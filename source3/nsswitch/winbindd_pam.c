@@ -23,6 +23,8 @@
 
 #include "winbindd.h"
 
+extern pstring global_myname;
+
 /* Copy of parse_domain_user from winbindd_util.c.  Parse a string of the
    form DOMAIN/user into a domain and a user */
 
@@ -50,9 +52,16 @@ static void parse_domain_user(char *domuser, fstring domain, fstring user)
 
 enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state) 
 {
-	BOOL result, user_exists;
+	BOOL result;
 	fstring name_domain, name_user;
 	int passlen;
+
+	unsigned char local_lm_response[24];
+	unsigned char local_nt_response[24];
+
+	auth_usersupplied_info user_info;
+	auth_serversupplied_info server_info;
+	AUTH_STR theirdomain, smb_username, wksta_name;
 
 	DEBUG(3, ("[%5d]: pam auth %s\n", state->pid,
 		  state->request.data.auth.user));
@@ -68,17 +77,48 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 		return WINBINDD_ERROR;
 
 	passlen = strlen(state->request.data.auth.pass);
+		
+	ZERO_STRUCT(user_info);
+	ZERO_STRUCT(theirdomain);
+	ZERO_STRUCT(smb_username);
+	ZERO_STRUCT(wksta_name);
+	
+	theirdomain.str = name_domain;
+	theirdomain.len = strlen(theirdomain.str);
 
+	user_info.requested_domain = theirdomain;
+	user_info.domain = theirdomain;
+	
+	user_info.smb_username.str = name_user;
+	user_info.smb_username.len = strlen(name_user);
+
+	user_info.requested_username.str = name_user;
+	user_info.requested_username.len = strlen(name_user);
+
+	user_info.wksta_name.str = global_myname;
+	user_info.wksta_name.len = strlen(user_info.wksta_name.str);
+
+	user_info.wksta_name = wksta_name;
+
+	generate_random_buffer( user_info.chal, 8, False);
+
+	if (state->request.data.auth.pass) {
+		SMBencrypt((uchar *)state->request.data.auth.pass, user_info.chal, local_lm_response);
+		user_info.lm_resp.buffer = (uint8 *)local_lm_response;
+		user_info.lm_resp.len = 24;
+		SMBNTencrypt((uchar *)state->request.data.auth.pass, user_info.chal, local_nt_response);
+		user_info.nt_resp.buffer = (uint8 *)local_nt_response;
+		user_info.nt_resp.len = 24;
+	} else {
+		return WINBINDD_ERROR;
+	}
+	
 	/* So domain_client_validate() actually opens a new connection
 	   for each authentication performed.  This can theoretically
 	   be optimised to use an already open IPC$ connection. */
 
-	result = domain_client_validate(name_user, name_domain,
-					state->request.data.auth.pass,
-					passlen,
-					state->request.data.auth.pass,
-					passlen, &user_exists, 
-					server_state.controller);
+	result = (domain_client_validate(&user_info, &server_info,
+					server_state.controller) == NT_STATUS_NOPROBLEMO);
 
 	return result ? WINBINDD_OK : WINBINDD_ERROR;
 }

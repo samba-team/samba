@@ -976,20 +976,19 @@ checking for a logon as it doesn't export the password
 hashes to anyone who has compromised the secure channel. JRA.
 ********************************************************************/
 
-void init_id_info2(NET_ID_INFO_2 *id, char *domain_name,
-				uint32 param_ctrl, uint32 log_id_low, uint32 log_id_high,
-				char *user_name, char *wksta_name,
-				unsigned char lm_challenge[8],
-				unsigned char *lm_chal_resp,
-				unsigned char *nt_chal_resp)
+void init_id_info2(NET_ID_INFO_2 * id, const char *domain_name,
+		   uint32 param_ctrl,
+		   uint32 log_id_low, uint32 log_id_high,
+		   const char *user_name, const char *wksta_name,
+		   const uchar lm_challenge[8],
+		   const uchar * lm_chal_resp, int lm_chal_resp_len,
+		   const uchar * nt_chal_resp, int nt_chal_resp_len)
 {
 	int len_domain_name = strlen(domain_name);
 	int len_user_name   = strlen(user_name  );
 	int len_wksta_name  = strlen(wksta_name );
-	int nt_chal_resp_len = ((nt_chal_resp != NULL) ? 24 : 0);
-	int lm_chal_resp_len = ((lm_chal_resp != NULL) ? 24 : 0);
 	unsigned char lm_owf[24];
-	unsigned char nt_owf[24];
+	unsigned char nt_owf[128];
 
 	DEBUG(5,("init_id_info2: %d\n", __LINE__));
 
@@ -1015,15 +1014,16 @@ void init_id_info2(NET_ID_INFO_2 *id, char *domain_name,
 	}
 
 	memcpy(id->lm_chal, lm_challenge, sizeof(id->lm_chal));
-	init_str_hdr(&id->hdr_nt_chal_resp, 24, nt_chal_resp_len, (nt_chal_resp != NULL) ? 1 : 0);
-	init_str_hdr(&id->hdr_lm_chal_resp, 24, lm_chal_resp_len, (lm_chal_resp != NULL) ? 1 : 0);
+	init_str_hdr(&id->hdr_nt_chal_resp, sizeof(lm_owf), nt_chal_resp_len, (nt_chal_resp != NULL) ? 1 : 0);
+	init_str_hdr(&id->hdr_lm_chal_resp, sizeof(nt_owf), lm_chal_resp_len, (lm_chal_resp != NULL) ? 1 : 0);
 
 	init_unistr2(&id->uni_domain_name, domain_name, len_domain_name);
 	init_unistr2(&id->uni_user_name, user_name, len_user_name);
 	init_unistr2(&id->uni_wksta_name, wksta_name, len_wksta_name);
 
-	init_string2(&id->nt_chal_resp, (char *)nt_chal_resp, nt_chal_resp_len);
-	init_string2(&id->lm_chal_resp, (char *)lm_chal_resp, lm_chal_resp_len);
+	init_string2(&id->nt_chal_resp, (const char *)nt_chal_resp, nt_chal_resp_len);
+	init_string2(&id->lm_chal_resp, (const char *)lm_chal_resp, lm_chal_resp_len);
+
 }
 
 /*******************************************************************

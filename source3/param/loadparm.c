@@ -252,6 +252,8 @@ typedef struct
 	BOOL bAllowTrustedDomains;
 	BOOL bRestrictAnonymous;
 	BOOL bLanmanAuth;
+	BOOL bNTLMAuth;
+	BOOL bPlaintextToSmbpasswd;
 	BOOL bDebugHiresTimestamp;
 	BOOL bDebugPid;
 	BOOL bDebugUid;
@@ -676,6 +678,8 @@ static struct parm_struct parm_table[] = {
 	{"unix password sync", P_BOOL, P_GLOBAL, &Globals.bUnixPasswdSync, NULL, NULL, 0},
 	{"restrict anonymous", P_BOOL, P_GLOBAL, &Globals.bRestrictAnonymous, NULL, NULL, 0},
 	{"lanman auth", P_BOOL, P_GLOBAL, &Globals.bLanmanAuth, NULL, NULL, 0},
+	{"ntlm auth", P_BOOL, P_GLOBAL, &Globals.bNTLMAuth, NULL, NULL, 0},
+	{"plaintext to smbpasswd", P_BOOL, P_GLOBAL, &Globals.bPlaintextToSmbpasswd, NULL, NULL, 0},
 	{"use rhosts", P_BOOL, P_GLOBAL, &Globals.bUseRhosts, NULL, NULL, 0},
 	
 	{"username", P_STRING, P_LOCAL, &sDefault.szUsername, NULL, NULL, FLAG_GLOBAL | FLAG_SHARE},
@@ -1265,6 +1269,8 @@ static void init_globals(void)
 	Globals.bStatCache = True;	/* use stat cache by default */
 	Globals.bRestrictAnonymous = False;
 	Globals.bLanmanAuth = True;	/* Do use the LanMan hash if it is available */
+	Globals.bNTLMAuth = True;	/* Do use NTLMv1 if it is available (otherwise NTLMv2) */
+	Globals.bPlaintextToSmbpasswd = False;	/* Check the passwords with smbpasswd, even if in plaintext */
 	Globals.map_to_guest = 0;	/* By Default, "Never" */
 	Globals.min_passwd_length = MINPASSWDLENGTH;	/* By Default, 5. */
 	Globals.oplock_break_wait_time = 0;	/* By Default, 0 msecs. */
@@ -1540,6 +1546,8 @@ FN_GLOBAL_BOOL(lp_stat_cache, &Globals.bStatCache)
 FN_GLOBAL_BOOL(lp_allow_trusted_domains, &Globals.bAllowTrustedDomains)
 FN_GLOBAL_BOOL(lp_restrict_anonymous, &Globals.bRestrictAnonymous)
 FN_GLOBAL_BOOL(lp_lanman_auth, &Globals.bLanmanAuth)
+FN_GLOBAL_BOOL(lp_ntlm_auth, &Globals.bNTLMAuth)
+FN_GLOBAL_BOOL(lp_plaintext_to_smbpasswd, &Globals.bPlaintextToSmbpasswd)
 FN_GLOBAL_BOOL(lp_host_msdfs, &Globals.bHostMSDfs)
 FN_GLOBAL_BOOL(lp_kernel_oplocks, &Globals.bKernelOplocks)
 FN_GLOBAL_BOOL(lp_enhanced_browsing, &Globals.enhanced_browsing)

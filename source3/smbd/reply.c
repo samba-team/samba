@@ -434,6 +434,11 @@ int reply_ioctl(connection_struct *conn,
 }
 
 /****************************************************************************
+ This function breaks the authentication split.  It needs sorting out.
+ I can't see why we can't hadle this INSIDE the check_password, as in then
+ end all it does it spit out an nt_status code.
+ ****************************************************************************/
+/****************************************************************************
  always return an error: it's just a matter of which one...
  ****************************************************************************/
 static int session_trust_account(connection_struct *conn, char *inbuf, char *outbuf, char *user,
@@ -444,7 +449,40 @@ static int session_trust_account(connection_struct *conn, char *inbuf, char *out
   SAM_ACCOUNT 	*sam_trust_acct = NULL; 
   uint16	acct_ctrl;
   BOOL ret;
-  
+  	auth_usersupplied_info user_info;
+	auth_serversupplied_info server_info;
+	AUTH_STR domain, smb_username, wksta_name;
+		
+	ZERO_STRUCT(user_info);
+	ZERO_STRUCT(server_info);
+	ZERO_STRUCT(domain);
+	ZERO_STRUCT(smb_username);
+	ZERO_STRUCT(wksta_name);
+	
+	domain.str = lp_workgroup();
+	domain.len = strlen(domain.str);
+
+	user_info.requested_domain = domain;
+	user_info.domain = domain;
+
+	smb_username.str = user;
+	smb_username.len = strlen(smb_username.str);
+
+	user_info.requested_username = smb_username;  /* For the time-being */
+	user_info.smb_username = smb_username;
+	
+	user_info.wksta_name = wksta_name;
+
+	user_info.lm_resp.buffer = (uint8 *)smb_passwd;
+	user_info.lm_resp.len = smb_passlen;
+	user_info.nt_resp.buffer = (uint8 *)smb_nt_passwd;
+	user_info.nt_resp.len = smb_nt_passlen;
+	
+	if (!last_challenge(user_info.chal)) {
+		DEBUG(1,("smb_password_ok: no challenge done - password failed\n"));
+		return NT_STATUS_LOGON_FAILURE;
+	}
+
   pdb_init_sam(&sam_trust_acct);
 
   if (lp_security() == SEC_USER) {
@@ -470,7 +508,7 @@ static int session_trust_account(connection_struct *conn, char *inbuf, char *out
      return(ERROR(0, NT_STATUS_LOGON_FAILURE));
     }
 
-    if (!smb_password_ok(sam_trust_acct, NULL, (unsigned char *)smb_passwd, (unsigned char *)smb_nt_passwd)) {
+    if (!smb_password_ok(sam_trust_acct, &user_info, &server_info)) {
       DEBUG(0,("session_trust_account: Trust Account %s - password failed\n", user));
       SSVAL(outbuf, smb_flg2, SVAL(outbuf, smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);
     pdb_free_sam(sam_trust_acct);
@@ -504,173 +542,6 @@ static int session_trust_account(connection_struct *conn, char *inbuf, char *out
 }
 
 /****************************************************************************
- Create a UNIX user on demand.
-****************************************************************************/
-
-int smb_create_user(char *unix_user, char *homedir)
-{
-  pstring add_script;
-  int ret;
-
-  pstrcpy(add_script, lp_adduser_script());
-  if (! *add_script) return -1;
-  all_string_sub(add_script, "%u", unix_user, sizeof(pstring));
-  if (homedir)
-    all_string_sub(add_script, "%H", homedir, sizeof(pstring));
-  ret = smbrun(add_script,NULL);
-  DEBUG(3,("smb_create_user: Running the command `%s' gave %d\n",add_script,ret));
-  return ret;
-}
-
-/****************************************************************************
- Delete a UNIX user on demand.
-****************************************************************************/
-
-static int smb_delete_user(char *unix_user)
-{
-  pstring del_script;
-  int ret;
-
-  pstrcpy(del_script, lp_deluser_script());
-  if (! *del_script) return -1;
-  all_string_sub(del_script, "%u", unix_user, sizeof(pstring));
-  ret = smbrun(del_script,NULL);
-  DEBUG(3,("smb_delete_user: Running the command `%s' gave %d\n",del_script,ret));
-  return ret;
-}
-
-/****************************************************************************
- Check user is in correct domain if required
-****************************************************************************/
-
-static BOOL check_domain_match(char *user, char *domain) 
-{
-  /*
-   * If we aren't serving to trusted domains, we must make sure that
-   * the validation request comes from an account in the same domain
-   * as the Samba server
-   */
-
-  if (!lp_allow_trusted_domains() &&
-      !strequal(lp_workgroup(), domain) ) {
-      DEBUG(1, ("check_domain_match: Attempt to connect as user %s from domain %s denied.\n", user, domain));
-      return False;
-  } else {
-      return True;
-  }
-}
-
-/****************************************************************************
- Check for a valid username and password in security=server mode.
-****************************************************************************/
-
-static BOOL check_server_security(char *orig_user, char *domain, char *unix_user,
-                                  char *smb_apasswd, int smb_apasslen,
-                                  char *smb_ntpasswd, int smb_ntpasslen)
-{
-  BOOL ret = False;
-
-  if(lp_security() != SEC_SERVER)
-    return False;
-
-  if (!check_domain_match(orig_user, domain))
-     return False;
-
-  ret = server_validate(orig_user, domain, 
-                            smb_apasswd, smb_apasslen, 
-                            smb_ntpasswd, smb_ntpasslen);
-  if(ret) {
-    struct passwd *pwd=NULL;
-
-    /*
-     * User validated ok against Domain controller.
-     * If the admin wants us to try and create a UNIX
-     * user on the fly, do so.
-     * Note that we can never delete users when in server
-     * level security as we never know if it was a failure
-     * due to a bad password, or the user really doesn't exist.
-     */
-    if(lp_adduser_script() && !(pwd = smb_getpwnam(unix_user,True))) {
-      smb_create_user(unix_user, NULL);
-    }
-
-    if(lp_adduser_script() && pwd) {
-      SMB_STRUCT_STAT st;
-
-      /*
-       * Also call smb_create_user if the users home directory
-       * doesn't exist. Used with winbindd to allow the script to
-       * create the home directory for a user mapped with winbindd.
-       */
-
-      if (pwd->pw_shell && (sys_stat(pwd->pw_dir, &st) == -1) && (errno == ENOENT))
-        smb_create_user(unix_user, pwd->pw_dir);
-    }
-  }
-
-  return ret;
-}
-
-/****************************************************************************
- Check for a valid username and password in security=domain mode.
-****************************************************************************/
-
-static BOOL check_domain_security(char *orig_user, char *domain, char *unix_user, 
-                                  char *smb_apasswd, int smb_apasslen,
-                                  char *smb_ntpasswd, int smb_ntpasslen)
-{
-	BOOL ret = False;
-	BOOL user_exists = True;
-	struct passwd *pwd=NULL;
-
-	if(lp_security() != SEC_DOMAIN)
-		return False;
-
-	if (!check_domain_match(orig_user, domain))
-		return False;
-
-	ret = domain_client_validate(orig_user, domain,
-			smb_apasswd, smb_apasslen,
-			smb_ntpasswd, smb_ntpasslen,
-			&user_exists, NULL);
-
-	if(ret) {
-		/*
-		 * User validated ok against Domain controller.
-		 * If the admin wants us to try and create a UNIX
-		 * user on the fly, do so.
-		 */
-		if(user_exists && lp_adduser_script() && !(pwd = smb_getpwnam(unix_user,True)))
-			smb_create_user(unix_user, NULL);
-
-		if(lp_adduser_script() && pwd) {
-			SMB_STRUCT_STAT st;
-
-			/*
-			 * Also call smb_create_user if the users home directory
-			 * doesn't exist. Used with winbindd to allow the script to
-			 * create the home directory for a user mapped with winbindd.
-			 */
-
-			if (pwd->pw_dir && (sys_stat(pwd->pw_dir, &st) == -1) && (errno == ENOENT))
-				smb_create_user(unix_user, pwd->pw_dir);
-		}
-
-	} else {
-		/*
-		 * User failed to validate ok against Domain controller.
-		 * If the failure was "user doesn't exist" and admin 
-		 * wants us to try and delete that UNIX user on the fly,
-		 * do so.
-		 */
-		if(!user_exists && lp_deluser_script() && smb_getpwnam(unix_user,True))
-			smb_delete_user(unix_user);
-	}
-
-	return ret;
-}
-
-/****************************************************************************
  Return a bad password error configured for the correct client type.
 ****************************************************************************/       
 
@@ -701,8 +572,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
   pstring smb_apasswd;
   int   smb_ntpasslen = 0;   
   pstring smb_ntpasswd;
-  BOOL valid_nt_password = False;
-  BOOL valid_lm_password = False;
+  BOOL valid_password = False;
   pstring user;
   pstring orig_user;
   fstring domain;
@@ -926,50 +796,16 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
   
   add_session_user(user);
 
-  /* 
-   * Check with orig_user for security=server and
-   * security=domain.
-   */
-
-  if (!guest && !check_server_security(orig_user, domain, user, 
-         smb_apasswd, smb_apasslen, smb_ntpasswd, smb_ntpasslen) &&
-      !check_domain_security(orig_user, domain, user, smb_apasswd,
-         smb_apasslen, smb_ntpasswd, smb_ntpasslen) &&
-      !check_hosts_equiv(user))
-  {
-    /* 
-     * If we get here then the user wasn't guest and the remote
-     * authentication methods failed. Check the authentication
-     * methods on this local server.
-     *
-     * If an NT password was supplied try and validate with that
-     * first. This is superior as the passwords are mixed case 
-     * 128 length unicode.
-      */
-
-    if(smb_ntpasslen)
-    {
-      if(!password_ok(user, smb_ntpasswd,smb_ntpasslen))
-        DEBUG(2,("NT Password did not match for user '%s'!\n", user));
-      else
-        valid_nt_password = True;
-    } 
-    
-    
-    /* check the LanMan password only if necessary and if allowed 
-       by lp_lanman_auth() */
-    if (!valid_nt_password && lp_lanman_auth())
-    {
-      DEBUG(2,("Defaulting to Lanman password for %s\n", user));
-      valid_lm_password = password_ok(user, smb_apasswd,smb_apasslen);
-    }
-      
+  if (!guest) {
+	  valid_password = (pass_check_smb(user, domain, 
+					   smb_apasswd, smb_apasslen, 
+				       smb_ntpasswd, smb_ntpasslen) == NT_STATUS_NOPROBLEMO);
 
     /* The true branch will be executed if 
        (1) the NT password failed (or was not tried), and 
        (2) LanMan authentication failed (or was disabled) 
      */
-    if (!valid_nt_password && !valid_lm_password)
+    if (!valid_password)
     {
       if (lp_security() >= SEC_USER) 
       {

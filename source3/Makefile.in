@@ -182,6 +182,9 @@ OPLOCK_OBJ = smbd/oplock.o smbd/oplock_irix.o smbd/oplock_linux.o
 
 NOTIFY_OBJ = smbd/notify.o smbd/notify_hash.o smbd/notify_kernel.o
 
+AUTH_OBJ = smbd/auth.o smbd/auth_smbpasswd.o smbd/auth_server.o smbd/auth_domain.o \
+	   smbd/auth_rhosts.o smbd/auth_util.o	
+
 SMBD_OBJ1 = smbd/server.o smbd/files.o smbd/chgpasswd.o smbd/connection.o \
 	    smbd/utmp.o smbd/session.o \
             smbd/dfree.o smbd/dir.o smbd/password.o smbd/conn.o smbd/fileio.o \
@@ -207,7 +210,7 @@ SMBD_OBJ = $(SMBD_OBJ1) $(MSDFS_OBJ) $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) \
            $(RPC_SERVER_OBJ) $(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) \
            $(LOCKING_OBJ) $(PASSDB_OBJ) $(PRINTING_OBJ) $(PROFILE_OBJ) \
 	   $(LIB_OBJ) $(PRINTBACKEND_OBJ) $(QUOTAOBJS) $(OPLOCK_OBJ) \
-	   $(NOTIFY_OBJ) $(GROUPDB_OBJ)
+	   $(NOTIFY_OBJ) $(GROUPDB_OBJ) $(AUTH_OBJ)
 
 
 NMBD_OBJ1 = nmbd/asyncdns.o nmbd/nmbd.o nmbd/nmbd_become_dmb.o \
@@ -342,7 +345,7 @@ SMBFILTER_OBJ = utils/smbfilter.o $(LIBSMB_OBJ) $(PARAM_OBJ) \
 
 PROTO_OBJ = $(SMBD_OBJ) $(NMBD_OBJ) $(SWAT_OBJ) $(CLIENT_OBJ) \
 	    $(SMBWRAPPER_OBJ) $(SMBTORTURE_OBJ) $(RPCCLIENT_OBJ1) \
-	    $(LIBMSRPC_OBJ) $(RPC_CLIENT_OBJ)
+	    $(LIBMSRPC_OBJ) $(RPC_CLIENT_OBJ) $(AUTH_OBJ)
 
 NSS_OBJ_0 = nsswitch/wins.o $(PARAM_OBJ) $(UBIQX_OBJ) $(LIBSMB_OBJ) $(LIB_OBJ) $(NSSWINS_OBJ)
 NSS_OBJ = $(NSS_OBJ_0:.o=.po)
@@ -381,9 +384,8 @@ WINBINDD_OBJ1 = \
 		nsswitch/winbindd_misc.o
 
 NECESSARY_BECAUSE_SAMBA_DEPENDENCIES_ARE_SO_BROKEN_OBJ = \
-		smbd/password.o smbd/utmp.o smbd/session.o smbd/uid.o smbd/sec_ctx.o \
-		rpc_client/cli_netlogon.o rpc_client/cli_login.o \
-		smbd/chgpasswd.o
+		smbd/auth_domain.o \
+		rpc_client/cli_netlogon.o rpc_client/cli_login.o 
 
 WINBINDD_OBJ = \
 		$(WINBINDD_OBJ1) $(NOPROTO_OBJ) $(PASSDB_OBJ) \
