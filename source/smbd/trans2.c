@@ -967,7 +967,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 				/* This is necessary, as otherwise the
 				 * desktop.ini file in this folder is
 				 * ignored */
-				mode |= (lp_profile_acls(SNUM(conn)) ? 1 : 0);
+				mode |= (lp_profile_acls(SNUM(conn)) ? aRONLY : 0);
 				file_size = 0;
 			}
 
@@ -2515,7 +2515,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 	if (mode & aDIR) {
 		/* This is necessary, as otherwise the desktop.ini file in
 		 * this folder is ignored */
-		mode |= (lp_profile_acls(SNUM(conn)) ? 1 : 0);
+		mode |= (lp_profile_acls(SNUM(conn)) ? aRONLY : 0);
 		file_size = 0;
 	}
 
