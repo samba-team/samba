@@ -320,9 +320,6 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
   uint32 len;
   time_t mdate=0, adate=0, cdate=0;
   char *nameptr;
-  BOOL isrootdir = (strequal(conn->dirpath,"./") ||
-		    strequal(conn->dirpath,".") ||
-		    strequal(conn->dirpath,"/"));
   BOOL was_8_3;
   int nt_extmode; /* Used for NT connections instead of mode */
   BOOL needslash = ( conn->dirpath[strlen(conn->dirpath) -1] != '/');
@@ -395,9 +392,6 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
       if (dont_descend && !isdots)
         continue;
 	  
-      if (isrootdir && isdots)
-        continue;
-
       pstrcpy(pathreal,conn->dirpath);
       if(needslash)
         pstrcat(pathreal,"/");
