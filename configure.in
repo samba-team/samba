@@ -321,6 +321,7 @@ AC_OUTPUT(Makefile 			\
 	lib/gssapi/Makefile		\
 	lib/45/Makefile			\
 	lib/otp/Makefile		\
+	lib/kafs/Makefile		\
 	kuser/Makefile			\
 	kpasswd/Makefile		\
 	admin/Makefile			\
@@ -334,6 +335,7 @@ AC_OUTPUT(Makefile 			\
 	appl/telnet/libtelnet/Makefile	\
 	appl/telnet/telnet/Makefile	\
 	appl/telnet/telnetd/Makefile	\
+	appl/afsutil			\
 	doc/Makefile			\
 )
 
