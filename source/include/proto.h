@@ -821,7 +821,8 @@ void pwd_make_lm_nt_owf2(struct pwd_info *pwd, const uchar srv_key[8],
 		const char *user, const char *server, const char *domain);
 void pwd_make_lm_nt_owf(struct pwd_info *pwd, uchar cryptkey[8]);
 void pwd_get_lm_nt_owf(struct pwd_info *pwd, uchar lm_owf[24],
-				uchar *nt_owf, size_t *nt_owf_len);
+				uchar *nt_owf, size_t *nt_owf_len,
+				uchar *sess_key);
 
 /*The following definitions come from  libsmb/smbdes.c  */
 

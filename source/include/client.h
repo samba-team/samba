@@ -74,6 +74,8 @@ struct pwd_info
 	uchar lm_cli_chal[8];
 	uchar nt_cli_chal[128];
 	size_t nt_cli_chal_len;
+
+	uchar sess_key[16];
 };
 
 struct cli_state {

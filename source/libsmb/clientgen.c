@@ -1026,8 +1026,13 @@ static BOOL cli_calc_session_pwds(struct cli_state *cli,
 			*ntpasslen = cli->nt_cli_chal_len + 16;
 
 			hmac_md5_init_limK_to_64(kr, 16, &ctx);
-			hmac_md5_update(cli->nt_cli_chal, cli->nt_cli_chal_len, &ctx);
+			hmac_md5_update(cli->nt_cli_chal, cli->nt_cli_chal_len,
+			                &ctx);
 			hmac_md5_final(cli->sess_key, &ctx);
+#if DEBUG_PASSWORD
+			DEBUG(100,("session key:\n"));
+			dump_data(100, cli->sess_key, sizeof(cli->sess_key));
+#endif
 
 		}
 		else
@@ -3262,7 +3267,7 @@ BOOL cli_establish_connection(struct cli_state *cli,
 		}
 
 		pwd_get_lm_nt_owf(&(cli->pwd), lm_sess_pwd, nt_sess_pwd,
-		                  &nt_sess_pwd_len);
+		                  &nt_sess_pwd_len, cli->sess_key);
 
 		/* attempt encrypted session */
 		if (!cli_session_setup_x(cli, cli->user_name,
