@@ -1907,6 +1907,26 @@ AC_ARG_WITH(quotas,
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
+    case "$host_os" in
+      *linux*)
+        # Check for kernel 2.4.x quota braindamage...
+        AC_CACHE_CHECK([for linux 2.4.x quota braindamage..],samba_cv_linux_2_4_quota_braindamage, [
+        AC_TRY_COMPILE([#include <stdio.h>
+#include <sys/types.h>
+#include <asm/types.h>
+#include <linux/quota.h>
+#include <mntent.h>
+#include <linux/unistd.h>],[struct mem_dqblk D;],
+      samba_cv_linux_2_4_quota_braindamage=yes,samba_cv_linux_2_4_quota_braindamage=no)])
+if test x"$samba_cv_linux_2_4_quota_braindamage" = x"yes"; then
+        AC_DEFINE(LINUX_QUOTAS_2)
+else
+        AC_DEFINE(LINUX_QUOTAS_1)
+fi
+        ;;
+      *)
+        ;;
+    esac
     QUOTAOBJS=smbd/quotas.o
     AC_DEFINE(WITH_QUOTAS)
     ;;
