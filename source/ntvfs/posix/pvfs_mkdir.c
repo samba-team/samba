@@ -60,6 +60,13 @@ static NTSTATUS pvfs_t2mkdir(struct pvfs_state *pvfs,
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
+	/* setup an inherited acl from the parent */
+	status = pvfs_acl_inherit(pvfs, req, name, -1);
+	if (!NT_STATUS_IS_OK(status)) {
+		rmdir(name->full_name);
+		return status;
+	}
+
 	/* setup any EAs that were asked for */
 	status = pvfs_setfileinfo_ea_set(pvfs, name, -1, 
 					 md->t2mkdir.in.num_eas,
@@ -108,6 +115,13 @@ NTSTATUS pvfs_mkdir(struct ntvfs_module_context *ntvfs,
 	}
 
 	pvfs_xattr_unlink_hook(pvfs, name->full_name);
+
+	/* setup an inherited acl from the parent */
+	status = pvfs_acl_inherit(pvfs, req, name, -1);
+	if (!NT_STATUS_IS_OK(status)) {
+		rmdir(name->full_name);
+		return status;
+	}
 
 	return NT_STATUS_OK;
 }
