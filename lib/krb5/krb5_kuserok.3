@@ -41,7 +41,7 @@
 Kerberos 5 Library (libkrb5, -lkrb5)
 .Sh SYNOPSIS
 .Fd #include <krb5.h>
-.Ft krb5_error_code
+.Ft krb5_boolean
 .Fo krb5_kuserok 
 .Fa "krb5_context context"
 .Fa "krb5_principal principal"
@@ -56,13 +56,32 @@ is allowed to log in as that user.
 .Pp
 First
 .Nm
-checks if principal is the same as user@realm in any of the
-default realms.
-After that it reads the file
+check if there is a local account name
+.Fa username.
+If there isn't,
+.Nm
+returns
+.Dv FALSE .
+.Pp
+Then
+.Nm
+checks if principal is the same as user@realm in any of the default
+realms. If that is the case,
+.Nm
+returns
+.Dv TRUE .
+.Pp
+After that it reads the file 
 .Pa .k5login
 (if it exists) in the users home directory and checks if
 .Fa principal
 is in the file.
+If it does exists,
+.Dv TRUE
+is returned.
+If neither of the above turns out to be true,
+.DV FALSE
+is returned.
 .Pp
 The
 .Pa .k5login
