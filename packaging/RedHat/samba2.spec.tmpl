@@ -295,6 +295,44 @@ if [ -f /etc/smbpasswd ]; then
 	mv /etc/smbpasswd /etc/samba/smbpasswd
 fi
 
+#
+# For 2.2.1 we move the tdb files from /var/lock/samba to /var/cache/samba
+# to preserve across reboots.
+#
+echo "Moving tdb files in /var/lock/samba/*.tdb to /var/cache/samba/*.tdb"
+for i in /var/lock/samba/*.tdb
+do
+if [ -f $i ]; then
+	newname=`echo $i | sed -e's/lock/cache/'`
+	echo "Moving $i to $newname"
+	mv $i $newname
+fi
+
+# Remove the transient tdb files.
+if [ -e /var/cache/samba/brlock.tdb ]; then
+	rm -f /var/cache/samba/brlock.tdb
+fi
+
+if [ -e /var/cache/samba/unexpected.tdb ]; then
+	rm -f /var/cache/samba/unexpected.tdb
+fi
+
+if [ -e /var/cache/samba/connections.tdb ]; then
+	rm -f /var/cache/samba/connections.tdb
+fi
+
+if [ -e /var/cache/samba/locking.tdb ]; then
+	rm -f /var/cache/samba/locking.tdb
+fi
+
+if [ -e /var/cache/samba/messages.tdb ]; then
+	rm -f /var/cache/samba/messages.tdb
+fi
+
+if [ -d /var/lock/samba ]; then
+	rm -rf /var/lock/samba
+fi
+
 # Add swat entry to /etc/services if not already there.
 if !( grep ^[:space:]*swat /etc/services > /dev/null ) then
 	echo 'swat		901/tcp				# Add swat service used via inetd' >> /etc/services
