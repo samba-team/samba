@@ -43,7 +43,7 @@
 */
 
 /* NT status -> dos error map */
-static struct {
+const static struct {
 	uint8 dos_class;
 	uint32 dos_code;
 	NTSTATUS ntstatus;
@@ -609,7 +609,7 @@ static struct {
 
 
 /* dos -> nt status error map */
-static struct {
+const static struct {
 	uint8 dos_class;
 	uint32 dos_code;
 	NTSTATUS ntstatus;
@@ -864,7 +864,7 @@ static struct {
 };
 
 /* errmap NTSTATUS->Win32 */
-static struct {
+const static struct {
 	NTSTATUS ntstatus;
 	WERROR werror;
 } ntstatus_to_werror_map[] = {
