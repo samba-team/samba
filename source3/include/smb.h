@@ -236,15 +236,15 @@ typedef struct nttime_info
 /* SID Types */
 enum SID_NAME_USE
 {
-	SID_NAME_USE_NONE = 0,/* NOTUSED */
 	SID_NAME_USER    = 1, /* user */
-	SID_NAME_DOM_GRP = 2, /* domain group */
-	SID_NAME_DOMAIN  = 3, /* domain: don't know what this is */
-	SID_NAME_ALIAS   = 4, /* local group */
-	SID_NAME_WKN_GRP = 5, /* well-known group */
-	SID_NAME_DELETED = 6, /* deleted account: needed for c2 rating */
-	SID_NAME_INVALID = 7, /* invalid account */
-	SID_NAME_UNKNOWN = 8  /* oops. */
+	SID_NAME_DOM_GRP,     /* domain group */
+	SID_NAME_DOMAIN,      /* domain sid */
+	SID_NAME_ALIAS,       /* local group */
+	SID_NAME_WKN_GRP,     /* well-known group */
+	SID_NAME_DELETED,     /* deleted account: needed for c2 rating */
+	SID_NAME_INVALID,     /* invalid account */
+	SID_NAME_UNKNOWN,     /* unknown sid type */
+	SID_NAME_COMPUTER,    /* sid for a computer */
 };
 
 /**
