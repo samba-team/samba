@@ -2351,7 +2351,7 @@ static int call_nt_transact_set_user_quota(connection_struct *conn, char *inbuf,
 	ZERO_STRUCT(qt);
 
 	/* access check */
-	if (conn->admin_user != True) {
+	if (current_user.uid != 0) {
 		DEBUG(1,("set_user_quota: access_denied service [%s] user [%s]\n",
 			lp_servicename(SNUM(conn)),conn->user));
 		return ERROR_DOS(ERRDOS,ERRnoaccess);
