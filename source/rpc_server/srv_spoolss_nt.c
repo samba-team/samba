@@ -5749,10 +5749,6 @@ uint32 _spoolss_enumprinterdata(POLICY_HND *handle, uint32 idx,
 
 	ZERO_STRUCT(printer);
 	
-	*out_max_value_len=0;
-	*out_value=NULL;
-	*out_value_len=0;
-
 	*out_type=0;
 
 	*out_max_data_len=0;
@@ -5815,18 +5811,6 @@ uint32 _spoolss_enumprinterdata(POLICY_HND *handle, uint32 idx,
 			param_index++;
 		}
 
-		/*
-		 * I think this is correct, it doesn't break APW and
-		 * allows Gerald's Win32 test programs to work correctly,
-		 * but may need altering.... JRA.
-		 */
-
-		if (param_index == 0) {
-			/* No parameters found. */
-			free_a_printer(&printer, 2);
-			return ERROR_NO_MORE_ITEMS;
-		}
-
 		/* the value is an UNICODE string but realvaluesize is the length in bytes including the leading 0 */
 		*out_value_len=2*(1+biggest_valuesize);
 		*out_data_len=biggest_datasize;
@@ -5843,8 +5827,31 @@ uint32 _spoolss_enumprinterdata(POLICY_HND *handle, uint32 idx,
 	 */
 
 	if (!get_specific_param_by_index(*printer, 2, idx, value, &data, &type, &data_len)) {
+
 		safe_free(data);
 		free_a_printer(&printer, 2);
+
+		/* out_value should default to "" or else NT4 has 
+		   problems unmarshalling the response */	
+	   
+		*out_max_value_len=(in_value_len/sizeof(uint16));
+		if((*out_value=(uint16 *)malloc(in_value_len*sizeof(uint8))) == NULL)
+			return ERROR_NOT_ENOUGH_MEMORY;
+		
+		ZERO_STRUCTP(*out_value);
+		*out_value_len = (uint32)dos_PutUniCode((char *)*out_value, "", in_value_len, True);
+
+		/* magic ending value? 
+		*out_type = 0x77f92cd4; */
+
+		/* the data is counted in bytes */
+		*out_max_data_len = in_data_len;
+		*out_data_len = in_data_len;
+		if((*data_out=(uint8 *)malloc(in_data_len*sizeof(uint8))) == NULL) 
+			return ERROR_NOT_ENOUGH_MEMORY;
+	
+		memset(*data_out,'\0',in_data_len);
+
 		return ERROR_NO_MORE_ITEMS;
 	}
 
