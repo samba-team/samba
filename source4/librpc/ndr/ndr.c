@@ -347,10 +347,6 @@ void ndr_print_function_debug(void (*fn)(struct ndr_print *, const char *, int ,
 {
 	struct ndr_print ndr;
 
-	if (!DEBUGLVL(2)) {
-		return;
-	}
-
 	ndr.mem_ctx = talloc_init("ndr_print_function");
 	if (!ndr.mem_ctx) return;
 	ndr.print = ndr_print_debug_helper;

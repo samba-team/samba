@@ -441,8 +441,6 @@ BOOL torture_rpc_winreg(int dummy)
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}
-	
-	p->flags |= DCERPC_DEBUG_PRINT_BOTH;
 
 	for (i = 0; i < ARRAY_SIZE(open_fns); i++) {
 		if (!test_Open(p, mem_ctx, open_fns[i]))
