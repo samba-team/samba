@@ -139,8 +139,18 @@ print_cred_verbose(krb5_context context, krb5_creds *cred)
 	if(j) printf(", ");
 	switch(cred->addresses.val[j].addr_type){
 	case AF_INET:
-	    printf("%s", inet_ntoa(*(struct in_addr*)cred->addresses.val[j].address.data));
+	    printf("IPv4: %s", inet_ntoa(*(struct in_addr*)cred->addresses.val[j].address.data));
 	    break;
+#if defined(AF_INET6) && defined(HAVE_NETINET_IN6_H)
+	case AF_INET6: {
+	    char foo[INET6_ADDRSTRLEN];
+
+	    printf("IPv6: %s", inet_ntop(AF_INET6,
+				   cred->addresses.val[j].address.data,
+				   foo, sizeof(foo)));
+	    break;
+	}
+#endif
 	default:
 	    printf("{ %d %d }", cred->addresses.val[j].addr_type,
 		   cred->addresses.val[j].address.length);
