@@ -103,7 +103,8 @@ static void rpcclient_stop(void)
 #define COMPL_REGKEY 1
 #define COMPL_SAMUSR 3
 #define COMPL_SAMGRP 4
-#define COMPL_SVCLST 5
+#define COMPL_SAMALS 5
+#define COMPL_SVCLST 6
 
 /****************************************************************************
  This defines the commands supported by this client
@@ -354,27 +355,27 @@ commands[] =
 	{
 		"addgroupmem",
 		cmd_sam_add_groupmem,
-		"<group rid> [member rid1] [member rid2] ... SAM Add Domain Group Member",
-		{COMPL_SAMGRP, COMPL_SAMGRP}
+		"<group rid> [user] [user] ... SAM Add Domain Group Member",
+		{COMPL_SAMGRP, COMPL_SAMUSR}
 	},
 
 	{
 		"addaliasmem",
 		cmd_sam_add_aliasmem,
 		"<alias rid> [member sid1] [member sid2] ... SAM Add Domain Alias Member",
-		{COMPL_NONE, COMPL_NONE}
+		{COMPL_SAMALS, COMPL_NONE}
 	},
 	{
 		"delgroupmem",
 		cmd_sam_del_groupmem,
-		"<group rid> [member rid1] [member rid2] ... SAM Delete Domain Group Member",
-		{COMPL_SAMGRP, COMPL_SAMGRP}
+		"<group rid> [user] [user] ... SAM Delete Domain Group Member",
+		{COMPL_SAMGRP, COMPL_SAMUSR}
 	},
 	{
 		"delaliasmem",
 		cmd_sam_del_aliasmem,
 		"<alias rid> [member sid1] [member sid2] ... SAM Delete Domain Alias Member",
-		{COMPL_NONE, COMPL_NONE}
+		{COMPL_SAMALS, COMPL_NONE}
 	},
 	{
 		"creategroup",
@@ -404,7 +405,7 @@ commands[] =
 		"delalias",
 		cmd_sam_delete_dom_alias,
 		"SAM Delete Domain Alias",
-		{COMPL_NONE, COMPL_NONE}
+		{COMPL_SAMALS, COMPL_NONE}
 	},
 	{
 		"ntpass",
@@ -421,13 +422,25 @@ commands[] =
 	{
 		"samgroup",
 		cmd_sam_query_group,
-		"<username> SAM Group Query (experimental!)",
+		"<groupname> SAM Group Query (experimental!)",
 		{COMPL_SAMGRP, COMPL_NONE}
+	},
+	{
+		"samalias",
+		cmd_sam_query_alias,
+		"<aliasname> SAM Alias Query",
+		{COMPL_SAMALS, COMPL_NONE}
+	},
+	{
+		"samaliasmem",
+		cmd_sam_query_aliasmem,
+		"<aliasname> SAM Alias Members",
+		{COMPL_SAMALS, COMPL_NONE}
 	},
 	{
 		"samgroupmem",
 		cmd_sam_query_groupmem,
-		"SAM Group Members (experimental!)",
+		"SAM Group Members",
 		{COMPL_SAMGRP, COMPL_NONE}
 	},
 	{
@@ -938,6 +951,43 @@ static char *complete_samenum_usr(char *text, int state)
 	return NULL;
 }
 
+static char *complete_samenum_als(char *text, int state)
+{
+	static uint32 i = 0;
+	static uint32 num_als = 0;
+	static struct acct_info *sam = NULL;
+    
+	if (state == 0)
+	{
+		free(sam);
+		sam = NULL;
+		num_als = 0;
+
+		/* Iterate all aliases */
+		if (msrpc_sam_enum_aliases(&cli_info, &sam, &num_als,
+		                   NULL, NULL, NULL) == 0)
+		{
+			return NULL;
+		}
+
+		i = 0;
+    	}
+
+	for (; i < num_als; i++)
+	{
+		char *als_name = sam[i].acct_name;
+		if (text == NULL || text[0] == 0 ||
+		    strnequal(text, als_name, strlen(text)))
+		{
+			char *name = strdup(als_name);
+			i++;
+			return name;
+		}
+	}
+	
+	return NULL;
+}
+
 static char *complete_samenum_grp(char *text, int state)
 {
 	static uint32 i = 0;
@@ -1108,6 +1158,9 @@ static char **completion_fn(char *text, int start, int end)
 
         case COMPL_SAMGRP:
           return completion_matches(text, complete_samenum_grp);
+
+        case COMPL_SAMALS:
+          return completion_matches(text, complete_samenum_als);
 
         case COMPL_SAMUSR:
           return completion_matches(text, complete_samenum_usr);

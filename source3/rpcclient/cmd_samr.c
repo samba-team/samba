@@ -925,10 +925,6 @@ uint32 msrpc_sam_enum_aliases(struct client_info *info,
 	fstrcat(srv_name, info->dest_host);
 	strupper(srv_name);
 
-	report(out_hnd, "SAM Enumerate Aliases\n");
-	report(out_hnd, "From: %s To: %s Domain: %s SID: %s\n",
-	                  info->myhostname, srv_name, domain, sid);
-
 	/* open SAMR session.  negotiate credentials */
 	res = res ? cli_nt_session_open(smb_cli, PIPE_SAMR, &fnum) : False;
 
@@ -2646,6 +2642,199 @@ void cmd_sam_query_dominfo(struct client_info *info)
 		DEBUG(5,("cmd_sam_query_dominfo: failed\n"));
 	}
 }
+
+/****************************************************************************
+experimental SAM alias query members.
+****************************************************************************/
+void cmd_sam_query_aliasmem(struct client_info *info)
+{
+	uint16 fnum;
+	fstring srv_name;
+	fstring domain;
+	fstring sid_str;
+	DOM_SID sid;
+	BOOL res = True;
+	BOOL res1 = True;
+
+	fstring alias_name;
+	char *names[1];
+	uint32 num_rids;
+	uint32 rid[MAX_LOOKUP_SIDS];
+	uint32 type[MAX_LOOKUP_SIDS];
+	POLICY_HND sam_pol;
+	POLICY_HND pol_dom;
+
+	fstrcpy(domain, info->dom.level5_dom);
+	sid_copy(&sid, &info->dom.level5_sid);
+
+	if (sid.num_auths == 0)
+	{
+		report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
+		return;
+	}
+
+	if (!next_token(NULL, alias_name, NULL, sizeof(alias_name)))
+	{
+		report(out_hnd, "samalias <name>\n");
+		return;
+	}
+
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, info->dest_host);
+	strupper(srv_name);
+
+	sid_to_string(sid_str, &sid);
+
+	report(out_hnd, "SAM Query Alias: %s\n", alias_name);
+	report(out_hnd, "From: %s To: %s Domain: %s SID: %s\n",
+	                  info->myhostname, srv_name, domain, sid_str);
+
+	/* open SAMR session.  negotiate credentials */
+	res = res ? cli_nt_session_open(smb_cli, PIPE_SAMR, &fnum) : False;
+
+	/* establish a connection. */
+	res = res ? samr_connect(smb_cli, fnum,
+				srv_name, 0x02000000,
+				&sam_pol) : False;
+
+	/* connect to the domain */
+	res = res ? samr_open_domain(smb_cli, fnum,
+	            &sam_pol, 0x304, &sid,
+	            &pol_dom) : False;
+
+	/* look up alias rid */
+	names[0] = alias_name;
+	res1 = res ? samr_query_lookup_names(smb_cli, fnum,
+					&pol_dom, 0x3e8,
+					1, names,
+					&num_rids, rid, type) : False;
+
+	if (res1 && num_rids == 1)
+	{
+		res1 = req_aliasmem_info(smb_cli, fnum,
+				&pol_dom,
+				domain,
+				&sid,
+				rid[0],
+	                        names[0],
+				sam_display_alias_members);
+	}
+
+	res = res ? samr_close(smb_cli, fnum,
+	            &sam_pol) : False;
+
+	res = res ? samr_close(smb_cli, fnum,
+	            &pol_dom) : False;
+
+	/* close the session */
+	cli_nt_session_close(smb_cli, fnum);
+
+	if (res1)
+	{
+		DEBUG(5,("cmd_sam_query_alias: succeeded\n"));
+	}
+	else
+	{
+		DEBUG(5,("cmd_sam_query_alias: failed\n"));
+	}
+}
+
+
+/****************************************************************************
+experimental SAM alias query.
+****************************************************************************/
+void cmd_sam_query_alias(struct client_info *info)
+{
+	uint16 fnum;
+	fstring srv_name;
+	fstring domain;
+	fstring sid_str;
+	DOM_SID sid;
+	BOOL res = True;
+	BOOL res1 = True;
+
+	fstring alias_name;
+	char *names[1];
+	uint32 num_rids;
+	uint32 rid[MAX_LOOKUP_SIDS];
+	uint32 type[MAX_LOOKUP_SIDS];
+	POLICY_HND sam_pol;
+	POLICY_HND pol_dom;
+
+	fstrcpy(domain, info->dom.level5_dom);
+	sid_copy(&sid, &info->dom.level5_sid);
+
+	if (sid.num_auths == 0)
+	{
+		report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
+		return;
+	}
+
+	if (!next_token(NULL, alias_name, NULL, sizeof(alias_name)))
+	{
+		report(out_hnd, "samalias <name>\n");
+		return;
+	}
+
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, info->dest_host);
+	strupper(srv_name);
+
+	sid_to_string(sid_str, &sid);
+
+	report(out_hnd, "SAM Query Alias: %s\n", alias_name);
+	report(out_hnd, "From: %s To: %s Domain: %s SID: %s\n",
+	                  info->myhostname, srv_name, domain, sid_str);
+
+	/* open SAMR session.  negotiate credentials */
+	res = res ? cli_nt_session_open(smb_cli, PIPE_SAMR, &fnum) : False;
+
+	/* establish a connection. */
+	res = res ? samr_connect(smb_cli, fnum,
+				srv_name, 0x02000000,
+				&sam_pol) : False;
+
+	/* connect to the domain */
+	res = res ? samr_open_domain(smb_cli, fnum,
+	            &sam_pol, 0x304, &sid,
+	            &pol_dom) : False;
+
+	/* look up alias rid */
+	names[0] = alias_name;
+	res1 = res ? samr_query_lookup_names(smb_cli, fnum,
+					&pol_dom, 0x3e8,
+					1, names,
+					&num_rids, rid, type) : False;
+
+	if (res1 && num_rids == 1)
+	{
+		res1 = query_aliasinfo(smb_cli, fnum,
+				&pol_dom,
+				domain,
+				&sid,
+				rid[0],
+				sam_display_alias_info);
+	}
+
+	res = res ? samr_close(smb_cli, fnum,
+	            &sam_pol) : False;
+
+	res = res ? samr_close(smb_cli, fnum,
+	            &pol_dom) : False;
+
+	/* close the session */
+	cli_nt_session_close(smb_cli, fnum);
+
+	if (res1)
+	{
+		DEBUG(5,("cmd_sam_query_alias: succeeded\n"));
+	}
+	else
+	{
+		DEBUG(5,("cmd_sam_query_alias: failed\n"));
+	}
+}
+
 
 /****************************************************************************
 SAM aliases query.
