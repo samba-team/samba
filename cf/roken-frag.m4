@@ -10,7 +10,7 @@ AC_REQUIRE([rk_CONFIG_HEADER])
 
 DIR_roken=roken
 LIB_roken='$(top_builddir)/$1/libroken.la'
-CPPFLAGS_roken='-I$(top_builddir)/$1 -I$(top_srcdir)/$1'
+INCLUDES_roken='-I$(top_builddir)/$1 -I$(top_srcdir)/$1'
 
 dnl Checks for programs
 AC_REQUIRE([AC_PROG_CC])
@@ -58,11 +58,13 @@ AC_CHECK_HEADERS([\
 	gdbm/ndbm.h				\
 	grp.h					\
 	ndbm.h					\
+	net/if.h				\
 	netdb.h					\
 	netinet/in.h				\
 	netinet/in6.h				\
 	netinet/in_systm.h			\
 	netinet6/in6.h				\
+	netinet6/in6_var.h			\
 	paths.h					\
 	pwd.h					\
 	resolv.h				\
@@ -74,6 +76,7 @@ AC_CHECK_HEADERS([\
 	sys/proc.h				\
 	sys/resource.h				\
 	sys/socket.h				\
+	sys/sockio.h				\
 	sys/stat.h				\
 	sys/sysctl.h				\
 	sys/time.h				\
@@ -231,6 +234,8 @@ AC_FIND_FUNC_NO_LIBS(pidfile,util,
 [#ifdef HAVE_UTIL_H
 #include <util.h>
 #endif],0)
+
+dnl 	getifaddrs				\
 
 AC_BROKEN([					\
 	chown					\
@@ -489,6 +494,7 @@ AC_HAVE_TYPE([socklen_t],[#include <sys/socket.h>])
 AC_HAVE_TYPE([struct sockaddr], [#include <sys/socket.h>])
 AC_HAVE_TYPE([struct sockaddr_storage], [#include <sys/socket.h>])
 AC_HAVE_TYPE([struct addrinfo], [#include <netdb.h>])
+AC_HAVE_TYPE([struct ifaddrs], [#include <ifaddrs.h>])
 
 dnl
 dnl Check for struct winsize
@@ -515,5 +521,5 @@ LIB_roken="${LIB_roken} \$(LIB_crypt) \$(LIB_dbopen)"
 
 AC_SUBST(DIR_roken)dnl
 AC_SUBST(LIB_roken)dnl
-AC_SUBST(CPPFLAGS_roken)dnl
+AC_SUBST(INCLUDES_roken)dnl
 ])
