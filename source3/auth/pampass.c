@@ -4,7 +4,7 @@
    PAM Password checking
    Copyright (C) Andrew Tridgell 1992-2001
    Copyright (C) John H Terpsta 1999-2001
-   Copyright (C) Andrew Barton 2001
+   Copyright (C) Andrew Bartlett 2001
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -224,8 +224,11 @@ static BOOL pam_auth(pam_handle_t *pamh, char *user, char *password)
 		case PAM_ABORT:
 			DEBUG(0, ("PAM: One or more PAM modules failed to load\n"));
 			break;
-		default:
+	        case PAM_SUCCESS:
 			DEBUG(4, ("PAM: User %s Authenticated OK\n", user));
+		        break;
+		default:
+			DEBUG(0, ("PAM: UNKNOWN ERROR while authenticating user %s\n", user));
 	}
 	if(!pam_error_handler(pamh, pam_error, "Authentication Failure", 2)) {
 		proc_pam_end(pamh);
@@ -260,8 +263,11 @@ static BOOL pam_account(pam_handle_t *pamh, char * user, char * password)
 		case PAM_USER_UNKNOWN:
 			DEBUG(0, ("PAM: User \"%s\" is NOT known to account management\n", user));
 			break;
-		default:
+	        case PAM_SUCCESS:
 			DEBUG(4, ("PAM: Account OK for User: %s\n", user));
+		        break;
+		default:
+			DEBUG(0, ("PAM: UNKNOWN ERROR for User: %s\n", user));
 	}
 	if(!pam_error_handler(pamh, pam_error, "Account Check Failed", 2)) {
 		proc_pam_end(pamh);
@@ -355,6 +361,27 @@ BOOL pam_session(BOOL flag, const connection_struct *conn, char *tty)
 	  proc_pam_end(pamh);
 	  return False;
 	}
+}
+
+/*
+ * PAM Externally accessible Account handler
+ */
+BOOL pam_accountcheck(char * user)
+{
+	pam_handle_t *pamh = NULL;
+
+	PAM_username = user;
+	PAM_password = NULL;
+
+	if( proc_pam_start(&pamh, user))
+	{
+			if ( pam_account(pamh, user, NULL))
+			{
+				return( proc_pam_end(pamh));
+			}
+	}
+	DEBUG(0, ("PAM: Account Validation Failed - Rejecting User!\n"));
+	return( False );
 }
 
 /*
