@@ -2796,8 +2796,8 @@ WERROR mod_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level)
 		{
 			/*
 			 * Update the changestamp.  Emperical tests show that the
-			 * ChangeID is always updated,but c_setprinter is only 
-			 * incremented on a SetPrinter() call.
+			 * ChangeID is always updated,but c_setprinter is  
+			 *  global spooler variable (not per printer).
 			 */
 
 			/* ChangeID **must** be increasing over the lifetime
