@@ -1642,7 +1642,7 @@ BOOL domain_client_validate( char *user, char *domain,
 			return False;
 		}
  
-		ptok->num_sids = (size_t)info3.num_groups2;
+		ptok->num_sids = (size_t)info3.num_groups2 + info3.num_other_sids;
 		if ((ptok->user_sids = (DOM_SID *)malloc( sizeof(DOM_SID) * ptok->num_sids )) == NULL) {
 			DEBUG(0, ("domain_client_validate: Out of memory allocating group SIDS\n"));
 			SAFE_FREE(ptok);
@@ -1650,10 +1650,21 @@ BOOL domain_client_validate( char *user, char *domain,
 			return False;
 		}
  
-		for (i = 0; i < ptok->num_sids; i++) {
+		/* Group membership (including nested groups) is
+		   stored here. */
+
+		for (i = 0; i < info3.num_groups2; i++) {
 			sid_copy(&ptok->user_sids[i], &info3.dom_sid.sid);
 			sid_append_rid(&ptok->user_sids[i], info3.gids[i].g_rid);
 		}
+
+		/* Universal group memberships for other domains are
+		   stored in the info3.other_sids field. */
+
+		for (i = 0; i < info3.num_other_sids; i++)
+			sid_copy(&ptok->user_sids[info3.num_groups2 + i], 
+				 &info3.other_sids[i].sid);
+
 		*pptoken = ptok;
 	}
 
