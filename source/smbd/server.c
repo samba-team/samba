@@ -58,6 +58,13 @@ extern pstring user_socket_options;
 connection_struct Connections[MAX_CONNECTIONS];
 files_struct Files[MAX_OPEN_FILES];
 
+/*
+ * Indirection for file fd's. Needed as POSIX locking
+ * is based on file/process, not fd/process.
+ */
+file_fd_struct FileFd[MAX_OPEN_FILES];
+int max_file_fd_used = 0;
+
 extern int Protocol;
 
 int maxxmit = BUFFER_SIZE;
@@ -731,17 +738,182 @@ static void check_for_pipe(char *fname)
     }
 }
 
+/****************************************************************************
+fd support routines - attempt to do a sys_open
+****************************************************************************/
+
+int fd_attempt_open(char *fname, int flags, int mode)
+{
+  int fd = sys_open(fname,flags,mode);
+
+  /* Fix for files ending in '.' */
+  if((fd == -1) && (errno == ENOENT) &&
+     (strchr(fname,'.')==NULL))
+    {
+      strcat(fname,".");
+      fd = sys_open(fname,flags,mode);
+    }
+
+#if (defined(ENAMETOOLONG) && defined(HAVE_PATHCONF))
+  if ((fd == -1) && (errno == ENAMETOOLONG))
+    {
+      int max_len;
+      char *p = strrchr(fname, '/');
+
+      if (p == fname)   /* name is "/xxx" */
+        {
+          max_len = pathconf("/", _PC_NAME_MAX);
+          p++;
+        }
+      else if ((p == NULL) || (p == fname))
+        {
+          p = fname;
+          max_len = pathconf(".", _PC_NAME_MAX);
+        }
+      else
+        {
+          *p = '\0';
+          max_len = pathconf(fname, _PC_NAME_MAX);
+          *p = '/';
+          p++;
+        }
+      if (strlen(p) > max_len)
+        {
+          char tmp = p[max_len];
+
+          p[max_len] = '\0';
+          if ((fd = sys_open(fname,flags,mode)) == -1)
+            p[max_len] = tmp;
+        }
+    }
+#endif
+  return fd;
+}
+
+/****************************************************************************
+fd support routines - attempt to find an already open file by dev
+and inode - increments the ref_count of the returned file_fd_struct *.
+****************************************************************************/
+file_fd_struct *fd_get_already_open(struct stat *sbuf)
+{
+  int i;
+  file_fd_struct *fd_ptr;
+
+  if(sbuf == 0)
+    return 0;
+
+  for(i = 0; i <= max_file_fd_used; i++) {
+    fd_ptr = &FileFd[i];
+    if((fd_ptr->ref_count > 0) &&
+       (((int32)sbuf->st_dev) == fd_ptr->dev) &&
+       (((int32)sbuf->st_ino) == fd_ptr->inode)) {
+      fd_ptr->ref_count++;
+      DEBUG(3,
+       ("Re-used file_fd_struct %d, dev = %x, inode = %x, ref_count = %d\n",
+        i, fd_ptr->dev, fd_ptr->inode, fd_ptr->ref_count));
+      return fd_ptr;
+    }
+  }
+  return 0;
+}
+
+/****************************************************************************
+fd support routines - attempt to find a empty slot in the FileFd array.
+Increments the ref_count of the returned entry.
+****************************************************************************/
+file_fd_struct *fd_get_new()
+{
+  int i;
+  file_fd_struct *fd_ptr;
+
+  for(i = 0; i < MAX_OPEN_FILES; i++) {
+    fd_ptr = &FileFd[i];
+    if(fd_ptr->ref_count == 0) {
+      fd_ptr->dev = (int32)-1;
+      fd_ptr->inode = (int32)-1;
+      fd_ptr->fd = -1;
+      fd_ptr->fd_readonly = -1;
+      fd_ptr->fd_writeonly = -1;
+      fd_ptr->real_open_flags = -1;
+      fd_ptr->ref_count++;
+      /* Increment max used counter if neccessary, cuts down
+	 on search time when re-using */
+      if(i > max_file_fd_used)
+        max_file_fd_used = i;
+      DEBUG(3,("Allocated new file_fd_struct %d, dev = %x, inode = %x\n",
+               i, fd_ptr->dev, fd_ptr->inode));
+      return fd_ptr;
+    }
+  }
+  DEBUG(1,("ERROR! Out of file_fd structures - perhaps increase MAX_OPEN_FILES?\
+n"));
+  return 0;
+}
+
+/****************************************************************************
+fd support routines - attempt to re-open an already open fd as O_RDWR.
+Save the already open fd (we cannot close due to POSIX file locking braindamage.
+****************************************************************************/
+
+void fd_attempt_reopen(char *fname, int mode, file_fd_struct *fd_ptr)
+{
+  int fd = sys_open( fname, O_RDWR, mode);
+
+  if(fd == -1)
+    return;
+
+  if(fd_ptr->real_open_flags == O_RDONLY)
+    fd_ptr->fd_readonly = fd_ptr->fd;
+  if(fd_ptr->real_open_flags == O_WRONLY)
+    fd_ptr->fd_writeonly = fd_ptr->fd;
+
+  fd_ptr->fd = fd;
+  fd_ptr->real_open_flags = O_RDWR;
+}
+
+/****************************************************************************
+fd support routines - attempt to close the file referenced by this fd.
+Decrements the ref_count and returns it.
+****************************************************************************/
+int fd_attempt_close(file_fd_struct *fd_ptr)
+{
+  DEBUG(3,("fd_attempt_close on file_fd_struct %d, fd = %d, dev = %x, inode = %x, open_flags = %d, ref_count = %d.\n",
+	   fd_ptr - &FileFd[0],
+	   fd_ptr->fd, fd_ptr->dev, fd_ptr->inode,
+	   fd_ptr->real_open_flags,
+	   fd_ptr->ref_count));
+  if(fd_ptr->ref_count > 0) {
+    fd_ptr->ref_count--;
+    if(fd_ptr->ref_count == 0) {
+      if(fd_ptr->fd != -1)
+        close(fd_ptr->fd);
+      if(fd_ptr->fd_readonly != -1)
+	close(fd_ptr->fd_readonly);
+      if(fd_ptr->fd_writeonly != -1)
+	close(fd_ptr->fd_writeonly);
+      fd_ptr->fd = -1;
+      fd_ptr->fd_readonly = -1;
+      fd_ptr->fd_writeonly = -1;
+      fd_ptr->real_open_flags = -1;
+      fd_ptr->dev = -1;
+      fd_ptr->inode = -1;
+    }
+  } 
+ return fd_ptr->ref_count;
+}
 
 /****************************************************************************
 open a file
 ****************************************************************************/
-void open_file(int fnum,int cnum,char *fname1,int flags,int mode)
+void open_file(int fnum,int cnum,char *fname1,int flags,int mode, struct stat *sbuf)
 {
   extern struct current_user current_user;
   pstring fname;
+  struct stat statbuf;
+  file_fd_struct *fd_ptr;
 
   Files[fnum].open = False;
-  Files[fnum].fd = -1;
+  Files[fnum].fd_ptr = 0;
   errno = EPERM;
 
   strcpy(fname,fname1);
@@ -771,10 +943,104 @@ void open_file(int fnum,int cnum,char *fname1,int flags,int mode)
     sys_unlink(fname);
 #endif
 
+  /*
+   * Ensure we have a valid struct stat so we can search the
+   * open fd table.
+   */
+  if(sbuf == 0) {
+    if(stat(fname, &statbuf) < 0) {
+      if(errno != ENOENT) {
+        DEBUG(3,("Error doing stat on file %s (%s)\n",
+                 fname,strerror(errno)));
 
-  Files[fnum].fd = sys_open(fname,flags,mode);
+        check_for_pipe(fname);
+        return;
+      }
+      sbuf = 0;
+    } else {
+      sbuf = &statbuf;
+    }
+  }
 
-  if ((Files[fnum].fd>=0) && 
+  /*
+   * Check to see if we have this file already
+   * open. If we do, just use the already open fd and increment the
+   * reference count (fd_get_already_open increments the ref_count).
+   */
+  if((fd_ptr = fd_get_already_open(sbuf))!= 0) {
+
+    int accmode = (flags & (O_RDONLY | O_WRONLY | O_RDWR));
+
+    /* File was already open. */
+    if((flags & O_CREAT) && (flags & O_EXCL)) {
+      fd_ptr->ref_count--;
+      errno = EEXIST;
+      return;
+    }
+
+    /* 
+     * If not opened O_RDWR try
+     * and do that here - a chmod may have been done
+     * between the last open and now. 
+     */
+    if(fd_ptr->real_open_flags != O_RDWR)
+      fd_attempt_reopen(fname, mode, fd_ptr);
+
+    /*
+     * Ensure that if we wanted write access
+     * it has been opened for write, and if we wanted read it
+     * was open for read. 
+     */
+    if(((accmode == O_WRONLY) && (fd_ptr->real_open_flags == O_RDONLY)) ||
+       ((accmode == O_RDONLY) && (fd_ptr->real_open_flags == O_WRONLY)) ||
+       ((accmode == O_RDWR) && (fd_ptr->real_open_flags != O_RDWR))) {
+      DEBUG(3,("Error opening (already open for flags=%d) file %s (%s) (flags=%d)\n",
+               fd_ptr->real_open_flags, fname,strerror(EACCES),flags));
+      check_for_pipe(fname);
+      fd_ptr->ref_count--;
+      return;
+    }
+
+    /* 
+     * If O_TRUNC was set, ensure we truncate the file.
+     * open_file_shared explicitly clears this flag before
+     * calling open_file, so we can safely do this here.
+     */
+    if(flags & O_TRUNC)
+      ftruncate(fd_ptr->fd, 0);
+      
+  } else {
+    int open_flags;
+    /* We need to allocate a new file_fd_struct (this increments the
+       ref_count). */
+    if((fd_ptr = fd_get_new()) == 0)
+      return;
+    /*
+     * Whatever the requested flags, attempt read/write access,
+     * as we don't know what flags future file opens may require.
+     * If this fails, try again with the required flags. 
+     * Even if we open read/write when only read access was 
+     * requested the setting of the can_write flag in
+     * the file_struct will protect us from errant
+     * write requests. We never need to worry about O_APPEND
+     * as this is not set anywhere in Samba.
+     */
+    fd_ptr->real_open_flags = O_RDWR;
+    /* Set the flags as needed without the read/write modes. */
+    open_flags = flags & ~(O_RDWR|O_WRONLY|O_RDONLY);
+    fd_ptr->fd = fd_attempt_open(fname, open_flags|O_RDWR, mode);
+    if((fd_ptr->fd == -1) && (errno == EACCES)) {
+      if(flags & O_WRONLY) {
+        fd_ptr->fd = fd_attempt_open(fname, open_flags|O_WRONLY, mode);
+        fd_ptr->real_open_flags = O_WRONLY;
+      } else {
+	fd_ptr->fd = fd_attempt_open(fname, open_flags|O_RDONLY, mode);
+        fd_ptr->real_open_flags = O_RDONLY;
+      }
+    }
+  }
+
+  if ((fd_ptr->fd >=0) && 
       Connections[cnum].printer && lp_minprintspace(SNUM(cnum))) {
     pstring dname;
     int dum1,dum2,dum3;
@@ -784,72 +1050,47 @@ void open_file(int fnum,int cnum,char *fname1,int flags,int mode)
     if (p) *p = 0;
     if (sys_disk_free(dname,&dum1,&dum2,&dum3) < 
 	lp_minprintspace(SNUM(cnum))) {
-      close(Files[fnum].fd);
-      Files[fnum].fd = -1;
-      sys_unlink(fname);
+      fd_attempt_close(fd_ptr);
+      Files[fnum].fd_ptr = 0;
+      if(fd_ptr->ref_count == 0)
+        sys_unlink(fname);
       errno = ENOSPC;
       return;
     }
   }
     
-
-  /* Fix for files ending in '.' */
-  if((Files[fnum].fd == -1) && (errno == ENOENT) && 
-     (strchr(fname,'.')==NULL))
-    {
-      strcat(fname,".");
-      Files[fnum].fd = sys_open(fname,flags,mode);
-    }
-
-#if (defined(ENAMETOOLONG) && defined(HAVE_PATHCONF))
-  if ((Files[fnum].fd == -1) && (errno == ENAMETOOLONG))
-    {
-      int max_len;
-      char *p = strrchr(fname, '/');
-
-      if (p == fname)	/* name is "/xxx" */
-	{
-	  max_len = pathconf("/", _PC_NAME_MAX);
-	  p++;
-	}
-      else if ((p == NULL) || (p == fname))
-	{
-	  p = fname;
-	  max_len = pathconf(".", _PC_NAME_MAX);
-	}
-      else
-	{
-	  *p = '\0';
-	  max_len = pathconf(fname, _PC_NAME_MAX);
-	  *p = '/';
-	  p++;
-	}
-      if (strlen(p) > max_len)
-	{
-	  char tmp = p[max_len];
-
-	  p[max_len] = '\0';
-	  if ((Files[fnum].fd = sys_open(fname,flags,mode)) == -1)
-	    p[max_len] = tmp;
-	}
-    }
-#endif
-
-  if (Files[fnum].fd < 0)
+  if (fd_ptr->fd < 0)
     {
       DEBUG(3,("Error opening file %s (%s) (flags=%d)\n",
 	       fname,strerror(errno),flags));
+      /* Ensure the ref_count is decremented. */
+      fd_attempt_close(fd_ptr);
       check_for_pipe(fname);
       return;
     }
 
-  if (Files[fnum].fd >= 0)
+  if (fd_ptr->fd >= 0)
     {
-      struct stat st;
+      if(sbuf == 0) {
+        /* Do the fstat */
+        if(fstat(fd_ptr->fd, &statbuf) == -1) {
+          /* Error - backout !! */
+          DEBUG(3,("Error doing fstat on fd %d, file %s (%s)\n",
+                   fd_ptr->fd, fname,strerror(errno)));
+          /* Ensure the ref_count is decremented. */
+          fd_attempt_close(fd_ptr);
+          return;
+        }
+        sbuf = &statbuf;
+      }
+      /* Set the correct entries in fd_ptr. */
+      fd_ptr->dev = (int32)sbuf->st_dev;
+      fd_ptr->inode = (int32)sbuf->st_ino;
+
+      Files[fnum].fd_ptr = fd_ptr;
       Connections[cnum].num_files_open++;
-      fstat(Files[fnum].fd,&st);
-      Files[fnum].mode = st.st_mode;
-      Files[fnum].open_time = time(NULL);
+      Files[fnum].mode = sbuf->st_mode;
+      GetTimeOfDay(&Files[fnum].open_time);
       Files[fnum].uid = current_user.id;
       Files[fnum].size = 0;
       Files[fnum].pos = -1;
@@ -911,7 +1152,7 @@ sync a file
 void sync_file(int fnum)
 {
 #ifndef NO_FSYNC
-  fsync(Files[fnum].fd);
+  fsync(Files[fnum].fd_ptr->fd);
 #endif
 }
 
@@ -961,7 +1202,7 @@ close a file - possibly invalidating the read prediction
 void close_file(int fnum)
 {
   int cnum = Files[fnum].cnum;
-  invalidate_read_prediction(Files[fnum].fd);
+  invalidate_read_prediction(Files[fnum].fd_ptr->fd);
   Files[fnum].open = False;
   Connections[cnum].num_files_open--;
   if(Files[fnum].wbmpx_ptr) 
@@ -981,7 +1222,7 @@ void close_file(int fnum)
   if (lp_share_modes(SNUM(cnum)))
     del_share_mode(fnum);
 
-  close(Files[fnum].fd);
+  fd_attempt_close(Files[fnum].fd_ptr);
 
   /* NT uses smbclose to start a print - weird */
   if (Files[fnum].print_file)
@@ -1081,7 +1322,7 @@ static void truncate_unless_locked(int fnum, int cnum)
       unix_ERR_code = ERRlock;
     }
     else
-      ftruncate(Files[fnum].fd,0); 
+      ftruncate(Files[fnum].fd_ptr->fd,0); 
   }
 }
 
@@ -1101,7 +1342,7 @@ void open_file_shared(int fnum,int cnum,char *fname,int share_mode,int ofun,
   int share_pid=0;
 
   Files[fnum].open = False;
-  Files[fnum].fd = -1;
+  Files[fnum].fd_ptr = 0;
 
   /* this is for OS/2 EAs - try and say we don't support them */
   if (strstr(fname,".+,;=[].")) {
@@ -1208,10 +1449,10 @@ void open_file_shared(int fnum,int cnum,char *fname,int share_mode,int ofun,
   DEBUG(4,("calling open_file with flags=0x%X flags2=0x%X mode=0%o\n",
 	   flags,flags2,mode));
 
-  open_file(fnum,cnum,fname,flags|(flags2&~(O_TRUNC)),mode);
+  open_file(fnum,cnum,fname,flags|(flags2&~(O_TRUNC)),mode,&sbuf);
   if (!Files[fnum].open && flags==O_RDWR && errno!=ENOENT && fcbopen) {
     flags = O_RDONLY;
-    open_file(fnum,cnum,fname,flags,mode);
+    open_file(fnum,cnum,fname,flags,mode,&sbuf);
   }
 
   if (Files[fnum].open) {
@@ -1282,7 +1523,7 @@ int seek_file(int fnum,int pos)
   if (Files[fnum].print_file && POSTSCRIPT(Files[fnum].cnum))
     offset = 3;
 
-  Files[fnum].pos = lseek(Files[fnum].fd,pos+offset,SEEK_SET) - offset;
+  Files[fnum].pos = lseek(Files[fnum].fd_ptr->fd,pos+offset,SEEK_SET) - offset;
   return(Files[fnum].pos);
 }
 
@@ -1295,7 +1536,7 @@ int read_file(int fnum,char *data,int pos,int n)
 
   if (!Files[fnum].can_write)
     {
-      ret = read_predict(Files[fnum].fd,pos,data,NULL,n);
+      ret = read_predict(Files[fnum].fd_ptr->fd,pos,data,NULL,n);
 
       data += ret;
       n -= ret;
@@ -1327,7 +1568,7 @@ int read_file(int fnum,char *data,int pos,int n)
     }
   
   if (n > 0) {
-    readret = read(Files[fnum].fd,data,n);
+    readret = read(Files[fnum].fd_ptr->fd,data,n);
     if (readret > 0) ret += readret;
   }
 
@@ -1348,7 +1589,7 @@ int write_file(int fnum,char *data,int n)
   if (!Files[fnum].modified) {
     struct stat st;
     Files[fnum].modified = True;
-    if (fstat(Files[fnum].fd,&st) == 0) {
+    if (fstat(Files[fnum].fd_ptr->fd,&st) == 0) {
       int dosmode = dos_mode(Files[fnum].cnum,Files[fnum].name,&st);
       if (MAP_ARCHIVE(Files[fnum].cnum) && !IS_DOS_ARCHIVE(dosmode)) {	
 	dos_chmod(Files[fnum].cnum,Files[fnum].name,dosmode | aARCH,&st);
@@ -1356,7 +1597,7 @@ int write_file(int fnum,char *data,int n)
     }  
   }
 
-  return(write_data(Files[fnum].fd,data,n));
+  return(write_data(Files[fnum].fd_ptr->fd,data,n));
 }
 
 
@@ -2057,14 +2298,21 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
 #if HAVE_GETGRNAM 
   if (*lp_force_group(snum))
     {
-      struct group *gptr = (struct group *)getgrnam(lp_force_group(snum));
+      struct group *gptr;
+      pstring gname;
+
+      StrnCpy(gname,lp_force_group(snum),sizeof(pstring)-1);
+      /* default service may be a group name 		*/
+      string_sub(gname,"%S",service);
+      gptr = (struct group *)getgrnam(gname);
+
       if (gptr)
 	{
 	  pcon->gid = gptr->gr_gid;
-	  DEBUG(3,("Forced group %s\n",lp_force_group(snum)));
+	  DEBUG(3,("Forced group %s\n",gname));
 	}
       else
-	DEBUG(1,("Couldn't find group %s\n",lp_force_group(snum)));
+	DEBUG(1,("Couldn't find group %s\n",gname));
     }
 #endif
 
@@ -2936,6 +3184,11 @@ void exit_server(char *reason)
     if (dump_core()) return;
 #endif
   }    
+
+#if FAST_SHARE_MODES
+  stop_share_mode_mgmt();
+#endif
+
   DEBUG(3,("%s Server exit  (%s)\n",timestring(),reason?reason:""));
   exit(0);
 }
@@ -3574,6 +3827,19 @@ static void init_structs(void )
     {
       Files[i].open = False;
       string_init(&Files[i].name,"");
+
+    }
+
+  for (i=0;i<MAX_OPEN_FILES;i++)
+    {
+      file_fd_struct *fd_ptr = &FileFd[i];
+      fd_ptr->ref_count = 0;
+      fd_ptr->dev = (int32)-1;
+      fd_ptr->inode = (int32)-1;
+      fd_ptr->fd = -1;
+      fd_ptr->fd_readonly = -1;
+      fd_ptr->fd_writeonly = -1;
+      fd_ptr->real_open_flags = -1;
     }
 
   init_dptrs();
@@ -3807,10 +4073,6 @@ static void usage(char *pname)
 
   process();
   close_sockets();
-
-#if FAST_SHARE_MODES
-  stop_share_mode_mgmt();
-#endif
 
   exit_server("normal exit");
   return(0);

@@ -51,15 +51,15 @@ extern void charset_initialise(void);
 #undef isspace
 #endif
 
-#define toupper(c) upper_char_map[(char)(c)]
-#define tolower(c) lower_char_map[(char)(c)]
-#define isupper(c) (((char)(c)) != tolower(c))
-#define islower(c) (((char)(c)) != toupper(c))
-#define isdoschar(c) (dos_char_map[(char)(c)] != 0)
+#define toupper(c) (upper_char_map[(c&0xff)] & 0xff)
+#define tolower(c) (lower_char_map[(c&0xff)] & 0xff)
+#define isupper(c) ((c&0xff) != tolower(c&0xff))
+#define islower(c) ((c&0xff) != toupper(c&0xff))
+#define isdoschar(c) (dos_char_map[(c&0xff)] != 0)
 #define isspace(c) ((c)==' ' || (c) == '\t')
 
 /* this is used to determine if a character is safe to use in
    something that may be put on a command line */
-#define issafe(c) (isalnum(c) || strchr("-._",c))
+#define issafe(c) (isalnum((c&0xff)) || strchr("-._",c))
 #endif
 

@@ -286,10 +286,27 @@ typedef struct
 	BOOL  wr_discard; /* discard all further data */
         } write_bmpx_struct;
 
+/*
+ * Structure used to indirect fd's from the files_struct.
+ * Needed as POSIX locking is based on file and process, not
+ * file descriptor and process.
+ */
+
+typedef struct
+{
+  uint16 ref_count;
+  int32 dev;
+  int32 inode;
+  int fd;
+  int fd_readonly;
+  int fd_writeonly;
+  int real_open_flags;
+} file_fd_struct;
+
 typedef struct
 {
   int cnum;
-  int fd;
+  file_fd_struct *fd_ptr;
   int pos;
   int size;
   int mode;
@@ -297,7 +314,7 @@ typedef struct
   char *mmap_ptr;
   int mmap_size;
   write_bmpx_struct *wbmpx_ptr;
-  time_t open_time;
+  struct timeval open_time;
   BOOL open;
   BOOL can_lock;
   BOOL can_read;
@@ -405,7 +422,7 @@ typedef struct
   shm_offset_t next_offset; /* offset of next record in list in shared mem */
   int locking_version;
   int share_mode;
-  time_t time;
+  struct timeval time;
   int pid;
   dev_t st_dev;
   ino_t st_ino;
@@ -428,7 +445,7 @@ struct connect_record
 };
 
 
-#define LOCKING_VERSION 2
+#define LOCKING_VERSION 3
 
 /* these are useful macros for checking validity of handles */
 #define VALID_FNUM(fnum)   (((fnum) >= 0) && ((fnum) < MAX_OPEN_FILES))

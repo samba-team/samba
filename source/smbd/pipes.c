@@ -131,7 +131,7 @@ int reply_open_pipe_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   if (!Files[fnum].open)
     return(UNIXERROR(ERRDOS,ERRnoaccess));
 
-  if (fstat(Files[fnum].fd,&sbuf) != 0) {
+  if (fstat(Files[fnum].fd_ptr->fd,&sbuf) != 0) {
     close_file(fnum);
     return(ERROR(ERRDOS,ERRnoaccess));
   }

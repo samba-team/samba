@@ -259,10 +259,20 @@ typedef unsigned short mode_t;
 #include <utime.h>
 #define NO_STRERROR
 #endif
+#ifndef REPLACE_GETPASS
 #define REPLACE_GETPASS
+#endif
+#ifndef BSD_TERMIO
 #define BSD_TERMIO
+#endif
+#ifndef USE_SIGPROCMASK
 #define USE_SIGPROCMASK
+#endif
+#ifndef USE_WAITPID
 #define USE_WAITPID
+#endif
+/* SunOS doesn't have POSIX atexit */
+#define atexit on_exit
 #endif
 
 
@@ -496,6 +506,7 @@ char *mktemp(char *); /* No standard include */
 #include <sys/id.h>
 #include <sys/priv.h>
 #include <netinet/tcp.h>
+#include <locale.h>
 #define SYSV
 #define USE_WAITPID
 #define USE_SIGBLOCK
@@ -642,6 +653,7 @@ char *mktemp(char *); /* No standard include */
 #include <sys/statfs.h>
 #include <sys/stropts.h>
 #include <limits.h>
+#include <locale.h>
 #ifdef EVEREST
 #include <unistd.h> 
 #endif
@@ -916,6 +928,38 @@ typedef int mode_t;
 #include <sys/bsdioctl.h>
 #endif
 
+#ifdef AMIGA
+#include <arpa/inet.h>
+#include <dirent.h>
+#include <string.h>
+#include <netinet/tcp.h>
+#include <sys/acct.h>
+#include <sys/fcntl.h>
+#include <sys/filio.h>
+#include <sys/sockio.h>
+#include <netinet/in_systm.h>
+#include <netinet/ip.h>
+#include <sys/termios.h>
+#include <limits.h>
+#include <sys/timeb.h>
+
+#define SIGNAL_CAST (void (*)(int))
+#define USE_GETCWD
+#define HAVE_BZERO
+#define HAVE_MEMMOVE
+#define USE_SIGPROCMASK
+#define USE_WAITPID
+#define USE_DIRECT
+#define USE_F_FSIZE
+#define HAVE_FCNTL_LOCK 0
+#define HAVE_GETTIMEOFDAY
+#define HAVE_PATHCONF
+
+#define HAVE_NO_PROC
+#define NO_FORK_DEBUG
+#define HAVE_FORK 0
+#define HAVE_VFORK 1
+#endif
 
 
 /*******************************************************************

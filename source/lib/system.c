@@ -198,14 +198,10 @@ for rename()
 ********************************************************************/
 int sys_rename(char *from, char *to)
 {
-#ifdef KANJI
     pstring zfrom, zto;
     strcpy (zfrom, dos_to_unix (from, False));
     strcpy (zto, dos_to_unix (to, False));
     return rename (zfrom, zto);
-#else 
-    return rename (from, to);
-#endif /* KANJI */
 }
 
 /*******************************************************************

@@ -224,9 +224,9 @@ unsigned int   Ucrit_IsActive = 0;                    /* added by OH */
      dir = opendir(lp_lockdir());
      if (!dir) return(0);
      while ((s=readdirname(dir))) {
-       char buf[16];
+       char buf[20];
        int pid,mode;
-       time_t t;
+       struct timeval t;
        int fd;
        pstring lname;
        int dev,inode;
@@ -240,19 +240,20 @@ unsigned int   Ucrit_IsActive = 0;                    /* added by OH */
        
        fd = open(lname,O_RDONLY,0);
        if (fd < 0) continue;
-       if (read(fd,buf,16) != 16) continue;
+       if (read(fd,buf,20) != 20) continue;
        n = read(fd,fname,sizeof(fname));
        fname[MAX(n,0)]=0;
        close(fd);
        
-       t = IVAL(buf,0);
-       mode = IVAL(buf,4);
-       pid = IVAL(buf,8);
+       t.tv_sec = IVAL(buf,4);
+       t.tv_usec = IVAL(buf,8);
+       mode = IVAL(buf,12);
+       pid = IVAL(buf,16);
        
        if ( !Ucrit_checkPid(pid) )             /* added by OH */
 	 continue;
        
-       if (IVAL(buf,12) != LOCKING_VERSION || !process_exists(pid)) {
+       if (IVAL(buf,0) != LOCKING_VERSION || !process_exists(pid)) {
 	 if (unlink(lname)==0)
 	   printf("Deleted stale share file %s\n",s);
 	 continue;
@@ -284,7 +285,7 @@ unsigned int   Ucrit_IsActive = 0;                    /* added by OH */
       case 1: printf("WRONLY "); break;
       case 2: printf("RDWR   "); break;
       }
-    printf(" %s   %s",fname,asctime(LocalTime(&t)));
+    printf(" %s   %s",fname,asctime(LocalTime((time_t *)&t.tv_sec)));
 
 #if FAST_SHARE_MODES
      prev_p = scanner_p ;

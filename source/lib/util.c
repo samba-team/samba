@@ -957,9 +957,6 @@ void unix_format(char *fname)
 {
   pstring namecopy;
   string_replace(fname,'\\','/');
-#ifndef KANJI
-  dos2unix_format(fname, True);
-#endif /* KANJI */
 
   if (*fname == '/')
     {
@@ -974,9 +971,6 @@ void unix_format(char *fname)
 ****************************************************************************/
 void dos_format(char *fname)
 {
-#ifndef KANJI
-  unix2dos_format(fname, True);
-#endif /* KANJI */
   string_replace(fname,'/','\\');
 }
 
@@ -3083,6 +3077,7 @@ char *client_name(void)
 
   if (getpeername(Client, &sa, &length) < 0) {
     DEBUG(0,("getpeername failed\n"));
+    done = False;
     return name_buf;
   }
 
@@ -3092,6 +3087,7 @@ char *client_name(void)
 			  AF_INET)) == 0) {
     DEBUG(1,("Gethostbyaddr failed for %s\n",client_addr()));
     StrnCpy(name_buf,client_addr(),sizeof(name_buf) - 1);
+    done = False;
   } else {
     StrnCpy(name_buf,(char *)hp->h_name,sizeof(name_buf) - 1);
     if (!matchname(name_buf, sockin->sin_addr)) {
@@ -3362,14 +3358,12 @@ char *readdirname(void *p)
 
   dname = ptr->d_name;
 
-#ifdef KANJI
   {
     static pstring buf;
     strcpy(buf, dname);
     unix_to_dos(buf, True);
     dname = buf;
   }
-#endif
 
 #ifdef NEXT2
   if (telldir(p) < 0) return(NULL);
