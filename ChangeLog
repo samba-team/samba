@@ -1,5 +1,10 @@
 1999-07-04  Assar Westerlund  <assar@sics.se>
 
+	* lib/krb5/get_in_tkt.c (add_padat): encrypt pre-auth data with
+ 	all enctypes
+
+	* kpasswd/kpasswdd.c (change): fetch the salt-type from the entry
+
 	* admin/srvconvert.c (srvconv): better error messages
 
 1999-07-03  Assar Westerlund  <assar@sics.se>
