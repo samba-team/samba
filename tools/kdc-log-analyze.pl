@@ -514,6 +514,7 @@ sub islocalrealm (\$) {
 	my $realm;
 
 	foreach $realm (@local_realms) {
+		return 1 if ($princ eq $realm);
 		return 1 if ($princ =~ /[^@]+\@${realm}/);
 	}
 	return 0;
