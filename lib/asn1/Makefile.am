@@ -109,6 +109,7 @@ libasn1_la_SOURCES =				\
 	der_free.c				\
 	der_length.c				\
 	der_copy.c				\
+	der_cmp.c				\
 	timegm.c				\
 	$(BUILT_SOURCES)
 
