@@ -257,14 +257,23 @@ static BOOL cli_session_setup_nt1(struct cli_state *cli, const char *user,
 	if (passlen != 24) {
 		if (lp_client_ntlmv2_auth()) {
 			DATA_BLOB server_chal;
-
+			DATA_BLOB names_blob;
 			server_chal = data_blob(cli->secblob.data, MIN(cli->secblob.length, 8)); 
 
-			if (!SMBNTLMv2encrypt(user, workgroup, pass, server_chal, 
-					      &lm_response, &nt_response, NULL, &session_key)) {
+			/* note that the 'workgroup' here is a best guess - we don't know
+			   the server's domain at this point.  The 'server name' is also
+			   dodgy... 
+			*/
+			names_blob = NTLMv2_generate_names_blob(cli->called.name, workgroup);
+
+			if (!SMBNTLMv2encrypt(user, workgroup, pass, &server_chal, 
+					      &names_blob,
+					      &lm_response, &nt_response, &session_key)) {
+				data_blob_free(&names_blob);
 				data_blob_free(&server_chal);
 				return False;
 			}
+			data_blob_free(&names_blob);
 			data_blob_free(&server_chal);
 
 		} else {
