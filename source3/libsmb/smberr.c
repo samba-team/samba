@@ -193,3 +193,14 @@ char *werror_str(WERROR status)
 	slprintf(msg, sizeof(msg), "WIN32 code 0x%08x", W_ERROR_V(status));
 	return msg;
 }
+
+
+/*****************************************************************************
+map a unix errno to a win32 error
+ *****************************************************************************/
+WERROR map_werror_from_unix(int error)
+{
+	NTSTATUS status = map_nt_error_from_unix(error);
+	return ntstatus_to_werror(status);
+}
+

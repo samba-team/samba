@@ -603,7 +603,7 @@ static BOOL is_owner(struct current_user *user, int jobid)
 /****************************************************************************
 delete a print job
 ****************************************************************************/
-BOOL print_job_delete(struct current_user *user, int jobid, int *errcode)
+BOOL print_job_delete(struct current_user *user, int jobid, WERROR *errcode)
 {
 	int snum = print_job_snum(jobid);
 	char *printer_name;
@@ -617,7 +617,7 @@ BOOL print_job_delete(struct current_user *user, int jobid, int *errcode)
 	if (!owner && 
 	    !print_access_check(user, snum, JOB_ACCESS_ADMINISTER)) {
 		DEBUG(3, ("delete denied by security descriptor\n"));
-		*errcode = ERRnoaccess;
+		*errcode = WERR_ACCESS_DENIED;
 		return False;
 	}
 
@@ -641,7 +641,7 @@ BOOL print_job_delete(struct current_user *user, int jobid, int *errcode)
 /****************************************************************************
 pause a job
 ****************************************************************************/
-BOOL print_job_pause(struct current_user *user, int jobid, int *errcode)
+BOOL print_job_pause(struct current_user *user, int jobid, WERROR *errcode)
 {
 	struct printjob *pjob = print_job_find(jobid);
 	int snum, ret = -1;
@@ -685,7 +685,7 @@ BOOL print_job_pause(struct current_user *user, int jobid, int *errcode)
 /****************************************************************************
 resume a job
 ****************************************************************************/
-BOOL print_job_resume(struct current_user *user, int jobid, int *errcode)
+BOOL print_job_resume(struct current_user *user, int jobid, WERROR *errcode)
 {
 	struct printjob *pjob = print_job_find(jobid);
 	char *printer_name;
@@ -1184,20 +1184,20 @@ int print_queue_snum(char *qname)
 /****************************************************************************
  pause a queue
 ****************************************************************************/
-BOOL print_queue_pause(struct current_user *user, int snum, int *errcode)
+BOOL print_queue_pause(struct current_user *user, int snum, WERROR *errcode)
 {
 	char *printer_name;
 	int ret;
 	
 	if (!print_access_check(user, snum, PRINTER_ACCESS_ADMINISTER)) {
-		*errcode = ERRnoaccess;
+		*errcode = WERR_ACCESS_DENIED;
 		return False;
 	}
 
 	ret = (*(current_printif->queue_pause))(snum);
 
 	if (ret != 0) {
-		*errcode = ERRinvalidparam;
+		*errcode = WERR_INVALID_PARAM;
 		return False;
 	}
 
@@ -1216,20 +1216,20 @@ BOOL print_queue_pause(struct current_user *user, int snum, int *errcode)
 /****************************************************************************
  resume a queue
 ****************************************************************************/
-BOOL print_queue_resume(struct current_user *user, int snum, int *errcode)
+BOOL print_queue_resume(struct current_user *user, int snum, WERROR *errcode)
 {
 	char *printer_name;
 	int ret;
 
 	if (!print_access_check(user, snum, PRINTER_ACCESS_ADMINISTER)) {
-		*errcode = ERRnoaccess;
+		*errcode = WERR_ACCESS_DENIED;
 		return False;
 	}
 
 	ret = (*(current_printif->queue_resume))(snum);
 
 	if (ret != 0) {
-		*errcode = ERRinvalidparam;
+		*errcode = WERR_INVALID_PARAM;
 		return False;
 	}
 
@@ -1248,7 +1248,7 @@ BOOL print_queue_resume(struct current_user *user, int snum, int *errcode)
 /****************************************************************************
  purge a queue - implemented by deleting all jobs that we can delete
 ****************************************************************************/
-BOOL print_queue_purge(struct current_user *user, int snum, int *errcode)
+BOOL print_queue_purge(struct current_user *user, int snum, WERROR *errcode)
 {
 	print_queue_struct *queue;
 	print_status_struct status;

@@ -54,13 +54,13 @@ struct {
 };
 
 /* Map an NT error code from a Unix error code */
-
-uint32 map_nt_error_from_unix(int unix_error)
+NTSTATUS map_nt_error_from_unix(int unix_error)
 {
 	int i = 0;
 
-	/* Look through list */
+	if (unix_error == 0) return NT_STATUS_OK;
 
+	/* Look through list */
 	while(unix_dos_nt_errmap[i].unix_error != 0) {
 		if (unix_dos_nt_errmap[i].unix_error == unix_error) {
 			return unix_dos_nt_errmap[i].nt_error;

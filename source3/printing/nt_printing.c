@@ -3388,18 +3388,18 @@ BOOL get_specific_param(NT_PRINTER_INFO_LEVEL printer, uint32 level,
  Store a security desc for a printer.
 ****************************************************************************/
 
-uint32 nt_printing_setsec(char *printername, SEC_DESC_BUF *secdesc_ctr)
+WERROR nt_printing_setsec(char *printername, SEC_DESC_BUF *secdesc_ctr)
 {
 	SEC_DESC_BUF *new_secdesc_ctr = NULL;
 	SEC_DESC_BUF *old_secdesc_ctr = NULL;
 	prs_struct ps;
 	TALLOC_CTX *mem_ctx = NULL;
 	fstring key;
-	NTSTATUS status;
+	WERROR status;
 
 	mem_ctx = talloc_init();
 	if (mem_ctx == NULL)
-		return False;
+		return WERR_NOMEM;
 
         /* The old owner and group sids of the security descriptor are not
 	   present when new ACEs are added or removed by changing printer
@@ -3454,7 +3454,7 @@ uint32 nt_printing_setsec(char *printername, SEC_DESC_BUF *secdesc_ctr)
 
 	if (!sec_io_desc_buf("nt_printing_setsec", &new_secdesc_ctr,
 			     &ps, 1)) {
-		status = ERRbadfunc;
+		status = WERR_BADFUNC;
 		goto out;
 	}
 
@@ -3464,7 +3464,7 @@ uint32 nt_printing_setsec(char *printername, SEC_DESC_BUF *secdesc_ctr)
 		status = 0;
 	} else {
 		DEBUG(1,("Failed to store secdesc for %s\n", printername));
-		status = ERRbadfunc;
+		status = WERR_BADFUNC;
 	}
 
 	/* Free malloc'ed memory */

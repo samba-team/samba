@@ -629,7 +629,7 @@ SPOOL_Q_STARTDOCPRINTER;
 typedef struct spool_r_startdocprinter
 {
 	uint32 jobid;
-	NTSTATUS status;
+	WERROR status;
 }
 SPOOL_R_STARTDOCPRINTER;
 
@@ -736,7 +736,7 @@ typedef struct spool_r_rfnpcnex
 {
 	uint32 info_ptr;
 	SPOOL_NOTIFY_INFO info;
-	NTSTATUS status;
+	WERROR status;
 }
 SPOOL_R_RFNPCNEX;
 
@@ -870,7 +870,7 @@ typedef struct spool_r_enumprinters
 	NEW_BUFFER *buffer;
 	uint32 needed;		/* bytes needed */
 	uint32 returned;	/* number of printers */
-	NTSTATUS status;
+	WERROR status;
 }
 SPOOL_R_ENUMPRINTERS;
 
@@ -899,7 +899,7 @@ typedef struct spool_r_getprinter
 {
 	NEW_BUFFER *buffer;
 	uint32 needed;
-	NTSTATUS status;
+	WERROR status;
 } SPOOL_R_GETPRINTER;
 
 typedef struct driver_info_1
@@ -984,7 +984,7 @@ typedef struct spool_r_getprinterdriver2
 	uint32 needed;
 	uint32 servermajorversion;
 	uint32 serverminorversion;
-	NTSTATUS status;
+	WERROR status;
 }
 SPOOL_R_GETPRINTERDRIVER2;
 
