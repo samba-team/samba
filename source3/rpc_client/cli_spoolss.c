@@ -2171,6 +2171,7 @@ WERROR cli_spoolss_enumprinterdataex(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	SPOOL_Q_ENUMPRINTERDATAEX q;
 	SPOOL_R_ENUMPRINTERDATAEX r;
 	WERROR result = W_ERROR(ERRgeneral);
+	int i;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
@@ -2207,7 +2208,22 @@ WERROR cli_spoolss_enumprinterdataex(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	*returned = r.returned;
 
-	/* TODO: figure out a nice way to return data */
+	/* Again, we have to deep copy the results on the passed in
+	   tdb context as they will disappear after the prs_free at
+	   the end of this function. */
+
+	*values = talloc(mem_ctx, sizeof(PRINTER_ENUM_VALUES) * r.returned);
+
+	for (i = 0; i < r.returned; i++) {
+		PRINTER_ENUM_VALUES *v = &r.ctr.values[i];
+
+		(*values)[i].valuename.buffer = talloc(mem_ctx, v->value_len * 2);
+		unistrcpy((*values)[i].valuename.buffer, v->valuename.buffer);
+		(*values)[i].type = v->type;
+		(*values)[i].data = talloc(mem_ctx, v->data_len);
+		memcpy((*values)[i].data, v->data, v->data_len);
+		(*values)[i].data_len = v->data_len;
+	}
 
  done:
 	prs_mem_free(&qbuf);
