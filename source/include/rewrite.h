@@ -111,6 +111,4 @@ typedef struct {
 	void *cd_direct, *cd_pull, *cd_push;
 } *smb_iconv_t;
 
-#include "lib/cmdline/popt_common.h"
-
 #endif /* _REWRITE_H */

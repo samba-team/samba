@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "lib/cmdline/popt_common.h"
 #include "system/time.h"
 
 /* 

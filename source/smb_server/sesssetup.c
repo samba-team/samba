@@ -22,6 +22,7 @@
 */
 
 #include "includes.h"
+#include "auth/auth.h"
 
 /*
   setup the OS, Lanman and domain portions of a session setup reply

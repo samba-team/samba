@@ -21,6 +21,11 @@
 #ifndef _SAMBA_AUTH_H
 #define _SAMBA_AUTH_H
 
+#include "libcli/auth/ntlmssp.h"
+#include "libcli/auth/credentials.h"
+#include "libcli/auth/gensec.h"
+#include "libcli/auth/spnego.h"
+
 /* modules can use the following to determine if the interface has changed
  * please increment the version number after each interface change
  * with a comment and maybe update struct auth_critical_sizes.

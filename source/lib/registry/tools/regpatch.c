@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "lib/cmdline/popt_common.h"
 
 /*
  * Routines to parse a REGEDIT4 file

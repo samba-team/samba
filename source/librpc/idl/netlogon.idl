@@ -129,6 +129,14 @@ interface netlogon
 		uint32 attributes;
 	} netr_GroupMembership;
 
+	typedef [public,flag(NDR_PAHEX)] struct {
+		uint8 key[16];
+	} netr_UserSessionKey;
+
+	typedef [public,flag(NDR_PAHEX)] struct {
+		uint8 key[8];
+	} netr_LMSessionKey;
+
 	typedef [public] struct {
 		NTTIME last_logon;
 		NTTIME last_logoff;

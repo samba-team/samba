@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_schannel.h"
+#include "auth/auth.h"
 
 enum schannel_position {
 	DCERPC_SCHANNEL_STATE_START = 0,

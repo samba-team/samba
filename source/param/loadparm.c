@@ -55,6 +55,7 @@
 #include "includes.h"
 #include "system/time.h"
 #include "system/iconv.h"
+#include "system/network.h"
 #include "librpc/gen_ndr/ndr_svcctl.h"
 
 BOOL in_client = False;		/* Not in the client by default */
@@ -911,7 +912,9 @@ static void init_globals(void)
 
 	/* options that can be set on the command line must be initialised via
 	   the slower do_parameter() to ensure that FLAG_CMDLINE is obeyed */
-	do_parameter("socket options", DEFAULT_SOCKET_OPTIONS);
+#ifdef TCP_NODELAY
+	do_parameter("socket options", "TCP_NODELAY");
+#endif
 	do_parameter("workgroup", DEFAULT_WORKGROUP);
 	do_parameter("netbios name", get_myname());
 	do_parameter("max protocol", "NT1");

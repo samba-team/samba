@@ -27,6 +27,7 @@
 #include "system/kerberos.h"
 #include "libcli/auth/kerberos.h"
 #include "librpc/gen_ndr/ndr_krb5pac.h"
+#include "auth/auth.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH

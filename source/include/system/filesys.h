@@ -20,6 +20,9 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#include <unistd.h>
+#include <sys/stat.h>
+
 #ifdef HAVE_SYS_MOUNT_H
 #include <sys/mount.h>
 #endif
@@ -57,4 +60,88 @@
 #endif
 
 #include <sys/file.h>
+
+#ifdef HAVE_FCNTL_H
+#include <fcntl.h>
+#else
+#ifdef HAVE_SYS_FCNTL_H
+#include <sys/fcntl.h>
+#endif
+#endif
+
+#ifdef HAVE_SYS_MODE_H
+/* apparently AIX needs this for S_ISLNK */
+#ifndef S_ISLNK
+#include <sys/mode.h>
+#endif
+#endif
+
+#ifdef HAVE_SYS_IOCTL_H
+#include <sys/ioctl.h>
+#endif
+
+/*
+ * Veritas File System.  Often in addition to native.
+ * Quotas different.
+ */
+#if defined(HAVE_SYS_FS_VX_QUOTA_H)
+#define VXFS_QUOTA
+#endif
+
+#if HAVE_SYS_ATTRIBUTES_H
+#include <sys/attributes.h>
+#endif
+
+/* mutually exclusive (SuSE 8.2) */
+#if HAVE_ATTR_XATTR_H
+#include <attr/xattr.h>
+#elif HAVE_SYS_XATTR_H
+#include <sys/xattr.h>
+#endif
+
+
+/* Some POSIX definitions for those without */
+ 
+#ifndef S_IFDIR
+#define S_IFDIR         0x4000
+#endif
+#ifndef S_ISDIR
+#define S_ISDIR(mode)   ((mode & 0xF000) == S_IFDIR)
+#endif
+#ifndef S_IRWXU
+#define S_IRWXU 00700           /* read, write, execute: owner */
+#endif
+#ifndef S_IRUSR
+#define S_IRUSR 00400           /* read permission: owner */
+#endif
+#ifndef S_IWUSR
+#define S_IWUSR 00200           /* write permission: owner */
+#endif
+#ifndef S_IXUSR
+#define S_IXUSR 00100           /* execute permission: owner */
+#endif
+#ifndef S_IRWXG
+#define S_IRWXG 00070           /* read, write, execute: group */
+#endif
+#ifndef S_IRGRP
+#define S_IRGRP 00040           /* read permission: group */
+#endif
+#ifndef S_IWGRP
+#define S_IWGRP 00020           /* write permission: group */
+#endif
+#ifndef S_IXGRP
+#define S_IXGRP 00010           /* execute permission: group */
+#endif
+#ifndef S_IRWXO
+#define S_IRWXO 00007           /* read, write, execute: other */
+#endif
+#ifndef S_IROTH
+#define S_IROTH 00004           /* read permission: other */
+#endif
+#ifndef S_IWOTH
+#define S_IWOTH 00002           /* write permission: other */
+#endif
+#ifndef S_IXOTH
+#define S_IXOTH 00001           /* execute permission: other */
+#endif
 
