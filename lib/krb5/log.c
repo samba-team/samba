@@ -77,17 +77,27 @@ struct s2i syslogvals[] = {
     L(DEBUG),
 
     L(AUTH),
+#ifdef LOG_AUTHPRIV
     L(AUTHPRIV),
+#endif
+#ifdef LOG_CRON
     L(CRON),
+#endif
     L(DAEMON),
+#ifdef LOG_FTP
     L(FTP),
+#endif
     L(KERN),
     L(LPR),
     L(MAIL),
+#ifdef LOG_NEWS
     L(NEWS),
+#endif
     L(SYSLOG),
     L(USER),
+#ifdef LOG_UUCP
     L(UUCP),
+#endif
     L(LOCAL0),
     L(LOCAL1),
     L(LOCAL2),
