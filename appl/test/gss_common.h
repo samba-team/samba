@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -40,3 +40,11 @@
 
 void write_token (int sock, gss_buffer_t buf);
 void read_token (int sock, gss_buffer_t buf);
+
+void gss_print_errors (int min_stat);
+
+void gss_verr(int exitval, int status, const char *fmt, va_list ap)
+    __attribute__ ((format (printf, 3, 0)));
+
+void gss_err(int exitval, int status, const char *fmt, ...)
+    __attribute__ ((format (printf, 3, 4)));
