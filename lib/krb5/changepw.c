@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -289,8 +289,10 @@ krb5_change_password (krb5_context	context,
 				a->ai_addr,
 				a->ai_addrlen,
 				newpw);
-	    if (ret)
+	    if (ret) {
+		close(sock);
 		goto out;
+	    }
 
 	    FD_ZERO(&fdset);
 	    FD_SET(sock, &fdset);
@@ -298,8 +300,10 @@ krb5_change_password (krb5_context	context,
 	    tv.tv_sec  = 1 << i;
 
 	    ret = select (sock + 1, &fdset, NULL, NULL, &tv);
-	    if (ret < 0 && errno != EINTR)
+	    if (ret < 0 && errno != EINTR) {
+		close(sock);
 		goto out;
+	    }
 	    if (ret == 1)
 		break;
 	}
