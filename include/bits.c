@@ -40,29 +40,15 @@ RCSID("$Id$");
 #include <stdlib.h>
 #include <ctype.h>
 
-static void
-my_strupr(char *s)
-{
-    char *p = s;
-
-    while(*p){
-	if(islower((unsigned char)*p))
-	    *p = toupper((unsigned char)*p);
-	p++;
-    }	
-}
-
-
 #define BITSIZE(TYPE)						\
 {								\
-    int b = 0; TYPE x = 1, zero = 0; char *pre = "u_";		\
+    int b = 0; TYPE x = 1, zero = 0; char *pre = "u";		\
     char tmp[128], tmp2[128];					\
     while(x){ x <<= 1; b++; if(x < zero) pre=""; }		\
     if(b >= len){						\
         int tabs;						\
 	sprintf(tmp, "%sint%d_t" , pre, len);			\
 	sprintf(tmp2, "typedef %s %s;", #TYPE, tmp);		\
-	my_strupr(tmp);						\
 	tabs = 5 - strlen(tmp2) / 8;				\
         fprintf(f, "%s", tmp2);					\
 	while(tabs-- > 0) fprintf(f, "\t");			\
@@ -173,22 +159,42 @@ int main(int argc, char **argv)
 #endif /* HAVE_INT64_T */
 #endif
 
-#ifndef HAVE_U_INT8_T
+#ifndef HAVE_UINT8_T
     flag = print_bt(f, flag);
     try_unsigned (f, 8);
-#endif /* HAVE_INT8_T */
-#ifndef HAVE_U_INT16_T
+#endif /* HAVE_UINT8_T */
+#ifndef HAVE_UINT16_T
     flag = print_bt(f, flag);
     try_unsigned (f, 16);
+#endif /* HAVE_UINT16_T */
+#ifndef HAVE_UINT32_T
+    flag = print_bt(f, flag);
+    try_unsigned (f, 32);
+#endif /* HAVE_UINT32_T */
+#if 0
+#ifndef HAVE_UINT64_T
+    flag = print_bt(f, flag);
+    try_unsigned (f, 64);
+#endif /* HAVE_UINT64_T */
+#endif
+
+#define X(S) fprintf(f, "typedef uint" #S "_t u_int" #S "_t;\n")
+#ifndef HAVE_U_INT8_T
+    flag = print_bt(f, flag);
+    X(8);
+#endif /* HAVE_U_INT8_T */
+#ifndef HAVE_U_INT16_T
+    flag = print_bt(f, flag);
+    X(16);
 #endif /* HAVE_U_INT16_T */
 #ifndef HAVE_U_INT32_T
     flag = print_bt(f, flag);
-    try_unsigned (f, 32);
+    X(32);
 #endif /* HAVE_U_INT32_T */
 #if 0
 #ifndef HAVE_U_INT64_T
     flag = print_bt(f, flag);
-    try_unsigned (f, 64);
+    X(64);
 #endif /* HAVE_U_INT64_T */
 #endif
 
