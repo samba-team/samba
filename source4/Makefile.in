@@ -22,9 +22,6 @@ LDSHFLAGS=@LDSHFLAGS@ @LDFLAGS@ @CFLAGS@
 PERL=@PERL@
 DYNEXP=@DYNEXP@
 
-TERMLDFLAGS=@TERMLDFLAGS@
-TERMLIBS=@TERMLIBS@
-
 VPATH=@srcdir@
 srcdir=@srcdir@
 builddir=@builddir@
@@ -112,6 +109,12 @@ LIBRPC_OBJS = @LIBRPC_OBJS@
 LIBSMB_OBJS = @LIBSMB_OBJS@
 
 LIBPOPT_OBJS = @LIBPOPT_OBJS@
+LIBPOPT_LIBS = @LIBPOPT_LIBS@
+
+LIBCMDLINE_OBJS = @LIBCMDLINE_OBJS@
+LIBCMDLINE_LIBS = @LIBCMDLINE_LIBS@
+
+CONFIG_OBJS = @CONFIG_OBJS@
 
 PROCESS_MODEL_OBJS = @PROCESS_MODEL_OBJS@
 PROCESS_MODEL_LIBS = @PROCESS_MODEL_LIBS@
@@ -137,15 +140,6 @@ TORTURE_RPC_OBJS = @TORTURE_RPC_OBJS@
 
 TORTURE_OBJS = @TORTURE_OBJS@
 
-
-READLINE_OBJ = lib/readline.o
-
-POPT_LIB_OBJ = lib/popt_common.o 
-
-PARAM_OBJ = param/loadparm.o param/params.o dynconfig.o
-
-SECRETS_OBJ = passdb/secrets.o
-
 SMBD_OBJ_MAIN = smbd/server.o
 
 SMBD_OBJ_SRV =	smbd/process.o \
@@ -157,40 +151,40 @@ SMBD_OBJ_SRV =	smbd/process.o \
 
 
 SMBD_OBJ_BASE = $(PROCESS_MODEL_OBJS) $(SMBD_OBJ_SRV) \
-		$(PARAM_OBJ) $(SECRETS_OBJ)  \
-		$(LIBBASIC_OBJS) $(POPT_LIB_OBJ) $(LIBSMB_OBJS)
+		$(CONFIG_OBJS)  \
+		$(LIBBASIC_OBJS) $(LIBCMDLINE_OBJS) $(LIBSMB_OBJS)
 
 SMBD_OBJS = $(SMBD_OBJ_MAIN) $(SMBD_OBJ_BASE) $(LIBPOPT_OBJS)
-SMBD_LIBS = $(LIBS) $(SMB_LIBS) $(PROCESS_MODEL_LIBS) $(DCERPC_LIBS) $(AUTH_LIBS) $(PASSDB_LIBS) $(NTVFS_LIBS) $(LIBPOPT_LIBS)
+SMBD_LIBS = $(LIBS) $(LIBCMDLINE_LIBS) $(SMB_LIBS) $(PROCESS_MODEL_LIBS) $(DCERPC_LIBS) $(AUTH_LIBS) $(PASSDB_LIBS) $(NTVFS_LIBS) $(LIBPOPT_LIBS)
 
 CLIENT_OBJ1 = client/client.o client/clitar.o libcli/raw/clirewrite.o
 
-CLIENT_OBJ = $(CLIENT_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJS) $(SECRETS_OBJ) \
+CLIENT_OBJ = $(CLIENT_OBJ1) $(CONFIG_OBJS) $(LIBSMB_OBJS) \
 	     $(LIBBASIC_OBJS) \
-             $(READLINE_OBJ) $(POPT_LIB_OBJ) $(LIBPOPT_OBJS)
+             $(LIBCMDLINE_OBJS) $(LIBPOPT_OBJS)
 
-SMBTORTURE_OBJS = $(TORTURE_OBJS) $(SECRETS_OBJ) $(LIBSMB_OBJS) $(PARAM_OBJ) $(LIBBASIC_OBJS)
+SMBTORTURE_OBJS = $(TORTURE_OBJS) $(CONFIG_OBJS) $(LIBSMB_OBJS) $(LIBBASIC_OBJS)
 SMBTORTURE_LIBS = $(LIBS)
 
-GENTEST_OBJ = torture/gentest.o torture/torture_util.o $(LIBSMB_OBJS) $(PARAM_OBJ) \
-		$(LIBBASIC_OBJS) $(SECRETS_OBJ) libcli/raw/clirewrite.o
+GENTEST_OBJ = torture/gentest.o torture/torture_util.o $(LIBSMB_OBJS) $(CONFIG_OBJS) \
+		$(LIBBASIC_OBJS) libcli/raw/clirewrite.o
 
-MASKTEST_OBJ = torture/masktest.o $(LIBSMB_OBJS) $(PARAM_OBJ) \
-		$(LIBBASIC_OBJS) $(SECRETS_OBJ) libcli/raw/clirewrite.o
+MASKTEST_OBJ = torture/masktest.o $(LIBSMB_OBJS) $(CONFIG_OBJS) \
+		$(LIBBASIC_OBJS) libcli/raw/clirewrite.o
 
-LOCKTEST_OBJ = torture/locktest.o $(LIBSMB_OBJS) $(PARAM_OBJ) \
-		$(LIBBASIC_OBJS) $(SECRETS_OBJ) libcli/raw/clirewrite.o
+LOCKTEST_OBJ = torture/locktest.o $(LIBSMB_OBJS) $(CONFIG_OBJS) \
+		$(LIBBASIC_OBJS) libcli/raw/clirewrite.o
 
 NDRDUMP_OBJ = utils/ndrdump.o utils/rewrite.o \
-		$(LIBSMB_OBJS) $(PARAM_OBJ) $(LIBBASIC_OBJS) $(SECRETS_OBJ)
+		$(LIBSMB_OBJS) $(CONFIG_OBJS) $(LIBBASIC_OBJS)
 
 PROTO_OBJ = $(SMBD_OBJ_SRV) \
 	    $(SMBD_OBJ_MAIN) $(PROCESS_MODEL_OBJS) \
 	    $(LIBSMB_OBJS) \
 	    $(TORTURE_OBJS) \
-	    $(PARAM_OBJ) $(SECRETS_OBJ) \
-	    $(READLINE_OBJ) $(CLIENT_OBJ1) \
-	    $(LIBBASIC_OBJS) $(POPT_LIB_OBJ)
+	    $(CONFIG_OBJS) \
+	    $(LIBCMDLINE_OBJS) $(CLIENT_OBJ1) \
+	    $(LIBBASIC_OBJS)
 
 ######################################################################
 # now the rules...
@@ -311,7 +305,7 @@ bin/smbd@EXEEXT@: $(SMBD_OBJS) bin/.dummy
 
 bin/smbclient@EXEEXT@: $(CLIENT_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(CLIENT_OBJ) $(LDFLAGS) $(TERMLDFLAGS) $(TERMLIBS) $(LIBS)
+	@$(CC) $(FLAGS) -o $@ $(CLIENT_OBJ) $(LDFLAGS) $(LIBS) $(LIBCMDLINE_LIBS)
 
 bin/smbtorture@EXEEXT@: $(SMBTORTURE_OBJS) bin/.dummy
 	@echo Linking $@
