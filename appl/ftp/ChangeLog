@@ -1,3 +1,8 @@
+2001-01-29  Assar Westerlund  <assar@sics.se>
+
+	* ftpd/Makefile.am: move up LIB_otp so we do not end up picking
+ 	one from /usr/athena
+
 2001-01-25  Johan Danielsson  <joda@pdc.kth.se>
 
 	* ftpd/ls.c: fix bug in previous; make it easier to build test
