@@ -473,14 +473,14 @@ static void switch_message(int type, struct smbsrv_request *req)
 	
 	/* does this protocol need a valid tree connection? */
 	if ((flags & AS_USER) && !req->tcon) {
-		req_reply_error(req, NT_STATUS_NETWORK_NAME_DELETED);
+		req_reply_error(req, NT_STATUS_INVALID_HANDLE);
 		return;
 	}
 
 	/* see if the vuid is valid */
 	if ((flags & AS_USER) && !req->session) {
 		if (!(flags & AS_GUEST)) {
-			req_reply_error(req, NT_STATUS_DOS(ERRSRV, ERRbaduid));
+			req_reply_error(req, NT_STATUS_INVALID_HANDLE);
 			return;
 		}
 	}
