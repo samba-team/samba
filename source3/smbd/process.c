@@ -655,7 +655,8 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
 
 	/* Make sure this is an SMB packet */
 	if (strncmp(smb_base(inbuf),"\377SMB",4) != 0) {
-		DEBUG(2,("Non-SMB packet of length %d\n",smb_len(inbuf)));
+		DEBUG(2,("Non-SMB packet of length %d. Terminating server\n",smb_len(inbuf)));
+		exit_server("Non-SMB packet");
 		return(-1);
 	}
 
