@@ -9,7 +9,14 @@
 {
 	/******************/
 	/* Function: 0x00 */
-	NTSTATUS spoolss_00(
+	NTSTATUS spoolss_EnumPrinters(
+		[in]	 uint32 flags,
+		[in]	 unistr *server,
+		[in]	 uint32 level,
+		[in,out] uint8_buf *buffer,
+		[in]     uint32 offered,
+		[out]	 uint32 needed,
+		[out]	 uint32 returned
 		);
 
 	/******************/
@@ -154,7 +161,8 @@
 
 	/******************/
 	/* Function: 0x1d */
-	NTSTATUS spoolss_1d(
+	NTSTATUS spoolss_ClosePrinter(
+		[in,out,ref] policy_handle *handle
 		);
 
 	/******************/
@@ -378,13 +386,13 @@
 	/******************/
 	/* Function: 0x45 */
 	NTSTATUS spoolss_OpenPrinterEx(
-		[in]    unistr *printername,
-		[in]    unistr *datatype,
-		[in]	spoolss_DevmodeContainer devmode_ctr,
-		[in]	uint32 access_required,
-		[in]	uint32 level,
+		[in]                  unistr *printername,
+		[in]                  unistr *datatype,
+		[in]	              spoolss_DevmodeContainer devmode_ctr,
+		[in]	              uint32 access_required,
+		[in]	              uint32 level,
 		[in,switch_is(level)] spoolss_UserLevel userlevel,
-		[out,ref]	policy_handle *handle
+		[out,ref]	      policy_handle *handle
 		);
 
 	/******************/
