@@ -21,8 +21,6 @@
 
 #include "includes.h"
 
-#ifdef WITH_UTMP
-
 /****************************************************************************
 Reflect connection status in utmp/wtmp files.
 	T.D.Lee@durham.ac.uk  September 1999
@@ -109,6 +107,23 @@ Notes:
 	Our caller (session.c) should note our 16-bit limitation.
 
 ****************************************************************************/
+
+#ifndef WITH_UTMP
+/*
+ * Not WITH_UTMP?  Simply supply dummy routines.
+ */
+
+void sys_utmp_claim(const char *username, const char *hostname, 
+		    struct in_addr *ipaddr,
+		    const char *id_str, int id_num)
+{}
+
+void sys_utmp_yield(const char *username, const char *hostname, 
+		    struct in_addr *ipaddr,
+		    const char *id_str, int id_num)
+{}
+
+#else /* WITH_UTMP */
 
 #include <utmp.h>
 
@@ -571,6 +586,4 @@ void sys_utmp_claim(const char *username, const char *hostname,
 	sys_utmp_update(&u, hostname, True);
 }
 
-#else /* WITH_UTMP */
- void dummy_utmp(void) {}
-#endif
+#endif /* WITH_UTMP */

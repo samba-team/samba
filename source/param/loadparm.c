@@ -158,11 +158,9 @@ typedef struct
 	char *szAbortShutdownScript;
 	char *szWINSHook;
 	char *szWINSPartners;
-#ifdef WITH_UTMP
 	char *szUtmpDir;
 	char *szWtmpDir;
 	BOOL bUtmp;
-#endif
 	char *szSourceEnv;
 	char *szIdmapUID;
 	char *szIdmapGID;
@@ -1575,11 +1573,9 @@ FN_GLOBAL_STRING(lp_lockdir, &Globals.szLockDir)
 FN_GLOBAL_STRING(lp_piddir, &Globals.szPidDir)
 FN_GLOBAL_STRING(lp_mangling_method, &Globals.szManglingMethod)
 FN_GLOBAL_INTEGER(lp_mangle_prefix, &Globals.mangle_prefix)
-#ifdef WITH_UTMP
 FN_GLOBAL_STRING(lp_utmpdir, &Globals.szUtmpDir)
 FN_GLOBAL_STRING(lp_wtmpdir, &Globals.szWtmpDir)
 FN_GLOBAL_BOOL(lp_utmp, &Globals.bUtmp)
-#endif
 FN_GLOBAL_STRING(lp_rootdir, &Globals.szRootdir)
 FN_GLOBAL_STRING(lp_source_environment, &Globals.szSourceEnv)
 FN_GLOBAL_STRING(lp_defaultservice, &Globals.szDefaultService)
