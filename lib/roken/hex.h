@@ -33,14 +33,13 @@
 
 /* $Id$ */
 
-#ifndef _BASE64_H_
-#define _BASE64_H_
+#ifndef _rk_HEX_H_
+#define _rk_HEX_H_ 1
 
 #define hex_encode rk_hex_encode
 #define hex_decode rk_hex_decode
 
-ssize_t		hex_encode(const void *, int, char **);
+ssize_t		hex_encode(const void *, size_t, char **);
 ssize_t		hex_decode(const char *, void *, size_t);
 
-#endif /* _BASE64_H_ */
-
+#endif /* _rk_HEX_H_ */
