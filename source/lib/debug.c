@@ -263,6 +263,11 @@ void setup_logging(char *pname, BOOL interactive)
 {
 	message_register(MSG_DEBUG, debug_message);
 
+	/* reset to allow multiple setup calls, going from interactive to
+	   non-interactive */
+	stdout_logging = False;
+	dbf = NULL;
+
 	if (interactive) {
 		stdout_logging = True;
 		dbf = stdout;
