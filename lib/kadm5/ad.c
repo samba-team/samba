@@ -561,9 +561,9 @@ kadm5_ad_create_principal(void *server_handle,
      */
 
 #ifdef OPENLDAP
-    LDAPMod *attrs[6], rattrs[5], *a;
+    LDAPMod *attrs[7], rattrs[6], *a;
     char *useraccvals[2] = { NULL, NULL }, 
-	*samvals[2], *dnsvals[2], *spnvals[4];
+	*samvals[2], *dnsvals[2], *spnvals[4], *tv[2];
     char *ocvals_spn[] = { "top", "person", "organizationalPerson", 
 			   "user", "computer", NULL}; 
     char *p, *realmless_p, *dn = NULL;
@@ -643,7 +643,7 @@ kadm5_ad_create_principal(void *server_handle,
 		free(short_spn);
 		short_spn = NULL;
 	    } else {
-		memmove(p1, p2, strlen(p2));
+		memmove(p1, p2, strlen(p2) + 1);
 	    }
 	}
 
@@ -658,8 +658,8 @@ kadm5_ad_create_principal(void *server_handle,
 	a->mod_op = LDAP_MOD_ADD;
 	a->mod_type = "objectClass";
 	a->mod_values = ocvals_spn;
-
 	a++;
+
 	a->mod_op = LDAP_MOD_ADD;
 	a->mod_type = "userAccountControl";
 	a->mod_values = useraccvals;
@@ -668,23 +668,23 @@ kadm5_ad_create_principal(void *server_handle,
 		 UF_PASSWD_NOT_EXPIRE |
 		 UF_WORKSTATION_TRUST_ACCOUNT);
 	useraccvals[1] = NULL;
-
 	a++;
+
 	a->mod_op = LDAP_MOD_ADD;
 	a->mod_type = "sAMAccountName";
 	a->mod_values = samvals;
 	samvals[0] = samname;
 	samvals[1] = NULL;
-
 	a++;
+
 	a->mod_op = LDAP_MOD_ADD;
 	a->mod_type = "dNSHostName";
 	a->mod_values = dnsvals;
 	dnsvals[0] = (char *)fqdn;
 	dnsvals[1] = NULL;
+	a++;
 
 	/* XXX  add even more spn's */
-	a++;
 	a->mod_op = LDAP_MOD_ADD;
 	a->mod_type = "servicePrincipalName";
 	a->mod_values = spnvals;
@@ -692,6 +692,14 @@ kadm5_ad_create_principal(void *server_handle,
 	spnvals[1] = realmless_p;
 	spnvals[2] = short_spn; /* possibly NULL */
 	spnvals[3] = NULL;
+	a++;
+
+	a->mod_op = LDAP_MOD_ADD;
+	a->mod_type = "accountExpires";
+	a->mod_values = tv;
+	tv[0] = "116444736000000000"; /* "never" */
+	tv[1] = NULL;
+	a++;
 
     } else {
 	/* create user account */
@@ -704,21 +712,31 @@ kadm5_ad_create_principal(void *server_handle,
 		 uf_flags |
 		 UF_PASSWD_NOT_EXPIRE);
 	useraccvals[1] = NULL;
-
 	a++;
+
 	a->mod_op = LDAP_MOD_ADD;
 	a->mod_type = "sAMAccountName";
 	a->mod_values = samvals;
 	samvals[0] = realmless_p;
 	samvals[1] = NULL;
-
 	a++;
+
 	a->mod_op = LDAP_MOD_ADD;
 	a->mod_type = "userPrincipalName";
 	a->mod_values = spnvals;
 	spnvals[0] = p;
 	spnvals[1] = NULL;
+	a++;
+
+	a->mod_op = LDAP_MOD_ADD;
+	a->mod_type = "accountExpires";
+	a->mod_values = tv;
+	tv[0] = "116444736000000000"; /* "never" */
+	tv[1] = NULL;
+	a++;
     }
+
+    attrs[a - &rattrs[0]] = NULL;
 
     ret = ldap_add_s(CTX2LP(context), dn, attrs);
 
@@ -844,6 +862,8 @@ kadm5_ad_get_principal(void *server_handle,
      * return 0 || KADM5_DUP;
      */
 
+    memset(entry, 0, sizeof(*entry));
+
     if (mask & KADM5_KVNO)
 	laddattr(&attr, &attrlen, "msDS-KeyVersionNumber");
 
@@ -898,11 +918,13 @@ kadm5_ad_get_principal(void *server_handle,
 	if (vals)
 	    printf("userAccountControl %s\n", vals[0]);
 #endif
+	entry->princ_expire_time = 0;
 	if (mask & KADM5_PRINC_EXPIRE_TIME) {
 	    vals = ldap_get_values(CTX2LP(context), m0, "accountExpires");
 	    if (vals)
 		entry->princ_expire_time = nt2unixtime(vals[0]);
 	}
+	entry->last_success = 0;
 	if (mask & KADM5_LAST_SUCCESS) {
 	    vals = ldap_get_values(CTX2LP(context), m0, "lastLogon");
 	    if (vals)
