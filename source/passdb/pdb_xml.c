@@ -19,7 +19,14 @@
  * Mass Ave, Cambridge, MA 02139, USA.
  */
 
-/* FIXME: Support stdin input by using '-' */
+/* FIXME: 
+ * - Support stdin input by using '-'
+ * - Be faster. Don't rewrite the whole file when adding a user, but store it in the memory and save it when exiting. Requires changes to samba source.
+ * - Gives the ability to read/write to standard input/output
+ * - Do locking!
+ * - Better names!
+ */
+
 
 #define XML_URL "http://www.samba.org/ns"
 
