@@ -209,6 +209,29 @@ static char *unmap_unixname(char *unix_user_name, int name_idx)
 	return NULL;
 }
 
+#ifdef DISABLED_BECAUSE_IT_FIXES_THE_PROBLEM_IN_THE_WRONG_WAY
+
+/*
+ * 1) this code should be *inside* getsam21pwent(), behind the
+ * sam database API.  it should *not* be explictly in the samsrv
+ * implementation.  that's the whole point of the sam database API:
+ * it hides implementation issues like this and allows code reuse
+ * for LDAP, NISPLUS, SMBPASSWD+Unix Passwd, MYSQL, tdb etc.
+ *
+ * 2) modifications to cvs main and 2_0 should be absolutely critical
+ * bug-fixes only, and TNG should be checked and worked on first.
+ * any bug-fixes and enhancements should be made to TNG,
+ * as per instructions at top of this file.
+ *
+ * i really appreciate the efforts of the person who wrote this code
+ * (whoever they are), however please consult with me because there
+ * are design issues that you should be aware of, and your skills
+ * are needed to fix the problems in the correct code-module in
+ * the right branch, not this one.
+ * 
+ * lkcl@samba.org 23mar2000.
+ */
+
 /*******************************************************************
  This function sets up a list of users taken from the list of
  users that UNIX knows about, as well as all the user names that
@@ -354,6 +377,8 @@ static BOOL get_passwd_entries(SAM_USER_INFO_21 *pw_buf,
 
 	return (*num_entries) > 0;
 }
+
+#endif
 
 /*******************************************************************
  samr_reply_unknown_1
@@ -817,7 +842,7 @@ static void samr_reply_query_dispinfo(SAMR_Q_QUERY_DISPINFO *q_u,
 	if (r_e.status == 0x0)
 	{
 		become_root(True);
-		got_pwds = get_passwd_entries(pass, q_u->start_idx, &total_entries, &num_entries, MAX_SAM_ENTRIES, 0);
+		got_pwds = get_sampwd_entries(pass, q_u->start_idx, &total_entries, &num_entries, MAX_SAM_ENTRIES, 0);
 		unbecome_root(True);
 
 		switch (q_u->switch_level)
