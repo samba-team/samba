@@ -39,7 +39,6 @@
 #define CHECK_TYPES 0
 
 extern int DEBUGLEVEL;
-extern int max_send;
 
 extern fstring local_machine;
 extern fstring global_myworkgroup;
@@ -364,7 +363,6 @@ static void PACKS(struct pack_desc *desc, char *t, char *v)
 /****************************************************************************
   get a print queue
   ****************************************************************************/
-
 static void PackDriverData(struct pack_desc *desc)
 {
 	char drivdata[4 + 4 + 32];
@@ -1601,8 +1599,9 @@ static BOOL api_NetRemoteTOD(connection_struct *conn,uint16 vuid, char *param,ch
 }
 
 /****************************************************************************
-  set the user password
-  ****************************************************************************/
+ Set the user password.
+*****************************************************************************/
+
 static BOOL api_SetUserPassword(connection_struct * conn, uint16 vuid,
 				char *param, char *data, int mdrcnt,
 				int mprcnt, char **rdata, char **rparam,
@@ -3238,5 +3237,5 @@ int api_reply(connection_struct * conn, uint16 vuid, char *outbuf, char *data,
 	prs_free_data(&rdata_buf);
 	prs_free_data(&rparam_buf);
 
-	return (-1);
+	return -1;
 }

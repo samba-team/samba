@@ -269,7 +269,7 @@ int reply_tcon(connection_struct * conn,
 int reply_tcon_and_X(connection_struct * conn, char *inbuf, char *outbuf,
 		     int length, int bufsize)
 {
-	pstring service;
+	fstring service;
 	pstring user;
 	pstring password;
 	pstring devicename;
@@ -309,11 +309,9 @@ int reply_tcon_and_X(connection_struct * conn, char *inbuf, char *outbuf,
 		*password = 0;
 	}
 
-	fstrcpy(service, path + 2);
-	p = strchr(service, '\\');
+	p = strchr(path+2, '\\');
 	if (!p)
 		return (ERROR(ERRSRV, ERRinvnetname));
-	*p = 0;
 	fstrcpy(service, p + 1);
 	p = strchr(service, '%');
 	if (p)
