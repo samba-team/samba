@@ -40,6 +40,9 @@
 
 RCSID("$Id$");
 
+static pid_t wait_on_pid = -1;
+static int   done        = 0;
+
 /*
  * Signal handler that justs waits for the children when they die.
  */
@@ -52,6 +55,8 @@ childhandler (int sig)
 
      do { 
        pid = waitpid (-1, &status, WNOHANG|WUNTRACED);
+       if (pid > 0 && pid == wait_on_pid)
+	   done = 1;
      } while(pid > 0);
      signal (SIGCHLD, childhandler);
      SIGRETURN(0);
@@ -204,12 +209,9 @@ recv_conn (int sock, kx_context *kc,
 	     cleanup (*nsockets, *sockets);
 	     fatal (kc, sock, "fork: %s", strerror(errno));
 	 } else if (pid != 0) {
-	     int status;
-
-	     while (waitpid (pid, &status, 0) != pid
-		    && !WIFEXITED(status)
-		    && !WIFSIGNALED(status))
-		 ;
+	     wait_on_pid = pid;
+	     while (!done)
+		 pause ();
 	     cleanup (*nsockets, *sockets);
 	     exit (0);
 	 }
