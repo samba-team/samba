@@ -108,9 +108,13 @@ static const struct sid_map_fill static_sid_name_map[] =
 	{ "BATCH",                NULL,                 SID_NAME_WKN_GRP, "S-1-5-3" },
 	{ "Interactive",          NULL,                 SID_NAME_WKN_GRP, "S-1-5-4" }, /* right name? */
 	{ "Service",              NULL,                 SID_NAME_WKN_GRP, "S-1-5-6" }, /* right name? */
-	{ "",                     NULL,                 SID_NAME_USER, "S-1-5-7" }, /* not known, but NT responds! */
+	{ "Anonymous Logon",      NULL,                 SID_NAME_USER, "S-1-5-7" },
+	{ "Proxy",                NULL,                 SID_NAME_WKN_GRP, "S-1-5-8" },
 	{ "SERVER LOGON",         NULL,                 SID_NAME_WKN_GRP, "S-1-5-9" },
+	{ "Self",                 NULL,                 SID_NAME_WKN_GRP, "S-1-5-10" },
 	{ "Authenticated Users",  NULL,                 SID_NAME_WKN_GRP, "S-1-5-11" },
+	{ "Restricted",           NULL,                 SID_NAME_WKN_GRP, "S-1-5-12" },
+	{ "Terminal Server User", NULL,                 SID_NAME_WKN_GRP, "S-1-5-13" },
 	{ "SYSTEM",               &global_sid_S_1_5_18, SID_NAME_WKN_GRP, NULL },
 	{ global_sam_name,        &global_sam_sid,      SID_NAME_DOMAIN, NULL },
 	{ global_myworkgroup,     &global_member_sid,   SID_NAME_DOMAIN, NULL },
