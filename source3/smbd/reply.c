@@ -61,6 +61,10 @@ NTSTATUS check_path_syntax(pstring destname, const pstring srcname)
 			while (IS_DIRECTORY_SEP(*s)) {
 				s++;
 			}
+			if ((s[0] == '.') && (s[1] == '\0')) {
+				ret = NT_STATUS_OBJECT_NAME_INVALID;
+				break;
+			}
 			if ((d != destname) && (*s != '\0')) {
 				/* We only care about non-leading or trailing '/' or '\\' */
 				*d++ = '/';
@@ -84,7 +88,8 @@ NTSTATUS check_path_syntax(pstring destname, const pstring srcname)
 			}
 			/* Are we at the start ? Can't go back further if so. */
 			if (d == destname) {
-				return NT_STATUS_OBJECT_PATH_SYNTAX_BAD;
+				ret = NT_STATUS_OBJECT_PATH_SYNTAX_BAD;
+				break;
 			}
 			/* Go back one level... */
 			/* We know this is safe as '/' cannot be part of a mb sequence. */
@@ -95,7 +100,7 @@ NTSTATUS check_path_syntax(pstring destname, const pstring srcname)
 				d--;
 			}
 			s += 3;
-		} else if ((s[0] == '.') && IS_DIRECTORY_SEP(s[1])) {
+		} else if ((s[0] == '.') && (IS_DIRECTORY_SEP(s[1]) || s[2] == '\0')) {
 
 			/*
 			 * No mb char starts with '.' so we're safe checking the directory separator here.
@@ -105,11 +110,14 @@ NTSTATUS check_path_syntax(pstring destname, const pstring srcname)
 
 			if (s == srcname) {
 				ret = NT_STATUS_OBJECT_NAME_INVALID;
+				break;
 			} else {
-				if (s[2] == '\0') {
-					return NT_STATUS_INVALID_PARAMETER;
+				if (s[1] != '\0' && s[2] == '\0') {
+					ret = NT_STATUS_INVALID_PARAMETER;
+					break;
 				}
 				ret = NT_STATUS_OBJECT_PATH_NOT_FOUND;
+				break;
 			}
 			s++;
 		} else {
@@ -128,6 +136,7 @@ NTSTATUS check_path_syntax(pstring destname, const pstring srcname)
 						break;
 					default:
 						DEBUG(0,("check_path_syntax: character length assumptions invalid !\n"));
+						*d = '\0';
 						return NT_STATUS_INVALID_PARAMETER;
 				}
 			}
