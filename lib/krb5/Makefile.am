@@ -150,6 +150,7 @@ man_MANS =					\
 	krb5.conf.5				\
 	krb5_425_conv_principal.3		\
 	krb5_address.3				\
+	krb5_aname_to_localname.3		\
 	krb5_appdefault.3			\
 	krb5_auth_context.3			\
 	krb5_build_principal.3			\
