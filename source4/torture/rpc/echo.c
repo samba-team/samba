@@ -319,6 +319,40 @@ static BOOL test_enum(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	return ret;
 }
 
+/*
+  test surrounding conformant array handling
+*/
+static BOOL test_surrounding(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+{
+	NTSTATUS status;
+	struct echo_TestSurrounding r;
+	BOOL ret = True;
+
+	ZERO_STRUCT(r);
+	r.in.data = talloc(mem_ctx, struct echo_Surrounding);
+
+	r.in.data->x = 20;
+	r.in.data->surrounding = talloc_zero_array(mem_ctx, uint16_t, r.in.data->x);
+
+	r.out.data = talloc(mem_ctx, struct echo_Surrounding);
+
+	printf("\nTesting TestSurrounding\n");
+	status = dcerpc_echo_TestSurrounding(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("TestSurrounding failed - %s\n", nt_errstr(status));
+		ret = False;
+	}
+	
+	if (r.out.data->x != 2 * r.in.data->x) {
+		printf("TestSurrounding did not make the array twice as large\n");
+		ret = False;
+	}
+
+	return ret;
+}
+
+
+
 BOOL torture_rpc_echo(void)
 {
         NTSTATUS status;
@@ -344,6 +378,7 @@ BOOL torture_rpc_echo(void)
 	ret &= test_testcall2(p, mem_ctx);
 	ret &= test_enum(p, mem_ctx);
 	ret &= test_sleep(p, mem_ctx);
+	ret &= test_surrounding(p, mem_ctx);
 
 	printf("\n");
 	
