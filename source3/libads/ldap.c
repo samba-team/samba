@@ -741,7 +741,11 @@ ADS_STATUS ads_find_machine_acct(ADS_STRUCT *ads, void **res, const char *host)
 
 	/* the easiest way to find a machine account anywhere in the tree
 	   is to look for hostname$ */
-	asprintf(&exp, "(samAccountName=%s$)", host);
+	if (asprintf(&exp, "(samAccountName=%s$)", host) == -1) {
+		DEBUG(1, ("asprintf failed!\n"));
+		return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
+	}
+	
 	status = ads_search(ads, res, exp, attrs);
 	free(exp);
 	return status;
@@ -898,13 +902,15 @@ ADS_STATUS ads_gen_mod(ADS_STRUCT *ads, const char *mod_dn, ADS_MODLIST mods)
 	controls[0] = &PermitModify;
 	controls[1] = NULL;
 
-	push_utf8_allocate((void **) &utf8_dn, mod_dn);
+	if (push_utf8_allocate(&utf8_dn, mod_dn) == -1) {
+		return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
+	}
 
 	/* find the end of the list, marked by NULL or -1 */
 	for(i=0;(mods[i]!=0)&&(mods[i]!=(LDAPMod *) -1);i++);
 	/* make sure the end of the list is NULL */
 	mods[i] = NULL;
-	ret = ldap_modify_ext_s(ads->ld, utf8_dn ? utf8_dn : mod_dn,
+	ret = ldap_modify_ext_s(ads->ld, utf8_dn,
 				(LDAPMod **) mods, controls, NULL);
 	SAFE_FREE(utf8_dn);
 	return ADS_ERROR(ret);
@@ -922,7 +928,10 @@ ADS_STATUS ads_gen_add(ADS_STRUCT *ads, const char *new_dn, ADS_MODLIST mods)
 	int ret, i;
 	char *utf8_dn = NULL;
 
-	push_utf8_allocate((void **) &utf8_dn, new_dn);
+	if (push_utf8_allocate(&utf8_dn, new_dn) == -1) {
+		DEBUG(1, ("ads_gen_add: push_utf8_allocate failed!"));
+		return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
+	}
 	
 	/* find the end of the list, marked by NULL or -1 */
 	for(i=0;(mods[i]!=0)&&(mods[i]!=(LDAPMod *) -1);i++);
@@ -944,7 +953,11 @@ ADS_STATUS ads_del_dn(ADS_STRUCT *ads, char *del_dn)
 {
 	int ret;
 	char *utf8_dn = NULL;
-	push_utf8_allocate((void **) &utf8_dn, del_dn);
+	if (push_utf8_allocate(&utf8_dn, del_dn) == -1) {
+		DEBUG(1, ("ads_del_dn: push_utf8_allocate failed!"));
+		return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
+	}
+	
 	ret = ldap_delete(ads->ld, utf8_dn ? utf8_dn : del_dn);
 	return ADS_ERROR(ret);
 }
@@ -991,6 +1004,10 @@ static ADS_STATUS ads_add_machine_acct(ADS_STRUCT *ads, const char *hostname,
 	if (!(host_upn = talloc_asprintf(ctx, "%s@%s", host_spn, ads->config.realm)))
 		goto done;
 	ou_str = ads_ou_string(org_unit);
+	if (!ou_str) {
+		DEBUG(1, ("ads_ou_string returned NULL (malloc failure?)\n"));
+		goto done;
+	}
 	new_dn = talloc_asprintf(ctx, "cn=%s,%s,%s", hostname, ou_str, 
 				 ads->config.bind_path);
 	free(ou_str);
