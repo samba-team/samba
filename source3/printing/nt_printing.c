@@ -832,7 +832,7 @@ static int unpack_specifics(NT_PRINTER_PARAM **list, char *buf, int buflen)
 	*list = NULL;
 
 	while (1) {
-		len += tdb_unpack(buf+len, buflen-len, "p", p);
+		len += tdb_unpack(buf+len, buflen-len, "p", &p);
 		if (!p) break;
 
 		len += tdb_unpack(buf+len, buflen-len, "fdB",
@@ -873,6 +873,14 @@ static uint32 get_a_printer_2_default(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstrin
 	fstrcpy(info.datatype, "RAW");
 
 	info.devmode = (NT_DEVICEMODE *)memdup(&devmode, sizeof(devmode));
+
+	/*
+	 * put a better system here, please.
+	 */
+	info.secdesc.len = 0; /* convertperms_unix_to_sd(&sbuf, False,
+						    sbuf.st_mode, 
+						    &info.secdesc.sec); */
+	info.secdesc.max_len = info.secdesc.len;
 
 	*info_ptr = (NT_PRINTER_INFO_LEVEL_2 *)memdup(&info, sizeof(info));
 	if (! *info_ptr) return 2;
@@ -924,6 +932,9 @@ static uint32 get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharen
 			info.parameters);
 
 	len += unpack_devicemode(&info.devmode,dbuf.dptr+len, dbuf.dsize-len);
+#if 0
+	len += unpack_secdesc(&info.devmode,dbuf.dptr+len, dbuf.dsize-len);
+#endif
 	len += unpack_specifics(&info.specific,dbuf.dptr+len, dbuf.dsize-len);
 
 	*info_ptr=memdup(&info, sizeof(info));
