@@ -2697,7 +2697,7 @@ static BOOL is_binding_string(const char *binding_string)
 			parse_dns(poptGetOptArg(pc));
 			break;
 		case OPT_DANGEROUS:
-			lp_set_cmdline("torture:dangerous", "1");
+			lp_set_cmdline("torture:dangerous", "Yes");
 			break;
 		default:
 			d_printf("Invalid option %s: %s\n", 
