@@ -177,20 +177,9 @@ setup(
               extra_compile_args = flags_list,
               extra_objects = obj_list),
 
-    # Moving to merge all individual extensions in to one big
-    # extension.  This is to avoid the fact that each extension is 3MB
-    # in size due to the lack of proper depedency management in Samba.
-
-    Extension(name = "samba",
-              sources = [samba_srcdir + "python/py_samba.c",
-                         samba_srcdir + "python/py_common.c"],
-              libraries = lib_list,
-              library_dirs = ["/usr/kerberos/lib"],
-              extra_compile_args = flags_list,
-              extra_objects = obj_list),
-
     # tdbpack/unpack extensions.  Does not actually link to any Samba
     # code, although it implements a compatible data format.
+    
     Extension(name = "tdbpack",
               sources = [os.path.join(samba_srcdir, "python", "py_tdbpack.c")],
               extra_compile_args = ["-I."])
