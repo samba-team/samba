@@ -80,3 +80,17 @@ static /**/const char *const rcsid[] = { (const char *)rcsid, "\100(#)" msg }
  */
 
 #define _GNU_SOURCE
+
+/*
+ * this assumes that KRB_C_BIGENDIAN is used.
+ * if we can find out endianess at compile-time, do so,
+ * otherwise WORDS_BIGENDIAN should already have been defined
+ */
+
+#if ENDIANESS_IN_SYS_PARAM_H
+#  include <sys/types.h>
+#  include <sys/param.h>
+#  if BYTE_ORDER == BIG_ENDIAN
+#  define WORDS_BIGENDIAN 1
+#  endif
+#endif
