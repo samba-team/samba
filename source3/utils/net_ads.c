@@ -41,12 +41,14 @@ int net_ads_usage(int argc, const char **argv)
 "\nnet ads status"\
 "\n\tdump the machine account details to stdout\n"
 "\nnet ads password <username@realm> -Uadmin_username@realm%%admin_pass"\
-"\n\tchange a user's password using an admin account"
-"\n\t(note: use realm in UPPERCASE)\n"
-"\nnet ads chostpass"
-"\n\tchange the trust account password of this machine in the AD tree\n"
-"\nnet ads printer [info | publish | remove] <printername> <servername>"
-"\n\t lookup, add, or remove directory entry for a printer\n"
+"\n\tchange a user's password using an admin account"\
+"\n\t(note: use realm in UPPERCASE)\n"\
+"\nnet ads chostpass"\
+"\n\tchange the trust account password of this machine in the AD tree\n"\
+"\nnet ads printer [info | publish | remove] <printername> <servername>"\
+"\n\t lookup, add, or remove directory entry for a printer\n"\
+"\nnet ads search"\
+"\n\tperform a raw LDAP search and dump the results\n"
 		);
 	return -1;
 }
@@ -597,7 +599,7 @@ static int net_ads_printer_info(int argc, const char **argv)
 {
 	ADS_STRUCT *ads;
 	ADS_STATUS rc;
-	char *servername, *printername;
+	const char *servername, *printername;
 	extern pstring global_myname;
 	void *res = NULL;
 
@@ -817,12 +819,72 @@ static int net_ads_change_localhost_pass(int argc, const char **argv)
     return 0;
 }
 
+/*
+  help for net ads search
+*/
+static int net_ads_search_usage(int argc, const char **argv)
+{
+	d_printf(
+		"\nnet ads search <expression> <attributes...>\n"\
+		"\nperform a raw LDAP search on a ADS server and dump the results\n"\
+		"The expression is a standard LDAP search expression, and the\n"\
+		"attributes are a list of LDAP fields to show in the results\n\n"\
+		"Example: net ads search '(objectCategory=group)' sAMAccountName\n\n"
+		);
+	net_common_flags_usage(argc, argv);
+	return -1;
+}
+
+
+/*
+  general ADS search function. Useful in diagnosing problems in ADS
+*/
+static int net_ads_search(int argc, const char **argv)
+{
+	ADS_STRUCT *ads;
+	ADS_STATUS rc;
+	const char *exp;
+	const char **attrs;
+	void *res = NULL;
+
+	if (argc < 1) {
+		return net_ads_search_usage(argc, argv);
+	}
+
+	if (!(ads = ads_startup())) {
+		return -1;
+	}
+
+	exp = argv[0];
+	attrs = (argv + 1);
+
+	rc = ads_do_search_all(ads, ads->bind_path, 
+			       LDAP_SCOPE_SUBTREE,
+			       exp, attrs, &res);
+	if (!ADS_ERR_OK(rc)) {
+		d_printf("search failed: %s\n", ads_errstr(rc));
+		return -1;
+	}	
+
+	d_printf("Got %d replies\n\n", ads_count_replies(ads, res));
+
+	/* dump the results */
+	ads_dump(ads, res);
+
+	ads_msgfree(ads, res);
+	ads_destroy(&ads);
+
+	return 0;
+}
+
+
 int net_ads_help(int argc, const char **argv)
 {
 	struct functable func[] = {
 		{"USER", net_ads_user_usage},
 		{"GROUP", net_ads_group_usage},
 		{"PRINTER", net_ads_printer_usage},
+		{"SEARCH", net_ads_search_usage},
 #if 0
 		{"INFO", net_ads_info},
 		{"JOIN", net_ads_join},
@@ -849,6 +911,7 @@ int net_ads(int argc, const char **argv)
 		{"PASSWORD", net_ads_password},
 		{"CHOSTPASS", net_ads_change_localhost_pass},
 		{"PRINTER", net_ads_printer},
+		{"SEARCH", net_ads_search},
 		{"HELP", net_ads_help},
 		{NULL, NULL}
 	};
