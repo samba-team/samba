@@ -920,6 +920,10 @@ static void print_queue_update(int snum)
 
 	SAFE_FREE(tstruct.queue);
 
+	DEBUG(10,("print_queue_update: printer %s INFO/total_jobs = %d\n",
+				unix_printer_name,
+				tstruct.total_jobs));
+
 	tdb_store_int32(pdb->tdb, "INFO/total_jobs", tstruct.total_jobs);
 
 	get_queue_status(snum, &old_status);
@@ -1556,6 +1560,8 @@ int print_queue_length(int snum, print_status_struct *pstatus)
 	if (pstatus)
 		*pstatus = status;
 
+	DEBUG(10,("print_queue_length: for printer %s = %d\n",
+				lp_const_servicename_unix(snum), len));
 	return len;
 }
 
