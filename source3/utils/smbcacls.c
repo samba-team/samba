@@ -761,7 +761,7 @@ static struct cli_state *connect_one(const char *share)
 
 	ctx=talloc_init("main");
 
-	/* set default debug level to 0 regardless of what smb.conf sets */
+	/* set default debug level to 1 regardless of what smb.conf sets */
 	setup_logging( "smbcacls", True );
 	DEBUGLEVEL_CLASS[DBGC_ALL] = 1;
 	dbf = x_stderr;
