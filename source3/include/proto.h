@@ -16,6 +16,18 @@ BOOL queue_dns_query(struct packet_struct *p,struct nmb_name *question,
 BOOL queue_dns_query(struct packet_struct *p,struct nmb_name *question,
 		     struct name_record **n);
 
+/*The following definitions come from  cgi.c  */
+
+void cgi_load_variables(FILE *f1);
+char *cgi_variable(char *name);
+char *cgi_vnum(int i, char **name);
+int cgi_boolean(char *name, int def);
+char *quotedup(char *s);
+char *urlquote(char *s);
+char *quotequotes(char *s);
+void quote_spaces(char *buf);
+void cgi_setup(char *rootdir);
+
 /*The following definitions come from  charcnv.c  */
 
 char *unix2dos_format(char *str,BOOL overwrite);
@@ -60,6 +72,7 @@ BOOL cli_lock(struct cli_state *cli, int fnum, uint32 offset, uint32 len, int ti
 BOOL cli_unlock(struct cli_state *cli, int fnum, uint32 offset, uint32 len, int timeout);
 int cli_read(struct cli_state *cli, int fnum, char *buf, uint32 offset, uint16 size);
 int cli_write(struct cli_state *cli, int fnum, char *buf, uint32 offset, uint16 size);
+BOOL cli_stat(struct cli_state *cli, char *fname, struct stat *st);
 BOOL cli_negprot(struct cli_state *cli);
 BOOL cli_session_request(struct cli_state *cli, char *host, int name_type,
 			 char *myname);

@@ -368,8 +368,9 @@ BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
 					
 			for (i = 0;i < count;i++, p += 26) {
 				char *sname = p;
-				int comment_offset = IVAL(p,22) & 0xFFFF;
-				char *cmnt = comment_offset?(rdata+comment_offset-converter):"";
+				int comment_offset = (IVAL(p,22) & 0xFFFF)-converter;
+				char *cmnt = comment_offset?(rdata+comment_offset):"";
+				if (comment_offset < 0 || comment_offset > rdrcnt) continue;
 
 				stype = IVAL(p,18) & ~SV_TYPE_LOCAL_LIST_ONLY;
 
@@ -418,7 +419,7 @@ BOOL cli_session_setup(struct cli_state *cli,
 	fstring pword;
 
 	if (cli->protocol < PROTOCOL_LANMAN1)
-		return False;
+		return True;
 
 	if (passlen > sizeof(pword)-1) {
 		return False;
@@ -647,7 +648,7 @@ int cli_open(struct cli_state *cli, char *fname, int flags, int share_mode)
 	SSVAL(cli->outbuf,smb_vwv2,0);  /* no additional info */
 	SSVAL(cli->outbuf,smb_vwv3,accessmode);
 	SSVAL(cli->outbuf,smb_vwv4,aSYSTEM | aHIDDEN);
-	SSVAL(cli->outbuf,smb_vwv5,aSYSTEM | aHIDDEN);
+	SSVAL(cli->outbuf,smb_vwv5,0);
 	SSVAL(cli->outbuf,smb_vwv8,openfn);
   
 	p = smb_buf(cli->outbuf);
@@ -684,8 +685,7 @@ BOOL cli_close(struct cli_state *cli, int fnum)
 	cli_setup_packet(cli);
 
 	SSVAL(cli->outbuf,smb_vwv0,fnum);
-	SSVAL(cli->outbuf,smb_vwv1,0);
-	SSVAL(cli->outbuf,smb_vwv2,0);
+	SIVALS(cli->outbuf,smb_vwv1,-1);
 
 	send_smb(cli->fd,cli->outbuf);
 	if (!receive_smb(cli->fd,cli->inbuf,cli->timeout)) {
@@ -861,6 +861,44 @@ int cli_write(struct cli_state *cli, int fnum, char *buf, uint32 offset, uint16 
 
 
 /****************************************************************************
+stat a file (actually a SMBgetattr call)
+This only fills in a few of the stat fields
+****************************************************************************/
+BOOL cli_stat(struct cli_state *cli, char *fname, struct stat *st)
+{
+	char *p;
+
+	bzero(cli->outbuf,smb_size);
+	bzero(cli->inbuf,smb_size);
+
+	set_message(cli->outbuf,0,strlen(fname)+2,True);
+
+	CVAL(cli->outbuf,smb_com) = SMBgetatr;
+	SSVAL(cli->outbuf,smb_tid,cli->cnum);
+	cli_setup_packet(cli);
+
+	p = smb_buf(cli->outbuf);
+	*p = 4;
+	strcpy(p+1, fname);
+
+	send_smb(cli->fd,cli->outbuf);
+	if (!receive_smb(cli->fd,cli->inbuf,cli->timeout)) {
+		return False;
+	}
+	
+	if (CVAL(cli->inbuf,smb_rcls) != 0) {
+		return False;
+	}
+
+	memset(st, 0, sizeof(*st));
+	st->st_size = IVAL(cli->inbuf, smb_vwv3);
+
+	st->st_mtime = make_unix_date3(cli->inbuf+smb_vwv1);
+	return True;
+}
+
+
+/****************************************************************************
 send a negprot command
 ****************************************************************************/
 BOOL cli_negprot(struct cli_state *cli)
@@ -907,19 +945,7 @@ BOOL cli_negprot(struct cli_state *cli)
 	cli->protocol = prots[SVAL(cli->inbuf,smb_vwv0)].prot;
 
 
-	if (cli->protocol < PROTOCOL_NT1) {    
-		cli->sec_mode = SVAL(cli->inbuf,smb_vwv1);
-		cli->max_xmit = SVAL(cli->inbuf,smb_vwv2);
-		cli->sesskey = IVAL(cli->inbuf,smb_vwv6);
-		cli->serverzone = SVALS(cli->inbuf,smb_vwv10)*60;
-		/* this time is converted to GMT by make_unix_date */
-		cli->servertime = make_unix_date(cli->inbuf+smb_vwv8);
-		if (cli->protocol >= PROTOCOL_COREPLUS) {
-			cli->readbraw_supported = ((SVAL(cli->inbuf,smb_vwv5) & 0x1) != 0);
-			cli->writebraw_supported = ((SVAL(cli->inbuf,smb_vwv5) & 0x2) != 0);
-		}
-		memcpy(cli->cryptkey,smb_buf(cli->inbuf),8);
-	} else {
+	if (cli->protocol >= PROTOCOL_NT1) {    
 		/* NT protocol */
 		cli->sec_mode = CVAL(cli->inbuf,smb_vwv1);
 		cli->max_xmit = IVAL(cli->inbuf,smb_vwv3+1);
@@ -931,6 +957,20 @@ BOOL cli_negprot(struct cli_state *cli)
 		if (IVAL(cli->inbuf,smb_vwv9+1) & 1)
 			cli->readbraw_supported = 
 				cli->writebraw_supported = True;      
+	} else if (cli->protocol >= PROTOCOL_LANMAN1) {
+		cli->sec_mode = SVAL(cli->inbuf,smb_vwv1);
+		cli->max_xmit = SVAL(cli->inbuf,smb_vwv2);
+		cli->sesskey = IVAL(cli->inbuf,smb_vwv6);
+		cli->serverzone = SVALS(cli->inbuf,smb_vwv10)*60;
+		/* this time is converted to GMT by make_unix_date */
+		cli->servertime = make_unix_date(cli->inbuf+smb_vwv8);
+		cli->readbraw_supported = ((SVAL(cli->inbuf,smb_vwv5) & 0x1) != 0);
+		cli->writebraw_supported = ((SVAL(cli->inbuf,smb_vwv5) & 0x2) != 0);
+		memcpy(cli->cryptkey,smb_buf(cli->inbuf),8);
+	} else {
+		/* the old core protocol */
+		cli->sec_mode = 0;
+		cli->serverzone = TimeDiff(time(NULL));
 	}
 
 	return True;
