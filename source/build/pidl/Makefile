@@ -1,5 +1,5 @@
 idl.pm: idl.yp
-	yapp idl.yp
+	yapp -s idl.yp
 
 clean:
 	rm -f idl.pm

@@ -5,6 +5,12 @@
 
 
 
+# the precedence actually doesn't matter at all for this grammer, but
+# by providing a precedence we reduce the number of conflicts
+# enormously
+%left   '-' '+' '&' '|' '*' '>' '.' '/' '(' ')' '[' ',' ';'
+
+
 ################
 # grammer
 %%
@@ -166,28 +172,25 @@ pointers:
 
 element_list1: 
     #empty
-    | base_element ';'               { [ $_[1] ] }
     | element_list1 base_element ';' { push(@{$_[1]}, $_[2]); $_[1] }
 ;
 
 element_list2: 
     #empty
-    | 'void'
-    | base_element                   { [ $_[1] ] }
+    | 'void' 
+    | base_element { [ $_[1] ] }
     | element_list2 ',' base_element { push(@{$_[1]}, $_[3]); $_[1] }
 ;
 
 array_len: 
     #empty 
     | '[' ']'            { "*" }
-    | '[' '*' ']'        { "*" }
     | '[' anytext ']'    { "$_[2]" }
 ;
 
 
 property_list: 
-    #empty 
-    | '[' properties ']' { $_[2] }
+    #empty
     | property_list '[' properties ']' { util::FlattenArray([$_[1],$_[3]]); }
 ;
 
