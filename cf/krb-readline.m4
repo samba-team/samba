@@ -33,10 +33,6 @@ else
 	LIB_readline='$(top_builddir)/lib/editline/libeditline.la'
 fi
 AM_CONDITIONAL(el_compat, test "$ac_foo" = yes)
-if test "$readline_libdir"; then
-	LIB_readline="-rpath $readline_libdir $LIB_readline"
-fi
-LIB_readline="$LIB_readline \$(LIB_tgetent)"
 AC_DEFINE(HAVE_READLINE, 1, 
 	[Define if you have a readline compatible library.])dnl
 
