@@ -972,7 +972,7 @@ struct tab cmdtab[] = {		/* In order defined in RFC 765 */
 	{ "SIZE", SIZE, OSTR, 1,	"<sp> path-name" },
 	{ "MDTM", MDTM, OSTR, 1,	"<sp> path-name" },
 
-	/* extensions from draft-ietf-cat-ftpsec-08 */
+	/* extensions from RFC2228 */
 	{ "AUTH", AUTH,	STR1, 1,	"<sp> auth-type" },
 	{ "ADAT", ADAT,	STR1, 1,	"<sp> auth-data" },
 	{ "PBSZ", PBSZ,	ARGS, 1,	"<sp> buffer-size" },
