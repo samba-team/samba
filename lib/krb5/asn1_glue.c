@@ -8,7 +8,7 @@ RCSID("$Id$");
 
 krb5_error_code
 krb5_principal2principalname (PrincipalName *p,
-			      krb5_principal from)
+			      const krb5_principal from)
 {
 #ifdef USE_ASN1_PRINCIPAL
     copy_PrincipalName(&from->name, p);
@@ -30,8 +30,8 @@ krb5_principal2principalname (PrincipalName *p,
 
 krb5_error_code
 principalname2krb5_principal (krb5_principal *principal,
-			      PrincipalName from,
-			      char *realm)
+			      const PrincipalName from,
+			      const Realm realm)
 {
     krb5_principal p = malloc(sizeof(*p));
 #ifdef USE_ASN1_PRINCIPAL
