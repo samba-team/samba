@@ -500,6 +500,28 @@ static void fill_printjob_info(connection_struct *conn, int snum, int uLevel,
 }
 
 /********************************************************************
+ Return a driver name given an snum.
+ Looks in a tdb first. Returns True if from tdb, False otherwise.
+ ********************************************************************/
+
+static BOOL get_driver_name(int snum, pstring drivername)
+{
+	NT_PRINTER_INFO_LEVEL *info = NULL;
+	BOOL in_tdb = False;
+
+	get_a_printer (&info, 2, lp_servicename(snum));
+	if (info != NULL) {
+		pstrcpy( drivername, info->info_2->drivername);
+		in_tdb = True;
+		free_a_printer(&info, 2);
+	} else {
+		pstrcpy( drivername, lp_printerdriver(snum));
+	}
+
+	return in_tdb;
+}
+
+/********************************************************************
  Respond to the DosPrintQInfo command with a level of 52
  This is used to get printer driver information for Win9x clients
  ********************************************************************/
@@ -514,10 +536,10 @@ static void fill_printq_info_52(connection_struct *conn, int snum, int uLevel,
 	char *p;
 	char **lines = NULL;
 	pstring gen_line;
-	NT_PRINTER_INFO_LEVEL *info = NULL;
 	BOOL in_tdb = False;
 	fstring location;
-	
+	pstring drivername;
+
 	/*
 	 * Check in the tdb *first* before checking the legacy
 	 * files. This allows an NT upload to take precedence over
@@ -528,21 +550,20 @@ static void fill_printq_info_52(connection_struct *conn, int snum, int uLevel,
 	 * 'print driver' parameter --jerry
 	 */
 
-	get_a_printer (&info, 2, lp_servicename(snum));
-	if ((info != NULL) && 
-	    ((ok = get_a_printer_driver_9x_compatible(gen_line, info->info_2->drivername)) == True))
+
+	if ((get_driver_name(snum,drivername)) && 
+	    ((ok = get_a_printer_driver_9x_compatible(gen_line, drivername)) == True))
 	{
 		in_tdb = True;
 		p = gen_line;
-		DEBUG(10,("9x compatable driver line for [%s]: [%s]\n", 
-			  info->info_2->drivername, gen_line));
+		DEBUG(10,("9x compatable driver line for [%s]: [%s]\n", drivername, gen_line));
 	} 
 	else 
 	{
 		/* didn't find driver in tdb */
 
-		DEBUG(10,("snum: %d\nlp_printerdriver: [%s]\nlp_driverfile: [%s]\n",
-			   snum, lp_printerdriver(snum), lp_driverfile(snum)));
+		DEBUG(10,("snum: %d\nprinterdriver: [%s]\nlp_driverfile: [%s]\n",
+			   snum, drivername, lp_driverfile(snum)));
 
 		lines = file_lines_load(lp_driverfile(snum),NULL, False);
 		if (!lines) 
@@ -558,8 +579,8 @@ static void fill_printq_info_52(connection_struct *conn, int snum, int uLevel,
 		{
 			p = lines[i];
 			if (next_token(&p,tok,":",sizeof(tok)) &&
-		    	   (strlen(lp_printerdriver(snum)) == strlen(tok)) &&
-		    	   (!strncmp(tok,lp_printerdriver(snum),strlen(lp_printerdriver(snum)))))
+		    	   (strlen(drivername) == strlen(tok)) &&
+		    	   (!strncmp(tok,drivername,strlen(drivername))))
 			{
 				ok = True;
 			}
@@ -605,14 +626,7 @@ static void fill_printq_info_52(connection_struct *conn, int snum, int uLevel,
 			goto err;
 	
 		PACKI(desc,"W",0x0400);               /* don't know */
-		if (in_tdb)
-		{
-			PACKS(desc,"z",info->info_2->drivername);    /* long printer name */
-		}
-		else
-		{
-			PACKS(desc,"z",lp_printerdriver(snum));    /* long printer name */
-		}
+		PACKS(desc,"z",drivername);    /* long printer name */
 		PACKS(desc,"z",driver);                    /* Driverfile Name */
 		PACKS(desc,"z",datafile);                  /* Datafile name */
 		PACKS(desc,"z",langmon);			 /* language monitor */
@@ -631,11 +645,7 @@ static void fill_printq_info_52(connection_struct *conn, int snum, int uLevel,
 		PACKS(desc,"z",helpfile);                  /* helpfile name */
 		PACKS(desc,"z",driver);                    /* driver name */
 
-		if (in_tdb)
-			DEBUG(3,("lp_printerdriver:%s:\n",info->info_2->drivername));
-		else
-			DEBUG(3,("lp_printerdriver:%s:\n",lp_printerdriver(snum)));
-			
+		DEBUG(3,("printerdriver:%s:\n",drivername));
 		DEBUG(3,("Driver:%s:\n",driver));
 		DEBUG(3,("Data File:%s:\n",datafile));
 		DEBUG(3,("Language Monitor:%s:\n",langmon));
@@ -670,7 +680,6 @@ static void fill_printq_info_52(connection_struct *conn, int snum, int uLevel,
 	desc->errcode=NERR_notsupported;
 
  done:
-	safe_free(info);
 	file_lines_free(lines);	
 }
 
@@ -719,6 +728,8 @@ static void fill_printq_info(connection_struct *conn, int snum, int uLevel,
 	}
 
 	if (uLevel == 3 || uLevel == 4) {
+		pstring drivername;
+
 		PACKI(desc,"W",5);		/* uPriority */
 		PACKI(desc,"W",0);		/* uStarttime */
 		PACKI(desc,"W",0);		/* uUntiltime */
@@ -735,7 +746,8 @@ static void fill_printq_info(connection_struct *conn, int snum, int uLevel,
 		}
 		PACKI(desc,(uLevel == 3 ? "W" : "N"),count);	/* cJobs */
 		PACKS(desc,"z",SERVICE(snum)); /* pszPrinters */
-		PACKS(desc,"z",lp_printerdriver(snum));		/* pszDriverName */
+		get_driver_name(snum,drivername);
+		PACKS(desc,"z",drivername);		/* pszDriverName */
 		PackDriverData(desc);	/* pDriverData */
 	}
 
@@ -759,7 +771,7 @@ static int get_printerdrivernumber(int snum)
 	char *p;
 	char **lines = NULL;
 	pstring gen_line;
-	NT_PRINTER_INFO_LEVEL *info = NULL;
+	pstring drivername;
 	
 	/*
 	 * Check in the tdb *first* before checking the legacy
@@ -771,19 +783,18 @@ static int get_printerdrivernumber(int snum)
 	 * 'print driver' parameter --jerry
 	 */
 	
-	get_a_printer (&info, 2, lp_servicename(snum));
-	if ((info != NULL) && 
-	    (ok = get_a_printer_driver_9x_compatible(gen_line, info->info_2->drivername) == True)) 
+	if ((get_driver_name(snum,drivername)) && 
+	    (ok = get_a_printer_driver_9x_compatible(gen_line, drivername) == True)) 
 	{
 		p = gen_line;
-		DEBUG(10,("9x compatable driver line for [%s]: [%s]\n", lp_printerdriver(snum), gen_line));
+		DEBUG(10,("9x compatable driver line for [%s]: [%s]\n", drivername, gen_line));
 	} 
 	else 
 	{
 		/* didn't find driver in tdb */
 	
-		DEBUG(10,("snum: %d\nlp_printerdriver: [%s]\nlp_driverfile: [%s]\n",
-			  snum, lp_printerdriver(snum), lp_driverfile(snum)));
+		DEBUG(10,("snum: %d\nprinterdriver: [%s]\nlp_driverfile: [%s]\n",
+			  snum, drivername, lp_driverfile(snum)));
 		
 		lines = file_lines_load(lp_driverfile(snum), NULL, False);
 		if (!lines) 
@@ -797,8 +808,8 @@ static int get_printerdrivernumber(int snum)
 		{
 			p = lines[i];
 			if (next_token(&p,tok,":",sizeof(tok)) &&
-			   (strlen(lp_printerdriver(snum)) == strlen(tok)) &&
-			   (!strncmp(tok,lp_printerdriver(snum),strlen(lp_printerdriver(snum))))) 
+			   (strlen(drivername) == strlen(tok)) &&
+			   (!strncmp(tok,drivername,strlen(drivername)))) 
 			{
 				ok = True;
 			}
@@ -826,7 +837,6 @@ static int get_printerdrivernumber(int snum)
 
  done:
 
-	safe_free(info);
 	file_lines_free(lines);
 
 	return result;
