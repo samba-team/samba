@@ -53,7 +53,7 @@
 
 #include "includes.h"
 
-#if 0
+#if 1
 #define M_DEBUG(level, x) DEBUG(level, x)
 #else
 #define M_DEBUG(level, x)
@@ -219,7 +219,7 @@ static BOOL is_mangled_component(const char *name, size_t len)
 	if (len > 8) {
 		if (name[8] != '.')
 			return False;
-		for (i=9; name[i]; i++) {
+		for (i=9; name[i] && i < len; i++) {
 			if (! FLAG_CHECK(name[i], FLAG_ASCII)) {
 				return False;
 			}
