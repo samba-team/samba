@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -118,10 +118,10 @@ store_principal_ent(krb5_storage *sp,
 	krb5_store_principal(sp, princ->principal);
     if (mask & KADM5_PRINC_EXPIRE_TIME)
 	krb5_store_int32(sp, princ->princ_expire_time);
-    if (mask & KADM5_LAST_PWD_CHANGE)
-	krb5_store_int32(sp, princ->last_pwd_change);
     if (mask & KADM5_PW_EXPIRATION)
 	krb5_store_int32(sp, princ->pw_expiration);
+    if (mask & KADM5_LAST_PWD_CHANGE)
+	krb5_store_int32(sp, princ->last_pwd_change);
     if (mask & KADM5_MAX_LIFE)
 	krb5_store_int32(sp, princ->max_life);
     if (mask & KADM5_MOD_NAME) {
