@@ -1,5 +1,7 @@
 Mon Apr 19 12:32:04 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
+	* configure.in: check for dlopen, and dlfcn.h
+
 	* kpasswd/kpasswdd.c: add support for dlopen:ing password quality
  	check library
 
