@@ -41,7 +41,7 @@ void start_smbd(void)
 
 	become_daemon();
 
-	execl(binfile, "smbd", "-D", NULL);
+	execl(binfile, binfile, "-D", NULL);
 
 	exit(0);
 }
@@ -62,7 +62,7 @@ void start_nmbd(void)
 	
 	become_daemon();
 
-	execl(binfile, "nmbd", "-D", NULL);
+	execl(binfile, binfile, "-D", NULL);
 
 	exit(0);
 }
