@@ -1111,7 +1111,7 @@ install-sbin: $(SPROGS) installdirs
 	done
 
 installscripts: installdirs
-	@$(SHELL) $(srcdir)/script/installscripts.sh $(INSTALLPERMS) $(BINDIR) $(patsubst %,$(srcdir)/%,$(SCRIPTS)
+	@$(SHELL) $(srcdir)/script/installscripts.sh $(INSTALLPERMS) $(BINDIR) $(patsubst %,$(srcdir)/%,$(SCRIPTS))
 
 installcp: installdirs
 	@$(SHELL) $(srcdir)/script/installcp.sh $(srcdir) $(LIBDIR) $(CODEPAGEDIR) $(BINDIR) $(CODEPAGELIST)
