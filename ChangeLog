@@ -1,3 +1,12 @@
+2002-01-07  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/get_in_tkt.c: use krb5_enctype consistently.  From Ben
+	Harris <bjh21@netbsd.org>
+	* lib/krb5/crypto.c: use krb5_enctype consistently.  From Ben
+	Harris <bjh21@netbsd.org>
+	* kdc/kerberos5.c: use krb5_enctype consistently.  From Ben Harris
+	<bjh21@netbsd.org>
+
 2001-12-20  Johan Danielsson  <joda@pdc.kth.se>
 
 	* lib/krb5/crypto.c: use our own des string-to-key function, since
