@@ -979,7 +979,7 @@ static BOOL test_SetPassword(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	   allows the password to be set to the same value twice in a
 	   row (match win2k3) */
 	printf("Testing a second ServerPasswordSet on machine account\n");
-	printf("Changing machine account password to '%s' (same as pervsious run)\n", password);
+	printf("Changing machine account password to '%s' (same as previous run)\n", password);
 
 	creds_client_authenticator(&creds, &r.in.credential);
 
