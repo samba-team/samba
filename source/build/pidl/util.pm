@@ -390,5 +390,15 @@ sub is_inline_array($)
 	return 0;
 }
 
+# return a "" quoted string, unless already quoted
+sub make_str($)
+{
+	my $str = shift;
+	if (substr($str, 0, 1) eq "\"") {
+		return $str;
+	}
+	return "\"" . $str . "\"";
+}
+
 1;
 

@@ -280,7 +280,8 @@ sub HeaderInterface($)
 
     if (defined $interface->{PROPERTIES}->{uuid}) {
 	    my $name = uc $interface->{NAME};
-	    $res .= "#define DCERPC_$name\_UUID \"$interface->{PROPERTIES}->{uuid}\"\n";
+	    $res .= "#define DCERPC_$name\_UUID " . 
+		util::make_str($interface->{PROPERTIES}->{uuid}) . "\n";
 
 		if(!defined $interface->{PROPERTIES}->{version}) { $interface->{PROPERTIES}->{version} = "0.0"; }
 	    $res .= "#define DCERPC_$name\_VERSION $interface->{PROPERTIES}->{version}\n";

@@ -662,7 +662,8 @@ sub ParseHeader($)
 
     if ($hdr->{PROPERTIES}{uuid}) {
 	my($name) = $hdr->{NAME};
-	$result .= "#define DCERPC_" . uc($name) . "_UUID \"$hdr->{PROPERTIES}->{uuid}\"\n";
+	$result .= "#define DCERPC_" . uc($name) . "_UUID " . 
+	    util::make_str($hdr->{PROPERTIES}->{uuid}) . "\n";
 	$result .= "const int DCERPC_" . uc($name) . "_VERSION = " . $hdr->{PROPERTIES}->{version} . ";\n";
 	$result .= "#define DCERPC_" . uc($name) . "_NAME \"" . $name . "\"\n";
 	$result .= "\n";
