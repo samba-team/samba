@@ -311,7 +311,7 @@ BOOL in_group(gid_t group, gid_t current_gid, int ngroups, const gid_t *groups)
 
 static const char *Atoic(const char *p, int *n, const char *c)
 {
-	if (!isdigit((const int)*p)) {
+	if (!isdigit((int)*p)) {
 		DEBUG(5, ("Atoic: malformed number\n"));
 		return NULL;
 	}
