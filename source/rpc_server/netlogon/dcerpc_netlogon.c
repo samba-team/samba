@@ -1045,12 +1045,49 @@ static WERROR netr_DSRADDRESSTOSITENAMESW(struct dcesrv_call_state *dce_call, TA
 
 
 /* 
-  netr_DSRGETDCNAMEEX2 
+  netr_DrsGetDCNameEx2
 */
-static WERROR netr_DSRGETDCNAMEEX2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct netr_DSRGETDCNAMEEX2 *r)
+static WERROR netr_DrsGetDCNameEx2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct netr_DrsGetDCNameEx2 *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	const char * const attrs[] = { "dnsDomain", "objectGUID", NULL };
+	void *sam_ctx;
+	struct ldb_message **res;
+	int ret;
+
+	ZERO_STRUCT(r->out);
+
+	sam_ctx = samdb_connect(mem_ctx);
+	if (sam_ctx == NULL) {
+		return WERR_DS_SERVICE_UNAVAILABLE;
+	}
+
+	ret = samdb_search(sam_ctx, mem_ctx, NULL, &res, attrs,
+				"(&(objectClass=domainDNS)(dnsDomain=%s))",
+				r->in.domain_name);
+	if (ret != 1) {
+		return WERR_NO_SUCH_DOMAIN;
+	}
+
+	r->out.info = talloc_p(mem_ctx, struct netr_DrsGetDCNameEx2Info);
+	if (!r->out.info) {
+		return WERR_NOMEM;
+	}
+
+	/* TODO: - return real IP address
+	 *       - check all r->in.* parameters (server_unc is ignored by w2k3!)
+	 */
+	r->out.info->dc_unc		= talloc_asprintf(mem_ctx, "\\\\%s.%s", lp_netbios_name(),lp_realm());
+	r->out.info->dc_address	= talloc_strdup(mem_ctx, "\\\\0.0.0.0");
+	r->out.info->dc_address_type	= 1;
+	r->out.info->domain_guid	= samdb_result_guid(res[0], "objectGUID");
+	r->out.info->domain_name	= samdb_result_string(res[0], "dnsDomain", NULL);
+	r->out.info->forest_name	= samdb_result_string(res[0], "dnsDomain", NULL);
+	r->out.info->dc_flags		= 0xE00001FD;
+	r->out.info->dc_site_name	= talloc_strdup(mem_ctx, "Default-First-Site-Name");
+	r->out.info->client_site_name	= talloc_strdup(mem_ctx, "Default-First-Site-Name");
+
+	return WERR_OK;
 }
 
 
