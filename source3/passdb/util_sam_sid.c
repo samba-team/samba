@@ -294,6 +294,8 @@ BOOL map_name_to_wellknown_sid(DOM_SID *sid, enum SID_NAME_USE *use, const char 
 	if (!sid_name_map_initialized)
 		init_sid_name_map();
 
+	DEBUG(10,("map_name_to_wellknown_sid: looking up %s\n", name));
+
 	for (i=0; sid_name_map[i].sid != NULL; i++) {
 		const known_sid_users *users = sid_name_map[i].known_users;
 
