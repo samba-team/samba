@@ -745,14 +745,9 @@ uninstallreg:
 
 # Swig extensions
 
+swig: scripting/swig/_tdb.so scripting/swig/_dcerpc.so
+
 PYTHON_TDB_OBJ = lib/tdb/common/tdb.o lib/tdb/common/spinlock.o
-
-swig: scripting/swig/_tdb.so
-
-swig_clean:
-	-rm -f scripting/swig/_tdb.so scripting/swig/tdb.pyc \\
-		scripting/swig/tdb.py scripting/swig/tdb_wrap.c \\
-		scripting/swig/tdb_wrap.o
 
 scripting/swig/tdb.py: scripting/swig/tdb.i
 	swig -python scripting/swig/tdb.i
@@ -760,6 +755,37 @@ scripting/swig/tdb.py: scripting/swig/tdb.i
 scripting/swig/_tdb.so: scripting/swig/tdb.py scripting/swig/tdb_wrap.o \$(PYTHON_TDB_OBJ)
 	\$(SHLD) \$(SHLD_FLAGS) -o scripting/swig/_tdb.so scripting/swig/tdb_wrap.o \\
 		\$(PYTHON_TDB_OBJ)
+
+PYTHON_DCERPC_OBJ = \$(SUBSYSTEM_LIBRPC_RAW_OBJS) \\
+	\$(SUBSYSTEM_LIBNDR_RAW_OBJS) \\
+	\$(SUBSYSTEM_LIBBASIC_OBJS) \\
+	\$(SUBSYSTEM_CONFIG_OBJS) \\
+	\$(SUBSYSTEM_LIBTDB_OBJS) \\
+	\$(SUBSYSTEM_SCHANNELDB_OBJS) \\
+	\$(SUBSYSTEM_GENSEC_OBJS) \\
+	\$(SUBSYSTEM_LIBCLI_UTILS_OBJS) \\
+	\$(SUBSYSTEM_LIBCLI_RAW_OBJS) \\
+	\$(SUBSYSTEM_LIBCLI_AUTH_OBJS) \\
+	\$(SUBSYSTEM_LIBCLI_NMB_OBJS) \\
+	\$(SUBSYSTEM_AUTH_OBJS) \\
+	\$(SUBSYSTEM_SAMDB_OBJS) \\
+	\$(SUBSYSTEM_LIBLDB_OBJS) \\
+	\$(SUBSYSTEM_CHARSET_OBJS) \\
+	\$(SUBSYSTEM_LIBSMB_OBJS) \\
+	\$(SUBSYSTEM_DCERPC_COMMON_OBJS)
+
+PYTHON_DCERPC_LIBS = -lldap
+
+scripting/swig/dcerpc.py: scripting/swig/dcerpc.i scripting/swig/samr.i scripting/swig/samba.i
+	swig -python scripting/swig/dcerpc.i
+
+scripting/swig/_dcerpc.so: scripting/swig/dcerpc.py scripting/swig/dcerpc_wrap.o \$(PYTHON_DCERPC_OBJ)
+	\$(SHLD) \$(SHLD_FLAGS) -o scripting/swig/_dcerpc.so scripting/swig/dcerpc_wrap.o \$(PYTHON_DCERPC_OBJ) \$(PYTHON_DCERPC_LIBS)
+
+swig_clean:
+	-rm -f scripting/swig/_tdb.so scripting/swig/tdb.pyc \\
+		scripting/swig/tdb.py scripting/swig/tdb_wrap.c \\
+		scripting/swig/tdb_wrap.o
 
 everything: all
 

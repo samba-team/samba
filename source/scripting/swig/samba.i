@@ -31,3 +31,9 @@
 	}
 	$1 = (uint32_t)PyInt_AsLong($input);
 }
+
+/* For the moment treat NTSTATUS as an integer */
+
+%typemap(out) NTSTATUS {
+        $result = PyInt_FromLong(NT_STATUS_V($1));
+}
