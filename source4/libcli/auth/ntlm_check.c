@@ -1,10 +1,9 @@
 /* 
    Unix SMB/CIFS implementation.
    Password and authentication handling
-   Copyright (C) Andrew Tridgell              1992-2000
-   Copyright (C) Luke Kenneth Casson Leighton 1996-2000
-   Copyright (C) Andrew Bartlett              2001-2003
-   Copyright (C) Gerald Carter                2003
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2001-2004
+   Copyright (C) Gerald Carter                             2003
+   Copyright (C) Luke Kenneth Casson Leighton         1996-2000
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
