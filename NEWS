@@ -1,3 +1,11 @@
+Changes in release 0.2m:
+
+ * handle glibc's getaddrinfo() that returns several ai_canonname
+
+ * new endian test
+
+ * man pages fixes
+
 Changes in release 0.2l:
 
  * bug fixes
