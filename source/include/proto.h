@@ -775,6 +775,7 @@ void sync_browse_lists(struct subnet_record *d, struct work_record *work,
 /*The following definitions come from  ntclient.c  */
 
 void cmd_srv_query_info(struct client_info *info);
+void cmd_srv_query_conn(struct client_info *info);
 void cmd_srv_query_sess(struct client_info *info);
 void cmd_srv_query_files(struct client_info *info);
 void cmd_lsa_query_info(struct client_info *info);
@@ -1144,12 +1145,19 @@ BOOL do_samr_close(struct cli_state *cli, int t_idx, uint16 fnum, POLICY_HND *hn
 
 BOOL do_srv_session_open(struct cli_state *cli, int t_idx, struct client_info *info);
 void do_srv_session_close(struct cli_state *cli, int t_idx, struct client_info *info);
+BOOL do_srv_net_srv_conn_enum(struct cli_state *cli, int t_idx, uint16 fnum,
+			char *server_name, char *qual_name,
+			uint32 switch_value, SRV_CONN_INFO_CTR *ctr,
+			uint32 preferred_len,
+			ENUM_HND *hnd);
 BOOL do_srv_net_srv_sess_enum(struct cli_state *cli, int t_idx, uint16 fnum,
-			char *server_name, uint32 switch_value, SRV_SESS_INFO_CTR *ctr,
+			char *server_name, char *qual_name,
+			uint32 switch_value, SRV_SESS_INFO_CTR *ctr,
 			uint32 preferred_len,
 			ENUM_HND *hnd);
 BOOL do_srv_net_srv_file_enum(struct cli_state *cli, int t_idx, uint16 fnum,
-			char *server_name, uint32 switch_value, SRV_FILE_INFO_CTR *ctr,
+			char *server_name, char *qual_name,
+			uint32 switch_value, SRV_FILE_INFO_CTR *ctr,
 			uint32 preferred_len,
 			ENUM_HND *hnd);
 BOOL do_srv_net_srv_get_info(struct cli_state *cli, int t_idx, uint16 fnum,
@@ -1298,10 +1306,16 @@ void samr_io_r_enum_dom_aliases(char *desc, BOOL io, SAMR_R_ENUM_DOM_ALIASES *r_
 void make_samr_q_query_dispinfo(SAMR_Q_QUERY_DISPINFO *q_e, POLICY_HND *pol,
 				uint16 switch_level, uint32 start_idx, uint32 size);
 void samr_io_q_query_dispinfo(char *desc, BOOL io, SAMR_Q_QUERY_DISPINFO *q_e, struct mem_buffer *buf, int *q, int depth);
-void make_samr_r_query_dispinfo(SAMR_R_QUERY_DISPINFO *r_u,
+void make_sam_info_2(SAM_INFO_2 *sam, uint32 acb_mask,
 		uint32 start_idx, uint32 num_sam_entries,
-		struct smb_passwd pass[MAX_SAM_ENTRIES],
-		uint32 status);
+		struct smb_passwd pass[MAX_SAM_ENTRIES]);
+void sam_io_sam_info_2(char *desc, BOOL io, SAM_INFO_2 *sam, struct mem_buffer *buf, int *q, int depth);
+void make_sam_info_1(SAM_INFO_1 *sam, uint32 acb_mask,
+		uint32 start_idx, uint32 num_sam_entries,
+		struct smb_passwd pass[MAX_SAM_ENTRIES]);
+void sam_io_sam_info_1(char *desc, BOOL io, SAM_INFO_1 *sam, struct mem_buffer *buf, int *q, int depth);
+void make_samr_r_query_dispinfo(SAMR_R_QUERY_DISPINFO *r_u,
+		uint16 switch_level, SAM_INFO_CTR *ctr, uint32 status);
 void samr_io_r_query_dispinfo(char *desc, BOOL io, SAMR_R_QUERY_DISPINFO *r_u, struct mem_buffer *buf, int *q, int depth);
 void make_samr_q_enum_dom_groups(SAMR_Q_ENUM_DOM_GROUPS *q_e, POLICY_HND *pol,
 				uint16 switch_level, uint32 start_idx, uint32 size);
@@ -1427,11 +1441,18 @@ void make_dom_rid4(DOM_RID4 *rid4, uint16 unknown, uint16 attr, uint32 rid);
 void smb_io_dom_rid4(char *desc, BOOL io, DOM_RID4 *rid4, struct mem_buffer *buf, int *q, int depth);
 void make_sam_str1(SAM_STR1 *sam, char *sam_acct, char *sam_name, char *sam_desc);
 void smb_io_sam_str1(char *desc, BOOL io, SAM_STR1 *sam, uint32 acct_buf, uint32 name_buf, uint32 desc_buf, struct mem_buffer *buf, int *q, int depth);
-void make_sam_entry1(SAM_ENTRY1 *sam, uint32 user_idx, struct smb_passwd *pass);
+void make_sam_entry1(SAM_ENTRY1 *sam, uint32 user_idx, struct smb_passwd *pass,
+				char *sam_full, char *sam_desc);
 void smb_io_sam_entry1(char *desc, BOOL io, SAM_ENTRY1 *sam, struct mem_buffer *buf, int *q, int depth);
+void make_sam_str2(SAM_STR2 *sam, char *sam_acct, char *sam_desc);
+void smb_io_sam_str2(char *desc, BOOL io, SAM_STR2 *sam, uint32 acct_buf, uint32 desc_buf, struct mem_buffer *buf, int *q, int depth);
+void make_sam_entry2(SAM_ENTRY2 *sam, uint32 user_idx, struct smb_passwd *pass,
+				char *sam_desc);
+void smb_io_sam_entry2(char *desc, BOOL io, SAM_ENTRY2 *sam, struct mem_buffer *buf, int *q, int depth);
 void make_sam_str3(SAM_STR3 *sam, char *grp_acct, char *grp_desc);
 void smb_io_sam_str3(char *desc, BOOL io, SAM_STR3 *sam, uint32 acct_buf, uint32 desc_buf, struct mem_buffer *buf, int *q, int depth);
-void make_sam_entry3(SAM_ENTRY3 *sam, uint32 grp_idx, struct smb_passwd *pass);
+void make_sam_entry3(SAM_ENTRY3 *sam, uint32 grp_idx, struct smb_passwd *pass,
+				char *grp_desc);
 void smb_io_sam_entry3(char *desc, BOOL io, SAM_ENTRY3 *sam, struct mem_buffer *buf, int *q, int depth);
 void make_sam_entry(SAM_ENTRY *sam, char *sam_name, uint32 rid);
 void smb_io_sam_entry(char *desc, BOOL io, SAM_ENTRY *sam, struct mem_buffer *buf, int *q, int depth);
@@ -1535,11 +1556,31 @@ void srv_io_sess_info1(char *desc, BOOL io, SESS_INFO_1 *ss1, struct mem_buffer 
 void srv_io_srv_sess_info_1(char *desc, BOOL io, SRV_SESS_INFO_1 *ss1, struct mem_buffer *buf, int *q,  int depth);
 void srv_io_srv_sess_ctr(char *desc, BOOL io, SRV_SESS_INFO_CTR *ctr, struct mem_buffer *buf, int *q,  int depth);
 void make_srv_q_net_sess_enum(SRV_Q_NET_SESS_ENUM *q_n, 
-				char *srv_name, uint32 sess_level, SRV_SESS_INFO_CTR *ctr,
+				char *srv_name, char *qual_name,
+				uint32 sess_level, SRV_SESS_INFO_CTR *ctr,
 				uint32 preferred_len,
 				ENUM_HND *hnd);
 void srv_io_q_net_sess_enum(char *desc, BOOL io, SRV_Q_NET_SESS_ENUM *q_n, struct mem_buffer *buf, int *q,  int depth);
 void srv_io_r_net_sess_enum(char *desc, BOOL io, SRV_R_NET_SESS_ENUM *r_n, struct mem_buffer *buf, int *q,  int depth);
+void make_srv_conn_info0(CONN_INFO_0 *ss0, uint32 id);
+void srv_io_conn_info0(char *desc, BOOL io, CONN_INFO_0 *ss0, struct mem_buffer *buf, int *q,  int depth);
+void srv_io_srv_conn_info_0(char *desc, BOOL io, SRV_CONN_INFO_0 *ss0, struct mem_buffer *buf, int *q,  int depth);
+void make_srv_conn_info1_str(CONN_INFO_1_STR *ss1, char *usr_name, char *net_name);
+void srv_io_conn_info1_str(char *desc, BOOL io, CONN_INFO_1_STR *ss1, struct mem_buffer *buf, int *q,  int depth);
+void make_srv_conn_info1(CONN_INFO_1 *ss1, 
+				uint32 id, uint32 type,
+				uint32 num_opens, uint32 num_users, uint32 open_time,
+				char *usr_name, char *net_name);
+void srv_io_conn_info1(char *desc, BOOL io, CONN_INFO_1 *ss1, struct mem_buffer *buf, int *q,  int depth);
+void srv_io_srv_conn_info_1(char *desc, BOOL io, SRV_CONN_INFO_1 *ss1, struct mem_buffer *buf, int *q,  int depth);
+void srv_io_srv_conn_ctr(char *desc, BOOL io, SRV_CONN_INFO_CTR *ctr, struct mem_buffer *buf, int *q,  int depth);
+void make_srv_q_net_conn_enum(SRV_Q_NET_CONN_ENUM *q_n, 
+				char *srv_name, char *qual_name,
+				uint32 conn_level, SRV_CONN_INFO_CTR *ctr,
+				uint32 preferred_len,
+				ENUM_HND *hnd);
+void srv_io_q_net_conn_enum(char *desc, BOOL io, SRV_Q_NET_CONN_ENUM *q_n, struct mem_buffer *buf, int *q,  int depth);
+void srv_io_r_net_conn_enum(char *desc, BOOL io, SRV_R_NET_CONN_ENUM *r_n, struct mem_buffer *buf, int *q,  int depth);
 void make_srv_file_info3_str(FILE_INFO_3_STR *fi3, char *user_name, char *path_name);
 void srv_io_file_info3_str(char *desc, BOOL io, FILE_INFO_3_STR *sh1, struct mem_buffer *buf, int *q,  int depth);
 void make_srv_file_info3(FILE_INFO_3 *fl3,
@@ -1549,7 +1590,8 @@ void srv_io_file_info3(char *desc, BOOL io, FILE_INFO_3 *fl3, struct mem_buffer 
 void srv_io_srv_file_info_3(char *desc, BOOL io, SRV_FILE_INFO_3 *fl3, struct mem_buffer *buf, int *q,  int depth);
 void srv_io_srv_file_ctr(char *desc, BOOL io, SRV_FILE_INFO_CTR *ctr, struct mem_buffer *buf, int *q,  int depth);
 void make_srv_q_net_file_enum(SRV_Q_NET_FILE_ENUM *q_n, 
-				char *srv_name, uint32 file_level, SRV_FILE_INFO_CTR *ctr,
+				char *srv_name, char *qual_name,
+				uint32 file_level, SRV_FILE_INFO_CTR *ctr,
 				uint32 preferred_len,
 				ENUM_HND *hnd);
 void srv_io_q_net_file_enum(char *desc, BOOL io, SRV_Q_NET_FILE_ENUM *q_n, struct mem_buffer *buf, int *q,  int depth);
@@ -1897,7 +1939,7 @@ char *align4(char *q, char *base);
 char *align2(char *q, char *base);
 char *align_offset(char *q, char *base, int align_offset_len);
 void print_asc(int level, unsigned char *buf,int len);
-void dump_data(int level,char *buf1, size_t len);
+void dump_data(int level, unsigned char *buf, size_t len);
 char *tab_depth(int depth);
 int writefile(BOOL translation, int f, char *b, int n);
 int readfile(BOOL translation, char *b, int size, int n, FILE *f);

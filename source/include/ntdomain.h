@@ -147,11 +147,12 @@ SamrTestPrivateFunctionsUser
 #define NET_TRUST_DOM_LIST     0x13
 
 /* srvsvc pipe */
-#define SRV_NET_SRV_GET_INFO 0x15
-#define SRV_NET_SRV_SET_INFO 0x16
-#define SRV_NETSHAREENUM     0x0f
+#define SRV_NETCONNENUM      0x08
 #define SRV_NETFILEENUM      0x09
 #define SRV_NETSESSENUM      0x0c
+#define SRV_NETSHAREENUM     0x0f
+#define SRV_NET_SRV_GET_INFO 0x15
+#define SRV_NET_SRV_SET_INFO 0x16
 
 /* wkssvc pipe */
 #define WKS_UNKNOWN_0    0x00
@@ -492,7 +493,7 @@ typedef struct sam_user_info_15
 	uint32 unknown_1;
 
 	uint32 ptr_unknown6;         /* unknown pointer 3 */
-	char unknown_2[32];    /* user passwords? */
+	uint8 unknown_2[32];    /* user passwords? */
 
 	uint32 user_rid;      /* User ID */
 	uint32 group_rid;     /* Group ID */
@@ -508,7 +509,7 @@ typedef struct sam_user_info_15
 
 	uint32 unknown_5;     /* 0x0002 0000 */
 
-	char padding1[8];
+	uint8 padding1[8];
 
 	UNISTR2 uni_user_name;    /* username unicode string */
 	UNISTR2 uni_full_name;    /* user's full name unicode string */
@@ -518,7 +519,7 @@ typedef struct sam_user_info_15
 	UNISTR2 uni_logon_script; /* logon script unicode string */
 	UNISTR2 uni_description;  /* user description unicode string */
 
-	char padding2[32];
+	uint8 padding2[32];
 	uint32 padding3;
 
 	uint32 unknown_6; /* 0x0000 04ec */
@@ -1254,8 +1255,8 @@ typedef struct q_net_sess_enum_info
 	uint32 ptr_srv_name;         /* pointer (to server name?) */
 	UNISTR2 uni_srv_name;        /* server name */
 
-	uint32 padding0;
-	uint32 padding1;
+	uint32 ptr_qual_name;         /* pointer (to qualifier name) */
+	UNISTR2 uni_qual_name;        /* qualifier name "\\qualifier" */
 
 	uint32 sess_level;          /* session level */
 
@@ -1278,6 +1279,112 @@ typedef struct r_net_sess_enum_info
 	uint32 status;               /* return status */
 
 } SRV_R_NET_SESS_ENUM;
+
+/* CONN_INFO_0 (pointers to level 0 connection info strings) */
+typedef struct ptr_conn_info0
+{
+	uint32 id; /* connection id. */
+
+} CONN_INFO_0;
+
+/* oops - this is going to take up a *massive* amount of stack. */
+/* the UNISTR2s already have 1024 uint16 chars in them... */
+#define MAX_CONN_ENTRIES 32
+
+/* SRV_CONN_INFO_0 */
+typedef struct srv_conn_info_0_info
+{
+	uint32 num_entries_read;                     /* EntriesRead */
+	uint32 ptr_conn_info;                       /* Buffer */
+	uint32 num_entries_read2;                    /* EntriesRead */
+
+	CONN_INFO_0     info_0    [MAX_CONN_ENTRIES]; /* connection entry pointers */
+
+	uint32 total_entries;                    /* total number of entries */
+
+} SRV_CONN_INFO_0;
+
+/* CONN_INFO_1 (pointers to level 1 connection info strings) */
+typedef struct ptr_conn_info1
+{
+	uint32 id;   /* connection id */
+	uint32 type; /* 0x3 */
+	uint32 num_opens;
+	uint32 num_users;
+	uint32 open_time;
+
+	uint32 ptr_usr_name; /* pointer to user name. */
+	uint32 ptr_net_name; /* pointer to network name (e.g IPC$). */
+
+} CONN_INFO_1;
+
+/* CONN_INFO_1_STR (level 1 connection info strings) */
+typedef struct str_conn_info1
+{
+	UNISTR2 uni_usr_name; /* unicode string of user */
+	UNISTR2 uni_net_name; /* unicode string of name */
+
+} CONN_INFO_1_STR;
+
+/* SRV_CONN_INFO_1 */
+typedef struct srv_conn_info_1_info
+{
+	uint32 num_entries_read;                     /* EntriesRead */
+	uint32 ptr_conn_info;                       /* Buffer */
+	uint32 num_entries_read2;                    /* EntriesRead */
+
+	CONN_INFO_1     info_1    [MAX_CONN_ENTRIES]; /* connection entry pointers */
+	CONN_INFO_1_STR info_1_str[MAX_CONN_ENTRIES]; /* connection entry strings */
+
+	uint32 total_entries;                    /* total number of entries */
+
+} SRV_CONN_INFO_1;
+
+/* SRV_CONN_INFO_CTR */
+typedef struct srv_conn_info_ctr_info
+{
+	uint32 switch_value;         /* switch value */
+	uint32 ptr_conn_ctr;       /* pointer to conn info union */
+	union
+    {
+		SRV_CONN_INFO_0 info0; /* connection info level 0 */
+		SRV_CONN_INFO_1 info1; /* connection info level 1 */
+
+    } conn;
+
+} SRV_CONN_INFO_CTR;
+
+
+/* SRV_Q_NET_CONN_ENUM */
+typedef struct q_net_conn_enum_info
+{
+	uint32 ptr_srv_name;         /* pointer (to server name) */
+	UNISTR2 uni_srv_name;        /* server name "\\server" */
+
+	uint32 ptr_qual_name;         /* pointer (to qualifier name) */
+	UNISTR2 uni_qual_name;        /* qualifier name "\\qualifier" */
+
+	uint32 conn_level;          /* connection level */
+
+	SRV_CONN_INFO_CTR *ctr;
+
+	uint32 preferred_len;        /* preferred maximum length (0xffff ffff) */
+	ENUM_HND enum_hnd;
+
+} SRV_Q_NET_CONN_ENUM;
+
+/* SRV_R_NET_CONN_ENUM */
+typedef struct r_net_conn_enum_info
+{
+	uint32 conn_level;          /* share level */
+
+	SRV_CONN_INFO_CTR *ctr;
+
+	ENUM_HND enum_hnd;
+
+	uint32 status;               /* return status */
+
+} SRV_R_NET_CONN_ENUM;
 
 /* oops - this is going to take up a *massive* amount of stack. */
 /* the UNISTR2s already have 1024 uint16 chars in them... */
@@ -1415,8 +1522,8 @@ typedef struct q_net_file_enum_info
 	uint32 ptr_srv_name;         /* pointer (to server name?) */
 	UNISTR2 uni_srv_name;        /* server name */
 
-	uint32 padding0;
-	uint32 padding1;
+	uint32 ptr_qual_name;         /* pointer (to qualifier name) */
+	UNISTR2 uni_qual_name;        /* qualifier name "\\qualifier" */
 
 	uint32 file_level;          /* file level */
 
@@ -1801,20 +1908,70 @@ typedef struct samr_str_entry_info1
 
 } SAM_STR1;
 
-/* SAMR_R_QUERY_DISPINFO - SAM rids, names and descriptions */
-typedef struct r_samr_query_dispinfo_info
+typedef struct sam_entry_info_1
 {
-	uint32 unknown_0;        /* 0x0000 0492 or 0x0000 00be */
-	uint32 unknown_1;        /* 0x0000 049a or 0x0000 00be */
-	uint32 switch_level;     /* 0x0000 0001 or 0x0000 0002 */
-
 	uint32 num_entries;
 	uint32 ptr_entries;
-
 	uint32 num_entries2;
 
 	SAM_ENTRY1 sam[MAX_SAM_ENTRIES];
 	SAM_STR1   str[MAX_SAM_ENTRIES];
+
+
+} SAM_INFO_1;
+
+typedef struct samr_entry_info2
+{
+	uint32 user_idx;
+
+	uint32 rid_user;
+	uint16 acb_info;
+	uint16 pad;
+
+	UNIHDR hdr_srv_name;
+	UNIHDR hdr_srv_desc;
+
+} SAM_ENTRY2;
+
+typedef struct samr_str_entry_info2
+{
+	UNISTR2 uni_srv_name;
+	UNISTR2 uni_srv_desc;
+
+} SAM_STR2;
+
+typedef struct sam_entry_info_2
+{
+	uint32 num_entries;
+	uint32 ptr_entries;
+	uint32 num_entries2;
+
+	SAM_ENTRY2 sam[MAX_SAM_ENTRIES];
+	SAM_STR2   str[MAX_SAM_ENTRIES];
+
+} SAM_INFO_2;
+
+typedef struct sam_info_ctr_info
+{
+	union
+	{
+		SAM_INFO_1 *info1; /* server info */
+		SAM_INFO_2 *info2; /* user info */
+		void       *info; /* allows assignment without typecasting, */
+
+	} sam;
+
+} SAM_INFO_CTR;
+
+/* SAMR_R_QUERY_DISPINFO - SAM rids, names and descriptions */
+typedef struct r_samr_query_dispinfo_info
+{
+	uint32 unknown_0;        /* container length? 0x0000 0492 or 0x0000 00be */
+	uint32 unknown_1;        /* container length? 0x0000 049a or 0x0000 00be */
+	uint16 switch_level;     /* 0x0001 or 0x0002 */
+	/*uint8 pad[2] */
+
+	SAM_INFO_CTR *ctr;
 
 	uint32 status;
 

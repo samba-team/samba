@@ -85,6 +85,7 @@ struct
   {"nltest",     cmd_nltest,           "<server> Net Logon Test"},
   {"srvinfo",    cmd_srv_query_info,   "DCE/RPC - Server Query Info"},
   {"srvsessions",cmd_srv_query_sess,   "DCE/RPC - List sessions on a server"},
+  {"srvconnections",cmd_srv_query_conn, "DCE/RPC - List connections on a server"},
   {"srvfiles",   cmd_srv_query_files,  "DCE/RPC - List files on a server"},
   {"lsaquery",   cmd_lsa_query_info,   "Query Info Policy (domain member or server)"},
   {"samusers",   cmd_sam_query_users,  "SAM User Database Query"},

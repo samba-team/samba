@@ -41,8 +41,6 @@ extern FILE* out_hnd;
 
 /****************************************************************************
 server get info query
-
-use the anon IPC$ for this one
 ****************************************************************************/
 void cmd_srv_query_info(struct client_info *info)
 {
@@ -92,6 +90,68 @@ void cmd_srv_query_info(struct client_info *info)
 }
 
 /****************************************************************************
+server enum connections
+****************************************************************************/
+void cmd_srv_query_conn(struct client_info *info)
+{
+	fstring dest_srv;
+	fstring qual_srv;
+	fstring tmp;
+	SRV_CONN_INFO_CTR ctr;
+	ENUM_HND hnd;
+	uint32 info_level = 0;
+
+	BOOL res = True;
+
+	bzero(&ctr, sizeof(ctr));
+
+	strcpy(qual_srv, "\\\\");
+	strcat(qual_srv, info->myhostname);
+	strupper(qual_srv);
+
+	strcpy(dest_srv, "\\\\");
+	strcat(dest_srv, info->dest_host);
+	strupper(dest_srv);
+
+	if (next_token(NULL, tmp, NULL))
+	{
+		info_level = strtoul(tmp, (char**)NULL, 10);
+	}
+
+	DEBUG(4,("cmd_srv_query_conn: server:%s info level: %D\n",
+				dest_srv, info_level));
+
+	DEBUG(5, ("cmd_srv_query_conn: ipc_cli->fd:%d\n", ipc_cli->fd));
+
+	/* open srvsvc session. */
+	res = res ? do_srv_session_open(ipc_cli, ipc_tidx, info) : False;
+
+	hnd.ptr_hnd = 1;
+	hnd.handle = 0;
+
+	/* enumerate files on server */
+	res = res ? do_srv_net_srv_conn_enum(ipc_cli, ipc_tidx, info->dom.srvsvc_fnum,
+				dest_srv, qual_srv,
+	            info_level, &ctr, 0x1000, &hnd) : False;
+
+	/* close the session */
+	do_srv_session_close(ipc_cli, ipc_tidx, info);
+
+	if (res)
+	{
+		DEBUG(5,("cmd_srv_query_conn: query succeeded\n"));
+
+/*
+		display_srv_info_ctr(out_hnd, &ctr);
+*/
+	}
+	else
+	{
+		DEBUG(5,("cmd_srv_query_conn: query failed\n"));
+	}
+}
+
+/****************************************************************************
 server enum sessions
 ****************************************************************************/
 void cmd_srv_query_sess(struct client_info *info)
@@ -115,12 +175,12 @@ void cmd_srv_query_sess(struct client_info *info)
 		info_level = strtoul(tmp, (char**)NULL, 10);
 	}
 
-	DEBUG(4,("cmd_srv_query_files: server:%s info level: %D\n",
+	DEBUG(4,("cmd_srv_query_sess: server:%s info level: %D\n",
 				dest_srv, info_level));
 
-	DEBUG(5, ("cmd_srv_query_files: ipc_cli->fd:%d\n", ipc_cli->fd));
+	DEBUG(5, ("cmd_srv_query_sess: ipc_cli->fd:%d\n", ipc_cli->fd));
 
-	/* open LSARPC session. */
+	/* open srvsvc session. */
 	res = res ? do_srv_session_open(ipc_cli, ipc_tidx, info) : False;
 
 	hnd.ptr_hnd = 1;
@@ -128,14 +188,14 @@ void cmd_srv_query_sess(struct client_info *info)
 
 	/* enumerate files on server */
 	res = res ? do_srv_net_srv_sess_enum(ipc_cli, ipc_tidx, info->dom.srvsvc_fnum,
-				dest_srv, info_level, &ctr, 0x1000, &hnd) : False;
+				dest_srv, NULL, info_level, &ctr, 0x1000, &hnd) : False;
 
 	/* close the session */
 	do_srv_session_close(ipc_cli, ipc_tidx, info);
 
 	if (res)
 	{
-		DEBUG(5,("cmd_srv_query_files: query succeeded\n"));
+		DEBUG(5,("cmd_srv_query_sess: query succeeded\n"));
 
 /*
 		display_srv_info_ctr(out_hnd, &ctr);
@@ -143,7 +203,7 @@ void cmd_srv_query_sess(struct client_info *info)
 	}
 	else
 	{
-		DEBUG(5,("cmd_srv_query_files: query failed\n"));
+		DEBUG(5,("cmd_srv_query_sess: query failed\n"));
 	}
 }
 
@@ -176,7 +236,7 @@ void cmd_srv_query_files(struct client_info *info)
 
 	DEBUG(5, ("cmd_srv_query_files: ipc_cli->fd:%d\n", ipc_cli->fd));
 
-	/* open LSARPC session. */
+	/* open srvsvc session. */
 	res = res ? do_srv_session_open(ipc_cli, ipc_tidx, info) : False;
 
 	hnd.ptr_hnd = 1;
@@ -184,7 +244,7 @@ void cmd_srv_query_files(struct client_info *info)
 
 	/* enumerate files on server */
 	res = res ? do_srv_net_srv_file_enum(ipc_cli, ipc_tidx, info->dom.srvsvc_fnum,
-				dest_srv, info_level, &ctr, 0x1000, &hnd) : False;
+				dest_srv, NULL, info_level, &ctr, 0x1000, &hnd) : False;
 
 	/* close the session */
 	do_srv_session_close(ipc_cli, ipc_tidx, info);
@@ -205,8 +265,6 @@ void cmd_srv_query_files(struct client_info *info)
 
 /****************************************************************************
 nt lsa query
-
-use the anon IPC$ for this one
 ****************************************************************************/
 void cmd_lsa_query_info(struct client_info *info)
 {
@@ -286,8 +344,6 @@ void cmd_lsa_query_info(struct client_info *info)
 
 /****************************************************************************
 experimental SAM user query.
-
-use the nt IPC$ connection for this one.
 ****************************************************************************/
 void cmd_sam_query_users(struct client_info *info)
 {
@@ -451,8 +507,6 @@ void cmd_sam_query_users(struct client_info *info)
 
 /****************************************************************************
 experimental nt login.
-
-use the anon IPC$ for this one
 ****************************************************************************/
 void cmd_nt_login_test(struct client_info *info)
 {
@@ -529,8 +583,6 @@ void cmd_nt_login_test(struct client_info *info)
 
 /****************************************************************************
 experimental net login test.
-
-use the nt IPC$ connection for this one.
 ****************************************************************************/
 void cmd_nltest(struct client_info *info)
 {
