@@ -343,6 +343,7 @@ enum winbindd_result winbindd_getgrnam_from_gid(struct winbindd_cli_state
 	/* Group membership lives at start of extra data */
 
 	state->response.data.gr.gr_mem_ofs = 0;
+
 	state->response.length += gr_mem_len;
 	state->response.extra_data = gr_mem;
 
@@ -495,6 +496,8 @@ static BOOL get_sam_group_entries(struct getent_state *ent)
 			memcpy(&name_list[ent->num_sam_entries],
 			       sam_grp_entries, 
 			       num_entries * sizeof(struct acct_info));
+
+			safe_free(sam_grp_entries);
 		}
 
 		ent->num_sam_entries += num_entries;
@@ -647,6 +650,8 @@ enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state)
 
 			memcpy(&gr_mem_list[gr_mem_list_len], gr_mem,
 			       gr_mem_len);
+
+			safe_free(gr_mem);
 
 			group_list[group_list_ndx].gr_mem_ofs = 
 				gr_mem_list_len;
