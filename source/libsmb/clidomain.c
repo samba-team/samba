@@ -530,7 +530,7 @@ BOOL get_any_dc_name(char *domain, fstring srv_name)
 			/* Check that this DC is actually a member of the
 			   domain we are interested in */
 
-			if (name_status_find(0x1c, dest_ip, the_domain)) {
+			if (name_status_find("*", 0x1c, dest_ip, the_domain)) {
                                 if (!strequal(the_domain, domain)) {
                                         DEBUG(1, ("get_any_dc_name(): dc %s not a member of domain %s (%s)\n",
                                                   remote_machine, domain, the_domain));
