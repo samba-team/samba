@@ -1585,7 +1585,7 @@ see "debug level"
 .SS logon path (G)
 
 This parameter specifies the home directory where roaming profiles 
-(USER.DAT / USER.MAN files) are stored.
+(USER.DAT / USER.MAN files for Windows 95) are stored.
 
 This option takes the standard substitutions, allowing you to have
 separate logon scripts for each user or machine.  It also specifies
@@ -1603,11 +1603,16 @@ be made read-only.  It is not adviseable that the USER.DAT file be made
 read-only - rename it to USER.MAN to achieve the desired effect
 (a MANdatory profile).
 
+Windows clients can sometimes maintain a connection to the [homes]
+share, even though there is no user logged in.  Therefore, it is
+vital that the logon path does not include a reference to the
+homes share (i.e \\\\%L\\HOMES\profile_path will cause problems).
+
 .B Default:
- 	logon path = \\\\%L\\%U 
+ 	logon path = \\\\%L\\%U\\profile
 
 .B Example:
-	logon path = \\\\PROFILESERVER\\HOME_DIR\\%U
+	logon path = \\\\PROFILESERVER\\HOME_DIR\\%U\\PROFILE
 
 .SS logon script (G)
 
