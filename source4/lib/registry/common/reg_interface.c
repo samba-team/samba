@@ -268,7 +268,10 @@ WERROR reg_key_get_subkey_by_index(REG_KEY *key, int idx, REG_KEY **subkey)
 {
 	if(!key) return WERR_INVALID_PARAM;
 
-	if(!key->handle->functions->get_subkey_by_index) {
+	if(key->handle->functions->get_subkey_by_index) {
+		WERROR status = key->handle->functions->get_subkey_by_index(key, idx, subkey);
+		if(!NT_STATUS_IS_OK(status)) return status;
+	} else if(key->handle->functions->fetch_subkeys) {
 		if(!key->cache_subkeys) 
 			key->handle->functions->fetch_subkeys(key, &key->cache_subkeys_count, &key->cache_subkeys);
 
@@ -278,8 +281,7 @@ WERROR reg_key_get_subkey_by_index(REG_KEY *key, int idx, REG_KEY **subkey)
 			return WERR_NO_MORE_ITEMS;
 		}
 	} else {
-		WERROR status = key->handle->functions->get_subkey_by_index(key, idx, subkey);
-		if(!NT_STATUS_IS_OK(status)) return status;
+		return WERR_NOT_SUPPORTED;
 	}
 
 	(*subkey)->path = talloc_asprintf((*subkey)->mem_ctx, "%s%s%s", key->path, key->path[strlen(key->path)-1] == '\\'?"":"\\", (*subkey)->name);
