@@ -645,7 +645,35 @@
 
 	/************************/
 	/* Function    0x28     */
-	NTSTATUS samr_QUERY_DISPINFO();
+
+	typedef struct {
+		uint32    idx;
+		uint32    rid;
+		uint32    acct_flags;
+		samr_Name username;
+		samr_Name full_name;
+		samr_Name description;
+	} samr_DispEntry1;
+
+	typedef struct {
+		uint32 count;
+		[size_is(count)] samr_DispEntry1 *entries;
+	} samr_DispInfo1;
+
+	typedef union {
+		[case(1)] samr_DispInfo1 info1;
+	} samr_DispInfo;
+
+	NTSTATUS samr_QueryDisplayInfo(
+		[in,ref]    policy_handle *handle,
+		[in]        uint16 level,
+		[in]        uint32 start_idx,
+		[in]        uint32 max_entries,
+		[in]        uint32 buf_size,
+		[out]       uint32 total_size,
+		[out]       uint32 returned_size,
+		[out,switch_is(level)] samr_DispInfo info
+		);
 
 	/************************/
 	/* Function    0x29     */

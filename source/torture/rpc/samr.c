@@ -651,6 +651,30 @@ static BOOL test_EnumDomainAliases(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return ret;	
 }
 
+static BOOL test_QueryDisplayInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+				  struct policy_handle *handle)
+{
+	NTSTATUS status;
+	struct samr_QueryDisplayInfo r;
+	BOOL ret = True;
+
+	printf("Testing QueryDisplayInfo\n");
+
+	r.in.handle = handle;
+	r.in.level = 1;
+	r.in.start_idx = 0;
+	r.in.max_entries = 100;
+	r.in.buf_size = (uint32)-1;
+
+	status = dcerpc_samr_QueryDisplayInfo(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("QueryDisplayInfo failed - %s\n", nt_errstr(status));
+		return False;
+	}
+	
+	return ret;	
+}
+
 static BOOL test_QueryDomainInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 				 struct policy_handle *handle)
 {
@@ -720,6 +744,10 @@ static BOOL test_OpenDomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	}
 
 	if (!test_EnumDomainAliases(p, mem_ctx, &domain_handle)) {
+		ret = False;
+	}
+
+	if (!test_QueryDisplayInfo(p, mem_ctx, &domain_handle)) {
 		ret = False;
 	}
 
