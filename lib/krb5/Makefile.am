@@ -16,7 +16,7 @@ libkrb5_a_SOURCES = \
 	get_for_creds.c get_host_realm.c get_in_tkt.c \
 	get_in_tkt_pw.c get_port.c init_creds.c \
 	init_creds_pw.c keyblock.c keytab.c krbhst.c \
-	kuserok.c log.c misc.c mk_error.c mk_priv.c \
+	kuserok.c log.c mcache.c misc.c mk_error.c mk_priv.c \
 	mk_rep.c mk_req.c mk_req_ext.c mk_safe.c \
 	net_read.c net_write.c padata.c principal.c \
 	prompter_posix.c rd_cred.c rd_error.c rd_priv.c \
