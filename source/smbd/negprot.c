@@ -277,6 +277,14 @@ static int reply_nt1(char *inbuf, char *outbuf)
 	if (global_encrypted_passwords_negotiated)
 		secword |= NEGOTIATE_SECURITY_CHALLENGE_RESPONSE;
 	
+	if (lp_server_signing()) {
+		secword |= NEGOTIATE_SECURITY_SIGNATURES_ENABLED;
+		/* No raw mode with smb signing. */
+		capabilities &= ~CAP_RAW_MODE;
+		if (lp_server_signing() == Required)
+			secword |=NEGOTIATE_SECURITY_SIGNATURES_REQUIRED;
+	}
+
 	set_message(outbuf,17,0,True);
 	
 	SCVAL(outbuf,smb_vwv1,secword);
@@ -520,6 +528,10 @@ int reply_negprot(connection_struct *conn,
 	SSVAL(outbuf,smb_vwv0,choice);
   
 	DEBUG( 5, ( "negprot index=%d\n", choice ) );
+
+	if ((lp_server_signing() == Required) && (Protocol < PROTOCOL_NT1)) {
+		exit_server("SMB signing is required and client negotiated a downlevel protocol");
+	}
 
 	END_PROFILE(SMBnegprot);
 	return(outsize);

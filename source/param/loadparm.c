@@ -1864,7 +1864,7 @@ FN_LOCAL_BOOL(lp_inherit_acls, bInheritACLS)
 FN_LOCAL_BOOL(lp_use_client_driver, bUseClientDriver)
 FN_LOCAL_BOOL(lp_default_devmode, bDefaultDevmode)
 FN_LOCAL_BOOL(lp_nt_acl_support, bNTAclSupport)
-FN_LOCAL_BOOL(lp_use_sendfile, bUseSendfile)
+FN_LOCAL_BOOL(_lp_use_sendfile, bUseSendfile)
 FN_LOCAL_BOOL(lp_profile_acls, bProfileAcls)
 FN_LOCAL_BOOL(lp_map_acl_inherit, bMap_acl_inherit)
 FN_LOCAL_INTEGER(lp_create_mask, iCreate_mask)
@@ -4290,4 +4290,13 @@ int lp_maxprintjobs(int snum)
 		maxjobs = PRINT_MAX_JOBID - 1;
 
 	return maxjobs;
+}
+
+/*******************************************************************
+ Ensure we don't use sendfile if server smb signing is active.
+********************************************************************/
+
+BOOL lp_use_sendfile(int snum)
+{
+	return (_lp_use_sendfile(snum) && !srv_signing_active());
 }

@@ -479,24 +479,86 @@ BOOL cli_check_sign_mac(struct cli_state *cli)
  SMB signing - server API's.
 ************************************************************/
 
+static struct smb_sign_info srv_sign_info = {
+	null_sign_outgoing_message,
+	null_check_incoming_message,
+	null_free_signing_context,
+	NULL,
+	False,
+	False,
+	False,
+	False
+};
+
+/***********************************************************
+ Turn on signing after sending an oplock break.
+************************************************************/
+
 void srv_enable_signing(void)
 {
+	srv_sign_info.doing_signing = True;
 }
+
+/***********************************************************
+ Turn off signing before sending an oplock break.
+************************************************************/
 
 void srv_disable_signing(void)
 {
+	srv_sign_info.doing_signing = False;
 }
 
-BOOL srv_check_sign_mac(char *buf)
+/***********************************************************
+ Called to validate an incoming packet from the client.
+************************************************************/
+
+BOOL srv_check_sign_mac(char *inbuf)
 {
-	return True;
+	if (!srv_sign_info.doing_signing)
+		return True;
+
+	/* Check if it's a session keepalive. */
+	if(CVAL(inbuf,0) == SMBkeepalive)
+		return True;
+
+	if (smb_len(inbuf) < (smb_ss_field + 8 - 4)) {
+		DEBUG(1, ("srv_check_sign_mac: Can't check signature on short packet! smb_len = %u\n", smb_len(inbuf) ));
+		return False;
+	}
+
+	return srv_sign_info.check_incoming_message(inbuf, &srv_sign_info);
 }
 
-void srv_calculate_sign_mac(char *buf)
+/***********************************************************
+ Called to sign an outgoing packet to the client.
+************************************************************/
+
+void srv_calculate_sign_mac(char *outbuf)
 {
+	if (!srv_sign_info.doing_signing)
+		return;
+
+	/* Check if it's a session keepalive. */
+	/* JRA Paranioa test - do we ever generate these in the server ? */
+	if(CVAL(outbuf,0) == SMBkeepalive)
+		return;
+
+	/* JRA Paranioa test - we should be able to get rid of this... */
+	if (smb_len(outbuf) < (smb_ss_field + 8 - 4)) {
+		DEBUG(1, ("srv_calculate_sign_mac: Logic error. Can't check signature on short packet! smb_len = %u\n",
+					smb_len(outbuf) ));
+		abort();
+	}
+
+	srv_sign_info.sign_outgoing_message(outbuf, &srv_sign_info);
 }
 
-BOOL allow_sendfile(void)
+/***********************************************************
+ Returns whether signing is active. We can't use sendfile or raw
+ reads/writes if it is.
+************************************************************/
+
+BOOL srv_signing_active(void)
 {
-	return True;
+	return srv_sign_info.doing_signing;
 }
