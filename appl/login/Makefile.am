@@ -6,7 +6,8 @@ INCLUDES += $(INCLUDE_krb4)
 
 bin_PROGRAMS = login
 
-login_SOURCES = login.c				\
+login_SOURCES = \
+		login.c				\
 		osfc2.c				\
 		read_string.c			\
 		utmp_login.c			\
@@ -15,6 +16,8 @@ login_SOURCES = login.c				\
 		stty_default.c			\
 		login_access.c			\
 		login_locl.h			\
+		login_proto.h			\
+		conf.c				\
 		shadow.c
 
 LDADD = $(LIB_kafs) \
@@ -24,3 +27,8 @@ LDADD = $(LIB_kafs) \
 	$(top_builddir)/lib/asn1/libasn1.la \
 	$(LIB_roken) \
 	$(LIB_security)
+
+login_DEPENDENCIES = $(LIB_roken)
+
+$(srcdir)/login_protos.h:
+	cd $(srcdir); perl ../../cf/make-proto.pl -o login_protos.h $(login_SOURCES) || rm -f login_protos.h
