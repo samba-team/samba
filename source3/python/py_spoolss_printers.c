@@ -24,8 +24,8 @@
 
 PyObject *spoolss_openprinter(PyObject *self, PyObject *args, PyObject *kw)
 {
-	char *unc_name, *server = NULL, *errstr;
-	TALLOC_CTX *mem_ctx;
+	char *unc_name, *server, *errstr;
+	TALLOC_CTX *mem_ctx = NULL;
 	POLICY_HND hnd;
 	WERROR werror;
 	PyObject *result = NULL, *creds = NULL;
@@ -36,10 +36,12 @@ PyObject *spoolss_openprinter(PyObject *self, PyObject *args, PyObject *kw)
 	if (!PyArg_ParseTupleAndKeywords(
 		    args, kw, "s|O!i", kwlist, &unc_name, &PyDict_Type, &creds,
 		    &desired_access))
-		goto done;
+		return NULL;
 
-	/* FIXME: Return name format exception for names without a UNC
-	   prefix */ 
+	if (unc_name[0] != '\\' || unc_name[1] != '\\') {
+		PyErr_SetString(spoolss_error, "bad printer name");
+		return NULL;
+	}
 
 	server = strdup(unc_name + 2);
 
@@ -48,8 +50,7 @@ PyObject *spoolss_openprinter(PyObject *self, PyObject *args, PyObject *kw)
 		*c = 0;
 	}
 
-	if (!(cli = open_pipe_creds(
-		      server, creds, cli_spoolss_initialise, &errstr))) {
+	if (!(cli = open_pipe_creds(server, creds, PIPE_SPOOLSS, &errstr))) {
 		PyErr_SetString(spoolss_error, errstr);
 		free(errstr);
 		goto done;
@@ -66,8 +67,6 @@ PyObject *spoolss_openprinter(PyObject *self, PyObject *args, PyObject *kw)
 		"", &hnd);
 
 	if (!W_ERROR_IS_OK(werror)) {
-		cli_shutdown(cli);
-		SAFE_FREE(cli);
 		PyErr_SetObject(spoolss_werror, py_werror_tuple(werror));
 		goto done;
 	}
@@ -75,6 +74,14 @@ PyObject *spoolss_openprinter(PyObject *self, PyObject *args, PyObject *kw)
 	result = new_spoolss_policy_hnd_object(cli, mem_ctx, &hnd);
 
  done:
+	if (!result) {
+		if (cli)
+			cli_shutdown(cli);
+
+		if (mem_ctx)
+			talloc_destroy(mem_ctx);
+	}
+
 	SAFE_FREE(server);
 
 	return result;
@@ -182,6 +189,7 @@ PyObject *spoolss_hnd_setprinter(PyObject *self, PyObject *args, PyObject *kw)
 	uint32 level;
 	static char *kwlist[] = {"dict", NULL};
 	union {
+		PRINTER_INFO_1 printers_1;
 		PRINTER_INFO_2 printers_2;
 		PRINTER_INFO_3 printers_3;
 	} pinfo;
@@ -197,7 +205,7 @@ PyObject *spoolss_hnd_setprinter(PyObject *self, PyObject *args, PyObject *kw)
 		return NULL;
 	}
 
-	if (level != 2 && level != 3) {
+	if (level < 1 && level > 3) {
 		PyErr_SetString(spoolss_error, "unsupported info level");
 		return NULL;
 	}
@@ -207,6 +215,16 @@ PyObject *spoolss_hnd_setprinter(PyObject *self, PyObject *args, PyObject *kw)
 	ZERO_STRUCT(ctr);
 
 	switch (level) {
+	case 1:
+		ctr.printers_1 = &pinfo.printers_1;
+
+		if (!py_to_PRINTER_INFO_1(&pinfo.printers_1, info)){
+			PyErr_SetString(spoolss_error, 
+					"error converting printer to info 1");
+			return NULL;
+		}
+
+		break;
 	case 2:
 		ctr.printers_2 = &pinfo.printers_2;
 
@@ -259,23 +277,23 @@ PyObject *spoolss_enumprinters(PyObject *self, PyObject *args, PyObject *kw)
 	PRINTER_INFO_CTR ctr;
 	int level = 1, flags = PRINTER_ENUM_LOCAL, i;
 	uint32 needed, num_printers;
-	static char *kwlist[] = {"server", "level", "flags", "creds", NULL};
+	static char *kwlist[] = {"server", "name", "level", "flags", 
+				 "creds", NULL};
 	TALLOC_CTX *mem_ctx = NULL;
 	struct cli_state *cli = NULL;
-	char *server, *errstr;
+	char *server, *errstr, *name = NULL;
 
 	/* Parse parameters */
 
 	if (!PyArg_ParseTupleAndKeywords(
-		    args, kw, "s|iiO!", kwlist, &server, &level, &flags, 
-		    &PyDict_Type, &creds))
+		    args, kw, "s|siiO!", kwlist, &server, &name, &level, 
+		    &flags, &PyDict_Type, &creds))
 		return NULL;
 	
 	if (server[0] == '\\' && server[1] == '\\')
 		server += 2;
 
-	if (!(cli = open_pipe_creds(
-		      server, creds, cli_spoolss_initialise, &errstr))) {
+	if (!(cli = open_pipe_creds(server, creds, PIPE_SPOOLSS, &errstr))) {
 		PyErr_SetString(spoolss_error, errstr);
 		free(errstr);
 		goto done;
@@ -287,15 +305,28 @@ PyObject *spoolss_enumprinters(PyObject *self, PyObject *args, PyObject *kw)
 		goto done;
 	}
 
+	/* This RPC is weird.  By setting the server name to different
+	   values we can get different behaviour.  If however the server
+	   name is not specified, we default it to being the full server
+	   name as this is probably what the caller intended.  To pass a
+	   NULL name, pass a value of "" */
+
+	if (!name)
+		name = server;
+	else {
+		if (!name[0])
+			name = NULL;
+	}
+
 	/* Call rpc function */
 	
 	werror = cli_spoolss_enum_printers(
-		cli, mem_ctx, 0, &needed, flags, level,
+		cli, mem_ctx, 0, &needed, name, flags, level,
 		&num_printers, &ctr);
 
 	if (W_ERROR_V(werror) == ERRinsufficientbuffer)
 		werror = cli_spoolss_enum_printers(
-			cli, mem_ctx, needed, NULL, flags, level,
+			cli, mem_ctx, needed, NULL, name, flags, level,
 			&num_printers, &ctr);
 
 	if (!W_ERROR_IS_OK(werror)) {
@@ -397,8 +428,7 @@ PyObject *spoolss_addprinterex(PyObject *self, PyObject *args, PyObject *kw)
 		    &PyDict_Type, &info, &PyDict_Type, &creds))
 		return NULL;
 
-	if (!(cli = open_pipe_creds(
-		      server, creds, cli_spoolss_initialise, &errstr))) {
+	if (!(cli = open_pipe_creds(server, creds, PIPE_SPOOLSS, &errstr))) {
 		PyErr_SetString(spoolss_error, errstr);
 		free(errstr);
 		goto done;
@@ -407,7 +437,7 @@ PyObject *spoolss_addprinterex(PyObject *self, PyObject *args, PyObject *kw)
 	if (!(mem_ctx = talloc_init())) {
 		PyErr_SetString(
 			spoolss_error, "unable to init talloc context\n");
-		return NULL;
+		goto done;
 	}
 
 	if (!py_to_PRINTER_INFO_2(&info2, info, mem_ctx)) {
@@ -424,8 +454,11 @@ PyObject *spoolss_addprinterex(PyObject *self, PyObject *args, PyObject *kw)
 	result = Py_None;
 
 done:
-	cli_shutdown(cli);
-	talloc_destroy(mem_ctx);
+	if (cli)
+		cli_shutdown(cli);
+
+	if (mem_ctx)
+		talloc_destroy(mem_ctx);
 
 	return result;
 }
