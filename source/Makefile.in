@@ -232,6 +232,8 @@ all : CHECK $(SPROGS) $(PROGS)
 
 smbwrapper : CHECK smbwrapper/smbsh smbwrapper/smbwrapper.so @WRAP32@
 
+smbtorture : CHECK bin/smbtorture
+
 .SUFFIXES:
 .SUFFIXES: .c .o .po .po32
 
