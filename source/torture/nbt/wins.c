@@ -46,11 +46,12 @@
 	CHECK_STRING((_name).scope, (correct).scope); \
 } while (0)
 
+
 /*
   test operations against a WINS server
 */
 static BOOL nbt_test_wins_name(TALLOC_CTX *mem_ctx, const char *address,
-			       struct nbt_name *name)
+			       struct nbt_name *name, uint16_t nb_flags)
 {
 	struct nbt_name_register_wins io;
 	struct nbt_name_query query;
@@ -65,14 +66,14 @@ static BOOL nbt_test_wins_name(TALLOC_CTX *mem_ctx, const char *address,
 	   the right IP */
 	socket_listen(nbtsock->sock, myaddress, 0, 0, 0);
 
-	printf("Testing name registration to WINS with name %s at %s\n", 
-	       nbt_name_string(mem_ctx, name), myaddress);
+	printf("Testing name registration to WINS with name %s at %s nb_flags=0x%x\n", 
+	       nbt_name_string(mem_ctx, name), myaddress, nb_flags);
 
 	printf("release the name\n");
 	release.in.name = *name;
 	release.in.dest_addr = address;
 	release.in.address = myaddress;
-	release.in.nb_flags = NBT_NODE_H;
+	release.in.nb_flags = nb_flags;
 	release.in.broadcast = False;
 	release.in.timeout = 3;
 	release.in.retries = 0;
@@ -93,7 +94,7 @@ static BOOL nbt_test_wins_name(TALLOC_CTX *mem_ctx, const char *address,
 	io.in.name = *name;
 	io.in.wins_servers = str_list_make(mem_ctx, address, NULL);
 	io.in.addresses = str_list_make(mem_ctx, myaddress, NULL);
-	io.in.nb_flags = NBT_NODE_H;
+	io.in.nb_flags = nb_flags;
 	io.in.ttl = 300000;
 	
 	status = nbt_name_register_wins(nbtsock, mem_ctx, &io);
@@ -109,6 +110,18 @@ static BOOL nbt_test_wins_name(TALLOC_CTX *mem_ctx, const char *address,
 	
 	CHECK_STRING(io.out.wins_server, address);
 	CHECK_VALUE(io.out.rcode, 0);
+
+	if (nb_flags & NBT_NM_GROUP) {
+		printf("Try to register as non-group\n");
+		io.in.nb_flags &= ~NBT_NM_GROUP;
+		status = nbt_name_register_wins(nbtsock, mem_ctx, &io);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("Bad response from %s for name register - %s\n",
+			       address, nt_errstr(status));
+			return False;
+		}
+		CHECK_VALUE(io.out.rcode, NBT_RCODE_ACT);
+	}
 
 	printf("query the name to make sure its there\n");
 	query.in.name = *name;
@@ -131,7 +144,11 @@ static BOOL nbt_test_wins_name(TALLOC_CTX *mem_ctx, const char *address,
 	
 	CHECK_NAME(query.out.name, *name);
 	CHECK_VALUE(query.out.num_addrs, 1);
-	CHECK_STRING(query.out.reply_addrs[0], myaddress);
+	if (nb_flags & NBT_NM_GROUP) {
+		CHECK_STRING(query.out.reply_addrs[0], "255.255.255.255");
+	} else {
+		CHECK_STRING(query.out.reply_addrs[0], myaddress);
+	}
 
 
 	query.in.name.name = strupper_talloc(mem_ctx, name->name);
@@ -173,7 +190,7 @@ static BOOL nbt_test_wins_name(TALLOC_CTX *mem_ctx, const char *address,
 	refresh.in.name = *name;
 	refresh.in.wins_servers = str_list_make(mem_ctx, address, NULL);
 	refresh.in.addresses = str_list_make(mem_ctx, myaddress, NULL);
-	refresh.in.nb_flags = NBT_NODE_H;
+	refresh.in.nb_flags = nb_flags;
 	refresh.in.ttl = 12345;
 	
 	status = nbt_name_refresh_wins(nbtsock, mem_ctx, &refresh);
@@ -187,14 +204,14 @@ static BOOL nbt_test_wins_name(TALLOC_CTX *mem_ctx, const char *address,
 		return False;
 	}
 	
-	CHECK_STRING(io.out.wins_server, address);
-	CHECK_VALUE(io.out.rcode, 0);
+	CHECK_STRING(refresh.out.wins_server, address);
+	CHECK_VALUE(refresh.out.rcode, 0);
 
 	printf("release the name\n");
 	release.in.name = *name;
 	release.in.dest_addr = address;
 	release.in.address = myaddress;
-	release.in.nb_flags = NBT_NODE_H;
+	release.in.nb_flags = nb_flags;
 	release.in.broadcast = False;
 	release.in.timeout = 3;
 	release.in.retries = 0;
@@ -233,13 +250,21 @@ static BOOL nbt_test_wins_name(TALLOC_CTX *mem_ctx, const char *address,
 	printf("query the name to make sure its gone\n");
 	query.in.name = *name;
 	status = nbt_name_query(nbtsock, mem_ctx, &query);
-	if (NT_STATUS_IS_OK(status)) {
-		printf("ERROR: Name query success after release\n");
-		return False;
-	}
-	if (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
-		printf("Incorrect response to name query - %s\n", nt_errstr(status));
-		return False;
+	if (nb_flags & NBT_NM_GROUP) {
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("ERROR: Name query failed after group release - %s\n",
+			       nt_errstr(status));
+			return False;
+		}
+	} else {
+		if (NT_STATUS_IS_OK(status)) {
+			printf("ERROR: Name query success after release\n");
+			return False;
+		}
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+			printf("Incorrect response to name query - %s\n", nt_errstr(status));
+			return False;
+		}
 	}
 	
 	return ret;
@@ -260,26 +285,31 @@ static BOOL nbt_test_wins(TALLOC_CTX *mem_ctx, const char *address)
 				    
 	name.type = NBT_NAME_CLIENT;
 	name.scope = NULL;
-	ret &= nbt_test_wins_name(mem_ctx, address, &name);
+	ret &= nbt_test_wins_name(mem_ctx, address, &name, NBT_NODE_H);
+
+	name.scope = "example";
+	name.type = 0x72;
+	ret &= nbt_test_wins_name(mem_ctx, address, &name, NBT_NODE_H);
 
 	name.scope = "example";
 	name.type = 0x71;
-	ret &= nbt_test_wins_name(mem_ctx, address, &name);
+	ret &= nbt_test_wins_name(mem_ctx, address, &name, NBT_NODE_H | NBT_NM_GROUP);
 
 	name.scope = "foo.example.com";
-	ret &= nbt_test_wins_name(mem_ctx, address, &name);
+	name.type = 0x72;
+	ret &= nbt_test_wins_name(mem_ctx, address, &name, NBT_NODE_H);
 
 	name.name = talloc_asprintf(mem_ctx, "_T\01-%5u.foo", r);
-	ret &= nbt_test_wins_name(mem_ctx, address, &name);
+	ret &= nbt_test_wins_name(mem_ctx, address, &name, NBT_NODE_H);
 
 	name.name = "";
-	ret &= nbt_test_wins_name(mem_ctx, address, &name);
+	ret &= nbt_test_wins_name(mem_ctx, address, &name, NBT_NODE_H);
 
 	name.name = talloc_asprintf(mem_ctx, ".");
-	ret &= nbt_test_wins_name(mem_ctx, address, &name);
+	ret &= nbt_test_wins_name(mem_ctx, address, &name, NBT_NODE_H);
 
 	name.name = talloc_asprintf(mem_ctx, "%5u-\377\200\300FOO", r);
-	ret &= nbt_test_wins_name(mem_ctx, address, &name);
+	ret &= nbt_test_wins_name(mem_ctx, address, &name, NBT_NODE_H);
 
 	return ret;
 }
