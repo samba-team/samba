@@ -173,7 +173,7 @@ AC_ARG_ENABLE(experimental, [  --enable-experimental Turn on experimental featur
         experimental=yes
     fi])
 
-sinclude(build/m4/rewrite.m4)
+SMB_INCLUDE_M4(build/m4/rewrite.m4)
 
 dnl exclude these modules 
 AC_ARG_WITH(exclude-modules,
@@ -205,25 +205,24 @@ AC_ARG_WITH(static-modules,
 	done
 fi ])
 
-sinclude(nsswitch/config.m4)
-sinclude(lib/popt/config.m4)
-sinclude(lib/iconv.m4)
-sinclude(lib/basic.m4)
-sinclude(lib/tdb/config.m4)
-sinclude(lib/ldb/config.m4)
-sinclude(lib/cmdline/config.m4)
-sinclude(param/config.m4)
-sinclude(libcli/config.m4)
-sinclude(librpc/config.m4)
-sinclude(libcli/libsmb.m4)
-sinclude(smbd/process_model.m4)
-sinclude(smb_server/config.m4)
-sinclude(auth/config.m4)
-sinclude(ntvfs/config.m4)
-sinclude(rpc_server/config.m4)
-sinclude(lib/registry/config.m4)
-sinclude(torture/config.m4)
-sinclude(scripting/config.m4)
+SMB_INCLUDE_M4(lib/popt/config.m4)
+SMB_INCLUDE_M4(lib/iconv.m4)
+SMB_INCLUDE_M4(lib/basic.m4)
+SMB_INCLUDE_M4(lib/tdb/config.m4)
+SMB_INCLUDE_M4(lib/ldb/config.m4)
+SMB_INCLUDE_M4(lib/cmdline/config.m4)
+SMB_INCLUDE_M4(param/config.m4)
+SMB_INCLUDE_M4(libcli/config.m4)
+SMB_INCLUDE_M4(librpc/config.m4)
+SMB_INCLUDE_M4(libcli/libsmb.m4)
+SMB_INCLUDE_M4(smbd/process_model.m4)
+SMB_INCLUDE_M4(smb_server/config.m4)
+SMB_INCLUDE_M4(auth/config.m4)
+SMB_INCLUDE_M4(ntvfs/config.m4)
+SMB_INCLUDE_M4(rpc_server/config.m4)
+SMB_INCLUDE_M4(lib/registry/config.m4)
+SMB_INCLUDE_M4(torture/config.m4)
+SMB_INCLUDE_M4(scripting/config.m4)
 
 ALLLIBS_LIBS="$LIBS"
 ALLLIBS_CFLAGS="$CFLAGS"
