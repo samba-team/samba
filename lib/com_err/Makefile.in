@@ -64,10 +64,11 @@ Wall:
 install: all
 	$(MKINSTALLDIRS) $(DESTDIR)$(includedir)
 	@for i in $(include_HEADERS); do \
-	if test -f "$(srcdir)/$$i" ; then x="$(srcdir)/$$i"; \
-	else x="$$i"; fi ;\
-	echo "$(INSTALL_DATA) $$x $(DESTDIR)$(includedir)/$$i" ;\
-	$(INSTALL_DATA) $$x $(DESTDIR)$(includedir)/$$i ; done
+	f=`basename $$i`; \
+	if test -f "$(srcdir)/$$f" ; then x="$(srcdir)/$$f"; \
+	else x="$$f"; fi ;\
+	echo "$(INSTALL_DATA) $$x $(DESTDIR)$(includedir)/$$f" ;\
+	$(INSTALL_DATA) $$x $(DESTDIR)$(includedir)/$$f ; done
 
 	$(MKINSTALLDIRS) $(DESTDIR)$(libdir)
 	@for i in $(lib_LIBRARIES); do \
@@ -82,8 +83,9 @@ install: all
 
 uninstall:
 	@for i in $(include_HEADERS); do \
-	echo "rm -f $(DESTDIR)$(includedir)/$$x" ;\
-	rm -f $(DESTDIR)$(includedir)/$$i ; done
+	f=`basename $$i`; \
+	echo "rm -f $(DESTDIR)$(includedir)/$$f" ;\
+	rm -f $(DESTDIR)$(includedir)/$$f ; done
 
 	@for i in $(lib_LIBRARIES); do \
 	echo "rm -f $(DESTDIR)$(libdir)/$$i" ;\
