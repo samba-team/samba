@@ -161,8 +161,8 @@ static BOOL open_file(files_struct *fsp,connection_struct *conn,
 			check_for_pipe(fname);
 			return False;
 		}
-	}
-		fsp->fd == -1; /* What we used to call a stat open. */
+	} else
+		fsp->fd = -1; /* What we used to call a stat open. */
 
 	if (!VALID_STAT(*psbuf)) {
 		int ret;
