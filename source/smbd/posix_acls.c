@@ -1255,9 +1255,6 @@ static void arrange_posix_perms( char *filename, canon_ace **pp_list_head)
 	canon_ace *owner_ace = NULL;
 	canon_ace *other_ace = NULL;
 	canon_ace *ace = NULL;
-	mode_t owner_perms = 0;
-	mode_t group_perms = 0;
-	mode_t other_perms = 0;
 
 	for (ace = list_head; ace; ace = ace->next) {
 		if (ace->type == SMB_ACL_USER_OBJ)
@@ -1265,9 +1262,6 @@ static void arrange_posix_perms( char *filename, canon_ace **pp_list_head)
 		else if (ace->type == SMB_ACL_OTHER) {
 			/* Last ace - this is "other" */
 			other_ace = ace;
-		} else {
-			/* Get the union of all the group and supplementary user perms. */
-			group_perms |= ace->perms;
 		}
 	}
 		
@@ -1288,47 +1282,6 @@ static void arrange_posix_perms( char *filename, canon_ace **pp_list_head)
 
 	if (other_ace) {
 		DLIST_DEMOTE(list_head, other_ace, ace);
-	}
-
-	owner_perms = owner_ace->perms;
-	other_perms = other_ace->perms;
-
-	/*
-	 * We have to be clever here. NT4.x won't display anything other
-	 * Than an "Everyone, No access" DENY acl. Truncate blank perms
-	 * from the end, but we can't truncate blank permissions from
-	 * anywhere except the end, as they have an effect on allowing access
-	 * under POSIX.
-	 */
-
-	if ((owner_perms || group_perms) && !other_perms) {
-		DLIST_REMOVE(list_head, other_ace);
-		safe_free(other_ace);
-	}
-
-	if (owner_perms && !group_perms && !other_perms) {
-		/* Free everything except the list head. */
-		free_canon_ace_list(owner_ace->next);
-		owner_ace->next = NULL;
-	}
-
-	if (!owner_perms && !group_perms && !other_perms) {
-		/*
-		 * Special case - no one has any access.
-		 * Return a 1 element ACL - other has "no access".
-		 */
-
-		if (owner_ace->next) {
-			free_canon_ace_list(owner_ace->next);
-			owner_ace->next = NULL;
-		}
-
-		owner_ace->type = SMB_ACL_OTHER;
-		owner_ace->sid = global_sid_World;
-		owner_ace->unix_ug.world = -1;
-		owner_ace->owner_type = WORLD_ACE;
-		owner_ace->attr = DENY_ACE;
-		owner_ace->perms = 0;
 	}
 
 	/* We have probably changed the head of the list. */
@@ -1394,10 +1347,10 @@ static canon_ace *unix_canonicalise_acl(files_struct *fsp, SMB_STRUCT_STAT *psbu
 	owner_ace->attr = owner_ace->perms ? ALLOW_ACE : DENY_ACE;
 	
 	group_ace->perms = unix_perms_to_acl_perms(mode, S_IRGRP, S_IWGRP, S_IXGRP);
-	group_ace->attr = group_ace->perms ? ALLOW_ACE : DENY_ACE;
+	group_ace->attr = ALLOW_ACE;
 
 	other_ace->perms = unix_perms_to_acl_perms(mode, S_IROTH, S_IWOTH, S_IXOTH);
-	other_ace->attr = other_ace->perms ? ALLOW_ACE : DENY_ACE;
+	other_ace->attr = ALLOW_ACE;
 
 	DLIST_ADD(list_head, other_ace);
 	DLIST_ADD(list_head, group_ace);
