@@ -8,7 +8,7 @@
 $1 == "error_table" || $1 == "et" {
 	name = $2
 	base = 0
-	for(i = 1; i <= 4; i++){
+	for(i = 1; i <= length(name); i++){
 		base = base * 64 + index("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_", substr(name, i, 1))
 	}
 	base *= 256
