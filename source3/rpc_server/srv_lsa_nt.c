@@ -839,16 +839,17 @@ NTSTATUS _lsa_priv_get_dispname(pipes_struct *p, LSA_Q_PRIV_GET_DISPNAME *q_u, L
 
 /***************************************************************************
 _lsa_enum_accounts.
+
+ This call lists all sids that have been granted privileges. I think it would
+ be ok not to return anything here, or only return BUILTIN\Administrators.
  ***************************************************************************/
 
 NTSTATUS _lsa_enum_accounts(pipes_struct *p, LSA_Q_ENUM_ACCOUNTS *q_u, LSA_R_ENUM_ACCOUNTS *r_u)
 {
+	extern DOM_SID global_sid_Builtin_Administrators;
 	struct lsa_info *handle;
-	GROUP_MAP *map=NULL;
 	int num_entries=0;
 	LSA_SID_ENUM *sids=&r_u->sids;
-	int i=0,j=0;
-	BOOL ret;
 
 	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&handle))
 		return NT_STATUS_INVALID_HANDLE;
@@ -861,15 +862,8 @@ NTSTATUS _lsa_enum_accounts(pipes_struct *p, LSA_Q_ENUM_ACCOUNTS *q_u, LSA_R_ENU
 	if (!(handle->access & POLICY_VIEW_LOCAL_INFORMATION))
 		return NT_STATUS_ACCESS_DENIED;
 
-	/* get the list of mapped groups (domain, local, builtin) */
-	become_root();
-	ret = pdb_enum_group_mapping(SID_NAME_UNKNOWN, &map, &num_entries, ENUM_ONLY_MAPPED);
-	unbecome_root();
-	if( !ret ) {
-		DEBUG(3,("_lsa_enum_accounts: enumeration of groups failed!\n"));
-		return NT_STATUS_OK;
-	}
-	
+
+	num_entries = 1;
 
 	if (q_u->enum_context >= num_entries)
 		return NT_STATUS_NO_MORE_ENTRIES;
@@ -878,19 +872,11 @@ NTSTATUS _lsa_enum_accounts(pipes_struct *p, LSA_Q_ENUM_ACCOUNTS *q_u, LSA_R_ENU
 	sids->sid = (DOM_SID2 *)talloc_zero(p->mem_ctx, (num_entries-q_u->enum_context)*sizeof(DOM_SID2));
 
 	if (sids->ptr_sid==NULL || sids->sid==NULL) {
-		SAFE_FREE(map);
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	for (i=q_u->enum_context, j=0; i<num_entries; i++) {
-		init_dom_sid2( &(*sids).sid[j],  &map[i].sid);
-		(*sids).ptr_sid[j]=1;
-		j++;
-	}
-
-	SAFE_FREE(map);
-
-	init_lsa_r_enum_accounts(r_u, j);
+	init_dom_sid2( &(*sids).sid[0], &global_sid_Builtin_Administrators);
+	init_lsa_r_enum_accounts(r_u, 1);
 
 	return NT_STATUS_OK;
 }
