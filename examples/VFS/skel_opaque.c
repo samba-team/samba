@@ -76,9 +76,24 @@ static DIR *skel_opendir(vfs_handle_struct *handle, connection_struct *conn, con
 	return vfswrap_opendir(NULL, conn, fname);
 }
 
-static struct dirent *skel_readdir(vfs_handle_struct *handle, connection_struct *conn, DIR *dirp)
+static SMB_STRUCT_DIRENT *skel_readdir(vfs_handle_struct *handle, connection_struct *conn, DIR *dirp)
 {
 	return vfswrap_readdir(NULL, conn, dirp);
+}
+
+static void skel_seekdir(vfs_handle_struct *handle, connection_struct *conn, DIR *dirp, long offset)
+{
+	return vfswrap_seekdir(NULL, conn, dirp, offset);
+}
+
+static long skel_telldir(vfs_handle_struct *handle, connection_struct *conn, DIR *dirp)
+{
+	return vfswrap_telldir(NULL, conn, dirp);
+}
+
+static void skel_rewinddir(vfs_handle_struct *handle, connection_struct *conn, DIR *dirp)
+{
+	return vfswrap_rewinddir(NULL, conn, dirp);
 }
 
 static int skel_mkdir(vfs_handle_struct *handle, connection_struct *conn, const char *path, mode_t mode)
@@ -489,6 +504,9 @@ static vfs_op_tuple skel_op_tuples[] = {
 
 	{SMB_VFS_OP(skel_opendir),			SMB_VFS_OP_OPENDIR,		SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(skel_readdir),			SMB_VFS_OP_READDIR,		SMB_VFS_LAYER_OPAQUE},
+	{SMB_VFS_OP(skel_seekdir),			SMB_VFS_OP_SEEKDIR,		SMB_VFS_LAYER_OPAQUE},
+	{SMB_VFS_OP(skel_telldir),			SMB_VFS_OP_TELLDIR,		SMB_VFS_LAYER_OPAQUE},
+	{SMB_VFS_OP(skel_rewinddir),			SMB_VFS_OP_REWINDDIR,		SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(skel_mkdir),			SMB_VFS_OP_MKDIR,		SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(skel_rmdir),			SMB_VFS_OP_RMDIR,		SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(skel_closedir),			SMB_VFS_OP_CLOSEDIR,		SMB_VFS_LAYER_OPAQUE},
