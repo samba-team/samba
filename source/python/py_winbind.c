@@ -3,7 +3,7 @@
 
    Python wrapper for winbind client functions.
 
-   Copyright (C) Tim Potter      2002
+   Copyright (C) Tim Potter      2002-2003
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -452,6 +452,65 @@ static PyObject *py_auth_crap(PyObject *self, PyObject *args, PyObject *kw)
 	return PyInt_FromLong(response.data.auth.nt_status);
 }
 
+#if 0				/* Include when auth_smbd merged to HEAD */
+
+/* Challenge/response authentication, with secret */
+
+static PyObject *py_auth_smbd(PyObject *self, PyObject *args, PyObject *kw)
+{
+	static char *kwlist[] = 
+		{"username", "password", "use_lm_hash", "use_nt_hash", NULL };
+	struct winbindd_request request;
+	struct winbindd_response response;
+	char *username, *password;
+	int use_lm_hash = 1, use_nt_hash = 1;
+
+	if (!PyArg_ParseTupleAndKeywords(
+		    args, kw, "ss|ii", kwlist, &username, &password, 
+		    &use_lm_hash, &use_nt_hash))
+		return NULL;
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	fstrcpy(request.data.smbd_auth_crap.user, username);
+
+	generate_random_buffer(request.data.smbd_auth_crap.chal, 8, False);
+        
+	if (use_lm_hash) {
+		SMBencrypt((uchar *)password, 
+			   request.data.smbd_auth_crap.chal, 
+			   (uchar *)request.data.smbd_auth_crap.lm_resp);
+		request.data.smbd_auth_crap.lm_resp_len = 24;
+	}
+
+	if (use_nt_hash) {
+		SMBNTencrypt((uchar *)password, 
+			     request.data.smbd_auth_crap.chal,
+			     (uchar *)request.data.smbd_auth_crap.nt_resp);
+		request.data.smbd_auth_crap.nt_resp_len = 24;
+	}
+
+	if (!secrets_fetch_trust_account_password(
+		    lp_workgroup(), request.data.smbd_auth_crap.proof, NULL)) {
+		PyErr_SetString(
+			winbind_error, "unable to fetch domain secret");
+		return NULL;
+	}
+
+
+
+	if (winbindd_request(WINBINDD_SMBD_AUTH_CRAP, &request, &response) 
+	    != NSS_STATUS_SUCCESS) {
+		PyErr_SetString(winbind_error, "lookup failed");
+		return NULL;		
+	}
+	
+	return PyInt_FromLong(response.data.auth.nt_status);
+}
+
+#endif /* 0 */
+
 /* Get user info from name */
 
 static PyObject *py_getpwnam(PyObject *self, PyObject *args)
@@ -647,6 +706,17 @@ The NT status code is returned with zero indicating success." },
 Authenticate a username and password using the challenge/response
 protocol.  The NT status code is returned with zero indicating
 success." },
+
+#if 0				/* Include when smbd_auth merged to HEAD */
+
+	{ "auth_smbd", (PyCFunction)py_auth_crap, METH_VARARGS,
+	  "auth_smbd(s, s) -> int
+
+Authenticate a username and password using the challenge/response
+protocol but using the domain secret to prove we are root.  The NT 
+status code is returned with zero indicating success." },
+
+#endif
 
 	{ NULL }
 };
