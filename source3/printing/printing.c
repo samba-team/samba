@@ -246,6 +246,16 @@ static int traverse_fn_delete(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void 
 	return 0;
 }
 
+/**
+ * Send PRINTER NOTIFY to all processes.
+ **/
+void broadcast_printer_notify(const char *printer_name)
+{
+	/* include NUL */
+	message_send_all(conn_tdb_ctx(), MSG_PRINTER_NOTIFY, printer_name,
+			 strlen(printer_name) + 1, False, NULL);
+}
+
 /****************************************************************************
 check if the print queue has been updated recently enough
 ****************************************************************************/
@@ -442,7 +452,7 @@ static void print_queue_update_background(int snum)
 	if( qcount != get_queue_status(snum, &old_status)) {
 		DEBUG(10,("print_queue_update: queue status change %d jobs -> %d jobs for printer %s\n",
 				old_status.qcount, qcount, printer_name ));
-		message_send_all(conn_tdb_ctx(), MSG_PRINTER_NOTIFY, printer_name, strlen(printer_name) + 1, False);
+		broadcast_printer_notify(printer_name);
 	}
 
 	/* store the new queue status structure */
@@ -688,7 +698,7 @@ BOOL print_job_delete(struct current_user *user, int jobid, WERROR *errcode)
 
 	printer_name = PRINTERNAME(snum);
 
-	message_send_all(conn_tdb_ctx(), MSG_PRINTER_NOTIFY, printer_name, strlen(printer_name) + 1, False);
+	broadcast_printer_notify(printer_name);
 
 	return !print_job_exists(jobid);
 }
@@ -731,7 +741,7 @@ BOOL print_job_pause(struct current_user *user, int jobid, WERROR *errcode)
 
 	printer_name = PRINTERNAME(snum);
 
-	message_send_all(conn_tdb_ctx(), MSG_PRINTER_NOTIFY, printer_name, strlen(printer_name) + 1, False);
+	broadcast_printer_notify(printer_name);
 
 	/* how do we tell if this succeeded? */
 
@@ -774,7 +784,7 @@ BOOL print_job_resume(struct current_user *user, int jobid, WERROR *errcode)
 
 	printer_name = PRINTERNAME(snum);
 
-	message_send_all(conn_tdb_ctx(),MSG_PRINTER_NOTIFY, printer_name, strlen(printer_name) + 1, False);
+	broadcast_printer_notify(printer_name);
 
 	return True;
 }
@@ -1274,7 +1284,7 @@ BOOL print_queue_pause(struct current_user *user, int snum, WERROR *errcode)
 
 	printer_name = PRINTERNAME(snum);
 
-	message_send_all(conn_tdb_ctx(),MSG_PRINTER_NOTIFY, printer_name, strlen(printer_name) + 1, False);
+	broadcast_printer_notify(printer_name);
 
 	return True;
 }
@@ -1306,7 +1316,7 @@ BOOL print_queue_resume(struct current_user *user, int snum, WERROR *errcode)
 
 	printer_name = PRINTERNAME(snum);
 
-	message_send_all(conn_tdb_ctx(),MSG_PRINTER_NOTIFY, printer_name, strlen(printer_name) + 1, False);
+	broadcast_printer_notify(printer_name);
 
 	return True;
 }
@@ -1342,7 +1352,7 @@ BOOL print_queue_purge(struct current_user *user, int snum, WERROR *errcode)
 
 	printer_name = PRINTERNAME(snum);
 
-	message_send_all(conn_tdb_ctx(),MSG_PRINTER_NOTIFY, printer_name, strlen(printer_name) + 1, False);
+	broadcast_printer_notify(printer_name);
 
 	return True;
 }
