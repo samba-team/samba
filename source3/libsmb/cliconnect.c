@@ -137,7 +137,7 @@ BOOL cli_session_setup(struct cli_state *cli,
 		memcpy(p,pword,passlen);
 		p += passlen;
 		p += clistr_push(cli, p, user, -1, CLISTR_CONVERT|CLISTR_UPPER|CLISTR_TERMINATE);
-		set_message(cli->outbuf,10,PTR_DIFF(p,smb_buf(cli->outbuf)),False);
+		cli_setup_bcc(cli, p);
 	}
 	else
 	{
@@ -171,7 +171,7 @@ BOOL cli_session_setup(struct cli_state *cli,
 		p += clistr_push(cli, p, workgroup, -1, CLISTR_CONVERT|CLISTR_TERMINATE|CLISTR_UPPER);
 		p += clistr_push(cli, p, "Unix", -1, CLISTR_CONVERT|CLISTR_TERMINATE);
 		p += clistr_push(cli, p, "Samba", -1, CLISTR_CONVERT|CLISTR_TERMINATE);
-		set_message(cli->outbuf,13,PTR_DIFF(p,smb_buf(cli->outbuf)),False);
+		cli_setup_bcc(cli, p);
 	}
 
       cli_send_smb(cli);
@@ -279,7 +279,7 @@ BOOL cli_send_tconX(struct cli_state *cli,
 	p += clistr_push(cli, p, fullshare, -1, CLISTR_CONVERT | CLISTR_TERMINATE);
 	fstrcpy(p, dev); p += strlen(dev)+1;
 
-	set_message(cli->outbuf,4,PTR_DIFF(p,smb_buf(cli->outbuf)),False);
+	cli_setup_bcc(cli, p);
 
 	SCVAL(cli->inbuf,smb_rcls, 1);
 

@@ -49,7 +49,7 @@ BOOL cli_message_start(struct cli_state *cli, char *host, char *username,
 	unix_to_dos(p,True);
 	p = skip_string(p,1);
 	
-	set_message(cli->outbuf,0,PTR_DIFF(p,smb_buf(cli->outbuf)),False);
+	cli_setup_bcc(cli, p);
 	
 	cli_send_smb(cli);	
 	
