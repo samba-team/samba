@@ -85,9 +85,7 @@ static BOOL mangled_equal(char *name1, char *name2, int snum)
 #if 1
   mangle_name_83(tmpname);
 #else
-  /* We need to use name_map_mangle here to ensure
-   * tmpname gets into the cache. JRA. */
-  name_map_mangle(tmpname,True,True,snum);
+  name_map_mangle(tmpname,True,False,snum);
 #endif
 
   return(strequal(name1,tmpname));
