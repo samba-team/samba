@@ -39,9 +39,6 @@ krb5_error_code krb5_data_realloc(krb5_data *, int);
 krb5_error_code krb5_data_copy(krb5_data *, void *, size_t);
 
 
-krb5_error_code krb5_principal_alloc(krb5_principal*);
-void 		krb5_principal_free(krb5_principal);
-
 krb5_error_code krb5_get_lrealm(char ** realm);
 
 krb5_error_code
