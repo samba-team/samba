@@ -26,7 +26,8 @@ fstring remote_arch="UNKNOWN";
 userdom_struct current_user_info;
 fstring remote_proto="UNKNOWN";
 
-static fstring remote_machine="";
+static fstring remote_machine;
+static fstring smb_user_name;
 
 
 void set_local_machine_name(const char* local_name)
@@ -58,6 +59,21 @@ const char* get_local_machine_name(void)
 {
 	return local_machine;
 }
+
+
+/*
+  setup the string used by %U substitution 
+*/
+void sub_set_smb_name(const char *name)
+{
+	fstring tmp;
+
+	fstrcpy(tmp,name);
+	trim_string(tmp," "," ");
+	strlower(tmp);
+	alpha_strcpy(smb_user_name,tmp,SAFE_NETBIOS_CHARS,sizeof(smb_user_name)-1);
+}
+
 
 /*******************************************************************
  Given a pointer to a %$(NAME) expand it as an environment variable.
@@ -676,20 +692,20 @@ char *alloc_sub_advanced(int snum, const char *user,
 void standard_sub_conn(connection_struct *conn, char *str, size_t len)
 {
 	standard_sub_advanced(SNUM(conn), conn->user, conn->connectpath,
-			conn->gid, current_user_info.smb_name, str, len);
+			conn->gid, smb_user_name, str, len);
 }
 
 char *talloc_sub_conn(TALLOC_CTX *mem_ctx, connection_struct *conn, char *str)
 {
 	return talloc_sub_advanced(mem_ctx, SNUM(conn), conn->user,
 			conn->connectpath, conn->gid,
-			current_user_info.smb_name, str);
+			smb_user_name, str);
 }
 
 char *alloc_sub_conn(connection_struct *conn, char *str)
 {
 	return alloc_sub_advanced(SNUM(conn), conn->user, conn->connectpath,
-			conn->gid, current_user_info.smb_name, str);
+			conn->gid, smb_user_name, str);
 }
 
 /****************************************************************************
@@ -710,5 +726,5 @@ void standard_sub_snum(int snum, char *str, size_t len)
 	}
 
 	standard_sub_advanced(snum, cached_user, "", -1,
-		current_user_info.smb_name, str, len);
+			      smb_user_name, str, len);
 }
