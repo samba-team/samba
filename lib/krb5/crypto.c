@@ -423,12 +423,12 @@ ARCFOUR_string_to_key(krb5_context context,
     if (len != 0 && s == NULL)
 	return ENOMEM;
     for (p = s, i = 0; i < password.length; ++i) {
-	*p++ = 0;
 	*p++ = ((char *)password.data)[i];
+	*p++ = 0;
     }
     for (i = 0; i < salt.length; ++i) {
-	*p++ = 0;
 	*p++ = ((char *)salt.data)[i];
+	*p++ = 0;
     }
     md4_init(&m);
     md4_update(&m, s, len);
