@@ -482,27 +482,124 @@ static BOOL api_lsa_getsystemaccount(pipes_struct *p)
 
 
 /***************************************************************************
+ api_lsa_setsystemaccount
+ ***************************************************************************/
+
+static BOOL api_lsa_setsystemaccount(pipes_struct *p)
+{
+	LSA_Q_SETSYSTEMACCOUNT q_u;
+	LSA_R_SETSYSTEMACCOUNT r_u;
+	
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	if(!lsa_io_q_setsystemaccount("", &q_u, data, 0)) {
+		DEBUG(0,("api_lsa_setsystemaccount: failed to unmarshall LSA_Q_SETSYSTEMACCOUNT.\n"));
+		return False;
+	}
+
+	r_u.status = _lsa_setsystemaccount(p, &q_u, &r_u);
+
+	/* store the response in the SMB stream */
+	if(!lsa_io_r_setsystemaccount("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_lsa_setsystemaccount: Failed to marshall LSA_R_SETSYSTEMACCOUNT.\n"));
+		return False;
+	}
+
+	return True;
+}
+
+/***************************************************************************
+ api_lsa_addprivs
+ ***************************************************************************/
+
+static BOOL api_lsa_addprivs(pipes_struct *p)
+{
+	LSA_Q_ADDPRIVS q_u;
+	LSA_R_ADDPRIVS r_u;
+	
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	if(!lsa_io_q_addprivs("", &q_u, data, 0)) {
+		DEBUG(0,("api_lsa_addprivs: failed to unmarshall LSA_Q_ADDPRIVS.\n"));
+		return False;
+	}
+
+	r_u.status = _lsa_addprivs(p, &q_u, &r_u);
+
+	/* store the response in the SMB stream */
+	if(!lsa_io_r_addprivs("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_lsa_addprivs: Failed to marshall LSA_R_ADDPRIVS.\n"));
+		return False;
+	}
+
+	return True;
+}
+
+/***************************************************************************
+ api_lsa_removeprivs
+ ***************************************************************************/
+
+static BOOL api_lsa_removeprivs(pipes_struct *p)
+{
+	LSA_Q_REMOVEPRIVS q_u;
+	LSA_R_REMOVEPRIVS r_u;
+	
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	if(!lsa_io_q_removeprivs("", &q_u, data, 0)) {
+		DEBUG(0,("api_lsa_removeprivs: failed to unmarshall LSA_Q_REMOVEPRIVS.\n"));
+		return False;
+	}
+
+	r_u.status = _lsa_removeprivs(p, &q_u, &r_u);
+
+	/* store the response in the SMB stream */
+	if(!lsa_io_r_removeprivs("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_lsa_removeprivs: Failed to marshall LSA_R_REMOVEPRIVS.\n"));
+		return False;
+	}
+
+	return True;
+}
+
+
+/***************************************************************************
  \PIPE\ntlsa commands
  ***************************************************************************/
 
 static struct api_struct api_lsa_cmds[] =
 {
-	{ "LSA_OPENPOLICY2"     , LSA_OPENPOLICY2     , api_lsa_open_policy2   },
-	{ "LSA_OPENPOLICY"      , LSA_OPENPOLICY      , api_lsa_open_policy    },
-	{ "LSA_QUERYINFOPOLICY" , LSA_QUERYINFOPOLICY , api_lsa_query_info     },
-	{ "LSA_ENUMTRUSTDOM"    , LSA_ENUMTRUSTDOM    , api_lsa_enum_trust_dom },
-	{ "LSA_CLOSE"           , LSA_CLOSE           , api_lsa_close          },
-	{ "LSA_OPENSECRET"      , LSA_OPENSECRET      , api_lsa_open_secret    },
-	{ "LSA_LOOKUPSIDS"      , LSA_LOOKUPSIDS      , api_lsa_lookup_sids    },
-	{ "LSA_LOOKUPNAMES"     , LSA_LOOKUPNAMES     , api_lsa_lookup_names   },
-	{ "LSA_ENUM_PRIVS"      , LSA_ENUM_PRIVS      , api_lsa_enum_privs     },
+	{ "LSA_OPENPOLICY2"     , LSA_OPENPOLICY2     , api_lsa_open_policy2     },
+	{ "LSA_OPENPOLICY"      , LSA_OPENPOLICY      , api_lsa_open_policy      },
+	{ "LSA_QUERYINFOPOLICY" , LSA_QUERYINFOPOLICY , api_lsa_query_info       },
+	{ "LSA_ENUMTRUSTDOM"    , LSA_ENUMTRUSTDOM    , api_lsa_enum_trust_dom   },
+	{ "LSA_CLOSE"           , LSA_CLOSE           , api_lsa_close            },
+	{ "LSA_OPENSECRET"      , LSA_OPENSECRET      , api_lsa_open_secret      },
+	{ "LSA_LOOKUPSIDS"      , LSA_LOOKUPSIDS      , api_lsa_lookup_sids      },
+	{ "LSA_LOOKUPNAMES"     , LSA_LOOKUPNAMES     , api_lsa_lookup_names     },
+	{ "LSA_ENUM_PRIVS"      , LSA_ENUM_PRIVS      , api_lsa_enum_privs       },
 	{ "LSA_PRIV_GET_DISPNAME",LSA_PRIV_GET_DISPNAME,api_lsa_priv_get_dispname},
-	{ "LSA_ENUM_ACCOUNTS"   , LSA_ENUM_ACCOUNTS   , api_lsa_enum_accounts  },
-	{ "LSA_UNK_GET_CONNUSER", LSA_UNK_GET_CONNUSER, api_lsa_unk_get_connuser},
-	{ "LSA_OPENACCOUNT"     , LSA_OPENACCOUNT     , api_lsa_open_account    },
+	{ "LSA_ENUM_ACCOUNTS"   , LSA_ENUM_ACCOUNTS   , api_lsa_enum_accounts    },
+	{ "LSA_UNK_GET_CONNUSER", LSA_UNK_GET_CONNUSER, api_lsa_unk_get_connuser },
+	{ "LSA_OPENACCOUNT"     , LSA_OPENACCOUNT     , api_lsa_open_account     },
 	{ "LSA_ENUMPRIVSACCOUNT", LSA_ENUMPRIVSACCOUNT, api_lsa_enum_privsaccount},
-	{ "LSA_GETSYSTEMACCOUNT", LSA_GETSYSTEMACCOUNT, api_lsa_getsystemaccount},
-	{ NULL                  , 0                   , NULL                   }
+	{ "LSA_GETSYSTEMACCOUNT", LSA_GETSYSTEMACCOUNT, api_lsa_getsystemaccount },
+	{ "LSA_SETSYSTEMACCOUNT", LSA_SETSYSTEMACCOUNT, api_lsa_setsystemaccount },
+	{ "LSA_ADDPRIVS"        , LSA_ADDPRIVS        , api_lsa_addprivs         },
+	{ "LSA_REMOVEPRIVS"     , LSA_REMOVEPRIVS     , api_lsa_removeprivs      },
+	{ NULL                  , 0                   , NULL                     }
 };
 
 /***************************************************************************

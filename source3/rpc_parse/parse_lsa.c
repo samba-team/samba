@@ -1814,6 +1814,7 @@ void init_lsa_r_enum_privsaccount(LSA_R_ENUMPRIVSACCOUNT *r_u, LUID_ATTR *set, u
 	r_u->set.set=set;
 	r_u->set.count=count;
 	r_u->set.control=control;
+	DEBUG(10,("init_lsa_r_enum_privsaccount: %d %d privileges\n", r_u->count, r_u->set.count));
 }
 
 /*******************************************************************
@@ -1894,6 +1895,47 @@ BOOL lsa_io_r_getsystemaccount(char *desc, LSA_R_GETSYSTEMACCOUNT  *r_c, prs_str
 	return True;
 }
 
+
+/*******************************************************************
+ Reads or writes an LSA_Q_SETSYSTEMACCOUNT structure.
+********************************************************************/
+
+BOOL lsa_io_q_setsystemaccount(char *desc, LSA_Q_SETSYSTEMACCOUNT  *r_c, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "lsa_io_q_setsystemaccount");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+ 
+	if(!smb_io_pol_hnd("pol", &r_c->pol, ps, depth))
+		return False;
+
+	if(!prs_uint32("access", ps, depth, &r_c->access))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ Reads or writes an LSA_R_SETSYSTEMACCOUNT structure.
+********************************************************************/
+
+BOOL lsa_io_r_setsystemaccount(char *desc, LSA_R_SETSYSTEMACCOUNT  *r_c, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "lsa_io_r_setsystemaccount");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+ 
+	if(!prs_ntstatus("status", ps, depth, &r_c->status))
+		return False;
+
+	return True;
+}
+
+
 void init_lsa_q_lookupprivvalue(LSA_Q_LOOKUPPRIVVALUE *trn, POLICY_HND *hnd, char *name)
 {
 	int len_name = strlen(name);
@@ -1948,3 +1990,113 @@ BOOL lsa_io_r_lookupprivvalue(char *desc, LSA_R_LOOKUPPRIVVALUE  *r_c, prs_struc
 
 	return True;
 }
+
+
+/*******************************************************************
+ Reads or writes an LSA_Q_ADDPRIVS structure.
+********************************************************************/
+
+BOOL lsa_io_q_addprivs(char *desc, LSA_Q_ADDPRIVS *r_c, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "lsa_io_q_addprivs");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+ 
+	if(!smb_io_pol_hnd("pol", &r_c->pol, ps, depth))
+		return False;
+	
+	if(!prs_uint32("count", ps, depth, &r_c->count))
+		return False;
+
+	if (UNMARSHALLING(ps) && r_c->count!=0) {
+		if (!(r_c->set.set = (LUID_ATTR *)prs_alloc_mem(ps,sizeof(LUID_ATTR) * r_c->count)))
+			return False;
+	}
+	
+	if(!lsa_io_privilege_set(desc, &r_c->set, ps, depth))
+		return False;
+	
+	return True;
+}
+
+/*******************************************************************
+ Reads or writes an LSA_R_ADDPRIVS structure.
+********************************************************************/
+
+BOOL lsa_io_r_addprivs(char *desc, LSA_R_ADDPRIVS *r_c, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "lsa_io_r_addprivs");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+ 
+	if(!prs_ntstatus("status", ps, depth, &r_c->status))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ Reads or writes an LSA_Q_REMOVEPRIVS structure.
+********************************************************************/
+
+BOOL lsa_io_q_removeprivs(char *desc, LSA_Q_REMOVEPRIVS *r_c, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "lsa_io_q_removeprivs");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+ 
+	if(!smb_io_pol_hnd("pol", &r_c->pol, ps, depth))
+		return False;
+	
+	if(!prs_uint32("allrights", ps, depth, &r_c->allrights))
+		return False;
+
+	if(!prs_uint32("ptr", ps, depth, &r_c->ptr))
+		return False;
+
+	/* 
+	 * JFM: I'm not sure at all if the count is inside the ptr
+	 * never seen one with ptr=0
+	 */
+
+	if (r_c->ptr!=0) {
+		if(!prs_uint32("count", ps, depth, &r_c->count))
+			return False;
+
+		if (UNMARSHALLING(ps) && r_c->count!=0) {
+			if (!(r_c->set.set = (LUID_ATTR *)prs_alloc_mem(ps,sizeof(LUID_ATTR) * r_c->count)))
+				return False;
+		}
+
+		if(!lsa_io_privilege_set(desc, &r_c->set, ps, depth))
+			return False;
+	}
+
+	return True;
+}
+
+/*******************************************************************
+ Reads or writes an LSA_R_REMOVEPRIVS structure.
+********************************************************************/
+
+BOOL lsa_io_r_removeprivs(char *desc, LSA_R_REMOVEPRIVS *r_c, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "lsa_io_r_removeprivs");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+ 
+	if(!prs_ntstatus("status", ps, depth, &r_c->status))
+		return False;
+
+	return True;
+}
+
+

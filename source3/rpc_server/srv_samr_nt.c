@@ -813,13 +813,16 @@ static NTSTATUS get_group_alias_entries(TALLOC_CTX *ctx, DOMAIN_GRP **d_grp, DOM
 		enum_group_mapping(SID_NAME_WKN_GRP, &map, (int *)&num_entries, ENUM_ONLY_MAPPED);
 		
 		if (num_entries != 0) {
+			for (i=0; i<num_entries; i++)
+				free_privilege(&(map[i].priv_set));
+		
 			*d_grp=(DOMAIN_GRP *)talloc_zero(ctx, num_entries*sizeof(DOMAIN_GRP));
 			if (*d_grp==NULL)
 				return NT_STATUS_NO_MEMORY;
 			
 			for(i=0; i<num_entries && i<max_entries; i++) {
 				fstrcpy((*d_grp)[i].name, map[i+start_idx].nt_name);
-				sid_split_rid(&map[i].sid, &(*d_grp)[i].rid);
+				sid_split_rid(&map[i+start_idx].sid, &(*d_grp)[i].rid);
 				
 			}
 		}
@@ -851,6 +854,12 @@ static NTSTATUS get_group_alias_entries(TALLOC_CTX *ctx, DOMAIN_GRP **d_grp, DOM
 				continue;
 			}
 
+			/*
+			 * free early the privilege struct as it's not used
+			 * and prevent leaking mem.
+			 */
+			free_privilege(&smap.priv_set);
+			
 			if (smap.sid_name_use!=SID_NAME_ALIAS) {
 				continue;
 			}
@@ -873,8 +882,9 @@ static NTSTATUS get_group_alias_entries(TALLOC_CTX *ctx, DOMAIN_GRP **d_grp, DOM
 				if ( (*d_grp)[i].rid == trid )
 					break;
 
-			if ( i < num_entries )
+			if ( i < num_entries ) {
 				continue; /* rid was there, dup! */
+			}
 
 			/* JRA - added this for large group db enumeration... */
 
@@ -925,6 +935,13 @@ static NTSTATUS get_group_domain_entries(TALLOC_CTX *ctx, DOMAIN_GRP **d_grp, DO
 	*p_num_entries = 0;
 
 	enum_group_mapping(SID_NAME_DOM_GRP, &map, (int *)&group_entries, ENUM_ONLY_MAPPED);
+			
+	/*
+	 * free early the privilege struct as it's not used
+	 * and prevent leaking mem.
+	 */
+	for (i=0; i<group_entries; i++)
+		free_privilege(&(map[i].priv_set));
 
 	num_entries=group_entries-start_idx;
 
@@ -2702,6 +2719,8 @@ NTSTATUS _samr_query_aliasmem(pipes_struct *p, SAMR_Q_QUERY_ALIASMEM *q_u, SAMR_
 		}
 	}
 
+	free_privilege(&map.priv_set);
+
 	if(!get_uid_list_of_group(map.gid, &uid, &num_uids))
 		return NT_STATUS_NO_SUCH_ALIAS;
 
@@ -2762,6 +2781,8 @@ NTSTATUS _samr_query_groupmem(pipes_struct *p, SAMR_Q_QUERY_GROUPMEM *q_u, SAMR_
 	if(!get_domain_group_from_sid(group_sid, &map))
 		return NT_STATUS_NO_SUCH_GROUP;
 
+	free_privilege(&map.priv_set);
+
 	if(!get_uid_list_of_group(map.gid, &uid, &num_uids))
 		return NT_STATUS_NO_SUCH_GROUP;
 
@@ -2817,7 +2838,9 @@ NTSTATUS _samr_add_aliasmem(pipes_struct *p, SAMR_Q_ADD_ALIASMEM *q_u, SAMR_R_AD
 		} else
 			return NT_STATUS_NO_SUCH_ALIAS;
 	}
-	
+
+	free_privilege(&map.priv_set);
+
 	sid_split_rid(&q_u->sid.sid, &rid);
 	uid=pdb_user_rid_to_uid(rid);
 
@@ -2884,6 +2907,8 @@ NTSTATUS _samr_add_groupmem(pipes_struct *p, SAMR_Q_ADD_GROUPMEM *q_u, SAMR_R_AD
 
 	if(!get_domain_group_from_sid(group_sid, &map))
 		return NT_STATUS_NO_SUCH_GROUP;
+
+	free_privilege(&map.priv_set);
 
 	if ((pwd=getpwuid(pdb_user_rid_to_uid(q_u->rid))) ==NULL)
 		return NT_STATUS_NO_SUCH_USER;
@@ -2968,6 +2993,8 @@ NTSTATUS _samr_delete_dom_group(pipes_struct *p, SAMR_Q_DELETE_DOM_GROUP *q_u, S
 	if(!get_domain_group_from_sid(group_sid, &map))
 		return NT_STATUS_NO_SUCH_ALIAS;
 
+	free_privilege(&map.priv_set);
+
 	gid=map.gid;
 
 	/* check if group really exists */
@@ -3025,6 +3052,8 @@ NTSTATUS _samr_delete_dom_alias(pipes_struct *p, SAMR_Q_DELETE_DOM_ALIAS *q_u, S
 	if(!get_local_group_from_sid(alias_sid, &map))
 		return NT_STATUS_NO_SUCH_ALIAS;
 
+	free_privilege(&map.priv_set);
+
 	gid=map.gid;
 
 	/* check if group really exists */
@@ -3059,6 +3088,9 @@ NTSTATUS _samr_create_dom_group(pipes_struct *p, SAMR_Q_CREATE_DOM_GROUP *q_u, S
 	fstring sid_string;
 	struct group *grp;
 	struct samr_info *info;
+	PRIVILEGE_SET priv_set;
+
+	init_privilege(&priv_set);
 
 	/* Find the policy handle. Open a policy on it. */
 	if (!get_lsa_policy_samr_sid(p, &q_u->pol, &dom_sid)) 
@@ -3085,7 +3117,7 @@ NTSTATUS _samr_create_dom_group(pipes_struct *p, SAMR_Q_CREATE_DOM_GROUP *q_u, S
 	r_u->rid=pdb_gid_to_group_rid(grp->gr_gid);
 
 	/* add the group to the mapping table */
-	if(!add_initial_entry(grp->gr_gid, sid_string, SID_NAME_DOM_GRP, name, NULL, SE_PRIV_NONE))
+	if(!add_initial_entry(grp->gr_gid, sid_string, SID_NAME_DOM_GRP, name, NULL, priv_set, PR_ACCESS_FROM_NETWORK))
 		return NT_STATUS_ACCESS_DENIED;
 
 	if ((info = (struct samr_info *)malloc(sizeof(struct samr_info))) == NULL)
@@ -3115,6 +3147,9 @@ NTSTATUS _samr_create_dom_alias(pipes_struct *p, SAMR_Q_CREATE_DOM_ALIAS *q_u, S
 	fstring sid_string;
 	struct group *grp;
 	struct samr_info *info;
+	PRIVILEGE_SET priv_set;
+
+	init_privilege(&priv_set);
 
 	/* Find the policy handle. Open a policy on it. */
 	if (!get_lsa_policy_samr_sid(p, &q_u->dom_pol, &dom_sid)) 
@@ -3150,7 +3185,7 @@ NTSTATUS _samr_create_dom_alias(pipes_struct *p, SAMR_Q_CREATE_DOM_ALIAS *q_u, S
 	sid_to_string(sid_string, &info->sid);
 
 	/* add the group to the mapping table */
-	if(!add_initial_entry(grp->gr_gid, sid_string, SID_NAME_ALIAS, name, NULL, SE_PRIV_NONE))
+	if(!add_initial_entry(grp->gr_gid, sid_string, SID_NAME_ALIAS, name, NULL, priv_set, PR_ACCESS_FROM_NETWORK))
 		return NT_STATUS_ACCESS_DENIED;
 
 	/* get a (unique) handle.  open a policy on it. */
@@ -3180,6 +3215,8 @@ NTSTATUS _samr_query_groupinfo(pipes_struct *p, SAMR_Q_QUERY_GROUPINFO *q_u, SAM
 
 	if (!get_domain_group_from_sid(group_sid, &map))
 		return NT_STATUS_INVALID_HANDLE;
+
+	free_privilege(&map.priv_set);
 	
 	ctr=(GROUP_INFO_CTR *)talloc_zero(p->mem_ctx, sizeof(GROUP_INFO_CTR));
 	if (ctr==NULL)
@@ -3234,11 +3271,16 @@ NTSTATUS _samr_set_groupinfo(pipes_struct *p, SAMR_Q_SET_GROUPINFO *q_u, SAMR_R_
 			unistr2_to_ascii(map.comment, &(ctr->group.info4.uni_acct_desc), sizeof(map.comment)-1);
 			break;
 		default:
+			free_privilege(&map.priv_set);
 			return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
-	if(!add_mapping_entry(&map, TDB_REPLACE))
+	if(!add_mapping_entry(&map, TDB_REPLACE)) {
+		free_privilege(&map.priv_set);
 		return NT_STATUS_NO_SUCH_GROUP;
+	}
+
+	free_privilege(&map.priv_set);
 
 	return NT_STATUS_OK;
 }
@@ -3268,11 +3310,16 @@ NTSTATUS _samr_set_aliasinfo(pipes_struct *p, SAMR_Q_SET_ALIASINFO *q_u, SAMR_R_
 			unistr2_to_ascii(map.comment, &(ctr->alias.info3.uni_acct_desc), sizeof(map.comment)-1);
 			break;
 		default:
+			free_privilege(&map.priv_set);
 			return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
-	if(!add_mapping_entry(&map, TDB_REPLACE))
+	if(!add_mapping_entry(&map, TDB_REPLACE)) {
+		free_privilege(&map.priv_set);
 		return NT_STATUS_NO_SUCH_GROUP;
+	}
+
+	free_privilege(&map.priv_set);
 
 	return NT_STATUS_OK;
 }
@@ -3319,6 +3366,8 @@ NTSTATUS _samr_open_group(pipes_struct *p, SAMR_Q_OPEN_GROUP *q_u, SAMR_R_OPEN_G
 	/* check if that group really exists */
 	if (!get_domain_group_from_sid(info->sid, &map))
 		return NT_STATUS_NO_SUCH_USER;
+
+	free_privilege(&map.priv_set);
 
 	/* get a (unique) handle.  open a policy on it. */
 	if (!create_policy_hnd(p, &r_u->pol, free_samr_info, (void *)info))
