@@ -1555,7 +1555,7 @@ static BOOL set_boolean(BOOL *pb, char *pszParmValue)
          *pb = False;
       else
       {
-         DEBUG(0,( "Badly formed boolean in configuration file: \"%s\".\n",
+         DEBUG(0,("ERROR: Badly formed boolean in configuration file: \"%s\".\n",
                pszParmValue));
          bRetval = False;
       }
