@@ -531,3 +531,15 @@ NTSTATUS smb_raw_nttrans(struct smbcli_tree *tree,
 
 	return smb_raw_nttrans_recv(req, mem_ctx, parms);
 }
+
+/*
+  work out the maximum data size for a trans request while avoiding 
+  multi-part replies
+
+  TODO: we only need to avoid multi-part replies because the
+  multi-part trans receive code is broken.
+*/
+size_t smb_raw_max_trans_data(struct smbcli_tree *tree, size_t param_size)
+{
+	return tree->session->transport->options.max_xmit - (70 + param_size);
+}

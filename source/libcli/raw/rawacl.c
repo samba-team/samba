@@ -31,7 +31,7 @@ struct smbcli_request *smb_raw_query_secdesc_send(struct smbcli_tree *tree,
 
 	nt.in.max_setup = 0;
 	nt.in.max_param = 4;
-	nt.in.max_data = 0x10000;
+	nt.in.max_data = smb_raw_max_trans_data(tree, 4);
 	nt.in.setup_count = 0;
 	nt.in.function = NT_TRANSACT_QUERY_SECURITY_DESC;
 	nt.in.setup = NULL;

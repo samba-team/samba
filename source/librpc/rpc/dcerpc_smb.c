@@ -236,7 +236,7 @@ static NTSTATUS smb_send_trans_request(struct dcerpc_pipe *p, DATA_BLOB *blob)
         setup[1] = smb->fnum;
 
         trans->in.max_param = 0;
-        trans->in.max_data = 0x8000;
+        trans->in.max_data = smb_raw_max_trans_data(smb->tree, 0);
         trans->in.max_setup = 0;
         trans->in.setup_count = 2;
         trans->in.flags = 0;

@@ -206,8 +206,8 @@ static NTSTATUS smb_raw_search_first_blob(struct smbcli_tree *tree,
 	tp.in.timeout = 0;
 	tp.in.setup_count = 1;
 	tp.in.data = data_blob(NULL, 0);
-	tp.in.max_param = 1024;
-	tp.in.max_data = 8192;
+	tp.in.max_param = 10;
+	tp.in.max_data = smb_raw_max_trans_data(tree, 10);
 	tp.in.setup = &setup;
 	
 	tp.in.params = data_blob_talloc(mem_ctx, NULL, 12);
@@ -258,8 +258,8 @@ static NTSTATUS smb_raw_search_next_blob(struct smbcli_tree *tree,
 	tp.in.timeout = 0;
 	tp.in.setup_count = 1;
 	tp.in.data = data_blob(NULL, 0);
-	tp.in.max_param = 1024;
-	tp.in.max_data = 8192;
+	tp.in.max_param = 10;
+	tp.in.max_data = smb_raw_max_trans_data(tree, 10);
 	tp.in.setup = &setup;
 	
 	tp.in.params = data_blob_talloc(mem_ctx, NULL, 12);
