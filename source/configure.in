@@ -1592,7 +1592,7 @@ AC_ARG_WITH(krb4,
 # check for Kerberos 5 auth system
 AC_MSG_CHECKING(whether to use Kerberos 5)
 AC_ARG_WITH(krb5,
-[  --with-krb5=base-dir    Include Kerberos 5 support (defualt=no)],
+[  --with-krb5=base-dir    Include Kerberos 5 support (default=no)],
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
