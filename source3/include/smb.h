@@ -952,6 +952,11 @@ struct bitmap {
 #define SMBntcreateX     0xA2   /* NT create and X */
 #define SMBntcancel      0xA4   /* NT cancel */
 
+/* These are the trans subcommands */
+#define TRANSACT_SETNAMEDPIPEHANDLESTATE  0x01
+#define TRANSACT_DCERPCCMD                0x26
+#define TRANSACT_WAITNAMEDPIPEHANDLESTATE 0x53
+
 /* These are the TRANS2 sub commands */
 #define TRANSACT2_OPEN                        0
 #define TRANSACT2_FINDFIRST                   1
