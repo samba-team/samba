@@ -51,6 +51,7 @@ BOOL become_userk(connection_struct *conn, const vuser_key *key)
 	char group_c;
 	int ngroups = 0;
 	gid_t *groups = NULL;
+	BOOL ret;
 
 	if (!conn)
 	{
@@ -142,9 +143,13 @@ BOOL become_userk(connection_struct *conn, const vuser_key *key)
 		}
 	}
 	
+	/* fortunately, become_unix_sec_ctx() now copies the groups */
+	ret = become_unix_sec_ctx(key, conn, uid, gid, ngroups, groups);
+
+	/* free the groups *after* setting them! */
 	vuid_free_user_struct(vuser);
 
-	return become_unix_sec_ctx(key, conn, uid, gid, ngroups, groups);
+	return ret;
 }
 
 /****************************************************************************

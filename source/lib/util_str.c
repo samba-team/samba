@@ -838,6 +838,7 @@ char *safe_strcpy(char *dest,const char *src, size_t maxlength)
     if (len > maxlength) {
 	    DEBUG(0,("ERROR: string overflow by %d in safe_strcpy [%.50s]\n",
 		     (int)(len-maxlength), src));
+	    SMB_ASSERT(len <= maxlength);
 	    len = maxlength;
     }
       
@@ -869,6 +870,7 @@ char *safe_strcat(char *dest, const char *src, size_t maxlength)
     if (src_len + dest_len > maxlength) {
 	    DEBUG(0,("ERROR: string overflow by %d in safe_strcat [%.50s]\n",
 		     (int)(src_len + dest_len - maxlength), src));
+	    SMB_ASSERT(False);
 	    src_len = maxlength - dest_len;
     }
       
@@ -1118,6 +1120,7 @@ void string_sub(char *s,const char *pattern,const char *insert, size_t len)
 			DEBUG(0,("ERROR: string overflow by %d in string_sub(%.50s, %d)\n", 
 				 (int)(ls + (li-lp) - len),
 				 pattern, (int)len));
+		    SMB_ASSERT(False);
 			break;
 		}
 		if (li != lp) {

@@ -485,67 +485,6 @@ to open_mode %x\n", (unsigned long)desired_access, (unsigned long)share_access,
   return smb_open_mode;
 }
 
-/*
- * This is a *disgusting* hack.
- * This is *so* bad that even I'm embarrassed (and I
- * have no shame). Here's the deal :
- * Until we get the correct SPOOLSS code into smbd
- * then when we're running with NT SMB support then
- * NT makes this call with a level of zero, and then
- * immediately follows it with an open request to
- * the \\SRVSVC pipe. If we allow that open to
- * succeed then NT barfs when it cannot open the
- * \\SPOOLSS pipe immediately after and continually
- * whines saying "Printer name is invalid" forever
- * after. If we cause *JUST THIS NEXT OPEN* of \\SRVSVC
- * to fail, then NT downgrades to using the downlevel code
- * and everything works as well as before. I hate
- * myself for adding this code.... JRA.
- *
- * The HACK_FAIL_TIME define allows only a 2
- * second window for this to occur, just in
- * case...
- */
-
-static BOOL fail_next_srvsvc = False;
-static time_t fail_time;
-#define HACK_FAIL_TIME 2 /* In seconds. */
-
-void fail_next_srvsvc_open(void)
-{
-  /* Check client is WinNT proper; Win2K doesn't like Jeremy's hack - matty */
-  if (get_remote_arch() != RA_WINNT)
-    return;
-
-  fail_next_srvsvc = True;
-  fail_time = time(NULL);
-  DEBUG(10,("fail_next_srvsvc_open: setting up timeout close of \\srvsvc pipe for print fix.\n"));
-}
-
-/*
- * HACK alert.... see above - JRA.
- */
-
-BOOL should_fail_next_srvsvc_open(const char *pipename)
-{
-
-  DEBUG(10,("should_fail_next_srvsvc_open: fail = %d, pipe = %s\n",
-    (int)fail_next_srvsvc, pipename));
-
-  if(fail_next_srvsvc && (time(NULL) > fail_time + HACK_FAIL_TIME)) {
-    fail_next_srvsvc = False;
-    fail_time = (time_t)0;
-    DEBUG(10,("should_fail_next_srvsvc_open: End of timeout close of \\srvsvc pipe for print fix.\n"));
-  }
-
-  if(fail_next_srvsvc && strequal(pipename, "srvsvc")) {
-    fail_next_srvsvc = False;
-    DEBUG(10,("should_fail_next_srvsvc_open: Deliberately failing open of \\srvsvc pipe for print fix.\n"));
-    return True;
-  }
-  return False;
-}
-
 
 /****************************************************************************
  Reply to an NT create and X call on a pipe.
@@ -571,9 +510,6 @@ static int nt_open_pipe(char *fname, connection_struct *conn,
 	/* Strip \\ off the name. */
 	fname++;
     
-	if(should_fail_next_srvsvc_open(fname))
-		return (ERROR(ERRSRV,ERRaccess));
-
 	DEBUG(3,("nt_open_pipe: Known pipe %s opening.\n", fname));
 
 	key.pid = getpid();

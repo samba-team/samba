@@ -180,16 +180,16 @@ BOOL vuid_io_user_struct(char *desc, user_struct * r_u, prs_struct * ps,
 }
 
 
-
 /*******************************************************************
 frees a structure.
 ********************************************************************/
 void vuid_free_user_struct(user_struct * r_u)
 {
-	if (r_u != NULL && r_u->groups != NULL)
+	if (r_u != NULL)
 	{
-		free(r_u->groups);
+		safe_free(r_u->groups);
 		r_u->groups = NULL;
 	}
 	safe_free(r_u);
 }
+
