@@ -2265,14 +2265,24 @@ krb5_string_to_key_derived(krb5_context context,
     return ret;
 }
 
-/*
- * Return the size of an encrypted packet of length `data_len'
- */
+static size_t
+wrapped_length (krb5_context context,
+		krb5_crypto  crypto,
+		size_t       data_len)
+{
+    struct encryption_type *et = crypto->et;
+    size_t blocksize = et->blocksize;
+    size_t res;
 
-size_t
-krb5_get_wrapped_length (krb5_context context,
-			 krb5_crypto  crypto,
-			 size_t       data_len)
+    res =  et->confoundersize + et->cksumtype->checksumsize + data_len;
+    res =  (res + blocksize - 1) / blocksize * blocksize;
+    return res;
+}
+
+static size_t
+wrapped_length_dervied (krb5_context context,
+			krb5_crypto  crypto,
+			size_t       data_len)
 {
     struct encryption_type *et = crypto->et;
     size_t blocksize = et->blocksize;
@@ -2282,6 +2292,21 @@ krb5_get_wrapped_length (krb5_context context,
     res =  (res + blocksize - 1) / blocksize * blocksize;
     res += et->cksumtype->checksumsize;
     return res;
+}
+
+/*
+ * Return the size of an encrypted packet of length `data_len'
+ */
+
+size_t
+krb5_get_wrapped_length (krb5_context context,
+			 krb5_crypto  crypto,
+			 size_t       data_len)
+{
+    if (derived_crypto (context, crypto))
+	return wrapped_length_dervied (context, crypto, data_len);
+    else
+	return wrapped_length (context, crypto, data_len);
 }
 
 #ifdef CRYPTO_DEBUG
