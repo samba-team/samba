@@ -27,7 +27,7 @@ static int sys_waitpid(pid_t pid,int *status,int options)
 #endif /* USE_WAITPID */
 }
 
-#define DATA "conftest.fcntl"
+#define DATA "/tmp/conftest.fcntl"
 
 #ifndef SEEK_SET
 #define SEEK_SET 0

@@ -5,30 +5,7 @@
    largely based on pam_userdb by Christian Gafton <gafton@redhat.com> 
 */
 
-#include <features.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
-#include <syslog.h>
-#include <stdarg.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <errno.h>
-
-#define MODULE_NAME "pam_winbind"
-#define PAM_SM_AUTH
-#define PAM_SM_ACCOUNT
-#define PAM_SM_PASSWORD
-#include <security/pam_modules.h>
-#include <security/_pam_macros.h>
-
-#define PAM_DEBUG_ARG (1<<0)
-#define PAM_USE_AUTHTOK_ARG (1<<1)
-#define PAM_UNKNOWN_OK_ARG (1<<2)
-
-#include "winbind_nss_config.h"
-#include "winbindd_nss.h"
+#include "pam_winbind.h"
 
 /* prototypes from common.c */
 void init_request(struct winbindd_request *req,int rq_type);

@@ -570,6 +570,9 @@
 /* Define if you have the pread64 function.  */
 #undef HAVE_PREAD64
 
+/* Define if you have the putenv function.  */
+#undef HAVE_PUTENV
+
 /* Define if you have the putprpwnam function.  */
 #undef HAVE_PUTPRPWNAM
 
@@ -705,6 +708,9 @@
 /* Define if you have the <fcntl.h> header file.  */
 #undef HAVE_FCNTL_H
 
+/* Define if you have the <features.h> header file.  */
+#undef HAVE_FEATURES_H
+
 /* Define if you have the <getopt.h> header file.  */
 #undef HAVE_GETOPT_H
 
@@ -744,6 +750,9 @@
 /* Define if you have the <nss.h> header file.  */
 #undef HAVE_NSS_H
 
+/* Define if you have the <nss_common.h> header file.  */
+#undef HAVE_NSS_COMMON_H
+
 /* Define if you have the <poll.h> header file.  */
 #undef HAVE_POLL_H
 
@@ -767,6 +776,9 @@
 
 /* Define if you have the <rpcsvc/ypclnt.h> header file.  */
 #undef HAVE_RPCSVC_YPCLNT_H
+
+/* Define if you have the <security/_pam_macros.h> header file.  */
+#undef HAVE_SECURITY__PAM_MACROS_H
 
 /* Define if you have the <security/pam_appl.h> header file.  */
 #undef HAVE_SECURITY_PAM_APPL_H

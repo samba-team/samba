@@ -124,8 +124,6 @@ BOOL cli_connect_servers_auth(struct cli_state *cli,
 				char *server,
 				const struct ntuser_creds *usr);
 BOOL cli_connect_serverlist(struct cli_state *cli, char *p);
-BOOL _get_trust_account_password(char *domain, unsigned char *ret_pwd, 
-				 time_t *pass_last_set_time);
 BOOL get_any_dc_name(char *domain, fstring srv_name);
 
 /*The following definitions come from  libsmb/clientgen.c  */
@@ -392,7 +390,7 @@ BOOL make_strhdr2(STRHDR2 *hdr, uint32 max_len, uint32 len, uint32 buffer);
 BOOL smb_io_strhdr2(char *desc, STRHDR2 *hdr, prs_struct *ps, int depth);
 BOOL make_uni_hdr(UNIHDR *hdr, int len);
 BOOL make_unihdr_from_unistr2(UNIHDR *hdr, const UNISTR2 *str);
-BOOL smb_io_unihdr(char *desc,  UNIHDR *hdr, prs_struct *ps, int depth);
+BOOL smb_io_unihdr(const char *desc,  UNIHDR *hdr, prs_struct *ps, int depth);
 BOOL make_buf_hdr(BUFHDR *hdr, int max_len, int len);
 BOOL smb_io_hdrbuf_pre(char *desc, BUFHDR *hdr, prs_struct *ps, int depth, uint32 *offset);
 BOOL smb_io_hdrbuf_post(char *desc, BUFHDR *hdr, prs_struct *ps, int depth, 
@@ -402,7 +400,7 @@ BOOL make_bufhdr2(BUFHDR2 *hdr, uint32 info_level, uint32 length, uint32 buffer)
 BOOL smb_io_bufhdr2(char *desc, BUFHDR2 *hdr, prs_struct *ps, int depth);
 BOOL make_uni_hdr2(UNIHDR2 *hdr, int len);
 BOOL make_unihdr2_from_unistr2(UNIHDR2 *hdr, const UNISTR2 *str);
-BOOL smb_io_unihdr2(char *desc,  UNIHDR2 *hdr2, prs_struct *ps, int depth);
+BOOL smb_io_unihdr2(const char *desc,  UNIHDR2 *hdr2, prs_struct *ps, int depth);
 BOOL make_unistr(UNISTR *str, char *buf);
 BOOL smb_io_unistr(char *desc,  UNISTR *uni, prs_struct *ps, int depth);
 BOOL make_buffer3_uint32(BUFFER3 *str, uint32 val);
@@ -425,7 +423,8 @@ BOOL make_string2(STRING2 *str, const char *buf, int len);
 BOOL make_buf_string2(STRING2 *str, uint32 *ptr, const char *buf);
 BOOL smb_io_string2(char *desc,  STRING2 *str2, uint32 buffer, prs_struct *ps, int depth);
 BOOL make_unistr2(UNISTR2 *str, const char *buf, int len);
-BOOL smb_io_unistr2(char *desc,  UNISTR2 *uni2, uint32 buffer, prs_struct *ps, int depth);
+BOOL smb_io_unistr2(const char *desc, UNISTR2 *uni2, uint32 buffer,
+		    prs_struct *ps, int depth);
 BOOL smb_io_gid(char *desc,  DOM_GID *gid, prs_struct *ps, int depth);
 BOOL smb_io_pol_hnd(char *desc,  POLICY_HND *pol, prs_struct *ps, int depth);
 BOOL smb_io_unistr3(char *desc,  UNISTR3 *name, prs_struct *ps, int depth);

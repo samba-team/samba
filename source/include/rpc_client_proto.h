@@ -30,9 +30,9 @@ BOOL cli_connection_init_auth(const char *srv_name, const char *pipe_name,
 			      cli_auth_fns * auth, void *auth_creds);
 BOOL cli_connection_getsrv(const char *srv_name, const char *pipe_name,
 			   struct cli_connection **con);
-BOOL cli_connection_get(const POLICY_HND * pol, struct cli_connection **con);
-BOOL cli_pol_link(POLICY_HND * to, const POLICY_HND * from);
-BOOL cli_get_usr_sesskey(const POLICY_HND * pol, uchar usr_sess_key[16]);
+BOOL cli_connection_get(const POLICY_HND *pol, struct cli_connection **con);
+BOOL cli_pol_link(POLICY_HND *to, const POLICY_HND *from);
+BOOL cli_get_usr_sesskey(const POLICY_HND *pol, uchar usr_sess_key[16]);
 BOOL cli_set_con_usr_sesskey(struct cli_connection *con,
 			     const uchar usr_sess_key[16]);
 const vuser_key *cli_con_sec_ctx(struct cli_connection *con);
@@ -43,7 +43,7 @@ BOOL cli_conn_set_auth_info(struct cli_connection *con, void *auth_info);
 struct ntdom_info *cli_conn_get_ntinfo(struct cli_connection *con);
 BOOL cli_get_con_sesskey(struct cli_connection *con, uchar sess_key[16]);
 BOOL cli_con_get_srvname(struct cli_connection *con, char *srv_name);
-BOOL cli_get_sesskey(const POLICY_HND * pol, uchar sess_key[16]);
+BOOL cli_get_sesskey(const POLICY_HND *pol, uchar sess_key[16]);
 BOOL cli_get_sesskey_srv(const char *srv_name, uchar sess_key[16]);
 void cli_con_gen_next_creds(struct cli_connection *con,
 			    DOM_CRED * new_clnt_cred);
@@ -53,19 +53,19 @@ BOOL cli_con_deal_with_creds(struct cli_connection *con,
 BOOL cli_con_set_creds(const char *srv_name, const uchar sess_key[16],
 		       DOM_CRED * cred);
 BOOL rpc_hnd_ok(const POLICY_HND *hnd);
-BOOL rpc_hnd_pipe_req(const POLICY_HND * hnd, uint8 op_num,
-		      prs_struct * data, prs_struct * rdata);
+BOOL rpc_hnd_pipe_req(const POLICY_HND *hnd, uint8 op_num,
+		      prs_struct *data, prs_struct *rdata);
 BOOL rpc_con_pipe_req(struct cli_connection *con, uint8 op_num,
-		      prs_struct * data, prs_struct * rdata);
-BOOL rpc_api_write(struct cli_connection *con, prs_struct * data);
-BOOL rpc_api_rcv_pdu(struct cli_connection *con, prs_struct * rdata);
+		      prs_struct *data, prs_struct *rdata);
+BOOL rpc_api_write(struct cli_connection *con, prs_struct *data);
+BOOL rpc_api_rcv_pdu(struct cli_connection *con, prs_struct *rdata);
 BOOL rpc_con_ok(struct cli_connection *con);
-BOOL rpc_api_send_rcv_pdu(struct cli_connection *con, prs_struct * data,
-			  prs_struct * rdata);
-BOOL set_policy_con(struct policy_cache *cache, POLICY_HND * hnd,
+BOOL rpc_api_send_rcv_pdu(struct cli_connection *con, prs_struct *data,
+			  prs_struct *rdata);
+BOOL set_policy_con(struct policy_cache *cache, POLICY_HND *hnd,
 		    struct cli_connection *con,
 		    void (*free_fn) (struct cli_connection *));
-BOOL get_policy_con(struct policy_cache *cache, const POLICY_HND * hnd,
+BOOL get_policy_con(struct policy_cache *cache, const POLICY_HND *hnd,
 		    struct cli_connection **con);
 
 /*The following definitions come from  rpc_client/cli_dfs.c  */

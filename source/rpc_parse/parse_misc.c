@@ -5,7 +5,8 @@
  *  RPC Pipe client / server routines
  *  Copyright (C) Andrew Tridgell              1992-2000,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-2000,
- *  Copyright (C) Paul Ashton                  1997-2000.
+ *  Copyright (C) Paul Ashton                  1997-2000,
+ *  Copyright (C) Elrond                            2000.
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -306,7 +307,7 @@ BOOL make_unihdr_from_unistr2(UNIHDR *hdr, const UNISTR2 *str)
  Reads or writes a UNIHDR structure.
 ********************************************************************/
 
-BOOL smb_io_unihdr(char *desc,  UNIHDR *hdr, prs_struct *ps, int depth)
+BOOL smb_io_unihdr(const char *desc,  UNIHDR *hdr, prs_struct *ps, int depth)
 {
 	if (hdr == NULL)
 		return False;
@@ -461,7 +462,7 @@ BOOL make_unihdr2_from_unistr2(UNIHDR2 *hdr, const UNISTR2 *str)
 /*******************************************************************
  Reads or writes a UNIHDR2 structure.
 ********************************************************************/
-BOOL smb_io_unihdr2(char *desc,  UNIHDR2 *hdr2, prs_struct *ps, int depth)
+BOOL smb_io_unihdr2(const char *desc,  UNIHDR2 *hdr2, prs_struct *ps, int depth)
 {
 	if (hdr2 == NULL)
 		return False;
@@ -913,7 +914,8 @@ XXXX NOTE: UNISTR2 structures need NOT be null-terminated.
      the uni_str_len member tells you how long the string is;
      the uni_max_len member tells you how large the buffer is.
 ********************************************************************/
-BOOL smb_io_unistr2(char *desc,  UNISTR2 *uni2, uint32 buffer, prs_struct *ps, int depth)
+BOOL smb_io_unistr2(const char *desc, UNISTR2 *uni2, uint32 buffer,
+		    prs_struct *ps, int depth)
 {
 	if (uni2 == NULL) return False;
 

@@ -75,6 +75,8 @@ void winbindd_idmap_dump_status(void);
 
 /*The following definitions come from  nsswitch/winbindd_misc.c  */
 
+BOOL _get_trust_account_password(char *domain, unsigned char *ret_pwd, 
+					time_t *pass_last_set_time);
 enum winbindd_result winbindd_check_machine_acct(
 	struct winbindd_cli_state *state);
 enum winbindd_result winbindd_list_trusted_domains(struct winbindd_cli_state

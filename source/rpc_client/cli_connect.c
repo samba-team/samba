@@ -73,7 +73,7 @@ static void free_con_array(uint32 num_entries,
 	free_void_array(num_entries, (void **)entries, *fn);
 }
 
-static struct cli_connection *add_con_to_array(uint32 * len,
+static struct cli_connection *add_con_to_array(uint32 *len,
 					       struct cli_connection ***array,
 					       struct cli_connection *con)
 {
@@ -198,7 +198,7 @@ static struct cli_connection *cli_con_get(const char *srv_name,
 			con->auth = cli_conn_get_authfns(con);
 			if (con->auth_info != NULL)
 			{
-				DEBUG(1,("cli_con_get: TODO: auth reuse\n"));
+				DEBUG(1, ("cli_con_get: TODO: auth reuse\n"));
 				cli_connection_free(con);
 				return NULL;
 			}
@@ -383,7 +383,7 @@ BOOL cli_connection_getsrv(const char *srv_name, const char *pipe_name,
 /****************************************************************************
 obtain client state
 ****************************************************************************/
-BOOL cli_connection_get(const POLICY_HND * pol, struct cli_connection **con)
+BOOL cli_connection_get(const POLICY_HND *pol, struct cli_connection **con)
 {
 	return get_policy_con(get_global_hnd_cache(), pol, con);
 }
@@ -391,7 +391,7 @@ BOOL cli_connection_get(const POLICY_HND * pol, struct cli_connection **con)
 /****************************************************************************
 link a child policy handle to a parent one
 ****************************************************************************/
-BOOL cli_pol_link(POLICY_HND * to, const POLICY_HND * from)
+BOOL cli_pol_link(POLICY_HND *to, const POLICY_HND *from)
 {
 	struct cli_connection *con = NULL;
 
@@ -411,7 +411,7 @@ BOOL cli_pol_link(POLICY_HND * to, const POLICY_HND * from)
 /****************************************************************************
 set a user session key associated with a connection 
 ****************************************************************************/
-BOOL cli_get_usr_sesskey(const POLICY_HND * pol, uchar usr_sess_key[16])
+BOOL cli_get_usr_sesskey(const POLICY_HND *pol, uchar usr_sess_key[16])
 {
 	struct ntdom_info *nt;
 	struct cli_connection *con;
@@ -563,7 +563,7 @@ policy handle.
 ****************************************************************************/
 BOOL cli_con_get_srvname(struct cli_connection *con, char *srv_name)
 {
-	char *desthost = NULL;
+	const char *desthost = NULL;
 
 	if (con == NULL)
 	{
@@ -601,7 +601,7 @@ BOOL cli_con_get_srvname(struct cli_connection *con, char *srv_name)
 get a user session key associated with a connection associated with a
 policy handle.
 ****************************************************************************/
-BOOL cli_get_sesskey(const POLICY_HND * pol, uchar sess_key[16])
+BOOL cli_get_sesskey(const POLICY_HND *pol, uchar sess_key[16])
 {
 	struct cli_connection *con = NULL;
 
@@ -698,8 +698,8 @@ BOOL rpc_hnd_ok(const POLICY_HND *hnd)
 /****************************************************************************
  send a request on an rpc pipe.
  ****************************************************************************/
-BOOL rpc_hnd_pipe_req(const POLICY_HND * hnd, uint8 op_num,
-		      prs_struct * data, prs_struct * rdata)
+BOOL rpc_hnd_pipe_req(const POLICY_HND *hnd, uint8 op_num,
+		      prs_struct *data, prs_struct *rdata)
 {
 	struct cli_connection *con = NULL;
 
@@ -708,7 +708,8 @@ BOOL rpc_hnd_pipe_req(const POLICY_HND * hnd, uint8 op_num,
 		return False;
 	}
 
-	if (!rpc_con_ok(con)) return False;
+	if (!rpc_con_ok(con))
+		return False;
 
 	return rpc_con_pipe_req(con, op_num, data, rdata);
 }
@@ -717,7 +718,7 @@ BOOL rpc_hnd_pipe_req(const POLICY_HND * hnd, uint8 op_num,
  send a request on an rpc pipe.
  ****************************************************************************/
 BOOL rpc_con_pipe_req(struct cli_connection *con, uint8 op_num,
-		      prs_struct * data, prs_struct * rdata)
+		      prs_struct *data, prs_struct *rdata)
 {
 	BOOL ret;
 	DEBUG(10, ("rpc_con_pipe_req: op_num %d offset %d used: %d\n",
@@ -730,9 +731,9 @@ BOOL rpc_con_pipe_req(struct cli_connection *con, uint8 op_num,
 }
 
 /****************************************************************************
- write to a pipe
+ write a full PDU to a pipe
 ****************************************************************************/
-BOOL rpc_api_write(struct cli_connection *con, prs_struct * data)
+BOOL rpc_api_write(struct cli_connection *con, prs_struct *data)
 {
 	switch (con->type)
 	{
@@ -755,7 +756,10 @@ BOOL rpc_api_write(struct cli_connection *con, prs_struct * data)
 	return False;
 }
 
-BOOL rpc_api_rcv_pdu(struct cli_connection *con, prs_struct * rdata)
+/****************************************************************************
+ read a full PDU from a pipe
+****************************************************************************/
+BOOL rpc_api_rcv_pdu(struct cli_connection *con, prs_struct *rdata)
 {
 	switch (con->type)
 	{
@@ -780,8 +784,9 @@ BOOL rpc_api_rcv_pdu(struct cli_connection *con, prs_struct * rdata)
 	return False;
 }
 
-/* this allows us to detect dead servers. The cli->fd is set to -1 when
-   we get an error */
+/****************************************************************************
+ this allows us to detect dead servers. 
+****************************************************************************/
 BOOL rpc_con_ok(struct cli_connection *con)
 {
 	if (!con) return False;
@@ -805,8 +810,11 @@ BOOL rpc_con_ok(struct cli_connection *con)
 }
 
 
-BOOL rpc_api_send_rcv_pdu(struct cli_connection *con, prs_struct * data,
-			  prs_struct * rdata)
+/****************************************************************************
+ write full PDU to pipe then read full PDU from pipe.
+****************************************************************************/
+BOOL rpc_api_send_rcv_pdu(struct cli_connection *con, prs_struct *data,
+			  prs_struct *rdata)
 {
 	switch (con->type)
 	{
@@ -858,7 +866,7 @@ static void free_policy_con(void *dev)
 /****************************************************************************
   set con state
 ****************************************************************************/
-BOOL set_policy_con(struct policy_cache *cache, POLICY_HND * hnd,
+BOOL set_policy_con(struct policy_cache *cache, POLICY_HND *hnd,
 		    struct cli_connection *con,
 		    void (*free_fn) (struct cli_connection *))
 {
@@ -884,7 +892,7 @@ BOOL set_policy_con(struct policy_cache *cache, POLICY_HND * hnd,
 /****************************************************************************
   get con state
 ****************************************************************************/
-BOOL get_policy_con(struct policy_cache *cache, const POLICY_HND * hnd,
+BOOL get_policy_con(struct policy_cache *cache, const POLICY_HND *hnd,
 		    struct cli_connection **con)
 {
 	struct con_info *dev;
