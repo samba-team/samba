@@ -376,24 +376,24 @@
 	} samr_GroupInfoDesciption;
 
 	typedef enum {
-		GroupInfoAll          = 1,
-		GroupInfoName         = 2,
-		GroupInfoX            = 3,
-		GroupInfoDescription  = 4,
-		GroupInfoAll2         = 5
-	} GroupInfo;
+		GROUPINFOALL          = 1,
+		GROUPINFONAME         = 2,
+		GROUPINFOX            = 3,
+		GROUPINFODESCRIPTION  = 4,
+		GROUPINFOALL2         = 5
+	} samr_GroupInfoEnum;
 
 	typedef union {
-		[case(GroupInfoAll)]         samr_GroupInfoAll    all;
-		[case(GroupInfoName)]        samr_String            name;
-		[case(GroupInfoX)]           samr_GroupInfoX      unknown;
-		[case(GroupInfoDescription)] samr_String            description;
-		[case(GroupInfoAll2)]        samr_GroupInfoAll    all2;
+		[case(GROUPINFOALL)]         samr_GroupInfoAll    all;
+		[case(GROUPINFONAME)]        samr_String            name;
+		[case(GROUPINFOX)]           samr_GroupInfoX      unknown;
+		[case(GROUPINFODESCRIPTION)] samr_String            description;
+		[case(GROUPINFOALL2)]        samr_GroupInfoAll    all2;
 	} samr_GroupInfo;
 
 	NTSTATUS samr_QueryGroupInfo(
 		[in,ref]                  policy_handle *group_handle,
-		[in]                      GroupInfo level,
+		[in]                      samr_GroupInfoEnum level,
 		[out,switch_is(level)]    samr_GroupInfo *info
 		);
 
@@ -401,7 +401,7 @@
 	/* Function    0x15     */
 	NTSTATUS samr_SetGroupInfo(
 		[in,ref]                  policy_handle *group_handle,
-		[in]                      GroupInfo level,
+		[in]                      samr_GroupInfoEnum level,
 		[in,switch_is(level),ref] samr_GroupInfo *info
 		);
 
@@ -477,20 +477,20 @@
 	} samr_AliasInfoAll;
 
 	typedef enum {
-		AliasInfoAll          = 1,
-		AliasInfoName         = 2,
-		AliasInfoDescription  = 3
-	} AliasInfo;
+		ALIASINFOALL          = 1,
+		ALIASINFONAME         = 2,
+		ALIASINFODESCRIPTION  = 3
+	} samr_AliasInfoEnum;
 
 	typedef union {
-		[case(AliasInfoAll)] samr_AliasInfoAll all;
-		[case(AliasInfoName)] samr_String name;
-		[case(AliasInfoDescription)] samr_String description;
+		[case(ALIASINFOALL)] samr_AliasInfoAll all;
+		[case(ALIASINFONAME)] samr_String name;
+		[case(ALIASINFODESCRIPTION)] samr_String description;
 	} samr_AliasInfo;
 
 	NTSTATUS samr_QueryAliasInfo(
 		[in,ref]                  policy_handle  *alias_handle,
-		[in]                      AliasInfo      level,
+		[in]                      samr_AliasInfoEnum      level,
 		[out,switch_is(level)]    samr_AliasInfo *info
 		);
 
@@ -498,7 +498,7 @@
 	/* Function    0x1d     */
 	NTSTATUS samr_SetAliasInfo(
 		[in,ref]                  policy_handle  *alias_handle,
-		[in]                      AliasInfo      level,
+		[in]                      samr_AliasInfoEnum      level,
 		[in,switch_is(level),ref] samr_AliasInfo *info
 		);
 
