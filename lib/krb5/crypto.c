@@ -656,7 +656,7 @@ krb5_generate_random_keyblock(krb5_context context,
 
 static krb5_error_code
 _key_schedule(krb5_context context,
-	     struct key_data *key)
+	      struct key_data *key)
 {
     krb5_error_code ret;
     struct encryption_type *et = _find_enctype(key->key->keytype);
@@ -1207,6 +1207,7 @@ verify_checksum(krb5_context context,
     int keyed_checksum;
     Checksum c;
     struct checksum_type *ct;
+
     if(crypto) {
 	ct = crypto->et->keyed_checksum;
 	if(ct == NULL)
@@ -1650,8 +1651,10 @@ encrypt_internal(krb5_context context,
 			  p, 
 			  block_sz,
 			  &cksum);
-    if(ret == 0 && cksum.checksum.length != checksum_sz)
+    if(ret == 0 && cksum.checksum.length != checksum_sz) {
+	free_Checksum (&cksum);
 	ret = KRB5_CRYPTO_INTERNAL;
+    }
     if(ret) {
 	memset(p, 0, block_sz);
 	free(p);
@@ -2099,6 +2102,24 @@ krb5_string_to_key_derived(krb5_context context,
     ret = krb5_copy_keyblock_contents(context, kd.key, key);
     free_key_data(context, &kd);
     return ret;
+}
+
+/*
+ * Return the size of an encrypted packet of length `data_len'
+ */
+
+size_t
+krb5_get_wrapped_length (krb5_context context,
+			 krb5_crypto  crypto,
+			 size_t       data_len)
+{
+    struct encryption_type *et = crypto->et;
+    size_t blocksize = et->blocksize;
+    size_t res;
+
+    res = et->confoundersize + et->cksumtype->checksumsize + data_len;
+    res = (res + blocksize - 1) / blocksize * blocksize;
+    return res;
 }
 
 #ifdef CRYPTO_DEBUG
