@@ -654,14 +654,12 @@ uint32 clean_up_driver_struct(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract,
 			NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver;
 			driver=driver_abstract.info_3;
 			return clean_up_driver_struct_level_3(driver, user);
-			break;
 		}
 		case 6:
 		{
 			NT_PRINTER_DRIVER_INFO_LEVEL_6 *driver;
 			driver=driver_abstract.info_6;
 			return clean_up_driver_struct_level_6(driver, user);
-			break;
 		}
 		default:
 			return ERROR_INVALID_PARAMETER;

@@ -664,13 +664,13 @@ void display_job_info_ctr(FILE *out_hnd, enum action_type action,
 		case 1:
 		{
 			display_job_info_1_ctr(out_hnd, action, 
-			                   count, (JOB_INFO_1*const*const)ctr);
+			                   count, (JOB_INFO_1 **)ctr);
 			break;
 		}
 		case 2:
 		{
 			display_job_info_2_ctr(out_hnd, action, 
-			                   count, (JOB_INFO_2*const*const)ctr);
+			                   count, (JOB_INFO_2 **)ctr);
 			break;
 		}
 		default:

@@ -1219,7 +1219,7 @@ BOOL api_rpcTNP(pipes_struct *p, char *rpc_name,
 
 		DEBUG(10, ("api_rpcTNP: rpc input buffer underflow (parse error?)\n"));
 		if (data) {
-			prs_uint8s(False, "", &p->in_data.data, 0, data,
+			prs_uint8s(False, "", &p->in_data.data, 0, (unsigned char *)data,
 				   data_len);
 			free(data);
 		}
