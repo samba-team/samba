@@ -28,11 +28,13 @@ main (int argc, char **argv)
   }else{
       char *realm;
       struct passwd *pw;
-      krb5_get_lrealm(&realm);
+
+      err = krb5_get_default_realm (context, &realm);
+      if (err)
+	  errx (1, "%s", krb5_get_err_text(context, err));
       pw = getpwuid(getuid());
       krb5_build_principal(context, &principal, strlen(realm), realm,
 			   pw->pw_name, NULL);
-
       free(realm);
   }
 
