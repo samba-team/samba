@@ -14,10 +14,27 @@
 	* kpasswd/kpasswd.c (main): make sure the ticket is not
 	forwardable and not proxiable
 
+2000-01-26  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/crypto.c: update to pseudo-standard APIs for
+	md4,md5,sha.  some changes to libdes calls to make them more
+	portable.
+
 2000-01-21  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/verify_init.c (krb5_verify_init_creds): make sure to
  	clean up the correct creds.
+
+2000-01-16  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/principal.c (append_component): change parameter to
+	`const char *'.  check malloc
+	* lib/krb5/principal.c (append_component, va_ext_princ, va_princ):
+	const-ize
+	* lib/krb5/mk_req.c (krb5_mk_req): make `service' and `hostname'
+	const
+	* lib/krb5/principal.c (replace_chars): also add space here
+	* lib/krb5/principal.c: (quotable_chars): add space
 
 2000-01-12  Assar Westerlund  <assar@sics.se>
 
