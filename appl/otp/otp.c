@@ -46,7 +46,7 @@ static void
 usage (void)
 {
   fprintf(stderr,
-	  "Usage: %s [-r] [-s] [-f alg] num seed\n",
+	  "Usage: %s [-r] [-f alg] num seed\n",
 	  prog);
   exit (1);
 }
@@ -169,7 +169,6 @@ int
 main (int argc, char **argv)
 {
   int c;
-  int setp = 0;
   int renewp = 0;
   OtpAlgorithm *alg = otp_find_alg (OTP_ALG_DEFAULT);
 
@@ -179,9 +178,6 @@ main (int argc, char **argv)
     switch (c) {
     case 'r' :
       renewp = 1;
-      break;
-    case 's' :
-      setp = 1;
       break;
     case 'f' :
       alg = otp_find_alg (optarg);
@@ -194,20 +190,11 @@ main (int argc, char **argv)
       usage ();
       break;
     }
-  if (setp && renewp) {
-    fprintf (stderr, "%s: `-r' and `-s' incompatible\n", prog);
-    return 1;
-  }
-  
   argc -= optind;
   argv += optind;
 
-  if (setp)
-    return set (argc, argv, alg);
-  else if (renewp)
+  if (renewp)
     return renew (argc, argv, alg);
-  else {
-    fprintf (stderr, "%s: Nothing to do\n", prog);
-    return 1;
-  }
+  else
+    return set (argc, argv, alg);
 }
