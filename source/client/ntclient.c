@@ -149,11 +149,11 @@ void cmd_sam_query_users(struct client_info *info)
 	res = res ? do_samr_session_open(&nt_cli, nt_tidx, info) : False;
 
 	/* lookup domain controller; receive a policy handle */
-	res = res ? do_samr_open_policy(&nt_cli, nt_tidx, info->dom.samr_fnum,
+	res = res ? do_samr_open_domain(&nt_cli, nt_tidx, info->dom.samr_fnum,
 				srv_name, 0x00000020,
 				&info->dom.samr_pol_open) : False;
 
-	res = res ? do_samr_enum_sam_db(&nt_cli, nt_tidx, info->dom.samr_fnum,
+	res = res ? do_samr_enum_dom_users(&nt_cli, nt_tidx, info->dom.samr_fnum,
 				&info->dom.samr_pol_open, 0xffff,
 				info->dom.sam, &info->dom.num_sam_entries) : False;
 
@@ -172,7 +172,7 @@ void cmd_sam_query_users(struct client_info *info)
 		          info->dom.sam[user_idx].acct_name));
 
 		/* send client open secret; receive a client policy handle */
-		res = res ? do_samr_open_secret(&nt_cli, nt_tidx, info->dom.samr_fnum,
+		res = res ? do_samr_connect(&nt_cli, nt_tidx, info->dom.samr_fnum,
 					&info->dom.samr_pol_open,
 					info->dom.sam[user_idx].smb_userid, sid,
 					&(info->dom.sam[user_idx].acct_pol)) : False;

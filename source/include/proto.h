@@ -28,7 +28,7 @@ int interpret_character_set(char *str, int def);
 
 /*The following definitions come from  charset.c  */
 
-void charset_initialise();
+void charset_initialise(void);
 void codepage_initialise(int client_codepage);
 void add_char_string(char *s);
 
@@ -539,7 +539,7 @@ void announce_my_servers_removed(void);
 void announce_server(struct subnet_record *d, struct work_record *work,
 		     char *name, char *comment, time_t ttl, int server_type);
 void announce_host(time_t t);
-void reset_announce_timer();
+void reset_announce_timer(void);
 void announce_master(time_t t);
 void announce_remote(time_t t);
 
@@ -1050,14 +1050,14 @@ BOOL rpc_pipe_bind(struct cli_state *cli, int t_idx, char *pipe_name, uint16 fnu
 
 BOOL do_samr_session_open(struct cli_state *cli, int t_idx, struct client_info *info);
 void do_samr_session_close(struct cli_state *cli, int t_idx, struct client_info *info);
-BOOL do_samr_enum_sam_db(struct cli_state *cli, int t_idx, uint16 fnum, 
+BOOL do_samr_enum_dom_users(struct cli_state *cli, int t_idx, uint16 fnum, 
 				LSA_POL_HND *pol, uint32 size,
 				struct acct_info sam[MAX_SAM_ENTRIES],
 				int *num_sam_users);
-BOOL do_samr_open_policy(struct cli_state *cli, int t_idx, uint16 fnum, 
+BOOL do_samr_open_domain(struct cli_state *cli, int t_idx, uint16 fnum, 
 				char *srv_name, uint32 unknown_0,
 				LSA_POL_HND *rtn_pol);
-BOOL do_samr_open_secret(struct cli_state *cli, int t_idx, uint16 fnum, 
+BOOL do_samr_connect(struct cli_state *cli, int t_idx, uint16 fnum, 
 				LSA_POL_HND *query_pol, uint32 rid,
 				char *sid, LSA_POL_HND *rtn_pol);
 
@@ -1163,15 +1163,21 @@ char* reg_io_r_open_entry(BOOL io, REG_R_OPEN_ENTRY *r_r, char *q, char *base, i
 
 char* samr_io_q_close(BOOL io, SAMR_Q_CLOSE *q_u, char *q, char *base, int align, int depth);
 char* samr_io_r_close(BOOL io, SAMR_R_CLOSE *r_u, char *q, char *base, int align, int depth);
-void make_samr_q_open_secret(SAMR_Q_OPEN_SECRET *q_u,
+void make_samr_q_connect(SAMR_Q_CONNECT *q_u,
 				LSA_POL_HND *pol, uint32 rid, char *sid);
-char* samr_io_q_open_secret(BOOL io, SAMR_Q_OPEN_SECRET *q_u, char *q, char *base, int align, int depth);
-char* samr_io_r_open_secret(BOOL io, SAMR_R_OPEN_SECRET *r_u, char *q, char *base, int align, int depth);
-void make_samr_q_enum_sam_db(SAMR_Q_ENUM_SAM_DB *q_e, LSA_POL_HND *pol, uint32 size);
-char* samr_io_q_enum_sam_db(BOOL io, SAMR_Q_ENUM_SAM_DB *q_e, char *q, char *base, int align, int depth);
-void make_samr_r_enum_sam_db(SAMR_R_ENUM_SAM_DB *r_u,
+char* samr_io_q_connect(BOOL io, SAMR_Q_CONNECT *q_u, char *q, char *base, int align, int depth);
+char* samr_io_r_connect(BOOL io, SAMR_R_CONNECT *r_u, char *q, char *base, int align, int depth);
+void make_samr_q_enum_dom_users(SAMR_Q_ENUM_DOM_USERS *q_e, LSA_POL_HND *pol, uint32 size);
+char* samr_io_q_enum_dom_users(BOOL io, SAMR_Q_ENUM_DOM_USERS *q_e, char *q, char *base, int align, int depth);
+void make_samr_r_enum_dom_users(SAMR_R_ENUM_DOM_USERS *r_u,
 		uint32 num_sam_entries, struct smb_passwd pass[MAX_SAM_ENTRIES], uint32 status);
-char* samr_io_r_enum_sam_db(BOOL io, SAMR_R_ENUM_SAM_DB *r_u, char *q, char *base, int align, int depth);
+char* samr_io_r_enum_dom_users(BOOL io, SAMR_R_ENUM_DOM_USERS *r_u, char *q, char *base, int align, int depth);
+void make_samr_q_enum_dom_aliases(SAMR_Q_ENUM_DOM_ALIASES *q_e, LSA_POL_HND *pol, uint32 size);
+char* samr_io_q_enum_dom_aliases(BOOL io, SAMR_Q_ENUM_DOM_ALIASES *q_e, char *q, char *base, int align, int depth);
+void make_samr_r_enum_dom_aliases(SAMR_R_ENUM_DOM_ALIASES *r_u,
+		uint32 num_sam_entries, struct smb_passwd grps[MAX_SAM_ENTRIES],
+		uint32 status);
+char* samr_io_r_enum_dom_aliases(BOOL io, SAMR_R_ENUM_DOM_ALIASES *r_u, char *q, char *base, int align, int depth);
 void make_samr_q_query_dispinfo(SAMR_Q_QUERY_DISPINFO *q_e, LSA_POL_HND *pol,
 				uint16 switch_level, uint32 start_idx, uint32 size);
 char* samr_io_q_query_dispinfo(BOOL io, SAMR_Q_QUERY_DISPINFO *q_e, char *q, char *base, int align, int depth);
@@ -1180,6 +1186,22 @@ void make_samr_r_query_dispinfo(SAMR_R_QUERY_DISPINFO *r_u,
 		struct smb_passwd pass[MAX_SAM_ENTRIES],
 		uint32 status);
 char* samr_io_r_query_dispinfo(BOOL io, SAMR_R_QUERY_DISPINFO *r_u, char *q, char *base, int align, int depth);
+void make_samr_q_enum_dom_groups(SAMR_Q_ENUM_DOM_GROUPS *q_e, LSA_POL_HND *pol,
+				uint16 switch_level, uint32 start_idx, uint32 size);
+char* samr_io_q_enum_dom_groups(BOOL io, SAMR_Q_ENUM_DOM_GROUPS *q_e, char *q, char *base, int align, int depth);
+void make_samr_r_enum_dom_groups(SAMR_R_ENUM_DOM_GROUPS *r_u,
+		uint32 start_idx, uint32 num_sam_entries,
+		struct smb_passwd pass[MAX_SAM_ENTRIES],
+		uint32 status);
+char* samr_io_r_enum_dom_groups(BOOL io, SAMR_R_ENUM_DOM_GROUPS *r_u, char *q, char *base, int align, int depth);
+void make_samr_q_query_aliasinfo(SAMR_Q_QUERY_ALIASINFO *q_e,
+				LSA_POL_HND *pol,
+				uint16 switch_level);
+char* samr_io_q_query_aliasinfo(BOOL io, SAMR_Q_QUERY_ALIASINFO *q_e, char *q, char *base, int align, int depth);
+void make_samr_r_query_aliasinfo(SAMR_R_QUERY_ALIASINFO *r_u,
+		uint16 switch_level, char *acct_desc,
+		uint32 status);
+char* samr_io_r_query_aliasinfo(BOOL io, SAMR_R_QUERY_ALIASINFO *r_u, char *q, char *base, int align, int depth);
 char* samr_io_q_lookup_rids(BOOL io, SAMR_Q_LOOKUP_RIDS *q_u, char *q, char *base, int align, int depth);
 void make_samr_r_lookup_rids(SAMR_R_LOOKUP_RIDS *r_u,
 		uint32 num_rids, uint32 rid, uint32 status);
@@ -1194,10 +1216,14 @@ void make_samr_r_unknown_24(SAMR_R_UNKNOWN_24 *r_u,
 char* samr_io_r_unknown_24(BOOL io, SAMR_R_UNKNOWN_24 *r_u, char *q, char *base, int align, int depth);
 char* samr_io_q_unknown_32(BOOL io, SAMR_Q_UNKNOWN_32 *q_u, char *q, char *base, int align, int depth);
 char* samr_io_r_unknown_32(BOOL io, SAMR_R_UNKNOWN_32 *r_u, char *q, char *base, int align, int depth);
-void make_samr_q_open_policy(SAMR_Q_OPEN_POLICY *q_u,
+void make_samr_q_open_domain(SAMR_Q_OPEN_DOMAIN *q_u,
 				char *srv_name, uint32 unknown_0);
-char* samr_io_q_open_policy(BOOL io, SAMR_Q_OPEN_POLICY *q_u, char *q, char *base, int align, int depth);
-char* samr_io_r_open_policy(BOOL io, SAMR_R_OPEN_POLICY *r_u, char *q, char *base, int align, int depth);
+char* samr_io_q_open_domain(BOOL io, SAMR_Q_OPEN_DOMAIN *q_u, char *q, char *base, int align, int depth);
+char* samr_io_r_open_domain(BOOL io, SAMR_R_OPEN_DOMAIN *r_u, char *q, char *base, int align, int depth);
+void make_samr_q_open_alias(SAMR_Q_OPEN_ALIAS *q_u,
+				uint32 unknown_0, uint32 rid);
+char* samr_io_q_open_alias(BOOL io, SAMR_Q_OPEN_ALIAS *q_u, char *q, char *base, int align, int depth);
+char* samr_io_r_open_alias(BOOL io, SAMR_R_OPEN_ALIAS *r_u, char *q, char *base, int align, int depth);
 
 /*The following definitions come from  rpc_pipes/smbparse.c  */
 
@@ -1223,10 +1249,14 @@ void make_dom_rid3(DOM_RID3 *rid3, uint32 rid);
 char* smb_io_dom_rid3(BOOL io, DOM_RID3 *rid3, char *q, char *base, int align, int depth);
 void make_dom_rid4(DOM_RID4 *rid4, uint16 unknown, uint16 attr, uint32 rid);
 char* smb_io_dom_rid4(BOOL io, DOM_RID4 *rid4, char *q, char *base, int align, int depth);
-void make_sam_str2(SAM_STR2 *sam, char *sam_acct, char *sam_name, char *sam_desc);
-char* smb_io_sam_str2(BOOL io, SAM_STR2 *sam, uint32 acct_buf, uint32 name_buf, uint32 desc_buf, char *q, char *base, int align, int depth);
-void make_sam_entry2(SAM_ENTRY2 *sam, uint32 user_idx, struct smb_passwd *pass);
-char* smb_io_sam_entry2(BOOL io, SAM_ENTRY2 *sam, char *q, char *base, int align, int depth);
+void make_sam_str1(SAM_STR1 *sam, char *sam_acct, char *sam_name, char *sam_desc);
+char* smb_io_sam_str1(BOOL io, SAM_STR1 *sam, uint32 acct_buf, uint32 name_buf, uint32 desc_buf, char *q, char *base, int align, int depth);
+void make_sam_entry1(SAM_ENTRY1 *sam, uint32 user_idx, struct smb_passwd *pass);
+char* smb_io_sam_entry1(BOOL io, SAM_ENTRY1 *sam, char *q, char *base, int align, int depth);
+void make_sam_str3(SAM_STR3 *sam, char *grp_acct, char *grp_desc);
+char* smb_io_sam_str3(BOOL io, SAM_STR3 *sam, uint32 acct_buf, uint32 desc_buf, char *q, char *base, int align, int depth);
+void make_sam_entry3(SAM_ENTRY3 *sam, uint32 grp_idx, struct smb_passwd *pass);
+char* smb_io_sam_entry3(BOOL io, SAM_ENTRY3 *sam, char *q, char *base, int align, int depth);
 void make_sam_entry(SAM_ENTRY *sam, char *sam_name, uint32 rid);
 char* smb_io_sam_entry(BOOL io, SAM_ENTRY *sam, char *q, char *base, int align, int depth);
 void make_clnt_srv(DOM_CLNT_SRV *log, char *logon_srv, char *comp_name);
