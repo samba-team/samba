@@ -58,6 +58,7 @@ struct krb5_pk_identity {
     STACK_OF(X509) *cert;
     STACK_OF(X509) *trusted_certs;
     STACK_OF(X509_CRL) *crls;
+    ENGINE *engine;
 };
 
 /* XXX copied from lib/krb5/pkinit.c */
@@ -688,7 +689,7 @@ pk_mk_pa_reply_enckey(krb5_context context,
     ri = &ed.recipientInfos.val[0];
 
     ri->version = 0;
-    ri->rid.element = choice_RecipientIdentifier_issuerAndSerialNumber;
+    ri->rid.element = choice_CMSIdentifier_issuerAndSerialNumber;
 	
     issuer_name = X509_get_issuer_name(client_params->certificate->cert);
     OPENSSL_ASN1_MALLOC_ENCODE(X509_NAME, buf.data, buf.length,
@@ -697,8 +698,14 @@ pk_mk_pa_reply_enckey(krb5_context context,
 	krb5_clear_error_string(context);
 	goto out;
     }
-    ri->rid.u.issuerAndSerialNumber.issuer.data = buf.data;
-    ri->rid.u.issuerAndSerialNumber.issuer.length = buf.length;
+    ret = decode_Name(buf.data, buf.length,
+		      &ri->rid.u.issuerAndSerialNumber.issuer,
+		      NULL);
+    free(buf.data);
+    if (ret) {
+	krb5_set_error_string(context, "pkinit: failed to parse Name");
+	goto out;
+    }
 
     serial = &ri->rid.u.issuerAndSerialNumber.serialNumber;
     {
