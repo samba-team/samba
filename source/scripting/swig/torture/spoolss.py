@@ -267,6 +267,7 @@ def test_EnumPrinterData(pipe, handle):
  
         enum_index += 1
 
+
 def test_SetPrinterData(pipe, handle):
 
     print 'testing spoolss_SetPrinterData'
@@ -292,6 +293,8 @@ def test_SetPrinterData(pipe, handle):
     if result['buffer'] != data:
         print 'SetPrinterData: mismatch'
         sys.exit(1)
+
+    dcerpc.spoolss_DeletePrinterData(pipe, r)
 
 
 def test_EnumPrinters(pipe):
