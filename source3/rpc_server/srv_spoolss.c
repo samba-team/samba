@@ -140,9 +140,9 @@ static BOOL api_spoolss_rffpcnex(uint16 vuid, prs_struct *data, prs_struct *rdat
 
 	r_u.status = _spoolss_rffpcnex(&q_u.handle, q_u.flags,
 	                               q_u.options, &q_u.localmachine,
-	                               q_u.printerlocal, &q_u.option);
+	                               q_u.printerlocal, q_u.option);
 
-	if (!spoolss_io_r_rffpcnex("",&r_u,rdata,0)) {
+	if (!spoolss_io_r_rffpcnex("", &r_u, rdata, 0)) {
 		DEBUG(0,("spoolss_io_r_rffpcnex: unable to marshall SPOOL_R_RFFPCNEX.\n"));
 		return False;
 	}
@@ -171,12 +171,17 @@ static BOOL api_spoolss_rfnpcnex(uint16 vuid, prs_struct *data, prs_struct *rdat
 	}
 
 	r_u.status = _spoolss_rfnpcnex(&q_u.handle, q_u.change,
-	                               &q_u.option, &r_u.count, &r_u.info);
+	                               q_u.option, &r_u.info);
+
+	/* we always have a NOTIFY_INFO struct */
+	r_u.info_ptr=0x1;
 
 	if (!spoolss_io_r_rfnpcnex("", &r_u, rdata, 0)) {
 		DEBUG(0,("spoolss_io_r_rfnpcnex: unable to marshall SPOOL_R_RFNPCNEX.\n"));
 		return False;
 	}
+
+	safe_free(r_u.info.data);
 
 	return True;
 }

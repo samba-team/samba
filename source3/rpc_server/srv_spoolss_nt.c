@@ -39,28 +39,31 @@ extern pstring global_myname;
 /* and a reference to what it's pointing to */
 /* and the notify info asked about */
 /* that's the central struct */
-static struct
-{
-  BOOL        open;
-  BOOL        ok;
-  BOOL        document_started;
-  BOOL        page_started;
-  uint32      current_jobid;
-  uint32      document_fd;
-  uint32      document_lastwritten;
-  pstring     document_name;
-  pstring     job_name;
-  POLICY_HND printer_hnd;
-  BOOL        printer_type;
-  union
-  {
-  	fstring printername;
-	fstring printerservername;
-  } dev;
-  uint32 type;
-  uint32 access;
-  uint32 number_of_notify;
-  SPOOL_NOTIFY_OPTION_TYPE notify_info[MAX_PRINTER_NOTIFY+MAX_JOB_NOTIFY];
+static struct {
+	BOOL open;
+	BOOL ok;
+	BOOL document_started;
+	BOOL page_started;
+	uint32 current_jobid;
+	uint32 document_fd;
+	uint32 document_lastwritten;
+	pstring document_name;
+	pstring job_name;
+	POLICY_HND printer_hnd;
+	BOOL printer_type;
+	union {
+	  	fstring printername;
+		fstring printerservername;
+	} dev;
+	uint32 type;
+	uint32 access;
+	struct {
+		uint32 flags;
+		uint32 options;
+		fstring localmachine; 
+		uint32 printerlocal;
+		SPOOL_NOTIFY_OPTION *option;
+	} notify;
 } Printer[MAX_OPEN_PRINTER_EXS];
 
 #define VALID_HANDLE(pnum)   (((pnum) >= 0) && ((pnum) < MAX_OPEN_PRINTER_EXS))
@@ -110,13 +113,13 @@ static int find_printer_index_by_hnd(const POLICY_HND *hnd)
 	{
 		if (memcmp(&(Printer[i].printer_hnd), hnd, sizeof(*hnd)) == 0)
 		{
-			DEBUG(4,("Found printer handle[%x] ", i));
-			dump_data(4, hnd->data, sizeof(hnd->data));
+			DEBUG(4,("Found printer handle[%x] \n", i));
+			/*dump_data(4, hnd->data, sizeof(hnd->data));*/
 			return i;
 		}
 	}
 	DEBUG(3,("Whoops, Printer handle not found: "));
-	dump_data(4, hnd->data, sizeof(hnd->data));
+	/*dump_data(4, hnd->data, sizeof(hnd->data));*/
 	return -1;
 }
 
@@ -125,7 +128,7 @@ static int find_printer_index_by_hnd(const POLICY_HND *hnd)
 ****************************************************************************/
 static void clear_handle(POLICY_HND *hnd)
 {
-	bzero(hnd->data, POLICY_HND_SIZE);
+	memset(hnd->data, 0, POLICY_HND_SIZE);
 }
 
 /****************************************************************************
@@ -142,6 +145,13 @@ static BOOL close_printer_handle(POLICY_HND *hnd)
 	}
 
 	Printer[pnum].open=False;
+	Printer[pnum].notify.flags=0;
+	Printer[pnum].notify.options=0;
+	Printer[pnum].notify.localmachine[0]='\0';
+	Printer[pnum].notify.printerlocal=0;
+	safe_free(Printer[pnum].notify.option);
+	Printer[pnum].notify.option=NULL;
+	
 	clear_handle(hnd);
 
 	return True;
@@ -204,6 +214,7 @@ static BOOL open_printer_hnd(POLICY_HND *hnd)
 			memcpy(&(Printer[i].printer_hnd), hnd, sizeof(*hnd));
 			DEBUG(4,("Opened printer handle[%x] ", i));
 			dump_data(4, hnd->data, sizeof(hnd->data));
+			Printer[i].notify.option=NULL;
 			return True;
 		}
 	}
@@ -334,6 +345,7 @@ static BOOL set_printer_hnd_printername(POLICY_HND *hnd, char *printername)
 		return False;
 	}
 	
+	snum--;
 	DEBUGADD(4,("Printer found: %s[%x]\n",lp_servicename(snum),snum));
 	ZERO_STRUCT(Printer[pnum].dev.printername);
 	strncpy(Printer[pnum].dev.printername, lp_servicename(snum), strlen(lp_servicename(snum)));
@@ -635,7 +647,7 @@ static BOOL getprinterdata_printer(const POLICY_HND *handle,
 		if (get_specific_param(printer, 2, value, &idata, type, &len)) 
 		{
 			*data  = (uint8 *)malloc( (len>in_size)?len:in_size *sizeof(uint8) );
-			bzero(*data, sizeof(uint8)*len);
+			memset(*data, 0, sizeof(uint8)*len);
 			memcpy(*data, idata, (len>in_size)?len:in_size);
 			*needed = len;
 			
@@ -713,42 +725,26 @@ uint32 _spoolss_getprinterdata(const POLICY_HND *handle, UNISTR2 *valuename,
  * in fact ReplyOpenPrinter is the changenotify equivalent on the spoolss pipe
  * called from api_spoolss_rffpcnex 
  ********************************************************************/
-uint32 _spoolss_rffpcnex(const POLICY_HND *handle,
-				uint32 flags, uint32 options,
-				const UNISTR2 *localmachine,
-				uint32	printerlocal,
-				SPOOL_NOTIFY_OPTION *option)
+uint32 _spoolss_rffpcnex(const POLICY_HND *handle, uint32 flags, uint32 options,
+			 const UNISTR2 *localmachine, uint32 printerlocal,
+			 SPOOL_NOTIFY_OPTION *option)
 {
-	int i,j,k;
+	int i;
 
 	/* store the notify value in the printer struct */
 
 	i=find_printer_index_by_hnd(handle);
 
 	if (i == -1)
-	{
 		return NT_STATUS_INVALID_HANDLE;
-	}
 
-	Printer[i].number_of_notify=option->count;
+	Printer[i].notify.flags=flags;
+	Printer[i].notify.options=options;
+	Printer[i].notify.printerlocal=printerlocal;
+	Printer[i].notify.option=option;
+	unistr2_to_ascii(Printer[i].notify.localmachine, localmachine, sizeof(Printer[i].notify.localmachine)-1);
 
-	DEBUG(3,("Copying %x notify option info\n",Printer[i].number_of_notify));
-
-	for (j=0;j<Printer[i].number_of_notify;j++)
-	{
-		Printer[i].notify_info[j].count=option->type[j].count;
-		Printer[i].notify_info[j].type=option->type[j].type	;
-		
-		DEBUG(4,("Copying %x info fields of type %x\n",
-		         Printer[i].notify_info[j].count,
-			 Printer[i].notify_info[j].type));
-		for(k=0;k<Printer[i].notify_info[j].count;k++)
-		{
-			Printer[i].notify_info[j].fields[k]=option->type[j].fields[k];
-		}
-	}
-
-	return 0x0;
+	return NT_STATUS_NO_PROBLEMO;
 }
 
 /*******************************************************************
@@ -961,7 +957,7 @@ static void spoolss_notify_status(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_
 	print_queue_struct *q=NULL;
 	print_status_struct status;
 
-	bzero(&status,sizeof(status));
+	memset(&status, 0, sizeof(status));
 
 	count=get_printqueue(snum, NULL, &q, &status);
 
@@ -977,7 +973,7 @@ static void spoolss_notify_cjobs(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_q
 	print_queue_struct *q=NULL;
 	print_status_struct status;
 
-	bzero(&status,sizeof(status));
+	memset(&status, 0, sizeof(status));
 
 	data->notify_data.value[0]=get_printqueue(snum, NULL, &q, &status);
 	if (q) free(q);
@@ -1163,40 +1159,30 @@ static int search_notify(uint16 type, uint16 field, int *value)
 	int j;
 	BOOL found;
 
-	DEBUG(4,("\tsearch_notify: in\n"));	
 	for (j=0, found=False; found==False && notify_info_data_table[j].type != END ; j++)
 	{
 		if ( (notify_info_data_table[j].type  == type  ) &&
 		     (notify_info_data_table[j].field == field ) )
-		{
 			found=True;
-		}
 	}
 	*value=--j;
 
 	if ( found && (notify_info_data_table[j].fn != NULL) )
-	{
-		DEBUG(4,("\tsearch_notify: out TRUE\n"));
-		return (True);
-	}
+		return True;
 	else
-	{
-		DEBUG(4,("\tsearch_notify: out FALSE\n"));
-		return (False);	
-	}
+		return False;	
 }
 
 /****************************************************************************
 ****************************************************************************/
 static void construct_info_data(SPOOL_NOTIFY_INFO_DATA *info_data, uint16 type, uint16 field, int id)
 {
-	DEBUG(4,("\tconstruct_info_data: in\n"));
 	info_data->type     = type;
 	info_data->field    = field;
+	info_data->reserved = 0;
 	info_data->id       = id;
 	info_data->size     = size_of_notify_info_data(type, field);
 	info_data->enc_type = type_of_notify_info_data(type, field);
-	DEBUG(4,("\tconstruct_info_data: out\n"));
 }
 
 
@@ -1205,49 +1191,48 @@ static void construct_info_data(SPOOL_NOTIFY_INFO_DATA *info_data, uint16 type, 
  * fill a notify_info struct with info asked
  * 
  ********************************************************************/
-static void construct_notify_printer_info(SPOOL_NOTIFY_INFO *info, int pnum, 
-					  int snum, int i, uint32 id)
+static BOOL construct_notify_printer_info(SPOOL_NOTIFY_INFO *info, int snum, SPOOL_NOTIFY_OPTION_TYPE *option_type, uint32 id)
 {
-
-	int k,j;
+	int field_num,j;
 	uint16 type;
 	uint16 field;
 
-	SPOOL_NOTIFY_INFO_DATA *info_data;
-	print_queue_struct *queue=NULL;
+	SPOOL_NOTIFY_INFO_DATA *current_data;
 	NT_PRINTER_INFO_LEVEL printer;
+	print_queue_struct *queue=NULL;
 	
 	DEBUG(4,("construct_notify_printer_info\n"));
 	
-	info_data=&(info->data[info->count]);
-	
-	type = Printer[pnum].notify_info[i].type;
+	type=option_type->type;
 
-	DEBUGADD(4,("Notify number %d -> number of notify info: %d\n",i,Printer[pnum].notify_info[i].count));
+	DEBUGADD(4,("Notify type: [%s], number of notify info: [%d] on printer: [%s]\n",
+		(option_type->type==PRINTER_NOTIFY_TYPE?"PRINTER_NOTIFY_TYPE":"JOB_NOTIFY_TYPE"), 
+		option_type->count, lp_servicename(snum)));
 	
-	if (!get_a_printer(&printer, 2, lp_servicename(snum)))
+	if (get_a_printer(&printer, 2, lp_servicename(snum))!=0)
 	{
-		
-		for(k=0; k<Printer[pnum].notify_info[i].count; k++)
-		{
-			field = Printer[pnum].notify_info[i].fields[k];
-			DEBUGADD(4,("notify [%d]: type [%x], field [%x]\n", k, type, field));
-
-			if (search_notify(type, field, &j) )
-			{
-				DEBUGADD(4,("j=[%d]:%s\n", j, notify_info_data_table[j].name));
-				construct_info_data(info_data, type, field, id);
-			
-				DEBUGADD(4,("notify_info_data_table: in\n"));
-				notify_info_data_table[j].fn(snum, info_data, queue, &printer);
-				DEBUGADD(4,("notify_info_data_table: out\n"));
-				info->count++;
-				info_data=&(info->data[info->count]);
-			}
-		}
-	
-		free_a_printer(printer, 2);
+		return False;
 	}
+
+	for(field_num=0; field_num<option_type->count; field_num++)
+	{
+		field = option_type->fields[field_num];
+		DEBUGADD(4,("notify [%d]: type [%x], field [%x]\n", field_num, type, field));
+
+		if (!search_notify(type, field, &j) )
+			continue;
+		
+		info->data=Realloc(info->data, (info->count+1)*sizeof(SPOOL_NOTIFY_INFO_DATA));
+		current_data=&(info->data[info->count]);
+
+		construct_info_data(current_data, type, field, id);		
+		notify_info_data_table[j].fn(snum, current_data, queue, &printer);
+
+		info->count++;
+	}
+
+	free_a_printer(printer, 2);
+	return True;
 }
 
 /*******************************************************************
@@ -1255,45 +1240,71 @@ static void construct_notify_printer_info(SPOOL_NOTIFY_INFO *info, int pnum,
  * fill a notify_info struct with info asked
  * 
  ********************************************************************/
-static void construct_notify_jobs_info(print_queue_struct *queue, SPOOL_NOTIFY_INFO *info,
-                                       int pnum, int snum, int i, uint32 id)
+static BOOL construct_notify_jobs_info(print_queue_struct *queue, SPOOL_NOTIFY_INFO *info, int snum, SPOOL_NOTIFY_OPTION_TYPE *option_type, uint32 id)
 {
-
-	int k,j;
+	int field_num,j;
 	uint16 type;
 	uint16 field;
 
-	SPOOL_NOTIFY_INFO_DATA *info_data;
+	SPOOL_NOTIFY_INFO_DATA *current_data;
 	NT_PRINTER_INFO_LEVEL printer;
 	
 	DEBUG(4,("construct_notify_jobs_info\n"));
-	info_data=&(info->data[info->count]);
 	
-	type = Printer[pnum].notify_info[i].type;
+	type = option_type->type;
 
-	DEBUGADD(4,("Notify number %d -> number of notify info: %d\n",i,Printer[pnum].notify_info[i].count));
+	DEBUGADD(4,("Notify type: [%s], number of notify info: [%d]\n",
+		(option_type->type==PRINTER_NOTIFY_TYPE?"PRINTER_NOTIFY_TYPE":"JOB_NOTIFY_TYPE"), 
+		option_type->count));
 
-	if (!get_a_printer(&printer, 2, lp_servicename(snum)))
+	if (get_a_printer(&printer, 2, lp_servicename(snum))!=0)
 	{	
-		for(k=0; k<Printer[pnum].notify_info[i].count; k++)
-		{
-			field = Printer[pnum].notify_info[i].fields[k];
-			DEBUGADD(4,("notify [%d]: type [%x], field [%x]\n",k, type, field));
-
-			if (search_notify(type, field, &j) )
-			{
-				DEBUGADD(4,("j=[%d]:%s\n", j, notify_info_data_table[j].name));
-				construct_info_data(info_data, type, field, id);
-				DEBUGADD(4,("notify_info_data_table: in\n"));
-				notify_info_data_table[j].fn(snum, info_data, queue, &printer);
-				DEBUGADD(4,("notify_info_data_table: out\n"));
-				info->count++;
-				info_data=&(info->data[info->count]);
-			}
-		}
-		free_a_printer(printer, 2);
+		return False;
 	}
+	
+	for(field_num=0; field_num<option_type->count; field_num++)
+	{
+		field = option_type->fields[field_num];
+
+		if (!search_notify(type, field, &j) )
+			continue;
+
+		info->data=Realloc(info->data, (info->count+1)*sizeof(SPOOL_NOTIFY_INFO_DATA));
+		current_data=&(info->data[info->count]);
+
+		construct_info_data(current_data, type, field, id);
+		notify_info_data_table[j].fn(snum, current_data, queue, &printer);
+		info->count++;
+	}
+	
+	free_a_printer(printer, 2);
+	
+	return True;
 }
+
+/*
+ * JFM: The enumeration is not that simple, it's even non obvious.
+ *
+ * let's take an example: I want to monitor the PRINTER SERVER for
+ * the printer's name and the number of jobs currently queued.
+ * So in the NOTIFY_OPTION, I have one NOTIFY_OPTION_TYPE structure.
+ * Its type is PRINTER_NOTIFY_TYPE and it has 2 fields NAME and CJOBS.
+ * 
+ * I have 3 printers on the back of my server.
+ *
+ * Now the response is a NOTIFY_INFO structure, with 6 NOTIFY_INFO_DATA
+ * structures.
+ *   Number	Data			Id
+ *	1	printer 1 name		1
+ *	2	printer 1 cjob		1
+ *	3	printer 2 name		2
+ *	4	printer 2 cjob		2
+ *	5	printer 3 name		3
+ *	6	printer 3 name		3
+ *
+ * that's the print server case, the printer case is even worse.
+ */
+
 
 
 /*******************************************************************
@@ -1302,40 +1313,54 @@ static void construct_notify_jobs_info(print_queue_struct *queue, SPOOL_NOTIFY_I
  * fill a notify_info struct with info asked
  * 
  ********************************************************************/
-static uint32 printserver_notify_info(const POLICY_HND *hnd,
-				SPOOL_NOTIFY_INFO *info)
+static uint32 printserver_notify_info(const POLICY_HND *hnd, SPOOL_NOTIFY_INFO *info)
 {
 	int snum;
 	int pnum=find_printer_index_by_hnd(hnd);
 	int n_services=lp_numservices();
-	int i=0;
-	uint32 id=1;
+	int i;
+	uint32 id;
+	SPOOL_NOTIFY_OPTION *option;
+	SPOOL_NOTIFY_OPTION_TYPE *option_type;
+
+	DEBUG(4,("printserver_notify_info\n"));
+	
+	option=Printer[pnum].notify.option;
+	id=1;
+	info->version=2;
+	info->data=NULL;
 	info->count=0;
 
-	if (pnum == -1)
+	for (i=0; i<option->count; i++)
 	{
-		return NT_STATUS_INVALID_HANDLE;
+		option_type=&(option->ctr.type[i]);
+		
+		if (option_type->type!=PRINTER_NOTIFY_TYPE)
+			continue;
+		
+		for (snum=0; snum<n_services; snum++)
+			if ( lp_browseable(snum) && lp_snum_ok(snum) && lp_print_ok(snum) )
+				if (construct_notify_printer_info(info, snum, option_type, id))
+					id++;
 	}
-
-	DEBUG(4,("Enumerating printers\n"));
-
-	for (i=0; i<Printer[pnum].number_of_notify; i++)
+			
+	/*
+	 * Debugging information, don't delete.
+	 */
+	/* 
+	DEBUG(1,("dumping the NOTIFY_INFO\n"));
+	DEBUGADD(1,("info->version:[%d], info->flags:[%d], info->count:[%d]\n", info->version, info->flags, info->count));
+	DEBUGADD(1,("num\ttype\tfield\tres\tid\tsize\tenc_type\n"));
+	
+	for (i=0; i<info->count; i++)
 	{
-	 if ( Printer[pnum].notify_info[i].type == PRINTER_NOTIFY_TYPE )
-	 {
-	  for (snum=0; snum<n_services; snum++)
-	  {
-	   if ( lp_browseable(snum) && lp_snum_ok(snum) && lp_print_ok(snum) )
-	   {
-		construct_notify_printer_info(info, pnum, snum, i, id);
-		id++;
-	   }
-	  }
-	 }
+		DEBUGADD(1,("[%d]\t[%d]\t[%d]\t[%d]\t[%d]\t[%d]\t[%d]\n",
+		i, info->data[i].type, info->data[i].field, info->data[i].reserved,
+		info->data[i].id, info->data[i].size, info->data[i].enc_type));
 	}
-	DEBUG(4,("All printers enumerated\n"));
-
-	return 0x0;
+	*/
+	
+	return NT_STATUS_NO_PROBLEMO;
 }
 
 /*******************************************************************
@@ -1343,59 +1368,72 @@ static uint32 printserver_notify_info(const POLICY_HND *hnd,
  * fill a notify_info struct with info asked
  * 
  ********************************************************************/
-static uint32 printer_notify_info(const POLICY_HND *hnd,
-				SPOOL_NOTIFY_INFO *info)
+static uint32 printer_notify_info(const POLICY_HND *hnd, SPOOL_NOTIFY_INFO *info)
 {
 	int snum;
 	int pnum=find_printer_index_by_hnd(hnd);
-	int i=0, j;
-	uint32 id=0xFFFF;
+	int i;
+	uint32 id;
+	SPOOL_NOTIFY_OPTION *option;
+	SPOOL_NOTIFY_OPTION_TYPE *option_type;
+	int count,j;
+	print_queue_struct *queue=NULL;
+	print_status_struct status;
 	
+	DEBUG(4,("printer_notify_info\n"));
+
+	option=Printer[pnum].notify.option;
+	id=1;
+	info->version=2;
+	info->data=NULL;
 	info->count=0;
 
-	if (pnum == -1 || !get_printer_snum(hnd, &snum) )
-	{
-		return NT_STATUS_INVALID_HANDLE;
-	}
+	get_printer_snum(hnd, &snum);
 
-	for (i=0; i<Printer[pnum].number_of_notify; i++)
+	for (i=0; i<option->count; i++)
 	{
-	 switch ( Printer[pnum].notify_info[i].type )
-	 {
-	  case PRINTER_NOTIFY_TYPE:
-	   {
-		construct_notify_printer_info(info, pnum, snum, i, id);
-		id--;
-		break;
-	   }
-	  case JOB_NOTIFY_TYPE:
-	   {
-		int count;
-		print_queue_struct *queue=NULL;
-		print_status_struct status;
-		bzero(&status, sizeof(status));	
-		count=get_printqueue(snum, NULL, &queue, &status);
-		for (j=0; j<count; j++)
-		{
-			construct_notify_jobs_info(&(queue[j]), info, pnum, snum, i, queue[j].job);
+		option_type=&(option->ctr.type[i]);
+		
+		switch ( option_type->type ) {
+		case PRINTER_NOTIFY_TYPE:
+			if(construct_notify_printer_info(info, snum, option_type, id))
+				id++;
+			break;
+			
+		case JOB_NOTIFY_TYPE:
+			memset(&status, 0, sizeof(status));	
+			count=get_printqueue(snum, NULL, &queue, &status);
+			for (j=0; j<count; j++)
+				if (construct_notify_jobs_info(&(queue[j]), info, snum, option_type, id))
+					id++;
+			safe_free(queue);
+			break;
 		}
-		safe_free(queue);
-		break;
-	   }
-	 }
 	}
-
-	return 0x0;
+	
+	/*
+	 * Debugging information, don't delete.
+	 */
+	/* 
+	DEBUG(1,("dumping the NOTIFY_INFO\n"));
+	DEBUGADD(1,("info->version:[%d], info->flags:[%d], info->count:[%d]\n", info->version, info->flags, info->count));
+	DEBUGADD(1,("num\ttype\tfield\tres\tid\tsize\tenc_type\n"));
+	
+	for (i=0; i<info->count; i++)
+	{
+		DEBUGADD(1,("[%d]\t[%d]\t[%d]\t[%d]\t[%d]\t[%d]\t[%d]\n",
+		i, info->data[i].type, info->data[i].field, info->data[i].reserved,
+		info->data[i].id, info->data[i].size, info->data[i].enc_type));
+	}
+	*/
+	return NT_STATUS_NO_PROBLEMO;
 }
 
 /********************************************************************
  * spoolss_rfnpcnex
  ********************************************************************/
-uint32 _spoolss_rfnpcnex( const POLICY_HND *handle,
-				uint32 change,
-				const SPOOL_NOTIFY_OPTION *option,
-				uint32 *count,
-				SPOOL_NOTIFY_INFO *info)
+uint32 _spoolss_rfnpcnex( const POLICY_HND *handle, uint32 change,
+			  SPOOL_NOTIFY_OPTION *option, SPOOL_NOTIFY_INFO *info)
 {
 	int pnum=find_printer_index_by_hnd(handle);
 
@@ -1404,21 +1442,32 @@ uint32 _spoolss_rfnpcnex( const POLICY_HND *handle,
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	DEBUG(4,("Printer %x of type %x\n",pnum,Printer[pnum].printer_type));
+	DEBUG(4,("Printer %x of type %x\n",pnum, Printer[pnum].printer_type));
 
-	/* lkxlXXXX - jfm, is this right? put a warning in for you to review! */
-	DEBUG(0,("_spoolss_rfnpcnex: change, option and count ignored\n"));
+	/* jfm: the change value isn't used right now.
+	 * 	we will honour it when
+	 *	a) we'll be able to send notification to the client
+	 *	b) we'll have a way to communicate between the spoolss process.
+	 *
+	 *	same thing for option->flags
+	 *	I should check for PRINTER_NOTIFY_OPTIONS_REFRESH but as 
+	 *	I don't have a global notification system, I'm sending back all the
+	 *	informations even when _NOTHING_ has changed.
+	 */
 
-	switch (Printer[pnum].printer_type)
-	{
+	/* just discard the SPOOL_NOTIFY_OPTION */
+	if (option!=NULL)
+		safe_free(option->ctr.type);
+	
+	safe_free(option);
+
+	switch (Printer[pnum].printer_type) {
 		case PRINTER_HANDLE_IS_PRINTSERVER:
-		{
 			return printserver_notify_info(handle, info);
-		}
+			break;
 		case PRINTER_HANDLE_IS_PRINTER:
-		{
 			return printer_notify_info(handle, info);
-		}
+			break;
 	}
 
 	return NT_STATUS_INVALID_INFO_CLASS;
@@ -1436,7 +1485,7 @@ static BOOL construct_printer_info_0(PRINTER_INFO_0 *printer,int snum, pstring s
 	
 	print_queue_struct *queue=NULL;
 	print_status_struct status;
-	bzero(&status,sizeof(status));	
+	memset(&status, 0, sizeof(status));	
 
 	if (get_a_printer(&ntprinter, 2, lp_servicename(snum)) != 0)
 	{
@@ -1476,7 +1525,7 @@ static BOOL construct_printer_info_0(PRINTER_INFO_0 *printer,int snum, pstring s
 	printer->unknown14    = 0x1;
 	printer->unknown15    = 0x024a; /*586 Pentium ? */
 	printer->unknown16    = 0x0;
-	printer->unknown17    = 0x423ed444;
+	printer->unknown17    = 0x423ed444; /* CacheChangeID */
 	printer->unknown18    = 0x0;
 	printer->status       = status.status;
 	printer->unknown20    = 0x0;
@@ -1536,8 +1585,8 @@ static void construct_dev_mode(DEVICEMODE *devmode, int snum, char *servername)
 
 	DEBUG(7,("construct_dev_mode\n"));
 	
-	bzero(&(devmode->devicename), 2*sizeof(adevice));
-	bzero(&(devmode->formname), 2*sizeof(aform));
+	memset(&(devmode->devicename), 0, 2*sizeof(adevice));
+	memset(&(devmode->formname), 0, 2*sizeof(aform));
 
 	DEBUGADD(8,("getting printer characteristics\n"));
 
@@ -1598,7 +1647,7 @@ static BOOL construct_printer_info_2(PRINTER_INFO_2 *printer, int snum, pstring 
 	
 	print_queue_struct *queue=NULL;
 	print_status_struct status;
-	bzero(&status, sizeof(status));	
+	memset(&status, 0, sizeof(status));	
 	count=get_printqueue(snum, NULL, &queue, &status);
 
 	if (get_a_printer(&ntprinter, 2, lp_servicename(snum)) !=0 )
@@ -2713,14 +2762,28 @@ uint32 _spoolss_setprinter( const POLICY_HND *handle,
 
 /****************************************************************************
 ****************************************************************************/
-uint32 _spoolss_fcpn( const POLICY_HND *handle)
+uint32 _spoolss_fcpn(const POLICY_HND *handle)
 {
-	return 0x0;
+	int pnum = find_printer_index_by_hnd(handle);
+	
+	if (!OPEN_HANDLE(pnum))
+	{
+		return NT_STATUS_INVALID_HANDLE;
+	}
+	
+	Printer[pnum].notify.flags=0;
+	Printer[pnum].notify.options=0;
+	Printer[pnum].notify.localmachine[0]='\0';
+	Printer[pnum].notify.printerlocal=0;
+	safe_free(Printer[pnum].notify.option);
+	Printer[pnum].notify.option=NULL;
+	
+	return NT_STATUS_NO_PROBLEMO;
 }
 
 /****************************************************************************
 ****************************************************************************/
-uint32 _spoolss_addjob( const POLICY_HND *handle, uint32 level,
+uint32 _spoolss_addjob(const POLICY_HND *handle, uint32 level,
 			NEW_BUFFER *buffer, uint32 offered)
 {
 	return NT_STATUS_NO_PROBLEMO;
@@ -2956,7 +3019,7 @@ uint32 _spoolss_setjob( const POLICY_HND *handle,
 	BOOL found=False;
 	int count;
 		
-	bzero(&prt_status,sizeof(prt_status));
+	memset(&prt_status, 0, sizeof(prt_status));
 
 	if (!get_printer_snum(handle, &snum))
 	{
@@ -3989,7 +4052,7 @@ uint32 _spoolss_getjob( POLICY_HND *handle, uint32 jobid, uint32 level,
 
 	DEBUG(5,("spoolss_getjob\n"));
 	
-	bzero(&prt_status, sizeof(prt_status));
+	memset(&prt_status, 0, sizeof(prt_status));
 
 	*needed=0;
 	

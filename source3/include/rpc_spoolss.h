@@ -185,6 +185,9 @@
 #define JOB_NOTIFY_TYPE     0x01
 
 #define MAX_PRINTER_NOTIFY 26
+#define MAX_JOB_NOTIFY 24
+
+#define MAX_NOTIFY_TYPE_FOR_NOW 26
 
 #define PRINTER_NOTIFY_SERVER_NAME		0x00
 #define PRINTER_NOTIFY_PRINTER_NAME		0x01
@@ -213,8 +216,6 @@
 #define PRINTER_NOTIFY_TOTAL_BYTES		0x18
 #define PRINTER_NOTIFY_BYTES_PRINTED		0x19
 
-#define MAX_JOB_NOTIFY 24
-
 #define JOB_NOTIFY_PRINTER_NAME			0x00
 #define JOB_NOTIFY_MACHINE_NAME			0x01
 #define JOB_NOTIFY_PORT_NAME			0x02
@@ -239,6 +240,57 @@
 #define JOB_NOTIFY_PAGES_PRINTED		0x15
 #define JOB_NOTIFY_TOTAL_BYTES			0x16
 #define JOB_NOTIFY_BYTES_PRINTED		0x17
+
+#define PRINTER_CHANGE_ADD_PRINTER			0x00000001
+#define PRINTER_CHANGE_SET_PRINTER			0x00000002
+#define PRINTER_CHANGE_DELETE_PRINTER			0x00000004
+#define PRINTER_CHANGE_FAILED_CONNECTION_PRINTER	0x00000008
+#define PRINTER_CHANGE_PRINTER	(PRINTER_CHANGE_ADD_PRINTER | \
+				 PRINTER_CHANGE_SET_PRINTER | \
+				 PRINTER_CHANGE_DELETE_PRINTER | \
+				 PRINTER_CHANGE_FAILED_CONNECTION_PRINTER )
+
+#define PRINTER_CHANGE_ADD_JOB				0x00000100
+#define PRINTER_CHANGE_SET_JOB				0x00000200
+#define PRINTER_CHANGE_DELETE_JOB			0x00000400
+#define PRINTER_CHANGE_WRITE_JOB			0x00000800
+#define PRINTER_CHANGE_JOB	(PRINTER_CHANGE_ADD_JOB | \
+				 PRINTER_CHANGE_SET_JOB | \
+				 PRINTER_CHANGE_DELETE_JOB | \
+				 PRINTER_CHANGE_WRITE_JOB )
+
+#define PRINTER_CHANGE_ADD_FORM				0x00010000
+#define PRINTER_CHANGE_SET_FORM				0x00020000
+#define PRINTER_CHANGE_DELETE_FORM			0x00040000
+#define PRINTER_CHANGE_FORM	(PRINTER_CHANGE_ADD_FORM | \
+				 PRINTER_CHANGE_SET_FORM | \
+				 PRINTER_CHANGE_DELETE_FORM )
+
+#define PRINTER_CHANGE_ADD_PORT				0x00100000
+#define PRINTER_CHANGE_CONFIGURE_PORT			0x00200000
+#define PRINTER_CHANGE_DELETE_PORT			0x00400000
+#define PRINTER_CHANGE_PORT	(PRINTER_CHANGE_ADD_PORT | \
+				 PRINTER_CHANGE_CONFIGURE_PORT | \
+				 PRINTER_CHANGE_DELETE_PORT )
+
+#define PRINTER_CHANGE_ADD_PRINT_PROCESSOR		0x01000000
+#define PRINTER_CHANGE_DELETE_PRINT_PROCESSOR		0x04000000
+#define PRINTER_CHANGE_PRINT_PROCESSOR	(PRINTER_CHANGE_ADD_PRINT_PROCESSOR | \
+					 PRINTER_CHANGE_DELETE_PRINT_PROCESSOR )
+
+#define PRINTER_CHANGE_ADD_PRINTER_DRIVER		0x10000000
+#define PRINTER_CHANGE_SET_PRINTER_DRIVER		0x20000000
+#define PRINTER_CHANGE_DELETE_PRINTER_DRIVER		0x40000000
+#define PRINTER_CHANGE_PRINTER_DRIVER	(PRINTER_CHANGE_ADD_PRINTER_DRIVER | \
+					 PRINTER_CHANGE_SET_PRINTER_DRIVER | \
+					 PRINTER_CHANGE_DELETE_PRINTER_DRIVER )
+
+#define PRINTER_CHANGE_TIMEOUT				0x80000000
+#define PRINTER_CHANGE_ALL	(PRINTER_CHANGE_JOB | \
+				 PRINTER_CHANGE_FORM | \
+				 PRINTER_CHANGE_PORT | \
+				 PRINTER_CHANGE_PRINT_PROCESSOR | \
+				 PRINTER_CHANGE_PRINTER_DRIVER )
 
 /*
  * The printer attributes.
@@ -396,8 +448,17 @@ typedef struct spool_notify_option_type
 	uint32 reserved1;
 	uint32 reserved2;
 	uint32 count;
-	uint16 fields[16];
+	uint32 fields_ptr;
+	uint32 count2;
+	uint16 fields[MAX_NOTIFY_TYPE_FOR_NOW];
 } SPOOL_NOTIFY_OPTION_TYPE;
+
+typedef struct spool_notify_option_type_ctr
+{
+	uint32 count;
+	SPOOL_NOTIFY_OPTION_TYPE *type;
+} SPOOL_NOTIFY_OPTION_TYPE_CTR;
+
 
 
 typedef struct s_header_type
@@ -410,15 +471,6 @@ typedef struct s_header_type
 	} data;
 } HEADER_TYPE;
 
-/*typedef struct s_buffer
-{
-	uint32 ptr;
-	uint32 size;
-	uint32 count;
-	uint8 *data;
-	HEADER_TYPE *header;
-} BUFFER;
-*/
 typedef struct new_buffer
 {
 	uint32 ptr;
@@ -536,9 +588,10 @@ typedef struct spool_r_writeprinter
 typedef struct spool_notify_option
 {
 	uint32 version;
-	uint32 reserved;
+	uint32 flags;
 	uint32 count;
-	SPOOL_NOTIFY_OPTION_TYPE type[16]; /* totally arbitrary !!! */
+	uint32 option_type_ptr;
+	SPOOL_NOTIFY_OPTION_TYPE_CTR ctr;
 } SPOOL_NOTIFY_OPTION;
 
 typedef struct spool_notify_info_data
@@ -565,10 +618,7 @@ typedef struct spool_notify_info
 	uint32 version;
 	uint32 flags;
 	uint32 count;
-	SPOOL_NOTIFY_INFO_DATA data[26*16];
-	/* 26 differents data types */
-	/* so size it for 16 printers at max */
-	/* jfmxxxx: Have to make it dynamic !!!*/
+	SPOOL_NOTIFY_INFO_DATA *data;
 } SPOOL_NOTIFY_INFO;
 
 /* If the struct name looks obscure, yes it is ! */
@@ -578,9 +628,11 @@ typedef struct spoolss_q_rffpcnex
 	POLICY_HND handle;
 	uint32 flags;
 	uint32 options;
+	uint32 localmachine_ptr;
 	UNISTR2 localmachine;
 	uint32	printerlocal;
-        SPOOL_NOTIFY_OPTION option;
+	uint32 option_ptr;
+        SPOOL_NOTIFY_OPTION *option;
 } SPOOL_Q_RFFPCNEX;
 
 typedef struct spool_r_rffpcnex
@@ -593,15 +645,15 @@ typedef struct spool_q_rfnpcnex
 {
 	POLICY_HND handle;
 	uint32 change;
-	SPOOL_NOTIFY_OPTION option;
+	uint32 option_ptr;
+	SPOOL_NOTIFY_OPTION *option;
 } SPOOL_Q_RFNPCNEX;
 
 typedef struct spool_r_rfnpcnex
 {
-	uint32 count;
+	uint32 info_ptr;
 	SPOOL_NOTIFY_INFO info;
 	uint32 status;
-
 } SPOOL_R_RFNPCNEX;
 
 /* Find Close Printer Notify */
