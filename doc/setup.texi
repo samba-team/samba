@@ -204,6 +204,7 @@ attributes, absolute time times and relative times.
 
 When doing interactive editing, attributes are listed with @samp{?}.
 
+The attributes are given in a comma (@samp{,}) separated list.
 Attributes are removed from the list by prefixing them with @samp{-}.
 
 @smallexample
@@ -212,11 +213,11 @@ Max ticket life [1 day]:
 Max renewable life [1 week]:
 Principal expiration time [never]:
 Password expiration time [never]:
-Attributes []:disallow-renewable
+Attributes [disallow-renewable]: requires-pre-auth,-disallow-renewable
 kadmin> get me
             Principal: me@@MY.REALM
 [...]
-           Attributes: disallow-renewable
+           Attributes: requires-pre-auth
 @end smallexample
 
 @subsection Absolute times
