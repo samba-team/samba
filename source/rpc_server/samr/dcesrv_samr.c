@@ -445,7 +445,7 @@ static void samr_Account_destroy(struct dcesrv_connection *conn, struct dcesrv_h
   samr_CreateDomainGroup 
 */
 static NTSTATUS samr_CreateDomainGroup(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct samr_CreateDomainGroup *r)
+				       struct samr_CreateDomainGroup *r)
 {
 	struct samr_domain_state *d_state;
 	struct samr_account_state *state;
@@ -475,7 +475,7 @@ static NTSTATUS samr_CreateDomainGroup(struct dcesrv_call_state *dce_call, TALLO
 
 	/* check if the group already exists */
 	name = samdb_search_string(d_state->sam_ctx, mem_ctx, d_state->basedn, 
-				   "name",
+				   "sAMAccountName",
 				   "(&(sAMAccountName=%s)(objectclass=group))",
 				   groupname);
 	if (name != NULL) {
@@ -533,7 +533,7 @@ static NTSTATUS samr_CreateDomainGroup(struct dcesrv_call_state *dce_call, TALLO
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	/* create user state and new policy handle */
+	/* create group state and new policy handle */
 	mem_ctx2 = talloc_init("CreateDomainGroup(%s)", groupname);
 	if (!mem_ctx2) {
 		return NT_STATUS_NO_MEMORY;
@@ -620,7 +620,8 @@ static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 
 	/* check if the user already exists */
 	name = samdb_search_string(d_state->sam_ctx, mem_ctx, d_state->basedn, 
-				   "name", "(&(sAMAccountName=%s)(objectclass=user))", username);
+				   "sAMAccountName", 
+				   "(&(sAMAccountName=%s)(objectclass=user))", username);
 	if (name != NULL) {
 		return NT_STATUS_USER_EXISTS;
 	}
@@ -1611,9 +1612,22 @@ static NTSTATUS samr_TestPrivateFunctionsUser(struct dcesrv_call_state *dce_call
   samr_GetUserPwInfo 
 */
 static NTSTATUS samr_GetUserPwInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct samr_GetUserPwInfo *r)
+				   struct samr_GetUserPwInfo *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct dcesrv_handle *h;
+	struct samr_account_state *state;
+
+	ZERO_STRUCT(r->out.info);
+
+	DCESRV_PULL_HANDLE(h, r->in.handle, SAMR_HANDLE_USER);
+
+	state = h->data;
+
+	r->out.info.min_pwd_len = samdb_search_uint(state->sam_ctx, mem_ctx, 0, NULL, "minPwdLength", 
+						    "dn=%s", state->domain_state->basedn);
+	r->out.info.password_properties = samdb_search_uint(state->sam_ctx, mem_ctx, 0, NULL, "pwdProperties", 
+							    "dn=%s", state->basedn);
+	return NT_STATUS_OK;
 }
 
 
