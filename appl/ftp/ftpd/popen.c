@@ -169,6 +169,8 @@ ftpd_popen(char *program, char *type, int do_stderr, int no_glob)
 			close(pdes[1]);
 		}
 		execv(gargv[0], gargv);
+		gargv[0] = argv[0];
+		execv(gargv[0], gargv);
 		_exit(1);
 	}
 	/* parent; assume fdopen can't fail...  */
