@@ -739,7 +739,8 @@ enum client_action
 		}
 		else
 		{
-			pwd_make_lm_nt_16(&(smb_cli->pwd), password); /* generate 16 byte hashes */
+			/* generate 16 byte hashes */
+			pwd_make_lm_nt_16(&(smb_cli->pwd), password);
 		}
 	}
 	else 
