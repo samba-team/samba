@@ -174,6 +174,7 @@ char *skip_unibuf(char *src, size_t len)
  len is the filename length (ignoring any terminating zero) in uin16
  units. Always null terminates.
  Hack alert: uses fixed buffer(s).
+ len is in 2 byte (unicode) units.
 ********************************************************************/
 
 char *dos_unistrn2(uint16 *src, int len)
@@ -445,6 +446,7 @@ char *dos_buffer2_to_multistr(BUFFER2 *str)
  codepage string.
  Return number of unicode chars copied, excluding the null character.
  Unicode strings created are in little-endian format.
+ max_len is in bytes.
 ********************************************************************/
 
 size_t dos_struni2(char *dst, const char *src, size_t max_len)
@@ -455,7 +457,7 @@ size_t dos_struni2(char *dst, const char *src, size_t max_len)
 		return 0;
 
 	if (src != NULL) {
-		for (; (len < max_len-2) && *src; len++, dst +=2) {
+		for (; ((len*2) < max_len-2) && *src; len++, dst +=2) {
 			size_t skip = get_character_len(*src);
 			smb_ucs2_t val = (*src & 0xff);
 
