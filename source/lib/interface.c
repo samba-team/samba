@@ -32,12 +32,9 @@ static BOOL got_ip=False;
 static BOOL got_bcast=False;
 static BOOL got_nmask=False;
 
-static struct interface {
-  struct interface *next;
-  struct in_addr ip;
-  struct in_addr bcast;
-  struct in_addr nmask;
-} *interfaces = NULL;
+struct interface *local_interfaces  = NULL;
+struct interface *remote_interfaces = NULL;
+
 struct interface *last_iface;
 
 /****************************************************************************
@@ -253,13 +250,12 @@ static void get_broadcast(struct in_addr *if_ipaddr,
 
 
 
-
 /****************************************************************************
 load a list of network interfaces
 ****************************************************************************/
-void load_interfaces(void)
+static void interpret_interfaces(char *s, struct interface **interfaces,
+		char *description)
 {
-  char *s = lp_interfaces();
   char *ptr = s;
   fstring token;
   struct interface *iface;
@@ -278,7 +274,7 @@ void load_interfaces(void)
     /* maybe we already have it listed */
     {
       struct interface *i;
-      for (i=interfaces;i;i=i->next)
+      for (i=(*interfaces);i;i=i->next)
 	if (ip_equal(ip,i->ip)) break;
       if (i) continue;
     }
@@ -299,18 +295,18 @@ void load_interfaces(void)
     iface->bcast.s_addr = iface->ip.s_addr | ~iface->nmask.s_addr;
     iface->next = NULL;
 
-    if (!interfaces) {
-      interfaces = iface;
+    if (!(*interfaces)) {
+      (*interfaces) = iface;
     } else {
       last_iface->next = iface;
     }
     last_iface = iface;
-    DEBUG(1,("Added interface ip=%s ",inet_ntoa(iface->ip)));
+    DEBUG(1,("Added %s ip=%s ",description,inet_ntoa(iface->ip)));
     DEBUG(1,("bcast=%s ",inet_ntoa(iface->bcast)));
     DEBUG(1,("nmask=%s\n",inet_ntoa(iface->nmask)));	     
   }
 
-  if (interfaces) return;
+  if (*interfaces) return;
 
   /* setup a default interface */
   iface = (struct interface *)malloc(sizeof(*iface));
@@ -339,11 +335,26 @@ void load_interfaces(void)
     DEBUG(2,("Warning: inconsistant interface %s\n",inet_ntoa(iface->ip)));
   }
 
-  interfaces = last_iface = iface;
+  (*interfaces) = last_iface = iface;
 
   DEBUG(1,("Added interface ip=%s ",inet_ntoa(iface->ip)));
   DEBUG(1,("bcast=%s ",inet_ntoa(iface->bcast)));
   DEBUG(1,("nmask=%s\n",inet_ntoa(iface->nmask)));	     
+}
+
+
+/****************************************************************************
+load the remote and local interfaces
+****************************************************************************/
+void load_interfaces(void)
+{
+  /* add the machine's interfaces to local interface structure*/
+  interpret_interfaces(lp_interfaces       (), &local_interfaces,
+						"interface");
+
+  /* add all subnets to remote interfaces structure */
+  interpret_interfaces(lp_remote_interfaces(), &remote_interfaces,
+						"remote subnet");
 }
 
 
@@ -375,7 +386,7 @@ void iface_set_default(char *ip,char *bcast,char *nmask)
 BOOL ismyip(struct in_addr ip)
 {
   struct interface *i;
-  for (i=interfaces;i;i=i->next)
+  for (i=local_interfaces;i;i=i->next)
     if (ip_equal(i->ip,ip)) return True;
   return False;
 }
@@ -386,7 +397,7 @@ BOOL ismyip(struct in_addr ip)
 BOOL ismybcast(struct in_addr bcast)
 {
   struct interface *i;
-  for (i=interfaces;i;i=i->next)
+  for (i=local_interfaces;i;i=i->next)
     if (ip_equal(i->bcast,bcast)) return True;
   return False;
 }
@@ -399,7 +410,7 @@ int iface_count(void)
   int ret = 0;
   struct interface *i;
 
-  for (i=interfaces;i;i=i->next)
+  for (i=local_interfaces;i;i=i->next)
     ret++;
   return ret;
 }
@@ -411,7 +422,7 @@ struct in_addr *iface_n_ip(int n)
 {
   struct interface *i;
   
-  for (i=interfaces;i && n;i=i->next)
+  for (i=local_interfaces;i && n;i=i->next)
     n--;
 
   if (i) return &i->ip;
@@ -421,14 +432,13 @@ struct in_addr *iface_n_ip(int n)
 static struct interface *iface_find(struct in_addr ip)
 {
   struct interface *i;
-  if (zero_ip(ip)) return interfaces;
+  if (zero_ip(ip)) return local_interfaces;
 
-  for (i=interfaces;i;i=i->next)
+  for (i=local_interfaces;i;i=i->next)
     if (same_net(i->ip,ip,i->nmask)) return i;
 
-  return interfaces;
+  return local_interfaces;
 }
-
 
 /* these 3 functions return the ip/bcast/nmask for the interface
    most appropriate for the given ip address */
@@ -447,5 +457,6 @@ struct in_addr *iface_ip(struct in_addr ip)
 {
   return(&iface_find(ip)->ip);
 }
+
 
 
