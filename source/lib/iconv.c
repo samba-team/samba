@@ -161,6 +161,12 @@ size_t smb_iconv(smb_iconv_t cd,
 	return 0;
 }
 
+static BOOL is_utf16(const char *name)
+{
+	return strcasecmp(name, "UCS-2LE") == 0 ||
+		strcasecmp(name, "UTF-16LE") == 0;
+}
+
 /*
   simple iconv_open() wrapper
  */
@@ -202,13 +208,17 @@ smb_iconv_t smb_iconv_open(const char *tocode, const char *fromcode)
 #ifdef HAVE_NATIVE_ICONV
 	if (!from) {
 		ret->pull = sys_iconv;
-		ret->cd_pull = iconv_open("UCS-2LE", fromcode);
+		ret->cd_pull = iconv_open("UTF-16LE", fromcode);
+		if (ret->cd_pull == (iconv_t)-1)
+			ret->cd_pull = iconv_open("UCS-2LE", fromcode);
 		if (ret->cd_pull == (iconv_t)-1) goto failed;
 	}
 
 	if (!to) {
 		ret->push = sys_iconv;
-		ret->cd_push = iconv_open(tocode, "UCS-2LE");
+		ret->cd_push = iconv_open(tocode, "UTF-16LE");
+		if (ret->cd_push == (iconv_t)-1)
+			ret->cd_push = iconv_open(tocode, "UCS-2LE");
 		if (ret->cd_push == (iconv_t)-1) goto failed;
 	}
 #else
@@ -218,23 +228,23 @@ smb_iconv_t smb_iconv_open(const char *tocode, const char *fromcode)
 #endif
 
 	/* check for conversion to/from ucs2 */
-	if (strcasecmp(fromcode, "UTF-16LE") == 0 && to) {
+	if (is_utf16(fromcode) && to) {
 		ret->direct = to->push;
 		return ret;
 	}
-	if (strcasecmp(tocode, "UTF-16LE") == 0 && from) {
+	if (is_utf16(tocode) && from) {
 		ret->direct = from->pull;
 		return ret;
 	}
 
 #ifdef HAVE_NATIVE_ICONV
-	if (strcasecmp(fromcode, "UTF-16LE") == 0) {
+	if (is_utf16(fromcode)) {
 		ret->direct = sys_iconv;
 		ret->cd_direct = ret->cd_push;
 		ret->cd_push = NULL;
 		return ret;
 	}
-	if (strcasecmp(tocode, "UTF-16LE") == 0) {
+	if (is_utf16(tocode)) {
 		ret->direct = sys_iconv;
 		ret->cd_direct = ret->cd_pull;
 		ret->cd_pull = NULL;
