@@ -234,7 +234,7 @@ interface ObjectRpcBaseTypes
 		GUID clsid; /* Clsid of unmarshaling code */
 		uint32 cbExtension; /* size of extension data */
 		uint32 size; /* size of data that follows */
-		[size_is(size), ref] uint8 *pData; /* extension + class specific data */
+		[size_is(size)] uint8 pData[]; /* extension + class specific data */
 	} u_custom;
 
 	typedef struct
@@ -262,7 +262,7 @@ interface ObjectRpcBaseTypes
 	typedef [public] struct 
 	{
 		uint32 size;
-		[size_is(size)] uint8 data[];
+		[subcontext(4)] OBJREF obj;
 	} MInterfacePointer;
 }
 
@@ -278,8 +278,8 @@ interface IUnknown
 	/* Function 0x00 */
 	/* Returns the interface with the specified IID 
 	   if implemented by this object */
-	[local] WERROR QueryInterface([in] IID *riid
-	   /*FIXME, [out] void **data*/);
+	[local] WERROR QueryInterface([in] IID *riid,
+	   [out,iid_is(riid)] MInterfacePointer *data);
 
 	/*****************/
 	/* Function 0x01 */
@@ -297,9 +297,9 @@ interface IUnknown
 	pointer_default(unique)
 ] interface IClassFactory : IUnknown
 {
-	[local] WERROR CreateInstance(/*FIXME[in] IUnknown *pUnknown, 
+	[local] WERROR CreateInstance(/*FIXME[in] IUnknown *pUnknown*/, 
 			       [in] IID *riid,
-			       [out, iid_is(riid)] void **ppv*/);
+			       [out, iid_is(riid)] MInterfacePointer *ppv);
 
 	[call_as(CreateInstance)] WERROR RemoteCreateInstance();
 
@@ -338,7 +338,7 @@ interface IRemUnknown : IUnknown
 		[in] uint32 cRefs, /* count of AddRefs requested */
 		[in] uint16 cIids, /* count of IIDs that follow */
 		[in, size_is(cIids)] IID* iids, /*, // IIDs to QI for */
-		 [out] MInterfacePointer *ip
+		[out, size_is(cIids)] MInterfacePointer *ip
 		);
 
 	typedef struct 
@@ -368,8 +368,8 @@ interface IRemUnknown : IUnknown
 	void RemoteGetClassObject([in] GUID clsid, 
 											  [in] uint32 context,
 											  [in] LCID locale,
-											  [in] GUID iid/*FIXME,
-											  [out, iid_is(iid)] void *data */);
+											  [in] GUID iid,
+											  [out, iid_is(iid)] MInterfacePointer data);
 }
 
 /* Looks like this is the equivalent of .NET's 
