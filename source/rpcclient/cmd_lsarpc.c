@@ -278,23 +278,29 @@ static NTSTATUS cmd_lsa_enum_trust_dom(struct cli_state *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	/* Lookup list of trusted domains */
+	result = STATUS_MORE_ENTRIES;
 
-	result = cli_lsa_enum_trust_dom(cli, mem_ctx, &pol, &enum_ctx,
-					&num_domains,
-					&domain_names, &domain_sids);
-	if (!NT_STATUS_IS_OK(result) &&
-	    !NT_STATUS_EQUAL(result, NT_STATUS_NO_MORE_ENTRIES) &&
-	    !NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES))
-	    goto done;
+	while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES)) {
 
-	/* Print results: list of names and sids returned in this response. */	 
-	for (i = 0; i < num_domains; i++) {
-		fstring sid_str;
+		/* Lookup list of trusted domains */
 
-		sid_to_string(sid_str, &domain_sids[i]);
-		printf("%s %s\n", domain_names[i] ? domain_names[i] : 
-		       "*unknown*", sid_str);
+		result = cli_lsa_enum_trust_dom(cli, mem_ctx, &pol, &enum_ctx,
+						&num_domains,
+						&domain_names, &domain_sids);
+		if (!NT_STATUS_IS_OK(result) &&
+		    !NT_STATUS_EQUAL(result, NT_STATUS_NO_MORE_ENTRIES) &&
+		    !NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES))
+			goto done;
+
+		/* Print results: list of names and sids returned in this
+		 * response. */	 
+		for (i = 0; i < num_domains; i++) {
+			fstring sid_str;
+
+			sid_to_string(sid_str, &domain_sids[i]);
+			printf("%s %s\n", domain_names[i] ? domain_names[i] : 
+			       "*unknown*", sid_str);
+		}
 	}
 
  done:
