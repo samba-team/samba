@@ -25,23 +25,23 @@
 	} ds_DomainBasicInformation;
 	
 	typedef union {
-		[case(1)] ds_DomainBasicInformation info1;
+		[case(1)] ds_DomainBasicInformation basic;
 	} ds_DomainInformation;
 
-	NTSTATUS ds_RolerGetPrimaryDomainInformation(
+	WERROR ds_RolerGetPrimaryDomainInformation(
 		[in] uint16 level,
 		[out,switch_is(level)] ds_DomainInformation *info
 		);
 
 
-	NTSTATUS ds_RolerDnsNameToFlatName();
-	NTSTATUS ds_RolerDcAsDc();
-	NTSTATUS ds_RolerDcAsReplica();
-	NTSTATUS ds_RolerDemoteDc();
-	NTSTATUS ds_RolerGetDcOperationProgress();
-	NTSTATUS ds_RolerGetDcOperationResults();
-	NTSTATUS ds_RolerCancel();
-	NTSTATUS ds_RolerServerSaveStateForUpgrade();
-	NTSTATUS ds_RolerUpgradeDownlevelServer();
-	NTSTATUS ds_RolerAbortDownlevelServerUpgrade();
+	WERROR ds_RolerDnsNameToFlatName();
+	WERROR ds_RolerDcAsDc();
+	WERROR ds_RolerDcAsReplica();
+	WERROR ds_RolerDemoteDc();
+	WERROR ds_RolerGetDcOperationProgress();
+	WERROR ds_RolerGetDcOperationResults();
+	WERROR ds_RolerCancel();
+	WERROR ds_RolerServerSaveStateForUpgrade();
+	WERROR ds_RolerUpgradeDownlevelServer();
+	WERROR ds_RolerAbortDownlevelServerUpgrade();
 }
