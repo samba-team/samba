@@ -157,6 +157,7 @@ LIB_OBJ =	lib/charcnv.o lib/charset.o lib/debug.o lib/fault.o \
 		lib/util_file.o \
 		lib/util_sock.o lib/util_sec.o lib/util_array.o \
 		lib/vagent.o \
+		lib/talloc.o \
 		tdb/tdb.o
 
 STUB_UID_OBJ = lib/stub_uid.o
@@ -168,19 +169,17 @@ PARAM_OBJ = param/loadparm.o param/params.o
 
 LIBSAMBA_OBJ = $(PARAM_OBJ) $(LIB_OBJ)
 
-LIBNMB_OBJ = libsmb/namequery.o libsmb/nmblib.o
+LIBNMB_OBJ = libsmb/namequery.o libsmb/nmblib.o libsmb/unexpected.o
 
 LIBSMB_OBJ = libsmb/clientgen.o \
-             libsmb/nterr.o libsmb/smbdes.o libsmb/smbencrypt.o \
-             libsmb/smberr.o libsmb/credentials.o \
-		libsmb/pwd_cache.o \
-	     lib/crc32.o lib/md5.o lib/hmacmd5.o \
-		lib/util_hnd.o \
-                 rpc_parse/parse_creds.o \
-                rpc_parse/parse_net.o \
-		 rpc_parse/parse_ntlmssp.o rpc_parse/parse_prs.o \
-                 rpc_parse/parse_vuid.o \
-           lib/vuser.o lib/vuser_db.o
+	libsmb/nterr.o libsmb/smbdes.o libsmb/smbencrypt.o \
+	libsmb/smberr.o libsmb/credentials.o \
+	libsmb/pwd_cache.o  lib/util_hnd.o \
+	lib/crc32.o lib/md5.o lib/hmacmd5.o \
+	rpc_parse/parse_creds.o  rpc_parse/parse_net.o \
+	rpc_parse/parse_ntlmssp.o rpc_parse/parse_prs.o \
+	rpc_parse/parse_vuid.o \
+	lib/vuser.o lib/vuser_db.o
 
 RPC_SRVUTIL_OBJ = rpc_server/srv_pipe_srv.o \
 		rpc_server/srv_pipe_noauth.o

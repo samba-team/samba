@@ -3496,3 +3496,4 @@ const char *get_sid_name_use_str(uint32 sid_name_use)
 {
 	return enum_field_to_str(sid_name_use, sid_name_info, True);
 }
+

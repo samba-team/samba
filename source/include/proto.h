@@ -651,6 +651,13 @@ BOOL smb_safe_err_msg(uint8 class, uint32 num, char *ret, size_t len);
 BOOL smb_safe_errstr(char *inbuf, char *msg, size_t len);
 char *smb_errstr(char *inbuf);
 
+/*The following definitions come from  libsmb/unexpected.c  */
+
+void unexpected_packet(struct packet_struct *p);
+void clear_unexpected(time_t t);
+struct packet_struct *receive_unexpected(enum packet_type packet_type, int id, 
+					 char *mailslot_name);
+
 /*The following definitions come from  lib/snprintf.c  */
 
 
@@ -714,6 +721,11 @@ int sys_getgroups(int setlen, gid_t *gidset);
 struct passwd *copy_passwd_struct(struct passwd *pass);
 struct passwd *sys_getpwnam(const char *name);
 struct passwd *sys_getpwuid(uid_t uid);
+
+/*The following definitions come from  lib/talloc.c  */
+
+void *talloc(TALLOC_CTX *t, size_t size);
+void talloc_destroy(TALLOC_CTX *t);
 
 /*The following definitions come from  lib/time.c  */
 
@@ -1341,6 +1353,7 @@ void add_logon_names(void);
 
 /*The following definitions come from  nmbd/nmbd_mynames.c  */
 
+void register_my_workgroup_one_subnet(struct subnet_record *subrec);
 BOOL register_my_workgroup_and_names(void);
 void release_my_names(void);
 void refresh_my_names(time_t t);
