@@ -89,7 +89,7 @@ fi
 ])
 
 AC_CACHE_CHECK([for IPv6], ac_cv_lib_ipv6, [
-AC_TRY_LINK([
+AC_LINK_IFELSE([AC_LANG_SOURCE([[
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
@@ -102,8 +102,8 @@ AC_TRY_LINK([
 #ifdef HAVE_NETINET_IN6_H
 #include <netinet/in6.h>
 #endif
-],
-[
+]],
+[[
  struct sockaddr_in6 sin6;
  int s;
 
@@ -113,9 +113,9 @@ AC_TRY_LINK([
  sin6.sin6_port = htons(17);
  sin6.sin6_addr = in6addr_any;
  bind(s, (struct sockaddr *)&sin6, sizeof(sin6));
-],
-ac_cv_lib_ipv6=yes,
-ac_cv_lib_ipv6=no)])
+]])],
+[ac_cv_lib_ipv6=yes],
+[ac_cv_lib_ipv6=no])])
 if test "$ac_cv_lib_ipv6" = yes; then
   AC_DEFINE(HAVE_IPV6, 1, [Define if you have IPv6.])
 else
@@ -125,7 +125,7 @@ fi
 ## test for AIX missing in6addr_loopback
 if test "$ac_cv_lib_ipv6" = yes; then
 	AC_CACHE_CHECK([for in6addr_loopback],[ac_cv_var_in6addr_loopback],[
-	AC_TRY_LINK([
+	AC_LINK_IFELSE([AC_LANG_SOURCE([[
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
@@ -137,10 +137,10 @@ if test "$ac_cv_lib_ipv6" = yes; then
 #endif
 #ifdef HAVE_NETINET_IN6_H
 #include <netinet/in6.h>
-#endif],[
+#endif]],[[
 struct sockaddr_in6 sin6;
 sin6.sin6_addr = in6addr_loopback;
-],ac_cv_var_in6addr_loopback=yes,ac_cv_var_in6addr_loopback=no)])
+]])],[ac_cv_var_in6addr_loopback=yes],[ac_cv_var_in6addr_loopback=no])])
 	if test "$ac_cv_var_in6addr_loopback" = yes; then
 		AC_DEFINE(HAVE_IN6ADDR_LOOPBACK, 1, 
 			[Define if you have the in6addr_loopback variable])

@@ -5,15 +5,13 @@ AC_DEFUN([rk_CHECK_VAR], [
 AC_MSG_CHECKING(for $1)
 AC_CACHE_VAL(ac_cv_var_$1, [
 m4_ifval([$2],[
-	AC_TRY_LINK([$2
-	void * foo() { return &$1; }],
-	    [foo()],
-	    ac_cv_var_$1=yes, ac_cv_var_$1=no)])
+	AC_LINK_IFELSE([AC_LANG_SOURCE([[$2
+	void * foo() { return &$1; }]],[[foo()]])],
+	    [ac_cv_var_$1=yes],[ac_cv_var_$1=no])])
 if test "$ac_cv_var_$1" != yes ; then
-AC_TRY_LINK([extern int $1;
-int foo() { return $1; }],
-	    [foo()],
-	    ac_cv_var_$1=yes, ac_cv_var_$1=no)
+AC_LINK_IFELSE([AC_LANG_SOURCE([[extern int $1;
+int foo() { return $1; }]],[[foo()]])],
+	    [ac_cv_var_$1=yes],[ac_cv_var_$1=no])
 fi
 ])
 ac_foo=`eval echo \\$ac_cv_var_$1`
