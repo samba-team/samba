@@ -629,6 +629,9 @@ LIBBIGBALLOFMUD_OBJ = $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) $(UBIQX_OBJ) $(SECRETS_OBJ
 
 LIBBIGBALLOFMUD_PICOBJS = $(LIBBIGBALLOFMUD_OBJ:.o=.@PICSUFFIX@)
 
+BASIC_OBJ = lib/util_str.o lib/debug.o lib/xfile.o lib/util.o \
+            lib/system.o lib/dprintf.o lib/time.o
+
 CLIENT_OBJ1 = client/client.o client/clitar.o 
 
 #CLIENT_OBJ = $(CLIENT_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) \
@@ -636,7 +639,7 @@ CLIENT_OBJ1 = client/client.o client/clitar.o
 #             $(READLINE_OBJ) $(POPT_LIB_OBJ) $(SECRETS_OBJ)
 
 CLIENT_OBJ = $(CLIENT_OBJ1) $(LIBCLI_OBJ) $(LIBCMDLINE_OBJ) $(LIBNMB_OBJ) \
-             $(PARAM_OBJ)
+             $(PARAM_OBJ) $(BASIC_OBJ)
 
 NET_OBJ1 = utils/net.o utils/net_ads.o utils/net_ads_cldap.o utils/net_help.o \
 	   utils/net_rap.o utils/net_rpc.o utils/net_rpc_samsync.o \

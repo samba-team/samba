@@ -506,37 +506,6 @@ int set_message_end(void *outbuf,void *end_ptr)
 }
 
 /*******************************************************************
- Reduce a file name, removing .. elements.
-********************************************************************/
-
-void dos_clean_name(char *s)
-{
-	char *p=NULL;
-
-	DEBUG(3,("dos_clean_name [%s]\n",s));
-
-	/* remove any double slashes */
-	all_string_sub(s, "\\\\", "\\", 0);
-
-	while ((p = strstr_m(s,"\\..\\")) != NULL) {
-		pstring s1;
-
-		*p = 0;
-		pstrcpy(s1,p+3);
-
-		if ((p=strrchr_m(s,'\\')) != NULL)
-			*p = 0;
-		else
-			*s = 0;
-		pstrcat(s,s1);
-	}  
-
-	trim_string(s,NULL,"\\..");
-
-	all_string_sub(s, "\\.\\", "\\", 0);
-}
-
-/*******************************************************************
  Reduce a file name, removing .. elements. 
 ********************************************************************/
 
@@ -799,23 +768,6 @@ void become_daemon(BOOL Fork)
 				  attach it to the logfile */
 }
 
-/****************************************************************************
- Put up a yes/no prompt.
-****************************************************************************/
-
-BOOL yesno(char *p)
-{
-	pstring ans;
-	printf("%s",p);
-
-	if (!fgets(ans,sizeof(ans)-1,stdin))
-		return(False);
-
-	if (*ans == 'y' || *ans == 'Y')
-		return(True);
-
-	return(False);
-}
 
 /****************************************************************************
  Expand a pointer to be a particular size.
@@ -1137,7 +1089,7 @@ void zero_ip(struct in_addr *ip)
         static struct in_addr ipzero;
 
         if (!init) {
-                ipzero = *interpret_addr2("0.0.0.0");
+                ipzero = *interpret_addr2_x("0.0.0.0");
                 init = True;
         }
 
@@ -1491,51 +1443,12 @@ void smb_panic2(const char *why, BOOL decrement_pid_count )
 #undef NAMESIZE
 #endif
 
-	dbgflush();
 #ifdef SIGABRT
 	CatchSignal(SIGABRT,SIGNAL_CAST SIG_DFL);
 #endif
 	abort();
 }
 
-/*******************************************************************
-  A readdir wrapper which just returns the file name.
- ********************************************************************/
-
-const char *readdirname(DIR *p)
-{
-	struct smb_dirent *ptr;
-	char *dname;
-
-	if (!p)
-		return(NULL);
-  
-	ptr = (struct smb_dirent *)sys_readdir(p);
-	if (!ptr)
-		return(NULL);
-
-	dname = ptr->d_name;
-
-#ifdef NEXT2
-	if (telldir(p) < 0)
-		return(NULL);
-#endif
-
-#ifdef HAVE_BROKEN_READDIR
-	/* using /usr/ucb/cc is BAD */
-	dname = dname - 2;
-#endif
-
-	{
-		static pstring buf;
-		int len = NAMLEN(ptr);
-		memcpy(buf, dname, len);
-		buf[len] = 0;
-		dname = buf;
-	}
-
-	return(dname);
-}
 
 /*******************************************************************
  Utility function used to decide if the last component 
@@ -1562,7 +1475,7 @@ BOOL is_in_path(const char *name, name_compare_entry *namelist, BOOL case_sensit
 
 	for(; namelist->name != NULL; namelist++) {
 		if(namelist->is_wild) {
-			if (mask_match(last_component, namelist->name, case_sensitive)) {
+			if (mask_match_x(last_component, namelist->name, case_sensitive)) {
 				DEBUG(8,("is_in_path: mask match succeeded\n"));
 				return True;
 			}
@@ -2341,7 +2254,7 @@ BOOL mask_match_x(const char *string, char *pattern, BOOL is_case_sensitive)
 	if (strcmp(pattern,".") == 0)
 		return False;
 	
-	return ms_fnmatch(pattern, string, Protocol, is_case_sensitive) == 0;
+		return ms_fnmatch_x(pattern, string, Protocol, is_case_sensitive) == 0;
 }
 
 /*******************************************************************
@@ -2352,7 +2265,7 @@ BOOL mask_match_x(const char *string, char *pattern, BOOL is_case_sensitive)
 BOOL mask_match_list(const char *string, char **list, int listLen, BOOL is_case_sensitive)
 {
        while (listLen-- > 0) {
-               if (mask_match(string, *list++, is_case_sensitive))
+               if (mask_match_x(string, *list++, is_case_sensitive))
                        return True;
        }
        return False;

@@ -82,11 +82,11 @@ extern int extra_time_offset;
 
 static BOOL defaults_saved = False;
 
-typedef struct _param_opt_struct param_opt_struct;
-struct _param_opt_struct {
-	param_opt_struct *prev, *next;
+struct param_opt {
+	struct param_opt *prev, *next;
 	char *key;
 	char *value;
+	int flags;
 	char **list;
 };
 
@@ -292,7 +292,7 @@ typedef struct
 	int name_cache_timeout;
 	int client_signing;
 	int server_signing;
-	param_opt_struct *param_opt;
+	struct param_opt *param_opt;
 }
 global;
 
@@ -417,7 +417,7 @@ typedef struct
 	BOOL bMap_acl_inherit;
 	BOOL bAfs_Share;
 	BOOL bEASupport;
-	param_opt_struct *param_opt;
+	struct param_opt *param_opt;
 
 	char dummy[3];		/* for alignment */
 }
@@ -934,7 +934,7 @@ static struct parm_struct parm_table[] = {
 	{"max open files", P_INTEGER, P_GLOBAL, &Globals.max_open_files, NULL, NULL, FLAG_ADVANCED}, 
 	{"min print space", P_INTEGER, P_LOCAL, &sDefault.iMinPrintSpace, NULL, NULL, FLAG_ADVANCED | FLAG_PRINT}, 
 
-	{"socket options", P_GSTRING, P_GLOBAL, user_socket_options, NULL, NULL, FLAG_ADVANCED}, 
+	{"socket options", P_STRING, P_GLOBAL, user_socket_options, NULL, NULL, FLAG_ADVANCED}, 
 	{"strict allocate", P_BOOL, P_LOCAL, &sDefault.bStrictAllocate, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE}, 
 	{"strict sync", P_BOOL, P_LOCAL, &sDefault.bStrictSync, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE}, 
 	{"sync always", P_BOOL, P_LOCAL, &sDefault.bSyncAlways, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE}, 
@@ -1930,11 +1930,11 @@ static void init_copymap(service * pservice);
 /* This is a helper function for parametrical options support. */
 /* It returns a pointer to parametrical option value if it exists or NULL otherwise */
 /* Actual parametrical functions are quite simple */
-static param_opt_struct *get_parametrics(int snum, const char *type, const char *option)
+static struct param_opt *get_parametrics(int snum, const char *type, const char *option)
 {
 	BOOL global_section = False;
 	char* param_key;
-        param_opt_struct *data;
+        struct param_opt *data;
 	
 	if (snum >= iNumServices) return NULL;
 	
@@ -2064,7 +2064,7 @@ static int lp_enum(const char *s,const struct enum_list *_enum)
 /* the returned value is talloced in lp_talloc */
 char *lp_parm_talloc_string(int snum, const char *type, const char *option, const char *def)
 {
-	param_opt_struct *data = get_parametrics(snum, type, option);
+	struct param_opt *data = get_parametrics(snum, type, option);
 	
 	if (data == NULL||data->value==NULL) {
 		if (def) {
@@ -2081,7 +2081,7 @@ char *lp_parm_talloc_string(int snum, const char *type, const char *option, cons
 /* Parametric option has following syntax: 'Type: option = value' */
 const char *lp_parm_const_string(int snum, const char *type, const char *option, const char *def)
 {
-	param_opt_struct *data = get_parametrics(snum, type, option);
+	struct param_opt *data = get_parametrics(snum, type, option);
 	
 	if (data == NULL||data->value==NULL)
 		return def;
@@ -2094,7 +2094,7 @@ const char *lp_parm_const_string(int snum, const char *type, const char *option,
 
 const char **lp_parm_string_list(int snum, const char *type, const char *option, const char **def)
 {
-	param_opt_struct *data = get_parametrics(snum, type, option);
+	struct param_opt *data = get_parametrics(snum, type, option);
 
 	if (data == NULL||data->value==NULL)
 		return (const char **)def;
@@ -2111,7 +2111,7 @@ const char **lp_parm_string_list(int snum, const char *type, const char *option,
 
 int lp_parm_int(int snum, const char *type, const char *option, int def)
 {
-	param_opt_struct *data = get_parametrics(snum, type, option);
+	struct param_opt *data = get_parametrics(snum, type, option);
 	
 	if (data && data->value && *data->value)
 		return lp_int(data->value);
@@ -2124,7 +2124,7 @@ int lp_parm_int(int snum, const char *type, const char *option, int def)
 
 unsigned long lp_parm_ulong(int snum, const char *type, const char *option, unsigned long def)
 {
-	param_opt_struct *data = get_parametrics(snum, type, option);
+	struct param_opt *data = get_parametrics(snum, type, option);
 	
 	if (data && data->value && *data->value)
 		return lp_ulong(data->value);
@@ -2137,7 +2137,7 @@ unsigned long lp_parm_ulong(int snum, const char *type, const char *option, unsi
 
 BOOL lp_parm_bool(int snum, const char *type, const char *option, BOOL def)
 {
-	param_opt_struct *data = get_parametrics(snum, type, option);
+	struct param_opt *data = get_parametrics(snum, type, option);
 	
 	if (data && data->value && *data->value)
 		return lp_bool(data->value);
@@ -2151,7 +2151,7 @@ BOOL lp_parm_bool(int snum, const char *type, const char *option, BOOL def)
 int lp_parm_enum(int snum, const char *type, const char *option,
 		 const struct enum_list *_enum, int def)
 {
-	param_opt_struct *data = get_parametrics(snum, type, option);
+	struct param_opt *data = get_parametrics(snum, type, option);
 	
 	if (data && data->value && *data->value && _enum)
 		return lp_enum(data->value, _enum);
@@ -2177,7 +2177,7 @@ static void init_service(service * pservice)
 static void free_service(service *pservice)
 {
 	int i;
-        param_opt_struct *data, *pdata;
+        struct param_opt *data, *pdata;
 	if (!pservice)
 		return;
 
@@ -2228,7 +2228,7 @@ static int add_a_service(const service *pservice, const char *name)
 	int i;
 	service tservice;
 	int num_to_alloc = iNumServices + 1;
-	param_opt_struct *data, *pdata;
+	struct param_opt *data, *pdata;
 
 	tservice = *pservice;
 
@@ -2491,7 +2491,7 @@ static void copy_service(service * pserviceDest, service * pserviceSource, BOOL 
 {
 	int i;
 	BOOL bcopyall = (pcopymapDest == NULL);
-	param_opt_struct *data, *pdata, *paramo;
+	struct param_opt *data, *pdata, *paramo;
 	BOOL not_added;
 
 	for (i = 0; parm_table[i].label; i++)
@@ -2565,7 +2565,7 @@ static void copy_service(service * pserviceDest, service * pserviceSource, BOOL 
 			pdata = pdata->next;
 		}
 		if (not_added) {
-		    paramo = smb_xmalloc(sizeof(param_opt_struct));
+		    paramo = smb_xmalloc(sizeof(struct param_opt));
 		    paramo->key = strdup(data->key);
 		    paramo->value = strdup(data->value);
 		    paramo->list = NULL;
@@ -3066,59 +3066,76 @@ void *lp_local_ptr(int snum, void *ptr)
 }
 
 /***************************************************************************
+ Process a parametric option
+***************************************************************************/
+static BOOL lp_do_parameter_parametric(int snum, const char *pszParmName, const char *pszParmValue, int flags)
+{
+	struct param_opt *paramo, *data;
+	char *name;
+
+	while (isspace(*pszParmName)) {
+		pszParmName++;
+	}
+
+	name = strdup(pszParmName);
+	if (!name) return False;
+
+	strlower(name);
+
+	if (snum < 0) {
+		data = Globals.param_opt;
+	} else {
+		data = ServicePtrs[snum]->param_opt;
+	}
+
+	/* Traverse destination */
+	for (paramo=data; paramo; paramo=paramo->next) {
+		/* If we already have the option set, override it unless
+		   it was a command line option and the new one isn't */
+		if (strcmp(paramo->key, name) == 0) {
+			if ((paramo->flags & FLAG_CMDLINE) &&
+			    !(flags & FLAG_CMDLINE)) {
+				return True;
+			}
+
+			free(paramo->value);
+			paramo->value = strdup(pszParmValue);
+			paramo->flags = flags;
+			free(name);
+			return True;
+		}
+	}
+
+	paramo = smb_xmalloc(sizeof(*paramo));
+	paramo->key = strdup(name);
+	paramo->value = strdup(pszParmValue);
+	paramo->flags = flags;
+	if (snum < 0) {
+		DLIST_ADD(Globals.param_opt, paramo);
+	} else {
+		DLIST_ADD(ServicePtrs[snum]->param_opt, paramo);
+	}
+
+	free(name);
+	
+	return True;
+}
+
+/***************************************************************************
  Process a parameter for a particular service number. If snum < 0
  then assume we are in the globals.
 ***************************************************************************/
-
 BOOL lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue)
 {
-	int parmnum, i, slen;
+	int parmnum, i;
 	void *parm_ptr = NULL;	/* where we are going to store the result */
 	void *def_ptr = NULL;
-	pstring param_key;
-	char *sep;
-	param_opt_struct *paramo, *data;
-	BOOL not_added;
 
 	parmnum = map_parameter(pszParmName);
 
 	if (parmnum < 0) {
-		if ((sep=strchr(pszParmName, ':')) != NULL) {
-			*sep = '\0';
-			ZERO_STRUCT(param_key);
-			pstr_sprintf(param_key, "%s:", pszParmName);
-			slen = strlen(param_key);
-			pstrcat(param_key, sep+1);
-			trim_char(param_key+slen, ' ', ' ');
-			not_added = True;
-			data = (snum < 0) ? Globals.param_opt : 
-				ServicePtrs[snum]->param_opt;
-			/* Traverse destination */
-			while (data) {
-				/* If we already have same option, override it */
-				if (strcmp(data->key, param_key) == 0) {
-					string_free(&data->value);
-					str_list_free(&data->list);
-					data->value = strdup(pszParmValue);
-					not_added = False;
-					break;
-				}
-				data = data->next;
-			}
-			if (not_added) {
-				paramo = smb_xmalloc(sizeof(param_opt_struct));
-				paramo->key = strdup(param_key);
-				paramo->value = strdup(pszParmValue);
-				paramo->list = NULL;
-				if (snum < 0) {
-					DLIST_ADD(Globals.param_opt, paramo);
-				} else {
-					DLIST_ADD(ServicePtrs[snum]->param_opt, paramo);
-				}
-			}
-
-			*sep = ':';
-			return (True);
+		if (strchr(pszParmName, ':')) {
+			return lp_do_parameter_parametric(snum, pszParmName, pszParmValue, 0);
 		}
 		DEBUG(0, ("Ignoring unknown parameter \"%s\"\n", pszParmName));
 		return (True);
@@ -3127,6 +3144,12 @@ BOOL lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 	if (parm_table[parmnum].flags & FLAG_DEPRECATED) {
 		DEBUG(1, ("WARNING: The \"%s\" option is deprecated\n",
 			  pszParmName));
+	}
+
+	/* if the flag has been set on the command line, then don't allow override,
+	   but don't report an error */
+	if (parm_table[parmnum].flags & FLAG_CMDLINE) {
+		return True;
 	}
 
 	def_ptr = parm_table[parmnum].ptr;
@@ -3188,7 +3211,6 @@ BOOL lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 			break;
 
 		case P_LIST:
-			str_list_free(parm_ptr);
 			*(char ***)parm_ptr = str_list_make(pszParmValue, NULL);
 			break;
 
@@ -3198,20 +3220,20 @@ BOOL lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 
 		case P_USTRING:
 			string_set(parm_ptr, pszParmValue);
-			strupper_m(*(char **)parm_ptr);
-			break;
-
-		case P_GSTRING:
-			pstrcpy((char *)parm_ptr, pszParmValue);
-			break;
-
-		case P_UGSTRING:
-			pstrcpy((char *)parm_ptr, pszParmValue);
-			strupper_m((char *)parm_ptr);
+			strupper(*(char **)parm_ptr);
 			break;
 
 		case P_ENUM:
-			lp_set_enum_parm( &parm_table[parmnum], pszParmValue, (int*)parm_ptr );
+			for (i = 0; parm_table[parmnum].enum_list[i].name; i++) {
+				if (strequal
+				    (pszParmValue,
+				     parm_table[parmnum].enum_list[i].name)) {
+					*(int *)parm_ptr =
+						parm_table[parmnum].
+						enum_list[i].value;
+					break;
+				}
+			}
 			break;
 		case P_SEP:
 			break;
@@ -3313,13 +3335,6 @@ static void print_parameter(struct parm_struct *p, void *ptr, FILE * f)
 			}
 			break;
 
-		case P_GSTRING:
-		case P_UGSTRING:
-			if ((char *)ptr) {
-				fprintf(f, "%s", (char *)ptr);
-			}
-			break;
-
 		case P_STRING:
 		case P_USTRING:
 			if (*(char **)ptr) {
@@ -3353,16 +3368,6 @@ static BOOL equal_parameter(parm_type type, void *ptr1, void *ptr2)
 		case P_LIST:
 			return str_list_compare(*(char ***)ptr1, *(char ***)ptr2);
 
-		case P_GSTRING:
-		case P_UGSTRING:
-		{
-			char *p1 = (char *)ptr1, *p2 = (char *)ptr2;
-			if (p1 && !*p1)
-				p1 = NULL;
-			if (p2 && !*p2)
-				p2 = NULL;
-			return (p1 == p2 || strequal(p1, p2));
-		}
 		case P_STRING:
 		case P_USTRING:
 		{
@@ -3456,10 +3461,6 @@ static BOOL is_default(int i)
 		case P_USTRING:
 			return strequal(parm_table[i].def.svalue,
 					*(char **)parm_table[i].ptr);
-		case P_GSTRING:
-		case P_UGSTRING:
-			return strequal(parm_table[i].def.svalue,
-					(char *)parm_table[i].ptr);
 		case P_BOOL:
 		case P_BOOLREV:
 			return parm_table[i].def.bvalue ==
@@ -3485,7 +3486,7 @@ Display the contents of the global structure.
 static void dump_globals(FILE *f)
 {
 	int i;
-	param_opt_struct *data;
+	struct param_opt *data;
 	
 	fprintf(f, "# Global parameters\n[global]\n");
 
@@ -3529,7 +3530,7 @@ BOOL lp_is_default(int snum, struct parm_struct *parm)
 static void dump_a_service(service * pService, FILE * f)
 {
 	int i;
-	param_opt_struct *data;
+	struct param_opt *data;
 	
 	if (pService != &sDefault)
 		fprintf(f, "\n[%s]\n", pService->szService);
@@ -3776,14 +3777,6 @@ static void lp_save_defaults(void)
 					parm_table[i].def.svalue = NULL;
 				}
 				break;
-			case P_GSTRING:
-			case P_UGSTRING:
-				if (parm_table[i].ptr) {
-					parm_table[i].def.svalue = strdup((char *)parm_table[i].ptr);
-				} else {
-					parm_table[i].def.svalue = NULL;
-				}
-				break;
 			case P_BOOL:
 			case P_BOOLREV:
 				parm_table[i].def.bvalue =
@@ -3894,7 +3887,7 @@ BOOL lp_load(const char *pszFname, BOOL global_only, BOOL save_defaults,
 {
 	pstring n2;
 	BOOL bRetval;
-	param_opt_struct *data, *pdata;
+	struct param_opt *data, *pdata;
 	char *username;
 
 	pstrcpy(n2, pszFname);
@@ -4277,16 +4270,6 @@ const char *lp_printername(int snum)
 void get_private_directory(pstring privdir)
 {
 	pstrcpy (privdir, lp_private_dir());
-}
-
-/***********************************************************
- Allow daemons such as winbindd to fix their logfile name.
-************************************************************/
-
-void lp_set_logfile(const char *name)
-{
-	string_set(&Globals.szLogFile, name);
-	pstrcpy(debugf, name);
 }
 
 /*******************************************************************

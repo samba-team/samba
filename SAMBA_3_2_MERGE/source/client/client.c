@@ -3059,7 +3059,7 @@ static void remember_query_host(const char *arg,
  			break;
 		case 'I':
 			{
-				dest_ip = *interpret_addr2(poptGetOptArg(pc));
+				dest_ip = *interpret_addr2(mem_ctx, poptGetOptArg(pc));
 				if (is_zero_ip(dest_ip))
 					exit(1);
 				have_ip = True;
