@@ -361,6 +361,7 @@ NTSTATUS _lsa_query_info(pipes_struct *p, LSA_Q_QUERY_INFO *q_u, LSA_R_QUERY_INF
 	LSA_INFO_UNION *info = &r_u->dom;
 	DOM_SID domain_sid;
 	fstring dos_domain;
+	fstring dos_myname;
 	char *name = NULL;
 	DOM_SID *sid = NULL;
 
@@ -368,6 +369,9 @@ NTSTATUS _lsa_query_info(pipes_struct *p, LSA_Q_QUERY_INFO *q_u, LSA_R_QUERY_INF
 
 	if (!find_policy_by_hnd(p, &q_u->pol, NULL))
 		return NT_STATUS_INVALID_HANDLE;
+
+	fstrcpy(dos_myname, global_myname);
+	unix_to_dos(dos_myname, True);
 
 	fstrcpy(dos_domain, global_myworkgroup);
 	unix_to_dos(dos_domain, True);
@@ -421,7 +425,7 @@ NTSTATUS _lsa_query_info(pipes_struct *p, LSA_Q_QUERY_INFO *q_u, LSA_R_QUERY_INF
 				sid = &global_sam_sid;
 				break;
 			case ROLE_DOMAIN_MEMBER:
-				name = dos_domain;
+				name = dos_myname;
 				sid = &global_sam_sid;
 				break;
 			case ROLE_STANDALONE:
