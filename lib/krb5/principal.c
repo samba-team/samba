@@ -11,8 +11,10 @@ void
 krb5_free_principal(krb5_context context,
 		    krb5_principal p)
 {
-    free_Principal(p);
-    free(p);
+    if(p){
+	free_Principal(p);
+	free(p);
+    }
 }
 
 krb5_error_code
