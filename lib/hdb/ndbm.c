@@ -115,7 +115,7 @@ NDBM_firstkey(krb5_context context, HDB *db, hdb_entry *entry)
 static krb5_error_code
 NDBM_nextkey(krb5_context context, HDB *db, hdb_entry *entry)
 {
-    return DB_seq(context, db, entry, 0);
+    return NDBM_seq(context, db, entry, 0);
 }
 
 krb5_error_code
