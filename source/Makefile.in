@@ -394,6 +394,8 @@ NSS_OBJ = $(NSS_OBJ_0:.o=.po)
 
 all : CHECK $(SPROGS) $(PROGS) nsswitch
 
+everything : CHECK $(SPROGS) $(PROGS) nsswitch smbwrapper smbtorture rpctorture debug2html smbfilter
+
 pam_smbpass : CHECK bin/pam_smbpass.@SHLIBEXT@
 
 smbwrapper : CHECK bin/smbsh bin/smbwrapper.@SHLIBEXT@ @WRAP32@
