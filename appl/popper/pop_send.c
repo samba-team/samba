@@ -136,14 +136,18 @@ pop_send(POP *p)
           return (pop_msg (p,POP_FAILURE,"SIGHUP or SIGPIPE flagged"));
     }
     /*  Send the message body */
-    while (fgets(buffer,MAXMSGLINELEN,p->drop)) {
-        /*  Look for the start of the next message */
-        if (strncmp(buffer,"From ",5) == 0) break;
-        /*  Decrement the lines sent (for a TOP command) */
-        if (msg_lines >= 0 && msg_lines-- == 0) break;
-        pop_sendline(p,buffer);
-        if (hangup)
-          return (pop_msg (p,POP_FAILURE,"SIGHUP or SIGPIPE flagged"));
+    {
+	int blank_line = 0;
+	while (fgets(buffer,MAXMSGLINELEN,p->drop)) {
+	    /*  Look for the start of the next message */
+	    if (blank_line && strncmp(buffer,"From ",5) == 0) break;
+	    blank_line = (strncmp(buffer, "\n", 1) == 0);
+	    /*  Decrement the lines sent (for a TOP command) */
+	    if (msg_lines >= 0 && msg_lines-- == 0) break;
+	    pop_sendline(p,buffer);
+	    if (hangup)
+		return (pop_msg (p,POP_FAILURE,"SIGHUP or SIGPIPE flagged"));
+	}
     }
     /*  "." signals the end of a multi-line transmission */
     fputs(".\r\n",p->output);

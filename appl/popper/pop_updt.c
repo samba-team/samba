@@ -33,6 +33,8 @@ pop_updt (POP *p)
 
     long                    offset;                 /* New mail offset */
 
+    int			    blank_line;
+
 #ifdef DEBUG
     if (p->debug) {
         pop_log(p,POP_DEBUG,"Performing maildrop update...");
@@ -120,6 +122,7 @@ pop_updt (POP *p)
         if(p->debug)
             pop_log(p,POP_DEBUG,"Copying message %d.",mp->number);
 #endif /* DEBUG */
+	blank_line = 1;
         for(status_written = doing_body = 0 ;
             fgets(buffer,MAXMSGLINELEN,p->drop);) {
 
@@ -150,8 +153,9 @@ pop_updt (POP *p)
                 fputs (buffer, md);
             } 
             else { /* Body */ 
-                if (strncmp(buffer,"From ",5) == 0) break;
+                if (blank_line && strncmp(buffer,"From ",5) == 0) break;
                 fputs (buffer, md);
+		blank_line = (*buffer == '\n');
             }
         }
     }
