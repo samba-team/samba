@@ -517,10 +517,6 @@ static int print_subpath_values_printers( char *key, REGVAL_CTR *val )
 	prs_struct	prs;
 	uint32		offset;
 	int		snum;
-	int		i;
-	fstring		valuename;
-	uint8		*data;
-	uint32		type, data_len;
 	fstring		printername;
 	
 	/* 
