@@ -37,10 +37,6 @@
  **/
 
 
-/* A function of this type is passed to the 'run_rpc_command' wrapper */
-typedef NTSTATUS (*rpc_command_fn)(const DOM_SID *, const char *, 
-				   struct cli_state *, TALLOC_CTX *, int, const char **);
-
 /**
  * Many of the RPC functions need the domain sid.  This function gets
  *  it at the start of every run 
@@ -100,7 +96,7 @@ static DOM_SID *net_get_remote_domain_sid(struct cli_state *cli, TALLOC_CTX *mem
  * @return A shell status integer (0 for success)
  */
 
-static int run_rpc_command(struct cli_state *cli_arg, const int pipe_idx, int conn_flags,
+int run_rpc_command(struct cli_state *cli_arg, const int pipe_idx, int conn_flags,
                            rpc_command_fn fn,
                            int argc, const char **argv) 
 {
@@ -5260,10 +5256,10 @@ int net_rpc_usage(int argc, const char **argv)
 	d_printf("  net rpc getsid \t\tfetch the domain sid into the local secrets.tdb\n");
 	d_printf("  net rpc vampire \t\tsyncronise an NT PDC's users and groups into the local passdb\n");
 	d_printf("  net rpc samdump \t\tdiplay an NT PDC's users, groups and other data\n");
-	d_printf("  net rpc trustdom \t\tto create trusting domain's account\n"
-		 "\t\t\t\t\tor establish trust\n");
+	d_printf("  net rpc trustdom \t\tto create trusting domain's account or establish trust\n");
 	d_printf("  net rpc abortshutdown \tto abort the shutdown of a remote server\n");
 	d_printf("  net rpc shutdown \t\tto shutdown a remote server\n");
+	d_printf("  net rpc rights\t\tto manage privileges assigned to SIDs\n");
 	d_printf("\n");
 	d_printf("'net rpc shutdown' also accepts the following miscellaneous options:\n"); /* misc options */
 	d_printf("\t-r or --reboot\trequest remote server reboot on shutdown\n");
@@ -5332,6 +5328,7 @@ int net_rpc(int argc, const char **argv)
 		{"samdump", rpc_samdump},
 		{"vampire", rpc_vampire},
 		{"getsid", net_rpc_getsid},
+		{"rights", net_rpc_rights},
 		{"help", net_rpc_help},
 		{NULL, NULL}
 	};
