@@ -70,7 +70,7 @@ init_socket(struct descr *d, int type, int port)
 	d->s = -1;
 	return;
     }
-    if(type == SOCK_STREAM && listen(d->s, 5) < 0){
+    if(type == SOCK_STREAM && listen(d->s, SOMAXCONN) < 0){
 	warn("listen");
 	close(d->s);
 	d->s = -1;
