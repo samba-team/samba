@@ -282,15 +282,14 @@ main(int argc, char **argv, char **envp)
 		switch (ch) {
 		case 'a':
 		{
-		    int tmp;
-		    if(isdigit(optarg[0])){
-			tmp = atoi(optarg);
-			if(tmp >= 0 && tmp <= 2){
-			    auth_level = tmp;
-			    break;
-			}
-		    }
-		    warnx("bad value for -a");
+		    if(strcmp(optarg, "none") == 0)
+			auth_level = 0;
+		    else if(strcmp(optarg, "safe") == 0)
+			auth_level = 1;
+		    else if(strcmp(optarg, "user") == 0)
+			auth_level = 2;
+		    else
+			warnx("bad value for -a");
 		    break;
 		}
 		case 'd':
