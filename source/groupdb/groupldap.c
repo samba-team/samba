@@ -222,7 +222,7 @@ static DOMAIN_GRP *ldapgroup_getgrpbynam(const char *name,
 		return (False);
 
 	slprintf(filter, sizeof(filter)-1,
-		 "(&(cn=%s)(objectClass=sambaGroup))", name);
+		 "(&(cn=%s,*)(objectClass=sambaGroup))", name);
 	ldap_search_for(filter);
 
 	ret = ldapgroup_getgrp(&domgrp, members, num_membs);
