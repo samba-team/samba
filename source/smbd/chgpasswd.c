@@ -328,7 +328,7 @@ static int talktochild(int master, const char *seq)
 	return (count > 0);
 }
 
-static BOOL chat_with_program(char *passwordprogram, struct passwd *pass,
+static BOOL chat_with_program(char *passwordprogram, const struct passwd *pass,
 			      char *chatsequence, BOOL as_root)
 {
 	char *slavedev;
