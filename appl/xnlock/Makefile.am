@@ -16,6 +16,8 @@ bin_PROGRAMS =
 
 endif
 
+CHECK_LOCAL = 
+
 man_MANS = xnlock.1
 
 EXTRA_DIST = $(man_MANS) nose.0.left nose.0.right nose.1.left nose.1.right \
