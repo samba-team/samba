@@ -1,3 +1,24 @@
+1999-06-24  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/rd_cred.c (krb5_rd_cred): compare the sender's address
+ 	as an addrport one
+
+	* lib/krb5/krb5.h (KRB5_ADDRESS_ADDRPORT, KRB5_ADDRESS_IPPORT):
+ 	add
+	(krb5_auth_context): add local and remote port
+
+	* lib/krb5/get_for_creds.c (krb5_get_forwarded_creds): get the
+ 	local and remote address and add them to the krb-cred packet
+
+	* lib/krb5/auth_context.c: save the local and remove ports in the
+ 	auth_context
+
+	* lib/krb5/address.c (krb5_make_addrport): create an address of
+ 	type KRB5_ADDRESS_ADDRPORT from (addr, port)
+
+	* lib/krb5/addr_families.c (krb5_sockaddr2port): new function for
+ 	grabbing the port number out of the sockaddr
+
 1999-06-23  Assar Westerlund  <assar@sics.se>
 
 	* admin/srvcreate.c (srvcreate): always take the DES-CBC-MD5 key.

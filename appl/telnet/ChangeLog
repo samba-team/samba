@@ -1,3 +1,8 @@
+1999-06-24  Assar Westerlund  <assar@sics.se>
+
+	* libtelnet/kerberos5.c (kerberos5_send): set the addresses in the
+ 	auth_context
+
 1999-06-23  Assar Westerlund  <assar@sics.se>
 
 	* telnet/Makefile.am (INCLUDES): add $(INCLUDE_krb4)
