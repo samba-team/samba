@@ -633,7 +633,8 @@ BOOL spoolss_io_devmode(char *desc, prs_struct *ps, int depth, DEVICEMODE *devmo
 		}
 			
 		DEBUG(7,("spoolss_io_devmode: parsing [%d] bytes of private\n",devmode->driverextra));
-		if (!prs_uint8s(True, "private",  ps, depth, devmode->private, devmode->driverextra))
+		if (!prs_uint8s(False, "private",  ps, depth,
+				devmode->private, devmode->driverextra))
 			return False;
 	}
 
