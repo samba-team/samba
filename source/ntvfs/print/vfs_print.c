@@ -88,7 +88,8 @@ NTSTATUS ntvfs_print_init(void)
 	struct ntvfs_ops ops;
 
 	ZERO_STRUCT(ops);
-	
+
+	/* fill in the name and type */
 	ops.name = "default";
 	ops.type = NTVFS_PRINT;
 	

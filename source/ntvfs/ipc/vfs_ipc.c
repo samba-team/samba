@@ -686,9 +686,11 @@ NTSTATUS ntvfs_ipc_init(void)
 
 	ZERO_STRUCT(ops);
 	
-	/* fill in all the operations */
-	ops.name = "ipc";
+	/* fill in the name and type */
+	ops.name = "default";
 	ops.type = NTVFS_IPC;
+
+	/* fill in all the operations */
 	ops.connect = ipc_connect;
 	ops.disconnect = ipc_disconnect;
 	ops.unlink = ipc_unlink;

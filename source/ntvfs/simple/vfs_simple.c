@@ -819,7 +819,8 @@ NTSTATUS ntvfs_simple_init(void)
 	struct ntvfs_ops ops;
 
 	ZERO_STRUCT(ops);
-	
+
+	/* fill in the name and type */
 	ops.name = "simple";
 	ops.type = NTVFS_DISK;
 

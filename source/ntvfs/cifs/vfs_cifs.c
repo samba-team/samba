@@ -686,6 +686,7 @@ NTSTATUS ntvfs_cifs_init(void)
 
 	ZERO_STRUCT(ops);
 
+	/* fill in the name and type */
 	ops.name = "cifs";
 	ops.type = NTVFS_DISK;
 	
