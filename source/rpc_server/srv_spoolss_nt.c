@@ -1929,7 +1929,7 @@ static void spoolss_notify_submitted_time(int snum,
 
 	len = sizeof(SYSTEMTIME);
 
-	data->notify_data.data.length = len/2 - 1;
+	data->notify_data.data.length = len;
 	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, len);
 
 	if (!data->notify_data.data.string) {
