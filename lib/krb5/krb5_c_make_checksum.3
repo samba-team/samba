@@ -262,6 +262,13 @@ structure.
 .Fa data
 should be free with
 .Fn krb5_free_data .
+If some either of
+.Fa data
+or
+.Fa checksum
+is not needed for the application, 
+.Dv NULL
+can be passed in.
 .Sh SEE ALSO
 .Xr krb5 3 ,
 .Xr krb5_free_data 3 ,
