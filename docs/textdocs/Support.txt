@@ -32,7 +32,7 @@ Region                             Number of entries
 ----------------------------------------------------
     AFRICA                                        2
     AMERICA - CENTRAL & SOUTH                     4
-    AMERICA - USA                                35
+    AMERICA - USA                                36
     ASIA                                          1
     AUSTRALIA & NEW ZEALAND                      18
     CANADA                                        9
@@ -702,6 +702,22 @@ For information about the InfoMagic Workgroup Server contact InfoMagic:
 
 To contact Stelias about custom arrangments, send email to
 info@stelias.com.
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+USA - VIRGINIA
+
+Commonwealth Technical Services, Inc.
+13618 Hull Street Road
+Suite 300
+Midlothian, VA 23112
+bcaudle@ctsi.net
+www.ctsi.net
+804-639-5400
+
+Commonwealth Technical Services supports Samba systems on various UNIX platforms, 
+as well as providing hardware, software, and consulting services for UNIX and Windows
+networks and the Internet.
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
