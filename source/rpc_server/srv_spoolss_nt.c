@@ -1723,9 +1723,8 @@ static BOOL srv_spoolss_replyopenprinter(char *printer, uint32 localprinter, uin
  * _spoolss_rffpcnex
  * ReplyFindFirstPrinterChangeNotifyEx
  *
- * jfmxxxx: before replying OK: status=0
- * should do a rpc call to the workstation asking ReplyOpenPrinter
- * have to code it, later.
+ * before replying OK: status=0 a rpc call is made to the workstation
+ * asking ReplyOpenPrinter 
  *
  * in fact ReplyOpenPrinter is the changenotify equivalent on the spoolss pipe
  * called from api_spoolss_rffpcnex
@@ -2478,6 +2477,10 @@ struct s_notify_info_data_table
 		    print_queue_struct *queue,
 		    NT_PRINTER_INFO_LEVEL *printer, TALLOC_CTX *mem_ctx);
 };
+
+/* A table describing the various print notification constants and
+   whether the notification data is a pointer to a variable sized
+   buffer, a one value uint32 or a two value uint32. */
 
 struct s_notify_info_data_table notify_info_data_table[] =
 {

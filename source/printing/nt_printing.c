@@ -1,6 +1,5 @@
 /*
- *  Unix SMB/Netbios implementation.
- *  Version 1.9.
+ *  Unix SMB/CIFS implementation.
  *  RPC Pipe client / server routines
  *  Copyright (C) Andrew Tridgell              1992-2000,
  *  Copyright (C) Jean François Micouleau      1998-2000.
@@ -1006,22 +1005,22 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file,
 		if (new_major > old_major ||
 			(new_major == old_major && new_minor > old_minor)) {
 			
-			DEBUG(6,("file_version_is_newer: version Replacing [%s] with [%s]\n", old_file, new_file));
+			DEBUG(6,("file_version_is_newer: Replacing [%s] with [%s]\n", old_file, new_file));
 			return True;
 		}
 		else {
-			DEBUG(6,("file_version_is_newer: version Leaving [%s] unchanged\n", old_file));
+			DEBUG(6,("file_version_is_newer: Leaving [%s] unchanged\n", old_file));
 			return False;
 		}
 
 	} else {
 		/* Compare modification time/dates and choose the newest time/date */
 		if (new_create_time > old_create_time) {
-			DEBUG(6,("file_version_is_newer: file Replacing [%s] with [%s]\n", old_file, new_file));
+			DEBUG(6,("file_version_is_newer: Replacing [%s] with [%s]\n", old_file, new_file));
 			return True;
 		}
 		else {
-			DEBUG(6,("file_version_is_newer: file Leaving [%s] unchanged\n", old_file));
+			DEBUG(6,("file_version_is_newer: Leaving [%s] unchanged\n", old_file));
 			return False;
 		}
 	}
