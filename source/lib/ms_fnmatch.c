@@ -167,8 +167,17 @@ int ms_fnmatch(const char *pattern, const char *string, enum protocol_types prot
 		}
 	}
 
-	pstrcpy_wa(p, pattern);
-	pstrcpy_wa(s, string);
+	if (push_ucs2(NULL, p, pattern, sizeof(p), STR_TERMINATE) == (size_t)-1) {
+		/* Not quite the right answer, but finding the right one
+		  under this failure case is expensive, and it's pretty close */
+		return -1;
+	}
+
+	if (push_ucs2(NULL, s, string, sizeof(s), STR_TERMINATE) == (size_t)-1) {
+		/* Not quite the right answer, but finding the right one
+		   under this failure case is expensive, and it's pretty close */
+		return -1;
+	}
 
 	if (protocol <= PROTOCOL_LANMAN2) {
 		/*
