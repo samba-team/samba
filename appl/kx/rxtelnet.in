@@ -39,12 +39,16 @@ PATH=$pdc_trams:$bindir:$PATH
 export PATH
 set -- `kx $kx_args $host`
 if test $# -ne 3; then
-  exit 1
+  echo "Warning: Cound not setup X forwarding"
+  pid=NO  
+  disp=""
+  auth=""
+else
+  screen=`echo $DISPLAY | sed -ne 's/[^:]*:[0-9]*\(\.[0-9]*\)/\1/p'`
+  pid=$1
+  disp=${2}${screen}
+  auth=$3
 fi
-screen=`echo $DISPLAY | sed -ne 's/[^:]*:[0-9]*\(\.[0-9]*\)/\1/p'`
-pid=$1
-disp=${2}${screen}
-auth=$3
 oldifs=$IFS
 IFS=:
 set -- $PATH
@@ -61,8 +65,8 @@ if test -z "$term"; then
 fi
 test "$verb" && echo "Telnet command used is `type $binary`."
 if test -n "$term" -a "$term" != "none"; then
-  ($term -title $title -n $title $xterm_args -e env DISPLAY=$disp XAUTHORITY=$auth $binary -D $telnet_args $host $port; kill -USR2 $pid) &
+  ($term -title $title -n $title $xterm_args -e env DISPLAY=$disp XAUTHORITY=$auth $binary -D $telnet_args $host $port; test x"$pid" != xNO && kill -USR2 $pid) &
 else
   env DISPLAY=$disp XAUTHORITY=$auth $binary -D $telnet_args $host $port
-  kill -USR2 $pid
+  test x"$pid" != xNO && kill -USR2 $pid
 fi
