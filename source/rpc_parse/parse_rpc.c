@@ -75,7 +75,7 @@ interface/version dce/rpc pipe identification
 	}, 0x00                             \
 }
 
-#define SYNT_LSARPC_V0_WIN2K                \
+#define SYNT_LSARPC_V0_DS                \
 {                                           \
 	{                                   \
 		0x3919286a, 0xb10c, 0x11d0, \
@@ -147,7 +147,7 @@ struct pipe_id_info pipe_names [] =
 {
 	/* client pipe , abstract syntax       , server pipe   , transfer syntax */
 	{ PIPE_LSARPC  , SYNT_LSARPC_V0        , PIPE_LSASS    , TRANS_SYNT_V2 },
-	{ PIPE_LSARPC  , SYNT_LSARPC_V0_WIN2K  , PIPE_LSASS    , TRANS_SYNT_V2 },
+	{ PIPE_LSARPC  , SYNT_LSARPC_V0_DS     , PIPE_LSASS    , TRANS_SYNT_V2 },
 	{ PIPE_SAMR    , SYNT_SAMR_V1          , PIPE_LSASS    , TRANS_SYNT_V2 },
 	{ PIPE_NETLOGON, SYNT_NETLOGON_V1      , PIPE_LSASS    , TRANS_SYNT_V2 },
 	{ PIPE_SRVSVC  , SYNT_SRVSVC_V3        , PIPE_NTSVCS   , TRANS_SYNT_V2 },
