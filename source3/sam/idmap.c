@@ -24,17 +24,13 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_IDMAP
 
-static struct {
-
+struct idmap_function_entry {
 	const char *name;
-	/* Function to create a member of the idmap_methods list */
-	NTSTATUS (*reg_meth)(struct idmap_methods **methods);
 	struct idmap_methods *methods;
-
-} remote_idmap_functions[] = {
-	{ "winbind", idmap_reg_winbind, NULL },
-	{ NULL, NULL, NULL }
+	struct idmap_function_entry *prev,*next;
 };
+
+static struct idmap_function_entry *backends = NULL;
 
 static struct idmap_methods *local_map;
 static struct idmap_methods *remote_map;
@@ -42,32 +38,55 @@ static struct idmap_methods *remote_map;
 static void lazy_initialize_idmap(void)
 {
 	static BOOL initialized = False;
-	if (initialized) return;
-	idmap_init();
-	initialized = True;
+
+	if(!initialized) {
+		idmap_init();
+		initialized = True;
+	}
 }
-
-
 
 static struct idmap_methods *get_methods(const char *name)
 {
-	int i = 0;
-	struct idmap_methods *ret = NULL;
+	struct idmap_function_entry *entry = backends;
 
-	while (remote_idmap_functions[i].name && strcmp(remote_idmap_functions[i].name, name)) {
-		i++;
+	while(entry) {
+		if (strcmp(entry->name, name) == 0) return entry->methods;
+		entry = entry->next;
 	}
 
-	if (remote_idmap_functions[i].name) {
+	return NULL;
+}
 
-		if (!remote_idmap_functions[i].methods) {
-			remote_idmap_functions[i].reg_meth(&remote_idmap_functions[i].methods);
-		}
+NTSTATUS smb_register_idmap(int version, const char *name, struct idmap_methods *methods)
+{
+	struct idmap_function_entry *entry;
 
-		ret = remote_idmap_functions[i].methods;
+ 	if ((version != SMB_IDMAP_INTERFACE_VERSION)) {
+		DEBUG(0, ("Failed to register idmap module.\n"
+		          "The module was compiled against SMB_IDMAP_INTERFACE_VERSION %d,\n"
+		          "current SMB_IDMAP_INTERFACE_VERSION is %d.\n"
+		          "Please recompile against the current version of samba!\n",  
+			  version, SMB_IDMAP_INTERFACE_VERSION));
+		return NT_STATUS_OBJECT_TYPE_MISMATCH;
+  	}
+
+	if (!name || !name[0] || !methods) {
+		DEBUG(0,("smb_register_idmap() called with NULL pointer or empty name!\n"));
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	return ret;
+	if (get_methods(name)) {
+		DEBUG(0,("idmap module %s already registered!\n", name));
+		return NT_STATUS_OBJECT_NAME_COLLISION;
+	}
+
+	entry = smb_xmalloc(sizeof(struct idmap_function_entry));
+	entry->name = smb_xstrdup(name);
+	entry->methods = methods;
+
+	DLIST_ADD(backends, entry);
+	DEBUG(5, ("Successfully added idmap backend '%s'\n", name));
+	return NT_STATUS_OK;
 }
 
 /* Initialize backend */
@@ -75,8 +94,17 @@ BOOL idmap_init(void)
 {
 	const char *remote_backend = lp_idmap_backend();
 
+	if (!backends)
+		static_init_idmap;
+
 	if (!local_map) {
-		idmap_reg_tdb(&local_map);
+		local_map = get_methods("tdb");
+
+		if (!local_map) {
+			DEBUG(0, ("idmap_init: could not find tdb backend!\n"));
+			return False;
+		}
+		
 		if (NT_STATUS_IS_ERR(local_map->init())) {
 			DEBUG(0, ("idmap_init: could not load or create local backend!\n"));
 			return False;
@@ -86,12 +114,15 @@ BOOL idmap_init(void)
 	if (!remote_map && remote_backend && *remote_backend != 0) {
 		DEBUG(3, ("idmap_init: using '%s' as remote backend\n", remote_backend));
 		
-		remote_map = get_methods(remote_backend);
-		if (!remote_map) {
+		if((remote_map = get_methods(remote_backend)) ||
+		    (NT_STATUS_IS_OK(smb_probe_module("idmap", remote_backend)) && 
+		    (remote_map = get_methods(remote_backend)))) {
+			remote_map->init();
+		} else {
 			DEBUG(0, ("idmap_init: could not load remote backend '%s'\n", remote_backend));
 			return False;
 		}
-		remote_map->init();
+
 	}
 
 	return True;

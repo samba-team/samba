@@ -135,8 +135,7 @@ static void db_status(void) {
 	return;
 }
 
-struct idmap_methods winbind_methods = {
-
+static struct idmap_methods winbind_methods = {
 	db_init,
 	db_get_sid_from_id,
 	db_get_id_from_sid,
@@ -146,10 +145,8 @@ struct idmap_methods winbind_methods = {
 
 };
 
-NTSTATUS idmap_reg_winbind(struct idmap_methods **meth)
+NTSTATUS idmap_winbind_init(void)
 {
-	*meth = &winbind_methods;
-
-	return NT_STATUS_OK;
+	return smb_register_idmap(SMB_IDMAP_INTERFACE_VERSION, "winbind", &winbind_methods);
 }
 

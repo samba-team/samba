@@ -31,6 +31,7 @@ PRINTLIBS=@PRINTLIBS@
 AUTHLIBS=@AUTHLIBS@
 ACLLIBS=@ACLLIBS@
 PASSDBLIBS=@PASSDBLIBS@
+IDMAP_LIBS=@IDMAP_LIBS@
 ADSLIBS=@ADSLIBS@
 KRB5LIBS=@KRB5_LIBS@
 
@@ -60,6 +61,7 @@ LIBDIR = @libdir@
 VFSLIBDIR = $(LIBDIR)/vfs
 PDBLIBDIR = $(LIBDIR)/pdb
 RPCLIBDIR = $(LIBDIR)/rpc
+IDMAPLIBDIR = $(LIBDIR)/idmap
 CHARSETLIBDIR = $(LIBDIR)/charset
 AUTHLIBDIR = $(LIBDIR)/auth
 CONFIGDIR = @configdir@
@@ -144,9 +146,10 @@ SCRIPTS = $(srcdir)/script/smbtar $(builddir)/script/findsmb
 VFS_MODULES = @VFS_MODULES@
 PDB_MODULES = @PDB_MODULES@
 RPC_MODULES = @RPC_MODULES@
+IDMAP_MODULES = @IDMAP_MODULES@
 CHARSET_MODULES = @CHARSET_MODULES@
 AUTH_MODULES = @AUTH_MODULES@
-MODULES = $(VFS_MODULES) $(PDB_MODULES) $(RPC_MODULES) $(CHARSET_MODULES) $(AUTH_MODULES)
+MODULES = $(VFS_MODULES) $(PDB_MODULES) $(RPC_MODULES) $(IDMAP_MODULES) $(CHARSET_MODULES) $(AUTH_MODULES)
 
 ######################################################################
 # object file lists
@@ -280,7 +283,7 @@ XML_OBJ = passdb/pdb_xml.o
 MYSQL_OBJ = passdb/pdb_mysql.o
 DEVEL_HELP_OBJ = modules/weird.o
 
-IDMAP_OBJ = sam/idmap.o sam/idmap_util.o sam/idmap_tdb.o sam/idmap_winbind.o
+IDMAP_OBJ = sam/idmap.o sam/idmap_util.o @IDMAP_STATIC@
 
 GROUPDB_OBJ = groupdb/mapping.o
 
@@ -731,7 +734,7 @@ bin/.dummy:
 bin/smbd@EXEEXT@: $(SMBD_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SMBD_OBJ) $(ADSLIBS) $(LDFLAGS) $(DYNEXP) $(PRINTLIBS) \
-	  $(AUTHLIBS) $(ACLLIBS) $(PASSDBLIBS) $(LIBS) @POPTLIBS@
+	  $(AUTHLIBS) $(ACLLIBS) $(PASSDBLIBS) $(IDMAP_LIBS) $(LIBS) @POPTLIBS@
 
 bin/nmbd@EXEEXT@: $(NMBD_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
@@ -744,11 +747,11 @@ bin/wrepld@EXEEXT@: $(WREPL_OBJ) @BUILD_POPT@ bin/.dummy
 bin/swat@EXEEXT@: $(SWAT_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SWAT_OBJ) $(LDFLAGS) $(DYNEXP) $(PRINTLIBS) \
-	  $(AUTHLIBS) $(LIBS) $(PASSDBLIBS)  @POPTLIBS@ $(KRB5LIBS)
+	  $(AUTHLIBS) $(LIBS) $(PASSDBLIBS) $(IDMAP_LIBS) @POPTLIBS@ $(KRB5LIBS)
 
 bin/rpcclient@EXEEXT@: $(RPCCLIENT_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(PASSDBLIBS) $(RPCCLIENT_OBJ) $(LDFLAGS) $(DYNEXP) $(TERMLDFLAGS) $(TERMLIBS) $(LIBS) @POPTLIBS@ $(ADSLIBS)
+	@$(CC) $(FLAGS) -o $@ $(PASSDBLIBS) $(IDMAP_LIBS) $(RPCCLIENT_OBJ) $(LDFLAGS) $(DYNEXP) $(TERMLDFLAGS) $(TERMLIBS) $(LIBS) @POPTLIBS@ $(ADSLIBS)
 
 bin/smbclient@EXEEXT@: $(CLIENT_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
@@ -804,15 +807,15 @@ bin/smbtree@EXEEXT@: $(SMBTREE_OBJ) @BUILD_POPT@ bin/.dummy
 
 bin/smbpasswd@EXEEXT@: $(SMBPASSWD_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMBPASSWD_OBJ) $(PASSDBLIBS) $(LDFLAGS) $(DYNEXP) $(LIBS) $(KRB5LIBS)
+	@$(CC) $(FLAGS) -o $@ $(SMBPASSWD_OBJ) $(PASSDBLIBS) $(IDMAP_LIBS) $(LDFLAGS) $(DYNEXP) $(LIBS) $(KRB5LIBS)
 
 bin/pdbedit@EXEEXT@: $(PDBEDIT_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(PASSDBLIBS) $(PDBEDIT_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) @POPTLIBS@
+	@$(CC) $(FLAGS) -o $@ $(PASSDBLIBS) $(IDMAP_LIBS) $(PDBEDIT_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) @POPTLIBS@
 
 bin/samtest@EXEEXT@: $(SAMTEST_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SAMTEST_OBJ) $(LDFLAGS) $(TERMLDFLAGS) $(TERMLIBS) $(DYNEXP) $(LIBS) @POPTLIBS@ $(PASSDBLIBS) $(ADSLIBS)
+	@$(CC) $(FLAGS) -o $@ $(SAMTEST_OBJ) $(LDFLAGS) $(TERMLDFLAGS) $(TERMLIBS) $(DYNEXP) $(LIBS) @POPTLIBS@ $(PASSDBLIBS) $(IDMAP_LIBS) $(ADSLIBS)
 
 bin/nmblookup@EXEEXT@: $(NMBLOOKUP_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
@@ -905,7 +908,7 @@ bin/libsmbclient.a: $(LIBSMBCLIENT_PICOBJS)
 bin/libbigballofmud.@SHLIBEXT@: $(LIBBIGBALLOFMUD_PICOBJS)
 	@echo Linking bigballofmud shared library $@
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(LIBBIGBALLOFMUD_PICOBJS) $(LIBS) \
-		@SONAMEFLAG@`basename $@`.$(LIBBIGBALLOFMUD_MAJOR) $(PASSDBLIBS) $(ADSLIBS)
+		@SONAMEFLAG@`basename $@`.$(LIBBIGBALLOFMUD_MAJOR) $(PASSDBLIBS) $(IDMAP_LIBS) $(ADSLIBS)
 	ln -snf libbigballofmud.so bin/libbigballofmud.so.0
 
 # It would be nice to build a static bigballofmud too, but when I try
@@ -1042,6 +1045,11 @@ bin/xml.@SHLIBEXT@: $(XML_OBJ:.o=.po)
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(XML_OBJ:.o=.po) @XML_LIBS@ \
 		@SONAMEFLAG@`basename $@`
 
+bin/winbind_idmap.@SHLIBEXT@: sam/idmap_winbind.po
+	@echo "Building plugin $@"
+	@$(SHLD) $(LDSHFLAGS)  -o $@ sam/idmap_winbind.po \
+		@SONAMEFLAG@`basename $@`
+
 bin/audit.@SHLIBEXT@: $(VFS_AUDIT_OBJ:.o=.po)
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_AUDIT_OBJ:.o=.po) \
@@ -1114,7 +1122,7 @@ install-everything: install installmodules
 # is not used
 
 installdirs:
-	@$(SHELL) $(srcdir)/script/installdirs.sh $(DESTDIR)$(BASEDIR) $(DESTDIR)$(BINDIR) $(DESTDIR)$(SBINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(DESTDIR)$(PRIVATEDIR) $(DESTDIR)$(VFSLIBDIR) $(DESTDIR)$(PDBLIBDIR) $(DESTDIR)$(PIDDIR) $(DESTDIR)$(LOCKDIR)
+	@$(SHELL) $(srcdir)/script/installdirs.sh $(DESTDIR)$(BASEDIR) $(DESTDIR)$(BINDIR) $(DESTDIR)$(SBINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(DESTDIR)$(PRIVATEDIR) $(DESTDIR)$(PIDDIR) $(DESTDIR)$(LOCKDIR)
 
 installservers: all installdirs
 	@$(SHELL) $(srcdir)/script/installbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(SBINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(SBIN_PROGS)
@@ -1128,6 +1136,7 @@ installmodules: modules installdirs
 	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(VFSLIBDIR) $(VFS_MODULES)
 	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(PDBLIBDIR) $(PDB_MODULES)
 	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(RPCLIBDIR) $(RPC_MODULES)
+	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(IDMAPLIBDIR) $(IDMAP_MODULES)
 	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(CHARSETLIBDIR) $(CHARSET_MODULES)
 	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(AUTHLIBDIR) $(AUTH_MODULES)
 
@@ -1161,7 +1170,7 @@ python_ext: $(PYTHON_PICOBJS)
 	fi
 	PYTHON_OBJS="$(PYTHON_PICOBJS)" \
 	PYTHON_CFLAGS="$(CFLAGS) $(CPPFLAGS) $(FLAGS)" \
-	LIBS="$(LIBS) $(PASSDBLIBS) $(KRB5LIBS)" \
+	LIBS="$(LIBS) $(PASSDBLIBS) $(IDMAP_LIBS) $(KRB5LIBS)" \
 		$(PYTHON) python/setup.py build
 
 python_install: $(PYTHON_PICOBJS)
@@ -1227,7 +1236,7 @@ clean: delheaders python_clean
 # This is quite ugly actually.. But we need to make 
 # sure the changes to include/config.h are used.
 modules_clean:
-	@-rm -f @MODULES_CLEAN@ auth/auth.o passdb/pdb_interface.o rpc_server/srv_pipe_hnd.o lib/iconv.o smbd/vfs.o
+	@-rm -f @MODULES_CLEAN@ auth/auth.o passdb/pdb_interface.o smbd/server.o lib/iconv.o smbd/vfs.o sam/idmap.o
 
 # Making this target will just make sure that the prototype files
 # exist, not necessarily that they are up to date.  Since they're

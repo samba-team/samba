@@ -22,6 +22,9 @@
    Boston, MA  02111-1307, USA.   
 */
 
+#define SMB_IDMAP_INTERFACE_VERSION	1
+
+
 #define ID_EMPTY	0x00
 #define ID_USERID	0x01
 #define ID_GROUPID	0x02

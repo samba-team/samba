@@ -154,6 +154,7 @@ AC_SUBST(AUTHLIBS)
 AC_SUBST(ACLLIBS)
 AC_SUBST(ADSLIBS)
 AC_SUBST(PASSDBLIBS)
+AC_SUBST(IDMAP_LIBS)
 AC_SUBST(KRB5_LIBS)
 AC_SUBST(LDAP_LIBS)
 AC_SUBST(LDAP_OBJ)
@@ -3698,6 +3699,7 @@ dnl Always built these modules static
 MODULE_pdb_guest=STATIC
 MODULE_rpc_spoolss=STATIC
 MODULE_rpc_srv=STATIC
+MODULE_idmap_tdb=STATIC
 
 AC_ARG_WITH(static-modules,
 [  --with-static-modules=MODULES  Comma-seperated list of names of modules to statically link in],
@@ -3746,6 +3748,10 @@ SMB_MODULE(rpc_spoolss, \$(RPC_SPOOLSS_OBJ), "bin/librpc_spoolss.$SHLIBEXT", RPC
 SMB_MODULE(rpc_samr, \$(RPC_SAMR_OBJ), "bin/librpc_samr.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_echo, \$(RPC_ECHO_OBJ), "bin/librpc_echo.$SHLIBEXT", RPC)
 SMB_SUBSYSTEM(RPC)
+
+SMB_MODULE(idmap_winbind, sam/idmap_winbind.o, "bin/winbind_idmap.$SHLIBEXT", IDMAP)
+SMB_MODULE(idmap_tdb, sam/idmap_tdb.o, "bin/winbind_tdb.$SHLIBEXT", IDMAP)
+SMB_SUBSYSTEM(IDMAP)
 
 SMB_MODULE(charset_weird, modules/weird.o, "bin/weird.$SHLIBEXT", CHARSET)
 SMB_SUBSYSTEM(CHARSET)
