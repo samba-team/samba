@@ -17,9 +17,8 @@ docs/docbook/projdoc/Printing.sgml - Cups is not documented, smbprint, printing 
 docs/docbook/projdoc/Samba-BDC-HOWTO.sgml - Needs update to 3.0
 docs/docbook/projdoc/Samba-LDAP-HOWTO.sgml - Needs update to 3.0 ( http://www.unav.es/cti/ldap-smb/smb-ldap-3-howto.html )
 docs/docbook/projdoc/Speed.sgml - contains outdated and invalid information
-docs/docbook/projdoc/UNIX_INSTALL.sgml - Needs a lot of updating (swat, ADS, PDC, etc)
+docs/docbook/projdoc/UNIX_INSTALL.sgml - Merge locking part with oplocks.sgml
 docs/docbook/projdoc/printer_driver2.sgml - Needs integration with printing.sgml, still up to date?
-docs/docbook/projdoc/security_level.sgml - information about ads and domain should be added (currently only contains pointers to the ads and domain_member docs)
 docs/docbook/projdoc/upgrading-to-3.0.sgml - not finished yet
 docs/docbook/projdoc/winbind.sgml - needs documentation for ADS
 docs/textdocs/CUPS-PrintingInfo.txt - needs to be converted to sgml - Kurt Pfeifle
@@ -36,7 +35,6 @@ docs/docbook/manpages/smbspool.8.sgml
 docs/docbook/manpages/smbstatus.1.sgml
 docs/docbook/manpages/smbtar.1.sgml
 docs/docbook/manpages/smbumount.8.sgml
-docs/docbook/manpages/testparm.1.sgml
 docs/docbook/manpages/testprns.1.sgml
 
 Stuff that needs to be documented:
@@ -65,3 +63,4 @@ idmap backend            // security
 sam backend              // security
 kernel change notify     // tuning
 lpq cache time           // tuning
+-valid					 // misc
