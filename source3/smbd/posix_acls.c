@@ -3226,7 +3226,7 @@ int get_acl_group_bits( connection_struct *conn, const char *fname, mode_t *mode
 		}
 	}
 	SMB_VFS_SYS_ACL_FREE_ACL(conn, posix_acl);
-	return -1;
+	return result;
 }
 
 /****************************************************************************
