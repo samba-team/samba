@@ -64,7 +64,7 @@ static int read_only;
 
 
 /* Conversion to hash entry index from device and inode numbers. */
-#define HASH_ENTRY(dev,ino) ((( (uint32)(dev) )* ( (uint32)(ino) )) % lp_shmem_hash_size())
+#define HASH_ENTRY(dev,ino) ((((uint32)(dev)) * ((uint32)(ino))) % shmops->hash_size())
 
 
 /*******************************************************************
@@ -109,15 +109,6 @@ static int shm_get_share_modes(int cnum, int token, uint32 dev, uint32 inode,
   share_mode_entry *share_array = (share_mode_entry *)0;
 
   *old_shares = 0;
-
-  if(hash_entry > lp_shmem_hash_size() )
-  {
-    DEBUG(0, 
-      ("PANIC ERROR : get_share_modes (FAST_SHARE_MODES): hash_entry %d too large \
-(max = %d)\n",
-      hash_entry, lp_shmem_hash_size() ));
-    return 0;
-  }
 
   mode_array = (int *)shmops->offset2addr(shmops->get_userdef_off());
   
@@ -289,15 +280,6 @@ static void shm_del_share_mode(int token, int fnum)
 
   hash_entry = HASH_ENTRY(dev, inode);
 
-  if(hash_entry > lp_shmem_hash_size() )
-  {
-    DEBUG(0,
-      ("PANIC ERROR:del_share_mode (FAST_SHARE_MODES): hash_entry %d too large \
-(max = %d)\n",
-      hash_entry, lp_shmem_hash_size() ));
-    return;
-  }
-
   mode_array = (int *)shmops->offset2addr(shmops->get_userdef_off());
  
   if(mode_array[hash_entry] == NULL_OFFSET)
@@ -428,14 +410,6 @@ static BOOL shm_set_share_mode(int token, int fnum, uint16 port, uint16 op_type)
   inode = fs_p->fd_ptr->inode;
 
   hash_entry = HASH_ENTRY(dev, inode);
-  if(hash_entry > lp_shmem_hash_size() )
-  {
-    DEBUG(0,
-      ("PANIC ERROR:set_share_mode (FAST_SHARE_MODES): hash_entry %d too large \
-(max = %d)\n",
-      hash_entry, lp_shmem_hash_size() ));
-    return False;
-  }
 
   mode_array = (int *)shmops->offset2addr(shmops->get_userdef_off());
 
@@ -550,15 +524,6 @@ static BOOL shm_remove_share_oplock(int fnum, int token)
 
   hash_entry = HASH_ENTRY(dev, inode);
 
-  if(hash_entry > lp_shmem_hash_size() )
-  {
-    DEBUG(0,
-      ("PANIC ERROR:remove_share_oplock (FAST_SHARE_MODES): hash_entry %d too large \
-(max = %d)\n",
-      hash_entry, lp_shmem_hash_size() ));
-    return False;
-  }
-
   mode_array = (int *)shmops->offset2addr(shmops->get_userdef_off());
 
   if(mode_array[hash_entry] == NULL_OFFSET)
@@ -654,7 +619,7 @@ static int shm_share_forall(void (*fn)(share_mode_entry *, char *))
 
 	mode_array = (int *)shmops->offset2addr(shmops->get_userdef_off());
 
-	for( i = 0; i < lp_shmem_hash_size(); i++) {
+	for( i = 0; i < shmops->hash_size(); i++) {
 		shmops->lock_hash_entry(i);
 		if(mode_array[i] == NULL_OFFSET)  {
 			shmops->unlock_hash_entry(i);
@@ -730,19 +695,11 @@ struct share_ops *locking_shm_init(int ronly)
 	read_only = ronly;
 
 #ifdef USE_SYSV_IPC
-	shmops = sysv_shm_open(lp_shmem_size(), read_only);
+	shmops = sysv_shm_open(read_only);
 	if (shmops) return &share_ops;
 #endif
 
-	pstrcpy(shmem_file_name,lp_lockdir());
-	if (!directory_exist(shmem_file_name,NULL)) {
-		if (read_only) return NULL;
-		mkdir(shmem_file_name,0755);
-	}
-	trim_string(shmem_file_name,"","/");
-	if (!*shmem_file_name) return(False);
-	strcat(shmem_file_name, "/SHARE_MEM_FILE");
-	shmops = smb_shm_open(shmem_file_name, lp_shmem_size(), read_only);
+	shmops = smb_shm_open(read_only);
 	if (shmops) return &share_ops;
 
 	return NULL;

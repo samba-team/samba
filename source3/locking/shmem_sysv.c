@@ -39,6 +39,14 @@ extern int DEBUGLEVEL;
 #define IPC_PERMS 0644
 #endif
 
+#ifdef SEMMSL
+#define SHMEM_HASH_SIZE (SEMMSL-1)
+#else
+#define SHMEM_HASH_SIZE 63
+#endif
+
+#define MIN_SHM_SIZE 10240
+
 static int shm_id;
 static int sem_id;
 static int shm_size;
@@ -487,6 +495,16 @@ static BOOL shm_get_usage(int *bytes_free,
 	return True;
 }
 
+
+/*******************************************************************
+hash a number into a hash_entry
+  ******************************************************************/
+static unsigned shm_hash_size(void)
+{
+	return hash_size;
+}
+
+
 static struct shmem_ops shmops = {
 	shm_close,
 	shm_alloc,
@@ -497,12 +515,13 @@ static struct shmem_ops shmops = {
 	shm_lock_hash_entry,
 	shm_unlock_hash_entry,
 	shm_get_usage,
+	shm_hash_size,
 };
 
 /*******************************************************************
   open the shared memory
   ******************************************************************/
-struct shmem_ops *sysv_shm_open(int size, int ronly)
+struct shmem_ops *sysv_shm_open(int ronly)
 {
 	BOOL created_new = False;
 	BOOL other_processes;
@@ -513,17 +532,23 @@ struct shmem_ops *sysv_shm_open(int size, int ronly)
 
 	read_only = ronly;
 
-	shm_size = size;
+	shm_size = lp_shmem_size();
 
-	DEBUG(4,("Trying sysv shmem open of size %d\n", size));
+	DEBUG(4,("Trying sysv shmem open of size %d\n", shm_size));
 
 	/* first the semaphore */
 	sem_id = semget(SEMAPHORE_KEY, 0, 0);
 	if (sem_id == -1) {
 		if (read_only) return NULL;
 
-		sem_id = semget(SEMAPHORE_KEY, lp_shmem_hash_size()+1, 
-				IPC_CREAT | IPC_EXCL | IPC_PERMS);
+		hash_size = SHMEM_HASH_SIZE;
+
+		while (hash_size > 1) {
+			sem_id = semget(SEMAPHORE_KEY, hash_size+1, 
+					IPC_CREAT | IPC_EXCL | IPC_PERMS);
+			if (sem_id != -1 || errno != EINVAL) break;
+			hash_size--;
+		}
 
 		if (sem_id == -1) {
 			DEBUG(0,("Can't create or use semaphore %s\n", 
@@ -532,7 +557,7 @@ struct shmem_ops *sysv_shm_open(int size, int ronly)
 
 		if (sem_id != -1) {
 			su.val = 1;
-			for (i=0;i<lp_shmem_hash_size()+1;i++) {
+			for (i=0;i<hash_size+1;i++) {
 				if (semctl(sem_id, i, SETVAL, su) != 0) {
 					DEBUG(1,("Failed to init semaphore %d\n", i));
 				}
@@ -552,10 +577,16 @@ struct shmem_ops *sysv_shm_open(int size, int ronly)
 	if (semctl(sem_id, 0, IPC_STAT, su) != 0) {
 		DEBUG(0,("ERROR shm_open : can't IPC_STAT\n"));
 	}
-	hash_size = sem_ds.sem_nsems;
-	if (hash_size != lp_shmem_hash_size()+1) {
-		DEBUG(0,("WARNING: nsems=%d\n", hash_size));
+	hash_size = sem_ds.sem_nsems-1;
+
+	if (!read_only) {
+		if (sem_ds.sem_perm.cuid != 0 || sem_ds.sem_perm.cgid != 0) {
+			DEBUG(0,("ERROR: root did not create the semaphore\n"));
+			return NULL;
+		}
 	}
+
+	
 	
 	if (!global_lock())
 		return NULL;
@@ -566,7 +597,12 @@ struct shmem_ops *sysv_shm_open(int size, int ronly)
 	/* if that failed then create one */
 	if (shm_id == -1) {
 		if (read_only) return NULL;
-		shm_id = shmget(SHMEM_KEY, shm_size, IPC_CREAT | IPC_EXCL);
+		while (shm_size > MIN_SHM_SIZE) {
+			shm_id = shmget(SHMEM_KEY, shm_size, 
+					IPC_CREAT | IPC_EXCL | IPC_PERMS);
+			if (shm_id != -1 || errno != EINVAL) break;
+			shm_size *= 0.9;
+		}
 		created_new = (shm_id != -1);
 	}
 	
@@ -592,19 +628,23 @@ struct shmem_ops *sysv_shm_open(int size, int ronly)
 		DEBUG(0,("ERROR shm_open : can't IPC_STAT\n"));
 	}
 
-	/* set the permissions */
 	if (!read_only) {
-		shm_ds.shm_perm.mode = IPC_PERMS;
-		shmctl(shm_id, IPC_SET, &shm_ds);
+		if (shm_ds.shm_perm.cuid != 0 || shm_ds.shm_perm.cgid != 0) {
+			DEBUG(0,("ERROR: root did not create the shmem\n"));
+			global_unlock();
+			return NULL;
+		}
 	}
+
+	shm_size = shm_ds.shm_segsz;
 
 	other_processes = (shm_ds.shm_nattch > 1);
 
 	if (!read_only && !other_processes) {
 		memset((char *)shm_header_p, 0, shm_size);
 		shm_initialize(shm_size);
-		shm_create_hash_table(lp_shmem_hash_size());
-		DEBUG(1,("Initialised IPC area of size %d\n", shm_size));
+		shm_create_hash_table(hash_size);
+		DEBUG(3,("Initialised IPC area of size %d\n", shm_size));
 	} else if (!shm_validate_header(shm_size)) {
 		/* existing file is corrupt, samba admin should remove
                    it by hand */

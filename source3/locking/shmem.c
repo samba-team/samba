@@ -41,6 +41,9 @@ extern int DEBUGLEVEL;
 #define SHM_FILE_MODE 0644
 #endif
 
+#define SHMEM_HASH_SIZE 113
+
+
 /* WARNING : offsets are used because mmap() does not guarantee that all processes have the 
    shared memory mapped to the same address */
 
@@ -653,12 +656,6 @@ static BOOL smb_shm_lock_hash_entry( unsigned int entry)
       return False;
     }
 
-  if(entry >= lp_shmem_hash_size())
-    {
-      DEBUG(0,("ERROR smb_shm_lock_hash_entry : hash entry size too big (%d)\n", entry));
-      return False;
-    }
-  
   /* Do an exclusive wait lock on the 4 byte region mapping into this entry  */
   if (fcntl_lock(smb_shm_fd, F_SETLKW, start, sizeof(int), F_WRLCK) == False)
     {
@@ -683,12 +680,6 @@ static BOOL smb_shm_unlock_hash_entry( unsigned int entry )
       return False;
     }
    
-  if(entry >= lp_shmem_hash_size())
-    {
-      DEBUG(0,("ERROR smb_shm_unlock_hash_entry : hash entry size too big (%d)\n", entry));
-      return False;
-    }
-
   /* Do a wait lock on the 4 byte region mapping into this entry  */
   if (fcntl_lock(smb_shm_fd, F_SETLKW, start, sizeof(int), F_UNLCK) == False)
     {
@@ -720,6 +711,13 @@ static BOOL smb_shm_get_usage(int *bytes_free,
    return True;
 }
 
+/*******************************************************************
+hash a number into a hash_entry
+  ******************************************************************/
+static unsigned smb_shm_hash_size(void)
+{
+	return SHMEM_HASH_SIZE;
+}
 
 static struct shmem_ops shmops = {
 	smb_shm_close,
@@ -731,18 +729,30 @@ static struct shmem_ops shmops = {
 	smb_shm_lock_hash_entry,
 	smb_shm_unlock_hash_entry,
 	smb_shm_get_usage,
+	smb_shm_hash_size,
 };
 
 /*******************************************************************
   open the shared memory
   ******************************************************************/
-struct shmem_ops *smb_shm_open(char *file_name, int size, int ronly)
+struct shmem_ops *smb_shm_open(int ronly)
 {
-   int filesize;
-   BOOL created_new = False;
-   BOOL other_processes = True;
+	pstring file_name;
+	int filesize;
+	BOOL created_new = False;
+	BOOL other_processes = True;
+	int size = lp_shmem_size();
 
-   read_only = ronly;
+	read_only = ronly;
+
+	pstrcpy(file_name,lp_lockdir());
+	if (!directory_exist(file_name,NULL)) {
+		if (read_only) return NULL;
+		mkdir(file_name,0755);
+	}
+	trim_string(file_name,"","/");
+	if (!*file_name) return(False);
+	strcat(file_name, "/SHARE_MEM_FILE");
    
    DEBUG(5,("smb_shm_open : using shmem file %s to be of size %d\n",file_name,size));
 
@@ -840,7 +850,7 @@ struct shmem_ops *smb_shm_open(char *file_name, int size, int ronly)
    {
       smb_shm_initialize(size);
       /* Create the hash buckets for the share file entries. */
-      smb_shm_create_hash_table( lp_shmem_hash_size() );
+      smb_shm_create_hash_table(SHMEM_HASH_SIZE);
    }
    else if (!smb_shm_validate_header(size) )
    {
