@@ -102,6 +102,7 @@ void close_file(files_struct *fsp, BOOL normal_close)
 	SMB_DEV_T dev = fsp->fd_ptr->dev;
 	SMB_INO_T inode = fsp->fd_ptr->inode;
 	int token;
+    BOOL last_reference = False;
 	connection_struct *conn = fsp->conn;
 
 	remove_pending_lock_requests_by_fid(fsp);
@@ -118,7 +119,9 @@ void close_file(files_struct *fsp, BOOL normal_close)
 	}
 
 	if(fd_attempt_close(fsp->fd_ptr) == 0)
-		fsp->fd_ptr = NULL;
+		last_reference = True;
+
+    fsp->fd_ptr = NULL;
 
 	if (lp_share_modes(SNUM(conn)))
 		unlock_share_entry(conn, dev, inode, token);
@@ -131,6 +134,17 @@ void close_file(files_struct *fsp, BOOL normal_close)
 	if (normal_close) {
 		check_magic(fsp,conn);
 	}
+
+	/*
+	 * NT can set delete_on_close of the last open
+	 * reference to a file.
+	 */
+
+    if (normal_close && last_reference && fsp->delete_on_close) {
+		if(dos_unlink(fsp->fsp_name) != 0)
+          DEBUG(0,("close_file: file %s. Delete on close was set and unlink failed \
+with error %s\n", fsp->fsp_name, strerror(errno) ));
+    }
 
 	if(fsp->granted_oplock == True)
 		global_oplocks_open--;

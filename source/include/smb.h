@@ -576,6 +576,7 @@ typedef struct files_struct
 	BOOL granted_oplock;
 	BOOL sent_oplock_break;
 	BOOL is_directory;
+	BOOL delete_on_close;
 	char *fsp_name;
 } files_struct;
 

@@ -222,7 +222,7 @@ static void reply_lockingX_error(blocking_lock_record *blr, int eclass, int32 ec
       offset = (((SMB_OFF_T) IVAL(data,SMB_LARGE_LKOFF_OFFSET_HIGH(i))) << 32) |
                ((SMB_OFF_T) IVAL(data,SMB_LARGE_LKOFF_OFFSET_LOW(i)));
     }
-#endif
+#endif /* LARGE_SMB_OFF_T */
     do_unlock(fsp,conn,count,offset,&dummy1,&dummy2);
   }
 
@@ -412,7 +412,7 @@ static BOOL process_lockingX(blocking_lock_record *blr)
       offset = (((SMB_OFF_T) IVAL(data,SMB_LARGE_LKOFF_OFFSET_HIGH(blr->lock_num))) << 32) |
                ((SMB_OFF_T) IVAL(data,SMB_LARGE_LKOFF_OFFSET_LOW(blr->lock_num)));
     }
-#endif
+#endif /* LARGE_SMB_OFF_T */
     errno = 0;
     if(!do_lock(fsp,conn,count,offset, ((locktype & 1) ? F_RDLCK : F_WRLCK),
                 &eclass, &ecode))

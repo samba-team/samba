@@ -2006,14 +2006,14 @@ int reply_read_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
   set_message(outbuf,12,0,True);
   data = smb_buf(outbuf);
 
-#ifdef LARGE_SMB_INO_T
+#ifdef LARGE_SMB_OFF_T
   if(SVAL(inbuf,smb_wct) == 12) {
     /*
      * This is a large offset (64 bit) read.
      */
     startpos |= (((SMB_OFF_T)IVAL(inbuf,smb_vwv10)) << 32);
   }
-#endif /* LARGE_SMB_INO_T */
+#endif /* LARGE_SMB_OFF_T */
 
   if (is_locked(fsp,conn,smb_maxcnt,startpos, F_RDLCK))
     return(ERROR(ERRDOS,ERRlock));
@@ -2264,14 +2264,14 @@ int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int leng
 
   data = smb_base(inbuf) + smb_doff;
 
-#ifdef LLARGE_SMB_INO_T
+#ifdef LLARGE_SMB_OFF_T
   if(SVAL(inbuf,smb_wct) == 14) {
     /*
      * This is a large offset (64 bit) write.
      */
     startpos |= (((SMB_OFF_T)IVAL(inbuf,smb_vwv12)) << 32);
   }
-#endif /* LARGE_SMB_INO_T */
+#endif /* LARGE_SMB_OFF_T */
 
   if (is_locked(fsp,conn,numtowrite,startpos, F_WRLCK))
     return(ERROR(ERRDOS,ERRlock));
@@ -2408,8 +2408,8 @@ int reply_close(connection_struct *conn,
 	 * We can only use CHECK_FSP if we know it's not a directory.
 	 */
 
-	if(!(fsp && fsp->open && fsp->is_directory))
-		CHECK_FSP(fsp,conn);
+    if(!fsp || !fsp->open || (fsp->conn != conn))
+      return(ERROR(ERRDOS,ERRbadfid));
 
 	if(HAS_CACHED_ERROR(fsp)) {
 		eclass = fsp->wbmpx_ptr->wr_errclass;
@@ -3631,7 +3631,7 @@ dev = %x, inode = %.0f\n", fsp->fnum, (unsigned int)dev, (double)inode));
       offset = (((SMB_OFF_T) IVAL(data,SMB_LARGE_LKOFF_OFFSET_HIGH(i))) << 32) |
                ((SMB_OFF_T) IVAL(data,SMB_LARGE_LKOFF_OFFSET_LOW(i)));
     }
-#endif
+#endif /* LARGE_SMB_OFF_T */
 
     DEBUG(10,("reply_lockingX: unlock start=%.0f, len=%.0f for file %s\n",
           (double)offset, (double)count, fsp->fsp_name ));
@@ -3661,8 +3661,8 @@ dev = %x, inode = %.0f\n", fsp->fnum, (unsigned int)dev, (double)inode));
       offset = (((SMB_OFF_T) IVAL(data,SMB_LARGE_LKOFF_OFFSET_HIGH(i))) << 32) |
                ((SMB_OFF_T) IVAL(data,SMB_LARGE_LKOFF_OFFSET_LOW(i)));
     }
-#endif
-
+#endif /* LARGE_SMB_OFF_T */
+ 
     DEBUG(10,("reply_lockingX: lock start=%.0f, len=%.0f for file %s\n",
           (double)offset, (double)count, fsp->fsp_name ));
 
@@ -3696,7 +3696,7 @@ dev = %x, inode = %.0f\n", fsp->fnum, (unsigned int)dev, (double)inode));
         offset = (((SMB_OFF_T) IVAL(data,SMB_LARGE_LKOFF_OFFSET_HIGH(i))) << 32) |
                  ((SMB_OFF_T) IVAL(data,SMB_LARGE_LKOFF_OFFSET_LOW(i)));
       }
-#endif
+#endif /* LARGE_SMB_OFF_T */
 
       do_unlock(fsp,conn,count,offset,&dummy1,&dummy2);
     }
