@@ -1507,22 +1507,26 @@ int reply_fclose(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 {
   int outsize = 0;
   int status_len;
-  char *path;
+  pstring path;
   char status[21];
   int dptr_num= -2;
+  char *p;
+
   START_PROFILE(SMBfclose);
 
   outsize = set_message(outbuf,1,0,True);
-  path = smb_buf(inbuf) + 1;
-  status_len = SVAL(smb_buf(inbuf),3 + strlen(path));
+  p = smb_buf(inbuf) + 1;
+  p += srvstr_pull(inbuf, path, p, sizeof(path), -1, STR_TERMINATE|STR_CONVERT);
+  p++;
+  status_len = SVAL(p,0);
+  p += 2;
 
-  
   if (status_len == 0) {
     END_PROFILE(SMBfclose);
     return(ERROR(ERRSRV,ERRsrverror));
   }
 
-  memcpy(status,smb_buf(inbuf) + 1 + strlen(path) + 4,21);
+  memcpy(status,p,21);
 
   if(dptr_fetch(status+12,&dptr_num)) {
     /*  Close the dptr - we know it's gone */
@@ -1560,7 +1564,7 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
  
   share_mode = SVAL(inbuf,smb_vwv0);
 
-  pstrcpy(fname,smb_buf(inbuf)+1);
+  srvstr_pull(inbuf, fname, smb_buf(inbuf)+1, sizeof(fname), -1, STR_TERMINATE);
 
   RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
 
@@ -1654,8 +1658,7 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
   }
 
   /* XXXX we need to handle passed times, sattr and flags */
-
-  pstrcpy(fname,smb_buf(inbuf));
+  srvstr_pull(inbuf, fname, smb_buf(inbuf), sizeof(fname), -1, STR_TERMINATE);
 
   RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
 
