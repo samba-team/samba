@@ -413,14 +413,14 @@ static int check_printq_info(struct pack_desc* desc,
 }
 
 
-#define JOB_STATUS_QUEUED 0
-#define JOB_STATUS_PAUSED 1
-#define JOB_STATUS_SPOOLING 2
-#define JOB_STATUS_PRINTING 3
-#define JOB_STATUS_PRINTED 4
+#define RAP_JOB_STATUS_QUEUED 0
+#define RAP_JOB_STATUS_PAUSED 1
+#define RAP_JOB_STATUS_SPOOLING 2
+#define RAP_JOB_STATUS_PRINTING 3
+#define RAP_JOB_STATUS_PRINTED 4
 
-#define QUEUE_STATUS_PAUSED 1
-#define QUEUE_STATUS_ERROR 2
+#define RAP_QUEUE_STATUS_PAUSED 1
+#define RAP_QUEUE_STATUS_ERROR 2
 
 /* turn a print job status into a on the wire status 
 */
@@ -428,13 +428,13 @@ static int printj_status(int v)
 {
 	switch (v) {
 	case LPQ_QUEUED:
-		return JOB_STATUS_QUEUED;
+		return RAP_JOB_STATUS_QUEUED;
 	case LPQ_PAUSED:
-		return JOB_STATUS_PAUSED;
+		return RAP_JOB_STATUS_PAUSED;
 	case LPQ_SPOOLING:
-		return JOB_STATUS_SPOOLING;
+		return RAP_JOB_STATUS_SPOOLING;
 	case LPQ_PRINTING:
-		return JOB_STATUS_PRINTING;
+		return RAP_JOB_STATUS_PRINTING;
 	}
 	return 0;
 }
@@ -447,9 +447,9 @@ static int printq_status(int v)
 	case LPQ_QUEUED:
 		return 0;
 	case LPQ_PAUSED:
-		return QUEUE_STATUS_PAUSED;
+		return RAP_QUEUE_STATUS_PAUSED;
 	}
-	return QUEUE_STATUS_ERROR;
+	return RAP_QUEUE_STATUS_ERROR;
 }
 
 static void fill_printjob_info(connection_struct *conn, int snum, int uLevel,

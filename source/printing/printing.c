@@ -402,58 +402,50 @@ static void print_queue_update(int snum)
 	 * This is essentially a mutex on the update.
 	 */
 
-	if (get_updating_pid(printer_name) == -1) {
-		/* Lock the queue for the database update */
+	if (get_updating_pid(printer_name) != -1)
+		return;
 
-		slprintf(keystr, sizeof(keystr) - 1, "LOCK/%s", printer_name);
-		tdb_lock_bystring(tdb, keystr);
+	/* Lock the queue for the database update */
 
+	slprintf(keystr, sizeof(keystr) - 1, "LOCK/%s", printer_name);
+	tdb_lock_bystring(tdb, keystr);
+
+	/*
+	 * Ensure that no one else got in here.
+	 * If the updating pid is still -1 then we are
+	 * the winner.
+	 */
+
+	if (get_updating_pid(printer_name) != -1) {
 		/*
-		 * Ensure that no one else got in here.
-		 * If the updating pid is still -1 then we are
-		 * the winner.
+		 * Someone else is doing the update, exit.
 		 */
-
-		if (get_updating_pid(printer_name) != -1) {
-			/*
-			 * Someone else is doing the update, exit.
-			 */
-			tdb_unlock_bystring(tdb, keystr);
-			return;
-		}
-
-		/*
-		 * We're going to do the update ourselves.
-		 */
-
-		/* Tell others we're doing the update. */
-		set_updating_pid(printer_name, False);
-
-		/*
-		 * Allow others to enter and notice we're doing
-		 * the update.
-		 */
-
 		tdb_unlock_bystring(tdb, keystr);
-
-		/*
-		 * Update the cache time FIRST ! Stops others even
-		 * attempting to get the lock and doing this
-		 * if the lpq takes a long time.
-		 */
-
-		slprintf(cachestr, sizeof(cachestr), "CACHE/%s", printer_name);
-		tdb_store_int(tdb, cachestr, (int)time(NULL));
-
-	}
-	else
-	{
-		/*
-		 * Someone else is already doing the update, defer to
-		 * them.
-		 */
 		return;
 	}
+
+	/*
+	 * We're going to do the update ourselves.
+	 */
+
+	/* Tell others we're doing the update. */
+	set_updating_pid(printer_name, False);
+
+	/*
+	 * Allow others to enter and notice we're doing
+	 * the update.
+	 */
+
+	tdb_unlock_bystring(tdb, keystr);
+
+	/*
+	 * Update the cache time FIRST ! Stops others even
+	 * attempting to get the lock and doing this
+	 * if the lpq takes a long time.
+	 */
+
+	slprintf(cachestr, sizeof(cachestr), "CACHE/%s", printer_name);
+	tdb_store_int(tdb, cachestr, (int)time(NULL));
 
 	slprintf(tmp_file, sizeof(tmp_file), "%s/smblpq.%d", path, local_pid);
 
@@ -645,6 +637,13 @@ static BOOL print_job_delete1(int jobid)
 
 	if (!pjob) return False;
 
+	/*
+	 * If already deleting just return.
+	 */
+
+	if (pjob->status == LPQ_DELETING)
+		return True;
+
 	snum = print_job_snum(jobid);
 
 	/* Hrm - we need to be able to cope with deleting a job before it
@@ -654,6 +653,11 @@ static BOOL print_job_delete1(int jobid)
 		DEBUG(5, ("attempt to delete job %d not seen by lpr\n",
 			  jobid));
 	}
+
+	/* Set the tdb entry to be deleting. */
+
+	pjob->status = LPQ_DELETING;
+	print_job_store(jobid, pjob);
 
 	if (pjob->spooled && pjob->sysjob != -1) {
 		fstring jobstr;
@@ -666,13 +670,6 @@ static BOOL print_job_delete1(int jobid)
 			"%j", jobstr,
 			"%T", http_timestring(pjob->starttime),
 			NULL);
-	}
-
-	/* Delete the tdb entry if the delete suceeded or the job hasn't
-	   been spooled. */
-
-	if (result == 0) {
-		tdb_delete(tdb, print_key(jobid));
 	}
 
 	return (result == 0);
@@ -979,7 +976,7 @@ int print_job_start(struct current_user *user, int snum, char *jobname)
 	pjob.sysjob = -1;
 	pjob.fd = -1;
 	pjob.starttime = time(NULL);
-	pjob.status = LPQ_QUEUED;
+	pjob.status = LPQ_SPOOLING;
 	pjob.size = 0;
 	pjob.spooled = False;
 	pjob.smbjob = True;
@@ -1093,8 +1090,10 @@ BOOL print_job_end(int jobid, BOOL normal_close)
 	/* Technically, this is not quit right. If the printer has a separator
 	 * page turned on, the NT spooler prints the separator page even if the
 	 * print job is 0 bytes. 010215 JRR */
-	if (pjob->size == 0) {
-		/* don't bother spooling empty files */
+	if (pjob->size == 0 || pjob->status == LPQ_DELETING) {
+		/* don't bother spooling empty files or something being deleted. */
+		DEBUG(5,("print_job_end: canceling spool of %s (%s)\n",
+			pjob->filename, pjob->size ? "deleted" : "zero length" ));
 		unlink(pjob->filename);
 		tdb_delete(tdb, print_key(jobid));
 		return True;
@@ -1130,6 +1129,7 @@ BOOL print_job_end(int jobid, BOOL normal_close)
 	/* The print job has been sucessfully handed over to the back-end */
 	
 	pjob->spooled = True;
+	pjob->status = LPQ_QUEUED;
 	print_job_store(jobid, pjob);
 	
 	/* make sure the database is up to date */
