@@ -1891,4 +1891,6 @@ struct nmb_name {
 #define MAP_TO_GUEST_ON_BAD_USER 1
 #define MAP_TO_GUEST_ON_BAD_PASSWORD 2
 
+#define SAFE_NETBIOS_CHARS ". -_"
+
 #endif /* _SMB_H */
