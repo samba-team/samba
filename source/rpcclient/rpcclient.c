@@ -25,19 +25,14 @@
 extern int DEBUGLEVEL;
 extern fstring debugf;
 
-/* Various pipe commands */
-extern struct cmd_set lsarpc_commands[];
-extern struct cmd_set samr_commands[];
-extern struct cmd_set spoolss_commands[];
+DOM_SID domain_sid;
 
 /* List to hold groups of commands */
+
 static struct cmd_list {
 	struct cmd_list *prev, *next;
 	struct cmd_set *cmd_set;
 } *cmd_list;
-
-
-DOM_SID domain_sid;
 
 /****************************************************************************
 handle completion of commands for readline
@@ -158,25 +153,6 @@ static void read_authfile (
 	fclose(auth);
 	
 	return;
-}
-
-static char* next_command (
-	char**	cmdstr
-)
-{
-	static pstring 		command;
-	char			*p;
-	
-	if (!cmdstr || !(*cmdstr))
-		return NULL;
-	
-	p = strchr(*cmdstr, ';');
-	if (p)
-		*p = '\0';
-	pstrcpy(command, *cmdstr);
-	*cmdstr = p;
-	
-	return command;
 }
 
 static void get_username (char *username)
@@ -322,6 +298,24 @@ static struct cmd_set separator_command[] = {
 	{ NULL, NULL, NULL }
 };
 
+
+/* Various pipe commands */
+
+extern struct cmd_set lsarpc_commands[];
+extern struct cmd_set samr_commands[];
+extern struct cmd_set spoolss_commands[];
+extern struct cmd_set netlogon_commands[];
+extern struct cmd_set srvsvc_commands[];
+
+static struct cmd_set *rpcclient_command_list[] = {
+	rpcclient_commands,
+	lsarpc_commands,
+	samr_commands,
+	spoolss_commands,
+	netlogon_commands,
+	srvsvc_commands,
+	NULL
+};
 
 void add_command_set(struct cmd_set *cmd_set)
 {
@@ -525,6 +519,7 @@ static void usage(char *pname)
 				username,
 				domain,
 				server;
+	struct cmd_set **cmd_set;
 
 	charset_initialise();
 	setlinebuf(stdout);
@@ -640,27 +635,26 @@ static void usage(char *pname)
 	}
 	
 	/* There are no pointers in ntuser_creds struct so zero it out */
+
 	ZERO_STRUCTP (&creds);
 	
 	/* Load command lists */
-	add_command_set(rpcclient_commands);
-	add_command_set(separator_command);
 
-	add_command_set(spoolss_commands);
-	add_command_set(separator_command);
+	cmd_set = rpcclient_command_list;
 
-	add_command_set(lsarpc_commands);
-	add_command_set(separator_command);
-
-	add_command_set(samr_commands);
-	add_command_set(separator_command);
+	while(*cmd_set) {
+		add_command_set(*cmd_set);
+		add_command_set(separator_command);
+		cmd_set++;
+	}
 
 	/* Do anything specified with -c */
+
 	if (cmdstr[0]) {
-		char 	*cmd;
+		fstring cmd;
 		char 	*p = cmdstr;
 
-		while((cmd=next_command(&p)) != NULL) {
+		while(next_token(&p, cmd, ";", sizeof(fstring))) {
 			process_cmd(&cli, cmd);
 		}
 
@@ -668,6 +662,7 @@ static void usage(char *pname)
 	}
 
 	/* Loop around accepting commands */
+
 	while(1) {
 		pstring prompt;
 		char *line;
