@@ -304,6 +304,7 @@ static void popt_common_credentials_callback(poptContext con,
 			if ((p = strchr_m(tmp,'\\'))) {
 				*p = 0;
 				pstrcpy(cmdline_auth_info.domain,tmp);
+				cmdline_auth_info.got_domain = True;
 				pstrcpy(cmdline_auth_info.username,p+1);
 			}
 
@@ -317,6 +318,7 @@ static void popt_common_credentials_callback(poptContext con,
 
 		if (getenv("DOMAIN")) {
 			pstrcpy(cmdline_auth_info.domain,getenv("DOMAIN"));
+			cmdline_auth_info.got_domain = True;
 		}
 
 		if (getenv("PASSWD")) {
@@ -344,6 +346,7 @@ static void popt_common_credentials_callback(poptContext con,
 			if ((p = strchr_m(tmp,'\\'))) {
 				*p = 0;
 				pstrcpy(cmdline_auth_info.domain,tmp);
+				cmdline_auth_info.got_domain = True;
 				pstrcpy(cmdline_auth_info.username,p+1);
 			}
 
@@ -431,12 +434,13 @@ const char *cmdline_get_username(void)
 
 void cmdline_set_userdomain(const char *domain)
 {
+	cmdline_auth_info.got_domain = True;
 	pstrcpy(cmdline_auth_info.domain, domain);
 }
 
 const char *cmdline_get_userdomain(void)
 {
-	if (cmdline_auth_info.domain[0]) {
+	if (cmdline_auth_info.got_domain) {
 		return cmdline_auth_info.domain;
 	}
 
