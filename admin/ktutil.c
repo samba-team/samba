@@ -239,6 +239,124 @@ kt_add(int argc, char **argv)
     return 0;
 }
 
+static int
+kt_get(int argc, char **argv)
+{
+    krb5_error_code ret;
+    kadm5_config_params conf;
+    void *kadm_handle;
+    char *principal = NULL;
+    char *realm = NULL;
+    char *admin_server = NULL;
+    int server_port = 0;
+    int optind = 0;
+    int i, j;
+    
+    struct getargs args[] = {
+	{ "principal",	'p',	arg_string,   NULL, 
+	  "admin principal", "principal" 
+	},
+	{ "realm",	'r',	arg_string,   NULL, 
+	  "realm to use", "realm" 
+	},
+	{ "admin-server",	'a',	arg_string, NULL,
+	  "server to contact", "host" 
+	},
+	{ "server-port",	's',	arg_integer, NULL,
+	  "server to contact", "port number" 
+	}
+    };
+
+    args[0].value = &principal;
+    args[1].value = &realm;
+    args[2].value = &admin_server;
+    args[3].value = &server_port;
+
+    memset(&conf, 0, sizeof(conf));
+
+    if(getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &optind))
+	return 0;
+
+    if(realm) {
+	krb5_set_default_realm(context, realm); /* XXX should be fixed
+						   some other way */
+	conf.realm = realm;
+	conf.mask |= KADM5_CONFIG_REALM;
+    }
+    
+    if (admin_server) {
+	conf.admin_server = admin_server;
+	conf.mask |= KADM5_CONFIG_ADMIN_SERVER;
+    }
+
+    if (server_port) {
+	conf.kadmind_port = htons(server_port);
+	conf.mask |= KADM5_CONFIG_KADMIND_PORT;
+    }
+
+    ret = kadm5_init_with_password_ctx(context, 
+				       principal,
+				       NULL,
+				       KADM5_ADMIN_SERVICE,
+				       &conf, 0, 0, 
+				       &kadm_handle);
+    if(ret) {
+	krb5_warn(context, ret, "kadm5_init_with_password");
+	return 0;
+    }
+    
+    
+    for(i = optind; i < argc; i++){
+	krb5_principal princ_ent;
+	kadm5_principal_ent_rec princ;
+	int mask = 0;
+	krb5_keyblock *keys;
+	int n_keys;
+	int created = 0;
+	krb5_keytab_entry entry;
+
+	ret = krb5_parse_name(context, argv[i], &princ_ent);
+	memset(&princ, 0, sizeof(princ));
+	princ.principal = princ_ent;
+	mask |= KADM5_PRINCIPAL;
+	princ.attributes |= KRB5_KDB_DISALLOW_ALL_TIX;
+	mask |= KADM5_ATTRIBUTES;
+	princ.princ_expire_time = 0;
+	mask |= KADM5_PRINC_EXPIRE_TIME;
+	
+	ret = kadm5_create_principal(kadm_handle, &princ, mask, "x");
+	if(ret == 0)
+	    created++;
+	else if(ret != KADM5_DUP) {
+	    krb5_free_principal(context, princ_ent);
+	    continue;
+	}
+	ret = kadm5_randkey_principal(kadm_handle, princ_ent, &keys, &n_keys);
+	
+	ret = kadm5_get_principal(kadm_handle, princ_ent, &princ, 
+			      KADM5_PRINCIPAL | KADM5_KVNO | KADM5_ATTRIBUTES);
+	princ.attributes &= (~KRB5_KDB_DISALLOW_ALL_TIX);
+	mask = KADM5_ATTRIBUTES;
+	if(created) {
+	    princ.kvno = 1;
+	    mask |= KADM5_KVNO;
+	}
+	ret = kadm5_modify_principal(kadm_handle, &princ, mask);
+	for(j = 0; j < n_keys; j++) {
+	    entry.principal = princ_ent;
+	    entry.vno = princ.kvno;
+	    entry.keyblock = keys[j];
+	    ret = krb5_kt_add_entry(context, keytab, &entry);
+	    krb5_free_keyblock_contents(context, &keys[j]);
+	}
+	
+	kadm5_free_principal_ent(kadm_handle, &princ);
+	krb5_free_principal(context, princ_ent);
+    }
+    kadm5_destroy(kadm_handle);
+    return 0;
+}
+
 static int help(int argc, char **argv);
 
 static SL_cmd cmds[] = {
@@ -246,6 +364,7 @@ static SL_cmd cmds[] = {
     { "srvconvert",	srvconv,	"srvconvert [flags]",	"" },
     { "srv2keytab" },
     { "add", 		kt_add,		"add", 		"" },
+    { "get", 		kt_get,		"get [principal...]", "" },
     { "remove", 	kt_remove,	"remove", 	"" },
     { "help",		help,		"help",			"" },
     { NULL, 	NULL,		NULL, 			NULL }
