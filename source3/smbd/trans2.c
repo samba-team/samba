@@ -319,7 +319,7 @@ static NTSTATUS set_ea(connection_struct *conn, files_struct *fsp, const char *f
 		return NT_STATUS_EAS_NOT_SUPPORTED;
 	}
 
-	while (ea_list) {
+	for (;ea_list; ea_list = ea_list->next) {
 		int ret;
 		fstring unix_ea_name;
 
@@ -452,7 +452,7 @@ static struct ea_list *read_ea_list(TALLOC_CTX *ctx, const char *pdata, size_t d
 		if (pdata[offset + 4 + namelen] != '\0') {
 			return NULL;
 		}
-		pull_ascii_talloc(ctx, &eal->ea.name, pdata + offset);
+		pull_ascii_talloc(ctx, &eal->ea.name, pdata + offset + 4);
 		if (!eal->ea.name) {
 			return NULL;
 		}
