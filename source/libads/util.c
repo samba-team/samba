@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#ifdef HAVE_LDAP
 
 ADS_STATUS ads_change_trust_account_password(ADS_STRUCT *ads, char *host_principal)
 {
