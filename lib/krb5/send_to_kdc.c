@@ -368,21 +368,6 @@ out:
 }
 
 krb5_error_code
-krb5_sendto_kdc2(krb5_context context,
-		 const krb5_data *send_data,
-		 const krb5_realm *realm,
-		 krb5_data *receive,
-		 krb5_boolean master)
-{
-    int flags = 0;
-
-    if (master)
-	flags |= KRB5_KRBHST_FLAGS_MASTER;
-
-   return krb5_sendto_kdc_flags(context, send_data, realm, receive, flags);
-}
-
-krb5_error_code
 krb5_sendto_kdc(krb5_context context,
 		const krb5_data *send_data,
 		const krb5_realm *realm,
