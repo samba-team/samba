@@ -894,6 +894,10 @@ static BOOL init_structs(void )
 	if (!init_change_notify())
 		exit(1);
 
+	/* Setup privileges database */
+	if (!privilege_init())
+		exit(1);
+
 	/* re-initialise the timezone */
 	TimeInit();
 
