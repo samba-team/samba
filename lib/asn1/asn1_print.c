@@ -145,9 +145,13 @@ loop (unsigned char *buf, size_t len, int indent)
 		ret = der_get_octet_string (buf, length, &str, NULL);
 		if (ret)
 		    errx (1, "der_get_octet_string: %s", error_message (ret));
-		printf ("(length %lu), ", (unsigned long)length);
+		printf ("(length %lu)%s", (unsigned long)str.length,
+			str.length > 0 ? ", " : "");
 		uc = (unsigned char *)str.data;
-		for (i = 0; i < 16; ++i)
+		length = str.length;
+		if (length > 16)
+		    length = 16;
+		for (i = 0; i < length; ++i)
 		    printf ("%02x", uc[i]);
 		printf ("\n");
 		free (str.data);
