@@ -56,25 +56,26 @@ static void usage(void)
 	printf("    smbpasswd [options] [password]\n\n");
 
 	printf("options:\n");
-	printf("  -c smb.conf file     Use the given path to the smb.conf file\n");
+	printf("  -L                   local mode (must be first option)\n");
+	printf("  -h                   print this usage message\n");
 	printf("  -s                   use stdin for password prompt\n");
+	printf("  -c smb.conf file     Use the given path to the smb.conf file\n");
 	printf("  -D LEVEL             debug level\n");
-	printf("  -U USER              remote username\n");
 	printf("  -r MACHINE           remote machine\n");
+	printf("  -U USER              remote username\n");
 
 	printf("extra options when run by root or in local mode:\n");
-	printf("  -L                   local mode (must be first option)\n");
-	printf("  -R ORDER             name resolve order\n");
 	printf("  -a                   add user\n");
-	printf("  -x                   delete user\n");
 	printf("  -d                   disable user\n");
 	printf("  -e                   enable user\n");
-	printf("  -n                   set no password\n");
-	printf("  -m                   machine trust account\n");
 	printf("  -i                   interdomain trust account\n");
+	printf("  -m                   machine trust account\n");
+	printf("  -n                   set no password\n");
 #ifdef WITH_LDAP_SAM
 	printf("  -w                   ldap admin password\n");
 #endif
+	printf("  -x                   delete user\n");
+	printf("  -R ORDER             name resolve order\n");
 
 	exit(1);
 }
