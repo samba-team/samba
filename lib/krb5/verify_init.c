@@ -40,14 +40,25 @@
 
 RCSID("$Id$");
 
+static int
+ison (const char *s)
+{
+    return strcasecmp (s, "y") == 0
+	|| strcasecmp (s, "yes") == 0
+	|| strcasecmp (s, "t") == 0
+	|| strcasecmp (s, "true") == 0
+	|| strcasecmp (s, "1") == 0
+	|| strcasecmp (s, "on") == 0;
+}
+
 void
-krb5_verify_init_creds_opt_init(krb5_init_creds_opt *options)
+krb5_verify_init_creds_opt_init(krb5_verify_init_creds_opt *options)
 {
     memset (options, 0, sizeof(*options));
 }
 
 void
-krb5_verify_init_creds_opt_set_ap_req_nofail(krb5_init_creds_opt *options,
+krb5_verify_init_creds_opt_set_ap_req_nofail(krb5_verify_init_creds_opt *options,
 					     int ap_req_nofail)
 {
     options->flags |= KRB5_VERIFY_INIT_CREDS_OPT_AP_REQ_NOFAIL;
@@ -63,27 +74,136 @@ krb5_verify_init_creds(krb5_context context,
 		       krb5_verify_init_creds_opt *options)
 {
     krb5_error_code ret;
+    krb5_data req;
+    krb5_ccache local_ccache;
+    krb5_keytab_entry entry;
+    krb5_creds *new_creds = NULL;
+    krb5_auth_context auth_context = NULL;
+    krb5_principal server = NULL;
+    krb5_keytab keytab = NULL;
+
+    krb5_data_zero (&req);
+    memset (&entry, 0, sizeof(entry));
 
     if (ap_req_server == NULL) {
 	char local_hostname[MAXHOSTNAMELEN];
-	chat *hostname;
-	struct hostent *hostent;
 
 	if (gethostname (local_hostname, sizeof(local_hostname)) < 0)
 	    return errno;
-	hostname = local_hostname;
-	hostent = gethostbyname (hostname);
-	if (hostent != NULL)
-	    hostname = hostent->h_name;
-	strlwr (hostname);	/* XXX */
 
 	ret = krb5_sname_to_principal (context,
-				       hostname,
+				       local_hostname,
 				       "host",
-				       KRB5_NT_SRV_INST,
-				       &ap_req_server);
+				       KRB5_NT_SRV_HST,
+				       &server);
 	if (ret)
-	    return ret;
+	    goto cleanup;
+    } else
+	server = ap_req_server;
+
+    if (ap_req_keytab == NULL) {
+	ret = krb5_kt_default (context, &keytab);
+	if (ret)
+	    goto cleanup;
+    } else
+	keytab = ap_req_keytab;
+
+    if (ccache && *ccache)
+	local_ccache = *ccache;
+    else {
+	ret = krb5_cc_gen_new (context, &mcc_ops, &local_ccache);
+	if (ret)
+	    goto cleanup;
+	ret = krb5_cc_initialize (context,
+				  local_ccache,
+				  creds->client);
+	if (ret)
+	    goto cleanup;
+	ret = krb5_cc_store_cred (context,
+				  local_ccache,
+				  creds);
+	if (ret)
+	    goto cleanup;
     }
+
+    if (!krb5_principal_compare (context, server, creds->server)) {
+	krb5_creds match_cred;
+
+	memset (&match_cred, 0, sizeof(match_cred));
+
+	match_cred.client = creds->client;
+	match_cred.server = server;
+
+	ret = krb5_get_credentials (context,
+				    0,
+				    local_ccache,
+				    &match_cred,
+				    &new_creds);
+	if (ret)
+	    goto cleanup;
+    } else
+	new_creds = creds;
+
+    ret = krb5_mk_req_extended (context,
+				&auth_context,
+				0,
+				NULL,
+				new_creds,
+				&req);
     
+    krb5_auth_con_free (context, auth_context);
+    auth_context = NULL;
+
+    if (ret)
+	goto cleanup;
+
+    ret = krb5_kt_get_entry (context,
+			     keytab,
+			     server,
+			     0,
+			     KEYTYPE_DES,
+			     &entry);
+    if (ret) {
+	const char *p;
+
+	if (options->flags & KRB5_VERIFY_INIT_CREDS_OPT_AP_REQ_NOFAIL
+	    || ((p = krb5_config_get_string (context->cf,
+					     "libdefaults",
+					     "verify_ap_req_nofail",
+					     NULL))
+		&& ison(p))) {
+	    goto cleanup;
+	} else {
+	    ret = 0;
+	    goto cleanup;
+	}
+    }
+
+    ret = krb5_rd_req_with_keyblock (context,
+				     &auth_context,
+				     &req,
+				     server,
+				     &entry.keyblock,
+				     0,
+				     NULL);
+
+cleanup:
+    if (auth_context)
+	krb5_auth_con_free (context, auth_context);
+    krb5_data_free (&req);
+    krb5_kt_free_entry (context, &entry);
+    if (new_creds)
+	krb5_free_creds (context, new_creds);
+    if (ap_req_server == NULL && server)
+	krb5_free_principal (context, server);
+    if (ap_req_keytab == NULL && keytab)
+	krb5_kt_close (context, keytab);
+    if (ccache == NULL
+	|| (ret != 0 && *ccache == NULL))
+	krb5_cc_destroy (context, local_ccache);
+
+    if (ret == 0 && ccache != NULL && *ccache == NULL)
+	*ccache = local_ccache;
+
+    return ret;
 }
