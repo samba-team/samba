@@ -322,11 +322,25 @@
  */
 
 #ifndef SMB_DEV_T
-#define SMB_DEV_T uint32
+#define SMB_DEV_T dev_t
 #endif
 
+/*
+ * Setup the correctly sized inode type.
+ */
+
 #ifndef SMB_INO_T
-#define SMB_INO_T uint32
+#  ifdef HAVE_INO64_T
+#    define SMB_INO_T ino64_t
+#  else
+#    define SMB_INO_T ino_t
+#  endif
+#endif
+
+#ifndef LARGE_SMB_INO_T
+#  if defined(HAVE_INO64_T) || (defined(SIZEOF_INO_T) && (SIZEOF_INO_T == 8))
+#    define LARGE_SMB_INO_T 1
+#  endif
 #endif
 
 #ifndef SMB_OFF_T

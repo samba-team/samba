@@ -90,7 +90,11 @@ static BOOL share_name(connection_struct *conn,
 	len = strlen(name);
 	name += len;
 	
-	slprintf(name, sizeof(pstring) - len - 1, "/share.%u.%u",dev,inode);
+#ifdef LARGE_SMB_INO_T
+	slprintf(name, sizeof(pstring) - len - 1, "/share.%u.%.0f",(unsigned int)dev,(double)inode);
+#else /* LARGE_SMB_INO_T */
+	slprintf(name, sizeof(pstring) - len - 1, "/share.%u.%lu",(unsigned int)dev,(unsigned long)inode);
+#endif /* LARGE_SMB_INO_T */
 	return(True);
 }
 
@@ -966,8 +970,16 @@ static int slow_share_forall(void (*fn)(share_mode_entry *, char *))
 		BOOL new_file;
 		pstring fname;
 
-		if (sscanf(s,"share.%u.%u",&dev,&inode)!=2) continue;
-       
+#ifdef LARGE_SMB_INO_T
+        double inode_ascii;
+		if (sscanf(s,"share.%u.%lf",&dev,&inode_ascii)!=2) continue;
+        inode = (SMB_INO_T)inode_ascii;
+#else /* LARGE_SMB_INO_T */
+        unsigned long inode_long;
+		if (sscanf(s,"share.%u.%lu",&dev,&inode_long)!=2) continue;
+        inode = (SMB_INO_T)inode_long;
+#endif /* LARGE_SMB_INO_T */       
+
 		pstrcpy(lname,lp_lockdir());
 		trim_string(lname,NULL,"/");
 		pstrcat(lname,"/");

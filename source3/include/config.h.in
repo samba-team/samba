@@ -60,6 +60,8 @@
 #undef HAVE_LONGLONG
 #undef HAVE_OFF64_T
 #undef SIZEOF_OFF_T
+#undef HAVE_INO64_T
+#undef SIZEOF_INO_T
 #undef HAVE_REMSH
 #undef HAVE_UNSIGNED_CHAR
 #undef HAVE_UTIMBUF

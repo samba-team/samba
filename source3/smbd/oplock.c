@@ -105,19 +105,30 @@ should be %d).\n", msg_len, OPLOCK_BREAK_MSG_LEN));
       }
       {
         uint32 remotepid = IVAL(msg_start,OPLOCK_BREAK_PID_OFFSET);
-        /*
-         * Warning - this will need to be changed if SMB_DEV_T/SMB_INO_T <> 4 bytes. !!
-         */
         SMB_DEV_T dev = IVAL(msg_start,OPLOCK_BREAK_DEV_OFFSET);
+        /*
+         * Warning - beware of SMB_INO_T <> 4 bytes. !!
+         */
+#ifdef LARGE_SMB_INO_T
+        SMB_INO_T inode_low = IVAL(msg_start, OPLOCK_BREAK_INODE_OFFSET);
+        SMB_INO_T inode_high = IVAL(msg_start, OPLOCK_BREAK_INODE_OFFSET + 4);
+        SMB_INO_T inode = inode_low | (inode_high << 32);
+#else /* LARGE_SMB_INO_T */
         SMB_INO_T inode = IVAL(msg_start, OPLOCK_BREAK_INODE_OFFSET);
+#endif /* LARGE_SMB_INO_T */
         struct timeval tval;
         struct sockaddr_in toaddr;
 
         tval.tv_sec = IVAL(msg_start, OPLOCK_BREAK_SEC_OFFSET);
         tval.tv_usec = IVAL(msg_start, OPLOCK_BREAK_USEC_OFFSET);
 
+#ifdef LARGE_SMB_INO_T
         DEBUG(5,("process_local_message: oplock break request from \
-pid %d, port %d, dev = %x, inode = %x\n", remotepid, from_port, dev, inode));
+pid %d, port %d, dev = %x, inode = %.0f\n", remotepid, from_port, (unsigned int)dev, (double)inode));
+#else /* LARGE_SMB_INO_T */
+        DEBUG(5,("process_local_message: oplock break request from \
+pid %d, port %d, dev = %x, inode = %lx\n", remotepid, from_port, (unsigned int)dev, (unsigned long)inode));
+#endif /* LARGE_SMB_INO_T */
 
         /*
          * If we have no record of any currently open oplocks,
@@ -157,9 +168,15 @@ oplocks. Returning success.\n"));
           return False;
         }
 
+#ifdef LARGE_SMB_INO_T
         DEBUG(5,("process_local_message: oplock break reply sent to \
-pid %d, port %d, for file dev = %x, inode = %x\n", remotepid, 
-                from_port, dev, inode));
+pid %d, port %d, for file dev = %x, inode = %.0f\n",
+              remotepid, from_port, (unsigned int)dev, (double)inode));
+#else /* LARGE_SMB_INO_T */
+        DEBUG(5,("process_local_message: oplock break reply sent to \
+pid %d, port %d, for file dev = %x, inode = %lx\n",
+              remotepid, from_port, (unsigned int)dev, (unsigned long)inode));
+#endif /* LARGE_SMB_INO_T */
 
       }
       break;
@@ -179,14 +196,25 @@ reply - dumping info.\n"));
 
       {
         uint32 remotepid = IVAL(msg_start,OPLOCK_BREAK_PID_OFFSET);
-        /*
-         * Warning - this will need to be changed if SMB_DEV_T/SMB_INO_T <> 4 bytes. !!
-         */
         SMB_DEV_T dev = IVAL(msg_start,OPLOCK_BREAK_DEV_OFFSET);
+        /*
+         * Warning - beware of SMB_INO_T <> 4 bytes. !!
+         */
+#ifdef LARGE_SMB_INO_T
+        SMB_INO_T inode_low = IVAL(msg_start, OPLOCK_BREAK_INODE_OFFSET);
+        SMB_INO_T inode_high = IVAL(msg_start, OPLOCK_BREAK_INODE_OFFSET + 4);
+        SMB_INO_T inode = inode_low | (inode_high << 32);
+#else /* LARGE_SMB_INO_T */
         SMB_INO_T inode = IVAL(msg_start, OPLOCK_BREAK_INODE_OFFSET);
+#endif /* LARGE_SMB_INO_T */
 
+#ifdef LARGE_SMB_INO_T
         DEBUG(0,("process_local_message: unsolicited oplock break reply from \
-pid %d, port %d, dev = %x, inode = %x\n", remotepid, from_port, dev, inode));
+pid %d, port %d, dev = %x, inode = %.0f\n", remotepid, from_port, (unsigned int)dev, (double)inode));
+#else /* LARGE_SMB_INO_T */
+        DEBUG(0,("process_local_message: unsolicited oplock break reply from \
+pid %d, port %d, dev = %x, inode = %lx\n", remotepid, from_port, (unsigned int)dev, (unsigned long)inode));
+#endif /* LARGE_SMB_INO_T */
 
        }
        return False;
@@ -217,7 +245,11 @@ BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval)
 
   if( DEBUGLVL( 3 ) )
     {
-    dbgtext( "oplock_break: called for dev = %x, inode = %x.\n", dev, inode );
+#ifdef LARGE_SMB_INO_T
+    dbgtext( "oplock_break: called for dev = %x, inode = %.0f.\n", (unsigned int)dev, (double)inode );
+#else /* LARGE_SMB_INO_T */
+    dbgtext( "oplock_break: called for dev = %x, inode = %lx.\n", (unsigned int)dev, (unsigned long)inode );
+#endif /* LARGE_SMB_INO_T */
     dbgtext( "Current global_oplocks_open = %d\n", global_oplocks_open );
     }
 
@@ -232,7 +264,11 @@ BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval)
     if( DEBUGLVL( 0 ) )
       {
       dbgtext( "oplock_break: cannot find open file with " );
-      dbgtext( "dev = %x, inode = %x ", dev, inode);
+#ifdef LARGE_SMB_INO_T
+      dbgtext( "dev = %x, inode = %.0f ", (unsigned int)dev, (double)inode);
+#else /* LARGE_SMB_INO_T */
+      dbgtext( "dev = %x, inode = %x ", (unsigned int)dev, (unsigned long)inode);
+#endif /* LARGE_SMB_INO_T */
       dbgtext( "allowing break to succeed.\n" );
       }
     return True;
@@ -252,7 +288,11 @@ BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval)
     if( DEBUGLVL( 0 ) )
       {
       dbgtext( "oplock_break: file %s ", fsp->fsp_name );
-      dbgtext( "(dev = %x, inode = %x) has no oplock.\n", dev, inode );
+#ifdef LARGE_SMB_INO_T
+      dbgtext( "(dev = %x, inode = %.0f) has no oplock.\n", (unsigned int)dev, (double)inode );
+#else /* LARGE_SMB_INO_T */
+      dbgtext( "(dev = %x, inode = %lx) has no oplock.\n", (unsigned int)dev, (unsigned long)inode );
+#endif /* LARGE_SMB_INO_T */
       dbgtext( "Allowing break to succeed regardless.\n" );
       }
     return True;
@@ -265,7 +305,11 @@ BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval)
       {
       dbgtext( "oplock_break: ERROR: oplock_break already sent for " );
       dbgtext( "file %s ", fsp->fsp_name);
-      dbgtext( "(dev = %x, inode = %x)\n", dev, inode );
+#ifdef LARGE_SMB_INO_T
+      dbgtext( "(dev = %x, inode = %.0f)\n", (unsigned int)dev, (double)inode );
+#else /* LARGE_SMB_INO_T */
+      dbgtext( "(dev = %x, inode = %lx)\n", (unsigned int)dev, (unsigned long)inode );
+#endif /* LARGE_SMB_INO_T */
       }
 
     /* We have to fail the open here as we cannot send another oplock break on
@@ -357,7 +401,12 @@ BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval)
                      OPLOCK_BREAK_TIMEOUT ) );
 
       DEBUGADD( 0, ( "oplock_break failed for file %s ", fsp->fsp_name ) );
-      DEBUGADD( 0, ( "(dev = %x, inode = %x).\n", dev, inode));
+#ifdef LARGE_SMB_INO_T
+      DEBUGADD( 0, ( "(dev = %x, inode = %.0f).\n", (unsigned int)dev, (double)inode));
+#else /* LARGE_SMB_INO_T */
+      DEBUGADD( 0, ( "(dev = %x, inode = %lx).\n", (unsigned int)dev, (unsigned long)inode));
+#endif /* LARGE_SMB_INO_T */
+
       shutdown_server = True;
       break;
     }
@@ -384,7 +433,12 @@ BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval)
         dbgtext( "oplock_break: no break received from client " );
         dbgtext( "within %d seconds.\n", OPLOCK_BREAK_TIMEOUT );
         dbgtext( "oplock_break failed for file %s ", fsp->fsp_name );
-        dbgtext( "(dev = %x, inode = %x).\n", dev, inode );
+#ifdef LARGE_SMB_INO_T
+        dbgtext( "(dev = %x, inode = %.0f).\n", (unsigned int)dev, (double)inode );
+#else /* LARGE_SMB_INO_T */
+        dbgtext( "(dev = %x, inode = %lx).\n", (unsigned int)dev, (unsigned long)inode );
+#endif /* LARGE_SMB_INO_T */
+
         }
       shutdown_server = True;
       break;
@@ -451,7 +505,11 @@ BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval)
   if( DEBUGLVL( 3 ) )
     {
     dbgtext( "oplock_break: returning success for " );
-    dbgtext( "dev = %x, inode = %x.\n", dev, inode );
+#ifdef LARGE_SMB_INO_T
+    dbgtext( "dev = %x, inode = %.0f\n", (unsigned int)dev, (double)inode );
+#else /* LARGE_SMB_INO_T */
+    dbgtext( "dev = %x, inode = %lx\n", (unsigned int)dev, (unsigned long)inode );
+#endif /* LARGE_SMB_INO_T */
     dbgtext( "Current global_oplocks_open = %d\n", global_oplocks_open );
     }
 
@@ -495,11 +553,16 @@ should be %d\n", pid, share_entry->op_port, oplock_port));
   SIVAL(op_break_msg,OPLOCK_BREAK_PID_OFFSET,pid);
   SIVAL(op_break_msg,OPLOCK_BREAK_SEC_OFFSET,(uint32)share_entry->time.tv_sec);
   SIVAL(op_break_msg,OPLOCK_BREAK_USEC_OFFSET,(uint32)share_entry->time.tv_usec);
-  /*
-   * WARNING - this will need to be changed if SMB_DEV_T/SMB_INO_T <> 4 bytes.
-   */
   SIVAL(op_break_msg,OPLOCK_BREAK_DEV_OFFSET,dev);
+  /*
+   * WARNING - beware of SMB_INO_T <> 4 bytes.
+   */
+#ifdef LARGE_SMB_INO_T
+  SIVAL(op_break_msg,OPLOCK_BREAK_INODE_OFFSET,(inode & 0xFFFFFFFFL));
+  SIVAL(op_break_msg,OPLOCK_BREAK_INODE_OFFSET+4,((inode >> 32) & 0xFFFFFFFFL));
+#else /* LARGE_SMB_INO_T */
   SIVAL(op_break_msg,OPLOCK_BREAK_INODE_OFFSET,inode);
+#endif /* LARGE_SMB_INO_T */
 
   /* set the address and port */
   bzero((char *)&addr_out,sizeof(addr_out));
@@ -511,7 +574,12 @@ should be %d\n", pid, share_entry->op_port, oplock_port));
     {
     dbgtext( "request_oplock_break: sending a oplock break message to " );
     dbgtext( "pid %d on port %d ", share_entry->pid, share_entry->op_port );
-    dbgtext( "for dev = %x, inode = %x\n", dev, inode );
+#ifdef LARGE_SMB_INO_T
+    dbgtext( "for dev = %x, inode = %.0f\n", (unsigned int)dev, (double)inode );
+#else /* LARGE_SMB_INO_T */
+    dbgtext( "for dev = %x, inode = %lx\n", (unsigned int)dev, (unsigned long)inode );
+#endif /* LARGE_SMB_INO_T */
+
     }
 
   if(sendto(oplock_sock,op_break_msg,OPLOCK_BREAK_MSG_LEN,0,
@@ -522,7 +590,11 @@ should be %d\n", pid, share_entry->op_port, oplock_port));
       dbgtext( "request_oplock_break: failed when sending a oplock " );
       dbgtext( "break message to pid %d ", share_entry->pid );
       dbgtext( "on port %d ", share_entry->op_port );
-      dbgtext( "for dev = %x, inode = %x.\n", dev, inode );
+#ifdef LARGE_SMB_INO_T
+      dbgtext( "for dev = %x, inode = %.0f\n", (unsigned int)dev, (double)inode );
+#else /* LARGE_SMB_INO_T */
+      dbgtext( "for dev = %x, inode = %lx\n", (unsigned int)dev, (unsigned long)inode );
+#endif /* LARGE_SMB_INO_T */
       dbgtext( "Error was %s\n", strerror(errno) );
       }
     return False;
@@ -555,7 +627,12 @@ should be %d\n", pid, share_entry->op_port, oplock_port));
           dbgtext( "request_oplock_break: no response received to oplock " );
           dbgtext( "break request to pid %d ", share_entry->pid );
           dbgtext( "on port %d ", share_entry->op_port );
-          dbgtext( "for dev = %x, inode = %x\n", dev, inode );
+#ifdef LARGE_SMB_INO_T
+          dbgtext( "for dev = %x, inode = %.0f\n", (unsigned int)dev, (double)inode );
+#else /* LARGE_SMB_INO_T */
+          dbgtext( "for dev = %x, inode = %lx\n", (unsigned int)dev, (unsigned long)inode );
+#endif /* LARGE_SMB_INO_T */
+
           }
         /*
          * This is a hack to make handling of failing clients more robust.
@@ -572,7 +649,11 @@ should be %d\n", pid, share_entry->op_port, oplock_port));
           dbgtext( "request_oplock_break: error in response received " );
           dbgtext( "to oplock break request to pid %d ", share_entry->pid );
           dbgtext( "on port %d ", share_entry->op_port );
-          dbgtext( "for dev = %x, inode = %x.\n", dev, inode );
+#ifdef LARGE_SMB_INO_T
+          dbgtext( "for dev = %x, inode = %.0f\n", (unsigned int)dev, (double)inode );
+#else /* LARGE_SMB_INO_T */
+          dbgtext( "for dev = %x, inode = %lx\n", (unsigned int)dev, (unsigned long)inode );
+#endif /* LARGE_SMB_INO_T */
           dbgtext( "Error was (%s).\n", strerror(errno) );
           }
       return False;

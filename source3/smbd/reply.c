@@ -3564,9 +3564,15 @@ no oplock granted on this file.\n", fsp->fnum));
     /* Remove the oplock flag from the sharemode. */
     lock_share_entry(fsp->conn, dev, inode, &token);
     if(remove_share_oplock(fsp, token)==False) {
+
+#ifdef LARGE_SMB_INO_T
 	    DEBUG(0,("reply_lockingX: failed to remove share oplock for fnum %d, \
-dev = %x, inode = %x\n", 
-		     fsp->fnum, dev, inode));
+dev = %x, inode = %.0f\n", fsp->fnum, (unsigned int)dev, (double)inode));
+#else /* LARGE_SMB_INO_T */
+	    DEBUG(0,("reply_lockingX: failed to remove share oplock for fnum %d, \
+dev = %x, inode = %lx\n", fsp->fnum, (unsigned int)dev, (unsigned long)inode));
+#endif /* LARGE_SMB_INO_T */
+
 	    unlock_share_entry(fsp->conn, dev, inode, token);
     } else {
 	    unlock_share_entry(fsp->conn, dev, inode, token);

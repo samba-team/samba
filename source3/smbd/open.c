@@ -149,10 +149,18 @@ int fd_attempt_close(file_fd_struct *fd_ptr)
 {
   extern struct current_user current_user;
 
-  DEBUG(3,("fd_attempt_close fd = %d, dev = %x, inode = %x, open_flags = %d, ref_count = %d.\n",
-          fd_ptr->fd, fd_ptr->dev, fd_ptr->inode,
+#ifdef LARGE_SMB_INO_T
+  DEBUG(3,("fd_attempt_close fd = %d, dev = %x, inode = %.0f, open_flags = %d, ref_count = %d.\n",
+          fd_ptr->fd, (unsigned int)fd_ptr->dev, (double)fd_ptr->inode,
           fd_ptr->real_open_flags,
           fd_ptr->ref_count));
+#else /* LARGE_SMB_INO_T */
+  DEBUG(3,("fd_attempt_close fd = %d, dev = %x, inode = %lx, open_flags = %d, ref_count = %d.\n",
+          fd_ptr->fd, (unsigned int)fd_ptr->dev, (unsigned long)fd_ptr->inode,
+          fd_ptr->real_open_flags,
+          fd_ptr->ref_count));
+#endif /* LARGE_SMB_INO_T */
+
   if(fd_ptr->ref_count > 0) {
     fd_ptr->ref_count--;
     if(fd_ptr->ref_count == 0) {
@@ -718,16 +726,28 @@ void open_file_shared(files_struct *fsp,connection_struct *conn,char *fname,int 
           if(share_entry->op_type & (EXCLUSIVE_OPLOCK|BATCH_OPLOCK))
           {
 
+#ifdef LARGE_SMB_INO_T
             DEBUG(5,("open_file_shared: breaking oplock (%x) on file %s, \
-dev = %x, inode = %x\n", share_entry->op_type, fname, dev, inode));
+dev = %x, inode = %.0f\n", share_entry->op_type, fname, (unsigned int)dev, (double)inode));
+#else /* LARGE_SMB_INO_T */
+            DEBUG(5,("open_file_shared: breaking oplock (%x) on file %s, \
+dev = %x, inode = %lx\n", share_entry->op_type, fname, (unsigned int)dev, (unsigned long)inode));
+#endif /* LARGE_SMB_INO_T */
 
             /* Oplock break.... */
             unlock_share_entry(conn, dev, inode, token);
             if(request_oplock_break(share_entry, dev, inode) == False)
             {
               free((char *)old_shares);
+
+#ifdef LARGE_SMB_INO_T
               DEBUG(0,("open_file_shared: FAILED when breaking oplock (%x) on file %s, \
-dev = %x, inode = %x\n", old_shares[i].op_type, fname, dev, inode));
+dev = %x, inode = %.0f\n", old_shares[i].op_type, fname, (unsigned int)dev, (double)inode));
+#else /* LARGE_SMB_INO_T */
+              DEBUG(0,("open_file_shared: FAILED when breaking oplock (%x) on file %s, \
+dev = %x, inode = %lx\n", old_shares[i].op_type, fname, (unsigned int)dev, (unsigned long)inode));
+#endif /* LARGE_SMB_INO_T */
+
               errno = EACCES;
               unix_ERR_class = ERRDOS;
               unix_ERR_code = ERRbadshare;
@@ -831,8 +851,13 @@ dev = %x, inode = %x\n", old_shares[i].op_type, fname, dev, inode));
         global_oplocks_open++;
         port = oplock_port;
 
+#ifdef LARGE_SMB_INO_T
         DEBUG(5,("open_file_shared: granted oplock (%x) on file %s, \
-dev = %x, inode = %x\n", oplock_request, fname, dev, inode));
+dev = %x, inode = %.0f\n", oplock_request, fname, (unsigned int)dev, (double)inode));
+#else /* LARGE_SMB_INO_T */
+        DEBUG(5,("open_file_shared: granted oplock (%x) on file %s, \
+dev = %x, inode = %lx\n", oplock_request, fname, (unsigned int)dev, (double)inode));
+#endif /* LARGE_SMB_INO_T */
 
       }
       else
@@ -1051,8 +1076,15 @@ BOOL check_file_sharing(connection_struct *conn,char *fname, BOOL rename_op)
            */
           if(rename_op && (share_entry->pid == pid))
           {
+
+#ifdef LARGE_SMB_INO_T
             DEBUG(0,("check_file_sharing: NT redirector workaround - rename attempted on \
-batch oplocked file %s, dev = %x, inode = %x\n", fname, dev, inode));
+batch oplocked file %s, dev = %x, inode = %.0f\n", fname, (unsigned int)dev, (double)inode));
+#else /* LARGE_SMB_INO_T */
+            DEBUG(0,("check_file_sharing: NT redirector workaround - rename attempted on \
+batch oplocked file %s, dev = %x, inode = %lx\n", fname, (unsigned int)dev, (unsigned long)inode));
+#endif /* LARGE_SMB_INO_T */
+
             /* 
              * This next line is a test that allows the deny-mode
              * processing to be skipped. This seems to be needed as
@@ -1065,16 +1097,29 @@ batch oplocked file %s, dev = %x, inode = %x\n", fname, dev, inode));
           }
           else
           {
+
+#ifdef LARGE_SMB_INO_T
             DEBUG(5,("check_file_sharing: breaking oplock (%x) on file %s, \
-dev = %x, inode = %x\n", share_entry->op_type, fname, dev, inode));
+dev = %x, inode = %.0f\n", share_entry->op_type, fname, (unsigned int)dev, (double)inode));
+#else /* LARGE_SMB_INO_T */
+            DEBUG(5,("check_file_sharing: breaking oplock (%x) on file %s, \
+dev = %x, inode = %lx\n", share_entry->op_type, fname, (unsigned int)dev, (unsigned long)inode));
+#endif /* LARGE_SMB_INO_T */
 
             /* Oplock break.... */
             unlock_share_entry(conn, dev, inode, token);
             if(request_oplock_break(share_entry, dev, inode) == False)
             {
               free((char *)old_shares);
+
+#ifdef LARGE_SMB_INO_T
               DEBUG(0,("check_file_sharing: FAILED when breaking oplock (%x) on file %s, \
-dev = %x, inode = %x\n", old_shares[i].op_type, fname, dev, inode));
+dev = %x, inode = %.0f\n", old_shares[i].op_type, fname, (unsigned int)dev, (double)inode));
+#else /* LARGE_SMB_INO_T */
+              DEBUG(0,("check_file_sharing: FAILED when breaking oplock (%x) on file %s, \
+dev = %x, inode = %lx\n", old_shares[i].op_type, fname, (unsigned int)dev, (unsigned long)inode));
+#endif /* LARGE_SMB_INO_T */
+
               return False;
             }
             lock_share_entry(conn, dev, inode, &token);
