@@ -40,7 +40,9 @@ RCSID("$Id$");
 
 #include <syslog.h>
 
+#ifdef HAVE_PATHS_H
 #include <paths.h>
+#endif
 
 #include <pwd.h>
 
@@ -51,6 +53,10 @@ RCSID("$Id$");
 
 #ifndef _PATH_DEFPATH
 #define _PATH_DEFPATH "/usr/bin:/bin"
+#endif
+
+#ifndef _PATH_BSHELL
+#define _PATH_BSHELL "/bin/sh"
 #endif
 
 int kerberos_flag = 1;
