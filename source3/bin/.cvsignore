@@ -24,6 +24,7 @@ smbcacls
 smbcacls
 smbclient
 smbcontrol
+smbcquotas
 smbd
 smbfilter
 smbgroupedit
@@ -38,6 +39,7 @@ smbtree
 smbumount
 swat
 t_push_ucs2
+t_snprintf
 t_strcmp
 talloctort
 tdbbackup
@@ -47,4 +49,3 @@ vfstest
 wbinfo
 winbindd
 wrepld
-smbcquotas
