@@ -120,6 +120,18 @@ send_and_recv_http(int fd,
     return 0;
 }
 
+static int
+init_port(const char *s, int fallback)
+{
+    if (s) {
+	int tmp;
+
+	sscanf (s, "%d", &tmp);
+	return htons(tmp);
+    } else
+	return fallback;
+}
+
 krb5_error_code
 krb5_sendto_kdc (krb5_context context,
 		 const krb5_data *send,
@@ -141,61 +153,90 @@ krb5_sendto_kdc (krb5_context context,
 	  return err;
      }
 
-     for (i = 0; i < 3; ++i)
+     for (i = 0; i < context->max_retries; ++i)
 	 for (hp = hostlist; (p = *hp); ++hp) {
-	       char *addr;
-	       char *colon;
-	       int http_flag = 0;
+	     char *addr;
+	     char *colon;
+	     int http_flag = 0;
 
-	       if(strncmp(p, "http://", 7) == 0){
-		   p += 7;
-		   http_flag = 1;
-	       }
-	       colon = strchr (p, ':');
-	       if (colon)
-		    *colon = '\0';
-	       hostent = gethostbyname (p);
-	       if(hostent == NULL)
-		   continue;
-	       if (colon)
-		    *colon++ = ':';
-	       while ((addr = *hostent->h_addr_list++)) {
-		    struct sockaddr_in a;
-		    int ret;
-		    
-		    if(http_flag)
-			fd = socket(AF_INET, SOCK_STREAM, 0);
-		    else
-			fd = socket(AF_INET, SOCK_DGRAM, 0);
-		    
-		    if(fd < 0){
-			return errno;
-		    }
-		    memset (&a, 0, sizeof(a));
-		    a.sin_family = AF_INET;
-		    if (colon) {
-			 int tmp;
+	     if(strncmp(p, "http://", 7) == 0){
+		 p += 7;
+		 http_flag = 1;
+	     }
+	     colon = strchr (p, ':');
+	     if (colon)
+		 *colon = '\0';
+#ifdef HAVE_GETHOSTBYNAME2
+	     hostent = gethostbyname2 (p, AF_INET6);
+	     if (hostent == NULL)
+		 hostent = gethostbyname2 (p, AF_INET);
+#else
+	     hostent = gethostbyname (p);
+#endif
+	     if(hostent == NULL)
+		 continue;
+	     if (colon)
+		 *colon++ = ':';
+	     while ((addr = *hostent->h_addr_list++)) {
+		 int ret;
+		 int family;
+		 struct sockaddr *sa;
+		 int sa_len;
+		 struct sockaddr_in sin;
+#if defined(AF_INET6) && defined(HAVE_SOCKADDR_IN6)
+		 struct sockaddr_in6 sin6;
+#endif
 
-			 sscanf (colon, "%d", &tmp);
-			 a.sin_port = htons(tmp);
-		    } else
-			 a.sin_port   = port;
-		    a.sin_addr   = *((struct in_addr *)addr);
-		    connect(fd, (struct sockaddr*)&a, sizeof(a));
+		 family = hostent->h_addrtype;
 		    
-		    if(http_flag)
-			ret = send_and_recv_http(fd, context->kdc_timeout,
-						 send, receive);
-		    else
+		 if(http_flag)
+		     fd = socket(family, SOCK_STREAM, 0);
+		 else
+		     fd = socket(family, SOCK_DGRAM, 0);
+		    
+		 if(fd < 0)
+		     return errno;
+		 switch (family) {
+		 case AF_INET :
+		     memset(&sin, 0, sizeof(sin));
+		     sa_len = sizeof(sin);
+		     sa = (struct sockaddr *)&sin;
+		     sin.sin_family = family;
+		     sin.sin_port   = init_port(colon, port);
+		     sin.sin_addr   = *((struct in_addr *)addr);
+		     break;
+#if defined(AF_INET6) && defined(HAVE_SOCKADDR_IN6)
+		 case AF_INET6:
+		     memset(&sin6, 0, sizeof(sin6));
+		     sa_len = sizeof(sin6);
+		     sa = (struct sockaddr *)&sin6;
+		     sin6.sin6_family = family;
+		     sin6.sin6_port   = init_port(colon, port);
+		     sin6.sin6_addr   = *((struct in6_addr *)addr);
+		     break;
+#endif
+		 default:
+		     continue;
+		 }
+
+		 if(connect(fd, sa, sa_len) < 0) {
+		     close (fd);
+		     continue;
+		 }
+		    
+		 if(http_flag)
+		     ret = send_and_recv_http(fd, context->kdc_timeout,
+					      send, receive);
+		 else
 			
-			ret = send_and_recv (fd, context->kdc_timeout, 1,
-					     send, receive);
-		    close (fd);
-		    if(ret == 0){
-			krb5_free_krbhst (context, hostlist);
-			return 0;
-		    }
-	       }
+		     ret = send_and_recv (fd, context->kdc_timeout, 1,
+					  send, receive);
+		 close (fd);
+		 if(ret == 0){
+		     krb5_free_krbhst (context, hostlist);
+		     return 0;
+		 }
+	     }
 	 }
      krb5_free_krbhst (context, hostlist);
      return KRB5_KDC_UNREACH;

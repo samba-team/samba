@@ -48,16 +48,35 @@ krb5_sock_to_principal (krb5_context context,
 			krb5_principal *ret_princ)
 {
     krb5_error_code ret;
+#if defined(AF_INET6) && defined(HAVE_SOCKADDR_IN6)
+    struct sockaddr_in6 addr;
+#else
     struct sockaddr_in addr;
+#endif
     int len = sizeof(addr);
     struct hostent *hostent;
 
     if (getsockname (sock, (struct sockaddr *)&addr, &len) < 0)
 	return errno;
     
+#if defined(AF_INET6) && defined(HAVE_SOCKADDR_IN6)
+    if(len == sizeof(struct sockaddr_in6))
+	hostent = gethostbyaddr ((const char *)&addr.sin6_addr,
+				 sizeof(addr.sin6_addr),
+				 addr.sin6_family);
+    else {
+	struct sockaddr_in *foo = (struct sockaddr_in *)&addr;
+	
+	hostent = gethostbyaddr ((const char *)&foo->sin_addr,
+				 sizeof(foo->sin_addr),
+				 foo->sin_family);
+    }
+#else
     hostent = gethostbyaddr ((const char *)&addr.sin_addr,
 			     sizeof(addr.sin_addr),
 			     addr.sin_family);
+#endif
+
     if (hostent == NULL)
 	return h_errno;
     return krb5_sname_to_principal (context,

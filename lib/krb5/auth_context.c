@@ -132,6 +132,40 @@ krb5_auth_con_setaddrs(krb5_context context,
     return 0;
 }
 
+static void
+sockaddr2krb5_address (struct sockaddr *sa,
+		       krb5_address *ka)
+{
+    switch (sa->sa_family) {
+    case AF_INET: {
+	struct sockaddr_in *sin = (struct sockaddr_in *)sa;
+
+	ka->addr_type = AF_INET;
+	ka->address.length = sizeof(sin->sin_addr);
+	ka->address.data   = &sin->sin_addr;
+	break;
+    }
+#if defined(AF_INET6) && defined(HAVE_SOCKADDR_IN6)
+    case AF_INET6: {
+	struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)sa;
+
+	if (IN6_IS_ADDR_V4MAPPED(&sin6->sin6_addr)) {
+	    ka->addr_type      = AF_INET;
+	    ka->address.length = sizeof(struct in_addr);
+	    ka->address.data   = IN6_ADDR_V6_TO_V4(&sin6->sin6_addr);
+	} else {
+	    ka->addr_type = AF_INET6;
+	    ka->address.length = sizeof(sin6->sin6_addr);
+	    ka->address.data   = &sin6->sin6_addr;
+	}
+	break;
+    }
+#endif
+    default:
+	break;
+    }
+}
+
 
 krb5_error_code
 krb5_auth_con_setaddrs_from_fd (krb5_context context,
@@ -140,16 +174,19 @@ krb5_auth_con_setaddrs_from_fd (krb5_context context,
 {
     krb5_address *lptr = NULL, *rptr = NULL;
     krb5_address local_k_address, remote_k_address;
+#if defined(AF_INET6) && defined(HAVE_SOCKADDR_IN6)
+    struct sockaddr_in6 local_addr, remote_addr;
+#else
     struct sockaddr_in local_addr, remote_addr;
+#endif
     int len;
 
     if (auth_context->local_address == NULL) {
 	len = sizeof (local_addr);
 	if (getsockname (fd, (struct sockaddr *)&local_addr, &len) < 0)
 	    return errno;
-	local_k_address.addr_type = AF_INET;
-	local_k_address.address.length = sizeof(local_addr.sin_addr);
-	local_k_address.address.data   = &local_addr.sin_addr;
+	sockaddr2krb5_address((struct sockaddr *)&local_addr,
+			      &local_k_address);
 	lptr = &local_k_address;
     }
 
@@ -157,9 +194,8 @@ krb5_auth_con_setaddrs_from_fd (krb5_context context,
 	len = sizeof (remote_addr);
 	if (getpeername (fd, (struct sockaddr *)&remote_addr, &len) < 0)
 	    return errno;
-	remote_k_address.addr_type = AF_INET;
-	remote_k_address.address.length = sizeof(remote_addr.sin_addr);
-	remote_k_address.address.data   = &remote_addr.sin_addr;
+	sockaddr2krb5_address((struct sockaddr *)&remote_addr,
+			      &remote_k_address);
 	rptr = &remote_k_address;
     }
 
