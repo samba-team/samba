@@ -1,4 +1,14 @@
+2002-02-15  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/krb5/keytab_keyfile.c (akf_add_entry): don't create the file
+	before we need to write to it
+	(from Åke Sandgren)
+
 2002-02-14  Johan Danielsson  <joda@pdc.kth.se>
+
+	* configure.in: rk_RETSIGTYPE and rk_BROKEN_REALLOC are called via
+	rk_ROKEN (from Gombas Gabor); find inttypes by CHECK_TYPES
+	directly
 
 	* lib/krb5/rd_safe.c: actually use the correct key (from Daniel
 	Kouril)
