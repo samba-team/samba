@@ -3255,9 +3255,9 @@ static BOOL api_dce_rpc_command(char *outbuf,
 	if (reply)
 	{
 		/* now send the reply */
-		send_trans_reply(outbuf, p->rhdr.data, NULL, NULL, 0, p->max_rdata_len);
+		send_trans_reply(outbuf, p->rhdr.data, NULL, NULL, 0, p->file_offset);
 
-		if (mem_buf_len(p->rhdr.data) <= p->max_rdata_len)
+		if (mem_buf_len(p->rhdr.data) <= p->file_offset)
 		{
 			/* all of data was sent: no need to wait for SMBreadX calls */
 			mem_free_data(p->rhdr .data);
@@ -3283,7 +3283,7 @@ static BOOL api_SNPHS(char *outbuf, pipes_struct *p, char *param)
 	if (set_rpc_pipe_hnd_state(p, id))
 	{
 		/* now send the reply */
-		send_trans_reply(outbuf, NULL, NULL, NULL, 0, p->max_rdata_len);
+		send_trans_reply(outbuf, NULL, NULL, NULL, 0, p->file_offset);
 
 		return True;
 	}
@@ -3366,10 +3366,10 @@ static int api_fd_reply(int cnum,uint16 vuid,char *outbuf,
 				  tdscnt,tpscnt,mdrcnt,mprcnt,cnum,vuid));
 
 		/* record maximum data length that can be transmitted in an SMBtrans */
-		p->max_rdata_len = mdrcnt;
+		p->file_offset = mdrcnt;
 
-                DEBUG(10,("api_fd_reply: p:%p max_rdata_len: %d\n",
-                           p, p->max_rdata_len));
+                DEBUG(10,("api_fd_reply: p:%p file_offset: %d\n",
+                           p, p->file_offset));
 
 		switch (subcommand)
 		{

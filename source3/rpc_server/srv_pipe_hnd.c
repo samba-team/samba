@@ -81,8 +81,10 @@ void init_rpc_pipe_hnd(void)
 		Pipes[i].rhdr.offset  = 0;
 		Pipes[i].rdata.offset = 0;
 
-		Pipes[i].max_rdata_len = 0;
-		Pipes[i].hdr_offsets   = 0;
+		Pipes[i].file_offset     = 0;
+		Pipes[i].hdr_offsets     = 0;
+		Pipes[i].frag_len_left   = 0;
+		Pipes[i].next_frag_start = 0;
 	}
 
 	return;
@@ -110,8 +112,10 @@ int open_rpc_pipe_hnd(char *pipe_name, int cnum, uint16 vuid)
 			Pipes[i].rhdr.offset  = 0;
 			Pipes[i].rdata.offset = 0;
 
-			Pipes[i].max_rdata_len = 0;
-			Pipes[i].hdr_offsets   = 0;
+			Pipes[i].file_offset     = 0;
+			Pipes[i].hdr_offsets     = 0;
+			Pipes[i].frag_len_left   = 0;
+			Pipes[i].next_frag_start = 0;
 
 			fstrcpy(Pipes[i].name, pipe_name);
 
@@ -134,7 +138,7 @@ int open_rpc_pipe_hnd(char *pipe_name, int cnum, uint16 vuid)
 
  headers are interspersed with the data at regular intervals.  by the time
  this function is called, the start of the data could possibly have been
- read by an SMBtrans (max_rdata_len != 0).
+ read by an SMBtrans (file_offset != 0).
 
  calling create_rpc_request() here is a fudge.  the data should already
  have been prepared into arrays of headers + data stream sections.
@@ -142,13 +146,14 @@ int open_rpc_pipe_hnd(char *pipe_name, int cnum, uint16 vuid)
  ****************************************************************************/
 int read_pipe(uint16 pnum, char *data, uint32 pos, int n)
 {
-	int data_pos = pos;
+	int data_hdr_pos;
+	int data_pos;
 	pipes_struct *p = &Pipes[pnum - PIPE_HANDLE_OFFSET];
 	DEBUG(6,("read_pipe: %x", pnum));
 
 	if (VALID_PNUM(pnum - PIPE_HANDLE_OFFSET))
 	{
-		DEBUG(6,("name: %s cnum: %d open: %s data_pos: %lx len: %lx",
+		DEBUG(6,("name: %s cnum: %d open: %s data_pos: %d len: %d",
 		          p->name,
 		          p->cnum,
 		          BOOLSTR(p->open),
@@ -160,7 +165,6 @@ int read_pipe(uint16 pnum, char *data, uint32 pos, int n)
 		int num = 0;
 		int len = 0;
 		uint32 hdr_num = 0;
-		uint32 rpc_frag_pos = 0;
 
 		DEBUG(6,("OK\n"));
 
@@ -170,29 +174,38 @@ int read_pipe(uint16 pnum, char *data, uint32 pos, int n)
 			return 0;
 		}
 
-		DEBUG(6,("read_pipe: p: %p max_rdata_len: %d data_pos: %d num: %d\n",
-		          p, p->max_rdata_len, data_pos, num));
+		DEBUG(6,("read_pipe: p: %p file_offset: %d file_pos: %d\n",
+		          p, p->file_offset, n));
+		DEBUG(6,("read_pipe: frag_len_left: %d next_frag_start: %d\n",
+		          p->frag_len_left, p->next_frag_start));
 
 		/* the read request starts from where the SMBtrans2 left off. */
-		data_pos += p->max_rdata_len;
-
-		rpc_frag_pos = data_pos % p->hdr.frag_len;
-
-		/* headers accumulate an offset */
-		data_pos -= p->hdr_offsets;
+		data_pos     = p->file_offset - p->hdr_offsets;
+		data_hdr_pos = p->file_offset;
 
 		len = mem_buf_len(p->rhdr.data);
 		num = len - (int)data_pos;
 
+		DEBUG(6,("read_pipe: len: %d num: %d n: %d\n", len, num, n));
+
 		if (num > n) num = n;
+		if (num <= 0)
+		{
+			DEBUG(5,("read_pipe: 0 or -ve data length\n"));
+			return 0;
+		}
 
 		if (!IS_BITS_SET_ALL(p->hdr.flags, RPC_FLG_LAST))
 		{
-			DEBUG(5,("read_pipe: hdr_offsets: %d rpc_frag_pos: %d frag_len: %d\n",
-			          p->hdr_offsets, rpc_frag_pos, p->hdr.frag_len));
+			/* intermediate fragment - possibility of another header */
 
-			if (rpc_frag_pos == 0)
+			DEBUG(5,("read_pipe: frag_len: %d data_pos: %d data_hdr_pos: %d\n",
+			          p->hdr.frag_len, data_pos, data_hdr_pos));
+
+			if (data_hdr_pos == p->next_frag_start)
 			{
+				DEBUG(6,("read_pipe: next fragment header\n"));
+
 				/* this is subtracted from the total data bytes, later */
 				hdr_num = 0x18;
 
@@ -200,24 +213,44 @@ int read_pipe(uint16 pnum, char *data, uint32 pos, int n)
 				create_rpc_reply(p, data_pos, p->rdata.offset);
 				mem_buf_copy(data, p->rhdr.data, 0, 0x18);
 
-				/* make room in data stream for header */
-				p->hdr_offsets += 0x18;
 				data += 0x18;
+				p->frag_len_left = p->hdr.frag_len;
+				p->next_frag_start += p->hdr.frag_len;
+				p->hdr_offsets += 0x18;
 
-				DEBUG(6,("read_pipe: hdr_offsets: %d\n", p->hdr_offsets));
+				/*DEBUG(6,("read_pipe: hdr_offsets: %d\n", p->hdr_offsets));*/
 			}
 		}
 
-		if (num > 0)
+		if (num < hdr_num)
 		{
-			DEBUG(6,("read_pipe: adjusted data_pos: %d num: %d\n",
-			          data_pos, num - hdr_num));
-			mem_buf_copy(data, p->rhdr.data, data_pos, num - hdr_num);
-
-			return num;
+			DEBUG(5,("read_pipe: warning - data read only part of a header\n"));
 		}
 
-		return 0;
+		DEBUG(6,("read_pipe: adjusted data_pos: %d num-hdr_num: %d\n",
+				  data_pos, num - hdr_num));
+		mem_buf_copy(data, p->rhdr.data, data_pos, num - hdr_num);
+
+		data_pos += num;
+		data_hdr_pos += num;
+
+		if (hdr_num == 0x18 && num == 0x18)
+		{
+			DEBUG(6,("read_pipe: just header read\n"));
+
+			/* advance to the next fragment */
+			p->frag_len_left -= 0x18; 
+		}
+		else if (data_hdr_pos == p->next_frag_start)
+		{
+			DEBUG(6,("read_pipe: next fragment expected\n"));
+
+			/* advance to the next fragment */
+		}
+
+		p->file_offset  += num;
+
+		return num;
 
 	}
 	else
