@@ -730,8 +730,10 @@ static BOOL samsync_handle_secret(TALLOC_CTX *mem_ctx, struct samsync_state *sam
 		return False;
 	}
 
-	TEST_SEC_DESC_EQUAL(secret->sdbuf, lsa, &sec_handle);
-
+/*
+  We would like to do this, but it is NOT_SUPPORTED on win2k3
+  TEST_SEC_DESC_EQUAL(secret->sdbuf, lsa, &sec_handle);
+*/
 	status = dcerpc_fetch_session_key(samsync_state->p_lsa, &session_key);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("dcerpc_fetch_session_key failed - %s\n", nt_errstr(status));
@@ -837,8 +839,10 @@ static BOOL samsync_handle_trusted_domain(TALLOC_CTX *mem_ctx, struct samsync_st
 	}
 	TEST_STRING_EQUAL(info[1]->name.netbios_name, trusted_domain->domain_name);
 	TEST_INT_EQUAL(info[3]->flags.flags, trusted_domain->flags);
+/*
+  We would like to do this, but it is NOT_SUPPORTED on win2k3
 	TEST_SEC_DESC_EQUAL(trusted_domain->sdbuf, lsa, &trustdom_handle);
-
+*/
 	DLIST_ADD(samsync_state->trusted_domains, new);
 
 	return ret;
@@ -1102,7 +1106,8 @@ static BOOL test_DatabaseDeltas(struct samsync_state *samsync_state, TALLOC_CTX 
 
 			status = dcerpc_netr_DatabaseDeltas(samsync_state->p, mem_ctx, &r);
 			if (!NT_STATUS_IS_OK(status) &&
-			    !NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
+			    !NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES) &&
+			    !NT_STATUS_EQUAL(status, NT_STATUS_SYNCHRONIZATION_REQUIRED)) {
 				printf("DatabaseDeltas - %s\n", nt_errstr(status));
 				ret = False;
 				break;
