@@ -778,8 +778,11 @@ static BOOL samsync_handle_secret(TALLOC_CTX *mem_ctx, struct samsync_state *sam
 		lsa_blob1.data = q.out.old_val->buf->data;
 		lsa_blob1.length = q.out.old_val->buf->length;
 
-		lsa_blob_out = sess_decrypt_blob(mem_ctx, &lsa_blob1, &session_key);
-		
+		status = sess_decrypt_blob(mem_ctx, &lsa_blob1, &session_key, &lsa_blob_out);
+		if (!NT_STATUS_IS_OK(status)) {
+			return False;
+		}
+
 		if (!q.out.old_mtime) {
 			printf("OLD mtime not available on LSA for secret %s\n", old->name);
 			ret = False;
@@ -814,7 +817,10 @@ static BOOL samsync_handle_secret(TALLOC_CTX *mem_ctx, struct samsync_state *sam
 		lsa_blob1.data = q.out.new_val->buf->data;
 		lsa_blob1.length = q.out.new_val->buf->length;
 
-		lsa_blob_out = sess_decrypt_blob(mem_ctx, &lsa_blob1, &session_key);
+		status = sess_decrypt_blob(mem_ctx, &lsa_blob1, &session_key, &lsa_blob_out);
+		if (!NT_STATUS_IS_OK(status)) {
+			return False;
+		}
 		
 		if (!q.out.new_mtime) {
 			printf("NEW mtime not available on LSA for secret %s\n", new->name);

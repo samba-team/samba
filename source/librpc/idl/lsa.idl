@@ -535,16 +535,16 @@
 
 	/* Function:          0x1c */
 	NTSTATUS lsa_OpenSecret(
-		[in,ref]     policy_handle *handle,
-		[in]         lsa_String       name,
-		[in]         uint32         access_mask,
-		[out,ref]    policy_handle *sec_handle
+		[in,ref]     policy_handle    *handle,
+		[in]         lsa_String        name,
+		[in]         uint32            access_mask,
+		[out,ref]    policy_handle    *sec_handle
 		);
 
 	/* Function:           0x1d */
 
 	NTSTATUS lsa_SetSecret(
-		[in,ref]     policy_handle *handle,
+		[in,ref]     policy_handle    *sec_handle,
 		[in]         lsa_DATA_BUF     *new_val,
 		[in]         lsa_DATA_BUF     *old_val
 		);
@@ -555,7 +555,7 @@
 
 	/* Function:         0x1e */
 	NTSTATUS lsa_QuerySecret (
-		[in,ref]     policy_handle *handle,
+		[in,ref]     policy_handle     *sec_handle,
 		[in,out]     lsa_DATA_BUF_PTR  *new_val,
 		[in,out]     NTTIME_hyper      *new_mtime,
 		[in,out]     lsa_DATA_BUF_PTR  *old_val,
