@@ -41,13 +41,15 @@ static struct interface *local_interfaces  = NULL;
 /****************************************************************************
 Try and find an interface that matches an ip. If we cannot, return NULL
   **************************************************************************/
-static struct interface *iface_find(struct in_addr ip)
+static struct interface *iface_find(struct in_addr ip, BOOL CheckMask)
 {
 	struct interface *i;
 	if (zero_ip(ip)) return local_interfaces;
 
 	for (i=local_interfaces;i;i=i->next)
-		if (same_net(i->ip,ip,i->nmask)) return i;
+		if (CheckMask) {
+			if (same_net(i->ip,ip,i->nmask)) return i;
+		} else if ((i->ip).s_addr == ip.s_addr) return i;
 
 	return NULL;
 }
@@ -59,7 +61,7 @@ add an interface to the linked list of interfaces
 static void add_interface(struct in_addr ip, struct in_addr nmask)
 {
 	struct interface *iface;
-	if (iface_find(ip)) {
+	if (iface_find(ip, False)) {
 		DEBUG(3,("not adding duplicate interface %s\n",inet_ntoa(ip)));
 		return;
 	}
@@ -365,12 +367,12 @@ unsigned iface_hash(void)
 
 struct in_addr *iface_bcast(struct in_addr ip)
 {
-	struct interface *i = iface_find(ip);
+	struct interface *i = iface_find(ip, True);
 	return(i ? &i->bcast : &local_interfaces->bcast);
 }
 
 struct in_addr *iface_ip(struct in_addr ip)
 {
-	struct interface *i = iface_find(ip);
+	struct interface *i = iface_find(ip, True);
 	return(i ? &i->ip : &local_interfaces->ip);
 }

@@ -272,7 +272,7 @@ static BOOL reload_nmbd_services(BOOL test)
   BOOL ret;
   extern fstring remote_machine;
 
-  fstrcpy( remote_machine, "nmb" );
+  fstrcpy( remote_machine, "nmbd" );
 
   if ( lp_loaded() )
   {
