@@ -201,8 +201,8 @@ this function is part of samba's domain master browser functionality.
 it is responsible for giving master browsers a list of other browsers
 that maintain backup lists of servers for that master browser's workgroup.
 
-it is also responsible for giving master browsers a list of primary domain
-controllers for that master browser's domain.
+it is also responsible for giving master browsers a list of domain master
+browsers for that local master browser's domain.
 
 a correct way to think of this function is that it is a 'request to
 send out a backup list for the requested workgroup or domain'.
@@ -217,8 +217,8 @@ matter of experimenting until it's right.
   *************************************************************************/
 
 this function is responsible for compiling a list of either master
-browsers and backup master browsers or primary domain controllers or
-backup domain controllers. samba constructs this list from its 
+browsers and backup master browsers or domain master browsers and
+backup domain master browsers. samba constructs this list from its 
 workgroup / server database.
 
 the list is then sent to the host that requested it by sending an

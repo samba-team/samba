@@ -74,7 +74,7 @@ if it is found, then we need to check whether it is appropriate for us
 to reply to such a query.
 
 we will only reply if the query is a directed query, the name belongs to
-samba on that subnet, or the name is a primary domain controller type,
+samba on that subnet, or the name is a domain master browser type,
 or we're doing replies on behalf of hosts on subnets not known to the
 host issuing the query. in the latter instance, it would be appropriate
 if samba is using a WINS server for it to forward the name query on to

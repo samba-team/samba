@@ -1,6 +1,6 @@
 /* 
    Unix SMB/Netbios documentation.
-   Version 0.1
+   Version 0.2
    Copyright (C) Luke Leighton  Andrew Tridgell  1996
    
    This program is free software; you can redistribute it and/or modify
@@ -26,6 +26,11 @@
 
    0.1 - 22jul96 : Andrew.Tridgell@anu.edu.au
    tridge's comments on first revision
+
+   0.2 - 05aug96 : lkcl@pires.co.uk
+   actioned tridge comments about pdc -> domain master
+   documented NAME_QUERY_ANNOUNCE_HOST
+
 */
 
 
@@ -39,22 +44,22 @@ or as a response to announcement requests.
   *************************************************************************/
 
 this function is responsible for announcing samba as a master browser
-to all known primary domain controllers.
+to all known domain masters.
 
 this announcement is sent out at CHECK_TIME_MST_ANNOUNCE minute
 intervals, only if samba is a master browser on one or more of
 its local interfaces.
 
 if no domain controller has been specified (lp_domain_controller())
-samba goes through its list of servers looking for primary domain
-controllers. when it finds one (other than itself) it will either
+samba goes through its list of servers looking for domain master
+browsers. when it finds one (other than itself) it will either
 initiate a NAME_QUERY_PDC_SRV_CHK by broadcast or with a WINS
 server. this will result in a NAME_STATUS_PDC_SRV_CHK, which
 will result in a sync browse list and an announcement
 ANN_MasterAnnounce being sent (see sync_server()).
 
 if a domain controller has been specified, samba will search for
-a primary domain controller for its workgroup (either by directed
+a domain master browser for its workgroup (either by directed
 packet or by broadcast if it cannot resolve the domain controller
 name using DNS), which results in the same action as listed above.
 
@@ -119,20 +124,42 @@ these packets are received by other servers, which will then
 update their records accordingly: what services we have, our
 name, our comment field and our time to live (to name a few).
 
+if samba is a non-master then we need to see if there is a
+domain master (on a remote subnet) that we need to announce to
+it.
+
+if samba is not the WINS server (and it is using another
+WINS server) then we need to do a name query to the WINS
+server to ask it what the domain controller is. this is done
+using a samba 'state' NAME_QUERY_ANNOUNCE_HOST, which passes
+sufficient information on to be able to carry out the
+host announcement using a unicasted do_announce_host() if and
+when a reply comes back. if there is no reply to the name query,
+this is not necessarily an error - there may genuinely be no
+domain master currently up and running for samba's workgroup.
+
+if samba is a WINS server, then samba will need to look up the
+domain controller for its workgroup in its WINS records. an
+over-cautious samba could carry out a name query on that
+domain controller to make sure that it is alive and that samba's
+WINS records are up-to-date. in any event, it will send a unicast
+do_announce_host() to inform the domain master browser, if one
+exists, of samba's server status.
+
 if we are a master browser, then using do_announce_host() we
-must send an announcement notifying members of that workgroup
-that we are their master browser, and another announcement
-indicating to all backup browsers and master browsers that
-we are a master browser.
+must send a broadcast announcement on the local interface
+notifying members of that workgroup that we are their master
+browser, and another announcement indicating to all backup
+browsers and master browsers that we are a master browser.
 
-(note: if another master browser receives this announcement
-and thinks that it is also the master browser for this
-workgroup, it stops being a master browser and forces an
-election).
+(note: if another master browser receives this broadcasted
+announcement and thinks that it is also the master browser
+for this workgroup, it stops being a master browser and forces
+an election).
 
-if we are not a master browser, then we send an announcement
-notifying the master browser that we are a member of its
-workgroup.
+if we are not a master browser, then we send a broacast 
+announcement notifying the master browser that we are a member
+of its workgroup, on the local interface.
 
 
 /*************************************************************************
@@ -165,7 +192,7 @@ this function is responsible for getting master browsers and domain
 controllers to send us lists of backup servers. this is done by
 sending an ANN_GetBackupListReq browse mailslot.
 
-the master browser, or primary domain controller, should respond 
+the local master browser, or domain master browser, should respond 
 with an ANN_GetBackupListResp browse mailslot containing the list
 of backup servers.
 
@@ -189,8 +216,8 @@ else for it.
 
 this function is responsible for initiating a sync browse list
 sequence and, if necessary, carrying out an ANN_MasterAnnouncement
-to the primary domain controller (that we are also sync'ing
-browse lists with).
+to the domain master browser (that we are also sync'ing browse lists
+with).
 
 see nameservresp.c:response_name_status_check().
 

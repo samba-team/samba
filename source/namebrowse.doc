@@ -41,8 +41,7 @@ the entry is removed.
 
 samba can ask for a NetServerEnum call to be issued to grab a remote
 server's list of servers and workgroups either in its capacity as
-a primary domain controller (domain master browser), as a local
-master browser.
+a domain master browser, as a local master browser.
 
 samba does not deal with becoming a backup master browser properly
 at present.
