@@ -211,8 +211,12 @@ struct passwd *Get_Pwnam(char *user,BOOL allow_change)
 	if (strcmp(user, orig_username) != 0)
 	{
 		ret = _Get_Pwnam(orig_username);
-		if (ret)
+		if (ret) {
+			if (allow_change)
+				fstrcpy(user, orig_username);
+
 			return(ret);
+		}
 	}
 
 	/* finally, try in all caps if that is a new case */
