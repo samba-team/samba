@@ -72,7 +72,6 @@ static void free_dir(struct smbw_dir *dir)
 	free(dir);
 }
 
-
 static struct smbw_dir *cur_dir;
 
 /***************************************************** 
@@ -102,7 +101,7 @@ static void smbw_dir_add(struct file_info *finfo, const char *mask,
 add a entry to a directory listing
 *******************************************************/
 static void smbw_share_add(const char *share, uint32 type, 
-                           const char *comment, void *state)
+			   const char *comment, void *state)
 {
 	struct file_info finfo;
 
@@ -205,22 +204,22 @@ int smbw_dir_open(const char *fname)
 		*p = 0;
 		smbw_server_add(".",0,"", NULL);
 		smbw_server_add("..",0,"", NULL);
-		cli_NetServerEnum(&srv->cli, srv->server_name, SV_TYPE_DOMAIN_ENUM,
-				  smbw_server_add, NULL);
+		smbw_NetServerEnum(&srv->cli, srv->server_name, 
+				   SV_TYPE_DOMAIN_ENUM, smbw_server_add, NULL);
 		*p = '#';
 	} else if ((p=strstr(srv->server_name,"#1D"))) {
 		DEBUG(4,("doing NetServerEnum\n"));
 		*p = 0;
 		smbw_server_add(".",0,"", NULL);
 		smbw_server_add("..",0,"", NULL);
-		cli_NetServerEnum(&srv->cli, srv->server_name, SV_TYPE_ALL,
-				  smbw_server_add, NULL);
+		smbw_NetServerEnum(&srv->cli, srv->server_name, SV_TYPE_ALL,
+				   smbw_server_add, NULL);
 		*p = '#';
 	} else if (strcmp(srv->cli.dev,"IPC") == 0) {
 		DEBUG(4,("doing NetShareEnum\n"));
 		smbw_share_add(".",0,"", NULL);
 		smbw_share_add("..",0,"", NULL);
-		if (cli_RNetShareEnum(&srv->cli, smbw_share_add, NULL) < 0) {
+		if (smbw_RNetShareEnum(&srv->cli, smbw_share_add, NULL) < 0) {
 			errno = smbw_errno(&srv->cli);
 			goto failed;
 		}
