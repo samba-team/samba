@@ -405,7 +405,7 @@ static void show_main_buttons(void)
 	image_link("Home", "", "images/home.gif");
 
 	/* Root gets full functionality */
-	if (am_root() == True) {
+	if (demo_mode || am_root()) {
 		image_link("Globals", "globals", "images/globals.gif");
 		image_link("Shares", "shares", "images/shares.gif");
 		image_link("Printers", "printers", "images/printers.gif");
