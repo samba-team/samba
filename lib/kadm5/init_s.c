@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -65,6 +65,10 @@ kadm5_s_init_with_password_ctx(krb5_context context,
 
     ctx->acl_file = HDB_DB_DIR "/kadmind.acl";  /* XXX get from conf */
     
+    ctx->log_context.log_file = HDB_DB_DIR "/log";
+
+    ctx->log_context.log_fd   = -1;
+
     ret = krb5_parse_name(ctx->context, client_name, &ctx->caller);
     if(ret)
 	return ret;
