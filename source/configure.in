@@ -641,7 +641,7 @@ case "$host_os" in
 			ATTEMPT_WRAP32_BUILD=yes
 			BLDSHARED="true"
 			LDSHFLAGS="-Wl,-soname,\$@ -shared"
-			PICFLAG="-fPIC"
+			PICFLAG="-KPIC"
 		;;
 		*aix*) AC_DEFINE(AIX)
 			BLDSHARED="true"
