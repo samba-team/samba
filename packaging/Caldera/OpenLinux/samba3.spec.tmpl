@@ -251,7 +251,7 @@ CFLAGS="$RPM_OPT_FLAGS" LDFLAGS="-s" ./configure \
 #	--with-nisplus-home \
 #	--with-acl-support \
 
-make all nsswitch/libnss_wins.so torture smbfs
+make all nsswitch/libnss_wins.so torture 
 
 
 %Install
@@ -272,7 +272,7 @@ mkdir -p $DESTDIR/usr/share/samba/codepages/src
 mkdir -p $DESTDIR/usr/share/swat/using_samba/{gifs,figs}
 mkdir -p $DESTDIR/var/{lo{ck,g}/samba.d,spool/samba}
 
-make -C source install installclientlib installsmbfs
+make -C source install installclientlib 
 
 strip $DESTDIR/usr/bin/smb{mount,mnt,umount}
 # Add links for mount.smbfs
