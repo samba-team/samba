@@ -45,14 +45,14 @@ int clistr_push(struct cli_state *cli, void *dest, const char *src, int dest_len
 		dest_len = sizeof(pstring);
 	}
 
-	if (!(flags & STR_ASCII) && clistr_align(cli, PTR_DIFF(dest, cli->outbuf))) {
+	if (!(flags & STR_ASCII) && clistr_align(cli->outbuf, dest)) {
 		*(char *)dest = 0;
 		dest++;
 		dest_len--;
 		len++;
 	}
 
-	if ((flags & STR_ASCII) || !(cli->capabilities & CAP_UNICODE)) {
+	if ((flags & STR_ASCII) || !(SVAL(cli->outbuf, smb_flg2) & FLAGS2_UNICODE_STRINGS)) {
 		/* the server doesn't want unicode */
 		safe_strcpy(dest, src, dest_len);
 		len = strlen(dest);
@@ -76,27 +76,6 @@ int clistr_push(struct cli_state *cli, void *dest, const char *src, int dest_len
 	return len;
 }
 
-
-/****************************************************************************
-return the length that a string would occupy when copied with clistr_push()
-  STR_TERMINATE means include the null termination
-  STR_CONVERT   means convert from unix to dos codepage
-  STR_UPPER     means uppercase in the destination
-note that dest is only used for alignment purposes. No data is written.
-****************************************************************************/
-int clistr_push_size(struct cli_state *cli, const void *dest, const char *src, int dest_len, int flags)
-{
-	int len = strlen(src);
-	if (flags & STR_TERMINATE) len++;
-	if (!(flags & STR_ASCII) && (cli->capabilities & CAP_UNICODE)) len *= 2;
-
-	if (!(flags & STR_ASCII) && dest && clistr_align(cli, PTR_DIFF(cli->outbuf, dest))) {
-		len++;
-	}
-
-	return len;
-}
-
 /****************************************************************************
 copy a string from a unicode or ascii source (depending on
 cli->capabilities) to a char* destination
@@ -116,12 +95,12 @@ int clistr_pull(struct cli_state *cli, char *dest, const void *src, int dest_len
 		dest_len = sizeof(pstring);
 	}
 
-	if (clistr_align(cli, PTR_DIFF(src, cli->inbuf))) {
+	if (clistr_align(cli->inbuf, src)) {
 		src++;
 		if (src_len > 0) src_len--;
 	}
 
-	if (!(flags & STR_UNICODE) && !(cli->capabilities & CAP_UNICODE)) {
+	if (!(flags & STR_UNICODE) && !(SVAL(cli->inbuf, smb_flg2) & FLAGS2_UNICODE_STRINGS)) {
 		/* the server doesn't want unicode */
 		if (flags & STR_TERMINATE) {
 			safe_strcpy(dest, src, dest_len);
@@ -153,31 +132,14 @@ int clistr_pull(struct cli_state *cli, char *dest, const void *src, int dest_len
 	return len;
 }
 
-/****************************************************************************
-return the length that a string would occupy (not including the null)
-when copied with clistr_pull()
-if src_len is -1 then assume the source is null terminated
-****************************************************************************/
-int clistr_pull_size(struct cli_state *cli, const void *src, int src_len)
-{
-	if (clistr_align(cli, PTR_DIFF(src, cli->inbuf))) {
-		src++;
-		if (src_len > 0) src_len--;
-	}
-
-	if (!(cli->capabilities & CAP_UNICODE)) {
-		return strlen(src);
-	}	
-	return strlen_w(src);
-}
 
 /****************************************************************************
 return an alignment of either 0 or 1
 if unicode is not negotiated then return 0
 otherwise return 1 if offset is off
 ****************************************************************************/
-int clistr_align(struct cli_state *cli, int offset)
+int clistr_align(const void *buf, const void *p)
 {
-	if (!(cli->capabilities & CAP_UNICODE)) return 0;
-	return offset & 1;
+	if (!(SVAL(buf, smb_flg2) & FLAGS2_UNICODE_STRINGS)) return 0;
+	return PTR_DIFF(p, buf) & 1;
 }

@@ -51,9 +51,7 @@ BOOL cli_send_trans(struct cli_state *cli, int trans,
 	cli_setup_packet(cli);
 
 	if (pipe_name) {
-		pipe_name_len = clistr_push_size(cli, smb_buf(cli->outbuf), 
-						 pipe_name, -1, 
-						 STR_TERMINATE);
+		pipe_name_len = clistr_push(cli, smb_buf(cli->outbuf), pipe_name, -1, STR_TERMINATE);
 	}
 
 	outparam = smb_buf(cli->outbuf)+(trans==SMBtrans ? pipe_name_len : 3);
@@ -75,9 +73,7 @@ BOOL cli_send_trans(struct cli_state *cli, int trans,
 	for (i=0;i<lsetup;i++)		/* setup[] */
 		SSVAL(cli->outbuf,smb_setup+i*2,setup[i]);
 	p = smb_buf(cli->outbuf);
-	if (trans==SMBtrans) {
-		clistr_push(cli, p, pipe_name, -1, STR_TERMINATE);
-	} else {
+	if (trans != SMBtrans) {
 		*p++ = 0;  /* put in a null smb_name */
 		*p++ = 'D'; *p++ = ' ';	/* observed in OS/2 */
 	}

@@ -401,10 +401,8 @@ uint32 cli_spoolss_getprinter(struct cli_state *cli, POLICY_HND *pol,
 /*The following definitions come from  libsmb/clistr.c  */
 
 int clistr_push(struct cli_state *cli, void *dest, const char *src, int dest_len, int flags);
-int clistr_push_size(struct cli_state *cli, const void *dest, const char *src, int dest_len, int flags);
 int clistr_pull(struct cli_state *cli, char *dest, const void *src, int dest_len, int src_len, int flags);
-int clistr_pull_size(struct cli_state *cli, const void *src, int src_len);
-int clistr_align(struct cli_state *cli, int offset);
+int clistr_align(const void *buf, const void *p);
 
 /*The following definitions come from  libsmb/clitrans.c  */
 
