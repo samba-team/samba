@@ -127,9 +127,14 @@ static ADS_STRUCT *ads_startup(void)
 	ADS_STATUS status;
 	BOOL need_password = False;
 	BOOL second_time = False;
-       char *cp;
+	char *cp;
 	
-	ads = ads_init(NULL, opt_target_workgroup, opt_host);
+	/* lp_realm() should be handled by a command line param, 
+	   However, the join requires that realm be set in smb.conf
+	   and compares our realm with the remote server's so this is
+	   ok until someone needs more flexibility */
+	   
+	ads = ads_init(lp_realm(), opt_target_workgroup, opt_host);
 
 	if (!opt_user_name) {
 		opt_user_name = "administrator";

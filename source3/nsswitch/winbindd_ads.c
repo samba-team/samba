@@ -28,10 +28,6 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
-/* the realm of our primary LDAP server */
-static char *primary_realm;
-
-
 /*
   return our ads connections structure for a domain. We keep the connection
   open to make things faster
@@ -58,10 +54,8 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 	SAFE_FREE(ads->auth.password);
 	ads->auth.password = secrets_fetch_machine_password(lp_workgroup(), NULL, NULL);
 
-	if (primary_realm) {
-		SAFE_FREE(ads->auth.realm);
-		ads->auth.realm = strdup(primary_realm);
-	}
+	SAFE_FREE(ads->auth.realm);
+	ads->auth.realm = strdup(lp_realm());
 
 	status = ads_connect(ads);
 	if (!ADS_ERR_OK(status) || !ads->config.realm) {
@@ -82,11 +76,6 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 			}
 		}
 		return NULL;
-	}
-
-	/* remember our primary realm for trusted domain support */
-	if (!primary_realm) {
-		primary_realm = strdup(ads->config.realm);
 	}
 
 	domain->private = (void *)ads;
