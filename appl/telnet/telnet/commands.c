@@ -2120,9 +2120,7 @@ tn(int argc, char **argv)
 	}
     } else {
 #endif
-	temp = inet_addr(hostp);
-	if (temp != (unsigned long) -1) {
-	    sin.sin_addr.s_addr = temp;
+	if(inet_aton(hostp, &sin.sin_addr)){
 	    sin.sin_family = AF_INET;
 	    strcpy(_hostname, hostp);
 	    hostname = _hostname;
