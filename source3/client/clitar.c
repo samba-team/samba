@@ -48,6 +48,13 @@ BOOL tar_inc=False;
 BOOL tar_reset=False;
 /* Include / exclude mode (true=include, false=exclude) */
 BOOL tar_excl=True;
+/* Dump files with System attribute */
+BOOL tar_system=False;
+/* Dump files with Hidden attribute */
+BOOL tar_hidden=True;
+/* Be noisy - make a catalogue */
+BOOL tar_noisy=True;
+
 char tar_type='\0';
 static char **cliplist=NULL;
 static int clipn=0;
@@ -856,6 +863,16 @@ static void do_atar(char *rname,char *lname,file_info *finfo1)
       DEBUG(4, ("skipping %s - archive bit not set\n", finfo.name));
       shallitime=0;
     }
+  else if (!tar_system && (finfo.mode & aSYSTEM))
+    {
+      DEBUG(4, ("skipping %s - system bit is set\n", finfo.name));
+      shallitime=0;
+    }
+  else if (!tar_hidden && (finfo.mode & aHIDDEN))
+    {
+      DEBUG(4, ("skipping %s - hidden bit is set\n", finfo.name));
+      shallitime=0;
+    }
   else
     {
       if (SVAL(inbuf,smb_vwv0) == SMBreadX)
@@ -870,7 +887,7 @@ static void do_atar(char *rname,char *lname,file_info *finfo1)
 	  datalen = 0;
 	}
 
-      DEBUG(1,("getting file %s of size %d bytes as a tar file %s",
+      DEBUG(2,("getting file %s of size %d bytes as a tar file %s",
 	       finfo.name,
 	       finfo.size,
 	       lname));
@@ -1135,9 +1152,16 @@ static void do_atar(char *rname,char *lname,file_info *finfo1)
       get_total_size += finfo.size;
 
       /* Thanks to Carel-Jan Engel (ease@mail.wirehub.nl) for this one */
-      DEBUG(1,("(%g kb/s) (average %g kb/s)\n",
+      DEBUG(2,("(%g kb/s) (average %g kb/s)\n",
 	       finfo.size / MAX(0.001, (1.024*this_time)),
 	       get_total_size / MAX(0.001, (1.024*get_total_time_ms))));
+      if (tar_noisy)
+	{
+	  printf("%10d (%7.1f kb/s) %s\n",
+	       finfo.size, finfo.size / MAX(0.001, (1.024*this_time)),
+               finfo.name);
+	}
+
     }
   
   free(inbuf);free(outbuf);
@@ -1456,7 +1480,7 @@ void cmd_block(void)
     }
 
   blocksize=block;
-  DEBUG(1,("blocksize is now %d\n", blocksize));
+  DEBUG(2,("blocksize is now %d\n", blocksize));
 }
 
 /****************************************************************************
@@ -1475,12 +1499,28 @@ void cmd_tarmode(void)
       tar_reset=True;
     else if (strequal(buf, "noreset"))
       tar_reset=False;
+    else if (strequal(buf, "system"))
+      tar_system=True;
+    else if (strequal(buf, "nosystem"))
+      tar_system=False;
+    else if (strequal(buf, "hidden"))
+      tar_hidden=True;
+    else if (strequal(buf, "nohidden"))
+      tar_hidden=False;
+    else if (strequal(buf, "verbose") || strequal(buf, "noquiet"))
+      tar_noisy=True;
+    else if (strequal(buf, "quiet") || strequal(buf, "noverbose"))
+      tar_noisy=False;
     else DEBUG(0, ("tarmode: unrecognised option %s\n", buf));
   }
 
-  DEBUG(0, ("tarmode is now %s, %s\n",
+  DEBUG(0, ("tarmode is now %s, %s, %s, %s, %s\n",
 	    tar_inc ? "incremental" : "full",
-	    tar_reset ? "reset" : "noreset"));
+	    tar_system ? "system" : "nosystem",
+	    tar_hidden ? "hidden" : "nohidden",
+	    tar_reset ? "reset" : "noreset",
+	    tar_noisy ? "verbose" : "quiet"));
+
 }
 
 /****************************************************************************
@@ -1533,7 +1573,7 @@ void cmd_setmode(void)
       return;
     }
 
-  DEBUG(1, ("\nperm set %d %d\n", attra[ATTRSET], attra[ATTRRESET]));
+  DEBUG(2, ("\nperm set %d %d\n", attra[ATTRSET], attra[ATTRRESET]));
   (void) do_setrattr(fname, attra[ATTRSET], ATTRSET);
   (void) do_setrattr(fname, attra[ATTRRESET], ATTRRESET);
 }
