@@ -207,7 +207,7 @@ int cli_get_backup_list(const char *myname, const char *send_to_name)
 
   name_size = sizeof(sock_out);
 
-  getsockname(dgram_sock, (struct sockaddr_in *)&sock_out, &name_size);
+  getsockname(dgram_sock, (struct sockaddr *)&sock_out, &name_size);
 
   DEBUG(5, ("Socket bound to IP:%s, port: %d\n", inet_ntoa(sock_out.sin_addr), ntohs(sock_out.sin_port)));
 
