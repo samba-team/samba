@@ -87,7 +87,7 @@ void cmd_netlogon_login_test(struct client_info *info)
 	                                info->mach_acct, new_mach_pwd) : False;
 #endif
 	/* open NETLOGON session.  negotiate credentials */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_NETLOGON, False) : False;
+	res = res ? cli_nt_session_open(smb_cli, PIPE_NETLOGON) : False;
 
 	res = res ? cli_nt_setup_creds(smb_cli, trust_passwd) : False;
 

@@ -86,6 +86,9 @@ typedef struct pipes_struct
 
 	BOOL ntlmssp_auth;
 	unsigned char ntlmssp_hash[258];
+	fstring user_name;
+	fstring domain;
+	fstring wks;
 
 	uint32 file_offset;
 	uint32 hdr_offsets;

@@ -62,7 +62,7 @@ void cmd_lsa_query_info(struct client_info *info)
 	DEBUG(5, ("cmd_lsa_query_info: smb_cli->fd:%d\n", smb_cli->fd));
 
 	/* open LSARPC session. */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_LSARPC, False) : False;
+	res = res ? cli_nt_session_open(smb_cli, PIPE_LSARPC) : False;
 
 	/* lookup domain controller; receive a policy handle */
 	res = res ? do_lsa_open_policy(smb_cli,
@@ -171,7 +171,7 @@ void cmd_lsa_lookup_sids(struct client_info *info)
 	sids[0] = &sid;
 
 	/* open LSARPC session. */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_LSARPC, False) : False;
+	res = res ? cli_nt_session_open(smb_cli, PIPE_LSARPC) : False;
 
 	/* lookup domain controller; receive a policy handle */
 	res = res ? do_lsa_open_policy(smb_cli,

@@ -67,7 +67,7 @@ void cmd_srv_query_info(struct client_info *info)
 	DEBUG(5, ("cmd_srv_query_info: smb_cli->fd:%d\n", smb_cli->fd));
 
 	/* open LSARPC session. */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_SRVSVC, False) : False;
+	res = res ? cli_nt_session_open(smb_cli, PIPE_SRVSVC) : False;
 
 	/* send info level: receive requested info.  hopefully. */
 	res = res ? do_srv_net_srv_get_info(smb_cli,
@@ -125,7 +125,7 @@ void cmd_srv_enum_conn(struct client_info *info)
 	DEBUG(5, ("cmd_srv_enum_conn: smb_cli->fd:%d\n", smb_cli->fd));
 
 	/* open srvsvc session. */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_SRVSVC, False) : False;
+	res = res ? cli_nt_session_open(smb_cli, PIPE_SRVSVC) : False;
 
 	hnd.ptr_hnd = 1;
 	hnd.handle = 0;
@@ -185,7 +185,7 @@ void cmd_srv_enum_shares(struct client_info *info)
 	DEBUG(5, ("cmd_srv_enum_shares: smb_cli->fd:%d\n", smb_cli->fd));
 
 	/* open srvsvc session. */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_SRVSVC, False) : False;
+	res = res ? cli_nt_session_open(smb_cli, PIPE_SRVSVC) : False;
 
 	hnd.ptr_hnd = 0;
 	hnd.handle = 0;
@@ -245,7 +245,7 @@ void cmd_srv_enum_sess(struct client_info *info)
 	DEBUG(5, ("cmd_srv_enum_sess: smb_cli->fd:%d\n", smb_cli->fd));
 
 	/* open srvsvc session. */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_SRVSVC, False) : False;
+	res = res ? cli_nt_session_open(smb_cli, PIPE_SRVSVC) : False;
 
 	hnd.ptr_hnd = 1;
 	hnd.handle = 0;
@@ -297,7 +297,7 @@ void cmd_srv_enum_files(struct client_info *info)
 	DEBUG(5, ("cmd_srv_enum_files: smb_cli->fd:%d\n", smb_cli->fd));
 
 	/* open srvsvc session. */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_SRVSVC, False) : False;
+	res = res ? cli_nt_session_open(smb_cli, PIPE_SRVSVC) : False;
 
 	hnd.ptr_hnd = 1;
 	hnd.handle = 0;

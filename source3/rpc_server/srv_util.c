@@ -208,6 +208,52 @@ BOOL create_rpc_reply(pipes_struct *p,
 	return p->rhdr.data != NULL && p->rhdr.offset == 0x18;
 }
 
+static BOOL api_pipe_ntlmssp_verify(pipes_struct *p)
+{
+	uchar lm_owf[24];
+	uchar nt_owf[24];
+	
+	DEBUG(5,("api_pipe_ntlmssp_verify: checking user details\n"));
+
+	if (p->ntlmssp_resp.hdr_lm_resp.str_str_len == 0) return False;
+	if (p->ntlmssp_resp.hdr_nt_resp.str_str_len == 0) return False;
+	if (p->ntlmssp_resp.hdr_usr    .str_str_len == 0) return False;
+	if (p->ntlmssp_resp.hdr_domain .str_str_len == 0) return False;
+	if (p->ntlmssp_resp.hdr_wks    .str_str_len == 0) return False;
+
+	memset(p->user_name, 0, sizeof(p->user_name));
+	memset(p->domain   , 0, sizeof(p->domain   ));
+	memset(p->wks      , 0, sizeof(p->wks      ));
+
+	if (IS_BITS_SET_ALL(p->ntlmssp_chal.neg_flags, NTLMSSP_NEGOTIATE_UNICODE))
+	{
+		fstrcpy(p->user_name, unistrn2((uint16*)p->ntlmssp_resp.user  , p->ntlmssp_resp.hdr_usr   .str_str_len/2));
+		fstrcpy(p->domain   , unistrn2((uint16*)p->ntlmssp_resp.domain, p->ntlmssp_resp.hdr_domain.str_str_len/2));
+		fstrcpy(p->wks      , unistrn2((uint16*)p->ntlmssp_resp.wks   , p->ntlmssp_resp.hdr_wks   .str_str_len/2));
+	}
+	else
+	{
+		fstrcpy(p->user_name, p->ntlmssp_resp.user  );
+		fstrcpy(p->domain   , p->ntlmssp_resp.domain);
+		fstrcpy(p->wks      , p->ntlmssp_resp.wks   );
+	}
+
+	DEBUG(5,("user: %s domain: %s wks: %s\n", p->user_name, p->domain, p->wks));
+
+	memcpy(lm_owf, p->ntlmssp_resp.lm_resp, sizeof(lm_owf));
+	memcpy(nt_owf, p->ntlmssp_resp.nt_resp, sizeof(nt_owf));
+
+#ifdef DEBUG_PASSWORD
+	DEBUG(100,"lm, nt owfs:\n"));
+	dump_data(100, lm_owf, sizeof(lm_owf));
+	dump_data(100, nt_owf, sizeof(nt_owf));
+#endif
+	return True;
+#if 0
+	return pass_check_smb(p->user_name, p->domain,
+	                      p->ntplssp_chal.challenge, lm_owf, nt_owf);
+#endif
+}
 
 static BOOL api_pipe_ntlmssp(pipes_struct *p, prs_struct *pd)
 {
@@ -222,6 +268,10 @@ static BOOL api_pipe_ntlmssp(pipes_struct *p, prs_struct *pd)
 		case NTLMSSP_AUTH:
 		{
 			smb_io_rpc_auth_ntlmssp_resp("", &p->ntlmssp_resp, pd, 0);
+			if (!api_pipe_ntlmssp_verify(p))
+			{
+				pd->offset = 0;
+			}
 			break;
 		}
 		default:
