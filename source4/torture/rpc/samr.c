@@ -685,8 +685,8 @@ static BOOL test_GetDomPwInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct samr_GetDomPwInfo r;
 	BOOL ret = True;
 
-	r.in.name = domain_name;
-	printf("Testing GetDomPwInfo with name %s\n", r.in.name->string);
+	r.in.domain_name = domain_name;
+	printf("Testing GetDomPwInfo with name %s\n", r.in.domain_name->string);
 
 	status = dcerpc_samr_GetDomPwInfo(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -694,8 +694,8 @@ static BOOL test_GetDomPwInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		ret = False;
 	}
 
-	r.in.name->string = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
-	printf("Testing GetDomPwInfo with name %s\n", r.in.name->string);
+	r.in.domain_name->string = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
+	printf("Testing GetDomPwInfo with name %s\n", r.in.domain_name->string);
 
 	status = dcerpc_samr_GetDomPwInfo(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -703,8 +703,8 @@ static BOOL test_GetDomPwInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		ret = False;
 	}
 
-	r.in.name->string = "\\\\__NONAME__";
-	printf("Testing GetDomPwInfo with name %s\n", r.in.name->string);
+	r.in.domain_name->string = "\\\\__NONAME__";
+	printf("Testing GetDomPwInfo with name %s\n", r.in.domain_name->string);
 
 	status = dcerpc_samr_GetDomPwInfo(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -712,8 +712,8 @@ static BOOL test_GetDomPwInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		ret = False;
 	}
 
-	r.in.name->string = "\\\\Builtin";
-	printf("Testing GetDomPwInfo with name %s\n", r.in.name->string);
+	r.in.domain_name->string = "\\\\Builtin";
+	printf("Testing GetDomPwInfo with name %s\n", r.in.domain_name->string);
 
 	status = dcerpc_samr_GetDomPwInfo(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -958,7 +958,7 @@ static BOOL test_OemChangePasswordUser2(struct dcerpc_pipe *p, TALLOC_CTX *mem_c
 
 	struct samr_String domain_name;
 	domain_name.string = "";
-	dom_pw_info.in.name = &domain_name;
+	dom_pw_info.in.domain_name = &domain_name;
 
 	printf("Testing OemChangePasswordUser2\n");
 
@@ -1015,7 +1015,7 @@ static BOOL test_ChangePasswordUser2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	struct samr_String domain_name;
 	domain_name.string = "";
-	dom_pw_info.in.name = &domain_name;
+	dom_pw_info.in.domain_name = &domain_name;
 
 	printf("Testing ChangePasswordUser2\n");
 
@@ -2966,7 +2966,7 @@ static BOOL test_LookupDomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	/* check for correct error codes */
 	r.in.connect_handle = handle;
-	r.in.domain = &n2;
+	r.in.domain_name = &n2;
 	n2.string = NULL;
 
 	status = dcerpc_samr_LookupDomain(p, mem_ctx, &r);
@@ -2984,7 +2984,7 @@ static BOOL test_LookupDomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	}
 
 	r.in.connect_handle = handle;
-	r.in.domain = domain;
+	r.in.domain_name = domain;
 
 	status = dcerpc_samr_LookupDomain(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {

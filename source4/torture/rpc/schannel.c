@@ -37,9 +37,9 @@ static BOOL test_samr_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	struct samr_String name;
 
 	name.string = lp_workgroup();
-	r.in.name = &name;
+	r.in.domain_name = &name;
 
-	printf("Testing GetDomPwInfo with name %s\n", r.in.name->string);
+	printf("Testing GetDomPwInfo with name %s\n", r.in.domain_name->string);
 	
 	/* do several ops to test credential chaining */
 	for (i=0;i<5;i++) {
