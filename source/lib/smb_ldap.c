@@ -1323,7 +1323,8 @@ struct ldap_message *new_ldap_message(void)
 
 void destroy_ldap_message(struct ldap_message *msg)
 {
-	talloc_destroy(msg->mem_ctx);
+	if (msg != NULL)
+		talloc_destroy(msg->mem_ctx);
 }
 
 BOOL ldap_send_msg(struct ldap_connection *conn, struct ldap_message *msg,
@@ -1574,6 +1575,34 @@ void ldap_endsearchent(struct ldap_connection *conn,
 		SAFE_FREE(e);
 		e = next;
 	}
+}
+
+struct ldap_message *ldap_searchone(struct ldap_connection *conn,
+				    struct ldap_message *msg,
+				    const struct timeval *endtime)
+{
+	struct ldap_message *res1, *res2 = NULL;
+	if (!ldap_setsearchent(conn, msg, endtime))
+		return NULL;
+
+	res1 = ldap_getsearchent(conn, endtime);
+
+	if (res1 != NULL)
+		res2 = ldap_getsearchent(conn, endtime);
+
+	ldap_endsearchent(conn, endtime);
+
+	if (res1 == NULL)
+		return NULL;
+
+	if (res2 != NULL) {
+		/* More than one entry */
+		destroy_ldap_message(res1);
+		destroy_ldap_message(res2);
+		return NULL;
+	}
+
+	return res1;
 }
 
 int ldap_error(struct ldap_connection *conn)

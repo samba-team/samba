@@ -715,6 +715,8 @@ out:
 /**********************************************************************
  Verify the sambaUnixIdPool entry in the directiry.  
 **********************************************************************/
+#define NEW_LDAP 1
+#ifdef NEW_LDAP
 
 static NTSTATUS verify_idpool( void )
 {
@@ -773,6 +775,86 @@ static NTSTATUS verify_idpool( void )
 	return ( rc==LDAP_SUCCESS ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL );
 }
 
+#else
+
+static NTSTATUS verify_idpool(void)
+{
+	const char *attr_list[3] = { "uidnumber", "gidnumber", "objectclass" };
+	BOOL result;
+	char *mod;
+	struct ldap_message *msg, *entry, *res;
+
+	uid_t	luid, huid;
+	gid_t	lgid, hgid;
+
+	msg = new_ldap_message();
+
+	if (msg == NULL)
+		return NT_STATUS_NO_MEMORY;
+
+	msg->type = LDAP_TAG_SearchRequest;
+	msg->r.SearchRequest.basedn = lp_ldap_suffix();
+	msg->r.SearchRequest.scope = LDAP_SEARCH_SCOPE_SUB;
+	msg->r.SearchRequest.deref = LDAP_DEREFERENCE_NEVER;
+	msg->r.SearchRequest.timelimit = 0;
+	msg->r.SearchRequest.sizelimit = 0;
+	msg->r.SearchRequest.attributesonly = False;
+	msg->r.SearchRequest.filter = "(objectclass=sambaUnixIdPool)";
+	msg->r.SearchRequest.num_attributes = 3;
+	msg->r.SearchRequest.attributes = attr_list;
+
+	entry = ldap_searchone(ldap_state.conn, msg, NULL);
+
+	result = (entry != NULL);
+
+	destroy_ldap_message(msg);
+	destroy_ldap_message(entry);
+
+	if (result)
+		return NT_STATUS_OK;
+
+	if ( !lp_idmap_uid(&luid, &huid) || !lp_idmap_gid( &lgid, &hgid ) ) {
+		DEBUG(3,("ldap_idmap_init: idmap uid/gid parameters not "
+			 "specified\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	asprintf(&mod,
+		 "dn: %s\n"
+		 "changetype: modify\n"
+		 "add: objectClass\n"
+		 "objectClass: sambaUnixIdPool\n"
+		 "-\n"
+		 "add: uidNumber\n"
+		 "uidNumber: %lu\n"
+		 "-\n"
+		 "add: gidNumber\n"
+		 "gidNumber: %lu\n",
+		 lp_ldap_idmap_suffix(),
+		 (unsigned long)luid, (unsigned long)lgid);
+		 
+	msg = ldap_ldif2msg(mod);
+
+	SAFE_FREE(mod);
+
+	if (msg == NULL)
+		return NT_STATUS_NO_MEMORY;
+
+	res = ldap_transaction(ldap_state.conn, msg);
+
+	if ((res == NULL) || (res->r.ModifyResponse.resultcode != 0)) {
+		destroy_ldap_message(msg);
+		destroy_ldap_message(res);
+		DEBUG(5, ("Could not add sambaUnixIdPool\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	destroy_ldap_message(msg);
+	destroy_ldap_message(res);
+	return NT_STATUS_OK;
+}
+#endif
+
 /*****************************************************************************
  Initialise idmap database. 
 *****************************************************************************/
@@ -805,7 +887,10 @@ static NTSTATUS ldap_idmap_init( char *params )
 	ldap_state.conn->simple_pw =
 		talloc_strdup(ldap_state.conn->mem_ctx, pw);
 
-	if (!ldap_connect(ldap_state.conn, params))
+	SAFE_FREE(dn);
+	SAFE_FREE(pw);
+
+	if (!ldap_setup_connection(ldap_state.conn, params))
 		return NT_STATUS_UNSUCCESSFUL;
 
 	/* see if the idmap suffix and sub entries exists */
