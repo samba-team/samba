@@ -724,7 +724,7 @@ delheaders:
 
 # we want our generated headers to be rebuilt if they don't exist, but not rebuilt every time
 .headers.stamp: include/proto.h include/build_env.h
-	@touch $@
+	@[ -f $@ ] || @touch $@
 
 $(PROTO_OBJ) : .headers.stamp
 
