@@ -215,15 +215,6 @@ enum socket_error {SOCKET_READ_TIMEOUT,
    incorrect parameters - what does it mean? maybe created temporary file? */
 #define NTCREATEX_ACTION_UNKNOWN 5
 
-
-
-/* share types */
-#define STYPE_DISKTREE  0	/* Disk drive */
-#define STYPE_PRINTQ    1	/* Spooler queue */
-#define STYPE_DEVICE    2	/* Serial device */
-#define STYPE_IPC       3	/* Interprocess communication (IPC) */
-#define STYPE_HIDDEN    0x80000000 /* share is a hidden one (ends with $) */
-
 #include "doserr.h"
 
 /*
