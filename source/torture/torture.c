@@ -169,7 +169,7 @@ BOOL torture_close_connection(struct cli_state *c)
 
 /* check if the server produced the expected error code */
 static BOOL check_error(int line, struct cli_state *c, 
-			uint8 eclass, uint32 ecode, uint32 nterr)
+			uint8 eclass, uint32 ecode, NTSTATUS nterr)
 {
         if (cli_is_dos_error(c)) {
                 uint8 class;
@@ -182,8 +182,8 @@ static BOOL check_error(int line, struct cli_state *c,
                 if (eclass != class || ecode != num) {
                         printf("unexpected error code class=%d code=%d\n", 
                                (int)class, (int)num);
-                        printf(" expected %d/%d %d (line=%d)\n", 
-                               (int)eclass, (int)ecode, (int)nterr, line);
+                        printf(" expected %d/%d %s (line=%d)\n", 
+                               (int)eclass, (int)ecode, get_nt_error_msg(nterr), line);
                         return False;
                 }
 
@@ -194,7 +194,7 @@ static BOOL check_error(int line, struct cli_state *c,
 
                 status = cli_nt_error(c);
 
-                if (nterr != status) {
+                if (NT_STATUS_V(nterr) != NT_STATUS_V(status)) {
                         printf("unexpected error code %s\n", get_nt_error_msg(status));
                         printf(" expected %s (line=%d)\n", get_nt_error_msg(nterr), line);
                         return False;

@@ -32,25 +32,23 @@ look for a partial hit
 ****************************************************************************/
 static void trans2_check_hit(char *format, int op, int level, NTSTATUS status)
 {
-	switch (status) {
-	case NT_STATUS_INVALID_LEVEL:
-	case NT_STATUS_NOT_IMPLEMENTED:
-	case NT_STATUS_NOT_SUPPORTED:
-	case NT_STATUS_UNSUCCESSFUL:
-	case NT_STATUS_INVALID_INFO_CLASS:
-		break;
-	default:
-#if VERBOSE
-		printf("possible %s hit op=%3d level=%5d status=%s\n",
-		       format, op, level, get_nt_error_msg(status));
-#endif
+	if (NT_STATUS_V(status) == NT_STATUS_V(NT_STATUS_INVALID_LEVEL) ||
+	    NT_STATUS_V(status) == NT_STATUS_V(NT_STATUS_NOT_IMPLEMENTED) ||
+	    NT_STATUS_V(status) == NT_STATUS_V(NT_STATUS_NOT_SUPPORTED) ||
+	    NT_STATUS_V(status) == NT_STATUS_V(NT_STATUS_UNSUCCESSFUL) ||
+	    NT_STATUS_V(status) == NT_STATUS_V(NT_STATUS_INVALID_INFO_CLASS)) {
+		return;
 	}
+#if VERBOSE
+	printf("possible %s hit op=%3d level=%5d status=%s\n",
+	       format, op, level, get_nt_error_msg(status));
+#endif
 }
 
 /****************************************************************************
 check for existance of a trans2 call
 ****************************************************************************/
-static uint32 try_trans2(struct cli_state *cli, 
+static NTSTATUS try_trans2(struct cli_state *cli, 
 			 int op,
 			 char *param, char *data,
 			 int param_len, int data_len,
@@ -80,30 +78,30 @@ static uint32 try_trans2(struct cli_state *cli,
 }
 
 
-static uint32 try_trans2_len(struct cli_state *cli, 
+static NTSTATUS try_trans2_len(struct cli_state *cli, 
 			     char *format,
 			     int op, int level,
 			     char *param, char *data,
 			     int param_len, int *data_len,
 			     int *rparam_len, int *rdata_len)
 {
-	uint32 ret=0;
+	NTSTATUS ret=NT_STATUS_OK;
 
 	ret = try_trans2(cli, op, param, data, param_len,
 			 sizeof(pstring), rparam_len, rdata_len);
 #if VERBOSE 
 	printf("op=%d level=%d ret=%s\n", op, level, get_nt_error_msg(ret));
 #endif
-	if (ret != 0) return ret;
+	if (!NT_STATUS_IS_OK(ret)) return ret;
 
 	*data_len = 0;
 	while (*data_len < sizeof(pstring)) {
 		ret = try_trans2(cli, op, param, data, param_len,
 				 *data_len, rparam_len, rdata_len);
-		if (ret == 0) break;
+		if (NT_STATUS_IS_OK(ret)) break;
 		*data_len += 2;
 	}
-	if (ret == NT_STATUS_OK) {
+	if (NT_STATUS_IS_OK(ret)) {
 		printf("found %s level=%d data_len=%d rparam_len=%d rdata_len=%d\n",
 		       format, level, *data_len, *rparam_len, *rdata_len);
 	} else {
@@ -132,7 +130,7 @@ static BOOL scan_trans2(struct cli_state *cli, int op, int level,
 	SSVAL(param, 0, level);
 	status = try_trans2_len(cli, "void", op, level, param, data, param_len, &data_len, 
 			    &rparam_len, &rdata_len);
-	if (status == 0) return True;
+	if (NT_STATUS_IS_OK(status)) return True;
 
 	/* try with a file descriptor */
 	param_len = 6;
@@ -141,7 +139,7 @@ static BOOL scan_trans2(struct cli_state *cli, int op, int level,
 	SSVAL(param, 4, 0);
 	status = try_trans2_len(cli, "fnum", op, level, param, data, param_len, &data_len, 
 				&rparam_len, &rdata_len);
-	if (status == 0) return True;
+	if (NT_STATUS_IS_OK(status)) return True;
 
 
 	/* try with a notify style */
@@ -151,7 +149,7 @@ static BOOL scan_trans2(struct cli_state *cli, int op, int level,
 	SSVAL(param, 4, level);
 	status = try_trans2_len(cli, "notify", op, level, param, data, param_len, &data_len, 
 				&rparam_len, &rdata_len);
-	if (status == 0) return True;
+	if (NT_STATUS_IS_OK(status)) return True;
 
 	/* try with a file name */
 	param_len = 6;
@@ -162,7 +160,7 @@ static BOOL scan_trans2(struct cli_state *cli, int op, int level,
 
 	status = try_trans2_len(cli, "fname", op, level, param, data, param_len, &data_len, 
 				&rparam_len, &rdata_len);
-	if (status == 0) return True;
+	if (NT_STATUS_IS_OK(status)) return True;
 
 	/* try with a new file name */
 	param_len = 6;
@@ -175,7 +173,7 @@ static BOOL scan_trans2(struct cli_state *cli, int op, int level,
 				&rparam_len, &rdata_len);
 	cli_unlink(cli, "\\newfile.dat");
 	cli_rmdir(cli, "\\newfile.dat");
-	if (status == 0) return True;
+	if (NT_STATUS_IS_OK(status)) return True;
 
 	/* try dfs style  */
 	cli_mkdir(cli, "\\testdir");
@@ -186,7 +184,7 @@ static BOOL scan_trans2(struct cli_state *cli, int op, int level,
 	status = try_trans2_len(cli, "dfs", op, level, param, data, param_len, &data_len, 
 				&rparam_len, &rdata_len);
 	cli_rmdir(cli, "\\testdir");
-	if (status == 0) return True;
+	if (NT_STATUS_IS_OK(status)) return True;
 
 	return False;
 }
@@ -238,25 +236,23 @@ look for a partial hit
 ****************************************************************************/
 static void nttrans_check_hit(char *format, int op, int level, NTSTATUS status)
 {
-	switch (status) {
-	case NT_STATUS_INVALID_LEVEL:
-	case NT_STATUS_NOT_IMPLEMENTED:
-	case NT_STATUS_NOT_SUPPORTED:
-	case NT_STATUS_UNSUCCESSFUL:
-	case NT_STATUS_INVALID_INFO_CLASS:
-		break;
-	default:
+	if (NT_STATUS_V(status) == NT_STATUS_V(NT_STATUS_INVALID_LEVEL) ||
+	    NT_STATUS_V(status) == NT_STATUS_V(NT_STATUS_NOT_IMPLEMENTED) ||
+	    NT_STATUS_V(status) == NT_STATUS_V(NT_STATUS_NOT_SUPPORTED) ||
+	    NT_STATUS_V(status) == NT_STATUS_V(NT_STATUS_UNSUCCESSFUL) ||
+	    NT_STATUS_V(status) == NT_STATUS_V(NT_STATUS_INVALID_INFO_CLASS)) {
+		return;
+	}
 #if VERBOSE
 		printf("possible %s hit op=%3d level=%5d status=%s\n",
 		       format, op, level, get_nt_error_msg(status));
 #endif
-	}
 }
 
 /****************************************************************************
 check for existance of a nttrans call
 ****************************************************************************/
-static uint32 try_nttrans(struct cli_state *cli, 
+static NTSTATUS try_nttrans(struct cli_state *cli, 
 			 int op,
 			 char *param, char *data,
 			 int param_len, int data_len,
@@ -284,30 +280,30 @@ static uint32 try_nttrans(struct cli_state *cli,
 }
 
 
-static uint32 try_nttrans_len(struct cli_state *cli, 
+static NTSTATUS try_nttrans_len(struct cli_state *cli, 
 			     char *format,
 			     int op, int level,
 			     char *param, char *data,
 			     int param_len, int *data_len,
 			     int *rparam_len, int *rdata_len)
 {
-	uint32 ret=0;
+	NTSTATUS ret=NT_STATUS_OK;
 
 	ret = try_nttrans(cli, op, param, data, param_len,
 			 sizeof(pstring), rparam_len, rdata_len);
 #if VERBOSE 
 	printf("op=%d level=%d ret=%s\n", op, level, get_nt_error_msg(ret));
 #endif
-	if (ret != 0) return ret;
+	if (!NT_STATUS_IS_OK(ret)) return ret;
 
 	*data_len = 0;
 	while (*data_len < sizeof(pstring)) {
 		ret = try_nttrans(cli, op, param, data, param_len,
 				 *data_len, rparam_len, rdata_len);
-		if (ret == 0) break;
+		if (NT_STATUS_IS_OK(ret)) break;
 		*data_len += 2;
 	}
-	if (ret == NT_STATUS_OK) {
+	if (NT_STATUS_IS_OK(ret)) {
 		printf("found %s level=%d data_len=%d rparam_len=%d rdata_len=%d\n",
 		       format, level, *data_len, *rparam_len, *rdata_len);
 	} else {
@@ -336,7 +332,7 @@ static BOOL scan_nttrans(struct cli_state *cli, int op, int level,
 	SSVAL(param, 0, level);
 	status = try_nttrans_len(cli, "void", op, level, param, data, param_len, &data_len, 
 			    &rparam_len, &rdata_len);
-	if (status == 0) return True;
+	if (NT_STATUS_IS_OK(status)) return True;
 
 	/* try with a file descriptor */
 	param_len = 6;
@@ -345,7 +341,7 @@ static BOOL scan_nttrans(struct cli_state *cli, int op, int level,
 	SSVAL(param, 4, 0);
 	status = try_nttrans_len(cli, "fnum", op, level, param, data, param_len, &data_len, 
 				&rparam_len, &rdata_len);
-	if (status == 0) return True;
+	if (NT_STATUS_IS_OK(status)) return True;
 
 
 	/* try with a notify style */
@@ -355,7 +351,7 @@ static BOOL scan_nttrans(struct cli_state *cli, int op, int level,
 	SSVAL(param, 4, level);
 	status = try_nttrans_len(cli, "notify", op, level, param, data, param_len, &data_len, 
 				&rparam_len, &rdata_len);
-	if (status == 0) return True;
+	if (NT_STATUS_IS_OK(status)) return True;
 
 	/* try with a file name */
 	param_len = 6;
@@ -366,7 +362,7 @@ static BOOL scan_nttrans(struct cli_state *cli, int op, int level,
 
 	status = try_nttrans_len(cli, "fname", op, level, param, data, param_len, &data_len, 
 				&rparam_len, &rdata_len);
-	if (status == 0) return True;
+	if (NT_STATUS_IS_OK(status)) return True;
 
 	/* try with a new file name */
 	param_len = 6;
@@ -379,7 +375,7 @@ static BOOL scan_nttrans(struct cli_state *cli, int op, int level,
 				&rparam_len, &rdata_len);
 	cli_unlink(cli, "\\newfile.dat");
 	cli_rmdir(cli, "\\newfile.dat");
-	if (status == 0) return True;
+	if (NT_STATUS_IS_OK(status)) return True;
 
 	/* try dfs style  */
 	cli_mkdir(cli, "\\testdir");
@@ -390,7 +386,7 @@ static BOOL scan_nttrans(struct cli_state *cli, int op, int level,
 	status = try_nttrans_len(cli, "dfs", op, level, param, data, param_len, &data_len, 
 				&rparam_len, &rdata_len);
 	cli_rmdir(cli, "\\testdir");
-	if (status == 0) return True;
+	if (NT_STATUS_IS_OK(status)) return True;
 
 	return False;
 }
