@@ -2,7 +2,7 @@
 # Makefile.in for Samba - rewritten for autoconf support
 # Copyright Andrew Tridgell 1992-1998
 # Copyright (C) 2001 by Martin Pool <mbp@samba.org>
-# Copyright Andrew Barteltt 2002
+# Copyright Andrew Bartlett 2002
 # Copyright (C) 2003 Anthony Liguori <aliguor@us.ibm.com>
 ###########################################################################
 
@@ -136,8 +136,9 @@ QUOTAOBJS=@QUOTAOBJS@
 
 VFS_MODULES = bin/vfs_audit.@SHLIBEXT@ bin/vfs_extd_audit.@SHLIBEXT@ bin/vfs_recycle.@SHLIBEXT@ \
 	bin/vfs_netatalk.@SHLIBEXT@ bin/vfs_fake_perms.@SHLIBEXT@
-PDB_MODULES = @MODULE_MYSQL@ @MODULE_XML@
-MODULES = bin/developer.@SHLIBEXT@ 
+PDB_MODULES = @PDB_MODULES@
+RPC_MODULES = @RPC_MODULES@
+MODULES = $(VFS_MODULES) $(PDB_MODULES) $(RPC_MODULES)
 
 ######################################################################
 # object file lists
@@ -241,29 +242,7 @@ RPC_SPOOLSS_OBJ = rpc_server/srv_spoolss.o rpc_server/srv_spoolss_nt.o
 RPC_PIPE_OBJ = rpc_server/srv_pipe_hnd.o rpc_server/srv_util.o \
                rpc_server/srv_pipe.o rpc_server/srv_lsa_hnd.o
 
-# These are like they are to avoid a dependency on GNU MAKE
-@LSA_DYNAMIC_YES@RPC_MODULES1 = bin/librpc_lsarpc.@SHLIBEXT@
-@NETLOG_DYNAMIC_YES@RPC_MODULES2 = bin/librpc_NETLOGON.@SHLIBEXT@
-@SAMR_DYNAMIC_YES@RPC_MODULES3 = bin/librpc_samr.@SHLIBEXT@
-@SVC_DYNAMIC_YES@RPC_MODULES4 = bin/librpc_srvsvc.@SHLIBEXT@
-@WKS_DYNAMIC_YES@RPC_MODULES5 = bin/librpc_wkssvc.@SHLIBEXT@
-@REG_DYNAMIC_YES@RPC_MODULES6 = bin/librpc_winreg.@SHLIBEXT@
-@SPOOLSS_DYNAMIC_YES@RPC_MODULES7 = bin/librpc_spoolss.@SHLIBEXT@
-@DFS_DYNAMIC_YES@RPC_MODULES8 = bin/librpc_netdfs.@SHLIBEXT@
-RPC_MODULES = $(RPC_MODULES1) $(RPC_MODULES2) $(RPC_MODULES3) $(RPC_MODULES4) \
-	$(RPC_MODULES5) $(RPC_MODULES6) $(RPC_MODULES7) $(RPC_MODULES8)
-
-@LSA_DYNAMIC_NO@RPC_PIPE_OBJ1 = $(RPC_LSA_OBJ)
-@NETLOG_DYNAMIC_NO@RPC_PIPE_OBJ2 = $(RPC_NETLOG_OBJ)
-@SAMR_DYNAMIC_NO@RPC_PIPE_OBJ3 = $(RPC_SAMR_OBJ)
-@SVC_DYNAMIC_NO@RPC_PIPE_OBJ4 = $(RPC_SVC_OBJ)
-@WKS_DYNAMIC_NO@RPC_PIPE_OBJ5 = $(RPC_WKS_OBJ)
-@REG_DYNAMIC_NO@RPC_PIPE_OBJ6 = $(RPC_REG_OBJ)
-@SPOOLSS_DYNAMIC_NO@RPC_PIPE_OBJ7 = $(RPC_SPOOLSS_OBJ)
-@DFS_DYNAMIC_NO@RPC_PIPE_OBJ8 =	$(RPC_DFS_OBJ)
-RPC_SERVER_OBJ = $(RPC_PIPE_OBJ1) $(RPC_PIPE_OBJ2) $(RPC_PIPE_OBJ3) \
-	$(RPC_PIPE_OBJ4) $(RPC_PIPE_OBJ5) $(RPC_PIPE_OBJ6) $(RPC_PIPE_OBJ7) \
-	$(RPC_PIPE_OBJ8) $(RPC_PIPE_OBJ)
+RPC_SERVER_OBJ = @RPC_STATIC@ $(RPC_PIPE_OBJ)
 
 # this includes only the low level parse code, not stuff
 # that requires knowledge of security contexts
@@ -285,11 +264,8 @@ LOCKING_OBJ = locking/locking.o locking/brlock.o locking/posix.o
 PASSDB_GET_SET_OBJ = passdb/pdb_get_set.o
 
 PASSDB_OBJ = $(PASSDB_GET_SET_OBJ) passdb/passdb.o passdb/pdb_interface.o \
-		passdb/machine_sid.o passdb/pdb_smbpasswd.o \
-		passdb/pdb_tdb.o passdb/pdb_ldap.o \
-		passdb/pdb_unix.o passdb/pdb_guest.o passdb/util_sam_sid.o \
-		passdb/pdb_compat.o passdb/pdb_nisplus.o \
-		passdb/privileges.o 
+		passdb/machine_sid.o passdb/util_sam_sid.o passdb/pdb_compat.o \
+		passdb/privileges.o @PDB_STATIC@
 
 XML_OBJ = modules/xml.o
 MYSQL_OBJ = modules/mysql.o
@@ -303,8 +279,6 @@ SAM_OBJ = sam/account.o sam/get_set_account.o sam/get_set_group.o \
 SAMTEST_OBJ = torture/samtest.o torture/cmd_sam.o $(SAM_OBJ) $(LIB_OBJ) $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) $(READLINE_OBJ) lib/util_seaccess.o $(LIBADS_OBJ) $(KRBCLIENT_OBJ) $(PASSDB_OBJ) $(SECRETS_OBJ) $(GROUPDB_OBJ)
 
 GROUPDB_OBJ = groupdb/mapping.o
-
-# passdb/smbpass.o passdb/ldap.o passdb/nispass.o 
 
 PROFILE_OBJ = profile/profile.o
 
@@ -617,7 +591,7 @@ NTLM_AUTH_OBJ = utils/ntlm_auth.o $(LIBNTLMSSP_OBJ) $(LIBSAMBA_OBJ) $(POPT_LIB_O
 # now the rules...
 ######################################################################
 all : SHOWFLAGS proto_exists $(SBIN_PROGS) $(BIN_PROGS) $(SHLIBS) \
-	$(TORTURE_PROGS) $(RPC_MODULES) @EXTRA_ALL_TARGETS@
+	$(TORTURE_PROGS) @EXTRA_ALL_TARGETS@
 
 pam_smbpass : SHOWFLAGS bin/pam_smbpass.@SHLIBEXT@
 
@@ -649,7 +623,7 @@ nsswitch : SHOWFLAGS bin/winbindd@EXEEXT@ bin/wbinfo@EXEEXT@ nsswitch/libnss_win
 
 wins : SHOWFLAGS nsswitch/libnss_wins.@SHLIBEXT@
 
-modules: SHOWFLAGS proto_exists $(VFS_MODULES) $(PDB_MODULES) $(MODULES)
+modules: SHOWFLAGS proto_exists $(MODULES)
 
 everything: all libsmbclient debug2html smbfilter talloctort
 
@@ -1054,11 +1028,11 @@ installbin: all installdirs
 	@$(SHELL) $(srcdir)/script/installbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(SBINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(SBIN_PROGS)
 	@$(SHELL) $(srcdir)/script/installbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(BINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(BIN_PROGS)
 
-	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(RPCLIBDIR) $(RPC_MODULES)
 
 installmodules: all installdirs
 	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(VFSLIBDIR) $(VFS_MODULES)
 	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(PDBLIBDIR) $(PDB_MODULES)
+	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(RPCLIBDIR) $(RPC_MODULES)
 
 installscripts: installdirs
 	@$(SHELL) $(srcdir)/script/installscripts.sh $(INSTALLPERMS) $(DESTDIR)$(BINDIR) $(SCRIPTS)
@@ -1128,12 +1102,11 @@ uninstallman:
 uninstallbin:
 	@$(SHELL) $(srcdir)/script/uninstallbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(SBINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(DESTDIR)$(SBIN_PROGS)
 	@$(SHELL) $(srcdir)/script/uninstallbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(BINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(DESTDIR)$(BIN_PROGS)
-	@$(SHELL) $(srcdir)/script/uninstallmodules.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(RPCLIBDIR) $(DESTDIR)$(RPC_MODULES)
 
 uninstallmodules:
 	@$(SHELL) $(srcdir)/script/uninstallmodules.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(VFSLIBDIR) $(DESTDIR)$(VFS_MODULES)
 	@$(SHELL) $(srcdir)/script/uninstallmodules.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(PDBLIBDIR) $(DESTDIR)$(PDB_MODULES)
-	@$(SHELL) $(srcdir)/script/uninstallmodules.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(MODULES)
+	@$(SHELL) $(srcdir)/script/uninstallmodules.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(RPCLIBDIR) $(DESTDIR)$(RPC_MODULES)
 
 uninstallscripts:
 	@$(SHELL) $(srcdir)/script/uninstallscripts.sh $(INSTALLPERMS) $(DESTDIR)$(BINDIR) $(SCRIPTS)

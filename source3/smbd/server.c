@@ -411,9 +411,6 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 					return False;
 				}
 
-				/* Load DSO's */
-				init_modules();
-
 				return True; 
 			}
 			/* The parent doesn't need this socket */
@@ -865,6 +862,10 @@ static BOOL init_structs(void )
 
 	if(!initialize_password_db(False))
 		exit(1);
+
+	static_init_rpc;
+
+	init_modules();
 
 	uni_group_cache_init(); /* Non-critical */
 	

@@ -37,8 +37,6 @@ static int tdbsam_debug_level = DBGC_ALL;
 
 #endif
 
-#ifdef WITH_TDB_SAM
-
 #define PDB_VERSION		"20010830"
 #define PASSDB_FILE_NAME	"passdb.tdb"
 #define TDB_FORMAT_STRING	"ddddddBBBBBBBBBBBBddBBwdwdBdd"
@@ -988,20 +986,9 @@ NTSTATUS pdb_init_tdbsam_nua(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method,
 	return NT_STATUS_OK;
 }
 
-
-#else
-
-NTSTATUS pdb_init_tdbsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const char *location)
+int pdb_tdbsam_init(void)
 {
-	DEBUG(0, ("tdbsam not compiled in!\n"));
-	return NT_STATUS_UNSUCCESSFUL;
+    smb_register_passdb("tdbsam", pdb_init_tdbsam, PASSDB_INTERFACE_VERSION);
+    smb_register_passdb("tdbsam_nua", pdb_init_tdbsam_nua, PASSDB_INTERFACE_VERSION);
 }
 
-NTSTATUS pdb_init_tdbsam_nua(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const char *location)
-{
-	DEBUG(0, ("tdbsam_nua not compiled in!\n"));
-	return NT_STATUS_UNSUCCESSFUL;
-}
-
-
-#endif

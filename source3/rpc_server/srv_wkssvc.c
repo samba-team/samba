@@ -60,11 +60,7 @@ static BOOL api_wks_query_info(pipes_struct *p)
  \PIPE\wkssvc commands
  ********************************************************************/
 
-#ifdef RPC_WKS_DYNAMIC
-int init_module(void)
-#else
 int rpc_wks_init(void)
-#endif
 {
   static struct api_struct api_wks_cmds[] =
     {

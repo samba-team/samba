@@ -158,11 +158,7 @@ static BOOL api_dfs_enum(pipes_struct *p)
 \pipe\netdfs commands
 ********************************************************************/
 
-#ifdef RPC_DFS_DYNAMIC
-int init_module(void)
-#else
 int rpc_dfs_init(void)
-#endif
 {
   struct api_struct api_netdfs_cmds[] =
     {
