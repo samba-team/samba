@@ -1,9 +1,17 @@
+    ------------------------------------------------------------
+    | NOTE: This is currently just experimental code, it might |
+    | not work as expected. You have been warned.              |
+    ------------------------------------------------------------
+
 This is a quick attempt at a SIA module for Kerberos. To install this
 you will have to do the following:
 
-* Make sure libsia_krb4.so is available in /usr/athena/lib
+* Make sure libsia_krb4.so is available in /usr/athena/lib. You might
+  actually want it on local disk, so /usr/shlib might be a better
+  place if /usr/athena is not local.
 
-* Copy krb4_matrix.conf to /etc/sia
+* Copy krb4_matrix.conf to /etc/sia. If you put libsia_krb4.so in some
+  obscure place, you might have to edit krb4_matrix.conf.
 
 * Apply security.patch to /sbin/init.d/security
 
@@ -14,5 +22,8 @@ you will have to do the following:
   shouldn't be necessary.  It's usually sufficient just to run
   /sbin/init.d/security
 
-
 Users with local passwords (like root) should be able to login safely.
+
+There is currently no support for changing kerberos passwords. Use
+kpasswd instead.
+
