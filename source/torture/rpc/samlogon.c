@@ -72,10 +72,8 @@ static NTSTATUS check_samlogon(struct samlogon_state *samlogon_state,
 	struct netr_LogonSamLogonEx *r_ex = &samlogon_state->r_ex;
 	struct netr_LogonSamLogonWithFlags *r_flags = &samlogon_state->r_flags;
 	struct netr_NetworkInfo ninfo;
-	
-	struct netr_SamBaseInfo *base;
-
-	uint16 validation_level;
+	struct netr_SamBaseInfo *base = NULL;
+	uint16 validation_level = 0;
 	
 	samlogon_state->r.in.logon.network = &ninfo;
 	samlogon_state->r_ex.in.logon.network = &ninfo;

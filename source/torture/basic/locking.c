@@ -790,7 +790,7 @@ BOOL torture_locktest7(void)
 	struct smbcli_state *cli1;
 	const char *fname = "\\lockt7.lck";
 	int fnum1;
-	int fnum2;
+	int fnum2 = -1;
 	size_t size;
 	char buf[200];
 	BOOL correct = False;

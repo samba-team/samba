@@ -1968,7 +1968,7 @@ BOOL torture_denydos_sharing(void)
 	union smb_fileinfo finfo;
 	const char *fname = "\\torture_denydos.txt";
 	NTSTATUS status;
-	int fnum1, fnum2;
+	int fnum1 = -1, fnum2 = -1;
 	BOOL ret = True;
 	union smb_setfileinfo sfinfo;
 	TALLOC_CTX *mem_ctx;

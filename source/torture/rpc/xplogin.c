@@ -775,7 +775,7 @@ static NTSTATUS test_getallsids(struct smbcli_transport *transport,
 	struct samr_Connect4 r4;
 	struct policy_handle connect_handle, user_handle;
 	struct policy_handle builtin_handle, domain_handle;
-	struct dom_sid *domain_sid;
+	struct dom_sid *domain_sid = NULL;
 
 	struct dom_sid *user_sid;
 	struct dom_sid *primary_group_sid;

@@ -602,7 +602,7 @@ NTSTATUS dcerpc_binding_from_tower(TALLOC_CTX *mem_ctx, struct epm_tower *tower,
 
 NTSTATUS dcerpc_binding_build_tower(TALLOC_CTX *mem_ctx, struct dcerpc_binding *binding, struct epm_tower *tower)
 {
-	const enum epm_protocols *protseq;
+	const enum epm_protocols *protseq = NULL;
 	int num_protocols = -1, i;
 	NTSTATUS status;
 	

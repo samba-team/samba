@@ -59,7 +59,7 @@ static NTSTATUS sldb_Search(struct ldapsrv_partition *partition, struct ldapsrv_
 	int result = LDAP_SUCCESS;
 	struct samdb_context *samdb;
 	struct ldb_message **res;
-	int i, j, y, count;
+	int i, j, y, count = 0;
 	enum ldb_scope scope = LDB_SCOPE_DEFAULT;
 	const char **attrs = NULL;
 	const char *errstr = NULL;
@@ -183,7 +183,7 @@ static NTSTATUS sldb_Add(struct ldapsrv_partition *partition, struct ldapsrv_cal
 	struct ldapsrv_reply *add_reply;
 	int ldb_ret;
 	struct samdb_context *samdb;
-	struct ldb_message *msg;
+	struct ldb_message *msg = NULL;
 	int result = LDAP_SUCCESS;
 	const char *errstr = NULL;
 	int i,j;
@@ -336,7 +336,7 @@ static NTSTATUS sldb_Modify(struct ldapsrv_partition *partition, struct ldapsrv_
 	struct ldapsrv_reply *modify_reply;
 	int ldb_ret;
 	struct samdb_context *samdb;
-	struct ldb_message *msg;
+	struct ldb_message *msg = NULL;
 	int result = LDAP_SUCCESS;
 	const char *errstr = NULL;
 	int i,j;
@@ -450,7 +450,7 @@ static NTSTATUS sldb_Compare(struct ldapsrv_partition *partition, struct ldapsrv
 	struct ldb_message **res;
 	const char *attrs[1];
 	const char *errstr = NULL;
-	const char *filter;
+	const char *filter = NULL;
 	int count;
 
 	local_ctx = talloc_named(call, 0, "sldb_Compare local_memory_context");
@@ -517,7 +517,7 @@ NTSTATUS sldb_ModifyDN(struct ldapsrv_partition *partition, struct ldapsrv_call 
 	struct samdb_context *samdb;
 	const char *errstr = NULL;
 	int result = LDAP_SUCCESS;
-	const char *newdn;
+	const char *newdn = NULL;
 	char *parentdn = NULL;
 
 	local_ctx = talloc_named(call, 0, "sldb_ModifyDN local memory context");
