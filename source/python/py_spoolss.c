@@ -73,6 +73,9 @@ Example:
 >>> spoolss.closeprinter(hnd)
 "},
 
+	{ "addprinterex", spoolss_addprinterex, METH_VARARGS, 
+	  "addprinterex()"},
+
 	/* Server enumeratation functions */
 
 	{ "enumprinters", (PyCFunction)spoolss_enumprinters, 
