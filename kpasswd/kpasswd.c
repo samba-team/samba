@@ -101,7 +101,7 @@ main (int argc, char **argv)
     if(argv[0]) {
 	ret = krb5_parse_name (context, argv[0], &principal);
 	if (ret)
-	    errx (1, "krb5_parse_name: %s", krb5_get_err_text(context, ret));
+	    krb5_err (context, 1, ret, "krb5_parse_name");
     } else
 	principal = NULL;
 
@@ -114,9 +114,16 @@ main (int argc, char **argv)
 					0,
 					"kadmin/changepw",
 					&opt);
-    if (ret)
-	errx (1, "krb5_get_initial_creds: %s",
-	      krb5_get_err_text(context, ret));
+    switch (ret) {
+    case 0:
+	break;
+    case KRB5KRB_AP_ERR_BAD_INTEGRITY:
+    case KRB5KRB_AP_ERR_MODIFIED:
+	krb5_errx(context, 1, "Password incorrect");
+	break;
+    default:
+	krb5_err(context, 1, ret, "krb5_get_init_creds");
+    }
 
     krb5_data_zero (&result_code_string);
     krb5_data_zero (&result_string);
@@ -129,8 +136,7 @@ main (int argc, char **argv)
 				&result_code_string,
 				&result_string);
     if (ret)
-	errx (1, "krb5_change_password: %s",
-	      krb5_get_err_text(context, ret));
+	krb5_err (context, 1, ret, "krb5_change_password");
 
     printf ("%.*s\n", (int)result_string.length,
 	    (char *)result_string.data);
