@@ -618,7 +618,7 @@ typedef enum
 
 typedef enum
 {
-  P_LOCAL,P_GLOBAL,P_SEPARATOR,P_NONE,
+  P_LOCAL,P_GLOBAL,P_SEPARATOR,P_NONE
 } parm_class;
 
 struct enum_list {
