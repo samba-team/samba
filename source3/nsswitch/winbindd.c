@@ -800,6 +800,7 @@ int main(int argc, char **argv)
 	BlockSignals(False, SIGINT);
 	BlockSignals(False, SIGQUIT);
 	BlockSignals(False, SIGTERM);
+	BlockSignals(False, SIGUSR1);
 	BlockSignals(False, SIGUSR2);
 	BlockSignals(False, SIGHUP);
 
