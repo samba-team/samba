@@ -331,8 +331,8 @@ other than the machine being configured so that the network configuration has a 
 for it's workgroup entry. It is not uncommon for the name WORKGROUP to be used for this. With this
 mode of configuration there are NO machine trust accounts and any concept of membership as such
 is limited to the fact that all machines appear in the network neighbourhood to be logically
-grouped together. Again, just to be clear: <strong>workgroup mode does not involve any security machine 
-accounts</strong>.
+grouped together. Again, just to be clear: <emphasis>workgroup mode does not involve any security machine 
+accounts</emphasis>.
 </para>
 
 <para>

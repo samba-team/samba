@@ -698,7 +698,7 @@ In case samba can't figure out your ads server using your realm name, use the
 </para>
 
 <note><para>
-You do <strong>not</strong> need a smbpasswd file, and older clients will be authenticated as 
+You do <emphasis>not</emphasis> need a smbpasswd file, and older clients will be authenticated as 
 if <parameter>security = domain</parameter>, although it won't do any harm and 
 allows you to have local users not in the domain. It is expected that the above 
 required options will change soon when active directory integration will get 

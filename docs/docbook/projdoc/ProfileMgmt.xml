@@ -749,7 +749,7 @@ to the group profile.
 </para>
 
 <para>
-The next step is rather important. <strong>Please note:</strong> Instead of assigning a group profile
+The next step is rather important. <emphasis>Please note:</emphasis> Instead of assigning a group profile
 to users (ie: Using User Manager) on a "per user" basis, the group itself is assigned
 the now modified profile.
 </para>

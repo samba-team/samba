@@ -636,7 +636,7 @@ in &smb.conf;.  By default it will not be a domain master.
 </para>
 
 <para>
-Note that you should <strong>not</strong> set Samba to be the domain master for a
+Note that you should <emphasis>not</emphasis> set Samba to be the domain master for a
 workgroup that has the same name as an NT Domain.
 </para>
 

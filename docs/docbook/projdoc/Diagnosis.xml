@@ -215,7 +215,7 @@ To solve this problem change these lines to:
 </programlisting></para>
 
 <para>
-Do <strong>not</strong> use the <command>bind interfaces only</command> parameter where you 
+Do <emphasis>not</emphasis> use the <command>bind interfaces only</command> parameter where you 
 may wish to
 use the samba password change facility, or where &smbclient; may need to
 access a local service for name resolution or for local resource
