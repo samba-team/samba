@@ -35,6 +35,10 @@ static struct {
 	{NULL, -1}
 };
 
+time_t timeout_start;
+
+#define MAX_WAIT	10
+
 static void usage(BOOL doexit)
 {
 	int i;
@@ -64,7 +68,7 @@ a useful function for testing the message system
 void pong_function(int msg_type, pid_t src, void *buf, size_t len)
 {
 	pong_count++;
-	printf("PONG\n");
+	printf("PONG from PID %d\n",src);
 }
 
 /****************************************************************************
@@ -75,7 +79,7 @@ void debuglevel_function(int msg_type, pid_t src, void *buf, size_t len)
         int level;
         memcpy(&level, buf, sizeof(int));
 
-	printf("Current debug level is %d\n",level);
+	printf("Current debug level of PID %d is %d\n",src,level);
 	got_level = True;
 }
 
@@ -126,6 +130,7 @@ static BOOL do_command(char *dest, char *msg_name, char *params)
 {
 	int i, n, v;
 	int mtype;
+	BOOL retval;
 
 	mtype = parse_type(msg_name);
 	if (mtype == -1) {
@@ -177,13 +182,18 @@ static BOOL do_command(char *dest, char *msg_name, char *params)
 		    message_register(MSG_DEBUGLEVEL, debuglevel_function);
 		    debuglevel_registered = True;
 		}
-		if (strequal(dest, "nmbd") || strequal(dest, "smbd")) {
-		    fprintf(stderr,"debuglevel can only be sent to a PID\n");
-		    return(False);
-		}
 		got_level = False;
-		send_message(dest, MSG_REQ_DEBUGLEVEL, NULL, 0);
-		while (!got_level) message_dispatch();
+		retval = send_message(dest, MSG_REQ_DEBUGLEVEL, NULL, 0);
+		if (retval) {
+			timeout_start = time(NULL);
+			while (!got_level) {
+				message_dispatch();
+				if ((time(NULL) - timeout_start) > MAX_WAIT) {
+					fprintf(stderr,"debuglevel timeout\n");
+					break;
+				}
+			}
+		}
 		break;
 
 	case MSG_PING:
@@ -198,9 +208,19 @@ static BOOL do_command(char *dest, char *msg_name, char *params)
 		n = atoi(params);
 		pong_count = 0;
 		for (i=0;i<n;i++) {
-			send_message(dest, MSG_PING, NULL, 0);
+			retval = send_message(dest, MSG_PING, NULL, 0);
+			if (retval == False) break;
 		}
-		while (pong_count < n) message_dispatch();
+		if (retval) {
+			timeout_start = time(NULL);
+			while (pong_count < n) {
+				message_dispatch();
+				if ((time(NULL) - timeout_start) > MAX_WAIT) {
+					fprintf(stderr,"PING timeout\n");
+					break;
+				}
+			}
+		}
 		break;
 
 	}
