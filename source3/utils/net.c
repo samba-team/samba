@@ -329,6 +329,49 @@ static int net_file(int argc, const char **argv)
 	return net_rap_file(argc, argv);
 }
 
+static int net_setlocalsid(int argc, const char **argv)
+{
+	DOM_SID sid;
+
+	if ( (argc != 1)
+	     || (strncmp(argv[0], "S-1-5-21-", strlen("S-1-5-21-")) != 0)
+	     || (!string_to_sid(&sid, argv[0]))
+	     || (sid.num_auths != 4)) {
+		d_printf("usage: net setlocalsid S-1-5-21-x-y-z\n");
+		return 1;
+	}
+
+	if (!secrets_store_domain_sid(global_myname, &sid)) {
+		DEBUG(0,("Can't store domain SID as a pdc/bdc.\n"));
+		return 1;
+	}
+
+	return 0;
+}
+
+static int net_getdomainsid(int argc, const char **argv)
+{
+	DOM_SID domain_sid;
+	fstring sid_str;
+
+	if (!secrets_fetch_domain_sid(global_myname, &domain_sid)) {
+		d_printf("Could not fetch local SID\n");
+		return 1;
+	}
+	sid_to_string(sid_str, &domain_sid);
+	d_printf("SID for domain %s is: %s\n", global_myname, sid_str);
+
+	if (!secrets_fetch_domain_sid(lp_workgroup(), &domain_sid)) {
+		d_printf("Could not fetch domain SID\n");
+		return 1;
+	}
+
+	sid_to_string(sid_str, &domain_sid);
+	d_printf("SID for domain %s is: %s\n", lp_workgroup(), sid_str);
+
+	return 0;
+}
+
 /* main function table */
 static struct functable net_func[] = {
 	{"RPC", net_rpc},
@@ -353,6 +396,8 @@ static struct functable net_func[] = {
 	{"LOOKUP", net_lookup},
 	{"JOIN", net_join},
 	{"CACHE", net_cache},
+	{"SETLOCALSID", net_setlocalsid},
+	{"GETDOMAINSID", net_getdomainsid},
 
 	{"HELP", net_help},
 	{NULL, NULL}
