@@ -55,54 +55,87 @@ BOOL req_send_oplock_break(struct smbsrv_tcon *tcon, uint16_t fnum, uint8_t leve
 	return True;
 }
 
+
+static void construct_reply(struct smbsrv_request *req);
+
 /****************************************************************************
-receive a SMB request from the wire, forming a request_context from the result
+receive a SMB request header from the wire, forming a request_context
+from the result
 ****************************************************************************/
-static struct smbsrv_request *receive_smb_request(struct smbsrv_connection *smb_conn)
+static NTSTATUS receive_smb_request(struct smbsrv_connection *smb_conn)
 {
 	NTSTATUS status;
-	ssize_t len, len2;
-	DATA_BLOB tmp_blob;
+	ssize_t len;
 	struct smbsrv_request *req;
-	char hdr[4];
 	size_t nread;
 
-	status = socket_recv(smb_conn->connection->socket, hdr, 
-			     4, &nread, SOCKET_FLAG_BLOCK|SOCKET_FLAG_PEEK);
-	if (!NT_STATUS_IS_OK(status)) {
-		return NULL;
+	/* allocate the request if needed */
+	if (smb_conn->partial_req == NULL) {
+		req = init_smb_request(smb_conn);
+		if (req == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		req->in.buffer = talloc_array_p(req, char, NBT_HDR_SIZE);
+		if (req->in.buffer == NULL) {
+			talloc_free(req);
+			return NT_STATUS_NO_MEMORY;
+		}
+		req->in.size = 0;
+		smb_conn->partial_req = req;
 	}
-	if (nread != 4) {
-		return NULL;
+
+	req = smb_conn->partial_req;
+
+	/* read in the header */
+	if (req->in.size < NBT_HDR_SIZE) {
+		status = socket_recv(smb_conn->connection->socket, 
+				     req->in.buffer + req->in.size,
+				     NBT_HDR_SIZE - req->in.size, 
+				     &nread, 0);
+		if (NT_STATUS_IS_ERR(status)) {
+			return status;
+		}
+		if (nread == 0) {
+			return NT_STATUS_OK;
+		}
+		req->in.size += nread;
+
+		/* when we have a full NBT header, then allocate the packet */
+		if (req->in.size == NBT_HDR_SIZE) {
+			len = smb_len(req->in.buffer) + NBT_HDR_SIZE;
+			req->in.buffer = talloc_realloc(req, req->in.buffer, len);
+			if (req->in.buffer == NULL) {
+				return NT_STATUS_NO_MEMORY;
+			}
+		} else {
+			return NT_STATUS_OK;
+		}
 	}
 
-	len = smb_len(hdr);
-
-	req = init_smb_request(smb_conn);
-
-	GetTimeOfDay(&req->request_time);
-	req->chained_fnum = -1;
-
-	len2 = len + NBT_HDR_SIZE;
-
-	tmp_blob = data_blob_talloc(req, NULL, len2);
-	if (tmp_blob.data == NULL) {
-		return NULL;
-	}
+	/* read in the main packet */
+	len = smb_len(req->in.buffer) + NBT_HDR_SIZE;
 
 	status = socket_recv(smb_conn->connection->socket, 
-			     tmp_blob.data, len2, 
-			     &nread, SOCKET_FLAG_BLOCK);
-	if (!NT_STATUS_IS_OK(status)) {
-		return NULL;
+			     req->in.buffer + req->in.size,
+			     len - req->in.size, 
+			     &nread, 0);
+	if (NT_STATUS_IS_ERR(status)) {
+		return status;
 	}
-	if (nread != len2) {
-		return NULL;
+	if (nread == 0) {
+		return NT_STATUS_OK;
 	}
 
-	/* fill in the rest of the req->in structure */
-	req->in.buffer = tmp_blob.data;
-	req->in.size = len2;
+	req->in.size += nread;
+
+	if (req->in.size != len) {
+		return NT_STATUS_OK;
+	}
+
+	/* we have a full packet */
+	GetTimeOfDay(&req->request_time);
+	req->chained_fnum = -1;
 	req->in.allocated = req->in.size;
 	req->in.hdr = req->in.buffer + NBT_HDR_SIZE;
 	req->in.vwv = req->in.hdr + HDR_VWV;
@@ -125,7 +158,11 @@ static struct smbsrv_request *receive_smb_request(struct smbsrv_connection *smb_
 		}
 	}
 
-	return req;
+	smb_conn->partial_req = NULL;
+
+	construct_reply(req);
+
+	return NT_STATUS_OK;
 }
 
 /*
@@ -746,23 +783,20 @@ static void smbsrv_init(struct server_service *service, const struct model_ops *
 */
 static void smbsrv_recv(struct server_connection *conn, time_t t, uint16_t flags)
 {
-	struct smbsrv_request *req;
 	struct smbsrv_connection *smb_conn = conn->private_data;
+	NTSTATUS status;
 
 	DEBUG(10,("smbsrv_recv\n"));
 
-	req = receive_smb_request(smb_conn);
-	if (!req) {
+	status = receive_smb_request(smb_conn);
+	if (NT_STATUS_IS_ERR(status)) {
 		conn->event.fde->flags = 0;
-		smbsrv_terminate_connection(smb_conn, "receive error");
+		smbsrv_terminate_connection(smb_conn, nt_errstr(status));
 		return;
 	}
 
-	construct_reply(req);
-
 	/* free up temporary memory */
 	lp_talloc_free();
-	return;
 }
 
 /*
@@ -806,15 +840,12 @@ static void smbsrv_close(struct server_connection *conn, const char *reason)
 */
 void smbd_process_async(struct smbsrv_connection *smb_conn)
 {
-	struct smbsrv_request *req;
+	NTSTATUS status;
 	
-	req = receive_smb_request(smb_conn);
-	if (!req) {
-		smbsrv_terminate_connection(smb_conn, "receive error");
-		return;
+	status = receive_smb_request(smb_conn);
+	if (NT_STATUS_IS_ERR(status)) {
+		smbsrv_terminate_connection(smb_conn, nt_errstr(status));
 	}
-
-	construct_reply(req);
 }
 
 
