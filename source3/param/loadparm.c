@@ -161,6 +161,7 @@ typedef struct
 	char *szChangeShareCommand;
 	char *szDeleteShareCommand;
 	char *szGuestaccount;
+	char *szManglingMethod;
 	int max_log_size;
 	int mangled_stack;
 	int max_xmit;
@@ -911,6 +912,7 @@ static struct parm_struct parm_table[] = {
 
 	{"Filename Handling", P_SEP, P_SEPARATOR},
 	{"strip dot", P_BOOL, P_GLOBAL, &Globals.bStripDot, NULL, NULL, 0},
+	{"mangling method", P_STRING, P_GLOBAL, &Globals.szManglingMethod, NULL, NULL, 0},
 	
 	{"mangled stack", P_INTEGER, P_GLOBAL, &Globals.mangled_stack, NULL, NULL, 0},
 	{"default case", P_ENUM, P_LOCAL, &sDefault.iDefaultCase, NULL, enum_case, FLAG_SHARE},
@@ -1519,6 +1521,7 @@ FN_GLOBAL_STRING(lp_addprinter_cmd, &Globals.szAddPrinterCommand)
 FN_GLOBAL_STRING(lp_deleteprinter_cmd, &Globals.szDeletePrinterCommand)
 FN_GLOBAL_STRING(lp_os2_driver_map, &Globals.szOs2DriverMap)
 FN_GLOBAL_STRING(lp_lockdir, &Globals.szLockDir)
+FN_GLOBAL_STRING(lp_mangling_method, &Globals.szManglingMethod)
 #ifdef WITH_UTMP
 FN_GLOBAL_STRING(lp_utmpdir, &Globals.szUtmpDir)
 FN_GLOBAL_STRING(lp_wtmpdir, &Globals.szWtmpDir)

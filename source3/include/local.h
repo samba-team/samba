@@ -197,4 +197,10 @@
 /* Allocation roundup. */
 #define SMB_ROUNDUP_ALLOCATION_SIZE 0x100000
 
+/* shall we deny oplocks to clients that get timeouts? */
+#define FASCIST_OPLOCK_BACKOFF 1
+
+/* this enables the "rabbit pellet" fix for SMBwritebraw */
+#define RABBIT_PELLET_FIX 1
+
 #endif

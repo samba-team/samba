@@ -1300,8 +1300,8 @@ NTSTATUS unlink_internals(connection_struct *conn, int dirtype, char *name)
 	 * Tine Smukavec <valentin.smukavec@hermes.si>.
 	 */
 	
-	if (!rc && is_mangled(mask))
-		check_mangled_cache( mask );
+	if (!rc && mangle_is_mangled(mask))
+		mangle_check_cache( mask );
 	
 	has_wild = ms_has_wild(mask);
 	
@@ -1842,12 +1842,15 @@ int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int size,
 	/* we won't return a status if write through is not selected - this follows what WfWg does */
 	END_PROFILE(SMBwritebraw);
 	if (!write_through && total_written==tcount) {
+
+#if RABBIT_PELLET_FIX
 		/*
 		 * Fix for "rabbit pellet" mode, trigger an early TCP ack by
 		 * sending a SMBkeepalive. Thanks to DaveCB at Sun for this. JRA.
 		 */
 		if (!send_keepalive(smbd_server_fd()))
 			exit_server("reply_writebraw: send of keepalive failed");
+#endif
 		return(-1);
 	}
 
@@ -3022,21 +3025,8 @@ NTSTATUS rename_internals(connection_struct *conn, char *name, char *newname, BO
 	 * Tine Smukavec <valentin.smukavec@hermes.si>.
 	 */
 
-#if 1
-	if (!rc && is_mangled(mask))
-		check_mangled_cache( mask );
-#else
-	if (!rc)
-	{
-		char *unmangled;
-		
-		unmangled = dos_unmangle(mask);
-		if (unmangled)
-			strncpy(mask, unmangled, strlen(unmangled) + 1);
-			
-		SAFE_FREE(unmangled);
-	}
-#endif
+	if (!rc && mangle_is_mangled(mask))
+		mangle_check_cache( mask );
 
 	has_wild = ms_has_wild(mask);
 
@@ -3044,7 +3034,7 @@ NTSTATUS rename_internals(connection_struct *conn, char *name, char *newname, BO
 		/*
 		 * No wildcards - just process the one file.
 		 */
-		BOOL is_short_name = is_8_3(name, True);
+		BOOL is_short_name = mangle_is_8_3(name, True);
 
 		/* Add a terminating '/' to the directory name. */
 		pstrcat(directory,"/");
@@ -3439,21 +3429,8 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
    * Tine Smukavec <valentin.smukavec@hermes.si>.
    */
 
-#if 1
-	if (!rc && is_mangled(mask))
-		check_mangled_cache( mask );
-#else
-	if (!rc)
-	{
-		char *unmangled;
-		
-		unmangled = dos_unmangle(mask);
-		if (unmangled)
-			strncpy(mask, unmangled, strlen(unmangled) + 1);
-			
-		SAFE_FREE(unmangled);
-	}
-#endif
+  if (!rc && mangle_is_mangled(mask))
+	  mangle_check_cache( mask );
 
   has_wild = ms_has_wild(mask);
 
