@@ -506,7 +506,10 @@ krb5_parse_address(krb5_context context,
 		   const char *string,
 		   krb5_addresses *addresses)
 {
-    int i;
+    int i, n;
+    struct addrinfo *ai, *a;
+    int error;
+
     for(i = 0; i < num_addrs; i++) {
 	if(at[i].parse_addr) {
 	    krb5_address a;
@@ -518,24 +521,24 @@ krb5_parse_address(krb5_context context,
 	}
     }
 
-#ifdef HAVE_GETHOSTBYNAME
-    {
-	char **a;
-	struct hostent *hp = gethostbyname(string);
-	struct addr_operations *aop;
-	if(hp == NULL)
-	    return -1;
-	for(a = hp->h_addr_list; *a; a++);
-	ALLOC_SEQ(addresses, a - hp->h_addr_list);
-	
-	aop = find_af(hp->h_addrtype);
-	for(a = hp->h_addr_list; *a; a++) {
-	    addresses->val[a - hp->h_addr_list].addr_type = aop->atype;
-	    krb5_data_copy(&addresses->val[a - hp->h_addr_list].address, 
-			   *a,
-			   hp->h_length);
-	}
-	return 0;
+    error = getaddrinfo (string, NULL, NULL, &ai);
+    if (error)
+	return -1;
+    
+    n = 0;
+    for (a = ai; a != NULL; a = a->ai_next)
+	++n;
+
+    ALLOC_SEQ(addresses, n);
+
+    for (a = ai, i = 0; a != NULL; a = a->ai_next, ++i) {
+	struct addr_operations *aop = find_af (ai->ai_family);
+
+	addresses->val[i].addr_type = aop->atype;
+	krb5_data_copy (&addresses->val[i].address,
+			ai->ai_addr,
+			ai->ai_addrlen);
     }
-#endif
+    freeaddrinfo (ai);
+    return 0;
 }
