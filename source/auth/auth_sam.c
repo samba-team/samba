@@ -27,8 +27,9 @@
 #define DBGC_CLASS DBGC_AUTH
 
 /****************************************************************************
-core of smb password checking routine.
+ Core of smb password checking routine.
 ****************************************************************************/
+
 static BOOL smb_pwd_check_ntlmv1(const DATA_BLOB *nt_response,
 				 const uchar *part_passwd,
 				 const DATA_BLOB *sec_blob,
@@ -54,8 +55,7 @@ static BOOL smb_pwd_check_ntlmv1(const DATA_BLOB *nt_response,
 	}
 
 	SMBOWFencrypt(part_passwd, sec_blob->data, p24);
-	if (user_sess_key != NULL)
-	{
+	if (user_sess_key != NULL) {
 		SMBsesskeygen_ntv1(part_passwd, NULL, user_sess_key);
 	}
 	
@@ -74,12 +74,11 @@ static BOOL smb_pwd_check_ntlmv1(const DATA_BLOB *nt_response,
   return (memcmp(p24, nt_response->data, 24) == 0);
 }
 
-
 /****************************************************************************
-core of smb password checking routine. (NTLMv2, LMv2)
-
-Note:  The same code works with both NTLMv2 and LMv2.
+ Core of smb password checking routine. (NTLMv2, LMv2)
+ Note:  The same code works with both NTLMv2 and LMv2.
 ****************************************************************************/
+
 static BOOL smb_pwd_check_ntlmv2(const DATA_BLOB *ntv2_response,
 				 const uchar *part_passwd,
 				 const DATA_BLOB *sec_blob,
@@ -92,8 +91,7 @@ static BOOL smb_pwd_check_ntlmv2(const DATA_BLOB *ntv2_response,
 	uchar client_response[16];
 	DATA_BLOB client_key_data;
 
-	if (part_passwd == NULL)
-	{
+	if (part_passwd == NULL) {
 		DEBUG(10,("No password set - DISALLOWING access\n"));
 		/* No password set - always False */
 		return False;
@@ -121,8 +119,7 @@ static BOOL smb_pwd_check_ntlmv2(const DATA_BLOB *ntv2_response,
 	}
 
 	SMBOWFencrypt_ntv2(kr, sec_blob, &client_key_data, value_from_encryption);
-	if (user_sess_key != NULL)
-	{
+	if (user_sess_key != NULL) {
 		SMBsesskeygen_ntv2(kr, value_from_encryption, user_sess_key);
 	}
 
@@ -142,11 +139,11 @@ static BOOL smb_pwd_check_ntlmv2(const DATA_BLOB *ntv2_response,
 	return (memcmp(value_from_encryption, client_response, 16) == 0);
 }
 
-
 /****************************************************************************
  Do a specific test for an smb password being correct, given a smb_password and
  the lanman and NT responses.
 ****************************************************************************/
+
 static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
 				TALLOC_CTX *mem_ctx,
 				SAM_ACCOUNT *sampass, 
@@ -158,15 +155,11 @@ static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
 	uint32 auth_flags;
 
 	acct_ctrl = pdb_get_acct_ctrl(sampass);
-	if (acct_ctrl & ACB_PWNOTREQ) 
-	{
-		if (lp_null_passwords()) 
-		{
+	if (acct_ctrl & ACB_PWNOTREQ) {
+		if (lp_null_passwords()) {
 			DEBUG(3,("Account for user '%s' has no password and null passwords are allowed.\n", pdb_get_username(sampass)));
 			return(NT_STATUS_OK);
-		} 
-		else 
-		{
+		} else {
 			DEBUG(3,("Account for user '%s' has no password and null passwords are NOT allowed.\n", pdb_get_username(sampass)));
 			return(NT_STATUS_LOGON_FAILURE);
 		}		
@@ -191,8 +184,7 @@ static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
 					  nt_pw, &auth_context->challenge, 
 					  user_info->smb_name.str, 
 					  user_info->client_domain.str,
-					  user_sess_key))
-		{
+					  user_sess_key)) {
 			return NT_STATUS_OK;
 		}
 
@@ -201,9 +193,7 @@ static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
 					  nt_pw, &auth_context->challenge, 
 					  user_info->smb_name.str, 
 					  "",
-					  user_sess_key))
-		    
-		{
+					  user_sess_key)) {
 			return NT_STATUS_OK;
 		} else {
 			DEBUG(3,("sam_password_ok: NTLMv2 password check failed\n"));
@@ -218,8 +208,7 @@ static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
 			DEBUG(4,("sam_password_ok: Checking NT MD4 password\n"));
 			if (smb_pwd_check_ntlmv1(&user_info->nt_resp, 
 						 nt_pw, &auth_context->challenge,
-						 user_sess_key)) 
-			{
+						 user_sess_key)) {
 				return NT_STATUS_OK;
 			} else {
 				DEBUG(3,("sam_password_ok: NT MD4 password check failed for user %s\n",pdb_get_username(sampass)));
@@ -247,8 +236,7 @@ static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
 			DEBUG(4,("sam_password_ok: Checking LM password\n"));
 			if (smb_pwd_check_ntlmv1(&user_info->lm_resp, 
 						 lm_pw, &auth_context->challenge,
-						 user_sess_key)) 
-			{
+						 user_sess_key)) {
 				return NT_STATUS_OK;
 			}
 		}
@@ -268,8 +256,7 @@ static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
 					  nt_pw, &auth_context->challenge, 
 					  user_info->smb_name.str, 
 					  user_info->client_domain.str,
-					  user_sess_key))
-		{
+					  user_sess_key)) {
 			return NT_STATUS_OK;
 		}
 
@@ -278,8 +265,7 @@ static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
 					  nt_pw, &auth_context->challenge, 
 					  user_info->smb_name.str, 
 					  "",
-					  user_sess_key))
-		{
+					  user_sess_key)) {
 			return NT_STATUS_OK;
 		}
 
@@ -287,12 +273,10 @@ static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
 		   - I think this is related to Win9X pass-though authentication
 		*/
 		DEBUG(4,("sam_password_ok: Checking NT MD4 password in LM field\n"));
-		if (lp_ntlm_auth()) 
-		{
+		if (lp_ntlm_auth()) {
 			if (smb_pwd_check_ntlmv1(&user_info->lm_resp, 
 						 nt_pw, &auth_context->challenge,
-						 user_sess_key)) 
-			{
+						 user_sess_key)) {
 				return NT_STATUS_OK;
 			}
 			DEBUG(3,("sam_password_ok: LM password, NT MD4 password in LM field and LMv2 failed for user %s\n",pdb_get_username(sampass)));
@@ -313,6 +297,7 @@ static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
  Do a specific test for a SAM_ACCOUNT being vaild for this connection 
  (ie not disabled, expired and the like).
 ****************************************************************************/
+
 static NTSTATUS sam_account_ok(TALLOC_CTX *mem_ctx,
 			       SAM_ACCOUNT *sampass, 
 			       const auth_usersupplied_info *user_info)
@@ -325,16 +310,22 @@ static NTSTATUS sam_account_ok(TALLOC_CTX *mem_ctx,
 
 	/* Quit if the account was disabled. */
 	if (acct_ctrl & ACB_DISABLED) {
-		DEBUG(1,("Account for user '%s' was disabled.\n", pdb_get_username(sampass)));
+		DEBUG(1,("sam_account_ok: Account for user '%s' was disabled.\n", pdb_get_username(sampass)));
 		return NT_STATUS_ACCOUNT_DISABLED;
+	}
+
+	/* Quit if the account was locked out. */
+	if (acct_ctrl & ACB_AUTOLOCK) {
+		DEBUG(1,("sam_account_ok: Account for user %s was locked out.\n", pdb_get_username(sampass)));
+		return NT_STATUS_ACCOUNT_LOCKED_OUT;
 	}
 
 	/* Test account expire time */
 	
 	kickoff_time = pdb_get_kickoff_time(sampass);
 	if (kickoff_time != 0 && time(NULL) > kickoff_time) {
-		DEBUG(1,("Account for user '%s' has expired.\n", pdb_get_username(sampass)));
-		DEBUG(3,("Account expired at '%ld' unix time.\n", (long)kickoff_time));
+		DEBUG(1,("sam_account_ok: Account for user '%s' has expired.\n", pdb_get_username(sampass)));
+		DEBUG(3,("sam_account_ok: Account expired at '%ld' unix time.\n", (long)kickoff_time));
 		return NT_STATUS_ACCOUNT_EXPIRED;
 	}
 
@@ -344,14 +335,14 @@ static NTSTATUS sam_account_ok(TALLOC_CTX *mem_ctx,
 
 		/* check for immediate expiry "must change at next logon" */
 		if (must_change_time == 0 && last_set_time != 0) {
-			DEBUG(1,("Account for user '%s' password must change!.\n", pdb_get_username(sampass)));
+			DEBUG(1,("sam_account_ok: Account for user '%s' password must change!.\n", pdb_get_username(sampass)));
 			return NT_STATUS_PASSWORD_MUST_CHANGE;
 		}
 
 		/* check for expired password */
 		if (must_change_time < time(NULL) && must_change_time != 0) {
-			DEBUG(1,("Account for user '%s' password expired!.\n", pdb_get_username(sampass)));
-			DEBUG(1,("Password expired at '%s' (%ld) unix time.\n", http_timestring(must_change_time), (long)must_change_time));
+			DEBUG(1,("sam_account_ok: Account for user '%s' password expired!.\n", pdb_get_username(sampass)));
+			DEBUG(1,("sam_account_ok: Password expired at '%s' (%ld) unix time.\n", http_timestring(must_change_time), (long)must_change_time));
 			return NT_STATUS_PASSWORD_EXPIRED;
 		}
 	}
@@ -359,8 +350,8 @@ static NTSTATUS sam_account_ok(TALLOC_CTX *mem_ctx,
 	/* Test workstation. Workstation list is comma separated. */
 
 	workstation_list = talloc_strdup(mem_ctx, pdb_get_workstations(sampass));
-
-	if (!workstation_list) return NT_STATUS_NO_MEMORY;
+	if (!workstation_list)
+		return NT_STATUS_NO_MEMORY;
 
 	if (*workstation_list) {
 		BOOL invalid_ws = True;
@@ -369,7 +360,7 @@ static NTSTATUS sam_account_ok(TALLOC_CTX *mem_ctx,
 		fstring tok;
 			
 		while (next_token(&s, tok, ",", sizeof(tok))) {
-			DEBUG(10,("checking for workstation match %s and %s (len=%d)\n",
+			DEBUG(10,("sam_account_ok: checking for workstation match %s and %s (len=%d)\n",
 				  tok, user_info->wksta_name.str, user_info->wksta_name.len));
 			if(strequal(tok, user_info->wksta_name.str)) {
 				invalid_ws = False;
@@ -398,7 +389,6 @@ static NTSTATUS sam_account_ok(TALLOC_CTX *mem_ctx,
 	
 	return NT_STATUS_OK;
 }
-
 
 /****************************************************************************
 check if a username/password is OK assuming the password is a 24 byte
@@ -434,9 +424,8 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 	ret = pdb_getsampwnam(sampass, user_info->internal_username.str);
 	unbecome_root();
 
-	if (ret == False)
-	{
-		DEBUG(3,("Couldn't find user '%s' in passdb file.\n", user_info->internal_username.str));
+	if (ret == False) {
+		DEBUG(3,("check_sam_security: Couldn't find user '%s' in passdb file.\n", user_info->internal_username.str));
 		pdb_free_sam(&sampass);
 		return NT_STATUS_NO_SUCH_USER;
 	}
