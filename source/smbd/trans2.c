@@ -2800,6 +2800,8 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 
 	if(size != sbuf.st_size) {
 
+		int ret;
+
 		DEBUG(10,("call_trans2setfilepathinfo: file %s : setting new size to %.0f\n",
 			fname, (double)size ));
 
@@ -2825,11 +2827,14 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 	
 			if (new_fsp == NULL)
 				return(UNIXERROR(ERRDOS,ERRbadpath));
-			vfs_set_filelen(new_fsp, size);
+			ret = vfs_set_filelen(new_fsp, size);
 			close_file(new_fsp,True);
 		} else {
-			vfs_set_filelen(fsp, size);
+			ret = vfs_set_filelen(fsp, size);
 		}
+
+		if (ret == -1)
+			return (UNIXERROR(ERRHRD,ERRdiskfull));
 	}
 
 	SSVAL(params,0,0);
