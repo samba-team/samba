@@ -423,6 +423,9 @@ POPT_OBJS=popt/findme.o popt/popt.o popt/poptconfig.o \
 
 TDBBACKUP_OBJ = tdb/tdbbackup.o $(TDBBASE_OBJ)
 
+PSEC_OBJ = $(LIB_OBJ) $(PARAM_OBJ) $(UBIQX_OBJ) $(RPC_PARSE_OBJ) \
+	$(LIBSMB_OBJ) $(PASSDB_OBJ) $(RPC_CLIENT_OBJ) utils/psec.o
+
 ######################################################################
 # now the rules...
 ######################################################################
@@ -453,6 +456,8 @@ smbcacls : CHECK bin/smbcacls
 locktest2 : CHECK bin/locktest2
 
 rpctorture : CHECK bin/rpctorture
+
+psec: CHECK bin/psec
 
 bin/rpccheck: $(RPCCHECK_OBJ) bin/.dummy
 	@echo Linking $@
@@ -694,6 +699,10 @@ bin/wbinfo: $(WBINFO_OBJ) $(PARAM_OBJ) $(LIB_OBJ) $(NOPROTO_OBJ) \
 bin/tdbbackup: $(TDBBACKUP_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(TDBBACKUP_OBJ)
+
+bin/psec: $(PSEC_OBJ) bin/.dummy
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(PSEC_OBJ) $(LIBS)
 
 install: installbin installman installscripts installcp installswat
 
