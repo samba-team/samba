@@ -2258,7 +2258,7 @@ BOOL unix_wild_match(char *pattern, char *string)
 
 static void free_data_blob(DATA_BLOB *d)
 {
-	if ((d) && (d->free)) {
+	if ((d) && (d->free_fn)) {
 		SAFE_FREE(d->data);
 	}
 }
@@ -2283,7 +2283,7 @@ DATA_BLOB data_blob(const void *p, size_t length)
 		ret.data = smb_xmalloc(length);
 	}
 	ret.length = length;
-	ret.free = free_data_blob;
+	ret.free_fn = free_data_blob;
 	return ret;
 }
 
@@ -2305,7 +2305,7 @@ DATA_BLOB data_blob_talloc(TALLOC_CTX *mem_ctx, const void *p, size_t length)
 		smb_panic("data_blob_talloc: talloc_memdup failed.\n");
 
 	ret.length = length;
-	ret.free = NULL;
+	ret.free_fn = NULL;
 	return ret;
 }
 
@@ -2315,8 +2315,8 @@ free a data blob
 void data_blob_free(DATA_BLOB *d)
 {
 	if (d) {
-		if (d->free) {
-			(d->free)(d);
+		if (d->free_fn) {
+			(d->free_fn)(d);
 		}
 		ZERO_STRUCTP(d);
 	}
