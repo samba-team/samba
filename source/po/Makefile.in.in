@@ -25,7 +25,7 @@ gettextsrcdir = $(prefix)/share/gettext/po
 subdir = po
 
 INSTALL = @INSTALL@
-INSTALL_DATA = $(SHELL) @INSTALL_DATA@
+INSTALL_DATA = @INSTALL_DATA@
 MKINSTALLDIRS = $(top_srcdir)/script/@MKINSTALLDIRS@
 
 CC = @CC@
@@ -118,7 +118,7 @@ install-data-basic:
 	else \
 	  $(SHELL) $(top_srcdir)/mkinstalldirs $(datadir); \
 	fi
-	@catalogs='$(CATALOGS)'; \
+	catalogs='$(CATALOGS)'; \
 	for cat in $$catalogs; do \
 	  cat=`basename $$cat`; \
 	  case "$$cat" in \
