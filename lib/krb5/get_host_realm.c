@@ -58,7 +58,7 @@ domain_match (const char *s, const char *pattern)
 krb5_error_code
 krb5_get_host_realm(krb5_context context,
 		    const char *host,
-		    char ***realms)
+		    krb5_realm **realms)
 {
     krb5_error_code ret;
     char hostname[MAXHOSTNAMELEN];
@@ -81,7 +81,7 @@ krb5_get_host_realm(krb5_context context,
     if (hostent != NULL)
 	host = hostent->h_name;
 
-    *realms = malloc(2 * sizeof(char*));
+    *realms = malloc(2 * sizeof(krb5_realm));
     if (*realms == NULL)
 	return ENOMEM;
     (*realms)[0] = NULL;
