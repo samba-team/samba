@@ -383,7 +383,7 @@ struct parm_struct
 
 struct bitmap {
 	uint32_t *b;
-	unsigned int n;
+	uint_t n;
 };
 
 #define FLAG_BASIC 	0x0001 /* fundamental options */
@@ -855,7 +855,7 @@ struct bitmap {
 struct nmb_name {
 	char         name[17];
 	char         scope[64];
-	unsigned int name_type;
+	uint_t name_type;
 };
 
 

@@ -129,7 +129,7 @@ wraparound
 ****************************************************************************/
 int bitmap_find(struct bitmap *bm, unsigned ofs)
 {
-	unsigned int i, j;
+	uint_t i, j;
 
 	if (ofs > bm->n) ofs = 0;
 

@@ -28,7 +28,7 @@
 struct dom_sid *dom_sid_parse_talloc(TALLOC_CTX *mem_ctx, const char *sidstr)
 {
 	struct dom_sid *ret;
-	unsigned int rev, ia, num_sub_auths, i;
+	uint_t rev, ia, num_sub_auths, i;
 	char *p;
   
 	if (strncasecmp(sidstr, "S-", 2)) {

@@ -189,7 +189,7 @@ int set_blocking(int fd, BOOL set)
  Sleep for a specified number of milliseconds.
 ********************************************************************/
 
-void msleep(unsigned int t)
+void msleep(uint_t t)
 {
 	struct timeval tval;  
 

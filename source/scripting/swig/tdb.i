@@ -77,7 +77,7 @@ typedef int SIG_ATOMIC_T;
 
 /* Treat a mode_t as an unsigned integer */
 
-typedef unsigned int mode_t;
+typedef uint_t mode_t;
 
 /* flags to tdb_store() */
 

@@ -99,7 +99,7 @@ void pidfile_create(const char *name)
 	}
 
 	memset(buf, 0, sizeof(buf));
-	slprintf(buf, sizeof(buf) - 1, "%u\n", (unsigned int) getpid());
+	slprintf(buf, sizeof(buf) - 1, "%u\n", (uint_t) getpid());
 	if (write(fd, buf, strlen(buf)) != (ssize_t)strlen(buf)) {
 		DEBUG(0,("ERROR: can't write to file %s: %s\n", 
 			 pidFile, strerror(errno)));
