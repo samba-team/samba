@@ -39,7 +39,7 @@ typedef struct recycle_bin_struct
 {
 	TALLOC_CTX *ctx;
 	char	*repository;		/* name of the recycle bin directory */
-	BOOL	keep_directories;	/* keep directory structure of deleted file in recycle bin */
+	BOOL	keep_dir_tree;		/* keep directory structure of deleted file in recycle bin */
 	BOOL	versions;		/* create versions of deleted files with identical name */
 	BOOL	touch;			/* touch access date of deleted file */
 	char	*exclude;		/* which files to exclude */
@@ -47,8 +47,6 @@ typedef struct recycle_bin_struct
 	char	*noversions;		/* which files to exclude from versioning */
 	SMB_OFF_T maxsize;		/* maximum file size to be saved */
 } recycle_bin_struct;
-
-static BOOL checkparam(char *haystack,char *needle);
 
 /* VFS operations */
 static struct vfs_ops default_vfs_ops;   /* For passthrough operation */
@@ -71,6 +69,16 @@ static vfs_op_tuple recycle_ops[] = {
 	{NULL,				SMB_VFS_OP_NOOP,	SMB_VFS_LAYER_NOOP}
 };
 
+static BOOL check_bool_param(const char *value)
+{
+	if (strwicmp(value, "yes") == 0 ||
+	    strwicmp(value, "true") == 0 ||
+	    strwicmp(value, "1") == 0)
+		return True;
+
+	return False;
+}
+
 /**
  * VFS initialisation function.
  *
@@ -81,7 +89,7 @@ vfs_op_tuple *vfs_init(int *vfs_version, struct vfs_ops *def_vfs_ops)
 	DEBUG(10, ("Initializing VFS module recycle\n"));
 	*vfs_version = SMB_VFS_INTERFACE_VERSION;
 	memcpy(&default_vfs_ops, def_vfs_ops, sizeof(struct vfs_ops));
-	vfs_recycle_debug_level = debug_add_class("recycle.bin");
+	vfs_recycle_debug_level = debug_add_class("vfs_recycle_bin");
 	if (vfs_recycle_debug_level == -1) {
 		vfs_recycle_debug_level = DBGC_VFS;
 		DEBUG(0, ("vfs_recycle: Couldn't register custom debugging class!\n"));
@@ -125,7 +133,7 @@ static int recycle_connect(struct connection_struct *conn, const char *service, 
 	/* Set defaults */
 	recbin->repository = talloc_strdup(ctx, ".recycle");
 	ALLOC_CHECK(recbin->repository, error);
-	recbin->keep_directories = False;
+	recbin->keep_dir_tree = False;
 	recbin->versions = False;
 	recbin->touch = False;
 	recbin->exclude = "";
@@ -136,22 +144,28 @@ static int recycle_connect(struct connection_struct *conn, const char *service, 
 	/* parse configuration options */
 	servicename = talloc_strdup(recbin->ctx, lp_servicename(SNUM(conn)));
 	DEBUG(10, ("servicename = %s\n",servicename));
-	if ((tmp_str = lp_parm_string(servicename, "recycle.bin", "repository")) != NULL) {
+	if ((tmp_str = lp_parm_string(servicename, "vfs_recycle_bin", "repository")) != NULL) {
 		recbin->repository = talloc_sub_conn(ctx, conn, tmp_str);
 		ALLOC_CHECK(recbin->repository, error);
 		trim_string(recbin->repository, "/", "/");
 		DEBUG(5, ("recycle.bin: repository = %s\n", recbin->repository));
 	}
-	if ((tmp_str = lp_parm_string(servicename, "recycle.bin", "mode")) != NULL) {
-		if (checkparam(tmp_str, "KEEP_DIRECTORIES") == True)
-			recbin->keep_directories = True;
-		if (checkparam(tmp_str, "VERSIONS") == True)
-			recbin->versions = True;
-		if (checkparam(tmp_str, "TOUCH") == True)
-			recbin->touch = True;
-		DEBUG(5, ("recycle.bin: mode = %s\n", tmp_str));
+	if ((tmp_str = lp_parm_string(servicename, "vfs_recycle_bin", "keeptree")) != NULL) {
+		if (check_bool_param(tmp_str) == True)
+			recbin->keep_dir_tree = True;
+		DEBUG(5, ("recycle.bin: keeptree = %s\n", tmp_str));
 	}
-	if ((tmp_str = lp_parm_string(servicename, "recycle.bin", "maxsize")) != NULL) {
+	if ((tmp_str = lp_parm_string(servicename, "vfs_recycle_bin", "versions")) != NULL) {
+		if (check_bool_param(tmp_str) == True)
+			recbin->versions = True;
+		DEBUG(5, ("recycle.bin: versions = %s\n", tmp_str));
+	}
+	if ((tmp_str = lp_parm_string(servicename, "vfs_recycle_bin", "touch")) != NULL) {
+		if (check_bool_param(tmp_str) == True)
+			recbin->touch = True;
+		DEBUG(5, ("recycle.bin: touch = %s\n", tmp_str));
+	}
+	if ((tmp_str = lp_parm_string(servicename, "vfs_recycle_bin", "maxsize")) != NULL) {
 		recbin->maxsize = strtoul(tmp_str, NULL, 10);
 		if (recbin->maxsize == 0) {
 			recbin->maxsize = -1;
@@ -160,17 +174,17 @@ static int recycle_connect(struct connection_struct *conn, const char *service, 
 			DEBUG(5, ("recycle.bin: maxsize = %ld\n", (long int)recbin->maxsize));
 		}
 	}
-	if ((tmp_str = lp_parm_string(servicename, "recycle.bin", "exclude")) != NULL) {
+	if ((tmp_str = lp_parm_string(servicename, "vfs_recycle_bin", "exclude")) != NULL) {
 		recbin->exclude = talloc_strdup(ctx, tmp_str);
 		ALLOC_CHECK(recbin->exclude, error);
 		DEBUG(5, ("recycle.bin: exclude = %s\n", recbin->exclude));
 	}
-	if ((tmp_str = lp_parm_string(servicename,"recycle.bin", "exclude_dir")) != NULL) {
+	if ((tmp_str = lp_parm_string(servicename,"vfs_recycle_bin", "exclude_dir")) != NULL) {
 		recbin->exclude_dir = talloc_strdup(ctx, tmp_str);
 		ALLOC_CHECK(recbin->exclude_dir, error);
 		DEBUG(5, ("recycle.bin: exclude_dir = %s\n", recbin->exclude_dir));
 	}
-	if ((tmp_str = lp_parm_string(servicename,"recycle.bin", "noversions")) != NULL) {
+	if ((tmp_str = lp_parm_string(servicename,"vfs_recycle_bin", "noversions")) != NULL) {
 		recbin->noversions = talloc_strdup(ctx, tmp_str);
 		ALLOC_CHECK(recbin->noversions, error);
 		DEBUG(5, ("recycle.bin: noversions = %s\n", recbin->noversions));
@@ -292,7 +306,7 @@ done:
  * @param needle string to be matched exactly to haystack
  * @return True if found
  **/
-static BOOL checkparam(char *haystack, char *needle)
+static BOOL checkparam(const char *haystack, const char *needle)
 {
 	char *token;
 	char *tok_str;
@@ -324,7 +338,7 @@ done:
  * @param needle string to be matched exectly to haystack including pattern matching
  * @return True if found
  **/
-static BOOL matchparam(char *haystack, char *needle)
+static BOOL matchparam(const char *haystack, const char *needle)
 {
 	char *token;
 	char *tok_str;
@@ -386,7 +400,7 @@ static int recycle_unlink(connection_struct *conn, const char *inname)
 	SMB_BIG_UINT dfree, dsize, bsize;
 	SMB_OFF_T file_size, space_avail;
 	BOOL exist;
-	int rc;
+	int rc = -1;
 
 	file_name = strdup(inname);
 	ALLOC_CHECK(file_name, done);
@@ -485,7 +499,7 @@ static int recycle_unlink(connection_struct *conn, const char *inname)
 	safe_strcpy(temp_name, recbin->repository, PATH_MAX);
 
 	/* see if we need to recreate the original directory structure in the recycle bin */
-	if (recbin->keep_directories == True) {
+	if (recbin->keep_dir_tree == True) {
 		safe_strcat(temp_name, "/", PATH_MAX);
 		safe_strcat(temp_name, path_name, PATH_MAX);
 	}
@@ -502,15 +516,16 @@ static int recycle_unlink(connection_struct *conn, const char *inname)
 		}
 	}
 
-	safe_strcat(temp_name, "/", PATH_MAX);
-	safe_strcat(temp_name, base, PATH_MAX);
+	final_name = (char *)malloc(PATH_MAX);
+	ALLOC_CHECK(final_name, done);
+	snprintf(final_name, PATH_MAX, "%s/%s", temp_name, base);
 	DEBUG(10, ("recycle.bin: recycled file name%s\n", temp_name));		/* new filename with path */
 
 	/* check if we should delete file from recycle bin */
-	if (recycle_file_exist(conn, temp_name)) {
+	if (recycle_file_exist(conn, final_name)) {
 		if (recbin->versions == False || matchparam(recbin->noversions, base) == True) {
-			DEBUG(3, ("recycle.bin: Removing old file %s from recycle bin\n", temp_name));
-			if (default_vfs_ops.unlink(conn, temp_name) != 0) {
+			DEBUG(3, ("recycle.bin: Removing old file %s from recycle bin\n", final_name));
+			if (default_vfs_ops.unlink(conn, final_name) != 0) {
 				DEBUG(1, ("recycle.bin: Error deleting old file: %s\n", strerror(errno)));
 			}
 		}
@@ -518,12 +533,8 @@ static int recycle_unlink(connection_struct *conn, const char *inname)
 
 	/* rename file we move to recycle bin */
 	i = 1;
-	final_name = (char *)malloc(PATH_MAX);
-	ALLOC_CHECK(final_name, done);
-	final_name = safe_strcpy(final_name, temp_name, PATH_MAX);
 	while (recycle_file_exist(conn, final_name)) {
-		snprintf(final_name, PATH_MAX, "Copy #%d of ", i++);
-		safe_strcat(final_name, temp_name, PATH_MAX);
+		snprintf(final_name, PATH_MAX, "%s/Copy #%d of %s", temp_name, i++, base);
 	}
 
 	DEBUG(10, ("recycle.bin: Moving %s to %s\n", file_name, final_name));
