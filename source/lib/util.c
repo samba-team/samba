@@ -4390,3 +4390,41 @@ char *align_offset(char *q, char *base, int align_offset_len)
 	return q;
 }
 
+static void print_asc(int level, unsigned char *buf,int len)
+{
+	int i;
+	for (i=0;i<len;i++)
+		DEBUG(level,("%c", isprint(buf[i])?buf[i]:'.'));
+}
+
+void dump_data(int level,unsigned char *buf,int len)
+{
+  int i=0;
+  if (len<=0) return;
+
+  DEBUG(level,("[%03X] ",i));
+  for (i=0;i<len;) {
+    DEBUG(level,("%02X ",(int)buf[i]));
+    i++;
+    if (i%8 == 0) DEBUG(level,(" "));
+    if (i%16 == 0) {      
+      print_asc(level,&buf[i-16],8); DEBUG(level,(" "));
+      print_asc(level,&buf[i-8],8); DEBUG(level,("\n"));
+      if (i<len) DEBUG(level,("[%03X] ",i));
+    }
+  }
+  if (i%16) {
+    int n;
+
+    n = 16 - (i%16);
+    DEBUG(level,(" "));
+    if (n>8) DEBUG(level,(" "));
+    while (n--) DEBUG(level,("   "));
+
+    n = MIN(8,i%16);
+    print_asc(level,&buf[i-(i%16)],n); DEBUG(level,(" "));
+    n = (i%16) - n;
+    if (n>0) print_asc(level,&buf[i-n],n); 
+    DEBUG(level,("\n"));    
+  }
+}

@@ -386,6 +386,12 @@ static void process_dgram(struct packet_struct *p)
      process_logon_packet(p,buf2,len);
      return;
    }
+
+   /* datagram packet received for the NT domain log on mailslot */
+   if (strequal(smb_buf(buf),NT_LOGON_MAILSLOT)) {
+     process_logon_packet(p,buf2,len);
+     return;
+   }
 }
 
 /****************************************************************************

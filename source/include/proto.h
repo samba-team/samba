@@ -1071,3 +1071,4 @@ void pstrcpy(char *dest, char *src);
 char *align4(char *q, char *base);
 char *align2(char *q, char *base);
 char *align_offset(char *q, char *base, int align_offset_len);
+void dump_data(int level,unsigned char *buf,int len);
