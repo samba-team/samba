@@ -338,7 +338,9 @@ static void brl_notify_unlock(struct brl_context *brl,
 			if (last_notice != -1 && brl_overlap(&locks[i], &locks[last_notice])) {
 				continue;
 			}
-			last_notice = i;
+			if (locks[i].lock_type == PENDING_WRITE_LOCK) {
+				last_notice = i;
+			}
 			data.data = (void *)&locks[i].notify_ptr;
 			data.length = sizeof(void *);
 			messaging_send(brl->messaging_ctx, locks[i].context.server, MSG_BRL_RETRY, &data);
