@@ -107,23 +107,59 @@ BOOL asn1_pop_tag(ASN1_DATA *data)
 	return True;
 }
 
-static void push_int_bigendian(ASN1_DATA *data, int i)
+/* "i" is the one's complement representation, as is the normal result of an
+ * implicit signed->unsigned conversion */
+
+static void push_int_bigendian(ASN1_DATA *data, unsigned int i, BOOL negative)
 {
 	uint8_t lowest = i & 0xFF;
 
 	i = i >> 8;
 	if (i != 0)
-		push_int_bigendian(data, i);
+		push_int_bigendian(data, i, negative);
+
+	if (data->nesting->start+1 == data->ofs) {
+
+		/* We did not write anything yet, looking at the highest
+		 * valued byte */
+
+		if (negative) {
+			/* Don't write leading 0xff's */
+			if (lowest == 0xFF)
+				return;
+
+			if ((lowest & 0x80) == 0) {
+				/* The only exception for a leading 0xff is if
+				 * the highest bit is 0, which would indicate
+				 * a positive value */
+				asn1_write_uint8(data, 0xff);
+			}
+		} else {
+			if (lowest & 0x80) {
+				/* The highest bit of a positive integer is 1,
+				 * this would indicate a negative number. Push
+				 * a 0 to indicate a positive one */
+				asn1_write_uint8(data, 0);
+			}
+		}
+	}
 
 	asn1_write_uint8(data, lowest);
 }
-
 
 /* write an integer */
 BOOL asn1_write_Integer(ASN1_DATA *data, int i)
 {
 	if (!asn1_push_tag(data, ASN1_INTEGER)) return False;
-	push_int_bigendian(data, i);
+	if (i == -1) {
+		/* -1 is special as it consists of all-0xff bytes. In
+                    push_int_bigendian this is the only case that is not
+                    properly handled, as all 0xff bytes would be handled as
+                    leading ones to be ignored. */
+		asn1_write_uint8(data, 0xff);
+	} else {
+		push_int_bigendian(data, i, i<0);
+	}
 	return asn1_pop_tag(data);
 }
 
