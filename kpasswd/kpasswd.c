@@ -144,7 +144,7 @@ main (int argc, char **argv)
     if (ret)
 	errx (1, "krb5_init_context failed: %d", ret);
   
-    ret = krb5_get_init_creds_opt_alloc (&opt);
+    ret = krb5_get_init_creds_opt_alloc (context, &opt);
     if (ret)
 	krb5_err(context, 1, ret, "krb5_get_init_creds_opt_alloc");
     

@@ -517,7 +517,7 @@ get_creds(krb5_context context, krb5_ccache *cache)
 			      "kadmin", HPROP_NAME, NULL);
     if(ret) krb5_err(context, 1, ret, "krb5_make_principal");
 
-    ret = krb5_get_init_creds_opt_alloc(&init_opts);
+    ret = krb5_get_init_creds_opt_alloc(context, &init_opts);
     if(ret) krb5_err(context, 1, ret, "krb5_get_init_creds_opt_alloc");
     krb5_get_init_creds_opt_set_preauth_list(init_opts, &preauth, 1);
 

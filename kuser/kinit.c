@@ -415,7 +415,7 @@ get_new_tickets(krb5_context context,
 
     memset(&cred, 0, sizeof(cred));
 
-    ret = krb5_get_init_creds_opt_alloc (&opt);
+    ret = krb5_get_init_creds_opt_alloc (context, &opt);
     if (ret)
 	krb5_err(context, 1, ret, "krb5_get_init_creds_opt_alloc");
     

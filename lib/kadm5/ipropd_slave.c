@@ -89,7 +89,7 @@ get_creds(krb5_context context, const char *keytab_str,
 				   KRB5_NT_SRV_HST, &client);
     if (ret) krb5_err(context, 1, ret, "krb5_sname_to_principal");
 
-    ret = krb5_get_init_creds_opt_alloc(&init_opts);
+    ret = krb5_get_init_creds_opt_alloc(context, &init_opts);
     if (ret) krb5_err(context, 1, ret, "krb5_get_init_creds_opt_alloc");
 
     asprintf (&server, "%s/%s", IPROP_NAME, host);

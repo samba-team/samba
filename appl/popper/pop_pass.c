@@ -43,7 +43,7 @@ krb5_verify_password (POP *p)
     krb5_principal client, server;
     krb5_creds creds;
 
-    ret = krb5_get_init_creds_opt_alloc (&get_options);
+    ret = krb5_get_init_creds_opt_alloc (p->context, &get_options);
     if (ret) {
 	pop_log(p, POP_PRIORITY, "krb5_get_init_creds_opt_init: %s",
 		krb5_get_err_text (p->context, ret));

@@ -144,7 +144,7 @@ get_new_cache(krb5_context context,
     krb5_get_init_creds_opt *opt;
     krb5_ccache id;
     
-    ret = krb5_get_init_creds_opt_alloc (&opt);
+    ret = krb5_get_init_creds_opt_alloc (context, &opt);
     if (ret)
 	return ret;
 

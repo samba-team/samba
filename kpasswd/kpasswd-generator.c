@@ -95,7 +95,7 @@ generate_requests (const char *filename, unsigned nreq)
 	krb5_data result_code_string, result_string;
 	char *old_pwd, *new_pwd;
 
-	krb5_get_init_creds_opt_alloc (&opt);
+	krb5_get_init_creds_opt_alloc (context, &opt);
 	krb5_get_init_creds_opt_set_tkt_life (opt, 300);
 	krb5_get_init_creds_opt_set_forwardable (opt, FALSE);
 	krb5_get_init_creds_opt_set_proxiable (opt, FALSE);

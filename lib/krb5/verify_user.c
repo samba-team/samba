@@ -139,7 +139,7 @@ verify_user_opt_int(krb5_context context,
     krb5_get_init_creds_opt *opt;
     krb5_creds cred;
 
-    ret = krb5_get_init_creds_opt_alloc (&opt);
+    ret = krb5_get_init_creds_opt_alloc (context, &opt);
     if (ret)
 	return ret;
     krb5_get_init_creds_opt_set_default_flags(context, NULL, 
