@@ -79,6 +79,10 @@ void smbw_init(void)
 
 	load_interfaces();
 
+	if ((p=smbw_getshared("SERVICESF"))) {
+		pstrcpy(servicesf, p);
+	}
+
 	lp_load(servicesf,True,False,False);
 
 	get_myname(global_myname);
@@ -246,86 +250,105 @@ void clean_fname(char *name)
 }
 
 
+
+/***************************************************** 
+find a workgroup (any workgroup!) that has a master 
+browser on the local network
+*******************************************************/
+static char *smbw_find_workgroup(void)
+{
+	fstring server;
+	char *p;
+	struct in_addr *ip_list = NULL;
+	int count = 0;
+	int i;
+
+	/* first off see if an existing workgroup name exists */
+	p = smbw_getshared("WORKGROUP");
+	if (!p) p = lp_workgroup();
+	
+	slprintf(server, sizeof(server), "%s#1D", p);
+	if (smbw_server(server, "IPC$")) return p;
+
+	/* go looking for workgroups */
+	if (!name_resolve_bcast(MSBROWSE, 1, &ip_list, &count)) {
+		DEBUG(1,("No workgroups found!"));
+		return p;
+	}
+
+	for (i=0;i<count;i++) {
+		static fstring name;
+		if (name_status_find(0x1d, ip_list[i], name)) {
+			slprintf(server, sizeof(server), "%s#1D", name);
+			if (smbw_server(server, "IPC$")) {
+				free(ip_list);
+				return name;
+			}
+		}
+	}
+
+	free(ip_list);
+
+	return p;
+}
+
 /***************************************************** 
 parse a smb path into its components. 
+server is one of
+  1) the name of the SMB server
+  2) WORKGROUP#1D for share listing
+  3) WORKGROUP#__ for workgroup listing
+share is the share on the server to query
+path is the SMB path on the server
+return the full path (ie. add cwd if needed)
 *******************************************************/
 char *smbw_parse_path(const char *fname, char *server, char *share, char *path)
 {
 	static pstring s;
-	char *p, *p2;
-	int len = strlen(smbw_prefix)-1;
+	char *p;
+	int len;
+	fstring workgroup;
 
-	*server = *share = *path = 0;
-
-	if (fname[0] == '/') {
-		pstrcpy(s, fname);
+	/* add cwd if necessary */
+	if (fname[0] != '/') {
+		slprintf(s, sizeof(s), "%s/%s", smbw_cwd, fname);
 	} else {
-		slprintf(s,sizeof(s)-1, "%s/%s", smbw_cwd, fname);
+		pstrcpy(s, fname);
 	}
 	clean_fname(s);
 
-	DEBUG(5,("cleaned %s (fname=%s cwd=%s)\n", 
-		 s, fname, smbw_cwd));
-
+	/* see if it has the right prefix */
+	len = strlen(smbw_prefix)-1;
 	if (strncmp(s,smbw_prefix,len) || 
 	    (s[len] != '/' && s[len] != 0)) return s;
 
-	p = s + len;
+	/* ok, its for us. Now parse out the workgroup, share etc. */
+	p = s+len;
 	if (*p == '/') p++;
-
-	p2 = strchr(p,'/');
-
-	if (p2) {
-		len = (int)(p2-p);
-	} else {
-		len = strlen(p);
-	}
-
-	len = MIN(len,sizeof(fstring)-1);
-
-	strncpy(server, p, len);
-	server[len] = 0;		
-
-	p = p2;
-	if (!p) {
-		if (len == 0) {
-			char *workgroup = smbw_getshared("WORKGROUP");
-			if (!workgroup) workgroup = lp_workgroup();
-			slprintf(server,sizeof(fstring)-1, "%s#1D", workgroup);
-		}
+	if (!next_token(&p, workgroup, "/", sizeof(fstring))) {
+		/* we're in /smb - give a list of workgroups */
+		slprintf(server,sizeof(fstring), "%s#01", smbw_find_workgroup());
 		fstrcpy(share,"IPC$");
 		pstrcpy(path,"");
-		goto ok;
+		return s;
 	}
 
-	p++;
-	p2 = strchr(p,'/');
-
-	if (p2) {
-		len = (int)(p2-p);
-	} else {
-		len = strlen(p);
+	if (!next_token(&p, server, "/", sizeof(fstring))) {
+		/* we are in /smb/WORKGROUP */
+		slprintf(server,sizeof(fstring), "%s#1D", workgroup);
+		fstrcpy(share,"IPC$");
+		pstrcpy(path,"");
 	}
 
-	len = MIN(len,sizeof(fstring)-1);
-	
-	strncpy(share, p, len);
-	share[len] = 0;
-
-	p = p2;
-	if (!p) {
-		pstrcpy(path,"\\");
-		goto ok;
+	if (!next_token(&p, share, "/", sizeof(fstring))) {
+		/* we are in /smb/WORKGROUP/SERVER */
+		fstrcpy(share,"IPC$");
+		pstrcpy(path,"");
 	}
 
-	pstrcpy(path,p);
+	pstrcpy(path, p);
 
 	all_string_sub(path, "/", "\\", 0);
-
- ok:
-	DEBUG(4,("parsed path name=%s cwd=%s [%s] [%s] [%s]\n", 
-		 fname, smbw_cwd,
-		 server, share, path));
 
 	return s;
 }
@@ -437,7 +460,7 @@ struct smbw_server *smbw_server(char *server, char *share)
 
 	ip = ipzero;
 	ZERO_STRUCT(c);
-	
+
 	get_auth_data_fn(server, share, &workgroup, &username, &password);
 
 	/* try to use an existing connection */
@@ -459,7 +482,8 @@ struct smbw_server *smbw_server(char *server, char *share)
 
 	DEBUG(4,("server_n=[%s] server=[%s]\n", server_n, server));
 
-	if ((p=strchr(server_n,'#')) && strcmp(p+1,"1D")==0) {
+	if ((p=strchr(server_n,'#')) && 
+	    (strcmp(p+1,"1D")==0 || strcmp(p+1,"01")==0)) {
 		struct in_addr sip;
 		pstring s;
 
