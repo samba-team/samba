@@ -373,9 +373,13 @@ int main(int argc, char **argv)
         usage(prog_name, True);
     }
 
-    if(*user_name)
-      pwd = getpwnam(user_name);
-    else {
+    if(*user_name) {
+      if((pwd = getpwnam(user_name)) == NULL) {
+        fprintf(stderr, "%s: User \"%s\" was not found in system password file.\n", 
+                    prog_name, user_name);
+        exit(1);
+      }
+    } else {
       if((pwd = getpwuid(real_uid)) != NULL)
         pstrcpy( user_name, pwd->pw_name);
     }
