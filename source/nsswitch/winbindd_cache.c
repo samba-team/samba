@@ -56,6 +56,7 @@ static uint32 cached_sequence_number(char *domain_name)
 	time_t t = time(NULL);
 
 	slprintf(keystr, sizeof(keystr), "CACHESEQ/%s", domain_name);
+	dos_to_unix(keystr, True);             /* Convert key to unix-codepage */
 	dbuf = tdb_fetch_by_string(cache_tdb, keystr);
 	if (!dbuf.dptr || dbuf.dsize != sizeof(rec)) {
 		goto refetch;
@@ -92,6 +93,7 @@ static void set_cache_sequence_number(char *domain_name, char *cache_type, char 
 	fstring keystr;
 	slprintf(keystr,sizeof(keystr),"CACHESEQ %s/%s/%s",
 		 domain_name, cache_type, subkey?subkey:"");
+	dos_to_unix(keystr, True);             /* Convert key to unix-codepage */
 	tdb_store_int(cache_tdb, keystr, cached_sequence_number(domain_name));
 }
 
@@ -101,6 +103,7 @@ static uint32 get_cache_sequence_number(char *domain_name, char *cache_type, cha
 	uint32 seq_num;
 	slprintf(keystr,sizeof(keystr),"CACHESEQ %s/%s/%s",
 		 domain_name, cache_type, subkey?subkey:"");
+	dos_to_unix(keystr, True);             /* Convert key to unix-codepage */
 	seq_num = (uint32)tdb_fetch_int(cache_tdb, keystr);
 	DEBUG(4,("%s is %u\n", keystr, (unsigned)seq_num));
 	return seq_num;
@@ -124,7 +127,7 @@ static void fill_cache(char *domain_name, char *cache_type,
 	/* Store data as a mega-huge chunk in the tdb */
 	slprintf(keystr, sizeof(keystr), "%s CACHE DATA/%s", cache_type,
 		 domain_name);
-
+	dos_to_unix(keystr, True);             /* Convert key to unix-codepage */
 	tdb_store_by_string(cache_tdb, keystr, 
 			    sam_entries, sizeof(struct acct_info) * num_sam_entries);
 
@@ -156,6 +159,7 @@ static void fill_cache_entry(char *domain, char *cache_type, char *name, void *b
 
 	/* Create key for store */
 	slprintf(keystr, sizeof(keystr), "%s/%s/%s", cache_type, domain, name);
+	dos_to_unix(keystr, True);             /* Convert key to unix-codepage */
 
 	DEBUG(4, ("filling cache entry %s\n", keystr));
 
@@ -200,6 +204,7 @@ void winbindd_fill_group_cache_entry(char *domain, char *group_name,
 
         /* Fill extra data */
         slprintf(keystr, sizeof(keystr), "%s/%s/%s DATA", CACHE_TYPE_GROUP, domain, group_name);
+        dos_to_unix(keystr, True);         /* Convert key to unix-codepage */
         tdb_store_by_string(cache_tdb, keystr, extra_data, extra_data_len);
 
 	set_cache_sequence_number(domain, CACHE_TYPE_GROUP, group_name);
@@ -222,6 +227,7 @@ void winbindd_fill_gid_cache_entry(char *domain, gid_t gid,
 
         /* Fill extra data */
         slprintf(keystr, sizeof(keystr), "%s/%s/%s DATA", CACHE_TYPE_GROUP, domain, gidstr);
+        dos_to_unix(keystr, True);         /* Convert key to unix-codepage */
         tdb_store_by_string(cache_tdb, keystr, extra_data, extra_data_len);
 
 	set_cache_sequence_number(domain, CACHE_TYPE_GROUP, gidstr);
@@ -250,6 +256,7 @@ static BOOL fetch_cache(char *domain_name, char *cache_type,
         /* Create key */        
         slprintf(keystr, sizeof(keystr), "%s CACHE DATA/%s", cache_type,
                  domain_name);
+        dos_to_unix(keystr, True);         /* Convert key to unix-codepage */
 	
         /* Fetch cache information */
 	data = tdb_fetch_by_string(cache_tdb, keystr);
@@ -298,6 +305,7 @@ static BOOL fetch_cache_entry(char *domain, char *cache_type, char *name, void *
     
 	/* Create key for lookup */
 	slprintf(keystr, sizeof(keystr), "%s/%s/%s", cache_type, domain, name);
+	dos_to_unix(keystr, True);             /* Convert key to unix-codepage */
     
 	/* Look up cache entry */
 	data = tdb_fetch_by_string(cache_tdb, keystr);
@@ -362,6 +370,7 @@ BOOL winbindd_fetch_group_cache_entry(char *domain_name, char *group,
 	
         /* Fetch extra data */
         slprintf(keystr, sizeof(keystr), "%s/%s/%s DATA", CACHE_TYPE_GROUP, domain_name, group);
+        dos_to_unix(keystr, True);         /* Convert key to unix-codepage */
         data = tdb_fetch_by_string(cache_tdb, keystr);
 
         if (!data.dptr) return False;
@@ -399,6 +408,7 @@ BOOL winbindd_fetch_gid_cache_entry(char *domain_name, gid_t gid,
 
         /* Fetch extra data */
         slprintf(keystr, sizeof(keystr), "%s/%s/%s DATA", CACHE_TYPE_GROUP, domain_name, gidstr);
+        dos_to_unix(keystr, True);         /* Convert key to unix-codepage */
         data = tdb_fetch_by_string(cache_tdb, keystr);
         if (!data.dptr) return False;
 

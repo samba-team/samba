@@ -78,6 +78,7 @@ static BOOL get_id_from_rid(char *domain_name, uint32 rid, int *id,
     /* Check if rid is present in database */
 
     slprintf(keystr, sizeof(keystr), "%s/%d", domain_name, rid);
+	dos_to_unix(keystr, True);             /* Convert key to unix-codepage */
     
     key.dptr = keystr;
     key.dsize = strlen(keystr) + 1;
