@@ -198,55 +198,54 @@ static WERROR rpc_open_key(TALLOC_CTX *mem_ctx, struct registry_hive *h, const c
 static WERROR rpc_get_value_by_index(TALLOC_CTX *mem_ctx, struct registry_key *parent, int n, struct registry_value **value)  
 {
 	struct rpc_key_data *mykeydata = parent->backend_data;
-	uint32_t requested_len = 0;
 	WERROR error;
-
+	struct winreg_EnumValue r;
+	uint32 type, len1, len2 = 0;
+	struct EnumValueIn buf_name, buf_val;
+	NTSTATUS status;
+	
 	if(mykeydata->num_values == -1) {
 		error = rpc_query_key(parent);
 		if(!W_ERROR_IS_OK(error)) return error;
 	}
 
-	requested_len = mykeydata->max_valdatalen;
-
-#if 0 /* EnumValue is not working yet ... */
+	len1 = mykeydata->max_valdatalen;
+	
 	r.in.handle = &mykeydata->pol;
 	r.in.enum_index = n;
-	r.in.type = r.out.type = &type;
-	r.in.requested_len = r.out.requested_len = &requested_len;
-	r.in.returned_len = r.out.returned_len = &returned_len;
-	vn.max_len = mykeydata->max_valnamelen * 2;
-	vn.len = 0;
-	vn.buf = NULL;
-	if(vn.max_len > 0) {
-		vn.len = 0;
-		vn.max_len = mykeydata->max_valnamelen*2;
-		/* FIXME: we should not point a 'char *' to a const buffer!!! --metze*/
-		vn.buf = "";
-	}
-	r.in.name = r.out.name = &vn;
-	vb.max_len = mykeydata->max_valdatalen;
-	vb.offset = 0x0;
-	vb.len = 0x0;
-	vb.buffer = talloc_array_p(mem_ctx, uint8, mykeydata->max_valdatalen);
-	r.in.value = r.out.value = &vb;
+	r.in.name_in.len = 0;
+	r.in.name_in.max_len = mykeydata->max_valnamelen * 2;
+	buf_name.max_len = mykeydata->max_valnamelen;
+	buf_name.offset = 0;
+	buf_name.len = 0;
+	r.in.name_in.buffer = &buf_name;
+	r.in.type = &type;
+	buf_val.max_len = mykeydata->max_valdatalen;
+	buf_val.offset = 0;
+	buf_val.len = 0;
+	r.in.value_in = &buf_val;
+	r.in.value_len1 = &len1;
+	r.in.value_len2 = &len2;
 
-	status = dcerpc_winreg_EnumValue((struct dcerpc_pipe *)parent->handle->backend_data, parent->mem_ctx, &r);
+	
+	status = dcerpc_winreg_EnumValue((struct dcerpc_pipe *)parent->hive->backend_data, mem_ctx, &r);
 	if(NT_STATUS_IS_ERR(status)) {
 		DEBUG(0, ("Error in EnumValue: %s\n", nt_errstr(status)));
+		return WERR_GENERAL_FAILURE;
 	}
 	
 	if(NT_STATUS_IS_OK(status) && W_ERROR_IS_OK(r.out.result)) {
-		*value = reg_val_new(parent, NULL);
-		(*value)->name = r.out.name->buf;
+		*value = talloc_p(mem_ctx, struct registry_value);
+		(*value)->parent = parent;
+		(*value)->name = talloc_strdup(mem_ctx, r.out.name_out.name);
+		printf("Type: %d\n", type);
 		(*value)->data_type = type;
-		(*value)->data_len = r.out.value->len;
-		(*value)->data_blk = r.out.value->buffer;
-		exit(1);
+		(*value)->data_len = r.out.value_out->buffer.length;
+		(*value)->data_blk = talloc_memdup(mem_ctx, r.out.value_out->buffer.data, r.out.value_out->buffer.length);
 		return WERR_OK;
 	}
-#endif
 	
-	return WERR_NOT_SUPPORTED;
+	return r.out.result;
 }
 
 static WERROR rpc_get_subkey_by_index(TALLOC_CTX *mem_ctx, struct registry_key *parent, int n, struct registry_key **subkey) 
