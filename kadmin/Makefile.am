@@ -2,7 +2,7 @@
 
 include $(top_srcdir)/Makefile.am.common
 
-INCLUDES += $(INCLUDE_readline) $(INCLUDE_krb4) $(INCLUDE_des) -I$(srcdir)/../lib/krb5
+INCLUDES += $(INCLUDE_readline) $(INCLUDE_des) -I$(srcdir)/../lib/krb5
 
 sbin_PROGRAMS = kadmin
 
@@ -30,19 +30,12 @@ kadmin_SOURCES =				\
 	random_password.c			\
 	kadmin_locl.h
 
-if KRB4
-KRB4LIB = $(LIB_krb4)
-version4_c = version4.c
-endif
-
 kadmind_SOURCES =				\
 	kadmind.c				\
 	server.c				\
 	kadmin_locl.h				\
 	$(version4_c)				\
 	kadm_conn.c
-
-EXTRA_kadmind_SOURCES = version4.c
 
 add_random_users_SOURCES = add-random-users.c
 
@@ -55,7 +48,7 @@ LDADD_common = \
 	$(LIB_roken) \
 	$(DBLIB)
 
-kadmind_LDADD = $(KRB4LIB) $(top_builddir)/lib/kadm5/libkadm5srv.la \
+kadmind_LDADD = $(top_builddir)/lib/kadm5/libkadm5srv.la \
 	$(LDADD_common) \
 	$(LIB_pidfile) \
 	$(LIB_dlopen)

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2003 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2004 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -45,9 +45,6 @@ static int version_flag;
 static int debug_flag;
 static char *port_str;
 char *realm;
-#ifdef KRB4
-int do_kerberos4 = 0;
-#endif
 
 static struct getargs args[] = {
     { 
@@ -74,11 +71,6 @@ static struct getargs args[] = {
     {	"debug",	'd',	arg_flag,   &debug_flag, 
 	"enable debugging" 
     },
-#ifdef KRB4
-    {	"kerberos4", 0,		arg_flag,   &do_kerberos4,
-	"don't respond to kerberos 4 requests"
-    },
-#endif
     {	"ports",	'p',	arg_string, &port_str, 
 	"ports to listen to", "port" },
     {	"help",		'h',	arg_flag,   &help_flag },
