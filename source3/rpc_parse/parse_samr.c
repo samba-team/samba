@@ -999,11 +999,13 @@ static void sam_io_sam_info_2(char *desc,  SAM_INFO_2 *sam, prs_struct *ps, int 
 
 	for (i = 0; i < sam->num_entries; i++)
 	{
+		prs_grow(ps);
 		sam_io_sam_entry2("", &(sam->sam[i]), ps, depth);
 	}
 
 	for (i = 0; i < sam->num_entries; i++)
 	{
+		prs_grow(ps);
 		sam_io_sam_str2 ("", &(sam->str[i]),
 							 sam->sam[i].hdr_srv_name.buffer,
 							 sam->sam[i].hdr_srv_desc.buffer,
@@ -1082,11 +1084,13 @@ static void sam_io_sam_info_1(char *desc,  SAM_INFO_1 *sam, prs_struct *ps, int 
 
 	for (i = 0; i < sam->num_entries; i++)
 	{
+		prs_grow(ps);
 		sam_io_sam_entry1("", &(sam->sam[i]), ps, depth);
 	}
 
 	for (i = 0; i < sam->num_entries; i++)
 	{
+		prs_grow(ps);
 		sam_io_sam_str1 ("", &(sam->str[i]),
 							 sam->sam[i].hdr_acct_name.buffer,
 							 sam->sam[i].hdr_user_name.buffer,
@@ -1300,11 +1304,13 @@ void samr_io_r_enum_dom_groups(char *desc,  SAMR_R_ENUM_DOM_GROUPS *r_u, prs_str
 
 		for (i = 0; i < r_u->num_entries; i++)
 		{
+			prs_grow(ps);
 			sam_io_sam_entry3("", &(r_u->sam[i]), ps, depth);
 		}
 
 		for (i = 0; i < r_u->num_entries; i++)
 		{
+			prs_grow(ps);
 			sam_io_sam_str3 ("", &(r_u->str[i]),
 			                     r_u->sam[i].hdr_grp_name.buffer,
 			                     r_u->sam[i].hdr_grp_desc.buffer,
@@ -1472,6 +1478,7 @@ void samr_io_q_lookup_ids(char *desc,  SAMR_Q_LOOKUP_IDS *q_u, prs_struct *ps, i
 	{
 		if (q_u->ptr_sid[i] != 0)
 		{
+			prs_grow(ps);
 			slprintf(tmp, sizeof(tmp)-1, "sid[%02d]", i);
 			smb_io_dom_sid2(tmp, &(q_u->sid[i]), ps, depth); 
 		}
@@ -1573,10 +1580,12 @@ void samr_io_q_lookup_names(char *desc,  SAMR_Q_LOOKUP_NAMES *q_u, prs_struct *p
 
 	for (i = 0; i < q_u->num_rids2; i++)
 	{
+		prs_grow(ps);
 		smb_io_unihdr ("", &(q_u->hdr_user_name[i]), ps, depth); 
 	}
 	for (i = 0; i < q_u->num_rids2; i++)
 	{
+		prs_grow(ps);
 		smb_io_unistr2("", &(q_u->uni_user_name[i]), q_u->hdr_user_name[i].buffer, ps, depth); 
 	}
 
@@ -1644,6 +1653,7 @@ void samr_io_r_lookup_names(char *desc,  SAMR_R_LOOKUP_NAMES *r_u, prs_struct *p
 
 		for (i = 0; i < r_u->num_entries2; i++)
 		{
+			prs_grow(ps);
 			smb_io_dom_rid3("", &(r_u->dom_rid[i]), ps, depth);
 		}
 
@@ -1681,6 +1691,7 @@ void samr_io_q_unknown_12(char *desc,  SAMR_Q_UNKNOWN_12 *q_u, prs_struct *ps, i
 
 	for (i = 0; i < q_u->num_gids2; i++)
 	{
+		prs_grow(ps);
 		slprintf(tmp, sizeof(tmp) - 1, "gid[%02d]  ", i);
 		prs_uint32(tmp, ps, depth, &(q_u->gid[i]));
 	}
@@ -1759,11 +1770,13 @@ void samr_io_r_unknown_12(char *desc,  SAMR_R_UNKNOWN_12 *r_u, prs_struct *ps, i
 
 		for (i = 0; i < r_u->num_aliases2; i++)
 		{
+			prs_grow(ps);
 			slprintf(tmp, sizeof(tmp) - 1, "als_hdr[%02d]  ", i);
 			smb_io_unihdr ("", &(r_u->hdr_als_name[i]), ps, depth); 
 		}
 		for (i = 0; i < r_u->num_aliases2; i++)
 		{
+			prs_grow(ps);
 			slprintf(tmp, sizeof(tmp) - 1, "als_str[%02d]  ", i);
 			smb_io_unistr2("", &(r_u->uni_als_name[i]), r_u->hdr_als_name[i].buffer, ps, depth); 
 		}
@@ -1781,6 +1794,7 @@ void samr_io_r_unknown_12(char *desc,  SAMR_R_UNKNOWN_12 *r_u, prs_struct *ps, i
 
 		for (i = 0; i < r_u->num_als_usrs2; i++)
 		{
+			prs_grow(ps);
 			slprintf(tmp, sizeof(tmp) - 1, "als_usrs[%02d]  ", i);
 			prs_uint32(tmp, ps, depth, &(r_u->num_als_usrs[i]));
 		}
@@ -1931,6 +1945,7 @@ void samr_io_r_query_usergroups(char *desc,  SAMR_R_QUERY_USERGROUPS *r_u, prs_s
 
 			for (i = 0; i < r_u->num_entries2; i++)
 			{
+				prs_grow(ps);
 				smb_io_gid("", &(r_u->gid[i]), ps, depth);
 			}
 		}
@@ -2413,7 +2428,7 @@ void make_samr_q_connect_anon(SAMR_Q_CONNECT_ANON *q_u)
 	DEBUG(5,("make_q_connect_anon\n"));
 
 	q_u->ptr       = 1;
-	q_u->unknown_0 = 0x5c;
+	q_u->unknown_0 = 0x5c; /* server name (?!!) */
 	q_u->unknown_1 = 0x01;
 	q_u->unknown_2 = 0x20;
 }
@@ -2529,8 +2544,6 @@ void make_samr_q_unknown_12(SAMR_Q_UNKNOWN_12 *q_u,
 		q_u->gid[i] = gid[i];
 	}
 }
-
-
 
 
 /*******************************************************************
@@ -2743,11 +2756,13 @@ void samr_io_q_chgpasswd_user(char *desc, SAMR_Q_CHGPASSWD_USER *q_u, prs_struct
 	smb_io_unistr2("", &(q_u->uni_user_name), q_u->hdr_user_name.buffer, ps, depth); 
 
 	samr_io_enc_passwd("nt_newpass", &(q_u->nt_newpass), ps, depth); 
+	prs_grow(ps);
 	samr_io_enc_hash  ("nt_oldhash", &(q_u->nt_oldhash), ps, depth); 
 
 	prs_uint32("unknown", ps, depth, &(q_u->unknown));
 
 	samr_io_enc_passwd("lm_newpass", &(q_u->lm_newpass), ps, depth); 
+	prs_grow(ps);
 	samr_io_enc_hash  ("lm_oldhash", &(q_u->lm_oldhash), ps, depth); 
 }
 
