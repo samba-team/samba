@@ -71,14 +71,7 @@ typedef int BOOL;
 #define READ_EOF 2
 #define READ_ERROR 3
 
-
 #define DIR_STRUCT_SIZE 43
-
-/* these define all the command types recognised by the server - there
-are lots of gaps so probably there are some rare commands that are not
-implemented */
-
-#define pSETDIR '\377'
 
 /* these define the attribute byte as seen by DOS */
 #define aRONLY (1L<<0)
@@ -156,11 +149,7 @@ implemented */
 
 #include "doserr.h"
 
-
-
 #include "pstring.h"
-
-
 
 /*
  * SMB UCS2 (16-bit unicode) internal type.
@@ -249,24 +238,6 @@ typedef uint32 WERROR;
 #define ACB_AUTOLOCK   0x0400  /* 1 = Account auto locked */
  
 #define MAX_HOURS_LEN 32
-
-typedef struct
-{
-        uint32 pid;
-        uint16 vuid;
-
-}
-vuser_key;
-
-
-struct use_info
-{
-	BOOL connected;
-	char *srv_name;
-	vuser_key key;
-	char *user_name;
-	char *domain;
-};
 
 #ifndef MAXSUBAUTHS
 #define MAXSUBAUTHS 15 /* max sub authorities in a SID */
@@ -1564,12 +1535,6 @@ struct node_status {
 	unsigned char flags;
 };
 
-
-
-#define AGENT_CMD_CON       0
-#define AGENT_CMD_CON_ANON  2
-#define AGENT_CMD_CON_REUSE 1
-
 struct pwd_info
 {
 	BOOL null_pwd;
@@ -1590,18 +1555,6 @@ struct pwd_info
 	size_t nt_cli_chal_len;
 
 	uchar sess_key[16];
-};
-
-/*
- * Network Computing Architechture Context Name Named Pipe
- * See MSDN docs for more information
- */
-struct ncacn_np
-{
-        fstring pipe_name;
-        struct cli_state *smb;
-        uint16 fnum;
-        BOOL initialised;
 };
 
 #include "rpc_creds.h"
