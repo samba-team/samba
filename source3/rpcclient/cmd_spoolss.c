@@ -724,10 +724,9 @@ static NTSTATUS cmd_spoolss_enum_drivers(struct cli_state *cli,
                                          TALLOC_CTX *mem_ctx,
                                          int argc, char **argv)
 {
-	NTSTATUS	result = NT_STATUS_OK;
+	WERROR werror;
 	uint32          info_level = 1;
 	PRINTER_DRIVER_CTR 	ctr;
-	fstring 	servername;
 	uint32		i, j,
 			returned;
 
@@ -737,9 +736,6 @@ static NTSTATUS cmd_spoolss_enum_drivers(struct cli_state *cli,
 		return NT_STATUS_OK;
 	}
 
-	/* get the arguments need to open the printer handle */
-	slprintf (servername, sizeof(fstring)-1, "\\\\%s", cli->desthost);
-	strupper (servername);
 	if (argc == 2)
 		info_level = atoi(argv[1]);
 
@@ -747,18 +743,23 @@ static NTSTATUS cmd_spoolss_enum_drivers(struct cli_state *cli,
 	/* loop through and print driver info level for each architecture */
 	for (i=0; archi_table[i].long_archi!=NULL; i++) 
 	{
-		returned = 0;	
-		result = cli_spoolss_enumprinterdrivers (cli, mem_ctx, info_level, 
+		uint32 needed;
+
+		werror = cli_spoolss_enumprinterdrivers(
+			cli, mem_ctx, 0, &needed, info_level, 
+			archi_table[i].long_archi, &returned, &ctr);
+
+		if (W_ERROR_V(werror) == ERRinsufficientbuffer)
+			werror = cli_spoolss_enumprinterdrivers(
+				cli, mem_ctx, needed, NULL, info_level, 
 				archi_table[i].long_archi, &returned, &ctr);
 
 		if (returned == 0)
 			continue;
 			
-
-		if (!NT_STATUS_IS_OK(result))
-		{
-			printf ("Error getting driver for environment [%s] - %s\n",
-				archi_table[i].long_archi, get_nt_error_msg(result));
+		if (!W_ERROR_IS_OK(werror)) {
+			printf ("Error getting driver for environment [%s] - %d\n",
+				archi_table[i].long_archi, W_ERROR_V(werror));
 			continue;
 		}
 		
@@ -787,7 +788,7 @@ static NTSTATUS cmd_spoolss_enum_drivers(struct cli_state *cli,
 		}
 	}
 	
-	return result;
+	return W_ERROR_IS_OK(werror) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
 /****************************************************************************
