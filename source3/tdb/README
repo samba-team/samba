@@ -101,9 +101,10 @@ int tdb_exists(TDB_CONTEXT *tdb, TDB_DATA key);
 
 ----------------------------------------------------------------------
 int tdb_traverse(TDB_CONTEXT *tdb, int (*fn)(TDB_CONTEXT *tdb,
-                 TDB_DATA key, TDB_DATA dbuf));
+                 TDB_DATA key, TDB_DATA dbuf, void *state), void *state);
 
-   traverse the entire database - calling fn(tdb, key, data) on each element.
+   traverse the entire database - calling fn(tdb, key, data, state) on each 
+   element.
 
    return -1 on error or the record count traversed
 
