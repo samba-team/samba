@@ -682,12 +682,11 @@ match is found and is used to update the encrypted password file
 return True on correct match, False otherwise
 ****************************************************************************/
 
-BOOL pass_check(char *user, char *password, int pwlen, 
-		BOOL (*fn) (char *, char *))
+BOOL pass_check(struct passwd *pass, char *user, char *password, int pwlen, 
+		BOOL (*fn) (char *, char *), BOOL run_cracker)
 {
 	pstring pass2;
 	int level = lp_passwordlevel();
-	struct passwd *pass = NULL;
 
 	if (password)
 		password[pwlen] = 0;
@@ -701,8 +700,6 @@ BOOL pass_check(char *user, char *password, int pwlen,
 
 	if (((!*password) || (!pwlen)) && !lp_null_passwords())
 		return (False);
-
-	pass = Get_Pwnam(user, True);
 
 #ifdef WITH_PAM
 
@@ -817,6 +814,10 @@ BOOL pass_check(char *user, char *password, int pwlen,
 		if (fn)
 			fn(user, password);
 		return (True);
+	}
+
+	if (!run_cracker) {
+		return False;
 	}
 
 	/* if the password was given to us with mixed case then we don't
