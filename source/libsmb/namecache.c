@@ -257,5 +257,6 @@ void namecache_flush(void)
 
 void namecache_disable(void)
 {
+	DEBUG(5, ("namecache_disable: namecache not used\n"));
 	disable_namecache = True;
 }
