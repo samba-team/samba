@@ -641,18 +641,14 @@ static BOOL test_LookupPrivDisplayName(struct dcerpc_pipe *p,
 				struct lsa_Name *priv_name)
 {
 	struct lsa_LookupPrivDisplayName r;
-	struct lsa_Name disp_name;
 	NTSTATUS status;
 
-	ZERO_STRUCT(disp_name);
-	
 	printf("testing LookupPrivDisplayName(%s)\n", priv_name->name);
 	
 	r.in.handle = handle;
 	r.in.name = priv_name;
 	r.in.unknown = 0;
 	r.in.unknown2 = 0;
-	r.out.disp_name = &disp_name;
 
 	status = dcerpc_lsa_LookupPrivDisplayName(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
