@@ -21,6 +21,8 @@
 
 #include "includes.h"
 
+#define CHECK_PATH_ON_TCONX 1
+
 extern struct timeval smb_last_time;
 extern int case_default;
 extern BOOL case_preserve;
@@ -595,6 +597,12 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 		}
 	}
 
+	/*
+	 * FIXME!!!! Reenabled this code since it current;y breaks 
+	 * move_driver_to_download_area() by keeping the root path 
+	 * of the connection at /tmp.  I'll work on a real fix, but this
+	 * will keep people happy for a temporary meaure.  --jerry
+	 */ 
 #if CHECK_PATH_ON_TCONX
 	/* win2000 does not check the permissions on the directory
 	   during the tree connect, instead relying on permission
