@@ -198,7 +198,7 @@ krb5_do_decrypt(krb5_context context,
     ret = krb5_verify_checksum (context,
 				ptr, 
 				len,
-				NULL,
+				keyblock,
 				&cksum);
     free_Checksum(&cksum);
     if(ret)
