@@ -1632,8 +1632,6 @@ AC_ARG_WITH(krb5,
     CFLAGS="$CFLAGS -I$withval/include"
     CPPFLAGS="$CPPFLAGS -I$withval/include"
     LDFLAGS="$LDFLAGS -L$withval/lib"
-    AC_DEFINE(HAVE_KRB5)
-    have_krb5=yes;
     ;;
   esac ],
   AC_MSG_RESULT(no)
@@ -1652,10 +1650,9 @@ AC_CHECK_LIB(k5crypto, krb5_encrypt_data, [LIBS="$LIBS -lk5crypto"])
 
 ########################################################
 # now see if we can find the krb5 libs in standard paths
-if test x$have_krb5 != xyes; then
+# or as specified above
 AC_CHECK_LIB(krb5, krb5_mk_req_extended, [LIBS="$LIBS -lkrb5";
 	AC_DEFINE(HAVE_KRB5)])
-fi
 
 ########################################################
 # now see if we can find the ldap libs in standard paths
