@@ -223,6 +223,23 @@ static void register_all(void)
 	message_register(MSG_POOL_USAGE, pool_usage_cb);
 }
 
+/* This guy is here so we can link printing/notify.c to the smbcontrol
+   binary without having to pull in tons of other crap. */
+
+TDB_CONTEXT *conn_tdb_ctx(void)
+{
+	static TDB_CONTEXT *tdb;
+
+	if (tdb)
+		return tdb;
+
+	tdb = tdb_open_log(lock_path("connections.tdb"), 0, TDB_DEFAULT, O_RDONLY, 0);
+
+	if (!tdb)
+		DEBUG(3, ("Failed to open connections database in send_spoolss_notify2_msg\n"));
+
+	return tdb;
+}
 
 /****************************************************************************
 do command
@@ -352,6 +369,9 @@ static BOOL do_command(char *dest, char *msg_name, int iparams, char **params)
 			fprintf(stderr, "Must specify subcommand:\n");
 			fprintf(stderr, "\tqueuepause <printername>\n");
 			fprintf(stderr, "\tqueueresume <printername>\n");
+			fprintf(stderr, "\tjobpause <printername> <unix jobid>\n");
+			fprintf(stderr, "\tjobresume <printername> <unix jobid>\n");
+			fprintf(stderr, "\tjobdelete <printername> <unix jobid>\n");
 			return False;
 		}
 

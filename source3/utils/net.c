@@ -234,7 +234,7 @@ BOOL net_find_server(unsigned flags, struct in_addr *server_ip, char **server_na
 }
 
 
-BOOL net_find_dc(struct in_addr *server_ip, fstring server_name, char *domain_name)
+BOOL net_find_dc(struct in_addr *server_ip, fstring server_name, const char *domain_name)
 {
 	struct in_addr *ip_list;
 	int addr_count;
@@ -381,8 +381,6 @@ static struct functable net_func[] = {
 		{"port",	'p', POPT_ARG_INT,    &opt_port},
 		{"myname",	'n', POPT_ARG_STRING, &opt_requester_name},
 		{"conf",	's', POPT_ARG_STRING, &servicesf},
-		{"debug",	'd', POPT_ARG_STRING,    &debuglevel},
-		{"debuglevel",	'd', POPT_ARG_STRING,    &debuglevel},
 		{"server",	'S', POPT_ARG_STRING, &opt_host},
 		{"comment",	'C', POPT_ARG_STRING, &opt_comment},
 		{"maxusers",	'M', POPT_ARG_INT,    &opt_maxusers},
@@ -393,6 +391,7 @@ static struct functable net_func[] = {
 		{"force",	'f', POPT_ARG_NONE,   &opt_force},
 		{"timeout",	't', POPT_ARG_INT,    &opt_timeout},
 		{"machine-pass",'P', POPT_ARG_NONE,   &opt_machine_pass},
+		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_debug },
 		{ 0, 0, 0, 0}
 	};
 
