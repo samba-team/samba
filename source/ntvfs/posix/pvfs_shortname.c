@@ -20,7 +20,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include "include/includes.h"
+#include "includes.h"
 #include "vfs_posix.h"
 #include "system/iconv.h"
 
@@ -55,9 +55,6 @@
   ===============================================================================
 */
 
-
-#include "includes.h"
-#include "vfs_posix.h"
 
 #if 1
 #define M_DEBUG(level, x) DEBUG(level, x)

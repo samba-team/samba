@@ -20,7 +20,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include "include/includes.h"
+#include "includes.h"
 #include "events.h"
 #include "dlinklist.h"
 #include "vfs_posix.h"
