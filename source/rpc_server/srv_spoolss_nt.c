@@ -3214,7 +3214,7 @@ WERROR _spoolss_enumprinters( pipes_struct *p, SPOOL_Q_ENUMPRINTERS *q_u, SPOOL_
 		return enumprinters_level5(flags, name, buffer, offered, needed, returned);
 	case 3:
 	case 4:
-	default:
+		break;
 	}
 	return WERR_UNKNOWN_LEVEL;
 }
