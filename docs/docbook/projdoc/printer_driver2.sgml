@@ -554,52 +554,49 @@ foreach (supported architecture for a given driver)
 <para>
 Given that printer driver management has changed (we hope improved) in 
 2.2 over prior releases, migration from an existing setup to 2.2 can 
-follow several paths.
+follow several paths. Here are the possible scenarios for 
+migration:
 </para>
 
-<para>
-Windows clients have a tendency to remember things for quite a while.
-For example, if a Windows NT client has attached to a Samba 2.0 server,
-it will remember the server as a LanMan printer server.  Upgrading 
-the Samba host to 2.2 makes support for MSRPC printing possible, but 
-the NT client will still remember the previous setting.
-</para>
+<itemizedlist>
+	<listitem><para>If you do not desire the new Windows NT 
+	print driver support, nothing needs to be done.  
+	All existing parameters work the same.</para></listitem>
 
-<para>
-In order to give an NT client printing "amnesia" (only necessary if you 
-want to use the newer MSRPC printing functionality in Samba), delete 
-the registry keys associated with the print server contained in 
-<constant>[HKLM\SYSTEM\CurrentControlSet\Control\Print]</constant>.  The 
-spooler service on the client should be stopped prior to doing this:
-</para>
+	<listitem><para>If you want to take advantage of NT printer 
+	driver support but do not want to migrate the 
+	9x drivers to the new setup, the leave the existing 
+	<filename>printers.def</filename> file.  When smbd attempts 
+	to locate a 
+	9x driver for the printer in the TDB and fails it 
+	will drop down to using the printers.def (and all 
+	associated parameters).  The <command>make_printerdef</command> 
+	tool will also remain for backwards compatibility but will 
+	be removed in the next major release.</para></listitem>
 
-<para>
-<prompt>C:\WINNT\ ></prompt> <userinput>net stop spooler</userinput>
-</para>
+	<listitem><para>If you install a Windows 9x driver for a printer 
+	on your Samba host (in the printing TDB), this information will 
+	take precedence and the three old printing parameters
+	will be ignored (including print driver location).</para></listitem>
 
-<para>
-<emphasis>All the normal disclaimers about editing the registry go 
-here.</emphasis>  Be careful, and know what you are doing.
-</para>
+	<listitem><para>If you want to migrate an existing <filename>printers.def</filename> 
+	file into the new setup, the current only solution is to use the Windows 
+	NT APW to install the NT drivers and the 9x  drivers.  This can be scripted 
+	using <command>smbclient</command> and <command>rpcclient</command>.  See the 
+	Imprints installation client at <ulink 
+	url="http://imprints.sourceforge.net/">http://imprints.sourceforge.net/</ulink> 
+	for an example.
+	</para></listitem>
+</itemizedlist>
 
-<para>
-The spooler service should be restarted after you have finished 
-removing the appropriate registry entries by replacing the 
-<command>stop</command> command above with <command>start</command>.
-</para>
 
-<para>
-Windows 9x clients will continue to use LanMan printing calls
-with a 2.2 Samba server so there is no need to perform any of these
-modifications on non-NT clients.
-</para>
-	
 <warning>
 <title>Achtung!</title>
 
 <para>
-The following smb.conf parameters are considered to be depreciated and will 
-be removed soon.  Do not use them in new installations
+The following <filename>smb.conf</filename> parameters are considered to 
+be deprecated and will be removed soon.  Do not use them in new 
+installations
 </para>
 		
 <itemizedlist>
@@ -616,39 +613,14 @@ be removed soon.  Do not use them in new installations
 
 
 <para>
-Here are the possible scenarios for supporting migration:
+The have been two new parameters add in Samba 2.2.2 to for 
+better support of Samba 2.0.x backwards capability (<parameter>disable
+spoolss</parameter>) and for using local printers drivers on Windows 
+NT/2000 clients (<parameter>use client driver</parameter>). Both of 
+these options are described in the smb.coinf(5) man page and are 
+disabled by default.
 </para>
-	
-<itemizedlist>
-	<listitem><para>If you do not desire the new Windows NT 
-	print driver support, nothing needs to be done.  
-	All existing parameters work the same.</para></listitem>
 
-	<listitem><para>If you want to take advantage of NT printer 
-	driver support but do not want to migrate the 
-	9x drivers to the new setup, the leave the existing 
-	printers.def file.  When smbd attempts to locate a 
-	9x driver for the printer in the TDB and fails it 
-	will drop down to using the printers.def (and all 
-	associated parameters).  The <command>make_printerdef</command> 
-	tool will also remain for backwards compatibility but will 
-	be moved to the "this tool is the old way of doing it" 
-	pile.</para></listitem>
-
-	<listitem><para>If you install a Windows 9x driver for a printer 
-	on your Samba host (in the printing TDB), this information will 
-	take precedence and the three old printing parameters
-	will be ignored (including print driver location).</para></listitem>
-
-	<listitem><para>If you want to migrate an existing <filename>printers.def</filename> 
-	file into the new setup, the current only solution is to use the Windows 
-	NT APW to install the NT drivers and the 9x  drivers.  This can be scripted 
-	using <command>smbclient</command> and <command>rpcclient</command>.  See the 
-	Imprints installation client at <ulink 
-	url="http://imprints.sourceforge.net/">http://imprints.sourceforge.net/</ulink> 
-	for an example.
-	</para></listitem>
-</itemizedlist>
 
 </sect1>
 
