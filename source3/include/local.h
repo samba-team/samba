@@ -187,4 +187,7 @@
    it are worked out */
 #define USE_READ_PREDICTION 0
 
+/* name of directory that netatalk uses to store macintosh resource forks */
+#define APPLEDOUBLE ".AppleDouble/"
+
 #endif
