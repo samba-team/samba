@@ -3278,10 +3278,6 @@ char *get_trusted_serverlist(const char* domain)
 	{
 		DEBUG(10,("local domain server list: %s\n", server_list));
 		pstrcpy(srv_list, lp_passwordserver());
-		if (srv_list[0] == 0)
-		{
-			pstrcpy(srv_list, global_myname);
-		}
 		return srv_list;
 	}
 

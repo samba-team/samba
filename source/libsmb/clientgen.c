@@ -3840,8 +3840,9 @@ BOOL get_any_dc_name(const char *domain, char *srv_name)
 	extern pstring global_myname;
 	char *servers = get_trusted_serverlist(domain);
 
-	if (strequal(servers, global_myname))
+	if (servers[0] == 0)
 	{
+		/* empty list: return our own name */
 		fstrcpy(srv_name, "\\\\");
 		fstrcat(srv_name, global_myname);
 		strupper(srv_name);
