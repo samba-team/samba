@@ -86,12 +86,13 @@ int krb4_adat(char *auth)
     char inst[INST_SZ];
 
     memset(&tkt, 0, sizeof(tkt));
-    tkt.length = base64_decode(auth, tkt.dat);
+    len = base64_decode(auth, tkt.dat);
 
-    if(tkt.length < 0){
+    if(len < 0){
 	reply(501, "Failed to decode base64 data.");
 	return -1;
     }
+    tkt.length = len;
 
     k_getsockinst(0, inst);
     kerror = krb_rd_req(&tkt, "ftp", inst, 0, &auth_dat, "");

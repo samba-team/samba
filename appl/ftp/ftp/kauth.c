@@ -52,6 +52,7 @@ void kauth(int argc, char **argv)
     char *p;
     int overbose;
     char passwd[100];
+    int tmp;
 	
     if(argc > 2){
 	printf("usage: %s [principal]\n", argv[0]);
@@ -80,12 +81,13 @@ void kauth(int argc, char **argv)
 	return;
     }
     p += 2;
-    tkt.length = base64_decode(p, &tkt.dat);
-    if(tkt.length < 0){
+    tmp = base64_decode(p, &tkt.dat);
+    if(tmp < 0){
 	printf("Failed to decode base64 in reply.\n");
 	code = -1;
 	return;
     }
+    tkt.length = tmp;
     tktcopy.length = tkt.length;
     
     p = strstr(reply_string, "P=");
