@@ -109,6 +109,11 @@ Note that specifying this parameter here will override the \fIlog level\fR param
 
 .SH "COMMANDS"
 
+.SS "CHANGESECRETPW"
+
+.PP
+This command allows the Samba machine account password to be set from an external application to a machine account password that has already been stored in Active Directory\&. DO NOT USE this command unless you know exactly what you are doing\&. The use of this command requires that the force flag (-f) be used also\&. There will be NO command prompt\&. Whatever information is piped into stdin, either by typing at the command line or otherwise, will be stored as the literal machine password\&. Do NOT use this without care and attention as it will overwrite a legitimate machine password without warning\&. YOU HAVE BEEN WARNED\&.
+
 .SS "TIME"
 
 .PP

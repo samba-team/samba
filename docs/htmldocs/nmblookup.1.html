@@ -6,9 +6,9 @@
 	are done over UDP.</p></div><div class="refsect1" lang="en"><h2>OPTIONS</h2><div class="variablelist"><dl><dt><span class="term">-M</span></dt><dd><p>Searches for a master browser by looking 
 		up the  NetBIOS name <i class="replaceable"><tt>name</tt></i> with a 
 		type of <tt class="constant">0x1d</tt>. If <i class="replaceable"><tt>
-		name</tt></i> is &quot;-&quot; then it does a lookup on the special name 
+		name</tt></i> is "-" then it does a lookup on the special name 
 		<tt class="constant">__MSBROWSE__</tt>. Please note that in order to 
-		use the name &quot;-&quot;, you need to make sure &quot;-&quot; isn't parsed as an 
+		use the name "-", you need to make sure "-" isn't parsed as an 
 		argument, e.g. use : 
 		<b class="userinput"><tt>nmblookup -M -- -</tt></b>.</p></dd><dt><span class="term">-R</span></dt><dd><p>Set the recursion desired bit in the packet 
 		to do a recursive lookup. This is used when sending a name 
@@ -28,7 +28,7 @@
 		</p></dd><dt><span class="term">-A</span></dt><dd><p>Interpret <i class="replaceable"><tt>name</tt></i> as 
 		an IP Address and do a node status query on this address.</p></dd><dt><span class="term">-n &lt;primary NetBIOS name&gt;</span></dt><dd><p>This option allows you to override
 the NetBIOS name that Samba uses for itself. This is identical
-to setting the <a class="indexterm" name="id2796756"></a><i class="parameter"><tt>netbios name</tt></i> parameter in the <tt class="filename">smb.conf</tt> file. 
+to setting the <a class="indexterm" name="id2799960"></a><a href="#"><i class="parameter"><tt>netbios name</tt></i></a> parameter in the <tt class="filename">smb.conf</tt> file. 
 However, a command
 line setting will take precedence over settings in
 <tt class="filename">smb.conf</tt>.</p></dd><dt><span class="term">-i &lt;scope&gt;</span></dt><dd><p>This specifies a NetBIOS scope that
@@ -73,9 +73,9 @@ amounts of log data, and should only be used when
 investigating a problem. Levels above 3 are designed for 
 use only by developers and generate HUGE amounts of log
 data, most of which is extremely cryptic.</p><p>Note that specifying this parameter here will 
-override the <a class="indexterm" name="id2797037"></a><i class="parameter"><tt>log level</tt></i> parameter
+override the <a class="indexterm" name="id2800366"></a><a href="#"><i class="parameter"><tt>log level</tt></i></a> parameter
 in the <tt class="filename">smb.conf</tt> file.</p></dd><dt><span class="term">-l|--logfile=logbasename</span></dt><dd><p>File name for log/debug files. The extension
-<tt class="constant">&quot;.client&quot;</tt> will be appended. The log file is
+<tt class="constant">".client"</tt> will be appended. The log file is
 never removed by the client.
 </p></dd><dt><span class="term">-T</span></dt><dd><p>This causes any IP addresses found in the 
 		lookup to be looked up via a reverse DNS lookup into a 
