@@ -45,7 +45,7 @@ static struct share_ops *share_ops;
 
 static int map_lock_type( files_struct *fsp, int lock_type)
 {
-  if((lock_type == F_WRLCK) && (fsp->fd_ptr->real_open_flags == O_RDONLY)) {
+  if((lock_type == F_WRLCK) && (fsp->f_u.fd_ptr->real_open_flags == O_RDONLY)) {
     /*
      * Many UNIX's cannot get a write lock on a file opened read-only.
      * Win32 locking semantics allow this.
@@ -53,7 +53,7 @@ static int map_lock_type( files_struct *fsp, int lock_type)
      */
     DEBUG(10,("map_lock_type: Downgrading write lock to read due to read-only file.\n"));
     return F_RDLCK;
-  } else if( (lock_type == F_RDLCK) && (fsp->fd_ptr->real_open_flags == O_WRONLY)) {
+  } else if( (lock_type == F_RDLCK) && (fsp->f_u.fd_ptr->real_open_flags == O_WRONLY)) {
     /*
      * Ditto for read locks on write only files.
      */
@@ -90,7 +90,7 @@ BOOL is_locked(int fnum,int cnum,uint32 count,uint32 offset, int lock_type)
    * fd. So we don't need to use map_lock_type here.
    */
 
-  return(fcntl_lock(fsp->fd_ptr->fd,F_GETLK,offset,count,lock_type));
+  return(fcntl_lock(fsp->f_u.fd_ptr->fd,F_GETLK,offset,count,lock_type));
 }
 
 
@@ -114,7 +114,7 @@ BOOL do_lock(int fnum,int cnum,uint32 count,uint32 offset,int lock_type,
   }
 
   if (OPEN_FNUM(fnum) && fsp->can_lock && (fsp->cnum == cnum))
-    ok = fcntl_lock(fsp->fd_ptr->fd,F_SETLK,offset,count,
+    ok = fcntl_lock(fsp->f_u.fd_ptr->fd,F_SETLK,offset,count,
                     map_lock_type(fsp,lock_type));
 
   if (!ok) {
@@ -139,7 +139,7 @@ BOOL do_unlock(int fnum,int cnum,uint32 count,uint32 offset,int *eclass,uint32 *
     return(True);
 
   if (OPEN_FNUM(fnum) && fsp->can_lock && (fsp->cnum == cnum))
-    ok = fcntl_lock(fsp->fd_ptr->fd,F_SETLK,offset,count,F_UNLCK);
+    ok = fcntl_lock(fsp->f_u.fd_ptr->fd,F_SETLK,offset,count,F_UNLCK);
    
   if (!ok) {
     *eclass = ERRDOS;

@@ -207,6 +207,7 @@ static int call_trans2open(char *inbuf, char *outbuf, int bufsize, int cnum,
   struct stat sbuf;
   int smb_action = 0;
   BOOL bad_path = False;
+  files_struct *fsp;
 
   StrnCpy(fname,pname,namelen);
 
@@ -221,6 +222,8 @@ static int call_trans2open(char *inbuf, char *outbuf, int bufsize, int cnum,
   if (fnum < 0)
     return(ERROR(ERRSRV,ERRnofids));
 
+  fsp = &Files[fnum];
+
   if (!check_name(fname,cnum))
   {
     if((errno == ENOENT) && bad_path)
@@ -228,28 +231,27 @@ static int call_trans2open(char *inbuf, char *outbuf, int bufsize, int cnum,
       unix_ERR_class = ERRDOS;
       unix_ERR_code = ERRbadpath;
     }
-    Files[fnum].reserved = False;
+    fsp->reserved = False;
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
 
   unixmode = unix_mode(cnum,open_attr | aARCH);
       
-      
   open_file_shared(fnum,cnum,fname,open_mode,open_ofun,unixmode,
 		   oplock_request, &rmode,&smb_action);
       
-  if (!Files[fnum].open)
+  if (!fsp->open)
   {
     if((errno == ENOENT) && bad_path)
     {
       unix_ERR_class = ERRDOS;
       unix_ERR_code = ERRbadpath;
     }
-    Files[fnum].reserved = False;
+    fsp->reserved = False;
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
 
-  if (fstat(Files[fnum].fd_ptr->fd,&sbuf) != 0) {
+  if (fstat(fsp->f_u.fd_ptr->fd,&sbuf) != 0) {
     close_file(fnum,False);
     return(ERROR(ERRDOS,ERRnoaccess));
   }
@@ -1187,11 +1189,11 @@ static int call_trans2qfilepathinfo(char *inbuf, char *outbuf, int length,
     CHECK_ERROR(fnum);
 
     fname = Files[fnum].name;
-    if (fstat(Files[fnum].fd_ptr->fd,&sbuf) != 0) {
+    if (fstat(Files[fnum].f_u.fd_ptr->fd,&sbuf) != 0) {
       DEBUG(3,("fstat of fnum %d failed (%s)\n",fnum, strerror(errno)));
       return(UNIXERROR(ERRDOS,ERRbadfid));
     }
-    pos = lseek(Files[fnum].fd_ptr->fd,0,SEEK_CUR);
+    pos = lseek(Files[fnum].f_u.fd_ptr->fd,0,SEEK_CUR);
   } else {
     /* qpathinfo */
     info_level = SVAL(params,0);
@@ -1411,7 +1413,7 @@ static int call_trans2setfilepathinfo(char *inbuf, char *outbuf, int length,
     CHECK_ERROR(fnum);
 
     fname = Files[fnum].name;
-    fd = Files[fnum].fd_ptr->fd;
+    fd = Files[fnum].f_u.fd_ptr->fd;
 
     if(fstat(fd,&st)!=0) {
       DEBUG(3,("fstat of %s failed (%s)\n", fname, strerror(errno)));
@@ -1788,7 +1790,7 @@ int reply_trans2(char *inbuf,char *outbuf,int length,int bufsize)
     DEBUG(2,("%s: reply_trans2: queueing message trans2open due to being in oplock break state.\n",
            timestring() ));
 
-    push_smb_message( inbuf, length);
+    push_oplock_pending_smb_message( inbuf, length);
     return -1;
   }
 

@@ -424,10 +424,6 @@ int reply_ntcreate_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   files_struct *fsp;
   char *p = NULL;
   
-  /* If it's a request for a directory open, fail it. */
-  if(flags & OPEN_DIRECTORY)
-    return(ERROR(ERRDOS,ERRnoaccess));
-
   /* 
    * We need to construct the open_and_X ofun value from the
    * NT values, as that's what our code is structured to accept.
@@ -459,7 +455,7 @@ int reply_ntcreate_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   } else {
 
     /*
-     * Ordinary file.
+     * Ordinary file or directory.
      */
 
     /*
@@ -495,66 +491,95 @@ int reply_ntcreate_and_X(char *inbuf,char *outbuf,int length,int bufsize)
     oplock_request = (flags & REQUEST_OPLOCK) ? EXCLUSIVE_OPLOCK : 0;
     oplock_request |= (flags & REQUEST_BATCH_OPLOCK) ? BATCH_OPLOCK : 0;
 
-    /*
-     * NB. We have a potential bug here. If we cause an oplock
-     * break to ourselves, then we could end up processing filename
-     * related SMB requests whilst we await the oplock break
-     * response. As we may have changed the filename case
-     * semantics to be POSIX-like, this could mean a filename
-     * request could fail when it should succeed. This is a
-     * rare condition, but eventually we must arrange to restore
-     * the correct case semantics before issuing an oplock break
-     * request to our client. JRA.
+    /* 
+     * If it's a request for a directory open, deal with it separately.
      */
 
-    open_file_shared(fnum,cnum,fname,smb_open_mode,smb_ofun,unixmode,
-                     oplock_request,&rmode,&smb_action);
+    if(flags & OPEN_DIRECTORY) {
+      oplock_request = 0;
 
-    restore_case_semantics(file_attributes);
+      open_directory(fnum, cnum, fname, smb_ofun, unixmode, &smb_action);
 
-    if (!fsp->open) { 
-      /*
-       * We cheat here. The only case we care about is a directory
-       * rename, where the NT client will attempt to open the source
-       * directory for DELETE access. Note that when the NT client
-       * does this it does *not* set the directory bit in the
-       * request packet. This is translated into a read/write open
-       * request. POSIX states that any open for write request on a directory
-       * will generate an EISDIR error, so we can catch this here and open
-       * a pseudo handle that is flagged as a directory. JRA.
-       */
+      restore_case_semantics(file_attributes);
 
-      if(errno == EISDIR) {
-        oplock_request = 0;
-        open_directory(fnum, cnum, fname, &smb_action);
-
-        if(!fsp->open) {
-          fsp->reserved = False;
-          return(UNIXERROR(ERRDOS,ERRnoaccess));
-        }
-      } else {
-        if((errno == ENOENT) && bad_path) {
-          unix_ERR_class = ERRDOS;
-          unix_ERR_code = ERRbadpath;
-        }
-
+      if(!fsp->open) {
         fsp->reserved = False;
         return(UNIXERROR(ERRDOS,ERRnoaccess));
       }
-    } 
+    } else {
+
+      /*
+       * Ordinary file case.
+       */
+
+      /*
+       * NB. We have a potential bug here. If we cause an oplock
+       * break to ourselves, then we could end up processing filename
+       * related SMB requests whilst we await the oplock break
+       * response. As we may have changed the filename case
+       * semantics to be POSIX-like, this could mean a filename
+       * request could fail when it should succeed. This is a
+       * rare condition, but eventually we must arrange to restore
+       * the correct case semantics before issuing an oplock break
+       * request to our client. JRA.
+       */
+
+      open_file_shared(fnum,cnum,fname,smb_open_mode,smb_ofun,unixmode,
+                       oplock_request,&rmode,&smb_action);
+
+      if (!fsp->open) { 
+        /*
+         * We cheat here. The only case we care about is a directory
+         * rename, where the NT client will attempt to open the source
+         * directory for DELETE access. Note that when the NT client
+         * does this it does *not* set the directory bit in the
+         * request packet. This is translated into a read/write open
+         * request. POSIX states that any open for write request on a directory
+         * will generate an EISDIR error, so we can catch this here and open
+         * a pseudo handle that is flagged as a directory. JRA.
+         */
+
+        if(errno == EISDIR) {
+          oplock_request = 0;
+
+          open_directory(fnum, cnum, fname, smb_ofun, unixmode, &smb_action);
+
+          if(!fsp->open) {
+            fsp->reserved = False;
+            restore_case_semantics(file_attributes);
+            return(UNIXERROR(ERRDOS,ERRnoaccess));
+          }
+        } else {
+          if((errno == ENOENT) && bad_path) {
+            unix_ERR_class = ERRDOS;
+            unix_ERR_code = ERRbadpath;
+          }
+
+          fsp->reserved = False;
+
+          restore_case_semantics(file_attributes);
+
+          return(UNIXERROR(ERRDOS,ERRnoaccess));
+        }
+      } 
+    }
   
     if(fsp->is_directory) {
-      if(stat(fsp->name, &sbuf) != 0) {
+      if(sys_stat(fsp->name, &sbuf) != 0) {
         close_directory(fnum);
+        restore_case_semantics(file_attributes);
         return(ERROR(ERRDOS,ERRnoaccess));
       }
     } else {
-      if (fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
+      if (fstat(fsp->f_u.fd_ptr->fd,&sbuf) != 0) {
         close_file(fnum,False);
+        restore_case_semantics(file_attributes);
         return(ERROR(ERRDOS,ERRnoaccess));
       } 
     }
   
+    restore_case_semantics(file_attributes);
+
     file_len = sbuf.st_size;
     fmode = dos_mode(cnum,fname,&sbuf);
     if(fmode == 0)
@@ -668,10 +693,6 @@ static int call_nt_transact_create(char *inbuf, char *outbuf, int length,
   files_struct *fsp;
   char *p = NULL;
 
-  /* If it's a request for a directory open, fail it. */
-  if(flags & OPEN_DIRECTORY)
-    return(ERROR(ERRDOS,ERRnoaccess));
-
   /* 
    * We need to construct the open_and_X ofun value from the
    * NT values, as that's what our code is structured to accept.
@@ -733,55 +754,84 @@ static int call_nt_transact_create(char *inbuf, char *outbuf, int length,
     oplock_request = (flags & REQUEST_OPLOCK) ? EXCLUSIVE_OPLOCK : 0;
     oplock_request |= (flags & REQUEST_BATCH_OPLOCK) ? BATCH_OPLOCK : 0;
 
-    open_file_shared(fnum,cnum,fname,smb_open_mode,smb_ofun,unixmode,
-                     oplock_request,&rmode,&smb_action);
-
-    fsp = &Files[fnum];
-    
-    if (!fsp->open) { 
-      if((errno == ENOENT) && bad_path) {
-        unix_ERR_class = ERRDOS;
-        unix_ERR_code = ERRbadpath;
-      }
-      Files[fnum].reserved = False;
-
-      restore_case_semantics(file_attributes);
-
-      return(UNIXERROR(ERRDOS,ERRnoaccess));
-    } 
-  
-    if (fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
-      close_file(fnum,False);
-
-      restore_case_semantics(file_attributes);
-
-      return(ERROR(ERRDOS,ERRnoaccess));
-    } 
-  
-    restore_case_semantics(file_attributes);
-
-    file_len = sbuf.st_size;
-    fmode = dos_mode(cnum,fname,&sbuf);
-    if(fmode == 0)
-      fmode = FILE_ATTRIBUTE_NORMAL;
-    mtime = sbuf.st_mtime;
-    if (fmode & aDIR) {
-      close_file(fnum,False);
-      return(ERROR(ERRDOS,ERRnoaccess));
-    } 
-  
-    /* 
-     * If the caller set the extended oplock request bit
-     * and we granted one (by whatever means) - set the
-     * correct bit for extended oplock reply.
+    /*
+     * If it's a request for a directory open, deal with it separately.
      */
+
+    if(flags & OPEN_DIRECTORY) {
+
+      oplock_request = 0;
+
+      /*
+       * We will get a create directory here if the Win32
+       * app specified a security descriptor in the 
+       * CreateDirectory() call.
+       */
+
+      open_directory(fnum, cnum, fname, smb_ofun, unixmode, &smb_action);
+
+      if(!fsp->open) {
+        fsp->reserved = False;
+        return(UNIXERROR(ERRDOS,ERRnoaccess));
+      }
+    } else {
+
+      /*
+       * Ordinary file case.
+       */
+
+      open_file_shared(fnum,cnum,fname,smb_open_mode,smb_ofun,unixmode,
+                       oplock_request,&rmode,&smb_action);
+
+      fsp = &Files[fnum];
     
-    if (oplock_request && lp_fake_oplocks(SNUM(cnum)))
-      smb_action |= EXTENDED_OPLOCK_GRANTED;
+      if (!fsp->open) { 
+        if((errno == ENOENT) && bad_path) {
+          unix_ERR_class = ERRDOS;
+          unix_ERR_code = ERRbadpath;
+        }
+        Files[fnum].reserved = False;
+
+        restore_case_semantics(file_attributes);
+
+        return(UNIXERROR(ERRDOS,ERRnoaccess));
+      } 
   
-    if(oplock_request && fsp->granted_oplock)
-      smb_action |= EXTENDED_OPLOCK_GRANTED;
+      if (fstat(fsp->f_u.fd_ptr->fd,&sbuf) != 0) {
+        close_file(fnum,False);
+
+        restore_case_semantics(file_attributes);
+
+        return(ERROR(ERRDOS,ERRnoaccess));
+      } 
+  
+      file_len = sbuf.st_size;
+      fmode = dos_mode(cnum,fname,&sbuf);
+      if(fmode == 0)
+        fmode = FILE_ATTRIBUTE_NORMAL;
+      mtime = sbuf.st_mtime;
+
+      if (fmode & aDIR) {
+        close_file(fnum,False);
+        restore_case_semantics(file_attributes);
+        return(ERROR(ERRDOS,ERRnoaccess));
+      } 
+
+      /* 
+       * If the caller set the extended oplock request bit
+       * and we granted one (by whatever means) - set the
+       * correct bit for extended oplock reply.
+       */
+    
+      if (oplock_request && lp_fake_oplocks(SNUM(cnum)))
+        smb_action |= EXTENDED_OPLOCK_GRANTED;
+  
+      if(oplock_request && fsp->granted_oplock)
+        smb_action |= EXTENDED_OPLOCK_GRANTED;
+    }
   }
+
+  restore_case_semantics(file_attributes);
 
   /* Realloc the size of parameters and data we will return */
   params = *ppparams = Realloc(*ppparams, 69);
@@ -972,7 +1022,7 @@ int reply_nttrans(char *inbuf,char *outbuf,int length,int bufsize)
     DEBUG(2,("%s: reply_nttrans: queueing message NT_TRANSACT_CREATE \
 due to being in oplock break state.\n", timestring() ));
 
-    push_smb_message( inbuf, length);
+    push_oplock_pending_smb_message( inbuf, length);
     return -1;
   }
 

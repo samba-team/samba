@@ -169,6 +169,7 @@ implemented */
 #define ERRbaddirectory 267 /* Invalid directory name in a path. */
 #define ERROR_EAS_DIDNT_FIT 275 /* Extended attributes didn't fit */
 #define ERROR_EAS_NOT_SUPPORTED 282 /* Extended attributes not supported */
+#define ERROR_NOTIFY_ENUM_DIR 1022 /* Buffer too small to return change notify. */
 #define ERRunknownipc 2142
 
 
@@ -437,10 +438,24 @@ typedef struct
   int real_open_flags;
 } file_fd_struct;
 
+/*
+ * Structure used to keep directory state information around.
+ * Used in NT change-notify code.
+ */
+
+typedef struct
+{
+  time_t modify_time;
+  time_t status_time;
+} dir_status_struct;
+
 typedef struct
 {
   int cnum;
-  file_fd_struct *fd_ptr;
+  union {
+    file_fd_struct *fd_ptr;
+    dir_status_struct *dir_ptr;
+  } f_u;
   int pos;
   uint32 size;
   int mode;
@@ -462,7 +477,6 @@ typedef struct
   BOOL reserved;
   char *name;
 } files_struct;
-
 
 struct uid_cache {
   int entries;
