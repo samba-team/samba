@@ -16,6 +16,9 @@
 #ifdef HAVE_SYS_RESOURCE_H
 #include <sys/resource.h>
 #endif
+#ifdef HAVE_SYS_SELECT_H
+#include <sys/select.h>
+#endif
 #include <sys/wait.h>
 #include <sys/stat.h>
 #include <sys/socket.h>
@@ -38,7 +41,7 @@ extern char *prog;
 int copy_encrypted (int fd1, int fd2, des_cblock *iv,
 		    des_key_schedule schedule);
 
-RETSIGTYPE childhandler ();
+RETSIGTYPE childhandler (int);
 
 int get_local_xsocket (unsigned dnr);
 int connect_local_xsocket (unsigned dnr);

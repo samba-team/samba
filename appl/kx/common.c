@@ -7,7 +7,7 @@ do_enccopy (int fd1, int fd2, int mode, des_cblock *iv,
 	    des_key_schedule schedule, int *num)
 {
      int ret;
-     char buf[BUFSIZ];
+     u_char buf[BUFSIZ];
 
      ret = read (fd1, buf, sizeof(buf));
      if (ret == 0)
@@ -74,7 +74,7 @@ copy_encrypted (int fd1, int fd2, des_cblock *iv,
  */
 
 RETSIGTYPE
-childhandler ()
+childhandler (int sig)
 {
   pid_t pid;
   int status;
