@@ -530,12 +530,28 @@ static BOOL dump_core(void)
 update the current smbd process count
 ****************************************************************************/
 
-static void decrement_smbd_process_count(void)
+static BOOL process_count_update_successful = False;
+
+int32 increment_smbd_process_count(void)
 {
 	int32 total_smbds;
 
 	if (lp_max_smbd_processes()) {
 		total_smbds = 0;
+		if (tdb_change_int32_atomic(conn_tdb_ctx(), "INFO/total_smbds", &total_smbds, -1) == -1)
+			return 1;
+		process_count_update_successful = True;
+		return total_smbds + 1;
+	}
+	return 1;
+}
+
+static void decrement_smbd_process_count(void)
+{
+	int32 total_smbds;
+
+	if (lp_max_smbd_processes() && process_count_update_successful) {
+		total_smbds = 1;
 		tdb_change_int32_atomic(conn_tdb_ctx(), "INFO/total_smbds", &total_smbds, -1);
 	}
 }
