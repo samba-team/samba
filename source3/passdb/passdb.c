@@ -1841,18 +1841,20 @@ BOOL init_sam_from_buffer_v2(SAM_ACCOUNT *sampass, uint8 *buf, uint32 buflen)
 	/* Change from V1 is addition of password history field. */
 	account_policy_get(AP_PASSWORD_HISTORY, &pwHistLen);
 	if (pwHistLen) {
-		char *pw_hist = malloc(pwHistLen * NT_HASH_LEN);
+		char *pw_hist = malloc(pwHistLen * PW_HISTORY_ENTRY_LEN);
 		if (!pw_hist) {
 			ret = False;
 			goto done;
 		}
-		memset(pw_hist, '\0', pwHistLen * NT_HASH_LEN);
+		memset(pw_hist, '\0', pwHistLen * PW_HISTORY_ENTRY_LEN);
 		if (nt_pw_hist_ptr && nt_pw_hist_len) {
 			int i;
-			SMB_ASSERT((nt_pw_hist_len % NT_HASH_LEN) == 0);
-			nt_pw_hist_len /= NT_HASH_LEN;
+			SMB_ASSERT((nt_pw_hist_len % PW_HISTORY_ENTRY_LEN) == 0);
+			nt_pw_hist_len /= PW_HISTORY_ENTRY_LEN;
 			for (i = 0; (i < pwHistLen) && (i < nt_pw_hist_len); i++) {
-				memcpy(&pw_hist[i*NT_HASH_LEN], &nt_pw_hist_ptr[i*NT_HASH_LEN], NT_HASH_LEN);
+				memcpy(&pw_hist[i*PW_HISTORY_ENTRY_LEN],
+					&nt_pw_hist_ptr[i*PW_HISTORY_ENTRY_LEN],
+					PW_HISTORY_ENTRY_LEN);
 			}
 		}
 		if (!pdb_set_pw_history(sampass, pw_hist, pwHistLen, PDB_SET)) {
@@ -2048,7 +2050,7 @@ uint32 init_buffer_from_sam_v2 (uint8 **buf, const SAM_ACCOUNT *sampass, BOOL si
 	account_policy_get(AP_PASSWORD_HISTORY, &pwHistLen);
 	nt_pw_hist =  pdb_get_pw_history(sampass, &nt_pw_hist_len);
 	if (pwHistLen && nt_pw_hist && nt_pw_hist_len) {
-		nt_pw_hist_len *= NT_HASH_LEN;
+		nt_pw_hist_len *= PW_HISTORY_ENTRY_LEN;
 	} else {
 		nt_pw_hist_len = 0;
 	}

@@ -941,7 +941,7 @@ static NTSTATUS check_oem_password(const char *user,
 static BOOL check_passwd_history(SAM_ACCOUNT *sampass, const char *plaintext)
 {
 	uchar new_nt_p16[NT_HASH_LEN];
-	uchar zero_nt_pw[NT_HASH_LEN];
+	uchar zero_md5_nt_pw[SALTED_MD5_HASH_LEN];
 	const uint8 *nt_pw;
 	const uint8 *pwhistory;
 	BOOL found = False;
@@ -972,22 +972,28 @@ static BOOL check_passwd_history(SAM_ACCOUNT *sampass, const char *plaintext)
 	}
 
 	dump_data(100, new_nt_p16, NT_HASH_LEN);
-	dump_data(100, pwhistory, NT_HASH_LEN*pwHisLen);
+	dump_data(100, pwhistory, PW_HISTORY_ENTRY_LEN*pwHisLen);
 
-	memset(zero_nt_pw, '\0', NT_HASH_LEN);
+	memset(zero_md5_nt_pw, '\0', SALTED_MD5_HASH_LEN);
 	for (i=0; i<pwHisLen; i++) {
-		if (!memcmp(&pwhistory[i*NT_HASH_LEN], zero_nt_pw, NT_HASH_LEN)) {
-			/* Ignore zero entries. */
+		uchar new_nt_pw_salted_md5_hash[SALTED_MD5_HASH_LEN];
+		const uchar *current_salt = &pwhistory[i*PW_HISTORY_ENTRY_LEN];
+		const uchar *old_nt_pw_salted_md5_hash = &pwhistory[(i*PW_HISTORY_ENTRY_LEN)+
+							PW_HISTORY_SALT_LEN];
+		if (!memcmp(zero_md5_nt_pw, old_nt_pw_salted_md5_hash, SALTED_MD5_HASH_LEN)) {
+			/* Ignore zero valued entries. */
 			continue;
 		}
-		if (!memcmp(&pwhistory[i*NT_HASH_LEN], new_nt_p16, NT_HASH_LEN)) {
+		/* Create salted versions of new to compare. */
+		E_md5hash(current_salt, new_nt_p16, new_nt_pw_salted_md5_hash);
+
+		if (!memcmp(new_nt_pw_salted_md5_hash, old_nt_pw_salted_md5_hash, SALTED_MD5_HASH_LEN)) {
 			DEBUG(1,("check_passwd_history: proposed new password for user %s found in history list !\n",
 				pdb_get_username(sampass) ));
 			found = True;
 			break;
 		}
 	}
-
 	return found;
 }
 
