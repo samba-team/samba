@@ -104,6 +104,17 @@ ADD_OBJ_FILES = \
 #################################
 
 #################################
+# Start SUBSYSTEM TORTURE_LDAP
+[SUBSYSTEM::TORTURE_LDAP]
+ADD_OBJ_FILES = \
+		torture/ldap/common.o \
+		torture/ldap/basic.o
+REQUIRED_SUBSYSTEMS = \
+		LIBCLI_LDAP
+# End SUBSYSTEM TORTURE_LDAP
+#################################
+
+#################################
 # Start BINARY smbtorture
 [BINARY::smbtorture]
 OBJ_FILES = \
@@ -116,6 +127,7 @@ REQUIRED_SUBSYSTEMS = \
 		TORTURE_RAP \
 		TORTURE_AUTH \
 		TORTURE_NBENCH \
+		TORTURE_LDAP \
 		CONFIG \
 		LIBCMDLINE \
 		LIBBASIC

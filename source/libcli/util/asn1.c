@@ -313,7 +313,6 @@ BOOL asn1_start_tag(ASN1_DATA *data, uint8_t tag)
 	return !data->has_error;
 }
 
-#if 0
 static BOOL read_one_uint8(int sock, uint8_t *result, ASN1_DATA *data,
 			   const struct timeval *endtime)
 {
@@ -375,7 +374,6 @@ BOOL asn1_read_sequence_until(int sock, ASN1_DATA *data,
 	
 	return True;
 }
-#endif
 
 /* Get the length to be expected in buf */
 BOOL asn1_object_length(uint8_t *buf, size_t buf_length,
