@@ -1,11 +1,10 @@
 /* 
    Unix SMB/Netbios implementation.
-   Version 1.9.
-   SMB parameters and setup
+
    Copyright (C) Andrew Tridgell              1992-2000,
    Copyright (C) Luke Kenneth Casson Leighton 1996-2000,
    Copyright (C) Jean Francois Micouleau      1998-2000.
-   Copyright (C) Gerald Carter                2001-2002.
+   Copyright (C) Gerald Carter                2001-2005.
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -614,15 +613,6 @@ typedef struct s_header_type
 }
 HEADER_TYPE;
 
-typedef struct new_buffer
-{
-	uint32 ptr;
-	uint32 size;
-	prs_struct prs;
-	uint32 struct_start;
-	uint32 string_at_end;
-}
-NEW_BUFFER;
 
 typedef struct spool_q_getprinterdata
 {
@@ -1014,7 +1004,7 @@ typedef struct spool_q_enumprinters
 	uint32 servername_ptr;
 	UNISTR2 servername;
 	uint32 level;
-	NEW_BUFFER *buffer;
+	RPC_BUFFER *buffer;
 	uint32 offered;
 }
 SPOOL_Q_ENUMPRINTERS;
@@ -1033,7 +1023,7 @@ PRINTER_INFO_CTR;
 
 typedef struct spool_r_enumprinters
 {
-	NEW_BUFFER *buffer;
+	RPC_BUFFER *buffer;
 	uint32 needed;		/* bytes needed */
 	uint32 returned;	/* number of printers */
 	WERROR status;
@@ -1045,7 +1035,7 @@ typedef struct spool_q_getprinter
 {
 	POLICY_HND handle;
 	uint32 level;
-	NEW_BUFFER *buffer;
+	RPC_BUFFER *buffer;
 	uint32 offered;
 }
 SPOOL_Q_GETPRINTER;
@@ -1063,7 +1053,7 @@ typedef struct printer_info_info
 
 typedef struct spool_r_getprinter
 {
-	NEW_BUFFER *buffer;
+	RPC_BUFFER *buffer;
 	uint32 needed;
 	WERROR status;
 } SPOOL_R_GETPRINTER;
@@ -1137,7 +1127,7 @@ typedef struct spool_q_getprinterdriver2
 	uint32 architecture_ptr;
 	UNISTR2 architecture;
 	uint32 level;
-	NEW_BUFFER *buffer;
+	RPC_BUFFER *buffer;
 	uint32 offered;
 	uint32 clientmajorversion;
 	uint32 clientminorversion;
@@ -1146,7 +1136,7 @@ SPOOL_Q_GETPRINTERDRIVER2;
 
 typedef struct spool_r_getprinterdriver2
 {
-	NEW_BUFFER *buffer;
+	RPC_BUFFER *buffer;
 	uint32 needed;
 	uint32 servermajorversion;
 	uint32 serverminorversion;
@@ -1167,14 +1157,14 @@ typedef struct spool_q_addjob
 {
 	POLICY_HND handle;
 	uint32 level;
-	NEW_BUFFER *buffer;
+	RPC_BUFFER *buffer;
 	uint32 offered;
 }
 SPOOL_Q_ADDJOB;
 
 typedef struct spool_r_addjob
 {
-	NEW_BUFFER *buffer;
+	RPC_BUFFER *buffer;
 	uint32 needed;
 	WERROR status;
 }
@@ -1251,7 +1241,7 @@ typedef struct spool_q_enumjobs
 	uint32 firstjob;
 	uint32 numofjobs;
 	uint32 level;
-	NEW_BUFFER *buffer;
+	RPC_BUFFER *buffer;
 	uint32 offered;
 }
 SPOOL_Q_ENUMJOBS;
@@ -1269,7 +1259,7 @@ typedef struct job_info_ctr_info
 
 typedef struct spool_r_enumjobs
 {
-	NEW_BUFFER *buffer;
+	RPC_BUFFER *buffer;
 	uint32 needed;
 	uint32 returned;
 	WERROR status;
@@ -1316,7 +1306,7 @@ typedef struct spool_q_enumports
 	uint32 name_ptr;
 	UNISTR2 name;
 	uint32 level;
-	NEW_BUFFER *buffer;
+	RPC_BUFFER *buffer;
 	uint32 offered;
 }
 SPOOL_Q_ENUMPORTS;
@@ -1335,7 +1325,7 @@ PORT_INFO_CTR;
 
 typedef struct spool_r_enumports
 {
-	NEW_BUFFER *buffer;
+	RPC_BUFFER *buffer;
 	uint32 needed;		/* bytes needed */
 	uint32 returned;	/* number of printers */
 	WERROR status;
@@ -1385,14 +1375,14 @@ typedef struct spool_q_enumprinterdrivers
 	uint32 environment_ptr;
 	UNISTR2 environment;
 	uint32 level;
-	NEW_BUFFER *buffer;
+	RPC_BUFFER *buffer;
 	uint32 offered;
 }
 SPOOL_Q_ENUMPRINTERDRIVERS;
 
 typedef struct spool_r_enumprinterdrivers
 {
-	NEW_BUFFER *buffer;
+	RPC_BUFFER *buffer;
 	uint32 needed;
 	uint32 returned;
 	WERROR status;
@@ -1420,14 +1410,14 @@ typedef struct spool_q_enumforms
 {
 	POLICY_HND handle;
 	uint32 level;
-	NEW_BUFFER *buffer;
+	RPC_BUFFER *buffer;
 	uint32 offered;
 }
 SPOOL_Q_ENUMFORMS;
 
 typedef struct spool_r_enumforms
 {
-	NEW_BUFFER *buffer;
+	RPC_BUFFER *buffer;
 	uint32 needed;
 	uint32 numofforms;
 	WERROR status;
@@ -1439,14 +1429,14 @@ typedef struct spool_q_getform
 	POLICY_HND handle;
 	UNISTR2 formname;
 	uint32 level;
-	NEW_BUFFER *buffer;
+	RPC_BUFFER *buffer;
 	uint32 offered;
 }
 SPOOL_Q_GETFORM;
 
 typedef struct spool_r_getform
 {
-	NEW_BUFFER *buffer;
+	RPC_BUFFER *buffer;
 	uint32 needed;
 	WERROR status;
 }
@@ -1758,14 +1748,14 @@ typedef struct spool_q_getprinterdriverdirectory
 	uint32 environment_ptr;
 	UNISTR2 environment;
 	uint32 level;
-	NEW_BUFFER *buffer;
+	RPC_BUFFER *buffer;
 	uint32 offered;
 }
 SPOOL_Q_GETPRINTERDRIVERDIR;
 
 typedef struct spool_r_getprinterdriverdirectory
 {
-	NEW_BUFFER *buffer;
+	RPC_BUFFER *buffer;
 	uint32 needed;
 	WERROR status;
 }
@@ -1795,7 +1785,7 @@ typedef struct spool_q_enumprintprocessors
 	uint32 environment_ptr;
 	UNISTR2 environment;
 	uint32 level;
-	NEW_BUFFER *buffer;
+	RPC_BUFFER *buffer;
 	uint32 offered;
 }
 SPOOL_Q_ENUMPRINTPROCESSORS;
@@ -1808,7 +1798,7 @@ PRINTPROCESSOR_1;
 
 typedef struct spool_r_enumprintprocessors
 {
-	NEW_BUFFER *buffer;
+	RPC_BUFFER *buffer;
 	uint32 needed;
 	uint32 returned;
 	WERROR status;
@@ -1822,7 +1812,7 @@ typedef struct spool_q_enumprintprocdatatypes
 	uint32 processor_ptr;
 	UNISTR2 processor;
 	uint32 level;
-	NEW_BUFFER *buffer;
+	RPC_BUFFER *buffer;
 	uint32 offered;
 }
 SPOOL_Q_ENUMPRINTPROCDATATYPES;
@@ -1835,7 +1825,7 @@ PRINTPROCDATATYPE_1;
 
 typedef struct spool_r_enumprintprocdatatypes
 {
-	NEW_BUFFER *buffer;
+	RPC_BUFFER *buffer;
 	uint32 needed;
 	uint32 returned;
 	WERROR status;
@@ -1861,14 +1851,14 @@ typedef struct spool_q_enumprintmonitors
 	uint32 name_ptr;
 	UNISTR2 name;
 	uint32 level;
-	NEW_BUFFER *buffer;
+	RPC_BUFFER *buffer;
 	uint32 offered;
 }
 SPOOL_Q_ENUMPRINTMONITORS;
 
 typedef struct spool_r_enumprintmonitors
 {
-	NEW_BUFFER *buffer;
+	RPC_BUFFER *buffer;
 	uint32 needed;
 	uint32 returned;
 	WERROR status;
@@ -1996,7 +1986,7 @@ typedef struct spool_q_getjob
 	POLICY_HND handle;
 	uint32 jobid;
 	uint32 level;
-	NEW_BUFFER *buffer;
+	RPC_BUFFER *buffer;
 	uint32 offered;
 }
 SPOOL_Q_GETJOB;
@@ -2016,7 +2006,7 @@ PJOB_INFO;
 
 typedef struct spool_r_getjob
 {
-	NEW_BUFFER *buffer;
+	RPC_BUFFER *buffer;
 	uint32 needed;
 	WERROR status;
 }
@@ -2217,14 +2207,14 @@ typedef struct spool_q_getprintprocessordirectory
 	UNISTR2 name;
 	UNISTR2 environment;
 	uint32 level;
-	NEW_BUFFER *buffer;
+	RPC_BUFFER *buffer;
 	uint32 offered;
 }
 SPOOL_Q_GETPRINTPROCESSORDIRECTORY;
 
 typedef struct spool_r_getprintprocessordirectory
 {
-	NEW_BUFFER *buffer;
+	RPC_BUFFER *buffer;
 	uint32 needed;
 	WERROR status;
 }

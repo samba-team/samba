@@ -26,6 +26,74 @@
 /*******************************************************************
 ********************************************************************/
 
+static BOOL svcctl_io_service_status( const char *desc, SERVICE_STATUS *status, prs_struct *ps, int depth )
+{
+
+	prs_debug(ps, depth, desc, "svcctl_io_service_status");
+	depth++;
+
+	if(!prs_uint32("type", ps, depth, &status->type))
+		return False;
+
+	if(!prs_uint32("state", ps, depth, &status->state))
+		return False;
+
+	if(!prs_uint32("controls_accepted", ps, depth, &status->controls_accepted))
+		return False;
+
+	if(!prs_uint32("win32_exit_code", ps, depth, &status->win32_exit_code))
+		return False;
+
+	if(!prs_uint32("service_exit_code", ps, depth, &status->service_exit_code))
+		return False;
+
+	if(!prs_uint32("check_point", ps, depth, &status->check_point))
+		return False;
+
+	if(!prs_uint32("wait_hint", ps, depth, &status->wait_hint))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+********************************************************************/
+
+BOOL svcctl_io_enum_services_status( const char *desc, ENUM_SERVICES_STATUS *enum_status, RPC_BUFFER *buffer, int depth )
+{
+	prs_struct *ps=&buffer->prs;
+	
+	prs_debug(ps, depth, desc, "svcctl_io_enum_services_status");
+	depth++;
+	
+	if ( !smb_io_relstr("servicename", buffer, depth, &enum_status->servicename) )
+		return False;
+	if ( !smb_io_relstr("displayname", buffer, depth, &enum_status->displayname) )
+		return False;
+
+	if ( !svcctl_io_service_status("svc_status", &enum_status->status, ps, depth) )
+		return False;
+	
+	return True;
+}
+
+/*******************************************************************
+********************************************************************/
+
+uint32 svcctl_sizeof_enum_services_status( ENUM_SERVICES_STATUS *status )
+{
+	uint32 size = 0;
+	
+	size += size_of_relative_string( &status->servicename );
+	size += size_of_relative_string( &status->displayname );
+	size += sizeof(SERVICE_STATUS);
+
+	return size;
+}
+
+/*******************************************************************
+********************************************************************/
+
 BOOL svcctl_io_q_close_service(const char *desc, SVCCTL_Q_CLOSE_SERVICE *q_u, prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
@@ -268,39 +336,6 @@ BOOL svcctl_io_q_query_status(const char *desc, SVCCTL_Q_QUERY_STATUS *q_u, prs_
 /*******************************************************************
 ********************************************************************/
 
-static BOOL svcctl_io_service_status( const char *desc, SERVICE_STATUS *status, prs_struct *ps, int depth )
-{
-
-	prs_debug(ps, depth, desc, "svcctl_io_r_query_status");
-	depth++;
-
-	if(!prs_uint32("type", ps, depth, &status->type))
-		return False;
-
-	if(!prs_uint32("state", ps, depth, &status->state))
-		return False;
-
-	if(!prs_uint32("controls_accepted", ps, depth, &status->controls_accepted))
-		return False;
-
-	if(!prs_uint32("win32_exit_code", ps, depth, &status->win32_exit_code))
-		return False;
-
-	if(!prs_uint32("service_exit_code", ps, depth, &status->service_exit_code))
-		return False;
-
-	if(!prs_uint32("check_point", ps, depth, &status->check_point))
-		return False;
-
-	if(!prs_uint32("wait_hint", ps, depth, &status->wait_hint))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
-********************************************************************/
-
 BOOL svcctl_io_r_query_status(const char *desc, SVCCTL_R_QUERY_STATUS *r_u, prs_struct *ps, int depth)
 {
 	if (r_u == NULL)
@@ -344,9 +379,8 @@ BOOL svcctl_io_q_enum_services_status(const char *desc, SVCCTL_Q_ENUM_SERVICES_S
 		return False;
 	if(!prs_uint32("buffer_size", ps, depth, &q_u->buffer_size))
 		return False;
-	if(!prs_uint32("resume_ptr", ps, depth, &q_u->resume_ptr))
-		return False;
-	if(!prs_uint32("resume", ps, depth, &q_u->resume))
+
+	if(!prs_uint32_p("resume", ps, depth, &q_u->resume))
 		return False;
 	
 	return True;
@@ -366,17 +400,9 @@ BOOL svcctl_io_r_enum_services_status(const char *desc, SVCCTL_R_ENUM_SERVICES_S
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_uint32("buffer_size", ps, depth, &r_u->buffer_size))
+	if (!prs_rpcbuffer("", ps, depth, &r_u->buffer))
 		return False;
-	if ( r_u->buffer_size ) {
 
-		if ( !(r_u->buffer = TALLOC_ZERO_ARRAY( get_talloc_ctx(), uint8, r_u->buffer_size )) )
-			return False;
-
-		if(!prs_uint8s(False, "buffer", ps, depth, r_u->buffer, r_u->buffer_size))
-			return False;
-	}
-		
 	if(!prs_align(ps))
 		return False;
 
@@ -385,9 +411,7 @@ BOOL svcctl_io_r_enum_services_status(const char *desc, SVCCTL_R_ENUM_SERVICES_S
 	if(!prs_uint32("returned", ps, depth, &r_u->returned))
 		return False;
 
-	if(!prs_uint32("resume_ptr", ps, depth, &r_u->resume_ptr))
-		return False;
-	if(!prs_uint32("resume", ps, depth, &r_u->resume))
+	if(!prs_uint32_p("resume", ps, depth, &r_u->resume))
 		return False;
 
 	if(!prs_werror("status", ps, depth, &r_u->status))

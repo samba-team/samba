@@ -25,14 +25,50 @@
 
 /* svcctl pipe */
 
-#define SVCCTL_CLOSE_SERVICE		0x00
-#define SVCCTL_QUERY_STATUS		0x06
-#define SVCCTL_ENUM_SERVICES_STATUS	0x0e
-#define SVCCTL_OPEN_SCMANAGER		0x0f
-#define SVCCTL_OPEN_SERVICE		0x10
-#define SVCCTL_QUERY_SERVICE_CONFIG	0x11
-#define SVCCTL_START_SERVICE		0x13
-#define SVCCTL_GET_DISPLAY_NAME		0x14
+#define SVCCTL_CLOSE_SERVICE			0x00
+#define SVCCTL_QUERY_STATUS			0x06
+#define SVCCTL_ENUM_DEPENDENT_SERVICES_W	0x0d
+#define SVCCTL_ENUM_SERVICES_STATUS_W		0x0e
+#define SVCCTL_OPEN_SCMANAGER_W			0x0f
+#define SVCCTL_OPEN_SERVICE			0x10
+#define SVCCTL_QUERY_SERVICE_CONFIG		0x11
+#define SVCCTL_START_SERVICE			0x13
+#define SVCCTL_GET_DISPLAY_NAME			0x14
+
+/* ANSI versions not implemented currently 
+#define SVCCTL_ENUM_SERVICES_STATUS_A		0x0e
+#define SVCCTL_OPEN_SCMANAGER_A			0x1b
+*/
+
+/* SERVER_STATUS - type */
+
+#define SVCCTL_TYPE_WIN32		0x00000030
+#define SVCCTL_TYPE_DRIVER		0x0000000f
+
+/* SERVER_STATUS - state */
+#define SVCCTL_STATE_ACTIVE		0x00000001
+#define SVCCTL_STATE_INACTIVE		0x00000002
+#define SVCCTL_STATE_ALL		( SVC_STATE_ACTIVE | SVC_STATE_INACTIVE )
+
+/* SERVER_STATUS - CurrentState */
+
+#define SVCCTL_STOPPED			0x00000001
+#define SVCCTL_START_PENDING		0x00000002
+#define SVCCTL_STOP_PENDING		0x00000003
+#define SVCCTL_RUNNING			0x00000004
+#define SVCCTL_CONTINUE_PENDING		0x00000005
+#define SVCCTL_PAUSE_PENDING		0x00000006
+#define SVCCTL_PAUSED			0x00000007
+
+/* SERVER_STATUS - ControlAccepted */
+
+#define SVCCTL_ACCEPT_STOP			0x00000001
+#define SVCCTL_ACCEPT_PAUSE_CONTINUE		0x00000002
+#define SVCCTL_ACCEPT_SHUTDOWN			0x00000004
+#define SVCCTL_ACCEPT_PARAMCHANGE		0x00000008
+#define SVCCTL_ACCEPT_NETBINDCHANGE		0x00000010
+#define SVCCTL_ACCEPT_HARDWAREPROFILECHANGE	0x00000020
+#define SVCCTL_ACCEPT_POWEREVENT		0x00000040
 
 
 /* rpc structures */
@@ -111,21 +147,24 @@ typedef struct {
 } SVCCTL_R_QUERY_STATUS;
 
 typedef struct {
+	UNISTR servicename;
+	UNISTR displayname;
+	SERVICE_STATUS status;
+} ENUM_SERVICES_STATUS;
+
+typedef struct {
 	POLICY_HND handle;
 	uint32 type;
 	uint32 state;
 	uint32 buffer_size;
-	uint32 resume_ptr;
-	uint32 resume;
+	uint32 *resume;
 } SVCCTL_Q_ENUM_SERVICES_STATUS;
 
 typedef struct {
-	uint32 buffer_size;
-	uint8 *buffer;
+	RPC_BUFFER buffer;
 	uint32 needed;
 	uint32 returned;
-	uint32 resume_ptr;
-	uint32 resume;
+	uint32 *resume;
 	WERROR status;
 } SVCCTL_R_ENUM_SERVICES_STATUS;
 

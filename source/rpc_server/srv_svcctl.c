@@ -198,11 +198,11 @@ static BOOL api_svcctl_start_service(pipes_struct *p)
 static struct api_struct api_svcctl_cmds[] =
 {
       { "SVCCTL_CLOSE_SERVICE"         , SVCCTL_CLOSE_SERVICE         , api_svcctl_close_service },
-      { "SVCCTL_OPEN_SCMANAGER"        , SVCCTL_OPEN_SCMANAGER        , api_svcctl_open_scmanager },
+      { "SVCCTL_OPEN_SCMANAGER_W"      , SVCCTL_OPEN_SCMANAGER_W      , api_svcctl_open_scmanager },
       { "SVCCTL_OPEN_SERVICE"          , SVCCTL_OPEN_SERVICE          , api_svcctl_open_service },
       { "SVCCTL_GET_DISPLAY_NAME"      , SVCCTL_GET_DISPLAY_NAME      , api_svcctl_get_display_name },
       { "SVCCTL_QUERY_STATUS"          , SVCCTL_QUERY_STATUS          , api_svcctl_query_status },
-      { "SVCCTL_ENUM_SERVICES_STATUS"  , SVCCTL_ENUM_SERVICES_STATUS  , api_svcctl_enum_services_status },
+      { "SVCCTL_ENUM_SERVICES_STATUS_W", SVCCTL_ENUM_SERVICES_STATUS_W, api_svcctl_enum_services_status },
       { "SVCCTL_START_SERVICE"         , SVCCTL_START_SERVICE         , api_svcctl_start_service }
 };
 

@@ -31,25 +31,13 @@
  * @{
  **/
 
-/**********************************************************************
- Initialize a new spoolss buff for use by a client rpc
-**********************************************************************/
-static void init_buffer(NEW_BUFFER *buffer, uint32 size, TALLOC_CTX *ctx)
-{
-	buffer->ptr = (size != 0);
-	buffer->size = size;
-	buffer->string_at_end = size;
-	prs_init(&buffer->prs, size, ctx, MARSHALL);
-	buffer->struct_start = prs_offset(&buffer->prs);
-}
-
 /*********************************************************************
  Decode various spoolss rpc's and info levels
  ********************************************************************/
 
 /**********************************************************************
 **********************************************************************/
-static void decode_printer_info_0(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer,
+static void decode_printer_info_0(TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer,
 				uint32 returned, PRINTER_INFO_0 **info)
 {
         uint32 i;
@@ -69,7 +57,7 @@ static void decode_printer_info_0(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer,
 
 /**********************************************************************
 **********************************************************************/
-static void decode_printer_info_1(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer,
+static void decode_printer_info_1(TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer,
 				uint32 returned, PRINTER_INFO_1 **info)
 {
         uint32 i;
@@ -89,7 +77,7 @@ static void decode_printer_info_1(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer,
 
 /**********************************************************************
 **********************************************************************/
-static void decode_printer_info_2(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer, 
+static void decode_printer_info_2(TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer, 
 				uint32 returned, PRINTER_INFO_2 **info)
 {
         uint32 i;
@@ -111,7 +99,7 @@ static void decode_printer_info_2(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer,
 
 /**********************************************************************
 **********************************************************************/
-static void decode_printer_info_3(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer, 
+static void decode_printer_info_3(TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer, 
 				uint32 returned, PRINTER_INFO_3 **info)
 {
         uint32 i;
@@ -132,7 +120,7 @@ static void decode_printer_info_3(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer,
 
 /**********************************************************************
 **********************************************************************/
-static void decode_printer_info_7(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer,
+static void decode_printer_info_7(TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer,
 				uint32 returned, PRINTER_INFO_7 **info)
 {
 	uint32 i;
@@ -153,7 +141,7 @@ static void decode_printer_info_7(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer,
 
 /**********************************************************************
 **********************************************************************/
-static void decode_port_info_1(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer, 
+static void decode_port_info_1(TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer, 
 			uint32 returned, PORT_INFO_1 **info)
 {
         uint32 i;
@@ -173,7 +161,7 @@ static void decode_port_info_1(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer,
 
 /**********************************************************************
 **********************************************************************/
-static void decode_port_info_2(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer, 
+static void decode_port_info_2(TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer, 
 			uint32 returned, PORT_INFO_2 **info)
 {
         uint32 i;
@@ -193,7 +181,7 @@ static void decode_port_info_2(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer,
 
 /**********************************************************************
 **********************************************************************/
-static void decode_printer_driver_1(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer, 
+static void decode_printer_driver_1(TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer, 
 			uint32 returned, DRIVER_INFO_1 **info)
 {
         uint32 i;
@@ -213,7 +201,7 @@ static void decode_printer_driver_1(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer,
 
 /**********************************************************************
 **********************************************************************/
-static void decode_printer_driver_2(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer, 
+static void decode_printer_driver_2(TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer, 
 			uint32 returned, DRIVER_INFO_2 **info)
 {
         uint32 i;
@@ -233,7 +221,7 @@ static void decode_printer_driver_2(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer,
 
 /**********************************************************************
 **********************************************************************/
-static void decode_printer_driver_3(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer, 
+static void decode_printer_driver_3(TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer, 
 			uint32 returned, DRIVER_INFO_3 **info)
 {
         uint32 i;
@@ -253,7 +241,7 @@ static void decode_printer_driver_3(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer,
 
 /**********************************************************************
 **********************************************************************/
-static void decode_printerdriverdir_1 (TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer,
+static void decode_printerdriverdir_1 (TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer,
 			uint32 returned, DRIVER_DIRECTORY_1 **info
 )
 {
@@ -430,7 +418,7 @@ WERROR cli_spoolss_enum_printers(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	prs_struct qbuf, rbuf;
 	SPOOL_Q_ENUMPRINTERS q;
         SPOOL_R_ENUMPRINTERS r;
-	NEW_BUFFER buffer;
+	RPC_BUFFER buffer;
 	WERROR result = W_ERROR(ERRgeneral);
 
 	ZERO_STRUCT(q);
@@ -438,7 +426,7 @@ WERROR cli_spoolss_enum_printers(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Initialise input parameters */
 
-	init_buffer(&buffer, offered, mem_ctx);
+	rpcbuf_init(&buffer, offered, mem_ctx);
 
 	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
@@ -525,7 +513,7 @@ WERROR cli_spoolss_enum_ports(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	prs_struct qbuf, rbuf;
 	SPOOL_Q_ENUMPORTS q;
         SPOOL_R_ENUMPORTS r;
-	NEW_BUFFER buffer;
+	RPC_BUFFER buffer;
 	WERROR result = W_ERROR(ERRgeneral);
 	fstring server;
 
@@ -537,7 +525,7 @@ WERROR cli_spoolss_enum_ports(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Initialise input parameters */
 	
-	init_buffer(&buffer, offered, mem_ctx);
+	rpcbuf_init(&buffer, offered, mem_ctx);
 	
 	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
@@ -600,7 +588,7 @@ WERROR cli_spoolss_getprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	prs_struct qbuf, rbuf;
 	SPOOL_Q_GETPRINTER q;
 	SPOOL_R_GETPRINTER r;
-	NEW_BUFFER buffer;
+	RPC_BUFFER buffer;
 	WERROR result = W_ERROR(ERRgeneral);
 
 	ZERO_STRUCT(q);
@@ -608,7 +596,7 @@ WERROR cli_spoolss_getprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Initialise input parameters */
 
-	init_buffer(&buffer, offered, mem_ctx);
+	rpcbuf_init(&buffer, offered, mem_ctx);
 	
 	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
@@ -749,7 +737,7 @@ WERROR cli_spoolss_getprinterdriver(struct cli_state *cli,
 	prs_struct qbuf, rbuf;
 	SPOOL_Q_GETPRINTERDRIVER2 q;
         SPOOL_R_GETPRINTERDRIVER2 r;
-	NEW_BUFFER buffer;
+	RPC_BUFFER buffer;
 	WERROR result = W_ERROR(ERRgeneral);
 	fstring server;
 
@@ -761,7 +749,7 @@ WERROR cli_spoolss_getprinterdriver(struct cli_state *cli,
 
 	/* Initialise input parameters */
 
-	init_buffer(&buffer, offered, mem_ctx);
+	rpcbuf_init(&buffer, offered, mem_ctx);
 
 	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
@@ -830,7 +818,7 @@ WERROR cli_spoolss_enumprinterdrivers (struct cli_state *cli,
 	prs_struct qbuf, rbuf;
 	SPOOL_Q_ENUMPRINTERDRIVERS q;
         SPOOL_R_ENUMPRINTERDRIVERS r;
-	NEW_BUFFER buffer;
+	RPC_BUFFER buffer;
 	WERROR result = W_ERROR(ERRgeneral);
 	fstring server;
 
@@ -842,7 +830,7 @@ WERROR cli_spoolss_enumprinterdrivers (struct cli_state *cli,
 
 	/* Initialise input parameters */
 
-	init_buffer(&buffer, offered, mem_ctx);
+	rpcbuf_init(&buffer, offered, mem_ctx);
 
 	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
@@ -916,7 +904,7 @@ WERROR cli_spoolss_getprinterdriverdir (struct cli_state *cli,
 	prs_struct 			qbuf, rbuf;
 	SPOOL_Q_GETPRINTERDRIVERDIR 	q;
         SPOOL_R_GETPRINTERDRIVERDIR 	r;
-	NEW_BUFFER 			buffer;
+	RPC_BUFFER 			buffer;
 	WERROR result = W_ERROR(ERRgeneral);
 	fstring 			server;
 
@@ -928,7 +916,7 @@ WERROR cli_spoolss_getprinterdriverdir (struct cli_state *cli,
 
 	/* Initialise input parameters */
 
-	init_buffer(&buffer, offered, mem_ctx);
+	rpcbuf_init(&buffer, offered, mem_ctx);
 
 	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
@@ -1204,7 +1192,7 @@ WERROR cli_spoolss_getprintprocessordirectory(struct cli_state *cli,
 	SPOOL_R_GETPRINTPROCESSORDIRECTORY r;
 	int level = 1;
 	WERROR result = W_ERROR(ERRgeneral);
-	NEW_BUFFER buffer;
+	RPC_BUFFER buffer;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
@@ -1216,7 +1204,7 @@ WERROR cli_spoolss_getprintprocessordirectory(struct cli_state *cli,
 
 	/* Initialise input parameters */
 
-	init_buffer(&buffer, offered, mem_ctx);
+	rpcbuf_init(&buffer, offered, mem_ctx);
 
 	make_spoolss_q_getprintprocessordirectory(
 		&q, name, environment, level, &buffer, offered);
@@ -1388,14 +1376,14 @@ WERROR cli_spoolss_getform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	SPOOL_Q_GETFORM q;
 	SPOOL_R_GETFORM r;
 	WERROR result = W_ERROR(ERRgeneral);
-	NEW_BUFFER buffer;
+	RPC_BUFFER buffer;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
 	/* Initialise parse structures */
 
-	init_buffer(&buffer, offered, mem_ctx);
+	rpcbuf_init(&buffer, offered, mem_ctx);
 
 	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
@@ -1494,7 +1482,7 @@ WERROR cli_spoolss_deleteform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
-static void decode_forms_1(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer, 
+static void decode_forms_1(TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer, 
 			   uint32 num_forms, FORM_1 **forms)
 {
 	int i;
@@ -1530,14 +1518,14 @@ WERROR cli_spoolss_enumforms(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	SPOOL_Q_ENUMFORMS q;
 	SPOOL_R_ENUMFORMS r;
 	WERROR result = W_ERROR(ERRgeneral);
-	NEW_BUFFER buffer;
+	RPC_BUFFER buffer;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
 	/* Initialise parse structures */
 
-	init_buffer(&buffer, offered, mem_ctx);
+	rpcbuf_init(&buffer, offered, mem_ctx);
 
 	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
@@ -1576,7 +1564,7 @@ WERROR cli_spoolss_enumforms(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
-static void decode_jobs_1(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer, 
+static void decode_jobs_1(TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer, 
 			  uint32 num_jobs, JOB_INFO_1 **jobs)
 {
 	uint32 i;
@@ -1588,7 +1576,7 @@ static void decode_jobs_1(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer,
 		smb_io_job_info_1("", buffer, &((*jobs)[i]), 0);
 }
 
-static void decode_jobs_2(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer, 
+static void decode_jobs_2(TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer, 
 			  uint32 num_jobs, JOB_INFO_2 **jobs)
 {
 	uint32 i;
@@ -1611,14 +1599,14 @@ WERROR cli_spoolss_enumjobs(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	SPOOL_Q_ENUMJOBS q;
 	SPOOL_R_ENUMJOBS r;
 	WERROR result = W_ERROR(ERRgeneral);
-	NEW_BUFFER buffer;
+	RPC_BUFFER buffer;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
 	/* Initialise parse structures */
 
-	init_buffer(&buffer, offered, mem_ctx);
+	rpcbuf_init(&buffer, offered, mem_ctx);
 
 	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
@@ -1728,14 +1716,14 @@ WERROR cli_spoolss_getjob(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	SPOOL_Q_GETJOB q;
 	SPOOL_R_GETJOB r;
 	WERROR result = W_ERROR(ERRgeneral);
-	NEW_BUFFER buffer;
+	RPC_BUFFER buffer;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
 	/* Initialise parse structures */
 
-	init_buffer(&buffer, offered, mem_ctx);
+	rpcbuf_init(&buffer, offered, mem_ctx);
 
 	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
