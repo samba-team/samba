@@ -199,7 +199,7 @@ void fetch_machine_sid(struct cli_state *cli)
 
 	if (!(mem_ctx=talloc_init()))
 	{
-		DEBUG(0,("fetch_domain_sid: talloc_init returned NULL!\n"));
+		DEBUG(0,("fetch_machine_sid: talloc_init returned NULL!\n"));
 		goto error;
 	}
 
