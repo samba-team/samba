@@ -77,20 +77,7 @@ static int opt_machine_pass = 0;
 BOOL opt_have_ip = False;
 struct in_addr opt_dest_ip;
 
-/*****************************************************************************
- stubb functions
-****************************************************************************/
-
-void become_root( void )
-{
-        return;
-}
-
-void unbecome_root( void )
-{
-        return;
-}
-
+extern BOOL AllowDebugChange;
 
 uint32 get_sec_channel_type(const char *param) 
 {
@@ -154,7 +141,7 @@ NTSTATUS connect_to_ipc(struct cli_state **c, struct in_addr *server_ip,
 					server_ip, opt_port,
 					"IPC$", "IPC",  
 					opt_user_name, opt_workgroup,
-					opt_password, 0, NULL);
+					opt_password, 0, Undefined, NULL);
 	
 	if (NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
@@ -184,7 +171,7 @@ NTSTATUS connect_to_ipc_anonymous(struct cli_state **c,
 					server_ip, opt_port,
 					"IPC$", "IPC",  
 					"", "",
-					"", 0, NULL);
+					"", 0, Undefined, NULL);
 	
 	if (NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
@@ -580,6 +567,8 @@ static struct functable net_func[] = {
 
 	zero_ip(&opt_dest_ip);
 
+	/* set default debug level to 0 regardless of what smb.conf sets */
+	DEBUGLEVEL_CLASS[DBGC_ALL] = 0;
 	dbf = x_stderr;
 	
 	pc = poptGetContext(NULL, argc, (const char **) argv, long_options, 
@@ -615,9 +604,14 @@ static struct functable net_func[] = {
 		}
 	}
 	
-	lp_load(dyn_CONFIGFILE,True,False,False);       
-
-	argv_new = (const char **)poptGetArgs(pc);
+	/*
+	 * Don't load debug level from smb.conf. It should be
+	 * set by cmdline arg or remain default (0)
+	 */
+	AllowDebugChange = False;
+	lp_load(dyn_CONFIGFILE,True,False,False);
+	
+ 	argv_new = (const char **)poptGetArgs(pc);
 
 	argc_new = argc;
 	for (i=0; i<argc; i++) {

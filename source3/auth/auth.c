@@ -512,7 +512,7 @@ NTSTATUS make_auth_context_fixed(struct auth_context **auth_context, uchar chal[
 		return nt_status;
 	}
 	
-	(*auth_context)->challenge = data_blob(chal, 8);
+	(*auth_context)->challenge = data_blob_talloc((*auth_context)->mem_ctx, chal, 8);
 	(*auth_context)->challenge_set_by = "fixed";
 	return nt_status;
 }

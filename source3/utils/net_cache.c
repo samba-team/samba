@@ -214,7 +214,7 @@ static int net_cache_del(int argc, const char **argv)
 	const char *keystr = argv[0];
 	
 	if (argc < 1) {
-		d_printf("\nUsage: net cache add <key string>\n");
+		d_printf("\nUsage: net cache del <key string>\n");
 		return -1;
 	}
 	

@@ -232,7 +232,7 @@ enum winbindd_result winbindd_getgrnam(struct winbindd_cli_state *state)
 	/* Ensure null termination */
 	state->request.data.groupname[sizeof(state->request.data.groupname)-1]='\0';
 
-	DEBUG(3, ("[%5d]: getgrnam %s\n", state->pid,
+	DEBUG(3, ("[%5lu]: getgrnam %s\n", (unsigned long)state->pid,
 		  state->request.data.groupname));
 
 	/* Parse domain and groupname */
@@ -334,8 +334,8 @@ enum winbindd_result winbindd_getgrgid(struct winbindd_cli_state *state)
 	int gr_mem_len;
 	char *gr_mem;
 
-	DEBUG(3, ("[%5d]: getgrgid %d\n", state->pid, 
-		  state->request.data.gid));
+	DEBUG(3, ("[%5lu]: getgrgid %lu\n", (unsigned long)state->pid, 
+		  (unsigned long)state->request.data.gid));
 
 	/* Bug out if the gid isn't in the winbind range */
 
@@ -360,8 +360,8 @@ enum winbindd_result winbindd_getgrgid(struct winbindd_cli_state *state)
 
 	/* Get rid from gid */
 	if (!NT_STATUS_IS_OK(idmap_gid_to_sid(&group_sid, state->request.data.gid))) {
-		DEBUG(1, ("could not convert gid %d to rid\n", 
-			  state->request.data.gid));
+		DEBUG(1, ("could not convert gid %lu to rid\n", 
+			  (unsigned long)state->request.data.gid));
 		return WINBINDD_ERROR;
 	}
 
@@ -416,7 +416,7 @@ enum winbindd_result winbindd_setgrent(struct winbindd_cli_state *state)
 {
 	struct winbindd_domain *domain;
 
-	DEBUG(3, ("[%5d]: setgrent\n", state->pid));
+	DEBUG(3, ("[%5lu]: setgrent\n", (unsigned long)state->pid));
 
 	/* Check user has enabled this */
 
@@ -469,7 +469,7 @@ enum winbindd_result winbindd_setgrent(struct winbindd_cli_state *state)
 
 enum winbindd_result winbindd_endgrent(struct winbindd_cli_state *state)
 {
-	DEBUG(3, ("[%5d]: endgrent\n", state->pid));
+	DEBUG(3, ("[%5lu]: endgrent\n", (unsigned long)state->pid));
 
 	free_getent_state(state->getgrent_state);
 	state->getgrent_state = NULL;
@@ -605,7 +605,7 @@ enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state)
 	int num_groups, group_list_ndx = 0, i, gr_mem_list_len = 0;
 	char *new_extra_data, *gr_mem_list = NULL;
 
-	DEBUG(3, ("[%5d]: getgrent\n", state->pid));
+	DEBUG(3, ("[%5lu]: getgrent\n", (unsigned long)state->pid));
 
 	/* Check user has enabled this */
 
@@ -691,7 +691,7 @@ enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state)
 			goto tryagain;
 		}
 
-		DEBUG(10, ("got gid %d for group %x\n", group_gid,
+		DEBUG(10, ("got gid %lu for group %x\n", (unsigned long)group_gid,
 			   name_list[ent->sam_entry_index].rid));
 		
 		/* Fill in group entry */
@@ -825,7 +825,7 @@ enum winbindd_result winbindd_list_groups(struct winbindd_cli_state *state)
 	char *ted = NULL;
 	unsigned int extra_data_len = 0, i;
 
-	DEBUG(3, ("[%5d]: list groups\n", state->pid));
+	DEBUG(3, ("[%5lu]: list groups\n", (unsigned long)state->pid));
 
 	/* Enumerate over trusted domains */
 
@@ -915,7 +915,7 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 	/* Ensure null termination */
 	state->request.data.username[sizeof(state->request.data.username)-1]='\0';
 
-	DEBUG(3, ("[%5d]: getgroups %s\n", state->pid,
+	DEBUG(3, ("[%5lu]: getgroups %s\n", (unsigned long)state->pid,
 		  state->request.data.username));
 
 	if (!(mem_ctx = talloc_init("winbindd_getgroups(%s)",
@@ -1009,9 +1009,9 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 			/* We've jumped through a lot of hoops to get here */
 
 			DEBUG(10, ("winbindd_getgroups: mapped other sid %s to "
-				   "gid %d\n", sid_string_static(
+				   "gid %lu\n", sid_string_static(
 					   &info3->other_sids[i].sid),
-				   gid_list[num_gids]));
+				   (unsigned long)gid_list[num_gids]));
 
 			num_gids++;
 		}

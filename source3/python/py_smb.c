@@ -238,7 +238,8 @@ static PyObject *py_smb_query_secdesc(PyObject *self, PyObject *args,
 
 	if (cli_is_error(cli->cli)) {
 		PyErr_SetString(PyExc_RuntimeError, "query_secdesc failed");
-		return NULL;
+		result = NULL;
+		goto done;
 	}
 
 	if (!secdesc) {
@@ -342,11 +343,48 @@ static PyMethodDef smb_methods[] = {
 	{ "connect", (PyCFunction)py_smb_connect, METH_VARARGS | METH_KEYWORDS,
 	  "Connect to a host" },
 
+	/* Other stuff - this should really go into a samba config module
+  	   but for the moment let's leave it here. */
+
+	{ "setup_logging", (PyCFunction)py_setup_logging, 
+	  METH_VARARGS | METH_KEYWORDS, 
+	  "Set up debug logging.\n"
+"\n"
+"Initialises Samba's debug logging system.  One argument is expected which\n"
+"is a boolean specifying whether debugging is interactive and sent to stdout\n"
+"or logged to a file.\n"
+"\n"
+"Example:\n"
+"\n"
+">>> smb.setup_logging(interactive = 1)" },
+
+	{ "get_debuglevel", (PyCFunction)get_debuglevel, 
+	  METH_VARARGS, 
+	  "Set the current debug level.\n"
+"\n"
+"Example:\n"
+"\n"
+">>> smb.get_debuglevel()\n"
+"0" },
+
+	{ "set_debuglevel", (PyCFunction)set_debuglevel, 
+	  METH_VARARGS, 
+	  "Get the current debug level.\n"
+"\n"
+"Example:\n"
+"\n"
+">>> smb.set_debuglevel(10)" },
+
 	{ NULL }
 };
 
 static void py_cli_state_dealloc(PyObject* self)
 {
+	cli_state_object *cli = (cli_state_object *)self;
+
+	if (cli->cli)
+		cli_shutdown(cli->cli);
+
 	PyObject_Del(self);
 }
 
@@ -395,5 +433,5 @@ void initsmb(void)
 	py_samba_init();
 
 	setup_logging("smb", True);
-	DEBUGLEVEL = 10;
+	DEBUGLEVEL = 3;
 }

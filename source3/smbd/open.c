@@ -125,6 +125,7 @@ static BOOL open_file(files_struct *fsp,connection_struct *conn,
 			   directory.
 			*/
 			flags &= ~O_CREAT;
+			local_flags &= ~O_CREAT;
 		}
 	}
 
@@ -165,6 +166,14 @@ static BOOL open_file(files_struct *fsp,connection_struct *conn,
 		if (VALID_STAT(*psbuf) && S_ISFIFO(psbuf->st_mode))
 			local_flags |= O_NONBLOCK;
 #endif
+
+		/* Don't create files with Microsoft wildcard characters. */
+		if ((local_flags & O_CREAT) && !VALID_STAT(*psbuf) && ms_has_wild(fname))  {
+			unix_ERR_class = ERRDOS;
+			unix_ERR_code = ERRinvalidname;
+			unix_ERR_ntstatus = NT_STATUS_OBJECT_NAME_INVALID;
+			return False;
+		}
 
 		/* Actually do the open */
 		fsp->fd = fd_open(conn, fname, local_flags, mode);
@@ -675,8 +684,8 @@ dev = %x, inode = %.0f\n", old_shares[i].op_type, fname, (unsigned int)dev, (dou
 dev = %x, inode = %.0f. Deleting it to continue...\n", (int)broken_entry.pid, fname, (unsigned int)dev, (double)inode));
 					
 					if (process_exists(broken_entry.pid)) {
-						DEBUG(0,("open_mode_check: Existent process %d left active oplock.\n",
-							 broken_entry.pid ));
+						DEBUG(0,("open_mode_check: Existent process %lu left active oplock.\n",
+							 (unsigned long)broken_entry.pid ));
 					}
 					
 					if (del_share_entry(dev, inode, &broken_entry, NULL) == -1) {
@@ -874,7 +883,7 @@ files_struct *open_file_shared1(connection_struct *conn,char *fname, SMB_STRUCT_
 	if (file_existed && (GET_FILE_OPEN_DISPOSITION(ofun) == FILE_EXISTS_TRUNCATE)) {
 		if (!open_match_attributes(conn, fname, psbuf->st_mode, mode, &new_mode)) {
 			DEBUG(5,("open_file_shared: attributes missmatch for file %s (0%o, 0%o)\n",
-						fname, psbuf->st_mode, mode ));
+						fname, (int)psbuf->st_mode, (int)mode ));
 			file_free(fsp);
 			errno = EACCES;
 			return NULL;
@@ -1287,6 +1296,15 @@ files_struct *open_directory(connection_struct *conn, char *fname, SMB_STRUCT_ST
 				DEBUG(2,("open_directory: failing create on read-only share\n"));
 				file_free(fsp);
 				errno = EACCES;
+				return NULL;
+			}
+
+			if (ms_has_wild(fname))  {
+				file_free(fsp);
+				DEBUG(5,("open_directory: failing create on filename %s with wildcards\n", fname));
+				unix_ERR_class = ERRDOS;
+				unix_ERR_code = ERRinvalidname;
+				unix_ERR_ntstatus = NT_STATUS_OBJECT_NAME_INVALID;
 				return NULL;
 			}
 

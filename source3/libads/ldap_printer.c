@@ -1,7 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
    ads (active directory) printer utility library
-   Copyright (C) Jim McDonough 2002
+   Copyright (C) Jim McDonough <jmcd@us.ibm.com> 2002
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by

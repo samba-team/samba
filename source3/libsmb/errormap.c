@@ -1498,6 +1498,7 @@ const struct unix_error_map unix_dos_nt_errmap[] = {
 	{ ENFILE, ERRDOS, ERRnofids, NT_STATUS_TOO_MANY_OPENED_FILES },
 	{ EMFILE, ERRDOS, ERRnofids, NT_STATUS_TOO_MANY_OPENED_FILES },
 	{ ENOSPC, ERRHRD, ERRdiskfull, NT_STATUS_DISK_FULL },
+	{ ENOMEM, ERRDOS, ERRnomem, NT_STATUS_NO_MEMORY },
 #ifdef EDQUOT
 	{ EDQUOT, ERRHRD, ERRdiskfull, NT_STATUS_DISK_FULL },
 #endif

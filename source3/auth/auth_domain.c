@@ -69,7 +69,7 @@ static NTSTATUS connect_to_domain_password_server(struct cli_state **cli,
 	/* Attempt connection */
 	*retry = True;
 	result = cli_full_connection(cli, global_myname(), dc_name, &dc_ip, 0, 
-		"IPC$", "IPC", "", "", "", 0, retry);
+		"IPC$", "IPC", "", "", "", 0, Undefined, retry);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		/* map to something more useful */
@@ -104,7 +104,7 @@ machine %s. Error was : %s.\n", dc_name, cli_errstr(*cli)));
 		return NT_STATUS_NO_LOGON_SERVERS;
 	}
 
-	snprintf((*cli)->mach_acct, sizeof((*cli)->mach_acct) - 1, "%s$", setup_creds_as);
+	fstr_sprintf((*cli)->mach_acct, "%s$", setup_creds_as);
 
 	if (!(*cli)->mach_acct) {
 		release_server_mutex();

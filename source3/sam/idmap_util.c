@@ -146,7 +146,7 @@ NTSTATUS idmap_uid_to_sid(DOM_SID *sid, uid_t uid)
 	unid_t id;
 	int flags;
 
-	DEBUG(10,("idmap_uid_to_sid: uid = [%d]\n", uid));
+	DEBUG(10,("idmap_uid_to_sid: uid = [%lu]\n", (unsigned long)uid));
 
 	flags = ID_USERID;
 	id.uid = uid;
@@ -164,7 +164,7 @@ NTSTATUS idmap_gid_to_sid(DOM_SID *sid, gid_t gid)
 	unid_t id;
 	int flags;
 
-	DEBUG(10,("idmap_gid_to_sid: gid = [%d]\n", gid));
+	DEBUG(10,("idmap_gid_to_sid: gid = [%lu]\n", (unsigned long)gid));
 
 	flags = ID_GROUPID;
 #if 0	/* JERRY */
@@ -195,7 +195,7 @@ NTSTATUS idmap_sid_to_uid(const DOM_SID *sid, uid_t *uid, uint32 flags)
 	ret = idmap_get_id_from_sid(&id, &flags, sid);
 	
 	if ( NT_STATUS_IS_OK(ret) ) {
-		DEBUG(10,("idmap_sid_to_uid: uid = [%d]\n", id.uid));
+		DEBUG(10,("idmap_sid_to_uid: uid = [%lu]\n", (unsigned long)id.uid));
 		*uid = id.uid;
 	} 
 
@@ -225,7 +225,7 @@ NTSTATUS idmap_sid_to_gid(const DOM_SID *sid, gid_t *gid, uint32 flags)
 	
 	if ( NT_STATUS_IS_OK(ret) ) 
 	{
-		DEBUG(10,("idmap_sid_to_gid: gid = [%d]\n", id.gid));
+		DEBUG(10,("idmap_sid_to_gid: gid = [%lu]\n", (unsigned long)id.gid));
 		*gid = id.gid;
 	}
 

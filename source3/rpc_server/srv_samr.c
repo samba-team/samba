@@ -6,8 +6,7 @@
  *  Copyright (C) Paul Ashton                       1997,
  *  Copyright (C) Marc Jacobsen			    1999,
  *  Copyright (C) Jean François Micouleau      1998-2001,
- *  Copyright (C) Anthony Liguori              2002-2003,
- *  Copyright (C) Jim McDonough                     2002.
+ *  Copyright (C) Jim McDonough <jmcd@us.ibm.com> 2002-2003.
  *	
  * 	Split into interface and implementation modules by, 
  *

@@ -48,8 +48,6 @@ int reply_special(char *inbuf,char *outbuf)
 	int msg_type = CVAL(inbuf,0);
 	int msg_flags = CVAL(inbuf,1);
 	pstring name1,name2;
-
-	int len;
 	char name_type = 0;
 	
 	static BOOL already_got_session = False;
@@ -75,23 +73,16 @@ int reply_special(char *inbuf,char *outbuf)
 			return(0);
 		}
 		name_extract(inbuf,4,name1);
-		name_extract(inbuf,4 + name_len(inbuf + 4),name2);
+		name_type = name_extract(inbuf,4 + name_len(inbuf + 4),name2);
 		DEBUG(2,("netbios connect: name1=%s name2=%s\n",
 			 name1,name2));      
-
-		name1[15] = 0;
-
-		len = strlen(name2);
-		if (len == 16) {
-			name_type = name2[15];
-			name2[15] = 0;
-		}
 
 		set_local_machine_name(name1, True);
 		set_remote_machine_name(name2, True);
 
-		DEBUG(2,("netbios connect: local=%s remote=%s\n",
-			get_local_machine_name(), get_remote_machine_name() ));
+		DEBUG(2,("netbios connect: local=%s remote=%s, name type = %x\n",
+			 get_local_machine_name(), get_remote_machine_name(),
+			 name_type));
 
 		if (name_type == 'R') {
 			/* We are being asked for a pathworks session --- 
@@ -1281,6 +1272,16 @@ NTSTATUS unlink_internals(connection_struct *conn, int dirtype, char *name)
 	
 	*directory = *mask = 0;
 	
+	/* We must check for wildcards in the name given
+	 * directly by the client - before any unmangling.
+	 * This prevents an unmangling of a UNIX name containing
+	 * a DOS wildcard like '*' or '?' from unmangling into
+	 * a wildcard delete which was not intended.
+	 * FIX for #226. JRA.
+	 */
+
+	has_wild = ms_has_wild(name);
+
 	rc = unix_convert(name,conn,0,&bad_path,&sbuf);
 	
 	p = strrchr_m(name,'/');
@@ -1305,13 +1306,12 @@ NTSTATUS unlink_internals(connection_struct *conn, int dirtype, char *name)
 	if (!rc && mangle_is_mangled(mask))
 		mangle_check_cache( mask );
 	
-	has_wild = ms_has_wild(mask);
-	
 	if (!has_wild) {
 		pstrcat(directory,"/");
 		pstrcat(directory,mask);
 		error = can_delete(directory,conn,dirtype);
-		if (!NT_STATUS_IS_OK(error)) return error;
+		if (!NT_STATUS_IS_OK(error))
+			return error;
 
 		if (SMB_VFS_UNLINK(conn,directory) == 0) {
 			count++;
@@ -1338,12 +1338,15 @@ NTSTATUS unlink_internals(connection_struct *conn, int dirtype, char *name)
 				pstring fname;
 				pstrcpy(fname,dname);
 				
-				if(!mask_match(fname, mask, case_sensitive)) continue;
+				if(!mask_match(fname, mask, case_sensitive))
+					continue;
 				
 				slprintf(fname,sizeof(fname)-1, "%s/%s",directory,dname);
 				error = can_delete(fname,conn,dirtype);
-				if (!NT_STATUS_IS_OK(error)) continue;
-				if (SMB_VFS_UNLINK(conn,fname) == 0) count++;
+				if (!NT_STATUS_IS_OK(error))
+					continue;
+				if (SMB_VFS_UNLINK(conn,fname) == 0)
+					count++;
 				DEBUG(3,("unlink_internals: succesful unlink [%s]\n",fname));
 			}
 			CloseDir(dirptr);
@@ -1379,7 +1382,8 @@ int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 	DEBUG(3,("reply_unlink : %s\n",name));
 	
 	status = unlink_internals(conn, dirtype, name);
-	if (!NT_STATUS_IS_OK(status)) return ERROR_NT(status);
+	if (!NT_STATUS_IS_OK(status))
+		return ERROR_NT(status);
 
 	/*
 	 * Win2k needs a changenotify request response before it will
@@ -1471,6 +1475,10 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
 	char *header = outbuf;
 	files_struct *fsp;
 	START_PROFILE(SMBreadbraw);
+
+	if (srv_is_signing_active()) {
+		exit_server("reply_readbraw: SMB signing is active - raw reads/writes are disallowed.");
+	}
 
 	/*
 	 * Special check if an oplock break has been issued
@@ -1869,6 +1877,10 @@ int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int size,
 	files_struct *fsp = file_fsp(inbuf,smb_vwv0);
 	int outsize = 0;
 	START_PROFILE(SMBwritebraw);
+
+	if (srv_is_signing_active()) {
+		exit_server("reply_readbraw: SMB signing is active - raw reads/writes are disallowed.");
+	}
 
 	CHECK_FSP(fsp,conn);
 	CHECK_WRITE(fsp);
@@ -2828,7 +2840,11 @@ NTSTATUS mkdir_internal(connection_struct *conn, pstring directory)
 	int ret= -1;
 	
 	unix_convert(directory,conn,0,&bad_path,&sbuf);
-	
+
+	if (ms_has_wild(directory)) {
+		return NT_STATUS_OBJECT_NAME_INVALID;
+	}
+
 	if (check_name(directory, conn))
 		ret = vfs_MkDir(conn,directory,unix_mode(conn,aDIR,directory));
 	

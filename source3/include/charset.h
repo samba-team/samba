@@ -24,9 +24,9 @@ typedef enum {CH_UCS2=0, CH_UNIX=1, CH_DISPLAY=2, CH_DOS=3, CH_UTF8=4} charset_t
 
 #define NUM_CHARSETS 5
 
-/*
- *   for each charset we have a function that pulls from that charset to
- *     a ucs2 buffer, and a function that pushes to a ucs2 buffer
+/* 
+ *   for each charset we have a function that pushes from that charset to a ucs2
+ *   buffer, and a function that pulls from ucs2 buffer to that  charset.
  *     */
 
 struct charset_functions {

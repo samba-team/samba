@@ -223,7 +223,7 @@ struct cli_state *open_pipe_creds(char *server, PyObject *creds,
 
 	result = cli_full_connection(
 		&cli, NULL, server, NULL, 0, "IPC$", "IPC",
-		username, domain, password, 0, NULL);
+		username, domain, password, 0, Undefined, NULL);
 	
 	if (!NT_STATUS_IS_OK(result)) {
 		*errstr = strdup("error connecting to IPC$ pipe");

@@ -141,7 +141,7 @@ BOOL cli_send_smb(struct cli_state *cli)
 	if (cli->fd == -1)
 		return False;
 
-	cli_caclulate_sign_mac(cli);
+	cli_calculate_sign_mac(cli);
 
 	len = smb_len(cli->outbuf) + 4;
 
@@ -157,6 +157,10 @@ BOOL cli_send_smb(struct cli_state *cli)
 		}
 		nwritten += ret;
 	}
+	/* Increment the mid so we can tell between responses. */
+	cli->mid++;
+	if (!cli->mid)
+		cli->mid++;
 	return True;
 }
 
@@ -206,6 +210,27 @@ void cli_init_creds(struct cli_state *cli, const struct ntuser_creds *usr)
 
         DEBUG(10,("cli_init_creds: user %s domain %s\n",
                cli->user_name, cli->domain));
+}
+
+/****************************************************************************
+ Set the signing state (used from the command line).
+****************************************************************************/
+
+void cli_setup_signing_state(struct cli_state *cli, int signing_state)
+{
+	if (signing_state == Undefined)
+		return;
+
+	if (signing_state == False) {
+		cli->sign_info.allow_smb_signing = False;
+		cli->sign_info.mandatory_signing = False;
+		return;
+	}
+
+	cli->sign_info.allow_smb_signing = True;
+
+	if (signing_state == Required) 
+		cli->sign_info.mandatory_signing = True;
 }
 
 /****************************************************************************

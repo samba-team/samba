@@ -53,9 +53,9 @@ extern int max_send;
 ****************************************************************************/
 
 typedef struct {
-   ubi_slNode msg_next;
-   char *msg_buf;
-   int msg_len;
+	ubi_slNode msg_next;
+	char *msg_buf;
+	int msg_len;
 } pending_message_list;
 
 static ubi_slList smb_oplock_queue = { NULL, (ubi_slNodePtr)&smb_oplock_queue, 0};
@@ -67,29 +67,30 @@ static ubi_slList smb_oplock_queue = { NULL, (ubi_slNodePtr)&smb_oplock_queue, 0
 
 static BOOL push_message(ubi_slList *list_head, char *buf, int msg_len)
 {
-  pending_message_list *msg = (pending_message_list *)
+	pending_message_list *msg = (pending_message_list *)
                                malloc(sizeof(pending_message_list));
 
-  if(msg == NULL)
-  {
-    DEBUG(0,("push_message: malloc fail (1)\n"));
-    return False;
-  }
+	if(msg == NULL) {
+		DEBUG(0,("push_message: malloc fail (1)\n"));
+		return False;
+	}
 
-  msg->msg_buf = (char *)malloc(msg_len);
-  if(msg->msg_buf == NULL)
-  {
-    DEBUG(0,("push_message: malloc fail (2)\n"));
-    SAFE_FREE(msg);
-    return False;
-  }
+	msg->msg_buf = (char *)malloc(msg_len);
+	if(msg->msg_buf == NULL) {
+		DEBUG(0,("push_message: malloc fail (2)\n"));
+		SAFE_FREE(msg);
+		return False;
+	}
 
-  memcpy(msg->msg_buf, buf, msg_len);
-  msg->msg_len = msg_len;
+	memcpy(msg->msg_buf, buf, msg_len);
+	msg->msg_len = msg_len;
 
-  ubi_slAddTail( list_head, msg);
+	ubi_slAddTail( list_head, msg);
 
-  return True;
+	/* Push the MID of this packet on the signing queue. */
+	srv_defer_sign_response(SVAL(buf,smb_mid));
+
+	return True;
 }
 
 /****************************************************************************
@@ -295,28 +296,29 @@ BOOL receive_next_smb(char *inbuf, int bufsize, int timeout)
 
 void respond_to_all_remaining_local_messages(void)
 {
-  char buffer[1024];
+	char buffer[1024];
 
-  /*
-   * Assert we have no exclusive open oplocks.
-   */
+	/*
+	 * Assert we have no exclusive open oplocks.
+	 */
 
-  if(get_number_of_exclusive_open_oplocks()) {
-    DEBUG(0,("respond_to_all_remaining_local_messages: PANIC : we have %d exclusive oplocks.\n",
-          get_number_of_exclusive_open_oplocks() ));
-    return;
-  }
+	if(get_number_of_exclusive_open_oplocks()) {
+		DEBUG(0,("respond_to_all_remaining_local_messages: PANIC : we have %d exclusive oplocks.\n",
+			get_number_of_exclusive_open_oplocks() ));
+		return;
+	}
 
-  /*
-   * Keep doing receive_local_message with a 1 ms timeout until
-   * we have no more messages.
-   */
-  while(receive_local_message(buffer, sizeof(buffer), 1)) {
-	  /* Deal with oplock break requests from other smbd's. */
-	  process_local_message(buffer, sizeof(buffer));
-  }
+	/*
+	 * Keep doing receive_local_message with a 1 ms timeout until
+	 * we have no more messages.
+	 */
 
-  return;
+	while(receive_local_message(buffer, sizeof(buffer), 1)) {
+		/* Deal with oplock break requests from other smbd's. */
+		process_local_message(buffer, sizeof(buffer));
+	}
+
+	return;
 }
 
 
@@ -339,13 +341,11 @@ force write permissions on print services.
    functions. Any message that has a NULL function is unimplemented -
    please feel free to contribute implementations!
 */
-static const struct smb_message_struct
-{
-  const char *name;
-  int (*fn)(connection_struct *conn, char *, char *, int, int);
-  int flags;
-}
- smb_messages[256] = {
+static const struct smb_message_struct {
+	const char *name;
+	int (*fn)(connection_struct *conn, char *, char *, int, int);
+	int flags;
+} smb_messages[256] = {
 
 /* 0x00 */ { "SMBmkdir",reply_mkdir,AS_USER | NEED_WRITE},
 /* 0x01 */ { "SMBrmdir",reply_rmdir,AS_USER | NEED_WRITE},
@@ -849,67 +849,62 @@ set. Ignoring max smbd restriction.\n"));
 }
 
 /****************************************************************************
-  process an smb from the client - split out from the smbd_process() code so
-  it can be used by the oplock break code.
+ Process an smb from the client - split out from the smbd_process() code so
+ it can be used by the oplock break code.
 ****************************************************************************/
+
 void process_smb(char *inbuf, char *outbuf)
 {
-  static int trans_num;
-  int msg_type = CVAL(inbuf,0);
-  int32 len = smb_len(inbuf);
-  int nread = len + 4;
+	static int trans_num;
+	int msg_type = CVAL(inbuf,0);
+	int32 len = smb_len(inbuf);
+	int nread = len + 4;
 
-  DO_PROFILE_INC(smb_count);
+	DO_PROFILE_INC(smb_count);
 
-  if (trans_num == 0) {
-	  /* on the first packet, check the global hosts allow/ hosts
-	     deny parameters before doing any parsing of the packet
-	     passed to us by the client.  This prevents attacks on our
-	     parsing code from hosts not in the hosts allow list */
-	  if (smbd_process_limit() ||
-		  !check_access(smbd_server_fd(), lp_hostsallow(-1), lp_hostsdeny(-1))) {
-		  /* send a negative session response "not listening on calling
-		   name" */
-		  static unsigned char buf[5] = {0x83, 0, 0, 1, 0x81};
-		  DEBUG( 1, ( "Connection denied from %s\n",
-			      client_addr() ) );
-		  (void)send_smb(smbd_server_fd(),(char *)buf);
-		  exit_server("connection denied");
-	  }
-  }
+	if (trans_num == 0) {
+		/* on the first packet, check the global hosts allow/ hosts
+		deny parameters before doing any parsing of the packet
+		passed to us by the client.  This prevents attacks on our
+		parsing code from hosts not in the hosts allow list */
+		if (smbd_process_limit() ||
+				!check_access(smbd_server_fd(), lp_hostsallow(-1), lp_hostsdeny(-1))) {
+			/* send a negative session response "not listening on calling name" */
+			static unsigned char buf[5] = {0x83, 0, 0, 1, 0x81};
+			DEBUG( 1, ( "Connection denied from %s\n", client_addr() ) );
+			(void)send_smb(smbd_server_fd(),(char *)buf);
+			exit_server("connection denied");
+		}
+	}
 
-  DEBUG( 6, ( "got message type 0x%x of len 0x%x\n", msg_type, len ) );
-  DEBUG( 3, ( "Transaction %d of length %d\n", trans_num, nread ) );
+	DEBUG( 6, ( "got message type 0x%x of len 0x%x\n", msg_type, len ) );
+	DEBUG( 3, ( "Transaction %d of length %d\n", trans_num, nread ) );
 
-  if (msg_type == 0)
-    show_msg(inbuf);
-  else if(msg_type == SMBkeepalive)
-    return; /* Keepalive packet. */
+	if (msg_type == 0)
+		show_msg(inbuf);
+	else if(msg_type == SMBkeepalive)
+		return; /* Keepalive packet. */
 
-  nread = construct_reply(inbuf,outbuf,nread,max_send);
+	nread = construct_reply(inbuf,outbuf,nread,max_send);
       
-  if(nread > 0) 
-  {
-    if (CVAL(outbuf,0) == 0)
-      show_msg(outbuf);
+	if(nread > 0) {
+		if (CVAL(outbuf,0) == 0)
+			show_msg(outbuf);
 	
-    if (nread != smb_len(outbuf) + 4) 
-    {
-      DEBUG(0,("ERROR: Invalid message response size! %d %d\n",
-                 nread, smb_len(outbuf)));
-    }
-    else
-      if (!send_smb(smbd_server_fd(),outbuf))
-        exit_server("process_smb: send_smb failed.");
-  }
-  trans_num++;
+		if (nread != smb_len(outbuf) + 4) {
+			DEBUG(0,("ERROR: Invalid message response size! %d %d\n",
+				nread, smb_len(outbuf)));
+		} else if (!send_smb(smbd_server_fd(),outbuf)) {
+			exit_server("process_smb: send_smb failed.");
+		}
+	}
+	trans_num++;
 }
 
-
-
 /****************************************************************************
-return a string containing the function name of a SMB command
+ Return a string containing the function name of a SMB command.
 ****************************************************************************/
+
 const char *smb_fn_name(int type)
 {
 	const char *unknown_name = "SMBunknown";
@@ -949,92 +944,94 @@ void construct_reply_common(char *inbuf,char *outbuf)
 }
 
 /****************************************************************************
-  construct a chained reply and add it to the already made reply
-  **************************************************************************/
+ Construct a chained reply and add it to the already made reply
+****************************************************************************/
+
 int chain_reply(char *inbuf,char *outbuf,int size,int bufsize)
 {
-  static char *orig_inbuf;
-  static char *orig_outbuf;
-  int smb_com1, smb_com2 = CVAL(inbuf,smb_vwv0);
-  unsigned smb_off2 = SVAL(inbuf,smb_vwv1);
-  char *inbuf2, *outbuf2;
-  int outsize2;
-  char inbuf_saved[smb_wct];
-  char outbuf_saved[smb_wct];
-  int wct = CVAL(outbuf,smb_wct);
-  int outsize = smb_size + 2*wct + SVAL(outbuf,smb_vwv0+2*wct);
+	static char *orig_inbuf;
+	static char *orig_outbuf;
+	int smb_com1, smb_com2 = CVAL(inbuf,smb_vwv0);
+	unsigned smb_off2 = SVAL(inbuf,smb_vwv1);
+	char *inbuf2, *outbuf2;
+	int outsize2;
+	char inbuf_saved[smb_wct];
+	char outbuf_saved[smb_wct];
+	int wct = CVAL(outbuf,smb_wct);
+	int outsize = smb_size + 2*wct + SVAL(outbuf,smb_vwv0+2*wct);
 
-  /* maybe its not chained */
-  if (smb_com2 == 0xFF) {
-    SCVAL(outbuf,smb_vwv0,0xFF);
-    return outsize;
-  }
+	/* maybe its not chained */
+	if (smb_com2 == 0xFF) {
+		SCVAL(outbuf,smb_vwv0,0xFF);
+		return outsize;
+	}
 
-  if (chain_size == 0) {
-    /* this is the first part of the chain */
-    orig_inbuf = inbuf;
-    orig_outbuf = outbuf;
-  }
+	if (chain_size == 0) {
+		/* this is the first part of the chain */
+		orig_inbuf = inbuf;
+		orig_outbuf = outbuf;
+	}
 
-  /*
-   * The original Win95 redirector dies on a reply to
-   * a lockingX and read chain unless the chain reply is
-   * 4 byte aligned. JRA.
-   */
+	/*
+	 * The original Win95 redirector dies on a reply to
+	 * a lockingX and read chain unless the chain reply is
+	 * 4 byte aligned. JRA.
+	 */
 
-  outsize = (outsize + 3) & ~3;
+	outsize = (outsize + 3) & ~3;
 
-  /* we need to tell the client where the next part of the reply will be */
-  SSVAL(outbuf,smb_vwv1,smb_offset(outbuf+outsize,outbuf));
-  SCVAL(outbuf,smb_vwv0,smb_com2);
+	/* we need to tell the client where the next part of the reply will be */
+	SSVAL(outbuf,smb_vwv1,smb_offset(outbuf+outsize,outbuf));
+	SCVAL(outbuf,smb_vwv0,smb_com2);
 
-  /* remember how much the caller added to the chain, only counting stuff
-     after the parameter words */
-  chain_size += outsize - smb_wct;
+	/* remember how much the caller added to the chain, only counting stuff
+		after the parameter words */
+	chain_size += outsize - smb_wct;
 
-  /* work out pointers into the original packets. The
-     headers on these need to be filled in */
-  inbuf2 = orig_inbuf + smb_off2 + 4 - smb_wct;
-  outbuf2 = orig_outbuf + SVAL(outbuf,smb_vwv1) + 4 - smb_wct;
+	/* work out pointers into the original packets. The
+		headers on these need to be filled in */
+	inbuf2 = orig_inbuf + smb_off2 + 4 - smb_wct;
+	outbuf2 = orig_outbuf + SVAL(outbuf,smb_vwv1) + 4 - smb_wct;
 
-  /* remember the original command type */
-  smb_com1 = CVAL(orig_inbuf,smb_com);
+	/* remember the original command type */
+	smb_com1 = CVAL(orig_inbuf,smb_com);
 
-  /* save the data which will be overwritten by the new headers */
-  memcpy(inbuf_saved,inbuf2,smb_wct);
-  memcpy(outbuf_saved,outbuf2,smb_wct);
+	/* save the data which will be overwritten by the new headers */
+	memcpy(inbuf_saved,inbuf2,smb_wct);
+	memcpy(outbuf_saved,outbuf2,smb_wct);
 
-  /* give the new packet the same header as the last part of the SMB */
-  memmove(inbuf2,inbuf,smb_wct);
+	/* give the new packet the same header as the last part of the SMB */
+	memmove(inbuf2,inbuf,smb_wct);
 
-  /* create the in buffer */
-  SCVAL(inbuf2,smb_com,smb_com2);
+	/* create the in buffer */
+	SCVAL(inbuf2,smb_com,smb_com2);
 
-  /* create the out buffer */
-  construct_reply_common(inbuf2, outbuf2);
+	/* create the out buffer */
+	construct_reply_common(inbuf2, outbuf2);
 
-  DEBUG(3,("Chained message\n"));
-  show_msg(inbuf2);
+	DEBUG(3,("Chained message\n"));
+	show_msg(inbuf2);
 
-  /* process the request */
-  outsize2 = switch_message(smb_com2,inbuf2,outbuf2,size-chain_size,
-			    bufsize-chain_size);
+	/* process the request */
+	outsize2 = switch_message(smb_com2,inbuf2,outbuf2,size-chain_size,
+				bufsize-chain_size);
 
-  /* copy the new reply and request headers over the old ones, but
-     preserve the smb_com field */
-  memmove(orig_outbuf,outbuf2,smb_wct);
-  SCVAL(orig_outbuf,smb_com,smb_com1);
+	/* copy the new reply and request headers over the old ones, but
+		preserve the smb_com field */
+	memmove(orig_outbuf,outbuf2,smb_wct);
+	SCVAL(orig_outbuf,smb_com,smb_com1);
 
-  /* restore the saved data, being careful not to overwrite any
-   data from the reply header */
-  memcpy(inbuf2,inbuf_saved,smb_wct);
-  {
-    int ofs = smb_wct - PTR_DIFF(outbuf2,orig_outbuf);
-    if (ofs < 0) ofs = 0;
-    memmove(outbuf2+ofs,outbuf_saved+ofs,smb_wct-ofs);
-  }
+	/* restore the saved data, being careful not to overwrite any
+		data from the reply header */
+	memcpy(inbuf2,inbuf_saved,smb_wct);
 
-  return outsize2;
+	{
+		int ofs = smb_wct - PTR_DIFF(outbuf2,orig_outbuf);
+		if (ofs < 0) ofs = 0;
+			memmove(outbuf2+ofs,outbuf_saved+ofs,smb_wct-ofs);
+	}
+
+	return outsize2;
 }
 
 /****************************************************************************
@@ -1065,17 +1062,16 @@ static int setup_select_timeout(void)
 
 void check_reload(int t)
 {
-  static time_t last_smb_conf_reload_time = 0;
+	static time_t last_smb_conf_reload_time = 0;
 
-  if(last_smb_conf_reload_time == 0)
-    last_smb_conf_reload_time = t;
+	if(last_smb_conf_reload_time == 0)
+		last_smb_conf_reload_time = t;
 
-  if (reload_after_sighup || (t >= last_smb_conf_reload_time+SMBD_RELOAD_CHECK))
-  {
-    reload_services(True);
-    reload_after_sighup = False;
-    last_smb_conf_reload_time = t;
-  }
+	if (reload_after_sighup || (t >= last_smb_conf_reload_time+SMBD_RELOAD_CHECK)) {
+		reload_services(True);
+		reload_after_sighup = False;
+		last_smb_conf_reload_time = t;
+	}
 }
 
 /****************************************************************************
@@ -1084,165 +1080,164 @@ void check_reload(int t)
 
 static BOOL timeout_processing(int deadtime, int *select_timeout, time_t *last_timeout_processing_time)
 {
-  static time_t last_keepalive_sent_time = 0;
-  static time_t last_idle_closed_check = 0;
-  time_t t;
-  BOOL allidle = True;
-  extern int keepalive;
+	static time_t last_keepalive_sent_time = 0;
+	static time_t last_idle_closed_check = 0;
+	time_t t;
+	BOOL allidle = True;
+	extern int keepalive;
 
-  if (smb_read_error == READ_EOF) 
-  {
-    DEBUG(3,("end of file from client\n"));
-    return False;
-  }
+	if (smb_read_error == READ_EOF) {
+		DEBUG(3,("timeout_processing: End of file from client (client has disconnected).\n"));
+		return False;
+	}
 
-  if (smb_read_error == READ_ERROR) 
-  {
-    DEBUG(3,("receive_smb error (%s) exiting\n",
-              strerror(errno)));
-    return False;
-  }
+	if (smb_read_error == READ_ERROR) {
+		DEBUG(3,("timeout_processing: receive_smb error (%s) Exiting\n",
+			strerror(errno)));
+		return False;
+	}
 
-  *last_timeout_processing_time = t = time(NULL);
+	if (smb_read_error == READ_BAD_SIG) {
+		DEBUG(3,("timeout_processing: receive_smb error bad smb signature. Exiting\n"));
+		return False;
+	}
 
-  if(last_keepalive_sent_time == 0)
-    last_keepalive_sent_time = t;
+	*last_timeout_processing_time = t = time(NULL);
 
-  if(last_idle_closed_check == 0)
-    last_idle_closed_check = t;
+	if(last_keepalive_sent_time == 0)
+		last_keepalive_sent_time = t;
 
-  /* become root again if waiting */
-  change_to_root_user();
+	if(last_idle_closed_check == 0)
+		last_idle_closed_check = t;
 
-  /* run all registered idle events */
-  smb_run_idle_events(t);
+	/* become root again if waiting */
+	change_to_root_user();
 
-  /* check if we need to reload services */
-  check_reload(t);
+	/* run all registered idle events */
+	smb_run_idle_events(t);
 
-  /* automatic timeout if all connections are closed */      
-  if (conn_num_open()==0 && (t - last_idle_closed_check) >= IDLE_CLOSED_TIMEOUT) 
-  {
-    DEBUG( 2, ( "Closing idle connection\n" ) );
-    return False;
-  }
-  else
-    last_idle_closed_check = t;
+	/* check if we need to reload services */
+	check_reload(t);
 
-  if (keepalive && (t - last_keepalive_sent_time)>keepalive) 
-  {
-	  extern struct auth_context *negprot_global_auth_context;
-	  if (!send_keepalive(smbd_server_fd())) {
-		  DEBUG( 2, ( "Keepalive failed - exiting.\n" ) );
-		  return False;
-	  }
-	  
-	  /* send a keepalive for a password server or the like.
-	     This is attached to the auth_info created in the
-	     negprot */
-	  if (negprot_global_auth_context 
-	      && negprot_global_auth_context->challenge_set_method 
-	      && negprot_global_auth_context->challenge_set_method->send_keepalive) {
-		  negprot_global_auth_context->challenge_set_method->send_keepalive
-			  (&negprot_global_auth_context->challenge_set_method->private_data);
-	  }
+	/* automatic timeout if all connections are closed */      
+	if (conn_num_open()==0 && (t - last_idle_closed_check) >= IDLE_CLOSED_TIMEOUT) {
+		DEBUG( 2, ( "Closing idle connection\n" ) );
+		return False;
+	} else {
+		last_idle_closed_check = t;
+	}
 
-	  last_keepalive_sent_time = t;
-  }
+	if (keepalive && (t - last_keepalive_sent_time)>keepalive) {
+		extern struct auth_context *negprot_global_auth_context;
+		if (!send_keepalive(smbd_server_fd())) {
+			DEBUG( 2, ( "Keepalive failed - exiting.\n" ) );
+			return False;
+		}
 
-  /* check for connection timeouts */
-  allidle = conn_idle_all(t, deadtime);
+		/* send a keepalive for a password server or the like.
+			This is attached to the auth_info created in the
+		negprot */
+		if (negprot_global_auth_context && negprot_global_auth_context->challenge_set_method 
+				&& negprot_global_auth_context->challenge_set_method->send_keepalive) {
 
-  if (allidle && conn_num_open()>0) {
-    DEBUG(2,("Closing idle connection 2.\n"));
-    return False;
-  }
+			negprot_global_auth_context->challenge_set_method->send_keepalive
+			(&negprot_global_auth_context->challenge_set_method->private_data);
+		}
 
-  if(global_machine_password_needs_changing && 
-     /* for ADS we need to do a regular ADS password change, not a domain
-        password change */
-     lp_security() == SEC_DOMAIN)
-  {
-    unsigned char trust_passwd_hash[16];
-    time_t lct;
+		last_keepalive_sent_time = t;
+	}
 
-    /*
-     * We're in domain level security, and the code that
-     * read the machine password flagged that the machine
-     * password needs changing.
-     */
+	/* check for connection timeouts */
+	allidle = conn_idle_all(t, deadtime);
 
-    /*
-     * First, open the machine password file with an exclusive lock.
-     */
+	if (allidle && conn_num_open()>0) {
+		DEBUG(2,("Closing idle connection 2.\n"));
+		return False;
+	}
 
-    if (secrets_lock_trust_account_password(lp_workgroup(), True) == False) {
-      DEBUG(0,("process: unable to lock the machine account password for \
+	if(global_machine_password_needs_changing && 
+			/* for ADS we need to do a regular ADS password change, not a domain
+					password change */
+			lp_security() == SEC_DOMAIN) {
+
+		unsigned char trust_passwd_hash[16];
+		time_t lct;
+
+		/*
+		 * We're in domain level security, and the code that
+		 * read the machine password flagged that the machine
+		 * password needs changing.
+		 */
+
+		/*
+		 * First, open the machine password file with an exclusive lock.
+		 */
+
+		if (secrets_lock_trust_account_password(lp_workgroup(), True) == False) {
+			DEBUG(0,("process: unable to lock the machine account password for \
 machine %s in domain %s.\n", global_myname(), lp_workgroup() ));
-      return True;
-    }
+			return True;
+		}
 
-    if(!secrets_fetch_trust_account_password(lp_workgroup(), 
-					     trust_passwd_hash, 
-					     &lct, NULL)) {
-      DEBUG(0,("process: unable to read the machine account password for \
+		if(!secrets_fetch_trust_account_password(lp_workgroup(), trust_passwd_hash, &lct, NULL)) {
+			DEBUG(0,("process: unable to read the machine account password for \
 machine %s in domain %s.\n", global_myname(), lp_workgroup()));
-      secrets_lock_trust_account_password(lp_workgroup(), False);
-      return True;
-    }
+			secrets_lock_trust_account_password(lp_workgroup(), False);
+			return True;
+		}
 
-    /*
-     * Make sure someone else hasn't already done this.
-     */
+		/*
+		 * Make sure someone else hasn't already done this.
+		 */
 
-    if(t < lct + lp_machine_password_timeout()) {
-      global_machine_password_needs_changing = False;
-      secrets_lock_trust_account_password(lp_workgroup(), False);
-      return True;
-    }
+		if(t < lct + lp_machine_password_timeout()) {
+			global_machine_password_needs_changing = False;
+			secrets_lock_trust_account_password(lp_workgroup(), False);
+			return True;
+		}
 
-    /* always just contact the PDC here */
+		/* always just contact the PDC here */
     
-    change_trust_account_password( lp_workgroup(), NULL);
-    global_machine_password_needs_changing = False;
-    secrets_lock_trust_account_password(lp_workgroup(), False);
-  }
+		change_trust_account_password( lp_workgroup(), NULL);
+		global_machine_password_needs_changing = False;
+		secrets_lock_trust_account_password(lp_workgroup(), False);
+	}
 
-  /*
-   * Check to see if we have any blocking locks
-   * outstanding on the queue.
-   */
-  process_blocking_lock_queue(t);
+	/*
+	 * Check to see if we have any blocking locks
+	 * outstanding on the queue.
+	 */
+	process_blocking_lock_queue(t);
 
-  /* update printer queue caches if necessary */
+	/* update printer queue caches if necessary */
   
-  update_monitored_printq_cache();
+	update_monitored_printq_cache();
   
-  /*
-   * Check to see if we have any change notifies 
-   * outstanding on the queue.
-   */
-  process_pending_change_notify_queue(t);
+	/*
+	 * Check to see if we have any change notifies 
+	 * outstanding on the queue.
+	 */
+	process_pending_change_notify_queue(t);
 
-  /*
-   * Now we are root, check if the log files need pruning.
-   * Force a log file check.
-   */
-  force_check_log_size();
-  check_log_size();
+	/*
+	 * Now we are root, check if the log files need pruning.
+	 * Force a log file check.
+	 */
+	force_check_log_size();
+	check_log_size();
 
-  /* Send any queued printer notify message to interested smbd's. */
+	/* Send any queued printer notify message to interested smbd's. */
 
-  print_notify_send_messages(0);
+	print_notify_send_messages(0);
 
-  /*
-   * Modify the select timeout depending upon
-   * what we have remaining in our queues.
-   */
+	/*
+	 * Modify the select timeout depending upon
+	 * what we have remaining in our queues.
+	 */
 
-  *select_timeout = setup_select_timeout();
+	*select_timeout = setup_select_timeout();
 
-  return True;
+	return True;
 }
 
 /****************************************************************************

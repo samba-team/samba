@@ -152,7 +152,8 @@ static NTSTATUS cm_open_connection(const char *domain, const int pipe_index,
 		
 		result = cli_full_connection(&new_conn->cli, global_myname(), new_conn->controller, 
 					     &dc_ip, 0, "IPC$", "IPC", ipc_username, ipc_domain, 
-					     ipc_password, CLI_FULL_CONNECTION_ANNONYMOUS_FALLBACK, &retry);
+					     ipc_password, CLI_FULL_CONNECTION_ANNONYMOUS_FALLBACK, 
+					     Undefined, &retry);
 		
 		secrets_named_mutex_release(new_conn->controller);
 
@@ -168,6 +169,11 @@ static NTSTATUS cm_open_connection(const char *domain, const int pipe_index,
 		add_failed_connection_entry(domain, new_conn->controller, result);
 		return result;
 	}
+	
+	/* set the domain if empty; needed for schannel connections */
+	if ( !*new_conn->cli->domain )
+		fstrcpy( new_conn->cli->domain, domain );
+		
 	
 	if ( !cli_nt_session_open (new_conn->cli, pipe_index) ) {
 		result = NT_STATUS_PIPE_NOT_AVAILABLE;
@@ -186,6 +192,25 @@ static NTSTATUS cm_open_connection(const char *domain, const int pipe_index,
 	}
 
 	return NT_STATUS_OK;
+}
+
+/************************************************************************
+ Wrapper around statuc cm_open_connection to retreive a freshly
+ setup cli_state struct
+************************************************************************/
+
+NTSTATUS cm_fresh_connection(const char *domain, const int pipe_index,
+			       struct cli_state **cli)
+{
+	NTSTATUS result;
+	struct winbindd_cm_conn conn;
+	
+	result = cm_open_connection( domain, pipe_index, &conn );
+	
+	if ( NT_STATUS_IS_OK(result) ) 
+		*cli = conn.cli;
+
+	return result;
 }
 
 /* Return true if a connection is still alive */
@@ -320,13 +345,11 @@ BOOL cm_check_for_native_mode_win2k( const char *domain )
 
 done:
 
-#if 0
-	/*
-	 * I don't think we need to shutdown here ? JRA.
-	 */
+	/* close the connection;  no other cals use this pipe and it is called only
+	   on reestablishing the domain list   --jerry */
+
 	if ( conn.cli )
 		cli_shutdown( conn.cli );
-#endif
 	
 	return ret;
 }
@@ -488,14 +511,14 @@ NTSTATUS cm_get_netlogon_cli(const char *domain,
 	if (!NT_STATUS_IS_OK(result))
 		return result;
 	
-	snprintf(lock_name, sizeof(lock_name), "NETLOGON\\%s", conn->controller);
+	fstr_sprintf(lock_name, "NETLOGON\\%s", conn->controller);
 
 	if (!(got_mutex = secrets_named_mutex(lock_name, WINBIND_SERVER_MUTEX_WAIT_TIME))) {
 		DEBUG(0,("cm_get_netlogon_cli: mutex grab failed for %s\n", conn->controller));
 	}
 	
 	if ( sec_channel_type == SEC_CHAN_DOMAIN )
-		snprintf(conn->cli->mach_acct, sizeof(conn->cli->mach_acct) - 1, "%s$", lp_workgroup());
+		fstr_sprintf(conn->cli->mach_acct, "%s$", lp_workgroup());
 			
 	result = cli_nt_establish_netlogon(conn->cli, sec_channel_type, trust_passwd);
 	

@@ -1897,76 +1897,78 @@ static BOOL api_SetUserPassword(connection_struct *conn,uint16 vuid, char *param
 				char **rdata,char **rparam,
 				int *rdata_len,int *rparam_len)
 {
-  char *p = skip_string(param+2,2);
-  fstring user;
-  fstring pass1,pass2;
+	char *p = skip_string(param+2,2);
+	fstring user;
+	fstring pass1,pass2;
 
-  pull_ascii_fstring(user,p);
+	pull_ascii_fstring(user,p);
 
-  p = skip_string(p,1);
+	p = skip_string(p,1);
 
-  memset(pass1,'\0',sizeof(pass1));
-  memset(pass2,'\0',sizeof(pass2));
-  memcpy(pass1,p,16);
-  memcpy(pass2,p+16,16);
+	memset(pass1,'\0',sizeof(pass1));
+	memset(pass2,'\0',sizeof(pass2));
+	memcpy(pass1,p,16);
+	memcpy(pass2,p+16,16);
 
-  *rparam_len = 4;
-  *rparam = REALLOC(*rparam,*rparam_len);
+	*rparam_len = 4;
+	*rparam = REALLOC(*rparam,*rparam_len);
 
-  *rdata_len = 0;
+	*rdata_len = 0;
 
-  SSVAL(*rparam,0,NERR_badpass);
-  SSVAL(*rparam,2,0);		/* converter word */
+	SSVAL(*rparam,0,NERR_badpass);
+	SSVAL(*rparam,2,0);		/* converter word */
 
-  DEBUG(3,("Set password for <%s>\n",user));
+	DEBUG(3,("Set password for <%s>\n",user));
 
-  /*
-   * Attempt to verify the old password against smbpasswd entries
-   * Win98 clients send old and new password in plaintext for this call.
-   */
+	/*
+	 * Attempt to verify the old password against smbpasswd entries
+	 * Win98 clients send old and new password in plaintext for this call.
+	 */
 
-  {
-	  auth_serversupplied_info *server_info = NULL;
-	  DATA_BLOB password = data_blob(pass1, strlen(pass1)+1);
-	  if (NT_STATUS_IS_OK(check_plaintext_password(user,password,&server_info))) {
+	{
+		auth_serversupplied_info *server_info = NULL;
+		DATA_BLOB password = data_blob(pass1, strlen(pass1)+1);
 
-		  if (NT_STATUS_IS_OK(change_oem_password(server_info->sam_account, pass1, pass2)))
-		  {
-			  SSVAL(*rparam,0,NERR_Success);
-		  }
-		  
-		  free_server_info(&server_info);
-	  }
-	  data_blob_clear_free(&password);
-  }
+		if (NT_STATUS_IS_OK(check_plaintext_password(user,password,&server_info))) {
 
-  /*
-   * If the plaintext change failed, attempt
-   * the old encrypted method. NT will generate this
-   * after trying the samr method. Note that this
-   * method is done as a last resort as this
-   * password change method loses the NT password hash
-   * and cannot change the UNIX password as no plaintext
-   * is received.
-   */
+			become_root();
+			if (NT_STATUS_IS_OK(change_oem_password(server_info->sam_account, pass1, pass2))) {
+				SSVAL(*rparam,0,NERR_Success);
+			}
+			unbecome_root();
 
-  if(SVAL(*rparam,0) != NERR_Success)
-  {
-    SAM_ACCOUNT *hnd = NULL;
+			free_server_info(&server_info);
+		}
+		data_blob_clear_free(&password);
+	}
 
-    if (check_lanman_password(user,(unsigned char *)pass1,(unsigned char *)pass2, &hnd) && 
-       change_lanman_password(hnd,pass2))
-    {
-      SSVAL(*rparam,0,NERR_Success);
-    }
-	pdb_free_sam(&hnd);
-  }
+	/*
+	 * If the plaintext change failed, attempt
+	 * the old encrypted method. NT will generate this
+	 * after trying the samr method. Note that this
+	 * method is done as a last resort as this
+	 * password change method loses the NT password hash
+	 * and cannot change the UNIX password as no plaintext
+	 * is received.
+	 */
 
+	if(SVAL(*rparam,0) != NERR_Success) {
+		SAM_ACCOUNT *hnd = NULL;
 
-  memset((char *)pass1,'\0',sizeof(fstring));
-  memset((char *)pass2,'\0',sizeof(fstring));	 
+		if (check_lanman_password(user,(unsigned char *)pass1,(unsigned char *)pass2, &hnd)) {
+			become_root();
+			if (change_lanman_password(hnd,pass2)) {
+				SSVAL(*rparam,0,NERR_Success);
+			}
+			unbecome_root();
+			pdb_free_sam(&hnd);
+		}
+	}
+
+	memset((char *)pass1,'\0',sizeof(fstring));
+	memset((char *)pass2,'\0',sizeof(fstring));	 
 	 
-  return(True);
+	return(True);
 }
 
 /****************************************************************************

@@ -154,7 +154,7 @@ BOOL enumerate_domain_trusts( TALLOC_CTX *mem_ctx, const char *domain,
 	/* setup the anonymous connection */
 
 	result = cli_full_connection( &cli, global_myname(), dc_name, &dc_ip, 0, "IPC$", "IPC",
-		"", "", "", 0, &retry);
+		"", "", "", 0, Undefined, &retry);
 	if ( !NT_STATUS_IS_OK(result) )
 		goto done;
 
