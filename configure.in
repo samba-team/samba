@@ -51,13 +51,6 @@ AC_PROG_LIBTOOL
 
 AC_WFLAGS(-Wall -Wmissing-prototypes -Wpointer-arith -Wbad-function-cast -Wmissing-declarations -Wnested-externs)
 
-rk_DB
-
-dnl AC_ROKEN(10,[/usr/heimdal /usr/athena],[lib/roken],[$(top_builddir)/lib/roken/libroken.la],[-I$(top_builddir)/lib/roken -I$(top_srcdir)/lib/roken])
-
-rk_ROKEN(lib/roken)
-LIB_roken="\$(top_builddir)/lib/vers/libvers.la $LIB_roken"
-
 rk_TEST_PACKAGE(openldap,
 [#include <lber.h>
 #include <ldap.h>],
@@ -163,6 +156,8 @@ AM_CONDITIONAL(do_roken_rename, true)
 AC_DEFINE(KRB5, 1, [Enable Kerberos 5 support in applications.])dnl
 AC_SUBST(LIB_kdb)dnl
 
+KRB_CRYPTO
+
 AC_ARG_ENABLE(dce, 
 	AC_HELP_STRING([--enable-dce],[if you want support for DCE/DFS PAG's]))
 if test "$enable_dce" = yes; then
@@ -183,6 +178,13 @@ fi
 AC_SUBST(dpagaix_cflags)
 AC_SUBST(dpagaix_ldadd)
 AC_SUBST(dpagaix_ldflags)
+
+rk_DB
+
+dnl AC_ROKEN(10,[/usr/heimdal /usr/athena],[lib/roken],[$(top_builddir)/lib/roken/libroken.la],[-I$(top_builddir)/lib/roken -I$(top_srcdir)/lib/roken])
+
+rk_ROKEN(lib/roken)
+LIB_roken="\$(top_builddir)/lib/vers/libvers.la $LIB_roken"
 
 rk_OTP
 
@@ -373,8 +375,6 @@ AC_CHECK_TYPES([int8_t, int16_t, int32_t, int64_t,
 #include <netinet/in6_machtypes.h>
 #endif
 ])
-
-KRB_CRYPTO
 
 KRB_READLINE
 
