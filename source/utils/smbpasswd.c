@@ -82,7 +82,7 @@ static void usage(void)
 	printf("  -r MACHINE           remote machine\n");
 
 	printf("extra options when run by root or in local mode:\n");
-	printf("  -L                   local mode\n");
+	printf("  -L                   local mode (must be first option)\n");
 	printf("  -R ORDER             name resolve order\n");
 	printf("  -j DOMAIN            join domain name\n");
 	printf("  -a                   add user\n");
