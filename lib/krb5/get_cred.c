@@ -644,14 +644,15 @@ get_cred_from_kdc_flags(krb5_context context,
 	    *out_creds = calloc(1, sizeof(**out_creds));
 	    if(*out_creds == NULL)
 		ret = ENOMEM;
-	    else
+	    else {
 		ret = get_cred_kdc_la(context, ccache, flags, 
 				      in_creds, &tgts, *out_creds);
+		if (ret)
+		    free (*out_creds);
+	    }
 	    krb5_free_creds_contents(context, &tgts);
 	    krb5_free_principal(context, tmp_creds.server);
 	    krb5_free_principal(context, tmp_creds.client);
-	    if(ret)
-		free(*out_creds);
 	    return ret;
 	}
     }
@@ -696,7 +697,15 @@ get_cred_from_kdc_flags(krb5_context context,
 	
     krb5_free_principal(context, tmp_creds.server);
     krb5_free_principal(context, tmp_creds.client);
-    ret = get_cred_kdc_la(context, ccache, flags, in_creds, tgt, *out_creds);
+    *out_creds = calloc(1, sizeof(**out_creds));
+    if(*out_creds == NULL)
+	ret = ENOMEM;
+    else {
+	ret = get_cred_kdc_la(context, ccache, flags, 
+				      in_creds, tgt, *out_creds);
+	if (ret)
+	    free (*out_creds);
+    }
     krb5_free_creds(context, tgt);
     return ret;
 }
