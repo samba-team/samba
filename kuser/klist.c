@@ -24,19 +24,19 @@ main (int argc, char **argv)
 
     err = krb5_init_context (&context);
     if (err)
-	abort ();
+	errx (1, "krb5_init_context: %s", krb5_get_err_text(context,err));
 
     err = krb5_cc_default (context, &ccache);
     if (err)
-	abort ();
+	errx (1, "krb5_cc_default: %s", krb5_get_err_text(context,err));
 
     err = krb5_cc_get_principal (context, ccache, &principal);
     if (err)
-	abort ();
+	errx (1, "krb5_cc_get_principal: %s", krb5_get_err_text(context,err));
 
     err = krb5_unparse_name (context, principal, &str);
     if (err)
-	abort ();
+	errx (1, "krb5_unparse_name: %s", krb5_get_err_text(context,err));
 
     printf ("Credentials cache: %s\n", krb5_cc_get_name(context, ccache));
     printf ("\tPrincipal: %s\n\n", str);
@@ -44,7 +44,7 @@ main (int argc, char **argv)
 
     err = krb5_cc_start_seq_get (context, ccache, &cursor);
     if (err)
-	abort ();
+	errx (1, "krb5_cc_start_seq_get: %s", krb5_get_err_text(context,err));
 
     printf("  %-15s  %-15s  %s\n", "Issued", "Expires", "Principal");
 
@@ -61,18 +61,17 @@ main (int argc, char **argv)
 	    printf ("%-15s  ", ">>>Expired<<<");
 	err = krb5_unparse_name (context, creds.server, &str);
 	if (err)
-	    abort ();
+	    errx (1, "krb5_unparse_name: %s", krb5_get_err_text(context,err));
 	printf ("%s\n", str);
 	free (str);
     }
     err = krb5_cc_end_seq_get (context, ccache, &cursor);
     if (err)
-	return err;
+	errx (1, "krb5_cc_end_seq_get: %s", krb5_get_err_text(context,err));
 
     err = krb5_cc_close (context, ccache);
     if (err)
-	abort ();
-
+	errx (1, "krb5_cc_close: %s", krb5_get_err_text(context,err));
 
     krb5_free_principal (context, principal);
 
