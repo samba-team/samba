@@ -339,6 +339,9 @@ rpc_info_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 	POLICY_HND connect_pol, domain_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	SAM_UNK_CTR ctr;
+	fstring sid_str;
+
+	sid_to_string(sid_str, domain_sid);
 
 	/* Get sam policy handle */	
 	result = cli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
@@ -361,6 +364,7 @@ rpc_info_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 	if (NT_STATUS_IS_OK(result)) {
 		TALLOC_CTX *ctx = talloc_init();
 		d_printf("Domain Name: %s\n", unistr2_tdup(ctx, &ctr.info.inf2.uni_domain));
+		d_printf("Domain SID: %s\n", sid_str);
 		d_printf("Sequence number: %u\n", ctr.info.inf2.seq_num);
 		d_printf("Num users: %u\n", ctr.info.inf2.num_domain_usrs);
 		d_printf("Num domain groups: %u\n", ctr.info.inf2.num_domain_grps);
@@ -387,6 +391,54 @@ int net_rpc_info(int argc, const char **argv)
 }
 
 
+/** 
+ * Fetch domain SID into the local secrets.tdb
+ *
+ * All parameters are provided by the run_rpc_command function, except for
+ * argc, argv which are passes through. 
+ *
+ * @param domain_sid The domain sid acquired from the remote server
+ * @param cli A cli_state connected to the server.
+ * @param mem_ctx Talloc context, destoyed on completion of the function.
+ * @param argc  Standard main() style argc
+ * @param argv  Standard main() style argv.  Initial components are already
+ *              stripped
+ *
+ * @return Normal NTSTATUS return.
+ **/
+
+static NTSTATUS 
+rpc_getsid_internals(const DOM_SID *domain_sid, struct cli_state *cli,
+		   TALLOC_CTX *mem_ctx, int argc, const char **argv)
+{
+	fstring sid_str;
+
+	sid_to_string(sid_str, domain_sid);
+	d_printf("Storing SID %s for Domain %s in secrets.tdb\n",
+		 sid_str, lp_workgroup());
+
+	if (!secrets_store_domain_sid(global_myname, domain_sid)) {
+		DEBUG(0,("pdb_generate_sam_sid: "
+			 "Can't store domain SID as a pdc/bdc.\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	return NT_STATUS_OK;
+}
+
+
+/** 
+ * 'net rpc getsid' entrypoint.
+ * @param argc  Standard main() style argc
+ * @param argc  Standard main() style argv.  Initial components are already
+ *              stripped
+ **/
+int net_rpc_getsid(int argc, const char **argv) 
+{
+	return run_rpc_command(NULL, PIPE_SAMR, NET_FLAGS_ANONYMOUS | NET_FLAGS_PDC, 
+			       rpc_getsid_internals,
+			       argc, argv);
+}
 
 
 /****************************************************************************/
@@ -2120,12 +2172,13 @@ int net_rpc_usage(int argc, const char **argv)
 {
 	d_printf("  net rpc info \t\t\tshow basic info about a domain \n");
 	d_printf("  net rpc join \t\t\tto join a domain \n");
-	d_printf("  net rpc testjoin \t\t\ttests that a join is valid\n");
+	d_printf("  net rpc testjoin \t\ttests that a join is valid\n");
 	d_printf("  net rpc user \t\t\tto add, delete and list users\n");
 	d_printf("  net rpc group \t\tto list groups\n");
 	d_printf("  net rpc share \t\tto add, delete, and list shares\n");
 	d_printf("  net rpc file \t\t\tto list open files\n");
 	d_printf("  net rpc changetrustpw \tto change the trust account password\n");
+	d_printf("  net rpc getsid \t\tfetch the domain sid into the local secrets.tdb\n");
 	d_printf("  net rpc trustdom \t\tto create trusting domain's account\n"
 		 "\t\t\t\t\tor establish trust\n");
 	d_printf("  net rpc abortshutdown \tto abort the shutdown of a remote server\n");
@@ -2192,6 +2245,7 @@ int net_rpc(int argc, const char **argv)
 		{"trustdom", rpc_trustdom},
 		{"abortshutdown", rpc_shutdown_abort},
 		{"shutdown", rpc_shutdown},
+		{"getsid", net_rpc_getsid},
 		{"help", net_rpc_help},
 		{NULL, NULL}
 	};
