@@ -71,8 +71,8 @@ struct brl_context {
   talloc_free(). We need the messaging_ctx to allow for
   pending lock notifications.
 */
-void *brl_init(TALLOC_CTX *mem_ctx, servid_t server, uint16_t tid, 
-	       void *messaging_ctx)
+struct brl_context *brl_init(TALLOC_CTX *mem_ctx, servid_t server, uint16_t tid, 
+			     void *messaging_ctx)
 {
 	char *path;
 	struct brl_context *brl;
@@ -97,7 +97,7 @@ void *brl_init(TALLOC_CTX *mem_ctx, servid_t server, uint16_t tid,
 	brl->messaging_ctx = messaging_ctx;
 	ZERO_STRUCT(brl->last_lock_failure);
 
-	return (void *)brl;
+	return brl;
 }
 
 
@@ -219,7 +219,7 @@ static NTSTATUS brl_lock_failed(struct brl_context *brl, struct lock_struct *loc
   someone else closing an overlapping lock range) a messaging
   notification is sent, identified by the notify_ptr
 */
-NTSTATUS brl_lock(void *brl_ctx,
+NTSTATUS brl_lock(struct brl_context *brl,
 		  DATA_BLOB *file_key, 
 		  uint16_t smbpid,
 		  uint16_t fnum, 
@@ -227,7 +227,6 @@ NTSTATUS brl_lock(void *brl_ctx,
 		  enum brl_type lock_type,
 		  void *notify_ptr)
 {
-	struct brl_context *brl = brl_ctx;
 	TDB_DATA kbuf, dbuf;
 	int count, i;
 	struct lock_struct lock, *locks;
@@ -248,7 +247,7 @@ NTSTATUS brl_lock(void *brl_ctx,
 	   preventing the real lock gets removed */
 	if (lock_type >= PENDING_READ_LOCK) {
 		enum brl_type rw = (lock_type==PENDING_READ_LOCK? READ_LOCK : WRITE_LOCK);
-		status = brl_lock(brl_ctx, file_key, smbpid, fnum, start, size, rw, NULL);
+		status = brl_lock(brl, file_key, smbpid, fnum, start, size, rw, NULL);
 		if (NT_STATUS_IS_OK(status)) {
 			tdb_chainunlock(brl->w->tdb, kbuf);
 			return NT_STATUS_OK;
@@ -368,13 +367,12 @@ static void brl_notify_all(struct brl_context *brl,
 /*
  Unlock a range of bytes.
 */
-NTSTATUS brl_unlock(void *brl_ctx,
+NTSTATUS brl_unlock(struct brl_context *brl,
 		    DATA_BLOB *file_key, 
 		    uint16_t smbpid,
 		    uint16_t fnum,
 		    uint64_t start, uint64_t size)
 {
-	struct brl_context *brl = brl_ctx;
 	TDB_DATA kbuf, dbuf;
 	int count, i;
 	struct lock_struct *locks;
@@ -456,11 +454,10 @@ NTSTATUS brl_unlock(void *brl_ctx,
   given up trying to establish a lock or when they have succeeded in
   getting it. In either case they no longer need to be notified.
 */
-NTSTATUS brl_remove_pending(void *brl_ctx,
+NTSTATUS brl_remove_pending(struct brl_context *brl,
 			    DATA_BLOB *file_key, 
 			    void *notify_ptr)
 {
-	struct brl_context *brl = brl_ctx;
 	TDB_DATA kbuf, dbuf;
 	int count, i;
 	struct lock_struct *locks;
@@ -526,14 +523,13 @@ NTSTATUS brl_remove_pending(void *brl_ctx,
 /*
   Test if we are allowed to perform IO on a region of an open file
 */
-NTSTATUS brl_locktest(void *brl_ctx,
+NTSTATUS brl_locktest(struct brl_context *brl,
 		      DATA_BLOB *file_key, 
 		      uint16_t fnum,
 		      uint16 smbpid, 
 		      uint64_t start, uint64_t size, 
 		      enum brl_type lock_type)
 {
-	struct brl_context *brl = brl_ctx;
 	TDB_DATA kbuf, dbuf;
 	int count, i;
 	struct lock_struct lock, *locks;
@@ -573,10 +569,9 @@ NTSTATUS brl_locktest(void *brl_ctx,
 /*
  Remove any locks associated with a open file.
 */
-NTSTATUS brl_close(void *brl_ctx,
+NTSTATUS brl_close(struct brl_context *brl,
 		   DATA_BLOB *file_key, int fnum)
 {
-	struct brl_context *brl = brl_ctx;
 	TDB_DATA kbuf, dbuf;
 	int count, i, dcount=0;
 	struct lock_struct *locks;
