@@ -1371,7 +1371,12 @@ static int call_trans2qfsinfo(connection_struct *conn, char *inbuf, char *outbuf
 
 			SIVAL(pdata,0,FILE_CASE_PRESERVED_NAMES|FILE_CASE_SENSITIVE_SEARCH|
 				(lp_nt_acl_support(SNUM(conn)) ? FILE_PERSISTENT_ACLS : 0)|
-				(HAVE_SYS_QUOTAS ? FILE_VOLUME_QUOTAS: 0)); /* FS ATTRIBUTES */
+#if defined(HAVE_SYS_QUOTAS)
+				FILE_VOLUME_QUOTAS
+#else
+				0
+#if				
+				); /* FS ATTRIBUTES */
 
 			SIVAL(pdata,4,255); /* Max filename component length */
 			/* NOTE! the fstype must *not* be null terminated or win98 won't recognise it
