@@ -1470,6 +1470,35 @@ void str_list_free(char ***list)
 	SAFE_FREE(*list);
 }
 
+/******************************************************************************
+ version of standard_sub_basic() for string lists; uses alloc_sub_basic() 
+ for the work
+ *****************************************************************************/
+ 
+BOOL str_list_sub_basic( char **list, const char *smb_name )
+{
+	char *s, *tmpstr;
+	
+	while ( *list ) {
+		s = *list;
+		tmpstr = alloc_sub_basic(smb_name, s);
+		if ( !tmpstr ) {
+			DEBUG(0,("str_list_sub_basic: alloc_sub_basic() return NULL!\n"));
+			return False;
+		}
+
+		*list = tmpstr;
+			
+		list++;
+	}
+
+	return True;
+}
+
+/******************************************************************************
+ substritute a specific pattern in a string list
+ *****************************************************************************/
+ 
 BOOL str_list_substitute(char **list, const char *pattern, const char *insert)
 {
 	char *p, *s, *t;
@@ -1524,6 +1553,7 @@ BOOL str_list_substitute(char **list, const char *pattern, const char *insert)
 				}
 			}	
 		}
+		
 		
 		list++;
 	}
