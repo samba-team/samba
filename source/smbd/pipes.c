@@ -772,29 +772,21 @@ static int lsa_reply_auth_2(LSA_Q_AUTH_2 *q_a, char *q, char *base,
 	return q - start; 
 }
 
-static void make_lsa_dom_chal(DOM_CRED *cred, DOM_CHAL *srv_chal, UTIME srv_time)
-{
-	memcpy(cred->challenge.data, srv_chal->data, sizeof(srv_chal->data));
-	cred->timestamp = srv_time;
-}
-	
-
 static void make_lsa_r_srv_pwset(LSA_R_SRV_PWSET *r_a,
-                             DOM_CHAL *srv_chal, UTIME srv_time, int status)  
+                             DOM_CRED *srv_cred, int status)  
 {
-	make_lsa_dom_chal(&(r_a->srv_cred), srv_chal, srv_time);
+	memcpy(&(r_a->srv_cred), srv_cred, sizeof(r_a->srv_cred));
 	r_a->status = status;
 }
 
 static int lsa_reply_srv_pwset(LSA_Q_SRV_PWSET *q_s, char *q, char *base,
-				DOM_CHAL *srv_cred, UTIME srv_time,
-				int status)
+				DOM_CRED *srv_cred, int status)
 {
 	char *start = q;
 	LSA_R_SRV_PWSET r_s;
 
 	/* set up the LSA Server Password Set response */
-	make_lsa_r_srv_pwset(&r_s, srv_cred, srv_time, status);
+	make_lsa_r_srv_pwset(&r_s, srv_cred, status);
 
 	/* store the response in the SMB stream */
 	q = lsa_io_r_srv_pwset(False, &r_s, q, base, 4);
@@ -917,15 +909,14 @@ static void make_lsa_user_info(LSA_USER_INFO *usr,
 
 
 static int lsa_reply_sam_logon(LSA_Q_SAM_LOGON *q_s, char *q, char *base,
-				DOM_CHAL *srv_cred, UTIME srv_time,
-				LSA_USER_INFO *user_info)
+				DOM_CRED *srv_cred, LSA_USER_INFO *user_info)
 {
 	char *start = q;
 	LSA_R_SAM_LOGON r_s;
 
 	/* XXXX maybe we want to say 'no', reject the client's credentials */
 	r_s.buffer_creds = 1; /* yes, we have valid server credentials */
-	make_lsa_dom_chal(&(r_s.srv_creds), srv_cred, srv_time);
+	memcpy(&(r_s.srv_creds), srv_cred, sizeof(r_s.srv_creds));
 
 	/* store the user information, if there is any. */
 	r_s.user = user_info;
@@ -941,7 +932,7 @@ static int lsa_reply_sam_logon(LSA_Q_SAM_LOGON *q_s, char *q, char *base,
 
 
 static int lsa_reply_sam_logoff(LSA_Q_SAM_LOGOFF *q_s, char *q, char *base,
-				DOM_CHAL *srv_cred, UTIME srv_time,
+				DOM_CRED *srv_cred, 
 				uint32 status)
 {
 	char *start = q;
@@ -949,7 +940,7 @@ static int lsa_reply_sam_logoff(LSA_Q_SAM_LOGOFF *q_s, char *q, char *base,
 
 	/* XXXX maybe we want to say 'no', reject the client's credentials */
 	r_s.buffer_creds = 1; /* yes, we have valid server credentials */
-	make_lsa_dom_chal(&(r_s.srv_creds), srv_cred, srv_time);
+	memcpy(&(r_s.srv_creds), srv_cred, sizeof(r_s.srv_creds));
 
 	r_s.status = status;
 
@@ -1284,6 +1275,34 @@ static void api_lsa_auth_2( user_struct *vuser,
 }
 
 
+static BOOL deal_with_credentials(user_struct *vuser,
+			DOM_CRED *clnt_cred, DOM_CRED *srv_cred)
+{
+	UTIME new_clnt_time;
+
+	/* doesn't matter that server time is 0 */
+	srv_cred->timestamp.time = 0;
+
+	/* check that the client credentials are valid */
+	if (cred_assert(&(clnt_cred->challenge), vuser->dc.sess_key,
+                    &(vuser->dc.srv_cred), clnt_cred->timestamp))
+	{
+		return False;
+	}
+
+	/* increment client time by one second */
+	new_clnt_time.time = clnt_cred->timestamp.time + 1;
+
+	/* create server credentials for inclusion in the reply */
+	cred_create(vuser->dc.sess_key, &(vuser->dc.clnt_cred), new_clnt_time,
+	            &(srv_cred->challenge));
+
+	/* update the client and server credentials, for use next time... */
+	*(uint32*)(vuser->dc.srv_cred.data) = ( *(uint32*)(vuser->dc.clnt_cred.data) += new_clnt_time.time );
+
+	return True;
+}
+
 static void api_lsa_srv_pwset( user_struct *vuser,
                                char *param, char *data,
                                char **rdata, int *rdata_len )
@@ -1291,29 +1310,17 @@ static void api_lsa_srv_pwset( user_struct *vuser,
 	int reply_len;
 	LSA_Q_SRV_PWSET q_a;
 
-	DOM_CHAL srv_chal;
-	UTIME srv_time;
-	UTIME new_clnt_time;
+	DOM_CRED srv_cred;
 
-	srv_time.time = 0;
-
-	/* grab the challenge... */
+	/* grab the challenge and encrypted password ... */
 	lsa_io_q_srv_pwset(True, &q_a, data + 0x18, data + 0x18, 4);
 
-	/* check that the client credentials are valid */
-	cred_assert(&(q_a.clnt_id.cred.challenge), vuser->dc.sess_key,
-                &(vuser->dc.srv_cred), srv_time);
-
-	new_clnt_time.time = q_a.clnt_id.cred.timestamp.time + 1;
-
-	/* create server credentials for inclusion in the reply */
-	cred_create(vuser->dc.sess_key, &(vuser->dc.clnt_cred), new_clnt_time, &srv_chal);
-
-	*(uint32*)(vuser->dc.srv_cred.data) = ( *(uint32*)(vuser->dc.clnt_cred.data) += new_clnt_time.time );
+	/* checks and updates credentials.  creates reply credentials */
+	deal_with_credentials(vuser, &(q_a.clnt_id.cred), &srv_cred);
 
 	/* construct reply.  always indicate failure.  nt keeps going... */
 	reply_len = lsa_reply_srv_pwset(&q_a, *rdata + 0x18, *rdata + 0x18,
-					&srv_chal, srv_time,
+					&srv_cred,
 	                NT_STATUS_WRONG_PASSWORD|0xC000000);
 
 	/* construct header, now that we know the reply length */
@@ -1322,111 +1329,133 @@ static void api_lsa_srv_pwset( user_struct *vuser,
 	*rdata_len = reply_len;
 }
 
-#if 0
-case LSASRVPWSET:
-	DEBUG(1,("LSASRVPWSET\n"));
-	q = data + 0x18;
-	dump_data(1,q,128);
-	logonsrv = q + 16;
-	q = skip_unicode_string(logonsrv,1)+12;
-	q = align4(q, data);
-	accountname = q;
-	q = skip_unicode_string(accountname,1);
-	secchanneltype = qSVAL;
-	q += 12;
-	q = align4(q, data);
-	unicomp = q;
-	q = skip_unicode_string(unicomp,1);
-	rcvcred[0] = qIVAL;
-	rcvcred[1] = qIVAL;
-	clnttime = qIVAL;
 
-	DEBUG(1,("PWSET logonsrv=%s accountname=%s unicomp=%s\n",
-		 unistr(logonsrv), unistr(accountname), unistr(unicomp)));
-
-	checkcred(cnum, rcvcred[0], rcvcred[1], clnttime);
-	DEBUG(3,("PWSET %lx %lx %lx %lx\n", rcvcred[0], rcvcred[1], clnttime, negflags));
-	newpass = q;
-
-	DEBUG(1,("PWSET logonsrv=%s accountname=%s unicomp=%s newpass=%s\n",
-		 unistr(logonsrv), unistr(accountname), unistr(unicomp), newpass));
-
-	/* PAXX: For the moment we'll reject these */
-	/* TODO Need to set newpass in smbpasswd file for accountname */
-	q = *rdata + 0x18;
-	makecred(cnum, clnttime+1, q);
-	q += 8;
-	qSIVAL(0); /* timestamp. Seems to be ignored */
-	
-	dcauth[cnum].svrcred[0] = dcauth[cnum].cred[0] = dcauth[cnum].cred[0] + clnttime + 1;
-
-	endrpcreply(data, *rdata, q-*rdata, 0xc000006a, rdata_len);
-	break;
-#endif
-
-
-BOOL api_netlogrpcTNP(int cnum,int uid, char *param,char *data,
-		     int mdrcnt,int mprcnt,
-		     char **rdata,char **rparam,
-		     int *rdata_len,int *rparam_len)
+static void api_lsa_sam_logoff( user_struct *vuser,
+                               char *param, char *data,
+                               char **rdata, int *rdata_len )
 {
-	uint16 opnum = SVAL(data,22);
-	int pkttype  = CVAL(data, 2);
+	int reply_len;
+	LSA_Q_SAM_LOGOFF q_l;
 
-	user_struct *vuser = get_valid_user_struct(uid);
+	DOM_CRED srv_cred;
 
-	if (pkttype == 0x0b) /* RPC BIND */
+	/* grab the challenge... */
+	lsa_io_q_sam_logoff(True, &q_l, data + 0x18, data + 0x18, 4);
+
+	/* checks and updates credentials.  creates reply credentials */
+	deal_with_credentials(vuser, &(q_l.sam_id.client.cred), &srv_cred);
+
+	/* construct reply.  always indicate success */
+	reply_len = lsa_reply_sam_logoff(&q_l, *rdata + 0x18, *rdata + 0x18,
+					&srv_cred,
+	                0x0);
+
+	/* construct header, now that we know the reply length */
+	reply_len += make_rpc_reply(data, *rdata, reply_len);
+
+	*rdata_len = reply_len;
+}
+
+
+static void api_lsa_sam_logon( user_struct *vuser,
+                               char *param, char *data,
+                               char **rdata, int *rdata_len )
+{
+	int reply_len;
+	LSA_Q_SAM_LOGON q_l;
+	LSA_USER_INFO usr_info;
+	LSA_USER_INFO *p_usr_info = NULL;
+
+	DOM_CRED srv_creds;
+
+	lsa_io_q_sam_logon(True, &q_l, data + 0x18, data + 0x18, 4);
+
+	/* checks and updates credentials.  creates reply credentials */
+	deal_with_credentials(vuser, &(q_l.sam_id.client.cred), &srv_creds);
+
+	if (vuser != NULL)
 	{
-		DEBUG(4,("netlogon rpc bind %x\n",pkttype));
-		LsarpcTNP1(data,rdata,rdata_len);
-		return True;
-	}
+		NTTIME dummy_time;
+		pstring logon_script;
+		pstring profile_path;
+		pstring home_dir;
+		pstring home_drive;
+		pstring my_name;
+		pstring my_workgroup;
+		pstring dom_sid;
+		pstring username;
+		extern pstring myname;
 
-	DEBUG(4,("netlogon TransactNamedPipe op %x\n",opnum));
+		dummy_time.low  = 0xffffffff;
+		dummy_time.high = 0x7fffffff;
 
-	if (vuser == NULL) return False;
+		get_myname(myname, NULL);
 
-	DEBUG(3,("Username of UID %d is %s\n", vuser->uid, vuser->name));
-#if defined(NETGROUP) && defined(AUTOMOUNT)
-	DEBUG(3,("HOMESHR for %s is %s\n", vuser->name, vuser->home_share));
+		pstrcpy(logon_script, lp_logon_script());
+		pstrcpy(profile_path, lp_logon_path  ());
+		pstrcpy(dom_sid     , lp_domainsid   ());
+		pstrcpy(my_workgroup, lp_workgroup   ());
+
+		pstrcpy(username, unistr2(q_l.sam_id.client.login.uni_acct_name.buffer));
+		pstrcpy(my_name     , myname           );
+		strupper(my_name);
+
+		pstrcpy(home_drive  , "a:"             );
+
+#if (defined(NETGROUP) && defined(AUTOMOUNT))
+		pstrcpy(home_dir    , vuser->home_share);
+#else
+		pstrcpy(home_dir    , "\\\\%L\\%U");
+		standard_sub_basic(home_dir);
 #endif
 
-	switch (opnum)
-	{
-		case LSA_REQCHAL:
-		{
-			DEBUG(3,("LSA_REQCHAL\n"));
-			api_lsa_req_chal(vuser, param, data, rdata, rdata_len);
-			break;
-		}
+		p_usr_info = &usr_info;
 
-		case LSA_AUTH2:
-		{
-			DEBUG(3,("LSA_AUTH2\n"));
-			api_lsa_auth_2(vuser, param, data, rdata, rdata_len);
-			break;
-		}
+		make_lsa_user_info(p_usr_info,
 
-		case LSA_SRVPWSET:
-		{
-			DEBUG(3,("LSA_SRVPWSET\n"));
-			api_lsa_srv_pwset(vuser, param, data, rdata, rdata_len);
-			break;
-		}
+		               &dummy_time, /* logon_time */
+		               &dummy_time, /* logoff_time */
+		               &dummy_time, /* kickoff_time */
+		               &dummy_time, /* pass_last_set_time */
+		               &dummy_time, /* pass_can_change_time */
+		               &dummy_time, /* pass_must_change_time */
 
-		default:
-		{
-  			DEBUG(4, ("**** netlogon, unknown code: %lx\n", opnum));
-			break;
-		}
+		               username, /* user_name */
+		               vuser->real_name, /* full_name */
+		               logon_script, /* logon_script */
+		               profile_path, /* profile_path */
+		               home_dir, /* home_dir */
+		               home_drive, /* dir_drive */
+
+		               0, /* logon_count */
+		               0, /* bad_pw_count */
+
+		               vuser->uid, /* uint32 user_id */
+		               vuser->gid, /* uint32 group_id */
+		               0,    /* uint32 num_groups */
+		               NULL, /* DOM_GID *gids */
+		               0x20, /* uint32 user_flgs */
+
+		               NULL, /* char sess_key[16] */
+
+		               my_name, /* char *logon_srv */
+		               my_workgroup, /* char *logon_dom */
+
+		               dom_sid, /* char *dom_sid */
+		               NULL); /* char *other_sids */
 	}
 
-	return True;
+	reply_len = lsa_reply_sam_logon(&q_l, *rdata + 0x18, *rdata + 0x18,
+					&srv_creds, p_usr_info);
+
+	/* construct header, now that we know the reply length */
+	reply_len += make_rpc_reply(data, *rdata, reply_len);
+
+	*rdata_len = reply_len;
 }
 
 
 #if 0
-
 case LSASAMLOGON:
 	DEBUG(1,("LSASAMLOGON\n"));
 	dump_data(1,data,128);
@@ -1616,62 +1645,79 @@ DEBUG(4,("netlogon LINE %d %lx %s ia %d\n",__LINE__, q, p, identauth));
 
   endrpcreply(data, *rdata, q-*rdata, 0, rdata_len);
   break;
+#endif
 
-case LSASAMLOGOFF:
-	DEBUG(1,("LSASAMLOGOFF\n"));
-  q = data + 0x18;
-  logonsrv = q + 16;
-  DEBUG(1,("SAMLOGOFF %d\n", __LINE__));
-  unicomp = skip_unicode_string(logonsrv,1)+16;
-  if (strlen(unistr(logonsrv)) % 2 == 0)
-q += 2;
-  DEBUG(1,("SMLOG %d\n", __LINE__));
-  q = skip_unicode_string(unicomp,1)+4;
-  if (strlen(unistr(unicomp)) % 2 == 0)
-q += 2;
-  DEBUG(1,("SMLOG %d\n", __LINE__));
-  rcvcred[0] = qIVAL;
-  DEBUG(1,("SMLOG %d\n", __LINE__));
-  rcvcred[1] = qIVAL;
-  DEBUG(1,("SMLOG %d\n", __LINE__));
-  clnttime = qIVAL;
-  checkcred(cnum, rcvcred[0], rcvcred[1], clnttime);
-  q += 4;
-  rtncred[0] = qIVAL; /* all these are ignored */
-  DEBUG(1,("SMLOG %d\n", __LINE__));
-  rtncred[1] = qIVAL;
-  rtntime = qIVAL;
-  logonlevel = qSVAL;
-  DEBUG(1,("SMLOG %d\n", __LINE__));
-  switchval = qSVAL;
-  switch (switchval)
-  {
-	case 1:
-  q += 4;
-  domlen = qSVAL;
-  dommaxlen = qSVAL; q += 4;
-  paramcontrol = qIVAL;
-  logonid[0] = qIVAL; /* low part */
-  logonid[1] = qIVAL; /* high part */
-  usernamelen = qSVAL;
-  DEBUG(1,("SMLOG %d\n", __LINE__));
-  usernamemaxlen = qSVAL; q += 4;
-  wslen = qSVAL;
-  wsmaxlen = qSVAL; q += 4;
-  rc4lmowfpass = q; q += 16;
-  rc4ntowfpass = q; q += 16;
-  q += 12; domain = q; q += dommaxlen + 12;
-  if ((domlen/2) % 2 != 0) q += 2;
-  username = q; q += usernamemaxlen + 12; /* PAXX: HACK */
-  if ((usernamelen/2) % 2 != 0) q += 2;
-  ws = q;
-  break;
-default: DEBUG(0, ("unknown switch in SAMLOGON %d\n",switchval));
-  }
-  DEBUG(1,("SAMLOGOFF %s\n", unistr(username)));
-default:
-  DEBUG(4, ("**** netlogon, unknown code: %lx\n", opnum));
+BOOL api_netlogrpcTNP(int cnum,int uid, char *param,char *data,
+		     int mdrcnt,int mprcnt,
+		     char **rdata,char **rparam,
+		     int *rdata_len,int *rparam_len)
+{
+	uint16 opnum = SVAL(data,22);
+	int pkttype  = CVAL(data, 2);
 
-#endif /* 0 */
+	user_struct *vuser = get_valid_user_struct(uid);
+
+	if (pkttype == 0x0b) /* RPC BIND */
+	{
+		DEBUG(4,("netlogon rpc bind %x\n",pkttype));
+		LsarpcTNP1(data,rdata,rdata_len);
+		return True;
+	}
+
+	DEBUG(4,("netlogon TransactNamedPipe op %x\n",opnum));
+
+	if (vuser == NULL) return False;
+
+	DEBUG(3,("Username of UID %d is %s\n", vuser->uid, vuser->name));
+#if defined(NETGROUP) && defined(AUTOMOUNT)
+	DEBUG(3,("HOMESHR for %s is %s\n", vuser->name, vuser->home_share));
+#endif
+
+	switch (opnum)
+	{
+		case LSA_REQCHAL:
+		{
+			DEBUG(3,("LSA_REQCHAL\n"));
+			api_lsa_req_chal(vuser, param, data, rdata, rdata_len);
+			break;
+		}
+
+		case LSA_AUTH2:
+		{
+			DEBUG(3,("LSA_AUTH2\n"));
+			api_lsa_auth_2(vuser, param, data, rdata, rdata_len);
+			break;
+		}
+
+		case LSA_SRVPWSET:
+		{
+			DEBUG(3,("LSA_SRVPWSET\n"));
+			api_lsa_srv_pwset(vuser, param, data, rdata, rdata_len);
+			break;
+		}
+
+		case LSA_SAMLOGON:
+		{
+			DEBUG(3,("LSA_SAMLOGON\n"));
+			api_lsa_sam_logon(vuser, param, data, rdata, rdata_len);
+			break;
+		}
+
+		case LSA_SAMLOGOFF:
+		{
+			DEBUG(3,("LSA_SAMLOGOFF\n"));
+			api_lsa_sam_logoff(vuser, param, data, rdata, rdata_len);
+			break;
+		}
+
+		default:
+		{
+  			DEBUG(4, ("**** netlogon, unknown code: %lx\n", opnum));
+			break;
+		}
+	}
+
+	return True;
+}
 
 #endif /* NTDOMAIN */
