@@ -32,10 +32,14 @@ interface epmapper
 	} epm_prot_uuid;
 
 	typedef enum {
-		EPM_PROTOCOL_TCP   = 0x07,
-		EPM_PROTOCOL_IP    = 0x09,
-		EPM_PROTOCOL_RPC_C = 0x0b,
-		EPM_PROTOCOL_UUID  = 0x0d
+		EPM_PROTOCOL_TCP     = 0x07,
+		EPM_PROTOCOL_IP      = 0x09,
+		EPM_PROTOCOL_PIPE    = 0x10,
+		EPM_PROTOCOL_NETBIOS = 0x11,
+		EPM_PROTOCOL_RPC_C   = 0x0b,
+		EPM_PROTOCOL_UUID    = 0x0d,
+		EPM_PROTOCOL_SMB     = 0x0f,
+		EPM_PROTOCOL_HTTP    = 0x1f
 	} epm_protocols;
 
 	typedef [nodiscriminant] union {

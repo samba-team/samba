@@ -143,7 +143,7 @@ NTSTATUS dcerpc_epm_map_tcp_port(const char *server,
 	}
 
 	if (twr_r->towers.num_floors != 5 ||
-	    twr_r->towers.floors[3].lhs.protocol != EPM_PROTOCOL_TCP ||
+	    twr_r->towers.floors[3].lhs.protocol != twr.towers.floors[3].lhs.protocol ||
 	    twr_r->towers.floors[3].rhs.rhs_data.length != 2) {
 		dcerpc_pipe_close(p);
 		return NT_STATUS_PORT_UNREACHABLE;
@@ -155,3 +155,35 @@ NTSTATUS dcerpc_epm_map_tcp_port(const char *server,
 
 	return NT_STATUS_OK;
 }
+
+
+/*
+  find the pipe name for a local IDL interface
+*/
+const char *idl_pipe_name(const char *uuid, uint32 if_version)
+{
+	int i;
+	for (i=0;dcerpc_pipes[i];i++) {
+		if (strcasecmp(dcerpc_pipes[i]->uuid, uuid) == 0 &&
+		    dcerpc_pipes[i]->if_version == if_version) {
+			return dcerpc_pipes[i]->name;
+		}
+	}
+	return "UNKNOWN";
+}
+
+/*
+  find the number of calls defined by local IDL
+*/
+int idl_num_calls(const char *uuid, uint32 if_version)
+{
+	int i;
+	for (i=0;dcerpc_pipes[i];i++) {
+		if (strcasecmp(dcerpc_pipes[i]->uuid, uuid) == 0 &&
+		    dcerpc_pipes[i]->if_version == if_version) {
+			return dcerpc_pipes[i]->num_calls;
+		}
+	}
+	return -1;
+}
+

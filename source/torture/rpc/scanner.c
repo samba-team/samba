@@ -23,36 +23,6 @@
 #include "includes.h"
 
 /*
-  find the number of calls defined by local IDL
-*/
-static const char *find_idl_name(const char *uuid, uint32 if_version)
-{
-	int i;
-	for (i=0;dcerpc_pipes[i];i++) {
-		if (strcasecmp(dcerpc_pipes[i]->uuid, uuid) == 0 &&
-		    dcerpc_pipes[i]->if_version == if_version) {
-			return dcerpc_pipes[i]->name;
-		}
-	}
-	return "UNKNOWN";
-}
-
-/*
-  find the number of calls defined by local IDL
-*/
-static int num_idl_calls(const char *uuid, uint32 if_version)
-{
-	int i;
-	for (i=0;dcerpc_pipes[i];i++) {
-		if (strcasecmp(dcerpc_pipes[i]->uuid, uuid) == 0 &&
-		    dcerpc_pipes[i]->if_version == if_version) {
-			return dcerpc_pipes[i]->num_calls;
-		}
-	}
-	return -1;
-}
-
-/*
   work out how many calls there are for an interface
  */
 static BOOL test_num_calls(const struct dcerpc_interface_table *iface,
@@ -82,7 +52,7 @@ static BOOL test_num_calls(const struct dcerpc_interface_table *iface,
 	status = dcerpc_request(p, 10000, mem_ctx, &stub_in, &stub_out);
 	if (NT_STATUS_IS_OK(status) ||
 	    p->last_fault_code != DCERPC_FAULT_OP_RNG_ERROR) {
-		printf("unable to determine call count - %s %08x\n",
+		printf("\tunable to determine call count - %s %08x\n",
 		       nt_errstr(status), p->last_fault_code);
 		goto done;
 	}
@@ -94,7 +64,7 @@ static BOOL test_num_calls(const struct dcerpc_interface_table *iface,
 	}
 
 	printf("\t%d calls available\n", i+1);
-	idl_calls = num_idl_calls(uuid, id->major_version);
+	idl_calls = idl_num_calls(uuid, id->major_version);
 	if (idl_calls == -1) {
 		printf("\tinterface not known in local IDL\n");
 	} else if (i+1 != idl_calls) {
@@ -145,7 +115,7 @@ static BOOL test_inq_if_ids(struct dcerpc_pipe *p,
 		printf("\n\tuuid %s  version 0x%04x:0x%04x  '%s'\n",
 		       uuid,
 		       id->major_version, id->minor_version,
-		       find_idl_name(uuid, id->major_version));
+		       idl_pipe_name(uuid, id->major_version));
 		test_num_calls(iface, mem_ctx, id);
 	}
 
