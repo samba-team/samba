@@ -91,10 +91,9 @@ get_for_creds(etype, sumtype, rhost, client, enc_key, forwardable, outbuf)
     if (!rhost || !(hp = gethostbyname(rhost)))
       return KRB5_ERR_BAD_HOSTNAME;
 
-    remote_host = (char *) malloc(strlen(hp->h_name)+1);
-    if (!remote_host)
+    remote_host = strdup(hp->h_name);
+    if (remote_host == NULL)
       return ENOMEM;
-    strcpy(remote_host, hp->h_name);
 
     if (retval = krb5_get_host_realm(remote_host, &hrealms)) {
 	free(remote_host);
