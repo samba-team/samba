@@ -45,7 +45,7 @@ PyObject *from_struct(void *s, struct pyconv *conv)
 			fstring str = "";
 
 			if (u->buffer)
-				fstr_pull(s, u);
+				fstr_pull(str, u);
 
 			item = PyString_FromString(str);
 			PyDict_SetItemString(obj, conv[i].name, item);
