@@ -274,8 +274,10 @@ install -m755 source/nsswitch/pam_winbind.so $RPM_BUILD_ROOT/lib/security
 install -m755 source/bin/pam_smbpass.so $RPM_BUILD_ROOT/lib/security
 
 # Install the VFS modules
-install -m755 examples/VFS/recycle.so $RPM_BUILD_ROOT%{prefix}/lib/samba/vfs
+install -m755 examples/VFS/recycle/recycle.so $RPM_BUILD_ROOT%{prefix}/lib/samba/vfs
+install -m755 examples/VFS/block/block.so $RPM_BUILD_ROOT%{prefix}/lib/samba/vfs
 install -m755 examples/VFS/audit.so $RPM_BUILD_ROOT%{prefix}/lib/samba/vfs
+
 # clean out VFS directory since it will get installed as documentation later
 (cd examples/VFS; make clean)
 
