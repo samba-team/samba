@@ -79,8 +79,6 @@ kadm5_s_create_principal(void *server_handle,
     ent.flags.change_pw = 0;
     ent.flags.invalid = 0;
     
-    ent.kvno = 1;
-
     ret = _kadm5_setup_entry(&ent, princ, mask);
 
     /* XXX this should be fixed */
@@ -103,8 +101,6 @@ kadm5_s_create_principal(void *server_handle,
     context->db->close(context->context, context->db);
 out:
     hdb_free_entry(context->context, &ent);
-    if(ret == HDB_ERR_INUSE)
-	return KADM5_DUP;
-    return ret;
+    return _kadm5_error_code(ret);
 }
 
