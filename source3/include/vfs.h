@@ -1,6 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
    VFS structures and parameters
+   Copyright (C) Jeremy Allison                         1999-2003
    Copyright (C) Tim Potter				1999
    Copyright (C) Alexander Bokovoy			2002
    Copyright (C) Stefan (metze) Metzmacher		2003
@@ -47,12 +48,14 @@
 /* Changed to version 4 for cascaded VFS interface. Alexander Bokovoy. */
 /* Changed to version 5 for sendfile addition. JRA. */
 /* Changed to version 6 for the new module system, fixed cascading and quota functions. --metze */
-/* Version 7 to include the get_nt_acl info parameter. JRA. */
-#define SMB_VFS_INTERFACE_VERSION 7
+/* Changed to version 7 to include the get_nt_acl info parameter. JRA. */
+/* Changed to version 8 includes EA calls. JRA. */
+
+#define SMB_VFS_INTERFACE_VERSION 8
 
 
 /* to bug old modules witch are trying to compile with the old functions */
-#define vfs_init __ERROR_please_port_this_module_to_SMB_VFS_INTERFACE_VERSION_6_donot_use_vfs_init_anymore(void) { __ERROR_please_port_this_module_to_SMB_VFS_INTERFACE_VERSION_6_donot_use_vfs_init_anymore };
+#define vfs_init __ERROR_please_port_this_module_to_SMB_VFS_INTERFACE_VERSION_8_donot_use_vfs_init_anymore(void) { __ERROR_please_port_this_module_to_SMB_VFS_INTERFACE_VERSION_8_donot_use_vfs_init_anymore };
 #define lp_parm_string __ERROR_please_port_lp_parm_string_to_lp_parm_const_string_or_lp_parm_talloc_string { \
   __ERROR_please_port_lp_parm_string_to_lp_parm_const_string_or_lp_parm_talloc_string };
 #define lp_vfs_options __ERROR_please_donot_use_lp_vfs_options_anymore_use_lp_parm_xxxx_functions_instead { \
@@ -161,6 +164,20 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_SYS_ACL_FREE_ACL,
 	SMB_VFS_OP_SYS_ACL_FREE_QUALIFIER,
 	
+	/* EA operations. */
+	SMB_VFS_OP_GETXATTR,
+	SMB_VFS_OP_LGETXATTR,
+	SMB_VFS_OP_FGETXATTR,
+	SMB_VFS_OP_LISTXATTR,
+	SMB_VFS_OP_LLISTXATTR,
+	SMB_VFS_OP_FLISTXATTR,
+	SMB_VFS_OP_REMOVEXATTR,
+	SMB_VFS_OP_LREMOVEXATTR,
+	SMB_VFS_OP_FREMOVEXATTR,
+	SMB_VFS_OP_SETXATTR,
+	SMB_VFS_OP_LSETXATTR,
+	SMB_VFS_OP_FSETXATTR,
+
 	/* This should always be last enum value */
 	
 	SMB_VFS_OP_LAST
@@ -251,6 +268,21 @@ struct vfs_ops {
 		int (*sys_acl_free_text)(struct vfs_handle_struct *handle, struct connection_struct *conn, char *text);
 		int (*sys_acl_free_acl)(struct vfs_handle_struct *handle, struct connection_struct *conn, SMB_ACL_T posix_acl);
 		int (*sys_acl_free_qualifier)(struct vfs_handle_struct *handle, struct connection_struct *conn, void *qualifier, SMB_ACL_TAG_T tagtype);
+
+		/* EA operations. */
+		ssize_t (*getxattr)(struct vfs_handle_struct *handle,struct connection_struct *conn,const char *path, const char *name, void *value, size_t size);
+		ssize_t (*lgetxattr)(struct vfs_handle_struct *handle,struct connection_struct *conn,const char *path, const char *name, void *value, size_t size);
+		ssize_t (*fgetxattr)(struct vfs_handle_struct *handle, struct files_struct *fsp,int fd, const char *name, void *value, size_t size);
+		ssize_t (*listxattr)(struct vfs_handle_struct *handle, struct connection_struct *conn,const char *path, char *list, size_t size);
+		ssize_t (*llistxattr)(struct vfs_handle_struct *handle, struct connection_struct *conn,const char *path, char *list, size_t size);
+		ssize_t (*flistxattr)(struct vfs_handle_struct *handle, struct files_struct *fsp,int fd, char *list, size_t size);
+		int (*removexattr)(struct vfs_handle_struct *handle, struct connection_struct *conn,const char *path, const char *name);
+		int (*lremovexattr)(struct vfs_handle_struct *handle, struct connection_struct *conn,const char *path, const char *name);
+		int (*fremovexattr)(struct vfs_handle_struct *handle, struct files_struct *fsp,int filedes, const char *name);
+		int (*setxattr)(struct vfs_handle_struct *handle, struct connection_struct *conn,const char *path, const char *name, const void *value, size_t size, int flags);
+		int (*lsetxattr)(struct vfs_handle_struct *handle, struct connection_struct *conn,const char *path, const char *name, const void *value, size_t size, int flags);
+		int (*fsetxattr)(struct vfs_handle_struct *handle, struct files_struct *fsp,int filedes, const char *name, const void *value, size_t size, int flags);
+
 	} ops;
 
 	struct vfs_handles_pointers {
@@ -333,6 +365,20 @@ struct vfs_ops {
 		struct vfs_handle_struct *sys_acl_free_text;
 		struct vfs_handle_struct *sys_acl_free_acl;
 		struct vfs_handle_struct *sys_acl_free_qualifier;
+
+		/* EA operations. */
+		struct vfs_handle_struct *getxattr;
+		struct vfs_handle_struct *lgetxattr;
+		struct vfs_handle_struct *fgetxattr;
+		struct vfs_handle_struct *listxattr;
+		struct vfs_handle_struct *llistxattr;
+		struct vfs_handle_struct *flistxattr;
+		struct vfs_handle_struct *removexattr;
+		struct vfs_handle_struct *lremovexattr;
+		struct vfs_handle_struct *fremovexattr;
+		struct vfs_handle_struct *setxattr;
+		struct vfs_handle_struct *lsetxattr;
+		struct vfs_handle_struct *fsetxattr;
 	} handles;
 };
 

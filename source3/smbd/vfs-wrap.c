@@ -785,3 +785,67 @@ int vfswrap_set_quota(struct vfs_handle_struct *handle, struct connection_struct
 	return -1;
 #endif	
 }
+
+/****************************************************************
+ Extended attribute operations.
+*****************************************************************/
+
+ssize_t vfswrap_getxattr(struct vfs_handle_struct *handle,struct connection_struct *conn,const char *path, const char *name, void *value, size_t size)
+{
+	return sys_getxattr(path, name, value, size);
+}
+
+ssize_t vfswrap_lgetxattr(struct vfs_handle_struct *handle,struct connection_struct *conn,const char *path, const char *name, void *value, size_t size)
+{
+	return sys_lgetxattr(path, name, value, size);
+}
+
+ssize_t vfswrap_fgetxattr(struct vfs_handle_struct *handle, struct files_struct *fsp,int fd, const char *name, void *value, size_t size)
+{
+	return sys_fgetxattr(fd, name, value, size);
+}
+
+ssize_t vfswrap_listxattr(struct vfs_handle_struct *handle, struct connection_struct *conn,const char *path, char *list, size_t size)
+{
+	return sys_listxattr(path, list, size);
+}
+
+ssize_t vfswrap_llistxattr(struct vfs_handle_struct *handle, struct connection_struct *conn,const char *path, char *list, size_t size)
+{
+	return sys_llistxattr(path, list, size);
+}
+
+ssize_t vfswrap_flistxattr(struct vfs_handle_struct *handle, struct files_struct *fsp,int fd, char *list, size_t size)
+{
+	return sys_flistxattr(fd, list, size);
+}
+
+int vfswrap_removexattr(struct vfs_handle_struct *handle, struct connection_struct *conn,const char *path, const char *name)
+{
+	return sys_removexattr(path, name);
+}
+
+int vfswrap_lremovexattr(struct vfs_handle_struct *handle, struct connection_struct *conn,const char *path, const char *name)
+{
+	return sys_lremovexattr(path, name);
+}
+
+int vfswrap_fremovexattr(struct vfs_handle_struct *handle, struct files_struct *fsp,int fd, const char *name)
+{
+	return sys_fremovexattr(fd, name);
+}
+
+int vfswrap_setxattr(struct vfs_handle_struct *handle, struct connection_struct *conn,const char *path, const char *name, const void *value, size_t size, int flags)
+{
+	return sys_setxattr(path, name, value, size, flags);
+}
+
+int vfswrap_lsetxattr(struct vfs_handle_struct *handle, struct connection_struct *conn,const char *path, const char *name, const void *value, size_t size, int flags)
+{
+	return sys_lsetxattr(path, name, value, size, flags);
+}
+
+int vfswrap_fsetxattr(struct vfs_handle_struct *handle, struct files_struct *fsp,int fd, const char *name, const void *value, size_t size, int flags)
+{
+	return sys_fsetxattr(fd, name, value, size, flags);
+}
