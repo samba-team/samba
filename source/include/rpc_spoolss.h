@@ -35,7 +35,6 @@
 #define SPOOLSS_GETPRINTPROCESSORDIRECTORY		0x10
 #define SPOOLSS_READPRINTER				0x16
 #define SPOOLSS_WAITFORPRINTERCHANGE			0x1c
-#define SPOOLSS_DELETEFORM				0x1f
 #define SPOOLSS_GETFORM					0x20
 #define SPOOLSS_ADDPORT					0x25
 #define SPOOLSS_CONFIGUREPORT				0x26
@@ -91,6 +90,7 @@
 #define SPOOLSS_SETPRINTERDATA				0x1b
 #define SPOOLSS_CLOSEPRINTER				0x1d
 #define SPOOLSS_ADDFORM					0x1e
+#define SPOOLSS_DELETEFORM				0x1f
 #define SPOOLSS_SETFORM					0x21
 #define SPOOLSS_ENUMFORMS				0x22
 #define SPOOLSS_ENUMPORTS				0x23
@@ -1685,6 +1685,19 @@ typedef struct spool_r_setform
 	uint32 status;
 }
 SPOOL_R_SETFORM;
+
+typedef struct spool_q_deleteform
+{
+	POLICY_HND handle;
+	UNISTR2 name;
+}
+SPOOL_Q_DELETEFORM;
+
+typedef struct spool_r_deleteform
+{
+	uint32 status;
+}
+SPOOL_R_DELETEFORM;
 
 typedef struct spool_q_getjob
 {

@@ -155,7 +155,7 @@ BOOL add_a_form(nt_forms_struct **list, const FORM *form, int *count)
 
 	update=False;
 	
-	unistr2_to_ascii(form_name, &(form->name), sizeof(form_name)-1);
+	unistr2_to_ascii(form_name, &form->name, sizeof(form_name)-1);
 	for (n=0; n<*count && update==False; n++)
 	{
 		if (!strncmp((*list)[n].name, form_name, strlen(form_name)))
@@ -169,7 +169,7 @@ BOOL add_a_form(nt_forms_struct **list, const FORM *form, int *count)
 	{
 		if((*list=Realloc(*list, (n+1)*sizeof(nt_forms_struct))) == NULL)
 			return False;
-		unistr2_to_ascii((*list)[n].name, &(form->name), sizeof((*list)[n].name)-1);
+		unistr2_to_ascii((*list)[n].name, &form->name, sizeof((*list)[n].name)-1);
 		(*count)++;
 	}
 	
@@ -180,6 +180,53 @@ BOOL add_a_form(nt_forms_struct **list, const FORM *form, int *count)
 	(*list)[n].top=form->top;
 	(*list)[n].right=form->right;
 	(*list)[n].bottom=form->bottom;
+
+	return True;
+}
+
+/****************************************************************************
+ delete a named form struct 
+****************************************************************************/
+BOOL delete_a_form(nt_forms_struct **list, UNISTR2 *del_name, int *count, uint32 *ret)
+{
+	pstring key;
+	TDB_DATA kbuf;
+	int n=0;
+	fstring form_name;
+
+	*ret = 0;
+
+	if (*count == 1) {
+		/*
+		 * Don't delete the last form (no empty lists).
+		 * CHECKME ! Is this correct ? JRA.
+		 */
+		*ret = ERROR_INVALID_PARAMETER;
+		return False;
+	}
+
+	unistr2_to_ascii(form_name, del_name, sizeof(form_name)-1);
+
+	for (n=0; n<*count; n++) {
+		if (!strncmp((*list)[n].name, form_name, strlen(form_name))) {
+			DEBUG(103, ("delete_a_form, [%s] in list\n", form_name));
+			break;
+		}
+	}
+
+	if (n == *count) {
+		DEBUG(10,("delete_a_form, [%s] not found\n", form_name));
+		*ret = ERROR_INVALID_PARAMETER;
+		return False;
+	}
+
+	slprintf(key, sizeof(key), "%s%s", FORMS_PREFIX, (*list)[n].name);
+	kbuf.dsize = strlen(key)+1;
+	kbuf.dptr = key;
+	if (tdb_delete(tdb, kbuf) != 0) {
+		*ret = ERROR_NOT_ENOUGH_MEMORY;
+		return False;
+	}
 
 	return True;
 }
