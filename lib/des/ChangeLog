@@ -1,3 +1,14 @@
+2004-06-02  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* rnd_keys.c: don't include krb4 headers
+	
+	* rijndael-alg-fst.c: don't include krb4 headers
+	
+	* aes.c: don't include krb4 headers
+	
+	* aes.h: define AES_{EN,DE}CRYPT; remove #ifdefs, this is an
+	installed file
+
 2004-04-25  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* rc2.c: handle non blocksized cbc messages
