@@ -1222,7 +1222,7 @@ BOOL brl_unlock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 BOOL brl_locktest(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 		  uint16 smbpid, pid_t pid, uint16 tid,
 		  br_off start, br_off size, 
-		  enum brl_type lock_type);
+		  enum brl_type lock_type, int check_self);
 void brl_close(SMB_DEV_T dev, SMB_INO_T ino, pid_t pid, int tid, int fnum);
 int brl_forall(BRLOCK_FN(fn));
 
@@ -1230,7 +1230,7 @@ int brl_forall(BRLOCK_FN(fn));
 
 BOOL is_locked(files_struct *fsp,connection_struct *conn,
 	       SMB_BIG_UINT count,SMB_BIG_UINT offset, 
-	       enum brl_type lock_type);
+	       enum brl_type lock_type, BOOL check_self);
 BOOL do_lock(files_struct *fsp,connection_struct *conn,
              SMB_BIG_UINT count,SMB_BIG_UINT offset,enum brl_type lock_type,
              int *eclass,uint32 *ecode);
