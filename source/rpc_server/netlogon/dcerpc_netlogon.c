@@ -517,6 +517,7 @@ static NTSTATUS netr_LogonSamLogonWithFlags(struct dcesrv_call_state *dce_call, 
 	switch (r->in.logon_level) {
 	case 1:
 	case 3:
+	case 5:
 		creds_arcfour_crypt(pipe_state->creds, 
 				    r->in.logon.password->lmpassword.hash, 
 				    sizeof(r->in.logon.password->lmpassword.hash));
