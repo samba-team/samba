@@ -181,6 +181,42 @@ WERROR cli_srvsvc_net_share_enum(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 				init_unistr2(&info2->info_2_str.uni_passwd, s, UNI_STR_TERMINATE);
 		}
 		break;
+	/* adding info-level 502 here */
+	case 502:
+		ctr->share.info502 = (SRV_SHARE_INFO_502 *)talloc(
+			mem_ctx, sizeof(SRV_SHARE_INFO_502) * ctr->num_entries);
+		
+		memset(ctr->share.info502, 0, sizeof(SRV_SHARE_INFO_502));
+
+		for (i = 0; i < ctr->num_entries; i++) {
+			SRV_SHARE_INFO_502 *info502 = &ctr->share.info502[i];
+			char *s;
+			
+			/* Copy pointer crap */
+			memcpy(&info502->info_502, &r.ctr.share.info502[i].info_502, 
+			       sizeof(SH_INFO_502));
+
+			/* Duplicate strings */
+
+			s = unistr2_tdup(mem_ctx, &r.ctr.share.info502[i].info_502_str.uni_netname);
+			if (s)
+				init_unistr2(&info502->info_502_str.uni_netname, s, UNI_STR_TERMINATE);
+
+			s = unistr2_tdup(mem_ctx, &r.ctr.share.info502[i].info_502_str.uni_remark);
+			if (s)
+				init_unistr2(&info502->info_502_str.uni_remark, s, UNI_STR_TERMINATE);
+
+			s = unistr2_tdup(mem_ctx, &r.ctr.share.info502[i].info_502_str.uni_path);
+			if (s)
+				init_unistr2(&info502->info_502_str.uni_path, s, UNI_STR_TERMINATE);
+
+			s = unistr2_tdup(mem_ctx, &r.ctr.share.info502[i].info_502_str.uni_passwd);
+			if (s)
+				init_unistr2(&info502->info_502_str.uni_passwd, s, UNI_STR_TERMINATE);
+		
+			info502->info_502_str.sd = dup_sec_desc(mem_ctx, r.ctr.share.info502[i].info_502_str.sd);
+		}
+		break;
 	}
  done:
 	prs_mem_free(&qbuf);
