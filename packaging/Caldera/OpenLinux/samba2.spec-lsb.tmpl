@@ -300,10 +300,10 @@ CFLAGS="$RPM_OPT_FLAGS" LDFLAGS="-s" ./configure \
         --prefix='$(DESTDIR)/usr' \
         --localstatedir='$(DESTDIR)/var' \
         --libdir='$(DESTDIR)%{EtcSamba}'
-make
 cd block
 mv block.c block.c.old
-sed 's/etc\/samba/etc\/samba\.d/g' < block.c.old > block.c
+sed 's/etc\/samba/etc\/samba\.d\/vfs/g' < block.c.old > block.c
+cd ..
 make
  
 
@@ -319,7 +319,7 @@ mkdir -p $DESTDIR/%{LSBservedir}/{netlogon,profiles,Public}
 mkdir -p $DESTDIR/etc/skel/Samba
 mkdir -p $DESTDIR/usr/share/samba/codepages/src $DESTDIR/sbin
 mkdir -p $DESTDIR/%{SVIdir}
-mkdir -p $DESTDIR/usr/{include,lib/samba}
+mkdir -p $DESTDIR/usr/{include,lib/samba/vfs}
 
 make LOGFILEBASE=/var/log/samba.d -C source  install
 
@@ -343,10 +343,11 @@ ln -s libnss_winbind.so.2.0 $DESTDIR/lib/libnss_winbind.so.2
 ln -s libnss_winbind.so.2.0 $DESTDIR/lib/libnss_winbind.so
 
 # Adding VFS modules
-install -m 755 examples/VFS/audit.so $DESTDIR/usr/lib/samba
-install -m 755 examples/VFS/recycle.so $DESTDIR/usr/lib/samba
-install -m 755 examples/VFS/skel.so $DESTDIR/usr/lib/samba
-install -m 755 examples/VFS/block/block.so $DESTDIR/usr/lib/samba
+install -m 755 examples/VFS/audit.so $DESTDIR/usr/lib/samba/vfs
+install -m 755 examples/VFS/recycle/recycle.so $DESTDIR/usr/lib/samba/vfs
+install -m 755 examples/VFS/recycle/recycle.conf $DESTDIR/usr/lib/samba/vfs
+install -m 755 examples/VFS/skel.so $DESTDIR/usr/lib/samba/vfs
+install -m 755 examples/VFS/block/block.so $DESTDIR/usr/lib/samba/vfs
 install -m 644 examples/VFS/block/samba-block.conf $DESTDIR/etc/samba.d/samba-block.conf.example
 install -m 644 examples/VFS/block/smb.conf $DESTDIR/etc/samba.d/smb.conf.example-with-block-use
 
