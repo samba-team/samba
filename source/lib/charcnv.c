@@ -258,15 +258,18 @@ size_t convert_string(charset_t from, charset_t to,
 	if (from != CH_UCS2 && to != CH_UCS2) {
 		const unsigned char *p = (const unsigned char *)src;
 		unsigned char *q = (unsigned char *)dest;
+		unsigned char lastp;
 		size_t retval = 0;
 
 		/* If all characters are ascii, fast path here. */
 		while (srclen && destlen) {
-			if (*p <= 0x7f) {
+			if ((lastp = *p) <= 0x7f) {
 				*q++ = *p++;
 				srclen--;
 				destlen--;
 				retval++;
+				if (!lastp)
+					break;
 			} else {
 				return retval + convert_string_internal(from, to, p, srclen, q, destlen);
 			}
@@ -276,15 +279,18 @@ size_t convert_string(charset_t from, charset_t to,
 		const unsigned char *p = (const unsigned char *)src;
 		unsigned char *q = (unsigned char *)dest;
 		size_t retval = 0;
+		unsigned char lastp;
 
 		/* If all characters are ascii, fast path here. */
 		while ((srclen >= 2) && destlen) {
-			if (*p <= 0x7f && p[1] == 0) {
+			if ((lastp = *p) <= 0x7f && p[1] == 0) {
 				*q++ = *p;
 				srclen -= 2;
 				p += 2;
 				destlen--;
 				retval++;
+				if (!lastp)
+					break;
 			} else {
 				return retval + convert_string_internal(from, to, p, srclen, q, destlen);
 			}
@@ -294,15 +300,18 @@ size_t convert_string(charset_t from, charset_t to,
 		const unsigned char *p = (const unsigned char *)src;
 		unsigned char *q = (unsigned char *)dest;
 		size_t retval = 0;
+		unsigned char lastp;
 
 		/* If all characters are ascii, fast path here. */
 		while (srclen && (destlen >= 2)) {
-			if (*p <= 0x7F) {
+			if ((lastp = *p) <= 0x7F) {
 				*q++ = *p++;
 				*q++ = '\0';
 				srclen--;
 				destlen -= 2;
 				retval += 2;
+				if (!lastp)
+					break;
 			} else {
 				return retval + convert_string_internal(from, to, p, srclen, q, destlen);
 			}
@@ -486,29 +495,28 @@ size_t unix_strupper(const char *src, size_t srclen, char *dest, size_t destlen)
 
 /**
  strdup() a unix string to upper case.
+ Max size is pstring.
 **/
 
 char *strdup_upper(const char *s)
 {
 	size_t size;
-	smb_ucs2_t *buffer;
-	char *out_buffer;
+	wpstring buffer;
+	pstring out_buffer;
 	
-	size = push_ucs2_allocate(&buffer, s);
+	size = convert_string(CH_UNIX, CH_UCS2, s, -1, buffer, sizeof(buffer));
 	if (size == -1) {
 		return NULL;
 	}
 
 	strupper_w(buffer);
 	
-	size = pull_ucs2_allocate(&out_buffer, buffer);
-	SAFE_FREE(buffer);
-
+	size = convert_string(CH_UCS2, CH_UNIX, buffer, sizeof(buffer), out_buffer, sizeof(out_buffer));
 	if (size == -1) {
 		return NULL;
 	}
 	
-	return out_buffer;
+	return strdup(out_buffer);
 }
 
 size_t unix_strlower(const char *src, size_t srclen, char *dest, size_t destlen)
