@@ -420,14 +420,15 @@ IP %s\n", namestr(question), inet_ntoa(from_ip) ));
 
   /*
    * If this is a refresh request and the name doesn't exist then
-   * fail it.
+   * treat it like a registration request. This allows us to recover 
+   * from errors (tridge)
    */
 
   if(namerec == NULL)
   {
     DEBUG(3,("wins_process_name_refresh_request: Name refresh for name %s and \
-the name does not exist.\n", namestr(question) ));
-    send_wins_name_registration_response(NAM_ERR, 0, p);
+the name does not exist. Treating as registration.\n", namestr(question) ));
+    wins_process_name_registration_request(subrec,p);
     return;
   }
 
