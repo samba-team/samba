@@ -1321,6 +1321,7 @@ showlayout:
 	@echo "  configdir:   $(CONFIGDIR)"
 	@echo "  lockdir:     $(LOCKDIR)"
 	@echo "  piddir:      $(PIDDIR)"
+	@echo "  swatdir:     $(SWATDIR)"
 
 
 uninstall: uninstallman uninstallbin uninstallscripts uninstallmodules
