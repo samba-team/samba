@@ -48,21 +48,15 @@ krb5_generate_subkey(krb5_context context,
     krb5_error_code ret;
     krb5_keyblock *k;
 
-    if (key->keytype != KEYTYPE_DES)
-	abort ();
     k = malloc(sizeof(**subkey));
     if (k == NULL)
 	return ENOMEM;
-    k->keytype = key->keytype;
-    k->keyvalue.length = 0;
-    ret = krb5_data_copy (&k->keyvalue,
-			  key->keyvalue.data,
-			  key->keyvalue.length);
-    if (ret) {
+
+    ret = krb5_generate_random_keyblock(context, key->keytype, k);
+    if(ret){
 	free(k);
 	return ret;
     }
-    des_new_random_key ((des_cblock *)k->keyvalue.data);
     *subkey = k;
     return 0;
 }
