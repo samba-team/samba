@@ -24,6 +24,10 @@
 
 <para>
 <indexterm><primary>Interdomain Trusts</primary></indexterm>
+<indexterm><primary>LDAP</primary></indexterm>
+<indexterm><primary>trusts</primary></indexterm>
+<indexterm><primary>samba-to-samba trusts</primary></indexterm>
+<indexterm><primary>Active Directory</primary></indexterm>
 Samba-3 supports NT4-style domain trust relationships. This is a feature that many sites
 will want to use if they migrate to Samba-3 from an NT4-style domain and do not want to
 adopt Active Directory or an LDAP-based authentication backend. This section explains
@@ -31,6 +35,23 @@ some background information regarding trust relationships and how to create them
 possible for Samba-3 to trust NT4 (and vice versa), as well as to create Samba-to-Samba 
 trusts.
 </para>
+
+<para>
+<indexterm><primary>winbind</primary></indexterm>
+<indexterm><primary>UID range</primary></indexterm>
+<indexterm><primary>GID range</primary></indexterm>
+The use of interdomain trusts requires use of <command>winbind</command> &smbmdash; this means
+that the <command>winbindd</command> daemon must be running. Winbind operation in this mode
+is dependant on the specification of a valid UID range and a valid GID range in the &smb.conf; file.
+These are specified respectively using 
+<smbconfoption><name>idmap uid</name><value>10000-20000</value></smbconfoption> and
+<smbconfoption><name>idmap gid</name><value>10000-20000</value></smbconfoption>.
+</para>
+
+<note><para>
+The use of winbind is necessary only when Samba is the trusting Domain, not when it is the
+trusted Domain.
+</para></note>
 
 <sect1>
 <title>Features and Benefits</title>
