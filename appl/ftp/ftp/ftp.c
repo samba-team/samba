@@ -507,13 +507,13 @@ getreply(int expecteof)
 #endif
 
 int
-empty(struct fd_set *mask, int sec)
+empty(fd_set *mask, int sec)
 {
 	struct timeval t;
 
 	t.tv_sec = (long) sec;
 	t.tv_usec = 0;
-	return (select(32, mask, (struct fd_set *) 0, (struct fd_set *) 0, &t));
+	return (select(32, mask, (fd_set *) 0, (fd_set *) 0, &t));
 }
 
 jmp_buf	sendabort;
@@ -1397,7 +1397,7 @@ proxtrans(char *cmd, char *local, char *remote)
 	sighand oldintr;
 	int secndflag = 0, prox_type, nfnd;
 	char *cmd2;
-	struct fd_set mask;
+	fd_set mask;
 
 	if (strcmp(cmd, "RETR"))
 		cmd2 = "RETR";
@@ -1512,7 +1512,7 @@ abort:
 void
 reset(int argc, char **argv)
 {
-	struct fd_set mask;
+	fd_set mask;
 	int nfnd = 1;
 
 	FD_ZERO(&mask);
@@ -1579,7 +1579,7 @@ abort_remote(FILE *din)
 {
 	char buf[BUFSIZ];
 	int nfnd;
-	struct fd_set mask;
+	fd_set mask;
 
 	/*
 	 * send IAC in urgent mode instead of DM because 4.3BSD places oob mark
