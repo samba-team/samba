@@ -1896,7 +1896,7 @@ BOOL msrpc_sam_ntchange_pwd(const char* srv_name,
 
 	if (domain != NULL)
 	{
-		safe_strcpy(samr_creds.domain, ntuser,
+		safe_strcpy(samr_creds.domain, domain,
 		            sizeof(samr_creds.domain)-1);
 	}
 

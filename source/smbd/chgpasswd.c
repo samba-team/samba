@@ -630,7 +630,9 @@ static BOOL check_oem_password(const char *user,
 	/* 
 	 * Call the hash function to get the new password.
 	 */
-	SamOEMhash((uchar *) lmdata, (uchar *) smbpw->smb_passwd, True);
+	dump_data_pw("encrypted password buffer\n", lmdata, sizeof(lmdata));
+	SamOEMhash((uchar *) lmdata, (uchar *) smbpw->smb_passwd, 1);
+	dump_data_pw("unencrypted password buffer\n", lmdata, sizeof(lmdata));
 
 	if (!decode_pw_buffer(lmdata, buf, 256, &len))
 	{

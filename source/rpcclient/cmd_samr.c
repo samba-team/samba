@@ -78,7 +78,7 @@ static void sam_display_alias_members(const char *domain, const DOM_SID * sid,
 				      uint32 num_names,
 				      DOM_SID * const *const sids,
 				      char *const *const name,
-				      uint32 * const type)
+				      uint32 *const type)
 {
 	display_alias_members(out_hnd, ACTION_HEADER, num_names, name, type);
 	display_alias_members(out_hnd, ACTION_ENUMERATE, num_names, name,
@@ -106,9 +106,9 @@ static void sam_display_group_members(const char *domain, const DOM_SID * sid,
 				      uint32 group_rid,
 				      const char *group_name,
 				      uint32 num_names,
-				      const uint32 * rid_mem,
+				      const uint32 *rid_mem,
 				      char *const *const name,
-				      uint32 * const type)
+				      uint32 *const type)
 {
 	display_group_members(out_hnd, ACTION_HEADER, num_names, name, type);
 	display_group_members(out_hnd, ACTION_ENUMERATE, num_names, name,
@@ -149,6 +149,7 @@ void cmd_sam_ntchange_pwd(struct client_info *info, int argc, char *argv[])
 	uchar lm_oldhash[16];
 	fstring acct_name;
 	fstring domain;
+	DOM_SID sid;
 
 	fstrcpy(srv_name, "\\\\");
 	fstrcat(srv_name, info->dest_host);
@@ -156,19 +157,25 @@ void cmd_sam_ntchange_pwd(struct client_info *info, int argc, char *argv[])
 
 	report(out_hnd, "SAM NT Password Change\n");
 
-	safe_strcpy(domain, usr_creds->ntc.domain, sizeof(domain));
+	if (msrpc_sam_get_first_domain(srv_name, domain, &sid) != 0x0)
+	{
+		report(out_hnd,
+		       "please use 'lsaquery' first, to ascertain the SID\n");
+		return;
+	}
 
 	if (argc >= 2)
 	{
 		struct pwd_info old_pwd;
-		safe_strcpy(acct_name, argv[1], sizeof(acct_name));
+		safe_strcpy(acct_name, argv[1], sizeof(acct_name) - 1);
 		pwd_read(&old_pwd, "Old Password:", True);
 		pwd_get_lm_nt_16(&old_pwd, lm_oldhash, nt_oldhash);
 	}
 	else
 	{
+		safe_strcpy(domain, usr_creds->ntc.domain, sizeof(domain) - 1);
 		safe_strcpy(acct_name, usr_creds->ntc.user_name,
-			    sizeof(acct_name));
+			    sizeof(acct_name) - 1);
 		pwd_get_lm_nt_16(&(usr_creds->ntc.pwd), lm_oldhash,
 				 nt_oldhash);
 	}
@@ -273,8 +280,7 @@ void cmd_sam_lookup_domain(struct client_info *info, int argc, char *argv[])
 	res = res ? samr_connect(srv_name, 0x02000000, &sam_pol) : False;
 
 	/* connect to the domain */
-	res =
-		res ? samr_query_lookup_domain(&sam_pol, domain,
+	res = res ? samr_query_lookup_domain(&sam_pol, domain,
 					       &dom_sid) : False;
 
 	res = res ? samr_close(&sam_pol) : False;
@@ -623,8 +629,7 @@ void cmd_sam_del_aliasmem(struct client_info *info, int argc, char *argv[])
 		argv++;
 		/* get a sid, delete a member from the alias */
 		res2 = res2 ? string_to_sid(&member_sid, argv[0]) : False;
-		res2 =
-			res2 ? samr_del_aliasmem(&alias_pol,
+		res2 = res2 ? samr_del_aliasmem(&alias_pol,
 						 &member_sid) : False;
 
 		if (res2)
@@ -1039,11 +1044,11 @@ void cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 	argc--;
 	argv++;
 
-	safe_strcpy(acct_name, argv[0], sizeof(acct_name));
+	safe_strcpy(acct_name, argv[0], sizeof(acct_name) - 1);
 	len = strlen(acct_name) - 1;
 	if (acct_name[len] == '$')
 	{
-		safe_strcpy(name, argv[0], sizeof(name));
+		safe_strcpy(name, argv[0], sizeof(name) - 1);
 		name[len] = 0;
 		acb_info = ACB_WSTRUST;
 	}
@@ -2522,7 +2527,7 @@ void cmd_sam_set_userinfo2(struct client_info *info, int argc, char *argv[])
 	argc--;
 	argv++;
 
-	safe_strcpy(user_name, argv[0], sizeof(user_name));
+	safe_strcpy(user_name, argv[0], sizeof(user_name) - 1);
 
 	while ((opt = getopt(argc, argv, "s:c:p:")) != EOF)
 	{
@@ -2574,8 +2579,7 @@ void cmd_sam_set_userinfo2(struct client_info *info, int argc, char *argv[])
 		void *usr = NULL;
 		uint32 switch_value = 0;
 
-		SAM_USER_INFO_12 *p =
-			(SAM_USER_INFO_12 *) malloc(sizeof(SAM_USER_INFO_12));
+		SAM_USER_INFO_12 *p= g_new(SAM_USER_INFO_12, 1);
 		usr = (void *)p;
 		switch_value = 0x12;
 
@@ -2599,9 +2603,7 @@ void cmd_sam_set_userinfo2(struct client_info *info, int argc, char *argv[])
 
 		if (True)
 		{
-			SAM_USER_INFO_10 *p =
-				(SAM_USER_INFO_10 *)
-				malloc(sizeof(SAM_USER_INFO_10));
+			SAM_USER_INFO_10 *p = g_new(SAM_USER_INFO_10, 1);
 			p->acb_info = ctr.info.id10->acb_info;
 			DEBUG(10, ("acb_info: %x\n", p->acb_info));
 			if (set_acb_bits)
@@ -2699,7 +2701,7 @@ void cmd_sam_set_userinfo(struct client_info *info, int argc, char *argv[])
 		return;
 	}
 
-	safe_strcpy(user_name, argv[0], sizeof(user_name));
+	safe_strcpy(user_name, argv[0], sizeof(user_name) - 1);
 
 	if (argc == 1)
 	{
@@ -2768,9 +2770,7 @@ void cmd_sam_set_userinfo(struct client_info *info, int argc, char *argv[])
 
 		if (True)
 		{
-			SAM_USER_INFO_24 *p =
-				(SAM_USER_INFO_24 *)
-				malloc(sizeof(SAM_USER_INFO_24));
+			SAM_USER_INFO_24 *p = g_new(SAM_USER_INFO_24, 1);
 			make_sam_user_info24(p, pwbuf, strlen(password));
 
 			usr = p;
@@ -2780,9 +2780,7 @@ void cmd_sam_set_userinfo(struct client_info *info, int argc, char *argv[])
 		if (False)
 		{
 			SAM_USER_INFO_21 *usr21 = ctr.info.id21;
-			SAM_USER_INFO_23 *p =
-				(SAM_USER_INFO_23 *)
-				malloc(sizeof(SAM_USER_INFO_23));
+			SAM_USER_INFO_23 *p = g_new(SAM_USER_INFO_23, 1);
 			/* send user info query, level 0x15 */
 			make_sam_user_info23W(p,
 					      &usr21->logon_time,

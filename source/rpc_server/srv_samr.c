@@ -694,8 +694,8 @@ static BOOL api_samr_chgpasswd_user( rpcsrv_struct *p, prs_struct *data, prs_str
         }
 	r_u.status = _samr_chgpasswd_user(&q_u.uni_dest_host,
 	                          &q_u.uni_user_name,
-	                          lm_newpass, nt_newpass,
-	                          lm_oldhash, nt_oldhash);
+	                          nt_newpass, nt_oldhash,
+	                          lm_newpass, lm_oldhash);
 	return samr_io_r_chgpasswd_user("", &r_u, rdata, 0);
 }
 
