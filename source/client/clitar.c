@@ -193,7 +193,7 @@ static void writetarheader(int f,  char *aname, int size, time_t mtime,
 	  memset(b, 0, l+TBLOCK+100);
 	  fixtarname(b, aname, l);
 	  i = strlen(b)+1;
-	  DEBUG(5, ("File name in tar file: %s, size=%i, \n", b, strlen(b)));
+	  DEBUG(5, ("File name in tar file: %s, size=%d, \n", b, (int)strlen(b)));
 	  dotarbuf(f, b, TBLOCK*(((i-1)/TBLOCK)+1));
 	  free(b);
   }
@@ -659,7 +659,7 @@ static void do_atar(char *rname,char *lname,file_info *finfo1)
     {
       DEBUG(3,("skipping file %s of size %d bytes\n",
 	       finfo.name,
-	       finfo.size));
+	       (int)finfo.size));
       shallitime=0;
       ttarf+=finfo.size + TBLOCK - (finfo.size % TBLOCK);
       ntarf++;
@@ -712,7 +712,7 @@ static void do_atar(char *rname,char *lname,file_info *finfo1)
     {
       DEBUG(3,("getting file %s of size %d bytes as a tar file %s",
 	       finfo.name,
-	       finfo.size,
+	       (int)finfo.size,
 	       lname));
       
       /* write a tar header, don't bother with mode - just set to 100644 */
@@ -747,7 +747,7 @@ static void do_atar(char *rname,char *lname,file_info *finfo1)
 
       /* pad tar file with zero's if we couldn't get entire file */
       if (nread < finfo.size) {
-	      DEBUG(0, ("Didn't get entire file. size=%d, nread=%d\n", finfo.size, nread));
+	      DEBUG(0, ("Didn't get entire file. size=%d, nread=%d\n", (int)finfo.size, (int)nread));
 	      if (padit(data, sizeof(data), finfo.size - nread))
 		      DEBUG(0,("Error writing tar file - %s\n", strerror(errno)));
       }
@@ -781,7 +781,7 @@ static void do_atar(char *rname,char *lname,file_info *finfo1)
       if (tar_noisy)
 	{
 	  DEBUG(0, ("%10d (%7.1f kb/s) %s\n",
-	       finfo.size, finfo.size / MAX(0.001, (1.024*this_time)),
+	       (int)finfo.size, finfo.size / MAX(0.001, (1.024*this_time)),
                finfo.name));
 	}
 
@@ -806,7 +806,7 @@ static void do_tar(file_info *finfo)
   if (!tar_excl && clipn) {
     pstring exclaim;
 
-    DEBUG(5, ("Excl: strlen(cur_dir) = %i\n", strlen(cur_dir)));
+    DEBUG(5, ("Excl: strlen(cur_dir) = %d\n", (int)strlen(cur_dir)));
 
     safe_strcpy(exclaim, cur_dir, sizeof(pstring));
     *(exclaim+strlen(exclaim)-1)='\0';
@@ -834,7 +834,7 @@ static void do_tar(file_info *finfo)
 
       safe_strcpy(saved_curdir, cur_dir, sizeof(saved_curdir));
 
-      DEBUG(5, ("Sizeof(cur_dir)=%i, strlen(cur_dir)=%i, strlen(finfo->name)=%i\nname=%s,cur_dir=%s\n", sizeof(cur_dir), strlen(cur_dir), strlen(finfo->name), finfo->name, cur_dir));
+      DEBUG(5, ("Sizeof(cur_dir)=%d, strlen(cur_dir)=%d, strlen(finfo->name)=%d\nname=%s,cur_dir=%s\n", (int)sizeof(cur_dir), (int)strlen(cur_dir), (int)strlen(finfo->name), finfo->name, cur_dir));
 
       safe_strcat(cur_dir,finfo->name, sizeof(cur_dir));
       safe_strcat(cur_dir,"\\", sizeof(cur_dir));
@@ -968,7 +968,12 @@ static int skip_file(int skipsize)
   return(True);
 }
 
-/* We get a file from the tar file and store it */
+/*************************************************************
+ Get a file from the tar file and store it.
+ When this is called, tarbuf already contains the first
+ file block. This is a bit broken & needs fixing.
+**************************************************************/
+
 static int get_file(file_info2 finfo)
 {
   int fsize = finfo.size;
@@ -1023,13 +1028,14 @@ static int get_file(file_info2 finfo)
 
     }
 
+    /*
+     */
+
     while (dsize >= TBLOCK) {
 
       if (next_block(tarbuf, &buffer_p, tbufsiz) <=0) {
-
 	DEBUG(0, ("Empty file, short tar file, or read error: %s\n", strerror(errno)));
 	return False;
-
       }
 
       dsize -= TBLOCK;
@@ -1060,7 +1066,7 @@ static int get_file(file_info2 finfo)
 
   ntarf++;
 
-  DEBUG(0, ("restore tar file %s of size %d bytes\n", finfo.name, finfo.size));
+  DEBUG(0, ("restore tar file %s of size %d bytes\n", finfo.name, (int)finfo.size));
   
   return(True);
 }
@@ -1071,7 +1077,7 @@ static int get_file(file_info2 finfo)
 static int get_dir(file_info2 finfo)
 {
 
-  DEBUG(5, ("Creating directory: %s\n", finfo.name));
+  DEBUG(0, ("restore directory %s\n", finfo.name));
 
   if (!ensurepath(finfo.name)) {
 
@@ -1079,6 +1085,8 @@ static int get_dir(file_info2 finfo)
     return(False);
 
   }
+
+  ntarf++;
   return(True);
 
 }
@@ -1094,12 +1102,12 @@ static char * get_longfilename(file_info2 finfo)
   BOOL first = True;
 
   DEBUG(5, ("Restoring a long file name: %s\n", finfo.name));
-  DEBUG(5, ("Len = %i\n", finfo.size));
+  DEBUG(5, ("Len = %d\n", (int)finfo.size));
 
   if (longname == NULL) {
 
     DEBUG(0, ("could not allocate buffer of size %d for longname\n", 
-	      finfo.size + strlen(cur_dir) + 2));
+	      (int)(finfo.size + strlen(cur_dir) + 2)));
     return(NULL);
   }
 
@@ -1181,7 +1189,7 @@ static void do_tarput(void)
       return;
 
     case 0: /* chksum is zero - looks like an EOF */
-      DEBUG(0, ("total of %d tar files restored to share\n", ntarf));
+      DEBUG(0, ("tar: restored %d files and directories\n", ntarf));
       return;        /* Hmmm, bad here ... */
 
     default: 
@@ -1486,7 +1494,7 @@ int process_tar(void)
     close(tarhandle);
     free(tarbuf);
     
-    DEBUG(0, ("tar: dumped %d tar files\n", ntarf));
+    DEBUG(0, ("tar: dumped %d files and directories\n", ntarf));
     DEBUG(0, ("Total bytes written: %.0f\n", (double)ttarf));
     break;
   }
