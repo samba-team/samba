@@ -190,20 +190,31 @@ autoconf
 autoheader
 NUMCPU=`grep processor /proc/cpuinfo | wc -l`
 CFLAGS="$RPM_OPT_FLAGS $EXTRA" ./configure \
-	--prefix=%{prefix} \
 	--libdir=/etc/samba \
+	--prefix=%{prefix} \
 	--with-lockdir=/var/lock/samba \
-	--with-privatedir=/etc \
-	--with-swatdir=%{prefix}/share/swat \
-	--with-quotas \
-	--with-smbmount \
+	--with-netatalk \
 	--with-pam \
 	--with-pam_smbpass \
+	--with-privatedir=/etc \
 	--with-profile \
+	--with-quotas \
+	--with-sambabook=%{prefix}/share/swat/using_samba
+	--with-smbmount \
+	--with-swatdir=%{prefix}/share/swat \
 	--with-syslog \
 	--with-utmp \
-	--with-netatalk \
-	--with-sambabook=%{prefix}/share/swat/using_samba
+        --with-codepagedir=/usr/share/samba/codepages \
+        --with-configdir=/etc/samba \
+        --with-fhs \
+        --with-netatalk \
+        --with-pam \
+        --with-pam_smbpass \
+        --with-quotas \
+        --with-smbmount \
+        --with-syslog
+        --with-utmp \
+        --without-smbwrapper \
 
 make -j${NUMCPU} all smbfilter nsswitch/libnss_wins.so
 make -j${NUMCPU} debug2html 
