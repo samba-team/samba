@@ -180,7 +180,7 @@ static BOOL ads_try_dns(ADS_STRUCT *ads)
 /* try connecting to a ldap server via netbios */
 static BOOL ads_try_netbios(ADS_STRUCT *ads)
 {
-	struct in_addr *ip_list;
+	struct in_addr *ip_list, pdc_ip;
 	int count;
 	int i;
 	char *workgroup = ads->server.workgroup;
@@ -192,20 +192,15 @@ static BOOL ads_try_netbios(ADS_STRUCT *ads)
 	DEBUG(6,("ads_try_netbios: looking for workgroup '%s'\n", workgroup));
 
 	/* try the PDC first */
-	if (get_dc_list(True, workgroup, &ip_list, &count)) { 
-		for (i=0;i<count;i++) {
-			DEBUG(6,("ads_try_netbios: trying server '%s'\n", 
-				 inet_ntoa(ip_list[i])));
-			if (ads_try_connect(ads, inet_ntoa(ip_list[i]), LDAP_PORT)) {
-				free(ip_list);
-				return True;
-			}
-		}
-		free(ip_list);
+	if (get_pdc_ip(workgroup, &pdc_ip)) { 
+		DEBUG(6,("ads_try_netbios: trying server '%s'\n", 
+			 inet_ntoa(pdc_ip)));
+		if (ads_try_connect(ads, inet_ntoa(pdc_ip), LDAP_PORT))
+			return True;
 	}
 
 	/* now any DC, including backups */
-	if (get_dc_list(False, workgroup, &ip_list, &count)) { 
+	if (get_dc_list(workgroup, &ip_list, &count)) { 
 		for (i=0;i<count;i++) {
 			DEBUG(6,("ads_try_netbios: trying server '%s'\n", 
 				 inet_ntoa(ip_list[i])));

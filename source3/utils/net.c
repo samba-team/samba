@@ -180,20 +180,15 @@ BOOL net_find_server(unsigned flags, struct in_addr *server_ip, char **server_na
 			return False;
 		}
 	} else if (flags & NET_FLAGS_PDC) {
-		struct in_addr *ip_list;
-		int addr_count;
-		if (get_dc_list(True /* PDC only*/, opt_target_workgroup, &ip_list, &addr_count)) {
+		struct in_addr pdc_ip;
+
+		if (get_pdc_ip(opt_target_workgroup, &pdc_ip)) {
 			fstring dc_name;
-			if (addr_count < 1) {
-				return False;
-			}
 			
-			*server_ip = *ip_list;
-			
-			if (is_zero_ip(*server_ip))
+			if (is_zero_ip(pdc_ip))
 				return False;
 			
-			if (!lookup_dc_name(global_myname, opt_target_workgroup, server_ip, dc_name))
+			if (!lookup_dc_name(global_myname, opt_target_workgroup, &pdc_ip, dc_name))
 				return False;
 				
 			*server_name = strdup(dc_name);
@@ -236,17 +231,9 @@ BOOL net_find_server(unsigned flags, struct in_addr *server_ip, char **server_na
 
 BOOL net_find_dc(struct in_addr *server_ip, fstring server_name, const char *domain_name)
 {
-	struct in_addr *ip_list;
-	int addr_count;
-
-	if (get_dc_list(True /* PDC only*/, domain_name, &ip_list, &addr_count)) {
+	if (get_pdc_ip(domain_name, server_ip)) {
 		fstring dc_name;
-		if (addr_count < 1) {
-			return False;
-		}
 			
-		*server_ip = *ip_list;
-		
 		if (is_zero_ip(*server_ip))
 			return False;
 		

@@ -1206,54 +1206,87 @@ NT GETDC call, UNICODE, NT domain SID and uncle tom cobbley and all...
 #endif /* defined(I_HATE_WINDOWS_REPLY_CODE) */
 }
 
-
 /********************************************************
- Get the IP address list of the PDC/BDC's of a Domain.
+ Get the IP address list of the primary domain controller
+ for a domain.
 *********************************************************/
 
-BOOL get_dc_list(BOOL pdc_only, const char *group, struct in_addr **ip_list, int *count)
+BOOL get_pdc_ip(const char *domain, struct in_addr *ip)
 {
-	int name_type = pdc_only ? 0x1B : 0x1C;
+	struct in_addr *ip_list;
+	int count;
 
+	/* Look up #1B name */
+
+	if (!internal_resolve_name(domain, 0x1b, &ip_list, &count))
+		return False;
+
+	SMB_ASSERT(count == 1);
+
+	*ip = ip_list[0];
+	SAFE_FREE(ip_list);
+
+	return True;
+}
+
+/********************************************************
+ Get the IP address list of the domain controllers for
+ a domain.
+*********************************************************/
+
+BOOL get_dc_list(const char *domain, struct in_addr **ip_list, int *count)
+{
 	/*
 	 * If it's our domain then
 	 * use the 'password server' parameter.
 	 */
 
-	if (strequal(group, lp_workgroup())) {
+	if (strequal(domain, lp_workgroup())) {
 		char *p;
 		char *pserver = lp_passwordserver();
 		fstring name;
 		int num_adresses = 0;
 		struct in_addr *return_iplist = NULL;
 
-		if (! *pserver)
-			return internal_resolve_name(group, name_type, ip_list, count);
+		if (!*pserver)
+			return internal_resolve_name(
+				domain, 0x1C, ip_list, count);
 
 		p = pserver;
+
 		while (next_token(&p,name,LIST_SEP,sizeof(name))) {
 			if (strequal(name, "*"))
-				return internal_resolve_name(group, name_type, ip_list, count);
+				return internal_resolve_name(
+					domain, 0x1C, ip_list, count);
 			num_adresses++;
 		}
-		if (num_adresses == 0)
-			return internal_resolve_name(group, name_type, ip_list, count);
 
-		return_iplist = (struct in_addr *)malloc(num_adresses * sizeof(struct in_addr));
-		if(return_iplist == NULL) {
+		if (num_adresses == 0)
+			return internal_resolve_name(
+				domain, 0x1C, ip_list, count);
+
+		return_iplist = (struct in_addr *)malloc(
+			num_adresses * sizeof(struct in_addr));
+
+		if (return_iplist == NULL) {
 			DEBUG(3,("get_dc_list: malloc fail !\n"));
 			return False;
 		}
+
 		p = pserver;
 		*count = 0;
+
 		while (next_token(&p,name,LIST_SEP,sizeof(name))) {
 			struct in_addr name_ip;
 			if (resolve_name( name, &name_ip, 0x20) == False)
 				continue;
 			return_iplist[(*count)++] = name_ip;
 		}
+
 		*ip_list = return_iplist;
+
 		return (*count != 0);
-	} else
-		return internal_resolve_name(group, name_type, ip_list, count);
+	}
+	
+	return internal_resolve_name(domain, 0x1C, ip_list, count);
 }
