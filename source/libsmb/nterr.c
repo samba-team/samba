@@ -607,7 +607,7 @@ char *get_friendly_nt_error_msg(NTSTATUS nt_code)
 	
 	/* fall back to NT_STATUS_XXX string */
 	
-	return get_nt_error_msg(nt_code);
+	return nt_errstr(nt_code);
 }
 
 /*****************************************************************************
