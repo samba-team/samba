@@ -15,7 +15,7 @@ propagate the KDC database
 .Oo Fl d Ar file \*(Ba Xo
 .Fl -database= Ns Pa file Oc
 .Xc
-.Op Fl -source= Ns Ar heimdal|krb4-db|krb4-dump
+.Op Fl -source= Ns Ar heimdal|mit-dump|krb4-db|krb4-dump
 .Op Fl 4 | Fl -v4-db
 .Op Fl K | Fl -ka-db
 .Oo Fl c Ar cell \*(Ba Xo
@@ -67,14 +67,14 @@ Where to find the master key to encrypt or decrypt keys with.
 .Xc
 The database to be propagated.
 .It Xo
-.Fl -source= Ns Ar heimdal|krb4-db|krb4-dump
+.Fl -source= Ns Ar heimdal|mit-dump|krb4-db|krb4-dump
 .Xc
 Specifies the type of the source database. Alternaves include: 
 .Bl -tag -width krb4-dump
 .It heimdal
 a Heimdal database
-.\" .It mit-dump
-.\" a MIT Kerberos 5 dump file
+.It mit-dump
+a MIT Kerberos 5 dump file
 .It krb4-db
 a Kerberos 4 database
 .It krb4-dump
@@ -116,20 +116,8 @@ Dump the database on stdout, in a format that can be fed to hpropd.
 
 The following options are only valid if
 .Nm hprop
-is compiled with support for Kerberos 4 (and kaserver).
+is compiled with support for Kerberos 4 (kaserver).
 .Bl -tag -width Ds
-.It Xo
-.Fl 4 Ns ,
-.Fl -v4-db
-.Xc
-Deprecated, identical to 
-.Sq --source=krb4-db .
-.It Xo
-.Fl K Ns ,
-.Fl -ka-db
-.Xc
-Deprecated, identical to 
-.Sq --source=kaserver .
 .It Xo
 .Fl r Ar string Ns ,
 .Fl -v4-realm= Ns Ar string
@@ -145,23 +133,36 @@ The AFS cell name, used if reading a kaserver database.
 .Fl -kaspecials
 .Xc
 Also dump the principals marked as special in the kaserver database.
+.It Xo
+.Fl 4 Ns ,
+.Fl -v4-db
+.Xc
+Deprecated, identical to 
+.Sq --source=krb4-db .
+.It Xo
+.Fl K Ns ,
+.Fl -ka-db
+.Xc
+Deprecated, identical to 
+.Sq --source=kaserver .
 .El
 
 .Sh EXAMPLES
 The following will propagate a database to another machine (which
-should run hprop):
+should run
+.Xr hpropd 8):
 .Bd -literal -offset indent
 $ hprop slave-1 slave-2
 .Ed
 
 Copy a Kerberos 4 database to a Kerberos 5 slave:
 .Bd -literal -offset indent
-$ hprop -4 -E krb5-slave
+$ hprop --source=krb4-db -E krb5-slave
 .Ed
 
-Convert a Kerberos 4 database for use with a Heimdal KDC:
+Convert a Kerberos 4 dump-file for use with a Heimdal KDC:
 .Bd -literal -offset indent
-$ hprop -n -4 -E | hpropd -n
+$ hprop -n --source=krb4-dump -d /var/kerberos/principal.dump -E | hpropd -n
 .Ed
 .Sh SEE ALSO
 .Xr hpropd 8
