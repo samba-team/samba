@@ -53,9 +53,9 @@ struct vfs_ops {
 
 	/* Disk operations */
     
-	int (*connect)(struct connection_struct *conn, char *service, char *user);
+	int (*connect)(struct connection_struct *conn, const char *service, const char *user);
 	void (*disconnect)(struct connection_struct *conn);
-	SMB_BIG_UINT (*disk_free)(struct connection_struct *conn, char *path, BOOL small_query, SMB_BIG_UINT *bsize, 
+	SMB_BIG_UINT (*disk_free)(struct connection_struct *conn, const char *path, BOOL small_query, SMB_BIG_UINT *bsize, 
 		SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize);
     
 	/* Directory operations */

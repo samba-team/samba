@@ -4203,7 +4203,7 @@ BOOL claim_connection(connection_struct *conn,char *name,int max_connections,BOO
 
 /*The following definitions come from  smbd/dfree.c  */
 
-SMB_BIG_UINT sys_disk_free(char *path, BOOL small_query, 
+SMB_BIG_UINT sys_disk_free(const char *path, BOOL small_query, 
                            SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree,SMB_BIG_UINT *dsize);
 
 /*The following definitions come from  smbd/dir.c  */
@@ -4638,9 +4638,9 @@ BOOL reduce_name(connection_struct *conn, char *s,char *dir,BOOL widelinks);
 
 /*The following definitions come from  smbd/vfs-wrap.c  */
 
-int vfswrap_dummy_connect(connection_struct *conn, char *service, char *user);
+int vfswrap_dummy_connect(connection_struct *conn, const char *service, const char *user);
 void vfswrap_dummy_disconnect(connection_struct *conn);
-SMB_BIG_UINT vfswrap_disk_free(connection_struct *conn, char *path, BOOL small_query, SMB_BIG_UINT *bsize, 
+SMB_BIG_UINT vfswrap_disk_free(connection_struct *conn, const char *path, BOOL small_query, SMB_BIG_UINT *bsize, 
 			       SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize);
 DIR *vfswrap_opendir(connection_struct *conn, const char *fname);
 struct dirent *vfswrap_readdir(connection_struct *conn, DIR *dirp);

@@ -25,7 +25,7 @@
    is sure to try and execute them.  These stubs are used to prevent
    this possibility. */
 
-int vfswrap_dummy_connect(connection_struct *conn, char *service, char *user)
+int vfswrap_dummy_connect(connection_struct *conn, const char *service, const char *user)
 {
     return 0;    /* Return >= 0 for success */
 }
@@ -36,7 +36,7 @@ void vfswrap_dummy_disconnect(connection_struct *conn)
 
 /* Disk operations */
 
-SMB_BIG_UINT vfswrap_disk_free(connection_struct *conn, char *path, BOOL small_query, SMB_BIG_UINT *bsize, 
+SMB_BIG_UINT vfswrap_disk_free(connection_struct *conn, const char *path, BOOL small_query, SMB_BIG_UINT *bsize, 
 			       SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
 {
     SMB_BIG_UINT result;
