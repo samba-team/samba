@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -221,6 +221,17 @@ v4_prop(void *arg, Principal *p)
     }
 
     ret = v5_prop(pd->context, NULL, &ent, pd);
+
+    if (strcmp (p->name, "krbtgt") == 0
+	&& strcmp (realm, p->instance) != 0) {
+	krb5_free_principal (pd->context, ent.principal);
+	ret = krb5_425_conv_principal (pd->context, p->name,
+				       realm, p->instance,
+				       &ent.principal);
+	if (ret == 0)
+	    ret = v5_prop (pd->context, NULL, &ent, pd);
+    }
+
 out:
     hdb_free_entry(pd->context, &ent);
     return ret;
