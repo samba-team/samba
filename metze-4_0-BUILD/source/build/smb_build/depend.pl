@@ -418,10 +418,10 @@ sub _do_depend_binaries($)
 ###########################################################
 # This function creates the dependency tree from the SMB_BUILD 
 # context
-# create_depend_output($SMB_BUILD_CTX)
+# create_depend($SMB_BUILD_CTX)
 #
 # $SMB_BUILD_CTX -	the global SMB_BUILD context
-sub create_depend_output($)
+sub create_depend($)
 {
 	my $CTX = shift;
 
