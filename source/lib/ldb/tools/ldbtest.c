@@ -294,6 +294,8 @@ static void start_test_index(struct ldb_context **ldb)
 
 	printf("Starting index test\n");
 
+	ldb_delete(*ldb, "@INDEXLIST");
+
 	memset(&msg, 0, sizeof(msg));
 	msg.dn = strdup("@INDEXLIST");
 	ldb_msg_add_string(*ldb, &msg, "@IDXATTR", strdup("uid"));
@@ -404,9 +406,9 @@ static void usage(void)
 
 	srandom(1);
 
-	start_test_index(&ldb);
-
 	start_test(ldb, nrecords, nsearches);
+
+	start_test_index(&ldb);
 
 	ldb_close(ldb);
 
