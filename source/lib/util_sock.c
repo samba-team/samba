@@ -51,14 +51,16 @@ BOOL is_a_socket(int fd)
 
 enum SOCK_OPT_TYPES {OPT_BOOL,OPT_INT,OPT_ON};
 
-struct
+typedef struct smb_socket_option
 {
   char *name;
   int level;
   int option;
   int value;
   int opttype;
-} socket_options[] = {
+} smb_socket_option;
+
+smb_socket_option socket_options[] = {
   {"SO_KEEPALIVE",      SOL_SOCKET,    SO_KEEPALIVE,    0,                 OPT_BOOL},
   {"SO_REUSEADDR",      SOL_SOCKET,    SO_REUSEADDR,    0,                 OPT_BOOL},
   {"SO_BROADCAST",      SOL_SOCKET,    SO_BROADCAST,    0,                 OPT_BOOL},
@@ -93,6 +95,23 @@ struct
   {"SO_RCVTIMEO",       SOL_SOCKET,    SO_RCVTIMEO,     0,                 OPT_INT},
 #endif
   {NULL,0,0,0,0}};
+
+/****************************************************************************
+ Print socket options.
+****************************************************************************/
+static void print_socket_options(int s)
+{
+	int value, vlen = 4;
+	smb_socket_option *p = &socket_options[0];
+
+	for (; p->name != NULL; p++) {
+		if (getsockopt(s, p->level, p->option, (void *)&value, &vlen) == -1) {
+			DEBUG(3,("Could not test socket option %s.\n", p->name));
+		} else {
+			DEBUG(3,("socket option %s = %d\n",p->name,value));
+		}
+	}
+ }
 
 /****************************************************************************
  Set user socket options.
@@ -145,6 +164,8 @@ void set_socket_options(int fd, char *options)
 		if (ret != 0)
 			DEBUG(0,("Failed to set socket option %s (Error %s)\n",tok, strerror(errno) ));
 	}
+
+	print_socket_options(fd);
 }
 
 /****************************************************************************
