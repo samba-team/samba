@@ -1264,12 +1264,6 @@ int nt_free_regf(REGF *regf)
   if (regf->regfile_name) free(regf->regfile_name);
   if (regf->outfile_name) free(regf->outfile_name);
 
-  /* Free the mmap'd area */
-
-  if (regf->base) munmap(regf->base, regf->sbuf.st_size);
-  regf->base = NULL;
-  close(regf->fd);    /* Ignore the error :-) */
-
   nt_delete_reg_key(regf->root, False); /* Free the tree */
   free(regf->sk_map);
   regf->sk_count = regf->sk_map_size = 0;
@@ -1892,7 +1886,7 @@ REG_KEY *nt_get_key_tree(REGF *regf, NK_HDR *nk_hdr, int size, REG_KEY *parent)
   own = (REG_KEY *)LOCN(regf->base, own_off);
 
   if (verbose) fprintf(stdout, "  Owner offset: %0X, Our Offset: %0X\n", 
-		       own, nk_hdr);
+		       (unsigned int)own, (unsigned int)nk_hdr);
 
   /* 
    * We should verify that the owner field is correct ...
@@ -2016,6 +2010,15 @@ int nt_load_registry(REGF *regf)
   regf->root = nt_get_key_tree(regf, first_key, BLK_SIZE(first_key), NULL);
 
   assert(regf->root != NULL);
+
+  /*
+   * Unmap the registry file, as we might want to read in another
+   * tree etc.
+   */
+
+  if (regf->base) munmap(regf->base, regf->sbuf.st_size);
+  regf->base = NULL;
+  close(regf->fd);    /* Ignore the error :-) */
 
   return 1;
 }
@@ -2504,7 +2507,7 @@ CMD *regedit4_get_cmd(int fd)
   cmd->cmd = CMD_NONE;
   cmd->key = NULL;
   cmd->val_spec_list = cmd->val_spec_last = NULL;
-  while (cl = get_cmd_line(fd)) {
+  while ((cl = get_cmd_line(fd))) {
 
     strip_comment(cl);     /* remove anything beyond a comment char */
     trim_trailing_spaces(cl);
