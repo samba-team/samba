@@ -35,6 +35,9 @@ BOOL passive = False;
 /* the client file descriptor */
 int Client = -1;
 
+/* the port, where client connected */
+int ClientPort = 0;
+
 /* the last IP received from */
 struct in_addr lastip;
 

@@ -76,11 +76,13 @@ static void  killkids(void)
 static BOOL open_sockets_inetd(void)
 {
 	extern int Client;
+	extern int ClientPort;
 
 	/* Started from inetd. fd 0 is the socket. */
 	/* We will abort gracefully when the client or remote system 
 	   goes away */
 	Client = dup(0);
+	ClientPort = 138;
 	
 	/* close our standard file descriptors */
 	close_low_fds();
@@ -91,13 +93,32 @@ static BOOL open_sockets_inetd(void)
 	return True;
 }
 
+/****************************************************************************
+  open and listen to a socket
+****************************************************************************/
+static int open_server_socket(int port, ulong ipaddr)
+{
+	int s;
+
+	s = open_socket_in(SOCK_STREAM, port, 0, ipaddr);
+	if(s == -1)
+		return -1;
+		/* ready to listen */
+	if (listen(s, 5) == -1) {
+		DEBUG(0,("listen: %s\n", strerror(errno)));
+		close(s);
+		return -1;
+	}
+	return s;
+}
 
 /****************************************************************************
   open the socket communication
 ****************************************************************************/
-static BOOL open_sockets(BOOL is_daemon,int port)
+static BOOL open_sockets(BOOL is_daemon,int port,int port445)
 {
 	extern int Client;
+	extern int ClientPort;
 	int num_interfaces = iface_count();
 	int fd_listenset[FD_SETSIZE];
 	fd_set listen_set;
@@ -131,7 +152,7 @@ static BOOL open_sockets(BOOL is_daemon,int port)
 		   socket per interface and bind to only these.
 		*/
 		
-		if(num_interfaces > FD_SETSIZE) {
+		if(num_interfaces * 2 > FD_SETSIZE) {
 			DEBUG(0,("open_sockets: Too many interfaces specified to bind to. Number was %d \
 max can be %d\n", 
 				 num_interfaces, FD_SETSIZE));
@@ -147,15 +168,11 @@ max can be %d\n",
 				DEBUG(0,("open_sockets: interface %d has NULL IP address !\n", i));
 				continue;
 			}
-			s = fd_listenset[i] = open_socket_in(SOCK_STREAM, port, 0, ifip->s_addr);
-			if(s == -1)
-				return False;
-				/* ready to listen */
-			if (listen(s, 5) == -1) {
-				DEBUG(0,("listen: %s\n",strerror(errno)));
-				close(s);
-				return False;
-			}
+			s = fd_listenset[i * 2] = open_server_socket(port, ifip->s_addr);
+			if(s == -1) return False;
+			FD_SET(s,&listen_set);
+			s = fd_listenset[i * 2 + 1] = open_server_socket(port445, ifip->s_addr);
+			if(s == -1) return False;
 			FD_SET(s,&listen_set);
 		}
 	} else {
@@ -164,20 +181,15 @@ max can be %d\n",
 		num_interfaces = 1;
 		
 		/* open an incoming socket */
-		s = open_socket_in(SOCK_STREAM, port, 0,
-				   interpret_addr(lp_socket_address()));
+		s = open_server_socket(port, interpret_addr(lp_socket_address()));
 		if (s == -1)
 			return(False);
-		
-		/* ready to listen */
-		if (listen(s, 5) == -1) {
-			DEBUG(0,("open_sockets: listen: %s\n",
-				 strerror(errno)));
-			close(s);
-			return False;
-		}
-		
 		fd_listenset[0] = s;
+		FD_SET(s,&listen_set);
+		s = open_server_socket(port445, interpret_addr(lp_socket_address()));
+		if (s == -1)
+			return(False);
+		fd_listenset[1] = s;
 		FD_SET(s,&listen_set);
 	} 
 
@@ -204,14 +216,21 @@ max can be %d\n",
 			
 			s = -1;
 			for(i = 0; i < num_interfaces; i++) {
-				if(FD_ISSET(fd_listenset[i],&lfds)) {
-					s = fd_listenset[i];
-					/* Clear this so we don't look
-					   at it again. */
-					FD_CLR(fd_listenset[i],&lfds);
+				if(FD_ISSET(fd_listenset[i * 2],&lfds)) {
+					s = fd_listenset[i * 2];
+					ClientPort = 138;
+					break;
+				}
+				if(FD_ISSET(fd_listenset[i * 2 + 1],&lfds)) {
+					s = fd_listenset[i * 2 + 1];
+					ClientPort = 445;
 					break;
 				}
 			}
+
+			/* Clear this so we don't look
+			   at it again. */
+			FD_CLR(s,&lfds);
 
 			Client = accept(s,&addr,&in_addrlen);
 			
@@ -489,6 +508,7 @@ static void usage(char *pname)
 	/* shall I run as a daemon */
 	BOOL is_daemon = False;
 	int port = SMB_PORT;
+	int port445 = 455;
 	int opt;
 	extern char *optarg;
 	
@@ -728,7 +748,7 @@ static void usage(char *pname)
 		pidfile_create("smbd");
 	}
 
-	if (!open_sockets(is_daemon,port))
+	if (!open_sockets(is_daemon,port,port445))
 		exit(1);
 
 	if (!locking_init(0))
