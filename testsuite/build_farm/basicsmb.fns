@@ -1,0 +1,21 @@
+test_smb_conf_setup() {
+	cat basicsmb.smb.conf.template | sed "s|PREFIX|$prefix|g" | sed "s|BUILD_FARM|$pwd|g" > $prefix/lib/smb.conf
+	echo "Setting up smb.conf:"
+	cat $prefix/lib/smb.conf
+
+	echo "127.0.0.1    localhost">$prefix/lib/lmhosts
+
+}
+
+test_smbpasswd() {
+	echo "( echo $password ; echo $password; ) | $prefix/bin/smbpasswd -L -s -a $whoami"
+	( echo $password ; echo $password; ) | $prefix/bin/smbpasswd -L -s -a $whoami
+	status=$?
+	if [ $status = 0 ]; then
+	    echo "smbpasswd correctly set inital password ($password)"
+	else
+	    echo "smbpasswd failed to set inital password ($password)! (status $status)"
+	    return 1
+	fi
+	return 0
+}
