@@ -84,11 +84,18 @@ IDENTIFIER		{ return IDENTIFIER; }
 "]"			{ return *yytext; }
 ::=			{ return EEQUAL; }
 --[^\n]*\n		{ ++lineno; }
--?(0x)?[0-9]+		{ char *e; yylval.constant = strtol(yytext, &e, 0); 
-			  if(e == yytext) 
+-?(0x)?[0-9]+		{ char *e, *y = yytext;
+			  yylval.constant = strtol((const char *)yytext,
+						   &e, 0);
+			  if(e == y) 
 			    error_message("malformed constant (%s)", yytext); 
-			  else return CONSTANT; }
-[A-Za-z][-A-Za-z0-9_]*	{ yylval.name =  strdup (yytext); return IDENT; }
+			  else
+			    return CONSTANT;
+			}
+[A-Za-z][-A-Za-z0-9_]*	{
+			  yylval.name =  strdup ((const char *)yytext);
+			  return IDENT;
+			}
 [ \t]			;
 \n			{ ++lineno; }
 \.\.			{ return DOTDOT; }
