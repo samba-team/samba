@@ -22,6 +22,8 @@
 
 #include "includes.h"
 
+static BOOL use_bcast;
+
 struct user_auth_info {
 	pstring username;
 	pstring password;
@@ -43,6 +45,7 @@ static void usage(void)
 \t-W workgroup            workgroup of user to authenticate as\n\
 \t-D                      list only domains (workgroups) of tree\n\
 \t-S                      list domains and servers of tree\n\
+\t-b                      use bcast instead of using the master browser\n\
 \n\
 The username can be of the form username%%password or\n\
 workgroup\\username%%password.\n\n\
@@ -211,7 +214,7 @@ static BOOL get_workgroups(struct user_auth_info *user_info)
 
 	pstrcpy(master_workgroup, lp_workgroup());
 
-        if (!find_master_ip(lp_workgroup(), &server_ip)) {
+        if (use_bcast || !find_master_ip(lp_workgroup(), &server_ip)) {
                 DEBUG(4, ("Unable to find master browser for workgroup %s\n", 
 			  master_workgroup));
 		if (!find_master_ip_bcast(master_workgroup, &server_ip)) {
@@ -358,7 +361,7 @@ static BOOL print_tree(struct user_auth_info *user_info)
 
 	/* Parse command line args */
 
-	while ((opt = getopt(argc, argv, "U:hd:W:DS")) != EOF) {
+	while ((opt = getopt(argc, argv, "U:hd:W:DSb")) != EOF) {
 		switch (opt) {
 		case 'U':
 			pstrcpy(user_info.username,optarg);
@@ -368,6 +371,10 @@ static BOOL print_tree(struct user_auth_info *user_info)
 				pstrcpy(user_info.password, p+1);
 				got_pass = 1;
 			}
+			break;
+
+		case 'b':
+			use_bcast = True;
 			break;
 
 		case 'h':
