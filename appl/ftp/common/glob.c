@@ -364,7 +364,7 @@ globtilde(const Char *pattern, Char *patbuf, glob_t *pglob)
 		 * first and then trying the password file
 		 */
 		if ((h = getenv("HOME")) == NULL) {
-			if ((pwd = getpwuid(getuid())) == NULL)
+			if ((pwd = k_getpwuid(getuid())) == NULL)
 				return pattern;
 			else
 				h = pwd->pw_dir;
