@@ -2647,3 +2647,78 @@ BOOL srv_io_r_net_file_query_secdesc(char *desc, SRV_R_NET_FILE_QUERY_SECDESC *r
 
 	return True;
 }
+
+/*******************************************************************
+ Reads or writes a structure.
+********************************************************************/
+
+BOOL srv_io_q_net_file_set_secdesc(char *desc, SRV_Q_NET_FILE_SET_SECDESC *q_n, prs_struct *ps, int depth)
+{
+	if (q_n == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "srv_io_q_net_file_set_secdesc");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("ptr_srv_name", ps, depth, &q_n->ptr_srv_name))
+		return False;
+
+	if(!smb_io_unistr2("", &q_n->uni_srv_name, True, ps, depth))
+		return False;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("ptr_qual_name", ps, depth, &q_n->ptr_qual_name))
+		return False;
+
+	if(!smb_io_unistr2("", &q_n->uni_qual_name, True, ps, depth))
+		return False;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!smb_io_unistr2("", &q_n->uni_file_name, True, ps, depth))
+		return False;
+
+	if(!prs_uint32("sec_info", ps, depth, &q_n->sec_info))
+		return False;
+
+	if(!prs_uint32("size_set", ps, depth, &q_n->size_set))
+		return False;
+
+	if(!prs_uint32("ptr_secdesc", ps, depth, &q_n->ptr_secdesc))
+		return False;
+
+	if(!prs_uint32("size_secdesc", ps, depth, &q_n->size_secdesc))
+		return False;
+
+	if(!sec_io_desc("sec_desc", &q_n->sec_desc, ps, depth))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ Reads or writes a structure.
+********************************************************************/
+
+BOOL srv_io_r_net_file_set_secdesc(char *desc, SRV_R_NET_FILE_SET_SECDESC *r_n, prs_struct *ps, int depth)
+{
+	if (r_n == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "srv_io_r_net_file_set_secdesc");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("status", ps, depth, &r_n->status))
+		return False;
+
+	return True;
+}
