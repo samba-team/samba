@@ -1,3 +1,20 @@
+2003-08-31  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* copy_ccache.c (gss_krb5_extract_authz_data_from_sec_context):
+	check that we have a ticket before we start to use it
+	
+	* gss_acquire_cred.3: document
+	gss_krb5_extract_authz_data_from_sec_context
+	
+	* gssapi.h (gss_krb5_extract_authz_data_from_sec_context):
+	return the kerberos authorizationdata, from idea of Luke Howard
+
+	* copy_ccache.c (gss_krb5_extract_authz_data_from_sec_context):
+	return the kerberos authorizationdata, from idea of Luke Howard
+	
+	* verify_mic.c (gss_verify_mic_internal): switch type and key
+	argument
+
 2003-08-30  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* cfx.[ch]: draft-ietf-krb-wg-gssapi-cfx-01.txt implemetation
