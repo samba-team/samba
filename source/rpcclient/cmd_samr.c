@@ -328,7 +328,7 @@ void cmd_sam_lookup_names(struct client_info *info, int argc, char *argv[])
 	POLICY_HND pol_sam;
 	POLICY_HND pol_dom;
 	int num_names;
-	const char **names;
+	char **names;
 	uint32 num_rids, i;
 	uint32 *rids = NULL;
 	uint32 *types = NULL;
@@ -374,7 +374,7 @@ void cmd_sam_lookup_names(struct client_info *info, int argc, char *argv[])
 	argv += optind;
 
 	num_names = argc;
-	names = (const char **) argv;
+	names = (char **) argv;
 
 	if (num_names <= 0)
 	{
@@ -643,7 +643,7 @@ void cmd_sam_delete_dom_alias(struct client_info *info, int argc, char *argv[])
 	BOOL res2 = True;
 	uint32 ace_perms = 0x02000000; /* absolutely no idea. */
 	uint32 alias_rid = 0;
-	const char *names[1];
+	char *names[1];
 	uint32 *rids;
 	uint32 *types;
 	uint32 num_rids;
@@ -1072,8 +1072,10 @@ void cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 
 	if (acb_info == ACB_WSTRUST || acb_info == ACB_SVRTRUST)
 	{
+#if 0
 		uint8 rnd_data[512];
 		int i, j;
+#endif
 
 		if (password != NULL)
 		{
@@ -1387,7 +1389,7 @@ void cmd_sam_delete_dom_user(struct client_info *info, int argc, char *argv[])
 	BOOL res1 = True;
 	BOOL res2 = True;
 	uint32 user_rid = 0;
-	const char *names[1];
+	char *names[1];
 	uint32 *rids;
 	uint32 *types;
 	uint32 num_rids;
@@ -1492,7 +1494,7 @@ void cmd_sam_delete_dom_group(struct client_info *info, int argc, char *argv[])
 	BOOL res2 = True;
 	uint32 ace_perms = 0x02000000; /* absolutely no idea. */
 	uint32 group_rid = 0;
-	const char *names[1];
+	char *names[1];
 	uint32 *rids;
 	uint32 *types;
 	uint32 num_rids;
@@ -1594,10 +1596,10 @@ void cmd_sam_add_groupmem(struct client_info *info, int argc, char *argv[])
 	uint32 ace_perms = 0x02000000; /* absolutely no idea. */
 	uint32 *group_rids;
 	uint32 *group_types;
-	const char **names = NULL;
+	char **names = NULL;
 	uint32 num_names = 0;
 	fstring group_name;
-	const char *group_names[1];
+	char *group_names[1];
 	uint32 *rids;
 	uint32 *types;
 	uint32 num_rids;
@@ -1642,7 +1644,7 @@ void cmd_sam_add_groupmem(struct client_info *info, int argc, char *argv[])
 	argv++;
 
 	num_names = argc;
-	names = (const char **) argv;
+	names = (char **) argv;
 
 	report(out_hnd, "SAM Add Domain Group member\n");
 
@@ -1930,7 +1932,7 @@ void cmd_sam_query_groupmem(struct client_info *info, int argc, char *argv[])
 	BOOL res1 = True;
 
 	char *group_name;
-	const char *names[1];
+	char *names[1];
 	uint32 num_rids;
 	uint32 *rids;
 	uint32 *types;
@@ -2026,7 +2028,7 @@ void cmd_sam_query_group(struct client_info *info, int argc, char *argv[])
 	BOOL res1 = True;
 
 	char *group_name;
-	const char *names[1];
+	char *names[1];
 	uint32 num_rids;
 	uint32 *rids;
 	uint32 *types;
@@ -2120,7 +2122,7 @@ void cmd_sam_query_sec_obj(struct client_info *info, int argc, char *argv[])
 	BOOL res1 = True;
 
 	char *user_name;
-	const char *names[1];
+	char *names[1];
 	uint32 num_rids;
 	uint32 *rids;
 	uint32 *types;
@@ -2235,7 +2237,7 @@ void cmd_sam_query_user(struct client_info *info, int argc, char *argv[])
 	int opt;
 
 	char *user_name;
-	const char *names[1];
+	char *names[1];
 	uint32 num_rids;
 	uint32 *rids;
 	uint32 *types;
@@ -2377,7 +2379,7 @@ void cmd_sam_set_userinfo2(struct client_info *info, int argc, char *argv[])
 
 	fstring user_name;
 
-	const char *names[1];
+	char *names[1];
 	uint32 num_rids;
 	uint32 *rids;
 	uint32 *types;
@@ -2528,7 +2530,7 @@ void cmd_sam_set_userinfo(struct client_info *info, int argc, char *argv[])
 	fstring user_name;
 	fstring password;
 
-	const char *names[1];
+	char *names[1];
 	uint32 num_rids;
 	uint32 *rids;
 	uint32 *types;
@@ -2835,7 +2837,7 @@ void cmd_sam_query_aliasmem(struct client_info *info, int argc, char *argv[])
 	BOOL res1 = True;
 
 	char *alias_name;
-	const char *names[1];
+	char *names[1];
 	uint32 num_rids;
 	uint32 *rids;
 	uint32 *types;
@@ -2932,7 +2934,7 @@ void cmd_sam_query_alias(struct client_info *info, int argc, char *argv[])
 	BOOL res1 = True;
 
 	char *alias_name;
-	const char *names[1];
+	char *names[1];
 	uint32 num_rids;
 	uint32 *rids;
 	uint32 *types;
