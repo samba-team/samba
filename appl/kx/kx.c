@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995-2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -132,7 +132,7 @@ connect_host (kx_context *kc)
 	return -1;
     }
 
-    addrlen = a->ai_addrlen;
+    addrlen = sizeof(thisaddr_ss);
     if (getsockname (s, thisaddr, &addrlen) < 0 ||
 	addrlen != a->ai_addrlen)
 	err(1, "getsockname(%s)", kc->host);
