@@ -1229,6 +1229,7 @@ int create_kerberos_key_from_string(krb5_context context,
 
 void get_auth_data_from_tkt(DATA_BLOB *auth_data, krb5_ticket *tkt);
 krb5_const_principal get_principal_from_tkt(krb5_ticket *tkt);
+krb5_error_code krb5_locate_kdc(krb5_context ctx, const krb5_data *realm, struct sockaddr **addr_pp, int *naddrs, int get_masters);
 
 #endif /* HAVE_KRB5 */
 

@@ -1637,6 +1637,9 @@
 /* Whether krb5_auth_con_setuseruserkey is available */
 #undef HAVE_KRB5_AUTH_CON_SETUSERUSERKEY
 
+/* Whether krb5_locate_kdc is available */
+#undef HAVE_KRB5_LOCATE_KDC
+
 /* Whether the krb5_address struct has a addrtype property */
 #undef HAVE_ADDRTYPE_IN_KRB5_ADDRESS
 
