@@ -464,6 +464,47 @@ static NTSTATUS trans2_open(struct smbsrv_request *req, struct smb_trans2 *trans
 	return status;
 }
 
+
+/*
+  trans2 mkdir implementation
+*/
+static NTSTATUS trans2_mkdir(struct smbsrv_request *req, struct smb_trans2 *trans)
+{
+	union smb_mkdir *io;
+	NTSTATUS status;
+
+	/* make sure we got enough parameters */
+	if (trans->in.params.length < 5) {
+		return NT_STATUS_FOOBAR;
+	}
+
+	io = talloc_p(req, union smb_mkdir);
+	if (io == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	io->t2mkdir.level = RAW_MKDIR_T2MKDIR;
+	trans2_pull_blob_string(req, &trans->in.params, 4, &io->t2mkdir.in.path, 0);
+
+	status = ea_pull_list(&trans->in.data, io, 
+			      &io->t2mkdir.in.num_eas, 
+			      &io->t2mkdir.in.eas);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = ntvfs_mkdir(req, io);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	trans2_setup_reply(req, trans, 2, 0, 0);
+
+	SSVAL(trans->out.params.data, VWV(0), 0);
+
+	return status;
+}
+
 /*
   fill in the reply from a qpathinfo or qfileinfo call
 */
@@ -1305,6 +1346,8 @@ static NTSTATUS trans2_backend(struct smbsrv_request *req, struct smb_trans2 *tr
 		return trans2_qfsinfo(req, trans);
 	case TRANSACT2_OPEN:
 		return trans2_open(req, trans);
+	case TRANSACT2_MKDIR:
+		return trans2_mkdir(req, trans);
 	}
 
 	/* an unknown trans2 command */
