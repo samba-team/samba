@@ -45,10 +45,10 @@ typedef struct file_info_struct file_info2;
 
 struct file_info_struct
 {
-  size_t size;
+  SMB_BIG_UINT size;
   uint16 mode;
-  int uid;
-  int gid;
+  uid_t uid;
+  gid_t gid;
   /* These times are normally kept in GMT */
   time_t mtime;
   time_t atime;
@@ -643,6 +643,7 @@ static void do_atar(char *rname,char *lname,file_info *finfo1)
     finfo.mtime = finfo1 -> mtime;
     finfo.atime = finfo1 -> atime;
     finfo.ctime = finfo1 -> ctime;
+    finfo.name  = finfo1 -> name;
   }
   else {
     finfo.size  = def_finfo.size;
@@ -652,13 +653,14 @@ static void do_atar(char *rname,char *lname,file_info *finfo1)
     finfo.mtime = def_finfo.mtime;
     finfo.atime = def_finfo.atime;
     finfo.ctime = def_finfo.ctime;
+    finfo.name  = def_finfo.name;
   }
 
   if (dry_run)
     {
-      DEBUG(3,("skipping file %s of size %d bytes\n",
+      DEBUG(3,("skipping file %s of size %12.0f bytes\n",
 	       finfo.name,
-	       (int)finfo.size));
+	       (double)finfo.size));
       shallitime=0;
       ttarf+=finfo.size + TBLOCK - (finfo.size % TBLOCK);
       ntarf++;
@@ -1868,7 +1870,7 @@ int tar_parseargs(int argc, char *argv[], char *Optarg, int Optind)
     if (tar_type=='c' && (dry_run || strcmp(argv[Optind], "/dev/null")==0))
       {
 	if (!dry_run) {
-	  DEBUG(0,("Output is /dev/null, assuming dry_run"));
+	  DEBUG(0,("Output is /dev/null, assuming dry_run\n"));
 	  dry_run = True;
 	}
 	tarhandle=-1;
