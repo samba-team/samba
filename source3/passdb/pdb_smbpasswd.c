@@ -1269,7 +1269,7 @@ static BOOL build_sam_account (SAM_ACCOUNT *sam_pass,
 	if (samlogon_user[strlen(samlogon_user)-1] != '$')
 	{
 		pstring 	str;
-		gid_t 		gid;
+		gid_t 		gid = getegid();
 		
 	        sam_logon_in_ssb = True;
 	
