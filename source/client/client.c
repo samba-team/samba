@@ -2102,7 +2102,6 @@ static int do_message_op(void)
 			}
 			break;
 		case 'L':
-			got_pass = True;
 			pstrcpy(query_host,optarg);
 			if(!explicit_user)
 				*username = '\0';
