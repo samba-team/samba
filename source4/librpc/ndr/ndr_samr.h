@@ -109,6 +109,11 @@ struct samr_SetSecurity {
 
 };
 
+struct samr_SdBuf {
+	uint32 sd_size;
+	struct security_descriptor *sd;
+};
+
 struct samr_QuerySecurity {
 	struct {
 		struct policy_handle *handle;
@@ -116,8 +121,7 @@ struct samr_QuerySecurity {
 	} in;
 
 	struct {
-		uint32 *length;
-		struct security_descriptor *sd;
+		struct samr_SdBuf *sdbuf;
 		NTSTATUS result;
 	} out;
 

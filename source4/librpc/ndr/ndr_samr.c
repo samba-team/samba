@@ -527,27 +527,40 @@ NTSTATUS ndr_pull_samr_SetSecurity(struct ndr_pull *ndr, struct samr_SetSecurity
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_samr_QuerySecurity(struct ndr_pull *ndr, struct samr_QuerySecurity *r)
+NTSTATUS ndr_pull_samr_SdBuf(struct ndr_pull *ndr, int ndr_flags, struct samr_SdBuf *r)
 {
-	uint32 _ptr_length;
 	uint32 _ptr_sd;
-	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_length));
-	if (_ptr_length) {
-		NDR_ALLOC(ndr, r->out.length);
-	} else {
-		r->out.length = NULL;
-	}
-	if (r->out.length) {
-		NDR_CHECK(ndr_pull_uint32(ndr, r->out.length));
-	}
+	NDR_CHECK(ndr_pull_struct_start(ndr));
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_align(ndr, 4));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->sd_size));
 	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_sd));
 	if (_ptr_sd) {
-		NDR_ALLOC(ndr, r->out.sd);
+		NDR_ALLOC(ndr, r->sd);
 	} else {
-		r->out.sd = NULL;
+		r->sd = NULL;
 	}
-	if (r->out.sd) {
-	NDR_CHECK(ndr_pull_subcontext_flags_fn(ndr, r->out.sd, (ndr_pull_flags_fn_t) ndr_pull_security_descriptor));
+	ndr_pull_struct_end(ndr);
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+	if (r->sd) {
+	NDR_CHECK(ndr_pull_subcontext_flags_fn(ndr, r->sd, (ndr_pull_flags_fn_t) ndr_pull_security_descriptor));
+	}
+done:
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_pull_samr_QuerySecurity(struct ndr_pull *ndr, struct samr_QuerySecurity *r)
+{
+	uint32 _ptr_sdbuf;
+	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_sdbuf));
+	if (_ptr_sdbuf) {
+		NDR_ALLOC(ndr, r->out.sdbuf);
+	} else {
+		r->out.sdbuf = NULL;
+	}
+	if (r->out.sdbuf) {
+		NDR_CHECK(ndr_pull_samr_SdBuf(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.sdbuf));
 	}
 	NDR_CHECK(ndr_pull_NTSTATUS(ndr, &r->out.result));
 
@@ -2445,6 +2458,20 @@ void ndr_print_samr_SetSecurity(struct ndr_print *ndr, const char *name, int fla
 	ndr->depth--;
 }
 
+void ndr_print_samr_SdBuf(struct ndr_print *ndr, const char *name, struct samr_SdBuf *r)
+{
+	ndr_print_struct(ndr, name, "samr_SdBuf");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "sd_size", r->sd_size);
+	ndr_print_ptr(ndr, "sd", r->sd);
+	ndr->depth++;
+	if (r->sd) {
+		ndr_print_security_descriptor(ndr, "sd", r->sd);
+	}
+	ndr->depth--;
+	ndr->depth--;
+}
+
 void ndr_print_samr_QuerySecurity(struct ndr_print *ndr, const char *name, int flags, struct samr_QuerySecurity *r)
 {
 	ndr_print_struct(ndr, name, "samr_QuerySecurity");
@@ -2462,16 +2489,10 @@ void ndr_print_samr_QuerySecurity(struct ndr_print *ndr, const char *name, int f
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "samr_QuerySecurity");
 	ndr->depth++;
-	ndr_print_ptr(ndr, "length", r->out.length);
+	ndr_print_ptr(ndr, "sdbuf", r->out.sdbuf);
 	ndr->depth++;
-	if (r->out.length) {
-		ndr_print_uint32(ndr, "length", *r->out.length);
-	}
-	ndr->depth--;
-	ndr_print_ptr(ndr, "sd", r->out.sd);
-	ndr->depth++;
-	if (r->out.sd) {
-		ndr_print_security_descriptor(ndr, "sd", r->out.sd);
+	if (r->out.sdbuf) {
+		ndr_print_samr_SdBuf(ndr, "sdbuf", r->out.sdbuf);
 	}
 	ndr->depth--;
 	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
