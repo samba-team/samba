@@ -1788,14 +1788,14 @@ static BOOL run_vusertest_create_files_and_write(void) {
     
       msglen = strlen(msg)+1;
 
-      //printf("write size(%d) to file.\n", msglen);
+      /* printf("write size(%d) to file.\n", msglen); */
 
       if (cli_write(&vusers[i].cli, vusers[i].per_tid[j].fnum[i], 0, (char *)&msglen, 0, sizeof(msglen)) != sizeof(msglen)) {
 	printf("write failed (%s)\n", cli_errstr(&vusers[i].cli));
 	return False;
       }
     
-      //printf("write \"%s\" to file.\n", msg);
+      /* printf("write \"%s\" to file.\n", msg); */
 
       if (cli_write(&vusers[i].cli, vusers[i].per_tid[j].fnum[i], 0, msg, sizeof(msglen), msglen) != msglen) {
 	printf("write failed (%s)\n", cli_errstr(&vusers[i].cli));
@@ -1892,14 +1892,14 @@ static BOOL run_vusertest_cross_op_and_open_and_read(const char *opname, BOOL (*
 
 	if(file_is_open) {
 
-	  //printf("read length from file.\n");
+		/* printf("read length from file.\n"); */
 	  
 	  if (cli_read(&vusers[k].cli, vusers[k].per_tid[j].fnum[i], (char *)&msglen, 0, sizeof(msglen)) != sizeof(msglen)) {
 	
 	    printf("read failed (%s)\n", cli_errstr(&vusers[k].cli));
 	  } else {
 
-	    //printf("read %d characters from file.\n", msglen);
+		  /* printf("read %d characters from file.\n", msglen); */
 
 	    if (cli_read(&vusers[k].cli, vusers[k].per_tid[j].fnum[i], msg, sizeof(msglen), msglen) != msglen) {
 
