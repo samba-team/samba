@@ -151,6 +151,10 @@ static int do_reseed(BOOL use_fd, int fd)
 			return fd;
 	}
 
+#ifdef __INSURE__
+	memset(seed_inbuf, '\0', sizeof(seed_inbuf));
+#endif
+
 	/* Add in some secret file contents */
 
 	do_filehash("/etc/shadow", &seed_inbuf[0]);

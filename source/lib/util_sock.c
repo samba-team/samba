@@ -942,27 +942,6 @@ connect_again:
   return res;
 }
 
-
-/*******************************************************************
- Reset the 'done' variables so after a client process is created
- from a fork call these calls will be re-done. This should be
- expanded if more variables need reseting.
- ******************************************************************/
-
-
-void reset_globals_after_fork(void)
-{
-  /*
-   * Re-seed the random crypto generator, so all smbd's
-   * started from the same parent won't generate the same
-   * sequence.
-   */
-  {
-    unsigned char dummy;
-    generate_random_buffer( &dummy, 1, True);
-  } 
-}
-
 /* the following 3 client_*() functions are nasty ways of allowing
    some generic functions to get info that really should be hidden in
    particular modules */

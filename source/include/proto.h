@@ -600,7 +600,6 @@ BOOL send_smb(int fd,char *buffer);
 BOOL send_one_packet(char *buf,int len,struct in_addr ip,int port,int type);
 int open_socket_in(int type, int port, int dlevel,uint32 socket_addr, BOOL rebind);
 int open_socket_out(int type, struct in_addr *addr, int port ,int timeout);
-void reset_globals_after_fork(void);
 void client_setfd(int fd);
 char *client_name(void);
 char *client_addr(void);
@@ -2009,6 +2008,7 @@ BOOL secrets_fetch_trust_account_password(char *domain, uint8 ret_pwd[16],
 					  time_t *pass_last_set_time);
 BOOL secrets_store_trust_account_password(char *domain, uint8 new_pwd[16]);
 BOOL trust_password_delete(char *domain);
+void reset_globals_after_fork(void);
 
 /*The following definitions come from  passdb/smbpass.c  */
 
