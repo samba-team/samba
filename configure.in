@@ -45,9 +45,9 @@ AC_DECL_YYTEXT
 dnl Checks for header files.
 AC_HEADER_STDC
 
-AC_CHECK_HEADERS(arpa/inet.h crypt.h db.h dbm.h fcntl.h grp.h)
+AC_CHECK_HEADERS(arpa/inet.h crypt.h db.h dbm.h dirent.h fcntl.h grp.h)
 AC_CHECK_HEADERS(limits.h ndbm.h netdb.h netinet/in.h netinet/in6_machtypes.h paths.h pwd.h)
-AC_CHECK_HEADERS(rpcsvc/dbm.h shadow.h sys/bitypes.h sys/filio.h)
+AC_CHECK_HEADERS(rpcsvc/dbm.h shadow.h signal.h sys/bitypes.h sys/filio.h)
 AC_CHECK_HEADERS(sys/ioctl.h sys/param.h sys/proc.h sys/resource.h)
 AC_CHECK_HEADERS(sys/socket.h sys/stat.h sys/sysctl.h sys/time.h)
 AC_CHECK_HEADERS(sys/tty.h sys/types.h syslog.h termios.h unistd.h)
@@ -96,11 +96,11 @@ if test "$ac_cv_type_signal" = "void" ; then
 fi
 AC_SUBST(VOID_RETSIGTYPE)
 
-dnl AC_FIND_IF_NOT_BROKEN(hstrerror, resolv,
-dnl [#ifdef HAVE_NETDB_H
-dnl #include <netdb.h>
-dnl #endif],
-dnl 17)
+AC_FIND_IF_NOT_BROKEN(hstrerror, resolv,
+[#ifdef HAVE_NETDB_H
+#include <netdb.h>
+#endif],
+17)
 
 AC_BROKEN(chown daemon err errx fchown getcwd getdtablesize)
 AC_BROKEN(getusershell inet_aton initgroups lstat memmove mkstemp)
@@ -226,4 +226,7 @@ AC_OUTPUT(Makefile 		\
 	lib/gssapi/Makefile	\
 	kuser/Makefile		\
 	admin/Makefile		\
-	kdc/Makefile)
+	kdc/Makefile		\
+	appl/Makefile		\
+	appl/rsh/Makefile	\
+)
