@@ -1,3 +1,9 @@
+2001-10-31  Jacques Vidrine <n@nectar.com>
+
+	* get_mic.c (mic_des3): MIC computation using DES3/SHA1
+	was bogusly appending the message buffer to the result,
+	overwriting a heap buffer in the process.
+
 2001-08-29  Assar Westerlund  <assar@sics.se>
 
 	* 8003.c (gssapi_krb5_verify_8003_checksum,
