@@ -1,3 +1,8 @@
+2000-11-16  Assar Westerlund  <assar@sics.se>
+
+	* kadm_conn.c (wait_for_connection): check for fd's being too
+	large to select on
+
 2000-11-09  Johan Danielsson  <joda@pdc.kth.se>
 
 	* get.c: don't try to print modifier name if it isn't set (from

@@ -1,7 +1,40 @@
 2000-11-15  Assar Westerlund  <assar@sics.se>
 
-	* lib/krb5/send_to_kdc.c (recv_loop): check `fd' for being too
-	large to be able to select on
+	* lib/hdb/hdb.c (hdb_next_enctype2key): const-ize a little bit
+	* lib/Makefile.am (SUBDIRS): try to only build des when needed
+	* kuser/klist.c: print key versions numbers of v4 tickets in
+	verbose mode
+
+	* kdc/kerberos5.c (tgs_rep2): adapt to new krb5_verify_ap_req2
+	* appl/test/gss_common.c (read_token): remove unused variable
+
+	* configure.in (krb4): add -Wl
+	(MD4Init et al): look for these in more libraries
+	(getmsg): only run test if we have the function
+	(AC_OUTPUT): create tools/krb5-config
+
+	* tools/krb5-config.in: new script for storing flags to use
+	* Makefile.am (SUBDIRS): add tools
+
+	* lib/krb5/get_cred.c (make_pa_tgs_req): update to new
+	krb5_mk_req_internal
+	* lib/krb5/mk_req_ext.c (krb5_mk_req_internal): allow different
+	usages for the encryption.  change callers
+	* lib/krb5/rd_req.c (decrypt_authenticator): add an encryption
+	`usage'.  also try the old
+	(and wrong) usage of KRB5_KU_AP_REQ_AUTH for backwards compatibility
+	(krb5_verify_ap_req2): new function for specifying the usage different
+	from the default (KRB5_KU_AP_REQ_AUTH)
+	* lib/krb5/build_auth.c (krb5_build_authenticator): add a `usage'
+	parameter to permit the generation of authenticators with
+	different crypto usage
+
+	* lib/krb5/mk_req.c (krb5_mk_req_exact): new function that takes a
+	krb5_principal
+	(krb5_mk_req): use krb5_mk_req_exact
+
+	* lib/krb5/mcache.c (mcc_close): free data
+	(mcc_destroy): don't free data
 
 2000-11-13  Assar Westerlund  <assar@sics.se>
 
@@ -22,12 +55,16 @@
 
 2000-10-08  Assar Westerlund  <assar@sics.se>
 
+	* lib/krb5/changepw.c (krb5_change_password): check for fd's being
+	too large to select on
 	* kpasswd/kpasswdd.c (add_new_tcp): check for the socket fd being
 	too large to select on
 	* kdc/connect.c (add_new_tcp): check for the socket fd being too
 	large to selct on
 	* kdc/connect.c (loop): check that the socket fd is not too large
 	to select on
+	* lib/krb5/send_to_kdc.c (recv_loop): check `fd' for being too
+	large to be able to select on
 
 	* kdc/kaserver.c (do_authenticate): check for time skew
 

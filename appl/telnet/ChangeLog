@@ -1,3 +1,7 @@
+2000-11-16  Assar Westerlund  <assar@sics.se>
+
+	* libtelnet/misc-proto.h (telnet_getenv): const-ize some
+
 2000-11-08  Johan Danielsson  <joda@pdc.kth.se>
 
 	* telnet/telnet.c: fake entry if no tgetent

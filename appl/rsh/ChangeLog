@@ -1,3 +1,9 @@
+2000-11-15  Assar Westerlund  <assar@sics.se>
+
+	* rshd.c (loop): check that the fd's aren't too large to select on
+	* rsh.c (loop, proto): check that the fd's aren't too large to
+	select on
+
 2000-08-10  Assar Westerlund  <assar@sics.se>
 
 	* rsh.c: move code to do config/command parsing correctly.

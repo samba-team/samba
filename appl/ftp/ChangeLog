@@ -1,3 +1,10 @@
+2000-11-15  Assar Westerlund  <assar@sics.se>
+
+	* ftp/main.c: add `-l' for no line-editing
+	* ftp/globals.c (readline): add
+	* ftp/ftp_var.h (lineedit): add variable indicated if we should
+	use readline
+
 2000-11-09  Johan Danielsson  <joda@pdc.kth.se>
 
 	* ftp/security.c (sec_read): fix bug in previous (from Jacques A.
