@@ -1021,7 +1021,7 @@ BOOL cli_negprot(struct cli_state *cli)
 	cli->protocol = prots[SVAL(cli->inbuf,smb_vwv0)].prot;	
 
 	if ((cli->protocol < PROTOCOL_NT1) && cli->sign_info.mandatory_signing) {
-		DEBUG(1,("cli_negprot: SMB signing is mandatory and the selected protocol level doesn't support it.\n"));
+		DEBUG(0,("cli_negprot: SMB signing is mandatory and the selected protocol level doesn't support it.\n"));
 		return False;
 	}
 
@@ -1057,7 +1057,7 @@ BOOL cli_negprot(struct cli_state *cli)
 		if (cli->sec_mode & NEGOTIATE_SECURITY_SIGNATURES_REQUIRED) {
 			/* Fail if server says signing is mandatory and we don't want to support it. */
 			if (!cli->sign_info.allow_smb_signing) {
-				DEBUG(1,("cli_negprot: SMB signing is mandatory and we have disabled it.\n"));
+				DEBUG(0,("cli_negprot: SMB signing is mandatory and we have disabled it.\n"));
 				return False;
 			}
 			cli->sign_info.negotiated_smb_signing = True;
