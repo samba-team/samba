@@ -163,11 +163,10 @@ static BOOL api_noauth_auth_gen(rpcsrv_struct *l, prs_struct *resp,
 	return ret;
 }
 
-static BOOL api_noauth_auth_chk(rpcsrv_struct *l,
-				enum RPC_PKT_TYPE pkt_type)
+static BOOL api_noauth_auth_chk(rpcsrv_struct *l, enum RPC_PKT_TYPE pkt_type)
 {
 	l->auth_validated = True;
-	memset(l->user_sess_key, 0, 16);
+
 	return True;
 }
 
