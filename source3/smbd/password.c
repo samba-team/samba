@@ -113,16 +113,6 @@ user_struct *get_valid_user_struct(uint16 vuid)
 }
 
 /****************************************************************************
- Delete the SID list for this user.
-****************************************************************************/
-
-static void delete_nt_token(NT_USER_TOKEN *token)
-{
-	safe_free( token->user_sids );
-	ZERO_STRUCTP(token);
-}
-
-/****************************************************************************
 invalidate a uid
 ****************************************************************************/
 void invalidate_vuid(uint16 vuid)
@@ -145,7 +135,6 @@ void invalidate_vuid(uint16 vuid)
 
 	delete_nt_token(&vuser->nt_user_token);
 }
-
 
 /****************************************************************************
 return a validated username
@@ -192,15 +181,21 @@ int initialize_groups(char *user, uid_t uid, gid_t gid)
  Create the SID list for this user.
 ****************************************************************************/
 
-void setup_nt_token(NT_USER_TOKEN *token, uid_t uid, gid_t gid, int ngroups, gid_t *groups)
+NT_USER_TOKEN *create_nt_token(uid_t uid, gid_t gid, int ngroups, gid_t *groups)
 {
+	NT_USER_TOKEN *token;
 	DOM_SID *psids;
 	int i;
 
+	if ((token = (NT_USER_TOKEN *)malloc( sizeof(NT_USER_TOKEN) ) ) == NULL)
+		return NULL;
+
 	ZERO_STRUCTP(token);
 
-	if ((token->user_sids = (DOM_SID *)malloc( (ngroups + 2)*sizeof(DOM_SID))) == NULL)
-		return;
+	if ((token->user_sids = (DOM_SID *)malloc( (ngroups + 2)*sizeof(DOM_SID))) == NULL) {
+		free(token);
+		return NULL;
+	}
 
 	psids = token->user_sids;
 
@@ -211,6 +206,8 @@ void setup_nt_token(NT_USER_TOKEN *token, uid_t uid, gid_t gid, int ngroups, gid
 
 	for (i = 0; i < ngroups; i++)
 		gid_to_sid( &psids[i+2], groups[i]);
+
+	return token;
 }
 
 /****************************************************************************
@@ -258,7 +255,7 @@ uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name,
   get_current_groups( &vuser->n_groups, &vuser->groups);
 
   /* Create an NT_USER_TOKEN struct for this user. */
-  setup_nt_token(&vuser->nt_user_token, uid,gid, vuser->n_groups, vuser->groups);
+  vuser->nt_user_token = create_nt_token(uid,gid, vuser->n_groups, vuser->groups);
 
   DEBUG(3,("uid %d registered to name %s\n",(int)uid,unix_name));
 

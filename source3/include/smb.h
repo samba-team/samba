@@ -383,8 +383,11 @@ struct use_info
 	char *domain;
 };
 
+#ifndef MAXSUBAUTHS
 #define MAXSUBAUTHS 15 /* max sub authorities in a SID */
+#endif
 
+#ifndef _DOM_SID
 /* DOM_SID - security id */
 typedef struct sid_info
 {
@@ -398,16 +401,21 @@ typedef struct sid_info
   uint32 sub_auths[MAXSUBAUTHS];  /* pointer to sub-authorities. */
 
 } DOM_SID;
+#define _DOM_SID
+#endif
 
 /*
  * The complete list of SIDS belonging to this user.
  * Created when a vuid is registered.
  */
 
+#ifndef _NT_USER_TOKEN
 typedef struct _nt_user_token {
 	size_t num_sids;
 	DOM_SID *user_sids;
 } NT_USER_TOKEN;
+#define _NT_USER_TOKEN
+#endif
 
 /*** query a local group, get a list of these: shows who is in that group ***/
 
@@ -580,6 +588,7 @@ typedef struct connection_struct
 	/* This groups info is valid for the user that *opened* the connection */
 	int ngroups;
 	gid_t *groups;
+	NT_USER_TOKEN *nt_user_token;
 	
 	time_t lastused;
 	BOOL used;
@@ -598,6 +607,7 @@ struct current_user
 	gid_t gid;
 	int ngroups;
 	gid_t *groups;
+	NT_USER_TOKEN *nt_user_token;
 };
 
 /*
@@ -1672,7 +1682,7 @@ typedef struct
 	int n_groups;
 	gid_t *groups;
 
-	NT_USER_TOKEN nt_user_token;
+	NT_USER_TOKEN *nt_user_token;
 
 	/* per-user authentication information on NT RPCs */
 	/* lkclXXXX - THIS SHOULD NOT BE HERE! */

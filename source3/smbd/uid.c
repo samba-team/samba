@@ -47,7 +47,7 @@ BOOL become_guest(void)
 	initgroups(pass->pw_name, (gid_t)pass->pw_gid);
 #endif
 	
-	set_sec_ctx(pass->pw_uid, pass->pw_gid, 0, NULL);
+	set_sec_ctx(pass->pw_uid, pass->pw_gid, 0, NULL, NULL);
 	
 	current_user.conn = NULL;
 	current_user.vuid = UID_FIELD_INVALID;
@@ -164,10 +164,11 @@ BOOL become_user(connection_struct *conn, uint16 vuid)
 		}
 	}
 	
-	set_sec_ctx(uid, gid, current_user.ngroups, current_user.groups);
+	set_sec_ctx(uid, gid, current_user.ngroups, current_user.groups, current_user.nt_user_token);
 
 	current_user.conn = conn;
 	current_user.vuid = vuid;
+	current_user.nt_user_token = conn->nt_user_token;
 
 	DEBUG(5,("become_user uid=(%d,%d) gid=(%d,%d)\n",
 		 (int)getuid(),(int)geteuid(),(int)getgid(),(int)getegid()));
@@ -206,8 +207,9 @@ BOOL become_authenticated_pipe_user(pipes_struct *p)
 		return False;
 	}
 
+	/* JRATEST - this needs fixined w.r.t. NT user tokens... */
 	set_sec_ctx(p->pipe_user.uid, p->pipe_user.gid, 
-		    p->pipe_user.ngroups, p->pipe_user.groups);
+		    p->pipe_user.ngroups, p->pipe_user.groups, NULL);
 
 	return True;
 }

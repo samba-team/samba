@@ -162,8 +162,9 @@ BOOL conn_idle_all(time_t t, int deadtime)
 }
 
 /****************************************************************************
-free a conn structure
+ Free a conn structure.
 ****************************************************************************/
+
 void conn_free(connection_struct *conn)
 {
 	/* Free vfs_connection_struct */
@@ -179,6 +180,7 @@ void conn_free(connection_struct *conn)
 		if (conn->vfs_conn->groups != NULL) {
 			free(conn->vfs_conn->groups);
 		}
+		delete_nt_token(&conn->vfs_conn->nt_user_token);
 		free(conn->vfs_conn);
 	}
 
@@ -190,6 +192,7 @@ void conn_free(connection_struct *conn)
 		conn->ngroups = 0;
 	}
 
+	delete_nt_token(&conn->nt_user_token);
 	free_namearray(conn->veto_list);
 	free_namearray(conn->hide_list);
 	free_namearray(conn->veto_oplock_list);
