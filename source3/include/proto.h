@@ -102,6 +102,7 @@ int iface_count(void);
 BOOL we_are_multihomed(void);
 struct interface *get_interface(int n);
 struct in_addr *iface_n_ip(int n);
+unsigned iface_hash(void);
 struct in_addr *iface_bcast(struct in_addr ip);
 struct in_addr *iface_nmask(struct in_addr ip);
 struct in_addr *iface_ip(struct in_addr ip);
