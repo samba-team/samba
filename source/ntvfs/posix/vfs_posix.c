@@ -58,8 +58,6 @@ static NTSTATUS pvfs_connect(struct ntvfs_module_context *ntvfs,
 	struct stat st;
 	char *base_directory;
 
-	DEBUG(0,("WARNING: the posix vfs handler is incomplete - you probably want \"ntvfs handler = simple\"\n"));
-
 	pvfs = talloc_p(tcon, struct pvfs_state);
 	if (pvfs == NULL) {
 		return NT_STATUS_NO_MEMORY;
