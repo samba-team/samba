@@ -45,6 +45,7 @@ extern int DEBUGLEVEL;
 static int process_tok(fstring tok);
 static void cmd_help(struct client_info *info, int argc, char *argv[]);
 static void cmd_quit(struct client_info *info, int argc, char *argv[]);
+static void cmd_set (struct client_info *info, int argc, char *argv[]);
 
 static struct user_credentials usr;
 
@@ -498,6 +499,12 @@ commands[] =
 		{COMPL_NONE, COMPL_NONE}
 	},
 
+	{
+		"rpcclient",
+		cmd_set,
+		"run rpcclient inside rpcclient (change options etc.)",
+		{COMPL_NONE, COMPL_NONE}
+	},
 	/*
 	 * bye bye
 	 */
@@ -642,6 +649,9 @@ static int process_tok(char *tok)
     return(-2);
 }
 
+/* command options mask */
+static uint32 cmd_set_options = 0xffffffff;
+
 /****************************************************************************
   process commands from the client
 ****************************************************************************/
@@ -650,6 +660,9 @@ static BOOL do_command(struct client_info *info, char *line)
 	int i;
 	char *ptr = line;
 	pstring tok;
+
+	cmd_argc = 0;
+	cmd_argv = NULL;
 
 	/* get the first part of the command */
 	if (!next_token(&ptr,tok,NULL, sizeof(tok)))
@@ -668,10 +681,15 @@ static BOOL do_command(struct client_info *info, char *line)
 		return False;
 	}
 
+	cmd_set_options = 0x0;
+
 	if ((i = process_tok(cmd_argv[0])) >= 0)
 	{
-		optind = -1;
-		commands[i].fn(info, (uint32)cmd_argc, cmd_argv);
+		int argc = (int)cmd_argc;
+		char **argv = cmd_argv;
+		optind = 0;
+
+		commands[i].fn(info, argc, argv);
 	}
 	else if (i == -2)
 	{
@@ -683,8 +701,6 @@ static BOOL do_command(struct client_info *info, char *line)
 	}
 
 	free_char_array(cmd_argc, cmd_argv);
-	cmd_argc = 0;
-	cmd_argv = NULL;
 
 	return True;
 }
@@ -728,28 +744,31 @@ static BOOL process( struct client_info *info, char *cmd_str)
 	pstring line;
 	char *cmd = cmd_str;
 
-	if (cmd[0] != '\0') while (cmd[0] != '\0')
+	if (cmd != NULL)
 	{
-		char *p;
-
-		if ((p = strchr(cmd, ';')) == 0)
+		while (cmd[0] != '\0')
 		{
-			strncpy(line, cmd, 999);
-			line[1000] = '\0';
-			cmd += strlen(cmd);
-		}
-		else
-		{
-			if (p - cmd > 999) p = cmd + 999;
-			strncpy(line, cmd, p - cmd);
-			line[p - cmd] = '\0';
-			cmd = p + 1;
-		}
+			char *p;
 
-		/* input language code to internal one */
-		CNV_INPUT (line);
+			if ((p = strchr(cmd, ';')) == 0)
+			{
+				strncpy(line, cmd, 999);
+				line[1000] = '\0';
+				cmd += strlen(cmd);
+			}
+			else
+			{
+				if (p - cmd > 999) p = cmd + 999;
+				strncpy(line, cmd, p - cmd);
+				line[p - cmd] = '\0';
+				cmd = p + 1;
+			}
 
-		if (!do_command(info, line)) continue;
+			/* input language code to internal one */
+			CNV_INPUT (line);
+
+			if (!do_command(info, line)) continue;
+		}
 	}
 	else while (!feof(stdin))
 	{
@@ -760,7 +779,7 @@ static BOOL process( struct client_info *info, char *cmd_str)
 #ifndef HAVE_LIBREADLINE
 
 		/* display a prompt */
-		fprintf(out_hnd, "smb: %s> ", CNV_LANG(info->cur_dir));
+		fprintf(out_hnd, "%s$ ", CNV_LANG(cli_info.dest_host));
 		fflush(out_hnd);
 
 #ifdef CLIX
@@ -786,8 +805,8 @@ static BOOL process( struct client_info *info, char *cmd_str)
 
 #else /* HAVE_LIBREADLINE */
 
-		slprintf(promptline, sizeof(promptline) - 1, "smb: %s> ",
-			 CNV_LANG(info->cur_dir));
+		slprintf(promptline, sizeof(promptline) - 1, "%s$ ",
+			 CNV_LANG(cli_info.dest_host));
 
 		if (!readline(promptline))
 		    break;
@@ -824,12 +843,11 @@ usage on the program
 ****************************************************************************/
 static void usage(char *pname)
 {
-  fprintf(out_hnd, "Usage: %s [service] [-S server] [-d debuglevel] [-l log] ",
+  fprintf(out_hnd, "Usage: %s [password] [-S server] [-U user] -[W domain] [-l log] ",
 	   pname);
 
   fprintf(out_hnd, "\nVersion %s\n",VERSION);
   fprintf(out_hnd, "\t-d debuglevel         set the debuglevel\n");
-  fprintf(out_hnd, "\tservice               connect to \\\\server\\share \n");
   fprintf(out_hnd, "\t-S server             connect to \\\\server\\IPC$ \n");
   fprintf(out_hnd, "\t-l log basename.      Basename for log/debug files\n");
   fprintf(out_hnd, "\t-n netbios name.      Use this name as my netbios name\n");
@@ -838,18 +856,12 @@ static void usage(char *pname)
   fprintf(out_hnd, "\t-I dest IP            use this IP to connect to\n");
   fprintf(out_hnd, "\t-E                    write messages to stderr instead of stdout\n");
   fprintf(out_hnd, "\t-U username           set the network username\n");
+  fprintf(out_hnd, "\t-U username%%pass      set the network username and password\n");
   fprintf(out_hnd, "\t-W domain             set the domain name\n");
-  fprintf(out_hnd, "\t-c command string     execute semicolon separated commands\n");
+  fprintf(out_hnd, "\t-c 'command string'   execute semicolon separated commands\n");
   fprintf(out_hnd, "\t-t terminal code      terminal i/o code {sjis|euc|jis7|jis8|junet|hex}\n");
   fprintf(out_hnd, "\n");
 }
-
-enum client_action
-{
-	CLIENT_NONE,
-	CLIENT_IPC,
-	CLIENT_SVC
-};
 
 #ifdef HAVE_LIBREADLINE
 
@@ -1320,27 +1332,319 @@ static char *complete_cmd_null(char *text, int state)
 
 #endif /* HAVE_LIBREADLINE */
 
+static void set_user_password(struct user_credentials *u,
+				BOOL got_pass, char *password)
+{
+	/* set the password cache info */
+	if (got_pass)
+	{
+		if (password == NULL)
+		{
+			pwd_set_nullpwd(&(u->pwd));
+		}
+		else
+		{
+			/* generate 16 byte hashes */
+			pwd_make_lm_nt_16(&(u->pwd), password);
+		}
+	}
+	else 
+	{
+		pwd_read(&(u->pwd), "Enter Password:", True);
+	}
+}
+
+#define CMD_INTER 0x0
+#define CMD_STR 0x1
+#define CMD_DBF 0x2
+#define CMD_SVC 0x4
+#define CMD_TERM 0x8
+#define CMD_PASS 0x10
+#define CMD_USER 0x20
+#define CMD_NOPW 0x40
+#define CMD_DBLV 0x80
+#define CMD_HELP 0x100
+#define CMD_SOCK 0x200
+#define CMD_IFACE 0x400
+#define CMD_DOM 0x800
+#define CMD_IP 0x1000
+#define CMD_HOST 0x2000
+#define CMD_NAME 0x4000
+#define CMD_DBG 0x8000
+#define CMD_SCOPE 0x10000
+
+static void cmd_set(struct client_info *info, int argc, char *argv[])
+{
+	BOOL interactive = True;
+	char *cmd_str = NULL;
+	char opt;
+	extern FILE *dbf;
+	extern char *optarg;
+	static pstring servicesf = CONFIGFILE;
+	pstring term_code;
+	pstring password; /* local copy only, if one is entered */
+
+#ifdef KANJI
+	pstrcpy(term_code, KANJI);
+#else /* KANJI */
+	*term_code = 0;
+#endif /* KANJI */
+
+	if (*argv[1] != '-')
+	{
+		if (argc > 1 && (*argv[1] != '-'))
+		{
+			cmd_set_options |= CMD_PASS;
+			pstrcpy(password,argv[1]);  
+			memset(argv[1],'X',strlen(argv[1]));
+			argc--;
+			argv++;
+		}
+	}
+
+	while ((opt = getopt(argc, argv, "s:B:O:M:S:i:N:n:d:l:hI:EB:U:L:t:m:W:T:D:c:")) != EOF)
+	{
+		switch (opt)
+		{
+			case 'm':
+			{
+				/* FIXME ... max_protocol seems to be funny here */
+
+				int max_protocol = 0;
+				max_protocol = interpret_protocol(optarg,max_protocol);
+				fprintf(stderr, "max protocol not currently supported\n");
+				break;
+			}
+
+			case 'O':
+			{
+				cmd_set_options |= CMD_SOCK;
+				pstrcpy(user_socket_options,optarg);
+				break;	
+			}
+
+			case 'S':
+			{
+				cmd_set_options |= CMD_HOST;
+				pstrcpy(cli_info.dest_host,optarg);
+				strupper(cli_info.dest_host);
+				break;
+			}
+
+			case 'B':
+			{
+				cmd_set_options |= CMD_IFACE;
+				iface_set_default(NULL,optarg,NULL);
+				break;
+			}
+
+			case 'i':
+			{
+				cmd_set_options |= CMD_SCOPE;
+				pstrcpy(scope, optarg);
+				break;
+			}
+
+			case 'U':
+			{
+				char *lp;
+				cmd_set_options |= CMD_USER;
+				pstrcpy(usr.user_name,optarg);
+				if ((lp=strchr(usr.user_name,'%')))
+				{
+					*lp = 0;
+					pstrcpy(password,lp+1);
+					cmd_set_options |= CMD_PASS;
+					memset(strchr(optarg,'%')+1,'X',strlen(password));
+				}
+				break;
+			}
+
+			case 'W':
+			{
+				cmd_set_options |= CMD_DOM;
+				pstrcpy(usr.domain,optarg);
+				break;
+			}
+
+			case 'E':
+			{
+				cmd_set_options |= CMD_DBG;
+				dbf = stderr;
+				break;
+			}
+
+			case 'I':
+			{
+				cmd_set_options |= CMD_IP;
+				cli_info.dest_ip = *interpret_addr2(optarg);
+				if (zero_ip(cli_info.dest_ip))
+				{
+					exit(1);
+				}
+				break;
+			}
+
+			case 'n':
+			{
+				cmd_set_options |= CMD_NAME;
+				fstrcpy(global_myname, optarg);
+				break;
+			}
+
+			case 'N':
+			{
+				cmd_set_options |= CMD_NOPW | CMD_PASS;
+				break;
+			}
+
+			case 'd':
+			{
+				cmd_set_options |= CMD_DBLV;
+				if (*optarg == 'A')
+					DEBUGLEVEL = 10000;
+				else
+					DEBUGLEVEL = atoi(optarg);
+				break;
+			}
+
+			case 'l':
+			{
+				cmd_set_options |= CMD_INTER;
+				slprintf(debugf, sizeof(debugf)-1,
+				         "%s.client", optarg);
+				interactive = False;
+				break;
+			}
+
+			case 'c':
+			{
+				cmd_set_options |= CMD_STR | CMD_PASS;
+				cmd_str = optarg;
+				break;
+			}
+
+			case 'h':
+			{
+				cmd_set_options |= CMD_HELP;
+				usage(argv[0]);
+				break;
+			}
+
+			case 's':
+			{
+				cmd_set_options |= CMD_SVC;
+				pstrcpy(servicesf, optarg);
+				break;
+			}
+
+			case 't':
+			{
+				cmd_set_options |= CMD_TERM;
+				pstrcpy(term_code, optarg);
+				break;
+			}
+
+			default:
+			{
+				cmd_set_options |= CMD_HELP;
+				usage(argv[0]);
+				break;
+			}
+		}
+	}
+
+	if (IS_BITS_SET_ALL(cmd_set_options, CMD_HELP))
+	{
+		return;
+	}
+
+	setup_logging(debugf, interactive);
+	reopen_logs();
+
+	if (IS_BITS_SET_ALL(cmd_set_options, CMD_NOPW))
+	{
+		set_user_password(&usr, True, NULL);
+	}
+	else if (IS_BITS_SET_ALL(cmd_set_options, CMD_PASS))
+	{
+		set_user_password(&usr, True, password);
+	}
+
+	/* paranoia: destroy the local copy of the password */
+	bzero(password, sizeof(password)); 
+
+	strupper(global_myname);
+	fstrcpy(cli_info.myhostname, global_myname);
+
+	if (!lp_load(servicesf,True, False, False))
+	{
+		fprintf(stderr, "Can't load %s - run testparm to debug it\n", servicesf);
+	}
+
+	load_interfaces();
+
+	fstrcpy(cli_info.mach_acct, cli_info.myhostname);
+	strupper(cli_info.mach_acct);
+	fstrcat(cli_info.mach_acct, "$");
+
+	if (cmd_str != NULL)
+	{
+		process(&cli_info, cmd_str);
+	}
+}
+
+static void read_user_env(struct user_credentials *u)
+{
+	pstring password;
+
+	password[0] = 0;
+
+	if (getenv("USER"))
+	{
+		char *p;
+		pstrcpy(u->user_name,getenv("USER"));
+
+		/* modification to support userid%passwd syntax in the USER var
+		25.Aug.97, jdblair@uab.edu */
+
+		if ((p=strchr(u->user_name,'%')))
+		{
+			*p = 0;
+			pstrcpy(password,p+1);
+			memset(strchr(getenv("USER"),'%')+1,'X',strlen(password));
+		}
+		strupper(u->user_name);
+	}
+
+	/* modification to support PASSWD environmental var
+	   25.Aug.97, jdblair@uab.edu */
+	if (getenv("PASSWD"))
+	{
+		pstrcpy(password,getenv("PASSWD"));
+	}
+
+	if (*u->user_name == 0 && getenv("LOGNAME"))
+	{
+		pstrcpy(u->user_name,getenv("LOGNAME"));
+		strupper(u->user_name);
+	}
+
+	set_user_password(u, True, password);
+
+	/* paranoia: destroy the local copy of the password */
+	bzero(password, sizeof(password)); 
+}
+
 /****************************************************************************
   main program
 ****************************************************************************/
  int main(int argc,char *argv[])
 {
-	BOOL interactive = True;
-
-	int opt;
-	extern FILE *dbf;
-	extern char *optarg;
-	extern int optind;
-	static pstring servicesf = CONFIGFILE;
-	pstring term_code;
-	char *p;
-	BOOL got_pass = False;
-	char *cmd_str="";
-	mode_t myumask = 0755;
-	enum client_action cli_action = CLIENT_NONE;
 	extern struct user_credentials *usr_creds;
+	mode_t myumask = 0755;
 
-	pstring password; /* local copy only, if one is entered */
+	DEBUGLEVEL = 2;
 
 	usr.ntlmssp_flags = 0x0;
 
@@ -1350,44 +1654,12 @@ static char *complete_cmd_null(char *text, int state)
 
 	init_policy_hnd(64);
 
-#ifdef KANJI
-	pstrcpy(term_code, KANJI);
-#else /* KANJI */
-	*term_code = 0;
-#endif /* KANJI */
-
-	DEBUGLEVEL = 2;
-
-	cli_info.put_total_size = 0;
-	cli_info.put_total_time_ms = 0;
-	cli_info.get_total_size = 0;
-	cli_info.get_total_time_ms = 0;
-
-	cli_info.dir_total = 0;
-	cli_info.newer_than = 0;
-	cli_info.archive_level = 0;
-	cli_info.print_mode = 1;
-
-	cli_info.translation = False;
-	cli_info.recurse_dir = False;
-	cli_info.lowercase = False;
-	cli_info.prompt = True;
-	cli_info.abort_mget = True;
-
-	cli_info.dest_ip.s_addr = 0;
-	cli_info.name_type = 0x20;
-
-	pstrcpy(cli_info.cur_dir , "\\");
-	pstrcpy(cli_info.file_sel, "");
-	pstrcpy(cli_info.base_dir, "");
 	pstrcpy(usr.domain, "");
 	pstrcpy(usr.user_name, "");
+
 	pstrcpy(cli_info.myhostname, "");
 	pstrcpy(cli_info.dest_host, "");
-
-	pstrcpy(cli_info.svc_type, "A:");
-	pstrcpy(cli_info.share, "");
-	pstrcpy(cli_info.service, "");
+	cli_info.dest_ip.s_addr = 0;
 
 	ZERO_STRUCT(cli_info.dom.level3_sid);
 	ZERO_STRUCT(cli_info.dom.level5_sid);
@@ -1419,290 +1691,29 @@ static char *complete_cmd_null(char *text, int state)
 		fprintf(stderr, "Failed to get my hostname.\n");
 	}
 
-	if (getenv("USER"))
-	{
-		pstrcpy(usr.user_name,getenv("USER"));
-
-		/* modification to support userid%passwd syntax in the USER var
-		25.Aug.97, jdblair@uab.edu */
-
-		if ((p=strchr(usr.user_name,'%')))
-		{
-			*p = 0;
-			pstrcpy(password,p+1);
-			got_pass = True;
-			memset(strchr(getenv("USER"),'%')+1,'X',strlen(password));
-		}
-		strupper(usr.user_name);
-	}
-
-	password[0] = 0;
-
-	/* modification to support PASSWD environmental var
-	   25.Aug.97, jdblair@uab.edu */
-	if (getenv("PASSWD"))
-	{
-		pstrcpy(password,getenv("PASSWD"));
-	}
-
-	if (*usr.user_name == 0 && getenv("LOGNAME"))
-	{
-		pstrcpy(usr.user_name,getenv("LOGNAME"));
-		strupper(usr.user_name);
-	}
-
 	if (argc < 2)
 	{
 		usage(argv[0]);
 		exit(1);
 	}
 
-	if (*argv[1] != '-')
+	read_user_env(&usr);
+
+	cmd_set_options &= ~CMD_HELP;
+	cmd_set_options &= ~CMD_NOPW;
+
+	cmd_set(&cli_info, argc, argv);
+
+	if (IS_BITS_SET_ALL(cmd_set_options, CMD_HELP))
 	{
-
-		pstrcpy(cli_info.service, argv[1]);  
-		/* Convert any '/' characters in the service name to '\' characters */
-		string_replace( cli_info.service, '/','\\');
-		argc--;
-		argv++;
-
-		fprintf(out_hnd, "service: %s\n", cli_info.service);
-
-		if (count_chars(cli_info.service,'\\') < 3)
-		{
-			usage(argv[0]);
-			printf("\n%s: Not enough '\\' characters in service\n", cli_info.service);
-			exit(1);
-		}
-
-		/*
-		if (count_chars(cli_info.service,'\\') > 3)
-		{
-			usage(pname);
-			printf("\n%s: Too many '\\' characters in service\n", cli_info.service);
-			exit(1);
-		}
-		*/
-
-		if (argc > 1 && (*argv[1] != '-'))
-		{
-			got_pass = True;
-			pstrcpy(password,argv[1]);  
-			memset(argv[1],'X',strlen(argv[1]));
-			argc--;
-			argv++;
-		}
-
-		cli_action = CLIENT_SVC;
-	}
-
-	while ((opt = getopt(argc, argv,"s:B:O:M:S:i:N:n:d:l:hI:EB:U:L:t:m:W:T:D:c:")) != EOF)
-	{
-		switch (opt)
-		{
-			case 'm':
-			{
-				/* FIXME ... max_protocol seems to be funny here */
-
-				int max_protocol = 0;
-				max_protocol = interpret_protocol(optarg,max_protocol);
-				fprintf(stderr, "max protocol not currently supported\n");
-				break;
-			}
-
-			case 'O':
-			{
-				pstrcpy(user_socket_options,optarg);
-				break;	
-			}
-
-			case 'S':
-			{
-				pstrcpy(cli_info.dest_host,optarg);
-				strupper(cli_info.dest_host);
-				cli_action = CLIENT_IPC;
-				break;
-			}
-
-			case 'B':
-			{
-				iface_set_default(NULL,optarg,NULL);
-				break;
-			}
-
-			case 'i':
-			{
-				pstrcpy(scope, optarg);
-				break;
-			}
-
-			case 'U':
-			{
-				char *lp;
-				pstrcpy(usr.user_name,optarg);
-				if ((lp=strchr(usr.user_name,'%')))
-				{
-					*lp = 0;
-					pstrcpy(password,lp+1);
-					got_pass = True;
-					memset(strchr(optarg,'%')+1,'X',strlen(password));
-				}
-				break;
-			}
-
-			case 'W':
-			{
-				pstrcpy(usr.domain,optarg);
-				break;
-			}
-
-			case 'E':
-			{
-				dbf = stderr;
-				break;
-			}
-
-			case 'I':
-			{
-				cli_info.dest_ip = *interpret_addr2(optarg);
-				if (zero_ip(cli_info.dest_ip))
-				{
-					exit(1);
-				}
-				break;
-			}
-
-			case 'n':
-			{
-				fstrcpy(global_myname, optarg);
-				break;
-			}
-
-			case 'N':
-			{
-				got_pass = True;
-				break;
-			}
-
-			case 'd':
-			{
-				if (*optarg == 'A')
-					DEBUGLEVEL = 10000;
-				else
-					DEBUGLEVEL = atoi(optarg);
-				break;
-			}
-
-			case 'l':
-			{
-				slprintf(debugf, sizeof(debugf)-1,
-				         "%s.client", optarg);
-				interactive = False;
-				break;
-			}
-
-			case 'c':
-			{
-				cmd_str = optarg;
-				got_pass = True;
-				break;
-			}
-
-			case 'h':
-			{
-				usage(argv[0]);
-				exit(0);
-				break;
-			}
-
-			case 's':
-			{
-				pstrcpy(servicesf, optarg);
-				break;
-			}
-
-			case 't':
-			{
-				pstrcpy(term_code, optarg);
-				break;
-			}
-
-			default:
-			{
-				usage(argv[0]);
-				exit(1);
-				break;
-			}
-		}
-	}
-
-	setup_logging(debugf, interactive);
-
-	if (cli_action == CLIENT_NONE)
-	{
-		usage(argv[0]);
-		exit(1);
-	}
-
-	strupper(global_myname);
-	fstrcpy(cli_info.myhostname, global_myname);
-
-	DEBUG(3,("%s client started (version %s)\n",timestring(),VERSION));
-
-	if (!lp_load(servicesf,True, False, False))
-	{
-		fprintf(stderr, "Can't load %s - run testparm to debug it\n", servicesf);
+		exit(0);
 	}
 
 	codepage_initialise(lp_client_code_page());
 
-	load_interfaces();
+	DEBUG(3,("%s client started (version %s)\n",timestring(),VERSION));
 
-	if (cli_action == CLIENT_IPC)
-	{
-		pstrcpy(cli_info.share, "IPC$");
-		pstrcpy(cli_info.svc_type, "IPC");
-	}
-
-	fstrcpy(cli_info.mach_acct, cli_info.myhostname);
-	strupper(cli_info.mach_acct);
-	fstrcat(cli_info.mach_acct, "$");
-
-	/* set the password cache info */
-	if (got_pass)
-	{
-		if (password[0] == 0)
-		{
-			pwd_set_nullpwd(&(usr.pwd));
-		}
-		else
-		{
-			/* generate 16 byte hashes */
-			pwd_make_lm_nt_16(&(usr.pwd), password);
-		}
-	}
-	else 
-	{
-		pwd_read(&(usr.pwd), "Enter Password:", True);
-	}
-
-	/* paranoia: destroy the local copy of the password */
-	bzero(password, sizeof(password)); 
-
-	switch (cli_action)
-	{
-		case CLIENT_IPC:
-		{
-			process(&cli_info, cmd_str);
-			break;
-		}
-
-		default:
-		{
-			fprintf(stderr, "unknown client action requested\n");
-			break;
-		}
-	}
+	process(&cli_info, NULL);
 
 	return(0);
 }

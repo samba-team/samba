@@ -294,13 +294,10 @@ void cmd_reg_enum(struct client_info *info, int argc, char *argv[])
 
 	full_keyname = argv[1];
 
-	if (msrpc_reg_enum_key(srv_name, full_keyname,
+	(void)(msrpc_reg_enum_key(srv_name, full_keyname,
 				reg_display_key,
 				reg_display_key_info,
-				reg_display_val_info))
-	{
-		pstrcpy(info->cur_dir, full_keyname);
-	}
+				reg_display_val_info));
 }
 
 /****************************************************************************
@@ -1103,9 +1100,6 @@ void cmd_reg_shutdown(struct client_info *info, int argc, char *argv[])
 	fstrcpy(srv_name, "\\\\");
 	fstrcat(srv_name, info->dest_host);
 	strupper(srv_name);
-
-	argc--;
-	argv++;
 
 	while ((opt = getopt(argc, argv,"fim:t:r-")) != EOF)
 	{

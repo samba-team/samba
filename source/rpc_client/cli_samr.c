@@ -2444,6 +2444,7 @@ BOOL samr_query_dispinfo(  POLICY_HND *pol_domain, uint16 level,
 		if (p && r_o.ptr_entries != 0)
 		{
 			valid_query = True;
+			(*num_entries) = r_o.num_entries;
 		}
 	}
 

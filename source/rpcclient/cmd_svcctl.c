@@ -201,9 +201,6 @@ void cmd_svc_enum(struct client_info *info, int argc, char *argv[])
 	fstrcat(srv_name, info->dest_host);
 	strupper(srv_name);
 
-	argc--;
-	argv++;
-
 	while ((opt = getopt(argc, argv,"i")) != EOF)
 	{
 		switch (opt)

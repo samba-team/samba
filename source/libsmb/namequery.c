@@ -23,6 +23,7 @@
 #include "includes.h"
 
 extern pstring scope;
+extern pstring global_myname;
 extern int DEBUGLEVEL;
 
 /* nmbd.c sets this to True. */
@@ -646,7 +647,30 @@ BOOL resolve_name(const char *name, struct in_addr *return_ip, int name_type)
   return False;
 }
 
+/********************************************************
+ resolve a name of format \\server_name or \\ipaddress
+ into a name.  also, cut the \\ from the front for us.
+*********************************************************/
+BOOL resolve_srv_name(const char* srv_name, fstring dest_host,
+				struct in_addr *ip)
+{
+	DEBUG(10,("resolve_srv_name: %s\n", srv_name));
 
+	if (srv_name == NULL || strequal("\\\\.", srv_name))
+	{
+		fstrcpy(dest_host, global_myname);
+		ip = interpret_addr2("127.0.0.1");
+		return True;
+	}
+
+	if (!strnequal("\\\\", srv_name, 2))
+	{
+		return False;
+	}
+
+	fstrcpy(dest_host, &srv_name[2]);
+	return resolve_name(dest_host, ip, 0x20);
+}
 
 /********************************************************
 find the IP address of the master browser or DMB for a workgroup

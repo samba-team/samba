@@ -1388,12 +1388,50 @@ BOOL msrpc_sam_create_dom_user(const char* srv_name, DOM_SID *sid1,
 
 	if (res2)
 	{
-		DEBUG(5,("cmd_sam_create_dom_user: succeeded\n"));
+		DEBUG(5,("msrpc_sam_create_dom_user: succeeded\n"));
 	}
 	else
 	{
-		DEBUG(5,("cmd_sam_create_dom_user: failed\n"));
+		DEBUG(5,("msrpc_sam_create_dom_user: failed\n"));
 	}
 
 	return res2;
 }
+
+/****************************************************************************
+experimental SAM query display info.
+****************************************************************************/
+BOOL msrpc_sam_query_dispinfo(const char* srv_name, const char* domain,
+				DOM_SID *sid1,
+				uint16 switch_value,
+				uint32 *num_entries, SAM_DISPINFO_CTR *ctr,
+				DISP_FN(disp_fn))
+{
+	BOOL res = True;
+	BOOL res1 = True;
+	uint32 ace_perms = 0x304; /* absolutely no idea. */
+	POLICY_HND sam_pol;
+	POLICY_HND pol_dom;
+
+	/* establish a connection. */
+	res = res ? samr_connect( srv_name, 0x02000000, &sam_pol) : False;
+
+	/* connect to the domain */
+	res = res ? samr_open_domain( &sam_pol, ace_perms, sid1,
+	            &pol_dom) : False;
+
+	/* send a samr query_disp_info command */
+	res1 = res ? samr_query_dispinfo( &pol_dom, switch_value, 
+		    num_entries, ctr) : False;
+
+	res = res ? samr_close(&sam_pol) : False;
+	res = res ? samr_close(&pol_dom) : False;
+
+	if (res1 && disp_fn != NULL)
+	{
+		disp_fn(domain, sid1, switch_value, *num_entries, ctr);
+	}
+
+	return res1;
+}
+

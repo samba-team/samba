@@ -183,6 +183,10 @@ struct acct_info
 	void (*fn)(const char*, const DOM_SID*, uint32, const char*,\
 	           uint32, const uint32*, char *const *const, uint32* const)
 
+#define DISP_FN(fn)\
+	void (*fn)(const char*, const DOM_SID*, uint16, uint32, \
+	           SAM_DISPINFO_CTR *)
+
 #define REG_FN(fn)\
 	void (*fn)(int, const char *, int)
 #define REG_KEY_FN(fn)\

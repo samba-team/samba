@@ -344,16 +344,18 @@ void cmd_at(struct client_info *info, int argc, char *argv[])
 	else if (jobid == -1) /* enumerate */
 	{
 		AT_ENUM_INFO jobs[AT_MAX_JOBS];
-		fstring commands[AT_MAX_JOBS];
+		char **commands;
 		uint32 num_jobs;
 
 		if (at_enum_jobs(smb_cli, nt_pipe_fnum, dest_wks, &num_jobs,
-			     jobs, commands))
+			     jobs, &commands))
 		{
 			display_at_enum_info(out_hnd, ACTION_HEADER   , num_jobs, jobs, commands);
 			display_at_enum_info(out_hnd, ACTION_ENUMERATE, num_jobs, jobs, commands);
 			display_at_enum_info(out_hnd, ACTION_FOOTER   , num_jobs, jobs, commands);
 		}
+
+		free_char_array(num_jobs, commands);
 	}
 	else /* job info */
 	{

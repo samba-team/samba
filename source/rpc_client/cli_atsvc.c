@@ -128,7 +128,7 @@ enumerate scheduled jobs
 ****************************************************************************/
 BOOL at_enum_jobs(struct cli_state *cli, uint16 fnum, 
 		  char *server_name, uint32 *num_jobs,
-		  AT_ENUM_INFO *jobs, fstring *commands)
+		  AT_ENUM_INFO *jobs, char ***commands)
 {
 	prs_struct rbuf;
 	prs_struct buf; 
@@ -167,13 +167,18 @@ BOOL at_enum_jobs(struct cli_state *cli, uint16 fnum,
 		{
 			int i;
 
-			*num_jobs = r_e.num_entries;
+			*num_jobs = 0;
 			memcpy(jobs, &r_e.info, r_e.num_entries * sizeof(AT_ENUM_INFO));
 
 			for (i = 0; i < r_e.num_entries; i++)
 			{
-				unistr2_to_ascii(commands[i], &r_e.command[i],
-						 sizeof(commands[i]));
+				fstring cmd;
+				unistr2_to_ascii(cmd, &r_e.command[i], sizeof(cmd));
+				add_chars_to_array(num_jobs, commands, cmd);
+			}
+			if ((*num_jobs) != r_e.num_entries)
+			{
+				p = False;
 			}
 		}
 	}
