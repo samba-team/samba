@@ -1437,6 +1437,7 @@ static BOOL lp_add_ipc(void)
   string_set(&iSERVICE(i).szPath,tmpdir());
   string_set(&iSERVICE(i).szUsername,"");
   string_set(&iSERVICE(i).comment,comment);
+  string_set(&iSERVICE(i).fstype,"IPC");
   iSERVICE(i).status = False;
   iSERVICE(i).iMaxConnections = 0;
   iSERVICE(i).bAvailable = True;
