@@ -17,6 +17,36 @@ master browser.
 samba does not deal with becoming a backup master browser properly
 at present.
 
+-------------
+NOTE FROM TRIDGE:
+
+Yes, samba can send these either in its capacity as a DMB or as a
+MB. There are only two situations:
+
+- If samba is a DMB then it should sync with the "local only" bit set
+with any master browser that has sent it a "master announce".
+
+- if samba is not a DMB then it can only sync with the DMB, and should
+not set the "local only" bit.
+
+Note that samba should never sync with other non-DMB servers when it
+is not a DMB. 
+
+Try to do a sync under any other circumstances is dangerous without a
+multi-threaded nmbd. I have a print server at home that knows some SMB
+and NBT, but if you try to sync browse lists with it then it clogs up,
+and also clogs up nmbd while it times out the connection. If  we
+follow  the above two rules then we can't get into this sort of
+trouble as:
+
+- if we are a DMB and a master browser sends us a "master announce"
+then it is expecting to receive a NetServerEnum SMB connection soon,
+and must be capabable of handling it.
+
+- if we are not a DMB then we will only sync with the DMB, which must
+be capable of doing this stuff or things are really in a mess :-)
+--------------
+
 
 /*************************************************************************
   do_browser_lists()
@@ -39,6 +69,24 @@ NetServerEnum api call.
 
 samba will only initiate this process if it is a master browser
 for this workgroup.
+
+-----------
+NOTE FROM TRIDGE:
+
+I'd actually prefer to skip the name query completely if we can
+resolve the DMBs name via gethostbyname(). For the name query to work
+we either have to have WINS working, or we need to know the broadcast
+address of the network that the DMB is on. This makes us too dependent
+on too many thing being right.
+
+If the gethostbyname() fails then sure, go for a normal name query,
+but if it works then we have saved ourselves a lot of trouble and
+gained a lot of robustness.
+
+This is best handled by a generic "resolve netbios name" routine that
+tries DNS first then resorts to WINS or bcast if that fails. It also
+needs to cache the results. 
+-------------
 
 
 /*************************************************************************
@@ -66,4 +114,7 @@ this function's scope) and have been in the cache for a while.
 
 this function is responsible for adding a new entry into the list
 of servers to sync browse lists with at some point in the near future.
+
+
+
 

@@ -46,3 +46,25 @@ expected response queue. the number of expected responses is decreased.
 this function is responsible for adding the response record created by
 make_response_queue_record() into the appropriate response record queue.
 
+
+-----------------
+NOTE FROM TRIDGE:
+
+namedbresp.c is interesting because it implements a novel way of
+getting most of the advantages of a multi-threaded nmbd daemon without
+the portability problems. 
+
+The NBT specs (rfc1001/1002) talk about the 16 bit IDs in the packets
+as being used to ensure that packets are unique, and to stop packets
+from being confused. It suggests incrementing the ID by 1 each time.
+
+Instead Luke uses these IDs to identify individual threads of control
+in nmbd. So when nmbd sends out a NBT packet as part of some complex
+processing, it adds to a linked list the information required to
+continue the processing when the reply comes in (or it times
+out). When a reply arrives this list can be searched to find the
+matching query and the next step in the processing can be carried out.
+
+This is really good stuff, and allows for much more complex behaviour
+than was possible with the old nmbd.
+----------------
