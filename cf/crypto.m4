@@ -45,8 +45,8 @@ if test "$crypto_lib" = "unknown" -a "$with_openssl" != "no"; then
     MD5_Init(&md5);
     SHA1_Init(&sha1);
 
-    des_cbc_encrypt(NULL, NULL, 0, NULL, NULL, 0);
-    RC4(NULL, 0, NULL, NULL);
+    des_cbc_encrypt(0, 0, 0, 0, 0, 0);
+    RC4(0, 0, 0, 0);
   ], [
   crypto_lib=libcrypto
   AC_DEFINE([HAVE_OPENSSL], 1, [define to use openssl's libcrypto])
@@ -88,8 +88,8 @@ if test "$crypto_lib" = "unknown" -a "$with_krb4" != "no"; then
     MD5_Init(&md5);
     SHA1_Init(&sha1);
 
-    des_cbc_encrypt(NULL, NULL, 0, NULL, NULL, 0);
-    RC4(NULL, 0, NULL, NULL);
+    des_cbc_encrypt(0, 0, 0, 0, 0, 0);
+    RC4(0, 0, 0, 0);
   ], [crypto_lib=krb4; AC_MSG_RESULT([krb4's libdes])])
 
 fi
