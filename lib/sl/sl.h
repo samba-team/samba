@@ -41,7 +41,7 @@
 #ifndef _SL_H
 #define _SL_H
 
-typedef void (*cmd_func)(int, char **);
+typedef int (*cmd_func)(int, char **);
 
 struct sl_cmd {
   char *name;

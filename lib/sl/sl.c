@@ -135,6 +135,7 @@ sl_loop (SL_cmd *cmds, char *prompt)
 {
     unsigned max_count;
     char **ptr;
+    int ret;
 
     max_count = 17;
     ptr = malloc(max_count * sizeof(*ptr));
@@ -149,6 +150,7 @@ sl_loop (SL_cmd *cmds, char *prompt)
 	unsigned count;
 	SL_cmd *c;
 
+	ret = 0;
 	buf = readline(prompt);
 	if(buf == NULL)
 	    break;
@@ -178,9 +180,13 @@ sl_loop (SL_cmd *cmds, char *prompt)
 	}
 	if (count > 0) {
 	    c = sl_match (cmds, ptr[0], 0);
-	    if (c)
-		(*c->func)(count, ptr);
-	    else
+	    if (c) {
+		ret = (*c->func)(count, ptr);
+		if (ret != 0) {
+		    free (buf);
+		    break;
+		}
+	    } else
 		printf ("Unrecognized command: %s\n", ptr[0]);
 	}
 	free(buf);
