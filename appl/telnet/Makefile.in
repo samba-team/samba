@@ -6,21 +6,27 @@ VPATH		= @srcdir@
 SHELL		= /bin/sh
 
 CC = @CC@
-AR = ar
 RANLIB = @RANLIB@
 DEFS = @DEFS@
 CFLAGS = @CFLAGS@
 
-prefix = /usr/local
+INSTALL = @INSTALL@
+prefix = @prefix@
 exec_prefix = $(prefix)
 libdir = $(exec_prefix)/lib
 
-all:
-	cd libtelnet; make CC="${CC}"
-	cd telnet; make CC="${CC}"
-	cd telnetd; make CC="${CC}"
+SUBDIRS=libtelnet telnet telnetd
 
-.DEFAULT:
-	cd libtelnet; make $@ WHAT=${WHAT} CC="${CC}"
-	cd telnet; make $@ WHAT=${WHAT} CC="${CC}"
-	cd telnetd; make $@ WHAT=${WHAT} CC="${CC}"
+all:
+	for i in $(SUBDIRS); \
+	do (cd $$i; $(MAKE) $(MFLAGS) all); done
+
+.PHONY: configure
+
+configure: 
+	$(srcdir)/configure
+
+clean cleandir:
+	for i in $(SUBDIRS); \
+	do (cd $$i; $(MAKE) $(MFLAGS) clean); done
+

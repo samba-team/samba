@@ -35,6 +35,8 @@
 static char sccsid[] = "@(#)state.c	8.5 (Berkeley) 5/30/95";
 #endif /* not lint */
 
+#include <config.h>
+
 #include "telnetd.h"
 #if	defined(AUTHENTICATION)
 #include <libtelnet/auth.h>

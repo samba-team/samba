@@ -35,6 +35,7 @@
 static char sccsid[] = "@(#)rsaencpwd.c	8.3 (Berkeley) 5/30/95";
 #endif /* not lint */
 
+#include <config.h>
 
 #ifdef	RSA_ENCPWD
 /*

@@ -35,6 +35,8 @@
 static char sccsid[] = "@(#)spx.c	8.2 (Berkeley) 5/30/95";
 #endif /* not lint */
 
+#include <config.h>
+
 #ifdef	SPX
 /*
  * COPYRIGHT (C) 1990 DIGITAL EQUIPMENT CORPORATION

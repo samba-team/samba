@@ -69,6 +69,7 @@ static char sccsid[] = "@(#)kerberos5.c	8.3 (Berkeley) 5/30/95";
  * or implied warranty.
  */
 
+#include <config.h>
 
 #ifdef	KRB5
 #include <arpa/telnet.h>

@@ -50,6 +50,8 @@ static char sccsid[] = "@(#)read_password.c	8.3 (Berkeley) 5/30/95";
  * echoing.
  */
 
+#include <config.h>
+
 #if	defined(RSA_ENCPWD) || defined(KRB4_ENCPWD)
 
 #include <stdio.h>

@@ -55,6 +55,7 @@ static char sccsid[] = "@(#)auth.c	8.3 (Berkeley) 5/30/95";
  * or implied warranty.
  */
 
+#include <config.h>
 
 #if	defined(AUTHENTICATION)
 #include <stdio.h>

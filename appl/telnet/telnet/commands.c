@@ -35,6 +35,8 @@
 static char sccsid[] = "@(#)commands.c	8.4 (Berkeley) 5/30/95";
 #endif /* not lint */
 
+#include <config.h>
+
 #if	defined(unix)
 #include <sys/param.h>
 #if	defined(CRAY) || defined(sysV88)
@@ -56,6 +58,7 @@ static char sccsid[] = "@(#)commands.c	8.4 (Berkeley) 5/30/95";
 #include <pwd.h>
 #include <varargs.h>
 #include <errno.h>
+#include <stdlib.h>
 
 #include <arpa/telnet.h>
 
@@ -2009,7 +2012,8 @@ extern int
 	EncryptStop P((char *)),
 	EncryptStopInput P((void)),
 	EncryptStopOutput P((void)),
-	EncryptStatus P((void)),
+	EncryptStatus P((void));
+static int
 	EncryptHelp P((void));
 
 struct encryptlist EncryptList[] = {

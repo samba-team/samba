@@ -35,6 +35,8 @@
 static char sccsid[] = "@(#)network.c	8.2 (Berkeley) 12/15/93";
 #endif /* not lint */
 
+#include <config.h>
+
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/time.h>

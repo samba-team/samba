@@ -60,6 +60,8 @@ static char orig_sccsid[] = "@(#)encrypt.c	5.2 (Berkeley) 3/22/91";
  */
 
 
+#include <config.h>
+
 #if	defined(ENCRYPTION)
 
 #define	ENCRYPT_NAMES

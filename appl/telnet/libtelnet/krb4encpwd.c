@@ -35,6 +35,7 @@
 static char sccsid[] = "@(#)krb4encpwd.c	8.3 (Berkeley) 5/30/95";
 #endif /* not lint */
 
+#include <config.h>
 
 #ifdef	KRB4_ENCPWD
 /*

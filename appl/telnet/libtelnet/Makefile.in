@@ -9,22 +9,32 @@ CC = @CC@
 AR = ar
 RANLIB = @RANLIB@
 DEFS = @DEFS@
-CFLAGS = @CFLAGS@
+CFLAGS = @CFLAGS@ -I/usr/athena/include -I.. -I$(VPATH)/..
 
-prefix = /usr/local
+prefix = @prefix@
 exec_prefix = $(prefix)
 libdir = $(exec_prefix)/lib
 
-#
-# Everything happens in ../Makefile.config and Makefile.generic
-#
-SHELL=/bin/sh
+LIBOBJS=@LIBOBJS@
 
-all:
-	$(MAKE) -f $(VPATH)/../Config.local WHAT=${WHAT} CC="${CC}" VPATH=${VPATH} MAKE="${MAKE}"; \
+SOURCES=auth.c encrypt.c genget.c \
+	misc.c kerberos.c kerberos5.c forward.c spx.c enc_des.c \
+	rsaencpwd.c krb4encpwd.c read_password.c \
+	setenv.c getent.c strdup.c strcasecmp.c \
+	strchr.c strrchr.c strftime.c strerror.c
 
-.DEFAULT:
-	$(MAKE) -f $(VPATH)/../Config.local WHAT=${WHAT} CC="${CC}" VPATH=${VPATH} $@ MAKE="${MAKE}"; \
+
+OBJECTS=auth.o encrypt.o genget.o \
+	misc.o kerberos.o kerberos5.o forward.o spx.o enc_des.o \
+	rsaencpwd.o krb4encpwd.o read_password.o \
+	$(LIBOBJS)
+
+all: libtelnet.a
+
+
+libtelnet.a: $(OBJECTS)
+	$(AR) cr libtelnet.a $(OBJECTS)
+	$(RANLIB) libtelnet.a
 
 clean cleandir:
-	rm -f *.o *.a telnet telnetd core
+	rm -f *.o *.a \#* *~ core

@@ -41,6 +41,8 @@ static char copyright[] =
 static char sccsid[] = "@(#)main.c	8.3 (Berkeley) 5/30/95";
 #endif /* not lint */
 
+#include <config.h>
+
 #include <sys/types.h>
 
 #include "ring.h"

@@ -41,6 +41,8 @@ static char copyright[] =
 static char sccsid[] = "@(#)telnetd.c	8.4 (Berkeley) 5/30/95";
 #endif /* not lint */
 
+#include <config.h>
+
 #include "telnetd.h"
 #include "pathnames.h"
 
