@@ -199,7 +199,7 @@ typedef struct data_blob {
 /* 8 byte aligned 'hyper' type from MS IDL */
 typedef uint64_t HYPER_T;
 
-/* 64 bit time (100 nanosec) 1601 - cifs6.txt, section 3.5, page 30 */
+/* 64 bit time (100 nanosec) 1601 - cifs6.txt, section 3.5, page 30, 4 byte aligned */
 typedef uint64_t NTTIME;
 
 /* 64 bit time (100 nanosec) 1601, but 8 byte aligned 'hyper' type */
