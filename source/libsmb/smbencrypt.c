@@ -127,7 +127,9 @@ void nt_lm_owf_gen(const char *pwd, uchar nt_p16[16], uchar p16[16])
 
 /* Does both the NTLMv2 owfs of a user's password */
 BOOL ntv2_owf_gen(const uchar owf[16],
-		  const char *user_in, const char *domain_in, uchar kr_buf[16])
+		  const char *user_in, const char *domain_in,
+		  BOOL upper_case_domain, /* Transform the domain into UPPER case */
+		  uchar kr_buf[16])
 {
 	smb_ucs2_t *user;
 	smb_ucs2_t *domain;
@@ -150,7 +152,9 @@ BOOL ntv2_owf_gen(const uchar owf[16],
 	}
 
 	strupper_w(user);
-	strupper_w(domain);
+
+	if (upper_case_domain)
+		strupper_w(domain);
 
 	SMB_ASSERT(user_byte_len >= 2);
 	SMB_ASSERT(domain_byte_len >= 2);
@@ -426,7 +430,7 @@ BOOL SMBNTLMv2encrypt(const char *user, const char *domain, const char *password
 	   the username and domain.
 	   This prevents username swapping during the auth exchange
 	*/
-	if (!ntv2_owf_gen(nt_hash, user, domain, ntlm_v2_hash)) {
+	if (!ntv2_owf_gen(nt_hash, user, domain, True, ntlm_v2_hash)) {
 		return False;
 	}
 	
