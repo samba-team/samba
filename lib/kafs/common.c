@@ -275,6 +275,8 @@ _kafs_afslog_all_local_cells(kafs_data *data, uid_t uid, const char *homedir)
     find_cells(_PATH_ARLA_THISCELL, &cells, &index);
     find_cells(_PATH_OPENAFS_DEBIAN_THESECELLS, &cells, &index);
     find_cells(_PATH_OPENAFS_DEBIAN_THISCELL, &cells, &index);
+    find_cells(_PATH_OPENAFS_MACOSX_THESECELLS, &cells, &index);
+    find_cells(_PATH_OPENAFS_MACOSX_THISCELL, &cells, &index);
     find_cells(_PATH_ARLA_DEBIAN_THESECELLS, &cells, &index);
     find_cells(_PATH_ARLA_DEBIAN_THISCELL, &cells, &index);
     find_cells(_PATH_ARLA_OPENBSD_THESECELLS, &cells, &index);
@@ -299,6 +301,7 @@ file_find_cell(kafs_data *data, const char *cell, char **realm, int exact)
     if ((F = fopen(_PATH_CELLSERVDB, "r"))
 	|| (F = fopen(_PATH_ARLA_CELLSERVDB, "r"))
 	|| (F = fopen(_PATH_OPENAFS_DEBIAN_CELLSERVDB, "r"))
+	|| (F = fopen(_PATH_OPENAFS_MACOSX_CELLSERVDB, "r"))
 	|| (F = fopen(_PATH_ARLA_DEBIAN_CELLSERVDB, "r"))) {
 	while (fgets(buf, sizeof(buf), F)) {
 	    int cmp;
@@ -337,9 +340,9 @@ file_find_cell(kafs_data *data, const char *cell, char **realm, int exact)
     return ret;
 }
 
-/* Find the realm associated with cell. Do this by opening
-   /usr/vice/etc/CellServDB and getting the realm-of-host for the
-   first VL-server for the cell.
+/* Find the realm associated with cell. Do this by opening CellServDB
+   file and getting the realm-of-host for the first VL-server for the
+   cell.
 
    This does not work when the VL-server is living in one realm, but
    the cell it is serving is living in another realm.
