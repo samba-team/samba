@@ -1,3 +1,9 @@
+2002-03-11  Assar Westerlund  <assar@sics.se>
+
+	* Makefile.am (libgssapi_la_LDFLAGS): bump version to 3:5:2
+	* 8003.c (gssapi_krb5_verify_8003_checksum): handle zero channel
+	bindings
+
 2001-10-31  Jacques Vidrine <n@nectar.com>
 
 	* get_mic.c (mic_des3): MIC computation using DES3/SHA1

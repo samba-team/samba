@@ -1,3 +1,40 @@
+2002-03-11  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/Makefile.am (libkrb5_la_LDFLAGS): bump version to
+	18:3:1
+	* lib/hdb/Makefile.am (libhdb_la_LDFLAGS): bump version to 7:5:0
+	* lib/asn1/Makefile.am (libasn1_la_LDFLAGS): bump version to 6:0:0
+	
+2002-03-10  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/rd_cred.c: handle addresses with port numbers
+
+	* lib/krb5/keytab_file.c, lib/krb5/keytab.c:
+	store the kvno % 256 as the byte and the complete 32 bit kvno after
+	the end of the current keytab entry
+
+	* lib/krb5/init_creds_pw.c:
+	handle LR_PW_EXPTIME and LR_ACCT_EXPTIME in the same way
+
+	* lib/krb5/get_for_creds.c (krb5_get_forwarded_creds):
+	handle ports giving for the remote address
+
+	* lib/krb5/get_cred.c:
+	get a ticket with no addresses if no-addresses is set
+
+	* lib/krb5/crypto.c:
+	rename functions DES_* to krb5_* to avoid colliding with modern
+	openssl
+
+	* lib/krb5/addr_families.c:
+	make all functions taking 'struct sockaddr' actually take a socklen_t
+	instead of int and that acts as an in-out parameter (indicating the
+	maximum length of the sockaddr to be written)
+
+	* kdc/kerberos4.c:
+	make the kvno's in the krb4 universe by the real one % 256, since they
+	cannot only be 8 bit, and the v5 ones are actually 32 bits
+
 2002-02-15  Johan Danielsson  <joda@pdc.kth.se>
 
 	* lib/krb5/keytab_keyfile.c (akf_add_entry): don't create the file

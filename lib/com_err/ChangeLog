@@ -1,3 +1,7 @@
+2002-03-11  Assar Westerlund  <assar@sics.se>
+
+	* Makefile.am (libcom_err_la_LDFLAGS): set version to 2:1:1
+
 2002-03-10  Assar Westerlund  <assar@sics.se>
 
 	* com_err.c (error_message): do not call strerror with a negative error
