@@ -107,11 +107,9 @@ fi
 CFLAGS="$RPM_OPT_FLAGS" ./configure \
 	--prefix=%{_prefix} \
 	--localstatedir=/var \
-	--with-configdir=%{_sysconfdir}/samba \
+	--sysconfdir=/etc \
 	--with-privatedir=%{_sysconfdir}/samba \
-	--with-piddir=/var/run \
 	--with-fhs \
-	--with-lockdir=/var/lib/samba \
 	--with-quotas \
 	--with-smbmount \
 	--with-pam \
@@ -122,6 +120,7 @@ CFLAGS="$RPM_OPT_FLAGS" ./configure \
 	--with-swatdir=%{_datadir}/swat \
 	--with-libsmbclient \
 	--with-acl-support 
+make showlayout
 make proto
 make %{?_smp_mflags} all nsswitch/libnss_wins.so debug2html 
 
@@ -155,7 +154,8 @@ ln -s ../..%{initdir}/smb  $RPM_BUILD_ROOT%{_sbindir}/samba
 install -m644 packaging/RedHat/samba.pamd.stack $RPM_BUILD_ROOT/etc/pam.d/samba
 install -m644 $RPM_SOURCE_DIR/samba.log $RPM_BUILD_ROOT/etc/logrotate.d/samba
 ln -s ../usr/bin/smbmount $RPM_BUILD_ROOT/sbin/mount.smb
-ln -s ../usr/bin/smbmount $RPM_BUILD_ROOT/sbin/mount.smbfs
+## mount.smbfs is installed by Samba's Makefile
+## ln -s ../usr/bin/smbmount $RPM_BUILD_ROOT/sbin/mount.smbfs
 echo 127.0.0.1 localhost > $RPM_BUILD_ROOT%{_sysconfdir}/samba/lmhosts
 
 # pam_smbpass
@@ -166,10 +166,10 @@ mv source/bin/pam_smbpass.so $RPM_BUILD_ROOT/%{_lib}/security/pam_smbpass.so
 mkdir -p $RPM_BUILD_ROOT/%{_lib}/security
 install -m 755 source/nsswitch/pam_winbind.so $RPM_BUILD_ROOT/%{_lib}/security/pam_winbind.so
 mkdir -p $RPM_BUILD_ROOT%{_libdir}
-install -m 755 source/nsswitch/libnss_winbind.so $RPM_BUILD_ROOT/%{_lib}/libnss_winbind.so.2
-ln -sf /%{_lib}/libnss_winbind.so.2  $RPM_BUILD_ROOT%{_libdir}/libnss_winbind.so
-install -m 755 source/nsswitch/libnss_wins.so $RPM_BUILD_ROOT/%{_lib}/libnss_wins.so.2
-ln -sf /%{_lib}/libnss_wins.so.2  $RPM_BUILD_ROOT%{_libdir}/libnss_wins.so
+install -m 755 source/nsswitch/libnss_winbind.so $RPM_BUILD_ROOT/%{_lib}/libnss_winbind.so
+ln -sf /%{_lib}/libnss_winbind.so  $RPM_BUILD_ROOT%{_libdir}/libnss_winbind.so.2
+install -m 755 source/nsswitch/libnss_wins.so $RPM_BUILD_ROOT/%{_lib}/libnss_wins.so
+ln -sf /%{_lib}/libnss_wins.so  $RPM_BUILD_ROOT%{_libdir}/libnss_wins.so.2
 
 # libsmbclient
 
@@ -186,6 +186,9 @@ install -m644 %{SOURCE2} $RPM_BUILD_ROOT%{_sysconfdir}/xinetd.d/swat
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig
 install -m644 %{SOURCE4} $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig/samba
 
+##
+## Clean out man pages for tools not installed here
+##
 rm -f $RPM_BUILD_ROOT/%{_mandir}/man1/editreg.1*
 rm -f $RPM_BUILD_ROOT%{_mandir}/man1/log2pcap.1*
 rm -f $RPM_BUILD_ROOT%{_mandir}/man1/smbsh.1*
@@ -325,10 +328,8 @@ fi
 
 %files common
 %defattr(-,root,root)
-%{_libdir}/libnss_wins.so
-/%{_lib}/libnss_wins.so.2
-%{_libdir}/libnss_winbind.so
-/%{_lib}/libnss_winbind.so.2
+/%{_lib}/libnss_wins.so.*
+/%{_lib}/libnss_winbind.so.*
 /%{_lib}/security/pam_winbind.so
 %{_libdir}/libsmbclient.a
 %{_libdir}/libsmbclient.so
