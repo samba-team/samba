@@ -383,7 +383,9 @@ subnet %s - name not found.\n", nmb_namestr(&nmb->question.question_name),
     }
 
     /* Remove duplicate names. */
-    qsort( buf0, names_added, 18, QSORT_CAST status_compare );
+    if (names_added > 1) {
+	    qsort( buf0, names_added, 18, QSORT_CAST status_compare );
+    }
 
     for( i=1; i < names_added ; i++ )
     {
