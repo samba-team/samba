@@ -61,20 +61,29 @@ BOOL _get_trust_account_password(char *domain, unsigned char *ret_pwd,
 
 /* Check the machine account password is valid */
 
+extern struct in_addr ipzero;
+
 static uint32 check_any(char *trust_account, uchar trust_passwd[16])
 {
-	struct in_addr *ip_list = NULL, pdc_ip;
+	struct in_addr *ip_list = NULL, pdc_ip = ipzero;
 	uint16 validation_level;
 	fstring controller;
 	uint32 result;
 	int count, i;
 
+	/* Always try the PDC first */
+
 	if (!get_dc_list(True, lp_workgroup(), &ip_list, &count) ||
 	    !lookup_pdc_name(global_myname, lp_workgroup(), &ip_list[0],
 			     controller)) {
-		DEBUG(0, ("could not find domain controller for "
+
+		/* Now this isn't fatal as we can still check for backup
+		   domain controllers so just continue. */
+
+		DEBUG(3, ("could not find primary domain controller for "
 			  "domain %s\n", lp_workgroup()));		  
-		return NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
+		
+		goto try_others;
 	}
 
 	pdc_ip = ip_list[0];
@@ -90,6 +99,8 @@ static uint32 check_any(char *trust_account, uchar trust_passwd[16])
 
 	/* OK, now try other domain controllers */
 	
+ try_others:
+
 	if (!get_dc_list(False, lp_workgroup(), &ip_list, &count)) {
 		DEBUG(0, ("could not find domain controller for "
 			  "domain %s\n", lp_workgroup()));
