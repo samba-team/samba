@@ -106,8 +106,8 @@ details:
 54) Save LDFLAGS during iconv detection (bug 57).
 55) Run krb5 logins through the username map if the winbindd 
     lookup fails (bug 698).
-56) Add const for lp_set_name_resolve_order() to avoid compiler warnings
-    (bug 471).
+56) Add const for lp_set_name_resolve_order() to avoid compiler 
+    warnings (bug 471).
 57) Add support for the %i macro in smb.conf to stand in for the for 
     the local IP address to which a client connected.
 58) Allow winbindd to match local accounts to domain SID when 
