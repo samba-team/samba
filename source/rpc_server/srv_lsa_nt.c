@@ -532,8 +532,8 @@ uint32 _lsa_unk_get_connuser(pipes_struct *p, LSA_Q_UNK_GET_CONNUSER *q_u, LSA_R
   fstrcpy(username, vuser->user.smb_name);
   fstrcpy(domname, vuser->user.domain);
   
-  ulen = strlen(username);
-  dlen = strlen(domname);
+  ulen = strlen(username) + 1;
+  dlen = strlen(domname) + 1;
   
   init_uni_hdr(&r_u->hdr_user_name, ulen);
   r_u->ptr_user_name = 1;
