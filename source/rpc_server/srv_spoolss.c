@@ -726,25 +726,6 @@ static void api_spoolss_startpageprinter(rpcsrv_struct *p, prs_struct *data,
 	spoolss_io_r_startpageprinter("",&r_u,rdata,0);		
 }
 
-/****************************************************************************
-****************************************************************************/
-static void spoolss_reply_endpageprinter(SPOOL_Q_ENDPAGEPRINTER *q_u, prs_struct *rdata)
-{
-	SPOOL_R_ENDPAGEPRINTER r_u;
-	int pnum = find_printer_index_by_hnd(&(q_u->handle));
-
-	if (OPEN_HANDLE(pnum))
-	{
-		Printer[pnum].page_started=False;
-		r_u.status=0x0;
-
-		spoolss_io_r_endpageprinter("",&r_u,rdata,0);		
-	}
-	else
-	{
-		DEBUG(3,("Error in endpageprinter printer handle (pnum=%x)\n",pnum));
-	}
-}
 
 /********************************************************************
  * api_spoolss_getprinter
@@ -755,10 +736,14 @@ static void api_spoolss_endpageprinter(rpcsrv_struct *p, prs_struct *data,
                                           prs_struct *rdata)
 {
 	SPOOL_Q_ENDPAGEPRINTER q_u;
+	SPOOL_R_ENDPAGEPRINTER r_u;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
 	
 	spoolss_io_q_endpageprinter("", &q_u, data, 0);
-	
-	spoolss_reply_endpageprinter(&q_u, rdata);
+	r_u.status = _spoolss_endpageprinter(&q_u.handle);
+	spoolss_io_r_endpageprinter("",&r_u,rdata,0);		
 }
 
 /********************************************************************

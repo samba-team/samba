@@ -2083,27 +2083,23 @@ uint32 _spoolss_startpageprinter(const POLICY_HND *handle)
 	return NT_STATUS_INVALID_HANDLE;
 }
 
-#if 0
-
 /****************************************************************************
 ****************************************************************************/
-uint32 _spoolss_endpageprinter(SPOOL_Q_ENDPAGEPRINTER *q_u, prs_struct *rdata)
+uint32 _spoolss_endpageprinter(const POLICY_HND *handle)
 {
-	SPOOL_R_ENDPAGEPRINTER r_u;
 	int pnum = find_printer_index_by_hnd(handle);
 
 	if (OPEN_HANDLE(pnum))
 	{
 		Printer[pnum].page_started=False;
-		status=0x0;
+		return 0x0;
+	}
 
-		spoolss_io_r_endpageprinter("",&r_u,rdata,0);		
-	}
-	else
-	{
-		DEBUG(3,("Error in endpageprinter printer handle (pnum=%x)\n",pnum));
-	}
+	DEBUG(3,("Error in endpageprinter printer handle (pnum=%x)\n",pnum));
+	return NT_STATUS_INVALID_HANDLE;
 }
+
+#if 0
 
 /********************************************************************
  * api_spoolss_getprinter
