@@ -212,7 +212,8 @@ gss_accept_sec_context
     ret = gssapi_krb5_decapsulate (minor_status,
 				   input_token_buffer,
 				   &indata,
-				   "\x01\x00");
+				   "\x01\x00",
+				   GSS_KRB5_MECHANISM);
     if (ret)
 	goto failure;
 
@@ -411,7 +412,8 @@ gss_accept_sec_context
 	ret = gssapi_krb5_encapsulate (minor_status,
 				       &outbuf,
 				       output_token,
-				       "\x02\x00");
+				       "\x02\x00",
+				       GSS_KRB5_MECHANISM);
 	krb5_data_free (&outbuf);
 	if (ret)
 	    goto failure;
@@ -425,7 +427,7 @@ gss_accept_sec_context
 #endif
 
     {
-	OM_uint32 seq_number;
+	int32_t seq_number;
 	
 	krb5_auth_getremoteseqnumber (gssapi_krb5_context,
 				      (*context_handle)->auth_context,

@@ -417,7 +417,7 @@ init_auth
     }
 
     ret = gssapi_krb5_encapsulate (minor_status, &outbuf, output_token,
-				   "\x01\x00");
+				   "\x01\x00", GSS_KRB5_MECHANISM);
     if (ret)
 	goto failure;
 
@@ -497,7 +497,7 @@ repl_mutual
 	*actual_mech_type = GSS_KRB5_MECHANISM;
 
     ret = gssapi_krb5_decapsulate (minor_status, input_token, &indata,
-				   "\x02\x00");
+				   "\x02\x00", GSS_KRB5_MECHANISM);
     if (ret) {
 	HEIMDAL_MUTEX_unlock(&(*context_handle)->ctx_id_mutex);
 	/* XXX - Handle AP_ERROR */
