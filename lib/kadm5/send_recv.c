@@ -82,7 +82,6 @@ _kadm5_client_recv(kadm5_client_context *context, krb5_storage *sp)
     data.length = len;
     data.data = buf;
     ret = krb5_rd_priv(context->context, context->ac, &data, &reply, NULL);
-    krb5_data_free(&data);
     sp->store(sp, reply.data, reply.length);
     sp->seek(sp, 0, SEEK_SET);
     krb5_data_free(&reply);
