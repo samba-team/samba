@@ -74,9 +74,6 @@ struct	socket_security ss;
 #include <libtelnet/auth.h>
 int	auth_level = 0;
 #endif
-#if	defined(SecurID)
-int	require_SecurID = 0;
-#endif
 
 extern	int utmp_len;
 int	registerd_host_only = 0;
@@ -165,9 +162,6 @@ char valid_opts[] = {
 #ifdef CRAY
 	'r', ':',
 #endif
-#ifdef	SecurID
-	's',
-#endif
 	'L', ':',
 #ifdef AUTHENTICATION
 	'y',
@@ -216,10 +210,12 @@ int main(int argc, char **argv)
 			 * Check for required authentication level
 			 */
 			if (strcmp(optarg, "debug") == 0) {
-				extern int auth_debug_mode;
 				auth_debug_mode = 1;
 			} else if (strcasecmp(optarg, "none") == 0) {
 				auth_level = 0;
+			} else if (strcasecmp(optarg, "otp") == 0) {
+				auth_level = 0;
+				require_otp = 1;
 			} else if (strcasecmp(optarg, "other") == 0) {
 				auth_level = AUTH_OTHER;
 			} else if (strcasecmp(optarg, "user") == 0) {
@@ -320,12 +316,6 @@ int main(int argc, char **argv)
 		    }
 #endif	/* CRAY */
 
-#ifdef	SecurID
-		case 's':
-			/* SecurID required */
-			require_SecurID = 1;
-			break;
-#endif	/* SecurID */
 		case 'S':
 #ifdef	HAS_GETTOS
 			if ((tos = parsetos(optarg, "tcp")) < 0)
@@ -495,7 +485,7 @@ usage()
 {
 	fprintf(stderr, "Usage: telnetd");
 #ifdef	AUTHENTICATION
-	fprintf(stderr, " [-a (debug|other|user|valid|off|none)]\n\t");
+	fprintf(stderr, " [-a (debug|other|otp|user|valid|off|none)]\n\t");
 #endif
 	fprintf(stderr, " [-debug]");
 #ifdef DIAGNOSTICS
@@ -517,9 +507,6 @@ usage()
 	fprintf(stderr, " [-r[lowpty]-[highpty]]");
 #endif
 	fprintf(stderr, "\n\t");
-#ifdef	SecurID
-	fprintf(stderr, " [-s]");
-#endif
 #ifdef	HAS_GETTOS
 	fprintf(stderr, " [-S tos]");
 #endif
