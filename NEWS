@@ -9,7 +9,7 @@ Changes in release 0.2k:
  * allow users to change their own passwords with kadmin (with initial
    tickets)
 
- * add `ktutil change'
+ * add `ktutil change' and `ktutil purge'
 
 Changes in release 0.2j:
 

@@ -1,5 +1,9 @@
 2000-01-02  Assar Westerlund  <assar@sics.se>
 
+	* admin/purge.c: remove all non-current and old entries from a
+	keytab
+
+	* admin: break up ktutil.c into files
 
 	* admin/ktutil.c (list): support --verbose (also listning time
 	stamps)
