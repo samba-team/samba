@@ -67,6 +67,7 @@ init_auth
   Authenticator *auth;
   krb5_data authenticator;
   Checksum cksum;
+  krb5_enctype enctype;
 
   gssapi_krb5_init ();
 
@@ -186,8 +187,21 @@ init_auth
     goto failure;
   }
 
+  if ((*context_handle)->auth_context->enctype)
+      enctype = (*context_handle)->auth_context->enctype;
+  else {
+      kret = krb5_keytype_to_etype(gssapi_krb5_context,
+				  (*context_handle)->auth_context->keyblock->keytype,
+				  &enctype);
+      if (kret)
+	  return kret;
+  }
+
+
+
   kret = krb5_build_authenticator (gssapi_krb5_context,
 				   (*context_handle)->auth_context,
+				   enctype,
 				   cred,
 				   &cksum,
 				   &auth,
@@ -199,6 +213,7 @@ init_auth
   }
 
   kret = krb5_build_ap_req (gssapi_krb5_context,
+			    enctype,
 			    cred,
 			    ap_options,
 			    authenticator,
