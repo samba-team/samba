@@ -179,7 +179,7 @@ static struct ldap_parse_tree *ldap_parse_filterlist(TALLOC_CTX *mem_ctx,
 
 	while (*s && (next = ldap_parse_filter(mem_ctx, &s))) {
 		struct ldap_parse_tree **e;
-		e = talloc_realloc(mem_ctx, ret->u.list.elements,
+		e = talloc_realloc(ret->u.list.elements,
 				   sizeof(struct ldap_parse_tree) *
 				   (ret->u.list.num_elements+1));
 		if (!e) {

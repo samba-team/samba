@@ -488,8 +488,9 @@ static BOOL test_Open(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, void *fn)
 	BOOL ret = True;
 	winreg_open_fn *open_fn = (winreg_open_fn *)fn;
 
-	if (!open_fn(p, mem_ctx, &handle))
+	if (!open_fn(p, mem_ctx, &handle)) {
 		return False;
+	}
 
 	if (!test_CreateKey(p, mem_ctx, &handle, "spottyfoot", NULL)) {
 		printf("CreateKey failed\n");

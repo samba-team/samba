@@ -181,7 +181,7 @@ BOOL smbcli_sock_connect_byname(struct smbcli_socket *sock, const char *host, in
 	ret = smbcli_sock_connect(sock, &ip, port);
 
 	if (ret) {
-		sock->hostname = talloc_steal(mem_ctx, sock->mem_ctx, name);
+		sock->hostname = talloc_steal(sock->mem_ctx, name);
 	}
 
 	talloc_destroy(mem_ctx);

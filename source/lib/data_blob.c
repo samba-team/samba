@@ -108,7 +108,7 @@ DATA_BLOB data_blob_talloc_steal(TALLOC_CTX *old_ctx, TALLOC_CTX *new_ctx,
 {
 	DATA_BLOB new;
 	new = *old;
-	new.data = talloc_steal(old_ctx, new_ctx, old->data);
+	new.data = talloc_steal(new_ctx, old->data);
 	if (new.data == NULL) {
 		smb_panic("data_blob_talloc_steal: talloc_steal failed.\n");
 	}

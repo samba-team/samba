@@ -129,7 +129,7 @@ static uint32_t build_ep_list(TALLOC_CTX *mem_ctx,
 		struct dcesrv_if_list *iface;
 
 		for (iface=d->interface_list;iface;iface=iface->next) {
-			(*eps) = talloc_realloc_p(mem_ctx, *eps, 
+			(*eps) = talloc_realloc_p(*eps, 
 						  struct dcesrv_ep_iface,
 						  total + 1);
 			if (!*eps) {

@@ -69,7 +69,7 @@ void smbcli_session_close(struct smbcli_session *session)
 ****************************************************************************/
 struct smbcli_request *smb_raw_session_setup_send(struct smbcli_session *session, union smb_sesssetup *parms) 
 {
-	struct smbcli_request *req;
+	struct smbcli_request *req = NULL;
 
 	switch (parms->generic.level) {
 	case RAW_SESSSETUP_GENERIC:

@@ -150,7 +150,7 @@ static BOOL test_open(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	union smb_fileinfo finfo;
 	const char *fname = BASEDIR "\\torture_open.txt";
 	NTSTATUS status;
-	int fnum, fnum2;
+	int fnum = -1, fnum2;
 	BOOL ret = True;
 
 	printf("Checking RAW_OPEN_OPEN\n");
@@ -261,7 +261,7 @@ static BOOL test_openx(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	union smb_fileinfo finfo;
 	const char *fname = BASEDIR "\\torture_openx.txt";
 	NTSTATUS status;
-	int fnum, fnum2;
+	int fnum = -1, fnum2;
 	BOOL ret = True;
 	int i;
 	struct {
@@ -579,7 +579,7 @@ static BOOL test_ntcreatex(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	const char *fname = BASEDIR "\\torture_ntcreatex.txt";
 	const char *dname = BASEDIR "\\torture_ntcreatex.dir";
 	NTSTATUS status;
-	int fnum;
+	int fnum = -1;
 	BOOL ret = True;
 	int i;
 	struct {
@@ -822,7 +822,7 @@ static BOOL test_mknew(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	union smb_open io;
 	const char *fname = BASEDIR "\\torture_mknew.txt";
 	NTSTATUS status;
-	int fnum;
+	int fnum = -1;
 	BOOL ret = True;
 	time_t basetime = (time(NULL) + 3600*24*3) & ~1;
 	union smb_fileinfo finfo;
@@ -876,7 +876,7 @@ static BOOL test_create(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	union smb_open io;
 	const char *fname = BASEDIR "\\torture_create.txt";
 	NTSTATUS status;
-	int fnum;
+	int fnum = -1;
 	BOOL ret = True;
 	time_t basetime = (time(NULL) + 3600*24*3) & ~1;
 	union smb_fileinfo finfo;
@@ -930,7 +930,7 @@ static BOOL test_ctemp(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
 	union smb_open io;
 	NTSTATUS status;
-	int fnum;
+	int fnum = -1;
 	BOOL ret = True;
 	time_t basetime = (time(NULL) + 3600*24*3) & ~1;
 	union smb_fileinfo finfo;

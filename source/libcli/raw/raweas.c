@@ -128,7 +128,7 @@ NTSTATUS ea_pull_list(const DATA_BLOB *blob,
 		blob2.data = blob->data + ofs;
 		blob2.length = ea_size - ofs;
 
-		*eas = talloc_realloc(mem_ctx, *eas, sizeof(**eas) * (n+1));
+		*eas = talloc_realloc(*eas, sizeof(**eas) * (n+1));
 		if (! *eas) return NT_STATUS_NO_MEMORY;
 
 		len = ea_pull_struct(&blob2, mem_ctx, &(*eas)[n]);
