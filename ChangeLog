@@ -1,5 +1,18 @@
 2003-03-10  Love Hörnquist Åstrand <lha@it.su.se>
 
+	* lib/krb5/krb5.3: add more functions
+	
+	* lib/krb5/krb5_ccache.3: document krb5_ccache and krb5_cc
+	functions
+
+	* lib/krb5/krb5_kuserok.3: document krb5_kuserok
+	
+	* lib/krb5/krb5_verify_user.3: document
+	krb5_verify_opt_set_flags(opt, KRB5_VERIFY_LREALMS) behavior
+
+	* lib/krb5/krb5_verify_user.3: document krb5_verify_opt* and
+	krb5_verify_user_opt
+
 	* lib/krb5/*.[0-9]: add copyright/licenses on more manpages
 
 	* kuser/kdestroy.c (main): handle that krb5_cc_default_name can
