@@ -235,6 +235,16 @@ AC_ARG_ENABLE(debug,
 	CFLAGS="${CFLAGS} -g"
     fi])
 
+# compile with optimization and without debugging by default, but
+# allow people to set their own preference.
+# do this here since AC_CACHE_CHECK apparently sets the CFLAGS to "-g -O2"
+# if it has no value.  This prevent *very* large debug binaries from occurring
+# by default.
+if test "x$CFLAGS" = x; then
+  CFLAGS="-O"
+fi
+
+
 AC_ARG_ENABLE(developer, [  --enable-developer      Turn on developer warnings and debugging (default=no)],
     [if eval "test x$enable_developer = xyes"; then
         developer=yes
@@ -292,13 +302,6 @@ AC_PROG_AWK
 AC_PATH_PROG(PERL, perl)
 
 AC_CHECK_TOOL(AR, ar)
-
-# compile with optimization and without debugging by default, but
-# allow people to set their own preference.
-if test "x$CFLAGS" = x
-then
-  CFLAGS="-O ${CFLAGS}"
-fi
 
 dnl Check if we use GNU ld
 LD=ld
