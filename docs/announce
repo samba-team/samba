@@ -4,14 +4,15 @@
 What is Samba?
 --------------
 
-Samba is a SMB file server that runs on Unix and other operating systems. 
-It allows these operating systems (currently Unix, Netware, OS/2 and 
-AmigaDOS) to act as a file and print server for SMB clients. There are many
-Lan-Manager compatible clients such as LanManager for DOS, Windows for
-Workgroups, Windows NT, Windows 95, OS/2, Pathworks and many more.
+Samba is a SMB file server that runs on Unix and other operating
+systems.  It allows these operating systems (currently Unix, Netware,
+OS/2 and AmigaDOS) to act as a file and print server for SMB and CIFS
+clients. There are many Lan-Manager compatible clients such as
+LanManager for DOS, Windows for Workgroups, Windows NT, Windows 95,
+Linux smbfs, OS/2, Pathworks and more.
 
-The package also includes a SMB client for accessing other SMB servers 
-and a netbios nameserver for browsing support.
+The package also includes a SMB client for accessing other SMB servers,
+and an advanced netbios/WINS nameserver for browsing support.
 
 What can it do for me?
 ----------------------
@@ -20,6 +21,13 @@ If you have any PCs running SMB clients, such as a PC running Windows
 for Workgroups, then you can mount file space or printers on a Samba
 host, so that directories, files and printers on the host are
 available on the PC.
+
+If you have any SMB servers such as Windows NT Server, Warp Server or
+Pathworks you may be able to replace them by or supplement them with
+Samba. One of Samba's big strengths is integration, so you can use it
+to tie together your Unix (or VMS etc) hosts and PC clients. If you
+are tired of the insecurity, expense and instability of PCNFS then Samba 
+may be for you.
 
 The client part of the package will also allow you to attach to other
 SMB-based servers (such as windows NT and windows for workgroups) so
@@ -32,12 +40,12 @@ What are its features?
 ------------------------
 
 Samba supports many features that are not supported in other SMB
-implementations (all of which are commercial). Some of it's features
-include host as well as username/password security, a client,
-automatic home directory exporting, automatic printer exporting, dead
-connection timeouts, umask support, guest connections, name mangling
-and hidden and system attribute mapping. Look at the man pages
-included with the package for a full list of features.
+implementations (all of which are commercial). These include host as
+well as username/password security, a client, automatic home directory
+exporting, automatic printer exporting, dead connection timeouts,
+umask support, guest connections, name mangling and hidden and system
+attribute mapping. Look at the FAQs included with the package for
+a full list of features.
 
 What's new since 1.8?
 ---------------------
@@ -49,8 +57,9 @@ Where can I get a client for my PC?
 
 There is a free client for MS-DOS based PCs available from
 ftp.microsoft.com in the directory bussys/Clients/MSCLIENT/. Please
-read the licencing information before downloading. The built in
-Windows for Workgroups client is also very good.
+read the licencing information before downloading. The add-on 32-bit
+TCP/IP Windows for Workgroups client is also very good. Windows 95,
+Windows NT and OS/2 come with suitable clients by default.
 
 What network protocols are supported?
 -------------------------------------
