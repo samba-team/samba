@@ -289,12 +289,12 @@ files_struct *file_find_fsp(files_struct *orig_fsp)
 {
 	files_struct *fsp;
 
-    for (fsp=Files;fsp;fsp=fsp->next) {
-        if (fsp == orig_fsp)
-            return fsp;
-    }
+	for (fsp=Files;fsp;fsp=fsp->next) {
+		if (fsp == orig_fsp)
+			return fsp;
+	}
 
-    return NULL;
+	return NULL;
 }
 
 /****************************************************************************
@@ -303,16 +303,16 @@ files_struct *file_find_fsp(files_struct *orig_fsp)
 
 files_struct *file_find_di_first(SMB_DEV_T dev, SMB_INO_T inode)
 {
-    files_struct *fsp;
+	files_struct *fsp;
 
-    for (fsp=Files;fsp;fsp=fsp->next) {
-        if ( fsp->fd != -1 &&
-            fsp->dev == dev &&
-            fsp->inode == inode )
-            return fsp;
-    }
+	for (fsp=Files;fsp;fsp=fsp->next) {
+		if ( fsp->fd != -1 &&
+				fsp->dev == dev &&
+				fsp->inode == inode )
+			return fsp;
+	}
 
-    return NULL;
+	return NULL;
 }
 
 /****************************************************************************
@@ -321,16 +321,16 @@ files_struct *file_find_di_first(SMB_DEV_T dev, SMB_INO_T inode)
 
 files_struct *file_find_di_next(files_struct *start_fsp)
 {
-    files_struct *fsp;
+	files_struct *fsp;
 
-    for (fsp = start_fsp->next;fsp;fsp=fsp->next) {
-        if ( fsp->fd != -1 &&
-            fsp->dev == start_fsp->dev &&
-            fsp->inode == start_fsp->inode )
-            return fsp;
-    }
+	for (fsp = start_fsp->next;fsp;fsp=fsp->next) {
+		if ( fsp->fd != -1 &&
+				fsp->dev == start_fsp->dev &&
+				fsp->inode == start_fsp->inode )
+			return fsp;
+	}
 
-    return NULL;
+	return NULL;
 }
 
 /****************************************************************************
@@ -388,7 +388,9 @@ void file_free(files_struct *fsp)
 	   information */
 	ZERO_STRUCTP(fsp);
 
-	if (fsp == chain_fsp) chain_fsp = NULL;
+	if (fsp == chain_fsp) {
+		chain_fsp = NULL;
+	}
 
 	SAFE_FREE(fsp);
 }
