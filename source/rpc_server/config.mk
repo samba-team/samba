@@ -21,6 +21,16 @@ REQUIRED_SUBSYSTEMS = \
 # End MODULE dcerpc_IOXIDResolver
 ################################################
 
+################################################
+# Start MODULE dcerpc_IRemoteActivation
+[MODULE::dcerpc_IRemoteActivation]
+INIT_OBJ_FILES = \
+		rpc_server/dcom/remact.o
+REQUIRED_SUBSYSTEMS = \
+		DCERPC_COMMON
+# End MODULE dcerpc_IRemoteActivation
+################################################
+
 
 
 ################################################

@@ -16,6 +16,7 @@ SMB_MODULE_MK(dcerpc_netlogon,DCERPC,STATIC,rpc_server/config.mk)
 SMB_MODULE_MK(dcerpc_lsarpc,DCERPC,STATIC,rpc_server/config.mk)
 SMB_MODULE_MK(dcerpc_spoolss,DCERPC,STATIC,rpc_server/config.mk)
 SMB_MODULE_MK(dcerpc_IOXIDResolver,DCERPC,STATIC,rpc_server/config.mk)
+SMB_MODULE_MK(dcerpc_IRemoteActivation,DCERPC,STATIC,rpc_server/config.mk)
 SMB_MODULE_MK(dcerpc_drsuapi,DCERPC,STATIC,rpc_server/config.mk)
 
 SMB_SUBSYSTEM_MK(DCERPC,rpc_server/config.mk)
