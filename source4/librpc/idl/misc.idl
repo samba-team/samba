@@ -58,10 +58,10 @@ interface misc
 		[relative] security_acl *dacl; /* user (discretionary) ACL */
 	} security_descriptor;
 
-	typedef [public, flag(NDR_PAHEX)] struct {
-		uint8 data[20];
+	typedef [public] struct {
+		uint32 handle_type;
+		GUID   uuid;
 	} policy_handle;
-
 
 	/* a 4 byte aligned 64-bit integer */
 	typedef [public] struct {

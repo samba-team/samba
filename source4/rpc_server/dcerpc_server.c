@@ -128,7 +128,6 @@ NTSTATUS dcesrv_endpoint_connect_ops(struct dcesrv_context *dce,
 	(*p)->ndr = NULL;
 	(*p)->dispatch = NULL;
 	(*p)->handles = NULL;
-	(*p)->next_handle = 0;
 	(*p)->partial_input = data_blob(NULL, 0);
 	(*p)->auth_state.ntlmssp_state = NULL;
 	(*p)->auth_state.auth_info = NULL;
