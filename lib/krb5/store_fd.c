@@ -63,7 +63,15 @@ krb5_storage *
 krb5_storage_from_fd(int fd)
 {
     krb5_storage *sp = malloc(sizeof(krb5_storage));
+
+    if (sp == NULL)
+	return NULL;
+
     sp->data = malloc(sizeof(fd_storage));
+    if (sp->data == NULL) {
+	free(sp);
+	return NULL;
+    }
     sp->flags = 0;
     FD(sp) = fd;
     sp->fetch = fd_fetch;
