@@ -61,7 +61,7 @@ make_err_reply(krb5_data *reply, int code, const char *msg)
 {
     KTEXT_ST er;
 
-    /* name, instance and realm is not checked in most (all?) version
+    /* name, instance and realm are not checked in most (all?)
        implementations; msg is also never used, but we send it anyway
        (for debugging purposes) */
 
@@ -74,9 +74,13 @@ make_err_reply(krb5_data *reply, int code, const char *msg)
 static krb5_boolean
 valid_princ(krb5_context context, krb5_principal princ)
 {
+    krb5_error_code ret;
     char *s;
     hdb_entry *ent;
-    krb5_unparse_name(context, princ, &s);
+
+    ret = krb5_unparse_name(context, princ, &s);
+    if (ret)
+	return 0;
     ent = db_fetch(princ);
     if(ent == NULL){
 	kdc_log(7, "Lookup %s failed", s);
@@ -85,8 +89,7 @@ valid_princ(krb5_context context, krb5_principal princ)
     }
     kdc_log(7, "Lookup %s succeeded", s);
     free(s);
-    hdb_free_entry(context, ent);
-    free(ent);
+    free_ent(ent);
     return 1;
 }
 
@@ -502,11 +505,8 @@ do_version4(unsigned char *buf,
     out2:
 	if(tgt_princ)
 	    krb5_free_principal(context, tgt_princ);
-	if(tgt){
-	    hdb_free_entry(context, tgt);
-	    free(tgt);
-	}
-
+	if(tgt)
+	    free_ent(tgt);
 	break;
     }
     
@@ -529,14 +529,10 @@ out:
 	free(sname);
     if(sinst)
 	free(sinst);
-    if(client){
-	hdb_free_entry(context, client);
-	free(client);
-    }
-    if(server){
-	hdb_free_entry(context, server);
-	free(server);
-    }
+    if(client)
+	free_ent(client);
+    if(server)
+	free_ent(server);
     krb5_storage_free(sp);
     return 0;
 }
@@ -567,8 +563,8 @@ encrypt_v4_ticket(void *buf, size_t len, des_cblock *key, EncryptedData *reply)
 }
 
 krb5_error_code
-encode_v4_ticket(void *buf, size_t len, EncTicketPart *et, 
-		 PrincipalName *service, size_t *size)
+encode_v4_ticket(void *buf, size_t len, const EncTicketPart *et,
+		 const PrincipalName *service, size_t *size)
 {
     krb5_storage *sp;
     krb5_error_code ret;
