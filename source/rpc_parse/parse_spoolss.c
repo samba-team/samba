@@ -6865,3 +6865,78 @@ BOOL smb_io_printprocessordirectory_1(char *desc, NEW_BUFFER *buffer, PRINTPROCE
 
 	return True;
 }
+
+/*******************************************************************
+ * init a structure.
+ ********************************************************************/
+
+BOOL make_spoolss_q_addform(SPOOL_Q_ADDFORM *q_u, POLICY_HND *handle, 
+			    int level, FORM *form)
+{
+	memcpy(&q_u->handle, handle, sizeof(POLICY_HND));
+	q_u->level = level;
+	q_u->level2 = level;
+	memcpy(&q_u->form, form, sizeof(FORM));
+
+	return True;
+}
+
+/*******************************************************************
+ * init a structure.
+ ********************************************************************/
+
+BOOL make_spoolss_q_setform(SPOOL_Q_SETFORM *q_u, POLICY_HND *handle, 
+			    int level, char *form_name, FORM *form)
+{
+	memcpy(&q_u->handle, handle, sizeof(POLICY_HND));
+	q_u->level = level;
+	q_u->level2 = level;
+	memcpy(&q_u->form, form, sizeof(FORM));
+	init_unistr2(&q_u->name, form_name, strlen(form_name) + 1);
+
+	return True;
+}
+
+/*******************************************************************
+ * init a structure.
+ ********************************************************************/
+
+BOOL make_spoolss_q_deleteform(SPOOL_Q_DELETEFORM *q_u, POLICY_HND *handle, char *form)
+{
+	memcpy(&q_u->handle, handle, sizeof(POLICY_HND));
+	init_unistr2(&q_u->name, form, strlen(form) + 1);
+	return True;
+}
+
+/*******************************************************************
+ * init a structure.
+ ********************************************************************/
+
+BOOL make_spoolss_q_getform(SPOOL_Q_GETFORM *q_u, POLICY_HND *handle, 
+                            char *formname, uint32 level, NEW_BUFFER *buffer,
+			    uint32 offered)
+{
+        memcpy(&q_u->handle, handle, sizeof(POLICY_HND));
+        q_u->level = level;
+        init_unistr2(&q_u->formname, formname, strlen(formname) + 1);
+        q_u->buffer=buffer;
+        q_u->offered=offered;
+
+        return True;
+}
+
+/*******************************************************************
+ * init a structure.
+ ********************************************************************/
+
+BOOL make_spoolss_q_enumforms(SPOOL_Q_ENUMFORMS *q_u, POLICY_HND *handle, 
+			      uint32 level, NEW_BUFFER *buffer,
+			      uint32 offered)
+{
+        memcpy(&q_u->handle, handle, sizeof(POLICY_HND));
+        q_u->level = level;
+        q_u->buffer=buffer;
+        q_u->offered=offered;
+
+	return True;
+}
