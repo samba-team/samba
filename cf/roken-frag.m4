@@ -168,6 +168,7 @@ AC_CHECK_FUNCS([				\
 	getrlimit				\
 	getspnam				\
 	initstate				\
+	random					\
 	setprogname				\
 	setstate				\
 	strsvis					\
