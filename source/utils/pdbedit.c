@@ -192,11 +192,12 @@ static int print_user_info (struct pdb_context *in, const char *username, BOOL v
 {
 	SAM_ACCOUNT *sam_pwent=NULL;
 	BOOL ret;
-	
+	BOOL updated_autolock = False, updated_badpw = False;
+
 	if (!NT_STATUS_IS_OK(pdb_init_sam (&sam_pwent))) {
 		return -1;
 	}
-	
+
 	ret = NT_STATUS_IS_OK(in->pdb_getsampwnam (in, sam_pwent, username));
 
 	if (ret==False) {
@@ -204,7 +205,20 @@ static int print_user_info (struct pdb_context *in, const char *username, BOOL v
 		pdb_free_sam(&sam_pwent);
 		return -1;
 	}
-	
+
+	if (!pdb_update_autolock_flag(sam_pwent, &updated_autolock))
+		DEBUG(2,("pdb_update_autolock_flag failed.\n"));
+
+	if (!pdb_update_bad_password_count(sam_pwent, &updated_badpw))
+		DEBUG(2,("pdb_update_bad_password_count failed.\n"));
+
+	if (updated_autolock || updated_badpw) {
+		become_root();
+		if(!pdb_update_sam_account(sam_pwent))
+			DEBUG(1, ("Failed to modify entry.\n"));
+		unbecome_root();
+	}
+
 	ret=print_sam_info (sam_pwent, verbosity, smbpwdstyle);
 	pdb_free_sam(&sam_pwent);
 	
