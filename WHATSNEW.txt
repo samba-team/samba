@@ -1,8 +1,112 @@
-            WHAT'S NEW IN Samba 2.2.6 - 16th October 2002
-            =============================================
+            WHAT'S NEW IN Samba 2.2.7 - 20th November 2002
+            ==============================================
 
-This is the latest stable release of Samba. This is the version that all
-production Samba servers should be running for all current bug-fixes.
+This is the latest stable release of Samba. This is the version 
+that all production Samba servers should be running for all current
+bug-fixes.
+
+IMPORTANT: Security bugfix for Samba
+------------------------------------
+
+Summary
+-------
+
+A security hole has been discovered in versions 2.2.2 through 2.2.6 
+of Samba that could potentially allow an attacker to gain root access
+on the target machine.  The word "potentially" is used because there 
+is no known exploit of this bug, and the Samba Team has not been able to
+craft one ourselves. However, the seriousness of the problem warrants
+this immediate 2.2.7 release.
+
+In addition to addressing this security issue, Samba 2.2.7 also includes
+thirteen unrelated improvements. These improvements result from our
+process of continuous quality assurance and code review, and are part of
+the Samba team's committment to excellence.
+
+Details
+-------
+
+There was a bug in the length checking for encrypted password change
+requests from clients. A client could potentially send an encrypted
+password, which, when decrypted with the old hashed password could be
+used as a buffer overrun attack on the stack of smbd. The attach would
+have to be crafted such that converting a DOS codepage string to little
+endian UCS2 unicode would translate into an executable block of code.
+
+All versions of Samba between 2.2.2 to 2.2.6 inclusive are vulnerable
+to this problem. This version of Samba 2.2.7 contains a fix for this
+problem.
+
+Earlier versions of Samba are not vulnerable.
+
+There is no known exploit or exploit code for this vulnerability,
+it was discovered by a code audit by Debian Samba maintainers.
+
+Credit
+------
+
+Thanks to Steve Langasek <vorlon@debian.org> and Eloy Paris
+<peloy@debian.org> for bringing this vulnerability to our notice.
+
+Patch for Samba versions 2.2.2 to 2.2.6
+---------------------------------------
+
+The following patch applies cleanly to the above Samba versions
+and will fix the vulnerability for sites that do not wish to upgrade
+to 2.2.7 at this time.
+
+
+-------------------------------cut here---------------------------------
+--- libsmb/smbencrypt.c.orig    Tue Nov 19 17:21:57 2002
++++ libsmb/smbencrypt.c Tue Nov 19 17:22:12 2002
+@@ -63,7 +63,7 @@
+        if(len > 128)
+                len = 128;
+        /* Password must be converted to NT unicode - null terminated. */
+-       dos_struni2((char *)wpwd, (const char *)passwd, 256);
++       dos_struni2((char *)wpwd, (const char *)passwd, len);
+        /* Calculate length in bytes */
+        len = strlen_w((const smb_ucs2_t *)wpwd) * sizeof(int16);
+-------------------------------cut here---------------------------------
+
+
+
+Changes since 2.2.6
+--------------------
+
+See the cvs log for SAMBA_2_2 for more details
+
+1)  ensure we send the notify message in the same way it is expected
+    to be received by srv_spoolss_receive_message().
+2)  attribute matching on truncate only matters when opening truncate
+    with current SYSTEM|HIDDEN -> NONE. It's fine to truncate on open
+    with current NONE -> SYSTEM | HIDDEN.
+3)  Fix bug in rpcclient's deldriver command
+4)  Don't set global_machine_password_needs_changing if
+    lp_machine_password_timeout() is set to zero
+5)  don't parse the BUFFER5 if the buffer length is zero
+6)  fix core dump if pdbedit is run as non-root or smbpasswd file does
+    not exist
+7)  Ensure can_delete() returns correct error code
+8)  correctly return NT_STATUS_DELETE_PENDING from open code
+9)  fix bug that assumed dos_unistr2 length was in ucs2 units, not bytes
+10) check the long_archi name is not null when deleting a printer driver.
+    fixes core dump in smbd when using rpcclient's deldriver
+11) fix fd leak with kernel change notify on Linux 2.4 kernels
+12) must add one to the extra_data size to transfer the 0 string
+    terminator.  This was causing "wbinfo --sequence" to access past the
+    end of malloced memory
+13) fix for large systems allowing more than 65536 files open in
+    NTcreate&X
+14) Fix bug in %U expansion
+
+
+              =========================================
+
+Older releases notes for 2.2.x distributions follow
+
+-----------------------------------------------------------------------------
+The release notes for 2.2.6 follow :
 
 There have been several fixes and internal enhancements which include:
 
