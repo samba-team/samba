@@ -1259,6 +1259,10 @@ sub ParseTypedefPush($)
 		return;
 	}
 
+	if (defined($e->{PROPERTIES}) && !defined($e->{DATA}->{PROPERTIES})) {
+		$e->{DATA}->{PROPERTIES} = $e->{PROPERTIES};
+	}
+
 	if ($e->{DATA}->{TYPE} eq "STRUCT") {
 		pidl $static . "NTSTATUS ndr_push_$e->{NAME}(struct ndr_push *ndr, int ndr_flags, struct $e->{NAME} *r)";
 		pidl "\n{\n";
@@ -1291,6 +1295,10 @@ sub ParseTypedefPull($)
 {
 	my($e) = shift;
 	my $static = fn_prefix($e);
+
+	if (defined($e->{PROPERTIES}) && !defined($e->{DATA}->{PROPERTIES})) {
+		$e->{DATA}->{PROPERTIES} = $e->{PROPERTIES};
+	}
 
 	if (! needed::is_needed("pull_$e->{NAME}")) {
 #		print "pull_$e->{NAME} not needed\n";
@@ -1328,6 +1336,10 @@ sub ParseTypedefPull($)
 sub ParseTypedefPrint($)
 {
 	my($e) = shift;
+
+	if (defined($e->{PROPERTIES}) && !defined($e->{DATA}->{PROPERTIES})) {
+		$e->{DATA}->{PROPERTIES} = $e->{PROPERTIES};
+	}
 
 	if ($e->{DATA}->{TYPE} eq "STRUCT") {
 		pidl "void ndr_print_$e->{NAME}(struct ndr_print *ndr, const char *name, struct $e->{NAME} *r)";
