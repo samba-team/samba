@@ -8,7 +8,6 @@
 ###########################################################
 
 package output;
-use Data::Dumper;
 use strict;
 
 sub generate_objlist($)
