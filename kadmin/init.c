@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -78,6 +78,7 @@ create_random_entry(krb5_principal princ, time_t max_life, time_t max_rlife,
     ent.kvno = 1;
     ret = kadm5_modify_principal(kadm_handle, &ent, 
 				 KADM5_ATTRIBUTES|KADM5_KVNO);
+    kadm5_free_principal_ent (kadm_handle, &ent);
     if(ret)
 	return ret;
     return 0;
