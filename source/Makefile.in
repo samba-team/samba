@@ -156,7 +156,7 @@ LIB_OBJ = lib/charcnv.o lib/debug.o lib/fault.o \
 	  nsswitch/wb_client.o nsswitch/wb_common.o \
 	  lib/pam_errors.o intl/lang_tdb.o lib/account_pol.o \
 	  lib/adt_tree.o lib/gencache.o $(TDB_OBJ) \
-	  lib/module.o 
+	  lib/module.o lib/genparser.o lib/genparser_samba.o
 
 LIB_SMBD_OBJ = lib/system_smbd.o lib/util_smbd.o
 
@@ -1053,7 +1053,8 @@ clean: delheaders python_clean
 # afterwards.
 proto_exists: include/proto.h include/wrepld_proto.h include/build_env.h \
 	nsswitch/winbindd_proto.h web/swat_proto.h \
-	client/client_proto.h utils/net_proto.h
+	client/client_proto.h utils/net_proto.h \
+	include/tdbsam2_parse_info.h
 
 delheaders:
 	@echo Removing prototype headers
@@ -1061,10 +1062,12 @@ delheaders:
 	@/bin/rm -f $(srcdir)/include/wrepld_proto.h $(srcdir)/nsswitch/winbindd_proto.h 
 	@/bin/rm -f $(srcdir)/web/swat_proto.h
 	@/bin/rm -f $(srcdir)/client/client_proto.h $(srcdir)/utils/net_proto.h
+	@/bin/rm -f $(srcdir)/include/tdbsam2_parse_info.h
 
 	@/bin/rm -f include/proto.h include/build_env.h include/wrepld_proto.h \
 	            nsswitch/winbindd_proto.h web/swat_proto.h \
-		    client/client_proto.h utils/net_proto.h
+		    client/client_proto.h utils/net_proto.h \
+		    include/tdbsam2_parse_info.h
 
 include/proto.h:
 	@echo Building include/proto.h
@@ -1102,6 +1105,11 @@ utils/net_proto.h:
 	  -h _CLIENT_PROTO_H_ utils/net_proto.h \
 	  $(NET_OBJ1)
 
+include/tdbsam2_parse_info.h:
+	@cd $(srcdir) && script/genstruct.pl \
+	-o include/tdbsam2_parse_info.h $(CC) -E -O2 -g \
+	include/tdbsam2.h
+
 # "make headers" or "make proto" calls a subshell because we need to
 # make sure these commands are executed in sequence even for a
 # parallel make.
@@ -1109,7 +1117,7 @@ headers:
 	$(MAKE) delheaders include/proto.h include/build_env.h \
 	include/wrepld_proto.h nsswitch/winbindd_proto.h \
 	web/swat_proto.h client/client_proto.h \
-	utils/net_proto.h
+	utils/net_proto.h include/tdbsam2_parse_info.h
 
 proto: headers 
 

@@ -23,6 +23,7 @@
 
 #define GUMS_VERSION_MAJOR 0
 #define GUMS_VERSION_MINOR 1
+#define GUMS_OBJECT_VERSION	1
 
 #define GUMS_OBJ_DOMAIN			1
 #define GUMS_OBJ_NORMAL_USER		2
@@ -36,12 +37,12 @@ typedef struct gums_user
 {
 	DOM_SID *group_sid;		/* Primary Group SID */
 
-	NTTIME *logon_time;		/* logon time */
-	NTTIME *logoff_time;		/* logoff time */
-	NTTIME *kickoff_time;		/* kickoff time */
-	NTTIME *pass_last_set_time;	/* password last set time */
-	NTTIME *pass_can_change_time;	/* password can change time */
-	NTTIME *pass_must_change_time;	/* password must change time */
+	NTTIME logon_time;		/* logon time */
+	NTTIME logoff_time;		/* logoff time */
+	NTTIME kickoff_time;		/* kickoff time */
+	NTTIME pass_last_set_time;	/* password last set time */
+	NTTIME pass_can_change_time;	/* password can change time */
+	NTTIME pass_must_change_time;	/* password must change time */
 
 	char *full_name;		/* user's full name string */
 	char *home_dir;			/* home directory string */
@@ -52,14 +53,14 @@ typedef struct gums_user
 	char *unknown_str;		/* don't know what this is, yet. */
 	char *munged_dial;		/* munged path name and dial-back tel number */
 		
-	DATA_BLOB *lm_pw; 		/* .data is Null if no password */
-	DATA_BLOB *nt_pw; 		/* .data is Null if no password */
+	DATA_BLOB lm_pw; 		/* .data is Null if no password */
+	DATA_BLOB nt_pw; 		/* .data is Null if no password */
 		
 	uint32 unknown_3;		/* 0x00ff ffff */
 		
 	uint16 logon_divs;		/* 168 - number of hours in a week */
 	uint32 hours_len;		/* normally 21 bytes */
-	uint8 hours[MAX_HOURS_LEN];
+	uint8 *hours;
 		
 	uint32 unknown_5;		/* 0x0002 0000 */
 	uint32 unknown_6;		/* 0x0000 04ec */
@@ -69,14 +70,13 @@ typedef struct gums_user
 typedef struct gums_group
 {
 	uint32 count;			/* Number of SIDs */
-	DOM_SID *members;		/* SID array */
+	DOM_SID **members;		/* SID array */
 
 } GUMS_GROUP;
 
 union gums_obj_p {
 	gums_user *user;
 	gums_group *group;
-	gums_group *alias;
 }
 
 typedef struct gums_object
@@ -111,7 +111,7 @@ typedef struct gums_commit_set
 	uint32 type;			/* Object type */
 	DOM_SID sid;			/* Object Sid */
 	uint32 count;			/* number of changes */
-	GUMS_DATA_SET *data;
+	GUMS_DATA_SET **data;
 } GUMS_COMMIT_SET;
 
 typedef struct gums_privilege
@@ -127,7 +127,7 @@ typedef struct gums_privilege
 	char *description;		/* Object Description */
 
 	uint32 count;
-	DOM_SID *members;
+	DOM_SID **members;
 
 } GUMS_PRIVILEGE;
 
