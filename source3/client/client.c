@@ -2969,7 +2969,7 @@ static BOOL browse_host(BOOL sort)
 	    }
 
 	  if (sort)
-	    qsort(p,count,20,QSORT_CAST strcasecmp);
+	    qsort(p,count,20,QSORT_CAST StrCaseCmp);
 
 	  for (i=0;i<count;i++)
 	    {
