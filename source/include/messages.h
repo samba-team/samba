@@ -61,6 +61,9 @@
 #define MSG_SMB_SAM_REPL     3004
 #define MSG_SMB_UNLOCK       3005
 
+/* winbind messages */
+#define MSG_WINBIND_FINISHED 4001
+
 /* Flags to classify messages - used in message_send_all() */
 /* Sender will filter by flag. */
 
