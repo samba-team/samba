@@ -16,7 +16,7 @@
 ] interface samr
 {
 	/* account control (acct_flags) bits */
-	typedef bitmap {
+	typedef [public] bitmap {
 		ACB_DISABLED  = 0x00000001,  /* 1 = User account disabled */
 		ACB_HOMDIRREQ = 0x00000002,  /* 1 = Home directory required */
 		ACB_PWNOTREQ  = 0x00000004,  /* 1 = User password not required */

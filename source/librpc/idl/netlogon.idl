@@ -16,6 +16,8 @@
 
 interface netlogon
 {
+	declare bitmap samr_AcctFlags;
+
 	typedef [public] struct {
 		[value(strlen_m(r->string)*2)]  uint16 size;
 		[value(r->size)]                uint16 length;
@@ -162,7 +164,7 @@ interface netlogon
 		netr_String domain;
 		dom_sid2 *domain_sid;
 		netr_LMSessionKey LMSessKey;
-		uint32 acct_flags;
+		samr_AcctFlags acct_flags;
 		uint32 unknown[7];
 	} netr_SamBaseInfo;
 
@@ -351,7 +353,7 @@ interface netlogon
 		uint16 logon_count;
 		NTTIME last_password_change;
 		NTTIME acct_expiry;
-		uint32 acct_flags;
+		samr_AcctFlags acct_flags;
 		samr_Password lmpassword;
 		samr_Password ntpassword;
 		bool8 nt_password_present;
