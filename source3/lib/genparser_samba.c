@@ -63,7 +63,7 @@ int gen_parse_SEC_ACCESS(TALLOC_CTX *mem_ctx, char *ptr, const char *str)
 
 int gen_parse_GUID(TALLOC_CTX *mem_ctx, char *ptr, const char *str)
 {
-	int info[GUID_SIZE];
+	int info[UUID_FLAT_SIZE];
 	int i;
 	char *sc;
        	char *p;
@@ -74,7 +74,7 @@ int gen_parse_GUID(TALLOC_CTX *mem_ctx, char *ptr, const char *str)
 	sc = m;
 	
 	memset(info, 0, sizeof(info));
-	for (i = 0; i < GUID_SIZE; i++) {
+	for (i = 0; i < UUID_FLAT_SIZE; i++) {
 		p = strchr(sc, ',');
 		if (p != NULL) p = '\0';
 		info[i] = atoi(sc);
@@ -82,8 +82,8 @@ int gen_parse_GUID(TALLOC_CTX *mem_ctx, char *ptr, const char *str)
 	}
 	free(m);
 		
-	for (i = 0; i < GUID_SIZE; i++) {
-		((GUID *)ptr)->info[i] = info[i];
+	for (i = 0; i < UUID_FLAT_SIZE; i++) {
+		((UUID_FLAT *)ptr)->info[i] = info[i];
 	}
 		
 	return 0;
@@ -172,10 +172,10 @@ int gen_dump_GUID(TALLOC_CTX *mem_ctx, struct parse_string *p, const char *ptr, 
 {
 	int i, r;
 
-	for (i = 0; i < (GUID_SIZE - 1); i++) {
-		if (!(r = addshort(mem_ctx, p, "%d,", ((GUID *)ptr)->info[i]))) return r;
+	for (i = 0; i < (UUID_FLAT_SIZE - 1); i++) {
+		if (!(r = addshort(mem_ctx, p, "%d,", ((UUID_FLAT *)ptr)->info[i]))) return r;
 	}
-	return addshort(mem_ctx, p, "%d", ((GUID *)ptr)->info[i]);
+	return addshort(mem_ctx, p, "%d", ((UUID_FLAT *)ptr)->info[i]);
 }
 
 int gen_dump_SEC_ACE(TALLOC_CTX *mem_ctx, struct parse_string *p, const char *ptr, unsigned indent)
