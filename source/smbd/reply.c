@@ -92,12 +92,13 @@ int reply_special(char *inbuf,char *outbuf)
 		DEBUG(2,("netbios connect: name1=%s name2=%s\n",
 			 name1,name2));      
 
-		alpha_strcpy(remote_machine,name2,sizeof(remote_machine)-1);
+		fstrcpy(remote_machine,name2);
 		remote_machine[15] = 0;
 		trim_string(remote_machine," "," ");
 		strlower(remote_machine);
+		alpha_strcpy(remote_machine,remote_machine,sizeof(remote_machine)-1);
 
-		alpha_strcpy(local_machine,name1,sizeof(local_machine)-1);
+		fstrcpy(local_machine,name1);
 		len = strlen(local_machine);
 		if (len == 16) {
 			name_type = local_machine[15];
@@ -105,6 +106,7 @@ int reply_special(char *inbuf,char *outbuf)
 		}
 		trim_string(local_machine," "," ");
 		strlower(local_machine);
+		alpha_strcpy(local_machine,local_machine,sizeof(local_machine)-1);
 
 		if (name_type == 'R') {
 			/* We are being asked for a pathworks session --- 
