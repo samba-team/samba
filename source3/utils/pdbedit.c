@@ -411,6 +411,7 @@ int main (int argc, char **argv)
 	static char *backend_out = NULL;
 	static char *logon_script = NULL;
 	static char *profile_path = NULL;
+	static int new_debuglevel = -1;
 
 	struct pdb_context *in;
 	poptContext pc;
@@ -430,7 +431,7 @@ int main (int argc, char **argv)
 		{"delete",	'x',POPT_ARG_VAL,&delete_user,1,"delete user",NULL},
 		{"import",	'i',POPT_ARG_STRING,&backend_in,0,"use different passdb backend",NULL},
 		{"export",	'e',POPT_ARG_STRING,&backend_out,0,"export user accounts to backend", NULL},
-		{"debuglevel",'D',POPT_ARG_INT,&DEBUGLEVEL,0,"set debuglevel",NULL},
+		{"debuglevel",'D',POPT_ARG_INT,&new_debuglevel,0,"set debuglevel",NULL},
 		{0,0,0,0}
 	};
 
@@ -450,6 +451,10 @@ int main (int argc, char **argv)
 						POPT_CONTEXT_KEEP_FIRST);
 
 	while((opt = poptGetNextOpt(pc)) != -1);
+
+	if (new_debuglevel != -1) {
+		DEBUGLEVEL = new_debuglevel;
+	}
 
 	setparms = (full_name || home_dir || home_drive || logon_script || profile_path);
 
