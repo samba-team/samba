@@ -25,6 +25,8 @@
 
 #define CACHE_TYPE_USER "USR"
 #define CACHE_TYPE_GROUP "GRP"
+#define CACHE_TYPE_NAME "NAM"      /* Stores mapping from SID to name. */
+#define CACHE_TYPE_SID "SID"       /* Stores mapping from name to SID. */
 
 /* Initialise caching system */
 
@@ -172,6 +174,34 @@ static void store_cache_entry(char *domain, char *cache_type, char *name,
 
 	/* Store it */
 	tdb_store_by_string(cache_tdb, keystr, buf, len);
+}
+
+/* Fill a name cache entry */
+ 
+void winbindd_store_name_cache_entry(char *domain,
+                                     char *sid, struct winbindd_name *name)
+{
+	if (lp_winbind_cache_time() == 0)
+		return;
+ 
+	store_cache_entry(domain, CACHE_TYPE_NAME, sid, name,
+		sizeof(struct winbindd_name));
+ 
+	set_cache_sequence_number(domain, CACHE_TYPE_NAME, sid);
+}
+
+/* Fill a SID cache entry */
+ 
+void winbindd_store_sid_cache_entry(char *domain,
+					char *name, struct winbindd_sid *sid)
+{
+	if (lp_winbind_cache_time() == 0)
+		return;
+ 
+	store_cache_entry(domain, CACHE_TYPE_SID, name, sid,
+		sizeof(struct winbindd_sid));
+ 
+	set_cache_sequence_number(domain, CACHE_TYPE_SID, name);
 }
 
 /* Fill a user info cache entry */
@@ -361,6 +391,44 @@ static BOOL fetch_cache_entry(char *domain, char *cache_type, char *name,
         memcpy((char *)buf, data.dptr, len < data.dsize ? len : data.dsize);
 	free(data.dptr);
 	return True;
+}
+
+/* Fetch an individual SID cache entry */
+ 
+BOOL winbindd_fetch_sid_cache_entry(char *domain,
+                                    char *name, struct winbindd_sid *sid)
+{
+	uint32 seq_num;
+ 
+	if (lp_winbind_cache_time() == 0)
+		return False;
+ 
+	seq_num = get_cache_sequence_number(domain, CACHE_TYPE_SID, name);
+ 
+	if (cache_domain_expired(domain, seq_num))
+		return False;
+ 
+	return fetch_cache_entry(domain, CACHE_TYPE_SID, name, sid,
+		sizeof(struct winbindd_sid));
+}
+ 
+/* Fetch an individual name cache entry */
+ 
+BOOL winbindd_fetch_name_cache_entry(char *domain,
+                                     char *sid, struct winbindd_name *name)
+{
+	uint32 seq_num;
+ 
+	if (lp_winbind_cache_time() == 0)
+		return False;
+ 
+	seq_num = get_cache_sequence_number(domain, CACHE_TYPE_NAME, sid);
+ 
+	if (cache_domain_expired(domain, seq_num))
+		return False;
+ 
+	return fetch_cache_entry(domain, CACHE_TYPE_NAME, sid, name,
+		sizeof(struct winbindd_name));
 }
 
 /* Fetch an individual user cache entry */

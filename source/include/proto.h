@@ -553,7 +553,6 @@ uint32 interpret_addr(char *str);
 struct in_addr *interpret_addr2(char *str);
 BOOL zero_ip(struct in_addr ip);
 BOOL same_net(struct in_addr ip1, struct in_addr ip2, struct in_addr mask);
-struct hostent *Get_Hostbyname(const char *name);
 BOOL process_exists(pid_t pid);
 void smb_panic(char *why);
 char *readdirname(DIR * p);
@@ -726,8 +725,7 @@ BOOL send_null_session_msg(int fd);
 BOOL send_smb(int fd, char *buffer);
 BOOL send_one_packet(char *buf, int len, struct in_addr ip, int port,
 		     int type);
-int open_socket_in(int type, int port, int dlevel, uint32 socket_addr,
-		   BOOL rebind);
+int open_socket_in(int type, int port, int dlevel,uint32 socket_addr, BOOL rebind);
 int open_socket_out(int type, struct in_addr *addr, int port, int timeout);
 void reset_globals_after_fork(void);
 void client_setfd(int fd);
