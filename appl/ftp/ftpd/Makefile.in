@@ -35,6 +35,7 @@ LIBTOP = $(ATHENA)/lib
 LIBKAFS = @KRB_KAFS_LIB@
 LIBKRB	= -L$(LIBTOP)/krb -lkrb
 LIBDES	= -L$(LIBTOP)/des -ldes
+LIBOTP  = -L$(LIBTOP)/otp -lotp
 LIBROKEN= $(LIBTOP)/roken/libroken.a
 
 PROGS = ftpd
@@ -52,7 +53,7 @@ install: all
 
 
 ftpd: $(ftpd_OBJS)
-	$(CC) $(LD_FLAGS) $(LDFLAGS) -o ftpd $(ftpd_OBJS) ../common/libcommon.a $(LIBKAFS) $(LIBKRB) $(LIBDES) $(LIBROKEN) $(LIBS) $(SKEYLIB)
+	$(CC) $(LD_FLAGS) $(LDFLAGS) -o ftpd $(ftpd_OBJS) ../common/libcommon.a $(LIBKAFS) $(LIBKRB) $(LIBOTP) $(LIBDES) $(LIBROKEN) $(LIBS) $(SKEYLIB)
 
 ftpcmd.c: ftpcmd.y
 	$(YACC) $(YFLAGS) $<
