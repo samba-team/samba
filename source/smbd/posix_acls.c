@@ -3373,14 +3373,243 @@ int fchmod_acl(files_struct *fsp, int fd, mode_t mode)
 
 BOOL directory_has_default_acl(connection_struct *conn, const char *fname)
 {
-        SMB_ACL_T dir_acl = SMB_VFS_SYS_ACL_GET_FILE( conn, fname, SMB_ACL_TYPE_DEFAULT);
-        BOOL has_acl = False;
-        SMB_ACL_ENTRY_T entry;
+	SMB_ACL_T dir_acl = SMB_VFS_SYS_ACL_GET_FILE( conn, fname, SMB_ACL_TYPE_DEFAULT);
+	BOOL has_acl = False;
+	SMB_ACL_ENTRY_T entry;
 
-        if (dir_acl != NULL && (SMB_VFS_SYS_ACL_GET_ENTRY(conn, dir_acl, SMB_ACL_FIRST_ENTRY, &entry) == 1))
-                has_acl = True;
+	if (dir_acl != NULL && (SMB_VFS_SYS_ACL_GET_ENTRY(conn, dir_acl, SMB_ACL_FIRST_ENTRY, &entry) == 1)) {
+		has_acl = True;
+	}
 
-	if (dir_acl)
+	if (dir_acl) {
 	        SMB_VFS_SYS_ACL_FREE_ACL(conn, dir_acl);
+	}
         return has_acl;
+}
+
+/****************************************************************************
+ Map from wire type to permset.
+****************************************************************************/
+
+static BOOL unix_ex_wire_to_permset(connection_struct *conn, unsigned char wire_perm, SMB_ACL_PERMSET_T *p_permset)
+{
+	if (wire_perm & ~(SMB_POSIX_ACL_READ|SMB_POSIX_ACL_WRITE|SMB_POSIX_ACL_EXECUTE)) {
+		return False;
+	}
+
+	if (SMB_VFS_SYS_ACL_CLEAR_PERMS(conn, *p_permset) ==  -1) {
+		return False;
+	}
+
+	if (wire_perm & SMB_POSIX_ACL_READ) {
+		if (SMB_VFS_SYS_ACL_ADD_PERM(conn, *p_permset, SMB_ACL_READ) == -1) {
+			return False;
+		}
+	}
+	if (wire_perm & SMB_POSIX_ACL_WRITE) {
+		if (SMB_VFS_SYS_ACL_ADD_PERM(conn, *p_permset, SMB_ACL_WRITE) == -1) {
+			return False;
+		}
+	}
+	if (wire_perm & SMB_POSIX_ACL_EXECUTE) {
+		if (SMB_VFS_SYS_ACL_ADD_PERM(conn, *p_permset, SMB_ACL_EXECUTE) == -1) {
+			return False;
+		}
+	}
+	return True;
+}
+
+/****************************************************************************
+ Map from wire type to tagtype.
+****************************************************************************/
+
+static BOOL unix_ex_wire_to_tagtype(unsigned char wire_tt, SMB_ACL_TAG_T *p_tt)
+{
+	switch (wire_tt) {
+		case SMB_POSIX_ACL_USER_OBJ:
+			*p_tt = SMB_ACL_USER_OBJ;
+			break;
+		case SMB_POSIX_ACL_USER:
+			*p_tt = SMB_ACL_USER;
+			break;
+		case SMB_POSIX_ACL_GROUP_OBJ:
+			*p_tt = SMB_ACL_GROUP_OBJ;
+			break;
+		case SMB_POSIX_ACL_GROUP:
+			*p_tt = SMB_ACL_GROUP;
+			break;
+		case SMB_POSIX_ACL_MASK:
+			*p_tt = SMB_ACL_MASK;
+			break;
+		case SMB_POSIX_ACL_OTHER:
+			*p_tt = SMB_ACL_OTHER;
+			break;
+		default:
+			return False;
+	}
+	return True;
+}
+
+/****************************************************************************
+ Create a new POSIX acl from wire permissions.
+****************************************************************************/
+
+static SMB_ACL_T create_posix_acl_from_wire(connection_struct *conn, uint16 num_acls, const char *pdata)
+{
+	unsigned int i;
+	SMB_ACL_T the_acl = SMB_VFS_SYS_ACL_INIT(conn, num_acls);
+
+	if (the_acl == NULL) {
+		return NULL;
+	}
+
+	for (i = 0; i < num_acls; i++) {
+		SMB_ACL_ENTRY_T the_entry;
+		SMB_ACL_PERMSET_T the_permset;
+		SMB_ACL_TAG_T tag_type;
+
+		if (SMB_VFS_SYS_ACL_CREATE_ENTRY(conn, &the_acl, &the_entry) == -1) {
+			DEBUG(0,("create_posix_acl_from_wire: Failed to create entry %u. (%s)\n",
+				i, strerror(errno) ));
+			goto fail;
+		}
+
+		if (!unix_ex_wire_to_tagtype(CVAL(pdata,(i*SMB_POSIX_ACL_ENTRY_SIZE)), &tag_type)) {
+			DEBUG(0,("create_posix_acl_from_wire: invalid wire tagtype %u on entry %u.\n",
+				CVAL(pdata,(i*SMB_POSIX_ACL_ENTRY_SIZE)), i ));
+			goto fail;
+		}
+
+		if (SMB_VFS_SYS_ACL_SET_TAG_TYPE(conn, the_entry, tag_type) == -1) {
+			DEBUG(0,("create_posix_acl_from_wire: Failed to set tagtype on entry %u. (%s)\n",
+				i, strerror(errno) ));
+			goto fail;
+		}
+
+		if (!unix_ex_wire_to_permset(conn, CVAL(pdata,(i*SMB_POSIX_ACL_ENTRY_SIZE)+1), &the_permset)) {
+			DEBUG(0,("create_posix_acl_from_wire: invalid permset %u on entry %u.\n",
+				CVAL(pdata,(i*SMB_POSIX_ACL_ENTRY_SIZE) + 1), i ));
+			goto fail;
+		}
+
+		if (SMB_VFS_SYS_ACL_SET_PERMSET(conn, the_entry, the_permset) == -1) {
+			DEBUG(0,("create_posix_acl_from_wire: Failed to add permset on entry %u. (%s)\n",
+				i, strerror(errno) ));
+			goto fail;
+		}
+
+		if (tag_type == SMB_ACL_USER) {
+			uint32 uidval = IVAL(pdata,(i*SMB_POSIX_ACL_ENTRY_SIZE)+2);
+			uid_t uid = (uid_t)uidval;
+			if (SMB_VFS_SYS_ACL_SET_QUALIFIER(conn, the_entry,(void *)&uid) == -1) {
+				DEBUG(0,("create_posix_acl_from_wire: Failed to set uid %u on entry %u. (%s)\n",
+					(unsigned int)uid, i, strerror(errno) ));
+				goto fail;
+			}
+		}
+
+		if (tag_type == SMB_ACL_GROUP) {
+			uint32 gidval = IVAL(pdata,(i*SMB_POSIX_ACL_ENTRY_SIZE)+2);
+			gid_t gid = (uid_t)gidval;
+			if (SMB_VFS_SYS_ACL_SET_QUALIFIER(conn, the_entry,(void *)&gid) == -1) {
+				DEBUG(0,("create_posix_acl_from_wire: Failed to set gid %u on entry %u. (%s)\n",
+					(unsigned int)gid, i, strerror(errno) ));
+				goto fail;
+			}
+		}
+	}
+
+	return the_acl;
+
+ fail:
+
+	if (the_acl != NULL) {
+		SMB_VFS_SYS_ACL_FREE_ACL(conn, the_acl);
+	}
+	return NULL;
+}
+
+/****************************************************************************
+ Calls from UNIX extensions - Default POSIX ACL set.
+ If num_dir_acls == 0 and not a directory just return. If it is a directory
+ and num_dir_acls == 0 then remove the default acl. Else set the default acl
+ on the directory.
+****************************************************************************/
+
+BOOL set_unix_posix_default_acl(connection_struct *conn, const char *fname, SMB_STRUCT_STAT *psbuf,
+				uint16 num_dir_acls, const char *pdata)
+{
+	SMB_ACL_T dir_acl = NULL;
+
+	if (num_dir_acls && !S_ISDIR(psbuf->st_mode)) {
+		DEBUG(5,("set_unix_posix_default_acl: Can't set default ACL on non-directory file %s\n", fname ));
+		errno = EISDIR;
+		return False;
+	}
+
+	if (!num_dir_acls) {
+		/* Remove the default ACL. */
+		if (SMB_VFS_SYS_ACL_DELETE_DEF_FILE(conn, fname) == -1) {
+			DEBUG(5,("set_unix_posix_default_acl: acl_delete_def_file failed on directory %s (%s)\n",
+				fname, strerror(errno) ));
+			return False;
+		}
+		return True;
+	}
+
+	if ((dir_acl = create_posix_acl_from_wire(conn, num_dir_acls, pdata)) == NULL) {
+		return False;
+	}
+
+	if (SMB_VFS_SYS_ACL_SET_FILE(conn, fname, SMB_ACL_TYPE_DEFAULT, dir_acl) == -1) {
+		DEBUG(5,("set_unix_posix_default_acl: acl_set_file failed on directory %s (%s)\n",
+			fname, strerror(errno) ));
+	        SMB_VFS_SYS_ACL_FREE_ACL(conn, dir_acl);
+		return False;
+	}
+
+	DEBUG(10,("set_unix_posix_default_acl: set default acl for file %s\n", fname ));
+	SMB_VFS_SYS_ACL_FREE_ACL(conn, dir_acl);
+	return True;
+}
+
+/****************************************************************************
+ Calls from UNIX extensions - POSIX ACL set.
+ If num_dir_acls == 0 then read/modify/write acl after removing all entries
+ except SMB_ACL_USER_OBJ, SMB_ACL_GROUP_OBJ, SMB_ACL_OTHER.
+****************************************************************************/
+
+BOOL set_unix_posix_acl(connection_struct *conn, files_struct *fsp, const char *fname, uint16 num_acls, const char *pdata)
+{
+	SMB_ACL_T file_acl = NULL;
+
+	if (!num_acls) {
+		/* TODO !!! */
+		/* Remove the default ACL. */
+	}
+
+	if ((file_acl = create_posix_acl_from_wire(conn, num_acls, pdata)) == NULL) {
+		return False;
+	}
+
+	if (fsp && fsp->fd != -1) {
+		/* The preferred way - use an open fd. */
+		if (SMB_VFS_SYS_ACL_SET_FD(fsp, fsp->fd, file_acl) == -1) {
+			DEBUG(5,("set_unix_posix_acl: acl_set_file failed on %s (%s)\n",
+				fname, strerror(errno) ));
+		        SMB_VFS_SYS_ACL_FREE_ACL(conn, file_acl);
+			return False;
+		}
+	} else {
+		if (SMB_VFS_SYS_ACL_SET_FILE(conn, fname, SMB_ACL_TYPE_ACCESS, file_acl) == -1) {
+			DEBUG(5,("set_unix_posix_acl: acl_set_file failed on %s (%s)\n",
+				fname, strerror(errno) ));
+		        SMB_VFS_SYS_ACL_FREE_ACL(conn, file_acl);
+			return False;
+		}
+	}
+
+	DEBUG(10,("set_unix_posix_acl: set acl for file %s\n", fname ));
+	SMB_VFS_SYS_ACL_FREE_ACL(conn, file_acl);
+	return True;
 }
