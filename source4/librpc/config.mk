@@ -5,8 +5,9 @@ INIT_OBJ_FILES = \
 		librpc/ndr/ndr.o
 ADD_OBJ_FILES = \
 		librpc/ndr/ndr_basic.o \
+		librpc/ndr/ndr_compression.o \
 		librpc/ndr/ndr_misc.o
-REQUIRED_SUBSYSTEMS = LIBCLI_UTILS
+REQUIRED_SUBSYSTEMS = LIBCLI_UTILS EXT_LIB_ZLIB
 # End SUBSYSTEM LIBNDR_RAW
 ################################################
 
