@@ -1,0 +1,104 @@
+<localization language="id">
+
+<gentext key="abstract"       text="Abstrak"/>
+<gentext key="answer"         text="Jawab:"/>
+<gentext key="appendix"       text="Lampiran"/>
+<gentext key="article"        text="Artikel"/>
+<gentext key="bibliography"   text="Bibliografi"/>
+<gentext key="book"           text="Buku"/>
+<gentext key="caution"        text="PERHATIAN"/>
+<gentext key="caution"        text="Perhatian"/>
+<gentext key="chapter"        text="Bab"/>
+<gentext key="colophon"       text="Kolofon"/>
+<gentext key="copyright"      text="Hak Cipta"/>
+<gentext key="dedication"     text="Dedikasi"/>
+<gentext key="edition"        text="Edisi"/>
+<gentext key="equation"       text="Persamaan"/>
+<gentext key="example"        text="Teladan"/>
+<gentext key="figure"         text="Gambar"/>
+<gentext key="glosssee"       text="Lihat"/>
+<gentext key="glossseealso"   text="Lihat Juga"/>
+<gentext key="glossary"       text="Daftar Istilah"/>
+<gentext key="important"      text="PENTING"/>
+<gentext key="isbn"           text="ISBN"/>
+<gentext key="important"      text="Penting"/>
+<gentext key="index"          text="Indeks"/>
+<gentext key="legalnotice"    text="Aspek Hukum"/>
+<gentext key="msgaud"         text="Pemirsa"/>
+<gentext key="msglevel"       text="Tingkatan"/>
+<gentext key="msgorig"        text="Asal"/>
+<gentext key="note"           text="CATATAN"/>
+<gentext key="note"           text="Catatan"/>
+<gentext key="part"           text="Bagian"/>
+<gentext key="preface"        text="Kata Pengantar"/>
+<gentext key="procedure"      text="Prosedur"/>
+<gentext key="published"      text="Diterbitkan"/>
+<gentext key="question"       text="Tanya:"/>
+<gentext key="refentry"       text=""/>
+<gentext key="reference"      text="Referensi"/>
+<gentext key="refname"        text="Nama"/>
+<gentext key="refsection"     text=""/>
+<gentext key="refsynopsisdiv" text="Sinopsis"/>
+<gentext key="revision"       text="Revisi"/>
+<gentext key="revhistory"     text="Catatan Revisi"/>
+<gentext key="section"        text="Bagian"/>
+<gentext key="see"            text="Lihat"/>
+<gentext key="seealso"        text="Lihat Juga"/>
+<gentext key="set"            text="Set"/>
+<gentext key="setindex"       text="Set Index"/>
+<gentext key="sidebar"        text=""/>
+<gentext key="step"           text="Tahap"/>
+<gentext key="tip"            text="TIP"/>
+<gentext key="table"          text="Tabel"/>
+<gentext key="tip"            text="Tip"/>
+<gentext key="warning"        text="AWAS"/>
+<gentext key="warning"        text="Awas"/>
+<gentext key="appendix"       text="lampiran"/>
+<gentext key="chapter"        text="bab"/>
+<gentext key="section"        text="bagian"/>
+<gentext key="sidebar"        text="sidebar"/>
+<gentext key="step"           text="tahap"/>
+<gentext key="seealso"        text="Lihat juga"/>
+
+<gentext key="TableofContents" text="Daftar Isi"/>
+<gentext key="in" text="di"/>
+<gentext key="by" text="oleh"/>
+<gentext key="Edited" text="disunting"/>
+<gentext key="Editedby" text="disunting oleh"/>
+<gentext key="and" text="dan"/>
+<gentext key="Notes" text="Catatan"/>
+<gentext key="TableNotes" text="Catatan"/>
+<gentext key="nonexistantelement" text="elemen tak tampak"/>
+<gentext key="Pgs" text="Hal."/>
+<gentext key="unsupported" text="tidak didukung"/>
+<gentext key="xrefto" text="xref ke"/>
+<gentext key="unexpectedelementname" text="Nama Elemen seharusnya tidak ada"/>
+<gentext key="Revisedby" text="Revised by: "/>
+
+<gentext key="ListofTables" text="Daftar Tabel"/>
+<gentext key="ListofExamples" text="Daftar Teladan"/>
+<gentext key="ListofFigures" text="Daftar Gambar"/>
+<gentext key="ListofEquations" text="Daftar Persamaan"/>
+<gentext key="ListofUnknown" text="Daftar Gaib"/>
+
+<gentext key="nav-prev" text="Prev"/>
+<gentext key="nav-prev-sibling" text="Fast Backward"/>
+<gentext key="nav-next-sibling" text="Fast Forward"/>
+<gentext key="nav-next" text="Next"/>
+<gentext key="nav-up" text="Up"/>
+<gentext key="nav-home" text="Home"/>
+
+<dingbat key="startquote" text='&#8220;'/>
+<dingbat key="endquote" text='&#8221;'/>
+<dingbat key="nestedstartquote" text="`"/>
+<dingbat key="nestedendquote" text="'"/>
+<dingbat key="bullet" text="&#2022;"/>
+
+<xref element="bibliography" text="%t"/>
+<xref element="chapter" text="%g %n, %t"/>
+<xref element="dedication" text="%t"/>
+<xref element="glossary" text="%t"/>
+<xref element="index" text="%t"/>
+<xref element="preface" text="%t"/>
+
+</localization>

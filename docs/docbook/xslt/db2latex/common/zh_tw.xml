@@ -1,0 +1,98 @@
+<localization language="zh_tw">
+
+<gentext key="abstract"       text="&#x6458;&#x8981;"/>
+<gentext key="answer"         text="&#x7B54;&#xFF1A;"/>
+<gentext key="appendix"       text="&#x9644;&#x9304;"/>
+<gentext key="article"        text="&#x6587;&#x7AE0;"/>
+<gentext key="bibliography"   text="&#x53C3;&#x8003;&#x6587;&#x737B;"/>
+<gentext key="book"           text="&#x66F8;&#x76EE;"/>
+<gentext key="caution"        text="&#x6CE8;&#x610F;"/>
+<gentext key="chapter"        text="&#x7AE0;"/>
+<gentext key="colophon"       text="&#x7248;&#x672C;&#x8A18;&#x9304;"/>
+<gentext key="copyright"      text="&#x7248;&#x6B0A;"/>
+<gentext key="dedication"     text="&#x5949;&#x737B;"/>
+<gentext key="edition"        text="&#x7248;"/>
+<gentext key="equation"       text="&#x65B9;&#x7A0B;&#x5F0F;"/>
+<gentext key="example"        text="&#x7BC4;&#x4F8B;"/>
+<gentext key="figure"         text="&#x5716;&#x5F62;"/>
+<gentext key="glossary"       text="&#x5C0F;&#x8FAD;&#x5F59;"/>
+<gentext key="glosssee"       text="&#x53C3;&#x898B;"/>
+<gentext key="glossseealso"   text="&#x53E6;&#x53C3;&#x898B;"/>
+<gentext key="important"      text="&#x91CD;&#x8981;"/>
+<gentext key="index"          text="&#x7D22;&#x5F15;"/>
+<gentext key="isbn"           text="ISBN"/>
+<gentext key="legalnotice"    text="&#x6CD5;&#x5F8B;&#x8072;&#x660E;"/>
+<gentext key="msgaud"         text="&#x8B80;&#x8005;"/>
+<gentext key="msglevel"       text="&#x7A0B;&#x5EA6;"/>
+<gentext key="msgorig"        text="&#x51FA;&#x8655;"/>
+<gentext key="note"           text="&#x6CE8;"/>
+<gentext key="part"           text="&#x90E8;"/>
+<gentext key="preface"        text="&#x5E8F;&#x8A00;"/>
+<gentext key="procedure"      text="&#x904E;&#x7A0B;"/>
+<gentext key="published"      text="&#x51FA;&#x7248;"/>
+<gentext key="question"       text="&#x554F;&#xFF1A;"/>
+<gentext key="refentry"       text="&#x53C3;&#x7167;&#x9805;&#x76EE;"/>
+<gentext key="reference"      text="&#x53C3;&#x8003;"/>
+<gentext key="refname"        text="&#x53C3;&#x8003;&#x540D;"/>
+<gentext key="refsection"     text="&#x53C3;&#x7167;&#x7AE0;&#x7BC0;"/>
+<gentext key="refsynopsisdiv" text="&#x5927;&#x7DB1;"/>
+<gentext key="revhistory"     text="&#x4FEE;&#x8A02;&#x8A18;&#x9304;"/>
+<gentext key="revision"       text="&#x4FEE;&#x8A02;"/>
+<gentext key="section"        text="&#x7BC0;"/>
+<gentext key="see"            text="&#x898B;"/>
+<gentext key="seealso"        text="&#x53E6;&#x898B;"/>
+<gentext key="set"            text="Set"/>
+<gentext key="setindex"       text="Set Index"/>
+<gentext key="sidebar"        text=""/>
+<gentext key="step"           text="&#x6B65;&#x9A5F;"/>
+<gentext key="table"          text="&#x8868;&#x683C;"/>
+<gentext key="tip"            text="&#x63D0;&#x793A;"/>
+<gentext key="tip"            text="&#x63D0;&#x793A;"/>
+<gentext key="warning"        text="&#x8B66;&#x544A;"/>
+
+<gentext key="TableofContents"
+         text="&#x5167;&#x5BB9;&#x76EE;&#x9304;"/>
+<gentext key="in"             text="&#x5728;"/>
+<gentext key="by"             text="&#x7531;"/>
+<gentext key="Edited"         text="&#x7DE8;&#x8F2F;"/>
+<gentext key="Editedby"       text="&#x7DE8;&#x8F2F;"/>
+<gentext key="and"            text="&#x4E14;"/>
+<gentext key="Notes"          text="&#x6CE8;"/>
+<gentext key="TableNotes"     text="&#x6CE8;&#x91CB;"/>
+<gentext key="nonexistantelement"
+         text="&#x4E0D;&#x5B58;&#x5728;&#x7684;&#x5143;&#x7D20;"/>
+<gentext key="Pgs"            text="&#x9801;"/>
+<gentext key="unsupported"    text="&#x672A;&#x652F;&#x63F4;"/>
+<gentext key="xrefto"         text="&#x53C3;&#x7167;"/>
+<gentext key="unexpectedelementname"
+         text="&#x975E;&#x9810;&#x671F;&#x7684;&#x5143;&#x7D20;&#x540D;"/>
+<gentext key="Revisedby"      text="&#x4FEE;&#x8A02;"/>
+
+<gentext key="ListofTables"   text="&#x9644;&#x8868;&#x76EE;&#x9304;"/>
+<gentext key="ListofExamples" text="&#x7BC4;&#x4F8B;&#x76EE;&#x9304;"/>
+<gentext key="ListofFigures"  text="&#x9644;&#x5716;&#x76EE;&#x9304;"/>
+<gentext key="ListofEquations" text="&#x516C;&#x5F0F;&#x76EE;&#x9304;"/>
+<gentext key="ListofUnknown"  text="&#x5176;&#x5B83;&#x5167;&#x5BB9;&#x76EE;&#x9304;"/>
+
+<gentext key="nav-prev"       text="&#x524D;&#x4E00;&#x9801;"/>
+<gentext key="nav-prev-sibling" text="&#x5FEB;&#x901F;&#x5411;&#x524D;"/>
+<gentext key="nav-next-sibling" text="&#x5FEB;&#x901F;&#x5411;&#x5F8C;"/>
+<gentext key="nav-next"         text="&#x4E0B;&#x4E00;&#x9801;"/>
+<gentext key="nav-up"           text="&#x4E0A;&#x4E00;&#x5C64;"/>
+<gentext key="nav-home"         text="&#x5167;&#x5BB9;"/>
+
+<dingbat key="startquote"     text="&quot;"/>
+<dingbat key="endquote"       text="&quot;"/>
+<dingbat key="nestedstartquote" text="'"/>
+<dingbat key="nestedendquote"   text="'"/>
+<dingbat key="bullet"         text="&#2022;"/>
+
+<xref element="appendix"      text="%g %n"/>
+<xref element="chapter"       text="%g %n"/>
+<xref element="dedication"    text="%t"/>
+<xref element="preface"       text="%t"/>
+<xref element="bibliography"  text="%t"/>
+<xref element="glossary"      text="%t"/>
+<xref element="index"         text="%t"/>
+
+</localization>

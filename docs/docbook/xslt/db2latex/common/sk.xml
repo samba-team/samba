@@ -1,0 +1,104 @@
+<localization language="sk">
+
+<gentext key="abstract"                 text="Obsah"/>
+<gentext key="answer"                   text="A:"/>
+<gentext key="appendix"                 text="Dodatok"/>
+<gentext key="article"                  text="&#x010C;l&#x00E1;nok"/>
+<gentext key="bibliography"             text="Bibliografia"/>
+<gentext key="book"                     text="Kniha"/>
+<gentext key="caution"                  text="V&#x00DD;STRAHA"/>
+<gentext key="caution"                  text="V&#x00FD;straha"/>
+<gentext key="chapter"                  text="Kapitola"/>
+<gentext key="colophon"                 text="Tir&#x00E1;&#x017E;"/>
+<gentext key="copyright"                text="Copyright"/>
+<gentext key="dedication"               text="Venovanie"/>
+<gentext key="edition"                  text="Vydanie"/>
+<gentext key="equation"                 text="Rovnice"/>
+<gentext key="example"                  text="Pr&#x00ED;klad"/>
+<gentext key="figure"                   text="Obr&#x00E1;zok"/>
+<gentext key="glosssee"                 text="Pozri"/>
+<gentext key="glossseealso"             text="Pozri tie&#x017E;"/>
+<gentext key="glossary"                 text="Slovn&#x00ED;k"/>
+<gentext key="important"                text="D&#x00D4;LE&#x017D;IT&#x00C9;"/>
+<gentext key="isbn"                     text="ISBN"/>
+<gentext key="important"                text="D&#x00F4;le&#x017E;it&#x00E9;"/>
+<gentext key="index"                    text="Zoznam"/>
+<gentext key="legalnotice"              text="Pr&#x00E1;vna pozn&#x00E1;mka"/>
+<gentext key="msgaud"                   text="Publikum"/>
+<gentext key="msglevel"                 text="&#x00DA;rove&#x0148;"/>
+<gentext key="msgorig"                  text="P&#x00F4;vod"/>
+<gentext key="note"                     text="POZN&#x00C1;MKA"/>
+<gentext key="note"                     text="Pozn&#x00E1;mka"/>
+<gentext key="part"                     text="&#x010C;as&#x0165;"/>
+<gentext key="preface"                  text="&#x00DA;vod"/>
+<gentext key="procedure"                text="Postup"/>
+<gentext key="published"                text="Vydan&#x00E9;"/>
+<gentext key="question"                 text="Q:"/>
+<gentext key="refentry"                 text=""/>
+<gentext key="reference"                text="Odkaz"/>
+<gentext key="refname"                  text="Meno"/>
+<gentext key="refsection"               text=""/>
+<gentext key="refsynopsisdiv"           text="Preh&#x013E;ad"/>
+<gentext key="revision"                 text="Rev&#x00ED;zia"/>
+<gentext key="revhistory"               text="Preh&#x013E;ad rev&#x00ED;zi&#x00ED;"/>
+<gentext key="section"                  text="Oddiel"/>
+<gentext key="see"                      text="Pozri"/>
+<gentext key="seealso"                  text="Pozri tie&#x017E;"/>
+<gentext key="set"                      text="Nastavi&#x0165;"/>
+<gentext key="setindex"                 text="Nastavi&#x0165; index"/>
+<gentext key="sidebar"                  text=""/>
+<gentext key="step"                     text="Krok"/>
+<gentext key="tip"                      text="TIP"/>
+<gentext key="table"                    text="Tabu&#x013E;ka"/>
+<gentext key="tip"                      text="Tip"/>
+<gentext key="warning"                  text="VAROVANIE"/>
+<gentext key="warning"                  text="Varovanie"/>
+<gentext key="appendix"                 text="dodatok"/>
+<gentext key="chapter"                  text="kapitola"/>
+<gentext key="section"                  text="oddiel"/>
+<gentext key="sidebar"                  text="bo&#x010D;n&#x00ED; li&#x0161;ta"/>
+<gentext key="step"                     text="krok"/>
+<gentext key="seealso"                  text="Pozri tie&#x017E;"/>
+
+<gentext key="TableofContents"          text="Obsah"/>
+<gentext key="in"                       text="v"/>
+<gentext key="by"                       text=""/>
+<gentext key="Edited"                   text="Vydan&#x00E9;"/>
+<gentext key="Editedby"                 text="Vydan&#x00E9;"/>
+<gentext key="and"                      text="a"/>
+<gentext key="Notes"                    text="Pozn&#x00E1;mky"/>
+<gentext key="TableNotes"               text="Pozn&#x00E1;mky"/>
+<gentext key="nonexistantelement"       text="neexistuj&#x00FA;ci prvok"/>
+<gentext key="Pgs"                      text="Str."/>
+<gentext key="unsupported"              text="nepodporovan&#x00FD;"/>
+<gentext key="xrefto"                   text="xref k"/>
+<gentext key="unexpectedelementname"    text="Neo&#x010D;ak&#x00E1;van&#x00E9; meno prvku"/>
+<gentext key="Revisedby"                text="Revised by: "/>
+
+<gentext key="ListofTables"             text="Zoznam tabuliek"/>
+<gentext key="ListofExamples"           text="Zoznam pr&#x00ED;kladov"/>
+<gentext key="ListofFigures"            text="Zoznam obr&#x00E1;zkov"/>
+<gentext key="ListofEquations"          text="Zoznam rovn&#x00ED;c"/>
+<gentext key="ListofUnknown"            text="Zoznam nezn&#x00E1;meho"/>
+
+<gentext key="nav-prev"                 text="Predch&#x00E1;dzaj&#x00FA;ci"/>
+<gentext key="nav-prev-sibling"         text="R&#x00FD;chlo nazp&#x00E4;t"/>
+<gentext key="nav-next-sibling"         text="R&#x00FD;chlo dopredu"/>
+<gentext key="nav-next"                 text="&#x010E;al&#x0161;&#x00ED;"/>
+<gentext key="nav-up"                   text="Hore"/>
+<gentext key="nav-home"                 text="Domov"/>
+
+<dingbat key="startquote" text="&#x201C;"/>
+<dingbat key="endquote" text="&#x201D;"/>
+<dingbat key="nestedstartquote" text="&#x2018;"/>
+<dingbat key="nestedendquote" text="&#x2019;"/>
+<dingbat key="bullet" text="&#2022;"/>
+
+<xref element="bibliography" text="%t"/>
+<xref element="chapter" text="%g %n, %t"/>
+<xref element="dedication" text="%t"/>
+<xref element="glossary" text="%t"/>
+<xref element="index" text="%t"/>
+<xref element="preface" text="%t"/>
+
+</localization>

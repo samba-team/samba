@@ -1,0 +1,99 @@
+<localization language="sv">
+
+<gentext key="abstract"                 text="Abstrakt"/>
+<gentext key="appendix"                 text="Appendix"/>
+<gentext key="article"                  text="Artikel"/>
+<gentext key="bibliography"             text="Bibliografi"/>
+<gentext key="book"                     text="Bok"/>
+<gentext key="caution"                  text="OBSERVERA"/>
+<gentext key="caution"                  text="Observera"/>
+<gentext key="chapter"                  text="Kapitel"/>
+<gentext key="copyright"                text="Copyright"/>
+<gentext key="dedication"               text="Dedikation"/>
+<gentext key="edition"                  text="Edition"/>
+<gentext key="equation"                 text="Ekvation"/>
+<gentext key="example"                  text="Exempel"/>
+<gentext key="figure"                   text="Figur"/>
+<gentext key="glosssee"                 text="Se"/>
+<gentext key="glossseealso"             text="Se &#196;ven"/>
+<gentext key="glossary"                 text="Gloslista"/>
+<gentext key="important"                text="VIKTIGT"/>
+<gentext key="isbn"                     text="ISBN"/>
+<gentext key="important"                text="Viktigt"/>
+<gentext key="index"                    text="Index"/>
+<gentext key="legalnotice"              text="Legal Notice"/>
+<gentext key="msgaud"                   text="M&#229;lgrupp"/>
+<gentext key="msglevel"                 text="Niv&#229;"/>
+<gentext key="msgorig"                  text="Ursprung"/>
+<gentext key="note"                     text="NOT"/>
+<gentext key="note"                     text="Not"/>
+<gentext key="part"                     text="Del"/>
+<gentext key="preface"                  text="F&#246;retal"/>
+<gentext key="procedure"                text="Procedur"/>
+<gentext key="published"                text="Publicerad"/>
+<gentext key="refname"                  text="Namn"/>
+<gentext key="reference"                text="Referens"/>
+<gentext key="revision"                 text="Revision"/>
+<gentext key="revhistory"               text="Revisions Historik;"/>
+<gentext key="section"                  text="Sektion"/>
+<gentext key="see"                      text="Se"/>
+<gentext key="seealso"                  text="Se &#196;ven"/>
+<gentext key="set"                      text="Set"/>
+<gentext key="setindex"                 text="Set Index"/>
+<gentext key="sidebar"                  text="Sidebar"/>
+<gentext key="step"                     text="Steg"/>
+<gentext key="tip"                      text="TIPS"/>
+<gentext key="table"                    text="Tabell"/>
+<gentext key="tip"                      text="Tips"/>
+<gentext key="warning"                  text="VARNING"/>
+<gentext key="warning"                  text="Varning"/>
+<gentext key="appendix"                 text="appendix"/>
+<gentext key="chapter"                  text="kapitel"/>
+<gentext key="section"                  text="sektion"/>
+<gentext key="step"                     text="steg"/>
+<gentext key="seealso"                  text="Se &#228;ven"/>
+
+<gentext key="TableofContents"          text="Inneh&#229;llsf&#246;rteckning"/>
+<gentext key="called"                   text="kallas"/>
+<gentext key="in"                       text="i"/>
+<gentext key="by"                       text="av"/>
+<gentext key="Edited"                   text="Utgiven"/>
+<gentext key="Editedby"                 text="Utgiven av"/>
+<gentext key="and"                      text="och"/>
+<gentext key="Notes"                    text="Noter"/>
+<gentext key="TableNotes"               text="Noter"/>
+<gentext key="nonexistantelement"       text="non-existant element"/>
+<gentext key="the"                      text=""/>
+<gentext key="Pgs"                      text="Sid."/>
+<gentext key="unsupported"              text="unsupported"/>
+<gentext key="xrefto"                   text="xref till"/>
+<gentext key="unexpectedelementname"    text="Unexpected element name"/>
+<gentext key="Revisedby"                text="Revised by: "/>
+
+<gentext key="ListofTables"             text="Tabellf&#246;rteckning"/>
+<gentext key="ListofExamples"           text="Exempelf&#246;rteckning"/>
+<gentext key="ListofFigures"            text="Figurf&#246;rteckning"/>
+<gentext key="ListofEquations"          text="Ekvationsf&#246;rteckning"/>
+<gentext key="ListofUnknown"            text="F&#246;rteckning av ok&#228;nda"/>
+
+<gentext key="nav-prev"                 text="F&#246;rutg&#229;ende"/>
+<gentext key="nav-prev-sibling"         text="Snabbt framm&#229;t"/>
+<gentext key="nav-next-sibling"         text="Snabbt bak&#229;t"/>
+<gentext key="nav-next"                 text="N&#228;sta"/>
+<gentext key="nav-up"                   text="Upp"/>
+<gentext key="nav-home"                 text="Hem"/>
+
+<dingbat key="startquote" text="&#x201C;"/>
+<dingbat key="endquote" text="&#x201D;"/>
+<dingbat key="nestedstartquote" text="&#x2018;"/>
+<dingbat key="nestedendquote" text="&#x2019;"/>
+<dingbat key="bullet" text="&#2022;"/>
+
+<xref element="bibliography" text="%t"/>
+<xref element="chapter" text="%g %n, %t"/>
+<xref element="dedication" text="%t"/>
+<xref element="glossary" text="%t"/>
+<xref element="index" text="%t"/>
+<xref element="preface" text="%t"/>
+
+</localization>

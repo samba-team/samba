@@ -12,6 +12,20 @@
 
 <xsl:param name="xmlSambaNsUri" select="'http://samba.org/common'"/>
 
+<xsl:template match="refentry">
+<xsl:text disable-output-escaping="yes">
+&lt;!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN"
+                  "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd" [
+
+&lt;!ENTITY % globalentities SYSTEM './../global.ent'> %globalentities;
+]>
+</xsl:text>
+<xsl:element name="refentry">
+	<xsl:attribute name="id"><xsl:value-of select="@id"/></xsl:attribute>
+	<xsl:apply-templates/>
+</xsl:element>
+</xsl:template>
+
 <!-- This is needed to copy content unchanged -->
 <xsl:template match="@*|node()">
   <xsl:copy>
@@ -61,8 +75,7 @@
   </xsl:variable>
   
   <xsl:element name="varlistentry">
-     <xsl:text>
-</xsl:text>     
+     <xsl:text>&#10;</xsl:text>     
      <xsl:copy-of select="$term"/>
      <xsl:copy-of select="$content"/>
      <xsl:text>

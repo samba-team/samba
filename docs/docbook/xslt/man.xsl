@@ -8,7 +8,7 @@
 <xsl:param name="chunk.section.depth" select="0"/>
 <xsl:param name="chunk.first.sections" select="1"/>
 <xsl:param name="use.id.as.filename" select="1"/>
-<xsl:param name="base.dir" select="'../../manpages/'"/>
+<xsl:param name="base.dir" select="'../manpages/'"/>
 
 <!-- 
     Our ulink stylesheet omits @url part if content was specified
