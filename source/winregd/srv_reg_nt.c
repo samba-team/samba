@@ -69,37 +69,6 @@ static BOOL get_policy_reg_name(struct policy_cache *cache, POLICY_HND * hnd,
 	return False;
 }
 
-#if 0
-/*******************************************************************
- reg_reply_unknown_1
- ********************************************************************/
-static void reg_reply_close(REG_Q_CLOSE * q_r, prs_struct * rdata)
-{
-	REG_R_CLOSE r_u;
-
-	/* set up the REG unknown_1 response */
-	bzero(r_u.pol.data, POL_HND_SIZE);
-
-	/* close the policy handle */
-	if (close_policy_hnd(get_global_hnd_cache(), &(q_r->pol)))
-	{
-		r_u.status = NT_STATUS_NOPROBLEMO;
-	}
-	else
-	{
-		r_u.status = NT_STATUS_OBJECT_NAME_INVALID;
-	}
-
-	DEBUG(5, ("reg_unknown_1: %d\n", __LINE__));
-
-	/* store the response in the SMB stream */
-	reg_io_r_close("", &r_u, rdata, 0);
-
-	DEBUG(5, ("reg_unknown_1: %d\n", __LINE__));
-}
-
-
-#endif
 /*******************************************************************
  _reg_close
  ********************************************************************/

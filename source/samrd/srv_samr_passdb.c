@@ -1616,7 +1616,7 @@ uint32 _samr_open_user(const POLICY_HND *domain_pol,
 	DOM_SID sid;
 
 	/* set up the SAMR open_user response */
-	bzero(user_pol->data, POL_HND_SIZE);
+	ZERO_STRUCTP(user_pol);
 
 	/* find the policy handle.  open a policy on it. */
 	if (!get_policy_samr_sid(get_global_hnd_cache(), domain_pol, &sid))
@@ -2190,7 +2190,7 @@ uint32 _samr_create_dom_alias(const POLICY_HND *domain_pol,
 	DOM_SID dom_sid;
 	LOCAL_GRP grp;
 
-	bzero(alias_pol, POL_HND_SIZE);
+	ZERO_STRUCTP(alias_pol);
 
 	/* find the policy handle.  open a policy on it. */
 	if (find_policy_by_hnd(get_global_hnd_cache(), domain_pol) == -1)
@@ -2242,7 +2242,7 @@ uint32 _samr_create_dom_group(const POLICY_HND *domain_pol,
 	DOM_SID dom_sid;
 	DOMAIN_GRP grp;
 
-	bzero(group_pol, POL_HND_SIZE);
+	ZERO_STRUCTP(group_pol);
 
 	/* find the policy handle.  open a policy on it. */
 	if (find_policy_by_hnd(get_global_hnd_cache(), domain_pol) == -1)

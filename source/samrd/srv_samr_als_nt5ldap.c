@@ -332,7 +332,7 @@ uint32 _samr_create_dom_alias(const POLICY_HND *domain_pol,
 	LOCAL_GRP grp;
 	LDAPDB *hds = NULL;
 
-	bzero(alias_pol, POL_HND_SIZE);
+	ZERO_STRUCTP(alias_pol);
 
 	/* find the policy handle.  open a policy on it. */
 	if (find_policy_by_hnd(get_global_hnd_cache(), domain_pol) == -1)
