@@ -381,6 +381,19 @@
 #include <krb5.h>
 #endif
 
+#if HAVE_LDAP
+#include <ldap.h>
+#endif
+
+#if HAVE_SASL_H
+#include <sasl.h>
+#endif
+
+/* we support ADS if we have krb5 and ldap libs */
+#if defined(HAVE_KRB5) && defined(HAVE_LDAP) && defined(HAVE_SASL_H)
+#define HAVE_ADS
+#endif
+
 /*
  * Define VOLATILE if needed.
  */
@@ -650,6 +663,7 @@ extern int errno;
 #include "../tdb/tdb.h"
 #include "../tdb/spinlock.h"
 #include "talloc.h"
+#include "ads.h"
 #include "interfaces.h"
 #include "hash.h"
 #include "trans2.h"
@@ -869,6 +883,14 @@ int rename(const char *zfrom, const char *zto);
 
 #ifndef HAVE_MKTIME
 time_t mktime(struct tm *t);
+#endif
+
+#ifndef HAVE_STRLCPY
+size_t strlcpy(char *d, const char *s, size_t bufsize);
+#endif
+
+#ifndef HAVE_STRLCAT
+size_t strlcat(char *d, const char *s, size_t bufsize);
 #endif
 
 #ifndef HAVE_FTRUNCATE

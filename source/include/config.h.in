@@ -248,6 +248,7 @@
 #undef I18N_DEFAULT_PREF_LANG
 #undef HAVE_KRB5
 #undef BROKEN_REDHAT_7_SYSTEM_HEADERS
+#undef HAVE_LDAP
 
 /* The number of bytes in a int.  */
 #undef SIZEOF_INT
@@ -741,6 +742,12 @@
 /* Define if you have the strftime function.  */
 #undef HAVE_STRFTIME
 
+/* Define if you have the strlcat function.  */
+#undef HAVE_STRLCAT
+
+/* Define if you have the strlcpy function.  */
+#undef HAVE_STRLCPY
+
 /* Define if you have the strpbrk function.  */
 #undef HAVE_STRPBRK
 
@@ -816,6 +823,9 @@
 /* Define if you have the <lastlog.h> header file.  */
 #undef HAVE_LASTLOG_H
 
+/* Define if you have the <ldap.h> header file.  */
+#undef HAVE_LDAP_H
+
 /* Define if you have the <limits.h> header file.  */
 #undef HAVE_LIMITS_H
 
@@ -869,6 +879,9 @@
 
 /* Define if you have the <rpcsvc/ypclnt.h> header file.  */
 #undef HAVE_RPCSVC_YPCLNT_H
+
+/* Define if you have the <sasl.h> header file.  */
+#undef HAVE_SASL_H
 
 /* Define if you have the <security/_pam_macros.h> header file.  */
 #undef HAVE_SECURITY__PAM_MACROS_H
