@@ -166,7 +166,7 @@ char *getsmbpass(const char *prompt)
 
 	printf("\n");
 
-	if (gotintr_sig) {
+	if (gotintr) {
 		printf("Interupted by signal.\n");
 		fflush(stdout);
 		exit(1);
