@@ -2058,7 +2058,8 @@ int read_file(int fnum,char *data,uint32 pos,int n)
 #if USE_MMAP
   if (Files[fnum].mmap_ptr)
     {
-      int num = MIN(n,(int)(Files[fnum].mmap_size-pos));
+      int num = (Files[fnum].mmap_size > pos) ? (Files[fnum].mmap_size - pos) : -1;
+      num = MIN(n,num);
       if (num > 0)
 	{
 	  memcpy(data,Files[fnum].mmap_ptr+pos,num);
