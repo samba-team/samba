@@ -847,6 +847,7 @@ static BOOL resolve_lmhosts(const char *name, int name_type,
 	pstring lmhost_name;
 	int name_type2;
 	struct in_addr return_ip;
+	BOOL result = False;
 
 	*return_iplist = NULL;
 	*return_count = 0;
@@ -854,38 +855,42 @@ static BOOL resolve_lmhosts(const char *name, int name_type,
 	DEBUG(3,("resolve_lmhosts: Attempting lmhosts lookup for name %s<0x%x>\n", name, name_type));
 
 	fp = startlmhosts(dyn_LMHOSTSFILE);
-	if(fp) {
-		while (getlmhostsent(fp, lmhost_name, &name_type2,
-				     &return_ip)) {
 
-			if (!strequal(name, lmhost_name))
-				continue;
+	if ( fp == NULL )
+		return False;
 
-			if ((name_type2 != -1) && (name_type != name_type2))
-				continue;
+	while (getlmhostsent(fp, lmhost_name, &name_type2, &return_ip)) 
+	{
 
-			*return_iplist = (struct ip_service *)
-				realloc((*return_iplist),
-					sizeof(struct ip_service) *
-					((*return_count)+1));
+		if (!strequal(name, lmhost_name))
+			continue;
 
-			if ((*return_iplist) == NULL) {
-				DEBUG(3,("resolve_lmhosts: malloc fail !\n"));
-				return False;
-			}
+		if ((name_type2 != -1) && (name_type != name_type2))
+			continue;
 
-			(*return_iplist)[*return_count].ip   = return_ip;
-			(*return_iplist)[*return_count].port = PORT_NONE;
-			*return_count += 1;
+		*return_iplist = (struct ip_service *)realloc((*return_iplist),
+			sizeof(struct ip_service) * ((*return_count)+1));
 
-			/* Multiple names only for DC lookup */
-			if (name_type != 0x1c)
-				break;
+		if ((*return_iplist) == NULL) {
+			DEBUG(3,("resolve_lmhosts: malloc fail !\n"));
+			return False;
 		}
-		endlmhosts(fp);
-		return True;
+
+		(*return_iplist)[*return_count].ip   = return_ip;
+		(*return_iplist)[*return_count].port = PORT_NONE;
+		*return_count += 1;
+
+		/* we found something */
+		result = True;
+
+		/* Multiple names only for DC lookup */
+		if (name_type != 0x1c)
+			break;
 	}
-	return False;
+
+	endlmhosts(fp);
+
+	return result;
 }
 
 
