@@ -1,3 +1,7 @@
+2002-10-29  Johan Danielsson  <joda@pdc.kth.se>
+
+	* ftp/main.c: reinstate -n flag (from Torbjörn Granlund)
+
 2002-10-16  Johan Danielsson  <joda@pdc.kth.se>
 
 	* ftp/ftp.c: fix parsing of epsv ports (from Love)
