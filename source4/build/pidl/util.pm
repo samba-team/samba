@@ -235,7 +235,9 @@ sub is_pure_scalar($)
 	if (has_property($e, "ref")) {
 		return 1;
 	}
-	if (is_scalar_type($e->{TYPE}) && !$e->{POINTERS}) {
+	if (is_scalar_type($e->{TYPE}) && 
+	    !$e->{POINTERS} && 
+	    !array_size($e)) {
 		return 1;
 	}
 	return 0;
