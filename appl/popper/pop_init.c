@@ -212,6 +212,14 @@ pop_init(POP *p,int argcount,char **argmessage)
     if(version_flag)
 	krb5_errx(p->context, 0, "%s", heimdal_version);
 
+    argc -= optind;
+    argv += optind;
+
+    if (argc != 0) {
+	arg_printusage(args, num_args, "");
+	exit(1);
+    }
+
     if(auth_str){
 	if (strcmp (auth_str, "none") == 0)
 	    p->auth_level = AUTH_NONE;
