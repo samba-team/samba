@@ -80,8 +80,9 @@ int main(int argc, char **argv)
 	ent.keyblock.keytype = KEYTYPE_DES;
 	ent.keyblock.contents.data = malloc(strlen(e.key)/2+1);
 	for(i = 0; i < strlen(e.key); i += 2){
-	    sscanf(e.key + i, "%2x", 
-		   (unsigned char *)ent.keyblock.contents.data + (i/2));
+	    unsigned tmp;
+	    sscanf(e.key + i, "%2x", &tmp);
+	    ((unsigned char *)ent.keyblock.contents.data)[i/2] = tmp;
 	}
 	ent.keyblock.contents.length = i / 2;
 	ent.kvno = atoi(e.kvno);
