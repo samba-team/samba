@@ -481,6 +481,25 @@ enum winbindd_result winbindd_getpwent(struct winbindd_cli_state *state)
 
 			ent->sam_entry_index++;
 
+			/* Add user to return list */
+
+			if (result == WINBINDD_OK) {
+
+				/* We've got a user.  Update client
+				   response structure and break out of
+				   while loop */
+
+				user_list_ndx++;
+				state->response.data.num_entries++;
+				state->response.length += 
+					sizeof(struct winbindd_pw);
+				break;
+			} else {
+				DEBUG(1, ("could not getpwnam_from_user "
+					  "for username %s\n", 
+					  domain_user_name));
+			}
+
 			/* Check to see if we should move on to the next
                            pipe */
 
@@ -509,22 +528,6 @@ enum winbindd_result winbindd_getpwent(struct winbindd_cli_state *state)
 				free(old_ent);
 			}
 
-			if (result == WINBINDD_OK) {
-
-				/* We've got a user.  Update client
-				   response structure and break out of
-				   while loop */
-
-				user_list_ndx++;
-				state->response.data.num_entries++;
-				state->response.length += 
-					sizeof(struct winbindd_pw);
-				break;
-			} else {
-				DEBUG(1, ("could not getpwnam_from_user "
-					  "for username %s\n", 
-					  domain_user_name));
-			}
 		}
 	}
 	
