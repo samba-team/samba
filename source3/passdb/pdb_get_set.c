@@ -476,7 +476,7 @@ BOOL pdb_set_init_flags (SAM_ACCOUNT *sampass, enum pdb_elements element, enum p
 				return False;
 			}
         		if (!bitmap_set(sampass->private.set_flags, element)) {
-				DEBUG(0,("Can't set flag: %d in set_falgs.\n",element));
+				DEBUG(0,("Can't set flag: %d in set_flags.\n",element));
 				return False;
 			}
 			DEBUG(11, ("element %d -> now CHANGED\n", element)); 
@@ -487,7 +487,7 @@ BOOL pdb_set_init_flags (SAM_ACCOUNT *sampass, enum pdb_elements element, enum p
 				return False;
 			}
         		if (!bitmap_set(sampass->private.set_flags, element)) {
-				DEBUG(0,("Can't set flag: %d in set_falgs.\n",element));
+				DEBUG(0,("Can't set flag: %d in set_flags.\n",element));
 				return False;
 			}
 			DEBUG(10, ("element %d -> now SET\n", element)); 
@@ -499,7 +499,7 @@ BOOL pdb_set_init_flags (SAM_ACCOUNT *sampass, enum pdb_elements element, enum p
 				return False;
 			}
         		if (!bitmap_clear(sampass->private.set_flags, element)) {
-				DEBUG(0,("Can't set flag: %d in set_falgs.\n",element));
+				DEBUG(0,("Can't set flag: %d in set_flags.\n",element));
 				return False;
 			}
 			DEBUG(11, ("element %d -> now DEFAULT\n", element)); 
