@@ -91,6 +91,14 @@
 
 typedef int BOOL;
 
+/*
+  we use struct ipv4_addr to avoid having to include all the
+  system networking headers everywhere
+*/
+struct ipv4_addr {
+	uint32_t addr;
+};
+
 #ifndef HAVE_STRERROR
 extern char *sys_errlist[];
 #define strerror(i) sys_errlist[i]

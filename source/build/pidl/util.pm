@@ -302,6 +302,7 @@ my %type_alignments =
      "WERROR"         => 4,
      "boolean32"      => 4,
      "unsigned32"     => 4,
+     "ipv4address"    => 4,
      "hyper"          => 8,
      "NTTIME_hyper"   => 8
      );
@@ -538,7 +539,8 @@ my %type_mappings =
      "udlong"       => "uint64_t",
      "hyper"        => "uint64_t",
      "NTTIME_1sec"  => "NTTIME",
-     "NTTIME_hyper" => "NTTIME"
+     "NTTIME_hyper" => "NTTIME",
+     "ipv4address"  => "const char *"
      );
 
 # map from a IDL type to a C header type

@@ -72,8 +72,6 @@ NTSTATUS nbt_name_query_recv(struct nbt_name_request *req,
 {
 	NTSTATUS status;
 	struct nbt_name_packet *packet;
-	const char *addr;
-	struct in_addr in;
 	int i;
 
 	status = nbt_name_request_recv(req);
@@ -102,13 +100,8 @@ NTSTATUS nbt_name_query_recv(struct nbt_name_request *req,
 	}
 	
 	for (i=0;i<io->out.num_addrs;i++) {
-		in.s_addr = htonl(packet->answers[0].rdata.netbios.addresses[i].ipaddr.addr);
-		addr = inet_ntoa(in);
-		if (addr == NULL) {
-			talloc_free(req);
-			return NT_STATUS_NO_MEMORY;
-		}
-		io->out.reply_addrs[i] = talloc_strdup(mem_ctx, addr);
+		io->out.reply_addrs[i] = talloc_steal(mem_ctx, 
+						      packet->answers[0].rdata.netbios.addresses[i].ipaddr);
 	}
 
 	talloc_steal(mem_ctx, io->out.name.name);

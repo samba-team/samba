@@ -386,15 +386,7 @@ const char *dcerpc_floor_get_rhs_data(TALLOC_CTX *mem_ctx, struct epm_floor *flo
 		return talloc_asprintf(mem_ctx, "%d", floor->rhs.http.port);
 
 	case EPM_PROTOCOL_IP:
-		if (floor->rhs.ip.ipaddr.addr == 0) {
-			return NULL; 
-		}
-
-		{
-			struct ipv4_addr in;
-			in.addr = htonl(floor->rhs.ip.ipaddr.addr);
-			return talloc_strdup(mem_ctx, sys_inet_ntoa(in));
-		}
+		return talloc_strdup(mem_ctx, floor->rhs.ip.ipaddr);
 
 	case EPM_PROTOCOL_NCACN:
 		return NULL;
@@ -457,11 +449,8 @@ static NTSTATUS dcerpc_floor_set_rhs_data(TALLOC_CTX *mem_ctx, struct epm_floor 
 		return NT_STATUS_OK;
 
 	case EPM_PROTOCOL_IP:
-		if (strlen(data) > 0) {
-			floor->rhs.ip.ipaddr.addr = ntohl(interpret_addr(data));
-		} else {
-			floor->rhs.ip.ipaddr.addr = 0;
-		}
+		floor->rhs.ip.ipaddr = talloc_strdup(mem_ctx, data);
+		NT_STATUS_HAVE_NO_MEMORY(floor->rhs.ip.ipaddr);
 		return NT_STATUS_OK;
 
 	case EPM_PROTOCOL_NCACN:
@@ -474,23 +463,17 @@ static NTSTATUS dcerpc_floor_set_rhs_data(TALLOC_CTX *mem_ctx, struct epm_floor 
 
 	case EPM_PROTOCOL_SMB:
 		floor->rhs.smb.unc = talloc_strdup(mem_ctx, data);
-		if (!floor->rhs.smb.unc) {
-			return NT_STATUS_NO_MEMORY;
-		}
+		NT_STATUS_HAVE_NO_MEMORY(floor->rhs.smb.unc);
 		return NT_STATUS_OK;
 
 	case EPM_PROTOCOL_PIPE:
 		floor->rhs.pipe.path = talloc_strdup(mem_ctx, data);
-		if (!floor->rhs.pipe.path) {
-			return NT_STATUS_NO_MEMORY;
-		}
+		NT_STATUS_HAVE_NO_MEMORY(floor->rhs.pipe.path);
 		return NT_STATUS_OK;
 
 	case EPM_PROTOCOL_NETBIOS:
 		floor->rhs.netbios.name = talloc_strdup(mem_ctx, data);
-		if (!floor->rhs.netbios.name) {
-			return NT_STATUS_NO_MEMORY;
-		}
+		NT_STATUS_HAVE_NO_MEMORY(floor->rhs.netbios.name);
 		return NT_STATUS_OK;
 
 	case EPM_PROTOCOL_NCALRPC:
@@ -506,16 +489,12 @@ static NTSTATUS dcerpc_floor_set_rhs_data(TALLOC_CTX *mem_ctx, struct epm_floor 
 		
 	case EPM_PROTOCOL_STREETTALK:
 		floor->rhs.streettalk.streettalk = talloc_strdup(mem_ctx, data);
-		if (!floor->rhs.streettalk.streettalk) {
-			return NT_STATUS_NO_MEMORY;
-		}
+		NT_STATUS_HAVE_NO_MEMORY(floor->rhs.streettalk.streettalk);
 		return NT_STATUS_OK;
 		
 	case EPM_PROTOCOL_UNIX_DS:
 		floor->rhs.unix_ds.path = talloc_strdup(mem_ctx, data);
-		if (!floor->rhs.unix_ds.path) {
-			return NT_STATUS_NO_MEMORY;
-		}
+		NT_STATUS_HAVE_NO_MEMORY(floor->rhs.unix_ds.path);
 		return NT_STATUS_OK;
 		
 	case EPM_PROTOCOL_NULL:
