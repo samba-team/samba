@@ -268,6 +268,9 @@ supplied using the link(bf(-U))(minusU) option, by appending a percent symbol ("
 then the password to username.  For example, to attach to a service as
 user tt("fred") with password tt("secret"), you would specify. nl()
 
+You can specify a domain name as part of the username by using a
+username of the form "DOMAIN/user" or "DOMAIN\user".
+
 tt(-U fred%secret) nl()
 
 on the command line. Note that there are no spaces around the percent
