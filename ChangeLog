@@ -9,6 +9,10 @@ Thu Jul 24 08:13:59 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 Thu Jul 24 01:54:43 1997  Assar Westerlund  <assar@sics.se>
 
+	* lib/roken/parse_units.c, parse_time.c: new files
+
+	* admin/gettime.c (gettime): use `parse_time'
+
 	* kdc/kerberos5.c (as_rep): Use `METHOD-DATA' when sending
  	KRB5KDC_ERR_PREAUTH_REQUIRED, not PA-DATA.
 
