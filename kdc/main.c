@@ -20,4 +20,6 @@ main(int argc, char **argv)
     signal(SIGINT, sigterm);
     krb5_init_context(&context);
     loop(context);
+    krb5_free_context(context);
+    return 0;
 }
