@@ -263,6 +263,12 @@
 /* Whether acl_get_perm_np() is available */
 #undef HAVE_ACL_GET_PERM_NP
 
+/* Whether the krb5_address struct has a addrtype property */
+#undef HAVE_ADDRTYPE_IN_KRB5_ADDRESS
+
+/* Whether the krb5_address struct has a addr_type property */
+#undef HAVE_ADDR_TYPE_IN_KRB5_ADDRESS
+
 /* Whether AIX ACLs are available */
 #undef HAVE_AIX_ACLS
 

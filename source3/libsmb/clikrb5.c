@@ -50,6 +50,26 @@ krb5_error_code krb5_set_default_tgs_ktypes(krb5_context ctx, const krb5_enctype
 }
 #endif
 
+#if defined(HAVE_ADDR_TYPE_IN_KRB5_ADDRESS)
+/* HEIMDAL */
+void setup_kaddr( krb5_address *pkaddr, struct sockaddr *paddr)
+{
+	pkaddr->addr_type = KRB5_ADDRESS_INET;
+	pkaddr->address.length = sizeof(((struct sockaddr_in *)paddr)->sin_addr);
+	pkaddr->address.data = (char *)&(((struct sockaddr_in *)paddr)->sin_addr);
+}
+#elif defined(HAVE_ADDRTYPE_IN_KRB5_ADDRESS)
+/* MIT */
+void setup_kaddr( krb5_address *pkaddr, struct sockaddr *paddr)
+{
+	pkaddr->addrtype = ADDRTYPE_INET;
+	pkaddr->length = sizeof(((struct sockaddr_in *)paddr)->sin_addr);
+	pkaddr->contents = (char *)&(((struct sockaddr_in *)paddr)->sin_addr);
+}
+#else
+__ERROR__XX__UNKNOWN_ADDRTYPE
+#endif
+
 /*
   we can't use krb5_mk_req because w2k wants the service to be in a particular format
 */
