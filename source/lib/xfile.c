@@ -135,7 +135,12 @@ int x_fclose(XFILE *f)
 		memset(f->buf, 0, f->bufsize);
 		SAFE_FREE(f->buf);
 	}
-	SAFE_FREE(f);
+	/* check the file descriptor given to the function is NOT one of the static
+	 * descriptor of this libreary or we will free unallocated memory
+	 * --sss */
+	if (f != x_stdin && f != x_stdout && f != x_stderr) {
+		SAFE_FREE(f);
+	}
 	return ret;
 }
 
