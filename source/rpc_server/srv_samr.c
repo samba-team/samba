@@ -453,7 +453,7 @@ static BOOL api_samr_open_user(pipes_struct *p)
 		return False;
 	}
 
-	r_u.status = _api_samr_open_user(p, &q_u, &r_u);
+	r_u.status = _samr_open_user(p, &q_u, &r_u);
 
 	/* store the response in the SMB stream */
 	if(!samr_io_r_open_user("", &r_u, rdata, 0)) {
@@ -575,7 +575,7 @@ static BOOL api_samr_create_user(pipes_struct *p)
 		return False;
 	}
 
-	r_u.status=_api_samr_create_user(p, &q_u, &r_u);
+	r_u.status=_samr_create_user(p, &q_u, &r_u);
 
 	/* store the response in the SMB stream */
 	if(!samr_io_r_create_user("", &r_u, rdata, 0)) {
@@ -757,7 +757,7 @@ static BOOL api_samr_open_alias(pipes_struct *p)
 		return False;
 	}
 
-	r_u.status=_api_samr_open_alias(p, &q_u, &r_u);
+	r_u.status=_samr_open_alias(p, &q_u, &r_u);
 
 	/* store the response in the SMB stream */
 	if(!samr_io_r_open_alias("", &r_u, rdata, 0)) {
