@@ -172,7 +172,7 @@ pop_dropinfo(POP *p)
 	if(blank_line) {
 	    in_header = 0;
 #if defined(UIDL) || defined(XOVER)
-	    if (mp->msg_id) {
+	    if (mp->msg_id == NULL) {
 		asprintf(&mp->msg_id, "no-message-id-%d", mp->number);
 		if(mp->msg_id == NULL) {
                     fclose (p->drop);
