@@ -327,7 +327,7 @@ NTSTATUS ndr_push_samr_UserInfo1(struct ndr_push *ndr, int ndr_flags, struct sam
 	NDR_CHECK(ndr_push_align(ndr, 4));
 	NDR_CHECK(ndr_push_samr_Name(ndr, NDR_SCALARS, &r->username));
 	NDR_CHECK(ndr_push_samr_Name(ndr, NDR_SCALARS, &r->full_name));
-	NDR_CHECK(ndr_push_uint32(ndr, r->primary_group_rid));
+	NDR_CHECK(ndr_push_uint32(ndr, r->primary_gid));
 	NDR_CHECK(ndr_push_samr_Name(ndr, NDR_SCALARS, &r->description));
 	NDR_CHECK(ndr_push_samr_Name(ndr, NDR_SCALARS, &r->comment));
 	ndr_push_struct_end(ndr);
@@ -367,7 +367,7 @@ NTSTATUS ndr_push_samr_UserInfo3(struct ndr_push *ndr, int ndr_flags, struct sam
 	NDR_CHECK(ndr_push_samr_Name(ndr, NDR_SCALARS, &r->username));
 	NDR_CHECK(ndr_push_samr_Name(ndr, NDR_SCALARS, &r->full_name));
 	NDR_CHECK(ndr_push_uint32(ndr, r->Rid));
-	NDR_CHECK(ndr_push_uint32(ndr, r->primary_group_rid));
+	NDR_CHECK(ndr_push_uint32(ndr, r->primary_gid));
 	NDR_CHECK(ndr_push_samr_Name(ndr, NDR_SCALARS, &r->home_directory));
 	NDR_CHECK(ndr_push_samr_Name(ndr, NDR_SCALARS, &r->home_drive));
 	NDR_CHECK(ndr_push_samr_Name(ndr, NDR_SCALARS, &r->logon_script));
@@ -431,7 +431,7 @@ NTSTATUS ndr_push_samr_UserInfo5(struct ndr_push *ndr, int ndr_flags, struct sam
 	NDR_CHECK(ndr_push_samr_Name(ndr, NDR_SCALARS, &r->username));
 	NDR_CHECK(ndr_push_samr_Name(ndr, NDR_SCALARS, &r->full_name));
 	NDR_CHECK(ndr_push_uint32(ndr, r->rid));
-	NDR_CHECK(ndr_push_uint32(ndr, r->primary_group_rid));
+	NDR_CHECK(ndr_push_uint32(ndr, r->primary_gid));
 	NDR_CHECK(ndr_push_samr_Name(ndr, NDR_SCALARS, &r->home_directory));
 	NDR_CHECK(ndr_push_samr_Name(ndr, NDR_SCALARS, &r->home_drive));
 	NDR_CHECK(ndr_push_samr_Name(ndr, NDR_SCALARS, &r->logon_script));
@@ -517,7 +517,7 @@ NTSTATUS ndr_push_samr_UserInfo9(struct ndr_push *ndr, int ndr_flags, struct sam
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_push_struct_start(ndr));
 	NDR_CHECK(ndr_push_align(ndr, 4));
-	NDR_CHECK(ndr_push_uint32(ndr, r->PrimaryGroupRid));
+	NDR_CHECK(ndr_push_uint32(ndr, r->primary_gid));
 	ndr_push_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
@@ -664,7 +664,7 @@ NTSTATUS ndr_push_samr_UserInfo21(struct ndr_push *ndr, int ndr_flags, struct sa
 	NDR_CHECK(ndr_push_uint32(ndr, r->buf_count));
 	NDR_CHECK(ndr_push_ptr(ndr, r->buffer));
 	NDR_CHECK(ndr_push_uint32(ndr, r->rid));
-	NDR_CHECK(ndr_push_uint32(ndr, r->primary_group_rid));
+	NDR_CHECK(ndr_push_uint32(ndr, r->primary_gid));
 	NDR_CHECK(ndr_push_uint32(ndr, r->acct_flags));
 	NDR_CHECK(ndr_push_uint32(ndr, r->fields_present));
 	NDR_CHECK(ndr_push_uint32(ndr, r->units_per_week));
@@ -2141,7 +2141,7 @@ NTSTATUS ndr_pull_samr_UserInfo1(struct ndr_pull *ndr, int ndr_flags, struct sam
 	NDR_CHECK(ndr_pull_align(ndr, 4));
 	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->username));
 	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->full_name));
-	NDR_CHECK(ndr_pull_uint32(ndr, &r->primary_group_rid));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->primary_gid));
 	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->description));
 	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->comment));
 	ndr_pull_struct_end(ndr);
@@ -2182,7 +2182,7 @@ NTSTATUS ndr_pull_samr_UserInfo3(struct ndr_pull *ndr, int ndr_flags, struct sam
 	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->username));
 	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->full_name));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->Rid));
-	NDR_CHECK(ndr_pull_uint32(ndr, &r->primary_group_rid));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->primary_gid));
 	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->home_directory));
 	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->home_drive));
 	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->logon_script));
@@ -2284,7 +2284,7 @@ NTSTATUS ndr_pull_samr_UserInfo5(struct ndr_pull *ndr, int ndr_flags, struct sam
 	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->username));
 	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->full_name));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->rid));
-	NDR_CHECK(ndr_pull_uint32(ndr, &r->primary_group_rid));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->primary_gid));
 	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->home_directory));
 	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->home_drive));
 	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->logon_script));
@@ -2388,7 +2388,7 @@ NTSTATUS ndr_pull_samr_UserInfo9(struct ndr_pull *ndr, int ndr_flags, struct sam
 	NDR_CHECK(ndr_pull_struct_start(ndr));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
-	NDR_CHECK(ndr_pull_uint32(ndr, &r->PrimaryGroupRid));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->primary_gid));
 	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
@@ -2542,7 +2542,7 @@ NTSTATUS ndr_pull_samr_UserInfo21(struct ndr_pull *ndr, int ndr_flags, struct sa
 		r->buffer = NULL;
 	}
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->rid));
-	NDR_CHECK(ndr_pull_uint32(ndr, &r->primary_group_rid));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->primary_gid));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->acct_flags));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->fields_present));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->units_per_week));
@@ -4323,7 +4323,7 @@ void ndr_print_samr_UserInfo1(struct ndr_print *ndr, const char *name, struct sa
 	ndr->depth++;
 	ndr_print_samr_Name(ndr, "username", &r->username);
 	ndr_print_samr_Name(ndr, "full_name", &r->full_name);
-	ndr_print_uint32(ndr, "primary_group_rid", r->primary_group_rid);
+	ndr_print_uint32(ndr, "primary_gid", r->primary_gid);
 	ndr_print_samr_Name(ndr, "description", &r->description);
 	ndr_print_samr_Name(ndr, "comment", &r->comment);
 	ndr->depth--;
@@ -4347,7 +4347,7 @@ void ndr_print_samr_UserInfo3(struct ndr_print *ndr, const char *name, struct sa
 	ndr_print_samr_Name(ndr, "username", &r->username);
 	ndr_print_samr_Name(ndr, "full_name", &r->full_name);
 	ndr_print_uint32(ndr, "Rid", r->Rid);
-	ndr_print_uint32(ndr, "primary_group_rid", r->primary_group_rid);
+	ndr_print_uint32(ndr, "primary_gid", r->primary_gid);
 	ndr_print_samr_Name(ndr, "home_directory", &r->home_directory);
 	ndr_print_samr_Name(ndr, "home_drive", &r->home_drive);
 	ndr_print_samr_Name(ndr, "logon_script", &r->logon_script);
@@ -4392,7 +4392,7 @@ void ndr_print_samr_UserInfo5(struct ndr_print *ndr, const char *name, struct sa
 	ndr_print_samr_Name(ndr, "username", &r->username);
 	ndr_print_samr_Name(ndr, "full_name", &r->full_name);
 	ndr_print_uint32(ndr, "rid", r->rid);
-	ndr_print_uint32(ndr, "primary_group_rid", r->primary_group_rid);
+	ndr_print_uint32(ndr, "primary_gid", r->primary_gid);
 	ndr_print_samr_Name(ndr, "home_directory", &r->home_directory);
 	ndr_print_samr_Name(ndr, "home_drive", &r->home_drive);
 	ndr_print_samr_Name(ndr, "logon_script", &r->logon_script);
@@ -4445,7 +4445,7 @@ void ndr_print_samr_UserInfo9(struct ndr_print *ndr, const char *name, struct sa
 {
 	ndr_print_struct(ndr, name, "samr_UserInfo9");
 	ndr->depth++;
-	ndr_print_uint32(ndr, "PrimaryGroupRid", r->PrimaryGroupRid);
+	ndr_print_uint32(ndr, "primary_gid", r->primary_gid);
 	ndr->depth--;
 }
 
@@ -4545,7 +4545,7 @@ void ndr_print_samr_UserInfo21(struct ndr_print *ndr, const char *name, struct s
 	}
 	ndr->depth--;
 	ndr_print_uint32(ndr, "rid", r->rid);
-	ndr_print_uint32(ndr, "primary_group_rid", r->primary_group_rid);
+	ndr_print_uint32(ndr, "primary_gid", r->primary_gid);
 	ndr_print_uint32(ndr, "acct_flags", r->acct_flags);
 	ndr_print_uint32(ndr, "fields_present", r->fields_present);
 	ndr_print_uint32(ndr, "units_per_week", r->units_per_week);

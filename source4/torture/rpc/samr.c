@@ -83,6 +83,7 @@ static BOOL test_SetUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	struct samr_SetUserInfo s;
 	struct samr_QueryUserInfo q;
+	struct samr_QueryUserInfo q0;
 	union samr_UserInfo u;
 	BOOL ret = True;
 
@@ -90,6 +91,7 @@ static BOOL test_SetUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	s.in.info = &u;
 	q.in.handle = handle;
 	q.out.info = &u;
+	q0 = q;
 
 #define TESTCALL(call, r) \
 		status = dcerpc_samr_ ##call(p, mem_ctx, &r); \
@@ -134,24 +136,26 @@ static BOOL test_SetUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		STRING_EQUAL(u.info ## lvl2.field2.name, value, field2); \
 	} while (0)
 
-#define TEST_USERINFO_INT(lvl1, field1, lvl2, field2) do { \
+#define TEST_USERINFO_INT(lvl1, field1, lvl2, field2, value) do { \
 		printf("field test %d/%s vs %d/%s\n", lvl1, #field1, lvl2, #field2); \
 		q.in.level = lvl1; \
 		TESTCALL(QueryUserInfo, q) \
 		s.in.level = lvl1; \
 		u = *q.out.info; \
-		u.info ## lvl1.field1 = __LINE__; \
+		u.info ## lvl1.field1 = value; \
 		TESTCALL(SetUserInfo, s) \
 		u.info ## lvl1.field1 = 0; \
 		TESTCALL(QueryUserInfo, q); \
 		u = *q.out.info; \
-		INT_EQUAL(u.info ## lvl1.field1, __LINE__, field1); \
+		INT_EQUAL(u.info ## lvl1.field1, value, field1); \
 		q.in.level = lvl2; \
 		TESTCALL(QueryUserInfo, q) \
 		u = *q.out.info; \
-		INT_EQUAL(u.info ## lvl2.field2, __LINE__, field1); \
+		INT_EQUAL(u.info ## lvl2.field2, value, field1); \
 	} while (0)
-	
+
+	q0.in.level = 12;
+	do { TESTCALL(QueryUserInfo, q0) } while (0);
 
 	TEST_USERINFO_NAME(2, comment,  1, comment, "xx2-1 comment");
 	TEST_USERINFO_NAME(2, comment, 21, comment, "xx2-21 comment");
@@ -164,16 +168,36 @@ static BOOL test_SetUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	TEST_USERINFO_NAME(6, full_name, 21, full_name, "xx6-21 full_name");
 	TEST_USERINFO_NAME(8, full_name, 21, full_name, "xx7-21 full_name");
 
+	TEST_USERINFO_NAME(11, logon_script, 3, logon_script, "xx11-3 logon_script");
+	TEST_USERINFO_NAME(11, logon_script, 5, logon_script, "xx11-5 logon_script");
 	TEST_USERINFO_NAME(11, logon_script, 21, logon_script, "xx11-21 logon_script");
+
+	TEST_USERINFO_NAME(12, profile,  3, profile, "xx12-3 profile");
+	TEST_USERINFO_NAME(12, profile,  5, profile, "xx12-5 profile");
 	TEST_USERINFO_NAME(12, profile, 21, profile, "xx12-21 profile");
+
+	TEST_USERINFO_NAME(13, description,  1, description, "xx13-1 description");
+	TEST_USERINFO_NAME(13, description,  5, description, "xx13-5 description");
 	TEST_USERINFO_NAME(13, description, 21, description, "xx13-21 description");
-	TEST_USERINFO_NAME(14, workstations, 21, workstations, "testworkstation");
+
+	TEST_USERINFO_NAME(14, workstations,  3, workstations, "testworkstation3");
+	TEST_USERINFO_NAME(14, workstations,  5, workstations, "testworkstation5");
+	TEST_USERINFO_NAME(14, workstations, 21, workstations, "testworkstation21");
+
 	TEST_USERINFO_NAME(20, callback, 21, callback, "xx20-21 callback");
 
-	TEST_USERINFO_INT(2, country_code, 21, country_code);
-	TEST_USERINFO_INT(2, code_page, 21, code_page);
-	TEST_USERINFO_INT(4, logon_hours[3], 5, logon_hours[3]);
-	
+	TEST_USERINFO_INT(2, country_code, 21, country_code, __LINE__);
+	TEST_USERINFO_INT(2, code_page, 21, code_page, __LINE__);
+
+	TEST_USERINFO_INT(4, logon_hours[3],  3, logon_hours[3], __LINE__);
+	TEST_USERINFO_INT(4, logon_hours[3],  5, logon_hours[3], __LINE__);
+	TEST_USERINFO_INT(4, logon_hours[3], 21, logon_hours[3], __LINE__);
+
+	TEST_USERINFO_INT(9, primary_gid,  1, primary_gid, 513);
+	TEST_USERINFO_INT(9, primary_gid,  3, primary_gid, 513);
+	TEST_USERINFO_INT(9, primary_gid,  5, primary_gid, 513);
+	TEST_USERINFO_INT(9, primary_gid, 21, primary_gid, 513);
+
 	return ret;
 }
 

@@ -696,7 +696,7 @@ struct samr_DeleteUser {
 struct samr_UserInfo1 {
 	struct samr_Name username;
 	struct samr_Name full_name;
-	uint32 primary_group_rid;
+	uint32 primary_gid;
 	struct samr_Name description;
 	struct samr_Name comment;
 };
@@ -712,7 +712,7 @@ struct samr_UserInfo3 {
 	struct samr_Name username;
 	struct samr_Name full_name;
 	uint32 Rid;
-	uint32 primary_group_rid;
+	uint32 primary_gid;
 	struct samr_Name home_directory;
 	struct samr_Name home_drive;
 	struct samr_Name logon_script;
@@ -739,7 +739,7 @@ struct samr_UserInfo5 {
 	struct samr_Name username;
 	struct samr_Name full_name;
 	uint32 rid;
-	uint32 primary_group_rid;
+	uint32 primary_gid;
 	struct samr_Name home_directory;
 	struct samr_Name home_drive;
 	struct samr_Name logon_script;
@@ -771,7 +771,7 @@ struct samr_UserInfo8 {
 };
 
 struct samr_UserInfo9 {
-	uint32 PrimaryGroupRid;
+	uint32 primary_gid;
 };
 
 struct samr_UserInfo10 {
@@ -830,7 +830,7 @@ struct samr_UserInfo21 {
 	uint32 buf_count;
 	uint8 *buffer;
 	uint32 rid;
-	uint32 primary_group_rid;
+	uint32 primary_gid;
 	uint32 acct_flags;
 	uint32 fields_present;
 	uint32 units_per_week;
