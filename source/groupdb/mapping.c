@@ -637,7 +637,7 @@ BOOL get_group_map_from_ntname(char *name, GROUP_MAP *map, BOOL with_priv)
 	PRIVILEGE_SET *set;
 
 	if(!init_group_mapping()) {
-		DEBUG(0,("failed to initialize group mapping"));
+		DEBUG(0,("get_group_map_from_ntname:failed to initialize group mapping"));
 		return(False);
 	}
 
