@@ -156,6 +156,7 @@ int set_entry(krb5_context context,
 int
 foreach_principal(const char *exp, 
 		  int (*func)(krb5_principal, void*), 
+		  const char *funcname,
 		  void *data);
 
 void get_response(const char *prompt, const char *def, char *buf, size_t len);
