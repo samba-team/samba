@@ -1,3 +1,11 @@
+Tue Mar  3 20:09:59 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* admin: Remove kdb_edit.
+
+Sun Mar  1 03:28:42 1998  Assar Westerlund  <assar@sics.se>
+
+	* lib/kadm5/dump_log.c: print operation names
+
 Sun Mar  1 03:04:12 1998  Assar Westerlund  <assar@sics.se>
 
 	* configure.in: add X-tests, and {bin,...}dir appl/{kx,kauth}
@@ -13,10 +21,6 @@ Sun Mar  1 03:04:12 1998  Assar Westerlund  <assar@sics.se>
 	* lib/kadm5/ipropd_slave.c (get_creds): get credentials for
  	`iprop/master' directly.
 	(main): use `krb5_read_message'
-
-Sun Mar  1 03:28:42 1998  Assar Westerlund  <assar@sics.se>
-
-	* lib/kadm5/dump_log.c: print operation names
 
 Sun Mar  1 02:05:11 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
 
