@@ -269,8 +269,11 @@ send_via_proxy (krb5_context context,
 	}
 	break;
     }
-    if (a == NULL)
+    if (a == NULL) {
+	freeaddrinfo (ai);
 	return 1;
+    }
+    freeaddrinfo (ai);
 
     asprintf(&prefix, "http://%s/", hostname);
     if(prefix == NULL) {
