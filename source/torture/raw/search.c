@@ -444,11 +444,11 @@ static NTSTATUS multiple_search(struct smbcli_state *cli,
 	} else {
 		io.t2ffirst.in.search_attrib = 0;
 		io.t2ffirst.in.max_count = per_search;
-		io.t2ffirst.in.flags = 0;
+		io.t2ffirst.in.flags = FLAG_TRANS2_FIND_CLOSE_IF_END;
 		io.t2ffirst.in.storage_type = 0;
 		io.t2ffirst.in.pattern = pattern;
 		if (cont_type == CONT_RESUME_KEY) {
-			io.t2ffirst.in.flags = FLAG_TRANS2_FIND_REQUIRE_RESUME | 
+			io.t2ffirst.in.flags |= FLAG_TRANS2_FIND_REQUIRE_RESUME | 
 				FLAG_TRANS2_FIND_BACKUP_INTENT;
 		}
 	}
@@ -467,7 +467,7 @@ static NTSTATUS multiple_search(struct smbcli_state *cli,
 			io2.t2fnext.in.handle = io.t2ffirst.out.handle;
 			io2.t2fnext.in.max_count = per_search;
 			io2.t2fnext.in.resume_key = 0;
-			io2.t2fnext.in.flags = 0;
+			io2.t2fnext.in.flags = FLAG_TRANS2_FIND_CLOSE_IF_END;
 			io2.t2fnext.in.last_name = "";
 			switch (cont_type) {
 			case CONT_RESUME_KEY:
@@ -488,7 +488,7 @@ static NTSTATUS multiple_search(struct smbcli_state *cli,
 					printf("Server does not support resume by key\n");
 					return NT_STATUS_NOT_SUPPORTED;
 				}
-				io2.t2fnext.in.flags = FLAG_TRANS2_FIND_REQUIRE_RESUME |
+				io2.t2fnext.in.flags |= FLAG_TRANS2_FIND_REQUIRE_RESUME |
 					FLAG_TRANS2_FIND_BACKUP_INTENT;
 				break;
 			case CONT_NAME:
@@ -507,7 +507,7 @@ static NTSTATUS multiple_search(struct smbcli_state *cli,
 				}
 				break;
 			case CONT_FLAGS:
-				io2.t2fnext.in.flags = FLAG_TRANS2_FIND_CONTINUE;
+				io2.t2fnext.in.flags |= FLAG_TRANS2_FIND_CONTINUE;
 				break;
 			}
 		}
@@ -589,6 +589,7 @@ static BOOL test_many_files(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		enum smb_search_level level;
 		enum continue_type cont_type;
 	} search_types[] = {
+		{"SEARCH",              "ID",    RAW_SEARCH_SEARCH,              CONT_RESUME_KEY},
 		{"BOTH_DIRECTORY_INFO", "NAME",  RAW_SEARCH_BOTH_DIRECTORY_INFO, CONT_NAME},
 		{"BOTH_DIRECTORY_INFO", "FLAGS", RAW_SEARCH_BOTH_DIRECTORY_INFO, CONT_FLAGS},
 		{"BOTH_DIRECTORY_INFO", "KEY",   RAW_SEARCH_BOTH_DIRECTORY_INFO, CONT_RESUME_KEY},
@@ -600,8 +601,7 @@ static BOOL test_many_files(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		{"EA_SIZE",             "NAME",  RAW_SEARCH_EA_SIZE,             CONT_NAME},
 		{"DIRECTORY_INFO",      "FLAGS", RAW_SEARCH_DIRECTORY_INFO,      CONT_FLAGS},
 		{"DIRECTORY_INFO",      "KEY",   RAW_SEARCH_DIRECTORY_INFO,      CONT_RESUME_KEY},
-		{"DIRECTORY_INFO",      "NAME",  RAW_SEARCH_DIRECTORY_INFO,      CONT_NAME},
-		{"SEARCH",              "ID",    RAW_SEARCH_SEARCH,              CONT_RESUME_KEY}
+		{"DIRECTORY_INFO",      "NAME",  RAW_SEARCH_DIRECTORY_INFO,      CONT_NAME}
 	};
 
 	if (smbcli_deltree(cli->tree, BASEDIR) == -1 || 

@@ -1801,7 +1801,7 @@ union smb_search_data {
 		time_t write_time;
 		uint32_t size;
 		struct smb_search_id id;
-		char *name;
+		const char *name;
 	} search;
 	
 	/* trans2 findfirst RAW_SEARCH_STANDARD level */
