@@ -159,12 +159,13 @@ static unsigned decode_id(const char *name)
 	return id;
 }
 
+static struct passwd *wb_aix_getpwuid(uid_t uid);
+
 static char *decode_user(const char *name)
 {
 	struct passwd *pwd;
 	unsigned id;
 	char *ret;
-	static struct passwd *wb_aix_getpwuid(uid_t uid);
 
 	sscanf(name+1, "%u", &id);
 	pwd = wb_aix_getpwuid(id);
