@@ -114,7 +114,7 @@
 	</para>
 
 	<sect2>
-		<title>Linking of smbd with <filename>libcups.so</filename></title>
+		<title>Linking of smbd with libcups.so</title>
 
 		<para>
 			Samba has a very special relationship to CUPS. The reason is: Samba
