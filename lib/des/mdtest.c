@@ -151,7 +151,7 @@ sha_tests (void)
     sha_init (&sha);
     sha_update (&sha, (unsigned char *)t->str, strlen(t->str));
     sha_finito (&sha, res);
-    if (memcmp (res, t->hash, 16) != 0) {
+    if (memcmp (res, t->hash, 20) != 0) {
       printf ("SHA(\"%s\") failed\n", t->str);
       return 1;
     }
