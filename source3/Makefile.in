@@ -157,6 +157,8 @@ PASSDB_OBJ = passdb/passdb.o passdb/smbpassfile.o passdb/smbpass.o passdb/secret
 
 PROFILE_OBJ = profile/profile.o
 
+OPLOCK_OBJ = smbd/oplock.o smbd/oplock_irix.o
+
 SMBD_OBJ1 = smbd/server.o smbd/files.o smbd/chgpasswd.o smbd/connection.o \
             smbd/dfree.o smbd/dir.o smbd/password.o smbd/conn.o smbd/fileio.o \
             smbd/ipc.o smbd/lanman.o smbd/mangle.o smbd/negprot.o \
@@ -166,8 +168,8 @@ SMBD_OBJ1 = smbd/server.o smbd/files.o smbd/chgpasswd.o smbd/connection.o \
 	    smbd/vfs.o smbd/vfs-wrap.o smbd/statcache.o \
             smbd/unix_acls.o lib/msrpc-client.o lib/msrpc_use.o \
             rpc_parse/parse_creds.o \
-	    smbd/process.o smbd/oplock.o smbd/service.o smbd/error.o \
-	    printing/printfsp.o
+	    smbd/process.o smbd/service.o smbd/error.o \
+	    printing/printfsp.o 
 
 PRINTING_OBJ = printing/pcap.o printing/print_svid.o printing/print_cups.o printing/load.o
 
@@ -178,7 +180,7 @@ MSDFS_OBJ = msdfs/msdfs.o
 SMBD_OBJ = $(SMBD_OBJ1) $(MSDFS_OBJ) $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) \
            $(RPC_SERVER_OBJ) $(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) \
            $(LOCKING_OBJ) $(PASSDB_OBJ) $(PRINTING_OBJ) $(PROFILE_OBJ) $(LIB_OBJ) \
-	   $(PRINTBACKEND_OBJ) $(QUOTAOBJS)
+	   $(PRINTBACKEND_OBJ) $(QUOTAOBJS) $(OPLOCK_OBJ)
 
 
 NMBD_OBJ1 = nmbd/asyncdns.o nmbd/nmbd.o nmbd/nmbd_become_dmb.o \
@@ -359,67 +361,40 @@ MAKEDIR = || exec false; \
 	  mkdir "$$dir" || \
 	  exec false; fi || exec false
 
-# the lines below containing `@MAINT@' are for atomatic dependency tracking
-# they will only work with GNU make, gcc and --enable-maintainer-mode
-# without --enable-maintainer-mode, they do nothing
-.c.o: @MAINT@ .deps/.dummy
+.c.o: 
 	@if (: >> $@ || : > $@) >/dev/null 2>&1; then rm -f $@; else \
 	 dir=`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` $(MAKEDIR); fi
-@MAINT@	@if (: >> .deps/$@ || : > .deps/$@) >/dev/null 2>&1; then :; \
-@MAINT@	 else dir=.deps/`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` \
-@MAINT@	      $(MAKEDIR); fi; rm -f .deps/$@ .deps/$@d
 	@echo Compiling $*.c
 	@$(CC) -I. -I$(srcdir) $(FLAGS) -c $< \
-	  -o $@ @MAINT@ -Wp,-MD,.deps/$@
+	  -o $@ 
 @BROKEN_CC@	-mv `echo $@ | sed 's%^.*/%%g'` $@
-@MAINT@	@sed 's|^'`echo $@ | sed 's,.*/,,'`':|$@:|' \
-@MAINT@	  <.deps/$@ >.deps/$@d && \
-@MAINT@	rm -f .deps/$@ && : >.deps/.stamp
 
 # This is for libtool
-.c.lo: @MAINT@ .deps/.dummy
+.c.lo: 
 	@if (: >> $@ || : > $@) >/dev/null 2>&1; then rm -f $@; else \
 	  dir=`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` $(MAKEDIR); fi
-@MAINT@	@if (: >> .deps/$@ || : > .deps/$@) >/dev/null 2>&1; then :; \
-@MAINT@	 else dir=.deps/`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` \
-@MAINT@	      $(MAKEDIR); fi; rm -f .deps/$@ .deps/$@d
 	@echo Compiling $< with libtool
 	@$(LIBTOOL) --mode=compile \
 	  $(CC) -I. -I$(srcdir) $(FLAGS) -c $< \
-	  -o $@ @MAINT@ -Wp,-MD,.deps/$@
-@MAINT@	@sed 's|^.*'`echo $* | sed 's,.*/,,'`'.*:|$@:|' \
-@MAINT@	  <.deps/$@ >.deps/$@d && \
-@MAINT@	rm -f .deps/$@ && : >.deps/.stamp
+	  -o $@ 
 
-.c.po: @MAINT@ .deps/.dummy
+.c.po: 
 	@if (: >> $@ || : > $@) >/dev/null 2>&1; then rm -f $@; else \
 	  dir=`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` $(MAKEDIR); fi
-@MAINT@	@if (: >> .deps/$@ || : > .deps/$@) >/dev/null 2>&1; then :; \
-@MAINT@	 else dir=.deps/`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` \
-@MAINT@	      $(MAKEDIR); fi; rm -f .deps/$@ .deps/$@d
 	@echo Compiling $*.c with @PICFLAG@
 	@$(CC) -I. -I$(srcdir) $(FLAGS) @PICFLAG@ -c $< \
-	  -o $*.po.o @MAINT@ -Wp,-MD,.deps/$@
+	  -o $*.po.o 
 @BROKEN_CC@	-mv `echo $@ | sed -e 's%^.*/%%g' -e 's%\.po$$%.o%'` $@.o
-@MAINT@	@sed 's|^'`echo $*\.po\.o | sed 's,.*/,,'`':|$@:|' \
-@MAINT@	  <.deps/$@ >.deps/$@d && \
-@MAINT@	rm -f .deps/$@ && : >.deps/.stamp
 	@mv $*.po.o $@
 
 # this is for IRIX
-.c.po32: @MAINT@ .deps/.dummy
+.c.po32: 
 	@if (: >> $@ || : > $@) >/dev/null 2>&1; then rm -f $@; else \
 	  dir=`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` $(MAKEDIR); fi
-@MAINT@	@if (: >> .deps/$@ || : > .deps/$@) >/dev/null 2>&1; then :; \
-@MAINT@	 else dir=.deps/`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` \
-@MAINT@	      $(MAKEDIR); fi; rm -f .deps/$@ .deps/$@d
 	@echo Compiling $*.c with @PICFLAG@ and -32
 	@$(CC) -32 -I. -I$(srcdir) $(FLAGS32) @PICFLAG@ -c $< \
-	  -o $*.po32.o @MAINT@ -Wp,-MD,.deps/$@
+	  -o $*.po32.o 
 @BROKEN_CC@	-mv `echo $@ | sed -e 's%^.*/%%g' -e 's%\.po32$$%.o%'` $@.o
-@MAINT@	@sed 's|^'`echo $*.po32.o | sed 's,.*/,,'`':|$@:|' \
-@MAINT@	  <.deps/$@ >.deps/$@d && \
-@MAINT@	rm -f .deps/$@ && : >.deps/.stamp
 	@mv $*.po32.o $@
 
 bin/.dummy:
@@ -620,7 +595,7 @@ realclean: clean
 	-rmdir bin
 
 distclean: realclean
-	-rm -f include/config.h include/stamp-h Makefile
+	-rm -f include/config.h Makefile
 	-rm -f config.status config.cache so_locations
 	-rm -rf .deps
 
@@ -640,48 +615,13 @@ finddead:
 	nm */*.o |grep 'T ' | awk '{print $$3}' | sort -u > nmfns.txt
 	comm -13 nmused.txt nmfns.txt 
 
-# Rules for maintainers (--enable-maintainer-mode)
-AUTOCONF=@AUTOCONF@
-AUTOHEADER=@AUTOHEADER@
 
 # when configure.in is updated, reconfigure
-$(srcdir)/configure: @MAINT@ $(srcdir)/configure.in $(srcdir)/aclocal.m4
-	@echo "WARNING: you need to rerun configure"
+$(srcdir)/configure: $(srcdir)/configure.in
+	@echo "WARNING: you need to rerun autoconf"
 
 config.status: $(srcdir)/configure
-	@echo "WARNING: you need to run ./config.status --recheck"
+	@echo "WARNING: you need to run configure"
 
-Makefile: $(srcdir)/Makefile.in config.status \
-	  include/stamp-h # just to ensure that config.h is up-to-date
+Makefile: $(srcdir)/Makefile.in config.status
 	@echo "WARNING: you need to run ./config.status"
-
-# note that nothing depends on config.h, so will probably be rebuilt
-# only when explicitly requested, unless dependency tracking is enabled
-include/config.h: include/stamp-h
-	@:
-
-include/stamp-h: $(srcdir)/include/config.h.in config.status
-	CONFIG_FILES= CONFIG_HEADERS=include/config.h $(SHELL) ./config.status
-	@echo > include/stamp-h
-
-$(srcdir)/include/config.h.in: $(srcdir)/include/stamp-h.in
-	@:
-
-$(srcdir)/include/stamp-h.in: @MAINT@ $(srcdir)/acconfig.h $(srcdir)/configure.in
-	cd $(srcdir) && $(AUTOHEADER)
-	@date -u > $@
-
-# automatic dependency tracking rules
-.deps/.dummy:
-	@if (: >> $@ || : > $@) >/dev/null 2>&1; then :; else \
-	  dir=.deps $(MAKEDIR); fi
-	@: >> $@ || : > $@ # what a fancy emoticon!
-
-.deps/.stamp: .deps/.dummy
-	@: >> $@ || : > $@
-
-.deps/depend: .deps/.stamp
-	@echo Updating dependencies
-	@: | cat `find .deps -type f -name \*d` >$@ 2>/dev/null || true
-
-@MAINT@-include .deps/depend
