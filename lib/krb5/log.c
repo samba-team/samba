@@ -329,7 +329,7 @@ krb5_openlog(krb5_context context,
     if(p == NULL)
 	p = krb5_config_get_strings(context->cf, "logging", "default", NULL);
     if(p){
-	for(q = p; *q == NULL; q++)
+	for(q = p; *q; q++)
 	    ret = krb5_addlog_dest(context, *fac, *q);
 	krb5_config_free_strings(p);
     }else
