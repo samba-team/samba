@@ -127,10 +127,6 @@ static void SidToString(fstring str, DOM_SID *sid)
 	/* Converted OK */
 	
 	fstrcpy(str, names[0]);
-	
-	safe_free(names[0]);
-	safe_free(names);
-	safe_free(types);
 }
 
 /* convert a string to a SID, either numeric or username/group */
@@ -153,9 +149,6 @@ static BOOL StringToSid(DOM_SID *sid, char *str)
 	}
 
 	sid_copy(sid, &sids[0]);
-
-	safe_free(sids);
-	safe_free(types);
 
  done:
 
@@ -458,7 +451,7 @@ static int cacl_dump(struct cli_state *cli, char *filename)
 		return EXIT_FAILED;
 	}
 
-	sd = cli_query_secdesc(cli, fnum);
+	sd = cli_query_secdesc(cli, fnum, ctx);
 
 	if (!sd) {
 		printf("ERROR: secdesc query failed: %s\n", cli_errstr(cli));
@@ -495,7 +488,7 @@ static int owner_set(struct cli_state *cli, enum chown_mode change_mode,
 	if (!StringToSid(&sid, new_username))
 		return EXIT_PARSE_ERROR;
 
-	old = cli_query_secdesc(cli, fnum);
+	old = cli_query_secdesc(cli, fnum, ctx);
 
 	cli_close(cli, fnum);
 
@@ -589,7 +582,7 @@ static int cacl_set(struct cli_state *cli, char *filename,
 		return EXIT_FAILED;
 	}
 
-	old = cli_query_secdesc(cli, fnum);
+	old = cli_query_secdesc(cli, fnum, ctx);
 
 	if (!old) {
 		printf("calc_set: Failed to query old descriptor\n");
