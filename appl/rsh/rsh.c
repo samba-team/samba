@@ -841,6 +841,10 @@ main(int argc, char **argv)
     if (status)
         errx(1, "krb5_init_context failed: %u", status);
       
+    if (getarg (args, sizeof(args) / sizeof(args[0]), argc, argv,
+		&optind))
+	usage (1);
+
     if (do_forwardable == -1)
 	do_forwardable = krb5_config_get_bool (context, NULL,
 					       "libdefaults",
@@ -852,16 +856,14 @@ main(int argc, char **argv)
 					   "libdefaults",
 					   "forward",
 					   NULL);
+    else if (do_forward == 0)
+	do_forwardable = 0;
 
     if (do_encrypt == -1)
 	do_encrypt = krb5_config_get_bool (context, NULL,
 					   "libdefaults",
 					   "encrypt",
 					   NULL);
-
-    if (getarg (args, sizeof(args) / sizeof(args[0]), argc, argv,
-		&optind))
-	usage (1);
 
     if (do_forwardable)
 	do_forward = 1;
