@@ -1982,6 +1982,7 @@ uint32 nt_printing_setsec(char *printername, SEC_DESC_BUF *secdesc_ctr)
 
 	if (!secdesc_ctr->sec->owner_sid || !secdesc_ctr->sec->grp_sid) {
 		DOM_SID *owner_sid, *group_sid;
+		SEC_ACL *dacl, *sacl;
 		SEC_DESC *psd = NULL;
 		size_t size;
 
@@ -1997,13 +1998,21 @@ uint32 nt_printing_setsec(char *printername, SEC_DESC_BUF *secdesc_ctr)
 			secdesc_ctr->sec->grp_sid :
 			old_secdesc_ctr->sec->grp_sid;
 
+		dacl = secdesc_ctr->sec->dacl ?
+			secdesc_ctr->sec->dacl :
+			old_secdesc_ctr->sec->dacl;
+
+		sacl = secdesc_ctr->sec->sacl ?
+			secdesc_ctr->sec->sacl :
+			old_secdesc_ctr->sec->sacl;
+
 		/* Make a deep copy of the security descriptor */
 
 		psd = make_sec_desc(secdesc_ctr->sec->revision,
 				    secdesc_ctr->sec->type,
 				    owner_sid, group_sid,
-				    secdesc_ctr->sec->sacl,
-				    secdesc_ctr->sec->dacl,
+				    sacl,
+				    dacl,
 				    &size);
 
 		new_secdesc_ctr = make_sec_desc_buf(size, psd);
