@@ -365,14 +365,6 @@ static void centry_end(struct cache_entry *centry, const char *format, ...)
 	free(kstr);
 }
 
-/* form a name with the domain part stuck on the front */
-static char *prepend_domain(struct winbindd_domain *domain, const char *name)
-{
-	static fstring s;
-	snprintf(s, sizeof(s), "%s%s%s", domain->name, lp_winbind_separator(), name);
-	return s;
-}
-
 /* form a sid from the domain plus rid */
 static DOM_SID *form_sid(struct winbindd_domain *domain, uint32 rid)
 {
@@ -487,12 +479,12 @@ do_query:
 		if (cache->backend->consistent) {
 			/* when the backend is consistent we can pre-prime some mappings */
 			wcache_save_name_to_sid(domain, NT_STATUS_OK, 
-						prepend_domain(domain, (*info)[i].acct_name), 
+						(*info)[i].acct_name, 
 						form_sid(domain, (*info)[i].user_rid),
 						SID_NAME_USER);
 			wcache_save_sid_to_name(domain, NT_STATUS_OK, 
 						form_sid(domain, (*info)[i].user_rid),
-						prepend_domain(domain, (*info)[i].acct_name), 
+						(*info)[i].acct_name, 
 						SID_NAME_USER, (*info)[i].user_rid);
 			wcache_save_user(domain, NT_STATUS_OK, &(*info)[i]);
 		}
