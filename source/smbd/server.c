@@ -476,19 +476,21 @@ usage on the program
 ****************************************************************************/
 static void usage(char *pname)
 {
-	DEBUG(0,("Incorrect program usage - are you sure the command line is correct?\n"));
 
-	printf("Usage: %s [-D] [-p port] [-d debuglevel] ", pname);
-        printf("[-l log basename] [-s services file]\n" );
-	printf("Version %s\n",VERSION);
-	printf("\t-D                    become a daemon\n");
-	printf("\t-p port               listen on the specified port\n");
-	printf("\t-d debuglevel         set the debuglevel\n");
+	printf("Usage: %s [-DaoPh?V] [-d debuglevel] [-l log basename] [-p port]\n", pname);
+	printf("       [-O socket options] [-s services file] [-i scope]\n");
+	printf("\t-D                    Become a daemon\n");
+	printf("\t-a                    Append to log file (default)\n");
+	printf("\t-o                    Overwrite log file, don't append\n");
+	printf("\t-P                    Passive only\n");
+	printf("\t-h                    Print usage\n");
+	printf("\t-?                    Print usage\n");
+	printf("\t-V                    Print version\n");
+	printf("\t-d debuglevel         Set the debuglevel\n");
 	printf("\t-l log basename.      Basename for log/debug files\n");
+	printf("\t-p port               Listen on the specified port\n");
+	printf("\t-O socket options     Socket options\n");
 	printf("\t-s services file.     Filename of services file\n");
-	printf("\t-P                    passive only\n");
-	printf("\t-a                    append to log file (default)\n");
-	printf("\t-o                    overwrite log file, don't append\n");
 	printf("\t-i scope              NetBIOS scope to use (default none)\n");
 	printf("\n");
 }
@@ -557,7 +559,7 @@ static void usage(char *pname)
 		argc--;
 	}
 
-	while ( EOF != (opt = getopt(argc, argv, "O:i:l:s:d:Dp:h?Paof:")) )
+	while ( EOF != (opt = getopt(argc, argv, "O:i:l:s:d:Dp:h?VPaof:")) )
 		switch (opt)  {
 		case 'O':
 			pstrcpy(user_socket_options,optarg);
@@ -611,7 +613,12 @@ static void usage(char *pname)
 			exit(0);
 			break;
 
+		case 'V':
+			printf("Version %s\n",VERSION);
+			exit(0);
+			break;
 		default:
+			DEBUG(0,("Incorrect program usage - are you sure the command line is correct?\n"));
 			usage(argv[0]);
 			exit(1);
 		}

@@ -6,7 +6,7 @@ naming services to clients
 .PP 
 .SH "SYNOPSIS" 
 .PP 
-\fBnmbd\fP [-D] [-o] [-a] [-H lmhosts file] [-d debuglevel] [-l log file basename] [-n primary NetBIOS name] [-p port number] [-s configuration file] [-i NetBIOS scope] [-h]
+\fBnmbd\fP [-D] [-a] [-o] [-h] [-V] [-H lmhosts file] [-d debuglevel] [-l log file basename] [-n primary NetBIOS name] [-p port number] [-s configuration file] [-i NetBIOS scope]
 .PP 
 .SH "DESCRIPTION" 
 .PP 
@@ -58,6 +58,12 @@ append log messages to the log file\&.  This is the default\&.
 If this parameter is specified, the log files will be
 overwritten when opened\&.  By default, the log files will be appended
 to\&.
+.IP 
+.IP "\fB-h\fP" 
+Prints the help information (usage) for \fBnmbd\fP\&.
+.IP 
+.IP "\fB-V\fP" 
+Prints the version number for \fBnmbd\fP\&.
 .IP 
 .IP "\fB-H filename\fP" 
 NetBIOS lmhosts file\&.
@@ -137,9 +143,6 @@ use of NetBIOS scopes, see rfc1001\&.txt and rfc1002\&.txt\&. NetBIOS scopes
 are \fIvery\fP rarely used, only set this parameter if you are the
 system administrator in charge of all the NetBIOS systems you
 communicate with\&.
-.IP 
-.IP "\fB-h\fP" 
-Prints the help information (usage) for \fBnmbd\fP\&.
 .IP 
 .PP 
 .SH "FILES" 

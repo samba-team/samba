@@ -532,20 +532,21 @@ static BOOL init_structs(void)
  **************************************************************************** */
 static void usage(char *pname)
 {
-  DEBUG(0,("Incorrect program usage - is the command line correct?\n"));
 
-  printf( "Usage: %s [-n name] [-D] [-p port] [-d debuglevel] ", pname );
-  printf( "[-l log basename]\n" );
-  printf( "Version %s\n", VERSION );
-  printf( "\t-D                    become a daemon\n" );
-  printf( "\t-p port               listen on the specified port\n" );
-  printf( "\t-d debuglevel         set the debuglevel\n" );
+  printf( "Usage: %s [-DaohV] [-H lmhosts file] [-d debuglevel] [-l log basename]\n", pname );
+  printf( "       [-n name] [-p port] [-s configuration file] [-i scope]\n" );
+  printf( "\t-D                    Become a daemon\n" );
+  printf( "\t-a                    Append to log file (default)\n" );
+  printf( "\t-o                    Overwrite log file, don't append\n" );
+  printf( "\t-h                    Print usage\n" );
+  printf( "\t-V                    Print version\n" );
+  printf( "\t-H hosts file         Load a netbios hosts file\n" );
+  printf( "\t-d debuglevel         Set the debuglevel\n" );
   printf( "\t-l log basename.      Basename for log/debug files\n" );
-  printf( "\t-n netbiosname.       " );
-  printf( "the netbios name to advertise for this host\n");
-  printf( "\t-H hosts file         load a netbios hosts file\n" );
-  printf( "\t-a                    append to log file (default)\n" );
-  printf( "\t-o                    overwrite log file, don't append\n" );
+  printf( "\t-n netbiosname.       Primary netbios name\n" );
+  printf( "\t-p port               Listen on the specified port\n" );
+  printf( "\t-s configuration file Configuration file name\n" );
+  printf( "\t-i scope              NetBIOS scope\n" );
   printf( "\n");
 } /* usage */
 
@@ -615,7 +616,7 @@ static void usage(char *pname)
 #endif /* MEM_MAN */
 
   while( EOF != 
-         (opt = getopt( argc, argv, "aos:T:I:C:bAi:B:N:Rn:l:d:Dp:hSH:G:f:" )) )
+         (opt = getopt( argc, argv, "Vaos:T:I:C:bAi:B:N:Rn:l:d:Dp:hSH:G:f:" )) )
     {
       switch (opt)
         {
@@ -662,9 +663,14 @@ static void usage(char *pname)
           usage(argv[0]);
           exit(0);
           break;
+        case 'V':
+	  printf( "Version %s\n", VERSION );
+          exit(0);
+          break;
         default:
           if( !is_a_socket(0) )
           {
+	    DEBUG(0,("Incorrect program usage - is the command line correct?\n"));
             usage(argv[0]);
             exit(0);
           }
