@@ -151,13 +151,13 @@ main(int argc, char **argv)
     ret = hdb_create(context, &new, new_database);
     if(ret != 0)
 	krb5_err(context, 1, ret, "hdb_create");
-    ret = hdb_set_master_key(context, db, key);
+    ret = hdb_set_master_key(context, new, key);
     if (ret)
 	krb5_err(context, 1, ret, "hdb_set_master_key");
     ret = db->open(context, db, O_RDONLY, 0);
     if(ret)
 	krb5_err(context, 1, ret, "%s", old_database);
-    ret = db->open(context, new, O_CREAT|O_EXCL|O_RDWR, 0600);
+    ret = new->open(context, new, O_CREAT|O_EXCL|O_RDWR, 0600);
     if(ret)
 	krb5_err(context, 1, ret, "%s", new_database);
     ret = hdb_foreach(context, db, func, new);
