@@ -22,7 +22,6 @@
 <!ENTITY Portability SYSTEM "Portability.sgml">
 <!ENTITY Other-Clients SYSTEM "Other-Clients.sgml">
 <!ENTITY ADS-HOWTO SYSTEM "ADS-HOWTO.sgml">
-<!ENTITY oplocks SYSTEM "oplocks.sgml">
 <!ENTITY pdb-mysql SYSTEM "pdb_mysql.sgml">
 <!ENTITY pdb-xml SYSTEM "pdb_xml.sgml">
 <!ENTITY VFS SYSTEM "VFS.sgml">
@@ -43,7 +42,7 @@
 <title>Abstract</title>
 
 <para>
-<emphasis>Last Update</emphasis> : $Date: 2002/11/13 15:34:49 $
+<emphasis>Last Update</emphasis> : $Date: 2002/12/24 01:41:10 $
 </para>
 
 <para>
@@ -80,7 +79,6 @@ PLEASE read this.</para>
 </partintro>
 &UNIX-INSTALL;
 &BROWSING;
-&oplocks;
 &BROWSING-Quick;
 &ENCRYPTION;
 </part>
