@@ -37,28 +37,80 @@
  */
 
 #include "kuser_locl.h"
+#ifdef KRB4
+#include <krb.h>
+#include <kafs.h>
+#endif
 RCSID("$Id$");
 
-int forwardable;
-int renewable;
-int version_flag = 0;
-int help_flag = 0;
-char *lifetime = NULL;
-char *server = NULL;
+int forwardable		= 0;
+int proxiable		= 0;
+int renewable		= 0;
+int renew_flag		= 0;
+int validate_flag	= 0;
+int version_flag	= 0;
+int help_flag		= 0;
+char *lifetime 		= NULL;
+char *renew_life	= NULL;
+char *server		= NULL;
+char *cred_cache	= NULL;
+char *start_str		= NULL;
+int use_keytab		= 0;
+char *keytab_str	= NULL;
+#ifdef KRB4
+extern int do_afslog;
+extern int get_v4_tgt;
+#endif
 
 struct getargs args[] = {
-    { "forwardable",		'f', arg_flag, &forwardable, 
-      "get forwardable tickets", NULL },
-    { "renewable",		'r', arg_flag, &renewable, 
-      "get renewable tickets", NULL },
-    { "lifetime",		'l', arg_string, &lifetime,
+#ifdef KRB4
+    { "524init", 	'4', arg_flag, &get_v4_tgt,
+      "obtain version 4 TGT" },
+    
+    { "afslog", 	0  , arg_flag, &do_afslog,
+      "obtain afs tokens"  },
+#endif
+    { "cache", 		'c', arg_string, &cred_cache,
+      "credentials cache", "cachename" },
+
+    { "cache", 		'c', arg_string, &cred_cache,
+      "credentials cache", "cachename" },
+
+    { "forwardable",	'f', arg_flag, &forwardable,
+      "get forwardable tickets"},
+
+    { "keytab",         't', arg_string, &keytab_str,
+      "keytab to use", "keytabname" },
+
+    { "lifetime",	'l', arg_string, &lifetime,
       "lifetime of tickets", "seconds"},
-    { "server", 		'S', arg_string, &server,
+
+    { "proxiable",	'p', arg_flag, &proxiable,
+      "get proxiable tickets" },
+
+    { "renew",          'R', arg_flag, &renew_flag,
+      "renew TGT" },
+
+    { "renewable",	0,   arg_flag, &renewable,
+      "get renewable tickets" },
+
+    { "renewable-life",	'r', arg_string, &renew_life,
+      "renewable lifetime of tickets", "seconds" },
+
+    { "server", 	'S', arg_string, &server,
       "server to get ticket for", "principal" },
-    { "version", 		0,   arg_flag, &version_flag, 
-      NULL, NULL },
-    { "help",			0,   arg_flag, &help_flag, 
-      NULL, NULL}
+
+    { "start-time",	's', arg_string, &start_str,
+      "when ticket gets valid", "seconds" },
+
+    { "use-keytab",     'k', arg_flag, &use_keytab,
+      "get key from keytab" },
+
+    { "validate",	'v', arg_flag, &validate_flag,
+      "validate TGT" },
+
+    { "version", 	0,   arg_flag, &version_flag },
+    { "help",		0,   arg_flag, &help_flag }
 };
 
 static void
@@ -68,6 +120,79 @@ usage (int ret)
 		    sizeof(args)/sizeof(*args),
 		    "[principal]");
     exit (ret);
+}
+
+static int
+renew_validate(krb5_context context, 
+	       int renew,
+	       int validate,
+	       krb5_ccache cache, 
+	       const char *server,
+	       krb5_deltat life)
+{
+    krb5_error_code ret;
+    krb5_creds in, *out;
+    krb5_kdc_flags flags;
+
+    memset(&in, 0, sizeof(in));
+
+    ret = krb5_cc_get_principal(context, cache, &in.client);
+    if(ret) {
+	krb5_warn(context, ret, "krb5_cc_get_principal");
+	return ret;
+    }
+    if(server) {
+	ret = krb5_parse_name(context, server, &in.server);
+	if(ret) {
+	    krb5_warn(context, ret, "krb5_parse_name");
+	    goto out;
+	}
+    } else {
+	char *realm;
+	ret = krb5_get_default_realm(context, &realm);
+	if(ret) {
+	    krb5_warn(context, ret, "krb5_get_default_realm");
+	    goto out;
+	}
+	ret = krb5_make_principal(context, &in.server, 
+				  realm, "krbtgt", realm, NULL);
+	if(ret) {
+	    krb5_warn(context, ret, "krb5_make_principal");
+	    goto out;
+	}
+	free(realm);
+    }
+    flags.i = 0;
+    flags.b.renewable = flags.b.renew = renew;
+    flags.b.validate = validate;
+    if(life)
+	in.times.endtime = time(NULL) + life;
+
+    out = calloc(1, sizeof(*out));
+    ret = krb5_get_kdc_cred(context,
+			    cache,
+			    flags,
+			    NULL,
+			    NULL,
+			    &in,
+			    &out);
+    if(ret) {
+	krb5_warn(context, ret, "krb5_get_kdc_cred");
+	goto out;
+    }
+    ret = krb5_cc_initialize(context, cache, in.client);
+    if(ret) {
+	krb5_warn(context, ret, "krb5_cc_initialize");
+	goto out;
+    }
+    ret = krb5_cc_store_cred(context, cache, out);
+    if(ret) {
+	krb5_warn(context, ret, "krb5_cc_store_cred");
+	goto out;
+    }
+out:
+    krb5_free_creds(context, out);
+    return ret;
 }
 
 int
@@ -80,6 +205,8 @@ main (int argc, char **argv)
     krb5_creds cred;
     int optind = 0;
     krb5_get_init_creds_opt opt;
+    krb5_deltat start_time = 0;
+    krb5_deltat ticket_life;
 
     set_progname (argv[0]);
     memset(&cred, 0, sizeof(cred));
@@ -99,19 +226,49 @@ main (int argc, char **argv)
 	exit(0);
     }
 
-    krb5_get_init_creds_opt_init (&opt);
-    
-    if (forwardable)
-	krb5_get_init_creds_opt_set_forwardable (&opt, forwardable);
-    if (renewable)
-	krb5_get_init_creds_opt_set_renew_life (&opt, 1 << 30);
+    if(cred_cache) 
+	ret = krb5_cc_resolve(context, cred_cache, &ccache);
+    else
+	ret = krb5_cc_default (context, &ccache);
+    if (ret)
+	krb5_err (context, 1, ret, "resolving credentials cache");
 
     if (lifetime) {
-	int tmp = parse_time (lifetime, NULL);
+	int tmp = parse_time (lifetime, "s");
 	if (tmp < 0)
 	    errx (1, "unparsable time: %s", lifetime);
 
-	krb5_get_init_creds_opt_set_tkt_life (&opt, tmp);
+	ticket_life = tmp;
+    }
+    if(renew_flag || validate_flag) {
+	ret = renew_validate(context, renew_flag, validate_flag, 
+			     ccache, server, ticket_life);
+	exit(ret != 0);
+    }
+
+    krb5_get_init_creds_opt_init (&opt);
+    
+    krb5_get_init_creds_opt_set_forwardable (&opt, forwardable);
+    krb5_get_init_creds_opt_set_proxiable (&opt, proxiable);
+
+    if(renew_life) {
+	int tmp = parse_time (renew_life, "s");
+	if (tmp < 0)
+	    errx (1, "unparsable time: %s", renew_life);
+
+	krb5_get_init_creds_opt_set_renew_life (&opt, tmp);
+    } else if (renewable)
+	krb5_get_init_creds_opt_set_renew_life (&opt, 1 << 30);
+
+    if(ticket_life != 0)
+	krb5_get_init_creds_opt_set_tkt_life (&opt, ticket_life);
+
+    if(start_str) {
+	int tmp = parse_time (lifetime, "s");
+	if (tmp < 0)
+	    errx (1, "unparsable time: %s", start_str);
+
+	start_time = tmp;
     }
 
     argc -= optind;
@@ -120,10 +277,6 @@ main (int argc, char **argv)
     if (argc > 1)
 	usage (1);
 
-    ret = krb5_cc_default (context, &ccache);
-    if (ret)
-	krb5_err (context, 1, ret, "krb5_cc_default");
-
     if (argv[0]) {
 	ret = krb5_parse_name (context, argv[0], &principal);
 	if (ret)
@@ -131,15 +284,32 @@ main (int argc, char **argv)
     } else
 	principal = NULL;
 
-    ret = krb5_get_init_creds_password (context,
-					&cred,
-					principal,
-					NULL,
-					krb5_prompter_posix,
-					NULL,
-					0,
-					server,
-					&opt);
+    if(use_keytab || keytab_str) {
+	krb5_keytab kt;
+	if(keytab_str)
+	    ret = krb5_kt_resolve(context, keytab_str, &kt);
+	else
+	    ret = krb5_kt_default(context, &kt);
+	if (ret)
+	    krb5_err (context, 1, ret, "resolving keytab");
+	ret = krb5_get_init_creds_keytab (context,
+					  &cred,
+					  principal,
+					  kt,
+					  start_time,
+					  server,
+					  &opt);
+	krb5_kt_close(context, kt);
+    } else 
+	ret = krb5_get_init_creds_password (context,
+					    &cred,
+					    principal,
+					    NULL,
+					    krb5_prompter_posix,
+					    NULL,
+					    start_time,
+					    server,
+					    &opt);
     switch(ret){
     case 0:
 	break;
@@ -160,6 +330,20 @@ main (int argc, char **argv)
     ret = krb5_cc_store_cred (context, ccache, &cred);
     if (ret)
 	krb5_err (context, 1, ret, "krb5_cc_store_cred");
+
+#ifdef KRB4
+    if(get_v4_tgt) {
+	CREDENTIALS c;
+	ret = krb524_convert_creds_kdc(context, &cred, &c);
+	if(ret)
+	    krb5_warn(context, ret, "converting creds");
+	else
+	    tf_setup(&c, c.pname, c.pinst);
+	memset(&c, 0, sizeof(c));
+    }
+    if(do_afslog && k_hasafs())
+	krb5_afslog(context, ccache, NULL, NULL);
+#endif
     krb5_free_creds_contents (context, &cred);
     krb5_cc_close (context, ccache);
     krb5_free_context (context);
