@@ -1,3 +1,8 @@
+2001-07-08  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/krb5/context.c: use krb5_copy_addresses instead of
+	copy_HostAddresses
+
 2001-07-06  Assar Westerlund  <assar@sics.se>
 
 	* configure.in (LIB_des_a, LIB_des_so): add these so that they can
