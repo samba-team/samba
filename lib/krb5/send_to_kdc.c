@@ -40,6 +40,12 @@
 
 RCSID("$Id$");
 
+/*
+ * send the data in `req' on the socket `fd' (which is datagram iff udp)
+ * waiting `tmout' for a reply and returning the reply in `rep'.
+ * returns 0 and data in `rep' if succesful, otherwise -1
+ */
+
 static int
 send_and_recv (int fd,
 	       time_t tmout,
@@ -54,27 +60,38 @@ send_and_recv (int fd,
 
      if (send (fd, req->data, req->length, 0) < 0)
 	  return -1;
-     rep->data = NULL;
-     rep->length = 0;
+     krb5_data_zero(rep);
      do{
 	 FD_ZERO(&fdset);
 	 FD_SET(fd, &fdset);
 	 timeout.tv_sec  = tmout;
 	 timeout.tv_usec = 0;
 	 ret = select (fd + 1, &fdset, NULL, NULL, &timeout);
-	 if (ret <= 0)
+	 if (ret < 0) {
+	     if (errno == EINTR)
+		 continue;
 	     return -1;
-	 else {
+	 } else if (ret == 0) {
+	     return 0;
+	 } else {
+	     void *tmp;
 
-	     if (ioctl (fd, FIONREAD, &nbytes) < 0)
+	     if (ioctl (fd, FIONREAD, &nbytes) < 0) {
+		 krb5_data_free (rep);
 		 return -1;
+	     }
 	     if(nbytes == 0)
 		 return 0;
 
-	     rep->data = realloc(rep->data, rep->length + nbytes);
-	     ret = recv (fd, (char*)rep->data + rep->length, nbytes, 0);
+	     tmp = realloc (rep->data, rep->length + nbytes);
+	     if (tmp == NULL) {
+		 krb5_data_free (rep);
+		 return -1;
+	     }
+	     rep->data = tmp;
+	     ret = recv (fd, (char*)tmp + rep->length, nbytes, 0);
 	     if (ret < 0) {
-		 free (rep->data);
+		 krb5_data_free (rep);
 		 return -1;
 	     }
 	     rep->length += ret;
@@ -83,72 +100,113 @@ send_and_recv (int fd,
      return 0;
 }
 
+/*
+ * Send kerberos requests and receive a reply on a udp or any other kind
+ * of a datagram socket.  See `send_and_recv'.
+ */
+
 static int
 send_and_recv_udp(int fd, 
 		  time_t tmout,
-		  const krb5_data *send,
-		  krb5_data *recv)
+		  const krb5_data *req,
+		  krb5_data *rep)
 {
-    return send_and_recv(fd, tmout, 1, send, recv);
+    return send_and_recv(fd, tmout, 1, req, rep);
 }
+
+/*
+ * `send_and_recv' for a TCP (or any other stream) socket.
+ * Since there are no record limits on a stream socket the protocol here
+ * is to prepend the request with 4 bytes of its length and the reply
+ * is similarly encoded.
+ */
 
 static int
 send_and_recv_tcp(int fd, 
 		  time_t tmout,
-		  const krb5_data *Send,
-		  krb5_data *recv)
+		  const krb5_data *req,
+		  krb5_data *rep)
 {
     unsigned char len[4];
-    _krb5_put_int(len, Send->length, 4);
-    send(fd, len, sizeof(len), 0);
-    if(send_and_recv(fd, tmout, 0, Send, recv))
+    unsigned long rep_len;
+
+    _krb5_put_int(len, req->length, 4);
+    if(send(fd, len, sizeof(len), 0) < 0)
 	return -1;
-    if(recv->length < 4)
+    if(send_and_recv(fd, tmout, 0, req, rep))
 	return -1;
-    memmove(recv->data, (char*)recv->data + 4, recv->length - 4);
-    recv->length -= 4;
+    if(rep->length < 4) {
+	krb5_data_free (rep);
+	return -1;
+    }
+    _krb5_get_int(rep->data, &rep_len, 4);
+    memmove(rep->data, (char*)rep->data + 4, rep->length - 4);
+    rep->length -= 4;
+    if (rep_len != rep->length) {
+	krb5_data_free (rep);
+	return -1;
+    }
     return 0;
 }
+
+/*
+ * `send_and_recv' tailored for the HTTP protocol.
+ */
 
 static int
 send_and_recv_http(int fd, 
 		   time_t tmout,
 		   const char *prefix,
-		   const krb5_data *send,
-		   krb5_data *recv)
+		   const krb5_data *req,
+		   krb5_data *rep)
 {
     char *request;
     char *str;
     krb5_data r;
     int ret;
-    int len = base64_encode(send->data, send->length, &str);
+    int len = base64_encode(req->data, req->length, &str);
+
     if(len < 0)
 	return -1;
     asprintf(&request, "GET %s%s HTTP/1.0\r\n\r\n", prefix, str);
     free(str);
-    r.data = request;
+    if (request == NULL)
+	return -1;
+    r.data   = request;
     r.length = strlen(request);
-    ret = send_and_recv(fd, tmout, 0, &r, recv);
+    ret = send_and_recv(fd, tmout, 0, &r, rep);
     free(request);
     if(ret)
 	return ret;
     {
+	unsigned long rep_len;
 	char *s, *p;
-	s = realloc(recv->data, recv->length + 1);
-	s[recv->length] = 0;
+
+	s = realloc(rep->data, rep->length + 1);
+	if (s == NULL) {
+	    krb5_data_free (rep);
+	    return -1;
+	}
+	s[rep->length] = 0;
 	p = strstr(s, "\r\n\r\n");
 	if(p == NULL) {
 	    free(s);
 	    return -1;
 	}
 	p += 4;
-	recv->data = s;
-	recv->length -= p - s;
-	if(recv->length < 4) { /* remove length */
+	rep->data = s;
+	rep->length -= p - s;
+	if(rep->length < 4) { /* remove length */
 	    free(s);
 	    return -1;
 	}
-	memmove(recv->data, p + 4, recv->length - 4);
+	rep->length -= 4;
+	_krb5_get_int(p, &rep_len, 4);
+	if (rep_len != rep->length) {
+	    free(s);
+	    return -1;
+	}
+	memmove(rep->data, p + 4, rep->length);
     }
     return 0;
 }
