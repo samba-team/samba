@@ -91,7 +91,7 @@ static WERROR srvsvc_NetCharDevGetInfo(struct dcesrv_call_state *dce_call, TALLO
 static WERROR srvsvc_NetCharDevControl(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NetCharDevControl *r)
 {
-	return WERR_NOT_SUPPORTED;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
@@ -188,7 +188,7 @@ static WERROR srvsvc_NetCharDevQSetInfo(struct dcesrv_call_state *dce_call, TALL
 static WERROR srvsvc_NetCharDevQPurge(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NetCharDevQPurge *r)
 {
-	return WERR_NOT_SUPPORTED;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
@@ -198,7 +198,7 @@ static WERROR srvsvc_NetCharDevQPurge(struct dcesrv_call_state *dce_call, TALLOC
 static WERROR srvsvc_NetCharDevQPurgeSelf(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 					  struct srvsvc_NetCharDevQPurgeSelf *r)
 {
-	return WERR_NOT_SUPPORTED;	
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);	
 }
 
 
@@ -305,8 +305,7 @@ static WERROR srvsvc_NetFileGetInfo(struct dcesrv_call_state *dce_call, TALLOC_C
 static WERROR srvsvc_NetFileClose(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NetFileClose *r)
 {
-	return WERR_NOT_SUPPORTED;
-	return WERR_OK;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
@@ -380,8 +379,7 @@ static WERROR srvsvc_NetSessEnum(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 static WERROR srvsvc_NetSessDel(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NetSessDel *r)
 {
-	return WERR_NOT_SUPPORTED;
-	return WERR_OK;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
@@ -625,7 +623,7 @@ static WERROR srvsvc_NetShareGetInfo(struct dcesrv_call_state *dce_call, TALLOC_
 static WERROR srvsvc_NetShareSetInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NetShareSetInfo *r)
 {
-	return WERR_NOT_SUPPORTED;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
@@ -635,7 +633,7 @@ static WERROR srvsvc_NetShareSetInfo(struct dcesrv_call_state *dce_call, TALLOC_
 static WERROR srvsvc_NetShareDel(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NetShareDel *r)
 {
-	return WERR_NOT_SUPPORTED;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
@@ -645,7 +643,7 @@ static WERROR srvsvc_NetShareDel(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 static WERROR srvsvc_NetShareDelSticky(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NetShareDelSticky *r)
 {
-	return WERR_NOT_SUPPORTED;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
@@ -655,7 +653,7 @@ static WERROR srvsvc_NetShareDelSticky(struct dcesrv_call_state *dce_call, TALLO
 static WERROR srvsvc_NetShareCheck(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NetShareCheck *r)
 {
-	return WERR_NOT_SUPPORTED;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
@@ -665,7 +663,7 @@ static WERROR srvsvc_NetShareCheck(struct dcesrv_call_state *dce_call, TALLOC_CT
 static WERROR srvsvc_NetSrvGetInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NetSrvGetInfo *r)
 {
-	return WERR_NOT_SUPPORTED;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
@@ -675,7 +673,7 @@ static WERROR srvsvc_NetSrvGetInfo(struct dcesrv_call_state *dce_call, TALLOC_CT
 static WERROR srvsvc_NetSrvSetInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NetSrvSetInfo *r)
 {
-	return WERR_NOT_SUPPORTED;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
@@ -717,7 +715,7 @@ static WERROR srvsvc_NetDiskEnum(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 static WERROR srvsvc_NETRSERVERSTATISTICSGET(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 					     struct srvsvc_NETRSERVERSTATISTICSGET *r)
 {
-	return WERR_NOT_SUPPORTED;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
@@ -727,7 +725,7 @@ static WERROR srvsvc_NETRSERVERSTATISTICSGET(struct dcesrv_call_state *dce_call,
 static WERROR srvsvc_NETRSERVERTRANSPORTADD(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NETRSERVERTRANSPORTADD *r)
 {
-	return WERR_NOT_SUPPORTED;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
@@ -797,7 +795,7 @@ static WERROR srvsvc_NetTransportEnum(struct dcesrv_call_state *dce_call, TALLOC
 static WERROR srvsvc_NETRSERVERTRANSPORTDEL(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NETRSERVERTRANSPORTDEL *r)
 {
-	return WERR_NOT_SUPPORTED;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
@@ -807,7 +805,7 @@ static WERROR srvsvc_NETRSERVERTRANSPORTDEL(struct dcesrv_call_state *dce_call, 
 static WERROR srvsvc_NET_REMOTE_TOD(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NET_REMOTE_TOD *r)
 {
-	return WERR_NOT_SUPPORTED;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
@@ -817,7 +815,7 @@ static WERROR srvsvc_NET_REMOTE_TOD(struct dcesrv_call_state *dce_call, TALLOC_C
 static WERROR srvsvc_NETRSERVERSETSERVICEBITS(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NETRSERVERSETSERVICEBITS *r)
 {
-	return WERR_NOT_SUPPORTED;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
@@ -827,7 +825,7 @@ static WERROR srvsvc_NETRSERVERSETSERVICEBITS(struct dcesrv_call_state *dce_call
 static WERROR srvsvc_NETRPRPATHTYPE(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NETRPRPATHTYPE *r)
 {
-	return WERR_NOT_SUPPORTED;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
@@ -837,7 +835,7 @@ static WERROR srvsvc_NETRPRPATHTYPE(struct dcesrv_call_state *dce_call, TALLOC_C
 static WERROR srvsvc_NETRPRPATHCANONICALIZE(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NETRPRPATHCANONICALIZE *r)
 {
-	return WERR_NOT_SUPPORTED;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
@@ -847,7 +845,7 @@ static WERROR srvsvc_NETRPRPATHCANONICALIZE(struct dcesrv_call_state *dce_call, 
 static WERROR srvsvc_NETRPRPATHCOMPARE(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NETRPRPATHCOMPARE *r)
 {
-	return WERR_NOT_SUPPORTED;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
@@ -857,7 +855,7 @@ static WERROR srvsvc_NETRPRPATHCOMPARE(struct dcesrv_call_state *dce_call, TALLO
 static WERROR srvsvc_NET_NAME_VALIDATE(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NET_NAME_VALIDATE *r)
 {
-	return WERR_NOT_SUPPORTED;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
@@ -867,7 +865,7 @@ static WERROR srvsvc_NET_NAME_VALIDATE(struct dcesrv_call_state *dce_call, TALLO
 static WERROR srvsvc_NETRPRNAMECANONICALIZE(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NETRPRNAMECANONICALIZE *r)
 {
-	return WERR_NOT_SUPPORTED;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
@@ -877,7 +875,7 @@ static WERROR srvsvc_NETRPRNAMECANONICALIZE(struct dcesrv_call_state *dce_call, 
 static WERROR srvsvc_NETRPRNAMECOMPARE(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NETRPRNAMECOMPARE *r)
 {
-	return WERR_NOT_SUPPORTED;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
@@ -1036,7 +1034,7 @@ static WERROR srvsvc_NetShareEnum(struct dcesrv_call_state *dce_call, TALLOC_CTX
 static WERROR srvsvc_NETRSHAREDELSTART(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NETRSHAREDELSTART *r)
 {
-	return WERR_NOT_SUPPORTED;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
@@ -1046,7 +1044,7 @@ static WERROR srvsvc_NETRSHAREDELSTART(struct dcesrv_call_state *dce_call, TALLO
 static WERROR srvsvc_NETRSHAREDELCOMMIT(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NETRSHAREDELCOMMIT *r)
 {
-	return WERR_NOT_SUPPORTED;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
@@ -1056,7 +1054,7 @@ static WERROR srvsvc_NETRSHAREDELCOMMIT(struct dcesrv_call_state *dce_call, TALL
 static WERROR srvsvc_NET_FILE_QUERY_SECDESC(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NET_FILE_QUERY_SECDESC *r)
 {
-	return WERR_NOT_SUPPORTED;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
@@ -1066,7 +1064,7 @@ static WERROR srvsvc_NET_FILE_QUERY_SECDESC(struct dcesrv_call_state *dce_call, 
 static WERROR srvsvc_NET_FILE_SET_SECDESC(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NET_FILE_SET_SECDESC *r)
 {
-	return WERR_NOT_SUPPORTED;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
@@ -1076,7 +1074,7 @@ static WERROR srvsvc_NET_FILE_SET_SECDESC(struct dcesrv_call_state *dce_call, TA
 static WERROR srvsvc_NETRSERVERTRANSPORTADDEX(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NETRSERVERTRANSPORTADDEX *r)
 {
-	return WERR_NOT_SUPPORTED;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
@@ -1086,7 +1084,7 @@ static WERROR srvsvc_NETRSERVERTRANSPORTADDEX(struct dcesrv_call_state *dce_call
 static WERROR srvsvc_NETRSERVERSETSERVICEBITSEX(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NETRSERVERSETSERVICEBITSEX *r)
 {
-	return WERR_NOT_SUPPORTED;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
@@ -1096,7 +1094,7 @@ static WERROR srvsvc_NETRSERVERSETSERVICEBITSEX(struct dcesrv_call_state *dce_ca
 static WERROR srvsvc_NETRDFSGETVERSION(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NETRDFSGETVERSION *r)
 {
-	return WERR_NOT_SUPPORTED;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
@@ -1106,7 +1104,7 @@ static WERROR srvsvc_NETRDFSGETVERSION(struct dcesrv_call_state *dce_call, TALLO
 static WERROR srvsvc_NETRDFSCREATELOCALPARTITION(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NETRDFSCREATELOCALPARTITION *r)
 {
-	return WERR_NOT_SUPPORTED;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
@@ -1116,7 +1114,7 @@ static WERROR srvsvc_NETRDFSCREATELOCALPARTITION(struct dcesrv_call_state *dce_c
 static WERROR srvsvc_NETRDFSDELETELOCALPARTITION(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NETRDFSDELETELOCALPARTITION *r)
 {
-	return WERR_NOT_SUPPORTED;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
@@ -1126,7 +1124,7 @@ static WERROR srvsvc_NETRDFSDELETELOCALPARTITION(struct dcesrv_call_state *dce_c
 static WERROR srvsvc_NETRDFSSETLOCALVOLUMESTATE(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NETRDFSSETLOCALVOLUMESTATE *r)
 {
-	return WERR_NOT_SUPPORTED;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
@@ -1136,7 +1134,7 @@ static WERROR srvsvc_NETRDFSSETLOCALVOLUMESTATE(struct dcesrv_call_state *dce_ca
 static WERROR srvsvc_NETRDFSSETSERVERINFO(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NETRDFSSETSERVERINFO *r)
 {
-	return WERR_NOT_SUPPORTED;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
@@ -1146,7 +1144,7 @@ static WERROR srvsvc_NETRDFSSETSERVERINFO(struct dcesrv_call_state *dce_call, TA
 static WERROR srvsvc_NETRDFSCREATEEXITPOINT(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NETRDFSCREATEEXITPOINT *r)
 {
-	return WERR_NOT_SUPPORTED;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
@@ -1156,7 +1154,7 @@ static WERROR srvsvc_NETRDFSCREATEEXITPOINT(struct dcesrv_call_state *dce_call, 
 static WERROR srvsvc_NETRDFSDELETEEXITPOINT(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NETRDFSDELETEEXITPOINT *r)
 {
-	return WERR_NOT_SUPPORTED;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
@@ -1166,7 +1164,7 @@ static WERROR srvsvc_NETRDFSDELETEEXITPOINT(struct dcesrv_call_state *dce_call, 
 static WERROR srvsvc_NETRDFSMODIFYPREFIX(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NETRDFSMODIFYPREFIX *r)
 {
-	return WERR_NOT_SUPPORTED;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
@@ -1176,7 +1174,7 @@ static WERROR srvsvc_NETRDFSMODIFYPREFIX(struct dcesrv_call_state *dce_call, TAL
 static WERROR srvsvc_NETRDFSFIXLOCALVOLUME(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NETRDFSFIXLOCALVOLUME *r)
 {
-	return WERR_NOT_SUPPORTED;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
@@ -1186,7 +1184,7 @@ static WERROR srvsvc_NETRDFSFIXLOCALVOLUME(struct dcesrv_call_state *dce_call, T
 static WERROR srvsvc_NETRDFSMANAGERREPORTSITEINFO(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NETRDFSMANAGERREPORTSITEINFO *r)
 {
-	return WERR_NOT_SUPPORTED;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
@@ -1196,7 +1194,7 @@ static WERROR srvsvc_NETRDFSMANAGERREPORTSITEINFO(struct dcesrv_call_state *dce_
 static WERROR srvsvc_NETRSERVERTRANSPORTDELEX(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct srvsvc_NETRSERVERTRANSPORTDELEX *r)
 {
-	return WERR_NOT_SUPPORTED;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
