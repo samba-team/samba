@@ -3413,6 +3413,13 @@ static BOOL send_login(char *inbuf,char *outbuf,BOOL start_session,BOOL use_setu
       uid = SVAL(inbuf,smb_uid);
     }
 
+  if (SVAL(inbuf, smb_vwv2) & 1)
+	  DEBUG(1,("connected as guest "));
+  if (sec_mode & 1)
+	  DEBUG(1,("security=user\n"));
+  else
+	  DEBUG(1,("security=share\n"));
+
   /* now we've got a connection - send a tcon message */
   bzero(outbuf,smb_size);
 
@@ -3520,6 +3527,7 @@ static BOOL send_login(char *inbuf,char *outbuf,BOOL start_session,BOOL use_setu
       free(inbuf);
       free(outbuf);
     }
+
   return True;
 }
 
@@ -3692,6 +3700,7 @@ static BOOL send_trans_request(char *outbuf,int trans,
 
     return(True);
 }
+
 
 /****************************************************************************
 try and browse available connections on a host
@@ -4118,7 +4127,7 @@ static BOOL open_sockets(int port )
       strcpy(desthost,host);
     }
 
-  if (*myname == 0) {
+  if (!(*myname)) {
       get_myname(myname,NULL);
   }
   strupper(myname);
@@ -4661,7 +4670,7 @@ static void usage(char *pname)
     strcpy(workgroup,lp_workgroup());
 
   load_interfaces();
-  get_myname(*myname?NULL:myname,NULL);  
+  get_myname((*myname)?NULL:myname,NULL);  
   strupper(myname);
 
   if (tar_type) {
