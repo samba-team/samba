@@ -106,10 +106,26 @@ init_tgs_req (krb5_context context,
     memset(t, 0, sizeof(*t));
     t->pvno = 5;
     t->msg_type = krb_tgs_req;
-    ret = krb5_init_etype(context, 
-			  &t->req_body.etype.len, 
-			  &t->req_body.etype.val, 
-			  NULL);
+    if (in_creds->session.keytype) {
+	krb5_enctype foo[2];
+
+	ret = krb5_keytype_to_etype(context,
+				    in_creds->session.keytype,
+				    &foo[0]);
+	if(ret)
+	    return ret;
+	foo[1] = 0;
+
+	ret = krb5_init_etype(context,
+			      &t->req_body.etype.len,
+			      &t->req_body.etype.val,
+			      foo);
+    } else {
+	ret = krb5_init_etype(context, 
+			      &t->req_body.etype.len, 
+			      &t->req_body.etype.val, 
+			      NULL);
+    }
     if (ret)
 	goto fail;
     t->req_body.addresses = addresses;
@@ -472,6 +488,9 @@ get_cred_from_kdc_flags(krb5_context context,
     krb5_realm client_realm, server_realm;
 
     *out_creds = calloc(1, sizeof(**out_creds));
+    if (*out_creds == NULL)
+	return ENOMEM;
+
     client_realm = *krb5_princ_realm(context, in_creds->client);
     server_realm = *krb5_princ_realm(context, in_creds->server);
     memset(&tmp_creds, 0, sizeof(tmp_creds));
@@ -560,7 +579,14 @@ krb5_get_credentials_with_flags(krb5_context context,
     int i;
     
     *out_creds = calloc(1, sizeof(**out_creds));
-    ret = krb5_cc_retrieve_cred(context, ccache, 0, in_creds, *out_creds);
+    if (*out_creds == NULL)
+	return ENOMEM;
+
+    ret = krb5_cc_retrieve_cred(context,
+				ccache,
+				in_creds->session.keytype ?
+				KRB5_TC_MATCH_KEYTYPE : 0,
+				in_creds, *out_creds);
     if(ret == 0)
 	return 0;
     free(*out_creds);
