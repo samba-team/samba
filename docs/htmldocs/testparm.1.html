@@ -1,10 +1,11 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <HTML
 ><HEAD
 ><TITLE
 >testparm</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.57"></HEAD
+CONTENT="Modular DocBook HTML Stylesheet Version 1.77"></HEAD
 ><BODY
 CLASS="REFENTRY"
 BGCOLOR="#FFFFFF"
@@ -15,8 +16,8 @@ ALINK="#0000FF"
 ><H1
 ><A
 NAME="TESTPARM"
->testparm</A
-></H1
+></A
+>testparm</H1
 ><DIV
 CLASS="REFNAMEDIV"
 ><A
@@ -37,12 +38,12 @@ NAME="AEN8"
 ><B
 CLASS="COMMAND"
 >testparm</B
->  [-s] [-h] [-L &#60;servername&#62;] {config filename} [hostname  hostIP]</P
+>  [-s] [-h] [-v] [-L &lt;servername&gt;] {config filename} [hostname  hostIP]</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN16"
+NAME="AEN17"
 ></A
 ><H2
 >DESCRIPTION</H2
@@ -68,8 +69,12 @@ CLASS="COMMAND"
 	</B
 > will successfully load the configuration file.</P
 ><P
->Note that this is <EM
->NOT</EM
+>Note that this is <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>NOT</I
+></SPAN
 > a guarantee that 
 	the services specified in the configuration file will be 
 	available or will operate as expected. </P
@@ -95,7 +100,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN31"
+NAME="AEN32"
 ></A
 ><H2
 >OPTIONS</H2
@@ -133,6 +138,18 @@ CLASS="REPLACEABLE"
 >.
 		This is useful for testing include files specified with the 
 		%L macro. </P
+></DD
+><DT
+>-v</DT
+><DD
+><P
+>If this option is specified, testparm 
+		will also output all options that were not used in 
+		<TT
+CLASS="FILENAME"
+>smb.conf</TT
+> and are thus set to
+		their defaults.</P
 ></DD
 ><DT
 >configfilename</DT
@@ -192,7 +209,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN66"
+NAME="AEN72"
 ></A
 ><H2
 >FILES</H2
@@ -221,7 +238,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN75"
+NAME="AEN81"
 ></A
 ><H2
 >DIAGNOSTICS</H2
@@ -235,7 +252,7 @@ NAME="AEN75"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN78"
+NAME="AEN84"
 ></A
 ><H2
 >VERSION</H2
@@ -246,7 +263,7 @@ NAME="AEN78"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN81"
+NAME="AEN87"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -272,7 +289,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN88"
+NAME="AEN94"
 ></A
 ><H2
 >AUTHOR</H2

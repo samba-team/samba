@@ -1,10 +1,11 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <HTML
 ><HEAD
 ><TITLE
 >winbindd</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.57"></HEAD
+CONTENT="Modular DocBook HTML Stylesheet Version 1.77"></HEAD
 ><BODY
 CLASS="REFENTRY"
 BGCOLOR="#FFFFFF"
@@ -15,8 +16,8 @@ ALINK="#0000FF"
 ><H1
 ><A
 NAME="WINBINDD"
->winbindd</A
-></H1
+></A
+>winbindd</H1
 ><DIV
 CLASS="REFNAMEDIV"
 ><A
@@ -37,7 +38,7 @@ NAME="AEN8"
 ><B
 CLASS="COMMAND"
 >winbindd</B
->  [-i] [-d &#60;debug level&#62;] [-s &#60;smb config file&#62;]</P
+>  [-i] [-d &lt;debug level&gt;] [-s &lt;smb config file&gt;]</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
@@ -92,13 +93,13 @@ CLASS="PARAMETER"
 >account</I
 ></TT
 > 
-	module-types.  The latter is simply
+	module-types.  The latter simply
 	performs a getpwnam() to verify that the system can obtain a uid for the
 	user.  If the <TT
 CLASS="FILENAME"
 >libnss_winbind</TT
 > library has been correctly 
-	installed, this should always suceed.
+	installed, this should always succeed.
 	</P
 ><P
 >The following nsswitch databases are implemented by 
@@ -170,20 +171,11 @@ CLASS="FILENAME"
 > and then from the 
 	Windows NT server. </P
 ><P
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="100%"
-><TR
-><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 >passwd:         files winbind
 group:          files winbind
 	</PRE
-></TD
-></TR
-></TABLE
 ></P
 ><P
 >The following simple configuration in the
@@ -287,279 +279,130 @@ CLASS="FILENAME"
 	[global] section of smb.conf. </P
 ><P
 ></P
-><DIV
-CLASS="VARIABLELIST"
-><DL
-><DT
->winbind separator</DT
-><DD
+><UL
+><LI
 ><P
->The winbind separator option allows you 
-		to specify how NT domain names and user names are combined 
-		into unix user names when presented to users. By default, 
-		<B
-CLASS="COMMAND"
->winbindd</B
-> will use the traditional '\' 
-		separator so that the unix user names look like 
-		DOMAIN\username. In some cases this separator character may 
-		cause problems as the '\' character has special meaning in 
-		unix shells.  In that case you can use the winbind separator 
-		option to specify an alternative separator character. Good 
-		alternatives may be '/' (although that conflicts
-		with the unix directory separator) or a '+ 'character. 
-		The '+' character appears to be the best choice for 100% 
-		compatibility with existing unix utilities, but may be an 
-		aesthetically bad choice depending on your taste. </P
-><P
->Default: <B
-CLASS="COMMAND"
->winbind separator = \ </B
->
-		</P
-><P
->Example: <B
-CLASS="COMMAND"
->winbind separator = + </B
-></P
-></DD
-><DT
->winbind uid</DT
-><DD
-><P
->The winbind uid parameter specifies the 
-		range of user ids that are allocated by the winbindd daemon.  
-		This range of ids should have no existing local or NIS users 
-		within it as strange conflicts can occur otherwise. </P
-><P
->Default: <B
-CLASS="COMMAND"
->winbind uid = &#60;empty string&#62; 
-		</B
-></P
-><P
->Example: <B
-CLASS="COMMAND"
->winbind uid = 10000-20000</B
-></P
-></DD
-><DT
->winbind gid</DT
-><DD
-><P
->The winbind gid parameter specifies the 
-		range of group ids that are allocated by the winbindd daemon.  
-		This range of group ids should have no existing local or NIS 
-		groups within it as strange conflicts can occur otherwise.</P
-><P
->Default: <B
-CLASS="COMMAND"
->winbind gid = &#60;empty string&#62;
-		</B
-></P
-><P
->Example: <B
-CLASS="COMMAND"
->winbind gid = 10000-20000
-		</B
-> </P
-></DD
-><DT
->winbind cache time</DT
-><DD
-><P
->This parameter specifies the number of 
-		seconds the winbindd daemon will cache user and group information 
-		before querying a Windows NT server again. When a item in the 
-		cache is older than this time winbindd will ask the domain 
-		controller for the sequence number of the server's account database. 
-		If the sequence number has not changed then the cached item is 
-		marked as valid for a further <TT
+><A
+HREF="smb.conf.5.html#WINBINDSEPARATOR"
+TARGET="_top"
+>		<TT
 CLASS="PARAMETER"
 ><I
->winbind cache time
-		</I
+>winbind separator</I
 ></TT
-> seconds.  Otherwise the item is fetched from the 
-		server. This means that as long as the account database is not 
-		actively changing winbindd will only have to send one sequence 
-		number query packet every <TT
+></A
+></P
+></LI
+><LI
+><P
+><A
+HREF="smb.conf.5.html#WINBINDUID"
+TARGET="_top"
+>		<TT
 CLASS="PARAMETER"
 ><I
->winbind cache time
-		</I
+>winbind uid</I
 ></TT
-> seconds. </P
+></A
+></P
+></LI
+><LI
 ><P
->Default: <B
-CLASS="COMMAND"
->winbind cache time = 15</B
->
-		</P
-></DD
-><DT
->winbind enum users</DT
-><DD
+><A
+HREF="smb.conf.5.html#WINBINDGID"
+TARGET="_top"
+>		<TT
+CLASS="PARAMETER"
+><I
+>winbind gid</I
+></TT
+></A
+></P
+></LI
+><LI
 ><P
->On large installations it may be necessary 
-		to suppress the enumeration of users through the <B
-CLASS="COMMAND"
->		setpwent()</B
->, <B
-CLASS="COMMAND"
->getpwent()</B
-> and 
-		<B
-CLASS="COMMAND"
->endpwent()</B
-> group of system calls.  If 
-		the <TT
+><A
+HREF="smb.conf.5.html#WINBINDCACHETIME"
+TARGET="_top"
+>		<TT
+CLASS="PARAMETER"
+><I
+>winbind cache time</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
+HREF="smb.conf.5.html#WINBINDENUMUSERS"
+TARGET="_top"
+>		<TT
 CLASS="PARAMETER"
 ><I
 >winbind enum users</I
 ></TT
-> parameter is false, 
-		calls to the <B
-CLASS="COMMAND"
->getpwent</B
-> system call will not 
-		return any data. </P
-><P
-><EM
->Warning:</EM
-> Turning off user enumeration 
-		may cause some programs to behave oddly.  For example, the <B
-CLASS="COMMAND"
->finger</B
-> 
-		program relies on having access to the full user list when 
-		searching  for matching usernames. </P
-><P
->Default: <B
-CLASS="COMMAND"
->winbind enum users = yes </B
+></A
 ></P
-></DD
-><DT
->winbind enum groups</DT
-><DD
+></LI
+><LI
 ><P
->On large installations it may be necessary 
-		to suppress the enumeration of groups through the <B
-CLASS="COMMAND"
->		setgrent()</B
->, <B
-CLASS="COMMAND"
->getgrent()</B
-> and 
-		<B
-CLASS="COMMAND"
->endgrent()</B
-> group of system calls.  If 
-		the <TT
+><A
+HREF="smb.conf.5.html#WINBINDENUMGROUPS"
+TARGET="_top"
+>		<TT
 CLASS="PARAMETER"
 ><I
 >winbind enum groups</I
 ></TT
-> parameter is 
-		false, calls to the <B
-CLASS="COMMAND"
->getgrent()</B
-> system 
-		call will not return any data. </P
+></A
+></P
+></LI
+><LI
 ><P
-><EM
->Warning:</EM
-> Turning off group 
-		enumeration may cause some programs to behave oddly. 
-		</P
-><P
->Default: <B
-CLASS="COMMAND"
->winbind enum groups = no </B
->
-		</P
-></DD
-><DT
->template homedir</DT
-><DD
-><P
->When filling out the user information 
-		for a Windows NT user, the <B
-CLASS="COMMAND"
->winbindd</B
-> daemon 
-		uses this parameter to fill in the home directory for that user.  
-		If the string <TT
+><A
+HREF="smb.conf.5.html#TEMPLATEHOMEDIR"
+TARGET="_top"
+>		<TT
 CLASS="PARAMETER"
 ><I
->%D</I
+>template homedir</I
 ></TT
-> is present it is 
-		substituted with the user's Windows NT domain name.  If the 
-		string <TT
+></A
+></P
+></LI
+><LI
+><P
+><A
+HREF="smb.conf.5.html#TEMPLATESHELL"
+TARGET="_top"
+>		<TT
 CLASS="PARAMETER"
 ><I
->%U</I
+>template shell</I
 ></TT
-> is present it is substituted
-		with the user's Windows NT user name. </P
-><P
->Default: <B
-CLASS="COMMAND"
->template homedir = /home/%D/%U </B
->
-		</P
-></DD
-><DT
->template shell</DT
-><DD
-><P
->When filling out the user information for 
- 		a Windows NT user, the <B
-CLASS="COMMAND"
->winbindd</B
-> daemon 
-		uses this parameter to fill in the shell for that user. 
-		</P
-><P
->Default: <B
-CLASS="COMMAND"
->template shell = /bin/false </B
->
-		</P
-></DD
-><DT
->winbind use default domain</DT
-><DD
-><P
->This parameter specifies whether the <B
-CLASS="COMMAND"
->winbindd</B
->
-		daemon should operate on users without domain component in their username.  
-                Users without a domain component are treated as is part of the winbindd server's 
-                own domain.  While this does not benifit Windows users, it makes SSH, FTP and e-mail 
-                function in a way much closer to the way they would in a native unix system.</P
-><P
->Default: <B
-CLASS="COMMAND"
->winbind use default domain = &#60;falseg&#62; 
-		</B
+></A
 ></P
+></LI
+><LI
 ><P
->Example: <B
-CLASS="COMMAND"
->winbind use default domain = true</B
+><A
+HREF="smb.conf.5.html#WINBINDUSEDEFAULTDOMAIN"
+TARGET="_top"
+>		<TT
+CLASS="PARAMETER"
+><I
+>winbind use default domain</I
+></TT
+></A
 ></P
-></DD
-></DL
-></DIV
+></LI
+></UL
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN167"
+NAME="AEN118"
 ></A
 ><H2
 >EXAMPLE SETUP</H2
@@ -574,20 +417,11 @@ CLASS="FILENAME"
 > put the 
 	following:</P
 ><P
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="100%"
-><TR
-><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 >passwd:     files winbind
 group:      files winbind
 	</PRE
-></TD
-></TR
-></TABLE
 ></P
 ><P
 >In <TT
@@ -601,12 +435,6 @@ CLASS="PARAMETER"
 ></TT
 > lines with something like this: </P
 ><P
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="100%"
-><TR
-><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 >auth       required	/lib/security/pam_securetty.so
@@ -614,9 +442,6 @@ auth       required	/lib/security/pam_nologin.so
 auth       sufficient	/lib/security/pam_winbind.so
 auth       required     /lib/security/pam_pwdb.so use_first_pass shadow nullok
 	</PRE
-></TD
-></TR
-></TABLE
 ></P
 ><P
 >Note in particular the use of the <TT
@@ -697,12 +522,6 @@ CLASS="FILENAME"
 > containing directives like the 
 	following:  </P
 ><P
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="100%"
-><TR
-><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 >[global]
@@ -716,9 +535,6 @@ CLASS="PROGRAMLISTING"
         security = domain
         password server = *
 	</PRE
-></TD
-></TR
-></TABLE
 ></P
 ><P
 >Now start winbindd and you should find that your user and 
@@ -737,7 +553,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN206"
+NAME="AEN157"
 ></A
 ><H2
 >NOTES</H2
@@ -795,7 +611,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN222"
+NAME="AEN173"
 ></A
 ><H2
 >SIGNALS</H2
@@ -846,7 +662,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN239"
+NAME="AEN190"
 ></A
 ><H2
 >FILES</H2
@@ -922,7 +738,7 @@ CLASS="FILENAME"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN268"
+NAME="AEN219"
 ></A
 ><H2
 >VERSION</H2
@@ -933,7 +749,7 @@ NAME="AEN268"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN271"
+NAME="AEN222"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -961,7 +777,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN278"
+NAME="AEN229"
 ></A
 ><H2
 >AUTHOR</H2

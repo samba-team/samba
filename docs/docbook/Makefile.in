@@ -119,7 +119,7 @@ $(HTMLDIR)/Samba-Developers-Guide.html: $(DEVDOC)/dev-doc.sgml
 
 
 $(HTMLDIR)/%.html: $(MANPROJDOC)/%.sgml
-	$(DOCBOOK2HTML) -o $(HTMLDIR) $<
+	$(DOCBOOK2HTML) -u -o $(HTMLDIR) $<
 
 $(MANDIR)/%: $(MANPROJDOC)/%.sgml 
 	$(DOCBOOK2MAN) -o $(MANDIR) $< || rm $@
