@@ -1,5 +1,5 @@
 !==
-!== PROFILES.txt for Samba release TNG-prealpha 06 Mar 2000
+!== PROFILES.txt for Samba release TNG-prealpha 08 Mar 2000
 !==
 Contributors:	Bruce Cook <BC3-AU@bigfoot.com>
 		Copyright (C) 1998 Bruce Cook
