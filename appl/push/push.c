@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -258,6 +258,8 @@ doit(int s,
 
 	FD_ZERO(&readset);
 	FD_ZERO(&writeset);
+	if (s >= FD_SETSIZE)
+	    errx (1, "fd too large");
 	FD_SET(s,&readset);
 	if (((state == STAT || state == RETR || state == TOP)
 	     && asked_for < count)
