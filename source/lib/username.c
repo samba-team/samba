@@ -169,7 +169,7 @@ BOOL map_username(char *user)
 			return False;
 		}
 
-		if (strchr_m(dosname,'*') || user_in_list(user, (const char **)dosuserlist)) {
+		if (strchr_m(dosname,'*') || user_in_list(user, (const char **)dosuserlist, NULL, 0)) {
 			DEBUG(3,("Mapped user %s to %s\n",user,unixname));
 			mapped_user = True;
 			fstrcpy(last_from,user);
@@ -328,10 +328,26 @@ static BOOL user_in_winbind_group_list(const char *user, const char *gname, BOOL
 	int num_groups;
 	int i;
  	gid_t *groups = NULL;
- 	gid_t gid;
+ 	gid_t gid, gid_low, gid_high;
  	BOOL ret = False;
  
  	*winbind_answered = False;
+ 
+	if ((gid = nametogid(gname)) == (gid_t)-1) {
+ 		DEBUG(0,("user_in_winbind_group_list: nametogid for group %s failed.\n",
+ 			gname ));
+ 		goto err;
+ 	}
+
+	if (!lp_winbind_gid(&gid_low, &gid_high)) {
+		DEBUG(4, ("winbind gid range not configured, therefore %s cannot be a winbind group\n", gname));
+ 		goto err;
+	}
+
+	if (gid < gid_low || gid > gid_high) {
+		DEBUG(4, ("group %s is not a winbind group\n", gname));
+ 		goto err;
+	}
  
  	/*
  	 * Get the gid's that this user belongs to.
@@ -361,12 +377,6 @@ failed with error %s\n", strerror(errno) ));
 	 * to a gid_t via either winbind or the local UNIX lookup and do the comparison.
 	 */
  
-	if ((gid = nametogid(gname)) == (gid_t)-1) {
- 		DEBUG(0,("user_in_winbind_group_list: winbind_lookup_name for group %s failed.\n",
- 			gname ));
- 		goto err;
- 	}
- 
  	for (i = 0; i < num_groups; i++) {
  		if (gid == groups[i]) {
  			ret = True;
@@ -389,7 +399,7 @@ failed with error %s\n", strerror(errno) ));
  Check if a user is in a UNIX group.
 ****************************************************************************/
 
-static BOOL user_in_unix_group_list(const char *user,const char *gname)
+BOOL user_in_unix_group_list(const char *user,const char *gname)
 {
 	struct passwd *pass = Get_Pwnam(user);
 	struct sys_userlist *user_list;
@@ -432,10 +442,27 @@ static BOOL user_in_unix_group_list(const char *user,const char *gname)
  Check if a user is in a group list. Ask winbind first, then use UNIX.
 ****************************************************************************/
 
-BOOL user_in_group_list(const char *user, const char *gname)
+BOOL user_in_group_list(const char *user, const char *gname, gid_t *groups, size_t n_groups)
 {
 	BOOL winbind_answered = False;
 	BOOL ret;
+	gid_t gid;
+	unsigned i;
+
+	gid = nametogid(gname);
+	if (gid == (gid_t)-1) 
+		return False;
+
+	if (groups && n_groups > 0) {
+		for (i=0; i < n_groups; i++) {
+			if (groups[i] == gid) {
+				return True;
+			}
+		}
+		return False;
+	}
+
+	/* fallback if we don't yet have the group list */
 
 	ret = user_in_winbind_group_list(user, gname, &winbind_answered);
 	if (!winbind_answered)
@@ -451,7 +478,7 @@ BOOL user_in_group_list(const char *user, const char *gname)
  and netgroup lists.
 ****************************************************************************/
 
-BOOL user_in_list(const char *user,const char **list)
+BOOL user_in_list(const char *user,const char **list, gid_t *groups, size_t n_groups)
 {
 	if (!list || !*list)
 		return False;
@@ -480,7 +507,7 @@ BOOL user_in_list(const char *user,const char **list)
 			 */
 			if(user_in_netgroup_list(user, *list +1))
 				return True;
-			if(user_in_group_list(user, *list +1))
+			if(user_in_group_list(user, *list +1, groups, n_groups))
 				return True;
 		} else if (**list == '+') {
 
@@ -488,7 +515,7 @@ BOOL user_in_list(const char *user,const char **list)
 				/*
 				 * Search UNIX list followed by netgroup.
 				 */
-				if(user_in_group_list(user, *list +2))
+				if(user_in_group_list(user, *list +2, groups, n_groups))
 					return True;
 				if(user_in_netgroup_list(user, *list +2))
 					return True;
@@ -499,7 +526,7 @@ BOOL user_in_list(const char *user,const char **list)
 				 * Just search UNIX list.
 				 */
 
-				if(user_in_group_list(user, *list +1))
+				if(user_in_group_list(user, *list +1, groups, n_groups))
 					return True;
 			}
 
@@ -511,7 +538,7 @@ BOOL user_in_list(const char *user,const char **list)
 				 */
 				if(user_in_netgroup_list(user, *list +2))
 					return True;
-				if(user_in_group_list(user, *list +2))
+				if(user_in_group_list(user, *list +2, groups, n_groups))
 					return True;
 			} else {
 				/*

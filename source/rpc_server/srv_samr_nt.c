@@ -3427,7 +3427,7 @@ NTSTATUS _samr_add_aliasmem(pipes_struct *p, SAMR_Q_ADD_ALIASMEM *q_u, SAMR_R_AD
 	fstrcpy(grp_name, grp->gr_name);
 
 	/* if the user is already in the group */
-	if(user_in_group_list(pwd->pw_name, grp_name)) {
+	if(user_in_unix_group_list(pwd->pw_name, grp_name)) {
 		passwd_free(&pwd);
 		return NT_STATUS_MEMBER_IN_ALIAS;
 	}
@@ -3439,7 +3439,7 @@ NTSTATUS _samr_add_aliasmem(pipes_struct *p, SAMR_Q_ADD_ALIASMEM *q_u, SAMR_R_AD
 	smb_add_user_group(grp_name, pwd->pw_name);
 
 	/* check if the user has been added then ... */
-	if(!user_in_group_list(pwd->pw_name, grp_name)) {
+	if(!user_in_unix_group_list(pwd->pw_name, grp_name)) {
 		passwd_free(&pwd);
 		return NT_STATUS_MEMBER_NOT_IN_ALIAS;	/* don't know what to reply else */
 	}
@@ -3485,7 +3485,7 @@ NTSTATUS _samr_del_aliasmem(pipes_struct *p, SAMR_Q_DEL_ALIASMEM *q_u, SAMR_R_DE
 	if ((grp=getgrgid(map.gid)) == NULL)
 		return NT_STATUS_NO_SUCH_ALIAS;
 
-	/* we need to copy the name otherwise it's overloaded in user_in_group_list */
+	/* we need to copy the name otherwise it's overloaded in user_in_unix_group_list */
 	fstrcpy(grp_name, grp->gr_name);
 
 	/* check if the user exists before trying to remove it from the group */
@@ -3497,7 +3497,7 @@ NTSTATUS _samr_del_aliasmem(pipes_struct *p, SAMR_Q_DEL_ALIASMEM *q_u, SAMR_R_DE
 	}
 
 	/* if the user is not in the group */
-	if(!user_in_group_list(pdb_get_username(sam_pass), grp_name)) {
+	if(!user_in_unix_group_list(pdb_get_username(sam_pass), grp_name)) {
 		pdb_free_sam(&sam_pass);
 		return NT_STATUS_MEMBER_IN_ALIAS;
 	}
@@ -3505,7 +3505,7 @@ NTSTATUS _samr_del_aliasmem(pipes_struct *p, SAMR_Q_DEL_ALIASMEM *q_u, SAMR_R_DE
 	smb_delete_user_group(grp_name, pdb_get_username(sam_pass));
 
 	/* check if the user has been removed then ... */
-	if(user_in_group_list(pdb_get_username(sam_pass), grp_name)) {
+	if(user_in_unix_group_list(pdb_get_username(sam_pass), grp_name)) {
 		pdb_free_sam(&sam_pass);
 		return NT_STATUS_MEMBER_NOT_IN_ALIAS;	/* don't know what to reply else */
 	}
@@ -3583,11 +3583,11 @@ NTSTATUS _samr_add_groupmem(pipes_struct *p, SAMR_Q_ADD_GROUPMEM *q_u, SAMR_R_AD
 		return NT_STATUS_NO_SUCH_GROUP;
 	}
 
-	/* we need to copy the name otherwise it's overloaded in user_in_group_list */
+	/* we need to copy the name otherwise it's overloaded in user_in_unix_group_list */
 	fstrcpy(grp_name, grp->gr_name);
 
 	/* if the user is already in the group */
-	if(user_in_group_list(pwd->pw_name, grp_name)) {
+	if(user_in_unix_group_list(pwd->pw_name, grp_name)) {
 		passwd_free(&pwd);
 		return NT_STATUS_MEMBER_IN_GROUP;
 	}
@@ -3601,7 +3601,7 @@ NTSTATUS _samr_add_groupmem(pipes_struct *p, SAMR_Q_ADD_GROUPMEM *q_u, SAMR_R_AD
 	smb_add_user_group(grp_name, pwd->pw_name);
 
 	/* check if the user has been added then ... */
-	if(!user_in_group_list(pwd->pw_name, grp_name)) {
+	if(!user_in_unix_group_list(pwd->pw_name, grp_name)) {
 		passwd_free(&pwd);
 		return NT_STATUS_MEMBER_NOT_IN_GROUP;		/* don't know what to reply else */
 	}
@@ -3662,7 +3662,7 @@ NTSTATUS _samr_del_groupmem(pipes_struct *p, SAMR_Q_DEL_GROUPMEM *q_u, SAMR_R_DE
 	}
 
 	/* if the user is not in the group */
-	if (!user_in_group_list(pdb_get_username(sam_pass), grp_name)) {
+	if (!user_in_unix_group_list(pdb_get_username(sam_pass), grp_name)) {
 		pdb_free_sam(&sam_pass);
 		return NT_STATUS_MEMBER_NOT_IN_GROUP;
 	}
@@ -3670,7 +3670,7 @@ NTSTATUS _samr_del_groupmem(pipes_struct *p, SAMR_Q_DEL_GROUPMEM *q_u, SAMR_R_DE
 	smb_delete_user_group(grp_name, pdb_get_username(sam_pass));
 
 	/* check if the user has been removed then ... */
-	if (user_in_group_list(pdb_get_username(sam_pass), grp_name)) {
+	if (user_in_unix_group_list(pdb_get_username(sam_pass), grp_name)) {
 		pdb_free_sam(&sam_pass);
 		return NT_STATUS_ACCESS_DENIED;		/* don't know what to reply else */
 	}

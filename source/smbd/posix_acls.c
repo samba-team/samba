@@ -573,7 +573,7 @@ static BOOL uid_entry_in_group( canon_ace *uid_ace, canon_ace *group_ace )
 	 * not uids/gids.
 	 */
 
-	return user_in_group_list(u_name, g_name );
+	return user_in_group_list(u_name, g_name, NULL, 0);
 }
 
 /****************************************************************************

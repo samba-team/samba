@@ -258,7 +258,7 @@ static NTSTATUS share_sanity_checks(int snum, pstring dev)
 /****************************************************************************
  readonly share?
 ****************************************************************************/
-static void set_read_only(connection_struct *conn) 
+static void set_read_only(connection_struct *conn, gid_t *groups, size_t n_groups)
 {
 	char **list;
 	char *service = lp_servicename(conn->service);
@@ -271,7 +271,7 @@ static void set_read_only(connection_struct *conn)
 		if (!str_list_substitute(list, "%S", service)) {
 			DEBUG(0, ("ERROR: read list substitution failed\n"));
 		}
-		if (user_in_list(conn->user, (const char **)list))
+		if (user_in_list(conn->user, (const char **)list, groups, n_groups))
 			conn->read_only = True;
 		str_list_free(&list);
 	}
@@ -281,7 +281,7 @@ static void set_read_only(connection_struct *conn)
 		if (!str_list_substitute(list, "%S", service)) {
 			DEBUG(0, ("ERROR: write list substitution failed\n"));
 		}
-		if (user_in_list(conn->user, (const char **)list))
+		if (user_in_list(conn->user, (const char **)list, groups, n_groups))
 			conn->read_only = False;
 		str_list_free(&list);
 	}
@@ -291,7 +291,7 @@ static void set_read_only(connection_struct *conn)
 /****************************************************************************
   admin user check
 ****************************************************************************/
-static void set_admin_user(connection_struct *conn) 
+static void set_admin_user(connection_struct *conn, gid_t *groups, size_t n_groups)
 {
 	/* admin user check */
 	
@@ -299,7 +299,7 @@ static void set_admin_user(connection_struct *conn)
 	   marked read_only. Changed as I don't think this is needed,
 	   but old code left in case there is a problem here.
 	*/
-	if (user_in_list(conn->user,lp_admin_users(conn->service)) 
+	if (user_in_list(conn->user,lp_admin_users(conn->service), groups, n_groups) 
 #if 0
 	    && !conn->read_only
 #endif
@@ -364,14 +364,14 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	} else if (vuser) {
 		if (vuser->guest) {
 			if (!lp_guest_ok(snum)) {
-				DEBUG(2, ("guest user (from session setup) not permitted to access this share (%s)", lp_servicename(snum)));
+				DEBUG(2, ("guest user (from session setup) not permitted to access this share (%s)\n", lp_servicename(snum)));
 				      conn_free(conn);
 				      *status = NT_STATUS_ACCESS_DENIED;
 				      return NULL;
 			}
 		} else {
-			if (!user_ok(vuser->user.unix_name, snum)) {
-				DEBUG(2, ("user '%s' (from session setup) not permitted to access this share (%s)", vuser->user.unix_name, lp_servicename(snum)));
+			if (!user_ok(vuser->user.unix_name, snum, vuser->groups, vuser->n_groups)) {
+				DEBUG(2, ("user '%s' (from session setup) not permitted to access this share (%s)\n", vuser->user.unix_name, lp_servicename(snum)));
 				conn_free(conn);
 				*status = NT_STATUS_ACCESS_DENIED;
 				return NULL;
@@ -427,9 +427,9 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	string_set(&conn->user,user);
 	conn->nt_user_token = NULL;
 	
-	set_read_only(conn);
+	set_read_only(conn, vuser ? vuser->groups : NULL, vuser ? vuser->n_groups : 0);
 	
-	set_admin_user(conn);
+	set_admin_user(conn, vuser ? vuser->groups : NULL, vuser ? vuser->n_groups : 0);
 
 	/*
 	 * If force user is true, then store the
@@ -499,7 +499,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 			 * Otherwise, the meaning of the '+' would be ignored.
 			 */
 			if (conn->force_user && user_must_be_member) {
-				if (user_in_group_list( user, gname )) {
+				if (user_in_group_list( user, gname, NULL, 0)) {
 						conn->gid = gid;
 						DEBUG(3,("Forced group %s for member %s\n",gname,user));
 				}
