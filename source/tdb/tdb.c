@@ -186,7 +186,7 @@ static int tdb_brlock(TDB_CONTEXT *tdb, tdb_off offset,
 
 	if (tdb->flags & TDB_NOLOCK)
 		return 0;
-	if (tdb->read_only) {
+	if ((rw_type == F_WRLCK) && (tdb->read_only)) {
 		errno = EACCES;
 		return -1;
 	}
@@ -1800,6 +1800,16 @@ int tdb_chainlock(TDB_CONTEXT *tdb, TDB_DATA key)
 int tdb_chainunlock(TDB_CONTEXT *tdb, TDB_DATA key)
 {
 	return tdb_unlock(tdb, BUCKET(tdb_hash(&key)), F_WRLCK);
+}
+
+int tdb_chainlock_read(TDB_CONTEXT *tdb, TDB_DATA key)
+{
+	return tdb_lock(tdb, BUCKET(tdb_hash(&key)), F_RDLCK);
+}
+
+int tdb_chainunlock_read(TDB_CONTEXT *tdb, TDB_DATA key)
+{
+	return tdb_unlock(tdb, BUCKET(tdb_hash(&key)), F_RDLCK);
 }
 
 
