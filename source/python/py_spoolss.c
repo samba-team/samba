@@ -213,6 +213,20 @@ Set the form given by the dictionary argument.
            METH_VARARGS | METH_KEYWORDS,
           "Notify spooler that a document is about to be printed." },
 
+        /* Printer data */
+
+        { "getprinterdata", spoolss_getprinterdata,
+           METH_VARARGS | METH_KEYWORDS,
+          "Get printer data." },
+
+        { "setprinterdata", spoolss_setprinterdata,
+           METH_VARARGS | METH_KEYWORDS,
+          "Set printer data." },
+
+        { "enumprinterdata", spoolss_enumprinterdata,
+           METH_VARARGS | METH_KEYWORDS,
+          "Enumerate printer data." },
+
 	{ NULL }
 
 };
