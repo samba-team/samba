@@ -40,7 +40,7 @@ enum winbindd_result winbindd_lookupsid(struct winbindd_cli_state *state)
 	/* Lookup sid from PDC using lsa_lookup_sids() */
 
 	if (!string_to_sid(&sid, state->request.data.sid)) {
-		DEBUG(5, ("%s not a SID\n", state->request.data.sid));
+		DEBUG(5, ("%s not a SID!\n", state->request.data.sid));
 		return WINBINDD_ERROR;
 	}
 
@@ -109,7 +109,11 @@ enum winbindd_result winbindd_sid_to_uid(struct winbindd_cli_state *state)
 
 	/* Split sid into domain sid and user rid */
 
-	string_to_sid(&sid, state->request.data.sid);
+	if (!string_to_sid(&sid, state->request.data.sid)) {
+		DEBUG(0, ("%s not a SID!\n", state->request.data.sid));
+		return WINBINDD_ERROR;
+	}
+
 	sid_split_rid(&sid, &user_rid);
 
 	/* Find domain this sid belongs to */
@@ -148,7 +152,11 @@ enum winbindd_result winbindd_sid_to_gid(struct winbindd_cli_state *state)
 
 	/* Split sid into domain sid and user rid */
 
-	string_to_sid(&sid, state->request.data.sid);
+	if (!string_to_sid(&sid, state->request.data.sid)) {
+		DEBUG(0, ("%s not a SID!\n", state->request.data.sid));
+		return WINBINDD_ERROR;
+	}
+
 	sid_split_rid(&sid, &group_rid);
 
 	/* Find domain this sid belongs to */
