@@ -650,7 +650,7 @@ BOOL local_sid_to_gid(gid_t *pgid, DOM_SID *psid, enum SID_NAME_USE *name_type)
 static void select_name(pstring string, const UNISTR2 *from)
 {
 	if (from->buffer != 0)
-		unistr2_to_ascii(string, from, sizeof(*string));
+		unistr2_to_ascii(string, from, sizeof(pstring));
 }
 
 /*************************************************************
