@@ -221,22 +221,24 @@ int krb4_enc(char *msg)
     }
     kerror = krb_rd_priv(cmd, len, schedule, &auth_dat.session, 
 			 &his_addr, &ctrl_addr, &m_data);
-    free(cmd);
 
     if(kerror){
 	reply(535, "Error reading request: %s.", krb_get_err_text(kerror));
+	free(cmd);
 	return -1;
     }
     
     tmp = malloc(strlen(msg) + 1);
     if (tmp == NULL) {
 	reply(451, "Failed to allocate memory.");
+	free(cmd);
 	return -1;
     }
     snprintf(tmp, strlen(msg) + 1, "%.*s", (int)m_data.app_length, m_data.app_data);
     if(!strstr(tmp, "\r\n"))
 	strcat(tmp, "\r\n");
     new_ftp_command(tmp);
+    free(cmd);
     return 0;
 }
 
