@@ -284,7 +284,7 @@ int main (int argc, char **argv)
 				data_bytes_read = read_log_data(in, curpacket+data_offset, data_length);
 			}  else { 
 				if(in_packet){ 
-					if(hexformat) { print_hex_packet(out, curpacket, curpacket_len); return; }
+					if(hexformat) print_hex_packet(out, curpacket, curpacket_len); 
 					else print_netbios_packet(out, curpacket, curpacket_len, data_bytes_read+data_offset);
 					free(curpacket); 
 				}
