@@ -79,7 +79,7 @@ enum {
 };
 
 typedef struct krb5_address{
-    int16_t type;
+    int type;
     krb5_data address;
 } krb5_address;
 
