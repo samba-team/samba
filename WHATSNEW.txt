@@ -3,7 +3,7 @@
                                 Jan 4, 2005
                    ===================================
 
-This is a preview release of the Samba 3.0.2 code base and
+This is a preview release of the Samba 3.0.11 code base and
 is provided for testing only.  This release is *not* intended
 for production servers.  However, there have been several bug
 fixes since 3.0.10 that we feel are important to make available
@@ -19,7 +19,7 @@ Common bugs fixed in 3.0.11pre1 include:
 Additional features introduced in Samba 3.0.11pre1:
 
   o Winbindd performance improvements.
-  o More 'net rpc campire' functionality.
+  o More 'net rpc vampire' functionality.
  
 
 
@@ -59,7 +59,7 @@ o   Jeremy Allison <jra@samba.org>
       inherit = no'.
     * BUG 2088: Ensure inherit permissions is only applied on a new 
       file, not an existing one.
-    * Don't go fishing for the krb5 authorisation data unless we know
+    * Don't go fishing for the krb5 authorization data unless we know
       it's there.
     * BUG 2110: Ensure we convert to ucs2 correctly after the 
       CAN-2004-0930 patch.
@@ -85,7 +85,7 @@ o   Gerald (Jerry) Carter <jerry@samba.org>
       available in lp_file_list_changed().
     * Fixes the spurious 'register_message_flags: tdb fetch failed' 
       errors.
-    * Don't run the backgroup LPQ daemon when we are running in
+    * Don't run the background LPQ daemon when we are running in
       interactive mode.
     * prevent the background LPQ daemon from updating the print queue
       cache just because multiple smbd processes sent a message that
@@ -99,7 +99,7 @@ o   Gerald (Jerry) Carter <jerry@samba.org>
     * BUG 2107: fix memory bloating caused by large numbers of 
       print_queue_updates() requests sent via messages.tdb.
     * Check the setprinter(3) based on the access permissions on 
-      the handle and avoid the call to print_access_chaeck().
+      the handle and avoid the call to print_access_check().
       
 
 o   Nadav Danieli <nadavd@exanet.com>
@@ -109,18 +109,18 @@ o   Nadav Danieli <nadavd@exanet.com>
 o   Guenther Deschner <gd@samba.org> 
     * Allow 'localhost' as a valid server name in the smbd for the
       spoolss calls.
-    * Fix KRB5_SETPW-defines, no change in behaviour (Thanks to Luke
+    * Fix KRB5_SETPW-defines, no change in behavior (Thanks to Luke
       Mewburn for the input).
     * BUG 2059: Add additional checks needed after logic change to the
       HAVE_WRFILE_KEYTAB detection test.
     * BUG 1076: Fix interaction with Exchange 5.5. SP4 and a 
       Samba DC.  Allow us to lookup at least our own SID.
-    * More fixes to have proper german in swat (Thanks to Reiner 
+    * More fixes to have proper German in swat (Thanks to Reiner 
       Klaproth and Björn Jacke.
     * BUG 404, 2076: Allow to set OWNER- and GROUP-entries while 
       setting security descriptors with smbcacls and using with 
       the -S or -M switch. 
-    * Include the munged_dial, bad_password_count, lopgon_count, and 
+    * Include the munged_dial, bad_password_count, logon_count, and 
       logon_hours attributes when running 'net rpc vampire'.
     * Fix segfault in idmap_rid.
     * When winbindd is operating in the multi-mapping mode of 
@@ -189,17 +189,17 @@ o   Volker Lendecke <vl@samba.org>
       Samba DC.
     * Fix bug when serving the 'Start Menu' in a roaming user profile..
     * Map more pre-defined NT security descriptors to AFS acls.
-    * Add timeout to AD searche requests.
+    * Add timeout to AD search requests.
     * If a connection to a DC is requested (in winbindd), open
-      connections simultaeneously to all DCs found.
+      connections simultaneously to all DCs found.
     * Memleak fixes.
     * Fix logic error in handling of 'printcap name' parameter.
     * Prevent winbindd from SPAM'ing the log files with 'user root 
       does not exist'.
-    * Baclkport samr_DomInfo2 IDL specification from Samba 4.
+    * Backport samr_DomInfo2 IDL specification from Samba 4.
     * Implement smbstatus -n, don't lookup users and groups.
-    * Implement a stupid mapping that maps the space to another 
-      character choosable by afsacl:space.
+    * Implement simple mapping that maps the space to another character 
+      defined by afsacl:space.
     * Add support for 'net idmap delete <idmap-file> <SID>'.
     * Add new parameter 'afs token lifetime' tells the AFS client 
       when to throw away a token (patch from kllin@it.su.se).
