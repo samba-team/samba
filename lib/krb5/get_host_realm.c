@@ -60,6 +60,7 @@ krb5_get_host_realm(krb5_context context,
 		    const char *host,
 		    char ***realms)
 {
+    krb5_error_code ret;
     char hostname[MAXHOSTNAMELEN];
     char *res = NULL;
     const char *partial = NULL;
@@ -118,9 +119,12 @@ krb5_get_host_realm(krb5_context context,
 	    }
 	    strupr ((*realms)[0]);
 	} else {
-	    free (*realms);
-	    *realms = NULL;
-	    return KRB5_ERR_HOST_REALM_UNKNOWN;
+	    ret = krb5_get_default_realm (context, *realms);
+	    if (ret) {
+		free (*realms);
+		*realms = NULL;
+		return KRB5_ERR_HOST_REALM_UNKNOWN;
+	    }
 	}
     }
 
