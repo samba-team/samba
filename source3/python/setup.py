@@ -41,15 +41,24 @@ samba_srcdir = os.environ.get("SRCDIR", "")
 
 samba_libs = os.environ.get("LIBS", "")
 
-# Convert libs and objs from space separated strings to lists of strings
-# for distutils to digest.  Split "-l" prefix off library list.
-
 obj_list = string.split(samba_objs)
 
-lib_list = []
+# Unfortunately the samba_libs variable contains both shared libraries
+# and linker flags.  The python distutils doesn't like this so we have
+# to split $samba_libs into a flags component and a library component.
+
+libraries = []
+library_dirs = []
 
 for lib in string.split(samba_libs):
-    lib_list.append(string.replace(lib, "-l", ""))
+    if lib[0:2] == "-l":
+        libraries.append(lib[2:])
+        continue
+    if lib[0:2] == "-L":
+        library_dirs.append(lib[2:])
+        continue
+    print "Unknown entry '%s' in $LIBS variable passed to setup.py" % lib
+    sys.exit(1)
 
 flags_list = string.split(samba_cflags)
 
@@ -96,8 +105,8 @@ setup(
                          samba_srcdir + "python/py_spoolss_jobs.c",
                          samba_srcdir + "python/py_spoolss_jobs_conv.c",
                          ],
-              libraries = lib_list,
-              library_dirs = ["/usr/kerberos/lib"],
+              libraries = libraries,
+              library_dirs = ["/usr/kerberos/lib"] + library_dirs,
               extra_compile_args = flags_list,
               extra_objects = obj_list),
 
@@ -107,8 +116,8 @@ setup(
               sources = [samba_srcdir + "python/py_lsa.c",
                          samba_srcdir + "python/py_common.c",
                          samba_srcdir + "python/py_ntsec.c"],
-              libraries = lib_list,
-              library_dirs = ["/usr/kerberos/lib"],
+              libraries = libraries,
+              library_dirs = ["/usr/kerberos/lib"] + library_dirs,
               extra_compile_args = flags_list,
               extra_objects = obj_list),
 
@@ -119,8 +128,8 @@ setup(
                          samba_srcdir + "python/py_conv.c",
                          samba_srcdir + "python/py_samr_conv.c",
                          samba_srcdir + "python/py_common.c"],
-              libraries = lib_list,
-              library_dirs = ["/usr/kerberos/lib"],
+              libraries = libraries,
+              library_dirs = ["/usr/kerberos/lib"] + library_dirs,
               extra_compile_args = flags_list,
               extra_objects = obj_list),
 
@@ -131,8 +140,8 @@ setup(
                          samba_srcdir + "python/py_winbind_conv.c",
                          samba_srcdir + "python/py_conv.c",
                          samba_srcdir + "python/py_common.c"],
-              libraries = lib_list,
-              library_dirs = ["/usr/kerberos/lib"],
+              libraries = libraries,
+              library_dirs = ["/usr/kerberos/lib"] + library_dirs,
               extra_compile_args = flags_list,
               extra_objects = obj_list),
 
@@ -141,8 +150,8 @@ setup(
     Extension(name = "winreg",
               sources = [samba_srcdir + "python/py_winreg.c",
                          samba_srcdir + "python/py_common.c"],
-              libraries = lib_list,
-              library_dirs = ["/usr/kerberos/lib"],
+              libraries = libraries,
+              library_dirs = ["/usr/kerberos/lib"] + library_dirs,
               extra_compile_args = flags_list,
               extra_objects = obj_list),
 
@@ -153,8 +162,8 @@ setup(
                          samba_srcdir + "python/py_conv.c",
                          samba_srcdir + "python/py_srvsvc_conv.c",
                          samba_srcdir + "python/py_common.c"],
-              libraries = lib_list,
-              library_dirs = ["/usr/kerberos/lib"],
+              libraries = libraries,
+              library_dirs = ["/usr/kerberos/lib"] + library_dirs,
               extra_compile_args = flags_list,
               extra_objects = obj_list),
 
@@ -162,8 +171,8 @@ setup(
 
     Extension(name = "tdb",
               sources = [samba_srcdir + "python/py_tdb.c"],
-              libraries = lib_list,
-              library_dirs = ["/usr/kerberos/lib"],
+              libraries = libraries,
+              library_dirs = ["/usr/kerberos/lib"] + library_dirs,
               extra_compile_args = flags_list,
               extra_objects = obj_list),
 
@@ -173,8 +182,8 @@ setup(
               sources = [samba_srcdir + "python/py_smb.c",
                          samba_srcdir + "python/py_common.c",
                          samba_srcdir + "python/py_ntsec.c"],
-              libraries = lib_list,
-              library_dirs = ["/usr/kerberos/lib"],
+              libraries = libraries,
+              library_dirs = ["/usr/kerberos/lib"] + library_dirs,
               extra_compile_args = flags_list,
               extra_objects = obj_list),
 
