@@ -1,5 +1,7 @@
 2003-01-16  Love  <lha@it.su.se>
 
+	* admin/ktutil.8: document -v, --verbose
+
 	* admin/get.c (kt_get): make getarg usage consistent with other
 	other parts of ktutil
 
