@@ -321,13 +321,13 @@ end_fwd:
 			&(*context_handle)->auth_context,
 			&outbuf);
     if (kret) {
-      krb5_data_free (&outbuf);
       ret = GSS_S_FAILURE;
       goto failure;
     }
     ret = gssapi_krb5_encapsulate (&outbuf,
 				   output_token,
 				   "\x02\x00");
+    krb5_data_free (&outbuf);
     if (ret) {
 	kret = 0;
       goto failure;
