@@ -1190,7 +1190,8 @@ static uint32 cmd_set(struct client_info *info, int argc, char *argv[])
 		return 0;
 	}
 
-	if (cmd_set_options & CMD_NOPW) {
+	/* NULL password if specified or is username is empty */
+	if ((cmd_set_options & CMD_NOPW) || (strlen(usr.ntc.user_name) == 0)) {
 		set_user_password(&usr.ntc, True, NULL);
 	}
 	else
