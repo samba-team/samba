@@ -324,9 +324,10 @@ static int map_share_mode( uint32 desired_access, uint32 share_access, uint32 fi
   }
 
   if (smb_open_mode == -1) {
-    if(desired_access & (DELETE_ACCESS|FILE_WRITE_ATTRIBUTES))
+    if(desired_access & (DELETE_ACCESS|FILE_WRITE_ATTRIBUTES|
+                         WRITE_DAC_ACCESS|WRITE_OWNER_ACCESS))
       smb_open_mode = 2;
-    else if( desired_access & FILE_EXECUTE)
+    else if(desired_access & (FILE_EXECUTE|READ_CONTROL_ACCESS))
       smb_open_mode = 0;
     else {
       DEBUG(0,("map_share_mode: Incorrect value for desired_access = %x\n",
