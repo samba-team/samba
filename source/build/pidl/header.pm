@@ -275,6 +275,8 @@ sub HeaderInterface($)
     if (defined $if_uuid) {
 	    my $name = uc $interface->{NAME};
 	    $res .= "#define DCERPC_$name\_UUID \"$if_uuid\"\n";
+
+		if(!defined $if_version) { $if_version = "0.0"; }
 	    $res .= "#define DCERPC_$name\_VERSION $if_version\n";
 	    $res .= "#define DCERPC_$name\_NAME \"$interface->{NAME}\"\n\n";
 	    $res .= "extern const struct dcerpc_interface_table dcerpc_table_$interface->{NAME};\n";
