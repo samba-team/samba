@@ -436,7 +436,7 @@ NTSTATUS dcerpc_bind_auth_schannel(struct dcerpc_pipe *p,
 	NTSTATUS status;
 	int chan_type = 0;
 
-	status = gensec_client_start(&p->security_state.generic_state);
+	status = gensec_client_start(p, &p->security_state.generic_state);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}

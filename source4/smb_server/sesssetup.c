@@ -221,7 +221,7 @@ static NTSTATUS sesssetup_spnego(struct smbsrv_request *req, union smb_sesssetup
 
 		status = gensec_update(smb_sess->gensec_ctx, req, sess->spnego.in.secblob, &sess->spnego.out.secblob);
 	} else {
-		status = gensec_server_start(&gensec_ctx);
+		status = gensec_server_start(req->smb_conn, &gensec_ctx);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("Failed to start GENSEC server code: %s\n", nt_errstr(status)));
 			return status;

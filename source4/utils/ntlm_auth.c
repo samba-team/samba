@@ -315,7 +315,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 		case NTLMSSP_CLIENT_1:
 			/* setup the client side */
 			
-			if (!NT_STATUS_IS_OK(gensec_client_start(gensec_state))) {
+			if (!NT_STATUS_IS_OK(gensec_client_start(NULL, gensec_state))) {
 				exit(1);
 			}
 			gensec_set_username(*gensec_state, opt_username);
@@ -334,7 +334,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 			break;
 		case GSS_SPNEGO_SERVER:
 		case SQUID_2_5_NTLMSSP:
-			if (!NT_STATUS_IS_OK(gensec_server_start(gensec_state))) {
+			if (!NT_STATUS_IS_OK(gensec_server_start(NULL, gensec_state))) {
 				exit(1);
 			}
 			break;
