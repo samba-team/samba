@@ -169,6 +169,9 @@ initialise a msrpcent structure
 void msrpc_init_creds(struct msrpc_state *msrpc, const struct user_creds *usr)
 {
 	copy_user_creds(&msrpc->usr, usr);
+#if 0
+	msrpc->nt.ntlmssp_cli_flgs = usr->ntc.ntlmssp_flags;
+#endif
 }
 
 /****************************************************************************

@@ -432,8 +432,9 @@ void copy_nt_creds(struct ntuser_creds *to,
 	safe_strcpy(to->user_name, from->user_name, sizeof(from->user_name)-1);
 	memcpy(&to->pwd, &from->pwd, sizeof(from->pwd));
 	to->ntlmssp_flags = from->ntlmssp_flags;
-	DEBUG(10,("copy_nt_creds: user %s domain %s nopw %s\n",
-	       to->user_name, to->domain, BOOLSTR(pwd_is_nullpwd(&to->pwd))));
+	DEBUG(10,("copy_nt_creds: user %s domain %s nopw %s flgs: %x\n",
+	       to->user_name, to->domain, BOOLSTR(pwd_is_nullpwd(&to->pwd)),
+	       to->ntlmssp_flags));
 };
 
 void copy_user_creds(struct user_creds *to,

@@ -271,8 +271,6 @@ struct cli_state *cli_net_use_add(const char* srv_name,
 		return NULL;
 	}
 
-	cli->cli->nt.ntlmssp_cli_flgs = 0x0;
-
 	add_cli_to_array(&num_clis, &clis, cli);
 	cli->num_users++;
 

@@ -2722,6 +2722,9 @@ initialise a client structure
 void cli_init_creds(struct cli_state *cli, const struct ntuser_creds *usr)
 {
 	copy_nt_creds(&cli->usr, usr);
+#if 0
+	cli->nt.ntlmssp_cli_flgs = usr->ntlmssp_flags;
+#endif
 }
 
 /****************************************************************************
