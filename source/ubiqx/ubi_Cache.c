@@ -1,4 +1,4 @@
-/* ************************************************************************== **
+/* ========================================================================== **
  *                                 ubi_Cache.c
  *
  *  Copyright (C) 1997 by Christopher R. Hertel
@@ -47,7 +47,7 @@
  *
  *  To use this module, you will need to supply a comparison function of
  *  type ubi_trCompFunc and a node-freeing function of type
- *  ubi_trKillNodeTrn.  See ubi_BinTree.h for more information on
+ *  ubi_trKillNodeRtn.  See ubi_BinTree.h for more information on
  *  these.  (This is all basic ubiqx tree management stuff.)
  *
  *  Notes:
@@ -91,6 +91,9 @@
  * -------------------------------------------------------------------------- **
  *
  *  Log: ubi_Cache.c,v 
+ *  Revision 0.4  1999/09/22 03:42:24  crh
+ *  Fixed a minor typo.
+ *
  *  Revision 0.3  1998/06/03 18:00:15  crh
  *  Further fiddling with sys_include.h, which is no longer explicitly
  *  included by this module since it is inherited from ubi_BinTree.h.
@@ -105,7 +108,7 @@
  *  Revision 0.0  1997/12/18 06:24:33  crh
  *  Initial Revision.
  *
- * ************************************************************************== **
+ * ========================================================================== **
  */
 
 #include "ubi_Cache.h"    /* Header for *this* module. */
@@ -117,8 +120,8 @@
 /*  commented out until I make use of it...
 static char ModuleID[] = 
 "ubi_Cache\n\
-\tRevision: 0.3 \n\
-\tDate: 1998/06/03 18:00:15 \n\
+\tRevision: 0.4 \n\
+\tDate: 1999/09/22 03:42:24 \n\
 \tAuthor: crh \n";
 */
 

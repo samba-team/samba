@@ -1,4 +1,4 @@
-/* ************************************************************************== **
+/* ========================================================================== **
  *                              ubi_SplayTree.c
  *
  *  Copyright (C) 1993-1998 by Christopher R. Hertel
@@ -37,6 +37,9 @@
  * -------------------------------------------------------------------------- **
  *
  * Log: ubi_SplayTree.c,v 
+ * Revision 4.5  2000/01/08 23:26:49  crh
+ * Added ubi_trSplay() macro, which does a type cast for us.
+ *
  * Revision 4.4  1998/06/04 21:29:27  crh
  * Upper-cased defined constants (eg UBI_BINTREE_H) in some header files.
  * This is more "standard", and is what people expect.  Weird, eh?
@@ -153,22 +156,22 @@
  * Initial version, written by Christopher R. Hertel.
  * This module implements Splay Trees using the ubi_BinTree module as a basis.
  *
- * ************************************************************************== **
+ * ========================================================================== **
  */
 
 #include "ubi_SplayTree.h"  /* Header for THIS module.   */
 
-/* ************************************************************************== **
+/* ========================================================================== **
  * Static data.
  */
 
 static char ModuleID[] = "ubi_SplayTree\n\
-\tRevision: 4.4 \n\
-\tDate: 1998/06/04 21:29:27 \n\
+\tRevision: 4.5 \n\
+\tDate: 2000/01/08 23:26:49 \n\
 \tAuthor: crh \n";
 
 
-/* ************************************************************************== **
+/* ========================================================================== **
  * Private functions...
  */
 
@@ -247,7 +250,7 @@ static ubi_btNodePtr Splay( ubi_btNodePtr SplayWithMe )
   return( SplayWithMe );
   } /* Splay */
 
-/* ************************************************************************== **
+/* ========================================================================== **
  * Exported utilities.
  */
 
@@ -505,5 +508,5 @@ int ubi_sptModuleID( int size, char *list[] )
   return( 0 );
   } /* ubi_sptModuleID */
 
-/* ******************************** The End ********************************= */
+/* ================================ The End ================================= */
 

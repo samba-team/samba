@@ -1,4 +1,4 @@
-/* ************************************************************************== **
+/* ========================================================================== **
  *                              ubi_dLinkList.c
  *
  *  Copyright (C) 1997, 1998 by Christopher R. Hertel
@@ -24,7 +24,13 @@
  *
  * -------------------------------------------------------------------------- **
  *
- * Log: ubi_dLinkList.c,v
+ * Log: ubi_dLinkList.c,v 
+ * Revision 0.11  1999/06/19 16:58:06  crh
+ * Renamed the ubi_slRemove() function in ubi_sLinkList to
+ * ubi_slRemoveNext().  I was bothered by the fact that it didn't
+ * match the functionality of the ubi_dlRemove() function in
+ * ubi_dLinkList.  The new name is more 'correct'.
+ *
  * Revision 0.10  1998/07/24 07:30:20  crh
  * Added the ubi_dlNewList() macro.
  *
@@ -64,15 +70,15 @@
  * This module is similar to the ubi_sLinkList module, but it is neither a
  * descendant type nor an easy drop-in replacement for the latter.  One key
  * difference is that the ubi_dlRemove() function removes the indicated node,
- * while the ubi_slRemove() function (in ubi_sLinkList) removes the node
+ * while the ubi_slRemoveNext() function (in ubi_sLinkList) removes the node
  * *following* the indicated node.
  *
- * ************************************************************************== **
+ * ========================================================================== **
  */
 
 #include "ubi_dLinkList.h"  /* Header for *this* module. */
 
-/* ************************************************************************== **
+/* ========================================================================== **
  * Functions...
  */
 
@@ -162,4 +168,4 @@ ubi_dlNodePtr ubi_dlRemove( ubi_dlListPtr ListPtr, ubi_dlNodePtr Old )
   return( Old );
   } /* ubi_dlRemove */
 
-/* ******************************** The End ********************************= */
+/* ================================ The End ================================= */
