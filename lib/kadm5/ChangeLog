@@ -1,3 +1,8 @@
+2000-01-28  Assar Westerlund  <assar@sics.se>
+
+	* init_c.c (get_new_cache): make sure to request non-forwardable,
+	non-proxiable
+
 2000-01-06  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.am (libkadm5srv.la): bump version to 5:1:0

@@ -1,3 +1,13 @@
+2000-01-28  Assar Westerlund  <assar@sics.se>
+
+	* kpasswd/kpasswd.c (main): make sure the ticket is not
+	forwardable and not proxiable
+
+2000-01-21  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/verify_init.c (krb5_verify_init_creds): make sure to
+ 	clean up the correct creds.
+
 2000-01-12  Assar Westerlund  <assar@sics.se>
 
 	* kdc/kerberos4.c (do_version4): check if preauth was required and
