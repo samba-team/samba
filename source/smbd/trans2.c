@@ -2021,6 +2021,8 @@ int reply_findnclose(connection_struct *conn,
 	return(outsize);
 }
 
+#define UNICODE_DFS
+
 /****************************************************************************
  reply to a TRANS2_GET_DFS_REFERRAL
  ****************************************************************************/
@@ -2054,6 +2056,8 @@ static int call_trans2getdfsreferral(connection_struct *conn,
 	DEBUG(0,("call_trans2getdfsreferral:1\n"));
 
 	ZERO_STRUCT(rtp);
+	ZERO_STRUCT(reply);
+
 	/* decode the param member of query */
 	rtp.level=SVAL(params, 0);
 	DEBUGADD(0,("rtp.level:[%d]\n",rtp.level));
@@ -2084,7 +2088,7 @@ static int call_trans2getdfsreferral(connection_struct *conn,
  	DEBUGADD(0,("checking against [%s][%d]\n", list[i].localpath, filename_len));
  
 		if( (filename_len==query_file_len) && 
-		    (!strncmp(rtp.directory, list[i].localpath, query_file_len)) )
+		    (!StrnCaseCmp(rtp.directory, list[i].localpath, query_file_len)) )
 		{
 			
 			bytesreq+=22;		     	          /* the referal size */
@@ -2117,14 +2121,14 @@ static int call_trans2getdfsreferral(connection_struct *conn,
 
 	localstring_offset  = pdata + 8 + reply.number_of_referal*22;
 
-/* unicode version */
+#ifdef UNICODE_DFS
 	mangledstring_offset = localstring_offset + 2*(1+strlen(reply.filename));
 	sharename_offset = mangledstring_offset + 2*(1+strlen(reply.mangledname));
 
-/*ascii version 
+#else
 	mangledstring_offset = localstring_offset + (1+strlen(reply.filename));
 	sharename_offset = mangledstring_offset + (1+strlen(reply.mangledname));
-*/
+#endif
 	referal_offset = pdata + 8;
 
 	/* right now respond storage server */
@@ -2134,50 +2138,45 @@ static int call_trans2getdfsreferral(connection_struct *conn,
 	reply.server_function=1;
 
 	/* write the header */
-/* unicode version*/
-	/*SSVAL(pheader, 0, reply.path_consumed*2);*/
-/*ascii version 
-
+#ifdef UNICODE_DFS
+	SSVAL(pheader, 0, reply.path_consumed*2);
+#else
 	SSVAL(pheader, 0, reply.path_consumed);
-*/
-
-	SSVAL(pheader, 0, 6);
-
+#endif
 	SSVAL(pheader, 2, reply.number_of_referal);
 	SIVAL(pheader, 4, reply.server_function);
 
  	/* write the local path string */
-/* unicode version*/
+#ifdef UNICODE_DFS
 	for(i=0; i<strlen(reply.filename); i++)
  	{
 		SSVAL(localstring_offset, 2*i, (uint16) reply.filename[i]);
 	}
 	SSVAL(localstring_offset, 2*strlen(reply.filename), 0);
-/*ascii version 
+#else
 
 	for(i=0; i<strlen(reply.filename); i++)
  	{
 		localstring_offset[i]=reply.filename[i];
 	}
 	localstring_offset[strlen(reply.filename)]=0;
-*/
+#endif
 	DEBUG(0,("reply.filename is [%s]:[%d], i is [%d]\n", reply.filename, strlen(reply.filename), i));
 
 	/* write the mangled local path string */ 
-/* unicode version*/
+#ifdef UNICODE_DFS
 	for(i=0; i<strlen(reply.mangledname); i++)
  	{
 		SSVAL(mangledstring_offset, 2*i, (uint16) reply.mangledname[i]);
 	}
 	SSVAL(mangledstring_offset, 2*i, 0);
-/*ascii version 
-
+#else
 	for(i=0; i<strlen(reply.mangledname); i++)
  	{
 		mangledstring_offset[i]=reply.mangledname[i];
 	}
 	mangledstring_offset[i]=0;
-*/
+#endif
 	DEBUGADD(0,("call_trans2getdfsreferral:4\n"));
 
 	/* the order of the referals defines the load balancing */
@@ -2205,7 +2204,7 @@ static int call_trans2getdfsreferral(connection_struct *conn,
 			SSVAL(referal_offset, 18, mangledstring_offset-referal_offset);
 			SSVAL(referal_offset, 20, sharename_offset-referal_offset); 
 
-/* unicode version	*/	
+#ifdef UNICODE_DFS
 			for(j=0; j<list[i].sharename_length; j++)
  			{
 				SSVAL(sharename_offset, 2*j, (uint16) list[i].sharename[j]);
@@ -2213,7 +2212,7 @@ static int call_trans2getdfsreferral(connection_struct *conn,
 			SSVAL(sharename_offset, 2*j, 0);
 		
 			sharename_offset=sharename_offset + 2*(1+list[i].sharename_length);
-/*ascii version 
+#else
 			for(j=0; j<list[i].sharename_length; j++)
  			{
 				sharename_offset[j]=list[i].sharename[j];
@@ -2221,7 +2220,7 @@ static int call_trans2getdfsreferral(connection_struct *conn,
 			sharename_offset[j]=0;
 		
 			sharename_offset=sharename_offset + (1+list[i].sharename_length);
-*/
+#endif
 
 			referal_offset=referal_offset+22;
 		}					
