@@ -2572,6 +2572,7 @@ static struct cli_state *do_connect(const char *server, const char *share)
 		char *pass = getpass("Password: ");
 		if (pass) {
 			pstrcpy(password, pass);
+			got_pass = 1;
 		}
 	}
 
