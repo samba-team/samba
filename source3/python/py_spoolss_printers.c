@@ -177,7 +177,7 @@ PyObject *spoolss_hnd_setprinter(PyObject *self, PyObject *args, PyObject *kw)
 {
 	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
 	WERROR werror;
-	PyObject *info, *level_obj;
+	PyObject *info;
 	PRINTER_INFO_CTR ctr;
 	uint32 level;
 	static char *kwlist[] = {"dict", NULL};
@@ -192,28 +192,13 @@ PyObject *spoolss_hnd_setprinter(PyObject *self, PyObject *args, PyObject *kw)
 		    args, kw, "O!", kwlist, &PyDict_Type, &info))
 		return NULL;
 	
-	/* Check dictionary contains a level */
+	if (!get_level_value(info, &level)) {
+		PyErr_SetString(spoolss_error, "invalid info level");
+		return NULL;
+	}
 
-	if ((level_obj = PyDict_GetItemString(info, "level"))) {
-
-		if (!PyInt_Check(level_obj)) {
-			PyErr_SetString(spoolss_error, 
-					"level not an integer");
-			return NULL;
-		}
-
-		level = PyInt_AsLong(level_obj);
-
-		/* Only level 2, 3 supported by NT */
-
-		if (level != 2 && level != 3) {
-			PyErr_SetString(spoolss_error,
-					"unsupported info level");
-			return NULL;
-		}
-
-	} else {
-		PyErr_SetString(spoolss_error, "no info level present");
+	if (level != 2 && level != 3) {
+		PyErr_SetString(spoolss_error, "unsupported info level");
 		return NULL;
 	}
 
