@@ -3,14 +3,11 @@
 				 type="boolean"
                  xmlns:samba="http://samba.org/common">
 <description>
-    <para>If this parameter is <constant>yes</constant>, and Samba
-    was built with the --with-sendfile-support option, and the underlying operating
-    system supports sendfile system call, then some SMB read calls (mainly ReadAndX
+	<para>If this parameter is <constant>yes</constant>, and the <constant>sendfile()</constant> system call is supported by the underlying operating system, then some SMB read calls (mainly ReadAndX
     and ReadRaw) will use the more efficient sendfile system call for files that
     are exclusively oplocked. This may make more efficient use of the system CPU's
-    and cause Samba to be faster. This is off by default as it's effects are unknown
-    as yet. In particular, it appears that Windows 9X clients fail to work against
-    Samba with this parameter enabled in config.</para>
+    and cause Samba to be faster. 
+    </para>
 </description>
 
 <value type="default">yes</value>
