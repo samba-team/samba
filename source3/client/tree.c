@@ -280,7 +280,7 @@ static void cb_select_child (GtkWidget *root_tree, GtkWidget *child,
 		     (st1.st_mode&S_IXOTH?'x':'-'),
 		     st1.st_mode); 
 	    snprintf(col3, sizeof(col3), "%u", st1.st_size);
-	    snprintf(col4, sizeof(col4), "%s", ctime(&st1.st_ctime));
+	    snprintf(col4, sizeof(col4), "%s", ctime(&st1.st_mtime));
 	  }
 	}
 
@@ -604,7 +604,7 @@ auth_fn(const char *server, const char *share,
 }
 
 static char *col_titles[] = {
-  "Name", "Attributes", "Size", "Creation Date",
+  "Name", "Attributes", "Size", "Modification Date",
 };
 
 int main( int   argc,
