@@ -992,13 +992,30 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
 
         if (lp_map_to_guest() == MAP_TO_GUEST_ON_BAD_USER)
         {
-          if (smb_getpwnam(user,True))
+	  SAM_ACCOUNT *sampass = NULL;
+	  
+	  pdb_init_sam(&sampass);
+	  
+          /*
+           * This is really bad form.  We know that password_ok() failed,
+           * but the return value can't distinguish between a non-existent user
+           * and a bad password.  So we try to look the user up again here
+           * to see if he or she exists.  We must look up the user in the
+           * "smb passwd file" and not /etc/passwd so that we don't
+           * get confused when the two don't have a one-to-one correspondence.
+           * e.g. a standard UNIX account such as "operator"  --jerry
+           */	  
+	  
+          if (pdb_getsampwnam(sampass, user))
           {
             delete_nt_token(&ptok);
             DEBUG(1,("Rejecting user '%s': bad password\n", user));
-	    	END_PROFILE(SMBsesssetupX);
+            END_PROFILE(SMBsesssetupX);
+	    pdb_free_sam(sampass);
             return ERROR_BOTH(NT_STATUS_LOGON_FAILURE,ERRSRV,ERRbadpw);
           }
+	  
+	  pdb_free_sam(sampass);
         }
 
         /*
