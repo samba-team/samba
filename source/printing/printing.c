@@ -715,9 +715,20 @@ static int traverse_fn_delete(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void 
 			pjob_delete(ts->snum, jobid);
 		} else
 			ts->total_jobs++;
+		return 0;
 	}
-	else
-		ts->total_jobs++;
+
+	/* Save the pjob attributes we will store. */
+	ts->queue[i].job = jobid;
+	ts->queue[i].size = pjob.size;
+	ts->queue[i].page_count = pjob.page_count;
+	ts->queue[i].status = pjob.status;
+	ts->queue[i].priority = 1;
+	ts->queue[i].time = pjob.starttime;
+	fstrcpy(ts->queue[i].fs_user, pjob.user);
+	fstrcpy(ts->queue[i].fs_file, pjob.jobname);
+
+	ts->total_jobs++;
 
 	return 0;
 }
@@ -2105,6 +2116,7 @@ static BOOL get_stored_queue_info(struct tdb_print_db *pdb, int snum, int *pcoun
 	uint32 qcount = 0;
 	uint32 extra_count = 0;
 	int total_count = 0;
+	size_t len = 0;
 	uint32 i;
 	int max_reported_jobs = lp_max_reported_jobs(snum);
 	BOOL ret = False;
@@ -2147,8 +2159,8 @@ static BOOL get_stored_queue_info(struct tdb_print_db *pdb, int snum, int *pcoun
 		goto out;
 
 	/* Retrieve the linearised queue data. */
+	len = 0;
 	for( i  = 0; i < qcount; i++) {
-		size_t len = 0;
 		uint32 qjob, qsize, qpage_count, qstatus, qpriority, qtime;
 		len += tdb_unpack(data.dptr + 4 + len, data.dsize - len, NULL, "ddddddff",
 				&qjob,
