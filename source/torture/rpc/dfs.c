@@ -180,8 +180,6 @@ BOOL torture_rpc_dfs(int dummy)
 		return False;
 	}
 
-	p->flags |= DCERPC_DEBUG_PRINT_BOTH;
-	
 	if (!test_Exist(p, mem_ctx)) {
 		ret = False;
 	}

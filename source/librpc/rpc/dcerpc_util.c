@@ -276,6 +276,7 @@ static const struct {
 	{"sign", DCERPC_SIGN},
 	{"seal", DCERPC_SEAL},
 	{"validate", DCERPC_DEBUG_VALIDATE_BOTH},
+	{"print", DCERPC_DEBUG_PRINT_BOTH},
 	{"bigendian", DCERPC_PUSH_BIGENDIAN}
 };
 

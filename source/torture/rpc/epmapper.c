@@ -242,8 +242,6 @@ BOOL torture_rpc_epmapper(int dummy)
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}
-	
-	p->flags |= DCERPC_DEBUG_PRINT_BOTH;
 
 	if (!test_Lookup(p, mem_ctx)) {
 		ret = False;

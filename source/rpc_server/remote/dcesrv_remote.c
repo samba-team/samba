@@ -31,7 +31,6 @@ static NTSTATUS remote_op_bind(struct dcesrv_call_state *dce_call, const struct 
         NTSTATUS status;
         struct dcesrv_remote_private *private;
 	const char *binding = lp_parm_string(-1, "dcerpc_remote", "binding");
-	const char *print_debug = lp_parm_string(-1, "dcerpc_remote", "print_debug");
 
 	if (!binding) {
 		printf("You must specify a ncacn binding string\n");
@@ -47,10 +46,6 @@ static NTSTATUS remote_op_bind(struct dcesrv_call_state *dce_call, const struct 
 				     lp_workgroup(), 
 				     lp_parm_string(-1, "dcerpc_remote", "username"),
 				     lp_parm_string(-1, "dcerpc_remote", "password"));
-
-	if (print_debug && strcasecmp("yes",print_debug) == 0) {
-		private->c_pipe->flags |= DCERPC_DEBUG_PRINT_BOTH;
-	}
 
 	dce_call->conn->private = private;
 
@@ -71,14 +66,29 @@ static NTSTATUS remote_op_dispatch(struct dcesrv_call_state *dce_call, TALLOC_CT
 	struct dcesrv_remote_private *private = dce_call->conn->private;
 	NTSTATUS status;
 	uint16 opnum = dce_call->pkt.u.request.opnum;
+	const char *name = dce_call->conn->iface->ndr->calls[opnum].name;
 	ndr_push_flags_fn_t ndr_push_fn = dce_call->conn->iface->ndr->calls[opnum].ndr_push;
 	ndr_pull_flags_fn_t ndr_pull_fn = dce_call->conn->iface->ndr->calls[opnum].ndr_pull;
+	ndr_print_function_t ndr_print_fn = dce_call->conn->iface->ndr->calls[opnum].ndr_print;
 	size_t struct_size = dce_call->conn->iface->ndr->calls[opnum].struct_size;
+
+	if (private->c_pipe->flags & DCERPC_DEBUG_PRINT_IN) {
+		ndr_print_function_debug(ndr_print_fn, name, NDR_IN | NDR_SET_VALUES, r);		
+	}
 
 	status = dcerpc_ndr_request(private->c_pipe, opnum, mem_ctx,
 				    (ndr_push_flags_fn_t) ndr_push_fn,
 				    (ndr_pull_flags_fn_t) ndr_pull_fn,
 				    r, struct_size);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("dcesrv_remote: call[%s] failed with: %s!\n",name, nt_errstr(status)));
+		return status;
+	}
+
+	if (NT_STATUS_IS_OK(status) && (private->c_pipe->flags & DCERPC_DEBUG_PRINT_OUT)) {
+		ndr_print_function_debug(ndr_print_fn, name, NDR_OUT, r);		
+	}
 
 	return status;
 }

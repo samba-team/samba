@@ -148,8 +148,6 @@ BOOL torture_rpc_atsvc(int dummy)
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}
-	
-	p->flags |= DCERPC_DEBUG_PRINT_BOTH;
 
 	if (!test_JobEnum(p, mem_ctx)) {
 		return False;

@@ -100,8 +100,6 @@ BOOL torture_rpc_wkssvc(int dummy)
 		return False;
 	}
 
-	p->flags |= DCERPC_DEBUG_PRINT_BOTH;
-	
 	if (!test_NetWkstaGetInfo(p, mem_ctx)) {
 		ret = False;
 	}

@@ -533,8 +533,6 @@ BOOL torture_rpc_lsa(int dummy)
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}
-	
-	p->flags |= DCERPC_DEBUG_PRINT_BOTH;
 
 	if (!test_OpenPolicy(p, mem_ctx)) {
 		ret = False;

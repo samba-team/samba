@@ -258,8 +258,6 @@ BOOL torture_rpc_srvsvc(int dummy)
 		return False;
 	}
 
-	p->flags |= DCERPC_DEBUG_PRINT_BOTH;
-
 	if (!test_NetConnEnum(p, mem_ctx)) {
 		ret = False;
 	}

@@ -1394,8 +1394,6 @@ BOOL torture_rpc_samr(int dummy)
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}
-	
-	p->flags |= DCERPC_DEBUG_PRINT_BOTH;
 
 	if (!test_Connect(p, mem_ctx, &handle)) {
 		ret = False;

@@ -242,8 +242,6 @@ BOOL torture_rpc_echo(int dummy)
 	}
 #endif
 
-	p->flags |= DCERPC_DEBUG_PRINT_BOTH;
-
 	if (!test_testcall(p, mem_ctx)) {
 		ret = False;
 	}

@@ -573,6 +573,7 @@ other recognised flags are:
   sign : enable ntlmssp signing
   seal : enable ntlmssp sealing
   validate: enable the NDR validator
+  print: enable debugging of the packets
   bigendian: use bigendian RPC
 
 
@@ -586,9 +587,9 @@ For example, these all connect to the samr pipe:
    ncacn_np:myserver[samr]
    ncacn_np:myserver[\pipe\samr]
    ncacn_np:myserver[/pipe/samr]
-   ncacn_np:myserver:[samr,sign]
+   ncacn_np:myserver:[samr,sign,print]
    ncacn_np:myserver:[\pipe\samr,sign,seal,bigendian]
-   ncacn_np:myserver:[/pipe/samr,seal]
+   ncacn_np:myserver:[/pipe/samr,seal,validate]
 
    ncacn_ip_tcp:myserver
    ncacn_ip_tcp:myserver:1024

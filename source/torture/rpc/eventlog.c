@@ -95,8 +95,6 @@ BOOL torture_rpc_eventlog(int dummy)
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}
-	
-	p->flags |= DCERPC_DEBUG_PRINT_BOTH;
 
 	if (!test_OpenEventLog(p, mem_ctx)) {
 		return False;
