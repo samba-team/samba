@@ -1850,7 +1850,10 @@ static BOOL api_samr_create_user(pipes_struct *p)
 	DEBUG(5,("api_samr_create_user: %d\n", __LINE__));
 
 	/* grab the samr create user */
-	samr_io_q_create_user("", &q_u, data, 0);
+	if (!samr_io_q_create_user("", &q_u, data, 0)) {
+		DEBUG(0,("api_samr_create_user: Unable to unmarshall SAMR_Q_CREATE_USER.\n"));
+		return False;
+	}
 
 	/* find the policy handle.  open a policy on it. */
 	if ((find_lsa_policy_by_hnd(&q_u.pol) == -1)) {
@@ -1884,6 +1887,13 @@ static BOOL api_samr_create_user(pipes_struct *p)
 
 	local_flags=LOCAL_ADD_USER|LOCAL_DISABLE_USER|LOCAL_SET_NO_PASSWORD;
 	local_flags|= (q_u.acb_info & ACB_WSTRUST) ? LOCAL_TRUST_ACCOUNT:0;
+
+	/*
+	 * NB. VERY IMPORTANT ! This call must be done as the current pipe user,
+	 * *NOT* surrounded by a become_root()/unbecome_root() call. This ensures
+	 * that only people with write access to the smbpasswd file will be able
+	 * to create a user. JRA.
+	 */
 
 	if (!local_password_change(mach_acct, local_flags, NULL, err_str, sizeof(err_str), msg_str, sizeof(msg_str))) {
 		DEBUG(0, ("%s\n", err_str));
