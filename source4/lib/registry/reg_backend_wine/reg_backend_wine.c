@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include "lib/registry/common/registry.h"
+#include "windows/registry.h"
 
 static REG_OPS reg_backend_wine = {
 	.name = "wine",
