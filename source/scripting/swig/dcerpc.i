@@ -119,9 +119,9 @@ uint32 uint32_from_python(PyObject *obj, char *name)
 	}
 
 	if (PyLong_Check(obj))
-		return (uint32)PyLong_AsLong(obj);
-	else
-		return (uint32)PyInt_AsLong(obj);
+		return (uint32)PyLong_AsUnsignedLongMask(obj);
+
+	return (uint32)PyInt_AsLong(obj);
 }
 
 PyObject *uint32_to_python(uint32 obj)

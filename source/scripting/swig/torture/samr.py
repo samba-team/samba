@@ -864,6 +864,18 @@ def test_LongInt(pipe):
 
     result = dcerpc.samr_Connect(pipe, r)
 
+    # Test that we can parse a SID that contains a sub_auth that can't
+    # be held in a python int.
+
+    r = {}
+    r['connect_handle'] = result['connect_handle']
+    r['access_mask'] = 0x02000000
+    r['sid'] = {'sid_rev_num': 1, 'id_auth': [0, 0, 0, 0, 0, 5],
+                'num_auths': 4,
+                'sub_auths': [21, 737922324, 3002806791L, 1285293260]}
+
+    result = dcerpc.samr_OpenDomain(pipe, r)
+
 def runtests(binding, domain, username, password):
 
     print 'Testing SAMR pipe'
