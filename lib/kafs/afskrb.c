@@ -170,4 +170,48 @@ kafs_settoken(const char *cell, uid_t uid, CREDENTIALS *c)
     return ret;
 }
 
+#else /* KRB4 */
+
+#define KAFS_KRBET_KDC_SERVICE_EXP 39525378
+
+int
+krb_afslog_uid_home(const char *cell, const char *realm_hint, uid_t uid,
+		    const char *homedir)
+{
+    return KAFS_KRBET_KDC_SERVICE_EXP;
+}
+
+int
+krb_afslog_uid(const char *cell, const char *realm_hint, uid_t uid)
+{
+    return KAFS_KRBET_KDC_SERVICE_EXP;
+}
+
+int
+krb_afslog_home(const char *cell, const char *realm_hint, const char *homedir)
+{
+    return KAFS_KRBET_KDC_SERVICE_EXP;
+}
+
+int
+krb_afslog(const char *cell, const char *realm_hint)
+{
+    return KAFS_KRBET_KDC_SERVICE_EXP;
+}
+
+int
+krb_realm_of_cell(const char *cell, char **realm)
+{
+    *realm = NULL;
+    return KAFS_KRBET_KDC_SERVICE_EXP;
+}
+
+int kafs_settoken (const char*, uid_t, struct credentials *);
+
+int
+kafs_settoken(const char *cell, uid_t uid, struct credentials *c)
+{
+    return KAFS_KRBET_KDC_SERVICE_EXP;
+}
+
 #endif /* KRB4 */
