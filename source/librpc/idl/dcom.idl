@@ -375,8 +375,8 @@ interface IRemUnknown2 : IRemUnknown
 		 [in] IPID *ripid,
 		 [in] uint16 cIids,
 		 [in, size_is(cIids)] IID *iids,
-		 [out, size_is(cIids)] HRESULT *phr,
-		 [out, size_is(cIids)] MInterfacePointer *ppMIF[*]
+		 [out, size_is(cIids)] HRESULT *phr/*FIXME,
+		 [out, size_is(cIids)] MInterfacePointer *ppMIF[*]*/
 		);
 }
 
