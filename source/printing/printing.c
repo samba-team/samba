@@ -984,12 +984,12 @@ BOOL print_job_end(int jobid, BOOL normal_close)
 		 * Not a normal close or we couldn't stat the job file,
 		 * so something has gone wrong. Cleanup.
 		 */
-
-		unlink(pjob->filename);
-		tdb_delete(tdb, print_key(jobid));
-		return False;
+		goto fail;
 	}
-	
+
+	/* Technically, this is not quit right. If the printer has a separator
+	 * page turned on, the NT spooler prints the separator page even if the
+	 * print job is 0 bytes. 010215 JRR */
 	if (pjob->size == 0) {
 		/* don't bother spooling empty files */
 		unlink(pjob->filename);
@@ -1000,17 +1000,14 @@ BOOL print_job_end(int jobid, BOOL normal_close)
 	/* we print from the directory path to give the best chance of
            parsing the lpq output */
 	wd = sys_getwd(current_directory);
-	if (!wd)
-		return False;		
+	if (!wd) goto fail;
 
 	pstrcpy(print_directory, pjob->filename);
 	p = strrchr(print_directory,'/');
-	if (!p)
-		return False;
+	if (!p) goto fail;
 	*p++ = 0;
 
-	if (chdir(print_directory) != 0)
-		return False;
+	if (chdir(print_directory) != 0) goto fail;
 
 	pstrcpy(jobname, pjob->jobname);
 	pstring_sub(jobname, "'", "_");
@@ -1025,23 +1022,24 @@ BOOL print_job_end(int jobid, BOOL normal_close)
 
 	chdir(wd);
 
-	if (ret == 0) {
-		/* The print job has been sucessfully handed over to the back-end */
-		
-		pjob->spooled = True;
-		print_job_store(jobid, pjob);
-		
-		/* make sure the database is up to date */
-		if (print_cache_expired(snum)) print_queue_update(snum);
-		
-		return True;
-	} else {
-		/* The print job was not succesfully started. Cleanup */
-		/* Still need to add proper error return propagation! 010122:JRR */
-		unlink(pjob->filename);
-		tdb_delete(tdb, print_key(jobid));
-		return False;
-	}
+	if (ret) goto fail;
+
+	/* The print job has been sucessfully handed over to the back-end */
+	
+	pjob->spooled = True;
+	print_job_store(jobid, pjob);
+	
+	/* make sure the database is up to date */
+	if (print_cache_expired(snum)) print_queue_update(snum);
+	
+	return True;
+
+fail:
+	/* The print job was not succesfully started. Cleanup */
+	/* Still need to add proper error return propagation! 010122:JRR */
+	unlink(pjob->filename);
+	tdb_delete(tdb, print_key(jobid));
+	return False;
 }
 
 /* utility fn to enumerate the print queue */
