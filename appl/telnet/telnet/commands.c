@@ -61,6 +61,8 @@ RCSID("$Id$");
 #include "defines.h"
 #include "types.h"
 
+#include "roken.h"
+
 #if !defined(CRAY) && !defined(sysV88)
 #include <netinet/in_systm.h>
 # if (defined(vax) || defined(tahoe) || defined(hp300)) && !defined(ultrix)
