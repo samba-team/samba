@@ -81,17 +81,6 @@ string_to_type(const char *name)
     return -1;
 }
 
-#if 0
-static char *
-type_to_string(int type)
-{
-    struct stot *p = stot;
-    for(p = stot; p->name; p++)
-	if(type == p->type)
-	    return p->name;
-    return NULL;
-}
-#endif
 
 void
 dns_free_data(struct dns_reply *r)
@@ -294,6 +283,15 @@ dns_free_data(struct dns_reply *r)
 #endif
 
 #ifdef TEST
+static char *
+type_to_string(int type)
+{
+    struct stot *p = stot;
+    for(p = stot; p->name; p++)
+	if(type == p->type)
+	    return p->name;
+    return NULL;
+}
 
 int 
 main(int argc, char **argv)
@@ -309,23 +307,23 @@ main(int argc, char **argv)
 	printf("%s %s %d ", rr->domain, type_to_string(rr->type), rr->ttl);
 	switch(rr->type){
 	case T_NS:
-	    printf("%s\n", (char*)rr->data);
+	    printf("%s\n", (char*)rr->u.data);
 	    break;
 	case T_A:
 	    printf("%d.%d.%d.%d\n", 
-		   ((unsigned char*)rr->data)[0],
-		   ((unsigned char*)rr->data)[1],
-		   ((unsigned char*)rr->data)[2],
-		   ((unsigned char*)rr->data)[3]);
+		   ((unsigned char*)rr->u.data)[0],
+		   ((unsigned char*)rr->u.data)[1],
+		   ((unsigned char*)rr->u.data)[2],
+		   ((unsigned char*)rr->u.data)[3]);
 	    break;
 	case T_MX:
 	case T_AFSDB:{
-	    struct mx_record *mx = (struct mx_record*)rr->data;
+	    struct mx_record *mx = (struct mx_record*)rr->u.data;
 	    printf("%d %s\n", mx->preference, mx->domain);
 	    break;
 	}
 	case T_SRV:{
-	    struct srv_record *srv = (struct srv_record*)rr->data;
+	    struct srv_record *srv = (struct srv_record*)rr->u.data;
 	    printf("%d %d %d %s\n", srv->priority, srv->weight, 
 		   srv->port, srv->target);
 	    break;
