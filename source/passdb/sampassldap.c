@@ -107,9 +107,6 @@ static struct sam_passwd *ldapsam_getsam()
 	struct sam_passwd *sam21;
 	struct smb_passwd *smbpw;
 
-	extern BOOL sam_logon_in_ssb;
-	extern pstring samlogon_user;
-
 	if(!ldap_entry)
 		return NULL;
 
@@ -158,20 +155,11 @@ static struct sam_passwd *ldapsam_getsam()
         sam21->unknown_str = NULL;
         sam21->munged_dial = NULL;
 
-	/* XXXX hack to get standard_sub_basic() to use sam logon username */
-	/* possibly a better way would be to do a become_user() call */
-
-	sam_logon_in_ssb = True;
-
-	pstrcpy(samlogon_user, sam21->unix_name);
-
-	standard_sub_basic(logon_script);
-	standard_sub_basic(profile_path);
-	standard_sub_basic(home_drive);
-	standard_sub_basic(home_dir);
-	standard_sub_basic(workstations);
-
-	sam_logon_in_ssb = False;
+	standard_sub_vuser(logon_script, NULL);
+	standard_sub_vuser(profile_path, NULL);
+	standard_sub_vuser(home_drive, NULL);
+	standard_sub_vuser(home_dir, NULL);
+	standard_sub_vuser(workstations, NULL);
 
         ldap_entry = ldap_next_entry(ldap_struct, ldap_entry);
 	return sam21;
