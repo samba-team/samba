@@ -69,10 +69,8 @@ static NTSTATUS pvfs_default_acl(struct pvfs_state *pvfs,
 {
 	struct security_descriptor *sd;
 	NTSTATUS status;
-	struct security_ace aces[4];
+	struct security_ace ace;
 	mode_t mode;
-	struct dom_sid *sid;
-	int i;
 
 	sd = security_descriptor_initialise(req);
 	if (sd == NULL) {
@@ -90,97 +88,64 @@ static NTSTATUS pvfs_default_acl(struct pvfs_state *pvfs,
 
 	sd->type |= SEC_DESC_DACL_PRESENT;
 
+	mode = name->st.st_mode;
+
 	/*
-	  we provide 4 ACEs
-	    - Administrator
+	  we provide up to 4 ACEs
 	    - Owner
 	    - Group
 	    - Everyone
+	    - Administrator
 	 */
-	aces[0].access_mask = SEC_RIGHTS_FILE_ALL;
-	aces[1].access_mask = 0;
-	aces[2].access_mask = 0;
-	aces[3].access_mask = 0;
 
-	mode = name->st.st_mode;
+
+	/* setup owner ACE */
+	ace.type = SEC_ACE_TYPE_ACCESS_ALLOWED;
+	ace.flags = 0;
+	ace.trustee = *sd->owner_sid;
+	ace.access_mask = 0;
 
 	if (mode & S_IRUSR) {
-		aces[1].access_mask |= 
-			SEC_FILE_READ_DATA | 
-			SEC_FILE_READ_EA |
-			SEC_FILE_READ_ATTRIBUTE |
-			SEC_FILE_EXECUTE |
-			SEC_STD_SYNCHRONIZE |
-			SEC_STD_READ_CONTROL;
+		ace.access_mask |= SEC_RIGHTS_FILE_READ | SEC_FILE_EXECUTE;
 	}
 	if (mode & S_IWUSR) {
-		aces[1].access_mask |= 
-			SEC_FILE_WRITE_DATA | 
-			SEC_FILE_APPEND_DATA |
-			SEC_FILE_WRITE_EA |
-			SEC_FILE_WRITE_ATTRIBUTE |
-			SEC_STD_DELETE;
+		ace.access_mask |= SEC_RIGHTS_FILE_WRITE | SEC_STD_DELETE;
+	}
+	if (ace.access_mask) {
+		security_descriptor_dacl_add(sd, &ace);
 	}
 
+
+	/* setup group ACE */
+	ace.trustee = *sd->group_sid;
+	ace.access_mask = 0;
 	if (mode & S_IRGRP) {
-		aces[2].access_mask |= 
-			SEC_FILE_READ_DATA | 
-			SEC_FILE_READ_EA |
-			SEC_FILE_READ_ATTRIBUTE |
-			SEC_FILE_EXECUTE |
-			SEC_STD_SYNCHRONIZE |
-			SEC_STD_READ_CONTROL;
+		ace.access_mask |= SEC_RIGHTS_FILE_READ | SEC_FILE_EXECUTE;
 	}
 	if (mode & S_IWGRP) {
-		aces[2].access_mask |= 
-			SEC_FILE_WRITE_DATA | 
-			SEC_FILE_APPEND_DATA |
-			SEC_FILE_WRITE_EA |
-			SEC_FILE_WRITE_ATTRIBUTE;
+		ace.access_mask |= SEC_RIGHTS_FILE_WRITE;
+	}
+	if (ace.access_mask) {
+		security_descriptor_dacl_add(sd, &ace);
 	}
 
+	/* setup other ACE */
+	ace.trustee = *dom_sid_parse_talloc(req, SID_WORLD);
+	ace.access_mask = 0;
 	if (mode & S_IROTH) {
-		aces[3].access_mask |= 
-			SEC_FILE_READ_DATA | 
-			SEC_FILE_READ_EA |
-			SEC_FILE_READ_ATTRIBUTE |
-			SEC_FILE_EXECUTE |
-			SEC_STD_SYNCHRONIZE |
-			SEC_STD_READ_CONTROL;
+		ace.access_mask |= SEC_RIGHTS_FILE_READ | SEC_FILE_EXECUTE;
 	}
 	if (mode & S_IWOTH) {
-		aces[3].access_mask |= 
-			SEC_FILE_WRITE_DATA | 
-			SEC_FILE_APPEND_DATA |
-			SEC_FILE_WRITE_EA |
-			SEC_FILE_WRITE_ATTRIBUTE;
+		ace.access_mask |= SEC_RIGHTS_FILE_WRITE;
+	}
+	if (ace.access_mask) {
+		security_descriptor_dacl_add(sd, &ace);
 	}
 
-	sid = dom_sid_parse_talloc(sd, SID_BUILTIN_ADMINISTRATORS);
-	if (sid == NULL) return NT_STATUS_NO_MEMORY;
-
-	aces[0].type = SEC_ACE_TYPE_ACCESS_ALLOWED;
-	aces[0].flags = 0;
-	aces[0].trustee = *sid;
-
-	aces[1].type = SEC_ACE_TYPE_ACCESS_ALLOWED;
-	aces[1].flags = 0;
-	aces[1].trustee = *sd->owner_sid;
-
-	aces[2].type = SEC_ACE_TYPE_ACCESS_ALLOWED;
-	aces[2].flags = 0;
-	aces[2].trustee = *sd->group_sid;
-
-	sid = dom_sid_parse_talloc(sd, SID_WORLD);
-	if (sid == NULL) return NT_STATUS_NO_MEMORY;
-
-	aces[3].type = SEC_ACE_TYPE_ACCESS_ALLOWED;
-	aces[3].flags = 0;
-	aces[3].trustee = *sid;
-
-	for (i=0;i<4;i++) {
-		security_descriptor_dacl_add(sd, &aces[i]);
-	}
+	/* setup system ACE */
+	ace.trustee = *dom_sid_parse_talloc(req, SID_NT_SYSTEM);
+	ace.access_mask = SEC_RIGHTS_FILE_ALL;
+	security_descriptor_dacl_add(sd, &ace);
 	
 	acl->version = 1;
 	acl->info.sd = sd;
