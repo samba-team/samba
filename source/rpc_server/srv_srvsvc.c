@@ -30,261 +30,6 @@ extern int DEBUGLEVEL;
 extern pstring global_myname;
 
 /*******************************************************************
- fill in a sess info level 1 structure.
-
- this function breaks the rule that i'd like to be in place, namely
- it doesn't receive its data as arguments: it has to call lp_xxxx()
- functions itself.  yuck.
-
- ********************************************************************/
-static void make_srv_sess_0_info(SESS_INFO_0    *se0, SESS_INFO_0_STR *str0,
-				char *name)
-{
-	make_srv_sess_info0    (se0 , name);
-	make_srv_sess_info0_str(str0, name);
-}
-
-/*******************************************************************
- fill in a sess info level 0 structure.
-
- this function breaks the rule that i'd like to be in place, namely
- it doesn't receive its data as arguments: it has to call lp_xxxx()
- functions itself.  yuck.
-
- ********************************************************************/
-static void make_srv_sess_info_0(SRV_SESS_INFO_0 *ss0, uint32 *snum, uint32 *stot)
-{
-	uint32 num_entries = 0;
-	struct connect_record *crec;
-	uint32 session_count;
-
-        if (!get_session_count(&crec, &session_count))
-	{
-		(*snum) = 0;
-		(*stot) = 0;
-		return;
-	}
-
-	(*stot) = session_count;
-
-	DEBUG(0,("Session Count : %u\n",session_count));
-	
-	if (ss0 == NULL)
-	{
-		(*snum) = 0;
-		free(crec);
-		return;
-	}
-
-	if (snum)
-	{
-		DEBUG(0,("snum ok\n"));
-		for (; (*snum) < (*stot) && num_entries < MAX_SESS_ENTRIES; (*snum)++)
-		{
-			make_srv_sess_0_info(&(ss0->info_0    [num_entries]),
-								 &(ss0->info_0_str[num_entries]), crec[num_entries].machine);
-
-			DEBUG(0,("make_srv_sess_0_info\n"));
-			/* move on to creating next session */
-			/* move on to creating next sess */
-			num_entries++;
-		}
-
-		ss0->num_entries_read  = num_entries;
-		ss0->ptr_sess_info     = num_entries > 0 ? 1 : 0;
-		ss0->num_entries_read2 = num_entries;
-		
-		if ((*snum) >= (*stot))
-		{
-			(*snum) = 0;
-		}
-	}
-	else
-	{
-		ss0->num_entries_read = 0;
-		ss0->ptr_sess_info = 0;
-		ss0->num_entries_read2 = 0;
-	}
-	free(crec);
-}
-
-/*******************************************************************
- fill in a sess info level 1 structure.
-
- this function breaks the rule that i'd like to be in place, namely
- it doesn't receive its data as arguments: it has to call lp_xxxx()
- functions itself.  yuck.
-
- ********************************************************************/
-static void make_srv_sess_1_info(SESS_INFO_1    *se1, SESS_INFO_1_STR *str1,
-				char *name, char *user,
-				uint32 num_opens,
-				uint32 open_time, uint32 idle_time,
-				uint32 usr_flgs)
-{
-	make_srv_sess_info1    (se1 , name, user, num_opens, open_time, idle_time, usr_flgs);
-	make_srv_sess_info1_str(str1, name, user);
-}
-
-/*******************************************************************
- fill in a sess info level 1 structure.
-
- this function breaks the rule that i'd like to be in place, namely
- it doesn't receive its data as arguments: it has to call lp_xxxx()
- functions itself.  yuck.
-
- ********************************************************************/
-static void make_srv_sess_info_1(SRV_SESS_INFO_1 *ss1, uint32 *snum, uint32 *stot)
-{
-	uint32 num_entries = 0;
-	struct connect_record *crec;
-	uint32 session_count;
-
-        if (!get_session_count(&crec, &session_count))
-	{
-		(*snum) = 0;
-		(*stot) = 0;
-		return;
-	}
-
-	(*stot) = session_count;
-
-	DEBUG(0,("Session Count (info1) : %u\n",session_count));
-	if (ss1 == NULL)
-	{
-		(*snum) = 0;
-		free(crec);
-		return;
-	}
-
-	DEBUG(5,("make_srv_sess_1_ss1\n"));
-
-	if (snum)
-	{
-		for (; (*snum) < (*stot) && num_entries < MAX_SESS_ENTRIES; (*snum)++)
-		{
-			DEBUG(0,("sess1 machine: %s, uid : %u\n",crec[num_entries].machine,crec[num_entries].uid));
-			make_srv_sess_1_info(&(ss1->info_1    [num_entries]),
-								 &(ss1->info_1_str[num_entries]),
-			                     crec[num_entries].machine, 
-			                     uidtoname(crec[num_entries].uid), 1, 10, 5, 0);
-/* 	What are these on the End ??? */
-
-			/* move on to creating next session */
-			/* move on to creating next sess */
-			num_entries++;
-		}
-
-		ss1->num_entries_read  = num_entries;
-		ss1->ptr_sess_info     = num_entries > 0 ? 1 : 0;
-		ss1->num_entries_read2 = num_entries;
-		
-		if ((*snum) >= (*stot))
-		{
-			(*snum) = 0;
-		}
-	}
-	else
-	{
-		ss1->num_entries_read = 0;
-		ss1->ptr_sess_info = 0;
-		ss1->num_entries_read2 = 0;
-		
-		(*stot) = 0;
-	}
-	free(crec);
-}
-
-/*******************************************************************
- makes a SRV_R_NET_SESS_ENUM structure.
-********************************************************************/
-static uint32 make_srv_sess_info_ctr(SRV_SESS_INFO_CTR *ctr,
-				int switch_value, uint32 *resume_hnd, uint32 *total_entries)
-{
-	uint32 status = 0x0;
-	DEBUG(5,("make_srv_sess_info_ctr: %d\n", __LINE__));
-
-	ctr->switch_value = switch_value;
-
-	switch (switch_value)
-	{
-		case 0:
-		{
-			make_srv_sess_info_0(&(ctr->sess.info0), resume_hnd, total_entries);
-			ctr->ptr_sess_ctr = 1;
-			break;
-		}
-		case 1:
-		{
-			make_srv_sess_info_1(&(ctr->sess.info1), resume_hnd, total_entries);
-			ctr->ptr_sess_ctr = 1;
-			break;
-		}
-		default:
-		{
-			DEBUG(5,("make_srv_sess_info_ctr: unsupported switch value %d\n",
-			          switch_value));
-			(*resume_hnd) = 0;
-			(*total_entries) = 0;
-			ctr->ptr_sess_ctr = 0;
-			status = 0xC0000000 | NT_STATUS_INVALID_INFO_CLASS;
-			break;
-		}
-	}
-
-	return status;
-}
-
-/*******************************************************************
- makes a SRV_R_NET_SESS_ENUM structure.
-********************************************************************/
-static void make_srv_r_net_sess_enum(SRV_R_NET_SESS_ENUM *r_n,
-				uint32 resume_hnd, int sess_level, int switch_value)  
-{
-	DEBUG(5,("make_srv_r_net_sess_enum: %d\n", __LINE__));
-
-	r_n->sess_level  = sess_level;
-	if (sess_level == -1)
-	{
-		r_n->status = 0xC0000000 | NT_STATUS_INVALID_INFO_CLASS;
-	}
-	else
-	{
-		r_n->status = make_srv_sess_info_ctr(r_n->ctr, switch_value, &resume_hnd, &r_n->total_entries);
-	}
-	if (r_n->status != 0x0)
-	{
-		resume_hnd = 0;
-	}
-	make_enum_hnd(&(r_n->enum_hnd), resume_hnd);
-}
-
-/*******************************************************************
-net sess enum
-********************************************************************/
-static void srv_reply_net_sess_enum(SRV_Q_NET_SESS_ENUM *q_n,
-				prs_struct *rdata)
-{
-	SRV_R_NET_SESS_ENUM r_n;
-	SRV_SESS_INFO_CTR ctr;
-
-	r_n.ctr = &ctr;
-
-	DEBUG(5,("srv_net_sess_enum: %d\n", __LINE__));
-
-	/* set up the */
-	make_srv_r_net_sess_enum(&r_n,
-				get_enum_hnd(&q_n->enum_hnd),
-				q_n->sess_level,
-				q_n->ctr->switch_value);
-
-	/* store the response in the SMB stream */
-	srv_io_r_net_sess_enum("", &r_n, rdata, 0);
-
-	DEBUG(5,("srv_net_sess_enum: %d\n", __LINE__));
-}
-
-/*******************************************************************
  fill in a conn info level 0 structure.
 
  this function breaks the rule that i'd like to be in place, namely
@@ -734,17 +479,31 @@ static void api_srv_net_sess_enum( rpcsrv_struct *p, prs_struct *data,
                                     prs_struct *rdata )
 {
 	SRV_Q_NET_SESS_ENUM q_n;
+	SRV_R_NET_SESS_ENUM r_n;
 	SRV_SESS_INFO_CTR ctr;
 
+	ZERO_STRUCT(q_n);
+	ZERO_STRUCT(r_n);
+
 	q_n.ctr = &ctr;
+	r_n.ctr = &ctr;
 
 	/* grab the net server get enum */
 	srv_io_q_net_sess_enum("", &q_n, data, 0);
 
-	/* construct reply.  always indicate success */
-	srv_reply_net_sess_enum(&q_n, rdata);
-}
+	r_n.sess_level = q_n.sess_level;
 
+	r_n.status = _srv_net_sess_enum( &q_n.uni_srv_name,
+					ctr.switch_value, &ctr,
+					q_n.preferred_len, &q_n.enum_hnd,
+					&(r_n.total_entries),
+					q_n.sess_level );
+
+        memcpy(&r_n.enum_hnd, &q_n.enum_hnd, sizeof(r_n.enum_hnd));
+
+	/* store the response in the SMB stream */
+	srv_io_r_net_sess_enum("", &r_n, rdata, 0);
+}
 
 /*******************************************************************
 ********************************************************************/
