@@ -181,7 +181,7 @@ BOOL change_to_user(connection_struct *conn, uint16 vuid)
 		if (vuser && vuser->guest)
 			is_guest = True;
 
-		token = create_nt_token(uid, gid, current_user.ngroups, current_user.groups, is_guest);
+		token = create_nt_token(uid, gid, current_user.ngroups, current_user.groups, is_guest, NULL);
 		must_free_token = True;
 	}
 	
@@ -372,21 +372,32 @@ BOOL unbecome_user(void)
  group gid_t's. Add to the total group array.
 *****************************************************************/
  
-void add_supplementary_nt_login_groups(int *n_groups, gid_t **pp_groups, NT_USER_TOKEN *ptok)
+void add_supplementary_nt_login_groups(int *n_groups, gid_t **pp_groups, NT_USER_TOKEN **pptok)
 {
 	int total_groups;
 	int current_n_groups = *n_groups;
 	gid_t *final_groups = NULL;
 	size_t i;
+	NT_USER_TOKEN *ptok = *pptok;
+	NT_USER_TOKEN *new_tok = NULL;
  
 	if (!ptok || (ptok->num_sids == 0))
 		return;
- 
+
+	new_tok = dup_nt_token(ptok);
+	if (!new_tok) {
+		DEBUG(0,("add_supplementary_nt_login_groups: Failed to malloc new token\n"));
+		return;
+	}
+	/* Leave the allocated space but empty the number of SIDs. */
+	new_tok->num_sids = 0;
+
 	total_groups = current_n_groups + ptok->num_sids;
  
 	final_groups = (gid_t *)malloc(total_groups * sizeof(gid_t));
 	if (!final_groups) {
 		DEBUG(0,("add_supplementary_nt_login_groups: Failed to malloc new groups.\n"));
+		delete_nt_token(&new_tok);
 		return;
 	}
  
@@ -410,12 +421,19 @@ void add_supplementary_nt_login_groups(int *n_groups, gid_t **pp_groups, NT_USER
 				/* Group not already present. */
 				final_groups[current_n_groups++] = new_grp;
 			}
+		} else {
+			/* SID didn't map. Copy to the new token to be saved. */
+			sid_copy(&new_tok->user_sids[new_tok->num_sids++], &ptok->user_sids[i]);
 		}
 	}
  
 	SAFE_FREE(*pp_groups);
 	*pp_groups = final_groups;
 	*n_groups = current_n_groups;
+
+	/* Replace the old token with the truncated one. */
+	delete_nt_token(&ptok);
+	*pptok = new_tok;
 }
 
 /*****************************************************************
