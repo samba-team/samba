@@ -5,7 +5,7 @@
 <listitem>
     <para>This parameters controls how printer status  information is
     interpreted on your system. It also affects the  default values for
-    the <parameter moreinfo="none">print command</parameter>,  parameter
+    the <parameter moreinfo="none">print command</parameter>,  <parameter
     moreinfo="none">lpq command</parameter>, <parameter
     moreinfo="none">lppause command </parameter>, <parameter
     moreinfo="none">lpresume command</parameter>, and  <parameter
