@@ -179,12 +179,16 @@ int vasnprintf (char **ret, size_t max_sz, const char *format, va_list ap)
 char * strdup(const char *old);
 #endif
 
+#ifndef HAVE_STRNDUP
+char * strndup(const char *old, size_t sz);
+#endif
+
 #ifndef HAVE_STRLWR
 char * strlwr(char *);
 #endif
 
 #ifndef HAVE_STRNLEN
-int strnlen(char*, int);
+size_t strnlen(const char*, size_t);
 #endif
 
 #if !defined(HAVE_STRSEP) || defined(NEED_STRSEP_PROTO)
