@@ -2,6 +2,7 @@
  *  Unix SMB/CIFS implementation.
  *  error mapping functions
  *  Copyright (C) Andrew Tridgell 2001
+ *  Copyright (C) Andrew Bartlett 2001
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
