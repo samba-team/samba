@@ -1,6 +1,6 @@
 # $Id$
 
-include $(top_srcdir)/Makefile.am.common
+include $(top_srcdir)/cf/Makefile.am.common
 
 INCLUDES += $(INCLUDE_krb4) $(HESIODINCLUDE)
 
@@ -23,5 +23,5 @@ EXTRA_DIST = pfrom.in $(man_MANS)
 LDADD = $(LIB_krb5) \
 	$(LIB_krb4) \
 	$(top_builddir)/lib/des/libdes.la \
-	$(top_builddir)/lib/roken/libroken.la
+	$(top_builddir)/lib/roken/libroken.la \
 	$(HESIODLIB)
