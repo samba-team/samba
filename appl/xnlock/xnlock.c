@@ -169,25 +169,28 @@ static char*
 get_words(void)
 {
     FILE *pp = NULL;
-    static char buf[BUFSIZ];
+    static char buf[512];
+    long n;
 
-    if(appres.text_prog){
+    if (appres.text_prog) {
 	pp = popen(appres.text_prog, "r");
-	if(!pp){
-	    warn ("popen %s", appres.text_prog);
+	if (!pp) {
+	    warn("popen %s", appres.text_prog);
 	    return appres.text;
 	}
-	fread(buf, BUFSIZ, 1, pp);
+	n = fread(buf, 1, sizeof(buf) - 1, pp);
+	buf[n] = 0;
 	pclose(pp);
 	return buf;
     }
-    if(appres.file){
+    if (appres.file) {
 	pp = fopen(appres.file, "r");
-	if(!pp){
-	    warn ("fopen %s", appres.file);
+	if (!pp) {
+	    warn("fopen %s", appres.file);
 	    return appres.text;
 	}
-	fread(buf, BUFSIZ, 1, pp);
+	n = fread(buf, 1, sizeof(buf) - 1, pp);
+	buf[n] = 0;
 	fclose(pp);
 	return buf;
     }
