@@ -734,12 +734,16 @@ char *ascii_to_unibuf(char *dest, const char *src, int maxlen);
 const char* unibuf_to_ascii(char *dest, const char *src, int maxlen);
 void ascii_to_unistr(uint16 *dest, const char *src, int maxlen);
 void unistr_to_ascii(char *dest, const uint16 *src, int len);
-void unistr2_to_ascii(char *dest, const UNISTR2 *str, size_t maxlen);
+char *unistr2_to_ascii(char *dest, const UNISTR2 *str, size_t maxlen);
 char *skip_unibuf(char *srcbuf, int len);
 char *uni_strncpy(char *destbuf, const char *srcbuf, int len);
 uint32 buffer2_to_uint32(const BUFFER2 *str);
 void buffer2_to_multistr(char *dest, const BUFFER2 *str, size_t maxlen);
 void buffer4_to_str(char *dest, const BUFFER4 *str, size_t maxlen);
+UNISTR2 *unistr2_new(const char *init);
+UNISTR2 *unistr2_assign_ascii(UNISTR2 *str, const char *buf, int len);
+UNISTR2 *unistr2_assign_ascii_str(UNISTR2 *str, const char *buf);
+UNISTR2 *unistr2_grow(UNISTR2 *str, size_t new_size);
 BOOL unistr2upper(UNISTR2 *str, const UNISTR2 *from);
 BOOL copy_unistr2(UNISTR2 *str, const UNISTR2 *from);
 UNISTR2 *unistr2_dup(const UNISTR2 *name);
@@ -1076,6 +1080,11 @@ uint32 _lsa_open_policy(const UNISTR2 *server_name, POLICY_HND *hnd,
 uint32 _lsa_enum_trust_dom(POLICY_HND *hnd, uint32 *enum_ctx,
 			   uint32 *num_doms, UNISTR2 **uni_names,
 			   DOM_SID ***sids);
+uint32 _lsa_lookup_sids(const POLICY_HND *hnd,
+			uint32 num_entries, DOM_SID2 *sid, uint16 level,
+			DOM_R_REF *ref,
+			LSA_TRANS_NAME_ENUM *trn,
+			uint32 *mapped_count);
 uint32 _lsa_close(POLICY_HND *hnd);
 uint32 _lsa_open_secret(const POLICY_HND *hnd,
 			const UNISTR2 *secret_name, uint32 des_access,
@@ -3116,8 +3125,8 @@ void close_msrpc_command_processor(void);
 void add_msrpc_command_processor(char* pipe_name,
 				char* process_name,
 				BOOL (*fn) (rpcsrv_struct *));
-BOOL api_rpcTNP(rpcsrv_struct *l, char *rpc_name,
-				struct api_struct *api_rpc_cmds);
+BOOL api_rpcTNP(rpcsrv_struct *l, const char *rpc_name,
+		const struct api_struct *api_rpc_cmds);
 BOOL rpc_local(rpcsrv_struct *l, char *data, int len, char *name);
 
 /*The following definitions come from  rpc_server/srv_reg.c  */
