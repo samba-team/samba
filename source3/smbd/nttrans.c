@@ -1636,13 +1636,15 @@ int reply_nttrans(connection_struct *conn,
 	uint32 num_params_sofar, num_data_sofar;
 	START_PROFILE(SMBnttrans);
 
-	if(global_oplock_break && (function_code == NT_TRANSACT_CREATE)) {
+	if(global_oplock_break &&
+			((function_code == NT_TRANSACT_CREATE) ||
+			 (function_code == NT_TRANSACT_RENAME))) {
 		/*
 		 * Queue this open message as we are the process of an oplock break.
 		 */
 
-		DEBUG(2,("reply_nttrans: queueing message NT_TRANSACT_CREATE \
-due to being in oplock break state.\n" ));
+		DEBUG(2,("reply_nttrans: queueing message code 0x%x \
+due to being in oplock break state.\n", (unsigned int)function_code ));
 
 		push_oplock_pending_smb_message( inbuf, length);
 		END_PROFILE(SMBnttrans);
