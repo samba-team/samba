@@ -317,6 +317,13 @@ AC_BROKEN([					\
 	writev					\
 ])
 
+dnl
+dnl Check for sa_len in struct sockaddr, 
+dnl needs to come before the getnameinfo test
+dnl
+AC_HAVE_STRUCT_FIELD(struct sockaddr, sa_len, [#include <sys/types.h>
+#include <sys/socket.h>])
+
 if test "$ac_cv_func_getnameinfo" = "yes"; then
   rk_BROKEN_GETNAMEINFO
   if test "$ac_cv_func_getnameinfo_broken" = yes; then
@@ -524,13 +531,6 @@ dnl Check for struct spwd
 dnl
 
 AC_KRB_STRUCT_SPWD
-
-dnl
-dnl Check for sa_len in struct sockaddr
-dnl
-
-AC_HAVE_STRUCT_FIELD(struct sockaddr, sa_len, [#include <sys/types.h>
-#include <sys/socket.h>])
 
 dnl won't work with automake
 dnl moved to AC_OUTPUT in configure.in
