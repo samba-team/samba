@@ -319,6 +319,9 @@ max can be %d\n",
 			if (smbd_server_fd() != -1 && interactive)
 				return True;
 	
+			if (!tdb_check_exist())
+				return True;
+
 			if (allowable_number_of_smbd_processes() && smbd_server_fd() != -1 && sys_fork()==0) {
 				/* Child code ... */
 				

@@ -2017,3 +2017,9 @@ int tdb_reopen_all(void)
 
 	return 0;
 }
+
+TDB_CONTEXT *get_tdb_list(void)
+{
+	return tdbs;
+}
+

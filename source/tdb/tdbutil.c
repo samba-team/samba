@@ -649,3 +649,21 @@ int tdb_traverse_delete_fn(TDB_CONTEXT *the_tdb, TDB_DATA key, TDB_DATA dbuf,
 {
     return tdb_delete(the_tdb, key);
 }
+
+/* Check current open tdb's still exist (not deleted by child). */
+BOOL tdb_check_exist(void)
+{
+	TDB_CONTEXT *tdb;
+	struct stat st;
+
+	for (tdb=get_tdb_list(); tdb; tdb = tdb->next) {
+		if (stat(tdb->name, &st) == -1 && errno == ENOENT) {
+			DEBUG(0,("tdb_check_exist: tdb %s no longer exists - corruption in tdb. Exiting.\n",
+						tdb->name ));
+			return False;
+		}
+	}
+
+	return True;
+}
+
