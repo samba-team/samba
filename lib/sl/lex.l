@@ -1,6 +1,6 @@
 %{
 /*
- * Copyright (c) 1998 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1998 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -43,6 +43,8 @@ static unsigned lineno = 1;
 static int getstring(void);
 
 #define YY_NO_UNPUT
+
+#undef ECHO
 
 %}
 
