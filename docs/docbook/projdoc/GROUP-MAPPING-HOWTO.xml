@@ -35,7 +35,7 @@
 
 	<para>
 	Group accounts can be managed using the MS Windows NT4 or MS Windows 200x MMC tools
-	so long as appropriate interface scripts have been provided to &smb.conf;
+	so long as appropriate interface scripts have been provided to &smb.conf;.
 	</para>
 
 	<para>
@@ -52,7 +52,7 @@
 	There are several possible work-arounds for the operating system tools limitation. One
 	method is to use a script that generates a name for the Unix/Linux system group that
 	fits the operating system limits, and that then just passes the Unix/Linux group id (GID)
-	back to the calling samba interface. This will provide a dynamic work-around solution.
+	back to the calling Samba interface. This will provide a dynamic work-around solution.
 	</para>
 
 	<para>
@@ -68,9 +68,9 @@
 
 	<para>
 	When installing <application>MS Windows NT4 / 200x</application> on a computer, the installation
-	program creates default users and groups. Notably the <constant>Administrators</constant> group,
-	and gives to that group privileges necessary privilidges to perform essential system tasks.
-	eg: Ability to change the date and time or to kill any process (or close too) running on the
+	program creates default users and groups, notably the <constant>Administrators</constant> group,
+	and gives that group privileges necessary privileges to perform essential system tasks.
+	eg: Ability to change the date and time or to kill (or close) any process running on the
 	local machine.
 	</para>
 	
@@ -81,14 +81,14 @@
 	</para>
 
 	<para>
-	When an MS Windows NT4 / W200x is made a domain member, the "Domain Adminis" group of the
+	When an MS Windows NT4 / W200x is made a domain member, the "Domain Admins" group of the
 	PDC is added to the local 'Administrators' group of the workstation. Every member of the
 	'Domain Administrators' group inherits the rights of the local 'Administrators' group when
 	logging on the workstation.
 	</para>
 
 	<para>
-	The following steps describe how to make samba PDC users members of the 'Domain Admins' group?
+	The following steps describe how to make Samba PDC users members of the 'Domain Admins' group?
 	</para>
 
 	<orderedlist>
@@ -97,7 +97,7 @@
 		</para></listitem>
 
 		<listitem><para>add to this group the users that must be Administrators. For example
-		if you want joe,john and mary, your entry in <filename>/etc/group</filename> will
+		if you want joe, john and mary, your entry in <filename>/etc/group</filename> will
 		look like:
 		</para>
 
@@ -140,7 +140,7 @@
 	</para>
 
 	<para>
-	Be aware that the RID parmeter is a unsigned 32 bit integer that should
+	Be aware that the RID parameter is a unsigned 32 bit integer that should
 	normally start at 1000.  However, this rid must not overlap with any RID assigned
 	to a user.  Verifying this is done differently depending on on the passdb backend 
 	you are using.  Future versions of the tools may perform the verification automatically,
@@ -185,7 +185,7 @@
 	<title>Sample &smb.conf; add group script</title>
 
 		<para>
-		A script to great complying group names for use by the samba group interfaces:
+		A script to great complying group names for use by the Samba group interfaces:
 		</para>
 
 		<para>
@@ -201,7 +201,8 @@ groupadd smbtmpgrp00
 thegid=`cat /etc/group | grep smbtmpgrp00 | cut -d ":" -f3`
 
 # Now change the name to what we want for the MS Windows networking end
-cat /etc/group | sed s/smbtmpgrp00/$1/g > /etc/group
+cp /etc/group /etc/group.bak
+cat /etc/group.bak | sed s/smbtmpgrp00/$1/g > /etc/group
 
 # Now return the GID as would normally happen.
 echo $thegid
@@ -255,7 +256,7 @@ net groupmap modify ntgroup="Power Users" unixgroup=sys
 </para>
 
 	<para>
-	Of course it is expected that the admininstrator will modify this to suit local needs.
+	Of course it is expected that the administrator will modify this to suit local needs.
 	For information regarding the use of the <command>net groupmap</command> tool please
 	refer to the man page.
 	</para>
@@ -278,12 +279,12 @@ manually before putting them into active service.
 
 		<para>
 		This is a common problem when the <command>groupadd</command> is called directly
-		by the samba interface script for the <parameter>add group script</parameter> in
+		by the Samba interface script for the <parameter>add group script</parameter> in
 		the &smb.conf; file.
 		</para>
 
 		<para>
-		The most common cause of failure is an attempt to add an MS Windows group acocunt
+		The most common cause of failure is an attempt to add an MS Windows group account
 		that has either an upper case character and/or a space character in it.
 		</para>
 

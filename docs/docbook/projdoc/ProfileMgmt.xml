@@ -68,7 +68,7 @@ This section documents how to configure Samba for MS Windows client profile supp
 <title>NT4/200x User Profiles</title>
 
 <para>
-To support Windowns NT4/200x clients, in the [global] section of smb.conf set the
+To support Windows NT4/200x clients, in the [global] section of smb.conf set the
 following (for example):
 </para>
 
@@ -91,7 +91,7 @@ namely <filename>\\sambaserver\username\profile</filename>.
 The <filename>\\N%\%U</filename> service is created automatically by the [homes] service.  If you are using
 a samba server for the profiles, you _must_ make the share specified in the logon path
 browseable. Please refer to the man page for &smb.conf; in respect of the different
-symantics of %L and %N, as well as %U and %u.
+semantics of %L and %N, as well as %U and %u.
 </para>
 
 <note>
@@ -186,7 +186,7 @@ There are three ways of doing this:
 					User Profiles\
 
 	Disable:	Only Allow Local User Profiles
-	Disable:	Prevent Roaming Profile Change from Propogating to the Server
+	Disable:	Prevent Roaming Profile Change from Propagating to the Server
 	</programlisting>
 		</para> </listitem>
 	</varlistentry>
@@ -500,13 +500,13 @@ profile on the MS Windows workstation as follows:
 </procedure>
 
 <para>
-Done. You now have a profile that can be editted using the samba-3.0.0
+Done. You now have a profile that can be edited using the samba-3.0.0
 <command>profiles</command> tool.
 </para>
 
 <note>
 <para>
-Under NT/2K the use of mandotory profiles forces the use of MS Exchange
+Under NT/2K the use of mandatory profiles forces the use of MS Exchange
 storage of mail data. That keeps desktop profiles usable.
 </para>
 </note>
@@ -627,7 +627,7 @@ select the tab labelled <guilabel>User Profiles</guilabel>.
 Select a user profile you want to migrate and click on it.
 </para>
 
-<note><para>I am using the term &quot;migrate&quot; lossely. You can copy a profile to
+<note><para>I am using the term &quot;migrate&quot; loosely. You can copy a profile to
 create a group profile. You can give the user 'Everyone' rights to the
 profile you copy this to. That is what you need to do, since your samba
 domain is not a member of a trust relationship with your NT4 PDC.</para></note>
@@ -739,7 +739,7 @@ affect a mandatory profile.
 <title>Creating/Managing Group Profiles</title>
 
 <para>
-Most organisations are arranged into departments. There is a nice benenfit in
+Most organisations are arranged into departments. There is a nice benefit in
 this fact since usually most users in a department will require the same desktop
 applications and the same desktop layout. MS Windows NT4/200x/XP will allow the
 use of Group Profiles. A Group Profile is a profile that is created firstly using
@@ -889,7 +889,7 @@ the following steps are followed in respect of profile handling:
 	out to the location of the profile. The <filename>NTuser.DAT</filename> file is then
 	re-created from the contents of the <filename>HKEY_CURRENT_USER</filename> contents.
 	Thus, should there not exist in the NETLOGON share an <filename>NTConfig.POL</filename> at the
-	next logon, the effect of the provious <filename>NTConfig.POL</filename> will still be held
+	next logon, the effect of the previous <filename>NTConfig.POL</filename> will still be held
 	in the profile. The effect of this is known as <emphasis>tatooing</emphasis>.
 	</para>
 	</step>
@@ -973,7 +973,7 @@ The default entries are:
 		<row><entry>Common Desktop</entry><entry>%SystemRoot%\Profiles\All Users\Desktop</entry></row>
 		<row><entry>Common Programs</entry><entry>%SystemRoot%\Profiles\All Users\Programs</entry></row>
 		<row><entry>Common Start Menu</entry><entry>%SystemRoot%\Profiles\All Users\Start Menu</entry></row>
-		<row><entry>Common Startup</entry><entry>%SystemRoot%\Profiles\All Users\Start Menu\Progams\Startup</entry></row>
+		<row><entry>Common Startup</entry><entry>%SystemRoot%\Profiles\All Users\Start Menu\Programs\Startup</entry></row>
 	</tbody>
 	</tgroup>
 </table>
@@ -1024,7 +1024,7 @@ default profile.
 </para>
 
 <para>
-On loging out, the users' desktop profile will be stored to the location specified in the registry
+On logging out, the users' desktop profile will be stored to the location specified in the registry
 settings that pertain to the user. If no specific policies have been created, or passed to the client
 during the login process (as Samba does automatically), then the user's profile will be written to
 the local machine only under the path <filename>C:\Documents and Settings\%USERNAME%</filename>.
@@ -1149,7 +1149,7 @@ In which case, the local cache copy will be deleted on logout.
 <title>Common Errors</title>
 
 <para>
-THe following are some typical errors/problems/questions that have been asked.
+The following are some typical errors/problems/questions that have been asked.
 </para>
 
 <sect2>
@@ -1236,7 +1236,7 @@ Your choices are:
 
 				<varlistentry>
 					<term>Group profiles</term>
-					<listitem><para>- loaded from a cetral place</para></listitem>
+					<listitem><para>- loaded from a central place</para></listitem>
 				</varlistentry>
 
 				<varlistentry>
@@ -1256,11 +1256,11 @@ Your choices are:
 <para>
 A WinNT4/2K/XP profile can vary in size from 130KB to off the scale.
 Outlook PST files are most often part of the profile and can be many GB in
-size. On average (in a well controlled environment) roaming profie size of
+size. On average (in a well controlled environment) roaming profile size of
 2MB is a good rule of thumb to use for planning purposes. In an
 undisciplined environment I have seen up to 2GB profiles. Users tend to
 complain when it take an hour to log onto a workstation but they harvest
-the fuits of folly (and ignorance).
+the fruits of folly (and ignorance).
 </para>
 
 <para>

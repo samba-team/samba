@@ -10,16 +10,16 @@
 <para>
 Before you continue reading in this section, please make sure that you are comfortable
 with configuring a Samba Domain Controller as described in the
-<ulink url="Samba-PDC-HOWTO.html">Domain Control Chapter</ulink>.
+<link linkend="samba-pdc">Domain Control</link> chapter.
 </para>
 
 <sect1>
 <title>Features And Benefits</title>
 
 <para>
-This is one of the most difficult chapters to summarise. It matters not what we say here
+This is one of the most difficult chapters to summarise. It does not matter what we say here
 for someone will still draw conclusions and / or approach the Samba-Team with expectations
-that are either not yet capable of being delivered, or that can be achieved for more
+that are either not yet capable of being delivered, or that can be achieved far more
 effectively using a totally different approach. Since this HOWTO is already so large and
 extensive, we have taken the decision to provide sufficient (but not comprehensive)
 information regarding Backup Domain Control. In the event that you should have a persistent
@@ -46,7 +46,7 @@ The use of a non-LDAP backend SAM database is particularly problematic because D
 servers and workstations periodically change the machine trust account password. The new
 password is then stored only locally. This means that in the absence of a centrally stored
 accounts database (such as that provided with an LDAP based solution) if Samba-3 is running
-as a BDC, the PDC instance of the Domain member trust account password will not reach the
+as a BDC, the BDC instance of the Domain member trust account password will not reach the
 PDC (master) copy of the SAM. If the PDC SAM is then replicated to BDCs this results in 
 overwriting of the SAM that contains the updated (changed) trust account password with resulting
 breakage of the domain trust.
@@ -74,7 +74,7 @@ lets consider each possible option and look at the pro's and con's for each theo
 	</listitem>
 		
 	<listitem><para>
-	Passdb Backend is tdbsam based, BDCs use cron based "net rcp vampire" to
+	Passdb Backend is tdbsam based, BDCs use cron based "net rpc vampire" to
 	suck down the Accounts database from the PDC
 	</para>
 
@@ -131,7 +131,7 @@ provided this capability. The technology has become known as the LanMan Netlogon
 </para>
 
 <para>
-When MS Windows NT3.10 was first released it supported an new style of Domain Control
+When MS Windows NT3.10 was first released, it supported an new style of Domain Control
 and with it a new form of the network logon service that has extended functionality.
 This service became known as the NT NetLogon Service. The nature of this service has
 changed with the evolution of MS Windows NT and today provides a very complex array of
@@ -142,11 +142,11 @@ services that are implemented over a complex spectrum of technologies.
 <title>MS Windows NT4 Style Domain Control</title>
 
 <para>
-Whenever a user logs into a Windows NT4 / 200x / XP Profresional Workstation,
+Whenever a user logs into a Windows NT4 / 200x / XP Professional Workstation,
 the workstation connects to a Domain Controller (authentication server) to validate
 the username and password that the user entered are valid. If the information entered
 does not validate against the account information that has been stored in the Domain
-Control database (the SAM, or Security Accounts Manager database) then a set of error
+Control database (the SAM, or Security Account Manager database) then a set of error
 codes is returned to the workstation that has made the authentication request.
 </para>
 
@@ -177,7 +177,7 @@ There are two situations in which it is desirable to install Backup Domain Contr
 
 <itemizedlist>
 	<listitem><para>
-	On the local network that the Primary Domain Controller is on if there are many
+	On the local network that the Primary Domain Controller is on, if there are many
 	workstations and/or where the PDC is generally very busy. In this case the BDCs
 	will pick up network logon requests and help to add robustness to network services.
 	</para></listitem>
@@ -198,7 +198,7 @@ has the PDC, the change will likely be made directly to the PDC instance of the 
 copy of the SAM. In the event that this update may be performed in a branch office the
 change will likely be stored in a delta file on the local BDC. The BDC will then send
 a trigger to the PDC to commence the process of SAM synchronisation. The PDC will then
-request the delta from the BDC and apply it to the master SAM. THe PDC will then contact
+request the delta from the BDC and apply it to the master SAM. The PDC will then contact
 all the BDCs in the Domain and trigger them to obtain the update and then apply that to
 their own copy of the SAM.
 </para>
@@ -237,7 +237,7 @@ parameters in the <parameter>[global]</parameter>-section of the &smb.conf; have
 <para>
 Several other things like a <parameter>[homes]</parameter> and a <parameter>[netlogon]</parameter> share also need to be set along with
 settings for the profile path, the users home drive, etc.. This will not be covered in this
-chapter, for more information please refer to the chapter on Domain Control.
+chapter, for more information please refer to the chapter on <link linkend="samba-pdc">Domain Control</link>.
 </para>
 
 </sect3>
@@ -251,7 +251,7 @@ As of the release of MS Windows 2000 and Active Directory, this information is n
 in a directory that can be replicated and for which partial or full administrative control
 can be delegated. Samba-3 is NOT able to be a Domain Controller within an Active Directory
 tree, and it can not be an Active Directory server. This means that Samba-3 also can NOT
-act as a Backup Domain Contoller to an Active Directory Domain Controller.
+act as a Backup Domain Controller to an Active Directory Domain Controller.
 </para>
 
 </sect2>
@@ -280,7 +280,7 @@ by doing a NetBIOS name query for the group name SAMBA&lt;#1c&gt;. It assumes th
 of the machines it gets back from the queries is a domain controller and can answer logon
 requests. To not open security holes both the workstation and the selected domain controller
 authenticate each other. After that the workstation sends the user's credentials (name and
-password) to the local Domain Controller, for valdation.
+password) to the local Domain Controller, for validation.
 </para>
 
 </sect2>
@@ -306,8 +306,12 @@ Several things have to be done:
 
 	<para>
 	To retrieve the domain SID from the PDC or an existing BDC and store it in the
-	secrets.tdb, execute 'net rpc getsid' on the BDC.
-	</para></listitem>
+	secrets.tdb, execute:
+	</para>
+	<screen>
+	&rootprompt;<userinput>net rpc getsid</userinput>
+	</screen>
+	</listitem>
 
 	<listitem><para>
 	The Unix user database has to be synchronized from the PDC to the
@@ -316,14 +320,18 @@ Several things have to be done:
 	whenever changes are made, or the PDC is set up as a NIS master
 	server and the BDC as a NIS slave server. To set up the BDC as a
 	mere NIS client would not be enough, as the BDC would not be able to
-	access its user database in case of a PDC failure.
+	access its user database in case of a PDC failure. NIS is by no means
+	the only method to synchronize passwords. An LDAP solution would work
+	as well.
 	</para>
 	</listitem>
 
 	<listitem><para>
-	The Samba password database in the file private/smbpasswd has to be
-	replicated from the PDC to the BDC. This is a bit tricky, see the
-	next section.
+	The Samba password database has to be replicated from the PDC to the BDC.
+	As said above, though possible to synchronise the <filename>smbpasswd</filename>
+	file with rsync and ssh, this method is	broken and flawed, and is 
+	therefore not recommended. A better solution is to set up slave LDAP
+	servers for each BDC and a master LDAP server for the PDC.
 	</para></listitem>
 
 	<listitem><para>
@@ -378,7 +386,12 @@ are not copied back to the central server. The newer machine account password is
 written when the SAM is copied from the PDC. The result is that the Domain member machine
 on start up will find that it's passwords does not match the one now in the database and
 since the startup security check will now fail, this machine will not allow logon attempts
-to procede and the account expiry error will be reported.
+to proceed and the account expiry error will be reported.
+</para>
+
+<para>
+The solution: use a more robust passdb backend, such as the ldapsam backend, setting up
+an slave LDAP server for each BDC, and a master LDAP server for the PDC.
 </para>
 
 </sect2>
@@ -418,8 +431,14 @@ has to be replicated to the BDC. So replicating the smbpasswd file very often is
 As the smbpasswd file contains plain text password equivalents, it must not be
 sent unencrypted over the wire. The best way to set up smbpasswd replication from
 the PDC to the BDC is to use the utility rsync. rsync can use ssh as a transport.
-Ssh itself can be set up to accept *only* rsync transfer without requiring the user
+Ssh itself can be set up to accept <emphasis>only</emphasis> rsync transfer without requiring the user
 to type a password.
+</para>
+
+<para>
+As said a few times before, use of this method is broken and flawed. Machine trust 
+accounts will go out of sync, resulting in a very broken domain. This method is
+<emphasis>not</emphasis> recommended. Try using LDAP instead.
 </para>
 
 </sect2>

@@ -4,7 +4,7 @@
     <pubdate>April 3 2003</pubdate>
 </chapterinfo>
 
-<title>Advanced Network Manangement</title>
+<title>Advanced Network Management</title>
 
 <para>
 This section documents peripheral issues that are of great importance to network
@@ -88,12 +88,12 @@ is the best tool in your network environment.
 
 <para>
 <screen>
-&gt; I have a wounderfull linux/samba server running as pdc for a network.
-&gt; Now I would like to add remote desktop capabilites so that
+&gt; I have a wonderful linux/samba server running as PDC for a network.
+&gt; Now I would like to add remote desktop capabilities so that
 &gt; users outside could login to the system and get their desktop up from
 &gt; home or another country..
 &gt;
-&gt; Is there a way to acomplish this? Do I need a windows terminal server?
+&gt; Is there a way to accomplish this? Do I need a windows terminal server?
 &gt; Do I need to configure it so that it is a member of the domain or a
 &gt; BDC,PDC? Are there any hacks for MS Windows XP to enable remote login
 &gt; even if the computer is in a domain?
@@ -120,7 +120,7 @@ is the best tool in your network environment.
 	</para>
 
 	<para>
-	I could testdrive their (public) RedHat machine in Italy, over a loaded
+	I could test drive their (public) RedHat machine in Italy, over a loaded
 	internet connection, with enabled thumbnail previews in KDE konqueror
 	which popped up immediately on "mouse-over". From inside that (remote X)
 	session I started a rdesktop session on another, a Windows XP machine.
@@ -143,7 +143,7 @@ is the best tool in your network environment.
 	</para>
 
 	<para>
-	I recommend to testdrive NX to anybody with a only a remote interest
+	I recommend to test drive NX to anybody with a only a remote interest
 	in remote computing
 	<ulink url="http://www.nomachine.com/testdrive.php">http://www.nomachine.com/testdrive.php</ulink>.
 	</para>
@@ -168,7 +168,7 @@ is the best tool in your network environment.
 	<para>
 	Now the best thing at the end: all the core compression and caching
 	technologies are released under the GPL and available as source code
-	to anybody who wants to build on it! These technolgies are working,
+	to anybody who wants to build on it! These technologies are working,
 	albeit started from the command line only (and very inconvenient to
 	use in order to get a fully running remote X session up and running....)
 	</para>
@@ -227,7 +227,7 @@ There are several opportunities for creating a custom network startup configurat
 <simplelist>
 	<member>No Logon Script</member>
 	<member>Simple universal Logon Script that applies to all users</member>
-	<member>Use of a conditional Logon Script that applies per user or per group attirbutes</member>
+	<member>Use of a conditional Logon Script that applies per user or per group attributes</member>
 	<member>Use of Samba's Preexec and Postexec functions on access to the NETLOGON share to create
 	a custom Logon Script and then execute it.</member>
 	<member>User of a tool such as KixStart</member>

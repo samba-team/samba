@@ -263,7 +263,7 @@ should be implied due to its presence here.
 		<para>
 		samba-vscan is a proof-of-concept module for Samba, which
 		uses the VFS (virtual file system) features of Samba 2.2.x/3.0
-		alphaX. Of couse, Samba has to be compiled with VFS support. 
+		alphaX. Of course, Samba has to be compiled with VFS support. 
 		samba-vscan supports various virus scanners and is maintained 
 		by Rainer Link.
 		</para>

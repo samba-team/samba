@@ -73,7 +73,7 @@
 	
 	<para>
 	Make sure you put the <filename>smb.conf</filename> file in the same place 
-	you specified in the<filename>Makefile</filename> (the default is to 
+	you specified in the <filename>Makefile</filename> (the default is to 
 	look for it in <filename>/usr/local/samba/lib/</filename>).
 	</para>
 

@@ -18,7 +18,7 @@ also.
 <title>Features and Benefits</title>
 
 <para>
-When MS Windows NT3.5 was introduced the hot new topic was the ability to implmement
+When MS Windows NT3.5 was introduced the hot new topic was the ability to implement
 Group Policies for users and group. Then along came MS Windows NT4 and a few sites
 started to adopt this capability. How do we know that? By way of the number of "booboos"
 (or mistakes) administrators made and then requested help to resolve.
@@ -64,7 +64,7 @@ affect users, groups of users, or machines.
 For MS Windows 9x/Me this file must be called <filename>Config.POL</filename> and may
 be generated using a tool called <filename>poledit.exe</filename>, better known as the
 Policy Editor. The policy editor was provided on the Windows 98 installation CD, but
-dissappeared again with the introduction of MS Windows Me (Millenium Edition). From
+disappeared again with the introduction of MS Windows Me (Millennium Edition). From
 comments from MS Windows network administrators it would appear that this tool became
 a part of the MS Windows Me Resource Kit.
 </para>
@@ -230,7 +230,7 @@ here is incomplete - you are warned.
 	MS Windows 200x policies are much more complex - GPOs are processed and applied at client machine
 	startup (machine specific part) and when the user logs onto the network the user specific part
 	is applied. In MS Windows 200x style policy management each machine and/or user may be subject
-	to any number of concurently applicable (and applied) policy sets (GPOs). Active Directory allows
+	to any number of concurrently applicable (and applied) policy sets (GPOs). Active Directory allows
 	the administrator to also set filters over the policy settings. No such equivalent capability
 	exists with NT4 style policy files.
 	</para>
@@ -268,10 +268,10 @@ here is incomplete - you are warned.
 		<para>
 		All policy configuration options are controlled through the use of policy administrative
 		templates. These files have a .adm extension, both in NT4 as well as in Windows 200x / XP.
-		Beware however, since the .adm files are NOT interchangible across NT4 and Windows 200x.
+		Beware however, since the .adm files are NOT interchangeable across NT4 and Windows 200x.
 		The later introduces many new features as well as extended definition capabilities. It is
 		well beyond the scope of this documentation to explain how to program .adm files, for that
-		the adminsitrator is referred to the Microsoft Windows Resource Kit for your particular
+		the administrator is referred to the Microsoft Windows Resource Kit for your particular
 		version of MS Windows.
 		</para>
 
@@ -315,7 +315,7 @@ applied to the user's part of the registry.
 MS Windows 200x/XP clients that log onto an MS Windows Active Directory security domain may additionally,
 acquire policy settings through Group Policy Objects (GPOs) that are defined and stored in Active Directory
 itself. The key benefit of using AS GPOs is that they impose no registry <emphasis>spoiling</emphasis> effect.
-This has considerable advanage compared with the use of NTConfig.POL (NT4) style policy updates.
+This has considerable advantage compared with the use of NTConfig.POL (NT4) style policy updates.
 </para>
 
 <para>
@@ -350,7 +350,7 @@ Common restrictions that are frequently used includes:
 	<para>
 	The tools that may be used to configure these types of controls from the MS Windows environment are:
 	The NT4 User Manager for domains, the NT4 System and Group Policy Editor, the registry editor (regedt32.exe).
-	Under MS Windows 200x/XP this is done using the Microsoft Managment Console (MMC) with approapriate
+	Under MS Windows 200x/XP this is done using the Microsoft Management Console (MMC) with appropriate
 	"snap-ins", the registry editor, and potentially also the NT4 System and Group Policy Editor.
 	</para>
 	</sect2>
@@ -394,7 +394,7 @@ reboot and as part of the user logon:
 	</para></listitem>
 
 	<listitem><para>
-	Execution of start-up scripts (hidden and synchronous by defaut).
+	Execution of start-up scripts (hidden and synchronous by default).
 	</para></listitem>
 
 	<listitem><para>
@@ -406,7 +406,7 @@ reboot and as part of the user logon:
 	</para></listitem>
 
 	<listitem><para>
-	An ordered list of User GPOs is obtained. The list contents depends on what is configured in respsect of:
+	An ordered list of User GPOs is obtained. The list contents depends on what is configured in respect of:
 
 <simplelist>
 	<member>Is user a domain member, thus subject to particular policies</member>

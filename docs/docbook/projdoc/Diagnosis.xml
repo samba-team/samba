@@ -5,7 +5,7 @@
 	<pubdate>Wed Jan 15</pubdate>
 </chapterinfo>
 
-<title>The samba checklist</title>
+<title>The Samba checklist</title>
 
 <sect1>
 <title>Introduction</title>
@@ -205,7 +205,7 @@ the following &smb.conf; file entries:
 
 <para>
 In the above, no allowance has been made for any session requests that
-will automatically translate to the loopback adaptor address 127.0.0.1.
+will automatically translate to the loopback adapter address 127.0.0.1.
 To solve this problem change these lines to:
 </para>
 
@@ -236,7 +236,7 @@ to start &smbd; as a daemon, it can avoid a lot of frustration!
 And yet another possible cause for failure of this test is when the subnet mask
 and / or broadcast address settings are incorrect. Please check that the
 network interface IP Address / Broadcast Address / Subnet Mask settings are
-correct and that Samba has correctly noted these in the <filename>log.nmb</filename> file.
+correct and that Samba has correctly noted these in the <filename>log.nmbd</filename> file.
 </para>
 
 </step>
@@ -289,7 +289,7 @@ Run the command <userinput>nmblookup -d 2 '*'</userinput>
 <para>
 This time we are trying the same as the previous test but are trying
 it via a broadcast to the default broadcast address. A number of
-Netbios/TCPIP hosts on the network should respond, although Samba may
+NetBIOS / TCP/IP hosts on the network should respond, although Samba may
 not catch all of the responses in the short time it listens. You
 should see <errorname>got a positive name query response</errorname>
 messages from several hosts.
@@ -346,7 +346,7 @@ If it says <errorname>bad password</errorname> then the likely causes are:
 <orderedlist>
 <listitem>
 	<para>
-	you have shadow passords (or some other password system) but didn't
+	you have shadow passwords (or some other password system) but didn't
 	compile in support for them in &smbd;
 	</para>
 </listitem>
@@ -409,12 +409,12 @@ to choose one of them):
 
 <listitem><para>
 	add the IP address of BIGSERVER to the <command>wins server</command> box in the
-	advanced tcp/ip setup on the PC.
+	advanced TCP/IP setup on the PC.
 </para></listitem>
 
 <listitem><para>
 	enable windows name resolution via DNS in the advanced section of
-	the tcp/ip setup
+	the TCP/IP setup
 </para></listitem>
 
 <listitem><para>

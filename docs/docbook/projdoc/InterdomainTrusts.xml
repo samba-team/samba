@@ -28,8 +28,8 @@ MS Windows NT4.
 Given that Samba-3 has the capability to function with a scalable backend authentication
 database such as LDAP, and given it's ability to run in Primary as well as Backup Domain control
 modes, the administrator would be well advised to consider alternatives to the use of
-Interdomain trusts simplt because by the very nature of how this works it is fragile.
-That was after all a key reason for the development and adoption of Microsoft Active Directory.
+Interdomain trusts simply because by the very nature of how this works it is fragile.
+That was, after all, a key reason for the development and adoption of Microsoft Active Directory.
 </para>
 
 </sect1>
@@ -115,7 +115,7 @@ typed twice (for standard confirmation).
 
 <para>
 A trust relationship will work only when the other (trusting) domain makes the appropriate connections
-with the trusted domain. To consumate the trust relationship the administrator will launch the
+with the trusted domain. To consummate the trust relationship the administrator will launch the
 Domain User Manager, from the menu select Policies, then select Trust Relationships, then click on the
 <guibutton>Add</guibutton> button that is next to the box that is labelled 
 <guilabel>Trusted Domains</guilabel>. A panel will open in which must be entered the name of the remote 
@@ -148,7 +148,7 @@ between domains in purely Samba environment.
 In order to set the Samba PDC to be the trusted party of the relationship first you need
 to create special account for the domain that will be the trusting party. To do that,
 you can use the 'smbpasswd' utility. Creating the trusted domain account is very
-similiar to creating a trusted machine account. Suppose, your domain is
+similar to creating a trusted machine account. Suppose, your domain is
 called SAMBA, and the remote domain is called RUMBA. The first step
 will be to issue this command from your favourite shell:
 </para>
@@ -175,7 +175,7 @@ After issuing this command you'll be asked to enter the password for
 the account. You can use any password you want, but be aware that Windows NT will
 not change this password until 7 days following account creation.
 After the command returns successfully, you can look at the entry for the new account
-(in the stardard way depending on your configuration) and see that account's name is
+(in the standard way depending on your configuration) and see that account's name is
 really RUMBA$ and it has 'I' flag in the flags field. Now you're ready to confirm
 the trust by establishing it from Windows NT Server.
 </para>
@@ -281,7 +281,7 @@ distributed trusted domains.
 
 	<para>
 	These are almost complete in Samba 3.0 snapshots.  The main catch
-	is getting winbindd to be able to allocate uid/gid's for trusted
+	is getting winbindd to be able to allocate UID/GIDs for trusted
 	users/groups.  See the updated Samba HOWTO collection for more
 	details.
 	</para>
