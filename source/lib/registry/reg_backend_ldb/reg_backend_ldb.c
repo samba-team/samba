@@ -146,7 +146,10 @@ static WERROR ldb_open_hive(TALLOC_CTX *mem_ctx, struct registry_hive *hive, str
 	ldb_set_debug_stderr(c);
 	hive->backend_data = c;
 
-	return ldb_open_key(mem_ctx, hive, "", k);
+	hive->root = talloc_zero_p(mem_ctx, struct registry_key);
+	hive->root->name = talloc_strdup(mem_ctx, "");
+
+	return WERR_OK;
 }
 
 static struct registry_operations reg_backend_ldb = {

@@ -51,6 +51,11 @@ static BOOL test_GetVersion(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		return False;
 	}
 
+	if (!W_ERROR_IS_OK(r.out.result)) {
+		printf("GetVersion failed - %s\n", win_errstr(r.out.result));
+		return False;
+	}
+
 	return True;
 }
 
@@ -103,6 +108,11 @@ static BOOL test_CloseKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("CloseKey failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	if (!W_ERROR_IS_OK(r.out.result)) {
+		printf("CloseKey failed - %s\n", win_errstr(r.out.result));
 		return False;
 	}
 
@@ -227,6 +237,8 @@ static BOOL test_EnumKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct winreg_String classname;
 	struct winreg_Time tm;
 	NTSTATUS status;
+
+	printf("Testing EnumKey\n\n");
 
 	r.in.handle = handle;
 	r.in.enum_index = 0;

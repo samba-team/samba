@@ -85,7 +85,7 @@ struct {
 
 static WERROR rpc_query_key(struct registry_key *k);
 
-WERROR rpc_list_hives (TALLOC_CTX *mem_ctx, const char *location, const char *credentials, char ***hives)
+static WERROR rpc_list_hives (TALLOC_CTX *mem_ctx, const char *location, const char *credentials, char ***hives)
 {
 	int i = 0;
 	*hives = talloc_p(mem_ctx, char *);
