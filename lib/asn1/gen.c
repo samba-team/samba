@@ -90,6 +90,11 @@ init_generate (const char *filename, const char *base)
 	     "typedef char *general_string;\n\n"
 #endif
 	     );
+    fprintf (headerfile,
+	     "typedef struct oid {\n"
+	     "  size_t length;\n"
+	     "  unsigned *components;\n"
+	     "} oid;\n\n");
     fprintf (headerfile, "#endif\n\n");
     logfile = fopen(STEM "_files", "w");
     if (logfile == NULL)
@@ -140,12 +145,34 @@ define_asn1 (int level, Type *t)
 	space(level);
 	fprintf (headerfile, "OCTET STRING");
 	break;
+    case TOID :
+	space(level);
+	fprintf(headerfile, "OBJECT IDENTIFIER");
+	break;
     case TBitString: {
 	Member *m;
 	int tag = -1;
 
 	space(level);
 	fprintf (headerfile, "BIT STRING {\n");
+	for (m = t->members; m && m->val != tag; m = m->next) {
+	    if (tag == -1)
+		tag = m->val;
+	    space(level + 1);
+	    fprintf (headerfile, "%s(%d)%s\n", m->name, m->val, 
+		     m->next->val == tag?"":",");
+
+	}
+	space(level);
+	fprintf (headerfile, "}");
+	break;
+    }
+    case TEnumerated : {
+	Member *m;
+	int tag = -1;
+
+	space(level);
+	fprintf (headerfile, "ENUMERATED {\n");
 	for (m = t->members; m && m->val != tag; m = m->next) {
 	    if (tag == -1)
 		tag = m->val;
@@ -249,6 +276,10 @@ define_type (int level, char *name, Type *t, int typedefp)
 	space(level);
 	fprintf (headerfile, "octet_string %s;\n", name);
 	break;
+    case TOID :
+	space(level);
+	fprintf (headerfile, "oid %s;\n", name);
+	break;
     case TBitString: {
 	Member *m;
 	Type i;
@@ -265,6 +296,23 @@ define_type (int level, char *name, Type *t, int typedefp)
 	    free (n);
 	    if (tag == -1)
 		tag = m->val;
+	}
+	space(level);
+	fprintf (headerfile, "} %s;\n\n", name);
+	break;
+    }
+    case TEnumerated: {
+	Member *m;
+	int tag = -1;
+
+	space(level);
+	fprintf (headerfile, "enum %s {\n", typedefp ? name : "");
+	for (m = t->members; m && m->val != tag; m = m->next) {
+	    if (tag == -1)
+		tag = m->val;
+	    space(level + 1);
+	    fprintf (headerfile, "%s = %d%s\n", m->gen_name, m->val,
+                        m->next->val == tag ? "" : ",");
 	}
 	space(level);
 	fprintf (headerfile, "} %s;\n\n", name);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -55,7 +55,7 @@ hash (void *a)
 }
 
 void
-initsym ()
+initsym (void)
 {
   htab = hashtabnew (101, cmp, hash);
 }

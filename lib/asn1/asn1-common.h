@@ -13,4 +13,9 @@ typedef struct octet_string {
 
 typedef char *general_string;
 
+typedef struct oid {
+    size_t length;
+    unsigned *components;
+} oid;
+
 #endif

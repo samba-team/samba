@@ -160,6 +160,36 @@ der_put_octet_string (unsigned char *p, size_t len,
 }
 
 int
+der_put_oid (unsigned char *p, size_t len,
+	     const oid *data, size_t *size)
+{
+    unsigned char *base = p;
+    int n;
+
+    for (n = data->length - 1; n >= 2; --n) {
+	unsigned u = data->components[n];
+
+	if (len < 1)
+	    return ASN1_OVERFLOW;
+	*p-- = u % 128;
+	u /= 128;
+	--len;
+	while (u > 0) {
+	    if (len < 1)
+		return ASN1_OVERFLOW;
+	    *p-- = 128 + u % 128;
+	    u /= 128;
+	    --len;
+	}
+    }
+    if (len < 1)
+	return ASN1_OVERFLOW;
+    *p-- = 40 * data->components[0] + data->components[1];
+    *size = base - p;
+    return 0;
+}
+
+int
 der_put_tag (unsigned char *p, size_t len, Der_class class, Der_type type,
 	     int tag, size_t *size)
 {
@@ -244,6 +274,31 @@ encode_unsigned (unsigned char *p, size_t len, const unsigned *data,
 }
 
 int
+encode_enumerated (unsigned char *p, size_t len, const unsigned *data,
+		   size_t *size)
+{
+    unsigned num = *data;
+    size_t ret = 0;
+    size_t l;
+    int e;
+    
+    e = der_put_int (p, len, num, &l);
+    if(e)
+	return e;
+    p -= l;
+    len -= l;
+    ret += l;
+    e = der_put_length_and_tag (p, len, l, UNIV, PRIM, UT_Enumerated, &l);
+    if (e)
+	return e;
+    p -= l;
+    len -= l;
+    ret += l;
+    *size = ret;
+    return 0;
+}
+
+int
 encode_general_string (unsigned char *p, size_t len, 
 		       const general_string *data, size_t *size)
 {
@@ -282,6 +337,30 @@ encode_octet_string (unsigned char *p, size_t len,
     len -= l;
     ret += l;
     e = der_put_length_and_tag (p, len, l, UNIV, PRIM, UT_OctetString, &l);
+    if (e)
+	return e;
+    p -= l;
+    len -= l;
+    ret += l;
+    *size = ret;
+    return 0;
+}
+
+int
+encode_oid(unsigned char *p, size_t len,
+	   const oid *k, size_t *size)
+{
+    size_t ret = 0;
+    size_t l;
+    int e;
+
+    e = der_put_oid (p, len, k, &l);
+    if (e)
+	return e;
+    p -= l;
+    len -= l;
+    ret += l;
+    e = der_put_length_and_tag (p, len, l, UNIV, PRIM, UT_OID, &l);
     if (e)
 	return e;
     p -= l;

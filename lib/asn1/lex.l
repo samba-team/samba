@@ -75,7 +75,10 @@ OPTIONAL		{ return OPTIONAL; }
 BEGIN			{ return TBEGIN; }
 END			{ return END; }
 DEFINITIONS		{ return DEFINITIONS; }
+ENUMERATED		{ return ENUMERATED; }
 EXTERNAL		{ return EXTERNAL; }
+OBJECT			{ return OBJECT; }
+IDENTIFIER		{ return IDENTIFIER; }
 [,;{}()|]		{ return *yytext; }
 "["			{ return *yytext; }
 "]"			{ return *yytext; }
@@ -85,7 +88,7 @@ EXTERNAL		{ return EXTERNAL; }
 			  if(e == yytext) 
 			    error_message("malformed constant (%s)", yytext); 
 			  else return CONSTANT; }
-[A-Za-z][-A-Za-z0-9_]*	{ yylval.name =  strdup (yytext); return IDENTIFIER; }
+[A-Za-z][-A-Za-z0-9_]*	{ yylval.name =  strdup (yytext); return IDENT; }
 [ \t]			;
 \n			{ ++lineno; }
 \.\.			{ return DOTDOT; }

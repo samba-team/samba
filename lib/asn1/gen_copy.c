@@ -55,10 +55,14 @@ copy_type (const char *from, const char *to, const Type *t)
       break;
   case TInteger:
   case TUInteger:
+  case TEnumerated :
       fprintf(codefile, "*(%s) = *(%s);\n", to, from);
       break;
   case TOctetString:
       copy_primitive ("octet_string", from, to);
+      break;
+  case TOID:
+      copy_primitive ("oid", from, to);
       break;
   case TBitString: {
       fprintf(codefile, "*(%s) = *(%s);\n", to, from);

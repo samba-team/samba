@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -38,7 +38,7 @@
 
 enum typetype { TInteger, TOctetString, TBitString, TSequence, TSequenceOf,
 		TGeneralizedTime, TGeneralString, TApplication, TType, 
-		TUInteger };
+		TUInteger, TEnumerated, TOID };
 
 typedef enum typetype Typetype;
 

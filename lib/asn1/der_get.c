@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -139,6 +139,38 @@ der_get_octet_string (const unsigned char *p, size_t len,
 }
 
 int
+der_get_oid (const unsigned char *p, size_t len,
+	     oid *data, size_t *size)
+{
+    int n;
+
+    if (len < 1)
+	return ASN1_OVERRUN;
+
+    data->components = malloc(len * sizeof(*data->components));
+    if (data->components == NULL && len != 0)
+	return ENOMEM;
+    data->components[0] = (*p) / 40;
+    data->components[1] = (*p) % 40;
+    --len;
+    ++p;
+    for (n = 2; len > 0; ++n) {
+	unsigned u = 0;
+
+	do {
+	    --len;
+	    u = u * 128 + (*p % 128);
+	} while (len > 0 && p[-1] & 0x80);
+	data->components[n] = u;
+    }
+    if (p[-1] & 0x80) {
+	free_oid (data);
+	return ASN1_OVERRUN;
+    }
+    return 0;
+}
+
+int
 der_get_tag (const unsigned char *p, size_t len,
 	     Der_class *class, Der_type *type,
 	     int *tag, size_t *size)
@@ -243,6 +275,33 @@ decode_unsigned (const unsigned char *p, size_t len,
     len -= l;
     ret += l;
     e = der_get_unsigned (p, reallen, num, &l);
+    if (e) return e;
+    p += l;
+    len -= l;
+    ret += l;
+    if(size) *size = ret;
+    return 0;
+}
+
+int
+decode_enumerated (const unsigned char *p, size_t len,
+		   unsigned *num, size_t *size)
+{
+    size_t ret = 0;
+    size_t l, reallen;
+    int e;
+
+    e = der_match_tag (p, len, UNIV, PRIM, UT_Enumerated, &l);
+    if (e) return e;
+    p += l;
+    len -= l;
+    ret += l;
+    e = der_get_length (p, len, &reallen, &l);
+    if (e) return e;
+    p += l;
+    len -= l;
+    ret += l;
+    e = der_get_int (p, reallen, num, &l);
     if (e) return e;
     p += l;
     len -= l;

@@ -69,8 +69,14 @@ length_type (const char *name, const Type *t, const char *variable)
     case TUInteger:
 	length_primitive ("unsigned", name, variable);
 	break;
+    case TEnumerated :
+	length_primitive ("enumerated", name, variable);
+	break;
     case TOctetString:
 	length_primitive ("octet_string", name, variable);
+	break;
+    case TOID :
+	length_primitive ("oid", name, variable);
 	break;
     case TBitString: {
 	/*

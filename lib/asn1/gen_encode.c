@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -76,6 +76,9 @@ encode_type (const char *name, const Type *t)
     case TOctetString:
 	encode_primitive ("octet_string", name);
 	break;
+    case TOID :
+	encode_primitive ("oid", name);
+	break;
     case TBitString: {
 	Member *m;
 	int pos;
@@ -126,6 +129,10 @@ encode_type (const char *name, const Type *t)
 		 "UT_BitString, &l);\n"
 		 "BACK;\n",
 		 rest);
+	break;
+    }
+    case TEnumerated : {
+	encode_primitive ("enumerated", name);
 	break;
     }
     case TSequence: {
@@ -234,6 +241,8 @@ generate_type_encode (const Symbol *s)
   case TGeneralizedTime:
   case TGeneralString:
   case TBitString:
+  case TEnumerated:
+  case TOID:
   case TSequence:
   case TSequenceOf:
   case TApplication:

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -53,5 +53,16 @@ copy_octet_string (const octet_string *from, octet_string *to)
     if(to->length != 0 && to->data == NULL)
 	return ENOMEM;
     memcpy(to->data, from->data, to->length);
+    return 0;
+}
+
+int
+copy_oid (const oid *from, oid *to)
+{
+    to->length     = from->length;
+    to->components = malloc(to->length * sizeof(*to->components));
+    if (to->length != 0 && to->components == NULL)
+	return ENOMEM;
+    memcpy(to->components, from->components, to->length);
     return 0;
 }

@@ -53,9 +53,13 @@ free_type (const char *name, const Type *t)
       break;
   case TInteger:
   case TUInteger:
+  case TEnumerated :
       break;
   case TOctetString:
       free_primitive ("octet_string", name);
+      break;
+  case TOID :
+      free_primitive ("oid", name);
       break;
   case TBitString: {
       break;
