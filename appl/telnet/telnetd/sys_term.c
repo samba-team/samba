@@ -1252,6 +1252,7 @@ void start_login(char *host, int autologin, char *name)
     struct utmpx utmpx;
     struct timeval tmp;
     char *clean_tty;
+    char *user;
 
     /*
      * Create utmp entry for child
@@ -1292,6 +1293,10 @@ void start_login(char *host, int autologin, char *name)
     addarg(&argv, "-h");
     addarg(&argv, host);
     addarg(&argv, "-p");
+    if(name[0])
+	user = name;
+    else
+	user = getenv("USER");
 #ifdef AUTHENTICATION
     if (auth_level < 0 || autologin != AUTH_VALID) {
 	if(!no_warn)
@@ -1301,24 +1306,18 @@ void start_login(char *host, int autologin, char *name)
 	    addarg(&argv, "-a");
 	    addarg(&argv, "otp");
 	}
-	if(log_unauth) {
-	    char *u;
-	    if(name[0]) u = name;
-	    else u=getenv("USER");
-	    u = u ? u : "unknown user";
+	if(log_unauth) 
 	    syslog(LOG_INFO, "unauthenticated access from %s (%s)", 
-		   host, u);
-	}
+		   host, user ? user : "unknown user");
     }
-    if (auth_level >= 0 && autologin == AUTH_VALID) {
+    if (auth_level >= 0 && autologin == AUTH_VALID)
 	addarg(&argv, "-f");
-	addarg(&argv, "--");
-	addarg(&argv, name);
-    } /* else */ /* esc@magic.fi; removed stupid else */
 #endif
-    if (getenv("USER")) {
+    if(user){
 	addarg(&argv, "--");
-	addarg(&argv, strdup(getenv("USER")));
+	addarg(&argv, strdup(user));
+    }
+    if (getenv("USER")) {
 	/*
 	 * Assume that login will set the USER variable
 	 * correctly.  For SysV systems, this means that
@@ -1330,6 +1329,20 @@ void start_login(char *host, int autologin, char *name)
 	 * USER value will be wrong.
 	 */
 	unsetenv("USER");
+	{
+	    FILE *f;
+	    char buf[1024];
+	    if((f = fopen("/etc/issue.net", "r")) || 
+	       (f = fopen("/etc/issue", "r"))){
+		while(fgets(buf, sizeof(buf) - 1, f)){
+		    char *p = buf + strlen(buf) - 1;
+		    if(p[0] == '\n' && (p == buf || p[-1] != '\r'))
+			strcpy(p, "\r\n");
+		    fputs(buf, stdout);
+		}
+		fclose(f);
+	    }
+	}
     }
     closelog();
     /*
