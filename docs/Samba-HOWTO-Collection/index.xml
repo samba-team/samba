@@ -19,7 +19,9 @@
 
 <?latex \setcounter{page}{5} ?>
 
-<xi:include href="../Samba-HOWTO-Collection-attributions.xml"/>
+<xi:include href="../Samba-HOWTO-Collection-attributions.xml">
+	<xi:fallback/>
+</xi:include>
 
 <?latex \cleardoublepage ?>
 
