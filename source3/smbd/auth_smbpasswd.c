@@ -102,11 +102,7 @@ static BOOL smb_pwd_check_ntlmv2(const DATA_BLOB ntv2_response,
 	}
 
 	client_key_data = data_blob(ntv2_response.data+16, ntv2_response.length-16);
-	memcpy(client_response, ntv2_response.data, ntv2_response.length);
-
-	if (!client_key_data.data) {
-		return False;
-	}
+	memcpy(client_response, ntv2_response.data, sizeof(client_response));
 
 	ntv2_owf_gen(part_passwd, user, domain, kr);
 	SMBOWFencrypt_ntv2(kr, sec_blob, client_key_data, (char *)value_from_encryption);
@@ -121,7 +117,7 @@ static BOOL smb_pwd_check_ntlmv2(const DATA_BLOB ntv2_response,
 	DEBUG(100,("Password from client was |"));
 	dump_data(100, ntv2_response.data, ntv2_response.length);
 	DEBUG(100,("Variable data from client was |"));
-	dump_data(100, ntv2_response.data, ntv2_response.length);
+	dump_data(100, client_key_data.data, client_key_data.length);
 	DEBUG(100,("Given challenge was |"));
 	dump_data(100, sec_blob.data, sec_blob.length);
 	DEBUG(100,("Value from encryption was |"));
