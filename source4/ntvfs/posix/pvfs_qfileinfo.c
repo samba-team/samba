@@ -47,7 +47,7 @@ static NTSTATUS pvfs_map_fileinfo(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 	info->generic.out.ea_size = 0;
 	info->generic.out.num_eas = 0;
 	info->generic.out.fname.s = name->original_name;
-	info->generic.out.alt_fname.s = pvfs_short_name(pvfs, name);
+	info->generic.out.alt_fname.s = pvfs_short_name(pvfs, name, name);
 	info->generic.out.compressed_size = name->st.st_size;
 	info->generic.out.format = 0;
 	info->generic.out.unit_shift = 0;
