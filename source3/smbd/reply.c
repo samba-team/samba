@@ -74,42 +74,57 @@ int reply_special(char *inbuf,char *outbuf)
 	extern fstring remote_machine;
 	extern fstring local_machine;
 	char *p;
+	int len;
+	char name_type = 0;
 	
 	*name1 = *name2 = 0;
 	
 	smb_setlen(outbuf,0);
 	
 	switch (msg_type) {
-    case 0x81: /* session request */
-      CVAL(outbuf,0) = 0x82;
-      CVAL(outbuf,3) = 0;
-      if (name_len(inbuf+4) > 50 || name_len(inbuf+4 + name_len(inbuf + 4)) > 50) {
-	      DEBUG(0,("Invalid name length in session request\n"));
-	      return(0);
-      }
-      name_extract(inbuf,4,name1);
-      name_extract(inbuf,4 + name_len(inbuf + 4),name2);
+	case 0x81: /* session request */
+		CVAL(outbuf,0) = 0x82;
+		CVAL(outbuf,3) = 0;
+		if (name_len(inbuf+4) > 50 || 
+		    name_len(inbuf+4 + name_len(inbuf + 4)) > 50) {
+			DEBUG(0,("Invalid name length in session request\n"));
+			return(0);
+		}
+		name_extract(inbuf,4,name1);
+		name_extract(inbuf,4 + name_len(inbuf + 4),name2);
 		DEBUG(2,("netbios connect: name1=%s name2=%s\n",
 			 name1,name2));      
 
-      fstrcpy(remote_machine,name2);
-      trim_string(remote_machine," "," ");
-      p = strchr(remote_machine,' ');
-      strlower(remote_machine);
-      if (p) *p = 0;
+		fstrcpy(remote_machine,name2);
+		trim_string(remote_machine," "," ");
+		p = strchr(remote_machine,' ');
+		strlower(remote_machine);
+		if (p) *p = 0;
 
-      fstrcpy(local_machine,name1);
-      trim_string(local_machine," "," ");
-      p = strchr(local_machine,' ');
-      strlower(local_machine);
-      if (p) *p = 0;
+		fstrcpy(local_machine,name1);
+		trim_string(local_machine," "," ");
+		len = strlen(local_machine);
+		if (len == 16) {
+			name_type = local_machine[15];
+			local_machine[15] = 0;
+		}
+		p = strchr(local_machine,' ');
+		strlower(local_machine);
+		if (p) *p = 0;
 
-      add_session_user(remote_machine);
+		if (name_type == 'R') {
+			/* We are being asked for a pathworks session --- 
+			   no thanks! */
+			CVAL(outbuf, 0) = 0x83;
+			break;
+		}
 
-      reload_services(True);
-      reopen_logs();
+		add_session_user(remote_machine);
 
-      break;
+		reload_services(True);
+		reopen_logs();
+
+		break;
 		
 	case 0x89: /* session keepalive request 
 		      (some old clients produce this?) */
