@@ -78,7 +78,7 @@ hdb_entry2string(hdb_entry *ent, char **str)
 {
     char *p;
     char buf[1024] = "";
-    int i, j;
+    int i;
     krb5_unparse_name(context, ent->principal, &p);
     strcat(buf, p);
     strcat(buf, " ");

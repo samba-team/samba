@@ -46,32 +46,29 @@ ext_keytab(int argc, char **argv)
     HDB *db;
     hdb_entry ent;
     int ret;
-    int i;
     krb5_keytab kid;
     krb5_keytab_entry key_entry;
-    char *p;
     
     if(argc < 2 || argc > 3){
-	warnx("Usage: ext_keytab principal [file]\n");
+	krb5_warnx(context, "Usage: ext_keytab principal [file]");
 	return 0;
     }
-	
     
     ret = hdb_open(context, &db, database, O_RDONLY, 0600);
     if(ret){
-	warnx("%s", krb5_get_err_text(context, ret));
+	krb5_warn(context, ret, "hdb_open");
 	return 0;
     }
 
     ret = krb5_parse_name (context, argv[1], &ent.principal);
     if (ret) {
-	warnx("%s", krb5_get_err_text(context, ret));
+	krb5_warn(context, ret, "krb5_parse_name");
 	goto cleanup1;
     }
 
     ret = db->fetch(context, db, &ent);
     if (ret) {
-	warnx ("%s", krb5_get_err_text(context, ret));
+	krb5_warn (context, ret, "db->fetch");
 	krb5_free_principal (context, ent.principal);
 	goto cleanup1;
     }
@@ -95,7 +92,7 @@ ext_keytab(int argc, char **argv)
     }
 
     if (ret) {
-	warnx("%s", krb5_get_err_text(context, ret));
+	krb5_warn(context, ret, "krb5_kt_resolve");
 	goto cleanup2;
     }
 
@@ -105,7 +102,7 @@ ext_keytab(int argc, char **argv)
     /* XXX - krb5_kt_free_entry? */
 
     if (ret) {
-	warnx("%s", krb5_get_err_text(context, ret));
+	krb5_warn(context, ret, "krb5_kt_add_entry");
     }
     krb5_kt_close (context, kid);
 cleanup2:

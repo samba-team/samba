@@ -44,28 +44,28 @@ int
 del_entry(int argc, char **argv)
 {
     HDB *db;
-    int err;
+    krb5_error_code ret;
     hdb_entry ent;
     
     if(argc != 2){
-	warnx("Usage: del_entry principal");
+	krb5_warnx(context, "Usage: del_entry principal");
 	return 0;
     }
 	
     krb5_parse_name(context, argv[1], &ent.principal);
     
-    if((err = hdb_open(context, &db, database, O_RDWR, 0600))){
-	warnx("hdb_open: %s", krb5_get_err_text(context, err));
+    if((ret = hdb_open(context, &db, database, O_RDWR, 0600))){
+	krb5_warn(context, ret, "hdb_open");
 	return 0;
     }
     
-    err = db->delete(context, db, &ent);
+    ret = db->delete(context, db, &ent);
     
-    switch(err){
+    switch(ret){
     case 0: 
 	break;
     default:
-	warnx("delete: %s", krb5_get_err_text(context, err));;
+	krb5_warn(context, ret, "delete");
 	break;
     }
     krb5_free_principal (context, ent.principal);
