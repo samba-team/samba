@@ -53,18 +53,15 @@ static NTSTATUS dcesrv_crypto_ntlmssp_update(struct dcesrv_auth *auth, TALLOC_CT
 						const DATA_BLOB in, DATA_BLOB *out) 
 {
 	struct auth_ntlmssp_state *auth_ntlmssp_state = auth->crypto_ctx.private_data;
+	NTSTATUS status;
 
-	return auth_ntlmssp_update(auth_ntlmssp_state, out_mem_ctx, in, out);
-}
+	status = auth_ntlmssp_update(auth_ntlmssp_state, out_mem_ctx, in, out);
+	if (NT_STATUS_IS_OK(status)) {
+		/* TODO: what is when the session_info is already set */
+		return auth_ntlmssp_get_session_info(auth_ntlmssp_state, &auth->session_info);
+	}
 
-/*
-  get auth_session_info state
-*/
-static NTSTATUS dcesrv_crypto_ntlmssp_session_info(struct dcesrv_auth *auth, struct auth_session_info **session_info) 
-{
-	struct auth_ntlmssp_state *auth_ntlmssp_state = auth->crypto_ctx.private_data;
-
-	return auth_ntlmssp_get_session_info(auth_ntlmssp_state, session_info);
+	return status;
 }
 
 /*
@@ -130,7 +127,6 @@ static const struct dcesrv_crypto_ops dcesrv_crypto_ntlmssp_ops = {
 	.auth_type	= DCERPC_AUTH_TYPE_NTLMSSP,
 	.start 		= dcesrv_crypto_ntlmssp_start,
 	.update 	= dcesrv_crypto_ntlmssp_update,
-	.session_info 	= dcesrv_crypto_ntlmssp_session_info,
 	.seal 		= dcesrv_crypto_ntlmssp_seal,
 	.sign		= dcesrv_crypto_ntlmssp_sign,
 	.check_sig	= dcesrv_crypto_ntlmssp_check_sig,

@@ -195,6 +195,7 @@ static NTSTATUS ipc_open_generic(struct request_context *req, const char *fname,
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS status;
 	struct dcesrv_ep_description ep_description;
+	struct auth_session_info *session_info = NULL;
 	struct ipc_private *private = req->conn->ntvfs_private;
 
 	mem_ctx = talloc_init("ipc_open '%s'", fname);
@@ -240,7 +241,18 @@ static NTSTATUS ipc_open_generic(struct request_context *req, const char *fname,
 	ep_description.type = ENDPOINT_SMB;
 	ep_description.info.smb_pipe = p->pipe_name;
 
-	status = dcesrv_endpoint_search_connect(&req->smb->dcesrv, &ep_description, &p->dce_conn);
+	/* tell the RPC layer the session_info */
+	if (req->user_ctx->vuser) {
+		/* 
+		 * TODO:  we need to reference count the entire session_info
+		 */
+		session_info = req->user_ctx->vuser->session_info;
+	}
+
+	status = dcesrv_endpoint_search_connect(&req->smb->dcesrv, 
+						&ep_description, 
+						session_info,
+						&p->dce_conn);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_destroy(mem_ctx);
 		return status;
@@ -251,13 +263,6 @@ static NTSTATUS ipc_open_generic(struct request_context *req, const char *fname,
 	DLIST_ADD(private->pipe_list, p);
 
 	*ps = p;
-
-	/* tell the RPC layer the transport session key */
-	if (req->user_ctx->vuser) {
-		/* TODO: Fix this to push more than just a session key
-		 * down - we need the entire session_info, reference counted... */
-		dcesrv_set_session_key(p->dce_conn, req->user_ctx->vuser->session_info->session_key);
-	}
 
 	return NT_STATUS_OK;
 }

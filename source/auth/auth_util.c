@@ -330,7 +330,7 @@ BOOL make_user_info_guest(struct auth_usersupplied_info **user_info)
  prints a NT_USER_TOKEN to debug output.
 ****************************************************************************/
 
-void debug_nt_user_token(int dbg_class, int dbg_lev, NT_USER_TOKEN *token)
+void debug_nt_user_token(int dbg_class, int dbg_lev, const NT_USER_TOKEN *token)
 {
 	TALLOC_CTX *mem_ctx;
 
@@ -354,6 +354,20 @@ void debug_nt_user_token(int dbg_class, int dbg_lev, NT_USER_TOKEN *token)
 					       dom_sid_string(mem_ctx, token->user_sids[i])));
 
 	talloc_destroy(mem_ctx);
+}
+
+/****************************************************************************
+ prints a NT_USER_TOKEN to debug output.
+****************************************************************************/
+
+void debug_session_info(int dbg_class, int dbg_lev, const struct auth_session_info *session_info)
+{
+	if (!session_info) {
+		DEBUGC(dbg_class, dbg_lev, ("Session Info: (NULL)\n"));
+		return;	
+	}
+
+	debug_nt_user_token(dbg_class, dbg_lev, session_info->nt_user_token);
 }
 
 /****************************************************************************

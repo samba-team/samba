@@ -271,17 +271,9 @@ NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce_ctx,
 	(*p)->auth_state.auth_info = NULL;
 	(*p)->auth_state.crypto_ctx.private_data = NULL;
 	(*p)->auth_state.crypto_ctx.ops = NULL;
-	(*p)->session_key = data_blob(NULL, 0);
+	(*p)->auth_state.session_info = NULL;
 
 	return NT_STATUS_OK;
-}
-
-/*
-  set the transport level session key
-*/
-void dcesrv_set_session_key(struct dcesrv_connection *p, DATA_BLOB key)
-{
-	p->session_key = data_blob_talloc(p->mem_ctx, key.data, key.length);
 }
 
 /*
@@ -289,6 +281,7 @@ void dcesrv_set_session_key(struct dcesrv_connection *p, DATA_BLOB key)
 */
 NTSTATUS dcesrv_endpoint_search_connect(struct dcesrv_context *dce_ctx,
 					const struct dcesrv_ep_description *ep_description,
+					struct auth_session_info *session_info,
 					struct dcesrv_connection **dce_conn_p)
 {
 	NTSTATUS status;
@@ -304,6 +297,8 @@ NTSTATUS dcesrv_endpoint_search_connect(struct dcesrv_context *dce_ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
+
+	(*dce_conn_p)->auth_state.session_info = session_info;
 
 	/* TODO: check security descriptor of the endpoint here 
 	 *       if it's a smb named pipe

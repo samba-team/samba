@@ -81,6 +81,11 @@ static NTSTATUS dcesrv_crypto_schannel_start(struct dcesrv_auth *auth, DATA_BLOB
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
+	/* TODO: here we need to set the session_info
+	 *       what should happen when te session_info is already set
+	 */
+	auth->session_info = NULL;
+
 	auth->crypto_ctx.private_data = schannel;
 
 	ack.unknown1 = 1;
@@ -104,14 +109,6 @@ static NTSTATUS dcesrv_crypto_schannel_update(struct dcesrv_auth *auth, TALLOC_C
 						const DATA_BLOB in, DATA_BLOB *out) 
 {
 	return NT_STATUS_OK;
-}
-
-/*
-  get auth_session_info state
-*/
-static NTSTATUS dcesrv_crypto_schannel_session_info(struct dcesrv_auth *auth, struct auth_session_info **session_info) 
-{
-	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
 /*
@@ -181,7 +178,6 @@ static const struct dcesrv_crypto_ops dcesrv_crypto_schannel_ops = {
 	.auth_type	= DCERPC_AUTH_TYPE_SCHANNEL,
 	.start 		= dcesrv_crypto_schannel_start,
 	.update 	= dcesrv_crypto_schannel_update,
-	.session_info 	= dcesrv_crypto_schannel_session_info,
 	.seal 		= dcesrv_crypto_schannel_seal,
 	.sign		= dcesrv_crypto_schannel_sign,
 	.check_sig	= dcesrv_crypto_schannel_check_sig,
