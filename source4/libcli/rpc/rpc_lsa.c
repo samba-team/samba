@@ -35,7 +35,7 @@ NTSTATUS dcerpc_lsa_OpenPolicy(struct dcerpc_pipe *p,
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx;
 
-	mem_ctx = talloc_init("dcerpc_rpcecho_addone");
+	mem_ctx = talloc_init("dcerpc_lsa_openpolicy");
 	if (!mem_ctx) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -77,7 +77,7 @@ NTSTATUS dcerpc_lsa_OpenPolicy2(struct dcerpc_pipe *p,
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx;
 
-	mem_ctx = talloc_init("dcerpc_rpcecho_addone");
+	mem_ctx = talloc_init("dcerpc_lsa_openpolicy2");
 	if (!mem_ctx) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -102,5 +102,41 @@ NTSTATUS dcerpc_lsa_OpenPolicy2(struct dcerpc_pipe *p,
 
 done:
 	talloc_destroy(mem_ctx);
+	return status;
+}
+
+/*
+  EnumSids interface
+*/
+NTSTATUS dcerpc_lsa_EnumSids(struct dcerpc_pipe *p,
+			     TALLOC_CTX *mem_ctx,
+			     struct policy_handle *handle,
+			     uint32 resume_handle,
+			     uint32 *num_entries,
+			     struct dom_sid ***sids)
+{
+	struct lsa_EnumSids r;
+	NTSTATUS status;
+
+	/* fill the .in side of the call */
+	r.in.handle = handle;
+	r.in.start_at = 0;
+	r.in.num_entries = *num_entries;
+
+	/* make the call */
+	status = dcerpc_ndr_request(p, LSA_ENUM_ACCOUNTS, mem_ctx,
+				    (ndr_push_fn_t) ndr_push_lsa_EnumSids,
+				    (ndr_pull_fn_t) ndr_pull_lsa_EnumSids,
+				    &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+	
+	/* and extract the .out parameters */
+	*num_entries = r.out.num_entries;
+	*sids = r.out.sids;
+	status = r.out.status;
+
+done:
 	return status;
 }

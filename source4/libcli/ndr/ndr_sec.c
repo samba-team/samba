@@ -137,6 +137,16 @@ NTSTATUS ndr_pull_dom_sid(struct ndr_pull *ndr, struct dom_sid *sid)
 }
 
 /*
+  parse a dom_sid2 - this is a dom_sid but with an extra copy of the num_auths field
+*/
+NTSTATUS ndr_pull_dom_sid2(struct ndr_pull *ndr, struct dom_sid *sid)
+{
+	uint32 num_auths;
+	NDR_CHECK(ndr_pull_u32(ndr, &num_auths));
+	return ndr_pull_dom_sid(ndr, sid);
+}
+
+/*
   parse a dom_sid offset and structure
 */
 NTSTATUS ndr_pull_dom_sid_ofs(struct ndr_pull *ndr, struct dom_sid **sid)

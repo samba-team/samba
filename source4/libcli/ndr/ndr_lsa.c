@@ -108,3 +108,48 @@ NTSTATUS ndr_pull_lsa_OpenPolicy2(struct ndr_pull *ndr,
 	NDR_CHECK(ndr_pull_status(ndr, &r->out.status));
 	return NT_STATUS_OK;
 }
+
+
+/*
+  push a EnumSids
+*/
+NTSTATUS ndr_push_lsa_EnumSids(struct ndr_push *ndr, 
+			       struct lsa_EnumSids *r)
+{
+	NDR_CHECK(ndr_push_policy_handle(ndr, r->in.handle));
+	NDR_CHECK(ndr_push_u32(ndr, r->in.start_at));
+	NDR_CHECK(ndr_push_u32(ndr, r->in.num_entries));
+	return NT_STATUS_OK;
+}
+
+/*
+  pull a EnumSids
+*/
+NTSTATUS ndr_pull_lsa_EnumSids(struct ndr_pull *ndr, 
+			       struct lsa_EnumSids *r)
+{
+	uint32 nptrs, asize, i, ptr;
+
+	NDR_CHECK(ndr_pull_u32(ndr, &r->out.num_entries));
+	NDR_CHECK(ndr_pull_u32(ndr, &nptrs));
+	NDR_CHECK(ndr_pull_u32(ndr, &ptr));
+	if (!ptr) goto done;
+
+	NDR_CHECK(ndr_pull_u32(ndr, &asize));
+	NDR_ALLOC_N(ndr, r->out.sids, nptrs);
+	for (i=0;i<nptrs;i++) {
+		NDR_CHECK(ndr_pull_u32(ndr, &ptr));
+		if (ptr) {
+			NDR_ALLOC(ndr, r->out.sids[i]);
+		} else {
+			r->out.sids[i] = NULL;
+		}
+	}
+	for (i=0;i<nptrs;i++) {
+		if (r->out.sids[i]) NDR_CHECK(ndr_pull_dom_sid2(ndr, r->out.sids[i]));
+	}
+
+done:
+	NDR_CHECK(ndr_pull_status(ndr, &r->out.status));
+	return NT_STATUS_OK;
+}
