@@ -590,7 +590,7 @@ static NTSTATUS cli_session_setup_ntlmssp(struct cli_state *cli, const char *use
 		
 			/* now send that blob on its way */
 			if (!cli_session_setup_blob_send(cli, msg1)) {
-				DEBUG(3, ("Failed to send NTLMSSP/SPENGO blob to server!\n"));
+				DEBUG(3, ("Failed to send NTLMSSP/SPNEGO blob to server!\n"));
 				nt_status = NT_STATUS_UNSUCCESSFUL;
 			} else {
 				data_blob_free(&msg1);
@@ -822,7 +822,7 @@ BOOL cli_session_setup(struct cli_state *cli,
 	if (cli->capabilities & CAP_EXTENDED_SECURITY) {
 		ADS_STATUS status = cli_session_setup_spnego(cli, user, pass, workgroup);
 		if (!ADS_ERR_OK(status)) {
-			DEBUG(3, ("SPENGO login failed: %s\n", ads_errstr(status)));
+			DEBUG(3, ("SPNEGO login failed: %s\n", ads_errstr(status)));
 			return False;
 		}
 		return True;
