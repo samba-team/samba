@@ -329,6 +329,7 @@ void gencache_iterate(void (*fn)(const char* key, const char *value, time_t time
 		if (!databuf.dptr || databuf.dsize <= TIMEOUT_LEN) {
 			SAFE_FREE(databuf.dptr);
 			SAFE_FREE(keystr);
+			SAFE_FREE(node->node_key.dptr);
 			node = node->next;
 			continue;
 		}
@@ -344,6 +345,7 @@ void gencache_iterate(void (*fn)(const char* key, const char *value, time_t time
 		SAFE_FREE(valstr);
 		SAFE_FREE(entry);
 		SAFE_FREE(keystr);
+		SAFE_FREE(node->node_key.dptr);
 		node = node->next;
 	}
 	
