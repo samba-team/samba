@@ -1,7 +1,31 @@
 1999-09-12  Assar Westerlund  <assar@sics.se>
 
+	* lib/krb5/krb5_locl.h (O_BINARY): add fallback definition
+
+	* lib/krb5/krb5.h (krb5_context_data): add keytab types
+
 	* configure.in: revert back awk test, not worked around in
  	roken.awk
+
+	* lib/krb5/keytab_krb4.c: remove O_BINARY
+
+	* lib/krb5/keytab_keyfile.c: some support for AFS KeyFile's.  From
+	Love <lha@e.kth.se>
+
+	* lib/krb5/keytab_file.c: remove O_BINARY
+
+	* lib/krb5/keytab.c: move the list of keytab types to the context
+
+	* lib/krb5/fcache.c: remove O_BINARY
+
+	* lib/krb5/context.c (init_context_from_config_file): register all
+ 	standard cache and keytab types
+	(krb5_free_context): free `kt_types'
+
+	* lib/krb5/cache.c (krb5_cc_resolve): move the registration of the
+ 	standard types of credential caches to context
+
+	* lib/krb5/Makefile.am (libkrb5_la_SOURCES): add keytab_keyfile.c
 
 1999-09-10  Assar Westerlund  <assar@sics.se>
 
