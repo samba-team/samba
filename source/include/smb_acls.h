@@ -149,7 +149,11 @@ typedef struct acl                 *SMB_ACL_ENTRY_T;
 #define SMB_ACL_OTHER               ACL_OTHER_OBJ
 #define SMB_ACL_MASK                ACL_MASK
 
-#define SMB_ACL_T 		    acl_t
+typedef struct SMB_ACL_T {
+   int next;
+   BOOL freeaclp;
+   struct acl  *aclp;
+} *SMB_ACL_T;
 
 #define SMB_ACL_ENTRY_T		    acl_entry_t
 
