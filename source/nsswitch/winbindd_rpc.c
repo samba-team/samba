@@ -631,6 +631,13 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
         if (!NT_STATUS_IS_OK(result))
                 goto done;
 
+	if (!*num_names) {
+		names = NULL;
+		name_types = NULL;
+		sid_mem = NULL;
+		goto done;
+	}
+
         /* Step #2: Convert list of rids into list of usernames.  Do this
            in bunches of ~1000 to avoid crashing NT4.  It looks like there
            is a buffer overflow or something like that lurking around
