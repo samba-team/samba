@@ -119,6 +119,8 @@ typedef struct
   char *szSocketOptions;
   char *szValidChars;
   char *szWorkGroup;
+  char *szDomainAdminGroup;
+  char *szDomainGuestGroup;
   char *szDomainAdminUsers;
   char *szDomainGuestUsers;
   char *szDomainHostsallow; 
@@ -586,6 +588,8 @@ static struct parm_struct parm_table[] =
   {"domain other sids",P_STRING,  P_GLOBAL, &Globals.szDomainOtherSIDs, NULL,   NULL,  0},
   {"domain groups",    P_STRING,  P_GLOBAL, &Globals.szDomainGroups,    NULL,   NULL,  0},
   {"domain controller",P_BOOL  ,  P_GLOBAL, &Globals.bDomainController,NULL,   NULL,  0},
+  {"domain admin group",P_STRING, P_GLOBAL, &Globals.szDomainAdminGroup, NULL,   NULL,  0},
+  {"domain guest group",P_STRING, P_GLOBAL, &Globals.szDomainGuestGroup, NULL,   NULL,  0},
   {"domain admin users",P_STRING, P_GLOBAL, &Globals.szDomainAdminUsers, NULL,   NULL,  0},
   {"domain guest users",P_STRING, P_GLOBAL, &Globals.szDomainGuestUsers, NULL,   NULL,  0},
   {"domain hosts allow",P_STRING, P_GLOBAL, &Globals.szDomainHostsallow, NULL,   NULL,  0},
@@ -986,6 +990,8 @@ FN_GLOBAL_STRING(lp_driverfile,&Globals.szDriverFile)
 FN_GLOBAL_STRING(lp_domain_sid,&Globals.szDomainSID)
 FN_GLOBAL_STRING(lp_domain_other_sids,&Globals.szDomainOtherSIDs)
 FN_GLOBAL_STRING(lp_domain_groups,&Globals.szDomainGroups)
+FN_GLOBAL_STRING(lp_domain_admin_group,&Globals.szDomainAdminGroup)
+FN_GLOBAL_STRING(lp_domain_guest_group,&Globals.szDomainGuestGroup)
 FN_GLOBAL_STRING(lp_domain_admin_users,&Globals.szDomainAdminUsers)
 FN_GLOBAL_STRING(lp_domain_guest_users,&Globals.szDomainGuestUsers)
 FN_GLOBAL_STRING(lp_domain_hostsallow,&Globals.szDomainHostsallow)

@@ -687,6 +687,15 @@ struct passdb_ops {
   struct sam_disp_info *(*getsamdispnam)(char *);
   struct sam_disp_info *(*getsamdisprid)(uint32);
   struct sam_disp_info *(*getsamdispent)(void *);
+
+#if 0
+  /*
+   * password checking functions
+   */
+  struct smb_passwd *(*smb_password_chal  )(char *username, char lm_pass[24], char nt_pass[24], char chal[8]);
+  struct smb_passwd *(*smb_password_check )(char *username, char lm_hash[16], char nt_hash[16],
+  struct passwd     *(*unix_password_check)(char *username, char *pass, int pass_len);
+#endif
 };
 
 /* this is used for smbstatus */
