@@ -21,8 +21,6 @@ static char SccsId[] = "@(#)@(#)pop_dropcopy.c	2.6  2.6 4/3/91";
 #include "popper.h"
 
 extern int      errno;
-extern int      sys_nerr;
-extern char    *sys_errlist[];
 
 /* 
  *  dropcopy:   Make a temporary copy of the user's mail drop and 
@@ -64,7 +62,7 @@ struct passwd	*	pwp;
     if ( (tf=fopen(template,"w+")) == NULL ) {	/* failure, bail out	*/
         pop_log(p,POP_PRIORITY,
             "Unable to create temporary temporary maildrop '%s': %s",template,
-                (errno < sys_nerr) ? sys_errlist[errno] : "") ;
+		k_strerror(errno));
         return pop_msg(p,POP_FAILURE,
 		"System error, can't create temporary file.");
     }
@@ -97,7 +95,7 @@ struct passwd	*	pwp;
     if ((dfd = open(p->temp_drop,O_RDWR|O_APPEND|O_CREAT,0600)) == -1){
         pop_log(p,POP_PRIORITY,
             "Unable to open temporary maildrop '%s': %s",p->temp_drop,
-                (errno < sys_nerr) ? sys_errlist[errno] : "") ;
+		k_strerror(errno));
         return pop_msg(p,POP_FAILURE,
 		"System error, can't open temporary file, do you own it?");
     }
@@ -111,7 +109,7 @@ struct passwd	*	pwp;
             /* NOTREACHED */
         default:
             return pop_msg(p,POP_FAILURE,"flock: '%s': %s", p->temp_drop,
-                (errno < sys_nerr) ? sys_errlist[errno] : "");
+		k_strerror(errno));
             /* NOTREACHED */
         }
     
@@ -125,7 +123,7 @@ struct passwd	*	pwp;
         if (k_flock (mfd, K_LOCK_EX) == -1) {
             (void)close(mfd) ;
             return pop_msg(p,POP_FAILURE, "flock: '%s': %s", p->temp_drop,
-                (errno < sys_nerr) ? sys_errlist[errno] : "");
+		k_strerror(errno));
         }
 
         /*  Copy the actual mail drop into the temporary mail drop */
