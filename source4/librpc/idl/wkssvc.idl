@@ -6,7 +6,8 @@
 
 [ uuid(6bffd098-a112-3610-9833-46c3f87e345a),
   version(1.0),
-  pointer_default(unique)
+  pointer_default(unique),
+  helpstring("Workstation Service")
 ] interface wkssvc
 {
 

@@ -7,7 +7,8 @@
 [ uuid(338cd001-2244-31f1-aaaa-900038001003),
   version(1.0),
   endpoints(winreg,TCP-0),
-  pointer_default(unique)
+  pointer_default(unique),
+  helpstring("Remote Registry Service")
 ] interface winreg
 {
 	typedef struct {
@@ -215,8 +216,13 @@
 	WERROR winreg_QueryValue(
 		[in,ref] policy_handle *handle,
 		[in] winreg_String valuename,
-		[out,ref] uint32 *type, 
+		[in] uint32 *reserved,
+		[in] uint32 *offered,
+		[in] uint32 *unknown1,
+		[in] uint32 *unknown2,
+		[out] uint32 *type, 
 		[out] uint8 *data,
+		[in,out] uint32 *offered2,
 		[in,out] uint32 *val_length
 	);
 
