@@ -1,3 +1,8 @@
+Mon Dec 29 16:37:26 1997  Assar Westerlund  <assar@sics.se>
+
+	* pop_updt.c (pop_updt): lseek before ftruncating the file.  From
+ 	<map@stacken.kth.se>
+
 Sat Nov 22 13:46:39 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 	* pop_pass.c: Destroy tickets after verification.
