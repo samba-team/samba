@@ -205,7 +205,7 @@ SMBD_OBJ1 = smbd/server.o smbd/files.o smbd/chgpasswd.o smbd/connection.o \
             smbd/posix_acls.o lib/sysacls.o \
 	    smbd/process.o smbd/service.o smbd/error.o \
 	    printing/printfsp.o lib/util_seaccess.o \
-	    libsmb/cli_pipe_util.o
+	    libsmb/cli_pipe_util.o libsmb/samlogon_cache.o
 
 PRINTING_OBJ = printing/pcap.o printing/print_svid.o \
 				 printing/print_cups.o printing/print_generic.o \
@@ -407,7 +407,7 @@ WINBINDD_OBJ1 = \
 NECESSARY_BECAUSE_SAMBA_DEPENDENCIES_ARE_SO_BROKEN_OBJ = \
 		smbd/password.o smbd/utmp.o smbd/session.o smbd/uid.o smbd/sec_ctx.o \
 		rpc_client/cli_netlogon.o rpc_client/cli_login.o \
-		smbd/chgpasswd.o libsmb/namequery_dc.o
+		smbd/chgpasswd.o libsmb/namequery_dc.o libsmb/samlogon_cache.o
 
 WINBINDD_OBJ = \
 		$(WINBINDD_OBJ1) $(NOPROTO_OBJ) $(PASSDB_OBJ) \

@@ -371,9 +371,38 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	retry = 0;
 	do {
 		/* Get sam handle */
-		if (!NT_STATUS_IS_OK(result = cm_get_sam_handle(domain->name, &hnd)))
+		if (!NT_STATUS_IS_OK(result = cm_get_sam_handle(domain->name, &hnd))) {
+			/* ACCESS_DENIED implies that a 2K DC with RestrictAnonymous enabled */
+			if ( NT_STATUS_EQUAL(result, NT_STATUS_ACCESS_DENIED) ) 
+			{
+				NET_USER_INFO_3 *user;
+				
+				DEBUG(5,("query_user: Trying to use local net_sam_logon cache due to RestrictAnonymous\n"));
+			
+				/* so lets see if we have a cached user_info_3 */
+				user = netsamlogon_cache_get( mem_ctx, &domain->sid, user_rid );
+				
+				/* if we failed, send back the original error code */
+				if ( !user ) {
+					DEBUG(5,("query_user: Cache lookup failed for %s-%d\n", 
+						sid_string_static(&domain->sid), user_rid));
+					return NT_STATUS_ACCESS_DENIED;
+				}
+					
+				user_info->user_rid = user_rid;
+				user_info->group_rid = user->group_rid;
+				user_info->acct_name = unistr2_tdup(mem_ctx, &user->uni_user_name);
+				user_info->full_name = unistr2_tdup(mem_ctx, &user->uni_full_name);
+								
+				SAFE_FREE(user);
+				
+				return NT_STATUS_OK;
+			}
+		
 			goto done;
 
+		}
+		
 		/* Get domain handle */
 		result = cli_samr_open_domain(hnd->cli, mem_ctx, &hnd->pol,
 				      SEC_RIGHTS_MAXIMUM_ALLOWED, 
@@ -444,8 +473,39 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	retry = 0;
 	do {
 		/* Get sam handle */
-		if (!NT_STATUS_IS_OK(result = cm_get_sam_handle(domain->name, &hnd)))
+		if (!NT_STATUS_IS_OK(result = cm_get_sam_handle(domain->name, &hnd))) {
+		
+			/* ACCESS_DENIED implies that a 2K DC with RestrictAnonymous enabled */
+			if ( NT_STATUS_EQUAL(result, NT_STATUS_ACCESS_DENIED) ) 
+			{
+				NET_USER_INFO_3 *user;
+				
+				DEBUG(5,("Trying to use local net_sam_logon cache due to RestrictAnonymous\n"));
+			
+				/* so lets see if we have a cached user_info_3 */
+				user = netsamlogon_cache_get( mem_ctx, &domain->sid, user_rid );
+				
+				/* if we failed, send back the original error code */
+				if ( !user ) {
+					DEBUG(5,("query_user: Cache lookup failed for %s-%d\n", 
+						sid_string_static(&domain->sid), user_rid));
+					return NT_STATUS_ACCESS_DENIED;
+				}
+					
+				*num_groups = user->num_groups;
+				
+				(*user_gids) = talloc(mem_ctx, sizeof(uint32) * (*num_groups));
+				for (i=0;i<(*num_groups);i++) {
+					(*user_gids)[i] = user->gids[i].g_rid;
+				}
+				
+				SAFE_FREE(user);
+				
+				return NT_STATUS_OK;
+			}
+		
 			goto done;
+		}
 
 		/* Get domain handle */
 		result = cli_samr_open_domain(hnd->cli, mem_ctx, &hnd->pol,
@@ -692,7 +752,7 @@ static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 	CLI_POLICY_HND *hnd;
 	SAM_UNK_CTR ctr;
 	uint16 switch_value = 2;
-	NTSTATUS result;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	uint32 seqnum = DOM_SEQUENCE_NONE;
 	POLICY_HND dom_pol;
 	BOOL got_dom_pol = False;
@@ -706,12 +766,19 @@ static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 
 	retry = 0;
 	do {
-		/* Get sam handle */
-		if (!NT_STATUS_IS_OK(result = cm_get_sam_handle(domain->name, &hnd)))
-			goto done;
+
 
 #ifdef WITH_HORRIBLE_LDAP_NATIVE_MODE_HACK
-		if (get_ldap_seq( inet_ntoa(hnd->cli->dest_ip), seq) == 0) {
+		if ( domain->native_mode ) 
+		{
+			fstring dcname;
+			struct in_addr dc_ip;
+			
+			if (!get_dc_name(domain->name, dcname, &dc_ip) )
+				goto done;
+				
+			DEBUG(8,("using get_ldap_seq() to retrieve the sequence number\n"));
+			if (get_ldap_seq( inet_ntoa(dc_ip), seq) == 0) {
 			result = NT_STATUS_OK;
 			seqnum = *seq;
 			DEBUG(10,("domain_sequence_number: LDAP for domain %s is %u\n",
@@ -722,8 +789,13 @@ static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 		DEBUG(10,("domain_sequence_number: failed to get LDAP sequence number (%u) for domain %s\n",
 		(unsigned)seqnum, domain->name ));
 
+		}
 #endif /* WITH_HORRIBLE_LDAP_NATIVE_MODE_HACK */
 
+		/* Get sam handle */
+		if (!NT_STATUS_IS_OK(result = cm_get_sam_handle(domain->name, &hnd)))
+			goto done;
+			
 		/* Get domain handle */
 		result = cli_samr_open_domain(hnd->cli, mem_ctx, &hnd->pol, 
 				      des_access, &domain->sid, &dom_pol);

@@ -4,6 +4,8 @@
    Winbind cache backend functions
 
    Copyright (C) Andrew Tridgell 2001
+   Copyright (C) Gerald Carter   2003
+   
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -1028,21 +1030,7 @@ static NTSTATUS domain_sid(struct winbindd_domain *domain, DOM_SID *sid)
 	return cache->backend->domain_sid(domain, sid);
 }
 
-/* the ADS backend methods are exposed via this structure */
-struct winbindd_methods cache_methods = {
-	True,
-	query_user_list,
-	enum_dom_groups,
-	enum_local_groups,
-	name_to_sid,
-	sid_to_name,
-	query_user,
-	lookup_usergroups,
-	lookup_groupmem,
-	sequence_number,
-	trusted_domains,
-	domain_sid
-};
+
 
 /* Invalidate cached user and group lists coherently */
 
@@ -1069,3 +1057,19 @@ void wcache_invalidate_cache(void)
 			tdb_traverse(cache->tdb, traverse_fn, NULL);
 	}
 }
+
+/* the ADS backend methods are exposed via this structure */
+struct winbindd_methods cache_methods = {
+	True,
+	query_user_list,
+	enum_dom_groups,
+	enum_local_groups,
+	name_to_sid,
+	sid_to_name,
+	query_user,
+	lookup_usergroups,
+	lookup_groupmem,
+	sequence_number,
+	trusted_domains,
+	domain_sid
+};

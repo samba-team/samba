@@ -1318,7 +1318,7 @@ void init_net_user_info3(TALLOC_CTX *ctx, NET_USER_INFO_3 *usr, SAM_ACCOUNT *sam
  Jacobsen at HP. JRA.
 ********************************************************************/
 
-static BOOL net_io_user_info3(char *desc, NET_USER_INFO_3 *usr, prs_struct *ps, int depth, uint16 validation_level)
+BOOL net_io_user_info3(char *desc, NET_USER_INFO_3 *usr, prs_struct *ps, int depth, uint16 validation_level)
 {
 	int i;
 

@@ -966,15 +966,13 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
+	netsamlogon_cache_init(); /* Non-critical */
+	
 	message_register(MSG_REQ_TALLOC_USAGE, return_all_talloc_info);
 
 	/* Loop waiting for requests */
 
 	process_loop();
-
-#if 0
-	uni_group_cache_shutdown();
-#endif
 
 	return 0;
 }
