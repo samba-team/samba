@@ -155,6 +155,15 @@ AC_ARG_ENABLE(experimental, [  --enable-experimental Turn on experimental featur
     fi])
 
 
+dnl disable these external libs 
+AC_ARG_WITH(disable-ext-lib,
+[  --with-disable-ext-lib=LIB Comma-seperated list of external libraries],
+[ if test $withval; then
+	for i in `echo $withval | sed -e's/,/ /g'`
+	do
+		eval SMB_EXT_LIB_$i=NO
+	done
+fi ])
 
 dnl exclude these modules 
 AC_ARG_WITH(exclude-modules,
