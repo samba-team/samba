@@ -30,7 +30,8 @@
 /* look in server.c for some explanation of these variables */
 extern int Protocol;
 extern int DEBUGLEVEL;
-extern int maxxmit;
+extern int max_send;
+extern int max_recv;
 extern int chain_fnum;
 extern char magic_char;
 extern connection_struct Connections[];
@@ -194,7 +195,7 @@ int reply_tcon(char *inbuf,char *outbuf)
     return(connection_error(inbuf,outbuf,connection_num));
   
   outsize = set_message(outbuf,2,0,True);
-  SSVAL(outbuf,smb_vwv0,maxxmit);
+  SSVAL(outbuf,smb_vwv0,max_recv);
   SSVAL(outbuf,smb_vwv1,connection_num);
   SSVAL(outbuf,smb_tid,connection_num);
   
@@ -509,7 +510,9 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   SSVAL(inbuf,smb_uid,sess_vuid);
 
   if (!done_sesssetup)
-    maxxmit = MIN(maxxmit,smb_bufsize);
+    max_send = MIN(max_send,smb_bufsize);
+
+  DEBUG(0,(" Client requested max send size of %d\n", max_send));
 
   done_sesssetup = True;
 

@@ -35,7 +35,6 @@
 /* look in server.c for some explanation of these variables */
 extern int Protocol;
 extern int DEBUGLEVEL;
-extern int maxxmit;
 extern int chain_fnum;
 extern char magic_char;
 extern connection_struct Connections[];
