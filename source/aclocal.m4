@@ -40,10 +40,10 @@ dnl Specify the default build method of this module
 dnl SMB_MODULE_DEFAULT(1:name,2:default_build)
 AC_DEFUN(SMB_MODULE_DEFAULT,
 [
-	dnl Fall back to static if dlopen() is not available
+	dnl Fall back to static if platform does not support shared libraries
 	[MODULE_DEFAULT_][$1]=$2
 
-	if test x"$[MODULE_DEFAULT_][$1]" = xSHARED -a x"$ac_cv_func_dlopen" != xyes; then
+	if test x"$[MODULE_DEFAULT_][$1]" = xSHARED -a x"$BLDSHARED" = xfalse; then
 		[MODULE_DEFAULT_][$1]=STATIC
 	fi
 ])
@@ -56,7 +56,7 @@ AC_DEFUN(SMB_MODULE,
 	if test -z "$[MODULE_DEFAULT_][$1]"; then
 		[MODULE_DEFAULT_][$1]=$3
 
-		if test x"$[MODULE_DEFAULT_][$1]" = xSHARED -a x"$ac_cv_func_dlopen" != xyes; then
+		if test x"$[MODULE_DEFAULT_][$1]" = xSHARED -a x"$BLDSHARED" = xfalse; then
 			[MODULE_DEFAULT_][$1]=STATIC
 		fi
 	fi
