@@ -15,8 +15,8 @@ main()
 	printf("WARNING: trapdoor uid system - Samba may not operate correctly\n");
 #endif
 
-#if !(defined(HAVE_NETMASK_IFCONF) || defined(HAVE_NETMASK_IFREQ) || defined(HAVE_NETMASK_AIX))
-	printf("WARNING: No automated netmask determination - use an interfaces line\n");
+#if !(defined(HAVE_IFACE_IFCONF) || defined(HAVE_IFACE_IFREQ) || defined(HAVE_IFACE_AIX))
+	printf("WARNING: No automated network interface determination\n");
 #endif
 
 #if !(defined(STAT_STATVFS) || defined(STAT_STATVFS64) || defined(STAT_STATFS3_OSF1) || defined(STAT_STATFS2_BSIZE) || defined(STAT_STATFS4) || defined(STAT_STATFS2_FSIZE) || defined(STAT_STATFS2_FS_DATA))
