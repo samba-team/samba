@@ -30,10 +30,15 @@ Issue a single SMBread and don't wait for a reply.
 static BOOL cli_issue_read(struct cli_state *cli, int fnum, off_t offset, 
 			   size_t size, int i)
 {
+	BOOL bigoffset = False;
+
 	memset(cli->outbuf,'\0',smb_size);
 	memset(cli->inbuf,'\0',smb_size);
 
-	set_message(cli->outbuf,10,0,True);
+	if ((SMB_BIG_UINT)offset >> 32) 
+		bigoffset = True;
+
+	set_message(cli->outbuf,bigoffset ? 12 : 10,0,True);
 		
 	SCVAL(cli->outbuf,smb_com,SMBreadX);
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
@@ -45,6 +50,9 @@ static BOOL cli_issue_read(struct cli_state *cli, int fnum, off_t offset,
 	SSVAL(cli->outbuf,smb_vwv5,size);
 	SSVAL(cli->outbuf,smb_vwv6,size);
 	SSVAL(cli->outbuf,smb_mid,cli->mid + i);
+
+	if (bigoffset)
+		SIVAL(cli->outbuf,smb_vwv10,(offset>>32) & 0xffffffff);
 
 	return cli_send_smb(cli);
 }
