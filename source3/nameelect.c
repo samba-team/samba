@@ -56,33 +56,50 @@ extern uint16 nb_type; /* samba's NetBIOS name type */
   ******************************************************************/
 void check_master_browser(time_t t)
 {
-  static time_t lastrun=0;
-  struct subnet_record *d;
+	static time_t lastrun=0;
+	struct subnet_record *d;
 
-  if (!lastrun) lastrun = t;
-  if (t < lastrun + CHECK_TIME_MST_BROWSE * 60)
-    return;
-  lastrun = t;
+	if (!lastrun) lastrun = t;
+	if (t < lastrun + CHECK_TIME_MST_BROWSE * 60)
+	return;
+	lastrun = t;
 
-  dump_workgroups();
+	dump_workgroups();
 
-  for (d = subnetlist; d; d = d->next)
-    {
-      struct work_record *work;
-
-      for (work = d->workgrouplist; work; work = work->next)
+	for (d = subnetlist; d; d = d->next)
 	{
-	  /* if we are not the browse master of a workgroup, and we can't
-	     find a browser on the subnet, do something about it. */
+		struct work_record *work;
 
-	  if (!AM_MASTER(work))
-	    {
-	      queue_netbios_packet(d,ClientNMB,NMB_QUERY,NAME_QUERY_MST_CHK,
-				   work->work_group,0x1d,0,0,0,NULL,NULL,
-				   True,False,d->bcast_ip,d->bcast_ip);
-	    }
+		for (work = d->workgrouplist; work; work = work->next)
+		{
+			if (!AM_MASTER(work))
+			{
+				if (lp_preferred_master())
+				{
+					/* preferred master - not a master browser.  force
+					   becoming a master browser, hence the log message.
+					 */
+
+					DEBUG(0,("%s preferred master for %s %s - force election\n",
+					          timestring(), work->work_group,
+					          inet_ntoa(d->bcast_ip)));
+
+					browser_gone(work->work_group, d->bcast_ip);
+				}
+				else
+				{
+					/* if we are not the browse master of a workgroup,
+					   and we can't find a browser on the subnet, do
+					   something about it.
+					 */
+
+					queue_netbios_packet(d,ClientNMB,NMB_QUERY,NAME_QUERY_MST_CHK,
+				                     work->work_group,0x1d,0,0,0,NULL,NULL,
+				                     True,False,d->bcast_ip,d->bcast_ip);
+				}
+			}
+		}
 	}
-    }
 }
 
 
