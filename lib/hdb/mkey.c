@@ -148,8 +148,12 @@ read_master_mit(krb5_context context, const char *filename,
     krb5_keyblock key;
 	       
     fd = open(filename, O_RDONLY | O_BINARY);
-    if(fd < 0)
-	return errno;
+    if(fd < 0) {
+	int save_errno = errno;
+	krb5_set_error_string(context, "failed to open %s: %s", filename,
+			      strerror(save_errno)));
+	return save_errno;
+    }
     sp = krb5_storage_from_fd(fd);
     if(sp == NULL) {
 	close(fd);
@@ -163,6 +167,8 @@ read_master_mit(krb5_context context, const char *filename,
 #else
     ret = krb5_ret_int16(sp, &enctype);
     if((htons(enctype) & 0xff00) == 0x3000) {
+	krb5_set_error_string(context, "unknown keytype in %s: %#x, expected %#x", 
+			      filename, htons(enctype), 0x3000);
 	ret = HEIM_ERR_BAD_MKEY;
 	goto out;
     }
