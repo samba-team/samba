@@ -1,2 +1,2 @@
 #!/bin/sh
-/usr/lib/rpm/find-requires | grep -v "Net::LDAP"
+/usr/lib/rpm/find-requires $* | egrep -v '(Net::LDAP|CGI)'
