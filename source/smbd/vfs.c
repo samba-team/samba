@@ -390,7 +390,6 @@ char *vfs_readdirname(connection_struct *conn, void *p)
 		dname = buf;
 	}
 
-	unix_to_dos(dname, True);
 	return(dname);
 }
 
