@@ -54,9 +54,9 @@
 #define SMB_ACL_TYPE_ACCESS         ACL_TYPE_ACCESS
 #define SMB_ACL_TYPE_DEFAULT        ACL_TYPE_DEFAULT
 
-#elif defined(HAVE_DRAFT13_POSIX_ACLS)
+#elif defined(HAVE_TRU64_ACLS)
 
-/* This is for DEC OSF/1 */
+/* This is for DEC/Compaq Tru64 UNIX */
 
 #define SMB_ACL_TAG_T               acl_tag_t
 #define SMB_ACL_TYPE_T				acl_type_t
