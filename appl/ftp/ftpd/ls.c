@@ -273,14 +273,100 @@ log10(int num)
     return i;
 }
 
+/*
+ * Operate as lstat but fake up entries for AFS mount points so we don't
+ * have to fetch them.
+ */
+
+static int
+lstat_file (const char *file, struct stat *sb)
+{
+    int ret;
+    const int maxsize = 2048;
+
+    if (k_hasafs() 
+	&& strcmp(file, ".")
+	&& strcmp(file, "..")) 
+    {
+	struct ViceIoctl    a_params;
+	char               *last;
+	char               *path_bkp;
+	static ino_t	   ino_counter = 0, ino_last = 0;
+	
+	path_bkp = strdup (file);
+	if (path_bkp == NULL)
+	    return -1;
+	
+	a_params.out = malloc (maxsize);
+	if (a_params.out == NULL) { 
+	    free (path_bkp);
+	    return -1;
+	}
+	
+	/* If path contains more than the filename alone - split it */
+	
+	last = strrchr (path_bkp, '/');
+	if (last != NULL) {
+	    *last = '\0';
+	    a_params.in = last + 1;
+	} else
+	    a_params.in = (char *)file;
+	
+	a_params.in_size  = strlen (a_params.in) + 1;
+	a_params.out_size = maxsize;
+	
+	ret = k_pioctl (last ? path_bkp : "." ,
+			VIOC_AFS_STAT_MT_PT, &a_params, 0);
+	free (a_params.out);
+	if (ret < 0) {
+	    free (path_bkp);
+
+	    if (errno != EINVAL)
+		return ret;
+	    else
+		/* if we get EINVAL this is probably not a mountpoint */
+		return lstat (file, sb);
+	}
+
+	/* 
+	 * wow this was a mountpoint, lets cook the struct stat
+	 * use . as a prototype
+	 */
+
+	ret = lstat (path_bkp, sb);
+	free (path_bkp);
+	if (ret < 0)
+	    return ret;
+
+	sb->st_mode = S_IFDIR | 0755;
+	if (ino_last == sb->st_ino)
+	    ino_counter++;
+	else {
+	    ino_last    = sb->st_ino;
+	    ino_counter = 0;
+	}
+	sb->st_ino += ino_counter;
+	sb->st_nlink = 3;
+
+	return 0;
+    } else {
+	return lstat (file, sb);
+    }
+}
+
 static void
 list_files(FILE *out, char **files, int n_files, int flags)
 {
     struct fileinfo *fi;
     int i;
+
     fi = calloc(n_files, sizeof(*fi));
+    if (fi == NULL) {
+	warnx("out of memory");
+	return;
+    }
     for(i = 0; i < n_files; i++) {
-	if(lstat(files[i], &fi[i].st) < 0) {
+	if(lstat_file(files[i], &fi[i].st) < 0) {
 	    sec_fprintf2(out, "%s: %s\r\n", files[i], strerror(errno));
 	    fi[i].filename = NULL;
 	} else {
