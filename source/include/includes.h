@@ -182,6 +182,10 @@
 #ifdef POSIX_H
 #include <bsd/net/if.h>
 #else
+#ifdef OSF1
+#include <net/route.h>
+#include <sys/mbuf.h>
+#endif
 #include <net/if.h>
 #endif
 #endif
