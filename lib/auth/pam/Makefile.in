@@ -54,7 +54,7 @@ Wall:
 install: all
 	$(MKINSTALLDIRS) $(DESTDIR)$(libdir)
 	-if test "$(LIB)" != ""; then \
-	  $(INSTALL_DATA) -m 0555 $(LIB) $(DESTDIR)$(libdir)/$(LIB) ; \
+	  $(INSTALL_DATA) $(LIB) $(DESTDIR)$(libdir)/$(LIB) ; \
 	fi
 
 uninstall:

@@ -58,8 +58,8 @@ Wall:
 install: all
 	$(MKINSTALLDIRS) $(DESTDIR)$(libdir)
 	@for i in $(LIB); do \
-	echo "$(INSTALL) -m 0555 $$i $(DESTDIR)$(libdir)/$$i" ;\
-	$(INSTALL) -m 0555 $$i $(DESTDIR)$(libdir)/$$i ; done
+	echo "$(INSTALL)  $$i $(DESTDIR)$(libdir)/$$i" ;\
+	$(INSTALL)  $$i $(DESTDIR)$(libdir)/$$i ; done
 	@install_symlink_command@
 
 uninstall:

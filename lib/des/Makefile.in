@@ -83,7 +83,7 @@ des_enc.o: des_enc.c
 
 install: all
 	$(MKINSTALLDIRS) $(DESTDIR)$(libdir)
-	$(INSTALL_DATA) -m 0555 $(LIB) $(DESTDIR)$(libdir)/$(LIB)
+	$(INSTALL_DATA) $(LIB) $(DESTDIR)$(libdir)/$(LIB)
 	@install_symlink_command@
 	$(MKINSTALLDIRS) $(DESTDIR)$(bindir)
 	for x in $(PROGS2INSTALL); do \

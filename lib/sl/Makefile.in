@@ -82,7 +82,7 @@ install: all
 	@install_symlink_command@
 	@install_symlink_command2@
 	$(MKINSTALLDIRS) $(DESTDIR)$(bindir)
-	$(INSTALL) -m 0555 $(PROGS) $(DESTDIR)$(bindir)/$(PROGS)
+	$(INSTALL)  $(PROGS) $(DESTDIR)$(bindir)/$(PROGS)
 
 uninstall:
 	rm -f $(DESTDIR)$(includedir)/ss/ss.h

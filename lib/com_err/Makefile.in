@@ -71,14 +71,14 @@ install: all
 
 	$(MKINSTALLDIRS) $(DESTDIR)$(libdir)
 	@for i in $(lib_LIBRARIES); do \
-	echo "$(INSTALL) -m 0555 $$i $(DESTDIR)$(libdir)/$$i" ;\
-	$(INSTALL) -m 0555 $$i $(DESTDIR)$(libdir)/$$i ; done
+	echo "$(INSTALL)  $$i $(DESTDIR)$(libdir)/$$i" ;\
+	$(INSTALL)  $$i $(DESTDIR)$(libdir)/$$i ; done
 	@install_symlink_command@
 
 	$(MKINSTALLDIRS) $(DESTDIR)$(bindir)
 	@for i in $(bin_PROGRAMS); do \
-	echo "$(INSTALL) -m 0555 $$i $(DESTDIR)$(bindir)/$$i" ;\
-	$(INSTALL) -m 0555 $$i $(DESTDIR)$(bindir)/$$i ; done
+	echo "$(INSTALL)  $$i $(DESTDIR)$(bindir)/$$i" ;\
+	$(INSTALL)  $$i $(DESTDIR)$(bindir)/$$i ; done
 
 uninstall:
 	@for i in $(include_HEADERS); do \
