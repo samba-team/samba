@@ -5,7 +5,7 @@ usage="Usage: $0 [-l username] [-r rsh_args] [-x xterm_args] host"
 while true
 do
   case $1 in
-  -l) rsh_args="${rsh_args} -l $2 "; title="${2}@"; shift 2;;
+  -l) rsh_args="${rsh_args} -l $2 "; kx_args="${kx_args} -l $2"; title="${2}@"; shift 2;;
   -r) rsh_args="${rsh_args} $2 "; shift 2;;
   -x) xterm_args="${xterm_args} $2 "; shift 2;;
   -*) echo "$0: Bad option $1"; echo $usage; exit 1;;
@@ -23,7 +23,7 @@ bindir=%bindir%
 pdc_trams=`dirname $0`
 PATH=$pdc_trams:$bindir:$PATH
 export PATH
-set -- `kx $host`
+set -- `kx $kx_args $host`
 if test $# -ne 3; then
   exit 1
 fi
