@@ -52,6 +52,7 @@ static NTSTATUS pvfs_default_acl(struct pvfs_state *pvfs,
 	if (token->num_sids > 1) {
 		sd->group_sid = token->user_sids[1];
 	}
+	sd->type |= SEC_DESC_DACL_PRESENT;
 
 	for (i=0;i<token->num_sids;i++) {
 		struct security_ace ace;
