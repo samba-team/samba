@@ -314,6 +314,17 @@ BOOL remove_share_oplock(int fnum, share_lock_token token);
 
 char* lsa_io_q_query(BOOL io, LSA_Q_QUERY_INFO *q_q, char *q, char *base, int align);
 char* lsa_io_r_query(BOOL io, LSA_R_QUERY_INFO *r_q, char *q, char *base, int align);
+char* lsa_io_q_lookup_sids(BOOL io, LSA_Q_LOOKUP_SIDS *q_s, char *q, char *base, int align);
+char* lsa_io_r_lookup_sids(BOOL io, LSA_R_LOOKUP_SIDS *r_s, char *q, char *base, int align);
+char* lsa_io_q_lookup_rids(BOOL io, LSA_Q_LOOKUP_RIDS *q_r, char *q, char *base, int align);
+char* lsa_io_r_lookup_rids(BOOL io, LSA_R_LOOKUP_RIDS *r_r, char *q, char *base, int align);
+char* lsa_io_q_req_chal(BOOL io, LSA_Q_REQ_CHAL *q_c, char *q, char *base, int align);
+char* lsa_io_r_req_chal(BOOL io, LSA_R_REQ_CHAL *r_c, char *q, char *base, int align);
+char* lsa_io_q_auth2(BOOL io, LSA_Q_AUTH_2 *q_a, char *q, char *base, int align);
+char* lsa_io_r_auth_2(BOOL io, LSA_R_AUTH_2 *r_a, char *q, char *base, int align);
+char* lsa_io_q_srv_pwset(BOOL io, LSA_Q_SRV_PWSET *q_s, char *q, char *base, int align);
+char* lsa_io_r_srv_pwset(BOOL io, LSA_R_SRV_PWSET *r_s, char *q, char *base, int align);
+char* lsa_io_user_info(BOOL io, LSA_USER_INFO *usr, char *q, char *base, int align);
 
 /*The following definitions come from  mangle.c  */
 
@@ -803,6 +814,8 @@ char* smb_io_dom_query_3(BOOL io, DOM_QUERY_3 *d_q, char *q, char *base, int ali
 char* smb_io_dom_query_5(BOOL io, DOM_QUERY_3 *d_q, char *q, char *base, int align);
 char* smb_io_dom_query(BOOL io, DOM_QUERY *d_q, char *q, char *base, int align);
 char* smb_io_dom_r_ref(BOOL io, DOM_R_REF *r_r, char *q, char *base, int align);
+char* smb_io_dom_name(BOOL io, DOM_NAME *name, char *q, char *base, int align);
+char* smb_io_neg_flags(BOOL io, NEG_FLAGS *neg, char *q, char *base, int align);
 
 /*The following definitions come from  smbpass.c  */
 

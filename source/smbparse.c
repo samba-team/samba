@@ -2,7 +2,7 @@
    Unix SMB/Netbios implementation.
    Version 1.9.
    Samba utility functions
-   Copyright (C) Luke Leighton 1996 - 1997
+   Copyright (C) Luke Leighton 1996 - 1997  Paul Ashton 1997
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -497,6 +497,41 @@ char* smb_io_dom_r_ref(BOOL io, DOM_R_REF *r_r, char *q, char *base, int align)
 	}
 	return q;
 }
+
+/*******************************************************************
+reads or writes a DOM_NAME structure.
+********************************************************************/
+char* smb_io_dom_name(BOOL io, DOM_NAME *name, char *q, char *base, int align)
+{
+	if (name == NULL) return NULL;
+
+	q = align_offset(q, base, align);
+	
+	RW_IVAL(io, q, name->uni_str_len, 0); q += 4;
+
+	/* don't know if len is specified by uni_str_len member... */
+	/* assume unicode string is unicode-null-terminated, instead */
+
+	q = smb_io_unistr(io, &(name->buffer), q, base, align);
+
+	return q;
+}
+
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+char* smb_io_neg_flags(BOOL io, NEG_FLAGS *neg, char *q, char *base, int align)
+{
+	if (neg == NULL) return NULL;
+
+	q = align_offset(q, base, align);
+	
+	RW_IVAL(io, q, neg->neg_flags, 0); q += 4;
+
+	return q;
+}
+
 
 #if 0
 /*******************************************************************
