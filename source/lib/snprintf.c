@@ -71,7 +71,6 @@
 #endif
 #include <sys/types.h>
 #include <stdarg.h>
-#include <math.h>
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>
 #endif
@@ -551,6 +550,42 @@ static LLONG ROUND(LDOUBLE value)
 	return intpart;
 }
 
+/* a replacement for modf that doesn't need the math library. Should
+   be portable, but slow */
+static double my_modf(double x0, double *iptr)
+{
+	int i;
+	long l;
+	double x = x0;
+	double f = 1.0;
+
+	for (i=0;i<100;i++) {
+		l = (long)x;
+		if (l <= (x+1) && l >= (x-1)) break;
+		x *= 0.1;
+		f *= 10.0;
+	}
+
+	if (i == 100) {
+		/* yikes! the number is beyond what we can handle. What do we do? */
+		(*iptr) = 0;
+		return 0;
+	}
+
+	if (i != 0) {
+		double i2;
+		double ret;
+
+		ret = my_modf(x0-l*f, &i2);
+		(*iptr) = l*f + i2;
+		return ret;
+	} 
+
+	(*iptr) = l;
+	return x - (*iptr);
+}
+
+
 static void fmtfp (char *buffer, size_t *currlen, size_t maxlen,
 		   LDOUBLE fvalue, int min, int max, int flags)
 {
@@ -608,7 +643,7 @@ static void fmtfp (char *buffer, size_t *currlen, size_t maxlen,
 	 */
 
 	temp = ufvalue;
-	modf(temp, &intpart);
+	my_modf(temp, &intpart);
 
 	fracpart = ROUND((POW10(max)) * (ufvalue - intpart));
 	
@@ -621,7 +656,7 @@ static void fmtfp (char *buffer, size_t *currlen, size_t maxlen,
 	/* Convert integer part */
 	do {
 		temp = intpart;
-		modf (intpart*0.1, &intpart);
+		my_modf(intpart*0.1, &intpart);
 		temp = temp*0.1;
 		index = (int) ((temp -intpart +0.05)* 10.0);
 		/* index = (int) (((double)(temp*0.1) -intpart +0.05) *10.0); */
@@ -637,7 +672,7 @@ static void fmtfp (char *buffer, size_t *currlen, size_t maxlen,
 	{
 		do {
 			temp = fracpart;
-			modf (fracpart*0.1, &fracpart);
+			my_modf(fracpart*0.1, &fracpart);
 			temp = temp*0.1;
 			index = (int) ((temp -fracpart +0.05)* 10.0);
 			/* index = (int) ((((temp/10) -fracpart) +0.05) *10); */
