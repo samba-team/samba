@@ -40,7 +40,7 @@ krb5_get_credentials (krb5_context context,
     unsigned char data[1024], buf2[1024];
     size_t len;
 
-    PA_DATA foo;
+    PA_DATA *foo;
 
     /*
      * XXX - Check if cred found in ccache
@@ -109,6 +109,8 @@ krb5_get_credentials (krb5_context context,
 	size_t len;
 	krb5_creds tmp_cred;
 
+	foo = malloc (sizeof(*foo));
+
 	ret = encode_KDC_REQ_BODY(buf + sizeof(buf) - 1, sizeof(buf),
 				  &a.req_body, &len);
 	in_data.length = len;
@@ -138,16 +140,16 @@ krb5_get_credentials (krb5_context context,
 				   0,
 				   &in_data,
 				   *out_creds,
-				   &foo.padata_value);
+				   &foo->padata_value);
 	if(ret)
 	    return ret;
 
-	foo.padata_type = pa_tgs_req;
+	foo->padata_type = pa_tgs_req;
     }
 
     a.padata = malloc(sizeof(*a.padata));
     a.padata->len = 1;
-    a.padata->val = &foo;
+    a.padata->val = foo;
 	
     /*
      * Encode
