@@ -39,17 +39,7 @@
 #include <vfs.h>
 
 extern struct vfs_ops default_vfs_ops;   /* For passthrough operation */
-struct vfs_ops skel_ops;
-
-/* VFS initialisation - return vfs_ops function pointer structure */
-
-BOOL vfs_init(connection_struct *conn)
-{
-    DEBUG(3, ("Initialising default vfs hooks\n"));
- 
-    memcpy(&conn->vfs_ops, &skel_ops, sizeof(struct vfs_ops));
-    return True;
-}
+extern struct vfs_ops skel_ops;
 
 static int skel_connect(struct connection_struct *conn, char *service, char *user)    
 {
@@ -359,7 +349,93 @@ static int skel_sys_acl_free_qualifier(struct connection_struct *conn, void *qua
 	return default_vfs_ops.sys_acl_free_qualifier(conn, qualifier, tagtype);
 }
 
+/* VFS initialisation - return vfs_ops function pointer structure */
 
+struct vfs_ops *vfs_init(int *vfs_version, struct vfs_ops *def_vfs_ops)
+{
+	struct vfs_ops tmp_ops;
+
+	DEBUG(3, ("Initialising default vfs hooks\n"));
+
+	*vfs_version = SMB_VFS_INTERFACE_VERSION;
+	memcpy(&tmp_ops, def_vfs_ops, sizeof(struct vfs_ops));
+
+	tmp_ops.connect = skel_connect;
+	tmp_ops.disconnect = skel_disconnect;
+	tmp_ops.disk_free = skel_disk_free;
+
+	/* Directory operations */
+
+	tmp_ops.opendir = skel_opendir;
+	tmp_ops.readdir = skel_readdir;
+	tmp_ops.mkdir = skel_mkdir;
+	tmp_ops.rmdir = skel_rmdir;
+	tmp_ops.closedir = skel_closedir;
+
+	/* File operations */
+
+	tmp_ops.open = skel_open;
+	tmp_ops.close = skel_close;
+	tmp_ops.read = skel_read;
+	tmp_ops.write = skel_write;
+	tmp_ops.lseek = skel_lseek;
+	tmp_ops.rename = skel_rename;
+	tmp_ops.fsync = skel_fsync;
+	tmp_ops.stat = skel_stat;
+	tmp_ops.fstat = skel_fstat;
+	tmp_ops.lstat = skel_lstat;
+	tmp_ops.unlink = skel_unlink;
+	tmp_ops.chmod = skel_chmod;
+	tmp_ops.fchmod = skel_fchmod;
+	tmp_ops.chown = skel_chown;
+	tmp_ops.fchown = skel_fchown;
+	tmp_ops.chdir = skel_chdir;
+	tmp_ops.getwd = skel_getwd;
+	tmp_ops.utime = skel_utime;
+	tmp_ops.ftruncate = skel_ftruncate;
+	tmp_ops.lock = skel_lock;
+	tmp_ops.symlink = skel_symlink;
+	tmp_ops.readlink = skel_readlink;
+	tmp_ops.link = skel_link;
+	tmp_ops.mknod = skel_mknod;
+	tmp_ops.realpath = skel_realpath;
+
+	tmp_ops.fget_nt_acl = skel_fget_nt_acl;
+	tmp_ops.get_nt_acl = skel_get_nt_acl;
+	tmp_ops.fset_nt_acl = skel_fset_nt_acl;
+	tmp_ops.set_nt_acl = skel_set_nt_acl;
+
+	/* POSIX ACL operations. */
+
+	tmp_ops.chmod_acl = skel_chmod_acl;
+	tmp_ops.fchmod_acl = skel_fchmod_acl;
+	tmp_ops.sys_acl_get_entry = skel_sys_acl_get_entry;
+	tmp_ops.sys_acl_get_tag_type = skel_sys_acl_get_tag_type;
+	tmp_ops.sys_acl_get_permset = skel_sys_acl_get_permset;
+	tmp_ops.sys_acl_get_qualifier = skel_sys_acl_get_qualifier;
+	tmp_ops.sys_acl_get_file = skel_sys_acl_get_file;
+	tmp_ops.sys_acl_get_fd = skel_sys_acl_get_fd;
+	tmp_ops.sys_acl_clear_perms = skel_sys_acl_clear_perms;
+	tmp_ops.sys_acl_add_perm = skel_sys_acl_add_perm;
+	tmp_ops.sys_acl_to_text = skel_sys_acl_to_text;
+	tmp_ops.sys_acl_init = skel_sys_acl_init;
+	tmp_ops.sys_acl_create_entry = skel_sys_acl_create_entry;
+	tmp_ops.sys_acl_set_tag_type = skel_sys_acl_set_tag_type;
+	tmp_ops.sys_acl_set_qualifier = skel_sys_acl_set_qualifier;
+	tmp_ops.sys_acl_set_permset = skel_sys_acl_set_permset;
+	tmp_ops.sys_acl_valid = skel_sys_acl_valid;
+	tmp_ops.sys_acl_set_file = skel_sys_acl_set_file;
+	tmp_ops.sys_acl_set_fd = skel_sys_acl_set_fd;
+	tmp_ops.sys_acl_delete_def_file = skel_sys_acl_delete_def_file;
+	tmp_ops.sys_acl_get_perm = skel_sys_acl_get_perm;
+	tmp_ops.sys_acl_free_text = skel_sys_acl_free_text;
+	tmp_ops.sys_acl_free_acl = skel_sys_acl_free_acl;
+	tmp_ops.sys_acl_free_qualifier = skel_sys_acl_free_qualifier;
+
+	memcpy(&skel_ops, &tmp_ops, sizeof(struct vfs_ops));
+
+	return &skel_ops;
+}
 
 /* VFS operations structure */
 
@@ -394,10 +470,10 @@ struct vfs_ops skel_ops = {
 	skel_unlink,
 	skel_chmod,
 	skel_fchmod,
-        skel_chown,
-        skel_fchown,
-        skel_chdir,
-        skel_getwd,
+	skel_chown,
+	skel_fchown,
+	skel_chdir,
+	skel_getwd,
 	skel_utime,
 	skel_ftruncate,
 	skel_lock,
@@ -409,36 +485,36 @@ struct vfs_ops skel_ops = {
 
 	/* NT File ACL operations */
 
-        skel_fget_nt_acl,
-        skel_get_nt_acl,
-        skel_fset_nt_acl,
-        skel_set_nt_acl,
+	skel_fget_nt_acl,
+	skel_get_nt_acl,
+	skel_fset_nt_acl,
+	skel_set_nt_acl,
+
+	/* POSIX ACL operations */
 
 	skel_chmod_acl,
 	skel_fchmod_acl,
 
-	/* POSIX ACL operations */
-
-        skel_sys_acl_get_entry,
-        skel_sys_acl_get_tag_type,
-        skel_sys_acl_get_permset,
-        skel_sys_acl_get_qualifier,
-        skel_sys_acl_get_file,
-        skel_sys_acl_get_fd,
-        skel_sys_acl_clear_perms,
-        skel_sys_acl_add_perm,
-        skel_sys_acl_to_text,
-        skel_sys_acl_init,
-        skel_sys_acl_create_entry,
-        skel_sys_acl_set_tag_type,
-        skel_sys_acl_set_qualifier,
-        skel_sys_acl_set_permset,
-        skel_sys_acl_valid,
-        skel_sys_acl_set_file,
-        skel_sys_acl_set_fd,
-        skel_sys_acl_delete_def_file,
-        skel_sys_acl_get_perm,
-        skel_sys_acl_free_text,
-        skel_sys_acl_free_acl,
-        skel_sys_acl_free_qualifier
+	skel_sys_acl_get_entry,
+	skel_sys_acl_get_tag_type,
+	skel_sys_acl_get_permset,
+	skel_sys_acl_get_qualifier,
+	skel_sys_acl_get_file,
+	skel_sys_acl_get_fd,
+	skel_sys_acl_clear_perms,
+	skel_sys_acl_add_perm,
+	skel_sys_acl_to_text,
+	skel_sys_acl_init,
+	skel_sys_acl_create_entry,
+	skel_sys_acl_set_tag_type,
+	skel_sys_acl_set_qualifier,
+	skel_sys_acl_set_permset,
+	skel_sys_acl_valid,
+	skel_sys_acl_set_file,
+	skel_sys_acl_set_fd,
+	skel_sys_acl_delete_def_file,
+	skel_sys_acl_get_perm,
+	skel_sys_acl_free_text,
+	skel_sys_acl_free_acl,
+	skel_sys_acl_free_qualifier
 };

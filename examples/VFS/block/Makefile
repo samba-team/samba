@@ -8,7 +8,7 @@
 CC = gcc
 LIBTOOL = libtool
 
-SAMBA_SRC = /usr/local/src/samba/samba-2.2.0-ron/source
+SAMBA_SRC = ../../../source
 SAMBA_INCL = ${SAMBA_SRC}/include
 UBIQX_SRC = ${SAMBA_SRC}/ubiqx
 SMBWR_SRC = ${SAMBA_SRC}/smbwrapper

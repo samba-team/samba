@@ -143,11 +143,32 @@ struct vfs_ops audit_ops = {
 /* VFS initialisation function.  Return initialised vfs_ops structure
    back to SAMBA. */
 
-BOOL vfs_init(connection_struct *conn)
+struct vfs_ops *vfs_init(int *vfs_version, struct vfs_ops *def_vfs_ops)
 {
+	struct vfs_ops tmp_ops;
+
+	*vfs_version = SMB_VFS_INTERFACE_VERSION;
+	memcpy(&tmp_ops, def_vfs_ops, sizeof(struct vfs_ops));
+
+	tmp_ops.connect = audit_connect;
+	tmp_ops.disconnect = audit_disconnect;
+	tmp_ops.opendir = audit_opendir;
+	tmp_ops.mkdir = audit_mkdir;
+	tmp_ops.rmdir = audit_rmdir;
+	tmp_ops.open = audit_open;
+	tmp_ops.close = audit_close;
+	tmp_ops.rename = audit_rename;
+	tmp_ops.unlink = audit_unlink;
+	tmp_ops.chmod = audit_chmod;
+	tmp_ops.chmod_acl = audit_chmod_acl;
+	tmp_ops.fchmod = audit_fchmod;
+	tmp_ops.fchmod_acl = audit_fchmod_acl;
+
+	memcpy(&audit_ops, &tmp_ops, sizeof(struct vfs_ops));
+
 	openlog("smbd_audit", LOG_PID, SYSLOG_FACILITY);
 	syslog(SYSLOG_PRIORITY, "VFS_INIT: vfs_ops loaded\n");
-	return True;
+	return &audit_ops;
 }
 
 /* Implementation of vfs_ops.  Pass everything on to the default
