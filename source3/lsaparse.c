@@ -434,7 +434,7 @@ char* lsa_io_user_info(BOOL io, LSA_USER_INFO *usr, char *q, char *base, int ali
 		DBG_RW_IVAL("buffer_groups ", depth, base, io, q, usr->buffer_groups); q += 4; /* undocumented buffer pointer to groups. */
 		DBG_RW_IVAL("user_flgs     ", depth, base, io, q, usr->user_flgs    ); q += 4;     /* user flags */
 
-		DBG_RW_PCVAL("sess_key     ", depth, base, io, q, usr->sess_key, 16); q += 16; /* unused user session key */
+		DBG_RW_PCVAL("user_sess_key", depth, base, io, q, usr->user_sess_key, 16); q += 16; /* unused user session key */
 
 		q = smb_io_unihdr(io, &(usr->hdr_logon_srv), q, base, align, depth); /* logon server unicode string header */
 		q = smb_io_unihdr(io, &(usr->hdr_logon_dom), q, base, align, depth); /* logon domain unicode string header */

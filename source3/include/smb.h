@@ -809,7 +809,7 @@ typedef struct lsa_q_user_info
 	uint32 buffer_groups; /* undocumented buffer pointer to groups. */
 	uint32 user_flgs;     /* user flags */
 
-	char sess_key[16]; /* unused user session key */
+	char user_sess_key[16]; /* unused user session key */
 
 	UNIHDR hdr_logon_srv; /* logon server unicode string header */
 	UNIHDR hdr_logon_dom; /* logon domain unicode string header */
