@@ -1417,6 +1417,7 @@ enum case_handling {CASE_LOWER,CASE_UPPER};
  */
 extern int unix_ERR_class;
 extern int unix_ERR_code;
+extern NTSTATUS unix_ERR_ntstatus;
 
 /*
  * Used in chaining code.
