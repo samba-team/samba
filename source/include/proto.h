@@ -1801,7 +1801,7 @@ int reply_nttrans(connection_struct *conn,
 void fd_add_to_uid_cache(file_fd_struct *fd_ptr, uid_t u);
 uint16 fd_attempt_close(file_fd_struct *fd_ptr);
 void open_file_shared(files_struct *fsp,connection_struct *conn,char *fname,int share_mode,int ofun,
-		      mode_t mode,int *oplock_request, int *Access,int *action);
+		      mode_t mode,int oplock_request, int *Access,int *action);
 int open_directory(files_struct *fsp,connection_struct *conn,
 		   char *fname, int smb_ofun, mode_t unixmode, int *action);
 BOOL check_file_sharing(connection_struct *conn,char *fname, BOOL rename_op);
