@@ -34,19 +34,7 @@ pop_msg(POP *p, int stat, char *format, ...)
 
     /*  Append the message (formatted, if necessary) */
     if (format) 
-#ifdef HAVE_VSPRINTF
         vsprintf(mp,format,ap);
-#else
-        {
-	    int a0 = va_arg(ap, int);
-	    int a1 = va_arg(ap, int);
-	    int a2 = va_arg(ap, int);
-	    int a3 = va_arg(ap, int);
-	    int a4 = va_arg(ap, int);
-	    int a5 = va_arg(ap, int);
-	    sprintf(mp, format, a0, a1, a2, a3, a4, a5, 0, 4711);
-	}
-#endif /* HAVE_VSPRINTF */
     
     /*  Log the message if debugging is turned on */
 #ifdef DEBUG
