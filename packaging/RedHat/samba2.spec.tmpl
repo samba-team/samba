@@ -21,9 +21,6 @@ in Linux. Samba uses NetBIOS over TCP/IP (NetBT) protocols
 and does NOT need NetBEUI (Microsoft Raw NetBIOS frame)
 protocol.
 
-This a work in progress release only. This is NOT a production
-stable release and it is VERY VERY pre-alpha.
-
 Samba-2 features an almost working NT Domain Control
 capability and includes the new SWAT (Samba Web Administration
 Tool) that allows samba's smb.conf file to be remotely managed
@@ -40,6 +37,13 @@ for Shadow passwords. Do NOT recompile with the SHADOW_PWD option
 enabled. Red Hat Linux has built in support for quotas in PAM.
 
 %changelog
+* Sun Oct 25 1998 John H Terpstra <jht@samba.anu.edu.au>
+ - Added parameters to /config to ensure smb.conf, lmhosts, 
+	and smbusers never gets over-written.
+
+* Sat Oct 24 1998 John H Terpstra <jht@samba.anu.edu.au>
+ - removed README.smbsh file from docs area
+
 * Mon Oct 05 1998 John H Terpstra <jht@samba.anu.edu.au>
  - Added rpcclient to binaries list
  - Added smbwrapper stuff
@@ -77,7 +81,6 @@ enabled. Red Hat Linux has built in support for quotas in PAM.
 %setup
 %patch -p1
 %patch1 -p1
-mv source/smbwrapper/README source/smbwrapper/README.smbsh
 
 %build
 cd source
@@ -209,7 +212,7 @@ mv $tmpfile services
 
 %files
 %doc README COPYING Manifest Read-Manifest-Now
-%doc WHATSNEW.txt Roadmap smbwrapper/README.smbsh
+%doc WHATSNEW.txt Roadmap
 %doc docs
 %doc swat/README
 %doc examples
@@ -248,9 +251,9 @@ mv $tmpfile services
 %attr(-,root,root) /usr/share/swat/images/viewconfig.gif
 %attr(-,root,root) /usr/share/swat/include/header.html
 %attr(-,root,root) /usr/share/swat/include/footer.html
-%attr(-,root,root) %config /etc/lmhosts
-%attr(-,root,root) %config /etc/smb.conf
-%attr(-,root,root) %config /etc/smbusers
+%attr(-,root,root) %config(noreplace) /etc/lmhosts
+%attr(-,root,root) %config(noreplace) /etc/smb.conf
+%attr(-,root,root) %config(noreplace) /etc/smbusers
 %attr(-,root,root) /etc/rc.d/init.d/smb
 %attr(-,root,root) /etc/logrotate.d/samba
 %attr(-,root,root) /etc/pam.d/samba
