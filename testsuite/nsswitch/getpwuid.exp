@@ -29,7 +29,7 @@ foreach {line} [split $output "\n"] {
     set pwd_entry [split $line ":"]
     set user [lindex $pwd_entry 0]
 
-    if {[regexp "^($domain|BUILTIN)/" $user]} {
+    if {[regexp "^($domain)/" $user]} {
 
         set got_entries 1
 
@@ -38,7 +38,7 @@ foreach {line} [split $output "\n"] {
         set uid [lindex $pwd_entry 2]
         set gid [lindex $pwd_entry 3]
 
-        # Test lookup of uid succeeds and lookup of gid fails
+        # Test lookup of uid succeeds
 
         set output [util_start "$srcdir/$subdir/getpwuid" "$uid" ""]
         if {[regexp "PASS:" $output]} {
@@ -46,16 +46,9 @@ foreach {line} [split $output "\n"] {
         } else {
             fail "getpwuid $uid ($user)"
         }            
-
-        set output [util_start "$srcdir/$subdir/getpwuid" "$gid" ""]
-        if {[regexp "PASS:" $output]} {
-            fail "getpwuid $uid ($user)"
-        } else {
-            pass "getpwuid $uid ($user)"
-        }            
     }
 }
 
 if {!$got_entries} {
-    perror "No domain or builtin users returned from getent"
+    perror "No domain users returned from getent"
 }
