@@ -495,8 +495,13 @@ int main(int argc, char **argv)
       exit(1);
     }
   
-    if (!cli_session_setup(&cli, user_name, old_passwd, strlen(old_passwd),
-                           "", 0, "")) {
+    /*
+     * We should connect as the anonymous user here, in case
+     * the server has "must change password" checked...
+     * Thanks to <Nicholas.S.Jenkins@cdc.com> for this fix.
+     */
+
+    if (!cli_session_setup(&cli, "", "", 0, "", 0, "")) {
       fprintf(stderr, "%s: machine %s rejected the session setup. Error was : %s.\n",        
               prog_name, remote_machine, cli_errstr(&cli) );
       cli_shutdown(&cli);
