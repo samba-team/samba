@@ -1359,7 +1359,7 @@ struct sam_passwd *smbiterate_getsam21pwuid(uid_t uid)
 	if (smbpw != NULL)
 	{
 		pwd = build_sampw_from_smbpw (smbpw);
-		DEBUG(10, ("found by user_uid: %d\n", uid));
+		DEBUG(10, ("found by user_uid: %u\n", (unsigned int)uid));
 	}
 
 	return pwd;
