@@ -573,6 +573,7 @@ char *mktemp(char *); /* No standard include */
 #define USE_SETSID
 #define USE_SETRES
 #define USE_SYSV_IPC
+#define NO_SEMUN
 #define DEFAULT_PRINTING PRINT_HPUX
 /* Ken Weiss <krweiss@ucdavis.edu> tells us that SIGCLD_IGNORE is
    not good for HPUX */
