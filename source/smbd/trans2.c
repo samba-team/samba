@@ -2349,7 +2349,6 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 
 	switch (info_level) {
 		case SMB_INFO_STANDARD:
-		case SMB_INFO_QUERY_EA_SIZE:
 		{
 			if (total_data < l1_cbFile+4)
 				return(ERROR_DOS(ERRDOS,ERRinvalidparam));
@@ -2365,6 +2364,9 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 
 			break;
 		}
+
+		case SMB_INFO_SET_EA:
+			return(ERROR_DOS(ERRDOS,ERReasnotsupported));
 
 		/* XXXX um, i don't think this is right.
 			it's also not in the cifs6.txt spec.
