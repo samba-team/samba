@@ -63,7 +63,7 @@ static BOOL do_pw_lock(int fd, int waitsecs, int type)
     return False;
   }
 
-  return ((ret == 0) ? True : False);
+  return (ret == 0);
 }
 
 static int pw_file_lock_depth;
@@ -103,7 +103,7 @@ static BOOL pw_file_unlock(int fd, int *plock_depth)
 
   (*plock_depth)--;
 
-  if(ret == False)
+  if(!ret)
     DEBUG(10,("pw_file_unlock: unlocking file failed, error = %s.\n",
                  strerror(errno)));
   return ret;
@@ -135,7 +135,8 @@ void *startsmbpwent(BOOL update)
   /* Set a 16k buffer to do more efficient reads */
   setvbuf(fp, s_readbuf, _IOFBF, sizeof(s_readbuf));
 
-  if ((pw_file_lock(fileno(fp), F_RDLCK | (update ? F_WRLCK : 0), 5, &pw_file_lock_depth)) == False) {
+  if (!pw_file_lock(fileno(fp), F_RDLCK | (update ? F_WRLCK : 0), 5, &pw_file_lock_depth))
+  {
     DEBUG(0, ("startsmbpwent: unable to lock file %s\n", pfile));
     fclose(fp);
     return NULL;
@@ -773,7 +774,7 @@ BOOL mod_smbpwd_entry(struct smb_passwd* pwd)
 
   lockfd = fileno(fp);
 
-  if (pw_file_lock(lockfd, F_RDLCK | F_WRLCK, 5, &pw_file_lock_depth) == False) {
+  if (!pw_file_lock(lockfd, F_RDLCK | F_WRLCK, 5, &pw_file_lock_depth)) {
     DEBUG(0, ("mod_smbpwd_entry: unable to lock file %s\n", pfile));
     fclose(fp);
     return False;
@@ -1086,12 +1087,17 @@ void *machine_password_lock( char *domain, char *name, BOOL update)
   char *p;
 
   if(mach_passwd_lock_depth == 0) {
+
     pstrcpy(mac_file, lp_smb_passwd_file());
     p = strrchr(mac_file, '/');
+
     if(p != NULL)
       *++p = '\0';
+
     mac_file_len = strlen(mac_file);
-    if(sizeof(pstring) - mac_file_len - strlen(domain) - strlen(name) - 6) {
+
+    if (sizeof(pstring) - mac_file_len - strlen(domain) - strlen(name) - 6 < 0)
+    {
       DEBUG(0,("machine_password_lock: path %s too long to add machine details.\n",
                 mac_file));
       return NULL;
@@ -1102,8 +1108,8 @@ void *machine_password_lock( char *domain, char *name, BOOL update)
     strcat(mac_file, name);
     strcat(mac_file, ".mac");
 
-    if((fp = fopen(mac_file, "r+b")) == 0) {
-      DEBUG(0,("machine_password_lock: cannot open file %s. Error was %s.\n",
+    if((fp = fopen(mac_file, "r+b")) == NULL) {
+      DEBUG(0,("machine_password_lock: cannot open file %s - Error was %s.\n",
             mac_file, strerror(errno) ));
       return NULL;
     }
@@ -1111,9 +1117,10 @@ void *machine_password_lock( char *domain, char *name, BOOL update)
     chmod(mac_file, 0600);
   }
 
-  if(pw_file_lock(fileno(fp), F_RDLCK | (update ? F_WRLCK : 0), 
-                                      60, &mach_passwd_lock_depth) == False) {
-    DEBUG(0,("machine_password_lock: cannot lock file %s.\n", mac_file));
+  if(!pw_file_lock(fileno(fp), F_RDLCK | (update ? F_WRLCK : 0), 
+                                      60, &mach_passwd_lock_depth))
+  {
+    DEBUG(0,("machine_password_lock: cannot lock file %s\n", mac_file));
     fclose(fp);
     return NULL;
   }
