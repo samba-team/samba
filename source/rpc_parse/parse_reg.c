@@ -135,7 +135,8 @@ static void reg_io_hdrbuf_sec(uint32 ptr, uint32 *ptr3, BUFHDR *hdr_sec, SEC_DES
 		}
 		if (ptr3 == NULL || *ptr3 != 0)
 		{
-			sec_io_desc_buf("data   ", data   , ps, depth);
+			/* JRA - this line is probably wrong... */
+			sec_io_desc_buf("data   ", &data   , ps, depth);
 		}
 		smb_io_hdrbuf_post("hdr_sec", hdr_sec, ps, depth, hdr_offset,
 		                   data->max_len, data->len);
@@ -145,15 +146,13 @@ static void reg_io_hdrbuf_sec(uint32 ptr, uint32 *ptr3, BUFHDR *hdr_sec, SEC_DES
 }
 
 
-
 /*******************************************************************
 creates a structure.
 ********************************************************************/
 void make_reg_q_create_key(REG_Q_CREATE_KEY *q_c, POLICY_HND *hnd,
 				char *name, char *class,
 				SEC_ACCESS *sam_access,
-				SEC_DESC_BUF *sec_buf,
-				int sec_len, SEC_DESC *sec)
+				SEC_DESC_BUF *sec_buf)
 {
 	int len_name  = name  != NULL ? strlen(name ) + 1: 0;
 	int len_class = class != NULL ? strlen(class) + 1: 0;
@@ -176,9 +175,8 @@ void make_reg_q_create_key(REG_Q_CREATE_KEY *q_c, POLICY_HND *hnd,
 
 	q_c->data = sec_buf;
 	q_c->ptr2 = 1;
-	make_buf_hdr(&(q_c->hdr_sec), sec_len, sec_len);
+	make_buf_hdr(&(q_c->hdr_sec), sec_buf->len, sec_buf->len);
 	q_c->ptr3 = 1;
-	make_sec_desc_buf(q_c->data, sec_len, sec);
 
 	q_c->unknown_2 = 0x00000000;
 }
@@ -547,8 +545,8 @@ void reg_io_r_close(char *desc,  REG_R_CLOSE *r_u, prs_struct *ps, int depth)
 /*******************************************************************
 makes a structure.
 ********************************************************************/
-void make_reg_q_set_key_sec(REG_Q_SET_KEY_SEC *q_i, POLICY_HND *pol, 
-				uint32 buf_len, SEC_DESC *sec_desc)
+void make_reg_q_set_key_sec(REG_Q_SET_KEY_SEC *q_i, POLICY_HND *pol,
+				SEC_DESC_BUF *sec_desc_buf)
 {
 	if (q_i == NULL) return;
 
@@ -557,8 +555,8 @@ void make_reg_q_set_key_sec(REG_Q_SET_KEY_SEC *q_i, POLICY_HND *pol,
 	q_i->sec_info = DACL_SECURITY_INFORMATION;
 
 	q_i->ptr = 1;
-	make_buf_hdr(&(q_i->hdr_sec), buf_len, buf_len);
-	make_sec_desc_buf(q_i->data, buf_len, sec_desc);
+	make_buf_hdr(&(q_i->hdr_sec), sec_desc_buf->len, sec_desc_buf->len);
+	q_i->data = sec_desc_buf;
 }
 
 /*******************************************************************
@@ -601,7 +599,7 @@ void reg_io_r_set_key_sec(char *desc, REG_R_SET_KEY_SEC *r_q, prs_struct *ps, in
 makes a structure.
 ********************************************************************/
 void make_reg_q_get_key_sec(REG_Q_GET_KEY_SEC *q_i, POLICY_HND *pol, 
-				uint32 buf_len, SEC_DESC_BUF *sec_buf)
+				uint32 sec_buf_size, SEC_DESC_BUF *psdb)
 {
 	if (q_i == NULL) return;
 
@@ -611,14 +609,10 @@ void make_reg_q_get_key_sec(REG_Q_GET_KEY_SEC *q_i, POLICY_HND *pol,
 	                GROUP_SECURITY_INFORMATION |
 	                DACL_SECURITY_INFORMATION;
 
-	q_i->ptr = sec_buf != NULL ? 1 : 0;
-	q_i->data = sec_buf;
+	q_i->ptr = psdb != NULL ? 1 : 0;
+	q_i->data = psdb;
 
-	if (sec_buf != NULL)
-	{
-		make_buf_hdr(&(q_i->hdr_sec), buf_len, 0);
-		make_sec_desc_buf(q_i->data, buf_len, NULL);
-	}
+	make_buf_hdr(&(q_i->hdr_sec), sec_buf_size, 0);
 }
 
 /*******************************************************************
@@ -675,8 +669,7 @@ void reg_io_r_get_key_sec(char *desc,  REG_R_GET_KEY_SEC *r_q, prs_struct *ps, i
 
 	if (r_q->ptr != 0)
 	{
-		smb_io_hdrbuf("", &(r_q->hdr_sec), ps, depth);
-		sec_io_desc_buf("", r_q->data, ps, depth);
+		sec_io_desc_buf("", &r_q->data, ps, depth);
 
 		prs_align(ps);
 	}

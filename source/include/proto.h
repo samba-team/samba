@@ -504,6 +504,7 @@ void sid_copy(DOM_SID *sid1, const DOM_SID *sid2);
 BOOL sid_front_equal(const DOM_SID *sid1, const DOM_SID *sid2);
 BOOL sid_equal(const DOM_SID *sid1, const DOM_SID *sid2);
 int sid_size(const DOM_SID *sid);
+DOM_SID *sid_dup(DOM_SID *src);
 
 /*The following definitions come from  lib/util_sock.c  */
 
@@ -1611,9 +1612,10 @@ BOOL do_reg_unknown_1a(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd, uint
 BOOL do_reg_query_info(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
 				char *type, uint32 *unk_0, uint32 *unk_1);
 BOOL do_reg_set_key_sec(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
-				uint32 sec_buf_size, SEC_DESC *sec_buf);
+				SEC_DESC_BUF *sec_buf);
 BOOL do_reg_get_key_sec(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
-				uint32 *sec_buf_size, SEC_DESC_BUF *sec_buf);
+				uint32 *sec_buf_size,
+				SEC_DESC_BUF **ppsec_desc_buf);
 BOOL do_reg_delete_val(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd, char *val_name);
 BOOL do_reg_delete_key(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd, char *key_name);
 BOOL do_reg_create_key(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
@@ -1861,7 +1863,7 @@ void smb_io_lookup_level(char *desc, LOOKUP_LEVEL *level, prs_struct *ps, int de
 uint32 get_enum_hnd(ENUM_HND *enh);
 void make_enum_hnd(ENUM_HND *enh, uint32 hnd);
 void smb_io_enum_hnd(char *desc,  ENUM_HND *hnd, prs_struct *ps, int depth);
-void smb_io_dom_sid(char *desc,  DOM_SID *sid, prs_struct *ps, int depth);
+BOOL smb_io_dom_sid(char *desc,  DOM_SID *sid, prs_struct *ps, int depth);
 void make_dom_sid2(DOM_SID2 *sid2, DOM_SID *sid);
 void smb_io_dom_sid2(char *desc,  DOM_SID2 *sid, prs_struct *ps, int depth);
 void make_str_hdr(STRHDR *hdr, int max_len, int len, uint32 buffer);
@@ -2036,8 +2038,7 @@ void reg_io_r_flush_key(char *desc,  REG_R_FLUSH_KEY *r_r, prs_struct *ps, int d
 void make_reg_q_create_key(REG_Q_CREATE_KEY *q_c, POLICY_HND *hnd,
 				char *name, char *class,
 				SEC_ACCESS *sam_access,
-				SEC_DESC_BUF *sec_buf,
-				int sec_len, SEC_DESC *sec);
+				SEC_DESC_BUF *sec_buf);
 void reg_io_q_create_key(char *desc,  REG_Q_CREATE_KEY *r_q, prs_struct *ps, int depth);
 void reg_io_r_create_key(char *desc,  REG_R_CREATE_KEY *r_r, prs_struct *ps, int depth);
 void make_reg_q_delete_val(REG_Q_DELETE_VALUE *q_c, POLICY_HND *hnd,
@@ -2062,12 +2063,12 @@ void reg_io_r_open_hku(char *desc,  REG_R_OPEN_HKU *r_r, prs_struct *ps, int dep
 void make_reg_q_close(REG_Q_CLOSE *q_c, POLICY_HND *hnd);
 void reg_io_q_close(char *desc,  REG_Q_CLOSE *q_u, prs_struct *ps, int depth);
 void reg_io_r_close(char *desc,  REG_R_CLOSE *r_u, prs_struct *ps, int depth);
-void make_reg_q_set_key_sec(REG_Q_SET_KEY_SEC *q_i, POLICY_HND *pol, 
-				uint32 buf_len, SEC_DESC *sec_desc);
+void make_reg_q_set_key_sec(REG_Q_SET_KEY_SEC *q_i, POLICY_HND *pol,
+				SEC_DESC_BUF *sec_desc_buf);
 void reg_io_q_set_key_sec(char *desc,  REG_Q_SET_KEY_SEC *r_q, prs_struct *ps, int depth);
 void reg_io_r_set_key_sec(char *desc, REG_R_SET_KEY_SEC *r_q, prs_struct *ps, int depth);
 void make_reg_q_get_key_sec(REG_Q_GET_KEY_SEC *q_i, POLICY_HND *pol, 
-				uint32 buf_len, SEC_DESC_BUF *sec_buf);
+				uint32 sec_buf_size, SEC_DESC_BUF *psdb);
 void reg_io_q_get_key_sec(char *desc,  REG_Q_GET_KEY_SEC *r_q, prs_struct *ps, int depth);
 void reg_io_r_get_key_sec(char *desc,  REG_R_GET_KEY_SEC *r_q, prs_struct *ps, int depth);
 void make_reg_q_info(REG_Q_INFO *q_i, POLICY_HND *pol, char *product_type,
@@ -2429,20 +2430,24 @@ void samr_io_r_chgpasswd_user(char *desc, SAMR_R_CHGPASSWD_USER *r_u, prs_struct
 
 /*The following definitions come from  rpc_parse/parse_sec.c  */
 
-void make_sec_access(SEC_ACCESS *t, uint32 mask);
-void sec_io_access(char *desc, SEC_ACCESS *t, prs_struct *ps, int depth);
-void make_sec_ace(SEC_ACE *t, DOM_SID *sid, uint8 type, SEC_ACCESS mask, uint8 flag);
-void sec_io_ace(char *desc, SEC_ACE *t, prs_struct *ps, int depth);
-void make_sec_acl(SEC_ACL *t, uint16 revision, int num_aces, SEC_ACE *ace);
-void free_sec_acl(SEC_ACL *t);
-void sec_io_acl(char *desc, SEC_ACL *t, prs_struct *ps, int depth);
-int make_sec_desc(SEC_DESC *t, uint16 revision, uint16 type,
-				DOM_SID *owner_sid, DOM_SID *grp_sid,
-				SEC_ACL *sacl, SEC_ACL *dacl);
-void free_sec_desc(SEC_DESC *t);
-void make_sec_desc_buf(SEC_DESC_BUF *buf, int len, SEC_DESC *data);
-void free_sec_desc_buf(SEC_DESC_BUF *buf);
-void sec_io_desc_buf(char *desc, SEC_DESC_BUF *sec, prs_struct *ps, int depth);
+void init_sec_access(SEC_ACCESS *t, uint32 mask);
+BOOL sec_io_access(char *desc, SEC_ACCESS *t, prs_struct *ps, int depth);
+void init_sec_ace(SEC_ACE *t, DOM_SID *sid, uint8 type, SEC_ACCESS mask, uint8 flag);
+BOOL sec_io_ace(char *desc, SEC_ACE *psa, prs_struct *ps, int depth);
+void free_sec_acl(SEC_ACL **ppsa);
+BOOL sec_io_acl(char *desc, SEC_ACL **ppsa, prs_struct *ps, int depth);
+SEC_DESC *make_sec_desc(uint16 revision, uint16 type,
+			DOM_SID *owner_sid, DOM_SID *grp_sid,
+			SEC_ACL *sacl, SEC_ACL *dacl, size_t *sec_desc_size);
+SEC_DESC *dup_sec_desc( SEC_DESC *src);
+void free_sec_desc(SEC_DESC **ppsd);
+SEC_DESC *make_standard_sec_desc(DOM_SID *owner_sid, DOM_SID *grp_sid,
+				 SEC_ACL *dacl, size_t *sec_desc_size);
+BOOL sec_io_desc(char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth);
+SEC_DESC_BUF *make_sec_desc_buf(int len, SEC_DESC *sec_desc);
+SEC_DESC_BUF *dup_sec_desc_buf(SEC_DESC_BUF *src);
+void free_sec_desc_buf(SEC_DESC_BUF **ppsdb);
+BOOL sec_io_desc_buf(char *desc, SEC_DESC_BUF **ppsdb, prs_struct *ps, int depth);
 
 /*The following definitions come from  rpc_parse/parse_srv.c  */
 
