@@ -68,8 +68,8 @@ void init_sec_ace(SEC_ACE *t, DOM_SID *sid, uint8 type, SEC_ACCESS mask, uint8 f
 	t->size = sid_size(sid) + 8;
 	t->info = mask;
 
-	ZERO_STRUCTP(&t->sid);
-	sid_copy(&t->sid, sid);
+	ZERO_STRUCTP(&t->trustee);
+	sid_copy(&t->trustee, sid);
 }
 
 /*******************************************************************
@@ -107,7 +107,7 @@ BOOL sec_io_ace(char *desc, SEC_ACE *psa, prs_struct *ps, int depth)
 	if(!prs_align(ps))
 		return False;
 
-	if(!smb_io_dom_sid("sid  ", &psa->sid , ps, depth))
+	if(!smb_io_dom_sid("sid  ", &psa->trustee , ps, depth))
 		return False;
 
 	if(!prs_uint16_post("size ", ps, depth, &psa->size, offset_ace_size, old_offset))
@@ -281,7 +281,7 @@ BOOL sec_ace_equal(SEC_ACE *s1, SEC_ACE *s2)
 
 	/* Check SID */
 
-	if (!sid_equal(&s1->sid, &s2->sid)) {
+	if (!sid_equal(&s1->trustee, &s2->trustee)) {
 		return False;
 	}
 

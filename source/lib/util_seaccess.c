@@ -33,7 +33,7 @@ static BOOL token_sid_in_ace(const NT_USER_TOKEN *token, const SEC_ACE *ace)
 	size_t i;
 
 	for (i = 0; i < token->num_sids; i++) {
-		if (sid_equal(&ace->sid, &token->user_sids[i]))
+		if (sid_equal(&ace->trustee, &token->user_sids[i]))
 			return True;
 	}
 
@@ -277,7 +277,7 @@ BOOL se_access_check(SEC_DESC *sd, NT_USER_TOKEN *token,
 
 		DEBUG(10,("se_access_check: ACE %u: type %d, flags = 0x%02x, SID = %s mask = %x, current desired = %x\n",
 			  (unsigned int)i, ace->type, ace->flags,
-			  sid_to_string(sid_str, &ace->sid),
+			  sid_to_string(sid_str, &ace->trustee),
 			  (unsigned int) ace->info.mask, 
 			  (unsigned int)tmp_acc_desired ));
 
@@ -388,10 +388,10 @@ SEC_DESC_BUF *se_create_child_secdesc(TALLOC_CTX *ctx, SEC_DESC *parent_ctr,
 			continue;
 
 		init_sec_access(&new_ace->info, ace->info.mask);
-		init_sec_ace(new_ace, &ace->sid, ace->type,
+		init_sec_ace(new_ace, &ace->trustee, ace->type,
 			     new_ace->info, new_flags);
 
-		sid_to_string(sid_str, &ace->sid);
+		sid_to_string(sid_str, &ace->trustee);
 
 		DEBUG(5, ("se_create_child_secdesc(): %s:%d/0x%02x/0x%08x "
 			  " inherited as %s:%d/0x%02x/0x%08x\n", sid_str,

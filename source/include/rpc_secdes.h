@@ -95,7 +95,7 @@ typedef struct security_ace_info
 	uint16 size;
 
 	SEC_ACCESS info;
-	DOM_SID sid;
+	DOM_SID trustee;
 
 } SEC_ACE;
 #define _SEC_ACE

@@ -89,7 +89,7 @@ static void display_sec_ace(SEC_ACE *ace)
 {
 	fstring sid_str;
 
-	sid_to_string(sid_str, &ace->sid);
+	sid_to_string(sid_str, &ace->trustee);
 	printf("\t\tSID: %s\n", sid_str);
 
 	printf("\t\ttype:[%d], flags:[0x%02x], mask:[0x%08x]\n", 

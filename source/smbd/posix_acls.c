@@ -688,7 +688,7 @@ static BOOL create_canon_ace_lists(files_struct *fsp,
 			if (psa1->info.mask != psa2->info.mask)
 				continue;
 
-			if (!sid_equal(&psa1->sid, &psa2->sid))
+			if (!sid_equal(&psa1->trustee, &psa2->trustee))
 				continue;
 
 			/*
@@ -718,10 +718,10 @@ static BOOL create_canon_ace_lists(files_struct *fsp,
 		 * Ignore non-mappable SIDs (NT Authority, BUILTIN etc).
 		 */
 
-		if (non_mappable_sid(&psa->sid)) {
+		if (non_mappable_sid(&psa->trustee)) {
 			fstring str;
 			DEBUG(10,("create_canon_ace_lists: ignoring non-mappable SID %s\n",
-				sid_to_string(str, &psa->sid) ));
+				sid_to_string(str, &psa->trustee) ));
 			continue;
 		}
 
@@ -738,7 +738,7 @@ static BOOL create_canon_ace_lists(files_struct *fsp,
 
 		ZERO_STRUCTP(current_ace);
 
-		sid_copy(&current_ace->sid, &psa->sid);
+		sid_copy(&current_ace->sid, &psa->trustee);
 
 		/*
 		 * Try and work out if the SID is a user or group
