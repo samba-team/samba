@@ -433,12 +433,11 @@ static NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 
 	/* This should be a 'netbios domain -> DNS domain' mapping */
 	dnsdomname[0] = '\0';
-	get_mydomname(dnsdomname);
+	get_mydnsdomname(dnsdomname);
 	strlower_m(dnsdomname);
 	
 	dnsname[0] = '\0';
-	get_myfullname(dnsname);
-	strlower_m(dnsname);
+	get_mydnsfullname(dnsname);
 	
 	/* This creates the 'blob' of names that appears at the end of the packet */
 	if (chal_flags & NTLMSSP_CHAL_TARGET_INFO) 
