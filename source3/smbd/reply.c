@@ -544,13 +544,18 @@ int reply_setatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 	mode = SVAL(inbuf,smb_vwv0);
 	mtime = make_unix_date3(inbuf+smb_vwv1);
   
-	if (VALID_STAT_OF_DIR(sbuf))
-		mode |= aDIR;
-	else
-		mode &= ~aDIR;
+	if (mode != FILE_ATTRIBUTE_NORMAL) {
+		if (VALID_STAT_OF_DIR(sbuf))
+			mode |= aDIR;
+		else
+			mode &= ~aDIR;
 
-	if (check_name(fname,conn))
-		ok =  (file_chmod(conn,fname,mode,NULL) == 0);
+		if (check_name(fname,conn))
+			ok =  (file_chmod(conn,fname,mode,NULL) == 0);
+	} else {
+		ok = True;
+	}
+
 	if (ok)
 		ok = set_filetime(conn,fname,mtime);
   
