@@ -608,26 +608,7 @@ CHECK_COMPILE_ET
 
 AC_AUTH_MODULES
 
-dnl This is done by AC_OUTPUT but we need the result here.
-
-test "x$prefix" = xNONE && prefix=$ac_default_prefix
-test "x$exec_prefix" = xNONE && exec_prefix='${prefix}'
-
-for i in bin lib libexec sbin; do
-	i=${i}dir
-	foo=`echo $i | tr 'xindiscernible' 'XINDISCERNIBLE'`
-	x="\$${i}"
-	eval y="$x"
-	while test "x$y" != "x$x"; do
-		x="$y"
-		eval y="$x"
-	done
-	AC_DEFINE_UNQUOTED($foo,"$x")
-done
-AH_BOTTOM([#undef BINDIR 
-#undef LIBDIR
-#undef LIBEXECDIR
-#undef SBINDIR])
+rk_DESTDIRS
 
 LTLIBOBJS=`echo "$LIBOBJS" | sed 's/\.o/\.lo/g'`
 AC_SUBST(LTLIBOBJS)
