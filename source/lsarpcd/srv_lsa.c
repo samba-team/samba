@@ -32,29 +32,6 @@ extern int DEBUGLEVEL;
 extern fstring global_myworkgroup;
 
 /***************************************************************************
-lsa_reply_open_policy
- ***************************************************************************/
-static void lsa_reply_open_policy(prs_struct *rdata)
-{
-	LSA_R_OPEN_POL r_o;
-
-	ZERO_STRUCT(r_o);
-
-	/* set up the LSA QUERY INFO response */
-
-	r_o.status = 0x0;
-
-	/* get a (unique) handle.  open a policy on it. */
-	if (!open_policy_hnd(get_global_hnd_cache(), &r_o.pol))
-	{
-		r_o.status = 0xC0000000 | NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
-
-	/* store the response in the SMB stream */
-	lsa_io_r_open_pol("", &r_o, rdata, 0);
-}
-
-/***************************************************************************
 make_dom_query
  ***************************************************************************/
 static void make_dom_query(DOM_QUERY *d_q, char *dom_name, DOM_SID *dom_sid)
@@ -491,7 +468,7 @@ static void api_lsa_open_policy2( rpcsrv_struct *p, prs_struct *data,
 
 	lsa_io_q_open_pol2("", &q_o, data, 0);
 	r_o.status = _lsa_open_policy2(&q_o.uni_server_name, &r_o.pol,
-				       q_o.attr.ptr_sec_qos,
+				       &q_o.attr,
 				       q_o.des_access);
 	lsa_io_r_open_pol2("", &r_o, rdata, 0);
 }
@@ -503,16 +480,16 @@ static void api_lsa_open_policy( rpcsrv_struct *p, prs_struct *data,
                              prs_struct *rdata )
 {
 	LSA_Q_OPEN_POL q_o;
+	LSA_R_OPEN_POL r_o;
 
+	ZERO_STRUCT(r_o);
 	ZERO_STRUCT(q_o);
 
-	/* grab the server, object attributes and desired access flag...*/
 	lsa_io_q_open_pol("", &q_o, data, 0);
-
-	/* lkclXXXX having decoded it, ignore all fields in the open policy! */
-
-	/* return a 20 byte policy handle */
-	lsa_reply_open_policy(rdata);
+	lsa_reply_open_policy(&q_o, rdata);
+	r_o.status = _lsa_open_policy(NULL, &r_o.pol,
+	                              &q_o.attr, q_o.des_access);
+	lsa_io_r_open_pol("", &r_o, rdata, 0);
 }
 
 /***************************************************************************

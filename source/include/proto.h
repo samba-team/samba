@@ -1055,6 +1055,12 @@ BOOL api_ntlsa_rpc(rpcsrv_struct *p);
 
 /*The following definitions come from  lsarpcd/srv_lsa_samdb.c  */
 
+uint32 _lsa_open_policy2(const UNISTR2 *server_name, POLICY_HND *hnd,
+				const LSA_OBJ_ATTR *attr,
+				uint32 des_access);
+uint32 _lsa_open_policy(const UNISTR2 *server_name, POLICY_HND *hnd,
+				const LSA_OBJ_ATTR *attr,
+				uint32 des_access);
 uint32 _lsa_close(POLICY_HND *hnd);
 
 /*The following definitions come from  msrpc/msrpcd.c  */
@@ -4313,8 +4319,10 @@ uint32 _samr_query_usergroups(const POLICY_HND *pol,
 				DOM_GID **gids);
 uint32 _samr_create_dom_alias(const POLICY_HND *domain_pol, const UNISTR2 *uni_acct_name,
 						POLICY_HND *alias_pol, uint32 *rid);
-uint32 _samr_create_dom_group(const POLICY_HND *domain_pol, const UNISTR2 *uni_acct_name,
-						POLICY_HND *group_pol, uint32 *rid);
+uint32 _samr_create_dom_group(const POLICY_HND *domain_pol,
+				const UNISTR2 *uni_acct_name,
+				uint32 access_mask,
+				POLICY_HND *group_pol, uint32 *rid);
 uint32 _samr_query_dom_info(const POLICY_HND *domain_pol, uint16 switch_value, SAM_UNK_CTR *ctr);
 uint32 _samr_create_user(const POLICY_HND *domain_pol, const UNISTR2 *uni_username,
 					uint16 acb_info, uint32 unknown_1, 

@@ -6,6 +6,7 @@
  *  Copyright (C) Andrew Tridgell              1992-2000,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-2000,
  *  Copyright (C) Jeremy Allison               1998-2000.
+ *  Copyright (C) Elrond                            2000.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -33,16 +34,17 @@ extern int DEBUGLEVEL;
 lsa_reply_open_policy2
  ***************************************************************************/
 uint32 _lsa_open_policy2(const UNISTR2 *server_name, POLICY_HND *hnd,
-				 BOOL sec_qos, uint32 des_access)
+				const LSA_OBJ_ATTR *attr,
+				uint32 des_access)
 {
 	if (hnd == NULL)
 	{
-		return 0xC0000000 | NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 	/* get a (unique) handle.  open a policy on it. */
 	if (!open_policy_hnd(get_global_hnd_cache(), hnd, des_access))
 	{
-		return 0xC0000000 | NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	return 0x0;
@@ -51,24 +53,22 @@ uint32 _lsa_open_policy2(const UNISTR2 *server_name, POLICY_HND *hnd,
 /***************************************************************************
 lsa_reply_open_policy
  ***************************************************************************/
-static void lsa_reply_open_policy(prs_struct *rdata)
+uint32 _lsa_open_policy(const UNISTR2 *server_name, POLICY_HND *hnd,
+				const LSA_OBJ_ATTR *attr,
+				uint32 des_access)
 {
-	LSA_R_OPEN_POL r_o;
-
-	ZERO_STRUCT(r_o);
-
-	/* set up the LSA QUERY INFO response */
-
-	r_o.status = 0x0;
-
-	/* get a (unique) handle.  open a policy on it. */
-	if (!open_policy_hnd(get_global_hnd_cache(), &r_o.pol))
+	if (hnd == NULL)
 	{
-		r_o.status = 0xC0000000 | NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	/* store the response in the SMB stream */
-	lsa_io_r_open_pol("", &r_o, rdata, 0);
+	/* get a (unique) handle.  open a policy on it. */
+	if (!open_policy_hnd(get_global_hnd_cache(), hnd, des_access))
+	{
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	return 0x0;
 }
 
 /***************************************************************************
@@ -492,26 +492,6 @@ static void lsa_reply_lookup_names(prs_struct *rdata,
 
 	/* store the response in the SMB stream */
 	lsa_io_r_lookup_names("", &r_l, rdata, 0);
-}
-
-
-/***************************************************************************
-_lsa_open_policy
- ***************************************************************************/
-static void _lsa_open_policy( rpcsrv_struct *p, prs_struct *data,
-                             prs_struct *rdata )
-{
-	LSA_Q_OPEN_POL q_o;
-
-	ZERO_STRUCT(q_o);
-
-	/* grab the server, object attributes and desired access flag...*/
-	lsa_io_q_open_pol("", &q_o, data, 0);
-
-	/* lkclXXXX having decoded it, ignore all fields in the open policy! */
-
-	/* return a 20 byte policy handle */
-	lsa_reply_open_policy(rdata);
 }
 
 /***************************************************************************
