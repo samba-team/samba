@@ -19,9 +19,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include "includes.h"
-#include "sids.h"
-#include "lib/surs.h"
+#include "winbindd.h"
 
 /* Wrapper around "standard" surs sid to unixid function */
 

@@ -21,8 +21,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include "includes.h"
-#include "nterr.h"
+#include "winbindd.h"
 
 /* Fill a pwent structure with information we have obtained */
 
@@ -62,7 +61,7 @@ static void winbindd_fill_pwent(struct winbindd_pw *pw, char *username,
 
     /* Password */
 
-    strncpy(pw->pw_passwd, "*", sizeof(pw->pw_passwd) - 1);
+    strncpy(pw->pw_passwd, "x", sizeof(pw->pw_passwd) - 1);
 
     /* Shell */
 
@@ -75,28 +74,27 @@ enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_state *state)
 {
     uint32 name_type, user_rid;
     SAM_USERINFO_CTR user_info;
-    DOM_SID domain_sid, user_sid, group_sid, tmp_sid;
-    fstring name_domain, name_user, tmp_name, domain_controller;
+    DOM_SID user_sid, group_sid, tmp_sid;
+    fstring name_domain, name_user;
+    struct winbindd_domain *domain;
     POSIX_ID uid, gid;
+    char *the_name;
 
-    /* Look for user domain name */
+    /* Get domain */
 
-    fstrcpy(tmp_name, state->request.data.username);
-    fstrcpy(name_domain, strtok(tmp_name, "/\\"));
-    fstrcpy(name_user, strtok(NULL, ""));
+    the_name = state->request.data.username;
+    next_token(&the_name, name_domain, "/\\", sizeof(fstring));
+    next_token(NULL, name_user, "", sizeof(fstring));
 
-    /* Get domain sid for the domain */
-
-    if (!find_domain_sid_from_name(name_domain, &domain_sid,
-                                   domain_controller)) {
-        DEBUG(0, ("Could not get domain sid for domain %s\n", name_domain));
+    if ((domain = find_domain_from_name(name_domain)) == NULL) {
+        DEBUG(0, ("could not find domain entry for domain %s\n", name_domain));
         return WINBINDD_ERROR;
     }
 
     /* Get rid and name type from name */
     
-    if (!winbindd_lookup_by_name(domain_controller, &domain_sid, name_user, 
-                                 &user_sid, &name_type)) {
+    if (!winbindd_lookup_sid_by_name(domain, name_user, &user_sid, 
+                                     &name_type)) {
         DEBUG(1, ("user '%s' does not exist\n", name_user));
         return WINBINDD_ERROR;
     }
@@ -113,8 +111,7 @@ enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_state *state)
     sid_copy(&tmp_sid, &user_sid);
     sid_split_rid(&tmp_sid, &user_rid);
 
-    if (!winbindd_lookup_userinfo(domain_controller, &domain_sid, user_rid, 
-                                  NULL, &user_info)) {
+    if (!winbindd_lookup_userinfo(domain, user_rid, &user_info)) {
         DEBUG(1, ("pwnam_from_user(): error getting user info for user '%s'\n",
                   name_user));
         return WINBINDD_ERROR;
@@ -122,20 +119,22 @@ enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_state *state)
     
     /* Resolve the uid number */
 
-    sid_copy(&user_sid, &domain_sid);
+    sid_copy(&user_sid, &domain->sid);
     sid_append_rid(&user_sid, user_info.info.id21->user_rid);
 
-    if (!winbindd_surs_sam_sid_to_unixid(&user_sid, SID_NAME_USER, &uid)) {
+    if (!winbindd_surs_sam_sid_to_unixid(domain, &user_sid, 
+                                         SID_NAME_USER, &uid)) {
         DEBUG(1, ("error getting user id for user\n"));
         return WINBINDD_ERROR;
     }
 
     /* Resolve the gid number */
 
-    sid_copy(&group_sid, &domain_sid);
+    sid_copy(&group_sid, &domain->sid);
     sid_append_rid(&group_sid, user_info.info.id21->group_rid);
     
-    if (!winbindd_surs_sam_sid_to_unixid(&group_sid, SID_NAME_DOM_GRP, &gid)) {
+    if (!winbindd_surs_sam_sid_to_unixid(domain, &group_sid, 
+                                         SID_NAME_DOM_GRP, &gid)) {
         DEBUG(1, ("error getting group id for user %s\n", name_user));
         return WINBINDD_ERROR;
     }
@@ -157,37 +156,38 @@ enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_state *state)
 
 enum winbindd_result winbindd_getpwnam_from_uid(struct winbindd_state *state)
 {
-    DOM_SID domain_sid, tmp_sid, domain_user_sid;
+    DOM_SID domain_user_sid, tmp_sid;
+    struct winbindd_domain *domain;
     uint32 user_rid;
-    fstring username, domain_controller;
+    fstring username;
     enum SID_NAME_USE name_type;
     SAM_USERINFO_CTR user_info;
     POSIX_ID surs_uid, surs_gid;
+
+    /* Find domain controller and domain sid */
+
+    if ((domain = find_domain_from_uid(state->request.data.uid)) == NULL) {
+        DEBUG(0, ("Could not find domain for uid %d\n", 
+                  state->request.data.uid));
+        return WINBINDD_ERROR;
+    }
 
     /* Get sid from uid */
 
     surs_uid.id = state->request.data.uid;
     surs_uid.type = SURS_POSIX_UID_AS_USR;
 
-    if (!winbindd_surs_unixid_to_sam_sid(&surs_uid, &domain_user_sid, True)) {
+    if (!winbindd_surs_unixid_to_sam_sid(domain, &surs_uid, 
+                                         &domain_user_sid)) {
         DEBUG(1, ("Could not convert uid %d to domain sid\n", 
                   state->request.data.uid));
         return WINBINDD_ERROR;
     }
     
-    /* Find domain controller and domain sid */
-
-    if (!find_domain_sid_from_uid(state->request.data.uid, &domain_sid, 
-                                  NULL, domain_controller)) {
-        DEBUG(0, ("Could not find domain for uid %d\n", 
-                  state->request.data.uid));
-        return WINBINDD_ERROR;
-    }
-
     /* Get name and name type from rid */
 
-    if (!winbindd_lookup_by_sid(domain_controller, &domain_sid, 
-                                &domain_user_sid, username, &name_type)) {
+    if (!winbindd_lookup_name_by_sid(domain, &domain_user_sid, username, 
+                                     &name_type)) {
         fstring temp;
 
         sid_to_string(temp, &domain_user_sid);
@@ -200,23 +200,22 @@ enum winbindd_result winbindd_getpwnam_from_uid(struct winbindd_state *state)
     sid_copy(&tmp_sid, &domain_user_sid);
     sid_split_rid(&tmp_sid, &user_rid);
 
-    if (!winbindd_lookup_userinfo(domain_controller, &domain_sid, user_rid, 
-                                  NULL, &user_info)) {
+    if (!winbindd_lookup_userinfo(domain, user_rid, &user_info)) {
         DEBUG(1, ("pwnam_from_uid(): error getting user info for user '%s'\n",
                   username));
         return WINBINDD_ERROR;
     }
 
-    if (!winbindd_surs_sam_sid_to_unixid(&domain_user_sid, SID_NAME_USER,
-                                         &surs_uid)) {
+    if (!winbindd_surs_sam_sid_to_unixid(domain, &domain_user_sid, 
+                                         SID_NAME_USER, &surs_uid)) {
         DEBUG(1, ("error sursing unix uid\n"));
         return WINBINDD_ERROR;
     }
 
     /* ??? Should be domain_group_sid??? */
 
-    if (!winbindd_surs_sam_sid_to_unixid(&domain_user_sid, SID_NAME_DOM_GRP,
-                                         &surs_gid)) {
+    if (!winbindd_surs_sam_sid_to_unixid(domain, &domain_user_sid, 
+                                         SID_NAME_DOM_GRP, &surs_gid)) {
         DEBUG(1, ("error sursing gid\n"));
         return WINBINDD_ERROR;
     }
@@ -256,11 +255,10 @@ enum winbindd_result winbindd_setpwent(struct winbindd_state *state)
 
     for(tmp = domain_list; tmp != NULL; tmp = tmp->next) {
         struct getent_state *domain_state;
-        BOOL res;
 
         /* No point looking up BUILTIN users as they don't exist */
 
-        if (strcmp(tmp->domain_name, "BUILTIN") == 0) {
+        if (strcmp(tmp->name, "BUILTIN") == 0) {
             continue;
         }
 
@@ -273,33 +271,11 @@ enum winbindd_result winbindd_setpwent(struct winbindd_state *state)
         }
 
         ZERO_STRUCTP(domain_state);
+        domain_state->domain = tmp;
 
-        /* Connect to sam database */
+        /* Add to list of open domains */
 
-        res = samr_connect(tmp->domain_controller, SEC_RIGHTS_MAXIMUM_ALLOWED, 
-                           &domain_state->sam_handle);
-
-        res = res ? samr_open_domain(&domain_state->sam_handle,
-                                     0x304, &tmp->domain_sid, 
-                                     &domain_state->sam_dom_handle) : False;
-
-        if (res) {
-
-            /* Add to list of open domains */
-
-            fstrcpy(domain_state->domain_name, tmp->domain_name);
-            DLIST_ADD(state->getpwent_state, domain_state);
-
-        } else {
-
-            /* Error opening sam pipes */
-
-            samr_close(&domain_state->sam_dom_handle);
-            samr_close(&domain_state->sam_handle);
-
-            free(domain_state);
-        }
-
+        DLIST_ADD(state->getpwent_state, domain_state)
     }
 
     return WINBINDD_OK;
@@ -332,17 +308,16 @@ enum winbindd_result winbindd_getpwent(struct winbindd_state *state)
 
         if (!ent->got_sam_entries) {
             uint32 status, start_ndx = 0;
-            
+
+            if (!open_sam_handles(ent->domain)) goto cleanup;
+
             do {
                 status =
                     samr_enum_dom_users(
-                        &ent->sam_dom_handle, &start_ndx, 0, 0, 0x10000,
-                        &ent->sam_entries, &ent->num_sam_entries);
+                        &ent->domain->sam_dom_handle, &start_ndx, 0, 0, 
+                        0x10000, &ent->sam_entries, &ent->num_sam_entries);
             } while (status == STATUS_MORE_ENTRIES);
             
-            samr_close(&ent->sam_dom_handle);
-            samr_close(&ent->sam_handle);
-
             ent->got_sam_entries = True;
         }
         
@@ -363,7 +338,7 @@ enum winbindd_result winbindd_getpwent(struct winbindd_state *state)
 
             /* Prepend domain to name */
         
-            fstrcpy(domain_user_name, ent->domain_name);
+            fstrcpy(domain_user_name, ent->domain->name);
             fstrcat(domain_user_name, "/");
             fstrcat(domain_user_name, user_name);
                 
@@ -388,11 +363,23 @@ enum winbindd_result winbindd_getpwent(struct winbindd_state *state)
 
         /* We've exhausted all users for this pipe - close it down and
            start on the next one. */
-        
+
+    cleanup:
+
+        /* Free mallocated memory for sam entries */
+
         if (ent->sam_entries != NULL) free(ent->sam_entries);
         ent->sam_entries = NULL;
 
-        DLIST_REMOVE(state->getpwent_state, state->getpwent_state);
+        /* Free state information for this domain */
+
+        {
+            struct getent_state *old_ent;
+
+            old_ent = state->getpwent_state;
+            DLIST_REMOVE(state->getpwent_state, state->getpwent_state);
+            free(old_ent);
+        }
     }
 
     /* Out of pipes so we're done */
