@@ -42,9 +42,9 @@ RCSID("$Id$");
 
 static krb5_error_code
 make_pa_tgs_req(krb5_context context, 
+		krb5_auth_context ac,
 		KDC_REQ_BODY *body,
 		PA_DATA *padata,
-		krb5_keyblock **subkey,
 		krb5_creds *creds)
 {
     unsigned char buf[1024];
@@ -58,16 +58,10 @@ make_pa_tgs_req(krb5_context context,
     in_data.data = buf + sizeof(buf) - len;
     {
 	Ticket ticket;
-	krb5_auth_context ac;
-	ret = krb5_auth_con_init(context, &ac);
-	if(ret)
-	    return ret;
 	ret = decode_Ticket(creds->ticket.data, creds->ticket.length, 
 			    &ticket, &len);
-	if(ret){
-	    krb5_auth_con_free(context, ac);
+	if(ret)
 	    return ret;
-	}
 	/*
 	 * If we get a ticket encrypted with DES-CBC-CRC, it's
 	 * probably an old DCE secd and then the usual heuristics of
@@ -84,10 +78,6 @@ make_pa_tgs_req(krb5_context context,
 	ret = krb5_mk_req_extended(context, &ac, 0, &in_data, creds, 
 				   &padata->padata_value);
 
-	if(ret == 0)
-	    ret = krb5_auth_con_getlocalsubkey(context, ac, subkey);
-
-	krb5_auth_con_free(context, ac);
     }
     if(ret)
 	return ret;
@@ -139,7 +129,7 @@ init_tgs_req (krb5_context context,
     ret = copy_Realm(&in_creds->server->realm, &t->req_body.realm);
     if (ret)
 	goto fail;
-    t->req_body.sname = malloc(sizeof(*t->req_body.sname));
+    ALLOC(t->req_body.sname, 1);
     if (t->req_body.sname == NULL) {
 	ret = ENOMEM;
 	goto fail;
@@ -151,6 +141,10 @@ init_tgs_req (krb5_context context,
     /* req_body.till should be NULL if there is no endtime specified,
        but old MIT code (like DCE secd) doesn't like that */
     ALLOC(t->req_body.till, 1);
+    if(t->req_body.till == NULL){
+	ret = ENOMEM;
+	goto fail;
+    }
     *t->req_body.till = in_creds->times.endtime;
     
     t->req_body.nonce = nonce;
@@ -160,8 +154,7 @@ init_tgs_req (krb5_context context,
 	    ret = ENOMEM;
 	    goto fail;
 	}
-	t->req_body.additional_tickets->len = 1;
-	ALLOC(t->req_body.additional_tickets->val, 1);
+	ALLOC_SEQ(t->req_body.additional_tickets, 1);
 	if (t->req_body.additional_tickets->val == NULL) {
 	    ret = ENOMEM;
 	    goto fail;
@@ -170,27 +163,54 @@ init_tgs_req (krb5_context context,
 	if (ret)
 	    goto fail;
     }
-    t->req_body.enc_authorization_data = NULL;
-    
-    t->padata = malloc(sizeof(*t->padata));
+    ALLOC(t->padata, 1);
     if (t->padata == NULL) {
 	ret = ENOMEM;
 	goto fail;
     }
-    t->padata->len = 1;
-    t->padata->val = malloc(sizeof(*t->padata->val));
+    ALLOC_SEQ(t->padata, 1);
     if (t->padata->val == NULL) {
 	ret = ENOMEM;
 	goto fail;
     }
 
-    ret = make_pa_tgs_req(context,
-			  &t->req_body, 
-			  t->padata->val,
-			  subkey, 
-			  krbtgt);
-    if(ret)
-	goto fail;
+    {
+	krb5_auth_context ac;
+	krb5_keyblock *key;
+	ret = krb5_auth_con_init(context, &ac);
+	if(ret)
+	    return ret;
+	ret = krb5_generate_subkey (context, &krbtgt->session, &key);
+	ret = krb5_auth_con_setlocalsubkey(context, ac, key);
+	if(ret == ENOMEM)
+	    /* XXX */;
+
+	if(in_creds->authdata.len){
+	    size_t len;
+	    unsigned char *buf;
+	    krb5_enctype etype;
+	    len = length_AuthorizationData(&in_creds->authdata);
+	    buf = malloc(len);
+	    ret = encode_AuthorizationData(buf + len - 1, len, &in_creds->authdata, &len);
+	    ALLOC(t->req_body.enc_authorization_data, 1);
+	    krb5_keytype_to_etype(context, key->keytype, &etype);
+	    krb5_encrypt_EncryptedData(context, buf, len, etype, 0, 
+				       key, t->req_body.enc_authorization_data);
+	}else
+	    t->req_body.enc_authorization_data = NULL;
+    
+
+	ret = make_pa_tgs_req(context,
+			      ac,
+			      &t->req_body, 
+			      t->padata->val,
+			      krbtgt);
+	if(ret)
+	    goto fail;
+	*subkey = key;
+
+	krb5_auth_con_free(context, ac);
+    }
     return 0;
 fail:
     free_TGS_REQ (t);
@@ -275,9 +295,12 @@ decrypt_tkt_with_subkey (krb5_context context,
 }
 
 static krb5_error_code
-get_cred_kdc(krb5_context context, krb5_ccache id, krb5_kdc_flags flags,
+get_cred_kdc(krb5_context context, 
+	     krb5_ccache id, 
+	     krb5_kdc_flags flags,
 	     krb5_addresses *addresses, 
-	     krb5_creds *in_creds, krb5_creds *krbtgt,
+	     krb5_creds *in_creds, 
+	     krb5_creds *krbtgt,
 	     krb5_creds **out_creds)
 {
     TGS_REQ req;
