@@ -72,7 +72,7 @@ int	filename_check(char *);
 int	ftpd_pclose(FILE *);
 FILE   *ftpd_popen(char *, char *, int, int);
 char   *getline(char *, int);
-void	logwtmp(char *, char *, char *);
+void	ftpd_logwtmp(char *, char *, char *);
 void	lreply(int, const char *, ...)
 #ifdef __GNUC__
 __attribute__ ((format (printf, 2, 3)))

@@ -772,7 +772,7 @@ int do_login(int code, char *passwd)
 	initgroups(pw->pw_name, pw->pw_gid);
 
 	/* open wtmp before chroot */
-	logwtmp(ttyline, pw->pw_name, remotehost);
+	ftpd_logwtmp(ttyline, pw->pw_name, remotehost);
 	logged_in = 1;
 
 	dochroot = checkuser(_PATH_FTPCHROOT, pw->pw_name);
@@ -855,7 +855,7 @@ end_login(void)
 
 	seteuid((uid_t)0);
 	if (logged_in)
-		logwtmp(ttyline, "", "");
+		ftpd_logwtmp(ttyline, "", "");
 	pw = NULL;
 	logged_in = 0;
 	guest = 0;
@@ -1781,7 +1781,7 @@ dologout(int status)
     transflag = 0;
     if (logged_in) {
 	seteuid((uid_t)0);
-	logwtmp(ttyline, "", "");
+	ftpd_logwtmp(ttyline, "", "");
 	cond_kdestroy();
     }
     /* beware of flushing buffers after a SIGPIPE */
