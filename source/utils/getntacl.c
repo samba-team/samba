@@ -23,7 +23,7 @@
 #include "includes.h"
 #include "system/filesys.h"
 
-#if (!defined(HAVE_NO_ACLS) || !defined(HAVE_XATTR_SUPPORT))
+#if (defined(HAVE_NO_ACLS) || !defined(HAVE_XATTR_SUPPORT))
 
 int main(int argc, char **argv)
 {
