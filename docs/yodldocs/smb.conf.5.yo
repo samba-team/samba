@@ -48,35 +48,37 @@ string (no quotes needed) or a boolean, which may be given as yes/no,
 preserved in string values. Some items such as create modes are
 numeric.
 
-label(SERVICEDESCRIPTIONS)
-manpagesection(SERVICE DESCRIPTIONS)
+label(SECTIONDESCRIPTIONS)
+manpagesection(SECTION DESCRIPTIONS)
 
-Each section in the configuration file describes a service. The
-section name is the service name and the parameters within the section
-define the service's attributes.
+Each section in the configuration file (except for the
+link(bf([global]))(global) section) describes a shared resource (known
+as a em("share")). The section name is the name of the shared resource
+and the parameters within the section define the shares attributes.
 
 There are three special sections, link(bf([global]))(global),
 link(bf([homes]))(homes) and link(bf([printers]))(printers), which are
 described under link(bf('special sections'))(specialsections). The
-following notes apply to ordinary service descriptions.
+following notes apply to ordinary section descriptions.
 
-A service consists of a directory to which access is being given plus
+A share consists of a directory to which access is being given plus
 a description of the access rights which are granted to the user of
 the service. Some housekeeping options are also specifiable.
 
-Services are either filespace services (used by the client as an
+Sections are either filespace services (used by the client as an
 extension of their native file systems) or printable services (used by
 the client to access print services on the host running the server).
 
-Services may be guest services, in which case no password is required
-to access them. A specified UNIX guest account is used to define
-access privileges in this case.
+Sections may be designated link(bf(guest))(guestok) services, in which
+case no password is required to access them. A specified UNIX
+link(bf(guest account))(guestaccount) is used to define access
+privileges in this case.
 
-Services other than guest services will require a password to access
+Sections other than guest services will require a password to access
 them. The client provides the username. As older clients only provide
 passwords and not usernames, you may specify a list of usernames to
 check against the password using the link(bf("user="))(user) option in
-the service definition. For modern clients such as Windows 95/98 and
+the share definition. For modern clients such as Windows 95/98 and
 Windows NT, this should not be neccessary.
 
 Note that the access rights granted by the server are masked by the
@@ -84,9 +86,9 @@ access rights granted to the specified or guest UNIX user by the host
 system. The server does not grant more access than the host system
 grants.
 
-The following sample section defines a file space service. The user
-has write access to the path tt(/home/bar). The service is accessed via
-the service name "foo":
+The following sample section defines a file space share. The user has
+write access to the path tt(/home/bar). The share is accessed via
+the share name "foo":
 
 verb(
 
@@ -96,7 +98,7 @@ verb(
 
 )
 
-The following sample section defines a printable service. The service
+The following sample section defines a printable share. The share
 is readonly, but printable. That is, the only write access permitted
 is via calls to open, write to and close a spool file. The
 link(bf('guest ok'))(guestok) parameter means access will be permitted
@@ -107,7 +109,7 @@ verb(
  		path = /usr/spool/public
  		read only = true
  		printable = true
- 		public = true
+ 		guest ok = true
 )
 
 label(SPECIALSECTIONS)
@@ -119,7 +121,7 @@ label(global)
 dit(bf(The [global] section))
 
 Parameters in this section apply to the server as a whole, or are
-defaults for services which do not specifically define certain
+defaults for sections which do not specifically define certain
 items. See the notes under link(bf('Parameters'))(Parameters) for more
 information.
 
@@ -130,17 +132,17 @@ If a section called tt('homes') is included in the configuration file,
 services connecting clients to their home directories can be created
 on the fly by the server.
 
-When the connection request is made, the existing services are
+When the connection request is made, the existing sections are
 scanned. If a match is found, it is used. If no match is found, the
-requested service name is treated as a user name and looked up in the
-local passwords file. If the name exists and the correct password has
-been given, a service is created by cloning the [homes] section.
+requested section name is treated as a user name and looked up in the
+local password file. If the name exists and the correct password has
+been given, a share is created by cloning the [homes] section.
 
-Some modifications are then made to the newly created section:
+Some modifications are then made to the newly created share:
 
 startit()
 
-it() The service name is changed from tt('homes') to the located
+it() The share name is changed from tt('homes') to the located
 username
 
 it() If no path was given, the path is set to the user's home
@@ -160,8 +162,8 @@ than for UNIX access.
 This is a fast and simple way to give a large number of clients access
 to their home directories with a minimum of fuss.
 
-A similar process occurs if the requested service name is tt("homes"),
-except that the service name is not changed to that of the requesting
+A similar process occurs if the requested section name is tt("homes"),
+except that the share name is not changed to that of the requesting
 user. This method of using the [homes] section works well if different
 users share a client PC.
 
@@ -183,7 +185,7 @@ access))(readonly).
 Note that the link(bf(browseable))(browseable) flag for auto home
 directories will be inherited from the global browseable flag, not the
 [homes] browseable flag. This is useful as it means setting
-browseable=no in the [homes] section will hide the [homes] service but
+browseable=no in the [homes] section will hide the [homes] share but
 make any auto home directories visible.
 
 label(printers)
@@ -195,24 +197,25 @@ If a [printers] section occurs in the configuration file, users are
 able to connect to any printer specified in the local host's printcap
 file.
 
-When a connection request is made, the existing services are
+When a connection request is made, the existing sections are
 scanned. If a match is found, it is used. If no match is found, but a
 link(bf([homes]))(homes) section exists, it is used as described
-above. Otherwise, the requested service name is treated as a printer
+above. Otherwise, the requested section name is treated as a printer
 name and the appropriate printcap file is scanned to see if the
-requested service name is a valid printer name. If a match is found, a
-new service is created by cloning the [printers] section.
+requested section name is a valid printer share name. If a match is
+found, a new printer share is created by cloning the [printers]
+section.
 
-A few modifications are then made to the newly created section:
+A few modifications are then made to the newly created share:
 
 startit()
 
-it() The service name is set to the located printer name
+it() The share name is set to the located printer name
 
 it() If no printer name was given, the printer name is set to the
 located printer name
 
-it() If the service does not permit guest access and no username was
+it() If the share does not permit guest access and no username was
 given, the username is set to the located printer name.
 
 endit()
@@ -228,7 +231,7 @@ verb(
  	[printers]
  		path = /usr/spool/public
  		writable = no
- 		public = yes
+ 		guest ok = yes
  		printable = yes 
 )
 
@@ -263,7 +266,7 @@ enddit()
 label(PARAMETERS)
 manpagesection(PARAMETERS)
 
-Parameters define the specific attributes of services.
+Parameters define the specific attributes of sections.
 
 Some parameters are specific to the link(bf([global]))(global) section
 (eg., link(bf(security))(security)).  Some parameters are usable in
@@ -326,10 +329,10 @@ label(percenth)
 it() bf(%h) = the internet hostname that Samba is running on.
 
 label(percentm)
-it() bf(%m) = the netbios name of the client machine (very useful).
+it() bf(%m) = the NetBIOS name of the client machine (very useful).
 
 label(percentL)
-it() bf(%L) = the netbios name of the server. This allows you to change your
+it() bf(%L) = the NetBIOS name of the server. This allows you to change your
 config based on what the client calls you. Your server can have a "dual
 personality".
 
@@ -353,12 +356,13 @@ negotiation. It can be one of CORE, COREPLUS, LANMAN1, LANMAN2 or NT1.
 label(percentd)
 it() bf(%d) = The process id of the current server process.
 
-label(percenta)
-it() bf(%a) = the architecture of the remote machine. Only some are recognised,
-and those may not be 100% reliable. It currently recognises Samba,
-WfWg, WinNT and Win95. Anything else will be known as "UNKNOWN". If it
-gets it wrong then sending a level 3 log to
-email(samba-bugs@samba.anu.edu.au) should allow it to be fixed.
+label(percenta) 
+it() bf(%a) = the architecture of the remote
+machine. Only some are recognised, and those may not be 100%
+reliable. It currently recognises Samba, WfWg, WinNT and
+Win95. Anything else will be known as "UNKNOWN". If it gets it wrong
+then sending a level 3 log to email(samba-bugs@samba.anu.edu.au)
+should allow it to be fixed.
 
 label(percentI)
 it() bf(%I) = The IP address of the client machine.
@@ -475,8 +479,6 @@ it() link(bf(domain guest users))(domainguestusers)
 it() link(bf(domain logons))(domainlogons)
 
 it() link(bf(domain master))(domainmaster)
-
-it() link(bf(domain sid))(domainsid)
 
 it() link(bf(encrypt passwords))(encryptpasswords)
 
@@ -1525,7 +1527,8 @@ There is no default value for this parameter. If this parameter is not
 given, attempting to connect to a nonexistent service results in an
 error.
 
-Typically the default service would be a public, read-only service.
+Typically the default service would be a link(bf(guest ok))(guestok),
+link(bf(read-only))(readonly) service.
 
 Also note that the apparent service name will be changed to equal that
 of the requested service, this is very useful as it allows you to use
@@ -1819,104 +1822,129 @@ and may fail.
   bf(Default:)
  	domain master = no
 
-.SS dont descend (S)
-There are certain directories on some systems (eg., the /proc tree under
-Linux) that are either not of interest to clients or are infinitely deep
-(recursive). This parameter allows you to specify a comma-delimited list
-of directories that the server should always show as empty.
+
+label(dont descend)
+dit(bf(dont descend (S)))
+
+There are certain directories on some systems (eg., the tt(/proc) tree
+under Linux) that are either not of interest to clients or are
+infinitely deep (recursive). This parameter allows you to specify a
+comma-delimited list of directories that the server should always show
+as empty.
 
 Note that Samba can be very fussy about the exact format of the "dont
-descend" entries. For example you may need "./proc" instead of just
-"/proc". Experimentation is the best policy :-)
+descend" entries. For example you may need tt("./proc") instead of
+just tt("/proc"). Experimentation is the best policy :-)
 
-.B Default:
+  bf(Default:)
  	none (i.e., all directories are OK to descend)
 
-.B Example:
+  bf(Example:)
   	dont descend = /proc,/dev
 
-.SS dos filetimes (S)
+label(dosfiletimeresolution)
+dit(bf(dos filetime resolution (S)))
+
+Under the DOS and Windows FAT filesystem, the finest granulatity on
+time resolution is two seconds. Setting this parameter for a share
+causes Samba to round the reported time down to the nearest two second
+boundary when a query call that requires one second resolution is made
+to link(bf(smbd))(smbd.8.html).
+
+This option is mainly used as a compatibility option for Visual C++
+when used against Samba shares. If oplocks are enabled on a share,
+Visual C++ uses two different time reading calls to check if a file
+has changed since it was last read. One of these calls uses a
+one-second granularity, the other uses a two second granularity. As
+the two second call rounds any odd second down, then if the file has a
+timestamp of an odd number of seconds then the two timestamps will not
+match and Visual C++ will keep reporting the file has changed. Setting
+this option causes the two timestamps to match, and Visual C++ is
+happy.
+
+  bf(Default:)
+        dos filetime resolution = False
+
+  bf(Example:)
+        dos filetime resolution = True
+
+label(dos filetimes)
+dit(bf(dos filetimes (S)))
+
 Under DOS and Windows, if a user can write to a file they can change
 the timestamp on it. Under POSIX semantics, only the owner of the file
 or root may change the timestamp. By default, Samba runs with POSIX
 semantics and refuses to change the timestamp on a file if the user
 smbd is acting on behalf of is not the file owner. Setting this option
-to True allows DOS semantics and smbd will change the file timstamp as 
-DOS requires. This is a correct implementation of a previous compile-time
-options (UTIME_WORKAROUND) which was broken and is now removed.
+to True allows DOS semantics and smbd will change the file timstamp as
+DOS requires.
 
-.B Default:
+  bf(Default:)
         dos filetimes = False
 
-.B Example:
+  bf(Example:)
         dos filetimes = True
 
-.SS dos filetime resolution (S)
-Under the DOS and Windows FAT filesystem, the finest granulatity on
-time resolution is two seconds. Setting this parameter for a share
-causes Samba to round the reported time down to the nearest two
-second boundary when a query call that requires one second resolution
-is made to smbd. 
-
-This option is mainly used as a compatibility option for Visual C++ 
-when used against Samba shares. If oplocks are enabled on a share,
-Visual C++ uses two different time reading calls to check if a file 
-has changed since it was last read. One of these calls uses a one-second 
-granularity, the other uses a two second granularity. As the two second 
-call rounds any odd second down, then if the file has a timestamp of an 
-odd number of seconds then the two timestamps will not match and Visual 
-C++ will keep reporting the file has changed. Setting this option causes 
-the two timestamps to match, and Visual C++ is happy.
-
-.B Default:
-        dos filetime resolution = False
-
-.B Example:
-        dos filetime resolution = True
-
-.SS encrypt passwords (G)
+label(encryptpasswords)
+dit(bf(encrypt passwords (G)))
 
 This boolean controls whether encrypted passwords will be negotiated
-with the client. Note that Windows NT 4.0 SP3 and above will by default
-expect encrypted passwords unless a registry entry is changed. To use
-encrypted passwords in Samba see the file docs/ENCRYPTION.txt.
+with the client. Note that Windows NT 4.0 SP3 and above and also
+Windows 98 will by default expect encrypted passwords unless a
+registry entry is changed. To use encrypted passwords in Samba see the
+file ENCRYPTION.txt in the Samba documentation directory tt(docs/)
+shipped with the source code.
 
-.SS exec (S)
+In order for encrypted passwords to work correctly
+link(bf(smbd))(smbd.8.html) must either have access to a local
+link(bf(smbpasswd (5)))(smbpasswd.5.html) file (see the
+link(bf(smbpasswd (8)))(smbpasswd.8.html) program for information on
+how to set up and maintain this file), or set the
+link(bf(security=))(security) parameter to either em("server") or
+em("domain") which causes link(bf(smbd))(smbd.8.html) to authenticate
+against another server.
 
-This is an alias for preexec
+label(exec)
+dit(bf(exec (S)))
 
-.SS fake directory create times (S)
+This is a synonym for link(bf(preexec))(preexec).
+
+
+label(fake directory create times)
+dit(bf(fake directory create times (S)))
+
 NTFS and Windows VFAT file systems keep a create time for all files
 and directories. This is not the same as the ctime - status change
-time - that Unix keeps, so Samba by default reports the earliest
-of the various times Unix does keep. Setting this parameter for a
-share causes Samba to always report midnight 1-1-1980 as
-the create time for directories.
+time - that Unix keeps, so Samba by default reports the earliest of
+the various times Unix does keep. Setting this parameter for a share
+causes Samba to always report midnight 1-1-1980 as the create time for
+directories.
 
-This option is mainly used as a compatibility option for Visual C++ 
-when used against Samba shares. Visual C++ generated makefiles
-have the object directory as a dependency for each object file,
-and a make rule to create the directory. Also, when NMAKE
-compares timestamps it uses the creation time when examining
-a directory. Thus the object directory will be created if it does
-not exist, but once it does exist it will always have an earlier
-timestamp than the object files it contains.
+This option is mainly used as a compatibility option for Visual C++
+when used against Samba shares. Visual C++ generated makefiles have
+the object directory as a dependency for each object file, and a make
+rule to create the directory. Also, when NMAKE compares timestamps it
+uses the creation time when examining a directory. Thus the object
+directory will be created if it does not exist, but once it does exist
+it will always have an earlier timestamp than the object files it
+contains.
 
-However, Unix time semantics mean that the create time reported
-by Samba will be updated whenever a file is created or deleted
-in the directory. NMAKE therefore finds all object files in the
-object directory bar the last one built are out of date compared
-to the directory and rebuilds them. Enabling this option ensures
-directories always predate their contents and an NMAKE build will
-proceed as expected.
+However, Unix time semantics mean that the create time reported by
+Samba will be updated whenever a file is created or deleted in the
+directory. NMAKE therefore finds all object files in the object
+directory bar the last one built are out of date compared to the
+directory and rebuilds them. Enabling this option ensures directories
+always predate their contents and an NMAKE build will proceed as
+expected.
 
-.B Default:
+  bf(Default:)
         fake directory create times = False
 
-.B Example:
+  bf(Example:)
         fake directory create times = True
 
-.SS fake oplocks (S)
+label(fakeoplocks)
+dit(bf(fake oplocks (S)))
 
 Oplocks are the way that SMB clients get permission from a server to
 locally cache file operations. If a server grants an oplock
@@ -1925,158 +1953,211 @@ only one accessing the file and it will aggressively cache file
 data. With some oplock types the client may even cache file open/close
 operations. This can give enormous performance benefits.
 
-When you set "fake oplocks = yes" Samba will always grant oplock
-requests no matter how many clients are using the file. 
+When you set tt("fake oplocks = yes") link(bf(smbd))(smbd.8.html) will
+always grant oplock requests no matter how many clients are using the
+file.
 
-By enabling this option on all read-only shares or shares that you know
-will only be accessed from one client at a time you will see a big
-performance improvement on many operations. If you enable this option
-on shares where multiple clients may be accessing the files read-write
-at the same time you can get data corruption. Use this option
-carefully! 
+It is generally much better to use the real link(bf(oplock))(oplock)
+support rather than this parameter.
 
-It is generally much better to use the real oplock support except for
-physically read-only media such as CDROMs.
+If you enable this option on all read-only shares or shares that you
+know will only be accessed from one client at a time such as
+physically read-only media like CDROMs, you will see a big performance
+improvement on many operations. If you enable this option on shares
+where multiple clients may be accessing the files read-write at the
+same time you can get data corruption. Use this option carefully!
 
 This option is disabled by default.
 
-.SS follow symlinks (S)
+label(followsymlinks)
+dit(bf(follow symlinks (S)))
 
-This parameter allows the Samba administrator to stop smbd from
-following symbolic links in a particular share. Setting this
-parameter to "No" prevents any file or directory that is a 
-symbolic link from being followed (the user will get an error).
-This option is very useful to stop users from adding a symbolic
-link to /etc/pasword in their home directory for instance.
-However it will slow filename lookups down slightly.
+This parameter allows the Samba administrator to stop
+link(bf(smbd))(smbd.8.html) from following symbolic links in a
+particular share. Setting this parameter to em("No") prevents any file
+or directory that is a symbolic link from being followed (the user
+will get an error).  This option is very useful to stop users from
+adding a symbolic link to tt(/etc/pasword) in their home directory for
+instance.  However it will slow filename lookups down slightly.
 
-This option is enabled (ie. smbd will follow symbolic links)
-by default.
+This option is enabled (ie. link(bf(smbd))(smbd.8.html) will follow
+symbolic links) by default.
 
-.SS force create mode (S)
-This parameter specifies a set of UNIX mode bit permissions that
-will *always* be set on a file created by Samba. This is done
-by bitwise 'OR'ing these bits onto the mode bits of a file that
-is being created. The default for this parameter is (in octel)
-000. The modes in this parameter are bitwise 'OR'ed onto the
-file mode after the mask set in the "create mask" parameter
-is applied.
+label(forcecreatemode)
+dit(bf(force create mode (S)))
 
-See also the parameter "create mask" for details on masking mode
-bits on created files.
+This parameter specifies a set of UNIX mode bit permissions that will
+em(*always*) be set on a file created by Samba. This is done by
+bitwise 'OR'ing these bits onto the mode bits of a file that is being
+created. The default for this parameter is (in octel) 000. The modes
+in this parameter are bitwise 'OR'ed onto the file mode after the mask
+set in the link(bf("create mask"))(createmark) parameter is applied.
 
-.B Default:
+See also the parameter link(bf("create mask"))(createmask) for details
+on masking mode bits on created files.
+
+  bf(Default:)
        force create mode = 000
 
-.B Example:
+  bf(Example:)
        force create mode = 0755
 
-would force all created files to have read and execute permissions
-set for 'group' and 'other' as well as the read/write/execute bits 
-set for the 'user'.
+would force all created files to have read and execute permissions set
+for 'group' and 'other' as well as the read/write/execute bits set for
+the 'user'.
 
-.SS force directory mode (S)
-This parameter specifies a set of UNIX mode bit permissions that
-will *always* be set on a directory created by Samba. This is done
-by bitwise 'OR'ing these bits onto the mode bits of a directory that
-is being created. The default for this parameter is (in octel)
-0000 which will not add any extra permission bits to a created
-directory. This operation is done after the mode mask in the parameter 
-"directory mask" is applied.
+label(forcedirectorymode)
+dit(bf(force directory mode (S)))
 
-See also the parameter "directory mask" for details on masking mode
-bits on created directories.
+This parameter specifies a set of UNIX mode bit permissions that will
+em(*always*) be set on a directory created by Samba. This is done by
+bitwise 'OR'ing these bits onto the mode bits of a directory that is
+being created. The default for this parameter is (in octel) 0000 which
+will not add any extra permission bits to a created directory. This
+operation is done after the mode mask in the parameter
+link(bf("directory mask"))(directorymask) is applied.
 
-.B Default:
+See also the parameter link(bf("directory mask"))(directorymask) for
+details on masking mode bits on created directories.
+
+  bf(Default:)
        force directory mode = 000
 
-.B Example:
+  bf(Example:)
        force directory mode = 0755
 
-would force all created directories to have read and execute permissions
-set for 'group' and 'other' as well as the read/write/execute bits 
-set for the 'user'.
+would force all created directories to have read and execute
+permissions set for 'group' and 'other' as well as the
+read/write/execute bits set for the 'user'.
 
-.SS force group (S)
-This specifies a group name that all connections to this service
-should be made as. This may be useful for sharing files.
+label(forcegroup)
+dit(bf(force group (S)))
 
-.B Default:
+This specifies a UNIX group name that will be assigned as the default
+primary group for all users connecting to this service. This is useful
+for sharing files by ensuring that all access to files on service will
+use the named group for their permissions checking. Thus, by assigning
+permissions for this group to the files and directories within this
+service the Samba administrator can restrict or allow sharing of these
+files.
+
+  bf(Default:)
        no forced group
 
-.B Example:
+  bf(Example:)
        force group = agroup
 
-.SS force user (S)
-This specifies a user name that all connections to this service
-should be made as. This may be useful for sharing files. You should
-also use it carefully as using it incorrectly can cause security
-problems.
+label(forceuser)
+dit(bf(force user (S)))
+
+This specifies a UNIX user name that will be assigned as the default
+user for all users connecting to this service. This is useful for
+sharing files. You should also use it carefully as using it
+incorrectly can cause security problems.
 
 This user name only gets used once a connection is established. Thus
 clients still need to connect as a valid user and supply a valid
 password. Once connected, all file operations will be performed as the
-"forced user", not matter what username the client connected as.
+tt("forced user"), no matter what username the client connected as.
 
-.B Default:
+This can be very useful 
+  bf(Default:)
        no forced user
 
-.B Example:
+  bf(Example:)
        force user = auser
 
-.SS getwd cache (G)
-This is a tuning option. When this is enabled a cacheing algorithm will
-be used to reduce the time taken for getwd() calls. This can have a
-significant impact on performance, especially when widelinks is False.
+label(fstype)
+dit(bf(fstype (S)))
 
-.B Default:
+This parameter allows the administrator to configure the string that
+specifies the type of filesystem a share is using that is reported by
+link(bf(smbd))(smbd.8.html) when a client queries the filesystem type
+for a share. The default type is bf("NTFS") for compatibility with
+Windows NT but this can be changed to other strings such as "Samba" or
+"FAT" if required.
+
+  bf(Default:)
+      fstype = NTFS
+
+  bf(Example:)
+      fstype = Samba
+
+label(getwdcache)
+dit(bf(getwd cache (G)))
+
+This is a tuning option. When this is enabled a cacheing algorithm
+will be used to reduce the time taken for getwd() calls. This can have
+a significant impact on performance, especially when the
+link(bf(widelinks))(widelinks) parameter is set to False.
+
+  bf(Default:)
  	getwd cache = No
 
-.B Example:
+  bf(Example:)
  	getwd cache = Yes
 
-.SS group (S)
-This is an alias for "force group" and is only kept for compatibility
-with old versions of Samba. It may be removed in future versions.
+label(group)
+dit(bf(group (S)))
 
-.SS guest account (S)
+Synonym for link(bf("force group"))(forcegroup).
+
+label(guestaccount)
+dit(bf(guest account (S)))
+
 This is a username which will be used for access to services which are
-specified as 'guest ok' (see below). Whatever privileges this user has
-will be available to any client connecting to the guest
-service. Typically this user will exist in the password file, but will
-not have a valid login. If a username is specified in a given service,
-the specified username overrides this one.
+specified as link(bf('guest ok'))(guestok) (see below). Whatever
+privileges this user has will be available to any client connecting to
+the guest service. Typically this user will exist in the password
+file, but will not have a valid login. The user account bf("ftp") is
+often a good choice for this parameter. If a username is specified in
+a given service, the specified username overrides this one.
 
-One some systems the account "nobody" may not be able to print. Use
-another account in this case. You should test this by trying to log in
-as your guest user (perhaps by using the "su \-" command) and trying to
-print using
-.BR lpr .
+One some systems the default guest account "nobody" may not be able to
+print. Use another account in this case. You should test this by
+trying to log in as your guest user (perhaps by using the tt("su -")
+command) and trying to print using the system print command such as
+bf(lpr (1)) or bf(lp (1)).
 
-Note that as of version 1.9 of Samba this option may be set
-differently for each service.
+  bf(Default:)
+ 	specified at compile time, usually "nobody"
 
-.B Default:
- 	specified at compile time
+  bf(Example:)
+ 	guest account = ftp
 
-.B Example:
- 	guest account = nobody
-.SS guest ok (S)
-See
-.B public.
-.SS guest only (S)
-If this parameter is 'yes' for a service, then only guest connections to the
-service are permitted. This parameter will have no affect if "guest ok" or
-"public" is not set for the service.
+label(guestok)
+dit(bf(guest ok (S)))
 
-See the section below on user/password validation for more information about
-this option.
+If this parameter is em('yes') for a service, then no password is
+required to connect to the service. Privileges will be those of the
+link(bf(guest account))(guestaccount).
 
-.B Default:
+See the section below on link(bf(security))(security) for more
+information about this option.
+
+  bf(Default:)
+ 	guest ok = no
+
+  bf(Example:)
+ 	guest ok = yes
+
+label(guestonly)
+dit(bf(guest only (S)))
+
+If this parameter is em('yes') for a service, then only guest
+connections to the service are permitted. This parameter will have no
+affect if link(bf("guest ok"))(guestok) or link(bf("public"))(public)
+is not set for the service.
+
+See the section below on link(bf(security))(security) for more
+information about this option.
+
+  bf(Default:)
  	guest only = no
 
-.B Example:
+  bf(Example:)
  	guest only = yes
+
 .SS hide dot files (S)
 This is a boolean parameter that controls whether files starting with
 a dot appear as hidden files.
@@ -3621,19 +3702,6 @@ phase in the SMB protocol takes care of choosing the appropriate protocol.
 
 .SS public (S)
 A synonym for this parameter is 'guest ok'.
-
-If this parameter is 'yes' for a service, then no password is required
-to connect to the service. Privileges will be those of the guest
-account.
-
-See the section below on user/password validation for more information about
-this option.
-
-.B Default:
- 	public = no
-
-.B Example:
- 	public = yes
 
 .SS queuepause command (S)
 This parameter specifies the command to be executed on the server host in
