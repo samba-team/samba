@@ -284,6 +284,10 @@ typedef union {
     krb5_flags i;
 } krb5_kdc_flags;
 
+/* flags for krb5_verify_ap_req */
+
+#define KRB5_VERIFY_AP_REQ_IGNORE_INVALID	(1 << 0)
+
 #define KRB5_GC_CACHED		1
 #define KRB5_GC_USER_USER	2
 
