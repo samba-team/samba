@@ -40,6 +40,46 @@
 
 RCSID("$Id$");
 
+void
+prepare_utmp (struct utmp *utmp, char *tty, char *username, char *hostname)
+{
+    char *ttyx = clean_ttyname (tty);
+
+    memset(utmp, 0, sizeof(*utmp));
+    utmp->ut_time = time(NULL);
+    strncpy(utmp->ut_line, ttyx, sizeof(utmp->ut_line));
+    strncpy(utmp->ut_name, username, sizeof(utmp->ut_name));
+
+# ifdef HAVE_UT_USER
+    strncpy(utmp->ut_user, username, sizeof(utmp->ut_user));
+# endif
+
+# ifdef HAVE_UT_ADDR
+    if (hostname[0]) {
+        struct hostent *he;
+	if ((he = gethostbyname(hostname)))
+	    memcpy(&utmp->ut_addr, he->h_addr_list[0],
+		   sizeof(utmp->ut_addr));
+    }
+# endif
+
+# ifdef HAVE_UT_HOST
+    strncpy(utmp->ut_host, hostname, sizeof(utmp->ut_host));
+# endif
+
+# ifdef HAVE_UT_TYPE
+    utmp->ut_type = USER_PROCESS;
+# endif
+
+# ifdef HAVE_UT_PID
+    utmp->ut_pid = getpid();
+# endif
+
+# ifdef HAVE_UT_ID
+    strncpy(utmp->ut_id, make_id(ttyx), sizeof(utmp->ut_id));
+# endif
+}
+
 #ifdef HAVE_UTMPX_H
 void utmp_login(char *tty, char *username, char *hostname) { return; }
 #else
@@ -51,53 +91,7 @@ void utmp_login(char *tty, char *username, char *hostname)
     struct utmp utmp;
     int fd;
 
-    char *ttyx; /* tty w/o /dev/* */
-
-    ttyx = tty;
-
-    if(strncmp(tty, "/dev/", 5) == 0)
-	ttyx = tty + 5;
-
-    memset(&utmp, 0, sizeof(utmp));
-    utmp.ut_time = time(NULL);
-    strncpy(utmp.ut_line, ttyx, sizeof(utmp.ut_line));
-    strncpy(utmp.ut_name, username, sizeof(utmp.ut_name));
-
-# ifdef HAVE_UT_USER
-    strncpy(utmp.ut_user, username, sizeof(utmp.ut_user));
-# endif
-
-# ifdef HAVE_UT_ADDR
-    if (hostname[0]) {
-        struct hostent *he;
-	if ((he = gethostbyname(hostname)))
-	    memcpy(&utmp.ut_addr, he->h_addr_list[0],
-		   sizeof(utmp.ut_addr));
-    }
-# endif
-
-# ifdef HAVE_UT_HOST
-    strncpy(utmp.ut_host, hostname, sizeof(utmp.ut_host));
-# endif
-
-# ifdef HAVE_UT_TYPE
-    utmp.ut_type = USER_PROCESS;
-# endif
-
-# ifdef HAVE_UT_PID
-    utmp.ut_pid = getpid();
-# endif
-
-# ifdef HAVE_UT_ID
-    {
-      /* any particular reason to not include "tty" ? */
-      char *id = ttyx;
-      if(strncmp(ttyx, "tty", 3) == 0)
-	id += 3;
-      strncpy(utmp.ut_id, id, sizeof(utmp.ut_id));
-    }
-# endif
-
+    prepare_utmp (&utmp, tty, username, hostname);
 
 #ifdef HAVE_SETUTENT
     utmpname(_PATH_UTMP);
