@@ -13,7 +13,7 @@ RCSID("$Id$");
 #include "roken.h"
 
 int
-verify_unix_user(char *user, char *password)
+unix_verify_user(char *user, char *password)
 {
     struct passwd *pw;
     

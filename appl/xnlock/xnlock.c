@@ -529,7 +529,7 @@ verify(char *password)
      * First try with root password, if allowed.
      */
     
-    if(appres.accept_root && verify_unix_user("root", password) == 0)
+    if(appres.accept_root && unix_verify_user("root", password) == 0)
 	return 0;
     /*
      * Password that log out user

@@ -52,7 +52,7 @@ pop_pass (POP *p)
 	 sprintf (tkt, TKT_ROOT "_popper.%d", (int)getpid());
 	 krb_set_tkt_string (tkt);
 	 if (krb_verify_user(p->user, "", lrealm, p->pop_parm[1], 1, "pop") &&
-	     verify_unix_user(p->user, p->pop_parm[1])) {
+	     unix_verify_user(p->user, p->pop_parm[1])) {
 	      dest_tkt ();
 	      return (pop_msg(p,POP_FAILURE,
 			      "Password supplied for \"%s\" is incorrect.",
