@@ -78,6 +78,14 @@ typedef struct HDB{
     krb5_error_code (*destroy)(krb5_context, struct HDB*);
 }HDB;
 
+#define HDB_INTERFACE_VERSION	1
+
+struct hdb_so_method {
+    int version;
+    const char *prefix;
+    krb5_error_code (*create)(krb5_context, HDB **, const char *filename);
+};
+
 #define HDB_DB_DIR "/var/heimdal"
 #define HDB_DEFAULT_DB HDB_DB_DIR "/heimdal"
 #define HDB_DB_FORMAT_ENTRY "hdb/db-format"
