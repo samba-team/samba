@@ -38,7 +38,7 @@ RCSID("$Id$");
 #include "telnetd.h"
 #include "pathnames.h"
 
-#if	defined(AUTHENTICATION)
+#ifdef AUTHENTICATION
 #include <libtelnet/auth.h>
 #endif
 
@@ -83,14 +83,18 @@ extern struct sysv sysv;
 #endif	/* NEWINIT */
 
 #ifdef	STREAMSPTY
+
+#ifdef HAVE_SAC_H
 #include <sac.h>
+#endif
+
 #include <sys/stropts.h>
 #endif
 
 #define SCPYN(a, b)	(void) strncpy(a, b, sizeof(a))
 #define SCMPN(a, b)	strncmp(a, b, sizeof(a))
 
-#ifdef	STREAMS
+#ifdef	HAVE_SYS_STREAM_H
 #include <sys/stream.h>
 #endif
 #ifdef __hpux
@@ -123,22 +127,6 @@ extern struct sysv sysv;
 # define EXTPROC 0400
 #endif
 
-#ifndef	USE_TERMIO
-struct termbuf {
-	struct sgttyb sg;
-	struct tchars tc;
-	struct ltchars ltc;
-	int state;
-	int lflags;
-} termbuf, termbuf2;
-# define	cfsetospeed(tp, val)	(tp)->sg.sg_ospeed = (val)
-# define	cfsetispeed(tp, val)	(tp)->sg.sg_ispeed = (val)
-# define	cfgetospeed(tp)		(tp)->sg.sg_ospeed
-# define	cfgetispeed(tp)		(tp)->sg.sg_ispeed
-#else	/* USE_TERMIO */
-# ifdef	SYSV_TERMIO
-#	define termios termio
-# endif
 # ifndef	TCSANOW
 #  ifdef TCSETS
 #   define	TCSANOW		TCSETS
@@ -173,7 +161,6 @@ struct termios termbuf, termbuf2;	/* pty control structure */
 # ifdef  STREAMSPTY
 int ttyfd = -1;
 # endif
-#endif	/* USE_TERMIO */
 
 char *new_login = LOGIN_PATH;
 
@@ -191,20 +178,11 @@ char *new_login = LOGIN_PATH;
 	void
 init_termbuf()
 {
-#ifndef	USE_TERMIO
-	(void) ioctl(pty, TIOCGETP, (char *)&termbuf.sg);
-	(void) ioctl(pty, TIOCGETC, (char *)&termbuf.tc);
-	(void) ioctl(pty, TIOCGLTC, (char *)&termbuf.ltc);
-# ifdef	TIOCGSTATE
-	(void) ioctl(pty, TIOCGSTATE, (char *)&termbuf.state);
-# endif
-#else
 # ifdef  STREAMSPTY
 	(void) tcgetattr(ttyfd, &termbuf);
 # else
 	(void) tcgetattr(pty, &termbuf);
 # endif
-#endif
 	termbuf2 = termbuf;
 }
 
@@ -227,19 +205,6 @@ set_termbuf()
 	/*
 	 * Only make the necessary changes.
 	 */
-#ifndef	USE_TERMIO
-	if (memcmp((char *)&termbuf.sg, (char *)&termbuf2.sg,
-							sizeof(termbuf.sg)))
-		(void) ioctl(pty, TIOCSETN, (char *)&termbuf.sg);
-	if (memcmp((char *)&termbuf.tc, (char *)&termbuf2.tc,
-							sizeof(termbuf.tc)))
-		(void) ioctl(pty, TIOCSETC, (char *)&termbuf.tc);
-	if (memcmp((char *)&termbuf.ltc, (char *)&termbuf2.ltc,
-							sizeof(termbuf.ltc)))
-		(void) ioctl(pty, TIOCSLTC, (char *)&termbuf.ltc);
-	if (termbuf.lflags != termbuf2.lflags)
-		(void) ioctl(pty, TIOCLSET, (char *)&termbuf.lflags);
-#else	/* USE_TERMIO */
 	if (memcmp((char *)&termbuf, (char *)&termbuf2, sizeof(termbuf)))
 # ifdef  STREAMSPTY
 		(void) tcsetattr(ttyfd, TCSANOW, &termbuf);
@@ -249,7 +214,6 @@ set_termbuf()
 # if	defined(CRAY2) && defined(UNICOS5)
 	needtermstat = 1;
 # endif
-#endif	/* USE_TERMIO */
 }
 
 
@@ -264,81 +228,6 @@ set_termbuf()
  * It returns the SLC_ level of support for this function.
  */
 
-#ifndef	USE_TERMIO
-	int
-spcset(func, valp, valpp)
-	int func;
-	cc_t *valp;
-	cc_t **valpp;
-{
-	switch(func) {
-	case SLC_EOF:
-		*valp = termbuf.tc.t_eofc;
-		*valpp = (cc_t *)&termbuf.tc.t_eofc;
-		return(SLC_VARIABLE);
-	case SLC_EC:
-		*valp = termbuf.sg.sg_erase;
-		*valpp = (cc_t *)&termbuf.sg.sg_erase;
-		return(SLC_VARIABLE);
-	case SLC_EL:
-		*valp = termbuf.sg.sg_kill;
-		*valpp = (cc_t *)&termbuf.sg.sg_kill;
-		return(SLC_VARIABLE);
-	case SLC_IP:
-		*valp = termbuf.tc.t_intrc;
-		*valpp = (cc_t *)&termbuf.tc.t_intrc;
-		return(SLC_VARIABLE|SLC_FLUSHIN|SLC_FLUSHOUT);
-	case SLC_ABORT:
-		*valp = termbuf.tc.t_quitc;
-		*valpp = (cc_t *)&termbuf.tc.t_quitc;
-		return(SLC_VARIABLE|SLC_FLUSHIN|SLC_FLUSHOUT);
-	case SLC_XON:
-		*valp = termbuf.tc.t_startc;
-		*valpp = (cc_t *)&termbuf.tc.t_startc;
-		return(SLC_VARIABLE);
-	case SLC_XOFF:
-		*valp = termbuf.tc.t_stopc;
-		*valpp = (cc_t *)&termbuf.tc.t_stopc;
-		return(SLC_VARIABLE);
-	case SLC_AO:
-		*valp = termbuf.ltc.t_flushc;
-		*valpp = (cc_t *)&termbuf.ltc.t_flushc;
-		return(SLC_VARIABLE);
-	case SLC_SUSP:
-		*valp = termbuf.ltc.t_suspc;
-		*valpp = (cc_t *)&termbuf.ltc.t_suspc;
-		return(SLC_VARIABLE);
-	case SLC_EW:
-		*valp = termbuf.ltc.t_werasc;
-		*valpp = (cc_t *)&termbuf.ltc.t_werasc;
-		return(SLC_VARIABLE);
-	case SLC_RP:
-		*valp = termbuf.ltc.t_rprntc;
-		*valpp = (cc_t *)&termbuf.ltc.t_rprntc;
-		return(SLC_VARIABLE);
-	case SLC_LNEXT:
-		*valp = termbuf.ltc.t_lnextc;
-		*valpp = (cc_t *)&termbuf.ltc.t_lnextc;
-		return(SLC_VARIABLE);
-	case SLC_FORW1:
-		*valp = termbuf.tc.t_brkc;
-		*valpp = (cc_t *)&termbuf.ltc.t_lnextc;
-		return(SLC_VARIABLE);
-	case SLC_BRK:
-	case SLC_SYNCH:
-	case SLC_AYT:
-	case SLC_EOR:
-		*valp = (cc_t)0;
-		*valpp = (cc_t *)0;
-		return(SLC_DEFAULT);
-	default:
-		*valp = (cc_t)0;
-		*valpp = (cc_t *)0;
-		return(SLC_NOSUPPORT);
-	}
-}
-
-#else	/* USE_TERMIO */
 
 	int
 spcset(func, valp, valpp)
@@ -434,7 +323,6 @@ spcset(func, valp, valpp)
 		return(SLC_NOSUPPORT);
 	}
 }
-#endif	/* USE_TERMIO */
 
 #ifdef CRAY
 /*
@@ -465,47 +353,59 @@ getnpty()
  *
  * Returns the file descriptor of the opened pty.
  */
-#ifndef	__GNUC__
-char *line = "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
-#else
+
 static char Xline[] = "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
 char *line = Xline;
-#endif
+
 #ifdef	CRAY
 char *myline = "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
 #endif	/* CRAY */
 
-int
-getpty(ptynum)
-int *ptynum;
+static char* k_ptsname(int p)
 {
-	register int p;
-#ifdef _AIX
-	p=open("/dev/ptc", 2);
-	if(p > 0){
-	  strcpy(line, ttyname(p));
-	  return p;
+#ifdef HAVE_PTSNAME
+  return ptsname(p);
+#endif
+#ifdef HAVE_TTYNAME
+  return ttyname(p);
+#endif
+  return NULL;
+}
+
+int getpty(int *ptynum)
+{
+        int p;
+	char *cp, *p1, *p2;
+	int i;
+	int dummy;
+#ifdef HAVE_OPENPTY
+        int master;
+	int slave;
+	if(openpty(&master, &slave, line, 0, 0) == 0){
+	  close(slave);
+	  return master;
 	}
 #else
 #ifdef	STREAMSPTY
-	int t;
-	char *ptsname();
+	char *clone[] = { "/dev/ptc", "/dev/ptmx", "/dev/ptm", 
+			  "/dev/ptym/clone", 0 };
 
-	p = open("/dev/ptmx", 2);
-	if (p > 0) {
-		grantpt(p);
-		unlockpt(p);
-		strcpy(line, ptsname(p));
-		return(p);
-	}
-
-#else	/* ! STREAMSPTY */
-#ifndef CRAY
-	register char *cp, *p1, *p2;
-	register int i;
-#if defined(sun) && defined(TIOCGPGRP) && BSD < 199207
-	int dummy;
+	char **q;
+	for(q=clone; *q; q++){
+	  p=open(*q, O_RDWR);
+	  if(p >= 0){
+#ifdef HAVE_GRANTPT
+	    grantpt(p);
 #endif
+#ifdef HAVE_UNLOCKPT
+	    unlockpt(p);
+#endif
+	    strcpy(line, k_ptsname(p));
+	    return p;
+	  }
+	}
+#endif /* STREAMSPTY */
+#ifndef CRAY
 
 #ifndef	__hpux
 	(void) sprintf(line, "/dev/ptyXX");
@@ -517,6 +417,7 @@ int *ptynum;
 	p2 = &line[14];
 #endif
 
+	
 	for (cp = "pqrstuvwxyzPQRST"; *cp; cp++) {
 		struct stat stb;
 
@@ -592,10 +493,9 @@ int *ptynum;
 	}
 #endif	/* CRAY */
 #endif	/* STREAMSPTY */
-#endif  /* AIX */
+#endif /* OPENPTY */
 	return(-1);
 }
-#endif	/* convex */
 
 #ifdef	LINEMODE
 /*
@@ -627,11 +527,7 @@ static int linestate;
 tty_linemode()
 {
 #ifndef convex
-#ifndef	USE_TERMIO
-	return(termbuf.state & TS_EXTPROC);
-#else
 	return(termbuf.c_lflag & EXTPROC);
-#endif
 #else
 	return(linestate);
 #endif
@@ -665,79 +561,45 @@ tty_setlinemode(on)
 	int
 tty_isecho()
 {
-#ifndef USE_TERMIO
-	return (termbuf.sg.sg_flags & ECHO);
-#else
 	return (termbuf.c_lflag & ECHO);
-#endif
 }
 
 	int
 tty_flowmode()
 {
-#ifndef USE_TERMIO
-	return(((termbuf.tc.t_startc) > 0 && (termbuf.tc.t_stopc) > 0) ? 1 : 0);
-#else
 	return((termbuf.c_iflag & IXON) ? 1 : 0);
-#endif
 }
 
 	int
 tty_restartany()
 {
-#ifndef USE_TERMIO
-# ifdef	DECCTQ
-	return((termbuf.lflags & DECCTQ) ? 0 : 1);
-# else
-	return(-1);
-# endif
-#else
 	return((termbuf.c_iflag & IXANY) ? 1 : 0);
-#endif
 }
 
 	void
 tty_setecho(on)
 	int on;
 {
-#ifndef	USE_TERMIO
-	if (on)
-		termbuf.sg.sg_flags |= ECHO|CRMOD;
-	else
-		termbuf.sg.sg_flags &= ~(ECHO|CRMOD);
-#else
 	if (on)
 		termbuf.c_lflag |= ECHO;
 	else
 		termbuf.c_lflag &= ~ECHO;
-#endif
 }
 
 	int
 tty_israw()
 {
-#ifndef USE_TERMIO
-	return(termbuf.sg.sg_flags & RAW);
-#else
 	return(!(termbuf.c_lflag & ICANON));
-#endif
 }
 
 #if	defined (AUTHENTICATION) && defined(NO_LOGIN_F) && defined(LOGIN_R)
 	int
 tty_setraw(on)
 {
-#  ifndef USE_TERMIO
-	if (on)
-		termbuf.sg.sg_flags |= RAW;
-	else
-		termbuf.sg.sg_flags &= ~RAW;
-#  else
 	if (on)
 		termbuf.c_lflag &= ~ICANON;
 	else
 		termbuf.c_lflag |= ICANON;
-#  endif
 }
 #endif
 
@@ -745,30 +607,17 @@ tty_setraw(on)
 tty_binaryin(on)
 	int on;
 {
-#ifndef	USE_TERMIO
-	if (on)
-		termbuf.lflags |= LPASS8;
-	else
-		termbuf.lflags &= ~LPASS8;
-#else
 	if (on) {
 		termbuf.c_iflag &= ~ISTRIP;
 	} else {
 		termbuf.c_iflag |= ISTRIP;
 	}
-#endif
 }
 
 	void
 tty_binaryout(on)
 	int on;
 {
-#ifndef	USE_TERMIO
-	if (on)
-		termbuf.lflags |= LLITOUT;
-	else
-		termbuf.lflags &= ~LLITOUT;
-#else
 	if (on) {
 		termbuf.c_cflag &= ~(CSIZE|PARENB);
 		termbuf.c_cflag |= CS8;
@@ -778,108 +627,69 @@ tty_binaryout(on)
 		termbuf.c_cflag |= CS7|PARENB;
 		termbuf.c_oflag |= OPOST;
 	}
-#endif
 }
 
 	int
 tty_isbinaryin()
 {
-#ifndef	USE_TERMIO
-	return(termbuf.lflags & LPASS8);
-#else
 	return(!(termbuf.c_iflag & ISTRIP));
-#endif
 }
 
 	int
 tty_isbinaryout()
 {
-#ifndef	USE_TERMIO
-	return(termbuf.lflags & LLITOUT);
-#else
 	return(!(termbuf.c_oflag&OPOST));
-#endif
 }
 
 #ifdef	LINEMODE
 	int
 tty_isediting()
 {
-#ifndef USE_TERMIO
-	return(!(termbuf.sg.sg_flags & (CBREAK|RAW)));
-#else
 	return(termbuf.c_lflag & ICANON);
-#endif
 }
 
 	int
 tty_istrapsig()
 {
-#ifndef USE_TERMIO
-	return(!(termbuf.sg.sg_flags&RAW));
-#else
 	return(termbuf.c_lflag & ISIG);
-#endif
 }
 
 	void
 tty_setedit(on)
 	int on;
 {
-#ifndef USE_TERMIO
-	if (on)
-		termbuf.sg.sg_flags &= ~CBREAK;
-	else
-		termbuf.sg.sg_flags |= CBREAK;
-#else
 	if (on)
 		termbuf.c_lflag |= ICANON;
 	else
 		termbuf.c_lflag &= ~ICANON;
-#endif
 }
 
 	void
 tty_setsig(on)
 	int on;
 {
-#ifndef	USE_TERMIO
-	if (on)
-		;
-#else
 	if (on)
 		termbuf.c_lflag |= ISIG;
 	else
 		termbuf.c_lflag &= ~ISIG;
-#endif
 }
 #endif	/* LINEMODE */
 
 	int
 tty_issofttab()
 {
-#ifndef	USE_TERMIO
-	return (termbuf.sg.sg_flags & XTABS);
-#else
 # ifdef	OXTABS
 	return (termbuf.c_oflag & OXTABS);
 # endif
 # ifdef	TABDLY
 	return ((termbuf.c_oflag & TABDLY) == TAB3);
 # endif
-#endif
 }
 
 	void
 tty_setsofttab(on)
 	int on;
 {
-#ifndef	USE_TERMIO
-	if (on)
-		termbuf.sg.sg_flags |= XTABS;
-	else
-		termbuf.sg.sg_flags &= ~XTABS;
-#else
 	if (on) {
 # ifdef	OXTABS
 		termbuf.c_oflag |= OXTABS;
@@ -897,15 +707,11 @@ tty_setsofttab(on)
 		termbuf.c_oflag |= TAB0;
 # endif
 	}
-#endif
 }
 
 	int
 tty_islitecho()
 {
-#ifndef	USE_TERMIO
-	return (!(termbuf.lflags & LCTLECH));
-#else
 # ifdef	ECHOCTL
 	return (!(termbuf.c_lflag & ECHOCTL));
 # endif
@@ -915,19 +721,12 @@ tty_islitecho()
 # if	!defined(ECHOCTL) && !defined(TCTLECH)
 	return (0);	/* assumes ctl chars are echoed '^x' */
 # endif
-#endif
 }
 
 	void
 tty_setlitecho(on)
 	int on;
 {
-#ifndef	USE_TERMIO
-	if (on)
-		termbuf.lflags &= ~LCTLECH;
-	else
-		termbuf.lflags |= LCTLECH;
-#else
 # ifdef	ECHOCTL
 	if (on)
 		termbuf.c_lflag &= ~ECHOCTL;
@@ -940,17 +739,12 @@ tty_setlitecho(on)
 	else
 		termbuf.c_lflag |= TCTLECH;
 # endif
-#endif
 }
 
 	int
 tty_iscrnl()
 {
-#ifndef	USE_TERMIO
-	return (termbuf.sg.sg_flags & CRMOD);
-#else
 	return (termbuf.c_iflag & ICRNL);
-#endif
 }
 
 /*
@@ -1053,10 +847,9 @@ extern char wtmpf[];
 # else	/* NEWINIT */
 int	gotalarm;
 
-	/* ARGSUSED */
-	void
-nologinproc(sig)
-	int sig;
+/* ARGSUSED */
+void
+nologinproc(int sig)
 {
 	gotalarm++;
 }
@@ -1072,6 +865,31 @@ extern void utmp_sig_notify P((int));
 # endif /* PARENT_DOES_UTMP */
 #endif
 
+#ifdef STREAMSPTY
+static void maybe_push_modules(int fd, char **modules)
+{
+  char **p;
+  int err;
+
+  for(p=modules; *p; p++){
+    err=ioctl(fd, I_FIND, *p);
+    if(err == 1)
+      break;
+    if(err < 0 && errno != EINVAL)
+      fatalperror(net, "I_FIND");
+    /* module not pushed or does not exist */
+  }
+  /* p points to null or to an already pushed module, now push all
+     modules before this one */
+
+  for(p--; p >= modules; p--){
+    err = ioctl(fd, I_PUSH, *p);
+    if(err < 0 && errno != EINVAL)
+      fatalperror(net, "I_PUSH");
+  }
+}
+#endif
+
 /*
  * getptyslave()
  *
@@ -1079,8 +897,7 @@ extern void utmp_sig_notify P((int));
  * that is necessary.  The return value is a file descriptor
  * for the slave side.
  */
-	int
-getptyslave()
+int getptyslave(void)
 {
 	register int t = -1;
 
@@ -1110,6 +927,11 @@ getptyslave()
 	 * Make sure that we don't have a controlling tty, and
 	 * that we are the session (process group) leader.
 	 */
+
+#if HAVE_SETSID
+	if(setsid()<0)
+	  fatalperror(net, "setsid()");
+#else
 # ifdef	TIOCNOTTY
 	t = open(_PATH_TTY, O_RDWR);
 	if (t >= 0) {
@@ -1117,7 +939,7 @@ getptyslave()
 		(void) close(t);
 	}
 # endif
-
+#endif
 
 # ifdef PARENT_DOES_UTMP
 	/*
@@ -1131,23 +953,34 @@ getptyslave()
 		fatalperror(net, line);
 
 #ifdef  STREAMSPTY
-#ifdef	USE_TERMIO
 	ttyfd = t;
-#endif
-	if (ioctl(t, I_PUSH, "ptem") < 0)
-		fatal(net, "I_PUSH ptem");
-	if (ioctl(t, I_PUSH, "ldterm") < 0)
-		fatal(net, "I_PUSH ldterm");
+	  
+
 	/*
 	 * Not all systems have (or need) modules ttcompat and pckt so
 	 * don't flag it as a fatal error if they don't exist.
 	 */
-	if (ioctl(t, I_PUSH, "ttcompat") < 0 && errno != EINVAL)
-		fatal(net, "I_PUSH ttcompat");
-	if (ioctl(pty, I_PUSH, "pckt") < 0 && errno != EINVAL)
-		fatal(net, "I_PUSH pckt");
-#endif
 
+	{
+	  /* these are the streams modules that we want pushed. note
+	     that they are in reverse order, ptem will be pushed
+	     first. maybe_push_modules() will try to push all modules
+	     before the first one that isn't already pushed. i.e if
+	     ldterm is pushed, only ttcompat will be attempted.
+
+	     all this is because we don't know which modules are
+	     available, and we don't know which modules are already
+	     pushed (via autopush, for instance).
+
+	     */
+	     
+	  char *ttymodules[] = { "ttcompat", "ldterm", "ptem", NULL };
+	  char *ptymodules[] = { "pckt", NULL };
+
+	  maybe_push_modules(t, ttymodules);
+	  maybe_push_modules(pty, ptymodules);
+	}
+#endif
 	/*
 	 * set up the tty modes as we like them to be.
 	 */
@@ -1164,9 +997,6 @@ getptyslave()
 	/*
 	 * Settings for sgtty based systems
 	 */
-# ifndef	USE_TERMIO
-	termbuf.sg.sg_flags |= CRMOD|ANYP|ECHO|XTABS;
-# endif	/* USE_TERMIO */
 
 	/*
 	 * Settings for UNICOS (and HPUX)
@@ -1183,7 +1013,7 @@ getptyslave()
 	 * systems, other than 4.4BSD.  In 4.4BSD the
 	 * kernel does the initial terminal setup.
 	 */
-# if defined(USE_TERMIO) && !(defined(CRAY) || defined(__hpux)) && (BSD <= 43)
+# if !(defined(CRAY) || defined(__hpux)) && (BSD <= 43)
 #  ifndef	OXTABS
 #   define OXTABS	0
 #  endif
@@ -1191,7 +1021,7 @@ getptyslave()
 	termbuf.c_oflag |= ONLCR|OXTABS;
 	termbuf.c_iflag |= ICRNL;
 	termbuf.c_iflag &= ~IXOFF;
-# endif /* defined(USE_TERMIO) && !defined(CRAY) && (BSD <= 43) */
+# endif
 	tty_rspeed((def_rspeed > 0) ? def_rspeed : 9600);
 	tty_tspeed((def_tspeed > 0) ? def_tspeed : 9600);
 # ifdef	LINEMODE
@@ -1330,11 +1160,10 @@ int cleanopen(char *line)
 
 #if BSD <= 43
 
-	int
-login_tty(t)
-	int t;
+int login_tty(int t)
 {
-#ifndef _AIX
+#if 0 /* setsid done in other place */
+#if defined(HAVE_SETSID) && !defined(_AIX)
 	if (setsid() < 0) {
 #ifdef ultrix
 		/*
@@ -1346,6 +1175,7 @@ login_tty(t)
 #endif
 			fatalperror(net, "setsid()");
 	}
+#endif /* HAVE_SETSID */
 #endif
 # if defined(TIOCSCTTY) && !defined(__hpux)
 	if (ioctl(t, TIOCSCTTY, (char *)0) < 0)
@@ -1370,11 +1200,8 @@ login_tty(t)
 #if defined HAVE_SETPGID
 	(void) setpgid(0, 0);
 #else
-#  if defined(SOLARIS) || defined(__hpux) || defined(__sgi) || defined(_AIX)
-	(void) setpgrp();
-#  else
-	(void) setpgrp(0, 0);
-#  endif
+	(void) setpgrp(0, 0); /* if setpgid isn't available, setpgrp
+				 probably takes arguments */
 #endif
 	close(open(line, O_RDWR));
 # endif
@@ -1481,7 +1308,7 @@ startslave(host, autologin, autoname)
 		utmp_sig_notify(pid);
 # endif	/* PARENT_DOES_UTMP */
 	} else {
-	  getptyslave(autologin);
+	  getptyslave();
 	  start_login(host, autologin, autoname);
 	  /*NOTREACHED*/
 	}
@@ -1611,10 +1438,6 @@ void start_login(char *host, int autologin, char *name)
 	register int pid = getpid();
 	struct utmpx utmpx;
 #endif
-#ifdef SOLARIS
-	char *term;
-	char termbuf[64];
-#endif
 
 #ifdef	HAVE_UTMPX_H
 	/*
@@ -1669,20 +1492,6 @@ void start_login(char *host, int autologin, char *name)
 	{
 		addarg(&argv, "-h");
 		addarg(&argv, host);
-#ifdef	SOLARIS_LOGIN
-		/*
-		 * SVR4 version of -h takes TERM= as second arg, or -
-		 */
-		term = getenv("TERM");
-		if (term == NULL || term[0] == 0) {
-			term = "-";
-		} else {
-			strcpy(termbuf, "TERM=");
-			strncat(termbuf, term, sizeof(termbuf) - 6);
-			term = termbuf;
-		}
-		addarg(&argv, term);
-#endif
 	}
 #endif
 #if	!defined(NO_LOGIN_P)
@@ -1787,7 +1596,6 @@ void start_login(char *host, int autologin, char *name)
 				tty_setecho(isecho);
 				tty_setraw(israw);
 				set_termbuf();
-#ifndef SOLARIS
 				if (!israw) {
 					/*
 					 * Write a newline to ensure
@@ -1796,7 +1604,6 @@ void start_login(char *host, int autologin, char *name)
 					 */
 					write(xpty, "\n", 1);
 				}
-#endif
 			}
 			pty = xpty;
 		}
@@ -1828,16 +1635,6 @@ void start_login(char *host, int autologin, char *name)
 		 */
 		unsetenv("USER");
 	}
-#ifdef	SOLARIS_LOGIN
-	else {
-		char **p;
-
-		addarg(&argv, "");	/* no login name */
-		for (p = environ; *p; p++) {
-			addarg(&argv, *p);
-		}
-	}
-#endif	/* SOLARIS */
 #if	defined(AUTHENTICATION) && defined(NO_LOGIN_F) && defined(LOGIN_R)
 	if (pty > 2)
 		close(pty);

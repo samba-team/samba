@@ -378,7 +378,7 @@ change_slc(func, flag, val)
 
 }  /* end of change_slc */
 
-#if	defined(USE_TERMIO) && (VEOF == VMIN)
+#if VEOF == VMIN
 cc_t oldeofc = '\004';
 #endif
 
@@ -396,7 +396,7 @@ check_slc()
 	register int i;
 
 	for (i = 1; i <= NSLC; i++) {
-#if	defined(USE_TERMIO) && (VEOF == VMIN)
+#if VEOF == VMIN
 		/*
 		 * In a perfect world this would be a neat little
 		 * function.  But in this world, we should not notify
@@ -410,7 +410,7 @@ check_slc()
 			else if (slctab[i].sptr)
 				oldeofc = *(slctab[i].sptr);
 		}
-#endif	/* defined(USE_TERMIO) && defined(SYSV_TERMIO) */
+#endif
 		if (slctab[i].sptr &&
 				(*(slctab[i].sptr) != slctab[i].current.val)) {
 			slctab[i].current.val = *(slctab[i].sptr);

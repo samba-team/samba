@@ -78,14 +78,21 @@ int	registerd_host_only = 0;
 
 #ifdef	STREAMSPTY
 # include <stropts.h>
-# include <termio.h>
-/* make sure we don't get the bsd version */
-# ifndef __sgi
-# include "/usr/include/sys/tty.h"
-# include <sys/ptyvar.h>
-# else  /* __sgi */
+# include <termios.h>
+#ifdef HAVE_SYS_STREAM_H
+#include <sys/stream.h>
+#endif
+# ifdef HAVE_SYS_STRTTY_H
 # include <sys/strtty.h>
-# endif /* __sgi */
+# endif
+/* make sure we don't get the bsd version */
+/* what is this here for? solaris? /joda */
+# ifdef HAVE_SYS_TTY_H
+# include "/usr/include/sys/tty.h"
+# endif
+# ifdef HAVE_SYS_PTYVAR_H
+# include <sys/ptyvar.h>
+# endif
 
 /*
  * Because of the way ptyibuf is used with streams messages, we need
@@ -99,7 +106,7 @@ char	ptyibuf2[BUFSIZ];
 unsigned char ctlbuf[BUFSIZ];
 struct	strbuf strbufc, strbufd;
 
-int readstream();
+int readstream(int, char*, int);
 
 #else	/* ! STREAMPTY */
 
@@ -1442,15 +1449,14 @@ telnet(f, p, host)
 
 int flowison = -1;  /* current state of flow: -1 is unknown */
 
-int readstream(p, ibuf, bufsize)
-	int p;
-	char *ibuf;
-	int bufsize;
+int readstream(int p, char *ibuf, int bufsize)
 {
 	int flags = 0;
 	int ret = 0;
 	struct termios *tsp;
+#if 0
 	struct termio *tp;
+#endif
 	struct iocblk *ip;
 	char vstop, vstart;
 	int ixon;
@@ -1501,6 +1507,7 @@ int readstream(p, ibuf, bufsize)
 			vstart = tsp->c_cc[VSTART];
 			ixon = tsp->c_iflag & IXON;
 			break;
+#if 0
 		case TCSETA:
 		case TCSETAW:
 		case TCSETAF:
@@ -1509,6 +1516,7 @@ int readstream(p, ibuf, bufsize)
 			vstart = tp->c_cc[VSTART];
 			ixon = tp->c_iflag & IXON;
 			break;
+#endif
 		default:
 			errno = EAGAIN;
 			return(-1);
@@ -1610,7 +1618,7 @@ doeof()
 {
 	init_termbuf();
 
-#if	defined(LINEMODE) && defined(USE_TERMIO) && (VEOF == VMIN)
+#if defined(LINEMODE) && (VEOF == VMIN)
 	if (!tty_isediting()) {
 		extern char oldeofc;
 		*pfrontp++ = oldeofc;
@@ -1621,26 +1629,3 @@ doeof()
 			(unsigned char)*slctab[SLC_EOF].sptr : '\004';
 }
 
-/* sigh -- make libtermcap.a happy */
-#ifdef SOLARIS2
-char *index(char *a, int b)
-{
-	return(strchr(a,b));
-}
-char *rindex(char *a, int b)
-{
-	return(strrchr(a,b));
-}
-void bzero(void *sp, int len)
-{
-	memset(sp, 0, len);
-}
-int bcopy(void *s1, void *s2, int len)
-{
-	memcpy(s2, s1, len);
-	return 0;
-}
-int bcmp(void *s1, void *s2, int len) {
-	memcmp(s2, s1, len);
-}
-#endif

@@ -46,7 +46,7 @@ $(OBJECTS): ../config.h
 
 .c.o:
 	$(CC) -c $(CPPFLAGS) $(CFLAGS) $(DEFS) \
-	@KRBINCPATH@ -I.. -I$(srcdir)/.. $<
+	@KRBINCPATH@ -I.. -I$(srcdir)/.. -I. -I$(srcdir) $<
 
 telnetd: $(OBJECTS)
 	$(CC) -o telnetd $(OBJECTS) $(LIBS) ../libtelnet/libtelnet.a $(KLIB)
