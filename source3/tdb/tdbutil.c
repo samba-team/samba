@@ -39,7 +39,7 @@ static void gotalarm_sig(void)
  Lock a chain with timeout (in seconds).
 ****************************************************************************/
 
-int tdb_chainlock_with_timeout( TDB_CONTEXT *tdb, TDB_DATA key, unsigned int timeout)
+static int tdb_chainlock_with_timeout( TDB_CONTEXT *tdb, TDB_DATA key, unsigned int timeout, int rw_type)
 {
 	/* Allow tdb_chainlock to be interrupted by an alarm. */
 	int ret;
@@ -51,13 +51,19 @@ int tdb_chainlock_with_timeout( TDB_CONTEXT *tdb, TDB_DATA key, unsigned int tim
 		alarm(timeout);
 	}
 
-	ret = tdb_chainlock(tdb, key);
+	if (rw_type == F_RDLCK)
+		ret = tdb_chainlock_read(tdb, key);
+	else
+		ret = tdb_chainlock(tdb, key);
 
 	if (timeout) {
 		alarm(0);
 		CatchSignal(SIGALRM, SIGNAL_CAST SIG_IGN);
-		if (gotalarm)
+		if (gotalarm) {
+			DEBUG(0,("tdb_chainlock_with_timeout: alarm (%u) timed out for key %s in tdb %s\n",
+				timeout, key.dptr, tdb->name ));
 			return -1;
+		}
 	}
 
 	return ret;
@@ -74,7 +80,7 @@ int tdb_lock_bystring(TDB_CONTEXT *tdb, char *keyval, unsigned int timeout)
 	key.dptr = keyval;
 	key.dsize = strlen(keyval)+1;
 	
-	return tdb_chainlock_with_timeout(tdb, key, timeout);
+	return tdb_chainlock_with_timeout(tdb, key, timeout, F_WRLCK);
 }
 
 /****************************************************************************
@@ -90,6 +96,35 @@ void tdb_unlock_bystring(TDB_CONTEXT *tdb, char *keyval)
 	
 	tdb_chainunlock(tdb, key);
 }
+
+/****************************************************************************
+ Read lock a chain by string. Return -1 if timeout or lock failed.
+****************************************************************************/
+
+int tdb_read_lock_bystring(TDB_CONTEXT *tdb, char *keyval, unsigned int timeout)
+{
+	TDB_DATA key;
+
+	key.dptr = keyval;
+	key.dsize = strlen(keyval)+1;
+	
+	return tdb_chainlock_with_timeout(tdb, key, timeout, F_RDLCK);
+}
+
+/****************************************************************************
+ Read unlock a chain by string.
+****************************************************************************/
+
+void tdb_read_unlock_bystring(TDB_CONTEXT *tdb, char *keyval)
+{
+	TDB_DATA key;
+
+	key.dptr = keyval;
+	key.dsize = strlen(keyval)+1;
+	
+	tdb_chainunlock_read(tdb, key);
+}
+
 
 /****************************************************************************
  Fetch a int32 value by a arbitrary blob key, return -1 if not found.
