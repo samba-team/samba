@@ -66,8 +66,8 @@ static NTSTATUS smbcli_sock_connect_one(struct smbcli_socket *sock,
 static void smbcli_sock_connect_handler(struct event_context *ev, struct fd_event *fde, 
 					struct timeval t, uint16_t flags)
 {
-	struct smbcli_composite *c = fde->private;
-	struct clisocket_connect *conn = c->private;
+	struct smbcli_composite *c = talloc_get_type(fde->private, struct smbcli_composite);
+	struct clisocket_connect *conn = talloc_get_type(c->private, struct clisocket_connect);
 	int i;
 	
 	c->status = socket_connect_complete(conn->sock->sock, 0);

@@ -94,7 +94,7 @@ static void use_nt1_session_keys(struct smbcli_session *session,
 static void request_handler(struct smbcli_request *req)
 {
 	struct smbcli_composite *c = req->async.private;
-	struct sesssetup_state *state = c->private;
+	struct sesssetup_state *state = talloc_get_type(c->private, struct sesssetup_state);
 	struct smbcli_session *session = req->session;
 	DATA_BLOB session_key = data_blob(NULL, 0);
 	DATA_BLOB null_data_blob = data_blob(NULL, 0);
@@ -168,7 +168,7 @@ static struct smbcli_request *session_setup_nt1(struct smbcli_composite *c,
 						struct smbcli_session *session, 
 						struct smb_composite_sesssetup *io) 
 {
-	struct sesssetup_state *state = c->private;
+	struct sesssetup_state *state = talloc_get_type(c->private, struct sesssetup_state);
 
 	state->setup.nt1.level           = RAW_SESSSETUP_NT1;
 	state->setup.nt1.in.bufsize      = session->transport->options.max_xmit;
@@ -207,7 +207,7 @@ static struct smbcli_request *session_setup_old(struct smbcli_composite *c,
 						struct smbcli_session *session,
 						struct smb_composite_sesssetup *io)
 {
-	struct sesssetup_state *state = c->private;
+	struct sesssetup_state *state = talloc_get_type(c->private, struct sesssetup_state);
 
 	state->setup.old.level      = RAW_SESSSETUP_OLD;
 	state->setup.old.in.bufsize = session->transport->options.max_xmit;
@@ -241,7 +241,7 @@ static struct smbcli_request *session_setup_spnego(struct smbcli_composite *c,
 						   struct smbcli_session *session,
 						   struct smb_composite_sesssetup *io)
 {
-	struct sesssetup_state *state = c->private;
+	struct sesssetup_state *state = talloc_get_type(c->private, struct sesssetup_state);
 	NTSTATUS status;
 	DATA_BLOB session_key = data_blob(NULL, 0);
 	DATA_BLOB null_data_blob = data_blob(NULL, 0);
