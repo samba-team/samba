@@ -78,15 +78,6 @@ RCSID("$Id$");
 #include "auth.h"
 #include "misc.h"
 
-extern int auth_debug_mode;
-
-/* where should this really reside? */
-
-#ifdef KRB5
-#define FORWARD
-#endif
-
-#ifdef	FORWARD
 int forward_flags = 0;  /* Flags get set in telnet/main.c on -f and -F */
 
 /* These values need to be the same as those defined in telnet/main.c. */
@@ -96,8 +87,6 @@ int forward_flags = 0;  /* Flags get set in telnet/main.c on -f and -F */
 
 void kerberos5_forward (Authenticator *);
 
-#endif	/* FORWARD */
-
 static unsigned char str_data[1024] = { IAC, SB, TELOPT_AUTHENTICATION, 0,
 			  		AUTHTYPE_KERBEROS_V5, };
 
@@ -106,11 +95,9 @@ static unsigned char str_data[1024] = { IAC, SB, TELOPT_AUTHENTICATION, 0,
 #define	KRB_ACCEPT		2	/* Accepted */
 #define	KRB_RESPONSE		3	/* Response for mutual auth. */
 
-#ifdef	FORWARD
 #define KRB_FORWARD     	4       /* Forwarded credentials follow */
 #define KRB_FORWARD_ACCEPT     	5       /* Forwarded credentials accepted */
 #define KRB_FORWARD_REJECT     	6       /* Forwarded credentials rejected */
-#endif	/* FORWARD */
 
 static	krb5_data auth;
 static  krb5_ticket *ticket;
@@ -419,7 +406,6 @@ kerberos5_is(Authenticator *ap, unsigned char *data, int cnt)
 	krb5_free_keyblock_contents(context, key_block);
 	
 	break;
-#ifdef	FORWARD
     case KRB_FORWARD: {
 	struct passwd *pwd;
 	char ccname[1024];	/* XXX */
@@ -478,7 +464,6 @@ kerberos5_is(Authenticator *ap, unsigned char *data, int cnt)
 	    printf("Forwarded credentials obtained\r\n");
 	break;
     }
-#endif	/* FORWARD */
     default:
 	if (auth_debug_mode)
 	    printf("Unknown Kerberos option %d\r\n", data[-1]);
@@ -539,10 +524,8 @@ kerberos5_reply(Authenticator *ap, unsigned char *data, int cnt)
 	encrypt_session_key(&skey, 0);
 	krb5_free_keyblock_contents (context, keyblock);
 	auth_finished(ap, AUTH_USER);
-#ifdef	FORWARD
 	if (forward_flags & OPTS_FORWARD_CREDS)
 	    kerberos5_forward(ap);
-#endif	/* FORWARD */
 	break;
     }
     case KRB_RESPONSE:
@@ -566,7 +549,6 @@ kerberos5_reply(Authenticator *ap, unsigned char *data, int cnt)
 	  mutual_complete = 1;
 	}
 	return;
-#ifdef	FORWARD
     case KRB_FORWARD_ACCEPT:
 	printf("[ Kerberos V5 accepted forwarded credentials ]\r\n");
 	return;
@@ -574,7 +556,6 @@ kerberos5_reply(Authenticator *ap, unsigned char *data, int cnt)
 	printf("[ Kerberos V5 refuses forwarded credentials because %.*s ]\r\n",
 	       cnt, data);
 	return;
-#endif	/* FORWARD */
     default:
 	if (auth_debug_mode)
 	    printf("Unknown Kerberos option %d\r\n", data[-1]);
@@ -637,7 +618,6 @@ kerberos5_printsub(unsigned char *data, int cnt, unsigned char *buf, int buflen)
 	strcpy_truncate((char *)buf, " RESPONSE", buflen);
 	goto common2;
 
-#ifdef	FORWARD
     case KRB_FORWARD:		/* Forwarded credentials follow */
 	strcpy_truncate((char *)buf, " FORWARD", buflen);
 	goto common2;
@@ -650,7 +630,6 @@ kerberos5_printsub(unsigned char *data, int cnt, unsigned char *buf, int buflen)
 	/* (reason might follow) */
 	strcpy_truncate((char *)buf, " FORWARD_REJECT", buflen);
 	goto common2;
-#endif	/* FORWARD */
 
     default:
 	snprintf(buf, buflen, " %d (unknown)", data[3]);
@@ -664,7 +643,6 @@ kerberos5_printsub(unsigned char *data, int cnt, unsigned char *buf, int buflen)
     }
 }
 
-#ifdef FORWARD
 void
 kerberos5_forward(Authenticator *ap)
 {
@@ -739,6 +717,5 @@ kerberos5_forward(Authenticator *ap)
 	    printf("Forwarded local Kerberos V5 credentials to server\r\n");
     }
 }
-#endif
 
 #endif /* KRB5 */
