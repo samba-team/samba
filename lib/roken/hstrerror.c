@@ -52,7 +52,7 @@ RCSID("$Id$");
 int h_errno = -17; /* Some magic number */
 #endif
 
-#ifndef HAVE_H_ERRLIST
+#if !(defined(HAVE_H_ERRLIST) && defined(HAVE_H_NERR))
 static const char *const h_errlist[] = {
     "Resolver Error 0 (no error)",
     "Unknown host",		/* 1 HOST_NOT_FOUND */
