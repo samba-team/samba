@@ -33,19 +33,17 @@ static int established_socket = -1;           /* fd for winbindd socket */
  * Utility and helper functions
  */
 
-
-
 static void init_request(struct winbindd_request *req,int rq_type)
 {
-	static char *domain_env;
-	static int initialised;
+        static char *domain_env;
+        static BOOL initialised;
 
 	req->cmd = rq_type;
 	req->pid = getpid();
 	req->domain[0] = '\0';
 
 	if (!initialised) {
-		initialised = 1;
+		initialised = True;
 		domain_env = getenv(WINBINDD_DOMAIN_ENV);
 	}
 
@@ -55,7 +53,6 @@ static void init_request(struct winbindd_request *req,int rq_type)
 		req->domain[sizeof(req->domain) - 1] = '\0';
 	}
 }
-
 
 /* Close established socket */
 
