@@ -1,3 +1,7 @@
+2001-06-18  Assar Westerlund  <assar@sics.se>
+
+	* libtelnet/kerberos5.c: update to new krb5_auth_con* names
+
 2001-04-25  Assar Westerlund  <assar@sics.se>
 
 	* telnetd/sys_term.c (start_login): give the correct error if exec
