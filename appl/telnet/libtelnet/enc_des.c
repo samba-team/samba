@@ -444,8 +444,8 @@ fb64_session(key, server, fbp)
 	fb64_stream_key(fbp->krbdes_key, &fbp->streams[DIR_DECRYPT-1]);
 
 	if (fbp->once == 0) {
-#if OLD
-		des_set_random_generator_seed(fbp->krbdes_key);
+#ifndef OLD_DES_RANDOM_KEY
+		des_init_random_number_generator(fbp->krbdes_key);
 #endif
 		fbp->once = 1;
 	}
