@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -213,6 +213,12 @@ get_init_creds_common(krb5_context context,
 {
     krb5_error_code ret;
     krb5_realm *client_realm;
+    krb5_get_init_creds_opt default_opt;
+
+    if (options == NULL) {
+	krb5_get_init_creds_opt_init (&default_opt);
+	options = &default_opt;
+    }
 
     ret = init_cred (context, cred, client, start_time,
 		     in_tkt_service, options);
