@@ -1809,7 +1809,11 @@ TDB_CONTEXT *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 	}
 }
 
-/* close a database */
+/**
+ * Close a database.
+ *
+ * @returns -1 for error; 0 for success.
+ **/
 int tdb_close(TDB_CONTEXT *tdb)
 {
 	TDB_CONTEXT **i;
