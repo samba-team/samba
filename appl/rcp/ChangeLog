@@ -1,5 +1,6 @@
 2001-01-29  Assar Westerlund  <assar@sics.se>
 
+	* rcp.c: remove non-STDC code
 	* rcp_locl.h: add sys/types.h and sys/wait.h
 
 	* rcp.c: no calls to err with NULL
