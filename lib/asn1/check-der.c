@@ -94,15 +94,16 @@ generic_test (const struct test_case *tests,
 	    ++ret;
 	}
 	if (sz != tests[i].byte_len) {
-	    printf ("encoding of %s has wrong len (%d != %d)\n",
-		    tests[i].name, sz, tests[i].byte_len);
+	    printf ("encoding of %s has wrong len (%lu != %lu)\n",
+		    tests[i].name, 
+		    (unsigned long)sz, (unsigned long)tests[i].byte_len);
 	    ++ret;
 	}
 
 	length_sz = (*length) (tests[i].val);
 	if (sz != length_sz) {
-	    printf ("length for %s is bad (%d != %d)\n",
-		    tests[i].name, length_sz, sz);
+	    printf ("length for %s is bad (%lu != %lu)\n",
+		    tests[i].name, (unsigned long)length_sz, (unsigned long)sz);
 	    ++ret;
 	}
 
@@ -121,8 +122,9 @@ generic_test (const struct test_case *tests,
 	    ++ret;
 	}
 	if (sz != consumed_sz) {
-	    printf ("different length decoding %s (%d != %d)\n",
-		    tests[i].name, sz, consumed_sz);
+	    printf ("different length decoding %s (%ld != %ld)\n",
+		    tests[i].name, 
+		    (unsigned long)sz, (unsigned long)consumed_sz);
 	    ++ret;
 	}
 	if ((*cmp)(val, tests[i].val) != 0) {
