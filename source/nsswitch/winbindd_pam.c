@@ -25,8 +25,6 @@
 
 #include "winbindd.h"
 
-extern pstring global_myname;
-
 /* Copy of parse_domain_user from winbindd_util.c.  Parse a string of the
    form DOMAIN/user into a domain and a user */
 
