@@ -1,10 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/types.h>
-#include <sys/time.h>
-#include <krb5.h>
-
+#include "kuser_locl.h"
 
 char*
 stime(time_t t)

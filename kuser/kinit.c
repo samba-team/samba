@@ -1,7 +1,4 @@
-#include <stdio.h>
-#include <string.h>
-#include <pwd.h>
-#include <krb5.h>
+#include "kuser_locl.h"
 
 
 int
@@ -15,18 +12,24 @@ main (int argc, char **argv)
   krb5_creds cred;
 
   err = krb5_init_context (&context);
-  if (err)
-    abort ();
-
+  if (err){
+      fprintf(stderr, "%s\n", krb5_get_err_text(context, err));;
+      abort();
+  }				  
+  
   err = krb5_cc_default (context, &ccache);
-  if (err)
-    abort ();
+  if (err){
+      fprintf(stderr, "%s\n", krb5_get_err_text(context, err));;
+      abort();
+  }				  
 
   
   if(argv[1]){
       err = krb5_parse_name (context, argv[1], &principal);
-      if (err)
-	  abort ();
+      if (err){
+	  fprintf(stderr, "%s\n", krb5_get_err_text(context, err));;
+	  abort();
+      }				  
       
   }else{
       char *realm;
@@ -40,8 +43,10 @@ main (int argc, char **argv)
   }
 
   err = krb5_cc_initialize (context, ccache, principal);
-  if (err)
-    abort ();
+  if (err){
+      fprintf(stderr, "%s\n", krb5_get_err_text(context, err));;
+      abort();
+  }				  
 
   cred.client = principal;
   cred.times.endtime = time (NULL) + 4711;
@@ -55,8 +60,10 @@ main (int argc, char **argv)
 				  principal->realm.length, 
 				  principal->realm.data,
 				  NULL);
-  if (err)
-    abort ();
+  if (err){
+      fprintf(stderr, "%s\n", krb5_get_err_text(context, err));;
+      abort();
+  }				  
   cred.server->type = KRB5_NT_SRV_INST;
 
   err = krb5_get_in_tkt_with_password (context,
@@ -68,8 +75,10 @@ main (int argc, char **argv)
 				       ccache,
 				       &cred,
 				       NULL);
-  if (err)
-      abort ();
+  if (err){
+      fprintf(stderr, "%s\n", krb5_get_err_text(context, err));;
+      abort();
+  }				  
   
   krb5_free_context (context);
   return 0;
