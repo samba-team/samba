@@ -1711,6 +1711,9 @@ uint32 del_a_printer(char *sharename)
 	return 0;
 }
 
+/* FIXME!!!  Reorder so this forward declaration is not necessary --jerry */
+static uint32 get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **, fstring);
+static void free_nt_printer_info_level_2(NT_PRINTER_INFO_LEVEL_2 **);
 /****************************************************************************
 ****************************************************************************/
 static uint32 update_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info)
@@ -1719,6 +1722,8 @@ static uint32 update_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info)
 	char *buf;
 	int buflen, len, ret;
 	TDB_DATA kbuf, dbuf;
+	NT_PRINTER_INFO_LEVEL_2 *old_printer = NULL;
+	NT_DEVICEMODE *devmode = NULL;
 	
 	/*
 	 * in addprinter: no servername and the printer is the name
@@ -1774,7 +1779,21 @@ static uint32 update_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info)
 			info->datatype,
 			info->parameters);
 
-	len += pack_devicemode(info->devmode, buf+len, buflen-len);
+	/* do not write a NULL devicemode if there was previously
+	   a valid one.  Windows 2000 likes to send setprinter calls
+	   with NULL devicemodes (e.g. HP 4050 PCL6 driver)  --jerry
+	   
+	   We need to get the previously saved information for 
+	   this printer if the devicemode is NULL */
+	devmode = info->devmode;
+	if (!devmode &&	info->sharename)
+	{
+		get_a_printer_2(&old_printer, info->sharename);
+		if (old_printer)
+			devmode = old_printer->devmode;
+	}
+	len += pack_devicemode(devmode, buf+len, buflen-len);
+	
 	len += pack_specifics(info->specific, buf+len, buflen-len);
 
 	if (buflen != len) {
@@ -1802,6 +1821,9 @@ static uint32 update_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info)
 	DEBUG(8,("packed printer [%s] with driver [%s] portname=[%s] len=%d\n",
 		 info->sharename, info->drivername, info->portname, len));
 
+	if (old_printer)
+		free_nt_printer_info_level_2(&old_printer);
+	
 	return ret;
 }
 
