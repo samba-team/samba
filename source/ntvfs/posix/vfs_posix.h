@@ -26,8 +26,10 @@
 /* this is the private structure for the posix vfs backend. It is used
    to hold per-connection (per tree connect) state information */
 struct pvfs_state {
+	struct smbsrv_tcon *tcon;
 	const char *base_directory;
 
+	const char *share_name;
 	uint_t flags;
 
 	struct {
@@ -45,6 +47,22 @@ struct pvfs_state {
 		   the initial search attributes */
 		uint16_t search_attrib;
 	} search;
+
+	struct pvfs_file *open_files;
+};
+
+
+/* this is the basic information needed about a file from the filesystem */
+struct pvfs_dos_fileinfo {
+	NTTIME create_time;
+	NTTIME access_time;
+	NTTIME write_time;
+	NTTIME change_time;
+	uint32_t attrib;
+	uint64_t alloc_size;
+	uint32_t nlink;
+	uint32_t ea_size;
+	uint64_t file_id;
 };
 
 /*
@@ -58,6 +76,7 @@ struct pvfs_filename {
 	BOOL has_wildcard;
 	BOOL exists;
 	struct stat st;
+	struct pvfs_dos_fileinfo dos;
 };
 
 
@@ -79,26 +98,15 @@ struct pvfs_search_state {
 	struct pvfs_dir *dir;
 };
 
-
-/* this is the basic information needed about a file from the filesystem */
-struct pvfs_file_info {
-	NTTIME create_time;
-	NTTIME access_time;
-	NTTIME write_time;
-	NTTIME change_time;
-	uint32_t attrib;
-	uint64_t alloc_size;
-	uint64_t size;
-	uint32_t nlink;
-	uint32_t ea_size;
-	uint64_t file_id;
-	uint64_t unix_uid;
-	uint64_t unix_gid;
-	uint32_t unix_file_type;
-	uint64_t unix_dev_major;
-	uint64_t unix_dev_minor;
-	uint64_t unix_permissions;
+/* open file state - this is a temporary implementation
+   to allow some tests to work */
+struct pvfs_file {
+	struct pvfs_file *next, *prev;
+	int fd;
+	uint16_t fnum;
+	struct pvfs_filename *name;
 };
+
 
 /* flags to pvfs_resolve_name() */
 #define PVFS_RESOLVE_NO_WILDCARD (1<<0)
@@ -106,5 +114,9 @@ struct pvfs_file_info {
 
 /* flags in pvfs->flags */
 #define PVFS_FLAG_CI_FILESYSTEM (1<<0) /* the filesystem is case insensitive */
+#define PVFS_FLAG_MAP_ARCHIVE   (1<<1)
+#define PVFS_FLAG_MAP_SYSTEM    (1<<2)
+#define PVFS_FLAG_MAP_HIDDEN    (1<<3)
+#define PVFS_FLAG_READONLY      (1<<4)
 
 #endif /* _VFS_POSIX_H_ */

@@ -116,11 +116,13 @@ static NTSTATUS pvfs_case_search(struct pvfs_state *pvfs, struct pvfs_filename *
 		}
 
 		if (!de) {
-			closedir(dir);
-			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+			if (i < num_components-1) {
+				closedir(dir);
+				return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+			}
+		} else {
+			components[i] = talloc_strdup(name, de->d_name);
 		}
-
-		components[i] = talloc_strdup(name, de->d_name);
 		test_name = talloc_asprintf(name, "%s/%s", partial_name, components[i]);
 		talloc_free(partial_name);
 		partial_name = test_name;
@@ -136,6 +138,10 @@ static NTSTATUS pvfs_case_search(struct pvfs_state *pvfs, struct pvfs_filename *
 
 	talloc_free(name->full_name);
 	name->full_name = partial_name;
+
+	if (name->exists) {
+		return pvfs_fill_dos_info(pvfs, name);
+	}
 
 	return NT_STATUS_OK;
 }
@@ -154,7 +160,7 @@ static NTSTATUS pvfs_unix_path(struct pvfs_state *pvfs, const char *cifs_name,
 {
 	char *ret, *p;
 
-	name->original_name = cifs_name;
+	name->original_name = talloc_strdup(name, cifs_name);
 	name->stream_name = NULL;
 	name->has_wildcard = False;
 
@@ -252,7 +258,7 @@ NTSTATUS pvfs_resolve_name(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 	/* if we can stat() the full name now then we are done */
 	if (stat((*name)->full_name, &(*name)->st) == 0) {
 		(*name)->exists = True;
-		return NT_STATUS_OK;
+		return pvfs_fill_dos_info(pvfs, *name);
 	}
 
 	/* the filesystem might be case insensitive, in which
@@ -280,12 +286,14 @@ NTSTATUS pvfs_resolve_partial(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 			      const char *unix_dir, const char *fname,
 			      struct pvfs_filename **name)
 {
+	NTSTATUS status;
+
 	*name = talloc_p(mem_ctx, struct pvfs_filename);
 	if (*name == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	(*name)->full_name = talloc_asprintf(mem_ctx, "%s/%s", unix_dir, fname);
+	(*name)->full_name = talloc_asprintf(*name, "%s/%s", unix_dir, fname);
 	if ((*name)->full_name == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -296,8 +304,28 @@ NTSTATUS pvfs_resolve_partial(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 
 	(*name)->exists = True;
 	(*name)->has_wildcard = False;
-	(*name)->original_name = fname;
+	(*name)->original_name = talloc_strdup(*name, fname);
 	(*name)->stream_name = NULL;
 
-	return NT_STATUS_OK;
+	status = pvfs_fill_dos_info(pvfs, *name);
+
+	return status;
+}
+
+
+/*
+  fill in the pvfs_filename info for an open file, given the current
+  info for a (possibly) non-open file. This is used by places that need
+  to update the pvfs_filename stat information, and by pvfs_open()
+*/
+NTSTATUS pvfs_resolve_name_fd(struct pvfs_state *pvfs, int fd,
+			      struct pvfs_filename *name)
+{
+	if (fstat(fd, &name->st) == -1) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	name->exists = True;
+	
+	return pvfs_fill_dos_info(pvfs, name);
 }

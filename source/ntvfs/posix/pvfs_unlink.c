@@ -63,8 +63,8 @@ static NTSTATUS pvfs_unlink_one(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 */
 NTSTATUS pvfs_unlink(struct smbsrv_request *req, struct smb_unlink *unl)
 {
-	struct pvfs_dir *dir;
 	struct pvfs_state *pvfs = req->tcon->ntvfs_private;
+	struct pvfs_dir *dir;
 	NTSTATUS status;
 	uint32_t i, total_deleted=0;
 	struct pvfs_filename *name;

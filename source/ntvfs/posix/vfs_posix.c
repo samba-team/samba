@@ -29,6 +29,22 @@
 
 
 /*
+  setup config options for a posix share
+*/
+static void pvfs_setup_options(struct pvfs_state *pvfs)
+{
+	int snum = pvfs->tcon->service;
+
+	if (lp_map_hidden(snum)) pvfs->flags |= PVFS_FLAG_MAP_HIDDEN;
+	if (lp_map_archive(snum)) pvfs->flags |= PVFS_FLAG_MAP_ARCHIVE;
+	if (lp_map_system(snum)) pvfs->flags |= PVFS_FLAG_MAP_SYSTEM;
+	if (lp_readonly(snum)) pvfs->flags |= PVFS_FLAG_READONLY;
+
+	pvfs->share_name = talloc_strdup(pvfs, lp_servicename(snum));
+}
+
+
+/*
   connect to a share - used when a tree_connect operation comes
   in. For a disk based backend we needs to ensure that the base
   directory exists (tho it doesn't need to be accessible by the user,
@@ -53,6 +69,7 @@ static NTSTATUS pvfs_connect(struct smbsrv_request *req, const char *sharename)
 	base_directory = talloc_strdup(pvfs, lp_pathname(tcon->service));
 	trim_string(base_directory, NULL, "/");
 
+	pvfs->tcon = tcon;
 	pvfs->base_directory = base_directory;
 
 	/* the directory must exist. Note that we deliberately don't
@@ -66,6 +83,8 @@ static NTSTATUS pvfs_connect(struct smbsrv_request *req, const char *sharename)
 	tcon->fs_type = talloc_strdup(tcon, "NTFS");
 	tcon->dev_type = talloc_strdup(tcon, "A:");
 	tcon->ntvfs_private = pvfs;
+
+	pvfs_setup_options(pvfs);
 
 	return NT_STATUS_OK;
 }
@@ -114,52 +133,6 @@ static NTSTATUS pvfs_chkpath(struct smbsrv_request *req, struct smb_chkpath *cp)
 }
 
 /*
-  return info on a pathname
-*/
-static NTSTATUS pvfs_qpathinfo(struct smbsrv_request *req, union smb_fileinfo *info)
-{
-	DEBUG(0,("pvfs_qpathinfo not implemented\n"));
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-/*
-  query info on a open file
-*/
-static NTSTATUS pvfs_qfileinfo(struct smbsrv_request *req, union smb_fileinfo *info)
-{
-	DEBUG(0,("pvfs_qfileinfo not implemented\n"));
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-
-/*
-  open a file
-*/
-static NTSTATUS pvfs_open(struct smbsrv_request *req, union smb_open *io)
-{
-	DEBUG(0,("pvfs_open not implemented\n"));
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-/*
-  create a directory
-*/
-static NTSTATUS pvfs_mkdir(struct smbsrv_request *req, union smb_mkdir *md)
-{
-	DEBUG(0,("pvfs_mkdir not implemented\n"));
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-/*
-  remove a directory
-*/
-static NTSTATUS pvfs_rmdir(struct smbsrv_request *req, struct smb_rmdir *rd)
-{
-	DEBUG(0,("pvfs_rmdir not implemented\n"));
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-/*
   rename a set of files
 */
 static NTSTATUS pvfs_rename(struct smbsrv_request *req, union smb_rename *ren)
@@ -178,24 +151,6 @@ static NTSTATUS pvfs_copy(struct smbsrv_request *req, struct smb_copy *cp)
 }
 
 /*
-  read from a file
-*/
-static NTSTATUS pvfs_read(struct smbsrv_request *req, union smb_read *rd)
-{
-	DEBUG(0,("pvfs_read not implemented\n"));
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-/*
-  write to a file
-*/
-static NTSTATUS pvfs_write(struct smbsrv_request *req, union smb_write *wr)
-{
-	DEBUG(0,("pvfs_write not implemented\n"));
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-/*
   seek in a file
 */
 static NTSTATUS pvfs_seek(struct smbsrv_request *req, struct smb_seek *io)
@@ -210,15 +165,6 @@ static NTSTATUS pvfs_seek(struct smbsrv_request *req, struct smb_seek *io)
 static NTSTATUS pvfs_flush(struct smbsrv_request *req, struct smb_flush *io)
 {
 	DEBUG(0,("pvfs_flush not implemented\n"));
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-/*
-  close a file
-*/
-static NTSTATUS pvfs_close(struct smbsrv_request *req, union smb_close *io)
-{
-	DEBUG(0,("pvfs_close not implemented\n"));
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
@@ -247,26 +193,6 @@ static NTSTATUS pvfs_setpathinfo(struct smbsrv_request *req, union smb_setfilein
 {
 	DEBUG(0,("pvfs_setpathinfo not implemented\n"));
 	return NT_STATUS_NOT_SUPPORTED;
-}
-
-/*
-  set info on a open file
-*/
-static NTSTATUS pvfs_setfileinfo(struct smbsrv_request *req, 
-				 union smb_setfileinfo *info)
-{
-	DEBUG(0,("pvfs_setfileinfo not implemented\n"));
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-
-/*
-  return filesystem space info
-*/
-static NTSTATUS pvfs_fsinfo(struct smbsrv_request *req, union smb_fsinfo *fs)
-{
-	DEBUG(0,("pvfs_fsinfo not implemented\n"));
-	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
 /*
