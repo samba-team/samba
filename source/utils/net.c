@@ -79,30 +79,6 @@ struct in_addr opt_dest_ip;
 
 extern BOOL AllowDebugChange;
 
-/**************************************************************************************************/
-/* Utility function to prompt for password from stdin.  Password entered must end with a newline. */
-/**************************************************************************************************/
-static char *stdin_new_passwd(void)
-{
-	static fstring new_pw;
-	size_t len;
-
-	ZERO_ARRAY(new_pw);
-
-	/*
-	 * if no error is reported from fgets() and string at least contains
-	 * the newline that ends the password, then replace the newline with
-	 * a null terminator.
-	 */
-	if ( fgets(new_pw, sizeof(new_pw), stdin) != NULL) {
-		if ((len = strlen(new_pw)) > 0) {
-			if(new_pw[len-1] == '\n')
-				new_pw[len - 1] = 0; 
-		}
-	}
-	return(new_pw);
-}
-
 uint32 get_sec_channel_type(const char *param) 
 {
 	if (!(param && *param)) {
@@ -382,9 +358,7 @@ static int net_changetrustpw(int argc, const char **argv)
 static int net_changesecretpw(int argc, const char **argv)
 {
         char *trust_pw;
-        char trust_pw_hash[16];
         uint32 sec_channel_type = SEC_CHAN_WKSTA;
-
 
 	if(opt_force) {
 		trust_pw = getpass("Enter machine password: ");
