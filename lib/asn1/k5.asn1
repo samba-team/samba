@@ -113,7 +113,8 @@ ENCTYPE ::= INTEGER {
 	ETYPE_DES_CFB64_NONE(-0x1002),
 	ETYPE_DES_PCBC_NONE(-0x1003),
 	ETYPE_DIGEST_MD5_NONE(-0x1004),		-- private use, lukeh@padl.com
-	ETYPE_CRAM_MD5_NONE(-0x1005)		-- private use, lukeh@padl.com
+	ETYPE_CRAM_MD5_NONE(-0x1005),		-- private use, lukeh@padl.com
+	ETYPE_RC2_CBC_NONE(-0x1005)
 }
 
 -- this is sugar to make something ASN1 does not have: unsigned
@@ -534,6 +535,13 @@ PA-ENC-SAM-RESPONSE-ENC ::= SEQUENCE {
 	sam-sad[1]		GeneralString OPTIONAL,
 	...
 }
+
+RC2CBCParameter ::= SEQUENCE {
+	rc2ParameterVersion	[0] INTEGER,
+	iv			[1] OCTET STRING -- exactly 8 octets
+}
+
+CBCParameter ::= OCTET STRING
 
 END
 
