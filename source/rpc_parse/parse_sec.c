@@ -135,7 +135,14 @@ SEC_ACL *make_sec_acl(TALLOC_CTX *ctx, uint16 revision, int num_aces, SEC_ACE *a
 	dst->num_aces = num_aces;
 	dst->size = 8;
 
-	if((dst->ace = (SEC_ACE *)talloc(ctx, sizeof(SEC_ACE) * num_aces )) == NULL) {
+	/* Now we need to return a non-NULL address for the ace list even
+	   if the number of aces required is zero.  This is because there
+	   is a distinct difference between a NULL ace and an ace with zero
+	   entries in it.  This is achieved by always making the number of
+	   bytes allocated by talloc() positive.  Heh. */
+
+	if((dst->ace = (SEC_ACE *)talloc(ctx, sizeof(SEC_ACE) * num_aces + 1))
+	   == NULL) {
 		return NULL;
 	}
 
