@@ -195,6 +195,8 @@ arg_match_long(struct getargs *args, size_t num_args,
 	   strcmp(optarg + 1, "true") == 0){
 	    *flag = !negate;
 	    return 0;
+	} else if (*optarg && strcmp(optarg + 1, "maybe") == 0) {
+	    *flag = rand() & 1;
 	} else {
 	    *flag = negate;
 	    return 0;
@@ -212,6 +214,8 @@ getarg(struct getargs *args, size_t num_args,
 {
     int i, j, k;
     int ret = 0;
+
+    srand (time(NULL));
     (*optind)++;
     for(i = *optind; i < argc; i++) {
 	if(argv[i][0] != '-')
