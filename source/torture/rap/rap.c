@@ -23,7 +23,6 @@
 #include "rap.h"
 
 struct rap_call {
-	TALLOC_CTX *mem_ctx;
 	uint16 callno;
 	char *paramdesc;
 	const char *datadesc;
@@ -41,24 +40,20 @@ struct rap_call {
 
 #define RAPNDR_FLAGS (LIBNDR_FLAG_NOALIGN|LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM);
 
-static struct rap_call *new_rap_cli_call(uint16 callno)
+static struct rap_call *new_rap_cli_call(TALLOC_CTX *mem_ctx, uint16 callno)
 {
 	struct rap_call *call;
-	TALLOC_CTX *mem_ctx = talloc_init("rap_call");
-
-	if (mem_ctx == NULL)
-		return NULL;
 
 	call = talloc_p(mem_ctx, struct rap_call);
 
 	if (call == NULL)
 		return NULL;
 
-	ZERO_STRUCTP(call);
-
 	call->callno = callno;
 	call->rcv_paramlen = 4;
-	call->mem_ctx = mem_ctx;
+
+	call->paramdesc = NULL;
+	call->datadesc = NULL;
 
 	call->ndr_push_param = ndr_push_init_ctx(mem_ctx);
 	call->ndr_push_param->flags = RAPNDR_FLAGS;
@@ -69,11 +64,6 @@ static struct rap_call *new_rap_cli_call(uint16 callno)
 	return call;
 }
 
-static void destroy_rap_call(struct rap_call *call)
-{
-	talloc_destroy(call->mem_ctx);
-}
-
 static void rap_cli_push_paramdesc(struct rap_call *call, char desc)
 {
 	int len = 0;
@@ -81,10 +71,11 @@ static void rap_cli_push_paramdesc(struct rap_call *call, char desc)
 	if (call->paramdesc != NULL)
 		len = strlen(call->paramdesc);
 
-	call->paramdesc = talloc_realloc(call->mem_ctx,
+	call->paramdesc = talloc_realloc(call,
 					 call->paramdesc,
 					 uint8_t,
 					 len+2);
+
 	call->paramdesc[len] = desc;
 	call->paramdesc[len+1] = '\0';
 }
@@ -159,15 +150,14 @@ static NTSTATUS rap_pull_string(TALLOC_CTX *mem_ctx, struct ndr_pull *ndr,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS rap_cli_do_call(struct smbcli_state *cli, TALLOC_CTX *mem_ctx,
-				struct rap_call *call)
+static NTSTATUS rap_cli_do_call(struct smbcli_state *cli, struct rap_call *call)
 {
 	NTSTATUS result;
 	DATA_BLOB param_blob;
 	struct ndr_push *params;
 	struct smb_trans2 trans;
 
-	params = ndr_push_init_ctx(mem_ctx);
+	params = ndr_push_init_ctx(call);
 
 	if (params == NULL)
 		return NT_STATUS_NO_MEMORY;
@@ -196,17 +186,15 @@ static NTSTATUS rap_cli_do_call(struct smbcli_state *cli, TALLOC_CTX *mem_ctx,
 	trans.in.params = ndr_push_blob(params);
 	trans.in.data = data_blob(NULL, 0);
 
-	result = smb_raw_trans(cli->tree, call->mem_ctx, &trans);
+	result = smb_raw_trans(cli->tree, call, &trans);
 
 	if (!NT_STATUS_IS_OK(result))
 		return result;
 
-	call->ndr_pull_param = ndr_pull_init_blob(&trans.out.params,
-						  call->mem_ctx);
+	call->ndr_pull_param = ndr_pull_init_blob(&trans.out.params, call);
 	call->ndr_pull_param->flags = RAPNDR_FLAGS;
 
-	call->ndr_pull_data = ndr_pull_init_blob(&trans.out.data,
-						 call->mem_ctx);
+	call->ndr_pull_data = ndr_pull_init_blob(&trans.out.data, call);
 	call->ndr_pull_data->flags = RAPNDR_FLAGS;
 
 	return result;
@@ -219,14 +207,13 @@ static NTSTATUS rap_cli_do_call(struct smbcli_state *cli, TALLOC_CTX *mem_ctx,
                         } while (0)
 
 static NTSTATUS smbcli_rap_netshareenum(struct smbcli_state *cli,
-				     TALLOC_CTX *mem_ctx,
-				     struct rap_NetShareEnum *r)
+					struct rap_NetShareEnum *r)
 {
 	struct rap_call *call;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	int i;
 
-	call = new_rap_cli_call(0);
+	call = new_rap_cli_call(NULL, 0);
 
 	if (call == NULL)
 		return NT_STATUS_NO_MEMORY;
@@ -244,7 +231,7 @@ static NTSTATUS smbcli_rap_netshareenum(struct smbcli_state *cli,
 		break;
 	}
 
-	result = rap_cli_do_call(cli, mem_ctx, call);
+	result = rap_cli_do_call(cli, call);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -254,11 +241,13 @@ static NTSTATUS smbcli_rap_netshareenum(struct smbcli_state *cli,
 	NDR_OK(ndr_pull_uint16(call->ndr_pull_param, &r->out.count));
 	NDR_OK(ndr_pull_uint16(call->ndr_pull_param, &r->out.available));
 
-	r->out.info = talloc_array_p(mem_ctx, union rap_shareenum_info,
+	r->out.info = talloc_array_p(call, union rap_shareenum_info,
 				     r->out.count);
 
-	if (r->out.info == NULL)
-		return NT_STATUS_NO_MEMORY;
+	if (r->out.info == NULL) {
+		result = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
 
 	for (i=0; i<r->out.count; i++) {
 		switch(r->in.level) {
@@ -273,7 +262,7 @@ static NTSTATUS smbcli_rap_netshareenum(struct smbcli_state *cli,
 					      (uint8_t *)&r->out.info[i].info1.pad, 1));
 			NDR_OK(ndr_pull_uint16(call->ndr_pull_data,
 					       &r->out.info[i].info1.type));
-			NDR_OK(rap_pull_string(mem_ctx, call->ndr_pull_data,
+			NDR_OK(rap_pull_string(call, call->ndr_pull_data,
 					       r->out.convert,
 					       &r->out.info[i].info1.comment));
 			break;
@@ -283,12 +272,11 @@ static NTSTATUS smbcli_rap_netshareenum(struct smbcli_state *cli,
 	result = NT_STATUS_OK;
 
  done:
-	destroy_rap_call(call);
-
+	talloc_destroy(call);
 	return result;
 }
 
-static BOOL test_netshareenum(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static BOOL test_netshareenum(struct smbcli_state *cli)
 {
 	struct rap_NetShareEnum r;
 	int i;
@@ -296,7 +284,7 @@ static BOOL test_netshareenum(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	r.in.level = 1;
 	r.in.bufsize = 8192;
 
-	if (!NT_STATUS_IS_OK(smbcli_rap_netshareenum(cli, mem_ctx, &r)))
+	if (!NT_STATUS_IS_OK(smbcli_rap_netshareenum(cli, &r)))
 		return False;
 
 	for (i=0; i<r.out.count; i++) {
@@ -309,14 +297,13 @@ static BOOL test_netshareenum(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 }
 
 static NTSTATUS smbcli_rap_netserverenum2(struct smbcli_state *cli,
-				       TALLOC_CTX *mem_ctx,
-				       struct rap_NetServerEnum2 *r)
+					  struct rap_NetServerEnum2 *r)
 {
 	struct rap_call *call;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	int i;
 
-	call = new_rap_cli_call(104);
+	call = new_rap_cli_call(NULL, 104);
 
 	if (call == NULL)
 		return NT_STATUS_NO_MEMORY;
@@ -336,7 +323,7 @@ static NTSTATUS smbcli_rap_netserverenum2(struct smbcli_state *cli,
 		break;
 	}
 
-	result = rap_cli_do_call(cli, mem_ctx, call);
+	result = rap_cli_do_call(cli, call);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -348,11 +335,13 @@ static NTSTATUS smbcli_rap_netserverenum2(struct smbcli_state *cli,
 	NDR_OK(ndr_pull_uint16(call->ndr_pull_param, &r->out.count));
 	NDR_OK(ndr_pull_uint16(call->ndr_pull_param, &r->out.available));
 
-	r->out.info = talloc_array_p(mem_ctx, union rap_server_info,
+	r->out.info = talloc_array_p(call, union rap_server_info,
 				     r->out.count);
 
-	if (r->out.info == NULL)
-		return NT_STATUS_NO_MEMORY;
+	if (r->out.info == NULL) {
+		result = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
 
 	for (i=0; i<r->out.count; i++) {
 		switch(r->in.level) {
@@ -369,7 +358,7 @@ static NTSTATUS smbcli_rap_netserverenum2(struct smbcli_state *cli,
 					      &r->out.info[i].info1.version_minor, 1));
 			NDR_OK(ndr_pull_uint32(call->ndr_pull_data,
 					       &r->out.info[i].info1.servertype));
-			NDR_OK(rap_pull_string(mem_ctx, call->ndr_pull_data,
+			NDR_OK(rap_pull_string(call, call->ndr_pull_data,
 					       r->out.convert,
 					       &r->out.info[i].info1.comment));
 		}
@@ -378,12 +367,11 @@ static NTSTATUS smbcli_rap_netserverenum2(struct smbcli_state *cli,
 	result = NT_STATUS_OK;
 
  done:
-	destroy_rap_call(call);
-
+	talloc_destroy(call);
 	return result;
 }
 
-static BOOL test_netserverenum(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static BOOL test_netserverenum(struct smbcli_state *cli)
 {
 	struct rap_NetServerEnum2 r;
 	int i;
@@ -394,7 +382,7 @@ static BOOL test_netserverenum(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	r.in.servertype = 0x80000000;
 	r.in.domain = NULL;
 
-	if (!NT_STATUS_IS_OK(smbcli_rap_netserverenum2(cli, mem_ctx, &r)))
+	if (!NT_STATUS_IS_OK(smbcli_rap_netserverenum2(cli, &r)))
 		return False;
 
 	for (i=0; i<r.out.count; i++) {
@@ -415,14 +403,14 @@ static BOOL test_netserverenum(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 
 
-static BOOL test_rap(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static BOOL test_rap(struct smbcli_state *cli)
 {
 	BOOL res = True;
 
-	if (!test_netserverenum(cli, mem_ctx))
+	if (!test_netserverenum(cli))
 		res = False;
 
-	if (!test_netshareenum(cli, mem_ctx))
+	if (!test_netshareenum(cli))
 		res = False;
 
 	return res;
@@ -440,36 +428,40 @@ BOOL torture_raw_rap(void)
 
 	mem_ctx = talloc_init("torture_raw_rap");
 
-	if (!test_rap(cli, mem_ctx)) {
+	if (!test_rap(cli)) {
 		ret = False;
 	}
 
 	torture_close_connection(cli);
 	talloc_destroy(mem_ctx);
+
 	return ret;
 }
 
 BOOL torture_rap_scan(void)
 {
+	TALLOC_CTX *mem_ctx;
 	struct smbcli_state *cli;
 	uint16 callno;
+
+	mem_ctx = talloc_init("torture_rap_scan");
 
 	if (!torture_open_connection(&cli)) {
 		return False;
 	}
 	
 	for (callno = 0; callno < 0xffff; callno++) {
-		struct rap_call *call = new_rap_cli_call(callno);
+		struct rap_call *call = new_rap_cli_call(mem_ctx, callno);
 		NTSTATUS result;
 
-		result = rap_cli_do_call(cli, cli, call);
+		result = rap_cli_do_call(cli, call);
 
 		if (NT_STATUS_EQUAL(result, NT_STATUS_INVALID_PARAMETER))
 			printf("callno %d is RAP call\n", callno);
-
-		destroy_rap_call(call);
 	}
 
 	torture_close_connection(cli);
+
+
 	return True;
 }
