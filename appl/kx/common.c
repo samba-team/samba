@@ -85,56 +85,109 @@ childhandler (int sig)
      SIGRETURN(0);
 }
 
-/*
- * Allocate and listen on a local X server socket.
- */
-
-#define TMPX11 "/tmp/.X11-unix"
+#ifndef X_UNIX_PATH
+#define X_UNIX_PATH "/tmp/.X11-unix/X"
+#endif
 
 char x_socket[MaxPathLen];
 
+/*
+ * Allocate and listen on a local X server socket and a TCP socket.
+ * Return the display number.
+ */
+
 int
-get_local_xsocket (int *num)
+get_xsockets (int *unix_socket, int *tcp_socket)
 {
-     int fd;
-     struct sockaddr_un addr;
+     int unixfd, tcpfd;
+     struct sockaddr_un unixaddr;
+     struct sockaddr_in tcpaddr;
      int dpy;
      int oldmask;
+     struct hostent *h;
+     struct in_addr local;
+     char *dir, *p;
+
+     dir = strdup (X_UNIX_PATH);
+     p = strchr (dir, '/');
+     if (p)
+       *p = '\0';
 
      oldmask = umask(0);
-     mkdir (TMPX11, 01777);
+     mkdir (dir, 01777);
      umask (oldmask);
+     free (dir);
 
-     fd = socket (AF_UNIX, SOCK_STREAM, 0);
-     if (fd < 0) {
-	  fprintf (stderr, "%s: socket: %s\n", prog, strerror(errno));
-	  return fd;
-     }    
-     addr.sun_family = AF_UNIX;
+     h = gethostbyname ("localhost");
+     if (h)
+	 memcpy (&local, h->h_addr, h->h_length);
+     else
+	 local.s_addr = inet_addr ("127.0.0.1");
+
      for(dpy = 4; dpy < 256; ++dpy) {
-	  struct stat statbuf;
+	 unixfd = socket (AF_UNIX, SOCK_STREAM, 0);
+	 if (unixfd < 0) {
+	     fprintf (stderr, "%s: socket: %s\n", prog, strerror(errno));
+	     return -1;
+	 }    
+	 memset (&unixaddr, 0, sizeof(unixaddr));
+	 unixaddr.sun_family = AF_UNIX;
+	 sprintf (unixaddr.sun_path, X_UNIX_PATH "%u", dpy);
+	 if(bind(unixfd,
+		 (struct sockaddr *)&unixaddr,
+		 sizeof(unixaddr)) < 0) {
+	     close (unixfd);
+	     if (errno == EADDRINUSE ||
+		 errno == EACCES) /* Cray return EACCESS */
+		 continue;
+	     else
+		 return -1;
+	 }
 
-	  sprintf (addr.sun_path, TMPX11 "/X%u", dpy);
-	  if(bind(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0)
-	       if (errno == EADDRINUSE)
-		    continue;
-	       else
-		    return -1;
-	  else
-	       break;
+	 if (tcp_socket) {
+	     tcpfd = socket (AF_INET, SOCK_STREAM, 0);
+	     if (tcpfd < 0) {
+		 fprintf (stderr, "%s: socket: %s\n", prog,
+			  strerror(errno));
+		 close (unixfd);
+		 return -1;
+	     }
+	     memset (&tcpaddr, 0, sizeof(tcpaddr));
+	     tcpaddr.sin_family = AF_INET;
+	     tcpaddr.sin_addr = local;
+	     tcpaddr.sin_port = htons(6000 + dpy);
+	     if (bind (tcpfd, (struct sockaddr *)&tcpaddr,
+		       sizeof(tcpaddr)) < 0) {
+		 close (unixfd);
+		 close (tcpfd);
+		 if (errno == EADDRINUSE)
+		     continue;
+		 else
+		     return -1;
+	     }
+	 }
+	 break;
      }
      if (dpy == 256) {
 	  fprintf (stderr, "%s: no free x-servers\n", prog);
 	  return -1;
      }
-     if (listen (fd, SOMAXCONN) < 0) {
+     if (listen (unixfd, SOMAXCONN) < 0) {
 	  fprintf (stderr, "%s: listen: %s\n", prog,
 		   strerror(errno));
 	  return -1;
      }
-     strcpy(x_socket, addr.sun_path);
-     *num = dpy;
-     return fd;
+     if (tcp_socket)
+	 if (listen (tcpfd, SOMAXCONN) < 0) {
+	     fprintf (stderr, "%s: listen: %s\n", prog,
+		      strerror(errno));
+	     return -1;
+	 }
+     strcpy(x_socket, unixaddr.sun_path);
+     *unix_socket = unixfd;
+     if (tcp_socket)
+	 *tcp_socket = tcpfd;
+     return dpy;
 }
 
 /*

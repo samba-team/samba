@@ -41,7 +41,7 @@ connect_host (char *host, des_cblock *key, des_key_schedule schedule,
 
      memset (&thataddr, 0, sizeof(thataddr));
      thataddr.sin_family = AF_INET;
-     thataddr.sin_port   = k_getportbyname ("kx", "tcp", htons(2111));
+     thataddr.sin_port   = k_getportbyname ("kx", "tcp", htons(KX_PORT));
      memcpy (&thataddr.sin_addr, hostent->h_addr, sizeof(thataddr.sin_addr));
 
      s = socket (AF_INET, SOCK_STREAM, 0);
@@ -261,11 +261,15 @@ doit (char *host, int passivep)
 	       fprintf (stderr, "%s: listen: %s\n", prog, strerror(errno));
 	       return 1;
 	  }
-	  if (krb_net_write (otherside, &newaddr.sin_port,
-			     sizeof(newaddr.sin_port))
-	      != sizeof(newaddr.sin_port)) {
-	       fprintf (stderr, "%s: write: %s\n", prog, strerror(errno));
-	       return 1;
+	  {
+	      char tmp[6];
+
+	      sprintf (tmp, "%d", ntohs(newaddr.sin_port));
+	      if (krb_net_write (otherside, tmp, sizeof(tmp))
+		  != sizeof(tmp)) {
+		  fprintf (stderr, "%s: write: %s\n", prog, strerror(errno));
+		  return 1;
+	      }
 	  }
 	  /* close (otherside); */
 	  fn = passive;
@@ -280,8 +284,8 @@ doit (char *host, int passivep)
 	      fclose(stdout);
 	  }
      } else {
-	  rendez_vous = get_local_xsocket (&display_num); /* XXX */
-	  if (rendez_vous < 0)
+	  display_num = get_xsockets (&rendez_vous, NULL);
+	  if (display_num < 0)
 	       return 1;
 	  fn = active;
      }

@@ -161,6 +161,10 @@ check_user_console ()
      return 0;
 }
 
+#ifndef INADDR_LOOPBACK
+#define INADDR_LOOPBACK 0x7f000001
+#endif
+
 static int
 create_and_write_cookie (char *xauthfile,
 			 u_char *cookie,
@@ -170,9 +174,13 @@ create_and_write_cookie (char *xauthfile,
      char tmp[64];
      FILE *f;
      char hostname[MaxHostNameLen];
+     struct in_addr loopback;
+     struct hostent *h;
 
-     auth.family = FamilyLocal;
      k_gethostname (hostname, sizeof(hostname));
+     loopback.s_addr = htonl(INADDR_LOOPBACK);
+     
+     auth.family = FamilyLocal;
      auth.address = hostname;
      auth.address_length = strlen(auth.address);
      sprintf (tmp, "%d", display_num);
@@ -190,19 +198,61 @@ create_and_write_cookie (char *xauthfile,
 	  fclose(f);
 	  return 1;
      }
+
+     h = gethostbyname (hostname);
+     if (h == NULL) {
+	  fclose (f);
+	  return 1;
+     }
+
+     /*
+      * I would like to write a cookie for localhost:n here, but some
+      * stupid code in libX11 will not look for cookies of that type,
+      * so we are forced to use FamilyWild instead.
+      */
+
+     auth.family  = FamilyWild;
+     auth.address_length = 0;
+
+#if 0 /* XXX */
+     auth.address = (char *)&loopback;
+     auth.address_length = sizeof(loopback);
+#endif
+
+     if (XauWriteAuth(f, &auth) == 0) {
+	  fclose (f);
+	  return 1;
+     }
+
      if(fclose(f))
 	  return 1;
      return 0;
 }
 
+/*
+ * Some simple controls on the address and corresponding socket
+ */
+
 static int
-doit(int sock)
+suspicious_address (int sock, struct sockaddr_in addr)
+{
+    char data[40];
+    int len = sizeof(data);
+    
+
+    return addr.sin_addr.s_addr != htonl(INADDR_LOOPBACK)
+	|| getsockopt (sock, IPPROTO_IP, IP_OPTIONS, data, &len) < 0
+	|| len != 0;
+}
+
+static int
+doit(int sock, int tcpp)
 {
      u_char passivep;
      struct sockaddr_in thataddr;
      des_key_schedule schedule;
      des_cblock key;
-     int localx;
+     int localx, tcpx;
      u_int32_t tmp;
 
      if (recv_conn (sock, &key, schedule, &thataddr))
@@ -212,8 +262,8 @@ doit(int sock)
      if (passivep) {
 	  char tmp[16];
 
-	  localx = get_local_xsocket (&display_num);
-	  if (localx < 0)
+	  display_num = get_xsockets (&localx, tcpp ? &tcpx : NULL);
+	  if (display_num < 0)
 	       return 1;
 	  sprintf (tmp, "%u", display_num);
 	  if (krb_net_write (sock, tmp, sizeof(tmp)) != sizeof(tmp))
@@ -225,9 +275,13 @@ doit(int sock)
 	  if(create_and_write_cookie (xauthfile, cookie,
 				      sizeof(cookie)))
 	       return 1;
-	  if (krb_net_read (sock, &thataddr.sin_port, sizeof(thataddr.sin_port))
-	      != sizeof(thataddr.sin_port))
-	       return 1;
+	  {
+	      char tmp[6];
+
+	      if(krb_net_read(sock, tmp, sizeof(tmp)) != sizeof(tmp))
+		  return -1;
+	      thataddr.sin_port = htons(atoi(tmp));
+	  }
 
 	  for (;;) {
 	       pid_t child;
@@ -238,6 +292,8 @@ doit(int sock)
 	       FD_ZERO(&fds);
 	       FD_SET(localx, &fds);
 	       FD_SET(sock, &fds);
+	       if (tcpp)
+		    FD_SET(tcpx, &fds);
 	       if(select(FD_SETSIZE, &fds, NULL, NULL, NULL) <=0)
 		   continue;
 	       if(FD_ISSET(sock, &fds)){
@@ -245,9 +301,19 @@ doit(int sock)
 		    */
 		   cleanup();
 		   exit(0);
-	       }else if(FD_ISSET(localx, &fds))
+	       } else if(FD_ISSET(localx, &fds))
 		   fd = accept (localx, NULL, &zero);
-	       else
+	       else if(tcpp && FD_ISSET(tcpx, &fds)) {
+		   struct sockaddr_in peer;
+		   int len = sizeof(peer);
+
+		   fd = accept (tcpx, (struct sockaddr *)&peer, &len);
+		   /* XXX */
+		   if (fd >= 0 && suspicious_address (fd, peer)) {
+		       close (fd);
+		       continue;
+		   }		       
+	       } else
 		   continue;
 	       if (fd < 0)
 		    if (errno == EINTR)
@@ -264,6 +330,8 @@ doit(int sock)
 		    return fatal(sock, msg);
 	       } else if (child == 0) {
 		    close (localx);
+		    if (tcpp)
+			 close (tcpx);
 		    return doit_conn (fd, &thataddr, &key, schedule);
 	       } else {
 		    close (fd);
@@ -280,6 +348,13 @@ doit(int sock)
      }
 }
 
+static void
+usage ()
+{
+     fprintf (stderr, "Usage: %s [-i] [-t]\n", prog);
+     exit (1);
+}
+
 /*
  * xkd - receive a forwarded X conncection
  */
@@ -287,9 +362,30 @@ doit(int sock)
 int
 main (int argc, char **argv)
 {
+     int c;
+     int no_inetd = 0;
+     int tcpp = 0;
+
      prog = argv[0];
 
+     while( (c = getopt (argc, argv, "it")) != EOF) {
+	  switch (c) {
+	  case 'i':
+	       no_inetd = 1;
+	       break;
+	  case 't':
+	       tcpp = 1;
+	       break;
+	  case '?':
+	  default:
+	       fprintf (stderr, "%s: unknown option '%c'\n", prog, c);
+	       usage ();
+	  }
+     }
+
+     if (no_inetd)
+	  mini_inetd (k_getportbyname("kx", "tcp", htons(KX_PORT)));
      openlog(prog, LOG_PID|LOG_CONS, LOG_DAEMON);
      signal (SIGCHLD, childhandler);
-     return doit(0);
+     return doit(STDIN_FILENO, tcpp);
 }
