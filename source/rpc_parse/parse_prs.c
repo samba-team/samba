@@ -288,11 +288,14 @@ BOOL prs_realloc_data(prs_struct *buf, size_t new_size)
 
 	if (new_data != NULL)
 	{
-		memset(&new_data[buf->data_size], 0, new_size - buf->data_size);
+		if (new_size > buf->data_size)
+		{
+			memset(&new_data[buf->data_size], 0, new_size - buf->data_size);
+		}
 		buf->data = new_data;
 		buf->data_size = new_size;
 	}
-	else if (buf->data_size <= new_size)
+	else if (buf->data_size >= new_size)
 	{
 		DEBUG(3,("prs_realloc: warning - could not realloc to %d\n",
 				  new_size));
