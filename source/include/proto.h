@@ -59,9 +59,9 @@ uint32 crc32_calc_buffer( char *buffer, uint32 count);
 
 /*The following definitions come from  lib/debug.c  */
 
-void sig_usr2( int sig );
-void sig_usr1( int sig );
-void setup_logging( char *pname, BOOL interactive );
+void debug_message(int msg_type, pid_t src, void *buf, size_t len);
+void debug_message_send(pid_t pid, int level);
+void setup_logging(char *pname, BOOL interactive);
 void reopen_logs( void );
 void force_check_log_size( void );
 BOOL need_to_check_log_size( void );
@@ -147,6 +147,18 @@ void initialize_multibyte_vectors( int client_codepage);
 /*The following definitions come from  lib/md4.c  */
 
 void mdfour(unsigned char *out, unsigned char *in, int n);
+
+/*The following definitions come from  lib/messages.c  */
+
+void ping_message(int msg_type, pid_t src, void *buf, size_t len);
+void debuglevel_message(int msg_type, pid_t src, void *buf, size_t len);
+BOOL message_init(void);
+BOOL message_send_pid(pid_t pid, int msg_type, void *buf, size_t len);
+void message_dispatch(void);
+void message_register(int msg_type, 
+		      void (*fn)(int msg_type, pid_t pid, void *buf, size_t len));
+void message_deregister(int msg_type);
+BOOL message_send_all(int msg_type, void *buf, size_t len);
 
 /*The following definitions come from  lib/ms_fnmatch.c  */
 
@@ -992,6 +1004,7 @@ void check_master_browser_exists(time_t t);
 void run_elections(time_t t);
 void process_election(struct subnet_record *subrec, struct packet_struct *p, char *buf);
 BOOL check_elections(void);
+void nmbd_message_election(int msg_type, pid_t src, void *buf, size_t len);
 
 /*The following definitions come from  nmbd/nmbd_incomingdgrams.c  */
 
@@ -1782,6 +1795,7 @@ BOOL print_queue_purge(struct current_user *user, int snum, int *errcode);
 
 /*The following definitions come from  profile/profile.c  */
 
+void profile_message(int msg_type, pid_t src, void *buf, size_t len);
 BOOL profile_setup(BOOL rdonly);
 
 /*The following definitions come from  rpc_client/cli_connect.c  */
@@ -1979,6 +1993,15 @@ uint32 spoolss_getprinterdriverdir(fstring srv_name, fstring env_name, uint32 le
                              NEW_BUFFER *buffer, uint32 offered,
                              uint32 *needed);
 uint32 spoolss_addprinterdriver(const char *srv_name, uint32 level, PRINTER_DRIVER_CTR *info);
+
+/*The following definitions come from  rpc_client/cli_spoolss_notify.c  */
+
+BOOL spoolss_disconnect_from_client( struct cli_state *cli);
+BOOL spoolss_connect_to_client( struct cli_state *cli, char *remote_machine);
+BOOL cli_spoolss_reply_open_printer(struct cli_state *cli, char *printer, uint32 localprinter, uint32 type, uint32 *status, POLICY_HND *handle);
+BOOL cli_spoolss_reply_rrpcn(struct cli_state *cli, POLICY_HND *handle, 
+			     uint32 change_low, uint32 change_high, uint32 *status);
+BOOL cli_spoolss_reply_close_printer(struct cli_state *cli, POLICY_HND *handle, uint32 *status);
 
 /*The following definitions come from  rpc_client/cli_srvsvc.c  */
 
@@ -2952,10 +2975,17 @@ void free_print1_array(uint32 num_entries, PRINTER_INFO_1 **entries);
 void free_job1_array(uint32 num_entries, JOB_INFO_1 **entries);
 void free_job_info_2(JOB_INFO_2 *job);
 void free_job2_array(uint32 num_entries, JOB_INFO_2 **entries);
+BOOL make_spoolss_q_replyopenprinter(SPOOL_Q_REPLYOPENPRINTER *q_u, 
+			       const fstring string, uint32 printer, uint32 type);
 BOOL spoolss_io_q_replyopenprinter(char *desc, SPOOL_Q_REPLYOPENPRINTER *q_u, prs_struct *ps, int depth);
 BOOL spoolss_io_r_replyopenprinter(char *desc, SPOOL_R_REPLYOPENPRINTER *r_u, prs_struct *ps, int depth);
+BOOL make_spoolss_q_reply_closeprinter(SPOOL_Q_REPLYCLOSEPRINTER *q_u, POLICY_HND *hnd);
 BOOL spoolss_io_q_replycloseprinter(char *desc, SPOOL_Q_REPLYCLOSEPRINTER *q_u, prs_struct *ps, int depth);
 BOOL spoolss_io_r_replycloseprinter(char *desc, SPOOL_R_REPLYCLOSEPRINTER *r_u, prs_struct *ps, int depth);
+BOOL make_spoolss_q_reply_rrpcn(SPOOL_Q_REPLY_RRPCN *q_u, POLICY_HND *hnd,
+			        uint32 change_low, uint32 change_high);
+BOOL spoolss_io_q_reply_rrpcn(char *desc, SPOOL_Q_REPLY_RRPCN *q_u, prs_struct *ps, int depth);
+BOOL spoolss_io_r_reply_rrpcn(char *desc, SPOOL_R_REPLY_RRPCN *r_u, prs_struct *ps, int depth);
 
 /*The following definitions come from  rpc_parse/parse_srv.c  */
 
@@ -3136,6 +3166,7 @@ BOOL api_spoolss_rpc(pipes_struct *p);
 
 #if OLD_NTDOMAIN
 void init_printer_hnd(void);
+void srv_spoolss_receive_message(int msg_type, pid_t src, void *buf, size_t len);
 uint32 _spoolss_open_printer_ex( const UNISTR2 *printername,
 				 const PRINTER_DEFAULT *printer_default,
 				 uint32  user_switch, SPOOL_USER_CTR user_ctr,

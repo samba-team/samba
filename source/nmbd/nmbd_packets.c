@@ -1760,6 +1760,7 @@ only use %d.\n", (count*2) + 2, FD_SETSIZE));
 
 /****************************************************************************
   Listens for NMB or DGRAM packets, and queues them.
+  return True if the socket is dead
 ***************************************************************************/
 
 BOOL listen_for_packets(BOOL run_election)
@@ -1767,6 +1768,7 @@ BOOL listen_for_packets(BOOL run_election)
   static fd_set *listen_set = NULL;
   static int listen_number = 0;
   static int *sock_array = NULL;
+  int i;
 
   fd_set fds;
   int selrtn;
@@ -1808,110 +1810,78 @@ BOOL listen_for_packets(BOOL run_election)
   /* Prepare for the select - allow certain signals. */
 
   BlockSignals(False, SIGTERM);
-#if defined(SIGUSR1)
-  BlockSignals(False, SIGUSR1);
-#endif /* SIGUSR1 */
-#if defined(SIGUSR2)
-  BlockSignals(False, SIGUSR2);
-#endif /* SIGUSR2 */
 
-  selrtn = sys_select_intr(FD_SETSIZE,&fds,&timeout);
+  selrtn = sys_select(FD_SETSIZE,&fds,&timeout);
 
   /* We can only take signals when we are in the select - block them again here. */
 
   BlockSignals(True, SIGTERM);
-#if defined(SIGUSR1)
-  BlockSignals(True, SIGUSR1);
-#endif /* SIGUSR1 */
-#if defined(SIGUSR2)
-  BlockSignals(True, SIGUSR2);
-#endif /* SIGUSR2 */
 
-  if(selrtn > 0)
-  {
-    int i;
+  if(selrtn == -1) {
+	  return False;
+  }
 
 #ifndef SYNC_DNS
-    if (dns_fd != -1 && FD_ISSET(dns_fd,&fds)) {
-	    run_dns_queue();
-    }
+  if (dns_fd != -1 && FD_ISSET(dns_fd,&fds)) {
+	  run_dns_queue();
+  }
 #endif
 
-    for(i = 0; i < listen_number; i++)
-    {
-      if(i < (listen_number/2))
-      {
-        /* Processing a 137 socket. */
-        if (FD_ISSET(sock_array[i],&fds))
-        {
-          struct packet_struct *packet = read_packet(sock_array[i], NMB_PACKET);
-          if (packet)
-          {
-            /*
-             * If we got a packet on the broadcast socket and interfaces
-             * only is set then check it came from one of our local nets. 
-             */
-            if(lp_bind_interfaces_only() && (sock_array[i] == ClientNMB) && 
-               (!is_local_net(packet->ip)))
-            {
-              DEBUG(7,("discarding nmb packet sent to broadcast socket from %s:%d\n",
-                        inet_ntoa(packet->ip),packet->port));	  
-              free_packet(packet);
-            }
-            else if ((ip_equal(loopback_ip, packet->ip) || 
-              ismyip(packet->ip)) && packet->port == global_nmb_port)
-            {
-              DEBUG(7,("discarding own packet from %s:%d\n",
-                        inet_ntoa(packet->ip),packet->port));	  
-              free_packet(packet);
-            }
-            else
-            {
-              /* Save the file descriptor this packet came in on. */
-              packet->fd = sock_array[i];
-              queue_packet(packet);
-            }
-          }
-        }
-      }
-      else
-      {
-        /* Processing a 138 socket. */
-
-        if (FD_ISSET(sock_array[i],&fds))
-        {
-          struct packet_struct *packet = read_packet(sock_array[i], DGRAM_PACKET);
-          if (packet)
-          {
-            /*
-             * If we got a packet on the broadcast socket and interfaces
-             * only is set then check it came from one of our local nets. 
-             */
-            if(lp_bind_interfaces_only() && (sock_array[i] == ClientDGRAM) && 
-                 (!is_local_net(packet->ip)))
-            {
-              DEBUG(7,("discarding dgram packet sent to broadcast socket from %s:%d\n",
-                        inet_ntoa(packet->ip),packet->port));	  
-              free_packet(packet);
-            }
-            else if ((ip_equal(loopback_ip, packet->ip) || 
-                 ismyip(packet->ip)) && packet->port == DGRAM_PORT)
-            {
-              DEBUG(7,("discarding own packet from %s:%d\n",
-                        inet_ntoa(packet->ip),packet->port));	  
-              free_packet(packet);
-            }
-            else
-            {
-              /* Save the file descriptor this packet came in on. */
-              packet->fd = sock_array[i];
-              queue_packet(packet);
-            }
-          }
-        }
-      } /* end processing 138 socket. */
-    } /* end for */
-  } /* end if selret > 0 */
+  for(i = 0; i < listen_number; i++) {
+	  if (i < (listen_number/2)) {
+		  /* Processing a 137 socket. */
+		  if (FD_ISSET(sock_array[i],&fds)) {
+			  struct packet_struct *packet = read_packet(sock_array[i], NMB_PACKET);
+			  if (packet) {
+				  /*
+				   * If we got a packet on the broadcast socket and interfaces
+				   * only is set then check it came from one of our local nets. 
+				   */
+				  if(lp_bind_interfaces_only() && (sock_array[i] == ClientNMB) && 
+				     (!is_local_net(packet->ip))) {
+					  DEBUG(7,("discarding nmb packet sent to broadcast socket from %s:%d\n",
+						   inet_ntoa(packet->ip),packet->port));	  
+					  free_packet(packet);
+				  } else if ((ip_equal(loopback_ip, packet->ip) || 
+					      ismyip(packet->ip)) && packet->port == global_nmb_port) {
+					  DEBUG(7,("discarding own packet from %s:%d\n",
+						   inet_ntoa(packet->ip),packet->port));	  
+					  free_packet(packet);
+				  } else {
+					  /* Save the file descriptor this packet came in on. */
+					  packet->fd = sock_array[i];
+					  queue_packet(packet);
+				  }
+			  }
+		  }
+	  } else {
+		  /* Processing a 138 socket. */
+		  if (FD_ISSET(sock_array[i],&fds)) {
+			  struct packet_struct *packet = read_packet(sock_array[i], DGRAM_PACKET);
+			  if (packet) {
+				  /*
+				   * If we got a packet on the broadcast socket and interfaces
+				   * only is set then check it came from one of our local nets. 
+				   */
+				  if(lp_bind_interfaces_only() && (sock_array[i] == ClientDGRAM) && 
+				     (!is_local_net(packet->ip))) {
+					  DEBUG(7,("discarding dgram packet sent to broadcast socket from %s:%d\n",
+						   inet_ntoa(packet->ip),packet->port));	  
+					  free_packet(packet);
+				  } else if ((ip_equal(loopback_ip, packet->ip) || 
+					      ismyip(packet->ip)) && packet->port == DGRAM_PORT) {
+					  DEBUG(7,("discarding own packet from %s:%d\n",
+						   inet_ntoa(packet->ip),packet->port));	  
+					  free_packet(packet);
+				  } else {
+					  /* Save the file descriptor this packet came in on. */
+					  packet->fd = sock_array[i];
+					  queue_packet(packet);
+				  }
+			  }
+		  }
+	  } /* end processing 138 socket. */
+  } /* end for */
   return False;
 }
 

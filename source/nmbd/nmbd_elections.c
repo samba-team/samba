@@ -381,3 +381,24 @@ yet registered on subnet %s\n", nmb_namestr(&nmbname), subrec->subnet_name ));
   }
   return run_any_election;
 }
+
+
+
+/****************************************************************************
+process a internal Samba message forcing an election
+***************************************************************************/
+void nmbd_message_election(int msg_type, pid_t src, void *buf, size_t len)
+{
+	struct subnet_record *subrec;
+
+	for (subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec)) {
+		struct work_record *work;
+		for (work = subrec->workgrouplist; work; work = work->next) {
+			if (strequal(work->work_group, global_myworkgroup)) {
+				work->needelection = True;
+				work->ElectionCount=0;
+				work->mst_state = lp_local_master() ? MST_POTENTIAL : MST_NONE;
+			}
+		}
+	}
+}

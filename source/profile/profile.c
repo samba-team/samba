@@ -39,6 +39,36 @@ BOOL do_profile_times = False;
 
 struct timeval profile_starttime;
 struct timeval profile_endtime;
+struct timeval profile_starttime_nested;
+struct timeval profile_endtime_nested;
+
+/****************************************************************************
+receive a set profile level message
+****************************************************************************/
+void profile_message(int msg_type, pid_t src, void *buf, size_t len)
+{
+        int level;
+
+	memcpy(&level, buf, sizeof(int));
+	switch (level) {
+	case 0:		/* turn off profiling */
+		do_profile_flag = False;
+		do_profile_times = False;
+		break;
+	case 1:		/* turn on counter profiling only */
+		do_profile_flag = True;
+		do_profile_times = False;
+		break;
+	case 2:		/* turn on complete profiling */
+		do_profile_flag = True;
+		do_profile_times = True;
+		break;
+	case 3:		/* reset profile values */
+		memset((char *)profile_p, 0, sizeof(*profile_p));
+		break;
+	}
+	DEBUG(1,("Profile level set to %d from pid %d\n", level, (int)src));
+}
 
 /*******************************************************************
   open the profiling shared memory area
@@ -106,6 +136,7 @@ BOOL profile_setup(BOOL rdonly)
 	}
 
 	profile_p = &profile_h->stats;
+	message_register(MSG_PROFILE, profile_message);
 	return True;
 }
 

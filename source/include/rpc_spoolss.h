@@ -54,7 +54,6 @@
 #define SPOOLSS_FINDNEXTPRINTERCHANGENOTIFICATION	0x37
 #define SPOOLSS_ROUTERFINDFIRSTPRINTERNOTIFICATIONOLD	0x39
 #define SPOOLSS_ROUTERREPLYPRINTER			0x3b
-#define SPOOLSS_REPLYCLOSEPRINTER			0x3c
 #define SPOOLSS_ADDPORTEX				0x3d
 #define SPOOLSS_REMOTEFINDFIRSTPRINTERCHANGENOTIFICATION0x3e
 #define SPOOLSS_SPOOLERINIT				0x3f
@@ -99,8 +98,11 @@
 /* find close printer notification */
 #define SPOOLSS_FCPN					0x38
 #define SPOOLSS_REPLYOPENPRINTER			0x3a
+#define SPOOLSS_REPLYCLOSEPRINTER			0x3c
 /* remote find first printer change notifyEx */
 #define SPOOLSS_RFFPCNEX				0x41
+/*SPOOLSS_ROUTERREFRESHPRINTERCHANGENOTIFICATION */
+#define SPOOLSS_RRPCN					0x42
 /* remote find next printer change notifyEx */
 #define SPOOLSS_RFNPCNEX				0x43
 #define SPOOLSS_OPENPRINTEREX				0x45
@@ -298,6 +300,8 @@
 				 PRINTER_CHANGE_PORT | \
 				 PRINTER_CHANGE_PRINT_PROCESSOR | \
 				 PRINTER_CHANGE_PRINTER_DRIVER )
+
+#define PRINTER_NOTIFY_INFO_DISCARDED	0x1
 
 /*
  * The printer attributes.
@@ -1773,7 +1777,8 @@ typedef struct spool_q_replyopenprinter
 	UNISTR2 string;
 	uint32 printer;
 	uint32 type;
-	NEW_BUFFER *buffer;
+	uint32 unknown0;
+	uint32 unknown1;
 }
 SPOOL_Q_REPLYOPENPRINTER;
 
@@ -1796,6 +1801,25 @@ typedef struct spool_r_replycloseprinter
 	uint32 status;
 }
 SPOOL_R_REPLYCLOSEPRINTER;
+
+typedef struct spool_q_rrpcn
+{
+	POLICY_HND handle;
+	uint32 change_low;
+	uint32 change_high;
+	uint32 unknown0;
+	uint32 unknown1;
+	uint32 info_ptr;
+	SPOOL_NOTIFY_INFO info;	
+}
+SPOOL_Q_REPLY_RRPCN;
+
+typedef struct spool_r_rrpcn
+{
+	uint32 unknown0;
+	uint32 status;
+}
+SPOOL_R_REPLY_RRPCN;
 
 #define PRINTER_DRIVER_VERSION 2
 #define PRINTER_DRIVER_ARCHITECTURE "Windows NT x86"

@@ -494,8 +494,8 @@ BOOL pass_check_smb(char *user, char *domain,
 
 	if (smb_pass->acct_ctrl & ACB_PWNOTREQ) {
 		if (lp_null_passwords()) {
-		DEBUG(3,("Account for user '%s' has no password and null passwords are allowed.\n", smb_pass->smb_name));
-		return(True);
+			DEBUG(3,("Account for user '%s' has no password and null passwords are allowed.\n", smb_pass->smb_name));
+			return(True);
 		} else {
 			DEBUG(3,("Account for user '%s' has no password and null passwords are NOT allowed.\n", smb_pass->smb_name));
 			return(False);

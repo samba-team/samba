@@ -635,6 +635,11 @@ static void usage(char *pname)
 	BlockSignals(True,SIGFPE);
 #endif
 
+#if defined(SIGUSR2)
+	/* We are no longer interested in USR2 */
+	BlockSignals(True,SIGUSR2);
+#endif
+
 	/* we want total control over the permissions on created files,
 	   so set our umask to 0 */
 	umask(0);
@@ -685,20 +690,6 @@ static void usage(char *pname)
 
 	CatchSignal(SIGHUP,SIGNAL_CAST sig_hup);
 	
-	/* Setup the signals that allow the debug log level
-	   to by dynamically changed. */
- 
-	/* If we are using the malloc debug code we can't use
-	   SIGUSR1 and SIGUSR2 to do debug level changes. */
-	
-#if defined(SIGUSR1)
-	CatchSignal( SIGUSR1, SIGNAL_CAST sig_usr1 );
-#endif /* SIGUSR1 */
-   
-#if defined(SIGUSR2)
-	CatchSignal( SIGUSR2, SIGNAL_CAST sig_usr2 );
-#endif /* SIGUSR2 */
-
 	DEBUG(3,( "loaded services\n"));
 
 	if (!is_daemon && !is_a_socket(0)) {
@@ -717,6 +708,10 @@ static void usage(char *pname)
 
 	if (is_daemon) {
 		pidfile_create("smbd");
+	}
+
+	if (!message_init()) {
+		exit(1);
 	}
 
 	if (!open_sockets(is_daemon,port))
