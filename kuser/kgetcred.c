@@ -119,7 +119,7 @@ main(int argc, char **argv)
     in.times.endtime = 0;
     ret = krb5_get_credentials(context, 0, cache, &in, &out);
     if (ret)
-	krb5_err (context, 1, ret, "krb5_");
+	krb5_err (context, 1, ret, "krb5_get_credentials");
 
     krb5_free_creds_contents(context, out);
     return 0;
