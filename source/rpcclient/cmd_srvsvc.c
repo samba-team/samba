@@ -293,6 +293,28 @@ static NTSTATUS cmd_srvsvc_net_share_enum(struct cli_state *cli,
 	return W_ERROR_IS_OK(result) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
+static NTSTATUS cmd_srvsvc_net_remote_tod(struct cli_state *cli, 
+                                          TALLOC_CTX *mem_ctx,
+                                          int argc, char **argv)
+{
+	TIME_OF_DAY_INFO tod;
+	WERROR result;
+
+	if (argc > 1) {
+		printf("Usage: %s\n", argv[0]);
+		return NT_STATUS_OK;
+	}
+
+	result = cli_srvsvc_net_remote_tod(
+		cli, mem_ctx, cli->srv_name_slash, &tod);
+
+	if (!W_ERROR_IS_OK(result))
+		goto done;
+
+ done:
+	return W_ERROR_IS_OK(result) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
+}
+
 /* List of commands exported by this module */
 
 struct cmd_set srvsvc_commands[] = {
@@ -301,6 +323,7 @@ struct cmd_set srvsvc_commands[] = {
 
 	{ "srvinfo",    cmd_srvsvc_srv_query_info,  PIPE_SRVSVC, "Server query info", "" },
 	{ "netshareenum", cmd_srvsvc_net_share_enum, PIPE_SRVSVC, "Enumerate shares", "" },
+	{ "netremotetod", cmd_srvsvc_net_remote_tod, PIPE_SRVSVC, "Fetch remote time of day", "" },
 
 	{ NULL }
 };

@@ -188,3 +188,48 @@ WERROR cli_srvsvc_net_share_enum(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	return result;
 }
+
+WERROR cli_srvsvc_net_remote_tod(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				 char *server, TIME_OF_DAY_INFO *tod)
+{
+	prs_struct qbuf, rbuf;
+	SRV_Q_NET_REMOTE_TOD q;
+	SRV_R_NET_REMOTE_TOD r;
+	WERROR result = W_ERROR(ERRgeneral);
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Initialise input parameters */
+
+	init_srv_q_net_remote_tod(&q, cli->srv_name_slash);
+
+	/* Marshall data and send request */
+
+	if (!srv_io_q_net_remote_tod("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SRV_NET_REMOTE_TOD, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	r.tod = tod;
+
+	if (!srv_io_r_net_remote_tod("", &r, &rbuf, 0))
+		goto done;
+
+	result = r.status;
+
+	if (!W_ERROR_IS_OK(result))
+		goto done;
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;	
+}
