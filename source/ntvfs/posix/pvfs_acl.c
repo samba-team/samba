@@ -28,6 +28,38 @@
 
 
 /*
+  map a single access_mask from generic to specific bits for files/dirs
+*/
+static uint32_t pvfs_translate_mask(uint32_t access_mask)
+{
+	if (access_mask & SEC_MASK_GENERIC) {
+		if (access_mask & SEC_GENERIC_READ)    access_mask |= SEC_RIGHTS_FILE_READ;
+		if (access_mask & SEC_GENERIC_WRITE)   access_mask |= SEC_RIGHTS_FILE_WRITE;
+		if (access_mask & SEC_GENERIC_EXECUTE) access_mask |= SEC_RIGHTS_FILE_EXECUTE;
+		if (access_mask & SEC_GENERIC_ALL)     access_mask |= SEC_RIGHTS_FILE_ALL;
+		access_mask &= ~SEC_MASK_GENERIC;
+	}
+	return access_mask;
+}
+
+
+/*
+  map any generic access bits in the given acl
+  this relies on the fact that the mappings for files and directories
+  are the same
+*/
+static void pvfs_translate_generic_bits(struct security_acl *acl)
+{
+	unsigned i;
+
+	for (i=0;i<acl->num_aces;i++) {
+		struct security_ace *ace = &acl->aces[i];
+		ace->access_mask = pvfs_translate_mask(ace->access_mask);
+	}
+}
+
+
+/*
   setup a default ACL for a file
 */
 static NTSTATUS pvfs_default_acl(struct pvfs_state *pvfs,
@@ -222,9 +254,11 @@ NTSTATUS pvfs_acl_set(struct pvfs_state *pvfs,
 	}
 	if (secinfo_flags & SECINFO_DACL) {
 		sd->dacl = new_sd->dacl;
+		pvfs_translate_generic_bits(sd->dacl);
 	}
 	if (secinfo_flags & SECINFO_SACL) {
 		sd->sacl = new_sd->sacl;
+		pvfs_translate_generic_bits(sd->sacl);
 	}
 
 	status = pvfs_acl_save(pvfs, name, fd, acl);
@@ -343,7 +377,14 @@ NTSTATUS pvfs_access_check(struct pvfs_state *pvfs,
 		return NT_STATUS_INVALID_ACL;
 	}
 
+	/* expand the generic access bits to file specific bits */
+	*access_mask = pvfs_translate_mask(*access_mask);
+
+	/* check the acl against the required access mask */
 	status = sec_access_check(sd, token, *access_mask, access_mask);
+
+	/* this bit is always granted, even if not asked for */
+	*access_mask |= SEC_FILE_READ_ATTRIBUTE;
 
 	talloc_free(acl);
 	

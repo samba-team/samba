@@ -42,13 +42,16 @@ static BOOL sid_active_in_token(struct dom_sid *sid, struct nt_user_token *token
 /*
   perform a SEC_FLAG_MAXIMUM_ALLOWED access check
 */
-static NTSTATUS access_check_max_allowed(struct security_descriptor *sd, 
-					 struct nt_user_token *token, 
-					 uint32_t *access_granted)
+static uint32_t access_check_max_allowed(struct security_descriptor *sd, 
+					 struct nt_user_token *token)
 {
 	uint32_t denied = 0, granted = 0;
-	int i;
+	unsigned i;
 	
+	if (sid_active_in_token(sd->owner_sid, token)) {
+		granted |= ~(SEC_STD_WRITE_DAC|SEC_STD_READ_CONTROL);
+	}
+
 	for (i = 0;i<sd->dacl->num_aces; i++) {
 		struct security_ace *ace = &sd->dacl->aces[i];
 
@@ -67,15 +70,7 @@ static NTSTATUS access_check_max_allowed(struct security_descriptor *sd,
 		}
 	}
 
-	granted &= ~denied;
-
-	if (granted == 0) {
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
-	*access_granted = granted;
-
-	return NT_STATUS_OK;	
+	return granted & ~denied;
 }
 
 /*
@@ -89,15 +84,14 @@ NTSTATUS sec_access_check(struct security_descriptor *sd,
 	int i;
 	uint32_t bits_remaining;
 
-	bits_remaining = access_desired;
-
-	/* the owner always gets SEC_STD_WRITE_DAC & SEC_STD_READ_CONTROL */
-	if (bits_remaining & (SEC_STD_WRITE_DAC | SEC_STD_READ_CONTROL)) {
-		if (sid_active_in_token(sd->owner_sid, token)) {
-			bits_remaining &= 
-				~(SEC_STD_WRITE_DAC|SEC_STD_READ_CONTROL);
-		}
+	/* handle the maximum allowed flag */
+	if (access_desired & SEC_FLAG_MAXIMUM_ALLOWED) {
+		access_desired |= access_check_max_allowed(sd, token);
+		access_desired &= ~SEC_FLAG_MAXIMUM_ALLOWED;
 	}
+
+	*access_granted = access_desired;
+	bits_remaining = access_desired;
 
 #if 0
 	/* this is where we should check for the "system security" privilege, once we 
@@ -122,9 +116,10 @@ NTSTATUS sec_access_check(struct security_descriptor *sd,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	/* handle the maximum allowed case separately */
-	if (access_desired == SEC_FLAG_MAXIMUM_ALLOWED) {
-		return access_check_max_allowed(sd, token, access_granted);
+	/* the owner always gets SEC_STD_WRITE_DAC & SEC_STD_READ_CONTROL */
+	if ((bits_remaining & (SEC_STD_WRITE_DAC|SEC_STD_READ_CONTROL)) &&
+	    sid_active_in_token(sd->owner_sid, token)) {
+		bits_remaining &= ~(SEC_STD_WRITE_DAC|SEC_STD_READ_CONTROL);
 	}
 
 	/* check each ace in turn. */
@@ -155,8 +150,6 @@ NTSTATUS sec_access_check(struct security_descriptor *sd,
 	if (bits_remaining != 0) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
-
-	*access_granted = access_desired;
 
 	return NT_STATUS_OK;
 }
