@@ -2010,7 +2010,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			fsp.fd = -1;
 			
 			/* access check */
-			if (conn->admin_user != True) {
+			if (current_user.uid != 0) {
 				DEBUG(0,("set_user_quota: access_denied service [%s] user [%s]\n",
 					lp_servicename(SNUM(conn)),conn->user));
 				return ERROR_DOS(ERRDOS,ERRnoaccess);
@@ -2108,7 +2108,7 @@ static int call_trans2setfsinfo(connection_struct *conn,
 	DEBUG(10,("call_trans2setfsinfo: SET_FS_QUOTA: for service [%s]\n",lp_servicename(SNUM(conn))));
 
 	/* access check */
-	if ((conn->admin_user != True)||!CAN_WRITE(conn)) {
+	if ((current_user.uid != 0)||!CAN_WRITE(conn)) {
 		DEBUG(0,("set_user_quota: access_denied service [%s] user [%s]\n",
 			lp_servicename(SNUM(conn)),conn->user));
 		return ERROR_DOS(ERRSRV,ERRaccess);
