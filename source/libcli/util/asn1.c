@@ -379,67 +379,6 @@ BOOL asn1_start_tag(struct asn1_data *data, uint8_t tag)
 	return !data->has_error;
 }
 
-static BOOL read_one_uint8(int sock, uint8_t *result, struct asn1_data *data,
-			   const struct timeval *endtime)
-{
-	if (read_data_until(sock, result, 1, endtime) != 1)
-		return False;
-
-	return asn1_write(data, result, 1);
-}
-
-/* Read a complete ASN sequence (ie LDAP result) from a socket */
-BOOL asn1_read_sequence_until(int sock, struct asn1_data *data,
-			      const struct timeval *endtime)
-{
-	uint8_t b;
-	size_t len;
-	char *buf;
-
-	ZERO_STRUCTP(data);
-
-	if (!read_one_uint8(sock, &b, data, endtime))
-		return False;
-
-	if (b != 0x30) {
-		data->has_error = True;
-		return False;
-	}
-
-	if (!read_one_uint8(sock, &b, data, endtime))
-		return False;
-
-	if (b & 0x80) {
-		int n = b & 0x7f;
-		if (!read_one_uint8(sock, &b, data, endtime))
-			return False;
-		len = b;
-		while (n > 1) {
-			if (!read_one_uint8(sock, &b, data, endtime))
-				return False;
-			len = (len<<8) | b;
-			n--;
-		}
-	} else {
-		len = b;
-	}
-
-	buf = talloc_size(NULL, len);
-	if (buf == NULL)
-		return False;
-
-	if (read_data_until(sock, buf, len, endtime) != len)
-		return False;
-
-	if (!asn1_write(data, buf, len))
-		return False;
-
-	talloc_free(buf);
-
-	data->ofs = 0;
-	
-	return True;
-}
 
 /* Get the length to be expected in buf */
 BOOL asn1_object_length(uint8_t *buf, size_t buf_length,

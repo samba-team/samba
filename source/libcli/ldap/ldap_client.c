@@ -29,6 +29,246 @@
 #include "asn_1.h"
 #include "dlinklist.h"
 
+
+
+/****************************************************************************
+ Check the timeout. 
+****************************************************************************/
+static BOOL timeout_until(struct timeval *timeout,
+			  const struct timeval *endtime)
+{
+	struct timeval now;
+
+	GetTimeOfDay(&now);
+
+	if ((now.tv_sec > endtime->tv_sec) ||
+	    ((now.tv_sec == endtime->tv_sec) &&
+	     (now.tv_usec > endtime->tv_usec)))
+		return False;
+
+	timeout->tv_sec = endtime->tv_sec - now.tv_sec;
+	timeout->tv_usec = endtime->tv_usec - now.tv_usec;
+	return True;
+}
+
+
+/****************************************************************************
+ Read data from the client, reading exactly N bytes, with timeout. 
+****************************************************************************/
+static ssize_t read_data_until(int fd,char *buffer,size_t N,
+			       const struct timeval *endtime)
+{
+	ssize_t ret;
+	size_t total=0;  
+ 
+	while (total < N) {
+
+		if (endtime != NULL) {
+			fd_set r_fds;
+			struct timeval timeout;
+			int res;
+
+			FD_ZERO(&r_fds);
+			FD_SET(fd, &r_fds);
+
+			if (!timeout_until(&timeout, endtime))
+				return -1;
+
+			res = sys_select(fd+1, &r_fds, NULL, NULL, &timeout);
+			if (res <= 0)
+				return -1;
+		}
+
+		ret = sys_read(fd,buffer + total,N - total);
+
+		if (ret == 0) {
+			DEBUG(10,("read_data: read of %d returned 0. Error = %s\n", (int)(N - total), strerror(errno) ));
+			return 0;
+		}
+
+		if (ret == -1) {
+			DEBUG(0,("read_data: read failure for %d. Error = %s\n", (int)(N - total), strerror(errno) ));
+			return -1;
+		}
+		total += ret;
+	}
+	return (ssize_t)total;
+}
+
+
+/****************************************************************************
+ Write data to a fd with timeout.
+****************************************************************************/
+static ssize_t write_data_until(int fd,char *buffer,size_t N,
+				const struct timeval *endtime)
+{
+	size_t total=0;
+	ssize_t ret;
+
+	while (total < N) {
+
+		if (endtime != NULL) {
+			fd_set w_fds;
+			struct timeval timeout;
+			int res;
+
+			FD_ZERO(&w_fds);
+			FD_SET(fd, &w_fds);
+
+			if (!timeout_until(&timeout, endtime))
+				return -1;
+
+			res = sys_select(fd+1, NULL, &w_fds, NULL, &timeout);
+			if (res <= 0)
+				return -1;
+		}
+
+		ret = sys_write(fd,buffer + total,N - total);
+
+		if (ret == -1) {
+			DEBUG(0,("write_data: write failure. Error = %s\n", strerror(errno) ));
+			return -1;
+		}
+		if (ret == 0)
+			return total;
+
+		total += ret;
+	}
+	return (ssize_t)total;
+}
+
+
+
+static BOOL read_one_uint8(int sock, uint8_t *result, struct asn1_data *data,
+			   const struct timeval *endtime)
+{
+	if (read_data_until(sock, result, 1, endtime) != 1)
+		return False;
+
+	return asn1_write(data, result, 1);
+}
+
+/* Read a complete ASN sequence (ie LDAP result) from a socket */
+static BOOL asn1_read_sequence_until(int sock, struct asn1_data *data,
+				     const struct timeval *endtime)
+{
+	uint8_t b;
+	size_t len;
+	char *buf;
+
+	ZERO_STRUCTP(data);
+
+	if (!read_one_uint8(sock, &b, data, endtime))
+		return False;
+
+	if (b != 0x30) {
+		data->has_error = True;
+		return False;
+	}
+
+	if (!read_one_uint8(sock, &b, data, endtime))
+		return False;
+
+	if (b & 0x80) {
+		int n = b & 0x7f;
+		if (!read_one_uint8(sock, &b, data, endtime))
+			return False;
+		len = b;
+		while (n > 1) {
+			if (!read_one_uint8(sock, &b, data, endtime))
+				return False;
+			len = (len<<8) | b;
+			n--;
+		}
+	} else {
+		len = b;
+	}
+
+	buf = talloc_size(NULL, len);
+	if (buf == NULL)
+		return False;
+
+	if (read_data_until(sock, buf, len, endtime) != len)
+		return False;
+
+	if (!asn1_write(data, buf, len))
+		return False;
+
+	talloc_free(buf);
+
+	data->ofs = 0;
+	
+	return True;
+}
+
+
+
+/****************************************************************************
+  create an outgoing socket. timeout is in milliseconds.
+  **************************************************************************/
+static int open_socket_out(int type, struct ipv4_addr *addr, int port, int timeout)
+{
+	struct sockaddr_in sock_out;
+	int res,ret;
+	int connect_loop = 250; /* 250 milliseconds */
+	int loops = (timeout) / connect_loop;
+
+	/* create a socket to write to */
+	res = socket(PF_INET, type, 0);
+	if (res == -1) 
+	{ DEBUG(0,("socket error\n")); return -1; }
+	
+	if (type != SOCK_STREAM) return(res);
+	
+	memset((char *)&sock_out,'\0',sizeof(sock_out));
+	putip((char *)&sock_out.sin_addr,(char *)addr);
+	
+	sock_out.sin_port = htons( port );
+	sock_out.sin_family = PF_INET;
+	
+	/* set it non-blocking */
+	set_blocking(res,False);
+	
+	DEBUG(3,("Connecting to %s at port %d\n", sys_inet_ntoa(*addr),port));
+	
+	/* and connect it to the destination */
+connect_again:
+	ret = connect(res,(struct sockaddr *)&sock_out,sizeof(sock_out));
+	
+	/* Some systems return EAGAIN when they mean EINPROGRESS */
+	if (ret < 0 && (errno == EINPROGRESS || errno == EALREADY ||
+			errno == EAGAIN) && loops--) {
+		msleep(connect_loop);
+		goto connect_again;
+	}
+	
+	if (ret < 0 && (errno == EINPROGRESS || errno == EALREADY ||
+			errno == EAGAIN)) {
+		DEBUG(1,("timeout connecting to %s:%d\n", sys_inet_ntoa(*addr),port));
+		close(res);
+		return -1;
+	}
+	
+#ifdef EISCONN
+	if (ret < 0 && errno == EISCONN) {
+		errno = 0;
+		ret = 0;
+	}
+#endif
+	
+	if (ret < 0) {
+		DEBUG(2,("error connecting to %s:%d (%s)\n",
+			 sys_inet_ntoa(*addr),port,strerror(errno)));
+		close(res);
+		return -1;
+	}
+	
+	/* set it blocking again */
+	set_blocking(res,True);
+	
+	return res;
+}
+
 #if 0
 static struct ldap_message *new_ldap_search_message(struct ldap_connection *conn,
 					     const char *base,
