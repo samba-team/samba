@@ -16,8 +16,8 @@ interface drsblobs {
 		uint32 version;
 		NTTIME_1sec orginating_time;
 		GUID orginating_dsa; /* the 'invocationId' ? */
-		uint64 orginating_usn;
-		uint64 local_usn;
+		HYPER_T orginating_usn;
+		HYPER_T local_usn;
 	} replPropertyMetaData1;
 
 	typedef struct {
@@ -47,7 +47,7 @@ interface drsblobs {
 	 */
 	typedef struct {
 		GUID invocation_id_guid; /* the 'invocationId' field of the CN=NTDS Settings object */
-		uint64 highest_usn; /* updated after a full replication cycle */
+		HYPER_T highest_usn; /* updated after a full replication cycle */
 	} replUpToDateVector1;
 
 	typedef struct {
@@ -58,7 +58,7 @@ interface drsblobs {
 
 	typedef struct {
 		GUID invocation_id_guid; /* the 'invocationId' field of the CN=NTDS Settings object */
-		uint64 highest_usn; /* updated after a full replication cycle */
+		HYPER_T highest_usn; /* updated after a full replication cycle */
 		NTTIME_1sec last_success;
 	} replUpToDateVector2;
 
@@ -104,9 +104,9 @@ interface drsblobs {
 		uint32 replica_flags;
 		uint8 schedule[84];
 		uint32 reserved;
-		uint64 tmp_highest_usn; /* updated after each object update */
-		uint64 reserved_usn;
-		uint64 highest_usn; /* updated after a full replication cycle */
+		HYPER_T tmp_highest_usn; /* updated after each object update */
+		HYPER_T reserved_usn;
+		HYPER_T highest_usn; /* updated after a full replication cycle */
 		GUID source_dsa_obj_guid; /* the 'objectGuid' field of the CN=NTDS Settings object */
 		GUID source_dsa_invocation_id; /* the 'invocationId' field of the CN=NTDS Settings object */
 		GUID transport_guid;

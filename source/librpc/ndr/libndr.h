@@ -200,12 +200,18 @@ enum ndr_err_code {
 #define ndr_size_uint16(t, p, flags) (NDR_SIZE_ALIGN(t, 2, flags) + 2)
 #define ndr_size_int32(t, p, flags) (NDR_SIZE_ALIGN(t, 4, flags) + 4)
 #define ndr_size_uint32(t, p, flags) (NDR_SIZE_ALIGN(t, 4, flags) + 4)
-#define ndr_size_int64(t, p, flags) (NDR_SIZE_ALIGN(t, 8, flags) + 8)
-#define ndr_size_uint64(t, p, flags) (NDR_SIZE_ALIGN(t, 8, flags) + 8)
 #define ndr_size_ptr(t, p, flags) (NDR_SIZE_ALIGN(t, 4, flags) + 4)
+/* 
+ * [u]int64 uses 4 Byte alignment
+ * and HYPER_T uses 8 Byte alignment
+ */
+#define ndr_size_int64(t, p, flags) (NDR_SIZE_ALIGN(t, 4, flags) + 8)
+#define ndr_size_uint64(t, p, flags) (NDR_SIZE_ALIGN(t, 4, flags) + 8)
+#define ndr_size_HYPER_T(t, p, flags) (NDR_SIZE_ALIGN(t, 8, flags) + 8)
+
 
 #define ndr_size_NTTIME(t, p, flags) ndr_size_uint64(t, p, flags)
-#define ndr_size_NTTIME_1sec(t, p, flags) ndr_size_NTTIME(t, p, flags)
+#define ndr_size_NTTIME_1sec(t, p, flags) ndr_size_HYPER_T(t, p, flags)
 
 #define ndr_size_WERROR(t, p, flags) ndr_size_uint32(t, p, flags)
 #define ndr_size_NTSTATUS(t, p, flags) ndr_size_uint32(t, p, flags)
