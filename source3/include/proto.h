@@ -704,9 +704,6 @@ BOOL unix_convert(char *name,int cnum,pstring saved_last_component, BOOL *bad_pa
 int disk_free(char *path,int *bsize,int *dfree,int *dsize);
 int sys_disk_free(char *path,int *bsize,int *dfree,int *dsize);
 BOOL check_name(char *name,int cnum);
-int fd_attempt_open(char *fname, int flags, int mode);
-void fd_attempt_reopen(char *fname, int mode, file_fd_struct *fd_ptr);
-int fd_attempt_close(file_fd_struct *fd_ptr);
 void sync_file(int fnum);
 void close_file(int fnum);
 BOOL check_file_sharing(int cnum,char *fname);

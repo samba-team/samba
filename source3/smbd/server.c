@@ -886,8 +886,7 @@ static void check_for_pipe(char *fname)
 /****************************************************************************
 fd support routines - attempt to do a sys_open
 ****************************************************************************/
-
-int fd_attempt_open(char *fname, int flags, int mode)
+static int fd_attempt_open(char *fname, int flags, int mode)
 {
   int fd = sys_open(fname,flags,mode);
 
@@ -939,7 +938,7 @@ int fd_attempt_open(char *fname, int flags, int mode)
 fd support routines - attempt to find an already open file by dev
 and inode - increments the ref_count of the returned file_fd_struct *.
 ****************************************************************************/
-file_fd_struct *fd_get_already_open(struct stat *sbuf)
+static file_fd_struct *fd_get_already_open(struct stat *sbuf)
 {
   int i;
   file_fd_struct *fd_ptr;
@@ -966,7 +965,7 @@ file_fd_struct *fd_get_already_open(struct stat *sbuf)
 fd support routines - attempt to find a empty slot in the FileFd array.
 Increments the ref_count of the returned entry.
 ****************************************************************************/
-file_fd_struct *fd_get_new()
+static file_fd_struct *fd_get_new()
 {
   int i;
   file_fd_struct *fd_ptr;
@@ -999,8 +998,7 @@ n"));
 fd support routines - attempt to re-open an already open fd as O_RDWR.
 Save the already open fd (we cannot close due to POSIX file locking braindamage.
 ****************************************************************************/
-
-void fd_attempt_reopen(char *fname, int mode, file_fd_struct *fd_ptr)
+static void fd_attempt_reopen(char *fname, int mode, file_fd_struct *fd_ptr)
 {
   int fd = sys_open( fname, O_RDWR, mode);
 
@@ -1020,7 +1018,7 @@ void fd_attempt_reopen(char *fname, int mode, file_fd_struct *fd_ptr)
 fd support routines - attempt to close the file referenced by this fd.
 Decrements the ref_count and returns it.
 ****************************************************************************/
-int fd_attempt_close(file_fd_struct *fd_ptr)
+static int fd_attempt_close(file_fd_struct *fd_ptr)
 {
   DEBUG(3,("fd_attempt_close on file_fd_struct %d, fd = %d, dev = %x, inode = %x, open_flags = %d, ref_count = %d.\n",
 	   fd_ptr - &FileFd[0],
@@ -1060,6 +1058,7 @@ static void open_file(int fnum,int cnum,char *fname1,int flags,int mode, struct 
 
   fsp->open = False;
   fsp->fd_ptr = 0;
+  fsp->granted_oplock = False;
   errno = EPERM;
 
   pstrcpy(fname,fname1);
