@@ -528,6 +528,7 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 			nt_status = gensec_set_target_principal(gensec_security, 
 								spnego.negTokenInit.targetPrincipal);
 			if (!NT_STATUS_IS_OK(nt_status)) {
+				spnego_free_data(&spnego);
 				return nt_status;
 			}
 		}
@@ -540,6 +541,7 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 							     &unwrapped_out);
 
 		if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED) && !NT_STATUS_IS_OK(nt_status)) {
+			spnego_free_data(&spnego);
 			return nt_status;
 		}
 
