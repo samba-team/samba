@@ -194,7 +194,7 @@ int dos_mode(int cnum,char *path,struct stat *sbuf)
       result |= aRONLY;
   }
 
-  if ((sbuf->st_mode & S_IXUSR) != 0)
+  if (MAP_ARCHIVE(cnum) && ((sbuf->st_mode & S_IXUSR) != 0))
     result |= aARCH;
 
   if (MAP_SYSTEM(cnum) && ((sbuf->st_mode & S_IXGRP) != 0))
