@@ -1,5 +1,7 @@
 2000-12-16  Johan Danielsson  <joda@pdc.kth.se>
 
+	* admin/ktutil.8: reflect recent changes
+
 	* admin/copy.c: don't copy an entry that already exists in the
 	keytab, and warn if the keyblock differs
 
