@@ -1,3 +1,8 @@
+2004-03-02  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* sl.h: make it possible to use libsl from c++
+	From: Mattias Amnefelt <mattiasa@kth.se>
+	
 2002-05-19  Johan Danielsson  <joda@pdc.kth.se>
 
 	* Makefile.am: just link mk_cmds against libsl; avoids libtool
