@@ -3903,10 +3903,26 @@ BOOL can_delete_file_in_directory(connection_struct *conn, const char *fname)
 	if (current_user.uid == sbuf.st_uid) {
 		return (sbuf.st_mode & S_IWUSR) ? True : False;
 	}
+
+#ifdef S_ISVTX
+	/* sticky bit means delete only by owner or root. */
+	if (sbuf.st_mode & S_ISVTX) {
+		SMB_STRUCT_STAT sbuf_file;  
+		if(SMB_VFS_STAT(conn, fname, &sbuf_file) != 0) {
+			return False;
+		}
+		if (current_user.uid == sbuf_file.st_uid) {
+			return True;
+		}
+		return False;
+	}
+#endif
+
 	/* Check group ownership. */
 	ret = check_posix_acl_group_write(conn, dname, &sbuf);
 	if (ret == 0 || ret == 1) {
 		return ret ? True : False;
 	}
+
 	return (sbuf.st_mode & S_IWOTH) ? True : False;
 }
