@@ -2189,7 +2189,7 @@ static BOOL api_RNetUserGetInfo(int cnum,uint16 vuid, char *param,char *data,
 	{         
 		SSVAL(p,usri11_priv,Connections[cnum].admin_user?USER_PRIV_ADMIN:USER_PRIV_USER); 
 		SIVAL(p,usri11_auth_flags,AF_OP_PRINT);		/* auth flags */
-		SIVALS(p,usri11_password_age,0xffffffff);		/* password age */
+		SIVALS(p,usri11_password_age,-1);		/* password age */
 		SIVAL(p,usri11_homedir,PTR_DIFF(p2,p)); /* home dir */
 		strcpy(p2, lp_logon_path());
 		p2 = skip_string(p2,1);
@@ -2198,8 +2198,8 @@ static BOOL api_RNetUserGetInfo(int cnum,uint16 vuid, char *param,char *data,
 		p2 = skip_string(p2,1);
 		SIVAL(p,usri11_last_logon,0);		/* last logon */
 		SIVAL(p,usri11_last_logoff,0);		/* last logoff */
-		SSVALS(p,usri11_bad_pw_count,0xffffffff);		/* bad pw counts */
-		SSVALS(p,usri11_num_logons,0xffffffff);		/* num logons */
+		SSVALS(p,usri11_bad_pw_count,-1);	/* bad pw counts */
+		SSVALS(p,usri11_num_logons,-1);		/* num logons */
 		SIVAL(p,usri11_logon_server,PTR_DIFF(p2,p)); /* logon server */
 		strcpy(p2,"\\\\*");
 		p2 = skip_string(p2,1);
@@ -2209,7 +2209,7 @@ static BOOL api_RNetUserGetInfo(int cnum,uint16 vuid, char *param,char *data,
 		strcpy(p2,"");
 		p2 = skip_string(p2,1);
 
-		SIVALS(p,usri11_max_storage,0xffffffff);		/* max storage */
+		SIVALS(p,usri11_max_storage,-1);		/* max storage */
 		SSVAL(p,usri11_units_per_week,168);		/* units per week */
 		SIVAL(p,usri11_logon_hours,PTR_DIFF(p2,p)); /* logon hours */
 
