@@ -424,6 +424,10 @@
 #include <gssapi/gssapi_generic.h>
 #endif
 
+#if HAVE_COM_ERR_H
+#include <com_err.h>
+#endif
+
 /* we support ADS if we want it and have krb5 and ldap libs */
 #if defined(WITH_ADS) && defined(HAVE_KRB5) && defined(HAVE_LDAP)
 #define HAVE_ADS
