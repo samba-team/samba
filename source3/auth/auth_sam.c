@@ -98,9 +98,10 @@ static BOOL smb_pwd_check_ntlmv2(const DATA_BLOB ntv2_response,
 		return False;
 	}
 
-	if (ntv2_response.length < 16) {
+	if (ntv2_response.length < 24) {
 		/* We MUST have more than 16 bytes, or the stuff below will go
-		   crazy... */
+		   crazy.  No known implementation sends less than the 24 bytes
+		   for LMv2, let alone NTLMv2. */
 		DEBUG(0, ("smb_pwd_check_ntlmv2: incorrect password length (%d)\n", 
 			  ntv2_response.length));
 		return False;
