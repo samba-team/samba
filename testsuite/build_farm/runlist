@@ -1,1 +1,1 @@
-TEST_ALL="basicsmb"
+TEST_ALL="basicsmb-sharelist basicsmb-listfilesauth basicsmb-listfilesnpw"

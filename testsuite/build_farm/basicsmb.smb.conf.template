@@ -3,6 +3,7 @@
     log level = 3
     encrypt passwords = yes
     server string = Samba %v Build Farm Tests
+    name resolve order = lmhosts
 
 [test]
     path = PREFIX/testdir

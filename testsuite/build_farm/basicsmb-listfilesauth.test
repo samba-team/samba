@@ -1,0 +1,22 @@
+. basicsmb.fns
+
+test_listfilesauth() {
+	echo $prefix/bin/smbclient //localhost/samba -U$whoami%$password -c 'ls'
+	$prefix/bin/smbclient //localhost/samba -U$whoami%$password -c 'ls'
+	status=$?
+	if [ $status = 0 ]; then
+		echo "listed files OK"
+	else 
+		echo "listing files with smbd failed with status $status"
+		return 1
+	fi
+	return 0
+}
+
+password=samba
+
+(test_smb_conf_setup && test_smbpasswd) || exit 1
+
+test_listfilesauth || exit 1
+
+
