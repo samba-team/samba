@@ -3,25 +3,18 @@
 @comment  node-name,  next,  previous,  up
 @chapter Introduction
 
-@quotation
-@strong{Caution:} this is alpha quality software. If something doesn't
-work, it's probably because it doesn't. Don't be surprised if your
-computer suffers a melt-down.
-@end quotation
-
 @heading What is Heimdal?
 
 Heimdal is a free implementation of Kerberos 5. The goals are to:
 
 @itemize @bullet
 @item
-have an implementation that can be freely used outside of the United
-States
+have an implementation that can be freely used by anyone
 @item
 be protocol compatible with existing implementations and, if not in
 conflict, with RFC 1510 (and any future updated RFC)
 @item
-be somewhat compatible with the M.I.T. Kerberos V5 API
+be reasonably compatible with the M.I.T Kerberos V5 API
 @item
 have support for Kerberos V5 over GSS-API (RFC1964)
 @item
@@ -30,10 +23,6 @@ popper, etc.)
 @item
 include enough backwards compatibility with Kerberos V4
 @end itemize
-
-This initial pre-version is mostly compatible with the M.I.T.
-implementation, as well as DCE secd. The library is at least not
-completely different from the M.I.T. @code{libkrb5}.
 
 @heading Status
 
