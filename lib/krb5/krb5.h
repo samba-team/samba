@@ -177,7 +177,7 @@ typedef struct krb5_fcache{
 }krb5_fcache;
 
 typedef struct krb5_cc_cursor{
-  int dummy;
+  int fd;
 }krb5_cc_cursor;
 
 typedef struct krb5_keytab{
