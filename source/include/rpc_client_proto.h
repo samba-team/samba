@@ -83,11 +83,11 @@ uint32 cli_nt_setup_creds( const char* srv_name,
 				const char* domain,
 				const char* myhostname,
 				const char* trust_acct,
-				unsigned char trust_pwd[16],
+				const uchar trust_pwd[16],
 				uint16 sec_chan);
 BOOL cli_nt_srv_pwset(const char* srv_name, const char* myhostname,
 				const char* trust_acct,
-				unsigned char *new_hashof_trust_pwd,
+				const uchar *new_hashof_trust_pwd,
 				uint16 sec_chan);
 BOOL cli_nt_login_general(const char* srv_name, const char* myhostname,
 				const char *domain, const char *username, 
@@ -167,7 +167,7 @@ uint32 cli_net_req_chal( const char *srv_name, const char* myhostname,
 BOOL cli_net_srv_pwset(const char* srv_name,
 				const char* myhostname,
 				const char* trust_acct,
-				uint8 hashed_trust_pwd[16],
+				const uint8 hashed_trust_pwd[16],
 				uint16 sec_chan_type);
 uint32 cli_net_sam_logon(const char* srv_name, const char* myhostname,
 				NET_ID_INFO_CTR *ctr, 
@@ -475,11 +475,13 @@ uint32 lookup_lsa_sid(const char *domain,
 		      DOM_SID * sid, char *name, uint32 * type);
 BOOL msrpc_lsa_create_secret(const char *srv_name, const char *secret_name,
 			     uint32 access_rights);
+void secret_store_data(STRING2 * secret, const char* data, int len);
 BOOL msrpc_lsa_set_secret(const char *srv_name,
 			  const char *secret_name, const char *data, int len);
 BOOL msrpc_lsa_query_secret(const char *srv_name,
 			    const char *secret_name,
 			    STRING2 * secret, NTTIME * last_update);
+BOOL secret_get_data(const STRING2 *secret, uchar *data, size_t len);
 BOOL msrpc_lsa_query_trust_passwd(const char *srv_name,
 				  const char *secret_name,
 				  uchar trust_passwd[16],
@@ -487,6 +489,10 @@ BOOL msrpc_lsa_query_trust_passwd(const char *srv_name,
 
 /*The following definitions come from  rpc_client/msrpc_netlogon.c  */
 
+BOOL modify_trust_password( const char *domain, const char *remote_machine, 
+                          const uchar orig_trust_passwd_hash[16],
+                          const uchar new_trust_passwd_hash[16],
+                          uint16 sec_chan);
 uint32 check_domain_security(const char *orig_user, const char *domain,
 			     const uchar * challenge,
 			     const char *smb_apasswd, int smb_apasslen,

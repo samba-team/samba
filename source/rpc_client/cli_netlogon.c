@@ -300,7 +300,7 @@ LSA Server Password Set.
 BOOL cli_net_srv_pwset(const char* srv_name,
 				const char* myhostname,
 				const char* trust_acct,
-				uint8 hashed_trust_pwd[16],
+				const uint8 hashed_trust_pwd[16],
 				uint16 sec_chan_type)
 {
   prs_struct rbuf;

@@ -1159,20 +1159,6 @@ BOOL pm_process( char *FileName,
                  BOOL (*sfunc)(char *),
                  BOOL (*pfunc)(char *, char *) );
 
-/*The following definitions come from  passdb/smbpassfile.c  */
-
-BOOL trust_password_lock( const char *domain, const char *name, BOOL update);
-BOOL trust_password_unlock(void);
-BOOL trust_password_delete( char *domain, char *name );
-BOOL get_trust_account_password( uchar *ret_pwd, time_t *pass_last_set_time);
-BOOL set_trust_account_password( uchar *md4_new_pwd);
-BOOL trust_get_passwd_time( uchar trust_passwd[16],
-				const char *domain, const char *myname,
-				NTTIME *modtime);
-BOOL trust_get_passwd( uchar trust_passwd[16],
-				const char *domain, const char *myname);
-BOOL create_trust_account_file(char *domain, char *name, uchar pass[16]);
-
 /*The following definitions come from  rpc_client/cli_connect.c  */
 
 void init_connections(void);
@@ -1267,7 +1253,7 @@ uint32 cli_net_req_chal( const char *srv_name, const char* myhostname,
 BOOL cli_net_srv_pwset(const char* srv_name,
 				const char* myhostname,
 				const char* trust_acct,
-				uint8 hashed_trust_pwd[16],
+				const uint8 hashed_trust_pwd[16],
 				uint16 sec_chan_type);
 uint32 cli_net_sam_logon(const char* srv_name, const char* myhostname,
 				NET_ID_INFO_CTR *ctr, 

@@ -222,6 +222,22 @@ BOOL msrpc_lsa_create_secret(const char *srv_name, const char *secret_name,
 }
 
 /****************************************************************************
+put data into secret buffer.
+****************************************************************************/
+void secret_store_data(STRING2 * secret, const char* data, int len)
+{
+	ZERO_STRUCTP(secret);
+
+	secret->str_max_len = len + 8;
+	secret->undoc = 0;
+	secret->str_str_len = len + 8;
+
+	SIVAL(secret->buffer, 0, len);
+	SIVAL(secret->buffer, 4, 0x01);
+	memcpy(secret->buffer + 8, data, len);
+}
+
+/****************************************************************************
 nt lsa query secret
 ****************************************************************************/
 BOOL msrpc_lsa_set_secret(const char *srv_name,
@@ -235,15 +251,7 @@ BOOL msrpc_lsa_set_secret(const char *srv_name,
 	POLICY_HND lsa_pol;
 	STRING2 secret;
 
-	ZERO_STRUCT(secret);
-
-	secret.str_max_len = len + 8;
-	secret.undoc = 0;
-	secret.str_str_len = len + 8;
-
-	SIVAL(secret.buffer, 0, len);
-	SIVAL(secret.buffer, 4, 0x01);
-	memcpy(secret.buffer + 8, data, len);
+	secret_store_data(&secret, data, len);
 
 	/* lookup domain controller; receive a policy handle */
 	res = res ? lsa_open_policy2(srv_name,
@@ -297,6 +305,28 @@ BOOL msrpc_lsa_query_secret(const char *srv_name,
 }
 
 /****************************************************************************
+obtains a trust account password
+****************************************************************************/
+BOOL secret_get_data(const STRING2 *secret, uchar *data, size_t len)
+{
+	if (secret->str_str_len != len + 8)
+	{
+		return False;
+	}
+	if (IVAL(secret->buffer, 0) != len)
+	{
+		return False;
+	}
+	if (IVAL(secret->buffer, 4) != 0x1)
+	{
+		return False;
+	}
+	memcpy(data, secret->buffer + 8, len);
+	return True;
+}
+
+/****************************************************************************
+obtains a trust account password
 ****************************************************************************/
 BOOL msrpc_lsa_query_trust_passwd(const char *srv_name,
 				  const char *secret_name,
@@ -304,24 +334,10 @@ BOOL msrpc_lsa_query_trust_passwd(const char *srv_name,
 				  NTTIME * last_update)
 {
 	STRING2 secret;
-
 	if (!msrpc_lsa_query_secret(srv_name, secret_name, &secret,
 				    last_update))
 	{
 		return False;
 	}
-	if (secret.str_str_len != 0x18)
-	{
-		return False;
-	}
-	if (IVAL(secret.buffer, 0) != 0x10)
-	{
-		return False;
-	}
-	if (IVAL(secret.buffer, 4) != 0x1)
-	{
-		return False;
-	}
-	memcpy(trust_passwd, secret.buffer + 8, 16);
-	return True;
+	return secret_get_data(&secret, trust_passwd, 16);
 }

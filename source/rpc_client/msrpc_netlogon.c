@@ -33,6 +33,41 @@ extern int DEBUGLEVEL;
 extern pstring global_myname;
 extern pstring global_myworkgroup;
 
+/*********************************************************
+ Change the domain password on the PDC.
+**********************************************************/
+
+BOOL modify_trust_password(const char *domain, const char *remote_machine,
+			   const uchar orig_trust_passwd_hash[16],
+			   const uchar new_trust_passwd_hash[16],
+			   uint16 sec_chan)
+{
+	struct nmb_name calling, called;
+	fstring trust_acct;
+	fstring srv_name;
+
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, remote_machine);
+	strupper(srv_name);
+
+	fstrcpy(trust_acct, global_myname);
+	fstrcat(trust_acct, "$");
+
+	if (cli_nt_setup_creds(srv_name, domain, global_myname, trust_acct,
+			       orig_trust_passwd_hash, sec_chan) != 0x0)
+	{
+		return False;
+	}
+
+	if (!cli_nt_srv_pwset(srv_name, global_myname, trust_acct,
+			      new_trust_passwd_hash, sec_chan))
+	{
+		return False;
+	}
+
+	return True;
+}
+
 /***********************************************************************
  Do the same as security=server, but using NT Domain calls and a session
  key from the workstation trust account password.
