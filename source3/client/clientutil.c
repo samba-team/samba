@@ -428,20 +428,20 @@ static struct {
 /****************************************************************************
 send a login command.  
 ****************************************************************************/
-BOOL cli_send_login(char *inbuf,char *outbuf,BOOL start_session,BOOL use_setup)
+BOOL cli_send_login(char *inbuf,char *outbuf,BOOL start_session,BOOL use_setup, struct connection_options *options)
 {
   BOOL was_null = (!inbuf && !outbuf);
-  int sesskey=0;
   time_t servertime = 0;
   extern int serverzone;
-  int sec_mode=0;
-  int crypt_len;
-  int max_vcs=0;
+  int crypt_len=0;
   char *pass = NULL;  
   pstring dev;
   char *p;
   int numprots;
   int tries=0;
+  struct connection_options opt;
+
+  bzero(&opt, sizeof(opt));
 
   if (was_null)
     {
@@ -516,34 +516,35 @@ BOOL cli_send_login(char *inbuf,char *outbuf,BOOL start_session,BOOL use_setup)
       return(False);
     }
 
-  Protocol = prots[SVAL(inbuf,smb_vwv0)].prot;
+  opt.protocol = Protocol = prots[SVAL(inbuf,smb_vwv0)].prot;
 
 
   if (Protocol < PROTOCOL_LANMAN1) {    
 	  /* no extra params */
   } else if (Protocol < PROTOCOL_NT1) {
-    sec_mode = SVAL(inbuf,smb_vwv1);
-    max_xmit = SVAL(inbuf,smb_vwv2);
-    sesskey = IVAL(inbuf,smb_vwv6);
-    serverzone = SVALS(inbuf,smb_vwv10)*60;
+    opt.sec_mode = SVAL(inbuf,smb_vwv1);
+    opt.max_xmit = max_xmit = SVAL(inbuf,smb_vwv2);
+    opt.sesskey = IVAL(inbuf,smb_vwv6);
+    opt.serverzone = serverzone = SVALS(inbuf,smb_vwv10)*60;
     /* this time is converted to GMT by make_unix_date */
     servertime = make_unix_date(inbuf+smb_vwv8);
     if (Protocol >= PROTOCOL_COREPLUS) {
+      opt.rawmode = SVAL(inbuf,smb_vwv5);
       readbraw_supported = ((SVAL(inbuf,smb_vwv5) & 0x1) != 0);
       writebraw_supported = ((SVAL(inbuf,smb_vwv5) & 0x2) != 0);
     }
     crypt_len = smb_buflen(inbuf);
     memcpy(cryptkey,smb_buf(inbuf),8);
     DEBUG(3,("max mux %d\n",SVAL(inbuf,smb_vwv3)));
-    max_vcs = SVAL(inbuf,smb_vwv4); 
-    DEBUG(3,("max vcs %d\n",max_vcs)); 
+    opt.max_vcs = SVAL(inbuf,smb_vwv4); 
+    DEBUG(3,("max vcs %d\n",opt.max_vcs)); 
     DEBUG(3,("max blk %d\n",SVAL(inbuf,smb_vwv5)));
   } else {
     /* NT protocol */
-    sec_mode = CVAL(inbuf,smb_vwv1);
-    max_xmit = IVAL(inbuf,smb_vwv3+1);
-    sesskey = IVAL(inbuf,smb_vwv7+1);
-    serverzone = SVALS(inbuf,smb_vwv15+1)*60;
+    opt.sec_mode = CVAL(inbuf,smb_vwv1);
+    opt.max_xmit = max_xmit = IVAL(inbuf,smb_vwv3+1);
+    opt.sesskey = IVAL(inbuf,smb_vwv7+1);
+    opt.serverzone = SVALS(inbuf,smb_vwv15+1)*60;
     /* this time arrives in real GMT */
     servertime = interpret_long_date(inbuf+smb_vwv11+1);
     crypt_len = CVAL(inbuf,smb_vwv16+1);
@@ -551,8 +552,8 @@ BOOL cli_send_login(char *inbuf,char *outbuf,BOOL start_session,BOOL use_setup)
     if (IVAL(inbuf,smb_vwv9+1) & 1)
       readbraw_supported = writebraw_supported = True;      
     DEBUG(3,("max mux %d\n",SVAL(inbuf,smb_vwv1+1)));
-    max_vcs = SVAL(inbuf,smb_vwv2+1); 
-    DEBUG(3,("max vcs %d\n",max_vcs));
+    opt.max_vcs = SVAL(inbuf,smb_vwv2+1); 
+    DEBUG(3,("max vcs %d\n",opt.max_vcs));
     DEBUG(3,("max raw %d\n",IVAL(inbuf,smb_vwv5+1)));
     DEBUG(3,("capabilities 0x%x\n",IVAL(inbuf,smb_vwv9+1)));
   }
@@ -562,7 +563,7 @@ BOOL cli_send_login(char *inbuf,char *outbuf,BOOL start_session,BOOL use_setup)
   DEBUG(3,("Got %d byte crypt key\n",crypt_len));
   DEBUG(3,("Chose protocol [%s]\n",prots[SVAL(inbuf,smb_vwv0)].name));
 
-  doencrypt = ((sec_mode & 2) != 0);
+  doencrypt = ((opt.sec_mode & 2) != 0);
 
   if (servertime) {
     static BOOL done_time = False;
@@ -600,7 +601,7 @@ BOOL cli_send_login(char *inbuf,char *outbuf,BOOL start_session,BOOL use_setup)
       }
 
       /* if in share level security then don't send a password now */
-      if (!(sec_mode & 1)) {strcpy(pword, "");passlen=1;} 
+      if (!(opt.sec_mode & 1)) {strcpy(pword, "");passlen=1;} 
 
       /* send a session setup command */
       bzero(outbuf,smb_size);
@@ -613,8 +614,8 @@ BOOL cli_send_login(char *inbuf,char *outbuf,BOOL start_session,BOOL use_setup)
 	CVAL(outbuf,smb_vwv0) = 0xFF;
 	SSVAL(outbuf,smb_vwv2,max_xmit);
 	SSVAL(outbuf,smb_vwv3,2);
-	SSVAL(outbuf,smb_vwv4,max_vcs-1);
-	SIVAL(outbuf,smb_vwv5,sesskey);
+	SSVAL(outbuf,smb_vwv4,opt.max_vcs-1);
+	SIVAL(outbuf,smb_vwv5,opt.sesskey);
 	SSVAL(outbuf,smb_vwv7,passlen);
 	p = smb_buf(outbuf);
 	memcpy(p,pword,passlen);
@@ -631,7 +632,7 @@ BOOL cli_send_login(char *inbuf,char *outbuf,BOOL start_session,BOOL use_setup)
 	SSVAL(outbuf,smb_vwv2,BUFFER_SIZE);
 	SSVAL(outbuf,smb_vwv3,2);
 	SSVAL(outbuf,smb_vwv4,getpid());
-	SIVAL(outbuf,smb_vwv5,sesskey);
+	SIVAL(outbuf,smb_vwv5,opt.sesskey);
 	SSVAL(outbuf,smb_vwv7,passlen);
 	SSVAL(outbuf,smb_vwv8,0);
 	p = smb_buf(outbuf);
@@ -688,10 +689,10 @@ BOOL cli_send_login(char *inbuf,char *outbuf,BOOL start_session,BOOL use_setup)
       if (SVAL(inbuf,smb_uid) != uid)
 	DEBUG(3,("Server gave us a UID of %d. We gave %d\n",
 	      SVAL(inbuf,smb_uid),uid));
-      uid = SVAL(inbuf,smb_uid);
+      opt.server_uid = uid = SVAL(inbuf,smb_uid);
     }
 
-  if (sec_mode & 1) {
+  if (opt.sec_mode & 1) {
 	  if (SVAL(inbuf, smb_vwv2) & 1)
 		  DEBUG(1,("connected as guest "));
 	  DEBUG(1,("security=user\n"));
@@ -722,7 +723,7 @@ BOOL cli_send_login(char *inbuf,char *outbuf,BOOL start_session,BOOL use_setup)
     }
 
     /* if in user level security then don't send a password now */
-    if ((sec_mode & 1)) {
+    if ((opt.sec_mode & 1)) {
       strcpy(pword, ""); passlen=1; 
     }
 
@@ -798,6 +799,8 @@ BOOL cli_send_login(char *inbuf,char *outbuf,BOOL start_session,BOOL use_setup)
 
     cnum = SVAL(inbuf,smb_tid);
   }
+  opt.max_xmit = max_xmit;
+  opt.tid = cnum;
 
   DEBUG(3,("Connected with cnum=%d max_xmit=%d\n",cnum,max_xmit));
 
@@ -805,6 +808,11 @@ BOOL cli_send_login(char *inbuf,char *outbuf,BOOL start_session,BOOL use_setup)
     {
       free(inbuf);
       free(outbuf);
+    }
+
+  if (options != NULL)
+    {
+      *options = opt;
     }
 
   return True;
@@ -951,6 +959,6 @@ BOOL cli_reopen_connection(char *inbuf,char *outbuf)
   close_sockets();
   if (!cli_open_sockets(0)) return(False);
 
-  return(cli_send_login(inbuf,outbuf,True,True));
+  return(cli_send_login(inbuf,outbuf,True,True,NULL));
 }
 

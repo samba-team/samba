@@ -114,7 +114,7 @@ BOOL cli_send_trans_request(char *outbuf,int trans,
 			       int ldata,int lparam,int lsetup,
 			       int mdata,int mparam,int msetup);
 BOOL cli_send_session_request(char *inbuf,char *outbuf);
-BOOL cli_send_login(char *inbuf,char *outbuf,BOOL start_session,BOOL use_setup);
+BOOL cli_send_login(char *inbuf,char *outbuf,BOOL start_session,BOOL use_setup, struct connection_options *options);
 void cli_send_logout(void );
 BOOL cli_open_sockets(int port );
 BOOL cli_reopen_connection(char *inbuf,char *outbuf);
