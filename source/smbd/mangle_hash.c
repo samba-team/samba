@@ -730,7 +730,7 @@ static void name_map(char *OutName, BOOL need83, BOOL cache83)
 	DEBUG(5,("name_map( %s, need83 = %s, cache83 = %s)\n", OutName,
 		 need83 ? "True" : "False", cache83 ? "True" : "False"));
 	
-	if (push_ucs2_allocate(&OutName_ucs2, OutName) < 0) {
+	if (push_ucs2_allocate(&OutName_ucs2, OutName) == -1 ) {
 		DEBUG(0, ("push_ucs2_allocate failed!\n"));
 		return;
 	}
