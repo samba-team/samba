@@ -1,34 +1,27 @@
-          WHATS NEW IN 1.9.18alpha3 Oct 21st 1997
+          WHATS NEW IN 1.9.18alpha4 Oct 24th 1997
           =======================================
 
 This is NOT a production release of Samba code.
 For production servers please run Samba 1.9.17p4
 or later releases in the 1.9.17 series.
 
-This release is being made as alpha3, as an
-incorrect alpha2 was temporarily available from
-the Samba ftp site. As we have no way of knowing
-if some people downloaded this incorrect release
-the safest course seemed to be to increment the
-alpha release number as we wish there to be no
-confusion between releases.
-
 This release contains some experimental features and
 changes and is being made available so people can
 test and provide feedback and patches for ongoing
 Samba development.
 
-Please note that only the Domain controler code
+Please note that only the Domain controller code
 is truly experimental. The other changes have
 been extensively tested and are of the same
 quality as normal Samba alpha releases. The
-Domain controler code is disabled in the Makefile
+Domain controller code is disabled in the Makefile
 by default and is being made available to Samba
 programmers in the interests of advancing a 
 public implementation of this important protocol.
 
 This release contains three major changes to the 
 1.9.17 series and much re-written code.
+
 
 The main changes are :
 
@@ -50,32 +43,36 @@ tested and is believed to be completely stable.
 
 Please report any problems to the samba-bugs alias.
 
-2). Experimental Domain controler code.
----------------------------------------
+
+2). Experimental Primary Domain controller code.
+------------------------------------------------
 
 Samba now contains a *VERY* experimental
-implementation of part of the Windows NT
-4.x Domain Controler specification, as
+server implementation of part of the Windows NT
+4.x Domain Controller specification, as
 published by Paul Ashton (now a Samba Team
-member). This code is not enabled in the
-Makefile by default, and to work on this 
-code you must read the file :
+member).  It also contains work-in-progress in
+implementing the client-side.
+
+This code is not enabled in the Makefile by default,
+and to work on this code you must read the file :
 
    docs/NTDOMAIN.txt
 
-Please note that as this code is not complete.
-It is being made available as part of this
+Please note that as this code is not complete,
+it is being made available as part of this
 release to allow interested parties to contribute
-and help the Samba Team in implementing this
-important feature.
+and help the Samba Team in documenting and implementing
+this important feature.
 
 Please do not expect to be able to replace your
-NT Domain Controlers with Samba until this code
+NT Domain Controllers with Samba until this code
 is finished, tested and an announcement is made.
 
-At present the Domain Controler code is for 
+At present the Domain Controller code is for 
 programmers and people interested in Microsoft 
 protocols only.
+
 
 3). New Internationalization support.
 -------------------------------------
@@ -97,6 +94,7 @@ Please see the new man page for make_smbcodepage
 for details on adding additional client code page
 support.
 
+
 Changed code.
 -------------
 
@@ -109,7 +107,16 @@ Samba source code). The 'encrypt passwords' parameter
 may now be used without recompiling.
 
 Much of the internals of Samba has been re-structured
-to support the oplock and Domain controler changes.
+to support the oplock and Domain controller changes.
+
+The WINS client and WINS server capabilities in nmbd
+are also being restructured, to make it easier to
+understand and maintain.
+
+Some of the new parameters for NT Domain Logons and
+Profile support are now also used by the Win95 Domain
+Logons and Profile support.
+
 
 New parameters in smb.conf.
 ---------------------------
@@ -122,14 +129,21 @@ Documented in the smb.con man pages :
 "bind interfaces only"
 "username level"
 
-Not yet documented in the smb.conf man page, please 
-read docs/NTDOMAIN.txt for information on the next 
-parameters.
-
 "domain sid"
 "domain groups"
+
 "logon drive"
 "logon home"
+
+
+Not yet documented in the smb.conf man page, please 
+read docs/NTDOMAIN.txt or examine the source code for
+information on the next parameters :
+
+"domain other sids"
+"domain admin users"
+"domain guest users"
+
 
 New Share level parameters.
 ---------------------------
@@ -148,8 +162,8 @@ bug please email a report to :
 
 samba-bugs@samba.anu.edu.au
 
-Stating the version number of Samba that you
-are running, and *full details* of the steps
+Please state the version number of Samba that
+you are running, and *full details* of the steps
 we need to reproduce the problem.
 
 As always, all bugs are our responsibility.
@@ -157,3 +171,4 @@ As always, all bugs are our responsibility.
 Regards,
 
 	The Samba Team.
+
