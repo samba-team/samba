@@ -41,7 +41,7 @@
 #endif
 
 #include <stdlib.h>
-#include <string.h
+#include <string.h>
 #include <errno.h>
 #include <krb5_asn1.h>
 #include <der.h>
