@@ -2322,7 +2322,9 @@ NTSTATUS init_r_enum_acct_rights( LSA_R_ENUM_ACCT_RIGHTS *r_u, PRIVILEGE_SET *pr
 	}
 
 	if ( num_priv ) {
-		if ( !init_unistr2_array( &r_u->rights, num_priv, privname_array ) ) 
+		r_u->rights = TALLOC_P( get_talloc_ctx(), UNISTR4_ARRAY );
+
+		if ( !init_unistr4_array( r_u->rights, num_priv, privname_array ) ) 
 			return NT_STATUS_NO_MEMORY;
 
 		r_u->count = num_priv;
@@ -2364,7 +2366,7 @@ BOOL lsa_io_r_enum_acct_rights(const char *desc, LSA_R_ENUM_ACCT_RIGHTS *r_c, pr
 	if(!prs_uint32("count   ", ps, depth, &r_c->count))
 		return False;
 
-	if(!smb_io_unistr2_array("rights", &r_c->rights, ps, depth))
+	if ( !prs_pointer("rights", ps, depth, (void**)&r_c->rights, sizeof(UNISTR4_ARRAY), (PRS_POINTER_CAST)prs_unistr4_array) )
 		return False;
 
 	if(!prs_align(ps))
@@ -2380,17 +2382,17 @@ BOOL lsa_io_r_enum_acct_rights(const char *desc, LSA_R_ENUM_ACCT_RIGHTS *r_c, pr
 /*******************************************************************
  Inits an LSA_Q_ADD_ACCT_RIGHTS structure.
 ********************************************************************/
-void init_q_add_acct_rights(LSA_Q_ADD_ACCT_RIGHTS *q_q, 
-			    POLICY_HND *hnd, 
-			    DOM_SID *sid,
-			    uint32 count, 
-			    const char **rights)
+void init_q_add_acct_rights( LSA_Q_ADD_ACCT_RIGHTS *q_q, POLICY_HND *hnd, 
+                             DOM_SID *sid, uint32 count, const char **rights )
 {
 	DEBUG(5, ("init_q_add_acct_rights\n"));
 
 	q_q->pol = *hnd;
 	init_dom_sid2(&q_q->sid, sid);
-	init_unistr2_array(&q_q->rights, count, rights);
+	
+	q_q->rights = TALLOC_P( get_talloc_ctx(), UNISTR4_ARRAY );
+	init_unistr4_array( q_q->rights, count, rights );
+	
 	q_q->count = count;
 }
 
@@ -2412,7 +2414,7 @@ BOOL lsa_io_q_add_acct_rights(const char *desc, LSA_Q_ADD_ACCT_RIGHTS *q_q, prs_
 	if(!prs_uint32("count", ps, depth, &q_q->count))
 		return False;
 
-	if(!smb_io_unistr2_array("rights", &q_q->rights, ps, depth))
+	if ( !prs_pointer("rights", ps, depth, (void**)&q_q->rights, sizeof(UNISTR4_ARRAY), (PRS_POINTER_CAST)prs_unistr4_array) )
 		return False;
 
 	return True;
@@ -2446,10 +2448,14 @@ void init_q_remove_acct_rights(LSA_Q_REMOVE_ACCT_RIGHTS *q_q,
 	DEBUG(5, ("init_q_remove_acct_rights\n"));
 
 	q_q->pol = *hnd;
+
 	init_dom_sid2(&q_q->sid, sid);
+
 	q_q->removeall = removeall;
-	init_unistr2_array(&q_q->rights, count, rights);
 	q_q->count = count;
+
+	q_q->rights = TALLOC_P( get_talloc_ctx(), UNISTR4_ARRAY );
+	init_unistr4_array( q_q->rights, count, rights );
 }
 
 
@@ -2473,7 +2479,7 @@ BOOL lsa_io_q_remove_acct_rights(const char *desc, LSA_Q_REMOVE_ACCT_RIGHTS *q_q
 	if(!prs_uint32("count", ps, depth, &q_q->count))
 		return False;
 
-	if(!smb_io_unistr2_array("rights", &q_q->rights, ps, depth))
+	if ( !prs_pointer("rights", ps, depth, (void**)&q_q->rights, sizeof(UNISTR4_ARRAY), (PRS_POINTER_CAST)prs_unistr4_array) )
 		return False;
 
 	return True;

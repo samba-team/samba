@@ -1114,7 +1114,6 @@ BOOL smb_io_unistr2(const char *desc, UNISTR2 *uni2, uint32 buffer, prs_struct *
 
 BOOL prs_unistr4(const char *desc, prs_struct *ps, int depth, UNISTR4 *uni4)
 {
-
 	if ( !prs_uint16("length", ps, depth, &uni4->length ))
 		return False;
 	if ( !prs_uint16("size", ps, depth, &uni4->size ))
@@ -1126,33 +1125,97 @@ BOOL prs_unistr4(const char *desc, prs_struct *ps, int depth, UNISTR4 *uni4)
 	return True;
 }
 
+/*******************************************************************
+ now read/write UNISTR4 header
+********************************************************************/
+
+BOOL prs_unistr4_hdr(const char *desc, prs_struct *ps, int depth, UNISTR4 *uni4)
+{
+	prs_debug(ps, depth, desc, "prs_unistr4_hdr");
+	depth++;
+
+	if ( !prs_uint16("length", ps, depth, &uni4->length) )
+		return False;
+	if ( !prs_uint16("size", ps, depth, &uni4->size) )
+		return False;
+	if ( !prs_io_unistr2_p(desc, ps, depth, &uni4->string) )
+		return False;
+		
+	return True;
+}
+
+/*******************************************************************
+ now read/write UNISTR4 string
+********************************************************************/
+
+BOOL prs_unistr4_str(const char *desc, prs_struct *ps, int depth, UNISTR4 *uni4)
+{
+	prs_debug(ps, depth, desc, "prs_unistr4_str");
+	depth++;
+
+	if ( !prs_io_unistr2(desc, ps, depth, uni4->string) )
+		return False;
+		
+	return True;
+}
+
+/*******************************************************************
+ Reads or writes a UNISTR2_ARRAY structure.
+********************************************************************/
+
+BOOL prs_unistr4_array(const char *desc, prs_struct *ps, int depth, UNISTR4_ARRAY *array )
+{
+	unsigned int i;
+
+	prs_debug(ps, depth, desc, "prs_unistr4_array");
+	depth++;
+
+	if(!prs_uint32("count", ps, depth, &array->count))
+		return False;
+
+	if ( array->count == 0 ) 
+		return True;
+	
+	if (UNMARSHALLING(ps)) {
+		if ( !(array->strings = TALLOC_ZERO_ARRAY( get_talloc_ctx(), UNISTR4, array->count)) )
+			return False;
+	}
+	
+	/* write the headers and then the actual string buffer */
+	
+	for ( i=0; i<array->count; i++ ) {
+		if ( !prs_unistr4_hdr( "string", ps, depth, &array->strings[i]) )
+			return False;
+	}
+
+	for (i=0;i<array->count;i++) {
+		if ( !prs_unistr4_str("string", ps, depth, &array->strings[i]) ) 
+			return False;
+	}
+	
+	return True;
+}
 
 /********************************************************************
   initialise a UNISTR_ARRAY from a char**
 ********************************************************************/
 
-BOOL init_unistr2_array(UNISTR2_ARRAY *array, 
-		       uint32 count, const char **strings)
+BOOL init_unistr4_array( UNISTR4_ARRAY *array, uint32 count, const char **strings )
 {
 	unsigned int i;
 
 	array->count = count;
-	array->ref_id = count?1:0;
-	if (array->count == 0) {
+
+	if ( array->count == 0 )
 		return True;
-	}
 
-	array->strings = TALLOC_ZERO_ARRAY(get_talloc_ctx(), UNISTR2_ARRAY_EL, count );
-	if (!array->strings) {
+	/* allocate memory for the array of UNISTR4 objects */
+
+	if ( !(array->strings = TALLOC_ZERO_ARRAY(get_talloc_ctx(), UNISTR4, count )) )
 		return False;
-	}
 
-	for (i=0;i<count;i++) {
-		init_unistr2(&array->strings[i].string, strings[i], UNI_FLAGS_NONE);
-		array->strings[i].size = array->strings[i].string.uni_max_len*2;
-		array->strings[i].length = array->strings[i].size;
-		array->strings[i].ref_id = 1;
-	}
+	for ( i=0; i<count; i++ ) 
+		init_unistr4( &array->strings[i], strings[i], STR_TERMINATE );
 
 	return True;
 }
@@ -1203,55 +1266,6 @@ BOOL smb_io_account_lockout_str(const char *desc, LOCKOUT_STRING *account_lockou
 
 	return True;
 }
-
-/*******************************************************************
- Reads or writes a UNISTR2_ARRAY structure.
-********************************************************************/
-BOOL smb_io_unistr2_array(const char *desc, UNISTR2_ARRAY *array, prs_struct *ps, int depth)
-{
-	unsigned int i;
-
-	prs_debug(ps, depth, desc, "smb_io_unistr2_array");
-	depth++;
-
-	if(!prs_uint32("ref_id", ps, depth, &array->ref_id))
-		return False;
-
-	if (! array->ref_id) {
-		return True;
-	}
-
-	if(!prs_uint32("count", ps, depth, &array->count))
-		return False;
-
-	if (array->count == 0) {
-		return True;
-	}
-
-	if (UNMARSHALLING(ps)) {
-		array->strings = TALLOC_ZERO_ARRAY(get_talloc_ctx(), UNISTR2_ARRAY_EL, array->count );
-	}
-	if (! array->strings) {
-		return False;
-	}
-
-	for (i=0;i<array->count;i++) {
-		if(!prs_uint16("length", ps, depth, &array->strings[i].length))
-			return False;
-		if(!prs_uint16("size", ps, depth, &array->strings[i].size))
-			return False;
-		if(!prs_uint32("ref_id", ps, depth, &array->strings[i].ref_id))
-			return False;
-	}
-
-	for (i=0;i<array->count;i++) {
-		if (! smb_io_unistr2("string", &array->strings[i].string, array->strings[i].ref_id, ps, depth)) 
-			return False;
-	}
-	
-	return True;
-}
-
 
 /*******************************************************************
  Inits a DOM_RID2 structure.

@@ -182,13 +182,6 @@ typedef struct unistr2_info
 	uint16 *buffer;
 } UNISTR2;
 
-/* UNIHDR + UNISTR2* */
-typedef struct {
-	uint16 length;	/* number of bytes not counting NULL terminatation */
-	uint16 size;	/* number of bytes including NULL terminatation */
-	UNISTR2 *string;
-} UNISTR4;
-
 /* STRING2 - string size (in uint8 chars) and buffer */
 typedef struct string2_info
 {
@@ -206,22 +199,18 @@ typedef struct unistr3_info
 
 } UNISTR3;
 
-/* an element in a unicode string array */
-typedef struct
-{
-	uint16 length;
-	uint16 size;
-	uint32 ref_id;
-	UNISTR2 string;
-} UNISTR2_ARRAY_EL;
+/* UNIHDR + UNISTR2* */
 
-/* an array of unicode strings */
-typedef struct 
-{
-	uint32 ref_id;
+typedef struct {
+	uint16 length;	/* number of bytes not counting NULL terminatation */
+	uint16 size;	/* number of bytes including NULL terminatation */
+	UNISTR2 *string;
+} UNISTR4;
+
+typedef struct {
 	uint32 count;
-	UNISTR2_ARRAY_EL *strings;
-} UNISTR2_ARRAY;
+	UNISTR4 *strings;
+} UNISTR4_ARRAY;
 
 
 /* an element in a sid array */

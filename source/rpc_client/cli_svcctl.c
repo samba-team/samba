@@ -323,8 +323,8 @@ WERROR cli_svcctl_start_service( struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	
 	memcpy( &in.handle, hService, sizeof(POLICY_HND) );
 	
-	in.parmcount = 0;
-	in.parameters.ref_id = 0x0;
+	in.parmcount  = 0;
+	in.parameters = NULL;
 	
 	CLI_DO_RPC( cli, mem_ctx, PI_SVCCTL, SVCCTL_START_SERVICE_W,
 	            in, out, 
