@@ -554,7 +554,7 @@ void exit_server(const char *reason)
 
 	invalidate_all_vuids();
 
-	print_notify_send_messages();	
+	print_notify_send_messages(3); /* 3 second timeout. */
 
 	/* delete our entry in the connections database. */
 	yield_connection(NULL,"");

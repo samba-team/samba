@@ -51,7 +51,7 @@ static TDB_DATA make_tdb_data(const char *dptr, size_t dsize)
  Lock a chain with timeout (in seconds).
 ****************************************************************************/
 
-static int tdb_chainlock_with_timeout( TDB_CONTEXT *tdb, TDB_DATA key, unsigned int timeout, int rw_type)
+static int tdb_chainlock_with_timeout_internal( TDB_CONTEXT *tdb, TDB_DATA key, unsigned int timeout, int rw_type)
 {
 	/* Allow tdb_chainlock to be interrupted by an alarm. */
 	int ret;
@@ -72,7 +72,7 @@ static int tdb_chainlock_with_timeout( TDB_CONTEXT *tdb, TDB_DATA key, unsigned 
 		alarm(0);
 		CatchSignal(SIGALRM, SIGNAL_CAST SIG_IGN);
 		if (gotalarm) {
-			DEBUG(0,("tdb_chainlock_with_timeout: alarm (%u) timed out for key %s in tdb %s\n",
+			DEBUG(0,("tdb_chainlock_with_timeout_internal: alarm (%u) timed out for key %s in tdb %s\n",
 				timeout, key.dptr, tdb->name ));
 			/* TODO: If we time out waiting for a lock, it might
 			 * be nice to use F_GETLK to get the pid of the
@@ -86,6 +86,15 @@ static int tdb_chainlock_with_timeout( TDB_CONTEXT *tdb, TDB_DATA key, unsigned 
 }
 
 /****************************************************************************
+ Write lock a chain. Return -1 if timeout or lock failed.
+****************************************************************************/
+
+int tdb_chainlock_with_timeout( TDB_CONTEXT *tdb, TDB_DATA key, unsigned int timeout)
+{
+	return tdb_chainlock_with_timeout_internal(tdb, key, timeout, F_WRLCK);
+}
+
+/****************************************************************************
  Lock a chain by string. Return -1 if timeout or lock failed.
 ****************************************************************************/
 
@@ -93,7 +102,7 @@ int tdb_lock_bystring(TDB_CONTEXT *tdb, const char *keyval, unsigned int timeout
 {
 	TDB_DATA key = make_tdb_data(keyval, strlen(keyval)+1);
 	
-	return tdb_chainlock_with_timeout(tdb, key, timeout, F_WRLCK);
+	return tdb_chainlock_with_timeout_internal(tdb, key, timeout, F_WRLCK);
 }
 
 /****************************************************************************
@@ -115,7 +124,7 @@ int tdb_read_lock_bystring(TDB_CONTEXT *tdb, const char *keyval, unsigned int ti
 {
 	TDB_DATA key = make_tdb_data(keyval, strlen(keyval)+1);
 	
-	return tdb_chainlock_with_timeout(tdb, key, timeout, F_RDLCK);
+	return tdb_chainlock_with_timeout_internal(tdb, key, timeout, F_RDLCK);
 }
 
 /****************************************************************************
