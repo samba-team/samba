@@ -120,7 +120,7 @@ init_context_from_config_file(krb5_context context)
 				 "dns_proxy", NULL);
     if(tmp) 
 	roken_gethostby_setup(context->http_proxy, tmp);
-    krb5_set_default_realm(context, NULL);
+    context->default_realms = NULL;
 
     {
 	krb5_addresses addresses;
