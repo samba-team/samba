@@ -50,6 +50,8 @@ calling_error(OM_uint32 v)
 	"A parameter was malformed"
     };
 
+    v >>= GSS_C_CALLING_ERROR_OFFSET;
+
     if (v == 0)
 	return "";
     else if (v >= sizeof(msgs)/sizeof(*msgs))
@@ -83,6 +85,8 @@ routine_error(OM_uint32 v)
 	"The requested credential element already exists",
 	"The provided name was not a mechanism name.",
     };
+
+    v >>= GSS_C_ROUTINE_ERROR_OFFSET;
 
     if (v == 0)
 	return "";
