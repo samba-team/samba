@@ -1464,6 +1464,32 @@ tgs_rep2(KDC_REQ_BODY *b,
 	}
 #endif
 
+	/* check principal flags */
+	if(server->flags.invalid) {
+	    kdc_log(0, "%s has `invalid' flag set", spn);
+	    ret = KRB5KDC_ERR_SERVICE_NOTYET;
+	    goto out;
+	}
+	if(!server->flags.server) {
+	    kdc_log(0, "%s may not act as server", spn);
+	    ret = KRB5KDC_ERR_POLICY;
+	    goto out;
+	}
+	if(server->flags.initial) {
+	    kdc_log(0, "%s has `initial' flag set", spn);
+	    ret = KRB5KDC_ERR_POLICY;
+	    goto out;
+	}
+	if(client->flags.invalid) {
+	    kdc_log(0, "%s has `invalid' flag set", cpn);
+	    ret = KRB5KDC_ERR_CLIENT_NOTYET;
+	    goto out;
+	}
+	if(!client->flags.client) {
+	    kdc_log(0, "%s may not act as client", cpn);
+	    ret = KRB5KDC_ERR_POLICY;
+	    goto out;
+	}
 
 	if((b->kdc_options.validate || b->kdc_options.renew) && 
 	   !krb5_principal_compare(context, 
