@@ -635,7 +635,7 @@ static void kerberos_derive_salting_principal_direct(krb5_context context,
  Wrapper function for the above.
  ************************************************************************/
 
-void kerberos_derive_salting_principal(char *service_principal)
+BOOL kerberos_derive_salting_principal(char *service_principal)
 {
 	krb5_context context = NULL;
 	krb5_enctype *enctypes = NULL;
@@ -646,7 +646,7 @@ void kerberos_derive_salting_principal(char *service_principal)
 	if ((ret = krb5_init_context(&context)) != 0) {
 		DEBUG(1,("kerberos_derive_cifs_salting_principals: krb5_init_context failed. %s\n",
 			error_message(ret)));
-		return;
+		return False;
 	}
 	if ((ret = get_kerberos_allowed_etypes(context, &enctypes)) != 0) {
 		DEBUG(1,("kerberos_derive_cifs_salting_principals: get_kerberos_allowed_etypes failed. %s\n",
@@ -672,6 +672,8 @@ void kerberos_derive_salting_principal(char *service_principal)
 	if (context) {
 		krb5_free_context(context);
 	}
+
+	return ret ? False : True;
 }
 
 /************************************************************************
