@@ -50,5 +50,6 @@
 #include "asn1.h"
 #include "der.h"
 #include "asn1_err.h"
+#include <parse_units.h>
 
 #endif /* __LIBASN1_H__ */

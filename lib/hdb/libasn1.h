@@ -48,8 +48,9 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <asn1.h>
-#include "hdb_asn1.h"
 #include <der.h>
+#include "hdb_asn1.h"
 #include <asn1_err.h>
+#include <parse_units.h>
 
 #endif /* __LIBASN1_H__ */
