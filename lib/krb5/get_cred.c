@@ -174,10 +174,10 @@ init_tgs_req (krb5_context context,
     t->pvno = 5;
     t->msg_type = krb_tgs_req;
     if (in_creds->session.keytype) {
-	ret = krb5_keytype_to_enctypes (context,
-					in_creds->session.keytype,
-					&t->req_body.etype.len,
-					&t->req_body.etype.val);
+	ret = krb5_keytype_to_enctypes_default (context,
+						in_creds->session.keytype,
+						&t->req_body.etype.len,
+						&t->req_body.etype.val);
     } else {
 	ret = krb5_init_etype(context, 
 			      &t->req_body.etype.len, 
