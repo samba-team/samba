@@ -81,7 +81,7 @@ static int make_nonstd_fd_internals(int fd, int limit /* Recursion limiter */)
 		if ((new_fd = fcntl(fd, F_DUPFD, 3)) == -1) {
 			return -1;
 		}
-		/* Parinoia */
+		/* Paranoia */
 		if (new_fd < 3) {
 			close(new_fd);
 			return -1;
@@ -191,6 +191,8 @@ static int winbind_named_pipe_sock(const char *dir)
 	
 	if (connect(fd, (struct sockaddr *)&sunaddr, 
 		    sizeof(sunaddr)) == -1) {
+		DEBUG(10, ("error connecting to pipe socket: %s\n", 
+			strerror(errno)));
 		close(fd);
 		return -1;
 	}
