@@ -373,7 +373,7 @@ static NTSTATUS dcerpc_schannel_key(struct dcerpc_pipe *p,
 	r.in.credentials = &credentials1;
 	r.out.credentials = &credentials2;
 
-	generate_random_buffer(credentials1.data, sizeof(credentials1.data), False);
+	generate_random_buffer(credentials1.data, sizeof(credentials1.data));
 
 	status = dcerpc_netr_ServerReqChallenge(p2, p->mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {

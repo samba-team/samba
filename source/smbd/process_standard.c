@@ -74,6 +74,10 @@ static void standard_accept_connection(struct event_context *ev, struct fd_event
 		DEBUG(0,("standard_accept_connection: tdb_reopen_all failed.\n"));
 	}
 
+	/* Ensure that the forked children do not expose identical random streams */
+
+	set_need_random_reseed();
+
 	mem_ctx = talloc_init("server_service_connection");
 	if (!mem_ctx) {
 		DEBUG(0,("talloc_init(server_service_connection) failed\n"));

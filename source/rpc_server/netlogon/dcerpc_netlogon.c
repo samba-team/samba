@@ -150,8 +150,7 @@ static NTSTATUS netr_ServerReqChallenge(struct dcesrv_call_state *dce_call, TALL
 	pipe_state->client_challenge = *r->in.credentials;
 
 	generate_random_buffer(pipe_state->server_challenge.data, 
-			       sizeof(pipe_state->server_challenge.data),
-			       False);
+			       sizeof(pipe_state->server_challenge.data));
 
 	*r->out.credentials = pipe_state->server_challenge;
 

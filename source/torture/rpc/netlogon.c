@@ -88,7 +88,7 @@ static BOOL test_SetupCredentials(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.credentials = &credentials1;
 	r.out.credentials = &credentials2;
 
-	generate_random_buffer(credentials1.data, sizeof(credentials1.data), False);
+	generate_random_buffer(credentials1.data, sizeof(credentials1.data));
 
 	status = dcerpc_netr_ServerReqChallenge(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -148,7 +148,7 @@ static BOOL test_SetupCredentials2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.credentials = &credentials1;
 	r.out.credentials = &credentials2;
 
-	generate_random_buffer(credentials1.data, sizeof(credentials1.data), False);
+	generate_random_buffer(credentials1.data, sizeof(credentials1.data));
 
 	status = dcerpc_netr_ServerReqChallenge(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -214,7 +214,7 @@ static BOOL test_SetupCredentials3(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.credentials = &credentials1;
 	r.out.credentials = &credentials2;
 
-	generate_random_buffer(credentials1.data, sizeof(credentials1.data), False);
+	generate_random_buffer(credentials1.data, sizeof(credentials1.data));
 
 	status = dcerpc_netr_ServerReqChallenge(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -893,8 +893,7 @@ static BOOL test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 
 	samlogon_state.chall = data_blob_talloc(mem_ctx, NULL, 8);
 
-	generate_random_buffer(samlogon_state.chall.data, 
-			       8, False);
+	generate_random_buffer(samlogon_state.chall.data, 8);
 
 	if (!test_SetupCredentials2(p, mem_ctx, NETLOGON_NEG_AUTH2_FLAGS, &samlogon_state.creds)) {
 		return False;

@@ -458,7 +458,7 @@ static BOOL rw_torture2(struct cli_state *c1, struct cli_state *c2)
 			printf("%d\r", i); fflush(stdout);
 		}
 
-		generate_random_buffer(buf, buf_size, False);
+		generate_random_buffer(buf, buf_size);
 
 		if ((bytes_written = cli_write(c1->tree, fnum1, 0, buf, 0, buf_size)) != buf_size) {
 			printf("write failed (%s)\n", cli_errstr(c1->tree));

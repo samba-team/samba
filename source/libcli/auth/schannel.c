@@ -194,7 +194,7 @@ NTSTATUS schannel_seal_packet(struct schannel_state *state,
 	uint8_t sealing_key[16];
 	static const uint8_t netsec_sig[8] = NETSEC_SEAL_SIGNATURE;
 
-	generate_random_buffer(confounder, 8, False);
+	generate_random_buffer(confounder, 8);
 
 	RSIVAL(seq_num, 0, state->seq_num);
 	SIVAL(seq_num, 4, state->initiator?0x80:0);
