@@ -3629,30 +3629,6 @@ else
 fi
 
 #################################################
-# choose native language(s) of man pages
-AC_MSG_CHECKING(chosen man pages' language(s))
-AC_ARG_WITH(manpages-langs,
-[  --with-manpages-langs={en,ja,pl}  Choose man pages' language(s). (en)],
-[ case "$withval" in
-  yes|no)
-    AC_MSG_WARN(--with-manpages-langs called without argument - will use default)
-    manlangs="en"
-  ;;
-  *)
-    manlangs="$withval"
-  ;;
-  esac
-
-  AC_MSG_RESULT($manlangs)
-  manlangs=`echo $manlangs | sed "s/,/ /g"`   # replacing commas with spaces to produce a list
-  AC_SUBST(manlangs)],
-
-  [manlangs="en"
-  AC_MSG_RESULT($manlangs)
-  AC_SUBST(manlangs)]
-)
-
-#################################################
 # should we build libsmbclient?
 
 INSTALLCLIENTCMD_SH=:
