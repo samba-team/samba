@@ -264,15 +264,14 @@ Comma Separated list of Files
 		to the MS Platform SDK GetPrinterData() function (* This
 		command is currently unimplemented).</para></listitem></varlistentry>
 
-
+		<varlistentry><term>enumdataex</term><listitem><para>Enumerate printer data for a key</para></listitem></varlistentry>
 
 		<varlistentry><term>enumjobs &lt;printer&gt;</term>
 		<listitem><para>List the jobs and status of a given printer. 
 		This command corresponds to the MS Platform SDK EnumJobs() 
 		function </listitem></varlistentry>
-		
 
-
+		<varlistentry><term>enumkey</term><listitem><para>Enumerate printer keys</para></listitem></varlistentry>
 		
 		<varlistentry><term>enumports [level]</term>
 		<listitem><para>
@@ -306,6 +305,7 @@ Comma Separated list of Files
 		This command corresponds to the GetPrinterData() MS Platform 
 		SDK function. </para></listitem></varlistentry>
 
+		<varlistentry><term>getdataex</term><listitem><para>Get printer driver data with keyname</para></listitem></varlistentry>
 
 		
 		<varlistentry><term>getdriver &lt;printername&gt;</term>
@@ -333,12 +333,11 @@ Comma Separated list of Files
 		corresponds to the GetPrinter() MS Platform SDK function. 
 		</para></listitem></varlistentry>
 
-
+		<varlistentry><term>getprintprocdir</term><listitem><para>Get print processor directory</para></listitem></varlistentry>
 		
 		<varlistentry><term>openprinter &lt;printername&gt;</term> 
 		<listitem><para>Execute an OpenPrinterEx() and ClosePrinter() RPC 
 		against a given printer. </para></listitem> 
-
 
 		<varlistentry><term>setdriver &lt;printername&gt;
 		&lt;drivername&gt;</term>
@@ -350,8 +349,46 @@ Comma Separated list of Files
 		<command>enumdrivers</command> commands for obtaining a list of
 		of installed printers and drivers.</para></listitem></varlistentry>
 
+		<varlistentry><term>addform</term><listitem><para>Add form</para></listitem></varlistentry>
+		<varlistentry><term>setform</term><listitem><para>Set form</para></listitem></varlistentry>
+		<varlistentry><term>getform</term><listitem><para>Get form</para></listitem></varlistentry>
+		<varlistentry><term>deleteform</term><listitem><para>Delete form</para></listitem></varlistentry>
+		<varlistentry><term>enumforms</term><listitem><para>Enumerate form</para></listitem></varlistentry>
+		<varlistentry><term>setprinter</term><listitem><para>Set printer comment</para></listitem></varlistentry>
+		<varlistentry><term>setprinterdata</term><listitem><para>Set REG_SZ printer data</para></listitem></varlistentry>
+		<varlistentry><term>rffpcnex</term><listitem><para>Rffpcnex test</para></listitem></varlistentry>
+		
+
 	</variablelist>
 
+	</refsect2>
+
+	<refsect2>
+	<title>NETLOGON</title>
+
+	<variablelist>
+
+	<varlistentry><term>logonctrl2</term>
+	<listitem><para>Logon Control 2</para></listitem>
+	</varlistentry>
+
+	<varlistentry><term>logonctrl</term>
+	<listitem><para>Logon Control</para></listitem>
+	</varlistentry>
+
+	<varlistentry><term>samsync</term>
+	<listitem><para>Sam Synchronisation</para></listitem>
+	</varlistentry>
+
+	<varlistentry><term>samdeltas</term>
+	<listitem><para>Query Sam Deltas</para></listitem>
+	</varlistentry>
+
+	<varlistentry><term>samlogon</term>
+	<listitem><para>Sam Logon</para></listitem>
+	</varlistentry>
+
+	</variablelist>
 	</refsect2>
 
 	<refsect2>
