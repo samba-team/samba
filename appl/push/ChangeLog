@@ -1,3 +1,7 @@
+Mon Mar 15 18:26:16 1999  Johan Danielsson  <joda@blubb.pdc.kth.se>
+
+	* push.c: strncasecmp headers
+
 Mon Feb 15 22:22:09 1999  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.in (pfrom): use libexecdir
