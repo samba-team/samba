@@ -1605,6 +1605,58 @@ struct ldap_message *ldap_searchone(struct ldap_connection *conn,
 	return res1;
 }
 
+BOOL ldap_find_single_value(struct ldap_message *msg, const char *attr,
+			    DATA_BLOB *value)
+{
+	int i;
+	struct ldap_SearchResEntry *r = &msg->r.SearchResultEntry;
+
+	if (msg->type != LDAP_TAG_SearchResultEntry)
+		return False;
+
+	for (i=0; i<r->num_attributes; i++) {
+		if (strequal(attr, r->attributes[i].name)) {
+			if (r->attributes[i].num_values != 1)
+				return False;
+
+			*value = r->attributes[i].values[0];
+			return True;
+		}
+	}
+	return False;
+}
+
+BOOL ldap_find_single_int(struct ldap_message *msg, const char *attr,
+			  int *value)
+{
+	DATA_BLOB blob;
+	char *val;
+	int errno_save;
+	BOOL res;
+
+	if (!ldap_find_single_value(msg, attr, &blob))
+		return False;
+
+	val = malloc(blob.length+1);
+	if (val == NULL)
+		return False;
+
+	memcpy(val, blob.data, blob.length);
+	val[blob.length] = '\0';
+
+	errno_save = errno;
+	errno = 0;
+
+	*value = strtol(val, NULL, 10);
+
+	res = (errno == 0);
+
+	free(val);
+	errno = errno_save;
+
+	return res;
+}
+
 int ldap_error(struct ldap_connection *conn)
 {
 	return 0;

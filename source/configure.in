@@ -2536,7 +2536,7 @@ if test x"$with_ldap_support" != x"no"; then
   
   if test x"$ac_cv_lib_ext_ldap_ldap_init" = x"yes" -a x"$ac_cv_func_ext_ldap_domain2hostlist" = x"yes"; then
     AC_DEFINE(HAVE_LDAP,1,[Whether ldap is available])
-    default_static_modules="$default_static_modules pdb_ldap idmap_ldap";
+    default_static_modules="$default_static_modules pdb_ldap idmap_ldap idmap_smbldap";
     default_shared_modules="$default_shared_modules config_ldap";
     SMBLDAP="lib/smbldap.o"
     SMBLDAPUTIL="lib/smbldap_util.o"
@@ -4410,6 +4410,7 @@ SMB_MODULE(rpc_epmapper, \$(RPC_EPMAPPER_OBJ), "bin/librpc_epmapper.$SHLIBEXT",
 SMB_SUBSYSTEM(RPC,smbd/server.o)
 
 SMB_MODULE(idmap_ldap, sam/idmap_ldap.o, "bin/idmap_ldap.$SHLIBEXT", IDMAP)
+SMB_MODULE(idmap_smbldap, sam/idmap_smbldap.o, "bin/idmap_smbldap.$SHLIBEXT", IDMAP)
 SMB_MODULE(idmap_tdb, sam/idmap_tdb.o, "bin/idmap_tdb.$SHLIBEXT", IDMAP)
 SMB_SUBSYSTEM(IDMAP,sam/idmap.o)
 

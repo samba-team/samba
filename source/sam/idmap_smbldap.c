@@ -36,6 +36,7 @@
 
 struct ldap_idmap_state {
 	struct smbldap_state *smbldap_state;
+	struct ldap_connection *conn;
 	TALLOC_CTX *mem_ctx;
 };
 
@@ -117,6 +118,53 @@ static NTSTATUS ldap_set_mapping(const DOM_SID *sid, unid_t id, int id_type)
  Even if the sambaDomain attribute in LDAP tells us that this RID is 
  safe to use, always check before use.  
 *********************************************************************/
+
+static NTSTATUS sid_in_use2(struct ldap_idmap_state *state, const DOM_SID *sid,
+			    const struct timeval *endtime, BOOL *in_use)
+{
+	fstring filter;
+	const char *sid_attr[] = {"sambaSID"};
+	struct ldap_message *msg = new_ldap_message();
+	struct ldap_message *entry;
+	struct ldap_SearchRequest *r;
+	NTSTATUS result;
+
+	if (msg == NULL)
+		return NT_STATUS_NO_MEMORY;
+
+	fstr_sprintf(filter, "(%s=%s)", "sambaSID", sid_string_static(sid));
+
+	r = &msg->r.SearchRequest;
+	msg->type = LDAP_TAG_SearchRequest;
+	r->basedn = lp_ldap_suffix();
+	r->scope = LDAP_SEARCH_SCOPE_SUB;
+	r->deref = LDAP_DEREFERENCE_NEVER;
+	r->timelimit = 0;
+	r->sizelimit = 0;
+	r->attributesonly = False;
+	r->filter = filter;
+	r->num_attributes = 1;
+	r->attributes = sid_attr;
+
+	if (!ldap_setsearchent(state->conn, msg, endtime)) {
+		result = ldap2nterror(ldap_error(state->conn));
+		goto done;
+	}
+
+	*in_use = False;
+
+	entry = ldap_getsearchent(state->conn, endtime);
+	if (entry != NULL) {
+		*in_use = True;
+		destroy_ldap_message(entry);
+	}
+
+	ldap_endsearchent(state->conn, endtime);
+
+ done:
+	destroy_ldap_message(msg);
+	return result;
+}
 
 static BOOL sid_in_use(struct ldap_idmap_state *state, 
 		       const DOM_SID *sid, int *error) 
@@ -376,55 +424,42 @@ static NTSTATUS ldap_allocate_rid(uint32 *rid, int rid_type)
 static NTSTATUS ldap_allocate_id(unid_t *id, int id_type)
 {
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-	int rc = LDAP_SERVER_DOWN;
-	int count = 0;
-	LDAPMessage *result = NULL;
-	LDAPMessage *entry = NULL;
-	pstring id_str, new_id_str;
-	LDAPMod **mods = NULL;
-	const char *type;
-	char *dn = NULL;
-	char **attr_list;
-	pstring filter;
 	uid_t	luid, huid;
 	gid_t	lgid, hgid;
+	const char *attrs[] = { "uidNumber", "gidNumber" };
+	struct ldap_message *idpool_s = NULL;
+	struct ldap_message *idpool = NULL;
+	struct ldap_message *mod_msg = NULL;
+	struct ldap_message *mod_res = NULL;
+	int value;
+	const char *id_attrib;
+	char *mod;
 
+	id_attrib = (id_type & ID_USERID) ? "uidNumber" : "gidNumber";
 
-	type = (id_type & ID_USERID) ?
-		get_attr_key2string( idpool_attr_list, LDAP_ATTR_UIDNUMBER ) : 
-		get_attr_key2string( idpool_attr_list, LDAP_ATTR_GIDNUMBER );
+	idpool_s = new_ldap_message();
 
-	pstr_sprintf(filter, "(objectClass=%s)", LDAP_OBJ_IDPOOL);
+	if (idpool_s == NULL)
+		return NT_STATUS_NO_MEMORY;
 
-	attr_list = get_attr_list( idpool_attr_list );
+	idpool_s->type = LDAP_TAG_SearchRequest;
+	idpool_s->r.SearchRequest.basedn = lp_ldap_suffix();
+	idpool_s->r.SearchRequest.scope = LDAP_SEARCH_SCOPE_SUB;
+	idpool_s->r.SearchRequest.deref = LDAP_DEREFERENCE_NEVER;
+	idpool_s->r.SearchRequest.timelimit = 0;
+	idpool_s->r.SearchRequest.sizelimit = 0;
+	idpool_s->r.SearchRequest.attributesonly = False;
+	idpool_s->r.SearchRequest.filter = "(objectclass=sambaUnixIdPool)";
+	idpool_s->r.SearchRequest.num_attributes = 2;
+	idpool_s->r.SearchRequest.attributes = attrs;
 
-	rc = smbldap_search(ldap_state.smbldap_state, lp_ldap_idmap_suffix(),
-			       LDAP_SCOPE_SUBTREE, filter,
-			       attr_list, 0, &result);
-	free_attr_list( attr_list );
-	 
-	if (rc != LDAP_SUCCESS) {
-		DEBUG(0,("ldap_allocate_id: %s object not found\n", LDAP_OBJ_IDPOOL));
+	idpool = ldap_searchone(ldap_state.conn, idpool_s, NULL);
+
+	if (idpool == NULL)
 		goto out;
-	}
-	
-	count = ldap_count_entries(ldap_state.smbldap_state->ldap_struct, result);
-	if (count != 1) {
-		DEBUG(0,("ldap_allocate_id: single %s object not found\n", LDAP_OBJ_IDPOOL));
-		goto out;
-	}
 
-	dn = smbldap_get_dn(ldap_state.smbldap_state->ldap_struct, result);
-	if (!dn) {
+	if (!ldap_find_single_int(idpool, id_attrib, &value))
 		goto out;
-	}
-	entry = ldap_first_entry(ldap_state.smbldap_state->ldap_struct, result);
-
-	if (!smbldap_get_single_pstring(ldap_state.smbldap_state->ldap_struct, entry, type, id_str)) {
-		DEBUG(0,("ldap_allocate_id: %s attribute not found\n",
-			 type));
-		goto out;
-	}
 
 	/* this must succeed or else we wouldn't have initialized */
 		
@@ -434,48 +469,51 @@ static NTSTATUS ldap_allocate_id(unid_t *id, int id_type)
 	/* make sure we still have room to grow */
 	
 	if (id_type & ID_USERID) {
-		id->uid = strtoul(id_str, NULL, 10);
+		id->uid = value;
 		if (id->uid > huid ) {
-			DEBUG(0,("ldap_allocate_id: Cannot allocate uid above %lu!\n", 
-				 (unsigned long)huid));
+			DEBUG(0,("ldap_allocate_id: Cannot allocate uid "
+				 "above %lu!\n",  (unsigned long)huid));
 			goto out;
 		}
 	}
 	else { 
-		id->gid = strtoul(id_str, NULL, 10);
+		id->gid = value;
 		if (id->gid > hgid ) {
-			DEBUG(0,("ldap_allocate_id: Cannot allocate gid above %lu!\n", 
-				 (unsigned long)hgid));
+			DEBUG(0,("ldap_allocate_id: Cannot allocate gid "
+				 "above %lu!\n", (unsigned long)hgid));
 			goto out;
 		}
 	}
 	
-	pstr_sprintf(new_id_str, "%lu", 
-		 ((id_type & ID_USERID) ? (unsigned long)id->uid : 
-		  (unsigned long)id->gid) + 1);
-		 
-	smbldap_set_mod( &mods, LDAP_MOD_DELETE, type, id_str );		 
-	smbldap_set_mod( &mods, LDAP_MOD_ADD, type, new_id_str );
+	asprintf(&mod,
+		 "dn: %s\n"
+		 "changetype: modify\n"
+		 "delete: %s\n"
+		 "%s: %d\n"
+		 "-\n"
+		 "add: %s\n"
+		 "%s: %d\n",
+		 idpool->r.SearchResultEntry.dn, id_attrib, id_attrib, value,
+		 id_attrib, id_attrib, value+1);
 
-	if (mods == NULL) {
-		DEBUG(0,("ldap_allocate_id: smbldap_set_mod() failed.\n"));
-		goto out;		
-	}
+	mod_msg = ldap_ldif2msg(mod);
 
-	rc = smbldap_modify(ldap_state.smbldap_state, dn, mods);
+	SAFE_FREE(mod);
 
-	ldap_mods_free( mods, True );
-	if (rc != LDAP_SUCCESS) {
-		DEBUG(0,("ldap_allocate_id: Failed to allocate new %s.  ldap_modify() failed.\n",
-			type));
+	if (mod_msg == NULL)
 		goto out;
-	}
-	
+
+	mod_res = ldap_transaction(ldap_state.conn, mod_msg);
+
+	if ((mod_res == NULL) || (mod_res->r.ModifyResponse.resultcode != 0))
+		goto out;
+
 	ret = NT_STATUS_OK;
 out:
-	SAFE_FREE(dn);
-	if (result != NULL)
-		ldap_msgfree(result);
+	destroy_ldap_message(idpool_s);
+	destroy_ldap_message(idpool);
+	destroy_ldap_message(mod_msg);
+	destroy_ldap_message(mod_res);
 
 	return ret;
 }
@@ -548,7 +586,8 @@ out:
  Get an id from a sid 
 ***********************************************************************/
 
-static NTSTATUS ldap_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID *sid)
+static NTSTATUS ldap_get_id_from_sid(unid_t *id, int *id_type,
+				     const DOM_SID *sid)
 {
 	LDAPMessage *result = NULL;
 	LDAPMessage *entry = NULL;
@@ -662,64 +701,83 @@ out:
 }
 
 /**********************************************************************
- Verify the sambaUnixIdPool entry in the directiry.  
+ Verify the sambaUnixIdPool entry in the directory.  
 **********************************************************************/
-
-static NTSTATUS verify_idpool( void )
+static NTSTATUS verify_idpool(void)
 {
-	fstring filter;
-	int rc;
-	char **attr_list;
-	LDAPMessage *result = NULL;
-	LDAPMod **mods = NULL;
-	int count;
-	
-	fstr_sprintf( filter, "(objectclass=%s)", LDAP_OBJ_IDPOOL );
-	
-	attr_list = get_attr_list( idpool_attr_list );
-	rc = smbldap_search(ldap_state.smbldap_state, lp_ldap_idmap_suffix(), 
-		LDAP_SCOPE_SUBTREE, filter, attr_list, 0, &result);
-	free_attr_list ( attr_list );
+	const char *attr_list[3] = { "uidnumber", "gidnumber", "objectclass" };
+	BOOL result;
+	char *mod;
+	struct ldap_message *msg, *entry, *res;
 
-	if (rc != LDAP_SUCCESS)
-		return NT_STATUS_UNSUCCESSFUL;
+	uid_t	luid, huid;
+	gid_t	lgid, hgid;
 
-	count = ldap_count_entries(ldap_state.smbldap_state->ldap_struct, result);
+	msg = new_ldap_message();
 
-	ldap_msgfree(result);
+	if (msg == NULL)
+		return NT_STATUS_NO_MEMORY;
 
-	if ( count > 1 ) {
-		DEBUG(0,("ldap_idmap_init: multiple entries returned from %s (base == %s)\n",
-			filter, lp_ldap_idmap_suffix() ));
+	msg->type = LDAP_TAG_SearchRequest;
+	msg->r.SearchRequest.basedn = lp_ldap_suffix();
+	msg->r.SearchRequest.scope = LDAP_SEARCH_SCOPE_SUB;
+	msg->r.SearchRequest.deref = LDAP_DEREFERENCE_NEVER;
+	msg->r.SearchRequest.timelimit = 0;
+	msg->r.SearchRequest.sizelimit = 0;
+	msg->r.SearchRequest.attributesonly = False;
+	msg->r.SearchRequest.filter = "(objectclass=sambaUnixIdPool)";
+	msg->r.SearchRequest.num_attributes = 3;
+	msg->r.SearchRequest.attributes = attr_list;
+
+	entry = ldap_searchone(ldap_state.conn, msg, NULL);
+
+	result = (entry != NULL);
+
+	destroy_ldap_message(msg);
+	destroy_ldap_message(entry);
+
+	if (result)
+		return NT_STATUS_OK;
+
+	if ( !lp_idmap_uid(&luid, &huid) || !lp_idmap_gid( &lgid, &hgid ) ) {
+		DEBUG(3,("ldap_idmap_init: idmap uid/gid parameters not "
+			 "specified\n"));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
-	else if (count == 0) {
-		uid_t	luid, huid;
-		gid_t	lgid, hgid;
-		fstring uid_str, gid_str;
-		
-		if ( !lp_idmap_uid(&luid, &huid) || !lp_idmap_gid( &lgid, &hgid ) ) {
-			DEBUG(0,("ldap_idmap_init: idmap uid/gid parameters not specified\n"));
-			return NT_STATUS_UNSUCCESSFUL;
-		}
-		
-		fstr_sprintf( uid_str, "%lu", (unsigned long)luid );
-		fstr_sprintf( gid_str, "%lu", (unsigned long)lgid );
 
-		smbldap_set_mod( &mods, LDAP_MOD_ADD, "objectClass", LDAP_OBJ_IDPOOL );
-		smbldap_set_mod( &mods, LDAP_MOD_ADD, 
-			get_attr_key2string(idpool_attr_list, LDAP_ATTR_UIDNUMBER), uid_str );
-		smbldap_set_mod( &mods, LDAP_MOD_ADD,
-			get_attr_key2string(idpool_attr_list, LDAP_ATTR_GIDNUMBER), gid_str );
-		if (mods) {
-			rc = smbldap_modify(ldap_state.smbldap_state, lp_ldap_idmap_suffix(), mods);
-			ldap_mods_free( mods, True );
-		} else {
-			return NT_STATUS_UNSUCCESSFUL;
-		}
+	asprintf(&mod,
+		 "dn: %s\n"
+		 "changetype: modify\n"
+		 "add: objectClass\n"
+		 "objectClass: sambaUnixIdPool\n"
+		 "-\n"
+		 "add: uidNumber\n"
+		 "uidNumber: %lu\n"
+		 "-\n"
+		 "add: gidNumber\n"
+		 "gidNumber: %lu\n",
+		 lp_ldap_idmap_suffix(),
+		 (unsigned long)luid, (unsigned long)lgid);
+		 
+	msg = ldap_ldif2msg(mod);
+
+	SAFE_FREE(mod);
+
+	if (msg == NULL)
+		return NT_STATUS_NO_MEMORY;
+
+	res = ldap_transaction(ldap_state.conn, msg);
+
+	if ((res == NULL) || (res->r.ModifyResponse.resultcode != 0)) {
+		destroy_ldap_message(msg);
+		destroy_ldap_message(res);
+		DEBUG(5, ("Could not add sambaUnixIdPool\n"));
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	return ( rc==LDAP_SUCCESS ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL );
+	destroy_ldap_message(msg);
+	destroy_ldap_message(res);
+	return NT_STATUS_OK;
 }
 
 /*****************************************************************************
@@ -729,6 +787,7 @@ static NTSTATUS verify_idpool( void )
 static NTSTATUS ldap_idmap_init( char *params )
 {
 	NTSTATUS nt_status;
+	char *dn, *pw;
 
 	ldap_state.mem_ctx = talloc_init("idmap_ldap");
 	if (!ldap_state.mem_ctx) {
@@ -742,6 +801,22 @@ static NTSTATUS ldap_idmap_init( char *params )
 		talloc_destroy(ldap_state.mem_ctx);
 		return nt_status;
 	}
+
+	ldap_state.conn = new_ldap_connection();
+
+	if (!fetch_ldap_pw(&dn, &pw))
+		return NT_STATUS_UNSUCCESSFUL;
+
+	ldap_state.conn->auth_dn =
+		talloc_strdup(ldap_state.conn->mem_ctx, dn);
+	ldap_state.conn->simple_pw =
+		talloc_strdup(ldap_state.conn->mem_ctx, pw);
+
+	SAFE_FREE(dn);
+	SAFE_FREE(pw);
+
+	if (!ldap_setup_connection(ldap_state.conn, params))
+		return NT_STATUS_UNSUCCESSFUL;
 
 	/* see if the idmap suffix and sub entries exists */
 	
@@ -788,7 +863,7 @@ static struct idmap_methods ldap_methods = {
 
 };
 
-NTSTATUS idmap_ldap_init(void)
+NTSTATUS idmap_smbldap_init(void)
 {
-	return smb_register_idmap(SMB_IDMAP_INTERFACE_VERSION, "ldap", &ldap_methods);
+	return smb_register_idmap(SMB_IDMAP_INTERFACE_VERSION, "smbldap", &ldap_methods);
 }
