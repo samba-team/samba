@@ -22,7 +22,7 @@
 
 #include "includes.h"
 
-#ifdef HAVE_NO_ACLS
+#if (!defined(HAVE_NO_ACLS) || !defined(HAVE_XATTR_SUPPORT))
 
 int main(int argc, char **argv)
 {
