@@ -83,7 +83,7 @@
 
 #include "hdb.h"
 
-extern require_preauth;
+extern int require_preauth;
 extern sig_atomic_t exit_flag;
 extern char *keyfile;
 
