@@ -599,10 +599,21 @@ send_reject (OM_uint32 *minor_status,
     if (ret)
 	return ret;
 
+#if 0
     ret = _gssapi_encapsulate(minor_status,
 			      &data,
 			      output_token,
 			      GSS_SPNEGO_MECHANISM);
+#else
+    output_token->value = malloc(data.length);
+    if (output_token->value == NULL) {
+	*minor_status = ENOMEM;
+	ret = GSS_S_FAILURE;
+    } else {
+	output_token->length = data.length;
+	memcpy(output_token->value, data.data, output_token->length);
+    }
+#endif
     free(buf);
     if (ret)
 	return ret;
@@ -697,10 +708,21 @@ send_accept (OM_uint32 *minor_status,
     if (ret)
 	return ret;
 
+#if 0
     ret = _gssapi_encapsulate(minor_status,
 			      &data,
 			      output_token,
 			      GSS_SPNEGO_MECHANISM);
+#else
+    output_token->value = malloc(data.length);
+    if (output_token->value == NULL) {
+	*minor_status = ENOMEM;
+	ret = GSS_S_FAILURE;
+    } else {
+	output_token->length = data.length;
+	memcpy(output_token->value, data.data, output_token->length);
+    }
+#endif
     free(buf);
     if (ret)
 	return ret;
