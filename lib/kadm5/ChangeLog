@@ -1,3 +1,19 @@
+2004-06-28  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* ad.c: implement kadm5_ad_init_with_password_ctx set more error
+	strings
+	
+2004-06-21  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: man_MANS = kadm5_pwcheck.3
+	
+	* kadm5_pwcheck.3: document new password quality api
+	
+	* password_quality.c: new password check interface (old still
+	supported)
+	
+	* kadm5-pwcheck.h: new password check interface
+	
 2004-06-08  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* ipropd_master.c (main): process all slaves, not just up to the

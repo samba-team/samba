@@ -1,3 +1,7 @@
+2004-06-28  Love Hörquist Åstrand  <lha@it.su.se>
+
+	* kadmin.c: use kadm5_ad_init_with_password_ctx
+	
 2004-06-27  Johan Danielsson  <joda@pdc.kth.se>
 
 	* kadmin.8: document get -o and stash
