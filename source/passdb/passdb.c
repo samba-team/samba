@@ -1032,21 +1032,13 @@ BOOL local_password_change(const char *user_name, int local_flags,
 
 	/* Get the smb passwd entry for this user */
 	pdb_init_sam(&sam_pass);
-	if (local_flags & LOCAL_DELETE_USER) {
-		if (!pdb_delete_sam_account(sam_pass)) {
-			slprintf(err_str,err_str_len-1, "Failed to delete entry for user %s.\n", user_name);
-			pdb_free_sam(&sam_pass);
-			return False;
-		}
-		slprintf(msg_str, msg_str_len-1, "Deleted user %s.\n", user_name);
-		pdb_free_sam(&sam_pass);
-		return True;
-	}
 	if(!pdb_getsampwnam(sam_pass, user_name)) {
 		pdb_free_sam(&sam_pass);
 		
 		if (local_flags & LOCAL_ADD_USER) {
 			pwd = getpwnam_alloc(user_name);
+		} else if (local_flags & LOCAL_DELETE_USER) {
+			/* Might not exist in /etc/passwd */
 		} else {
 			slprintf(err_str, err_str_len-1,"Failed to find entry for user %s.\n", user_name);
 			return False;
@@ -1163,6 +1155,13 @@ BOOL local_password_change(const char *user_name, int local_flags,
 			pdb_free_sam(&sam_pass);
 			return False;
 		}
+	} else if (local_flags & LOCAL_DELETE_USER) {
+		if (!pdb_delete_sam_account(sam_pass)) {
+			slprintf(err_str,err_str_len-1, "Failed to delete entry for user %s.\n", user_name);
+			pdb_free_sam(&sam_pass);
+			return False;
+		}
+		slprintf(msg_str, msg_str_len-1, "Deleted user %s.\n", user_name);
 	} else {
 		if(!pdb_update_sam_account(sam_pass)) {
 			slprintf(err_str, err_str_len-1, "Failed to modify entry for user %s.\n", user_name);
