@@ -143,7 +143,7 @@ void ofb64_init(int server)
 
 void fb64_init(struct fb *fbp)
 {
-	memset((void *)fbp,0, sizeof(*fbp));
+	memset(fbp,0, sizeof(*fbp));
 	fbp->state[0] = fbp->state[1] = FAILED;
 	fbp->fb_feed[0] = IAC;
 	fbp->fb_feed[1] = SB;
@@ -283,7 +283,7 @@ int fb64_is(unsigned char *data, int cnt, struct fb *fbp)
 		if (encrypt_debug_mode)
 			printf("Initializing Decrypt stream\r\n");
 
-		fb64_stream_iv((void *)data, &fbp->streams[DIR_DECRYPT-1]);
+		fb64_stream_iv(data, &fbp->streams[DIR_DECRYPT-1]);
 
 		p = fbp->fb_feed + 3;
 		*p++ = ENCRYPT_REPLY;
@@ -397,7 +397,7 @@ static void fb64_session(Session_Key *key, int server, struct fb *fbp)
 				key ? key->type : -1, SK_DES);
 		return;
 	}
-	memcpy((void *)fbp->krbdes_key, (void *)key->data, sizeof(des_cblock));
+	memcpy(fbp->krbdes_key, key->data, sizeof(des_cblock));
 
 	fb64_stream_key(fbp->krbdes_key, &fbp->streams[DIR_ENCRYPT-1]);
 	fb64_stream_key(fbp->krbdes_key, &fbp->streams[DIR_DECRYPT-1]);
@@ -508,8 +508,8 @@ void ofb64_printsub(unsigned char *data, int cnt,
 void fb64_stream_iv(des_cblock seed, struct stinfo *stp)
 {
 
-	memcpy((void *)stp->str_iv, (void *)seed,sizeof(des_cblock));
-	memcpy((void *)stp->str_output, (void *)seed, sizeof(des_cblock));
+	memcpy(stp->str_iv, seed,sizeof(des_cblock));
+	memcpy(stp->str_output, seed, sizeof(des_cblock));
 
 	des_key_sched(&stp->str_ikey, stp->str_sched);
 
@@ -518,10 +518,10 @@ void fb64_stream_iv(des_cblock seed, struct stinfo *stp)
 
 void fb64_stream_key(des_cblock key, struct stinfo *stp)
 {
-	memcpy((void *)stp->str_ikey, (void *)key, sizeof(des_cblock));
+	memcpy(stp->str_ikey, key, sizeof(des_cblock));
 	des_key_sched((des_cblock*)key, stp->str_sched);
 
-	memcpy((void *)stp->str_output, (void *)stp->str_iv, sizeof(des_cblock));
+	memcpy(stp->str_output, stp->str_iv, sizeof(des_cblock));
 
 	stp->str_index = sizeof(des_cblock);
 }
@@ -558,7 +558,7 @@ void cfb64_encrypt(unsigned char *s, int c)
 		if (index == sizeof(des_cblock)) {
 			des_cblock b;
 			des_ecb_encrypt(&stp->str_output, &b,stp->str_sched, 1);
-			memcpy((void *)stp->str_feed, (void *)b, sizeof(des_cblock));
+			memcpy(stp->str_feed, b, sizeof(des_cblock));
 			index = 0;
 		}
 
@@ -590,7 +590,7 @@ int cfb64_decrypt(int data)
 	if (index == sizeof(des_cblock)) {
 		des_cblock b;
 		des_ecb_encrypt(&stp->str_output,&b, stp->str_sched, 1);
-		memcpy((void *)stp->str_feed, (void *)b, sizeof(des_cblock));
+		memcpy(stp->str_feed, b, sizeof(des_cblock));
 		stp->str_index = 1;	/* Next time will be 1 */
 		index = 0;		/* But now use 0 */ 
 	}
@@ -630,7 +630,7 @@ void ofb64_encrypt(unsigned char *s, int c)
 		if (index == sizeof(des_cblock)) {
 			des_cblock b;
 			des_ecb_encrypt(&stp->str_feed,&b, stp->str_sched, 1);
-			memcpy((void *)stp->str_feed, (void *)b, sizeof(des_cblock));
+			memcpy(stp->str_feed, b, sizeof(des_cblock));
 			index = 0;
 		}
 		*s++ ^= stp->str_feed[index];
@@ -659,7 +659,7 @@ int ofb64_decrypt(int data)
 	if (index == sizeof(des_cblock)) {
 		des_cblock b;
 		des_ecb_encrypt(&stp->str_feed,&b,stp->str_sched, 1);
-		memcpy((void *)stp->str_feed, (void *)b, sizeof(des_cblock));
+		memcpy(stp->str_feed, b, sizeof(des_cblock));
 		stp->str_index = 1;	/* Next time will be 1 */
 		index = 0;		/* But now use 0 */ 
 	}

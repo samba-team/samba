@@ -428,7 +428,7 @@ OUT:
 		default:
 			break;
 	}
-	return ((char *)0);
+	return NULL;
 }
 
 #define HELPINDENT ((int) sizeof ("directory"))

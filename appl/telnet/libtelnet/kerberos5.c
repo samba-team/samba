@@ -139,7 +139,7 @@ Data(ap, type, d, c)
 	unsigned char *cd = (unsigned char *)d;
 
 	if (c == -1)
-		c = strlen((char *)cd);
+		c = strlen(cd);
 
 	if (auth_debug_mode) {
 		printf("%s:%d: [%d] (%d)",
@@ -249,7 +249,7 @@ kerberos5_send(ap)
 	}
 
 
-	memset((char *)&creds, 0, sizeof(creds));
+	memset(&creds, 0, sizeof(creds));
 	creds.server = server;
 
 	if (r = krb5_cc_get_principal(ccache, &creds.client)) {

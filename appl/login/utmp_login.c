@@ -111,7 +111,7 @@ void utmp_login(char *tty, char *username, char *hostname)
       ttyno = ttyslot();
       if (ttyno > 0 && (fd = open(_PATH_UTMP, O_WRONLY, 0)) >= 0) {
 	lseek(fd, (long)(ttyno * sizeof(struct utmp)), SEEK_SET);
-	write(fd, (char *)&utmp, sizeof(struct utmp));
+	write(fd, &utmp, sizeof(struct utmp));
 	close(fd);
       }
     }
@@ -119,7 +119,7 @@ void utmp_login(char *tty, char *username, char *hostname)
 #endif /* HAVE_SETUTENT */
 
     if ((fd = open(_PATH_WTMP, O_WRONLY|O_APPEND, 0)) >= 0) {
-	write(fd, (char *)&utmp, sizeof(struct utmp));
+	write(fd, &utmp, sizeof(struct utmp));
 	close(fd);
     }
 }

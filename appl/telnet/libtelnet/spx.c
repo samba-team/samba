@@ -299,7 +299,7 @@ spx_send(ap)
 		return(0);
 	}
 
-	if (!Data(ap, SPX_AUTH, (void *)output_token.value, output_token.length)) {
+	if (!Data(ap, SPX_AUTH, output_token.value, output_token.length)) {
 		return(0);
 	}
 
@@ -387,7 +387,7 @@ spx_is(ap, data, cnt)
 					src_name,
 					&fullname_buffer,
 					&fullname_type);
-			Data(ap, SPX_REJECT, (void *)"auth failed", -1);
+			Data(ap, SPX_REJECT, "auth failed", -1);
 			auth_finished(ap, AUTH_REJECT);
 			return;
 		}
@@ -398,7 +398,7 @@ spx_is(ap, data, cnt)
 					&fullname_type);
 
 
-		Data(ap, SPX_ACCEPT, (void *)output_token.value, output_token.length);
+		Data(ap, SPX_ACCEPT, output_token.value, output_token.length);
 		auth_finished(ap, AUTH_USER);
 		break;
 

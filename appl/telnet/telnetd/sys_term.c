@@ -188,7 +188,7 @@ copy_termbuf(cp, len)
 {
 	if (len > sizeof(termbuf))
 		len = sizeof(termbuf);
-	memmove((char *)&termbuf, cp, len);
+	memmove(&termbuf, cp, len);
 	termbuf2 = termbuf;
 }
 #endif	/* defined(LINEMODE) && defined(TIOCPKT_IOCTL) */
@@ -199,7 +199,7 @@ set_termbuf(void)
 	/*
 	 * Only make the necessary changes.
 	 */
-	if (memcmp((char *)&termbuf, (char *)&termbuf2, sizeof(termbuf)))
+	if (memcmp(&termbuf, &termbuf2, sizeof(termbuf)))
 # ifdef  STREAMSPTY
 		if (really_stream)
 			tcsetattr(ttyfd, TCSANOW, &termbuf);
@@ -1020,7 +1020,7 @@ void getptyslave(void)
 	init_termbuf();
 # ifdef	TIOCGWINSZ
 	if (def_row || def_col) {
-		memset((char *)&ws, 0, sizeof(ws));
+		memset(&ws, 0, sizeof(ws));
 		ws.ws_col = def_col;
 		ws.ws_row = def_row;
 		ioctl(t, TIOCSWINSZ, (char *)&ws);
@@ -1276,7 +1276,7 @@ startslave(char *host, int autologin, char *autoname)
 		pututline(&wtmp);
 		endutent();
 		if ((i = open(wtmpf, O_WRONLY|O_APPEND)) >= 0) {
-			write(i, (char *)&wtmp, sizeof(struct utmp));
+			write(i, &wtmp, sizeof(struct utmp));
 			close(i);
 		}
 #ifdef	CRAY
@@ -1666,7 +1666,7 @@ rmut(void)
 		if (!utmp)
 			syslog(LOG_ERR, "utmp malloc failed");
 		if (statbf.st_size && utmp) {
-			nutmp = read(f, (char *)utmp, (int)statbf.st_size);
+			nutmp = read(f, utmp, (int)statbf.st_size);
 			nutmp /= sizeof(struct utmp);
 
 			for (u = utmp ; u < &utmp[nutmp] ; u++) {
@@ -1679,7 +1679,7 @@ rmut(void)
 				SCPYN(u->ut_host, "");
 #endif
 				time(&u->ut_time);
-				write(f, (char *)u, sizeof(wtmp));
+				write(f, u, sizeof(wtmp));
 				found++;
 			}
 		}
@@ -1694,7 +1694,7 @@ rmut(void)
 			SCPYN(wtmp.ut_host, "");
 #endif
 			time(&wtmp.ut_time);
-			write(f, (char *)&wtmp, sizeof(wtmp));
+			write(f, &wtmp, sizeof(wtmp));
 			close(f);
 		}
 	}

@@ -275,7 +275,7 @@ kerberos4_is(Authenticator *ap, unsigned char *data, int cnt)
 		printf("No local realm\r\n");
 	    return;
 	}
-	memmove((void *)auth.dat, (void *)data, auth.length = cnt);
+	memmove(auth.dat, data, auth.length = cnt);
 	if (auth_debug_mode) {
 	    printf("Got %d bytes of authentication data\r\n", cnt);
 	    printf("CK: %d:", kerberos4_cksum(auth.dat, auth.length));
@@ -296,14 +296,14 @@ kerberos4_is(Authenticator *ap, unsigned char *data, int cnt)
 	krb_kntoln(&adat, name);
 
 	if (UserNameRequested && !kuserok(&adat, UserNameRequested))
-	    Data(ap, KRB_ACCEPT, (void *)0, 0);
+	    Data(ap, KRB_ACCEPT, NULL, 0);
 	else {
 	    char *msg = malloc(ANAME_SZ + 1 + INST_SZ +
 			       REALM_SZ +
 			       strlen(UserNameRequested) + 80);
 	    
 	    if (msg == NULL)
-		Data(ap, KRB_REJECT, (void *)0, 0);
+		Data(ap, KRB_REJECT, NULL, 0);
 	    sprintf (msg, "user `%s' is not authorized to "
 		     "login as `%s'", 
 		     krb_unparse_name_long(adat.pname, 
@@ -319,7 +319,7 @@ kerberos4_is(Authenticator *ap, unsigned char *data, int cnt)
 	
     case KRB_CHALLENGE:
 #ifndef ENCRYPTION
-	Data(ap, KRB_RESPONSE, (void *)0, 0);
+	Data(ap, KRB_RESPONSE, NULL, 0);
 #else
 	if(!VALIDKEY(session_key)){
 	    Data(ap, KRB_RESPONSE, NULL, 0);

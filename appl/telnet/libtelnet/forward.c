@@ -124,8 +124,8 @@ get_for_creds(etype, sumtype, rhost, client, enc_key, forwardable, outbuf)
 		return ENOMEM;
 	    }
 	    else
-	      memmove ((char *)addrs[i]->contents, hp->h_addr_list[i],
-		      addrs[i]->length);
+	      memmove (addrs[i]->contents, hp->h_addr_list[i],
+		       addrs[i]->length);
 	}
 	else {
 	    return ENOMEM;
@@ -133,7 +133,7 @@ get_for_creds(etype, sumtype, rhost, client, enc_key, forwardable, outbuf)
     }
     addrs[i] = 0;
 
-    memset((char *)&creds, 0, sizeof(creds));
+    memset(&creds, 0, sizeof(creds));
     if (retval = krb5_copy_principal(client, &creds.client))
       return retval;
 
@@ -220,7 +220,7 @@ get_for_creds(etype, sumtype, rhost, client, enc_key, forwardable, outbuf)
 	return retval;
 #undef cleanup
 #define cleanup() {\
-	memset((char *)dec_rep->enc_part2->session->contents, 0,\
+	memset(dec_rep->enc_part2->session->contents, 0,\
 	      dec_rep->enc_part2->session->length);\
 		  krb5_free_kdc_rep(dec_rep); }
 
@@ -490,7 +490,7 @@ const krb5_address *recv_addr;	  /* optional */
 	krb5_xfree(creds->ticket.data);
 	return ENOMEM;
     }
-    memmove((char *)creds->ticket.data, (char *) scratch->data, scratch->length);
+    memmove(creds->ticket.data, scratch->data, scratch->length);
 
     cleanup_scratch();
 
@@ -603,7 +603,7 @@ const krb5_address *recv_addr;	  /* optional */
 
 #undef clean
 #define clean() {\
-	memset((char *)creds->keyblock.contents, 0, creds->keyblock.length);}
+	memset(creds->keyblock.contents, 0, creds->keyblock.length);}
 
     creds->times = credmsg_enc_part->ticket_info[0]->times;
     creds->is_skey = FALSE;

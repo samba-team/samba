@@ -104,7 +104,7 @@ static u_long ring_clock = 0;
 
 int ring_init(Ring *ring, unsigned char *buffer, int count)
 {
-    memset((char *)ring, 0, sizeof *ring);
+    memset(ring, 0, sizeof *ring);
 
     ring->size = count;
 

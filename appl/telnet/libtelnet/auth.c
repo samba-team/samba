@@ -414,7 +414,7 @@ auth_send(unsigned char *data, int cnt)
 	auth_send_cnt = cnt > sizeof(_auth_send_data)
 	    ? sizeof(_auth_send_data)
 	    : cnt;
-	memmove((void *)_auth_send_data, (void *)data, auth_send_cnt);
+	memmove(_auth_send_data, data, auth_send_cnt);
 	auth_send_data = _auth_send_data;
     } else {
 	/*
@@ -533,7 +533,7 @@ auth_name(unsigned char *data, int cnt)
 		   Name, cnt, sizeof(savename)-1);
 	return;
     }
-    memmove((void *)savename, (void *)data, cnt);
+    memmove(savename, data, cnt);
     savename[cnt] = '\0';	/* Null terminate */
     if (auth_debug_mode)
 	printf(">>>%s: Got NAME [%s]\r\n", Name, savename);

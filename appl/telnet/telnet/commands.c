@@ -2172,7 +2172,7 @@ int tn(int argc, char **argv)
     char *cmd, *hostp = 0, *portp = 0, *user = 0;
 
     /* clear the socket address prior to use */
-    memset((char *)&sin, 0, sizeof(sin));
+    memset(&sin, 0, sizeof(sin));
 
     if (connected) {
 	printf("?Already connected to %s\n", hostname);
@@ -2350,7 +2350,7 @@ int tn(int argc, char **argv)
 		fprintf(stderr, "telnet: connect to address %s: ",
 						inet_ntoa(sin.sin_addr));
 		errno = oerrno;
-		perror((char *)0);
+		perror(NULL);
 		host->h_addr_list++;
 		memmove(&sin.sin_addr,
 			host->h_addr_list[0],
@@ -2731,7 +2731,7 @@ sourceroute(arg, cpp, lenp)
 			*cpp = cp;
 			return(0);
 		}
-		memmove(lsrp, (char *)&sin_addr, 4);
+		memmove(lsrp, &sin_addr, 4);
 		lsrp += 4;
 		if (cp2)
 			cp = cp2;

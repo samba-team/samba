@@ -186,7 +186,7 @@ rsaencpwd_send(ap)
 	if (!auth_sendname(UserNameRequested, strlen(UserNameRequested))) {
 		return(0);
 	}
-	if (!Data(ap, NULL, (void *)NULL, 0)) {
+	if (!Data(ap, NULL, NULL, 0)) {
 		return(0);
 	}
 
@@ -212,10 +212,10 @@ rsaencpwd_is(ap, data, cnt)
 	cnt--;
 	switch (*data++) {
 	case RSA_ENCPWD_AUTH:
-		memmove((void *)auth.dat, (void *)data, auth.length = cnt);
+		memmove(auth.dat, data, auth.length = cnt);
 
 		if ((fp=fopen(key_file, "r"))==NULL) {
-		  Data(ap, RSA_ENCPWD_REJECT, (void *)"Auth failed", -1);
+		  Data(ap, RSA_ENCPWD_REJECT, "Auth failed", -1);
 		  auth_finished(ap, AUTH_REJECT);
 		  return;
 		}
@@ -231,7 +231,7 @@ rsaencpwd_is(ap, data, cnt)
 		r = accept_rsa_encpwd(&auth, key, challenge,
 				      challenge_len, r_passwd);
 		if (r < 0) {
-		  Data(ap, RSA_ENCPWD_REJECT, (void *)"Auth failed", -1);
+		  Data(ap, RSA_ENCPWD_REJECT, "Auth failed", -1);
 		  auth_finished(ap, AUTH_REJECT);
 		  return;
 		}
@@ -240,12 +240,12 @@ rsaencpwd_is(ap, data, cnt)
 		  /*
 		   *  illegal username and password
 		   */
-		  Data(ap, RSA_ENCPWD_REJECT, (void *)"Illegal password", -1);
+		  Data(ap, RSA_ENCPWD_REJECT, "Illegal password", -1);
 		  auth_finished(ap, AUTH_REJECT);
 		  return;
 		}
 
-		Data(ap, RSA_ENCPWD_ACCEPT, (void *)0, 0);
+		Data(ap, RSA_ENCPWD_ACCEPT, 0, 0);
 		auth_finished(ap, AUTH_USER);
 		break;
 
@@ -270,7 +270,7 @@ rsaencpwd_is(ap, data, cnt)
 		  }
 
 		  if ((fp=fopen(key_file, "r"))==NULL) {
-		    Data(ap, RSA_ENCPWD_REJECT, (void *)"Auth failed", -1);
+		    Data(ap, RSA_ENCPWD_REJECT, "Auth failed", -1);
 		    auth_finished(ap, AUTH_REJECT);
 		    return;
 		  }
@@ -303,7 +303,7 @@ rsaencpwd_is(ap, data, cnt)
 		  ptr += NumEncodeLengthOctets(i);
 		  memmove(ptr, key, i);
 		  chalkey_len = 1+NumEncodeLengthOctets(chalkey_len)+chalkey_len;
-		  Data(ap, RSA_ENCPWD_CHALLENGEKEY, (void *)chalkey, chalkey_len);
+		  Data(ap, RSA_ENCPWD_CHALLENGEKEY, chalkey, chalkey_len);
 		}
 		break;
 
@@ -347,7 +347,7 @@ rsaencpwd_reply(ap, data, cnt)
 		 * Verify that the response to the challenge is correct.
 		 */
 
-		memmove((void *)chalkey, (void *)data, cnt);
+		memmove(chalkey, data, cnt);
 		ptr = (char *) &chalkey[0];
 		ptr += DecodeHeaderLength(chalkey);
 		if (*ptr != 0x04) {
@@ -374,7 +374,7 @@ rsaencpwd_reply(ap, data, cnt)
 		  token.length = 1;
 		}
 
-		if (!Data(ap, RSA_ENCPWD_AUTH, (void *)token.dat, token.length)) {
+		if (!Data(ap, RSA_ENCPWD_AUTH, token.dat, token.length)) {
 		  return;
 		}
 

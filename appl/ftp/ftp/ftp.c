@@ -70,7 +70,7 @@ hookup(char *host, int port)
 		if (hp == NULL) {
 			warnx("%s: %s", host, hstrerror(h_errno));
 			code = -1;
-			return ((char *) 0);
+			return NULL;
 		}
 		hisctladdr.sin_family = hp->h_addrtype;
 		memmove(&hisctladdr.sin_addr,
@@ -159,7 +159,7 @@ hookup(char *host, int port)
 	return (hostname);
 bad:
 	close(s);
-	return ((char *)0);
+	return NULL;
 }
 
 int
@@ -1577,7 +1577,7 @@ gunique(char *local)
 		*cp = '/';
 	if (d < 0) {
 		warn("local: %s", local);
-		return ((char *) 0);
+		return NULL;
 	}
 	strcpy(new, local);
 	cp = new + strlen(new);

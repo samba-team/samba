@@ -46,7 +46,7 @@ RCSID("$Id$");
 net_write(unsigned char *str, int len)
 {
 	if (nfrontp + len < netobuf + BUFSIZ) {
-		memmove((void *)nfrontp, (void *)str, len);
+		memmove(nfrontp, str, len);
 		nfrontp += len;
 		return(len);
 	}
@@ -82,6 +82,6 @@ telnet_getenv(char *val)
 	char *
 telnet_gets(char *prompt, char *result, int length, int echo)
 {
-	return((char *)0);
+	return NULL;
 }
 #endif

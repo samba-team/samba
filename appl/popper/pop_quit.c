@@ -15,7 +15,7 @@ int
 pop_quit (POP *p)
 {
     /*  Release the message information list */
-    if (p->mlp) free ((char *)p->mlp);
+    if (p->mlp) free (p->mlp);
 
     return(POP_SUCCESS);
 }

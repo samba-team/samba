@@ -1599,7 +1599,7 @@ renamefrom(char *name)
 
 	if (stat(name, &st) < 0) {
 		perror_reply(550, name);
-		return ((char *)0);
+		return NULL;
 	}
 	reply(350, "File exists, ready for destination name");
 	return (name);
@@ -1763,7 +1763,7 @@ gunique(char *local)
 		*cp = '\0';
 	if (stat(cp ? local : ".", &st) < 0) {
 		perror_reply(553, cp ? local : ".");
-		return ((char *) 0);
+		return NULL;
 	}
 	if (cp)
 		*cp = '/';

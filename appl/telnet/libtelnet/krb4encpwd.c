@@ -128,7 +128,7 @@ Data(ap, type, d, c)
 	unsigned char *cd = (unsigned char *)d;
 
 	if (c == -1)
-		c = strlen((char *)cd);
+		c = strlen(cd);
 
 	if (0) {
 		printf("%s:%d: [%d] (%d)",
@@ -189,7 +189,7 @@ krb4encpwd_send(ap)
 		return(0);
 	}
 
-	if (!Data(ap, KRB4_ENCPWD_ACK, (void *)NULL, 0)) {
+	if (!Data(ap, KRB4_ENCPWD_ACK, NULL, 0)) {
 		return(0);
 	}
 
@@ -213,13 +213,13 @@ krb4encpwd_is(ap, data, cnt)
 		return;
 	switch (*data++) {
 	case KRB4_ENCPWD_AUTH:
-		memmove((void *)auth.dat, (void *)data, auth.length = cnt);
+		memmove(auth.dat, data, auth.length = cnt);
 
 		k_gethostname(lhostname, sizeof(lhostname));
 		if ((cp = strchr(lhostname, '.')) != 0)  *cp = '\0';
 
 		if (r = krb_rd_encpwd_req(&auth, KRB_SERVICE_NAME, lhostname, 0, &adat, NULL, challenge, r_user, r_passwd)) {
-			Data(ap, KRB4_ENCPWD_REJECT, (void *)"Auth failed", -1);
+			Data(ap, KRB4_ENCPWD_REJECT, "Auth failed", -1);
 			auth_finished(ap, AUTH_REJECT);
 			return;
 		}
@@ -228,13 +228,13 @@ krb4encpwd_is(ap, data, cnt)
 		  /*
 		   *  illegal username and password
 		   */
-		  Data(ap, KRB4_ENCPWD_REJECT, (void *)"Illegal password", -1);
+		  Data(ap, KRB4_ENCPWD_REJECT, "Illegal password", -1);
 		  auth_finished(ap, AUTH_REJECT);
 		  return;
 		}
 
-		memmove((void *)session_key, (void *)adat.session, sizeof(des_cblock));
-		Data(ap, KRB4_ENCPWD_ACCEPT, (void *)0, 0);
+		memmove(session_key, adat.session, sizeof(des_cblock));
+		Data(ap, KRB4_ENCPWD_ACCEPT, 0, 0);
 		auth_finished(ap, AUTH_USER);
 		break;
 
@@ -243,7 +243,7 @@ krb4encpwd_is(ap, data, cnt)
 		 *  Take the received random challenge text and save
 		 *  for future authentication.
 		 */
-		memmove((void *)challenge, (void *)data, sizeof(des_cblock));
+		memmove(challenge, data, sizeof(des_cblock));
 		break;
 
 
@@ -262,7 +262,7 @@ krb4encpwd_is(ap, data, cnt)
 
 		  time(&now);
 		  sprintf(challenge, "%x", now);
-		  Data(ap, KRB4_ENCPWD_CHALLENGE, (void *)challenge, strlen(challenge));
+		  Data(ap, KRB4_ENCPWD_CHALLENGE, challenge, strlen(challenge));
 		}
 		break;
 
@@ -309,7 +309,7 @@ krb4encpwd_reply(ap, data, cnt)
 
 		k_gethostname(hostname, sizeof(hostname));
 		realm = krb_realmofhost(hostname);
-		memmove((void *)challenge, (void *)data, cnt);
+		memmove(challenge, data, cnt);
 		memset(user_passwd, 0, sizeof(user_passwd));
 		local_des_read_pw_string(user_passwd, sizeof(user_passwd)-1, "Password: ", 0);
 		UserPassword = user_passwd;
@@ -321,7 +321,7 @@ krb4encpwd_reply(ap, data, cnt)
 		  krb_token.length = 0;
 		}
 
-		if (!Data(ap, KRB4_ENCPWD_AUTH, (void *)krb_token.dat, krb_token.length)) {
+		if (!Data(ap, KRB4_ENCPWD_AUTH, krb_token.dat, krb_token.length)) {
 		  return;
 		}
 
