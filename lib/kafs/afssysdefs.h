@@ -45,6 +45,5 @@
 #endif
 
 #ifdef SYS_afs_syscall
-#undef  AFS_SYSCALL
-#define AFS_SYSCALL	SYS_afs_syscall
+#define AFS_SYSCALL3	SYS_afs_syscall
 #endif

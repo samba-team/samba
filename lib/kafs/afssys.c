@@ -336,7 +336,7 @@ k_afsklog(char *cell, char *krealm)
       parms.in_size = t - buf;
       parms.out = 0;
       parms.out_size = 0;
-      (void) k_pioctl(0, VIOCSETTOK, &parms, 0);
+      k_pioctl(0, VIOCSETTOK, &parms, 0);
     }
   return k_errno;
 }
@@ -345,8 +345,9 @@ k_afsklog(char *cell, char *krealm)
 #define SINGLE_ENTRY_POINT	1
 #define MULTIPLE_ENTRY_POINT	2
 #define SINGLE_ENTRY_POINT2	3
-#define AIX_ENTRY_POINTS	4
-#define UNKNOWN_ENTRY_POINT	5
+#define SINGLE_ENTRY_POINT3	4
+#define AIX_ENTRY_POINTS	5
+#define UNKNOWN_ENTRY_POINT	6
 static int afs_entry_point = UNKNOWN_ENTRY_POINT;
 
 int
@@ -371,6 +372,12 @@ k_pioctl(char *a_path,
 #ifdef AFS_SYSCALL2
   if (afs_entry_point == SINGLE_ENTRY_POINT2)
     return syscall(AFS_SYSCALL2, AFSCALL_PIOCTL,
+		   a_path, o_opcode, a_paramsP, a_followSymlinks);
+#endif
+
+#ifdef AFS_SYSCALL3
+  if (afs_entry_point == SINGLE_ENTRY_POINT3)
+    return syscall(AFS_SYSCALL3, AFSCALL_PIOCTL,
 		   a_path, o_opcode, a_paramsP, a_followSymlinks);
 #endif
 
@@ -507,6 +514,19 @@ k_hasafs(void)
     }
 #endif /* AFS_SYSCALL */
 
+#ifdef AFS_SYSCALL3
+  if (setjmp(catch_SIGSYS) == 0)
+    {
+      syscall(AFS_SYSCALL3, AFSCALL_PIOCTL,
+	      0, VIOCSETTOK, &parms, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+      if (errno == EINVAL)
+	{
+	  afs_entry_point = SINGLE_ENTRY_POINT3;
+	  goto done;
+	}
+    }
+#endif /* AFS_SYSCALL */
+
 #ifdef _AIX
   aix_setup();
   if(Pioctl != NULL && Setpag != NULL){
@@ -517,7 +537,7 @@ k_hasafs(void)
 
  done:
 #ifdef SIGSYS
-  (void) signal(SIGSYS, saved_func);
+  signal(SIGSYS, saved_func);
 #endif
 #endif /* NO_AFS */
   errno = saved_errno;
