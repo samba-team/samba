@@ -145,7 +145,8 @@ echo no)
 
 echo $ac_n "checking for sin_len in sock ... $ac_c"
 AC_TRY_COMPILE([#include <sys/types.h>
-#include <sys/socket.h>],
+#include <sys/socket.h>
+#include <netinet/in.h>],
 [struct sockaddr_in sock; sock.sin_len = sizeof(sock);],
 echo yes;AC_DEFINE(HAVE_SOCK_SIN_LEN), 
 echo no)
