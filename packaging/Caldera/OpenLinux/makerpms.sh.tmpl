@@ -17,6 +17,10 @@ if [ z$1 = z"old" ]; then
 	old=1;
 	shift
 fi
+if [ z$1 = z"team" ]; then
+	team=1;
+	shift
+fi
 
 # Start preparing the packages...
 if [ $devel -ne 0 ]; then
@@ -28,15 +32,23 @@ else
 fi
 
 cp -af *.spec *.spec-lsb $SPECDIR
-for src in *.patch; do
-  trg=`echo $src | sed 's;xxxxxx;PVERSION;'`
-  cp -a $src $SRCDIR/$trg
+if [ $team -ne 0 ]; then
+	cp *.spec-team $SPECDIR
+fi
+for i in `ls *.patch`
+do
+	cp $i $SRCDIR/
 done
-
 # Start building the package
 cd $SPECDIR
 if [ $old -eq 0 ]; then
 mv -f samba2.spec samba2.spec-nonlsb
-ln -f samba2.spec-lsb samba2.spec
+ln -f samba2.spec-lsb samba3.spec
 fi
-rpm -ba -v samba2.spec
+if [ $team -ne 0 ]; then
+	mv -f samba3.spec samba3.spec-lsb
+	ln -f samba3.spec-team samba3.spec
+	rpm -ba -v samba3.spec
+else
+	rpm -ba -v --rmsource --clean samba3.spec
+fi
