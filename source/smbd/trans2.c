@@ -920,7 +920,7 @@ static int call_trans2findnext(connection_struct *conn,
 
   *mask = *directory = *resume_name = 0;
 
-  pstrcpy( resume_name, params+12);
+  srvstr_pull(inbuf, resume_name, params+12, sizeof(resume_name), -1, STR_TERMINATE|STR_CONVERT);
 
   DEBUG(3,("call_trans2findnext: dirhandle = %d, max_data_bytes = %d, maxentries = %d, \
 close_after_request=%d, close_if_end = %d requires_resume_key = %d \
