@@ -8,7 +8,7 @@
  *  Copyright (C) Jeremy Allison               2001-2002,
  *  Copyright (C) Jean François Micouleau      1998-2001,
  *  Copyright (C) Jim McDonough <jmcd@us.ibm.com>   2002,
- *  Copyright (C) Gerald (Jerry) Carter             2003,
+ *  Copyright (C) Gerald (Jerry) Carter             2003 - 2004,
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -450,11 +450,10 @@ NTSTATUS _samr_get_usrdom_pwinfo(pipes_struct *p, SAMR_Q_GET_USRDOM_PWINFO *q_u,
 static NTSTATUS samr_make_dom_obj_sd(TALLOC_CTX *ctx, SEC_DESC **psd, size_t *sd_size)
 {
 	extern DOM_SID global_sid_World;
-	DOM_SID adm_sid;
-	DOM_SID act_sid;
-
-	SEC_ACE ace[3];
+	DOM_SID adm_sid, act_sid, domadmin_sid;
+	SEC_ACE ace[4];
 	SEC_ACCESS mask;
+	size_t i = 0;
 
 	SEC_ACL *psa = NULL;
 
@@ -466,14 +465,24 @@ static NTSTATUS samr_make_dom_obj_sd(TALLOC_CTX *ctx, SEC_DESC **psd, size_t *sd
 
 	/*basic access for every one*/
 	init_sec_access(&mask, GENERIC_RIGHTS_DOMAIN_EXECUTE | GENERIC_RIGHTS_DOMAIN_READ);
-	init_sec_ace(&ace[0], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+	init_sec_ace(&ace[i++], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
 
 	/*full access for builtin aliases Administrators and Account Operators*/
+	
 	init_sec_access(&mask, GENERIC_RIGHTS_DOMAIN_ALL_ACCESS);
-	init_sec_ace(&ace[1], &adm_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
-	init_sec_ace(&ace[2], &act_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+	
+	init_sec_ace(&ace[i++], &adm_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+	init_sec_ace(&ace[i++], &act_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+	
+	/* add domain admins if we are a DC */
+	
+	if ( IS_DC ) {
+		sid_copy( &domadmin_sid, get_global_sam_sid() );
+		sid_append_rid( &domadmin_sid, DOMAIN_GROUP_RID_ADMINS );
+		init_sec_ace(&ace[i++], &domadmin_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+	}
 
-	if ((psa = make_sec_acl(ctx, NT4_ACL_REVISION, 3, ace)) == NULL)
+	if ((psa = make_sec_acl(ctx, NT4_ACL_REVISION, i, ace)) == NULL)
 		return NT_STATUS_NO_MEMORY;
 
 	if ((*psd = make_sec_desc(ctx, SEC_DESC_REVISION, SEC_DESC_SELF_RELATIVE, NULL, NULL, NULL, psa, sd_size)) == NULL)
@@ -489,10 +498,10 @@ static NTSTATUS samr_make_dom_obj_sd(TALLOC_CTX *ctx, SEC_DESC **psd, size_t *sd
 static NTSTATUS samr_make_usr_obj_sd(TALLOC_CTX *ctx, SEC_DESC **psd, size_t *sd_size, DOM_SID *usr_sid)
 {
 	extern DOM_SID global_sid_World;
-	DOM_SID adm_sid;
-	DOM_SID act_sid;
+	DOM_SID adm_sid, act_sid, domadmin_sid;
+	size_t i = 0;
 
-	SEC_ACE ace[4];
+	SEC_ACE ace[5];
 	SEC_ACCESS mask;
 
 	SEC_ACL *psa = NULL;
@@ -504,17 +513,28 @@ static NTSTATUS samr_make_usr_obj_sd(TALLOC_CTX *ctx, SEC_DESC **psd, size_t *sd
 	sid_append_rid(&act_sid, BUILTIN_ALIAS_RID_ACCOUNT_OPS);
 
 	/*basic access for every one*/
+	
 	init_sec_access(&mask, GENERIC_RIGHTS_USER_EXECUTE | GENERIC_RIGHTS_USER_READ);
-	init_sec_ace(&ace[0], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+	init_sec_ace(&ace[i++], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
 
 	/*full access for builtin aliases Administrators and Account Operators*/
+	
 	init_sec_access(&mask, GENERIC_RIGHTS_USER_ALL_ACCESS);
-	init_sec_ace(&ace[1], &adm_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
-	init_sec_ace(&ace[2], &act_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+	init_sec_ace(&ace[i++], &adm_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+	init_sec_ace(&ace[i++], &act_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+
+	/* add domain admins if we are a DC */
+	
+	if ( IS_DC ) {
+		sid_copy( &domadmin_sid, get_global_sam_sid() );
+		sid_append_rid( &domadmin_sid, DOMAIN_GROUP_RID_ADMINS );
+		init_sec_ace(&ace[i++], &domadmin_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+	}
 
 	/*extended access for the user*/
+	
 	init_sec_access(&mask,READ_CONTROL_ACCESS | SA_RIGHT_USER_CHANGE_PASSWORD | SA_RIGHT_USER_SET_LOC_COM);
-	init_sec_ace(&ace[3], usr_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+	init_sec_ace(&ace[i++], usr_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
 
 	if ((psa = make_sec_acl(ctx, NT4_ACL_REVISION, 4, ace)) == NULL)
 		return NT_STATUS_NO_MEMORY;
@@ -2193,6 +2213,7 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREA
 	uint32 new_rid = 0;
 	/* check this, when giving away 'add computer to domain' privs */
 	uint32    des_access = GENERIC_RIGHTS_USER_ALL_ACCESS;
+	BOOL is_domain_admin = False;
 
 	/* Get the domain SID stored in the domain policy */
 	if (!get_lsa_policy_samr_sid(p, &dom_pol, &sid, &acc_granted))
@@ -2216,6 +2237,13 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREA
 
 	rpcstr_pull(account, user_account.buffer, sizeof(account), user_account.uni_str_len*2, 0);
 	strlower_m(account);
+	
+	/* check to see if we are a domain admin */
+	
+	is_domain_admin = nt_token_check_domain_rid( p->pipe_user.nt_user_token, DOMAIN_GROUP_RID_ADMINS );
+	
+	DEBUG(5, ("_samr_create_user: %s is%s a member of the Domain Admins group\n",
+		p->pipe_user_name, is_domain_admin ? "" : " not"));
 
 	pdb_init_sam(&sam_pass);
 
@@ -2235,35 +2263,7 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREA
 	 * *NOT* surrounded by a become_root()/unbecome_root() call. This ensures
 	 * that only people with write access to the smbpasswd file will be able
 	 * to create a user. JRA.
-	 */
-
-	/*
-	 * add the user in the /etc/passwd file or the unix authority system.
-	 * We don't check if the smb_create_user() function succed or not for 2 reasons:
-	 * a) local_password_change() checks for us if the /etc/passwd account really exists
-	 * b) smb_create_user() would return an error if the account already exists
-	 * and as it could return an error also if it can't create the account, it would be tricky.
-	 *
-	 * So we go the easy way, only check after if the account exists.
-	 * JFM (2/3/2001), to clear any possible bad understanding (-:
-	 *
-	 * We now have seperate script paramaters for adding users/machines so we
-	 * now have some sainity-checking to match. 
-	 */
-
-	DEBUG(10,("checking account %s at pos %lu for $ termination\n",account, (unsigned long)strlen(account)-1));
-	
-	/* 
-	 * we used to have code here that made sure the acb_info flags 
-	 * matched with the users named (e.g. an account flags as a machine 
-	 * trust account ended in '$').  It has been ifdef'd out for a long 
-	 * time, so I replaced it with this comment.     --jerry
-	 */
-
-	/* the passdb lookup has failed; check to see if we need to run the
-	   add user/machine script */
-	   
-	pw = Get_Pwnam(account);
+	 */   
 	
 	/*********************************************************************
 	 * HEADS UP!  If we have to create a new user account, we have to get 
@@ -2275,6 +2275,13 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREA
 	 * of what ever passdb backend people may use.
 	 *                                             --jerry (2003-07-10)
 	 *********************************************************************/
+	
+	pw = Get_Pwnam(account);
+	
+	/* ================ BEGIN DOMAIN ADMIN BLOCK ================ */
+	
+	if ( is_domain_admin )				
+		become_root();
 	
 	if ( !pw ) {
 		/* 
@@ -2307,12 +2314,22 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREA
 	
 	/* implicit call to getpwnam() next.  we have a valid SID coming out of this call */
 
-	if ( !NT_STATUS_IS_OK(nt_status = pdb_init_sam_new(&sam_pass, account, new_rid)) )
+	if ( !NT_STATUS_IS_OK(nt_status = pdb_init_sam_new(&sam_pass, account, new_rid)) ) {
+		if ( is_domain_admin )
+			unbecome_root();
 		return nt_status;
+	}
 		
  	pdb_set_acct_ctrl(sam_pass, acb_info, PDB_CHANGED);
 	
- 	if (!pdb_add_sam_account(sam_pass)) {
+	ret = pdb_add_sam_account(sam_pass);
+	
+	if ( is_domain_admin )				
+		unbecome_root();
+		
+	/* ================ END DOMAIN ADMIN BLOCK ================ */
+
+ 	if ( !ret ) {
  		pdb_free_sam(&sam_pass);
  		DEBUG(0, ("could not add user/computer %s to passdb.  Check permissions?\n", 
  			  account));
@@ -2320,13 +2337,16 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREA
  	}
  	
 	/* Get the user's SID */
+	
 	sid_copy(&sid, pdb_get_user_sid(sam_pass));
 	
 	samr_make_usr_obj_sd(p->mem_ctx, &psd, &sd_size, &sid);
 	se_map_generic(&des_access, &usr_generic_mapping);
-	if (!NT_STATUS_IS_OK(nt_status = 
-			     access_check_samr_object(psd, p->pipe_user.nt_user_token, 
-						      des_access, &acc_granted, "_samr_create_user"))) {
+	
+	nt_status = access_check_samr_object(psd, p->pipe_user.nt_user_token, 
+		des_access, &acc_granted, "_samr_create_user");
+		
+	if ( !NT_STATUS_IS_OK(nt_status) ) {
 		return nt_status;
 	}
 
@@ -3011,6 +3031,7 @@ NTSTATUS _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SE
 	SAM_USERINFO_CTR *ctr = q_u->ctr;
 	uint32 acc_granted;
 	uint32 acc_required;
+	BOOL is_domain_admin;
 
 	DEBUG(5, ("_samr_set_userinfo: %d\n", __LINE__));
 
@@ -3020,7 +3041,17 @@ NTSTATUS _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SE
 	if (!get_lsa_policy_samr_sid(p, pol, &sid, &acc_granted))
 		return NT_STATUS_INVALID_HANDLE;
 	
-	acc_required = SA_RIGHT_USER_SET_LOC_COM | SA_RIGHT_USER_SET_ATTRIBUTES; /* This is probably wrong */	
+	/* the access mask depends on what the caller wants to do */
+
+	switch (switch_value) {
+		case 24:
+			acc_required = SA_RIGHT_USER_SET_PASSWORD | SA_RIGHT_USER_SET_ATTRIBUTES | SA_RIGHT_USER_ACCT_FLAGS_EXPIRY;
+			break;
+		default:
+			acc_required = SA_RIGHT_USER_SET_LOC_COM | SA_RIGHT_USER_SET_ATTRIBUTES; /* This is probably wrong */	
+			break;
+	}
+
 	if (!NT_STATUS_IS_OK(r_u->status = access_check_samr_function(acc_granted, acc_required, "_samr_set_userinfo"))) {
 		return r_u->status;
 	}
@@ -3032,23 +3063,36 @@ NTSTATUS _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SE
 		return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
+	/* check to see if we are a domain admin */
+	
+	is_domain_admin = nt_token_check_domain_rid( p->pipe_user.nt_user_token, DOMAIN_GROUP_RID_ADMINS );
+	
+	DEBUG(5, ("_samr_create_user: %s is%s a member of the Domain Admins group\n",
+		p->pipe_user_name, is_domain_admin ? "" : " not"));
+
+	/* ================ BEGIN DOMAIN ADMIN BLOCK ================ */
+	
+	if ( is_domain_admin )				
+		become_root();
+
 	/* ok!  user info levels (lots: see MSDEV help), off we go... */
+
 	switch (switch_value) {
 		case 0x12:
 			if (!set_user_info_12(ctr->info.id12, &sid))
-				return NT_STATUS_ACCESS_DENIED;
+				r_u->status = NT_STATUS_ACCESS_DENIED;
 			break;
 
 		case 24:
 			if (!p->session_key.length) {
-				return NT_STATUS_NO_USER_SESSION_KEY;
+				r_u->status = NT_STATUS_NO_USER_SESSION_KEY;
 			}
 			SamOEMhashBlob(ctr->info.id24->pass, 516, &p->session_key);
 
 			dump_data(100, (char *)ctr->info.id24->pass, 516);
 
 			if (!set_user_info_pw((char *)ctr->info.id24->pass, &sid))
-				return NT_STATUS_ACCESS_DENIED;
+				r_u->status = NT_STATUS_ACCESS_DENIED;
 			break;
 
 		case 25:
@@ -3062,33 +3106,40 @@ NTSTATUS _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SE
 			 */
 
 			if (!p->session_key.length) {
-				return NT_STATUS_NO_USER_SESSION_KEY;
+				r_u->status = NT_STATUS_NO_USER_SESSION_KEY;
 			}
 			SamOEMhashBlob(ctr->info.id25->pass, 532, &p->session_key);
 
 			dump_data(100, (char *)ctr->info.id25->pass, 532);
 
 			if (!set_user_info_pw(ctr->info.id25->pass, &sid))
-				return NT_STATUS_ACCESS_DENIED;
+				r_u->status = NT_STATUS_ACCESS_DENIED;
 			break;
 #endif
-			return NT_STATUS_INVALID_INFO_CLASS;
+			r_u->status = NT_STATUS_INVALID_INFO_CLASS;
+			break;
 
 		case 23:
 			if (!p->session_key.length) {
-				return NT_STATUS_NO_USER_SESSION_KEY;
+				r_u->status = NT_STATUS_NO_USER_SESSION_KEY;
 			}
 			SamOEMhashBlob(ctr->info.id23->pass, 516, &p->session_key);
 
 			dump_data(100, (char *)ctr->info.id23->pass, 516);
 
 			if (!set_user_info_23(ctr->info.id23, &sid))
-				return NT_STATUS_ACCESS_DENIED;
+				r_u->status = NT_STATUS_ACCESS_DENIED;
 			break;
 
 		default:
-			return NT_STATUS_INVALID_INFO_CLASS;
+			r_u->status = NT_STATUS_INVALID_INFO_CLASS;
 	}
+
+	
+	if ( is_domain_admin )				
+		unbecome_root();
+		
+	/* ================ END DOMAIN ADMIN BLOCK ================ */
 
 	return r_u->status;
 }
@@ -3105,6 +3156,7 @@ NTSTATUS _samr_set_userinfo2(pipes_struct *p, SAMR_Q_SET_USERINFO2 *q_u, SAMR_R_
 	uint16 switch_value = q_u->switch_value;
 	uint32 acc_granted;
 	uint32 acc_required;
+	BOOL is_domain_admin;
 
 	DEBUG(5, ("samr_reply_set_userinfo2: %d\n", __LINE__));
 
@@ -3128,7 +3180,20 @@ NTSTATUS _samr_set_userinfo2(pipes_struct *p, SAMR_Q_SET_USERINFO2 *q_u, SAMR_R_
 
 	switch_value=ctr->switch_value;
 
+	/* check to see if we are a domain admin */
+	
+	is_domain_admin = nt_token_check_domain_rid( p->pipe_user.nt_user_token, DOMAIN_GROUP_RID_ADMINS );
+	
+	DEBUG(5, ("_samr_create_user: %s is%s a member of the Domain Admins group\n",
+		p->pipe_user_name, is_domain_admin ? "" : " not"));
+
+	/* ================ BEGIN DOMAIN ADMIN BLOCK ================ */
+	
+	if ( is_domain_admin )				
+		become_root();
+		
 	/* ok!  user info levels (lots: see MSDEV help), off we go... */
+	
 	switch (switch_value) {
 		case 21:
 			if (!set_user_info_21(ctr->info.id21, &sid))
@@ -3136,20 +3201,25 @@ NTSTATUS _samr_set_userinfo2(pipes_struct *p, SAMR_Q_SET_USERINFO2 *q_u, SAMR_R_
 			break;
 		case 20:
 			if (!set_user_info_20(ctr->info.id20, &sid))
-				return NT_STATUS_ACCESS_DENIED;
+				r_u->status = NT_STATUS_ACCESS_DENIED;
 			break;
 		case 16:
 			if (!set_user_info_10(ctr->info.id10, &sid))
-				return NT_STATUS_ACCESS_DENIED;
+				r_u->status = NT_STATUS_ACCESS_DENIED;
 			break;
 		case 18:
 			/* Used by AS/U JRA. */
 			if (!set_user_info_12(ctr->info.id12, &sid))
-				return NT_STATUS_ACCESS_DENIED;
+				r_u->status = NT_STATUS_ACCESS_DENIED;
 			break;
 		default:
-			return NT_STATUS_INVALID_INFO_CLASS;
+			r_u->status = NT_STATUS_INVALID_INFO_CLASS;
 	}
+
+	if ( is_domain_admin )				
+		unbecome_root();
+		
+	/* ================ END DOMAIN ADMIN BLOCK ================ */
 
 	return r_u->status;
 }

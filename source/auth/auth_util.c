@@ -1444,6 +1444,35 @@ NT_USER_TOKEN *dup_nt_token(NT_USER_TOKEN *ptoken)
 	return token;
 }
 
+/****************************************************************************
+ Check for a SID in an NT_USER_TOKEN
+****************************************************************************/
+
+BOOL nt_token_check_sid ( DOM_SID *sid, NT_USER_TOKEN *token )
+{
+	int i;
+	
+	if ( !sid || !token )
+		return False;
+	
+	for ( i=0; i<token->num_sids; i++ ) {
+		if ( sid_equal( sid, &token->user_sids[i] ) )
+			return True;
+	}
+
+	return False;
+}
+
+BOOL nt_token_check_domain_rid( NT_USER_TOKEN *token, uint32 rid ) 
+{
+	DOM_SID domain_sid;
+
+	sid_copy( &domain_sid, get_global_sam_sid() );
+	sid_append_rid( &domain_sid, rid );
+	
+	return nt_token_check_sid( &domain_sid, token );\
+}
+
 /**
  * Verify whether or not given domain is trusted.
  *
