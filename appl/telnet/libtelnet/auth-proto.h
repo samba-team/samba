@@ -118,5 +118,7 @@ void kerberos5_is (Authenticator *, unsigned char *, int);
 void kerberos5_reply (Authenticator *, unsigned char *, int);
 int kerberos5_status (Authenticator *, char *, size_t, int);
 void kerberos5_printsub (unsigned char *, int, unsigned char *, int);
+int kerberos5_set_forward(int);
+int kerberos5_set_forwardable(int);
 #endif
 #endif
