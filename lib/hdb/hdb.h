@@ -84,6 +84,7 @@ Key *hdb_unseal_key(Key*, des_key_schedule);
 void hdb_seal_key(Key*, des_key_schedule);
 void hdb_free_key(Key*);
 
-#define HDB_DEFAULT_DB "heimdal"
+#define HDB_DB_DIR "/var/heimdal"
+#define HDB_DEFAULT_DB HDB_DB_DIR "/heimdal"
 
 #endif /* __HDB_H__ */
