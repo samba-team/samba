@@ -1418,7 +1418,7 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 			} else {
 				x_fprintf(x_stdout, "Authenticated: No\n");
 			}
-		} else if (!lm_response.data || !nt_response.data) {
+		} else if (!lm_response.data && !nt_response.data) {
 			x_fprintf(x_stdout, "Error: No password supplied!\n");
 		} else if (!challenge.data) {	
 			x_fprintf(x_stdout, "Error: No lanman-challenge supplied!\n");
@@ -1513,16 +1513,23 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 
 	request = buf;
 
-	parameter = strstr_m(request, ": ");
+	/* Indicates a base64 encoded structure */
+	parameter = strstr_m(request, ":: ");
 	if (!parameter) {
-		/* Indicates a base64 encoded structure */
-		parameter = strstr_m(request, ":: ");
+		parameter = strstr_m(request, ": ");
 		
 		if (!parameter) {
 			DEBUG(0, ("Parameter not found!\n"));
 			x_fprintf(x_stdout, "Error: Parameter not found!\n.\n");
 			return;
 		}
+		
+		parameter[0] ='\0';
+		parameter++;
+		parameter[0] ='\0';
+		parameter++;
+
+	} else {
 		parameter[0] ='\0';
 		parameter++;
 		parameter[0] ='\0';
@@ -1531,12 +1538,6 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 		parameter++;
 
 		base64_decode_inplace(parameter);
-	} else {
-		
-		parameter[0] ='\0';
-		parameter++;
-		parameter[0] ='\0';
-		parameter++;
 	}
 
 	if (strequal(request, "LANMAN-Challenge")) {
