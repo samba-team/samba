@@ -141,6 +141,235 @@ static BOOL smb_pwd_check_ntlmv2(const DATA_BLOB *ntv2_response,
 	return (memcmp(value_from_encryption, client_response, 16) == 0);
 }
 
+/**
+ * Check a challenge-response password against the value of the NT or
+ * LM password hash.
+ *
+ * @param mem_ctx talloc context
+ * @param challenge 8-byte challenge.  If all zero, forces plaintext comparison
+ * @param nt_response 'unicode' NT response to the challenge, or unicode password
+ * @param lm_response ASCII or LANMAN response to the challenge, or password in DOS code page
+ * @param username internal Samba username, for log messages
+ * @param client_username username the client used
+ * @param client_domain domain name the client used (may be mapped)
+ * @param nt_pw MD4 unicode password from our passdb or similar
+ * @param lm_pw LANMAN ASCII password from our passdb or similar
+ * @param user_sess_key User session key
+ * @param lm_sess_key LM session key (first 8 bytes of the LM hash)
+ */
+
+static NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
+				    const DATA_BLOB *challenge,
+				    const DATA_BLOB *lm_response,
+				    const DATA_BLOB *nt_response,
+				    const char *username, 
+				    const char *client_username, 
+				    const char *client_domain,
+				    const uint8 *lm_pw, const uint8 *nt_pw, 
+				    DATA_BLOB *user_sess_key, 
+				    DATA_BLOB *lm_sess_key)
+{
+	static const unsigned char zeros[8];
+	if (nt_pw == NULL) {
+		DEBUG(3,("sam_password_ok: NO NT password stored for user %s.\n", 
+			 username));
+	}
+
+	/* Check for cleartext netlogon. Used by Exchange 5.5. */
+	if (challenge->length == sizeof(zeros) && 
+	    (memcmp(challenge->data, zeros, challenge->length) == 0 )) {
+
+		DEBUG(4,("sam_password_ok: checking plaintext passwords for user %s\n",
+			 username));
+		if (nt_pw && nt_response->length) {
+			unsigned char pwhash[16];
+			mdfour(pwhash, nt_response->data, nt_response->length);
+			if (memcmp(pwhash, nt_pw, sizeof(pwhash)) == 0) {
+				return NT_STATUS_OK;
+			} else {
+				DEBUG(3,("sam_password_ok: NT (Unicode) plaintext password check failed for user %s\n",
+					 username));
+				return NT_STATUS_WRONG_PASSWORD;
+			}
+
+		} else if (!lp_lanman_auth()) {
+			DEBUG(3,("sam_password_ok: (plaintext password check) LANMAN passwords NOT PERMITTED for user %s\n",
+				 username));
+
+		} else if (lm_pw && lm_response->length) {
+			uchar dospwd[14]; 
+			uchar p16[16]; 
+			ZERO_STRUCT(dospwd);
+			
+			DEBUG(100, ("DOS password: %s\n"));
+			memcpy(dospwd, lm_response->data, MIN(lm_response->length, sizeof(dospwd)));
+			/* Only the fisrt 14 chars are considered, password need not be null terminated. */
+			E_P16((const unsigned char *)dospwd, p16);
+
+			dump_data_pw("DOS password (first buffer)\n", dospwd, 14);
+			dump_data_pw("DOS password (wire DES hash)\n", p16, 16);
+			dump_data_pw("DOS password (passdb DES hash)\n", lm_pw, 16);
+			if (memcmp(p16, lm_pw, sizeof(p16)) == 0) {
+				return NT_STATUS_OK;
+			} else {
+				DEBUG(3,("sam_password_ok: LANMAN (ASCII) plaintext password check failed for user %s\n",
+					 username));
+				return NT_STATUS_WRONG_PASSWORD;
+			}
+		} else {
+			DEBUG(3, ("Plaintext authentication for user %s attempted, but neither NT nor LM passwords available\n", username));
+			return NT_STATUS_WRONG_PASSWORD;
+		}
+	}
+
+	if (nt_response->length != 0 && nt_response->length < 24) {
+		DEBUG(2,("sam_password_ok: invalid NT password length (%lu) for user %s\n", 
+			 (unsigned long)nt_response->length, username));		
+	}
+	
+	if (nt_response->length >= 24 && nt_pw) {
+		if (nt_response->length > 24) {
+			/* We have the NT MD4 hash challenge available - see if we can
+			   use it (ie. does it exist in the smbpasswd file).
+			*/
+			DEBUG(4,("sam_password_ok: Checking NTLMv2 password with domain [%s]\n", client_domain));
+			if (smb_pwd_check_ntlmv2( nt_response, 
+						  nt_pw, challenge, 
+					  client_username, 
+						  client_domain,
+						  user_sess_key)) {
+				return NT_STATUS_OK;
+			}
+			
+			DEBUG(4,("sam_password_ok: Checking NTLMv2 password without a domain\n"));
+			if (smb_pwd_check_ntlmv2( nt_response, 
+						  nt_pw, challenge, 
+						  client_username, 
+						  "",
+						  user_sess_key)) {
+				return NT_STATUS_OK;
+			} else {
+				DEBUG(3,("sam_password_ok: NTLMv2 password check failed\n"));
+				return NT_STATUS_WRONG_PASSWORD;
+			}
+		}
+
+		if (lp_ntlm_auth()) {		
+			/* We have the NT MD4 hash challenge available - see if we can
+			   use it (ie. does it exist in the smbpasswd file).
+			*/
+			DEBUG(4,("sam_password_ok: Checking NT MD4 password\n"));
+			if (smb_pwd_check_ntlmv1(nt_response, 
+						 nt_pw, challenge,
+						 user_sess_key)) {
+				/* The LM session key for this response is not very secure, 
+				   so use it only if we otherwise allow LM authentication */
+
+				if (lp_lanman_auth() && lm_pw) {
+					uint8 first_8_lm_hash[16];
+					memcpy(first_8_lm_hash, lm_pw, 8);
+					memset(first_8_lm_hash + 8, '\0', 8);
+					*lm_sess_key = data_blob(first_8_lm_hash, 16);
+				}
+				return NT_STATUS_OK;
+			} else {
+				DEBUG(3,("sam_password_ok: NT MD4 password check failed for user %s\n",
+					 username));
+				return NT_STATUS_WRONG_PASSWORD;
+			}
+		} else {
+			DEBUG(2,("sam_password_ok: NTLMv1 passwords NOT PERMITTED for user %s\n",
+				 username));			
+			/* no return, becouse we might pick up LMv2 in the LM field */
+		}
+	}
+	
+	if (lm_response->length == 0) {
+		DEBUG(3,("sam_password_ok: NEITHER LanMan nor NT password supplied for user %s\n",
+			 username));
+		return NT_STATUS_WRONG_PASSWORD;
+	}
+	
+	if (lm_response->length < 24) {
+		DEBUG(2,("sam_password_ok: invalid LanMan password length (%lu) for user %s\n", 
+			 (unsigned long)nt_response->length, username));		
+		return NT_STATUS_WRONG_PASSWORD;
+	}
+		
+	if (!lp_lanman_auth()) {
+		DEBUG(3,("sam_password_ok: Lanman passwords NOT PERMITTED for user %s\n",
+			 username));
+	} else if (!lm_pw) {
+		DEBUG(3,("sam_password_ok: NO LanMan password set for user %s (and no NT password supplied)\n",
+			 username));
+	} else {
+		DEBUG(4,("sam_password_ok: Checking LM password\n"));
+		if (smb_pwd_check_ntlmv1(lm_response, 
+					 lm_pw, challenge,
+					 NULL)) {
+			uint8 first_8_lm_hash[16];
+			memcpy(first_8_lm_hash, lm_pw, 8);
+			memset(first_8_lm_hash + 8, '\0', 8);
+			*user_sess_key = data_blob(first_8_lm_hash, 16);
+			*lm_sess_key = data_blob(first_8_lm_hash, 16);
+			return NT_STATUS_OK;
+		}
+	}
+	
+	if (!nt_pw) {
+		DEBUG(4,("sam_password_ok: LM password check failed for user, no NT password %s\n",username));
+		return NT_STATUS_WRONG_PASSWORD;
+	}
+	
+	/* This is for 'LMv2' authentication.  almost NTLMv2 but limited to 24 bytes.
+	   - related to Win9X, legacy NAS pass-though authentication
+	*/
+	DEBUG(4,("sam_password_ok: Checking LMv2 password with domain %s\n", client_domain));
+	if (smb_pwd_check_ntlmv2( lm_response, 
+				  nt_pw, challenge, 
+				  client_username,
+				  client_domain,
+				  NULL)) {
+		return NT_STATUS_OK;
+	}
+	
+	DEBUG(4,("sam_password_ok: Checking LMv2 password without a domain\n"));
+	if (smb_pwd_check_ntlmv2( lm_response, 
+				  nt_pw, challenge, 
+				  client_username,
+				  "",
+				  NULL)) {
+		return NT_STATUS_OK;
+	}
+
+	/* Apparently NT accepts NT responses in the LM field
+	   - I think this is related to Win9X pass-though authentication
+	*/
+	DEBUG(4,("sam_password_ok: Checking NT MD4 password in LM field\n"));
+	if (lp_ntlm_auth()) {
+		if (smb_pwd_check_ntlmv1(lm_response, 
+					 nt_pw, challenge,
+					 NULL)) {
+			/* The session key for this response is still very odd.  
+			   It not very secure, so use it only if we otherwise 
+			   allow LM authentication */
+
+			if (lp_lanman_auth() && lm_pw) {
+				uint8 first_8_lm_hash[16];
+				memcpy(first_8_lm_hash, lm_pw, 8);
+				memset(first_8_lm_hash + 8, '\0', 8);
+				*user_sess_key = data_blob(first_8_lm_hash, 16);
+				*lm_sess_key = data_blob(first_8_lm_hash, 16);
+			}
+			return NT_STATUS_OK;
+		}
+		DEBUG(3,("sam_password_ok: LM password, NT MD4 password in LM field and LMv2 failed for user %s\n",username));
+	} else {
+		DEBUG(3,("sam_password_ok: LM password and LMv2 failed for user %s, and NT MD4 password in LM field not permitted\n",username));
+	}
+	return NT_STATUS_WRONG_PASSWORD;
+}
+
 /****************************************************************************
  Do a specific test for an smb password being correct, given a smb_password and
  the lanman and NT responses.
@@ -154,189 +383,31 @@ static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
 				DATA_BLOB *lm_sess_key)
 {
 	uint16 acct_ctrl;
-	const uint8 *nt_pw, *lm_pw;
-	uint32 auth_flags;
+	const uint8 *lm_pw, *nt_pw;
+	const char *username = pdb_get_username(sampass);
 
 	acct_ctrl = pdb_get_acct_ctrl(sampass);
 	if (acct_ctrl & ACB_PWNOTREQ) {
 		if (lp_null_passwords()) {
-			DEBUG(3,("Account for user '%s' has no password and null passwords are allowed.\n", pdb_get_username(sampass)));
-			return(NT_STATUS_OK);
+			DEBUG(3,("Account for user '%s' has no password and null passwords are allowed.\n", username));
+			return NT_STATUS_OK;
 		} else {
-			DEBUG(3,("Account for user '%s' has no password and null passwords are NOT allowed.\n", pdb_get_username(sampass)));
-			return(NT_STATUS_LOGON_FAILURE);
+			DEBUG(3,("Account for user '%s' has no password and null passwords are NOT allowed.\n", username));
+			return NT_STATUS_LOGON_FAILURE;
 		}		
 	}
 
-	auth_flags = user_info->auth_flags;
+	lm_pw = pdb_get_lanman_passwd(sampass);
+	nt_pw = pdb_get_nt_passwd(sampass);
 
-	if (IS_SAM_DEFAULT(sampass, PDB_NTPASSWD)) {
-		DEBUG(3,("sam_password_ok: NO NT password stored for user %s.\n", 
-			 pdb_get_username(sampass)));
-		/* No return, we want to check the LM hash below in this case */
-		auth_flags &= (~(AUTH_FLAG_NTLMv2_RESP |  AUTH_FLAG_NTLM_RESP));
-	} else {
-		/* Check for cleartext netlogon. Used by Exchange 5.5. */
-		unsigned char zeros[8];
-
-		memset(zeros,'\0',sizeof(zeros));
-		if (auth_context->challenge.length == sizeof(zeros) && 
-				(memcmp(auth_context->challenge.data, zeros, auth_context->challenge.length) == 0 ) &&
-				user_info->nt_resp.length) {
-			if ((nt_pw = pdb_get_nt_passwd(sampass)) != NULL) {
-				unsigned char pwhash[16];
-				mdfour(pwhash, user_info->nt_resp.data, user_info->nt_resp.length);
-				if (memcmp(pwhash, nt_pw, sizeof(pwhash)) == 0) {
-					return NT_STATUS_OK;
-				}
-			}
-		}
-	}
-	
-	if (auth_flags & AUTH_FLAG_NTLMv2_RESP) {
-		nt_pw = pdb_get_nt_passwd(sampass);
-		/* We have the NT MD4 hash challenge available - see if we can
-		   use it (ie. does it exist in the smbpasswd file).
-		*/
-		DEBUG(4,("sam_password_ok: Checking NTLMv2 password with domain [%s]\n", user_info->client_domain.str));
-		if (smb_pwd_check_ntlmv2( &user_info->nt_resp, 
-					  nt_pw, &auth_context->challenge, 
-					  user_info->smb_name.str, 
-					  user_info->client_domain.str,
-					  user_sess_key)) {
-			return NT_STATUS_OK;
-		}
-
-		DEBUG(4,("sam_password_ok: Checking NTLMv2 password without a domain\n"));
-		if (smb_pwd_check_ntlmv2( &user_info->nt_resp, 
-					  nt_pw, &auth_context->challenge, 
-					  user_info->smb_name.str, 
-					  "",
-					  user_sess_key)) {
-			return NT_STATUS_OK;
-		} else {
-			DEBUG(3,("sam_password_ok: NTLMv2 password check failed\n"));
-			return NT_STATUS_WRONG_PASSWORD;
-		}
-	} else if (auth_flags & AUTH_FLAG_NTLM_RESP) {
-		if (lp_ntlm_auth()) {		
-			nt_pw = pdb_get_nt_passwd(sampass);
-			/* We have the NT MD4 hash challenge available - see if we can
-			   use it (ie. does it exist in the smbpasswd file).
-			*/
-			DEBUG(4,("sam_password_ok: Checking NT MD4 password\n"));
-			if (smb_pwd_check_ntlmv1(&user_info->nt_resp, 
-						 nt_pw, &auth_context->challenge,
-						 user_sess_key)) {
-				/* The LM session key for this response is not very secure, 
-				   so use it only if we otherwise allow LM authentication */
-				lm_pw = pdb_get_lanman_passwd(sampass);
-
-				if (lp_lanman_auth() && lm_pw) {
-					uint8 first_8_lm_hash[16];
-					memcpy(first_8_lm_hash, lm_pw, 8);
-					memset(first_8_lm_hash + 8, '\0', 8);
-					*lm_sess_key = data_blob(first_8_lm_hash, 16);
-				}
-				return NT_STATUS_OK;
-			} else {
-				DEBUG(3,("sam_password_ok: NT MD4 password check failed for user %s\n",pdb_get_username(sampass)));
-				return NT_STATUS_WRONG_PASSWORD;
-			}
-		} else {
-			DEBUG(2,("sam_password_ok: NTLMv1 passwords NOT PERMITTED for user %s\n",pdb_get_username(sampass)));			
-			/* no return, becouse we might pick up LMv2 in the LM field */
-		}
-	}
-	
-	if (auth_flags & AUTH_FLAG_LM_RESP) {
-		if (user_info->lm_resp.length != 24) {
-			DEBUG(2,("sam_password_ok: invalid LanMan password length (%lu) for user %s\n", 
-				 (unsigned long)user_info->nt_resp.length, pdb_get_username(sampass)));		
-		}
-		
-		if (!lp_lanman_auth()) {
-			DEBUG(3,("sam_password_ok: Lanman passwords NOT PERMITTED for user %s\n",pdb_get_username(sampass)));
-		} else if (IS_SAM_DEFAULT(sampass, PDB_LMPASSWD)) {
-			DEBUG(3,("sam_password_ok: NO LanMan password set for user %s (and no NT password supplied)\n",pdb_get_username(sampass)));
-		} else {
-			lm_pw = pdb_get_lanman_passwd(sampass);
-			
-			DEBUG(4,("sam_password_ok: Checking LM password\n"));
-			if (smb_pwd_check_ntlmv1(&user_info->lm_resp, 
-						 lm_pw, &auth_context->challenge,
-						 NULL)) {
-				uint8 first_8_lm_hash[16];
-				memcpy(first_8_lm_hash, lm_pw, 8);
-				memset(first_8_lm_hash + 8, '\0', 8);
-				*user_sess_key = data_blob(first_8_lm_hash, 16);
-				*lm_sess_key = data_blob(first_8_lm_hash, 16);
-				return NT_STATUS_OK;
-			}
-		}
-
-		if (IS_SAM_DEFAULT(sampass, PDB_NTPASSWD)) {
-			DEBUG(4,("sam_password_ok: LM password check failed for user, no NT password %s\n",pdb_get_username(sampass)));
-			return NT_STATUS_WRONG_PASSWORD;
-		} 
-		
-		nt_pw = pdb_get_nt_passwd(sampass);
-
-		/* This is for 'LMv2' authentication.  almost NTLMv2 but limited to 24 bytes.
-		   - related to Win9X, legacy NAS pass-though authentication
-		*/
-		DEBUG(4,("sam_password_ok: Checking LMv2 password with domain %s\n", user_info->client_domain.str));
-		if (smb_pwd_check_ntlmv2( &user_info->lm_resp, 
-					  nt_pw, &auth_context->challenge, 
-					  user_info->smb_name.str, 
-					  user_info->client_domain.str,
-					  NULL)) {
-			return NT_STATUS_OK;
-		}
-
-		DEBUG(4,("sam_password_ok: Checking LMv2 password without a domain\n"));
-		if (smb_pwd_check_ntlmv2( &user_info->lm_resp, 
-					  nt_pw, &auth_context->challenge, 
-					  user_info->smb_name.str, 
-					  "",
-					  NULL)) {
-			return NT_STATUS_OK;
-		}
-
-		/* Apparently NT accepts NT responses in the LM field
-		   - I think this is related to Win9X pass-though authentication
-		*/
-		DEBUG(4,("sam_password_ok: Checking NT MD4 password in LM field\n"));
-		if (lp_ntlm_auth()) {
-			if (smb_pwd_check_ntlmv1(&user_info->lm_resp, 
-						 nt_pw, &auth_context->challenge,
-						 NULL)) {
-				/* The session key for this response is still very odd.  
-				   It not very secure, so use it only if we otherwise 
-				   allow LM authentication */
-				lm_pw = pdb_get_lanman_passwd(sampass);
-			
-				if (lp_lanman_auth() && lm_pw) {
-					uint8 first_8_lm_hash[16];
-					memcpy(first_8_lm_hash, lm_pw, 8);
-					memset(first_8_lm_hash + 8, '\0', 8);
-					*user_sess_key = data_blob(first_8_lm_hash, 16);
-					*lm_sess_key = data_blob(first_8_lm_hash, 16);
-				}
-				return NT_STATUS_OK;
-			}
-			DEBUG(3,("sam_password_ok: LM password, NT MD4 password in LM field and LMv2 failed for user %s\n",pdb_get_username(sampass)));
-			return NT_STATUS_WRONG_PASSWORD;
-		} else {
-			DEBUG(3,("sam_password_ok: LM password and LMv2 failed for user %s, and NT MD4 password in LM field not permitted\n",pdb_get_username(sampass)));
-			return NT_STATUS_WRONG_PASSWORD;
-		}
-	}
-		
-	/* Should not be reached, but if they send nothing... */
-	DEBUG(3,("sam_password_ok: NEITHER LanMan nor NT password supplied for user %s\n",pdb_get_username(sampass)));
-	return NT_STATUS_WRONG_PASSWORD;
+	return ntlm_password_check(mem_ctx, &auth_context->challenge, 
+				   &user_info->lm_resp, &user_info->nt_resp,  
+				   username, 
+				   user_info->smb_name.str, 
+				   user_info->client_domain.str, 
+				   lm_pw, nt_pw, user_sess_key, lm_sess_key);
 }
+
 
 /****************************************************************************
  Do a specific test for a SAM_ACCOUNT being vaild for this connection 
