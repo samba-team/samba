@@ -50,7 +50,7 @@ static BOOL parse_dfs_path(char* pathname, struct dfs_path* pdp)
 		return False;
 	*p = '\0';
 	pstrcpy(pdp->hostname,temp);
-	DEBUG(10,("hostname: %s\n",pdp->hostname));
+	DEBUG(10,("parse_dfs_path: hostname: %s\n",pdp->hostname));
 
 	/* parse out servicename */
 	temp = p+1;
@@ -62,7 +62,7 @@ static BOOL parse_dfs_path(char* pathname, struct dfs_path* pdp)
 	}
 	*p = '\0';
 	pstrcpy(pdp->servicename,temp);
-	DEBUG(10,("servicename: %s\n",pdp->servicename));
+	DEBUG(10,("parse_dfs_path: servicename: %s\n",pdp->servicename));
 
 	/* rest is reqpath */
 	pstrcpy(pdp->reqpath, p+1);
@@ -71,7 +71,54 @@ static BOOL parse_dfs_path(char* pathname, struct dfs_path* pdp)
 		*p++ = '/';
 	}
 
-	DEBUG(10,("rest of the path: %s\n",pdp->reqpath));
+	DEBUG(10,("parse_dfs_path: rest of the path: %s\n",pdp->reqpath));
+	return True;
+}
+
+/**********************************************************************
+  Parse the pathname  of the form /hostname/service/reqpath
+  into the dfs_path structure 
+ **********************************************************************/
+
+static BOOL parse_processed_dfs_path(char* pathname, struct dfs_path* pdp)
+{
+	pstring pathname_local;
+	char* p,*temp;
+
+	pstrcpy(pathname_local,pathname);
+	p = temp = pathname_local;
+
+	ZERO_STRUCTP(pdp);
+
+	trim_char(temp,'/','/');
+	DEBUG(10,("temp in parse_processed_dfs_path: .%s. after trimming \\'s\n",temp));
+
+	/* now tokenize */
+	/* parse out hostname */
+	p = strchr_m(temp,'/');
+	if(p == NULL)
+		return False;
+	*p = '\0';
+	pstrcpy(pdp->hostname,temp);
+	DEBUG(10,("parse_processed_dfs_path: hostname: %s\n",pdp->hostname));
+
+	/* parse out servicename */
+	temp = p+1;
+	p = strchr_m(temp,'/');
+	if(p == NULL) {
+		pstrcpy(pdp->servicename,temp);
+		pdp->reqpath[0] = '\0';
+		return True;
+	}
+	*p = '\0';
+	pstrcpy(pdp->servicename,temp);
+	DEBUG(10,("parse_processed_dfs_path: servicename: %s\n",pdp->servicename));
+
+	/* rest is reqpath */
+	/* JRA. We should do a check_path_syntax here.... TOFIX ! */
+	pstrcpy(pdp->reqpath, p+1);
+
+	DEBUG(10,("parse_processed_dfs_path: rest of the path: %s\n",pdp->reqpath));
 	return True;
 }
 
@@ -99,11 +146,20 @@ static BOOL create_conn_struct( connection_struct *conn, int snum, char *path)
 		talloc_destroy( conn->mem_ctx );
 		return False;
 	}
+
+	/*
+	 * Windows seems to insist on doing trans2getdfsreferral() calls on the IPC$
+	 * share as the anonymous user. If we try to chdir as that user we will
+	 * fail.... WTF ? JRA.
+	 */
+
 	if (vfs_ChDir(conn,conn->connectpath) != 0) {
 		DEBUG(3,("create_conn_struct: Can't ChDir to new conn path %s. Error was %s\n",
 					conn->connectpath, strerror(errno) ));
+#if 0 /* JRATEST ? */
 		talloc_destroy( conn->mem_ctx );
 		return False;
+#endif
 	}
 	return True;
 }
@@ -113,6 +169,7 @@ static BOOL create_conn_struct( connection_struct *conn, int snum, char *path)
  Parse the contents of a symlink to verify if it is an msdfs referral
  A valid referral is of the form: msdfs:server1\share1,server2\share2
  **********************************************************************/
+
 static BOOL parse_symlink(char* buf,struct referral** preflist, 
 				 int* refcount)
 {
@@ -317,7 +374,7 @@ BOOL dfs_redirect(pstring pathname, connection_struct* conn,
 	if (!conn || !pathname)
 		return False;
 
-	parse_dfs_path(pathname, &dp);
+	parse_processed_dfs_path(pathname, &dp);
 
 	/* if dfs pathname for a non-dfs share, convert to tcon-relative
 	   path and return false */
@@ -768,7 +825,7 @@ static BOOL junction_to_local_path(struct junction_map* jucn, char* path,
 	return True;
 }
 
-BOOL create_msdfs_link(struct junction_map* jucn, BOOL exists)
+BOOL create_msdfs_link(struct junction_map *jucn, BOOL exists)
 {
 	pstring path;
 	pstring msdfs_link;
