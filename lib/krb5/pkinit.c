@@ -1686,7 +1686,7 @@ _krb5_pk_load_openssl_id(krb5_context context,
 	if (prompter == NULL)
 	    prompter = krb5_prompter_posix;
 	private_key = PEM_read_PrivateKey(f, NULL, ssl_pass_cb, prompter);
-    else
+    } else
 	private_key = PEM_read_PrivateKey(f, NULL, NULL, password);
     fclose(f);
     if (private_key == NULL) {
