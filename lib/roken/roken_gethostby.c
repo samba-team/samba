@@ -126,7 +126,6 @@ roken_gethostby_setup(const char *proxy_spec, const char *dns_spec)
     char *dns_host, *dns_path;
     int dns_port;
     
-    char *tmp;
     int ret = -1;
     
     split_spec(dns_spec, &dns_host, &dns_port, &dns_path, 80);
