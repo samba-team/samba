@@ -79,12 +79,13 @@ SamrTestPrivateFunctionsUser
 
 #define SAMR_CONNECT_ANON      0x00
 #define SAMR_CLOSE_HND         0x01
-
+#define SAMR_UNKNOWN_2         0x02 /* set sec object? */
 #define SAMR_QUERY_SEC_OBJECT  0x03
-#define SAMR_LOOKUP_DOMAIN     0x05
-#define SAMR_OPEN_DOMAIN       0x07
-#define SAMR_ENUM_DOMAINS      0x06
 
+#define SAMR_UNKNOWN_4         0x04 /* profile info? */
+#define SAMR_LOOKUP_DOMAIN     0x05
+#define SAMR_ENUM_DOMAINS      0x06
+#define SAMR_OPEN_DOMAIN       0x07
 #define SAMR_QUERY_DOMAIN_INFO 0x08
 
 #define SAMR_CREATE_DOM_GROUP  0x0a
@@ -104,6 +105,7 @@ SamrTestPrivateFunctionsUser
 #define SAMR_DELETE_DOM_GROUP  0x17
 #define SAMR_DEL_GROUPMEM      0x18
 #define SAMR_QUERY_GROUPMEM    0x19
+#define SAMR_UNKNOWN_1A        0x1a
 
 #define SAMR_OPEN_ALIAS        0x1b
 #define SAMR_QUERY_ALIASINFO   0x1c
@@ -114,25 +116,33 @@ SamrTestPrivateFunctionsUser
 #define SAMR_QUERY_ALIASMEM    0x21
 
 #define SAMR_OPEN_USER         0x22
+#define SAMR_UNKNOWN_23        0x23
 #define SAMR_QUERY_USERINFO    0x24
 #define SAMR_SET_USERINFO2     0x25
 #define SAMR_QUERY_USERGROUPS  0x27
-#define SAMR_CREATE_USER       0x32
-#define SAMR_SET_USERINFO      0x3A
 
 #define SAMR_QUERY_DISPINFO    0x28
-
+#define SAMR_UNKNOWN_29        0x29
+#define SAMR_UNKNOWN_2a        0x2a
+#define SAMR_UNKNOWN_2b        0x2b
 #define SAMR_GET_USRDOM_PWINFO 0x2c
+#define SAMR_UNKNOWN_2e        0x2e
+#define SAMR_UNKNOWN_2f        0x2f
 #define SAMR_QUERY_DISPINFO3   0x30 /* Alias for SAMR_QUERY_DISPINFO
 				       with info level 3 */
+#define SAMR_UNKNOWN_31        0x31
+#define SAMR_CREATE_USER       0x32
 #define SAMR_QUERY_DISPINFO4   0x33 /* Alias for SAMR_QUERY_DISPINFO
 				       with info level 4 */
 #define SAMR_ADDMULTI_ALIASMEM 0x34
 
+#define SAMR_UNKNOWN_35        0x35
+#define SAMR_UNKNOWN_36        0x36
 #define SAMR_CHGPASSWD_USER    0x37
 #define SAMR_GET_DOM_PWINFO    0x38
-
 #define SAMR_CONNECT           0x39
+#define SAMR_SET_USERINFO      0x3A
+
 
 
 typedef struct logon_hours_info
