@@ -622,7 +622,6 @@ static void init_structs(void )
 	static BOOL is_daemon = False;
 	static BOOL interactive = False;
 	static char *ports = NULL;
-	extern BOOL append_log;
 	int opt;
 	poptContext pc;
 
@@ -639,8 +638,6 @@ static void init_structs(void )
 	{NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_version},
 	{ NULL }
 	};
-
-	append_log = True;
 
 #ifdef HAVE_SET_AUTH_PARAMETERS
 	set_auth_parameters(argc,argv);
