@@ -63,6 +63,46 @@ static struct toktab {
 	{ NULL,		0 }
 };
 
+/*
+ * Write a copy of the hostname into `hostname, sz' and return a guess
+ * as to the `domain' of that hostname.
+ */
+
+static char *
+guess_domain (char *hostname, size_t sz)
+{
+    struct hostent *he;
+    char *dot;
+    char *a;
+    char **aliases;
+
+    if (gethostname (hostname, sz) < 0) {
+	strcpy_truncate (hostname, "", sz);
+	return "";
+    }
+    dot = strchr (hostname, '.');
+    if (dot != NULL)
+	return dot + 1;
+
+    he = gethostbyname (hostname);
+    if (he == NULL)
+	return hostname;
+
+    dot = strchr (he->h_name, '.');
+    if (dot != NULL) {
+	strcpy_truncate (hostname, he->h_name, sz);
+	return dot + 1;
+    }
+    for (aliases = he->h_aliases; (a = *aliases) != NULL; ++aliases) {
+	dot = strchr (a, '.');
+	if (dot != NULL) {
+	    strcpy_truncate (hostname, a, sz);
+	    return dot + 1;
+	}
+    }
+    return hostname;
+}
+
 int
 ruserpass(char *host, char **aname, char **apass, char **aacct)
 {
@@ -70,12 +110,8 @@ ruserpass(char *host, char **aname, char **apass, char **aacct)
 	int t, i, c, usedefault = 0;
 	struct stat stb;
 
-	if(gethostname(myhostname, MaxHostNameLen) < 0)
-	    strcpy_truncate(myhostname, "", MaxHostNameLen);
-	if((mydomain = strchr(myhostname, '.')) == NULL)
-	    mydomain = myhostname;
-	else
-	    mydomain++;
+	mydomain = guess_domain (myhostname, MaxHostNameLen);
+
 	hdir = getenv("HOME");
 	if (hdir == NULL)
 		hdir = ".";
