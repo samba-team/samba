@@ -184,8 +184,8 @@ static BOOL dual_already_queued(struct winbindd_cli_state *state)
 
 already_queued:
 
-	DEBUG(3, ("dual_already_queued: request already queued\n", 
-		  state->request.cmd));
+	DEBUG(3, ("dual_already_queued: %u request already queued\n", 
+		  (unsigned int)state->request.cmd));
 
 	return True;
 }
