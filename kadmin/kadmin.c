@@ -141,6 +141,7 @@ static SL_cmd commands[] = {
 	"privileges",	get_privs,	"privileges",
 	"Shows which kinds of operations you are allowed to perform."
     },
+    { "privs" },
     { 
 	"list",		list_princs,	"list expression...", 
 	"Lists principals in a terse format. The same as `get -t'." 
@@ -184,6 +185,24 @@ get_privs(int argc, char **argv)
     char str[128];
     kadm5_ret_t ret;
     
+    int help_flag = 0;
+    struct getargs args[] = {
+	{ "help",	'h',	arg_flag,	NULL }
+    };
+    int num_args = sizeof(args) / sizeof(args[0]);
+    int optind = 0;
+
+    args[0].value = &help_flag;
+
+    if(getarg(args, num_args, argc, argv, &optind)) {
+	arg_printusage (args, num_args, "privileges", NULL);
+	return 0;
+    }
+    if(help_flag) {
+	arg_printusage (args, num_args, "privileges", NULL);
+	return 0;
+    }
+
     ret = kadm5_get_privs(kadm_handle, &privs);
     if(ret)
 	krb5_warn(context, ret, "kadm5_get_privs");
