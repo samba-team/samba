@@ -89,7 +89,7 @@ parse_args(krb5_context context, kadm5_principal_ent_t ent,
     return 0;
 }
 
-
+int
 mod_entry(int argc, char **argv)
 {
     kadm5_principal_ent_rec princ;
