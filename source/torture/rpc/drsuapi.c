@@ -772,6 +772,11 @@ static BOOL test_DsReplicaSync(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		}
 	};
 
+	if (lp_parm_int(-1, "torture", "dangerous") != 1) {
+		printf("DsReplicaSync disabled - enable dangerous tests to use\n");
+		return True;
+	}
+
 	r.in.bind_handle	= &priv->bind_handle;
 
 	for (i=0; i < ARRAY_SIZE(array); i++) {
@@ -870,11 +875,7 @@ BOOL torture_rpc_drsuapi(void)
 
 	ret &= test_DsReplicaGetInfo(p, mem_ctx, &priv);
 
-	if (lp_parm_int(-1, "torture", "dangerous") == 1) {
-		ret &= test_DsReplicaSync(p, mem_ctx, &priv);
-	} else {
-		printf("DsReplicaSync disabled - enable dangerous tests to use\n");
-	}
+	ret &= test_DsReplicaSync(p, mem_ctx, &priv);
 
 	ret &= test_DsUnbind(p, mem_ctx, &priv);
 
