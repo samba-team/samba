@@ -111,7 +111,7 @@ static void display_sam_entry(SAM_DELTA_HDR *hdr_delta, SAM_DELTA_CTR *delta)
 
 static void dump_database(struct cli_state *cli, unsigned db_type, DOM_CRED *ret_creds)
 {
-	unsigned last_rid = -1;
+	unsigned sync_context = 0;
         NTSTATUS result;
 	int i;
         TALLOC_CTX *mem_ctx;
@@ -126,15 +126,15 @@ static void dump_database(struct cli_state *cli, unsigned db_type, DOM_CRED *ret
 	d_printf("Dumping database %u\n", db_type);
 
 	do {
-		result = cli_netlogon_sam_sync(cli, mem_ctx, ret_creds, db_type, last_rid+1,
+		result = cli_netlogon_sam_sync(cli, mem_ctx, ret_creds, db_type,
+					       sync_context,
 					       &num_deltas, &hdr_deltas, &deltas);
 		clnt_deal_with_creds(cli->sess_key, &(cli->clnt_cred), ret_creds);
-		last_rid = 0;
                 for (i = 0; i < num_deltas; i++) {
 			display_sam_entry(&hdr_deltas[i], &deltas[i]);
-			last_rid = hdr_deltas[i].target_rid;
                 }
-	} while (last_rid && NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
+		sync_context += 1;
+	} while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
 
 	talloc_destroy(mem_ctx);
 }
@@ -620,7 +620,7 @@ static void
 fetch_database(struct cli_state *cli, unsigned db_type, DOM_CRED *ret_creds,
 	       DOM_SID dom_sid)
 {
-	unsigned last_rid = -1;
+	unsigned sync_context = 0;
         NTSTATUS result;
 	int i;
         TALLOC_CTX *mem_ctx;
@@ -636,17 +636,16 @@ fetch_database(struct cli_state *cli, unsigned db_type, DOM_CRED *ret_creds,
 
 	do {
 		result = cli_netlogon_sam_sync(cli, mem_ctx, ret_creds,
-					       db_type, last_rid+1,
+					       db_type, sync_context,
 					       &num_deltas,
 					       &hdr_deltas, &deltas);
 		clnt_deal_with_creds(cli->sess_key, &(cli->clnt_cred),
 				     ret_creds);
-		last_rid = 0;
                 for (i = 0; i < num_deltas; i++) {
 			fetch_sam_entry(&hdr_deltas[i], &deltas[i], dom_sid);
-			last_rid = hdr_deltas[i].target_rid;
                 }
-	} while (last_rid && NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
+		sync_context += 1;
+	} while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
 
 	talloc_destroy(mem_ctx);
 }
