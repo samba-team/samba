@@ -1953,18 +1953,6 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="#NTACLSUPPORT"
-><TT
-CLASS="PARAMETER"
-><I
->nt acl support</I
-></TT
-></A
-></P
-></LI
-><LI
-><P
-><A
 HREF="#NTPIPESUPPORT"
 ><TT
 CLASS="PARAMETER"
@@ -3011,7 +2999,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN974"
+NAME="AEN970"
 ></A
 ><H2
 >COMPLETE LIST OF SERVICE PARAMETERS</H2
@@ -3797,6 +3785,18 @@ HREF="#MSDFSROOT"
 CLASS="PARAMETER"
 ><I
 >msdfs root</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
+HREF="#NTACLSUPPORT"
+><TT
+CLASS="PARAMETER"
+><I
+>nt acl support</I
 ></TT
 ></A
 ></P
@@ -12604,7 +12604,7 @@ CLASS="COMMAND"
 ><A
 NAME="NTACLSUPPORT"
 ></A
->nt acl support (G)</DT
+>nt acl support (S)</DT
 ><DD
 ><P
 >This boolean parameter controls whether 
@@ -12613,7 +12613,9 @@ HREF="smbd.8.html"
 TARGET="_top"
 >smbd(8)</A
 > will attempt to map 
-		UNIX permissions into Windows NT access control lists.</P
+		UNIX permissions into Windows NT access control lists.
+		This parameter was formally a global parameter in releases
+		prior to 2.2.2.</P
 ><P
 >Default: <B
 CLASS="COMMAND"
