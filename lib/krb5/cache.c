@@ -402,6 +402,12 @@ krb5_cc_retrieve_cred(krb5_context context,
 {
     krb5_error_code ret;
     krb5_cc_cursor cursor;
+
+    if (id->ops->retrieve != NULL) {
+	return id->ops->retrieve(context, id, whichfields,
+				 mcreds, creds);
+    }
+
     krb5_cc_start_seq_get(context, id, &cursor);
     while((ret = krb5_cc_next_cred(context, id, &cursor, creds)) == 0){
 	if(krb5_compare_creds(context, whichfields, mcreds, creds)){
