@@ -12,13 +12,14 @@ Bugfixes added since 1.9.18p1
 and fixed. This occured under heavy load at large sites. Several
 of the sites who reported the original problem have now been 
 testing the code in this (1.9.18p2) release for a week now with
-no problems (previously the problem occurred within 6-12 hours).
-Thanks to Peter Crawshaw of Mount Allison University for
-his great help in tracking down this bug.
+no problems (previously the problem occurred within 3-6 hours).
+(Thanks to Peter Crawshaw of Mount Allison University for
+his great help in tracking down this bug).
 2). Fix for a share level security problem that caused 
 'valid users' not to work correctly.
 3). Addition of Russian code page support.
-4). Fix to the password changing code.
+4). Fix to the password changing code (thanks to Randy Boring
+at Thursby Software Systems for this).
 5). More fixes to the Windows 95 printer driver support
 code from Herb Lewis at SGI.
 6). Two NetBIOS over TCP source name type fixes in nmbd.
@@ -27,9 +28,13 @@ smb.conf file fixed.
 8). LPRng parsing code fix.
 9). Fix to try and return a 'best guess' of create time
 under UNIX (which doens't store such a file attribute).
-10). Added parameters to ~samba/examples/smb.conf.default file
-	- Remote announce, Remote browse sync, username map, filename
-	  case preservation ans sensitivity options.
+10). Added parameters to samba/examples/smb.conf.default file :
+Remote announce, Remote browse sync, username map, filename
+case preservation and sensitivity options.
+11). Reply to trans2 calls now aligns all parameters and
+data on 4 byte boundary.
+12). Fixed SIGTERM bug where nmbd would hang on exit.
+13). Fixed WINS server bug to allow spaces in WINS names.
 
 Bugfixes added since 1.9.18
 ---------------------------
