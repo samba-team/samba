@@ -28,7 +28,8 @@ Contents
 
      * SECTION ONE: General information
           All about Samba - what it is, how to get it, related sources of
-          information, how to understand the version numbering scheme.
+          information, how to understand the version numbering scheme,
+          pizza details
      * SECTION TWO: Compiling and installing Samba on a Unix host
           Common problems that arise when building and installing Samba under
           Unix.
@@ -99,6 +100,8 @@ At time of writing, the current version was 1.9.16. If you want to be sure
 check the bottom of the change-log file. 
 (ftp://samba.anu.edu.au/pub/samba/alpha/change-log)
 
+For more information see question 5, "What do the version numbers mean?"
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 * 3: Where can I get it?
 
@@ -128,6 +131,8 @@ help with the testing and development - but don't install it on your
 departmental server. Samba is typically very stable and safe, and this is
 mostly due to the policy of many public releases.
 
+How the scheme works:
+
 1) when major changes are made the version number is increased. For example,
 the transition from 1.9.15 to 1.9.16. However, this version number will not
 appear immediately and people should continue to use 1.9.15 for production
@@ -149,15 +154,15 @@ patch levels are released which give us the pXX series, for example
 
 So the progression goes:
 
-			1.9.15p7 	
-			1.9.15p8
-			1.9.16alpha1
+			1.9.15p7 	(production)
+			1.9.15p8        (production)
+			1.9.16alpha1    (test sites only)
 			  :
-			1.9.16alpha20
-			1.9.16
-			1.9.16p1
+			1.9.16alpha20   (test sites only)
+			1.9.16          (production)
+			1.9.16p1        (production)
 
-The above system means that whenever someone looks on our ftp site
+The above system means that whenever someone looks at the samba ftp site
 they will be able to grab the highest numbered release without an
 alpha in the name and be sure of getting the current recommended
 version.
@@ -271,7 +276,34 @@ it in the next version.
 If you make changes to the source code, _please_ submit these patches so that
 everyone else gets the benefit of your work. This is one of the most important
 aspects to the maintainence of Samba. Send all patches to 
-samba-bugs@samba.anu.edu.au, not Andrew Tridgell or any other individual. 
+samba-bugs@samba.anu.edu.au, not Andrew Tridgell or any other individual and
+not the samba team mailing list.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+* n: Pizza Supply Details
+
+Those who have registered in the Samba survey as "Pizza Factory" will already
+know this, but the rest may need some help. Andrew doesn't ask for payment, 
+but he does appreciate it when people give him pizza. This calls for a little
+organisation when the pizza donor is twenty thousand kilometres away, but
+it has been done.
+
+Method 1: Ring up your local branch of an international pizza chain and see if
+they honour their vouchers internationally. Pizza Hut do, which is how the
+entire Canberra Linux Users Group got to eat pizza one night, courtesy of
+someone in the US
+
+Method 2: Ring up a local pizza shop in Canberra and quote a credit card
+number for a certain amount, and tell them that Andrew will be collecting
+it (don't forget to tell him.) One kind soul from Germany did this.
+
+Method 3: Purchase a pizza voucher from your local pizza shop that has no
+international affiliations and send it to Andrew. It is completely useless
+but he can hang it on the wall next to the one he already has from Germany :-)
+
+Method 4: Air freight him a pizza with your favourite regional flavours. It will
+probably get stuck in customs or torn apart by hungry sniffer dogs but it will
+have been a noble gesture.
 
 ===============================================================================
 SECTION TWO: Compiling and installing Samba on a Unix host
