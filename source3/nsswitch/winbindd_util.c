@@ -175,7 +175,7 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 	/* Link to domain list */
 	DLIST_ADD(_domain_list, domain);
         
-	DEBUG(1,("Added domain %s %s %s\n", 
+	DEBUG(2,("Added domain %s %s %s\n", 
 		 domain->name, domain->alt_name,
 		 &domain->sid?sid_string_static(&domain->sid):""));
         
