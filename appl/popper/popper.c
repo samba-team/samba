@@ -36,17 +36,19 @@ ring(int sig)
 static char *
 tgets(char *str, int size, FILE *fp, int timeout)
 {
-  signal(SIGALRM, ring);
-  alarm(timeout);
-  if (setjmp(env)) {
-      alarm(0);
-      signal(SIGALRM,SIG_DFL);
-      return NULL;
-  }
-  fgets(str,size,fp);
-  alarm(0);
-  signal(SIGALRM,SIG_DFL);
-  return(str);
+    char *ret;
+    
+    signal(SIGALRM, ring);
+    alarm(timeout);
+    if (setjmp(env)) {
+	alarm(0);
+	signal(SIGALRM, SIG_DFL);
+	return NULL;
+    }
+    ret = fgets(str, size, fp);
+    alarm(0);
+    signal(SIGALRM, SIG_DFL);
+    return ret;
 }
 
 /* 
