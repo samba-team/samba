@@ -42,13 +42,19 @@ static struct {
 	{"dmalloc-mark", MSG_REQ_DMALLOC_MARK },
 	{"dmalloc-log-changed", MSG_REQ_DMALLOC_LOG_CHANGED },
 	{"shutdown", MSG_SHUTDOWN },
-	{"change_id", MSG_PRINTER_DRVUPGRADE},
+	{"drvupgrade", MSG_PRINTER_DRVUPGRADE},
 	{NULL, -1}
 };
 
 time_t timeout_start;
 
 #define MAX_WAIT	10
+
+/* we need these because we link to printing*.o */
+
+void become_root(void) {}
+void unbecome_root(void) {}
+
 
 static void usage(BOOL doexit)
 {
@@ -250,6 +256,7 @@ static BOOL do_command(char *dest, char *msg_name, int iparams, char **params)
 	int i, n, v;
 	int mtype;
 	BOOL retval=False;
+	BOOL check_notify_msgs = False;
 
 	mtype = parse_type(msg_name);
 	if (mtype == -1) {
@@ -360,9 +367,7 @@ static BOOL do_command(char *dest, char *msg_name, int iparams, char **params)
 		break;
 
 		/* Send a notification message to a printer */
-		/* NB. None of these currently work due to changes in the printing notify mechanisms. */
 
-#if 0
 	case MSG_PRINTER_NOTIFY2: {
 		char *cmd;
 
@@ -379,6 +384,8 @@ static BOOL do_command(char *dest, char *msg_name, int iparams, char **params)
 		}
 
 		cmd = params[0];
+
+		check_notify_msgs = True;
 
 		/* Pause a print queue */
 
@@ -421,6 +428,7 @@ static BOOL do_command(char *dest, char *msg_name, int iparams, char **params)
 			notify_job_status_byname(
 				params[1], jobid, JOB_STATUS_PAUSED, 
 				SPOOLSS_NOTIFY_MSG_UNIX_JOBID);
+			break;
 		}
 
 		/* Resume a print job */
@@ -438,6 +446,7 @@ static BOOL do_command(char *dest, char *msg_name, int iparams, char **params)
 			notify_job_status_byname(
 				params[1], jobid, JOB_STATUS_QUEUED,
 				SPOOLSS_NOTIFY_MSG_UNIX_JOBID);
+			break;
 		}
 
 		/* Delete a print job */
@@ -462,9 +471,39 @@ static BOOL do_command(char *dest, char *msg_name, int iparams, char **params)
 				SPOOLSS_NOTIFY_MSG_UNIX_JOBID);
 		}
 
+		/* printer change notify */
+		
+		if (strequal(cmd, "printer")) {
+			int attribute = -1;
+			
+			if (!params[1] || !params[2] || !params[3]) {
+				fprintf(stderr, "printer command requires an and attribute name and value!\n");
+				fprintf(stderr, "supported attributes:\n");
+				fprintf(stderr, "\tcomment:\n");
+				fprintf(stderr, "\tport:\n");
+				fprintf(stderr, "\tdriver:\n");
+				return False;
+			}
+			if ( strequal(params[2], "comment") )
+				attribute = PRINTER_NOTIFY_COMMENT;
+			else if ( strequal(params[2], "port") )
+				attribute = PRINTER_NOTIFY_PORT_NAME;
+			else if ( strequal(params[2], "driver") )
+				attribute = PRINTER_NOTIFY_DRIVER_NAME;
+			
+			if ( attribute == -1 ) {
+				fprintf(stderr, "bad attribute!\n");
+				return False;
+			}
+			
+			notify_printer_byname( params[1], attribute, params[3]);
+			
+			break;
+		}
+		
 		break;
 	  }
-#endif
+
 
 	case MSG_SMB_FORCE_TDIS:
 		if (!strequal(dest, "smbd")) {
@@ -563,6 +602,11 @@ static BOOL do_command(char *dest, char *msg_name, int iparams, char **params)
 		break;
 	}
 
+	/* check if we have any pending print notify messages */
+
+	if ( check_notify_msgs )
+		print_notify_send_messages();
+		
 	return (True);
 }
 

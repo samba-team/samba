@@ -283,7 +283,8 @@ PRINTING_OBJ = printing/pcap.o printing/print_svid.o \
 				printing/print_cups.o printing/print_generic.o \
 				printing/lpq_parse.o printing/load.o
 
-PRINTBACKEND_OBJ = printing/printing.o printing/nt_printing.o printing/notify.o
+PRINTBACKEND_OBJ = printing/printing.o printing/nt_printing.o printing/notify.o \
+		printing/printing_db.o
 
 MSDFS_OBJ = msdfs/msdfs.o 
 
@@ -325,7 +326,8 @@ STATUS_OBJ = utils/status.o $(LOCKING_OBJ) $(PARAM_OBJ) \
              $(UBIQX_OBJ) $(PROFILE_OBJ) $(LIB_OBJ) $(POPT_LIB_OBJ)
 
 SMBCONTROL_OBJ = utils/smbcontrol.o $(LOCKING_OBJ) $(PARAM_OBJ) \
-             $(UBIQX_OBJ) $(PROFILE_OBJ) $(LIB_OBJ)
+	$(UBIQX_OBJ) $(PROFILE_OBJ) $(LIB_OBJ) printing/notify.o \
+	printing/printing_db.o
 
 SMBTREE_OBJ = utils/smbtree.o $(LOCKING_OBJ) $(PARAM_OBJ) \
              $(UBIQX_OBJ) $(PROFILE_OBJ) $(LIB_OBJ) $(LIBSMB_OBJ) 
@@ -682,7 +684,7 @@ bin/smbstatus: $(STATUS_OBJ) @BUILD_POPT@ bin/.dummy
 
 bin/smbcontrol: $(SMBCONTROL_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMBCONTROL_OBJ) $(LDFLAGS) $(LIBS)
+	@$(CC) -DUSING_SMBCONTROL $(FLAGS) -o $@ $(SMBCONTROL_OBJ) $(LDFLAGS) $(LIBS)
 
 bin/smbtree: $(SMBTREE_OBJ) bin/.dummy
 	@echo Linking $@

@@ -31,6 +31,18 @@ static struct notify_queue {
 	size_t buflen;
 } *notify_queue_head = NULL;
 
+/****************************************************************************
+ Turn a queue name into a snum.
+****************************************************************************/
+
+int print_queue_snum(const char *qname)
+{
+	int snum = lp_servicenumber(qname);
+	if (snum == -1 || !lp_print_ok(snum))
+		return -1;
+	return snum;
+}
+
 /*******************************************************************
  Used to decide if we need a short select timeout.
 *******************************************************************/
@@ -362,3 +374,78 @@ void notify_printer_location(int snum, char *location)
 		printer_name, PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_LOCATION,
 		snum, strlen(location) + 1, location);
 }
+
+void notify_printer_byname( char *printername, uint32 change, char *value )
+{
+	int snum = print_queue_snum(printername);
+	int type = PRINTER_NOTIFY_TYPE;
+	
+	if ( snum == -1 )
+		return;
+		
+	send_notify_field_buffer( printername, type, change, snum, strlen(value), value );
+} 
+
+
+/****************************************************************************
+ Return a malloced list of pid_t's that are interested in getting update
+ messages on this print queue. Used in printing/notify to send the messages.
+****************************************************************************/
+
+BOOL print_notify_pid_list(const char *printername, TALLOC_CTX *mem_ctx, size_t *p_num_pids, pid_t **pp_pid_list)
+{
+	struct tdb_print_db *pdb = NULL;
+	TDB_CONTEXT *tdb = NULL;
+	TDB_DATA data;
+	BOOL ret = True;
+	size_t i, num_pids, offset;
+	pid_t *pid_list;
+
+	*p_num_pids = 0;
+	*pp_pid_list = NULL;
+
+	pdb = get_print_db_byname(printername);
+	if (!pdb)
+		return False;
+	tdb = pdb->tdb;
+
+	if (tdb_read_lock_bystring(tdb, NOTIFY_PID_LIST_KEY, 10) == -1) {
+		DEBUG(0,("print_notify_pid_list: Failed to lock printer %s database\n",
+					printername));
+		if (pdb)
+			release_print_db(pdb);
+		return False;
+	}
+
+	data = get_printer_notify_pid_list( tdb, printername, True );
+
+	if (!data.dptr) {
+		ret = True;
+		goto done;
+	}
+
+	num_pids = data.dsize / 8;
+
+	if ((pid_list = (pid_t *)talloc(mem_ctx, sizeof(pid_t) * num_pids)) == NULL) {
+		ret = False;
+		goto done;
+	}
+
+	for( i = 0, offset = 0; offset < data.dsize; offset += 8, i++)
+		pid_list[i] = (pid_t)IVAL(data.dptr, offset);
+
+	*pp_pid_list = pid_list;
+	*p_num_pids = num_pids;
+
+	ret = True;
+
+  done:
+
+	tdb_read_unlock_bystring(tdb, NOTIFY_PID_LIST_KEY);
+	if (pdb)
+		release_print_db(pdb);
+	SAFE_FREE(data.dptr);
+	return ret;
+}
+
+
