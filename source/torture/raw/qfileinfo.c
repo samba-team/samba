@@ -115,7 +115,7 @@ static union smb_fileinfo *fname_find(const char *name)
         ret = False; \
 }} while(0)
 
-#define STR_EQUAL(n1, v1, n2, v2) do {if (strcmp(s1->n1.out.v1.s, s2->n2.out.v2.s) || \
+#define STR_EQUAL(n1, v1, n2, v2) do {if (strcmp_safe(s1->n1.out.v1.s, s2->n2.out.v2.s) || \
 					  s1->n1.out.v1.private_length != s2->n2.out.v2.private_length) { \
         printf("%s/%s [%s/%d] != %s/%s [%s/%d] at %s(%d)\n", \
                #n1, #v1, s1->n1.out.v1.s, s1->n1.out.v1.private_length, \
@@ -502,14 +502,14 @@ BOOL torture_raw_qfileinfo(int dummy)
 
 #define NAME_CHECK(sname, stype, tfield, flags) do { \
 	s1 = fnum_find(sname); \
-	if (s1 && (strcmp(s1->stype.out.tfield.s, correct_name) != 0 || \
+	if (s1 && (strcmp_safe(s1->stype.out.tfield.s, correct_name) != 0 || \
 	    		wire_bad_flags(&s1->stype.out.tfield, flags, cli))) { \
 		printf("(%d) handle %s/%s incorrect - '%s/%d'\n", __LINE__, #stype, #tfield,  \
 		       s1->stype.out.tfield.s, s1->stype.out.tfield.private_length); \
 		ret = False; \
 	} \
 	s1 = fname_find(sname); \
-	if (s1 && (strcmp(s1->stype.out.tfield.s, correct_name) != 0 || \
+	if (s1 && (strcmp_safe(s1->stype.out.tfield.s, correct_name) != 0 || \
 	    		wire_bad_flags(&s1->stype.out.tfield, flags, cli))) { \
 		printf("(%d) path %s/%s incorrect - '%s/%d'\n", __LINE__, #stype, #tfield,  \
 		       s1->stype.out.tfield.s, s1->stype.out.tfield.private_length); \
@@ -532,7 +532,7 @@ BOOL torture_raw_qfileinfo(int dummy)
 			       s1->all_info.out.fname.s);
 			ret = False;
 		} else {
-			if (strcmp(correct_name, p) != 0) {
+			if (strcmp_safe(correct_name, p) != 0) {
 				printf("incorrect basename in all_info/fname - '%s'\n",
 				       s1->all_info.out.fname.s);
 				ret = False;
