@@ -2596,7 +2596,9 @@ krb5_generate_random_block(void *buf, size_t len)
     }
     RAND_bytes(buf, len);
 }
+
 #else
+
 void
 krb5_generate_random_block(void *buf, size_t len)
 {
