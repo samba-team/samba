@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -90,7 +90,9 @@
 #include <roken.h>
 #include <err.h>
 #include <getarg.h>
+#ifdef KRB5
 #include <krb5.h>
+#endif
 
 #ifdef KRB4
 #include <krb.h>
