@@ -1,3 +1,5 @@
+*.po
+*.po32
 .headers.stamp
 .proto.stamp
 ID
@@ -8,10 +10,9 @@ config.cache
 config.log
 config.status
 cvs.log
+dmallog.log
 dox
 libtool
 so_locations
 testdir
 testtmp
-*.po
-*.po32
