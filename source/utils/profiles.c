@@ -445,7 +445,7 @@ int get_sid(DOM_SID *sid, char *sid_str)
       return 1;
     }
 
-    sid->sub_auths[i++] = auth;
+    SIVAL(&sid->sub_auths[i++], 0, auth);
     lstr = strchr(lstr + 1, '-'); 
   }
 
@@ -473,7 +473,7 @@ void print_sid(DOM_SID *sid)
 
   for (i = 0; i < comps; i++) {
 
-    fprintf(stdout, "-%u", sid->sub_auths[i]);
+    fprintf(stdout, "-%u", IVAL(&sid->sub_auths[i],0));
 
   }
   fprintf(stdout, "\n");
