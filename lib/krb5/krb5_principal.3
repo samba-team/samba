@@ -122,13 +122,13 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Li krb5_principal
 holds the name of a user or service in Kerberos.
 .Pp
-A principal have two parts, a
+A principal has two parts, a
 .Li PrincipalName
 and a
 .Li realm .
-The PrincipalName consists of one or more components, in printed form,
-each components are separated by /.
-The PrincipalName also have a name-type.
+The PrincipalName consists of one or more components. In printed form,
+the components are separated by /.
+The PrincipalName also has a name-type.
 .Pp
 Examples of a principal are
 .Li nisse/root@EXAMPLE.COM
@@ -137,7 +137,7 @@ and
 .Fn krb5_parse_name
 passes a principal name in
 .Fa name
-to the kerberos pricpal structure.
+to the kerberos principal structure.
 .Pp
 .Fn krb5_unparse_name
 prints the principal
@@ -148,13 +148,13 @@ to the string
 should be freed with
 .Xr free 3 .
 .Fn krb5_unparse_name_fixed
-behavies just like
+behaves just like
 .Fn krb5_unparse ,
 but instead unparses the principal into a fixed size buffer.
 .Pp
 .Fn krb5_unparse_name_short
-just return the principal without the realm if the principal is with
-in in the default realm. If the principal isn't, the full name is
+just returns the principal without the realm if the principal is
+in the default realm. If the principal isn't, the full name is
 returned.
 .Fn krb5_unparse_name_fixed_short
 works just like
@@ -164,9 +164,9 @@ but on a fixed size buffer.
 .Fn krb5_build_principal
 builds a principal from the realm
 .Fa realm
-that have the length
+that has the length
 .Fa rlen .
-each following arguments forms the each component of the principal.
+The following arguments form the components of the principal.
 The list of components is terminated with
 .Dv NULL .
 .Pp
@@ -175,11 +175,10 @@ works like
 .Fn krb5_build_principal
 using vargs.
 .Pp
-The
 .Fn krb5_build_principal_ext
 and
 .Fn krb5_build_principal_va_ext
-takes a list of length-value pairs, the list is terminated with a zero
+take a list of length-value pairs, the list is terminated with a zero
 length.
 .Pp
 .Fn krb5_make_principal
@@ -212,40 +211,41 @@ is they are the same, and
 if not.
 .Pp
 .Fn krb5_principal_match
-maches are
+matches a
 .Fa principal
-with a
+against a
 .Fa pattern .
-The patttern is a globbing expression, where each component (separated
-by /) of the principal is matched with each other.
+The pattern is a globbing expression, where each component (separated
+by /) is matched against the corresponding component of the principal.
 .Pp
+The
 .Fn krb5_principal_get_realm
 and
 .Fn krb5_principal_get_comp_string
 functions return parts of the
 .Fa principal ,
 either the realm or a specific component.
-Both functions returned string points to data inside the principal, so
+Both functions return string pointers to data inside the principal, so
 they are valid only as long as the principal exists.
 .Pp
 The
 .Fa component
 argument to
 .Fn krb5_principal_get_comp_string
-is the component number to return, from zero to the total number of
-components minus one. If a the requested component number is out of range,
+is the index of the component to return, from zero to the total number of
+components minus one. If the index is out of range
 .Dv NULL
 is returned.
 .Pp
 .Fn krb5_principal_get_realm
 and
 .Fn krb5_principal_get_comp_string
-can be seen as a replacement for the
+are replacements for
 .Fn krb5_princ_realm ,
 .Fn krb5_princ_component
-and related macros, described as intermal in the MIT API
+and related macros, described as internal in the MIT API
 specification.
-A difference is that these functions return strings, not
+Unlike the macros, these functions return strings, not
 .Dv krb5_data .
 A reason to return
 .Dv krb5_data
@@ -260,22 +260,21 @@ It's generally not necessary to look at the components of a principal.
 and
 .Fn krb5_principal_set_type
 get and sets the name type for a principal.
-Name type does exists but not really, there are subtile diffrences
-when principal types are used and when they are not used.
+Name type handling is tricky and not often needed,
+don't use this unless you know what you do.
 .Pp
 .Fn krb5_princ_realm
 returns the realm component of the principal.
-Caller must not free realm unless
+The caller must not free realm unless
 .Fn krb5_princ_set_realm
 is called to set a new realm after freeing the realm.
 .Fn krb5_princ_set_realm
 sets the realm component of a principal. Old realm is not freed.
 .Pp
-There are two functions
 .Fn krb5_sname_to_principal
 and
 .Fn krb5_sock_to_principal
-that are for easy creation of
+are for easy creation of
 .Dq service
 principals that can, for instance, be used to lookup a key in a keytab.
 For both functions the
@@ -311,9 +310,9 @@ which should be a bound
 or
 .Dv AF_INET6
 socket.
-This function require there is a mapping between the address
+There must be a mapping between the address and
 .Fq sockname .
-This function might try to resolve the name in DNS.
+The function may try to resolve the name in DNS.
 .Pp
 .Fn krb5_get_default_principal
 tries to find out what's a reasonable default principal by looking at
@@ -325,6 +324,6 @@ the enviroment its run in.
 .Xr krb5.conf 5
 .Sh BUGS
 You can not have a NUL in a component in some of the variable argument
-function above.
+functions above.
 Until someone can give a good example of where it would be a good idea
 to have NUL's in a component, this will not be fixed.
