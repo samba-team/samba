@@ -837,6 +837,11 @@ proto:
 	@echo rebuilding include/proto.h
 	@cd $(srcdir) && $(AWK) -f script/mkproto.awk `echo $(PROTO_OBJ) | tr ' ' '\n' | sed -e 's/\.o/\.c/g' | sort -u | egrep -v 'ubiqx/|wrapped'` > include/proto.h
 
+rpc_parse_proto:
+	@echo rebuilding include/rpc_parse_proto.h
+	@cd $(srcdir) && $(AWK) -v headername=RPC_PARSE_PROTO_H \
+	  -f script/mkproto.awk `echo $(RPC_PARSE_OBJ) | tr ' ' '\n' | sed -e 's/\.o/\.c/g' | sort -u | egrep -v 'ubiqx/|wrapped'` > include/rpc_parse_proto.h
+
 etags:
 	etags `find . -name "*.[ch]"`
 
