@@ -2230,9 +2230,6 @@ paragraphs. Your users complain about various issues (such as, <quote>We need to
 for each job from Letter to A4 and it will not store it.</quote>)
 </para>
 
-<sect2>
-<title>Setting Default Print Options for Client Drivers</title>
-
 <para>
 The last sentence might be viewed with mixed feelings by some users and
 admins. They have struggled for hours and could not arrive at a point
@@ -2244,8 +2241,8 @@ you to set printer options in three different ways. Here is the definite
 answer to the Samba default driver setting FAQ:
 </para>
 
-<formalpara><title><quote>I can not set and save default print options
-for all users on Windows 200x/XP. Why not?</quote></title>
+<sect2>
+<title>Setting Default Print Options for Client Drivers</title>
 
 <para>
 How are you doing it? I bet the wrong way. (It is not easy to find out, though). There are three different
@@ -2254,14 +2251,19 @@ dialogs look the same, but only one
 of them does what you intend. You need to be Administrator or Print Administrator to do this for all
 users. Here is how I reproduce it in an XP Professional:
 </para>
-The following list needs periods after the letters and numbers:::::::::
+
+<para>
+	The following list needs periods after the letters and numbers:::::::::
+</para>
+
+<para>
 <orderedlist numeration="upperalpha">
 	<listitem><para>The first <quote>wrong</quote> way:
 	<orderedlist numeration="arabic">
 		<listitem><para>Open the <guiicon>Printers</guiicon> folder.</para></listitem>
 
 		<listitem><para>Right-click on the printer (<emphasis>remoteprinter on cupshost</emphasis>) and
-		select in context menu <guimenu>Printing Preferences...</guimenu></para></listitem>.
+		select in context menu <guimenu>Printing Preferences...</guimenu></para></listitem>
 
 		<listitem><para>Look at this dialog closely and remember what it looks like.</para></listitem>
 	</orderedlist></para></listitem>
@@ -2275,10 +2277,10 @@ The following list needs periods after the letters and numbers:::::::::
 			<guimenuitem>Properties</guimenuitem></para></listitem>
 
 			<listitem><para>Click on the <guilabel>General</guilabel>
-			tab</para></listitem>.
+			tab</para></listitem>
 
 			<listitem><para>Click on the <guibutton>Printing
-			Preferences...</guibutton></para></listitem> button.
+			Preferences...</guibutton> button.</para></listitem> 
 
 			<listitem><para>A new dialog opens. Keep this dialog open and go back
 			to the parent dialog.</para></listitem>
@@ -2309,6 +2311,7 @@ The following list needs periods after the letters and numbers:::::::::
 		</orderedlist>
 	</listitem>
 </orderedlist>
+</para>
 
 <para>
 Do you see any difference in the two settings dialogs? I do not either. However, only the last one, which
@@ -2324,7 +2327,7 @@ arrive at when you right-click on the printer and select <guimenuitem>Print Sett
 is the one that you were taught to use back in the days of Windows NT, so it is only natural to try the
 same way with Windows 200x/XP. You would not dream that there is now a different path to arrive at an
 identically looking, but functionally different, dialog to set defaults for all users.
-</para></formalpara>
+</para>
 
 <tip><para>Try (on Windows 200x/XP) to run this command (as a user with the right privileges):
 </para>

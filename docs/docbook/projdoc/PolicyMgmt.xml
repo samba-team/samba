@@ -449,10 +449,10 @@ reboot and as part of the user logon:
 	An ordered list of user GPOs is obtained. The list contents depends on what is configured in respect of:
 
 <itemizedlist>
-	<listitem>Is the user a Domain Member, thus subject to particular policies?</listitem>
-	<listitem>Loopback enablement, and the state of the loopback policy (Merge or Replace).</listitem>
-	<listitem>Location of the Active Directory itself.</listitem>
-	<listitem>Has the list of GPOs changed? No processing is needed if not changed.</listitem>
+	<listitem><para>Is the user a Domain Member, thus subject to particular policies?</para></listitem>
+	<listitem><para>Loopback enablement, and the state of the loopback policy (Merge or Replace).</para></listitem>
+	<listitem><para>Location of the Active Directory itself.</para></listitem>
+	<listitem><para>Has the list of GPOs changed? No processing is needed if not changed.</para></listitem>
 </itemizedlist>
 	</para></listitem>
 

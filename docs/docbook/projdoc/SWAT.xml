@@ -351,7 +351,7 @@ and the SSL connection is up.
 SWAT can be configured to display its messages to match the settings of
 the language configurations of your Web browser. It will be passed to SWAT 
 in the Accept-Language header of the HTTP request.
-<para>
+</para>
 
 <para>
 To enable this feature:
@@ -391,7 +391,7 @@ and so on. If you find a mistake or create a new <command>msg</command> file, pl
 to us so we will include this in the next release of Samba.
 </para>
 
-</para>
+<para>
 Note that if you enable this feature and the <smbconfoption><name>display charset</name></smbconfoption> is not
 matched to your browser's setting, the SWAT display may be corrupted.  In a future version of
 Samba, SWAT will always display messages with UTF-8 encoding. You will then not need to set
