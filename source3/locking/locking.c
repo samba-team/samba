@@ -38,6 +38,8 @@ extern int DEBUGLEVEL;
 /* the locking database handle */
 static TDB_CONTEXT *tdb;
 
+int global_smbpid;
+
 /****************************************************************************
  Utility function called to see if a file region is locked.
 ****************************************************************************/
@@ -53,8 +55,8 @@ BOOL is_locked(files_struct *fsp,connection_struct *conn,
 	if (!lp_locking(snum) || !lp_strict_locking(snum))
 		return(False);
 
-	return !brl_locktest(fsp->fd_ptr->inode, fsp->fd_ptr->dev,
-			     1, getpid(), conn->cnum, 
+	return !brl_locktest(fsp->fd_ptr->dev, fsp->fd_ptr->inode, 
+			     global_smbpid, getpid(), conn->cnum, 
 			     offset, count, lock_type);
 }
 
@@ -81,8 +83,8 @@ BOOL do_lock(files_struct *fsp,connection_struct *conn,
 		  lock_type, (double)offset, (double)count, fsp->fsp_name ));
 
 	if (OPEN_FSP(fsp) && fsp->can_lock && (fsp->conn == conn)) {
-		ok = brl_lock(fsp->fd_ptr->inode, fsp->fd_ptr->dev,
-			      1, getpid(), conn->cnum, 
+		ok = brl_lock(fsp->fd_ptr->dev, fsp->fd_ptr->inode,
+			      global_smbpid, getpid(), conn->cnum, 
 			      offset, count, 
 			      lock_type);
 	}
@@ -112,8 +114,8 @@ BOOL do_unlock(files_struct *fsp,connection_struct *conn,
 		  (double)offset, (double)count, fsp->fsp_name ));
 	
 	if (OPEN_FSP(fsp) && fsp->can_lock && (fsp->conn == conn)) {
-		ok = brl_unlock(fsp->fd_ptr->inode, fsp->fd_ptr->dev,
-				1, getpid(), conn->cnum, 
+		ok = brl_unlock(fsp->fd_ptr->dev, fsp->fd_ptr->inode, 
+				global_smbpid, getpid(), conn->cnum, 
 				offset, count);
 	}
    

@@ -168,7 +168,7 @@ static BOOL check_error(struct cli_state *c,
 
 static BOOL wait_lock(struct cli_state *c, int fnum, uint32 offset, uint32 len)
 {
-	while (!cli_lock(c, fnum, offset, len, -1, F_WRLCK)) {
+	while (!cli_lock(c, fnum, offset, len, -1, WRITE_LOCK)) {
 		if (!check_error(c, ERRDOS, ERRlock, 0)) return False;
 	}
 	return True;
@@ -436,13 +436,13 @@ static void run_locktest1(int dummy)
 		return;
 	}
 
-	if (!cli_lock(&cli1, fnum1, 0, 4, 0, F_WRLCK)) {
+	if (!cli_lock(&cli1, fnum1, 0, 4, 0, WRITE_LOCK)) {
 		printf("lock1 failed (%s)\n", cli_errstr(&cli1));
 		return;
 	}
 
 
-	if (cli_lock(&cli2, fnum3, 0, 4, 0, F_WRLCK)) {
+	if (cli_lock(&cli2, fnum3, 0, 4, 0, WRITE_LOCK)) {
 		printf("lock2 succeeded! This is a locking bug\n");
 		return;
 	} else {
@@ -452,7 +452,7 @@ static void run_locktest1(int dummy)
 
 	printf("Testing lock timeouts\n");
 	t1 = time(NULL);
-	if (cli_lock(&cli2, fnum3, 0, 4, 10*1000, F_WRLCK)) {
+	if (cli_lock(&cli2, fnum3, 0, 4, 10*1000, WRITE_LOCK)) {
 		printf("lock3 succeeded! This is a locking bug\n");
 		return;
 	} else {
@@ -469,7 +469,7 @@ static void run_locktest1(int dummy)
 		return;
 	}
 
-	if (cli_lock(&cli2, fnum3, 0, 4, 0, F_WRLCK)) {
+	if (cli_lock(&cli2, fnum3, 0, 4, 0, WRITE_LOCK)) {
 		printf("lock4 succeeded! This is a locking bug\n");
 		return;
 	} else {
@@ -550,12 +550,14 @@ static void run_locktest2(int dummy)
 
 	cli_setpid(&cli, 1);
 
-	if (!cli_lock(&cli, fnum1, 0, 4, 0, F_WRLCK)) {
+	sleep(10);
+
+	if (!cli_lock(&cli, fnum1, 0, 4, 0, WRITE_LOCK)) {
 		printf("lock1 failed (%s)\n", cli_errstr(&cli));
 		return;
 	}
 
-	if (cli_lock(&cli, fnum2, 0, 4, 0, F_WRLCK)) {
+	if (cli_lock(&cli, fnum2, 0, 4, 0, WRITE_LOCK)) {
 		printf("lock2 succeeded! This is a locking bug\n");
 	} else {
 		if (!check_error(&cli, ERRDOS, ERRlock, 0)) return;
@@ -567,7 +569,7 @@ static void run_locktest2(int dummy)
 		printf("unlock1 succeeded! This is a locking bug\n");
 	}
 
-	if (cli_lock(&cli, fnum3, 0, 4, 0, F_WRLCK)) {
+	if (cli_lock(&cli, fnum3, 0, 4, 0, WRITE_LOCK)) {
 		printf("lock3 succeeded! This is a locking bug\n");
 	} else {
 		if (!check_error(&cli, ERRDOS, ERRlock, 0)) return;
@@ -633,14 +635,14 @@ static void run_locktest3(int dummy)
 
 	for (offset=i=0;i<numops;i++) {
 		NEXT_OFFSET;
-		if (!cli_lock(&cli1, fnum1, offset-1, 1, 0, F_WRLCK)) {
+		if (!cli_lock(&cli1, fnum1, offset-1, 1, 0, WRITE_LOCK)) {
 			printf("lock1 %d failed (%s)\n", 
 			       i,
 			       cli_errstr(&cli1));
 			return;
 		}
 
-		if (!cli_lock(&cli2, fnum2, offset-2, 1, 0, F_WRLCK)) {
+		if (!cli_lock(&cli2, fnum2, offset-2, 1, 0, WRITE_LOCK)) {
 			printf("lock2 %d failed (%s)\n", 
 			       i,
 			       cli_errstr(&cli1));
@@ -651,22 +653,22 @@ static void run_locktest3(int dummy)
 	for (offset=i=0;i<numops;i++) {
 		NEXT_OFFSET;
 
-		if (cli_lock(&cli1, fnum1, offset-2, 1, 0, F_WRLCK)) {
+		if (cli_lock(&cli1, fnum1, offset-2, 1, 0, WRITE_LOCK)) {
 			printf("error: lock1 %d succeeded!\n", i);
 			return;
 		}
 
-		if (cli_lock(&cli2, fnum2, offset-1, 1, 0, F_WRLCK)) {
+		if (cli_lock(&cli2, fnum2, offset-1, 1, 0, WRITE_LOCK)) {
 			printf("error: lock2 %d succeeded!\n", i);
 			return;
 		}
 
-		if (cli_lock(&cli1, fnum1, offset-1, 1, 0, F_WRLCK)) {
+		if (cli_lock(&cli1, fnum1, offset-1, 1, 0, WRITE_LOCK)) {
 			printf("error: lock3 %d succeeded!\n", i);
 			return;
 		}
 
-		if (cli_lock(&cli2, fnum2, offset-2, 1, 0, F_WRLCK)) {
+		if (cli_lock(&cli2, fnum2, offset-2, 1, 0, WRITE_LOCK)) {
 			printf("error: lock4 %d succeeded!\n", i);
 			return;
 		}
