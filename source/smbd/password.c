@@ -1018,151 +1018,158 @@ use this machine as the password server.\n"));
 
 /***********************************************************************
  Do the same as security=server, but using NT Domain calls and a session
- key from the machine password.
+ key from the workstation trust account password.
 ************************************************************************/
 
 BOOL domain_client_validate( char *user, char *domain, 
                              char *smb_apasswd, int smb_apasslen, 
                              char *smb_ntpasswd, int smb_ntpasslen)
 {
-  uint16 nt_pipe_fnum;
-  unsigned char local_challenge[8];
-  unsigned char local_lm_response[24];
-  unsigned char local_nt_reponse[24];
-  unsigned char trust_passwd[16];
-  NET_ID_INFO_CTR ctr;
-  NET_USER_INFO_3 info3;
-  struct cli_state cli;
-  uint32 smb_uid_low;
+	uint16 nt_pipe_fnum;
+	unsigned char local_challenge[8];
+	unsigned char local_lm_response[24];
+	unsigned char local_nt_reponse[24];
+	unsigned char trust_passwd[16];
+	NET_ID_INFO_CTR ctr;
+	NET_USER_INFO_3 info3;
+	struct cli_state cli;
+	uint32 smb_uid_low;
 
-  /* 
-   * Check that the requested domain is not our own machine name.
-   * If it is, we should never check the PDC here, we use our own local
-   * password file.
-   */
+	/* 
+	* Check that the requested domain is not our own machine name.
+	* If it is, we should never check the PDC here, we use our own local
+	* password file.
+	*/
 
-  if(strequal( domain, global_myname)) {
-    DEBUG(3,("domain_client_validate: Requested domain was for this machine.\n"));
-    return False;
-  }
+	if(strequal( domain, global_myname))
+	{
+		DEBUG(3,("domain_client_validate: Requested domain was for this machine.\n"));
+		return False;
+	}
 
-  /*
-   * Next, check that the passwords given were encrypted.
-   */
+	/*
+	* Next, check that the passwords given were encrypted.
+	*/
 
-  if(((smb_apasslen != 24) && (smb_apasslen != 0)) || 
-     ((smb_ntpasslen != 24) && (smb_ntpasslen != 0))) {
+	if(((smb_apasslen  != 24) && (smb_apasslen  != 0)) || 
+	   ((smb_ntpasslen != 24) && (smb_ntpasslen != 0)))
+	{
+		/*
+		 * Not encrypted - do so.
+		 */
 
-    /*
-     * Not encrypted - do so.
-     */
+		DEBUG(3,("domain_client_validate: User passwords not in encrypted format.\n"));
+		generate_random_buffer( local_challenge, 8, False);
+		SMBencrypt( (uchar *)smb_apasswd, local_challenge, local_lm_response);
+		SMBNTencrypt((uchar *)smb_ntpasswd, local_challenge, local_nt_reponse);
+		smb_apasslen = 24;
+		smb_ntpasslen = 24;
+		smb_apasswd = (char *)local_lm_response;
+		smb_ntpasswd = (char *)local_nt_reponse;
+	}
+	else
+	{
+		/*
+		 * Encrypted - get the challenge we sent for these
+		 * responses.
+		 */
 
-    DEBUG(3,("domain_client_validate: User passwords not in encrypted format.\n"));
-    generate_random_buffer( local_challenge, 8, False);
-    SMBencrypt( (uchar *)smb_apasswd, local_challenge, local_lm_response);
-    SMBNTencrypt((uchar *)smb_ntpasswd, local_challenge, local_nt_reponse);
-    smb_apasslen = 24;
-    smb_ntpasslen = 24;
-    smb_apasswd = (char *)local_lm_response;
-    smb_ntpasswd = (char *)local_nt_reponse;
-  } else {
+		if (!last_challenge(local_challenge))
+		{
+			DEBUG(0,("domain_client_validate: no challenge done - password failed\n"));
+			return False;
+		}
+	}
 
-    /*
-     * Encrypted - get the challenge we sent for these
-     * responses.
-     */
+	/*
+	 * Get the workstation trust account password.
+	 */
+	if (!trust_get_passwd( trust_passwd, global_myworkgroup, global_myname))
+	{
+		return False;
+	}
 
-    if (!last_challenge(local_challenge)) {
-      DEBUG(0,("domain_client_validate: no challenge done - password failed\n"));
-      return False;
-    }
-  }
-
-  /*
-   * Get the machine account password.
-   */
-  if (!trust_get_passwd( trust_passwd, global_myworkgroup, global_myname))
-  {
-    return False;
-  }
-
-  /*
-   * At this point, smb_apasswd points to the lanman response to
-   * the challenge in local_challenge, and smb_ntpasswd points to
-   * the NT response to the challenge in local_challenge. Ship
-   * these over the secure channel to a domain controller and
-   * see if they were valid.
-   */
+	/*
+	 * At this point, smb_apasswd points to the lanman response to
+	 * the challenge in local_challenge, and smb_ntpasswd points to
+	 * the NT response to the challenge in local_challenge. Ship
+	 * these over the secure channel to a domain controller and
+	 * see if they were valid.
+	 */
 
 	if (!cli_connect_serverlist(&cli, lp_passwordserver()))
 	{
-    DEBUG(0,("domain_client_validate: Domain password server not available.\n"));
-    return False;
-  }
+		DEBUG(0,("domain_client_validate: Domain password server not available.\n"));
+		return False;
+	}
 
-  /*
-   * Ok - we have an anonymous connection to the IPC$ share.
-   * Now start the NT Domain stuff :-).
-   */
+	/*
+	* Ok - we have an anonymous connection to the IPC$ share.
+	* Now start the NT Domain stuff :-).
+	*/
 
-  if(cli_nt_session_open(&cli, PIPE_NETLOGON, &nt_pipe_fnum) == False) {
-    DEBUG(0,("domain_client_validate: unable to open the domain client session to \
-machine %s. Error was : %s.\n", cli.desthost, cli_errstr(&cli)));
-    cli_nt_session_close(&cli, nt_pipe_fnum);
-    cli_ulogoff(&cli);
-    cli_shutdown(&cli);
-    return False; 
-  }
+	if(cli_nt_session_open(&cli, PIPE_NETLOGON, &nt_pipe_fnum) == False) {
+	DEBUG(0,("domain_client_validate: unable to open the domain client session to \
+	machine %s. Error was : %s.\n", cli.desthost, cli_errstr(&cli)));
+	cli_nt_session_close(&cli, nt_pipe_fnum);
+	cli_ulogoff(&cli);
+	cli_shutdown(&cli);
+	return False; 
+	}
 
-  if(cli_nt_setup_creds(&cli, nt_pipe_fnum,
-     cli.mach_acct, trust_passwd, SEC_CHAN_WKSTA) == False)
-  {
-    DEBUG(0,("domain_client_validate: unable to setup the PDC credentials to machine \
-%s. Error was : %s.\n", cli.desthost, cli_errstr(&cli)));
-    cli_nt_session_close(&cli, nt_pipe_fnum);
-    cli_ulogoff(&cli);
-    cli_shutdown(&cli);
-    return False;
-  }
+	if(cli_nt_setup_creds(&cli, nt_pipe_fnum,
+	   cli.mach_acct, trust_passwd, SEC_CHAN_WKSTA) == False)
+	{
+		DEBUG(0,("domain_client_validate: unable to setup the PDC credentials to machine \
+		%s. Error was : %s.\n", cli.desthost, cli_errstr(&cli)));
+		cli_nt_session_close(&cli, nt_pipe_fnum);
+		cli_ulogoff(&cli);
+		cli_shutdown(&cli);
+		return False;
+	}
 
-  /* We really don't care what LUID we give the user. */
-  generate_random_buffer( (unsigned char *)&smb_uid_low, 4, False);
+	/* We really don't care what LUID we give the user. */
+	generate_random_buffer( (unsigned char *)&smb_uid_low, 4, False);
 
-  if(cli_nt_login_network(&cli, nt_pipe_fnum, domain, user, smb_uid_low, (char *)local_challenge,
-                          ((smb_apasslen != 0) ? smb_apasswd : NULL),
-                          ((smb_ntpasslen != 0) ? smb_ntpasswd : NULL),
-                          &ctr, &info3) == False) {
-    DEBUG(0,("domain_client_validate: unable to validate password for user %s in domain \
-%s to Domain controller %s. Error was %s.\n", user, domain, cli.desthost, cli_errstr(&cli)));
-    cli_nt_session_close(&cli, nt_pipe_fnum);
-    cli_ulogoff(&cli);
-    cli_shutdown(&cli);
-    return False;
-  }
+	if (!cli_nt_login_network(&cli, nt_pipe_fnum, domain, user, smb_uid_low, (char *)local_challenge,
+	((smb_apasslen != 0) ? smb_apasswd : NULL),
+	((smb_ntpasslen != 0) ? smb_ntpasswd : NULL),
+	&ctr, &info3))
+	{
+		DEBUG(0,("domain_client_validate: unable to validate password for user %s in domain \
+		%s to Domain controller %s. Error was %s.\n", user, domain, cli.desthost, cli_errstr(&cli)));
+		cli_nt_session_close(&cli, nt_pipe_fnum);
+		cli_ulogoff(&cli);
+		cli_shutdown(&cli);
+		return False;
+	}
 
-  /*
-   * Here, if we really want it, we have lots of info about the user in info3.
-   */
+	/*
+	 * Here, if we really want it, we have lots of info about the user in info3.
+	 * LKCLXXXX - really important to check things like "is this user acct
+	 * locked out / disabled" etc!!!!
+	 */
 
 #if 0
-  /* 
-   * We don't actually need to do this - plus it fails currently with
-   * NT_STATUS_INVALID_INFO_CLASS - we need to know *exactly* what to
-   * send here. JRA.
-   */
+	/* 
+	* We don't actually need to do this - plus it fails currently with
+	* NT_STATUS_INVALID_INFO_CLASS - we need to know *exactly* what to
+	* send here. JRA.
+	*/
 
-  if(cli_nt_logoff(&cli, nt_pipe_fnum, &ctr) == False) {
-    DEBUG(0,("domain_client_validate: unable to log off user %s in domain \
-%s to Domain controller %s. Error was %s.\n", user, domain, cli.desthost, cli_errstr(&cli)));        
-    cli_nt_session_close(&cli, nt_pipe_fnum);
-    cli_ulogoff(&cli);
-    cli_shutdown(&cli);
-    return False;
-  }
+	if (!cli_nt_logoff(&cli, nt_pipe_fnum, &ctr))
+	{
+		DEBUG(0,("domain_client_validate: unable to log off user %s in domain \
+		%s to Domain controller %s. Error was %s.\n", user, domain, cli.desthost, cli_errstr(&cli)));        
+		cli_nt_session_close(&cli, nt_pipe_fnum);
+		cli_ulogoff(&cli);
+		cli_shutdown(&cli);
+		return False;
+	}
 #endif /* 0 */
 
-  cli_nt_session_close(&cli, nt_pipe_fnum);
-  cli_ulogoff(&cli);
-  cli_shutdown(&cli);
-  return True;
+	cli_nt_session_close(&cli, nt_pipe_fnum);
+	cli_ulogoff(&cli);
+	cli_shutdown(&cli);
+	return True;
 }
