@@ -3,7 +3,7 @@
    Version 1.9.
    Create printer definition files.
 
-   Copyright (C) Jean-Francois.Micouleau@utc.fr, 10/26/97
+   Copyright (C) Jean-Francois.Micouleau@utc.fr, 10/26/97 - 1998
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by

@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 1997 by Norm Jacobs, Colorado Springs, Colorado, USA
- * Copyright (C) 1997 by Sun Microsystem, Inc.
+ * Copyright (C) 1997-1998 by Norm Jacobs, Colorado Springs, Colorado, USA
+ * Copyright (C) 1997-1998 by Sun Microsystem, Inc.
  * All Rights Reserved
  *
  * This program is free software; you can redistribute it and/or modify
