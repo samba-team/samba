@@ -398,7 +398,7 @@ int getpty(int *ptynum)
 #if SunOS == 40
     int dummy;
 #endif
-#if 0 /* && defined(HAVE_OPENPTY) */
+#if __linux
     int master;
     int slave;
     if(openpty(&master, &slave, line, 0, 0) == 0){
