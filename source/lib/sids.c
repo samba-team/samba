@@ -250,7 +250,10 @@ static BOOL get_member_domain_sid(void)
 ****************************************************************************/
 static void generate_and_add_sids(void)
 {
+	static BOOL initialised;
 	int i;
+
+	if (initialised) return;
 
 	for (i = 0; static_sid_name_map[i].name != NULL; i++)
 	{
@@ -277,6 +280,8 @@ static void generate_and_add_sids(void)
 		}
 		add_sidmap_to_array(&num_maps, &sid_name_map, &map);
 	}
+
+	initialised = True;
 }
 
 /****************************************************************************
