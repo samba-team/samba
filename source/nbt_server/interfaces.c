@@ -49,13 +49,14 @@ static void nbtd_request_handler(struct nbt_name_socket *nbtsock,
 	}
 
 	/* the request is to us in our role as a B node */
-	switch (packet->operation & NBT_OPCODE) {
+	switch ((enum nbt_opcode)(packet->operation & NBT_OPCODE)) {
 	case NBT_OPCODE_QUERY:
 		nbtd_request_query(nbtsock, packet, src_address, src_port);
 		break;
 
 	case NBT_OPCODE_REGISTER:
 	case NBT_OPCODE_REFRESH:
+	case NBT_OPCODE_REFRESH2:
 		nbtd_request_defense(nbtsock, packet, src_address, src_port);
 		break;
 
@@ -165,9 +166,6 @@ static NTSTATUS nbtd_add_wins_socket(struct nbtd_server *nbtsrv)
 
 	iface->nbtsrv        = nbtsrv;
 
-	iface->nbtsock = nbt_name_socket_init(iface, nbtsrv->task->event_ctx);
-	NT_STATUS_HAVE_NO_MEMORY(iface->nbtsock);
-
 	DLIST_ADD(nbtsrv->wins_interface, iface);
 
 	return NT_STATUS_OK;
@@ -238,21 +236,24 @@ const char **nbtd_address_list(struct nbtd_interface *iface, TALLOC_CTX *mem_ctx
 	struct nbtd_server *nbtsrv = iface->nbtsrv;
 	const char **ret = NULL;
 	struct nbtd_interface *iface2;
-	int count;
+	int count = 0;
 
-	ret = talloc_array(mem_ctx, const char *, 2);
-	if (ret == NULL) goto failed;
+	if (iface->ip_address) {
+		ret = talloc_array(mem_ctx, const char *, 2);
+		if (ret == NULL) goto failed;
 
-	ret[0] = talloc_strdup(ret, iface->ip_address);
-	if (ret[0] == NULL) goto failed;
-	ret[1] = NULL;
+		ret[0] = talloc_strdup(ret, iface->ip_address);
+		if (ret[0] == NULL) goto failed;
+		ret[1] = NULL;
 
-	count = 1;
+		count = 1;
+	}
 
 	for (iface2=nbtsrv->interfaces;iface2;iface2=iface2->next) {
 		const char **ret2;
 
-		if (strcmp(iface2->ip_address, iface->ip_address) == 0) {
+		if (iface->ip_address &&
+		    strcmp(iface2->ip_address, iface->ip_address) == 0) {
 			continue;
 		}
 

@@ -76,7 +76,7 @@ static void nbtd_name_query_reply(struct nbt_name_socket *nbtsock,
 	}
 
 	DEBUG(7,("Sending name query reply for %s<%02x> at %s to %s:%d\n", 
-		 name->name, name->type, src_address, addresses[0], src_port));
+		 name->name, name->type, addresses[0], src_address, src_port));
 	
 	nbt_name_reply_send(nbtsock, src_address, src_port, packet);
 

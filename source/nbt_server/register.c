@@ -56,9 +56,10 @@ static void refresh_completion_handler(struct nbt_name_request *req)
 	iname->nb_flags &= ~NBT_NM_ACTIVE;
 
 	if (NT_STATUS_IS_OK(status)) {
-		DEBUG(1,("Name conflict from %s refreshing name %s<%02x> on %s - rcode %d\n", 
+		DEBUG(1,("Name conflict from %s refreshing name %s<%02x> on %s - %s\n", 
 			 io.out.reply_addr, iname->name.name, iname->name.type, 
-			 iname->iface->ip_address, io.out.rcode));
+			 iname->iface->ip_address, 
+			 nt_errstr(nbt_rcode_to_ntstatus(io.out.rcode))));
 	} else {
 		DEBUG(1,("Error refreshing name %s<%02x> on %s - %s\n", 
 			 iname->name.name, iname->name.type, iname->iface->ip_address,
@@ -92,6 +93,7 @@ static void name_refresh_handler(struct event_context *ev, struct timed_event *t
 	io.in.ttl             = iname->ttl;
 	io.in.register_demand = False;
 	io.in.broadcast       = True;
+	io.in.multi_homed     = False;
 	io.in.timeout         = 3;
 	io.in.retries         = 0;
 
@@ -189,7 +191,7 @@ static void nbtd_register_name_iface(struct nbtd_interface *iface,
 	/* if this is the wins interface, then we need to do a special
 	   wins name registration */
 	if (iface == iface->nbtsrv->wins_interface) {
-		nbtd_winsclient_refresh(iname);
+		nbtd_winsclient_register(iname);
 		return;
 	}
 
