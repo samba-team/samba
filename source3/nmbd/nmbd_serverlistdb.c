@@ -316,7 +316,6 @@ void write_browse_list(time_t t, BOOL force_write)
   struct server_record *servrec;
   pstring fname,fnamenew;
   uint32 stype;
-  fstring tmp;
   int i;
   XFILE *fp;
   BOOL list_changed = force_write;
