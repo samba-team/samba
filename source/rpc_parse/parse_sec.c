@@ -138,7 +138,7 @@ first of the xx_io_xx functions that allocates its data structures
 ********************************************************************/
 BOOL sec_io_acl(char *desc, SEC_ACL *t, prs_struct *ps, int depth)
 {
-	int i;
+	uint32 i;
 	uint32 old_offset;
 	uint32 offset_acl_size;
 
@@ -158,7 +158,7 @@ BOOL sec_io_acl(char *desc, SEC_ACL *t, prs_struct *ps, int depth)
 	if (ps->io && t->num_aces != 0)
 	{
 		/* reading */
-		t->ace = malloc(sizeof(t->ace[0]) * t->num_aces);
+		t->ace = (SEC_ACE*)malloc(sizeof(t->ace[0]) * t->num_aces);
 		ZERO_STRUCTP(t->ace);
 		}
 
@@ -328,7 +328,7 @@ static BOOL sec_io_desc(char *desc, SEC_DESC *t, prs_struct *ps, int depth)
 		if (ps->io)
 		{
 			/* reading */
-			t->dacl = malloc(sizeof(*t->dacl));
+			t->dacl = (SEC_ACL*)malloc(sizeof(*t->dacl));
 			ZERO_STRUCTP(t->dacl);
 		}
 
@@ -360,7 +360,7 @@ static BOOL sec_io_desc(char *desc, SEC_DESC *t, prs_struct *ps, int depth)
 		if (ps->io)
 		{
 			/* reading */
-			t->sacl = malloc(sizeof(*t->sacl));
+			t->sacl = (SEC_ACL*)malloc(sizeof(*t->sacl));
 			ZERO_STRUCTP(t->sacl);
 		}
 
@@ -395,7 +395,7 @@ static BOOL sec_io_desc(char *desc, SEC_DESC *t, prs_struct *ps, int depth)
 		if (ps->io)
 		{
 			/* reading */
-			t->owner_sid = malloc(sizeof(*t->owner_sid));
+			t->owner_sid = (DOM_SID*)malloc(sizeof(*t->owner_sid));
 			ZERO_STRUCTP(t->owner_sid);
 		}
 
@@ -425,7 +425,7 @@ static BOOL sec_io_desc(char *desc, SEC_DESC *t, prs_struct *ps, int depth)
 		if (ps->io)
 		{
 			/* reading */
-			t->grp_sid = malloc(sizeof(*t->grp_sid));
+			t->grp_sid = (DOM_SID*)malloc(sizeof(*t->grp_sid));
 			ZERO_STRUCTP(t->grp_sid);
 		}
 
@@ -502,7 +502,7 @@ BOOL sec_io_desc_buf(char *desc, SEC_DESC_BUF *sec, prs_struct *ps, int depth)
 	if (sec->len != 0 && ps->io)
 	{
 		/* reading */
-		sec->sec = malloc(sizeof(*sec->sec));
+		sec->sec = (SEC_DESC*)malloc(sizeof(*sec->sec));
 		ZERO_STRUCTP(sec->sec);
 
 		if (sec->sec == NULL)

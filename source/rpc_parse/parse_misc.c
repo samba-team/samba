@@ -489,7 +489,7 @@ BOOL make_buffer3_uint32(BUFFER3 *str, uint32 val)
 /*******************************************************************
 creates a BUFFER3 structure.
 ********************************************************************/
-BOOL make_buffer3_str(BUFFER3 *str, char *buf, int len)
+BOOL make_buffer3_str(BUFFER3 *str, const char *buf, int len)
 {
 	ZERO_STRUCTP(str);
 
@@ -498,7 +498,7 @@ BOOL make_buffer3_str(BUFFER3 *str, char *buf, int len)
 	str->buf_len     = len * 2;
 
 	/* store the string (little endian buffer) */
-	ascii_to_unibuf(str->buffer, buf, str->buf_len);
+	ascii_to_unibuf((char*)str->buffer, buf, str->buf_len);
 
 	return True;
 }
@@ -665,7 +665,8 @@ BOOL make_buffer2(BUFFER2 *str, const char *buf, int len)
 	str->undoc       = 0;
 
 	/* store the string */
-	ascii_to_unibuf(str->buffer, buf, MIN(str->buf_len, sizeof(str->buffer)-1));
+	ascii_to_unibuf((char*)str->buffer, buf,
+	                 MIN(str->buf_len, sizeof(str->buffer)-1));
 
 	return True;
 }

@@ -317,7 +317,7 @@ void cmd_lsa_query_secret(struct client_info *info)
 	BOOL res = True;
 	BOOL res1;
 	BOOL res2;
-	int i;
+	uint32 i;
 
 	POLICY_HND hnd_secret;
 	fstring secret_name;
@@ -360,7 +360,7 @@ void cmd_lsa_query_secret(struct client_info *info)
 	/* close the session */
 	cli_nt_session_close(smb_cli, nt_pipe_fnum);
 
-	if (res2 && nt_decrypt_string2(&secret, &enc_secret, smb_cli->pwd.smb_nt_pwd))
+	if (res2 && nt_decrypt_string2(&secret, &enc_secret, (char*)(smb_cli->pwd.smb_nt_pwd)))
 	{
 		report(out_hnd, "\tValue       : ");
 		for (i = 0; i < secret.str_str_len; i++)

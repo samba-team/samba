@@ -225,3 +225,23 @@ int sid_size(const DOM_SID *sid)
 	}
 	return sid->num_auths * sizeof(uint32) + 8;
 }
+
+
+/*****************************************************************
+ Duplicates a sid - mallocs the target.
+*****************************************************************/
+
+DOM_SID *sid_dup(DOM_SID *src)
+{
+  DOM_SID *dst;
+
+  if(!src)
+    return NULL;
+
+  if((dst = (DOM_SID*)malloc(sizeof(DOM_SID))) != NULL) {
+       memset(dst, '\0', sizeof(DOM_SID));
+       sid_copy( dst, src);
+  }
+
+  return dst;
+}

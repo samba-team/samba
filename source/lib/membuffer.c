@@ -107,7 +107,7 @@ BOOL mem_alloc_data(struct mem_buf *buf, int size)
 	buf->data_size = size + buf->margin;
 	buf->data_used = size;
 
-	buf->data = malloc(buf->data_size);
+	buf->data = (char*)malloc(buf->data_size);
 
 	if (buf->data == NULL && size != 0)
 	{
@@ -176,7 +176,7 @@ BOOL mem_buf_init(struct mem_buf **buf, uint32 margin)
 
 	if ((*buf) == NULL)
 	{
-		(*buf) = malloc(sizeof(**buf));
+		(*buf) = (struct mem_buf*)malloc(sizeof(**buf));
 		if ((*buf) != NULL) 
 		{
 			mem_init((*buf), margin);
@@ -236,7 +236,7 @@ void mem_free_data(struct mem_buf *buf)
 /*******************************************************************
  reallocate a memory buffer, including a safety margin
  ********************************************************************/
-BOOL mem_realloc_data(struct mem_buf *buf, int new_size)
+BOOL mem_realloc_data(struct mem_buf *buf, size_t new_size)
 {
 	char *new_data;
 
@@ -252,7 +252,7 @@ BOOL mem_realloc_data(struct mem_buf *buf, int new_size)
 		return True;
 	}
 
-	new_data = Realloc(buf->data, new_size + buf->margin);
+	new_data = (char*)Realloc(buf->data, new_size + buf->margin);
 
 	if (new_data != NULL)
 	{

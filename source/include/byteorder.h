@@ -176,10 +176,10 @@ it also defines lots of intermediate macros, just ignore those :-)
 /* macros for reading / writing arrays */
 
 #define SMBMACRO(macro,buf,pos,val,len,size) \
-{ int l; for (l = 0; l < (len); l++) (val)[l] = macro((buf), (pos) + (size)*l); }
+{ uint32 l; for (l = 0; l < (uint32)(len); l++) (val)[l] = macro((buf), (pos) + (size)*l); }
 
 #define SSMBMACRO(macro,buf,pos,val,len,size) \
-{ int l; for (l = 0; l < (len); l++) macro((buf), (pos) + (size)*l, (val)[l]); }
+{ uint32 l; for (l = 0; l < (uint32)(len); l++) macro((buf), (pos) + (size)*l, (val)[l]); }
 
 /* reads multiple data from an SMB buffer */
 #define PCVAL(buf,pos,val,len) SMBMACRO(CVAL,buf,pos,val,len,1)
@@ -209,40 +209,40 @@ it also defines lots of intermediate macros, just ignore those :-)
 
 #define DBG_RW_PCVAL(charmode,string,depth,base,read,inbuf,outbuf,len) \
 	RW_PCVAL(read,inbuf,outbuf,len) \
-	DEBUG(5,("%s%04x %s: ", \
+	DEBUG(10,("%s%04x %s: ", \
              tab_depth(depth), base,string)); \
-    if (charmode) print_asc(5, (unsigned char*)(outbuf), (len)); else \
-	{ int idx; for (idx = 0; idx < len; idx++) { DEBUGADD(5,("%02x ", (outbuf)[idx])); } } \
-	DEBUG(5,("\n"));
+    if (charmode) print_asc(10, (unsigned char*)(outbuf), (len)); else \
+	{ uint32 idx; for (idx = 0; idx < (uint32)(len); idx++) { DEBUGADD(10,("%02x ", (outbuf)[idx])); } } \
+	DEBUG(10,("\n"));
 
 #define DBG_RW_PSVAL(charmode,string,depth,base,read,inbuf,outbuf,len) \
 	RW_PSVAL(read,inbuf,outbuf,len) \
-	DEBUG(5,("%s%04x %s: ", \
+	DEBUG(10,("%s%04x %s: ", \
              tab_depth(depth), base,string)); \
-    if (charmode) print_asc(5, (unsigned char*)(outbuf), 2*(len)); else \
-	{ int idx; for (idx = 0; idx < len; idx++) { DEBUGADD(5,("%04x ", (outbuf)[idx])); } } \
-	DEBUG(5,("\n"));
+    if (charmode) print_asc(10, (unsigned char*)(outbuf), 2*(len)); else \
+	{ uint32 idx; for (idx = 0; idx < (uint32)(len); idx++) { DEBUGADD(10,("%04x ", (outbuf)[idx])); } } \
+	DEBUG(10,("\n"));
 
 #define DBG_RW_PIVAL(charmode,string,depth,base,read,inbuf,outbuf,len) \
 	RW_PIVAL(read,inbuf,outbuf,len) \
-	DEBUG(5,("%s%04x %s: ", \
+	DEBUG(10,("%s%04x %s: ", \
              tab_depth(depth), base,string)); \
-    if (charmode) print_asc(5, (unsigned char*)(outbuf), 4*(len)); else \
-	{ int idx; for (idx = 0; idx < len; idx++) { DEBUGADD(5,("%08x ", (outbuf)[idx])); } } \
-	DEBUG(5,("\n"));
+    if (charmode) print_asc(10, (unsigned char*)(outbuf), 4*(len)); else \
+	{ uint32 idx; for (idx = 0; idx < (uint32)(len); idx++) { DEBUGADD(10,("%08x ", (outbuf)[idx])); } } \
+	DEBUG(10,("\n"));
 
 #define DBG_RW_CVAL(string,depth,base,read,inbuf,outbuf) \
 	RW_CVAL(read,inbuf,outbuf,0) \
-	DEBUG(5,("%s%04x %s: %02x\n", \
+	DEBUG(10,("%s%04x %s: %02x\n", \
              tab_depth(depth), base, string, outbuf));
 
 #define DBG_RW_SVAL(string,depth,base,read,inbuf,outbuf) \
 	RW_SVAL(read,inbuf,outbuf,0) \
-	DEBUG(5,("%s%04x %s: %04x\n", \
+	DEBUG(10,("%s%04x %s: %04x\n", \
              tab_depth(depth), base, string, outbuf));
 
 #define DBG_RW_IVAL(string,depth,base,read,inbuf,outbuf) \
 	RW_IVAL(read,inbuf,outbuf,0) \
-	DEBUG(5,("%s%04x %s: %08x\n", \
+	DEBUG(10,("%s%04x %s: %08x\n", \
              tab_depth(depth), base, string, outbuf));
 

@@ -51,7 +51,8 @@ char *ascii_to_unibuf(char *dest, const char *src, int maxlen)
 /*******************************************************************
  Pull an ASCII string out of a UNICODE buffer (little endian).
  ********************************************************************/
-const char *unibuf_to_ascii(char *dest, const char *src, int maxlen)
+
+const char* unibuf_to_ascii(char *dest, const char *src, int maxlen)
 {
 	char *destend = dest + maxlen;
 	register char c;
@@ -126,11 +127,11 @@ void unistr_to_ascii(char *dest, const uint16 *src, int len)
  Convert a UNISTR2 structure to an ASCII string
  ********************************************************************/
 
-void unistr2_to_ascii(char *dest, const UNISTR2 *str, int maxlen)
+void unistr2_to_ascii(char *dest, const UNISTR2 *str, size_t maxlen)
 {
 	char *destend;
 	const uint16 *src;
-	int len;
+	size_t len;
 	register uint16 c;
 
 	src = str->buffer;
@@ -204,7 +205,7 @@ uint32 buffer2_to_uint32(const BUFFER2 *str)
 {
 	if (str->buf_len == 4)
 	{
-		const char *src = str->buffer;
+		const uchar *src = str->buffer;
 		return IVAL(src, 0);
 	}
 	else
@@ -217,12 +218,11 @@ uint32 buffer2_to_uint32(const BUFFER2 *str)
 /*******************************************************************
   Convert a 'multi-string' buffer to space-separated ASCII.
  ********************************************************************/
-
-void buffer2_to_multistr(char *dest, const BUFFER2 *str, int maxlen)
+void buffer2_to_multistr(char *dest, const BUFFER2 *str, size_t maxlen)
 {
 	char *destend;
-	const char *src;
-	int len;
+	const uchar *src;
+	size_t len;
 	register uint16 c;
 
 	src = str->buffer;

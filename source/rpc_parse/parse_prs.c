@@ -163,7 +163,7 @@ BOOL _prs_hash1(prs_struct *ps, uint32 offset, uint8 sess_key[16])
 	dump_data(100, sess_key, 16);
 	dump_data(100, q, 68);
 #endif
-	SamOEMhash(q, sess_key, 2);
+	SamOEMhash((uchar*)q, sess_key, 2);
 #ifdef DEBUG_PASSWORD
 	dump_data(100, q, 68);
 #endif
@@ -393,7 +393,7 @@ BOOL _prs_unistr(char *name, prs_struct *ps, int depth, UNISTR *str)
 		}
 		RW_SVAL(ps->io, q, str->buffer[i],0);
 	}
-	while ((i < sizeof(str->buffer) / sizeof(str->buffer[0])) &&
+	while ((((size_t)i) < sizeof(str->buffer) / sizeof(str->buffer[0])) &&
 		     (str->buffer[i] != 0));
 
 

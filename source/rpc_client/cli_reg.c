@@ -425,7 +425,7 @@ BOOL do_reg_query_info(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
 		if (p)
 		{
 			valid_query = True;
-			unibuf_to_ascii(type, r_o.uni_type.buffer,
+			unibuf_to_ascii(type, (const char*)r_o.uni_type.buffer,
 				MIN(r_o.uni_type.buf_len, sizeof(fstring)-1));
 			(*unk_0) = r_o.unknown_0;
 			(*unk_1) = r_o.unknown_1;
@@ -1018,7 +1018,7 @@ BOOL do_reg_close(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd)
 		if (p)
 		{
 			/* check that the returned policy handle is all zeros */
-			int i;
+			uint32 i;
 			valid_close = True;
 
 			for (i = 0; i < sizeof(r_c.pol.data); i++)

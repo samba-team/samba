@@ -197,7 +197,7 @@ BOOL svc_io_q_start_service(char *desc, SVC_Q_START_SERVICE *q_s, prs_struct *ps
 
 	if (q_s->ptr_argv != 0)
 	{
-		int i;
+		uint32 i;
 
 		prs_uint32("argc2   ", ps, depth, &(q_s->argc2));
 
@@ -366,7 +366,7 @@ ARGH!
 ********************************************************************/
 BOOL svc_io_r_enum_svcs_status(char *desc, SVC_R_ENUM_SVCS_STATUS *svc, prs_struct *ps, int depth)
 {
-	int i;
+	uint32 i;
 	if (svc == NULL) return False;
 
 	prs_debug(ps, depth, desc, "svc_io_r_enum_svcs_status");
@@ -404,7 +404,8 @@ BOOL svc_io_r_enum_svcs_status(char *desc, SVC_R_ENUM_SVCS_STATUS *svc, prs_stru
 		new_offset = ps->offset;
 		ps->offset = buf_offset;
 
-		svc->svcs = Realloc(NULL, svc->num_svcs * sizeof(ENUM_SRVC_STATUS));
+		svc->svcs = (ENUM_SRVC_STATUS*)Realloc(NULL,
+		            svc->num_svcs * sizeof(ENUM_SRVC_STATUS));
 
 		if (svc->svcs == NULL)
 		{

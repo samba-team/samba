@@ -106,7 +106,7 @@ void hmac_md5_update(const uchar* text, int text_len, HMACMD5Context *ctx)
 /***********************************************************************
  finish off hmac_md5 "inner" buffer and generate outer one.
 ***********************************************************************/
-void hmac_md5_final(caddr_t digest, HMACMD5Context *ctx)
+void hmac_md5_final(uchar *digest, HMACMD5Context *ctx)
 
 {
         struct MD5Context ctx_o;
