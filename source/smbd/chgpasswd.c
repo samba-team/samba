@@ -708,7 +708,7 @@ BOOL check_oem_password(char *user,
 		int uni_pw_len = new_pw_len;
 		char *pw;
 		new_pw_len /= 2;
-		pw = unistrn2((uint16*)(&lmdata[512-uni_pw_len]), new_pw_len);
+		pw = dos_unistrn2((uint16*)(&lmdata[512-uni_pw_len]), new_pw_len);
 		memcpy(new_passwd, pw, new_pw_len+1);
 	}
 	else

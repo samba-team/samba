@@ -44,7 +44,7 @@ static uint16 *ucs2_to_unixcp;
  string pointed to by dst.
 ********************************************************************/
 
-int PutUniCode(char *dst,char *src, ssize_t len)
+int dos_PutUniCode(char *dst,char *src, ssize_t len)
 {
 	int ret = 0;
 	while (*src && (len > 2)) {
@@ -92,7 +92,7 @@ char *skip_unicode_string(char *buf,int n)
  Hack alert: uses fixed buffer(s).
 ********************************************************************/
 
-char *unistrn2(uint16 *src, int len)
+char *dos_unistrn2(uint16 *src, int len)
 {
 	static char lbufs[8][MAXUNI];
 	static int nexti;
@@ -125,7 +125,7 @@ static int nexti;
  Hack alert: uses fixed buffer(s).
 ********************************************************************/
 
-char *unistr2(uint16 *src)
+char *dos_unistr2(uint16 *src)
 {
 	char *lbuf = lbufs[nexti];
 	char *p;
@@ -152,7 +152,7 @@ char *unistr2(uint16 *src)
 Return a DOS codepage version of a little-endian unicode string
 ********************************************************************/
 
-char *unistr2_to_str(UNISTR2 *str)
+char *dos_unistr2_to_str(UNISTR2 *str)
 {
 	char *lbuf = lbufs[nexti];
 	char *p;
@@ -193,7 +193,7 @@ uint32 buffer2_to_uint32(BUFFER2 *str)
 Return a DOS codepage version of a NOTunicode string
 ********************************************************************/
 
-char *buffer2_to_str(BUFFER2 *str)
+char *dos_buffer2_to_str(BUFFER2 *str)
 {
 	char *lbuf = lbufs[nexti];
 	char *p;
@@ -222,7 +222,7 @@ char *buffer2_to_str(BUFFER2 *str)
  Return a dos codepage version of a NOTunicode string
 ********************************************************************/
 
-char *buffer2_to_multistr(BUFFER2 *str)
+char *dos_buffer2_to_multistr(BUFFER2 *str)
 {
 	char *lbuf = lbufs[nexti];
 	char *p;
@@ -258,7 +258,7 @@ char *buffer2_to_multistr(BUFFER2 *str)
  Unicode strings created are in little-endian format.
 ********************************************************************/
 
-size_t struni2(char *dst, const char *src, size_t max_len)
+size_t dos_struni2(char *dst, const char *src, size_t max_len)
 {
 	size_t len = 0;
 
@@ -297,7 +297,7 @@ size_t struni2(char *dst, const char *src, size_t max_len)
  Hack alert: uses fixed buffer(s).
 ********************************************************************/
 
-char *unistr(char *buf)
+char *dos_unistr(char *buf)
 {
 	char *lbuf = lbufs[nexti];
 	uint16 *src = (uint16 *)buf;

@@ -141,10 +141,10 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
       if (strcmp(mailslot, NT_LOGON_MAILSLOT)==0) {
         q = align2(q, buf);
 
-        PutUniCode(q, my_name, sizeof(pstring)); /* PDC name */
+        dos_PutUniCode(q, my_name, sizeof(pstring)); /* PDC name */
         q = skip_unicode_string(q, 1); 
 
-        PutUniCode(q, global_myworkgroup,sizeof(pstring)); /* Domain name*/
+        dos_PutUniCode(q, global_myworkgroup,sizeof(pstring)); /* Domain name*/
         q = skip_unicode_string(q, 1); 
 
         SIVAL(q, 0, ntversion);
@@ -201,14 +201,14 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
        * Let's ignore the SID.
        */
 
-      pstrcpy(ascuser, unistr(uniuser));
+      pstrcpy(ascuser, dos_unistr(uniuser));
       DEBUG(3,("process_logon_packet: SAMLOGON user %s\n", ascuser));
 
       fstrcpy(reply_name,"\\\\"); /* Here it wants \\LOGONSERVER. */
       fstrcpy(reply_name+2,my_name); 
 
       DEBUG(3,("process_logon_packet: SAMLOGON request from %s(%s) for %s, returning logon svr %s domain %s code %x token=%x\n",
-	       unistr(unicomp),inet_ntoa(p->ip), ascuser, reply_name, global_myworkgroup,
+	       dos_unistr(unicomp),inet_ntoa(p->ip), ascuser, reply_name, global_myworkgroup,
 	       SAMLOGON_R ,lmnttoken));
 
       /* Construct reply. */
@@ -217,11 +217,11 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
       SSVAL(q, 0, SAMLOGON_R);
       q += 2;
 
-      PutUniCode(q, reply_name,sizeof(pstring));
+      dos_PutUniCode(q, reply_name,sizeof(pstring));
       q = skip_unicode_string(q, 1);
       unistrcpy(q, uniuser);
       q = skip_unicode_string(q, 1); /* User name (workstation trust account) */
-      PutUniCode(q, lp_workgroup(),sizeof(pstring));
+      dos_PutUniCode(q, lp_workgroup(),sizeof(pstring));
       q = skip_unicode_string(q, 1); /* Domain name. */
 
       SIVAL(q, 0, ntversion);

@@ -340,7 +340,7 @@ BOOL do_samr_enum_dom_users(struct cli_state *cli,
 	for (i = 0; i < *num_sam_users; i++) {
 		(*sam)[i].smb_userid = r_e.sam[i].rid;
 		if (r_e.sam[i].hdr_name.buffer) {
-			char *acct_name = unistrn2(r_e.uni_acct_name[name_idx].buffer,
+			char *acct_name = dos_unistrn2(r_e.uni_acct_name[name_idx].buffer,
 			                           r_e.uni_acct_name[name_idx].uni_str_len);
 			fstrcpy((*sam)[i].acct_name, acct_name);
 			name_idx++;
@@ -604,7 +604,7 @@ BOOL do_samr_query_unknown_12(struct cli_state *cli,
 		*num_aliases = r_o.num_aliases1;
 
 		for (i = 0; i < r_o.num_aliases1; i++) {
-			fstrcpy(als_names[i], unistrn2(r_o.uni_als_name[i].buffer,
+			fstrcpy(als_names[i], dos_unistrn2(r_o.uni_als_name[i].buffer,
 						r_o.uni_als_name[i].uni_str_len));
 		}
 		for (i = 0; i < r_o.num_als_usrs1; i++) {

@@ -265,7 +265,7 @@ static BOOL srv_reply_net_share_get_info(SRV_Q_NET_SHARE_GET_INFO *q_n,
 	DEBUG(5,("srv_net_share_get_info: %d\n", __LINE__));
 
 	/* Create the list of shares for the response. */
-	share_name = unistr2_to_str(&q_n->uni_share_name);
+	share_name = dos_unistr2_to_str(&q_n->uni_share_name);
 	init_srv_r_net_share_get_info(&r_n, share_name, q_n->info_level);
 
 	/* store the response in the SMB stream */

@@ -478,7 +478,7 @@ BOOL smb_io_unihdr2(char *desc, UNIHDR2 *hdr2, prs_struct *ps, int depth)
 void init_unistr(UNISTR *str, char *buf)
 {
 	/* store the string (null-terminated copy) */
-	struni2((char *)str->buffer, buf, sizeof(str->buffer));
+	dos_struni2((char *)str->buffer, buf, sizeof(str->buffer));
 }
 
 /*******************************************************************
@@ -530,7 +530,7 @@ void init_buffer3_str(BUFFER3 *str, char *buf, int len)
 	str->buf_len     = len * 2;
 
 	/* store the string (null-terminated 8 bit chars into 16 bit chars) */
-	struni2((char *)str->buffer, buf, sizeof(str->buffer));
+	dos_struni2((char *)str->buffer, buf, sizeof(str->buffer));
 }
 
 /*******************************************************************
@@ -770,7 +770,7 @@ void init_unistr2(UNISTR2 *str, char *buf, int len)
 	str->uni_str_len = len;
 
 	/* store the string (null-terminated 8 bit chars into 16 bit chars) */
-	struni2((char *)str->buffer, buf, sizeof(str->buffer));
+	dos_struni2((char *)str->buffer, buf, sizeof(str->buffer));
 }
 
 /*******************************************************************

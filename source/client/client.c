@@ -1519,15 +1519,6 @@ list a share name
 static void browse_fn(const char *name, uint32 m, const char *comment)
 {
         fstring typestr;
-        pstring name_str;
-        pstring comment_str;
-
-        pstrcpy(comment_str, comment);
-        dos_to_unix(comment_str, True);		
-
-        pstrcpy(name_str, name);
-        dos_to_unix(name_str, True);		
-
 
         *typestr=0;
 
@@ -1544,7 +1535,7 @@ static void browse_fn(const char *name, uint32 m, const char *comment)
         }
 
         printf("\t%-15.15s%-10.10s%s\n",
-               name_str, typestr,comment_str);
+               name, typestr,comment);
 }
 
 
@@ -1564,14 +1555,7 @@ list a server name
 ****************************************************************************/
 static void server_fn(const char *name, uint32 m, const char *comment)
 {
-        fstring n_str;
-        pstring c_str;
-
-        fstrcpy(n_str, name);
-        pstrcpy(c_str, comment);
-        dos_to_unix(n_str, True);
-        dos_to_unix(c_str, True);
-        printf("\t%-16.16s     %s\n", n_str, c_str);
+        printf("\t%-16.16s     %s\n", name, comment);
 }
 
 /****************************************************************************

@@ -632,6 +632,8 @@ BOOL cli_RNetShareEnum(struct cli_state *cli, void (*fn)(const char *, uint32, c
 		      int type = SVAL(p,14);
 		      int comment_offset = IVAL(p,16) & 0xFFFF;
 		      char *cmnt = comment_offset?(rdata+comment_offset-converter):"";
+			  dos_to_unix(sname,True);
+			  dos_to_unix(cmnt,True);
 		      fn(sname, type, cmnt);
 	      }
       } else {
@@ -709,6 +711,8 @@ BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
 
 				stype = IVAL(p,18) & ~SV_TYPE_LOCAL_LIST_ONLY;
 
+				dos_to_unix(sname, True);
+				dos_to_unix(cmnt, True);
 				fn(sname, stype, cmnt);
 			}
 		}

@@ -327,7 +327,7 @@ static BOOL api_net_req_chal( uint16 vuid, prs_struct *data, prs_struct *rdata)
 		return False;
 	}
 
-	fstrcpy(mach_acct, unistrn2(q_r.uni_logon_clnt.buffer,
+	fstrcpy(mach_acct, dos_unistrn2(q_r.uni_logon_clnt.buffer,
 	                            q_r.uni_logon_clnt.uni_str_len));
 
 	fstrcpy(mach_name, mach_acct);
@@ -441,7 +441,7 @@ static BOOL api_net_srv_pwset( uint16 vuid, prs_struct *data, prs_struct *rdata)
 
 		DEBUG(5,("api_net_srv_pwset: %d\n", __LINE__));
 
-		pstrcpy(mach_acct, unistrn2(q_a.clnt_id.login.uni_acct_name.buffer,
+		pstrcpy(mach_acct, dos_unistrn2(q_a.clnt_id.login.uni_acct_name.buffer,
 		                            q_a.clnt_id.login.uni_acct_name.uni_str_len));
 
 		DEBUG(3,("Server Password Set Wksta:[%s]\n", mach_acct));
@@ -687,7 +687,7 @@ static BOOL api_net_sam_logon( uint16 vuid, prs_struct *data, prs_struct *rdata)
   /* check username exists */
 
   if (status == 0) {
-    pstrcpy(nt_username, unistrn2(uni_samlogon_user->buffer,
+    pstrcpy(nt_username, dos_unistrn2(uni_samlogon_user->buffer,
             uni_samlogon_user->uni_str_len));
 
     DEBUG(3,("User:[%s]\n", nt_username));

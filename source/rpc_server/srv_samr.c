@@ -800,7 +800,7 @@ static BOOL samr_reply_lookup_names(SAMR_Q_LOOKUP_NAMES *q_u,
 		rid [i] = 0xffffffff;
 		type[i] = SID_NAME_UNKNOWN;
 
-		fstrcpy(name, unistrn2(q_u->uni_name[i].buffer,
+		fstrcpy(name, dos_unistrn2(q_u->uni_name[i].buffer,
 				q_u->uni_name[i].uni_str_len));
 
 		if(sid_equal(&pol_sid, &global_sam_sid)) {
@@ -861,8 +861,8 @@ static BOOL samr_reply_chgpasswd_user(SAMR_Q_CHGPASSWD_USER *q_u,
 	fstring user_name;
 	fstring wks;
 
-	fstrcpy(user_name, unistrn2(q_u->uni_user_name.buffer, q_u->uni_user_name.uni_str_len));
-	fstrcpy(wks      , unistrn2(q_u->uni_dest_host.buffer, q_u->uni_dest_host.uni_str_len));
+	fstrcpy(user_name, dos_unistrn2(q_u->uni_user_name.buffer, q_u->uni_user_name.uni_str_len));
+	fstrcpy(wks      , dos_unistrn2(q_u->uni_dest_host.buffer, q_u->uni_dest_host.uni_str_len));
 
 	DEBUG(5,("samr_chgpasswd_user: user: %s wks: %s\n", user_name, wks));
 
@@ -1490,7 +1490,7 @@ static BOOL api_samr_unknown_32( uint16 vuid, prs_struct *data, prs_struct *rdat
 	   reply if the account already exists...
 	 */
 
-	fstrcpy(mach_acct, unistrn2(q_u.uni_mach_acct.buffer,
+	fstrcpy(mach_acct, dos_unistrn2(q_u.uni_mach_acct.buffer,
 	                            q_u.uni_mach_acct.uni_str_len));
 
 	become_root(True);

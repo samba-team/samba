@@ -845,9 +845,9 @@ void init_rpc_auth_ntlmssp_resp(RPC_AUTH_NTLMSSP_RESP *rsp,
 	memcpy(rsp->nt_resp, nt_resp, 24);
 
 	if (IS_BITS_SET_ALL(neg_flags, NTLMSSP_NEGOTIATE_UNICODE)) {
-		struni2(rsp->domain, domain, sizeof(rsp->domain));
-		struni2(rsp->user, user, sizeof(rsp->user));
-		struni2(rsp->wks, wks, sizeof(rsp->wks));
+		dos_struni2(rsp->domain, domain, sizeof(rsp->domain));
+		dos_struni2(rsp->user, user, sizeof(rsp->user));
+		dos_struni2(rsp->wks, wks, sizeof(rsp->wks));
 	} else {
 		fstrcpy(rsp->domain, domain);
 		fstrcpy(rsp->user, user);

@@ -395,16 +395,16 @@ void split_at_last_component(char *path, char *front, char sep, char *back);
 
 /*The following definitions come from  lib/util_unistr.c  */
 
-int PutUniCode(char *dst,char *src, ssize_t len);
+int dos_PutUniCode(char *dst,char *src, ssize_t len);
 char *skip_unicode_string(char *buf,int n);
-char *unistrn2(uint16 *src, int len);
-char *unistr2(uint16 *src);
-char *unistr2_to_str(UNISTR2 *str);
+char *dos_unistrn2(uint16 *src, int len);
+char *dos_unistr2(uint16 *src);
+char *dos_unistr2_to_str(UNISTR2 *str);
 uint32 buffer2_to_uint32(BUFFER2 *str);
-char *buffer2_to_str(BUFFER2 *str);
-char *buffer2_to_multistr(BUFFER2 *str);
-size_t struni2(char *dst, const char *src, size_t max_len);
-char *unistr(char *buf);
+char *dos_buffer2_to_str(BUFFER2 *str);
+char *dos_buffer2_to_multistr(BUFFER2 *str);
+size_t dos_struni2(char *dst, const char *src, size_t max_len);
+char *dos_unistr(char *buf);
 int unistrcpy(char *dst, char *src);
 void default_unicode_map(smb_ucs2_t **pp_cp_to_ucs2, uint16 **pp_ucs2_to_cp);
 BOOL load_unicode_map(const char *codepage, smb_ucs2_t **pp_cp_to_ucs2, uint16 **pp_ucs2_to_cp);

@@ -279,9 +279,9 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p, RPC_AUTH_NTLMSSP_RESP *ntlm
 	 */
 
 	if (IS_BITS_SET_ALL(p->ntlmssp_chal_flags, NTLMSSP_NEGOTIATE_UNICODE)) {
-		fstrcpy(user_name, unistrn2((uint16*)ntlmssp_resp->user, ntlmssp_resp->hdr_usr.str_str_len/2));
-		fstrcpy(domain, unistrn2((uint16*)ntlmssp_resp->domain, ntlmssp_resp->hdr_domain.str_str_len/2));
-		fstrcpy(wks, unistrn2((uint16*)ntlmssp_resp->wks, ntlmssp_resp->hdr_wks.str_str_len/2));
+		fstrcpy(user_name, dos_unistrn2((uint16*)ntlmssp_resp->user, ntlmssp_resp->hdr_usr.str_str_len/2));
+		fstrcpy(domain, dos_unistrn2((uint16*)ntlmssp_resp->domain, ntlmssp_resp->hdr_domain.str_str_len/2));
+		fstrcpy(wks, dos_unistrn2((uint16*)ntlmssp_resp->wks, ntlmssp_resp->hdr_wks.str_str_len/2));
 	} else {
 		fstrcpy(user_name, ntlmssp_resp->user);
 		fstrcpy(domain, ntlmssp_resp->domain);

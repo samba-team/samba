@@ -167,7 +167,7 @@ static int init_dom_ref(DOM_R_REF *ref, char *dom_name, DOM_SID *dom_sid)
 	if (dom_name != NULL) {
 		for (num = 0; num < ref->num_ref_doms_1; num++) {
 			fstring domname;
-			fstrcpy(domname, unistr2_to_str(&ref->ref_dom[num].uni_dom_name));
+			fstrcpy(domname, dos_unistr2_to_str(&ref->ref_dom[num].uni_dom_name));
 			if (strequal(domname, dom_name))
 				return num;
 		}
@@ -223,7 +223,7 @@ static void init_lsa_rid2s(DOM_R_REF *ref, DOM_RID2 *rid2,
 		fstring user;
 		uint8 sid_name_use = SID_NAME_UNKNOWN;
 
-		pstrcpy(full_name, unistr2_to_str(&name[i]));
+		pstrcpy(full_name, dos_unistr2_to_str(&name[i]));
 
 		/*
 		 * Try and split the name into a DOMAIN and
