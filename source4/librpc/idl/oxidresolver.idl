@@ -54,7 +54,7 @@ interface IOXIDResolver
 	/* whole set can subsequently be pinged using SimplePing, */
 	/* thus reducing network traffic. */
 	[idempotent] WERROR ComplexPing (
-		[in, out] SETID *pSetId, /* In of 0 on first call for new set. */
+		[in, out, ref] SETID *SetId, /* In of 0 on first call for new set. */
 		 [in] uint16 SequenceNum,
 		 [in] uint16 cAddToSet,
 		 [in] uint16 cDelFromSet,
@@ -62,7 +62,7 @@ interface IOXIDResolver
 		 [in, size_is(cAddToSet)] OID AddToSet[],
 		/*remove these OIDs from the set */
 		 [in, size_is(cDelFromSet)] OID DelFromSet[],
-		[out] uint16 *pPingBackoffFactor/* 2^factor = multipler */
+		[out] uint16 pPingBackoffFactor/* 2^factor = multipler */
 			 );
 
 	/* In some cases the client maybe unsure that a particular */
@@ -75,7 +75,8 @@ interface IOXIDResolver
 	/* Method to get the protocol sequences, string bindings, */
 	/* RemoteUnknown IPID and COM version for an object server */
 	/* given its OXID. Supported by DCOM */
-	/* version 5.2 and above. */
+	/* version 5.2 and above. Looks like that means 
+	 * Windows 2003/XP and above */
 	[idempotent] WERROR ResolveOxid2 (
 											  [in] OXID *pOxid,
 											  [in] uint16 cRequestedProtseqs,
