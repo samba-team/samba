@@ -23,6 +23,58 @@ The following information assumes that your site is running NetBIOS over TCP/IP.
 </para></note>
 
 <sect1>
+<title>Features and Benefits</title>
+
+<para>
+Someone once referred to the past in terms of: <emphasis>They were the worst of times,
+they were the best of times. The more we look back, them more we long for what was and
+hope it never returns!</emphasis>.
+</para>
+
+<para>
+For many MS Windows network administrators that statement sums up their feelings about
+NetBIOS networking precisely. For those who mastered NetBIOS networking it's fickle
+nature was just par for the course. For those who never quite managed to tame it's
+lusty features NetBIOS is like Paterson's Curse.
+</para>
+
+<para>
+For those not familiar with botanical problems in Australia: Paterson's curse,
+Echium plantagineum, was introduced to Australia from Europe during the mid-nineteenth
+century. Since then it has spread rapidly. The high seed production, with densities of
+thousands of seeds per square metre, a seed longevity of more than seven years, and an
+ability to germinate at any time of year, given the right conditions, are some of the
+features which make it such a persistent weed.
+</para>
+
+<para>
+In this chapter we explore vital aspects of SMB (Server Message Block) networking with
+a particular focus on SMB as implmented through running NetBIOS (Network Basic
+Input / Output System) over TCP/IP. Since Samba does NOT implement SMB or NetBIOS over
+any other protocols we need to know how to configure our network environment and simply
+remember to use nothing but TCP/IP on all our MS Windows network clients.
+</para>
+
+<para>
+Samba provides the ability to implement a WINS (Windows Internetworking Name Server)
+and implements extensions to Microsoft's implementation of WINS. These extensions
+help Samba to affect stable WINS operations beyond the normal scope of MS WINS.
+</para>
+
+<para>
+Please note that WINS is exclusively a service that applies only to those systems
+that run NetBIOS over TCP/IP. MS Windows 200x / XP have the capacity to turn off
+support for NetBIOS, in which case WINS is of no relevance. Samba-3 supports this also.
+</para>
+
+<para>
+For those networks on which NetBIOS has been disabled (ie: WINS is NOT required)
+the use of DNS is necessary for host name resolution.
+</para>
+
+</sect1>
+
+<sect1>
 <title>What is Browsing?</title>
 
 <para>
@@ -76,28 +128,36 @@ called <filename>nmbd</filename>. The configuration parameters involved in nmbd'
 </programlisting></para>
 
 <para>
-WINS Server and WINS Support are mutually exclusive options. Those marked with an '*' are
-the only options that commonly MAY need to be modified. Even if not one of these parameters
-is set nmbd will still do it's job.
+For Samba the WINS Server and WINS Support are mutually exclusive options. Those marked with
+an '*' are the only options that commonly MAY need to be modified. Even if not one of these
+parameters is set nmbd will still do it's job.
 </para>
+
 </sect1>
 
 <sect1>
 <title>Discussion</title>
 
 <para>
-Firstly, all MS Windows networking is based on SMB (Server Message
-Block) based messaging. SMB messaging may be implemented using NetBIOS or 
-without NetBIOS. Samba implements NetBIOS by encapsulating it over TCP/IP.
-MS Windows products can do likewise. NetBIOS based networking uses broadcast
-messaging to affect browse list management. When running NetBIOS over
-TCP/IP this uses UDP based messaging. UDP messages can be broadcast or unicast.
+Firstly, all MS Windows networking uses SMB (Server Message Block) based messaging.
+SMB messaging may be implemented with or without NetBIOS. MS Windows 200x supports
+NetBIOS over TCP/IP for backwards compatibility. Microsoft are intent on phasing out NetBIOS
+support.
+</para>
+
+<sect2>
+<title>NetBIOS over TCP/IP</title>
+
+<para>
+Samba implements NetBIOS, as does MS Windows NT / 200x / XP, by encapsulating it over TCP/IP.
+MS Windows products can do likewise. NetBIOS based networking uses broadcast messaging to
+affect browse list management. When running NetBIOS over TCP/IP this uses UDP based messaging.
+UDP messages can be broadcast or unicast.
 </para>
 
 <para>
 Normally, only unicast UDP messaging can be forwarded by routers. The
-<command>remote announce</command>
-parameter to smb.conf helps to project browse announcements
+<command>remote announce</command> parameter to smb.conf helps to project browse announcements
 to remote network segments via unicast UDP. Similarly, the 
 <command>remote browse sync</command> parameter of <filename>smb.conf</filename>
 implements browse list collation using unicast UDP.
@@ -121,20 +181,21 @@ the use of the <command>remote announce</command> and the
 
 <para>
 As of Samba 3 WINS replication is being worked on. The bulk of the code has
-been committed, but it still needs maturation.
+been committed, but it still needs maturation. This is NOT a supported feature
+of the Samba-3.0.0 release. Hopefully, this will become a supported feature
+of one of the samba-3 release series.
 </para>
 
 <para>
 Right now samba WINS does not support MS-WINS replication. This means that
-when setting up Samba as a WINS server there must only be one <filename>nmbd</filename> configured
-as a WINS server on the network. Some sites have used multiple Samba WINS
+when setting up Samba as a WINS server there must only be one <filename>nmbd</filename>
+configured as a WINS server on the network. Some sites have used multiple Samba WINS
 servers for redundancy (one server per subnet) and then used 
 <command>remote browse sync</command> and <command>remote announce</command>
-to affect browse list collation across all
-segments. Note that this means clients will only resolve local names,
-and must be configured to use DNS to resolve names on other subnets in
-order to resolve the IP addresses of the servers they can see on other
-subnets. This setup is not recommended, but is mentioned as a practical
+to affect browse list collation across all segments. Note that this means clients
+will only resolve local names, and must be configured to use DNS to resolve names
+on other subnets in order to resolve the IP addresses of the servers they can see
+on other subnets. This setup is not recommended, but is mentioned as a practical
 consideration (ie: an 'if all else fails' scenario).
 </para>
 
@@ -145,15 +206,140 @@ that it will take time to establish a browse list and it can take up to 45
 minutes to stabilise, particularly across network segments.
 </para>
 
+</sect2>
+
+<sect2>
+<title>TCP/IP - without NetBIOS</title>
+
+<para>
+All TCP/IP using systems use various forms of host name resolution. The primary
+methods for TCP/IP hostname resolutions involves either a static file (<filename>/etc/hosts
+</filename>) or DNS (the Domain Name System). DNS is the technology that makes
+the Internet usable. DNS based host name resolution is supported by nearly all TCP/IP
+enabled systems. Only a few embedded TCP/IP systems do not support DNS.
+</para>
+
+<para>
+When an MS Windows 200x / XP system attempts to resolve a host name to an IP address
+it follows a defined path:
+</para>
+
+<orderedlist>
+	<listitem><para>
+	Checks the <filename>hosts</filename> file. It is located in
+	<filename>C:\WinNT\System32\Drivers\etc</filename>.
+	</para></listitem>
+
+	<listitem><para>
+	Does a DNS lookup
+	</para></listitem>
+
+        <listitem><para>
+	Checks the NetBIOS name cache
+        </para></listitem>
+
+        <listitem><para>
+	Queries the WINS server
+        </para></listitem>
+
+        <listitem><para>
+	Does a broadcast name lookup over UDP
+        </para></listitem>
+
+        <listitem><para>
+	Looks up entries in LMHOSTS. It is located in
+        <filename>C:\WinNT\System32\Drivers\etc</filename>.
+        </para></listitem>
+</orderedlist>
+
+<para>
+Windows 200x / XP can register it's host name with a Dynamic DNS server. You can
+force register with a Dynamic DNS server in Windows 200x / XP using:
+<command>ipconfig /registerdns</command>
+</para>
+
+<para>
+With Active Directory (ADS), a correctly functioning DNS server is absolutely
+essential. In the absence of a working DNS server that has been correctly configured
+MS Windows clients and servers will be totally unable to locate each other,
+consequently network services will be severely impaired.
+</para>
+
+<para>
+The use of Dynamic DNS is highly recommended with Active Directory, in which case
+the use of BIND9 is preferred for it's ability to adequately support the SRV (service)
+records that are needed for Active Directory.
+</para>
+
+</sect2>
+
+<sect2>
+<title>DNS and Active Directory</title>
+
+<para>
+Occasionally we hear from Unix network administrators who want to use a Unix based Dynamic
+DNS server in place of the Microsoft DNS server. While this might be desirable to some, the
+MS Windows 200x DNS server is auto-configured to work with Active Directory. It is possible
+to use BIND version 8 or 9, but it will almost certainly be necessary to create service records
+so that MS Active Directory clients can resolve host names to locate essential network services.
+The following are some of the default service records that Active Directory requires:
+</para>
+
+<itemizedlist>
+	<listitem><para>_ldap._tcp.pdc.ms-dcs.<emphasis>Domain</emphasis></para>
+
+		<para>
+		This provides the address of the Windows NT PDC for the Domain.
+		</para>
+	</listitem>
+
+	<listitem><para>_ldap._tcp.pdc.ms-dcs.<emphasis>DomainTree</emphasis></para>
+
+                <para>
+		Resolves the addresses of Global Catalog servers in the domain.
+                </para>
+	</listitem>
+
+        <listitem><para>_ldap._tcp.<emphasis>site</emphasis>.sites.writable.ms-dcs.<emphasis>Domain</emphasis></para>
+                <para>
+		Provides list of domain controllers based on sites.
+                </para>
+	</listitem>
+
+        <listitem><para>_ldap._tcp.writable.ms-dcs.<emphasis>Domain</emphasis></para>
+
+                <para>
+		Enumerates list of domain controllers that have the writable	
+		copies of the Active Directory data store.
+                </para>
+	</listitem>
+
+	<listitem><para>_ldap._tcp.<emphasis>GUID</emphasis>.domains.ms-dcs.<emphasis>DomainTree</emphasis></para>
+		<para>
+		Entry used by MS Windows clients to locate machines using the
+		Global Unique Identifier.
+                </para>
+	</listitem>
+
+	<listitem><para>_ldap._tcp.<emphasis>Site</emphasis>.gc.ms-dcs.<emphasis>DomainTree</emphasis></para>
+		<para>
+		Used by MS Windows clients to locate site configuration dependant
+		Global Catalog server.
+		</para>
+	</listitem>
+</itemizedlist>
+
+</sect2>
+
 </sect1>
 
 <sect1>
 <title>How Browsing Functions</title>
 
 <para>
-As stated above, MS Windows machines register their NetBIOS names 
+MS Windows machines register their NetBIOS names 
 (ie: the machine name for each service type in operation) on start 
-up. Also, as stated above, the exact method by which this name registration 
+up. The exact method by which this name registration 
 takes place is determined by whether or not the MS Windows client/server 
 has been given a WINS server address, whether or not LMHOSTS lookup 
 is enabled, or if DNS for NetBIOS name resolution is enabled, etc.
