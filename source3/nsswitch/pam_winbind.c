@@ -2,7 +2,7 @@
 
    Copyright Andrew Tridgell <tridge@samba.org> 2000
    Copyright Tim Potter <tpot@samba.org> 2000
-   Copyright Andrew Bartlettt <abartlet@samba.org> 2002
+   Copyright Andrew Bartlett <abartlet@samba.org> 2002
 
    largely based on pam_userdb by Christian Gafton <gafton@redhat.com> 
    also contains large slabs of code from pam_unix by Elliot Lee <sopwith@redhat.com>
