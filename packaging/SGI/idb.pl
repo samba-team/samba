@@ -31,27 +31,22 @@ close MAKEFILE;
 
 if (@sprogs) {
   @sprogs[0] =~ s/^.*\=//;
-  @sprogs[0] =~ s/^.*\)//;
   @sprogs = split(' ',@sprogs[0]);
 }
 if (@progs) {
   @progs[0] =~ s/^.*\=//;
-  @progs[0] =~ s/^.*\)//;
   @progs = split(' ',@progs[0]);
 }
 if (@progs1) {
   @progs1[0] =~ s/^.*\=//;
-  @progs1[0] =~ s/^.*\)//;
   @progs1 = split(' ',@progs1[0]);
 }
 if (@scripts) {
   @scripts[0] =~ s/^.*\=//;
-  @scripts[0] =~ s/^.*\)//;
   @scripts = split(' ',@scripts[0]);
 }
 if (@codepage) {
   @codepage[0] =~ s/^.*\=//;
-  @codepage[0] =~ s/^.*\)//;
   chdir '../../source';
   # if we have codepages we need to create them for the package
   system("./installcp.sh . ../packaging/SGI/codepages . @codepage[0]");
@@ -92,20 +87,23 @@ print IDB "f 0444 root sys usr/samba/README packaging/SGI/README samba.sw.base\n
 print IDB "d 0755 root sys usr/samba/bin packaging/SGI samba.sw.base\n";
 while(@bins) {
   $nextfile = shift @bins;
-  if ($nextfile eq "smbpasswd") {
-    print IDB "f 4555 root sys usr/samba/bin/$nextfile source/$nextfile samba.sw.base\n";
-  }
-  elsif ($nextfile eq "psfixes.pl") {
-    print IDB "f 0755 root sys usr/samba/bin/$nextfile packaging/SGI/$nextfile samba.sw.base\n";
-  }
-  elsif ($nextfile eq "sambalp") {
-    print IDB "f 0755 root sys usr/samba/bin/$nextfile packaging/SGI/$nextfile samba.sw.base\n";
-  }
-  elsif ($nextfile eq "smbprint") {
-    print IDB "f 0755 root sys usr/samba/bin/$nextfile packaging/SGI/$nextfile samba.sw.base\n";
-  }
-  else {
-    print IDB "f 0755 root sys usr/samba/bin/$nextfile source/$nextfile samba.sw.base\n";
+
+  if (index($nextfile,'$')) {
+    if ($nextfile eq "smbpasswd") {
+      print IDB "f 4555 root sys usr/samba/bin/$nextfile source/$nextfile samba.sw.base\n";
+    }
+    elsif ($nextfile eq "psfixes.pl") {
+      print IDB "f 0755 root sys usr/samba/bin/$nextfile packaging/SGI/$nextfile samba.sw.base\n";
+    }
+    elsif ($nextfile eq "sambalp") {
+      print IDB "f 0755 root sys usr/samba/bin/$nextfile packaging/SGI/$nextfile samba.sw.base\n";
+    }
+    elsif ($nextfile eq "smbprint") {
+      print IDB "f 0755 root sys usr/samba/bin/$nextfile packaging/SGI/$nextfile samba.sw.base\n";
+    }
+    else {
+      print IDB "f 0755 root sys usr/samba/bin/$nextfile source/$nextfile samba.sw.base\n";
+    }
   }
 }
 
