@@ -1108,7 +1108,7 @@ void interpret_coding_system(char *str)
     } else if (strequal (str, "hex")) {
 	codes = HEX_CODE;
 	hex_tag = HEXTAG;
-    } else if (strncasecmp (str, "hex", 3)) {
+    } else if (!strncasecmp (str, "hex", 3)) {
 	codes = HEX_CODE;
 	hex_tag = (str[3] ? str[3] : HEXTAG);
     } else if (strequal (str, "j8bb")) {
