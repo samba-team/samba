@@ -605,8 +605,6 @@ char *client_addr(void);
 char *get_socket_name(int fd);
 char *get_socket_addr(int fd);
 int open_pipe_sock(char *path);
-int create_pipe_socket(char *dir, int dir_perms,
-				char *path, int path_perms);
 int sock_exec(const char *prog);
 
 /*The following definitions come from  lib/util_str.c  */
@@ -4220,7 +4218,7 @@ char *validated_username(uint16 vuid);
 char *validated_domain(uint16 vuid);
 NT_USER_TOKEN *create_nt_token(uid_t uid, gid_t gid, int ngroups, gid_t *groups, BOOL is_guest);
 int register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name, 
-		  char *domain,BOOL guest);
+		  char *domain,BOOL guest, NT_USER_TOKEN *ptok);
 void add_session_user(char *user);
 BOOL smb_password_check(char *password, unsigned char *part_passwd, unsigned char *c8);
 BOOL smb_password_ok(SAM_ACCOUNT *sampass, uchar chal[8],
@@ -4240,7 +4238,7 @@ BOOL server_validate(char *user, char *domain,
 BOOL domain_client_validate( char *user, char *domain, 
                              char *smb_apasswd, int smb_apasslen, 
                              char *smb_ntpasswd, int smb_ntpasslen,
-                             BOOL *user_exists);
+                             BOOL *user_exists, NT_USER_TOKEN **pptoken);
 
 /*The following definitions come from  smbd/pipes.c  */
 
@@ -4418,6 +4416,7 @@ void become_root(void);
 void unbecome_root(void);
 BOOL become_user(connection_struct *conn, uint16 vuid);
 BOOL unbecome_user(void);
+void add_supplementary_nt_login_groups(int *n_groups, gid_t **pp_groups, NT_USER_TOKEN *ptok);
 BOOL lookup_name(const char *name, DOM_SID *psid, enum SID_NAME_USE *name_type);
 BOOL lookup_sid(DOM_SID *sid, fstring dom_name, fstring name, enum SID_NAME_USE *name_type);
 DOM_SID *uid_to_sid(DOM_SID *psid, uid_t uid);

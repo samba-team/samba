@@ -368,6 +368,42 @@ BOOL unbecome_user(void)
 }
 
 /*****************************************************************
+ Convert the suplimentary SIDs returned in a netlogon into UNIX
+ group gid_t's. Add to the total group array.
+*****************************************************************/
+ 
+void add_supplementary_nt_login_groups(int *n_groups, gid_t **pp_groups, NT_USER_TOKEN *ptok)
+{
+	int total_groups;
+	int current_n_groups = *n_groups;
+	gid_t *final_groups = NULL;
+	size_t i;
+ 
+	if (!ptok || (ptok->num_sids == 0))
+		return;
+ 
+	total_groups = current_n_groups + ptok->num_sids;
+ 
+	final_groups = (gid_t *)malloc(total_groups * sizeof(gid_t));
+	if (!final_groups) {
+		DEBUG(0,("add_supplementary_nt_login_groups: Failed to malloc new groups.\n"));
+		return;
+	}
+ 
+	memcpy(final_groups, *pp_groups, current_n_groups * sizeof(gid_t));
+	for (i = 0; i < ptok->num_sids; i++) {
+		enum SID_NAME_USE sid_type;
+ 
+		if (sid_to_gid(&ptok->user_sids[i], &final_groups[current_n_groups], &sid_type))
+			current_n_groups++;
+	}
+ 
+	SAFE_FREE(*pp_groups);
+	*pp_groups = final_groups;
+	*n_groups = current_n_groups;
+}
+
+/*****************************************************************
  *THE CANONICAL* convert name to SID function.
  Tries winbind first - then uses local lookup.
 *****************************************************************/  

@@ -634,7 +634,7 @@ static BOOL check_server_security(char *orig_user, char *domain, char *unix_user
 
 static BOOL check_domain_security(char *orig_user, char *domain, char *unix_user, 
                                   char *smb_apasswd, int smb_apasslen,
-                                  char *smb_ntpasswd, int smb_ntpasslen)
+                                  char *smb_ntpasswd, int smb_ntpasslen, NT_USER_TOKEN **pptoken)
 {
   BOOL ret = False;
   BOOL user_exists = True;
@@ -649,7 +649,7 @@ static BOOL check_domain_security(char *orig_user, char *domain, char *unix_user
   ret = domain_client_validate(orig_user, domain,
                                 smb_apasswd, smb_apasslen,
                                 smb_ntpasswd, smb_ntpasslen,
-                                &user_exists);
+                                &user_exists, pptoken);
 
   if(ret) {
     /*
@@ -711,6 +711,8 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
   static BOOL done_sesssetup = False;
   BOOL doencrypt = SMBENCRYPT();
   fstring domain;
+  NT_USER_TOKEN *ptok = NULL;
+
   START_PROFILE(SMBsesssetupX);
 
   *smb_apasswd = 0;
@@ -949,7 +951,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
   if (!guest && !check_server_security(orig_user, domain, user, 
          smb_apasswd, smb_apasslen, smb_ntpasswd, smb_ntpasslen) &&
       !check_domain_security(orig_user, domain, user, smb_apasswd,
-         smb_apasslen, smb_ntpasswd, smb_ntpasslen) &&
+         smb_apasslen, smb_ntpasswd, smb_ntpasslen, &ptok) &&
       !check_hosts_equiv(user))
   {
 
@@ -991,6 +993,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
       {
         if (lp_map_to_guest() == NEVER_MAP_TO_GUEST)
         {
+          delete_nt_token(&ptok);
           DEBUG(1,("Rejecting user '%s': authentication failed\n", user));
 		  END_PROFILE(SMBsesssetupX);
           return ERROR_BOTH(NT_STATUS_LOGON_FAILURE,ERRSRV,ERRbadpw);
@@ -1000,6 +1003,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
         {
           if (smb_getpwnam(user,True))
           {
+            delete_nt_token(&ptok);
             DEBUG(1,("Rejecting user '%s': bad password\n", user));
 	    	END_PROFILE(SMBsesssetupX);
             return ERROR_BOTH(NT_STATUS_LOGON_FAILURE,ERRSRV,ERRbadpw);
@@ -1053,6 +1057,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
   {
     const struct passwd *pw = smb_getpwnam(user,False);
     if (!pw) {
+      delete_nt_token(&ptok);
       DEBUG(1,("Username %s is invalid on this system\n",user));
       END_PROFILE(SMBsesssetupX);
       return ERROR_BOTH(NT_STATUS_LOGON_FAILURE,ERRSRV,ERRbadpw);
@@ -1067,13 +1072,14 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
   /* register the name and uid as being validated, so further connections
      to a uid can get through without a password, on the same VC */
 
-  sess_vuid = register_vuid(uid,gid,user,current_user_info.smb_name,domain,guest);
+  sess_vuid = register_vuid(uid,gid,user,current_user_info.smb_name,domain,guest,ptok);
+
+  delete_nt_token(&ptok);
   
   if (sess_vuid == -1) {
 	  return(ERROR(ERRDOS,ERRnoaccess));
   }
 
- 
   SSVAL(outbuf,smb_uid,sess_vuid);
   SSVAL(inbuf,smb_uid,sess_vuid);
 

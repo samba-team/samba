@@ -197,13 +197,15 @@ NT_USER_TOKEN *create_nt_token(uid_t uid, gid_t gid, int ngroups, gid_t *groups,
 	 * se_access_check depends on this.
 	 */
 
-	uid_to_sid( &psids[psid_ndx++], uid);
+	uid_to_sid( &psids[PRIMARY_USER_SID_INDEX], uid);
+	psid_ndx++;
 
 	/*
 	 * Primary group SID is second in token. Convention.
 	 */
 
-	gid_to_sid( &psids[psid_ndx++], gid);
+	gid_to_sid( &psids[PRIMARY_GROUP_SID_INDEX], gid);
+	psid_ndx++;
 
 	/* Now add the group SIDs. */
 
@@ -246,7 +248,7 @@ tell random client vuid's (normally zero) from valid vuids.
 ****************************************************************************/
 
 int register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name, 
-		  char *domain,BOOL guest)
+		  char *domain,BOOL guest, NT_USER_TOKEN *ptok)
 {
 	user_struct *vuser = NULL;
 	struct passwd *pwfile; /* for getting real name from passwd file */
@@ -294,6 +296,9 @@ int register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name,
 		Used by change_to_user() */
 	initialise_groups(unix_name, uid, gid);
 	get_current_groups( &vuser->n_groups, &vuser->groups);
+
+	if (ptok)
+		add_supplementary_nt_login_groups(&vuser->n_groups, &vuser->groups, ptok);
 
 	/* Create an NT_USER_TOKEN struct for this user. */
 	vuser->nt_user_token = create_nt_token(uid,gid, vuser->n_groups, vuser->groups, guest);
@@ -1484,7 +1489,7 @@ static BOOL find_connect_pdc(struct cli_state *pcli, unsigned char *trust_passwd
 BOOL domain_client_validate( char *user, char *domain, 
                              char *smb_apasswd, int smb_apasslen, 
                              char *smb_ntpasswd, int smb_ntpasslen,
-                             BOOL *user_exists)
+                             BOOL *user_exists, NT_USER_TOKEN **pptoken)
 {
   unsigned char local_challenge[8];
   unsigned char local_lm_response[24];
@@ -1498,6 +1503,9 @@ BOOL domain_client_validate( char *user, char *domain,
   uint32 smb_uid_low;
   BOOL connected_ok = False;
   time_t last_change_time;
+
+  if (pptoken)
+    *pptoken = NULL;
 
   if(user_exists != NULL)
     *user_exists = True; /* Only set false on a very specific error. */
@@ -1619,6 +1627,45 @@ BOOL domain_client_validate( char *user, char *domain,
   /*
    * Here, if we really want it, we have lots of info about the user in info3.
    */
+
+  /* Return group membership as returned by NT.  This contains group
+     membership in nested groups which doesn't seem to be accessible by any
+     other means.  We merge this into the NT_USER_TOKEN associated with the vuid
+     later on. */
+ 
+  if (pptoken) {
+    NT_USER_TOKEN *ptok;
+    int i;
+    DOM_SID domain_sid;
+ 
+    *pptoken = NULL;
+ 
+    if (info3.num_groups2 != 0) {
+      if ((ptok = (NT_USER_TOKEN *)malloc( sizeof(NT_USER_TOKEN) ) ) == NULL) {
+        DEBUG(0, ("domain_client_validate: Out of memory allocating NT_USER_TOKEN\n"));
+        return False;
+      }
+ 
+      ptok->num_sids = (size_t)info3.num_groups2;
+      if ((ptok->user_sids = (DOM_SID *)malloc( sizeof(DOM_SID) * ptok->num_sids )) == NULL) {
+        DEBUG(0, ("domain_client_validate: Out of memory allocating group SIDS\n"));
+        free(ptok);
+        return False;
+      }
+ 
+      if (!secrets_fetch_domain_sid(lp_workgroup(), &domain_sid)) {
+        DEBUG(0, ("domain_client_validate: unable to fetch domain sid.\n"));
+        delete_nt_token(&ptok);
+        return False;
+      }
+ 
+      for (i = 0; i < ptok->num_sids; i++) {
+        sid_copy(&ptok->user_sids[i], &domain_sid);
+        sid_append_rid(&ptok->user_sids[i], info3.gids[i].g_rid);
+      }
+      *pptoken = ptok;
+    }
+  }
 
 #if 0
   /* 
