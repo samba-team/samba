@@ -876,7 +876,7 @@ krb5_524_conv_principal(krb5_context context,
     
     if (strlcpy (name, n, aname_sz) >= aname_sz)
 	return KRB5_PARSE_MALFORMED;
-    if (strlcpy (instance, r, aname_sz) >= aname_sz)
+    if (strlcpy (instance, i, aname_sz) >= aname_sz)
 	return KRB5_PARSE_MALFORMED;
     if (strlcpy (realm, r, aname_sz) >= aname_sz)
 	return KRB5_PARSE_MALFORMED;
