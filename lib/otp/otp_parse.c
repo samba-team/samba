@@ -41,14 +41,7 @@
 RCSID("$Id$");
 #endif
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <ctype.h>
-
-#include "protos.h"
-#include "roken.h"
-#include "otp.h"
+#include "otp_locl.h"
 
 struct e {
   char *s;
