@@ -258,7 +258,10 @@ NTSTATUS dcerpc_schannel_creds(struct gensec_security *gensec_security,
 { 
 	struct dcerpc_schannel_state *dce_schan_state = gensec_security->private_data;
 
-	*creds = dce_schan_state->creds;
+	*creds = talloc_reference(mem_ctx, dce_schan_state->creds);
+	if (!*creds) {
+		return NT_STATUS_NO_MEMORY;
+	}
 	return NT_STATUS_OK;
 }
 		
