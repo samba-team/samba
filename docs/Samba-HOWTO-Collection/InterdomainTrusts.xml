@@ -450,7 +450,7 @@ when you un-join the machine, it is done, otherwise it is not done.
 <title>Problems With LDAP ldapsam And The smbldap-tools</title>
 
 <para>
-If you use the <command>smbldap-useradd.pl</command> script to create a trust
+If you use the <command>smbldap-useradd</command> script to create a trust
 account to set up Interdomain trusts the process of setting up the trust will
 fail. The account that was created in the LDAP database will have an account
 flags field that has <constant>[W          ]</constant>, when it must have
@@ -460,11 +460,11 @@ flags field that has <constant>[W          ]</constant>, when it must have
 <para><emphasis>Answer: </emphasis>Here is a simple solution.
 Create a machine account as follows:
 <screen>
-&rootprompt; smbldap-useradd.pl -w domain_name
+&rootprompt; smbldap-useradd -w domain_name
 </screen>
 Then set the desired trust account password as shown here:
 <screen>
-&rootprompt; smbldap-passwd.pl domain_name\$
+&rootprompt; smbldap-passwd domain_name\$
 </screen>
 Using a text editor, create the following file:
 <screen>
