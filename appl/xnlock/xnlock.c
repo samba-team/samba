@@ -223,7 +223,8 @@ init_words (int argc, char **argv)
 		    errx (1, "cannot allocate memory for message");
 	    }
 	} else {
-	    appres.text = strdup("");
+	    appres.text = malloc(128);
+	    appres.text[0] = 0;
 	    if (appres.text == NULL)
 		errx (1, "cannot allocate memory for message");
 	    while (argv[i]) {
@@ -232,6 +233,7 @@ init_words (int argc, char **argv)
 				    strlen(appres.text) + n + 2);
 		if (tmp == NULL)
 		    errx (1, "cannot allocate memory for message");
+		appres.text = tmp;
 		strcat (appres.text, argv[i]);
 		strcat (appres.text, " ");
 		++i;
