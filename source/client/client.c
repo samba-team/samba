@@ -815,14 +815,14 @@ static void do_mget(file_info *finfo)
 	if (lowercase)
 		strlower(finfo->name);
 	
-	if (!dos_directory_exist(finfo->name,NULL) && 
-	    dos_mkdir(finfo->name,0777) != 0) {
+	if (!directory_exist(finfo->name,NULL) && 
+	    mkdir(finfo->name,0777) != 0) {
 		DEBUG(0,("failed to create directory %s\n",finfo->name));
 		pstrcpy(cur_dir,saved_curdir);
 		return;
 	}
 	
-	if (dos_chdir(finfo->name) != 0) {
+	if (chdir(finfo->name) != 0) {
 		DEBUG(0,("failed to chdir to directory %s\n",finfo->name));
 		pstrcpy(cur_dir,saved_curdir);
 		return;
@@ -1120,8 +1120,8 @@ static BOOL seek_list(FILE *f,char *name)
 {
 	pstring s;
 	while (!feof(f)) {
-		if (fscanf(f,"%s",s) != 1) return(False);
-		trim_string(s,"./",NULL);
+		if (!fgets(s,sizeof(s),f)) return(False);
+		trim_string(s,"./","\n");
 		if (strncmp(s,name,strlen(name)) != 0) {
 			pstrcpy(name,s);
 			return(True);
@@ -1162,10 +1162,10 @@ static void cmd_mput(void)
 			 "%s/ls.smb.%d",tmpdir(),(int)getpid());
 		if (recurse)
 			slprintf(cmd,sizeof(pstring)-1,
-				 "find . -name \"%s\" -print > %s",p,tmpname);
+				"find . -name \"%s\" -print > %s",p,tmpname);
 		else
 			slprintf(cmd,sizeof(pstring)-1,
-				 "/bin/ls %s > %s",p,tmpname);
+				"find . -maxdepth 1 -name \"%s\" -print > %s",p,tmpname);
 		system(cmd);
 
 		f = sys_fopen(tmpname,"r");
@@ -1174,8 +1174,8 @@ static void cmd_mput(void)
 		while (!feof(f)) {
 			pstring quest;
 
-			if (fscanf(f,"%s",lname) != 1) break;
-			trim_string(lname,"./",NULL);
+			if (!fgets(lname,sizeof(lname),f)) break;
+			trim_string(lname,"./","\n");
 			
 		again1:
 			
@@ -1193,6 +1193,7 @@ static void cmd_mput(void)
 	      
 				pstrcpy(rname,cur_dir);
 				pstrcat(rname,lname);
+				dos_format(rname);
 				if (!cli_chkpath(cli, rname) && !do_mkdir(rname)) {
 					pstrcat(lname,"/");
 					if (!seek_list(f,lname))
@@ -1424,7 +1425,7 @@ static void cmd_newer(void)
 	SMB_STRUCT_STAT sbuf;
 
 	ok = next_token(NULL,buf,NULL,sizeof(buf));
-	if (ok && (dos_stat(buf,&sbuf) == 0)) {
+	if (ok && (sys_stat(buf,&sbuf) == 0)) {
 		newer_than = sbuf.st_mtime;
 		DEBUG(1,("Getting files newer than %s",
 			 asctime(LocalTime(&newer_than))));
