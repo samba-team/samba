@@ -312,7 +312,7 @@ static void cgi_web_auth(void)
 		exit(0);
 	}
 
-	pwd = getpwnam(user);
+	pwd = getpwnam_alloc(user);
 	if (!pwd) {
 		printf("%sCannot find user %s<br>%s\n", head, user, tail);
 		exit(0);
@@ -325,6 +325,7 @@ static void cgi_web_auth(void)
 		       head, user, (int)geteuid(), (int)getuid(), tail);
 		exit(0);
 	}
+	passwd_free(&pwd);
 }
 
 /***************************************************************************
