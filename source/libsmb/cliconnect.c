@@ -675,7 +675,7 @@ static NTSTATUS cli_session_setup_ntlmssp(struct cli_state *cli, const char *use
 			   for checking the first reply from the server */
 			cli_calculate_sign_mac(cli);
 			
-			if (!cli_check_sign_mac(cli, True)) {
+			if (!cli_check_sign_mac(cli)) {
 				nt_status = NT_STATUS_ACCESS_DENIED;
 			}
 		}
