@@ -40,7 +40,7 @@ $(foo) hdb_asn1.h: asn1_files
 asn1_files: ../asn1/asn1_compile $(srcdir)/hdb.asn1
 	../asn1/asn1_compile $(srcdir)/hdb.asn1 hdb_asn1
 
-$(libhdb_a_OBJECTS): hdb_asn1.h hdb_err.h
+$(libhdb_la_OBJECTS): hdb_asn1.h hdb_err.h
 
 .x.c:
 	@cmp -s $< $@ 2> /dev/null || cp $< $@
