@@ -2802,8 +2802,6 @@ static BOOL set_user_info_23(SAM_USER_INFO_23 *id23, DOM_SID *sid)
 
 	acct_ctrl = pdb_get_acct_ctrl(pwd);
 
-	copy_id23_to_sam_passwd(pwd, id23);
- 
 	if (!decode_pw_buffer((char*)id23->pass, plaintext_buf, 256, &len)) {
 		pdb_free_sam(&pwd);
 		return False;
@@ -2813,6 +2811,8 @@ static BOOL set_user_info_23(SAM_USER_INFO_23 *id23, DOM_SID *sid)
 		pdb_free_sam(&pwd);
 		return False;
 	}
+ 
+	copy_id23_to_sam_passwd(pwd, id23);
  
 	/* if it's a trust account, don't update /etc/passwd */
 	if ( (!IS_SAM_UNIX_USER(pwd)) ||

@@ -5470,7 +5470,15 @@ void init_sam_user_info23W(SAM_USER_INFO_23 * usr, NTTIME * logon_time,	/* all z
 	usr->logon_divs = logon_divs;	/* should be 168 (hours/week) */
 	usr->ptr_logon_hrs = hrs ? 1 : 0;
 
+	if (nt_time_is_zero(pass_must_change_time)) {
+		usr->passmustchange=PASS_MUST_CHANGE_AT_NEXT_LOGON;
+	} else {
+		usr->passmustchange=0;
+	}
+
+
 	ZERO_STRUCT(usr->padding1);
+	ZERO_STRUCT(usr->padding2);
 
 	usr->unknown_5 = unknown_5;	/* 0x0001 0000 */
 
@@ -5558,7 +5566,14 @@ void init_sam_user_info23A(SAM_USER_INFO_23 * usr, NTTIME * logon_time,	/* all z
 	usr->logon_divs = logon_divs;	/* should be 168 (hours/week) */
 	usr->ptr_logon_hrs = hrs ? 1 : 0;
 
+	if (nt_time_is_zero(pass_must_change_time)) {
+		usr->passmustchange=PASS_MUST_CHANGE_AT_NEXT_LOGON;
+	} else {
+		usr->passmustchange=0;
+	}
+
 	ZERO_STRUCT(usr->padding1);
+	ZERO_STRUCT(usr->padding2);
 
 	usr->unknown_5 = unknown_5;	/* 0x0001 0000 */
 
@@ -5651,10 +5666,17 @@ static BOOL sam_io_user_info23(char *desc, SAM_USER_INFO_23 * usr,
 		return False;
 	if(!prs_uint32("ptr_logon_hrs ", ps, depth, &usr->ptr_logon_hrs))
 		return False;
-	if(!prs_uint8s(False, "padding1      ", ps, depth, usr->padding1, sizeof(usr->padding1)))
-		return False;
+
 	if(!prs_uint32("unknown_5     ", ps, depth, &usr->unknown_5))
 		return False;
+
+	if(!prs_uint8s(False, "padding1      ", ps, depth, usr->padding1, sizeof(usr->padding1)))
+		return False;
+	if(!prs_uint8("passmustchange ", ps, depth, &usr->passmustchange))
+		return False;
+	if(!prs_uint8("padding2       ", ps, depth, &usr->padding2))
+		return False;
+
 
 	if(!prs_uint8s(False, "password      ", ps, depth, usr->pass, sizeof(usr->pass)))
 		return False;
@@ -5905,7 +5927,15 @@ void init_sam_user_info21W(SAM_USER_INFO_21 * usr,
 	usr->ptr_logon_hrs = hrs ? 1 : 0;
 	usr->unknown_5 = unknown_5;	/* 0x0002 0000 */
 
+	if (nt_time_is_zero(pass_must_change_time)) {
+		usr->passmustchange=PASS_MUST_CHANGE_AT_NEXT_LOGON;
+	} else {
+		usr->passmustchange=0;
+	}
+
+
 	ZERO_STRUCT(usr->padding1);
+	ZERO_STRUCT(usr->padding2);
 
 	copy_unistr2(&usr->uni_user_name, user_name);
 	copy_unistr2(&usr->uni_full_name, full_name);
@@ -6037,7 +6067,15 @@ NTSTATUS init_sam_user_info21A(SAM_USER_INFO_21 *usr, SAM_ACCOUNT *pw, DOM_SID *
 	usr->ptr_logon_hrs = pdb_get_hours(pw) ? 1 : 0;
 	usr->unknown_5 = pdb_get_unknown5(pw); /* 0x0002 0000 */
 
+	if (pdb_get_pass_must_change_time(pw) == 0) {
+		usr->passmustchange=PASS_MUST_CHANGE_AT_NEXT_LOGON;
+	} else {
+		usr->passmustchange=0;
+	}
+
+
 	ZERO_STRUCT(usr->padding1);
+	ZERO_STRUCT(usr->padding2);
 
 	init_unistr2(&usr->uni_user_name, user_name, len_user_name);
 	init_unistr2(&usr->uni_full_name, full_name, len_full_name);
@@ -6132,10 +6170,15 @@ static BOOL sam_io_user_info21(char *desc, SAM_USER_INFO_21 * usr,
 		return False;
 	if(!prs_uint32("ptr_logon_hrs ", ps, depth, &usr->ptr_logon_hrs))
 		return False;
+
 	if(!prs_uint32("unknown_5     ", ps, depth, &usr->unknown_5))
 		return False;
 
 	if(!prs_uint8s(False, "padding1      ", ps, depth, usr->padding1, sizeof(usr->padding1)))
+		return False;
+	if(!prs_uint8("passmustchange ", ps, depth, &usr->passmustchange))
+		return False;
+	if(!prs_uint8("padding2       ", ps, depth, &usr->padding2))
 		return False;
 
 	/* here begins pointed-to data */
