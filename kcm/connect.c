@@ -46,7 +46,11 @@ struct descr {
     struct sockaddr_storage __ss;
     struct sockaddr *sa;
     socklen_t sock_len;
-    struct ucred peercred;
+    struct {
+	uid_t uid;
+	gid_t gid;
+	pid_t pid;
+    } peercred;
 };
 
 static void
@@ -104,6 +108,13 @@ init_socket(struct descr *d)
 	setsockopt(d->s, SOL_SOCKET, SO_REUSEADDR, (void *)&one, sizeof(one));
     }
 #endif
+#ifdef LOCAL_CREDS
+    {
+	int one = 1;
+	setsockopt(d->s, 0, LOCAL_CREDS, (void *)&one, sizeof(one));
+    }
+#endif
+
     d->type = SOCK_STREAM;
 
     unlink(d->path);
@@ -325,7 +336,6 @@ handle_stream(struct descr *d, int index, int min_free)
     unsigned char buf[1024];
     int n;
     int ret = 0;
-    socklen_t peercredlen;
 
     if (d[index].timeout == 0) {
 	add_new_stream (d, index, min_free);
@@ -336,11 +346,24 @@ handle_stream(struct descr *d, int index, int min_free)
     d[index].peercred.uid = -1;
     d[index].peercred.gid = -1;
 
-    if (getsockopt(d[index].s, SOL_SOCKET, SO_PEERCRED, (void *)&d[index].peercred,
-		   &peercredlen) != 0) {
-	krb5_warn(kcm_context, errno, "failed to determine peer identity");
-	return;
+#ifdef SO_PEERCRED
+    {
+	socklen_t pclen;
+	struct ucred pc;
+
+	if (getsockopt(d[index].s, SOL_SOCKET, SO_PEERCRED, (void *)&pc,
+		       &pclen) != 0) {
+	    krb5_warn(kcm_context, errno, "failed to determine peer identity");
+	    return;
+	}
+	d[index].peercred.uid = pc.uid;
+	d[index].peercred.gid = pc.gid;
+	d[index].peercred.pid = pc.pid;
     }
+#else
+    krb5_warnx(kcm_context, "code unimplemented to get peer identity");
+    return;
+#endif
 
     n = recvfrom(d[index].s, buf, sizeof(buf), 0, NULL, NULL);
     if (n < 0) {
