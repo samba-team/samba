@@ -16,9 +16,8 @@ cp -pr man ../
 rm -rf man
 cd $NOWDIR
 tar cvf install.tar usr var
-cd samba-2.0.0/source/bin
-rm -f *
-cd ..
+cd samba-2.0.0/source
+rm -f ../source/bin/*
 make clean
 cd ../..
 tar cvf samba-2.0.0.tar samba-2.0.0
