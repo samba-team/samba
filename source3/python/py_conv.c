@@ -26,7 +26,7 @@
 
 static void fstr_pull(fstring str, UNISTR *uni)
 {
-	rpcstr_pull(str, uni->buffer, sizeof(fstring), 0, STR_TERMINATE);
+	rpcstr_pull(str, uni->buffer, sizeof(fstring), -1, STR_TERMINATE);
 }
 
 /* Convert a structure to a Python dict */
