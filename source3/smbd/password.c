@@ -585,6 +585,86 @@ void dfs_unlogin(void)
 
 #endif
 
+#ifdef KRB5_AUTH
+/*******************************************************************
+check on Kerberos authentication
+********************************************************************/
+static BOOL krb5_auth(char *this_user,char *password)
+{
+	krb5_data tgtname = {
+		0,
+		KRB5_TGS_NAME_SIZE,
+	 	KRB5_TGS_NAME
+ 	};
+	krb5_context kcontext;
+	krb5_principal kprinc;
+	krb5_principal server;
+	krb5_creds kcreds;
+	int options = 0;
+	krb5_address **addrs = (krb5_address **)0;
+	krb5_preauthtype *preauth = NULL;
+	krb5_keytab keytab = NULL;
+	krb5_timestamp now;
+	krb5_ccache ccache = NULL;
+	int retval;
+	char *name;
+
+	if ( retval=krb5_init_context(&kcontext))
+	{
+		return(False);
+	}
+
+	if ( retval = krb5_timeofday(kcontext, &now) )
+	{
+		return(False);
+	}
+
+	if ( retval = krb5_cc_default(kcontext, &ccache) )
+	{
+		return(False);
+	}
+	
+	if ( retval = krb5_parse_name(kcontext, this_user, &kprinc) )
+	{
+		return(False);
+	}
+
+	memset((char *)&kcreds, 0, sizeof(kcreds));
+
+	kcreds.client = kprinc;
+	
+	if ((retval = krb5_build_principal_ext(kcontext, &server,
+		krb5_princ_realm(kcontext, kprinc)->length,
+		krb5_princ_realm(kcontext, kprinc)->data,
+		tgtname.length,
+		tgtname.data,
+		krb5_princ_realm(kcontext, kprinc)->length,
+		krb5_princ_realm(kcontext, kprinc)->data,
+		0)))
+	{
+ 		return(False);
+	}
+
+	kcreds.server = server;
+
+	retval = krb5_get_in_tkt_with_password(kcontext,
+		options,
+		addrs,
+		NULL,
+		preauth,
+		password,
+		0,
+		&kcreds,
+		0);
+
+	if ( retval )
+	{
+		return(False);
+	}
+
+	return(True);
+}
+#endif /* KRB5_AUTH */
 
 #ifdef LINUX_BIGCRYPT
 /****************************************************************************
@@ -686,6 +766,10 @@ Hence we make a direct return to avoid a second chance!!!
 #ifdef DFS_AUTH
   if (dfs_auth(this_user,password)) return(True);
 #endif 
+
+#ifdef KRB5_AUTH
+  if (krb5_auth(this_user,password)) return(True);
+#endif
 
 #ifdef PWDAUTH
   if (pwdauth(this_user,password) == 0)
@@ -1318,7 +1402,8 @@ static BOOL check_user_equiv(char *user, char *remote, char *equiv_file)
 	}
 	file_host = strtok(bp, " \t\n");
 	file_user = strtok(NULL, " \t\n");
-	DEBUG(7, ("check_user_equiv %s %s\n", file_host, file_user));
+	DEBUG(7, ("check_user_equiv %s %s\n", file_host ? file_host : "(null)", 
+                 file_user ? file_user : "(null)" ));
 	if (file_host && *file_host) 
 	{
 	  BOOL host_ok = False;

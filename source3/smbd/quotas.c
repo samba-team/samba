@@ -437,7 +437,7 @@ BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
   /* Use softlimit to determine disk space, except when it has been exceeded */
   if ((D.dqb_curblocks>D.dqb_bsoftlimit)
 #if !defined(__FreeBSD__)
-||(D.dqb_curfiles>D.dqb_fsoftlimit)
+||((D.dqb_curfiles>D.dqb_fsoftlimit) && (D.dqb_fsoftlimit != 0))
 #endif
     ) {
       *dfree = 0;
