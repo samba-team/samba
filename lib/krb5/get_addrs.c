@@ -89,7 +89,8 @@ gethostname_fallback (krb5_addresses *res)
 enum {
     LOOP            = 1,	/* do include loopback interfaces */
     LOOP_IF_NONE    = 2,	/* include loopback if no other if's */
-    EXTRA_ADDRESSES = 4		/* include extra addresses */
+    EXTRA_ADDRESSES = 4,	/* include extra addresses */
+    SCAN_INTERFACES = 8		/* scan interfaces for addresses */
 };
 
 /*
@@ -240,26 +241,30 @@ get_addrs_int (krb5_context context, krb5_addresses *res, int flags)
 {
     krb5_error_code ret = -1;
 
+    if (flags & SCAN_INTERFACES) {
 #if defined(AF_INET6) && defined(SIOCGIF6CONF) && defined(SIOCGIF6FLAGS)
-    if (ret)
-	ret = find_all_addresses (context, res, flags,
-				  AF_INET6, SIOCGIF6CONF, SIOCGIF6FLAGS,
-				  sizeof(struct in6_ifreq));
+	if (ret)
+	    ret = find_all_addresses (context, res, flags,
+				      AF_INET6, SIOCGIF6CONF, SIOCGIF6FLAGS,
+				      sizeof(struct in6_ifreq));
 #endif
 #if defined(HAVE_IPV6) && defined(SIOCGIFCONF)
-    if (ret)
-	ret = find_all_addresses (context, res, flags,
-				  AF_INET6, SIOCGIFCONF, SIOCGIFFLAGS,
-				  sizeof(struct ifreq));
+	if (ret)
+	    ret = find_all_addresses (context, res, flags,
+				      AF_INET6, SIOCGIFCONF, SIOCGIFFLAGS,
+				      sizeof(struct ifreq));
 #endif
 #if defined(AF_INET) && defined(SIOCGIFCONF) && defined(SIOCGIFFLAGS)
-    if (ret)
-	ret = find_all_addresses (context, res, flags,
-				  AF_INET, SIOCGIFCONF, SIOCGIFFLAGS,
-				  sizeof(struct ifreq));
+	if (ret)
+	    ret = find_all_addresses (context, res, flags,
+				      AF_INET, SIOCGIFCONF, SIOCGIFFLAGS,
+				      sizeof(struct ifreq));
+	if(ret || res->len == 0)
+	    ret = gethostname_fallback (res);
 #endif
-    if(ret || res->len == 0)
-	ret = gethostname_fallback (res);
+    } else
+	ret == 0;
+
     if(ret == 0 && (flags & EXTRA_ADDRESSES)) {
 	/* append user specified addresses */
 	krb5_addresses a;
@@ -282,14 +287,18 @@ get_addrs_int (krb5_context context, krb5_addresses *res, int flags)
  * Try to get all addresses, but return the one corresponding to
  * `hostname' if we fail.
  *
- * Don't include any loopback addresses.
- *
+ * Only include loopback address if there are no other.
  */
 
 krb5_error_code
 krb5_get_all_client_addrs (krb5_context context, krb5_addresses *res)
 {
-    return get_addrs_int (context, res, LOOP_IF_NONE | EXTRA_ADDRESSES);
+    int flags = LOOP_IF_NONE | EXTRA_ADDRESSES;
+
+    if (context->scan_interfaces)
+	flags |= SCAN_INTERFACES;
+
+    return get_addrs_int (context, res, flags);
 }
 
 /*
@@ -300,5 +309,5 @@ krb5_get_all_client_addrs (krb5_context context, krb5_addresses *res)
 krb5_error_code
 krb5_get_all_server_addrs (krb5_context context, krb5_addresses *res)
 {
-    return get_addrs_int (context, res, LOOP);
+    return get_addrs_int (context, res, LOOP | SCAN_INTERFACES);
 }
