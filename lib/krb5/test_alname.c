@@ -37,7 +37,7 @@
 RCSID("$Id$");
 
 static void
-test_alname(krb5_context context, krb5_realm realm,
+test_alname(krb5_context context, krb5_const_realm realm,
 	    const char *user, const char *inst, 
 	    const char *localuser, int ok)
 {

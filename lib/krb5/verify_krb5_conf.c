@@ -219,7 +219,7 @@ mit_entry(krb5_context context, const char *path, char *data)
 }
 
 struct s2i {
-    char *s;
+    const char *s;
     int val;
 };
 
