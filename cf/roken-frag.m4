@@ -169,7 +169,6 @@ AC_CHECK_FUNCS([				\
 	strunvis				\
 	strvis					\
 	strvisx					\
-	strvisx					\
 	svis					\
 	sysconf					\
 	sysctl					\
