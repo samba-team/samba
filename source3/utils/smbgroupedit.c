@@ -177,8 +177,8 @@ static int changegroup(char *sid_string, char *group, enum SID_NAME_USE sid_type
 	if (privilege!=NULL)
 		convert_priv_from_text(&map.priv_set, privilege);
 
-	if (!pdb_add_group_mapping_entry(&map)) {
-		printf("Count not update group database\n");
+	if (!pdb_update_group_mapping_entry(&map)) {
+		printf("Could not update group database\n");
 		free_privilege(&map.priv_set);
 		return -1;
 	}
