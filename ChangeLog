@@ -1,5 +1,9 @@
 2000-09-01  Johan Danielsson  <joda@pdc.kth.se>
 
+	* kdc/kstash.8: update manual page
+
+	* kdc/kstash.c: fix typo, and remove unused option
+
 	* lib/krb5/kerberos.7: short kerberos intro page
 
 2000-08-23  Assar Westerlund  <assar@sics.se>
