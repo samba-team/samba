@@ -970,10 +970,10 @@ struct cmd_set reg_commands[] = {
 
 	{ "REG"  },
 
-	{ "shutdown",		cmd_reg_shutdown,		PI_WINREG, "Remote Shutdown",
+	{ "shutdown", RPC_RTYPE_NTSTATUS, cmd_reg_shutdown, NULL, PI_WINREG, "Remote Shutdown",
 				"syntax: shutdown [-m message] [-t timeout] [-r] [-h] [-f] (-r == reboot, -h == halt, -f == force)" },
 				
-	{ "abortshutdown",	cmd_reg_abort_shutdown,		PI_WINREG, "Abort Shutdown",
+	{ "abortshutdown", RPC_RTYPE_NTSTATUS, cmd_reg_abort_shutdown, NULL, PI_WINREG, "Abort Shutdown",
 				"syntax: abortshutdown" },
 /*
 	{ "regenum",		cmd_reg_enum,			"Registry Enumeration",
