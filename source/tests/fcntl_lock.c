@@ -37,7 +37,8 @@ static int sys_waitpid(pid_t pid,int *status,int options)
 int main(int argc, char *argv[])
 {
 	struct flock lock;
-	int fd, pid, ret, status=1;
+	int fd, ret, status=1;
+	pid_t pid;
 
 	if (!(pid=fork())) {
 		sleep(2);
