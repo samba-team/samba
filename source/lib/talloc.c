@@ -287,9 +287,10 @@ int talloc_free(void *ptr)
 
 
 /*
-  A talloc version of realloc 
+  A talloc version of realloc. The context argument is only used if
+  ptr is NULL
 */
-void *_talloc_realloc(void *ptr, size_t size, const char *name)
+void *_talloc_realloc(void *context, void *ptr, size_t size, const char *name)
 {
 	struct talloc_chunk *tc;
 	void *new_ptr;
@@ -302,7 +303,7 @@ void *_talloc_realloc(void *ptr, size_t size, const char *name)
 
 	/* realloc(NULL) is equavalent to malloc() */
 	if (ptr == NULL) {
-		return talloc_named_const(NULL, size, name);
+		return talloc_named_const(context, size, name);
 	}
 
 	tc = talloc_chunk_from_ptr(ptr);
@@ -550,7 +551,7 @@ static char *talloc_vasprintf_append(char *s,
 				     const char *fmt, va_list ap) PRINTF_ATTRIBUTE(2,0);
 
 static char *talloc_vasprintf_append(char *s,
-			      const char *fmt, va_list ap)
+				     const char *fmt, va_list ap)
 {	
 	int len, s_len;
 	va_list ap2;
@@ -564,7 +565,7 @@ static char *talloc_vasprintf_append(char *s,
 	}
 	len = vsnprintf(NULL, 0, fmt, ap2);
 
-	s = talloc_realloc(s, s_len + len+1);
+	s = talloc_realloc(NULL, s, s_len + len+1);
 	if (!s) return NULL;
 
 	VA_COPY(ap2, ap);
@@ -607,13 +608,13 @@ void *talloc_array(void *ctx, size_t el_size, uint_t count, const char *name)
 /*
   realloc an array, checking for integer overflow in the array size
 */
-void *talloc_realloc_array(void *ptr, size_t el_size, uint_t count, const char *name)
+void *talloc_realloc_array(void *ctx, void *ptr, size_t el_size, uint_t count, const char *name)
 {
 	if (count == 0 ||
 	    count >= MAX_TALLOC_SIZE/el_size) {
 		return NULL;
 	}
-	ptr = talloc_realloc(ptr, el_size * count);
+	ptr = talloc_realloc(ctx, ptr, el_size * count);
 	if (ptr) {
 		talloc_set_name_const(ptr, name);
 	}
@@ -632,5 +633,5 @@ void *talloc_ldb_alloc(void *context, void *ptr, size_t size)
 		talloc_free(ptr);
 		return NULL;
 	}
-	return talloc_realloc(ptr, size);
+	return talloc_realloc(context, ptr, size);
 }

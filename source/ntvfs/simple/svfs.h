@@ -17,7 +17,7 @@ struct svfs_private {
 struct svfs_dir {
 	uint_t count;
 	char *unix_dir;
-	struct {
+	struct svfs_dirfile {
 		char *name;
 		struct stat st;
 	} *files;

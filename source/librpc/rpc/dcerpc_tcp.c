@@ -141,7 +141,7 @@ static void tcp_process_recv(struct dcerpc_pipe *p)
 		}
 		frag_length = dcerpc_get_frag_length(&tcp->recv.data);
 
-		tcp->recv.data.data = talloc_realloc(tcp->recv.data.data,
+		tcp->recv.data.data = talloc_realloc(tcp, tcp->recv.data.data,
 						     frag_length);
 		if (tcp->recv.data.data == NULL) {
 			tcp_sock_dead(p, NT_STATUS_NO_MEMORY);

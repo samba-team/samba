@@ -153,11 +153,8 @@ NTSTATUS ntvfs_init_connection(struct smbsrv_request *req)
 */
 void ntvfs_set_private(struct smbsrv_tcon *tcon, int depth, void *value)
 {
-	if (!tcon->ntvfs_private_list) {
-		tcon->ntvfs_private_list = talloc_array_p(tcon, void *, depth+1);
-	} else {
-		tcon->ntvfs_private_list = talloc_realloc_p(tcon->ntvfs_private_list, 
-							    void *, depth+1);
-	}
+	tcon->ntvfs_private_list = talloc_realloc_p(tcon, 
+						    tcon->ntvfs_private_list, 
+						    void *, depth+1);
 	tcon->ntvfs_private_list[depth] = value;
 }

@@ -61,7 +61,7 @@ struct svfs_dir *svfs_list_unix(TALLOC_CTX *mem_ctx, struct smbsrv_request *req,
 	uint_t allocated = 0;
 	char *low_mask;
 
-	dir = talloc(mem_ctx, sizeof(struct svfs_dir));
+	dir = talloc_p(mem_ctx, struct svfs_dir);
 	if (!dir) { return NULL; }
 
 	dir->count = 0;
@@ -105,7 +105,7 @@ struct svfs_dir *svfs_list_unix(TALLOC_CTX *mem_ctx, struct smbsrv_request *req,
 		
 		if (dir->count >= allocated) {
 			allocated = (allocated + 100) * 1.2;
-			dir->files = talloc_realloc(dir->files, allocated * sizeof(dir->files[0]));
+			dir->files = talloc_realloc_p(dir, dir->files, struct svfs_dirfile, allocated);
 			if (!dir->files) { 
 				closedir(odir);
 				return NULL;
