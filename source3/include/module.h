@@ -24,7 +24,6 @@
 /* Module support */
 typedef NTSTATUS (init_module_function) (void);
 
-
 #define SMB_IDLE_EVENT_DEFAULT_INTERVAL	180
 #define SMB_IDLE_EVENT_MIN_INTERVAL	30
 
