@@ -915,6 +915,7 @@ tgs_rep2(KDC_REQ_BODY *b,
     Key *ekey;
     krb5_principal cp = NULL;
 
+    memset(&ap_req, 0, sizeof(ap_req));
     ret = krb5_decode_ap_req(context, &pa_data->padata_value, &ap_req);
     if(ret){
 	kdc_log(0, "Failed to decode AP-REQ: %s", 
@@ -1039,7 +1040,6 @@ tgs_rep2(KDC_REQ_BODY *b,
 	ret = tgs_make_reply(b, tgt, server, client, reply);
 	
     out:
-	free_AP_REQ(&ap_req);
 	free(spn);
 	free(cpn);
 	    
@@ -1068,6 +1068,7 @@ out2:
 	krb5_free_ticket(context, ticket);
 	free(ticket);
     }
+    free_AP_REQ(&ap_req);
 
     if(krbtgt){
 	hdb_free_entry(context, krbtgt);
