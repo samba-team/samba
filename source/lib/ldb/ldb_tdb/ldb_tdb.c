@@ -524,7 +524,8 @@ struct ldb_context *ltdb_connect(const char *url,
 		open_flags = O_CREAT | O_RDWR;
 	}
 
-	tdb = tdb_open(path, 0, tdb_flags, open_flags, 0666);
+	/* note that we use quite a large default hash size */
+	tdb = tdb_open(path, 10000, tdb_flags, open_flags, 0666);
 	if (!tdb) {
 		return NULL;
 	}
