@@ -343,7 +343,7 @@ static char *tdb_alloc_read(TDB_CONTEXT *tdb, tdb_off offset, tdb_len len)
 		return TDB_ERRCODE(TDB_ERR_OOM, buf);
 	}
 	if (tdb_read(tdb, offset, buf, len, 0) == -1) {
-		free(buf);
+		SAFE_FREE(buf);
 		return NULL;
 	}
 	return buf;
@@ -424,8 +424,8 @@ static tdb_off tdb_dump_record(TDB_CONTEXT *tdb, tdb_off offset)
 	}
 
 	if (tailer != rec.rec_len + sizeof(rec)) {
-		printf("ERROR: tailer does not match record! tailer=%u totalsize=%u\n", 
-		       (unsigned)tailer, (unsigned)(rec.rec_len + sizeof(rec)));
+		printf("ERROR: tailer does not match record! tailer=%u totalsize=%u\n",
+				(unsigned)tailer, (unsigned)(rec.rec_len + sizeof(rec)));
 	}
 	return rec.next;
 }
@@ -465,12 +465,11 @@ void tdb_dump_all(TDB_CONTEXT *tdb)
 void tdb_printfreelist(TDB_CONTEXT *tdb)
 {
 	long total_free = 0;
-	tdb_off offset, rec_ptr, last_ptr;
+	tdb_off offset, rec_ptr;
 	struct list_struct rec;
 
 	tdb_lock(tdb, -1, F_WRLCK);
 
-	last_ptr = 0;
 	offset = FREELIST_TOP;
 
 	/* read in the freelist top */
@@ -856,7 +855,7 @@ static int tdb_new_database(TDB_CONTEXT *tdb, int hash_size)
 		ret = tdb_create_rwlocks(tdb->fd, hash_size);
 
   fail:
-	free(newdb);
+	SAFE_FREE(newdb);
 	return ret;
 }
 
@@ -885,10 +884,10 @@ static tdb_off tdb_find(TDB_CONTEXT *tdb, TDB_DATA key, u32 hash,
 				return 0;
 
 			if (memcmp(key.dptr, k, key.dsize) == 0) {
-				free(k);
+				SAFE_FREE(k);
 				return rec_ptr;
 			}
-			free(k);
+			SAFE_FREE(k);
 		}
 		rec_ptr = r->next;
 	}
@@ -1196,10 +1195,10 @@ int tdb_traverse(TDB_CONTEXT *tdb, tdb_traverse_func fn, void *state)
 			/* They want us to terminate traversal */
 			unlock_record(tdb, tl.off);
 			tdb->travlocks.next = tl.next;
-			free(key.dptr);
+			SAFE_FREE(key.dptr);
 			return count;
 		}
-		free(key.dptr);
+		SAFE_FREE(key.dptr);
 	}
 	tdb->travlocks.next = tl.next;
 	if (ret < 0)
@@ -1249,8 +1248,7 @@ TDB_DATA tdb_nextkey(TDB_CONTEXT *tdb, TDB_DATA oldkey)
 			tdb->travlocks.off = 0;
 		}
 
-		if (k)
-			free(k);
+		SAFE_FREE(k);
 	}
 
 	if (!tdb->travlocks.off) {
@@ -1368,8 +1366,7 @@ int tdb_store(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, int flag)
 		ret = -1;
 	}
  out:
-	if (p)
-		free(p); 
+	SAFE_FREE(p); 
 	tdb_unlock(tdb, BUCKET(hash), F_WRLCK);
 	return ret;
 }
@@ -1553,16 +1550,14 @@ TDB_CONTEXT *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 	
 	if (tdb->map_ptr) {
 		if (tdb->flags & TDB_INTERNAL)
-			free(tdb->map_ptr);
+			SAFE_FREE(tdb->map_ptr);
 		else
 			tdb_munmap(tdb);
 	}
-	if (tdb->name)
-		free(tdb->name);
+	SAFE_FREE(tdb->name);
 	if (tdb->fd != -1)
 		close(tdb->fd);
-	if (tdb->locked)
-		free(tdb->locked);
+	SAFE_FREE(tdb->locked);
 	errno = save_errno;
 	return NULL;
 	}
@@ -1576,18 +1571,15 @@ int tdb_close(TDB_CONTEXT *tdb)
 
 	if (tdb->map_ptr) {
 		if (tdb->flags & TDB_INTERNAL)
-			free(tdb->map_ptr);
+			SAFE_FREE(tdb->map_ptr);
 		else
 			tdb_munmap(tdb);
 	}
-	if (tdb->name)
-		free(tdb->name);
+	SAFE_FREE(tdb->name);
 	if (tdb->fd != -1)
 		ret = close(tdb->fd);
-	if (tdb->locked)
-		free(tdb->locked);
-	if (tdb->lockedkeys)
-		free(tdb->lockedkeys);
+	SAFE_FREE(tdb->locked);
+	SAFE_FREE(tdb->lockedkeys);
 
 	/* Remove from contexts list */
 	for (i = &tdbs; *i; i = &(*i)->next) {
@@ -1598,7 +1590,7 @@ int tdb_close(TDB_CONTEXT *tdb)
 	}
 
 	memset(tdb, 0, sizeof(*tdb));
-	free(tdb);
+	SAFE_FREE(tdb);
 
 	return ret;
 }
@@ -1663,8 +1655,7 @@ int tdb_lockkeys(TDB_CONTEXT *tdb, u32 number, TDB_DATA keys[])
 	if (i < number) {
 		for ( j = 0; j < i; j++)
 			tdb_unlock(tdb, j, F_WRLCK);
-		free(tdb->lockedkeys);
-		tdb->lockedkeys = NULL;
+		SAFE_FREE(tdb->lockedkeys);
 		return TDB_ERRCODE(TDB_ERR_NOLOCK, -1);
 	}
 	return 0;
@@ -1676,8 +1667,7 @@ void tdb_unlockkeys(TDB_CONTEXT *tdb)
 	u32 i;
 	for (i = 0; i < tdb->lockedkeys[0]; i++)
 		tdb_unlock(tdb, tdb->lockedkeys[i+1], F_WRLCK);
-	free(tdb->lockedkeys);
-	tdb->lockedkeys = NULL;
+	SAFE_FREE(tdb->lockedkeys);
 }
 
 /* lock/unlock one hash chain. This is meant to be used to reduce
