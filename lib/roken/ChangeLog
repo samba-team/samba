@@ -1,3 +1,7 @@
+2001-08-24  Assar Westerlund  <assar@sics.se>
+
+	* Makefile.am: make it play better with recent automake
+
 2001-08-21  Assar Westerlund  <assar@sics.se>
 
 	* glob.c: provide a fallback for ARG_MAX.  from <tol@stacken.kth.se>
