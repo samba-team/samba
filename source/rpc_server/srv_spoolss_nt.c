@@ -554,12 +554,22 @@ static BOOL alloc_buffer_size(NEW_BUFFER *buffer, uint32 buffer_size)
  given by (notify_type, notify_field).
  **************************************************************************/
 
+static BOOL is_monitoring_event_flags(uint32 flags, uint16 notify_type,
+				      uint16 notify_field)
+{
+	return True;
+}
+
 static BOOL is_monitoring_event(Printer_entry *p, uint16 notify_type,
 				uint16 notify_field)
 {
 	SPOOL_NOTIFY_OPTION *option = p->notify.option;
 	uint32 i, j;
 	
+	if (p->notify.flags)
+		return is_monitoring_event_flags(
+			p->notify.flags, notify_type, notify_field);
+
 	for (i = 0; i < option->count; i++) {
 		
 		/* Check match for notify_type */
@@ -768,9 +778,30 @@ static void process_notify2_message(struct spoolss_notify_msg *msg,
 			goto done;
 		}
 
-		cli_spoolss_rrpcn(
-			&cli, mem_ctx, &p->notify.client_hnd, 
-			data_len, data, p->notify.change, 0);
+		if (!p->notify.flags)
+			cli_spoolss_rrpcn(
+				&cli, mem_ctx, &p->notify.client_hnd, 
+				data_len, data, p->notify.change, 0);
+		else {
+			NT_PRINTER_INFO_LEVEL *printer = NULL;
+
+			get_a_printer(&printer, 2, msg->printer);
+
+			if (!printer) {
+				DEBUG(5, ("unable to load info2 for %s\n",
+					  msg->printer));
+				goto done;
+			}
+
+			/* XXX: This needs to be updated for 
+                           PRINTER_CHANGE_SET_PRINTER_DRIVER. */ 
+
+			cli_spoolss_routerreplyprinter(
+				&cli, mem_ctx, &p->notify.client_hnd,
+				0, printer->info_2->changeid);
+
+			free_a_printer(&printer, 2);
+		}
 	}
 done:
 	return;
@@ -3310,8 +3341,10 @@ static DEVICEMODE *construct_dev_mode(int snum)
 	if (printer->info_2->devmode)
 		ntdevmode = dup_nt_devicemode(printer->info_2->devmode);
 
-	if (ntdevmode == NULL)
+	if (ntdevmode == NULL) {
+		DEBUG(5, ("BONG! There was no device mode!\n"));
 		goto fail;
+	}
 
 	DEBUGADD(8,("loading DEVICEMODE\n"));
 
