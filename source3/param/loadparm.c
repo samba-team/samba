@@ -1172,61 +1172,66 @@ static struct parm_struct parm_table[] = {
  Initialise the sDefault parameter structure for the printer values.
 ***************************************************************************/
 
-static void init_printer_values(void)
+static void init_printer_values(service *pService)
 {
+	if ( pService == NULL ) {
+		DEBUG(0,("init_printer_values: NULL pointer\n"));
+		return;
+	}
+		
 	/* choose defaults depending on the type of printing */
-	switch (sDefault.iPrinting) {
+	switch (pService->iPrinting) {
 		case PRINT_BSD:
 		case PRINT_AIX:
 		case PRINT_LPRNT:
 		case PRINT_LPROS2:
-			string_set(&sDefault.szLpqcommand, "lpq -P'%p'");
-			string_set(&sDefault.szLprmcommand, "lprm -P'%p' %j");
-			string_set(&sDefault.szPrintcommand,
+			string_set(&pService->szLpqcommand, "lpq -P'%p'");
+			string_set(&pService->szLprmcommand, "lprm -P'%p' %j");
+			string_set(&pService->szPrintcommand,
 				   "lpr -r -P'%p' %s");
 			break;
 
 		case PRINT_LPRNG:
 		case PRINT_PLP:
-			string_set(&sDefault.szLpqcommand, "lpq -P'%p'");
-			string_set(&sDefault.szLprmcommand, "lprm -P'%p' %j");
-			string_set(&sDefault.szPrintcommand,
+			string_set(&pService->szLpqcommand, "lpq -P'%p'");
+			string_set(&pService->szLprmcommand, "lprm -P'%p' %j");
+			string_set(&pService->szPrintcommand,
 				   "lpr -r -P'%p' %s");
-			string_set(&sDefault.szQueuepausecommand,
+			string_set(&pService->szQueuepausecommand,
 				   "lpc stop '%p'");
-			string_set(&sDefault.szQueueresumecommand,
+			string_set(&pService->szQueueresumecommand,
 				   "lpc start '%p'");
-			string_set(&sDefault.szLppausecommand,
+			string_set(&pService->szLppausecommand,
 				   "lpc hold '%p' %j");
-			string_set(&sDefault.szLpresumecommand,
+			string_set(&pService->szLpresumecommand,
 				   "lpc release '%p' %j");
 			break;
 
 		case PRINT_CUPS:
 #ifdef HAVE_CUPS
-			string_set(&sDefault.szLpqcommand, "");
-			string_set(&sDefault.szLprmcommand, "");
-			string_set(&sDefault.szPrintcommand, "");
-			string_set(&sDefault.szLppausecommand, "");
-			string_set(&sDefault.szLpresumecommand, "");
-			string_set(&sDefault.szQueuepausecommand, "");
-			string_set(&sDefault.szQueueresumecommand, "");
+			string_set(&pService->szLpqcommand, "");
+			string_set(&pService->szLprmcommand, "");
+			string_set(&pService->szPrintcommand, "");
+			string_set(&pService->szLppausecommand, "");
+			string_set(&pService->szLpresumecommand, "");
+			string_set(&pService->szQueuepausecommand, "");
+			string_set(&pService->szQueueresumecommand, "");
 
 	                string_set(&Globals.szPrintcapname, "cups");
 #else
-			string_set(&sDefault.szLpqcommand,
+			string_set(&pService->szLpqcommand,
 			           "/usr/bin/lpstat -o '%p'");
-			string_set(&sDefault.szLprmcommand,
+			string_set(&pService->szLprmcommand,
 			           "/usr/bin/cancel '%p-%j'");
-			string_set(&sDefault.szPrintcommand,
+			string_set(&pService->szPrintcommand,
 			           "/usr/bin/lp -d '%p' %s; rm %s");
-			string_set(&sDefault.szLppausecommand,
+			string_set(&pService->szLppausecommand,
 				   "lp -i '%p-%j' -H hold");
-			string_set(&sDefault.szLpresumecommand,
+			string_set(&pService->szLpresumecommand,
 				   "lp -i '%p-%j' -H resume");
-			string_set(&sDefault.szQueuepausecommand,
+			string_set(&pService->szQueuepausecommand,
 			           "/usr/bin/disable '%p'");
-			string_set(&sDefault.szQueueresumecommand,
+			string_set(&pService->szQueueresumecommand,
 			           "/usr/bin/enable '%p'");
 			string_set(&Globals.szPrintcapname, "lpstat");
 #endif /* HAVE_CUPS */
@@ -1234,38 +1239,38 @@ static void init_printer_values(void)
 
 		case PRINT_SYSV:
 		case PRINT_HPUX:
-			string_set(&sDefault.szLpqcommand, "lpstat -o%p");
-			string_set(&sDefault.szLprmcommand, "cancel %p-%j");
-			string_set(&sDefault.szPrintcommand,
+			string_set(&pService->szLpqcommand, "lpstat -o%p");
+			string_set(&pService->szLprmcommand, "cancel %p-%j");
+			string_set(&pService->szPrintcommand,
 				   "lp -c -d%p %s; rm %s");
-			string_set(&sDefault.szQueuepausecommand,
+			string_set(&pService->szQueuepausecommand,
 				   "disable %p");
-			string_set(&sDefault.szQueueresumecommand,
+			string_set(&pService->szQueueresumecommand,
 				   "enable %p");
 #ifndef HPUX
-			string_set(&sDefault.szLppausecommand,
+			string_set(&pService->szLppausecommand,
 				   "lp -i %p-%j -H hold");
-			string_set(&sDefault.szLpresumecommand,
+			string_set(&pService->szLpresumecommand,
 				   "lp -i %p-%j -H resume");
 #endif /* HPUX */
 			break;
 
 		case PRINT_QNX:
-			string_set(&sDefault.szLpqcommand, "lpq -P%p");
-			string_set(&sDefault.szLprmcommand, "lprm -P%p %j");
-			string_set(&sDefault.szPrintcommand, "lp -r -P%p %s");
+			string_set(&pService->szLpqcommand, "lpq -P%p");
+			string_set(&pService->szLprmcommand, "lprm -P%p %j");
+			string_set(&pService->szPrintcommand, "lp -r -P%p %s");
 			break;
 
 #ifdef DEVELOPER
 	case PRINT_TEST:
 	case PRINT_VLP:
-		string_set(&sDefault.szPrintcommand, "vlp print %p %s");
-		string_set(&sDefault.szLpqcommand, "vlp lpq %p");
-		string_set(&sDefault.szLprmcommand, "vlp lprm %p %j");
-		string_set(&sDefault.szLppausecommand, "vlp lppause %p %j");
-		string_set(&sDefault.szLpresumecommand, "vlp lpresum %p %j");
-		string_set(&sDefault.szQueuepausecommand, "vlp queuepause %p");
-		string_set(&sDefault.szQueueresumecommand, "vlp queueresume %p");
+		string_set(&pService->szPrintcommand, "vlp print %p %s");
+		string_set(&pService->szLpqcommand, "vlp lpq %p");
+		string_set(&pService->szLprmcommand, "vlp lprm %p %j");
+		string_set(&pService->szLppausecommand, "vlp lppause %p %j");
+		string_set(&pService->szLpresumecommand, "vlp lpresum %p %j");
+		string_set(&pService->szQueuepausecommand, "vlp queuepause %p");
+		string_set(&pService->szQueueresumecommand, "vlp queueresume %p");
 		break;
 #endif /* DEVELOPER */
 
@@ -1292,8 +1297,6 @@ static void init_globals(void)
 				string_set(parm_table[i].ptr, "");
 
 		string_set(&sDefault.fstype, FSTYPE_STRING);
-
-		init_printer_values();
 
 		done_init = True;
 	}
@@ -2387,7 +2390,7 @@ BOOL lp_add_printer(const char *pszPrintername, int iDefaultService)
 	ServicePtrs[i]->bOpLocks = False;
 	/* Printer services must be printable. */
 	ServicePtrs[i]->bPrint_ok = True;
-
+	
 	DEBUG(3, ("adding printer service %s\n", pszPrintername));
 
 	return (True);
@@ -3870,6 +3873,7 @@ BOOL lp_load(const char *pszFname, BOOL global_only, BOOL save_defaults,
 	}
 
 	init_iconv();
+	init_printer_values(&sDefault);
 
 	return (bRetval);
 }
