@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2002 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -629,6 +629,10 @@ do_login(const struct passwd *pwd, char *tty, char *ttyn)
 		    continue;
 		show_file(buf);
 	    }
+	} else {
+	    str = login_conf_get_string("welcome");
+	    if(str != NULL)
+		show_file(str);
 	}
     }
     add_env("HOME", home_dir);
