@@ -33,7 +33,6 @@
  */
 
 #include "includes.h"
-#include "smb.h"
 
 extern BOOL AllowDebugChange;
 
