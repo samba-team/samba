@@ -80,6 +80,14 @@ void *talloc_realloc(TALLOC_CTX *t, void *ptr, size_t size)
 {
 	struct talloc_chunk *tc;
 
+	/* size zero is equivalent to free() */
+	if (size == 0)
+		return NULL;
+
+	/* realloc(NULL) is equavalent to malloc() */
+	if (ptr == NULL)
+		return talloc(t, size);
+
 	for (tc=t->list; tc; tc=tc->next) {
 		if (tc->ptr == ptr) {
 			ptr = realloc(ptr, size);
