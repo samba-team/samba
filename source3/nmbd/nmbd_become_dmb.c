@@ -347,7 +347,7 @@ static void become_domain_master_browser_wins(char *workgroup_name)
          we can become a domain master browser. 
        */
 
-      DEBUG(0,("become_domain_master_browser_wins: querying WINS server at IP %s \
+      DEBUG(0,("become_domain_master_browser_wins: querying WINS server from IP %s \
 for domain master browser name %s on workgroup %s\n",
          inet_ntoa(unicast_subnet->myip), nmb_namestr(&nmbname), workgroup_name));
 
