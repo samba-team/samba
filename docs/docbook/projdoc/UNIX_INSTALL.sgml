@@ -3,80 +3,21 @@
 <title>How to Install and Test SAMBA</title>
 
 <sect1>
-	<title>Read the man pages</title>
-	
-	<para>The man pages distributed with SAMBA contain 
-	lots of useful info that will help to get you started. 
-	If you don't know how to read man pages then try 
-	something like:</para>
+	<title>Obtaining and installing samba</title>
 
-	<para><prompt>$ </prompt><userinput>man smbd.8</userinput>
-	or 
-	<prompt>$ </prompt><userinput>nroff -man smbd.8 | more
-	</userinput> on older unixes.</para>
-	
-	<para>Other sources of information are pointed to 
-	by the Samba web site,<ulink url="http://www.samba.org/">
-	http://www.samba.org</ulink></para>
-</sect1>
+	<para>Binary packages of samba are included in almost any Linux or 
+	Unix distribution. There are also some packages available at 
+	<ulink url="http://samba.org/">the samba homepage</ulink>
+	</para>
 
-<sect1>
-	<title>Building the Binaries</title>
-	
-	<para>To do this, first run the program <command>./configure
-	</command> in the source directory. This should automatically 
-	configure Samba for your operating system. If you have unusual 
-	needs then you may wish to run</para>
-	
-	<para><prompt>root# </prompt><userinput>./configure --help
-	</userinput></para>
-	
-	<para>first to see what special options you can enable.
-	Then executing</para>
-	
-	<para><prompt>root# </prompt><userinput>make</userinput></para>
-	
-	<para>will create the binaries. Once it's successfully 
-	compiled you can use </para>
-	
-	<para><prompt>root# </prompt><userinput>make install</userinput></para>
-	
-	<para>to install the binaries and manual pages. You can 
-	separately install the binaries and/or man pages using</para>
-	
-	<para><prompt>root# </prompt><userinput>make installbin
-	</userinput></para>
-	
-	<para>and</para>
-	
-	<para><prompt>root# </prompt><userinput>make installman
-	</userinput></para>
-
-	<para>Note that if you are upgrading for a previous version 
-	of Samba you might like to know that the old versions of 
-	the binaries will be renamed with a ".old" extension. You 
-	can go back to the previous version with</para>
-	
-	<para><prompt>root# </prompt><userinput>make revert
-	</userinput></para>
-	
-	<para>if you find this version a disaster!</para>
-</sect1>
-
-<sect1>
-	<title>The all important step</title>
-	
-	<para>At this stage you must fetch yourself a 
-	coffee or other drink you find stimulating. Getting the rest 
-	of the install right can sometimes be tricky, so you will 
-	probably need it.</para>
-
-	<para>If you have installed samba before then you can skip 
-	this step.</para>
+	<para>If you need to compile samba from source, check the 
+	appropriate appendix chapter.</para>
 </sect1>
 
 <sect1>
 	<title>Create the smb configuration file. </title>
+	
+	<!--FIXME: Add notes about different types of configuration -->
 
 	<para>There are sample configuration files in the examples 
 	subdirectory in the distribution. I suggest you read them 
@@ -127,106 +68,6 @@
 	<para>Always run testparm again when you change 
 	<filename>smb.conf</filename>!</para>
 
-</sect1>
-
-<sect1>
-	<title>Starting the smbd and nmbd</title>
-
-	<para>You must choose to start smbd and nmbd either
-	as daemons or from <command>inetd</command>. Don't try
-	to do both!  Either you can put them in <filename>
-	inetd.conf</filename> and have them started on demand
-	by <command>inetd</command>, or you can start them as
-	daemons either from the command line or in <filename>
-	/etc/rc.local</filename>. See the man pages for details
-	on the command line options. Take particular care to read
-	the bit about what user you need to be in order to start
-	Samba.  In many cases you must be root.</para>
-
-	<para>The main advantage of starting <command>smbd</command>
-	and <command>nmbd</command> using the recommended daemon method
-	is that they will respond slightly more quickly to an initial connection
-	request.</para>
-
-	<sect2>
-		<title>Starting from inetd.conf</title>
-
-		<para>NOTE; The following will be different if 
-		you use NIS or NIS+ to distributed services maps.</para>
-		
-		<para>Look at your <filename>/etc/services</filename>. 
-		What is defined at port 139/tcp. If nothing is defined 
-		then add a line like this:</para>
-
-		<para><userinput>netbios-ssn     139/tcp</userinput></para>
-
-		<para>similarly for 137/udp you should have an entry like:</para>
-
-		<para><userinput>netbios-ns	137/udp</userinput></para>
-
-		<para>Next edit your <filename>/etc/inetd.conf</filename> 
-		and add two lines something like this:</para>
-
-		<para><programlisting>
-		netbios-ssn stream tcp nowait root /usr/local/samba/bin/smbd smbd 
-		netbios-ns dgram udp wait root /usr/local/samba/bin/nmbd nmbd 
-		</programlisting></para>
-
-		<para>The exact syntax of <filename>/etc/inetd.conf</filename> 
-		varies between unixes. Look at the other entries in inetd.conf 
-		for a guide.</para>
-
-		<para>NOTE: Some unixes already have entries like netbios_ns 
-		(note the underscore) in <filename>/etc/services</filename>. 
-		You must either edit <filename>/etc/services</filename> or
-		<filename>/etc/inetd.conf</filename> to make them consistent.</para>
-
-		<para>NOTE: On many systems you may need to use the 
-		"interfaces" option in smb.conf to specify the IP address 
-		and netmask of your interfaces. Run <command>ifconfig</command> 
-		as root if you don't know what the broadcast is for your
-		net. <command>nmbd</command> tries to determine it at run 
-		time, but fails on some unixes. See the section on "testing nmbd" 
-		for a method of finding if you need to do this.</para>
-
-		<para>!!!WARNING!!! Many unixes only accept around 5 
-		parameters on the command line in <filename>inetd.conf</filename>. 
-		This means you shouldn't use spaces between the options and 
-		arguments, or you should use a script, and start the script 
-		from <command>inetd</command>.</para>
-
-		<para>Restart <command>inetd</command>, perhaps just send 
-		it a HUP. If you have installed an earlier version of <command>
-		nmbd</command> then you may need to kill nmbd as well.</para>
-	</sect2>
-	
-	<sect2>
-		<title>Alternative: starting it as a daemon</title>
-
-		<para>To start the server as a daemon you should create 
-		a script something like this one, perhaps calling 
-		it <filename>startsmb</filename>.</para>
-
-		<para><programlisting>
-		#!/bin/sh
-		/usr/local/samba/bin/smbd -D 
-		/usr/local/samba/bin/nmbd -D 
-		</programlisting></para>
-
-		<para>then make it executable with <command>chmod 
-		+x startsmb</command></para>
-
-		<para>You can then run <command>startsmb</command> by 
-		hand or execute it from <filename>/etc/rc.local</filename>
-		</para>
-
-		<para>To kill it send a kill signal to the processes 
-		<command>nmbd</command> and <command>smbd</command>.</para>
-
-		<para>NOTE: If you use the SVR4 style init system then 
-		you may like to look at the <filename>examples/svr4-startup</filename>
-		script to make Samba fit into that system.</para>
-	</sect2>
 </sect1>
 
 <sect1>
@@ -296,7 +137,7 @@
 	this pile of trash" then I suggest you do step 2 again (and 
 	again) till you calm down.</para>
 
-	<para>Then you might read the file DIAGNOSIS.txt and the 
+	<para>Then you might read the file HOWTO chapter Diagnosis and the 
 	FAQ. If you are still stuck then try the mailing list or 
 	newsgroup (look in the README for details). Samba has been 
 	successfully installed at thousands of sites worldwide, so maybe 

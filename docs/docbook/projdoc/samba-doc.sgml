@@ -7,7 +7,6 @@
 <!ENTITY NT-Security SYSTEM "NT_Security.sgml">
 <!ENTITY Samba-PDC-HOWTO SYSTEM "Samba-PDC-HOWTO.sgml">
 <!ENTITY Samba-BDC-HOWTO SYSTEM "Samba-BDC-HOWTO.sgml">
-<!ENTITY CVS-Access SYSTEM "CVS-Access.sgml">
 <!ENTITY IntegratingWithWindows SYSTEM "Integrating-with-Windows.sgml">
 <!ENTITY Samba-PAM SYSTEM "PAM-Authentication-And-Samba.sgml">
 <!ENTITY Diagnosis SYSTEM "Diagnosis.sgml">
@@ -24,6 +23,7 @@
 <!ENTITY VFS SYSTEM "VFS.sgml">
 <!ENTITY GroupProfiles SYSTEM "GroupProfiles.sgml">
 <!ENTITY SecuringSamba SYSTEM "securing-samba.sgml">
+<!ENTITY Compiling SYSTEM "Compiling.sgml">
 ]>
 
 <book id="Samba-HOWTO-Collection">
@@ -112,7 +112,6 @@ part each cover one specific feature.</para>
 &WINBIND;
 &BROWSING;
 &VFS;
-&CVS-Access;
 &GROUP-MAPPING-HOWTO;
 &SPEED;
 &GroupProfiles;
@@ -123,6 +122,7 @@ part each cover one specific feature.</para>
 <title>Appendixes</title>
 &Portability;
 &Other-Clients;
+&Compiling;
 &BUGS;
 &Diagnosis;
 </part>
