@@ -259,7 +259,7 @@ static BOOL check_auth_crap(void)
 
 /* Main program */
 
-enum {
+static enum {
 	OPT_USERNAME = 1000,
 	OPT_DOMAIN,
 	OPT_WORKSTATION,
@@ -274,7 +274,7 @@ enum {
  Routine to set hex password characters into an allocated array.
 **************************************************************/
 
-void hex_encode(const unsigned char *buff_in, size_t len, char **out_hex_buffer)
+static void hex_encode(const unsigned char *buff_in, size_t len, char **out_hex_buffer)
 {
 	int i;
 	char *hex_buffer;
@@ -291,7 +291,7 @@ void hex_encode(const unsigned char *buff_in, size_t len, char **out_hex_buffer)
  into a 16 byte array.
 **************************************************************/
 
-BOOL hex_decode(const char *hex_buf_in, unsigned char **out_buffer, size_t *size)
+static BOOL hex_decode(const char *hex_buf_in, unsigned char **out_buffer, size_t *size)
 {
 	int i;
 	size_t hex_buf_in_len = strlen(hex_buf_in);
