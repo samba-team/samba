@@ -139,7 +139,7 @@ const_v4 (struct addrinfo *a, void *data, int port)
     struct in_addr *addr = (struct in_addr *)data;
 
     a->ai_family  = PF_INET;
-    a->ai_addrlen = sizeof(sizeof(*sin));
+    a->ai_addrlen = sizeof(*sin);
     a->ai_addr    = malloc (sizeof(*sin));
     if (a->ai_addr == NULL)
 	return EAI_MEMORY;
@@ -159,7 +159,7 @@ const_v6 (struct addrinfo *a, void *data, int port)
     struct in6_addr *addr = (struct in6_addr *)data;
 
     a->ai_family  = PF_INET6;
-    a->ai_addrlen = sizeof(sizeof(*sin6));
+    a->ai_addrlen = sizeof(*sin6);
     a->ai_addr    = malloc (sizeof(*sin6));
     if (a->ai_addr == NULL)
 	return EAI_MEMORY;
