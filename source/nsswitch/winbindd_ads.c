@@ -554,8 +554,6 @@ static NTSTATUS lookup_usergroups_alt(struct winbindd_domain *domain,
 done:
 	if (res) 
 		ads_msgfree(ads, res);
-	if (msg) 
-		ads_msgfree(ads, msg);
 
 	return status;
 }
