@@ -1,3 +1,9 @@
+2000-03-09  Assar Westerlund  <assar@sics.se>
+
+	* getarg.c (arg_match_short): backup optind when there's a missing
+	argument so that the error can point at the flag and not the
+	non-existant argument
+
 2000-03-03  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.in (SOURCES): add timeval.c
