@@ -2626,6 +2626,17 @@ void get_printer_subst_params(int snum, fstring *printername, fstring *sharename
 	free_a_printer(&printer, 2);
 }
 
+/****************************************************************************
+ Update the changeid time.
+****************************************************************************/
+
+static uint32 rev_changeid(uint32 changeid)
+{
+	if (changeid == 0)
+		changeid = time(NULL);
+	return changeid++;
+}
+
 /*
  * The function below are the high level ones.
  * only those ones must be called from the spoolss code.
@@ -2652,13 +2663,11 @@ WERROR mod_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level)
 			 * incremented on a SetPrinter() call.
 			 */
 
-			time_t time_unix = time(NULL);
-
 			/* ChangeID **must** be increasing over the lifetime
-			   of client's spoolss service in order for the 
+			   of client's spoolss service in order for the
 			   client's cache to show updates */
 
-			printer.info_2->changeid = time_unix * 100;
+			printer.info_2->changeid = rev_changeid(printer.info_2->changeid);
 
 			/*
 			 * Because one day someone will ask:
@@ -2710,9 +2719,7 @@ WERROR add_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level)
 			 * --jerry
 			 */
 
-			time_t time_unix = time(NULL);
-
-			printer.info_2->changeid = time_unix * 100;
+			printer.info_2->changeid = rev_changeid(printer.info_2->changeid);
 			printer.info_2->c_setprinter++;
 
 			result=update_a_printer_2(printer.info_2);
