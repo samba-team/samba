@@ -35,12 +35,12 @@
 RCSID("$Id$");
 
 /*
- * Implementation of draft-ietf-krb-wg-gssapi-cfx-03.txt
+ * Implementation of draft-ietf-krb-wg-gssapi-cfx-06.txt
  */
 
-#define SentByAcceptor	(1 << 0)
-#define Sealed		(1 << 1)
-#define AcceptorSubkey	(1 << 2)
+#define CFXSentByAcceptor	(1 << 0)
+#define CFXSealed		(1 << 1)
+#define CTXAcceptorSubkey	(1 << 2)
 
 static krb5_error_code
 wrap_length_cfx(krb5_crypto crypto,
@@ -239,13 +239,15 @@ OM_uint32 _gssapi_wrap_cfx(OM_uint32 *minor_status,
     token->Flags     = 0;
     token->Filler    = 0xFF;
     if ((context_handle->more_flags & LOCAL) == 0)
-	token->Flags |= SentByAcceptor;
+	token->Flags |= CFXSentByAcceptor;
+    if (context_handle->more_flags & ACCEPTOR_SUBKEY)
+	token->Flags |= CTXAcceptorSubkey;
     if (conf_req_flag) {
 	/*
 	 * In Wrap tokens with confidentiality, the EC field is
 	 * used to encode the size (in bytes) of the random filler.
 	 */
-	token->Flags |= Sealed;
+	token->Flags |= CFXSealed;
 	token->EC[0] = (padlength >> 8) & 0xFF;
 	token->EC[1] = (padlength >> 0) & 0xFF;
     } else {
@@ -440,10 +442,19 @@ OM_uint32 _gssapi_unwrap_cfx(OM_uint32 *minor_status,
     }
 
     /* Ignore unknown flags */
-    token_flags = token->Flags & (SentByAcceptor | Sealed | AcceptorSubkey);
+    token_flags = token->Flags &
+	(CFXSentByAcceptor | CFXSealed | CTXAcceptorSubkey);
 
-    if (token_flags & SentByAcceptor) {
+    if (token_flags & CFXSentByAcceptor) {
 	if ((context_handle->more_flags & LOCAL) == 0)
+	    return GSS_S_DEFECTIVE_TOKEN;
+    }
+
+    if (context_handle->more_flags & ACCEPTOR_SUBKEY) {
+	if ((token_flags & CTXAcceptorSubkey) == 0)
+	    return GSS_S_DEFECTIVE_TOKEN;
+    } else {
+	if (token_flags & CTXAcceptorSubkey)
 	    return GSS_S_DEFECTIVE_TOKEN;
     }
 
@@ -452,7 +463,7 @@ OM_uint32 _gssapi_unwrap_cfx(OM_uint32 *minor_status,
     }
 
     if (conf_state != NULL) {
-	*conf_state = (token_flags & Sealed) ? 1 : 0;
+	*conf_state = (token_flags & CFXSealed) ? 1 : 0;
     }
 
     ec  = (token->EC[0]  << 8) | token->EC[1];
@@ -506,7 +517,7 @@ OM_uint32 _gssapi_unwrap_cfx(OM_uint32 *minor_status,
 	return GSS_S_FAILURE;
     }
 
-    if (token_flags & Sealed) {
+    if (token_flags & CFXSealed) {
 	ret = krb5_decrypt(gssapi_krb5_context, crypto, usage,
 	    p, len, &data);
 	if (ret != 0) {
@@ -647,7 +658,9 @@ OM_uint32 _gssapi_mic_cfx(OM_uint32 *minor_status,
     token->TOK_ID[1] = 0x04;
     token->Flags = 0;
     if ((context_handle->more_flags & LOCAL) == 0)
-	token->Flags |= SentByAcceptor;
+	token->Flags |= CFXSentByAcceptor;
+    if (context_handle->more_flags & ACCEPTOR_SUBKEY)
+	token->Flags |= CTXAcceptorSubkey;
     memset(token->Filler, 0xFF, 5);
 
     HEIMDAL_MUTEX_lock(&context_handle->ctx_id_mutex);
@@ -731,10 +744,17 @@ OM_uint32 _gssapi_verify_mic_cfx(OM_uint32 *minor_status,
     }
 
     /* Ignore unknown flags */
-    token_flags = token->Flags & SentByAcceptor;
+    token_flags = token->Flags & (CFXSentByAcceptor | CTXAcceptorSubkey);
 
-    if (token_flags & SentByAcceptor) {
+    if (token_flags & CFXSentByAcceptor) {
 	if ((context_handle->more_flags & LOCAL) == 0)
+	    return GSS_S_DEFECTIVE_TOKEN;
+    }
+    if (context_handle->more_flags & ACCEPTOR_SUBKEY) {
+	if ((token_flags & CTXAcceptorSubkey) == 0)
+	    return GSS_S_DEFECTIVE_TOKEN;
+    } else {
+	if (token_flags & CTXAcceptorSubkey)
 	    return GSS_S_DEFECTIVE_TOKEN;
     }
 
