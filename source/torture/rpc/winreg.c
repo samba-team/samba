@@ -319,6 +319,40 @@ static BOOL test_EnumKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return True;
 }
 
+static BOOL test_QueryMultipleValues(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct policy_handle *handle, const char *valuename)
+{
+	struct winreg_QueryMultipleValues r;
+	NTSTATUS status;
+
+	printf("Testing QueryMultipleValues\n");
+
+	r.in.key_handle = handle;
+	r.in.values = r.out.values = talloc_array_p(mem_ctx, struct QueryMultipleValue, 1);
+	r.in.values[0].name = talloc_p(mem_ctx, struct winreg_String);
+	r.in.values[0].name->name = valuename;
+	r.in.values[0].offset = 0;
+	r.in.values[0].length = 0;
+	r.in.values[0].type = 0;
+
+	r.in.num_values = 1;
+	r.in.buffer_size = r.out.buffer_size = talloc_p(mem_ctx, uint32);
+	*r.in.buffer_size = 0x20;
+	r.in.buffer = r.out.buffer = talloc_zero_array_p(mem_ctx, uint8, *r.in.buffer_size);
+
+	status = dcerpc_winreg_QueryMultipleValues(p, mem_ctx, &r);
+	if(NT_STATUS_IS_ERR(status)) {
+		printf("QueryMultipleValues failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	if (!W_ERROR_IS_OK(r.out.result)) {
+		printf("QueryMultipleValues failed - %s\n", win_errstr(r.out.result));
+		return False;
+	}
+
+	return True;
+}
+
 static BOOL test_QueryValue(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct policy_handle *handle, const char *valuename)
 {
 	struct winreg_QueryValue r;
@@ -329,6 +363,7 @@ static BOOL test_QueryValue(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct p
 	printf("Testing QueryValue\n");
 
 	r.in.handle = handle;
+	r.in.data = NULL;
 	r.in.value_name.name = valuename;
 	r.in.type = &zero;
 	r.in.size = &offered;
@@ -379,6 +414,7 @@ static BOOL test_EnumValue(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 		if (W_ERROR_IS_OK(r.out.result)) {
 			ret &= test_QueryValue(p, mem_ctx, handle, r.out.name_out.name);
+			ret &= test_QueryMultipleValues(p, mem_ctx, handle, r.out.name_out.name);
 		}
 
 		r.in.enum_index++;
