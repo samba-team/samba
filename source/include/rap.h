@@ -20,6 +20,9 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#ifndef _RAP_H_
+#define _RAP_H_
+
 /*****************************************************/
 /*                                                   */
 /*   Additional RAP functionality                    */
@@ -476,3 +479,4 @@ typedef struct rap_share_info_2
     char   reserved2;
 } RAP_SHARE_INFO_2;
 
+#endif /* _RAP_H_ */
