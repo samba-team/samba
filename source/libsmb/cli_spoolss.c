@@ -439,6 +439,8 @@ NTSTATUS cli_spoolss_enum_printers(
 			goto done;
 		}
 
+		result = NT_STATUS_OK;
+
 		if ((*returned = r.returned)) {
 			switch (level) {
 			case 1:
