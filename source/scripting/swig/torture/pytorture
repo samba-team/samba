@@ -48,4 +48,4 @@ for test in args:
    if not hasattr(module, 'runtests'):
       print 'Module "%s" does not have a runtests function' % test
 
-   module.runtests(binding, domain, username, password)
+   module.runtests(binding, (domain, username, password))

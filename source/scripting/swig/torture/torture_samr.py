@@ -721,13 +721,12 @@ def test_EnumDomains(pipe, connect_handle):
     for domain in connect_handle.EnumDomains():
         test_LookupDomain(pipe, connect_handle, domain)
 
-def runtests(binding, domain, username, password):
+def runtests(binding, creds):
 
     print 'Testing SAMR pipe'
 
     pipe = dcerpc.pipe_connect(binding,
-            dcerpc.DCERPC_SAMR_UUID, int(dcerpc.DCERPC_SAMR_VERSION),
-            domain, username, password)
+            dcerpc.DCERPC_SAMR_UUID, int(dcerpc.DCERPC_SAMR_VERSION), creds)
 
     handle = test_Connect(pipe)
 

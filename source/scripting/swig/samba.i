@@ -60,3 +60,9 @@
 %typemap(out) NTSTATUS {
         $result = PyLong_FromUnsignedLong(NT_STATUS_V($1));
 }
+
+%typemap(in) struct cli_credentials * {
+	$1 = cli_credentials_init(arg1);
+	cli_credentials_set_anonymous($1);
+//	cli_credentials_set_workstation($1, "FROGURT", CRED_SPECIFIED);
+}

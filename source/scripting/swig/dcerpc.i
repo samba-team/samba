@@ -153,13 +153,12 @@ void set_werror_exception(int status)
 
 %rename(pipe_connect) dcerpc_pipe_connect;
 
-NTSTATUS dcerpc_pipe_connect(struct dcerpc_pipe **OUT,
+NTSTATUS dcerpc_pipe_connect(TALLOC_CTX *parent_ctx,
+	                     struct dcerpc_pipe **OUT,
                              const char *binding,
                              const char *pipe_uuid,
                              uint32_t pipe_version,
-                             const char *domain,
-                             const char *username,
-                             const char *password);
+			     struct cli_credentials *credentials);
 
 %typemap(in) DATA_BLOB * (DATA_BLOB temp_data_blob) {
 	temp_data_blob.data = PyString_AsString($input);
