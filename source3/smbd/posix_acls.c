@@ -3755,12 +3755,158 @@ BOOL set_unix_posix_acl(connection_struct *conn, files_struct *fsp, const char *
 }
 
 /****************************************************************************
+ Check for POSIX group ACLs. If none use stat entry.
+****************************************************************************/
+
+static int check_posix_acl_group_write(connection_struct *conn, const char *dname, SMB_STRUCT_STAT *psbuf)
+{
+	extern struct current_user current_user;
+	SMB_ACL_T posix_acl = NULL;
+	int entry_id = SMB_ACL_FIRST_ENTRY;
+	SMB_ACL_ENTRY_T entry;
+	int i;
+	int ret = -1;
+
+	if ((posix_acl = SMB_VFS_SYS_ACL_GET_FILE(conn, dname, SMB_ACL_TYPE_ACCESS)) == NULL) {
+		goto check_stat;
+	}
+
+	/* First ensure the group mask allows group read. */
+	while ( SMB_VFS_SYS_ACL_GET_ENTRY(conn, posix_acl, entry_id, &entry) == 1) {
+		SMB_ACL_TAG_T tagtype;
+		SMB_ACL_PERMSET_T permset;
+
+		/* get_next... */
+		if (entry_id == SMB_ACL_FIRST_ENTRY)
+			entry_id = SMB_ACL_NEXT_ENTRY;
+
+		if (SMB_VFS_SYS_ACL_GET_TAG_TYPE(conn, entry, &tagtype) == -1) {
+			goto check_stat;
+		}
+
+		if (SMB_VFS_SYS_ACL_GET_PERMSET(conn, entry, &permset) == -1) {
+			goto check_stat;
+		}
+
+		switch(tagtype) {
+			case SMB_ACL_MASK:
+				if (!SMB_VFS_SYS_ACL_GET_PERM(conn, permset, SMB_ACL_WRITE)) {
+					/* We don't have group write permission. */
+					ret = -1; /* Allow caller to check "other" permissions. */
+					goto done;
+				}
+				break;
+			default:
+				continue;
+		}
+	}
+
+	/* Now check all group entries. */
+	entry_id = SMB_ACL_FIRST_ENTRY;
+	while ( SMB_VFS_SYS_ACL_GET_ENTRY(conn, posix_acl, entry_id, &entry) == 1) {
+		SMB_ACL_TAG_T tagtype;
+		SMB_ACL_PERMSET_T permset;
+		int have_write = -1;
+
+		/* get_next... */
+		if (entry_id == SMB_ACL_FIRST_ENTRY)
+			entry_id = SMB_ACL_NEXT_ENTRY;
+
+		if (SMB_VFS_SYS_ACL_GET_TAG_TYPE(conn, entry, &tagtype) == -1) {
+			goto check_stat;
+		}
+
+		if (SMB_VFS_SYS_ACL_GET_PERMSET(conn, entry, &permset) == -1) {
+			goto check_stat;
+		}
+
+		have_write = SMB_VFS_SYS_ACL_GET_PERM(conn, permset, SMB_ACL_WRITE);
+		if (have_write == -1) {
+			goto check_stat;
+		}
+
+		switch(tagtype) {
+			case SMB_ACL_USER:
+				{
+					/* Check against current_user.uid. */
+					uid_t *puid = (uid_t *)SMB_VFS_SYS_ACL_GET_QUALIFIER(conn, entry);
+					if (puid == NULL) {
+						goto check_stat;
+					}
+					if (current_user.uid == *puid) {
+						/* We're done now we have a uid match. */
+						ret = have_write;
+						goto done;
+					}
+				}
+				break;
+			case SMB_ACL_MASK:
+				{
+					gid_t *pgid = (gid_t *)SMB_VFS_SYS_ACL_GET_QUALIFIER(conn, entry);
+					if (pgid == NULL) {
+						goto check_stat;
+					}
+					for (i = 0; i < current_user.ngroups; i++) {
+						if (current_user.groups[i] == *pgid) {
+							/* We're done now we have a gid match. */
+							ret = have_write;
+							goto done;
+						}
+					}
+				}
+				break;
+			default:
+				continue;
+		}
+	}
+
+
+  check_stat:
+
+	for (i = 0; i < current_user.ngroups; i++) {
+		if (current_user.groups[i] == psbuf->st_gid) {
+			ret = (psbuf->st_mode & S_IWGRP) ? 1 : 0;
+			break;
+		}
+	}
+
+  done:
+
+	SMB_VFS_SYS_ACL_FREE_ACL(conn, posix_acl);
+	return ret;
+}
+
+/****************************************************************************
  Actually emulate the in-kernel access checking for write access. We need
  this to successfully return ACCESS_DENIED on a file open for delete access.
 ****************************************************************************/
 
 BOOL can_delete_file_in_directory(connection_struct *conn, const char *fname)
 {
-	/* Add acl check here... JRA */
-	return True;
+	extern struct current_user current_user;
+	SMB_STRUCT_STAT sbuf;  
+	pstring dname;
+	int ret;
+
+	pstrcpy(dname, parent_dirname(fname));
+	if(SMB_VFS_STAT(conn, dname, &sbuf) != 0) {
+		return False;
+	}
+	if (!S_ISDIR(sbuf.st_mode)) {
+		return False;
+	}
+	if (current_user.uid == 0) {
+		/* I'm sorry sir, I didn't know you were root... */
+		return True;
+	}
+
+	if (current_user.uid == sbuf.st_uid) {
+		return (sbuf.st_mode & S_IWUSR) ? True : False;
+	}
+	/* Check group ownership. */
+	ret = check_posix_acl_group_write(conn, dname, &sbuf);
+	if (ret == 0 || ret == 1) {
+		return ret ? True : False;
+	}
+	return (sbuf.st_mode & S_IWOTH) ? True : False;
 }
