@@ -3701,7 +3701,7 @@ static NTSTATUS ldapsam_add_trust_passwd(struct pdb_methods* methods, const SAM_
 static NTSTATUS ldapsam_update_trust_passwd(struct pdb_methods *methods, const SAM_TRUST_PASSWD *trust)
 {
 	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)methods->private_data;
-	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS nt_status = NT_STATUS_OK;
 	SAM_TRUST_PASSWD trustpw;
 	char **attr_list;
 	LDAPMessage *res = NULL;
@@ -3796,7 +3796,65 @@ static NTSTATUS ldapsam_update_trust_passwd(struct pdb_methods *methods, const S
 
 static NTSTATUS ldapsam_delete_trust_passwd(struct pdb_methods *methods, const SAM_TRUST_PASSWD *trust)
 {
-	NTSTATUS nt_status = NT_STATUS_NOT_IMPLEMENTED;
+	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)methods->private_data;
+	NTSTATUS nt_status;
+	const char *dom_name;
+	char **attr_list, *dn = NULL;
+	LDAPMessage *res = NULL;
+	int rc, count;
+
+	if (!trust) {
+		DEBUG(0, ("trust was NULL!\n"));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	dom_name = pdb_get_tp_domain_name_c(trust);
+	if (!dom_name) {
+		DEBUG(0, ("Couldn't get char-converted domain name\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	
+	attr_list = get_attr_list(trustpw_attr_list);
+
+	/* Checking if such trust password already exists in the directory
+	   - search and count the results */
+	rc = ldapsam_search_trustpw_by_name(ldap_state, dom_name, &res, attr_list);
+	if (rc != LDAP_SUCCESS) {
+		free_attr_list(attr_list);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	/* Counting the actual number of entries returned (we need only one) */
+	count = ldap_count_entries(ldap_state->smbldap_state->ldap_struct, res);
+	if (count < 1) {
+		DEBUG(0, ("Trust password (%s) does not exist in the directory!\n", dom_name));
+		return NT_STATUS_UNSUCCESSFUL;
+
+	} else if (count > 1) {
+		DEBUG(0, ("Multiple entries found for trust password [%s]!\n", dom_name));
+		return NT_STATUS_UNSUCCESSFUL;
+
+	} else
+		DEBUG(3, ("Trust password (%s) found in the directory\n", dom_name));
+
+	/* Getting distinguished name of the ldap entry */
+	dn = smbldap_get_dn(ldap_state->smbldap_state->ldap_struct, res);
+	if (!dn) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	/* Time to delete ... */
+	rc = smbldap_delete(ldap_state->smbldap_state, dn);
+	if (rc != LDAP_SUCCESS) {
+		char *ldap_err = NULL;
+		ldap_get_option(ldap_state->smbldap_state->ldap_struct, LDAP_OPT_ERROR_STRING,
+				&ldap_err);
+		DEBUG(1, ("Failed to delete trustpw dn= %s with %s\n\t%s\n", dn,
+			  ldap_err2string(rc), ldap_err ? ldap_err : "unknown"));
+		SAFE_FREE(ldap_err);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
 	return nt_status;
 }
 
