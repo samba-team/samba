@@ -359,7 +359,7 @@ snprintf (char *str, size_t sz, const char *format, ...)
   va_start(args, format);
   ret = vsnprintf (str, sz, format, args);
 
-  /* XXX - This is real paranoia! */
+#ifdef PARANOIA
   {
     int ret2;
     char *tmp;
@@ -373,6 +373,7 @@ snprintf (char *str, size_t sz, const char *format, ...)
       abort ();
     free (tmp);
   }
+#endif
 
   va_end(args);
   return ret;
@@ -389,7 +390,7 @@ asprintf (char **ret, const char *format, ...)
   va_start(args, format);
   val = vasprintf (ret, format, args);
 
-  /* XXX - more paranoia */
+#ifdef PARANOIA
   {
     int ret2;
     char *tmp;
@@ -402,6 +403,7 @@ asprintf (char **ret, const char *format, ...)
       abort ();
     free (tmp);
   }
+#endif
 
   va_end(args);
   return val;
@@ -418,7 +420,7 @@ asnprintf (char **ret, size_t max_sz, const char *format, ...)
   va_start(args, format);
   val = vasnprintf (ret, max_sz, format, args);
 
-  /* XXX - more paranoia */
+#ifdef PARANOIA
   {
     int ret2;
     char *tmp;
@@ -431,6 +433,7 @@ asnprintf (char **ret, size_t max_sz, const char *format, ...)
       abort ();
     free (tmp);
   }
+#endif
 
   va_end(args);
   return val;
