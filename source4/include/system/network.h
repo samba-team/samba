@@ -58,3 +58,7 @@
 #endif
 
 
+#ifdef REPLACE_INET_NTOA
+#define inet_ntoa rep_inet_ntoa
+#endif
+
