@@ -228,8 +228,6 @@ find_dynamic_method (krb5_context context,
     void *dl;
     size_t len;
     
-    dl = NULL;
-
     p = strchr(filename, ':');
 
     /* if no prefix, don't know what module to load, just ignore it */
