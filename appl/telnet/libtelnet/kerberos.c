@@ -98,7 +98,7 @@ static unsigned char str_name[1024] = { IAC, SB, TELOPT_AUTHENTICATION,
 
 static	KTEXT_ST auth;
 static	char name[ANAME_SZ];
-static	AUTH_DAT adat = { 0 };
+static	AUTH_DAT adat;
 static des_cblock session_key;
 static des_key_schedule sched;
 static des_cblock challenge;
@@ -301,22 +301,22 @@ kerberos4_is(Authenticator *ap, unsigned char *data, int cnt)
 	    char *msg = malloc(ANAME_SZ + 1 + INST_SZ +
 			       REALM_SZ +
 			       strlen(UserNameRequested) + 80);
-			
+	    
 	    if (msg == NULL)
 		Data(ap, KRB_REJECT, (void *)0, 0);
 	    sprintf (msg, "user `%s' is not authorized to "
 		     "login as `%s'", 
-		     krb_unparse_name(adat.pname, 
-				      adat.pinst, 
-				      adat.prealm), 
+		     krb_unparse_name_long(adat.pname, 
+					   adat.pinst, 
+					   adat.prealm), 
 		     UserNameRequested);
-
+	    
 	    Data(ap, KRB_REJECT, (void *)msg, -1);
 	    free(msg);
 	}
 	auth_finished(ap, AUTH_USER);
 	break;
-
+	
     case KRB_CHALLENGE:
 #ifndef ENCRYPTION
 	Data(ap, KRB_RESPONSE, (void *)0, 0);
