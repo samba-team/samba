@@ -1316,6 +1316,40 @@ static BOOL api_spoolss_enumprinterdataex(pipes_struct *p)
 	return True;
 }
 
+/****************************************************************************
+****************************************************************************/
+
+/* Disabled because it doesn't fix the bug I am looking at but it would be
+   a shame to throw away the code. -tpot */
+
+#if 0
+
+static BOOL api_spoolss_getprintprocessordirectory(pipes_struct *p)
+{
+	SPOOL_Q_GETPRINTPROCESSORDIRECTORY q_u;
+	SPOOL_R_GETPRINTPROCESSORDIRECTORY r_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+	
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+	
+	if(!spoolss_io_q_getprintprocessordirectory("", &q_u, data, 0)) {
+		DEBUG(0,("spoolss_io_q_getprintprocessordirectory: unable to unmarshall SPOOL_Q_GETPRINTPROCESSORDIRECTORY.\n"));
+		return False;
+	}
+	
+	r_u.status = _spoolss_getprintprocessordirectory(p, &q_u, &r_u);
+				
+	if(!spoolss_io_r_getprintprocessordirectory("", &r_u, rdata, 0)) {
+		DEBUG(0,("spoolss_io_r_getprintprocessordirectory: unable to marshall SPOOL_R_GETPRINTPROCESSORDIRECTORY.\n"));
+		return False;
+	}
+	
+	return True;
+}
+
+#endif
 
 /*******************************************************************
 \pipe\spoolss commands
@@ -1367,7 +1401,11 @@ struct api_struct api_spoolss_cmds[] =
  {"SPOOLSS_SETPRINTERDATAEX",          SPOOLSS_SETPRINTERDATAEX,          api_spoolss_setprinterdataex          },
  {"SPOOLSS_ENUMPRINTERKEY",            SPOOLSS_ENUMPRINTERKEY,            api_spoolss_enumprinterkey            },
  {"SPOOLSS_ENUMPRINTERDATAEX",         SPOOLSS_ENUMPRINTERDATAEX,         api_spoolss_enumprinterdataex         },
-
+#if 0
+ /* Disabled because it doesn't fix the bug I am looking at but it would be
+    a shame to throw away the code. -tpot */
+ {"SPOOLSS_GETPRINTPROCESSORDIRECTORY",SPOOLSS_GETPRINTPROCESSORDIRECTORY,api_spoolss_getprintprocessordirectory},
+#endif
  { NULL,                               0,                                 NULL                                  }
 };
 

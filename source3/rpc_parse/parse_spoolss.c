@@ -4,8 +4,9 @@
  *  RPC Pipe client / server routines
  *  Copyright (C) Andrew Tridgell              1992-2000,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-2000,
- *  Copyright (C) Jean François Micouleau      1998-2000.
- *  Copyright (C) Gerald Carter                2000
+ *  Copyright (C) Jean François Micouleau      1998-2000,
+ *  Copyright (C) Gerald Carter                2000,
+ *  Copyright (C) Tim Potter		       2001.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -3157,6 +3158,21 @@ return the size required by a struct in the stream
 ********************************************************************/  
 
 uint32 spoolss_size_driverdir_info_1(DRIVER_DIRECTORY_1 *info)
+{
+	int size=0;
+
+	size=str_len_uni(&info->name);	/* the string length       */
+	size=size+1;			/* add the leading zero    */
+	size=size*2;			/* convert in char         */
+
+	return size;
+}
+
+/*******************************************************************
+return the size required by a struct in the stream
+********************************************************************/  
+
+uint32 spoolss_size_printprocessordirectory_info_1(PRINTPROCESSOR_DIRECTORY_1 *info)
 {
 	int size=0;
 
@@ -6433,3 +6449,124 @@ BOOL spoolss_io_r_enumprinterdataex(char *desc, SPOOL_R_ENUMPRINTERDATAEX *r_u, 
 }
 
 
+/*******************************************************************
+ * write a structure.
+ ********************************************************************/  
+
+/* 
+   uint32 GetPrintProcessorDirectory(
+       [in] unistr2 *name,
+       [in] unistr2 *environment,
+       [in] uint32 level,
+       [in,out] NEW_BUFFER buffer,
+       [in] uint32 offered,
+       [out] uint32 needed,
+       [out] uint32 returned
+   );
+
+*/
+
+BOOL make_spoolss_q_getprintprocessordirectory(SPOOL_Q_GETPRINTPROCESSORDIRECTORY *q_u, const char *name, char *environment, int level, NEW_BUFFER *buffer, uint32 offered)
+{
+	DEBUG(5,("make_spoolss_q_getprintprocessordirectory\n"));
+
+	init_unistr2(&q_u->name, name, strlen(name)+1);
+	init_unistr2(&q_u->environment, environment, strlen(environment)+1);
+
+	q_u->level = level;
+
+	q_u->buffer = buffer;
+	q_u->offered = offered;
+
+	return True;
+}
+
+BOOL spoolss_io_q_getprintprocessordirectory(char *desc, SPOOL_Q_GETPRINTPROCESSORDIRECTORY *q_u, prs_struct *ps, int depth)
+{
+	uint32 ptr;
+
+	prs_debug(ps, depth, desc, "spoolss_io_q_getprintprocessordirectory");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;	
+
+	if (!prs_uint32("ptr", ps, depth, &ptr)) 
+		return False;
+
+	if (ptr) {
+		if(!smb_io_unistr2("name", &q_u->name, True, ps, depth))
+			return False;
+	}
+
+	if (!prs_align(ps))
+		return False;
+
+	if (!prs_uint32("ptr", ps, depth, &ptr))
+		return False;
+
+	if (ptr) {
+		if(!smb_io_unistr2("environment", &q_u->environment, True, 
+				   ps, depth))
+			return False;
+	}
+
+	if (!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("level",   ps, depth, &q_u->level))
+		return False;
+
+	if(!spoolss_io_buffer("", ps, depth, &q_u->buffer))
+		return False;
+	
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("offered", ps, depth, &q_u->offered))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ * write a structure.
+ ********************************************************************/  
+
+BOOL spoolss_io_r_getprintprocessordirectory(char *desc, SPOOL_R_GETPRINTPROCESSORDIRECTORY *r_u, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "spoolss_io_r_getprintprocessordirectory");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!spoolss_io_buffer("", ps, depth, &r_u->buffer))
+		return False;
+	
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("needed",     ps, depth, &r_u->needed))
+		return False;
+		
+	if(!prs_werror("status",     ps, depth, &r_u->status))
+		return False;
+
+	return True;
+}
+
+BOOL smb_io_printprocessordirectory_1(char *desc, NEW_BUFFER *buffer, PRINTPROCESSOR_DIRECTORY_1 *info, int depth)
+{
+	prs_struct *ps=&buffer->prs;
+
+	prs_debug(ps, depth, desc, "smb_io_printprocessordirectory_1");
+	depth++;
+
+	buffer->struct_start=prs_offset(ps);
+
+	if (!smb_io_unistr(desc, &info->name, ps, depth))
+		return False;
+
+	return True;
+}

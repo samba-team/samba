@@ -1149,6 +1149,37 @@ static NTSTATUS cmd_spoolss_deletedriver(struct cli_state *cli,
 	return NT_STATUS_OK;		
 }
 
+static NTSTATUS cmd_spoolss_getprintprocdir(struct cli_state *cli, 
+					    TALLOC_CTX *mem_ctx,
+					    int argc, char **argv)
+{
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	char *servername = NULL, *environment = NULL;
+	fstring procdir;
+	
+	/* parse the command arguements */
+	if (argc < 2 || argc > 3) {
+		printf ("Usage: %s <server> [environment]\n", argv[0]);
+		return NT_STATUS_OK;
+        }
+
+	asprintf(&servername, "\\\\%s", cli->desthost);
+	strupper(servername);
+
+	asprintf(&environment, "%s", (argc == 3) ? argv[2] : 
+		 PRINTER_DRIVER_ARCHITECTURE);
+
+	result = cli_spoolss_getprintprocessordirectory(
+		cli, mem_ctx, servername, environment, procdir);
+
+	if (NT_STATUS_IS_OK(result))
+		printf("%s", procdir);
+
+	SAFE_FREE(servername);
+	SAFE_FREE(environment);
+
+	return result;
+}
 
 /* List of commands exported by this module */
 struct cmd_set spoolss_commands[] = {
@@ -1169,6 +1200,7 @@ struct cmd_set spoolss_commands[] = {
 	{ "getprinter", 	cmd_spoolss_getprinter, 	PIPE_SPOOLSS, "Get printer info",                    "" },
 	{ "openprinter",	cmd_spoolss_open_printer_ex,	PIPE_SPOOLSS, "Open printer handle",                 "" },
 	{ "setdriver",		cmd_spoolss_setdriver,		PIPE_SPOOLSS, "Set printer driver",                  "" },
+	{ "getprintprocdir",	cmd_spoolss_getprintprocdir, PIPE_SPOOLSS, "Get print processor directory",          "" },
 
 	{ NULL }
 };
