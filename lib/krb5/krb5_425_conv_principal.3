@@ -1,6 +1,6 @@
 .\" Copyright (c) 1997 Kungliga Tekniska Högskolan
 .\" $Id$
-.Dd August 8, 1997
+.Dd April 11, 1999
 .Dt KRB5_425_CONV_PRINCIPAL 3
 .Os HEIMDAL
 .Sh NAME
@@ -85,8 +85,23 @@ section, it is looked up in a
 binding. If found here the name will be converted, but the instance
 will be untouched.
 .Pp
+This list of default host-type conversions is compiled-in:
+.Bd -literal -offset indent
+v4_name_convert = {
+	host = {
+		ftp = ftp
+		hprop = hprop
+		pop = pop
+		rcmd = host
+	}
+}
+.Ed
+.Pp
+It will only be used if there isn't an entry for these names in the
+config file, so you can override these defaults.
+.Pp
 .Fn krb5_425_conv_principal
-will call 
+will call
 .Fn krb5_425_conv_principal_ext
 with 
 .Dv NULL
@@ -132,13 +147,6 @@ A
 file that covers this case might look like:
 .Bd -literal -offset indent
 [libdefaults]
-	v4_name_convert = {
-		host = {
-			rcmd = host
-			ftp = ftp
-			pop = pop
-		}
-	}
 	v4_instance_resolve = yes
 [realms]
 	FOO.COM = {
@@ -180,11 +188,6 @@ the second example will result in
 .Dq ftp/b-host.foo.com 
 (because of the default domain). And all of this is of course only
 valid if you have working name resolving.
-
-.Sh BUGS
-You have to set up your
-.Pa krb5.conf
-correctly to have any of this work.
 
 .Sh SEE ALSO
 .Xr krb5_build_principal 3 ,

@@ -1,6 +1,6 @@
 .\" $Id$
 .\"
-.Dd July 27, 1997
+.Dd April 11, 1999
 .Dt KRB5.CONF 5
 .Os HEIMDAL
 .Sh NAME
@@ -63,8 +63,39 @@ Maximum time to wait for a reply from the kdc, default is 3 seconds.
 .It v4_name_convert
 .It v4_instance_resolve
 These are decribed in the 
-.Xr krb5_425_conv_principal 
+.Xr krb5_425_conv_principal  3
 manual page.
+.It Li capath = Va realm-routing-table
+.It Li default_etypes = Va etypes...
+A list of default etypes to use.
+.It Li default_keytab_name = Va keytab
+The keytab to use if none other is specified, default is
+.Dq FILE:/etc/krb5.keytab .
+.It Li kdc_timesync = Va boolean
+Try to keep track of the time differential between the local machine
+and the KDC, and then compensate for that when issuing requests.
+.It Li max_retries = Va number
+The max number of times to try to contact each KDC.
+.It Li ticket_lifetime = Va time
+Default ticket lifetime.
+.It Li renew_lifetime = Va time
+Default renewable ticket lifetime.
+.It Li verify_ap_req_nofail = Va boolean
+Enable to make a failure to verify obtained credentials
+non-fatal. This can be useful if there is no keytab on a host.
+.It Li warn_pwexpire = Va time
+How soon to warn for expiring password. Default is seven days.
+.It Li http_proxy = Va proxy-spec
+A HTTP-proxy to use when talking to the KDC via HTTP.
+.It Li dns_proxy = Va proxy-spec
+Enable using DNS via HTTP.
+.It Li extra_addresses = Va address...
+A list of addresses to get tickets for along with all local addresses.
+.It Li time_format = Va string
+How to print time strings in logs, this string is passed to
+.Xr strftime 3 .
+.It Li log_utc = Va boolean
+Write log-entries using UTC instead of your local time zone.
 .El
 .It Li [domain_realm]
 This is a list of mappings from DNS domain to Kerberos realm. Each
@@ -128,4 +159,7 @@ manual page for a list of defined destinations.
 	default = SYSLOG:INFO:USER
 .Ed
 .Sh SEE ALSO
+.Xr krb5_openlog 3 ,
+.Xr krb5_425_conv_principal 3 ,
+.Xr strftime 3 ,
 .Xr Source tm
