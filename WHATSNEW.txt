@@ -27,6 +27,18 @@ Additional features introduced in Samba 3.0.12rc1:
   o New libsmbclient functionality.
 
 
+libsmbclient Binary Compatibility
+==================================
+
+Please note that a change has been made to the _SMBCCTX structure 
+in source/include/libsmbclient.h.  This change is not backwards
+compatible with applications linked against the libsmbclient.so
+library from Samba 3.0.11.  However, it is compatible with all 
+other Samba 3.0.x releases.  This means that it will be most likely
+be necessary to recompile any applications linked against the 
+3.0.11 version of the library.
+
+
 ######################################################################
 Changes
 #######
