@@ -48,7 +48,6 @@ unsigned char	ttyobuf[2*BUFSIZ], ttyibuf[BUFSIZ];
 
 int termdata;			/* Debugging flag */
 
-#ifdef	USE_TERMIO
 # ifndef VDISCARD
 cc_t termFlushChar;
 # endif
@@ -79,10 +78,6 @@ cc_t termForw2Char;
 # ifndef VSTATUS
 cc_t termAytChar;
 # endif
-#else
-cc_t termForw2Char;
-cc_t termAytChar;
-#endif
 
 /*
  * initialize the terminal data structures.
@@ -170,9 +165,6 @@ getconnmode()
 #ifdef	KLUDGELINEMODE
     extern int kludgelinemode;
 #endif
-
-    if (In3270)
-	return(MODE_FLOW);
 
     if (my_want_state_is_dont(TELOPT_ECHO))
 	mode |= MODE_ECHO;

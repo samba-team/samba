@@ -35,21 +35,13 @@
 
 RCSID("$Id$");
 
-#if	defined(unix)
 #include <sys/param.h>
-#if	defined(CRAY) || defined(sysV88)
 #include <sys/types.h>
-#endif
 #include <sys/file.h>
-#else
-#include <sys/types.h>
-#endif	/* defined(unix) */
 #include <sys/socket.h>
 #include <netinet/in.h>
-#ifdef	CRAY
-#include <fcntl.h>
-#endif	/* CRAY */
 
+#include <fcntl.h>
 #include <signal.h>
 #include <netdb.h>
 #include <ctype.h>
@@ -57,6 +49,7 @@ RCSID("$Id$");
 #include <stdarg.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <arpa/telnet.h>
 
@@ -711,18 +704,6 @@ static struct togglelist Togglelist[] = {
 		&localchars,
 		    "recognize certain control characters" },
     { " ", "", 0 },		/* empty line */
-#if	defined(unix) && defined(TN3270)
-    { "apitrace",
-	"(debugging) toggle tracing of API transactions",
-	    0,
-		&apitrace,
-		    "trace API transactions" },
-    { "cursesdata",
-	"(debugging) toggle printing of hexadecimal curses data",
-	    0,
-		&cursesdata,
-		    "print hexadecimal representation of curses data" },
-#endif	/* defined(unix) && defined(TN3270) */
     { "debug",
 	"debugging",
 	    togdebug,
@@ -743,13 +724,11 @@ static struct togglelist Togglelist[] = {
 	    0,
 		&showoptions,
 		    "show option processing" },
-#if	defined(unix)
     { "termdata",
 	"(debugging) toggle printing of hexadecimal terminal data",
 	    0,
 		&termdata,
 		    "print hexadecimal representation of terminal traffic" },
-#endif	/* defined(unix) */
     { "?",
 	0,
 	    togglehelp },
@@ -844,9 +823,7 @@ toggle(argc, argv)
  * The following perform the "set" command.
  */
 
-#ifdef	USE_TERMIO
-struct termio new_tc = { 0 };
-#endif
+struct termios new_tc = { 0 };
 
 struct setlist {
     char *name;				/* name */
@@ -1328,9 +1305,8 @@ setescape(argc, argv)
 	}
 	if (arg[0] != '\0')
 		escape = arg[0];
-	if (!In3270) {
-		printf("Escape character is '%s'.\n", control(escape));
-	}
+	printf("Escape character is '%s'.\n", control(escape));
+
 	(void) fflush(stdout);
 	return 1;
 }
@@ -1376,19 +1352,16 @@ suspend()
     return 1;
 }
 
-#if	!defined(TN3270)
     /*ARGSUSED*/
-    int
-shell(argc, argv)
-    int argc;
-    char *argv[];
+int
+shell(int argc, char **argv)
 {
     long oldrows, oldcols, newrows, newcols, err;
 
     setcommandmode();
 
     err = (TerminalWindowSize(&oldrows, &oldcols) == 0) ? 1 : 0;
-    switch(vfork()) {
+    switch(fork()) {
     case -1:
 	perror("Fork failed\n");
 	break;
@@ -1425,9 +1398,6 @@ shell(argc, argv)
     }
     return 1;
 }
-#else	/* !defined(TN3270) */
-extern int shell();
-#endif	/* !defined(TN3270) */
 
 static int bye(int argc, char **argv)
 {
@@ -1444,9 +1414,6 @@ static int bye(int argc, char **argv)
 #endif
 	/* reset options */
 	tninit();
-#if	defined(TN3270)
-	SetIn3270();		/* Get out of 3270 mode */
-#endif	/* defined(TN3270) */
     }
     if ((argc != 2) || (strcmp(argv[1], "fromquit") != 0)) {
 	longjmp(toplevel, 1);
@@ -1563,9 +1530,6 @@ extern void
 	env_export P((unsigned char *)),
 	env_unexport P((unsigned char *)),
 	env_send P((unsigned char *)),
-#if defined(OLD_ENVIRON) && defined(ENV_HACK)
-	env_varval P((unsigned char *)),
-#endif
 	env_list P((void));
 static void
 	env_help P((void));
@@ -1582,10 +1546,6 @@ struct envlist EnvList[] = {
     { "send",	"Send an environment variable", env_send,	1 },
     { "list",	"List the current environment variables",
 						env_list,	0 },
-#if defined(OLD_ENVIRON) && defined(ENV_HACK)
-    { "varval", "Reverse VAR and VALUE (auto, right, wrong, status)",
-						env_varval,    1 },
-#endif
     { "help",	0,				env_help,		0 },
     { "?",	"Print help information",	env_help,		0 },
     { 0 },
@@ -1857,43 +1817,6 @@ env_getvalue(var)
 	return(NULL);
 }
 
-#if defined(OLD_ENVIRON) && defined(ENV_HACK)
-	void
-env_varval(what)
-	unsigned char *what;
-{
-	extern int old_env_var, old_env_value, env_auto;
-	int len = strlen((char *)what);
-
-	if (len == 0)
-		goto unknown;
-
-	if (strncasecmp((char *)what, "status", len) == 0) {
-		if (env_auto)
-			printf("%s%s", "VAR and VALUE are/will be ",
-					"determined automatically\n");
-		if (old_env_var == OLD_ENV_VAR)
-			printf("VAR and VALUE set to correct definitions\n");
-		else
-			printf("VAR and VALUE definitions are reversed\n");
-	} else if (strncasecmp((char *)what, "auto", len) == 0) {
-		env_auto = 1;
-		old_env_var = OLD_ENV_VALUE;
-		old_env_value = OLD_ENV_VAR;
-	} else if (strncasecmp((char *)what, "right", len) == 0) {
-		env_auto = 0;
-		old_env_var = OLD_ENV_VAR;
-		old_env_value = OLD_ENV_VALUE;
-	} else if (strncasecmp((char *)what, "wrong", len) == 0) {
-		env_auto = 0;
-		old_env_var = OLD_ENV_VALUE;
-		old_env_value = OLD_ENV_VAR;
-	} else {
-unknown:
-		printf("Unknown \"varval\" command. (\"auto\", \"right\", \"wrong\", \"status\")\n");
-	}
-}
-#endif
 
 #if	defined(AUTHENTICATION)
 /*
@@ -2089,38 +2012,6 @@ int encrypt_cmd(int argc, char **argv)
 }
 #endif
 
-#if	defined(unix) && defined(TN3270)
-    static void
-filestuff(fd)
-    int fd;
-{
-    int res;
-
-#ifdef	F_GETOWN
-    setconnmode(0);
-    res = fcntl(fd, F_GETOWN, 0);
-    setcommandmode();
-
-    if (res == -1) {
-	perror("fcntl");
-	return;
-    }
-    printf("\tOwner is %d.\n", res);
-#endif
-
-    setconnmode(0);
-    res = fcntl(fd, F_GETFL, 0);
-    setcommandmode();
-
-    if (res == -1) {
-	perror("fcntl");
-	return;
-    }
-#ifdef notdef
-    printf("\tFlags are 0x%x: %s\n", res, decodeflags(res));
-#endif
-}
-#endif /* defined(unix) && defined(TN3270) */
 
 /*
  * Print status about the connection.
@@ -2158,37 +2049,8 @@ static int status(int argc, char **argv)
     } else {
 	printf("No connection.\n");
     }
-#   if !defined(TN3270)
     printf("Escape character is '%s'.\n", control(escape));
     (void) fflush(stdout);
-#   else /* !defined(TN3270) */
-    if ((!In3270) && ((argc < 2) || strcmp(argv[1], "notmuch"))) {
-	printf("Escape character is '%s'.\n", control(escape));
-    }
-#   if defined(unix)
-    if ((argc >= 2) && !strcmp(argv[1], "everything")) {
-	printf("SIGIO received %d time%s.\n",
-				sigiocount, (sigiocount == 1)? "":"s");
-	if (In3270) {
-	    printf("Process ID %d, process group %d.\n",
-					    getpid(), getpgrp(getpid()));
-	    printf("Terminal input:\n");
-	    filestuff(tin);
-	    printf("Terminal output:\n");
-	    filestuff(tout);
-	    printf("Network socket:\n");
-	    filestuff(net);
-	}
-    }
-    if (In3270 && transcom) {
-       printf("Transparent mode command is '%s'.\n", transcom);
-    }
-#   endif /* defined(unix) */
-    (void) fflush(stdout);
-    if (In3270) {
-	return 0;
-    }
-#   endif /* defined(TN3270) */
     return 1;
 }
 
@@ -2533,18 +2395,13 @@ static char
 	togglestring[] ="toggle operating parameters ('toggle ?' for more)",
 	slchelp[] =	"change state of special charaters ('slc ?' for more)",
 	displayhelp[] =	"display operating parameters",
-#if	defined(TN3270) && defined(unix)
-	transcomhelp[] = "specify Unix command for transparent mode pipe",
-#endif	/* defined(TN3270) && defined(unix) */
 #if	defined(AUTHENTICATION)
 	authhelp[] =	"turn on (off) authentication ('auth ?' for more)",
 #endif
 #if	defined(ENCRYPTION)
 	encrypthelp[] =	"turn on (off) encryption ('encrypt ?' for more)",
 #endif
-#if	defined(unix)
 	zhelp[] =	"suspend telnet",
-#endif	/* defined(unix) */
 	shellhelp[] =	"invoke a subshell",
 	envhelp[] =	"change environment variables ('environ ?' for more)",
 	modestring[] = "try to enter line or character mode ('mode ?' for more)";
@@ -2564,23 +2421,14 @@ static Command cmdtab[] = {
 	{ "status",	statushelp,	status,		0 },
 	{ "toggle",	togglestring,	toggle,		0 },
 	{ "slc",	slchelp,	slccmd,		0 },
-#if	defined(TN3270) && defined(unix)
-	{ "transcom",	transcomhelp,	settranscom,	0 },
-#endif	/* defined(TN3270) && defined(unix) */
 #if	defined(AUTHENTICATION)
 	{ "auth",	authhelp,	auth_cmd,	0 },
 #endif
 #if	defined(ENCRYPTION)
 	{ "encrypt",	encrypthelp,	encrypt_cmd,	0 },
 #endif
-#if	defined(unix)
 	{ "z",		zhelp,		suspend,	0 },
-#endif	/* defined(unix) */
-#if	defined(TN3270)
-	{ "!",		shellhelp,	shell,		1 },
-#else
 	{ "!",		shellhelp,	shell,		0 },
-#endif
 	{ "environ",	envhelp,	env_cmd,	0 },
 	{ "?",		helphelp,	help,		0 },
 	{ 0,            0,              0,              0 }
@@ -2634,11 +2482,9 @@ command(top, tbuf, cnt)
     setcommandmode();
     if (!top) {
 	putchar('\n');
-#if	defined(unix)
     } else {
 	(void) signal(SIGINT, SIG_DFL);
 	(void) signal(SIGQUIT, SIG_DFL);
-#endif	/* defined(unix) */
     }
     for (;;) {
 	if (rlogin == _POSIX_VDISABLE)
@@ -2694,13 +2540,7 @@ command(top, tbuf, cnt)
 	    longjmp(toplevel, 1);
 	    /*NOTREACHED*/
 	}
-#if	defined(TN3270)
-	if (shell_active == 0) {
-	    setconnmode(0);
-	}
-#else	/* defined(TN3270) */
 	setconnmode(0);
-#endif	/* defined(TN3270) */
     }
 }
 

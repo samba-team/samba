@@ -38,54 +38,21 @@
 #if defined(CRAY) && !defined(NO_BSD_SETJMP)
 #include <bsdsetjmp.h>
 #endif
-#ifndef	FILIO_H
+/* not with SunOS 4 */
+#if defined(HAVE_SYS_IOCTL_H) && (defined(sun) && !defined(__svr4__))
 #include <sys/ioctl.h>
-#else
+#endif
+#ifdef HAVE_SYS_FILIO_H
 #include <sys/filio.h>
 #endif
-#ifdef CRAY
-# include <errno.h>
-#endif /* CRAY */
+
+#include <errno.h>
 
 #ifndef	BSD
 # define BSD 43
 #endif
 
-/*
- * ucb stdio.h defines BSD as something wierd
- */
-#if defined(sun) && defined(__svr4__)
-#undef BSD
-#define BSD 43
-#endif
-
-#ifndef	USE_TERMIO
-# if BSD > 43 || defined(SYSV_TERMIO)
-#  define USE_TERMIO
-# endif
-#endif
-
-#ifdef	USE_TERMIO
-#  ifdef SYSV_TERMIO
-#   include <sys/termio.h>
-#  else
-#   include <termios.h>
-#   define termio termios
-#  endif
-#endif
-#if defined(NO_CC_T) || !defined(USE_TERMIO)
-# if !defined(USE_TERMIO)
-typedef char cc_t;
-# else
-typedef unsigned char cc_t;
-# endif
-#endif
-
-#ifndef	NO_STRING_H
-#include <string.h>
-#else
-#include <strings.h>
-#endif
+#include <termios.h>
 
 #ifndef	_POSIX_VDISABLE
 # ifdef sun
@@ -99,10 +66,6 @@ typedef unsigned char cc_t;
 #endif
 
 #define	SUBBUFSIZE	256
-
-#ifndef CRAY
-extern int errno;		/* outside this world */
-#endif /* !CRAY */
 
 #if	!defined(P)
 # ifdef	__STDC__
@@ -119,7 +82,6 @@ extern int
     flushout,		/* flush output */
     connected,		/* Are we connected to the other side? */
     globalmode,		/* Mode tty should be in */
-    In3270,		/* Are we in 3270 mode? */
     telnetport,		/* Are we connected to the telnet port? */
     localflow,		/* Flow control handled locally */
     restartany,		/* If flow control, restart output on any character */
@@ -138,13 +100,7 @@ extern int
     crmod,
     netdata,		/* Print out network data flow */
     prettydump,		/* Print "netdata" output in user readable format */
-#if defined(unix) || defined(__unix__) || defined(__unix)
-#if	defined(TN3270)
-    cursesdata,		/* Print out curses data flow */
-    apitrace,		/* Trace API transactions */
-#endif	/* defined(TN3270) */
     termdata,		/* Print out terminal data flow */
-#endif	/* defined(unix) */
     debug;		/* Debug level */
 
 extern cc_t escape;	/* Escape to command mode */
@@ -245,7 +201,6 @@ extern jmp_buf
 extern void
     command P((int, char *, int)),
     Dump P((int, unsigned char *, int)),
-    init_3270 P((void)),
     printoption P((char *, int, int)),
     printsub P((int, unsigned char *, int)),
     sendnaws P((void)),
@@ -287,7 +242,7 @@ extern void
     slc P((unsigned char *, int)),
     slc_check P((void)),
     slc_start_reply P((void)),
-    slc_add_reply P((int, int, int)),
+    slc_add_reply P((unsigned char, unsigned char, cc_t)),
     slc_end_reply P((void));
 extern int
     slc_update P((void));
@@ -312,47 +267,8 @@ extern cc_t
 
 extern int quit P((void));
 
-#ifndef	USE_TERMIO
 
-extern struct	tchars ntc;
-extern struct	ltchars nltc;
-extern struct	sgttyb nttyb;
-
-# define termEofChar		ntc.t_eofc
-# define termEraseChar		nttyb.sg_erase
-# define termFlushChar		nltc.t_flushc
-# define termIntChar		ntc.t_intrc
-# define termKillChar		nttyb.sg_kill
-# define termLiteralNextChar	nltc.t_lnextc
-# define termQuitChar		ntc.t_quitc
-# define termSuspChar		nltc.t_suspc
-# define termRprntChar		nltc.t_rprntc
-# define termWerasChar		nltc.t_werasc
-# define termStartChar		ntc.t_startc
-# define termStopChar		ntc.t_stopc
-# define termForw1Char		ntc.t_brkc
-extern cc_t termForw2Char;
-extern cc_t termAytChar;
-
-# define termEofCharp		(cc_t *)&ntc.t_eofc
-# define termEraseCharp		(cc_t *)&nttyb.sg_erase
-# define termFlushCharp		(cc_t *)&nltc.t_flushc
-# define termIntCharp		(cc_t *)&ntc.t_intrc
-# define termKillCharp		(cc_t *)&nttyb.sg_kill
-# define termLiteralNextCharp	(cc_t *)&nltc.t_lnextc
-# define termQuitCharp		(cc_t *)&ntc.t_quitc
-# define termSuspCharp		(cc_t *)&nltc.t_suspc
-# define termRprntCharp		(cc_t *)&nltc.t_rprntc
-# define termWerasCharp		(cc_t *)&nltc.t_werasc
-# define termStartCharp		(cc_t *)&ntc.t_startc
-# define termStopCharp		(cc_t *)&ntc.t_stopc
-# define termForw1Charp		(cc_t *)&ntc.t_brkc
-# define termForw2Charp		(cc_t *)&termForw2Char
-# define termAytCharp		(cc_t *)&termAytChar
-
-# else
-
-extern struct	termio new_tc;
+extern struct	termios new_tc;
 
 # define termEofChar		new_tc.c_cc[VEOF]
 # define termEraseChar		new_tc.c_cc[VERASE]
@@ -414,7 +330,6 @@ extern cc_t termAytChar;
 #  define termAytChar		new_tc.c_cc[VSTATUS]
 #endif
 
-# if !defined(CRAY) || defined(__STDC__)
 #  define termEofCharp		&termEofChar
 #  define termEraseCharp	&termEraseChar
 #  define termIntCharp		&termIntChar
@@ -430,25 +345,6 @@ extern cc_t termAytChar;
 #  define termForw1Charp	&termForw1Char
 #  define termForw2Charp	&termForw2Char
 #  define termAytCharp		&termAytChar
-# else
-	/* Work around a compiler bug */
-#  define termEofCharp		0
-#  define termEraseCharp	0
-#  define termIntCharp		0
-#  define termKillCharp		0
-#  define termQuitCharp		0
-#  define termSuspCharp		0
-#  define termFlushCharp	0
-#  define termWerasCharp	0
-#  define termRprntCharp	0
-#  define termLiteralNextCharp	0
-#  define termStartCharp	0
-#  define termStopCharp		0
-#  define termForw1Charp	0
-#  define termForw2Charp	0
-#  define termAytCharp		0
-# endif
-#endif
 
 
 /* Ring buffer structures which are shared */
@@ -459,26 +355,3 @@ extern Ring
     ttyoring,
     ttyiring;
 
-/* Tn3270 section */
-#if	defined(TN3270)
-
-extern int
-    HaveInput,		/* Whether an asynchronous I/O indication came in */
-    noasynchtty,	/* Don't do signals on I/O (SIGURG, SIGIO) */
-    noasynchnet,	/* Don't do signals on I/O (SIGURG, SIGIO) */
-    sigiocount,		/* Count of SIGIO receptions */
-    shell_active;	/* Subshell is active */
-
-extern char
-    *Ibackp,		/* Oldest byte of 3270 data */
-    Ibuf[],		/* 3270 buffer */
-    *Ifrontp,		/* Where next 3270 byte goes */
-    tline[],
-    *transcom;		/* Transparent command */
-
-extern int
-    settranscom P((int, char**));
-
-extern void
-    inputAvailable P((int));
-#endif	/* defined(TN3270) */

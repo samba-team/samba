@@ -60,14 +60,9 @@ RCSID("$Id$");
 #include "externs.h"
 #include "types.h"
 
-#if	defined(CRAY) || (defined(USE_TERMIO) && !defined(SYSV_TERMIO))
-#define	SIG_FUNC_RET	void
-#else
-#define	SIG_FUNC_RET	int
-#endif
 
 #ifdef	SIGINFO
-extern SIG_FUNC_RET ayt_status();
+extern RETSIGTYPE ayt_status();
 #endif
 
 int
@@ -75,18 +70,8 @@ int
 	tin,			/* Input file descriptor */
 	net;
 
-#ifndef	USE_TERMIO
-struct	tchars otc = { 0 }, ntc = { 0 };
-struct	ltchars oltc = { 0 }, nltc = { 0 };
-struct	sgttyb ottyb = { 0 }, nttyb = { 0 };
-int	olmode = 0;
-# define cfgetispeed(ptr)	(ptr)->sg_ispeed
-# define cfgetospeed(ptr)	(ptr)->sg_ospeed
-# define old_tc ottyb
-
-#else	/* USE_TERMIO */
-struct	termio old_tc = { 0 };
-extern struct termio new_tc;
+struct	termios old_tc = { 0 };
+extern struct termios new_tc;
 
 # ifndef	TCSANOW
 #  ifdef TCSETS
@@ -115,12 +100,11 @@ extern struct termio new_tc;
 # ifdef	sysV88
 # define TIOCFLUSH TC_PX_DRAIN
 # endif
-#endif	/* USE_TERMIO */
 
 static fd_set ibits, obits, xbits;
 
 
-    void
+void
 init_sys()
 {
     tout = fileno(stdout);
@@ -133,18 +117,14 @@ init_sys()
 }
 
 
-    int
-TerminalWrite(buf, n)
-    char *buf;
-    int  n;
+int
+TerminalWrite(char *buf, int n)
 {
     return write(tout, buf, n);
 }
 
-    int
-TerminalRead(buf, n)
-    char *buf;
-    int  n;
+int
+TerminalRead(char *buf, int n)
 {
     return read(tin, buf, n);
 }
@@ -153,7 +133,7 @@ TerminalRead(buf, n)
  *
  */
 
-    int
+int
 TerminalAutoFlush()
 {
 #if	defined(LNOFLSH)
@@ -183,9 +163,8 @@ extern int kludgelinemode;
 
 extern void xmitAO(), xmitEL(), xmitEC(), intp(), sendbrk();
 
-    int
-TerminalSpecialChars(c)
-    int	c;
+int
+TerminalSpecialChars(int c)
 {
     if (c == termIntChar) {
 	intp();
@@ -227,7 +206,7 @@ TerminalSpecialChars(c)
  * Flush output to the terminal
  */
 
-    void
+void
 TerminalFlushOutput()
 {
 #ifdef	TIOCFLUSH
@@ -237,20 +216,9 @@ TerminalFlushOutput()
 #endif
 }
 
-    void
+void
 TerminalSaveState()
 {
-#ifndef	USE_TERMIO
-    ioctl(0, TIOCGETP, (char *)&ottyb);
-    ioctl(0, TIOCGETC, (char *)&otc);
-    ioctl(0, TIOCGLTC, (char *)&oltc);
-    ioctl(0, TIOCLGET, (char *)&olmode);
-
-    ntc = otc;
-    nltc = oltc;
-    nttyb = ottyb;
-
-#else	/* USE_TERMIO */
     tcgetattr(0, &old_tc);
 
     new_tc = old_tc;
@@ -276,12 +244,10 @@ TerminalSaveState()
 #ifndef	VSTATUS
     termAytChar = CONTROL('T');
 #endif
-#endif	/* USE_TERMIO */
 }
 
-    cc_t *
-tcval(func)
-    register int func;
+cc_t*
+tcval(int func)
 {
     switch(func) {
     case SLC_IP:	return(&termIntChar);
@@ -292,7 +258,6 @@ tcval(func)
     case SLC_XON:	return(&termStartChar);
     case SLC_XOFF:	return(&termStopChar);
     case SLC_FORW1:	return(&termForw1Char);
-#ifdef	USE_TERMIO
     case SLC_FORW2:	return(&termForw2Char);
 # ifdef	VDISCARD
     case SLC_AO:	return(&termFlushChar);
@@ -312,7 +277,6 @@ tcval(func)
 # ifdef	VSTATUS
     case SLC_AYT:	return(&termAytChar);
 # endif
-#endif
 
     case SLC_SYNCH:
     case SLC_BRK:
@@ -322,15 +286,9 @@ tcval(func)
     }
 }
 
-    void
+void
 TerminalDefaultChars()
 {
-#ifndef	USE_TERMIO
-    ntc = otc;
-    nltc = oltc;
-    nttyb.sg_kill = ottyb.sg_kill;
-    nttyb.sg_erase = ottyb.sg_erase;
-#else	/* USE_TERMIO */
     memmove(new_tc.c_cc, old_tc.c_cc, sizeof(old_tc.c_cc));
 # ifndef	VDISCARD
     termFlushChar = CONTROL('O');
@@ -353,7 +311,6 @@ TerminalDefaultChars()
 # ifndef	VSTATUS
     termAytChar = CONTROL('T');
 # endif
-#endif	/* USE_TERMIO */
 }
 
 #ifdef notdef
@@ -386,19 +343,11 @@ TerminalRestoreState()
  */
 
 
-    void
-TerminalNewMode(f)
-    register int f;
+void
+TerminalNewMode(int f)
 {
     static int prevmode = 0;
-#ifndef	USE_TERMIO
-    struct tchars tc;
-    struct ltchars ltc;
-    struct sgttyb sb;
-    int lmode;
-#else	/* USE_TERMIO */
-    struct termio tmp_tc;
-#endif	/* USE_TERMIO */
+    struct termios tmp_tc;
     int onoff;
     int old;
     cc_t esc;
@@ -413,68 +362,38 @@ TerminalNewMode(f)
      * left to write out, it returns -1 if it couldn't do
      * anything at all, otherwise it returns 1 + the number
      * of characters left to write.
-#ifndef	USE_TERMIO
-     * We would really like ask the kernel to wait for the output
-     * to drain, like we can do with the TCSADRAIN, but we don't have
-     * that option.  The only ioctl that waits for the output to
-     * drain, TIOCSETP, also flushes the input queue, which is NOT
-     * what we want (TIOCSETP is like TCSADFLUSH).
-#endif
      */
     old = ttyflush(SYNCHing|flushout);
     if (old < 0 || old > 1) {
-#ifdef	USE_TERMIO
 	tcgetattr(tin, &tmp_tc);
-#endif	/* USE_TERMIO */
 	do {
 	    /*
 	     * Wait for data to drain, then flush again.
 	     */
-#ifdef	USE_TERMIO
 	    tcsetattr(tin, TCSADRAIN, &tmp_tc);
-#endif	/* USE_TERMIO */
 	    old = ttyflush(SYNCHing|flushout);
 	} while (old < 0 || old > 1);
     }
 
     old = prevmode;
     prevmode = f&~MODE_FORCE;
-#ifndef	USE_TERMIO
-    sb = nttyb;
-    tc = ntc;
-    ltc = nltc;
-    lmode = olmode;
-#else
     tmp_tc = new_tc;
-#endif
 
     if (f&MODE_ECHO) {
-#ifndef	USE_TERMIO
-	sb.sg_flags |= ECHO;
-#else
 	tmp_tc.c_lflag |= ECHO;
 	tmp_tc.c_oflag |= ONLCR;
 	if (crlf)
 		tmp_tc.c_iflag |= ICRNL;
-#endif
     } else {
-#ifndef	USE_TERMIO
-	sb.sg_flags &= ~ECHO;
-#else
 	tmp_tc.c_lflag &= ~ECHO;
 	tmp_tc.c_oflag &= ~ONLCR;
 # ifdef notdef
 	if (crlf)
 		tmp_tc.c_iflag &= ~ICRNL;
 # endif
-#endif
     }
 
     if ((f&MODE_FLOW) == 0) {
-#ifndef	USE_TERMIO
-	tc.t_startc = _POSIX_VDISABLE;
-	tc.t_stopc = _POSIX_VDISABLE;
-#else
 	tmp_tc.c_iflag &= ~(IXOFF|IXON);	/* Leave the IXANY bit alone */
     } else {
 	if (restartany < 0) {
@@ -485,63 +404,32 @@ TerminalNewMode(f)
 		tmp_tc.c_iflag |= IXOFF|IXON;
 		tmp_tc.c_iflag &= ~IXANY;
 	}
-#endif
     }
 
     if ((f&MODE_TRAPSIG) == 0) {
-#ifndef	USE_TERMIO
-	tc.t_intrc = _POSIX_VDISABLE;
-	tc.t_quitc = _POSIX_VDISABLE;
-	tc.t_eofc = _POSIX_VDISABLE;
-	ltc.t_suspc = _POSIX_VDISABLE;
-	ltc.t_dsuspc = _POSIX_VDISABLE;
-#else
 	tmp_tc.c_lflag &= ~ISIG;
-#endif
 	localchars = 0;
     } else {
-#ifdef	USE_TERMIO
 	tmp_tc.c_lflag |= ISIG;
-#endif
 	localchars = 1;
     }
 
     if (f&MODE_EDIT) {
-#ifndef	USE_TERMIO
-	sb.sg_flags &= ~CBREAK;
-	sb.sg_flags |= CRMOD;
-#else
 	tmp_tc.c_lflag |= ICANON;
-#endif
     } else {
-#ifndef	USE_TERMIO
-	sb.sg_flags |= CBREAK;
-	if (f&MODE_ECHO)
-	    sb.sg_flags |= CRMOD;
-	else
-	    sb.sg_flags &= ~CRMOD;
-#else
 	tmp_tc.c_lflag &= ~ICANON;
 	tmp_tc.c_iflag &= ~ICRNL;
 	tmp_tc.c_cc[VMIN] = 1;
 	tmp_tc.c_cc[VTIME] = 0;
-#endif
     }
 
     if ((f&(MODE_EDIT|MODE_TRAPSIG)) == 0) {
-#ifndef	USE_TERMIO
-	ltc.t_lnextc = _POSIX_VDISABLE;
-#else
 # ifdef VLNEXT
 	tmp_tc.c_cc[VLNEXT] = (cc_t)(_POSIX_VDISABLE);
 # endif
-#endif
     }
 
     if (f&MODE_SOFT_TAB) {
-#ifndef USE_TERMIO
-	sb.sg_flags |= XTABS;
-#else
 # ifdef	OXTABS
 	tmp_tc.c_oflag |= OXTABS;
 # endif
@@ -549,52 +437,28 @@ TerminalNewMode(f)
 	tmp_tc.c_oflag &= ~TABDLY;
 	tmp_tc.c_oflag |= TAB3;
 # endif
-#endif
     } else {
-#ifndef USE_TERMIO
-	sb.sg_flags &= ~XTABS;
-#else
 # ifdef	OXTABS
 	tmp_tc.c_oflag &= ~OXTABS;
 # endif
 # ifdef	TABDLY
 	tmp_tc.c_oflag &= ~TABDLY;
 # endif
-#endif
     }
 
     if (f&MODE_LIT_ECHO) {
-#ifndef USE_TERMIO
-	lmode &= ~LCTLECH;
-#else
 # ifdef	ECHOCTL
 	tmp_tc.c_lflag &= ~ECHOCTL;
 # endif
-#endif
     } else {
-#ifndef USE_TERMIO
-	lmode |= LCTLECH;
-#else
 # ifdef	ECHOCTL
 	tmp_tc.c_lflag |= ECHOCTL;
 # endif
-#endif
     }
 
     if (f == -1) {
 	onoff = 0;
     } else {
-#ifndef	USE_TERMIO
-	if (f & MODE_OUTBIN)
-		lmode |= LLITOUT;
-	else
-		lmode &= ~LLITOUT;
-
-	if (f & MODE_INBIN)
-		lmode |= LPASS8;
-	else
-		lmode &= ~LPASS8;
-#else
 	if (f & MODE_INBIN)
 		tmp_tc.c_iflag &= ~ISTRIP;
 	else
@@ -608,16 +472,15 @@ TerminalNewMode(f)
 		tmp_tc.c_cflag |= old_tc.c_cflag & (CSIZE|PARENB);
 		tmp_tc.c_oflag |= OPOST;
 	}
-#endif
 	onoff = 1;
     }
 
     if (f != -1) {
 #ifdef	SIGTSTP
-	SIG_FUNC_RET susp();
+	RETSIGTYPE susp();
 #endif	/* SIGTSTP */
 #ifdef	SIGINFO
-	SIG_FUNC_RET ayt();
+	RETSIGTYPE ayt();
 #endif
 
 #ifdef	SIGTSTP
@@ -626,7 +489,7 @@ TerminalNewMode(f)
 #ifdef	SIGINFO
 	(void) signal(SIGINFO, ayt);
 #endif
-#if	defined(USE_TERMIO) && defined(NOKERNINFO)
+#ifdef NOKERNINFO
 	tmp_tc.c_lflag |= NOKERNINFO;
 #endif
 	/*
@@ -635,14 +498,9 @@ TerminalNewMode(f)
 	 * to process it because it will be processed when the
 	 * user attempts to read it, not when we send it.
 	 */
-#ifndef	USE_TERMIO
-	ltc.t_dsuspc = _POSIX_VDISABLE;
-#else
 # ifdef	VDSUSP
 	tmp_tc.c_cc[VDSUSP] = (cc_t)(_POSIX_VDISABLE);
 # endif
-#endif
-#ifdef	USE_TERMIO
 	/*
 	 * If the VEOL character is already set, then use VEOL2,
 	 * otherwise use VEOL.
@@ -660,54 +518,26 @@ TerminalNewMode(f)
 		    tmp_tc.c_cc[VEOL2] = esc;
 # endif
 	}
-#else
-	if (tc.t_brkc == (cc_t)(_POSIX_VDISABLE))
-		tc.t_brkc = esc;
-#endif
     } else {
+        sigset_t sm;
 #ifdef	SIGINFO
-	SIG_FUNC_RET ayt_status();
+	RETSIGTYPE ayt_status();
 
 	(void) signal(SIGINFO, ayt_status);
 #endif
 #ifdef	SIGTSTP
 	(void) signal(SIGTSTP, SIG_DFL);
-# ifndef SOLARIS
-	(void) sigsetmask(sigblock(0) & ~(1<<(SIGTSTP-1)));
-# else
-	(void) sigrelse(SIGTSTP);
-# endif
+	sigemptyset(sm);
+	sigaddset(sm, SIGTSTP);
+	sigprocmask(SIG_UNBLOCK, &sm, NULL);
 #endif	/* SIGTSTP */
-#ifndef USE_TERMIO
-	ltc = oltc;
-	tc = otc;
-	sb = ottyb;
-	lmode = olmode;
-#else
 	tmp_tc = old_tc;
-#endif
     }
-#ifndef USE_TERMIO
-    ioctl(tin, TIOCLSET, (char *)&lmode);
-    ioctl(tin, TIOCSLTC, (char *)&ltc);
-    ioctl(tin, TIOCSETC, (char *)&tc);
-    ioctl(tin, TIOCSETN, (char *)&sb);
-#else
     if (tcsetattr(tin, TCSADRAIN, &tmp_tc) < 0)
 	tcsetattr(tin, TCSANOW, &tmp_tc);
-#endif
 
-#if	(!defined(TN3270)) || ((!defined(NOT43)) || defined(PUTCHAR))
-# if	!defined(sysV88)
     ioctl(tin, FIONBIO, (char *)&onoff);
     ioctl(tout, FIONBIO, (char *)&onoff);
-# endif
-#endif	/* (!defined(TN3270)) || ((!defined(NOT43)) || defined(PUTCHAR)) */
-#if	defined(TN3270)
-    if (noasynchtty == 0) {
-	ioctl(tin, FIOASYNC, (char *)&onoff);
-    }
-#endif	/* defined(TN3270) */
 
 }
 
@@ -839,32 +669,13 @@ NetNonblockingIO(fd, onoff)
     ioctl(fd, FIONBIO, (char *)&onoff);
 }
 
-#if	defined(TN3270)
-    void
-NetSigIO(fd, onoff)
-    int fd;
-    int onoff;
-{
-    ioctl(fd, FIOASYNC, (char *)&onoff);	/* hear about input */
-}
-
-    void
-NetSetPgrp(fd)
-    int fd;
-{
-    int myPid;
-
-    myPid = getpid();
-    fcntl(fd, F_SETOWN, myPid);
-}
-#endif	/*defined(TN3270)*/
 
 /*
  * Various signal handling routines.
  */
 
     /* ARGSUSED */
-    SIG_FUNC_RET
+    RETSIGTYPE
 deadpeer(sig)
     int sig;
 {
@@ -873,7 +684,7 @@ deadpeer(sig)
 }
 
     /* ARGSUSED */
-    SIG_FUNC_RET
+    RETSIGTYPE
 intr(sig)
     int sig;
 {
@@ -886,7 +697,7 @@ intr(sig)
 }
 
     /* ARGSUSED */
-    SIG_FUNC_RET
+    RETSIGTYPE
 intr2(sig)
     int sig;
 {
@@ -903,7 +714,7 @@ intr2(sig)
 
 #ifdef	SIGTSTP
     /* ARGSUSED */
-    SIG_FUNC_RET
+    RETSIGTYPE
 susp(sig)
     int sig;
 {
@@ -916,7 +727,7 @@ susp(sig)
 
 #ifdef	SIGWINCH
     /* ARGSUSED */
-    SIG_FUNC_RET
+    RETSIGTYPE
 sendwin(sig)
     int sig;
 {
@@ -928,7 +739,7 @@ sendwin(sig)
 
 #ifdef	SIGINFO
     /* ARGSUSED */
-    SIG_FUNC_RET
+    RETSIGTYPE
 ayt(sig)
     int sig;
 {
@@ -960,12 +771,6 @@ sys_telnet_init()
 
     NetNonblockingIO(net, 1);
 
-#if	defined(TN3270)
-    if (noasynchnet == 0) {			/* DBX can't handle! */
-	NetSigIO(net, 1);
-	NetSetPgrp(net);
-    }
-#endif	/* defined(TN3270) */
 
 #if	defined(SO_OOBINLINE)
     if (SetSockOpt(net, SOL_SOCKET, SO_OOBINLINE, 1) == -1) {
@@ -1004,24 +809,12 @@ process_rings(netin, netout, netex, ttyin, ttyout, poll)
     if (ttyout) {
 	FD_SET(tout, &obits);
     }
-#if	defined(TN3270)
     if (ttyin) {
 	FD_SET(tin, &ibits);
     }
-#else	/* defined(TN3270) */
-    if (ttyin) {
-	FD_SET(tin, &ibits);
-    }
-#endif	/* defined(TN3270) */
-#if	defined(TN3270)
     if (netin) {
 	FD_SET(net, &ibits);
     }
-#   else /* !defined(TN3270) */
-    if (netin) {
-	FD_SET(net, &ibits);
-    }
-#   endif /* !defined(TN3270) */
     if (netex) {
 	FD_SET(net, &xbits);
     }
@@ -1036,23 +829,6 @@ process_rings(netin, netout, netex, ttyin, ttyout, poll)
 	    if (errno == EINTR) {
 		return 0;
 	    }
-#	    if defined(TN3270)
-		    /*
-		     * we can get EBADF if we were in transparent
-		     * mode, and the transcom process died.
-		    */
-	    if (errno == EBADF) {
-			/*
-			 * zero the bits (even though kernel does it)
-			 * to make sure we are selecting on the right
-			 * ones.
-			*/
-		FD_ZERO(&ibits);
-		FD_ZERO(&obits);
-		FD_ZERO(&xbits);
-		return 0;
-	    }
-#	    endif /* defined(TN3270) */
 		    /* I don't like this, does it ever happen? */
 	    printf("sleep(5) from telnet, after select\r\n");
 	    sleep(5);

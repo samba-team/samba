@@ -42,6 +42,7 @@ static char copyright[] =
 RCSID("$Id$");
 
 #include <sys/types.h>
+#include <string.h>
 
 #include "ring.h"
 #include "externs.h"
@@ -69,10 +70,6 @@ tninit()
     init_telnet();
 
     init_sys();
-
-#if defined(TN3270)
-    init_3270();
-#endif
 }
 
 void usage(void)
@@ -85,15 +82,7 @@ void usage(void)
 	  "[-8] [-E] [-L] [-S tos] [-a] [-c] [-d] [-e char] [-l user]",
 	  "\n\t[-n tracefile]",
 #endif
-#if defined(TN3270) && defined(unix)
-# ifdef AUTHENTICATION
-	  "[-noasynch] [-noasynctty]\n\t[-noasyncnet] [-r] [-t transcom] ",
-# else
-	  "[-noasynch] [-noasynctty] [-noasyncnet] [-r]\n\t[-t transcom]",
-# endif
-#else
 	  "[-r] ",
-#endif
 #ifdef	ENCRYPTION
 	  "[-x] [host-name [port]]"
 #else
@@ -244,33 +233,10 @@ int main(int argc, char **argv)
 			user = optarg;
 			break;
 		case 'n':
-#if defined(TN3270) && defined(unix)
-			/* distinguish between "-n oasynch" and "-noasynch" */
-			if (argv[optind - 1][0] == '-' && argv[optind - 1][1]
-			    == 'n' && argv[optind - 1][2] == 'o') {
-				if (!strcmp(optarg, "oasynch")) {
-					noasynchtty = 1;
-					noasynchnet = 1;
-				} else if (!strcmp(optarg, "oasynchtty"))
-					noasynchtty = 1;
-				else if (!strcmp(optarg, "oasynchnet"))
-					noasynchnet = 1;
-			} else
-#endif	/* defined(TN3270) && defined(unix) */
 				SetNetTrace(optarg);
 			break;
 		case 'r':
 			rlogin = '~';
-			break;
-		case 't':
-#if defined(TN3270) && defined(unix)
-			transcom = tline;
-			(void)strcpy(transcom, optarg);
-#else
-			fprintf(stderr,
-			   "%s: Warning: -t ignored, no TN3270 support.\n",
-								prompt);
-#endif
 			break;
 		case 'x':
 #ifdef	ENCRYPTION
@@ -329,11 +295,6 @@ int main(int argc, char **argv)
 	}
 	(void)setjmp(toplevel);
 	for (;;) {
-#ifdef TN3270
-		if (shell_active)
-			shell_continue();
-		else
-#endif
 			command(1, 0, 0);
 	}
 }

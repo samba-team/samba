@@ -774,20 +774,12 @@ printsub(direction, pointer, length)
 	    env_common:
 		{
 		    register int noquote = 2;
-#if defined(ENV_HACK) && defined(OLD_ENVIRON)
-		    extern int old_env_var, old_env_value;
-#endif
 		    for (i = 2; i < length; i++ ) {
 			switch (pointer[i]) {
 			case NEW_ENV_VALUE:
 #ifdef OLD_ENVIRON
 		     /*	case NEW_ENV_OVAR: */
 			    if (pointer[0] == TELOPT_OLD_ENVIRON) {
-# ifdef	ENV_HACK
-				if (old_env_var == OLD_ENV_VALUE)
-				    fprintf(NetTrace, "\" (VALUE) " + noquote);
-				else
-# endif
 				    fprintf(NetTrace, "\" VAR " + noquote);
 			    } else
 #endif /* OLD_ENVIRON */
@@ -799,11 +791,6 @@ printsub(direction, pointer, length)
 #ifdef OLD_ENVIRON
 		     /* case OLD_ENV_VALUE: */
 			    if (pointer[0] == TELOPT_OLD_ENVIRON) {
-# ifdef	ENV_HACK
-				if (old_env_value == OLD_ENV_VAR)
-				    fprintf(NetTrace, "\" (VAR) " + noquote);
-				else
-# endif
 				    fprintf(NetTrace, "\" VALUE " + noquote);
 			    } else
 #endif /* OLD_ENVIRON */
@@ -872,26 +859,20 @@ printsub(direction, pointer, length)
     void
 EmptyTerminal()
 {
-#if	defined(unix)
     fd_set	o;
 
     FD_ZERO(&o);
-#endif	/* defined(unix) */
 
     if (TTYBYTES() == 0) {
-#if	defined(unix)
 	FD_SET(tout, &o);
 	(void) select(tout+1, (fd_set *) 0, &o, (fd_set *) 0,
 			(struct timeval *) 0);	/* wait for TTLOWAT */
-#endif	/* defined(unix) */
     } else {
 	while (TTYBYTES()) {
 	    (void) ttyflush(0);
-#if	defined(unix)
 	    FD_SET(tout, &o);
 	    (void) select(tout+1, (fd_set *) 0, &o, (fd_set *) 0,
 				(struct timeval *) 0);	/* wait for TTLOWAT */
-#endif	/* defined(unix) */
 	}
     }
 }
@@ -900,24 +881,13 @@ EmptyTerminal()
 SetForExit()
 {
     setconnmode(0);
-#if	defined(TN3270)
-    if (In3270) {
-	Finish3270();
-    }
-#else	/* defined(TN3270) */
     do {
 	(void)telrcv();			/* Process any incoming data */
 	EmptyTerminal();
     } while (ring_full_count(&netiring));	/* While there is any */
-#endif	/* defined(TN3270) */
     setcommandmode();
     fflush(stdout);
     fflush(stderr);
-#if	defined(TN3270)
-    if (In3270) {
-	StopScreen(1);
-    }
-#endif	/* defined(TN3270) */
     setconnmode(0);
     EmptyTerminal();			/* Flush the path to the tty */
     setcommandmode();

@@ -54,7 +54,7 @@ RCSID("$Id$");
 #endif
 
 #include	<sys/types.h>
-#ifndef	FILIO_H
+#ifdef HAVE_SYS_IOCTL_H
 #include	<sys/ioctl.h>
 #endif
 #include	<sys/socket.h>
