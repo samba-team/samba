@@ -2062,10 +2062,12 @@ AC_ARG_WITH(pam,
 [  --with-pam              Include PAM support (default=no)],
 [ case "$withval" in
   yes)
-    AC_MSG_RESULT(yes)
-    AC_DEFINE(WITH_PAM,1,[Whether to include PAM support])
-    AUTHLIBS="$AUTHLIBS -lpam"
-    with_pam_for_crypt=yes
+    AC_MSG_RESULT(no)
+	AC_MSG_WARN(pam is disabled in samba4 until someone fixes it)
+#    AC_MSG_RESULT(yes)
+#    AC_DEFINE(WITH_PAM,1,[Whether to include PAM support])
+#    AUTHLIBS="$AUTHLIBS -lpam"
+#    with_pam_for_crypt=yes
     ;;
   *)
     AC_MSG_RESULT(no)
