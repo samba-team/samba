@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 2000 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -116,15 +116,19 @@ getifaddrs2(struct ifaddrs **ifap,
 	 p += sz) {
 	struct ifreq ifreq;
 	struct sockaddr *sa;
+	size_t salen;
 
 	ifr = (struct ifreq *)p;
 	sa  = &ifr->ifr_addr;
 
 	sz = ifreq_sz;
+	salen = sizeof(struct sockaddr);
 #ifdef HAVE_STRUCT_SOCKADDR_SA_LEN
+	salen = sa->sa_len;
 	sz = max(sz, sizeof(ifr->ifr_name) + sa->sa_len);
 #endif
 #ifdef SA_LEN
+	salen = SA_LEN(sa);
 	sz = max(sz, sizeof(ifr->ifr_name) + SA_LEN(sa));
 #endif
 	memset (&ifreq, 0, sizeof(ifreq));
@@ -140,8 +144,8 @@ getifaddrs2(struct ifaddrs **ifap,
 	(*end)->ifa_next = NULL;
 	(*end)->ifa_name = strdup(ifr->ifr_name);
 	(*end)->ifa_flags = ifreq.ifr_flags;
-	(*end)->ifa_addr = malloc(sizeof(*sa));
-	memcpy((*end)->ifa_addr, sa, sizeof(*sa));
+	(*end)->ifa_addr = malloc(salen);
+	memcpy((*end)->ifa_addr, sa, salen);
 	(*end)->ifa_netmask = NULL;
 
 #if 0
