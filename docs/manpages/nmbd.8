@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "NMBD" "8" "02 May 2002" "" ""
+.TH "NMBD" "8" "17 June 2002" "" ""
 .SH NAME
 nmbd \- NetBIOS name server to provide NetBIOS  over IP naming services to clients
 .SH SYNOPSIS
@@ -222,6 +222,15 @@ The debug log level of nmbd may be raised or lowered using
 (SIGUSR[1|2] signals are no longer used in Samba 2.2). This is
 to allow transient problems to be diagnosed, whilst still running
 at a normally low log level.
+.SH "TROUBLESHOOTING"
+.PP
+One of the common causes of difficulty when installing Samba and SWAT
+is the existsnece of some type of firewall or port filtering software
+on the Samba server. Make sure that the appropriate ports
+outlined in this man page are available on the server and are not currently
+being blocked by some type of security software such as iptables or
+"port sentry". For more troubleshooting information, refer to the additional
+documentation included in the Samba distribution.
 .SH "VERSION"
 .PP
 This man page is correct for version 2.2 of 

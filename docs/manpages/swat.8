@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SWAT" "8" "02 May 2002" "" ""
+.TH "SWAT" "8" "17 June 2002" "" ""
 .SH NAME
 swat \- Samba Web Administration Tool
 .SH SYNOPSIS
@@ -84,6 +84,35 @@ One you have edited \fI/etc/services\fR
 and \fI/etc/inetd.conf\fR you need to send a 
 HUP signal to inetd. To do this use \fBkill -1 PID
 \fRwhere PID is the process ID of the inetd daemon. 
+.SS "XINETD INSTALLATION"
+.PP
+Newer Linux systems ship with a more secure implementation
+of the inetd meta-daemon. The \fBxinetd\fR daemon
+can read configuration inf9ormation from a single file (i.e.
+\fI/etc/xinetd.conf\fR) or from a collection
+of service control files in the \fIxinetd.d/\fR directory.
+These directions assume the latter configuration.
+.PP
+The following file should be created as \fI/etc/xientd.d/swat\fR.
+It is then be neccessary cause the meta-daemon to reload its configuration files.
+Refer to the xinetd man page for details on how to accomplish this.
+.PP
+.sp
+.nf
+## /etc/xinetd.d/swat
+service swat
+{
+        port    = 901
+        socket_type     = stream
+        wait    = no
+        only_from = localhost
+        user    = root
+        server  = /usr/local/samba/bin/swat
+        log_on_failure  += USERID
+        disable =  No
+}
+.sp
+.fi
 .SS "LAUNCHING"
 .PP
 To launch SWAT just run your favorite web browser and 
@@ -93,11 +122,24 @@ Note that you can attach to SWAT from any IP connected
 machine but connecting from a remote machine leaves your 
 connection open to password sniffing as passwords will be sent 
 in the clear over the wire. 
+.SH "TROUBLESHOOTING"
+.PP
+One of the common causes of difficulty when installing Samba and SWAT
+is the existsnece of some type of firewall or port filtering software 
+on the Samba server. Make sure that the appropriate ports
+outlined in this man page are available on the server and are not currently 
+being blocked by some type of security software such as iptables or 
+"port sentry". For more troubleshooting information, refer to the additional 
+documentation included in the Samba distribution.
 .SH "FILES"
 .TP
 \fB\fI/etc/inetd.conf\fB\fR
 This file must contain suitable startup 
 information for the meta-daemon.
+.TP
+\fB\fI/etc/xinetd.d/swat\fB\fR
+This file must contain suitable startup 
+information for the \fBxinetd\fR meta-daemon.
 .TP
 \fB\fI/etc/services\fB\fR
 This file must contain a mapping of service name 
@@ -124,7 +166,7 @@ the Samba suite.
 .PP
 \fBinetd(5)\fR,
 \fBsmbd(8)\fR, 
-smb.conf(5)
+smb.conf(5), \fBxinetd(8)\fR
 .SH "AUTHOR"
 .PP
 The original Samba software and related utilities 

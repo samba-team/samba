@@ -252,6 +252,64 @@ CLASS="REFSECT2"
 NAME="AEN78"
 ></A
 ><H3
+>Xinetd Installation</H3
+><P
+>Newer Linux systems ship with a more secure implementation
+		of the inetd meta-daemon.  The <B
+CLASS="COMMAND"
+>xinetd</B
+> daemon
+		can read configuration inf9ormation from a single file (i.e.
+		<TT
+CLASS="FILENAME"
+>/etc/xinetd.conf</TT
+>) or from a collection
+		of service control files in the <TT
+CLASS="FILENAME"
+>xinetd.d/</TT
+> directory.
+		These directions assume the latter configuration.
+		</P
+><P
+>		The following file should be created as <TT
+CLASS="FILENAME"
+>/etc/xientd.d/swat</TT
+>.
+		It is then be neccessary cause the meta-daemon to reload its configuration files.
+		Refer to the xinetd man page for details on how to accomplish this.
+		</P
+><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+>## /etc/xinetd.d/swat
+service swat
+{
+        port    = 901
+        socket_type     = stream
+        wait    = no
+        only_from = localhost
+        user    = root
+        server  = /usr/local/samba/bin/swat
+        log_on_failure  += USERID
+        disable =  No
+}</PRE
+></TD
+></TR
+></TABLE
+></P
+></DIV
+><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN88"
+></A
+><H3
 >Launching</H3
 ><P
 >To launch SWAT just run your favorite web browser and 
@@ -266,7 +324,24 @@ NAME="AEN78"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN82"
+NAME="AEN92"
+></A
+><H2
+>TROUBLESHOOTING</H2
+><P
+>	One of the common causes of difficulty when installing Samba and SWAT
+	is the existsnece of some type of firewall or port filtering software 
+	on the Samba server.  Make sure that the appropriate ports
+	outlined in this man page are available on the server and are not currently 
+	being blocked by some type of security software such as iptables or 
+	"port sentry".  For more troubleshooting information, refer to the additional 
+	documentation included in the Samba distribution.
+	</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN95"
 ></A
 ><H2
 >FILES</H2
@@ -284,6 +359,19 @@ CLASS="FILENAME"
 ><P
 >This file must contain suitable startup 
 		information for the meta-daemon.</P
+></DD
+><DT
+><TT
+CLASS="FILENAME"
+>/etc/xinetd.d/swat</TT
+></DT
+><DD
+><P
+>This file must contain suitable startup 
+		information for the <B
+CLASS="COMMAND"
+>xinetd</B
+> meta-daemon.</P
 ></DD
 ><DT
 ><TT
@@ -324,7 +412,7 @@ CLASS="FILENAME"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN103"
+NAME="AEN122"
 ></A
 ><H2
 >WARNINGS</H2
@@ -356,7 +444,7 @@ CLASS="FILENAME"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN111"
+NAME="AEN130"
 ></A
 ><H2
 >VERSION</H2
@@ -367,7 +455,7 @@ NAME="AEN111"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN114"
+NAME="AEN133"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -388,13 +476,16 @@ CLASS="COMMAND"
 HREF="smb.conf.5.html"
 TARGET="_top"
 >smb.conf(5)</A
+>, <B
+CLASS="COMMAND"
+>xinetd(8)</B
 >
 	</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN121"
+NAME="AEN141"
 ></A
 ><H2
 >AUTHOR</H2
