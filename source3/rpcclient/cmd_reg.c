@@ -925,12 +925,13 @@ void cmd_reg_test_key_sec(struct client_info *info, int argc, char *argv[])
 
 	uint32 sec_buf_size;
 	SEC_DESC_BUF sec_buf;
+	uint32 sec_info = 0x7;
 
 	DEBUG(5, ("cmd_reg_get_key_sec: smb_cli->fd:%d\n", smb_cli->fd));
 
 	if (argc < 2)
 	{
-		report(out_hnd, "reggetsec <key_name>\n");
+		report(out_hnd, "regtestkeysec <key_name>\n");
 		return;
 	}
 
@@ -963,6 +964,7 @@ void cmd_reg_test_key_sec(struct client_info *info, int argc, char *argv[])
 	ZERO_STRUCT(sec_buf);
 
 	res4 = res3 ? do_reg_get_key_sec(smb_cli, fnum, &key_pol,
+	                        sec_info,
 				&sec_buf_size, &sec_buf) : False;
 	
 	if (res4)
@@ -971,6 +973,7 @@ void cmd_reg_test_key_sec(struct client_info *info, int argc, char *argv[])
 	}
 
 	res4 = res4 ? do_reg_get_key_sec(smb_cli, fnum, &key_pol,
+	                        sec_info,
 				&sec_buf_size, &sec_buf) : False;
 
 	if (res4 && sec_buf.len > 0 && sec_buf.sec != NULL)
@@ -980,7 +983,7 @@ void cmd_reg_test_key_sec(struct client_info *info, int argc, char *argv[])
 		display_sec_desc(out_hnd, ACTION_FOOTER   , sec_buf.sec);
 
 		res4 = res4 ? do_reg_set_key_sec(smb_cli, fnum, &key_pol,
-				sec_buf_size, sec_buf.sec) : False;
+				sec_info, sec_buf_size, sec_buf.sec) : False;
 
 		free_sec_desc_buf(&sec_buf);
 	}
@@ -1029,6 +1032,7 @@ void cmd_reg_get_key_sec(struct client_info *info, int argc, char *argv[])
 
 	uint32 sec_buf_size;
 	SEC_DESC_BUF sec_buf;
+	uint32 sec_info = 0x7;
 
 	DEBUG(5, ("cmd_reg_get_key_sec: smb_cli->fd:%d\n", smb_cli->fd));
 
@@ -1067,7 +1071,8 @@ void cmd_reg_get_key_sec(struct client_info *info, int argc, char *argv[])
 	ZERO_STRUCT(sec_buf);
 
 	res4 = res3 ? do_reg_get_key_sec(smb_cli, fnum, &key_pol,
-				&sec_buf_size, &sec_buf) : False;
+				sec_info,
+	                        &sec_buf_size, &sec_buf) : False;
 	
 	if (res4)
 	{
@@ -1075,7 +1080,8 @@ void cmd_reg_get_key_sec(struct client_info *info, int argc, char *argv[])
 	}
 
 	res4 = res4 ? do_reg_get_key_sec(smb_cli, fnum, &key_pol,
-				&sec_buf_size, &sec_buf) : False;
+				sec_info,
+	                        &sec_buf_size, &sec_buf) : False;
 
 	if (res4 && sec_buf.len > 0 && sec_buf.sec != NULL)
 	{

@@ -669,6 +669,10 @@ union semun {
 #define MAXPATHLEN 256
 #endif
 
+#ifndef MAX_SERVER_POLICY_HANDLES
+#define MAX_SERVER_POLICY_HANDLES 64
+#endif
+
 #ifndef SEEK_SET
 #define SEEK_SET 0
 #endif

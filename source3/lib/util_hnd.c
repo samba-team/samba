@@ -31,6 +31,11 @@ extern int DEBUGLEVEL;
 #define MAX_OPEN_POLS 64
 #endif
 
+#define POL_NO_INFO 0
+#define POL_REG_INFO 1
+#define POL_SAMR_INFO 2
+#define POL_CLI_INFO 3
+
 struct reg_info
 {
     /* for use by \PIPE\winreg */
@@ -45,17 +50,28 @@ struct samr_info
     uint32 status; /* some sort of flag.  best to record it.  comes from opnum 0x39 */
 };
 
+struct cli_info
+{
+	struct cli_state *cli;
+	uint16 fnum;
+	void (*free)(struct cli_state*, uint16 fnum);
+};
+
 static struct policy
 {
 	struct policy *next, *prev;
 	int pnum;
 	BOOL open;
 	POLICY_HND pol_hnd;
+	int type;
 
 	union {
-		struct samr_info samr;
-		struct reg_info reg;
+		struct samr_info *samr;
+		struct reg_info *reg;
+		struct cli_info *cli;
+
 	} dev;
+
 } *Policy;
 
 static struct bitmap *bmap;
@@ -85,18 +101,18 @@ static void create_pol_hnd(POLICY_HND *hnd)
 /****************************************************************************
   initialise policy handle states...
 ****************************************************************************/
-void init_lsa_policy_hnd(void)
+void init_policy_hnd(int num_pol_hnds)
 {
-	bmap = bitmap_allocate(MAX_OPEN_POLS);
+	bmap = bitmap_allocate(num_pol_hnds);
 	if (!bmap) {
-		exit_server("out of memory in init_lsa_policy_hnd\n");
+		exit_server("out of memory in init_policy_hnd\n");
 	}
 }
 
 /****************************************************************************
   find first available policy slot.  creates a policy handle for you.
 ****************************************************************************/
-BOOL open_lsa_policy_hnd(POLICY_HND *hnd)
+BOOL open_policy_hnd(POLICY_HND *hnd)
 {
 	int i;
 	struct policy *p;
@@ -118,6 +134,7 @@ BOOL open_lsa_policy_hnd(POLICY_HND *hnd)
 
 	p->open = True;				
 	p->pnum = i;
+	p->type = POL_NO_INFO;
 
 	create_pol_hnd(hnd);
 	memcpy(&p->pol_hnd, hnd, sizeof(*hnd));
@@ -135,7 +152,7 @@ BOOL open_lsa_policy_hnd(POLICY_HND *hnd)
 /****************************************************************************
   find policy by handle
 ****************************************************************************/
-static struct policy *find_lsa_policy(POLICY_HND *hnd)
+static struct policy *find_policy(POLICY_HND *hnd)
 {
 	struct policy *p;
 
@@ -156,9 +173,9 @@ static struct policy *find_lsa_policy(POLICY_HND *hnd)
 /****************************************************************************
   find policy index by handle
 ****************************************************************************/
-int find_lsa_policy_by_hnd(POLICY_HND *hnd)
+int find_policy_by_hnd(POLICY_HND *hnd)
 {
-	struct policy *p = find_lsa_policy(hnd);
+	struct policy *p = find_policy(hnd);
 
 	return p?p->pnum:-1;
 }
@@ -166,15 +183,24 @@ int find_lsa_policy_by_hnd(POLICY_HND *hnd)
 /****************************************************************************
   set samr rid
 ****************************************************************************/
-BOOL set_lsa_policy_samr_rid(POLICY_HND *hnd, uint32 rid)
+BOOL set_policy_samr_rid(POLICY_HND *hnd, uint32 rid)
 {
-	struct policy *p = find_lsa_policy(hnd);
+	struct policy *p = find_policy(hnd);
 
-	if (p && p->open) {
+	if (p && p->open)
+	{
 		DEBUG(3,("Setting policy device rid=%x pnum=%x\n",
 			 rid, p->pnum));
 
-		p->dev.samr.rid = rid;
+		if (p->dev.samr == NULL)
+		{
+			p->dev.samr = (struct samr_info*)malloc(sizeof(*p->dev.samr));
+		}
+		if (p->dev.samr == NULL)
+		{
+			return False;
+		}
+		p->dev.samr->rid = rid;
 		return True;
 	}
 
@@ -186,15 +212,25 @@ BOOL set_lsa_policy_samr_rid(POLICY_HND *hnd, uint32 rid)
 /****************************************************************************
   set samr pol status.  absolutely no idea what this is.
 ****************************************************************************/
-BOOL set_lsa_policy_samr_pol_status(POLICY_HND *hnd, uint32 pol_status)
+BOOL set_policy_samr_pol_status(POLICY_HND *hnd, uint32 pol_status)
 {
-	struct policy *p = find_lsa_policy(hnd);
+	struct policy *p = find_policy(hnd);
 
-	if (p && p->open) {
+	if (p && p->open)
+	{
 		DEBUG(3,("Setting policy status=%x pnum=%x\n",
 		          pol_status, p->pnum));
 
-		p->dev.samr.status = pol_status;
+		if (p->dev.samr == NULL)
+		{
+			p->type = POL_SAMR_INFO;
+			p->dev.samr = (struct samr_info*)malloc(sizeof(*p->dev.samr));
+		}
+		if (p->dev.samr == NULL)
+		{
+			return False;
+		}
+		p->dev.samr->status = pol_status;
 		return True;
 	} 
 
@@ -206,16 +242,25 @@ BOOL set_lsa_policy_samr_pol_status(POLICY_HND *hnd, uint32 pol_status)
 /****************************************************************************
   set samr sid
 ****************************************************************************/
-BOOL set_lsa_policy_samr_sid(POLICY_HND *hnd, DOM_SID *sid)
+BOOL set_policy_samr_sid(POLICY_HND *hnd, DOM_SID *sid)
 {
 	pstring sidstr;
-	struct policy *p = find_lsa_policy(hnd);
+	struct policy *p = find_policy(hnd);
 
 	if (p && p->open) {
 		DEBUG(3,("Setting policy sid=%s pnum=%x\n",
 			 sid_to_string(sidstr, sid), p->pnum));
 
-		memcpy(&p->dev.samr.sid, sid, sizeof(*sid));
+		if (p->dev.samr == NULL)
+		{
+			p->type = POL_SAMR_INFO;
+			p->dev.samr = (struct samr_info*)malloc(sizeof(*p->dev.samr));
+		}
+		if (p->dev.samr == NULL)
+		{
+			return False;
+		}
+		memcpy(&p->dev.samr->sid, sid, sizeof(*sid));
 		return True;
 	}
 
@@ -227,14 +272,14 @@ BOOL set_lsa_policy_samr_sid(POLICY_HND *hnd, DOM_SID *sid)
 /****************************************************************************
   get samr sid
 ****************************************************************************/
-BOOL get_lsa_policy_samr_sid(POLICY_HND *hnd, DOM_SID *sid)
+BOOL get_policy_samr_sid(POLICY_HND *hnd, DOM_SID *sid)
 {
-	struct policy *p = find_lsa_policy(hnd);
+	struct policy *p = find_policy(hnd);
 
 	if (p != NULL && p->open)
 	{
 		pstring sidstr;
-		memcpy(sid, &p->dev.samr.sid, sizeof(*sid));
+		memcpy(sid, &p->dev.samr->sid, sizeof(*sid));
 		DEBUG(3,("Getting policy sid=%s pnum=%x\n",
 			 sid_to_string(sidstr, sid), p->pnum));
 
@@ -248,12 +293,12 @@ BOOL get_lsa_policy_samr_sid(POLICY_HND *hnd, DOM_SID *sid)
 /****************************************************************************
   get samr rid
 ****************************************************************************/
-uint32 get_lsa_policy_samr_rid(POLICY_HND *hnd)
+uint32 get_policy_samr_rid(POLICY_HND *hnd)
 {
-	struct policy *p = find_lsa_policy(hnd);
+	struct policy *p = find_policy(hnd);
 
 	if (p && p->open) {
-		uint32 rid = p->dev.samr.rid;
+		uint32 rid = p->dev.samr->rid;
 		DEBUG(3,("Getting policy device rid=%x pnum=%x\n",
 		          rid, p->pnum));
 
@@ -267,16 +312,25 @@ uint32 get_lsa_policy_samr_rid(POLICY_HND *hnd)
 /****************************************************************************
   set reg name 
 ****************************************************************************/
-BOOL set_lsa_policy_reg_name(POLICY_HND *hnd, fstring name)
+BOOL set_policy_reg_name(POLICY_HND *hnd, fstring name)
 {
-	struct policy *p = find_lsa_policy(hnd);
+	struct policy *p = find_policy(hnd);
 
 	if (p && p->open)
 	{
 		DEBUG(3,("Getting policy pnum=%x\n",
 			 p->pnum));
 
-		fstrcpy(p->dev.reg.name, name);
+		if (p->dev.reg == NULL)
+		{
+			p->type = POL_REG_INFO;
+			p->dev.reg = (struct reg_info*)malloc(sizeof(*p->dev.reg));
+		}
+		if (p->dev.reg == NULL)
+		{
+			return False;
+		}
+		fstrcpy(p->dev.reg->name, name);
 		return True;
 	}
 
@@ -287,16 +341,16 @@ BOOL set_lsa_policy_reg_name(POLICY_HND *hnd, fstring name)
 /****************************************************************************
   set reg name 
 ****************************************************************************/
-BOOL get_lsa_policy_reg_name(POLICY_HND *hnd, fstring name)
+BOOL get_policy_reg_name(POLICY_HND *hnd, fstring name)
 {
-	struct policy *p = find_lsa_policy(hnd);
+	struct policy *p = find_policy(hnd);
 
 	if (p && p->open)
 	{
 		DEBUG(3,("Setting policy pnum=%x name=%s\n",
 			 p->pnum, name));
 
-		fstrcpy(name, p->dev.reg.name);
+		fstrcpy(name, p->dev.reg->name);
 		DEBUG(5,("getting policy reg name=%s\n", name));
 		return True;
 	}
@@ -306,11 +360,64 @@ BOOL get_lsa_policy_reg_name(POLICY_HND *hnd, fstring name)
 }
 
 /****************************************************************************
+  set cli state
+****************************************************************************/
+BOOL set_policy_cli_state(POLICY_HND *hnd, struct cli_state *cli, uint16 fnum,
+				void (*free_fn)(struct cli_state *, uint16))
+{
+	struct policy *p = find_policy(hnd);
+
+	if (p && p->open)
+	{
+		DEBUG(3,("Setting policy cli state pnum=%x\n", p->pnum));
+
+		if (p->dev.cli == NULL)
+		{
+			p->type = POL_CLI_INFO;
+			p->dev.cli = (struct cli_info*)malloc(sizeof(*p->dev.cli));
+		}
+		if (p->dev.cli == NULL)
+		{
+			return False;
+		}
+		p->dev.cli->cli  = cli;
+		p->dev.cli->free = free_fn;
+		p->dev.cli->fnum = fnum;
+		return True;
+	}
+
+	DEBUG(3,("Error setting policy cli state\n"));
+
+	return False;
+}
+
+/****************************************************************************
+  get cli state
+****************************************************************************/
+BOOL get_policy_cli_state(POLICY_HND *hnd, struct cli_state **cli, uint16 *fnum)
+{
+	struct policy *p = find_policy(hnd);
+
+	if (p != NULL && p->open)
+	{
+		DEBUG(3,("Getting cli state pnum=%x\n", p->pnum));
+
+		(*cli ) = p->dev.cli->cli;
+		(*fnum) = p->dev.cli->fnum;
+
+		return True;
+	}
+
+	DEBUG(3,("Error getting policy\n"));
+	return False;
+}
+
+/****************************************************************************
   close an lsa policy
 ****************************************************************************/
-BOOL close_lsa_policy_hnd(POLICY_HND *hnd)
+BOOL close_policy_hnd(POLICY_HND *hnd)
 {
-	struct policy *p = find_lsa_policy(hnd);
+	struct policy *p = find_policy(hnd);
 
 	if (!p)
 	{
@@ -326,6 +433,29 @@ BOOL close_lsa_policy_hnd(POLICY_HND *hnd)
 
 	ZERO_STRUCTP(p);
 	ZERO_STRUCTP(hnd);
+
+	switch (p->type)
+	{
+		case POL_REG_INFO:
+		{
+			free(p->dev.reg);
+			break;
+		}
+		case POL_SAMR_INFO:
+		{
+			free(p->dev.samr);
+			break;
+		}
+		case POL_CLI_INFO:
+		{
+			if (p->dev.cli->free != NULL)
+			{
+				p->dev.cli->free(p->dev.cli->cli,
+				                 p->dev.cli->fnum);
+			}
+			break;
+		}
+	}
 
 	free(p);
 

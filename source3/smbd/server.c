@@ -476,7 +476,7 @@ static void init_structs(void)
 	conn_init();
 	file_init();
 	init_rpc_pipe_hnd(); /* for RPC pipes */
-	init_lsa_policy_hnd(); /* for LSA handles */
+	init_policy_hnd(MAX_SERVER_POLICY_HANDLES); /* for policy handles */
 	init_printer_hnd(); /* for SPOOLSS handles */
 	init_dptrs();
 	init_dfs_table();
