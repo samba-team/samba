@@ -1564,7 +1564,7 @@ void wins_write_database(BOOL background)
   }
 
   slprintf(fname,sizeof(fname),"%s/%s.%d", lp_lockdir(), WINS_LIST, getpid());
-  string_sub(s->fname,"//", "/");
+  string_sub(fname,"//", "/");
 
   if((fp = fopen(fnamenew,"w")) == NULL)
   {
