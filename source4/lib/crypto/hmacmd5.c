@@ -69,8 +69,6 @@ void hmac_md5_init_rfc2104(uchar*  key, int key_len, HMACMD5Context *ctx)
 void hmac_md5_init_limK_to_64(const uchar* key, int key_len,
 			HMACMD5Context *ctx)
 {
-        int i;
-
         /* if key is longer than 64 bytes truncate it */
         if (key_len > 64)
 	{
