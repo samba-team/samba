@@ -681,7 +681,7 @@ BOOL smb_io_rpc_auth_ntlmssp_chk(char *desc, RPC_AUTH_NTLMSSP_CHK * chk,
 
 /*The following definitions come from  rpc_parse/parse_prs.c  */
 
-void prs_dump(char *name, int level, prs_struct *ps);
+void prs_dump(char *name, int v, prs_struct *ps);
 void prs_debug(prs_struct *ps, int depth, const char *desc,
 	       const char *fn_name);
 void prs_debug_out(const prs_struct *ps, char *msg, int level);

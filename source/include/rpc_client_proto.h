@@ -346,9 +346,13 @@ BOOL samr_set_groupinfo(  POLICY_HND *group_pol, GROUP_INFO_CTR *ctr);
 BOOL samr_unknown_2d(  const POLICY_HND *domain_pol,
 				const DOM_SID *sid);
 BOOL samr_open_domain(  const POLICY_HND *connect_pol,
-				uint32 ace_perms,
-				const DOM_SID *sid,
-				POLICY_HND *domain_pol);
+			  uint32 ace_perms,
+			  const DOM_SID *sid,
+			  POLICY_HND *domain_pol);
+uint32 isamr_open_domain(  const POLICY_HND *connect_pol,
+			  uint32 ace_perms,
+			  const DOM_SID *sid,
+			  POLICY_HND *domain_pol);
 BOOL samr_query_lookup_domain(  POLICY_HND *pol, const char *dom_name,
 			      DOM_SID *dom_sid);
 BOOL samr_query_lookup_names(const POLICY_HND *pol, uint32 flags,
@@ -697,10 +701,10 @@ BOOL get_samr_query_aliasinfo(
 				const POLICY_HND *pol_open_domain,
 				uint32 info_level,
 				uint32 alias_rid, ALIAS_INFO_CTR *ctr);
-BOOL msrpc_sam_create_dom_user(const char* srv_name, DOM_SID *sid1,
-				char *acct_name, uint16 acb_info,
-				const char *password, int plen,
-				uint32 *rid);
+uint32 msrpc_sam_create_dom_user(const char* srv_name, DOM_SID *sid1,
+				 char *acct_name, uint16 acb_info,
+				 const char *password, int plen,
+				 uint32 *rid);
 BOOL msrpc_sam_query_dispinfo(const char* srv_name, const char* domain,
 				DOM_SID *sid1,
 				uint16 switch_value,
