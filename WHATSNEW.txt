@@ -16,7 +16,8 @@ See the cvs log for SAMBA_2_2 for more details
 2)  Fix bug in determination of allocation size
 3)  Fix 64bit size problems which prevented copying of files larger
     than 2 GBytes.
-4)  Fix for xcopy /s problem.
+4)  Fix for xcopy /s problem with old DOS clients not sending correct
+    attributes on subsequent SMBsearch calls.
 
 
 
