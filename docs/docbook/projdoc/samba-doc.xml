@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!DOCTYPE book SYSTEM "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd" [
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN" "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd" [
+				  
 <!ENTITY % globalentities SYSTEM '../global.ent'> %globalentities;
 ]>
 
@@ -90,8 +91,7 @@ section carefully.
 <partintro>
 <title>Valuable Nuts and Bolts Information</title>
 <para>
-Samba has several features that you might want or might not want to use.
-The chapters in this part each cover specific Samba features.
+Samba has several features that you might want or might not want to use. The chapters in this part each cover specific Samba features.
 </para>
 </partintro>
 &NetworkBrowsing;

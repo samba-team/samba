@@ -687,7 +687,7 @@ In smb.conf [globals]
 			The LDAP ldapsam code has been developed and tested using the OpenLDAP 2.0 and 2.1 server and
 			client libraries.  The same code should work with Netscape's Directory Server and client SDK.
 			However, there are bound to be compile errors and bugs. These should not be hard to fix.
-			Please submit fixes via <link linkend="Bugs"/>.
+			Please submit fixes via <link linkend="bugreport"/>.
 			</para>
 
 		</sect3>
@@ -834,7 +834,7 @@ index   default               sub
 
 <para>
 <programlisting>
-root# </prompt><userinput>/etc/init.d/slapd restart</userinput>
+<prompt>root# </prompt><userinput>/etc/init.d/slapd restart</userinput>
 </programlisting>
 </para>
 
