@@ -272,9 +272,22 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 	} else {
 		/* NT sets the fstype of IPC$ to the null string */
 		const char *fsname = IS_IPC(conn) ? "" : lp_fstype(SNUM(conn));
+		const char *devicetype;
 
 		set_message(outbuf,3,0,True);
+ 
+		if ( IS_IPC(conn) )
+			devicetype = "IPC";
+		else if ( IS_PRINT(conn) )
+			devicetype = "LPT:";
+		else 
+			devicetype = "A:";
 
+ 		p = smb_buf(outbuf);
+		p += srvstr_push(outbuf, p, IS_IPC(conn) ? "IPC" : devicetype, -1, 
+ 				 STR_TERMINATE|STR_ASCII);
+ 		p += srvstr_push(outbuf, p, fsname, -1, 
+ 				 STR_TERMINATE);
 		p = smb_buf(outbuf);
 		p += srvstr_push(outbuf, p, IS_IPC(conn) ? "IPC" : devicename, -1, 
 				 STR_TERMINATE|STR_ASCII);
