@@ -303,7 +303,7 @@ static int net_groupmap_add(int argc, const char **argv)
 		return -1;
 	}
 
-	d_printf("Successully added group %s to the mapping db\n", ntgroup);
+	d_printf("Successfully added group %s to the mapping db\n", ntgroup);
 	return 0;
 }
 
