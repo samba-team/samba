@@ -1841,6 +1841,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 	int len;
 	time_t c_time;
 	files_struct *fsp = NULL;
+	uint32 desired_access = 0x12019F; /* Default - GENERIC_EXECUTE mapping from Windows */
 
 	if (!params)
 		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
@@ -1904,6 +1905,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 			}
 			pos = fsp->position_information;
 			delete_pending = fsp->delete_on_close;
+			desired_access = fsp->desired_access;
 		}
 	} else {
 		/* qpathinfo */
@@ -2152,7 +2154,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 			break;
 
 		case SMB_FILE_ACCESS_INFORMATION:
-			SIVAL(pdata,0,0x12019F); /* ??? */
+			SIVAL(pdata,0,desired_access);
 			data_size = 4;
 			break;
 

@@ -2822,12 +2822,15 @@ static BOOL run_deletetest(int dummy)
 		goto fail;
 	}
 
-#if 0
-	{
-		uint32 accinfo = 0;
-		cli_qfileinfo_test(cli1, fnum1, SMB_FILE_ACCESS_INFORMATION, (char *)&accinfo);
-		printf("access mode = 0x%lx\n", accinfo);
-	}
+#if 0 /* JRATEST */
+        {
+                uint32 *accinfo = NULL;
+                uint32 len;
+                cli_qfileinfo_test(cli1, fnum1, SMB_FILE_ACCESS_INFORMATION, (char **)&accinfo, &len);
+		if (accinfo)
+	                printf("access mode = 0x%lx\n", *accinfo);
+                SAFE_FREE(accinfo);
+        }
 #endif
 
 	if (!cli_close(cli1, fnum1)) {
