@@ -1568,7 +1568,7 @@ static WERROR cmd_spoolss_addform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	form.right = 20;
 	form.bottom = 30;
 
-	init_unistr2(&form.name, argv[2], strlen(argv[2]) + 1);
+	init_unistr2(&form.name, argv[2], UNI_STR_TERMINATE);
 
 	/* Add the form */
 
@@ -1627,7 +1627,7 @@ static WERROR cmd_spoolss_setform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	form.right = 2000;
 	form.bottom = 3000;
 
-	init_unistr2(&form.name, argv[2], strlen(argv[2]) + 1);
+	init_unistr2(&form.name, argv[2], UNI_STR_TERMINATE);
 
 	/* Set the form */
 

@@ -36,8 +36,7 @@ void init_srv_share_info0_str(SH_INFO_0_STR *sh0, const char *net_name)
 {
 	DEBUG(5,("init_srv_share_info0_str\n"));
 
-	if(net_name)
-		init_unistr2(&sh0->uni_netname, net_name, strlen(net_name)+1);
+	init_unistr2(&sh0->uni_netname, net_name, UNI_STR_TERMINATE);
 }
 
 /*******************************************************************
@@ -101,10 +100,8 @@ void init_srv_share_info1_str(SH_INFO_1_STR *sh1, const char *net_name, const ch
 {
 	DEBUG(5,("init_srv_share_info1_str\n"));
 
-	if(net_name)
-		init_unistr2(&sh1->uni_netname, net_name, strlen(net_name)+1);
-	if(remark)
-		init_unistr2(&sh1->uni_remark, remark, strlen(remark)+1);
+	init_unistr2(&sh1->uni_netname, net_name, UNI_STR_TERMINATE);
+	init_unistr2(&sh1->uni_remark, remark, UNI_STR_TERMINATE);
 }
 
 /*******************************************************************
@@ -184,14 +181,10 @@ void init_srv_share_info2_str(SH_INFO_2_STR *sh2,
 {
 	DEBUG(5,("init_srv_share_info2_str\n"));
 
-	if (net_name)
-		init_unistr2(&sh2->uni_netname, net_name, strlen(net_name)+1);
-	if (remark)
-		init_unistr2(&sh2->uni_remark, remark, strlen(remark)+1);
-	if (path)
-		init_unistr2(&sh2->uni_path, path, strlen(path)+1);
-	if (passwd)
-		init_unistr2(&sh2->uni_passwd, passwd, strlen(passwd)+1);
+	init_unistr2(&sh2->uni_netname, net_name, UNI_STR_TERMINATE);
+	init_unistr2(&sh2->uni_remark, remark, UNI_STR_TERMINATE);
+	init_unistr2(&sh2->uni_path, path, UNI_STR_TERMINATE);
+	init_unistr2(&sh2->uni_passwd, passwd, UNI_STR_TERMINATE);
 }
 
 /*******************************************************************
@@ -296,10 +289,8 @@ void init_srv_share_info501_str(SH_INFO_501_STR *sh501,
 {
 	DEBUG(5,("init_srv_share_info501_str\n"));
 
-	if(net_name)
-		init_unistr2(&sh501->uni_netname, net_name, strlen(net_name)+1);
-	if(remark)
-		init_unistr2(&sh501->uni_remark, remark, strlen(remark)+1);
+	init_unistr2(&sh501->uni_netname, net_name, UNI_STR_TERMINATE);
+	init_unistr2(&sh501->uni_remark, remark, UNI_STR_TERMINATE);
 }
 
 /*******************************************************************
@@ -446,17 +437,13 @@ void init_srv_share_info502_str(SH_INFO_502_STR *sh502str,
 {
 	DEBUG(5,("init_srv_share_info502_str\n"));
 
-	if(net_name)
-		init_unistr2(&sh502str->uni_netname, net_name, strlen(net_name)+1);
-	if(remark)
-		init_unistr2(&sh502str->uni_remark, remark, strlen(remark)+1);
-	if(path)
-		init_unistr2(&sh502str->uni_path, path, strlen(path)+1);
-	if(passwd)
-		init_unistr2(&sh502str->uni_passwd, passwd, strlen(passwd)+1);
-		sh502str->sd = psd;
+	init_unistr2(&sh502str->uni_netname, net_name, UNI_STR_TERMINATE);
+	init_unistr2(&sh502str->uni_remark, remark, UNI_STR_TERMINATE);
+	init_unistr2(&sh502str->uni_path, path, UNI_STR_TERMINATE);
+	init_unistr2(&sh502str->uni_passwd, passwd, UNI_STR_TERMINATE);
+	sh502str->sd = psd;
 	sh502str->reserved = 0;
-		sh502str->sd_size = sd_size;
+	sh502str->sd_size = sd_size;
 }
 
 /*******************************************************************
@@ -551,8 +538,7 @@ void init_srv_share_info1004_str(SH_INFO_1004_STR *sh1004, const char *remark)
 {
 	DEBUG(5,("init_srv_share_info1004_str\n"));
 
-	if(remark)
-		init_unistr2(&sh1004->uni_remark, remark, strlen(remark)+1);
+	init_unistr2(&sh1004->uni_remark, remark, UNI_STR_TERMINATE);
 }
 
 /*******************************************************************
@@ -659,8 +645,7 @@ void init_srv_share_info1007_str(SH_INFO_1007_STR *sh1007, const char *alternate
 {
 	DEBUG(5,("init_srv_share_info1007_str\n"));
 
-	if(alternate_directory_name)
-		init_unistr2(&sh1007->uni_AlternateDirectoryName, alternate_directory_name, strlen(alternate_directory_name)+1);
+	init_unistr2(&sh1007->uni_AlternateDirectoryName, alternate_directory_name, UNI_STR_TERMINATE);
 }
 
 /*******************************************************************
@@ -1474,7 +1459,7 @@ void init_srv_q_net_share_add(SRV_Q_NET_SHARE_ADD *q, const char *srvname,
 			      const char *path, const char *passwd)
 {
 	q->ptr_srv_name = 1;
-	init_unistr2(&q->uni_srv_name, srvname, strlen(srvname) +1);
+	init_unistr2(&q->uni_srv_name, srvname, UNI_STR_TERMINATE);
 	q->info.switch_value = q->info_level = 2;
 
 	q->info.ptr_share_ctr = 1;
@@ -1525,8 +1510,8 @@ void init_srv_q_net_share_del(SRV_Q_NET_SHARE_DEL *del, const char *srvname,
 			      const char *sharename)
 {
 	del->ptr_srv_name = 1;
-	init_unistr2(&del->uni_srv_name, srvname, strlen(srvname) +1 );
-	init_unistr2(&del->uni_share_name, sharename, strlen(sharename) + 1);
+	init_unistr2(&del->uni_srv_name, srvname, UNI_STR_TERMINATE);
+	init_unistr2(&del->uni_share_name, sharename, UNI_STR_TERMINATE);
 }
 
 /*******************************************************************
@@ -1589,7 +1574,7 @@ void init_srv_sess_info0_str(SESS_INFO_0_STR *ss0, const char *name)
 {
 	DEBUG(5,("init_srv_sess_info0_str\n"));
 
-	init_unistr2(&ss0->uni_name, name, strlen(name)+1);
+	init_unistr2(&ss0->uni_name, name, UNI_STR_TERMINATE);
 }
 
 /*******************************************************************
@@ -1703,8 +1688,8 @@ void init_srv_sess_info1_str(SESS_INFO_1_STR *ss1, const char *name, const char 
 {
 	DEBUG(5,("init_srv_sess_info1_str\n"));
 
-	init_unistr2(&ss1->uni_name, name, strlen(name)+1);
-	init_unistr2(&ss1->uni_user, user, strlen(user)+1);
+	init_unistr2(&ss1->uni_name, name, UNI_STR_TERMINATE);
+	init_unistr2(&ss1->uni_user, user, UNI_STR_TERMINATE);
 }
 
 /*******************************************************************
@@ -2075,8 +2060,8 @@ void init_srv_conn_info1_str(CONN_INFO_1_STR *ss1, const char *usr_name, const c
 {
 	DEBUG(5,("init_srv_conn_info1_str\n"));
 
-	init_unistr2(&ss1->uni_usr_name, usr_name, strlen(usr_name)+1);
-	init_unistr2(&ss1->uni_net_name, net_name, strlen(net_name)+1);
+	init_unistr2(&ss1->uni_usr_name, usr_name, UNI_STR_TERMINATE);
+	init_unistr2(&ss1->uni_net_name, net_name, UNI_STR_TERMINATE);
 }
 
 /*******************************************************************
@@ -2365,8 +2350,8 @@ void init_srv_file_info3_str(FILE_INFO_3_STR *fi3, const char *user_name, const 
 {
 	DEBUG(5,("init_srv_file_info3_str\n"));
 
-	init_unistr2(&fi3->uni_path_name, path_name, strlen(path_name)+1);
-	init_unistr2(&fi3->uni_user_name, user_name, strlen(user_name)+1);
+	init_unistr2(&fi3->uni_path_name, path_name, UNI_STR_TERMINATE);
+	init_unistr2(&fi3->uni_user_name, user_name, UNI_STR_TERMINATE);
 }
 
 /*******************************************************************
@@ -2628,7 +2613,7 @@ void init_srv_q_net_file_close(SRV_Q_NET_FILE_CLOSE *q_n, const char *server,
 			       uint32 file_id)
 {
 	q_n->ptr_srv_name = 1;
-	init_unistr2(&q_n->uni_srv_name, server, strlen(server) + 1);
+	init_unistr2(&q_n->uni_srv_name, server, UNI_STR_TERMINATE);
 	q_n->file_id = file_id;
 }
 
@@ -3586,6 +3571,5 @@ BOOL srv_io_r_net_file_set_secdesc(const char *desc, SRV_R_NET_FILE_SET_SECDESC 
 void init_srv_q_net_remote_tod(SRV_Q_NET_REMOTE_TOD *q_u, const char *server)
 {
 	q_u->ptr_srv_name = 1;
-	init_unistr2(&q_u->uni_srv_name, server, strlen(server) + 1);
+	init_unistr2(&q_u->uni_srv_name, server, UNI_STR_TERMINATE);
 }
-

@@ -80,9 +80,9 @@ BOOL init_dfs_q_dfs_remove(DFS_Q_DFS_REMOVE *q_d, const char *entrypath,
 			   const char *servername, const char *sharename)
 {
 	DEBUG(5,("init_dfs_q_dfs_remove\n"));
-	init_unistr2(&q_d->DfsEntryPath, entrypath,  strlen(entrypath)+1);
-	init_unistr2(&q_d->ServerName,   servername, strlen(servername)+1);
-	init_unistr2(&q_d->ShareName,    sharename,  strlen(sharename)+1);
+	init_unistr2(&q_d->DfsEntryPath, entrypath, UNI_STR_TERMINATE);
+	init_unistr2(&q_d->ServerName, servername, UNI_STR_TERMINATE);
+	init_unistr2(&q_d->ShareName, sharename, UNI_STR_TERMINATE);
 	q_d->ptr_ServerName = q_d->ptr_ShareName = 1;
 	return True;
 }
@@ -155,11 +155,11 @@ BOOL init_dfs_q_dfs_add(DFS_Q_DFS_ADD *q_d, const char *entrypath,
 {
 	DEBUG(5,("init_dfs_q_dfs_add\n"));
 	q_d->ptr_DfsEntryPath = q_d->ptr_ServerName = q_d->ptr_ShareName = 1;
-	init_unistr2(&q_d->DfsEntryPath, entrypath,  strlen(entrypath)+1);
-	init_unistr2(&q_d->ServerName,   servername, strlen(servername)+1);
-	init_unistr2(&q_d->ShareName,    sharename,  strlen(sharename)+1);
+	init_unistr2(&q_d->DfsEntryPath, entrypath, UNI_STR_TERMINATE);
+	init_unistr2(&q_d->ServerName, servername, UNI_STR_TERMINATE);
+	init_unistr2(&q_d->ShareName, sharename, UNI_STR_TERMINATE);
 	if(comment != NULL) {
-		init_unistr2(&q_d->Comment,      comment,    strlen(comment)+1);
+		init_unistr2(&q_d->Comment, comment,UNI_STR_TERMINATE);
 		q_d->ptr_Comment = 1;
 	} else {
 		q_d->ptr_Comment = 0;
@@ -237,9 +237,9 @@ BOOL init_dfs_q_dfs_get_info(DFS_Q_DFS_GET_INFO *q_d, const char *entrypath,
 			     uint32 info_level)
 {
 	DEBUG(5,("init_dfs_q2_get_info\n"));
-	init_unistr2(&q_d->uni_path, entrypath,  strlen(entrypath)+1);
-	init_unistr2(&q_d->uni_server,   servername, strlen(servername)+1);
-	init_unistr2(&q_d->uni_share,    sharename,  strlen(sharename)+1);
+	init_unistr2(&q_d->uni_path, entrypath, UNI_STR_TERMINATE);
+	init_unistr2(&q_d->uni_server, servername, UNI_STR_TERMINATE);
+	init_unistr2(&q_d->uni_share, sharename, UNI_STR_TERMINATE);
 	q_d->level = info_level;
 	q_d->ptr_server = q_d->ptr_share = 1;
 	return True;

@@ -77,12 +77,12 @@ static NTSTATUS fill_dsrole_dominfo_basic(TALLOC_CTX *ctx, DSROLE_PRIMARY_DOMAIN
 
 	basic->netbios_ptr = 1;
 	netbios_domain = get_global_sam_name();
-	init_unistr2( &basic->netbios_domain, netbios_domain, strlen(netbios_domain) );
+	init_unistr2( &basic->netbios_domain, netbios_domain, UNI_FLAGS_NONE);
 
 	basic->dnsname_ptr = 1;
-	init_unistr2( &basic->dns_domain, dnsdomain, strlen(dnsdomain) );
+	init_unistr2( &basic->dns_domain, dnsdomain, UNI_FLAGS_NONE);
 	basic->forestname_ptr = 1;
-	init_unistr2( &basic->forest_domain, dnsdomain, strlen(dnsdomain) );
+	init_unistr2( &basic->forest_domain, dnsdomain, UNI_FLAGS_NONE);
 	
 
 	/* fill in some additional fields if we are a member of an AD domain */

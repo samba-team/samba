@@ -59,7 +59,7 @@ PyObject *spoolss_hnd_addform(PyObject *self, PyObject *args, PyObject *kw)
 		PyObject *obj = PyDict_GetItemString(info, "name");
 		char *form_name = PyString_AsString(obj);
 
-		init_unistr2(&form.name, form_name, strlen(form_name) + 1);
+		init_unistr2(&form.name, form_name, UNI_STR_TERMINATE);
 		break;
 	}
 	default:

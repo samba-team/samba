@@ -148,7 +148,7 @@ typedef struct bufhdr_info
 typedef struct buffer2_info
 {
 	uint32 buf_max_len;
-	uint32 undoc;
+	uint32 offset;
 	uint32 buf_len;
 	/* unicode characters. ***MUST*** be little-endian. **NOT** necessarily null-terminated */
 	uint16 *buffer;
@@ -173,7 +173,7 @@ typedef struct buffer5_info
 typedef struct unistr2_info
 {
 	uint32 uni_max_len;
-	uint32 undoc;
+	uint32 offset;
 	uint32 uni_str_len;
 	/* unicode characters. ***MUST*** be little-endian. 
 		**must** be null-terminated and the uni_str_len should include
@@ -185,7 +185,7 @@ typedef struct unistr2_info
 typedef struct string2_info
 {
 	uint32 str_max_len;
-	uint32 undoc;
+	uint32 offset;
 	uint32 str_str_len;
 	uint8  *buffer; /* uint8 characters. **NOT** necessarily null-terminated */
 } STRING2;
@@ -403,5 +403,5 @@ typedef struct buffer4_info
 }
 BUFFER4;
 
-
+enum unistr2_term_codes { UNI_FLAGS_NONE = 0, UNI_STR_TERMINATE = 1, UNI_MAXLEN_TERMINATE = 2 };
 #endif /* _RPC_MISC_H */
