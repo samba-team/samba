@@ -81,6 +81,32 @@ static BOOL ncacn_np_establish_connection(struct ncacn_np *cli,
 	return True;
 }
 
+#if 0
+
+/* Useful for debugging rpc caching */
+
+static void dump_msrpcs(void)
+{
+	int i;
+
+	for (i = 0; i < num_msrpcs; i++) {
+		if (msrpcs[i]) {
+			DEBUG(3, ("[%d]: %s %s num_users=%d np_use=0x%08x "
+				  " np=0x%08x smb=0x%08x\n",
+				  i, msrpcs[i]->cli->smb->desthost,
+				  msrpcs[i]->cli->pipe_name,
+				  msrpcs[i]->num_users, 
+				  msrpcs[i],
+				  msrpcs[i]->cli,
+				  msrpcs[i]->cli->smb));
+		} else {
+			DEBUG(3, ("[%d]: NULL\n", i));
+		}
+	}
+}
+
+#endif
+
 /****************************************************************************
 terminate client connection
 ****************************************************************************/
@@ -88,13 +114,30 @@ static void ncacn_np_use_free(struct ncacn_np_use *cli)
 {
 	if (cli->cli != NULL)
 	{
+		int i;
+
+		/* Check that another connection doesn't have this same smb
+		   open. */
+
+		for (i = 0; i < num_msrpcs; i++) 
+		{
+			if (msrpcs[i] && msrpcs[i] != cli &&
+			    msrpcs[i]->cli && 
+			    msrpcs[i]->cli->smb == cli->cli->smb) {
+				goto no_shutdown;
+			}
+		}
+
 		if (cli->cli->initialised)
 		{
 			ncacn_np_shutdown(cli->cli);
 		}
+	no_shutdown:
+
 		ZERO_STRUCTP(cli->cli);
 		free(cli->cli);
 	}
+
 	ZERO_STRUCTP(cli);
 	free(cli);
 }
@@ -335,7 +378,7 @@ struct ncacn_np *ncacn_np_use_add(const char *pipe_name,
 				  BOOL reuse, BOOL *is_new_connection)
 {
 	struct ncacn_np_use *cli;
-	DEBUG(10, ("ncacn_np_use_add: %s\n", pipe_name));
+	DEBUG(10, ("ncacn_np_use_add: %s, %s\n", srv_name, pipe_name));
 
 	(*is_new_connection) = False;
 	cli = ncacn_np_find(srv_name, pipe_name, key, ntc, reuse);
@@ -358,7 +401,6 @@ struct ncacn_np *ncacn_np_use_add(const char *pipe_name,
 	    (cli->cli, srv_name, ntc, pipe_name, True))
 	{
 		DEBUG(0, ("ncacn_np_use_add: connection failed\n"));
-		cli->cli = NULL;
 		ncacn_np_use_free(cli);
 		return NULL;
 	}
@@ -399,11 +441,11 @@ BOOL ncacn_np_use_del(const char *srv_name, const char *pipe_name,
 		      BOOL force_close, BOOL *connection_closed)
 {
 	int i;
-	DEBUG(10, ("ncacn_np_net_use_del: %s. force close: %s ",
-		   pipe_name, BOOLSTR(force_close)));
+	DEBUG(10, ("ncacn_np_net_use_del: %s, %s. force close: %s ",
+		   srv_name, pipe_name, BOOLSTR(force_close)));
 	if (key != NULL)
 	{
-		DEBUG(10, ("[%d,%x]", key->pid, key->vuid));
+		DEBUG(3, ("[%d,%x]", key->pid, key->vuid));
 	}
 	DEBUG(10, ("\n"));
 
@@ -419,7 +461,7 @@ BOOL ncacn_np_use_del(const char *srv_name, const char *pipe_name,
 
 	if (strnequal("\\\\", srv_name, 2))
 	{
-		srv_name = &srv_name[6];
+		srv_name = &srv_name[2];
 	}
 
 	for (i = 0; i < num_msrpcs; i++)
@@ -464,7 +506,7 @@ BOOL ncacn_np_use_del(const char *srv_name, const char *pipe_name,
 		}
 		/* decrement number of users */
 		c->num_users--;
-		DEBUG(10, ("idx: %i num_users now: %d\n",
+		DEBUG(3, ("idx: %i num_users now: %d\n",
 			   i, c->num_users));
 		if (force_close || c->num_users == 0)
 		{
