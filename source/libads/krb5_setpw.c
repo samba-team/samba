@@ -468,7 +468,11 @@ ADS_STATUS ads_krb5_set_password(const char *kdc_host, const char *princ,
 	char *princ_name = NULL;
 	char *realm = NULL;
 	krb5_creds creds, *credsp = NULL;
+#if KRB5_PRINC_REALM_RETURNS_REALM
+	krb5_realm orig_realm;
+#else
 	krb5_data orig_realm;
+#endif
 	krb5_ccache ccache = NULL;
 
 	ZERO_STRUCT(creds);
