@@ -282,7 +282,7 @@ int dptr_create(int cnum,char *path, BOOL expect_close,int pid)
   int oldi;
 
   if (!start_dir(cnum,path))
-    return(-1);
+    return(-2); /* Code to say use a unix error return code. */
 
   if (dptrs_open >= MAXDIR)
     dptr_idleoldest();

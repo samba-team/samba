@@ -546,7 +546,7 @@ int reply_chkpth(char *inbuf,char *outbuf)
     ok = directory_exist(name,NULL);
 
   if (!ok)
-    return(ERROR(ERRDOS,ERRbadpath));
+    return(UNIXERROR(ERRDOS,ERRbadpath));
   
   outsize = set_message(outbuf,0,0,True);
   
@@ -825,7 +825,11 @@ int reply_search(char *inbuf,char *outbuf)
 	{
 	  dptr_num = dptr_create(cnum,directory,expect_close,SVAL(inbuf,smb_pid));
 	  if (dptr_num < 0)
-	    return(ERROR(ERRDOS,ERRnofids));
+        {
+          if(dptr_num == -2)
+            return (UNIXERROR(ERRDOS,ERRnofids));
+          return(ERROR(ERRDOS,ERRnofids));
+        }
 	}
 
       DEBUG(4,("dptr_num is %d\n",dptr_num));
