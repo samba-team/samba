@@ -83,7 +83,7 @@ static BOOL become_uid(int uid)
 		&priv, sizeof(priv_t)) < 0 ||
 	setuidx(ID_REAL|ID_EFFECTIVE, (uid_t)uid) < 0 ||
 	seteuid((uid_t)uid) < 0) 
-      DEBUG(1,("Can't set uid (AIX3)"));
+      DEBUG(1,("Can't set uid (AIX3)\n"));
   }
 #endif
 

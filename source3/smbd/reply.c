@@ -409,8 +409,14 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   }
 
 
+  /* If no username is sent use the guest account */
   if (!*user)
-    strcpy(user,lp_guestaccount(-1));
+    {
+      strcpy(user,lp_guestaccount(-1));
+      /* If no user and no password then set guest flag. */
+      if( *smb_apasswd == 0)
+        guest = True;
+    }
 
   strlower(user);
 
@@ -421,24 +427,22 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   add_session_user(user);
 
 
-  if (!(lp_security() == SEC_SERVER && server_validate(inbuf)) &&
+  if (!guest && !(lp_security() == SEC_SERVER && server_validate(inbuf)) &&
       !check_hosts_equiv(user))
     {
 
-      if (strequal(user,lp_guestaccount(-1)) && (*smb_apasswd == 0))
-	guest = True;
-  
       /* now check if it's a valid username/password */
       /* If an NT password was supplied try and validate with that
-	 first. This is superior as the passwords are mixed case 128 length unicode */
-      if(smb_ntpasslen && !guest)
+	 first. This is superior as the passwords are mixed case 
+         128 length unicode */
+      if(smb_ntpasslen)
 	{
 	  if(!password_ok(user,smb_ntpasswd,smb_ntpasslen,NULL))
 	    DEBUG(0,("NT Password did not match ! Defaulting to Lanman\n"));
 	  else
 	    valid_nt_password = True;
 	} 
-      if (!valid_nt_password && !guest && !password_ok(user,smb_apasswd,smb_apasslen,NULL))
+      if (!valid_nt_password && !password_ok(user,smb_apasswd,smb_apasslen,NULL))
 	{
 	  if (!computer_id && lp_security() >= SEC_USER) {
 #if (GUEST_SESSSETUP == 0)

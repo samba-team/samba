@@ -817,6 +817,22 @@ BOOL check_name(char *name,int cnum)
     }
 
   ret = reduce_name(name,Connections[cnum].connectpath,lp_widelinks(SNUM(cnum)));
+
+  /* Check if we are allowing users to follow symlinks */
+  /* Patch from David Clerc <David.Clerc@cui.unige.ch>
+     University of Geneva */
+
+  if (!lp_symlinks(SNUM(cnum)))
+    {
+      struct stat statbuf;
+      if ( (sys_lstat(name,&statbuf) != -1) &&
+          (S_ISLNK(statbuf.st_mode)) )
+        {
+          DEBUG(3,("check_name: denied: file path name %s is a symlink\n",name));
+          ret=0; 
+        }
+    }
+
   if (!ret)
     DEBUG(5,("check_name on %s failed\n",name));
 
@@ -4111,7 +4127,7 @@ static void usage(char *pname)
 
   setup_logging(argv[0],False);
 
-  charset_initialise(-1);
+  charset_initialise();
 
   /* make absolutely sure we run as root - to handle cases whre people
      are crazy enough to have it setuid */
@@ -4226,7 +4242,7 @@ static void usage(char *pname)
   if (!reload_services(False))
     return(-1);	
 
-  charset_initialise(lp_client_code_page());
+  codepage_initialise(lp_client_code_page());
 
   strcpy(myworkgroup, lp_workgroup());
 
