@@ -1435,8 +1435,7 @@ static int call_trans2qfsinfo(connection_struct *conn, char *inbuf, char *outbuf
 		case SMB_QUERY_FS_SIZE_INFO:
 		case SMB_FS_SIZE_INFORMATION:
 		{
-			SMB_BIG_UINT dfree,dsize,bsize,block_size,sectors_per_unit;
-			SMB_BIG_UINT bytes_per_sector,size_units,free_units;
+			SMB_BIG_UINT dfree,dsize,bsize,block_size,sectors_per_unit,bytes_per_sector;
 			data_len = 24;
 			conn->vfs_ops.disk_free(conn,".",False,&bsize,&dfree,&dsize);	
 			block_size = lp_block_size(snum);
@@ -1454,14 +1453,11 @@ static int call_trans2qfsinfo(connection_struct *conn, char *inbuf, char *outbuf
 			}
 			bytes_per_sector = 512;
 			sectors_per_unit = bsize/bytes_per_sector;
-			size_units = (dsize*bsize)/(bytes_per_sector*sectors_per_unit);
-			free_units = (dfree*bsize)/(bytes_per_sector*sectors_per_unit);
 			DEBUG(5,("call_trans2qfsinfo : SMB_QUERY_FS_SIZE_INFO bsize=%u, cSectorUnit=%u, \
-cBytesSector=%u, cUnitTotal=%u,cUnitAvail=%d\n", (unsigned int)bsize, (unsigned int)sectors_per_unit,
-				(unsigned int)bytes_per_sector, (unsigned int)size_units,
-				(unsigned int)free_units));
-			SBIG_UINT(pdata,0,size_units);
-			SBIG_UINT(pdata,8,free_units);
+cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned int)sectors_per_unit,
+				(unsigned int)bytes_per_sector, (unsigned int)dsize, (unsigned int)dfree));
+			SBIG_UINT(pdata,0,dsize);
+			SBIG_UINT(pdata,8,dfree);
 			SIVAL(pdata,16,sectors_per_unit);
 			SIVAL(pdata,20,bytes_per_sector);
 			break;
@@ -1469,8 +1465,7 @@ cBytesSector=%u, cUnitTotal=%u,cUnitAvail=%d\n", (unsigned int)bsize, (unsigned 
 
 		case SMB_FS_FULL_SIZE_INFORMATION:
 		{
-			SMB_BIG_UINT dfree,dsize,bsize,block_size,sectors_per_unit;
-			SMB_BIG_UINT bytes_per_sector,size_units,free_units;
+			SMB_BIG_UINT dfree,dsize,bsize,block_size,sectors_per_unit,bytes_per_sector;
 			data_len = 32;
 			conn->vfs_ops.disk_free(conn,".",False,&bsize,&dfree,&dsize);	
 			block_size = lp_block_size(snum);
@@ -1488,15 +1483,12 @@ cBytesSector=%u, cUnitTotal=%u,cUnitAvail=%d\n", (unsigned int)bsize, (unsigned 
 			}
 			bytes_per_sector = 512;
 			sectors_per_unit = bsize/bytes_per_sector;
-			size_units = (dsize*bsize)/(bytes_per_sector*sectors_per_unit);
-			free_units = (dfree*bsize)/(bytes_per_sector*sectors_per_unit);
 			DEBUG(5,("call_trans2qfsinfo : SMB_QUERY_FS_FULL_SIZE_INFO bsize=%u, cSectorUnit=%u, \
 cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned int)sectors_per_unit,
-				(unsigned int)bytes_per_sector, (unsigned int)size_units,
-				(unsigned int)free_units));
-			SBIG_UINT(pdata,0,size_units); /* Total Allocation units. */
-			SBIG_UINT(pdata,8,free_units); /* Caller available allocation units. */
-			SBIG_UINT(pdata,16,free_units); /* Actual available allocation units. */
+				(unsigned int)bytes_per_sector, (unsigned int)dsize, (unsigned int)dfree));
+			SBIG_UINT(pdata,0,dsize); /* Total Allocation units. */
+			SBIG_UINT(pdata,8,dfree); /* Caller available allocation units. */
+			SBIG_UINT(pdata,16,dfree); /* Actual available allocation units. */
 			SIVAL(pdata,24,sectors_per_unit); /* Sectors per allocation unit. */
 			SIVAL(pdata,28,bytes_per_sector); /* Bytes per sector. */
 			break;
