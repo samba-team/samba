@@ -1118,6 +1118,8 @@ static double create_procs(void (*fn)(int ))
 			pid_t mypid = getpid();
 			sys_srandom(((int)mypid) ^ ((int)time(NULL)));
 
+			slprintf(myname,sizeof(myname),"CLIENT%d", i);
+
 			while (1) {
 				memset(&current_cli, 0, sizeof(current_cli));
 				if (open_connection(&current_cli)) break;
