@@ -189,4 +189,7 @@
 /* Allocation roundup. */
 #define SMB_ROUNDUP_ALLOCATION_SIZE 0x100000
 
+/* Max number of jobs per print queue. */
+#define PRINT_MAX_JOBID 10000
+
 #endif

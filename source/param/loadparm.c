@@ -1799,7 +1799,6 @@ FN_LOCAL_INTEGER(lp_force_dir_security_mode, iDir_Security_force_mode)
 FN_LOCAL_INTEGER(lp_max_connections, iMaxConnections)
 FN_LOCAL_INTEGER(lp_defaultcase, iDefaultCase)
 FN_LOCAL_INTEGER(lp_minprintspace, iMinPrintSpace)
-FN_LOCAL_INTEGER(lp_maxprintjobs, iMaxPrintJobs)
 FN_LOCAL_INTEGER(lp_printing, iPrinting)
 FN_LOCAL_INTEGER(lp_oplock_contention_limit, iOplockContentionLimit)
 FN_LOCAL_INTEGER(lp_csc_policy, iCSCPolicy)
@@ -3888,4 +3887,17 @@ const char *get_called_name(void)
 	}
 
 	return local_machine;
+}
+
+/*******************************************************************
+ Return the max print jobs per queue.
+********************************************************************/
+
+int lp_maxprintjobs(int snum)
+{
+	int maxjobs = LP_SNUM_OK(snum) ? ServicePtrs[snum]->iMaxPrintJobs : sDefault.iMaxPrintJobs;
+	if (maxjobs <= 0 || maxjobs >= PRINT_MAX_JOBID)
+		maxjobs = PRINT_MAX_JOBID - 1;
+
+	return maxjobs;
 }

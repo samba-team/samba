@@ -257,7 +257,7 @@ BOOL print_backend_init(void)
 		pdb = get_print_db_byname(lp_const_servicename(snum));
 		if (!pdb)
 			continue;
-		if (tdb_lock_bystring(pdb->tdb, sversion) == -1) {
+		if (tdb_lock_bystring(pdb->tdb, sversion, 0) == -1) {
 			DEBUG(0,("print_backend_init: Failed to open printer %s database\n", lp_const_servicename(snum) ));
 			return False;
 		}
@@ -883,7 +883,8 @@ static void print_queue_update(int snum)
 	/* Lock the queue for the database update */
 
 	slprintf(keystr, sizeof(keystr) - 1, "LOCK/%s", printer_name);
-	if (tdb_lock_bystring(pdb->tdb, keystr) == -1) {
+	/* Only wait 10 seconds for this. */
+	if (tdb_lock_bystring(pdb->tdb, keystr, 10) == -1) {
 		DEBUG(0,("print_queue_update: Failed to lock printer %s database\n", printer_name));
 		release_print_db(pdb);
 		return;
@@ -1404,9 +1405,8 @@ static int get_queue_status(int snum, print_status_struct *status)
 	data = tdb_fetch(pdb->tdb, key);
 	release_print_db(pdb);
 	if (data.dptr) {
-		if (data.dsize == sizeof(print_status_struct)) {
+		if (data.dsize == sizeof(print_status_struct))
 			memcpy(status, data.dptr, sizeof(print_status_struct));
-		}
 		SAFE_FREE(data.dptr);
 	}
 	return status->qcount;
@@ -1489,7 +1489,7 @@ uint32 print_job_start(struct current_user *user, int snum, char *jobname, NT_DE
 	}
 
 	/* Insure the maximum queue size is not violated */
-	if (lp_maxprintjobs(snum) && (njobs = print_queue_length(snum,NULL)) > lp_maxprintjobs(snum)) {
+	if ((njobs = print_queue_length(snum,NULL)) > lp_maxprintjobs(snum)) {
 		DEBUG(3, ("print_job_start: number of jobs (%d) larger than max printjobs per queue (%d).\n",
 			njobs, lp_maxprintjobs(snum) ));
 		release_print_db(pdb);
@@ -1497,8 +1497,8 @@ uint32 print_job_start(struct current_user *user, int snum, char *jobname, NT_DE
 		return (uint32)-1;
 	}
 
-	/* lock the database */
-	if (tdb_lock_bystring(pdb->tdb, "INFO/nextjob") == -1) {
+	/* Lock the database - only wait 20 seconds. */
+	if (tdb_lock_bystring(pdb->tdb, "INFO/nextjob", 20) == -1) {
 		DEBUG(0,("print_job_start: failed to lock printing database %s\n", printername ));
 		release_print_db(pdb);
 		return (uint32)-1;

@@ -23,18 +23,57 @@
 /* these are little tdb utility functions that are meant to make
    dealing with a tdb database a little less cumbersome in Samba */
 
+static SIG_ATOMIC_T gotalarm;
+
+/***************************************************************
+ Signal function to tell us we timed out.
+****************************************************************/
+
+static void gotalarm_sig(void)
+{
+	gotalarm = 1;
+}
+
 /****************************************************************************
- Lock a chain by string.
+ Lock a chain with timeout (in seconds).
 ****************************************************************************/
 
-int tdb_lock_bystring(TDB_CONTEXT *tdb, char *keyval)
+int tdb_chainlock_with_timeout( TDB_CONTEXT *tdb, TDB_DATA key, unsigned int timeout)
+{
+	/* Allow tdb_chainlock to be interrupted by an alarm. */
+	int ret;
+	gotalarm = 0;
+	tdb_set_lock_alarm(&gotalarm);
+
+	if (timeout) {
+		CatchSignal(SIGALRM, SIGNAL_CAST gotalarm_sig);
+		alarm(timeout);
+	}
+
+	ret = tdb_chainlock(tdb, key);
+
+	if (timeout) {
+		alarm(0);
+		CatchSignal(SIGALRM, SIGNAL_CAST SIG_IGN);
+		if (gotalarm)
+			return -1;
+	}
+
+	return ret;
+}
+
+/****************************************************************************
+ Lock a chain by string. Return -1 if timeout or lock failed.
+****************************************************************************/
+
+int tdb_lock_bystring(TDB_CONTEXT *tdb, char *keyval, unsigned int timeout)
 {
 	TDB_DATA key;
 
 	key.dptr = keyval;
 	key.dsize = strlen(keyval)+1;
 	
-	return tdb_chainlock(tdb, key);
+	return tdb_chainlock_with_timeout(tdb, key, timeout);
 }
 
 /****************************************************************************
@@ -215,7 +254,7 @@ int32 tdb_change_int32_atomic(TDB_CONTEXT *tdb, char *keystr, int32 *oldval, int
 	int32 val;
 	int32 ret = -1;
 
-	if (tdb_lock_bystring(tdb, keystr) == -1)
+	if (tdb_lock_bystring(tdb, keystr,0) == -1)
 		return -1;
 
 	if ((val = tdb_fetch_int32(tdb, keystr)) == -1) {
@@ -256,7 +295,7 @@ BOOL tdb_change_uint32_atomic(TDB_CONTEXT *tdb, char *keystr, uint32 *oldval, ui
 	uint32 val;
 	BOOL ret = False;
  
-	if (tdb_lock_bystring(tdb, keystr) == -1)
+	if (tdb_lock_bystring(tdb, keystr,0) == -1)
 		return False;
  
 	if (!tdb_fetch_uint32(tdb, keystr, &val)) {
