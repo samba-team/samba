@@ -41,3 +41,15 @@ Also Note:
 The above method can be used to create mandatory profiles also. To convert
 a group profile into a mandatory profile simply locate the NTUser.DAT file
 in the copied profile and rename it to NTUser.MAN.
+
+
+Next Note:
+----------
+The W2K professional resource kit has moveuser.exe:
+
+Description:
+
+   moveuser.exe changes the security of a profile from one user to another.
+   This allows the account domain to change, and/or the user name to change.
+
+
