@@ -398,25 +398,40 @@ do_authenticate (struct rx_header *hdr,
     time_t max_life;
     u_int8_t life;
     int32_t chal;
+    char client_name[256];
+    char server_name[256];
 	
     krb5_data_zero (&request);
 
     unparse_auth_args (sp, &name, &instance, &start_time, &end_time,
 		       &request, &max_seq_len);
 
+    snprintf (client_name, sizeof(client_name), "%s.%s@%s",
+	      name, instance, v4_realm);
+
     client_entry = db_fetch4 (name, instance, v4_realm);
     if (client_entry == NULL) {
-	kdc_log(0, "Client not found in database: %s.%s@%s",
-		name, instance, v4_realm);
+	kdc_log(0, "Client not found in database: %s",
+		client_name);
 	make_error_reply (hdr, KANOENT, reply);
 	goto out;
     }
 
+    snprintf (server_name, sizeof(server_name), "%s.%s@%s",
+	      "krbtgt", v4_realm, v4_realm);
+
     server_entry = db_fetch4 ("krbtgt", v4_realm, v4_realm);
     if (server_entry == NULL) {
-	kdc_log(0, "Server not found in database: %s.%s@%s",
-		"krbtgt", v4_realm, v4_realm);
+	kdc_log(0, "Server not found in database: %s", server_name);
 	make_error_reply (hdr, KANOENT, reply);
+	goto out;
+    }
+
+    ret = check_flags (client_entry, client_name,
+		       server_entry, server_name,
+		       TRUE);
+    if (ret) {
+	make_error_reply (hdr, KAPWEXPIRED, reply);
 	goto out;
     }
 
@@ -575,6 +590,7 @@ do_getticket (struct rx_header *hdr,
     char pname[ANAME_SZ];
     char pinst[INST_SZ];
     char prealm[REALM_SZ];
+    char server_name[256];
 
     krb5_data_zero (&aticket);
     krb5_data_zero (&times);
@@ -582,11 +598,21 @@ do_getticket (struct rx_header *hdr,
     unparse_getticket_args (sp, &kvno, &auth_domain, &aticket,
 			    &name, &instance, &times, &max_seq_len);
 
+    snprintf (server_name, sizeof(server_name),
+	      "%s.%s@%s", name, instance, v4_realm);
+
     server_entry = db_fetch4 (name, instance, v4_realm);
     if (server_entry == NULL) {
-	kdc_log(0, "Server not found in database: %s.%s@%s",
-		name, instance, v4_realm);
+	kdc_log(0, "Server not found in database: %s", server_name);
 	make_error_reply (hdr, KANOENT, reply);
+	goto out;
+    }
+
+    ret = check_flags (NULL, NULL,
+		       server_entry, server_name,
+		       FALSE);
+    if (ret) {
+	make_error_reply (hdr, KAPWEXPIRED, reply);
 	goto out;
     }
 
