@@ -434,12 +434,12 @@ int push_ucs2(const void *base_ptr, void *dest, const char *src, int dest_len, i
  * @retval The number of bytes occupied by the string in the destination
  *         or -1 in case of error.
  **/
-int push_ucs2_talloc(TALLOC_CTX *ctx, void **dest, const char *src)
+int push_ucs2_talloc(TALLOC_CTX *ctx, smb_ucs2_t **dest, const char *src)
 {
 	int src_len = strlen(src)+1;
 
 	*dest = NULL;
-	return convert_string_talloc(ctx, CH_UNIX, CH_UCS2, src, src_len, dest);
+	return convert_string_talloc(ctx, CH_UNIX, CH_UCS2, src, src_len, (void **)dest);
 }
 
 /**
@@ -450,12 +450,12 @@ int push_ucs2_talloc(TALLOC_CTX *ctx, void **dest, const char *src)
  * @retval The number of bytes occupied by the string in the destination
  *         or -1 in case of error.
  **/
-int push_ucs2_allocate(void **dest, const char *src)
+int push_ucs2_allocate(smb_ucs2_t **dest, const char *src)
 {
 	int src_len = strlen(src)+1;
 
 	*dest = NULL;
-	return convert_string_allocate(CH_UNIX, CH_UCS2, src, src_len, dest);	
+	return convert_string_allocate(CH_UNIX, CH_UCS2, src, src_len, (void **)dest);	
 }
 
 /****************************************************************************

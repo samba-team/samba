@@ -127,7 +127,7 @@ ssize_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_
 	return total;
 }
 
-#if 0  /* relies on client_recieve_smb(), now a static in libsmb/clientgen.c */
+#if 0  /* relies on client_receive_smb(), now a static in libsmb/clientgen.c */
 
 /* This call is INCOMPATIBLE with SMB signing.  If you remove the #if 0
    you must fix ensure you don't attempt to sign the packets - data

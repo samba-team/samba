@@ -116,39 +116,63 @@ void nt_lm_owf_gen(const char *pwd, uchar nt_p16[16], uchar p16[16])
 }
 
 /* Does both the NTLMv2 owfs of a user's password */
-void ntv2_owf_gen(const uchar owf[16],
-		  const char *user_n, const char *domain_n, uchar kr_buf[16])
+BOOL ntv2_owf_gen(const uchar owf[16],
+		  const char *user_in, const char *domain_in, uchar kr_buf[16])
 {
-	pstring user_u;
-	pstring dom_u;
+	smb_ucs2_t *user;
+	smb_ucs2_t *domain;
+	
+	int user_byte_len;
+	int domain_byte_len;
+
 	HMACMD5Context ctx;
 
-	int user_l = strlen(user_n);
-	int domain_l = strlen(domain_n);
+	user_byte_len = push_ucs2_allocate(&user, user_in);
+	if (user_byte_len < 0) {
+		DEBUG(0, ("push_uss2_allocate() for user returned %d (probably malloc() failure)\n", user_byte_len));
+		return False;
+	}
 
-	push_ucs2(NULL, user_u, user_n, (user_l+1)*2, STR_UNICODE|STR_NOALIGN|STR_TERMINATE|STR_UPPER);
-	push_ucs2(NULL, dom_u, domain_n, (domain_l+1)*2, STR_UNICODE|STR_NOALIGN|STR_TERMINATE|STR_UPPER);
+	domain_byte_len = push_ucs2_allocate(&domain, domain_in);
+	if (domain_byte_len < 0) {
+		DEBUG(0, ("push_uss2_allocate() for domain returned %d (probably malloc() failure)\n", user_byte_len));
+		return False;
+	}
+
+	strupper_w(user);
+	strupper_w(domain);
+
+	/* We don't want null termination */
+	user_byte_len = user_byte_len - 2;
+	domain_byte_len = domain_byte_len - 2;
+	
+	SMB_ASSERT(user_byte_len >= 0);
+	SMB_ASSERT(domain_byte_len >= 0);
 
 	hmac_md5_init_limK_to_64(owf, 16, &ctx);
-	hmac_md5_update((const unsigned char *)user_u, user_l * 2, &ctx);
-	hmac_md5_update((const unsigned char *)dom_u, domain_l * 2, &ctx);
+	hmac_md5_update((const unsigned char *)user, user_byte_len, &ctx);
+	hmac_md5_update((const unsigned char *)domain, domain_byte_len, &ctx);
 	hmac_md5_final(kr_buf, &ctx);
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100, ("ntv2_owf_gen: user, domain, owfkey, kr\n"));
-	dump_data(100, user_u, user_l * 2);
-	dump_data(100, dom_u, domain_l * 2);
+	dump_data(100, (const char *)user, user_byte_len);
+	dump_data(100, (const char *)domain, domain_byte_len);
 	dump_data(100, owf, 16);
 	dump_data(100, kr_buf, 16);
 #endif
+
+	SAFE_FREE(user);
+	SAFE_FREE(domain);
+	return True;
 }
 
 /* Does the des encryption from the NT or LM MD4 hash. */
 void SMBOWFencrypt(const uchar passwd[16], const uchar *c8, uchar p24[24])
 {
 	uchar p21[21];
- 
-	memset(p21,'\0',21);
+
+	ZERO_STRUCT(p21);
  
 	memcpy(p21, passwd, 16);    
 	E_P24(p21, c8, p24);
@@ -362,6 +386,12 @@ void cli_caclulate_sign_mac(struct cli_state *cli)
 	unsigned char calc_md5_mac[16];
 	struct MD5Context md5_ctx;
 
+	if (cli->sign_info.temp_smb_signing) {
+		memcpy(&cli->outbuf[smb_ss_field], "SignRequest", 8);
+		cli->sign_info.temp_smb_signing = False;
+		return;
+	}
+
 	if (!cli->sign_info.use_smb_signing) {
 		return;
 	}
@@ -380,6 +410,8 @@ void cli_caclulate_sign_mac(struct cli_state *cli)
 	MD5Final(calc_md5_mac, &md5_ctx);
 
 	memcpy(&cli->outbuf[smb_ss_field], calc_md5_mac, 8);
+/*	cli->outbuf[smb_ss_field+2]=0; 
+	Uncomment this to test if the remote server actually verifies signitures...*/
 	cli->sign_info.send_seq_num++;
 	cli->sign_info.reply_seq_num = cli->sign_info.send_seq_num;
 	cli->sign_info.send_seq_num++;

@@ -160,7 +160,8 @@ void cli_setup_packet(struct cli_state *cli)
 		if (cli->use_spnego) {
 			flags2 |= FLAGS2_EXTENDED_SECURITY;
 		}
-		if (cli->sign_info.use_smb_signing)
+		if (cli->sign_info.use_smb_signing 
+		    || cli->sign_info.temp_smb_signing)
 			flags2 |= FLAGS2_SMB_SECURITY_SIGNATURES;
 		SSVAL(cli->outbuf,smb_flg2, flags2);
 	}
@@ -245,6 +246,10 @@ struct cli_state *cli_initialise(struct cli_state *cli)
 		cli->force_dos_errors = True;
 	}
 
+	/* A way to attempt to force SMB signing */
+	if (getenv("CLI_FORCE_SMB_SIGNING"))
+		cli->sign_info.negotiated_smb_signing = True;
+                                   
 	if (!cli->outbuf || !cli->inbuf)
                 goto error;
 
