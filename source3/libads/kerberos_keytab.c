@@ -8,6 +8,7 @@
    Copyright (C) Guenther Deschner 2003
    Copyright (C) Rakesh Patel 2004
    Copyright (C) Dan Perry 2004
+   Copyright (C) Jeremy Allison 2004
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -28,37 +29,52 @@
 
 #ifdef HAVE_KRB5
 
+/**********************************************************************
+ Converts a name to a fully qalified domain name.
+***********************************************************************/
 
-/*
+void name_to_fqdn(fstring fqdn, const char *name)
+{
+	struct hostent *hp = sys_gethostbyname(name);
+	if ( hp && hp->h_name && *hp->h_name ) {
+		DEBUG(10,("name_to_fqdn: lookup for %s -> %s.\n", name, hp->h_name));
+		fstrcpy(fqdn,hp->h_name);
+	} else {
+		DEBUG(10,("name_to_fqdn: lookup for %s failed.\n", name));
+		fstrcpy(fqdn, name);
+	}
+}
+
+/**********************************************************************
   Adds a single service principal, i.e. 'host' to the system keytab
-*/
+***********************************************************************/
+
 int ads_keytab_add_entry(const char *srvPrinc, ADS_STRUCT *ads)
 {
-	krb5_error_code ret;
-	krb5_context context;
-	krb5_keytab keytab;
-	krb5_kt_cursor cursor;
-	krb5_keytab_entry entry;
-	krb5_principal princ;
+	krb5_error_code ret = 0;
+	krb5_context context = NULL;
+	krb5_keytab keytab = NULL;
+	krb5_kt_cursor cursor = NULL;
+	krb5_keytab_entry kt_entry;
+	krb5_principal princ = NULL;
 	krb5_data password;
 	krb5_enctype *enctypes = NULL;
 	krb5_kvno kvno;
-	krb5_keyblock *key;
+	krb5_keyblock *key = NULL;
 
 	char *principal = NULL;
 	char *princ_s = NULL;
 	char *password_s = NULL;
 	char keytab_name[MAX_KEYTAB_NAME_LEN];          /* This MAX_NAME_LEN is a constant defined in krb5.h */
-	fstring myname;
+	fstring my_fqdn;
 	int i;
-	int retval = 0;
 	char *ktprinc = NULL;
-	struct hostent *hp;
 
+	ZERO_STRUCT(kt_entry);
 	initialize_krb5_error_table();
 	ret = krb5_init_context(&context);
 	if (ret) {
-		DEBUG(1,("could not krb5_init_context: %s\n",error_message(ret)));
+		DEBUG(1,("ads_keytab_add_entry: could not krb5_init_context: %s\n",error_message(ret)));
 		return -1;
 	}
 #ifdef HAVE_WRFILE_KEYTAB       /* MIT */
@@ -69,30 +85,31 @@ int ads_keytab_add_entry(const char *srvPrinc, ADS_STRUCT *ads)
 	ret = krb5_kt_default_name(context, (char *) &keytab_name[0], MAX_KEYTAB_NAME_LEN - 2);
 #endif
 	if (ret) {
-		DEBUG(1,("krb5_kt_default_name failed (%s)\n", error_message(ret)));
+		DEBUG(1,("ads_keytab_add_entry: krb5_kt_default_name failed (%s)\n", error_message(ret)));
+		goto out;
 	}
-	DEBUG(1,("Using default system keytab: %s\n", (char *) &keytab_name));
+	DEBUG(2,("ads_keytab_add_entry: Using default system keytab: %s\n", (char *) &keytab_name));
 	ret = krb5_kt_resolve(context, (char *) &keytab_name, &keytab);
 	if (ret) {
-		DEBUG(1,("krb5_kt_resolve failed (%s)\n", error_message(ret)));
-		return ret;
+		DEBUG(1,("ads_keytab_add_entry: krb5_kt_resolve failed (%s)\n", error_message(ret)));
+		goto out;
 	}
 
 	ret = get_kerberos_allowed_etypes(context,&enctypes);
 	if (ret) {
-		DEBUG(1,("get_kerberos_allowed_etypes failed (%s)\n",error_message(ret)));
+		DEBUG(1,("ads_keytab_add_entry: get_kerberos_allowed_etypes failed (%s)\n",error_message(ret)));
 		goto out;
 	}
 
 	/* retrieve the password */
 	if (!secrets_init()) {
-		DEBUG(1,("secrets_init failed\n"));
+		DEBUG(1,("ads_keytab_add_entry: secrets_init failed\n"));
 		ret = -1;
 		goto out;
 	}
 	password_s = secrets_fetch_machine_password(lp_workgroup(), NULL, NULL);
 	if (!password_s) {
-		DEBUG(1,("failed to fetch machine password\n"));
+		DEBUG(1,("ads_keytab_add_entry: failed to fetch machine password\n"));
 		ret = -1;
 		goto out;
 	}
@@ -100,23 +117,19 @@ int ads_keytab_add_entry(const char *srvPrinc, ADS_STRUCT *ads)
 	password.length = strlen(password_s);
 
 	/* Construct our principal */
-	fstrcpy(myname, global_myname());
-	hp = gethostbyname(myname);
-	if ( hp->h_name && strlen(hp->h_name) > 0 ) {
-		fstrcpy(myname,hp->h_name);
-	}
-	strlower_m(myname);
-	asprintf(&princ_s, "%s/%s@%s", srvPrinc, myname, lp_realm());
+	name_to_fqdn(my_fqdn, global_myname());
+	strlower_m(my_fqdn);
+	asprintf(&princ_s, "%s/%s@%s", srvPrinc, my_fqdn, lp_realm());
 
 	ret = krb5_parse_name(context, princ_s, &princ);
 	if (ret) {
-		DEBUG(1,("krb5_parse_name(%s) failed (%s)\n", princ_s, error_message(ret)));
+		DEBUG(1,("ads_keytab_add_entry: krb5_parse_name(%s) failed (%s)\n", princ_s, error_message(ret)));
 		goto out;
 	}
 
 	kvno = (krb5_kvno) ads_get_kvno(ads, global_myname());
 	if (kvno == -1) {       /* -1 indicates failure, everything else is OK */
-		DEBUG(1,("ads_get_kvno failed to determine the system's kvno.\n"));
+		DEBUG(1,("ads_keytab_add_entry: ads_get_kvno failed to determine the system's kvno.\n"));
 		ret = -1;
 		goto out;
 	}
@@ -124,10 +137,14 @@ int ads_keytab_add_entry(const char *srvPrinc, ADS_STRUCT *ads)
 	/* Seek and delete old keytab entries */
 	ret = krb5_kt_start_seq_get(context, keytab, &cursor);
 	if (ret != KRB5_KT_END && ret != ENOENT ) {
-		DEBUG(1,("Will try to delete old keytab entries\n"));
-		while(!krb5_kt_next_entry(context, keytab, &entry, &cursor)) {
+		DEBUG(3,("ads_keytab_add_entry: Will try to delete old keytab entries\n"));
+		while(!krb5_kt_next_entry(context, keytab, &kt_entry, &cursor)) {
 
-			krb5_unparse_name(context, entry.principal, &ktprinc);
+			ret = krb5_unparse_name(context, entry.principal, &ktprinc);
+			if (ret) {
+				DEBUG(1,("ads_keytab_add_entry: krb5_unparse_name failed (%s)\n", error_message(ret)));
+				goto out;
+			}
 
 			/*---------------------------------------------------------------------------
 			 * Save the entries with kvno - 1.   This is what microsoft does
@@ -138,12 +155,14 @@ int ads_keytab_add_entry(const char *srvPrinc, ADS_STRUCT *ads)
 			 * with the new kvno.
 			 */
 
+			HERE
+
 #ifdef HAVE_KRB5_KT_COMPARE
-			if (krb5_kt_compare(context, &entry, princ, 0, 0) == True && entry.vno != kvno - 1) {
+			if (krb5_kt_compare(context, &kt_entry, princ, 0, 0) == True && kt_entry.vno != kvno - 1) {
 #else
-			if (strcmp(ktprinc, princ_s) == 0 && entry.vno != kvno - 1) {
+			if (strcmp(ktprinc, princ_s) == 0 && kt_entry.vno != kvno - 1) {
 #endif
-				free(ktprinc);
+				SAFE_FREE(ktprinc);
 				DEBUG(1,("Found old entry for principal: %s (kvno %d) - trying to remove it.\n",
 					princ_s, entry.vno));
 				ret = krb5_kt_end_seq_get(context, keytab, &cursor);
@@ -168,7 +187,7 @@ int ads_keytab_add_entry(const char *srvPrinc, ADS_STRUCT *ads)
 				}
 				continue;
 			} else {
-				free(ktprinc);
+				SAFE_FREE(ktprinc);
 			}
 
 			ret = krb5_kt_free_entry(context, &entry);
@@ -231,22 +250,33 @@ int ads_keytab_add_entry(const char *srvPrinc, ADS_STRUCT *ads)
 
 out:
 
-	krb5_kt_close(context, keytab);
-	krb5_free_principal(context, princ);
-	if (enctypes) {
-		free(enctypes);
-	}
-	if (principal) {
-		free(principal);
-	}
-	if (password_s) {
-		free(password_s);
-	}
-	if (princ_s) {
-		free(princ_s);
-	}
+	SAFE_FREE(principal);
+	SAFE_FREE(password_s);
+	SAFE_FREE(princ_s);
 
-	return ret;
+	{
+		krb5_keytab_entry zero_kt_entry;
+		ZERO_STRUCT(zero_kt_entry);
+		if (memcmp(&zero_kt_entry, &kt_entry, sizeof(krb5_keytab_entry))) {
+			krb5_kt_free_entry(context, &kt_entry);
+		}
+	}
+	if (princ) {
+		krb5_free_principal(context, princ);
+	}
+	if (enctypes) {
+		free_kerberos_etypes(context, enctypes);
+	}
+	if (cursor && keytab) {
+		krb5_kt_end_seq_get(context, keytab, &cursor);	
+	}
+	if (keytab) {
+		krb5_kt_close(context, keytab);
+	}
+	if (context) {
+		krb5_free_context(context);
+	}
+	return (int)ret;
 }
 
 
