@@ -1,4 +1,4 @@
-There are Four (4) Extracts here from mail in the Samba Mailing List.
+There are Five (5) Extracts here from mail in the Samba Mailing List.
 The key contribution here is from Kurt Pfeifle.
 
 I added them to this repository in the hope that someone would find the information helpful.
@@ -1026,3 +1026,68 @@ as compared to the Adobe drivers?
 * the CUPS PostScript driver will be the heart of the fully fledged CUPS
    IPP client for Windows NT/2k/XP to be released soon (probably alongside
    the first Beta release for CUPS 1.2).
+
+==============================================================================
+<<< EXTANT 5 >>>
+==============================================================================
+Subject: Printing with Bells and Whistles
+=========================================
+
+May I suggest a radically different approach to your problem?
+
+* Let the Windows Clients use a PostScript driver, to produce
+   PostScript as their print output sent towards the Samba print
+   server (just like any Linux or Unix Client would also use
+   PostScript to send to the server...)
+
+* make the Unix printing subsystem which is underneath Samba
+   convert the incoming PostScript files to the native print
+   format of the target printers (would likely be PCL?
+   I understand you have mainly HP models?)
+
+* You're afraid, that this would just mean a *Generic* PostScript
+   driver for the clients? With no Simplex/Duplex selection,
+   no paper tray choice? But you need them to be able to set up
+   their jobs, ringing all the bells and whistles of the printers?
+
+   --> Not possible with traditional spooling systems!
+
+   --> But perfectly supported by CUPS (which uses "PPD" files to
+       describe how to control the print options for PostScript and
+       non-PostScript devices alike...
+
+   CUPS PPDs are working perfectly on Windows
+   clients who use Adobe PostScript drivers (or the new CUPS
+   PostScript driver for Windows NT/2K/XP). Clients can use
+   them to setup the job to their liking and CUPS will use
+   the received job options to make the (PCL-, ESC/P- or
+   PostScript-) printer behave as required.
+
+* You want to have the additional benefit of page count logging
+   and accounting? In this case the CUPS PostScript driver
+   is the best choice (better than the Adobe one).
+
+* You want to make the drivers downloadable for the clients?
+   "cupsaddsmb" is your friend. It will setup the [print$]
+   share on the Samba host to be ready to serve the clients
+   for a "point and print" driver installation...
+
+"What strings are attached?", I hear you asking...
+
+You are right, there are some. But, given the sheer CPU power
+you can buy nowadays in German supermarkets, these can be
+overcome easily.
+
+The strings: Well, if the
+CUPS/Samba side will have to print a *lot* onto 40 printers
+serving 500 users, you probably will need to set up a second
+server (which can do automatic load balancing with the first
+one, plus a degree of fail-over mechanism). Converting the
+incoming PostScript jobs, "interpreting" them for
+non-PostScript printers, amounts to the work of a "RIP"
+(Raster Image Processor) done in software. This requires
+more CPU and RAM than for the mere "raw spooling" task
+your current setup is solving... It all depends on the
+avarage and peak printing load the server should be
+able to handle....
+
