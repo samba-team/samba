@@ -283,6 +283,7 @@ void zero_free(void *p, size_t size);
 int set_maxfiles(int requested_max);
 void reg_get_subkey(char *full_keyname, char *key_name, char *subkey_name);
 BOOL reg_split_key(char *full_keyname, uint32 *reg_type, char *key_name);
+BOOL become_user_permanently(uid_t uid, gid_t gid);
 
 /*The following definitions come from  lib/util_file.c  */
 
@@ -1325,6 +1326,8 @@ BOOL do_reg_query_key(struct cli_state *cli, POLICY_HND *hnd,
 BOOL do_reg_unknown_1a(struct cli_state *cli, POLICY_HND *hnd, uint32 *unk);
 BOOL do_reg_query_info(struct cli_state *cli, POLICY_HND *hnd,
 				char *type, uint32 *unk_0, uint32 *unk_1);
+BOOL do_reg_set_key_sec(struct cli_state *cli, POLICY_HND *hnd,
+				uint32 sec_buf_size, SEC_DESC *sec_buf);
 BOOL do_reg_get_key_sec(struct cli_state *cli, POLICY_HND *hnd,
 				uint32 *sec_buf_size, SEC_DESC_BUF *sec_buf);
 BOOL do_reg_delete_val(struct cli_state *cli, POLICY_HND *hnd, char *val_name);
@@ -1475,6 +1478,9 @@ void smb_io_strhdr(char *desc,  STRHDR *hdr, prs_struct *ps, int depth);
 void make_uni_hdr(UNIHDR *hdr, int max_len, int len, uint32 buffer);
 void smb_io_unihdr(char *desc,  UNIHDR *hdr, prs_struct *ps, int depth);
 void make_buf_hdr(BUFHDR *hdr, int max_len, int len);
+void smb_io_hdrbuf_pre(char *desc,  BUFHDR *hdr, prs_struct *ps, int depth, uint32 *offset);
+void smb_io_hdrbuf_post(char *desc,  BUFHDR *hdr, prs_struct *ps, int depth, 
+				uint32 ptr_hdrbuf, uint32 start_offset);
 void smb_io_hdrbuf(char *desc,  BUFHDR *hdr, prs_struct *ps, int depth);
 void make_uni_hdr2(UNIHDR2 *hdr, int max_len, int len, uint16 terminate);
 void smb_io_unihdr2(char *desc,  UNIHDR2 *hdr2, prs_struct *ps, int depth);
@@ -1663,6 +1669,10 @@ void reg_io_r_open_hku(char *desc,  REG_R_OPEN_HKU *r_r, prs_struct *ps, int dep
 void make_reg_q_close(REG_Q_CLOSE *q_c, POLICY_HND *hnd);
 void reg_io_q_close(char *desc,  REG_Q_CLOSE *q_u, prs_struct *ps, int depth);
 void reg_io_r_close(char *desc,  REG_R_CLOSE *r_u, prs_struct *ps, int depth);
+void make_reg_q_set_key_sec(REG_Q_SET_KEY_SEC *q_i, POLICY_HND *pol, 
+				uint32 buf_len, SEC_DESC *sec_desc);
+void reg_io_q_set_key_sec(char *desc,  REG_Q_SET_KEY_SEC *r_q, prs_struct *ps, int depth);
+void reg_io_r_set_key_sec(char *desc, REG_R_SET_KEY_SEC *r_q, prs_struct *ps, int depth);
 void make_reg_q_get_key_sec(REG_Q_GET_KEY_SEC *q_i, POLICY_HND *pol, 
 				uint32 buf_len, SEC_DESC_BUF *sec_buf);
 void reg_io_q_get_key_sec(char *desc,  REG_Q_GET_KEY_SEC *r_q, prs_struct *ps, int depth);
@@ -2047,6 +2057,14 @@ BOOL close_lsa_policy_hnd(POLICY_HND *hnd);
 
 BOOL api_netlog_rpc(pipes_struct *p, prs_struct *data);
 
+/*The following definitions come from  rpc_server/srv_pipe.c  */
+
+BOOL create_rpc_reply(pipes_struct *p,
+				uint32 data_start, uint32 data_end);
+BOOL rpc_command(pipes_struct *p, prs_struct *pd);
+BOOL api_rpcTNP(pipes_struct *p, char *rpc_name, struct api_struct *api_rpc_cmds,
+				prs_struct *data);
+
 /*The following definitions come from  rpc_server/srv_pipe_hnd.c  */
 
 void set_pipe_handle_offset(int max_open_files);
@@ -2077,11 +2095,6 @@ BOOL api_srvsvc_rpc(pipes_struct *p, prs_struct *data);
 /*The following definitions come from  rpc_server/srv_util.c  */
 
 int make_dom_gids(char *gids_str, DOM_GID **ppgids);
-BOOL create_rpc_reply(pipes_struct *p,
-				uint32 data_start, uint32 data_end);
-BOOL rpc_command(pipes_struct *p, prs_struct *pd);
-BOOL api_rpcTNP(pipes_struct *p, char *rpc_name, struct api_struct *api_rpc_cmds,
-				prs_struct *data);
 void get_domain_user_groups(char *domain_groups, char *user);
 uint32 lookup_group_name(uint32 rid, char *group_name, uint32 *type);
 uint32 lookup_alias_name(uint32 rid, char *alias_name, uint32 *type);
@@ -2667,5 +2680,4 @@ void status_page(void);
 
 /*The following definitions come from  web/swat.c  */
 
-BOOL become_user_permanently(uid_t uid, gid_t gid);
 #endif /* _PROTO_H_ */

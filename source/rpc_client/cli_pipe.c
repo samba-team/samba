@@ -130,7 +130,7 @@ static BOOL rpc_check_hdr(prs_struct *rdata, RPC_HDR *rhdr,
 	(*last    ) = IS_BITS_SET_ALL(rhdr->flags, RPC_FLG_LAST );
 	(*len     ) = rhdr->frag_len - rdata->data->data_used;
 
-	return True;
+	return rhdr->pkt_type != RPC_FAULT;
 }
 
 static void NTLMSSPcalc_ap( struct cli_state *cli, unsigned char *data, int len)

@@ -3,9 +3,9 @@
  *  Unix SMB/Netbios implementation.
  *  Version 1.9.
  *  RPC Pipe client / server routines
- *  Copyright (C) Andrew Tridgell              1992-1997,
- *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
- *  Copyright (C) Paul Ashton                       1997.
+ *  Copyright (C) Andrew Tridgell              1992-1998,
+ *  Copyright (C) Luke Kenneth Casson Leighton 1996-1998,
+ *  Copyright (C) Paul Ashton                  1997-1998.
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -428,6 +428,54 @@ BOOL do_reg_query_info(struct cli_state *cli, POLICY_HND *hnd,
 			fstrcpy(type, buffer2_to_str(&r_o.uni_type));
 			(*unk_0) = r_o.unknown_0;
 			(*unk_1) = r_o.unknown_1;
+		}
+	}
+
+	prs_mem_free(&rbuf);
+	prs_mem_free(&buf );
+
+	return valid_query;
+}
+
+/****************************************************************************
+do a REG Set Key Security 
+****************************************************************************/
+BOOL do_reg_set_key_sec(struct cli_state *cli, POLICY_HND *hnd,
+				uint32 sec_buf_size, SEC_DESC *sec_buf)
+{
+	prs_struct rbuf;
+	prs_struct buf; 
+	REG_Q_SET_KEY_SEC q_o;
+	BOOL valid_query = False;
+
+	if (hnd == NULL) return False;
+
+	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
+	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
+
+	/* create and send a MSRPC command with api REG_SET_KEY_SEC */
+
+	DEBUG(4,("REG Set Key security.\n"));
+
+	make_reg_q_set_key_sec(&q_o, hnd, sec_buf_size, sec_buf);
+
+	/* turn parameters into data stream */
+	reg_io_q_set_key_sec("", &q_o, &buf, 0);
+
+	/* send the data on \PIPE\ */
+	if (rpc_api_pipe_req(cli, REG_SET_KEY_SEC, &buf, &rbuf))
+	{
+		REG_R_SET_KEY_SEC r_o;
+		BOOL p;
+
+		ZERO_STRUCT(r_o);
+
+		reg_io_r_set_key_sec("", &r_o, &rbuf, 0);
+		p = rbuf.offset != 0;
+
+		if (p && r_o.status != 0)
+		{
+			valid_query = True;
 		}
 	}
 
