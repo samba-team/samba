@@ -41,24 +41,6 @@ typedef struct canon_ace {
 
 static void free_canon_ace_list( canon_ace *list_head );
 
-#if 0
-/****************************************************************************
- Function to duplicate a canon_ace struct.
-****************************************************************************/
-
-static canon_ace *dup_canon_ace( canon_ace *c_ace)
-{
-	canon_ace *new_ace = (canon_ace *)malloc(sizeof(canon_ace));
-
-	if (new_ace == NULL)
-		return NULL;
-
-	*new_ace = *c_ace;
-
-	return new_ace;
-}
-#endif
-
 /****************************************************************************
  Function to create owner and group SIDs from a SMB_STRUCT_STAT.
 ****************************************************************************/
@@ -67,6 +49,47 @@ static void create_file_sids(SMB_STRUCT_STAT *psbuf, DOM_SID *powner_sid, DOM_SI
 {
 	uid_to_sid( powner_sid, psbuf->st_uid );
 	gid_to_sid( pgroup_sid, psbuf->st_gid );
+}
+
+/****************************************************************************
+ Print out a canon ace.
+****************************************************************************/
+
+static void print_canon_ace(canon_ace *ace, int num)
+{
+	fstring str;
+
+	dbgtext( "canon_ace index %d.", num );
+    dbgtext( "SID = %s ", sid_to_string( str, &ace->sid));
+	if (ace->owner_type == UID_ACE) {
+		struct passwd *pass = sys_getpwuid(ace->unix_ug.uid);
+		dbgtext( "uid %u (%s) ", (unsigned int)ace->unix_ug.uid, pass ? pass->pw_name : "UNKNOWN");
+	} else if (ace->owner_type == GID_ACE) {
+		struct group *grp = getgrgid(ace->unix_ug.gid);
+		dbgtext( "gid %u (%s) ", (unsigned int)ace->unix_ug.gid, grp ? grp->gr_name : "UNKNOWN");
+	} else
+		dbgtext( "other ");
+	switch (ace->type) {
+		case SMB_ACL_USER:
+			dbgtext( "SMB_ACL_USER ");
+			break;
+		case SMB_ACL_USER_OBJ:
+			dbgtext( "SMB_ACL_USER_OBJ ");
+			break;
+		case SMB_ACL_GROUP:
+			dbgtext( "SMB_ACL_GROUP ");
+			break;
+		case SMB_ACL_GROUP_OBJ:
+			dbgtext( "SMB_ACL_GROUP_OBJ ");
+			break;
+		case SMB_ACL_OTHER:
+			dbgtext( "SMB_ACL_OTHER ");
+			break;
+	}
+	dbgtext( "perms ");
+	dbgtext( "%c", ace->perms & S_IRUSR ? 'r' : '-');
+	dbgtext( "%c", ace->perms & S_IWUSR ? 'w' : '-');
+	dbgtext( "%c\n", ace->perms & S_IXUSR ? 'x' : '-');
 }
 
 /****************************************************************************
@@ -80,9 +103,9 @@ static SEC_ACCESS map_canon_ace_perms(int *pacl_type, DOM_SID *powner_sid, canon
 
 	*pacl_type = SEC_ACE_TYPE_ACCESS_ALLOWED;
 
-	if((ace->perms & (S_IRWXU|S_IWUSR|S_IXUSR)) == (S_IRWXU|S_IWUSR|S_IXUSR)) {
+	if((ace->perms & (S_IRUSR|S_IWUSR|S_IXUSR)) == (S_IRUSR|S_IWUSR|S_IXUSR)) {
 			nt_mask = UNIX_ACCESS_RWX;
-	} else if((ace->perms & (S_IRWXU|S_IWUSR|S_IXUSR)) == 0) {
+	} else if((ace->perms & (S_IRUSR|S_IWUSR|S_IXUSR)) == 0) {
 		/*
 		 * Here we differentiate between the owner and any other user.
 		 */
@@ -93,7 +116,7 @@ static SEC_ACCESS map_canon_ace_perms(int *pacl_type, DOM_SID *powner_sid, canon
 			nt_mask = 0;
 		}
 	} else {
-		nt_mask |= ((ace->perms & S_IRWXU) ? UNIX_ACCESS_R : 0 );
+		nt_mask |= ((ace->perms & S_IRUSR) ? UNIX_ACCESS_R : 0 );
 		nt_mask |= ((ace->perms & S_IWUSR) ? UNIX_ACCESS_W : 0 );
 		nt_mask |= ((ace->perms & S_IXUSR) ? UNIX_ACCESS_X : 0 );
 	}
@@ -203,6 +226,34 @@ static BOOL unpack_nt_owners(SMB_STRUCT_STAT *psbuf, uid_t *puser, gid_t *pgrp, 
 }
 
 /****************************************************************************
+ Merge aces with a common user.
+****************************************************************************/
+
+static BOOL merge_aces( canon_ace *list_head, canon_ace *p_ace)
+{
+	canon_ace *curr_ace;
+
+	for (curr_ace = list_head; curr_ace; curr_ace = curr_ace->next) {
+		if (curr_ace == p_ace)
+			continue;
+
+		if (curr_ace->type == p_ace->type && sid_equal(&curr_ace->sid, &p_ace->sid)) {
+			if( DEBUGLVL( 10 )) {
+				dbgtext("Merging ACE's\n");
+				print_canon_ace( p_ace, 0);
+				print_canon_ace( curr_ace, 0);
+			}
+			p_ace->perms |= curr_ace->perms;
+			DLIST_REMOVE(list_head, curr_ace);
+			free(curr_ace);
+			return True;
+		}
+	}
+
+	return False;
+}
+
+/****************************************************************************
  Unpack a SEC_DESC into two canonical ace lists. We don't depend on this
  succeeding.
 ****************************************************************************/
@@ -218,6 +269,7 @@ static BOOL unpack_canon_ace(files_struct *fsp,
 	BOOL all_aces_are_inherit_only = (fsp->is_directory ? True : False);
 	canon_ace *file_ace = NULL;
 	canon_ace *dir_ace = NULL;
+	canon_ace *current_ace = NULL;
 	enum SID_NAME_USE sid_type;
 	int i;
 
@@ -242,7 +294,6 @@ static BOOL unpack_canon_ace(files_struct *fsp,
 
 	for(i = 0; i < dacl->num_aces; i++) {
 		SEC_ACE *psa = &dacl->ace[i];
-		canon_ace *current_ace = NULL;
 
 		if((psa->type != SEC_ACE_TYPE_ACCESS_ALLOWED) && (psa->type != SEC_ACE_TYPE_ACCESS_DENIED)) {
 			DEBUG(3,("unpack_canon_ace: unable to set anything but an ALLOW or DENY ACE.\n"));
@@ -308,7 +359,7 @@ static BOOL unpack_canon_ace(files_struct *fsp,
 		if(psa->type == SEC_ACE_TYPE_ACCESS_ALLOWED)
 			current_ace->perms |= map_nt_perms( psa->info, S_IRUSR);
 		else
-			current_ace->perms &= ~(map_nt_perms( psa->info, S_IRUSR));
+			current_ace->perms = 0;
 
 		/*
 		 * Now note what kind of a POSIX ACL this should map to.
@@ -357,8 +408,27 @@ static BOOL unpack_canon_ace(files_struct *fsp,
 		 * there was no DACL sent. JRA.
 		 */
 
-		DEBUG(10,("unpack_posix_permissions: Win2k inherit acl traverse. Ignoring DACL.\n"));
+		DEBUG(10,("unpack_canon_ace: Win2k inherit acl traverse. Ignoring DACL.\n"));
 		free_sec_acl(&psd->dacl);
+	}
+
+	/*
+	 * Now go through the canon_ace lists and merge entries
+	 * belonging to identical users.
+	 */
+
+  again_file:
+
+	for (current_ace = file_ace; current_ace; current_ace = current_ace->next ) {
+		if (merge_aces( file_ace, current_ace))
+			goto again_file;
+	}
+
+  again_dir:
+
+	for (current_ace = dir_ace; current_ace; current_ace = current_ace->next ) {
+		if (merge_aces( dir_ace, current_ace))
+			goto again_dir;
 	}
 
 	*ppfile_ace = file_ace;
@@ -371,7 +441,7 @@ static BOOL unpack_canon_ace(files_struct *fsp,
 ****************************************************************************/
 
 static BOOL unpack_posix_permissions(files_struct *fsp, SMB_STRUCT_STAT *psbuf, mode_t *pmode,
-								uint32 security_info_sent, SEC_DESC *psd)
+								uint32 security_info_sent, SEC_DESC *psd, BOOL posix_acls)
 {
   extern DOM_SID global_sid_World;
   connection_struct *conn = fsp->conn;
@@ -478,6 +548,7 @@ static BOOL unpack_posix_permissions(files_struct *fsp, SMB_STRUCT_STAT *psbuf, 
       else
         *pmode &= ~(map_nt_perms( psa->info, S_IRUSR));
 
+      
     } else if( sid_equal(&ace_sid, &file_grp_sid)) {
       /*
        * Map the desired permissions into group perms.
@@ -499,7 +570,12 @@ static BOOL unpack_posix_permissions(files_struct *fsp, SMB_STRUCT_STAT *psbuf, 
         *pmode &= ~(map_nt_perms( psa->info, S_IROTH));
 
     } else {
-      DEBUG(0,("unpack_posix_permissions: unknown SID used in ACL.\n"));
+      /*
+       * Only bother printing the level zero error if we didn't get any
+       * POSIX ACLS.
+       */
+      if (!posix_acls)
+        DEBUG(0,("unpack_posix_permissions: unknown SID used in ACL.\n"));
       return False;
     }
   }
@@ -926,6 +1002,9 @@ static BOOL set_canon_ace_list(files_struct *fsp, canon_ace *the_ace, BOOL defau
 				i, strerror(errno) ));
 			goto done;
 		}
+
+		if( DEBUGLVL( 10 ))
+			print_canon_ace( p_ace, i);
 	}
 
 	/*
@@ -1018,6 +1097,8 @@ size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
 	canon_ace *dir_ace = NULL;
  
 	*ppdesc = NULL;
+
+	DEBUG(10,("get_nt_acl: called for file %s\n", fsp->fsp_name ));
 
 	if(fsp->is_directory || fsp->fd == -1) {
 
@@ -1160,6 +1241,8 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 	BOOL posix_perms;
 	BOOL acl_perms;
 
+	DEBUG(10,("set_nt_acl: called for file %s\n", fsp->fsp_name ));
+
 	/*
 	 * Get the current state of the file.
 	 */
@@ -1219,9 +1302,9 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 
 	create_file_sids(&sbuf, &file_owner_sid, &file_grp_sid);
 
-	posix_perms = unpack_posix_permissions( fsp, &sbuf, &perms, security_info_sent, psd);
 	acl_perms = unpack_canon_ace( fsp, &file_owner_sid, &file_grp_sid,
 									&file_ace_list, &dir_ace_list, security_info_sent, psd);
+	posix_perms = unpack_posix_permissions( fsp, &sbuf, &perms, security_info_sent, psd, acl_perms);
 
 	if (!posix_perms && !acl_perms) {
 		/*
