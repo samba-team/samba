@@ -1191,7 +1191,7 @@ BOOL ldap_decode(ASN1_DATA *data, struct ldap_message *msg)
 		r->dn = blob2string_talloc(msg->mem_ctx, blob);
 		if (asn1_peek_tag(data, 0x80)) {
 			int pwlen;
-			r->creds.password = NULL;
+			r->creds.password = "";
 			/* Mechanism 0 (SIMPLE) */
 			asn1_start_tag(data, 0x80);
 			pwlen = asn1_tag_remaining(data);
@@ -1410,8 +1410,8 @@ BOOL ldap_decode(ASN1_DATA *data, struct ldap_message *msg)
 	return !data->has_error;
 }
 
-static BOOL ldap_parse_basic_url(TALLOC_CTX *mem_ctx, const char *url,
-				 char **host, uint16 *port, BOOL *ldaps)
+BOOL ldap_parse_basic_url(TALLOC_CTX *mem_ctx, const char *url,
+			  char **host, uint16 *port, BOOL *ldaps)
 {
 	int tmp_port = 0;
 	fstring protocol;
@@ -1737,6 +1737,21 @@ struct ldap_message *new_ldap_search_message(const char *base,
 	res->r.SearchRequest.filter = filter;
 	res->r.SearchRequest.num_attributes = num_attributes;
 	res->r.SearchRequest.attributes = attributes;
+	return res;
+}
+
+struct ldap_message *new_ldap_simple_bind_msg(const char *dn, const char *pw)
+{
+	struct ldap_message *res = new_ldap_message();
+
+	if (res == NULL)
+		return NULL;
+
+	res->type = LDAP_TAG_BindRequest;
+	res->r.BindRequest.version = 3;
+	res->r.BindRequest.dn = talloc_strdup(res->mem_ctx, dn);
+	res->r.BindRequest.mechanism = LDAP_AUTH_MECH_SIMPLE;
+	res->r.BindRequest.creds.password = talloc_strdup(res->mem_ctx, pw);
 	return res;
 }
 
