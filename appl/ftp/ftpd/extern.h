@@ -53,7 +53,7 @@
 void	blkfree(char **);
 char  **copyblk(char **);
 void	cwd(char *);
-void	delete(char *);
+void	do_delete(char *);
 void	dologout(int);
 void	fatal(char *);
 int	ftpd_pclose(FILE *);
@@ -76,7 +76,7 @@ void	send_file_list(char *);
 void	setproctitle(const char *, ...);
 void	statcmd(void);
 void	statfilecmd(char *);
-void	store(char *, char *, int);
+void	do_store(char *, char *, int);
 void	upper(char *);
 void	user(char *);
 void	yyerror(char *);

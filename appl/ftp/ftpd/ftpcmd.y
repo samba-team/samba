@@ -325,14 +325,14 @@ cmd
 	| STOR check_login SP pathname CRLF
 		{
 			if ($2 && $4 != NULL)
-				store($4, "w", 0);
+				do_store($4, "w", 0);
 			if ($4 != NULL)
 				free($4);
 		}
 	| APPE check_login SP pathname CRLF
 		{
 			if ($2 && $4 != NULL)
-				store($4, "a", 0);
+				do_store($4, "a", 0);
 			if ($4 != NULL)
 				free($4);
 		}
@@ -392,7 +392,7 @@ cmd
 	| DELE check_login_no_guest SP pathname CRLF
 		{
 			if ($2 && $4 != NULL)
-				delete($4);
+				do_delete($4);
 			if ($4 != NULL)
 				free($4);
 		}
@@ -589,7 +589,7 @@ cmd
 	| STOU check_login SP pathname CRLF
 		{
 			if ($2 && $4 != NULL)
-				store($4, "w", 1);
+				do_store($4, "w", 1);
 			if ($4 != NULL)
 				free($4);
 		}

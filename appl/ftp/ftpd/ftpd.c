@@ -966,7 +966,7 @@ filename_check(char *filename)
 }
 
 void
-store(char *name, char *mode, int unique)
+do_store(char *name, char *mode, int unique)
 {
 	FILE *fout, *din;
 	struct stat st;
@@ -1515,7 +1515,7 @@ yyerror(char *s)
 }
 
 void
-delete(char *name)
+do_delete(char *name)
 {
 	struct stat st;
 
