@@ -2,6 +2,10 @@ Mon Mar  1 10:49:38 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* ftpd/logwtmp.c: HAVE_UT_* -> HAVE_STRUCT_UTMP*_UT_*
 
+Mon Feb 22 19:20:51 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* common/Makefile.in: remove glob
+
 Sat Feb 13 17:19:35 1999  Assar Westerlund  <assar@sics.se>
 
 	* ftpd/ftpd.c (match): remove #ifdef HAVE_FNMATCH.  We have a
