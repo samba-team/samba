@@ -1,6 +1,4 @@
 #include <krb5_locl.h>
-#include <d.h>
-#include <k5_der.h>
 #include <krb5_error.h>
 
 /*
@@ -14,6 +12,10 @@ krb5_get_credentials (krb5_context context,
 		      krb5_creds *in_creds,
 		      krb5_creds *out_creds)
 {
+  return 17;
+}
+#if 0
+
      krb5_error_code err;
      Tgs_Req a;
      krb5_kdc_rep rep;
@@ -75,4 +77,6 @@ krb5_get_credentials (krb5_context context,
 	  return ASN1_PARSE_ERROR;
      }
 
+
 }
+#endif

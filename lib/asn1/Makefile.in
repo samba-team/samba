@@ -1,0 +1,65 @@
+# $Id$
+
+srcdir		= @srcdir@
+VPATH		= @srcdir@
+
+CC		= @CC@
+YACC		= @YACC@
+LEX		= @LEX@
+YFLAGS		= -d
+
+INSTALL		= @INSTALL@
+INSTALL_PROGRAM = @INSTALL_PROGRAM@
+INSTALL_DATA	= @INSTALL_DATA@
+
+DEFS		= @DEFS@
+
+SHELL		= /bin/sh
+
+CFLAGS		= -g
+REALCFLAGS	= $(CFLAGS) $(DEFS) -I$(srcdir) -I. -I..
+
+FOO_SRCS	= parse.y lex.l main.c hash.c symbol.c gen.c
+FOO_OBJS	= parse.o lex.o main.o hash.o symbol.o gen.o
+FOO_HDRS	= lex.h parse.h hash.h symbol.h gen.h
+PROG		= foo
+
+ASN1_SRCS	= der_get.c der_put.c
+ASN1_OBJS	= der_get.o der_put.o foo.o
+ASN1_HDRS	=
+
+.c.o:
+		$(CC) -c $(CPPFLAGS) $(REALCFLAGS) $<
+
+.l.c:
+		$(LEX) $(LFLAGS) -t $< >$@
+
+all:		foo libasn1.a
+
+install:
+		echo "No installation yet"
+
+foo:		$(FOO_OBJS)
+		$(CC) $(LDFLAGS) -o $@ $(FOO_OBJS) $(LIBS)
+
+libasn1.a:	$(ASN1_OBJS)
+		ar cr $@ $(ASN1_OBJS)
+
+foo.c foo.h:	k5.asn1
+		./foo $(srcdir)/k5.asn1
+
+parse.h:	parse.c
+		mv y.tab.h parse.h
+
+lex.o:		parse.h
+
+clean		:
+		rm -f $(OBJS) $(PROG) lex.c parse.c parse.h *~ *.o core
+
+mostlyclean:	clean
+
+distclean:	clean
+
+realclean:	distclean
+
+.PHONY: all install tags clean distclean realclean

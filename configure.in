@@ -1,0 +1,31 @@
+dnl Process this file with autoconf to produce a configure script.
+AC_REVISION($Revision$)
+AC_INIT(send_to_kdc.c)
+AC_CONFIG_HEADER(config.h)
+
+dnl Checks for programs.
+AC_PROG_CC
+AC_PROG_INSTALL
+dnl AC_KRB_PROG_YACC
+AC_PROG_YACC
+AC_PROG_LEX
+AC_PROG_RANLIB
+
+dnl Checks for libraries.
+
+dnl Checks for header files.
+AC_HEADER_STDC
+AC_CHECK_HEADERS(fcntl.h limits.h sys/ioctl.h sys/time.h unistd.h)
+AC_CHECK_HEADERS(sys/bitypes.h)
+
+dnl Checks for typedefs, structures, and compiler characteristics.
+AC_C_CONST
+AC_TYPE_OFF_T
+AC_TYPE_SIZE_T
+AC_HEADER_TIME
+AC_STRUCT_TM
+
+dnl Checks for library functions.
+AC_CHECK_FUNCS(gethostname mktime select socket strdup strstr)
+
+AC_OUTPUT(Makefile asn1/Makefile)

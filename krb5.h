@@ -1,10 +1,16 @@
 #ifndef __KRB5_H__
 #define __KRB5_H__
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <sys/types.h>
 #include <stdarg.h>
 
+#ifdef HAVE_SYS_BITYPES_H
 #include <sys/bitypes.h>
+#endif
 
 #include "config_file.h"
 
@@ -213,7 +219,12 @@ typedef struct krb5_auth_context{
 
 typedef krb5_uint32 krb5_flags;
 
-typedef struct krb5_kdc_rep krb5_kdc_rep;
+#include <foo.h>
+
+typedef struct {
+  KDC_REP part1;
+  EncTGSRepPart part2;
+} krb5_kdc_rep;
 
 krb5_error_code
 krb5_init_context(krb5_context *context);

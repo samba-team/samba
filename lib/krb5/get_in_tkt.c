@@ -1,7 +1,5 @@
 #include "krb5_locl.h"
 #include <krb5_error.h>
-#include <d.h>
-#include <k5_der.h>
 
 static krb5_error_code
 krb5_get_salt (krb5_principal princ,
@@ -37,26 +35,68 @@ decrypt_tkt (krb5_context context,
 {
      des_key_schedule sched;
      char *buf;
-     Buffer buffer;
+     int i;
+     int len = dec_rep->part1.enc_part.cipher.length;
 
      des_set_key (key->contents.data, sched);
-     buf = malloc (dec_rep->enc_part.cipher.length);
+     buf = malloc (len);
      if (buf == NULL)
 	  return ENOMEM;
-     des_cbc_encrypt ((des_cblock *)dec_rep->enc_part.cipher.data,
+     des_cbc_encrypt ((des_cblock *)dec_rep->part1.enc_part.cipher.data,
 		      (des_cblock *)buf,
-		      dec_rep->enc_part.cipher.length,
+		      len,
 		      sched,
 		      key->contents.data,
 		      DES_DECRYPT);
 				/* XXX: Check CRC */
-     buf_init (&buffer, buf + 12, dec_rep->enc_part.cipher.length - 12);
-     if (der_get_enctgsreppart (&buffer, &dec_rep->enc_part2) == -1) {
-	  free (buf);
-	  return ASN1_PARSE_ERROR;
-     }
+
+     i = decode_EncTGSRepPart(buf + 12, len - 12, &dec_rep->part2);
      free (buf);
+     if (i < 0)
+       return ASN1_PARSE_ERROR;
      return 0;
+}
+
+/*
+ *
+ */
+
+krb5_error_code
+krb5_principal2principalname (PrincipalName *p,
+			      krb5_principal from)
+{
+  int i;
+
+  p->name_type = from->type;
+  p->name_string.len = from->ncomp;
+  p->name_string.val = malloc(from->ncomp * sizeof(*p->name_string.val));
+  for (i = 0; i < from->ncomp; ++i) {
+    int len = from->comp[i].length;
+    p->name_string.val[i] = malloc(len + 1);
+    strncpy (p->name_string.val[i], from->comp[i].data, len);
+    p->name_string.val[i][len] = '\0';
+  }
+  return 0;
+}
+
+krb5_error_code
+principalname2krb5_principal (krb5_principal p,
+			      PrincipalName from,
+			      krb5_data realm)
+{
+  int i;
+
+  p = malloc (sizeof(*p));
+  p->type = from.name_type;
+  p->ncomp = from.name_string.len;
+  p->comp = malloc (p->ncomp * sizeof(*p->comp));
+  for (i = 0; i < p->ncomp; ++i) {
+    int len = strlen(from.name_string.val[i]) + 1;
+    p->comp[i].length = len;
+    p->comp[i].data = strdup(from.name_string.val[i]);
+  }
+  p->realm = realm;
+  return 0;
 }
 
 /*
@@ -78,78 +118,93 @@ krb5_get_in_tkt(krb5_context context,
 		krb5_kdc_rep **ret_as_reply)
 {
      krb5_error_code err;
-     As_Req a;
+     AS_REQ a;
      krb5_kdc_rep rep;
      krb5_data req, resp;
      char buf[BUFSIZ];
-     Buffer buffer;
      krb5_data salt;
      krb5_keyblock *key;
 
      a.pvno = 5;
-     a.msg_type = KRB_AS_REQ;
-     memset (&a.kdc_options, 0, sizeof(a.kdc_options));
+     a.msg_type = krb_as_req;
+     memset (&a.req_body.kdc_options, 0, sizeof(a.req_body.kdc_options));
 /* a.kdc_options */
-     a.cname = creds->client;
-     a.sname = creds->server;
-     a.realm = creds->client->realm;
-     a.till  = creds->times.endtime;
-     a.nonce = 17;
+     a.req_body.cname = malloc(sizeof(*a.req_body.cname));
+     a.req_body.sname = malloc(sizeof(*a.req_body.sname));
+     krb5_principal2principalname (a.req_body.cname, creds->client);
+     krb5_principal2principalname (a.req_body.sname, creds->server);
+     a.req_body.realm = malloc(creds->client->realm.length + 1);
+     strncpy (a.req_body.realm, creds->client->realm.data,
+	      creds->client->realm.length);
+     a.req_body.realm[creds->client->realm.length] = '\0';
+
+     a.req_body.till  = creds->times.endtime;
+     a.req_body.nonce = 17;
      if (etypes)
-	  a.etypes = etypes;
+       abort ();
      else {
-	  err = krb5_get_default_in_tkt_etypes (context, &a.etypes);
+	  err = krb5_get_default_in_tkt_etypes (context,
+						&a.req_body.etype.val);
 	  if (err)
 	       return err;
-	  a.num_etypes = 1;
+	  a.req_body.etype.len = 1;
      }
      if (addrs){
      } else {
-	  err = krb5_get_all_client_addrs (&a.addrs);
+          a.req_body.addresses = malloc(sizeof(*a.req_body.addresses));
+
+	  err = krb5_get_all_client_addrs (a.req_body.addresses);
 	  if (err)
 	       return err;
      }
-     
-     req.length = der_put_as_req (buf + sizeof(buf) - 1, &a);
-     req.data   = buf + sizeof(buf) - req.length;
+     a.req_body.enc_authorization_data = NULL;
+     a.req_body.additional_tickets = NULL;
+     a.padata = NULL;
+
+     req.length = encode_AS_REQ (buf + sizeof(buf) - 1,
+				 sizeof(buf),
+				 &a);
+     if (req.length < 0)
+       return ASN1_PARSE_ERROR;
+     req.data = buf + sizeof(buf) - req.length;
      if (addrs == NULL) {
 	  int i;
 
-	  for (i = 0; i < a.addrs.number; ++i)
-	       krb5_data_free (&a.addrs.addrs[i].address);
-	  free (a.addrs.addrs);
+	  for (i = 0; i < a.req_body.addresses->len; ++i)
+	       krb5_data_free (&a.req_body.addresses->val[i].address);
+	  free (a.req_body.addresses->val);
      }
 
-     err = krb5_sendto_kdc (context, &req, &a.realm, &resp);
+     err = krb5_sendto_kdc (context, &req, &creds->client->realm, &resp);
      if (err) {
 	  return err;
      }
-     buf_init (&buffer, resp.data, resp.length);
-     if (der_get_as_rep (&buffer, &rep) == -1) {
-	  return ASN1_PARSE_ERROR;
-     }
-     krb5_data_free (&rep.realm);
-     krb5_principal_free (rep.cname);
-     creds->ticket.kvno  = rep.ticket.kvno;
-     creds->ticket.etype = rep.ticket.etype;
+     if(decode_AS_REP(resp.data, resp.length, &rep) < 0)
+       return ASN1_PARSE_ERROR;
+
+     free (rep.part1.crealm);
+     /*     krb5_principal_free (rep.part1.cname);*/
+     creds->ticket.kvno  = rep.part1.ticket.tkt_vno;
+     creds->ticket.etype = rep.part1.enc_part.etype;
      creds->ticket.enc_part.length = 0;
      creds->ticket.enc_part.data   = NULL;
      krb5_data_copy (&creds->ticket.enc_part,
-		     rep.ticket.enc_part.data,
-		     rep.ticket.enc_part.length);
-     krb5_data_free (&rep.ticket.enc_part);
+		     rep.part1.ticket.enc_part.cipher.data,
+		     rep.part1.ticket.enc_part.cipher.length);
+     krb5_data_free (&rep.part1.ticket.enc_part.cipher);
 
-     krb5_copy_principal (context,
-			  rep.ticket.sprinc,
-			  &creds->ticket.sprinc);
-     krb5_free_principal (rep.ticket.sprinc);
+     principalname2krb5_principal (creds->ticket.sprinc,
+				   rep.part1.ticket.sname,
+				   creds->client->realm);
+     /*     krb5_free_principal (rep.part1.ticket.sprinc);*/
 
      salt.length = 0;
      salt.data = NULL;
      err = krb5_get_salt (creds->client, creds->client->realm, &salt);
      if (err)
 	  return err;
-     err = (*key_proc)(context, rep.enc_part.etype, &salt, keyseed, &key);
+     err = (*key_proc)(context, rep.part1.enc_part.etype, &salt,
+		       keyseed, &key);
      krb5_data_free (&salt);
      if (err)
 	  return err;
@@ -161,45 +216,49 @@ krb5_get_in_tkt(krb5_context context,
      memset (key->contents.data, 0, key->contents.length);
      krb5_data_free (&key->contents);
      free (key);
-     if (rep.enc_part2.key_expiration)
-	  free (rep.enc_part2.key_expiration);
-     if (rep.enc_part2.starttime) {
-	  creds->times.starttime = *rep.enc_part2.starttime;
-	  free (rep.enc_part2.starttime);
+     if (rep.part2.key_expiration)
+	  free (rep.part2.key_expiration);
+     if (rep.part2.starttime) {
+	  creds->times.starttime = *rep.part2.starttime;
+	  free (rep.part2.starttime);
      } else
-	  creds->times.starttime = rep.enc_part2.authtime;
-     if (rep.enc_part2.renew_till) {
-	  creds->times.renew_till = *rep.enc_part2.renew_till;
-	  free (rep.enc_part2.renew_till);
+	  creds->times.starttime = rep.part2.authtime;
+     if (rep.part2.renew_till) {
+	  creds->times.renew_till = *rep.part2.renew_till;
+	  free (rep.part2.renew_till);
      } else
-	  creds->times.renew_till = rep.enc_part2.endtime;
-     creds->times.authtime = rep.enc_part2.authtime;
-     creds->times.endtime  = rep.enc_part2.endtime;
-     if (rep.enc_part2.req.values)
-	  free (rep.enc_part2.req.values);
-     if (rep.enc_part2.caddr.addrs) {
+	  creds->times.renew_till = rep.part2.endtime;
+     creds->times.authtime = rep.part2.authtime;
+     creds->times.endtime  = rep.part2.endtime;
+#if 0 /* What? */
+     if (rep.part2.req.values)
+	  free (rep.part2.req.values);
+#endif
+#if 0
+     if (rep.part2.caddr.addrs) {
 	  int i;
 
-	  for (i = 0; i < rep.enc_part2.caddr.number; ++i) {
-	       krb5_data_free (&rep.enc_part2.caddr.addrs[i].address);
+	  for (i = 0; i < rep.part2.caddr.number; ++i) {
+	       krb5_data_free (&rep.part2.caddr.addrs[i].address);
 	  }
-	  free (rep.enc_part2.caddr.addrs);
+	  free (rep.part2.caddr.addrs);
      }
-     krb5_principal_free (rep.enc_part2.sname);
-     krb5_data_free (&rep.enc_part2.srealm);
+     krb5_principal_free (rep.part2.sname);
+     krb5_data_free (&rep.part2.srealm);
+#endif
 	  
      if (err)
 	  return err;
 
      creds->session.contents.length = 0;
      creds->session.contents.data   = NULL;
-     creds->session.keytype = rep.enc_part2.key.keytype;
+     creds->session.keytype = rep.part2.key.keytype;
      err = krb5_data_copy (&creds->session.contents,
-			   rep.enc_part2.key.contents.data,
-			   rep.enc_part2.key.contents.length);
-     memset (rep.enc_part2.key.contents.data, 0,
-	     rep.enc_part2.key.contents.length);
-     krb5_data_free (&rep.enc_part2.key.contents);
+			   rep.part2.key.keyvalue.data,
+			   rep.part2.key.keyvalue.length);
+     memset (rep.part2.key.keyvalue.data, 0,
+	     rep.part2.key.keyvalue.length);
+     krb5_data_free (&rep.part2.key.keyvalue);
 
      if (err)
 	  return err;
