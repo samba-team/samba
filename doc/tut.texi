@@ -6,8 +6,22 @@ There currently isn't any documentation other than the source. To give
 some example how to you might try this code, we give you a quick
 `tutorial'.
 
-After you have built everything (don't @samp{make install}) you could do
-the following to test the kdc.
+First build everything.  You should be able to install it with
+@samp{make install} but don't need to.  Here are some simple tests to
+exercise the kdc.
+
+You will have to create a @file{/etc/krb5.conf} with the following contents:
+
+@example
+[realms]
+        MY.REALM = @{
+                kdc = my.computer
+        @}
+[domain_realm]
+        my.computer = MY.REALM
+@end example
+
+And then,
 
 @example 
 $ cd kdc
@@ -22,17 +36,17 @@ Default renewable ticket life: [432000]
 This will create an initial database (in the current directory).
 
 @example
-kdb_edit> add me@@MY.REALM 
+kdb_edit> add me
 Max ticket life [86400]: 
 Max renewable ticket [432000]: 
 Password:
 Verifying password - Password:
 @end example
 
-This will add a principal for you. You have to specify the realm.
+This will add a principal for you.
 
 @example
-kdb_edit> add host/my.computer@@MY.REALM
+kdb_edit> add host/my.computer
 Max ticket life [86400]: 
 Max renewable ticket [432000]: 
 Password:
@@ -40,7 +54,8 @@ Verifying password - Password:
 @end example
 
 This creates a host entry for your computer (this could be anything, but
-a `host' principal is most useful).
+a `host' principal is most useful).  Try using the password
+@samp{random}.  That should generate a random key.
 
 Now start the KDC (press control-D to exit kdb_edit).
 
@@ -48,29 +63,18 @@ Now start the KDC (press control-D to exit kdb_edit).
 $ ./kdc &
 @end example
 
-You will have to create a @file{/etc/krb5.conf} with the following contents:
-
-@example
-[realms]
-        MY.REALM = @{
-                kdc = my.computer
-        @}
-[domain_realm]
-        my.computer = MY.REALM
-@end example
-
 Now, try to get some credentials.
 
 @example
-$ ../kuser/kinit me@@MY.REALM
-Password: 
+$ ../kuser/kinit me
+me@@MY.REALM's Password: 
 $ ../kuser/klist
 Credentials cache: /tmp/krb5cc_3008
         Principal: me@@MY.REALM
 
   Issued           Expires          Principal
 Jul 13 07:25:55  Jul 14 07:25:55  krbtgt/MY.REALM@@MY.REALM
-$ ../kuser/kfoo host/my.computer@@MY.REALM
+$ ../kuser/kfoo host/my.computer
 $ ../kuser/klist 
 Credentials cache: /tmp/krb5cc_3008
         Principal: me@@MY.REALM
@@ -80,5 +84,5 @@ Jul 13 07:25:55  Jul 14 07:25:55  krbtgt/MY.REALM@@MY.REALM
 Jul 13 07:25:55  Jul 14 07:25:55  host/my.computer@@MY.REALM
 @end example
 
-Extending this example to do a full test of rsh or telnet is left as an
-exercise to the reader.
+Then you should try to run the programs in `appl/test', `appl/rsh', and
+`appl/telnet'.  This is left as an exercise to the reader.
