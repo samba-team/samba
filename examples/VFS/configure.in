@@ -55,7 +55,6 @@ AC_SUBST(SHLD)
 AC_SUBST(HOST_OS)
 AC_SUBST(PICFLAG)
 AC_SUBST(PICSUFFIX)
-AC_SUBST(POBAD_CC)
 AC_SUBST(SHLIBEXT)
 AC_SUBST(INSTALLCLIENTCMD_SH)
 AC_SUBST(INSTALLCLIENTCMD_A)
@@ -181,7 +180,6 @@ SONAMEFLAG="#"
 SHLD="\${CC}"
 PICFLAG=""
 PICSUFFIX="po"
-POBAD_CC="#"
 SHLIBEXT="so"
 
 if test "$enable_shared" = "yes"; then
@@ -214,7 +212,6 @@ if test "$enable_shared" = "yes"; then
 				## ${CFLAGS} added for building 64-bit shared 
 				## libs using Sun's Compiler
 				LDSHFLAGS="-G \${CFLAGS}"
-				POBAD_CC=""
 				PICSUFFIX="po.o"
 			fi
 			;;
