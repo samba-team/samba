@@ -39,15 +39,15 @@ might have to turn on the @samp{encode_as_rep_as_tgs_rep} flag in the
 KDC. You will also have to specify that the router can't handle anything
 but @samp{des-cbc-crc}. There currently isn't an easy way to do
 this. The best you can do is to dump your database (with @samp{kadmin -l
-dump}), and change the final dash for your router entry to a one, and
+dump}), remove all entries for keys other than @samp{des-cbc-crc}, and
 then reloading the database (@samp{kadmin -l load}). An example should
 clarify this. You should have something like (again, truncated):
 @example 
-host/router.foo.se@@FOO.SE 4:0:1:... - - - - - 126 -
+host/router.foo.se@@FOO.SE 4:0:1:...:-:... - - - - - - - 126
 @end example
 Change this to:
 @example 
-host/router.foo.se@@FOO.SE 4:0:1:... - - - - - 126 1
+host/router.foo.se@@FOO.SE 4:0:1:...:- - - - - - - - 126
 @end example
 
 This all fine and so, but unless you have an IOS version with encryption
