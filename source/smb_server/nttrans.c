@@ -131,12 +131,9 @@ static NTSTATUS nttrans_create(struct smbsrv_request *req,
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		/* w2k gets the length of the list wrong on the wire - auto-fix */
-		SIVAL(blob.data, 0, ea_length);
-
-		status = ea_pull_list(&blob, io, 
-				      &io->ntcreatex.in.ea_list->num_eas,
-				      &io->ntcreatex.in.ea_list->eas);
+		status = ea_pull_list_chained(&blob, io, 
+					      &io->ntcreatex.in.ea_list->num_eas,
+					      &io->ntcreatex.in.ea_list->eas);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}

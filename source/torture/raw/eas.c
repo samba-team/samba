@@ -100,6 +100,8 @@ static BOOL test_eas(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	BOOL ret = True;
 	int fnum;
 
+	printf("TESTING SETFILEINFO EA_SET\n");
+
 	io.generic.level = RAW_OPEN_NTCREATEX;
 	io.ntcreatex.in.root_fid = 0;
 	io.ntcreatex.in.flags = 0;
@@ -182,7 +184,70 @@ static BOOL test_eas(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 done:
 	smbcli_close(cli->tree, fnum);
-	return True;
+	return ret;
+}
+
+
+/*
+  test using NTTRANS CREATE to create a file with an initial EA set
+*/
+static BOOL test_open_eas(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+{
+	NTSTATUS status;
+	union smb_open io;
+	const char *fname = BASEDIR "\\ea2.txt";
+	BOOL ret = True;
+	int fnum = -1;
+	struct ea_struct eas[3];
+	struct smb_ea_list ea_list;
+
+	printf("TESTING NTTRANS CREATE WITH EAS\n");
+
+	io.generic.level = RAW_OPEN_NTTRANS_CREATE;
+	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.flags = 0;
+	io.ntcreatex.in.access_mask = SEC_RIGHT_MAXIMUM_ALLOWED;
+	io.ntcreatex.in.create_options = 0;
+	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	io.ntcreatex.in.share_access = 
+		NTCREATEX_SHARE_ACCESS_READ | 
+		NTCREATEX_SHARE_ACCESS_WRITE;
+	io.ntcreatex.in.alloc_size = 0;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io.ntcreatex.in.security_flags = 0;
+	io.ntcreatex.in.fname = fname;
+
+	ea_list.num_eas = 3;
+	ea_list.eas = eas;
+
+	eas[0].flags = 0;
+	eas[0].name.s = "1st EA";
+	eas[0].value = data_blob_string_const("Value One");
+
+	eas[1].flags = 0;
+	eas[1].name.s = "2nd EA";
+	eas[1].value = data_blob_string_const("Second Value");
+
+	eas[2].flags = 0;
+	eas[2].name.s = "and 3rd";
+	eas[2].value = data_blob_string_const("final value");
+
+	io.ntcreatex.in.ea_list = &ea_list;
+	io.ntcreatex.in.sec_desc = NULL;
+
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum = io.ntcreatex.out.fnum;
+	
+	ret &= check_ea(cli, mem_ctx, fname, "EAONE", NULL);
+	ret &= check_ea(cli, mem_ctx, fname, "1st EA", "Value One");
+	ret &= check_ea(cli, mem_ctx, fname, "2nd EA", "Second Value");
+	ret &= check_ea(cli, mem_ctx, fname, "and 3rd", "final value");
+
+done:
+	smbcli_close(cli->tree, fnum);
+	return ret;
 }
 
 /* 
@@ -205,6 +270,7 @@ BOOL torture_raw_eas(void)
 	}
 
 	ret &= test_eas(cli, mem_ctx);
+	ret &= test_open_eas(cli, mem_ctx);
 
 	smb_raw_exit(cli->session);
 	smbcli_deltree(cli->tree, BASEDIR);

@@ -287,15 +287,15 @@ static struct smbcli_request *smb_raw_nttrans_create_send(struct smbcli_tree *tr
 	}
 
 	if (parms->ntcreatex.in.ea_list) {
-		uint32_t ea_size = ea_list_size(parms->ntcreatex.in.ea_list->num_eas,
-						parms->ntcreatex.in.ea_list->eas);
+		uint32_t ea_size = ea_list_size_chained(parms->ntcreatex.in.ea_list->num_eas,
+							parms->ntcreatex.in.ea_list->eas);
 		ea_blob = data_blob_talloc(mem_ctx, NULL, ea_size);
 		if (ea_blob.data == NULL) {
 			return NULL;
 		}
-		ea_put_list(ea_blob.data, 
-			    parms->ntcreatex.in.ea_list->num_eas,
-			    parms->ntcreatex.in.ea_list->eas);
+		ea_put_list_chained(ea_blob.data, 
+				    parms->ntcreatex.in.ea_list->num_eas,
+				    parms->ntcreatex.in.ea_list->eas);
 	}
 
 	nt.in.params = data_blob_talloc(mem_ctx, NULL, 54);
