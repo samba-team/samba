@@ -4,3 +4,4 @@ tdbtorture
 test.db
 test.gdbm
 test.tdb
+*.po
