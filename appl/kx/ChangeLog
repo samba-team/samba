@@ -1,3 +1,8 @@
+1999-12-05  Assar Westerlund  <assar@sics.se>
+
+	* kxd.c (recv_conn): use getnameinfo_verified
+	* kxd.c (recv_conn): replace inaddr2str with getnameinfo
+
 1999-12-04  Assar Westerlund  <assar@sics.se>
 
 	* kx.c (connect_host): use getaddrinfo

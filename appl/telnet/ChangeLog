@@ -1,5 +1,6 @@
 1999-12-04  Assar Westerlund  <assar@sics.se>
 
+	* telnetd/telnetd.c (doit): use getnameinfo_verified
 	* telnetd/telnetd.c: use getnameinfo
 	* telnet/commands.c: re-write to using getaddrinfo.  disable
 	source-routing for the moment, it doesn't seem to be used anyways.
