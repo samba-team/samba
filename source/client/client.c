@@ -1205,7 +1205,10 @@ static void do_get(char *rname,char *lname,file_info *finfo1)
 	}
       DEBUG(0,("%s opening remote file %s\n",smb_errstr(inbuf),CNV_LANG(rname)));
       if(newhandle)
-	close(handle);
+	{
+ 	  close(handle);
+	  unlink(lname);
+	}
       free(inbuf);free(outbuf);
       return;
     }
