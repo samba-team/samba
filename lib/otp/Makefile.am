@@ -5,7 +5,7 @@ include $(top_srcdir)/Makefile.am.common
 noinst_PROGRAMS = otptest
 
 otptest_LDADD = libotp.la \
-	$(top_builddir)/lib/des/libdes.la \
+	$(LIB_des) \
 	$(LIB_roken) \
 	$(DBLIB)
 

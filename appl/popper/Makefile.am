@@ -24,6 +24,6 @@ LDADD = \
 	$(LIB_otp) \
 	$(LIB_krb5) \
 	$(LIB_krb4) \
-	$(top_builddir)/lib/des/libdes.la \
+	$(LIB_des) \
 	$(LIB_roken) \
 	$(DBLIB)

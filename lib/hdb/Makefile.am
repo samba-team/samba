@@ -16,7 +16,7 @@ LDADD = libhdb.la \
 	$(LIB_openldap) \
 	../krb5/libkrb5.la \
 	../asn1/libasn1.la \
-	../des/libdes.la \
+	$(LIB_des) \
 	$(LIB_roken) \
 	$(DBLIB)
 

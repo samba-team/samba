@@ -11,6 +11,6 @@ man_MANS = otp.1  otpprint.1
 
 LDADD = \
 	$(top_builddir)/lib/otp/libotp.la \
-	$(top_builddir)/lib/des/libdes.la \
+	$(LIB_des) \
 	$(LIB_roken) \
 	$(DBLIB)

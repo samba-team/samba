@@ -17,5 +17,5 @@ LDADD = $(LIB_kafs) \
 	$(LIB_krb4) \
 	$(top_builddir)/lib/krb5/libkrb5.la \
 	$(top_builddir)/lib/asn1/libasn1.la \
-	$(top_builddir)/lib/des/libdes.la \
+	$(LIB_des) \
 	$(LIB_roken)

@@ -25,6 +25,6 @@ LDADD = \
 	$(LIB_kafs) \
 	$(LIB_krb5) \
 	$(LIB_krb4) \
-	$(top_builddir)/lib/des/libdes.la \
+	$(LIB_des) \
 	$(LIB_roken) \
 	$(X_LIBS) -lXt $(X_PRE_LIBS) -lX11 $(X_EXTRA_LIBS)

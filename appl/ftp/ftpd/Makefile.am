@@ -51,6 +51,6 @@ LDADD = ../common/libcommon.a \
 	$(LIB_krb5) \
 	$(LIB_krb4) \
 	$(LIB_otp) \
-	$(top_builddir)/lib/des/libdes.la \
+	$(LIB_des) \
 	$(LIB_roken) \
 	$(DBLIB)
