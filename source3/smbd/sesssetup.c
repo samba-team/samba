@@ -463,7 +463,7 @@ static int reply_sesssetup_and_X_spnego(connection_struct *conn, char *inbuf,
 	DATA_BLOB blob1;
 	int ret;
 	size_t bufrem;
-	fstring native_os, native_lanman;
+	fstring native_os, native_lanman, primary_domain;
 	char *p2;
 	uint16 data_blob_len = SVAL(inbuf, smb_vwv7);
 	enum remote_arch_types ra_type = get_remote_arch();
@@ -497,11 +497,20 @@ static int reply_sesssetup_and_X_spnego(connection_struct *conn, char *inbuf,
 	p2 = inbuf + smb_vwv13 + data_blob_len;
 	p2 += srvstr_pull_buf(inbuf, native_os, p2, sizeof(native_os), STR_TERMINATE);
 	p2 += srvstr_pull_buf(inbuf, native_lanman, p2, sizeof(native_lanman), STR_TERMINATE);
-	DEBUG(3,("NativeOS=[%s] NativeLanMan=[%s]\n", native_os, native_lanman));
+	p2 += srvstr_pull_buf(inbuf, primary_domain, p2, sizeof(primary_domain), STR_TERMINATE);
+	DEBUG(3,("NativeOS=[%s] NativeLanMan=[%s] PrimaryDomain=[%s]\n", 
+		native_os, native_lanman, primary_domain));
 
-	if ( ra_type == RA_WIN2K )
-		ra_lanman_string( native_lanman );
-
+	if ( ra_type == RA_WIN2K ) {
+		/* Windows 2003 doesn't set the native lanman string, 
+		   but does set primary domain which is a bug I think */
+			   
+		if ( !strlen(native_lanman) )
+			ra_lanman_string( primary_domain );
+		else
+			ra_lanman_string( native_lanman );
+	}
+		
 	if (blob1.data[0] == ASN1_APPLICATION(0)) {
 		/* its a negTokenTarg packet */
 		ret = reply_spnego_negotiate(conn, inbuf, outbuf, length, bufsize, blob1);
@@ -556,6 +565,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 	fstring domain;
 	fstring native_os;
 	fstring native_lanman;
+	fstring primary_domain;
 	static BOOL done_sesssetup = False;
 	extern BOOL global_encrypted_passwords_negotiated;
 	extern BOOL global_spnego_negotiated;
@@ -619,6 +629,9 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 		uint16 passlen2 = SVAL(inbuf,smb_vwv8);
 		enum remote_arch_types ra_type = get_remote_arch();
 		char *p = smb_buf(inbuf);    
+		char *save_p = smb_buf(inbuf);
+		uint16 byte_count;
+			
 
 		if(global_client_caps == 0) {
 			global_client_caps = IVAL(inbuf,smb_vwv11);
@@ -689,11 +702,28 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 		p += srvstr_pull_buf(inbuf, domain, p, sizeof(domain), STR_TERMINATE);
 		p += srvstr_pull_buf(inbuf, native_os, p, sizeof(native_os), STR_TERMINATE);
 		p += srvstr_pull_buf(inbuf, native_lanman, p, sizeof(native_lanman), STR_TERMINATE);
-		DEBUG(3,("Domain=[%s]  NativeOS=[%s] NativeLanMan=[%s]\n",
-			 domain,native_os,native_lanman));
 
-		if ( ra_type == RA_WIN2K )
-			ra_lanman_string( native_lanman );
+		/* not documented or decoded by Ethereal but there is one more string 
+		   in the extra bytes which is the same as the PrimaryDomain when using 
+		   extended security.  Windows NT 4 and 2003 use this string to store 
+		   the native lanman string. Windows 9x does not include a string here 
+		   at all so we have to check if we have any extra bytes left */
+		
+		byte_count = SVAL(inbuf, smb_vwv13);
+		if ( PTR_DIFF(p, save_p) < byte_count)
+			p += srvstr_pull_buf(inbuf, primary_domain, p, sizeof(primary_domain), STR_TERMINATE);
+		else 
+			fstrcpy( primary_domain, "null" );
+
+		DEBUG(3,("Domain=[%s]  NativeOS=[%s] NativeLanMan=[%s] PrimaryDomain=[%s]\n",
+			 domain, native_os, native_lanman, primary_domain));
+
+		if ( ra_type == RA_WIN2K ) {
+			if ( strlen(native_lanman) == 0 )
+				ra_lanman_string( primary_domain );
+			else
+				ra_lanman_string( native_lanman );
+		}
 
 	}
 
