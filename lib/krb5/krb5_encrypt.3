@@ -31,19 +31,24 @@
 .\"
 .\" $Id$
 .\"
-.Dd August 24, 2003
+.Dd March 20, 2004
 .Dt KRB5_ENCRYPT 3
 .Os HEIMDAL
 .Sh NAME
+.Nm krb5_crypto_getblocksize ,
+.Nm krb5_crypto_getconfoundersize
+.Nm krb5_crypto_getenctype ,
+.Nm krb5_crypto_getpadsize ,
 .Nm krb5_decrypt ,
 .Nm krb5_decrypt_EncryptedData ,
 .Nm krb5_encrypt ,
 .Nm krb5_encrypt_EncryptedData,
-.Nm krb5_crypto_getblocksize ,
-.Nm krb5_crypto_getpadsize ,
-.Nm krb5_crypto_getenctype ,
-.Nm krb5_crypto_getconfoundersize
-.Nd encrypt and decrypt data
+.Nm krb5_enctype_disable ,
+.Nm krb5_enctype_is_disabled ,
+.Nm krb5_enctype_keysize ,
+.Nm krb5_enctype_to_string ,
+.Nm krb5_string_to_enctype ,
+.Nd encrypt and decrypt data, set and get encryption type parameters
 .Sh LIBRARY
 Kerberos 5 Library (libkrb5, -lkrb5)
 .Sh SYNOPSIS
@@ -78,6 +83,34 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Fa "krb5_crypto crypto
 .Fa size_t *confoundersize"
 .Fc
+.Ft krb5_error_code
+.Fo krb5_enctype_keysize
+.Fa "krb5_context context"
+.Fa "krb5_enctype type"
+.Fa "size_t *keysize"
+.Fc
+.Ft krb5_error_code
+.Fo krb5_string_to_enctype
+.Fa "krb5_context context"
+.Fa "const char *string"
+.Fa "krb5_enctype *etype"
+.Fc
+.Ft krb5_error_code
+.Fo krb5_enctype_to_string
+.Fa "krb5_context context"
+.Fa "krb5_enctype etype"
+.Fa "char **string"
+.Fc
+.Ft krb5_boolean
+.Fo krb5_enctype_is_disabled
+.Fa "krb5_context context"
+.Fa "krb5_enctype etype"
+.Fc
+.Ft void
+.Fo krb5_enctype_disable
+.Fa "krb5_context context"
+.Fa "krb5_enctype etype"
+.Fc
 .Sh DESCRIPTION
 These functions are used to encrypt and decrypt data.
 .Pp
@@ -107,11 +140,31 @@ and
 .Fn krb5_decrypt_EncryptedData
 works similarly.
 .Pp
+.Fn krb5_enctype_keysize ,
 .Fn krb5_crypto_getconfoundersize ,
 .Fn krb5_crypto_getblocksize ,
 .Fn krb5_crypto_getenctype ,
 .Fn krb5_crypto_getpadsize
 all returns various (sometimes) useful information from a crypto context.
+.Pp
+.Fn krb5_enctype_to_string
+converts a encryption type number to a string that can be printable
+and stored. The strings returned should be freed with
+.Xr free 3 .
+.Pp
+.Fn krb5_string_to_enctype
+converts a encryption type strings to a encryption type number that
+can use used for other Kerberos crypto functions.
+.Pp
+.Fn krb5_enctype_is_disabled
+return non-zero if
+.Fa enctype
+is (globally) disabled (and thus can't be used for
+encryption/decryption).
+.Pp
+.Fn krb5_enctype_disable
+(globally, for all contextes) disables the
+.Fa enctype .
 .\" .Sh EXAMPLE
 .\" .Sh BUGS
 .Sh SEE ALSO
