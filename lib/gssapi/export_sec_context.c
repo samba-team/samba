@@ -49,6 +49,7 @@ gss_export_sec_context (
     int ret;
     krb5_data data;
     gss_buffer_desc buffer;
+    int flags;
 
     gssapi_krb5_init ();
     if (!((*context_handle)->flags & GSS_C_TRANS_FLAG))
@@ -59,19 +60,43 @@ gss_export_sec_context (
 	*minor_status = ENOMEM;
 	return GSS_S_FAILURE;
     }
+    ac = (*context_handle)->auth_context;
+
+    /* flagging included fields */
+
+    flags = 0;
+    if (ac->local_address)
+	flags |= SC_LOCAL_ADDRESS;
+    if (ac->remote_address)
+	flags |= SC_REMOTE_ADDRESS;
+    if (ac->keyblock)
+	flags |= SC_KEYBLOCK;
+    if (ac->local_subkey)
+	flags |= SC_LOCAL_SUBKEY;
+    if (ac->remote_subkey)
+	flags |= SC_REMOTE_SUBKEY;
+
+    krb5_store_int32 (sp, flags);
+
     /* marshall auth context */
 
-    ac = (*context_handle)->auth_context;
     krb5_store_int32 (sp, ac->flags);
-    krb5_store_address (sp, *ac->local_address);
-    krb5_store_address (sp, *ac->remote_address);
+    if (ac->local_address)
+	krb5_store_address (sp, *ac->local_address);
+    if (ac->remote_address)
+	krb5_store_address (sp, *ac->remote_address);
     krb5_store_int16 (sp, ac->local_port);
     krb5_store_int16 (sp, ac->remote_port);
-    krb5_store_keyblock (sp, *ac->keyblock);
-    krb5_store_keyblock (sp, *ac->local_subkey);
-    krb5_store_keyblock (sp, *ac->remote_subkey);
+    if (ac->keyblock)
+	krb5_store_keyblock (sp, *ac->keyblock);
+    if (ac->local_subkey)
+	krb5_store_keyblock (sp, *ac->local_subkey);
+    if (ac->remote_subkey)
+	krb5_store_keyblock (sp, *ac->remote_subkey);
     krb5_store_int32 (sp, ac->local_seqnumber);
     krb5_store_int32 (sp, ac->remote_seqnumber);
+
+#if 0
     ret = encode_Authenticator (auth_buf, sizeof(auth_buf),
 				ac->authenticator, &sz);
     if (ret) {
@@ -82,6 +107,7 @@ gss_export_sec_context (
     data.data   = auth_buf;
     data.length = sz;
     krb5_store_data (sp, data);
+#endif
     krb5_store_int32 (sp, ac->keytype);
     krb5_store_int32 (sp, ac->cksumtype);
 
