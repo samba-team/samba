@@ -2222,6 +2222,10 @@ tn(int argc, char **argv)
 	break;
 #if defined(AF_INET6) && defined(HAVE_STRUCT_SOCKADDR_IN6)
     case AF_INET6: {
+#ifndef INET6_ADDRSTRLEN
+#define INET6_ADDRSTRLEN 46 
+#endif
+
 	char buf[INET6_ADDRSTRLEN];
 
 	sin6.sin6_port = port;
