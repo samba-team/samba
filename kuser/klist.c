@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -380,7 +380,7 @@ display_v4_tickets (int do_verbose)
     if (file == NULL)
 	file = TKT_FILE;
 
-    printf("v4-ticket file:	%s\n", file);
+    printf("%17s: %s\n", "V4-ticket file", file);
 
     ret = krb_get_tf_realm (file, princ.realm);
     if (ret) {
@@ -406,7 +406,7 @@ display_v4_tickets (int do_verbose)
 	return 1;
     }
 
-    printf("Principal:\t%s\n", krb_unparse_name (&princ));
+    printf ("%17s: %s\n", "Principal", krb_unparse_name(&princ));
     print_time_diff(do_verbose);
     printf("\n");
 
