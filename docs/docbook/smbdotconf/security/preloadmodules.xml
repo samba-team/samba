@@ -1,6 +1,9 @@
-<samba:parameter xmlns:samba="http://samba.org/common">
-	<term><anchor id="PRELOADMODULES"/>preload modules (S)</term>
-	<listitem><para>This is a list of paths to modules that should
+<samba:parameter name="preload modules"
+		 context="G"
+		 basic="1"
+		 xmlns:samba="http://samba.org/common">
+<listitem>
+	<para>This is a list of paths to modules that should
 	be loaded into smbd before a client connects. This improves
 	the speed of smbd when reacting to new connections somewhat. </para>
 
