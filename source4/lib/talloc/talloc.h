@@ -37,7 +37,7 @@ typedef void TALLOC_CTX;
 #endif
 
 /* useful macros for creating type checked pointers */
-#define talloc(ctx, type) (type *)talloc_named_const(ctx, sizeof(type), #type ": " __location__)
+#define talloc(ctx, type) (type *)talloc_named_const(ctx, sizeof(type), #type)
 #define talloc_size(ctx, size) talloc_named_const(ctx, size, __location__)
 
 #define talloc_new(ctx) talloc_named_const(ctx, 0, "talloc_new: " __location__)
@@ -45,11 +45,11 @@ typedef void TALLOC_CTX;
 #define talloc_zero(ctx, type) (type *)_talloc_zero(ctx, sizeof(type), #type)
 #define talloc_zero_size(ctx, size) _talloc_zero(ctx, size, __location__)
 
-#define talloc_zero_array(ctx, type, count) (type *)_talloc_zero_array(ctx, sizeof(type), count, __location__)
-#define talloc_array(ctx, type, count) (type *)_talloc_array(ctx, sizeof(type), count, __location__)
+#define talloc_zero_array(ctx, type, count) (type *)_talloc_zero_array(ctx, sizeof(type), count, #type)
+#define talloc_array(ctx, type, count) (type *)_talloc_array(ctx, sizeof(type), count, #type)
 #define talloc_array_size(ctx, size, count) _talloc_array(ctx, size, count, __location__)
 
-#define talloc_realloc(ctx, p, type, count) (type *)_talloc_realloc_array(ctx, p, sizeof(type), count, __location__)
+#define talloc_realloc(ctx, p, type, count) (type *)_talloc_realloc_array(ctx, p, sizeof(type), count, #type)
 #define talloc_realloc_size(ctx, ptr, size) _talloc_realloc(ctx, ptr, size, __location__)
 
 #define talloc_memdup(t, p, size) _talloc_memdup(t, p, size, __location__)
@@ -61,6 +61,9 @@ typedef void TALLOC_CTX;
 #define data_blob(ptr, size) data_blob_named(ptr, size, "DATA_BLOB: "__location__)
 #define data_blob_talloc(ctx, ptr, size) data_blob_talloc_named(ctx, ptr, size, "DATA_BLOB: "__location__)
 #define data_blob_dup_talloc(ctx, blob) data_blob_talloc_named(ctx, (blob)->data, (blob)->length, "DATA_BLOB: "__location__)
+
+#define talloc_set_type(ptr, type) talloc_set_name_const(ptr, #type)
+#define talloc_get_type(ptr, type) (type *)talloc_check_name(ptr, #type)
 
 
 #if TALLOC_DEPRECATED
@@ -76,7 +79,7 @@ typedef void TALLOC_CTX;
 #endif
 
 
-/* The following definitions come from lib/talloc.c  */
+/* The following definitions come from talloc.c  */
 void *_talloc(const void *context, size_t size);
 void talloc_set_destructor(const void *ptr, int (*destructor)(void *));
 void talloc_increase_ref_count(const void *ptr);
@@ -88,6 +91,7 @@ void *talloc_named(const void *context, size_t size,
 		   const char *fmt, ...) PRINTF_ATTRIBUTE(3,4);
 void *talloc_named_const(const void *context, size_t size, const char *name);
 const char *talloc_get_name(const void *ptr);
+void *talloc_check_name(const void *ptr, const char *name);
 void talloc_report_depth(const void *ptr, FILE *f, int depth);
 void *talloc_parent(const void *ptr);
 void *talloc_init(const char *fmt, ...) PRINTF_ATTRIBUTE(1,2);
