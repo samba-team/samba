@@ -1,5 +1,8 @@
 2004-02-10  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kpasswd/kpasswd.c (change_password): handle that printf(".*s",
+	0, (void*)NULL); doesn't work on solaris
+	
 	* lib/krb5/krb5.conf.5: don't use path's in first .Nm, it confuses
 	some locate.updatedb, use FILES section to describe where the file
 	is instead.
