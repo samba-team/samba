@@ -25,6 +25,28 @@
 #ifdef HAVE_KRB5
 
 /*
+  we use a prompter to avoid a crash bug in the kerberos libs when 
+  dealing with empty passwords
+  this prompter is just a string copy ...
+*/
+static krb5_error_code 
+kerb_prompter(krb5_context ctx, void *data,
+	       const char *name,
+	       const char *banner,
+	       int num_prompts,
+	       krb5_prompt prompts[])
+{
+	if (num_prompts == 0) return 0;
+
+	memset(prompts[0].reply->data, 0, prompts[0].reply->length);
+	if (prompts[0].reply->length > 0) {
+		strncpy(prompts[0].reply->data, data, prompts[0].reply->length-1);
+		prompts[0].reply->length = strlen(prompts[0].reply->data);
+	}
+	return 0;
+}
+
+/*
   simulate a kinit, putting the tgt in the default cache location
   remus@snapserver.com
 */
@@ -35,11 +57,6 @@ int kerberos_kinit_password(const char *principal, const char *password)
 	krb5_ccache cc;
 	krb5_principal me;
 	krb5_creds my_creds;
-
-	if (! *password) {
-		/* kerberos dies on an empty password! */
-		return KRB5_PARSE_MALFORMED;
-	}
 
 	if ((code = krb5_init_context(&ctx)))
 		return code;
@@ -54,8 +71,9 @@ int kerberos_kinit_password(const char *principal, const char *password)
 		return code;
 	}
 	
-	if ((code = krb5_get_init_creds_password(ctx, &my_creds, me, (char*)password, NULL, 
-						NULL, 0, NULL, NULL))) {
+	if ((code = krb5_get_init_creds_password(ctx, &my_creds, me, NULL, 
+						 kerb_prompter, 
+						 password, 0, NULL, NULL))) {
 		krb5_free_principal(ctx, me);
 		krb5_free_context(ctx);		
 		return code;
