@@ -20,6 +20,9 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#ifndef __NDR_ORPC_H__
+#define __NDR_ORPC_H__
+
 struct STRINGARRAY
 {
 	struct STRINGBINDING **stringbindings;
@@ -30,3 +33,5 @@ struct DUALSTRINGARRAY
 	struct STRINGBINDING **stringbindings;
 	struct SECURITYBINDING **securitybindings;
 };
+
+#endif /* __NDR_ORPC_H__ */

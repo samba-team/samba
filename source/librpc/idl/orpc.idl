@@ -45,7 +45,7 @@ interface ObjectRpcBaseTypes
 	} COMVERSION;
 
 	/* enumeration of additional information present in the call packet. */
-	typedef enum {
+	typedef bitmap {
 		ORPCF_NULL = 			0x00, /* no additional info in packet */
 		ORPCF_LOCAL = 			0x01, /* call is local to this machine */
 		ORPCF_RESERVED1 = 		0x02, /* reserved for local use */
@@ -130,7 +130,7 @@ interface ObjectRpcBaseTypes
 	/* Flag values for a STDOBJREF (standard part of an OBJREF). */
 	/* SORF_OXRES1 - SORF_OXRES8 are reserved for the object exporters */
 	/* use only, object importers must ignore them and must not enforce MBZ. */
-	typedef enum {
+	typedef bitmap {
 		SORF_NULL   = 0x0000, /* convenient for initializing SORF */
 		SORF_OXRES1 = 0x0001, /* reserved for exporter */
 		SORF_OXRES2 = 0x0020, /* reserved for exporter */

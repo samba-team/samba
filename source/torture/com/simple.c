@@ -44,12 +44,15 @@ static BOOL test_readwrite(TALLOC_CTX *mem_ctx, const char *host)
 	GUID_from_string(COM_ISTREAM_UUID, &IID[0]);
 	GUID_from_string(COM_IUNKNOWN_UUID, &IID[1]);
 	GUID_from_string(CLSID_SIMPLE, &clsid);
-/*	error = dcom_create_object(ctx, &clsid, 
+
+	if (host) {
+		error = dcom_create_object(ctx, &clsid, 
 							  host, 2, IID,
 							  &interfaces, 
-							  results);*/
-
-	error = com_create_object(ctx, &clsid, 2, IID, interfaces, results);
+							  results);
+	} else {
+		error = com_create_object(ctx, &clsid, 2, IID, interfaces, results);
+	}
 
 	if (!W_ERROR_IS_OK(error)) {
 		printf("(d)com_create_object failed - %s\n", win_errstr(error));
@@ -83,9 +86,9 @@ BOOL torture_com_simple(void)
 {
 	BOOL ret = True;
 	TALLOC_CTX *mem_ctx = talloc_init("torture_dcom_simple");
+	const char *host = lp_parm_string(-1, "dcom", "host");
 
-	ret &= test_readwrite(mem_ctx, NULL);
-	ret &= test_readwrite(mem_ctx, lp_parm_string(-1, "torture", "dcomhost"));
+	ret &= test_readwrite(mem_ctx, host);
 
 	talloc_free(mem_ctx);
 

@@ -270,7 +270,7 @@ object,
 	object
 ] interface ICoffeeMachine : IUnknown
 {
-	[helpstring("method MakeCoffee")] WERROR MakeCoffee(unistr *flavor);
+	[helpstring("method MakeCoffee")] WERROR MakeCoffee([in] unistr *flavor);
 }
 
 [
