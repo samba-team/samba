@@ -523,36 +523,23 @@
 
   3.1.  Are any Macintosh clients for Samba
 
-  In Rob Newberry's words (rob@eats.com, Sun, 4 Dec 1994):
-
-  The answer is "No." Samba speaks SMB, the protocol used for Microsoft
-  networks.  The Macintosh has ALWAYS spoken Appletalk. Even with
-  Microsoft "services for Macintosh", it has been a matter of making the
-  server speak Appletalk. It is the same for Novell Netware and the
-  Macintosh, although I believe Novell has (VERY LATE) released an
-  extension for the Mac to let it speak IPX.
-
-  In future Apple System Software, you may see support for other
-  protocols, such as SMB -- Applet is working on a new networking
-  architecture that will --> -- make it easier to support additional
-  protocols. But it's not here yet.
-
-  Now, the nice part is that if you want your Unix machine to speak
-  Appletalk, there are several options. "Netatalk" and "CAP" are free,
-  and available on the net. There are also several commercial options,
-  such as "PacerShare" and "Helios" (I think). In any case, you'll have
-  to look around for a server, not anything for the Mac.
-
-  Depending on you OS, some of these may not help you. I am currently
-  coordinating the effort to get CAP working with Native Ethertalk under
-  Linux, but we're not done yet.
-
   lkcl - update 09mar97 - the answer is "Yes!".  Thursby now have a
   CIFS Client / Server - see www.thursby.com.  They test it against
   Windows 95, Windows NT and samba for compatibility issues.  At
   present, DAVE is at version 1.0.0.  DAVE version 1.0.1 is in beta,
   and will be released in April 97 (the speed of finder copies has
   been greatly enhanced, and there are bug-fixes included).
+
+  Alternatives - There are two free implementations of AppleTalk for
+  several kinds of UNIX machnes, and several more commercial ones.
+  These products allow you to run file services and print services
+  natively to Macintosh users, with no additional support required on
+  the Macintosh.  The two free omplementations are Netatalk,
+  http://www.umich.edu/~rsug/netatalk/, and CAP, 
+  http://www.cs.mu.oz.au/appletalk/atalk.html.  What Samba offers 
+  MS Windows users, these packages offer to Macs.  For more info on
+  these packages, Samba, and Linux (and other UNIX-based systems)
+  see http://www.eats.com/linux_mac_win.html
 
   3.2.  Session request failed (131,130)" error
 
