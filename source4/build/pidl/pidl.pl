@@ -18,6 +18,7 @@ use header;
 use parser;
 use eparser;
 use client;
+use validator;
 use util;
 
 my($opt_help) = 0;
@@ -111,6 +112,8 @@ if ($opt_parse) {
     my($idl) = IdlParse($idl_file);
     defined $idl || die "Failed to parse $idl_file";
     util::SaveStructure($pidl_file, $idl) || die "Failed to save $pidl_file";
+
+    IdlValidator::Validate($idl);
 }
 
 if ($opt_dump) {
