@@ -45,9 +45,9 @@ BOOL nbtd_self_packet(struct nbt_name_socket *nbtsock,
 		      struct nbt_name_packet *packet, 
 		      const char *src_address, int src_port)
 {
-	struct nbt_interface *iface = talloc_get_type(nbtsock->incoming.private, 
-						      struct nbt_interface);
-	struct nbt_server *nbtsrv = iface->nbtsrv;
+	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private, 
+						       struct nbtd_interface);
+	struct nbtd_server *nbtsrv = iface->nbtsrv;
 	
 	/* if its not a broadcast then its not considered a self packet */
 	if (!(packet->operation & NBT_FLAG_BROADCAST)) {

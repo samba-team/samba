@@ -21,7 +21,6 @@
 */
 
 #include "includes.h"
-#include "dlinklist.h"
 #include "nbt_server/nbt_server.h"
 
 /*

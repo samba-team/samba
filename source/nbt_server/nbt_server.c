@@ -31,10 +31,10 @@
 */
 static void nbtd_task_init(struct task_server *task)
 {
-	struct nbt_server *nbtsrv;
+	struct nbtd_server *nbtsrv;
 	NTSTATUS status;
 
-	nbtsrv = talloc(task, struct nbt_server);
+	nbtsrv = talloc(task, struct nbtd_server);
 	if (nbtsrv == NULL) {
 		task_terminate(task, "nbtd: out of memory");
 		return;
@@ -43,6 +43,7 @@ static void nbtd_task_init(struct task_server *task)
 	nbtsrv->task            = task;
 	nbtsrv->interfaces      = NULL;
 	nbtsrv->bcast_interface = NULL;
+	nbtsrv->wins_interface  = NULL;
 
 	/* start listening on the configured network interfaces */
 	status = nbtd_startup_interfaces(nbtsrv);

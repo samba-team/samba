@@ -33,9 +33,11 @@ static void nbtd_request_handler(struct nbt_name_socket *nbtsock,
 				 struct nbt_name_packet *packet, 
 				 const char *src_address, int src_port)
 {
-	/* if its a WINS query then direct to our WINS server */
+	/* if its a WINS query then direct to our WINS server if we
+	   are running one */
 	if ((packet->operation & NBT_FLAG_RECURSION_DESIRED) &&
-	    !(packet->operation & NBT_FLAG_BROADCAST)) {
+	    !(packet->operation & NBT_FLAG_BROADCAST) &&
+	    lp_wins_support()) {
 		nbtd_query_wins(nbtsock, packet, src_address, src_port);
 		return;
 	}
@@ -56,6 +58,10 @@ static void nbtd_request_handler(struct nbt_name_socket *nbtsock,
 	case NBT_OPCODE_REFRESH:
 		nbtd_request_defense(nbtsock, packet, src_address, src_port);
 		break;
+
+	default:
+		nbtd_bad_packet(packet, src_address, "Unexpected opcode");
+		break;
 	}
 }
 
@@ -64,11 +70,11 @@ static void nbtd_request_handler(struct nbt_name_socket *nbtsock,
 /*
   find a registered name on an interface
 */
-struct nbt_iface_name *nbtd_find_iname(struct nbt_interface *iface, 
-				       struct nbt_name *name, 
-				       uint16_t nb_flags)
+struct nbtd_iface_name *nbtd_find_iname(struct nbtd_interface *iface, 
+					struct nbt_name *name, 
+					uint16_t nb_flags)
 {
-	struct nbt_iface_name *iname;
+	struct nbtd_iface_name *iname;
 	for (iname=iface->names;iname;iname=iname->next) {
 		if (iname->name.type == name->type &&
 		    StrCaseCmp(name->name, iname->name.name) == 0 &&
@@ -82,13 +88,13 @@ struct nbt_iface_name *nbtd_find_iname(struct nbt_interface *iface,
 /*
   start listening on the given address
 */
-static NTSTATUS nbtd_add_socket(struct nbt_server *nbtsrv, 
+static NTSTATUS nbtd_add_socket(struct nbtd_server *nbtsrv, 
 				const char *bind_address, 
 				const char *address, 
 				const char *bcast, 
 				const char *netmask)
 {
-	struct nbt_interface *iface;
+	struct nbtd_interface *iface;
 	NTSTATUS status;
 	struct nbt_name_socket *bcast_nbtsock;
 
@@ -100,7 +106,7 @@ static NTSTATUS nbtd_add_socket(struct nbt_server *nbtsrv,
 	  to interfaces
 	*/
 
-	iface = talloc(nbtsrv, struct nbt_interface);
+	iface = talloc(nbtsrv, struct nbtd_interface);
 	NT_STATUS_HAVE_NO_MEMORY(iface);
 
 	iface->nbtsrv        = nbtsrv;
@@ -151,9 +157,30 @@ static NTSTATUS nbtd_add_socket(struct nbt_server *nbtsrv,
 
 
 /*
+  setup a socket for talking to our WINS servers
+*/
+static NTSTATUS nbtd_add_wins_socket(struct nbtd_server *nbtsrv)
+{
+	struct nbtd_interface *iface;
+
+	iface = talloc_zero(nbtsrv, struct nbtd_interface);
+	NT_STATUS_HAVE_NO_MEMORY(iface);
+
+	iface->nbtsrv        = nbtsrv;
+
+	iface->nbtsock = nbt_name_socket_init(iface, nbtsrv->task->event_ctx);
+	NT_STATUS_HAVE_NO_MEMORY(iface->nbtsock);
+
+	DLIST_ADD(nbtsrv->wins_interface, iface);
+
+	return NT_STATUS_OK;
+}
+
+
+/*
   setup our listening sockets on the configured network interfaces
 */
-NTSTATUS nbtd_startup_interfaces(struct nbt_server *nbtsrv)
+NTSTATUS nbtd_startup_interfaces(struct nbtd_server *nbtsrv)
 {
 	int num_interfaces = iface_count();
 	int i;
@@ -194,7 +221,38 @@ NTSTATUS nbtd_startup_interfaces(struct nbt_server *nbtsrv)
 		NT_STATUS_NOT_OK_RETURN(status);
 	}
 
+	if (lp_wins_server_list()) {
+		status = nbtd_add_wins_socket(nbtsrv);
+		NT_STATUS_NOT_OK_RETURN(status);
+	}
+
 	talloc_free(tmp_ctx);
 
 	return NT_STATUS_OK;
+}
+
+
+/*
+  form a list of addresses that we should use in name query replies
+*/
+const char **nbtd_address_list(struct nbtd_server *nbtsrv, TALLOC_CTX *mem_ctx)
+{
+	const char **ret = NULL;
+	struct nbtd_interface *iface;
+	int count = 0;
+
+	for (iface=nbtsrv->interfaces;iface;iface=iface->next) {
+		const char **ret2 = talloc_realloc(mem_ctx, ret, const char *, count+2);
+		if (ret2 == NULL) goto failed;
+		ret = ret2;
+		ret[count] = talloc_strdup(ret, iface->ip_address);
+		if (ret[count] == NULL) goto failed;
+		count++;
+	}
+	ret[count] = NULL;
+	return ret;
+
+failed:
+	talloc_free(ret);
+	return NULL;
 }

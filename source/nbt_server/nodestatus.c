@@ -32,11 +32,11 @@ static void nbtd_node_status_reply(struct nbt_name_socket *nbtsock,
 				   struct nbt_name_packet *request_packet, 
 				   const char *src_address, int src_port,
 				   struct nbt_name *name, 
-				   struct nbt_interface *iface)
+				   struct nbtd_interface *iface)
 {
 	struct nbt_name_packet *packet;
 	uint32_t name_count;
-	struct nbt_iface_name *iname;
+	struct nbtd_iface_name *iname;
 	
 	/* work out how many names to send */
 	name_count = 0;
@@ -100,9 +100,9 @@ void nbtd_query_status(struct nbt_name_socket *nbtsock,
 		       const char *src_address, int src_port)
 {
 	struct nbt_name *name;
-	struct nbt_iface_name *iname;
-	struct nbt_interface *iface = talloc_get_type(nbtsock->incoming.private, 
-						      struct nbt_interface);
+	struct nbtd_iface_name *iname;
+	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private, 
+						       struct nbtd_interface);
 
 	NBT_ASSERT_PACKET(packet, src_address, packet->qdcount == 1);
 	NBT_ASSERT_PACKET(packet, src_address, packet->questions[0].question_type == NBT_QTYPE_STATUS);

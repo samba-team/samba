@@ -29,14 +29,15 @@
 #include "libcli/composite/composite.h"
 
 
-static void nbtd_start_refresh_timer(struct nbt_iface_name *iname);
+static void nbtd_start_refresh_timer(struct nbtd_iface_name *iname);
 
 /*
   a name refresh request has completed
 */
 static void refresh_completion_handler(struct nbt_name_request *req)
 {
-	struct nbt_iface_name *iname = talloc_get_type(req->async.private, struct nbt_iface_name);
+	struct nbtd_iface_name *iname = talloc_get_type(req->async.private, 
+							struct nbtd_iface_name);
 	NTSTATUS status;
 	struct nbt_name_refresh io;
 	TALLOC_CTX *tmp_ctx = talloc_new(iname);
@@ -74,8 +75,8 @@ static void refresh_completion_handler(struct nbt_name_request *req)
 static void name_refresh_handler(struct event_context *ev, struct timed_event *te, 
 				 struct timeval t, void *private)
 {
-	struct nbt_iface_name *iname = talloc_get_type(private, struct nbt_iface_name);
-	struct nbt_interface *iface = iname->iface;
+	struct nbtd_iface_name *iname = talloc_get_type(private, struct nbtd_iface_name);
+	struct nbtd_interface *iface = iname->iface;
 	struct nbt_name_register io;
 	struct nbt_name_request *req;
 
@@ -92,6 +93,7 @@ static void name_refresh_handler(struct event_context *ev, struct timed_event *t
 	io.in.register_demand = False;
 	io.in.broadcast       = True;
 	io.in.timeout         = 3;
+	io.in.retries         = 0;
 
 	req = nbt_name_register_send(iface->nbtsock, &io);
 	if (req == NULL) return;
@@ -104,7 +106,7 @@ static void name_refresh_handler(struct event_context *ev, struct timed_event *t
 /*
   start a timer to refresh this name
 */
-static void nbtd_start_refresh_timer(struct nbt_iface_name *iname)
+static void nbtd_start_refresh_timer(struct nbtd_iface_name *iname)
 {
 	uint32_t refresh_time;
 	uint32_t max_refresh_time = lp_parm_int(-1, "nbtd", "max_refresh_time", 7200);
@@ -123,8 +125,8 @@ static void nbtd_start_refresh_timer(struct nbt_iface_name *iname)
 */
 static void nbtd_register_handler(struct composite_context *req)
 {
-	struct nbt_iface_name *iname = talloc_get_type(req->async.private, 
-						       struct nbt_iface_name);
+	struct nbtd_iface_name *iname = talloc_get_type(req->async.private, 
+							struct nbtd_iface_name);
 	NTSTATUS status;
 
 	status = nbt_name_register_bcast_recv(req);
@@ -150,16 +152,16 @@ static void nbtd_register_handler(struct composite_context *req)
 /*
   register a name on a network interface
 */
-static void nbtd_register_name_iface(struct nbt_interface *iface,
+static void nbtd_register_name_iface(struct nbtd_interface *iface,
 				     const char *name, enum nbt_name_type type,
 				     uint16_t nb_flags)
 {
-	struct nbt_iface_name *iname;
+	struct nbtd_iface_name *iname;
 	const char *scope = lp_netbios_scope();
 	struct nbt_name_register_bcast io;
 	struct composite_context *req;
 
-	iname = talloc(iface, struct nbt_iface_name);
+	iname = talloc(iface, struct nbtd_iface_name);
 	if (!iname) return;
 
 	iname->iface     = iface;
@@ -173,13 +175,21 @@ static void nbtd_register_name_iface(struct nbt_interface *iface,
 	iname->nb_flags          = nb_flags;
 	iname->ttl               = lp_parm_int(-1, "nbtd", "bcast_ttl", 300000);
 	iname->registration_time = timeval_zero();
+	iname->wins_server       = NULL;
 
-	DLIST_ADD_END(iface->names, iname, struct nbt_iface_name *);
+	DLIST_ADD_END(iface->names, iname, struct nbtd_iface_name *);
 
 	if (nb_flags & NBT_NM_PERMANENT) {
 		/* permanent names are not announced and are immediately active */
 		iname->nb_flags |= NBT_NM_ACTIVE;
 		iname->ttl       = 0;
+		return;
+	}
+
+	/* if this is the wins interface, then we need to do a special
+	   wins name registration */
+	if (iface == iface->nbtsrv->wins_interface) {
+		nbtd_winsclient_refresh(iname);
 		return;
 	}
 
@@ -201,11 +211,11 @@ static void nbtd_register_name_iface(struct nbt_interface *iface,
 /*
   register one name on all our interfaces
 */
-static void nbtd_register_name(struct nbt_server *nbtsrv, 
+static void nbtd_register_name(struct nbtd_server *nbtsrv, 
 			       const char *name, enum nbt_name_type type,
 			       uint16_t nb_flags)
 {
-	struct nbt_interface *iface;
+	struct nbtd_interface *iface;
 	
 	/* register with all the local interfaces */
 	for (iface=nbtsrv->interfaces;iface;iface=iface->next) {
@@ -218,14 +228,17 @@ static void nbtd_register_name(struct nbt_server *nbtsrv,
 					 nb_flags | NBT_NM_PERMANENT);
 	}
 
-	/* TODO: register with our WINS servers */
+	/* register with our WINS servers */
+	if (nbtsrv->wins_interface) {
+		nbtd_register_name_iface(nbtsrv->wins_interface, name, type, nb_flags);
+	}
 }
 
 
 /*
   register our names on all interfaces
 */
-void nbtd_register_names(struct nbt_server *nbtsrv)
+void nbtd_register_names(struct nbtd_server *nbtsrv)
 {
 	uint16_t nb_flags = NBT_NODE_M;
 	const char **aliases;

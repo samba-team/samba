@@ -32,9 +32,16 @@ static void nbtd_name_query_reply(struct nbt_name_socket *nbtsock,
 				  struct nbt_name_packet *request_packet, 
 				  const char *src_address, int src_port,
 				  struct nbt_name *name, uint32_t ttl,
-				  uint16_t nb_flags, const char *address)
+				  uint16_t nb_flags, const char **addresses)
 {
 	struct nbt_name_packet *packet;
+	size_t num_addresses = str_list_length(addresses);
+	int i;
+
+	if (num_addresses == 0) {
+		DEBUG(3,("No addresses in name query reply - failing\n"));
+		return;
+	}
 
 	packet = talloc_zero(nbtsock, struct nbt_name_packet);
 	if (packet == NULL) return;
@@ -55,17 +62,21 @@ static void nbtd_name_query_reply(struct nbt_name_socket *nbtsock,
 	packet->answers[0].rr_type  = NBT_QTYPE_NETBIOS;
 	packet->answers[0].rr_class = NBT_QCLASS_IP;
 	packet->answers[0].ttl      = ttl;
-	packet->answers[0].rdata.netbios.length = 6;
-	packet->answers[0].rdata.netbios.addresses = talloc_array(packet->answers,
-							    struct nbt_rdata_address, 1);
+	packet->answers[0].rdata.netbios.length = num_addresses*6;
+	packet->answers[0].rdata.netbios.addresses = 
+		talloc_array(packet->answers, struct nbt_rdata_address, num_addresses);
 	if (packet->answers[0].rdata.netbios.addresses == NULL) goto failed;
-	packet->answers[0].rdata.netbios.addresses[0].nb_flags = nb_flags;
-	packet->answers[0].rdata.netbios.addresses[0].ipaddr = 
-		talloc_strdup(packet->answers, address);
-	if (packet->answers[0].rdata.netbios.addresses[0].ipaddr == NULL) goto failed;
+
+	for (i=0;i<num_addresses;i++) {
+		struct nbt_rdata_address *addr = 
+			&packet->answers[0].rdata.netbios.addresses[i];
+		addr->nb_flags = nb_flags;
+		addr->ipaddr = talloc_strdup(packet->answers, addresses[i]);
+		if (addr->ipaddr == NULL) goto failed;
+	}
 
 	DEBUG(7,("Sending name query reply for %s<%02x> at %s to %s:%d\n", 
-		 name->name, name->type, src_address, address, src_port));
+		 name->name, name->type, src_address, addresses[0], src_port));
 	
 	nbt_name_reply_send(nbtsock, src_address, src_port, packet);
 
@@ -81,10 +92,10 @@ void nbtd_request_query(struct nbt_name_socket *nbtsock,
 			struct nbt_name_packet *packet, 
 			const char *src_address, int src_port)
 {
-	struct nbt_iface_name *iname;
+	struct nbtd_iface_name *iname;
 	struct nbt_name *name;
-	struct nbt_interface *iface = talloc_get_type(nbtsock->incoming.private, 
-						      struct nbt_interface);
+	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private, 
+						       struct nbtd_interface);
 
 	/* see if its a node status query */
 	if (packet->qdcount == 1 &&
@@ -100,14 +111,23 @@ void nbtd_request_query(struct nbt_name_socket *nbtsock,
 	/* see if we have the requested name on this interface */
 	name = &packet->questions[0].name;
 
-	iname = nbtd_find_iname(iface, name, NBT_NM_ACTIVE);
+	iname = nbtd_find_iname(iface, name, 0);
 	if (iname == NULL) {
 		DEBUG(7,("Query for %s<%02x> from %s - not found on %s\n",
 			 name->name, name->type, src_address, iface->ip_address));
 		return;
 	}
 
+	/* if the name is not yet active and its a broadcast query then
+	   ignore it for now */
+	if (!(iname->nb_flags & NBT_NM_ACTIVE) && 
+	    (packet->operation & NBT_FLAG_BROADCAST)) {
+		DEBUG(7,("Query for %s<%02x> from %s - name not active yet on %s\n",
+			 name->name, name->type, src_address, iface->ip_address));
+		return;
+	}
+
 	nbtd_name_query_reply(nbtsock, packet, src_address, src_port,
 			      &iname->name, iname->ttl, iname->nb_flags, 
-			      iface->ip_address);
+			      nbtd_address_list(iface->nbtsrv, packet));
 }
