@@ -61,8 +61,11 @@ struct ldapsrv_service;
 struct ldapsrv_connection {
 	struct server_connection *connection;
 
-	struct gensec_security *gensec_ctx;
+	struct gensec_security *gensec;
 	const struct auth_session_info *session_info;
+
+	struct rw_buffer sasl_in_buffer;
+	struct rw_buffer sasl_out_buffer;
 
 	struct rw_buffer in_buffer;
 	struct rw_buffer out_buffer;

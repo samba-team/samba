@@ -129,6 +129,13 @@ static void consumed_from_buf(struct rw_buffer *buf,
 	buf->length -= length;
 }
 
+static void peek_into_read_buf(struct rw_buffer *buf, uint8_t **out,
+			       size_t *out_length)
+{
+	*out = buf->data;
+	*out_length = buf->length;
+}
+
 static BOOL append_to_buf(struct rw_buffer *buf, uint8_t *data, size_t length)
 {
 	buf->data = realloc(buf->data, buf->length+length);
@@ -161,6 +168,104 @@ static BOOL read_into_buf(struct socket_context *sock, struct rw_buffer *buf)
 	return ret;
 }
 
+static BOOL ldapsrv_read_buf(struct ldapsrv_connection *conn)
+{
+	NTSTATUS status;
+	DATA_BLOB tmp_blob;
+	DATA_BLOB creds;
+	BOOL ret;
+	uint8_t *buf;
+	int buf_length, sasl_length;
+	struct socket_context *sock = conn->connection->socket;
+	TALLOC_CTX *mem_ctx;
+
+	if (!conn->gensec ||
+	   !(gensec_have_feature(conn->gensec, GENSEC_WANT_SIGN) &&
+	     gensec_have_feature(conn->gensec, GENSEC_WANT_SEAL))) {
+		return read_into_buf(sock, &conn->in_buffer);
+	}
+
+	mem_ctx = talloc(conn, 0);
+	if (!mem_ctx) {
+		DEBUG(0,("no memory\n"));
+		return False;
+	}
+
+	status = socket_recv(sock, mem_ctx, &tmp_blob, 1024, 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10,("socket_recv: %s\n",nt_errstr(status)));
+		talloc_free(mem_ctx);
+		return False;
+	}
+
+	ret = append_to_buf(&conn->sasl_in_buffer, tmp_blob.data, tmp_blob.length);
+	if (!ret) {
+		talloc_free(mem_ctx);
+		return False;
+	}
+
+	peek_into_read_buf(&conn->sasl_in_buffer, &buf, &buf_length);
+
+	if (buf_length < 4) {
+		/* not enough yet */
+		talloc_free(mem_ctx);
+		return True;
+	}
+
+	sasl_length = RIVAL(buf, 0);
+
+	if (buf_length < (4 + sasl_length)) {
+		/* not enough yet */
+		talloc_free(mem_ctx);
+		return True;
+	}
+
+	creds.data = buf + 4;
+	creds.length = gensec_sig_size(conn->gensec);
+
+	if (creds.length > sasl_length) {
+		/* invalid packet? */
+		talloc_free(mem_ctx);
+		return False;
+	}
+
+	tmp_blob.data = buf + (4 + creds.length);
+	tmp_blob.length = (4 + sasl_length) - (4 + creds.length);
+
+	if (gensec_have_feature(conn->gensec, GENSEC_WANT_SEAL)) {
+		status = gensec_unseal_packet(conn->gensec, mem_ctx,
+					      tmp_blob.data, tmp_blob.length,
+					      tmp_blob.data, tmp_blob.length,
+					      &creds);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0,("gensec_unseal_packet: %s\n",nt_errstr(status)));
+			talloc_free(mem_ctx);
+			return False;
+		}
+	} else {
+		status = gensec_check_packet(conn->gensec, mem_ctx,
+					      tmp_blob.data, tmp_blob.length,
+					      tmp_blob.data, tmp_blob.length,
+					      &creds);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0,("gensec_check_packet: %s\n",nt_errstr(status)));
+			talloc_free(mem_ctx);
+			return False;
+		}
+	}
+
+	ret = append_to_buf(&conn->in_buffer, tmp_blob.data, tmp_blob.length);
+	if (!ret) {
+		talloc_free(mem_ctx);
+		return False;
+	}
+
+	consumed_from_buf(&conn->sasl_in_buffer, 4 + sasl_length);
+
+	talloc_free(mem_ctx);
+	return ret;
+}
+
 static BOOL write_from_buf(struct socket_context *sock, struct rw_buffer *buf)
 {
 	NTSTATUS status;
@@ -181,11 +286,84 @@ static BOOL write_from_buf(struct socket_context *sock, struct rw_buffer *buf)
 	return True;
 }
 
-static void peek_into_read_buf(struct rw_buffer *buf, uint8_t **out,
-			       size_t *out_length)
+static BOOL ldapsrv_write_buf(struct ldapsrv_connection *conn)
 {
-	*out = buf->data;
-	*out_length = buf->length;
+	NTSTATUS status;
+	DATA_BLOB tmp_blob;
+	DATA_BLOB creds;
+	DATA_BLOB sasl;
+	size_t sendlen;
+	BOOL ret;
+	struct socket_context *sock = conn->connection->socket;
+	TALLOC_CTX *mem_ctx;
+
+	if (!conn->gensec ||
+	   !(gensec_have_feature(conn->gensec, GENSEC_WANT_SIGN) &&
+	     gensec_have_feature(conn->gensec, GENSEC_WANT_SEAL))) {
+		return write_from_buf(sock, &conn->out_buffer);
+	}
+
+	mem_ctx = talloc(conn, 0);
+	if (!mem_ctx) {
+		DEBUG(0,("no memory\n"));
+		return False;
+	}
+
+	tmp_blob.data = conn->out_buffer.data;
+	tmp_blob.length = conn->out_buffer.length;
+
+	if (gensec_have_feature(conn->gensec, GENSEC_WANT_SEAL)) {
+		status = gensec_seal_packet(conn->gensec, mem_ctx,
+					    tmp_blob.data, tmp_blob.length,
+					    tmp_blob.data, tmp_blob.length,
+					    &creds);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0,("gensec_seal_packet: %s\n",nt_errstr(status)));
+			talloc_free(mem_ctx);
+			return False;
+		}
+	} else {
+		status = gensec_sign_packet(conn->gensec, mem_ctx,
+					    tmp_blob.data, tmp_blob.length,
+					    tmp_blob.data, tmp_blob.length,
+					    &creds);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0,("gensec_sign_packet: %s\n",nt_errstr(status)));
+			talloc_free(mem_ctx);
+			return False;
+		}		
+	}
+
+	sasl = data_blob_talloc(mem_ctx, NULL, 4 + creds.length + tmp_blob.length);
+	if (!sasl.data) {
+		DEBUG(0,("no memory\n"));
+		talloc_free(mem_ctx);
+		return False;
+	}
+
+	RSIVAL(sasl.data, 0, creds.length + tmp_blob.length);
+	memcpy(sasl.data + 4, creds.data, creds.length);
+	memcpy(sasl.data + 4 + creds.length, tmp_blob.data, tmp_blob.length);
+
+	ret = append_to_buf(&conn->sasl_out_buffer, sasl.data, sasl.length);
+	if (!ret) {
+		talloc_free(mem_ctx);
+		return False;
+	}
+	consumed_from_buf(&conn->out_buffer, tmp_blob.length);
+
+	status = socket_send(sock, mem_ctx, &tmp_blob, &sendlen, 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10,("socket_send() %s\n",nt_errstr(status)));
+		talloc_free(mem_ctx);
+		return False;
+	}
+
+	consumed_from_buf(&conn->sasl_out_buffer, sendlen);
+
+	talloc_free(mem_ctx);
+
+	return True;
 }
 
 static BOOL ldap_append_to_buf(struct ldap_message *msg, struct rw_buffer *buf)
@@ -499,16 +677,14 @@ static void ldapsrv_recv(struct server_connection *conn, time_t t,
 
 	DEBUG(10,("ldapsrv_recv\n"));
 
-	if (!read_into_buf(conn->socket, &ldap_conn->in_buffer)) {
-		ldapsrv_terminate_connection(ldap_conn, "read_into_buf() failed");
+	if (!ldapsrv_read_buf(ldap_conn)) {
+		ldapsrv_terminate_connection(ldap_conn, "ldapsrv_read_buf() failed");
 		return;
 	}
 
 	peek_into_read_buf(&ldap_conn->in_buffer, &buf, &buf_length);
 
 	while (buf_length > 0) {
-
-		peek_into_read_buf(&ldap_conn->in_buffer, &buf, &buf_length);
 		/* LDAP Messages are always SEQUENCES */
 
 		if (!asn1_object_length(buf, buf_length, ASN1_SEQUENCE(0),
@@ -576,7 +752,7 @@ static void ldapsrv_recv(struct server_connection *conn, time_t t,
 		return;
 	}
 
-	if (ldap_conn->out_buffer.length > 0) {
+	if ((ldap_conn->out_buffer.length > 0)||(ldap_conn->sasl_out_buffer.length > 0)) {
 		conn->event.fde->flags |= EVENT_FD_WRITE;
 	}
 
@@ -593,12 +769,12 @@ static void ldapsrv_send(struct server_connection *conn, time_t t,
 
 	DEBUG(10,("ldapsrv_send\n"));
 
-	if (!write_from_buf(conn->socket, &ldap_conn->out_buffer)) {
-		ldapsrv_terminate_connection(ldap_conn, "write_from_buf() failed");
+	if (!ldapsrv_write_buf(ldap_conn)) {
+		ldapsrv_terminate_connection(ldap_conn, "ldapsrv_write_buf() failed");
 		return;
 	}
 
-	if (ldap_conn->out_buffer.length == 0) {
+	if (ldap_conn->out_buffer.length == 0 && ldap_conn->sasl_out_buffer.length == 0) {
 		conn->event.fde->flags &= ~EVENT_FD_WRITE;
 	}
 
