@@ -50,7 +50,7 @@ NTSTATUS ndr_push_TestCall(struct ndr_push *ndr, struct TestCall *r)
 
 NTSTATUS ndr_push_TestCall2(struct ndr_push *ndr, struct TestCall2 *r)
 {
-	NDR_CHECK(ndr_push_uint32(ndr, r->in.level));
+	NDR_CHECK(ndr_push_uint16(ndr, r->in.level));
 
 	return NT_STATUS_OK;
 }
@@ -299,8 +299,8 @@ NTSTATUS ndr_pull_TestCall2(struct ndr_pull *ndr, struct TestCall2 *r)
 	}
 	if (r->out.info) {
 	if ((NDR_SCALARS|NDR_BUFFERS) & NDR_SCALARS) {
-		 uint32 _level;
-		NDR_CHECK(ndr_pull_uint32(ndr, &_level));
+		 uint16 _level;
+		NDR_CHECK(ndr_pull_uint16(ndr, &_level));
 		if (_level != r->in.level) return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u in info");
 	}
 	NDR_CHECK(ndr_pull_echo_Info(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.level, r->out.info));
@@ -550,7 +550,7 @@ void ndr_print_TestCall2(struct ndr_print *ndr, const char *name, int flags, str
 	if (flags & NDR_IN) {
 		ndr_print_struct(ndr, "in", "TestCall2");
 	ndr->depth++;
-	ndr_print_uint32(ndr, "level", r->in.level);
+	ndr_print_uint16(ndr, "level", r->in.level);
 	ndr->depth--;
 	}
 	if (flags & NDR_OUT) {

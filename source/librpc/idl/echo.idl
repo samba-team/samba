@@ -80,7 +80,7 @@ interface rpcecho
 	} echo_Info;
 
 	NTSTATUS TestCall2 (
-		     [in]                    uint32 level,
+		     [in]                    uint16 level,
 		     [out,switch_is(level)]  echo_Info *info
 		);
 }
