@@ -1,5 +1,5 @@
 !==
-!== OS2-Client-HOWTO.txt for Samba release 1.9.18alpha8 30 Oct 1997
+!== OS2-Client-HOWTO.txt for Samba release 1.9.18alpha9 30 Oct 1997
 !==
 
 
