@@ -579,6 +579,7 @@ static void cmd_quit(struct client_info *info, int argc, char *argv[])
 		dbgflush();
 	}
 #endif
+	free_connections();
 	exit(0);
 }
 
@@ -1490,6 +1491,7 @@ static void cmd_set(struct client_info *info, int argc, char *argv[])
 				cli_info.dest_ip = *interpret_addr2(optarg);
 				if (zero_ip(cli_info.dest_ip))
 				{
+					free_connections();
 					exit(1);
 				}
 				break;
@@ -1707,6 +1709,7 @@ void readline_init(void)
 	readline_init();
 	TimeInit();
 	charset_initialise();
+	init_connections();
 
 	myumask = umask(0);
 	umask(myumask);
@@ -1719,6 +1722,7 @@ void readline_init(void)
 	if (argc < 2)
 	{
 		usage(argv[0]);
+		free_connections();
 		exit(1);
 	}
 
@@ -1731,6 +1735,7 @@ void readline_init(void)
 
 	if (IS_BITS_SET_ALL(cmd_set_options, CMD_HELP))
 	{
+		free_connections();
 		exit(0);
 	}
 
@@ -1739,6 +1744,8 @@ void readline_init(void)
 	DEBUG(3,("%s client started (version %s)\n",timestring(),VERSION));
 
 	process(&cli_info, NULL);
+
+	free_connections();
 
 	return(0);
 }
