@@ -288,7 +288,7 @@ ssize_t spnego_read_data(DATA_BLOB data, struct spnego_data *token)
 		switch (context) {
 		case ASN1_APPLICATION(0):
 			asn1_start_tag(&asn1, ASN1_APPLICATION(0));
-			asn1_check_OID(&asn1, OID_SPNEGO);
+			asn1_check_OID(&asn1, GENSEC_OID_SPNEGO);
 			if (read_negTokenInit(&asn1, &token->negTokenInit)) {
 				token->type = SPNEGO_NEG_TOKEN_INIT;
 			}
@@ -321,7 +321,7 @@ ssize_t spnego_write_data(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, struct spnego_da
 	switch (spnego->type) {
 	case SPNEGO_NEG_TOKEN_INIT:
 		asn1_push_tag(&asn1, ASN1_APPLICATION(0));
-		asn1_write_OID(&asn1, OID_SPNEGO);
+		asn1_write_OID(&asn1, GENSEC_OID_SPNEGO);
 		write_negTokenInit(&asn1, &spnego->negTokenInit);
 		asn1_pop_tag(&asn1);
 		break;
