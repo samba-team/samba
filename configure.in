@@ -173,8 +173,8 @@ AM_CONDITIONAL(DCE, test "$enable_dce" = yes)
 
 ## XXX quite horrible:
 if test -f /etc/ibmcxx.cfg; then
-	dpagaix_LDADD=`sed -n '/^xlc_r4/,/^$/p' /etc/ibmcxx.cfg | sed -n -e '/libraries/{;s/^[^=]*=\(.*\)/\1/;s/,/ /gp;}'`
-	dpagaix_CFLAGS=`sed -n '/^xlc_r4/,/^$/p' /etc/ibmcxx.cfg | sed -n -e '/options/{;s/^[^=]*=\(.*\)/\1/;s/-q[^,]*//;s/,/ /gp;}'`
+	dpagaix_LDADD=`sed -n '/^xlc_r4/,/^$/p' /etc/ibmcxx.cfg | sed -n -e '/libraries/{;s/^[[^=]]*=\(.*\)/\1/;s/,/ /gp;}'`
+	dpagaix_CFLAGS=`sed -n '/^xlc_r4/,/^$/p' /etc/ibmcxx.cfg | sed -n -e '/options/{;s/^[[^=]]*=\(.*\)/\1/;s/-q[^,]*//;s/,/ /gp;}'`
 else
 	dpagaix_CFLAGS="-D_THREAD_SAFE -D_AIX_PTHREADS_D7 -D_AIX32_THREADS=1 -D_AES_SOURCE -D_AIX41 -I/usr/include/dce"
 	dpagaix_LDADD="-L/usr/lib/threads -ldcelibc_r -ldcepthreads -lpthreads_compat lpthreads -lc_r"
