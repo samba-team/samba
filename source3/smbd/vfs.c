@@ -390,6 +390,10 @@ char *vfs_readdirname(connection_struct *conn, void *p)
 	return(dname);
 }
 
+/* VFS options not quite working yet */
+
+#if 0
+
 /***************************************************************************
   handle the interpretation of the vfs option parameter
  *************************************************************************/
@@ -448,3 +452,6 @@ static BOOL handle_vfs_option(char *pszParmValue, char **ptr)
 
     return True;
 }
+
+#endif
+
