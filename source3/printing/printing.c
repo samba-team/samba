@@ -235,7 +235,7 @@ void printing_end(void)
  when asked for (and only when supported)
 ****************************************************************************/
 
-static struct printif *get_printer_fns_from_type( enum printing_types type )
+static struct printif *get_printer_fns_from_type( int type )
 {
 	struct printif *printer_fns = &generic_printif;
 
@@ -1379,7 +1379,7 @@ static void print_queue_update(int snum, BOOL force)
 	size_t len = 0;
 	size_t newlen;
 	struct tdb_print_db *pdb;
-	enum printing_types type;
+	int type;
 	struct printif *current_printif;
 
 	fstrcpy( sharename, lp_const_servicename(snum));
