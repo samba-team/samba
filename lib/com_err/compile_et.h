@@ -49,6 +49,9 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <ctype.h>
+
+#include <roken.h>
 
 extern long base;
 extern int number;
