@@ -30,6 +30,7 @@ extern int DEBUGLEVEL;
 #endif
 #include <stdlib.h>
 #include <stdio.h>
+#include <sys/types.h>
 #include <errno.h>
 
 #ifdef HAVE_SYS_PRIV_H
