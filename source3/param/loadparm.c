@@ -3344,8 +3344,8 @@ int lp_servicenumber(char *pszServiceName)
 	int iService;
 
 	for (iService = iNumServices - 1; iService >= 0; iService--)
-		if (VALID(iService) &&
-		    strequal(lp_servicename(iService), pszServiceName))
+		if (VALID(iService) && ServicePtrs[iService]->szService &&
+				strequal(ServicePtrs[iService]->szService, pszServiceName))
 			break;
 	if (iService < 0)
 		DEBUG(7,
