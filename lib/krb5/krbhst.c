@@ -120,7 +120,7 @@ srv_find_realm(krb5_context context, krb5_krbhst_info ***res, int *count,
 
 
 
-struct krbhst_data {
+struct krb5_krbhst_data {
     char *realm;
     unsigned int flags;
 #define KD_CONFIG	1
@@ -129,7 +129,7 @@ struct krbhst_data {
 #define KD_SRV_HTTP	8
 #define KD_FALLBACK    16
 
-    krb5_error_code (*get_next)(krb5_context, struct krbhst_data *, 
+    krb5_error_code (*get_next)(krb5_context, struct krb5_krbhst_data *, 
 				krb5_krbhst_info**);
 
     unsigned int fallback_count;
@@ -182,7 +182,7 @@ parse_hostspec(const char *spec)
 }
 
 static void
-append_host_hostinfo(struct krbhst_data *kd, struct krb5_krbhst_info *host)
+append_host_hostinfo(struct krb5_krbhst_data *kd, struct krb5_krbhst_info *host)
 {
     struct krb5_krbhst_info *h;
 
@@ -198,7 +198,7 @@ append_host_hostinfo(struct krbhst_data *kd, struct krb5_krbhst_info *host)
 }
 
 static krb5_error_code
-append_host_string(struct krbhst_data *kd, const char *host)
+append_host_string(struct krb5_krbhst_data *kd, const char *host)
 {
     struct krb5_krbhst_info *hi;
 
@@ -228,7 +228,7 @@ krb5_krbhst_format_string(krb5_context context, krb5_krbhst_info *host,
 }
 
 static krb5_boolean
-get_next(struct krbhst_data *kd, krb5_krbhst_info **host)
+get_next(struct krb5_krbhst_data *kd, krb5_krbhst_info **host)
 {
     struct krb5_krbhst_info *hi = *kd->index;
     if(hi != NULL) {
@@ -240,7 +240,7 @@ get_next(struct krbhst_data *kd, krb5_krbhst_info **host)
 }
 
 static void
-srv_get_hosts(krb5_context context, struct krbhst_data *kd, 
+srv_get_hosts(krb5_context context, struct krb5_krbhst_data *kd, 
 	const char *proto, const char *service)
 {
     krb5_krbhst_info **res;
@@ -254,7 +254,7 @@ srv_get_hosts(krb5_context context, struct krbhst_data *kd,
 
 
 static void
-config_get_hosts(krb5_context context, struct krbhst_data *kd, 
+config_get_hosts(krb5_context context, struct krb5_krbhst_data *kd, 
 		 const char *conf_string)
 {
     int i;
@@ -271,7 +271,7 @@ config_get_hosts(krb5_context context, struct krbhst_data *kd,
 }
 
 static void
-fallback_get_hosts(krb5_context context, struct krbhst_data *kd, 
+fallback_get_hosts(krb5_context context, struct krb5_krbhst_data *kd, 
 		   const char *serv_string)
 {
     char *host;
@@ -299,7 +299,7 @@ fallback_get_hosts(krb5_context context, struct krbhst_data *kd,
 
 static krb5_error_code
 kdc_get_next(krb5_context context,
-	     struct krbhst_data *kd,
+	     struct krb5_krbhst_data *kd,
 	     krb5_krbhst_info **host)
 {
     if((kd->flags & KD_CONFIG) == 0) {
@@ -342,7 +342,7 @@ kdc_get_next(krb5_context context,
 
 static krb5_error_code
 admin_get_next(krb5_context context,
-	       struct krbhst_data *kd,
+	       struct krb5_krbhst_data *kd,
 	       krb5_krbhst_info **host)
 {
     if((kd->flags & KD_CONFIG) == 0) {
@@ -368,7 +368,7 @@ admin_get_next(krb5_context context,
 
 static krb5_error_code
 kpasswd_get_next(krb5_context context,
-		 struct krbhst_data *kd,
+		 struct krb5_krbhst_data *kd,
 		 krb5_krbhst_info **host)
 {
     if((kd->flags & KD_CONFIG) == 0) {
@@ -393,7 +393,7 @@ kpasswd_get_next(krb5_context context,
 
 static krb5_error_code
 krb524_get_next(krb5_context context,
-		struct krbhst_data *kd,
+		struct krb5_krbhst_data *kd,
 		krb5_krbhst_info **host)
 {
     if((kd->flags & KD_CONFIG) == 0) {
@@ -407,11 +407,11 @@ krb524_get_next(krb5_context context,
     return KRB5_KDC_UNREACH; /* XXX */
 }
 
-static struct krbhst_data*
+static struct krb5_krbhst_data*
 common_init(krb5_context context,
 	    const char *realm)
 {
-    struct krbhst_data *kd;
+    struct krb5_krbhst_data *kd;
 
     if((kd = calloc(1, sizeof(*kd))) == NULL)
 	return NULL;
@@ -427,10 +427,10 @@ krb5_error_code
 krb5_krbhst_init(krb5_context context,
 		 const char *realm,
 		 unsigned int type,
-		 void **handle)
+		 krb5_krbhst_handle *handle)
 {
-    struct krbhst_data *kd;
-    krb5_error_code (*get_next)(krb5_context, struct krbhst_data *, 
+    struct krb5_krbhst_data *kd;
+    krb5_error_code (*get_next)(krb5_context, struct krb5_krbhst_data *, 
 				krb5_krbhst_info **);
     switch(type) {
     case KRB5_KRBHST_KDC:
@@ -458,20 +458,18 @@ krb5_krbhst_init(krb5_context context,
 
 krb5_error_code
 krb5_krbhst_next(krb5_context context,
-		 void *handle,
+		 krb5_krbhst_handle handle,
 		 krb5_krbhst_info **host)
 {
-    struct krbhst_data *kd = handle;
-
-    if(get_next(kd, host))
+    if(get_next(handle, host))
 	return 0;
 
-    return (*kd->get_next)(context, kd, host);
+    return (*handle->get_next)(context, handle, host);
 }
 
 krb5_error_code
 krb5_krbhst_next_as_string(krb5_context context,
-			   void *handle,
+			   krb5_krbhst_handle handle,
 			   char *hostname,
 			   size_t hostlen)
 {
@@ -485,17 +483,15 @@ krb5_krbhst_next_as_string(krb5_context context,
 
 
 void
-krb5_krbhst_reset(krb5_context context, void *handle)
+krb5_krbhst_reset(krb5_context context, krb5_krbhst_handle handle)
 {
-    struct krbhst_data *kd = handle;
-    kd->index = &kd->hosts;
+    handle->index = &handle->hosts;
 }
 
 void
-krb5_krbhst_free(krb5_context context, void *handle)
+krb5_krbhst_free(krb5_context context, krb5_krbhst_handle handle)
 {
-    struct krbhst_data *kd = handle;
-    free(kd->realm);
+    free(handle->realm);
     free(handle);
 }
 
@@ -508,7 +504,7 @@ gethostlist(krb5_context context, const char *realm,
 {
     krb5_error_code ret;
     int nhost = 0;
-    void *handle;
+    krb5_krbhst_handle handle;
     char host[MAXHOSTNAMELEN];
     krb5_krbhst_info *hostinfo;
 
@@ -594,7 +590,7 @@ int main(int argc, char **argv)
     krb5_init_context (&context);
     
     for(i = 1; i < argc; i++) {
-	void *handle;
+	krb5_krbhst_handle handle;
 	char host[MAXHOSTNAMELEN];
 	krb5_krbhst_init(context, argv[i], KRB5_KRBHST_KDC, &handle);
 	while(krb5_krbhst_next_as_string(context, handle, host, sizeof(host)) == 0)
