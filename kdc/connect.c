@@ -338,7 +338,7 @@ handle_udp(struct descr *d)
     void *sa_buf;
     int sa_size;
     int from_len;
-    size_t n;
+    int n;
 
     sa_size = krb5_max_sockaddr_size ();
     sa_buf = malloc(sa_size);
@@ -393,7 +393,7 @@ handle_tcp(struct descr *d, int index, int min_free)
     struct sockaddr *sa;
     int sa_size;
     int from_len;
-    size_t n;
+    int n;
 
     sa_size = krb5_max_sockaddr_size ();
     sa_buf = malloc(sa_size);
