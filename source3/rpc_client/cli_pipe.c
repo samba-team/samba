@@ -984,6 +984,22 @@ char* get_pipe_name_from_index( const int pipe_index )
 }
 
 /****************************************************************************
+ Check to see if this pipe index points to one of 
+ the pipes only supported by Win2k
+ ****************************************************************************/
+
+BOOL is_win2k_pipe( const int pipe_idx )
+{
+	switch ( pipe_idx )
+	{
+		case PI_LSARPC_DS:
+			return True;
+	}
+	
+	return False;
+}
+
+/****************************************************************************
  check the rpc bind acknowledge response
 ****************************************************************************/
 

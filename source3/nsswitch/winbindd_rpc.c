@@ -183,6 +183,65 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 	return status;
 }
 
+/* List all domain groups */
+
+static NTSTATUS enum_local_groups(struct winbindd_domain *domain,
+				TALLOC_CTX *mem_ctx,
+				uint32 *num_entries, 
+				struct acct_info **info)
+{
+	uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	CLI_POLICY_HND *hnd;
+	POLICY_HND dom_pol;
+	NTSTATUS result;
+
+	*num_entries = 0;
+	*info = NULL;
+
+	if ( !(hnd = cm_get_sam_handle(domain->name)) )
+		return NT_STATUS_UNSUCCESSFUL;
+
+	if ( !NT_STATUS_IS_OK(result = cli_samr_open_domain( hnd->cli, mem_ctx, &hnd->pol, 
+						des_access, &domain->sid, &dom_pol)) )
+	{
+		return result;
+	}
+
+	do {
+		struct acct_info *info2 = NULL;
+		uint32 count = 0, start = *num_entries;
+		TALLOC_CTX *mem_ctx2;
+
+		mem_ctx2 = talloc_init_named("enum_dom_local_groups[rpc]");
+
+		result = cli_samr_enum_als_groups( hnd->cli, mem_ctx2, &dom_pol,
+					  &start, 0xFFFF, &info2, &count);
+					  
+		if ( !NT_STATUS_IS_OK(result) 
+			&& !NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES) ) 
+		{
+			talloc_destroy(mem_ctx2);
+			break;
+		}
+
+		(*info) = talloc_realloc(mem_ctx, *info, 
+					 sizeof(**info) * ((*num_entries) + count));
+		if (! *info) {
+			talloc_destroy(mem_ctx2);
+			cli_samr_close(hnd->cli, mem_ctx, &dom_pol);
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		memcpy(&(*info)[*num_entries], info2, count*sizeof(*info2));
+		(*num_entries) += count;
+		talloc_destroy(mem_ctx2);
+	} while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
+
+	cli_samr_close(hnd->cli, mem_ctx, &dom_pol);
+
+	return result;
+}
+
 /* convert a single name to a sid in a domain */
 static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 			    const char *name,
@@ -635,6 +694,7 @@ struct winbindd_methods msrpc_methods = {
 	False,
 	query_user_list,
 	enum_dom_groups,
+	enum_local_groups,
 	name_to_sid,
 	sid_to_name,
 	query_user,
