@@ -117,7 +117,8 @@ BOOL cli_NetWkstaUserLogon(struct cli_state *cli,char *user, char *workstation)
 		if (cli->rap_error == 0) {
 			DEBUG(4,("NetWkstaUserLogon success\n"));
 			cli->privileges = SVAL(p, 24);
-			fstrcpy(cli->eff_name,p+2);
+			/* The cli->eff_name field used to be set here
+	                   but it wasn't used anywhere else. */
 		} else {
 			DEBUG(1,("NetwkstaUserLogon gave error %d\n", cli->rap_error));
 		}
