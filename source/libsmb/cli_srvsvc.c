@@ -116,6 +116,9 @@ WERROR cli_srvsvc_net_share_enum(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	ZERO_STRUCTP(ctr);
 
+	if (!r.ctr.num_entries)
+		goto done;
+
 	ctr->info_level = info_level;
 	ctr->num_entries = r.ctr.num_entries;
 
