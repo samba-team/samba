@@ -3845,31 +3845,6 @@ static void usage(char *pname)
       return(ret);
     }
 
-#ifdef NTDOMAIN
-
-	if (nt_domain_logon)
-	{
-		int ret = 0;
-		sprintf(service,"\\\\%s\\IPC$",query_host);
-		strupper(service);
-		connect_as_ipc = True;
-
-		DEBUG(5,("NT Domain Logon.  Service: %s\n", service));
-
-		if (cli_open_sockets(port))
-		{
-			if (!cli_send_login(NULL,NULL,True,True,NULL)) return(1);
-
-			do_nt_login(desthost, myhostname, Client, cnum);
-
-			cli_send_logout();
-			close_sockets();
-		}
-
-		return(ret);
-	}
-#endif 
-
   if (cli_open_sockets(port))
     {
       if (!process(base_directory))
