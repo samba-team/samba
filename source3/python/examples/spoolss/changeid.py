@@ -2,8 +2,13 @@
 #
 # Display the changeid for a list of printers given on the command line
 #
+# Sample usage:
+#
+#     changeid.py '\\win2kdc1\magpie'
+#
 
-import sys, spoolss
+import sys
+from samba import spoolss
 
 if len(sys.argv) == 1:
     print "Usage: changeid.py <printername>"
