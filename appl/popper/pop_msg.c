@@ -12,11 +12,7 @@ static char SccsId[] = "@(#)@(#)pop_msg.c	2.1  2.1 3/18/91";
 #include <stdio.h>
 #include <sys/types.h>
 #include <string.h>
-#if __STDC__
 #include <stdarg.h>
-#else
-#include <varargs.h>
-#endif
 #include "popper.h"
 
 /* 
@@ -24,28 +20,12 @@ static char SccsId[] = "@(#)@(#)pop_msg.c	2.1  2.1 3/18/91";
  */
 
 int
-#ifdef __STDC__
 pop_msg(POP *p, int stat, char *format, ...)
-#else
-pop_msg(va_alist)
-va_dcl
-#endif
 {
     register char   *   mp;
     char                message[MAXLINELEN];
     va_list             ap;
-#ifdef __STDC__
     va_start(ap, format);
-#else
-    POP             *   p;
-    int                 stat;               /*  POP status indicator */
-    char            *   format;             /*  Format string for the message */
-
-    va_start(ap);
-    p = va_arg(ap, POP *);
-    stat = va_arg(ap, int);
-    format = va_arg(ap, char *);
-#endif
     
     /*  Point to the message buffer */
     mp = message;

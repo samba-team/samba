@@ -11,11 +11,7 @@ static char SccsId[] = "@(#)@(#)pop_log.c	2.1  2.1 3/18/91";
 
 #include <stdio.h>
 #include <sys/types.h>
-#if __STDC__
 #include <stdarg.h>
-#else
-#include <varargs.h>
-#endif
 #include "popper.h"
 
 /* 
@@ -25,26 +21,10 @@ static char SccsId[] = "@(#)@(#)pop_log.c	2.1  2.1 3/18/91";
 static char msgbuf[MAXLINELEN];
 
 int
-#ifdef __STDC__
 pop_log(POP *p, int stat, char *format, ...)
-#else
-pop_log(va_alist)
-va_dcl
-#endif
 {
     va_list     ap;
-#ifdef __STDC__
     va_start(ap, format);
-#else
-    POP     *   p;
-    int         stat;
-    char    *   format;
-
-    va_start(ap);
-    p = va_arg(ap,POP *);
-    stat = va_arg(ap,int);
-    format = va_arg(ap,char *);
-#endif
 
 #ifdef HAVE_VSPRINTF
         vsprintf(msgbuf,format,ap);
