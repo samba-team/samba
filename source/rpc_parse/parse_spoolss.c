@@ -3705,7 +3705,7 @@ void free_spool_printer_driver_info_level_3(SPOOL_PRINTER_DRIVER_INFO_LEVEL_3 **
 
 	free_buffer5(&il->dependentfiles);
 
-	safe_free(q_u);
+	safe_free(il);
 }
 
 /*******************************************************************
@@ -3857,7 +3857,7 @@ void free_spool_printer_driver_info_level_6(SPOOL_PRINTER_DRIVER_INFO_LEVEL_6 **
 	free_buffer5(&il->dependentfiles);
 	free_buffer5(&il->previousnames);
 
-	safe_free(q_u);
+	safe_free(il);
 }
 
 

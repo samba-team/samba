@@ -560,7 +560,7 @@ static BOOL convert_printer_info(const SPOOL_PRINTER_INFO_LEVEL *uni,
 {
 	switch (level) {
 		case 2: 
-			uni_2_asc_printer_info_2(uni->info_2, &(printer->info_2));
+			uni_2_asc_printer_info_2(uni->info_2, &printer->info_2);
 			break;
 		default:
 			break;
@@ -3793,13 +3793,16 @@ static uint32 spoolss_addprinterex_level_2( const UNISTR2 *uni_srv_name,
 	fstring name;
 	fstring share_name;
 
+	if ((printer = (NT_PRINTER_INFO_LEVEL *)malloc(sizeof(NT_PRINTER_INFO_LEVEL))) == NULL) {
+		DEBUG(0,("spoolss_addprinterex_level_2: malloc fail.\n"));
+		return ERROR_NOT_ENOUGH_MEMORY;
+	}
+
+	ZERO_STRUCTP(printer);
+
 	clear_handle(handle);
 	
-	/* NULLify info_2 here */
-	/* don't put it in convert_printer_info as it's used also with non-NULL values */
-	printer->info_2=NULL;
-
-	/* convert from UNICODE to ASCII */
+	/* convert from UNICODE to ASCII - this allocates the info_2 struct inside *printer.*/
 	convert_printer_info(info, printer, 2);
 
 	unistr2_to_ascii(share_name, &info->info_2->printername, sizeof(share_name)-1);
@@ -3807,23 +3810,28 @@ static uint32 spoolss_addprinterex_level_2( const UNISTR2 *uni_srv_name,
 	slprintf(name, sizeof(name)-1, "\\\\%s\\%s", global_myname, share_name);
 
 	/* write the ASCII on disk */
-	if (add_a_printer(*printer, 2) != 0x0)
+	if (add_a_printer(*printer, 2) != 0) {
+		free_a_printer(&printer,2);
 		return ERROR_ACCESS_DENIED;
+	}
 
 	create_printer_hnd(handle);
 
 	open_printer_hnd(handle);
 
 	if (!set_printer_hnd_printertype(handle, name)) {
+		free_a_printer(&printer,2);
 		close_printer_handle(handle);
 		return ERROR_ACCESS_DENIED;
 	}
 
 	if (!set_printer_hnd_printername(handle, name)) {
+		free_a_printer(&printer,2);
 		close_printer_handle(handle);
 		return ERROR_ACCESS_DENIED;
 	}
 
+	free_a_printer(&printer,2);
 	return NT_STATUS_NO_PROBLEMO;
 }
 
@@ -3862,6 +3870,7 @@ static uint32 modify_driver_heirarchy(NT_PRINTER_DRIVER_INFO_LEVEL *driver, uint
 	pstring path_old;
 	pstring path_new;
 	pstring short_archi;
+	pstring model_name;
 
 	/* find_service is an smbd-specific function call */
 	int snum = find_service("print$");
@@ -3885,7 +3894,11 @@ static uint32 modify_driver_heirarchy(NT_PRINTER_DRIVER_INFO_LEVEL *driver, uint
 
 	slprintf(path_old, sizeof(path_old)-1, "%s/%s/TMP_%u", lp_pathname(snum), short_archi,
 		(unsigned int)sys_getpid());
-	slprintf(path_new, sizeof(path_new)-1, "%s/%s/%s", lp_pathname(snum), short_archi, model);
+
+	/* Clean up any '/' and other characters in the model name. */
+	alpha_strcpy(model_name, model, sizeof(pstring));
+
+	slprintf(path_new, sizeof(path_new)-1, "%s/%s/%s", lp_pathname(snum), short_archi, model_name);
 
 	DEBUG(10,("modify_driver_heirarchy: old_path=%s, new_path=%s\n",
 			path_old, path_new ));
