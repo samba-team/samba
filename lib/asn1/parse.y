@@ -48,7 +48,6 @@ RCSID("$Id$");
 
 static Type *new_type (Typetype t);
 void yyerror (char *);
-int yylex(void);
 
 static void append (Member *l, Member *r);
 
