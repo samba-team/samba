@@ -61,10 +61,18 @@ build_request(KTEXT req, char *name, char *inst, char *realm,
     krb5_data_free(&data);
 }
 
+#ifdef KRB_MK_REQ_CONST
 int
 krb_mk_req(KTEXT authent,
 	   const char *service, const char *instance, const char *realm, 
 	   int32_t checksum)
+#else
+int
+krb_mk_req(KTEXT authent,
+	   char *service, char *instance, char *realm, 
+	   int32_t checksum)
+
+#endif
 {
     CREDENTIALS cr;
     KTEXT_ST req;
