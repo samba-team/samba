@@ -21,6 +21,26 @@
 
 #include "includes.h"
 
+static BOOL test_Close(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+		       struct policy_handle *handle)
+{
+	NTSTATUS status;
+	struct samr_Close r;
+
+	r.in.handle = handle;
+	r.out.handle = handle;
+
+	status = dcerpc_samr_Close(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Close handle failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	return True;
+}
+
+
+
 static BOOL test_QueryAliasInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 				struct policy_handle *handle)
 {
@@ -131,6 +151,10 @@ static BOOL test_OpenUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		ret = False;
 	}
 
+	if (!test_Close(p, mem_ctx, &acct_handle)) {
+		ret = False;
+	}
+
 	return ret;
 }
 
@@ -159,6 +183,10 @@ static BOOL test_OpenGroup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		ret = False;
 	}
 
+	if (!test_Close(p, mem_ctx, &acct_handle)) {
+		ret = False;
+	}
+
 	return ret;
 }
 
@@ -184,6 +212,10 @@ static BOOL test_OpenAlias(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	}
 
 	if (!test_QueryAliasInfo(p, mem_ctx, &acct_handle)) {
+		ret = False;
+	}
+
+	if (!test_Close(p, mem_ctx, &acct_handle)) {
 		ret = False;
 	}
 
@@ -337,6 +369,7 @@ static BOOL test_OpenDomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	struct samr_OpenDomain r;
 	struct policy_handle domain_handle;
+	BOOL ret = True;
 
 	printf("Testing OpenDomain\n");
 
@@ -352,22 +385,26 @@ static BOOL test_OpenDomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	}
 
 	if (!test_QueryDomainInfo(p, mem_ctx, &domain_handle)) {
-		return False;
+		ret = False;
 	}
 
 	if (!test_EnumDomainUsers(p, mem_ctx, &domain_handle)) {
-		return False;
+		ret = False;
 	}
 
 	if (!test_EnumDomainGroups(p, mem_ctx, &domain_handle)) {
-		return False;
+		ret = False;
 	}
 
 	if (!test_EnumDomainAliases(p, mem_ctx, &domain_handle)) {
-		return False;
+		ret = False;
 	}
 
-	return True;	
+	if (!test_Close(p, mem_ctx, &domain_handle)) {
+		ret = False;
+	}
+
+	return ret;
 }
 
 static BOOL test_LookupDomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
@@ -488,6 +525,10 @@ BOOL torture_rpc_samr(int dummy)
 	}
 
 	if (!test_EnumDomains(p, mem_ctx, &handle)) {
+		ret = False;
+	}
+
+	if (!test_Close(p, mem_ctx, &handle)) {
 		ret = False;
 	}
 

@@ -19,7 +19,9 @@
 
 	/******************/
 	/* Function: 0x01 */
-	NTSTATUS samr_Close ();
+	NTSTATUS samr_Close (
+		[in,out,ref]  policy_handle *handle
+		);
 
 	/******************/
 	/* Function: 0x02 */
