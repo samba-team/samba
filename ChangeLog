@@ -1,4 +1,15 @@
+2003-05-14  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kuser/kinit.1: setup -> set up, new sentence, new line from
+	Thomas Klausner <wiz@netbsd.org>
+	
 2003-05-13  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kpasswd/kpasswd.1: handle setting passwords for multiple
+	principals at the same time
+
+	* kpasswd/kpasswd.c: handle setting passwords for multiple
+	principals at the same time
 
 	* lib/krb5/changepw.c: draft-ietf-cat-kerb-chg-password-02 and
 	rfc3244 share the response packet sure more constants now that
