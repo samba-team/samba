@@ -95,6 +95,56 @@ sub pointer_type($)
 	return undef;
 }
 
+# return 1 if this is a fixed array
+sub is_fixed_array($)
+{
+	my $e = shift;
+	my $len = $e->{"ARRAY_LEN"};
+	if (defined $len && util::is_constant($len)) {
+		return 1;
+	}
+	return 0;
+}
+
+# return 1 if this is a conformant array
+sub is_conformant_array($)
+{
+	my $e = shift;
+	return defined($e->{CONFORMANT_SIZE});
+}
+
+# return 1 if this is a inline array
+sub is_inline_array($)
+{
+	my $e = shift;
+	my $len = $e->{"ARRAY_LEN"};
+	if (is_fixed_array($e) ||
+	    defined $len && $len ne "*") {
+		return 1;
+	}
+	return 0;
+}
+
+sub is_varying_array($)
+{
+	my $e = shift;
+	return 1 if (util::has_property($e, "length_is"));
+	return 0;
+}
+
+sub array_type($)
+{
+	my $e = shift;
+
+	return "conformant-varying" if (is_varying_array($e) and is_conformant_array($e));
+	return "conformant" if (is_varying_array($e));
+	return "varying" if (is_varying_array($e));
+	return "inline" if (is_inline_array($e));
+	return "fixed" if (is_fixed_array($e));
+
+	return undef;
+}
+
 # determine if an element needs a reference pointer on the wire
 # in its NDR representation
 sub need_wire_pointer($)
@@ -143,7 +193,6 @@ sub need_alloc($)
 	return 0;
 }
 
-
 # determine the C prefix used to refer to a variable when passing to a push
 # function. This will be '*' for pointers to scalar types, '' for scalar
 # types and normal pointers and '&' for pass-by-reference structures
@@ -166,7 +215,6 @@ sub c_push_prefix($)
 	}
 	return "";
 }
-
 
 # determine the C prefix used to refer to a variable when passing to a pull
 # return '&' or ''
@@ -382,9 +430,9 @@ sub ParseArrayPush($$$)
 
 	my $size = ParseExpr($e, util::array_size($e), $var_prefix);
 
-	if (defined $e->{CONFORMANT_SIZE}) {
+	if (is_conformant_array($e) ) {
 		# the conformant size has already been pushed
-	} elsif (!util::is_inline_array($e)) {
+	} elsif (!is_inline_array($e)) {
 		# we need to emit the array size
 		pidl "NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, $size));";
 	}
@@ -430,7 +478,7 @@ sub CheckArraySizes($$)
 	my $e = shift;
 	my $var_prefix = shift;
 
-	if (!defined $e->{CONFORMANT_SIZE} && 
+	if (!is_conformant_array($e) && 
 	    util::has_property($e, "size_is")) {
 		my $size = ParseExpr($e, util::array_size($e), $var_prefix);
 		pidl "if ($var_prefix$e->{NAME}) {";
@@ -465,7 +513,7 @@ sub ParseArrayPull($$$)
 
 	# if this is a conformant array then we use that size to allocate, and make sure
 	# we allocate enough to pull the elements
-	if (defined $e->{CONFORMANT_SIZE}) {
+	if (is_conformant_array($e)) {
 		$alloc_size = $e->{CONFORMANT_SIZE};
 		check_null_pointer($size);
 		pidl "if ($size > $alloc_size) {";
@@ -473,7 +521,7 @@ sub ParseArrayPull($$$)
 		pidl "return ndr_pull_error(ndr, NDR_ERR_CONFORMANT_SIZE, \"Bad conformant size %u should be %u\", $alloc_size, $size);";
 		deindent;
 		pidl "}";
-	} elsif (!util::is_inline_array($e)) {
+	} elsif (!is_inline_array($e)) {
 		if ($var_prefix =~ /^r->out/ && $size =~ /^\*r->in/) {
 			my $size2 = substr($size, 1);
 			pidl "if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {	NDR_ALLOC(ndr, $size2); }";
@@ -484,15 +532,15 @@ sub ParseArrayPull($$$)
 		$alloc_size = "ndr_get_array_size(ndr, &$var_prefix$e->{NAME})";
 	}
 
-	if ((need_alloc($e) && !util::is_fixed_array($e)) ||
+	if ((need_alloc($e) && !is_fixed_array($e)) ||
 	    ($var_prefix eq "r->in." && util::has_property($e, "ref"))) {
-		if (!util::is_inline_array($e) || $ndr_flags eq "NDR_SCALARS") {
+		if (!is_inline_array($e) || $ndr_flags eq "NDR_SCALARS") {
 			pidl "NDR_ALLOC_N(ndr, $var_prefix$e->{NAME}, $alloc_size);";
 		}
 	}
 
 	if (($var_prefix eq "r->out." && util::has_property($e, "ref"))) {
-		if (!util::is_inline_array($e) || $ndr_flags eq "NDR_SCALARS") {
+		if (!is_inline_array($e) || $ndr_flags eq "NDR_SCALARS") {
 			pidl "if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {";
 			indent;
 			pidl "NDR_ALLOC_N(ndr, $var_prefix$e->{NAME}, $alloc_size);";
@@ -532,7 +580,7 @@ sub ParseElementPushScalar($$$)
 
 	if (util::has_property($e, "relative")) {
 		pidl "NDR_CHECK(ndr_push_relative_ptr1(ndr, $var_prefix$e->{NAME}));";
-	} elsif (util::is_inline_array($e)) {
+	} elsif (is_inline_array($e)) {
 		ParseArrayPush($e, "r->", "NDR_SCALARS");
 	} elsif (need_wire_pointer($e)) {
 		ParseElementPushPtr($e, $var_prefix, $ndr_flags);
@@ -581,7 +629,7 @@ sub ParseElementPrintScalar($$)
 		pidl "}";
 	}
 
-	if (util::is_fixed_array($e)) {
+	if (is_fixed_array($e)) {
 		ParseElementPrintBuffer($e, $var_prefix);
 	} elsif ($e->{POINTERS} || util::array_size($e)) {
 		pidl "ndr_print_ptr(ndr, \"$e->{NAME}\", $var_prefix$e->{NAME});";
@@ -720,7 +768,7 @@ sub ParseElementPullScalar($$$)
 
 	start_flags($e);
 
-	if (util::is_inline_array($e)) {
+	if (is_inline_array($e)) {
 		ParseArrayPull($e, "r->", "NDR_SCALARS");
 	} elsif (need_wire_pointer($e)) {
 		ParseElementPullPtr($e, $var_prefix, $ndr_flags);
@@ -788,7 +836,7 @@ sub ParseElementPushBuffer($$$)
 		}
 	}
 	    
-	if (util::is_inline_array($e)) {
+	if (is_inline_array($e)) {
 		ParseArrayPush($e, "r->", "NDR_BUFFERS");
 	} elsif (util::array_size($e)) {
 		ParseArrayPush($e, "r->", "NDR_SCALARS|NDR_BUFFERS");
@@ -869,7 +917,7 @@ sub ParseElementPullBuffer($$$)
 		}
 	}
 	    
-	if (util::is_inline_array($e)) {
+	if (is_inline_array($e)) {
 		ParseArrayPull($e, "r->", "NDR_BUFFERS");
 	} elsif (util::array_size($e)) {
 		ParseArrayPull($e, "r->", "NDR_SCALARS|NDR_BUFFERS");
