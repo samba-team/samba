@@ -465,10 +465,15 @@ NTSTATUS dcerpc_bind(struct dcerpc_pipe *p,
 		return status;
 	}
 
+	if (pkt.ptype == DCERPC_PKT_BIND_NAK) {
+		DEBUG(2,("dcerpc: bind_nak reason %d\n", pkt.u.bind_nak.reject_reason));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
 	if ((pkt.ptype != DCERPC_PKT_BIND_ACK) ||
 	    pkt.u.bind_ack.num_results == 0 ||
 	    pkt.u.bind_ack.ctx_list[0].result != 0) {
-		status = NT_STATUS_UNSUCCESSFUL;
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	if (pkt.ptype == DCERPC_PKT_BIND_ACK) {
