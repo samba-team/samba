@@ -36,6 +36,9 @@
  * SUCH DAMAGE.
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "roken.h"
 #ifndef HAVE_GETTIMEOFDAY
 
