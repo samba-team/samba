@@ -53,6 +53,9 @@ static BOOL cli_session_setup_lanman2(struct cli_state *cli, char *user,
 		return False;
 	}
 
+	/* Lanman2 cannot use SMB signing. */
+	cli->sign_info.use_smb_signing = False;
+
 	/* if in share level security then don't send a password now */
 	if (!(cli->sec_mode & NEGOTIATE_SECURITY_USER_LEVEL)) {
 		passlen = 0;
@@ -199,6 +202,9 @@ static BOOL cli_session_setup_plaintext(struct cli_state *cli, char *user,
 
 	passlen = clistr_push(cli, pword, pass, sizeof(pword), STR_TERMINATE|STR_ASCII);
 
+	/* Plaintext password cannot use SMB signing. */
+	cli->sign_info.use_smb_signing = False;
+
 	set_message(cli->outbuf,13,0,True);
 	SCVAL(cli->outbuf,smb_com,SMBsesssetupX);
 	cli_setup_packet(cli);
@@ -269,6 +275,7 @@ static BOOL cli_session_setup_nt1(struct cli_state *cli, char *user,
 		ntpasslen = 24;
 		SMBencrypt((uchar *)pass,cli->secblob.data,(uchar *)pword);
 		SMBNTencrypt((uchar *)pass,cli->secblob.data,(uchar *)ntpword);
+		cli_calculate_mac_key(cli, (uchar *)pass, (uchar *)ntpword);
 	} else {
 		memcpy(pword, pass, passlen);
 		memcpy(ntpword, ntpass, ntpasslen);
@@ -338,6 +345,9 @@ static DATA_BLOB cli_session_setup_blob(struct cli_state *cli, DATA_BLOB blob)
 
 	/* send a session setup command */
 	memset(cli->outbuf,'\0',smb_size);
+
+	/* Extended security cannot use SMB signing (for now). */
+	cli->sign_info.use_smb_signing = False;
 
 	set_message(cli->outbuf,12,0,True);
 	SCVAL(cli->outbuf,smb_com,SMBsesssetupX);
@@ -522,6 +532,9 @@ static BOOL cli_session_setup_spnego(struct cli_state *cli, char *user,
 	int i;
 	BOOL got_kerberos_mechanism = False;
 
+	/* spnego security cannot use SMB signing (for now). */
+	cli->sign_info.use_smb_signing = False;
+
 	DEBUG(2,("Doing spnego session setup (blob length=%d)\n", cli->secblob.length));
 
 	/* the server might not even do spnego */
@@ -638,18 +651,18 @@ BOOL cli_session_setup(struct cli_state *cli,
 
 BOOL cli_ulogoff(struct cli_state *cli)
 {
-        memset(cli->outbuf,'\0',smb_size);
-        set_message(cli->outbuf,2,0,True);
-        SCVAL(cli->outbuf,smb_com,SMBulogoffX);
-        cli_setup_packet(cli);
+	memset(cli->outbuf,'\0',smb_size);
+	set_message(cli->outbuf,2,0,True);
+	SCVAL(cli->outbuf,smb_com,SMBulogoffX);
+	cli_setup_packet(cli);
 	SSVAL(cli->outbuf,smb_vwv0,0xFF);
 	SSVAL(cli->outbuf,smb_vwv2,0);  /* no additional info */
 
-        cli_send_smb(cli);
-        if (!cli_receive_smb(cli))
-                return False;
+	cli_send_smb(cli);
+	if (!cli_receive_smb(cli))
+		return False;
 
-        return !cli_is_error(cli);
+	return !cli_is_error(cli);
 }
 
 /****************************************************************************

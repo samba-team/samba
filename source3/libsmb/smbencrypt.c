@@ -334,6 +334,18 @@ BOOL decode_pw_buffer(char in_buffer[516], char *new_pwrd,
 }
 
 /***********************************************************
+ SMB signing - setup the MAC key.
+************************************************************/
+
+void cli_calculate_mac_key(struct cli_state *cli, const unsigned char *ntpasswd, const uchar resp[24])
+{
+	/* Get first 16 bytes. */
+	E_md4hash(ntpasswd,&cli->sign_info.mac_key[0]);
+	memcpy(&cli->sign_info.mac_key[16],resp,24);
+	cli->sign_info.mac_key_len = 40;
+}
+
+/***********************************************************
  SMB signing - calculate a MAC to send.
 ************************************************************/
 
