@@ -1,6 +1,11 @@
-#include <krb5_locl.h>
-
+#ifdef HAVE_CONFIG_H
+#include <config.h>
 RCSID("$Id$");
+#endif
+#include <stdio.h>
+#include <string.h>
+#include <krb5.h>
+
 
 const char *
 krb5_get_err_text(krb5_context context, long code)
