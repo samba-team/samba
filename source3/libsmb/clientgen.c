@@ -840,7 +840,7 @@ BOOL cli_session_setup_x(struct cli_state *cli,
 		SIVAL(cli->outbuf,smb_vwv5,cli->sesskey);
 		SSVAL(cli->outbuf,smb_vwv7,passlen);
 		SSVAL(cli->outbuf,smb_vwv8,ntpasslen);
-		SIVAL(cli->outbuf,smb_vwv11, CAP_STATUS32);
+		SIVAL(cli->outbuf,smb_vwv11, 0);
 		p = smb_buf(cli->outbuf);
 		memcpy(p,pass,passlen); 
 		p += SVAL(cli->outbuf,smb_vwv7);
