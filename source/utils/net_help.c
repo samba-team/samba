@@ -100,6 +100,7 @@ int net_help_group(int argc, const char **argv)
 	net_common_flags_usage(argc, argv);
 	d_printf("\t-C or --comment=<comment>\tdescriptive comment (for add only)\n");
 	d_printf("\t-c or --container=<container>\tLDAP container, defaults to cn=Users (for add in ADS only)\n");
+	d_printf("\t-L or --localgroup\t\tWhen adding groups, create a local group (alias)\n");
 	return -1;
 }
 
