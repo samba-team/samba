@@ -649,17 +649,13 @@ static void usage(char *pname)
   DEBUG(0,("\t-l log basename.      Basename for log/debug files\n"));
   DEBUG(0,("\t-n netbios name.      Use this name as my netbios name\n"));
   DEBUG(0,("\t-N                    don't ask for a password\n"));
-  DEBUG(0,("\t-P                    connect to service as a printer\n"));
-  DEBUG(0,("\t-M host               send a winpopup message to the host\n"));
   DEBUG(0,("\t-m max protocol       set the max protocol level\n"));
-  DEBUG(0,("\t-L host               get a list of shares available on a host\n"));
   DEBUG(0,("\t-I dest IP            use this IP to connect to\n"));
   DEBUG(0,("\t-E                    write messages to stderr instead of stdout\n"));
   DEBUG(0,("\t-U username           set the network username\n"));
   DEBUG(0,("\t-W workgroup          set the workgroup name\n"));
   DEBUG(0,("\t-c command string     execute semicolon separated commands\n"));
   DEBUG(0,("\t-t terminal code      terminal i/o code {sjis|euc|jis7|jis8|junet|hex}\n"));
-  DEBUG(0,("\t-T<c|x>IXgbNa          command line tar\n"));
   DEBUG(0,("\t-D directory          start from directory\n"));
   DEBUG(0,("\n"));
 }
