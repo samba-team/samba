@@ -1840,50 +1840,6 @@ enum remote_arch_types get_remote_arch(void)
 	return ra_type;
 }
 
-
-void out_ascii(FILE *f, unsigned char *buf,int len)
-{
-	int i;
-	for (i=0;i<len;i++)
-		fprintf(f, "%c", isprint(buf[i])?buf[i]:'.');
-}
-
-void out_data(FILE *f,char *buf1,int len, int per_line)
-{
-	unsigned char *buf = (unsigned char *)buf1;
-	int i=0;
-	if (len<=0) {
-		return;
-	}
-
-	fprintf(f, "[%03X] ",i);
-	for (i=0;i<len;) {
-		fprintf(f, "%02X ",(int)buf[i]);
-		i++;
-		if (i%(per_line/2) == 0) fprintf(f, " ");
-		if (i%per_line == 0) {      
-			out_ascii(f,&buf[i-per_line  ],per_line/2); fprintf(f, " ");
-			out_ascii(f,&buf[i-per_line/2],per_line/2); fprintf(f, "\n");
-			if (i<len) fprintf(f, "[%03X] ",i);
-		}
-	}
-	if ((i%per_line) != 0) {
-		int n;
-
-		n = per_line - (i%per_line);
-		fprintf(f, " ");
-		if (n>(per_line/2)) fprintf(f, " ");
-		while (n--) {
-			fprintf(f, "   ");
-		}
-		n = MIN(per_line/2,i%per_line);
-		out_ascii(f,&buf[i-(i%per_line)],n); fprintf(f, " ");
-		n = (i%per_line) - n;
-		if (n>0) out_ascii(f,&buf[i-n],n); 
-		fprintf(f, "\n");    
-	}
-}
-
 void print_asc(int level, const unsigned char *buf,int len)
 {
 	int i;
