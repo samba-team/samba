@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -200,9 +200,15 @@ krb5_sendto_kdc (krb5_context context,
 		 p += 7;
 		 http_flag = 1;
 		 port = htons(80);
+	     } else if(strncmp(p, "http/", 5) == 0) {
+		 p += 5;
+		 http_flag = 1;
+		 port = htons(80);
 	     }else if(strncmp(p, "tcp/", 4) == 0){
 		 p += 4;
 		 tcp_flag = 1;
+	     } else if(strncmp(p, "udp/", 4) == 0) {
+		 p += 4;
 	     }
 	     colon = strchr (p, ':');
 	     if (colon)
