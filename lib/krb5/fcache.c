@@ -40,10 +40,6 @@
 
 RCSID("$Id$");
 
-#ifndef O_BINARY
-#define O_BINARY 0
-#endif
-
 typedef struct krb5_fcache{
     char *filename;
     int version;

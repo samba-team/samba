@@ -41,10 +41,6 @@
 
 RCSID("$Id$");
 
-#ifndef O_BINARY
-#define O_BINARY 0
-#endif
-
 struct krb4_kt_data {
     char *filename;
 };

@@ -40,10 +40,6 @@
 
 RCSID("$Id$");
 
-#ifndef O_BINARY
-#define O_BINARY 0
-#endif
-
 #define KRB5_KT_VNO_1 1
 #define KRB5_KT_VNO_2 2
 #define KRB5_KT_VNO   KRB5_KT_VNO_2
