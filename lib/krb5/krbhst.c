@@ -37,8 +37,73 @@
  */
 
 #include "krb5_locl.h"
+#include <resolve.h>
 
 RCSID("$Id$");
+
+static int
+add_string(char ***res, int *count, const char *string)
+{
+    char **tmp = realloc(*res, (*count + 1) * sizeof(**res));
+    if(tmp == NULL)
+	return ENOMEM;
+    *res = tmp;
+    if(string) {
+	tmp[*count] = strdup(string);
+	if(tmp[*count] == NULL)
+	    return ENOMEM;
+    } else
+	tmp[*count] = NULL;
+    (*count)++;
+    return 0;
+}
+
+static krb5_error_code
+srv_find_realm(krb5_context context, char ***res, int *count, 
+	       const char *realm, const char *proto, const char *service)
+{
+    char domain[1024];
+    char alt_domain[1024];
+    krb5_error_code ret;
+    struct dns_reply *r;
+    struct resource_record *rr;
+
+    snprintf(domain, sizeof(domain), "_%s._%s.%s.", service, proto, realm);
+    
+    r = dns_lookup(domain, "srv");
+    if(r == NULL && context->srv_try_rfc2052) {
+	snprintf(alt_domain, sizeof(alt_domain), "%s.%s.%s.", 
+		 service, proto, realm);
+	r = dns_lookup(alt_domain, "srv");
+    }
+    if(r == NULL && context->srv_try_txt)
+	r = dns_lookup(domain, "txt");
+    if(r == NULL && context->srv_try_rfc2052 && context->srv_try_txt)
+	r = dns_lookup(alt_domain, "txt");
+    if(r == NULL)
+	return 0;
+
+    for(rr = r->head; rr; rr = rr->next){
+	if(rr->type == T_SRV){
+	    char buf[1024];
+	    *res = realloc(*res, (*count + 1) * sizeof(**res));
+	    snprintf (buf, sizeof(buf),
+		      "%s/%s:%u",
+		      proto,
+		      rr->u.srv->target,
+		      rr->u.srv->port);
+	    ret = add_string(res, count, buf);
+	    if(ret)
+		return ret;
+	}else if(rr->type == T_TXT) {
+	    ret = add_string(res, count, rr->u.txt);
+	    if(ret)
+		return ret;
+	}
+    }
+    dns_free_data(r);
+    return 0;
+}
 
 static krb5_error_code
 get_krbhst (krb5_context context,
@@ -48,21 +113,33 @@ get_krbhst (krb5_context context,
 {
     char **res, **r;
     int count;
+    krb5_error_code ret;
+
     res = krb5_config_get_strings(context, NULL, 
 				  "realms", *realm, conf_string, NULL);
     for(r = res, count = 0; r && *r; r++, count++);
-    r = realloc(res, (count + 2) * sizeof(*res));
-    if(r == NULL){
-	krb5_config_free_strings(res);
-	return ENOMEM;
+
+    if(context->srv_lookup) {
+	char *s[] = { "udp", "tcp", "http" }, **q;
+	for(q = s; q < s + sizeof(s) / sizeof(s[0]); q++) {
+	    ret = srv_find_realm(context, &res, &count, *realm, *q, "kerberos");
+	    if(ret) {
+		krb5_config_free_strings(res);
+		return ret;
+	    }
+	}
     }
-    res = r;
-    asprintf(&res[count], "kerberos.%s", *realm);
-    if(res[count] == NULL){
-	krb5_config_free_strings(res);
-	return ENOMEM;
+
+    if(count == 0) {
+	char buf[1024];
+	snprintf(buf, sizeof(buf), "kerberos.%s", *realm);
+	ret = add_string(&res, &count, buf);
+	if(ret) {
+	    krb5_config_free_strings(res);
+	    return ret;
+	}
     }
-    res[count + 1] = NULL;
+    add_string(&res, &count, NULL);
     *hostlist = res;
     return 0;
 }
