@@ -25,6 +25,8 @@
 #include <asn1_err.h>
 #include <krb5_err.h>
 
+#include <asn1.h>
+
 #include "config_file.h"
 
 /* simple constants */
@@ -45,11 +47,7 @@ typedef u_int32_t krb5_flags;
 typedef void *krb5_pointer;
 typedef const void *krb5_const_pointer;
 
-typedef struct krb5_data{
-  size_t length;
-  krb5_pointer data;
-} krb5_data;
-
+typedef octet_string krb5_data;
 
 typedef enum krb5_cksumtype { 
   CKSUMTYPE_NONE		= 0,
@@ -102,10 +100,14 @@ typedef struct krb5_addresses {
 
 typedef enum krb5_keytype { KEYTYPE_DES = 1 } krb5_keytype;
 
+#ifndef yet
 typedef struct krb5_keyblock{
-  krb5_keytype keytype;
-  krb5_data contents;
+    krb5_keytype keytype;
+    krb5_data contents;
 } krb5_keyblock;
+#else
+typedef EncryptionKey krb5_keyblock;
+#endif
 
 struct krb5_cc_ops;
 
@@ -189,6 +191,14 @@ enum{
   KRB5_NT_UID		= 5
 };
 
+typedef krb5_data krb5_realm;
+
+#ifdef USE_PRINCIPALNAME
+typedef struct krb5_principal_data {
+    PrincipalName pn;
+    krb5_realm realm;
+} krb5_principal_data;
+#else
 typedef struct krb5_principal_data{
   int type;
   krb5_data realm;
@@ -196,10 +206,7 @@ typedef struct krb5_principal_data{
   int ncomp;
 }krb5_principal_data;
 
-typedef krb5_data krb5_realm;
-
-/* XXX This does not belong here! */
-#include <asn1.h>
+#endif
 
 typedef struct krb5_ticket {
 #if 0
@@ -213,21 +220,18 @@ typedef struct krb5_ticket {
     } enc_part2;
 } krb5_ticket;
 
-
-
-
 typedef struct krb5_authenticator_data{
-  int vno;
-  krb5_principal cname;
-  int cusec;
-  krb5_time ctime;
-  int *seq_number;
+    int vno;
+    krb5_principal cname;
+    int cusec;
+    krb5_time ctime;
+    int *seq_number;
 } krb5_authenticator_data;
 
 typedef krb5_authenticator_data *krb5_authenticator;
 
 typedef struct krb5_rcache{
-  int dummy;
+    int dummy;
 }krb5_rcache;
 
 typedef struct krb5_fcache{
