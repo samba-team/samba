@@ -1352,12 +1352,13 @@ static int call_trans2qfsinfo(connection_struct *conn,
 	    break;
     case SMB_QUERY_FS_SIZE_INFO:
     {
-      SMB_BIG_UINT dfree,dsize,bsize;
+      SMB_BIG_UINT dfree,dsize,bsize, secs_per_unit;
       data_len = 24;
       conn->vfs_ops.disk_free(conn,".",False,&bsize,&dfree,&dsize);	
-      SBIG_UINT(pdata,0,dsize);
-      SBIG_UINT(pdata,8,dfree);
-      SIVAL(pdata,16,bsize/512);
+      secs_per_unit = 2;
+      SBIG_UINT(pdata,0,dsize*(bsize/(512*secs_per_unit)));
+      SBIG_UINT(pdata,8,dfree*(bsize/(512*secs_per_unit)));
+      SIVAL(pdata,16,secs_per_unit);
       SIVAL(pdata,20,512);
       break;
     }
