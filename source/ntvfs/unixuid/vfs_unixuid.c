@@ -26,7 +26,7 @@
 struct unixuid_private {
 	void *samctx;
 	struct unix_sec_ctx *last_sec_ctx;
-	struct auth_session_info *last_session_info;
+	struct nt_user_token *last_token;
 };
 
 
@@ -238,35 +238,40 @@ static NTSTATUS set_unix_security(struct unix_sec_ctx *sec)
 }
 
 /*
-  form a unix_sec_ctx from the current session info
+  form a unix_sec_ctx from the current nt_user_token
 */
-static NTSTATUS authinfo_to_unix_security(struct ntvfs_module_context *ntvfs,
+static NTSTATUS nt_token_to_unix_security(struct ntvfs_module_context *ntvfs,
 					  struct smbsrv_request *req,
-					  struct auth_serversupplied_info *info,
+					  struct nt_user_token *token,
 					  struct unix_sec_ctx **sec)
 {
 	int i;
 	NTSTATUS status;
 	*sec = talloc_p(req, struct unix_sec_ctx);
 
-	status = sid_to_unixuid(ntvfs, req, info->user_sid, &(*sec)->uid);
+	/* we can't do unix security without a user and group */
+	if (token->num_sids < 2) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	status = sid_to_unixuid(ntvfs, req, token->user_sids[0], &(*sec)->uid);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	status = sid_to_unixgid(ntvfs, req, info->primary_group_sid, &(*sec)->gid);
+	status = sid_to_unixgid(ntvfs, req, token->user_sids[1], &(*sec)->gid);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	(*sec)->ngroups = info->n_domain_groups;
+	(*sec)->ngroups = token->num_sids - 2;
 	(*sec)->groups = talloc_array_p(*sec, gid_t, (*sec)->ngroups);
 	if ((*sec)->groups == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	for (i=0;i<(*sec)->ngroups;i++) {
-		status = sid_to_unixgid(ntvfs, req, info->domain_groups[i], &(*sec)->groups[i]);
+		status = sid_to_unixgid(ntvfs, req, token->user_sids[i+2], &(*sec)->groups[i]);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
@@ -282,7 +287,7 @@ static NTSTATUS unixuid_setup_security(struct ntvfs_module_context *ntvfs,
 				       struct smbsrv_request *req, struct unix_sec_ctx **sec)
 {
 	struct unixuid_private *private = ntvfs->private_data;
-	struct auth_serversupplied_info *info = req->session->session_info->server_info;
+	struct nt_user_token *token = req->session->session_info->nt_user_token;
 	void *ctx = talloc(req, 0);
 	struct unix_sec_ctx *newsec;
 	NTSTATUS status;
@@ -292,10 +297,10 @@ static NTSTATUS unixuid_setup_security(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (req->session->session_info == private->last_session_info) {
+	if (req->session->session_info->nt_user_token == private->last_token) {
 		newsec = private->last_sec_ctx;
 	} else {
-		status = authinfo_to_unix_security(ntvfs, req, info, &newsec);
+		status = nt_token_to_unix_security(ntvfs, req, token, &newsec);
 		if (!NT_STATUS_IS_OK(status)) {
 			talloc_free(ctx);
 			return status;
@@ -304,7 +309,7 @@ static NTSTATUS unixuid_setup_security(struct ntvfs_module_context *ntvfs,
 			talloc_free(private->last_sec_ctx);
 		}
 		private->last_sec_ctx = newsec;
-		private->last_session_info = req->session->session_info;
+		private->last_token = req->session->session_info->nt_user_token;
 		talloc_steal(private, newsec);
 	}
 
@@ -354,7 +359,7 @@ static NTSTATUS unixuid_connect(struct ntvfs_module_context *ntvfs,
 
 	ntvfs->private_data = private;
 	private->last_sec_ctx = NULL;
-	private->last_session_info = NULL;
+	private->last_token = NULL;
 
 	PASS_THRU_REQ(ntvfs, req, connect, (ntvfs, req, sharename));
 
@@ -611,7 +616,7 @@ static NTSTATUS unixuid_logoff(struct ntvfs_module_context *ntvfs,
 
 	PASS_THRU_REQ(ntvfs, req, logoff, (ntvfs, req));
 
-	private->last_session_info = NULL;
+	private->last_token = NULL;
 
 	return status;
 }
