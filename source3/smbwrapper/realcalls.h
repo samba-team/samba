@@ -39,6 +39,7 @@ struct dirent *__libc_readdir(DIR * dir);
 #define real_unlink(fn)			(syscall(SYS_unlink, (fn)))
 #define real_utime(fn, buf)		(syscall(SYS_utime, (fn), (buf)))
 #define real_utimes(fn, buf)		(syscall(SYS_utimes, (fn), (buf)))
+#define real_readlink(fn, buf, bufs)	(syscall(SYS_readlink, (fn), (buf), (bufs)))
 
 #endif
 

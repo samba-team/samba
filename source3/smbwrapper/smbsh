@@ -2,5 +2,21 @@
 
 # a simple launcher for the smbwrapper.so preloadde library
 
+if [ x$SMBW_USER = x ]; then
+    echo username?
+    read user
+    export SMBW_USER=$user
+fi
+
+# this doesn't hide the password - we need a proper launch app for that
+if [ x$SMBW_PASSWORD = x ]; then
+    echo password?
+    read pass
+    export SMBW_PASSWORD=$pass
+fi
+
 export LD_PRELOAD=$PWD/smbwrapper/smbwrapper.so
+
+export PWD
+export PS1='smbsh$ '
 bash

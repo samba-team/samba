@@ -56,6 +56,8 @@ static struct bitmap *file_bmap;
 static pstring local_machine;
 extern int DEBUGLEVEL;
 
+static int smbw_busy;
+
 /***************************************************** 
 initialise structures
 *******************************************************/
@@ -70,10 +72,16 @@ void smbw_init(void)
 	if (initialised) return;
 	initialised = 1;
 
+	smbw_busy++;
+
 	DEBUGLEVEL = 0;
 	setup_logging("smbw",True);
 
 	dbf = stderr;
+
+	if ((p=getenv("SMBW_LOGFILE"))) {
+		dbf = fopen(p, "a");
+	}
 
 	file_bmap = bitmap_allocate(SMBW_MAX_OPEN);
 	if (!file_bmap) {
@@ -94,11 +102,14 @@ void smbw_init(void)
 		DEBUGLEVEL = atoi(p);
 	}
 
-	if ((p=getenv("SMBW_CWD"))) {
+	if ((p=getenv(SMBW_PWD_ENV))) {
 		pstrcpy(smb_cwd, p);
+		DEBUG(4,("Initial cwd from smb_cwd is %s\n", smb_cwd));
 	} else {
 		sys_getwd(smb_cwd);
+		DEBUG(4,("Initial cwd from getwd is %s\n", smb_cwd));
 	}
+	smbw_busy--;
 }
 
 /***************************************************** 
@@ -106,6 +117,7 @@ determine if a file descriptor is a smb one
 *******************************************************/
 BOOL smbw_fd(int fd)
 {
+	if (smbw_busy) return False;
 	return (fd >= SMBW_FD_OFFSET);
 }
 
@@ -124,7 +136,7 @@ void clean_fname(char *name)
 	while (modified) {
 		modified = 0;
 
-		DEBUG(4,("cleaning %s\n", name));
+		DEBUG(5,("cleaning %s\n", name));
 
 		if ((p=strstr(name,"/./"))) {
 			modified = 1;
@@ -225,7 +237,7 @@ char *smbw_parse_path(char *fname, char **server, char **share, char **path)
 	}
 	clean_fname(s);
 
-	DEBUG(4,("cleaned %s (fname=%s cwd=%s)\n", 
+	DEBUG(5,("cleaned %s (fname=%s cwd=%s)\n", 
 		 s, fname, smb_cwd));
 
 	if (strncmp(s,SMBW_PREFIX,strlen(SMBW_PREFIX))) return s;
@@ -272,7 +284,7 @@ char *smbw_parse_path(char *fname, char **server, char **share, char **path)
 	string_sub(rpath, "/", "\\");
 
  ok:
-	DEBUG(4,("parsed path name=%s cwd=%s [%s] [%s] [%s]\n", 
+	DEBUG(5,("parsed path name=%s cwd=%s [%s] [%s] [%s]\n", 
 		 fname, smb_cwd,
 		 *server, *share, *path));
 
@@ -287,25 +299,32 @@ BOOL smbw_path(char *path)
 {
 	char *server, *share, *s;
 	char *cwd;
+	int l;
+
+	if (smbw_busy) return False;
+
+	smbw_init();
+
+	DEBUG(3,("smbw_path(%s)\n", path));
+
 	cwd = smbw_parse_path(path, &server, &share, &s);
-	return strncmp(cwd,SMBW_PREFIX,strlen(SMBW_PREFIX)) == 0;
+
+	l = strlen(SMBW_PREFIX)-1;
+
+	if (strncmp(cwd,SMBW_PREFIX,l) == 0 &&
+	    (cwd[l] == '/' || cwd[l] == 0)) {
+		return True;
+	}
+
+	return False;
 }
 
 /***************************************************** 
 return a unix errno from a SMB error pair
 *******************************************************/
-int smbw_errno(struct smbw_server *srv)
+int smbw_errno(struct cli_state *c)
 {
-	int eclass=0, ecode=0;
-	cli_error(&srv->cli, &eclass, &ecode);
-	DEBUG(2,("eclass=%d ecode=%d\n", eclass, ecode));
-	if (eclass == ERRDOS) {
-		switch (ecode) {
-		case ERRbadfile: return ENOENT;
-		case ERRnoaccess: return EPERM;
-		}
-	}
-	return EINVAL;
+	return cli_error(c, NULL, NULL);
 }
 
 /***************************************************** 
@@ -334,6 +353,11 @@ struct smbw_server *smbw_server(char *server, char *share)
 	for (srv=smbw_srvs;srv;srv=srv->next) {
 		if (strcmp(server,srv->server_name)==0 &&
 		    strcmp(share,srv->share_name)==0) return srv;
+	}
+
+	if (server[0] == 0) {
+		errno = EPERM;
+		return NULL;
 	}
 
 	/* have to open a new connection */
@@ -369,8 +393,8 @@ struct smbw_server *smbw_server(char *server, char *share)
 	if (!cli_send_tconX(&c, share, 
 			    strstr(share,"IPC$")?"IPC":"A:", 
 			    password, strlen(password)+1)) {
+		errno = smbw_errno(&c);
 		cli_shutdown(&c);
-		errno = ENOENT;
 		return NULL;
 	}
 
@@ -457,6 +481,25 @@ void smbw_setup_stat(struct stat *st, char *fname, size_t size, int mode)
 	st->st_gid = getgid();
 }
 
+
+/***************************************************** 
+try to do a QPATHINFO and if that fails then do a getatr
+this is needed because win95 sometimes refuses the qpathinfo
+*******************************************************/
+static BOOL smbw_getatr(struct smbw_server *srv, char *path, 
+			uint32 *mode, size_t *size, 
+			time_t *c_time, time_t *a_time, time_t *m_time)
+{
+	if (cli_qpathinfo(&srv->cli, path, c_time, a_time, m_time,
+			  size, mode)) return True;
+
+	if (cli_getatr(&srv->cli, path, mode, size, m_time)) {
+		a_time = c_time = m_time;
+		return True;
+	}
+	return False;
+}
+
 /***************************************************** 
 free a smbw_dir structure and all entries
 *******************************************************/
@@ -477,7 +520,7 @@ add a entry to a directory listing
 *******************************************************/
 void smbw_dir_add(struct file_info *finfo)
 {
-	DEBUG(2,("%s\n", finfo->name));
+	DEBUG(5,("%s\n", finfo->name));
 
 	if (cur_dir->malloced == cur_dir->count) {
 		cur_dir->list = (struct file_info *)Realloc(cur_dir->list, 
@@ -493,6 +536,22 @@ void smbw_dir_add(struct file_info *finfo)
 	cur_dir->list[cur_dir->count] = *finfo;
 	cur_dir->count++;
 }
+
+/***************************************************** 
+add a entry to a directory listing
+*******************************************************/
+void smbw_share_add(char *share, uint32 type, char *comment)
+{
+	struct file_info finfo;
+
+	ZERO_STRUCT(finfo);
+
+	pstrcpy(finfo.name, share);
+	finfo.mode = aRONLY | aDIR;	
+
+	smbw_dir_add(&finfo);
+}
+
 
 /***************************************************** 
 open a directory on the server
@@ -518,6 +577,8 @@ int smbw_dir_open(const char *fname1, int flags)
 	/* work out what server they are after */
 	smbw_parse_path(fname, &server, &share, &path);
 
+	DEBUG(4,("dir_open share=%s\n", share));
+
 	/* get a connection to the server */
 	srv = smbw_server(server, share);
 	if (!srv) {
@@ -538,9 +599,18 @@ int smbw_dir_open(const char *fname1, int flags)
 	slprintf(mask, sizeof(mask)-1, "%s\\*", path);
 	string_sub(mask,"\\\\","\\");
 
-	if (cli_list(&srv->cli, mask, aHIDDEN|aSYSTEM|aDIR, smbw_dir_add) <= 0) {
-		errno = smbw_errno(srv);
-		goto failed;
+	if (strcmp(share,"IPC$") == 0) {
+		DEBUG(4,("doing NetShareEnum\n"));
+		if (cli_RNetShareEnum(&srv->cli, smbw_share_add) <= 0) {
+			errno = smbw_errno(&srv->cli);
+			goto failed;
+		}
+	} else {
+		if (cli_list(&srv->cli, mask, aHIDDEN|aSYSTEM|aDIR, 
+			     smbw_dir_add) <= 0) {
+			errno = smbw_errno(&srv->cli);
+			goto failed;
+		}
 	}
 
 	cur_dir = NULL;
@@ -582,12 +652,14 @@ int smbw_open(const char *fname1, int flags, mode_t mode)
 
 	DEBUG(4,("%s\n", __FUNCTION__));
 
+	smbw_init();
+
 	if (!fname) {
 		errno = EINVAL;
 		return -1;
 	}
 
-	smbw_init();
+	smbw_busy++;	
 
 	/* work out what server they are after */
 	smbw_parse_path(fname, &server, &share, &path);
@@ -599,11 +671,17 @@ int smbw_open(const char *fname1, int flags, mode_t mode)
 		goto failed;
 	}
 
-	fd = cli_open(&srv->cli, path, flags, DENY_NONE);
+	if (path[strlen(path)-1] == '\\') {
+		fd = -1;
+	} else {
+		fd = cli_open(&srv->cli, path, flags, DENY_NONE);
+	}
 	if (fd == -1) {
 		if (fname) free(fname);
 		/* it might be a directory. Maybe we should use chkpath? */
-		return smbw_dir_open(fname1, flags);
+		fd = smbw_dir_open(fname1, flags);
+		smbw_busy--;
+		return fd;
 	}
 	if (fd == -1) {
 		errno = eno;
@@ -638,10 +716,11 @@ int smbw_open(const char *fname1, int flags, mode_t mode)
 
 	DLIST_ADD(smbw_files, file);
 
-	DEBUG(2,("opened %s\n", fname1));
+	DEBUG(4,("opened %s\n", fname1));
 
 	free(fname);
 
+	smbw_busy--;
 	return file->fd;
 
  failed:
@@ -657,6 +736,7 @@ int smbw_open(const char *fname1, int flags, mode_t mode)
 		}
 		free(file);
 	}
+	smbw_busy--;
 	return -1;
 }
 
@@ -695,16 +775,21 @@ int smbw_fstat(int fd, struct stat *st)
 
 	DEBUG(4,("%s\n", __FUNCTION__));
 
+	smbw_busy++;
+
 	file = smbw_file(fd);
 	if (!file) {
-		return smbw_dir_fstat(fd, st);
+		int ret = smbw_dir_fstat(fd, st);
+		smbw_busy--;
+		return ret;
 	}
 
-	DEBUG(4,("%s - qfileinfo\n", __FUNCTION__));
+	DEBUG(4,("%s - getattrE\n", __FUNCTION__));
 
-	if (!cli_qfileinfo(&file->srv->cli, file->cli_fd, 
-			   &c_time, &a_time, &m_time, &size, &mode)) {
+	if (!cli_getattrE(&file->srv->cli, file->cli_fd, 
+			  &mode, &size, &c_time, &a_time, &m_time)) {
 		errno = EINVAL;
+		smbw_busy--;
 		return -1;
 	}
 
@@ -716,8 +801,10 @@ int smbw_fstat(int fd, struct stat *st)
 
 	DEBUG(4,("%s - OK\n", __FUNCTION__));
 
+	smbw_busy--;
 	return 0;
 }
+
 
 /***************************************************** 
 a wrapper for stat()
@@ -727,9 +814,9 @@ int smbw_stat(char *fname1, struct stat *st)
 	struct smbw_server *srv;
 	char *server, *share, *path;
 	char *fname = strdup(fname1);
-	time_t c_time, a_time, m_time;
-	uint32 size;
-	int mode;
+	time_t m_time=0, a_time=0, c_time=0;
+	size_t size=0;
+	uint32 mode=0;
 
 	DEBUG(4,("%s (%s)\n", __FUNCTION__, fname1));
 
@@ -739,6 +826,8 @@ int smbw_stat(char *fname1, struct stat *st)
 	}
 
 	smbw_init();
+
+	smbw_busy++;
 
 	/* work out what server they are after */
 	smbw_parse_path(fname, &server, &share, &path);
@@ -750,22 +839,28 @@ int smbw_stat(char *fname1, struct stat *st)
 		goto failed;
 	}
 
-	if (!cli_qpathinfo(&srv->cli, path, 
-			   &c_time, &a_time, &m_time, &size, &mode)) {
-		errno = smbw_errno(srv);
-		goto failed;
+	if (strcmp(share,"IPC$") == 0) {
+		mode = aDIR | aRONLY;
+	} else {
+		if (!smbw_getatr(srv, path, 
+				 &mode, &size, &c_time, &a_time, &m_time)) {
+			errno = smbw_errno(&srv->cli);
+			goto failed;
+		}
 	}
 
 	smbw_setup_stat(st, path, size, mode);
 
-	st->st_atime = a_time;
-	st->st_ctime = c_time;
+	st->st_atime = time(NULL);
+	st->st_ctime = m_time;
 	st->st_mtime = m_time;
 
+	smbw_busy--;
 	return 0;
 
  failed:
 	if (fname) free(fname);
+	smbw_busy--;
 	return -1;
 }
 
@@ -779,22 +874,26 @@ ssize_t smbw_read(int fd, void *buf, size_t count)
 
 	DEBUG(4,("%s\n", __FUNCTION__));
 
+	smbw_busy++;
+
 	file = smbw_file(fd);
 	if (!file) {
-		DEBUG(3,("bad fd in read\n"));
 		errno = EBADF;
+		smbw_busy--;
 		return -1;
 	}
 	
 	ret = cli_read(&file->srv->cli, file->cli_fd, buf, file->offset, count);
 
 	if (ret == -1) {
-		errno = smbw_errno(file->srv);
+		errno = smbw_errno(&file->srv->cli);
+		smbw_busy--;
 		return -1;
 	}
 
 	file->offset += ret;
 
+	smbw_busy--;
 	return ret;
 }
 
@@ -808,22 +907,27 @@ ssize_t smbw_write(int fd, void *buf, size_t count)
 
 	DEBUG(4,("%s\n", __FUNCTION__));
 
+	smbw_busy++;
+
 	file = smbw_file(fd);
 	if (!file) {
 		DEBUG(3,("bad fd in read\n"));
 		errno = EBADF;
+		smbw_busy--;
 		return -1;
 	}
 	
 	ret = cli_write(&file->srv->cli, file->cli_fd, buf, file->offset, count);
 
 	if (ret == -1) {
-		errno = smbw_errno(file->srv);
+		errno = smbw_errno(&file->srv->cli);
+		smbw_busy--;
 		return -1;
 	}
 
 	file->offset += ret;
 
+	smbw_busy--;
 	return ret;
 }
 
@@ -861,13 +965,18 @@ int smbw_close(int fd)
 
 	DEBUG(4,("%s\n", __FUNCTION__));
 
+	smbw_busy++;
+
 	file = smbw_file(fd);
 	if (!file) {
-		return smbw_dir_close(fd);
+		int ret = smbw_dir_close(fd);
+		smbw_busy--;
+		return ret;
 	}
 	
 	if (!cli_close(&file->srv->cli, file->cli_fd)) {
-		errno = smbw_errno(file->srv);
+		errno = smbw_errno(&file->srv->cli);
+		smbw_busy--;
 		return -1;
 	}
 
@@ -879,6 +988,8 @@ int smbw_close(int fd)
 	free(file->fname);
 	ZERO_STRUCTP(file);
 	free(file);
+	
+	smbw_busy--;
 
 	return 0;
 }
@@ -904,9 +1015,12 @@ int smbw_getdents(unsigned int fd, struct dirent *dirp, int count)
 
 	DEBUG(4,("%s\n", __FUNCTION__));
 
+	smbw_busy++;
+
 	dir = smbw_dir(fd);
 	if (!dir) {
 		errno = EBADF;
+		smbw_busy--;
 		return -1;
 	}
 	
@@ -914,7 +1028,8 @@ int smbw_getdents(unsigned int fd, struct dirent *dirp, int count)
 		dirp->d_ino = dir->offset + 0x10000;
 		dirp->d_off = (dir->offset+1)*sizeof(*dirp);
 		dirp->d_reclen = sizeof(*dirp);
-		/* what's going on with the -1 here? maybe d_type isn't really there? */
+		/* what's going on with the -1 here? maybe d_type
+                   isn't really there? */
 		safe_strcpy(&dirp->d_name[-1], dir->list[dir->offset].name, 
 			    sizeof(dirp->d_name)-1);
 		dir->offset++;
@@ -923,6 +1038,7 @@ int smbw_getdents(unsigned int fd, struct dirent *dirp, int count)
 		n++;
 	}
 
+	smbw_busy--;
 	return n*sizeof(*dirp);
 }
 
@@ -937,6 +1053,27 @@ int smbw_access(char *name, int mode)
 	return smbw_stat(name, &st) == 0;
 }
 
+/***************************************************** 
+a wrapper for realink() - needed for correct errno setting
+*******************************************************/
+int smbw_readlink(char *path, char *buf, size_t bufsize)
+{
+	struct stat st;
+	int ret;
+
+	ret = smbw_stat(path, &st);
+	if (ret != 0) {
+		DEBUG(4,("readlink(%s) failed\n", path));
+		return -1;
+	}
+	
+	/* it exists - say it isn't a link */
+	DEBUG(4,("readlink(%s) not a link\n", path));
+
+	errno = EINVAL;
+	return -1;
+}
+
 
 /***************************************************** 
 a wrapper for chdir()
@@ -945,61 +1082,72 @@ int smbw_chdir(char *name)
 {
 	struct smbw_server *srv;
 	char *server, *share, *path;
-	int mode = aDIR;
+	uint32 mode = aDIR;
 	char *cwd;
-
-	DEBUG(4,("%s (%s)\n", __FUNCTION__, name));
-
-	if (!name) {
-		errno = EINVAL;
-		return -1;
-	}
 
 	smbw_init();
 
-	DEBUG(2,("parsing\n"));
+	if (smbw_busy) return real_chdir(cwd);
+
+	smbw_busy++;
+
+	if (!name) {
+		errno = EINVAL;
+		goto failed;
+	}
+
+	DEBUG(4,("%s (%s)\n", __FUNCTION__, name));
 
 	/* work out what server they are after */
 	cwd = smbw_parse_path(name, &server, &share, &path);
 
-	DEBUG(2,("parsed\n"));
-
 	if (strncmp(cwd,SMBW_PREFIX,strlen(SMBW_PREFIX))) {
 		if (real_chdir(cwd) == 0) {
+			DEBUG(4,("set SMBW_CWD to %s\n", cwd));
 			pstrcpy(smb_cwd, cwd);
-			setenv("SMB_CWD", smb_cwd, 1);
-			return 0;
+			if (setenv(SMBW_PWD_ENV, smb_cwd, 1)) {
+				DEBUG(4,("setenv failed\n"));
+			}
+			goto success;
 		}
 		errno = ENOENT;
-		return -1;
+		goto failed;
 	}
-
-	DEBUG(2,("doing server\n"));
 
 	/* get a connection to the server */
 	srv = smbw_server(server, share);
 	if (!srv) {
 		/* smbw_server sets errno */
-		return -1;
+		goto failed;
 	}
 
-	DEBUG(2,("doing qpathinfo share=%s\n", share));
-
 	if (strcmp(share,"IPC$") &&
-	    !cli_qpathinfo(&srv->cli, path, 
-			   NULL, NULL, NULL, NULL, &mode)) {
-		errno = smbw_errno(srv);
-		return -1;
+	    !smbw_getatr(srv, path, 
+			 &mode, NULL, NULL, NULL, NULL)) {
+		errno = smbw_errno(&srv->cli);
+		goto failed;
 	}
 
 	if (!(mode & aDIR)) {
 		errno = ENOTDIR;
-		return -1;
+		goto failed;
 	}
 
+	DEBUG(4,("set SMBW_CWD2 to %s\n", cwd));
 	pstrcpy(smb_cwd, cwd);
-	setenv("SMB_CWD", smb_cwd, 1);
+	if (setenv(SMBW_PWD_ENV, smb_cwd, 1)) {
+		DEBUG(4,("setenv failed\n"));
+	}
 
+	/* we don't want the old directory to be busy */
+	real_chdir("/");
+
+ success:
+	smbw_busy--;
 	return 0;
+
+ failed:
+	smbw_busy--;
+	return -1;
 }
 
