@@ -182,6 +182,10 @@ BOOL py_from_SECDESC(PyObject **dict, SEC_DESC *sd)
 	PyDict_SetItemString(*dict, "revision", obj);
 	Py_DECREF(obj);
 
+	obj = PyInt_FromLong(sd->type);
+	PyDict_SetItemString(*dict, "type", obj);
+	Py_DECREF(obj);
+
 	if (py_from_SID(&obj, sd->owner_sid)) {
 		PyDict_SetItemString(*dict, "owner_sid", obj);
 		Py_DECREF(obj);
@@ -209,6 +213,7 @@ BOOL py_to_SECDESC(SEC_DESC **sd, PyObject *dict, TALLOC_CTX *mem_ctx)
 {
 	PyObject *obj;
 	uint16 revision;
+	uint16 type = SEC_DESC_SELF_RELATIVE;
 	DOM_SID owner_sid, group_sid;
 	SEC_ACL sacl, dacl;
 	BOOL got_dacl = False, got_sacl = False;
@@ -221,6 +226,12 @@ BOOL py_to_SECDESC(SEC_DESC **sd, PyObject *dict, TALLOC_CTX *mem_ctx)
 		return False;
 
 	revision = PyInt_AsLong(obj);
+
+	if ((obj = PyDict_GetItemString(dict, "type"))) {
+		if (obj != Py_None) {
+			type = PyInt_AsLong(obj);
+		}
+	}
 
 	if ((obj = PyDict_GetItemString(dict, "owner_sid"))) {
 
@@ -276,7 +287,7 @@ BOOL py_to_SECDESC(SEC_DESC **sd, PyObject *dict, TALLOC_CTX *mem_ctx)
 	{
 		size_t sd_size;
 
-		*sd = make_sec_desc(mem_ctx, revision, SEC_DESC_SELF_RELATIVE,
+		*sd = make_sec_desc(mem_ctx, revision, type,
 			    got_owner_sid ? &owner_sid : NULL, 
 			    got_group_sid ? &group_sid : NULL,
 			    got_sacl ? &sacl : NULL, 
