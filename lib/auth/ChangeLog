@@ -1,3 +1,7 @@
+1999-12-20  Johan Danielsson  <joda@pdc.kth.se>
+
+	* sia/sia.c: don't use string concatenation with TKT_ROOT
+
 1999-11-15  Assar Westerlund  <assar@sics.se>
 
 	* */lib/Makefile.in: set LIBNAME.  From Enrico Scholz
