@@ -49,26 +49,26 @@ obtains new tokens (and possibly tickets) for the specified
 .Fa cell
 and
 .Fa realm .
-If 
+If
 .Fa cell
-is 
+is
 .Dv NULL ,
-the local cell is used. If 
-.Fa realm 
+the local cell is used. If
+.Fa realm
 is
 .Dv NULL ,
 the function tries to guess what realm to use. Unless you  have some good knowledge of what cell or realm to use, you should pass
-.Dv NULL . 
-.Fn krb_afslog 
+.Dv NULL .
+.Fn krb_afslog
 will use the real user-id for the
 .Dv ViceId
-field in the token, 
+field in the token,
 .Fn krb_afslog_uid
 will use
 .Fa uid .
 .Pp
 .\" .Fn krb5_afslog ,
-.\" and 
+.\" and
 .\" .Fn krb5_afslog_uid
 .\" are the Kerberos 5 equivalents of
 .\" .Fn krb_afslog ,
@@ -83,15 +83,15 @@ will use
 .\" function will be used.
 .\" .Pp
 .Fn k_afs_cell_of_file
-will in 
+will in
 .Fa cell
 return the cell of a specified file, no more than
 .Fa len
-characters is put in 
+characters is put in
 .Fa cell .
 .Pp
 .Fn k_pioctl
-does a 
+does a
 .Fn pioctl
 syscall with the specified arguments. This function is equivalent to
 .Fn lpioctl .
@@ -121,14 +121,14 @@ and
 .Fn krb_afslog_uid
 returns 0 on success, or a kerberos error number on failure.
 .Fn k_afs_cell_of_file ,
-.Fn k_pioctl , 
+.Fn k_pioctl ,
 .Fn k_setpag ,
 and
 .Fn k_unlog
 all return the value of the underlaying system call, 0 on success.
 .Sh EXAMPLES
 The following code from
-.Nm login 
+.Nm login
 will obtain a new PAG and tokens for the local cell and the cell of
 the users home directory.
 .Bd -literal
@@ -141,7 +141,7 @@ if (k_hasafs()) {
 }
 .Ed
 .Sh ERRORS
-If any of these functions (apart from 
+If any of these functions (apart from
 .Fn k_hasafs )
 is called without AFS beeing present in the kernel, the process will
 usually (depending on the operating system) receive a SIGSYS signal.

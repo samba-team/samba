@@ -7,7 +7,7 @@
 .Nm /etc/krb5.conf
 .Nd configuration file for Kerberos 5
 .Sh DESCRIPTION
-The 
+The
 .Nm
 file specifies several configuration parameters for the Kerberos 5
 library, as well as for some programs.
@@ -78,7 +78,7 @@ Default renewable ticket lifetime.
 .It Li [libdefaults]
 .Bl -tag -width "xxx" -offset indent
 .It Li default_realm = Va REALM
-Default realm to use, this is also known as your 
+Default realm to use, this is also known as your
 .Dq local realm .
 The default is the result of
 .Fn krb5_get_host_realm "local hostname" .
@@ -89,7 +89,7 @@ times. Default is 300 seconds (five minutes).
 Maximum time to wait for a reply from the kdc, default is 3 seconds.
 .It v4_name_convert
 .It v4_instance_resolve
-These are decribed in the 
+These are decribed in the
 .Xr krb5_425_conv_principal  3
 manual page.
 .It Li capath = {
@@ -263,12 +263,12 @@ verify the addresses in the tickets used in tgs requests.
 .\" XXX
 .It allow-null-ticket-addresses = Va BOOL
 allow addresses-less tickets.
-.\" XXX 
+.\" XXX
 .It allow-anonymous = Va BOOL
 if the kdc is allowed to hand out anonymous tickets.
 .It encode_as_rep_as_tgs_rep = Va BOOL
 encode as-rep as tgs-rep tobe compatible with mistakes older DCE secd did.
-.\" XXX 
+.\" XXX
 .It kdc_warn_pwexpire = Va TIME
 the time before expiration that the user should be warned that her
 password is about to expire.
@@ -292,7 +292,7 @@ if
 .Ar etype
 is omitted it means everything, and if string is omitted is means the default string (for that principal). Additional special values of keyttypes are:
 .Bl -tag -width "xxx" -offset indent
-.It v5 
+.It v5
 The kerberos 5 salt
 .Va pw-salt
 .It v4

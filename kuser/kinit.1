@@ -90,8 +90,8 @@ Get ticket that can be forwarded to another host.
 .Xc
 Don't ask for a password, but instead get the key from the specified
 keytab.
-.It Xo 
-.Fl l Ar time Ns , 
+.It Xo
+.Fl l Ar time Ns ,
 .Fl -lifetime= Ns Ar time
 .Xc
 Specifies the lifetime of the ticket. The argument can either be in
@@ -174,13 +174,13 @@ Request a ticket with no addresses.
 .Fl -anonymous
 .Xc
 Request an anonymous ticket (which means that the ticket will be
-issued to an anonymous principal, typically 
+issued to an anonymous principal, typically
 .Dq anonymous@REALM).
 .El
 .Pp
 The following options are only available if
-.Nm 
-has been compiled with support for Kerberos 4. 
+.Nm
+has been compiled with support for Kerberos 4.
 .Bl -tag -width Ds
 .It Xo
 .Fl 4 ,
@@ -199,12 +199,12 @@ Gets AFS tickets, converts them to version 4 format, and stores them
 in the kernel. Only useful if you have AFS.
 .El
 .Pp
-The 
+The
 .Ar forwardable ,
 .Ar proxiable ,
 .Ar ticket_life ,
 and
-.Ar renewable_life 
+.Ar renewable_life
 options can be set to a default value from the
 .Dv appdefaults
 section in krb5.conf, see
@@ -212,7 +212,7 @@ section in krb5.conf, see
 .Pp
 If  a
 .Ar command
-is given, 
+is given,
 .Nm kinit
 will setup new credentials caches, and AFS PAG, and then run the given
 command. When it finishes the credentials will be removed.

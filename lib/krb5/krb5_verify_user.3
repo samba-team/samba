@@ -16,7 +16,7 @@
 .Sh DESCRIPTION
 The
 .Nm krb5_verify_user
-function verifies the password supplied by a user. 
+function verifies the password supplied by a user.
 The principal whose
 password will be verified is specified in
 .Fa principal .
@@ -43,7 +43,7 @@ The
 function does the same, except that it ignores the realm in
 .Fa principal
 and tries all the local realms (see
-.Xr krb5.conf 5 ) . 
+.Xr krb5.conf 5 ) .
 After a successful return, the principal is set to the authenticated
 realm. If the call fails, the principal will not be meaningful, and
 should only be freed with
@@ -78,7 +78,7 @@ main(int argc, char **argv)
     error = krb5_verify_user(context, princ, NULL, NULL, TRUE, NULL);
     if (error)
         krb5_err(context, 1, error, "krb5_verify_user");
-	
+
     return 0;
 }
 .Ed

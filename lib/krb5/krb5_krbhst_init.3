@@ -36,10 +36,10 @@ administrative servers, the password changing servers, or the servers
 for Kerberos 4 ticket conversion.
 .Pp
 First a handle to a particular service is obtained by calling
-.Fn krb5_krbhst_init 
-with the 
+.Fn krb5_krbhst_init
+with the
 .Fa realm
-of interest and the type of service to lookup. The 
+of interest and the type of service to lookup. The
 .Fa type
 can be one of:
 .Pp
@@ -55,7 +55,7 @@ The
 is returned to the caller, and should be passed to the other
 functions.
 .Pp
-For each call to 
+For each call to
 .Fn krb5_krbhst_next
 information a new host is returned. The former function returns in
 .Fa host
@@ -73,7 +73,7 @@ typedef struct krb5_krbhst_info {
 } krb5_krbhst_info;
 .Ed
 .Pp
-The related function, 
+The related function,
 .Fn krb5_krbhst_next_as_string ,
 return the same information as a url-like string.
 .Pp
@@ -82,11 +82,11 @@ When there are no more hosts, these functions return
 .Pp
 To re-iterate over all hosts, call
 .Fn krb5_krbhst_reset
-and the next call to 
+and the next call to
 .Fn krb5_krbhst_next
 will return the first host.
 .Pp
-When done with the handle, 
+When done with the handle,
 .Fn krb5_krbhst_free
 should be called.
 .Pp
@@ -101,13 +101,13 @@ that will return a
 .Va struct addrinfo
 that can then be used for communicating with the server mentioned.
 .Sh EXAMPLE
-The following code will print the KDCs of the realm 
+The following code will print the KDCs of the realm
 .Dq MY.REALM .
 .Bd -literal -offset indent
 krb5_krbhst_handle handle;
 char host[MAXHOSTNAMELEN];
 krb5_krbhst_init(context, "MY.REALM", KRB5_KRBHST_KDC, &handle);
-while(krb5_krbhst_next_as_string(context, handle, 
+while(krb5_krbhst_next_as_string(context, handle,
 				 host, sizeof(host)) == 0)
     printf("%s\\n", host);
 krb5_krbhst_free(context, handle);

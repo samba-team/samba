@@ -25,7 +25,7 @@
 .Sh DESCRIPTION
 These functions create a Kerberos 5 principal from a realm and a list
 of components.
-All of these functions return an allocated principal in the 
+All of these functions return an allocated principal in the
 .Fa principal
 parameter, this should be freed with
 .Fn krb5_free_principal
@@ -36,22 +36,22 @@ The
 functions take a
 .Fa realm
 and the length of the realm.  The
-.Fn krb5_build_principal 
+.Fn krb5_build_principal
 and
 .Fn krb5_build_principal_va
 also takes a list of components (zero-terminated strings), terminated
 with
 .Dv NULL .
 The
-.Fn krb5_build_principal_ext 
-and 
-.Fn krb5_build_principal_va_ext 
+.Fn krb5_build_principal_ext
+and
+.Fn krb5_build_principal_va_ext
 takes a list of length-value pairs, the list is terminated with a zero
 length.
 .Pp
-The 
+The
 .Fn krb5_make_principal
-is a wrapper around 
+is a wrapper around
 .Fn krb5_build_principal .
 If the realm is
 .Dv NULL ,

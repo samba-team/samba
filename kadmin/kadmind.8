@@ -29,21 +29,22 @@
 .Sh DESCRIPTION
 .Nm
 listens for requests for changes to the Kerberos database and performs
-these, subject to permissions.  When starting, if stdin is a socket it assumes that it has been started by 
+these, subject to permissions.  When starting, if stdin is a socket it
+assumes that it has been started by
 .Xr inetd 8 ,
 otherwise it behaves as a daemon, forking processes for each new
-connection. The 
+connection. The
 .Fl -debug
-option causes 
+option causes
 .Nm
-to accept exactly one connection, which is useful for debugging. 
+to accept exactly one connection, which is useful for debugging.
 .Pp
 If built with krb4 support, it implements both the Heimdal Kerberos 5
 administrative protocol and the Kerberos 4 protocol. Password changes
 via the Kerberos 4 protocol are also performed by
 .Nm kadmind ,
 but the
-.Xr kpasswdd 8 
+.Xr kpasswdd 8
 daemon is responsible for the Kerberos 5 password changing protocol
 (used by
 .Xr kpasswd 1 )
@@ -119,7 +120,7 @@ enable debugging
 ports to listen to. By default, if run as a daemon, it listen to ports
 749, and 751 (if built with Kerberos 4 support), but you can add any
 number of ports with this option. The port string is a whitespace
-separated list of port specifications, with the special string 
+separated list of port specifications, with the special string
 .Dq +
 representing the default set of ports.
 .El
@@ -142,7 +143,7 @@ mallory/admin@EXAMPLE.COM  add,get  host/*@EXAMPLE.COM
 .Ed
 .\".Sh DIAGNOSTICS
 .Sh SEE ALSO
-.Xr kadmin 1 ,
 .Xr kpasswd 1 ,
+.Xr kadmin 8 ,
 .Xr kdc 8 ,
 .Xr kpasswdd 8

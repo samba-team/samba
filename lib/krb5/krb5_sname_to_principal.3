@@ -14,30 +14,30 @@
 .Ft krb5_error_code
 .Fn krb5_sock_to_principal "krb5_context context" "int socket" "const char *sname" "int32_t type" "krb5_principal *principal"
 .Sh DESCRIPTION
-These functions create a 
+These functions create a
 .Dq service
 principal that can, for instance, be used to lookup a key in a keytab. For both these function the
-.Fa sname 
-parameter will be used for the first component of the created principal. If 
+.Fa sname
+parameter will be used for the first component of the created principal. If
 .Fa sname
 is
 .Dv NULL ,
 .Dq host
 will be used instead.
-.Fn krb5_sname_to_principal 
-will use the passed 
+.Fn krb5_sname_to_principal
+will use the passed
 .Fa hostname
-for the second component. If type 
+for the second component. If type
 .Dv KRB5_NT_SRV_HST
 this name will be looked up with
 .Fn gethostbyname .
-If 
+If
 .Fa hostname is
 .Dv NULL ,
 the local hostname will be used.
 .Pp
-.Fn krb5_sock_to_principal 
-will use the 
+.Fn krb5_sock_to_principal
+will use the
 .Dq sockname
 of the passed
 .Fa socket ,

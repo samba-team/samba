@@ -17,14 +17,14 @@
 .Ft void
 .Fn krb5_appdefault_time "krb5_context context" "const char *appname" "krb5_realm realm" "const char *option" "time_t def_val" "time_t *ret_val"
 .Sh DESCRIPTION
-These functions get application application defaults from the 
+These functions get application application defaults from the
 .Dv appdefaults
 section of the
-.Xr krb5.conf 5 
+.Xr krb5.conf 5
 configuration file. These defaults can be specified per application,
 and/or per realm.
 .Pp
-These values will be looked for in 
+These values will be looked for in
 .Xr krb5.conf 5 ,
 in order of descending importance.
 .Bd -literal -offset indent
@@ -46,7 +46,7 @@ in order of descending importance.
 is the name of the application, and
 .Fa realm
 is the realm name. If the realm is omitted it will not be used for
-resolving values. 
+resolving values.
 .Fa def_val
 is the value to return if no value is found in
 .Xr krb5.conf 5 .

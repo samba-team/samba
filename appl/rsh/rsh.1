@@ -10,17 +10,17 @@ remote shell
 .Sh SYNOPSIS
 .Nm
 .Op Fl 45FGKdefnuxz
-.Op Fl U Pa string 
+.Op Fl U Pa string
 .Op Fl p Ar port
 .Op Fl l Ar username
 .Ar host [command]
 .Sh DESCRIPTION
 .Nm
-authenticates to the 
-.Xr rshd 8 
+authenticates to the
+.Xr rshd 8
 daemon on the remote
 .Ar host ,
-and then executes the specified 
+and then executes the specified
 .Ar command .
 .Pp
 .Nm
@@ -33,8 +33,8 @@ Valid options are:
 .Fl 4 ,
 .Fl -krb4
 .Xc
-The 
-.Fl 4 
+The
+.Fl 4
 option requests Kerberos 4 authentication. Normally all supported
 authentication mechanisms will be tried, but in some cases more
 explicit control is desired.
@@ -42,16 +42,16 @@ explicit control is desired.
 .Fl 5 ,
 .Fl -krb5
 .Xc
-The 
+The
 .Fl 5
-option requests Kerberos 5 authentication. This is analogous to the 
+option requests Kerberos 5 authentication. This is analogous to the
 .Fl 4
 option.
 .It Xo
 .Fl K ,
 .Fl -broken
 .Xc
-The 
+The
 .Fl K
 option turns off all Kerberos authentication. The long name implies
 that this is more or less totally unsecure. The security in this mode
@@ -60,9 +60,9 @@ relies on reserved ports, which is not very secure.
 .Fl n ,
 .Fl -no-input
 .Xc
-The 
+The
 .Fl n
-option directs the input from the 
+option directs the input from the
 .Pa /dev/null
 device (see the
 .Sx BUGS
@@ -89,7 +89,7 @@ section for limitations).
 The opposite of
 .Fl x .
 This is the default, but encryption can be enabled when using
-Kerberos 5, by setting the 
+Kerberos 5, by setting the
 .Li libdefaults/encrypt
 option in
 .Xr krb5.conf 5 .
@@ -97,22 +97,22 @@ option in
 .Fl f ,
 .Fl -forward
 .Xc
-Forward Kerberos 5 credentials to the remote host. Also controlled by 
+Forward Kerberos 5 credentials to the remote host. Also controlled by
 .Li libdefaults/forward
-in 
+in
 .Xr krb5.conf 5 .
 .It Xo
 .Fl G
 .Xc
-The opposite of 
+The opposite of
 .Fl f .
 .It Xo
 .Fl F ,
 .Fl -forwardable
 .Xc
-Make the forwarded credentials re-forwardable. Also controlled by 
+Make the forwarded credentials re-forwardable. Also controlled by
 .Li libdefaults/forwardable
-in 
+in
 .Xr krb5.conf 5 .
 .It Xo
 .Fl u ,
@@ -147,8 +147,8 @@ option or the
 format allow the remote name to be specified.
 .El
 .\".Pp
-.\"Without a 
-.\".Ar command 
+.\"Without a
+.\".Ar command
 .\".Nm
 .\"will just exec
 .\".Xr rlogin 1
@@ -200,13 +200,13 @@ was written as part of the Heimdal Kerberos 5 implementation.
 .Sh BUGS
 Some shells (notably
 .Xr csh 1 )
-will cause 
-.Nm 
-to block if run in the background, unless the standard input is directed away from the terminal. This is what the 
+will cause
+.Nm
+to block if run in the background, unless the standard input is directed away from the terminal. This is what the
 .Fl n
 option is for.
 .Pp
-The 
+The
 .Fl x
 options enables encryption for the session, but for both Kerberos 4
 and 5 the actual command is sent unencrypted, so you should not send

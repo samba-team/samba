@@ -15,12 +15,12 @@
 converts a string representation of a princpal name to
 .Nm krb5_principal .
 The
-.Fa principal 
+.Fa principal
 will point to allocated data that should be freed with
 .Fn krb5_free_principal .
 .Pp
 The string should consist of one or more name components separated with slashes
-.Pq Dq / , 
+.Pq Dq / ,
 optionally followed with an
 .Dq @
 and a realm name. A slash or @ may be contained in a name component by

@@ -35,8 +35,8 @@ doesn't send any data.
 Assume that clients connecting to this server will use some form of
 Kerberos authentication. See the
 .Sx EXAMPLES
-section for a sample 
-.Xr inetd.conf 5 
+section for a sample
+.Xr inetd.conf 5
 configuration.
 .It Xo
 .Fl x ,
@@ -74,18 +74,18 @@ peculiar environments, such as some batch systems.
 .Fl i ,
 .Fl -no-inetd
 .Xc
-The 
-.Fl i 
+The
+.Fl i
 option will cause
-.Nm 
-to create a socket, instead of assuming that its stdin came from 
+.Nm
+to create a socket, instead of assuming that its stdin came from
 .Xr inetd 8 .
 This is mostly useful for debugging.
 .It Xo
 .Fl p Ar port ,
 .Fl -port= Ns Ar port
 .Xc
-Port to use with 
+Port to use with
 .Fl i .
 .It Xo
 .Fl a
@@ -95,7 +95,7 @@ This flag is for backwards compatibility only.
 .Fl L
 .Xc
 This flag enables logging of connections to
-.Xr syslogd 8 . 
+.Xr syslogd 8 .
 This option is always on in this implementation.
 .El
 .\".Sh ENVIRONMENT
@@ -106,7 +106,7 @@ This option is always on in this implementation.
 .El
 .Sh EXAMPLES
 The following can be used to enable Kerberised rsh in
-.Xr inetd.cond 5 , 
+.Xr inetd.cond 5 ,
 while disabling non-Kerberised connections:
 .Bd -literal
 shell   stream  tcp  nowait  root  /usr/libexec/rshd  rshd -v

@@ -43,10 +43,10 @@
 .Sh DESCRIPTION
 The
 .Nm
-program is used to make modification to the Kerberos database, either remotely via the 
+program is used to make modification to the Kerberos database, either remotely via the
 .Xr kadmind 8
-daemon, or locally (with the 
-.Fl l 
+daemon, or locally (with the
+.Fl l
 option).
 .Pp
 Supported options:
@@ -93,12 +93,12 @@ port to use
 local admin mode
 .El
 .Pp
-If no 
+If no
 .Ar command
 is given on the command line,
-.Nm 
+.Nm
 will prompt for commands to process. Commands include:
-.\" not using a list here, since groff apparently gets confused 
+.\" not using a list here, since groff apparently gets confused
 .\" with nested Xo/Xc
 .Bd -ragged -offset indent
 .Nm add
@@ -236,7 +236,7 @@ reads a previously dumped database, and re-creates that database from scratch
 .Ar file
 .Pp
 .Bd -ragged -offset indent
-similar to 
+similar to
 .Nm list
 but just modifies the database with the entries in the dump file
 .Ed
