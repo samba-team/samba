@@ -206,14 +206,6 @@ krb5_auth_con_getremotesubkey(krb5_context context,
 			 auth_context->remote_subkey.keyvalue.length);
 }
 
-void
-krb5_free_keyblock(krb5_context context,
-		   krb5_keyblock *keyblock)
-{
-    memset(keyblock->keyvalue.data, 0, keyblock->keyvalue.length);
-    krb5_data_free (&keyblock->keyvalue);
-}
-
 krb5_error_code
 krb5_auth_setcksumtype(krb5_context context,
 		       krb5_auth_context auth_context,
