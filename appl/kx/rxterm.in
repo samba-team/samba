@@ -27,8 +27,9 @@ set -- `kx $host`
 if test $# -ne 3; then
   exit 1
 fi
+screen=`echo $DISPLAY | sed -ne 's/[^:]*:[0-9]*\(\.[0-9]*\)/\1/p'`
 pid=$1
-disp=$2
+disp=${2}${screen}
 auth=$3
 kill -USR1 $pid
 rsh $rsh_args $host "env DISPLAY=$disp XAUTHORITY=$auth xterm -T $title -n $title $xterm_args &"
