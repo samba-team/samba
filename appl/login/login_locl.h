@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -86,6 +86,10 @@
 #endif
 #include <kafs.h>
 
+#ifdef OTP
+#include <otp.h>
+#endif
+
 #ifndef _PATH_BSHELL
 #define _PATH_BSHELL "/bin/sh"
 #endif
@@ -120,6 +124,10 @@
 #ifndef _PATH_LOGIN_CONF
 #define _PATH_LOGIN_CONF "/etc/login.conf"
 #endif /* _PATH_LOGIN_CONF */
+
+#ifndef _PATH_ETC_ENVIRONMENT
+#define _PATH_ETC_ENVIRONMENT "/etc/environment"
+#endif
 
 struct spwd;
 
