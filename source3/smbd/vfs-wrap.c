@@ -359,7 +359,11 @@ static int copy_reg(const char *source, const char *dest)
 	 * But root probably wants to know, e.g. if NFS disallows it.
 	 */
 
+#ifdef HAVE_FCHOWN
 	if ((fchown(ofd, source_stats.st_uid, source_stats.st_gid) == -1) && (errno != EPERM))
+#else
+	if ((chown(dest, source_stats.st_uid, source_stats.st_gid) == -1) && (errno != EPERM))
+#endif
 		goto err;
 
 	/*
