@@ -49,6 +49,8 @@ BOOL change_to_guest(void)
 	current_user.conn = NULL;
 	current_user.vuid = UID_FIELD_INVALID;
 	
+	passwd_free(&pass);
+
 	return True;
 }
 
