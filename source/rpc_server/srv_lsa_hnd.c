@@ -71,11 +71,14 @@ static void create_pol_hnd(POLICY_HND *hnd)
 	pol_hnd_low++;
 	if (pol_hnd_low == 0) pol_hnd_high++;
 
-	SIVAL(hnd->data, 0 , 0x0);  /* first bit must be null */
-	SIVAL(hnd->data, 4 , pol_hnd_low ); /* second bit is incrementing */
-	SIVAL(hnd->data, 8 , pol_hnd_high); /* second bit is incrementing */
-	SIVAL(hnd->data, 12, time(NULL)); /* something random */
-	SIVAL(hnd->data, 16, sys_getpid()); /* something more random */
+	ZERO_STRUCTP(hnd);
+
+	SIVAL(&hnd->data1, 0 , 0x0);  /* first bit must be null */
+	SIVAL(&hnd->data2, 0 , pol_hnd_low ); /* second bit is incrementing */
+	SSVAL(&hnd->data3, 0 , pol_hnd_high); /* second bit is incrementing */
+	SSVAL(&hnd->data4, 0 , (pol_hnd_high>>16)); /* second bit is incrementing */
+	SIVAL(hnd->data5, 0, time(NULL)); /* something random */
+	SIVAL(hnd->data5, 4, sys_getpid()); /* something more random */
 }
 
 /****************************************************************************
@@ -116,14 +119,14 @@ BOOL open_lsa_policy_hnd(POLICY_HND *hnd)
 	p->pnum = i;
 
 	create_pol_hnd(hnd);
-	memcpy(&p->pol_hnd, hnd, sizeof(*hnd));
+	p->pol_hnd = *hnd;
 
 	bitmap_set(bmap, i);
 
 	DLIST_ADD(Policy, p);
 	
 	DEBUG(4,("Opened policy hnd[%x] ", i));
-	dump_data(4, (char *)hnd->data, sizeof(hnd->data));
+	dump_data(4, (char *)hnd, sizeof(hnd));
 
 	return True;
 }
@@ -138,13 +141,13 @@ static struct policy *find_lsa_policy(POLICY_HND *hnd)
 	for (p=Policy;p;p=p->next) {
 		if (memcmp(&p->pol_hnd, hnd, sizeof(*hnd)) == 0) {
 			DEBUG(4,("Found policy hnd[%x] ", p->pnum));
-			dump_data(4, (char *)hnd->data, sizeof(hnd->data));
+			dump_data(4, (char *)hnd, sizeof(hnd));
 			return p;
 		}
 	}
 
 	DEBUG(4,("Policy not found: "));
-	dump_data(4, (char *)hnd->data, sizeof(hnd->data));
+	dump_data(4, (char *)hnd, sizeof(hnd));
 
 	return NULL;
 }

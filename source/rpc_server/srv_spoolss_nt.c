@@ -83,8 +83,8 @@ static ubi_dlList counter_list;
 static struct cli_state cli;
 static uint32 smb_connections=0;
 
-#define OPEN_HANDLE(pnum)    ((pnum!=NULL) && (pnum->open!=False) && (IVAL(pnum->printer_hnd.data,16)==(uint32)sys_getpid()))
-#define OUR_HANDLE(pnum) ((pnum==NULL)?"NULL":(IVAL(pnum->data,16)==sys_getpid()?"OURS":"OTHER"))
+#define OPEN_HANDLE(pnum)    ((pnum!=NULL) && (pnum->open!=False) && (IVAL(pnum->printer_hnd.data5,4)==(uint32)sys_getpid()))
+#define OUR_HANDLE(pnum) ((pnum==NULL)?"NULL":(IVAL(pnum->data5,4)==(uint32)sys_getpid()?"OURS":"OTHER"))
 
 /* translate between internal status numbers and NT status numbers */
 static int nt_printj_status(int v)
@@ -218,11 +218,14 @@ static void create_printer_hnd(POLICY_HND *hnd)
 	prt_hnd_low++;
 	if (prt_hnd_low == 0) prt_hnd_high++;
 
-	SIVAL(hnd->data, 0 , 0x0);          /* first bit must be null */
-	SIVAL(hnd->data, 4 , prt_hnd_low ); /* second bit is incrementing */
-	SIVAL(hnd->data, 8 , prt_hnd_high); /* second bit is incrementing */
-	SIVAL(hnd->data, 12, time(NULL));   /* something random */
-	SIVAL(hnd->data, 16, sys_getpid());     /* something more random */
+	ZERO_STRUCTP(hnd);
+
+    SIVAL(&hnd->data1, 0 , 0x0);  /* first bit must be null */
+    SIVAL(&hnd->data2, 0 , prt_hnd_low ); /* second bit is incrementing */
+    SSVAL(&hnd->data3, 0 , prt_hnd_high); /* second bit is incrementing */
+    SSVAL(&hnd->data4, 0 , (prt_hnd_high>>16)); /* second bit is incrementing */
+    SIVAL(hnd->data5, 0, time(NULL)); /* something random */
+    SIVAL(hnd->data5, 4, sys_getpid()); /* something more random */
 }
 
 /****************************************************************************
