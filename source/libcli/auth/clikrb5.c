@@ -150,8 +150,8 @@
 }
 #endif
 
-void get_auth_data_from_tkt(TALLOC_CTX *mem_ctx, 
-			     DATA_BLOB *auth_data, krb5_ticket *tkt)
+ void get_auth_data_from_tkt(TALLOC_CTX *mem_ctx, 
+ 	 		    DATA_BLOB *auth_data, krb5_ticket *tkt)
 {
 #if defined(HAVE_KRB5_TKT_ENC_PART2)
 	if (tkt->enc_part2)
