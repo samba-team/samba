@@ -35,6 +35,21 @@
 
 #undef strcpy
 
+PyObject *ntstatus_exception;
+
+/* Set up return of a dcerpc.NTSTATUS exception */
+
+void set_ntstatus_exception(int status)
+{
+	PyObject *obj = PyTuple_New(2);
+
+	PyTuple_SetItem(obj, 0, PyInt_FromLong(status));
+	PyTuple_SetItem(obj, 1, 
+		PyString_FromString(nt_errstr(NT_STATUS(status))));
+
+	PyErr_SetObject(ntstatus_exception, obj);
+}
+
 %}
 
 %include "samba.i"
@@ -43,6 +58,7 @@
 /* setup_logging("python", DEBUG_STDOUT);	*/
 	lp_load(dyn_CONFIGFILE, True, False, False);
 	load_interfaces();
+	ntstatus_exception = PyErr_NewException("dcerpc.NTSTATUS", NULL, NULL);
 %}
 
 %typemap(in, numinputs=0) struct dcerpc_pipe **OUT (struct dcerpc_pipe *temp) {
@@ -50,10 +66,12 @@
 }
 
 %typemap(argout) struct dcerpc_pipe ** {
-        PyObject *o = PyTuple_New(2);
-        PyTuple_SetItem(o, 0, resultobj);
-        PyTuple_SetItem(o, 1, SWIG_NewPointerObj(*$1, SWIGTYPE_p_dcerpc_pipe, 0));
-        resultobj = o;
+	long status = PyLong_AsLong(resultobj);
+	if (status != 0) {
+		set_ntstatus_exception(status);
+		return NULL;
+	}
+        resultobj = SWIG_NewPointerObj(*$1, SWIGTYPE_p_dcerpc_pipe, 0);
 }
 
 %types(struct dcerpc_pipe *);
