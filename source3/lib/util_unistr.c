@@ -199,8 +199,34 @@ return number of unicode chars copied, excluding the null character.
 only handles ascii strings
 Unicode strings created are in little-endian format.
 ********************************************************************/
+int str_to_unistr16(uint16 *dst, const char *src)
+{
+	size_t len = 0;
 
-int struni2(char *dst, const char *src)
+	if (dst == NULL)
+		return 0;
+
+	if (src != NULL)
+	{
+		for (; *src && len < MAXUNI-2; len++, dst++, src++)
+		{
+			*dst = *src;
+		}
+	}
+
+	*dst = 0;
+
+	return len;
+}
+
+/*******************************************************************
+create a null-terminated unicode string from a null-terminated ascii string.
+return number of unicode chars copied, excluding the null character.
+only handles ascii strings
+Unicode strings created are in little-endian format.
+********************************************************************/
+
+int str_to_unistr8(char *dst, const char *src)
 {
 	size_t len = 0;
 

@@ -572,7 +572,8 @@ char *unistr2_to_str(UNISTR2 *str);
 uint32 buffer2_to_uint32(BUFFER2 *str);
 char *buffer2_to_str(BUFFER2 *str);
 char *buffer2_to_multistr(BUFFER2 *str);
-int struni2(char *dst, const char *src);
+int str_to_unistr16(uint16 *dst, const char *src);
+int str_to_unistr8(char *dst, const char *src);
 char *unistr(char *buf);
 int unistrcpy(char *dst, char *src);
 
@@ -580,6 +581,12 @@ int unistrcpy(char *dst, char *src);
 
 int cli_set_port(struct cli_state *cli, int port);
 char *cli_errstr(struct cli_state *cli);
+BOOL cli_send_trans(struct cli_state *cli, int trans, 
+                           char *name, int pipe_name_len, 
+                           int fid, int flags,
+                           uint16 *setup, int lsetup, int msetup,
+                           char *param, int lparam, int mparam,
+                           char *data, int ldata, int mdata);
 BOOL cli_api_pipe(struct cli_state *cli, char *pipe_name, int pipe_name_len,
                   uint16 *setup, uint32 setup_count, uint32 max_setup_count,
                   char *params, uint32 param_count, uint32 max_param_count,

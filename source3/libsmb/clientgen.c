@@ -226,7 +226,7 @@ static char *fix_char_ptr(unsigned int datap, unsigned int converter,
 /****************************************************************************
   send a SMB trans or trans2 request
   ****************************************************************************/
-static BOOL cli_send_trans(struct cli_state *cli, int trans, 
+BOOL cli_send_trans(struct cli_state *cli, int trans, 
                            char *name, int pipe_name_len, 
                            int fid, int flags,
                            uint16 *setup, int lsetup, int msetup,
