@@ -742,18 +742,18 @@ case "$host_os" in
 		*solaris*) AC_DEFINE(SUNOS5)
 			BLDSHARED="true"
 			LDSHFLAGS="-Wl,-soname,\$@ -shared"
-			PICFLAG="-KPIC -xO4"
+			PICFLAG="-KPIC"
 			PICSUFFIX="po.o"
 				;;
 		*sunos*) AC_DEFINE(SUNOS4)
 			BLDSHARED="true"
 			LDSHFLAGS="-Wl,-h,\$@ -G"
-			PICFLAG="-KPIC -O2"  # Is this correct for SunOS?
+			PICFLAG="-KPIC"  # Is this correct for SunOS?
 		;;
 		*bsd*) LDSHFLAGS="-shared -Bshareable"
 			BLDSHARED="true"
 			LDSHFLAGS="-Wl,-soname,\@ -shared"
-			PICFLAG="-fPIC -O2"
+			PICFLAG="-fPIC"
 		;;
 		*irix*) AC_DEFINE(IRIX)
 			case "$host_os" in
