@@ -53,6 +53,8 @@
 #endif
 #include <roken.h>
 
+#include <des.h>
+
 #include <krb5.h>
 #include <kadm5/admin.h>
 #include <kadm5/kadm5_err.h>

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -56,6 +56,7 @@
 #endif
 #include <roken.h>
 
+#include <des.h>
 #include <krb5.h>
 #include <hdb.h>
 #include <hdb-private.h>
