@@ -78,6 +78,9 @@ static int count_fn( TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *u
 	struct connections_data crec;
 	struct count_stat *cs = (struct count_stat *)udp;
  
+	if (dbuf.dsize != sizeof(crec))
+		return 0;
+
 	memcpy(&crec, dbuf.dptr, sizeof(crec));
  
     if (crec.cnum == -1)
