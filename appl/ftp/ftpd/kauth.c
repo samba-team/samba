@@ -36,34 +36,9 @@
  * SUCH DAMAGE.
  */
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "ftpd_locl.h"
 
 RCSID("$Id$");
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-#include <time.h>
-#ifdef HAVE_SYS_TIME_H 
-#include <sys/time.h>
-#endif
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
-
-#include <roken.h>
-
-#include <des.h>
-#include <krb.h>
-#include <kafs.h>
-
-#include "extern.h"
-#include "krb4.h"
-#include "auth.h"
-#include "base64.h"
 
 static KTEXT_ST cip;
 static unsigned int lifetime;
@@ -334,7 +309,7 @@ klist(void)
     if (header && err == EOF) {
 	lreply(200, "No tickets in file.");
     }
-    reply(200, "");
+    reply(200, " ");
 }
 
 /*
