@@ -3735,9 +3735,11 @@ dit(bf(nt acl support (G)))
 
 This boolean parameter controls whether url(bf(smbd))(smbd.8.html)
 will attempt to map UNIX permissions into Windows NT access control lists.
-This is currently an experimental option and is off by default.
 
   bf(Default:)
+tt(	nt acl support = yes)
+
+  bf(Example:)
 tt(	nt acl support = no)
 
 label(ntpipesupport)

@@ -627,7 +627,8 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
     enum remote_arch_types ra_type = get_remote_arch();
     char *p = smb_buf(inbuf);    
 
-    global_client_caps = IVAL(inbuf,smb_vwv11);
+    if(global_client_caps == 0)
+      global_client_caps = IVAL(inbuf,smb_vwv11);
 
     /* client_caps is used as final determination if client is NT or Win95. 
        This is needed to return the correct error codes in some

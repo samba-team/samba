@@ -916,7 +916,7 @@ static void init_globals(void)
   Globals.bOleLockingCompat = True;
   Globals.bNTSmbSupport = True; /* Do NT SMB's by default. */
   Globals.bNTPipeSupport = True; /* Do NT pipes by default. */
-  Globals.bNTAclSupport = False; /* Don't use NT ACLs by default. */
+  Globals.bNTAclSupport = True; /* Use NT ACLs by default. */
   Globals.bStatCache = True; /* use stat cache by default */
   Globals.bRestrictAnonymous = False;
   Globals.map_to_guest = 0; /* By Default, "Never" */

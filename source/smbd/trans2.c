@@ -31,6 +31,7 @@ extern int Client;
 extern int smb_read_error;
 extern fstring local_machine;
 extern int global_oplock_break;
+extern uint32 global_client_caps;
 
 /****************************************************************************
   Send the required number of replies back.
@@ -1083,7 +1084,6 @@ static int call_trans2qfsinfo(connection_struct *conn,
   char *vname = volume_label(SNUM(conn));
   int snum = SNUM(conn);
   char *fstype = lp_fstype(SNUM(conn));
-  extern uint32 global_client_caps;
 
   DEBUG(3,("call_trans2qfsinfo: level = %d\n", info_level));
 
@@ -1444,7 +1444,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
        * drives. Don't ask how I discovered this unless
        * you like hearing about me suffering.... :-). JRA.
        */
-      if(strequal(".", fname) && (get_remote_arch() == RA_WINNT)) {
+      if(strequal(".", fname) && (global_client_caps & CAP_UNICODE)) {
         l = l*2;
         SSVAL(outbuf,smb_flg2,SVAL(outbuf,smb_flg2)|FLAGS2_UNICODE_STRINGS);
         PutUniCode(pdata + 4, "\\");
