@@ -543,6 +543,7 @@ Modified Parameters (changes in behavior):
   * restrict anonymous (integer value)
   * security (new 'ads' value)
   * strict locking (enabled by default)
+  * unix extensions (enabled by default)
   * winbind cache time (increased to 5 minutes)
   * winbind uid (deprecated in favor of 'idmap uid')
   * winbind gid (deprecated in favor of 'idmap gid')
