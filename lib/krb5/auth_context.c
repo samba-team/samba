@@ -78,7 +78,7 @@ krb5_auth_con_free(krb5_context context,
 	free(auth_context->remote_address);
     }
     if(auth_context->keyblock)
-	krb5_free_keylock(context, auth_context->keyblock);
+	krb5_free_keyblock(context, auth_context->keyblock);
     free_EncryptionKey(&auth_context->remote_subkey);
     free_EncryptionKey(&auth_context->local_subkey);
     free (auth_context);
@@ -342,6 +342,16 @@ krb5_free_authenticator(krb5_context context,
 }
 
 
+krb5_error_code
+krb5_auth_con_setuserkey(krb5_context context,
+			 krb5_auth_context auth_context,
+			 krb5_keyblock *keyblock)
+{
+    if(auth_context->keyblock)
+	krb5_free_keyblock(context, auth_context->keyblock);
+    return krb5_copy_keyblock(context, keyblock, &auth_context->keyblock);
+}
+
 #if 0 /* not implemented */
 
 krb5_error_code
@@ -369,11 +379,4 @@ krb5_auth_con_setrcache(krb5_context context,
     abort ();
 }
 
-krb5_error_code
-krb5_auth_con_setuserkey(krb5_context context,
-			 krb5_auth_context auth_context,
-			 krb5_keyblock *keyblock)
-{
-    abort ();
-}
 #endif /* not implemented */
