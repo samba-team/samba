@@ -143,6 +143,7 @@ typedef struct logon_hours_info
 /* SAM_USER_INFO_23 */
 typedef struct sam_user_info_23
 {
+	/* TIMES MAY NOT IN RIGHT ORDER!!!! */
 	NTTIME logon_time;            /* logon time */
 	NTTIME logoff_time;           /* logoff time */
 	NTTIME kickoff_time;          /* kickoff time */
