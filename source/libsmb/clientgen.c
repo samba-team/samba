@@ -52,7 +52,8 @@ static BOOL cli_receive_smb(struct cli_state *cli)
 	
 	if (ret) {
 		/* it might be an oplock break request */
-		if (CVAL(cli->inbuf,smb_com) == SMBlockingX &&
+		if (!(CVAL(cli->inbuf, smb_flg) & FLAG_REPLY) &&
+		    CVAL(cli->inbuf,smb_com) == SMBlockingX &&
 		    SVAL(cli->inbuf,smb_vwv6) == 0 &&
 		    SVAL(cli->inbuf,smb_vwv7) == 0) {
 			if (cli->use_oplocks) cli_process_oplock(cli);
