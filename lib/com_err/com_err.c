@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -41,7 +41,7 @@ RCSID("$Id$");
 #include <roken.h>
 #include "com_err.h"
 
-struct et_list *_et_list;
+struct et_list *_et_list = NULL;
 
 
 const char *
