@@ -109,12 +109,8 @@ static BOOL ads_find_dc(ADS_STRUCT *ads)
 
 	/* realm */
 	c_realm = ads->server.realm;
-	if (!c_realm || !*c_realm) {
-		c_realm = lp_realm();
-	}
-	if ( c_realm )
+	if (c_realm && *c_realm) 
 		got_realm = True;
-
 	   
 again:
 	/* we need to try once with the realm name and fallback to the 
@@ -122,10 +118,10 @@ again:
 	   
 	if ( !got_realm	&& !lp_disable_netbios() ) {
 		c_realm = ads->server.workgroup;
-		if (!c_realm || !*c_realm) 
-			c_realm = lp_workgroup();
-		if (!c_realm)
+		if (!c_realm || !*c_realm) {
+			DEBUG(0,("ads_find_dc: no realm or workgroup!  Was the structure initialized?\n"));
 			return False;
+		}
 	}
 	
 	pstrcpy( realm, c_realm );
