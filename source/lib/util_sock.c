@@ -794,10 +794,15 @@ void client_setfd(int fd)
 
 char *client_name(void)
 {
-	return get_socket_name(client_fd,False);
+	return get_peer_name(client_fd,False);
 }
 
 char *client_addr(void)
+{
+	return get_peer_addr(client_fd);
+}
+
+char *client_socket_addr(void)
 {
 	return get_socket_addr(client_fd);
 }
@@ -866,7 +871,7 @@ static BOOL matchname(char *remotehost,struct in_addr  addr)
  Return the DNS name of the remote end of a socket.
 ******************************************************************/
 
-char *get_socket_name(int fd, BOOL force_lookup)
+char *get_peer_name(int fd, BOOL force_lookup)
 {
 	static pstring name_buf;
 	static fstring addr_buf;
@@ -879,10 +884,10 @@ char *get_socket_name(int fd, BOOL force_lookup)
 	   with dns. To avoid the delay we avoid the lookup if
 	   possible */
 	if (!lp_hostname_lookups() && (force_lookup == False)) {
-		return get_socket_addr(fd);
+		return get_peer_addr(fd);
 	}
 	
-	p = get_socket_addr(fd);
+	p = get_peer_addr(fd);
 
 	/* it might be the same as the last one - save some DNS work */
 	if (strcmp(p, addr_buf) == 0) return name_buf;
@@ -918,7 +923,7 @@ char *get_socket_name(int fd, BOOL force_lookup)
  Return the IP addr of the remote end of a socket as a string.
  ******************************************************************/
 
-char *get_socket_addr(int fd)
+char *get_peer_addr(int fd)
 {
 	struct sockaddr sa;
 	struct sockaddr_in *sockin = (struct sockaddr_in *) (&sa);
@@ -932,6 +937,29 @@ char *get_socket_addr(int fd)
 	}
 	
 	if (getpeername(fd, &sa, &length) < 0) {
+		DEBUG(0,("getpeername failed. Error was %s\n", strerror(errno) ));
+		return addr_buf;
+	}
+	
+	fstrcpy(addr_buf,(char *)inet_ntoa(sockin->sin_addr));
+	
+	return addr_buf;
+}
+
+char *get_socket_addr(int fd)
+{
+	struct sockaddr sa;
+	struct sockaddr_in *sockin = (struct sockaddr_in *) (&sa);
+	int     length = sizeof(sa);
+	static fstring addr_buf;
+
+	fstrcpy(addr_buf,"0.0.0.0");
+
+	if (fd == -1) {
+		return addr_buf;
+	}
+	
+	if (getsockname(fd, &sa, &length) < 0) {
 		DEBUG(0,("getpeername failed. Error was %s\n", strerror(errno) ));
 		return addr_buf;
 	}

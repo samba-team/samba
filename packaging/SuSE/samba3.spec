@@ -14,6 +14,7 @@
 # usedforbuild    aaa_base acl attr bash bind9-utils bison coreutils cpio cpp cvs cyrus-sasl2 db devs diffutils e2fsprogs file filesystem fillup findutils flex gawk gdbm-devel glibc glibc-devel glibc-locale gpm grep groff gzip info insserv kbd less libacl libattr libgcc libstdc++ libxcrypt m4 make man mktemp modutils ncurses ncurses-devel net-tools netcfg pam pam-devel pam-modules patch permissions ps rcs readline sed sendmail shadow strace syslogd sysvinit tar texinfo timezone unzip util-linux vim zlib zlib-devel XFree86-libs autoconf automake binutils bzip2 cracklib cups-devel cups-libs dialog docbook-utils docbook-xsl-stylesheets docbook_4 ed freetype2 gcc gdbm gettext ghostscript-fonts-std ghostscript-library ghostscript-x11 glib heimdal heimdal-devel heimdal-lib iso_ent libacl-devel libattr-devel libgimpprint libpng libtiff libtool libxml2 libxml2-devel libxslt mysql-devel mysql-shared openldap2 openldap2-client openldap2-devel openssl openssl-devel perl popt popt-devel python python-devel readline-devel rpm te_ams te_etex te_latex te_pdf tetex xmlcharent
 
 Name:         samba3
+Vendor:       Samba Team
 License:      GPL
 Group:        Productivity/Networking/Samba
 Url:          http://www.samba.org

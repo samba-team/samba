@@ -411,7 +411,7 @@ enum winbindd_result winbindd_gid_to_sid(struct winbindd_cli_state *state)
 		if ( !winbindd_lookup_sid_by_name(domain, grp->gr_name, &sid, &type) )
 			return WINBINDD_ERROR;
 		
-		if ( type!=SID_NAME_DOM_GRP || type!=SID_NAME_ALIAS )
+		if ( type!=SID_NAME_DOM_GRP && type!=SID_NAME_ALIAS )
 			return WINBINDD_ERROR;
 		
 		/* don't fail if we can't store it */
