@@ -549,11 +549,11 @@ static BOOL open_sockets(BOOL isdaemon, int port)
 static BOOL init_structs(void)
 {
   extern fstring local_machine;
-  char *p, *ptr;
+  char *p, **ptr;
   int namecount;
   int n;
   int nodup;
-  pstring nbname;
+  char *nbname;
 
   if (! *global_myname)
   {
@@ -569,7 +569,7 @@ static BOOL init_structs(void)
    */
   /* Work out the max number of netbios aliases that we have */
   ptr = lp_netbios_aliases();
-  for( namecount=0; next_token(&ptr,nbname,NULL, sizeof(nbname)); namecount++ )
+  for( namecount=0; *ptr; namecount++,ptr++ )
     ;
   if ( *global_myname )
     namecount++;
@@ -588,8 +588,14 @@ static BOOL init_structs(void)
     my_netbios_names[namecount++] = global_myname;
   
   ptr = lp_netbios_aliases();
-  while ( next_token( &ptr, nbname, NULL, sizeof(nbname) ) )
+  while ( *ptr )
   {
+    nbname = strdup(*ptr);
+    if (nbname == NULL)
+    {
+      DEBUG(0,("init_structs: malloc fail when allocating names.\n"));
+      return False;
+    }
     strupper( nbname );
     /* Look for duplicates */
     nodup=1;
@@ -599,16 +605,12 @@ static BOOL init_structs(void)
         nodup=0;
     }
     if (nodup)
-      my_netbios_names[namecount++] = strdup( nbname );
+      my_netbios_names[namecount++] = nbname;
+    else
+      free(nbname);
+
+    ptr++;
   }
-  
-  /* Check the strdups succeeded. */
-  for( n = 0; n < namecount; n++ )
-    if( NULL == my_netbios_names[n] )
-    {
-      DEBUG(0,("init_structs: malloc fail when allocating names.\n"));
-      return False;
-    }
   
   /* Terminate name list */
   my_netbios_names[namecount++] = NULL;
