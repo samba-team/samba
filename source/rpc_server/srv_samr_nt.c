@@ -122,7 +122,7 @@ static BOOL get_sampwd_entries(SAM_USER_INFO_21 *pw_buf, int start_idx,
     return (*num_entries) > 0;
 }
 
-static BOOL jf_get_sampwd_entries(SAM_USER_INFO_21 *pw_buf, int start_idx,
+static uint32 jf_get_sampwd_entries(SAM_USER_INFO_21 *pw_buf, int start_idx,
                                 int *total_entries, uint32 *num_entries,
                                 int max_num_entries, uint16 acb_mask)
 {
@@ -133,12 +133,12 @@ static BOOL jf_get_sampwd_entries(SAM_USER_INFO_21 *pw_buf, int start_idx,
 	*total_entries = 0;
 
 	if (pw_buf == NULL)
-		return False;
+		return NT_STATUS_NO_MEMORY;
 
 	vp = startsmbpwent(False);
 	if (!vp) {
 		DEBUG(0, ("get_sampwd_entries: Unable to open SMB password database.\n"));
-		return False;
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	while (((pwd = getsam21pwent(vp)) != NULL) && (*num_entries) < max_num_entries) {
@@ -183,7 +183,11 @@ static BOOL jf_get_sampwd_entries(SAM_USER_INFO_21 *pw_buf, int start_idx,
 	endsmbpwent(vp);
 
 	*total_entries = *num_entries;
-	return True;
+
+	if (pwd!=NULL)
+		return STATUS_MORE_ENTRIES;
+	else
+		return NT_STATUS_NO_PROBLEMO;
 }
 
 /*******************************************************************
@@ -860,7 +864,7 @@ static BOOL get_group_alias_entries(DOMAIN_GRP *d_grp, DOM_SID *sid, uint32 star
  Get the group entries - similar to get_sampwd_entries().
  ********************************************************************/
 
-static BOOL get_group_domain_entries(DOMAIN_GRP *d_grp, DOM_SID *sid, uint32 start_idx,
+static uint32 get_group_domain_entries(DOMAIN_GRP *d_grp, DOM_SID *sid, uint32 start_idx,
 				     uint32 *p_num_entries, uint32 max_entries)
 {
 	fstring sid_str;
@@ -888,7 +892,7 @@ static BOOL get_group_domain_entries(DOMAIN_GRP *d_grp, DOM_SID *sid, uint32 sta
 
 	*p_num_entries = num_entries;
 
-	return True;
+	return NT_STATUS_NO_PROBLEMO;
 }
 
 /*******************************************************************
@@ -967,7 +971,7 @@ uint32 _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u, SAMR_R_
     int total_entries = 0;
     uint32 data_size = 0;
 	DOM_SID sid;
-	BOOL ret;
+	uint32 ret;
 	SAM_DISPINFO_CTR *ctr;
 
 	DEBUG(5, ("samr_reply_query_dispinfo: %d\n", __LINE__));
@@ -1007,7 +1011,7 @@ uint32 _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u, SAMR_R_
 						MAX_SAM_ENTRIES, acb_mask);
 #endif
 		unbecome_root();
-		if (!ret) {
+		if (ret!=STATUS_MORE_ENTRIES && ret!=NT_STATUS_NO_PROBLEMO) {
 			DEBUG(5, ("get_sampwd_entries: failed\n"));
 			return NT_STATUS_ACCESS_DENIED;
 		}
@@ -1015,7 +1019,7 @@ uint32 _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u, SAMR_R_
 	case 0x3:
 	case 0x5:
 		ret = get_group_domain_entries(grps, &sid, q_u->start_idx, &num_entries, MAX_SAM_ENTRIES);
-		if (!ret)
+		if (ret!=NT_STATUS_NO_PROBLEMO)
 			return NT_STATUS_ACCESS_DENIED;
 		break;
 	default:
@@ -1023,6 +1027,7 @@ uint32 _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u, SAMR_R_
 		return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
+	r_u->status = ret;
 
 	if (num_entries > q_u->max_entries)
 		num_entries = q_u->max_entries;
