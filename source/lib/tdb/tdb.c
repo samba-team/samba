@@ -2,7 +2,6 @@
    Unix SMB/CIFS implementation.
    Samba database functions
    Copyright (C) Andrew Tridgell              1999-2000
-   Copyright (C) Luke Kenneth Casson Leighton      2000
    Copyright (C) Paul `Rusty' Russell		   2000
    Copyright (C) Jeremy Allison			   2000-2003
    
@@ -1293,7 +1292,7 @@ static int tdb_next_lock(TDB_CONTEXT *tdb, struct tdb_traverse_lock *tlock,
    if fn is NULL then it is not called
    a non-zero return value from fn() indicates that the traversal should stop
   */
-int tdb_traverse(TDB_CONTEXT *tdb, tdb_traverse_func fn, void *state)
+int tdb_traverse(TDB_CONTEXT *tdb, tdb_traverse_func fn)
 {
 	TDB_DATA key, dbuf;
 	struct list_struct rec;
@@ -1331,7 +1330,7 @@ int tdb_traverse(TDB_CONTEXT *tdb, tdb_traverse_func fn, void *state)
 			ret = -1;
 			goto out;
 		}
-		if (fn && fn(tdb, key, dbuf, state)) {
+		if (fn && fn(tdb, key, dbuf)) {
 			/* They want us to terminate traversal */
 			ret = count;
 			if (unlock_record(tdb, tl.off) != 0) {
@@ -1480,8 +1479,6 @@ int tdb_store(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, int flag)
 		/* first try in-place update, on modify or replace. */
 		if (tdb_update_hash(tdb, key, hash, dbuf) == 0)
 			goto out;
-		if (flag == TDB_MODIFY && tdb->ecode == TDB_ERR_NOEXIST)
-			goto fail;
 	}
 	/* reset the error code potentially set by the tdb_update() */
 	tdb->ecode = TDB_SUCCESS;
@@ -1504,9 +1501,7 @@ int tdb_store(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, int flag)
 	if (dbuf.dsize)
 		memcpy(p+key.dsize, dbuf.dptr, dbuf.dsize);
 
-	/* now we're into insert / modify / replace of a record which
-	 * we know could not be optimised by an in-place store (for
-	 * various reasons).  */
+	/* we have to allocate some space */
 	if (!(rec_ptr = tdb_allocate(tdb, key.dsize + dbuf.dsize, &rec)))
 		goto fail;
 
