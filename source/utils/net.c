@@ -241,7 +241,7 @@ BOOL net_find_dc(struct in_addr *server_ip, fstring server_name, const char *dom
 		if (!lookup_dc_name(global_myname(), domain_name, server_ip, dc_name))
 			return False;
 			
-		safe_strcpy(server_name, dc_name, FSTRING_LEN);
+		fstrcpy(server_name, dc_name);
 		return True;
 	} else
 		return False;

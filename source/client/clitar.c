@@ -202,7 +202,7 @@ static void writetarheader(int f, const char *aname, SMB_BIG_UINT size, time_t m
   /* write out a "standard" tar format header */
 
   hb.dbuf.name[NAMSIZ-1]='\0';
-  safe_strcpy(hb.dbuf.mode, amode, strlen(amode));
+  safe_strcpy(hb.dbuf.mode, amode, sizeof(hb.dbuf.mode)-1);
   oct_it((SMB_BIG_UINT)0, 8, hb.dbuf.uid);
   oct_it((SMB_BIG_UINT)0, 8, hb.dbuf.gid);
   oct_it((SMB_BIG_UINT) size, 13, hb.dbuf.size);
@@ -796,11 +796,11 @@ static void do_tar(file_info *finfo)
 
     DEBUG(5, ("Excl: strlen(cur_dir) = %d\n", (int)strlen(cur_dir)));
 
-    safe_strcpy(exclaim, cur_dir, sizeof(pstring));
+    pstrcpy(exclaim, cur_dir);
     *(exclaim+strlen(exclaim)-1)='\0';
 
-    safe_strcat(exclaim, "\\", sizeof(pstring));
-    safe_strcat(exclaim, finfo->name, sizeof(exclaim));
+    pstrcat(exclaim, "\\");
+    pstrcat(exclaim, finfo->name);
 
     DEBUG(5, ("...tar_re_search: %d\n", tar_re_search));
 
@@ -820,12 +820,12 @@ static void do_tar(file_info *finfo)
       pstring saved_curdir;
       pstring mtar_mask;
 
-      safe_strcpy(saved_curdir, cur_dir, sizeof(saved_curdir));
+      pstrcpy(saved_curdir, cur_dir);
 
       DEBUG(5, ("Sizeof(cur_dir)=%d, strlen(cur_dir)=%d, strlen(finfo->name)=%d\nname=%s,cur_dir=%s\n", (int)sizeof(cur_dir), (int)strlen(cur_dir), (int)strlen(finfo->name), finfo->name, cur_dir));
 
-      safe_strcat(cur_dir,finfo->name, sizeof(cur_dir));
-      safe_strcat(cur_dir,"\\", sizeof(cur_dir));
+      pstrcat(cur_dir,finfo->name);
+      pstrcat(cur_dir,"\\");
 
       DEBUG(5, ("Writing a dir, Name = %s\n", cur_dir));
 
@@ -836,16 +836,16 @@ static void do_tar(file_info *finfo)
           DEBUG(0,("                directory %s\n", cur_dir));
       }
       ntarf++;  /* Make sure we have a file on there */
-      safe_strcpy(mtar_mask,cur_dir, sizeof(pstring));
-      safe_strcat(mtar_mask,"*", sizeof(pstring));
+      pstrcpy(mtar_mask,cur_dir);
+      pstrcat(mtar_mask,"*");
       DEBUG(5, ("Doing list with mtar_mask: %s\n", mtar_mask));
       do_list(mtar_mask, attribute, do_tar, False, True);
-      safe_strcpy(cur_dir,saved_curdir, sizeof(pstring));
+      pstrcpy(cur_dir,saved_curdir);
     }
   else
     {
-      safe_strcpy(rname,cur_dir, sizeof(pstring));
-      safe_strcat(rname,finfo->name, sizeof(pstring));
+      pstrcpy(rname,cur_dir);
+      pstrcat(rname,finfo->name);
       do_atar(rname,finfo->name,finfo);
     }
 }
@@ -1362,8 +1362,8 @@ int cmd_setmode(void)
       return 1;
     }
 
-  safe_strcpy(fname, cur_dir, sizeof(pstring));
-  safe_strcat(fname, buf, sizeof(pstring));
+  pstrcpy(fname, cur_dir);
+  pstrcat(fname, buf);
 
   while (next_token_nr(NULL,buf,NULL,sizeof(buf))) {
     q=buf;
@@ -1459,32 +1459,32 @@ int process_tar(void)
 	if (strrchr_m(cliplist[i], '\\')) {
 	  pstring saved_dir;
 	  
-	  safe_strcpy(saved_dir, cur_dir, sizeof(pstring));
+	  pstrcpy(saved_dir, cur_dir);
 	  
 	  if (*cliplist[i]=='\\') {
-	    safe_strcpy(tarmac, cliplist[i], sizeof(pstring));
+	    pstrcpy(tarmac, cliplist[i]);
 	  } else {
-	    safe_strcpy(tarmac, cur_dir, sizeof(pstring));
-	    safe_strcat(tarmac, cliplist[i], sizeof(pstring));
+	    pstrcpy(tarmac, cur_dir);
+	    pstrcat(tarmac, cliplist[i]);
 	  }
-	  safe_strcpy(cur_dir, tarmac, sizeof(pstring));
+	  pstrcpy(cur_dir, tarmac);
 	  *(strrchr_m(cur_dir, '\\')+1)='\0';
 
 	  DEBUG(5, ("process_tar, do_list with tarmac: %s\n", tarmac));
 	  do_list(tarmac,attribute,do_tar, False, True);
-	  safe_strcpy(cur_dir,saved_dir, sizeof(pstring));
+	  pstrcpy(cur_dir,saved_dir);
 	} else {
-	  safe_strcpy(tarmac, cur_dir, sizeof(pstring));
-	  safe_strcat(tarmac, cliplist[i], sizeof(pstring));
+	  pstrcpy(tarmac, cur_dir);
+	  pstrcat(tarmac, cliplist[i]);
 	  DEBUG(5, ("process_tar, do_list with tarmac: %s\n", tarmac));
 	  do_list(tarmac,attribute,do_tar, False, True);
 	}
       }
     } else {
       pstring mask;
-      safe_strcpy(mask,cur_dir, sizeof(pstring));
+      pstrcpy(mask,cur_dir);
       DEBUG(5, ("process_tar, do_list with mask: %s\n", mask));
-      safe_strcat(mask,"\\*", sizeof(pstring));
+      pstrcat(mask,"\\*");
       do_list(mask,attribute,do_tar,False, True);
     }
     

@@ -916,7 +916,7 @@ You can string acls together with spaces, commas or newlines\n\
 	if (filename[0] != '\\') {
 		pstring s;
 		s[0] = '\\';
-		safe_strcpy(&s[1], filename, sizeof(pstring)-1);
+		safe_strcpy(&s[1], filename, sizeof(pstring)-2);
 		pstrcpy(filename, s);
 	}
 

@@ -638,7 +638,7 @@ static int rap_user_add(int argc, const char **argv)
 	if (!(cli = net_make_ipc_connection(0)))
                 return -1;
 			
-	safe_strcpy(userinfo.user_name, argv[0], sizeof(userinfo.user_name));
+	safe_strcpy(userinfo.user_name, argv[0], sizeof(userinfo.user_name)-1);
 	if (opt_flags == -1) 
                 opt_flags = 0x21; 
 			
@@ -755,7 +755,7 @@ static int rap_group_add(int argc, const char **argv)
                 return -1;
 			
 	/* BB check for length 21 or smaller explicitly ? BB */
-	safe_strcpy(grinfo.group_name, argv[0], sizeof(grinfo.group_name));
+	safe_strcpy(grinfo.group_name, argv[0], sizeof(grinfo.group_name)-1);
 	grinfo.reserved1 = '\0';
 	grinfo.comment = smb_xstrdup(opt_comment);
 	

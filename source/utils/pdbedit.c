@@ -363,20 +363,21 @@ static int new_machine (struct pdb_context *in, const char *machine_in)
 {
 	SAM_ACCOUNT *sam_pwent=NULL;
 	fstring machinename;
+	fstring machineaccount;
 	struct passwd  *pwd = NULL;
-	char name[16];
 	
 	fstrcpy(machinename, machine_in); 
+	machinename[15]= '\0';
 
 	if (machinename[strlen (machinename) -1] == '$')
 		machinename[strlen (machinename) -1] = '\0';
 	
 	strlower_m(machinename);
 	
-	safe_strcpy (name, machinename, 16);
-	safe_strcat (name, "$", 16);
+	fstrcpy(machineaccount, machinename);
+	fstrcat(machineaccount, "$");
 
-	if ((pwd = getpwnam_alloc(name))) {
+	if ((pwd = getpwnam_alloc(machineaccount))) {
 		if (!NT_STATUS_IS_OK(pdb_init_sam_pw( &sam_pwent, pwd))) {
 			fprintf(stderr, "Could not init sam from pw\n");
 			passwd_free(&pwd);
@@ -392,14 +393,14 @@ static int new_machine (struct pdb_context *in, const char *machine_in)
 
 	pdb_set_plaintext_passwd (sam_pwent, machinename);
 
-	pdb_set_username (sam_pwent, name, PDB_CHANGED);
+	pdb_set_username (sam_pwent, machineaccount, PDB_CHANGED);
 	
 	pdb_set_acct_ctrl (sam_pwent, ACB_WSTRUST, PDB_CHANGED);
 	
 	pdb_set_group_sid_from_rid(sam_pwent, DOMAIN_GROUP_RID_COMPUTERS, PDB_CHANGED);
 	
 	if (NT_STATUS_IS_OK(in->pdb_add_sam_account (in, sam_pwent))) {
-		print_user_info (in, name, True, False);
+		print_user_info (in, machineaccount, True, False);
 	} else {
 		fprintf (stderr, "Unable to add machine! (does it already exist?)\n");
 		pdb_free_sam (&sam_pwent);
@@ -435,12 +436,13 @@ static int delete_user_entry (struct pdb_context *in, const char *username)
 
 static int delete_machine_entry (struct pdb_context *in, const char *machinename)
 {
-	char name[16];
+	fstring name;
 	SAM_ACCOUNT *samaccount = NULL;
 	
-	safe_strcpy (name, machinename, 16);
-	if (name[strlen(name)] != '$')
-		safe_strcat (name, "$", 16);
+	fstrcpy(name, machinename);
+	name[15] = '\0';
+	if (name[strlen(name)-1] != '$')
+		fstrcat (name, "$");
 
 	if (!NT_STATUS_IS_OK(pdb_init_sam (&samaccount))) {
 		return -1;

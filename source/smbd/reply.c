@@ -161,7 +161,7 @@ int reply_tcon(connection_struct *conn,
 	*service_buf = *password = *dev = 0;
 
 	p = smb_buf(inbuf)+1;
-	p += srvstr_pull_buf(inbuf, service_buf, p, sizeof(service), STR_TERMINATE) + 1;
+	p += srvstr_pull_buf(inbuf, service_buf, p, sizeof(service_buf), STR_TERMINATE) + 1;
 	pwlen = srvstr_pull_buf(inbuf, password, p, sizeof(password), STR_TERMINATE) + 1;
 	p += pwlen;
 	p += srvstr_pull_buf(inbuf, dev, p, sizeof(dev), STR_TERMINATE) + 1;
