@@ -231,12 +231,13 @@ static void become_domain_master_query_success(struct subnet_record *subrec,
   else
   {
     if( DEBUGLVL( 0 ) )
-      {
+    {
       dbgtext( "become_domain_master_query_success:\n" );
       dbgtext( "There is already a domain master browser at " );
       dbgtext( "IP %s for workgroup %s ", inet_ntoa(ip), nmbname->name );
       dbgtext( "registered on subnet %s.\n", subrec->subnet_name );
-      }
+    }
+    become_domain_master_stage1(subrec, nmbname->name);
   }
 }
 
