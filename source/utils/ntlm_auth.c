@@ -920,7 +920,7 @@ static void manage_gss_spnego_request(enum stdio_helper_mode stdio_helper_mode,
 
 			if (NT_STATUS_IS_OK(status)) {
 
-				domain = strchr(principal, '@');
+				domain = strchr_m(principal, '@');
 
 				if (domain == NULL) {
 					DEBUG(1, ("Did not get a valid principal "
@@ -1184,7 +1184,7 @@ static BOOL manage_client_krb5_init(SPNEGO_DATA spnego)
 		pstr_sprintf(user, "%s@%s", opt_username, opt_domain);
 
 		if ((retval = kerberos_kinit_password(user, opt_password, 
-						      0, NULL))) {
+						      0, NULL, NULL))) {
 			DEBUG(10, ("Requesting TGT failed: %s\n", error_message(retval)));
 			return False;
 		}

@@ -118,13 +118,13 @@ static int		smb_print(struct cli_state *, char *, FILE *);
   * Find the URI...
   */
 
-  if (strncmp(argv[0], "smb://", 6) == 0)
-    strncpy(uri, argv[0], sizeof(uri) - 1);
-  else if (getenv("DEVICE_URI") != NULL)
+  if (getenv("DEVICE_URI") != NULL)
     strncpy(uri, getenv("DEVICE_URI"), sizeof(uri) - 1);
+  else if (strncmp(argv[0], "smb://", 6) == 0)
+    strncpy(uri, argv[0], sizeof(uri) - 1);
   else
   {
-    fputs("ERROR: No device URI found in argv[0] or DEVICE_URI environment variable!\n", stderr);
+    fputs("ERROR: No device URI found in DEVICE_URI environment variable or argv[0] !\n", stderr);
     return (1);
   }
 

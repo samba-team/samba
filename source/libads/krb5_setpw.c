@@ -25,7 +25,9 @@
 
 #define DEFAULT_KPASSWD_PORT	464
 #define KRB5_KPASSWD_VERS_CHANGEPW		1
+#ifndef KRB5_KPASSWD_VERS_SETPW
 #define KRB5_KPASSWD_VERS_SETPW			2
+#endif
 #define KRB5_KPASSWD_VERS_SETPW_MS		0xff80
 #define KRB5_KPASSWD_ACCESSDENIED		5
 #define KRB5_KPASSWD_BAD_VERSION		6
@@ -667,7 +669,7 @@ ADS_STATUS kerberos_set_password(const char *kpasswd_server,
 {
     int ret;
 
-    if ((ret = kerberos_kinit_password(auth_principal, auth_password, time_offset, NULL))) {
+    if ((ret = kerberos_kinit_password(auth_principal, auth_password, time_offset, NULL, NULL))) {
 	DEBUG(1,("Failed kinit for principal %s (%s)\n", auth_principal, error_message(ret)));
 	return ADS_ERROR_KRB5(ret);
     }

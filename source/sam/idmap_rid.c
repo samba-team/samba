@@ -152,13 +152,32 @@ static NTSTATUS rid_idmap_get_domains(uint32 *num_domains, fstring **domain_name
 	char *domain = NULL;
 	uint32 info_class = 5;
 	char *domain_name = NULL;
-	DOM_SID *domain_sid;
+	DOM_SID *domain_sid, sid;
 	fstring sid_str;
 	int i;
 	uint32 trusted_num_domains = 0;
 	char **trusted_domain_names;
 	DOM_SID *trusted_domain_sids;
-	
+	uint32 enum_ctx = 0;
+
+	/* put the results together */
+	*num_domains = 1;
+	*domain_names = (fstring *) malloc(sizeof(fstring) * *num_domains);
+	*domain_sids = (DOM_SID *) malloc(sizeof(DOM_SID) * *num_domains); 
+
+	/* avoid calling a DC when trusted domains are not allowed anyway */
+	if (!lp_allow_trusted_domains()) {
+
+		fstrcpy((*domain_names)[0], lp_workgroup());
+		if (!secrets_fetch_domain_sid(lp_workgroup(), &sid)) {
+			DEBUG(0,("rid_idmap_get_domains: failed to retrieve domain sid\n"));
+			return status;
+		}
+		sid_copy(&(*domain_sids)[0], &sid);
+
+		return NT_STATUS_OK;
+	}
+
 	/* create mem_ctx */
 	if (!(mem_ctx = talloc_init("rid_idmap_get_trusted_domains"))) {
 		DEBUG(0, ("rid_idmap_get_domains: talloc_init() failed\n"));
@@ -229,37 +248,32 @@ static NTSTATUS rid_idmap_get_domains(uint32 *num_domains, fstring **domain_name
 	sid_to_string(sid_str, domain_sid);
 	DEBUG(10,("rid_idmap_get_domains: my domain: [%s], sid: [%s]\n", domain_name, sid_str));
 
-	if (lp_allow_trusted_domains()) {
+	/* scan trusted domains */
+	DEBUG(10, ("rid_idmap_get_domains: enumerating trusted domains\n"));
+	status = cli_lsa_enum_trust_dom(cli, mem_ctx, &pol, &enum_ctx,
+			&trusted_num_domains,
+			&trusted_domain_names, 
+			&trusted_domain_sids);
 
-		uint32 enum_ctx = 0;
+	if (!NT_STATUS_IS_OK(status) &&
+	    !NT_STATUS_EQUAL(status, NT_STATUS_NO_MORE_ENTRIES) &&
+	    !NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
+		DEBUG(1, ("rid_idmap_get_domains: could not enumerate trusted domains\n"));
+		goto out;
+	}
 
-		/* scan trusted domains */
-		DEBUG(10, ("rid_idmap_get_domains: enumerating trusted domains\n"));
-		status = cli_lsa_enum_trust_dom(cli, mem_ctx, &pol, &enum_ctx,
-				&trusted_num_domains,
-				&trusted_domain_names, 
-				&trusted_domain_sids);
-
-		if (!NT_STATUS_IS_OK(status) &&
-		    !NT_STATUS_EQUAL(status, NT_STATUS_NO_MORE_ENTRIES) &&
-		    !NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
-			DEBUG(1, ("rid_idmap_get_domains: could not enumerate trusted domains\n"));
-			goto out;
-		}
-
-		/* show trusted domains */
-		DEBUG(10,("rid_idmap_get_domains: scan for trusted domains gave %d results:\n", trusted_num_domains));
-		for (i=0; i<trusted_num_domains; i++) {
-			sid_to_string(sid_str, &trusted_domain_sids[i]);
-			DEBUGADD(10,("rid_idmap_get_domains:\t#%d\tDOMAIN: [%s], SID: [%s]\n", 
-						i, trusted_domain_names[i], sid_str));
-		}
+	/* show trusted domains */
+	DEBUG(10,("rid_idmap_get_domains: scan for trusted domains gave %d results:\n", trusted_num_domains));
+	for (i=0; i<trusted_num_domains; i++) {
+		sid_to_string(sid_str, &trusted_domain_sids[i]);
+		DEBUGADD(10,("rid_idmap_get_domains:\t#%d\tDOMAIN: [%s], SID: [%s]\n", 
+					i, trusted_domain_names[i], sid_str));
 	}
 
 	/* put the results together */
 	*num_domains = trusted_num_domains + 1;
-	*domain_names = (fstring *) malloc(sizeof(fstring) * *num_domains);
-	*domain_sids = (DOM_SID *) malloc(sizeof(DOM_SID) * *num_domains); 
+	*domain_names = (fstring *) realloc(domain_names, sizeof(fstring) * *num_domains);
+	*domain_sids = (DOM_SID *) realloc(domain_sids, sizeof(DOM_SID) * *num_domains); 
 
 	/* first add myself at the end*/
 	fstrcpy((*domain_names)[0], domain_name);

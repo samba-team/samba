@@ -58,9 +58,6 @@ add_dynamic_entries()
 	if [ -f lib/pam_winbind.so ]; then
 		echo f none /usr/lib/security/pam_winbind.so=lib/pam_winbind.so 0755 root other
 	fi
-	if [ -f lib/pam_smbpass.so ]; then
-		echo f none /usr/lib/security/pam_pam_smbpass.so=lib/pam_winbind.so 0755 root other
-	fi
 
 	# Add the manpages
 	echo "#\n# man pages \n#"
@@ -124,7 +121,6 @@ if [ "x$1" != "xnobuild" ]; then
 	./configure --prefix=$INSTALL_DIR \
 		--with-acl-support \
 		--with-included-popt \
-		--with-pam_smbpass \
 		--localstatedir=/var/lib/samba \
 		--with-piddir=/var/run \
 		--with-logfilebase=/var/log/samba \

@@ -169,7 +169,7 @@ retry:
         * extract the realm and convert to upper case.
         * This is only used to establish the connection.
         */
-       if ((cp = strchr(ads->auth.user_name, '@'))!=0) {
+       if ((cp = strchr_m(ads->auth.user_name, '@'))!=0) {
                *cp++ = '\0';
                ads->auth.realm = smb_xstrdup(cp);
                strupper_m(ads->auth.realm);
@@ -823,6 +823,20 @@ int net_ads_join(int argc, const char **argv)
 		return -1;
 	}
 
+#ifdef HAVE_KRB5
+	if (!kerberos_derive_salting_principal(machine_account)) {
+		DEBUG(1,("Failed to determine salting principal\n"));
+		ads_destroy(&ads);
+		return -1;
+	}
+
+	if (!kerberos_derive_cifs_salting_principals()) {
+		DEBUG(1,("Failed to determine salting principals\n"));
+		ads_destroy(&ads);
+		return -1;
+	}
+#endif
+
 	if (!secrets_store_domain_sid(short_domain_name, &dom_sid)) {
 		DEBUG(1,("Failed to save domain sid\n"));
 		ads_destroy(&ads);
@@ -1126,7 +1140,7 @@ static int net_ads_password(int argc, const char **argv)
 	}
 
 	use_in_memory_ccache();    
-	c = strchr(auth_principal, '@');
+	c = strchr_m(auth_principal, '@');
 	if (c) {
 		realm = ++c;
 	} else {

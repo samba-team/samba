@@ -55,7 +55,7 @@ static PyObject *lsa_open_policy(PyObject *self, PyObject *args,
 	static char *kwlist[] = { "servername", "creds", "access", NULL };
 	char *server, *errstr;
 	PyObject *creds = NULL, *result = NULL;
-	uint32 desired_access = MAXIMUM_ALLOWED_ACCESS;
+	uint32 desired_access = GENERIC_EXECUTE_ACCESS;
 	struct cli_state *cli = NULL;
 	NTSTATUS ntstatus;
 	TALLOC_CTX *mem_ctx = NULL;
@@ -90,7 +90,7 @@ static PyObject *lsa_open_policy(PyObject *self, PyObject *args,
 	}
 
 	ntstatus = cli_lsa_open_policy(cli, mem_ctx, True,
-				       SEC_RIGHTS_MAXIMUM_ALLOWED, &hnd);
+				       desired_access, &hnd);
 
 	if (!NT_STATUS_IS_OK(ntstatus)) {
 		PyErr_SetObject(lsa_ntstatus, py_ntstatus_tuple(ntstatus));

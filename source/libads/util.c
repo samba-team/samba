@@ -24,39 +24,45 @@
 
 ADS_STATUS ads_change_trust_account_password(ADS_STRUCT *ads, char *host_principal)
 {
-    char *tmp_password;
-    char *password;
-    char *new_password;
-    char *service_principal;
-    ADS_STATUS ret;
-    uint32 sec_channel_type;
+	char *password;
+	char *new_password;
+	char *service_principal;
+	ADS_STATUS ret;
+	uint32 sec_channel_type;
     
-    if ((password = secrets_fetch_machine_password(lp_workgroup(), NULL, &sec_channel_type)) == NULL) {
-	DEBUG(1,("Failed to retrieve password for principal %s\n", host_principal));
-	return ADS_ERROR_SYSTEM(ENOENT);
-    }
+	if ((password = secrets_fetch_machine_password(lp_workgroup(), NULL, &sec_channel_type)) == NULL) {
+		DEBUG(1,("Failed to retrieve password for principal %s\n", host_principal));
+		return ADS_ERROR_SYSTEM(ENOENT);
+	}
 
-    tmp_password = generate_random_str(DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH);
-    new_password = strdup(tmp_password);
+	new_password = generate_random_str(DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH);
     
-    asprintf(&service_principal, "HOST/%s", host_principal);
+	asprintf(&service_principal, "HOST/%s", host_principal);
 
-    ret = kerberos_set_password(ads->auth.kdc_server, service_principal, password, service_principal, new_password, ads->auth.time_offset);
+	ret = kerberos_set_password(ads->auth.kdc_server, service_principal, password, service_principal, new_password, ads->auth.time_offset);
 
-    if (!ADS_ERR_OK(ret)) goto failed;
+	if (!ADS_ERR_OK(ret)) {
+		goto failed;
+	}
 
-    if (!secrets_store_machine_password(new_password, lp_workgroup(), sec_channel_type)) {
-	    DEBUG(1,("Failed to save machine password\n"));
-	    return ADS_ERROR_SYSTEM(EACCES);
-    }
+	if (!secrets_store_machine_password(new_password, lp_workgroup(), sec_channel_type)) {
+		DEBUG(1,("Failed to save machine password\n"));
+		ret = ADS_ERROR_SYSTEM(EACCES);
+		goto failed;
+	}
+
+	/* Determine if the KDC is salting keys for this principal in a
+	 * non-obvious way. */
+	if (!kerberos_derive_salting_principal(service_principal)) {
+		DEBUG(1,("Failed to determine correct salting principal for %s\n", service_principal));
+		ret = ADS_ERROR_SYSTEM(EACCES);
+		goto failed;
+	}
 
 failed:
-    SAFE_FREE(service_principal);
-    SAFE_FREE(new_password);
-
-    return ret;
+	SAFE_FREE(service_principal);
+	SAFE_FREE(password);
+	SAFE_FREE(new_password);
+	return ret;
 }
-
-
-
 #endif
