@@ -1114,6 +1114,9 @@ static BOOL close_internal_rpc_pipe_hnd(void *np_conn)
 	/* Free the handles database. */
 	close_policy_by_pipe(p);
 
+	if (p->session_key.data != NULL)
+		data_blob_free(&p->session_key);
+
 	delete_nt_token(&p->pipe_user.nt_user_token);
 	SAFE_FREE(p->pipe_user.groups);
 
