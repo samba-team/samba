@@ -662,7 +662,7 @@ static BOOL open_sockets(BOOL isdaemon, int port)
 	reopen_logs();
 
 	DEBUG( 0, ( "Netbios nameserver version %s started.\n", SAMBA_VERSION_STRING) );
-	DEBUGADD( 0, ( "Copyright Andrew Tridgell and the Samba Team 1994-2003\n" ) );
+	DEBUGADD( 0, ( "Copyright Andrew Tridgell and the Samba Team 1994-2004\n" ) );
 
 	if ( !reload_nmbd_services(False) )
 		return(-1);
