@@ -73,8 +73,6 @@ extern BOOL tar_reset;
 /* clitar bits end */
  
 
-static mode_t myumask = 0755;
-
 static BOOL prompt = True;
 
 static int printmode = 1;
@@ -2756,8 +2754,6 @@ static void remember_query_host(const char *arg,
 	pstrcpy(workgroup,lp_workgroup());
 
 	load_interfaces();
-	myumask = umask(0);
-	umask(myumask);
 
 	if (getenv("USER")) {
 		pstrcpy(username,getenv("USER"));
