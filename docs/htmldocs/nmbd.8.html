@@ -1,12 +1,11 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <HTML
 ><HEAD
 ><TITLE
 >nmbd</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
-"></HEAD
+CONTENT="Modular DocBook HTML Stylesheet Version 1.77+"></HEAD
 ><BODY
 CLASS="REFENTRY"
 BGCOLOR="#FFFFFF"
@@ -16,7 +15,9 @@ VLINK="#840084"
 ALINK="#0000FF"
 ><H1
 ><A
-NAME="NMBD">nmbd</H1
+NAME="NMBD.8"
+></A
+>nmbd</H1
 ><DIV
 CLASS="REFNAMEDIV"
 ><A
@@ -29,13 +30,15 @@ NAME="AEN5"
 ><DIV
 CLASS="REFSYNOPSISDIV"
 ><A
-NAME="AEN8"><H2
+NAME="AEN8"
+></A
+><H2
 >Synopsis</H2
 ><P
 ><B
 CLASS="COMMAND"
 >nmbd</B
-> [-D] [-F] [-S] [-a] [-i] [-o] [-h] [-V] [-d &#60;debug level&#62;] [-H &#60;lmhosts file&#62;] [-l &#60;log directory&#62;] [-n &#60;primary netbios name&#62;] [-p &#60;port number&#62;] [-s &#60;configuration file&#62;]</P
+>  [-D] [-F] [-S] [-a] [-i] [-o] [-h] [-V] [-d &lt;debug level&gt;] [-H &lt;lmhosts file&gt;] [-l &lt;log directory&gt;] [-n &lt;primary netbios name&gt;] [-p &lt;port number&gt;] [-s &lt;configuration file&gt;]</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
@@ -45,7 +48,13 @@ NAME="AEN25"
 ><H2
 >DESCRIPTION</H2
 ><P
->This program is part of the Samba suite.</P
+>This program is part of the <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>Samba</SPAN
+>(7)</SPAN
+> suite.</P
 ><P
 ><B
 CLASS="COMMAND"
@@ -69,9 +78,12 @@ CLASS="COMMAND"
 	specified it will respond with the IP number of the host it 
 	is running on.  Its "own NetBIOS name" is by
 	default the primary DNS name of the host it is running on, 
-	but this can be overridden with the <I
+	but this can be overridden with the <SPAN
+CLASS="emphasis"
+><I
 CLASS="EMPHASIS"
 >-n</I
+></SPAN
 > 
 	option (see OPTIONS below). Thus <B
 CLASS="COMMAND"
@@ -82,13 +94,12 @@ CLASS="COMMAND"
 CLASS="COMMAND"
 >nmbd</B
 > to respond on can be set 
-	via parameters in the <A
-HREF="smb.conf.5.html"
-TARGET="_top"
-><TT
-CLASS="FILENAME"
->	smb.conf(5)</TT
-></A
+	via parameters in the <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smb.conf</SPAN
+>(5)</SPAN
 > configuration file.</P
 ><P
 ><B
@@ -111,7 +122,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN42"
+NAME="AEN46"
 ></A
 ><H2
 >OPTIONS</H2
@@ -204,9 +215,9 @@ CLASS="COMMAND"
 CLASS="COMMAND"
 >nmbd</B
 > also logs to standard
-		output, as if the <B
-CLASS="COMMAND"
->-S</B
+		output, as if the <TT
+CLASS="CONSTANT"
+>-S</TT
 > parameter had been
 		given. </P
 ></DD
@@ -233,7 +244,7 @@ CLASS="COMMAND"
 >.</P
 ></DD
 ><DT
->-H &#60;filename&#62;</DT
+>-H &lt;filename&gt;</DT
 ><DD
 ><P
 >NetBIOS lmhosts file.  The lmhosts 
@@ -242,28 +253,39 @@ CLASS="COMMAND"
 		resolution mechanism <A
 HREF="smb.conf.5.html#nameresolveorder"
 TARGET="_top"
->		name resolve order</A
-> described in <A
-HREF="smb.conf.5.html"
-TARGET="_top"
-> <TT
-CLASS="FILENAME"
->smb.conf(5)</TT
+><TT
+CLASS="PARAMETER"
+><I
+>name resolve
+		order</I
+></TT
 ></A
->
-		to resolve any NetBIOS name queries needed by the server. Note 
-		that the contents of this file are <I
+> described in <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smb.conf</SPAN
+>(5)</SPAN
+> to resolve any 
+		NetBIOS name queries needed by the server. Note 
+		that the contents of this file are <SPAN
+CLASS="emphasis"
+><I
 CLASS="EMPHASIS"
 >NOT</I
+></SPAN
 > 
 		used by <B
 CLASS="COMMAND"
 >nmbd</B
 > to answer any name queries. 
 		Adding a line to this file affects name NetBIOS resolution 
-		from this host <I
+		from this host <SPAN
+CLASS="emphasis"
+><I
 CLASS="EMPHASIS"
 >ONLY</I
+></SPAN
 >.</P
 ><P
 >The default path to this file is compiled into 
@@ -278,17 +300,14 @@ CLASS="FILENAME"
 > or
 		<TT
 CLASS="FILENAME"
->/etc/lmhosts</TT
->. See the
-		<A
-HREF="lmhosts.5.html"
-TARGET="_top"
-><TT
-CLASS="FILENAME"
->lmhosts(5)</TT
-></A
->
-		man page for details on the contents of this file.</P
+>/etc/samba/lmhosts</TT
+>. See the <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>lmhosts</SPAN
+>(5)</SPAN
+> man page for details on the contents of this file.</P
 ></DD
 ><DT
 >-V</DT
@@ -301,7 +320,7 @@ CLASS="COMMAND"
 >.</P
 ></DD
 ><DT
->-d &#60;debug level&#62;</DT
+>-d &lt;debug level&gt;</DT
 ><DD
 ><P
 >debuglevel is an integer 
@@ -325,19 +344,23 @@ CLASS="COMMAND"
 		the <A
 HREF="smb.conf.5.html#loglevel"
 TARGET="_top"
->log level</A
-> 
-		parameter in the <A
-HREF="smb.conf.5.html"
-TARGET="_top"
 ><TT
-CLASS="FILENAME"
->		smb.conf(5)</TT
+CLASS="PARAMETER"
+><I
+>log level</I
+></TT
 ></A
+> 
+		parameter in the <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smb.conf</SPAN
+>(5)</SPAN
 > file.</P
 ></DD
 ><DT
->-l &#60;log directory&#62;</DT
+>-l &lt;log directory&gt;</DT
 ><DD
 ><P
 >The -l parameter specifies a directory 
@@ -357,9 +380,12 @@ CLASS="FILENAME"
 		<TT
 CLASS="FILENAME"
 >/var/log/log.nmb</TT
->.  <I
+>.  <SPAN
+CLASS="emphasis"
+><I
 CLASS="EMPHASIS"
 >Beware:</I
+></SPAN
 >
                 If the directory specified does not exist, <B
 CLASS="COMMAND"
@@ -369,7 +395,7 @@ CLASS="COMMAND"
 		</P
 ></DD
 ><DT
->-n &#60;primary NetBIOS name&#62;</DT
+>-n &lt;primary NetBIOS name&gt;</DT
 ><DD
 ><P
 >This option allows you to override
@@ -377,24 +403,31 @@ CLASS="COMMAND"
 		to setting the <A
 HREF="smb.conf.5.html#netbiosname"
 TARGET="_top"
->		NetBIOS name</A
-> parameter in the <A
-HREF="smb.conf.5.html"
-TARGET="_top"
->	
-		<TT
-CLASS="FILENAME"
->smb.conf</TT
+><TT
+CLASS="PARAMETER"
+><I
+>NetBIOS
+		name</I
+></TT
 ></A
+> parameter in the <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smb.conf</SPAN
+>(5)</SPAN
 > file.  However, a command
 		line setting will take precedence over settings in 
-		<TT
-CLASS="FILENAME"
->smb.conf</TT
+		<SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smb.conf</SPAN
+>(5)</SPAN
 >.</P
 ></DD
 ><DT
->-p &#60;UDP port number&#62;</DT
+>-p &lt;UDP port number&gt;</DT
 ><DD
 ><P
 >UDP port number is a positive integer value.
@@ -407,7 +440,7 @@ CLASS="COMMAND"
 		won't need help!</P
 ></DD
 ><DT
->-s &#60;configuration file&#62;</DT
+>-s &lt;configuration file&gt;</DT
 ><DD
 ><P
 >The default configuration file name
@@ -418,13 +451,12 @@ CLASS="FILENAME"
 		this may be changed when Samba is autoconfigured.</P
 ><P
 >The file specified contains the configuration details
-		required by the server. See <A
-HREF="smb.conf.5.html"
-TARGET="_top"
->		<TT
-CLASS="FILENAME"
->smb.conf(5)</TT
-></A
+		required by the server. See <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smb.conf</SPAN
+>(5)</SPAN
 > for more information.
 		</P
 ></DD
@@ -434,7 +466,7 @@ CLASS="FILENAME"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN148"
+NAME="AEN162"
 ></A
 ><H2
 >FILES</H2
@@ -457,9 +489,9 @@ CLASS="COMMAND"
 > meta-daemon, this file
 		must contain suitable startup information for the
 		meta-daemon. See the <A
-HREF="UNIX_INSTALL.html"
+HREF="install.html"
 TARGET="_top"
->UNIX_INSTALL.html</A
+>install</A
 > document
 		for details.
 		</P
@@ -477,9 +509,9 @@ CLASS="FILENAME"
 >If running the server as a daemon at startup,
 		this file will need to contain an appropriate startup
 		sequence for the server. See the <A
-HREF="UNIX_INSTALL.html"
+HREF="install.html"
 TARGET="_top"
->UNIX_INSTALL.html</A
+>"How to Install and Test SAMBA"</A
 > document
 		for details.</P
 ></DD
@@ -498,9 +530,9 @@ CLASS="COMMAND"
 		must contain a mapping of service name (e.g., netbios-ssn)
 		to service port (e.g., 139) and protocol type (e.g., tcp).
 		See the <A
-HREF="UNIX_INSTALL.html"
+HREF="install.html"
 TARGET="_top"
->UNIX_INSTALL.html</A
+>"How to Install and Test SAMBA"</A
 >
 		document for details.</P
 ></DD
@@ -511,34 +543,39 @@ CLASS="FILENAME"
 ></DT
 ><DD
 ><P
->This is the default location of the
-		<A
-HREF="smb.conf.5.html"
-TARGET="_top"
-><TT
-CLASS="FILENAME"
->smb.conf</TT
-></A
->
-		server configuration file. Other common places that systems
+>This is the default location of 
+		the <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smb.conf</SPAN
+>(5)</SPAN
+> server
+		configuration file. Other common places that systems
 		install this file are <TT
 CLASS="FILENAME"
 >/usr/samba/lib/smb.conf</TT
 >
 		and <TT
 CLASS="FILENAME"
->/etc/smb.conf</TT
+>/etc/samba/smb.conf</TT
 >.</P
 ><P
 >When run as a WINS server (see the
 		<A
 HREF="smb.conf.5.html#WINSSUPPORT"
 TARGET="_top"
->wins support</A
+><TT
+CLASS="CONSTANT"
+>wins support</TT
+></A
 >
-		parameter in the <TT
-CLASS="FILENAME"
->smb.conf(5)</TT
+		parameter in the <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smb.conf</SPAN
+>(5)</SPAN
 > man page),
 		<B
 CLASS="COMMAND"
@@ -557,19 +594,27 @@ CLASS="FILENAME"
 >If <B
 CLASS="COMMAND"
 >nmbd</B
-> is acting as a <I
+> is acting as a <SPAN
+CLASS="emphasis"
+><I
 CLASS="EMPHASIS"
 >		browse master</I
+></SPAN
 > (see the <A
 HREF="smb.conf.5.html#LOCALMASTER"
 TARGET="_top"
->local master</A
+><TT
+CLASS="CONSTANT"
+>local master</TT
+></A
 >
-		parameter in the <TT
-CLASS="FILENAME"
->smb.conf(5)</TT
-> man page,
-		<B
+		parameter in the <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smb.conf</SPAN
+>(5)</SPAN
+> man page, <B
 CLASS="COMMAND"
 >nmbd</B
 >
@@ -590,7 +635,7 @@ CLASS="FILENAME"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN195"
+NAME="AEN216"
 ></A
 ><H2
 >SIGNALS</H2
@@ -599,9 +644,12 @@ NAME="AEN195"
 CLASS="COMMAND"
 >nmbd</B
 > process it is recommended
-	that SIGKILL (-9) <I
+	that SIGKILL (-9) <SPAN
+CLASS="emphasis"
+><I
 CLASS="EMPHASIS"
 >NOT</I
+></SPAN
 > be used, except as a last
 	resort, as this may leave the name database in an inconsistent state.
 	The correct way to terminate <B
@@ -636,23 +684,22 @@ CLASS="FILENAME"
 >log.nmb</TT
 > file.</P
 ><P
->The debug log level of nmbd may be raised or lowered using
-	<A
-HREF="smbcontrol.1.html"
-TARGET="_top"
-><B
-CLASS="COMMAND"
->smbcontrol(1)</B
->
-	</A
-> (SIGUSR[1|2] signals are no longer used in Samba 2.2). This is
-	to allow transient problems to be diagnosed, whilst still running
+>The debug log level of nmbd may be raised or lowered
+	using <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smbcontrol</SPAN
+>(1)</SPAN
+> (SIGUSR[1|2] signals
+	are no longer used since Samba 2.2). This is to allow
+	transient problems to be diagnosed, whilst still running 
 	at a normally low log level.</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN211"
+NAME="AEN233"
 ></A
 ><H2
 >VERSION</H2
@@ -663,54 +710,49 @@ NAME="AEN211"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN214"
+NAME="AEN236"
 ></A
 ><H2
 >SEE ALSO</H2
 ><P
-><B
-CLASS="COMMAND"
->inetd(8)</B
->, <A
-HREF="smbd.8.html"
-TARGET="_top"
-><B
-CLASS="COMMAND"
->smbd(8)</B
-></A
->, 
-	<A
-HREF="smb.conf.5.html"
-TARGET="_top"
-><TT
-CLASS="FILENAME"
->smb.conf(5)</TT
->
-	</A
->, <A
-HREF="smbclient.1.html"
-TARGET="_top"
-><B
-CLASS="COMMAND"
->smbclient(1)
-	</B
-></A
->, <A
-HREF="testparm.1.html"
-TARGET="_top"
-><B
-CLASS="COMMAND"
->	testparm(1)</B
-></A
->, <A
-HREF="testprns.1.html"
-TARGET="_top"
->	<B
-CLASS="COMMAND"
->testprns(1)</B
-></A
->, and the Internet RFC's
-	<TT
+>	<SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>inetd</SPAN
+>(8)</SPAN
+>, <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smbd</SPAN
+>(8)</SPAN
+>, <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smb.conf</SPAN
+>(5)</SPAN
+>, <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smbclient</SPAN
+>(1)</SPAN
+>, <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>testparm</SPAN
+>(1)</SPAN
+>, <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>testprns</SPAN
+>(1)</SPAN
+>, and the Internet 
+	RFC's <TT
 CLASS="FILENAME"
 >rfc1001.txt</TT
 >, <TT
@@ -728,7 +770,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN231"
+NAME="AEN260"
 ></A
 ><H2
 >AUTHOR</H2
@@ -740,14 +782,14 @@ NAME="AEN231"
 ><P
 >The original Samba man pages were written by Karl Auer. 
 	The man page sources were converted to YODL format (another 
-	excellent piece of Open Source software, available at
-	<A
+	excellent piece of Open Source software, available at <A
 HREF="ftp://ftp.icce.rug.nl/pub/unix/"
 TARGET="_top"
 >	ftp://ftp.icce.rug.nl/pub/unix/</A
 >) and updated for the Samba 2.0 
 	release by Jeremy Allison.  The conversion to DocBook for 
-	Samba 2.2 was done by Gerald Carter</P
+	Samba 2.2 was done by Gerald Carter. The conversion to DocBook
+	XML 4.2 for Samba 3.0 was done by Alexander Bokovoy.</P
 ></DIV
 ></BODY
 ></HTML

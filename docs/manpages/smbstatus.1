@@ -3,7 +3,8 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMBSTATUS" "1" "05 November 2002" "" ""
+.TH "SMBSTATUS" "1" "28 January 2003" "" ""
+
 .SH NAME
 smbstatus \- report on current Samba connections
 .SH SYNOPSIS
@@ -12,7 +13,7 @@ smbstatus \- report on current Samba connections
 
 .SH "DESCRIPTION"
 .PP
-This tool is part of the  Samba suite.
+This tool is part of the \fBSamba\fR(7) suite.
 .PP
 \fBsmbstatus\fR is a very simple program to 
 list the current Samba connections.
@@ -39,7 +40,7 @@ causes smbstatus to only list locks.
 causes smbstatus to include byte range locks.
 .TP
 \fB-p|--processes\fR
-print a list of   \fBsmbd(8)\fR processes and exit. 
+print a list of \fBsmbd\fR(8) processes and exit. 
 Useful for scripting.
 .TP
 \fB-S|--shares\fR
@@ -48,8 +49,7 @@ causes smbstatus to only list shares.
 \fB-s|--conf=<configuration file>\fR
 The default configuration file name is
 determined at compile time. The file specified contains the
-configuration details required by the server. See \fIsmb.conf(5)\fR
- for more information.
+configuration details required by the server. See \fBsmb.conf\fR(5) for more information.
 .TP
 \fB-u|--user=<username>\fR
 selects information relevant to 
@@ -60,8 +60,7 @@ This man page is correct for version 3.0 of
 the Samba suite.
 .SH "SEE ALSO"
 .PP
-\fBsmbd(8)\fR and
-smb.conf(5)
+\fBsmbd\fR(8) and \fBsmb.conf\fR(5).
 .SH "AUTHOR"
 .PP
 The original Samba software and related utilities 
@@ -71,7 +70,7 @@ to the way the Linux kernel is developed.
 .PP
 The original Samba man pages were written by Karl Auer. 
 The man page sources were converted to YODL format (another 
-excellent piece of Open Source software, available at
-ftp://ftp.icce.rug.nl/pub/unix/ <URL:ftp://ftp.icce.rug.nl/pub/unix/>) and updated for the Samba 2.0 
+excellent piece of Open Source software, available at  ftp://ftp.icce.rug.nl/pub/unix/ <URL:ftp://ftp.icce.rug.nl/pub/unix/>) and updated for the Samba 2.0 
 release by Jeremy Allison.  The conversion to DocBook for 
-Samba 2.2 was done by Gerald Carter
+Samba 2.2 was done by Gerald Carter. The conversion to DocBook XML 4.2
+for Samba 3.0 was done by Alexander Bokovoy.

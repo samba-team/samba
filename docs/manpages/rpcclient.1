@@ -3,7 +3,8 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "RPCCLIENT" "1" "05 November 2002" "" ""
+.TH "RPCCLIENT" "1" "28 January 2003" "" ""
+
 .SH NAME
 rpcclient \- tool for executing client side  MS-RPC functions
 .SH SYNOPSIS
@@ -12,7 +13,7 @@ rpcclient \- tool for executing client side  MS-RPC functions
 
 .SH "DESCRIPTION"
 .PP
-This tool is part of the  Samba suite.
+This tool is part of the \fBSamba\fR(7) suite.
 .PP
 \fBrpcclient\fR is a utility initially developed
 to test MS-RPC functionality in Samba itself.  It has undergone 
@@ -24,8 +25,7 @@ their UNIX workstation.
 \fBserver\fR
 NetBIOS name of Server to which to connect. 
 The server can be  any SMB/CIFS server.  The name is 
-resolved using the   \fIname resolve order\fR line from 
-\fIsmb.conf(5)\fR.
+resolved using the   \fIname resolve order\fR line from \fBsmb.conf\fR(5).
 .TP
 \fB-A|--authfile=filename\fR
 This option allows 
@@ -34,10 +34,9 @@ password used in the connection.  The format of the file is
 
 
 .nf
-		username = <value> 
-		password = <value>
-		domain   = <value>
-		
+username = <value> 
+password = <value>
+domain   = <value>
 .fi
 
 Make certain that the permissions on the file restrict 
@@ -46,6 +45,9 @@ access from unwanted users.
 \fB-c|--command='command string'\fR
 execute semicolon separated commands (listed 
 below)) 
+.TP
+\fB-h|--help\fR
+Print a summary of command line options.
 .TP
 \fB-d|--debug=debuglevel\fR
 \fIdebuglevel\fR is an integer 
@@ -68,9 +70,6 @@ data, most of which is extremely cryptic.
 Note that specifying this parameter here will 
 override the log
 level file.
-.TP
-\fB-h|--help\fR
-Print a summary of command line options.
 .TP
 \fB-I IP-address\fR
 \fIIP address\fR is the address of the server to connect to. 
@@ -193,15 +192,14 @@ follows:
 
 
 .nf
-		Long Printer Name:\\
-		Driver File Name:\\
-		Data File Name:\\
-		Config File Name:\\
-		Help File Name:\\
-		Language Monitor Name:\\
-		Default Data Type:\\
-		Comma Separated list of Files
-		
+Long Printer Name:\\
+Driver File Name:\\
+Data File Name:\\
+Config File Name:\\
+Help File Name:\\
+Language Monitor Name:\\
+Default Data Type:\\
+Comma Separated list of Files
 .fi
 
 Any empty fields should be enter as the string "NULL". 
@@ -327,7 +325,7 @@ parameters where passed to the interpreter.
 .PP
 From Luke Leighton's original rpcclient man page:
 .PP
-\fB"WARNING!\fR The MSRPC over SMB code has 
+\fBWARNING!\fR The MSRPC over SMB code has 
 been developed from examining  Network traces. No documentation is 
 available from the original creators  (Microsoft) on how MSRPC over 
 SMB works, or how the individual MSRPC services  work. Microsoft's 
@@ -335,12 +333,11 @@ implementation of these services has been demonstrated  (and reported)
 to be... a bit flaky in places. 
 .PP
 The development of Samba's implementation is also a bit rough, 
-and as more  of the services are understood, it can even result in 
-versions of  \fBsmbd(8)\fR and \fBrpcclient(1)\fR 
-that are incompatible for some commands or  services. Additionally, 
+and as more of the services are understood, it can even result in 
+versions of \fBsmbd\fR(8) and \fBrpcclient\fR(1) that are incompatible for some commands or  services. Additionally, 
 the developers are sending reports to Microsoft,  and problems found 
 or reported to Microsoft are fixed in Service Packs,  which may 
-result in incompatibilities." 
+result in incompatibilities.
 .SH "VERSION"
 .PP
 This man page is correct for version 3.0 of the Samba 
@@ -355,4 +352,5 @@ to the way the Linux kernel is developed.
 The original rpcclient man page was written by Matthew 
 Geddes, Luke Kenneth Casson Leighton, and rewritten by Gerald Carter.  
 The conversion to DocBook for Samba 2.2 was done by Gerald 
-Carter.
+Carter. The conversion to DocBook XML 4.2 for Samba 3.0 was
+done by Alexander Bokovoy.

@@ -3,7 +3,8 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMBSH" "1" "26 November 2002" "" ""
+.TH "SMBSH" "1" "28 January 2003" "" ""
+
 .SH NAME
 smbsh \- Allows access to Windows NT filesystem  using UNIX commands
 .SH SYNOPSIS
@@ -12,7 +13,7 @@ smbsh \- Allows access to Windows NT filesystem  using UNIX commands
 
 .SH "DESCRIPTION"
 .PP
-This tool is part of the  Samba suite.
+This tool is part of the \fBSamba\fR(7) suite.
 .PP
 \fBsmbsh\fR allows you to access an NT filesystem 
 using UNIX commands such as \fBls\fR, \fB egrep\fR, and \fBrcp\fR. You must use a 
@@ -22,7 +23,7 @@ to work correctly.
 .TP
 \fB-W WORKGROUP\fR
 Override the default workgroup specified in the 
-workgroup parameter of the \fIsmb.conf\fR file 
+workgroup parameter of the \fBsmb.conf\fR(5) file 
 for this session. This may be needed to connect to some 
 servers. 
 .TP
@@ -44,20 +45,20 @@ services and in what order to resolve
 host names to IP addresses. The option takes a space-separated 
 string of different name resolution options.
 
-The options are :"lmhosts", "host", "wins" and "bcast". 
+The options are: "lmhosts", "host", "wins" and "bcast". 
 They cause names to be resolved as follows :
 .RS
 .TP 0.2i
 \(bu
-lmhosts : 
+lmhosts: 
 Lookup an IP address in the Samba lmhosts file. If the 
 line in lmhosts has no name type attached to the 
 NetBIOS name 
-(see the lmhosts(5)
-for details) then any name type matches for lookup.
+(see the \fBlmhosts\fR(5) for details) 
+then any name type matches for lookup.
 .TP 0.2i
 \(bu
-host : 
+host: 
 Do a standard host name to IP address resolution, using
 the system \fI/etc/hosts\fR, NIS, or DNS
 lookups. This method of name resolution is operating 
@@ -68,14 +69,14 @@ if the NetBIOS name type being queried is the 0x20
 (server) name type, otherwise it is ignored.
 .TP 0.2i
 \(bu
-wins : 
+wins: 
 Query a name with the IP address listed in the 
 \fIwins server\fR parameter.  If no 
 WINS server has been specified this method will be 
 ignored.
 .TP 0.2i
 \(bu
-bcast : 
+bcast: 
 Do a broadcast on each of the known local interfaces 
 listed in the \fIinterfaces\fR
 parameter. This is the least reliable of the name 
@@ -84,14 +85,13 @@ being on a locally connected subnet.
 .RE
 
 If this parameter is not set then the name resolve order 
-defined in the \fIsmb.conf\fR file parameter  
-(name resolve order) will be used. 
+defined in the \fBsmb.conf\fR(5) file parameter  
+(\fIname resolve order\fR) will be used. 
 
 The default order is lmhosts, host, wins, bcast. Without 
 this parameter or any entry in the \fIname resolve order
-\fR parameter of the \fIsmb.conf\fR 
-file, the name resolution methods will be attempted in this 
-order. 
+\fR parameter of the \fBsmb.conf\fR(5) file, the name resolution methods 
+will be attempted in this order. 
 .TP
 \fB-d <debug level>\fR
 debug level is an integer from 0 to 10.
@@ -100,7 +100,7 @@ The default value if this parameter is not specified
 is zero.
 
 The higher this value, the more detail will be logged
-about the activities of \fBnmblookup\fR. At level
+about the activities of \fBnmblookup\fR(1). At level
 0, only critical errors and serious warnings will be logged.
 .TP
 \fB-l logfilename\fR
@@ -118,13 +118,11 @@ value is specified at compile time.
 To use the \fBsmbsh\fR command, execute \fB smbsh\fR from the prompt and enter the username and password 
 that authenticates you to the machine running the Windows NT 
 operating system.
-.PP
 
 .nf
-	system% \fBsmbsh\fR
-	Username: \fBuser\fR
-	Password: \fBXXXXXXX\fR
-	
+system% \fBsmbsh\fR
+Username: \fBuser\fR
+Password: \fBXXXXXXX\fR
 .fi
 .PP
 Any dynamically linked command you execute from 
@@ -138,8 +136,7 @@ names for that machine. You could then, for example, use the \fB cd\fR command t
 edit files, and \fBrcp\fR  to copy files.
 .SH "VERSION"
 .PP
-This man page is correct for version 3.0 of 
-the Samba suite.
+This man page is correct for version 3.0 of the Samba suite.
 .SH "BUGS"
 .PP
 \fBsmbsh\fR works by intercepting the standard 
@@ -153,8 +150,7 @@ of UNIX have a \fBfile\fR command that will
 describe how a program was linked.
 .SH "SEE ALSO"
 .PP
-\fBsmbd(8)\fR 
-smb.conf(5)
+\fBsmbd\fR(8), \fBsmb.conf\fR(5)
 .SH "AUTHOR"
 .PP
 The original Samba software and related utilities 
@@ -164,7 +160,7 @@ to the way the Linux kernel is developed.
 .PP
 The original Samba man pages were written by Karl Auer. 
 The man page sources were converted to YODL format (another 
-excellent piece of Open Source software, available at
-ftp://ftp.icce.rug.nl/pub/unix/ <URL:ftp://ftp.icce.rug.nl/pub/unix/>) and updated for the Samba 2.0 
+excellent piece of Open Source software, available at  ftp://ftp.icce.rug.nl/pub/unix/ <URL:ftp://ftp.icce.rug.nl/pub/unix/>) and updated for the Samba 2.0 
 release by Jeremy Allison.  The conversion to DocBook for 
-Samba 2.2 was done by Gerald Carter
+Samba 2.2 was done by Gerald Carter. The conversion to DocBook XML 4.2
+for Samba 3.0 was done by Alexander Bokovoy.

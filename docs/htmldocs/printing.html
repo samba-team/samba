@@ -5,8 +5,7 @@
 >Printing Support</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
-"><LINK
+CONTENT="Modular DocBook HTML Stylesheet Version 1.77+"><LINK
 REL="HOME"
 TITLE="SAMBA Project Documentation"
 HREF="samba-howto-collection.html"><LINK
@@ -73,13 +72,17 @@ WIDTH="100%"></DIV
 CLASS="CHAPTER"
 ><H1
 ><A
-NAME="PRINTING">Chapter 14. Printing Support</H1
+NAME="PRINTING"
+></A
+>Chapter 13. Printing Support</H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1920">14.1. Introduction</H1
+NAME="AEN2054"
+></A
+>13.1. Introduction</H1
 ><P
 >Beginning with the 2.2.0 release, Samba supports 
 the native Windows NT printing mechanisms implemented via 
@@ -160,7 +163,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1942">14.2. Configuration</H1
+NAME="AEN2076"
+></A
+>13.2. Configuration</H1
 ><DIV
 CLASS="WARNING"
 ><P
@@ -175,7 +180,7 @@ WIDTH="25"
 ALIGN="CENTER"
 VALIGN="TOP"
 ><IMG
-SRC="../images/warning.gif"
+SRC="/usr/share/sgml/docbook/stylesheet/dsssl/modular/images/warning.gif"
 HSPACE="5"
 ALT="Warning"></TD
 ><TH
@@ -224,7 +229,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1950">14.2.1. Creating [print$]</H2
+NAME="AEN2084"
+></A
+>13.2.1. Creating [print$]</H2
 ><P
 >In order to support the uploading of printer driver 
 files, you must first configure a file share named [print$].  
@@ -303,7 +310,7 @@ WIDTH="25"
 ALIGN="CENTER"
 VALIGN="TOP"
 ><IMG
-SRC="../images/note.gif"
+SRC="/usr/share/sgml/docbook/stylesheet/dsssl/modular/images/note.gif"
 HSPACE="5"
 ALT="Note"></TD
 ><TH
@@ -374,7 +381,7 @@ WIDTH="25"
 ALIGN="CENTER"
 VALIGN="TOP"
 ><IMG
-SRC="../images/warning.gif"
+SRC="/usr/share/sgml/docbook/stylesheet/dsssl/modular/images/warning.gif"
 HSPACE="5"
 ALT="Warning"></TD
 ><TH
@@ -445,7 +452,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1985">14.2.2. Setting Drivers for Existing Printers</H2
+NAME="AEN2119"
+></A
+>13.2.2. Setting Drivers for Existing Printers</H2
 ><P
 >The initial listing of printers in the Samba host's 
 Printers folder will have no real printer driver assigned 
@@ -515,7 +524,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2001">14.2.3. Support a large number of printers</H2
+NAME="AEN2135"
+></A
+>13.2.3. Support a large number of printers</H2
 ><P
 >One issue that has arisen during the development
 phase of Samba 2.2 is the need to support driver downloads for
@@ -579,7 +590,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2012">14.2.4. Adding New Printers via the Windows NT APW</H2
+NAME="AEN2146"
+></A
+>13.2.4. Adding New Printers via the Windows NT APW</H2
 ><P
 >By default, Samba offers all printer shares defined in <TT
 CLASS="FILENAME"
@@ -720,8 +733,8 @@ echo "  :sd=/var/spool/lpd/$2:\\" 			&#62;&#62; $PRINTCAP
 echo "  :mx=0:ml=0:sh:\\" 				&#62;&#62; $PRINTCAP
 echo "  :lp=/usr/local/samba/var/print/$5.prn:" 	&#62;&#62; $PRINTCAP
 
-touch "/usr/local/samba/var/print/$5.prn" &#62;&#62; /tmp/printadd.$$ 2&#62;&#38;1
-chown $LP "/usr/local/samba/var/print/$5.prn" &#62;&#62; /tmp/printadd.$$ 2&#62;&#38;1
+touch "/usr/local/samba/var/print/$5.prn" &#62;&#62; /tmp/printadd.$$ 2&#62;&amp;1
+chown $LP "/usr/local/samba/var/print/$5.prn" &#62;&#62; /tmp/printadd.$$ 2&#62;&amp;1
 
 mkdir /var/spool/lpd/$2
 chmod 700 /var/spool/lpd/$2
@@ -746,7 +759,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2042">14.2.5. Samba and Printer Ports</H2
+NAME="AEN2176"
+></A
+>13.2.5. Samba and Printer Ports</H2
 ><P
 >Windows NT/2000 print servers associate a port with each printer.  These normally
 take the form of LPT1:, COM1:, FILE:, etc...  Samba must also support the
@@ -781,7 +796,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2050">14.3. The Imprints Toolset</H1
+NAME="AEN2184"
+></A
+>13.3. The Imprints Toolset</H1
 ><P
 >The Imprints tool set provides a UNIX equivalent of the 
 	Windows NT Add Printer Wizard.  For complete information, please 
@@ -797,7 +814,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2054">14.3.1. What is Imprints?</H2
+NAME="AEN2188"
+></A
+>13.3.1. What is Imprints?</H2
 ><P
 >Imprints is a collection of tools for supporting the goals 
 		of</P
@@ -827,7 +846,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2064">14.3.2. Creating Printer Driver Packages</H2
+NAME="AEN2198"
+></A
+>13.3.2. Creating Printer Driver Packages</H2
 ><P
 >The process of creating printer driver packages is beyond
 		the scope of this document (refer to Imprints.txt also included
@@ -841,7 +862,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2067">14.3.3. The Imprints server</H2
+NAME="AEN2201"
+></A
+>13.3.3. The Imprints server</H2
 ><P
 >The Imprints server is really a database server that 
 		may be queried via standard HTTP mechanisms.  Each printer 
@@ -863,7 +886,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2071">14.3.4. The Installation Client</H2
+NAME="AEN2205"
+></A
+>13.3.4. The Installation Client</H2
 ><P
 >More information regarding the Imprints installation client 
 		is available in the <TT
@@ -955,13 +980,17 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2093">14.4. Diagnosis</H1
+NAME="AEN2227"
+></A
+>13.4. Diagnosis</H1
 ><DIV
 CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2095">14.4.1. Introduction</H2
+NAME="AEN2229"
+></A
+>13.4.1. Introduction</H2
 ><P
 >This is a short description of how to debug printing problems with
 Samba. This describes how to debug problems with printing from a SMB
@@ -1034,7 +1063,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2111">14.4.2. Debugging printer problems</H2
+NAME="AEN2245"
+></A
+>13.4.2. Debugging printer problems</H2
 ><P
 >One way to debug printing problems is to start by replacing these
 command with shell scripts that record the arguments and the contents
@@ -1050,7 +1081,7 @@ CLASS="PROGRAMLISTING"
     /usr/bin/id -p &#62;/tmp/tmp.print
     # we run the command and save the error messages
     # replace the command with the one appropriate for your system
-    /usr/bin/lpr -r -P$1 $2 2&#62;&#62;&#38;/tmp/tmp.print</PRE
+    /usr/bin/lpr -r -P$1 $2 2&#62;&#62;&amp;/tmp/tmp.print</PRE
 ></P
 ><P
 >Then you print a file and try removing it.  You may find that the
@@ -1089,7 +1120,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2120">14.4.3. What printers do I have?</H2
+NAME="AEN2254"
+></A
+>13.4.3. What printers do I have?</H2
 ><P
 >You can use the 'testprns' program to check to see if the printer
 name you are using is recognized by Samba.  For example,  you can
@@ -1116,7 +1149,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2128">14.4.4. Setting up printcap and print servers</H2
+NAME="AEN2262"
+></A
+>13.4.4. Setting up printcap and print servers</H2
 ><P
 >You may need to set up some printcaps for your Samba system to use.
 It is strongly recommended that you use the facilities provided by
@@ -1198,7 +1233,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2156">14.4.5. Job sent, no output</H2
+NAME="AEN2290"
+></A
+>13.4.5. Job sent, no output</H2
 ><P
 >This is the most frustrating part of printing.  You may have sent the
 job,  verified that the job was forwarded,  set up a wrapper around
@@ -1241,7 +1278,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2167">14.4.6. Job sent, strange output</H2
+NAME="AEN2301"
+></A
+>13.4.6. Job sent, strange output</H2
 ><P
 >Once you have the job printing, you can then start worrying about
 making it print nicely.</P
@@ -1285,7 +1324,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2179">14.4.7. Raw PostScript printed</H2
+NAME="AEN2313"
+></A
+>13.4.7. Raw PostScript printed</H2
 ><P
 >This is a problem that is usually caused by either the print spooling
 system putting information at the start of the print job that makes
@@ -1298,7 +1339,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2182">14.4.8. Advanced Printing</H2
+NAME="AEN2316"
+></A
+>13.4.8. Advanced Printing</H2
 ><P
 >Note that you can do some pretty magic things by using your
 imagination with the "print command" option and some shell scripts.
@@ -1312,7 +1355,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2185">14.4.9. Real debugging</H2
+NAME="AEN2319"
+></A
+>13.4.9. Real debugging</H2
 ><P
 >If the above debug tips don't help, then maybe you need to bring in
 the bug guns, system tracing. See Tracing.txt in this directory.</P

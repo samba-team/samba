@@ -5,7 +5,7 @@
 >lmhosts</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.77"></HEAD
+CONTENT="Modular DocBook HTML Stylesheet Version 1.77+"></HEAD
 ><BODY
 CLASS="REFENTRY"
 BGCOLOR="#FFFFFF"
@@ -15,7 +15,7 @@ VLINK="#840084"
 ALINK="#0000FF"
 ><H1
 ><A
-NAME="LMHOSTS"
+NAME="LMHOSTS.5"
 ></A
 >lmhosts</H1
 ><DIV
@@ -37,24 +37,28 @@ NAME="AEN8"
 ><TT
 CLASS="FILENAME"
 >lmhosts</TT
-> is the <A
-HREF="samba.7.html"
-TARGET="_top"
->	Samba</A
+> is the <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>Samba</SPAN
+>(7)</SPAN
 > NetBIOS name to IP address mapping file.</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN12"
+NAME="AEN14"
 ></A
 ><H2
 >DESCRIPTION</H2
 ><P
->This file is part of the <A
-HREF="samba.7.html"
-TARGET="_top"
->	Samba</A
+>This file is part of the <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>Samba</SPAN
+>(7)</SPAN
 > suite.</P
 ><P
 ><TT
@@ -78,7 +82,7 @@ CLASS="FILENAME"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN20"
+NAME="AEN24"
 ></A
 ><H2
 >FILE FORMAT</H2
@@ -86,7 +90,7 @@ NAME="AEN20"
 >It is an ASCII file containing one line for NetBIOS name. 
 	The two fields on each line are separated from each other by 
 	white space. Any entry beginning with '#' is ignored. Each line 
-	in the lmhosts file contains the following information :</P
+	in the lmhosts file contains the following information:</P
 ><P
 ></P
 ><UL
@@ -107,8 +111,7 @@ NAME="AEN20"
 ></LI
 ></UL
 ><P
->An example follows :</P
-><P
+>An example follows:</P
 ><PRE
 CLASS="PROGRAMLISTING"
 >#
@@ -118,7 +121,6 @@ CLASS="PROGRAMLISTING"
 192.9.200.20	NTSERVER#20
 192.9.200.21	SAMBASERVER
 	</PRE
-></P
 ><P
 >Contains three IP to NetBIOS name mappings. The first 
 	and third will be returned for any queries for the names "TESTPC" 
@@ -133,58 +135,57 @@ CLASS="PROGRAMLISTING"
 CLASS="FILENAME"
 >lmhosts</TT
 > file 
-	is in the same directory as the <A
-HREF="smb.conf.5.html"
-TARGET="_top"
-> 		
-	smb.conf(5)&#62;</A
+	is in the same directory as the <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smb.conf</SPAN
+>(5)</SPAN
 > file.</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN37"
+NAME="AEN42"
 ></A
 ><H2
 >VERSION</H2
 ><P
->This man page is correct for version 2.2 of 
-	the Samba suite.</P
+>This man page is correct for version 3.0 of the Samba suite.</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN40"
+NAME="AEN45"
 ></A
 ><H2
 >SEE ALSO</H2
 ><P
-><A
-HREF="smbclient.1.html"
-TARGET="_top"
-><B
-CLASS="COMMAND"
->smbclient(1)
-	</B
-></A
->, <A
-HREF="smb.conf.5.html#NAMERESOLVEORDER"
-TARGET="_top"
->	smb.conf(5)</A
->, and <A
-HREF="smbpasswd.8.html"
-TARGET="_top"
-><B
-CLASS="COMMAND"
->	smbpasswd(8)</B
-></A
+><SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smbclient</SPAN
+>(1)</SPAN
+>, <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smb.conf</SPAN
+>(5)</SPAN
+>, and <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smbpasswd</SPAN
+>(8)</SPAN
 >
 	</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN48"
+NAME="AEN57"
 ></A
 ><H2
 >AUTHOR</H2
@@ -203,7 +204,8 @@ TARGET="_top"
 >	ftp://ftp.icce.rug.nl/pub/unix/</A
 >) and updated for the Samba 2.0 
 	release by Jeremy Allison.  The conversion to DocBook for 
-	Samba 2.2 was done by Gerald Carter</P
+	Samba 2.2 was done by Gerald Carter. The conversion to DocBook
+	XML 4.2 was done by Alexander Bokovoy.</P
 ></DIV
 ></BODY
 ></HTML

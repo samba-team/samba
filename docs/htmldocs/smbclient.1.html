@@ -5,7 +5,7 @@
 >smbclient</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.77"></HEAD
+CONTENT="Modular DocBook HTML Stylesheet Version 1.77+"></HEAD
 ><BODY
 CLASS="REFENTRY"
 BGCOLOR="#FFFFFF"
@@ -15,7 +15,7 @@ VLINK="#840084"
 ALINK="#0000FF"
 ><H1
 ><A
-NAME="SMBCLIENT"
+NAME="SMBCLIENT.1"
 ></A
 >smbclient</H1
 ><DIV
@@ -38,20 +38,22 @@ NAME="AEN8"
 ><B
 CLASS="COMMAND"
 >smbclient</B
->  {servicename} [password] [-b &lt;buffer size&gt;] [-d debuglevel] [-D Directory] [-U username] [-W workgroup] [-M &lt;netbios name&gt;] [-m maxprotocol] [-A authfile] [-N] [-l logfile] [-L &lt;netbios name&gt;] [-I destinationIP] [-E] [-c &lt;command string&gt;] [-i scope] [-O &lt;socket options&gt;] [-p port] [-R &lt;name resolve order&gt;] [-s &lt;smb config file&gt;] [-T&lt;c|x&gt;IXFqgbNan]</P
+>  {servicename} [password] [-b &lt;buffer size&gt;] [-d debuglevel] [-D Directory] [-U username] [-W workgroup] [-M &lt;netbios name&gt;] [-m maxprotocol] [-A authfile] [-N] [-l logfile] [-L &lt;netbios name&gt;] [-I destinationIP] [-E] [-c &lt;command string&gt;] [-i scope] [-O &lt;socket options&gt;] [-p port] [-R &lt;name resolve order&gt;] [-s &lt;smb config file&gt;] [-T&lt;c|x&gt;IXFqgbNan] [-k]</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN33"
+NAME="AEN34"
 ></A
 ><H2
 >DESCRIPTION</H2
 ><P
->This tool is part of the <A
-HREF="samba.7.html"
-TARGET="_top"
->	Samba</A
+>This tool is part of the <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>Samba</SPAN
+>(7)</SPAN
 > suite.</P
 ><P
 ><B
@@ -59,9 +61,12 @@ CLASS="COMMAND"
 >smbclient</B
 > is a client that can 
 	'talk' to an SMB/CIFS server. It offers an interface
-	similar to that of the ftp program (see <B
-CLASS="COMMAND"
->ftp(1)</B
+	similar to that of the ftp program (see <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>ftp</SPAN
+>(1)</SPAN
 >).  
 	Operations include things like getting files from the server 
 	to the local machine, putting files from the local machine to 
@@ -71,7 +76,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN40"
+NAME="AEN45"
 ></A
 ><H2
 >OPTIONS</H2
@@ -126,9 +131,13 @@ CLASS="PARAMETER"
 CLASS="COMMAND"
 >smbclient</B
 > or 
-		using the name resolve order parameter in the <TT
-CLASS="FILENAME"
->smb.conf</TT
+		using the name resolve order parameter in 
+		the <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smb.conf</SPAN
+>(5)</SPAN
 > file, 
 		allowing an administrator to change the order and methods 
 		by which server names are looked up. </P
@@ -178,10 +187,13 @@ CLASS="PARAMETER"
 >-s smb.conf</DT
 ><DD
 ><P
->Specifies the location of the all important 
-		<TT
-CLASS="FILENAME"
->smb.conf</TT
+>Specifies the location of the all 
+		important <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smb.conf</SPAN
+>(5)</SPAN
 > file. </P
 ></DD
 ><DT
@@ -189,10 +201,14 @@ CLASS="FILENAME"
 ><DD
 ><P
 >TCP socket options to set on the client 
-		socket. See the socket options parameter in the <TT
-CLASS="FILENAME"
->		smb.conf (5)</TT
-> manpage for the list of valid 
+		socket. See the socket options parameter in 
+		the <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smb.conf</SPAN
+>(5)</SPAN
+> manual page for the list of valid 
 		options. </P
 ></DD
 ><DT
@@ -205,7 +221,7 @@ CLASS="FILENAME"
 		string of different name resolution options.</P
 ><P
 >The options are :"lmhosts", "host", "wins" and "bcast". They 
-		cause names to be resolved as follows :</P
+		cause names to be resolved as follows:</P
 ><P
 ></P
 ><UL
@@ -214,12 +230,15 @@ CLASS="FILENAME"
 ><TT
 CLASS="CONSTANT"
 >lmhosts</TT
-> : Lookup an IP 
+>: Lookup an IP 
 			address in the Samba lmhosts file. If the line in lmhosts has 
-			no name type attached to the NetBIOS name (see the <A
-HREF="lmhosts.5.html"
-TARGET="_top"
->lmhosts(5)</A
+			no name type attached to the NetBIOS name (see 
+			the <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>lmhosts</SPAN
+>(5)</SPAN
 > for details) then
 			any name type matches for lookup.</P
 ></LI
@@ -228,7 +247,7 @@ TARGET="_top"
 ><TT
 CLASS="CONSTANT"
 >host</TT
-> : Do a standard host 
+>: Do a standard host 
 			name to IP address resolution, using the system <TT
 CLASS="FILENAME"
 >/etc/hosts
@@ -248,7 +267,7 @@ CLASS="FILENAME"
 ><TT
 CLASS="CONSTANT"
 >wins</TT
-> : Query a name with 
+>: Query a name with 
 			the IP address listed in the <TT
 CLASS="PARAMETER"
 ><I
@@ -263,7 +282,7 @@ CLASS="PARAMETER"
 ><TT
 CLASS="CONSTANT"
 >bcast</TT
-> : Do a broadcast on 
+>: Do a broadcast on 
 			each of the known local interfaces listed in the 
 			<TT
 CLASS="PARAMETER"
@@ -278,9 +297,12 @@ CLASS="PARAMETER"
 ></UL
 ><P
 >If this parameter is not set then the name resolve order 
-		defined in the <TT
-CLASS="FILENAME"
->smb.conf</TT
+		defined in the <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smb.conf</SPAN
+>(5)</SPAN
 > file parameter  
 		(name resolve order) will be used. </P
 ><P
@@ -291,9 +313,12 @@ CLASS="PARAMETER"
 >name resolve order
 		</I
 ></TT
-> parameter of the <TT
-CLASS="FILENAME"
->smb.conf</TT
+> parameter of the <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smb.conf</SPAN
+>(5)</SPAN
 > file the name resolution
 		methods will be attempted in this order. </P
 ></DD
@@ -343,9 +368,17 @@ CLASS="PARAMETER"
 > options useful, as they allow you to 
 		control the FROM and TO parts of the message. </P
 ><P
->See the message command parameter in the <TT
-CLASS="FILENAME"
->		smb.conf(5)</TT
+>See the <TT
+CLASS="PARAMETER"
+><I
+>message command</I
+></TT
+> parameter in the <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smb.conf</SPAN
+>(5)</SPAN
 > for a description of how to handle incoming 
 		WinPopup messages in Samba. </P
 ><P
@@ -614,8 +647,7 @@ CLASS="COMMAND"
 CLASS="PROGRAMLISTING"
 >username = &lt;value&gt; 
 password = &lt;value&gt;
-domain = &lt;value&gt;
-		</PRE
+domain = &lt;value&gt;</PRE
 ></P
 ><P
 >If the domain parameter is missing the current workgroup name
@@ -690,12 +722,14 @@ CLASS="COMMAND"
 ><DD
 ><P
 >Override the default workgroup (domain) specified
-		in the workgroup parameter of the <TT
-CLASS="FILENAME"
->smb.conf</TT
->
-		file for this connection. This may be needed to connect to some
-		servers. </P
+		in the workgroup parameter of the <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smb.conf</SPAN
+>(5)</SPAN
+>	file for this connection. This may be 
+		needed to connect to some servers. </P
 ></DD
 ><DT
 >-T tar options</DT
@@ -905,7 +939,7 @@ CLASS="EMPHASIS"
 ></SPAN
 ></P
 ><P
->All file names can be given as DOS path names (with '\' 
+>All file names can be given as DOS path names (with '\\' 
 		as the component separator) or as UNIX path names (with '/' as 
 		the component separator). </P
 ><P
@@ -1000,13 +1034,21 @@ CLASS="COMMAND"
 >-c 'print -'</B
 >. </P
 ></DD
+><DT
+>-k</DT
+><DD
+><P
+>		Try to authenticate with kerberos. Only useful in 
+		an Active Directory environment.
+		</P
+></DD
 ></DL
 ></DIV
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN310"
+NAME="AEN336"
 ></A
 ><H2
 >OPERATIONS</H2
@@ -1019,7 +1061,7 @@ CLASS="PROMPT"
 >smb:\&gt; </TT
 ></P
 ><P
->The backslash ("\") indicates the current working directory 
+>The backslash ("\\") indicates the current working directory 
 	on the server, and will change if the current working directory 
 	is changed. </P
 ><P
@@ -1496,7 +1538,7 @@ CLASS="REPLACEABLE"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN501"
+NAME="AEN527"
 ></A
 ><H2
 >NOTES</H2
@@ -1517,7 +1559,7 @@ NAME="AEN501"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN506"
+NAME="AEN532"
 ></A
 ><H2
 >ENVIRONMENT VARIABLES</H2
@@ -1550,7 +1592,7 @@ CLASS="ENVAR"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN514"
+NAME="AEN540"
 ></A
 ><H2
 >INSTALLATION</H2
@@ -1581,10 +1623,12 @@ CLASS="EMPHASIS"
 	and writeable only by the user. </P
 ><P
 >To test the client, you will need to know the name of a 
-	running SMB/CIFS server. It is possible to run <B
-CLASS="COMMAND"
->smbd(8)
-	</B
+	running SMB/CIFS server. It is possible to run <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smbd</SPAN
+>(8)</SPAN
 > as an ordinary user - running that server as a daemon 
 	on a user-accessible port (typically any port number over 1024)
 	would provide a suitable test server. </P
@@ -1592,7 +1636,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN524"
+NAME="AEN552"
 ></A
 ><H2
 >DIAGNOSTICS</H2
@@ -1608,18 +1652,17 @@ NAME="AEN524"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN528"
+NAME="AEN556"
 ></A
 ><H2
 >VERSION</H2
 ><P
->This man page is correct for version 2.2 of 
-	the Samba suite.</P
+>This man page is correct for version 2.2 of the Samba suite.</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN531"
+NAME="AEN559"
 ></A
 ><H2
 >AUTHOR</H2
@@ -1631,14 +1674,14 @@ NAME="AEN531"
 ><P
 >The original Samba man pages were written by Karl Auer. 
 	The man page sources were converted to YODL format (another 
-	excellent piece of Open Source software, available at
-	<A
+	excellent piece of Open Source software, available at <A
 HREF="ftp://ftp.icce.rug.nl/pub/unix/"
 TARGET="_top"
 >	ftp://ftp.icce.rug.nl/pub/unix/</A
 >) and updated for the Samba 2.0 
 	release by Jeremy Allison.  The conversion to DocBook for 
-	Samba 2.2 was done by Gerald Carter</P
+	Samba 2.2 was done by Gerald Carter. The conversion to DocBook XML 4.2 for Samba 3.0
+	was done by Alexander Bokovoy.</P
 ></DIV
 ></BODY
 ></HTML

@@ -5,8 +5,7 @@
 >Stackable VFS modules</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
-"><LINK
+CONTENT="Modular DocBook HTML Stylesheet Version 1.77+"><LINK
 REL="HOME"
 TITLE="SAMBA Project Documentation"
 HREF="samba-howto-collection.html"><LINK
@@ -14,11 +13,11 @@ REL="UP"
 TITLE="Optional configuration"
 HREF="optional.html"><LINK
 REL="PREVIOUS"
-TITLE="Passdb XML plugin"
-HREF="pdb-xml.html"><LINK
+TITLE="Improved browsing in samba"
+HREF="improved-browsing.html"><LINK
 REL="NEXT"
-TITLE="Storing Samba's User/Machine Account information in an LDAP Directory"
-HREF="samba-ldap-howto.html"></HEAD
+TITLE="Access Samba source code via CVS"
+HREF="cvs-access.html"></HEAD
 ><BODY
 CLASS="CHAPTER"
 BGCOLOR="#FFFFFF"
@@ -46,7 +45,7 @@ WIDTH="10%"
 ALIGN="left"
 VALIGN="bottom"
 ><A
-HREF="pdb-xml.html"
+HREF="improved-browsing.html"
 ACCESSKEY="P"
 >Prev</A
 ></TD
@@ -60,7 +59,7 @@ WIDTH="10%"
 ALIGN="right"
 VALIGN="bottom"
 ><A
-HREF="samba-ldap-howto.html"
+HREF="cvs-access.html"
 ACCESSKEY="N"
 >Next</A
 ></TD
@@ -73,13 +72,17 @@ WIDTH="100%"></DIV
 CLASS="CHAPTER"
 ><H1
 ><A
-NAME="VFS">Chapter 18. Stackable VFS modules</H1
+NAME="VFS"
+></A
+>Chapter 16. Stackable VFS modules</H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2640">18.1. Introduction and configuration</H1
+NAME="AEN2855"
+></A
+>16.1. Introduction and configuration</H1
 ><P
 >Since samba 3.0, samba supports stackable VFS(Virtual File System) modules.  
 Samba passes each request to access the unix file system thru the loaded VFS modules. 
@@ -118,13 +121,17 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2649">18.2. Included modules</H1
+NAME="AEN2864"
+></A
+>16.2. Included modules</H1
 ><DIV
 CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2651">18.2.1. audit</H2
+NAME="AEN2866"
+></A
+>16.2.1. audit</H2
 ><P
 >A simple module to audit file access to the syslog
 facility.  The following operations are logged:
@@ -160,7 +167,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2659">18.2.2. recycle</H2
+NAME="AEN2874"
+></A
+>16.2.2. recycle</H2
 ><P
 >A recycle-bin like modules. When used any unlink call
 will be intercepted and files moved to the recycle
@@ -229,7 +238,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2696">18.2.3. netatalk</H2
+NAME="AEN2911"
+></A
+>16.2.3. netatalk</H2
 ><P
 >A netatalk module, that will ease co-existence of samba and
 netatalk file sharing services.</P
@@ -260,7 +271,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2703">18.3. VFS modules available elsewhere</H1
+NAME="AEN2918"
+></A
+>16.3. VFS modules available elsewhere</H1
 ><P
 >This section contains a listing of various other VFS modules that 
 have been posted but don't currently reside in the Samba CVS 
@@ -274,7 +287,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2707">18.3.1. DatabaseFS</H2
+NAME="AEN2922"
+></A
+>16.3.1. DatabaseFS</H2
 ><P
 >URL: <A
 HREF="http://www.css.tayloru.edu/~elorimer/databasefs/index.php"
@@ -306,7 +321,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2715">18.3.2. vscan</H2
+NAME="AEN2930"
+></A
+>16.3.2. vscan</H2
 ><P
 >URL: <A
 HREF="http://www.openantivirus.org/"
@@ -338,7 +355,7 @@ WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
 ><A
-HREF="pdb-xml.html"
+HREF="improved-browsing.html"
 ACCESSKEY="P"
 >Prev</A
 ></TD
@@ -356,7 +373,7 @@ WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
 ><A
-HREF="samba-ldap-howto.html"
+HREF="cvs-access.html"
 ACCESSKEY="N"
 >Next</A
 ></TD
@@ -366,7 +383,7 @@ ACCESSKEY="N"
 WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
->Passdb XML plugin</TD
+>Improved browsing in samba</TD
 ><TD
 WIDTH="34%"
 ALIGN="center"
@@ -380,7 +397,7 @@ ACCESSKEY="U"
 WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
->Storing Samba's User/Machine Account information in an LDAP Directory</TD
+>Access Samba source code via CVS</TD
 ></TR
 ></TABLE
 ></DIV

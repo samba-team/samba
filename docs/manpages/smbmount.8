@@ -3,7 +3,8 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMBMOUNT" "8" "05 November 2002" "" ""
+.TH "SMBMOUNT" "8" "28 January 2003" "" ""
+
 .SH NAME
 smbmount \- mount an smbfs filesystem
 .SH SYNOPSIS
@@ -14,7 +15,7 @@ smbmount \- mount an smbfs filesystem
 .PP
 \fBsmbmount\fR mounts a Linux SMB filesystem. It 
 is usually invoked as \fBmount.smbfs\fR by
-the \fBmount(8)\fR command when using the 
+the \fBmount\fR(8) command when using the 
 "-t smbfs" option. This command only works in Linux, and the kernel must
 support the smbfs filesystem. 
 .PP
@@ -27,11 +28,10 @@ unknown options.
 \fBsmbmount\fR is a daemon. After mounting it keeps running until
 the mounted smbfs is umounted. It will log things that happen
 when in daemon mode using the "machine name" smbmount, so
-typically this output will end up in \fIlog.smbmount\fR. The
-\fBsmbmount\fR process may also be called mount.smbfs.
+typically this output will end up in \fIlog.smbmount\fR. The \fB smbmount\fR process may also be called mount.smbfs.
 .PP
 \fBNOTE:\fR \fBsmbmount\fR 
-calls \fBsmbmnt(8)\fR to do the actual mount. You 
+calls \fBsmbmnt\fR(8) to do the actual mount. You 
 must make sure that \fBsmbmnt\fR is in the path so 
 that it can be found. 
 .SH "OPTIONS"
@@ -58,14 +58,12 @@ in the PASSWD environment variable or a credentials file (see
 below) will be read correctly.
 .TP
 \fBcredentials=<filename>\fR
-specifies a file that contains a username
-and/or password. The format of the file is:
-
+specifies a file that contains a username and/or password. 
+The format of the file is:
 
 .nf
-		username = <value>
-		password = <value>
-		
+username = <value>
+password = <value>
 .fi
 
 This is preferred over having passwords in plaintext in a
@@ -114,8 +112,7 @@ sets the destination host or IP address.
 sets the workgroup on the destination 
 .TP
 \fBsockopt=<arg>\fR
-sets the TCP socket options. See the \fIsmb.conf
-\fR \fIsocket options\fR option.
+sets the TCP socket options. See the \fBsmb.conf\fR(5) \fIsocket options\fR option.
 .TP
 \fBscope=<arg>\fR
 sets the NetBIOS scope 
@@ -196,10 +193,8 @@ source tree may contain additional options and information.
 .PP
 FreeBSD also has a smbfs, but it is not related to smbmount
 .PP
-For Solaris, HP-UX and others you may want to look at
-\fBsmbsh(1)\fR or at other
-solutions, such as sharity or perhaps replacing the SMB server with
-a NFS server.
+For Solaris, HP-UX and others you may want to look at \fBsmbsh\fR(1) or at other solutions, such as 
+Sharity or perhaps replacing the SMB server with a NFS server.
 .SH "AUTHOR"
 .PP
 Volker Lendecke, Andrew Tridgell, Michael H. Warfield 
@@ -212,4 +207,5 @@ The SAMBA Mailing list <URL:mailto:samba@samba.org>
 is the preferred place to ask questions regarding these programs.
 .PP
 The conversion of this manpage for Samba 2.2 was performed 
-by Gerald Carter
+by Gerald Carter. The conversion to DocBook XML 4.2 for Samba 3.0
+was done by Alexander Bokovoy.

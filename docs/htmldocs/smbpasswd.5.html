@@ -5,7 +5,7 @@
 >smbpasswd</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.77"></HEAD
+CONTENT="Modular DocBook HTML Stylesheet Version 1.77+"></HEAD
 ><BODY
 CLASS="REFENTRY"
 BGCOLOR="#FFFFFF"
@@ -15,7 +15,7 @@ VLINK="#840084"
 ALINK="#0000FF"
 ><H1
 ><A
-NAME="SMBPASSWD"
+NAME="SMBPASSWD.5"
 ></A
 >smbpasswd</H1
 ><DIV
@@ -47,10 +47,12 @@ NAME="AEN11"
 ><H2
 >DESCRIPTION</H2
 ><P
->This tool is part of the <A
-HREF="samba.7.html"
-TARGET="_top"
->	Samba</A
+>This tool is part of the <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>Samba</SPAN
+>(7)</SPAN
 > suite.</P
 ><P
 >smbpasswd is the Samba encrypted password file. It contains 
@@ -62,7 +64,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN16"
+NAME="AEN18"
 ></A
 ><H2
 >FILE FORMAT</H2
@@ -204,7 +206,7 @@ CLASS="EMPHASIS"
 		the attributes of the users account. In the Samba 2.2 release 
 		this field is bracketed by '[' and ']' characters and is always 
 		13 characters in length (including the '[' and ']' characters).
-		The contents of this field may be any of the characters.
+		The contents of this field may be any of the following characters:
 		</P
 ><P
 ></P
@@ -241,10 +243,12 @@ CLASS="PARAMETER"
 > parameter is set in the <A
 HREF="smb.conf.5.html#NULLPASSWORDS"
 TARGET="_top"
-><TT
-CLASS="FILENAME"
->smb.conf(5)
-			</TT
+><SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smb.conf</SPAN
+>(5)</SPAN
 ></A
 > config file. </P
 ></LI
@@ -257,8 +261,7 @@ CLASS="EMPHASIS"
 >D</I
 ></SPAN
 > - This means the account 
-			is disabled and no SMB/CIFS logins  will be	allowed for 
-			this user. </P
+			is disabled and no SMB/CIFS logins  will be allowed for this user. </P
 ></LI
 ><LI
 ><P
@@ -296,7 +299,7 @@ CLASS="EMPHASIS"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN73"
+NAME="AEN77"
 ></A
 ><H2
 >VERSION</H2
@@ -307,23 +310,23 @@ NAME="AEN73"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN76"
+NAME="AEN80"
 ></A
 ><H2
 >SEE ALSO</H2
 ><P
-><A
-HREF="smbpasswd.8.html"
-TARGET="_top"
-><B
-CLASS="COMMAND"
->smbpasswd(8)</B
-></A
->, 
-	<A
-HREF="samba.7.html"
-TARGET="_top"
->samba(7)</A
+><SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smbpasswd</SPAN
+>(8)</SPAN
+>, <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>Samba</SPAN
+>(7)</SPAN
 >, and
 	the Internet RFC1321 for details on the MD4 algorithm.
 	</P
@@ -331,7 +334,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN82"
+NAME="AEN89"
 ></A
 ><H2
 >AUTHOR</H2
@@ -343,14 +346,14 @@ NAME="AEN82"
 ><P
 >The original Samba man pages were written by Karl Auer. 
 	The man page sources were converted to YODL format (another 
-	excellent piece of Open Source software, available at
-	<A
+	excellent piece of Open Source software, available at <A
 HREF="ftp://ftp.icce.rug.nl/pub/unix/"
 TARGET="_top"
 >	ftp://ftp.icce.rug.nl/pub/unix/</A
 >) and updated for the Samba 2.0 
 	release by Jeremy Allison.  The conversion to DocBook for 
-	Samba 2.2 was done by Gerald Carter</P
+	Samba 2.2 was done by Gerald Carter. The conversion to DocBook XML 4.2
+	for Samba 3.0 was done by Alexander Bokovoy.</P
 ></DIV
 ></BODY
 ></HTML

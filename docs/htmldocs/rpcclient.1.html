@@ -5,7 +5,7 @@
 >rpcclient</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.77"></HEAD
+CONTENT="Modular DocBook HTML Stylesheet Version 1.77+"></HEAD
 ><BODY
 CLASS="REFENTRY"
 BGCOLOR="#FFFFFF"
@@ -15,7 +15,7 @@ VLINK="#840084"
 ALINK="#0000FF"
 ><H1
 ><A
-NAME="RPCCLIENT"
+NAME="RPCCLIENT.1"
 ></A
 >rpcclient</H1
 ><DIV
@@ -48,10 +48,12 @@ NAME="AEN23"
 ><H2
 >DESCRIPTION</H2
 ><P
->This tool is part of the <A
-HREF="samba.7.html"
-TARGET="_top"
->	Samba</A
+>This tool is part of the <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>Samba</SPAN
+>(7)</SPAN
 > suite.</P
 ><P
 ><B
@@ -66,7 +68,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN29"
+NAME="AEN31"
 ></A
 ><H2
 >OPTIONS</H2
@@ -90,10 +92,12 @@ CLASS="PARAMETER"
 >name resolve order</I
 ></TT
 ></A
-> line from 
-		<TT
-CLASS="FILENAME"
->smb.conf(5)</TT
+> line from <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smb.conf</SPAN
+>(5)</SPAN
 >.</P
 ></DD
 ><DT
@@ -107,10 +111,9 @@ CLASS="FILENAME"
 ><P
 ><PRE
 CLASS="PROGRAMLISTING"
->		username = &lt;value&gt; 
-		password = &lt;value&gt;
-		domain   = &lt;value&gt;
-		</PRE
+>username = &lt;value&gt; 
+password = &lt;value&gt;
+domain   = &lt;value&gt;</PRE
 ></P
 ><P
 >Make certain that the permissions on the file restrict 
@@ -122,6 +125,12 @@ CLASS="PROGRAMLISTING"
 ><P
 >execute semicolon separated commands (listed 
 		below)) </P
+></DD
+><DT
+>-h|--help</DT
+><DD
+><P
+>Print a summary of command line options.</P
 ></DD
 ><DT
 >-d|--debug=debuglevel</DT
@@ -163,12 +172,6 @@ CLASS="FILENAME"
 >smb.conf(5)</TT
 ></A
 > file.</P
-></DD
-><DT
->-h|--help</DT
-><DD
-><P
->Print a summary of command line options.</P
 ></DD
 ><DT
 >-I IP-address</DT
@@ -303,7 +306,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN107"
+NAME="AEN111"
 ></A
 ><H2
 >COMMANDS</H2
@@ -467,15 +470,14 @@ CLASS="PARAMETER"
 ><P
 ><PRE
 CLASS="PROGRAMLISTING"
->		Long Printer Name:\
-		Driver File Name:\
-		Data File Name:\
-		Config File Name:\
-		Help File Name:\
-		Language Monitor Name:\
-		Default Data Type:\
-		Comma Separated list of Files
-		</PRE
+>Long Printer Name:\
+Driver File Name:\
+Data File Name:\
+Config File Name:\
+Help File Name:\
+Language Monitor Name:\
+Default Data Type:\
+Comma Separated list of Files</PRE
 ></P
 ><P
 >Any empty fields should be enter as the string "NULL". </P
@@ -705,7 +707,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN227"
+NAME="AEN231"
 ></A
 ><H2
 >BUGS</H2
@@ -724,7 +726,7 @@ CLASS="COMMAND"
 CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
->"WARNING!</I
+>WARNING!</I
 ></SPAN
 > The MSRPC over SMB code has 
 	been developed from examining  Network traces. No documentation is 
@@ -734,23 +736,28 @@ CLASS="EMPHASIS"
 	to be... a bit flaky in places. </P
 ><P
 >The development of Samba's implementation is also a bit rough, 
-	and as more  of the services are understood, it can even result in 
-	versions of  <B
-CLASS="COMMAND"
->smbd(8)</B
-> and <B
-CLASS="COMMAND"
->rpcclient(1)</B
-> 
-	that are incompatible for some commands or  services. Additionally, 
+	and as more of the services are understood, it can even result in 
+	versions of <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smbd</SPAN
+>(8)</SPAN
+> and <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>rpcclient</SPAN
+>(1)</SPAN
+> that are incompatible for some commands or  services. Additionally, 
 	the developers are sending reports to Microsoft,  and problems found 
 	or reported to Microsoft are fixed in Service Packs,  which may 
-	result in incompatibilities." </P
+	result in incompatibilities.</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN237"
+NAME="AEN245"
 ></A
 ><H2
 >VERSION</H2
@@ -761,7 +768,7 @@ NAME="AEN237"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN240"
+NAME="AEN248"
 ></A
 ><H2
 >AUTHOR</H2
@@ -774,7 +781,8 @@ NAME="AEN240"
 >The original rpcclient man page was written by Matthew 
 	Geddes, Luke Kenneth Casson Leighton, and rewritten by Gerald Carter.  
 	The conversion to DocBook for Samba 2.2 was done by Gerald 
-	Carter.</P
+	Carter. The conversion to DocBook XML 4.2 for Samba 3.0 was
+	done by Alexander Bokovoy.</P
 ></DIV
 ></BODY
 ></HTML

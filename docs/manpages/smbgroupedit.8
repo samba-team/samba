@@ -3,7 +3,8 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMBGROUPEDIT" "8" "03 January 2003" "" ""
+.TH "SMBGROUPEDIT" "8" "28 January 2003" "" ""
+
 .SH NAME
 smbgroupedit \- Query/set/change UNIX - Windows NT group mapping
 .SH SYNOPSIS
@@ -12,8 +13,7 @@ smbgroupedit \- Query/set/change UNIX - Windows NT group mapping
 
 .SH "DESCRIPTION"
 .PP
-This program is part of the Samba
-suite.
+This program is part of the \fBSamba\fR(7) suite.
 .PP
 The  smbgroupedit  command  allows for mapping unix groups
 to NT Builtin, Domain, or Local groups.  Also
@@ -39,8 +39,7 @@ give a long listing, of the format:
     Privilege      :
 .fi
 
-For examples,
-
+For example:
 
 .nf
 Users
@@ -59,8 +58,7 @@ display a short listing of the format:
 NTGroupName(SID) -> UnixGroupName
 .fi
 
-For example,
-
+For example:
 
 .nf
 Users (S-1-5-32-545) -> -1
@@ -94,8 +92,7 @@ map this domadm group to the 'domain admins' group:
 .RS
 .TP 3
 1. 
-Get the SID for the Windows NT "Domain Admins"
-group:
+Get the SID for the Windows NT "Domain Admins" group:
 
 
 .nf
@@ -106,7 +103,6 @@ Domain Admins (S-1-5-21-1108995562-3116817432-1375597819-512) -> -1
 2. 
 map the unix domadm group to the Windows NT
 "Domain Admins" group, by running the command:
-
 
 .nf
 root# \fBsmbgroupedit \\
@@ -119,7 +115,6 @@ Domain Admins SID (the S-1-5-21-...-512) is different for every PDC.
 .RE
 .PP
 To verify that your mapping has taken effect:
-.PP
 
 .nf
 root# \fBsmbgroupedit -vs|grep "Domain Admins"\fR
@@ -129,7 +124,6 @@ Domain Admins (S-1-5-21-1108995562-3116817432-1375597819-512) -> domadm
 To give access to a certain directory on a domain member machine (an
 NT/W2K or a samba server running winbind) to some users who are member
 of a group on your samba PDC, flag that group as a domain group:
-.PP
 
 .nf
 root# \fBsmbgroupedit -a unixgroup -td\fR
@@ -140,7 +134,7 @@ This man page is correct for the 3.0alpha releases of
 the Samba suite.
 .SH "SEE ALSO"
 .PP
-smb.conf(5)
+\fBsmb.conf\fR(5)
 .SH "AUTHOR"
 .PP
 The original Samba software and related utilities
@@ -150,4 +144,5 @@ to the way the Linux kernel is developed.
 .PP
 \fBsmbgroupedit\fR was written by Jean Francois Micouleau.
 The current set of manpages and documentation is maintained
-by the Samba Team in the same fashion as the Samba source code.
+by the Samba Team in the same fashion as the Samba source code. The conversion
+to DocBook XML 4.2 for Samba 3.0 was done by Alexander Bokovoy.

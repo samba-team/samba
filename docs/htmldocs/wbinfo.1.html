@@ -5,7 +5,7 @@
 >wbinfo</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.77"></HEAD
+CONTENT="Modular DocBook HTML Stylesheet Version 1.77+"></HEAD
 ><BODY
 CLASS="REFENTRY"
 BGCOLOR="#FFFFFF"
@@ -15,7 +15,7 @@ VLINK="#840084"
 ALINK="#0000FF"
 ><H1
 ><A
-NAME="WBINFO"
+NAME="WBINFO.1"
 ></A
 >wbinfo</H1
 ><DIV
@@ -47,28 +47,32 @@ NAME="AEN27"
 ><H2
 >DESCRIPTION</H2
 ><P
->This tool is part of the <A
-HREF="samba.7.html"
-TARGET="_top"
->	Samba</A
+>This tool is part of the <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>Samba</SPAN
+>(7)</SPAN
 > suite.</P
 ><P
 >The <B
 CLASS="COMMAND"
 >wbinfo</B
 > program queries and returns information 
-	created and used by the <A
-HREF="winbindd.8.html"
-TARGET="_top"
-><B
-CLASS="COMMAND"
->	winbindd(8)</B
-></A
+	created and used by the <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>winbindd</SPAN
+>(8)</SPAN
 > daemon. </P
 ><P
->The <B
-CLASS="COMMAND"
->winbindd(8)</B
+>The <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>winbindd</SPAN
+>(8)</SPAN
 > daemon must be configured 
 	and running for the <B
 CLASS="COMMAND"
@@ -79,7 +83,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN38"
+NAME="AEN43"
 ></A
 ><H2
 >OPTIONS</H2
@@ -93,33 +97,43 @@ CLASS="VARIABLELIST"
 ><DD
 ><P
 >This option will list all users available 
-		in the Windows NT domain for which the <B
-CLASS="COMMAND"
->winbindd(8)
-		</B
+		in the Windows NT domain for which the <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>winbindd</SPAN
+>(8)</SPAN
 > daemon is operating in. Users in all trusted domains 
 		will also be listed.  Note that this operation does not assign 
-		user ids to any users that have not already been seen by 
-		<B
-CLASS="COMMAND"
->winbindd(8)</B
->.</P
+		user ids to any users that have not already been seen by <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>winbindd</SPAN
+>(8)</SPAN
+>
+		.</P
 ></DD
 ><DT
 >-g</DT
 ><DD
 ><P
 >This option will list all groups available 
-		in the Windows NT domain for which the <B
-CLASS="COMMAND"
->winbindd(8)
-		</B
+		in the Windows NT domain for which the <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>Samba</SPAN
+>(7)</SPAN
 > daemon is operating in. Groups in all trusted domains
 		will also be listed.  Note that this operation does not assign 
-		group ids to any groups that have not already been seen by
-		<B
-CLASS="COMMAND"
->winbindd(8)</B
+		group ids to any groups that have not already been 
+		seen by <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>winbindd</SPAN
+>(8)</SPAN
 >. </P
 ></DD
 ><DT
@@ -132,9 +146,12 @@ CLASS="PARAMETER"
 >-N</I
 ></TT
 > option 
-		queries <B
-CLASS="COMMAND"
->winbindd(8)</B
+		queries <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>winbindd</SPAN
+>(8)</SPAN
 > to query the WINS
 		server for the IP address associated with the NetBIOS name
 		specified by the <TT
@@ -155,9 +172,12 @@ CLASS="PARAMETER"
 >-I</I
 ></TT
 > option 
-		queries <B
-CLASS="COMMAND"
->winbindd(8)</B
+		queries <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>winbindd</SPAN
+>(8)</SPAN
 > to send a node status
 		request to get the NetBIOS name associated with the IP address
 		specified by the <TT
@@ -178,22 +198,28 @@ CLASS="PARAMETER"
 >-n</I
 ></TT
 > option 
-		queries <B
-CLASS="COMMAND"
->winbindd(8)</B
+		queries <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>winbindd</SPAN
+>(8)</SPAN
 > for the SID 		
 		associated with the name specified. Domain names can be specified 
 		before the user name by using the winbind separator character.  
 		For example CWDOM1/Administrator refers to the Administrator
 		user in the domain CWDOM1.  If no domain is specified then the 
-		domain used is the one specified in the <TT
-CLASS="FILENAME"
->smb.conf</TT
->
-		<TT
+		domain used is the one specified in the <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smb.conf</SPAN
+>(5)</SPAN
+>	<TT
 CLASS="PARAMETER"
 ><I
->workgroup</I
+>workgroup
+		</I
 ></TT
 > parameter. </P
 ></DD
@@ -238,9 +264,12 @@ CLASS="PARAMETER"
 ><DD
 ><P
 >Convert a SID to a UNIX user id.  If the SID 
-		does not correspond to a UNIX user mapped by <B
-CLASS="COMMAND"
->		winbindd(8)</B
+		does not correspond to a UNIX user mapped by <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>winbindd</SPAN
+>(8)</SPAN
 > then the operation will fail. </P
 ></DD
 ><DT
@@ -248,10 +277,14 @@ CLASS="COMMAND"
 ><DD
 ><P
 >Convert a SID to a UNIX group id.  If the SID 
-		does not correspond to a UNIX group mapped by <B
-CLASS="COMMAND"
->		winbindd(8)</B
-> then the operation will fail. </P
+		does not correspond to a UNIX group mapped by <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>winbindd</SPAN
+>(8)</SPAN
+> then 
+		the operation will fail. </P
 ></DD
 ><DT
 >-t</DT
@@ -266,9 +299,12 @@ CLASS="COMMAND"
 ><DD
 ><P
 >Produce a list of domains trusted by the 
-		Windows NT server <B
-CLASS="COMMAND"
->winbindd(8)</B
+		Windows NT server <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>winbindd</SPAN
+>(8)</SPAN
 > contacts 
 		when resolving names.  This list does not include the Windows 
 		NT domain the server is a Primary Domain Controller for.
@@ -308,16 +344,18 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN120"
+NAME="AEN147"
 ></A
 ><H2
 >EXIT STATUS</H2
 ><P
 >The wbinfo program returns 0 if the operation 
-	succeeded, or 1 if the operation failed.  If the <B
-CLASS="COMMAND"
->winbindd(8)
-	</B
+	succeeded, or 1 if the operation failed.  If the <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>winbindd</SPAN
+>(8)</SPAN
 > daemon is not working <B
 CLASS="COMMAND"
 >wbinfo</B
@@ -327,7 +365,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN125"
+NAME="AEN154"
 ></A
 ><H2
 >VERSION</H2
@@ -338,25 +376,23 @@ NAME="AEN125"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN128"
+NAME="AEN157"
 ></A
 ><H2
 >SEE ALSO</H2
 ><P
-><A
-HREF="winbindd.8.html"
-TARGET="_top"
-><B
-CLASS="COMMAND"
->winbindd(8)</B
->
-	</A
+><SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>winbindd</SPAN
+>(8)</SPAN
 ></P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN133"
+NAME="AEN163"
 ></A
 ><H2
 >AUTHOR</H2
@@ -376,7 +412,8 @@ CLASS="COMMAND"
 	were written by Tim Potter.</P
 ><P
 >The conversion to DocBook for Samba 2.2 was done 
-	by Gerald Carter</P
+	by Gerald Carter. The conversion to DocBook XML 4.2 for Samba
+	3.0 was done by Alexander Bokovoy.</P
 ></DIV
 ></BODY
 ></HTML

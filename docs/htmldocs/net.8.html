@@ -5,7 +5,7 @@
 >net</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.77"></HEAD
+CONTENT="Modular DocBook HTML Stylesheet Version 1.77+"></HEAD
 ><BODY
 CLASS="REFENTRY"
 BGCOLOR="#FFFFFF"
@@ -15,7 +15,7 @@ VLINK="#840084"
 ALINK="#0000FF"
 ><H1
 ><A
-NAME="NET"
+NAME="NET.8"
 ></A
 >net</H1
 ><DIV
@@ -48,10 +48,12 @@ NAME="AEN31"
 ><H2
 >DESCRIPTION</H2
 ><P
->This tool is part of the <A
-HREF="samba.7.html"
-TARGET="_top"
->	Samba</A
+>This tool is part of the <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>Samba</SPAN
+>(7)</SPAN
 > suite.</P
 ><P
 >The samba net utility is meant to work just like the net utility 
@@ -60,7 +62,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN36"
+NAME="AEN38"
 ></A
 ><H2
 >OPTIONS</H2
@@ -81,7 +83,8 @@ CLASS="VARIABLELIST"
 >-w target-workgroup</DT
 ><DD
 ><P
->		Sets target workgroup or domain. You have to specify either this option or the IP address or the name of a server.
+>		Sets target workgroup or domain. You have to specify 
+		either this option or the IP address or the name of a server.
 		</P
 ></DD
 ><DT
@@ -102,7 +105,8 @@ CLASS="VARIABLELIST"
 >-I ip-address</DT
 ><DD
 ><P
->		IP address of target server to use. You have to specify either this option or a target workgroup or a target server.
+>		IP address of target server to use. You have to
+		specify either this option or a target workgroup or a target server.
 		</P
 ></DD
 ><DT
@@ -130,7 +134,8 @@ CLASS="VARIABLELIST"
 >-S server</DT
 ><DD
 ><P
->		Name of target server. You should specify either this option or a target workgroup or a target IP address.
+>		Name of target server. You should specify either 
+		this option or a target workgroup or a target IP address.
 		</P
 ></DD
 ><DT
@@ -215,7 +220,7 @@ CLASS="FILENAME"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN116"
+NAME="AEN118"
 ></A
 ><H2
 >TIME</H2
@@ -245,7 +250,10 @@ CLASS="COMMAND"
 >SYSTEM</DT
 ><DD
 ><P
->		Displays the time on the remote server in a format ready for /bin/date
+>		Displays the time on the remote server in a format ready for <B
+CLASS="COMMAND"
+>/bin/date</B
+>
 		</P
 ></DD
 ><DT
@@ -253,7 +261,10 @@ CLASS="COMMAND"
 ><DD
 ><P
 >		Tries to set the date and time of the local server to that on 
-		the remote server using /bin/date.
+		the remote server using <B
+CLASS="COMMAND"
+>/bin/date</B
+>.
 		</P
 ></DD
 ><DT
@@ -269,7 +280,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN138"
+NAME="AEN142"
 ></A
 ><H2
 >RPC</H2
@@ -320,7 +331,7 @@ CLASS="VARIABLELIST"
 		</P
 ></DD
 ><DT
->USER ADD &lt;name&gt; [password] [-F user flags] [misc. options</DT
+>USER ADD &lt;name&gt; [password] [-F user flags] [misc. options]</DT
 ><DD
 ><P
 >		Add specified user
@@ -373,7 +384,7 @@ CLASS="VARIABLELIST"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN191"
+NAME="AEN195"
 ></A
 ><H2
 >VERSION</H2
@@ -384,7 +395,7 @@ NAME="AEN191"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN194"
+NAME="AEN198"
 ></A
 ><H2
 >AUTHOR</H2

@@ -5,7 +5,7 @@
 >SAMBA Developers Guide</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.77"></HEAD
+CONTENT="Modular DocBook HTML Stylesheet Version 1.77+"></HEAD
 ><BODY
 CLASS="BOOK"
 BGCOLOR="#FFFFFF"
@@ -687,7 +687,7 @@ HREF="#AEN2925"
 ><DT
 >10.4. <A
 HREF="#AEN2959"
->ChangeID &#38; Client Caching of Printer Information</A
+>ChangeID and Client Caching of Printer Information</A
 ></DT
 ><DT
 >10.5. <A
@@ -810,7 +810,26 @@ HREF="#AEN3162"
 ><A
 NAME="SMBPASSWDFILEFORMAT"
 ></A
->The smbpasswd file</A
+>&#62;The smbpasswd file</A
+></DT
+></DL
+></DD
+><DT
+>14. <A
+HREF="#RPC-PLUGIN"
+>RPC Pluggable Modules</A
+></DT
+><DD
+><DL
+><DT
+>14.1. <A
+HREF="#AEN3225"
+>About</A
+></DT
+><DT
+>14.2. <A
+HREF="#AEN3228"
+>General Overview</A
 ></DT
 ></DL
 ></DD
@@ -915,7 +934,7 @@ NAME="AEN39"
 of, a 'NetBIOS Name Service'.  NT/AS offers 'Windows Internet Name Service'
 which is fully rfc1001/2 compliant, but has had to take specific action
 with certain NetBIOS names in order to make it useful.  (for example, it
-deals with the registration of &#60;1c&#62; &#60;1d&#62; &#60;1e&#62; names all in different ways.
+deals with the registration of &lt;1c&gt; &lt;1d&gt; &lt;1e&gt; names all in different ways.
 I recommend the reading of the Microsoft WINS Server Help files for full
 details).</P
 ><P
@@ -2533,7 +2552,7 @@ NAME="AEN540"
 ><P
 >This is a short document that describes some of the issues that
 confront a SMB implementation on unix, and how Samba copes with
-them. They may help people who are looking at unix&#60;-&#62;PC
+them. They may help people who are looking at unix&lt;-&gt;PC
 interoperability.</P
 ><P
 >It was written to help out a person who was writing a paper on unix to
@@ -2881,14 +2900,14 @@ example, if I'm using a csh style shell:</P
 ><P
 ><B
 CLASS="COMMAND"
->strace -f -p 3872 &#62;&#38; strace.out</B
+>strace -f -p 3872 &gt;&amp; strace.out</B
 ></P
 ><P
 >or with a sh style shell:</P
 ><P
 ><B
 CLASS="COMMAND"
->strace -f -p 3872 &#62; strace.out 2&#62;&#38;1</B
+>strace -f -p 3872 &#62; strace.out 2&gt;&amp;1</B
 ></P
 ><P
 >Note the "-f" option. This is only available on some systems, and
@@ -6985,7 +7004,7 @@ CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Note:	mailslots will contain a response mailslot, to which the response
-	should be sent.  the target NetBIOS name is REQUEST_NAME&#60;20&#62;, where
+	should be sent.  the target NetBIOS name is REQUEST_NAME&lt;20&gt;, where
 	REQUEST_NAME is the name of the machine that sent the request.</I
 ></SPAN
 ></P
@@ -7650,18 +7669,18 @@ NAME="AEN2699"
 ></A
 >9.7.2. Protocol</H3
 ><P
->C-&#62;S ReqChal,Cc S-&#62;C Cs</P
+>C-&gt;S ReqChal,Cc S-&gt;C Cs</P
 ><P
->C &#38; S compute session key Ks = E(PW[9..15],E(PW[0..6],Add(Cc,Cs)))</P
+>C &amp; S compute session key Ks = E(PW[9..15],E(PW[0..6],Add(Cc,Cs)))</P
 ><P
 >C: Rc = Cred(Ks,Cc) C-&#62;S Authenticate,Rc S: Rs = Cred(Ks,Cs),
-assert(Rc == Cred(Ks,Cc)) S-&#62;C Rs C: assert(Rs == Cred(Ks,Cs))</P
+assert(Rc == Cred(Ks,Cc)) S-&gt;C Rs C: assert(Rs == Cred(Ks,Cs))</P
 ><P
 >On joining the domain the client will optionally attempt to change its
 password and the domain controller may refuse to update it depending
 on registry settings. This will also occur weekly afterwards.</P
 ><P
->C: Tc = Time(), Rc' = Cred(Ks,Rc+Tc) C-&#62;S ServerPasswordSet,Rc',Tc,
+>C: Tc = Time(), Rc' = Cred(Ks,Rc+Tc) C-&gt;S ServerPasswordSet,Rc',Tc,
 arc4(Ks[0..7,16],lmowf(randompassword()) C: Rc = Cred(Ks,Rc+Tc+1) S:
 assert(Rc' == Cred(Ks,Rc+Tc)), Ts = Time() S: Rs' = Cred(Ks,Rs+Tc+1)
 S-&#62;C Rs',Ts C: assert(Rs' == Cred(Ks,Rs+Tc+1)) S: Rs = Rs'</P
@@ -7669,7 +7688,7 @@ S-&#62;C Rs',Ts C: assert(Rs' == Cred(Ks,Rs+Tc+1)) S: Rs = Rs'</P
 >User: U with password P wishes to login to the domain (incidental data
 such as workstation and domain omitted)</P
 ><P
->C: Tc = Time(), Rc' = Cred(Ks,Rc+Tc) C-&#62;S NetLogonSamLogon,Rc',Tc,U,
+>C: Tc = Time(), Rc' = Cred(Ks,Rc+Tc) C-&gt;S NetLogonSamLogon,Rc',Tc,U,
 arc4(Ks[0..7,16],16,ntowf(P),16), arc4(Ks[0..7,16],16,lmowf(P),16) S:
 assert(Rc' == Cred(Ks,Rc+Tc)) assert(passwords match those in SAM) S:
 Ts = Time()</P
@@ -8355,7 +8374,7 @@ CLASS="SECT1"
 ><A
 NAME="AEN2959"
 ></A
->10.4. ChangeID &#38; Client Caching of Printer Information</H2
+>10.4. ChangeID and Client Caching of Printer Information</H2
 ><P
 >[To be filled in later]</P
 ></DIV
@@ -8676,8 +8695,7 @@ accessed.</P
 >For example, when you call </P
 ><PRE
 CLASS="PROGRAMLISTING"
->&#60;
-NTSTATUS sam_get_account_by_name(const SAM_CONTEXT *context, const
+>NTSTATUS sam_get_account_by_name(const SAM_CONTEXT *context, const
 NT_USER_TOKEN *access_token, uint32 access_desired, const char *domain,
 const char *name, SAM_ACCOUNT_HANDLE **account)</PRE
 ><P
@@ -9102,7 +9120,7 @@ NAME="AEN3162"
 >13.3. <A
 NAME="SMBPASSWDFILEFORMAT"
 ></A
->The smbpasswd file</H2
+>&#62;The smbpasswd file</H2
 ><P
 >In order for Samba to participate in the above protocol 
 	it must be able to look up the 16 byte hashed values given a user name.
@@ -9131,7 +9149,7 @@ CLASS="FILENAME"
 CLASS="FILENAME"
 >/etc/passwd
 	</TT
-> file use the following command :</P
+> file use the following command:</P
 ><P
 ><TT
 CLASS="PROMPT"
@@ -9300,6 +9318,97 @@ CLASS="EMPHASIS"
 CLASS="FILENAME"
 >/etc/passwd</TT
 > file.</P
+></DIV
+></DIV
+><DIV
+CLASS="CHAPTER"
+><HR><H1
+><A
+NAME="RPC-PLUGIN"
+></A
+>Chapter 14. RPC Pluggable Modules</H1
+><DIV
+CLASS="SECT1"
+><H2
+CLASS="SECT1"
+><A
+NAME="AEN3225"
+></A
+>14.1. About</H2
+><P
+>This document describes how to make use the new RPC Pluggable Modules features
+of Samba 3.0.  This architecture was added to increase the maintainability of
+Samba allowing RPC Pipes to be worked on separately from the main CVS branch.
+The RPM architecture will also allow third-party vendors to add functionality
+to Samba through plug-ins.</P
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H2
+CLASS="SECT1"
+><A
+NAME="AEN3228"
+></A
+>14.2. General Overview</H2
+><P
+>When an RPC call is sent to smbd, smbd tries to load a shared library by the
+name <TT
+CLASS="FILENAME"
+>librpc_&lt;pipename&gt;.so</TT
+> to handle the call if
+it doesn't know how to handle the call internally.  For instance, LSA calls
+are handled by <TT
+CLASS="FILENAME"
+>librpc_lsass.so</TT
+>..
+These shared libraries should be located in the <TT
+CLASS="FILENAME"
+>&lt;sambaroot&gt;/lib/rpc</TT
+>.  smbd then attempts to call the rpc_pipe_init function within
+the shared library.</P
+><P
+>In the rpc_pipe_init function, the library should call 
+rpc_pipe_register_commands().  This function takes the following arguments:</P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+>int rpc_pipe_register_commands(const char *clnt, const char *srv,
+                               const struct api_struct *cmds, int size);</PRE
+></P
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+>clnt</DT
+><DD
+><P
+>the Client name of the named pipe</P
+></DD
+><DT
+>srv</DT
+><DD
+><P
+>the Server name of the named pipe</P
+></DD
+><DT
+>cmds</DT
+><DD
+><P
+>a list of api_structs that map RPC ordinal numbers to function calls</P
+></DD
+><DT
+>size</DT
+><DD
+><P
+>the number of api_structs contained in cmds</P
+></DD
+></DL
+></DIV
+><P
+>See rpc_server/srv_reg.c and rpc_server/srv_reg_nt.c for a small example of
+how to use this library.</P
 ></DIV
 ></DIV
 ></DIV

@@ -3,7 +3,8 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMBCACLS" "1" "05 November 2002" "" ""
+.TH "SMBCACLS" "1" "28 January 2003" "" ""
+
 .SH NAME
 smbcacls \- Set or get ACLs on an NT file or directory names
 .SH SYNOPSIS
@@ -12,7 +13,7 @@ smbcacls \- Set or get ACLs on an NT file or directory names
 
 .SH "DESCRIPTION"
 .PP
-This tool is part of the  Samba suite.
+This tool is part of the \fBSamba\fR(7) suite.
 .PP
 The \fBsmbcacls\fR program manipulates NT Access Control
 Lists (ACLs) on SMB file shares. 
@@ -45,7 +46,7 @@ type, owner and group for the call to succeed.
 Specifies a username used to connect to the 
 specified service.  The username may be of the form "username" in 
 which case the user is prompted to enter in a password and the 
-workgroup specified in the \fIsmb.conf\fR file is 
+workgroup specified in the \fBsmb.conf\fR(5) file is 
 used, or "username%password"  or "DOMAIN\\username%password" and the 
 password and workgroup names are used as provided. 
 .TP
@@ -85,7 +86,6 @@ REVISION:<revision number>
 OWNER:<sid or name>
 GROUP:<sid or name>
 ACL:<sid or name>:<type>/<flags>/<mask>
-	
 .fi
 .PP
 The revision of the ACL specifies the internal Windows 
@@ -116,7 +116,7 @@ common flags are:
 #define SEC_ACE_FLAG_CONTAINER_INHERIT   0x2
 .TP 0.2i
 \(bu
-#define SEC_ACE_FLAG_NO_PROPAGATE_INHERIT       0x4
+#define SEC_ACE_FLAG_NO_PROPAGATE_INHERIT     0x4
 .TP 0.2i
 \(bu
 #define SEC_ACE_FLAG_INHERIT_ONLY        0x8
@@ -172,8 +172,7 @@ of 1 is returned.  If there was an error parsing any command line
 arguments, an exit status of 2 is returned. 
 .SH "VERSION"
 .PP
-This man page is correct for version 2.2 of 
-the Samba suite.
+This man page is correct for version 2.2 of the Samba suite.
 .SH "AUTHOR"
 .PP
 The original Samba software and related utilities 
@@ -185,4 +184,5 @@ to the way the Linux kernel is developed.
 and Tim Potter.
 .PP
 The conversion to DocBook for Samba 2.2 was done 
-by Gerald Carter
+by Gerald Carter. The conversion to DocBook XML 4.2 for Samba 3.0 was done
+by Alexander Bokovoy.

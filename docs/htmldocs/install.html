@@ -5,8 +5,7 @@
 >How to Install and Test SAMBA</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
-"><LINK
+CONTENT="Modular DocBook HTML Stylesheet Version 1.77+"><LINK
 REL="HOME"
 TITLE="SAMBA Project Documentation"
 HREF="samba-howto-collection.html"><LINK
@@ -17,8 +16,8 @@ REL="PREVIOUS"
 TITLE="General installation"
 HREF="introduction.html"><LINK
 REL="NEXT"
-TITLE="Improved browsing in samba"
-HREF="improved-browsing.html"></HEAD
+TITLE="Quick Cross Subnet Browsing / Cross Workgroup Browsing guide"
+HREF="browsing-quick.html"></HEAD
 ><BODY
 CLASS="CHAPTER"
 BGCOLOR="#FFFFFF"
@@ -60,7 +59,7 @@ WIDTH="10%"
 ALIGN="right"
 VALIGN="bottom"
 ><A
-HREF="improved-browsing.html"
+HREF="browsing-quick.html"
 ACCESSKEY="N"
 >Next</A
 ></TD
@@ -73,13 +72,17 @@ WIDTH="100%"></DIV
 CLASS="CHAPTER"
 ><H1
 ><A
-NAME="INSTALL">Chapter 1. How to Install and Test SAMBA</H1
+NAME="INSTALL"
+></A
+>Chapter 1. How to Install and Test SAMBA</H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN26">1.1. Read the man pages</H1
+NAME="AEN26"
+></A
+>1.1. Read the man pages</H1
 ><P
 >The man pages distributed with SAMBA contain 
 	lots of useful info that will help to get you started. 
@@ -119,7 +122,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN36">1.2. Building the Binaries</H1
+NAME="AEN36"
+></A
+>1.2. Building the Binaries</H1
 ><P
 >To do this, first run the program <B
 CLASS="COMMAND"
@@ -216,7 +221,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN64">1.3. The all important step</H1
+NAME="AEN64"
+></A
+>1.3. The all important step</H1
 ><P
 >At this stage you must fetch yourself a 
 	coffee or other drink you find stimulating. Getting the rest 
@@ -231,7 +238,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN68">1.4. Create the smb configuration file.</H1
+NAME="AEN68"
+></A
+>1.4. Create the smb configuration file.</H1
 ><P
 >There are sample configuration files in the examples 
 	subdirectory in the distribution. I suggest you read them 
@@ -285,7 +294,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN82">1.5. Test your config file with 
+NAME="AEN82"
+></A
+>1.5. Test your config file with 
 	<B
 CLASS="COMMAND"
 >testparm</B
@@ -313,7 +324,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN90">1.6. Starting the smbd and nmbd</H1
+NAME="AEN90"
+></A
+>1.6. Starting the smbd and nmbd</H1
 ><P
 >You must choose to start smbd and nmbd either
 	as daemons or from <B
@@ -351,7 +364,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN100">1.6.1. Starting from inetd.conf</H2
+NAME="AEN100"
+></A
+>1.6.1. Starting from inetd.conf</H2
 ><P
 >NOTE; The following will be different if 
 		you use NIS or NIS+ to distributed services maps.</P
@@ -453,7 +468,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN129">1.6.2. Alternative: starting it as a daemon</H2
+NAME="AEN129"
+></A
+>1.6.2. Alternative: starting it as a daemon</H2
 ><P
 >To start the server as a daemon you should create 
 		a script something like this one, perhaps calling 
@@ -508,7 +525,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN145">1.7. Try listing the shares available on your 
+NAME="AEN145"
+></A
+>1.7. Try listing the shares available on your 
 	server</H1
 ><P
 ><TT
@@ -547,7 +566,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN154">1.8. Try connecting with the unix client</H1
+NAME="AEN154"
+></A
+>1.8. Try connecting with the unix client</H1
 ><P
 ><TT
 CLASS="PROMPT"
@@ -608,7 +629,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN170">1.9. Try connecting from a DOS, WfWg, Win9x, WinNT, 
+NAME="AEN170"
+></A
+>1.9. Try connecting from a DOS, WfWg, Win9x, WinNT, 
 	Win2k, OS/2, etc... client</H1
 ><P
 >Try mounting disks. eg:</P
@@ -655,7 +678,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN184">1.10. What If Things Don't Work?</H1
+NAME="AEN184"
+></A
+>1.10. What If Things Don't Work?</H1
 ><P
 >If nothing works and you start to think "who wrote 
 	this pile of trash" then I suggest you do step 2 again (and 
@@ -676,7 +701,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN189">1.10.1. Diagnosing Problems</H2
+NAME="AEN189"
+></A
+>1.10.1. Diagnosing Problems</H2
 ><P
 >If you have installation problems then go to the
 		<A
@@ -691,7 +718,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN193">1.10.2. Scope IDs</H2
+NAME="AEN193"
+></A
+>1.10.2. Scope IDs</H2
 ><P
 >By default Samba uses a blank scope ID. This means 
 		all your windows boxes must also have a blank scope ID. 
@@ -705,7 +734,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN196">1.10.3. Choosing the Protocol Level</H2
+NAME="AEN196"
+></A
+>1.10.3. Choosing the Protocol Level</H2
 ><P
 >The SMB protocol has many dialects. Currently 
 		Samba supports 5, called CORE, COREPLUS, LANMAN1, 
@@ -744,7 +775,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN205">1.10.4. Printing from UNIX to a Client PC</H2
+NAME="AEN205"
+></A
+>1.10.4. Printing from UNIX to a Client PC</H2
 ><P
 >To use a printer that is available via a smb-based 
 		server from a unix host with LPR you will need to compile the 
@@ -763,7 +796,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN210">1.10.5. Locking</H2
+NAME="AEN210"
+></A
+>1.10.5. Locking</H2
 ><P
 >One area which sometimes causes trouble is locking.</P
 ><P
@@ -821,7 +856,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN219">1.10.6. Mapping Usernames</H2
+NAME="AEN219"
+></A
+>1.10.6. Mapping Usernames</H2
 ><P
 >If you have different usernames on the PCs and 
 		the unix server then take a look at the "username map" option. 
@@ -863,7 +900,7 @@ WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
 ><A
-HREF="improved-browsing.html"
+HREF="browsing-quick.html"
 ACCESSKEY="N"
 >Next</A
 ></TD
@@ -887,7 +924,7 @@ ACCESSKEY="U"
 WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
->Improved browsing in samba</TD
+>Quick Cross Subnet Browsing / Cross Workgroup Browsing guide</TD
 ></TR
 ></TABLE
 ></DIV

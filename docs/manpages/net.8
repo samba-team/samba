@@ -3,7 +3,8 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "NET" "8" "05 November 2002" "" ""
+.TH "NET" "8" "28 January 2003" "" ""
+
 .SH NAME
 net \- Tool for administration of Samba and remote CIFS servers.
 .SH SYNOPSIS
@@ -12,7 +13,7 @@ net \- Tool for administration of Samba and remote CIFS servers.
 
 .SH "DESCRIPTION"
 .PP
-This tool is part of the  Samba suite.
+This tool is part of the \fBSamba\fR(7) suite.
 .PP
 The samba net utility is meant to work just like the net utility 
 available for windows and DOS.
@@ -22,7 +23,8 @@ available for windows and DOS.
 Display summary of all available options.
 .TP
 \fB-w target-workgroup\fR
-Sets target workgroup or domain. You have to specify either this option or the IP address or the name of a server.
+Sets target workgroup or domain. You have to specify 
+either this option or the IP address or the name of a server.
 .TP
 \fB-W workgroup\fR
 Sets client workgroup or domain
@@ -31,7 +33,8 @@ Sets client workgroup or domain
 User name to use
 .TP
 \fB-I ip-address\fR
-IP address of target server to use. You have to specify either this option or a target workgroup or a target server.
+IP address of target server to use. You have to
+specify either this option or a target workgroup or a target server.
 .TP
 \fB-p port\fR
 Port on the target server to connect to.
@@ -43,7 +46,8 @@ Sets name of the client.
 Specify alternative configuration file that should be loaded.
 .TP
 \fB-S server\fR
-Name of target server. You should specify either this option or a target workgroup or a target IP address.
+Name of target server. You should specify either 
+this option or a target workgroup or a target IP address.
 .TP
 \fB-C comment\fR
 FIXME
@@ -87,11 +91,11 @@ Without any options, the \fBNET TIME\fR command
 displays the time on the remote server.
 .TP
 \fBSYSTEM\fR
-Displays the time on the remote server in a format ready for /bin/date
+Displays the time on the remote server in a format ready for \fB/bin/date\fR
 .TP
 \fBSET\fR
 Tries to set the date and time of the local server to that on 
-the remote server using /bin/date.
+the remote server using \fB/bin/date\fR.
 .TP
 \fBZONE\fR
 Displays the timezone in hours from GMT on the remote computer.
@@ -116,7 +120,7 @@ delete specified user
 \fBUSER INFO <name> [misc options]\fR
 list the domain groups of the specified user
 .TP
-\fBUSER ADD <name> [password] [-F user flags] [misc. options\fR
+\fBUSER ADD <name> [password] [-F user flags] [misc. options]\fR
 Add specified user
 .TP
 \fBGROUP [misc options] [targets]\fR

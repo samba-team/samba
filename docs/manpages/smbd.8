@@ -3,7 +3,8 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMBD" "8" "15 January 2003" "" ""
+.TH "SMBD" "8" "28 January 2003" "" ""
+
 .SH NAME
 smbd \- server to provide SMB/CIFS services to clients
 .SH SYNOPSIS
@@ -12,7 +13,7 @@ smbd \- server to provide SMB/CIFS services to clients
 
 .SH "DESCRIPTION"
 .PP
-This program is part of the Samba suite.
+This program is part of the \fBSamba\fR(7) suite.
 .PP
 \fBsmbd\fR is the server daemon that 
 provides filesharing and printing services to Windows clients. 
@@ -26,14 +27,12 @@ OS/2, DAVE for Macintosh, and smbfs for Linux.
 An extensive description of the services that the 
 server can provide is given in the man page for the 
 configuration file controlling the attributes of those 
-services (see \fIsmb.conf(5)
-\fR  This man page will not describe the 
+services (see \fBsmb.conf\fR(5).  This man page will not describe the 
 services, but will concentrate on the administrative aspects 
 of running the server.
 .PP
 Please note that there are significant security 
-implications to running this server, and the \fIsmb.conf(5)\fR 
-manpage should be regarded as mandatory reading before 
+implications to running this server, and the \fBsmb.conf\fR(5) manual page should be regarded as mandatory reading before 
 proceeding with installation.
 .PP
 A session is created whenever a client requests one. 
@@ -117,8 +116,8 @@ use only by developers and generate HUGE amounts of log
 data, most of which is extremely cryptic.
 
 Note that specifying this parameter here will 
-override the log
-level file.
+override the \fIlog
+level\fR parameter in the \fBsmb.conf\fR(5) file.
 .TP
 \fB-l <log directory>\fR
 If specified,
@@ -127,8 +126,8 @@ specifies a log directory into which the "log.smbd" log
 file will be created for informational and debug 
 messages from the running server. The log 
 file generated is never removed by the server although 
-its size may be controlled by the max log size
-option in the \fI  smb.conf(5)\fR file. \fBBeware:\fR
+its size may be controlled by the \fImax log size\fR
+option in the \fBsmb.conf\fR(5) file. \fBBeware:\fR
 If the directory specified does not exist, \fBsmbd\fR
 will log to the default debug log location defined at compile time.
 
@@ -136,9 +135,8 @@ The default log directory is specified at
 compile time.
 .TP
 \fB-O <socket options>\fR
-See the socket options 
-parameter in the \fIsmb.conf(5)
-\fR file for details.
+See the \fIsocket options\fR 
+parameter in the \fBsmb.conf\fR(5) file for details.
 .TP
 \fB-p <port number>\fR
 \fIport number\fR is a positive integer 
@@ -169,7 +167,7 @@ configuration details required by the server.  The
 information in this file includes server-specific
 information such as what printcap file to use, as well 
 as descriptions of all the services that the server is 
-to provide. See \fI  smb.conf(5)\fR for more information.
+to provide. See \fBsmb.conf\fR(5) for more information.
 The default configuration file name is determined at 
 compile time.
 .SH "FILES"
@@ -178,7 +176,7 @@ compile time.
 If the server is to be run by the 
 \fBinetd\fR meta-daemon, this file 
 must contain suitable startup information for the 
-meta-daemon. See the UNIX_INSTALL.html
+meta-daemon. See the "How to Install and Test SAMBA"
 document for details.
 .TP
 \fB\fI/etc/rc\fB\fR
@@ -187,7 +185,7 @@ system uses).
 
 If running the server as a daemon at startup, 
 this file will need to contain an appropriate startup 
-sequence for the server. See the UNIX_INSTALL.html
+sequence for the server. See the "How to Install and Test SAMBA"
 document for details.
 .TP
 \fB\fI/etc/services\fB\fR
@@ -195,18 +193,16 @@ If running the server via the
 meta-daemon \fBinetd\fR, this file 
 must contain a mapping of service name (e.g., netbios-ssn) 
 to service port (e.g., 139) and protocol type (e.g., tcp). 
-See the UNIX_INSTALL.html
+See the "How to Install and Test SAMBA"
 document for details.
 .TP
 \fB\fI/usr/local/samba/lib/smb.conf\fB\fR
-This is the default location of the 
-\fIsmb.conf\fR
-server configuration file. Other common places that systems 
+This is the default location of the \fBsmb.conf\fR(5) server configuration file. Other common places that systems 
 install this file are \fI/usr/samba/lib/smb.conf\fR 
-and \fI/etc/smb.conf\fR.
+and \fI/etc/samba/smb.conf\fR.
 
 This file describes all the services the server 
-is to make available to clients. See   \fIsmb.conf(5)\fR for more information.
+is to make available to clients. See \fBsmb.conf\fR(5) for more information.
 .SH "LIMITATIONS"
 .PP
 On some systems \fBsmbd\fR cannot change uid back 
@@ -229,9 +225,8 @@ is not specific to the server, however.
 Samba uses PAM for authentication (when presented with a plaintext 
 password), for account checking (is this account disabled?) and for
 session management.  The degree too which samba supports PAM is restricted
-by the limitations of the SMB protocol and the 
-obey pam restricions
-smb.conf paramater.  When this is set, the following restrictions apply:
+by the limitations of the SMB protocol and the \fIobey 
+pam restricions\fR \fBsmb.conf\fR(5) paramater.  When this is set, the following restrictions apply:
 .TP 0.2i
 \(bu
 \fBAccount Validation\fR:  All accesses to a 
@@ -279,9 +274,8 @@ an \fBsmbd\fR is to send it a SIGTERM (-15) signal and wait for
 it to die on its own.
 .PP
 The debug log level of \fBsmbd\fR may be raised
-or lowered using \fBsmbcontrol(1)
-\fR program (SIGUSR[1|2] signals are no longer used in
-Samba 2.2). This is to allow transient problems to be diagnosed, 
+or lowered using \fBsmbcontrol\fR(1) program (SIGUSR[1|2] signals are no longer 
+used since Samba 2.2). This is to allow transient problems to be diagnosed, 
 whilst still running at a normally low log level.
 .PP
 Note that as the signal handlers send a debug write, 
@@ -292,12 +286,8 @@ by un-blocking the signals before the select call and re-blocking
 them after, however this would affect performance.
 .SH "SEE ALSO"
 .PP
-hosts_access(5), \fBinetd(8)\fR, 
-\fBnmbd(8)\fR 
-\fIsmb.conf(5)\fR
- \fBsmbclient(1)
-\fR and the Internet RFC's
-\fIrfc1001.txt\fR, \fIrfc1002.txt\fR. 
+\fBhosts_access\fR(5), \fBinetd\fR(8), \fBnmbd\fR(8), \fBsmb.conf\fR(5), \fBsmbclient\fR(1), \fBtestparm\fR(1), \fBtestprns\fR(1), and the 
+Internet RFC's \fIrfc1001.txt\fR, \fIrfc1002.txt\fR. 
 In addition the CIFS (formerly SMB) specification is available 
 as a link from the Web page  
 http://samba.org/cifs/ <URL:http://samba.org/cifs/>.
@@ -310,7 +300,7 @@ to the way the Linux kernel is developed.
 .PP
 The original Samba man pages were written by Karl Auer. 
 The man page sources were converted to YODL format (another 
-excellent piece of Open Source software, available at
-ftp://ftp.icce.rug.nl/pub/unix/ <URL:ftp://ftp.icce.rug.nl/pub/unix/>) and updated for the Samba 2.0 
+excellent piece of Open Source software, available at  ftp://ftp.icce.rug.nl/pub/unix/ <URL:ftp://ftp.icce.rug.nl/pub/unix/>) and updated for the Samba 2.0 
 release by Jeremy Allison.  The conversion to DocBook for 
-Samba 2.2 was done by Gerald Carter
+Samba 2.2 was done by Gerald Carter. The conversion to DocBook XML 4.2 for
+Samba 3.0 was done by Alexander Bokovoy.

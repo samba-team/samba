@@ -3,7 +3,8 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMBTAR" "1" "05 November 2002" "" ""
+.TH "SMBTAR" "1" "28 January 2003" "" ""
+
 .SH NAME
 smbtar \- shell script for backing up SMB/CIFS shares  directly to UNIX tape drives
 .SH SYNOPSIS
@@ -12,11 +13,10 @@ smbtar \- shell script for backing up SMB/CIFS shares  directly to UNIX tape dri
 
 .SH "DESCRIPTION"
 .PP
-This tool is part of the  Samba suite.
+This tool is part of the \fBSamba\fR(7) suite.
 .PP
 \fBsmbtar\fR is a very small shell script on top 
-of \fBsmbclient(1)\fR 
-which dumps SMB shares directly to tape. 
+of \fBsmbclient\fR(1) which dumps SMB shares directly to tape.
 .SH "OPTIONS"
 .TP
 \fB-s server\fR
@@ -72,8 +72,7 @@ from the tar file.
 .TP
 \fB-l log level\fR
 Log (debug) level. Corresponds to the 
-\fI-d\fR flag of \fBsmbclient(1)
-\fR. 
+\fI-d\fR flag of \fBsmbclient\fR(1).
 .SH "ENVIRONMENT VARIABLES"
 .PP
 The \fI$TAPE\fR variable specifies the 
@@ -91,18 +90,14 @@ on entire shares; should work on file lists. smbtar works best
 with GNU tar and may not work well with other versions. 
 .SH "DIAGNOSTICS"
 .PP
-See the \fBDIAGNOSTICS\fR section for the 
-\fBsmbclient(1)\fR 
- command.
+See the \fBDIAGNOSTICS\fR section for the \fBsmbclient\fR(1) command.
 .SH "VERSION"
 .PP
 This man page is correct for version 3.0 of 
 the Samba suite.
 .SH "SEE ALSO"
 .PP
-\fBsmbd(8)\fR 
-\fBsmbclient(1)\fR 
-smb.conf(5)
+\fBsmbd\fR(8), \fBsmbclient\fR(1), \fBsmb.conf\fR(5).
 .SH "AUTHOR"
 .PP
 The original Samba software and related utilities 
@@ -115,7 +110,7 @@ wrote the tar extension and this man page. The \fBsmbtar\fR
 script was heavily rewritten and improved by Martin Kraemer <URL:mailto:Martin.Kraemer@mch.sni.de>. Many 
 thanks to everyone who suggested extensions, improvements, bug 
 fixes, etc. The man page sources were converted to YODL format (another 
-excellent piece of Open Source software, available at
-ftp://ftp.icce.rug.nl/pub/unix/ <URL:ftp://ftp.icce.rug.nl/pub/unix/>) and updated for the Samba 2.0 
+excellent piece of Open Source software, available at  ftp://ftp.icce.rug.nl/pub/unix/ <URL:ftp://ftp.icce.rug.nl/pub/unix/>) and updated for the Samba 2.0 
 release by Jeremy Allison.  The conversion to DocBook for 
-Samba 2.2 was done by Gerald Carter.
+Samba 2.2 was done by Gerald Carter. The conversion to DocBook XML 4.2 for
+Samba 3.0 was done by Alexander Bokovoy.

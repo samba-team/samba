@@ -3,7 +3,8 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMBPASSWD" "8" "26 November 2002" "" ""
+.TH "SMBPASSWD" "8" "28 January 2003" "" ""
+
 .SH NAME
 smbpasswd \- change a user's SMB password
 .SH SYNOPSIS
@@ -12,24 +13,23 @@ smbpasswd \- change a user's SMB password
 
 .SH "DESCRIPTION"
 .PP
-This tool is part of the  Samba suite.
+This tool is part of the \fBSamba\fR(7) suite.
 .PP
 The smbpasswd program has several different 
-functions, depending on whether it is run by the \fBroot\fR 
-user or not. When run as a normal user it allows the user to change 
+functions, depending on whether it is run by the \fBroot\fR user 
+or not. When run as a normal user it allows the user to change 
 the password used for their SMB sessions on any machines that store 
 SMB passwords. 
 .PP
 By default (when run with no arguments) it will attempt to 
 change the current user's SMB password on the local machine. This is 
-similar to the way the \fBpasswd(1)\fR program works. 
-\fBsmbpasswd\fR differs from how the passwd program works 
+similar to the way the \fBpasswd(1)\fR program works. \fB smbpasswd\fR differs from how the passwd program works 
 however in that it is not \fBsetuid root\fR but works in 
-a client-server mode and communicates with a locally running
-\fBsmbd(8)\fR. As a consequence in order for this to 
+a client-server mode and communicates with a 
+locally running \fBsmbd\fR(8). As a consequence in order for this to 
 succeed the smbd daemon must be running on the local machine. On a 
 UNIX machine the encrypted SMB passwords are usually stored in 
-the \fIsmbpasswd(5)\fR file. 
+the \fBsmbpasswd\fR(5) file. 
 .PP
 When run by an ordinary user with no options, smbpasswd 
 will prompt them for their old SMB password and then ask them 
@@ -41,12 +41,12 @@ the <Enter> key when asked for your old password.
 .PP
 smbpasswd can also be used by a normal user to change their
 SMB password on remote machines, such as Windows NT Primary Domain 
-Controllers.   See the (-r) and -U options below. 
+Controllers.   See the (\fI-r\fR) and \fI-U\fR options 
+below. 
 .PP
 When run by root, smbpasswd allows new users to be added 
 and deleted in the smbpasswd file, as well as allows changes to 
-the attributes of the user in this file to be made. When run by root, 
-\fBsmbpasswd\fR accesses the local smbpasswd file 
+the attributes of the user in this file to be made. When run by root, \fB smbpasswd\fR accesses the local smbpasswd file 
 directly, thus enabling changes to be made even if smbd is not 
 running. 
 .SH "OPTIONS"
@@ -82,8 +82,7 @@ will fail.
 
 If the smbpasswd file is in the 'old' format (pre-Samba 2.0 
 format) there is no space in the user's password entry to write
-this information and the command will FAIL. See \fBsmbpasswd(5)
-\fR for details on the 'old' and new password file formats.
+this information and the command will FAIL. See \fBsmbpasswd\fR(5) for details on the 'old' and new password file formats.
 
 This option is only available when running smbpasswd as 
 root.
@@ -96,7 +95,7 @@ disabled this option has no effect. Once the account is enabled then
 the user will be able to authenticate via SMB once again. 
 
 If the smbpasswd file is in the 'old' format, then \fB  smbpasswd\fR will FAIL to enable the account.  
-See \fBsmbpasswd (5)\fR for 
+See \fBsmbpasswd\fR(5) for 
 details on the 'old' and new password file formats. 
 
 This option is only available when running smbpasswd as root. 
@@ -164,17 +163,17 @@ what name resolution services to use when looking up the NetBIOS
 name of the host being connected to. 
 
 The options are :"lmhosts", "host", "wins" and "bcast". They
-cause names to be resolved as follows : 
+cause names to be resolved as follows: 
 .RS
 .TP 0.2i
 \(bu
-lmhosts : Lookup an IP 
+lmhosts: Lookup an IP 
 address in the Samba lmhosts file. If the line in lmhosts has 
-no name type attached to the NetBIOS name (see the lmhosts(5) for details) then
+no name type attached to the NetBIOS name (see the \fBlmhosts\fR(5) for details) then
 any name type matches for lookup.
 .TP 0.2i
 \(bu
-host : Do a standard host 
+host: Do a standard host 
 name to IP address resolution, using the system \fI/etc/hosts
 \fR, NIS, or DNS lookups. This method of name resolution 
 is operating system depended for instance on IRIX or Solaris this 
@@ -184,13 +183,13 @@ type being queried is the 0x20 (server) name type, otherwise
 it is ignored.
 .TP 0.2i
 \(bu
-wins : Query a name with 
+wins: Query a name with 
 the IP address listed in the \fIwins server\fR 
 parameter.  If no WINS server has been specified this method 
 will be ignored.
 .TP 0.2i
 \(bu
-bcast : Do a broadcast on 
+bcast: Do a broadcast on 
 each of the known local interfaces listed in the
 \fIinterfaces\fR parameter. This is the least 
 reliable of the name resolution methods as it depends on the 
@@ -198,8 +197,7 @@ target host being on a locally connected subnet.
 .RE
 
 The default order is \fBlmhosts, host, wins, bcast\fR 
-and without this parameter or any entry in the 
-\fIsmb.conf\fR file the name resolution methods will 
+and without this parameter or any entry in the \fBsmb.conf\fR(5) file the name resolution methods will 
 be attempted in this order. 
 .TP
 \fB-m\fR
@@ -235,7 +233,7 @@ has been configured to use the experimental
 switch is used to specify the password to be used with the 
 \fIldap admin 
 dn\fR  Note that the password is stored in
-the \fIprivate/secrets.tdb\fR and is keyed off 
+the \fIsecrets.tdb\fR and is keyed off 
 of the admin's DN.  This means that if the value of \fIldap
 admin dn\fR ever changes, the password will need to be 
 manually updated as well.
@@ -261,23 +259,20 @@ to modify attributes directly in the local smbpasswd file.
 Since \fBsmbpasswd\fR works in client-server 
 mode communicating  with a local smbd for a non-root user then 
 the smbd daemon must be running for this to work. A common problem 
-is to add a restriction to the hosts that may access the \fB smbd\fR running on the local machine by specifying a 
-\fIallow hosts\fR or \fIdeny hosts\fR 
-entry in the \fIsmb.conf\fR file and neglecting to 
+is to add a restriction to the hosts that may access the \fB smbd\fR running on the local machine by specifying either \fIallow
+hosts\fR or \fIdeny hosts\fR entry in 
+the \fBsmb.conf\fR(5) file and neglecting to 
 allow "localhost" access to the smbd. 
 .PP
 In addition, the smbpasswd command is only useful if Samba
-has been set up to use encrypted passwords. See the file 
-\fIENCRYPTION.txt\fR in the docs directory for details 
+has been set up to use encrypted passwords. See the document  "LanMan and NT Password Encryption in Samba" in the docs directory for details 
 on how to do this. 
 .SH "VERSION"
 .PP
-This man page is correct for version 3.0 of 
-the Samba suite.
+This man page is correct for version 3.0 of the Samba suite.
 .SH "SEE ALSO"
 .PP
-\fIsmbpasswd(5)\fR 
-samba(7)
+\fBsmbpasswd\fR(5), \fBSamba\fR(7).
 .SH "AUTHOR"
 .PP
 The original Samba software and related utilities 
@@ -287,7 +282,7 @@ to the way the Linux kernel is developed.
 .PP
 The original Samba man pages were written by Karl Auer. 
 The man page sources were converted to YODL format (another 
-excellent piece of Open Source software, available at
-ftp://ftp.icce.rug.nl/pub/unix/ <URL:ftp://ftp.icce.rug.nl/pub/unix/>) and updated for the Samba 2.0 
+excellent piece of Open Source software, available at  ftp://ftp.icce.rug.nl/pub/unix/ <URL:ftp://ftp.icce.rug.nl/pub/unix/>) and updated for the Samba 2.0 
 release by Jeremy Allison.  The conversion to DocBook for 
-Samba 2.2 was done by Gerald Carter
+Samba 2.2 was done by Gerald Carter. The conversion to DocBook XML 4.2
+for Samba 3.0 was done by Alexander Bokovoy.

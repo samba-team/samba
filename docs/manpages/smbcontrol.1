@@ -3,7 +3,8 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMBCONTROL" "1" "05 November 2002" "" ""
+.TH "SMBCONTROL" "1" "28 January 2003" "" ""
+
 .SH NAME
 smbcontrol \- send messages to smbd, nmbd or winbindd processes
 .SH SYNOPSIS
@@ -15,13 +16,10 @@ smbcontrol \- send messages to smbd, nmbd or winbindd processes
 
 .SH "DESCRIPTION"
 .PP
-This tool is part of the  Samba suite.
+This tool is part of the \fBSamba\fR(7) suite.
 .PP
 \fBsmbcontrol\fR is a very small program, which 
-sends messages to an smbd(8) 
-an nmbd(8)
-or a winbindd(8) 
-daemon running on the system.
+sends messages to a \fBsmbd\fR(8), a \fBnmbd\fR(8), or a \fBwinbindd\fR(8) daemon running on the system.
 .SH "OPTIONS"
 .TP
 \fB-i\fR
@@ -31,8 +29,7 @@ on STDIN. An empty command line or a "q" will quit the
 program.
 .TP
 \fBdestination\fR
-One of \fInmbd\fR
-\fIsmbd\fR or a process ID.
+One of \fInmbd\fR, \fIsmbd\fR or a process ID.
 
 The \fIsmbd\fR destination causes the 
 message to "broadcast" to all smbd daemons.
@@ -134,8 +131,7 @@ This man page is correct for version 2.2 of
 the Samba suite.
 .SH "SEE ALSO"
 .PP
-\fBnmbd(8)\fR 
-and \fBsmbd(8)\fR
+\fBnmbd\fR(8) and \fBsmbd\fR(8).
 .SH "AUTHOR"
 .PP
 The original Samba software and related utilities 
@@ -145,7 +141,7 @@ to the way the Linux kernel is developed.
 .PP
 The original Samba man pages were written by Karl Auer. 
 The man page sources were converted to YODL format (another 
-excellent piece of Open Source software, available at
-ftp://ftp.icce.rug.nl/pub/unix/ <URL:ftp://ftp.icce.rug.nl/pub/unix/>) and updated for the Samba 2.0 
+excellent piece of Open Source software, available at  ftp://ftp.icce.rug.nl/pub/unix/ <URL:ftp://ftp.icce.rug.nl/pub/unix/>) and updated for the Samba 2.0 
 release by Jeremy Allison.  The conversion to DocBook for 
-Samba 2.2 was done by Gerald Carter
+Samba 2.2 was done by Gerald Carter. The conversion to DocBook XML 4.2 for
+Samba 3.0 was done by Alexander Bokovoy.

@@ -5,8 +5,7 @@
 >Diagnosing your samba server</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
-"><LINK
+CONTENT="Modular DocBook HTML Stylesheet Version 1.77+"><LINK
 REL="HOME"
 TITLE="SAMBA Project Documentation"
 HREF="samba-howto-collection.html"><LINK
@@ -66,13 +65,17 @@ WIDTH="100%"></DIV
 CLASS="CHAPTER"
 ><H1
 ><A
-NAME="DIAGNOSIS">Chapter 26. Diagnosing your samba server</H1
+NAME="DIAGNOSIS"
+></A
+>Chapter 24. Diagnosing your samba server</H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3378">26.1. Introduction</H1
+NAME="AEN3490"
+></A
+>24.1. Introduction</H1
 ><P
 >This file contains a list of tests you can perform to validate your
 Samba server. It also tells you what the likely cause of the problem
@@ -92,7 +95,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3383">26.2. Assumptions</H1
+NAME="AEN3495"
+></A
+>24.2. Assumptions</H1
 ><P
 >In all of the tests it is assumed you have a Samba server called 
 BIGSERVER and a PC called ACLIENT both in workgroup TESTGROUP.</P
@@ -128,13 +133,17 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3393">26.3. Tests</H1
+NAME="AEN3505"
+></A
+>24.3. Tests</H1
 ><DIV
 CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN3395">26.3.1. Test 1</H2
+NAME="AEN3507"
+></A
+>24.3.1. Test 1</H2
 ><P
 >In the directory in which you store your smb.conf file, run the command
 "testparm smb.conf". If it reports any errors then your smb.conf
@@ -154,7 +163,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN3401">26.3.2. Test 2</H2
+NAME="AEN3513"
+></A
+>24.3.2. Test 2</H2
 ><P
 >Run the command "ping BIGSERVER" from the PC and "ping ACLIENT" from
 the unix box. If you don't get a valid response then your TCP/IP
@@ -178,7 +189,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN3407">26.3.3. Test 3</H2
+NAME="AEN3519"
+></A
+>24.3.3. Test 3</H2
 ><P
 >Run the command "smbclient -L BIGSERVER" on the unix box. You
 should get a list of available shares back. </P
@@ -247,7 +260,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN3422">26.3.4. Test 4</H2
+NAME="AEN3534"
+></A
+>24.3.4. Test 4</H2
 ><P
 >Run the command "nmblookup -B BIGSERVER __SAMBA__". You should get the
 IP address of your Samba server back.</P
@@ -266,7 +281,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN3427">26.3.5. Test 5</H2
+NAME="AEN3539"
+></A
+>24.3.5. Test 5</H2
 ><P
 >run the command <B
 CLASS="COMMAND"
@@ -285,7 +302,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN3433">26.3.6. Test 6</H2
+NAME="AEN3545"
+></A
+>24.3.6. Test 6</H2
 ><P
 >Run the command <B
 CLASS="COMMAND"
@@ -317,7 +336,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN3441">26.3.7. Test 7</H2
+NAME="AEN3553"
+></A
+>24.3.7. Test 7</H2
 ><P
 >Run the command <B
 CLASS="COMMAND"
@@ -404,7 +425,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN3467">26.3.8. Test 8</H2
+NAME="AEN3579"
+></A
+>24.3.8. Test 8</H2
 ><P
 >On the PC type the command <B
 CLASS="COMMAND"
@@ -462,7 +485,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN3484">26.3.9. Test 9</H2
+NAME="AEN3596"
+></A
+>24.3.9. Test 9</H2
 ><P
 >Run the command <B
 CLASS="COMMAND"
@@ -494,7 +519,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN3492">26.3.10. Test 10</H2
+NAME="AEN3604"
+></A
+>24.3.10. Test 10</H2
 ><P
 >Run the command <B
 CLASS="COMMAND"
@@ -518,7 +545,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN3498">26.3.11. Test 11</H2
+NAME="AEN3610"
+></A
+>24.3.11. Test 11</H2
 ><P
 >From file manager try to browse the server. Your samba server should
 appear in the browse list of your local workgroup (or the one you
@@ -544,7 +573,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3503">26.4. Still having troubles?</H1
+NAME="AEN3615"
+></A
+>24.4. Still having troubles?</H1
 ><P
 >Try the mailing list or newsgroup, or use the ethereal utility to
 sniff the problem. The official samba mailing list can be reached at

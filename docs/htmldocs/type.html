@@ -5,14 +5,13 @@
 >Type of installation</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
-"><LINK
+CONTENT="Modular DocBook HTML Stylesheet Version 1.77+"><LINK
 REL="HOME"
 TITLE="SAMBA Project Documentation"
 HREF="samba-howto-collection.html"><LINK
 REL="PREVIOUS"
-TITLE="LanMan and NT Password Encryption in Samba"
-HREF="pwencrypt.html"><LINK
+TITLE="User information database"
+HREF="passdb.html"><LINK
 REL="NEXT"
 TITLE="User and Share security level (for servers not in a domain)"
 HREF="securitylevels.html"></HEAD
@@ -43,7 +42,7 @@ WIDTH="10%"
 ALIGN="left"
 VALIGN="bottom"
 ><A
-HREF="pwencrypt.html"
+HREF="passdb.html"
 ACCESSKEY="P"
 >Prev</A
 ></TD
@@ -69,7 +68,9 @@ WIDTH="100%"></DIV
 ><DIV
 CLASS="PART"
 ><A
-NAME="TYPE"><DIV
+NAME="TYPE"
+></A
+><DIV
 CLASS="TITLEPAGE"
 ><H1
 CLASS="TITLE"
@@ -77,7 +78,9 @@ CLASS="TITLE"
 ><DIV
 CLASS="PARTINTRO"
 ><A
-NAME="AEN531"><H1
+NAME="AEN678"
+></A
+><H1
 >Introduction</H1
 ><P
 >Samba can operate in various SMB networks. This part contains information on configuring samba 
@@ -91,233 +94,238 @@ CLASS="TOC"
 >Table of Contents</B
 ></DT
 ><DT
->5. <A
+>4. <A
 HREF="securitylevels.html"
 >User and Share security level (for servers not in a domain)</A
 ></DT
 ><DT
->6. <A
+>5. <A
 HREF="samba-pdc.html"
->How to Configure Samba as a NT4 Primary Domain Controller</A
+>Samba as a NT4 or Win2k Primary Domain Controller</A
 ></DT
 ><DD
 ><DL
 ><DT
->6.1. <A
-HREF="samba-pdc.html#AEN575"
+>5.1. <A
+HREF="samba-pdc.html#AEN722"
 >Prerequisite Reading</A
 ></DT
 ><DT
->6.2. <A
-HREF="samba-pdc.html#AEN581"
+>5.2. <A
+HREF="samba-pdc.html#AEN728"
 >Background</A
 ></DT
 ><DT
->6.3. <A
-HREF="samba-pdc.html#AEN620"
+>5.3. <A
+HREF="samba-pdc.html#AEN767"
 >Configuring the Samba Domain Controller</A
 ></DT
 ><DT
->6.4. <A
-HREF="samba-pdc.html#AEN663"
+>5.4. <A
+HREF="samba-pdc.html#AEN810"
 >Creating Machine Trust Accounts and Joining Clients to the
 Domain</A
 ></DT
 ><DD
 ><DL
 ><DT
->6.4.1. <A
-HREF="samba-pdc.html#AEN682"
+>5.4.1. <A
+HREF="samba-pdc.html#AEN829"
 >Manual Creation of Machine Trust Accounts</A
 ></DT
 ><DT
->6.4.2. <A
-HREF="samba-pdc.html#AEN723"
+>5.4.2. <A
+HREF="samba-pdc.html#AEN870"
 >"On-the-Fly" Creation of Machine Trust Accounts</A
 ></DT
 ><DT
->6.4.3. <A
-HREF="samba-pdc.html#AEN732"
+>5.4.3. <A
+HREF="samba-pdc.html#AEN879"
 >Joining the Client to the Domain</A
 ></DT
 ></DL
 ></DD
 ><DT
->6.5. <A
-HREF="samba-pdc.html#AEN747"
+>5.5. <A
+HREF="samba-pdc.html#AEN894"
 >Common Problems and Errors</A
 ></DT
 ><DT
->6.6. <A
-HREF="samba-pdc.html#AEN795"
+>5.6. <A
+HREF="samba-pdc.html#AEN942"
 >System Policies and Profiles</A
 ></DT
 ><DT
->6.7. <A
-HREF="samba-pdc.html#AEN839"
+>5.7. <A
+HREF="samba-pdc.html#AEN986"
 >What other help can I get?</A
 ></DT
 ><DT
->6.8. <A
-HREF="samba-pdc.html#AEN953"
+>5.8. <A
+HREF="samba-pdc.html#AEN1100"
 >Domain Control for Windows 9x/ME</A
 ></DT
 ><DD
 ><DL
 ><DT
->6.8.1. <A
-HREF="samba-pdc.html#AEN979"
+>5.8.1. <A
+HREF="samba-pdc.html#AEN1126"
 >Configuration Instructions:	Network Logons</A
 ></DT
 ><DT
->6.8.2. <A
-HREF="samba-pdc.html#AEN998"
+>5.8.2. <A
+HREF="samba-pdc.html#AEN1145"
 >Configuration Instructions:	Setting up Roaming User Profiles</A
 ></DT
 ></DL
 ></DD
 ><DT
->6.9. <A
-HREF="samba-pdc.html#AEN1091"
->DOMAIN_CONTROL.txt : Windows NT Domain Control &#38; Samba</A
+>5.9. <A
+HREF="samba-pdc.html#AEN1238"
+>DOMAIN_CONTROL.txt : Windows NT Domain Control &amp; Samba</A
 ></DT
 ></DL
 ></DD
 ><DT
->7. <A
+>6. <A
 HREF="samba-bdc.html"
 >How to Act as a Backup Domain Controller in a Purely Samba Controlled Domain</A
 ></DT
 ><DD
 ><DL
 ><DT
->7.1. <A
-HREF="samba-bdc.html#AEN1127"
+>6.1. <A
+HREF="samba-bdc.html#AEN1274"
 >Prerequisite Reading</A
 ></DT
 ><DT
->7.2. <A
-HREF="samba-bdc.html#AEN1131"
+>6.2. <A
+HREF="samba-bdc.html#AEN1278"
 >Background</A
 ></DT
 ><DT
->7.3. <A
-HREF="samba-bdc.html#AEN1139"
+>6.3. <A
+HREF="samba-bdc.html#AEN1286"
 >What qualifies a Domain Controller on the network?</A
 ></DT
 ><DD
 ><DL
 ><DT
->7.3.1. <A
-HREF="samba-bdc.html#AEN1142"
+>6.3.1. <A
+HREF="samba-bdc.html#AEN1289"
 >How does a Workstation find its domain controller?</A
 ></DT
 ><DT
->7.3.2. <A
-HREF="samba-bdc.html#AEN1145"
+>6.3.2. <A
+HREF="samba-bdc.html#AEN1292"
 >When is the PDC needed?</A
 ></DT
 ></DL
 ></DD
 ><DT
->7.4. <A
-HREF="samba-bdc.html#AEN1148"
->Can Samba be a Backup Domain Controller?</A
+>6.4. <A
+HREF="samba-bdc.html#AEN1295"
+>Can Samba be a Backup Domain Controller to an NT PDC?</A
 ></DT
 ><DT
->7.5. <A
-HREF="samba-bdc.html#AEN1152"
+>6.5. <A
+HREF="samba-bdc.html#AEN1300"
 >How do I set up a Samba BDC?</A
 ></DT
 ><DD
 ><DL
 ><DT
->7.5.1. <A
-HREF="samba-bdc.html#AEN1169"
+>6.5.1. <A
+HREF="samba-bdc.html#AEN1317"
 >How do I replicate the smbpasswd file?</A
+></DT
+><DT
+>6.5.2. <A
+HREF="samba-bdc.html#AEN1321"
+>Can I do this all with LDAP?</A
 ></DT
 ></DL
 ></DD
 ></DL
 ></DD
 ><DT
->8. <A
+>7. <A
 HREF="ads.html"
 >Samba as a ADS domain member</A
 ></DT
 ><DD
 ><DL
 ><DT
->8.1. <A
-HREF="ads.html#AEN1187"
+>7.1. <A
+HREF="ads.html#AEN1339"
 >Installing the required packages for Debian</A
 ></DT
 ><DT
->8.2. <A
-HREF="ads.html#AEN1193"
+>7.2. <A
+HREF="ads.html#AEN1346"
 >Installing the required packages for RedHat</A
 ></DT
 ><DT
->8.3. <A
-HREF="ads.html#AEN1202"
+>7.3. <A
+HREF="ads.html#AEN1356"
 >Compile Samba</A
 ></DT
 ><DT
->8.4. <A
-HREF="ads.html#AEN1217"
+>7.4. <A
+HREF="ads.html#AEN1371"
 >Setup your /etc/krb5.conf</A
 ></DT
 ><DT
->8.5. <A
-HREF="ads.html#AEN1227"
+>7.5. <A
+HREF="ads.html#AEN1381"
 >Create the computer account</A
 ></DT
 ><DD
 ><DL
 ><DT
->8.5.1. <A
-HREF="ads.html#AEN1231"
+>7.5.1. <A
+HREF="ads.html#AEN1385"
 >Possible errors</A
 ></DT
 ></DL
 ></DD
 ><DT
->8.6. <A
-HREF="ads.html#AEN1243"
+>7.6. <A
+HREF="ads.html#AEN1393"
 >Test your server setup</A
 ></DT
 ><DT
->8.7. <A
-HREF="ads.html#AEN1248"
+>7.7. <A
+HREF="ads.html#AEN1398"
 >Testing with smbclient</A
 ></DT
 ><DT
->8.8. <A
-HREF="ads.html#AEN1251"
+>7.8. <A
+HREF="ads.html#AEN1401"
 >Notes</A
 ></DT
 ></DL
 ></DD
 ><DT
->9. <A
+>8. <A
 HREF="domain-security.html"
->Samba as a NT4 domain member</A
+>Samba as a NT4 or Win2k domain member</A
 ></DT
 ><DD
 ><DL
 ><DT
->9.1. <A
-HREF="domain-security.html#AEN1273"
->Joining an NT Domain with Samba 2.2</A
+>8.1. <A
+HREF="domain-security.html#AEN1423"
+>Joining an NT Domain with Samba 3.0</A
 ></DT
 ><DT
->9.2. <A
-HREF="domain-security.html#AEN1337"
+>8.2. <A
+HREF="domain-security.html#AEN1478"
 >Samba and Windows 2000 Domains</A
 ></DT
 ><DT
->9.3. <A
-HREF="domain-security.html#AEN1342"
+>8.3. <A
+HREF="domain-security.html#AEN1481"
 >Why is this better than security = server?</A
 ></DT
 ></DL
@@ -342,7 +350,7 @@ WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
 ><A
-HREF="pwencrypt.html"
+HREF="passdb.html"
 ACCESSKEY="P"
 >Prev</A
 ></TD
@@ -370,7 +378,7 @@ ACCESSKEY="N"
 WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
->LanMan and NT Password Encryption in Samba</TD
+>User information database</TD
 ><TD
 WIDTH="34%"
 ALIGN="center"

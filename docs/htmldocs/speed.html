@@ -5,8 +5,7 @@
 >Samba performance issues</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
-"><LINK
+CONTENT="Modular DocBook HTML Stylesheet Version 1.77+"><LINK
 REL="HOME"
 TITLE="SAMBA Project Documentation"
 HREF="samba-howto-collection.html"><LINK
@@ -17,8 +16,8 @@ REL="PREVIOUS"
 TITLE="Group mapping HOWTO"
 HREF="groupmapping.html"><LINK
 REL="NEXT"
-TITLE="Appendixes"
-HREF="appendixes.html"></HEAD
+TITLE="Creating Group Profiles"
+HREF="groupprofiles.html"></HEAD
 ><BODY
 CLASS="CHAPTER"
 BGCOLOR="#FFFFFF"
@@ -60,7 +59,7 @@ WIDTH="10%"
 ALIGN="right"
 VALIGN="bottom"
 ><A
-HREF="appendixes.html"
+HREF="groupprofiles.html"
 ACCESSKEY="N"
 >Next</A
 ></TD
@@ -73,13 +72,17 @@ WIDTH="100%"></DIV
 CLASS="CHAPTER"
 ><H1
 ><A
-NAME="SPEED">Chapter 22. Samba performance issues</H1
+NAME="SPEED"
+></A
+>Chapter 19. Samba performance issues</H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3055">22.1. Comparisons</H1
+NAME="AEN3033"
+></A
+>19.1. Comparisons</H1
 ><P
 >The Samba server uses TCP to talk to the client. Thus if you are
 trying to see if it performs well you should really compare it to
@@ -108,7 +111,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3061">22.2. Socket options</H1
+NAME="AEN3039"
+></A
+>19.2. Socket options</H1
 ><P
 >There are a number of socket options that can greatly affect the
 performance of a TCP based server like Samba.</P
@@ -134,7 +139,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3068">22.3. Read size</H1
+NAME="AEN3046"
+></A
+>19.3. Read size</H1
 ><P
 >The option "read size" affects the overlap of disk reads/writes with
 network reads/writes. If the amount of data being transferred in
@@ -158,7 +165,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3073">22.4. Max xmit</H1
+NAME="AEN3051"
+></A
+>19.4. Max xmit</H1
 ><P
 >At startup the client and server negotiate a "maximum transmit" size,
 which limits the size of nearly all SMB commands. You can set the
@@ -179,7 +188,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3078">22.5. Log level</H1
+NAME="AEN3056"
+></A
+>19.5. Log level</H1
 ><P
 >If you set the log level (also known as "debug level") higher than 2
 then you may suffer a large drop in performance. This is because the
@@ -191,7 +202,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3081">22.6. Read raw</H1
+NAME="AEN3059"
+></A
+>19.6. Read raw</H1
 ><P
 >The "read raw" operation is designed to be an optimised, low-latency
 file read operation. A server may choose to not support it,
@@ -211,7 +224,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3086">22.7. Write raw</H1
+NAME="AEN3064"
+></A
+>19.7. Write raw</H1
 ><P
 >The "write raw" operation is designed to be an optimised, low-latency
 file write operation. A server may choose to not support it,
@@ -226,7 +241,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3090">22.8. Slow Clients</H1
+NAME="AEN3068"
+></A
+>19.8. Slow Clients</H1
 ><P
 >One person has reported that setting the protocol to COREPLUS rather
 than LANMAN2 gave a dramatic speed improvement (from 10k/s to 150k/s).</P
@@ -241,7 +258,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3094">22.9. Slow Logins</H1
+NAME="AEN3072"
+></A
+>19.9. Slow Logins</H1
 ><P
 >Slow logins are almost always due to the password checking time. Using
 the lowest practical "password level" will improve things a lot. You
@@ -252,7 +271,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3097">22.10. Client tuning</H1
+NAME="AEN3075"
+></A
+>19.10. Client tuning</H1
 ><P
 >Often a speed problem can be traced to the client. The client (for
 example Windows for Workgroups) can often be tuned for better TCP
@@ -386,7 +407,7 @@ WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
 ><A
-HREF="appendixes.html"
+HREF="groupprofiles.html"
 ACCESSKEY="N"
 >Next</A
 ></TD
@@ -410,7 +431,7 @@ ACCESSKEY="U"
 WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
->Appendixes</TD
+>Creating Group Profiles</TD
 ></TR
 ></TABLE
 ></DIV
