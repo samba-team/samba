@@ -49,5 +49,6 @@
 #define dns_srv_order _kafs_dns_srv_order
 
 #define strtok_r _kafs_strtok_r
+#define strlcpy _kafs_strlcpy
 
 #endif /* __roken_rename_h__ */
