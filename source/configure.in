@@ -2777,4 +2777,4 @@ AC_TRY_RUN([#include "${srcdir-.}/tests/summary.c"],
 builddir=`pwd`
 AC_SUBST(builddir)
 
-AC_OUTPUT(include/stamp-h Makefile)
+AC_OUTPUT(include/stamp-h Makefile script/findsmb)
