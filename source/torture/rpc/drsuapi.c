@@ -780,21 +780,17 @@ static BOOL test_DsReplicaSync(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 		r.in.level = array[i].level;
 		switch(r.in.level) {
-		case 1: {
-			uint16_t string[] = { 0x0064, 0x0063, 0x003d, 0x0073, 0x0039, 0x0000};
-			ZERO_STRUCT(r.in.req.req1);
+		case 1:
 			r.in.req.req1.info			= &info1;
 			r.in.req.req1.info->unknown1		= 32;
 			r.in.req.req1.info->unknown2		= 120;
 			ZERO_STRUCT(r.in.req.req1.info->guid1);
 			ZERO_ARRAY(r.in.req.req1.info->unknown3);
-			r.in.req.req1.info->length		= ARRAY_SIZE(string)-1;
-			r.in.req.req1.info->nc_dn		= string;/*priv->domain_obj_dn*/;
+			r.in.req.req1.info->nc_dn		= priv->domain_obj_dn;
 			r.in.req.req1.guid1			= priv->dcinfo.ntds_guid;
 			r.in.req.req1.string1			= NULL;
 			r.in.req.req1.unknown1			= 16;
 			break;
-		}
 		}
 
 		status = dcerpc_drsuapi_DsReplicaSync(p, mem_ctx, &r);
