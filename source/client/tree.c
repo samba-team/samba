@@ -37,6 +37,31 @@ struct tree_data {
 
 };
 
+void error_message(gchar *message) {
+
+  GtkWidget *dialog, *label, *okay_button;
+     
+  /* Create the widgets */
+     
+  dialog = gtk_dialog_new();
+  gtk_window_set_modal(GTK_WINDOW(dialog), TRUE);
+  label = gtk_label_new (message);
+  okay_button = gtk_button_new_with_label("Okay");
+     
+  /* Ensure that the dialog box is destroyed when the user clicks ok. */
+     
+  gtk_signal_connect_object (GTK_OBJECT (okay_button), "clicked",
+			     GTK_SIGNAL_FUNC (gtk_widget_destroy), dialog);
+  gtk_container_add (GTK_CONTAINER (GTK_DIALOG(dialog)->action_area),
+		     okay_button);
+
+  /* Add the label, and show everything we've added to the dialog. */
+
+  gtk_container_add (GTK_CONTAINER (GTK_DIALOG(dialog)->vbox),
+		     label);
+  gtk_widget_show_all (dialog);
+}
+
 /*
  * We are given a widget, and we want to retrieve its URL so we 
  * can do a directory listing.
@@ -88,7 +113,7 @@ char *get_path(GtkWidget *item)
    * Now, build the path
    */
 
-  slprintf(path_string, sizeof(path_string)-1, "smb:/");
+  snprintf(path_string, sizeof(path_string), "smb:/");
 
   for (j = i - 1; j >= 0; j--) {
 
@@ -116,130 +141,6 @@ struct tree_data *make_tree_data(guint32 type, const char *name)
 
   return p;
 
-}
-
-/* for all the GtkItem:: and GtkTreeItem:: signals */
-static void cb_itemsignal( GtkWidget *item,
-                           gchar     *signame )
-{
-  GtkWidget *real_tree, *aitem, *subtree;
-  gchar *name;
-  GtkLabel *label;
-  gint dh, err, dirlen, level;
-  char dirbuf[512];
-  struct smbc_dirent *dirp;
-  
-  label = GTK_LABEL (GTK_BIN (item)->child);
-  /* Get the text of the label */
-  gtk_label_get (label, &name);
-
-  level = GTK_TREE(item->parent)->level;
-
-  /* Get the level of the tree which the item is in */
-  g_print ("%s called for item %s->%p, level %d\n", signame, name,
-	   item, GTK_TREE (item->parent)->level);
-
-  if (strncmp(signame, "expand", 6) == 0) { /* Expand called */
-    char server[128];
-
-    if ((dh = smbc_opendir(get_path(item))) < 0) { /* Handle error */
-
-      g_print("cb_wholenet: Could not open dir %s, %s\n", get_path(item), 
-	      strerror(errno));
-
-      gtk_main_quit();
-
-      return;
-
-    }
-
-    real_tree = GTK_TREE_ITEM_SUBTREE(item);  /* Get the subtree */
-
-    while ((err = smbc_getdents(dh, (struct smbc_dirent *)dirbuf, 
-				sizeof(dirbuf))) != 0) {
-
-      if (err < 0) { /* An error, report it */
-
-	g_print("cb_wholenet: Could not read dir smbc://, %s\n",
-		strerror(errno));
-
-	gtk_main_quit();
-
-	return;
-
-      }
-
-      dirp = (struct smbc_dirent *)dirbuf;
-
-      while (err > 0) {
-	struct tree_data *my_data;
-
-	dirlen = dirp->dirlen;
-
-	my_data = make_tree_data(dirp->smbc_type, dirp->name);
-
-	if (!my_data) {
-
-	  g_print("Could not allocate space for tree_data: %s\n",
-		  dirp->name);
-
-	  gtk_main_quit();
-	  return;
-
-	}
-
-	aitem = gtk_tree_item_new_with_label(dirp->name);
-
-	/* Connect all GtkItem:: and GtkTreeItem:: signals */
-	gtk_signal_connect (GTK_OBJECT(aitem), "select",
-			    GTK_SIGNAL_FUNC(cb_itemsignal), "select");
-	gtk_signal_connect (GTK_OBJECT(aitem), "deselect",
-			    GTK_SIGNAL_FUNC(cb_itemsignal), "deselect");
-	gtk_signal_connect (GTK_OBJECT(aitem), "toggle",
-			    GTK_SIGNAL_FUNC(cb_itemsignal), "toggle");
-	gtk_signal_connect (GTK_OBJECT(aitem), "expand",
-			    GTK_SIGNAL_FUNC(cb_itemsignal), "expand");
-	gtk_signal_connect (GTK_OBJECT(aitem), "collapse",
-			    GTK_SIGNAL_FUNC(cb_itemsignal), "collapse");
-	/* Add it to the parent tree */
-	gtk_tree_append (GTK_TREE(real_tree), aitem);
-
-	gtk_widget_show (aitem);
-
-	gtk_object_set_user_data(GTK_OBJECT(aitem), (gpointer)my_data);
-
-	fprintf(stdout, "Added: %s, len: %u\n", dirp->name, dirlen);
-
-	if (dirp->smbc_type != SMBC_FILE &&
-	    dirp->smbc_type != SMBC_IPC_SHARE &&
-	    (strcmp(dirp->name, ".") != 0) && 
-	    (strcmp(dirp->name, "..") !=0)){
-	  
-	  subtree = gtk_tree_new();
-	  gtk_tree_item_set_subtree(GTK_TREE_ITEM(aitem), subtree);
-
-	}
-
-	(char *)dirp += dirlen;
-	err -= dirlen;
-
-      }
-
-    }
-
-    smbc_closedir(dh);   
-
-  }
-
-}
-
-/* Note that this is never called */
-static void cb_unselect_child( GtkWidget *root_tree,
-                               GtkWidget *child,
-                               GtkWidget *subtree )
-{
-  g_print ("unselect_child called for root tree %p, subtree %p, child %p\n",
-	   root_tree, subtree, child);
 }
 
 /* Note that this is called every time the user clicks on an item,
@@ -367,16 +268,19 @@ static void cb_select_child (GtkWidget *root_tree, GtkWidget *child,
 	  else {
 	    /* Now format each of the relevant things ... */
 
-	    slprintf(col2, sizeof(col2)-1, "%s%s%s%s%s%s(%0X)",
-		     (st1.st_mode&0x20?"A":""),
-		     (st1.st_mode&0x10?"D":""),
-		     (st1.st_mode&0x08?"V":""),
-		     (st1.st_mode&0x04?"S":""),
-		     (st1.st_mode&0x02?"H":""),
-		     (st1.st_mode&0x01?"R":""),
+	    snprintf(col2, sizeof(col2), "%c%c%c%c%c%c%c%c%c(%0X)",
+		     (st1.st_mode&S_IRUSR?'r':'-'),
+		     (st1.st_mode&S_IWUSR?'w':'-'),
+		     (st1.st_mode&S_IXUSR?'x':'-'),
+		     (st1.st_mode&S_IRGRP?'r':'-'),
+		     (st1.st_mode&S_IWGRP?'w':'-'),
+		     (st1.st_mode&S_IXGRP?'x':'-'),
+		     (st1.st_mode&S_IROTH?'r':'-'),
+		     (st1.st_mode&S_IWOTH?'w':'-'),
+		     (st1.st_mode&S_IXOTH?'x':'-'),
 		     st1.st_mode); 
-	    slprintf(col3, sizeof(col3)-1, "%u", st1.st_size);
-	    slprintf(col4, sizeof(col4)-1, "%s", ctime(&st1.st_ctime));
+	    snprintf(col3, sizeof(col3), "%u", st1.st_size);
+	    snprintf(col4, sizeof(col4), "%s", ctime(&st1.st_ctime));
 	  }
 	}
 
@@ -393,6 +297,158 @@ static void cb_select_child (GtkWidget *root_tree, GtkWidget *child,
       err -= dirlen;
 
     }
+
+  }
+
+}
+
+/* Note that this is never called */
+static void cb_unselect_child( GtkWidget *root_tree,
+                               GtkWidget *child,
+                               GtkWidget *subtree )
+{
+  g_print ("unselect_child called for root tree %p, subtree %p, child %p\n",
+	   root_tree, subtree, child);
+}
+
+/* for all the GtkItem:: and GtkTreeItem:: signals */
+static void cb_itemsignal( GtkWidget *item,
+                           gchar     *signame )
+{
+  GtkWidget *real_tree, *aitem, *subtree;
+  gchar *name;
+  GtkLabel *label;
+  gint dh, err, dirlen, level;
+  char dirbuf[512];
+  struct smbc_dirent *dirp;
+  
+  label = GTK_LABEL (GTK_BIN (item)->child);
+  /* Get the text of the label */
+  gtk_label_get (label, &name);
+
+  level = GTK_TREE(item->parent)->level;
+
+  /* Get the level of the tree which the item is in */
+  g_print ("%s called for item %s->%p, level %d\n", signame, name,
+	   item, GTK_TREE (item->parent)->level);
+
+  real_tree = GTK_TREE_ITEM_SUBTREE(item);  /* Get the subtree */
+
+  if (strncmp(signame, "expand", 6) == 0) { /* Expand called */
+    char server[128];
+
+    if ((dh = smbc_opendir(get_path(item))) < 0) { /* Handle error */
+      gchar errmsg[256];
+
+      g_print("cb_itemsignal: Could not open dir %s, %s\n", get_path(item), 
+	      strerror(errno));
+
+      slprintf(errmsg, sizeof(errmsg), "cb_itemsignal: Could not open dir %s, %s\n", get_path(item), strerror(errno));
+
+      error_message(errmsg);
+
+      /*      gtk_main_quit();*/
+
+      return;
+
+    }
+
+    while ((err = smbc_getdents(dh, (struct smbc_dirent *)dirbuf, 
+				sizeof(dirbuf))) != 0) {
+
+      if (err < 0) { /* An error, report it */
+	gchar errmsg[256];
+
+	g_print("cb_itemsignal: Could not read dir smbc://, %s\n",
+		strerror(errno));
+
+	slprintf(errmsg, sizeof(errmsg), "cb_itemsignal: Could not read dir smbc://, %s\n", strerror(errno));
+
+	error_message(errmsg);
+
+	/*	gtk_main_quit();*/
+
+	return;
+
+      }
+
+      dirp = (struct smbc_dirent *)dirbuf;
+
+      while (err > 0) {
+	struct tree_data *my_data;
+
+	dirlen = dirp->dirlen;
+
+	my_data = make_tree_data(dirp->smbc_type, dirp->name);
+
+	if (!my_data) {
+
+	  g_print("Could not allocate space for tree_data: %s\n",
+		  dirp->name);
+
+	  gtk_main_quit();
+	  return;
+
+	}
+
+	aitem = gtk_tree_item_new_with_label(dirp->name);
+
+	/* Connect all GtkItem:: and GtkTreeItem:: signals */
+	gtk_signal_connect (GTK_OBJECT(aitem), "select",
+			    GTK_SIGNAL_FUNC(cb_itemsignal), "select");
+	gtk_signal_connect (GTK_OBJECT(aitem), "deselect",
+			    GTK_SIGNAL_FUNC(cb_itemsignal), "deselect");
+	gtk_signal_connect (GTK_OBJECT(aitem), "toggle",
+			    GTK_SIGNAL_FUNC(cb_itemsignal), "toggle");
+	gtk_signal_connect (GTK_OBJECT(aitem), "expand",
+			    GTK_SIGNAL_FUNC(cb_itemsignal), "expand");
+	gtk_signal_connect (GTK_OBJECT(aitem), "collapse",
+			    GTK_SIGNAL_FUNC(cb_itemsignal), "collapse");
+	/* Add it to the parent tree */
+	gtk_tree_append (GTK_TREE(real_tree), aitem);
+
+	gtk_widget_show (aitem);
+
+	gtk_object_set_user_data(GTK_OBJECT(aitem), (gpointer)my_data);
+
+	fprintf(stdout, "Added: %s, len: %u\n", dirp->name, dirlen);
+
+	if (dirp->smbc_type != SMBC_FILE &&
+	    dirp->smbc_type != SMBC_IPC_SHARE &&
+	    (strcmp(dirp->name, ".") != 0) && 
+	    (strcmp(dirp->name, "..") !=0)){
+	  
+	  subtree = gtk_tree_new();
+	  gtk_tree_item_set_subtree(GTK_TREE_ITEM(aitem), subtree);
+
+	  gtk_signal_connect(GTK_OBJECT(subtree), "select_child",
+			     GTK_SIGNAL_FUNC(cb_select_child), real_tree);
+	  gtk_signal_connect(GTK_OBJECT(subtree), "unselect_child",
+			     GTK_SIGNAL_FUNC(cb_unselect_child), real_tree);
+
+	}
+
+	(char *)dirp += dirlen;
+	err -= dirlen;
+
+      }
+
+    }
+
+    smbc_closedir(dh);   
+
+  }
+  else if (strncmp(signame, "collapse", 8) == 0) {
+    GtkWidget *subtree = gtk_tree_new();
+
+    gtk_tree_remove_items(GTK_TREE(real_tree), GTK_TREE(real_tree)->children);
+
+    gtk_tree_item_set_subtree(GTK_TREE_ITEM(item), subtree);
+
+    gtk_signal_connect (GTK_OBJECT(subtree), "select_child",
+			GTK_SIGNAL_FUNC(cb_select_child), real_tree);
+    gtk_signal_connect (GTK_OBJECT(subtree), "unselect_child",
+			GTK_SIGNAL_FUNC(cb_unselect_child), real_tree);
 
   }
 
@@ -438,6 +494,8 @@ static void cb_wholenet(GtkWidget *item, gchar *signame)
   g_print ("%s called for item %s->%p, level %d\n", signame, name,
 	   item, GTK_TREE (item->parent)->level);
 
+  real_tree = GTK_TREE_ITEM_SUBTREE(item);  /* Get the subtree */
+
   if (strncmp(signame, "expand", 6) == 0) { /* Expand called */
 
     if ((dh = smbc_opendir("smb://")) < 0) { /* Handle error */
@@ -450,8 +508,6 @@ static void cb_wholenet(GtkWidget *item, gchar *signame)
       return;
 
     }
-
-    real_tree = GTK_TREE_ITEM_SUBTREE(item);  /* Get the subtree */
 
     while ((err = smbc_getdents(dh, (struct smbc_dirent *)dirbuf, 
 				sizeof(dirbuf))) != 0) {
@@ -502,6 +558,11 @@ static void cb_wholenet(GtkWidget *item, gchar *signame)
 
 	gtk_tree_item_set_subtree(GTK_TREE_ITEM(aitem), subtree);
 
+	gtk_signal_connect(GTK_OBJECT(subtree), "select_child",
+			   GTK_SIGNAL_FUNC(cb_select_child), real_tree);
+	gtk_signal_connect(GTK_OBJECT(subtree), "unselect_child",
+			   GTK_SIGNAL_FUNC(cb_unselect_child), real_tree);
+
 	(char *)dirp += dirlen;
 	err -= dirlen;
 
@@ -510,6 +571,20 @@ static void cb_wholenet(GtkWidget *item, gchar *signame)
     }
 
     smbc_closedir(dh);   
+
+  }
+  else { /* Must be collapse ... FIXME ... */
+    GtkWidget *subtree = gtk_tree_new();
+
+    gtk_tree_remove_items(GTK_TREE(real_tree), GTK_TREE(real_tree)->children);
+
+    gtk_tree_item_set_subtree(GTK_TREE_ITEM(item), subtree);
+
+    gtk_signal_connect (GTK_OBJECT(subtree), "select_child",
+			GTK_SIGNAL_FUNC(cb_select_child), real_tree);
+    gtk_signal_connect (GTK_OBJECT(subtree), "unselect_child",
+			GTK_SIGNAL_FUNC(cb_unselect_child), real_tree);
+
 
   }
 
@@ -548,6 +623,15 @@ int main( int   argc,
 
   err = smbc_init(auth_fn, 10);
 
+  /* Print an error response ... */
+
+  if (err < 0) {
+
+    fprintf(stderr, "smbc_init returned %s (%i)\nDo you have a ~/.smb/smb.conf file?\n", strerror(errno), errno);
+    exit(1);
+
+  }
+
   /* a generic toplevel window */
   window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
   gtk_widget_set_name(window, "main browser window");
@@ -573,9 +657,6 @@ int main( int   argc,
   gtk_paned_gutter_size(GTK_PANED(r_pane), (GTK_PANED(r_pane))->handle_size);
   gtk_container_add(GTK_CONTAINER(main_hbox), l_pane);
   gtk_widget_show(l_pane);
-  /*gtk_container_add(GTK_CONTAINER(main_hbox), r_pane);
-    gtk_widget_show(r_pane); */
-
 
   /* A generic scrolled window */
   scrolled_win = gtk_scrolled_window_new (NULL, NULL);
