@@ -51,7 +51,6 @@ char *smb_errstr(char *inbuf);
 
 /*The following definitions come from  clitar.c  */
 
-int strslashcmp(char *s1, char *s2);
 int padit(char *buf, int bufsize, int padsize);
 void cmd_block(void);
 void cmd_tarmode(void);
