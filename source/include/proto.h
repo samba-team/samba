@@ -422,7 +422,7 @@ BOOL deal_with_creds(uchar sess_key[8],
 
 struct node_status *name_status_query(int fd,struct nmb_name *name,
 				      struct in_addr to_ip, int *num_names);
-BOOL name_status_find(int type, struct in_addr to_ip, char *name);
+BOOL name_status_find(const char *q_name, int q_type, struct in_addr to_ip, char *name);
 struct in_addr *name_query(int fd,const char *name,int name_type, 
 			   BOOL bcast,BOOL recurse,
 			   struct in_addr to_ip, int *count);
