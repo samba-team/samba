@@ -59,7 +59,7 @@ NTSTATUS pdb_init_plugin(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, con
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	if (plugin_version()!=PASSDB_INTERFACE_VERSION) {
+	if (plugin_version() != PASSDB_INTERFACE_VERSION) {
 		sys_dlclose(dl_handle);
 		DEBUG(0, ("Wrong PASSDB_INTERFACE_VERSION! sam plugin has version %d and version %d is needed! Please update!\n",
 			    plugin_version(),PASSDB_INTERFACE_VERSION));

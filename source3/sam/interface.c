@@ -646,17 +646,17 @@ NTSTATUS context_sam_add_group(const SAM_CONTEXT *context, const SAM_GROUP_HANDL
 	return NT_STATUS_OK;
 }
 
-NTSTATUS context_sam_update_group(const SAM_CONTEXT *context, const DOM_SID *domainsid, const SAM_GROUP_HANDLE *group)
+NTSTATUS context_sam_update_group(const SAM_CONTEXT *context, const SAM_GROUP_HANDLE *group)
 {
 	DOM_SID		domainsid;
 	DOM_SID		*groupsid;
 	struct sam_methods *tmp_methods;
 	uint32		rid;
-	NTSTATUS status;
+	NTSTATUS nt_status;
 
-	if (!NT_STATUS_IS_OK(status = sam_get_group_sid(group, &groupsid))) {
+	if (!NT_STATUS_IS_OK(nt_status = sam_get_group_sid(group, &groupsid))) {
 		DEBUG(0,("Can't get group SID\n"));
-		return status;
+		return nt_status;
 	}
 
 	sid_copy(&domainsid, groupsid);
@@ -665,9 +665,9 @@ NTSTATUS context_sam_update_group(const SAM_CONTEXT *context, const DOM_SID *dom
 		return NT_STATUS_INVALID_SID;
 	}
 
-	if (!NT_STATUS_IS_OK(status = sam_get_methods_by_sid(context, &tmp_methods, &domainsid))) {
+	if (!NT_STATUS_IS_OK(nt_status = sam_get_methods_by_sid(context, &tmp_methods, &domainsid))) {
 		DEBUG(4,("sam_get_methods_by_sid failed\n"));
-		return status;
+		return nt_status;
 	}
 
 	if (!tmp_methods->sam_update_group) {
