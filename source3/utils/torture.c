@@ -930,7 +930,7 @@ static void run_locktest4(int dummy)
 
  fail:
 	cli_close(&cli1, fnum1);
-	cli_close(&cli1, fnum2);
+	cli_close(&cli2, fnum2);
 	cli_unlink(&cli1, fname);
 	close_connection(&cli1);
 	close_connection(&cli2);

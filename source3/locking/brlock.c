@@ -210,6 +210,9 @@ struct unlock_list *brl_unlock_list(TALLOC_CTX *ctx, struct unlock_list *ulhead,
 	 * Quit if the list is deleted.
 	 */
 
+	DEBUG(10,("brl_unlock_list: curr: start=%.0f,size=%.0f\n",
+		(double)ulhead->start, (double)ulhead->size ));
+
 	for (i=0; i<num_locks && ulhead; i++) {
 
 		struct lock_struct *lock = &locks[i];
@@ -227,9 +230,8 @@ struct unlock_list *brl_unlock_list(TALLOC_CTX *ctx, struct unlock_list *ulhead,
 
 		for (ul_curr = ulhead; ul_curr;) {
 
-			DEBUG(10,("brl_unlock_list: curr: start=%.0f,size=%.0f \
-lock: start=%.0f,size=%.0f\n", (double)ul_curr->start, (double)ul_curr->size,
-								(double)lock->start, (double)lock->size ));
+			DEBUG(10,("brl_unlock_list: lock: start=%.0f,size=%.0f:",
+				(double)lock->start, (double)lock->size ));
 
 			if ( (ul_curr->start >= (lock->start + lock->size)) ||
 				 (lock->start > (ul_curr->start + ul_curr->size))) {
@@ -248,7 +250,7 @@ OR....
              +---------+
 **********************************************/
 
-				DEBUG(10,("brl_unlock_list: no overlap case.\n" ));
+				DEBUG(10,("no overlap case.\n" ));
 
 				ul_curr = ul_curr->next;
 
@@ -270,7 +272,7 @@ OR....
 				/* Save the next pointer */
 				struct unlock_list *ul_next = ul_curr->next;
 
-				DEBUG(10,("brl_unlock_list: delete case.\n" ));
+				DEBUG(10,("delete case.\n" ));
 
 				DLIST_REMOVE(ulhead, ul_curr);
 				if(ulhead == NULL)
@@ -302,7 +304,7 @@ BECOMES....
 				ul_curr->size = (ul_curr->start + ul_curr->size) - (lock->start + lock->size);
 				ul_curr->start = lock->start + lock->size;
 
-				DEBUG(10,("brl_unlock_list: truncate high case: start=%.0f,size=%.0f\n",
+				DEBUG(10,("truncate high case: start=%.0f,size=%.0f\n",
 								(double)ul_curr->start, (double)ul_curr->size ));
 
 				ul_curr = ul_curr->next;
@@ -329,7 +331,7 @@ BECOMES....
 
 				ul_curr->size = lock->start - ul_curr->start;
 
-				DEBUG(10,("brl_unlock_list: truncate low case: start=%.0f,size=%.0f\n",
+				DEBUG(10,("truncate low case: start=%.0f,size=%.0f\n",
 								(double)ul_curr->start, (double)ul_curr->size ));
 
 				ul_curr = ul_curr->next;
@@ -372,7 +374,7 @@ BECOMES.....
 				/* Truncate the ul_curr. */
 				ul_curr->size = lock->start - ul_curr->start;
 
-				DEBUG(10,("brl_unlock_list: split case: curr: start=%.0f,size=%.0f \
+				DEBUG(10,("split case: curr: start=%.0f,size=%.0f \
 new: start=%.0f,size=%.0f\n", (double)ul_curr->start, (double)ul_curr->size,
 								(double)ul_new->start, (double)ul_new->size ));
 
@@ -385,7 +387,7 @@ new: start=%.0f,size=%.0f\n", (double)ul_curr->start, (double)ul_curr->size,
 				 * case by forcing an abort.... Remove in production.
 				 */
 
-				smb_panic("brl_unlock_list: logic flaw in cases...\n");
+				smb_panic("logic flaw in cases...\n");
 			}
 		} /* end for ( ul_curr = ulhead; ul_curr;) */
 	} /* end for (i=0; i<num_locks && ul_head; i++) */
@@ -422,7 +424,10 @@ BOOL brl_unlock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 	tdb_lockchain(tdb, kbuf);
 	dbuf = tdb_fetch(tdb, kbuf);
 
-	if (!dbuf.dptr) goto fail;
+	if (!dbuf.dptr) {
+		DEBUG(0,("brl_unlock: tdb_fetch failed !\n"));
+		goto fail;
+	}
 
 	context.smbpid = smbpid;
 	context.pid = pid;
@@ -434,6 +439,18 @@ BOOL brl_unlock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 	for (i=0; i<count; i++) {
 
 		struct lock_struct *lock = &locks[i];
+
+#if 0
+		/* JRATEST - DEBUGGING INFO */
+		if(!brl_same_context(&lock->context, &context)) {
+			DEBUG(10,("brl_unlock: Not same context. l_smbpid = %u, l_pid = %u, l_tid = %u: \
+smbpid = %u, pid = %u, tid = %u\n",
+				lock->context.smbpid, lock->context.pid, lock->context.tid,
+				context.smbpid, context.pid, context.tid ));
+
+		}
+		/* JRATEST */
+#endif
 
 		if (brl_same_context(&lock->context, &context) &&
 		    lock->fnum == fnum &&
