@@ -55,9 +55,14 @@ static size_t iconv_copy  (void *,const char **, size_t *, char **, size_t *);
 static size_t iconv_swab  (void *,const char **, size_t *, char **, size_t *);
 
 static const struct charset_functions const builtin_functions[] = {
+	/* windows is really neither UCS-2 not UTF-16 */
 	{"UCS-2LE",  iconv_copy, iconv_copy},
+	{"UTF-16LE",  iconv_copy, iconv_copy},
 	{"UCS-2BE",  iconv_swab, iconv_swab},
+
+	/* we include the UTF-8 alias to cope with differing locale settings */
 	{"UTF8",   utf8_pull,  utf8_push},
+	{"UTF-8",   utf8_pull,  utf8_push},
 	{"ASCII", ascii_pull, ascii_push},
 	{"UCS2-HEX", ucs2hex_pull, ucs2hex_push},
 	{NULL, NULL, NULL}
