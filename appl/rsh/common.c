@@ -86,8 +86,6 @@ do_read (int fd,
 ssize_t
 do_write (int fd, void *buf, size_t sz)
 {
-    int ret;
-
     if (do_encrypt) {
 #ifdef KRB4
 	if(auth_method == AUTH_KRB4) {
