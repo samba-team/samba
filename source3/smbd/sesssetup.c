@@ -64,7 +64,7 @@ static NTSTATUS check_guest_password(auth_serversupplied_info **server_info)
 }
 
 
-#if HAVE_KRB5
+#ifdef HAVE_KRB5
 /****************************************************************************
 reply to a session setup spnego negotiate packet for kerberos
 ****************************************************************************/
@@ -201,7 +201,7 @@ static int reply_spnego_negotiate(connection_struct *conn,
 	}
 	DEBUG(3,("Got secblob of size %d\n", secblob.length));
 
-#if HAVE_KRB5
+#ifdef HAVE_KRB5
 	if (got_kerberos) {
 		int ret = reply_spnego_kerberos(conn, inbuf, outbuf, 
 						length, bufsize, &secblob);

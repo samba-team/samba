@@ -378,7 +378,7 @@ static DATA_BLOB cli_session_setup_blob(struct cli_state *cli, DATA_BLOB blob)
 }
 
 
-#if HAVE_KRB5
+#ifdef HAVE_KRB5
 /****************************************************************************
 do a spnego/kerberos encrypted session setup
 ****************************************************************************/
@@ -543,7 +543,7 @@ static BOOL cli_session_setup_spnego(struct cli_state *cli, char *user,
 
 	fstrcpy(cli->user_name, user);
 
-#if HAVE_KRB5
+#ifdef HAVE_KRB5
 	if (got_kerberos_mechanism && cli->use_kerberos) {
 		return cli_session_setup_kerberos(cli, principal, workgroup);
 	}

@@ -2686,7 +2686,7 @@ static int do_message_op(void)
 			io_bufsize = MAX(1, atoi(optarg));
 			break;
 		case 'k':
-#if HAVE_KRB5
+#ifdef HAVE_KRB5
 			use_kerberos = True;
 			got_pass = True;
 #else

@@ -21,7 +21,7 @@
 
 #include "includes.h"
 
-#if HAVE_KRB5
+#ifdef HAVE_KRB5
 
 #define DEFAULT_KPASSWD_PORT	464
 #define KRB5_KPASSWD_VERS_CHANGEPW	1
