@@ -2053,8 +2053,15 @@ int reply_lockread(connection_struct *conn, char *inbuf,char *outbuf, int length
   outsize = set_message(outbuf,5,3,True);
   numtoread = MIN(BUFFER_SIZE-outsize,numtoread);
   data = smb_buf(outbuf) + 3;
-  
-  if(!do_lock( fsp, conn, numtoread, startpos, F_RDLCK, &eclass, &ecode)) {
+ 
+  /*
+   * NB. Discovered by Menny Hamburger at Mainsoft. This is a core+
+   * protocol request that predates the read/write lock concept. 
+   * Thus instead of asking for a read lock here we need to ask
+   * for a write lock. JRA.
+   */
+
+  if(!do_lock( fsp, conn, numtoread, startpos, F_WRLCK, &eclass, &ecode)) {
     if((ecode == ERRlock) && lp_blocking_locks(SNUM(conn))) {
       /*
        * A blocking lock was requested. Package up
