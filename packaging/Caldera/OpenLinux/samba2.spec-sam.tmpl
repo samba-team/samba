@@ -1,4 +1,4 @@
-%define Version 	PVERSION
+%define Version 	PVERSIONsam
 %define date            PRELEASE
 %define Vendor  	Caldera
 %define Dist		OpenLinux
@@ -287,7 +287,11 @@ CFLAGS="$RPM_OPT_FLAGS" LDFLAGS="-s" ./configure \
 	--with-syslog \
 	--with-vfs \
 	--with-msdfs \
-	--with-tdbsam 
+	--with-tdbsam \
+	--with-ldapsam \
+	--with-nisplussam \
+	--with-nisplushome \
+	--with-krb5=base-dir=/usr/athena
 
 make LOGFILEBASE=/var/log/samba.d everything nsswitch/libnss_wins.so
 
