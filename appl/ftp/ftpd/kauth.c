@@ -47,8 +47,14 @@ RCSID("$Id$");
 #include <string.h>
 
 #include <time.h>
+#ifdef HAVE_SYS_TIME_H 
 #include <sys/time.h>
+#endif
+#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
+#endif
+
+#include <roken.h>
 
 #include <des.h>
 #include <krb.h>
@@ -57,7 +63,7 @@ RCSID("$Id$");
 #include "extern.h"
 #include "krb4.h"
 #include "auth.h"
-
+#include "base64.h"
 
 static KTEXT_ST cip;
 static unsigned int lifetime;

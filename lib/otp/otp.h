@@ -72,7 +72,7 @@ typedef struct {
 OtpAlgorithm *otp_find_alg (char *name);
 void otp_print_stddict (OtpKey key, char *str);
 void otp_print_hex (OtpKey key, char *str);
-unsigned opt_checksum (OtpKey key);
+unsigned otp_checksum (OtpKey key);
 int otp_parse_hex (OtpKey key, char *);
 int otp_parse_stddict (OtpKey key, char *);
 int otp_parse_altdict (OtpKey key, char *, OtpAlgorithm *);

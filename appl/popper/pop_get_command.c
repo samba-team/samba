@@ -17,28 +17,28 @@ RCSID("$Id$");
  */
 
 static state_table states[] = {
-        auth1,  "user", 1,  1,  pop_user,   {auth1, auth2},
-        auth2,  "pass", 1,  99, pop_pass,   {auth1, trans},
+        {auth1,  "user", 1,  1,  pop_user,   {auth1, auth2}},
+        {auth2,  "pass", 1,  99, pop_pass,   {auth1, trans}},
 #ifdef RPOP
-        auth2,  "rpop", 1,  1,  pop_rpop,   {auth1, trans},
+        {auth2,  "rpop", 1,  1,  pop_rpop,   {auth1, trans}},
 #endif /* RPOP */
-        auth1,  "quit", 0,  0,  pop_quit,   {halt,  halt},
-        auth2,  "quit", 0,  0,  pop_quit,   {halt,  halt},
-        trans,  "stat", 0,  0,  pop_stat,   {trans, trans},
-        trans,  "list", 0,  1,  pop_list,   {trans, trans},
-        trans,  "retr", 1,  1,  pop_send,   {trans, trans},
-        trans,  "dele", 1,  1,  pop_dele,   {trans, trans},
-        trans,  "noop", 0,  0,  NULL,       {trans, trans},
-        trans,  "rset", 0,  0,  pop_rset,   {trans, trans},
-        trans,  "top",  2,  2,  pop_send,   {trans, trans},
-        trans,  "last", 0,  0,  pop_last,   {trans, trans},
-        trans,  "xtnd", 1,  99, pop_xtnd,   {trans, trans},
-        trans,  "quit", 0,  0,  pop_updt,   {halt,  halt},
-	trans,  "help", 0,  0,  pop_help,   {trans, trans},
+        {auth1,  "quit", 0,  0,  pop_quit,   {halt,  halt}},
+        {auth2,  "quit", 0,  0,  pop_quit,   {halt,  halt}},
+        {trans,  "stat", 0,  0,  pop_stat,   {trans, trans}},
+        {trans,  "list", 0,  1,  pop_list,   {trans, trans}},
+        {trans,  "retr", 1,  1,  pop_send,   {trans, trans}},
+        {trans,  "dele", 1,  1,  pop_dele,   {trans, trans}},
+        {trans,  "noop", 0,  0,  NULL,       {trans, trans}},
+        {trans,  "rset", 0,  0,  pop_rset,   {trans, trans}},
+        {trans,  "top",  2,  2,  pop_send,   {trans, trans}},
+        {trans,  "last", 0,  0,  pop_last,   {trans, trans}},
+        {trans,  "xtnd", 1,  99, pop_xtnd,   {trans, trans}},
+        {trans,  "quit", 0,  0,  pop_updt,   {halt,  halt}},
+	{trans,  "help", 0,  0,  pop_help,   {trans, trans}},
 #ifdef UIDL
-        trans,  "uidl", 0,  1,  pop_uidl,   {trans, trans},
+        {trans,  "uidl", 0,  1,  pop_uidl,   {trans, trans},}
 #endif
-        (state) 0,  NULL,   0,  0,  NULL,       {halt,  halt},
+        {(state) 0,  NULL,   0,  0,  NULL,       {halt,  halt}},
 };
 
 state_table *

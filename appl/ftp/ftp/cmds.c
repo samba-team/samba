@@ -1935,7 +1935,7 @@ restart(int argc, char **argv)
 	else {
 		off_t restart_point = atol(argv[1]);
 		printf("restarting at %qd. %s\n", restart_point,
-		    "execute get, put or append to initiate transfer");
+		       "execute get, put or append to initiate transfer");
 	}
 }
 

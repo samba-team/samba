@@ -80,7 +80,6 @@ otp_md_init (OtpKey key,
 {
   char *p;
   int len;
-  int i;
 
   len = strlen(pwd) + strlen(seed);
   p = malloc (len + 1);

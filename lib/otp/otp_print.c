@@ -41,6 +41,7 @@
 RCSID("$Id$");
 #endif
 
+#include <stdio.h>
 #include "otp.h"
 
 static char *std_dict[] =

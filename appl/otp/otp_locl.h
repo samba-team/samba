@@ -49,8 +49,12 @@
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 #ifdef HAVE_PWD_H
 #include <pwd.h>
 #endif
 #include <roken.h>
+#include <des.h>
 #include <otp.h>

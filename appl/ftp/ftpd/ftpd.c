@@ -105,6 +105,7 @@ RCSID("$Id$");
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <string.h>
 #ifdef HAVE_SYSLOG_H
 #include <syslog.h>
@@ -117,7 +118,7 @@ RCSID("$Id$");
 #include <grp.h>
 #endif
 
-#include <stdarg.h>
+#include <err.h>
 
 #include "pathnames.h"
 #include "extern.h"
@@ -846,12 +847,12 @@ retrieve(char *cmd, char *name)
 			char *cmd;
 		    } cmds[] = {
 		        /* XXX  - make this more general */
-			".tar", "/bin/gtar cPf - ",
-			".tar.gz", "/bin/gtar zcPf - ",
-			".tar.Z", "/bin/gtar ZcPf - ",
-			".gz", "/bin/gzip -c ",
-			".Z", "/bin/compress -c ",
-			NULL, NULL
+			{".tar", "/bin/gtar cPf - "},
+			{".tar.gz", "/bin/gtar zcPf - "},
+			{".tar.Z", "/bin/gtar ZcPf - "},
+			{".gz", "/bin/gzip -c "},
+			{".Z", "/bin/compress -c "},
+			{NULL, NULL}
 		    };
 		    struct cmds *p;
 		    for(p = cmds; p->ext; p++){

@@ -57,6 +57,9 @@
 #ifdef HAVE_PWD_H
 #include <pwd.h>
 #endif
+#ifdef HAVE_GRP_H
+#include <grp.h>
+#endif
 #ifdef HAVE_SYSLOG_H
 #include <syslog.h>
 #endif
@@ -118,6 +121,10 @@ extern size_t cookie_len;
 
 int get_xsockets (int *unix_socket, int *tcp_socket);
 int connect_local_xsocket (unsigned dnr);
+int create_and_write_cookie (char *xauthfile,
+			     u_char *cookie,
+			     size_t sz);
+int suspicious_address (int sock, struct sockaddr_in addr);
 
 #define KX_PORT 2111
 

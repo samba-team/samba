@@ -139,7 +139,7 @@ connect_host (char *host, des_cblock *key, des_key_schedule schedule,
 	 }
 
 #ifdef TCP_NODELAY
-	 setsockopt (s, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
+	 setsockopt (s, IPPROTO_TCP, TCP_NODELAY, (void *)&one, sizeof(one));
 #endif
 
 	 if (connect (s, (struct sockaddr *)&thataddr, sizeof(thataddr)) < 0) {
@@ -385,14 +385,14 @@ doit (char *host, int passivep, int debugp, int tcpp)
 	  fn = active;
      }
      if(debugp)
-	 printf ("%d\t%d\t%s\n", getpid(), display_num, xauthfile);
+	 printf ("%u\t%d\t%s\n", (unsigned)getpid(), display_num, xauthfile);
      else {
 	 pid = fork();
 	 if (pid < 0) {
 	     fprintf (stderr, "%s: fork: %s\n", prog, strerror(errno));
 	     return 1;
 	 } else if (pid > 0) {
-	     printf ("%d\t%d\t%s\n", pid, display_num, xauthfile);
+	     printf ("%u\t%d\t%s\n", (unsigned)pid, display_num, xauthfile);
 	     exit (0);
 	 } else {
 	     fclose(stdout);
@@ -429,7 +429,7 @@ doit (char *host, int passivep, int debugp, int tcpp)
 		    return 1;
 	       }
 #ifdef TCP_NODELAY
-	  setsockopt (fd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
+	  setsockopt (fd, IPPROTO_TCP, TCP_NODELAY, (void *)&one, sizeof(one));
 #endif
 	  ++nchild;
 	  child = fork ();

@@ -375,7 +375,6 @@ sec_write(int fd, char *data, int length)
 {
     int len = auth_pbsz;
     int tx = 0;
-    int bytes;
       
     if(data_prot == prot_clear)
 	return write(fd, data, length);

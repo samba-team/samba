@@ -46,7 +46,6 @@ RCSID("$Id$");
 void *
 otp_db_open ()
 {
-  DBM *ret;
   int lock;
 
   do {

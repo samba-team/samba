@@ -17,8 +17,8 @@ RCSID("$Id$");
  */
 
 static xtnd_table subcommands[] = {
-        "xmit",     0,  0,  pop_xmit,
-        NULL
+        {"xmit",     0,  0,  pop_xmit},
+        {NULL}
 };
 
 xtnd_table *

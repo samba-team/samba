@@ -183,7 +183,8 @@ get_xsockets (int *unix_socket, int *tcp_socket)
 		 return -1;
 	     }
 #ifdef TCP_NODELAY
-	     setsockopt (tcpfd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
+	     setsockopt (tcpfd, IPPROTO_TCP, TCP_NODELAY, (void *)&one,
+			 sizeof(one));
 #endif
 	     memset (&tcpaddr, 0, sizeof(tcpaddr));
 	     tcpaddr.sin_family = AF_INET;

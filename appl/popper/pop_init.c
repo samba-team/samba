@@ -70,7 +70,7 @@ pop_init(POP *p,int argcount,char **argmessage)
     int                     len;
     int                     options = 0;
     int                     sp = 0;             /*  Socket pointer */
-    char                *   trace_file_name;
+    char                *   trace_file_name = "/tmp/popper-trace";
     int			    inetd = 0;
 
     /*  Initialize the POP parameter block */
@@ -83,7 +83,7 @@ pop_init(POP *p,int argcount,char **argmessage)
     k_gethostname(p->myhost,MaxHostNameLen);
 
     /*  Open the log file */
-    (void)openlog(p->myname,POP_LOGOPTS,POP_FACILITY);
+    openlog(p->myname,POP_LOGOPTS,POP_FACILITY);
 
     /*  Process command line arguments */
     while ((c = getopt(argcount,argmessage,

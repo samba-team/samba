@@ -175,4 +175,14 @@ void mini_inetd (int port);
 #define LOG_AUTHPRIV LOG_AUTH
 #endif
 
+#ifdef NEED_OPTARG_DECLARATION
+extern char *optarg;
+#endif
+#ifdef NEED_OPTIND_DECLARATION
+extern int optind;
+#endif
+#ifdef NEED_OPTERR_DECLARATION
+extern int opterr;
+#endif
+
 #endif /*  __ROKEN_H__ */

@@ -41,15 +41,19 @@
 RCSID("$Id$");
 #endif
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
 #ifdef HAVE_SYS_IOCTL_H
 #include <sys/ioctl.h>
 #endif
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 
-#include <stdio.h>
-#include <stdlib.h>
 #include "extern.h"
 #include "krb4.h"
 #include "auth.h"

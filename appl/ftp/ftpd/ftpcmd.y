@@ -42,43 +42,56 @@
 
 %{
 
-#ifndef lint
-#if 0
-static char sccsid[] = "@(#)ftpcmd.y	8.3 (Berkeley) 4/6/94";
-#else
-static char rcsid[] = "$NetBSD: ftpcmd.y,v 1.6 1995/06/03 22:46:45 mycroft Exp $";
-#endif
-#endif /* not lint */
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
+RCSID("$Id$");
+
 #ifdef SOCKS
 #include <socks.h>
 #endif
 
+#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
+#endif
 
+#ifdef HAVE_SYS_PARAM_H
 #include <sys/param.h>
+#endif
+#ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
+#endif
+#ifdef HAVE_SYS_STAT_H
 #include <sys/stat.h>
+#endif
 
+#ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
+#endif
+#ifdef HAVE_ARPA_FTP_H
 #include <arpa/ftp.h>
+#endif
 
 #include <ctype.h>
 #include <errno.h>
 #include <glob.h>
+#ifdef HAVE_PWD_H
 #include <pwd.h>
+#endif
 #include <setjmp.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef HAVE_SYSLOG_H
 #include <syslog.h>
+#endif
 #include <time.h>
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 
 #ifdef HAVE_BSD_BSD_H
 #include <bsd/bsd.h>
@@ -686,7 +699,7 @@ host_port
 	: NUMBER COMMA NUMBER COMMA NUMBER COMMA NUMBER COMMA
 		NUMBER COMMA NUMBER
 		{
-			char *a, *p;
+			char *a;
 
 			data_dest.sin_family = AF_INET;
 			data_dest.sin_port = htons($9 * 256 + $11);

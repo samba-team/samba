@@ -35,14 +35,6 @@
  *
  */
 
-#ifndef lint
-#if 0
-static char sccsid[] = "@(#)popen.c	8.3 (Berkeley) 4/6/94";
-#else
-static char xrcsid[] = "$NetBSD: popen.c,v 1.5 1995/04/11 02:45:00 cgd Exp $";
-#endif
-#endif /* not lint */
-
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 RCSID("$Id$");

@@ -68,11 +68,10 @@ static Pixel		Black, White;
 static XFontStruct    *font;
 static char		root_cpass[16];
 static char		user_cpass[16];
-static char		root_pw[16];
 static int		time_left, prompt_x, prompt_y, time_x, time_y;
 static unsigned long	interval;
 static Pixmap		left0, left1, right0, right1, left_front,
-		right_front, front, down;
+			right_front, front, down;
 
 #define MAXLINES 40
 

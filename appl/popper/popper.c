@@ -62,8 +62,8 @@ main (int argc, char **argv)
     state_table     *   s;
     char                message[MAXLINELEN];
 
-    (void) signal(SIGHUP, catchSIGHUP);
-    (void) signal(SIGPIPE,catchSIGHUP);
+    signal(SIGHUP,  catchSIGHUP);
+    signal(SIGPIPE, catchSIGHUP);
 
     /*  Start things rolling */
     pop_init(&p,argc,argv);

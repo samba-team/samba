@@ -118,24 +118,20 @@
 #include <sys/mman.h>
 #endif
 
+#include <err.h>
+
 #include "ftp_var.h"
 #include "extern.h"
 #include "common.h"
 #include "pathnames.h"
 
+#include <des.h>
+
+#include <krb.h>
+
 #include "krb4.h"
 
 #include "roken.h"
-
-#ifdef NEED_OPTARG_DECLARATION
-extern char *optarg;
-#endif
-#ifdef NEED_OPTIND_DECLARATION
-extern int optind;
-#endif
-#ifdef NEED_OPTERR_DECLARATION
-extern int opterr;
-#endif
 
 #if defined(__sun__) && !defined(__svr4)
 int fclose(FILE*);

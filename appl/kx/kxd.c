@@ -188,7 +188,7 @@ doit_conn (int fd, struct sockaddr_in *thataddr,
     return fatal (sock, msg);
   }
 #ifdef TCP_NODELAY
-  setsockopt (sock, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
+  setsockopt (sock, IPPROTO_TCP, TCP_NODELAY, (void *)&one, sizeof(one));
 #endif
   if (connect (sock, (struct sockaddr *)thataddr,
 	       sizeof(*thataddr)) < 0) {
@@ -221,7 +221,6 @@ doit(int sock, int tcpp)
      des_key_schedule schedule;
      des_cblock key;
      int localx, tcpx;
-     u_int32_t tmp;
 
      if (recv_conn (sock, &key, schedule, &thataddr))
 	  return 1;
@@ -292,7 +291,8 @@ doit(int sock, int tcpp)
 			 return fatal (sock, msg);
 		    }
 #ifdef TCP_NODELAY
-	       setsockopt (fd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
+	       setsockopt (fd, IPPROTO_TCP, TCP_NODELAY, (void *)&one,
+			   sizeof(one));
 #endif
 	       child = fork ();
 	       if (child < 0) {

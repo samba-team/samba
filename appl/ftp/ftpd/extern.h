@@ -82,11 +82,12 @@ void	user(char *);
 void	yyerror(char *);
 
 void	kauth(char *, char*);
+void	klist(void);
 
-int find(char *);
+int	find(char *);
 
-
-int klogin(char *name, char *password);
+int	do_login(int code, char *passwd);
+int	klogin(char *name, char *password);
 
 const char *ftp_rooted(const char *path);
 

@@ -41,6 +41,9 @@
 #ifndef __KRB4_H__
 #define __KRB4_H__
 
+#include <stdio.h>
+#include <stdarg.h>
+
 extern int auth_complete;
 
 void sec_status(void);
@@ -49,6 +52,17 @@ enum { prot_clear, prot_safe, prot_confidential, prot_private };
 
 void sec_prot(int, char**);
 
+int sec_getc(FILE *F);
+int sec_putc(int c, FILE *F);
+int sec_fflush(FILE *F);
+int sec_read(int fd, void *data, int length);
+int sec_write(int fd, char *data, int length);
+
+int krb4_getc(FILE *F);
+int krb4_read(int fd, char *data, int length);
+
+
+
 void sec_set_protection_level(void);
 int sec_request_prot(char *level);
 
@@ -56,5 +70,12 @@ void kauth(int, char **);
 void klist(int, char **);
 
 void krb4_quit(void);
+
+int krb4_write_enc(FILE *F, char *fmt, va_list ap);
+int krb4_read_msg(char *s, int priv);
+int krb4_read_mic(char *s);
+int krb4_read_enc(char *s);
+
+int do_klogin(char *host);
 
 #endif /* __KRB4_H__ */
