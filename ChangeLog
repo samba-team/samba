@@ -1,3 +1,7 @@
+Mon Aug  4 20:20:48 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* kdc: Make context global.
+
 Fri Aug  1 17:23:56 1997  Assar Westerlund  <assar@sics.se>
 
 	* Release 0.0d
