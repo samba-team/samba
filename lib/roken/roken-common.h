@@ -209,4 +209,34 @@ char *ROKEN_LIB_FUNCTION estrdup (const char *);
 ssize_t ROKEN_LIB_FUNCTION eread (int fd, void *buf, size_t nbytes);
 ssize_t ROKEN_LIB_FUNCTION ewrite (int fd, const void *buf, size_t nbytes);
 
+void
+socket_set_address_and_port (struct sockaddr *sa, const void *ptr, int port);
+
+size_t
+socket_addr_size (const struct sockaddr *sa);
+
+void
+socket_set_any (struct sockaddr *sa, int af);
+
+size_t
+socket_sockaddr_size (const struct sockaddr *sa);
+
+void *
+socket_get_address (struct sockaddr *sa);
+
+int
+socket_get_port (const struct sockaddr *sa);
+
+void
+socket_set_port (struct sockaddr *sa, int port);
+
+void
+socket_set_debug (int sock);
+
+void
+socket_set_tos (int sock, int tos);
+
+void
+socket_set_reuseaddr (int sock, int val);
+
 #endif /* __ROKEN_COMMON_H__ */
