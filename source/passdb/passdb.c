@@ -51,14 +51,14 @@ BOOL initialize_password_db(BOOL reload)
 	/* load another module? */
 	if (reload && pdb_handle)
 	{
-		dlclose (pdb_handle);
+		sys_dlclose (pdb_handle);
 		pdb_handle = NULL;
 	}
 	
 	/* do we have a module defined or use the default? */
 	if (strlen (modulename) != 0)
 	{
-		if ((pdb_handle=dlopen (modulename, RTLD_LAZY)) == NULL)
+		if ((pdb_handle=sys_dlopen (modulename, RTLD_LAZY)) == NULL)
 		{
 			DEBUG(0,("initialize_password_db: ERROR - Unable to open passdb module \"%s\"!\n%s\n",
 				modulename, dlerror()));
@@ -71,7 +71,7 @@ BOOL initialize_password_db(BOOL reload)
 	   to open.  Let's try the default */
 	if (pdb_handle == NULL)
 	{
-		if ((pdb_handle=dlopen ("libpdbfile.so", RTLD_LAZY)) == NULL)
+		if ((pdb_handle=sys_dlopen ("libpdbfile.so", RTLD_LAZY)) == NULL)
 		{
 			DEBUG(0,("initialize_password_db: ERROR - Unable to open \"libpdbfile.so\" passdb module!  No user authentication possible!\n%s\n",
 				dlerror()));

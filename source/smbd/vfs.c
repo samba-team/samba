@@ -105,14 +105,14 @@ BOOL vfs_init_custom(connection_struct *conn)
 
     /* Open object file */
 
-    if ((conn->dl_handle = dlopen(lp_vfsobj(SNUM(conn)), RTLD_NOW | RTLD_GLOBAL)) == NULL) {
+    if ((conn->dl_handle = sys_dlopen(lp_vfsobj(SNUM(conn)), RTLD_NOW | RTLD_GLOBAL)) == NULL) {
 		DEBUG(0, ("Error opening %s: %s\n", lp_vfsobj(SNUM(conn)), dlerror()));
 		return False;
     }
 
     /* Get handle on vfs_init() symbol */
 
-    init_fptr = (struct vfs_ops *(*)(int *))dlsym(conn->dl_handle, "vfs_init");
+    init_fptr = (struct vfs_ops *(*)(int *))sys_dlsym(conn->dl_handle, "vfs_init");
 
     if (init_fptr == NULL) {
 		DEBUG(0, ("No vfs_init() symbol found in %s\n",

@@ -1081,3 +1081,34 @@ int sys_pclose(int fd)
 		return -1;
 	return wstatus;
 }
+
+/**************************************************************************
+ Wrappers for dlopen, dlsym, dlclose.
+****************************************************************************/
+
+void *sys_dlopen(const char *name, int flags)
+{
+#ifdef HAVE_LIBDL
+	return dlopen(name, flags);
+#else
+	return NULL;
+#endif
+}
+
+void *sys_dlsym(void *handle, char *symbol)
+{
+#ifdef HAVE_LIBDL
+    return dlsym(handle, symbol);
+#else
+    return NULL;
+#endif
+}
+
+int sys_dlclose (void *handle)
+{
+#ifdef HAVE_LIBDL
+	return dlclose(handle);
+#else
+	return 0;
+#endif
+}
