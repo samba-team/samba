@@ -40,6 +40,60 @@
 
 RCSID("$Id$");
 
+static int parse_args (krb5_context context, kadm5_principal_ent_t ent,
+		       int argc, char **argv, int *optind, char *name,
+		       int *mask);
+
+static int
+parse_args(krb5_context context, kadm5_principal_ent_t ent,
+	    int argc, char **argv, int *optind, char *name,
+	    int *mask)
+{
+    char *attr_str = NULL;
+    char *max_life_str = NULL;
+    char *max_rlife_str = NULL;
+    char *expiration_str = NULL;
+    char *pw_expiration_str = NULL;
+    int ret, i;
+
+    struct getargs args[] = {
+	{"attributes",	'a',	arg_string, NULL, "Attributies",
+	 "attributes"},
+	{"max-ticket-life", 0,	arg_string, NULL, "max ticket lifetime",
+	 "lifetime"},
+	{"max-renewable-life",  0, arg_string,	NULL,
+	 "max renewable lifetime", "lifetime" },
+	{"expiration-time",	0,	arg_string, 
+	 NULL, "Expiration time", "time"},
+	{"pw-expiration-time",  0,	arg_string, 
+	 NULL, "Password expiration time", "time"},
+    };
+
+    i = 0;
+    args[i++].value = &attr_str;
+    args[i++].value = &max_life_str;
+    args[i++].value = &max_rlife_str;
+    args[i++].value = &expiration_str;
+    args[i++].value = &pw_expiration_str;
+
+    *optind = 0; /* XXX */
+
+    if(getarg(args, sizeof(args) / sizeof(args[0]), 
+	      argc, argv, optind)){
+	arg_printusage(args, 
+		       sizeof(args) / sizeof(args[0]), 
+		       name ? name : "",
+		       "principal");
+	return -1;
+    }
+    
+    ret = set_entry(context, ent, mask, max_life_str, max_rlife_str, 
+		    expiration_str, pw_expiration_str, attr_str);
+    if (ret)
+	return ret;
+    return 0;
+}
+
 int
 mod_entry(int argc, char **argv)
 {
@@ -47,26 +101,42 @@ mod_entry(int argc, char **argv)
     int mask = 0;
     krb5_error_code ret;
     krb5_principal princ_ent = NULL;
+    int optind;
+
+    memset (&princ, 0, sizeof(princ));
+
+    ret = parse_args (context, &princ, argc, argv,
+		      &optind, "mod", &mask);
+    if (ret)
+	return 0;
+
+    argc -= optind;
+    argv += optind;
     
-    if (argc != 2) {
-	printf ("Usage: mod principal\n");
+    if (argc != 1) {
+	printf ("Usage: mod [options] principal\n");
 	return 0;
     }
 
-    krb5_parse_name(context, argv[1], &princ_ent);
+    krb5_parse_name(context, argv[0], &princ_ent);
 
-    memset(&princ, 0, sizeof(princ));
-    ret = kadm5_get_principal(kadm_handle, princ_ent, &princ, 
-			      KADM5_PRINCIPAL | KADM5_ATTRIBUTES | 
-			      KADM5_MAX_LIFE | KADM5_MAX_RLIFE |
-			      KADM5_PRINC_EXPIRE_TIME | KADM5_PW_EXPIRATION);
-    if (ret) {
-	printf ("no such principal: %s\n", argv[1]);
-	krb5_free_principal (context, princ_ent);
-	return 0;
+    if (mask == 0) {
+	memset(&princ, 0, sizeof(princ));
+	ret = kadm5_get_principal(kadm_handle, princ_ent, &princ, 
+				  KADM5_PRINCIPAL | KADM5_ATTRIBUTES | 
+				  KADM5_MAX_LIFE | KADM5_MAX_RLIFE |
+				  KADM5_PRINC_EXPIRE_TIME |
+				  KADM5_PW_EXPIRATION);
+	if (ret) {
+	    printf ("no such principal: %s\n", argv[1]);
+	    krb5_free_principal (context, princ_ent);
+	    return 0;
+	}
+	edit_entry(&princ, &mask, NULL, 0);
+
+    } else {
+	princ.principal = princ_ent;
     }
-    
-    edit_entry(&princ, &mask, NULL, 0);
 
     ret = kadm5_modify_principal(kadm_handle, &princ, mask);
     if(ret)
