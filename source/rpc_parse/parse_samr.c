@@ -1500,7 +1500,7 @@ inits a SAM_DISPINFO_1 structure.
 ********************************************************************/
 
 NTSTATUS init_sam_dispinfo_1(TALLOC_CTX *ctx, SAM_DISPINFO_1 *sam, uint32 num_entries,
-			     uint32 start_idx, DISP_USER_INFO *disp_user_info,
+			     uint32 start_idx, SAM_ACCOUNT *disp_user_info,
 			     DOM_SID *domain_sid)
 {
 	uint32 len_sam_name, len_sam_full, len_sam_desc;
@@ -1535,7 +1535,7 @@ NTSTATUS init_sam_dispinfo_1(TALLOC_CTX *ctx, SAM_DISPINFO_1 *sam, uint32 num_en
 
 		DEBUG(11, ("init_sam_dispinfo_1: entry: %d\n",i));
 		
-		pwd=disp_user_info[i+start_idx].sam;
+		pwd=&disp_user_info[i+start_idx];
 		
 		username = pdb_get_username(pwd);
 		fullname = pdb_get_fullname(pwd);
@@ -1635,7 +1635,7 @@ inits a SAM_DISPINFO_2 structure.
 ********************************************************************/
 
 NTSTATUS init_sam_dispinfo_2(TALLOC_CTX *ctx, SAM_DISPINFO_2 *sam, uint32 num_entries,
-			     uint32 start_idx, DISP_USER_INFO *disp_user_info, 
+			     uint32 start_idx, SAM_ACCOUNT *disp_user_info, 
 			     DOM_SID *domain_sid )
 {
 	uint32 len_sam_name, len_sam_desc;
@@ -1666,7 +1666,7 @@ NTSTATUS init_sam_dispinfo_2(TALLOC_CTX *ctx, SAM_DISPINFO_2 *sam, uint32 num_en
 		fstring user_sid_string, domain_sid_string;			
 
 		DEBUG(11, ("init_sam_dispinfo_2: entry: %d\n",i));
-		pwd=disp_user_info[i+start_idx].sam;
+		pwd=&disp_user_info[i+start_idx];
 
 		username = pdb_get_username(pwd);
 		acct_desc = pdb_get_acct_desc(pwd);
@@ -1754,7 +1754,7 @@ inits a SAM_DISPINFO_3 structure.
 ********************************************************************/
 
 NTSTATUS init_sam_dispinfo_3(TALLOC_CTX *ctx, SAM_DISPINFO_3 *sam, uint32 num_entries,
-			 uint32 start_idx, DISP_GROUP_INFO *disp_group_info)
+			 uint32 start_idx, DOMAIN_GRP *disp_group_info)
 {
 	uint32 len_sam_name, len_sam_desc;
 	uint32 i;
@@ -1776,7 +1776,7 @@ NTSTATUS init_sam_dispinfo_3(TALLOC_CTX *ctx, SAM_DISPINFO_3 *sam, uint32 num_en
 	ZERO_STRUCTP(sam->str);
 
 	for (i = 0; i < num_entries; i++) {
-		DOMAIN_GRP *grp = disp_group_info[i+start_idx].grp;
+		DOMAIN_GRP *grp = &disp_group_info[i+start_idx];
 
 		DEBUG(11, ("init_sam_dispinfo_3: entry: %d\n",i));
 
@@ -1848,7 +1848,7 @@ inits a SAM_DISPINFO_4 structure.
 ********************************************************************/
 
 NTSTATUS init_sam_dispinfo_4(TALLOC_CTX *ctx, SAM_DISPINFO_4 *sam, uint32 num_entries,
-			 uint32 start_idx, DISP_USER_INFO *disp_user_info)
+			 uint32 start_idx, SAM_ACCOUNT *disp_user_info)
 {
 	uint32 len_sam_name;
 	uint32 i;
@@ -1872,7 +1872,7 @@ NTSTATUS init_sam_dispinfo_4(TALLOC_CTX *ctx, SAM_DISPINFO_4 *sam, uint32 num_en
 
 	for (i = 0; i < num_entries; i++) {
 		DEBUG(11, ("init_sam_dispinfo_2: entry: %d\n",i));
-		pwd=disp_user_info[i+start_idx].sam;
+		pwd=&disp_user_info[i+start_idx];
 
 		len_sam_name = strlen(pdb_get_username(pwd));
 	  
@@ -1939,7 +1939,7 @@ inits a SAM_DISPINFO_5 structure.
 ********************************************************************/
 
 NTSTATUS init_sam_dispinfo_5(TALLOC_CTX *ctx, SAM_DISPINFO_5 *sam, uint32 num_entries,
-			 uint32 start_idx, DISP_GROUP_INFO *disp_group_info)
+			 uint32 start_idx, DOMAIN_GRP *disp_group_info)
 {
 	uint32 len_sam_name;
 	uint32 i;
@@ -1961,7 +1961,7 @@ NTSTATUS init_sam_dispinfo_5(TALLOC_CTX *ctx, SAM_DISPINFO_5 *sam, uint32 num_en
 	ZERO_STRUCTP(sam->str);
 
 	for (i = 0; i < num_entries; i++) {
-		DOMAIN_GRP *grp = disp_group_info[i+start_idx].grp;
+		DOMAIN_GRP *grp = &disp_group_info[i+start_idx];
 
 		DEBUG(11, ("init_sam_dispinfo_5: entry: %d\n",i));
 
