@@ -1527,6 +1527,9 @@ int fstr_sprintf(fstring s, const char *fmt, ...)
 /**
  Some platforms don't have strndup.
 **/
+#if defined(PARANOID_MALLOC_CHECKER)
+#undef strndup
+#endif
 
  char *strndup(const char *s, size_t n)
 {
@@ -1541,6 +1544,11 @@ int fstr_sprintf(fstring s, const char *fmt, ...)
 
 	return ret;
 }
+
+#if defined(PARANOID_MALLOC_CHECKER)
+#define strndup(s,n) __ERROR_DONT_USE_STRNDUP_DIRECTLY
+#endif
+
 #endif
 
 #if !defined(HAVE_STRNLEN) || defined(BROKEN_STRNLEN)
