@@ -1041,3 +1041,103 @@ char *client_addr(int fd)
 	global_client_addr_done = True;
 	return addr_buf;
 }
+
+/*******************************************************************
+ opens and connects to a unix pipe socket
+ ******************************************************************/
+int open_pipe_sock(char *path)
+{
+	int sock;
+	struct sockaddr_un sa;
+
+	sock = socket(AF_UNIX, SOCK_STREAM, 0);
+
+	if (sock < 0)
+	{
+		DEBUG(0, ("unix socket open failed\n"));
+		return sock;
+	}
+
+	ZERO_STRUCT(sa);
+	sa.sun_family = AF_UNIX;
+	safe_strcpy(sa.sun_path, path, sizeof(sa.sun_path)-1);
+
+	DEBUG(10, ("socket open succeeded.  file name: %s\n", sa.sun_path));
+
+	if (connect(sock, (struct sockaddr*) &sa, sizeof(sa)) < 0)
+	{
+		DEBUG(0,("socket connect to %s failed\n", sa.sun_path));
+		close(sock);
+		return -1;
+	}
+
+	return sock;
+}
+
+int create_pipe_socket(char *dir, int dir_perms,
+				char *path, int path_perms)
+{
+	int s;
+	struct sockaddr_un sa;
+
+	DEBUG(0,("create_pipe_socket: %s %d %s %d\n",
+	           dir, dir_perms, path, path_perms));
+
+	DEBUG(0,("*** RACE CONDITION.  PLEASE SOMEONE EXAMINE create_pipe_Socket AND FIX IT ***\n"));
+
+	mkdir(dir, dir_perms);
+
+	if (chmod(dir, dir_perms) < 0)
+	{
+		DEBUG(0, ("chmod on %s failed\n", dir));
+		return -1;
+	}
+
+	if (!remove(path))
+	{
+		DEBUG(0, ("remove on %s failed\n", path));
+	}
+		
+	/* start listening on unix socket */
+	s = socket(AF_UNIX, SOCK_STREAM, 0);
+
+	if (s < 0)
+	{
+		DEBUG(0, ("socket open failed\n"));
+		return -1;
+	}
+
+	ZERO_STRUCT(sa);
+	sa.sun_family = AF_UNIX;
+	safe_strcpy(sa.sun_path, path, sizeof(sa.sun_path)-1);
+
+	if (bind(s, (struct sockaddr*) &sa, sizeof(sa)) < 0)
+	{
+		DEBUG(0, ("socket bind to %s failed\n", sa.sun_path));
+		close(s);
+		remove(path);
+		return -1;
+	}
+
+	if (s == -1)
+	{
+		DEBUG(0,("bind failed\n"));
+		remove(path);
+		return -1;
+	}
+
+	if (path_perms != 0)
+	{
+		chmod(path, path_perms);
+	}
+
+	if (listen(s, 5) == -1)
+	{
+		DEBUG(0,("listen failed\n"));
+		return -1;
+	}
+
+	DEBUG(5,("unix socket opened: %s\n", path));
+
+	return s;
+}

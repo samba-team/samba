@@ -501,6 +501,8 @@ static void usage(char *pname)
 ****************************************************************************/
  int main(int argc,char *argv[])
 {
+	fstring sam_name;
+
 	extern BOOL append_log;
 	/* shall I run as a daemon */
 	BOOL is_daemon = False;
@@ -680,11 +682,6 @@ static void usage(char *pname)
 
 	fstrcpy(global_myworkgroup, lp_workgroup());
 
-	if(!pdb_generate_sam_sid()) {
-		DEBUG(0,("ERROR: Samba cannot create a SAM SID.\n"));
-		exit(1);
-	}
-
 	CatchSignal(SIGHUP,SIGNAL_CAST sig_hup);
 	
 	/* Setup the signals that allow the debug log level
@@ -734,7 +731,23 @@ static void usage(char *pname)
 
 	/* possibly reload the services file. */
 	reload_services(True);
-	
+
+	/* obtain or create a SAM SID */
+	if (lp_domain_logons())
+	{
+		fstrcpy(sam_name, global_myworkgroup);
+	}
+	else
+	{
+		fstrcpy(sam_name, global_myname);
+	}
+
+	if(!pdb_generate_sam_sid(sam_name, NULL))
+	{
+		DEBUG(0,("ERROR: Samba cannot create a SAM SID.\n"));
+		exit(1);
+	}
+
 	if (*lp_rootdir()) {
 		if (sys_chroot(lp_rootdir()) == 0)
 			DEBUG(2,("Changed root to %s\n", lp_rootdir()));

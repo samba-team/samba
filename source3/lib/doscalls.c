@@ -158,7 +158,7 @@ int dos_utime(char *fname,struct utimbuf *times)
  <warrenb@hpcvscdp.cv.hp.com>
 **********************************************************/
 
-static int copy_reg(char *source, const char *dest)
+int copy_reg(char *source, const char *dest)
 {
   SMB_STRUCT_STAT source_stats;
   int ifd;

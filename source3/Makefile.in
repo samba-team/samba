@@ -96,7 +96,7 @@ LIB_OBJ = lib/charcnv.o lib/charset.o lib/debug.o lib/fault.o \
           lib/signal.o lib/slprintf.o lib/system.o lib/doscalls.o lib/time.o \
 	  lib/ufc.o lib/genrand.o lib/username.o lib/access.o lib/smbrun.o \
 	  lib/bitmap.o lib/crc32.o lib/snprintf.o \
-	  lib/util_str.o lib/util_sid.o \
+	  lib/util_array.o lib/util_str.o lib/util_sid.o \
 	  lib/util_unistr.o lib/util_file.o \
 	  lib/util.o lib/util_sock.o lib/util_sec.o smbd/ssl.o lib/fnmatch.o \
 	  tdb/tdb.o
@@ -116,7 +116,7 @@ RPC_SERVER_OBJ = rpc_server/srv_lsa.o \
                  rpc_server/srv_pipe_hnd.o rpc_server/srv_reg.o \
                  rpc_server/srv_samr.o rpc_server/srv_srvsvc.o \
                  rpc_server/srv_util.o rpc_server/srv_wkssvc.o \
-		rpc_server/srv_pipe.o
+		rpc_server/srv_pipe_srv.o rpc_server/srv_pipe.o
 
 RPC_PARSE_OBJ = rpc_parse/parse_lsa.o rpc_parse/parse_misc.o \
                 rpc_parse/parse_net.o rpc_parse/parse_prs.o \
@@ -148,6 +148,8 @@ SMBD_OBJ1 = smbd/server.o smbd/files.o smbd/chgpasswd.o smbd/connection.o \
             smbd/message.o smbd/nttrans.o smbd/pipes.o smbd/predict.o \
             smbd/$(QUOTAOBJS) smbd/reply.o smbd/trans2.o smbd/uid.o \
 	    smbd/dosmode.o smbd/filename.o smbd/open.o smbd/close.o smbd/blocking.o \
+            lib/msrpc-client.o lib/msrpc_use.o \
+            rpc_parse/parse_creds.o \
 	    smbd/process.o smbd/oplock.o smbd/service.o smbd/error.o
 
 PRINTING_OBJ = printing/pcap.o printing/print_svid.o printing/printing.o \

@@ -788,52 +788,32 @@ BOOL pdb_name_to_rid(char *user_name, uint32 *u_rid, uint32 *g_rid)
 }
 
 /****************************************************************************
- Read the machine SID from a file.
+ Generate the global machine sid. Look for the DOMAINNAME.SID file first, if
+ not found then look in smb.conf and use it to create the DOMAINNAME.SID file.
 ****************************************************************************/
-
-static BOOL read_sid_from_file(int fd, char *sid_file)
-{   
-  fstring fline;
-    
-  memset(fline, '\0', sizeof(fline));
-
-  if(read(fd, fline, sizeof(fline) -1 ) < 0) {
-    DEBUG(0,("unable to read file %s. Error was %s\n",
-           sid_file, strerror(errno) ));
-    return False;
-  }
-
-  /*
-   * Convert to the machine SID.
-   */
-
-  fline[sizeof(fline)-1] = '\0';
-  if(!string_to_sid( &global_sam_sid, fline)) {
-    DEBUG(0,("unable to generate machine SID.\n"));
-    return False;
-  }
-
-  return True;
-}
-
-/****************************************************************************
- Generate the global machine sid. Look for the MACHINE.SID file first, if
- not found then look in smb.conf and use it to create the MACHINE.SID file.
-****************************************************************************/
-BOOL pdb_generate_sam_sid(void)
+BOOL pdb_generate_sam_sid(char *domain_name, DOM_SID *sid)
 {
-	int fd;
 	char *p;
 	pstring sid_file;
-	fstring sid_string;
-	SMB_STRUCT_STAT st;
-	BOOL overwrite_bad_sid = False;
+	pstring machine_sid_file;
+	fstring file_name;
 
-	generate_wellknown_sids();
+	if (sid == NULL)
+	{
+		sid = &global_sam_sid;
+	}
 
 	pstrcpy(sid_file, lp_smb_passwd_file());
+
+	if (sid_file[0] == 0)
+	{
+		DEBUG(0,("cannot find smb passwd file\n"));
+		return False;
+	}
+
 	p = strrchr(sid_file, '/');
-	if(p != NULL) {
+	if (p != NULL)
+	{
 		*++p = '\0';
 	}
 
@@ -845,180 +825,55 @@ BOOL pdb_generate_sam_sid(void)
 		}
 	}
 
-	pstrcat(sid_file, "MACHINE.SID");
+	pstrcpy(machine_sid_file, sid_file);
+	pstrcat(machine_sid_file, "MACHINE.SID");
+
+	slprintf(file_name, sizeof(file_name)-1, "%s.SID", domain_name);
+	strupper(file_name);
+	pstrcat(sid_file, file_name);
     
-	if((fd = sys_open(sid_file, O_RDWR | O_CREAT, 0644)) == -1) {
-		DEBUG(0,("unable to open or create file %s. Error was %s\n",
-			 sid_file, strerror(errno) ));
-		return False;
-	} 
-  
-	/*
-	 * Check if the file contains data.
-	 */
-	
-	if(sys_fstat( fd, &st) < 0) {
-		DEBUG(0,("unable to stat file %s. Error was %s\n",
-			 sid_file, strerror(errno) ));
-		close(fd);
-		return False;
-	} 
-  
-	if(st.st_size > 0) {
-		/*
-		 * We have a valid SID - read it.
-		 */
-		if(!read_sid_from_file( fd, sid_file)) {
-			DEBUG(0,("unable to read file %s. Error was %s\n",
-				 sid_file, strerror(errno) ));
-			close(fd);
+	if (file_exist(machine_sid_file, NULL))
+	{
+		if (file_exist(sid_file, NULL))
+		{
+			DEBUG(0,("both %s and %s exist when only one should, unable to continue\n",
+			          machine_sid_file, sid_file));
 			return False;
 		}
-
-		/*
-		 * JRA. Reversed the sense of this test now that I have
-		 * actually done this test *personally*. One more reason
-		 * to never trust third party information you have not
-		 * independently verified.... sigh. JRA.
-		 */
-
-		if(global_sam_sid.num_auths > 0 && global_sam_sid.sub_auths[0] == 0x21) {
-			/*
-			 * Fix and re-write...
-			 */
-			overwrite_bad_sid = True;
-			global_sam_sid.sub_auths[0] = 21;
-			DEBUG(5,("pdb_generate_sam_sid: Old (incorrect) sid id_auth of hex 21 \
-detected - re-writing to be decimal 21 instead.\n" ));
-			sid_to_string(sid_string, &global_sam_sid);
-			if(sys_lseek(fd, (SMB_OFF_T)0, SEEK_SET) != 0) {
-				DEBUG(0,("unable to seek file file %s. Error was %s\n",
-					 sid_file, strerror(errno) ));
-				close(fd);
-				return False;
-			}
-		} else {
-			close(fd);
-			return True;
-		}
-	} else {
-		/*
-		 * The file contains no data - we need to generate our
-		 * own sid.
-		 * Generate the new sid data & turn it into a string.
-		 */
-		int i;
-		uchar raw_sid_data[12];
-		DOM_SID mysid;
-
-		memset((char *)&mysid, '\0', sizeof(DOM_SID));
-		mysid.sid_rev_num = 1;
-		mysid.id_auth[5] = 5;
-		mysid.num_auths = 0;
-		mysid.sub_auths[mysid.num_auths++] = 21;
-
-		generate_random_buffer( raw_sid_data, 12, True);
-		for( i = 0; i < 3; i++)
-			mysid.sub_auths[mysid.num_auths++] = IVAL(raw_sid_data, i*4);
-
-		sid_to_string(sid_string, &mysid);
-	} 
-	
-	fstrcat(sid_string, "\n");
-	
-	/*
-	 * Ensure our new SID is valid.
-	 */
-	
-	if(!string_to_sid( &global_sam_sid, sid_string)) {
-		DEBUG(0,("unable to generate machine SID.\n"));
-		return False;
-	} 
-  
-	/*
-	 * Do an exclusive blocking lock on the file.
-	 */
-	
-	if(!do_file_lock( fd, 60, F_WRLCK)) {
-		DEBUG(0,("unable to lock file %s. Error was %s\n",
-			 sid_file, strerror(errno) ));
-		close(fd);
-		return False;
-	} 
- 
-	if(!overwrite_bad_sid) {
-		/*
-		 * At this point we have a blocking lock on the SID
-		 * file - check if in the meantime someone else wrote
-		 * SID data into the file. If so - they were here first,
-		 * use their data.
-		 */
-	
-		if(sys_fstat( fd, &st) < 0) {
-			DEBUG(0,("unable to stat file %s. Error was %s\n",
-				 sid_file, strerror(errno) ));
-			close(fd);
+		if (file_rename(machine_sid_file, sid_file))
+		{
+			DEBUG(0,("could not rename %s to %s.  Error was %s\n",
+			          machine_sid_file, sid_file, strerror(errno)));
 			return False;
-		} 
-  
-		if(st.st_size > 0) {
-			/*
-			 * Unlock as soon as possible to reduce
-			 * contention on the exclusive lock.
-			 */ 
-			do_file_lock( fd, 60, F_UNLCK);
-		
-			/*
-			 * We have a valid SID - read it.
-			 */
-		
-			if(!read_sid_from_file( fd, sid_file)) {
-				DEBUG(0,("unable to read file %s. Error was %s\n",
-					 sid_file, strerror(errno) ));
-				close(fd);
-				return False;
-			}
-			close(fd);
-			return True;
-		} 
+		}
 	}
 	
-	/*
-	 * The file is still empty and we have an exlusive lock on it,
-	 * or we're fixing an earlier mistake.
-	 * Write out out SID data into the file.
-	 */
-
-	/*
-	 * Use chmod here as some (strange) UNIX's don't
-	 * have fchmod. JRA.
-	 */	
-
-	if(chmod(sid_file, 0644) < 0) {
-		DEBUG(0,("unable to set correct permissions on file %s. \
-Error was %s\n", sid_file, strerror(errno) ));
-		do_file_lock( fd, 60, F_UNLCK);
-		close(fd);
+	/* attempt to read the SID from the file */
+	if (read_sid(domain_name, sid))
+	{
+		return True;
+	}
+  
+	if (!create_new_sid(sid))
+	{
 		return False;
-	} 
-	
-	if(write( fd, sid_string, strlen(sid_string)) != strlen(sid_string)) {
-		DEBUG(0,("unable to write file %s. Error was %s\n",
-			 sid_file, strerror(errno) ));
-		do_file_lock( fd, 60, F_UNLCK);
-		close(fd);
-		return False;
-	} 
-	
-	/*
-	 * Unlock & exit.
-	 */
-	
-	do_file_lock( fd, 60, F_UNLCK);
-	close(fd);
+	}
+	/* attempt to read the SID from the file */
+	if (!write_sid(domain_name, sid))
+	{
+		return True;
+	}
+  
+	/* during the attempt to write, someone else wrote? */
+
+	/* attempt to read the SID from the file */
+	if (read_sid(domain_name, sid))
+	{
+		return True;
+	}
+  
 	return True;
 }   
-
 /*******************************************************************
  Converts NT user RID to a UNIX uid.
  ********************************************************************/

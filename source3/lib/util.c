@@ -358,6 +358,21 @@ BOOL file_exist(char *fname,SMB_STRUCT_STAT *sbuf)
 }
 
 /*******************************************************************
+  rename a unix file
+********************************************************************/
+int file_rename(char *from, char *to)
+{
+	int rcode = rename (from, to);
+
+	if (errno == EXDEV) 
+	{
+		/* Rename across filesystems needed. */
+		rcode = copy_reg (from, to);        
+	}
+	return rcode;
+}
+
+/*******************************************************************
 check a files mod time
 ********************************************************************/
 time_t file_modtime(char *fname)

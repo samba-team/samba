@@ -56,21 +56,6 @@ struct print_job_info
 	time_t t;
 };
 
-struct pwd_info
-{
-    BOOL null_pwd;
-    BOOL cleartext;
-    BOOL crypted;
-
-    fstring password;
-
-    uchar smb_lm_pwd[16];
-    uchar smb_nt_pwd[16];
-
-    uchar smb_lm_owf[24];
-    uchar smb_nt_owf[24];
-};
-
 struct cli_state {
 	int port;
 	int fd;

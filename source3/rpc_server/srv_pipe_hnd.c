@@ -113,10 +113,44 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 	int i;
 	pipes_struct *p;
 	static int next_pipe;
+	struct msrpc_state *m = NULL;
+	user_struct *vuser = get_valid_user_struct(vuid);
+	struct user_creds usr;
+
+	ZERO_STRUCT(usr);
 
 	DEBUG(4,("Open pipe requested %s (pipes_open=%d)\n",
 		 pipe_name, pipes_open));
 	
+	if (vuser == NULL)
+	{
+		DEBUG(4,("invalid vuid %d\n", vuid));
+		return NULL;
+	}
+
+	/* set up unix credentials from the smb side, to feed over the pipe */
+	make_creds_unix(&usr.uxc, vuser->name, vuser->requested_name,
+	                              vuser->real_name, vuser->guest);
+	usr.ptr_uxc = 1;
+	make_creds_unix_sec(&usr.uxs, vuser->uid, vuser->gid,
+	                              vuser->n_groups, vuser->groups);
+	usr.ptr_uxs = 1;
+
+	/* set up nt credentials from the smb side, to feed over the pipe */
+	/* lkclXXXX todo!
+	make_creds_nt(&usr.ntc);
+	make_creds_nt_sec(&usr.nts);
+	*/
+
+	become_root(False); /* to connect to pipe */
+	m = msrpc_use_add(pipe_name, &usr, False);
+	unbecome_root(False);
+
+	if (m == NULL)
+	{
+		DEBUG(10,("open pipes: msrpc redirect failed - go local.\n"));
+	}
+
 	/* not repeating pipe numbers makes it easier to track things in 
 	   log files and prevents client bugs where pipe numbers are reused
 	   over connection restarts */
@@ -160,6 +194,8 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 	p->priority = 0;
 	p->conn = conn;
 	p->vuid  = vuid;
+	
+	p->m = m;
 
 	p->max_trans_reply = 0;
 	
@@ -201,7 +237,7 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 
 ssize_t write_to_pipe(pipes_struct *p, char *data, size_t n)
 {
-	DEBUG(6,("write_pipe: %x", p->pnum));
+	DEBUG(6,("write_to_pipe: %x", p->pnum));
 
 	DEBUG(6,("name: %s open: %s len: %d",
 		 p->name, BOOLSTR(p->open), (int)n));
@@ -371,6 +407,19 @@ BOOL close_rpc_pipe_hnd(pipes_struct *p, connection_struct *conn)
 
 	DEBUG(4,("closed pipe name %s pnum=%x (pipes_open=%d)\n", 
 		 p->name, p->pnum, pipes_open));  
+
+	if (p->m != NULL)
+	{
+		DEBUG(4,("closed msrpc redirect: "));
+		if (msrpc_use_del(p->m->pipe_name, &p->m->usr, False, NULL))
+		{
+			DEBUG(4,("OK\n"));
+		}
+		else
+		{
+			DEBUG(4,("FAILED\n"));
+		}
+	}
 
 	DLIST_REMOVE(Pipes, p);
 

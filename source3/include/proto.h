@@ -70,6 +70,7 @@ int dos_mkdir(char *dname,mode_t mode);
 int dos_rmdir(char *dname);
 int dos_chdir(char *dname);
 int dos_utime(char *fname,struct utimbuf *times);
+int copy_reg(char *source, const char *dest);
 int dos_rename(char *from, char *to);
 int dos_chmod(char *fname,mode_t mode);
 char *dos_getwd(char *unix_path);
@@ -124,6 +125,36 @@ void initialize_multibyte_vectors( int client_codepage);
 /*The following definitions come from  lib/md4.c  */
 
 void mdfour(unsigned char *out, unsigned char *in, int n);
+
+/*The following definitions come from  lib/msrpc-client.c  */
+
+BOOL receive_msrpc(int fd, prs_struct *data, unsigned int timeout);
+BOOL msrpc_send(int fd, prs_struct *ps);
+BOOL msrpc_receive(int fd, prs_struct *ps);
+BOOL msrpc_connect(struct msrpc_state *msrpc, const char *pipe_name);
+void msrpc_init_creds(struct msrpc_state *msrpc, const struct user_creds *usr);
+void msrpc_close_socket(struct msrpc_state *msrpc);
+void msrpc_sockopt(struct msrpc_state *msrpc, char *options);
+BOOL msrpc_connect_auth(struct msrpc_state *msrpc,
+				const char* pipename,
+				const struct user_creds *usr);
+struct msrpc_state *msrpc_initialise(struct msrpc_state *msrpc);
+void msrpc_shutdown(struct msrpc_state *msrpc);
+BOOL msrpc_establish_connection(struct msrpc_state *msrpc,
+		const char *pipe_name);
+
+/*The following definitions come from  lib/msrpc_use.c  */
+
+void init_msrpc_use(void);
+void free_msrpc_use(void);
+struct msrpc_state *msrpc_use_add(const char* pipe_name,
+				const struct user_creds *usr_creds,
+				BOOL redir);
+BOOL msrpc_use_del(const char* pipe_name,
+				const struct user_creds *usr_creds,
+				BOOL force_close,
+				BOOL *connection_closed);
+void msrpc_net_use_enum(uint32 *num_cons, struct use_info ***use);
 
 /*The following definitions come from  lib/pidfile.c  */
 
@@ -234,6 +265,7 @@ void putip(void *dest,void *src);
 char *dns_to_netbios_name(char *dns_name);
 int name_mangle( char *In, char *Out, char name_type );
 BOOL file_exist(char *fname,SMB_STRUCT_STAT *sbuf);
+int file_rename(char *from, char *to);
 time_t file_modtime(char *fname);
 BOOL directory_exist(char *dname,SMB_STRUCT_STAT *st);
 SMB_OFF_T get_file_size(char *file_name);
@@ -310,6 +342,23 @@ void *memdup(void *p, size_t size);
 char *myhostname(void);
 char *lock_path(char *name);
 
+/*The following definitions come from  lib/util_array.c  */
+
+void free_void_array(uint32 num_entries, void **entries,
+		void(free_item)(void*));
+void* add_copy_to_array(uint32 *len, void ***array, const void *item,
+	void*(item_dup)(const void*), BOOL alloc_anyway);
+void* add_item_to_array(uint32 *len, void ***array, void *item);
+void free_use_info_array(uint32 num_entries, struct use_info **entries);
+struct use_info* add_use_info_to_array(uint32 *len, struct use_info ***array,
+				const struct use_info *name);
+void free_char_array(uint32 num_entries, char **entries);
+char* add_chars_to_array(uint32 *len, char ***array, const char *name);
+void free_uint32_array(uint32 num_entries, uint32 **entries);
+uint32* add_uint32s_to_array(uint32 *len, uint32 ***array, const uint32 *name);
+void free_sid_array(uint32 num_entries, DOM_SID **entries);
+DOM_SID* add_sid_to_array(uint32 *len, DOM_SID ***array, const DOM_SID *sid);
+
 /*The following definitions come from  lib/util_file.c  */
 
 BOOL do_file_lock(int fd, int waitsecs, int type);
@@ -345,11 +394,14 @@ char *sid_to_string(fstring sidstr_out, DOM_SID *sid);
 BOOL string_to_sid(DOM_SID *sidout, char *sidstr);
 BOOL sid_append_rid(DOM_SID *sid, uint32 rid);
 BOOL sid_split_rid(DOM_SID *sid, uint32 *rid);
-void sid_copy(DOM_SID *dst, DOM_SID *src);
+void sid_copy(DOM_SID *dst, const DOM_SID *src);
 DOM_SID *sid_dup(DOM_SID *src);
 BOOL sid_linearize(char *outbuf, size_t len, DOM_SID *sid);
 BOOL sid_equal(DOM_SID *sid1, DOM_SID *sid2);
 size_t sid_size(DOM_SID *sid);
+BOOL read_sid(char *sam_name, DOM_SID *sid);
+BOOL write_sid(char *sam_name, DOM_SID *sid);
+BOOL create_new_sid(DOM_SID *sid);
 
 /*The following definitions come from  lib/util_sock.c  */
 
@@ -374,6 +426,9 @@ int open_socket_out(int type, struct in_addr *addr, int port ,int timeout);
 void reset_globals_after_fork(void);
 char *client_name(int fd);
 char *client_addr(int fd);
+int open_pipe_sock(char *path);
+int create_pipe_socket(char *dir, int dir_perms,
+				char *path, int path_perms);
 
 /*The following definitions come from  lib/util_str.c  */
 
@@ -645,6 +700,7 @@ BOOL remote_password_change(const char *remote_machine, const char *user_name,
 
 void pwd_init(struct pwd_info *pwd);
 void pwd_obfuscate_key(struct pwd_info *pwd, uint32 int_key, char *str_key);
+BOOL pwd_compare(struct pwd_info *pwd1, struct pwd_info *pwd2);
 void pwd_read(struct pwd_info *pwd, char *passwd_report, BOOL do_encrypt);
 void pwd_set_nullpwd(struct pwd_info *pwd);
 void pwd_set_cleartext(struct pwd_info *pwd, char *clr);
@@ -684,7 +740,8 @@ char *smb_errstr(char *inbuf);
 
 void unexpected_packet(struct packet_struct *p);
 void clear_unexpected(time_t t);
-struct packet_struct *receive_unexpected(enum packet_type packet_type, int id, char *mailslot_name);
+struct packet_struct *receive_unexpected(enum packet_type packet_type, int id, 
+					 char *mailslot_name);
 
 /*The following definitions come from  locking/locking.c  */
 
@@ -1355,7 +1412,7 @@ void pdb_set_last_set_time(char *p, int max_len, time_t t);
 void pdb_sethexpwd(char *p, unsigned char *pwd, uint16 acct_ctrl);
 BOOL pdb_gethexpwd(char *p, unsigned char *pwd);
 BOOL pdb_name_to_rid(char *user_name, uint32 *u_rid, uint32 *g_rid);
-BOOL pdb_generate_sam_sid(void);
+BOOL pdb_generate_sam_sid(char *domain_name, DOM_SID *sid);
 uid_t pdb_user_rid_to_uid(uint32 user_rid);
 gid_t pdb_user_rid_to_gid(uint32 user_rid);
 uint32 pdb_uid_to_user_rid(uid_t uid);
@@ -1581,6 +1638,45 @@ BOOL do_wks_query_info(struct cli_state *cli,
 			char *server_name, uint32 switch_value,
 			WKS_INFO_100 *wks100);
 
+/*The following definitions come from  rpc_parse/parse_creds.c  */
+
+BOOL make_creds_unix(CREDS_UNIX *r_u, const char* user_name,
+				const char* requested_name,
+				const char* real_name,
+				BOOL guest);
+BOOL creds_io_unix(char *desc, CREDS_UNIX *r_u, prs_struct *ps, int depth);
+void creds_free_unix(CREDS_UNIX *r_u);
+BOOL make_creds_unix_sec(CREDS_UNIX_SEC *r_u,
+		uint32 uid, uint32 gid, uint32 num_grps, gid_t *grps);
+BOOL creds_io_unix_sec(char *desc, CREDS_UNIX_SEC *r_u, prs_struct *ps, int depth);
+void creds_free_unix_sec(CREDS_UNIX_SEC *r_u);
+BOOL make_creds_nt_sec(CREDS_NT_SEC *r_u,
+		DOM_SID *sid, uint32 num_grps, uint32 *grps);
+BOOL creds_io_nt_sec(char *desc, CREDS_NT_SEC *r_u, prs_struct *ps, int depth);
+void creds_free_nt_sec(CREDS_NT_SEC *r_u);
+BOOL creds_io_pwd_info(char *desc, struct pwd_info *pwd, prs_struct *ps, int depth);
+BOOL creds_io_nt(char *desc, CREDS_NT *r_u, prs_struct *ps, int depth);
+void creds_free_nt(CREDS_NT *r_u);
+BOOL creds_io_hybrid(char *desc, CREDS_HYBRID *r_u, prs_struct *ps, int depth);
+void copy_unix_creds(CREDS_UNIX *to, const CREDS_UNIX *from);
+void copy_nt_sec_creds(CREDS_NT_SEC *to, const CREDS_NT_SEC *from);
+void copy_unix_sec_creds(CREDS_UNIX_SEC *to, const CREDS_UNIX_SEC *from);
+void copy_nt_creds(struct ntuser_creds *to,
+				const struct ntuser_creds *from);
+void copy_user_creds(struct user_creds *to,
+				const struct user_creds *from);
+void free_user_creds(struct user_creds *creds);
+BOOL creds_io_cmd(char *desc, CREDS_CMD *r_u, prs_struct *ps, int depth);
+BOOL create_ntuser_creds( prs_struct *ps,
+				const char* name, 
+				uint16 version, uint16 command,
+				const struct ntuser_creds *ntu,
+				BOOL reuse);
+BOOL create_user_creds( prs_struct *ps,
+				const char* name, 
+				uint16 version, uint16 command,
+				const struct user_creds *usr);
+
 /*The following definitions come from  rpc_parse/parse_lsa.c  */
 
 void init_lsa_trans_name(LSA_TRANS_NAME *trn, UNISTR2 *uni_name,
@@ -1769,6 +1865,7 @@ BOOL net_io_r_sam_logoff(char *desc, NET_R_SAM_LOGOFF *r_l, prs_struct *ps, int 
 
 void prs_debug(prs_struct *ps, int depth, char *desc, char *fn_name);
 BOOL prs_init(prs_struct *ps, uint32 size, uint8 align, BOOL io);
+BOOL prs_read(prs_struct *ps, int fd, size_t len, int timeout);
 void prs_mem_free(prs_struct *ps);
 void prs_give_memory(prs_struct *ps, char *buf, uint32 size, BOOL is_dynamic);
 char *prs_take_memory(prs_struct *ps, uint32 *psize);
@@ -2245,10 +2342,10 @@ BOOL api_netlog_rpc(pipes_struct *p, prs_struct *data);
 
 /*The following definitions come from  rpc_server/srv_pipe.c  */
 
-BOOL create_next_pdu(pipes_struct *p);
-BOOL rpc_command(pipes_struct *p, char *input_data, int data_len);
-BOOL api_rpcTNP(pipes_struct *p, char *rpc_name, struct api_struct *api_rpc_cmds,
-				prs_struct *rpc_in);
+BOOL readwrite_pipe(pipes_struct *p, char *data, int len,
+		char **rdata, int *rlen);
+ssize_t write_pipe(pipes_struct *p, char *data, size_t n);
+int read_pipe(pipes_struct *p, char *data, int n);
 
 /*The following definitions come from  rpc_server/srv_pipe_hnd.c  */
 
@@ -2265,6 +2362,13 @@ BOOL set_rpc_pipe_hnd_state(pipes_struct *p, uint16 device_state);
 BOOL close_rpc_pipe_hnd(pipes_struct *p, connection_struct *conn);
 pipes_struct *get_rpc_pipe_p(char *buf, int where);
 pipes_struct *get_rpc_pipe(int pnum);
+
+/*The following definitions come from  rpc_server/srv_pipe_srv.c  */
+
+BOOL create_next_pdu(pipes_struct *p);
+BOOL rpc_command(pipes_struct *p, char *input_data, int data_len);
+BOOL api_rpcTNP(pipes_struct *p, char *rpc_name, struct api_struct *api_rpc_cmds,
+				prs_struct *rpc_in);
 
 /*The following definitions come from  rpc_server/srv_reg.c  */
 

@@ -438,6 +438,14 @@ struct sam_disp_info
 	char *full_name;    /* user's full name string */
 };
 
+struct use_info
+{
+	BOOL connected;
+	char *srv_name;
+	char *user_name;
+	char *domain;
+};
+
 #define MAXSUBAUTHS 15 /* max sub authorities in a SID */
 
 /* DOM_SID - security id */
@@ -1768,6 +1776,59 @@ struct nmb_name {
   unsigned int name_type;
 };
 
+#define AGENT_CMD_CON       0
+#define AGENT_CMD_CON_ANON  2
+#define AGENT_CMD_CON_REUSE 1
+
+struct pwd_info
+{
+	BOOL null_pwd;
+	BOOL cleartext;
+	BOOL crypted;
+
+	fstring password;
+
+	uchar smb_lm_pwd[16];
+	uchar smb_nt_pwd[16];
+
+	uchar smb_lm_owf[24];
+	uchar smb_nt_owf[128];
+	size_t nt_owf_len;
+
+	uchar lm_cli_chal[8];
+	uchar nt_cli_chal[128];
+	size_t nt_cli_chal_len;
+
+	uchar sess_key[16];
+};
+
+#include "rpc_creds.h"
+
+struct ntdom_info
+{
+	unsigned char sess_key[16];        /* Current session key. */
+	unsigned char ntlmssp_hash[258];   /* ntlmssp data. */
+	uint32 ntlmssp_cli_flgs;           /* ntlmssp client flags */
+	uint32 ntlmssp_srv_flgs;           /* ntlmssp server flags */
+	uint32 ntlmssp_seq_num;            /* ntlmssp sequence number */
+	DOM_CRED clnt_cred;                /* Client credential. */
+
+	int max_recv_frag;
+	int max_xmit_frag;
+};
+
+struct msrpc_state
+{
+	fstring pipe_name;
+	struct user_creds usr;
+	struct ntdom_info nt;
+
+	int fd;
+	BOOL redirect;
+	BOOL initialised;
+	char *inbuf;
+	char *outbuf;
+};
 #include "client.h"
 #include "rpcclient.h"
 

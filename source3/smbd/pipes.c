@@ -129,7 +129,16 @@ int reply_pipe_write(char *inbuf,char *outbuf,int length,int dum_bufsize)
 	if (numtowrite == 0)
 		nwritten = 0;
 	else
-		nwritten = write_to_pipe(p, data, numtowrite);
+	{
+		if (p->m != NULL)
+		{
+			nwritten = write_pipe(p, data, numtowrite);
+		}
+		else
+		{
+			nwritten = write_to_pipe(p, data, numtowrite);
+		}
+	}
 
 	if ((nwritten == 0 && numtowrite != 0) || (nwritten < 0))
 		return (UNIXERROR(ERRDOS,ERRnoaccess));
@@ -207,7 +216,14 @@ int reply_pipe_read_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 	set_message(outbuf,12,0,True);
 	data = smb_buf(outbuf);
 
-	nread = read_from_pipe(p, data, smb_maxcnt);
+	if (p->m != NULL)
+	{
+		nread = read_pipe(p, data, smb_maxcnt);
+	}
+	else
+	{
+		nread = read_from_pipe(p, data, smb_maxcnt);
+	}
 
 	if (nread < 0)
 		return(UNIXERROR(ERRDOS,ERRnoaccess));
