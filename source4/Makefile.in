@@ -300,12 +300,7 @@ XML_OBJ = modules/xml.o
 MYSQL_OBJ = modules/mysql.o
 DEVEL_HELP_OBJ = modules/developer.o
 
-SAM_STATIC_MODULES = sam/sam_plugin.o sam/sam_skel.o sam/sam_ads.o
 
-SAM_OBJ = sam/account.o sam/get_set_account.o sam/get_set_group.o \
-		sam/get_set_domain.o sam/interface.o $(SAM_STATIC_MODULES)
-
-SAMTEST_OBJ = torture/samtest.o torture/cmd_sam.o $(SAM_OBJ) $(LIB_OBJ) $(PARAM_OBJ) $(LIBSMB_OBJ) $(READLINE_OBJ) lib/util_seaccess.o $(LIBADS_OBJ) $(KRBCLIENT_OBJ) $(PASSDB_OBJ) $(SECRETS_OBJ) $(GROUPDB_OBJ)
 
 GROUPDB_OBJ = groupdb/mapping.o
 
@@ -851,10 +846,6 @@ bin/smbpasswd@EXEEXT@: $(SMBPASSWD_OBJ) bin/.dummy
 bin/pdbedit@EXEEXT@: $(PDBEDIT_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(PDBEDIT_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) @BUILD_POPT@
-
-bin/samtest@EXEEXT@: $(SAMTEST_OBJ) @BUILD_POPT@ bin/.dummy
-	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SAMTEST_OBJ) $(LDFLAGS) $(DYNEXP) $(TERMLDFLAGS) $(TERMLIBS) $(DYNEXP) $(LIBS) @BUILD_POPT@
 
 bin/smbgroupedit@EXEEXT@: $(SMBGROUPEDIT_OBJ) bin/.dummy
 	@echo Linking $@
