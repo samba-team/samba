@@ -45,7 +45,7 @@ o   Andrew Bartlet <abartlet@samba.org>
     * BUG 722: Allow winbindd to map machine accounts to uids.
     * More cleanups for winbindd's find_our_domain().
     * More clearly detect whether a domain controller is an NT4
-      or mixed-mode AD DC.
+      or mixed-mode AD DC (additional bug fixes by jerry & jmcd).
     * Increase separation between DNS queries for hosts and queries
       for AD domain controllers.
 
@@ -74,11 +74,17 @@ o   Luke Howard <lukeh@PADL.COM>
     * Fix segfault in session setup reply caused by a early free().
 
 
+o   Stoian Ivanov <sdr@bultra.com>
+    * Implement grepable output for smbclient -L.
+
+
 o   Volker Lendecke <vl@samba.org>
     * Add a German translation for SWAT.
     * Fix a segfaults in winbindd.
     * Fix the user's domain passed to register_vuid() from 
       reply_spnego_kerberos().
+    * Add NSS example code in nss_winbind to convert UNIX 
+      id's <-> Windows SIDs.
       
       
 o   Herb Lewis <herb@samba.org>
@@ -94,9 +100,11 @@ o   John Klinger <john.klinger@lmco.com>
     * Implement initgroups() call in nss_winbind on Solaris.
 
 
-o   Jim McDonough <jmcd@us.ibm.com>
+o   Jim McDonough <jmcd@samba.org>
     * Fix regression in net rpc join caused by recent changes 
       to cli_lsa_query_info_policy().
+    * BUG 964: Fix crash bug in 'net rpc join' using a preexisting
+      machine account.
 
 
 o   Stefan Metzmacher <metze@samba.org>
