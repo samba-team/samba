@@ -323,6 +323,34 @@ BOOL smb_io_dom_sid2(const char *desc, DOM_SID2 *sid, prs_struct *ps, int depth)
 }
 
 /*******************************************************************
+ Reads or writes a struct uuid
+********************************************************************/
+
+BOOL smb_io_uuid(const char *desc, struct uuid *uuid, 
+		 prs_struct *ps, int depth)
+{
+	if (uuid == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "smb_io_uuid");
+	depth++;
+
+	if(!prs_uint32 ("data   ", ps, depth, &uuid->time_low))
+		return False;
+	if(!prs_uint16 ("data   ", ps, depth, &uuid->time_mid))
+		return False;
+	if(!prs_uint16 ("data   ", ps, depth, &uuid->time_hi_and_version))
+		return False;
+
+	if(!prs_uint8s (False, "data   ", ps, depth, uuid->clock_seq, sizeof(uuid->clock_seq)))
+		return False;
+	if(!prs_uint8s (False, "data   ", ps, depth, uuid->node, sizeof(uuid->node)))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
 creates a STRHDR structure.
 ********************************************************************/
 

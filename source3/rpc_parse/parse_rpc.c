@@ -34,7 +34,8 @@ interface/version dce/rpc pipe identification
 {                                           \
 	{                                   \
 		0x8a885d04, 0x1ceb, 0x11c9, \
-		{ 0x9f, 0xe8, 0x08, 0x00,   \
+		{ 0x9f, 0xe8 },             \
+		{ 0x08, 0x00,               \
 		0x2b, 0x10, 0x48, 0x60 }    \
 	}, 0x02                             \
 }
@@ -43,7 +44,8 @@ interface/version dce/rpc pipe identification
 {                                           \
 	{                                   \
 		0x8a885d04, 0x1ceb, 0x11c9, \
-		{ 0x9f, 0xe8, 0x08, 0x00,   \
+		{ 0x9f, 0xe8 },             \
+		{ 0x08, 0x00,               \
 		0x2b, 0x10, 0x48, 0x60 }    \
 	}, 0x02                             \
 }
@@ -52,7 +54,8 @@ interface/version dce/rpc pipe identification
 {                                           \
 	{                                   \
 		0x6bffd098, 0xa112, 0x3610, \
-		{ 0x98, 0x33, 0x46, 0xc3,   \
+		{ 0x98, 0x33 },             \
+		{ 0x46, 0xc3,               \
 		0xf8, 0x7e, 0x34, 0x5a }    \
 	}, 0x01                             \
 }
@@ -61,7 +64,8 @@ interface/version dce/rpc pipe identification
 {                                           \
 	{                                   \
 		0x4b324fc8, 0x1670, 0x01d3, \
-		{ 0x12, 0x78, 0x5a, 0x47,   \
+		{ 0x12, 0x78 },             \
+		{ 0x5a, 0x47,               \
 		0xbf, 0x6e, 0xe1, 0x88 }    \
 	}, 0x03                             \
 }
@@ -70,7 +74,8 @@ interface/version dce/rpc pipe identification
 {                                           \
 	{                                   \
 		0x12345778, 0x1234, 0xabcd, \
-		{ 0xef, 0x00, 0x01, 0x23,   \
+		{ 0xef, 0x00 },             \
+		{ 0x01, 0x23,               \
 		0x45, 0x67, 0x89, 0xab }    \
 	}, 0x00                             \
 }
@@ -79,7 +84,8 @@ interface/version dce/rpc pipe identification
 {                                           \
 	{                                   \
 		0x3919286a, 0xb10c, 0x11d0, \
-		{ 0x9b, 0xa8, 0x00, 0xc0,   \
+		{ 0x9b, 0xa8 },             \
+		{ 0x00, 0xc0,               \
 		0x4f, 0xd9, 0x2e, 0xf5 }    \
 	}, 0x00                             \
 }
@@ -88,7 +94,8 @@ interface/version dce/rpc pipe identification
 {                                           \
 	{                                   \
 		0x12345778, 0x1234, 0xabcd, \
-		{ 0xef, 0x00, 0x01, 0x23,   \
+		{ 0xef, 0x00 },             \
+		{ 0x01, 0x23,               \
 		0x45, 0x67, 0x89, 0xac }    \
 	}, 0x01                             \
 }
@@ -97,7 +104,8 @@ interface/version dce/rpc pipe identification
 {                                           \
 	{                                   \
 		0x12345678, 0x1234, 0xabcd, \
-		{ 0xef, 0x00, 0x01, 0x23,   \
+		{ 0xef, 0x00 },             \
+		{ 0x01, 0x23,               \
 		0x45, 0x67, 0xcf, 0xfb }    \
 	}, 0x01                             \
 }
@@ -106,7 +114,8 @@ interface/version dce/rpc pipe identification
 {                                           \
 	{                                   \
 		0x338cd001, 0x2244, 0x31f1, \
-		{ 0xaa, 0xaa, 0x90, 0x00,   \
+		{ 0xaa, 0xaa },             \
+		{ 0x90, 0x00,               \
 		0x38, 0x00, 0x10, 0x03 }    \
 	}, 0x01                             \
 }
@@ -115,7 +124,8 @@ interface/version dce/rpc pipe identification
 {                                           \
 	{                                   \
 		0x12345678, 0x1234, 0xabcd, \
-		{ 0xef, 0x00, 0x01, 0x23,   \
+		{ 0xef, 0x00 },             \
+		{ 0x01, 0x23,               \
 		0x45, 0x67, 0x89, 0xab }    \
 	}, 0x01                             \
 }
@@ -124,7 +134,8 @@ interface/version dce/rpc pipe identification
 {                                           \
 	{                                   \
 		0x0, 0x0, 0x0,              \
-		{ 0x00, 0x00, 0x00, 0x00,   \
+		{ 0x00, 0x00 },             \
+		{ 0x00, 0x00,               \
 		0x00, 0x00, 0x00, 0x00 }    \
 	}, 0x00                             \
 }
@@ -133,7 +144,8 @@ interface/version dce/rpc pipe identification
 {                                           \
         {                                   \
                 0x4fc742e0, 0x4a10, 0x11cf, \
-                { 0x82, 0x73, 0x00, 0xaa,   \
+                { 0x82, 0x73 },             \
+		{ 0x00, 0xaa,               \
                   0x00, 0x4a, 0xe6, 0x73 }  \
         }, 0x03                             \
 }
@@ -142,7 +154,8 @@ interface/version dce/rpc pipe identification
 {                                           \
         {                                   \
                 0x60a15ec5, 0x4de8, 0x11d7, \
-                { 0xa6, 0x37, 0x00, 0x50,   \
+                { 0xa6, 0x37 },             \
+		{ 0x00, 0x50,               \
                   0x56, 0xa2, 0x01, 0x82 }  \
         }, 0x01                             \
 }
@@ -151,7 +164,8 @@ interface/version dce/rpc pipe identification
 {                                           \
         {                                   \
                 0x894de0c0, 0x0d55, 0x11d3, \
-                { 0xa3, 0x22, 0x00, 0xc0,   \
+                { 0xa3, 0x22 },             \
+		{ 0x00, 0xc0,               \
                   0x4f, 0xa3, 0x21, 0xa1 }  \
         }, 0x01                             \
 }
@@ -253,34 +267,6 @@ BOOL smb_io_rpc_hdr(const char *desc,  RPC_HDR *rpc, prs_struct *ps, int depth)
 }
 
 /*******************************************************************
- Reads or writes an RPC_UUID structure.
-********************************************************************/
-
-static BOOL smb_io_rpc_uuid(const char *desc, RPC_UUID *uuid, prs_struct *ps, int depth)
-{
-	if (uuid == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "smb_io_rpc_uuid");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!prs_uint32 ("data   ", ps, depth, &uuid->time_low))
-		return False;
-	if(!prs_uint16 ("data   ", ps, depth, &uuid->time_mid))
-		return False;
-	if(!prs_uint16 ("data   ", ps, depth, &uuid->time_hi_and_version))
-		return False;
-
-	if(!prs_uint8s (False, "data   ", ps, depth, uuid->remaining, sizeof(uuid->remaining)))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
  Reads or writes an RPC_IFACE structure.
 ********************************************************************/
 
@@ -292,7 +278,10 @@ static BOOL smb_io_rpc_iface(const char *desc, RPC_IFACE *ifc, prs_struct *ps, i
 	prs_debug(ps, depth, desc, "smb_io_rpc_iface");
 	depth++;
 
-	if (!smb_io_rpc_uuid(  "uuid", &ifc->uuid, ps, depth))
+	if (!prs_align(ps))
+		return False;
+
+	if (!smb_io_uuid(  "uuid", &ifc->uuid, ps, depth))
 		return False;
 
 	if(!prs_uint32 ("version", ps, depth, &ifc->version))

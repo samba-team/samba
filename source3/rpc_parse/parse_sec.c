@@ -83,11 +83,11 @@ BOOL sec_io_ace(const char *desc, SEC_ACE *psa, prs_struct *ps, int depth)
 			return False;
 
 		if (psa->obj_flags & SEC_ACE_OBJECT_PRESENT)
-			if (!prs_uint8s(False, "obj_guid", ps, depth, psa->obj_guid.info, GUID_SIZE))
+			if (!smb_io_uuid("obj_guid", &psa->obj_guid, ps,depth))
 				return False;
 
 		if (psa->obj_flags & SEC_ACE_OBJECT_INHERITED_PRESENT)
-			if (!prs_uint8s(False, "inh_guid", ps, depth, psa->inh_guid.info, GUID_SIZE))
+			if (!smb_io_uuid("inh_guid", &psa->inh_guid, ps,depth))
 				return False;
 
 		if(!smb_io_dom_sid("trustee  ", &psa->trustee , ps, depth))
