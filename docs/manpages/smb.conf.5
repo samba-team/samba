@@ -4520,13 +4520,19 @@ better restrict them with hosts allow!
 If the \fB"security"\fP parameter is set to
 \fB"domain"\fP, then the list of machines in this option must be a list
 of Primary or Backup Domain controllers for the
-\fBDomain\fP, as the Samba server is cryptographicly
+\fBDomain\fP or the character \f(CW*\fP, as the Samba server is cryptographicly
 in that domain, and will use cryptographicly authenticated RPC calls
 to authenticate the user logging on\&. The advantage of using
 \fB"security=domain"\fP is that if you list
 several hosts in the \fB"password server"\fP option then
 \fBsmbd\fP will try each in turn till it finds one
 that responds\&. This is useful in case your primary server goes down\&.
+.IP 
+If the \fB"password server"\fP option is set to the character \f(CW*\fP,
+then Samba will attempt to auto-locate the Primary or Backup Domain controllers
+to authenticate against by doing a query for the name \f(CWWORKGROUP<1C>\fP
+and then contacting each server returned in the list of IP addresses
+from the \fBname resolution\fP source\&.
 .IP 
 If the \fB"security"\fP parameter is set to
 \fB"server"\fP, then there are different
@@ -4559,6 +4565,9 @@ See also the \fB"security"\fP parameter\&.
 .IP 
 \fBExample:\fP
 \f(CW	password server = NT-PDC, NT-BDC1, NT-BDC2\fP
+.IP 
+\fBExample:\fP
+\f(CW	password server = *\fP
 .IP 
 .IP "\fBpath (S)\fP" 
 .IP 

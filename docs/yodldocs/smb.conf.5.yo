@@ -4363,13 +4363,19 @@ better restrict them with hosts allow!
 If the link(bf("security"))(security) parameter is set to
 bf("domain"), then the list of machines in this option must be a list
 of Primary or Backup Domain controllers for the
-link(bf(Domain))(workgroup), as the Samba server is cryptographicly
+link(bf(Domain))(workgroup) or the character tt(*), as the Samba server is cryptographicly
 in that domain, and will use cryptographicly authenticated RPC calls
 to authenticate the user logging on. The advantage of using
 link(bf("security=domain"))(securityequaldomain) is that if you list
 several hosts in the bf("password server") option then
 url(bf(smbd))(smbd.8.html) will try each in turn till it finds one
 that responds. This is useful in case your primary server goes down.
+
+If the bf("password server") option is set to the character tt(*),
+then Samba will attempt to auto-locate the Primary or Backup Domain controllers
+to authenticate against by doing a query for the name tt(WORKGROUP<1C>)
+and then contacting each server returned in the list of IP addresses
+from the link(bf(name resolution))(nameresolveorder) source.
 
 If the link(bf("security"))(security) parameter is set to
 link(bf("server"))(securityequalserver), then there are different
@@ -4402,6 +4408,9 @@ tt(	password server = <empty string>)
 
   bf(Example:)
 tt(	password server = NT-PDC, NT-BDC1, NT-BDC2)
+
+  bf(Example:)
+tt(	password server = *)
 
 label(path)
 dit(bf(path (S)))
