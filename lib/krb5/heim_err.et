@@ -19,7 +19,8 @@ error_code BAD_MKEY,		"Failed to get the master key"
 
 index 128
 prefix HEIM_EAI
-error_code NOERROR,		"no error"
+#error_code NOERROR,		"no error"
+error_code UNKNOWN,		"unknown error from getaddrinfo"
 error_code ADDRFAMILY,		"address family for nodename not supported"
 error_code AGAIN,		"temporary failure in name resolution"
 error_code BADFLAGS,		"invalid value for ai_flags"
