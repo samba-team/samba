@@ -101,7 +101,7 @@ void load_groupname_map(void)
    * Load the file.
    */
 
-  lines = file_lines_load(groupname_map_file,NULL);
+  lines = file_lines_load(groupname_map_file,NULL,False);
   if (!lines) {
     DEBUG(0,("load_groupname_map: can't open groupname map %s. Error was %s\n",
           groupname_map_file, strerror(errno)));
