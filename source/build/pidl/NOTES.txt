@@ -90,9 +90,8 @@ A fixed array looks like this:
 	    long s[10];
     } Struct1;
 
-The NDR representation looks just like 4 separate long
+The NDR representation looks just like 10 separate long
 declarations. The array size is not encoded on the wire.
-
 
 pidl also supports "inline" arrays, which are not part of the IDL/NDR
 standard. These are declared like this:
