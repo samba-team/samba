@@ -78,28 +78,6 @@ int srvstr_push(void *outbuf, void *dest, const char *src, int dest_len, int fla
 	return len;
 }
 
-
-/****************************************************************************
-return the length that a string would occupy when copied with srvstr_push()
-  STR_TERMINATE means include the null termination
-  STR_CONVERT   means convert from unix to dos codepage
-  STR_UPPER     means uppercase in the destination
-note that dest is only used for alignment purposes. No data is written.
-****************************************************************************/
-int srvstr_push_size(void *outbuf, 
-		     const void *dest, const char *src, int dest_len, int flags)
-{
-	int len = strlen(src);
-	if (flags & STR_TERMINATE) len++;
-	if (!(flags & STR_ASCII) && UNICODE_FLAG(outbuf)) len *= 2;
-
-	if (!(flags & STR_ASCII) && dest && srvstr_align(outbuf, PTR_DIFF(outbuf, dest))) {
-		len++;
-	}
-
-	return len;
-}
-
 /****************************************************************************
 copy a string from a unicode or ascii source (depending on flg2) 
 to a char* destination
@@ -154,24 +132,6 @@ int srvstr_pull(void *inbuf, char *dest, const void *src, int dest_len, int src_
 	}
 	if (flags & STR_CONVERT) dos_to_unix(dest,True);
 	return len;
-}
-
-/****************************************************************************
-return the length that a string would occupy (not including the null)
-when copied with srvstr_pull()
-if src_len is -1 then assume the source is null terminated
-****************************************************************************/
-int srvstr_pull_size(void *inbuf, const void *src, int src_len)
-{
-	if (srvstr_align(inbuf, PTR_DIFF(src, inbuf))) {
-		src++;
-		if (src_len > 0) src_len--;
-	}
-
-	if (!UNICODE_FLAG(inbuf)) {
-		return strlen(src);
-	}	
-	return strlen_w(src);
 }
 
 /****************************************************************************

@@ -4074,10 +4074,7 @@ void close_cnum(connection_struct *conn, uint16 vuid);
 /*The following definitions come from  smbd/srvstr.c  */
 
 int srvstr_push(void *outbuf, void *dest, const char *src, int dest_len, int flags);
-int srvstr_push_size(void *outbuf, 
-		     const void *dest, const char *src, int dest_len, int flags);
 int srvstr_pull(void *inbuf, char *dest, const void *src, int dest_len, int src_len, int flags);
-int srvstr_pull_size(void *inbuf, const void *src, int src_len);
 int srvstr_align(void *inbuf, int offset);
 
 /*The following definitions come from  smbd/ssl.c  */
