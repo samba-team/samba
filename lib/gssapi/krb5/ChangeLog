@@ -1,3 +1,8 @@
+2003-09-21  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* cfx.c: no ASN.1-ish header on per-message tokens From: Luke
+	Howard <lukeh@PADL.COM>
+	
 2003-09-19  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* arcfour.h: remove depenency on gss_arcfour_mic_token and
