@@ -146,6 +146,13 @@ void message_named_mutex_release(char *name);
 
 int ms_fnmatch(const char *pattern, const char *string);
 
+/* The following definitions come from lib/pam_errors.c  */
+
+NTSTATUS pam_to_nt_status(int pam_error);
+int nt_status_to_pam(NTSTATUS nt_status);
+NTSTATUS pam_to_nt_status(int pam_error);
+int nt_status_to_pam(NTSTATUS nt_status);
+
 /* The following definitions come from lib/pidfile.c  */
 
 pid_t pidfile_pid(char *name);
@@ -821,10 +828,11 @@ NTSTATUS cli_lsa_close(struct cli_state *cli, TALLOC_CTX *mem_ctx,
                        POLICY_HND *pol);
 NTSTATUS cli_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
                              POLICY_HND *pol, int num_sids, DOM_SID *sids, 
-                             char ***domains, char ***names, uint32 **types, int *num_names);
+                             char ***domains, char ***names, uint32 **types);
 NTSTATUS cli_lsa_lookup_names(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-                              POLICY_HND *pol, int num_names, const char **names, 
-                              DOM_SID **sids, uint32 **types, int *num_sids);
+                              POLICY_HND *pol, int num_names, 
+			      const char **names, DOM_SID **sids, 
+			      uint32 **types);
 NTSTATUS cli_lsa_query_info_policy(struct cli_state *cli, TALLOC_CTX *mem_ctx,
                                    POLICY_HND *pol, uint16 info_class, 
                                    fstring domain_name, DOM_SID *domain_sid);
@@ -4239,6 +4247,14 @@ void set_drv_info_3_env (DRIVER_INFO_3 *info, const char *arch);
 /* The following definitions come from rpcclient/cmd_srvsvc.c  */
 
 
+/* The following definitions come from rpcclient/display_sec.c  */
+
+char *get_sec_mask_str(uint32 type);
+void display_sec_access(SEC_ACCESS *info);
+void display_sec_ace(SEC_ACE *ace);
+void display_sec_acl(SEC_ACL *sec_acl);
+void display_sec_desc(SEC_DESC *sec);
+
 /* The following definitions come from rpcclient/rpcclient.c  */
 
 void fetch_machine_sid(struct cli_state *cli);
@@ -4444,8 +4460,6 @@ struct cnotify_fns *kernel_notify_init(void) ;
 
 /* The following definitions come from smbd/nttrans.c  */
 
-int create_secmasks(files_struct *fsp, SMB_STRUCT_STAT sbuf,
-		    SEC_ACCESS *vsecmask, SEC_ACCESS *gsecmask);
 int reply_ntcreate_and_X(connection_struct *conn,
 			 char *inbuf,char *outbuf,int length,int bufsize);
 int reply_ntcancel(connection_struct *conn,

@@ -109,7 +109,6 @@ static void SidToString(fstring str, DOM_SID *sid)
 	char **domains = NULL;
 	char **names = NULL;
 	uint32 *types = NULL;
-	int num_names;
 
 	sid_to_string(str, sid);
 
@@ -126,8 +125,8 @@ static void SidToString(fstring str, DOM_SID *sid)
 
 	if (!cacls_open_policy_hnd() ||
 	    !NT_STATUS_IS_OK(cli_lsa_lookup_sids(&lsa_cli, lsa_cli.mem_ctx,  
-						 &pol, 1, sid, &domains, &names, 
-						 &types, &num_names)) ||
+						 &pol, 1, sid, &domains, 
+						 &names, &types)) ||
 	    !domains || !domains[0] || !names || !names[0]) {
 		return;
 	}
@@ -145,7 +144,6 @@ static BOOL StringToSid(DOM_SID *sid, const char *str)
 {
 	uint32 *types = NULL;
 	DOM_SID *sids = NULL;
-	int num_sids;
 	BOOL result = True;
 	
 	if (strncmp(str, "S-", 2) == 0) {
@@ -153,9 +151,9 @@ static BOOL StringToSid(DOM_SID *sid, const char *str)
 	}
 
 	if (!cacls_open_policy_hnd() ||
-	    !NT_STATUS_IS_OK(cli_lsa_lookup_names(&lsa_cli, lsa_cli.mem_ctx, &pol, 1, 
-						  &str, 
-						  &sids, &types, &num_sids))) {
+	    !NT_STATUS_IS_OK(cli_lsa_lookup_names(&lsa_cli, lsa_cli.mem_ctx, 
+						  &pol, 1, &str, &sids, 
+						  &types))) {
 		result = False;
 		goto done;
 	}
