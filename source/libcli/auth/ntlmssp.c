@@ -23,6 +23,7 @@
 
 #include "includes.h"
 #include "auth/auth.h"
+#include "lib/crypto/crypto.h"
 
 static NTSTATUS ntlmssp_client_initial(struct ntlmssp_state *ntlmssp_state, 
 				       TALLOC_CTX *out_mem_ctx, 

@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "lib/crypto/crypto.h"
 
 struct schannel_state {
 	uint8_t session_key[16];

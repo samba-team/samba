@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_samr.h"
+#include "lib/crypto/crypto.h"
 
 /*
  * do a password change using DCERPC/SAMR calls
