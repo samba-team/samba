@@ -124,7 +124,7 @@ static void do_node_status(int fd, char *name, int type, struct in_addr ip)
 			       cleanname,status[i].type,
 			       node_status_flags(status[i].flags));
 		}
-		free(status);
+		SAFE_FREE(status);
 	}
 	d_printf("\n");
 }

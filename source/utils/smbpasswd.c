@@ -491,14 +491,14 @@ static char *prompt_for_new_password(BOOL stdin_get)
 	p = get_pass("New SMB password:", stdin_get);
 
 	fstrcpy(new_passwd, p);
-	safe_free(p);
+	SAFE_FREE(p);
 
 	p = get_pass("Retype new SMB password:", stdin_get);
 
 	if (strcmp(p, new_passwd)) {
 		fprintf(stderr, "Mismatch - password unchanged.\n");
 		ZERO_ARRAY(new_passwd);
-		safe_free(p);
+		SAFE_FREE(p);
 		return NULL;
 	}
 
@@ -730,7 +730,7 @@ static int process_root(int argc, char *argv[])
 		}
 
 		if (local_flags & LOCAL_ADD_USER) {
-		        safe_free(new_passwd);
+		        SAFE_FREE(new_passwd);
 			new_passwd = xstrdup(user_name);
 			strlower(new_passwd);
 		}
@@ -803,7 +803,7 @@ static int process_root(int argc, char *argv[])
 	}
 
  done:
-	safe_free(new_passwd);
+	SAFE_FREE(new_passwd);
 	return result;
 }
 
@@ -898,8 +898,8 @@ static int process_nonroot(int argc, char *argv[])
 	printf("Password changed for user %s\n", user_name);
 
  done:
-	safe_free(old_passwd);
-	safe_free(new_passwd);
+	SAFE_FREE(old_passwd);
+	SAFE_FREE(new_passwd);
 
 	return result;
 }
