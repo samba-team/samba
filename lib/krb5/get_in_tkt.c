@@ -298,12 +298,6 @@ make_pa_enc_timestamp(krb5_context context, PA_DATA *pa,
     if (ret)
 	return ret;
 
-    /*
-     * According to the spec this is the only encryption method
-     * that must be supported so it's the safest choice.  On the
-     * other hand, old KDCs might not support it.
-     */
-
     ret = krb5_encrypt_EncryptedData(context, 
 				     buf + sizeof(buf) - len,
 				     len,
