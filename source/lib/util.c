@@ -1806,6 +1806,23 @@ BOOL ms_has_wild(char *s)
 	return False;
 }
 
+/*******************************************************************
+ Vector to allow us to change the fnmatch function for old DOS clients.
+*******************************************************************/
+
+static int (*fnmatch_function)(char *, char *) = ms_fnmatch;
+
+/*******************************************************************
+ Old client fnmatch function. FIXME ! This is incorrect at present. JRA.
+*******************************************************************/
+
+int dos_fnmatch(char *string, char *pattern)
+{
+	if (strcmp(pattern, "*.*"))
+		return 1;
+
+	return ms_fnmatch(string, pattern);
+}
 
 /*******************************************************************
  a wrapper that handles case sensitivity and the special handling
@@ -1818,14 +1835,14 @@ BOOL mask_match(char *string, char *pattern, BOOL is_case_sensitive)
 	if (strcmp(pattern,".") == 0) return False;
 	
 	if (is_case_sensitive) {
-		return ms_fnmatch(pattern, string) == 0;
+		return (*fnmatch_function)(pattern, string) == 0;
 	}
 
 	fstrcpy(p2, pattern);
 	fstrcpy(s2, string);
 	strlower(p2); 
 	strlower(s2);
-	return ms_fnmatch(p2, s2) == 0;
+	return (*fnmatch_function)(p2, s2) == 0;
 }
 
 

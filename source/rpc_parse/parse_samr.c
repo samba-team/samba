@@ -4993,7 +4993,6 @@ void init_sam_user_info24(SAM_USER_INFO_24 * usr,
 {
 	DEBUG(10, ("init_sam_user_info24: passlen: %d\n", passlen));
 	memcpy(usr->pass, newpass, sizeof(usr->pass));
-	usr->unk_0 = passlen;
 }
 
 /*******************************************************************
@@ -5013,8 +5012,6 @@ static BOOL sam_io_user_info24(char *desc, SAM_USER_INFO_24 * usr,
 		return False;
 
 	if(!prs_uint8s(False, "password", ps, depth, usr->pass, sizeof(usr->pass)))
-		return False;
-	if(!prs_uint16("unk_0", ps, depth, &usr->unk_0)) /* unknown */
 		return False;
 
 	return True;
