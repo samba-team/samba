@@ -12,6 +12,7 @@ CFLAGS = @CFLAGS@
 
 INSTALL = @INSTALL@
 INSTALL_DATA	= @INSTALL_DATA@
+MKDIRHIER = @top_srcdir@/mkdirhier-sh
 
 AIX_SYSCALL_MAGIC=@AIX_SYSCALL_MAGIC@
 
@@ -34,7 +35,7 @@ Wall:
 	$(CC) -c $(CPPFLAGS) $(DEFS) -I../.. -I../../include -I$(srcdir) -I$(srcdir)/../../include $(CFLAGS) $<
 
 install: all
-	$(INSTALL) -d $(libdir)
+	$(MKDIRHIER) $(libdir)
 	$(INSTALL_DATA) $(LIB) $(libdir)
 	-$(RANLIB) $(libdir)/$(LIB)
 

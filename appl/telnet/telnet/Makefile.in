@@ -12,6 +12,7 @@ DEFS = @DEFS@
 CFLAGS = @CFLAGS@
 LIBS = @LIBS@
 INSTALL = @INSTALL@
+MKDIRHIER = @top_srcdir@/../../mkdirhier-sh
 
 PROGS = telnet
 
@@ -41,8 +42,8 @@ telnet: $(OBJECTS)
 	$(CC) -o telnet $(OBJECTS) $(LIBS) ../libtelnet/libtelnet.a $(KLIB)
 
 install: all
-	$(INSTALL) -d $(prefix)/bin
-	$(INSTALL) $(PROGS) $(prefix)/bin
+	$(MKDIRHIER) $(prefix)/bin
+	for x in $(PROGS); do $(INSTALL) $$x $(prefix)/bin; done
 
 clean cleandir:
 	rm -f *.o *.a telnet \#* *~ core

@@ -12,6 +12,7 @@ CFLAGS = @CFLAGS@
 
 INSTALL = @INSTALL@
 INSTALL_DATA	= @INSTALL_DATA@
+MKDIRHIER = @top_srcdir@/mkdirhier-sh
 
 prefix = @prefix@
 exec_prefix = $(prefix)
@@ -20,13 +21,13 @@ libdir = $(exec_prefix)/lib
 LIB = libdes.a
 
 SOURCES = cbc_cksm.c cbc_enc.c ecb_enc.c pcbc_enc.c \
-        qud_cksm.c rand_key.c read_pwd.c set_key.c str2key.c \
+        qud_cksm.c read_pwd.c set_key.c str2key.c \
         cfb_enc.c \
 	3ecb_enc.c ofb_enc.c 3cbc_enc.c rnd_keys.c key_par.c \
 	enc_read.c enc_writ.c gethostid.c
 
 OBJECTS = cbc_cksm.o cbc_enc.o ecb_enc.o pcbc_enc.o \
-        qud_cksm.o rand_key.o read_pwd.o set_key.o str2key.o \
+        qud_cksm.o read_pwd.o set_key.o str2key.o \
         cfb_enc.o \
 	3ecb_enc.o ofb_enc.o 3cbc_enc.o rnd_keys.o key_par.o \
 	enc_read.o enc_writ.o gethostid.o
@@ -40,7 +41,7 @@ Wall:
 	$(CC) -c $(CPPFLAGS) $(DEFS) -I../.. -I../../include -I$(srcdir) -I$(srcdir)/../../include $(CFLAGS) $<
 
 install: all
-	$(INSTALL) -d $(prefix)/lib
+	$(MKDIRHIER) $(prefix)/lib
 	$(INSTALL_DATA) $(LIB) $(libdir)
 	-$(RANLIB) $(libdir)/$(LIB)
 

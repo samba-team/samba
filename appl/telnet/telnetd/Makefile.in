@@ -12,6 +12,7 @@ DEFS = @DEFS@
 CFLAGS = @CFLAGS@
 LIBS = @LIBS@
 INSTALL = @INSTALL@
+MKDIRHIER = @top_srcdir@/../../mkdirhier-sh
 
 prefix = @prefix@
 exec_prefix = $(prefix)
@@ -44,8 +45,8 @@ telnetd: $(OBJECTS)
 	$(CC) -o telnetd $(OBJECTS) $(LIBS) ../libtelnet/libtelnet.a $(KLIB)
 
 install: all
-	$(INSTALL) -d $(prefix)/libexec
-	$(INSTALL) $(PROGS) $(prefix)/libexec
+	$(MKDIRHIER) $(prefix)/libexec
+	for x in $(PROGS); do $(INSTALL) $$x $(prefix)/libexec; done
 
 clean cleandir:
 	rm -f *.o *.a telnetd \#* *~ core
