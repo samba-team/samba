@@ -9,6 +9,11 @@ libroken_la_LDFLAGS = -version-info 3:2:0
 
 noinst_PROGRAMS = make-roken make-print-version
 
+check_PROGRAMS = parse_bytes-test
+TESTS = parse_bytes-test
+
+parse_bytes_test_LDADD = libroken.la
+
 if KRB4
 if KRB5
 ## need to link with des here; otherwise, if krb4 is shared the link
