@@ -1453,12 +1453,14 @@ uint32 _samr_lookup_names(const POLICY_HND * pol,
 		fstring name;
 		uint32 status1;
 		unistr2_to_ascii(name, &uni_name[i], sizeof(name) - 1);
+		ZERO_STRUCT(sid);
 
 		status1 = lookup_name(name, &sid, &(type[i]));
 		if (status1 == 0x0)
 		{
 			found_one = True;
 			sid_split_rid(&sid, &rid[i]);
+			sid_to_string(tmp, &sid);
 		}
 		if ((status1 != 0x0) || !sid_equal(&pol_sid, &sid))
 		{
@@ -1466,7 +1468,6 @@ uint32 _samr_lookup_names(const POLICY_HND * pol,
 			type[i] = SID_NAME_UNKNOWN;
 		}
 
-		sid_to_string(tmp, &sid);
 		DEBUG(10, ("name: %s sid: %s rid: %x type: %d\n",
 			   name, tmp, rid[i], type[i]));
 	}
