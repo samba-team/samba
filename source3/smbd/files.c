@@ -84,6 +84,7 @@ files_struct *file_new(void )
 	if (!fsp) return NULL;
 
 	ZERO_STRUCTP(fsp);
+	fsp->fd = -1;
 
 	first_file = (i+1) % real_max_open_files;
 
