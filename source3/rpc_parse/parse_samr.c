@@ -364,8 +364,8 @@ static BOOL sam_io_unk_info1(char *desc, SAM_UNK_INFO_1 *u_1, prs_struct *ps, in
 
 void init_unk_info2(SAM_UNK_INFO_2 *u_2, char *domain, char *server)
 {
-	int len_domain = strlen(domain);
-	int len_server = strlen(server);
+	int len_domain = strlen(domain)+1;
+	int len_server = strlen(server)+1;
 
 	u_2->unknown_0 = 0x00000000;
 	u_2->unknown_1 = 0x80000000;
@@ -2025,8 +2025,8 @@ void init_samr_r_query_aliasinfo(SAMR_R_QUERY_ALIASINFO *r_u, uint32 switch_leve
   if(r_u == NULL)
     return;
 
-  alias_len = alias?strlen(alias):0;
-  alias_desc_len = alias_desc?strlen(alias_desc):0;
+  alias_len = alias?strlen(alias)+1:0;
+  alias_desc_len = alias_desc?strlen(alias_desc)+1:0;
 
   DEBUG(5,("init_samr_r_query_aliasinfo\n"));
 
@@ -2462,7 +2462,7 @@ void init_samr_r_lookup_rids(SAMR_R_LOOKUP_RIDS *r_u,
 		SMB_ASSERT_ARRAY(r_u->hdr_als_name, num_aliases);
 
 		for (i = 0; i < num_aliases; i++) {
-			int als_len = als_name[i] != NULL ? strlen(als_name[i]) : 0;
+			int als_len = als_name[i] != NULL ? strlen(als_name[i])+1 : 0;
 			init_uni_hdr(&r_u->hdr_als_name[i], als_len);
 			init_unistr2(&r_u->uni_als_name[i], als_name[i], als_len);
 			r_u->num_als_usrs[i] = num_als_usrs[i];
@@ -2842,7 +2842,7 @@ void init_sam_user_info11(SAM_USER_INFO_11 *usr,
 
 	DEBUG(5,("init_sam_user_info11\n"));
 
-	len_mach_acct = strlen(mach_acct);
+	len_mach_acct = strlen(mach_acct)+1;
 
 	memcpy(&usr->expiry,expiry, sizeof(usr->expiry)); /* expiry time or something? */
 	memset((char *)usr->padding_1, '\0', sizeof(usr->padding_1)); /* 0 - padding 24 bytes */
@@ -2990,16 +2990,16 @@ void init_sam_user_info21(SAM_USER_INFO_21 *usr,
 	uint32 unknown_5,
 	uint32 unknown_6)
 {
-	int len_user_name    = user_name    != NULL ? strlen(user_name   ) : 0;
-	int len_full_name    = full_name    != NULL ? strlen(full_name   ) : 0;
-	int len_home_dir     = home_dir     != NULL ? strlen(home_dir    ) : 0;
-	int len_dir_drive    = dir_drive    != NULL ? strlen(dir_drive   ) : 0;
-	int len_logon_script = logon_script != NULL ? strlen(logon_script) : 0;
-	int len_profile_path = profile_path != NULL ? strlen(profile_path) : 0;
-	int len_description  = description  != NULL ? strlen(description ) : 0;
-	int len_workstations = workstations != NULL ? strlen(workstations) : 0;
-	int len_unknown_str  = unknown_str  != NULL ? strlen(unknown_str ) : 0;
-	int len_munged_dial  = munged_dial  != NULL ? strlen(munged_dial ) : 0;
+	int len_user_name    = user_name    != NULL ? strlen(user_name   )+1 : 0;
+	int len_full_name    = full_name    != NULL ? strlen(full_name   )+1 : 0;
+	int len_home_dir     = home_dir     != NULL ? strlen(home_dir    )+1 : 0;
+	int len_dir_drive    = dir_drive    != NULL ? strlen(dir_drive   )+1 : 0;
+	int len_logon_script = logon_script != NULL ? strlen(logon_script)+1 : 0;
+	int len_profile_path = profile_path != NULL ? strlen(profile_path)+1 : 0;
+	int len_description  = description  != NULL ? strlen(description )+1 : 0;
+	int len_workstations = workstations != NULL ? strlen(workstations)+1 : 0;
+	int len_unknown_str  = unknown_str  != NULL ? strlen(unknown_str )+1 : 0;
+	int len_munged_dial  = munged_dial  != NULL ? strlen(munged_dial )+1 : 0;
 
 	usr->logon_time            = *logon_time;
 	usr->logoff_time           = *logoff_time;
@@ -3623,7 +3623,7 @@ void init_samr_q_unknown_13(SAMR_Q_UNKNOWN_13 *q_c,
 ********************************************************************/
 void init_samr_q_unknown_38(SAMR_Q_UNKNOWN_38 *q_u, char *srv_name)
 {
-	int len_srv_name = strlen(srv_name);
+	int len_srv_name = strlen(srv_name)+1;
 
 	DEBUG(5,("init_q_unknown_38\n"));
 
@@ -3785,8 +3785,8 @@ void init_samr_q_chgpasswd_user(SAMR_Q_CHGPASSWD_USER *q_u,
 				char nt_newpass[516], uchar nt_oldhash[16],
 				char lm_newpass[516], uchar lm_oldhash[16])
 {
-	int len_dest_host = strlen(dest_host);
-	int len_user_name = strlen(user_name);
+	int len_dest_host = strlen(dest_host)+1;
+	int len_user_name = strlen(user_name)+1;
 
 	DEBUG(5,("init_samr_q_chgpasswd_user\n"));
 
@@ -4003,8 +4003,8 @@ BOOL init_samr_r_enum_domains(SAMR_R_ENUM_DOMAINS * r_u,
   if(r_u->status == 0)
     for(i=0;i<num_sam_entries;i++) /* only two domains to send */
       {
-	init_unistr2(&r_u->uni_dom_name[i],domains[i], strlen(domains[i]));
-	init_sam_entry(&(r_u->sam[i]), strlen(domains[i]), 0);
+	init_unistr2(&r_u->uni_dom_name[i],domains[i], strlen(domains[i])+1);
+	init_sam_entry(&(r_u->sam[i]), strlen(domains[i])+1, 0);
       }
   else
     {
@@ -4206,49 +4206,51 @@ static BOOL sam_io_user_info23(char *desc, SAM_USER_INFO_23 *usr, prs_struct *ps
 
 	/* here begins pointed-to data */
 
+	if(!prs_align_needed(ps, usr->hdr_user_name.buffer))
+		return False;
 	if(!smb_io_unistr2("uni_user_name", &usr->uni_user_name, usr->hdr_user_name.buffer, ps, depth))	/* username unicode string */
 		return False;
-	if(!prs_align(ps))
+	if(!prs_align_needed(ps, usr->hdr_full_name.buffer))
 		return False;
 	if(!smb_io_unistr2("uni_full_name", &usr->uni_full_name, usr->hdr_full_name.buffer, ps, depth))	/* user's full name unicode string */
 		return False;
-	if(!prs_align(ps))
+	if(!prs_align_needed(ps, usr->hdr_home_dir.buffer))
 		return False;
 	if(!smb_io_unistr2("uni_home_dir", &usr->uni_home_dir, usr->hdr_home_dir.buffer, ps, depth))	/* home directory unicode string */
 		return False;
-	if(!prs_align(ps))
+	if(!prs_align_needed(ps, usr->hdr_dir_drive.buffer))
 		return False;
 	if(!smb_io_unistr2("uni_dir_drive", &usr->uni_dir_drive, usr->hdr_dir_drive.buffer, ps, depth))	/* home directory drive unicode string */
 		return False;
-	if(!prs_align(ps))
+	if(!prs_align_needed(ps, usr->hdr_logon_script.buffer))
 		return False;
 	if(!smb_io_unistr2("uni_logon_script", &usr->uni_logon_script, usr->hdr_logon_script.buffer, ps, depth))	/* logon script unicode string */
 		return False;
-	if(!prs_align(ps))
+	if(!prs_align_needed(ps, usr->hdr_profile_path.buffer))
 		return False;
 	if(!smb_io_unistr2("uni_profile_path", &usr->uni_profile_path, usr->hdr_profile_path.buffer, ps, depth))	/* profile path unicode string */
 		return False;
-	if(!prs_align(ps))
+	if(!prs_align_needed(ps, usr->hdr_acct_desc.buffer))
 		return False;
 	if(!smb_io_unistr2("uni_acct_desc", &usr->uni_acct_desc, usr->hdr_acct_desc.buffer, ps, depth))	/* user desc unicode string */
 		return False;
-	if(!prs_align(ps))
+	if(!prs_align_needed(ps, usr->hdr_workstations.buffer))
 		return False;
 	if(!smb_io_unistr2("uni_workstations", &usr->uni_workstations, usr->hdr_workstations.buffer, ps, depth))	/* worksations user can log on from */
 		return False;
-	if(!prs_align(ps))
+	if(!prs_align_needed(ps, usr->hdr_unknown_str.buffer))
 		return False;
 	if(!smb_io_unistr2("uni_unknown_str", &usr->uni_unknown_str, usr->hdr_unknown_str.buffer, ps, depth))	/* unknown string */
 		return False;
-	if(!prs_align(ps))
+	if(!prs_align_needed(ps, usr->hdr_munged_dial.buffer))
 		return False;
 	if(!smb_io_unistr2("uni_munged_dial", &usr->uni_munged_dial, usr->hdr_munged_dial.buffer, ps, depth))	/* worksations user can log on from */
-		return False;
-	if(!prs_align(ps))
 		return False;
 
 	/* ok, this is only guess-work (as usual) */
 	if (usr->unknown_5 != 0x0) {
+		if(!prs_align(ps))
+			return False;
 		if(!prs_uint32("unknown_6", ps, depth, &usr->unknown_6))
 			return False;
 		if(!prs_uint32("padding4", ps, depth, &usr->padding4))
@@ -4259,6 +4261,8 @@ static BOOL sam_io_user_info23(char *desc, SAM_USER_INFO_23 *usr, prs_struct *ps
 	}
 
 	if (usr->ptr_logon_hrs) {
+		if(!prs_align(ps))
+			return False;
 		if(!sam_io_logon_hrs("logon_hrs", &usr->logon_hrs, ps, depth))
 			return False;
 	}
