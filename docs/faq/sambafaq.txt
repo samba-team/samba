@@ -1,6 +1,6 @@
   Samba FAQ
-  Paul Blackman, ictinus@lake.canberra.edu.au
-  v 0.7, June '97
+  Paul Blackman, ictinus@samba.anu.edu.au
+  v 0.8, June '97
 
   This is the Frequently Asked Questions (FAQ) document for Samba, the
   free and very popular SMB server product. An SMB server allows file
