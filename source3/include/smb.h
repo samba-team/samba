@@ -482,12 +482,13 @@ typedef struct files_struct
 	mode_t mode;
 	uint16 vuid;
 	write_bmpx_struct *wbmpx_ptr;
-        write_cache *wcp;
+	write_cache *wcp;
 	struct timeval open_time;
-        int share_mode;
+	int share_mode;
 	time_t pending_modtime;
-        int oplock_type;
-        int sent_oplock_break;
+	int oplock_type;
+	int sent_oplock_break;
+	unsigned int num_posix_locks;
 	BOOL open;
 	BOOL can_lock;
 	BOOL can_read;

@@ -165,6 +165,7 @@ static void open_file(files_struct *fsp,connection_struct *conn,
 	fsp->modified = False;
 	fsp->oplock_type = NO_OPLOCK;
 	fsp->sent_oplock_break = NO_BREAK_SENT;
+	fsp->num_posix_locks = 0;
 	fsp->is_directory = False;
 	fsp->stat_open = False;
 	fsp->directory_delete_on_close = False;
@@ -738,6 +739,7 @@ int open_file_stat(files_struct *fsp,connection_struct *conn,
 	fsp->modified = False;
 	fsp->oplock_type = NO_OPLOCK;
 	fsp->sent_oplock_break = NO_BREAK_SENT;
+	fsp->num_posix_locks = 0;
 	fsp->is_directory = False;
 	fsp->stat_open = True;
 	fsp->directory_delete_on_close = False;
@@ -851,6 +853,7 @@ int open_directory(files_struct *fsp,connection_struct *conn,
 	fsp->modified = False;
 	fsp->oplock_type = NO_OPLOCK;
 	fsp->sent_oplock_break = NO_BREAK_SENT;
+	fsp->num_posix_locks = 0;
 	fsp->is_directory = True;
 	fsp->directory_delete_on_close = False;
 	fsp->conn = conn;
