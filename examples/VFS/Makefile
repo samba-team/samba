@@ -1,7 +1,7 @@
 #
 # Makefile for samba-vfs examples
 #
-# $Id: Makefile,v 1.2 2000/02/04 05:08:16 tpot Exp $
+# $Id: Makefile,v 1.2.2.1 2000/04/05 22:20:34 tpot Exp $
 #
 
 # Variables
