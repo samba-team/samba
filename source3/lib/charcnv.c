@@ -629,6 +629,8 @@ size_t pull_ucs2(const void *base_ptr, char *dest, const void *src, size_t dest_
 	ret = convert_string(CH_UCS2, CH_UNIX, src, src_len, dest, dest_len);
 	if (dest_len)
 		dest[MIN(ret, dest_len-1)] = 0;
+	else 
+		dest[0] = 0;
 
 	return src_len;
 }
