@@ -53,7 +53,7 @@ BOOL smb_register_passdb(const char *name, pdb_init_function init, int version)
 	}
 
 	entry = smb_xmalloc(sizeof(struct pdb_init_function_entry));
-	entry->name = name;
+	entry->name = smb_xstrdup(name);
 	entry->init = init;
 
 	DLIST_ADD(backends, entry);
