@@ -1,4 +1,4 @@
-.\" Copyright (c) 1997, 2000 - 2003 Kungliga Tekniska Högskolan
+.\" Copyright (c) 1997, 2000 - 2005 Kungliga Tekniska Högskolan
 .\" (Royal Institute of Technology, Stockholm, Sweden). 
 .\" All rights reserved. 
 .\"
@@ -31,7 +31,7 @@
 .\" 
 .\" $Id$
 .\"
-.Dd May 12, 2003
+.Dd January  5, 2005
 .Dt KPASSWD 1
 .Os HEIMDAL
 .Sh NAME
@@ -40,6 +40,10 @@
 .Sh SYNOPSIS
 .Nm
 .Op Fl -admin-principal= Ns Ar principal
+.Oo Fl c Ar cache \*(Ba Xo
+.Fl -cache= Ns Ar cache
+.Xc
+.Oc
 .Op Ar principal ...
 .Sh DESCRIPTION
 .Nm
@@ -52,6 +56,11 @@ Multiple passwords for different users can be changed at the same time,
 then the administrator principal will be used.
 If the administrator isn't specified on the command prompt, the
 principal of the default credential cache will be used.
+.Pp
+If a credential cache is given, the
+.Fl -admin-principal
+flag is ignored and use the default name of the credential cache is
+used instead.
 .Sh DIAGNOSTICS
 If the password quality check fails or some other error occurs, an
 explanation is printed.
