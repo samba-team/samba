@@ -1229,7 +1229,7 @@ static NTSTATUS can_delete(char *fname,connection_struct *conn, int dirtype)
 			return NT_STATUS_CANNOT_DELETE;
 	}
 	if ((fmode & ~dirtype) & (aHIDDEN | aSYSTEM))
-		return NT_STATUS_CANNOT_DELETE;
+		return NT_STATUS_NO_SUCH_FILE;
 
 	/* We need a better way to return NT status codes from open... */
 	unix_ERR_class = 0;
