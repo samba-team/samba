@@ -318,9 +318,9 @@
 	} samr_Ids;
 
 	NTSTATUS samr_GetAliasMembership(
-		[in,ref]      policy_handle *alias_handle,
+		[in,ref]      policy_handle *domain_handle,
 		[in,ref]      lsa_SidArray  *sids,
-		[out]         samr_Ids *rids
+		[out,ref]     samr_Ids *rids
 		);
 
 	/************************/
