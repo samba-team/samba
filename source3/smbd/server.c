@@ -373,6 +373,10 @@ static BOOL open_sockets_smbd(BOOL is_daemon,const char *smb_ports)
 					return False;
 				}
 
+				/* Load DSO's */
+				if(lp_modules()) 
+					smb_load_modules(lp_modules());
+
 				return True; 
 			}
 			/* The parent doesn't need this socket */
