@@ -13,6 +13,7 @@ struct lsa_Close {
 
 struct lsa_Delete {
 	struct {
+		struct policy_handle *handle;
 	} in;
 
 	struct {
@@ -21,11 +22,33 @@ struct lsa_Delete {
 
 };
 
+struct lsa_Name {
+	uint16 name_len;
+	uint16 name_size;
+	const char *name;
+};
+
+struct lsa_PrivEntry {
+	struct lsa_Name name;
+	uint32 luid_low;
+	uint32 luid_high;
+};
+
+struct lsa_PrivArray {
+	uint32 count;
+	struct lsa_PrivEntry *privs;
+};
+
 struct lsa_EnumPrivs {
 	struct {
+		struct policy_handle *handle;
+		uint32 *resume_handle;
+		uint32 max_count;
 	} in;
 
 	struct {
+		uint32 *resume_handle;
+		struct lsa_PrivArray *privs;
 		NTSTATUS result;
 	} out;
 
@@ -171,12 +194,6 @@ struct lsa_EnumTrustDom {
 		NTSTATUS result;
 	} out;
 
-};
-
-struct lsa_Name {
-	uint16 name_len;
-	uint16 name_size;
-	const char *name;
 };
 
 struct lsa_TranslatedSid {

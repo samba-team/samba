@@ -330,6 +330,65 @@ static BOOL test_EnumAccounts(struct dcerpc_pipe *p,
 }
 
 
+static BOOL test_EnumPrivs(struct dcerpc_pipe *p, 
+			   TALLOC_CTX *mem_ctx, 
+			   struct policy_handle *handle)
+{
+	NTSTATUS status;
+	struct lsa_EnumPrivs r;
+	struct lsa_PrivArray privs1;
+	uint32 resume_handle = 0;
+	int i;
+
+	printf("\ntesting EnumPrivs\n");
+
+	r.in.handle = handle;
+	r.in.resume_handle = &resume_handle;
+	r.in.max_count = 1000;
+	r.out.resume_handle = &resume_handle;
+	r.out.privs = &privs1;
+
+	resume_handle = 0;
+	status = dcerpc_lsa_EnumPrivs(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("EnumPrivs failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	printf("Got %d privs resume_handle=%u\n", privs1.count, resume_handle);
+
+	for (i=0;i<privs1.count;i++) {
+		printf("luid=%08x-%08x '%s'\n", 
+		       privs1.privs[i].luid_low,
+		       privs1.privs[i].luid_high,
+		       privs1.privs[i].name.name);
+	}
+
+	return True;
+}
+
+
+static BOOL test_Delete(struct dcerpc_pipe *p, 
+		       TALLOC_CTX *mem_ctx, 
+		       struct policy_handle *handle)
+{
+	NTSTATUS status;
+	struct lsa_Delete r;
+
+	printf("\ntesting Delete - but what does it do?\n");
+
+	r.in.handle = handle;
+	status = dcerpc_lsa_Delete(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Delete failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	printf("\n");
+
+	return True;
+}
+
 static BOOL test_Close(struct dcerpc_pipe *p, 
 		       TALLOC_CTX *mem_ctx, 
 		       struct policy_handle *handle)
@@ -342,6 +401,13 @@ static BOOL test_Close(struct dcerpc_pipe *p,
 	r.in.handle = handle;
 	status = dcerpc_lsa_Close(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
+		printf("Close failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	status = dcerpc_lsa_Close(p, mem_ctx, &r);
+	/* its really a fault - we need a status code for rpc fault */
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_LEVEL)) {
 		printf("Close failed - %s\n", nt_errstr(status));
 		return False;
 	}
@@ -377,11 +443,21 @@ BOOL torture_rpc_lsa(int dummy)
 	if (!test_EnumAccounts(p, mem_ctx, &handle)) {
 		ret = False;
 	}
+
+	if (!test_EnumPrivs(p, mem_ctx, &handle)) {
+		ret = False;
+	}
+	
+#if 0
+	if (!test_Delete(p, mem_ctx, &handle)) {
+		ret = False;
+	}
+#endif
 	
 	if (!test_Close(p, mem_ctx, &handle)) {
 		ret = False;
 	}
-	
+
         torture_rpc_close(p);
 
 	return ret;
