@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "version.h"
 
 const char *samba_version_string(void)
 {
