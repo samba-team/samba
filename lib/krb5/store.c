@@ -335,10 +335,10 @@ krb5_store_addrs(krb5_storage *sp, krb5_addresses p)
 {
     int i;
     int ret;
-    ret = krb5_store_int32(sp, p.number);
+    ret = krb5_store_int32(sp, p.len);
     if(ret) return ret;
-    for(i = 0; i<p.number; i++){
-	ret = krb5_store_address(sp, p.addrs[i]);
+    for(i = 0; i<p.len; i++){
+	ret = krb5_store_address(sp, p.val[i]);
 	if(ret) break;
     }
     return ret;
@@ -349,11 +349,11 @@ krb5_ret_addrs(krb5_storage *sp, krb5_addresses *adr)
 {
     int i;
     int ret;
-    ret = krb5_ret_int32(sp, &adr->number);
+    ret = krb5_ret_int32(sp, &adr->len);
     if(ret) return ret;
-    adr->addrs = ALLOC(adr->number, krb5_address);
-    for(i = 0; i < adr->number; i++){
-	ret = krb5_ret_address(sp, &adr->addrs[i]);
+    adr->val = ALLOC(adr->len, krb5_address);
+    for(i = 0; i < adr->len; i++){
+	ret = krb5_ret_address(sp, &adr->val[i]);
 	if(ret) break;
     }
     return ret;
