@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include "system/glob.h"
+#include "system/wait.h"
 #include "dlinklist.h"
 
 /* these are little tdb utility functions that are meant to make
