@@ -4292,7 +4292,12 @@ no oplock granted on this file (%s).\n", fsp->fnum, fsp->fsp_name));
   /* If any of the above locks failed, then we must unlock
      all of the previous locks (X/Open spec). */
   if(i != num_locks && num_locks != 0) {
-    for(; i >= 0; i--) {
+    /*
+     * Ensure we don't do a remove on the lock that just failed,
+     * as under POSIX rules, if we have a lock already there, we
+     * will delete it (and we shouldn't) .....
+     */
+    for(i--; i >= 0; i--) {
       count = get_lock_count( data, i, large_file_format, &err1);
       offset = get_lock_offset( data, i, large_file_format, &err2);
 
