@@ -198,7 +198,7 @@ void ndr_print_WERROR(struct ndr_print *ndr, const char *name, WERROR r)
 /*
   parse a set of bytes
 */
-NTSTATUS ndr_pull_bytes(struct ndr_pull *ndr, char *data, uint32_t n)
+NTSTATUS ndr_pull_bytes(struct ndr_pull *ndr, uint8_t *data, uint32_t n)
 {
 	NDR_PULL_NEED_BYTES(ndr, n);
 	memcpy(data, ndr->data + ndr->offset, n);
@@ -209,7 +209,7 @@ NTSTATUS ndr_pull_bytes(struct ndr_pull *ndr, char *data, uint32_t n)
 /*
   pull an array of uint8
 */
-NTSTATUS ndr_pull_array_uint8(struct ndr_pull *ndr, int ndr_flags, char *data, uint32_t n)
+NTSTATUS ndr_pull_array_uint8(struct ndr_pull *ndr, int ndr_flags, uint8_t *data, uint32_t n)
 {
 	if (!(ndr_flags & NDR_SCALARS)) {
 		return NT_STATUS_OK;
@@ -372,7 +372,7 @@ NTSTATUS ndr_pull_align(struct ndr_pull *ndr, size_t size)
 /*
   push some bytes
 */
-NTSTATUS ndr_push_bytes(struct ndr_push *ndr, const char *data, uint32_t n)
+NTSTATUS ndr_push_bytes(struct ndr_push *ndr, const uint8_t *data, uint32_t n)
 {
 	NDR_PUSH_NEED_BYTES(ndr, n);
 	memcpy(ndr->data + ndr->offset, data, n);
@@ -394,7 +394,7 @@ NTSTATUS ndr_push_zero(struct ndr_push *ndr, uint32_t n)
 /*
   push an array of uint8
 */
-NTSTATUS ndr_push_array_uint8(struct ndr_push *ndr, int ndr_flags, const char *data, uint32_t n)
+NTSTATUS ndr_push_array_uint8(struct ndr_push *ndr, int ndr_flags, const uint8_t *data, uint32_t n)
 {
 	if (!(ndr_flags & NDR_SCALARS)) {
 		return NT_STATUS_OK;
@@ -698,7 +698,7 @@ NTSTATUS ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
 
 	case LIBNDR_FLAG_STR_NULLTERM:
 		if (byte_mul == 1) {
-			len1 = ascii_len_n(ndr->data+ndr->offset, ndr->data_size - ndr->offset);
+			len1 = ascii_len_n((const char *)(ndr->data+ndr->offset), ndr->data_size - ndr->offset);
 		} else {
 			len1 = utf16_len_n(ndr->data+ndr->offset, ndr->data_size - ndr->offset);
 		}
