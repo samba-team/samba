@@ -767,8 +767,11 @@ extern int errno;
 #include "debugparse.h"
 
 #include "version.h"
+
 #include "smb.h"
+
 #include "smbw.h"
+
 #include "nameserv.h"
 
 #include "secrets.h"

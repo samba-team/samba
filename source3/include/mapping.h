@@ -43,7 +43,6 @@
 
 
 typedef struct _GROUP_MAP {
-	struct pdb_methods *methods;
 	gid_t gid;
 	DOM_SID sid;
 	enum SID_NAME_USE sid_name_use;
