@@ -1612,7 +1612,7 @@ AC_ARG_WITH(pam_smbpass,
 ###############################################
 # test for where we get crypt() from, but only
 # if not using PAM
-if test $with_pam != yes; then
+if test "$with_pam" != yes; then
 AC_CHECK_FUNCS(crypt)
 if test x"$ac_cv_func_crypt" = x"no"; then
     AC_CHECK_LIB(crypt, crypt, [LIBS="$LIBS -lcrypt";
