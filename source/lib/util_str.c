@@ -34,42 +34,47 @@ void set_first_token(char *ptr)
 Based on a routine by GJC@VILLAGE.COM. 
 Extensively modified by Andrew.Tridgell@anu.edu.au
 ****************************************************************************/
-BOOL next_token(char **ptr,char *buff,char *sep, size_t bufsize)
+
+BOOL next_token(char **ptr,char *buff,const char *sep, size_t bufsize)
 {
-  char *s;
-  BOOL quoted;
-  size_t len=1;
+	char *s;
+	BOOL quoted;
+	size_t len=1;
 
-  if (!ptr) ptr = &last_ptr;
-  if (!ptr) return(False);
+	if (!ptr)
+		ptr = &last_ptr;
+	if (!ptr)
+		return(False);
 
-  s = *ptr;
+	s = *ptr;
 
-  /* default to simple separators */
-  if (!sep) sep = " \t\n\r";
+	/* default to simple separators */
+	if (!sep)
+		sep = " \t\n\r";
 
-  /* find the first non sep char */
-  while(*s && strchr(sep,*s)) s++;
+	/* find the first non sep char */
+	while(*s && strchr(sep,*s))
+		s++;
 
-  /* nothing left? */
-  if (! *s) return(False);
+	/* nothing left? */
+	if (! *s)
+		return(False);
 
-  /* copy over the token */
-  for (quoted = False; len < bufsize && *s && (quoted || !strchr(sep,*s)); s++)
-    {
-	    if (*s == '\"') {
-		    quoted = !quoted;
-	    } else {
-		    len++;
-		    *buff++ = *s;
-	    }
-    }
+	/* copy over the token */
+	for (quoted = False; len < bufsize && *s && (quoted || !strchr(sep,*s)); s++) {
+		if (*s == '\"') {
+			quoted = !quoted;
+		} else {
+			len++;
+			*buff++ = *s;
+		}
+	}
 
-  *ptr = (*s) ? s+1 : s;  
-  *buff = 0;
-  last_ptr = *ptr;
+	*ptr = (*s) ? s+1 : s;  
+	*buff = 0;
+	last_ptr = *ptr;
 
-  return(True);
+	return(True);
 }
 
 /****************************************************************************

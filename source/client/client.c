@@ -2422,8 +2422,9 @@ static int do_tar_op(char *base_directory)
 }
 
 /****************************************************************************
-handle a message operation
+ Handle a message operation.
 ****************************************************************************/
+
 static int do_message_op(void)
 {
 	struct in_addr ip;
@@ -2435,7 +2436,15 @@ static int do_message_op(void)
 	make_nmb_name(&called , desthost, name_type);
 
 	zero_ip(&ip);
-	if (have_ip) ip = dest_ip;
+	if (have_ip)
+		ip = dest_ip;
+	else if (name_type != 0x20) {
+		/* We must do our own resolve name here as the nametype is #0x3, not #0x20. */
+		if (!resolve_name(desthost, &ip, name_type)) {
+			DEBUG(0,("Cannot resolve name %s#0x%x\n", desthost, name_type));
+			return 1;
+		}
+	}
 
 	if (!(cli=cli_initialise(NULL)) || (cli_set_port(cli, port) == 0) || !cli_connect(cli, desthost, &ip)) {
 		DEBUG(0,("Connection to %s failed\n", desthost));
