@@ -149,9 +149,20 @@ des_rand_data(unsigned char *data, int size)
     {
       int fd = open("/dev/random", O_RDONLY);
       if (fd != -1 && read(fd, data, size) == size)
-	  return;
-      if (fd != -1)
+	{
 	  close(fd);
+	  return;
+	}
+      close(fd);
+    }
+    {
+      int fd = open("/dev/rnd", O_RDONLY);
+      if (fd != -1 && read(fd, data, size) == size)
+	{
+	  close(fd);
+	  return;
+	}
+      close(fd);
     }
 
     /* Paranoia? Initialize data from /dev/mem if we can read it. */
