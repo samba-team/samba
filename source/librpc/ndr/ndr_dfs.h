@@ -62,16 +62,36 @@ struct dfs_Info {
 
 };
 
+struct dfs_String {
+	const char *str;
+};
+
+struct dfs_Enum1 {
+	uint32 count;
+	struct dfs_String *s;
+};
+
+union dfs_EnumInfo {
+/* [case(1)] */ struct dfs_Enum1 *enum1;
+};
+
+struct dfs_EnumStruct {
+	uint32 level;
+	union dfs_EnumInfo e;
+};
+
 struct dfs_Enum {
 	struct {
-		const char *name;
 		uint32 level;
-		uint32 buffer_size;
-		uint32 *resume_handle;
+		uint32 bufsize;
+		struct dfs_EnumStruct *info;
+		uint32 *unknown;
+		uint32 *total;
 	} in;
 
 	struct {
-		uint32 *resume_handle;
+		struct dfs_EnumStruct *info;
+		uint32 *total;
 		NTSTATUS result;
 	} out;
 

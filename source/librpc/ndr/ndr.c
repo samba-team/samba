@@ -337,3 +337,22 @@ NTSTATUS ndr_pull_error(struct ndr_pull *ndr, enum ndr_err_code err, const char 
 	/* we should map to different status codes */
 	return NT_STATUS_INVALID_PARAMETER;
 }
+
+/*
+  return and possibly log an NDR error
+*/
+NTSTATUS ndr_push_error(struct ndr_push *ndr, enum ndr_err_code err, const char *format, ...)
+{
+	char *s=NULL;
+	va_list ap;
+
+	va_start(ap, format);
+	vasprintf(&s, format, ap);
+	va_end(ap);
+
+	DEBUG(3,("ndr_push_error(%u): %s\n", err, s));
+
+	free(s);
+	/* we should map to different status codes */
+	return NT_STATUS_INVALID_PARAMETER;
+}

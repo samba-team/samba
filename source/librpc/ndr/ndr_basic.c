@@ -239,6 +239,18 @@ NTSTATUS ndr_push_array_uint8(struct ndr_push *ndr, const char *data, uint32 n)
 }
 
 /*
+  push an array of uint32
+*/
+NTSTATUS ndr_push_array_uint32(struct ndr_push *ndr, const uint32 *data, uint32 n)
+{
+	int i;
+	for (i=0;i<n;i++) {
+		NDR_CHECK(ndr_push_uint32(ndr, data[i]));
+	}
+	return NT_STATUS_OK;
+}
+
+/*
   save the current position
  */
 void ndr_push_save(struct ndr_push *ndr, struct ndr_push_save *save)

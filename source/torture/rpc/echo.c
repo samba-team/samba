@@ -197,6 +197,11 @@ BOOL torture_rpc_echo(int dummy)
 		return False;
 	}
 
+	if (!test_testcall(p, mem_ctx)) {
+		ret = False;
+	}
+	return ret;
+
 	if (!test_addone(p, mem_ctx)) {
 		ret = False;
 	}

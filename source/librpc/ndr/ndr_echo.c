@@ -9,13 +9,6 @@ NTSTATUS ndr_push_echo_AddOne(struct ndr_push *ndr, struct echo_AddOne *r)
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_echo_AddOne(struct ndr_pull *ndr, struct echo_AddOne *r)
-{
-	NDR_CHECK(ndr_pull_uint32(ndr, r->out.v));
-
-	return NT_STATUS_OK;
-}
-
 NTSTATUS ndr_push_echo_EchoData(struct ndr_push *ndr, struct echo_EchoData *r)
 {
 	NDR_CHECK(ndr_push_uint32(ndr, r->in.len));
@@ -23,6 +16,37 @@ NTSTATUS ndr_push_echo_EchoData(struct ndr_push *ndr, struct echo_EchoData *r)
 		NDR_CHECK(ndr_push_uint32(ndr, r->in.len));
 		NDR_CHECK(ndr_push_array_uint8(ndr, r->in.in_data, r->in.len));
 	}
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_push_echo_SinkData(struct ndr_push *ndr, struct echo_SinkData *r)
+{
+	NDR_CHECK(ndr_push_uint32(ndr, r->in.len));
+	if (r->in.data) {
+		NDR_CHECK(ndr_push_uint32(ndr, r->in.len));
+		NDR_CHECK(ndr_push_array_uint8(ndr, r->in.data, r->in.len));
+	}
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_push_echo_SourceData(struct ndr_push *ndr, struct echo_SourceData *r)
+{
+	NDR_CHECK(ndr_push_uint32(ndr, r->in.len));
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_push_TestCall(struct ndr_push *ndr, struct TestCall *r)
+{
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_pull_echo_AddOne(struct ndr_pull *ndr, struct echo_AddOne *r)
+{
+	NDR_CHECK(ndr_pull_uint32(ndr, r->out.v));
 
 	return NT_STATUS_OK;
 }
@@ -44,26 +68,8 @@ NTSTATUS ndr_pull_echo_EchoData(struct ndr_pull *ndr, struct echo_EchoData *r)
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_push_echo_SinkData(struct ndr_push *ndr, struct echo_SinkData *r)
-{
-	NDR_CHECK(ndr_push_uint32(ndr, r->in.len));
-	if (r->in.data) {
-		NDR_CHECK(ndr_push_uint32(ndr, r->in.len));
-		NDR_CHECK(ndr_push_array_uint8(ndr, r->in.data, r->in.len));
-	}
-
-	return NT_STATUS_OK;
-}
-
 NTSTATUS ndr_pull_echo_SinkData(struct ndr_pull *ndr, struct echo_SinkData *r)
 {
-
-	return NT_STATUS_OK;
-}
-
-NTSTATUS ndr_push_echo_SourceData(struct ndr_push *ndr, struct echo_SourceData *r)
-{
-	NDR_CHECK(ndr_push_uint32(ndr, r->in.len));
 
 	return NT_STATUS_OK;
 }
@@ -84,43 +90,96 @@ NTSTATUS ndr_pull_echo_SourceData(struct ndr_pull *ndr, struct echo_SourceData *
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS ndr_pull_Struct1(struct ndr_pull *ndr, int ndr_flags, struct Struct1 *r)
+static NTSTATUS ndr_pull_echo_Enum1(struct ndr_pull *ndr, int ndr_flags, struct echo_Enum1 *r)
 {
-	uint32 _conformant_size;
-	NDR_CHECK(ndr_pull_uint32(ndr, &_conformant_size));
+	uint32 _ptr_count;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
-	NDR_CHECK(ndr_pull_uint32(ndr, &r->bar));
-	NDR_CHECK(ndr_pull_uint32(ndr, &r->count));
-	NDR_CHECK(ndr_pull_uint32(ndr, &r->foo));
+	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_count));
+	if (_ptr_count) {
+		NDR_ALLOC(ndr, r->count);
+	} else {
+		r->count = NULL;
+	}
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-	if (r->count > _conformant_size) {
-		return ndr_pull_error(ndr, NDR_ERR_CONFORMANT_SIZE, "Bad conformant size %u should be %u", _conformant_size, r->count);
+	if (r->count) {
+		NDR_CHECK(ndr_pull_uint32(ndr, r->count));
 	}
-		NDR_ALLOC_N_SIZE(ndr, r->s, _conformant_size, sizeof(r->s[0]));
-		NDR_CHECK(ndr_pull_array_uint32(ndr, r->s, r->count));
 done:
 	return NT_STATUS_OK;
 }
 
-void ndr_print_Struct1(struct ndr_print *ndr, const char *name, struct Struct1 *r)
+static NTSTATUS ndr_pull_echo_Enum3(struct ndr_pull *ndr, int ndr_flags, struct echo_Enum3 *r)
 {
-	ndr_print_struct(ndr, name, "Struct1");
-	ndr->depth++;
-	ndr_print_uint32(ndr, "bar", r->bar);
-	ndr_print_uint32(ndr, "count", r->count);
-	ndr_print_uint32(ndr, "foo", r->foo);
-	ndr_print_ptr(ndr, "s", r->s);
-	ndr->depth++;
-		ndr_print_array_uint32(ndr, "s", r->s, r->count);
-	ndr->depth--;
-	ndr->depth--;
+	uint32 _ptr_count;
+	NDR_CHECK(ndr_pull_align(ndr, 4));
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_count));
+	if (_ptr_count) {
+		NDR_ALLOC(ndr, r->count);
+	} else {
+		r->count = NULL;
+	}
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+	if (r->count) {
+		NDR_CHECK(ndr_pull_uint32(ndr, r->count));
+	}
+done:
+	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_push_TestCall(struct ndr_push *ndr, struct TestCall *r)
+static NTSTATUS ndr_pull_echo_EnumInfo(struct ndr_pull *ndr, int ndr_flags, uint16 *level, union echo_EnumInfo *r)
 {
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_uint16(ndr, level));
+	switch (*level) {
+	case 1: {
+	NDR_CHECK(ndr_pull_echo_Enum1(ndr, NDR_SCALARS, &r->enum1));
+	break; }
 
+	case 3: {
+	NDR_CHECK(ndr_pull_echo_Enum3(ndr, NDR_SCALARS, &r->enum3));
+	break; }
+
+	default:
+		return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", *level);
+	}
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+	switch (*level) {
+	case 1:
+		NDR_CHECK(ndr_pull_echo_Enum1(ndr, NDR_BUFFERS, &r->enum1));
+	break;
+
+	case 3:
+		NDR_CHECK(ndr_pull_echo_Enum3(ndr, NDR_BUFFERS, &r->enum3));
+	break;
+
+	default:
+		return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", *level);
+	}
+done:
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS ndr_pull_Struct1(struct ndr_pull *ndr, int ndr_flags, struct Struct1 *r)
+{
+	NDR_CHECK(ndr_pull_align(ndr, 4));
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->level));
+	{ uint16 _level;
+	NDR_CHECK(ndr_pull_echo_EnumInfo(ndr, NDR_SCALARS, &_level, &r->e));
+	if (_level != r->level) return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u in e");
+	}
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+	{ uint16 _level;
+	NDR_CHECK(ndr_pull_echo_EnumInfo(ndr, NDR_BUFFERS, &_level, &r->e));
+	if (_level != r->level) return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u in e");
+	}
+done:
 	return NT_STATUS_OK;
 }
 
@@ -138,5 +197,57 @@ NTSTATUS ndr_pull_TestCall(struct ndr_pull *ndr, struct TestCall *r)
 	}
 
 	return NT_STATUS_OK;
+}
+
+void ndr_print_echo_Enum1(struct ndr_print *ndr, const char *name, struct echo_Enum1 *r)
+{
+	ndr_print_struct(ndr, name, "echo_Enum1");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "count", r->count);
+	ndr->depth++;
+	if (r->count) {
+		ndr_print_uint32(ndr, "count", *r->count);
+	}
+	ndr->depth--;
+	ndr->depth--;
+}
+
+void ndr_print_echo_Enum3(struct ndr_print *ndr, const char *name, struct echo_Enum3 *r)
+{
+	ndr_print_struct(ndr, name, "echo_Enum3");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "count", r->count);
+	ndr->depth++;
+	if (r->count) {
+		ndr_print_uint32(ndr, "count", *r->count);
+	}
+	ndr->depth--;
+	ndr->depth--;
+}
+
+void ndr_print_echo_EnumInfo(struct ndr_print *ndr, const char *name, uint16 level, union echo_EnumInfo *r)
+{
+	ndr_print_union(ndr, name, level, "echo_EnumInfo");
+	switch (level) {
+	case 1:
+	ndr_print_echo_Enum1(ndr, "enum1", &r->enum1);
+	break;
+
+	case 3:
+	ndr_print_echo_Enum3(ndr, "enum3", &r->enum3);
+	break;
+
+	default:
+		ndr_print_bad_level(ndr, name, level);
+	}
+}
+
+void ndr_print_Struct1(struct ndr_print *ndr, const char *name, struct Struct1 *r)
+{
+	ndr_print_struct(ndr, name, "Struct1");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "level", r->level);
+	ndr_print_echo_EnumInfo(ndr, "e", r->level, &r->e);
+	ndr->depth--;
 }
 
