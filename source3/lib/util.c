@@ -431,22 +431,22 @@ void make_dir_struct(char *buf,char *mask,char *fname,SMB_OFF_T size,int mode,ti
   if ((p = strchr_m(mask2,'.')) != NULL)
     {
       *p = 0;
-      memcpy(buf+1,mask2,MIN(strlen(mask2),8));
-      memcpy(buf+9,p+1,MIN(strlen(p+1),3));
+      push_ascii(buf+1,mask2,8, 0);
+      push_ascii(buf+9,p+1,3, 0);
       *p = '.';
     }
   else
-    memcpy(buf+1,mask2,MIN(strlen(mask2),11));
+      push_ascii(buf+1,mask2,11, 0);
 
   memset(buf+21,'\0',DIR_STRUCT_SIZE-21);
   CVAL(buf,21) = mode;
   put_dos_date(buf,22,date);
   SSVAL(buf,26,size & 0xFFFF);
   SSVAL(buf,28,(size >> 16)&0xFFFF);
-  StrnCpy(buf+30,fname,12);
+  push_ascii(buf+30,fname,12, 0);
   if (!case_sensitive)
     strupper(buf+30);
-  DEBUG(8,("put name [%s] into dir struct\n",buf+30));
+  DEBUG(8,("put name [%s] from [%s] into dir struct\n",buf+30, fname));
 }
 
 
