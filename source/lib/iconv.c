@@ -76,7 +76,7 @@ static size_t sys_iconv(void *cd,
   on systems that don't have iconv
  */
 size_t smb_iconv(smb_iconv_t cd, 
-		 char **inbuf, size_t *inbytesleft,
+		 const char **inbuf, size_t *inbytesleft,
 		 char **outbuf, size_t *outbytesleft)
 {
 	char cvtbuf[2048];

@@ -406,7 +406,7 @@ char *fd_load(int fd, size_t *size)
 /****************************************************************************
 load a file into memory
 ****************************************************************************/
-char *file_load(char *fname, size_t *size)
+char *file_load(const char *fname, size_t *size)
 {
 	int fd;
 	char *p;
@@ -464,7 +464,7 @@ static char **file_lines_parse(char *p, size_t size, int *numlines)
 load a file into memory and return an array of pointers to lines in the file
 must be freed with file_lines_free(). 
 ****************************************************************************/
-char **file_lines_load(char *fname, int *numlines)
+char **file_lines_load(const char *fname, int *numlines)
 {
 	char *p;
 	size_t size;
