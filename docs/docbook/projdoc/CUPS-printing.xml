@@ -573,7 +573,10 @@ Systems.Their <emphasis>Core Graphic Engine</emphasis> uses a
 <para>
 
 <figure><title>Windows Printing to a local Printer</title>
-<graphic fileref="projdoc/imagefiles/1small.png"/>
+<mediaobject>
+	<imageobject role="latex"><imagedata fileref="projdoc/imagefiles/1small"/></imageobject>
+	<imageobject><imagedata fileref="projdoc/imagefiles/1small.png"/></imageobject>
+</mediaobject>
 </figure>
 </para>
 </sect2>
@@ -655,7 +658,10 @@ is CUPS.... ;-)
 
 <para>
 <figure><title>Printing to a Postscript Printer</title>
-<graphic fileref="projdoc/imagefiles/2small.png"/>
+<mediaobject>
+	<imageobject role="latex"><imagedata fileref="projdoc/imagefiles/2small"/></imageobject>
+	<imageobject><imagedata fileref="projdoc/imagefiles/2small.png"/></imageobject>
+</mediaobject>
 </figure>
 </para>
 
@@ -685,7 +691,10 @@ to non-PostScript hardware.
 
 <para>
 <figure><title>Ghostscript as a RIP for non-postscript printers</title>
-<graphic fileref="projdoc/imagefiles/3small.png"/>
+<mediaobject>
+	<imageobject role="latex"><imagedata fileref="projdoc/imagefiles/3small"/></imageobject>
+	<imageobject><imagedata fileref="projdoc/imagefiles/3small.png"/></imageobject>
+</mediaobject>
 </figure>
 </para>
 
@@ -1090,7 +1099,10 @@ print options already embedded into the file.
 
 <para>
 <figure><title>Prefiltering in CUPS to form Postscript</title>
-<graphic fileref="projdoc/imagefiles/4small.png"/>
+<mediaobject>
+	<imageobject role="latex"><imagedata fileref="projdoc/imagefiles/4small"/></imageobject>
+	<imageobject><imagedata fileref="projdoc/imagefiles/4small.png"/></imageobject>
+</mediaobject>
 </figure>
 </para>
 </sect2>
@@ -1109,7 +1121,10 @@ stapling an punching it, etc.) into the PostScript file.
 
 <para>
 <figure><title>Adding Device-specific Print Options</title>
-<graphic fileref="projdoc/imagefiles/5small.png"/>
+<mediaobject>
+	<imageobject role="latex"><imagedata fileref="projdoc/imagefiles/5small"/></imageobject>
+	<imageobject><imagedata fileref="projdoc/imagefiles/5small.png"/></imageobject>
+</mediaobject>
 </figure>
 </para>
 
@@ -1150,7 +1165,10 @@ that are able to generate device-specific printer data.
 
 <para>
 <figure><title>Postscript to intermediate Raster format</title>
-<graphic fileref="projdoc/imagefiles/6small.png"/>
+<mediaobject>
+	<imageobject role="latex"><imagedata fileref="projdoc/imagefiles/6small"/></imageobject>
+	<imageobject><imagedata fileref="projdoc/imagefiles/6small.png"/></imageobject>
+</mediaobject>
 </figure>
 </para>
 
@@ -1169,7 +1187,10 @@ than one vendor financing the development of CUPS raster drivers).
 
 <para>
 <figure><title>CUPS-raster production using Ghostscript</title>
-<graphic fileref="projdoc/imagefiles/7small.png"/>
+<mediaobject>
+	<imageobject role="latex"><imagedata fileref="projdoc/imagefiles/7small"/></imageobject>
+	<imageobject><imagedata fileref="projdoc/imagefiles/7small.png"/></imageobject>
+</mediaobject>
 </figure>
 </para>
 
@@ -1205,7 +1226,10 @@ filtering:
 
 <para>
 <figure><title>Image format to CUPS-raster format conversion</title>
-<graphic fileref="projdoc/imagefiles/8small.png"/>
+<mediaobject>
+	<imageobject role="latex"><imagedata fileref="projdoc/imagefiles/8small"/></imageobject>
+	<imageobject><imagedata fileref="projdoc/imagefiles/8small.png"/></imageobject>
+</mediaobject>
 </figure>
 </para>
 
@@ -1230,7 +1254,10 @@ closely as possible with CUPS.
 
 <para>
 <figure><title>Raster to Printer Specific formats</title>
-<graphic fileref="projdoc/imagefiles/9small.png"/>
+<mediaobject>
+	<imageobject role="latex"><imagedata fileref="projdoc/imagefiles/9small"/></imageobject>
+	<imageobject><imagedata fileref="projdoc/imagefiles/9small.png"/></imageobject>
+</mediaobject>
 </figure>
 </para>
 </sect2>
@@ -1730,7 +1757,10 @@ advantages) than other methods.
 
 <para>
 <figure><title>cupsomatic/foomatic processing versus Native CUPS</title>
-<graphic fileref="projdoc/imagefiles/10small.png"/>
+<mediaobject>
+	<imageobject role="latex"><imagedata fileref="projdoc/imagefiles/10small"/></imageobject>
+	<imageobject><imagedata fileref="projdoc/imagefiles/10small.png"/></imageobject>
+</mediaobject>
 </figure>
 </para>
 
@@ -2018,7 +2048,10 @@ clients.
 
 <para>
 <figure><title>Print Driver execution on the Client</title>
-<graphic fileref="projdoc/imagefiles/11small.png"/>
+<mediaobject>
+	<imageobject role="latex"><imagedata fileref="projdoc/imagefiles/11small"/></imageobject>
+	<imageobject><imagedata fileref="projdoc/imagefiles/11small.png"/></imageobject>
+</mediaobject>
 </figure>
 </para>
 </sect2>
@@ -2038,7 +2071,10 @@ understand.
 
 <para>
 <figure><title>Print Driver execution on the Server</title>
-<graphic fileref="projdoc/imagefiles/12small.png"/>
+<mediaobject>
+	<imageobject role="latex"><imagedata fileref="projdoc/imagefiles/12small"/></imageobject>
+	<imageobject><imagedata fileref="projdoc/imagefiles/12small.png"/></imageobject>
+</mediaobject>
 </figure>
 </para>
 
@@ -2113,7 +2149,10 @@ simply use <parameter>printing = sysv</parameter>).
 
 <para>
 <figure><title>Printing via CUPS/samba server</title>
-<graphic fileref="projdoc/imagefiles/13small.png"/>
+<mediaobject>
+	<imageobject role="latex"><imagedata fileref="projdoc/imagefiles/13small"/></imageobject>
+	<imageobject><imagedata fileref="projdoc/imagefiles/13small.png"/></imageobject>
+</mediaobject>
 </figure>
 </para>
 </sect2>
@@ -3013,7 +3052,10 @@ not intended to, and does not work with, "raw" queues!
 
 <para>
 <figure><title>cupsaddsmb flowchart</title>
-<graphic fileref="projdoc/imagefiles/14small.png"/>
+<mediaobject>
+	<imageobject role="latex"><imagedata fileref="projdoc/imagefiles/1small"/></imageobject>
+	<imageobject><imagedata fileref="projdoc/imagefiles/1small.png"/></imageobject>
+</mediaobject>
 </figure>
 </para>
 </sect2>
@@ -3462,7 +3504,7 @@ driver installed".
 
 <sect3>
 <title>Fourth Step: Put all required Driver Files into Samba's
-<parameter>[print$]</parameter></title>
+[print$]</title>
 
 <para><screen>
 
@@ -5746,7 +5788,10 @@ files from the Adobe website.</para></listitem></varlistentry>
 
 <para>
 <figure><title>CUPS Printing Overview</title>
-<graphic fileref="projdoc/imagefiles/a_small.png"/>
+<mediaobject>
+	<imageobject role="latex"><imagedata fileref="projdoc/imagefiles/a_small"/></imageobject>
+	<imageobject><imagedata fileref="projdoc/imagefiles/a_small.png"/></imageobject>
+</mediaobject>
 </figure>
 </para>
 </sect2>
