@@ -152,6 +152,15 @@ via the %%o substitution. With encrypted passwords this is not possible.\n", lp_
 		ret = 1;
 	}
 
+	if (strlen(lp_winbind_separator()) != 1) {
+		printf("ERROR: the 'winbind separator' parameter must be a single character.\n");
+		ret = 1;
+	}
+
+	if (*lp_winbind_separator() == '+') {
+		printf("'winbind separator = +' might cause problems with group membership.\n");
+	}
+
 	return ret;
 }   
 
