@@ -6,6 +6,7 @@
 #endif
 
 #include <sys/types.h>
+#include <sys/time.h>
 #include <stdarg.h>
 
 #ifdef HAVE_SYS_BITYPES_H
@@ -393,6 +394,28 @@ krb5_free_krbhst (krb5_context context,
 
 extern const char krb5_config_file[];
 extern const char krb5_defkeyname[];
+
+void krb5_free_context(krb5_context context);
+
+
+krb5_error_code
+krb5_get_all_client_addrs (krb5_addresses *res);
+
+krb5_error_code
+krb5_set_default_in_tkt_etypes(krb5_context context, 
+			       const krb5_enctype *etypes);
+krb5_error_code
+krb5_get_default_in_tkt_etypes(krb5_context context,
+			       krb5_enctype **etypes);
+
+
+krb5_error_code
+krb5_string_to_key (char *str,
+		    krb5_data *salt,
+		    krb5_keyblock *key);
+
+
+#include "cache.h"
 
 
 #endif /* __KRB5_H__ */

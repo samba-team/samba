@@ -11,13 +11,19 @@
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/ioctl.h>
+
+extern int ioctl(int, int, ...);
+
+
 #include <sys/param.h>
 #include <time.h>
 #include <sys/time.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
+#ifdef HAVE_SYS_FILIO_H
 #include <sys/filio.h>
+#endif
 #include <des.h>
 
 #include "krb5.h"
@@ -32,6 +38,23 @@ krb5_error_code krb5_principal_alloc(krb5_principal*);
 void 		krb5_principal_free(krb5_principal);
 
 krb5_error_code krb5_get_lrealm(char ** realm);
+
+krb5_error_code
+krb5_parse_config_file(k5_cfile **cfile, const char *filename);
+
+krb5_error_code
+krb5_get_config_tag(k5_cfile *cf, const char *tag, char **value);
+
+int
+krb5_getportbyname (const char *service,
+		    const char *proto,
+		    int default_port);
+
+krb5_error_code
+krb5_sendto_kdc (krb5_context context,
+		 const krb5_data *send,
+		 const krb5_data *realm,
+		 krb5_data *receive);
 
 
 
