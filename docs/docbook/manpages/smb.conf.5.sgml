@@ -3546,7 +3546,7 @@
 		</varlistentry>
 
 		<varlistentry>
-		<term><anchor id="LDAPTRUSTUIDS">ldap trust uids (G)</term>
+		<term><anchor id="LDAPTRUSTIDS">ldap trust ids (G)</term>
 		<listitem><para>Normally, Samba validates each entry
 		in the LDAP server against getpwnam().  This allows
 		LDAP to be used for Samba with the unix system using
