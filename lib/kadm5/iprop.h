@@ -42,6 +42,9 @@
 #define __IPROP_H__
 
 #include "kadm5_locl.h"
+#ifdef HAVE_SYS_SELECT_H
+#include <sys/select.h>
+#endif
 
 #define IPROP_VERSION "iprop-0.0"
 
