@@ -1836,8 +1836,8 @@ or it is a member of a domain using link(bf("security = domain"))(security),
 the latter format can be used: the default Domain name is the Samba Server's
 Domain name, specified by link(bf("workgroup = MYGROUP"))(workgroup).
 
-Any UNIX groups that are em(NOT) specified in this map file are assumed
-to be Domain Groups, but it depends on the role of the Samba Server.
+Any UNIX groups that are em(NOT) specified in this map file are assumed to
+be either Local or Domain Groups, depending on the role of the Samba Server.
 
 In the case when Samba is an bf(EXPERIMENTAL) Domain Controller, Samba
 will present em(ALL) such unspecified UNIX groups as its own NT Domain
@@ -2007,7 +2007,7 @@ In the case when Samba is an bf(EXPERIMENTAL) Domain Controller, Samba
 will present em(ALL) such unspecified UNIX users as its own NT Domain
 Users, with the same name.
 
-In the case where Samba is member of a domain using
+In the case where Samba is a member of a domain using
 link(bf("security = domain"))(security), Samba will check the UNIX name with
 its Domain Controller (see link(bf("password server"))(passwordserver))
 as if it was an NT Domain User.  If the Domain Controller says that it is not,
@@ -2782,7 +2782,7 @@ the latter format can be used: the default Domain name is the Samba Server's
 Domain name, specified by link(bf("workgroup = MYGROUP"))(workgroup).
 
 Any UNIX groups that are em(NOT) specified in this map file are treated
-as Local Groups depending on the role of the Samba Server.
+as either Local or Domain Groups depending on the role of the Samba Server.
 
 In the case when Samba is an bf(EXPERIMENTAL) Domain Controller, Samba
 will present em(ALL) unspecified UNIX groups as its own NT Domain

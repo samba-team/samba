@@ -2,9 +2,9 @@
    Unix SMB/Netbios implementation.
    Version 1.9.
    SMB parameters and setup
-   Copyright (C) Andrew Tridgell 1992-1997
-   Copyright (C) Luke Kenneth Casson Leighton 1996-1997
-   Copyright (C) Paul Ashton 1997
+   Copyright (C) Andrew Tridgell 1992-1998
+   Copyright (C) Luke Kenneth Casson Leighton 1996-1998
+   Copyright (C) Paul Ashton 1997-1998
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -694,8 +694,6 @@ typedef struct r_samr_query_dispinfo_info
 
 } SAMR_R_QUERY_DISPINFO;
 
-
-#define SAMR_CREATE_DOM_GROUP  0x0a
 
 /* SAMR_Q_CREATE_DOM_GROUP - SAM create group */
 typedef struct q_samr_create_dom_group_info

@@ -1609,9 +1609,9 @@ BOOL do_samr_open_domain(struct cli_state *cli,
 				POLICY_HND *domain_pol);
 BOOL do_samr_query_unknown_12(struct cli_state *cli, 
 				POLICY_HND *pol, uint32 rid, uint32 num_gids, uint32 *gids,
-				uint32 *num_aliases,
-				fstring als_names    [MAX_LOOKUP_SIDS],
-				uint32  num_als_users[MAX_LOOKUP_SIDS]);
+				uint32 *num_names,
+				fstring names[MAX_LOOKUP_SIDS],
+				uint32  type [MAX_LOOKUP_SIDS]);
 BOOL do_samr_query_useraliases(struct cli_state *cli, 
 				POLICY_HND *pol, DOM_SID *sid,
 				uint32 *num_aliases, uint32 *rid);
@@ -2053,6 +2053,26 @@ void samr_io_group_info1(char *desc,  GROUP_INFO1 *gr1, prs_struct *ps, int dept
 void make_samr_group_info4(GROUP_INFO4 *gr4, char *acct_desc);
 void samr_io_group_info4(char *desc,  GROUP_INFO4 *gr4, prs_struct *ps, int depth);
 void samr_group_info_ctr(char *desc,  GROUP_INFO_CTR *ctr, prs_struct *ps, int depth);
+void make_samr_q_create_dom_group(SAMR_Q_CREATE_DOM_GROUP *q_e,
+				POLICY_HND *pol,
+				char *acct_desc);
+void samr_io_q_create_dom_group(char *desc,  SAMR_Q_CREATE_DOM_GROUP *q_e, prs_struct *ps, int depth);
+void make_samr_r_create_dom_group(SAMR_R_CREATE_DOM_GROUP *r_u, POLICY_HND *pol,
+		uint32 rid, uint32 status);
+void samr_io_r_create_dom_group(char *desc,  SAMR_R_CREATE_DOM_GROUP *r_u, prs_struct *ps, int depth);
+void make_samr_q_add_groupmem(SAMR_Q_ADD_GROUPMEM *q_e,
+				POLICY_HND *pol,
+				uint32 rid);
+void samr_io_q_add_groupmem(char *desc,  SAMR_Q_ADD_GROUPMEM *q_e, prs_struct *ps, int depth);
+void make_samr_r_add_groupmem(SAMR_R_ADD_GROUPMEM *r_u, POLICY_HND *pol,
+		uint32 status);
+void samr_io_r_add_groupmem(char *desc,  SAMR_R_ADD_GROUPMEM *r_u, prs_struct *ps, int depth);
+void make_samr_q_set_groupinfo(SAMR_Q_SET_GROUPINFO *q_e,
+				POLICY_HND *pol, GROUP_INFO_CTR *ctr);
+void samr_io_q_set_groupinfo(char *desc,  SAMR_Q_SET_GROUPINFO *q_e, prs_struct *ps, int depth);
+void make_samr_r_set_groupinfo(SAMR_R_SET_GROUPINFO *r_u, 
+		uint32 status);
+void samr_io_r_set_groupinfo(char *desc,  SAMR_R_SET_GROUPINFO *r_u, prs_struct *ps, int depth);
 void make_samr_q_query_groupinfo(SAMR_Q_QUERY_GROUPINFO *q_e,
 				POLICY_HND *pol,
 				uint16 switch_level);
@@ -2115,7 +2135,7 @@ void make_samr_q_unknown_12(SAMR_Q_UNKNOWN_12 *q_u,
 		uint32 num_gids, uint32 *gid);
 void samr_io_q_unknown_12(char *desc,  SAMR_Q_UNKNOWN_12 *q_u, prs_struct *ps, int depth);
 void make_samr_r_unknown_12(SAMR_R_UNKNOWN_12 *r_u,
-		uint32 num_aliases, fstring *als_name, uint8 *num_als_usrs,
+		uint32 num_names, fstring *name, uint8 *type,
 		uint32 status);
 void samr_io_r_unknown_12(char *desc,  SAMR_R_UNKNOWN_12 *r_u, prs_struct *ps, int depth);
 void make_samr_q_delete_alias(SAMR_Q_DELETE_DOM_ALIAS *q_u, POLICY_HND *hnd);
