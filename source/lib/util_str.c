@@ -442,7 +442,9 @@ char *safe_strcpy(char *dest,const char *src, size_t maxlength)
 		return NULL;
 	}
 
+#ifdef DEVELOPER
 	dest[maxlength]='\0';
+#endif
 
 	if (!src) {
 		*dest = 0;
