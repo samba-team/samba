@@ -14,11 +14,16 @@ CPPFLAGS=@CPPFLAGS@
 LDFLAGS=@LDFLAGS@
 AWK=@AWK@
 
+LIBTOOL=@LIBTOOL@ --quiet
+LIBTOOL_DEPS=@LIBTOOL_DEPS@
+LINK=$(LIBTOOL) --mode=link $(CC) $(FLAGS) $(LDFLAGS)
+
 INSTALLCMD=@INSTALL@
 
 VPATH=@srcdir@
 srcdir=@srcdir@
 builddir=@builddir@
+top_builddir=.
 SHELL=/bin/sh
 
 BASEDIR= @prefix@
@@ -297,7 +302,7 @@ debug2html : CHECK bin/debug2html
 smbfilter : CHECK bin/smbfilter
 
 .SUFFIXES:
-.SUFFIXES: .c .o .po .po32
+.SUFFIXES: .c .o .po .po32 .lo
 
 CHECK:
 	@echo "Using FLAGS = $(FLAGS)"
@@ -326,6 +331,21 @@ MAKEDIR = || exec false; \
 	  -o $@ @MAINT@ -Wp,-MD,.deps/$@
 @BROKEN_CC@	-mv `echo $@ | sed 's%^.*/%%g'` $@
 @MAINT@	@sed 's|^'`echo $@ | sed 's,.*/,,'`':|$@:|' \
+@MAINT@	  <.deps/$@ >.deps/$@d && \
+@MAINT@	rm -f .deps/$@ && : >.deps/.stamp
+
+# This is for libtool
+.c.lo: @MAINT@ .deps/.dummy
+	@if (: >> $@ || : > $@) >/dev/null 2>&1; then rm -f $@; else \
+	  dir=`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` $(MAKEDIR); fi
+@MAINT@	@if (: >> .deps/$@ || : > .deps/$@) >/dev/null 2>&1; then :; \
+@MAINT@	 else dir=.deps/`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` \
+@MAINT@	      $(MAKEDIR); fi; rm -f .deps/$@ .deps/$@d
+	@echo Compiling $< with libtool
+	@$(LIBTOOL) --mode=compile \
+	  $(CC) -I. -I$(srcdir) $(FLAGS) -c $< \
+	  -o $@ @MAINT@ -Wp,-MD,.deps/$@
+@MAINT@	@sed 's|^.*'`echo $* | sed 's,.*/,,'`'.*:|$@:|' \
 @MAINT@	  <.deps/$@ >.deps/$@d && \
 @MAINT@	rm -f .deps/$@ && : >.deps/.stamp
 
