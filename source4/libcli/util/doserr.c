@@ -68,8 +68,18 @@ static const struct werror_code_struct dos_errs[] =
 	{ "WERR_INVALID_SECURITY_DESCRIPTOR", WERR_INVALID_SECURITY_DESCRIPTOR },
 	{ "WERR_INVALID_OWNER", WERR_INVALID_OWNER },
 	{ "WERR_DS_OBJ_NOT_FOUND", WERR_DS_OBJ_NOT_FOUND },
+	{ "WERR_GENERAL_FAILURE", WERR_GENERAL_FAILURE },
+	{ "WERR_PRINTQ_FULL", WERR_PRINTQ_FULL },
+	{ "WERR_NO_SPOOL_SPACE", WERR_NO_SPOOL_SPACE },
+	{ "WERR_CAN_NOT_COMPLETE", WERR_CAN_NOT_COMPLETE },
+	{ "WERR_SERVER_UNAVAILABLE", WERR_SERVER_UNAVAILABLE },
 	{ NULL, W_ERROR(0) }
 };
+
+
+
+
+/* DFS errors */
 
 /*****************************************************************************
  returns a windows error message.  not amazingly helpful, but better than a number.
