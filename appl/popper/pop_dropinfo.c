@@ -48,6 +48,76 @@ error:
 }
 #endif
 
+void
+parse_header(MsgInfoList *mp, char *buffer)
+{
+#if defined(UIDL) || defined(XOVER)
+    if (strncasecmp("Message-Id:",buffer, 11) == 0) {
+	if (mp->msg_id == NULL)
+	    mp->msg_id = find_value_after_colon(buffer);
+    } 
+#ifdef UIDL
+    else if (strncasecmp(buffer, "X-UIDL:", 7) == 0) {
+	/* Courtesy to Qualcomm, there really is no such 
+	   thing as X-UIDL */
+	mp->msg_id = find_value_after_colon(buffer);
+    }
+#endif
+#endif
+#ifdef XOVER
+    else if (strncasecmp("Subject:", buffer, 8) == 0) {
+	if(mp->subject == NULL){
+	    char *p;
+	    mp->subject = find_value_after_colon(buffer);
+	    for(p = mp->subject; *p; p++)
+		if(*p == '\t') *p = ' ';
+	}
+    }
+    else if (strncasecmp("From:", buffer, 5) == 0) {
+	if(mp->from == NULL){
+	    char *p;
+	    mp->from = find_value_after_colon(buffer);
+	    for(p = mp->from; *p; p++)
+		if(*p == '\t') *p = ' ';
+	}
+    }
+    else if (strncasecmp("Date:", buffer, 5) == 0) {
+	if(mp->date == NULL){
+	    char *p;
+	    mp->date = find_value_after_colon(buffer);
+	    for(p = mp->date; *p; p++)
+		if(*p == '\t') *p = ' ';
+	}
+    }
+#endif
+}
+
+int
+add_missing_headers(POP *p, MsgInfoList *mp)
+{
+#if defined(UIDL) || defined(XOVER)
+    if (mp->msg_id == NULL) {
+	asprintf(&mp->msg_id, "no-message-id-%d", mp->number);
+	if(mp->msg_id == NULL) {
+	    fclose (p->drop);
+	    p->msg_count = 0;
+	    return pop_msg (p,POP_FAILURE,
+			    "Can't build message list for '%s': Out of memory",
+                            p->user);
+	}
+    }
+#endif	    
+#ifdef XOVER
+    if (mp->subject == NULL)
+	mp->subject = "<none>";
+    if (mp->from == NULL)
+	mp->from = "<unknown>";
+    if (mp->date == NULL)
+	mp->date = "<unknown>";
+#endif
+    return POP_SUCCESS;
+}
+
 /* 
  *  dropinfo:   Extract information about the POP maildrop and store 
  *  it for use by the other POP routines.
@@ -126,70 +196,15 @@ pop_dropinfo(POP *p)
 			"Msg %d at offset %ld being added to list",
 			mp->number, mp->offset);
 #endif /* DEBUG */
-        }else if(in_header){
-#if defined(UIDL) || defined(XOVER)
-	    if (strncasecmp("Message-Id:",buffer, 11) == 0) {
-		if (mp->msg_id == 0)
-		    mp->msg_id = find_value_after_colon(buffer);
-	    } 
-#ifdef UIDL
-	    else if (strncasecmp(buffer, "X-UIDL:", 7) == 0) {
-		/* Courtesy to Qualcomm, there really is no such 
-		   thing as X-UIDL */
-		mp->msg_id = find_value_after_colon(buffer);
-	    }
-#endif
-#endif
-#ifdef XOVER
-	    else if (strncasecmp("Subject:", buffer, 8) == 0) {
-		if(mp->subject == NULL){
-		    char *p;
-		    mp->subject = find_value_after_colon(buffer);
-		    for(p = mp->subject; *p; p++)
-			if(*p == '\t') *p = ' ';
-		}
-	    }
-	    else if (strncasecmp("From:", buffer, 5) == 0) {
-		if(mp->from == NULL){
-		    char *p;
-		    mp->from = find_value_after_colon(buffer);
-		    for(p = mp->from; *p; p++)
-			if(*p == '\t') *p = ' ';
-		}
-	    }
-	    else if (strncasecmp("Date:", buffer, 5) == 0) {
-		if(mp->date == NULL){
-		    char *p;
-		    mp->date = find_value_after_colon(buffer);
-		    for(p = mp->date; *p; p++)
-			if(*p == '\t') *p = ' ';
-		}
-	    }
-#endif
-	}
+        }else if(in_header)
+	    parse_header(mp, buffer);
 	blank_line = (strncmp(buffer, "\n", nchar) == 0);
 	if(blank_line) {
+	    int e;
 	    in_header = 0;
-#if defined(UIDL) || defined(XOVER)
-	    if (mp->msg_id == NULL) {
-		asprintf(&mp->msg_id, "no-message-id-%d", mp->number);
-		if(mp->msg_id == NULL) {
-                    fclose (p->drop);
-                    p->msg_count = 0;
-                    return pop_msg (p,POP_FAILURE,
-                        "Can't build message list for '%s': Out of memory",
-                            p->user);
-                }
-	    }
-#endif	    
-#ifdef XOVER
-	    if (mp->subject == 0)
-		mp->subject = "<none>";
-	    if (mp->from == 0)
-		mp->from = "<unknown>";
-	    if (mp->date == 0)
-		mp->date = "<unknown>";
-#endif
+	    e = add_missing_headers(p, mp);
+	    if(e != POP_SUCCESS)
+		return e;
 	}
         mp->length += nchar;
         p->drop_size += nchar;
