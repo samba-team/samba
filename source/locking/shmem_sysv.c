@@ -597,8 +597,8 @@ struct shmem_ops *sysv_shm_open(int ronly)
 
 	if (!read_only) {
 		if (sem_ds.sem_perm.cuid != 0 || ((sem_ds.sem_perm.cgid != root_gid) && (sem_ds.sem_perm.cgid != 0))) {
-			DEBUG(0,("ERROR: root did not create the semaphore: semgid=%d, rootgid=%d\n",
-                  sem_ds.sem_perm.cgid, root_gid));
+			DEBUG(0,("ERROR: root did not create the semaphore: semgid=%u, rootgid=%u\n",
+                  (unsigned int)sem_ds.sem_perm.cgid, (unsigned int)root_gid));
 			return NULL;
 		}
 
