@@ -58,6 +58,7 @@ unsigned int   Ucrit_IsActive = 0;                    /* added by OH */
  void unbecome_root(BOOL restore_dir) {}
 connection_struct Connections[MAX_CONNECTIONS];
 files_struct Files[MAX_OPEN_FILES];
+struct current_user current_user;
 
 
 static void print_share_mode(share_mode_entry *e, char *fname)

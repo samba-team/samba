@@ -39,6 +39,14 @@ extern int DEBUGLEVEL;
 #define IPC_PERMS 0644
 #endif
 
+#ifdef SECURE_SEMAPHORES
+/* secure semaphores are slow because we have to do a become_root()
+   on every call! */
+#define SEMAPHORE_PERMS IPC_PERMS
+#else
+#define SEMAPHORE_PERMS 0666
+#endif
+
 #ifdef SEMMSL
 #define SHMEM_HASH_SIZE (SEMMSL-1)
 #else
@@ -92,45 +100,49 @@ static BOOL shm_initialize_called = False;
 
 static int read_only;
 
-static BOOL sem_lock(int i)
+static BOOL sem_change(int i, int op)
 {
+#ifdef SECURE_SEMAPHORES
+	extern struct current_user current_user;
+	int became_root=0;
+#endif
 	struct sembuf sb;
-	if (read_only) return True;
-	
-	sb.sem_num = i;
-	sb.sem_op = -1;
-	sb.sem_flg = SEM_UNDO;
+	int ret;
 
-	if (semop(sem_id, &sb, 1) != 0) {
-		DEBUG(0,("ERROR: IPC lock failed on semaphore %d\n", i));
-		return False;
-	}
-
-	return True;
-}
-
-static BOOL sem_unlock(int i)
-{
-	struct sembuf sb;
 	if (read_only) return True;
 
+#ifdef SECURE_SEMAPHORES
+	if (current_user.uid != 0) {
+		become_root(0);
+		became_root = 1;
+	}
+#endif
+
 	sb.sem_num = i;
-	sb.sem_op = 1;
+	sb.sem_op = op;
 	sb.sem_flg = SEM_UNDO;
 
-	if (semop(sem_id, &sb, 1) != 0) {
-		DEBUG(0,("ERROR: IPC unlock failed on semaphore %d\n", i));
-		return False;
+	ret = semop(sem_id, &sb, 1);
+
+	if (ret != 0) {
+		DEBUG(0,("ERROR: sem_change(%d,%d) failed (%s)\n", 
+			 i, op, strerror(errno)));
 	}
 
-	return True;
+#ifdef SECURE_SEMAPHORES
+	if (became_root) {
+		unbecome_root(0);
+	}
+#endif
+
+	return ret == 0;
 }
 
 static BOOL global_lock(void)
 {
 	global_lock_count++;
 	if (global_lock_count == 1)
-		return sem_lock(0);
+		return sem_change(0, -1);
 	return True;
 }
 
@@ -138,7 +150,7 @@ static BOOL global_unlock(void)
 {
 	global_lock_count--;
 	if (global_lock_count == 0)
-		return sem_unlock(0);
+		return sem_change(0, 1);
 	return True;
 }
 
@@ -461,8 +473,7 @@ static int shm_get_userdef_off(void)
   ******************************************************************/
 static BOOL shm_lock_hash_entry(unsigned int entry)
 {
-	DEBUG(0,("hash lock %d\n", entry));
-	return sem_lock(entry+1);
+	return sem_change(entry+1, -1);
 }
 
 /*******************************************************************
@@ -470,8 +481,7 @@ static BOOL shm_lock_hash_entry(unsigned int entry)
   ******************************************************************/
 static BOOL shm_unlock_hash_entry(unsigned int entry)
 {
-	DEBUG(0,("hash unlock %d\n", entry));
-	return sem_unlock(entry+1);
+	return sem_change(entry+1, 1);
 }
 
 
@@ -545,7 +555,7 @@ struct shmem_ops *sysv_shm_open(int ronly)
 
 		while (hash_size > 1) {
 			sem_id = semget(SEMAPHORE_KEY, hash_size+1, 
-					IPC_CREAT | IPC_EXCL | IPC_PERMS);
+					IPC_CREAT|IPC_EXCL| SEMAPHORE_PERMS);
 			if (sem_id != -1 || errno != EINVAL) break;
 			hash_size--;
 		}
@@ -583,6 +593,11 @@ struct shmem_ops *sysv_shm_open(int ronly)
 		if (sem_ds.sem_perm.cuid != 0 || sem_ds.sem_perm.cgid != 0) {
 			DEBUG(0,("ERROR: root did not create the semaphore\n"));
 			return NULL;
+		}
+
+		sem_ds.sem_perm.mode = SEMAPHORE_PERMS;
+		if (semctl(sem_id, 0, IPC_SET, su) != 0) {
+			DEBUG(0,("ERROR shm_open : can't IPC_SET\n"));
 		}
 	}
 
