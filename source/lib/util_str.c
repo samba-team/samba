@@ -1333,6 +1333,20 @@ char *binary_string(char *buf, int len)
 	return s;
 }
 
+#ifndef HAVE_STRNLEN
+/*******************************************************************
+ Some platforms don't have strnlen
+********************************************************************/
+
+ size_t strnlen(const char *s, size_t n)
+{
+	int i;
+	for (i=0; s[i] && i<n; i++)
+		/* noop */ ;
+	return i;
+}
+#endif
+
 #ifndef HAVE_STRNDUP
 /*******************************************************************
  Some platforms don't have strndup.
@@ -1350,19 +1364,5 @@ char *binary_string(char *buf, int len)
 	ret[n] = 0;
 
 	return ret;
-}
-#endif
-
-#ifndef HAVE_STRNLEN
-/*******************************************************************
- Some platforms don't have strnlen
-********************************************************************/
-
- size_t strnlen(const char *s, size_t n)
-{
-	int i;
-	for (i=0; s[i] && i<n; i++)
-		/* noop */ ;
-	return i;
 }
 #endif
