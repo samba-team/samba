@@ -2052,7 +2052,8 @@ static BOOL set_user_info_24(SAM_USER_INFO_24 *id24, uint32 rid)
 	struct sam_passwd new_pwd;
 	static uchar nt_hash[16];
 	static uchar lm_hash[16];
-	pstring new_pw;
+	UNISTR2 new_pw;
+	uint32 len;
 
 	if (pwd == NULL)
 	{
@@ -2062,16 +2063,15 @@ static BOOL set_user_info_24(SAM_USER_INFO_24 *id24, uint32 rid)
 	pwdb_init_sam(&new_pwd);
 	copy_sam_passwd(&new_pwd, pwd);
 
-	if (!decode_pw_buffer(id24->pass, new_pw, sizeof(new_pw), True))
+	if (!decode_pw_buffer(id24->pass, (char *)new_pw.buffer, 256, &len))
 	{
 		return False;
 	}
 
-#ifdef DEBUG_PASSWORD
-	DEBUG(0,("New Password: %s\n", new_pw));
-#endif
+	new_pw.uni_max_len = len / 2;
+	new_pw.uni_str_len = len / 2;
 
-	nt_lm_owf_gen(new_pw, nt_hash, lm_hash);
+	nt_lm_owf_genW(&new_pw, nt_hash, lm_hash);
 
 	new_pwd.smb_passwd    = lm_hash;
 	new_pwd.smb_nt_passwd = nt_hash;
@@ -2088,7 +2088,8 @@ static BOOL set_user_info_23(SAM_USER_INFO_23 *id23, uint32 rid)
 	struct sam_passwd new_pwd;
 	static uchar nt_hash[16];
 	static uchar lm_hash[16];
-	pstring new_pw;
+	UNISTR2 new_pw;
+	uint32 len;
 
 	if (id23 == NULL)
 	{
@@ -2104,16 +2105,15 @@ static BOOL set_user_info_23(SAM_USER_INFO_23 *id23, uint32 rid)
 	copy_sam_passwd(&new_pwd, pwd);
 	copy_id23_to_sam_passwd(&new_pwd, id23);
 
-	if (!decode_pw_buffer(id23->pass, new_pw, sizeof(new_pw), True))
+	if (!decode_pw_buffer(id23->pass, (char*)new_pw.buffer, 256, &len))
 	{
 		return False;
 	}
 
-#ifdef DEBUG_PASSWORD
-	DEBUG(0,("New Password: %s\n", new_pw));
-#endif
+	new_pw.uni_max_len = len / 2;
+	new_pw.uni_str_len = len / 2;
 
-	nt_lm_owf_gen(new_pw, nt_hash, lm_hash);
+	nt_lm_owf_genW(&new_pw, nt_hash, lm_hash);
 
 	new_pwd.smb_passwd    = lm_hash;
 	new_pwd.smb_nt_passwd = nt_hash;
