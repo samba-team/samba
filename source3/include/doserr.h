@@ -71,6 +71,7 @@
 #define ERRnomoreitems 259
 #define ERRbaddirectory 267 /* Invalid directory name in a path. */
 #define ERReasnotsupported 282 /* Extended attributes */
+#define ERRlogonfailure 1326 /* Unknown username or bad password */
 #define ERRbuftoosmall 2123
 #define ERRunknownipc 2142
 #define ERRnosuchprintjob 2151
