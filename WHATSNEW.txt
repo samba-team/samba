@@ -1,6 +1,15 @@
               WHATS NEW IN Samba 3.0 alphaX
               =============================
 
+Changes in alpha4
+
+- fixed nexus/win9x user list (jfm)
+- fixed large user/group lists in winbindd (tridge)
+- fixed gssapi headers in redhat (jmcd)
+- fixed rap error code handling (jra)
+- more usermanager rpc calls (jfm)
+- re-added RAP calls at top level to net command (tridge)
+
 Changes in alpha3
 
 - fixed a silly tdb bug in alpha2 that affected internal databases
