@@ -1437,11 +1437,11 @@ static int call_trans2qfsinfo(connection_struct *conn, char *inbuf, char *outbuf
 			SMB_BIG_UINT dfree,dsize,bsize;
 			data_len = 32;
 			conn->vfs_ops.disk_free(conn,".",False,&bsize,&dfree,&dsize);	
-			SBIG_UINT(pdata,0,dsize);
-			SBIG_UINT(pdata,8,dsize);
-			SBIG_UINT(pdata,16,dfree);
-			SIVAL(pdata,24,bsize/512);
-			SIVAL(pdata,28,512);
+			SBIG_UINT(pdata,0,dsize); /* Total Allocation units. */
+			SBIG_UINT(pdata,8,dfree); /* Caller available allocation units. */
+			SBIG_UINT(pdata,16,dfree); /* Actual available allocation units. */
+			SIVAL(pdata,24,bsize/512); /* Sectors per allocation unit. */
+			SIVAL(pdata,28,512); /* Bytes per sector. */
 			break;
 		}
 
