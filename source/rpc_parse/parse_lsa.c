@@ -214,16 +214,12 @@ static void init_lsa_obj_attr(LSA_OBJ_ATTR *attr, uint32 attributes, LSA_SEC_QOS
 static BOOL lsa_io_obj_attr(const char *desc, LSA_OBJ_ATTR *attr, prs_struct *ps, 
 			    int depth)
 {
-	uint32 start;
-
 	prs_debug(ps, depth, desc, "lsa_io_obj_attr");
 	depth++;
 
 	if(!prs_align(ps))
 		return False;
 	
-	start = prs_offset(ps);
-
 	/* these pointers had _better_ be zero, because we don't know
 	   what they point to!
 	 */
@@ -239,15 +235,6 @@ static BOOL lsa_io_obj_attr(const char *desc, LSA_OBJ_ATTR *attr, prs_struct *ps
 		return False;
 	if(!prs_uint32("ptr_sec_qos ", ps, depth, &attr->ptr_sec_qos )) /* security quality of service (pointer) */
 		return False;
-
-	/* code commented out as it's not necessary true (tested with hyena). JFM, 11/22/2001 */
-#if 0
-	if (attr->len != prs_offset(ps) - start) {
-		DEBUG(3,("lsa_io_obj_attr: length %x does not match size %x\n",
-		         attr->len, prs_offset(ps) - start));
-		return False;
-	}
-#endif
 
 	if (attr->ptr_sec_qos != 0) {
 		if (UNMARSHALLING(ps))

@@ -1,109 +1,33 @@
-		   =================================
-                   Release Notes for Samba 3.0.11rc1
-                                Jan 28, 2005
-                   ==================================
+		   ==============================
+                   Release Notes for Samba 3.0.11
+                             XXX XX, 2005
+                   ==============================
 
-This is a release candidate of the Samba 3.0.11 code base and is 
-provided for testing only.  While close to the final stable release, 
-this snapshot is *not* intended for production servers.  If all 
-goes well, this this version will become the final 3.0.11 stable 
-release (with possible minor changes).
+This is the latest stable release of Samba. This is the version
+that production Samba servers should be running for all current
+bug-fixes.  Please read the following important changes in this 
+release.
 
-Common bugs fixed in 3.0.11rc1 include:
+Common bugs fixed in 3.0.11 include:
 
   o Crash in smbd when using CUPS printing.
   o Parsing error of other SIDs included in the user_info_3
     structure returned from domain controllers.
-    
-
-######################################################################
-Changes
-#######
-
-Changes since 3.0.11pre2
-------------------------
-
-smb.conf changes
-----------------
-
-    Parameter Name                      Action
-    --------------                      ------
-    winbind enable local accounts	Deprecated
-
-
-commits
--------
-o   Jeremy Allison <jra@samba.org>
-    * BUG 2092: Prevent auto-anonymous logins via libsmbclient 
-      for better use by desktop environments such as GNOME.
-    * Ensure we can't remove a level II oplock without having the
-      shared memory area locked.
-            
-
-o   Gerald (Jerry) Carter <jerry@samba.org>
-    * RedHat and Fedora Packaging fixes for perl dependencies.
-    * Remove unused schema items from OpenLDAP schema file.
-    * Remove duplicate enumeration of "Windows x86" architecture
-      when listing printer drivers via rpcclient.
-    * Fail set_privileges() if 'enable privileges = no' to prevent 
-      confused admins.
-    * Fix segfault in cups_queue_get().
-    * Tighten restrictions on changing user passwords when 
-      the connected user possesses the SeMachineAccountPrivilege.
-    * Ensure we set NETBIOSNAME.domainname for the long machine name
-      when publishing printers in AD (based on input from Rob Foehl).
-    * Mark 'winbind enable local accounts' as deprecated.
-    * Mark testprns tool as deprecated.
-    * Allow root to grant/revoke privilege assignments.
-    * Correct interaction between user rights and se_access_check() on
-      SAMR objects.
-    * BUG 2286: Fix typo OpenLDAP schema file for sambaConfig object 
-      class.
-
- 
-o   Guenther Deschner <gd@samba.org>
-    * Fix configure.in tests using KRB5_CONFIG variable and krb5-
-      config utility.
-    * Require assignment of Administrator SID in the passdb 
-      backend.  Fall back to the default name of 'Administrator' if
-      the lookup fails rather than using the first name in the
-      default 'admin users' list.
-    * Enhance LDAP failure debug messages.
-    
-    
-o   Volker Lendecke <vl@samba.org>
-    * Allow 'rpcclient -c enumtrust' to enumerate more than 10 trusts.
-    * Fix parsing of other_sids in net_user_info3.
-    * Correct bad failure logic when user was not a member of any 
-      domain local groups.
-    
-
-Changes for older versions follow below:
-
-      --------------------------------------------------
-		   
-		   ==================================
-                   Release Notes for Samba 3.0.11pre2
-                                Jan 21, 2005
-                   ===================================
-
-This is a preview release of the Samba 3.0.11 code base and
-is provided for testing only.  This release is *not* intended
-for production servers.  However, there have been several bug
-fixes since 3.0.10 that we feel are important to make available
-to the Samba community for wider testing.
-
-Common bugs fixed in 3.0.11pre2 include:
-
   o Inefficiencies when searching non-AD LDAP directories.
   o Failure to expand variables in user domain attributes
     in tdbsam and ldapsam.
   o Memory leaks.
   o Failure to retrieve certain attribute when migrating from 
     a Windows DC to a Samba DC via 'net rpc vampire'.
+  o Numerous printing bugs bugs including memory 
+    bloating on large/busy print servers.
+  o Compatibility issues with Exchange 5.5 SP4.
+  o sendfile fixes.
 
-Additional features introduced in Samba 3.0.11pre1:
+Additional features introduced in Samba 3.0.11:
 
+  o Winbindd performance improvements.
+  o More 'net rpc vampire' functionality.
   o Support for the Windows privilege model to assign rights
     to specific SIDs.
   o New administrative options to the 'net rpc' command.
@@ -134,186 +58,42 @@ These rights can be assigned to arbitrary users or groups
 via the 'net rpc rights grant/revoke' command.  More details
 of Samba's privilege implementation can be found in the 
 Samba-HOWTO-Collection.
-
+    
 
 ######################################################################
 Changes
 #######
 
-Changes since 3.0.11pre1
-------------------------
+Changes since 3.0.11rc1
+-----------------------
 
-smb.conf changes
-----------------
-    Parameter Name              	Action
-    --------------              	------
-    enable privileges			New
-    ldap password sync			Alias
-    
-    
 commits
 -------
 o   Jeremy Allison <jra@samba.org>
-    * Fixes for libsmbclient to ensure that interrupted system calls
-      are restarted minus the already expired portion of the timeout
-      (based on work by Derrell Lipman).
-    * More Unicode string parsing fixes.
-    * Convert the winreg pipe to use WERROR returns.
-    * Make all LDAP timeouts consistent (input from Joe Meadows 
-      <jameadows@webopolis.com>).
-    * BUG 2231: Remove double "\\" from client findfirst.
-    * BUG 2238: Fix memory leak in shadow copy vfs.
-    * Return correct DOS/NT error code on transact named pipe on 
-      closed pipe handle.
-    * BUG 2211: Fix security descriptor parsing bug (based on work by 
-      Mrinal Kalakrishnan <mail@mrinal.net>).
-    * BUG 2270: Fix memory leaks in cups printing backend support 
-      (based on work by Lars Mueller).
-    * BUG 2255: Fix debug level in kerberos error messages.
-
-
-o   Andrew Bartlett <abartlet@samba.org>
-    * Don't store the auth-user credentials with the cli_state* as 
-      this can cause the schannel setup to fail when the auth-user
-      domain is not our primary domain.
-
-
-o   Grigory Batalov <bga@altlinux.org>
-    * Fix encoding while receiving of a message which was actually 
-      sent using STR_ASCII.
-
-
-o   Daniel Beschorner <db@unit-netz.de>
-    * BUG 603: Correct access mask check for _samr_lookup_domain()
-      to work with Windows RAS server
-
-
-o   Jerome Borsboom <j.borsboom@erasmusmc.nl>
-    * Fix missing printer_tdb reference decrement.
-    
-
+o   Timur Bakeyev <timur@com.bat.ru>
 o   Gerald (Jerry) Carter <jerry@samba.org>
-    * Re-instantiate previous semantics for calling init_unistr2() 
-      with a NULL source buffer.
-    * Support Windows privilege model for assigning rights
-      to specific SIDs.  Based on work by Simo Sorce in the trunk 
-      svn branch.  This feature is controlled by the 'enable 
-      privileges = [yes|no]' smb.conf(5) option.
-    * Add some smb.conf scripts for add/delete/change shares and 
-      deleting cups printers.
-    * Expand variables in the profile path, logon home and logon script 
-      values when using either tdbsam or ldapsam.
-    * Add Domain Admins (Full Control) to the default printer security 
-      descriptor if we are a DC.
-
-
 o   Guenther Deschner <gd@samba.org>
-    * Allow rpcclient to define a port to use when connecting 
-      to a remote server.
-    * Allow Account Lockout with Lockout Duration "forever" (until 
-      admin unlocks) to be set and displayed in User Manager.
-    * Allow to set acb_mask in rpcclient's enumdomusers.
-    * Add more generic rootDSE inspection function to check 
-      for given controls or extensions and remember these on a 
-      per server basis.
-    * Improve LDAP search efficiency by passing the acb_mask to 
-      pdb_setsampwent().
-    * Fixes for ldapsam_enum_group_memberships().
-    * Add createdomgroup to rpcclient.
-    * Add "net rpc user RENAME"-command.
-    * Display sam_user_info_7 in rpcclient.
-    * Make multi-domain-mode in idmap_rid accessible from outside 
-      (can be compiled with -DIDMAP_RID_SUPPORT_TRUSTED_DOMAINS).
-    * When vampiring account policy AP_LOCK_ACCOUNT_DURATION honor 
-      "Lockout Duration: Forever".
-
-
-o   Rob Foehl <rwf@loonybin.net>
-    * Implement caching of names from printcap to support a true
-      'printcap cache time'.
-
-
-o   Jeff Hardy <hardyjm@potsdam.edu>
-    * Example script for 'add print command' when using CUPS.
-
-
-o   William Jojo <jojowil@hvcc.edu>
-    * AIX 5.3 compile fixes.
-
-
 o   Volker Lendecke <vl@samba.org>
-    * Initial work to allow support for multiple pipe opens on a 
-      single cli_state*.
-    * Ensure that we still retrieve the netbios name of any DC 
-      listed as a 'password server' to work around cases where the 
-      DC was defined using an IP address or fqdn.
-    * Fix memleak in winbindd connection code.
-    * Fix cli_samr_queryuseraliases.
-    * Allow wbinfo --user-sids to expand expand domain local groups.
+o   Tim Potter <tpot@samba.org>
 
-
-o   Jim McDonough <jmcd@us.ibm.com>
-    * BUG 2198: Set password last change time when running 'net rpc 
-      vampire'.
-    * Add "refuse machine password change" policy field.
-
-
-o   Stefan Metzmacher <metze@samba.org>    
-    * autogen.sh fixes.
-
-
-o   James Peach <jpeach@sgi.com>
-    * Fix rewinddir -> rewind_dir when using VFS macros.
-    
-
-o   Simo Sorce <idra@samba.org>
-    * Allows the add/change share command to create the shared 
-      directory directory on disk.
-     
-o   Jelmer Vernooij <jelmer@samba.org>
-    * Fixes for pdb_mysql.
-
-
-      --------------------------------------------------
-                   
-		   ==================================
-                   Release Notes for Samba 3.0.11pre1
-                                Jan 4, 2005
-                   ===================================
-
-Common bugs fixed in 3.0.11pre1 include:
-
-  o Numerous printing bugs bugs including memory 
-    bloating on large/busy print servers.
-  o Compatibility issues with Exchange 5.5 SP4.
-  o sendfile fixes.
-
-Additional features introduced in Samba 3.0.11pre1:
-
-  o Winbindd performance improvements.
-  o More 'net rpc vampire' functionality.
- 
-
-
-
-######################################################################
-Changes
-#######
 
 Changes since 3.0.10
 --------------------
 
 smb.conf changes
 ----------------
-    Parameter Name              	Action
-    --------------              	------
-    afs token lifetime			New
-    min password length			Deprecated
 
-    
+    Parameter Name                      Action
+    --------------                      ------
+    afs token lifetime			New
+    enable privileges			New
+    ldap password sync			Alias
+    min password length			Deprecated
+    winbind enable local accounts	Deprecated
+
+
 commits
 -------
-
 o   Jeremy Allison <jra@samba.org>
     * Extend vfs to add seekdir/telldir/rewinddir.
     * Fix dirent return.
@@ -333,6 +113,22 @@ o   Jeremy Allison <jra@samba.org>
       file, not an existing one.
     * Don't go fishing for the krb5 authorization data unless we know
       it's there.
+    * Fixes for libsmbclient to ensure that interrupted system calls
+      are restarted minus the already expired portion of the timeout
+      (based on work by Derrell Lipman).
+    * More Unicode string parsing fixes.
+    * Convert the winreg pipe to use WERROR returns.
+    * Make all LDAP timeouts consistent (input from Joe Meadows 
+      <jameadows@webopolis.com>).
+    * BUG 2231: Remove double "\\" from client findfirst.
+    * BUG 2238: Fix memory leak in shadow copy vfs.
+    * Return correct DOS/NT error code on transact named pipe on 
+      closed pipe handle.
+    * BUG 2211: Fix security descriptor parsing bug (based on work by 
+      Mrinal Kalakrishnan <mail@mrinal.net>).
+    * BUG 2270: Fix memory leaks in cups printing backend support 
+      (based on work by Lars Mueller).
+    * BUG 2255: Fix debug level in kerberos error messages.
     * BUG 2110: Ensure we convert to ucs2 correctly after the 
       CAN-2004-0930 patch.
     * Make strict locking an enum. Auto means use oplock optimization.
@@ -340,7 +136,11 @@ o   Jeremy Allison <jra@samba.org>
     * More *alloc fixes (includes additional fixes by Albert Chin.
     * Catch sendfile errors correctly and return the correct values 
       we want the caller to return.
-
+    * BUG 2092: Prevent auto-anonymous logins via libsmbclient 
+      for better use by desktop environments such as GNOME.
+    * Ensure we can't remove a level II oplock without having the
+      shared memory area locked.
+            
 
 o   Timur Bakeyev <timur@com.bat.ru>
     * BUG 2100: change the way we check for errors after a dlopen().
@@ -350,6 +150,23 @@ o   Andrew Bartlett <abartlet@samba.org>
     * Clarify error message when 'lanman auth = no'.
     * Remove the unnecessary UTF-8 conversion calls in the calls to
       auth_winbind from smbd.
+    * Don't store the auth-user credentials with the cli_state* as 
+      this can cause the schannel setup to fail when the auth-user
+      domain is not our primary domain.
+
+
+o   Grigory Batalov <bga@altlinux.org>
+    * Fix encoding while receiving of a message which was actually 
+      sent using STR_ASCII.
+
+
+o   Daniel Beschorner <db@unit-netz.de>
+    * BUG 603: Correct access mask check for _samr_lookup_domain()
+      to work with Windows RAS server
+
+
+o   Jerome Borsboom <j.borsboom@erasmusmc.nl>
+    * Fix missing printer_tdb reference decrement.
     
 
 o   Gerald (Jerry) Carter <jerry@samba.org>
@@ -372,13 +189,43 @@ o   Gerald (Jerry) Carter <jerry@samba.org>
       print_queue_updates() requests sent via messages.tdb.
     * Check the setprinter(3) based on the access permissions on 
       the handle and avoid the call to print_access_check().
-      
+    * Re-instantiate previous semantics for calling init_unistr2() 
+      with a NULL source buffer.
+    * Support Windows privilege model for assigning rights
+      to specific SIDs.  Based on work by Simo Sorce in the trunk 
+      svn branch.  This feature is controlled by the 'enable 
+      privileges = [yes|no]' smb.conf(5) option.
+    * Add some smb.conf scripts for add/delete/change shares and 
+      deleting cups printers.
+    * Expand variables in the profile path, logon home and logon script 
+      values when using either tdbsam or ldapsam.
+    * Add Domain Admins (Full Control) to the default printer security 
+      descriptor if we are a DC.
+    * RedHat and Fedora Packaging fixes for perl dependencies.
+    * Remove unused schema items from OpenLDAP schema file.
+    * Remove duplicate enumeration of "Windows x86" architecture
+      when listing printer drivers via rpcclient.
+    * Fail set_privileges() if 'enable privileges = no' to prevent 
+      confused admins.
+    * Fix segfault in cups_queue_get().
+    * Tighten restrictions on changing user passwords when 
+      the connected user possesses the SeMachineAccountPrivilege.
+    * Ensure we set NETBIOSNAME.domainname for the long machine name
+      when publishing printers in AD (based on input from Rob Foehl).
+    * Mark 'winbind enable local accounts' as deprecated.
+    * Mark testprns tool as deprecated.
+    * Allow root to grant/revoke privilege assignments.
+    * Correct interaction between user rights and se_access_check() on
+      SAMR objects.
+    * BUG 2286: Fix typo OpenLDAP schema file for sambaConfig object 
+      class.
 
+ 
 o   Nadav Danieli <nadavd@exanet.com>
     * Short circuit some is_locked() tests if we are oplocked.
     
     
-o   Guenther Deschner <gd@samba.org> 
+o   Guenther Deschner <gd@samba.org>
     * Allow 'localhost' as a valid server name in the smbd for the
       spoolss calls.
     * Fix KRB5_SETPW-defines, no change in behavior (Thanks to Luke
@@ -408,9 +255,33 @@ o   Guenther Deschner <gd@samba.org>
     * Marking "min password length" as depreciated.  
     * Implement SAMR query_dom_info-call info-level 8 server- and 
       client-side, based on samba4-idl.
-
-
-
+    * Allow rpcclient to define a port to use when connecting 
+      to a remote server.
+    * Allow Account Lockout with Lockout Duration "forever" (until 
+      admin unlocks) to be set and displayed in User Manager.
+    * Allow to set acb_mask in rpcclient's enumdomusers.
+    * Add more generic rootDSE inspection function to check 
+      for given controls or extensions and remember these on a 
+      per server basis.
+    * Improve LDAP search efficiency by passing the acb_mask to 
+      pdb_setsampwent().
+    * Fixes for ldapsam_enum_group_memberships().
+    * Add createdomgroup to rpcclient.
+    * Add "net rpc user RENAME"-command.
+    * Display sam_user_info_7 in rpcclient.
+    * Make multi-domain-mode in idmap_rid accessible from outside 
+      (can be compiled with -DIDMAP_RID_SUPPORT_TRUSTED_DOMAINS).
+    * When vampiring account policy AP_LOCK_ACCOUNT_DURATION honor 
+      "Lockout Duration: Forever".
+    * Fix configure.in tests using KRB5_CONFIG variable and krb5-
+      config utility.
+    * Require assignment of Administrator SID in the passdb 
+      backend.  Fall back to the default name of 'Administrator' if
+      the lookup fails rather than using the first name in the
+      default 'admin users' list.
+    * Enhance LDAP failure debug messages.
+    
+    
 o   Jay Fenlason <fenlason@redhat.com>
     * Fix crash in 'net join' due to calling free on 
       static buffers.
@@ -423,10 +294,16 @@ o   Rob Foehl <rwf@loonybin.net>.
     * Solaris packaging fixes.
     * Don't force the cups printer-make-and-model tag as the comment
       for autoloaded printers.
-    
+    * Implement caching of names from printcap to support a true
+      'printcap cache time'.
+
 
 o   Johann Hanne <jhml@gmx.net>
     * BUG 2038: Only fail winbindd_getgroups() if all lookups fail.
+
+
+o   Jeff Hardy <hardyjm@potsdam.edu>
+    * Example script for 'add print command' when using CUPS.
 
 
 o   David Hu <david.hu@hp.com>
@@ -448,7 +325,8 @@ o   Björn Jacke <bjoern@j3e.de>
 o   William Jojo <jojowil@hvcc.edu>
     * Fix HPUX sendfile and add configure.in tests and code for
       sendfile on AIX.
-      
+    * AIX 5.3 compile fixes.
+
 
 o   Volker Lendecke <vl@samba.org>
     * Optimize anonymous session setups by workstations in a 
@@ -475,12 +353,27 @@ o   Volker Lendecke <vl@samba.org>
     * Add support for 'net idmap delete <idmap-file> <SID>'.
     * Add new parameter 'afs token lifetime' tells the AFS client 
       when to throw away a token (patch from kllin@it.su.se).
-
+    * Initial work to allow support for multiple pipe opens on a 
+      single cli_state*.
+    * Ensure that we still retrieve the netbios name of any DC 
+      listed as a 'password server' to work around cases where the 
+      DC was defined using an IP address or fqdn.
+    * Fix memleak in winbindd connection code.
+    * Fix cli_samr_queryuseraliases.
+    * Allow wbinfo --user-sids to expand expand domain local groups.
+    * Allow 'rpcclient -c enumtrust' to enumerate more than 10 trusts.
+    * Fix parsing of other_sids in net_user_info3.
+    * Correct bad failure logic when user was not a member of any 
+      domain local groups.
+    
 
 o   Jim McDonough <jmcd@us.ibm.com>
     * BUG 1952: Try INITSHUTDOWN pipe first, used by newer 
       clients.  If it fails, fall back to WINREG.
     * BUG 1770: Remove READ_ATTRIBUTES from GENERIC_EXECUTE.
+    * BUG 2198: Set password last change time when running 'net rpc 
+      vampire'.
+    * Add "refuse machine password change" policy field.
 
 
 o   Luke Mewburn <lukem@NetBSD.org>
@@ -488,9 +381,13 @@ o   Luke Mewburn <lukem@NetBSD.org>
       standard SHM_.
       
 
+o   Stefan Metzmacher <metze@samba.org>    
+    * autogen.sh fixes.
+
+
 o   Buchan Milne <bgmilne@mandrake.org>
     * Mandrake packaging fixes.
-     
+
 
 o   Lars Mueller <lmuelle@suse.de>
     * Fix build of libsmbclient on x86_64.
@@ -507,6 +404,10 @@ o   Jason Mader <jason@ncac.gwu.edu>
     * BUG 2083: Fix compiler warnings caused by bad type casts.
 
 
+o   James Peach <jpeach@sgi.com>
+    * Fix rewinddir -> rewind_dir when using VFS macros.
+    
+
 o   Gavrie Philipson <gavrie@disksites.com>
     * BUG 1838: Remove stale printers imeeddiately when 
       processing a SIGHUP and during smb.conf reload.
@@ -519,23 +420,27 @@ o   Tim Potter <tpot@samba.org>
       more liberal.
     * HP-UX compile fixes.
 
-    
+
 o   Simo Sorce <idra@samba.org>
     * Backport pdbedit changes from trunk.
+    * Allows the add/change share command to create the shared 
+      directory directory on disk.
+     
+o   Jelmer Vernooij <jelmer@samba.org>
+    * Bug fixes for pdb_{xml,pqsql,xml}
+    * Fixes for pdb_mysql.
 
 
 o   Andrew Tridgell <tridge@samba.org>
     * Bring Samba3 into line with the Samba4 password change code.
     
 
-o   Jelmer Vernooij <jelmer@samba.org>
-    * Bug fixes for pdb_{xml,pqsql,xml}
-
-
 o   Shiro Yamada <shiro@miraclelinux.com>
     * BUG 2190: Force SWAT to display parameters in unix charset and 
       not UTF-8.
 
+
+Release Notes for older release follow:
 
       --------------------------------------------------
                    ==============================
