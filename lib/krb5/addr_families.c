@@ -423,12 +423,26 @@ static int
 arange_copy (krb5_context context, const krb5_address *inaddr, 
 	     krb5_address *outaddr)
 {
+    krb5_error_code ret;
     struct arange *i, *o;
-    copy_HostAddress(inaddr, outaddr);
+
+    outaddr->addr_type = KRB5_ADDRESS_ARANGE;
+    ret = krb5_data_alloc(&outaddr->address, sizeof(*o));
+    if(ret)
+	return ret;
     i = inaddr->address.data;
     o = outaddr->address.data;
-    krb5_copy_address(context, &i->low, &o->low);
-    krb5_copy_address(context, &i->high, &o->high);
+    ret = krb5_copy_address(context, &i->low, &o->low);
+    if(ret) {
+	krb5_data_free(&outaddr->address);
+	return ret;
+    }
+    ret = krb5_copy_address(context, &i->high, &o->high);
+    if(ret) {
+	krb5_free_address(context, &o->low);
+	krb5_data_free(&outaddr->address);
+	return ret;
+    }
     return 0;
 }
 
@@ -741,9 +755,19 @@ krb5_address_order(krb5_context context,
        should we call? this works for now, though */
     struct addr_operations *a;
     a = find_atype(addr1->addr_type); 
+    if(a == NULL) {
+	krb5_set_error_string (context, "Address family %d not supported", 
+			       addr1->addr_type);
+	return KRB5_PROG_ATYPE_NOSUPP;
+    }
     if(a->order_addr != NULL) 
 	return (*a->order_addr)(context, addr1, addr2); 
     a = find_atype(addr2->addr_type); 
+    if(a == NULL) {
+	krb5_set_error_string (context, "Address family %d not supported", 
+			       addr2->addr_type);
+	return KRB5_PROG_ATYPE_NOSUPP;
+    }
     if(a->order_addr != NULL) 
 	return (*a->order_addr)(context, addr1, addr2);
 
