@@ -182,6 +182,15 @@ static int negprot_spnego(char *p)
 
 	ZERO_STRUCT(guid);
 	safe_strcpy((char *)guid, global_myname(), sizeof(guid)-1);
+
+#ifdef DEVELOPER
+	{
+		size_t sl = strlen(guid);
+		if (sizeof(guid)-sl)
+			memset(&guid[sl], '\0', sizeof(guid)-sl);
+	}
+#endif
+
 	strlower((char *)guid);
 
 #if 0
