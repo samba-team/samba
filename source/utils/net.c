@@ -104,9 +104,9 @@ int net_run_function(int argc, const char **argv, struct functable *table,
 /****************************************************************************
 connect to \\server\ipc$  
 ****************************************************************************/
-static struct cli_state *connect_to_ipc(struct in_addr *server_ip, const char *server_name)
+NTSTATUS connect_to_ipc(struct cli_state **c, struct in_addr *server_ip,
+					const char *server_name)
 {
-	struct cli_state *c;
 	NTSTATUS nt_status;
 
 	if (!got_pass) {
@@ -116,14 +116,14 @@ static struct cli_state *connect_to_ipc(struct in_addr *server_ip, const char *s
 		}
 	}
 	
-	nt_status = cli_full_connection(&c, opt_requester_name, server_name, 
+	nt_status = cli_full_connection(c, opt_requester_name, server_name, 
 					server_ip, opt_port,
 					"IPC$", "IPC",  
 					opt_user_name, opt_workgroup,
 					opt_password, strlen(opt_password));
 	
 	if (NT_STATUS_IS_OK(nt_status)) {
-		return c;
+		return nt_status;
 	} else {
 		DEBUG(0,("Cannot connect to server.  Error was %s\n", 
 			 get_nt_error_msg(nt_status)));
@@ -134,29 +134,29 @@ static struct cli_state *connect_to_ipc(struct in_addr *server_ip, const char *s
 		    NT_STATUS_V(NT_STATUS_LOGON_FAILURE))
 			d_printf("The username or password was not correct.\n");
 
-		return NULL;
+		return nt_status;
 	}
 }
 
 /****************************************************************************
 connect to \\server\ipc$ anonymously
 ****************************************************************************/
-static struct cli_state *connect_to_ipc_anonymous(struct in_addr *server_ip, const char *server_name)
+NTSTATUS connect_to_ipc_anonymous(struct cli_state **c,
+			struct in_addr *server_ip, const char *server_name)
 {
-	struct cli_state *c;
 	NTSTATUS nt_status;
 
-	nt_status = cli_full_connection(&c, opt_requester_name, server_name, 
+	nt_status = cli_full_connection(c, opt_requester_name, server_name, 
 					server_ip, opt_port,
 					"IPC$", "IPC",  
 					"", "",
 					"", 0);
 	
 	if (NT_STATUS_IS_OK(nt_status)) {
-		return c;
+		return nt_status;
 	} else {
 		DEBUG(0,("Cannot connect to server (anonymously).  Error was %s\n", get_nt_error_msg(nt_status)));
-		return NULL;
+		return nt_status;
 	}
 }
 
@@ -232,11 +232,39 @@ static BOOL net_find_server(unsigned flags, struct in_addr *server_ip, char **se
 	return True;
 }
 
+
+BOOL net_find_dc(struct in_addr *server_ip, fstring server_name, char *domain_name)
+{
+	struct in_addr *ip_list;
+	int addr_count;
+
+	if (get_dc_list(True /* PDC only*/, domain_name, &ip_list, &addr_count)) {
+		fstring dc_name;
+		if (addr_count < 1) {
+			return False;
+		}
+			
+		*server_ip = *ip_list;
+		
+		if (is_zero_ip(*server_ip))
+			return False;
+		
+		if (!lookup_dc_name(global_myname, domain_name, server_ip, dc_name))
+			return False;
+			
+		safe_strcpy(server_name, dc_name, FSTRING_LEN);
+		return True;
+	} else
+		return False;
+}
+
+
 struct cli_state *net_make_ipc_connection(unsigned flags)
 {
 	char *server_name = NULL;
 	struct in_addr server_ip;
-	struct cli_state *cli;
+	struct cli_state *cli = NULL;
+	NTSTATUS nt_status;
 
 	if (!net_find_server(flags, &server_ip, &server_name)) {
 		d_printf("\nUnable to find a suitable server\n");
@@ -244,9 +272,9 @@ struct cli_state *net_make_ipc_connection(unsigned flags)
 	}
 
 	if (flags & NET_FLAGS_ANONYMOUS) {
-		cli = connect_to_ipc_anonymous(&server_ip, server_name);
+		nt_status = connect_to_ipc_anonymous(&cli, &server_ip, server_name);
 	} else {
-		cli = connect_to_ipc(&server_ip, server_name);
+		nt_status = connect_to_ipc(&cli, &server_ip, server_name);
 	}
 	SAFE_FREE(server_name);
 	return cli;
