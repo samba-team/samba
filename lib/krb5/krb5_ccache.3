@@ -1,36 +1,36 @@
 .\" Copyright (c) 2003 Kungliga Tekniska Högskolan
-.\" (Royal Institute of Technology, Stockholm, Sweden). 
-.\" All rights reserved. 
+.\" (Royal Institute of Technology, Stockholm, Sweden).
+.\" All rights reserved.
 .\"
-.\" Redistribution and use in source and binary forms, with or without 
-.\" modification, are permitted provided that the following conditions 
-.\" are met: 
+.\" Redistribution and use in source and binary forms, with or without
+.\" modification, are permitted provided that the following conditions
+.\" are met:
 .\"
-.\" 1. Redistributions of source code must retain the above copyright 
-.\"    notice, this list of conditions and the following disclaimer. 
+.\" 1. Redistributions of source code must retain the above copyright
+.\"    notice, this list of conditions and the following disclaimer.
 .\"
-.\" 2. Redistributions in binary form must reproduce the above copyright 
-.\"    notice, this list of conditions and the following disclaimer in the 
-.\"    documentation and/or other materials provided with the distribution. 
+.\" 2. Redistributions in binary form must reproduce the above copyright
+.\"    notice, this list of conditions and the following disclaimer in the
+.\"    documentation and/or other materials provided with the distribution.
 .\"
-.\" 3. Neither the name of the Institute nor the names of its contributors 
-.\"    may be used to endorse or promote products derived from this software 
-.\"    without specific prior written permission. 
+.\" 3. Neither the name of the Institute nor the names of its contributors
+.\"    may be used to endorse or promote products derived from this software
+.\"    without specific prior written permission.
 .\"
-.\" THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
-.\" ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
-.\" IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
-.\" ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
-.\" FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
-.\" DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
-.\" OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
-.\" HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
-.\" LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
-.\" OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
-.\" SUCH DAMAGE. 
-.\" 
+.\" THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+.\" ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+.\" IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+.\" ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+.\" FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+.\" DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+.\" OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+.\" HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+.\" LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+.\" OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+.\" SUCH DAMAGE.
+.\"
 .\" $Id$
-.\" 
+.\"
 .Dd March 16, 2003
 .Dt KRB5_CCACHE 3
 .Os HEIMDAL
@@ -231,68 +231,72 @@ gets and sets the default name for the
 .Fa context .
 .Pp
 .Fn krb5_cc_default
-opens the default ccache in 
+opens the default credential cache in
 .Fa id .
 Return 0 or an error code.
 .Pp
 .Fn krb5_cc_gen_new
-generates a new ccache of type
+generates a new credential cache of type
 .Fa ops
 in
 .Fa id .
 Return 0 or an error code.
+The Heimdal version of this function also runs
+.Fn krb5_cc_initialize
+on the credential cache, but since the MIT version doesn't portable
+code must call krb5_cc_initialize.
 .Pp
 .Fn krb5_cc_resolve
-finds and allocates a ccache in 
+finds and allocates a credential cache in
 .Fa id
-from the specification in 
+from the specification in
 .Fa residual .
-If the ccache name doesn't contain any colon (:), interpret it as a
+If the credential cache name doesn't contain any colon (:), interpret it as a
 file name.
 Return 0 or an error code.
 .Pp
 .Fn krb5_cc_initialize
-creates a new ccache in
+creates a new credential cache in
 .Fa id
 for
 .Fa primary_principal .
 Return 0 or an error code.
 .Pp
 .Fn krb5_cc_close
-stops using the ccache 
+stops using the credential cache
 .Fa id
 and frees the related resources.
 Return 0 or an error code.
 .Fn krb5_cc_destroy
-removes the ccache 
+removes the credential cache
 and closes (by calling
 .Fn krb5_cc_close )
 .Fa id .
 Return 0 or an error code.
 .Pp
 .Fn krb5_cc_copy_cache
-copys the contents of 
+copys the contents of
 .Fa from
-to 
+to
 .Fa to .
 .Pp
 .Fn krb5_cc_get_name
-returns the name of the ccache 
+returns the name of the credential cache
 .Fa id .
 .Pp
 .Fn krb5_cc_get_principal
-returns the principal of 
+returns the principal of
 .Fa id
 in
 .Fa principal .
 Return 0 or an error code.
 .Pp
 .Fn krb5_cc_get_type
-returns the type of the ccache
+returns the type of the credential cache
 .Fa id .
 .Pp
 .Fn krb5_cc_get_ops
-returns the ops of the ccache
+returns the ops of the credential cache
 .Fa id .
 .Pp
 .Fn krb5_cc_get_version
@@ -300,7 +304,7 @@ returns the version of
 .Fa id .
 .Pp
 .Fn krb5_cc_register
-Adds a new ccache type with operations 
+Adds a new credential cache type with operations
 .Fa ops ,
 overwriting any existing one if
 .Fa override .
@@ -310,13 +314,13 @@ Return an error code or 0.
 removes the credential identified by
 .Fa ( cred ,
 .Fa which )
-from 
+from
 .Fa id .
 .Pp
 .Fn krb5_cc_store_cred
 stores
 .Fa creds
-in the ccache
+in the credential cache
 .Fa id .
 Return 0 or an error code.
 .Pp
@@ -327,7 +331,7 @@ to
 .Fa flags .
 .Pp
 .Fn krb5_cc_retrieve_cred ,
-retrieves the credential identified by 
+retrieves the credential identified by
 .Fa mcreds
 (and
 .Fa whichfields )
