@@ -1,5 +1,8 @@
 2002-09-10  Johan Danielsson  <joda@pdc.kth.se>
 
+	* configure.in: we don't set package_libdir anymore, so no point
+	in testing for it
+
 	* tools/Makefile.am: subst INCLUDE_des
 
 	* tools/krb5-config.in: add INCLUDE_des to cflags

@@ -1,3 +1,7 @@
+2002-09-10  Johan Danielsson  <joda@pdc.kth.se>
+
+	* version4.c: change some lingering krb_err_base
+
 2002-09-09  Jacques Vidrine  <nectar@kth.se>
 
 	* server.c (kadmind_dispatch): while decoding arguments for
