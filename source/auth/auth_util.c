@@ -440,7 +440,6 @@ NTSTATUS make_server_info(const TALLOC_CTX *mem_ctx,
 NTSTATUS make_server_info_guest(const TALLOC_CTX *mem_ctx, struct auth_serversupplied_info **server_info)
 {
 	NTSTATUS nt_status;
-	static const char zeros[16];
 
 	nt_status = make_server_info(mem_ctx, server_info, "");
 
@@ -457,8 +456,11 @@ NTSTATUS make_server_info_guest(const TALLOC_CTX *mem_ctx, struct auth_serversup
 	
 	/* annoying, but the Guest really does have a session key, 
 	   and it is all zeros! */
-	(*server_info)->user_session_key = data_blob(zeros, sizeof(zeros));
-	(*server_info)->lm_session_key = data_blob(zeros, sizeof(zeros));
+	(*server_info)->user_session_key = data_blob_talloc(*server_info, NULL, 16);
+	(*server_info)->lm_session_key = data_blob_talloc(*server_info, NULL, 16);
+
+	data_blob_clear(&(*server_info)->user_session_key);
+	data_blob_clear(&(*server_info)->lm_session_key);
 
 	(*server_info)->account_name = "";
 	(*server_info)->domain = "";
