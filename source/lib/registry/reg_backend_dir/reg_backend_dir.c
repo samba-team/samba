@@ -80,22 +80,32 @@ static WERROR reg_dir_fetch_subkeys(REG_KEY *k, int *count, REG_KEY ***r)
 	if(!d) return WERR_INVALID_PARAM;
 	
 	while((e = readdir(d))) {
-		if(e->d_type == DT_DIR && 
-		   strcmp(e->d_name, ".") &&
+		if( strcmp(e->d_name, ".") &&
 		   strcmp(e->d_name, "..")) {
-			ar[(*count)] = reg_key_new_rel(e->d_name, k, NULL);
-			ar[(*count)]->backend_data = talloc_asprintf(ar[*count]->mem_ctx, "%s/%s", fullpath, e->d_name);
-			if(ar[(*count)])(*count)++;
+			struct stat stbuf;
+			char *thispath;
+			
+			/* Check if file is a directory */
+			asprintf(&thispath, "%s/%s", fullpath, e->d_name);
+			stat(thispath, &stbuf);
 
-			if((*count) == max) {
-				max+=200;
-				ar = realloc(ar, sizeof(REG_KEY *) * max);
+			if(S_ISDIR(stbuf.st_mode)) {
+				ar[(*count)] = reg_key_new_rel(e->d_name, k, NULL);
+				ar[(*count)]->backend_data = talloc_strdup(ar[*count]->mem_ctx, thispath);
+				if(ar[(*count)])(*count)++;
+
+				if((*count) == max) {
+					max+=200;
+					ar = realloc(ar, sizeof(REG_KEY *) * max);
+				}
 			}
+
+			SAFE_FREE(thispath);
 		}
 	}
 
 	closedir(d);
-	
+
 	*r = ar;
 	return WERR_OK;
 }
