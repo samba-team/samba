@@ -32,38 +32,9 @@ typedef char pstring[1024];
 /* zero a structure given a pointer to the structure */
 #define ZERO_STRUCTP(x) { if ((x) != NULL) memset((char *)(x), 0, sizeof(*(x))); }
 
-typedef struct {
-	uint32 low;
-	uint32 high;
-} UINT64_S;
-
-typedef struct 
-{
-  uint32 low;
-  uint32 high;
-} NTTIME;
-
 #define MAX_UNISTRLEN 256
 #define MAX_STRINGLEN 256
 #define MAX_BUFFERLEN 512
-
-/* UNISTR2 - unicode string size (in uint16 unicode chars) and buffer */
-typedef struct unistr2_info
-{
-  uint32 uni_max_len;
-  uint32 undoc;
-  uint32 uni_str_len;
-  /* unicode characters. ***MUST*** be little-endian. **NOT** necessarily null-terminated */
-  uint16 buffer[MAX_UNISTRLEN];
-
-} UNISTR2;
-
-/* BUFFER5 */
-typedef struct buffer5_info
-{
-  uint32 buf_len;
-  uint16 *buffer; /* data */
-} BUFFER5;
 
 typedef struct _prs_struct 
 {
@@ -86,13 +57,10 @@ BOOL prs_uint32(char *name, prs_struct *ps, int depth, uint32 *data32);
 BOOL prs_init(prs_struct *ps, uint32 size, uint8 align, BOOL io);
 void prs_debug(prs_struct *ps, int depth, char *desc, char *fn_name);
 BOOL prs_align(prs_struct *ps);
-BOOL smb_io_time(char *desc, NTTIME *nttime, prs_struct *ps, int depth);
-BOOL smb_io_unistr2(char *desc, UNISTR2 *uni2, uint32 buffer, prs_struct *ps, int depth);
-BOOL prs_unistr2(BOOL charmode, char *name, prs_struct *ps, int depth, UNISTR2 *str);
 void print_asc(int level, unsigned char *buf,int len);
 BOOL prs_read(prs_struct *ps, int fd, size_t len, int timeout);
 void dump_data(int level,char *buf1,int len);
-BOOL prs_uint64(char *name, prs_struct *ps, int depth, UINT64_S *data64);
-BOOL smb_io_buffer5(char *desc, BUFFER5 *buf5, prs_struct *ps, int depth);
 BOOL prs_uint16s(BOOL charmode, char *name, prs_struct *ps, int depth, uint16 *data16s, int len);
+BOOL prs_uint32s(BOOL charmode, char *name, prs_struct *ps, int depth, uint32 *data32s, int len);
+BOOL prs_pointer(char *desc, prs_struct *ps, int depth, void **p);
 
