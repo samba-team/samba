@@ -116,8 +116,6 @@ int find_service(char *service)
 
       if (phome_dir)
       {   
-        int iHomeService = lp_servicenumber(HOMES_NAME);
-
 	lp_add_home(service,iHomeService,phome_dir);
 	iService = lp_servicenumber(service);
       }
