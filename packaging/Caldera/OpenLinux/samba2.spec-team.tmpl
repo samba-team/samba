@@ -490,7 +490,9 @@ test "$1" = "0" || exit 0
 %Files -f files-samba-base
 %defattr(-,root,root)
 %config %attr(0755,root,root) %{SVIdir}/samba
+%config %attr(0755,root,root) %{SVIdir}/winbind
 %config %attr(644,root,root) /etc/sysconfig/daemons/samba
+%config %attr(644,root,root) /etc/sysconfig/daemons/winbind
 %config %attr(644,root,root) /etc/pam.d/samba
 %config %attr(644,root,root) /etc/logrotate.d/samba
 %config %attr(-,root,root) %{EtcSamba}
