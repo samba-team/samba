@@ -947,18 +947,21 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 		and no entries were found then return error and close dirptr 
 		(X/Open spec) */
 
-	if(ok && expect_close && numentries == 0 && status_len == 0) {
+	if (numentries == 0 || !ok) {
+		dptr_close(&dptr_num);
+	} else if(ok && expect_close && status_len == 0) {
 		/* Close the dptr - we know it's gone */
 		dptr_close(&dptr_num);
-		return ERROR_BOTH(STATUS_NO_MORE_FILES,ERRDOS,ERRnofiles);
-	} else if (numentries == 0 || !ok) {
-		dptr_close(&dptr_num);
-		return ERROR_BOTH(STATUS_NO_MORE_FILES,ERRDOS,ERRnofiles);
 	}
 
 	/* If we were called as SMBfunique, then we can close the dirptr now ! */
-	if(dptr_num >= 0 && CVAL(inbuf,smb_com) == SMBfunique)
+	if(dptr_num >= 0 && CVAL(inbuf,smb_com) == SMBfunique) {
 		dptr_close(&dptr_num);
+	}
+
+	if ((numentries == 0) && !ms_has_wild(mask)) {
+		return ERROR_BOTH(STATUS_NO_MORE_FILES,ERRDOS,ERRnofiles);
+	}
 
 	SSVAL(outbuf,smb_vwv0,numentries);
 	SSVAL(outbuf,smb_vwv1,3 + numentries * DIR_STRUCT_SIZE);
