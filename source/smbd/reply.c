@@ -202,7 +202,7 @@ int reply_tcon(connection_struct *conn,
 
 int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize)
 {
-	const char *service;
+	fstring service;
 	DATA_BLOB password;
 	pstring devicename;
 	NTSTATUS nt_status;
@@ -213,7 +213,7 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 	extern BOOL global_encrypted_passwords_negotiated;
 	START_PROFILE(SMBtconX);	
 
-	*devicename = 0;
+	*service = *devicename = 0;
 
 	/* we might have to close an old one */
 	if ((SVAL(inbuf,smb_vwv2) & 0x1) && conn) {
@@ -233,28 +233,26 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 	}
 
 	p = smb_buf(inbuf) + passlen;
-
 	p += srvstr_pull_buf(inbuf, path, p, sizeof(path), STR_TERMINATE);
 
 	/*
 	 * the service name can be either: \\server\share
 	 * or share directly like on the DELL PowerVault 705
 	 */
-	
 	if (*path=='\\') {	
 		q = strchr_m(path+2,'\\');
 		if (!q) {
 			END_PROFILE(SMBtconX);
 			return(ERROR_DOS(ERRDOS,ERRnosuchshare));
 		}
-		service = q+1;
+		fstrcpy(service,q+1);
 	}
 	else
-		service = path;
+		fstrcpy(service,path);
 		
 	p += srvstr_pull(inbuf, devicename, p, sizeof(devicename), 6, STR_ASCII);
 
-	DEBUG(4,("Got device type %s for %s\n",devicename, service));
+	DEBUG(4,("Got device type %s\n",devicename));
 
 	conn = make_connection(service,password,devicename,vuid,&nt_status);
 	
