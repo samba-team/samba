@@ -476,8 +476,7 @@ http://samba.org/cvs.html
 
 =====================================================================
 
-If you have problems, or think you have found a bug please email 
-a report to :
+If you think you have found a bug please email a report to :
 
         samba-bugs@samba.org
 
