@@ -5,7 +5,7 @@
 
 <html><head><title>smbclient (1)</title>
 
-<link rev="made" href="mailto:samba-bugs@samba.anu.edu.au">
+<link rev="made" href="mailto:samba-bugs@samba.org">
 </head>
 <body>
 
@@ -297,11 +297,11 @@ share. The secondary tar flags that can be given to this option are :
 <p><br><li><strong><strong>I</strong></strong> Include files and directories. Is the default
 	behavior when filenames are specified above. Causes tar files to
 	be included in an extract or create (and therefore everything else to
-	be excluded). See example below.  Filename globbing does not work for
-	included files for extractions (yet).
+	be excluded). See example below.  Filename globbing works 
+	in one of two ways.  See <strong>r</strong> below.
 <p><br><li><strong><strong>X</strong></strong> Exclude files and directories. Causes tar files to
 	be excluded from an extract or create. See example below.  Filename
-	globbing does not work for excluded files (yet).
+	globbing works in one of two ways now. See <strong>r</strong> below.
 <p><br><li><strong><strong>b</strong></strong> Blocksize. Must be followed by a valid (greater than
 	zero) blocksize.  Causes tar file to be written out in
 	blocksize*TBLOCK (usually 512 byte) blocks.
@@ -309,6 +309,11 @@ share. The secondary tar flags that can be given to this option are :
 	archive bit set. Useful only with the <strong>c</strong> flag.
 <p><br><li><strong><strong>q</strong></strong> Quiet. Keeps tar from printing diagnostics as it
 	works.  This is the same as tarmode quiet.
+<p><br><li><strong><strong>r</strong></strong> Regular expression include or exclude.  Uses regular 
+	regular expression matching for excluding or excluding files if 
+	compiled with HAVE_REGEX_H. However this mode can be very slow. If 
+	not compiled with HAVE_REGEX_H, does a limited wildcard match on * and 
+	?.
 <p><br><li><strong><strong>N</strong></strong> Newer than. Must be followed by the name of a file
 	whose date is compared against files found on the share during a
 	create. Only files newer than the file specified are backed up to the
@@ -567,7 +572,7 @@ level used by the client. If you have problems, set the debug level to
 <h2>AUTHOR</h2>
     
 <p><br>The original Samba software and related utilities were created by
-Andrew Tridgell <a href="mailto:samba-bugs@samba.anu.edu.au"><em>samba-bugs@samba.anu.edu.au</em></a>. Samba is now developed
+Andrew Tridgell <a href="mailto:samba-bugs@samba.org"><em>samba-bugs@samba.org</em></a>. Samba is now developed
 by the Samba Team as an Open Source project similar to the way the
 Linux kernel is developed.
 <p><br>The original Samba man pages were written by Karl Auer. The man page
@@ -575,7 +580,7 @@ sources were converted to YODL format (another excellent piece of Open
 Source software, available at
 <a href="ftp://ftp.icce.rug.nl/pub/unix/"><strong>ftp://ftp.icce.rug.nl/pub/unix/</strong></a>)
 and updated for the Samba2.0 release by Jeremy Allison.
-<a href="mailto:samba-bugs@samba.anu.edu.au"><em>samba-bugs@samba.anu.edu.au</em></a>.
+<a href="mailto:samba-bugs@samba.org"><em>samba-bugs@samba.org</em></a>.
 <p><br>See <a href="samba.7.html"><strong>samba (7)</strong></a> to find out how to get a full
 list of contributors and details on how to submit bug reports,
 comments etc.

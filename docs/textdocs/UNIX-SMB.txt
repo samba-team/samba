@@ -1,7 +1,7 @@
 !==
 !== UNIX-SMB.txt for Samba release 2.0.0-beta1 14 Nov 1998
 !==
-Contributor:	Andrew Tridgell <samba-bugs@samba.anu.edu.au>
+Contributor:	Andrew Tridgell <samba-bugs@samba.org>
 Date:		April 1995
 
 Subject:	Discussion of NetBIOS in a Unix World

@@ -3,7 +3,7 @@
 !==
 Subject:	DHCP Server Configuration for SMB Clients
 Date:		March 1, 1998
-Contributor:	John H Terpstra <jht@samba.anu.edu.au>
+Contributor:	John H Terpstra <jht@samba.org>
 Support:	This is an unsupported document. Refer to documentation that is
 		supplied with the ISC DHCP Server. Do NOT email the contributor
 		for ANY assistance.

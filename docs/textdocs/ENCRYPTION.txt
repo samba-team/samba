@@ -1,7 +1,7 @@
 !==
 !== ENCRYPTION.txt for Samba release 2.0.0-beta1 14 Nov 1998
 !==
-Contributor:	Jeremy Allison <samba-bugs@samba.anu.edu.au>
+Contributor:	Jeremy Allison <samba-bugs@samba.org>
 Updated:	March 19, 1998
 Note:		Please refer to WinNT.txt also
 

@@ -1,5 +1,5 @@
   Samba meta FAQ
-  Dan Shearer & Paul Blackman, ictinus@samba.anu.edu.au
+  Dan Shearer & Paul Blackman, ictinus@samba.org
   v 0.3, 7 Oct '97
 
   This is the meta-Frequently Asked Questions (FAQ) document for Samba,
@@ -182,7 +182,7 @@
 
   +o  Meta-FAQ. This is the mother of all documents, and is the one you
      are reading now. The latest version is always at
-     <http://samba.anu.edu.au/[.....]> but there is probably a much
+     <http://samba.org/[.....]> but there is probably a much
      nearer mirror site <../MIRRORS> which you should use instead.
 
   +o  <Samba-Server-FAQ.html> is the best starting point for information
@@ -261,14 +261,14 @@
 
   At time of writing, the current version was 1.9.17. If you want to be
   sure check the bottom of the change-log file.
-  <ftp://samba.anu.edu.au/pub/samba/alpha/change-log>
+  <ftp://samba.org/pub/samba/alpha/change-log>
   For more information see ``What do the version numbers mean?''
 
 
   22..33..  WWhheerree ccaann II ggeett iitt??
 
 
-  The Samba suite is available via anonymous ftp from samba.anu.edu.au
+  The Samba suite is available via anonymous ftp from samba.org
   and many mirror <../MIRRORS> sites. You will get much faster
   performance if you use a mirror site. The latest and greatest versions
   of the suite are in the directory:
@@ -362,7 +362,7 @@
   +o  The newsgroup comp.protocols.smb, which has a great deal of
      discussion about Samba.
 
-  +o  The WWW site 'SAMBA Web Pages' at  <http://samba.anu.edu.au/samba/>
+  +o  The WWW site 'SAMBA Web Pages' at  <http://samba.org/samba/>
      includes:
 
 
@@ -381,7 +381,7 @@
   22..66..  HHooww ddoo II ssuubbssccrriibbee ttoo tthhee SSaammbbaa MMaaiilliinngg LLiissttss??
 
 
-  Send email to listproc@samba.anu.edu.au. Make sure the subject line is
+  Send email to listproc@samba.org. Make sure the subject line is
   blank, and include the following two lines in the body of the message:
 
 
@@ -402,7 +402,7 @@
   subscribers. There are thousands of people on this list.
 
   If you stop being interested in Samba, please send another email to
-  listproc@samba.anu.edu.au. Make sure the subject line is blank, and
+  listproc@samba.org. Make sure the subject line is blank, and
   include the following two lines in the body of the message:
 
 
@@ -429,7 +429,7 @@
 
   1. See if there are any likely looking entries in this FAQ!  If you
      have just installed Samba, have you run through the checklist in
-     DIAGNOSIS.txt <ftp://samba.anu.edu.au/pub/samba/DIAGNOSIS.txt>? It
+     DIAGNOSIS.txt <ftp://samba.org/pub/samba/DIAGNOSIS.txt>? It
      can save you a lot of time and effort.  DIAGNOSIS.txt can also be
      found in the docs directory of the Samba distribution.
 
@@ -466,7 +466,7 @@
   If you make changes to the source code, _p_l_e_a_s_e submit these patches so
   that everyone else gets the benefit of your work. This is one of the
   most important aspects to the maintainence of Samba. Send all patches
-  to samba-bugs@samba.anu.edu.au. Do not send patches to Andrew Tridgell
+  to samba-bugs@samba.org. Do not send patches to Andrew Tridgell
   or any other individual, they may be lost if you do.
 
   Patch format ------------
@@ -518,7 +518,7 @@
 
   If you have spotted something very serious and believe that it is
   important to contact the developers quickly send a message to samba-
-  urgent@samba.anu.edu.au. This will be processed more quickly than mail
+  urgent@samba.org. This will be processed more quickly than mail
   to samba-bugs. Please think carefully before using this address. An
   example of its use might be to report a security hole.
 
@@ -614,7 +614,7 @@
   protocol specification is in the public domain and ongoing discussions
   concerning the spec take place on a public mailing list according to
   the rules of the Internet Engineering Task Force. For more information
-  and pointers see  <http://samba.anu.edu.au/cifs/>
+  and pointers see  <http://samba.org/cifs/>
 
   The following is taken from  <http://www.microsoft.com/intdev/cifs/>
 

@@ -1,5 +1,5 @@
   Samba FAQ
-  Paul Blackman, ictinus@samba.anu.edu.au
+  Paul Blackman, ictinus@samba.org
   v 0.8, June '97
 
   This is the Frequently Asked Questions (FAQ) document for Samba, the
@@ -160,7 +160,7 @@
 
   At time of writing, the current version was 1.9.17. If you want to be
   sure check the bottom of the change-log file.
-  <ftp://samba.anu.edu.au/pub/samba/alpha/change-log>
+  <ftp://samba.org/pub/samba/alpha/change-log>
 
   For more information see ``What do the version numbers mean?''
 
@@ -168,7 +168,7 @@
   11..33..  WWhheerree ccaann II ggeett iitt??
 
 
-  The Samba suite is available via anonymous ftp from samba.anu.edu.au.
+  The Samba suite is available via anonymous ftp from samba.org.
   The latest and greatest versions of the suite are in the directory:
 
   /pub/samba/
@@ -344,89 +344,89 @@
 
   +o  The long list of topic documentation.  These files can be found in
      the 'docs' directory of the Samba source, or at
-     <ftp://samba.anu.edu.au/pub/samba/docs/>
+     <ftp://samba.org/pub/samba/docs/>
 
   +o  Application_Serving.txt
-     <ftp://samba.anu.edu.au/pub/samba/docs/Application_Serving.txt>
+     <ftp://samba.org/pub/samba/docs/Application_Serving.txt>
 
-  +o  BROWSING.txt <ftp://samba.anu.edu.au/pub/samba/docs/BROWSING.txt>
+  +o  BROWSING.txt <ftp://samba.org/pub/samba/docs/BROWSING.txt>
 
-  +o  BUGS.txt <ftp://samba.anu.edu.au/pub/samba/docs/BUGS.txt>
+  +o  BUGS.txt <ftp://samba.org/pub/samba/docs/BUGS.txt>
 
-  +o  DIAGNOSIS.txt <ftp://samba.anu.edu.au/pub/samba/docs/DIAGNOSIS.txt>
+  +o  DIAGNOSIS.txt <ftp://samba.org/pub/samba/docs/DIAGNOSIS.txt>
 
-  +o  DNIX.txt <ftp://samba.anu.edu.au/pub/samba/docs/DNIX.txt>
+  +o  DNIX.txt <ftp://samba.org/pub/samba/docs/DNIX.txt>
 
-  +o  DOMAIN.txt <ftp://samba.anu.edu.au/pub/samba/docs/DOMAIN.txt>
+  +o  DOMAIN.txt <ftp://samba.org/pub/samba/docs/DOMAIN.txt>
 
   +o  CONTROL.txt
-     <ftp://samba.anu.edu.au/pub/samba/docs/DOMAIN_CONTROL.txt>
+     <ftp://samba.org/pub/samba/docs/DOMAIN_CONTROL.txt>
 
   +o  ENCRYPTION.txt
-     <ftp://samba.anu.edu.au/pub/samba/docs/ENCRYPTION.txt>
+     <ftp://samba.org/pub/samba/docs/ENCRYPTION.txt>
 
-  +o  Faxing.txt <ftp://samba.anu.edu.au/pub/samba/docs/Faxing.txt>
+  +o  Faxing.txt <ftp://samba.org/pub/samba/docs/Faxing.txt>
 
-  +o  GOTCHAS.txt <ftp://samba.anu.edu.au/pub/samba/docs/GOTCHAS.txt>
+  +o  GOTCHAS.txt <ftp://samba.org/pub/samba/docs/GOTCHAS.txt>
 
-  +o  HINTS.txt <ftp://samba.anu.edu.au/pub/samba/docs/HINTS.txt>
+  +o  HINTS.txt <ftp://samba.org/pub/samba/docs/HINTS.txt>
 
   +o  INSTALL.sambatar
-     <ftp://samba.anu.edu.au/pub/samba/docs/INSTALL.sambatar>
+     <ftp://samba.org/pub/samba/docs/INSTALL.sambatar>
 
-  +o  INSTALL.txt <ftp://samba.anu.edu.au/pub/samba/docs/INSTALL.txt>
+  +o  INSTALL.txt <ftp://samba.org/pub/samba/docs/INSTALL.txt>
 
-  +o  MIRRORS <ftp://samba.anu.edu.au/pub/samba/docs/MIRRORS>
+  +o  MIRRORS <ftp://samba.org/pub/samba/docs/MIRRORS>
 
-  +o  NetBIOS.txt <ftp://samba.anu.edu.au/pub/samba/docs/NetBIOS.txt>
+  +o  NetBIOS.txt <ftp://samba.org/pub/samba/docs/NetBIOS.txt>
 
-  +o  OS2.txt <ftp://samba.anu.edu.au/pub/samba/docs/OS2.txt>
+  +o  OS2.txt <ftp://samba.org/pub/samba/docs/OS2.txt>
 
-  +o  PROJECTS <ftp://samba.anu.edu.au/pub/samba/docs/PROJECTS>
+  +o  PROJECTS <ftp://samba.org/pub/samba/docs/PROJECTS>
 
-  +o  Passwords.txt <ftp://samba.anu.edu.au/pub/samba/docs/Passwords.txt>
+  +o  Passwords.txt <ftp://samba.org/pub/samba/docs/Passwords.txt>
 
-  +o  Printing.txt <ftp://samba.anu.edu.au/pub/samba/docs/Printing.txt>
+  +o  Printing.txt <ftp://samba.org/pub/samba/docs/Printing.txt>
 
-  +o  README.DCEDFS <ftp://samba.anu.edu.au/pub/samba/docs/README.DCEDFS>
+  +o  README.DCEDFS <ftp://samba.org/pub/samba/docs/README.DCEDFS>
 
-  +o  README.OS2 <ftp://samba.anu.edu.au/pub/samba/docs/README.OS2>
+  +o  README.OS2 <ftp://samba.org/pub/samba/docs/README.OS2>
 
-  +o  README.jis <ftp://samba.anu.edu.au/pub/samba/docs/README.jis>
+  +o  README.jis <ftp://samba.org/pub/samba/docs/README.jis>
 
   +o  README.sambatar
-     <ftp://samba.anu.edu.au/pub/samba/docs/README.sambatar>
+     <ftp://samba.org/pub/samba/docs/README.sambatar>
 
-  +o  SCO.txt <ftp://samba.anu.edu.au/pub/samba/docs/SCO.txt>
+  +o  SCO.txt <ftp://samba.org/pub/samba/docs/SCO.txt>
 
-  +o  SMBTAR.notes <ftp://samba.anu.edu.au/pub/samba/docs/SMBTAR.notes>
+  +o  SMBTAR.notes <ftp://samba.org/pub/samba/docs/SMBTAR.notes>
 
-  +o  Speed.txt <ftp://samba.anu.edu.au/pub/samba/docs/Speed.txt>
+  +o  Speed.txt <ftp://samba.org/pub/samba/docs/Speed.txt>
 
-  +o  Support.txt <ftp://samba.anu.edu.au/pub/samba/docs/Support.txt>
+  +o  Support.txt <ftp://samba.org/pub/samba/docs/Support.txt>
 
-  +o  THANKS <ftp://samba.anu.edu.au/pub/samba/docs/THANKS>
+  +o  THANKS <ftp://samba.org/pub/samba/docs/THANKS>
 
-  +o  Tracing.txt <ftp://samba.anu.edu.au/pub/samba/docs/Tracing.txt>
+  +o  Tracing.txt <ftp://samba.org/pub/samba/docs/Tracing.txt>
 
-  +o  SMB.txt <ftp://samba.anu.edu.au/pub/samba/docs/UNIX-SMB.txt>
+  +o  SMB.txt <ftp://samba.org/pub/samba/docs/UNIX-SMB.txt>
 
-  +o  Warp.txt <ftp://samba.anu.edu.au/pub/samba/docs/Warp.txt>
+  +o  Warp.txt <ftp://samba.org/pub/samba/docs/Warp.txt>
 
-  +o  WinNT.txt <ftp://samba.anu.edu.au/pub/samba/docs/WinNT.txt>
+  +o  WinNT.txt <ftp://samba.org/pub/samba/docs/WinNT.txt>
 
-  +o  history <ftp://samba.anu.edu.au/pub/samba/docs/history>
+  +o  history <ftp://samba.org/pub/samba/docs/history>
 
   +o  level.txt
-     <ftp://samba.anu.edu.au/pub/samba/docs/security_level.txt>
+     <ftp://samba.org/pub/samba/docs/security_level.txt>
 
-  +o  slip.htm <ftp://samba.anu.edu.au/pub/samba/docs/wfw_slip.htm>
+  +o  slip.htm <ftp://samba.org/pub/samba/docs/wfw_slip.htm>
 
 
   11..77..  HHooww ddoo II ssuubbssccrriibbee ttoo tthhee SSaammbbaa MMaaiilliinngg LLiissttss??
 
 
-  Send email to listproc@samba.anu.edu.au. Make sure the subject line is
+  Send email to listproc@samba.org. Make sure the subject line is
   blank, and include the following two lines in the body of the message:
 
 
@@ -446,7 +446,7 @@
   message to all subscribers.
 
   If you stop being interested in Samba, please send another email to
-  listproc@samba.anu.edu.au. Make sure the subject line is blank, and
+  listproc@samba.org. Make sure the subject line is blank, and
   include the following two lines in the body of the message:
 
 
@@ -470,7 +470,7 @@
 
   Firstly, see if there are any likely looking entries in this FAQ! If
   you have just installed Samba, have you run through the checklist in
-  DIAGNOSIS.txt <ftp://samba.anu.edu.au/pub/samba/DIAGNOSIS.txt>? It can
+  DIAGNOSIS.txt <ftp://samba.org/pub/samba/DIAGNOSIS.txt>? It can
   save you a lot of time and effort.  DIAGNOSIS.txt can also be found in
   the docs directory of the Samba distribution.
 
@@ -497,7 +497,7 @@
   If you make changes to the source code, _please_ submit these patches
   so that everyone else gets the benefit of your work. This is one of
   the most important aspects to the maintainence of Samba. Send all
-  patches to samba-bugs@samba.anu.edu.au. Do not send patches to Andrew
+  patches to samba-bugs@samba.org. Do not send patches to Andrew
   Tridgell or any other individual, they may be lost if you do.
 
 
@@ -538,7 +538,7 @@
   22..11..  II ccaann''tt sseeee tthhee SSaammbbaa sseerrvveerr iinn aannyy bbrroowwssee lliissttss!!
 
 
-  See BROWSING.txt <ftp://samba.anu.edu.au/pub/samba/BROWSING.txt> for
+  See BROWSING.txt <ftp://samba.org/pub/samba/BROWSING.txt> for
   more information on browsing.  Browsing.txt can also be found in the
   docs directory of the Samba source.
 
@@ -646,7 +646,7 @@
   machines (such as users of smbclient under Unix). Having said that,
   several developers are working hard on building it in to the next
   major version of Samba. If you can contribute, send a message to
-  samba-bugs@samba.anu.edu.au !
+  samba-bugs@samba.org !
 
   Seeing this message should not affect your ability to mount redirected
   disks and printers, which is really what all this is about.
@@ -703,7 +703,7 @@
   In earlier Samba versions there were some difficulties with the very
   latest Microsoft products, particularly Excel 5 and Word for Windows
   6. These should have all been solved. If not then please let Andrew
-  Tridgell know via email at samba-bugs@samba.anu.edu.au.
+  Tridgell know via email at samba-bugs@samba.org.
 
 
   22..99..  MMyy ""sseerrvveerr ssttrriinngg"" ddooeessnn''tt sseeeemm ttoo bbee rreeccooggnniisseedd
@@ -827,7 +827,7 @@
   +o  Copy timesync.pif to your windows directory
 
   +o  timesync.pif can be found at:
-     <http://samba.anu.edu.au/samba/binaries/miscellaneous/timesync.pif>
+     <http://samba.org/samba/binaries/miscellaneous/timesync.pif>
 
   +o  Add timesync.pif to your 'Start Up' group/folder
 
@@ -845,7 +845,7 @@
 
   Alternativley, if you clients support Domain Logons, you can setup
   Domain Logons with Samba - see: BROWSING.txt
-  <ftp://samba.anu.edu.au/pub/samba/docs/BROWSING.txt> *** for more
+  <ftp://samba.org/pub/samba/docs/BROWSING.txt> *** for more
   information.
 
   Then add
@@ -883,7 +883,7 @@
   (the default) then things will definately break as described above.
   The share level SMB security model has no provision for multiple user
   IDs on the one SMB connection. See security_level.txt
-  <ftp://samba.anu.edu.au/pub/samba/docs/security_level.txt> in the docs
+  <ftp://samba.org/pub/samba/docs/security_level.txt> in the docs
   for more info on share/user/server level security.
 
   If you run in user or server level security then you have a chance,
@@ -1050,7 +1050,7 @@
 
   this is effectively what older versions of Samba did, so if that
   worked for you then give it a go. If this does work then let us know
-  via samba-bugs@samba.anu.edu.au, and we'll make it the default. Cur-
+  via samba-bugs@samba.org, and we'll make it the default. Cur-
   rently the default is a 0 length string.
 
 
@@ -1064,7 +1064,7 @@
 
   1. Set the Samba configuration option 'security = user' and implement
      all of the stuff detailed in ENCRYPTION.txt
-     <ftp://samba.anu.edu.au/pub/samba/docs/ENCRYPTION.txt>.
+     <ftp://samba.org/pub/samba/docs/ENCRYPTION.txt>.
 
   2. Follow Microsoft's directions for setting your NT box to allow
      plain text passwords. see Knowledge Base Article Q166730

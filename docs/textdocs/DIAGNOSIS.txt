@@ -17,7 +17,7 @@ carefully choose them so later tests only use capabilities verified in
 the earlier tests.
 
 I would welcome additions to this set of tests. Please mail them to
-samba-bugs@samba.anu.edu.au
+samba-bugs@samba.org
 
 If you send me an email saying "it doesn't work" and you have not
 followed this test procedure then you should not be surprised if I
@@ -292,9 +292,9 @@ Still having troubles?
 
 Try the mailing list or newsgroup, or use the tcpdump-smb utility to
 sniff the problem. The official samba mailing list can be reached at
-samba@samba.anu.edu.au. To find out more about samba and how to
+samba@samba.org. To find out more about samba and how to
 subscribe to the mailing list check out the samba web page at
-              http://samba.anu.edu.au/samba
+              http://samba.org/samba
 
 Also look at the other docs in the Samba package!
 
