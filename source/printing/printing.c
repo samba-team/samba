@@ -1058,10 +1058,28 @@ int print_queue_status(int snum,
 	*queue = NULL;
 	
 	/*
-	 * Count the number of entries.
+	 * Fetch the queue status.  We must do this first, as there may
+	 * be no jobs in the queue.
+	 */
+	ZERO_STRUCTP(status);
+	slprintf(keystr, sizeof(keystr), "STATUS/%s", lp_servicename(snum));
+	key.dptr = keystr;
+	key.dsize = strlen(keystr);
+	data = tdb_fetch(tdb, key);
+	if (data.dptr) {
+		if (data.dsize == sizeof(*status)) {
+			memcpy(status, data.dptr, sizeof(*status));
+		}
+		free(data.dptr);
+	}
+
+	/*
+	 * Now, fetch the print queue information.  We first count the number
+	 * of entries, and then only retrieve the queue if necessary.
 	 */
 	tsc.count = 0;
 	tsc.snum = snum;
+	
 	tdb_traverse(tdb, traverse_count_fn_queue, (void *)&tsc);
 
 	if (tsc.count == 0)
@@ -1083,19 +1101,6 @@ int print_queue_status(int snum,
 	tstruct.snum = snum;
 
 	tdb_traverse(tdb, traverse_fn_queue, (void *)&tstruct);
-
-	/* also fetch the queue status */
-	ZERO_STRUCTP(status);
-	slprintf(keystr, sizeof(keystr), "STATUS/%s", lp_servicename(snum));
-	key.dptr = keystr;
-	key.dsize = strlen(keystr);
-	data = tdb_fetch(tdb, key);
-	if (data.dptr) {
-		if (data.dsize == sizeof(*status)) {
-			memcpy(status, data.dptr, sizeof(*status));
-		}
-		free(data.dptr);
-	}
 
 	/* Sort the queue by submission time otherwise they are displayed
 	   in hash order. */
