@@ -83,7 +83,33 @@ guest = *
     <para>Also note that no reverse mapping is done. The main effect
     this has is with printing. Users who have been mapped may have
     trouble deleting print jobs as PrintManager under WfWg will think
-	they don't own the print job.</para>
+    they don't own the print job.</para>
+
+   <para>
+   Samab versions prior to 3.0.8 would only support reading the fully qualified
+   username (e.g.: DOMAIN\user) from the username map when performing a
+   kerberos login from a client.  However, when looking up a map
+   entry for a user authenticated by NTLM[SSP], only the login name would be
+   used for matches.  This resulted in inconsistent behavior sometimes
+   even on the same server.
+   </para>
+
+   <para>
+   The following functionality is obeyed in version 3.0.8 and later:
+   </para>
+
+   <para>
+    When performing local authentication, the username map is
+    applied to the login name before attempting to authenticate
+    the connection.
+    </para>
+
+    <para>
+    When relying upon a external domain controller for validating
+    authentication requests, smbd will apply the username map
+    to the fully qualified username (i.e. DOMAIN\user) only
+    after the user has been successfully authenticated.
+    </para>
 </description>
 
 <value type="default"><comment>no username map</comment></value>
