@@ -931,7 +931,7 @@ static WERROR spoolss_OpenPrinterEx_server(struct dcesrv_call_state *dce_call,
 	handle->destroy = spoolss_OpenPrinter_destroy;
 
 	state->reference_count = 1;
-	state->access_mask = r->in.access_required;
+	state->access_mask = r->in.access_mask;
 	*r->out.handle = handle->wire_handle;
 
 	return WERR_OK;	
