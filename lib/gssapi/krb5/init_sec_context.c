@@ -35,6 +35,145 @@
 
 RCSID("$Id$");
 
+/*
+ * copy the addresses from `input_chan_bindings' (if any) to
+ * the auth context `ac'
+ */
+
+static OM_uint32
+set_addresses (krb5_auth_context ac,
+	       const gss_channel_bindings_t input_chan_bindings)	       
+{
+    /* Port numbers are expected to be in application_data.value, 
+     * initator's port first */ 
+
+    krb5_address initiator_addr, acceptor_addr;
+    krb5_error_code kret;
+       
+    if (input_chan_bindings == GSS_C_NO_CHANNEL_BINDINGS
+	|| input_chan_bindings->application_data.length !=
+	2 * sizeof(ac->local_port))
+	return 0;
+
+    memset(&initiator_addr, 0, sizeof(initiator_addr));
+    memset(&acceptor_addr, 0, sizeof(acceptor_addr));
+       
+    ac->local_port =
+	*(int16_t *) input_chan_bindings->application_data.value;
+       
+    ac->remote_port =
+	*((int16_t *) input_chan_bindings->application_data.value + 1);
+       
+    kret = gss_address_to_krb5addr(input_chan_bindings->acceptor_addrtype,
+				   &input_chan_bindings->acceptor_address,
+				   ac->remote_port,
+				   &acceptor_addr);
+    if (kret)
+	return kret;
+           
+    kret = gss_address_to_krb5addr(input_chan_bindings->initiator_addrtype,
+				   &input_chan_bindings->initiator_address,
+				   ac->local_port,
+				   &initiator_addr);
+    if (kret) {
+	krb5_free_address (gssapi_krb5_context, &acceptor_addr);
+	return kret;
+    }
+       
+    kret = krb5_auth_con_setaddrs(gssapi_krb5_context,
+				  ac,
+				  &initiator_addr,  /* local address */
+				  &acceptor_addr);  /* remote address */
+       
+    krb5_free_address (gssapi_krb5_context, &initiator_addr);
+    krb5_free_address (gssapi_krb5_context, &acceptor_addr);
+       
+#if 0
+    free(input_chan_bindings->application_data.value);
+    input_chan_bindings->application_data.value = NULL;
+    input_chan_bindings->application_data.length = 0;
+#endif
+
+    return kret;
+}
+
+/*
+ * handle delegated creds in init-sec-context
+ */
+
+static void
+do_delegation (krb5_auth_context ac,
+	       krb5_ccache ccache,
+	       krb5_creds *cred,
+	       const gss_name_t target_name,
+	       krb5_data *fwd_data,
+	       int *flags)
+{
+    krb5_creds creds;
+    krb5_kdc_flags fwd_flags;
+    krb5_keyblock *subkey;
+    krb5_error_code kret;
+       
+    memset (&creds, 0, sizeof(creds));
+    krb5_data_zero (fwd_data);
+       
+    kret = krb5_generate_subkey (gssapi_krb5_context, &cred->session, &subkey);
+    if (kret)
+	goto out;
+       
+    kret = krb5_auth_con_setlocalsubkey(gssapi_krb5_context, ac, subkey);
+    krb5_free_keyblock (gssapi_krb5_context, subkey);
+    if (kret)
+	goto out;
+       
+    kret = krb5_cc_get_principal(gssapi_krb5_context, ccache, &creds.client);
+    if (kret) 
+	goto out;
+       
+    kret = krb5_build_principal(gssapi_krb5_context,
+				&creds.server,
+				strlen(creds.client->realm),
+				creds.client->realm,
+				KRB5_TGS_NAME,
+				creds.client->realm,
+				NULL);
+    if (kret)
+	goto out; 
+       
+    creds.times.endtime = 0;
+       
+    fwd_flags.i = 0;
+    fwd_flags.b.forwarded = 1;
+    fwd_flags.b.forwardable = 1;
+       
+    if ( /*target_name->name.name_type != KRB5_NT_SRV_HST ||*/
+	target_name->name.name_string.len < 2) 
+	goto out;
+       
+    kret = krb5_get_forwarded_creds(gssapi_krb5_context,
+				    ac,
+				    ccache,
+				    fwd_flags.i,
+				    target_name->name.name_string.val[1],
+				    &creds,
+				    fwd_data);
+       
+ out:
+    if (kret)
+	*flags &= ~GSS_C_DELEG_FLAG;
+    else
+	*flags |= GSS_C_DELEG_FLAG;
+       
+    if (creds.client)
+	krb5_free_principal(gssapi_krb5_context, creds.client);
+    if (creds.server)
+	krb5_free_principal(gssapi_krb5_context, creds.server);
+}
+
+/*
+ * first stage of init-sec-context
+ */
+
 static OM_uint32
 init_auth
            (OM_uint32 * minor_status,
@@ -65,7 +204,6 @@ init_auth
     krb5_enctype enctype;
     krb5_data fwd_data;
 
-    krb5_data_zero (&fwd_data);
     output_token->length = 0;
     output_token->value  = NULL;
 
@@ -80,12 +218,12 @@ init_auth
 	return GSS_S_FAILURE;
     }
 
-    (*context_handle)->auth_context =  NULL;
-    (*context_handle)->source = NULL;
-    (*context_handle)->target = NULL;
-    (*context_handle)->flags = 0;
-    (*context_handle)->more_flags = 0;
-    (*context_handle)->ticket = NULL;
+    (*context_handle)->auth_context = NULL;
+    (*context_handle)->source       = NULL;
+    (*context_handle)->target       = NULL;
+    (*context_handle)->flags        = 0;
+    (*context_handle)->more_flags   = 0;
+    (*context_handle)->ticket       = NULL;
 
     kret = krb5_auth_con_init (gssapi_krb5_context,
 			       &(*context_handle)->auth_context);
@@ -95,66 +233,15 @@ init_auth
 	goto failure;
     }
 
-    if (input_chan_bindings != GSS_C_NO_CHANNEL_BINDINGS &&
-        input_chan_bindings->application_data.length ==
-            2 * sizeof((*context_handle)->auth_context->local_port)) {
-       /* Port numbers are expected to be in application_data.value, 
-        * initator's port first */ 
-
-       krb5_address initiator_addr, acceptor_addr;
-       
-       memset(&initiator_addr, 0, sizeof(initiator_addr));
-       memset(&acceptor_addr, 0, sizeof(acceptor_addr));
-       
-       (*context_handle)->auth_context->local_port =
-          *(int16_t *) input_chan_bindings->application_data.value;
-       
-       (*context_handle)->auth_context->remote_port =
-          *((int16_t *) input_chan_bindings->application_data.value + 1);
-       
-       kret = gss_address_to_krb5addr(input_chan_bindings->acceptor_addrtype,
-                                 &input_chan_bindings->acceptor_address,
-                                 (*context_handle)->auth_context->remote_port,
-                                 &acceptor_addr);
-       if (kret) {
-          *minor_status = kret;  
-          ret = GSS_S_BAD_BINDINGS;
-          goto failure;
-       }
-           
-       kret = gss_address_to_krb5addr(input_chan_bindings->initiator_addrtype,
-                                 &input_chan_bindings->initiator_address,
-                                 (*context_handle)->auth_context->local_port,
-                                 &initiator_addr);
-       if (kret) {
-          krb5_free_address (gssapi_krb5_context, &acceptor_addr);
-          *minor_status = kret;
-          ret = GSS_S_BAD_BINDINGS;
-          goto failure;
-       }
-       
-       kret = krb5_auth_con_setaddrs(gssapi_krb5_context,
-                                     (*context_handle)->auth_context,
-                                     &initiator_addr,  /* local address */
-                                     &acceptor_addr);  /* remote address */
-       
-       krb5_free_address (gssapi_krb5_context, &initiator_addr);
-       krb5_free_address (gssapi_krb5_context, &acceptor_addr);
-       
-#if 0
-       free(input_chan_bindings->application_data.value);
-       input_chan_bindings->application_data.value = NULL;
-       input_chan_bindings->application_data.length = 0;
-#endif
-
-       if (kret) {
-          *minor_status = kret;
-          ret = GSS_S_BAD_BINDINGS;
-          goto failure;
-       }
+    kret = set_addresses ((*context_handle)->auth_context,
+			  input_chan_bindings);
+    if (kret) {
+	*minor_status = kret;
+	ret = GSS_S_BAD_BINDINGS;
+	goto failure;
     }
        
-  {
+    {
 	int32_t tmp;
 
 	krb5_auth_con_getflags(gssapi_krb5_context,
@@ -198,7 +285,7 @@ init_auth
     this_cred.client          = (*context_handle)->source;
     this_cred.server          = (*context_handle)->target;
     this_cred.times.endtime   = 0;
-    this_cred.session.keytype = ETYPE_DES_CBC_CRC;
+    this_cred.session.keytype = 0;
   
     kret = krb5_get_credentials (gssapi_krb5_context,
 				 KRB5_TC_MATCH_KEYTYPE,
@@ -218,77 +305,9 @@ init_auth
   
     flags = 0;
     ap_options = 0;
-    if (req_flags & GSS_C_DELEG_FLAG) {
-       krb5_creds creds;
-       krb5_kdc_flags fwd_flags;
-       krb5_keyblock *subkey;
-       
-       memset ((char *)&creds, 0, sizeof(creds));
-       
-       subkey = (krb5_keyblock *) malloc(sizeof(subkey));
-       if (subkey == NULL) {
-          *minor_status = ENOMEM;
-          ret = GSS_S_FAILURE;
-          goto failure;
-       }
-       
-       krb5_generate_subkey (gssapi_krb5_context,
-                             &cred->session,
-                             &subkey);
-       if (kret) 
-          goto end_fwd;
-       
-       kret = krb5_auth_con_setlocalsubkey(gssapi_krb5_context,
-                                           (*context_handle)->auth_context,
-                                           subkey);
-       if (kret) 
-          goto end_fwd;
-       
-       kret = krb5_cc_get_principal(gssapi_krb5_context,
-                                    ccache,
-                                    &creds.client);
-       if (kret) 
-          goto end_fwd;
-       
-       kret = krb5_build_principal(gssapi_krb5_context,
-                                   &creds.server,
-                                   strlen(creds.client->realm),
-                                   creds.client->realm,
-                                   KRB5_TGS_NAME,
-                                   creds.client->realm,
-                                   NULL);
-       if (kret)
-          goto end_fwd; 
-       
-       creds.times.endtime = 0;
-       
-       fwd_flags.i = 0;
-       fwd_flags.b.forwarded = 1;
-       fwd_flags.b.forwardable = 1;
-       
-       if ( /*target_name->name.name_type != KRB5_NT_SRV_HST ||*/
-             target_name->name.name_string.len < 2) 
-          goto end_fwd;
-       
-       kret = krb5_get_forwarded_creds(gssapi_krb5_context,
-                                       (*context_handle)->auth_context,
-                                       ccache,
-                                       fwd_flags.i,
-                                       target_name->name.name_string.val[1],
-                                       &creds,
-                                       &fwd_data);
-       
-end_fwd:
-       if (kret)
-          flags &= ~GSS_C_DELEG_FLAG;
-       else
-          flags |= GSS_C_DELEG_FLAG;
-       
-       if (creds.client)
-          krb5_free_principal(gssapi_krb5_context, creds.client);
-       if (creds.server)
-          krb5_free_principal(gssapi_krb5_context, creds.server);
-    }
+    if (req_flags & GSS_C_DELEG_FLAG)
+	do_delegation ((*context_handle)->auth_context,
+		       ccache, cred, target_name, &fwd_data, &flags);
        
     if (req_flags & GSS_C_MUTUAL_FLAG) {
        flags |= GSS_C_MUTUAL_FLAG;
@@ -315,6 +334,7 @@ end_fwd:
 					     flags,
 					     &fwd_data,
 					     &cksum);
+    krb5_data_free (&fwd_data);
     if (kret) {
 	*minor_status = kret;
 	ret = GSS_S_FAILURE;
@@ -334,8 +354,6 @@ end_fwd:
 	    return kret;
     }
 #endif
-
-
 
     kret = krb5_build_authenticator (gssapi_krb5_context,
 				     (*context_handle)->auth_context,
@@ -364,13 +382,13 @@ end_fwd:
 	goto failure;
     }
 
-    ret = gssapi_krb5_encapsulate (&outbuf,
-				   output_token,
-				   "\x01\x00");
+    ret = gssapi_krb5_encapsulate (&outbuf, output_token, "\x01\x00");
     if (ret) {
 	*minor_status = kret;
 	goto failure;
     }
+
+    krb5_data_free (&outbuf);
 
     if (flags & GSS_C_MUTUAL_FLAG) {
 	return GSS_S_CONTINUE_NEEDED;
@@ -411,33 +429,31 @@ repl_mutual
             OM_uint32 * time_rec
            )
 {
-  OM_uint32 ret;
-  krb5_error_code kret;
-  krb5_data indata;
-  krb5_ap_rep_enc_part *repl;
+    OM_uint32 ret;
+    krb5_error_code kret;
+    krb5_data indata;
+    krb5_ap_rep_enc_part *repl;
 
-  ret = gssapi_krb5_decapsulate (input_token,
-				 &indata,
-				 "\x02\x00");
-  if (ret) {
+    ret = gssapi_krb5_decapsulate (input_token, &indata, "\x02\x00");
+    if (ret) {
 				/* XXX - Handle AP_ERROR */
-    return GSS_S_FAILURE;
-  }
+	return GSS_S_FAILURE;
+    }
 
-  kret = krb5_rd_rep (gssapi_krb5_context,
-		      (*context_handle)->auth_context,
-		      &indata,
-		      &repl);
-  if (kret)
-    return GSS_S_FAILURE;
-  krb5_free_ap_rep_enc_part (gssapi_krb5_context,
-			     repl);
+    kret = krb5_rd_rep (gssapi_krb5_context,
+			(*context_handle)->auth_context,
+			&indata,
+			&repl);
+    if (kret)
+	return GSS_S_FAILURE;
+    krb5_free_ap_rep_enc_part (gssapi_krb5_context,
+			       repl);
 
-  output_token->length = 0;
+    output_token->length = 0;
 
-  (*context_handle)->more_flags |= OPEN;
+    (*context_handle)->more_flags |= OPEN;
 
-  return GSS_S_COMPLETE;
+    return GSS_S_COMPLETE;
 }
 
 /*
@@ -460,34 +476,34 @@ OM_uint32 gss_init_sec_context
             OM_uint32 * time_rec
            )
 {
-  gssapi_krb5_init ();
+    gssapi_krb5_init ();
 
-  if (input_token == GSS_C_NO_BUFFER || input_token->length == 0)
-    return init_auth (minor_status,
-		      initiator_cred_handle,
-		      context_handle,
-		      target_name,
-		      mech_type,
-		      req_flags,
-		      time_req,
-		      input_chan_bindings,
-		      input_token,
-		      actual_mech_type,
-		      output_token,
-		      ret_flags,
-		      time_rec);
-  else
-    return repl_mutual(minor_status,
-		       initiator_cred_handle,
-		       context_handle,
-		       target_name,
-		       mech_type,
-		       req_flags,
-		       time_req,
-		       input_chan_bindings,
-		       input_token,
-		       actual_mech_type,
-		       output_token,
-		       ret_flags,
-		       time_rec);
+    if (input_token == GSS_C_NO_BUFFER || input_token->length == 0)
+	return init_auth (minor_status,
+			  initiator_cred_handle,
+			  context_handle,
+			  target_name,
+			  mech_type,
+			  req_flags,
+			  time_req,
+			  input_chan_bindings,
+			  input_token,
+			  actual_mech_type,
+			  output_token,
+			  ret_flags,
+			  time_rec);
+    else
+	return repl_mutual(minor_status,
+			   initiator_cred_handle,
+			   context_handle,
+			   target_name,
+			   mech_type,
+			   req_flags,
+			   time_req,
+			   input_chan_bindings,
+			   input_token,
+			   actual_mech_type,
+			   output_token,
+			   ret_flags,
+			   time_rec);
 }
