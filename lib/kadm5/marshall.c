@@ -270,6 +270,7 @@ ret_principal_ent(krb5_storage *sp,
     }
     if (mask & KADM5_TL_DATA) {
 	krb5_ret_int32(sp, &tmp);
+	princ->n_tl_data = tmp;
 	princ->tl_data = NULL;
 	for(i = 0; i < princ->n_tl_data; i++){
 	    krb5_tl_data *tp = malloc(sizeof(*tp));
