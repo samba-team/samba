@@ -1461,15 +1461,28 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 	}
 
 	/*
-	 * Now try and apply the desired SD.
+	 * According to the MS documentation, the only time the security
+	 * descriptor is applied to the opened file is iff we *created* the
+	 * file; an existing file stays the same.
+	 * 
+	 * Also, it seems (from observation) that you can open the file with
+	 * any access mask but you can still write the sd. We need to override
+	 * the granted access before we call set_sd
+	 * Patch for bug #2242 from Tom Lackemann <cessnatomny@yahoo.com>.
 	 */
 
-	if (lp_nt_acl_support(SNUM(conn)) && sd_len &&
-			!NT_STATUS_IS_OK(status = set_sd( fsp, data, sd_len, ALL_SECURITY_INFORMATION))) {
-		close_file(fsp,False);
-		restore_case_semantics(conn, file_attributes);
-		return ERROR_NT(status);
-	}
+	if (lp_nt_acl_support(SNUM(conn)) && sd_len && smb_action == FILE_WAS_CREATED) {
+		uint32 saved_access = fsp->desired_access;
+
+		fsp->desired_access = FILE_GENERIC_ALL;
+
+		if (!NT_STATUS_IS_OK(status = set_sd( fsp, data, sd_len, ALL_SECURITY_INFORMATION))) {
+			close_file(fsp,False);
+			restore_case_semantics(conn, file_attributes);
+			return ERROR_NT(status);
+		}
+		fsp->desired_access = saved_access;
+ 	}
 	
 	restore_case_semantics(conn, file_attributes);
 
