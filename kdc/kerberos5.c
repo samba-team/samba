@@ -240,7 +240,7 @@ realloc_method_data(METHOD_DATA *md)
 static krb5_error_code
 get_pa_etype_info(METHOD_DATA *md, hdb_entry *client)
 {
-    krb5_error_code ret;
+    krb5_error_code ret = 0;
     int i;
     ETYPE_INFO pa;
     ETYPE_INFO_ENTRY *tmp;
@@ -1278,7 +1278,7 @@ tgs_rep2(KDC_REQ_BODY *b,
     krb5_flags ap_req_options;
     const char *e_text = NULL;
 
-    hdb_entry *krbtgt;
+    hdb_entry *krbtgt = NULL;
     EncTicketPart *tgt;
     Key *tkey;
     krb5_enctype cetype;
