@@ -20,20 +20,20 @@ environment, and to make their lives a little easier.
 </para>
 
 <para>
-Since I don't need to buy an NT4 Server, how do I get the 'User Manager for Domains',
+	Since I don't need to buy an <application>NT4 Server</application>, how do I get the 'User Manager for Domains',
 the 'Server Manager'?
 </para>
 
 <para>
-Microsoft distributes a version of these tools called nexus for installation on Windows 9x / Me
-systems.  The tools set includes:
+Microsoft distributes a version of these tools called nexus for installation 
+on <application>Windows 9x / Me</application> systems.  The tools set includes:
 </para>
 
-<itemizedlist>
-	<listitem><para>Server Manager</para></listitem> 
-	<listitem><para>User Manager for Domains</para></listitem> 
-	<listitem><para>Event Viewer</para></listitem> 
-</itemizedlist>
+<simplelist>
+	<member>Server Manager</member>
+	<member>User Manager for Domains</member>
+	<member>Event Viewer</member>
+</simplelist>
 
 <para>
 Click here to download the archived file <ulink 
@@ -41,7 +41,7 @@ url="ftp://ftp.microsoft.com/Softlib/MSLFILES/NEXUS.EXE">ftp://ftp.microsoft.com
 </para>
 
 <para>
-The Windows NT 4.0 version of the 'User Manager for 
+The <application>Windows NT 4.0</application> version of the 'User Manager for 
 Domains' and 'Server Manager' are available from Microsoft via ftp 
 from <ulink url="ftp://ftp.microsoft.com/Softlib/MSLFILES/SRVTOOLS.EXE">ftp://ftp.microsoft.com/Softlib/MSLFILES/SRVTOOLS.EXE</ulink>
 </para>
@@ -69,7 +69,9 @@ There are several opportunities for creating a custom network startup configurat
 </simplelist>
 
 <para>
-The Samba source code tree includes two logon script generation/execution tools. See <filename>examples</filename> directory <filename>genlogon</filename> and <filename>ntlogon</filename> subdirectories.
+The Samba source code tree includes two logon script generation/execution tools.
+See <filename>examples</filename> directory <filename>genlogon</filename> and
+<filename>ntlogon</filename> subdirectories.
 </para>
 
 <para>
@@ -77,7 +79,7 @@ The following listings are from the genlogon directory.
 </para>
 
 <para>
-This is the genlogon.pl file:
+This is the <filename>genlogon.pl</filename> file:
 
 <programlisting>
 	#!/usr/bin/perl
@@ -174,10 +176,9 @@ Printers may be added automatically during logon script processing through the u
 	rundll32 printui.dll,PrintUIEntry /?
 </programlisting>
 
-See the documentation in the Microsoft knowledgebase article no: 189105 referred to above.
+See the documentation in the <ulink url="http://support.microsoft.com/default.asp?scid=kb;en-us;189105">Microsoft knowledgebase article no: 189105</ulink>.
 </para>
 </sect2>
 
 </sect1>
 </chapter>
-

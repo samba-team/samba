@@ -208,9 +208,9 @@ Samba-3 introduces the following new password backend capabilities:
 	In addition to differently encrypted passwords, windows also stores certain data for each
 	user that is not stored in a unix user database. e.g: workstations the user may logon from,
 	the location where the users' profile is stored, and so on. Samba retrieves and stores this
-	information using a "passdb backend".  Commonly available backends are LDAP, plain text
+	information using a <parameter>passdb backend</parameter>.  Commonly available backends are LDAP, plain text
 	file, MySQL and nisplus.  For more information, see the man page for &smb.conf; regarding the 
-	<command>passdb backend = </command> parameter.
+	<parameter>passdb backend</parameter> parameter.
 	</para>
 
 	<sect2>
@@ -756,9 +756,9 @@ objectclass ( 1.3.6.1.4.1.7165.2.2.3 NAME 'sambaAccount' SUP top AUXILIARY
 			</para>
 
 <para>
-<programlisting>
-<prompt>root# </prompt><userinput>cp samba.schema /etc/openldap/schema/</userinput>
-</programlisting>
+<screen>
+&rootprompt;<userinput>cp samba.schema /etc/openldap/schema/</userinput>
+</screen>
 </para>
 
 			<para>
@@ -833,9 +833,9 @@ index   default               sub
 		</para>
 
 <para>
-<programlisting>
-<prompt>root# </prompt><userinput>/etc/init.d/slapd restart</userinput>
-</programlisting>
+<screen>
+&rootprompt;<userinput>/etc/init.d/slapd restart</userinput>
+</screen>
 </para>
 
 		</sect3>
@@ -844,14 +844,13 @@ index   default               sub
 		<title>Configuring Samba</title>
 
 			<para>
-			The following parameters are available in smb.conf only with <parameter>--with-ldapsam</parameter>
-			was included when compiling Samba. The following parameters are available in smb.conf only if your
+			The following parameters are available in smb.conf only if your
 			version of samba was built with LDAP support. Samba automatically builds with LDAP support if the
 			LDAP libraries are found.
 			</para>
 
 		<itemizedlist>
-			<listitem><para><ulink url="smb.conf.5.html#PASSDBBACKEND">passdb backend ldapsam:url</ulink></para></listitem>
+			<listitem><para><ulink url="smb.conf.5.html#PASSDBBACKEND">passdb backend = ldapsam:url</ulink></para></listitem>
 			<listitem><para><ulink url="smb.conf.5.html#LDAPSSL">ldap ssl</ulink></para></listitem>
 			<listitem><para><ulink url="smb.conf.5.html#LDAPADMINDN">ldap admin dn</ulink></para></listitem>
 			<listitem><para><ulink url="smb.conf.5.html#LDAPSUFFIX">ldap suffix</ulink></para></listitem>
@@ -970,12 +969,12 @@ index   default               sub
 
 			<para>
 			To remedy the first security issue, the "ldap ssl" smb.conf parameter defaults
-			to require an encrypted session (<command>ldap ssl = on</command>) using
-			the default port of 636
+			to require an encrypted session (<parameter>ldap ssl = on</parameter>) using
+			the default port of <constant>636</constant>
 			when contacting the directory server.  When using an OpenLDAP server, it
 			is possible to use the use the StartTLS LDAP extended  operation in the place of
 			LDAPS.  In either case, you are strongly discouraged to disable this security
-			(<command>ldap ssl = off</command>).
+			(<parameter>ldap ssl = off</parameter>).
 			</para>
 
 			<para>
@@ -1236,7 +1235,7 @@ index   default               sub
 
 			<para>The identifier can be any string you like, as long as it doesn't collide with 
 			the identifiers of other plugins or other instances of pdb_mysql. If you 
-			specify multiple pdb_mysql.so entries in 'passdb backend', you also need to 
+			specify multiple pdb_mysql.so entries in <parameter>passdb backend</parameter>, you also need to 
 			use different identifiers!
 			</para>
 
@@ -1383,10 +1382,10 @@ index   default               sub
 		</para>
 
 		<para>
-		<programlisting>
 		then execute (as root):
-			pdbedit -i smbpasswd -e tdbsam
-		</programlisting>
+		<screen>
+		&rootprompt;<userinput>pdbedit -i smbpasswd -e tdbsam</userinput>
+		</screen>
 		</para>
 	</sect2>
 </sect1>
