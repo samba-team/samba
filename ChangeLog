@@ -1,5 +1,8 @@
 Sat May 23 04:55:19 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
 
+	* kadmin/kadmin.c: Pass NULL password to
+ 	kadm5_*_init_with_password.
+
 	* lib/kadm5/init_c.c: Implement init_with_{skey,creds}*. Make use
  	of `password' parameter to init_with_password.
 
