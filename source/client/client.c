@@ -307,7 +307,7 @@ static BOOL do_this_one(file_info *finfo)
 
 	if (*fileselection && 
 	    !mask_match(finfo->name,fileselection,False)) {
-		DEBUG(3,("match_match %s failed\n", finfo->name));
+		DEBUG(3,("mask_match %s failed\n", finfo->name));
 		return False;
 	}
 
@@ -695,7 +695,7 @@ static int do_get(char *rname,char *lname)
 	}
 
 	DEBUG(2,("getting file %s of size %.0f as %s ", 
-		 lname, (double)size, lname));
+		 rname, (double)size, lname));
 
 	if(!(data = (char *)malloc(read_size))) { 
 		d_printf("malloc fail for size %d\n", read_size);
