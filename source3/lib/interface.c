@@ -136,7 +136,7 @@ static void interpret_interfaces(char *s, struct interface **interfaces,
   allones_ip = *interpret_addr2("255.255.255.255");
   loopback_ip = *interpret_addr2("127.0.0.1");
 
-  while (next_token(&ptr,token,NULL)) {
+  while (next_token(&ptr,token,NULL,sizeof(token))) {
     /* parse it into an IP address/netmasklength pair */
     char *p = strchr(token,'/');
     if (p) *p++ = 0;

@@ -211,13 +211,13 @@ BOOL initialise_wins(void)
      * time to actually parse them into the ip_list array.
      */
 
-    if (!next_token(&ptr,name_str,NULL)) 
+    if (!next_token(&ptr,name_str,NULL,sizeof(name_str))) 
     {
       DEBUG(0,("initialise_wins: Failed to parse name when parsing line %s\n", line ));
       continue;
     }
 
-    if (!next_token(&ptr,ttl_str,NULL))
+    if (!next_token(&ptr,ttl_str,NULL,sizeof(ttl_str)))
     {
       DEBUG(0,("initialise_wins: Failed to parse time to live when parsing line %s\n", line ));
       continue;
@@ -229,7 +229,7 @@ BOOL initialise_wins(void)
     num_ips = 0;
     do
     {
-      got_token = next_token(&ptr,ip_str,NULL);
+      got_token = next_token(&ptr,ip_str,NULL,sizeof(ip_str));
       was_ip = False;
 
       if(got_token && strchr(ip_str, '.'))
@@ -260,16 +260,16 @@ BOOL initialise_wins(void)
  
     /* Reset and re-parse the line. */
     ptr = line;
-    next_token(&ptr,name_str,NULL); 
-    next_token(&ptr,ttl_str,NULL);
+    next_token(&ptr,name_str,NULL,sizeof(name_str)); 
+    next_token(&ptr,ttl_str,NULL,sizeof(ttl_str));
     for(i = 0; i < num_ips; i++)
     {
-      next_token(&ptr, ip_str, NULL);
+      next_token(&ptr, ip_str, NULL, sizeof(ip_str));
       ip_list[i] = *interpret_addr2(ip_str);
       if (ip_equal(ip_list[i], ipzero)) 
          source = SELF_NAME;
     }
-    next_token(&ptr,nb_flags_str,NULL);
+    next_token(&ptr,nb_flags_str,NULL, sizeof(nb_flags_str));
 
     /* 
      * Deal with SELF or REGISTER name encoding. Default is REGISTER

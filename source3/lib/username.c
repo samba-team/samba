@@ -297,7 +297,7 @@ BOOL user_in_list(char *user,char *list)
   pstring tok;
   char *p=list;
 
-  while (next_token(&p,tok,LIST_SEP))
+  while (next_token(&p,tok,LIST_SEP, sizeof(tok)))
   {
     /*
      * Check raw username.

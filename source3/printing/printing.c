@@ -228,7 +228,10 @@ static BOOL parse_lpq_bsd(char *line,print_queue_struct *buf,BOOL first)
   string_sub(line,"(","\"");
   string_sub(line,")","\"");
   
-  for (count=0; count<NTOK && next_token(&line,tok[count],NULL); count++) ;
+  for (count=0; 
+       count<NTOK && 
+	       next_token(&line,tok[count],NULL, sizeof(tok[count])); 
+       count++) ;
 
   /* we must get NTOK tokens */
   if (count < NTOK)
@@ -398,7 +401,10 @@ A long spool-path will just waste significant chars of the file name.
   string_sub(line,"(","\"");
   string_sub(line,")","\"");
   
-  for (count=0; count<LPRNG_NTOK && next_token(&line,tok[count],NULL); count++) ;
+  for (count=0; 
+       count<LPRNG_NTOK && 
+	       next_token(&line,tok[count],NULL, sizeof(tok[count])); 
+       count++) ;
 
   /* we must get LPRNG_NTOK tokens */
   if (count < LPRNG_NTOK)
@@ -471,7 +477,10 @@ static BOOL parse_lpq_aix(char *line,print_queue_struct *buf,BOOL first)
   string_sub(line,"(","\"");
   string_sub(line,")","\"");
 
-  for (count=0; count<10 && next_token(&line,tok[count],NULL); count++) ;
+  for (count=0; 
+       count<10 && 
+	       next_token(&line,tok[count],NULL, sizeof(tok[count])); 
+       count++) ;
 
   /* we must get 6 tokens */
   if (count < 10)
@@ -585,7 +594,7 @@ static BOOL parse_lpq_hpux(char * line, print_queue_struct *buf, BOOL first)
     string_sub(line,"(","\"");
     string_sub(line,")","\"");
     
-    for (count=0; count<2 && next_token(&line,tok[count],NULL); count++) ;
+    for (count=0; count<2 && next_token(&line,tok[count],NULL,sizeof(tok[count])); count++) ;
     /* we must get 2 tokens */
     if (count < 2) return(False);
     
@@ -621,7 +630,7 @@ static BOOL parse_lpq_hpux(char * line, print_queue_struct *buf, BOOL first)
     /* handle the dash in the job id */
     string_sub(line,"-"," ");
     
-    for (count=0; count<12 && next_token(&line,tok[count],NULL); count++) ;
+    for (count=0; count<12 && next_token(&line,tok[count],NULL,sizeof(tok[count])); count++) ;
       
     /* we must get 8 tokens */
     if (count < 8) return(False);
@@ -671,7 +680,7 @@ static BOOL parse_lpq_sysv(char *line,print_queue_struct *buf,BOOL first)
   /* handle the dash in the job id */
   string_sub(line,"-"," ");
   
-  for (count=0; count<9 && next_token(&line,tok[count],NULL); count++) ;
+  for (count=0; count<9 && next_token(&line,tok[count],NULL,sizeof(tok[count])); count++) ;
 
   /* we must get 7 tokens */
   if (count < 7)
@@ -735,7 +744,7 @@ static BOOL parse_lpq_qnx(char *line,print_queue_struct *buf,BOOL first)
 
   
   
-  for (count=0; count<7 && next_token(&line,tok[count],NULL); count++) ;
+  for (count=0; count<7 && next_token(&line,tok[count],NULL,sizeof(tok[count])); count++) ;
 
   /* we must get 7 tokens */
   if (count < 7)
@@ -790,7 +799,7 @@ static BOOL parse_lpq_plp(char *line,print_queue_struct *buf,BOOL first)
   string_sub(line,"(","\"");
   string_sub(line,")","\"");
   
-  for (count=0; count<11 && next_token(&line,tok[count],NULL); count++) ;
+  for (count=0; count<11 && next_token(&line,tok[count],NULL,sizeof(tok[count])); count++) ;
 
   /* we must get 11 tokens */
   if (count < 11)
@@ -858,7 +867,7 @@ static BOOL parse_lpq_softq(char *line,print_queue_struct *buf,BOOL first)
   /* mung all the ":"s to spaces*/
   string_sub(line,":"," ");
   
-  for (count=0; count<10 && next_token(&line,tok[count],NULL); count++) ;
+  for (count=0; count<10 && next_token(&line,tok[count],NULL,sizeof(tok[count])); count++) ;
 
   /* we must get 9 tokens */
   if (count < 9)

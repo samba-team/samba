@@ -347,13 +347,13 @@ BOOL getlmhostsent( FILE *fp, char *name, int *name_type, struct in_addr *ipaddr
 
     ptr = line;
 
-    if (next_token(&ptr,ip   ,NULL))
+    if (next_token(&ptr,ip   ,NULL,sizeof(ip)))
       ++count;
-    if (next_token(&ptr,name ,NULL))
+    if (next_token(&ptr,name ,NULL, sizeof(name)))
       ++count;
-    if (next_token(&ptr,flags,NULL))
+    if (next_token(&ptr,flags,NULL, sizeof(flags)))
       ++count;
-    if (next_token(&ptr,extra,NULL))
+    if (next_token(&ptr,extra,NULL, sizeof(extra)))
       ++count;
 
     if (count <= 0)
@@ -452,7 +452,7 @@ BOOL resolve_name(char *name, struct in_addr *return_ip)
   ptr = name_resolve_list;
   if (!ptr || !*ptr) ptr = "host";
 
-  while (next_token(&ptr, tok, LIST_SEP)) {
+  while (next_token(&ptr, tok, LIST_SEP, sizeof(tok))) {
     if(strequal(tok, "host") || strequal(tok, "hosts")) {
 
       /*

@@ -216,7 +216,7 @@ BOOL user_in_list(char *user,char *list);
 
 char *tmpdir(void);
 BOOL is_a_socket(int fd);
-BOOL next_token(char **ptr,char *buff,char *sep);
+BOOL next_token(char **ptr,char *buff,char *sep, int bufsize);
 char **toktocliplist(int *ctok, char *sep);
 void *mem_dup( void *from, int size );
 void array_promote(char *array,int elsize,int element);

@@ -506,7 +506,7 @@ void announce_remote(time_t t)
 
   comment = lp_serverstring();
 
-  for (ptr=s; next_token(&ptr,s2,NULL); ) 
+  for (ptr=s; next_token(&ptr,s2,NULL,sizeof(s2)); ) 
   {
     /* The entries are of the form a.b.c.d/WORKGROUP with 
        WORKGROUP being optional */
@@ -596,7 +596,7 @@ for workgroup %s on subnet %s.\n", global_myworkgroup, FIRST_SUBNET->subnet_name
   strupper(p);
   p = skip_string(p,1);
 
-  for (ptr=s; next_token(&ptr,s2,NULL); ) 
+  for (ptr=s; next_token(&ptr,s2,NULL,sizeof(s2)); ) 
   {
     /* The entries are of the form a.b.c.d */
     addr = *interpret_addr2(s2);

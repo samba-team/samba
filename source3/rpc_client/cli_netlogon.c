@@ -609,8 +609,9 @@ account password for domain %s.\n", domain));
    */
   generate_random_buffer( new_trust_passwd_hash, 16, True);
 
-  while(remote_machine_list && next_token( &remote_machine_list, 
-                                           remote_machine, LIST_SEP)) {
+  while(remote_machine_list && 
+	next_token(&remote_machine_list, remote_machine, 
+		   LIST_SEP, sizeof(remote_machine))) {
     strupper(remote_machine);
     if(modify_trust_password( domain, remote_machine, 
                               old_trust_passwd_hash, new_trust_passwd_hash)) {

@@ -131,10 +131,11 @@ static char *last_ptr=NULL;
 Based on a routine by GJC@VILLAGE.COM. 
 Extensively modified by Andrew.Tridgell@anu.edu.au
 ****************************************************************************/
-BOOL next_token(char **ptr,char *buff,char *sep)
+BOOL next_token(char **ptr,char *buff,char *sep, int bufsize)
 {
   char *s;
   BOOL quoted;
+  int len=1;
 
   if (!ptr) ptr = &last_ptr;
   if (!ptr) return(False);
@@ -151,12 +152,14 @@ BOOL next_token(char **ptr,char *buff,char *sep)
   if (! *s) return(False);
 
   /* copy over the token */
-  for (quoted = False; *s && (quoted || !strchr(sep,*s)); s++)
+  for (quoted = False; len < bufsize && *s && (quoted || !strchr(sep,*s)); s++)
     {
-      if (*s == '\"') 
-	quoted = !quoted;
-      else
-	*buff++ = *s;
+	    if (*s == '\"') {
+		    quoted = !quoted;
+	    } else {
+		    len++;
+		    *buff++ = *s;
+	    }
     }
 
   *ptr = (*s) ? s+1 : s;  
@@ -291,7 +294,7 @@ void set_socket_options(int fd, char *options)
 {
   fstring tok;
 
-  while (next_token(&options,tok," \t,"))
+  while (next_token(&options,tok," \t,", sizeof(tok)))
     {
       int ret=0,i;
       int value = 1;
@@ -2618,7 +2621,7 @@ BOOL in_list(char *s,char *list,BOOL casesensitive)
 
   if (!list) return(False);
 
-  while (next_token(&p,tok,LIST_SEP))
+  while (next_token(&p,tok,LIST_SEP,sizeof(tok)))
     {
       if (casesensitive) {
 	if (strcmp(tok,s) == 0)
@@ -5085,7 +5088,7 @@ BOOL string_to_sid(DOM_SID *sidout, char *sidstr)
   }
 
   p += 2;
-  if(!next_token(&p, tok, "-")) {
+  if(!next_token(&p, tok, "-", sizeof(tok))) {
     DEBUG(0,("string_to_sid: Sid %s is not in a valid format.\n", sidstr));
     return False;
   }
@@ -5093,7 +5096,7 @@ BOOL string_to_sid(DOM_SID *sidout, char *sidstr)
   /* Get the revision number. */
   sidout->sid_rev_num = atoi(tok);
 
-  if(!next_token(&p, tok, "-")) {
+  if(!next_token(&p, tok, "-", sizeof(tok))) {
     DEBUG(0,("string_to_sid: Sid %s is not in a valid format.\n", sidstr));
     return False;
   }
@@ -5111,7 +5114,8 @@ BOOL string_to_sid(DOM_SID *sidout, char *sidstr)
 
   sidout->num_auths = 0;
 
-  while(next_token(&p, tok, "-") && sidout->num_auths < MAXSUBAUTHS) {
+  while(next_token(&p, tok, "-", sizeof(tok)) && 
+	sidout->num_auths < MAXSUBAUTHS) {
     /* 
      * NOTE - the subauths are in native machine-endian format. They
      * are converted to little-endian when linearized onto the wire.

@@ -137,7 +137,9 @@ int make_dom_gids(char *gids_str, DOM_GID **ppgids)
   if (gids_str == NULL || *gids_str == 0)
     return 0;
 
-  for (count = 0, ptr = gids_str; next_token(&ptr, s2, NULL); count++)
+  for (count = 0, ptr = gids_str; 
+       next_token(&ptr, s2, NULL, sizeof(s2)); 
+       count++)
     ;
 
   gids = (DOM_GID *)malloc( sizeof(DOM_GID) * count );
@@ -147,8 +149,10 @@ int make_dom_gids(char *gids_str, DOM_GID **ppgids)
     return 0;
   }
 
-  for (count = 0, ptr = gids_str; next_token(&ptr, s2, NULL) && 
-                       count < LSA_MAX_GROUPS; count++) 
+  for (count = 0, ptr = gids_str; 
+       next_token(&ptr, s2, NULL, sizeof(s2)) && 
+	       count < LSA_MAX_GROUPS; 
+       count++) 
   {
     /* the entries are of the form GID/ATTR, ATTR being optional.*/
     char *attr;
