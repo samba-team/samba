@@ -258,7 +258,7 @@ static void domain_master_node_status_fail(struct subnet_record *subrec,
   {
     dbgtext( "domain_master_node_status_fail:\n" );
     dbgtext( "Doing a node status request to the domain master browser\n" );
-    dbgtext( "for workgroup %s ", userdata->data );
+    dbgtext( "for workgroup %s ", userdata ? userdata->data : "NULL" );
     dbgtext( "at IP %s failed.\n", inet_ntoa(rrec->packet->ip) );
     dbgtext( "Cannot sync browser lists.\n" );
   }
