@@ -446,8 +446,8 @@ static NTSTATUS smb_raw_session_setup_generic_spnego(struct smbcli_session *sess
 	}
 	
 	status = gensec_update(session->gensec, mem_ctx,
-				       session->transport->negotiate.secblob,
-				       &s2.spnego.in.secblob);
+			       session->transport->negotiate.secblob,
+			       &s2.spnego.in.secblob);
 
 	while(1) {
 		if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED) && !NT_STATUS_IS_OK(status)) {
@@ -493,6 +493,7 @@ done:
 		parms->generic.out.lanman = s2.spnego.out.lanman;
 		parms->generic.out.domain = s2.spnego.out.domain;
 	} else {
+		gensec_end(&session->gensec);
 		DEBUG(1, ("Failed to login with %s: %s\n", gensec_get_name_by_oid(chosen_oid), nt_errstr(status)));
 		return status;
 	}
