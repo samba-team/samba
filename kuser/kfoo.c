@@ -20,7 +20,7 @@ main(int argc, char **argv)
     memset(&in, 0, sizeof(in));
     krb5_cc_get_principal(context, cache, &in.client);
     krb5_parse_name(context, argv[1], &in.server);
-    in.times.endtime = time(NULL) + 4711;
+    in.times.endtime = 0;
     ret = krb5_get_credentials(context, 0, cache, &in, &out);
     
     printf("%s\n", krb5_get_err_text(context, ret));
