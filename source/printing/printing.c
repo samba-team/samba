@@ -43,10 +43,12 @@ static BOOL remove_from_jobs_changed(const char* sharename, uint32 jobid);
    jobids are assigned when a job starts spooling. 
 */
 
-/***************************************************************************
- Nightmare. LANMAN jobid's are 16 bit numbers..... We must map them to 32
- bit RPC jobids.... JRA.
-***************************************************************************/
+struct print_queue_update_context {
+	fstring sharename;
+	enum printing_types printing_type;
+	pstring lpqcommand;
+};
+
 
 static TDB_CONTEXT *rap_tdb;
 static uint16 next_rap_jobid;
@@ -54,6 +56,11 @@ struct rap_jobid_key {
 	fstring sharename;
 	uint32  jobid;
 };
+
+/***************************************************************************
+ Nightmare. LANMAN jobid's are 16 bit numbers..... We must map them to 32
+ bit RPC jobids.... JRA.
+***************************************************************************/
 
 uint16 pjobid_to_rap(const char* sharename, uint32 jobid)
 {
@@ -837,7 +844,7 @@ static pid_t get_updating_pid(fstring sharename)
  in the tdb.
 ****************************************************************************/
 
-static void set_updating_pid(const fstring sharename, BOOL delete)
+static void set_updating_pid(const fstring sharename, BOOL updating)
 {
 	fstring keystr;
 	TDB_DATA key;
@@ -853,8 +860,12 @@ static void set_updating_pid(const fstring sharename, BOOL delete)
 	slprintf(keystr, sizeof(keystr)-1, "UPDATING/%s", sharename);
     	key.dptr = keystr;
 	key.dsize = strlen(keystr);
+	
+	DEBUG(5, ("set_updating_pid: %s updating lpq cache for print share %s\n", 
+		updating ? "" : "not ",
+		sharename ));
 
-	if (delete) {
+	if ( !updating ) {
 		tdb_delete(pdb->tdb, key);
 		release_print_db(pdb);
 		return;
@@ -978,11 +989,46 @@ static void check_job_changed(const char *sharename, TDB_DATA data, uint32 jobid
 	}
 }
 
-struct print_queue_update_context {
-	fstring sharename;
-	enum printing_types printing_type;
-	pstring lpqcommand;
-};
+/****************************************************************************
+ Check if the print queue has been updated recently enough.
+****************************************************************************/
+
+static BOOL print_cache_expired(const char *sharename)
+{
+	fstring key;
+	time_t last_qscan_time, time_now = time(NULL);
+	struct tdb_print_db *pdb = get_print_db_byname(sharename);
+
+	if (!pdb)
+		return False;
+
+	slprintf(key, sizeof(key), "CACHE/%s", sharename);
+	last_qscan_time = (time_t)tdb_fetch_int32(pdb->tdb, key);
+
+	/*
+	 * Invalidate the queue for 3 reasons.
+	 * (1). last queue scan time == -1.
+	 * (2). Current time - last queue scan time > allowed cache time.
+	 * (3). last queue scan time > current time + MAX_CACHE_VALID_TIME (1 hour by default).
+	 * This last test picks up machines for which the clock has been moved
+	 * forward, an lpq scan done and then the clock moved back. Otherwise
+	 * that last lpq scan would stay around for a loooong loooong time... :-). JRA.
+	 */
+
+	if (last_qscan_time == ((time_t)-1) 
+		|| (time_now - last_qscan_time) >= lp_lpqcachetime() 
+		|| last_qscan_time > (time_now + MAX_CACHE_VALID_TIME)) 
+	{
+		DEBUG(3, ("print cache expired for queue %s " 
+			"(last_qscan_time = %d, time now = %d, qcachetime = %d)\n", 
+			sharename, (int)last_qscan_time, (int)time_now, 
+			(int)lp_lpqcachetime() ));
+		release_print_db(pdb);
+		return True;
+	}
+	release_print_db(pdb);
+	return False;
+}
 
 /****************************************************************************
  main work for updating the lpq cahe for a printer queue
@@ -1003,12 +1049,20 @@ static void print_queue_update_internal( const char *sharename,
 	fstring keystr, cachestr;
 	struct tdb_print_db *pdb = get_print_db_byname(sharename);
 	
+	DEBUG(5,("print_queue_update_internal: printer = %s, type = %d, lpq command = [%s]\n",
+		sharename, current_printif->type, lpq_command));
+
+	if ( !print_cache_expired(sharename) ) {
+		DEBUG(5,("print_queue_update_internal: print cache for %s is still ok\n", sharename));
+		return;
+	}
+
 	/*
 	 * Update the cache time FIRST ! Stops others even
 	 * attempting to get the lock and doing this
 	 * if the lpq takes a long time.
 	 */
-
+	 
 	slprintf(cachestr, sizeof(cachestr)-1, "CACHE/%s", sharename);
 	tdb_store_int32(pdb->tdb, cachestr, (int)time(NULL));
 
@@ -1019,8 +1073,8 @@ static void print_queue_update_internal( const char *sharename,
 		current_printif->type, 
 		lpq_command, &queue, &status);
 
-	DEBUG(3, ("%d job%s in queue for %s\n", qcount, (qcount != 1) ?
-		"s" : "", sharename));
+	DEBUG(3, ("print_queue_update_internal: %d job%s in queue for %s\n", 
+		qcount, (qcount != 1) ?	"s" : "", sharename));
 
 	/* Sort the queue by submission time otherwise they are displayed
 	   in hash order. */
@@ -1084,14 +1138,14 @@ static void print_queue_update_internal( const char *sharename,
 
 	SAFE_FREE(tstruct.queue);
 
-	DEBUG(10,("print_queue_update: printer %s INFO/total_jobs = %d\n",
+	DEBUG(10,("print_queue_update_internal: printer %s INFO/total_jobs = %d\n",
 				sharename, tstruct.total_jobs ));
 
 	tdb_store_int32(pdb->tdb, "INFO/total_jobs", tstruct.total_jobs);
 
 	get_queue_status(sharename, &old_status);
 	if (old_status.qcount != qcount)
-		DEBUG(10,("print_queue_update: queue status change %d jobs -> %d jobs for printer %s\n",
+		DEBUG(10,("print_queue_update_internal: queue status change %d jobs -> %d jobs for printer %s\n",
 					old_status.qcount, qcount, sharename));
 
 	/* store the new queue status structure */
@@ -1128,6 +1182,8 @@ static void print_queue_update_with_lock(int snum)
 	struct printif *current_printif = get_printer_fns( snum );
 
 	fstrcpy(sharename, lp_const_servicename(snum));
+
+	DEBUG(5,("print_queue_update_with_lock: printer share = %s\n", sharename));
 	pdb = get_print_db_byname(sharename);
 	if (!pdb)
 		return;
@@ -1147,7 +1203,7 @@ static void print_queue_update_with_lock(int snum)
 	slprintf(keystr, sizeof(keystr) - 1, "LOCK/%s", sharename);
 	/* Only wait 10 seconds for this. */
 	if (tdb_lock_bystring(pdb->tdb, keystr, 10) == -1) {
-		DEBUG(0,("print_queue_update: Failed to lock printer %s database\n", sharename));
+		DEBUG(0,("print_queue_update_with_lock: Failed to lock printer %s database\n", sharename));
 		release_print_db(pdb);
 		return;
 	}
@@ -1172,7 +1228,7 @@ static void print_queue_update_with_lock(int snum)
 	 */
 
 	/* Tell others we're doing the update. */
-	set_updating_pid(sharename, False);
+	set_updating_pid(sharename, True);
 
 	/*
 	 * Allow others to enter and notice we're doing
@@ -1192,7 +1248,7 @@ static void print_queue_update_with_lock(int snum)
 	print_queue_update_internal( sharename, current_printif, lpq_command );
 	
 	/* Delete our pid from the db. */
-	set_updating_pid(sharename, True);
+	set_updating_pid(sharename, False);
 	release_print_db(pdb);
 }
 
@@ -1290,6 +1346,11 @@ static void print_queue_update(int snum)
 		pstrcpy(ctx.lpqcommand, lp_lpqcommand(snum));
 		pstring_sub( ctx.lpqcommand, "%p", PRINTERNAME(snum) );
 		standard_sub_snum( snum, ctx.lpqcommand, sizeof(ctx.lpqcommand) );
+
+		DEBUG(10,("print_queue_update: Sending message -> printer = %s, "
+			"type = %d, lpq command = [%s]\n",
+			ctx.sharename, ctx.printing_type, ctx.lpqcommand ));
+
 	
 		become_root();
 		message_send_pid(background_lpq_updater_pid,
@@ -1897,45 +1958,6 @@ int print_job_write(int snum, uint32 jobid, const char *buf, int size)
 }
 
 /****************************************************************************
- Check if the print queue has been updated recently enough.
-****************************************************************************/
-
-static BOOL print_cache_expired(int snum)
-{
-	fstring key;
-	time_t last_qscan_time, time_now = time(NULL);
-	const char *printername = lp_const_servicename(snum);
-	struct tdb_print_db *pdb = get_print_db_byname(printername);
-
-	if (!pdb)
-		return False;
-
-	slprintf(key, sizeof(key), "CACHE/%s", printername);
-	last_qscan_time = (time_t)tdb_fetch_int32(pdb->tdb, key);
-
-	/*
-	 * Invalidate the queue for 3 reasons.
-	 * (1). last queue scan time == -1.
-	 * (2). Current time - last queue scan time > allowed cache time.
-	 * (3). last queue scan time > current time + MAX_CACHE_VALID_TIME (1 hour by default).
-	 * This last test picks up machines for which the clock has been moved
-	 * forward, an lpq scan done and then the clock moved back. Otherwise
-	 * that last lpq scan would stay around for a loooong loooong time... :-). JRA.
-	 */
-
-	if (last_qscan_time == ((time_t)-1) || (time_now - last_qscan_time) >= lp_lpqcachetime() ||
-			last_qscan_time > (time_now + MAX_CACHE_VALID_TIME)) {
-		DEBUG(3, ("print cache expired for queue %s \
-(last_qscan_time = %d, time now = %d, qcachetime = %d)\n", printername,
-			(int)last_qscan_time, (int)time_now, (int)lp_lpqcachetime() ));
-		release_print_db(pdb);
-		return True;
-	}
-	release_print_db(pdb);
-	return False;
-}
-
-/****************************************************************************
  Get the queue status - do not update if db is out of date.
 ****************************************************************************/
 
@@ -1979,7 +2001,7 @@ int print_queue_length(int snum, print_status_struct *pstatus)
 	int len;
  
 	/* make sure the database is up to date */
-	if (print_cache_expired(snum))
+	if (print_cache_expired(lp_const_servicename(snum)))
 		print_queue_update(snum);
  
 	/* also fetch the queue status */
@@ -2294,7 +2316,7 @@ BOOL print_job_end(int snum, uint32 jobid, BOOL normal_close)
 	pjob_store(sharename, jobid, pjob);
 	
 	/* make sure the database is up to date */
-	if (print_cache_expired(snum))
+	if (print_cache_expired(lp_const_servicename(snum)))
 		print_queue_update(snum);
 	
 	return True;
@@ -2326,7 +2348,7 @@ static BOOL get_stored_queue_info(struct tdb_print_db *pdb, int snum, int *pcoun
 	const char* sharename = lp_servicename(snum);
 
 	/* make sure the database is up to date */
-	if (print_cache_expired(snum))
+	if (print_cache_expired(lp_const_servicename(snum)))
 		print_queue_update(snum);
  
 	*pcount = 0;
@@ -2447,7 +2469,7 @@ int print_queue_status(int snum,
 
 	/* make sure the database is up to date */
 
-	if (print_cache_expired(snum))
+	if (print_cache_expired(lp_const_servicename(snum)))
 		print_queue_update(snum);
 
 	/* return if we are done */
@@ -2547,7 +2569,7 @@ BOOL print_queue_resume(struct current_user *user, int snum, WERROR *errcode)
 	}
 
 	/* make sure the database is up to date */
-	if (print_cache_expired(snum))
+	if (print_cache_expired(lp_const_servicename(snum)))
 		print_queue_update(snum);
 
 	/* Send a printer notify message */
