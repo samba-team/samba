@@ -62,6 +62,7 @@ extern krb5_boolean encode_as_rep_as_tgs_rep;
 extern krb5_boolean check_ticket_addresses;
 extern krb5_boolean allow_null_ticket_addresses;
 extern krb5_boolean allow_anonymous;
+extern krb5_boolean enforce_transited_policy;
 extern int enable_524;
 extern int enable_v4_cross_realm;
 

@@ -64,6 +64,7 @@ krb5_boolean encode_as_rep_as_tgs_rep; /* bug compatibility */
 krb5_boolean check_ticket_addresses;
 krb5_boolean allow_null_ticket_addresses;
 krb5_boolean allow_anonymous;
+krb5_boolean enforce_transited_policy;
 
 static struct getarg_strings addresses_str;	/* addresses to listen on */
 krb5_addresses explicit_addresses;
@@ -288,9 +289,8 @@ configure(int argc, char **argv)
 
     get_dbinfo();
     
-    if(max_request_str){
+    if(max_request_str)
 	max_request = parse_bytes(max_request_str, NULL);
-    }
 
     if(max_request == 0){
 	p = krb5_config_get_string (context,
@@ -361,6 +361,9 @@ configure(int argc, char **argv)
     allow_anonymous = 
 	krb5_config_get_bool(context, NULL, "kdc", 
 			     "allow-anonymous", NULL);
+    enforce_transited_policy = 
+	krb5_config_get_bool_default(context, NULL, TRUE, "kdc", 
+				     "enforce-transited-policy", NULL);
 #ifdef KRB4
     if(v4_realm == NULL){
 	p = krb5_config_get_string (context, NULL, 
