@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 2000 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -151,6 +151,10 @@ main(int argc, char **argv)
 	usage(1);
     if (help_flag)
 	usage (0);
+    if (version_flag) {
+	print_version(NULL);
+	return 0;
+    }
     srand (0);
     add_users (NUSERS);
     return 0;
