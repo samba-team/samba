@@ -536,7 +536,7 @@ BOOL change_lanman_password(struct smb_passwd *smbpw, unsigned char *pass1, unsi
 
   /* Now write it into the file. */
   become_root(0);
-  ret = mod_smbpwd_entry(smbpw);
+  ret = mod_smbpwd_entry(smbpw,False);
   unbecome_root(0);
     
   return ret;
@@ -632,9 +632,11 @@ BOOL check_oem_password(char *user, unsigned char *data,
 /***********************************************************
  Code to change the oem password. Changes both the lanman
  and NT hashes.
+ override = False, normal
+ override = True, override XXXXXXXXXX'd password
 ************************************************************/
 
-BOOL change_oem_password(struct smb_passwd *smbpw, char *new_passwd)
+BOOL change_oem_password(struct smb_passwd *smbpw, char *new_passwd, BOOL override)
 {
   int ret;
   fstring upper_case_new_passwd;
@@ -654,7 +656,7 @@ BOOL change_oem_password(struct smb_passwd *smbpw, char *new_passwd)
   
   /* Now write it into the file. */
   become_root(0);
-  ret = mod_smbpwd_entry(smbpw);
+  ret = mod_smbpwd_entry(smbpw,override);
   unbecome_root(0);
 
   memset(upper_case_new_passwd, '\0', strlen(upper_case_new_passwd));

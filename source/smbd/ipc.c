@@ -1719,7 +1719,7 @@ static BOOL api_SamOEMChangePassword(int cnum,uint16 vuid, char *param,char *dat
   if(lp_unix_password_sync())
     chgpasswd(user,"", new_passwd, True);
  
-  if(change_oem_password( smbpw, new_passwd)) {
+  if(change_oem_password( smbpw, new_passwd, False)) {
     SSVAL(*rparam,0,NERR_Success);
   }
 

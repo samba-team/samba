@@ -176,6 +176,7 @@ typedef struct
   BOOL bDomainMaster;
   BOOL bDomainLogons;
   BOOL bEncryptPasswords;
+  BOOL bUpdateEncrypt;
   BOOL bStripDot;
   BOOL bNullPasswords;
   BOOL bLoadPrinters;
@@ -436,6 +437,7 @@ static struct parm_struct parm_table[] =
   {"Security Options", P_SEP, P_SEPARATOR},
   {"security",         P_ENUM,    P_GLOBAL, &Globals.security,          NULL,   enum_security, FLAG_BASIC},
   {"encrypt passwords",P_BOOL,    P_GLOBAL, &Globals.bEncryptPasswords, NULL,   NULL,  FLAG_BASIC},
+  {"update encrypted", P_BOOL,    P_GLOBAL, &Globals.bUpdateEncrypt,    NULL,   NULL,  FLAG_BASIC},
   {"use rhosts",       P_BOOL,    P_GLOBAL, &Globals.bUseRhosts,        NULL,   NULL,  0},
   {"null passwords",   P_BOOL,    P_GLOBAL, &Globals.bNullPasswords,    NULL,   NULL,  0},
   {"password server",  P_STRING,  P_GLOBAL, &Globals.szPasswordServer,  NULL,   NULL,  0},
@@ -723,6 +725,7 @@ static void init_globals(void)
   Globals.maxprotocol = PROTOCOL_NT1;
   Globals.security = SEC_SHARE;
   Globals.bEncryptPasswords = False;
+  Globals.bUpdateEncrypt = False;
   Globals.bReadRaw = True;
   Globals.bWriteRaw = True;
   Globals.bReadPrediction = False;
@@ -977,6 +980,7 @@ FN_GLOBAL_BOOL(lp_writeraw,&Globals.bWriteRaw)
 FN_GLOBAL_BOOL(lp_null_passwords,&Globals.bNullPasswords)
 FN_GLOBAL_BOOL(lp_strip_dot,&Globals.bStripDot)
 FN_GLOBAL_BOOL(lp_encrypted_passwords,&Globals.bEncryptPasswords)
+FN_GLOBAL_BOOL(lp_update_encrypted,&Globals.bUpdateEncrypt)
 FN_GLOBAL_BOOL(lp_syslog_only,&Globals.bSyslogOnly)
 FN_GLOBAL_BOOL(lp_browse_list,&Globals.bBrowseList)
 FN_GLOBAL_BOOL(lp_unix_realname,&Globals.bUnixRealname)
