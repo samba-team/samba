@@ -55,9 +55,18 @@ packaging	(Only for those wishing to build binary distributions):
 
 	Currently support is included for the following Linux Distributions :
 	
-		Pacfic HiTech, RedHat and SuSE.
+		Caldera, RedHat, SuSE, Mandrake, and TurboLinux.
+
+	Packaging support for TuboLinux is under ~samba/packaging/PHT - the
+	previous name of the company was Pacific HiTech, hence the PHT.
 
 	In addition, packaging support is available for SGI and Solaris systems.
+
+	SCO OpenServer and SCO UnixWare have been acquired by Caldera. We expect
+	that Caldera will in future integrate Samba into the above operating
+	systems. UnixWare has been renamed to OpenUnix. Look under the directory
+	~samba/packaging/Caldera for packaging support for these platforms.
+
 	We hope that other Unix OS vendors will contribute their binary
 	distribution packaging control files - and we hope to make their binary
 	packages available on the master ftp site under:
