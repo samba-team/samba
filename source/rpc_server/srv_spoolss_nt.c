@@ -34,6 +34,7 @@ extern pstring global_myname;
 #define MAX_OPEN_PRINTER_EXS 50
 #endif
 
+#define PHANTOM_DEVMODE_KEY "_p_f_a_n_t_0_m_"
 #define PRINTER_HANDLE_IS_PRINTER	0
 #define PRINTER_HANDLE_IS_PRINTSERVER	1
 
@@ -5736,6 +5737,13 @@ static uint32 spoolss_addprinterex_level_2( pipes_struct *p, const UNISTR2 *uni_
 		return ERRinvalidparam;
 	}
 
+	/*
+	 * When a printer is created, the drivername bound to the printer is used
+	 * to lookup previously saved driver initialization info, which is then
+	 * bound to the new printer, simulating what happens in the Windows arch.
+	 */
+	set_driver_init(printer, 2);
+
 	/* write the ASCII on disk */
 	if (add_a_printer(*printer, 2) != 0) {
 		free_a_printer(&printer,2);
@@ -6132,10 +6140,23 @@ uint32 _spoolss_setprinterdata( pipes_struct *p, SPOOL_Q_SETPRINTERDATA *q_u, SP
 	}
 
 	unlink_specific_param_if_exist(printer->info_2, param);
-	
-	add_a_specific_param(printer->info_2, &param);
-	status = mod_a_printer(*printer, 2);
 
+	/*
+	 * When client side code sets a magic printer data key, detect it and save
+	 * the current printer data and the magic key's data (its the DEVMODE) for
+	 * future printer/driver initializations.
+	 */
+	if (param->type==3 && !strcmp( param->value, PHANTOM_DEVMODE_KEY)) {
+		/*
+		 * Set devmode and printer initialization info
+		 */
+		status = save_driver_init(printer, 2, param);
+	}
+	else {
+		add_a_specific_param(printer->info_2, &param);
+		status = mod_a_printer(*printer, 2);
+	}
+	
  done:
 	free_a_printer(&printer, 2);
 	if (param)
