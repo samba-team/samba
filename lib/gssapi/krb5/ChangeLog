@@ -1,5 +1,8 @@
 2003-04-25  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* gssapi.3: document [gssapi]correct_des3_mic
+	[gssapi]broken_des3_mic
+
 	* gss_acquire_cred.3: document gss_krb5_compat_des3_mic
 	
 	* compat.c (gss_krb5_compat_des3_mic): enable turning on/off des3
