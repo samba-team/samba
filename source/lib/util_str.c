@@ -1306,6 +1306,9 @@ char *strstr_m(const char *src, const char *findstr)
 	char *s2;
 	char *retp;
 
+	size_t findstr_len = 0;
+	size_t find_w_len;
+
 	/* Samba does single character findstr calls a *lot*. */
 	if (findstr[1] == '\0')
 		return strchr_m(src, *findstr);
@@ -1316,7 +1319,10 @@ char *strstr_m(const char *src, const char *findstr)
 
 	for (s = src; *s && !(((unsigned char)s[0]) & 0x80); s++) {
 		if (*s == *findstr) {
-			if (strcmp(s, findstr) == 0) {
+			if (!findstr_len) 
+				findstr_len = strlen(findstr);
+
+			if (strncmp(s, findstr, findstr_len) == 0) {
 				return (char *)s;
 			}
 		}
@@ -1341,8 +1347,10 @@ char *strstr_m(const char *src, const char *findstr)
 		return NULL;
 	}
 	
+	find_w_len = strlen_w(find_w);
+
 	for (p = src_w; (p = strchr_w(p, *find_w)) != NULL; p++) {
-		if (strcmp_w(p, find_w) == 0)
+		if (strncmp_w(p, find_w, find_w_len) == 0)
 			break;
 	}
 	if (!p) {
