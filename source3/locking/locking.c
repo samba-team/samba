@@ -37,7 +37,7 @@
 
 #include "includes.h"
 extern int DEBUGLEVEL;
-int global_smbpid;
+uint16 global_smbpid;
 
 /* the locking database handle */
 static TDB_CONTEXT *tdb;
@@ -99,7 +99,7 @@ BOOL is_locked(files_struct *fsp,connection_struct *conn,
  Utility function called by locking requests.
 ****************************************************************************/
 
-BOOL do_lock(files_struct *fsp,connection_struct *conn,
+BOOL do_lock(files_struct *fsp,connection_struct *conn, uint16 lock_pid,
              SMB_BIG_UINT count,SMB_BIG_UINT offset,enum brl_type lock_type,
              int *eclass,uint32 *ecode)
 {
@@ -119,7 +119,7 @@ BOOL do_lock(files_struct *fsp,connection_struct *conn,
 
 	if (OPEN_FSP(fsp) && fsp->can_lock && (fsp->conn == conn)) {
 		ok = brl_lock(fsp->dev, fsp->inode, fsp->fnum,
-			      global_smbpid, sys_getpid(), conn->cnum, 
+			      lock_pid, sys_getpid(), conn->cnum, 
 			      offset, count, 
 			      lock_type);
 
@@ -139,7 +139,7 @@ BOOL do_lock(files_struct *fsp,connection_struct *conn,
 				 * lock entry.
 				 */
 				(void)brl_unlock(fsp->dev, fsp->inode, fsp->fnum,
-								global_smbpid, sys_getpid(), conn->cnum, 
+								lock_pid, sys_getpid(), conn->cnum, 
 								offset, count);
 			}
 		}
@@ -157,7 +157,7 @@ BOOL do_lock(files_struct *fsp,connection_struct *conn,
  Utility function called by unlocking requests.
 ****************************************************************************/
 
-BOOL do_unlock(files_struct *fsp,connection_struct *conn,
+BOOL do_unlock(files_struct *fsp,connection_struct *conn, uint16 lock_pid,
                SMB_BIG_UINT count,SMB_BIG_UINT offset, 
 	       int *eclass,uint32 *ecode)
 {
@@ -182,7 +182,7 @@ BOOL do_unlock(files_struct *fsp,connection_struct *conn,
 	 */
 
 	ok = brl_unlock(fsp->dev, fsp->inode, fsp->fnum,
-			global_smbpid, sys_getpid(), conn->cnum, offset, count);
+			lock_pid, sys_getpid(), conn->cnum, offset, count);
    
 	if (!ok) {
 		DEBUG(10,("do_unlock: returning ERRlock.\n" ));

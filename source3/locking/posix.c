@@ -25,7 +25,6 @@
 
 #include "includes.h"
 extern int DEBUGLEVEL;
-extern int global_smbpid;
 
 /*
  * The POSIX locking database handle.

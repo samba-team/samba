@@ -2290,7 +2290,7 @@ int reply_lockread(connection_struct *conn, char *inbuf,char *outbuf, int length
    * for a write lock. JRA.
    */
 
-  if(!do_lock( fsp, conn, (SMB_BIG_UINT)numtoread, (SMB_BIG_UINT)startpos, WRITE_LOCK, &eclass, &ecode)) {
+  if(!do_lock( fsp, conn, SVAL(inbuf,smb_pid), (SMB_BIG_UINT)numtoread, (SMB_BIG_UINT)startpos, WRITE_LOCK, &eclass, &ecode)) {
     if((ecode == ERRlock) && lp_blocking_locks(SNUM(conn))) {
       /*
        * A blocking lock was requested. Package up
@@ -2605,7 +2605,7 @@ int reply_writeunlock(connection_struct *conn, char *inbuf,char *outbuf, int siz
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
 
-  if(!do_unlock(fsp, conn, (SMB_BIG_UINT)numtowrite, (SMB_BIG_UINT)startpos, &eclass, &ecode)) {
+  if(!do_unlock(fsp, conn, SVAL(inbuf,smb_pid), (SMB_BIG_UINT)numtowrite, (SMB_BIG_UINT)startpos, &eclass, &ecode)) {
     END_PROFILE(SMBwriteunlock);
     return(ERROR(eclass,ecode));
   }
@@ -3089,7 +3089,7 @@ int reply_lock(connection_struct *conn,
 	DEBUG(3,("lock fd=%d fnum=%d offset=%.0f count=%.0f\n",
 		 fsp->fd, fsp->fnum, (double)offset, (double)count));
 
-	if (!do_lock(fsp, conn, count, offset, WRITE_LOCK, &eclass, &ecode)) {
+	if (!do_lock(fsp, conn, SVAL(inbuf,smb_pid), count, offset, WRITE_LOCK, &eclass, &ecode)) {
           if((ecode == ERRlock) && lp_blocking_locks(SNUM(conn))) {
 	    /*
              * A blocking lock was requested. Package up
@@ -3128,7 +3128,7 @@ int reply_unlock(connection_struct *conn, char *inbuf,char *outbuf, int size, in
   count = (SMB_BIG_UINT)IVAL(inbuf,smb_vwv1);
   offset = (SMB_BIG_UINT)IVAL(inbuf,smb_vwv3);
 
-  if(!do_unlock(fsp, conn, count, offset, &eclass, &ecode)) {
+  if(!do_unlock(fsp, conn, SVAL(inbuf,smb_pid), count, offset, &eclass, &ecode)) {
     END_PROFILE(SMBunlock);
     return (ERROR(eclass,ecode));
   }
@@ -4248,6 +4248,18 @@ int reply_setdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 }
 
 /****************************************************************************
+ Get a lock pid, dealing with large count requests.
+****************************************************************************/
+
+uint16 get_lock_pid( char *data, int data_offset, BOOL large_file_format)
+{
+	if(!large_file_format)
+		return SVAL(data,SMB_LPID_OFFSET(data_offset));
+	else
+		return SVAL(data,SMB_LARGE__LPID_OFFSET(data_offset));
+}
+
+/****************************************************************************
  Get a lock count, dealing with large count requests.
 ****************************************************************************/
 
@@ -4346,6 +4358,7 @@ int reply_lockingX(connection_struct *conn, char *inbuf,char *outbuf,int length,
   uint16 num_ulocks = SVAL(inbuf,smb_vwv6);
   uint16 num_locks = SVAL(inbuf,smb_vwv7);
   SMB_BIG_UINT count = 0, offset = 0;
+  uint16 lock_pid;
   int32 lock_timeout = IVAL(inbuf,smb_vwv4);
   int i;
   char *data;
@@ -4418,6 +4431,7 @@ no oplock granted on this file (%s).\n", fsp->fnum, fsp->fsp_name));
   /* Data now points at the beginning of the list
      of smb_unlkrng structs */
   for(i = 0; i < (int)num_ulocks; i++) {
+    lock_pid = get_lock_pid( data, i, large_file_format);
     count = get_lock_count( data, i, large_file_format);
     offset = get_lock_offset( data, i, large_file_format, &err);
 
@@ -4429,10 +4443,10 @@ no oplock granted on this file (%s).\n", fsp->fnum, fsp->fsp_name));
       return ERROR(ERRDOS,ERRnoaccess);
     }
 
-    DEBUG(10,("reply_lockingX: unlock start=%.0f, len=%.0f for file %s\n",
-          (double)offset, (double)count, fsp->fsp_name ));
+    DEBUG(10,("reply_lockingX: unlock start=%.0f, len=%.0f for pid %u, file %s\n",
+          (unsigned int)lock_pid, (double)offset, (double)count, fsp->fsp_name ));
 
-    if(!do_unlock(fsp,conn,count,offset, &eclass, &ecode)) {
+    if(!do_unlock(fsp,conn,lock_pid,count,offset, &eclass, &ecode)) {
       END_PROFILE(SMBlockingX);
       return ERROR(eclass,ecode);
     }
@@ -4448,6 +4462,7 @@ no oplock granted on this file (%s).\n", fsp->fnum, fsp->fsp_name));
      of smb_lkrng structs */
 
   for(i = 0; i < (int)num_locks; i++) {
+    lock_pid = get_lock_pid( data, i, large_file_format);
     count = get_lock_count( data, i, large_file_format);
     offset = get_lock_offset( data, i, large_file_format, &err);
 
@@ -4459,10 +4474,10 @@ no oplock granted on this file (%s).\n", fsp->fnum, fsp->fsp_name));
       return ERROR(ERRDOS,ERRnoaccess);
     }
  
-    DEBUG(10,("reply_lockingX: lock start=%.0f, len=%.0f for file %s\n",
-          (double)offset, (double)count, fsp->fsp_name ));
+    DEBUG(10,("reply_lockingX: lock start=%.0f, len=%.0f for pid %u, file %s\n",
+          (unsigned int)lock_pid, (double)offset, (double)count, fsp->fsp_name ));
 
-    if(!do_lock(fsp,conn,count,offset, ((locktype & 1) ? READ_LOCK : WRITE_LOCK),
+    if(!do_lock(fsp,conn,lock_pid, count,offset, ((locktype & 1) ? READ_LOCK : WRITE_LOCK),
                 &eclass, &ecode)) {
       if((ecode == ERRlock) && (lock_timeout != 0) && lp_blocking_locks(SNUM(conn))) {
         /*
@@ -4488,6 +4503,7 @@ no oplock granted on this file (%s).\n", fsp->fnum, fsp->fsp_name));
      * will delete it (and we shouldn't) .....
      */
     for(i--; i >= 0; i--) {
+      lock_pid = get_lock_pid( data, i, large_file_format);
       count = get_lock_count( data, i, large_file_format);
       offset = get_lock_offset( data, i, large_file_format, &err);
 
@@ -4499,7 +4515,7 @@ no oplock granted on this file (%s).\n", fsp->fnum, fsp->fsp_name));
         return ERROR(ERRDOS,ERRnoaccess);
       }
  
-      do_unlock(fsp,conn,count,offset,&dummy1,&dummy2);
+      do_unlock(fsp,conn,lock_pid,count,offset,&dummy1,&dummy2);
     }
     END_PROFILE(SMBlockingX);
     return ERROR(eclass,ecode);

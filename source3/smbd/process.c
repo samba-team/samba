@@ -612,7 +612,7 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
 {
   static pid_t pid= (pid_t)-1;
   int outsize = 0;
-  extern int global_smbpid;
+  extern uint16 global_smbpid;
 
   type &= 0xff;
 
