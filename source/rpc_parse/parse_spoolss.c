@@ -5,7 +5,7 @@
  *  Copyright (C) Andrew Tridgell              1992-2000,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-2000,
  *  Copyright (C) Jean François Micouleau      1998-2000,
- *  Copyright (C) Gerald Carter                2000,
+ *  Copyright (C) Gerald Carter                2000-2002
  *  Copyright (C) Tim Potter		       2001.
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -4914,12 +4914,9 @@ BOOL spool_io_printer_driver_info_level(char *desc, SPOOL_PRINTER_DRIVER_INFO_LE
  init a SPOOL_Q_ADDPRINTERDRIVER struct
  ******************************************************************/
 
-BOOL make_spoolss_q_addprinterdriver(
-	TALLOC_CTX *mem_ctx,
-	SPOOL_Q_ADDPRINTERDRIVER *q_u, 
-	const char* srv_name, 
-	uint32 level, 
-	PRINTER_DRIVER_CTR *info)
+BOOL make_spoolss_q_addprinterdriver(TALLOC_CTX *mem_ctx,
+				SPOOL_Q_ADDPRINTERDRIVER *q_u, const char* srv_name, 
+				uint32 level, PRINTER_DRIVER_CTR *info)
 {
 	DEBUG(5,("make_spoolss_q_addprinterdriver\n"));
 	
@@ -4950,11 +4947,9 @@ BOOL make_spoolss_q_addprinterdriver(
 	return True;
 }
 
-BOOL make_spoolss_driver_info_3(
-	TALLOC_CTX *mem_ctx,
-	SPOOL_PRINTER_DRIVER_INFO_LEVEL_3 **spool_drv_info,
-	DRIVER_INFO_3 *info3
-)
+BOOL make_spoolss_driver_info_3(TALLOC_CTX *mem_ctx, 
+				SPOOL_PRINTER_DRIVER_INFO_LEVEL_3 **spool_drv_info,
+				DRIVER_INFO_3 *info3)
 {
 	uint32		len = 0;
 	uint16		*ptr = info3->dependentfiles;
@@ -5741,8 +5736,13 @@ BOOL spoolss_io_q_resetprinter(char *desc, SPOOL_Q_RESETPRINTER *q_u, prs_struct
 	if (!smb_io_pol_hnd("printer handle", &q_u->handle, ps, depth))
 		return False;
 
-	if (!prs_uint32("unknown1", ps, depth, &q_u->unknown1))
+	if (!prs_uint32("datatype_ptr", ps, depth, &q_u->datatype_ptr))
 		return False;
+		
+	if (q_u->datatype_ptr) {
+		if (!smb_io_unistr2("datatype", &q_u->datatype, q_u->datatype_ptr?True:False, ps, depth))
+			return False;
+	}
 
 	if (!spoolss_io_devmode_cont(desc, &q_u->devmode_ctr, ps, depth))
 		return False;
