@@ -37,6 +37,7 @@ d none samba/docs 0755 root other
 #
 # Stuff that goes into lib
 #
+d none samba/lib/charset 0755 root other
 f none samba/lib/smb.conf.example=examples/smb.conf.default 0644 root other
 d none samba/lib/regeditscripts 0755 root other
 f none samba/lib/regeditscripts/NT4_PlainPassword.reg=docs/Registry/NT4_PlainPassword.reg 0444 root other
