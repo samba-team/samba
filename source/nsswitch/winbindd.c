@@ -82,7 +82,7 @@ static void do_print_winbindd_status(void)
 	winbindd_status();
 	winbindd_idmap_status();
 	winbindd_cache_status();
-        winbindd_cm_status();
+	winbindd_cm_status();
 }
 
 /* Flush client cache */
@@ -96,35 +96,36 @@ static void do_flush_caches(void)
 
 /* Handle the signal by unlinking socket and exiting */
 
-static void termination_handler(int signum)
+static void terminate(void)
 {
 	pstring path;
 	
 	/* Remove socket file */
-	
 	snprintf(path, sizeof(path), "%s/%s", 
 		 WINBINDD_SOCKET_DIR, WINBINDD_SOCKET_NAME);
 	unlink(path);
-	
 	exit(0);
+}
+
+static BOOL do_sigterm;
+
+static void termination_handler(int signum)
+{
+	do_sigterm = True;
 }
 
 static BOOL print_winbindd_status;
 
 static void sigusr1_handler(int signum)
 {
-	BlockSignals(True, SIGUSR1);
 	print_winbindd_status = True;
-	BlockSignals(False, SIGUSR1);
 }
 
 static BOOL do_sighup;
 
 static void sighup_handler(int signum)
 {
-	BlockSignals(True, SIGHUP);
 	do_sighup = True;
-	BlockSignals(False, SIGHUP);
 }
 
 /* Create winbindd socket */
@@ -324,8 +325,12 @@ static void new_connection(int accept_sock)
 	/* Accept connection */
 	
 	len = sizeof(sunaddr);
-	if ((sock = accept(accept_sock, (struct sockaddr *)&sunaddr, &len)) 
-	    == -1)
+
+	do {
+		sock = accept(accept_sock, (struct sockaddr *)&sunaddr, &len);
+	} while (sock == -1 && errno == EINTR);
+
+	if (sock == -1)
 		return;
 	
 	DEBUG(6,("accepted socket %d\n", sock));
@@ -399,8 +404,10 @@ static void client_read(struct winbindd_cli_state *state)
     
 	/* Read data */
 
-	n = read(state->sock, state->read_buf_len + (char *)&state->request, 
-		 sizeof(state->request) - state->read_buf_len);
+	do {
+		n = read(state->sock, state->read_buf_len + (char *)&state->request, 
+				 sizeof(state->request) - state->read_buf_len);
+	} while (n == -1 && errno == EINTR);
 	
 	DEBUG(10,("client_read: read %d bytes. Need %d more for a full request.\n", n,
 			sizeof(state->request) - n - state->read_buf_len ));
@@ -447,7 +454,9 @@ static void client_write(struct winbindd_cli_state *state)
 			state->write_buf_len;
 	}
 	
-	num_written = write(state->sock, data, state->write_buf_len);
+	do {
+		num_written = write(state->sock, data, state->write_buf_len);
+	} while (num_written == -1 && errno == EINTR);
 	
 	DEBUG(10,("client_write: wrote %d bytes.\n", num_written ));
 
@@ -547,7 +556,8 @@ static void process_loop(int accept_sock)
 
 			/* Select requires we know the highest fd used */
 
-			if (state->sock > maxfd) maxfd = state->sock;
+			if (state->sock > maxfd)
+				maxfd = state->sock;
 
 			/* Add fd for reading */
 
@@ -562,28 +572,12 @@ static void process_loop(int accept_sock)
 			state = state->next;
 		}
 
-		/* Check signal handling things */
-
-		if (do_sighup) {
-
-			/* Flush winbindd cache */
-
-			do_flush_caches();
-			reload_services_file(True);
-
-			do_sighup = False;
-		}
-
-		if (print_winbindd_status) {
-			do_print_winbindd_status();
-			print_winbindd_status = False;
-		}
-
 		/* Call select */
         
 		selret = select(maxfd + 1, &r_fds, &w_fds, NULL, &timeout);
 
-		if (selret == 0) continue;
+		if (selret == 0)
+			continue;
 
 		if ((selret == -1 && errno != EINTR) || selret == 0) {
 
@@ -653,6 +647,26 @@ static void process_loop(int accept_sock)
 					client_write(state);
 			}
 		}
+
+		/* Check signal handling things */
+
+		if (do_sigterm)
+			terminate();
+
+		if (do_sighup) {
+
+			/* Flush winbindd cache */
+
+			do_flush_caches();
+			reload_services_file(True);
+
+			do_sighup = False;
+		}
+
+		if (print_winbindd_status) {
+			do_print_winbindd_status();
+			print_winbindd_status = False;
+		}
 	}
 }
 
@@ -668,7 +682,7 @@ int main(int argc, char **argv)
 	BOOL interactive = False;
 	int opt, new_debuglevel = -1;
 
-        /* Initialise for running in non-root mode */
+	/* Initialise for running in non-root mode */
 
 	sec_init();
 
@@ -682,7 +696,7 @@ int main(int argc, char **argv)
 	while ((opt = getopt(argc, argv, "id:s:")) != EOF) {
 		switch (opt) {
 
-			/* Don't become a daemon */
+		/* Don't become a daemon */
 
 		case 'i':
 			interactive = True;
@@ -736,11 +750,11 @@ int main(int argc, char **argv)
 
 	secrets_init();
 
-        /* Get list of domains we look up requests for.  This includes the
-           domain which we are a member of as well as any trusted
-           domains. */ 
+	/* Get list of domains we look up requests for.  This includes the
+		domain which we are a member of as well as any trusted
+		domains. */ 
 
-        get_domain_info();
+	get_domain_info();
 
 	ZERO_STRUCT(server_state);
 
