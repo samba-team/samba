@@ -31,7 +31,7 @@
 
 #include "includes.h"
 
-int d_vfprintf(FILE *f, const char *format, va_list ap)
+ int d_vfprintf(FILE *f, const char *format, va_list ap)
 {
 	char *p, *p2;
 	int ret, maxlen, clen;

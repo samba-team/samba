@@ -2080,7 +2080,7 @@ char *smb_xstrndup(const char *s, size_t n)
   vasprintf that aborts on malloc fail
 */
 
-int smb_xvasprintf(char **ptr, const char *format, va_list ap)
+ int smb_xvasprintf(char **ptr, const char *format, va_list ap)
 {
 	int n;
 	va_list ap2;

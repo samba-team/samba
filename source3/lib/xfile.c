@@ -184,7 +184,7 @@ int x_fwrite(const void *p, size_t size, size_t nmemb, XFILE *f)
 }
 
 /* thank goodness for asprintf() */
-int x_vfprintf(XFILE *f, const char *format, va_list ap)
+ int x_vfprintf(XFILE *f, const char *format, va_list ap)
 {
 	char *p;
 	int len, ret;
@@ -199,7 +199,7 @@ int x_vfprintf(XFILE *f, const char *format, va_list ap)
 	return ret;
 }
 
-int x_fprintf(XFILE *f, const char *format, ...)
+ int x_fprintf(XFILE *f, const char *format, ...)
 {
 	va_list ap;
 	int ret;
