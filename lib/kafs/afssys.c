@@ -142,7 +142,7 @@ k_afsklog_all_local_cells (char *krealm)
     return KSUCCESS;
   err = KSUCCESS;
   while(fgets(cell, sizeof(cell), f) && err == KSUCCESS) {
-    cell[strlen(cell)] = '\0';
+    cell[sizeof(cell) - 1] = '\0';
     err = k_afsklog (cell, krealm);
   }
   fclose(f);
