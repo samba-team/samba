@@ -428,9 +428,10 @@ static NTSTATUS fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
 			    (delta->acb_info & ACB_DOMTRUST) ) {
 			pstrcpy(add_script, lp_addmachine_script());
 		} else {
-			*add_script = '\0';
 			DEBUG(1, ("Unknown user type: %s\n",
 				  smbpasswd_encode_acb_info(delta->acb_info)));
+			nt_ret = NT_STATUS_UNSUCCESSFUL;
+			goto done;
 		}
 		if (*add_script) {
 			int add_ret;
@@ -448,8 +449,11 @@ static NTSTATUS fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
 		}
 		
 		/* try and find the possible unix account again */
-		if ( !(passwd = Get_Pwnam(account)) )
-			return NT_STATUS_NO_SUCH_USER;
+		if ( !(passwd = Get_Pwnam(account)) ) {
+			d_printf("Could not create posix account info for '%s'\n", account);
+			nt_ret = NT_STATUS_NO_SUCH_USER;
+			goto done;
+		}
 			
 	}
 	
@@ -499,6 +503,7 @@ static NTSTATUS fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
 			pdb_get_username(sam_account)));
 	}
 
+ done:
 	pdb_free_sam(&sam_account);
 	return nt_ret;
 }
