@@ -282,12 +282,13 @@ static BOOL do_command(char *dest, char *msg_name, int iparams, char **params)
 			return (False);
 		}
 		{
-			char msg[8 + sizeof(fstring)];
+			char msg[8 + sizeof(fstring)+4];
 			SIVAL(msg,0,PRINTER_CHANGE_ALL);
 			SIVAL(msg,4,0);
 			fstrcpy(&msg[8], params[0]);
+			SIVAL(msg,8+strlen(params[0])+1, PRINTER_MESSAGE_DRIVER);
 
-			retval = send_message(dest, MSG_PRINTER_NOTIFY, msg, 8 + strlen(params[0]) + 1, False);
+			retval = send_message(dest, MSG_PRINTER_NOTIFY, msg, 8 + strlen(params[0]) + 1 + 4, False);
 		}
 		break;
 
