@@ -606,10 +606,9 @@ typedef struct rpc_hdr_bba_info
 
 } RPC_HDR_BBA;
 
-/* RPC_HDR_RB - ms req bind header */
-typedef struct rpc_hdr_rb_info
+/* RPC_BIND_REQ - ms req bind */
+typedef struct rpc_bind_req_info
 {
-  RPC_HDR     hdr;
   RPC_HDR_BBA bba;
 
   uint32 num_elements;    /* the number of elements (0x1) */
@@ -638,7 +637,6 @@ typedef struct rpc_results_info
 /* RPC_HDR_BA */
 typedef struct rpc_hdr_ba_info
 {
-  RPC_HDR     hdr;
   RPC_HDR_BBA bba;
 
   RPC_ADDR_STR addr    ;  /* the secondary address string, as described earlier */

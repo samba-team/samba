@@ -599,13 +599,6 @@ BOOL api_netlogrpcTNP(int cnum,int uid, char *param,char *data,
 
 	smb_io_rpc_hdr_rr(True, &hdr, data, data, 4, 0);
 
-	if (hdr.hdr.pkt_type == RPC_BIND) /* RPC BIND */
-	{
-		DEBUG(4,("netlogon rpc bind %x\n",hdr.hdr.pkt_type));
-		LsarpcTNP1(data,rdata,rdata_len);
-		return True;
-	}
-
 	DEBUG(4,("netlogon TransactNamedPipe op %x\n",hdr.opnum));
 
 	if ((vuser = get_valid_user_struct(uid)) == NULL) return False;

@@ -238,7 +238,7 @@ char* lsa_io_q_lookup_sids(BOOL io, LSA_Q_LOOKUP_SIDS *q_s, char *q, char *base,
 		q = smb_io_dom_sid(io, &(q_s->dom_sids[i]), q, base, align, depth); /* domain SIDs to be looked up. */
 	}
 
-	DBG_RW_PCVAL("undoc                ", depth, base, io, q, q_s->undoc, 16); q += 16; /* completely undocumented 16 bytes */
+	DBG_RW_PCVAL(False, "undoc                ", depth, base, io, q, q_s->undoc, 16); q += 16; /* completely undocumented 16 bytes */
 
 	return q;
 }
@@ -301,7 +301,7 @@ char* lsa_io_q_lookup_rids(BOOL io, LSA_Q_LOOKUP_RIDS *q_r, char *q, char *base,
 		q = smb_io_dom_name(io, &(q_r->lookup_name[i]), q, base, align, depth); /* names to be looked up */
 	}
 
-	DBG_RW_PCVAL("undoc          ", depth, base, io, q, q_r->undoc, UNKNOWN_LEN); q += UNKNOWN_LEN; /* completely undocumented bytes of unknown length */
+	DBG_RW_PCVAL(False, "undoc          ", depth, base, io, q, q_r->undoc, UNKNOWN_LEN); q += UNKNOWN_LEN; /* completely undocumented bytes of unknown length */
 
 	return q;
 }
@@ -474,7 +474,7 @@ char* lsa_io_q_srv_pwset(BOOL io, LSA_Q_SRV_PWSET *q_s, char *q, char *base, int
 	q = align_offset(q, base, align);
     
 	q = smb_io_clnt_info(io, &(q_s->clnt_id), q, base, align, depth); /* client identification/authentication info */
-	DBG_RW_PCVAL("pwd", depth, base, io, q, q_s->pwd, 16); q += 16; /* new password - undocumented */
+	DBG_RW_PCVAL(False, "pwd", depth, base, io, q, q_s->pwd, 16); q += 16; /* new password - undocumented */
 
 	return q;
 }
@@ -541,13 +541,13 @@ char* lsa_io_user_info(BOOL io, LSA_USER_INFO *usr, char *q, char *base, int ali
 		DBG_RW_IVAL("buffer_groups ", depth, base, io, q, usr->buffer_groups); q += 4; /* undocumented buffer pointer to groups. */
 		DBG_RW_IVAL("user_flgs     ", depth, base, io, q, usr->user_flgs    ); q += 4;     /* user flags */
 
-		DBG_RW_PCVAL("user_sess_key", depth, base, io, q, usr->user_sess_key, 16); q += 16; /* unused user session key */
+		DBG_RW_PCVAL(False, "user_sess_key", depth, base, io, q, usr->user_sess_key, 16); q += 16; /* unused user session key */
 
 		q = smb_io_unihdr(io, &(usr->hdr_logon_srv), q, base, align, depth); /* logon server unicode string header */
 		q = smb_io_unihdr(io, &(usr->hdr_logon_dom), q, base, align, depth); /* logon domain unicode string header */
 
 		DBG_RW_IVAL("buffer_dom_id ", depth, base, io, q, usr->buffer_dom_id); q += 4; /* undocumented logon domain id pointer */
-		DBG_RW_PCVAL("padding       ", depth, base, io, q, usr->padding, 40); q += 40; /* unused padding bytes? */
+		DBG_RW_PCVAL(False, "padding       ", depth, base, io, q, usr->padding, 40); q += 40; /* unused padding bytes? */
 
 		DBG_RW_IVAL("num_other_sids", depth, base, io, q, usr->num_other_sids); q += 4; /* 0 - num_sids */
 		DBG_RW_IVAL("buffer_other_sids", depth, base, io, q, usr->buffer_other_sids); q += 4; /* NULL - undocumented pointer to SIDs. */

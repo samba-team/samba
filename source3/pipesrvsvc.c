@@ -198,13 +198,6 @@ BOOL api_srvsvcTNP(int cnum,int uid, char *param,char *data,
 
 	smb_io_rpc_hdr_rr(True, &hdr, data, data, 4, 0);
 
-	if (hdr.hdr.pkt_type == RPC_BIND) /* RPC BIND */
-	{
-		DEBUG(4,("srvsvc rpc bind %x\n",hdr.hdr.pkt_type));
-		LsarpcTNP1(data,rdata,rdata_len);
-		return True;
-	}
-
 	DEBUG(4,("srvsvc TransactNamedPipe op %x\n",hdr.opnum));
 
 	switch (hdr.opnum)

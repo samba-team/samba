@@ -136,7 +136,7 @@ char* smb_io_dom_sid(BOOL io, DOM_SID *sid, char *q, char *base, int align, int 
 	/* oops! XXXX should really issue a warning here... */
 	if (sid->num_auths > MAXSUBAUTHS) sid->num_auths = MAXSUBAUTHS;
 
-	DBG_RW_PIVAL("sub_auths ", depth, base, io, q, sid->sub_auths, sid->num_auths); q += sid->num_auths * 4;
+	DBG_RW_PIVAL(False, "sub_auths ", depth, base, io, q, sid->sub_auths, sid->num_auths); q += sid->num_auths * 4;
 
 	return q;
 }
@@ -278,7 +278,7 @@ char* smb_io_unistr2(BOOL io, UNISTR2 *uni2, char *q, char *base, int align, int
 
 	/* buffer advanced by indicated length of string
        NOT by searching for null-termination */
-	DBG_RW_PSVAL("buffer     ", depth, base, io, q, uni2->buffer, uni2->uni_max_len); q += uni2->uni_max_len * 2;
+	DBG_RW_PSVAL(True, "buffer     ", depth, base, io, q, uni2->buffer, uni2->uni_max_len); q += uni2->uni_max_len * 2;
 
 	return q;
 }
@@ -470,7 +470,7 @@ char* smb_io_chal(BOOL io, DOM_CHAL *chal, char *q, char *base, int align, int d
 	DBG_RW_IVAL("data[0]", depth, base, io, q, chal->data[0]); q += 4;
 	DBG_RW_IVAL("data[1]", depth, base, io, q, chal->data[1]); q += 4;
 /*
-	DBG_RW_PCVAL("data", depth, base, io, q, chal->data, 8); q += 8;
+	DBG_RW_PCVAL(False, "data", depth, base, io, q, chal->data, 8); q += 8;
 */
 	return q;
 }
@@ -619,7 +619,7 @@ char* smb_io_arc4_owf(BOOL io, ARC4_OWF *hash, char *q, char *base, int align, i
 
 	q = align_offset(q, base, align);
 	
-	DBG_RW_PCVAL("data", depth, base, io, q, hash->data, 16); q += 16;
+	DBG_RW_PCVAL(False, "data", depth, base, io, q, hash->data, 16); q += 16;
 
 	return q;
 }
@@ -854,8 +854,8 @@ char* smb_io_rpc_iface(BOOL io, RPC_IFACE *ifc, char *q, char *base, int align, 
 
 	q = align_offset(q, base, align);
 
-	DBG_RW_SVAL ("version", depth, base, io, q, ifc->version); q += 2;
-	DBG_RW_PCVAL("data   ", depth, base, io, q, ifc->data, sizeof(ifc->data)); q += sizeof(ifc->data);
+	DBG_RW_PCVAL(False, "data   ", depth, base, io, q, ifc->data, sizeof(ifc->data)); q += sizeof(ifc->data);
+	DBG_RW_IVAL (       "version", depth, base, io, q, ifc->version); q += 4;
 
 	return q;
 }
@@ -883,8 +883,8 @@ char* smb_io_rpc_addr_str(BOOL io, RPC_ADDR_STR *str, char *q, char *base, int a
 
 	q = align_offset(q, base, align);
 
-	DBG_RW_IVAL ("len ", depth, base, io, q, str->len); q += 2;
-	DBG_RW_PSVAL("addr", depth, base, io, q, str->addr, str->len); q += str->len;
+	DBG_RW_IVAL (      "len ", depth, base, io, q, str->len); q += 2;
+	DBG_RW_PCVAL(True, "addr", depth, base, io, q, str->addr, str->len); q += str->len;
 
 	return q;
 }
@@ -921,15 +921,13 @@ char* smb_io_rpc_hdr_bba(BOOL io, RPC_HDR_BBA *rpc, char *q, char *base, int ali
 /*******************************************************************
 creates an RPC_HDR_RB structure.
 ********************************************************************/
-void make_rpc_hdr_rb(RPC_HDR_RB *rpc, enum RPC_PKT_TYPE pkt_type,
-				uint32 call_id, int data_len,
+void make_rpc_hdr_rb(RPC_HDR_RB *rpc, 
 				uint16 max_tsize, uint16 max_rsize, uint32 assoc_gid,
 				uint32 num_elements, uint16 context_id, uint8 num_syntaxes,
 				RPC_IFACE *abstract, RPC_IFACE *transfer)
 {
 	if (rpc == NULL) return;
 
-	make_rpc_hdr    (&(rpc->hdr), pkt_type, call_id, data_len);
 	make_rpc_hdr_bba(&(rpc->bba), max_tsize, max_rsize, assoc_gid);
 
 	rpc->num_elements = num_elements ; /* the number of elements (0x1) */
@@ -953,7 +951,6 @@ char* smb_io_rpc_hdr_rb(BOOL io, RPC_HDR_RB *rpc, char *q, char *base, int align
 	DEBUG(5,("%s%04x smb_io_rpc_hdr_bba\n", tab_depth(depth), PTR_DIFF(q, base)));
 	depth++;
 
-	q = smb_io_rpc_hdr    (io, &(rpc->hdr), q, base, align, depth);
 	q = smb_io_rpc_hdr_bba(io, &(rpc->bba), q, base, align, depth);
 
 	DBG_RW_IVAL("num_elements", depth, base, io, q, rpc->num_elements); q += 4;
@@ -1013,8 +1010,7 @@ creates an RPC_HDR_BA structure.
 lkclXXXX only one reason at the moment!
 
 ********************************************************************/
-void make_rpc_hdr_ba(RPC_HDR_BA *rpc, enum RPC_PKT_TYPE pkt_type,
-				uint32 call_id, int data_len,
+void make_rpc_hdr_ba(RPC_HDR_BA *rpc, 
 				uint16 max_tsize, uint16 max_rsize, uint32 assoc_gid,
 				char *pipe_addr,
 				uint8 num_results, uint16 result, uint16 reason,
@@ -1022,7 +1018,6 @@ void make_rpc_hdr_ba(RPC_HDR_BA *rpc, enum RPC_PKT_TYPE pkt_type,
 {
 	if (rpc == NULL || transfer == NULL || pipe_addr == NULL) return;
 
-	make_rpc_hdr     (&(rpc->hdr ), pkt_type, call_id, data_len);
 	make_rpc_hdr_bba (&(rpc->bba ), max_tsize, max_rsize, assoc_gid);
 	make_rpc_addr_str(&(rpc->addr), pipe_addr);
 	make_rpc_results (&(rpc->res ), num_results, result, reason);
@@ -1041,10 +1036,10 @@ char* smb_io_rpc_hdr_ba(BOOL io, RPC_HDR_BA *rpc, char *q, char *base, int align
 	DEBUG(5,("%s%04x smb_io_rpc_hdr_ba\n", tab_depth(depth), PTR_DIFF(q, base)));
 	depth++;
 
-	q = smb_io_rpc_hdr     (io, &(rpc->hdr)     , q, base, align, depth);
 	q = smb_io_rpc_hdr_bba (io, &(rpc->bba)     , q, base, align, depth);
 	q = smb_io_rpc_addr_str(io, &(rpc->addr)    , q, base, align, depth);
 	q = smb_io_rpc_results (io, &(rpc->res)     , q, base, align, depth);
+	q = smb_io_rpc_iface   (io, &(rpc->transfer), q, base, align, depth);
 
 	return q;
 }
@@ -1148,7 +1143,7 @@ char* smb_io_pol_hnd(BOOL io, LSA_POL_HND *pol, char *q, char *base, int align, 
 
 	q = align_offset(q, base, align);
 	
-	DBG_RW_PCVAL("data", depth, base, io, q, pol->data, POL_HND_SIZE); q += POL_HND_SIZE;
+	DBG_RW_PCVAL(False, "data", depth, base, io, q, pol->data, POL_HND_SIZE); q += POL_HND_SIZE;
 
 	return q;
 }
