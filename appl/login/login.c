@@ -41,7 +41,7 @@
 RCSID("$Id$");
 
 /*
- * the environment we will sent to execle and the shell.
+ * the environment we will send to execle and the shell.
  */
 
 static char **env;
