@@ -37,6 +37,7 @@ HTMLDIR=../htmldocs
 MANPROJDOC = manpages
 PROJDOC = projdoc
 DEVDOC = devdoc
+XMLTO = @XMLTO@
 SMBDOTCONFDOC = smbdotconf
 PSDIR = ..
 PDFDIR = ..
@@ -50,20 +51,22 @@ MANPAGES_HTML=$(patsubst %,$(HTMLDIR)/%.html,$(MANPAGES_NAMES))
 all: 
 	@echo "Supported make targets:"
 	@echo "manpages - Build manpages"
-	@echo "pdf - Build PDF version of HOWTO Collection"
+	@echo "pdf - Build PDF version of HOWTO Collection and Developers Guide"
+	@echo "txt - Build plain text version of HOWTO Collection and Developers Guide"
 	@echo -n "html-single - Build single file HTML version of HOWTO Collection"
 	@echo " and developers guide"
-	@echo "html - Build HTML version of HOWTO Collection"
+	@echo "html - Build HTML version of HOWTO Collection and Developers Guide"
 	@echo "htmlman - Build html version of manpages"
 	@echo "htmlfaq - Build html version of the FAQ"
 	@echo "everything - Build all of the above"
 
-everything: manpages pdf html-single html htmlman htmlfaq
+everything: manpages pdf html-single html htmlman htmlfaq txt
 
 # Global rules
 
 manpages: $(MANDIR) $(MANPAGES)
 pdf: $(PDFDIR) $(PDFDIR)/Samba-HOWTO-Collection.pdf $(PDFDIR)/Samba-Developers-Guide.pdf
+txt: $(TXTDIR) $(TXTDIR)/Samba-HOWTO-Collection.txt $(TXTDIR)/Samba-Developers-Guide.txt
 htmlman: $(HTMLDIR) $(MANPAGES_HTML) CSS
 htmlfaq: $(HTMLDIR) CSS
 	@$(XSLTPROC) --stringparam base.dir "$(FAQDIR)/" --stringparam root.filename samba-faq xslt/html-chunk.xsl $(FAQPROJDOC)/sambafaq.xml
@@ -72,6 +75,18 @@ html: $(HTMLDIR) CSS
 	@$(XSLTPROC) xslt/html-chunk.xsl $(PROJDOC)/samba-doc.xml
 
 # Text files
+$(TXTDIR):
+	mkdir $(TXTDIR)
+
+$(TXTDIR)/Samba-HOWTO-Collection.txt: $(PROJDOC)/samba-doc.xml
+	@echo "Converting samba-doc to plain text..."
+	@$(XMLTO) txt -o $(TXTDIR) $<
+	@mv $(TXTDIR)/samba-doc.txt $(TXTDIR)/Samba-HOWTO-Collection.txt
+
+$(TXTDIR)/Samba-Developers-Guide.txt: $(DEVDOC)/dev-doc.xml
+	@echo "Converting dev-doc to plain text..."
+	@$(XMLTO) txt -o $(TXTDIR) $<
+	@mv $(TXTDIR)/dev-doc.txt $(TXTDIR)/Samba-Developers-Guide.txt
 
 # Adobe PDF files
 $(PDFDIR)/Samba-HOWTO-Collection.pdf: $(PROJDOC)/samba-doc.xml
