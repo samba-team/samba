@@ -60,7 +60,7 @@ install-suid-programs:
 
 install-exec-hook: install-suid-programs
 
-install-build-headers::
+install-build-headers:: $(include_HEADERS) $(build_HEADERZ)
 	@foo='$(include_HEADERS) $(build_HEADERZ)'; \
 	for f in $$foo; do \
 		f=`basename $$f`; \
