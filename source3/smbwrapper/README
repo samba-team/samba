@@ -22,7 +22,7 @@ This is code under development. Lots of things don't work yet.
 Things that I have tried and do seem to work include:
 
   emacs, tar, ls, cmp, cp, rsync, du, cat, rm, mv, less, more, wc, head,
-  tail, bash, tcsh
+  tail, bash, tcsh, mkdir, rmdir
 
 things that I know don't work:
  

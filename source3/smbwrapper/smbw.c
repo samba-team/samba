@@ -1598,3 +1598,39 @@ int smbw_rmdir(const char *fname)
 	smbw_busy--;
 	return -1;
 }
+
+
+/***************************************************** 
+a wrapper for getcwd()
+*******************************************************/
+char *smbw_getcwd(char *buf, size_t size)
+{
+	smbw_init();
+
+	if (smbw_busy) {
+		return __getcwd(buf, size);
+	}
+
+	smbw_busy++;
+
+	if (!buf) {
+		if (size <= 0) size = strlen(smb_cwd)+1;
+		buf = (char *)malloc(size);
+		if (!buf) {
+			errno = ENOMEM;
+			smbw_busy--;
+			return NULL;
+		}
+	}
+
+	if (strlen(smb_cwd) > size-1) {
+		errno = ERANGE;
+		smbw_busy--;
+		return NULL;
+	}
+
+	safe_strcpy(buf, smb_cwd, size);
+
+	smbw_busy--;
+	return buf;
+}
