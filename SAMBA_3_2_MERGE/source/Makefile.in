@@ -184,7 +184,7 @@ AFS_SETTOKEN_OBJ = lib/afs_settoken.o
 
 SERVER_MUTEX_OBJ = lib/server_mutex.o
 
-ERRORMAP_OBJ = libsmb/errormap.o
+ERRORMAP_OBJ = libcli/util/errormap.o
 
 PASSCHANGE_OBJ = libsmb/passchange.o
 
@@ -551,13 +551,12 @@ SMBSH_OBJ = smbwrapper/smbsh.o smbwrapper/shared.o \
 
 STATUS_OBJ = utils/status.o $(LOCKING_OBJ) $(PARAM_OBJ) \
              $(UBIQX_OBJ) $(PROFILE_OBJ) $(LIB_NONSMBD_OBJ)  \
-	     $(SECRETS_OBJ) $(LIBSAMBA_OBJ) $(DUMMYROOT_OBJ) $(ERRORMAP_OBJ) 
+	     $(LIBSAMBA_OBJ) $(DUMMYROOT_OBJ) $(ERRORMAP_OBJ) lib/cmdline/popt_common.o
              
 
 SMBCONTROL_OBJ = utils/smbcontrol.o $(LOCKING_OBJ) $(PARAM_OBJ) \
 	$(UBIQX_OBJ) $(PROFILE_OBJ) $(LIB_NONSMBD_OBJ)  \
-	$(SECRETS_OBJ) $(LIBSAMBA_OBJ) \
-	$(PRINTBASE_OBJ) $(DUMMYROOT_OBJ) $(ERRORMAP_OBJ)
+	$(PRINTBASE_OBJ) $(DUMMYROOT_OBJ) $(ERRORMAP_OBJ) lib/cmdline/popt_common.o
 
 SMBTREE_OBJ = utils/smbtree.o $(PARAM_OBJ) \
              $(UBIQX_OBJ) $(PROFILE_OBJ) $(LIB_NONSMBD_OBJ) $(LIBSMB_OBJ) \
@@ -577,7 +576,9 @@ SMBPASSWD_OBJ = utils/smbpasswd.o $(PASSCHANGE_OBJ) $(PARAM_OBJ) $(SECRETS_OBJ) 
 
 PDBEDIT_OBJ = utils/pdbedit.o $(PARAM_OBJ) $(PASSDB_OBJ) $(LIBSAMBA_OBJ) \
 		$(UBIQX_OBJ) $(LIB_NONSMBD_OBJ) $(GROUPDB_OBJ) $(SECRETS_OBJ) \
-		 $(SMBLDAP_OBJ) $(DUMMYROOT_OBJ)
+		 $(SMBLDAP_OBJ) $(DUMMYROOT_OBJ) lib/cmdline/popt_common.o \
+                libcli/util/smbencrypt.o libcli/util/smbdes.o libcli/util/nterr.o \
+                librpc/ndr/ndr_basic.o librpc/ndr/ndr.o libcli/util/doserr.o
 
 SMBGET_OBJ = utils/smbget.o  $(LIBSMBCLIENT_OBJ) $(SECRETS_OBJ)
 

@@ -232,6 +232,17 @@ time_t nt_time_to_unix(NTTIME nt)
 	return (time_t)nt;
 }
 
+/****************************************************************************
+initialise an NTTIME to -1, which means "unknown" or "don't expire"
+****************************************************************************/
+
+void init_nt_time(NTTIME *nt)
+{
+	uint8_t init_time[] = { 0x7f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
+
+	memcpy( nt, init_time, sizeof(*nt) );
+}
+
 
 /****************************************************************************
 put a 8 byte filetime from a time_t

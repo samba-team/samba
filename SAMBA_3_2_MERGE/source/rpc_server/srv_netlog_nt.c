@@ -487,7 +487,7 @@ NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *
 		DEBUG(100,("%02X ", q_u->pwd[i]));
 	DEBUG(100,("\n"));
 
-	cred_hash3( pwd, q_u->pwd, p->dc.sess_key, 0);
+	des_crypt112_16( pwd, q_u->pwd, p->dc.sess_key, 0);
 
 	/* lies!  nt and lm passwords are _not_ the same: don't care */
 	if (!pdb_set_lanman_passwd (sampass, pwd, PDB_CHANGED)) {

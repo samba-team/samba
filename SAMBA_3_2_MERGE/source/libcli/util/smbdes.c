@@ -365,6 +365,21 @@ void des_crypt112_16(uint8_t out[16], uint8_t in[16], const uint8_t key[14], int
 }
 
 /*
+  wrapper for old function name
+*/
+
+void SamOEMhash( unsigned char *data, const unsigned char *key, int val)
+{
+	DATA_BLOB key_blob;
+
+	key_blob = data_blob( key, val );
+	arcfour_crypt_blob( data, val, &key_blob );
+	data_blob_free( &key_blob );
+
+}
+
+
+/*
   arcfour encryption with a blob key
 */
 void arcfour_crypt_blob(uint8_t *data, int len, const DATA_BLOB *key)
