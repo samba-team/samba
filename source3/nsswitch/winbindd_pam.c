@@ -53,13 +53,15 @@ static void parse_domain_user(char *domuser, fstring domain, fstring user)
 enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state) 
 {
 	NTSTATUS result;
-	fstring name_domain, name_user, auth_dc;
+	fstring name_domain, name_user;
 	int passlen;
 	unsigned char trust_passwd[16];
 	time_t last_change_time;
-
 	auth_usersupplied_info *user_info;
-	auth_serversupplied_info *server_info;
+        uint32 smb_uid_low;
+        NET_USER_INFO_3 info3;
+	NET_ID_INFO_CTR ctr;
+        struct cli_state *cli;
 
 	DEBUG(3, ("[%5d]: pam auth %s\n", state->pid,
 		  state->request.data.auth.user));
@@ -76,39 +78,41 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 
 	passlen = strlen(state->request.data.auth.pass);
 		
-	if (state->request.data.auth.pass[0]) {
-		make_user_info_for_winbind(&user_info, 
-					   name_user, name_domain,
-					   state->request.data.auth.pass);
-	} else {
+	if (state->request.data.auth.pass[0])
+		make_user_info_winbind(&user_info, 
+                                       name_user, name_domain,
+                                       state->request.data.auth.pass);
+	else
 		return WINBINDD_ERROR;
-	}
 	
 	/*
 	 * Get the machine account password for our primary domain
 	 */
 
-	if (!secrets_fetch_trust_account_password(lp_workgroup(), trust_passwd, &last_change_time))
-	{
-		DEBUG(0, ("winbindd_pam_auth: could not fetch trust account password for domain %s\n", lp_workgroup()));
+	if (!secrets_fetch_trust_account_password(
+                lp_workgroup(), trust_passwd, &last_change_time)) {
+		DEBUG(0, ("winbindd_pam_auth: could not fetch trust account "
+                          "password for domain %s\n", lp_workgroup()));
 		return WINBINDD_ERROR;
 	}
 
-        if (!cm_get_dc_name(lp_workgroup(), auth_dc)) {
-                DEBUG(3, ("Could not find dc for workgroup %s\n",
-                          lp_workgroup()));
+	/* We really don't care what LUID we give the user. */
+
+	generate_random_buffer( (unsigned char *)&smb_uid_low, 4, False);
+
+	ZERO_STRUCT(info3);
+
+        if (!(cli = cm_get_netlogon_cli(lp_workgroup(), trust_passwd))) {
+                DEBUG(3, ("could not open handle to NETLOGON pipe\n"));
                 return WINBINDD_ERROR;
         }
 
-	/* So domain_client_validate() actually opens a new connection
-	   for each authentication performed.  This can theoretically
-	   be optimised to use an already open IPC$ connection. */
+	result = cli_nt_login_network(cli, user_info, smb_uid_low, 
+				      &ctr, &info3);
 
-	result = domain_client_validate(user_info, &server_info,
-                                        auth_dc, trust_passwd, 
-                                        last_change_time);
+        free_user_info(&user_info);
 
-        free_server_info(&server_info); /* No info needed */
+        cli_shutdown(cli);
 
 	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
 }
@@ -118,11 +122,15 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state) 
 {
 	NTSTATUS result;
-	fstring name_domain, name_user, auth_dc;
+	fstring name_domain, name_user;
 	unsigned char trust_passwd[16];
 	time_t last_change_time;
+
 	auth_usersupplied_info *user_info;
-	auth_serversupplied_info *server_info;
+        uint32 smb_uid_low;
+        NET_USER_INFO_3 info3;
+	NET_ID_INFO_CTR ctr;
+        struct cli_state *cli;
 
 	DEBUG(3, ("[%5d]: pam auth crap %s\n", state->pid,
 		  state->request.data.auth_crap.user));
@@ -132,36 +140,42 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 	parse_domain_user(state->request.data.auth_crap.user, name_domain, 
                           name_user);
 
-       	make_user_info_winbind_crap(&user_info, name_user, 
-				    name_domain, state->request.data.auth_crap.chal,
-				    (uchar *)state->request.data.auth_crap.lm_resp, 24,
-				    (uchar *)state->request.data.auth_crap.nt_resp, 24);
+       	make_user_info_winbind_crap(
+                &user_info, name_user, 
+                name_domain, state->request.data.auth_crap.chal,
+                (uchar *)state->request.data.auth_crap.lm_resp,
+                state->request.data.auth_crap.lm_resp_len,
+                (uchar *)state->request.data.auth_crap.nt_resp,
+                state->request.data.auth_crap.nt_resp_len);
 	
 	/*
 	 * Get the machine account password for our primary domain
 	 */
 
-	if (!secrets_fetch_trust_account_password(lp_workgroup(), trust_passwd, &last_change_time))
-	{
-		DEBUG(0, ("winbindd_pam_auth: could not fetch trust account password for domain %s\n", lp_workgroup()));
+	if (!secrets_fetch_trust_account_password(
+                lp_workgroup(), trust_passwd, &last_change_time)) {
+		DEBUG(0, ("winbindd_pam_auth: could not fetch trust account "
+                          "password for domain %s\n", lp_workgroup()));
 		return WINBINDD_ERROR;
 	}
 
-        if (!cm_get_dc_name(lp_workgroup(), auth_dc)) {
-                DEBUG(3, ("Could not find dc for workgroup %s\n",
-                          lp_workgroup()));
+	/* We really don't care what LUID we give the user. */
+
+	generate_random_buffer( (unsigned char *)&smb_uid_low, 4, False);
+
+	ZERO_STRUCT(info3);
+
+        if (!(cli = cm_get_netlogon_cli(lp_workgroup(), trust_passwd))) {
+                DEBUG(3, ("could not open handle to NETLOGON pipe\n"));
                 return WINBINDD_ERROR;
         }
 
-	/* So domain_client_validate() actually opens a new connection
-	   for each authentication performed.  This can theoretically
-	   be optimised to use an already open IPC$ connection. */
+	result = cli_nt_login_network(cli, user_info, smb_uid_low, 
+				      &ctr, &info3);
 
-	result = domain_client_validate(user_info, &server_info,
-                                        auth_dc, trust_passwd,
-                                        last_change_time);
+        free_user_info(&user_info);
 
-        free_server_info(&server_info); /* No info needed */        
+        cli_shutdown(cli);
 
 	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
 }
