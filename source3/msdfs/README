@@ -5,23 +5,28 @@ Currently, MS Dfs support is a configure time parameter (--with-msdfs). Can be c
 
 To have a server announce itself as a Dfs server, add a "host msdfs=yes" entry to smb.conf.
 
-To make a share a Dfs root, add a "dfs map" entry to the share definition in the smb.conf file.
+To make a share a Dfs root, add a "msdfs root=yes" entry to the share definition 
+in the smb.conf file.
 e.g. 
 [pub]
-	dfs map = /usr/local/samba/lib/pub_dfs_map
+	path = /export/publicsmb
+	msdfs root = yes
 
-The pub_dfs_map file would contain a list of junction points and their referral paths. 
+To create dfs volumes/junctions in the share, create symbolic links of the
+format msdfs:server1\share1,server2\share2 and so on.
 
-In our example, if you have a directory pub_dir1/ in the pub share and want to make it a dfs junction point to \\machineX\pub, you can have an entry in the pub_dfs_map file as:
+In the above example, create a dfs volume "dfsstorage" in the [pub] share as:
+cd /export/publicsmb
+ln -s msdfs:serverA\\share dfsstorage
 
-pub_dir1
-\\machineX\pub:0:600
+Clicking on dfsstorage from a dfs-aware client will show you the contents of 
+\\serverA\share
 
-where: 0 is the proximity of the server. If you have multiple referred servers for one junction point, you can set up preferences among these using this field.
-& 600 is the number of seconds the client must cache the referral. After this time period, the smb client supposedly should contact the server again for a fresh referral.
+Shares with "msdfs root = no" (which is the default) entries are served as normal 
+shares and the client stops talking Dfs with Samba after a tconX.
 
-NOTE: You can have multiple referral paths for one junction point. Currently, the parser code depends on the leading \ to determine if the line is a referral or a new junction point.
-
-Shares with no "dfs map" entries are served as normal shares and the client stops talking Dfs with Samba after a tconX.
-
-TODO: Dynamically showing junction points to dfs clients alone,probably in the findfirst reply. Currently, you need to have directories on the samba server as token junction points.
+NOTES: 
+* Windows clients need to be rebooted if a non-dfs root is made a dfs root or
+  vice versa. A better option is to introduce a new share and make it the dfs root.
+* Currently there's a restriction that msdfs symlink names should be all 
+  lowercase.

@@ -174,7 +174,7 @@ PRINTING_OBJ = printing/pcap.o printing/print_svid.o printing/print_cups.o print
 
 PRINTBACKEND_OBJ = printing/printing.o printing/lpq_parse.o printing/nt_printing.o
 
-MSDFS_OBJ = msdfs/msdfs.o msdfs/msdfs_tdb.o msdfs/parse_dfs_map.o
+MSDFS_OBJ = msdfs/msdfs.o 
 
 SMBD_OBJ = $(SMBD_OBJ1) $(MSDFS_OBJ) $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) \
            $(RPC_SERVER_OBJ) $(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) \

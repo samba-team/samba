@@ -405,8 +405,19 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
       pstrcat(pathreal,dname);
       if (conn->vfs_ops.stat(dos_to_unix(pathreal,False),&sbuf) != 0) 
       {
-        DEBUG(5,("get_lanman2_dir_entry:Couldn't stat [%s] (%s)\n",pathreal,strerror(errno)));
-        continue;
+	/* Needed to show the msdfs symlinks as directories */
+	if(!lp_host_msdfs() || !lp_msdfs_root(SNUM(conn)) 
+	   || !is_msdfs_volume(conn, pathreal))
+	  {
+	    DEBUG(5,("get_lanman2_dir_entry:Couldn't stat [%s] (%s)\n",
+		     pathreal,strerror(errno)));
+	    continue;
+	  }
+	else
+	  {
+	    DEBUG(5,("get_lanman2_dir_entry: Masquerading msdfs link %s as a directory\n", pathreal));
+	    sbuf.st_mode = (sbuf.st_mode & 0xFFF) | S_IFDIR;
+	  }
       }
 
       mode = dos_mode(conn,pathreal,&sbuf);
