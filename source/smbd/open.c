@@ -273,7 +273,7 @@ static void open_file(files_struct *fsp,connection_struct *conn,
   pstring fname;
   SMB_STRUCT_STAT statbuf;
   file_fd_struct *fd_ptr;
-  int accmode = (flags & (O_RDONLY | O_WRONLY | O_RDWR));
+  int accmode = (flags & O_ACCMODE);
 
   fsp->open = False;
   fsp->fd_ptr = 0;
