@@ -356,6 +356,7 @@ char *tab_depth(int depth);
 char *sid_to_string(pstring sidstr_out, DOM_SID *sid);
 BOOL string_to_sid(DOM_SID *sidout, char *sidstr);
 int str_checksum(char *s);
+void zero_free(void *p, int size);
 
 /*The following definitions come from  libsmb/clientgen.c  */
 

@@ -1569,8 +1569,17 @@ extern int unix_ERR_code;
 #define CMD_REPLY 0x8000
 
 /* useful macros */
+
+/* zero a structure */
 #define ZERO_STRUCT(x) memset((char *)&(x), 0, sizeof(x))
+
+/* zero a structure given a pointer to the structure */
+#define ZERO_STRUCTP(x) memset((char *)(x), 0, sizeof(*(x)))
+
+/* zero an array - note that sizeof(array) must work - ie. it must not be a 
+   pointer */
 #define ZERO_ARRAY(x) memset((char *)(x), 0, sizeof(x))
+
 #define SMB_ASSERT(b) ((b)?(void)0: \
         (DEBUG(0,("PANIC: assert failed at %s(%d)\n", \
 		 __FILE__, __LINE__)), smb_panic("assert failed")))

@@ -278,7 +278,7 @@ struct userdata_struct {
   userdata_copy_fn copy_fn;
   userdata_free_fn free_fn;
   unsigned int userdata_len;
-  char data[1];
+  char data[16]; /* 16 is to ensure alignment/padding on all systems */
 };
 
 struct response_record;
