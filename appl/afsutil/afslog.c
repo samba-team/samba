@@ -35,6 +35,7 @@
 #include <config.h>
 RCSID("$Id$");
 #endif
+#include <ctype.h>
 #include <krb5.h>
 #include <kafs.h>
 #include <roken.h>
@@ -80,7 +81,8 @@ expand_cell_name(const char *cell)
     do{
 	fgets(buf, 128, F);
 	if(buf[0] == '>'){
-	    for(p=buf; *p && *p != ' ' && *p != '\t'; p++);
+	    for(p=buf; *p && !isspace(*p) && *p != '#'; p++)
+		;
 	    *p=0;
 	    if(strstr(buf, cell)){
 		fclose(F);
