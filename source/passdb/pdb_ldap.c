@@ -1854,7 +1854,8 @@ static NTSTATUS ldapsam_add_sam_account(struct pdb_methods *my_methods, SAM_ACCO
 	}
 
 	if (ldap_count_entries(ldap_state->ldap_struct, result) != 0) {
-		DEBUG(0,("User already in the base, with samba properties\n"));
+		DEBUG(0,("User '%s' already in the base, with samba properties\n", 
+			 username));
 		ldap_msgfree(result);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
