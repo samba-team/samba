@@ -27,7 +27,9 @@
 struct DsPrivate {
 	struct policy_handle bind_handle;
 	struct GUID bind_guid;
+	const char *domain_obj_dn;
 	const char *domain_guid_str;
+	struct GUID domain_guid;
 	struct drsuapi_DsGetDCInfo2 dcinfo;
 };
 
@@ -71,7 +73,6 @@ static BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	BOOL ret = True;
 	const char *dns_domain;
 	const char *nt4_domain;
-	const char *FQDN_1779_domain;
 	const char *FQDN_1779_name;
 
 	ZERO_STRUCT(r);
@@ -133,6 +134,8 @@ static BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	}
 
 	priv->domain_guid_str = r.out.ctr.ctr1->array[0].result_name;
+	GUID_from_string(priv->domain_guid_str, &priv->domain_guid);
+
 
 	r.in.req.req1.format_offered	= DRSUAPI_DS_NAME_FORMAT_GUID;
 	r.in.req.req1.format_desired	= DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT;
@@ -182,7 +185,7 @@ static BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		return ret;
 	}
 
-	FQDN_1779_domain = r.out.ctr.ctr1->array[0].result_name;
+	priv->domain_obj_dn = r.out.ctr.ctr1->array[0].result_name;
 
 	r.in.req.req1.format_offered	= DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT;
 	r.in.req.req1.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779;
@@ -421,7 +424,7 @@ static BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.req.req1.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779;
 	names[0].str = GUID_string2(mem_ctx, &priv->bind_guid);
 
-	printf("testing DsCrackNames with NTDS GUID '%s' desired format:%d\n",
+	printf("testing DsCrackNames with BIND GUID '%s' desired format:%d\n",
 			names[0].str, r.in.req.req1.format_desired);
 
 	status = dcerpc_drsuapi_DsCrackNames(p, mem_ctx, &r);
@@ -627,6 +630,131 @@ static BOOL test_DsWriteAccountSpn(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
+static BOOL test_DsReplicaGetInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+			struct DsPrivate *priv)
+{
+	NTSTATUS status;
+	struct drsuapi_DsReplicaGetInfo r;
+	BOOL ret = True;
+	int i;
+	struct {
+		int32 level;
+		int32 infotype;
+		const char *obj_dn;
+	} array[] = {
+		{	
+			DRSUAPI_DS_REPLICA_GET_INFO,
+			DRSUAPI_DS_REPLICA_INFO_NEIGHBORS,
+			NULL
+		},{
+			DRSUAPI_DS_REPLICA_GET_INFO,
+			DRSUAPI_DS_REPLICA_INFO_CURSORS,
+			NULL
+		},{
+			DRSUAPI_DS_REPLICA_GET_INFO,
+			DRSUAPI_DS_REPLICA_INFO_OBJ_METADATA,
+			NULL
+		},{
+			DRSUAPI_DS_REPLICA_GET_INFO,
+			DRSUAPI_DS_REPLICA_INFO_KCC_DSA_CONNECT_FAILURES,
+			NULL
+		},{
+			DRSUAPI_DS_REPLICA_GET_INFO,
+			DRSUAPI_DS_REPLICA_INFO_KCC_DSA_LINK_FAILURES,
+			NULL
+		},{
+			DRSUAPI_DS_REPLICA_GET_INFO,
+			DRSUAPI_DS_REPLICA_INFO_PENDING_OPS,
+			NULL
+		},{
+			DRSUAPI_DS_REPLICA_GET_INFO2,
+			DRSUAPI_DS_REPLICA_INFO_ATTRIBUTE_VALUE_METADATA,
+			NULL
+		},{
+			DRSUAPI_DS_REPLICA_GET_INFO2,
+			DRSUAPI_DS_REPLICA_INFO_CURSORS2,
+			NULL
+		},{
+			DRSUAPI_DS_REPLICA_GET_INFO2,
+			DRSUAPI_DS_REPLICA_INFO_CURSORS3,
+			NULL
+		},{
+			DRSUAPI_DS_REPLICA_GET_INFO2,
+			DRSUAPI_DS_REPLICA_INFO_OBJ_METADATA2,
+			NULL
+		},{
+			DRSUAPI_DS_REPLICA_GET_INFO2,
+			DRSUAPI_DS_REPLICA_INFO_ATTRIBUTE_VALUE_METADATA2,
+			NULL
+		},{
+			DRSUAPI_DS_REPLICA_GET_INFO2,
+			DRSUAPI_DS_REPLICA_INFO_NEIGHBORS02,
+			NULL
+		},{
+			DRSUAPI_DS_REPLICA_GET_INFO2,
+			DRSUAPI_DS_REPLICA_INFO_CONNECTIONS04,
+			"__IGNORED__"
+		},{
+			DRSUAPI_DS_REPLICA_GET_INFO2,
+			DRSUAPI_DS_REPLICA_INFO_CURSURS05,
+			NULL
+		},{
+			DRSUAPI_DS_REPLICA_GET_INFO2,
+			DRSUAPI_DS_REPLICA_INFO_06,
+			NULL
+		}
+	};
+
+	r.in.bind_handle	= &priv->bind_handle;
+
+	for (i=0; i < ARRAY_SIZE(array); i++) {
+		const char *object_dn;
+
+		printf("testing DsReplicaGetInfo level %d infotype %d\n",
+			array[i].level, array[i].infotype);
+
+		object_dn = (array[i].obj_dn ? array[i].obj_dn : priv->domain_obj_dn);
+
+		r.in.level = array[i].level;
+		switch(r.in.level) {
+		case DRSUAPI_DS_REPLICA_GET_INFO:
+			r.in.req.req1.info_type	= array[i].infotype;
+			r.in.req.req1.object_dn	= object_dn;
+			ZERO_STRUCT(r.in.req.req1.guid1);
+			break;
+		case DRSUAPI_DS_REPLICA_GET_INFO2:
+			r.in.req.req2.info_type	= array[i].infotype;
+			r.in.req.req2.object_dn	= object_dn;
+			ZERO_STRUCT(r.in.req.req1.guid1);
+			r.in.req.req2.unknown1	= 0;
+			r.in.req.req2.string1	= NULL;
+			r.in.req.req2.string2	= NULL;
+			r.in.req.req2.unknown2	= 0;
+			break;
+		}
+
+		status = dcerpc_drsuapi_DsReplicaGetInfo(p, mem_ctx, &r);
+		if (!NT_STATUS_IS_OK(status)) {
+			const char *errstr = nt_errstr(status);
+			if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
+				errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
+			}
+			if (p->last_fault_code != DCERPC_FAULT_INVALID_TAG) {
+				printf("dcerpc_drsuapi_DsReplicaGetInfo failed - %s\n", errstr);
+				ret = False;
+			} else {
+				printf("DsReplicaGetInfo level %d and/or infotype %d not supported by server\n",
+					array[i].level, array[i].infotype);
+			}
+		} else if (!W_ERROR_IS_OK(r.out.result)) {
+			printf("DsReplicaGetInfo failed - %s\n", win_errstr(r.out.result));
+			ret = False;
+		}
+	}
+
+	return ret;
+}
+
 static BOOL test_DsUnbind(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 			struct DsPrivate *priv)
 {
@@ -690,6 +818,10 @@ BOOL torture_rpc_drsuapi(void)
 	}
 
 	if (!test_DsWriteAccountSpn(p, mem_ctx, &priv)) {
+		ret = False;
+	}
+
+	if (!test_DsReplicaGetInfo(p, mem_ctx, &priv)) {
 		ret = False;
 	}
 
