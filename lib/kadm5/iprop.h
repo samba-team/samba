@@ -41,6 +41,9 @@
 #ifdef HAVE_SYS_SELECT_H
 #include <sys/select.h>
 #endif
+#ifdef HAVE_UTIL_H
+#include <util.h>
+#endif
 
 #define IPROP_VERSION "iprop-0.0"
 
