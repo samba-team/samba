@@ -1672,8 +1672,10 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 			break;
 		}
 		
-	case 1022:
-		{
+	case SMB_FILE_STREAM_INFORMATION:
+		if (mode & aDIR) {
+			data_size = 0;
+		} else {
 			size_t byte_len = dos_PutUniCode(pdata+24,"::$DATA", 0xE, False);
 			SIVAL(pdata,0,0); /* ??? */
 			SIVAL(pdata,4,byte_len); /* Byte length of unicode string ::$DATA */
@@ -1681,8 +1683,8 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 			SIVAL(pdata,16,0x20); /* ??? */
 			SIVAL(pdata,20,0); /* ??? */
 			data_size = 24 + byte_len;
-			break;
 		}
+		break;
 
 	case 1028:
 		SOFF_T(pdata,0,size);
@@ -1992,6 +1994,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
       break;
     }
 
+    case SMB_FILE_DISPOSITION_INFORMATION:
     case SMB_SET_FILE_DISPOSITION_INFO: /* Set delete on close for open file. */
     {
 		BOOL delete_on_close = (CVAL(pdata,0) ? True : False);
@@ -2077,19 +2080,6 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 
 		break;
 	}
-
-	case 1013:
-#if 0 /* JRA */
-		/*
-		 * This (new) W2K call seems to set one byte. Not sure
-		 * yet what it's trying to do. JRA.
-		 */
-		{
-			unsigned char setval = CVAL(pdata,0);
-		}
-		return(ERROR(ERRDOS,ERRnoaccess));
-#endif /* JRA */
-		break;
 
 	default:
 	{
