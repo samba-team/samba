@@ -222,6 +222,23 @@ int rcmd(char **ahost, unsigned short inport, const char *locuser,
 	 const char *remuser, const char *cmd, int *fd2p);
 #endif
 
+#ifndef HAVE_FLOCK
+#ifndef LOCK_SH
+#define LOCK_SH   1		/* Shared lock */
+#endif
+#ifndef	LOCK_EX
+#define LOCK_EX   2		/* Exclusive lock */
+#endif
+#ifndef LOCK_NB
+#define LOCK_NB   4		/* Don't block when locking */
+#endif
+#ifndef LOCK_UN
+#define LOCK_UN   8		/* Unlock */
+#endif
+
+int flock(int fd, int operation);
+#endif /* HAVE_FLOCK */
+
 #ifdef TIME_WITH_SYS_TIME
 #include <sys/time.h>
 #include <time.h>
