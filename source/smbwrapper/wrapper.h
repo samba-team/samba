@@ -31,6 +31,12 @@
 #include <sys/acl.h>
 #endif
 
+#ifndef LINUX
+#ifdef HAVE_SYS_FCNTL_H
+#include <sys/fcntl.h>
+#endif
+#endif
+
 #include <stdio.h>
 #include <dirent.h>
 #include <errno.h>

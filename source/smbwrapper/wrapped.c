@@ -622,8 +622,9 @@ __asm__(".globl _write; _write = write");
 }
 #endif
 
+#ifndef LINUX
  int creat(const char *path, mode_t mode)
 {
-	/* drat, including sys/fcntl.h gives conflicts */
-	return open(path, 01101, mode);
+	return open(path, O_WRONLY|O_CREAT|O_TRUNC, mode);
 }
+#endif
