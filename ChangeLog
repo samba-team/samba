@@ -301,6 +301,25 @@
         * lib/hdb/mkey.c: fix a bug in which kstash would crash if
         there were no /etc/krb5.conf
 
+2001-11-09  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/krb5/krb5_verify_user.3: sort references (from Thomas
+	Klausner)
+
+	* lib/krb5/krb5_principal_get_realm.3: add section to reference
+	(from Thomas Klausner)
+
+	* lib/krb5/krb5_krbhst_init.3: sort references (from Thomas
+	Klausner)
+
+	* lib/krb5/krb5_keytab.3: white space fixes (from Thomas Klausner)
+
+	* lib/krb5/krb5_get_krbhst.3: remove extra white space (from
+	Thomas Klausner)
+
+	* lib/krb5/krb5_get_all_client_addrs.3: add section to reference
+	(from Thomas Klausner)
+
 2001-10-29  Jacques Vidrine <n@nectar.com>
 
 	* admin/get.c: fix a bug in which a reference to a data
