@@ -14,10 +14,12 @@ sub _prepare_command_interpreters($)
 	my $ctx = shift;
 	my $output;
 
-	$output = "
+	$output = << '__EOD__';
 SHELL=/bin/sh
-PERL=\@PERL\@
-";
+PERL=@PERL@
+
+__EOD__
+
 	return $output;
 }
 
@@ -26,20 +28,19 @@ sub _prepare_path_vars($)
 	my $ctx = shift;
 	my $output;
 
-	$output = "
-prefix=\@prefix\@
-exec_prefix=\@exec_prefix\@
-VPATH=\@srcdir\@
-srcdir=\@srcdir\@
-builddir=\@builddir\@
+	$output = << '__EOD__';
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+VPATH=@srcdir@
+srcdir=@srcdir@
+builddir=@builddir@
 
-BASEDIR= \@prefix\@
-BINDIR = \@bindir\@
-SBINDIR = \@sbindir\@
-LIBDIR = \@libdir\@
-CONFIGDIR = \@configdir\@
-VARDIR = \@localstatedir\@
-
+BASEDIR= @prefix@
+BINDIR = @bindir@
+SBINDIR = @sbindir@
+LIBDIR = @libdir@
+CONFIGDIR = @configdir@
+VARDIR = @localstatedir@
 
 # The permissions to give the executables
 INSTALLPERMS = 0755
@@ -47,31 +48,33 @@ INSTALLPERMS = 0755
 # set these to where to find various files
 # These can be overridden by command line switches (see smbd(8))
 # or in smb.conf (see smb.conf(5))
-LOGFILEBASE = \@logfilebase\@
-CONFIGFILE = \$(CONFIGDIR)/smb.conf
-LMHOSTSFILE = \$(CONFIGDIR)/lmhosts
-NCALRPCDIR = \@localstatedir\@/ncalrpc
+LOGFILEBASE = @logfilebase@
+CONFIGFILE = $(CONFIGDIR)/smb.conf
+LMHOSTSFILE = $(CONFIGDIR)/lmhosts
+NCALRPCDIR = @localstatedir@/ncalrpc
 
 # This is where smbpasswd et al go
-PRIVATEDIR = \@privatedir\@
-SMB_PASSWD_FILE = \$(PRIVATEDIR)/smbpasswd
+PRIVATEDIR = @privatedir@
+SMB_PASSWD_FILE = $(PRIVATEDIR)/smbpasswd
 
 # the directory where lock files go
-LOCKDIR = \@lockdir\@
+LOCKDIR = @lockdir@
 
 # the directory where pid files go
-PIDDIR = \@piddir\@
+PIDDIR = @piddir@
 
-PASSWD_FLAGS = -DSMB_PASSWD_FILE=\\\"\$(SMB_PASSWD_FILE)\\\" -DPRIVATE_DIR=\\\"\$(PRIVATEDIR)\\\"
-PATH_FLAGS1 = -DCONFIGFILE=\\\"\$(CONFIGFILE)\\\"  -DSBINDIR=\\\"\$(SBINDIR)\\\"
-PATH_FLAGS2 = \$(PATH_FLAGS1) -DBINDIR=\\\"\$(BINDIR)\\\" 
-PATH_FLAGS3 = \$(PATH_FLAGS2) -DLMHOSTSFILE=\\\"\$(LMHOSTSFILE)\\\" 
-PATH_FLAGS4 = \$(PATH_FLAGS3) -DLOCKDIR=\\\"\$(LOCKDIR)\\\" -DPIDDIR=\\\"\$(PIDDIR)\\\"
-PATH_FLAGS5 = \$(PATH_FLAGS4) -DLIBDIR=\\\"\$(LIBDIR)\\\" \\
-	      -DLOGFILEBASE=\\\"\$(LOGFILEBASE)\\\" -DSHLIBEXT=\\\"\@SHLIBEXT\@\\\"
-PATH_FLAGS6 = \$(PATH_FLAGS5) -DCONFIGDIR=\\\"\$(CONFIGDIR)\\\" -DNCALRPCDIR=\\\"\$(NCALRPCDIR)\\\"
-PATH_FLAGS = \$(PATH_FLAGS6) \$(PASSWD_FLAGS)
-";
+PASSWD_FLAGS = -DSMB_PASSWD_FILE=\"$(SMB_PASSWD_FILE)\" -DPRIVATE_DIR=\"$(PRIVATEDIR)\"
+PATH_FLAGS1 = -DCONFIGFILE=\"$(CONFIGFILE)\"  -DSBINDIR=\"$(SBINDIR)\"
+PATH_FLAGS2 = $(PATH_FLAGS1) -DBINDIR=\"$(BINDIR)\" 
+PATH_FLAGS3 = $(PATH_FLAGS2) -DLMHOSTSFILE=\"$(LMHOSTSFILE)\" 
+PATH_FLAGS4 = $(PATH_FLAGS3) -DLOCKDIR=\"$(LOCKDIR)\" -DPIDDIR=\"$(PIDDIR)\"
+PATH_FLAGS5 = $(PATH_FLAGS4) -DLIBDIR=\"$(LIBDIR)\" \
+	      -DLOGFILEBASE=\"$(LOGFILEBASE)\" -DSHLIBEXT=\"@SHLIBEXT@\"
+PATH_FLAGS6 = $(PATH_FLAGS5) -DCONFIGDIR=\"$(CONFIGDIR)\" -DNCALRPCDIR=\"$(NCALRPCDIR)\"
+PATH_FLAGS = $(PATH_FLAGS6) $(PASSWD_FLAGS)
+
+__EOD__
+
 	return $output;
 }
 
@@ -80,19 +83,21 @@ sub _prepare_compiler_linker($)
 	my $ctx = shift;
 	my $output;
 
-	$output = "
-CC=\@CC\@
-CC_FLAGS=-Iinclude -I. -I\$(srcdir)/include -I\$(srcdir) -D_SAMBA_BUILD_ -Ilib \@CFLAGS\@ \@CPPFLAGS\@
+	$output = << '__EOD__';
+CC=@CC@
+CC_FLAGS=-Iinclude -I. -I$(srcdir)/include -I$(srcdir) -D_SAMBA_BUILD_ -Ilib @CFLAGS@ @CPPFLAGS@
 
-LD=\@CC\@
-LD_FLAGS=\@LDFLAGS\@ \@CFLAGS\@
+LD=@CC@
+LD_FLAGS=@LDFLAGS@ @CFLAGS@
 
 STLD=ar
 STLD_FLAGS=-rc
 
-SHLD=\@CC\@
-SHLD_FLAGS=\@LDSHFLAGS\@ \@LDFLAGS\@
-";
+SHLD=@CC@
+SHLD_FLAGS=@LDSHFLAGS@ @LDFLAGS@
+
+__EOD__
+
 	return $output;
 }
 
@@ -101,9 +106,11 @@ sub _prepare_default_rule($)
 	my $ctx = shift;
 	my $output;
 
-	$output = "
+	$output = << '__EOD__';
 default: all
-";
+
+__EOD__
+
 	return $output;
 }
 
@@ -112,10 +119,12 @@ sub _prepare_SUFFIXES($)
 	my $ctx = shift;
 	my $output;
 
-	$output = "
+	$output = << '__EOD__';
 .SUFFIXES:
 .SUFFIXES: .c .o .h .h.gch .a .so
-";
+
+__EOD__
+
 	return $output;
 }
 
@@ -124,12 +133,12 @@ sub _prepare_IDL($)
 	my $ctx = shift;
 	my $output;
 
-	$output = "
+	$output = << '__EOD__';
 idl_full: build/pidl/idl.pm
-	CPP=\"\@CPP\@\" PERL=\"\$(PERL)\" script/build_idl.sh FULL
+	CPP="@CPP@" PERL="$(PERL)" script/build_idl.sh FULL
 
 idl: build/pidl/idl.pm
-	\@CPP=\"\@CPP\@\" PERL=\"\$(PERL)\" script/build_idl.sh PARTIAL
+	@CPP="@CPP@" PERL="$(PERL)" script/build_idl.sh PARTIAL
 
 build/pidl/idl.pm: build/pidl/idl.yp
 	-yapp -s build/pidl/idl.yp
@@ -141,7 +150,8 @@ pch_clean:
 
 basics: idl proto_exists
 
-";
+__EOD__
+
 	return $output;
 }
 
@@ -150,16 +160,17 @@ sub _prepare_dummy_MAKEDIR()
 	my $ctx = shift;
 	my $output;
 
-	$output = "
+	$output =  << '__EOD__';
 bin/.dummy:
-	\@: >> \$\@ || : > \$\@
+	@: >> $@ || : > $@
 
 dynconfig.o: dynconfig.c Makefile
-	\@echo Compiling \$*.c
-	\@\$(CC) \$(CC_FLAGS) \@PICFLAG\@ \$(PATH_FLAGS) -c \$< -o \$\@
-\@BROKEN_CC\@	-mv `echo \$\@ | sed 's%^.*/%%g'` \$\@
+	@echo Compiling $*.c
+	@$(CC) $(CC_FLAGS) @PICFLAG@ $(PATH_FLAGS) -c $< -o $@
+@BROKEN_CC@	-mv `echo $@ | sed 's%^.*/%%g'` $@
 
-";
+__EOD__
+
 	return $output;
 }
 
@@ -189,16 +200,17 @@ sub _prepare_std_CC_rule($$$$$)
 	my $flagsstr = "";
 	my $output;
 
-	$output = "
+	$output = << "__EOD__";
 ###################################
 # Start $comment
 .$src.$dst:
-	\@echo $message \$*.$src
+	\@echo $message \$\*.$src
 	\@\$(CC) \$(CC_FLAGS) $flags -c \$< -o \$\@
 \@BROKEN_CC\@	-mv `echo \$\@ | sed 's%^.*/%%g'` \$\@
 #End $comment
 ###################################
-";
+
+__EOD__
 
 	return $output;
 }
@@ -259,13 +271,14 @@ sub _prepare_obj_list($$)
 
 	$tmpobjlist = array2oneperline($ctx->{OBJ_LIST});
 
-	$output = "
+	$output = << "__EOD__";
 ###################################
 # Start $var $ctx->{NAME} OBJ LIST
 $var\_$ctx->{NAME}_OBJS =$tmpobjlist
 # End $var $ctx->{NAME} OBJ LIST
 ###################################
-";
+
+__EOD__
 
 	return $output;
 }
@@ -343,7 +356,7 @@ sub _prepare_shared_library_rule($)
 	$tmpshlink = array2oneperline($ctx->{LINK_LIST});
 	$tmpshflag = array2oneperline($ctx->{LINK_FLAGS});
 
-	$output = "
+	$output = << "__EOD__";
 ###################################
 # Start Library $ctx->{NAME}
 #
@@ -359,10 +372,11 @@ $ctx->{OUTPUT}: \$(LIBRARY_$ctx->{NAME}_DEPEND_LIST) bin/.dummy
 	\@\$(SHLD) \$(SHLD_FLAGS) -o \$\@ \\
 		\$(LIBRARY_$ctx->{NAME}_SHARED_LINK_FLAGS) \\
 		\$(LIBRARY_$ctx->{NAME}_SHARED_LINK_LIST)
-";
+
+__EOD__
 
 	if (defined($ctx->{LIBRARY_SONAME})) {
-		$output .= "
+	    $output .= << "__EOD__";
 # Symlink $ctx->{LIBRARY_SONAME}
 bin/$ctx->{LIBRARY_SONAME}: bin/$ctx->{LIBRARY_REALNAME} bin/.dummy
 	\@echo Symlink \$\@
@@ -371,15 +385,17 @@ bin/$ctx->{LIBRARY_SONAME}: bin/$ctx->{LIBRARY_REALNAME} bin/.dummy
 bin/$ctx->{LIBRARY_NAME}: bin/$ctx->{LIBRARY_SONAME} bin/.dummy
 	\@echo Symlink \$\@
 	\@ln -sf $ctx->{LIBRARY_SONAME} \$\@
-";
+
+__EOD__
 		$outname = $ctx->{LIBRARY_NAME};
 	}
 
-	$output .= "
+$output .= << "__EOD__";
 library_$ctx->{NAME}: basics bin/$outname
 # End Library $ctx->{NAME}
 ###################################
-";
+
+__EOD__
 
 	return $output;
 }
@@ -419,7 +435,7 @@ sub _prepare_static_library_rule($)
 
 	$tmprules = "bin/$ctx->{LIBRARY_NAME}";
 
-	$output = "
+	$output = << '__EOD__';
 ###################################
 # Start Library $ctx->{NAME}
 #
@@ -428,15 +444,16 @@ LIBRARY_$ctx->{NAME}_DEPEND_LIST =$tmpdepend
 LIBRARY_$ctx->{NAME}_STATIC_LINK_LIST =$tmpstlink
 #
 # Static $ctx->{LIBRARY_NAME}
-$ctx->{OUTPUT}: \$(LIBRARY_$ctx->{NAME}_DEPEND_LIST) bin/.dummy
-	\@echo Linking \$\@
-	\@\$(STLD) \$(STLD_FLAGS) \$\@ \\
-		\$(LIBRARY_$ctx->{NAME}_STATIC_LINK_LIST)
+$ctx->{OUTPUT}: $(LIBRARY_$ctx->{NAME}_DEPEND_LIST) bin/.dummy
+	@echo Linking $@
+	@$(STLD) $(STLD_FLAGS) $@ \\
+		$(LIBRARY_$ctx->{NAME}_STATIC_LINK_LIST)
 
 library_$ctx->{NAME}: basics $tmprules
 # End Library $ctx->{NAME}
 ###################################
-";
+
+__EOD__
 
 	return $output;
 }
@@ -471,7 +488,7 @@ sub _prepare_binary_rule($)
 	$tmplink = array2oneperline($ctx->{LINK_LIST});
 	$tmpflag = array2oneperline($ctx->{LINK_FLAGS});
 
-	$output = "
+	$output = << "__EOD__";
 ###################################
 # Start Binary $ctx->{BINARY}
 #
@@ -482,13 +499,14 @@ BINARY_$ctx->{NAME}_LINK_FLAGS =$tmpflag
 bin/$ctx->{BINARY}: bin/.dummy \$(BINARY_$ctx->{NAME}_DEPEND_LIST)
 	\@echo Linking \$\@
 	\@\$(LD) \$(LD_FLAGS) -o \$\@ \\
-		\$(BINARY_$ctx->{NAME}_LINK_FLAGS) \\
-		\$(BINARY_$ctx->{NAME}_LINK_LIST) \\
-		\$(BINARY_$ctx->{NAME}_LINK_FLAGS)
+		\$\(BINARY_$ctx->{NAME}_LINK_FLAGS) \\
+		\$\(BINARY_$ctx->{NAME}_LINK_LIST) \\
+		\$\(BINARY_$ctx->{NAME}_LINK_FLAGS)
 binary_$ctx->{BINARY}: basics bin/$ctx->{BINARY}
 # End Binary $ctx->{BINARY}
 ###################################
-";
+
+__EOD__
 
 	return $output;
 }
@@ -497,7 +515,7 @@ sub _prepare_proto_rules()
 {
 	my $output = "";
 
-	$output .= "
+	$output .= << '__EOD__';
 # Making this target will just make sure that the prototype files
 # exist, not necessarily that they are up to date.  Since they're
 # removed by 'make clean' this will always be run when you do anything
@@ -505,16 +523,16 @@ sub _prepare_proto_rules()
 proto_exists: include/proto.h include/build_env.h
 
 delheaders: pch_clean
-	-rm -f \$(builddir)/include/proto.h \$(builddir)/include/build_env.h:
+	-rm -f $(builddir)/include/proto.h $(builddir)/include/build_env.h:
 
 include/proto.h:
-	\@cd \$(srcdir) && \$(SHELL) script/mkproto.sh \"\$(PERL)\" \\
-	  -h _PROTO_H_ \$(builddir)/include/proto.h \\
-	  \$(PROTO_PROTO_OBJS)
+	@cd $(srcdir) && $(SHELL) script/mkproto.sh "$(PERL)" \
+	  -h _PROTO_H_ $(builddir)/include/proto.h \
+	  $(PROTO_PROTO_OBJS)
 
 include/build_env.h:
-	\@echo Building include/build_env.h
-	\@cd \$(srcdir) && \$(SHELL) script/build_env.sh \$(srcdir) \$(builddir) \$(CC) > \$(builddir)/include/build_env.h
+	@echo Building include/build_env.h
+	@cd $(srcdir) && $(SHELL) script/build_env.sh $(srcdir) $(builddir) $(CC) > $(builddir)/include/build_env.h
 
 # 'make headers' or 'make proto' calls a subshell because we need to
 # make sure these commands are executed in sequence even for a
@@ -524,7 +542,7 @@ headers: delheaders proto_exists
 proto: idl headers
 
 proto_test:
-	\@[ -f \$(builddir)/include/proto.h ] || \$(MAKE) proto
+	@[ -f $(builddir)/include/proto.h ] || $(MAKE) proto
 
 clean: delheaders
 	-rm -f *.o */*.o */*/*.o */*/*/*.o bin/*
@@ -545,7 +563,7 @@ realdistclean: distclean removebackup
 	-rm -f include/config.h.in
 	-rm -f lib/version.h
 	-rm -f configure
-";
+__EOD__
 
 	return $output;
 }
@@ -558,13 +576,14 @@ sub _prepare_make_target($)
 
 	$tmpdepend = array2oneperline($ctx->{DEPEND_LIST});
 
-	$output = "
+	$output = << "__EOD__";
 ###################################
 # Start Target $ctx->{TARGET}
 $ctx->{TARGET}: basics $tmpdepend
 # End Target $ctx->{TARGET}
 ###################################
-";
+
+__EOD__
 
 	return $output;
 }
@@ -587,49 +606,49 @@ sub _prepare_install_rules($)
 	my $CTX = shift;
 	my $output = "";
 
-	$output .= "
+	$output .= << '__EOD__';
 
 showlayout: 
-	\@echo \"Samba will be installed into:\"
-	\@echo \"  basedir: \$(BASEDIR)\"
-	\@echo \"  bindir:  \$(BINDIR)\"
-	\@echo \"  sbindir: \$(SBINDIR)\"
-	\@echo \"  libdir:  \$(LIBDIR)\"
-	\@echo \"  vardir:  \$(VARDIR)\"
-	\@echo \"  privatedir:  \$(PRIVATEDIR)\"
-	\@echo \"  piddir:  \$(PIDDIR)\"
-	\@echo \"  lockdir:  \$(LOCKDIR)\"
+	@echo "Samba will be installed into:"
+	@echo "  basedir: $(BASEDIR)"
+	@echo "  bindir:  $(BINDIR)"
+	@echo "  sbindir: $(SBINDIR)"
+	@echo "  libdir:  $(LIBDIR)"
+	@echo "  vardir:  $(VARDIR)"
+	@echo "  privatedir:  $(PRIVATEDIR)"
+	@echo "  piddir:  $(PIDDIR)"
+	@echo "  lockdir:  $(LOCKDIR)"
 
 showflags:
-	\@echo \"Samba will be compiled with flags:\"
-	\@echo \"  CC_FLAGS = \$(CC_FLAGS)\"
-	\@echo \"  LD_FLAGS = \$(LD_FLAGS)\"
-	\@echo \"  STLD_FLAGS = \$(STLD_FLAGS)\"
-	\@echo \"  SHLD_FLAGS = \$(SHLD_FLAGS)\"
+	@echo "Samba will be compiled with flags:"
+	@echo "  CC_FLAGS = $(CC_FLAGS)"
+	@echo "  LD_FLAGS = $(LD_FLAGS)"
+	@echo "  STLD_FLAGS = $(STLD_FLAGS)"
+	@echo "  SHLD_FLAGS = $(SHLD_FLAGS)"
 
 SBIN_PROGS = bin/smbd
 
-BIN_PROGS = bin/smbclient \\
-		bin/net \\
-		bin/nmblookup \\
+BIN_PROGS = bin/smbclient \
+		bin/net \
+		bin/nmblookup \
 		bin/ntlm_auth
 
-TORTURE_PROGS = bin/smbtorture \\
-		bin/gentest \\
-		bin/locktest \\
-		bin/masktest \\
+TORTURE_PROGS = bin/smbtorture \
+		bin/gentest \
+		bin/locktest \
+		bin/masktest \
 		bin/ndrdump
 
-LDB_PROGS = 	bin/ldbadd \\
-		bin/ldbdel \\
-		bin/ldbmodify \\
-		bin/ldbedit \\
+LDB_PROGS = 	bin/ldbadd \
+		bin/ldbdel \
+		bin/ldbmodify \
+		bin/ldbedit \
 		bin/ldbsearch
 
-REG_PROGS = 	bin/regpatch \\
-		bin/regshell \\
-		bin/regtree \\
-		bin/regpatch \\
+REG_PROGS = 	bin/regpatch \
+		bin/regshell \
+		bin/regtree \
+		bin/regpatch \
 		bin/regdiff
 
 install: showlayout installbin installtorture installldb installreg installdat 
@@ -643,37 +662,37 @@ install: showlayout installbin installtorture installldb installreg installdat
 # is not used
 
 installdirs:
-	\@\$(SHELL) \$(srcdir)/script/installdirs.sh \$(DESTDIR)\$(BASEDIR) \$(DESTDIR)\$(BINDIR) \$(DESTDIR)\$(SBINDIR) \$(DESTDIR)\$(LIBDIR) \$(DESTDIR)\$(VARDIR) \$(DESTDIR)\$(PRIVATEDIR) \$(DESTDIR)\$(PIDDIR) \$(DESTDIR)\$(LOCKDIR)
+	@$(SHELL) $(srcdir)/script/installdirs.sh $(DESTDIR)$(BASEDIR) $(DESTDIR)$(BINDIR) $(DESTDIR)$(SBINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(DESTDIR)$(PRIVATEDIR) $(DESTDIR)$(PIDDIR) $(DESTDIR)$(LOCKDIR)
 
 installbin: all installdirs
-	\@\$(SHELL) \$(srcdir)/script/installbin.sh \$(INSTALLPERMS) \$(DESTDIR)\$(BASEDIR) \$(DESTDIR)\$(SBINDIR) \$(DESTDIR)\$(LIBDIR) \$(DESTDIR)\$(VARDIR) \$(SBIN_PROGS)
-	\@\$(SHELL) \$(srcdir)/script/installbin.sh \$(INSTALLPERMS) \$(DESTDIR)\$(BASEDIR) \$(DESTDIR)\$(BINDIR) \$(DESTDIR)\$(LIBDIR) \$(DESTDIR)\$(VARDIR) \$(BIN_PROGS)
+	@$(SHELL) $(srcdir)/script/installbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(SBINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(SBIN_PROGS)
+	@$(SHELL) $(srcdir)/script/installbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(BINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(BIN_PROGS)
 
 installtorture: all installdirs
-	\@\$(SHELL) \$(srcdir)/script/installbin.sh \$(INSTALLPERMS) \$(DESTDIR)\$(BASEDIR) \$(DESTDIR)\$(BINDIR) \$(DESTDIR)\$(LIBDIR) \$(DESTDIR)\$(VARDIR) \$(TORTURE_PROGS)
+	@$(SHELL) $(srcdir)/script/installbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(BINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(TORTURE_PROGS)
 
 installldb: all installdirs
-	\@\$(SHELL) \$(srcdir)/script/installbin.sh \$(INSTALLPERMS) \$(DESTDIR)\$(BASEDIR) \$(DESTDIR)\$(BINDIR) \$(DESTDIR)\$(LIBDIR) \$(DESTDIR)\$(VARDIR) \$(LDB_PROGS)
+	@$(SHELL) $(srcdir)/script/installbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(BINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(LDB_PROGS)
 
 installreg: all installdirs
-	\@\$(SHELL) \$(srcdir)/script/installbin.sh \$(INSTALLPERMS) \$(DESTDIR)\$(BASEDIR) \$(DESTDIR)\$(BINDIR) \$(DESTDIR)\$(LIBDIR) \$(DESTDIR)\$(VARDIR) \$(REG_PROGS)
+	@$(SHELL) $(srcdir)/script/installbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(BINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(REG_PROGS)
 
 installdat: installdirs
-	\@\$(SHELL) \$(srcdir)/script/installdat.sh \$(DESTDIR)\$(LIBDIR) \$(srcdir)
+	@$(SHELL) $(srcdir)/script/installdat.sh $(DESTDIR)$(LIBDIR) $(srcdir)
 
 uninstall: uninstallbin uninstalltorture uninstallldb uninstallreg
 
 uninstallbin:
-	\@\$(SHELL) \$(srcdir)/script/uninstallbin.sh \$(INSTALLPERMS) \$(DESTDIR)\$(BASEDIR) \$(DESTDIR)\$(SBINDIR) \$(DESTDIR)\$(LIBDIR) \$(DESTDIR)\$(VARDIR) \$(DESTDIR)\$(SBIN_PROGS)
+	@$(SHELL) $(srcdir)/script/uninstallbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(SBINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(DESTDIR)$(SBIN_PROGS)
 
 uninstalltorture:
-	\@\$(SHELL) \$(srcdir)/script/uninstallbin.sh \$(INSTALLPERMS) \$(DESTDIR)\$(BASEDIR) \$(DESTDIR)\$(BINDIR) \$(DESTDIR)\$(LIBDIR) \$(DESTDIR)\$(VARDIR) \$(DESTDIR)\$(TORTURE_PROGS)
+	@$(SHELL) $(srcdir)/script/uninstallbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(BINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(DESTDIR)$(TORTURE_PROGS)
 
 uninstallldb:
-	\@\$(SHELL) \$(srcdir)/script/uninstallbin.sh \$(INSTALLPERMS) \$(DESTDIR)\$(BASEDIR) \$(DESTDIR)\$(BINDIR) \$(DESTDIR)\$(LIBDIR) \$(DESTDIR)\$(VARDIR) \$(DESTDIR)\$(LDB_PROGS)
+	@$(SHELL) $(srcdir)/script/uninstallbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(BINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(DESTDIR)$(LDB_PROGS)
 
 uninstallreg:
-	\@\$(SHELL) \$(srcdir)/script/uninstallbin.sh \$(INSTALLPERMS) \$(DESTDIR)\$(BASEDIR) \$(DESTDIR)\$(BINDIR) \$(DESTDIR)\$(LIBDIR) \$(DESTDIR)\$(VARDIR) \$(DESTDIR)\$(REG_PROGS)
+	@$(SHELL) $(srcdir)/script/uninstallbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(BINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(DESTDIR)$(REG_PROGS)
 
 # Swig extensions
 
@@ -682,32 +701,32 @@ swig: scripting/swig/_tdb.so scripting/swig/_dcerpc.so
 scripting/swig/tdb_wrap.c: scripting/swig/tdb.i
 	swig -python scripting/swig/tdb.i
 
-scripting/swig/_tdb.so: scripting/swig/tdb_wrap.o \$(LIBRARY_swig_tdb_DEPEND_LIST)
-	\$(SHLD) \$(SHLD_FLAGS) -o scripting/swig/_tdb.so scripting/swig/tdb_wrap.o \\
-		\$(LIBRARY_swig_tdb_SHARED_LINK_LIST) \$(LIBRARY_swig_tdb_SHARED_LINK_FLAGS)
+scripting/swig/_tdb.so: scripting/swig/tdb_wrap.o $(LIBRARY_swig_tdb_DEPEND_LIST)
+	$(SHLD) $(SHLD_FLAGS) -o scripting/swig/_tdb.so scripting/swig/tdb_wrap.o \
+		$(LIBRARY_swig_tdb_SHARED_LINK_LIST) $(LIBRARY_swig_tdb_SHARED_LINK_FLAGS)
 
 SWIG_INCLUDES = librpc/gen_ndr/samr.i librpc/gen_ndr/lsa.i librpc/gen_ndr/spoolss.i
 
-scripting/swig/dcerpc_wrap.c: scripting/swig/dcerpc.i scripting/swig/samba.i scripting/swig/status_codes.i \$(SWIG_INCLUDES)
+scripting/swig/dcerpc_wrap.c: scripting/swig/dcerpc.i scripting/swig/samba.i scripting/swig/status_codes.i $(SWIG_INCLUDES)
 	swig -python scripting/swig/dcerpc.i
 
-scripting/swig/_dcerpc.so: scripting/swig/dcerpc_wrap.o \$(LIBRARY_swig_dcerpc_DEPEND_LIST)
-	\$(SHLD) \$(SHLD_FLAGS) -o scripting/swig/_dcerpc.so scripting/swig/dcerpc_wrap.o \$(LIBRARY_swig_dcerpc_SHARED_LINK_LIST) \$(LIBRARY_swig_dcerpc_SHARED_LINK_FLAGS)
+scripting/swig/_dcerpc.so: scripting/swig/dcerpc_wrap.o $(LIBRARY_swig_dcerpc_DEPEND_LIST)
+	$(SHLD) $(SHLD_FLAGS) -o scripting/swig/_dcerpc.so scripting/swig/dcerpc_wrap.o $(LIBRARY_swig_dcerpc_SHARED_LINK_LIST) $(LIBRARY_swig_dcerpc_SHARED_LINK_FLAGS)
 
 swig_clean:
-	-rm -f scripting/swig/_tdb.so scripting/swig/tdb.pyc \\
-		scripting/swig/tdb.py scripting/swig/tdb_wrap.c \\
+	-rm -f scripting/swig/_tdb.so scripting/swig/tdb.pyc \
+		scripting/swig/tdb.py scripting/swig/tdb_wrap.c \
 		scripting/swig/tdb_wrap.o
 
 everything: all
 
 etags:
-	etags `find \$(srcdir) -name \"*.[ch]\"`
+	etags `find $(srcdir) -name "*.[ch]"`
 
 ctags:
-	ctags `find \$(srcdir) -name \"*.[ch]\"`
+	ctags `find $(srcdir) -name "*.[ch]"`
 
-";
+__EOD__
 
 	return $output;
 }
@@ -750,6 +769,7 @@ sub _prepare_makefile_in($)
 	$output  = "########################################\n";
 	$output .= "# Autogenerated by config.smb_build.pl #\n";
 	$output .= "########################################\n";
+	$output .= "\n";
 
 	my $cmd_ctx;
 	$output .= _prepare_command_interpreters($cmd_ctx);
@@ -768,8 +788,8 @@ sub _prepare_makefile_in($)
 
 	$output .= _prepare_dummy_MAKEDIR();
 
-	$output .= _prepare_std_CC_rule("c","o","\@PICFLAG\@","Compiling","Rule for std objectfiles");
-	$output .= _prepare_std_CC_rule("h","h.gch","\@PICFLAG\@","Precompiling","Rule for precompiled headerfiles");
+	$output .= _prepare_std_CC_rule("c","o",'@PICFLAG@',"Compiling","Rule for std objectfiles");
+	$output .= _prepare_std_CC_rule("h","h.gch",'@PICFLAG@',"Precompiling","Rule for precompiled headerfiles");
 
 	$output .= _prepare_obj_lists($CTX);
 
