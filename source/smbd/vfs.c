@@ -119,50 +119,47 @@ struct vfs_ops default_vfs_ops = {
 
 static BOOL vfs_init_default(connection_struct *conn)
 {
-    DEBUG(3, ("Initialising default vfs hooks\n"));
+	DEBUG(3, ("Initialising default vfs hooks\n"));
 
-    memcpy(&conn->vfs_ops, &default_vfs_ops, sizeof(struct vfs_ops));
-    return True;
+	memcpy(&conn->vfs_ops, &default_vfs_ops, sizeof(struct vfs_ops));
+	return True;
 }
 
 /****************************************************************************
   initialise custom vfs hooks
 ****************************************************************************/
 
-#ifdef HAVE_LIBDL
 static BOOL vfs_init_custom(connection_struct *conn)
 {
 	int vfs_version = -1;
-    struct vfs_ops *ops, *(*init_fptr)(int *, struct vfs_ops *);
+	struct vfs_ops *ops, *(*init_fptr)(int *, struct vfs_ops *);
 
-    DEBUG(3, ("Initialising custom vfs hooks from %s\n",
-	      lp_vfsobj(SNUM(conn))));
+	DEBUG(3, ("Initialising custom vfs hooks from %s\n", lp_vfsobj(SNUM(conn))));
 
-    /* Open object file */
+	/* Open object file */
 
-    if ((conn->dl_handle = sys_dlopen(lp_vfsobj(SNUM(conn)), RTLD_NOW | RTLD_GLOBAL)) == NULL) {
+	if ((conn->dl_handle = sys_dlopen(lp_vfsobj(SNUM(conn)), RTLD_NOW | RTLD_GLOBAL)) == NULL) {
 		DEBUG(0, ("Error opening %s: %s\n", lp_vfsobj(SNUM(conn)), dlerror()));
 		return False;
-    }
+	}
 
-    /* Get handle on vfs_init() symbol */
+	/* Get handle on vfs_init() symbol */
 
-    init_fptr = (struct vfs_ops *(*)(int *, struct vfs_ops *))sys_dlsym(conn->dl_handle, "vfs_init");
+	init_fptr = (struct vfs_ops *(*)(int *, struct vfs_ops *))sys_dlsym(conn->dl_handle, "vfs_init");
 
-    if (init_fptr == NULL) {
-		DEBUG(0, ("No vfs_init() symbol found in %s\n",
-		  lp_vfsobj(SNUM(conn))));
+	if (init_fptr == NULL) {
+		DEBUG(0, ("No vfs_init() symbol found in %s\n", lp_vfsobj(SNUM(conn))));
 		return False;
-    }
+	}
 
-    /* Initialise vfs_ops structure */
+	/* Initialise vfs_ops structure */
 
 	conn->vfs_ops = default_vfs_ops;
 
-    if ((ops = init_fptr(&vfs_version, &default_vfs_ops)) == NULL) {
-        DEBUG(0, ("vfs_init function from %s failed\n", lp_vfsobj(SNUM(conn))));
+	if ((ops = init_fptr(&vfs_version, &default_vfs_ops)) == NULL) {
+		DEBUG(0, ("vfs_init function from %s failed\n", lp_vfsobj(SNUM(conn))));
 		return False;
-    }
+	}
 
 	if (vfs_version != SMB_VFS_INTERFACE_VERSION) {
 		DEBUG(0, ("vfs_init returned wrong interface version info (was %d, should be %d)\n",
@@ -174,9 +171,8 @@ static BOOL vfs_init_custom(connection_struct *conn)
 		memcpy(&conn->vfs_ops, ops, sizeof(struct vfs_ops));
 	}
 
-    return True;
+	return True;
 }
-#endif
 
 /*****************************************************************
  Generic VFS init.
@@ -185,8 +181,6 @@ static BOOL vfs_init_custom(connection_struct *conn)
 BOOL smbd_vfs_init(connection_struct *conn)
 {
 	if (*lp_vfsobj(SNUM(conn))) {
-#ifdef HAVE_LIBDL
- 
 		/* Loadable object file */
  
 		if (!vfs_init_custom(conn)) {
@@ -195,10 +189,6 @@ BOOL smbd_vfs_init(connection_struct *conn)
 		}
 
 		return True;
-#else
-		DEBUG(0, ("smbd_vfs_init: No libdl present - cannot use VFS objects\n"));
-		return False;
-#endif
 	}
  
 	/* Normal share - initialise with disk access functions */
@@ -225,7 +215,7 @@ BOOL vfs_directory_exist(connection_struct *conn, const char *dname, SMB_STRUCT_
 	if(!ret)
 		errno = ENOTDIR;
 
-  return ret;
+	return ret;
 }
 
 /*******************************************************************
@@ -258,11 +248,11 @@ int vfs_mkdir(connection_struct *conn, char *const fname, mode_t mode)
 
 char *vfs_getwd(connection_struct *conn, char *unix_path)
 {
-    char *wd;
-    wd = conn->vfs_ops.getwd(conn,unix_path);
-    if (wd)
-        unix_to_dos(wd);
-    return wd;
+	char *wd;
+	wd = conn->vfs_ops.getwd(conn,unix_path);
+	if (wd)
+		unix_to_dos(wd);
+	return wd;
 }
 
 /*******************************************************************
@@ -312,7 +302,7 @@ ssize_t vfs_read_data(files_struct *fsp, char *buf, size_t byte_count)
 	while (total < byte_count)
 	{
 		ssize_t ret = fsp->conn->vfs_ops.read(fsp, fsp->fd, buf + total,
-											  byte_count - total);
+					  byte_count - total);
 
 		if (ret == 0) return total;
 		if (ret == -1) {
@@ -586,12 +576,11 @@ int vfs_ChDir(connection_struct *conn, const char *path)
 /* number of list structures for a caching GetWd function. */
 #define MAX_GETWDCACHE (50)
 
-struct
-{
-  SMB_DEV_T dev; /* These *must* be compatible with the types returned in a stat() call. */
-  SMB_INO_T inode; /* These *must* be compatible with the types returned in a stat() call. */
-  char *dos_path; /* The pathname in DOS format. */
-  BOOL valid;
+struct {
+	SMB_DEV_T dev; /* These *must* be compatible with the types returned in a stat() call. */
+	SMB_INO_T inode; /* These *must* be compatible with the types returned in a stat() call. */
+	char *dos_path; /* The pathname in DOS format. */
+	BOOL valid;
 } ino_list[MAX_GETWDCACHE];
 
 extern BOOL use_getwd_cache;
@@ -627,98 +616,87 @@ static void array_promote(char *array,int elsize,int element)
 
 char *vfs_GetWd(connection_struct *conn, char *path)
 {
-  pstring s;
-  static BOOL getwd_cache_init = False;
-  SMB_STRUCT_STAT st, st2;
-  int i;
+	pstring s;
+	static BOOL getwd_cache_init = False;
+	SMB_STRUCT_STAT st, st2;
+	int i;
 
-  *s = 0;
+	*s = 0;
 
-  if (!use_getwd_cache)
-    return(vfs_getwd(conn,path));
+	if (!use_getwd_cache)
+		return(vfs_getwd(conn,path));
 
-  /* init the cache */
-  if (!getwd_cache_init)
-  {
-    getwd_cache_init = True;
-    for (i=0;i<MAX_GETWDCACHE;i++)
-    {
-      string_set(&ino_list[i].dos_path,"");
-      ino_list[i].valid = False;
-    }
-  }
+	/* init the cache */
+	if (!getwd_cache_init) {
+		getwd_cache_init = True;
+		for (i=0;i<MAX_GETWDCACHE;i++) {
+			string_set(&ino_list[i].dos_path,"");
+			ino_list[i].valid = False;
+		}
+	}
 
-  /*  Get the inode of the current directory, if this doesn't work we're
-      in trouble :-) */
+	/*  Get the inode of the current directory, if this doesn't work we're
+		in trouble :-) */
 
-  if (vfs_stat(conn, ".",&st) == -1)
-  {
-    DEBUG(0,("Very strange, couldn't stat \".\" path=%s\n", path));
-    return(vfs_getwd(conn,path));
-  }
+	if (vfs_stat(conn, ".",&st) == -1) {
+		DEBUG(0,("Very strange, couldn't stat \".\" path=%s\n", path));
+		return(vfs_getwd(conn,path));
+	}
 
 
-  for (i=0; i<MAX_GETWDCACHE; i++)
-    if (ino_list[i].valid)
-    {
+	for (i=0; i<MAX_GETWDCACHE; i++) {
+		if (ino_list[i].valid) {
 
-      /*  If we have found an entry with a matching inode and dev number
-          then find the inode number for the directory in the cached string.
-          If this agrees with that returned by the stat for the current
-          directory then all is o.k. (but make sure it is a directory all
-          the same...) */
+			/*  If we have found an entry with a matching inode and dev number
+			then find the inode number for the directory in the cached string.
+			If this agrees with that returned by the stat for the current
+			directory then all is o.k. (but make sure it is a directory all
+			the same...) */
 
-      if (st.st_ino == ino_list[i].inode &&
-          st.st_dev == ino_list[i].dev)
-      {
-        if (vfs_stat(conn,ino_list[i].dos_path,&st2) == 0)
-        {
-          if (st.st_ino == st2.st_ino &&
-              st.st_dev == st2.st_dev &&
-              (st2.st_mode & S_IFMT) == S_IFDIR)
-          {
-            pstrcpy (path, ino_list[i].dos_path);
+			if (st.st_ino == ino_list[i].inode && st.st_dev == ino_list[i].dev) {
+				if (vfs_stat(conn,ino_list[i].dos_path,&st2) == 0) {
+					if (st.st_ino == st2.st_ino && st.st_dev == st2.st_dev &&
+							(st2.st_mode & S_IFMT) == S_IFDIR) {
+						pstrcpy (path, ino_list[i].dos_path);
 
-            /* promote it for future use */
-            array_promote((char *)&ino_list[0],sizeof(ino_list[0]),i);
-            return (path);
-          }
-          else
-          {
-            /*  If the inode is different then something's changed,
-                scrub the entry and start from scratch. */
-            ino_list[i].valid = False;
-          }
-        }
-      }
-    }
+						/* promote it for future use */
+						array_promote((char *)&ino_list[0],sizeof(ino_list[0]),i);
+						return (path);
 
+					} else {
+						/*  If the inode is different then something's changed,
+								scrub the entry and start from scratch. */
+						ino_list[i].valid = False;
+					}
+				}
+			}
+		}
+	}
 
-  /*  We don't have the information to hand so rely on traditional methods.
-      The very slow getcwd, which spawns a process on some systems, or the
-      not quite so bad getwd. */
+	/*  We don't have the information to hand so rely on traditional methods.
+		The very slow getcwd, which spawns a process on some systems, or the
+		not quite so bad getwd. */
 
-  if (!vfs_getwd(conn,s))
-  {
-    DEBUG(0,("vfs_GetWd: vfs_getwd call failed, errno %s\n",strerror(errno)));
-    return (NULL);
-  }
+	if (!vfs_getwd(conn,s)) {
+		DEBUG(0,("vfs_GetWd: vfs_getwd call failed, errno %s\n",strerror(errno)));
+		return (NULL);
+	}
 
-  pstrcpy(path,s);
+	pstrcpy(path,s);
 
-  DEBUG(5,("vfs_GetWd %s, inode %.0f, dev %.0f\n",s,(double)st.st_ino,(double)st.st_dev));
+	DEBUG(5,("vfs_GetWd %s, inode %.0f, dev %.0f\n",s,(double)st.st_ino,(double)st.st_dev));
 
-  /* add it to the cache */
-  i = MAX_GETWDCACHE - 1;
-  string_set(&ino_list[i].dos_path,s);
-  ino_list[i].dev = st.st_dev;
-  ino_list[i].inode = st.st_ino;
-  ino_list[i].valid = True;
+	/* add it to the cache */
+	i = MAX_GETWDCACHE - 1;
+	string_set(&ino_list[i].dos_path,s);
+	ino_list[i].dev = st.st_dev;
+	ino_list[i].inode = st.st_ino;
+	ino_list[i].valid = True;
 
-  /* put it at the top of the list */
-  array_promote((char *)&ino_list[0],sizeof(ino_list[0]),i);
+	/* put it at the top of the list */
+	array_promote((char *)&ino_list[0],sizeof(ino_list[0]),i);
 
-  return (path);
+	return (path);
 }
 
 /*******************************************************************
@@ -731,121 +709,109 @@ char *vfs_GetWd(connection_struct *conn, char *path)
 BOOL reduce_name(connection_struct *conn, char *s,char *dir,BOOL widelinks)
 {
 #ifndef REDUCE_PATHS
-  return True;
+	return True;
 #else
-  pstring dir2;
-  pstring wd;
-  pstring base_name;
-  pstring newname;
-  char *p=NULL;
-  BOOL relative = (*s != '/');
+	pstring dir2;
+	pstring wd;
+	pstring base_name;
+	pstring newname;
+	char *p=NULL;
+	BOOL relative = (*s != '/');
 
-  *dir2 = *wd = *base_name = *newname = 0;
+	*dir2 = *wd = *base_name = *newname = 0;
 
-  if (widelinks)
-  {
-    unix_clean_name(s);
-    /* can't have a leading .. */
-    if (strncmp(s,"..",2) == 0 && (s[2]==0 || s[2]=='/'))
-    {
-      DEBUG(3,("Illegal file name? (%s)\n",s));
-      return(False);
-    }
+	if (widelinks) {
+		unix_clean_name(s);
+		/* can't have a leading .. */
+		if (strncmp(s,"..",2) == 0 && (s[2]==0 || s[2]=='/')) {
+			DEBUG(3,("Illegal file name? (%s)\n",s));
+			return(False);
+		}
 
-    if (strlen(s) == 0)
-      pstrcpy(s,"./");
+		if (strlen(s) == 0)
+			pstrcpy(s,"./");
 
-    return(True);
-  }
+		return(True);
+	}
 
-  DEBUG(3,("reduce_name [%s] [%s]\n",s,dir));
+	DEBUG(3,("reduce_name [%s] [%s]\n",s,dir));
 
-  /* remove any double slashes */
-  all_string_sub(s,"//","/",0);
+	/* remove any double slashes */
+	all_string_sub(s,"//","/",0);
 
-  pstrcpy(base_name,s);
-  p = strrchr(base_name,'/');
+	pstrcpy(base_name,s);
+	p = strrchr(base_name,'/');
 
-  if (!p)
-    return(True);
+	if (!p)
+		return(True);
 
-  if (!vfs_GetWd(conn,wd))
-  {
-    DEBUG(0,("couldn't vfs_GetWd for %s %s\n",s,dir));
-    return(False);
-  }
+	if (!vfs_GetWd(conn,wd)) {
+		DEBUG(0,("couldn't vfs_GetWd for %s %s\n",s,dir));
+		return(False);
+	}
 
-  if (vfs_ChDir(conn,dir) != 0)
-  {
-    DEBUG(0,("couldn't vfs_ChDir to %s\n",dir));
-    return(False);
-  }
+	if (vfs_ChDir(conn,dir) != 0) {
+		DEBUG(0,("couldn't vfs_ChDir to %s\n",dir));
+		return(False);
+	}
 
-  if (!vfs_GetWd(conn,dir2))
-  {
-    DEBUG(0,("couldn't vfs_GetWd for %s\n",dir));
-    vfs_ChDir(conn,wd);
-    return(False);
-  }
+	if (!vfs_GetWd(conn,dir2)) {
+		DEBUG(0,("couldn't vfs_GetWd for %s\n",dir));
+		vfs_ChDir(conn,wd);
+		return(False);
+	}
 
-  if (p && (p != base_name))
-  {
-    *p = 0;
-    if (strcmp(p+1,".")==0)
-      p[1]=0;
-    if (strcmp(p+1,"..")==0)
-      *p = '/';
-  }
+	if (p && (p != base_name)) {
+		*p = 0;
+		if (strcmp(p+1,".")==0)
+			p[1]=0;
+		if (strcmp(p+1,"..")==0)
+			*p = '/';
+	}
 
-  if (vfs_ChDir(conn,base_name) != 0)
-  {
-    vfs_ChDir(conn,wd);
-    DEBUG(3,("couldn't vfs_ChDir for %s %s basename=%s\n",s,dir,base_name));
-    return(False);
-  }
+	if (vfs_ChDir(conn,base_name) != 0) {
+		vfs_ChDir(conn,wd);
+		DEBUG(3,("couldn't vfs_ChDir for %s %s basename=%s\n",s,dir,base_name));
+		return(False);
+	}
 
-  if (!vfs_GetWd(conn,newname))
-  {
-    vfs_ChDir(conn,wd);
-    DEBUG(2,("couldn't get vfs_GetWd for %s %s\n",s,dir2));
-    return(False);
-  }
+	if (!vfs_GetWd(conn,newname)) {
+		vfs_ChDir(conn,wd);
+		DEBUG(2,("couldn't get vfs_GetWd for %s %s\n",s,dir2));
+		return(False);
+	}
 
-  if (p && (p != base_name))
-  {
-    pstrcat(newname,"/");
-    pstrcat(newname,p+1);
-  }
+	if (p && (p != base_name)) {
+		pstrcat(newname,"/");
+		pstrcat(newname,p+1);
+	}
 
-  {
-    size_t l = strlen(dir2);
-    if (dir2[l-1] == '/')
-      l--;
+	{
+		size_t l = strlen(dir2);
+		if (dir2[l-1] == '/')
+			l--;
 
-    if (strncmp(newname,dir2,l) != 0)
-    {
-      vfs_ChDir(conn,wd);
-      DEBUG(2,("Bad access attempt? s=%s dir=%s newname=%s l=%d\n",s,dir2,newname,(int)l));
-      return(False);
-    }
+		if (strncmp(newname,dir2,l) != 0) {
+			vfs_ChDir(conn,wd);
+			DEBUG(2,("Bad access attempt? s=%s dir=%s newname=%s l=%d\n",s,dir2,newname,(int)l));
+			return(False);
+		}
 
-    if (relative)
-    {
-      if (newname[l] == '/')
-        pstrcpy(s,newname + l + 1);
-      else
-        pstrcpy(s,newname+l);
-    }
-    else
-      pstrcpy(s,newname);
-  }
+		if (relative) {
+			if (newname[l] == '/')
+				pstrcpy(s,newname + l + 1);
+			else
+				pstrcpy(s,newname+l);
+		} else
+			pstrcpy(s,newname);
+	}
 
-  vfs_ChDir(conn,wd);
+	vfs_ChDir(conn,wd);
 
-  if (strlen(s) == 0)
-    pstrcpy(s,"./");
+	if (strlen(s) == 0)
+		pstrcpy(s,"./");
 
-  DEBUG(3,("reduced to %s\n",s));
-  return(True);
+	DEBUG(3,("reduced to %s\n",s));
+	return(True);
 #endif
 }

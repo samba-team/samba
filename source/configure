@@ -5120,7 +5120,7 @@ else
     RUNPROG=""
 fi
 
-for ac_func in waitpid getcwd strdup strtoul strerror chown fchown chmod fchmod chroot link
+for ac_func in dlopen dlclose dlsym dlerror waitpid getcwd strdup strtoul strerror chown fchown chmod fchmod chroot link
 do
 echo $ac_n "checking for $ac_func""... $ac_c" 1>&6
 echo "configure:5127: checking for $ac_func" >&5

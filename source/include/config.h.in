@@ -489,6 +489,18 @@
 /* Define if you have the crypt16 function.  */
 #undef HAVE_CRYPT16
 
+/* Define if you have the dlclose function.  */
+#undef HAVE_DLCLOSE
+
+/* Define if you have the dlerror function.  */
+#undef HAVE_DLERROR
+
+/* Define if you have the dlopen function.  */
+#undef HAVE_DLOPEN
+
+/* Define if you have the dlsym function.  */
+#undef HAVE_DLSYM
+
 /* Define if you have the dup2 function.  */
 #undef HAVE_DUP2
 
