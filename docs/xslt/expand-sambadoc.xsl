@@ -7,14 +7,12 @@
 	(C) Alexander Bokovoy 					2002-2004
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
-	xmlns:samba="http://samba.org/common"
+	xmlns:samba="http://www.samba.org/samba/DTD/samba-doc"
 	version="1.1">
 
 	<xsl:import href="../settings.xsl"/>
 
 	<xsl:output method="xml" encoding="UTF-8" doctype-public="-//OASIS//DTD DocBook XML V4.2//EN" indent="yes" doctype-system="http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd"/>
-
-	<xsl:param name="xmlSambaNsUri" select="'http://samba.org/common'"/>
 
 	<xsl:template match="reference/refentry/refsect1">
 		<xsl:if test="title!='VERSION' and title!='AUTHOR'">
