@@ -331,7 +331,7 @@ NTSTATUS dcerpc_pull(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, struct dcerpc_packet 
 		break;
 
 	default:
-		return NT_STATUS_INVALID_LEVEL;
+		return NT_STATUS_NET_WRITE_FAULT;
 	}
 
 	return status;
@@ -478,7 +478,7 @@ NTSTATUS dcerpc_push(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, struct dcerpc_packet 
 		break;
 		
 	default:
-		status = NT_STATUS_INVALID_LEVEL;
+		status = NT_STATUS_NET_WRITE_FAULT;
 	}
 
 	return status;

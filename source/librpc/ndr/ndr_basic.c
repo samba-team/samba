@@ -397,9 +397,12 @@ NTSTATUS ndr_push_offset_ptr(struct ndr_push *ndr,
 /*
   push a GUID
 */
-NTSTATUS ndr_push_GUID(struct ndr_push *ndr, GUID *guid)
+NTSTATUS ndr_push_GUID(struct ndr_push *ndr, int ndr_flags, GUID *guid)
 {
-	return ndr_push_bytes(ndr, guid->info, GUID_SIZE);
+	if (ndr_flags & NDR_SCALARS) {
+		return ndr_push_bytes(ndr, guid->info, GUID_SIZE);
+	}
+	return NT_STATUS_OK;
 }
 
 /*

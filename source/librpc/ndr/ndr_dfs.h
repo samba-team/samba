@@ -102,10 +102,47 @@ struct dfs_EnumArray3 {
 	struct dfs_Info3 *s;
 };
 
+struct dfs_Info4 {
+	const char *path;
+	const char *comment;
+	uint32 state;
+	uint32 timeout;
+	struct GUID guid;
+	uint32 num_stores;
+	struct dfs_StorageInfo *stores;
+};
+
+struct dfs_EnumArray4 {
+	uint32 count;
+	struct dfs_Info4 *s;
+};
+
+struct dfs_Info200 {
+	const char *dom_root;
+};
+
+struct dfs_EnumArray200 {
+	uint32 count;
+	struct dfs_Info200 *s;
+};
+
+struct dfs_Info300 {
+	uint32 flags;
+	const char *dom_root;
+};
+
+struct dfs_EnumArray300 {
+	uint32 count;
+	struct dfs_Info300 *s;
+};
+
 union dfs_EnumInfo {
 /* [case(1)] */ struct dfs_EnumArray1 *info1;
 /* [case(2)] */ struct dfs_EnumArray2 *info2;
 /* [case(3)] */ struct dfs_EnumArray3 *info3;
+/* [case(4)] */ struct dfs_EnumArray4 *info4;
+/* [case(200)] */ struct dfs_EnumArray200 *info200;
+/* [case(300)] */ struct dfs_EnumArray300 *info300;
 };
 
 struct dfs_EnumStruct {
