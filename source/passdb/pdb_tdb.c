@@ -2,6 +2,7 @@
  * Unix SMB/Netbios implementation. Version 1.9. SMB parameters and setup
  * Copyright (C) Andrew Tridgell 1992-1998
  * Copyright (C) Simo Sorce 2000
+ * Copyright (C) Gerald Carter 2000
  * 
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free
@@ -24,6 +25,8 @@
 
 #define TDB_FORMAT_STRING	"ddddddfffPPfPPPPffddBBwdwdBdd"
 #define USERPREFIX		"USER_"
+#define UIDPREFIX		"UID_"
+#define RIDPREFIX		"RID_"
 
 extern int 		DEBUGLEVEL;
 extern pstring 		samlogon_user;
@@ -63,7 +66,12 @@ static BOOL init_sam_from_buffer (SAM_ACCOUNT *sampass, BYTE *buf,
 			nt_pw[16];
 	uint32		len = 0;
 	uint32		lmpwlen, ntpwlen, hourslen;
-			
+
+	/* using static memory for strings */
+	/* you set it now or you will delete any fields retrieved by tdb_unpack */
+	pdb_set_mem_ownership(sampass, False);
+
+									
 	/* unpack the buffer into variables */
 	len = tdb_unpack (buf, buflen, TDB_FORMAT_STRING,
 		&sampass->logon_time,
@@ -116,9 +124,6 @@ static BOOL init_sam_from_buffer (SAM_ACCOUNT *sampass, BYTE *buf,
 		memcpy(nt_pw, nt_pw_ptr, 16);
 		free (nt_pw_ptr);
 	}
-
-	/* using static memory for strings */
-	pdb_set_mem_ownership(sampass, False);
 	
 	pdb_set_username     (sampass, username);
 	pdb_set_domain       (sampass, domain);
@@ -370,14 +375,17 @@ SAM_ACCOUNT* pdb_getsampwent(void)
 /******************************************************************
  Lookup a name in the SAM TDB
 ******************************************************************/
-SAM_ACCOUNT* pdb_getsampwnam (char *name)
+SAM_ACCOUNT* pdb_getsampwnam (char *sname)
 {
 	TDB_CONTEXT 		*pwd_tdb;
 	TDB_DATA 		data, key;
 	fstring 		keystr;
 	struct passwd		*pw;
 	pstring			tdbfile;
+	fstring			name;
 	
+	fstrcpy (name, sname);
+	strlower (name);
 	pstrcpy (tdbfile, lp_private_dir());
 	pstrcat (tdbfile, "/passdb.tdb");
 	
@@ -398,7 +406,7 @@ SAM_ACCOUNT* pdb_getsampwnam (char *name)
 	if (!data.dptr)
 	{
 		DEBUG(5,("pdb_getsampwnam (TDB): error fetching database.\n"));
-		DEBUGADD(5, (" Error: %s\n", tdb_error(pwd_tdb)));
+		DEBUGADD(5, (" Error: %s\n", tdb_errorstr(pwd_tdb)));
 		tdb_close (pwd_tdb);
 		return NULL;
 	}
@@ -439,16 +447,44 @@ SAM_ACCOUNT* pdb_getsampwnam (char *name)
  **************************************************************************/
 SAM_ACCOUNT* pdb_getsampwuid (uid_t uid)
 {
-	SAM_ACCOUNT	*pw = NULL;
-
-	if (!pdb_setsampwent(False))
-		return NULL;
-		
-	while ( ((pw=pdb_getsampwent()) != NULL) && (pdb_get_uid(pw) != uid) )
-		/* do nothing */ ;
+	SAM_ACCOUNT		*pw = NULL;
+	TDB_CONTEXT 		*pwd_tdb;
+	TDB_DATA 		data, key;
+	fstring 		keystr;
+	pstring			tdbfile;
+	fstring			name;
 	
-	pdb_endsampwent();
-		
+	pstrcpy (tdbfile, lp_private_dir());
+	pstrcat (tdbfile, "/uiddb.tdb");
+	
+	/* set search key */
+	slprintf(keystr, sizeof(keystr), "%s%.5u", UIDPREFIX, uid);
+	key.dptr = keystr;
+	key.dsize = strlen (keystr) + 1;
+
+	/* open the accounts TDB */
+	if (!(pwd_tdb = tdb_open(tdbfile, 0, 0, O_RDONLY, 0600)))
+	{
+		DEBUG(0, ("pdb_getsampwuid: Unable to open TDB uid database!\n"));
+		return False;
+	}
+
+	/* get the record */
+	data = tdb_fetch (pwd_tdb, key);
+	if (!data.dptr)
+	{
+		DEBUG(5,("pdb_getsampwuid (TDB): error fetching database.\n"));
+		DEBUGADD(5, (" Error: %s\n", tdb_errorstr(pwd_tdb)));
+		tdb_close (pwd_tdb);
+		return NULL;
+	}
+
+	fstrcpy (name, data.dptr);
+
+	tdb_close (pwd_tdb);
+	
+	pw = pdb_getsampwnam (name);
+			
 	return pw;
 }
 
@@ -457,33 +493,68 @@ SAM_ACCOUNT* pdb_getsampwuid (uid_t uid)
  **************************************************************************/
 SAM_ACCOUNT* pdb_getsampwrid (uint32 rid)
 {
-	SAM_ACCOUNT	*pw = NULL;
-
-	if (!pdb_setsampwent(False))
-		return NULL;
-		
-	while ( ((pw=pdb_getsampwent()) != NULL) && (pdb_get_user_rid(pw) != rid) )
-		/* do nothing */ ;
+	SAM_ACCOUNT		*pw = NULL;
+	TDB_CONTEXT 		*pwd_tdb;
+	TDB_DATA 		data, key;
+	fstring 		keystr;
+	pstring			tdbfile;
+	fstring			name;
 	
-	pdb_endsampwent();
-		
+	pstrcpy (tdbfile, lp_private_dir());
+	pstrcat (tdbfile, "/riddb.tdb");
+	
+	/* set search key */
+	slprintf(keystr, sizeof(keystr), "%s%.8x", RIDPREFIX, rid);
+	key.dptr = keystr;
+	key.dsize = strlen (keystr) + 1;
+
+	/* open the accounts TDB */
+	if (!(pwd_tdb = tdb_open(tdbfile, 0, 0, O_RDONLY, 0600)))
+	{
+		DEBUG(0, ("pdb_getsampwrid: Unable to open TDB rid database!\n"));
+		return False;
+	}
+
+	/* get the record */
+	data = tdb_fetch (pwd_tdb, key);
+	if (!data.dptr)
+	{
+		DEBUG(5,("pdb_getsampwrid (TDB): error fetching database.\n"));
+		DEBUGADD(5, (" Error: %s\n", tdb_errorstr(pwd_tdb)));
+		tdb_close (pwd_tdb);
+		return NULL;
+	}
+
+	fstrcpy (name, data.dptr);
+	
+	tdb_close (pwd_tdb);
+	
+	pw = pdb_getsampwnam (name);
+			
 	return pw;
+
 }
 
 
 /***************************************************************************
  Delete a SAM_ACCOUNT
 ****************************************************************************/
-BOOL pdb_delete_sam_account(char *name)
+BOOL pdb_delete_sam_account(char *sname)
 {
+	struct passwd  *pwd = NULL;
 	TDB_CONTEXT 	*pwd_tdb;
-	TDB_DATA 	key;
+	TDB_DATA 	key, data;
 	fstring 	keystr;
 	pstring		tdbfile;
+	uid_t		uid;
+	uint32		rid;
+	fstring		name;
+	
+	fstrcpy (name, sname);
+	strlower (name);
 	
 	pstrcpy (tdbfile, lp_private_dir());
 	pstrcat (tdbfile, "/passdb.tdb");
-	
 
 	/* open the TDB */
 	if (!(pwd_tdb = tdb_open(tdbfile, 0, 0, O_RDWR, 0600)))
@@ -497,16 +568,90 @@ BOOL pdb_delete_sam_account(char *name)
 	key.dptr = keystr;
 	key.dsize = strlen (keystr) + 1;
 	
+	/* get the record */
+	data = tdb_fetch (pwd_tdb, key);
+	if (!data.dptr)
+	{
+		DEBUG(5,("pdb_getsampwnam (TDB): error fetching database.\n"));
+		DEBUGADD(5, (" Error: %s\n", tdb_errorstr(pwd_tdb)));
+		tdb_close (pwd_tdb);
+		return False;
+	}
+  
+  	/* unpack the buffer */
+	pdb_clear_sam (&global_sam_pass);
+	if (!init_sam_from_buffer (&global_sam_pass, data.dptr, data.dsize))
+	{
+		DEBUG(0,("pdb_getsampwent: Bad SAM_ACCOUNT entry returned from TDB!\n"));
+		return False;
+	}
+
+	pwd = sys_getpwnam(global_sam_pass.username);
+	uid = pwd->pw_uid;
+	rid = pdb_uid_to_user_rid (uid);
+
 	/* it's outaa here!  8^) */
 	if (tdb_delete(pwd_tdb, key) != TDB_SUCCESS)
 	{
-		DEBUG(5, ("Error deleting entry from tdb database!\n"));
-		DEBUGADD(5, (" Error: %s\n", tdb_error(pwd_tdb)));
+		DEBUG(5, ("Error deleting entry from tdb passwd database!\n"));
+		DEBUGADD(5, (" Error: %s\n", tdb_errorstr(pwd_tdb)));
+		tdb_close(pwd_tdb); 
+		return False;
+	}	
+	tdb_close(pwd_tdb);
+	
+	pstrcpy (tdbfile, lp_private_dir());
+	pstrcat (tdbfile, "/uiddb.tdb");
+
+	/* open the UID TDB */
+	if (!(pwd_tdb = tdb_open(tdbfile, 0, 0, O_RDWR, 0600)))
+	{
+		DEBUG(0, ("Unable to open TDB uid file!"));
+		return False;
+	}	
+
+  	/* set the search key */
+	slprintf(keystr, sizeof(keystr), "%s%.5u", UIDPREFIX, uid);
+	key.dptr = keystr;
+	key.dsize = strlen (keystr) + 1;
+
+	/* it's outaa here!  8^) */
+	if (tdb_delete(pwd_tdb, key) != TDB_SUCCESS)
+	{
+		DEBUG(5, ("Error deleting entry from tdb uid database!\n"));
+		DEBUGADD(5, (" Error: %s\n", tdb_errorstr(pwd_tdb)));
 		tdb_close(pwd_tdb); 
 		return False;
 	}
 	
 	tdb_close(pwd_tdb);
+	
+	pstrcpy (tdbfile, lp_private_dir());
+	pstrcat (tdbfile, "/riddb.tdb");	
+	
+	/* open the RID TDB */
+	if (!(pwd_tdb = tdb_open(tdbfile, 0, 0, O_RDWR, 0600)))
+	{
+		DEBUG(0, ("Unable to open TDB rid file!"));
+		return False;
+	}	
+
+  	/* set the search key */
+	slprintf(keystr, sizeof(keystr), "%s%.8x", UIDPREFIX, rid);
+	key.dptr = keystr;
+	key.dsize = strlen (keystr) + 1;
+
+	/* it's outaa here!  8^) */
+	if (tdb_delete(pwd_tdb, key) != TDB_SUCCESS)
+	{
+		DEBUG(5, ("Error deleting entry from tdb rid database!\n"));
+		DEBUGADD(5, (" Error: %s\n", tdb_errorstr(pwd_tdb)));
+		tdb_close(pwd_tdb); 
+		return False;
+	}
+	
+	tdb_close(pwd_tdb);
+	
 	return True;
 }
 
@@ -520,21 +665,21 @@ static BOOL tdb_update_sam(SAM_ACCOUNT* newpwd, BOOL override, int flag)
 	BYTE		*buf = NULL;
 	fstring 	keystr;
 	pstring		tdbfile;
+	fstring		name;
+	int		newtdb = FALSE;
 	
 	pstrcpy (tdbfile, lp_private_dir());
 	pstrcat (tdbfile, "/passdb.tdb");
 	
 	if ( (!newpwd->uid) || (!newpwd->gid) )
-	{
-		DEBUG (0,("tdb_update_sam: Attempting to store a SAM_ACCOUNT for [%s] with no uid/gid!\n", newpwd->username));
-		return False;
-	}
+		DEBUG (0,("tdb_update_sam: Storing a SAM_ACCOUNT for [%s] with uid %d and gid %d!\n",
+			newpwd->username, newpwd->uid, newpwd->gid));
 		
 	/* if we don't have a RID, then generate one */
 	if (!newpwd->user_rid)
-		pdb_set_user_rid (pdb_uid_to_user_rid (newpwd->uid));
+		pdb_set_user_rid (newpwd, pdb_uid_to_user_rid (newpwd->uid));
 	if (!newpwd->group_rid)
-		pdb_set_user_rid (pdb_uid_to_group_rid (newpwd->gid));
+		pdb_set_user_rid (newpwd, pdb_gid_to_group_rid (newpwd->gid));
     
 	/* copy the SAM_ACCOUNT struct into a BYTE buffer for storage */
 	if ((data.dsize=init_buffer_from_sam (&buf, newpwd)) == -1)
@@ -544,8 +689,11 @@ static BOOL tdb_update_sam(SAM_ACCOUNT* newpwd, BOOL override, int flag)
 	}
 	data.dptr = buf;
 
-  	/* setup the index key */
-	slprintf(keystr, sizeof(keystr), "%s%s", USERPREFIX, pdb_get_username(newpwd));
+	fstrcpy (name, pdb_get_username(newpwd));
+	strlower (name);
+	
+  	/* setup the USER index key */
+	slprintf(keystr, sizeof(keystr), "%s%s", USERPREFIX, name);
 	key.dptr = keystr;
 	key.dsize = strlen (keystr) + 1;
 
@@ -556,7 +704,7 @@ static BOOL tdb_update_sam(SAM_ACCOUNT* newpwd, BOOL override, int flag)
 		global_tdb_ent.passwd_tdb = NULL;
 	}
  
- 	/* open the account TDB */
+ 	/* open the account TDB passwd*/
   	if (!(pwd_tdb = tdb_open(tdbfile, 0, 0, O_RDWR, 0600)))
 	{
      		DEBUG(0, ("tdb_update_sam: Unable to open TDB passwd!\n"));
@@ -565,9 +713,10 @@ static BOOL tdb_update_sam(SAM_ACCOUNT* newpwd, BOOL override, int flag)
 			DEBUG(0, ("Unable to open TDB passwd, trying create new!\n"));
 			if (!(pwd_tdb = tdb_open(tdbfile, 0, 0, O_RDWR | O_CREAT | O_EXCL, 0600)))
 			{
-				DEBUG(0, ("Unable to create TDB passwd (smbpasswd.tdb) !!!\n"));
+				DEBUG(0, ("Unable to create TDB passwd (passdb.tdb) !!!\n"));
 				return False;
 			}
+			newtdb = TRUE;
 		}
 	}
 
@@ -575,14 +724,92 @@ static BOOL tdb_update_sam(SAM_ACCOUNT* newpwd, BOOL override, int flag)
 	if (tdb_store(pwd_tdb, key, data, flag) != TDB_SUCCESS)
 	{
 		DEBUG(0, ("Unable to modify TDB passwd!"));
-		DEBUGADD(0, (" Error: %s\n", tdb_error (pwd_tdb)));
+		DEBUGADD(0, (" Error: %s\n", tdb_errorstr(pwd_tdb)));
 		tdb_close (pwd_tdb);
 		return False;
 	}
 
 	/* cleanup */
 	tdb_close (pwd_tdb);
+	
+	/* setup UID/RID data */
+	data.dsize = sizeof(fstring);
+	data.dptr = name;
 
+	pstrcpy (tdbfile, lp_private_dir());
+	pstrcat (tdbfile, "/uiddb.tdb");
+
+	/* setup the UID index key */
+	slprintf(keystr, sizeof(keystr), "%s%.5u", UIDPREFIX, pdb_get_uid(newpwd));
+	key.dptr = keystr;
+	key.dsize = strlen (keystr) + 1;
+	
+	/* open the account TDB uid file*/
+  	if (!(pwd_tdb = tdb_open(tdbfile, 0, 0, O_RDWR, 0600)))
+	{
+     		DEBUG(0, ("tdb_update_sam: Unable to open TDB uid database!\n"));
+		if (newtdb == FALSE)
+			DEBUG(0, ("WARNING: uid database missing and passdb exist, check references integrity!\n"));
+		if (flag == TDB_INSERT)
+		{
+			DEBUG(0, ("Unable to open TDB uid file, trying create new!\n"));
+			if (!(pwd_tdb = tdb_open(tdbfile, 0, 0, O_RDWR | O_CREAT | O_EXCL, 0600)))
+			{
+				DEBUG(0, ("Unable to create TDB uid (uiddb.tdb) !!!\n"));
+				/* return False; */
+			}
+		}
+	}
+		
+	/* add the reference */
+	if (tdb_store(pwd_tdb, key, data, flag) != TDB_SUCCESS)
+	{
+		DEBUG(0, ("Unable to modify TDB uid database!"));
+		DEBUGADD(0, (" Error: %s\n", tdb_errorstr(pwd_tdb)));
+		/* tdb_close (pwd_tdb);
+		return False; */
+	}
+	
+	/* cleanup */
+	tdb_close (pwd_tdb);
+
+	pstrcpy (tdbfile, lp_private_dir());
+	pstrcat (tdbfile, "/riddb.tdb");
+
+	/* setup the RID index key */
+	slprintf(keystr, sizeof(keystr), "%s%.8x", UIDPREFIX, pdb_get_user_rid(newpwd));
+	key.dptr = keystr;
+	key.dsize = strlen (keystr) + 1;
+	
+	/* open the account TDB rid file*/
+  	if (!(pwd_tdb = tdb_open(tdbfile, 0, 0, O_RDWR, 0600)))
+	{
+     		DEBUG(0, ("tdb_update_sam: Unable to open TDB rid database!\n"));
+		if (newtdb == FALSE)
+			DEBUG(0, ("WARNING: rid database missing and passdb exist, check references integrity!\n"));
+		if (flag == TDB_INSERT)
+		{
+			DEBUG(0, ("Unable to open TDB rid file, trying create new!\n"));
+			if (!(pwd_tdb = tdb_open(tdbfile, 0, 0, O_RDWR | O_CREAT | O_EXCL, 0600)))
+			{
+				DEBUG(0, ("Unable to create TDB rid (riddb.tdb) !!!\n"));
+				/* return False; */
+			}
+		}
+	}
+		
+	/* add the reference */
+	if (tdb_store(pwd_tdb, key, data, flag) != TDB_SUCCESS)
+	{
+		DEBUG(0, ("Unable to modify TDB rid database!"));
+		DEBUGADD(0, (" Error: %s\n", tdb_errorstr(pwd_tdb)));
+		/* tdb_close (pwd_tdb);
+		return False; */
+	}
+	
+	/* cleanup */
+	tdb_close (pwd_tdb);
+	
 	return (True);
 }
 
