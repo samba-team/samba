@@ -62,9 +62,9 @@ main(int argc, char **argv)
     int c;
     set_progname(argv[0]);
     
-    configure(argc, argv);
-
     krb5_init_context(&context);
+
+    configure(argc, argv);
 
     if(keyfile){
 	FILE *f;
