@@ -134,9 +134,9 @@ reduce user complaints and administrator heartache.
 <para>
 There are in the SMB/CIFS networking world only two types of security: <emphasis>USER Level</emphasis>
 and <emphasis>SHARE Level</emphasis>. We refer to these collectively as <emphasis>security levels</emphasis>. In implementing these two <emphasis>security levels</emphasis> samba provides flexibilities
-that are not available with Microsoft Windows NT4 / 200x servers. Samba knows of fice (5)
+that are not available with Microsoft Windows NT4 / 200x servers. Samba knows of five (5)
 ways that allow the security levels to be implemented. In actual fact, Samba implements
-<emphasis>SHARE Levl</emphasis> security only one way, but has for ways of implementing
+<emphasis>SHARE Level</emphasis> security only one way, but has for ways of implementing
 <emphasis>USER Level</emphasis> security. Collectively, we call the samba implementations
 <emphasis>Security Modes</emphasis>. These are: <emphasis>SHARE, USER, DOMAIN, ADS, and SERVER</emphasis>
 modes. They are documented in this chapter.
@@ -306,6 +306,21 @@ security domain. This is done as follows:
 	</listitem>
 </itemizedlist>
 
+<note><para>
+As of Samba-2.2.4 the Samba 2.2.x series can auto-join a Windows NT4 style Domain just
+by executing:
+<programlisting>
+	smbpasswd -j DOMAIN_NAME -r PDC_NAME -U Administrator%password
+</programlisting>
+
+As of Samba-3 the same can be done by executing:
+<programlisting>
+	net join -U Administrator%password
+</programlisting>
+It is not necessary with Samba-3 to specify the DOMAIN_NAME or the PDC_NAME as it figures this
+out from the smb.conf file settings.
+</para></note>
+
 <para>
 Use of this mode of authentication does require there to be a standard Unix account
 for the user in order to assign a uid once the account has been authenticated by
@@ -418,10 +433,12 @@ workgroup mode.
 </para></note>
 
 <note><para>
-<emphasis>Server level</emphasis> security is incompatible with what is known as
-<emphasis>schannel</emphasis> or <emphasis>sign and seal</emphasis> protocols. This means that
-if you want to use <emphasis>server</emphasis> level security you must disable the use of
-<emphasis>sign and seal</emphasis> on all machines on your network.
+<emphasis>Server level</emphasis> security is incompatible with the newer security features
+in recent MS Windows networking protocols. In particular it is incompatible with NTLMv2.
+Server Mode security also breaks Sign and Seal interoperability because only a domain member
+can sign packets in the manner in which it is currently implemented in Samba-3. 
+If you chose to use Server Mode security this means it is necessary to disable Sign and Seal
+on all workstations.
 </para></note>
 
 <sect3>
@@ -470,7 +487,7 @@ for the user, this account can be blocked to prevent logons by other than MS Win
 
 <para>
 MS Windows clients may use encrypted passwords as part of a challenege/response
-authentication model (a.k.a. NTLMv1) or alone, or clear text strings for simple
+authentication model (a.k.a. NTLMv1 and NTLMv2) or alone, or clear text strings for simple
 password based authentication. It should be realized that with the SMB protocol
 the password is passed over the network either in plain text or encrypted, but
 not both in the same authentication request.
