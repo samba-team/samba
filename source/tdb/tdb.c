@@ -185,7 +185,6 @@ static int tdb_brlock(TDB_CONTEXT *tdb, tdb_off offset,
 	fl.l_pid = 0;
 
 	do {
-		errno = 0;
 		ret = fcntl(tdb->fd,lck_type,&fl);
 	} while (ret == -1 && errno == EINTR);
 

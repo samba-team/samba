@@ -82,7 +82,6 @@ ssize_t sys_read(int fd, void *buf, size_t count)
 	ssize_t ret;
 
 	do {
-		errno = 0;
 		ret = read(fd, buf, count);
 	} while (ret == -1 && errno == EINTR);
 	return ret;
@@ -97,7 +96,6 @@ ssize_t sys_write(int fd, const void *buf, size_t count)
 	ssize_t ret;
 
 	do {
-		errno = 0;
 		ret = write(fd, buf, count);
 	} while (ret == -1 && errno == EINTR);
 	return ret;
@@ -112,7 +110,6 @@ ssize_t sys_send(int s, const void *msg, size_t len, int flags)
 	ssize_t ret;
 
 	do {
-		errno = 0;
 		ret = send(s, msg, len, flags);
 	} while (ret == -1 && errno == EINTR);
 	return ret;
@@ -127,7 +124,6 @@ ssize_t sys_sendto(int s,  const void *msg, size_t len, int flags, const struct 
 	ssize_t ret;
 
 	do {
-		errno = 0;
 		ret = sendto(s, msg, len, flags, to, tolen);
 	} while (ret == -1 && errno == EINTR);
 	return ret;
@@ -142,7 +138,6 @@ ssize_t sys_recvfrom(int s, void *buf, size_t len, int flags, struct sockaddr *f
 	ssize_t ret;
 
 	do {
-		errno = 0;
 		ret = recvfrom(s, buf, len, flags, from, fromlen);
 	} while (ret == -1 && errno == EINTR);
 	return ret;
@@ -157,7 +152,6 @@ int sys_fcntl_ptr(int fd, int cmd, void *arg)
 	int ret;
 
 	do {
-		errno = 0;
 		ret = fcntl(fd, cmd, arg);
 	} while (ret == -1 && errno == EINTR);
 	return ret;
@@ -172,7 +166,6 @@ int sys_fcntl_long(int fd, int cmd, long arg)
 	int ret;
 
 	do {
-		errno = 0;
 		ret = fcntl(fd, cmd, arg);
 	} while (ret == -1 && errno == EINTR);
 	return ret;
