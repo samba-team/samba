@@ -1307,7 +1307,6 @@ char *strstr_m(const char *src, const char *findstr)
 	char *retp;
 
 	size_t findstr_len = 0;
-	size_t find_w_len;
 
 	/* for correctness */
 	if (!findstr[0]) {

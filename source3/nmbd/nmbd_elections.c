@@ -70,8 +70,8 @@ static void check_for_master_browser_success(struct subnet_record *subrec,
                                  struct nmb_name *answer_name,
                                  struct in_addr answer_ip, struct res_rec *rrec)
 {
-	nstring aname;
-	pull_ascii_nstring(aname, answer_name->name);
+	fstring aname;
+	pull_ascii_nstring(aname, sizeof(aname), answer_name->name);
 	DEBUG(3,("check_for_master_browser_success: Local master browser for workgroup %s exists at \
 IP %s (just checking).\n", aname, inet_ntoa(answer_ip) ));
 }
@@ -85,10 +85,10 @@ static void check_for_master_browser_fail( struct subnet_record *subrec,
                                            struct nmb_name *question_name,
                                            int fail_code)
 {
-	nstring workgroup_name;
+	fstring workgroup_name;
 	struct work_record *work;
 
-	pull_ascii_nstring(workgroup_name,question_name->name);
+	pull_ascii_nstring(workgroup_name,sizeof(workgroup_name),question_name->name);
 
 	work = find_workgroup_on_subnet(subrec, workgroup_name);
 	if(work == NULL) {
@@ -263,12 +263,12 @@ void process_election(struct subnet_record *subrec, struct packet_struct *p, cha
 	int version = CVAL(buf,0);
 	uint32 criterion = IVAL(buf,1);
 	int timeup = IVAL(buf,5)/1000;
-	nstring server_name;
+	fstring server_name;
 	struct work_record *work;
-	nstring workgroup_name;
+	fstring workgroup_name;
 
-	pull_ascii_nstring(server_name, buf+13);
-	pull_ascii_nstring(workgroup_name, dgram->dest_name.name);
+	pull_ascii_nstring(server_name, sizeof(server_name), buf+13);
+	pull_ascii_nstring(workgroup_name, sizeof(workgroup_name), dgram->dest_name.name);
 
 	START_PROFILE(election);
 	server_name[15] = 0;  

@@ -141,7 +141,7 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 		case QUERYFORPDC:
 			{
 				fstring mach_str, getdc_str;
-				nstring source_name;
+				fstring source_name;
 				char *q = buf + 2;
 				char *machine = q;
 
@@ -220,7 +220,7 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 				dump_data(4, outbuf, PTR_DIFF(q, outbuf));
 
 				pull_ascii_fstring(getdc_str, getdc);
-				pull_ascii_nstring(source_name, dgram->source_name.name);
+				pull_ascii_nstring(source_name, sizeof(source_name), dgram->source_name.name);
 
 				send_mailslot(True, getdc_str,
 					outbuf,PTR_DIFF(q,outbuf),
@@ -435,7 +435,7 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 				dump_data(4, outbuf, PTR_DIFF(q, outbuf));
 
 				pull_ascii_fstring(getdc_str, getdc);
-				pull_ascii_nstring(source_name, dgram->source_name.name);
+				pull_ascii_nstring(source_name, sizeof(source_name), dgram->source_name.name);
 
 				send_mailslot(True, getdc,
 					outbuf,PTR_DIFF(q,outbuf),
