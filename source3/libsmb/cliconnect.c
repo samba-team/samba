@@ -438,7 +438,7 @@ BOOL cli_negprot(struct cli_state *cli)
 		cli->servertime = interpret_long_date(cli->inbuf+smb_vwv11+1);
 		memcpy(cli->cryptkey,smb_buf(cli->inbuf),8);
 		cli->capabilities = IVAL(cli->inbuf,smb_vwv9+1);
-		if (cli->capabilities & 1) {
+		if (cli->capabilities & CAP_RAW_MODE) {
 			cli->readbraw_supported = True;
 			cli->writebraw_supported = True;      
 		}
