@@ -37,6 +37,8 @@ ADD_OBJ_FILES = \
 		lib/ldb/common/ldb_utf8.o \
 		lib/ldb/common/ldb_alloc.o \
 		lib/ldb/common/ldb_debug.o
+REQUIRED_SUBSYSTEMS = \
+		LIBREPLACE
 #
 # End SUBSYSTEM LIBLDB
 ################################################
