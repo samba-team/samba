@@ -107,7 +107,7 @@ krb5_copy_data(krb5_context context,
     ALLOC(*outdata, 1);
     if(*outdata == NULL)
 	return ENOMEM;
-    ret = copy_octet_string(indata, outdata);
+    ret = copy_octet_string(indata, *outdata);
     if(ret)
 	free(*outdata);
     return ret;
