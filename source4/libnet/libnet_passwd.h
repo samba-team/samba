@@ -72,6 +72,11 @@ union libnet_ChangePassword {
 enum libnet_SetPassword_level {
 	LIBNET_SET_PASSWORD_GENERIC,
 	LIBNET_SET_PASSWORD_SAMR,
+	LIBNET_SET_PASSWORD_SAMR_HANDLE,
+	LIBNET_SET_PASSWORD_SAMR_HANDLE_26,
+	LIBNET_SET_PASSWORD_SAMR_HANDLE_25,
+	LIBNET_SET_PASSWORD_SAMR_HANDLE_24,
+	LIBNET_SET_PASSWORD_SAMR_HANDLE_23,
 	LIBNET_SET_PASSWORD_KRB5,
 	LIBNET_SET_PASSWORD_LDAP,
 	LIBNET_SET_PASSWORD_RAP
@@ -91,6 +96,17 @@ union libnet_SetPassword {
 			const char *error_string;
 		} out;
 	} generic;
+
+	struct {
+		enum libnet_SetPassword_level level;
+		struct _libnet_SetPassword_samr_handle_in {
+			const char           *account_name; /* for debug only */
+			struct policy_handle *user_handle;
+			struct dcerpc_pipe   *dcerpc_pipe;
+			const char           *newpassword;
+		} in;
+		struct _libnet_SetPassword_out out;
+	} samr_handle;
 
 	struct {
 		enum libnet_SetPassword_level level;
