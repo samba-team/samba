@@ -73,6 +73,7 @@ static struct stot{
     DECL(srv),
     DECL(naptr),
     DECL(sshfp),
+    DECL(ds),
     {NULL, 	0}
 };
 
@@ -327,7 +328,6 @@ parse_record(const unsigned char *data, const unsigned char *end_data,
     }
     case rk_ns_t_sshfp : {
 	size_t sshfp_len;
-	unsigned type;
 
 	if (size < 2) {
 	    free(*rr);
@@ -335,13 +335,6 @@ parse_record(const unsigned char *data, const unsigned char *end_data,
 	}
 
 	sshfp_len = size - 2;
-
-	type = p[1];
-
-	if (type != 1 && sshfp_len != 20) /* SHA-1 */ {
-	    free(*rr);
-	    return -1;
-	}
 
 	(*rr)->u.sshfp = malloc (sizeof(*(*rr)->u.sshfp) + sshfp_len - 1);
 	if ((*rr)->u.sshfp == NULL) {
@@ -353,6 +346,29 @@ parse_record(const unsigned char *data, const unsigned char *end_data,
 	(*rr)->u.sshfp->type      = p[1];
 	(*rr)->u.sshfp->sshfp_len  = sshfp_len;
 	memcpy ((*rr)->u.sshfp->sshfp_data, p + 2, sshfp_len);
+	break;
+    }
+    case rk_ns_t_ds: {
+	size_t digest_len;
+
+	if (size < 4) {
+	    free(*rr);
+	    return -1;
+	}
+
+	digest_len = size - 4;
+
+	(*rr)->u.ds = malloc (sizeof(*(*rr)->u.ds) + digest_len - 1);
+	if ((*rr)->u.ds == NULL) {
+	    free(*rr);
+	    return -1;
+	}
+
+	(*rr)->u.ds->key_tag     = (p[0] << 8) | p[1];
+	(*rr)->u.ds->algorithm   = p[2];
+	(*rr)->u.ds->digest_type = p[3];
+	(*rr)->u.ds->digest_len  = digest_len;
+	memcpy ((*rr)->u.ds->digest_data, p + 4, digest_len);
 	break;
     }
     default:

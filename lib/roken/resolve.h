@@ -80,6 +80,7 @@ typedef enum {
 	rk_ns_t_sink = 40,	/* Kitchen sink (experimentatl) */
 	rk_ns_t_opt = 41,	/* EDNS0 option (meta-RR) */
 	rk_ns_t_apl = 42,	/* Address prefix list (RFC 3123) */
+	rk_ns_t_ds = 43,	/* Delegation Signer (RFC 3658) */
 	rk_ns_t_sshfp = 44,	/* SSH fingerprint */
 	rk_ns_t_tkey = 249,	/* Transaction key */
 	rk_ns_t_tsig = 250,	/* Transaction signature. */
@@ -218,6 +219,13 @@ struct sshfp_record {
     u_char   sshfp_data[1];
 };
 
+struct ds_record {
+    unsigned key_tag;
+    unsigned algorithm;
+    unsigned digest_type;
+    unsigned digest_len;
+    u_char digest_data[1];
+};
 
 struct resource_record{
     char *domain;
@@ -236,6 +244,7 @@ struct resource_record{
 	struct cert_record *cert;
 	struct sig_record *sig;
 	struct sshfp_record *sshfp;
+	struct ds_record *ds;
     }u;
     struct resource_record *next;
 };
