@@ -26,7 +26,6 @@ crc_init_table( )
 u_long
 crc_update (char *p, size_t len, u_long res)
 {
-    res ^= 0xFFFFFFFF;
     while (len--)
 	res = table[(res ^ *p++) & 0xFF] ^ (res >> 8);
     return res & 0xFFFFFFFF;
