@@ -85,7 +85,7 @@ parse_time_string(time_t *t, char *s)
     return t;
 }
 
-unsigned*
+static unsigned*
 parse_integer(unsigned *u, char *s)
 {
     if(strcmp(s, "-") == 0)
@@ -250,7 +250,7 @@ doit(char *filename, int merge)
 	memset(&ent, 0, sizeof(ent));
 	ret = krb5_parse_name(context, e.principal, &ent.principal);
 	if(ret){
-	    fprintf(stderr, "%s:%s:%s (%s)\n", 
+	    fprintf(stderr, "%s:%d:%s (%s)\n", 
 		    filename, 
 		    line,
 		    krb5_get_err_text(context, ret),
