@@ -91,9 +91,9 @@ pstring fileselection = "";
 extern file_info def_finfo;
 
 /* timing globals */
-int get_total_size = 0;
+off_t get_total_size = 0;
 int get_total_time_ms = 0;
-int put_total_size = 0;
+off_t put_total_size = 0;
 int put_total_time_ms = 0;
 
 /* totals globals */
@@ -1017,7 +1017,7 @@ static void do_put(char *rname,char *lname)
 {
 	int fnum;
 	FILE *f;
-	int nread=0;
+	off_t nread=0;
 	char *buf=NULL;
 	int maxwrite=io_bufsize;
 	

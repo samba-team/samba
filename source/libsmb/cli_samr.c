@@ -315,7 +315,7 @@ NTSTATUS cli_samr_query_userinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 NTSTATUS cli_samr_query_groupinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx,
                                   POLICY_HND *group_pol, uint32 info_level, 
-                                  GROUP_INFO_CTR *ctr)
+                                  GROUP_INFO_CTR **ctr)
 {
 	prs_struct qbuf, rbuf;
 	SAMR_Q_QUERY_GROUPINFO q;
@@ -341,11 +341,11 @@ NTSTATUS cli_samr_query_groupinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Unmarshall response */
 
-	r.ctr = ctr;
-
 	if (!samr_io_r_query_groupinfo("", &r, &rbuf, 0)) {
 		goto done;
 	}
+
+	*ctr = r.ctr;
 
 	/* Return output parameters */
 
