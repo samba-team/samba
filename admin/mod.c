@@ -41,7 +41,7 @@
 RCSID("$Id$");
 
 static void
-doit2(HDB *db, hdb_entry *ent)
+doit2(HDB *db, hdb_entry *ent, int changepw, int (*func)(hdb_entry *))
 {
     char buf[1024];
     int ret;
@@ -62,16 +62,21 @@ doit2(HDB *db, hdb_entry *ent)
 	krb5_err(context, 1, ret, "dbget");
     }
     
-    edit_entry (ent);
-    for(;;) {
-	fprintf(stderr, "Change password? (y/n) ");
-	fgets(buf, sizeof(buf), stdin);
-	if(buf[0] == 'n' || buf[0] == 'y' || buf[0] == 'N' || buf[0] == 'Y')
-	    break;
-	fprintf(stderr, "Please answer yes or no.\n");
+    if(changepw == 0) {
+	edit_entry (ent);
+	for(;;) {
+	    fprintf(stderr, "Change password? (y/n) ");
+	    fgets(buf, sizeof(buf), stdin);
+	    if(buf[0] == 'n' || buf[0] == 'y' || buf[0] == 'N' || buf[0] == 'Y')
+		break;
+	    fprintf(stderr, "Please answer yes or no.\n");
+	}
+	if(buf[0] == 'y' || buf[0] == 'Y')
+	    changepw = 1;
     }
-    if(buf[0] == 'y' || buf[0] == 'Y')
-	if(set_password (ent))
+
+    if(changepw)
+	if((*func)(ent))
 	    return;
 	    
     set_modified_by (ent);
@@ -82,7 +87,7 @@ doit2(HDB *db, hdb_entry *ent)
 }
 
 static void
-doit(const char *principal)
+doit(const char *principal, int changepw, int (*func)(hdb_entry *))
 {
     hdb_entry ent;
     krb5_error_code ret;
@@ -95,7 +100,7 @@ doit(const char *principal)
     }
     krb5_parse_name(context, principal, &ent.principal);
     
-    doit2(db, &ent);
+    doit2(db, &ent, changepw, func);
     db->close(context, db);
     hdb_free_entry(context, &ent);
 }
@@ -108,6 +113,30 @@ mod_entry(int argc, char **argv)
 	return 0;
     }
 
-    doit(argv[1]);
+    doit(argv[1], 0, set_password);
+    return 0;
+}
+
+int
+passwd(int argc, char **argv)
+{
+    if(argc != 2) {
+	krb5_warnx(context, "Usage: passwd principal");
+	return 0;
+    }
+
+    doit(argv[1], 1, set_password);
+    return 0;
+}
+
+int
+change_random_key(int argc, char **argv)
+{
+    if(argc != 2) {
+	krb5_warnx(context, "Usage: change_random_key principal");
+	return 0;
+    }
+
+    doit(argv[1], 1, set_random_key);
     return 0;
 }
