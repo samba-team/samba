@@ -644,7 +644,7 @@ system. In general, the "printing" parameter informs Samba about the
 print subsystem it should expect. Samba supports CUPS, LPD, LPRNG,
 SYSV, HPUX, AIX, QNX and PLP. Each of these systems defaults to a
 different <parameter>print command</parameter> (and other queue control
-commands).
+commands).</para>
 <caution><para>The <parameter>printing</parameter> parameter is
 normally a service level parameter. Since it is included here in the
 <parameter>[global]</parameter> section, it will take effect for all
@@ -2190,7 +2190,7 @@ The syntax of the command is <userinput>rpcclient
 -U'root%<replaceable>sambapassword</replaceable>' -c 'setdriver 
 "<replaceable>printername</replaceable>" 
 "<replaceable>drivername</replaceable>' 
-<replaceable>SAMBA-Hostname</replaceable></command> . --
+<replaceable>SAMBA-Hostname</replaceable></userinput> . --
 Now we have done *most* of the work. But not yet all....
 </para>
 
@@ -2268,7 +2268,7 @@ A new printer (named <replaceable>printername</replaceable> on
 samba-server) should now have appeared in your
 <emphasis>local</emphasis> Printer folder (check <guimenu>Start</guimenu> --
 <guimenuitem>Settings</guimenuitem> -- <guimenuitem>Control Panel</guimenuitem>
--- <guiicon>Printers and Faxes</guiicon></emphasis>).
+-- <guiicon>Printers and Faxes</guiicon>).
 </para>
 
 <para>
@@ -2351,7 +2351,7 @@ for this:
 </para>
 
 <itemizedlist>
-<listitem><para>Browse the <guiicon>Network Neighbourhood<guiicon></para></listitem>
+	<listitem><para>Browse the <guiicon>Network Neighbourhood</guiicon></para></listitem>
 
 <listitem><para>Find the Samba server</para></listitem>
 
