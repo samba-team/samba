@@ -248,7 +248,6 @@ static void trustdom_recv(void *private)
 	while ((p != NULL) && (*p != '\0')) {
 		char *sidstr;
 		DOM_SID sid;
-		struct winbindd_domain *domain;
 
 		sidstr = strchr(p, '\\');
 		if (sidstr == NULL) {
@@ -264,8 +263,12 @@ static void trustdom_recv(void *private)
 			break;
 		}
 
-		domain = add_trusted_domain(p, NULL, &cache_methods, &sid);
-		setup_domain_child(&domain->child);
+		if (find_domain_from_sid_noinit(&sid) == NULL) {
+			struct winbindd_domain *domain;
+			domain = add_trusted_domain(p, NULL, &cache_methods,
+						    &sid);
+			setup_domain_child(&domain->child);
+		}
 
 		p = strchr(sidstr, '\n');
 		if (p != NULL)
@@ -579,23 +582,35 @@ struct winbindd_domain *find_domain_from_name(const char *domain_name)
 
 /* Given a domain sid, return the struct winbindd domain info for it */
 
-struct winbindd_domain *find_domain_from_sid(const DOM_SID *sid)
+struct winbindd_domain *find_domain_from_sid_noinit(const DOM_SID *sid)
 {
 	struct winbindd_domain *domain;
 
 	/* Search through list */
 
 	for (domain = domain_list(); domain != NULL; domain = domain->next) {
-		if (sid_compare_domain(sid, &domain->sid) == 0) {
-			if (!domain->initialized)
-				set_dc_type_and_flags(domain);
+		if (sid_compare_domain(sid, &domain->sid) == 0)
 			return domain;
-		}
 	}
 
 	/* Not found */
 
 	return NULL;
+}
+
+struct winbindd_domain *find_domain_from_sid(const DOM_SID *sid)
+{
+	struct winbindd_domain *domain;
+
+	domain = find_domain_from_sid_noinit(sid);
+
+	if (domain == NULL)
+		return NULL;
+
+	if (!domain->initialized)
+		set_dc_type_and_flags(domain);
+
+	return domain;
 }
 
 /* Given a domain sid, return the struct winbindd domain info for it */
