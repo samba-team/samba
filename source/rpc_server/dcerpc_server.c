@@ -629,6 +629,12 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 		return dcesrv_fault(call, DCERPC_FAULT_NDR);
 	}
 
+	if (pull->offset != pull->data_size) {
+		DEBUG(3,("Warning: %d extra bytes in incoming RPC request\n", 
+			 pull->data_size - pull->offset));
+		dump_data(10, pull->data+pull->offset, pull->data_size - pull->offset);
+	}
+
 	call->fault_code = 0;
 
 	/* call the dispatch function */
