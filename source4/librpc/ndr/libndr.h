@@ -27,6 +27,7 @@
    start of an encapsulating structure */
 struct ndr_ofs_list {
 	uint32_t offset;
+	uint32_t base;
 	struct ndr_ofs_list *next;
 };
 
