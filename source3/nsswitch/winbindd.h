@@ -77,11 +77,33 @@ struct winbindd_state {
 
 extern struct winbindd_state server_state;  /* Server information */
 
-/* Structures to hold per domain information */
+typedef struct {
+	char *acct_name;
+	char *full_name;
+	uint32 user_rid;
+	uint32 group_rid; /* primary group */
+} WINBIND_DISPINFO;
 
+/* per-domain methods. This is how LDAP vs RPC is selected
+   This will eventually be the sole entry point to all the methods,
+   I'm just starting small
+ */
+struct winbindd_methods {
+	NTSTATUS (*query_dispinfo)(struct winbindd_domain *domain,
+				   TALLOC_CTX *mem_ctx,
+				   uint32 *start_ndx, uint32 *num_entries, 
+				   WINBIND_DISPINFO **info);
+
+
+};
+
+/* Structures to hold per domain information */
 struct winbindd_domain {
 	fstring name;                          /* Domain name */	
 	DOM_SID sid;                           /* SID for this domain */
+	struct winbindd_methods *methods;      /* lookup methods for
+                                                  this domain (LDAP or
+                                                  RPC) */
 	struct winbindd_domain *prev, *next;   /* Linked list info */
 };
 
