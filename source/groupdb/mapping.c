@@ -200,7 +200,7 @@ BOOL add_initial_entry(gid_t gid, fstring sid, enum SID_NAME_USE sid_name_use,
 /****************************************************************************
 initialise first time the mapping list
 ****************************************************************************/
-BOOL default_group_mapping()
+BOOL default_group_mapping(void)
 {
 	DOM_SID sid_admins;
 	DOM_SID sid_users;

@@ -798,10 +798,20 @@ static BOOL get_group_alias_entries(DOMAIN_GRP *d_grp, DOM_SID *sid, uint32 star
 			uint32 trid;
 			name = grp->gr_name;
 
+			DEBUG(10,("get_group_alias_entries: got group %s\n", name ));
+
 			/* Don't return winbind groups as they are not local! */
 
-			if (strchr(name, *sep) != NULL)
+			if (strchr(name, *sep) != NULL) {
+				DEBUG(10,("get_group_alias_entries: not returing %s, not local.\n", name ));
 				continue;
+			}
+
+			/* Don't return user private groups... */
+			if (Get_Pwnam(name, False) != 0) {
+				DEBUG(10,("get_group_alias_entries: not returing %s, clashes with user.\n", name ));
+				continue;
+			}
 
 			trid = pdb_gid_to_group_rid(grp->gr_gid);
 			for( i = 0; i < num_entries; i++)
