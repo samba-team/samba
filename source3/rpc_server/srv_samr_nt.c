@@ -1536,9 +1536,8 @@ NTSTATUS _samr_chgpasswd_user(pipes_struct *p, SAMR_Q_CHGPASSWD_USER *q_u, SAMR_
 	 * is case insensitive.
 	 */
 
-    if (!pass_oem_change(user_name, q_u->lm_newpass.pass, q_u->lm_oldhash.hash,
-                         q_u->nt_newpass.pass, q_u->nt_oldhash.hash))
-        r_u->status = NT_STATUS_WRONG_PASSWORD;
+    r_u->status = pass_oem_change(user_name, q_u->lm_newpass.pass, q_u->lm_oldhash.hash,
+				  q_u->nt_newpass.pass, q_u->nt_oldhash.hash);
 
     init_samr_r_chgpasswd_user(r_u, r_u->status);
 
