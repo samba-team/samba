@@ -1152,6 +1152,10 @@ const char *krb5_get_err_text(krb5_context context, long code);
 
 void krb5_init_ets(krb5_context context);
 
+krb5_error_code
+krb5_get_default_principal (krb5_context context,
+			    krb5_principal *princ);
+
 /* XXX these are glue functions and really don't belong here */
 
 krb5_error_code krb5_principal2principalname (PrincipalName *p, 
