@@ -27,7 +27,7 @@
   these functions must supply the generic call, but can if it wants to
   also implement other levels if the need arises
 
-  this allows backend writers to only implement one varient of each
+  this allows backend writers to only implement one variant of each
   call unless they need fine grained control of the calls.
 */
 

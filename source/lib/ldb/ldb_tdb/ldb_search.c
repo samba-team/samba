@@ -484,7 +484,7 @@ int ltdb_search_free(struct ldb_context *ldb, struct ldb_message **msgs)
 
 /*
   search the database with a LDAP-like expression.
-  this is the "full search" non-indexed varient
+  this is the "full search" non-indexed variant
 */
 static int ltdb_search_full(struct ldb_context *ldb, 
 			    const char *base,

@@ -405,7 +405,7 @@ void arcfour_crypt_blob(uint8_t *data, int len, const DATA_BLOB *key)
 }
 
 /*
-  a varient that assumes a 16 byte key. This should be removed
+  a variant that assumes a 16 byte key. This should be removed
   when the last user is gone
 */
 void arcfour_crypt(uint8_t *data, const uint8_t keystr[16], int len)

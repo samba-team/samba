@@ -159,7 +159,7 @@ void reply_tcon_and_X(struct request_context *req)
 		return;
 	}
 
-	/* construct reply - two varients */
+	/* construct reply - two variants */
 	if (req->smb->negotiate.protocol < PROTOCOL_NT1) {
 		req_setup_reply(req, 2, 0);
 
@@ -658,7 +658,7 @@ void reply_readbraw(struct request_context *req)
 
 	io.readbraw.level = RAW_READ_READBRAW;
 
-	/* there are two varients, one with 10 and one with 8 command words */
+	/* there are two variants, one with 10 and one with 8 command words */
 	if (req->in.wct != 10) {
 		REQ_CHECK_WCT(req, 8);
 	}
@@ -669,7 +669,7 @@ void reply_readbraw(struct request_context *req)
 	io.readbraw.in.maxcnt  = SVAL(req->in.vwv, VWV(4));
 	io.readbraw.in.timeout = IVAL(req->in.vwv, VWV(5));
 
-	/* the 64 bit varient */
+	/* the 64 bit variant */
 	if (req->in.wct == 10) {
 		uint32_t offset_high = IVAL(req->in.vwv, VWV(8));
 		io.readbraw.in.offset |= (((SMB_OFF_T)offset_high) << 32);
@@ -875,7 +875,7 @@ void reply_read_and_X(struct request_context *req)
 	io->readx.in.mincnt        = SVAL(req->in.vwv, VWV(6));
 	io->readx.in.remaining     = SVAL(req->in.vwv, VWV(9));
 	
-	/* the 64 bit varient */
+	/* the 64 bit variant */
 	if (req->in.wct == 12) {
 		uint32_t offset_high = IVAL(req->in.vwv, VWV(10));
 		io->readx.in.offset |= (((uint64_t)offset_high) << 32);
@@ -1732,7 +1732,7 @@ void reply_lockingX(struct request_context *req)
 
 	total_locks = lck->lockx.in.ulock_cnt + lck->lockx.in.lock_cnt;
 
-	/* there are two varients, one with 64 bit offsets and counts */
+	/* there are two variants, one with 64 bit offsets and counts */
 	if (lck->lockx.in.mode & LOCKING_ANDX_LARGE_FILES) {
 		lck_size = 20;
 	} else {
@@ -2091,7 +2091,7 @@ void reply_sesssetup(struct request_context *req)
 		return;
 	}
 
-	/* unsupported varient */
+	/* unsupported variant */
 	req_reply_error(req, NT_STATUS_FOOBAR);
 }
 
