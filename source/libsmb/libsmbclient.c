@@ -1991,6 +1991,12 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
                         DEBUG(99, ("Found master browser %s\n", inet_ntoa(ip_list[i].ip)));
                         
                         cli = get_ipc_connect_master_ip(&ip_list[i], workgroup, &u_info);
+
+			/* cli == NULL is the master browser refused to talk or 
+			   could not be found */
+			if ( !cli )
+				continue;
+
                         fstrcpy(server, cli->desthost);
                         cli_shutdown(cli);
 
