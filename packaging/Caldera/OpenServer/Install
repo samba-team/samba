@@ -70,7 +70,7 @@ done
 # Install VFS libraries
 $V install -m644 -s examples/VFS/block/block.so ${BLDFIX}/lib
 $V install -m644 -s examples/VFS/audit.so ${BLDFIX}/lib
-$V install -m644 -s examples/VFS/recycle.so ${BLDFIX}/lib
+$V install -m644 -s examples/VFS/recycle/recycle.so ${BLDFIX}/lib
 $V install -m644 -s examples/VFS/skel.so ${BLDFIX}/lib
 
 # Install level 1 man pages
@@ -129,6 +129,7 @@ $V install -m644 docs/manpages/swat.8 ${BLDFIX}/man/man.8
 $V install -m644 docs/manpages/smbmount.8 ${BLDFIX}/man/man.8
 $V install -m644 docs/manpages/smbmnt.8 ${BLDFIX}/man/man.8
 $V install -m644 docs/manpages/smbumount.8 ${BLDFIX}/man/man.8
+$V install -m644 examples/VFS/recycle/recycle.conf ${BLDFIX}/lib
 $V install -m644 examples/VFS/block/samba-block.conf ${BUILD_ROOT}/etc/samba.d
 $V install -m644 ${PKGDIR}/example.block.smb.conf ${BUILD_ROOT}/etc/samba.d
 $V install -m644 ${PKGDIR}/smb.conf $BUILD_ROOT/etc/samba.d/smb.conf.default

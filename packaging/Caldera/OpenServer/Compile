@@ -48,9 +48,6 @@ else
     cd ../examples/VFS
     rm -f mout-1
     gmake 2>&1 | tee mout-1
-    cd block
-    rm -f mout-1
-    gmake 2>&1 | tee mout-1
 fi
 #
 # Not building :
