@@ -232,62 +232,6 @@ NTSTATUS make_user_info_netlogon_interactive(struct auth_usersupplied_info **use
 	data_blob_free(&nt_interactive_blob);
 	return nt_status;
 }
-
-
-/****************************************************************************
- Create an auth_usersupplied_data structure
-****************************************************************************/
-
-BOOL make_user_info_for_reply(struct auth_usersupplied_info **user_info, 
-			      const char *smb_name, 
-			      const char *client_domain,
-			      const uint8_t chal[8],
-			      DATA_BLOB plaintext_password)
-{
-
-	DATA_BLOB local_lm_blob;
-	DATA_BLOB local_nt_blob;
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-			
-	/*
-	 * Not encrypted - do so.
-	 */
-	
-	DEBUG(5,("make_user_info_for_reply: User passwords not in encrypted format.\n"));
-	
-	if (plaintext_password.data) {
-		uint8_t local_lm_response[24];
-		
-#ifdef DEBUG_PASSWORD
-		DEBUG(10,("Unencrypted password (len %d):\n",plaintext_password.length));
-		dump_data(100, plaintext_password.data, plaintext_password.length);
-#endif
-
-		SMBencrypt( (const char *)plaintext_password.data, (const uint8_t *)chal, local_lm_response);
-		local_lm_blob = data_blob(local_lm_response, 24);
-		
-		/* We can't do an NT hash here, as the password needs to be
-		   case insensitive */
-		local_nt_blob = data_blob(NULL, 0); 
-		
-	} else {
-		local_lm_blob = data_blob(NULL, 0); 
-		local_nt_blob = data_blob(NULL, 0); 
-	}
-	
-	ret = make_user_info_map(user_info, smb_name,
-	                         client_domain, 
-	                         sub_get_remote_machine(),
-	                         local_lm_blob.data ? &local_lm_blob : NULL,
-	                         local_nt_blob.data ? &local_nt_blob : NULL,
-				 NULL, NULL,
-	                         plaintext_password.data ? &plaintext_password : NULL, 
-	                         False);
-	
-	data_blob_free(&local_lm_blob);
-	return NT_STATUS_IS_OK(ret) ? True : False;
-}
-
 /****************************************************************************
  Create an auth_usersupplied_data structure
 ****************************************************************************/
