@@ -33,6 +33,7 @@ char name[100];
 char realm[REALM_SZ + 1];
 #endif
 
+char SPACE_STRING[] = "                                                      ";
 char STRING[] = "****************";
 #define MAX_PASSWD_LENGTH (sizeof(STRING))
 
@@ -53,6 +54,8 @@ char STRING[] = "****************";
 #define FRONT	020
 #define X_INCR 3
 #define Y_INCR 2
+#define CTRL 1
+#define NOCTRL 1
 
 XtAppContext	app;
 Display        *dpy;
@@ -253,6 +256,7 @@ zrefresh()
   case 0:
       /* Child */
       execlp("zrefresh", "zrefresh", 0);
+      execl("/usr/athena/bin/zrefresh", "zrefresh", 0);
       fprintf(stderr, "Warning %s: Failed to exec zrefresh\n", ProgName);
       return -1;
   default:
@@ -491,7 +495,7 @@ Visibility(Widget w, XtPointer client_data, XEvent *event, Boolean *_b)
 }
 
 static void
-countdown(XtPointer _t, XtIntervalId *_d)
+countdown(int* _t, XtIntervalId *_d)
 {
     int *timeout = _t;
     char buf[16];
@@ -510,10 +514,10 @@ countdown(XtPointer _t, XtIntervalId *_d)
     seconds = time(0) - locked_at;
     if (seconds >= 3600)
       (void) sprintf(buf, "Locked for %d:%02d:%02d    ",
-                   seconds/3600, seconds/60%60, seconds%60);
+                   (int)seconds/3600, (int)seconds/60%60, (int)seconds%60);
     else
       (void) sprintf(buf, "Locked for %2d:%02d    ",
-                   seconds/60, seconds%60);
+		     (int)seconds/60, (int)seconds%60);
       
     XDrawImageString(dpy, XtWindow(widget), gc,
 	time_x, time_y, buf, strlen(buf));
@@ -526,6 +530,7 @@ GetPasswd(Widget w, XEvent *_event, String *_s, Cardinal *_n)
     XKeyEvent *event = (XKeyEvent *)_event;
     static char passwd[MAX_PASSWD_LENGTH];
     static int cnt;
+    static int is_ctrl = NOCTRL;
     char c;
     KeySym keysym;
 
@@ -545,8 +550,19 @@ GetPasswd(Widget w, XEvent *_event, String *_s, Cardinal *_n)
 	countdown(&time_left, 0);
 	return;
     }
+    if (event->type == KeyRelease) {
+      keysym = XLookupKeysym(event, 0);
+      if (keysym == XK_Control_L || keysym == XK_Control_R) {
+	is_ctrl = NOCTRL;
+      }
+    }
     if (event->type != KeyPress)
 	return;
+    keysym = XLookupKeysym(event, 0);
+    if (keysym == XK_Control_L || keysym == XK_Control_R) {
+      is_ctrl = CTRL;
+      return;
+    }
     if (!XLookupString(event, &c, 1, &keysym, 0))
 	return;
     if (keysym == XK_Return || keysym == XK_Linefeed) {
@@ -611,8 +627,17 @@ GetPasswd(Widget w, XEvent *_event, String *_s, Cardinal *_n)
     if (keysym == XK_BackSpace || keysym == XK_Delete || keysym == XK_Left) {
 	if (cnt)
 	    passwd[cnt--] = ' ';
+    } else if (keysym == XK_u && is_ctrl == 1) {
+      while (cnt) {
+	passwd[cnt--] = ' ';
+	XDrawImageString(dpy, XtWindow(w), gc,
+		    prompt_x, prompt_y, STRING, cnt);
+	XDrawImageString(dpy, XtWindow(w), gc,
+			 prompt_x + XTextWidth(font, STRING, cnt),
+			 prompt_y, SPACE_STRING, MAX_PASSWD_LENGTH - cnt + 1);
+      }
     } else if (isprint(c))
-	if (cnt >= MAX_PASSWD_LENGTH)
+	if ((cnt + 1) >= MAX_PASSWD_LENGTH)
 	    XBell(dpy, 50);
 	else
 	    passwd[cnt++] = c;
@@ -622,7 +647,7 @@ GetPasswd(Widget w, XEvent *_event, String *_s, Cardinal *_n)
 	prompt_x, prompt_y, STRING, cnt);
     XDrawImageString(dpy, XtWindow(w), gc,
 	prompt_x + XTextWidth(font, STRING, cnt),
-	prompt_y, "           ", 11-cnt);
+	prompt_y, SPACE_STRING, MAX_PASSWD_LENGTH - cnt + 1);
 }
 
 #include "nose.0.left"
