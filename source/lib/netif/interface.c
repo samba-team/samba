@@ -330,6 +330,20 @@ struct ipv4_addr *iface_n_bcast(int n)
 	return NULL;
 }
 
+/****************************************************************************
+  return netmask of the Nth interface
+  **************************************************************************/
+struct ipv4_addr *iface_n_netmask(int n)
+{
+	struct interface *i;
+  
+	for (i=local_interfaces;i && n;i=i->next)
+		n--;
+
+	if (i) return &i->nmask;
+	return NULL;
+}
+
 /* these 3 functions return the ip/bcast/nmask for the interface
    most appropriate for the given ip address. If they can't find
    an appropriate interface they return the requested field of the

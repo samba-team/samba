@@ -66,7 +66,7 @@ failed:
 }
 
 /*
-  wait for a name query replu
+  wait for a name query reply
 */
 NTSTATUS nbt_name_query_recv(struct nbt_name_request *req, 
 			     TALLOC_CTX *mem_ctx, struct nbt_name_query *io)
@@ -75,6 +75,7 @@ NTSTATUS nbt_name_query_recv(struct nbt_name_request *req,
 	struct nbt_name_packet *packet;
 	const char *addr;
 	struct in_addr in;
+	int i;
 
 	status = nbt_name_request_recv(req);
 	if (!NT_STATUS_IS_OK(status) ||
@@ -94,13 +95,23 @@ NTSTATUS nbt_name_query_recv(struct nbt_name_request *req,
 	}
 
 	io->out.name = packet->answers[0].name;
-	in.s_addr = htonl(packet->answers[0].rdata.netbios.ipaddr);
-	addr = inet_ntoa(in);
-	if (addr == NULL) {
+	io->out.num_addrs = packet->answers[0].rdata.netbios.length / 6;
+	io->out.reply_addrs = talloc_array(mem_ctx, const char *, io->out.num_addrs);
+	if (io->out.reply_addrs == NULL) {
 		talloc_free(req);
 		return NT_STATUS_NO_MEMORY;
 	}
-	io->out.reply_addr = talloc_strdup(mem_ctx, addr);
+	
+	for (i=0;i<io->out.num_addrs;i++) {
+		in.s_addr = htonl(packet->answers[0].rdata.netbios.addresses[i].ipaddr);
+		addr = inet_ntoa(in);
+		if (addr == NULL) {
+			talloc_free(req);
+			return NT_STATUS_NO_MEMORY;
+		}
+		io->out.reply_addrs[i] = talloc_strdup(mem_ctx, addr);
+	}
+
 	talloc_steal(mem_ctx, io->out.name.name);
 	talloc_steal(mem_ctx, io->out.name.scope);
 	    
@@ -110,7 +121,7 @@ NTSTATUS nbt_name_query_recv(struct nbt_name_request *req,
 }
 
 /*
-  wait for a name query replu
+  wait for a name query reply
 */
 NTSTATUS nbt_name_query(struct nbt_name_socket *nbtsock, 
 			TALLOC_CTX *mem_ctx, struct nbt_name_query *io)
@@ -156,7 +167,7 @@ failed:
 }
 
 /*
-  wait for a name status replu
+  wait for a name status reply
 */
 NTSTATUS nbt_name_status_recv(struct nbt_name_request *req, 
 			     TALLOC_CTX *mem_ctx, struct nbt_name_status *io)
@@ -199,7 +210,7 @@ NTSTATUS nbt_name_status_recv(struct nbt_name_request *req,
 }
 
 /*
-  wait for a name status replu
+  wait for a name status reply
 */
 NTSTATUS nbt_name_status(struct nbt_name_socket *nbtsock, 
 			TALLOC_CTX *mem_ctx, struct nbt_name_status *io)

@@ -22,7 +22,6 @@
 
 #include "includes.h"
 #include "events.h"
-#include "libcli/nbt/libnbt.h"
 #include "smbd/service_task.h"
 #include "nbt_server/nbt_server.h"
 
@@ -36,9 +35,12 @@ static void nbt_request_handler(struct nbt_name_socket *nbtsock,
 {
 	struct nbt_interface *iface = talloc_get_type(nbtsock->incoming.private, 
 						      struct nbt_interface);
-	DEBUG(0,("nbtd request from %s:%d\n", src_address, src_port));
 
-	NDR_PRINT_DEBUG(nbt_name_packet, packet);
+	switch (packet->operation & NBT_OPCODE) {
+	case NBT_OPCODE_QUERY:
+		nbt_request_query(nbtsock, packet, src_address, src_port);
+		break;
+	}
 }
 
 
@@ -57,8 +59,9 @@ static void nbtd_task_init(struct task_server *task)
 		return;
 	}
 
-	nbtsrv->task = task;
-	nbtsrv->interfaces = NULL;
+	nbtsrv->task            = task;
+	nbtsrv->interfaces      = NULL;
+	nbtsrv->bcast_interface = NULL;
 
 	/* start listening on the configured network interfaces */
 	status = nbt_startup_interfaces(nbtsrv);
@@ -71,6 +74,11 @@ static void nbtd_task_init(struct task_server *task)
 	for (iface=nbtsrv->interfaces;iface;iface=iface->next) {
 		nbt_set_incoming_handler(iface->nbtsock, nbt_request_handler, iface);
 	}
+	nbt_set_incoming_handler(nbtsrv->bcast_interface->nbtsock, nbt_request_handler, 
+				 nbtsrv->bcast_interface);
+
+	/* start the process of registering our names on all interfaces */
+	nbt_register_names(nbtsrv);
 }
 
 

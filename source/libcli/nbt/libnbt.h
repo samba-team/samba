@@ -113,7 +113,8 @@ struct nbt_name_query {
 	struct {
 		const char *reply_from;
 		struct nbt_name name;
-		const char *reply_addr;
+		int16_t num_addrs;
+		const char **reply_addrs;
 	} out;
 };
 
@@ -128,5 +129,25 @@ struct nbt_name_status {
 		const char *reply_from;
 		struct nbt_name name;
 		struct nbt_rdata_status status;
+	} out;
+};
+
+/* a name registration request */
+struct nbt_name_register {
+	struct {
+		struct nbt_name name;
+		const char *dest_addr;
+		const char *address;
+		uint16_t nb_flags;
+		BOOL register_demand;
+		BOOL broadcast;
+		uint32_t ttl;
+		int timeout; /* in seconds */
+	} in;
+	struct {
+		const char *reply_from;
+		struct nbt_name name;
+		const char *reply_addr;
+		uint8_t rcode;
 	} out;
 };
