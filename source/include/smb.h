@@ -556,23 +556,23 @@ typedef struct sam_passwd
 	pstring unknown_str ; /* don't know what this is, yet. */
 	pstring munged_dial ; /* munged path name and dial-back tel number */
 
-        uid_t uid;          /* this is actually the unix uid_t */
-        gid_t gid;          /* this is actually the unix gid_t */
-        uint32 user_rid;    /* Primary User ID */
-        uint32 group_rid;   /* Primary Group ID */
+	uid_t uid;          /* this is actually the unix uid_t */
+	gid_t gid;          /* this is actually the unix gid_t */
+	uint32 user_rid;    /* Primary User ID */
+	uint32 group_rid;   /* Primary Group ID */
 
-        unsigned char *lm_pw; /* Null if no password */
-        unsigned char *nt_pw; /* Null if no password */
+	unsigned char *lm_pw; /* Null if no password */
+	unsigned char *nt_pw; /* Null if no password */
 
-        uint16 acct_ctrl; /* account info (ACB_xxxx bit-mask) */
-        uint32 unknown_3; /* 0x00ff ffff */
+	uint16 acct_ctrl; /* account info (ACB_xxxx bit-mask) */
+	uint32 unknown_3; /* 0x00ff ffff */
 
-        uint16 logon_divs; /* 168 - number of hours in a week */
-        uint32 hours_len; /* normally 21 bytes */
-        uint8 hours[MAX_HOURS_LEN];
+	uint16 logon_divs; /* 168 - number of hours in a week */
+	uint32 hours_len; /* normally 21 bytes */
+	uint8 hours[MAX_HOURS_LEN];
 
-        uint32 unknown_5; /* 0x0002 0000 */
-        uint32 unknown_6; /* 0x0000 04ec */
+	uint32 unknown_5; /* 0x0002 0000 */
+	uint32 unknown_6; /* 0x0000 04ec */
 	
 } SAM_ACCOUNT;
 

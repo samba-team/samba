@@ -83,7 +83,6 @@ static BOOL pw_file_unlock(int fd, int *plock_depth)
 static void get_trust_account_file_name( char *domain, char *name, char *mac_file)
 {
   unsigned int mac_file_len;
-  char *p;
 
   /* strip the filename to the last '/' */
   get_private_directory(mac_file);
@@ -91,8 +90,7 @@ static void get_trust_account_file_name( char *domain, char *name, char *mac_fil
 
   mac_file_len = strlen(mac_file);
 
-  if ((int)(sizeof(pstring) - mac_file_len - strlen(domain) - strlen(name) - 6) < 0)
-  {
+  if ((int)(sizeof(pstring) - mac_file_len - strlen(domain) - strlen(name) - 6) < 0) {
     DEBUG(0,("trust_password_lock: path %s too long to add trust details.\n",
               mac_file));
     return;
