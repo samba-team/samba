@@ -33,7 +33,6 @@ static BOOL got_bcast=False;
 static BOOL got_nmask=False;
 
 struct interface *local_interfaces  = NULL;
-struct interface *remote_interfaces = NULL;
 
 struct interface *last_iface;
 
@@ -349,12 +348,7 @@ load the remote and local interfaces
 void load_interfaces(void)
 {
   /* add the machine's interfaces to local interface structure*/
-  interpret_interfaces(lp_interfaces       (), &local_interfaces,
-						"interface");
-
-  /* add all subnets to remote interfaces structure */
-  interpret_interfaces(lp_remote_interfaces(), &remote_interfaces,
-						"remote subnet");
+  interpret_interfaces(lp_interfaces(), &local_interfaces,"interface");
 }
 
 

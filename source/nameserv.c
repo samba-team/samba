@@ -186,8 +186,6 @@ void add_my_names(void)
   {
     BOOL wins_iface = ip_equal(d->bcast_ip, ipgrp);
 
-    if (!d->my_interface && !wins_iface) continue;
-
 	add_my_name_entry(d, myname,0x20,NB_ACTIVE);
 	add_my_name_entry(d, myname,0x03,NB_ACTIVE);
 	add_my_name_entry(d, myname,0x00,NB_ACTIVE);

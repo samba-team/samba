@@ -112,10 +112,7 @@ static BOOL add_info(struct subnet_record *d, struct work_record *work, int serv
 		  /* creates workgroup on remote subnet */
 		  if ((w = find_workgroupstruct(d,sname,True)))
 		    {
-		      if (d->my_interface)
-			{
-			  announce_request(w, d->bcast_ip);
-			}
+		      announce_request(w, d->bcast_ip);
 		    }
 		}
 	      

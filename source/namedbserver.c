@@ -161,7 +161,7 @@ struct server_record *add_server_entry(struct subnet_record *d,
   }
   
   
-  if (d->my_interface && strequal(lp_workgroup(),work->work_group))
+  if (strequal(lp_workgroup(),work->work_group))
     {
 	  if (servertype)
         servertype |= SV_TYPE_LOCAL_LIST_ONLY;

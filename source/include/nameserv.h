@@ -251,8 +251,6 @@ struct subnet_record
   struct in_addr bcast_ip;
   struct in_addr mask_ip;
   struct in_addr myip;
-
-  BOOL my_interface;
 };
 
 /* a resource record */

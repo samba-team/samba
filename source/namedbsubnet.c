@@ -47,9 +47,6 @@ int updatecount = 0;
 /* local interfaces structure */
 extern struct interface *local_interfaces;
 
-/* remote interfaces structure */
-extern struct interface *remote_interfaces;
-
 /* this is our domain/workgroup/server database */
 struct subnet_record *subnetlist = NULL;
 
@@ -143,7 +140,6 @@ static struct subnet_record *make_subnet(struct in_addr bcast_ip, struct in_addr
   d->bcast_ip = bcast_ip;
   d->mask_ip  = mask_ip;
   d->workgrouplist = NULL;
-  d->my_interface = False; /* True iff the interface is on the samba host */
   
   add_subnet(d);
   
@@ -152,7 +148,7 @@ static struct subnet_record *make_subnet(struct in_addr bcast_ip, struct in_addr
 
 
 /****************************************************************************
-  add the remote interfaces from lp_remote_interfaces() and lp_interfaces()
+  add the remote interfaces from lp_interfaces()
   to the netbios subnet database.
   ****************************************************************************/
 void add_subnet_interfaces(void)
@@ -165,22 +161,7 @@ void add_subnet_interfaces(void)
 		/* add the interface into our subnet database */
 		if (!find_subnet(i->bcast))
 		{
-		    struct subnet_record *d = make_subnet(i->bcast,i->nmask);
-			if (d)
-			{
-				/* short-cut method to identifying local interfaces */
-				d->my_interface = True;
-			}
-		}
-	}
-
-	/* loop on all remote interfaces */
-	for (i = remote_interfaces; i; i = i->next)
-	{
-		/* add the interface into our subnet database */
-		if (!find_subnet(i->bcast))
-		{
-		    make_subnet(i->bcast,i->nmask);
+		  make_subnet(i->bcast,i->nmask);
 		}
 	}
 
@@ -248,15 +229,14 @@ struct subnet_record *add_subnet_entry(struct in_addr bcast_ip,
 
       /* add WORKGROUP(1e) and WORKGROUP(00) entries into name database
 	 or register with WINS server, if it's our workgroup */
-      if (strequal(lp_workgroup(), name) && d->my_interface)
+      if (strequal(lp_workgroup(), name))
 	{
 	  add_my_name_entry(d,name,0x1e,NB_ACTIVE|NB_GROUP);
 	  add_my_name_entry(d,name,0x0 ,NB_ACTIVE|NB_GROUP);
 	}
       /* add samba server name to workgroup list. don't add
          lmhosts server entries to local interfaces */
-      if ((strequal(lp_workgroup(), name) && d->my_interface) ||
-          (lmhosts && !d->my_interface))
+      if (strequal(lp_workgroup(), name))
       {
 	    add_server_entry(d,w,myname,w->ServerType,0,ServerComment,True);
         DEBUG(3,("Added server name entry %s at %s\n",

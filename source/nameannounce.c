@@ -394,11 +394,13 @@ void announce_host(void)
 	  
 	  work->lastannounce_time = t;
 
+	  /*
 	  if (!d->my_interface) {
 	    stype &= ~(SV_TYPE_POTENTIAL_BROWSER | SV_TYPE_MASTER_BROWSER |
 		       SV_TYPE_DOMAIN_MASTER | SV_TYPE_BACKUP_BROWSER |
 		       SV_TYPE_DOMAIN_CTRL | SV_TYPE_DOMAIN_MEMBER);
 	  }
+	  */
 
 	  for (s = work->serverlist; s; s = s->next) {
 	    if (strequal(myname, s->serv.name)) { 
