@@ -411,7 +411,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
       {
 	/* Needed to show the msdfs symlinks as directories */
 	if(!lp_host_msdfs() || !lp_msdfs_root(SNUM(conn)) 
-	   || !is_msdfs_volume(conn, pathreal))
+	   || !is_msdfs_link(conn, pathreal))
 	  {
 	    DEBUG(5,("get_lanman2_dir_entry:Couldn't stat [%s] (%s)\n",
 		     pathreal,strerror(errno)));
@@ -2238,7 +2238,8 @@ int reply_trans2(connection_struct *conn,
 		return -1;
 	}
 	
-	if (IS_IPC(conn) && (tran_call != TRANSACT2_OPEN)) 
+	if (IS_IPC(conn) && (tran_call != TRANSACT2_OPEN)
+            && (tran_call != TRANSACT2_GET_DFS_REFERRAL)) 
 		return(ERROR(ERRSRV,ERRaccess));
 
 	outsize = set_message(outbuf,0,0,True);

@@ -201,7 +201,7 @@ static int reply_nt1(char *outbuf)
 	  capabilities |= CAP_RAW_MODE;
   }
 
-#ifdef MS_DFS
+#ifdef WITH_MSDFS
   if(lp_host_msdfs())
 	capabilities |= CAP_DFS;
 #endif

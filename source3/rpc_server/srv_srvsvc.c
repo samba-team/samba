@@ -98,7 +98,7 @@ static void init_srv_share_info_1005(SRV_SHARE_INFO_1005* sh1005, int snum)
 {
 	sh1005->dfs_root_flag = 0;
 
-#ifdef MS_DFS
+#ifdef WITH_MSDFS
 	if(lp_host_msdfs() && lp_msdfs_root(snum))
 		sh1005->dfs_root_flag = 3;
 #endif
