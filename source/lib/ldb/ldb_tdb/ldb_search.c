@@ -136,7 +136,7 @@ static int msg_add_all_elements(struct ldb_context *ldb, struct ldb_message *ret
 	int i;
 	for (i=0;i<msg->num_elements;i++) {
 		int flags = ltdb_attribute_flags(ldb, msg->elements[i].name);
-		if (flags & LTDB_FLAG_HIDDEN) {
+		if ((msg->dn[0] != '@') && (flags & LTDB_FLAG_HIDDEN)) {
 			continue;
 		}
 		if (msg_add_element(ldb, ret, &msg->elements[i]) != 0) {
