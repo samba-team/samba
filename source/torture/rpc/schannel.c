@@ -107,7 +107,7 @@ static BOOL test_netlogon_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		}
 		
 	}
-		return ret;
+	return ret;
 }
 
 /*
