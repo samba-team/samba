@@ -1031,10 +1031,10 @@ userPassword: {SSHA}c3ZM9tBaBo9autm1dL3waDS21+JSfQVz
 <smbconfoption><name>ldap trust ids</name><value>Yes</value></smbconfoption>
 
 <smbconfcomment> specify the base DN to use when searching the directory</smbconfcomment>
-<smbconfoption><name>ldap suffix</name><value>"ou=people,dc=samba,dc=org"</value></smbconfoption>
+<smbconfoption><name>ldap suffix</name><value>ou=people,dc=samba,dc=org</value></smbconfoption>
 
 <smbconfcomment> generally the default ldap search filter is ok</smbconfcomment>
-<smbconfoption><name>ldap filter</name><value>"(&amp;(uid=%u)(objectclass=sambaSamAccount))"</value></smbconfoption>
+<smbconfoption><name>ldap filter</name><value>(&amp;(uid=%u)(objectclass=sambaSamAccount))</value></smbconfoption>
 </smbconfexample>
 </para>
 
