@@ -218,18 +218,15 @@ static BOOL parse_lpq_lprng(char *line,print_queue_struct *buf,BOOL first)
 #define	LPRNG_NTOK	7
 #define	LPRNG_MAXTOK	128 /* PFMA just to keep us from running away. */
 
-  char *tokarr[LPRNG_MAXTOK];
+  fstring tokarr[LPRNG_MAXTOK];
   char *cptr;
   int  num_tok = 0;
   pstring line2;
 
   pstrcpy(line2,line);
-  tokarr[0] = strtok(line2," \t");
-  num_tok++;
-  while (((tokarr[num_tok] = strtok(NULL," \t")) != NULL)
-         && (num_tok < LPRNG_MAXTOK)) {
+  cptr = line2;
+  while(next_token( &cptr, tokarr[num_tok], " \t", sizeof(fstring)) && (num_tok < LPRNG_MAXTOK))
     num_tok++;
-  }
 
   /* We must get at least LPRNG_NTOK tokens. */
   if (num_tok < LPRNG_NTOK) {
