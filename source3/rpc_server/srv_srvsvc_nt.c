@@ -1601,6 +1601,7 @@ NTSTATUS _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDE
 	NTSTATUS nt_status;
 	struct current_user user;
 	connection_struct *conn = NULL;
+	BOOL became_user = False;
 
 	ZERO_STRUCT(st);
 
@@ -1611,6 +1612,8 @@ NTSTATUS _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDE
 	/* Null password is ok - we are already an authenticated user... */
 	*null_pw = '\0';
 
+	get_current_user(&user, p);	
+	
 	conn = make_connection(qualname, null_pw, 0, "A:", user.vuid, &nt_status);
 
 	if (conn == NULL) {
@@ -1619,16 +1622,24 @@ NTSTATUS _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDE
 		goto error_exit;
 	}
 
+	if (!become_user(conn, conn->vuid)) {
+		DEBUG(0,("_srv_net_file_set_secdesc: Can't become connected user!\n"));
+		r_u->status = NT_STATUS_ACCESS_DENIED;
+		goto error_exit;
+	}
+	became_user = True;
+
 	unistr2_to_ascii(filename, &q_u->uni_file_name, sizeof(filename));
 	unix_convert(filename, conn, NULL, &bad_path, &st);
+
 	fsp = open_file_shared(conn, filename, &st, SET_OPEN_MODE(DOS_OPEN_RDONLY),
-				(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN), 0, 0, &access_mode, &action);
+			       (FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN), 0, 0, &access_mode, &action);
 
 	if (!fsp) {
 		/* Perhaps it is a directory */
 		if (errno == EISDIR)
 			fsp = open_directory(conn, filename, &st,
-					(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN), 0, &action);
+					     (FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN), 0, &action);
 
 		if (!fsp) {
 			DEBUG(3,("_srv_net_file_query_secdesc: Unable to open file %s\n", filename));
@@ -1664,6 +1675,9 @@ NTSTATUS _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDE
 		close_file(fsp, True);
 	}
 
+	if (became_user)
+		unbecome_user();
+
 	if (conn) 
 		close_cnum(conn, user.vuid);
 
@@ -1678,9 +1692,9 @@ NTSTATUS _srv_net_file_set_secdesc(pipes_struct *p, SRV_Q_NET_FILE_SET_SECDESC *
 									SRV_R_NET_FILE_SET_SECDESC *r_u)
 {
 	BOOL ret;
+	fstring null_pw;
 	pstring filename;
 	pstring qualname;
-	fstring null_pw;
 	files_struct *fsp = NULL;
 	SMB_STRUCT_STAT st;
 	BOOL bad_path;
@@ -1700,6 +1714,8 @@ NTSTATUS _srv_net_file_set_secdesc(pipes_struct *p, SRV_Q_NET_FILE_SET_SECDESC *
 	/* Null password is ok - we are already an authenticated user... */
 	*null_pw = '\0';
 
+	get_current_user(&user, p);	
+	
 	conn = make_connection(qualname, null_pw, 0, "A:", user.vuid, &nt_status);
 
 	if (conn == NULL) {
@@ -1719,13 +1735,13 @@ NTSTATUS _srv_net_file_set_secdesc(pipes_struct *p, SRV_Q_NET_FILE_SET_SECDESC *
 	unix_convert(filename, conn, NULL, &bad_path, &st);
 
 	fsp = open_file_shared(conn, filename, &st, SET_OPEN_MODE(DOS_OPEN_RDWR),
-			(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN), 0, 0, &access_mode, &action);
+			       (FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN), 0, 0, &access_mode, &action);
 
 	if (!fsp) {
 		/* Perhaps it is a directory */
 		if (errno == EISDIR)
 			fsp = open_directory(conn, filename, &st,
-						(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN), 0, &action);
+					     (FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN), 0, &action);
 
 		if (!fsp) {
 			DEBUG(3,("_srv_net_file_set_secdesc: Unable to open file %s\n", filename));
