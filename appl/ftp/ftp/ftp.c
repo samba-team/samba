@@ -609,7 +609,7 @@ sendrequest(char *cmd, char *local, char *remote, int printnames)
     struct timeval start, stop;
     int c, d;
     FILE *fin, *dout = 0;
-    int (*closefunc) __P((FILE *));
+    int (*closefunc) (FILE *);
     RETSIGTYPE (*oldintr)(), (*oldintp)();
     long bytes = 0, hashbytes = HASHBYTES;
     char *lmode;
@@ -834,7 +834,7 @@ void
 recvrequest(char *cmd, char *local, char *remote, char *lmode, int printnames)
 {
     FILE *fout, *din = 0;
-    int (*closefunc) __P((FILE *));
+    int (*closefunc) (FILE *);
     sighand oldintr, oldintp;
     int c, d, is_retr, tcrflag, bare_lfs = 0;
     static int bufsize;
