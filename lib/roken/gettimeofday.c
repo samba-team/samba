@@ -36,10 +36,11 @@
  * SUCH DAMAGE.
  */
 
-#include "krb_locl.h"
+#include "roken.h"
+#ifndef HAVE_GETTIMEOFDAY
+
 RCSID("$Id$");
 
-#ifndef HAVE_GETTIMEOFDAY
 /*
  * Simple gettimeofday that only returns seconds.
  */

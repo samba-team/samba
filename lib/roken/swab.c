@@ -36,12 +36,12 @@
  * SUCH DAMAGE.
  */
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-RCSID("$Id$");
-#endif
+#include "roken.h"
 
 #ifndef HAVE_SWAB
+
+RCSID("$Id$");
+
 void
 swab (char *from, char *to, int nbytes)
 {
