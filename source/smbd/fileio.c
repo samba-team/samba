@@ -240,8 +240,8 @@ nonop=%u allocated=%u active=%u direct=%u perfect=%u readhits=%u\n",
     return real_write_file(fsp, data, pos, n);
   }
 
-  DEBUG(9,("write_file(fd=%d pos=%d size=%d) wofs=%d wsize=%d\n",
-	   fsp->fd, (int)pos, (int)n, (int)wcp->offset, (int)wcp->data_size));
+  DEBUG(9,("write_file(fd=%d pos=%.0f size=%u) wcp->offset=%.0f wcp->data_size=%u\n",
+	   fsp->fd, (double)pos, (unsigned int)n, (double)wcp->offset, (unsigned int)wcp->data_size));
 
   /* 
    * If we have active cache and it isn't contiguous then we flush.
@@ -344,12 +344,15 @@ nonop=%u allocated=%u active=%u direct=%u perfect=%u readhits=%u\n",
       write_path = 2;
 
     } else if ( (pos >= wcp->file_size) && 
+                (wcp->offset + wcp->data_size == wcp->file_size) &&
                 (pos > wcp->offset + wcp->data_size) && 
                 (pos < wcp->offset + wcp->alloc_size) ) {
 
       /*
        * Non-contiguous write part of which fits within
-       * the cache buffer and is extending the file.
+       * the cache buffer and is extending the file
+       * and the cache contents reflect the current
+       * data up to the current end of the file.
        */
 
       size_t data_used;
@@ -504,7 +507,8 @@ n = %u, wcp->offset=%.0f, wcp->data_size=%u\n",
 
     if (wcp->offset + wcp->data_size > wcp->file_size)
       wcp->file_size = wcp->offset + wcp->data_size;
-    DEBUG(9,("cache return %u\n", (unsigned int)n));
+    DEBUG(9,("wcp->offset = %.0f wcp->data_size = %u cache return %u\n",
+		(double)wcp->offset, (unsigned int)wcp->data_size, (unsigned int)n));
 
     total_written += n;
     return total_written; /* .... that's a write :) */
@@ -569,6 +573,8 @@ static BOOL setup_write_cache(files_struct *fsp, SMB_OFF_T file_size)
     SAFE_FREE(wcp);
     return False;
   }
+
+  memset(wcp->data, '\0', wcp->alloc_size );
 
   fsp->wcp = wcp;
   DO_PROFILE_INC(writecache_allocated_write_caches);
