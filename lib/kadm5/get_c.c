@@ -62,5 +62,6 @@ kadm5_c_get_principal(void *server_handle,
     ret = tmp;
     if(ret == 0)
 	kadm5_ret_principal_ent(sp, out);
+    krb5_storage_free(sp);
     return ret;
 }

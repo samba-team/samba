@@ -41,6 +41,7 @@
 RCSID("$Id$");
 
 static struct units acl_units[] = {
+    { "all",	KADM5_ACL_ALL },
     { "list",	KADM5_ACL_LIST },
     { "delete",	KADM5_ACL_DELETE },
     { "chpass",	KADM5_ACL_CHPASS },
@@ -60,8 +61,9 @@ _kadm5_acl_init(kadm5_server_context *context)
     krb5_error_code ret;
     
     krb5_parse_name(context->context, KADM5_ADMIN_SERVICE, &princ);
-    if(krb5_principal_compare(context->context, context->caller, princ)){
-	krb5_free_principal(context->context, princ);
+    ret = krb5_principal_compare(context->context, context->caller, princ);
+    krb5_free_principal(context->context, princ);
+    if(ret != 0){
 	context->acl_flags = ~0;
 	return 0;
     }

@@ -80,9 +80,11 @@ kadmind_dispatch(void *kadm_handle, krb5_storage *sp)
 	ret = kadm5_get_principal(kadm_handle, princ, &ent, mask);
 	sp->seek(sp, 0, SEEK_SET);
 	krb5_store_int32(sp, ret);
-	if(ret == 0)
+	if(ret == 0){
 	    kadm5_store_principal_ent(sp, &ent);
-	kadm5_free_principal_ent(kadm_handle, &ent);
+	    kadm5_free_principal_ent(kadm_handle, &ent);
+	}
+	krb5_free_principal(context->context, princ);
 	break;
     }
     case kadm_delete:{

@@ -166,5 +166,8 @@ main(int argc, char **argv)
     if (argc != 0)
 	exit(sl_command(commands, argc, argv));
 
-    return sl_loop(commands, "kadmin> ") != 0;
+    ret = sl_loop(commands, "kadmin> ") != 0;
+    kadm5_destroy(kadm_handle);
+    krb5_free_context(context);
+    return ret;
 }

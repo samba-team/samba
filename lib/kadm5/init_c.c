@@ -114,6 +114,8 @@ kadm5_c_init_with_password_ctx(krb5_context context,
     ret = krb5_sendauth(context, &ctx->ac, &s, KADMIN_APPL_VERSION, NULL, 
 			server, AP_OPTS_MUTUAL_REQUIRED, 
 			NULL, NULL, cc, NULL, NULL, NULL);
+    krb5_free_principal(context, server);
+    krb5_cc_close(context, cc);
     if(ret){
 	close(s);
 	return KADM5_FAILURE;

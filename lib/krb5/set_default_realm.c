@@ -73,6 +73,7 @@ krb5_set_default_realm(krb5_context context,
 	
     if (tmp == NULL)
 	return ENOMEM;
+    free(context->default_realm);
     context->default_realm = tmp;
     return 0;
 }

@@ -64,7 +64,7 @@ add_new_key(int argc, char **argv)
     int optind = 0;
     int mask = 0;
     krb5_error_code ret;
-    krb5_principal princ_ent;
+    krb5_principal princ_ent = NULL;
 
     args[0].value = &rkey;
     args[1].value = &password;
@@ -105,6 +105,8 @@ add_new_key(int argc, char **argv)
 	kadm5_free_principal_ent(kadm_handle, &princ);
     }
 out:
+    if(princ_ent)
+	krb5_free_principal(context, princ_ent);
     if(password)
 	memset(password, 0, strlen(password));
     return 0;
