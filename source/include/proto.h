@@ -403,7 +403,7 @@ BOOL cli_session_request(struct cli_state *cli,
 BOOL cli_connect(struct cli_state *cli, char *host, struct in_addr *ip);
 BOOL cli_initialise(struct cli_state *cli);
 void cli_shutdown(struct cli_state *cli);
-void cli_error(struct cli_state *cli, int *eclass, int *num);
+BOOL cli_error(struct cli_state *cli, uint8 *eclass, uint32 *num);
 void cli_sockopt(struct cli_state *cli, char *options);
 uint16 cli_setpid(struct cli_state *cli, uint16 pid);
 BOOL cli_reestablish_connection(struct cli_state *cli);
@@ -1275,6 +1275,31 @@ BOOL do_samr_query_userinfo(struct cli_state *cli,
 				POLICY_HND *pol, uint16 switch_value, void* usr);
 BOOL do_samr_close(struct cli_state *cli, POLICY_HND *hnd);
 
+/*The following definitions come from  rpc_client/cli_srvsvc.c  */
+
+BOOL do_srv_net_srv_conn_enum(struct cli_state *cli,
+			char *server_name, char *qual_name,
+			uint32 switch_value, SRV_CONN_INFO_CTR *ctr,
+			uint32 preferred_len,
+			ENUM_HND *hnd);
+BOOL do_srv_net_srv_sess_enum(struct cli_state *cli,
+			char *server_name, char *qual_name,
+			uint32 switch_value, SRV_SESS_INFO_CTR *ctr,
+			uint32 preferred_len,
+			ENUM_HND *hnd);
+BOOL do_srv_net_srv_share_enum(struct cli_state *cli,
+			char *server_name, 
+			uint32 switch_value, SRV_SHARE_INFO_CTR *ctr,
+			uint32 preferred_len,
+			ENUM_HND *hnd);
+BOOL do_srv_net_srv_file_enum(struct cli_state *cli,
+			char *server_name, char *qual_name,
+			uint32 switch_value, SRV_FILE_INFO_CTR *ctr,
+			uint32 preferred_len,
+			ENUM_HND *hnd);
+BOOL do_srv_net_srv_get_info(struct cli_state *cli,
+			char *server_name, uint32 switch_value, SRV_INFO_CTR *ctr);
+
 /*The following definitions come from  rpc_client/cli_wkssvc.c  */
 
 BOOL do_wks_query_info(struct cli_state *cli, 
@@ -1668,6 +1693,11 @@ void make_srv_share_info2(SH_INFO_2 *sh2,
 				char *net_name, uint32 type, char *remark,
 				uint32 perms, uint32 max_uses, uint32 num_uses,
 				char *path, char *passwd);
+void make_srv_q_net_share_enum(SRV_Q_NET_SHARE_ENUM *q_n, 
+				char *srv_name, 
+				uint32 share_level, SRV_SHARE_INFO_CTR *ctr,
+				uint32 preferred_len,
+				ENUM_HND *hnd);
 void srv_io_q_net_share_enum(char *desc,  SRV_Q_NET_SHARE_ENUM *q_n, prs_struct *ps, int depth);
 void srv_io_r_net_share_enum(char *desc,  SRV_R_NET_SHARE_ENUM *r_n, prs_struct *ps, int depth);
 void make_srv_sess_info0_str(SESS_INFO_0_STR *ss0, char *name);
@@ -1677,6 +1707,11 @@ void make_srv_sess_info1(SESS_INFO_1 *ss1,
 				char *name, char *user,
 				uint32 num_opens, uint32 open_time, uint32 idle_time,
 				uint32 user_flags);
+void make_srv_q_net_sess_enum(SRV_Q_NET_SESS_ENUM *q_n, 
+				char *srv_name, char *qual_name,
+				uint32 sess_level, SRV_SESS_INFO_CTR *ctr,
+				uint32 preferred_len,
+				ENUM_HND *hnd);
 void srv_io_q_net_sess_enum(char *desc,  SRV_Q_NET_SESS_ENUM *q_n, prs_struct *ps, int depth);
 void srv_io_r_net_sess_enum(char *desc,  SRV_R_NET_SESS_ENUM *r_n, prs_struct *ps, int depth);
 void make_srv_conn_info0(CONN_INFO_0 *ss0, uint32 id);
@@ -1685,12 +1720,22 @@ void make_srv_conn_info1(CONN_INFO_1 *ss1,
 				uint32 id, uint32 type,
 				uint32 num_opens, uint32 num_users, uint32 open_time,
 				char *usr_name, char *net_name);
+void make_srv_q_net_conn_enum(SRV_Q_NET_CONN_ENUM *q_n, 
+				char *srv_name, char *qual_name,
+				uint32 conn_level, SRV_CONN_INFO_CTR *ctr,
+				uint32 preferred_len,
+				ENUM_HND *hnd);
 void srv_io_q_net_conn_enum(char *desc,  SRV_Q_NET_CONN_ENUM *q_n, prs_struct *ps, int depth);
 void srv_io_r_net_conn_enum(char *desc,  SRV_R_NET_CONN_ENUM *r_n, prs_struct *ps, int depth);
 void make_srv_file_info3_str(FILE_INFO_3_STR *fi3, char *user_name, char *path_name);
 void make_srv_file_info3(FILE_INFO_3 *fl3,
 				uint32 id, uint32 perms, uint32 num_locks,
 				char *path_name, char *user_name);
+void make_srv_q_net_file_enum(SRV_Q_NET_FILE_ENUM *q_n, 
+				char *srv_name, char *qual_name,
+				uint32 file_level, SRV_FILE_INFO_CTR *ctr,
+				uint32 preferred_len,
+				ENUM_HND *hnd);
 void srv_io_q_net_file_enum(char *desc,  SRV_Q_NET_FILE_ENUM *q_n, prs_struct *ps, int depth);
 void srv_io_r_net_file_enum(char *desc,  SRV_R_NET_FILE_ENUM *r_n, prs_struct *ps, int depth);
 void make_srv_info_101(SRV_INFO_101 *sv101, uint32 platform_id, char *name,
@@ -1701,6 +1746,8 @@ void make_srv_info_102(SRV_INFO_102 *sv102, uint32 platform_id, char *name,
 				uint32 srv_type, uint32 users, uint32 disc, uint32 hidden,
 				uint32 announce, uint32 ann_delta, uint32 licenses,
 				char *usr_path);
+void make_srv_q_net_srv_get_info(SRV_Q_NET_SRV_GET_INFO *srv,
+				char *server_name, uint32 switch_value);
 void srv_io_q_net_srv_get_info(char *desc,  SRV_Q_NET_SRV_GET_INFO *q_n, prs_struct *ps, int depth);
 void make_srv_r_net_srv_get_info(SRV_R_NET_SRV_GET_INFO *srv,
 				uint32 switch_value, SRV_INFO_CTR *ctr, uint32 status);

@@ -63,51 +63,61 @@ static char *cli_smb_errstr(struct cli_state *cli)
     
 char *cli_errstr(struct cli_state *cli)
 {   
-  static fstring error_message;
-  int errclass;
-  int errnum;
-  int i;      
-      
-  /*  
-   * Errors are of three kinds - smb errors,
-   * dealt with by cli_smb_errstr, NT errors,
-   * whose code is in cli.nt_error, and rap
-   * errors, whose error code is in cli.rap_error.
-   */ 
+	static fstring error_message;
+	uint8 errclass;
+	uint32 errnum;
+	int i;      
 
-  cli_error(cli, &errclass, &errnum);
-  if(errclass != 0)
-    return cli_smb_errstr(cli);
+	/*  
+	 * Errors are of three kinds - smb errors,
+	 * dealt with by cli_smb_errstr, NT errors,
+	 * whose code is in cli.nt_error, and rap
+	 * errors, whose error code is in cli.rap_error.
+	 */ 
 
-  /*
-   * Was it an NT error ?
-   */
+	cli_error(cli, &errclass, &errnum);
 
-  if(cli->nt_error) {
-    char *nt_msg = get_nt_error_msg(cli->nt_error);
+	if (errclass != 0)
+	{
+		return cli_smb_errstr(cli);
+	}
 
-    if(nt_msg == NULL)
-      slprintf(error_message, sizeof(fstring) - 1, "NT code %d", cli->nt_error);
-    else
-      fstrcpy(error_message, nt_msg);
+	/*
+	 * Was it an NT error ?
+	 */
 
-    return error_message;
-  }
+	if (cli->nt_error)
+	{
+		char *nt_msg = get_nt_error_msg(cli->nt_error);
 
-  /*
-   * Must have been a rap error.
-   */
+		if (nt_msg == NULL)
+		{
+			slprintf(error_message, sizeof(fstring) - 1, "NT code %d", cli->nt_error);
+		}
+		else
+		{
+			fstrcpy(error_message, nt_msg);
+		}
 
-  slprintf(error_message, sizeof(error_message) - 1, "code %d", cli->rap_error);
-    
-  for(i = 0; rap_errmap[i].message != NULL; i++) {
-    if (rap_errmap[i].err == cli->rap_error) {
-      fstrcpy( error_message, rap_errmap[i].message);
-      break;
-    }
-  } 
-  
-  return error_message;
+		return error_message;
+	}
+
+	/*
+	 * Must have been a rap error.
+	 */
+
+	slprintf(error_message, sizeof(error_message) - 1, "code %d", cli->rap_error);
+
+	for (i = 0; rap_errmap[i].message != NULL; i++)
+	{
+		if (rap_errmap[i].err == cli->rap_error)
+		{
+			fstrcpy( error_message, rap_errmap[i].message);
+			break;
+		}
+	} 
+
+	return error_message;
 }
 
 /****************************************************************************
@@ -262,8 +272,11 @@ static BOOL cli_receive_trans(struct cli_state *cli,int trans,
 			 CVAL(cli->inbuf,smb_com)));
 		return(False);
 	}
-	if (CVAL(cli->inbuf,smb_rcls) != 0)
+
+	if (cli_error(cli, NULL, NULL))
+	{
 		return(False);
+	}
 
 	/* parse out the lengths */
 	total_data = SVAL(cli->inbuf,smb_tdrcnt);
@@ -313,8 +326,10 @@ static BOOL cli_receive_trans(struct cli_state *cli,int trans,
 				 CVAL(cli->inbuf,smb_com)));
 			return(False);
 		}
-		if (CVAL(cli->inbuf,smb_rcls) != 0)
+		if (cli_error(cli, NULL, NULL))
+		{
 			return(False);
+		}
 	}
 	
 	return(True);
@@ -330,7 +345,7 @@ BOOL cli_api_pipe(struct cli_state *cli, char *pipe_name, int pipe_name_len,
                   char **rparam, uint32 *rparam_count,
                   char **rdata, uint32 *rdata_count)
 {
-  if(pipe_name_len == 0)
+  if (pipe_name_len == 0)
     pipe_name_len = strlen(pipe_name);
 
   cli_send_trans(cli, SMBtrans, 
@@ -602,7 +617,7 @@ BOOL cli_session_setup(struct cli_state *cli,
 		return False;
 	}
 
-        if(((passlen == 0) || (passlen == 1)) && (pass[0] == '\0')) {
+        if (((passlen == 0) || (passlen == 1)) && (pass[0] == '\0')) {
           /* Null session connect. */
           pword[0] = '\0';
         } else {
@@ -620,7 +635,8 @@ BOOL cli_session_setup(struct cli_state *cli,
 	/* send a session setup command */
 	bzero(cli->outbuf,smb_size);
 
-	if (cli->protocol < PROTOCOL_NT1) {
+	if (cli->protocol < PROTOCOL_NT1)
+	{
 		set_message(cli->outbuf,10,1 + strlen(user) + passlen,True);
 		CVAL(cli->outbuf,smb_com) = SMBsesssetupX;
 		cli_setup_packet(cli);
@@ -636,7 +652,9 @@ BOOL cli_session_setup(struct cli_state *cli,
 		p += passlen;
 		pstrcpy(p,user);
 		strupper(p);
-	} else {
+	}
+	else
+	{
 		set_message(cli->outbuf,13,0,True);
 		CVAL(cli->outbuf,smb_com) = SMBsesssetupX;
 		cli_setup_packet(cli);
@@ -648,11 +666,15 @@ BOOL cli_session_setup(struct cli_state *cli,
 		SIVAL(cli->outbuf,smb_vwv5,cli->sesskey);
 		SSVAL(cli->outbuf,smb_vwv7,passlen);
 		SSVAL(cli->outbuf,smb_vwv8,ntpasslen);
+		SSVAL(cli->outbuf,smb_vwv11,CAP_STATUS32);
 		p = smb_buf(cli->outbuf);
 		memcpy(p,pword,passlen); 
 		p += SVAL(cli->outbuf,smb_vwv7);
-		memcpy(p,ntpass,ntpasslen); 
-		p += SVAL(cli->outbuf,smb_vwv8);
+		if (ntpasslen != 0)
+		{
+			memcpy(p,ntpass,ntpasslen); 
+			p += SVAL(cli->outbuf,smb_vwv8);
+		}
 		pstrcpy(p,user);
 		strupper(p);
 		p = skip_string(p,1);
@@ -1718,12 +1740,12 @@ BOOL cli_oem_change_password(struct cli_state *cli, char *user, char *new_passwo
   char *rdata = NULL;
   int rprcnt, rdrcnt;
 
-  if(strlen(user) >= sizeof(fstring)-1) {
+  if (strlen(user) >= sizeof(fstring)-1) {
     DEBUG(0,("cli_oem_change_password: user name %s is too long.\n", user));
     return False;
   }
 
-  if(new_pw_len > 512) {
+  if (new_pw_len > 512) {
     DEBUG(0,("cli_oem_change_password: new password for user %s is too long.\n", user));
     return False;
   }
@@ -1775,7 +1797,7 @@ BOOL cli_oem_change_password(struct cli_state *cli, char *user, char *new_passwo
 
   data_len = 532;
     
-  if(cli_send_trans(cli,SMBtrans,
+  if (cli_send_trans(cli,SMBtrans,
                     PIPE_LANMAN,strlen(PIPE_LANMAN),      /* name, length */
                     0,0,                                  /* fid, flags */
                     NULL,0,0,                             /* setup, length, max */
@@ -1787,10 +1809,10 @@ BOOL cli_oem_change_password(struct cli_state *cli, char *user, char *new_passwo
     return False;
   }
 
-  if(cli_receive_trans(cli,SMBtrans,
+  if (cli_receive_trans(cli,SMBtrans,
                        &rparam, &rprcnt,
                        &rdata, &rdrcnt)) {
-    if(rparam)
+    if (rparam)
       cli->rap_error = SVAL(rparam,0);
   }
 
@@ -1919,9 +1941,9 @@ retry:
 		return False;
 
 #ifdef WITH_SSL
-    if(CVAL(cli->inbuf,0) == 0x83 && CVAL(cli->inbuf,4) == 0x8e){ /* use ssl */
-        if(!sslutil_fd_is_ssl(cli->fd)){
-            if(sslutil_connect(cli->fd) == 0)
+    if (CVAL(cli->inbuf,0) == 0x83 && CVAL(cli->inbuf,4) == 0x8e){ /* use ssl */
+        if (!sslutil_fd_is_ssl(cli->fd)){
+            if (sslutil_connect(cli->fd) == 0)
                 goto retry;
         }
     }
@@ -1947,7 +1969,7 @@ BOOL cli_connect(struct cli_state *cli, char *host, struct in_addr *ip)
 	fstrcpy(cli->desthost, host);
 	
 	if (!ip || ip_equal(*ip, ipzero)) {
-                if(!resolve_name( cli->desthost, &dest_ip)) {
+                if (!resolve_name( cli->desthost, &dest_ip)) {
                         return False;
                 }
 	} else {
@@ -2007,13 +2029,37 @@ void cli_shutdown(struct cli_state *cli)
 	memset(cli, 0, sizeof(*cli));
 }
 
+
 /****************************************************************************
   return error codes for the last packet
 ****************************************************************************/
-void cli_error(struct cli_state *cli, int *eclass, int *num)
+BOOL cli_error(struct cli_state *cli, uint8 *eclass, uint32 *num)
 {
-	*eclass = CVAL(cli->inbuf,smb_rcls);
-	*num = SVAL(cli->inbuf,smb_err);
+	int  flgs2 = SVAL(cli->inbuf,smb_flg2);
+
+	if (eclass) *eclass = 0;
+	if (num   ) *num = 0;
+
+	if (flgs2 & FLAGS2_32_BIT_ERROR_CODES)
+	{
+		/* 32 bit error codes detected */
+		uint32 nt_err = IVAL(cli->inbuf,smb_rcls);
+		if (num) *num = nt_err;
+		DEBUG(10,("cli_error: 32 bit codes: code=%08x\n", nt_err));
+		return (IS_BITS_SET_ALL(nt_err, 0xc0000000));
+	}
+	else
+	{
+		/* dos 16 bit error codes detected */
+		char rcls  = CVAL(cli->inbuf,smb_rcls);
+		if (rcls != 0)
+		{
+			if (eclass) *eclass = rcls;
+			if (num   ) *num    = SVAL(cli->inbuf,smb_err);
+			return True;
+		}
+	}
+	return False;
 }
 
 /****************************************************************************
