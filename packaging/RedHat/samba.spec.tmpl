@@ -7,7 +7,7 @@ Group: Networking
 Source: http://download.samba.org/samba/ftp/samba-%{version}.tar.bz2
 Packager: Gerald Carter [Samba-Team] <jerry@samba.org>
 Requires: pam >= 0.72 kernel >= 2.2.1 glibc >= 2.1.2
-Prereq: chkconfig fileutils
+Prereq: chkconfig fileutils /sbin/ldconfig
 Provides: samba = %{version}
 Obsoletes: samba-common, samba-client, samba-swat
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
@@ -147,20 +147,6 @@ install -m 755 source/bin/libsmbclient.so $RPM_BUILD_ROOT%{prefix}/lib/
 install -m 755 source/bin/libsmbclient.a $RPM_BUILD_ROOT%{prefix}/lib/
 install -m 644 source/include/libsmbclient.h $RPM_BUILD_ROOT%{prefix}/include/
 
-# Install SWAT helper files
-#for i in swat/help/*.html docs/htmldocs/*.html
-#do
-#	install -m644 $i $RPM_BUILD_ROOT%{prefix}/share/swat/help
-#done
-#for i in swat/images/*.gif
-#do
-#	install -m644 $i $RPM_BUILD_ROOT%{prefix}/share/swat/images
-#done
-#for i in swat/include/*.html
-#do
-#	install -m644 $i $RPM_BUILD_ROOT%{prefix}/share/swat/include
-#done
-
 # Install the miscellany
 install -m755 swat/README $RPM_BUILD_ROOT%{prefix}/share/swat/README
 install -m755 packaging/RedHat/smbprint $RPM_BUILD_ROOT%{prefix}/bin
@@ -287,11 +273,8 @@ else
 	rm -f /etc/samba/samba.stack
 fi
 
-# Create winbind nss client symlink
-
-if [ -e /lib/libnss_winbind.so ]; then
-	ln -sf /lib/libnss_winbind.so /lib/libnss_winbind.so.2
-fi
+## call ldconfig to create the version symlink for libsmbclient.so
+/sbin/ldconfig
 
 %preun
 if [ $1 = 0 ] ; then
@@ -365,6 +348,8 @@ if [ $1 = 0 ] ; then
 		rm -r /etc/xinetd.d/swat
 	fi
 fi
+
+/sbin/ldconfig
 
 %files
 %defattr(-,root,root)
