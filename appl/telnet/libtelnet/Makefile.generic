@@ -1,0 +1,67 @@
+#
+# Copyright (c) 1991 The Regents of the University of California.
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms are permitted provided
+# that: (1) source distributions retain this entire copyright notice and
+# comment, and (2) distributions including binaries display the following
+# acknowledgement:  ``This product includes software developed by the
+# University of California, Berkeley and its contributors'' in the
+# documentation or other materials provided with the distribution and in
+# all advertising materials mentioning features or use of this software.
+# Neither the name of the University nor the names of its contributors may
+# be used to endorse or promote products derived from this software without
+# specific prior written permission.
+# THIS SOFTWARE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR IMPLIED
+# WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
+# MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+#
+#	@(#)Makefile.generic	5.5 (Berkeley) 3/1/91
+#
+
+LIB=    libtelnet.a
+SRCS=   auth.c encrypt.c genget.c \
+	misc.c kerberos.c kerberos5.c forward.c spx.c enc_des.c \
+	rsaencpwd.c krb4encpwd.c read_password.c \
+	setenv.c getent.c strdup.c strcasecmp.c \
+	strchr.c strrchr.c strftime.c strerror.c \
+	${LIB_SRC}
+
+OBJS=   auth.o encrypt.o genget.o \
+	misc.o kerberos.o kerberos5.o forward.o spx.o enc_des.o \
+	rsaencpwd.o krb4encpwd.o read_password.o \
+	${LIB_OBJ}
+
+TELNET_H= ../arpa/telnet.h
+
+CFLAGS= ${LCCFLAGS} ${DEFINES} ${INCLUDES}
+
+${LIB}: ${OBJS}
+	rm -f ${LIB}
+	${AR} ${ARFLAGS} ${LIB} `lorder ${OBJS} | tsort`
+	@if [ ${RANLIB} != NONE ]; \
+		then echo ${RANLIB} ${LIB}; ${RANLIB} ${LIB}; fi
+
+clean cleandir:
+	rm -f *.o ${LIB} core a.out
+
+auth.o: ${TELNET_H}
+auth.o: encrypt.h
+auth.o: auth.h
+auth.o: misc-proto.h
+encrypt.o: ${TELNET_H}
+encrypt.o: encrypt.h
+encrypt.o: misc.h
+kerberos.o: ${TELNET_H}
+kerberos.o: encrypt.h
+kerberos.o: auth.h
+kerberos.o: misc.h
+kerberos5.o: ${TELNET_H}
+kerberos5.o: encrypt.h
+kerberos5.o: auth.h
+kerberos5.o: misc.h
+misc.o: misc.h
+enc_des.o: ${TELNET_H}
+enc_des.o: encrypt.h
+enc_des.o: key-proto.h
+enc_des.o: misc-proto.h

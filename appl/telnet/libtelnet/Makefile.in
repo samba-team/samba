@@ -1,0 +1,30 @@
+# Makefile.in,v 1.2 1994/05/13 05:02:46 assar Exp
+
+srcdir		= @srcdir@
+VPATH		= @srcdir@
+
+SHELL		= /bin/sh
+
+CC = @CC@
+AR = ar
+RANLIB = @RANLIB@
+DEFS = @DEFS@
+CFLAGS = @CFLAGS@
+
+prefix = /usr/local
+exec_prefix = $(prefix)
+libdir = $(exec_prefix)/lib
+
+#
+# Everything happens in ../Makefile.config and Makefile.generic
+#
+SHELL=/bin/sh
+
+all:
+	$(MAKE) -f $(VPATH)/../Config.local WHAT=${WHAT} CC="${CC}" VPATH=${VPATH} MAKE="${MAKE}"; \
+
+.DEFAULT:
+	$(MAKE) -f $(VPATH)/../Config.local WHAT=${WHAT} CC="${CC}" VPATH=${VPATH} $@ MAKE="${MAKE}"; \
+
+clean cleandir:
+	rm -f *.o *.a telnet telnetd core
