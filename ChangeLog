@@ -1,3 +1,17 @@
+2000-08-04  Johan Danielsson  <joda@pdc.kth.se>
+
+	* kpasswd/Makefile.am: link with pidfile library
+
+	* kpasswd/kpasswdd.c: write a pid file
+
+	* kpasswd/kpasswd_locl.h: util.h
+
+	* kdc/Makefile.am: link with pidfile library
+
+	* kdc/main.c: write a pid file
+
+	* kdc/headers.h: util.h
+
 2000-07-28  Assar Westerlund  <assar@juguete.sics.se>
 
 	* Release 0.3a
