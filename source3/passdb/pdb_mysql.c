@@ -357,7 +357,7 @@ static NTSTATUS mysqlsam_setsampwent(struct pdb_methods *methods, BOOL update)
 
 	if (ret) {
 		DEBUG(0,
-			   ("Error executing query: %s\n", mysql_error(data->handle)));
+			   ("Error executing MySQL query %s: %s\n", query, mysql_error(data->handle)));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -525,7 +525,7 @@ static NTSTATUS mysqlsam_select_by_field(struct pdb_methods * methods, SAM_ACCOU
 	
 	if (mysql_ret) {
 		DEBUG(0,
-			("Error while executing MySQL query: %s\n",
+			("Error while executing MySQL query %s: %s\n", query,
 				mysql_error(data->handle)));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
