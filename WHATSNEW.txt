@@ -1,6 +1,6 @@
-                 WHATS NEW IN Samba 3.0 alpha21
-                       26th November 2002
-                 ===============================
+                  WHATS NEW IN Samba 3.0 alpha22
+                           4th March 2003
+                  ==============================
 
 This is a pre-release of Samba 3.0. This is NOT a stable release.
 Use at your own risk.
@@ -45,8 +45,17 @@ Major new features:
 - Samba now negotiates NT-style status32 codes on the wire. This
   improves error handling a lot.
 
-- better w2k printing support. The support for printing from win2000
-  clients has improved greatly.
+- better w2k printing support including publishing printer
+  attributes in active directory
+
+- new loadable RPC modules
+
+- new dual-daemon winbindd support for better performance
+
+- support for migrating from a Windows NT 4.0 domain 
+
+- support for establishing trust relationships with Windows NT 4.0
+  domain controllers
 
 Plus lots of other changes!
 
@@ -62,33 +71,111 @@ feedback. If you don't provide vital information to help us track down
 the problem then you will probably be ignored.
 
 
-Removed Parameters
-------------------
 
-  * postscript
-  * printer driver
-  * printer driver location
-  * printer driver file
-
-Added Parameters
----------------
-
-  * ldap trust ids
-  * acl compatibility
-  * mangle prefix
-
-
-Modified Parameters
+Changes in alpha22:
 -------------------
 
-  * restrict anonymous
-  * password server
+  Added Parameters
 
+  * client NTLMv2 auth
+  * client lanman auth
+  * client signing
+  * client use spnego
+  * max reported print jobs
+  * msdfs proxy
 
-Changes in alpha21:
 
  See cvs log for SAMBA_3_0 for complete details.  There are many
  smaller numerous changes that would clutter the release notes.
+
+1)  remove the global_myname string and replace with wrapper function
+    global_myname()
+2)  create vfs/ and pdb/ subdirectories for library installs
+3)  Fixup of ordered cleanup of get_dc_list()
+4)  Added more autoconf tests for Stratus VOS
+5)  Fixed nasty bug where file writes with start offsets in the 
+    range 0x80000000 -> 0xFFFFFFFF would fail as they were being cast 
+    from IVAL (uint32) to SMB_OFF_T (off_t or off64_t, both *signed* 
+    types).   The sign extension would cause the offset to be treated 
+    as negative.
+6)  Add support to automatically retrieve the dns host name and domain
+    name of an AD server
+7)  Add support for PRINTER_INFO_7 and publishing printer attributes
+    in active directory
+8)  Fix for 64 bit issues with oplocks and allocation size
+9)  Remove assert(count ==1) for multi-homed PDCs when resolving 
+    DOMAIN<0x1b>
+10) Ensure that change_trust_account_password() always talks to 
+    the PDC
+11) Add some docs on CUPS printing
+12) Fix rpcclient querygroup command
+13) The _abs time functions should not be converting from/to GMT
+14) Fix broken incremental tar in smbclient
+15) Adding supporting code for better testing using Valgrind
+16) Fix for old DOS client when veto files is set to /.*/
+17) Add win32 utility to query driver capabilities to publish
+    (examples/printing/prtpub.c)
+18) Fix memory leak when constructing an driver_level_6 structure and 
+    no dependent files 
+19) Add some friendly versions of NT_STATUS codes
+20) Protect nmbd against malformed reply packets
+21) Removal of unpopular winbind client environment variable
+22) Add msdfs proxy functionality; a CIFS share can directly be a 
+    stand-in for another share, and when clients connect to the first 
+    share, they will be redirected to the proxied share
+23) Make Samba compile cleanly with -Wwrite-strings
+24) Add new timegm() that actually works on solaris
+25) Add support for running smbd, nmbd, & winbindd under the daemontools
+    package
+26) Move user password changes into the NTSTATUS era, and add suppport 
+    for the 'min password age' and 'min passwd len' concepts
+27) Add new gencache based namecache code
+28) Add profiles utility support to Samba 3.0.x
+29) Fix open problem with changing attributes on an existing file
+30) Effeciency fixes for internal messaging system
+31) Make sure to update print queue cache during timeout_processing()
+    to send notify events
+32) Make -i flag work like it did in 2.2
+33) Merge some rpcclient and net functionality from HEAD
+34) Add support for compiling with Heimdal kerberos libraries
+35) Connect to the actual netbios name in smb.conf and not LOCALHOST
+36) Add support for CUPS-PRINTER_CLASS
+37) Add ntlm_auth tool and update NTLMSSP support
+38) require Autoconf 2.53 and remove configure from CVS
+39) Check for too many processes *before* the fork
+40) Fix delete on close semantics to match W2K. 
+41) merge desired_access for open_printer_ex from HEAD, allowing 
+    cupsaddsmb to work again!
+42) Add suport for dynamic RPC modules
+43) wrap all cm_get_XX calls and their subsequent requests in a retry loop 
+    in case we've temporarily lost connection to the DC. Makes winbindd 
+    more reliable
+44) Optimize user_ok() and user_in_group() when verifying group membership
+45) Add NTLMv2 client code (that works) and some SMB signing fixes
+46) Add caching of PRINTER_INFO_2 structures to open printer handles
+47) Add 1/3 second delay in OpenPrinter() reply to trigger a LAN/WAN
+    optimization in Windows 2000 clients
+48) Add "WinXP" to the possible values of the %a variable
+49) Fix to allow blocking lock notification to be done rapidly (no wait for 
+    smb -> smb lock release). Adds new PENDING_LOCK type to lockdb (does 
+    not interfere with existing locks)
+50) Limit the unix domain sockets used by winbindd (also solves FD_SETSIZE 
+    problem in winbindd to boot !). Adds a "last_access" field to winbindd
+    connections, and will close the oldest idle connection once the number 
+    of open connections goes over WINBINDD_MAX_SIMULTANEOUS_CLIENTS (defined 
+    in local.h as 200 currently)
+51) Limit the number of print jobs returned in EnumJobs()
+
+    
+
+                  ===============================
+
+Changes in older alpha releases follow:
+
+---------------------------------------------------------------------
+
+Changes in alpha21:
+-------------------
 
 1)  Numerous documentation updates including new Samba FAQ
 2)  Fixed logic error in checking wins server lists
@@ -124,14 +211,8 @@ Changes in alpha21:
     of DC's, but not authoritative (e.g. password server = DC1 DC2 *)
 
 
-
-                 ===============================
-
-Changes in older alpha releases follow:
-
----------------------------------------------------------------------
-
 Changes in alpha20:
+-------------------
 
 1)   Rework the 'guest account gets RID 501' code again...
 2)   Change to use NT-based session key negotiated for Win2k SPNEGO
@@ -293,86 +374,6 @@ Changes in alpha20:
 124) get some more of our access control bits right on the SAMR pipe
 125) Add -r parameter to smbgroupedit. With -r you can manually choose
      a rid
-
-Changes in alpha19
-1)  Virtual registry framework with printing hooks (jerry)
-2)  Heavy registry updates (jerry)
-3)  Use 850 as the default DOS character set in smb.conf (tpot)
-4)  printer fixes ) removed encoding of queueid in job number (jra)
-5)  A lot of small fixes (jra)
-6)  Don't crash on setfileinfo on printer fsp(jra)
-7)  fixed line buffer mode in XFILE(jra)
-8)  update samba.schema from 2.2 (jerry,idra)
-9)  Fix problem with oplock breaks and win2k )
-    noticed by Lev Iserovich <lev@ciprico.com> (jra)
-10) Update smbgroupedit to document -d ) thanks to metze (abartlet)
-11) Support weird behaviour used by win9x pass-through auth (abartlet,tpot)
-12) Support for duplicating stderr in log files (abartlet)
-13) Move startup time initialisation to server.c (abartlet)
-14) *A lot* of fixes and cleanups (abartlet)
-15) Fix up compiler warnings (abartlet)
-16) Few small fixes (tpot)
-17) Renamed new_cli_netlogon_* -> cli_netlogon_* (tpot)
-18) Fixed segfault in net time when host is unavailable (tridge)
-19) Ensure to be root when opening printer backend tdb (jra)
-20) Merges from APPLIANCE_HEAD (tpot,jerry)
-21) configure updates (tridge)
-22) getgrouplist() updates (tridge)
-23) Support for pdbedit to query account policy values (abartlet)
-24) Allow one to create trusting domain account using smbpasswd (mimir,abartlet)
-25) 'Net rpc trustdom list' (mimir, abartlet)
-26) Fix fallback to anonymous connection (mimir, abartlet)
-27) Fix for pdb_ldap and OpenLDAP 2.1
-28) Added support in swat to determine whether winbind is running (idra)
-29) Add 'hide unwritable' option (idra)
-30) Correct pickup of [homes] share after subsequent session setups (abartlet)
-31) Update rebind code in pdb_ldap (abartlet)
-32) Add some info levels to RPC srvsvc code )
-   thanks to Nigel Williams" <nigel@veritas.com> (abartlet)
-33) Small doc fixes (tridge)
-34) good security patch from Timothy.Sell@unisys.com (tridge)
-35) fix minor nits in nmbd from adtam@cup.hp.com (tridge)
-36) make sure async dns nmbd child dies (tridge)
-37) interim fix for nmbd not registering DOMAIN#1b (tridge)
-38) fix for smbtar filename matching (tridge)
-39) Better quote handling in smb.conf (abartlet)
-40) Support browsers setting multiple languages in swat (idra)
-41) Changed str_list_make to be able to use a different separator string (idra)
-42) Samsync support to insert account info into the pdb (tpot)
-43) Don't hide unwritable dirs when 'hide unwritable' is enabled )
-    suggested by Alexander Oswald <oswald@is.haw-hamburg.de> (idra)
-44) Fix for handling sparse files in smbd (tridge)
-45) Merges from 2_2 (jerry)
-46) Minor printer fixes (jerry)
-47) Add some checks to SID lookup code (abartlet)
-48) Cascaded VFS (Alexander Bokovoy, idra)
-49) Some netbios-less connections support in ADS mode (tridge)
-50) ADS tweaks (tridge)
-51) Fix plaintext passwords with win2k (tridge)
-52) 'net ads info' reports IP of LDAP server (tridge)
-53) Add some more RPC functions (jmcd)
-54) Add 'smb ports = ' option (tridge)
-55) Various small fixes (tridge)
-56) Passdb security checks (abartlet)
-57) Large winbind updates (abartlet)
-58) Moved rpc client routines from libsmb to rpc_client (tpot)
-59) Few nmbd fixes (jmcd)
-60) Fix swat to handle new debug level code (idra)
-61) Fix name length bug in namequeries (tridge)
-62) Don't have client binaries depend on libs they don't use )
-   patch from Steve Langasek <vorlon@netexpress.net> (abartlet)
-63) Printing change notification (merged from HEAD_APPLIANCE) (jerry)
-64) fix delete printer driver (from HEAD_APPLIANCE) (jerry)
-65) Added pdb_xml and pdb_mysql (jelmer)
-66) Update pdb_test (jelmer)
-67) Fix security issues with %m (abartlet)
-68) Support for service joins from win2k AND use SPNEGO (jmcd)
-69) pdbedit -i and -e fix, add -b (idra)
-70) textdocs converted to sgml (jelmer, jerry)
-71) Merge netbios namecache code from APPLIANCE_HEAD (tpot)
-72) Fix segs in new NTLMSSP code (abartlet)
-73) Always make guest rid 501 (abartlet)
-
 
 
 
