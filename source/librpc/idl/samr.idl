@@ -824,7 +824,7 @@
 	/* Function    0x2a     */
 
 	/*
-	  w2k3 return NT_STATUS_NOT_IMPLEMENTED for this
+	  w2k3 returns NT_STATUS_NOT_IMPLEMENTED for this
 	*/
 	NTSTATUS samr_TestPrivateFunctionsDomain(
 		[in,ref]    policy_handle *handle
@@ -835,7 +835,7 @@
 	/* Function    0x2b     */
 
 	/*
-	  w2k3 return NT_STATUS_NOT_IMPLEMENTED for this
+	  w2k3 returns NT_STATUS_NOT_IMPLEMENTED for this
 	*/
 	NTSTATUS samr_TestPrivateFunctionsUser(
 		[in,ref]    policy_handle *handle
