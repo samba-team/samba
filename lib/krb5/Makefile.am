@@ -135,6 +135,7 @@ $(srcdir)/krb5-private.h:
 libkrb5_la_LIBADD = ../com_err/error.lo ../com_err/com_err.lo
 
 man_MANS =					\
+	kerberos.8				\
 	krb5.conf.5				\
 	krb5_425_conv_principal.3		\
 	krb5_appdefault.3			\
