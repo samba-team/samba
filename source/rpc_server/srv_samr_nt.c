@@ -1473,13 +1473,14 @@ NTSTATUS _samr_lookup_names(pipes_struct *p, SAMR_Q_LOOKUP_NAMES *q_u, SAMR_R_LO
 	for (i = 0; i < num_rids; i++) {
 		fstring name;
             	DOM_SID sid;
+            	int ret;
 
 	        r_u->status = NT_STATUS_NONE_MAPPED;
 
 	        rid [i] = 0xffffffff;
 	        type[i] = SID_NAME_UNKNOWN;
 
-		rpcstr_pull(name, q_u->uni_name[i].buffer, sizeof(name), q_u->uni_name[i].uni_str_len*2, 0);
+		ret = rpcstr_pull(name, q_u->uni_name[i].buffer, sizeof(name), q_u->uni_name[i].uni_str_len*2, 0);
 
  		/*
 		 * we are only looking for a name
@@ -1492,7 +1493,8 @@ NTSTATUS _samr_lookup_names(pipes_struct *p, SAMR_Q_LOOKUP_NAMES *q_u, SAMR_R_LO
 		 * a cleaner code is to add the sid of the domain we're looking in
 		 * to the local_lookup_name function.
 		 */
-            	if(local_lookup_name(name, &sid, &local_type)) {
+		 
+            	if ((ret > 0) && local_lookup_name(name, &sid, &local_type)) {
                 	sid_split_rid(&sid, &local_rid);
 				
 			if (sid_equal(&sid, &pol_sid)) {
