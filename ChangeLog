@@ -1,3 +1,7 @@
+Sat Feb 27 22:17:30 1999  Johan Danielsson  <joda@blubb.pdc.kth.se>
+
+	* admin/ktutil.c: add minimally working `get' command
+
 Sat Feb 27 19:44:49 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* lib/hdb/convert_db.c: more typos
@@ -16,6 +20,10 @@ Fri Feb 26 17:37:00 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 Thu Feb 25 11:16:49 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* configure.in: -O does not belong in WFLAGS
+
+Thu Feb 25 11:05:57 1999  Johan Danielsson  <joda@blubb.pdc.kth.se>
+
+	* lib/asn1/der_put.c: fix der_put_int
 
 Tue Feb 23 20:35:12 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
