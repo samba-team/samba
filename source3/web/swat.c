@@ -26,8 +26,7 @@
 #include "includes.h"
 #include "smb.h"
 
-#define GLOBALS_SNUM -2
-#define DEFAULTS_SNUM -1
+#define GLOBALS_SNUM -1
 
 static pstring servicesf = CONFIGFILE;
 
@@ -84,7 +83,7 @@ static void show_parameter(int snum, struct parm_struct *parm)
 	int i;
 	void *ptr = parm->ptr;
 
-	if (parm->class == P_LOCAL) {
+	if (parm->class == P_LOCAL && snum >= 0) {
 		ptr = lp_local_ptr(snum, ptr);
 	}
 
@@ -134,7 +133,8 @@ static void show_parameter(int snum, struct parm_struct *parm)
 			       (*(int *)ptr)==parm->enum_list[i].value?"CHECKED":"", 
 			       parm->enum_list[i].name);
 		break;
-			
+	case P_SEP:
+		break;
 	}
 	printf("</td></tr>\n");
 }
@@ -144,18 +144,27 @@ static void show_parameters(int snum, int allparameters, int advanced, int print
 {
 	int i = 0;
 	struct parm_struct *parm;
-
-	printf("<table>\n");
+	char *heading = NULL;
+	char *last_heading = NULL;
 
 	while ((parm = lp_next_parameter(snum, &i, allparameters))) {
+		if (snum < 0 && parm->class == P_LOCAL && !(parm->flags & FLAG_GLOBAL))
+			continue;
+		if (parm->class == P_SEPARATOR) {
+			heading = parm->label;
+			continue;
+		}
 		if (parm->flags & FLAG_HIDE) continue;
 		if (!advanced) {
 			if (!printers && !(parm->flags & FLAG_BASIC)) continue;
 			if (printers && !(parm->flags & FLAG_PRINT)) continue;
 		}
+		if (heading && heading != last_heading) {
+			printf("<tr><td></td></tr><tr><td><b><u>%s</u></b></td></tr>\n", heading);
+			last_heading = heading;
+		}
 		show_parameter(snum, parm);
 	}
-	printf("</table>\n");
 }
 
 
@@ -171,6 +180,7 @@ static int save_reload(void)
 	}
 
 	fprintf(f, "# Samba config file created using SWAT\n");
+	fprintf(f, "# Date: %s\n\n", timestring());
 
 	lp_dump(f);
 
@@ -178,7 +188,7 @@ static int save_reload(void)
 
 	lp_killunused(NULL);
 
-	if (!lp_load(servicesf,False)) {
+	if (!lp_load(servicesf,False,False,False)) {
                 printf("Can't reload %s\n", servicesf);
                 return 0;
         }
@@ -202,15 +212,13 @@ static void commit_parameters(int snum)
 			lp_do_parameter(snum, parm->label, v); 
 		}
 	}
-
-	save_reload();
 }
 
 
 /* load the smb.conf file into loadparm. */
 static void load_config(void)
 {
-	if (!lp_load(servicesf,False)) {
+	if (!lp_load(servicesf,False,True,False)) {
 		printf("<b>Can't load %s - using defaults</b><p>\n", 
 		       servicesf);
 	}
@@ -237,6 +245,7 @@ static void show_main_buttons(void)
 	image_link("Shares", "shares", "images/shares.gif", 50, 50);
 	image_link("Printers", "printers", "images/printers.gif", 50, 50);
 	image_link("Status", "status", "images/status.gif", 50, 50);
+	image_link("View Config", "viewconfig", "images/viewconfig.gif", 50, 50);
 
 	printf("<HR>\n");
 }
@@ -245,6 +254,16 @@ static void show_main_buttons(void)
 static void welcome_page(void)
 {
 	include_html("help/welcome.html");
+}
+
+
+/* display the current smb.conf  */
+static void viewconfig_page(void)
+{
+	printf("<H2>Current Config</H2>\n");
+	printf("<pre>");
+	include_html(servicesf);
+	printf("</pre>");
 }
 
 
@@ -260,6 +279,7 @@ static void globals_page(void)
 
 	if (cgi_variable("Commit")) {
 		commit_parameters(GLOBALS_SNUM);
+		save_reload();
 	}
 
 	printf("<FORM method=post>\n");
@@ -272,7 +292,9 @@ static void globals_page(void)
 	}
 	printf("<p>\n");
 	
+	printf("<table>\n");
 	show_parameters(GLOBALS_SNUM, 1, advanced, 0);
+	printf("</table>\n");
 
 	if (advanced) {
 		printf("<input type=hidden name=\"Advanced\" value=1>\n");
@@ -300,6 +322,7 @@ static void shares_page(void)
 
 	if (cgi_variable("Commit") && snum >= 0) {
 		commit_parameters(snum);
+		save_reload();
 	}
 
 	if (cgi_variable("Delete") && snum >= 0) {
@@ -310,7 +333,7 @@ static void shares_page(void)
 	}
 
 	if (cgi_variable("createshare") && (share=cgi_variable("newshare"))) {
-		lp_copy_service(DEFAULTS_SNUM, share);
+		lp_copy_service(GLOBALS_SNUM, share);
 		save_reload();
 		snum = lp_servicenumber(share);
 	}
@@ -349,7 +372,9 @@ static void shares_page(void)
 	}
 
 	if (snum >= 0) {
+		printf("<table>\n");
 		show_parameters(snum, 1, advanced, 0);
+		printf("</table>\n");
 	}
 
 	if (advanced) {
@@ -379,6 +404,7 @@ static void printers_page(void)
 
 	if (cgi_variable("Commit") && snum >= 0) {
 		commit_parameters(snum);
+		save_reload();
 	}
 
 	if (cgi_variable("Delete") && snum >= 0) {
@@ -389,7 +415,7 @@ static void printers_page(void)
 	}
 
 	if (cgi_variable("createshare") && (share=cgi_variable("newshare"))) {
-		lp_copy_service(DEFAULTS_SNUM, share);
+		lp_copy_service(GLOBALS_SNUM, share);
 		snum = lp_servicenumber(share);
 		lp_do_parameter(snum, "print ok", "Yes");
 		save_reload();
@@ -430,7 +456,9 @@ static void printers_page(void)
 	}
 
 	if (snum >= 0) {
+		printf("<table>\n");
 		show_parameters(snum, 1, advanced, 1);
+		printf("</table>\n");
 	}
 
 	if (advanced) {
@@ -588,6 +616,8 @@ int main(int argc, char *argv[])
 		printers_page();
 	} else if (strcmp(page,"status")==0) {
 		status_page();
+	} else if (strcmp(page,"viewconfig")==0) {
+		viewconfig_page();
 	} else {
 		welcome_page();
 	}
