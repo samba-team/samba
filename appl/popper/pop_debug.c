@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995 - 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -129,15 +129,12 @@ doit_v5 (char *host, int port)
 {
     krb5_error_code ret;
     krb5_context context;
-    krb5_ccache ccache;
     krb5_auth_context auth_context = NULL;
     krb5_principal server;
     int s = get_socket (host, port);
 
     krb5_init_context (&context);
     
-    krb5_cc_default (context, &ccache);
-
     ret = krb5_sname_to_principal (context,
 				   host,
 				   "pop",
@@ -157,7 +154,7 @@ doit_v5 (char *host, int port)
 			 0,
 			 NULL,
 			 NULL,
-			 ccache,
+			 NULL,
 			 NULL,
 			 NULL,
 			 NULL);
