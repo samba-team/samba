@@ -1,4 +1,5 @@
-<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>Chapter 39. Samba Performance Tuning</title><link rel="stylesheet" href="samba.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.60.1"><link rel="home" href="index.html" title="SAMBA Project Documentation"><link rel="up" href="Appendixes.html" title="Part VI. Appendixes"><link rel="previous" href="Other-Clients.html" title="Chapter 38. Samba and other CIFS clients"><link rel="next" href="DNSDHCP.html" title="Chapter 40. DNS and DHCP Configuration Guide"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Chapter 39. Samba Performance Tuning</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="Other-Clients.html">Prev</a> </td><th width="60%" align="center">Part VI. Appendixes</th><td width="20%" align="right"> <a accesskey="n" href="DNSDHCP.html">Next</a></td></tr></table><hr></div><div class="chapter" lang="en"><div class="titlepage"><div><div><h2 class="title"><a name="speed"></a>Chapter 39. Samba Performance Tuning</h2></div><div><div class="author"><h3 class="author"><span class="firstname">Paul</span> <span class="surname">Cochrane</span></h3><div class="affiliation"><span class="orgname">Dundee Limb Fitting Centre<br></span><div class="address"><p><tt class="email">&lt;<a href="mailto:paulc@dth.scot.nhs.uk">paulc@dth.scot.nhs.uk</a>&gt;</tt></p></div></div></div></div><div><div class="author"><h3 class="author"><span class="firstname">Jelmer</span> <span class="othername">R.</span> <span class="surname">Vernooij</span></h3><div class="affiliation"><span class="orgname">The Samba Team<br></span><div class="address"><p><tt class="email">&lt;<a href="mailto:jelmer@samba.org">jelmer@samba.org</a>&gt;</tt></p></div></div></div></div><div><div class="author"><h3 class="author"><span class="firstname">John</span> <span class="othername">H.</span> <span class="surname">Terpstra</span></h3><div class="affiliation"><span class="orgname">Samba Team<br></span><div class="address"><p><tt class="email">&lt;<a href="mailto:jht@samba.org">jht@samba.org</a>&gt;</tt></p></div></div></div></div></div><div></div></div><div class="toc"><p><b>Table of Contents</b></p><dl><dt><a href="speed.html#id3018190">Comparisons</a></dt><dt><a href="speed.html#id3018235">Socket options</a></dt><dt><a href="speed.html#id3018310">Read size</a></dt><dt><a href="speed.html#id3018354">Max xmit</a></dt><dt><a href="speed.html#id3018407">Log level</a></dt><dt><a href="speed.html#id3018430">Read raw</a></dt><dt><a href="speed.html#id3018486">Write raw</a></dt><dt><a href="speed.html#id3018528">Slow Logins</a></dt><dt><a href="speed.html#id3018550">LDAP</a></dt><dt><a href="speed.html#id3018575">Client tuning</a></dt><dt><a href="speed.html#id3018601">Samba performance problem due changing kernel</a></dt><dt><a href="speed.html#id3018632">Corrupt tdb Files</a></dt></dl></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id3018190"></a>Comparisons</h2></div></div><div></div></div><p>
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>Chapter 39. Samba Performance Tuning</title><link rel="stylesheet" href="samba.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.60.1"><link rel="home" href="index.html" title="SAMBA Project Documentation"><link rel="up" href="Appendixes.html" title="Part VI. Appendixes"><link rel="previous" href="Other-Clients.html" title="Chapter 38. Samba and other CIFS clients"><link rel="next" href="DNSDHCP.html" title="Chapter 40. DNS and DHCP Configuration Guide"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Chapter 39. Samba Performance Tuning</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="Other-Clients.html">Prev</a> </td><th width="60%" align="center">Part VI. Appendixes</th><td width="20%" align="right"> <a accesskey="n" href="DNSDHCP.html">Next</a></td></tr></table><hr></div><div class="chapter" lang="en"><div class="titlepage"><div><div><h2 class="title"><a name="speed"></a>Chapter 39. Samba Performance Tuning</h2></div><div><div class="author"><h3 class="author"><span class="firstname">Paul</span> <span class="surname">Cochrane</span></h3><div class="affiliation"><span class="orgname">Dundee Limb Fitting Centre<br></span><div class="address"><p><tt class="email">&lt;<a href="mailto:paulc@dth.scot.nhs.uk">paulc@dth.scot.nhs.uk</a>&gt;</tt></p></div></div></div></div><div><div class="author"><h3 class="author"><span class="firstname">Jelmer</span> <span class="othername">R.</span> <span class="surname">Vernooij</span></h3><div class="affiliation"><span class="orgname">The Samba Team<br></span><div class="address"><p><tt class="email">&lt;<a href="mailto:jelmer@samba.org">jelmer@samba.org</a>&gt;</tt></p></div></div></div></div><div><div class="author"><h3 class="author"><span class="firstname">John</span> <span class="othername">H.</span> <span class="surname">Terpstra</span></h3><div class="affiliation"><span class="orgname">Samba Team<br></span><div class="address"><p><tt class="email">&lt;<a href="mailto:jht@samba.org">jht@samba.org</a>&gt;</tt></p></div></div></div></div></div><div></div></div><div class="toc"><p><b>Table of Contents</b></p><dl><dt><a href="speed.html#id3014177">Comparisons</a></dt><dt><a href="speed.html#id3014222">Socket options</a></dt><dt><a href="speed.html#id3014295">Read size</a></dt><dt><a href="speed.html#id3014339">Max xmit</a></dt><dt><a href="speed.html#id3014392">Log level</a></dt><dt><a href="speed.html#id3014415">Read raw</a></dt><dt><a href="speed.html#id3015357">Write raw</a></dt><dt><a href="speed.html#id3015399">Slow Logins</a></dt><dt><a href="speed.html#id3015420">LDAP</a></dt><dt><a href="speed.html#id3015445">Client tuning</a></dt><dt><a href="speed.html#id3015468">Samba performance problem due changing kernel</a></dt><dt><a href="speed.html#id3015501">Corrupt tdb Files</a></dt></dl></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id3014177"></a>Comparisons</h2></div></div><div></div></div><p>
 The Samba server uses TCP to talk to the client. Thus if you are
 trying to see if it performs well you should really compare it to
 programs that use the same protocol. The most readily available
@@ -20,7 +21,7 @@ suspect the biggest factor is not Samba vs some other system but the
 hardware and drivers used on the various systems. Given similar
 hardware Samba should certainly be competitive in speed with other
 systems.
-</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id3018235"></a>Socket options</h2></div></div><div></div></div><p>
+</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id3014222"></a>Socket options</h2></div></div><div></div></div><p>
 There are a number of socket options that can greatly affect the
 performance of a TCP based server like Samba.
 </p><p>
@@ -39,7 +40,7 @@ biggest single difference for most networks. Many people report that
 adding <i class="parameter"><tt>socket options = TCP_NODELAY</tt></i> doubles the read 
 performance of a Samba drive. The best explanation I have seen for this is
 that the Microsoft TCP/IP stack is slow in sending tcp ACKs.
-</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id3018310"></a>Read size</h2></div></div><div></div></div><p>
+</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id3014295"></a>Read size</h2></div></div><div></div></div><p>
 The option <i class="parameter"><tt>read size</tt></i> affects the overlap of disk
 reads/writes with network reads/writes. If the amount of data being
 transferred in several of the SMB commands (currently SMBwrite, SMBwriteX and
@@ -56,7 +57,7 @@ The default value is 16384, but very little experimentation has been
 done yet to determine the optimal value, and it is likely that the best
 value will vary greatly between systems anyway. A value over 65536 is
 pointless and will cause you to allocate memory unnecessarily.
-</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id3018354"></a>Max xmit</h2></div></div><div></div></div><p>
+</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id3014339"></a>Max xmit</h2></div></div><div></div></div><p>
 At startup the client and server negotiate a <i class="parameter"><tt>maximum transmit</tt></i> size,
 which limits the size of nearly all SMB commands. You can set the
 maximum size that Samba will negotiate using the <i class="parameter"><tt>max xmit = </tt></i> option
@@ -70,12 +71,12 @@ clients may perform better with a smaller transmit unit. Trying values
 of less than 2048 is likely to cause severe problems.
 </p><p>
 In most cases the default is the best option.
-</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id3018407"></a>Log level</h2></div></div><div></div></div><p>
+</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id3014392"></a>Log level</h2></div></div><div></div></div><p>
 If you set the log level (also known as <i class="parameter"><tt>debug level</tt></i>) higher than 2
 then you may suffer a large drop in performance. This is because the
 server flushes the log file after each operation, which can be very
 expensive. 
-</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id3018430"></a>Read raw</h2></div></div><div></div></div><p>
+</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id3014415"></a>Read raw</h2></div></div><div></div></div><p>
 The <i class="parameter"><tt>read raw</tt></i> operation is designed to be an optimised, low-latency
 file read operation. A server may choose to not support it,
 however. and Samba makes support for <i class="parameter"><tt>read raw</tt></i> optional, with it
@@ -88,7 +89,7 @@ read operations.
 So you might like to try <i class="parameter"><tt>read raw = no</tt></i> and see what happens on your
 network. It might lower, raise or not affect your performance. Only
 testing can really tell.
-</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id3018486"></a>Write raw</h2></div></div><div></div></div><p>
+</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id3015357"></a>Write raw</h2></div></div><div></div></div><p>
 The <i class="parameter"><tt>write raw</tt></i> operation is designed to be an optimised, low-latency
 file write operation. A server may choose to not support it,
 however. and Samba makes support for <i class="parameter"><tt>write raw</tt></i> optional, with it
@@ -96,18 +97,18 @@ being enabled by default.
 </p><p>
 Some machines may find <i class="parameter"><tt>write raw</tt></i> slower than normal write, in which
 case you may wish to change this option.
-</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id3018528"></a>Slow Logins</h2></div></div><div></div></div><p>
+</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id3015399"></a>Slow Logins</h2></div></div><div></div></div><p>
 Slow logins are almost always due to the password checking time. Using
 the lowest practical <i class="parameter"><tt>password level</tt></i> will improve things. 
-</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id3018550"></a>LDAP</h2></div></div><div></div></div><p>
+</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id3015420"></a>LDAP</h2></div></div><div></div></div><p>
 LDAP can be vastly improved by using the
 <a href="smb.conf.5.html#LDAPTRUSTIDS" target="_top"><i class="parameter"><tt>ldap trust ids</tt></i></a> parameter.
-</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id3018575"></a>Client tuning</h2></div></div><div></div></div><p>
+</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id3015445"></a>Client tuning</h2></div></div><div></div></div><p>
 Often a speed problem can be traced to the client. The client (for
 example Windows for Workgroups) can often be tuned for better TCP
 performance. Check the sections on the various clients in 
 <a href="Other-Clients.html" title="Chapter 38. Samba and other CIFS clients">Samba and Other Clients</a>.
-</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id3018601"></a>Samba performance problem due changing kernel</h2></div></div><div></div></div><p>
+</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id3015468"></a>Samba performance problem due changing kernel</h2></div></div><div></div></div><p>
 Hi everyone. I am running Gentoo on my server and samba 2.2.8a. Recently
 I changed kernel version from linux-2.4.19-gentoo-r10 to
 linux-2.4.20-wolk4.0s. And now I have performance issue with samba. Ok
@@ -122,7 +123,7 @@ Grab mii-tool and check the duplex settings on the NIC.
 My guess is that it is a link layer issue, not an application
 layer problem.  Also run ifconfig and verify that the framing
 error, collisions, etc... look normal for ethernet.
-</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id3018632"></a>Corrupt tdb Files</h2></div></div><div></div></div><p>
+</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id3015501"></a>Corrupt tdb Files</h2></div></div><div></div></div><p>
 Well today it happend, our first major problem using samba.
 Our samba PDC server has been hosting 3 TB of data to our 500+ users
 [Windows NT/XP]  for the last 3 years using samba, no problem.
