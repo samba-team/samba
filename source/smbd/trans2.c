@@ -274,6 +274,27 @@ static unsigned int estimate_ea_size(connection_struct *conn, files_struct *fsp,
 }
 
 /****************************************************************************
+ Ensure the EA name is case insensitive by matching any existing EA name.
+****************************************************************************/
+
+static void canonicalize_ea_name(connection_struct *conn, files_struct *fsp, const char *fname, fstring unix_ea_name)
+{
+	size_t total_ea_len;
+	TALLOC_CTX *mem_ctx = talloc_init("canonicalize_ea_name");
+	struct ea_list *ea_list = get_ea_list(mem_ctx, conn, fsp, fname, &total_ea_len);
+
+	for (; ea_list; ea_list = ea_list->next) {
+		if (strequal(&unix_ea_name[5], ea_list->ea.name)) {
+			DEBUG(10,("canonicalize_ea_name: %s -> %s\n",
+				&unix_ea_name[5], ea_list->ea.name));
+			safe_strcpy(&unix_ea_name[5], ea_list->ea.name, sizeof(fstring)-6);
+			break;
+		}
+	}
+	talloc_destroy(mem_ctx);
+}
+
+/****************************************************************************
  Set or delete an extended attribute.
 ****************************************************************************/
 
@@ -317,6 +338,8 @@ static NTSTATUS set_ea(connection_struct *conn, files_struct *fsp, const char *f
 	pull_ascii(&unix_ea_name[5], pdata, sizeof(fstring) - 5, -1, STR_TERMINATE);
 	pdata += (namelen + 1);
 
+	canonicalize_ea_name(conn, fsp, fname, unix_ea_name);
+
 	DEBUG(10,("set_ea: ea_name %s ealen = %u\n", unix_ea_name, ealen));
 	if (ealen) {
 		DEBUG(10,("set_ea: data :\n"));
@@ -341,8 +364,8 @@ static NTSTATUS set_ea(connection_struct *conn, files_struct *fsp, const char *f
 		}
 #ifdef ENOATTR
 		/* Removing a non existent attribute always succeeds. */
-		DEBUG(10,("set_ea: deleting ea name %s didn't exist - succeeding by default.\n", unix_ea_name));
 		if (ret == -1 && errno == ENOATTR) {
+			DEBUG(10,("set_ea: deleting ea name %s didn't exist - succeeding by default.\n", unix_ea_name));
 			ret = 0;
 		}
 #endif
