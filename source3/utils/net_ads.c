@@ -156,6 +156,7 @@ static int net_ads_join(int argc, const char **argv)
 	ADS_STRUCT *ads;
 	int rc;
 	char *password;
+	char *tmp_password;
 	extern pstring global_myname;
 	NTSTATUS status;
 
@@ -163,9 +164,10 @@ static int net_ads_join(int argc, const char **argv)
 		DEBUG(1,("Failed to initialise secrets database\n"));
 		return -1;
 	}
-
-	password = generate_random_str(15);
-	password = strdup(password);
+	
+	
+	tmp_password = generate_random_str(15);
+	password = strdup(tmp_password);
 
 	if (!(ads = ads_startup())) return -1;
 
