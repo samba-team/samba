@@ -432,13 +432,13 @@ static BOOL test_misc(void)
 	CHECK_BLOCKS(p1, 3);
 	talloc_free(p2);
 
-	d = talloc_array_p(p1, double, 0x20000000);
+	d = talloc_array(p1, double, 0x20000000);
 	if (d) {
 		printf("failed: integer overflow not detected\n");
 		return False;
 	}
 
-	d = talloc_realloc_p(p1, d, double, 0x20000000);
+	d = talloc_realloc(p1, d, double, 0x20000000);
 	if (d) {
 		printf("failed: integer overflow not detected\n");
 		return False;
@@ -583,14 +583,14 @@ static BOOL test_realloc_child(void)
 
 	root = talloc_new(NULL);
 
-	el1 = talloc_p(root, struct el1);
-	el1->list = talloc_p(el1, struct el2 *);
-	el1->list[0] = talloc_p(el1->list, struct el2);
+	el1 = talloc(root, struct el1);
+	el1->list = talloc(el1, struct el2 *);
+	el1->list[0] = talloc(el1->list, struct el2);
 	el1->list[0]->name = talloc_strdup(el1->list[0], "testing");
 	
-	el2 = talloc_p(el1->list, struct el2);
+	el2 = talloc(el1->list, struct el2);
 
-	el1->list = talloc_realloc_p(el1, el1->list, struct el2 *, 2);
+	el1->list = talloc_realloc(el1, el1->list, struct el2 *, 2);
 	el1->list[1] = el2;
 
 	talloc_free(root);
@@ -609,10 +609,10 @@ static BOOL test_steal(void)
 
 	root = talloc_new(NULL);
 
-	p1 = talloc_array_p(root, char, 10);
+	p1 = talloc_array(root, char, 10);
 	CHECK_SIZE(p1, 10);
 
-	p2 = talloc_realloc_p(root, NULL, char, 20);
+	p2 = talloc_realloc(root, NULL, char, 20);
 	CHECK_SIZE(p1, 10);
 	CHECK_SIZE(root, 30);
 
