@@ -23,25 +23,79 @@
 
 #ifdef HAVE_KRB5
 
+/*
+  simulate a kinit, putting the tgt in the default cache location
+  remus@snapserver.com
+*/
+int kerberos_kinit_password(const char *principal, const char *password)
+{
+	krb5_context ctx;
+	krb5_error_code code = 0;
+	krb5_ccache cc;
+	krb5_principal me;
+	krb5_creds my_creds;
+	
+	if ((code = krb5_init_context(&ctx)))
+		return code;
+	
+	if ((code = krb5_cc_default(ctx, &cc))) {
+		krb5_free_context(ctx);
+		return code;
+	}
+	
+	if ((code = krb5_parse_name(ctx, principal, &me))) {
+		krb5_free_context(ctx);	
+		return code;
+	}
+	
+	if ((code = krb5_get_init_creds_password(ctx, &my_creds, me, password, NULL, 
+						NULL, 0, NULL, NULL))) {
+		krb5_free_principal(ctx, me);
+		krb5_free_context(ctx);		
+		return code;
+	}
+	
+	if ((code = krb5_cc_initialize(ctx, cc, me))) {
+		krb5_free_cred_contents(ctx, &my_creds);
+		krb5_free_principal(ctx, me);
+		krb5_free_context(ctx);		
+		return code;
+	}
+	
+	if ((code = krb5_cc_store_cred(ctx, cc, &my_creds))) {
+		krb5_cc_close(ctx, cc);
+		krb5_free_cred_contents(ctx, &my_creds);
+		krb5_free_principal(ctx, me);
+		krb5_free_context(ctx);		
+		return code;
+	}
+	
+	krb5_cc_close(ctx, cc);
+	krb5_free_cred_contents(ctx, &my_creds);
+	krb5_free_principal(ctx, me);
+	krb5_free_context(ctx);		
+	
+	return 0;
+}
 
-/* VERY nasty hack until we have proper kerberos code for this */
-void kerberos_kinit_password(ADS_STRUCT *ads)
+
+
+/* run kinit to setup our ccache */
+int ads_kinit_password(ADS_STRUCT *ads)
 {
 	char *s;
-	FILE *f;
+	int ret;
 	extern pstring global_myname;
 	fstring myname;
 	fstrcpy(myname, global_myname);
 	strlower(myname);
-	asprintf(&s, "kinit 'HOST/%s@%s'", global_myname, ads->realm);
-	DEBUG(0,("HACK!! Running %s\n", s));
-	f = popen(s, "w");
-	if (f) {
-		fprintf(f,"%s\n", ads->password);
-		fflush(f);
-		fclose(f);
-	}
+	asprintf(&s, "HOST/%s@%s", global_myname, ads->realm);
+	ret = kerberos_kinit_password(s, ads->password);
 	free(s);
+	if (ret) {
+		DEBUG(1,("kerberos_kinit_password failed: %s\n", error_message(ret)));
+	}
+	return ret;
 }
 
 /*

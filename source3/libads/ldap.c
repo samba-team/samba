@@ -74,7 +74,7 @@ int ads_connect(ADS_STRUCT *ads)
 		/* the machine acct password might have changed */
 		free(ads->password);
 		ads->password = secrets_fetch_machine_password();
-		kerberos_kinit_password(ads);
+		ads_kinit_password(ads);
 	}
 
 	rc = ldap_sasl_interactive_bind_s(ads->ld, NULL, NULL, NULL, NULL, 
