@@ -290,5 +290,8 @@ vstrcollect(va_list *ap);
 char **
 strcollect(char *first, ...);
 
+void timevalfix(struct timeval *t1);
+void timevaladd(struct timeval *t1, const struct timeval *t2);
+void timevalsub(struct timeval *t1, const struct timeval *t2);
 
 #endif /* __ROKEN_COMMON_H__ */
