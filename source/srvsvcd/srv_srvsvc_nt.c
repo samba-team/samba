@@ -375,7 +375,7 @@ static uint32 make_srv_r_net_share_enum( uint32 resume_hnd,
 
 	if (share_level == 0)
 	{
-		status = (NT_STATUS_INVALID_INFO_CLASS);
+		status = NT_STATUS_INVALID_INFO_CLASS;
 	}
 	else
 	{
@@ -638,7 +638,7 @@ static uint32 make_srv_r_net_sess_enum( uint32 resume_hnd,
 
 	if (sess_level == -1)
 	{
-		status = (NT_STATUS_INVALID_INFO_CLASS);
+		status = NT_STATUS_INVALID_INFO_CLASS;
 	}
 	else
 	{
@@ -868,7 +868,7 @@ static uint32 make_srv_conn_info_ctr(SRV_CONN_INFO_CTR *ctr,
 			(*resume_hnd = 0);
 			(*total_entries) = 0;
 			ctr->ptr_conn_ctr = 0;
-			status = 0xC0000000 | NT_STATUS_INVALID_INFO_CLASS;
+			status = NT_STATUS_INVALID_INFO_CLASS;
 			break;
 		}
 	}
@@ -890,7 +890,7 @@ static uint32 make_srv_r_net_conn_enum( uint32 resume_hnd,
 
 	if (conn_level == -1)
 	{
-		status = (0xC0000000 | NT_STATUS_INVALID_INFO_CLASS);
+		status = NT_STATUS_INVALID_INFO_CLASS;
 	}
 	else
 	{
@@ -927,6 +927,147 @@ uint32 _srv_net_conn_enum( const UNISTR2 *srv_name,
 						conn_level );
 
 	DEBUG(5,("_srv_net_conn_enum: %d\n", __LINE__));
+
+	return status;
+}
+
+/*******************************************************************
+ fill in a file info level 3 structure.
+ ********************************************************************/
+static void make_srv_file_3_info(FILE_INFO_3     *fl3, FILE_INFO_3_STR *str3,
+				uint32 fnum, uint32 perms, uint32 num_locks,
+				char *path_name, char *user_name)
+{
+	make_srv_file_info3    (fl3 , fnum, perms, num_locks, path_name, user_name);
+	make_srv_file_info3_str(str3, path_name, user_name);
+}
+
+/*******************************************************************
+ fill in a file info level 3 structure.
+
+ this function breaks the rule that i'd like to be in place, namely
+ it doesn't receive its data as arguments: it has to call lp_xxxx()
+ functions itself.  yuck.
+
+ ********************************************************************/
+static void make_srv_file_info_3(SRV_FILE_INFO_3 *fl3, uint32 *fnum, uint32 *ftot)
+{
+	uint32 num_entries = 0;
+	(*ftot) = 1;
+
+	if (fl3 == NULL)
+	{
+		(*fnum) = 0;
+		return;
+	}
+
+	DEBUG(5,("make_srv_file_3_fl3\n"));
+
+	for (; (*fnum) < (*ftot) && num_entries < MAX_FILE_ENTRIES; (*fnum)++)
+	{
+		make_srv_file_3_info(&(fl3->info_3    [num_entries]),
+			                 &(fl3->info_3_str[num_entries]),
+		                     (*fnum), 0x35, 0, "\\PIPE\\samr", "dummy user");
+
+		/* move on to creating next file */
+		num_entries++;
+	}
+
+	fl3->num_entries_read  = num_entries;
+	fl3->ptr_file_info     = num_entries > 0 ? 1 : 0;
+	fl3->num_entries_read2 = num_entries;
+	
+	if ((*fnum) >= (*ftot))
+	{
+		(*fnum) = 0;
+	}
+}
+
+/*******************************************************************
+ makes a SRV_R_NET_FILE_ENUM structure.
+********************************************************************/
+static uint32 make_srv_file_info_ctr(SRV_FILE_INFO_CTR *ctr,
+				int switch_value, uint32 *resume_hnd, uint32 *total_entries)  
+{
+	uint32 status = NT_STATUS_NOPROBLEMO;
+	DEBUG(5,("make_srv_file_info_ctr: %d\n", __LINE__));
+
+	ctr->switch_value = switch_value;
+
+	switch (switch_value)
+	{
+		case 3:
+		{
+			make_srv_file_info_3(&(ctr->file.info3), resume_hnd, total_entries);
+			ctr->ptr_file_ctr = 1;
+			break;
+		}
+		default:
+		{
+			DEBUG(5,("make_srv_file_info_ctr: unsupported switch value %d\n",
+			          switch_value));
+			(*resume_hnd = 0);
+			(*total_entries) = 0;
+			ctr->ptr_file_ctr = 0;
+			status = NT_STATUS_INVALID_INFO_CLASS;
+			break;
+		}
+	}
+
+	return status;
+}
+
+/*******************************************************************
+ makes a SRV_R_NET_CONN_ENUM structure.
+********************************************************************/
+static uint32 make_srv_r_net_file_enum( uint32 resume_hnd,
+                        int switch_value, SRV_FILE_INFO_CTR *ctr,
+                        uint32 *total_entries, ENUM_HND *enum_hnd,
+                        uint32 file_level )
+{
+	uint32 status;
+
+	DEBUG(5,("make_srv_r_net_file_enum: %d\n", __LINE__));
+
+	if (file_level == 0)
+	{
+		status = NT_STATUS_INVALID_INFO_CLASS;
+	}
+	else
+	{
+		status = make_srv_file_info_ctr(ctr, switch_value,
+				&resume_hnd, total_entries);
+	}
+	if (status != NT_STATUS_NOPROBLEMO)
+	{
+		resume_hnd = 0;
+	}
+	make_enum_hnd(enum_hnd, resume_hnd);
+
+	return status;
+}
+
+/*******************************************************************
+net file enum
+********************************************************************/
+uint32 _srv_net_file_enum( const UNISTR2 *srv_name, 
+			uint32 switch_value, SRV_FILE_INFO_CTR *ctr,
+			uint32 preferred_len, ENUM_HND *enum_hnd,
+			uint32 *total_entries, uint32 file_level )
+{
+	uint32 status;
+
+	DEBUG(5,("_srv_net_file_enum: %d\n", __LINE__));
+
+	/* set up the */
+	status = make_srv_r_net_file_enum(get_enum_hnd(enum_hnd),
+						ctr->switch_value,
+						ctr,
+						total_entries,
+						enum_hnd,
+						file_level );
+
+	DEBUG(5,("_srv_net_file_enum: %d\n", __LINE__));
 
 	return status;
 }

@@ -5142,6 +5142,10 @@ uint32 _srv_net_conn_enum( const UNISTR2 *srv_name,
 			uint32 switch_value, SRV_CONN_INFO_CTR *ctr,
 			uint32 preferred_len, ENUM_HND *enum_hnd,
 			uint32 *total_entries, uint32 conn_level );
+uint32 _srv_net_file_enum( const UNISTR2 *srv_name, 
+			uint32 switch_value, SRV_FILE_INFO_CTR *ctr,
+			uint32 preferred_len, ENUM_HND *enum_hnd,
+			uint32 *total_entries, uint32 file_level );
 
 /*The following definitions come from  srvsvcd/srvsvcd.c  */
 
