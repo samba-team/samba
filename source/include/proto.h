@@ -1221,6 +1221,7 @@ void expire_workgroups_and_servers(time_t t);
 
 /*The following definitions come from  param/loadparm.c  */
 
+struct vfs_options *lp_vfsoptions(int i) ;
 char *lp_logfile(void);
 char *lp_smbrun(void);
 char *lp_configfile(void);
