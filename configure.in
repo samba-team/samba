@@ -50,12 +50,16 @@ AC_DECL_YYTEXT
 dnl Checks for header files.
 AC_HEADER_STDC
 
-AC_CHECK_HEADERS(arpa/inet.h crypt.h db.h dbm.h dirent.h fcntl.h grp.h)
-AC_CHECK_HEADERS(limits.h ndbm.h netdb.h net/if.h netinet/in.h netinet/in6.h netinet/in6_machtypes.h paths.h pwd.h)
-AC_CHECK_HEADERS(rpcsvc/dbm.h shadow.h signal.h sys/bitypes.h sys/filio.h)
-AC_CHECK_HEADERS(sys/ioctl.h sys/param.h sys/proc.h sys/resource.h)
-AC_CHECK_HEADERS(sys/socket.h sys/sockio.h sys/stat.h sys/sysctl.h sys/time.h)
-AC_CHECK_HEADERS(sys/tty.h sys/types.h syslog.h termios.h unistd.h)
+AC_CHECK_HEADERS(arpa/inet.h arpa/telnet.h bsdsetjmp.h crypt.h db.h)
+AC_CHECK_HEADERS(dbm.h dirent.h fcntl.h grp.h limits.h ndbm.h)
+AC_CHECK_HEADERS(net/if.h netdb.h netinet/in.h netinet/in_systm.h)
+AC_CHECK_HEADERS(netinet/in6.h netinet/in6_machtypes.h netinet/ip.h)
+AC_CHECK_HEADERS(paths.h pwd.h rpcsvc/dbm.h shadow.h signal.h)
+AC_CHECK_HEADERS(sys/bitypes.h sys/filio.h sys/file.h sys/ioctl.h)
+AC_CHECK_HEADERS(sys/param.h sys/proc.h sys/resource.h sys/select.h)
+AC_CHECK_HEADERS(sys/socket.h sys/sockio.h sys/stat.h sys/sysctl.h)
+AC_CHECK_HEADERS(sys/time.h sys/tty.h sys/types.h sys/wait.h)
+AC_CHECK_HEADERS(syslog.h termios.h unistd.h utmp.h utmpx.h)
 
 dnl Checks for libraries.
 
@@ -65,6 +69,7 @@ AC_FIND_FUNC(dbopen, $berkeley_db)
 AC_FIND_FUNC(dbm_firstkey, $berkeley_db gdbm ndbm)
 AC_FIND_FUNC(syslog, syslog)
 
+AC_FIND_FUNC(logwtmp, util)
 AC_FIND_FUNC_NO_LIBS(tgetent, termcap)
 
 dnl Checks for library functions.
@@ -91,6 +96,7 @@ if test "$ac_cv_func_snprintf_working" = yes; then
 fi
 
 AC_CHECK_FUNCS(asnprintf asprintf vasprintf vasnprintf vsnprintf)
+AC_CHECK_FUNCS(getmsg)
 
 AC_CHECK_FUNCS(gethostname mktime timegm select strstr)
 AC_CHECK_FUNCS(random rand setitimer setsid setsockopt)
@@ -163,6 +169,17 @@ AC_CHECK_DECLARATION([#include <stdlib.h>], opterr)
 AC_CHECK_DECLARATION([#include <stdlib.h>], optopt)
 
 dnl
+dnl Check for fields in struct utmp
+dnl
+AC_EGREP_HEADER(ut_user, utmp.h, AC_DEFINE(HAVE_UT_USER))
+AC_EGREP_HEADER(ut_host, utmp.h, AC_DEFINE(HAVE_UT_HOST))
+AC_EGREP_HEADER(ut_addr, utmp.h, AC_DEFINE(HAVE_UT_ADDR))
+AC_EGREP_HEADER(ut_type, utmp.h, AC_DEFINE(HAVE_UT_TYPE))
+AC_EGREP_HEADER(ut_pid, utmp.h, AC_DEFINE(HAVE_UT_PID))
+AC_EGREP_HEADER(ut_id, utmp.h, AC_DEFINE(HAVE_UT_ID))
+AC_EGREP_HEADER(ut_syslen, utmpx.h, AC_DEFINE(HAVE_UT_SYSLEN))
+
+dnl
 dnl Check for struct winsize
 dnl
 
@@ -223,22 +240,63 @@ AC_SUBST(LIB_readline)
 AC_SUBST(INCLUDE_readline)
 AC_SUBST(editline_OBJS)
 
-AC_OUTPUT(Makefile 		\
-	include/Makefile	\
-	lib/Makefile		\
-	lib/roken/Makefile	\
-	lib/editline/Makefile	\
-	lib/sl/Makefile		\
-	lib/error/Makefile	\
-	lib/error/compile_et	\
-	lib/asn1/Makefile	\
-	lib/des/Makefile	\
-	lib/krb5/Makefile	\
-	lib/hdb/Makefile	\
-	lib/gssapi/Makefile	\
-	kuser/Makefile		\
-	admin/Makefile		\
-	kdc/Makefile		\
-	appl/Makefile		\
-	appl/rsh/Makefile	\
+dnl telnet muck --------------------------------------------------
+
+AC_DEFINE(AUTHENTICATION)dnl
+AC_DEFINE(KRB5)dnl
+AC_DEFINE(ENCRYPTION)dnl
+AC_DEFINE(DES_ENCRYPTION)dnl
+AC_DEFINE(DIAGNOSTICS)dnl
+AC_DEFINE(OLD_ENVIRON)dnl
+
+# Simple test for streamspty, based on the existance of getmsg(), alas
+# this breaks on SunOS4 which have streams but BSD-like ptys
+#
+# And also something wierd has happend with dec-osf1, fallback to bsd-ptys
+
+AC_MSG_CHECKING(for streamspty)
+case "`uname -sr`" in
+SunOS\ 4*|OSF1*|IRIX\ 4*|HP-UX\ ?.10.*)
+	krb_cv_sys_streamspty=no
+	;;
+AIX*)
+	os_rel=`uname -v`.`uname -r`
+	if expr "$os_rel" : "3*" >/dev/null 2>&1; then
+		krb_cv_sys_streamspty=no
+	else
+		krb_cv_sys_streamspty="$ac_cv_func_getmsg"
+	fi
+	;;
+*)
+	krb_cv_sys_streamspty="$ac_cv_func_getmsg"
+	;;
+esac
+if test "$krb_cv_sys_streamspty" = yes; then
+	AC_DEFINE(STREAMSPTY)
+fi
+dnl AC_SUBST(STREAMSPTY)
+AC_MSG_RESULT($krb_cv_sys_streamspty)
+
+AC_OUTPUT(Makefile 			\
+	include/Makefile		\
+	lib/Makefile			\
+	lib/roken/Makefile		\
+	lib/editline/Makefile		\
+	lib/sl/Makefile			\
+	lib/error/Makefile		\
+	lib/error/compile_et		\
+	lib/asn1/Makefile		\
+	lib/des/Makefile		\
+	lib/krb5/Makefile		\
+	lib/hdb/Makefile		\
+	lib/gssapi/Makefile		\
+	kuser/Makefile			\
+	admin/Makefile			\
+	kdc/Makefile			\
+	appl/Makefile			\
+	appl/rsh/Makefile		\
+	appl/telnet/Makefile		\
+	appl/telnet/libtelnet/Makefile	\
+	appl/telnet/telnet/Makefile	\
+	appl/telnet/telnetd/Makefile	\
 )
