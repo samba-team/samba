@@ -77,7 +77,8 @@
 	machines that are local master browsers for that workgroup. There 
 	will be an '*' in front of the workgroup name for 
 	machines that are the domain master browser for that workgroup. 
-	Machines that are running Windows, Windows 95 or Windows 98 will 
+	Machines that are running Windows for Workgroups, Windows 95 or 
+	Windows 98 will 
 	not show any information about the operating system or server 
 	version.</para>
 
