@@ -30,15 +30,15 @@
 	
  The reason this is necessary is that the GENERIC_LIST uses a
  void pointer to store your data structure.  This means that
- you get no type checking and can create a hetergenous list.
+ you get no type checking and can create a heterogenous list.
  However, you will need to have some way to determine the type
  of your data.  If you are using a homogenous list, then
  wrapper functions are the easiest way.  If you are creating
- a hetergenous list, then you will need to use the type field
+ a heterogenous list, then you will need to use the type field
  for your arbitrary identifiers.
  
  TODO:
- If neccessary, you can add a few generic_list_*() to do things
+ If necessary, you can add a few generic_list_*() to do things
  like grab from the front (to implement a FIFO queue) or from
  the tail (to implement a FILO stack)
  ****************************************************************/
@@ -54,7 +54,7 @@ static GENERIC_LIST hnds;
 
 /****************************************************************
  Initialize the list.  This doesn't do much currently.  Just make
- sure that you call it so we can determine wether the list is 
+ sure that you call it so we can determine whether the list is 
  empty or not.
  ****************************************************************/
 static void generic_list_init(GENERIC_LIST *l)
@@ -110,7 +110,7 @@ static BOOL generic_list_insert(GENERIC_LIST *l,
 }
 
 /****************************************************************
- In order to locate an item in the list we need a pointer to 
+ In order to locate an item in the list, we need a pointer to 
  a compare function for the data items.
  
  We will return the actual pointer to the item in the list.  Not
@@ -177,7 +177,7 @@ static void* generic_list_locate (GENERIC_LIST *l, void *search,
 			SAFE_FREE(item);
 			return data_ptr;
 		}
-		/* increment to the nbext node in the list */
+		/* increment to the next node in the list */
 		else
 		{
 			tag = item;
@@ -218,12 +218,12 @@ BOOL copy_policy_hnd (POLICY_HND *dest, const POLICY_HND *src)
  
  
 /***************************************************************
- Return True if the to RPC_HND_NODEs are eqivalent in value.
+ Return True if the to RPC_HND_NODEs are equivalent in value.
  Return False if they are not.  Since a POLICY_HND is really 
  a UUID, two RPC_HND_NODES are considered to be the same if the
  POLICY_HND value matches.
 
- No ordering betweeen the two is attempted.
+ No ordering between the two is attempted.
  **************************************************************/
 BOOL compare_rpc_hnd_node(const RPC_HND_NODE *x, 
 			  const RPC_HND_NODE *y)
