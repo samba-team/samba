@@ -266,7 +266,10 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 	if ((getpeername((*cli)->fd, &peeraddr, &peeraddr_len) != 0) ||
 	    (peeraddr_len != sizeof(struct sockaddr_in)) ||
 	    (peeraddr_in->sin_family != PF_INET))
+	{
+		DEBUG(0,("cm_prepare_connection: %s\n", strerror(errno)));
 		goto done;
+	}
 
 	if (ntohs(peeraddr_in->sin_port) == 139) {
 		struct nmb_name calling;
