@@ -188,6 +188,11 @@ interface drsuapi
 	} drsuapi_DsReplicaCoursor05Ctr;
 
 	typedef [public] bitmap {
+		/* the _WRITEABLE flag seems to indicate a replication with all attributes,
+		 * and I'm currently always on error when it's set, but w2k and w2k3 uses it
+		 * in the dc join
+		 * --metze
+		 */
 		DRSUAPI_DS_REPLICA_NEIGHBOUR_WRITEABLE				= 0x00000010,
 		DRSUAPI_DS_REPLICA_NEIGHBOUR_SYNC_ON_STARTUP			= 0x00000020,
 		DRSUAPI_DS_REPLICA_NEIGHBOUR_DO_SCHEDULED_SYNCS			= 0x00000040,
@@ -200,6 +205,15 @@ interface drsuapi
 		DRSUAPI_DS_REPLICA_NEIGHBOUR_PREEMPTED				= 0x01000000,
 		DRSUAPI_DS_REPLICA_NEIGHBOUR_IGNORE_CHANGE_NOTIFICATIONS	= 0x04000000,
 		DRSUAPI_DS_REPLICA_NEIGHBOUR_DISABLE_SCHEDULED_SYNC		= 0x08000000,
+		/* 
+		 * the following NOTE applies to DsGetNCChangesRequest5:
+		 *  - the data is only compressed when 10 or more objects are replicated
+		 *  - but there could also be a size limit of 35 KBytes or something like that
+		 *  - the reply is DsGetNCChangesCtr2
+		 *  - maybe the same applies to DsGetNCChangesRequest8...
+		 *
+		 *  --metze
+		 */
 		DRSUAPI_DS_REPLICA_NEIGHBOUR_COMPRESS_CHANGES			= 0x10000000,
 		DRSUAPI_DS_REPLICA_NEIGHBOUR_NO_CHANGE_NOTIFICATIONS		= 0x20000000,
 		DRSUAPI_DS_REPLICA_NEIGHBOUR_PARTIAL_ATTRIBUTE_SET		= 0x40000000
