@@ -189,6 +189,5 @@ krb5_get_host_realm(krb5_context context,
 	(*realms)[1] = NULL;
 	return 0;
     }
-    free(*realms);
     return KRB5_ERR_HOST_REALM_UNKNOWN;
 }
