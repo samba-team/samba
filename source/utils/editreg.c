@@ -890,6 +890,99 @@ int valid_regf_hdr(REGF_HDR *regf_hdr)
 }
 
 /*
+ * Process an SK header ...
+ * Every time we see a new one, add it to the map. Otherwise, just look it up.
+ * We will do a simple linear search for the moment, since many KEYs have the 
+ * same security descriptor. 
+ * We allocate the map in increments of 10 entries.
+ */
+
+KEY_SEC_DESC *lookup_sec_key(SK_MAP *sk_map, int count, int sk_off)
+{
+  int i;
+
+  if (!sk_map) return NULL;
+
+  for (i = 0; i < count; i++) {
+
+    if (sk_map[i].sk_off == sk_off)
+      return sk_map[i].key_sec_desc;
+
+  }
+
+  return NULL;
+
+}
+
+KEY_SEC_DESC *process_sk(REGF *regf, SK_HDR *sk_hdr, int sk_off, int size)
+{
+  KEY_SEC_DESC *tmp = NULL;
+
+  if (!sk_hdr) return NULL;
+
+  if (SVAL(&sk_hdr->SK_ID) != REG_SK_ID) {
+    fprintf(stderr, "Unrecognized SK Header ID: %08X, %s\n", (int)sk_hdr,
+	    regf->regfile_name);
+    return NULL;
+  }
+
+  /* 
+   * Now, we need to look up the SK Record in the map, and return it
+   * Since the map contains the SK_OFF mapped to KEY_SEC_DESC, we can
+   * use that
+   */
+
+  if ((tmp = lookup_sec_key(*regf->sk_map, regf->sk_count, sk_off)) != NULL) {
+    tmp->ref_cnt++;
+    return tmp;
+  }
+
+  /*
+   * Now, allocate a KEY_SEC_DESC, and parse the structure here, and add the
+   * new KEY_SEC_DESC to the mapping structure, since the offset supplied is 
+   * the actual offset of structure. The same offset will be used by all
+   * all future references to this structure
+   */
+
+  tmp = (KEY_SEC_DESC *)malloc(sizeof(KEY_SEC_DESC));
+  if (!tmp) return NULL;
+
+  tmp->ref_cnt++;
+
+  if (!regf->sk_map) { /* Allocate a block of 10 */
+    regf->sk_map = (SK_MAP **)malloc(sizeof(SK_MAP) * 10);
+    if (!regf->sk_map) {
+      free(tmp);
+      return NULL;
+    }
+    regf->sk_map_size = 10;
+    regf->sk_count = 1;
+    (*regf->sk_map)[0].sk_off = sk_off;
+    (*regf->sk_map)[0].key_sec_desc = tmp;
+  }
+  else { /* Simply allocate a new slot, unless we have to expand the list */ 
+    int index = regf->sk_count;
+    if (regf->sk_count == regf->sk_map_size) {
+      regf->sk_map = (SK_MAP **)realloc(regf->sk_map, regf->sk_map_size + 10);
+      if (!regf->sk_map) {
+	free(tmp);
+	return NULL;
+      }
+      index++;
+    }
+    (*regf->sk_map)[index].sk_off = sk_off;
+    (*regf->sk_map)[index].key_sec_desc = tmp;
+    regf->sk_count++;
+  }
+
+  /*
+   * Now, process the actual sec desc and plug the values in
+   */
+
+  return tmp;
+}
+
+/*
  * Process a VK header and return a value
  */
 VAL_KEY *process_vk(REGF *regf, VK_HDR *vk_hdr, int size)
@@ -981,6 +1074,8 @@ VAL_LIST *process_vl(REGF *regf, VL_TYPE vl, int count, int size)
   int i, vk_off;
   VK_HDR *vk_hdr;
   VAL_LIST *tmp = NULL;
+
+  if (!vl) return NULL;
 
   if (-size < (count+1)*sizeof(int)){
     fprintf(stderr, "Error in VL header format. Size less than space required. %d\n", -size);
