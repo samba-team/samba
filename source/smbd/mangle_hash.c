@@ -172,7 +172,7 @@ static void init_chartest( void )
  *
  * ************************************************************************** **
  */
-static BOOL is_reserved_msdos( char *fname )
+static BOOL is_reserved_msdos( const char *fname )
   {
   char upperFname[13];
   char *p;
@@ -353,10 +353,10 @@ static BOOL is_8_3( const char *cfname, BOOL check_case, BOOL allow_wildcards )
 	int   len;
 	int   l;
 	int   skip;
-	char *p;
-	char *dot_pos;
+	const char *p;
+	const char *dot_pos;
 	char *slash_pos;
-	char *fname = (char *)cfname;
+	const char *fname = cfname;
 
 	slash_pos = strrchr( fname, '/' );
 
@@ -405,7 +405,7 @@ static BOOL is_8_3( const char *cfname, BOOL check_case, BOOL allow_wildcards )
 			p += skip;
 		else {
 			if( *p == '.' && !dot_pos )
-				dot_pos = (char *)p;
+				dot_pos = p;
 			else {
 				if( !isdoschar( *p )) {
 					if (!allow_wildcards)
