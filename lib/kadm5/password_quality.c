@@ -55,9 +55,11 @@ simple_passwd_quality (krb5_context context,
 	return NULL;
 }
 
-static const char* (*passwd_quality_check)(krb5_context, 
-					   krb5_principal, 
-					   krb5_data*) = simple_passwd_quality;
+typedef const char* (*passwd_quality_check_func)(krb5_context, 
+						 krb5_principal, 
+						 krb5_data*);
+
+static passwd_quality_check_func passwd_quality_check = simple_passwd_quality;
 
 #ifdef HAVE_DLOPEN
 extern const char *check_library;
@@ -137,7 +139,7 @@ kadm5_setup_passwd_quality_check(krb5_context context,
 	dlclose(handle);
 	return;
     }
-    passwd_quality_check = sym;
+    passwd_quality_check = (passwd_quality_check_func) sym;
 #endif /* HAVE_DLOPEN */
 }
 
