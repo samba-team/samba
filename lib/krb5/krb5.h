@@ -1116,6 +1116,15 @@ krb5_get_init_creds_password(krb5_context context,
 			     char *in_tkt_service,
 			     krb5_get_init_creds_opt *options);
 
+krb5_error_code
+krb5_get_init_creds_keytab(krb5_context context,
+			   krb5_creds *creds,
+			   krb5_principal client,
+			   krb5_keytab keytab,
+			   krb5_deltat start_time,
+			   char *in_tkt_service,
+			   krb5_get_init_creds_opt *options);
+
 typedef struct _krb5_verify_init_creds_opt {
     krb5_flags flags;
     int ap_req_nofail;
