@@ -83,7 +83,7 @@ fix to use rpc?
 
 ** lib/krb5
 
-replay cache not implemented
+the replay cache is, in it's current state, not very useful
 
 the following encryption types have been implemented: DES-CBC-CRC,
 DES-CBC-MD4, DES-CBC-MD5, DES3-CBC-MD5, DES3-CBC-SHA1
