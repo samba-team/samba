@@ -131,17 +131,20 @@ krb524_convert_creds_kdc(krb5_context context,
     char realm[REALM_SZ];
 
     ret = check_ticket_flags(v5creds->flags.b);
-    if(ret) return ret;
+    if(ret)
+	return ret;
     ret = krb5_sendto_kdc (context,
 			   &v5creds->ticket,
 			   krb5_princ_realm(context, v5creds->server),
 			   &reply);
+    if (ret)
+	return ret;
     sp = krb5_storage_from_mem(reply.data, reply.length);
     if(sp == NULL)
 	return ENOMEM;
     krb5_ret_int32(sp, &tmp);
     ret = tmp;
-    if(ret == 0){
+    if(ret == 0) {
 	memset(v4creds, 0, sizeof(*v4creds));
 	ret = krb5_ret_int32(sp, &tmp);
 	if(ret) goto out;
