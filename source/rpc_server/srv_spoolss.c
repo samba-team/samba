@@ -462,6 +462,7 @@ static BOOL api_spoolss_startdocprinter(pipes_struct *p)
 
 /********************************************************************
 ********************************************************************/
+
 static BOOL api_spoolss_enddocprinter(pipes_struct *p)
 {
 	SPOOL_Q_ENDDOCPRINTER q_u;
@@ -477,7 +478,7 @@ static BOOL api_spoolss_enddocprinter(pipes_struct *p)
 		return False;
 	}
 
-	r_u.status = _spoolss_enddocprinter(&q_u.handle);
+	r_u.status = _spoolss_enddocprinter(p, &q_u, &r_u);
 
 	if(!spoolss_io_r_enddocprinter("",&r_u,rdata,0)) {
 		DEBUG(0,("spoolss_io_r_enddocprinter: unable to marshall SPOOL_R_ENDDOCPRINTER.\n"));
@@ -487,9 +488,9 @@ static BOOL api_spoolss_enddocprinter(pipes_struct *p)
 	return True;		
 }
 
-
 /********************************************************************
 ********************************************************************/
+
 static BOOL api_spoolss_writeprinter(pipes_struct *p)
 {
 	SPOOL_Q_WRITEPRINTER q_u;
@@ -505,11 +506,7 @@ static BOOL api_spoolss_writeprinter(pipes_struct *p)
 		return False;
 	}
 
-	r_u.status = _spoolss_writeprinter(&q_u.handle,
-	                                   q_u.buffer_size,
-	                                   q_u.buffer,
-	                                   &q_u.buffer_size2);
-	r_u.buffer_written = q_u.buffer_size2;
+	r_u.status = _spoolss_writeprinter(p, &q_u, &r_u);
 
 	if(!spoolss_io_r_writeprinter("",&r_u,rdata,0)) {
 		DEBUG(0,("spoolss_io_r_writeprinter: unable to marshall SPOOL_R_WRITEPRINTER.\n"));
@@ -522,6 +519,7 @@ static BOOL api_spoolss_writeprinter(pipes_struct *p)
 /****************************************************************************
 
 ****************************************************************************/
+
 static BOOL api_spoolss_setprinter(pipes_struct *p)
 {
 	SPOOL_Q_SETPRINTER q_u;
@@ -537,9 +535,7 @@ static BOOL api_spoolss_setprinter(pipes_struct *p)
 		return False;
 	}
 	
-	r_u.status = _spoolss_setprinter(&q_u.handle, q_u.level, &q_u.info,
-	                                 q_u.devmode_ctr, q_u.secdesc_ctr, 
-					 q_u.command, p);
+	r_u.status = _spoolss_setprinter(p, &q_u, &r_u);
 	
 	if(!spoolss_io_r_setprinter("",&r_u,rdata,0)) {
 		DEBUG(0,("spoolss_io_r_setprinter: unable to marshall SPOOL_R_SETPRINTER.\n"));
@@ -551,6 +547,7 @@ static BOOL api_spoolss_setprinter(pipes_struct *p)
 
 /****************************************************************************
 ****************************************************************************/
+
 static BOOL api_spoolss_fcpn(pipes_struct *p)
 {
 	SPOOL_Q_FCPN q_u;
@@ -566,7 +563,7 @@ static BOOL api_spoolss_fcpn(pipes_struct *p)
 		return False;
 	}
 
-	r_u.status = _spoolss_fcpn(&q_u.handle);
+	r_u.status = _spoolss_fcpn(p, &q_u, &r_u);
 
 	if(!spoolss_io_r_fcpn("",&r_u,rdata,0)) {
 		DEBUG(0,("spoolss_io_r_fcpn: unable to marshall SPOOL_R_FCPN.\n"));
@@ -576,9 +573,9 @@ static BOOL api_spoolss_fcpn(pipes_struct *p)
 	return True;
 }
 
-
 /****************************************************************************
 ****************************************************************************/
+
 static BOOL api_spoolss_addjob(pipes_struct *p)
 {
 	SPOOL_Q_ADDJOB q_u;
@@ -594,11 +591,7 @@ static BOOL api_spoolss_addjob(pipes_struct *p)
 		return False;
 	}
 
-	/* that's an [in out] buffer (despite appearences to the contrary) */
-	new_spoolss_move_buffer(q_u.buffer, &r_u.buffer);
-
-	r_u.status = _spoolss_addjob(&q_u.handle, q_u.level,
-	                             r_u.buffer, q_u.offered, &r_u.needed);
+	r_u.status = _spoolss_addjob(p, &q_u, &r_u);
 		
 	if(!spoolss_io_r_addjob("",&r_u,rdata,0)) {
 		DEBUG(0,("spoolss_io_r_addjob: unable to marshall SPOOL_R_ADDJOB.\n"));
@@ -608,9 +601,9 @@ static BOOL api_spoolss_addjob(pipes_struct *p)
 	return True;		
 }
 
-
 /****************************************************************************
 ****************************************************************************/
+
 static BOOL api_spoolss_enumjobs(pipes_struct *p)
 {
 	SPOOL_Q_ENUMJOBS q_u;
@@ -626,12 +619,7 @@ static BOOL api_spoolss_enumjobs(pipes_struct *p)
 		return False;
 	}
 
-	/* that's an [in out] buffer */
-	new_spoolss_move_buffer(q_u.buffer, &r_u.buffer);
-
-	r_u.status = _spoolss_enumjobs(&q_u.handle, q_u.firstjob, q_u.numofjobs, q_u.level,
-					r_u.buffer, q_u.offered,
-					&r_u.needed, &r_u.returned);
+	r_u.status = _spoolss_enumjobs(p, &q_u, &r_u);
 
 	if (!spoolss_io_r_enumjobs("",&r_u,rdata,0)) {
 		DEBUG(0,("spoolss_io_r_enumjobs: unable to marshall SPOOL_R_ENUMJOBS.\n"));
@@ -641,9 +629,9 @@ static BOOL api_spoolss_enumjobs(pipes_struct *p)
 	return True;
 }
 
-
 /****************************************************************************
 ****************************************************************************/
+
 static BOOL api_spoolss_schedulejob(pipes_struct *p)
 {
 	SPOOL_Q_SCHEDULEJOB q_u;
@@ -659,7 +647,7 @@ static BOOL api_spoolss_schedulejob(pipes_struct *p)
 		return False;
 	}
 
-	r_u.status = _spoolss_schedulejob(&q_u.handle, q_u.jobid);
+	r_u.status = _spoolss_schedulejob(p, &q_u, &r_u);
 
 	if(!spoolss_io_r_schedulejob("",&r_u,rdata,0)) {
 		DEBUG(0,("spoolss_io_r_schedulejob: unable to marshall SPOOL_R_SCHEDULEJOB.\n"));
@@ -671,6 +659,7 @@ static BOOL api_spoolss_schedulejob(pipes_struct *p)
 
 /****************************************************************************
 ****************************************************************************/
+
 static BOOL api_spoolss_setjob(pipes_struct *p)
 {
 	SPOOL_Q_SETJOB q_u;
@@ -686,8 +675,7 @@ static BOOL api_spoolss_setjob(pipes_struct *p)
 		return False;
 	}
 
-	r_u.status = _spoolss_setjob(&q_u.handle, q_u.jobid,
-				q_u.level, p, &q_u.ctr, q_u.command);
+	r_u.status = _spoolss_setjob(p, &q_u, &r_u);
 
 	if(!spoolss_io_r_setjob("",&r_u,rdata,0)) {
 		DEBUG(0,("spoolss_io_r_setjob: unable to marshall SPOOL_R_SETJOB.\n"));
@@ -715,12 +703,7 @@ static BOOL api_spoolss_enumprinterdrivers(pipes_struct *p)
 		return False;
 	}
 
-	/* that's an [in out] buffer */
-	new_spoolss_move_buffer(q_u.buffer, &r_u.buffer);
-
-	r_u.status = _spoolss_enumprinterdrivers(&q_u.name, &q_u.environment, q_u.level,
-						 r_u.buffer, q_u.offered,
-						 &r_u.needed, &r_u.returned);
+	r_u.status = _spoolss_enumprinterdrivers(p, &q_u, &r_u);
 
 	if (!new_spoolss_io_r_enumprinterdrivers("",&r_u,rdata,0)) {
 		DEBUG(0,("new_spoolss_io_r_enumprinterdrivers: unable to marshall SPOOL_R_ENUMPRINTERDRIVERS.\n"));
@@ -729,7 +712,6 @@ static BOOL api_spoolss_enumprinterdrivers(pipes_struct *p)
 
 	return True;
 }
-
 
 /****************************************************************************
 ****************************************************************************/
