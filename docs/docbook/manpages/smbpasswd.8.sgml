@@ -183,12 +183,12 @@
 		
 
 		<varlistentry>
-		<term>-tterm>
+		<term>-t</term>
 		<listitem><para>This option is used to force smbpasswd to 
 		change the current password assigned to the machine trust account
 		when operating in domain security mode.  This is really meant to 
 		be used on systems that only run <ulink url="winbindd.8.html"<command>winbindd</command></ulink>.
-		Under server installations, <ulink utl="smbd.8.html"><command>smbd</command></ulink>
+		Under server installations, <ulink url="smbd.8.html"><command>smbd</command></ulink>
 		handle the password updates automatically.</para>
                 </listitem>
 		</varlistentry>

@@ -76,9 +76,13 @@ parameters in the [global]-section of the smb.conf have to be set:</P
 ><P
 ><PRE
 CLASS="PROGRAMLISTING"
->workgroup = SAMBA
-domain master = yes
-domain logons = yes</PRE
+>[global]
+     workgroup = SAMBA
+     domain master = yes
+     domain logons = yes
+     encrypt passwords = yes
+     security = user
+     ....</PRE
 ></P
 ><P
 >Several other things like a [homes] and a [netlogon] share also may be
@@ -171,33 +175,93 @@ NAME="AEN28"
 ><UL
 ><LI
 ><P
->The file private/MACHINE.SID identifies the domain. When a samba
-server is first started, it is created on the fly and must never be
-changed again. This file has to be the same on the PDC and the BDC,
-so the MACHINE.SID has to be copied from the PDC to the BDC.</P
+>	The file <TT
+CLASS="FILENAME"
+>private/MACHINE.SID</TT
+> identifies the domain. When a samba
+	server is first started, it is created on the fly and must never be
+	changed again. This file has to be the same on the PDC and the BDC,
+	so the MACHINE.SID has to be copied from the PDC to the BDC.  Note that in the
+	latest Samba 2.2.x releases, the machine SID (and therefore domain SID) is stored
+	in the <TT
+CLASS="FILENAME"
+>private/secrets.tdb</TT
+> database.  This file cannot just
+	be copied because Samba looks under the key <TT
+CLASS="CONSTANT"
+>SECRETS/SID/<TT
+CLASS="REPLACEABLE"
+><I
+>DOMAIN</I
+></TT
+></TT
+>.
+	where <TT
+CLASS="REPLACEABLE"
+><I
+>DOMAIN</I
+></TT
+> is the machine's netbios name.  Since this name has
+	to be unique for each SAMBA server, this lookup will fail.  </P
+><P
+>	A new option has been added to the <B
+CLASS="COMMAND"
+>smbpasswd(8)</B
+>
+	command to help ease this problem.  When running <B
+CLASS="COMMAND"
+>smbpasswd -S</B
+> as the root user,
+	the domain SID will be retrieved from a domain controller matching the value of the
+	<TT
+CLASS="PARAMETER"
+><I
+>workgroup</I
+></TT
+> parameter in <TT
+CLASS="FILENAME"
+>smb.conf</TT
+> and stored as the
+	new Samba server's machine SID.  See the <A
+HREF="smbpasswd.8.html"
+TARGET="_top"
+><B
+CLASS="COMMAND"
+>smbpasswd(8)</B
+></A
+>
+	man page for more details on this functionality.
+	</P
 ></LI
 ><LI
 ><P
->The Unix user database has to be synchronized from the PDC to the
-BDC. This means that both the /etc/passwd and /etc/group have to be
-replicated from the PDC to the BDC. This can be done manually
-whenever changes are made, or the PDC is set up as a NIS master
-server and the BDC as a NIS slave server. To set up the BDC as a
-mere NIS client would not be enough, as the BDC would not be able to
-access its user database in case of a PDC failure.</P
+>	The Unix user database has to be synchronized from the PDC to the
+	BDC. This means that both the /etc/passwd and /etc/group have to be
+	replicated from the PDC to the BDC. This can be done manually
+	whenever changes are made, or the PDC is set up as a NIS master
+	server and the BDC as a NIS slave server. To set up the BDC as a
+	mere NIS client would not be enough, as the BDC would not be able to
+	access its user database in case of a PDC failure.  LDAP is also a
+	potential vehicle for sharing this information.
+	</P
 ></LI
 ><LI
 ><P
->The Samba password database in the file private/smbpasswd has to be
-replicated from the PDC to the BDC. This is a bit tricky, see the
-next section.</P
+>	The Samba password database in the file <TT
+CLASS="FILENAME"
+>private/smbpasswd</TT
+>
+	has to be replicated from the PDC to the BDC. This is a bit tricky, see the
+	next section.
+	</P
 ></LI
 ><LI
 ><P
->Any netlogon share has to be replicated from the PDC to the
-BDC. This can be done manually whenever login scripts are changed,
-or it can be done automatically together with the smbpasswd
-synchronization.</P
+>	Any netlogon share has to be replicated from the PDC to the
+	BDC. This can be done manually whenever login scripts are changed,
+	or it can be done automatically together with the smbpasswd
+	synchronization.
+	</P
 ></LI
 ></UL
 ><P
@@ -206,9 +270,13 @@ by setting</P
 ><P
 ><PRE
 CLASS="PROGRAMLISTING"
->workgroup = samba
-domain master = no
-domain logons = yes</PRE
+>[global]
+     workgroup = SAMBA
+     domain master = yes
+     domain logons = yes
+     encrypt passwords = yes
+     security = user
+     ....</PRE
 ></P
 ><P
 >in the [global]-section of the smb.conf of the BDC. This makes the BDC
@@ -222,21 +290,58 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN44"
+NAME="AEN57"
 >How do I replicate the smbpasswd file?</A
 ></H2
 ><P
 >Replication of the smbpasswd file is sensitive. It has to be done
-whenever changes to the SAM are made. Every user's password change is
-done in the smbpasswd file and has to be replicated to the BDC. So
+whenever changes to the SAM are made. Every user's password change
+(including machine trust account password changes) is done in the
+smbpasswd file and has to be replicated to the BDC. So
 replicating the smbpasswd file very often is necessary.</P
 ><P
 >As the smbpasswd file contains plain text password equivalents, it
 must not be sent unencrypted over the wire. The best way to set up
 smbpasswd replication from the PDC to the BDC is to use the utility
-rsync. rsync can use ssh as a transport. ssh itself can be set up to
-accept *only* rsync transfer without requiring the user to type a
-password.</P
+<B
+CLASS="COMMAND"
+>rsync(1)</B
+>. <B
+CLASS="COMMAND"
+>rsync</B
+> can use
+<B
+CLASS="COMMAND"
+>ssh(1)</B
+> as a transport. <B
+CLASS="COMMAND"
+>ssh</B
+> itself
+can be set up to accept <I
+CLASS="EMPHASIS"
+>only</I
+> <B
+CLASS="COMMAND"
+>rsync</B
+> transfer without requiring the user to
+type a password.  Refer to the man pages for these two tools for more details.</P
+><P
+>Another solution with high potential is to use Samba's <TT
+CLASS="PARAMETER"
+><I
+>--with-ldapsam</I
+></TT
+>
+for sharing and/or replicating the list of <TT
+CLASS="CONSTANT"
+>sambaAccount</TT
+> entries.
+This can all be done over SSL to ensure security.  See the <A
+HREF="Samba-LDAP-HOWTO.html"
+TARGET="_top"
+>Samba-LDAP-HOWTO</A
+>
+for more details.</P
 ></DIV
 ></DIV
 ></DIV

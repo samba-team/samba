@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "NMBD" "8" "17 June 2002" "" ""
+.TH "NMBD" "8" "03 September 2002" "" ""
 .SH NAME
 nmbd \- NetBIOS name server to provide NetBIOS  over IP naming services to clients
 .SH SYNOPSIS
@@ -33,7 +33,7 @@ but this can be overridden with the \fB-n\fR
 option (see OPTIONS below). Thus \fBnmbd\fR will 
 reply to broadcast queries for its own name(s). Additional
 names for \fBnmbd\fR to respond on can be set 
-via parameters in the \fI smb.conf(5)\fRconfiguration file.
+via parameters in the \fI smb.conf(5)\fR configuration file.
 .PP
 \fBnmbd\fR can also be used as a WINS 
 (Windows Internet Name Server) server. What this basically means 
@@ -82,7 +82,7 @@ for \fBnmbd\fR.
 NetBIOS lmhosts file. The lmhosts 
 file is a list of NetBIOS names to IP addresses that 
 is loaded by the nmbd server and used via the name 
-resolution mechanism  name resolve order
+resolution mechanism  name resolve order described in  \fIsmb.conf(5)\fR
 to resolve any NetBIOS name queries needed by the server. Note 
 that the contents of this file are \fBNOT\fR 
 used by \fBnmbd\fR to answer any name queries. 
@@ -93,7 +93,7 @@ The default path to this file is compiled into
 Samba as part of the build process. Common defaults 
 are \fI/usr/local/samba/lib/lmhosts\fR,
 \fI/usr/samba/lib/lmhosts\fR or
-\fI/etc/lmhosts\fR. See the  \fIlmhosts(5)\fRman page for details on the 
+\fI/etc/lmhosts\fR. See the  \fIlmhosts(5)\fR man page for details on the 
 contents of this file.
 .TP
 \fB-V\fR
@@ -119,8 +119,8 @@ and generate HUGE amounts of log data, most of which is extremely
 cryptic.
 
 Note that specifying this parameter here will override 
-the log level
-parameter in the \fI smb.conf\fRfile.
+the log level 
+parameter in the \fI smb.conf\fR file.
 .TP
 \fB-l <log directory>\fR
 The -l parameter specifies a directory 
@@ -135,8 +135,8 @@ will log to the default debug log location defined at compile time.
 \fB-n <primary NetBIOS name>\fR
 This option allows you to override
 the NetBIOS name that Samba uses for itself. This is identical 
-to setting the  NetBIOS nameparameter in the  
-\fIsmb.conf\fRfile. However, a command
+to setting the  NetBIOS name parameter in the  
+\fIsmb.conf\fR file. However, a command
 line setting will take precedence over settings in 
 \fIsmb.conf\fR.
 .TP
@@ -153,14 +153,14 @@ is set at build time, typically as \fI /usr/local/samba/lib/smb.conf\fR, but
 this may be changed when Samba is autoconfigured.
 
 The file specified contains the configuration details
-required by the server. See  \fIsmb.conf(5)\fRfor more information.
+required by the server. See  \fIsmb.conf(5)\fR for more information.
 .SH "FILES"
 .TP
 \fB\fI/etc/inetd.conf\fB\fR
 If the server is to be run by the
 \fBinetd\fR meta-daemon, this file
 must contain suitable startup information for the
-meta-daemon. See the UNIX_INSTALL.htmldocument
+meta-daemon. See the UNIX_INSTALL.html document
 for details.
 .TP
 \fB\fI/etc/rc\fB\fR
@@ -169,7 +169,7 @@ system uses).
 
 If running the server as a daemon at startup,
 this file will need to contain an appropriate startup
-sequence for the server. See the UNIX_INSTALL.htmldocument
+sequence for the server. See the UNIX_INSTALL.html document
 for details.
 .TP
 \fB\fI/etc/services\fB\fR
@@ -219,7 +219,7 @@ the \fIlog.nmb\fR file.
 .PP
 The debug log level of nmbd may be raised or lowered using
 \fBsmbcontrol(1)\fR
-(SIGUSR[1|2] signals are no longer used in Samba 2.2). This is
+ (SIGUSR[1|2] signals are no longer used in Samba 2.2). This is
 to allow transient problems to be diagnosed, whilst still running
 at a normally low log level.
 .SH "TROUBLESHOOTING"
@@ -237,10 +237,10 @@ This man page is correct for version 2.2 of
 the Samba suite.
 .SH "SEE ALSO"
 .PP
-\fBinetd(8)\fR, \fBsmbd(8)\fR, 
+\fBinetd(8)\fR, \fBsmbd(8)\fR 
 \fIsmb.conf(5)\fR
-, \fBsmbclient(1)
-\fR, and the Internet RFC's
+ \fBsmbclient(1)
+\fR and the Internet RFC's
 \fIrfc1001.txt\fR, \fIrfc1002.txt\fR. 
 In addition the CIFS (formerly SMB) specification is available 
 as a link from the Web page  

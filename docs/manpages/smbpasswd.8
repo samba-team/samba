@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMBPASSWD" "8" "06 June 2002" "" ""
+.TH "SMBPASSWD" "8" "03 September 2002" "" ""
 .SH NAME
 smbpasswd \- change a user's SMB password
 .SH SYNOPSIS
@@ -17,7 +17,7 @@ otherwise:
 \fBsmbpasswd\fR [ \fBoptions\fR ]  [ \fBpassword\fR ] 
 .SH "DESCRIPTION"
 .PP
-This tool is part of the  Sambasuite.
+This tool is part of the  Samba suite.
 .PP
 The smbpasswd program has several different 
 functions, depending on whether it is run by the \fBroot\fR 
@@ -135,6 +135,14 @@ as well to indicate a specific domain controller which should
 be contacted. In this case, the domain SID obtained is the 
 one for the domain to which the remote machine belongs.
 .TP
+\fB-t\fR
+This option is used to force smbpasswd to 
+change the current password assigned to the machine trust account
+when operating in domain security mode. This is really meant to 
+be used on systems that only run \fBwinbindd\fR
+Under server installations, \fBsmbd\fR
+handle the password updates automatically.
+.TP
 \fB-U username[%pass]\fR
 This option may only be used in conjunction 
 with the \fI-r\fR option. When changing
@@ -212,7 +220,7 @@ has been configured to use the experimental
 \fB--with-ldapsam\fR option. The \fI-w\fR 
 switch is used to specify the password to be used with the 
 \fIldap admin 
-dn\fR. Note that the password is stored in
+dn\fR Note that the password is stored in
 the \fIprivate/secrets.tdb\fR and is keyed off 
 of the admin's DN. This means that if the value of \fIldap
 admin dn\fR ever changes, the password will need to be 
@@ -274,7 +282,7 @@ names to be resolved as follows :
 \(bu
 lmhosts : Lookup an IP 
 address in the Samba lmhosts file. If the line in lmhosts has 
-no name type attached to the NetBIOS name (see the lmhosts(5)for details) then
+no name type attached to the NetBIOS name (see the lmhosts(5) for details) then
 any name type matches for lookup.
 .TP 0.2i
 \(bu
@@ -336,7 +344,7 @@ This man page is correct for version 2.2 of
 the Samba suite.
 .SH "SEE ALSO"
 .PP
-\fIsmbpasswd(5)\fR, 
+\fIsmbpasswd(5)\fR 
 samba(7)
 .SH "AUTHOR"
 .PP

@@ -286,6 +286,31 @@ CLASS="PARAMETER"
 		</P
 ></DD
 ><DT
+>-t</DT
+><DD
+><P
+>This option is used to force smbpasswd to 
+		change the current password assigned to the machine trust account
+		when operating in domain security mode.  This is really meant to 
+		be used on systems that only run <A
+HREF="winbindd.8.html"
+TARGET="_top"
+><B
+CLASS="COMMAND"
+>winbindd</B
+></A
+>.
+		Under server installations, <A
+HREF="smbd.8.html"
+TARGET="_top"
+><B
+CLASS="COMMAND"
+>smbd</B
+></A
+>
+		handle the password updates automatically.</P
+></DD
+><DT
 >-U username[%pass]</DT
 ><DD
 ><P
@@ -660,7 +685,7 @@ CLASS="FILENAME"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN205"
+NAME="AEN213"
 ></A
 ><H2
 >NOTES</H2
@@ -703,7 +728,7 @@ CLASS="FILENAME"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN215"
+NAME="AEN223"
 ></A
 ><H2
 >VERSION</H2
@@ -714,7 +739,7 @@ NAME="AEN215"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN218"
+NAME="AEN226"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -737,7 +762,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN224"
+NAME="AEN232"
 ></A
 ><H2
 >AUTHOR</H2

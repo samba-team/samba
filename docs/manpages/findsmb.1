@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "FINDSMB" "1" "02 May 2002" "" ""
+.TH "FINDSMB" "1" "03 September 2002" "" ""
 .SH NAME
 findsmb \- list info about machines that respond to SMB  name queries on a subnet
 .SH SYNOPSIS
@@ -11,12 +11,12 @@ findsmb \- list info about machines that respond to SMB  name queries on a subne
 \fBfindsmb\fR [ \fBsubnet broadcast address\fR ] 
 .SH "DESCRIPTION"
 .PP
-This perl script is part of the  Sambasuite.
+This perl script is part of the  Samba suite.
 .PP
 \fBfindsmb\fR is a perl script that
 prints out several pieces of information about machines 
 on a subnet that respond to SMB name query requests.
-It uses \fB nmblookup(1)\fRto obtain this information.
+It uses \fB nmblookup(1)\fR to obtain this information.
 .SH "OPTIONS"
 .TP
 \fBsubnet broadcast address\fR
@@ -40,7 +40,7 @@ Machines that are running Windows, Windows 95 or Windows 98 will
 not show any information about the operating system or server 
 version.
 .PP
-The command must be run on a system without \fBnmbd\fRrunning. 
+The command must be run on a system without \fBnmbd\fR running. 
 If \fBnmbd\fR is running on the system, you will 
 only get the IP address and the DNS name of the machine. To 
 get proper responses from Windows 95 and Windows 98 machines, 
@@ -72,9 +72,9 @@ This man page is correct for version 2.2 of
 the Samba suite.
 .SH "SEE ALSO"
 .PP
-\fBnmbd(8)\fR, 
+\fBnmbd(8)\fR 
 \fBsmbclient(1)
-\fR
+\fR and  \fBnmblookup(1)\fR
 .SH "AUTHOR"
 .PP
 The original Samba software and related utilities 

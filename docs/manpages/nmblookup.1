@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "NMBLOOKUP" "1" "16 May 2002" "" ""
+.TH "NMBLOOKUP" "1" "03 September 2002" "" ""
 .SH NAME
 nmblookup \- NetBIOS over TCP/IP client used to lookup NetBIOS  names
 .SH SYNOPSIS
@@ -11,7 +11,7 @@ nmblookup \- NetBIOS over TCP/IP client used to lookup NetBIOS  names
 \fBnmblookup\fR [ \fB-f\fR ]  [ \fB-M\fR ]  [ \fB-R\fR ]  [ \fB-S\fR ]  [ \fB-r\fR ]  [ \fB-A\fR ]  [ \fB-h\fR ]  [ \fB-B <broadcast address>\fR ]  [ \fB-U <unicast address>\fR ]  [ \fB-d <debug level>\fR ]  [ \fB-s <smb config file>\fR ]  [ \fB-i <NetBIOS scope>\fR ]  [ \fB-T\fR ]  \fBname\fR
 .SH "DESCRIPTION"
 .PP
-This tool is part of the  Sambasuite.
+This tool is part of the  Samba suite.
 .PP
 \fBnmblookup\fR is used to query NetBIOS names 
 and map them to IP addresses in a network using NetBIOS over TCP/IP 
@@ -50,7 +50,7 @@ datagrams. The reason for this option is a bug in Windows 95
 where it ignores the source port of the requesting packet 
 and only replies to UDP port 137. Unfortunately, on most UNIX 
 systems root privilege is needed to bind to this port, and 
-in addition, if the nmbd(8)
+in addition, if the nmbd(8) 
 daemon is running on this machine it also binds to this port.
 .TP
 \fB-A\fR
@@ -65,7 +65,7 @@ Send the query to the given broadcast address. Without
 this option the default behavior of nmblookup is to send the 
 query to the broadcast address of the network interfaces as 
 either auto-detected or defined in the \fIinterfaces\fR
-parameter of the \fIsmb.conf (5)\fR file.
+ parameter of the \fIsmb.conf (5)\fR file.
 .TP
 \fB-U <unicast address>\fR
 Do a unicast query to the specified address or 
@@ -89,11 +89,11 @@ Levels above 3 are designed for use only by developers and
 generate HUGE amounts of data, most of which is extremely cryptic.
 
 Note that specifying this parameter here will override 
-the \fI log level\fRparameter in the \fI smb.conf(5)\fR file.
+the \fI log level\fR parameter in the \fI smb.conf(5)\fR file.
 .TP
 \fB-s <smb.conf>\fR
 This parameter specifies the pathname to 
-the Samba configuration file,  smb.conf(5). This file controls all aspects of
+the Samba configuration file,  smb.conf(5) This file controls all aspects of
 the Samba setup on the machine.
 .TP
 \fB-i <scope>\fR
@@ -142,8 +142,8 @@ This man page is correct for version 2.2 of
 the Samba suite.
 .SH "SEE ALSO"
 .PP
-\fBnmbd(8)\fR, 
-samba(7)
+\fBnmbd(8)\fR 
+samba(7) and smb.conf(5)
 .SH "AUTHOR"
 .PP
 The original Samba software and related utilities 
