@@ -221,55 +221,6 @@ LIBSMB_OBJ = libcli/clireadwrite.o libcli/cliconnect.o \
 	     libcli/clideltree.o \
 	     $(LIBRAW_OBJ)
 
-# LIBDFS_OBJ = libcli/clidfs.o
-
-#LIBMSRPC_SERVER_OBJ = libcli/trust_passwd.o
-
-#REGOBJS_OBJ = registry/reg_objects.o
-#REGISTRY_OBJ = registry/reg_frontend.o registry/reg_cachehook.o registry/reg_printing.o \
-#               registry/reg_db.o 
-
-#RPC_LSA_OBJ = rpc_server/srv_lsa.o rpc_server/srv_lsa_nt.o
-
-#RPC_NETLOG_OBJ = rpc_server/srv_netlog.o rpc_server/srv_netlog_nt.o
-
-#RPC_SAMR_OBJ = rpc_server/srv_samr.o rpc_server/srv_samr_nt.o \
-#               rpc_server/srv_samr_util.o
-
-#RPC_REG_OBJ =  rpc_server/srv_reg.o rpc_server/srv_reg_nt.o
-
-#RPC_SVC_OBJ = rpc_server/srv_srvsvc.o rpc_server/srv_srvsvc_nt.o
-
-#RPC_WKS_OBJ =  rpc_server/srv_wkssvc.o rpc_server/srv_wkssvc_nt.o
-
-#RPC_DFS_OBJ =  rpc_server/srv_dfs.o rpc_server/srv_dfs_nt.o
-#RPC_SPOOLSS_OBJ = rpc_server/srv_spoolss.o rpc_server/srv_spoolss_nt.o 
-
-# These are like they are to avoid a dependency on GNU MAKE
-@LSA_DYNAMIC_YES@RPC_MODULES1 = bin/librpc_lsarpc.@SHLIBEXT@
-@NETLOG_DYNAMIC_YES@RPC_MODULES2 = bin/librpc_NETLOGON.@SHLIBEXT@
-@SAMR_DYNAMIC_YES@RPC_MODULES3 = bin/librpc_samr.@SHLIBEXT@
-@SVC_DYNAMIC_YES@RPC_MODULES4 = bin/librpc_srvsvc.@SHLIBEXT@
-@WKS_DYNAMIC_YES@RPC_MODULES5 = bin/librpc_wkssvc.@SHLIBEXT@
-@REG_DYNAMIC_YES@RPC_MODULES6 = bin/librpc_winreg.@SHLIBEXT@
-@SPOOLSS_DYNAMIC_YES@RPC_MODULES7 = bin/librpc_spoolss.@SHLIBEXT@
-@DFS_DYNAMIC_YES@RPC_MODULES8 = bin/librpc_netdfs.@SHLIBEXT@
-RPC_MODULES = $(RPC_MODULES1) $(RPC_MODULES2) $(RPC_MODULES3) $(RPC_MODULES4) \
-	$(RPC_MODULES5) $(RPC_MODULES6) $(RPC_MODULES7) $(RPC_MODULES8)
-
-@LSA_DYNAMIC_NO@RPC_PIPE_OBJ1 = $(RPC_LSA_OBJ)
-@NETLOG_DYNAMIC_NO@RPC_PIPE_OBJ2 = $(RPC_NETLOG_OBJ)
-@SAMR_DYNAMIC_NO@RPC_PIPE_OBJ3 = $(RPC_SAMR_OBJ)
-@SVC_DYNAMIC_NO@RPC_PIPE_OBJ4 = $(RPC_SVC_OBJ)
-@WKS_DYNAMIC_NO@RPC_PIPE_OBJ5 = $(RPC_WKS_OBJ)
-@REG_DYNAMIC_NO@RPC_PIPE_OBJ6 = $(RPC_REG_OBJ)
-@SPOOLSS_DYNAMIC_NO@RPC_PIPE_OBJ7 = $(RPC_SPOOLSS_OBJ)
-@DFS_DYNAMIC_NO@RPC_PIPE_OBJ8 =	$(RPC_DFS_OBJ)
-RPC_SERVER_OBJ = $(RPC_PIPE_OBJ1) $(RPC_PIPE_OBJ2) $(RPC_PIPE_OBJ3) \
-	$(RPC_PIPE_OBJ4) $(RPC_PIPE_OBJ5) $(RPC_PIPE_OBJ6) $(RPC_PIPE_OBJ7) \
-	$(RPC_PIPE_OBJ8) $(RPC_PIPE_OBJ)
-
-
 #LOCKING_OBJ = locking/locking.o locking/brlock.o locking/posix.o
 
 PASSDB_GET_SET_OBJ = passdb/pdb_get_set.o
@@ -356,18 +307,6 @@ SMBD_OBJ_BASE = $(PROCESS_MODEL_OBJ) $(SMBD_OBJ_SRV) $(STFS_OBJS) \
 		$(AUTH_OBJ) $(GROUPDB_OBJ) \
 		$(LIB_SMBD_OBJ) $(POPT_LIB_OBJ) $(LIBSMB_OBJ)		
 
-#  $(RPC_SERVER_OBJ) $(RPC_PARSE_OBJ)  $(LOCKING_OBJ) $(LIBMSRPC_OBJ) $(LIBMSRPC_SERVER_OBJ) $(LIBADS_OBJ) $(KRBCLIENT_OBJ) $(LIBADS_SERVER_OBJ) 
-# $(PRINTING_OBJ) $(PROFILE_OBJ) $(PRINTBACKEND_OBJ) $(QUOTAOBJS) $(OPLOCK_OBJ) $(NOTIFY_OBJ) $(REGISTRY_OBJ) 
-
-#PRINTING_OBJ = printing/pcap.o printing/print_svid.o \
-#				printing/print_cups.o printing/print_generic.o \
-#				printing/lpq_parse.o printing/load.o
-
-#PRINTBACKEND_OBJ = printing/printing.o printing/nt_printing.o printing/notify.o \
-#		printing/printing_db.o
-
-# MSDFS_OBJ = msdfs/msdfs.o 
-
 SMBD_OBJ = $(SMBD_OBJ_MAIN) $(SMBD_OBJ_BASE)
 
 NMBD_OBJ1 = nmbd/asyncdns.o nmbd/nmbd.o nmbd/nmbd_become_dmb.o \
@@ -428,18 +367,6 @@ PDBEDIT_OBJ = utils/pdbedit.o $(PARAM_OBJ) $(PASSDB_OBJ) $(LIBSAMBA_OBJ) \
 
 SMBGROUPEDIT_OBJ = utils/smbgroupedit.o $(GROUPDB_OBJ) $(PARAM_OBJ) \
 		$(LIBSAMBA_OBJ) $(PASSDB_OBJ) $(SECRETS_OBJ) $(LIB_OBJ)
-
-RPCCLIENT_OBJ1 = rpcclient/rpcclient.o rpcclient/cmd_lsarpc.o \
-	         rpcclient/cmd_samr.o rpcclient/cmd_spoolss.o \
-		 rpcclient/cmd_netlogon.o rpcclient/cmd_srvsvc.o \
-		 rpcclient/cmd_dfs.o rpcclient/cmd_reg.o \
-		 rpcclient/display_sec.o rpcclient/cmd_ds.o
-
-RPCCLIENT_OBJ = $(RPCCLIENT_OBJ1) \
-             $(PARAM_OBJ) $(LIBSMB_OBJ) $(LIB_OBJ) \
-             $(RPC_PARSE_OBJ) $(PASSDB_OBJ) $(LIBMSRPC_OBJ) \
-             $(READLINE_OBJ) $(GROUPDB_OBJ) $(KRBCLIENT_OBJ) \
-	     $(LIBADS_OBJ) $(SECRETS_OBJ) $(POPT_LIB_OBJ)
 
 PAM_WINBIND_OBJ = nsswitch/pam_winbind.po nsswitch/wb_common.po lib/snprintf.po
 
@@ -644,9 +571,6 @@ NTLM_AUTH_OBJ = utils/ntlm_auth.o $(LIBNTLMSSP_OBJ) $(LIBSAMBA_OBJ) $(POPT_LIB_O
 # now the rules...
 ######################################################################
 all: SHOWFLAGS bin/smbd bin/smbclient bin/smbtorture bin/locktest bin/masktest bin/gentest
-
-#SHOWFLAGS proto_exists $(SBIN_PROGS) $(BIN_PROGS) $(SHLIBS) \
-#	$(TORTURE_PROGS) $(RPC_MODULES) @EXTRA_ALL_TARGETS@
 
 pam_smbpass : SHOWFLAGS bin/pam_smbpass.@SHLIBEXT@
 
@@ -945,46 +869,6 @@ bin/libbigballofmud.@SHLIBEXT@: $(LIBBIGBALLOFMUD_PICOBJS)
 		@SONAMEFLAG@`basename $@`.$(LIBBIGBALLOFMUD_MAJOR)
 
 libsmbclient: bin/libsmbclient.a @LIBSMBCLIENT_SHARED@
-
-bin/librpc_lsarpc.@SHLIBEXT@: $(RPC_LSA_OBJ)
-	@echo "Linking $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_LSA_OBJ) -lc \
-		@SONAMEFLAG@`basename $@`
-
-bin/librpc_samr.@SHLIBEXT@: $(RPC_SAMR_OBJ)
-	@echo "Linking $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_SAMR_OBJ) -lc \
-		@SONAMEFLAG@`basename $@`
-
-bin/librpc_srvsvc.@SHLIBEXT@: $(RPC_SVC_OBJ)
-	@echo "Linking $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_SVC_OBJ) -lc \
-		@SONAMEFLAG@`basename $@`
-
-bin/librpc_wkssvc.@SHLIBEXT@: $(RPC_WKS_OBJ)
-	@echo "Linking $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_WKS_OBJ) -lc \
-		@SONAMEFLAG@`basename $@`
-
-bin/librpc_NETLOGON.@SHLIBEXT@: $(RPC_NETLOG_OBJ)
-	@echo "Linking $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_NETLOG_OBJ) -lc \
-		@SONAMEFLAG@`basename $@`
-
-bin/librpc_winreg.@SHLIBEXT@: $(RPC_REG_OBJ)
-	@echo "Linking $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_REG_OBJ) -lc \
-		@SONAMEFLAG@`basename $@`
-
-bin/librpc_spoolss.@SHLIBEXT@: $(RPC_SPOOLSS_OBJ)
-	@echo "Linking $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_SPOOLSS_OBJ) -lc \
-		@SONAMEFLAG@`basename $@`
-
-bin/librpc_netdfs.@SHLIBEXT@: $(RPC_DFS_OBJ)
-	@echo "Linking $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_DFS_OBJ) -lc \
-		@SONAMEFLAG@`basename $@`
 
 nsswitch/libnss_wins.@SHLIBEXT@: $(NSS_OBJ)
 	@echo "Linking $@"
