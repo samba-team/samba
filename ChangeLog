@@ -1,5 +1,9 @@
 Sat Mar  8 08:16:28 1997  Assar Westerlund  <assar@sics.se>
 
+	* lib/krb5/rd_safe.c: new file
+
+	* lib/krb5/checksum.c (krb5_verify_checksum): New function
+
 	* lib/krb5/get_cred.c: use krb5_create_checksum
 
 	* lib/krb5/checksum.c: new file
