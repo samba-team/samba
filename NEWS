@@ -1,3 +1,9 @@
+Changes in release 0.2q:
+
+ * bug fix in tcp-handling in kdc
+
+ * bug fix in expand_hostname
+
 Changes in release 0.2p:
 
  * bug fix in `kadmin load/merge'
