@@ -2710,6 +2710,13 @@ AC_ARG_WITH(pam,
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
+    if test x"$ac_cv_header_security_pam_appl_h" = x"no"; then
+       if test x"$ac_cv_header_security_pam_modules_h" = x"no"; then
+	  if test x"$ac_cv_header_security__pam_macros_h" = x"no"; then
+	     AC_MSG_ERROR(--with-pam specified but no PAM headers found)
+	  fi
+       fi
+    fi
     AC_DEFINE(WITH_PAM,1,[Whether to include PAM support])
     AUTHLIBS="$AUTHLIBS -lpam"
     with_pam_for_crypt=yes
