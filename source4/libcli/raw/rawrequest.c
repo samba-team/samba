@@ -309,7 +309,11 @@ BOOL cli_request_receive(struct cli_request *req)
 			return False;
 		}
 
-		cli_request_receive_next(req->transport);
+		if (!cli_request_receive_next(req->transport)) {
+			cli_transport_close(req->transport);
+			req->status = NT_STATUS_UNEXPECTED_NETWORK_ERROR;
+			return False;
+		}
 	}
 
 	return True;
