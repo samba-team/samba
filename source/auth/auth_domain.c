@@ -92,8 +92,6 @@ static NTSTATUS connect_to_domain_password_server(struct cli_state **cli,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 	
-	DEBUG(10,("connect_to_domain_password_server: got mutex for %s\n", server));
-
 	/* Attempt connection */
 	result = cli_full_connection(cli, global_myname, server,
 				     &dest_ip, 0, "IPC$", "IPC", "", "", "", 0);
