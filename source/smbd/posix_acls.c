@@ -1551,7 +1551,7 @@ static void arrange_posix_perms( char *filename, canon_ace **pp_list_head)
 ****************************************************************************/
 
 static canon_ace *canonicalise_acl( files_struct *fsp, SMB_ACL_T posix_acl, SMB_STRUCT_STAT *psbuf,
-					DOM_SID *powner, DOM_SID *pgroup, SMB_ACL_TYPE_T acl_type)
+					DOM_SID *powner, DOM_SID *pgroup, SMB_ACL_TYPE_T the_acl_type)
 {
 	extern DOM_SID global_sid_World;
 	connection_struct *conn = fsp->conn;
@@ -1603,7 +1603,7 @@ static canon_ace *canonicalise_acl( files_struct *fsp, SMB_ACL_T posix_acl, SMB_
 					 * entries out of the blue when setting ACLs, so a get/set
 					 * cycle will drop them.
 					 */
-					if (acl_type == SMB_ACL_TYPE_ACCESS && *puid == psbuf->st_uid)
+					if (the_acl_type == SMB_ACL_TYPE_ACCESS && *puid == psbuf->st_uid)
 						continue;
 					uid_to_sid( &sid, *puid);
 					unix_ug.uid = *puid;
