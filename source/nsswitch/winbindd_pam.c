@@ -48,6 +48,7 @@ static NTSTATUS append_info3_as_ndr(TALLOC_CTX *mem_ctx,
 		prs_mem_free(&ps);
 		return NT_STATUS_NO_MEMORY;
 	}
+	memset( state->response.extra_data, '\0', size );
 	prs_copy_all_data_out(state->response.extra_data, &ps);
 	state->response.length += size;
 	prs_mem_free(&ps);
