@@ -547,21 +547,23 @@ grow_descr (struct descr *d, size_t n)
 {
     if (d->size - d->len < n) {
 	unsigned char *tmp;
+	size_t grow; 
 
-	d->size += max(1024, d->len + n);
-	if (d->size >= max_request) {
+	grow = max(1024, d->len + n);
+	if (d->size + grow > max_request) {
 	    kdc_log(0, "Request exceeds max request size (%lu bytes).",
-		    (unsigned long)d->size);
+		    (unsigned long)d->size + grow);
 	    clear_descr(d);
 	    return -1;
 	}
-	tmp = realloc (d->buf, d->size);
+	tmp = realloc (d->buf, d->size + grow);
 	if (tmp == NULL) {
 	    kdc_log(0, "Failed to re-allocate %lu bytes.",
-		    (unsigned long)d->size);
+		    (unsigned long)d->size + grow);
 	    clear_descr(d);
 	    return -1;
 	}
+	d->size += grow;
 	d->buf = tmp;
     }
     return 0;
