@@ -39,11 +39,17 @@ struct smbw_server {
 	dev_t dev;
 };
 
-struct smbw_file {
-	struct smbw_file *next, *prev;
-	int cli_fd, fd;
+struct smbw_filedes {
+	int cli_fd;
+	int ref_count;
 	char *fname;
 	off_t offset;
+};
+
+struct smbw_file {
+	struct smbw_file *next, *prev;
+	struct smbw_filedes *f;
+	int fd;
 	struct smbw_server *srv;
 };
 

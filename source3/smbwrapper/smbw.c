@@ -516,9 +516,17 @@ int smbw_open(const char *fname, int flags, mode_t mode)
 
 	ZERO_STRUCTP(file);
 
-	file->cli_fd = fd;
-	file->fname = strdup(path);
-	if (!file->fname) {
+	file->f = (struct smbw_filedes *)malloc(sizeof(*(file->f)));
+	if (!file->f) {
+		errno = ENOMEM;
+		goto failed;
+	}
+
+	ZERO_STRUCTP(file->f);
+
+	file->f->cli_fd = fd;
+	file->f->fname = strdup(path);
+	if (!file->f->fname) {
 		errno = ENOMEM;
 		goto failed;
 	}
@@ -535,6 +543,8 @@ int smbw_open(const char *fname, int flags, mode_t mode)
 		goto failed;
 	}
 
+	file->f->ref_count=1;
+
 	bitmap_set(smbw_file_bmap, file->fd);
 
 	DLIST_ADD(smbw_files, file);
@@ -549,8 +559,11 @@ int smbw_open(const char *fname, int flags, mode_t mode)
 		cli_close(&srv->cli, fd);
 	}
 	if (file) {
-		if (file->fname) {
-			free(file->fname);
+		if (file->f) {
+			if (file->f->fname) {
+				free(file->f->fname);
+			}
+			free(file->f);
 		}
 		free(file);
 	}
@@ -579,7 +592,7 @@ ssize_t smbw_read(int fd, void *buf, size_t count)
 		return -1;
 	}
 	
-	ret = cli_read(&file->srv->cli, file->cli_fd, buf, file->offset, count);
+	ret = cli_read(&file->srv->cli, file->f->cli_fd, buf, file->f->offset, count);
 
 	if (ret == -1) {
 		errno = smbw_errno(&file->srv->cli);
@@ -587,7 +600,7 @@ ssize_t smbw_read(int fd, void *buf, size_t count)
 		return -1;
 	}
 
-	file->offset += ret;
+	file->f->offset += ret;
 
 	smbw_busy--;
 	return ret;
@@ -613,7 +626,7 @@ ssize_t smbw_write(int fd, void *buf, size_t count)
 		return -1;
 	}
 	
-	ret = cli_write(&file->srv->cli, file->cli_fd, buf, file->offset, count);
+	ret = cli_write(&file->srv->cli, file->f->cli_fd, buf, file->f->offset, count);
 
 	if (ret == -1) {
 		errno = smbw_errno(&file->srv->cli);
@@ -621,7 +634,7 @@ ssize_t smbw_write(int fd, void *buf, size_t count)
 		return -1;
 	}
 
-	file->offset += ret;
+	file->f->offset += ret;
 
 	smbw_busy--;
 	return ret;
@@ -645,7 +658,8 @@ int smbw_close(int fd)
 		return ret;
 	}
 	
-	if (!cli_close(&file->srv->cli, file->cli_fd)) {
+	if (file->f->ref_count == 1 &&
+	    !cli_close(&file->srv->cli, file->f->cli_fd)) {
 		errno = smbw_errno(&file->srv->cli);
 		smbw_busy--;
 		return -1;
@@ -657,7 +671,11 @@ int smbw_close(int fd)
 	
 	DLIST_REMOVE(smbw_files, file);
 
-	free(file->fname);
+	file->f->ref_count--;
+	if (file->f->ref_count == 0) {
+		free(file->f->fname);
+		free(file->f);
+	}
 	ZERO_STRUCTP(file);
 	free(file);
 	
@@ -969,25 +987,135 @@ off_t smbw_lseek(int fd, off_t offset, int whence)
 
 	switch (whence) {
 	case SEEK_SET:
-		file->offset = offset;
+		file->f->offset = offset;
 		break;
 	case SEEK_CUR:
-		file->offset += offset;
+		file->f->offset += offset;
 		break;
 	case SEEK_END:
-		if (!cli_qfileinfo(&file->srv->cli, file->cli_fd, 
+		if (!cli_qfileinfo(&file->srv->cli, file->f->cli_fd, 
 				   NULL, &size, NULL, NULL, NULL) &&
-		    !cli_getattrE(&file->srv->cli, file->cli_fd, 
+		    !cli_getattrE(&file->srv->cli, file->f->cli_fd, 
 				  NULL, &size, NULL, NULL, NULL)) {
 			errno = EINVAL;
 			smbw_busy--;
 			return -1;
 		}
-		file->offset = size + offset;
+		file->f->offset = size + offset;
 		break;
 	}
 
 	smbw_busy--;
-	return file->offset;
+	return file->f->offset;
+}
+
+
+/***************************************************** 
+a wrapper for dup()
+*******************************************************/
+int smbw_dup(int fd)
+{
+	int fd2;
+	struct smbw_file *file, *file2;
+
+	DEBUG(4,("%s\n", __FUNCTION__));
+
+	smbw_busy++;
+
+	file = smbw_file(fd);
+	if (!file) {
+		errno = EBADF;
+		goto failed;
+	}
+
+	fd2 = dup(file->fd);
+	if (fd2 == -1) {
+		goto failed;
+	}
+
+	if (bitmap_query(smbw_file_bmap, fd2)) {
+		DEBUG(0,("ERROR: fd already open in dup!\n"));
+		errno = EIO;
+		goto failed;
+	}
+
+	file2 = (struct smbw_file *)malloc(sizeof(*file2));
+	if (!file2) {
+		close(fd2);
+		errno = ENOMEM;
+		goto failed;
+	}
+
+	ZERO_STRUCTP(file2);
+
+	*file2 = *file;
+	file2->fd = fd2;
+
+	file->f->ref_count++;
+
+	bitmap_set(smbw_file_bmap, fd2);
+	
+	DLIST_ADD(smbw_files, file2);
+	
+	smbw_busy--;
+	return fd2;
+
+ failed:
+	smbw_busy--;
+	return -1;
+}
+
+
+/***************************************************** 
+a wrapper for dup2()
+*******************************************************/
+int smbw_dup2(int fd, int fd2)
+{
+	struct smbw_file *file, *file2;
+
+	DEBUG(4,("%s\n", __FUNCTION__));
+
+	smbw_busy++;
+
+	file = smbw_file(fd);
+	if (!file) {
+		errno = EBADF;
+		goto failed;
+	}
+
+	if (bitmap_query(smbw_file_bmap, fd2)) {
+		DEBUG(0,("ERROR: fd already open in dup2!\n"));
+		errno = EIO;
+		goto failed;
+	}
+
+	if (dup2(file->fd, fd2) != fd2) {
+		goto failed;
+	}
+
+	file2 = (struct smbw_file *)malloc(sizeof(*file2));
+	if (!file2) {
+		close(fd2);
+		errno = ENOMEM;
+		goto failed;
+	}
+
+	ZERO_STRUCTP(file2);
+
+	*file2 = *file;
+	file2->fd = fd2;
+
+	file->f->ref_count++;
+
+	bitmap_set(smbw_file_bmap, fd2);
+	
+	DLIST_ADD(smbw_files, file2);
+	
+	smbw_busy--;
+	return fd2;
+
+ failed:
+	smbw_busy--;
+	return -1;
 }
 

@@ -95,16 +95,16 @@ int smbw_fstat(int fd, struct stat *st)
 		return ret;
 	}
 
-	if (!cli_qfileinfo(&file->srv->cli, file->cli_fd, 
+	if (!cli_qfileinfo(&file->srv->cli, file->f->cli_fd, 
 			  &mode, &size, &c_time, &a_time, &m_time) &&
-	    !cli_getattrE(&file->srv->cli, file->cli_fd, 
+	    !cli_getattrE(&file->srv->cli, file->f->cli_fd, 
 			  &mode, &size, &c_time, &a_time, &m_time)) {
 		errno = EINVAL;
 		smbw_busy--;
 		return -1;
 	}
 
-	smbw_setup_stat(st, file->fname, size, mode);
+	smbw_setup_stat(st, file->f->fname, size, mode);
 
 	st->st_atime = a_time;
 	st->st_ctime = c_time;

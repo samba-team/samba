@@ -58,6 +58,8 @@
 #define real_lseek(fd, offset, whence)	(syscall(SYS_lseek, (fd), (offset), (whence)))
 #define real_write(fd, buf, count )	(syscall(SYS_write, (fd), (buf), (count)))
 #define real_close(fd)	                (syscall(SYS_close, (fd)))
+#define real_dup(fd)	                (syscall(SYS_dup, (fd)))
+#define real_dup2(fd1, fd2)             (syscall(SYS_dup2, (fd1), (fd2)))
 #define real_fchdir(fd)	                (syscall(SYS_fchdir, (fd)))
 #define real_fcntl(fd,cmd,arg)	        (syscall(SYS_fcntl, (fd), (cmd), (arg)))
 #define real_symlink(fn1, fn2)		(syscall(SYS_symlink, (fn1), (fn2)))
@@ -66,5 +68,3 @@
 #define real_mkdir(fn, mode)		(syscall(SYS_mkdir, (fn), (mode)))
 #define real_utime(fn, buf)		(syscall(SYS_utime, (fn), (buf)))
 #define real_utimes(fn, buf)		(syscall(SYS_utimes, (fn), (buf)))
-
-
