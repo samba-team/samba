@@ -48,7 +48,6 @@
 	<para>The samba net utility is meant to work just like the net utility 
 	available for windows and DOS.</para>
 
-	FIXME
 </refsect1>
 
 <refsect1>
@@ -60,7 +59,7 @@
 		<listitem><para>
 		Display summary of all available options.
 		
-		</listitem></para>
+		</para></listitem>
 		</varlistentry>
 		
 		<varlistentry>
@@ -198,7 +197,7 @@
 	<title>TIME</title>
 
 	<para>The <command>NET TIME</command> command allows you to view the time on a remote server
-	or synchronise the time on the local server with the time on the remote server.
+	or synchronise the time on the local server with the time on the remote server.</para>
 
 	<variablelist>
 		<varlistentry>
@@ -245,7 +244,7 @@
 		<listitem><para>
 		Join a domain with specified username and password. Password 
 		will be prompted if none is specified.</para>
-		</para></listitem>
+		</listitem>
 		</varlistentry>
 
 		<varlistentry>
@@ -273,14 +272,14 @@
 		<term>USER INFO &lt;name&gt; [misc options]</term>
 		<listitem><para>
 		list the domain groups of the specified user
-		</listitem></para>
+		</para></listitem>
 		</varlistentry>
 
 		<varlistentry>
 		<term>USER ADD &lt;name&gt; [password] [-F user flags] [misc. options</term>
 		<listitem><para>
 		Add specified user
-		</listitem></para>
+		</para></listitem>
 		</varlistentry>
 
 		<varlistentry>
@@ -319,9 +318,11 @@
 		</varlistentry>
 
 		<varlistentry>
-		<term>SHARE DELETE &lt;sharenam
-
-
+		<term>SHARE DELETE &lt;sharenam</term>
+		<listitem><para></para></listitem>
+		</varlistentry>
+	</variablelist>
+</refsect1>
 
 <refsect1>
 	<title>VERSION</title>
