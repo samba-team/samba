@@ -65,7 +65,7 @@ static BOOL unixsam_getsampwrid (struct pdb_methods *methods,
 	return ret;
 }
 
-static BOOL unixsam_getsampwsid(struct pdb_methods *my_methods, SAM_ACCOUNT * user, DOM_SID *sid)
+static BOOL unixsam_getsampwsid(struct pdb_methods *my_methods, SAM_ACCOUNT * user, const DOM_SID *sid)
 {
 	uint32 rid;
 	if (!sid_peek_check_rid(get_global_sam_sid(), sid, &rid))
