@@ -76,10 +76,10 @@ read_token (int sock, gss_buffer_t buf)
 void
 gss_print_errors (int min_stat)
 {
-    int new_stat;
-    int msg_ctx = 0;
+    OM_uint32 new_stat;
+    OM_uint32 msg_ctx = 0;
     gss_buffer_desc status_string;
-    int ret;
+    OM_uint32 ret;
 
     do {
 	ret = gss_display_status (&new_stat,
