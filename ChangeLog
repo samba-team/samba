@@ -1,3 +1,15 @@
+2005-03-01  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* appl/test/http_client.c: allow specifing port to connect to
+
+2005-02-24  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/Makefile.am: bump version to 21:0:4
+
+	* lib/hdb/Makefile.am: bump version to 8:0:1
+	
+	* lib/asn1/Makefile.am: bump version to 7:0:1
+
 2005-02-23  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/crypto.c (DES_string_to_key_int): must check for weak
