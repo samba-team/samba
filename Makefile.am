@@ -2,7 +2,11 @@
 
 include $(top_srcdir)/Makefile.am.common
 
-SUBDIRS	= include lib kuser kdc admin kadmin kpasswd appl doc tools
+if KCM
+kcm_dir = kcm
+endif
+
+SUBDIRS	= include lib kuser kdc admin kadmin kpasswd $(kcm_dir) appl doc tools
 
 ## ACLOCAL = @ACLOCAL@ -I cf
 ACLOCAL_AMFLAGS = -I cf
