@@ -4,6 +4,7 @@
    Copyright (C) Igor Vergeichik <iverg@mail.ru> 2001
    Copyright (C) Andrew Tridgell 2001
    Copyright (C) Simo Sorce 2001
+   Copyright (C) Martin Pool 2003
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -37,7 +38,6 @@
  * @sa lib/iconv.c
  */
 
-static pstring cvtbuf;
 
 static smb_iconv_t conv_handles[NUM_CHARSETS][NUM_CHARSETS];
 
@@ -193,7 +193,7 @@ size_t convert_string(charset_t from, charset_t to,
  **/
 
 size_t convert_string_allocate(charset_t from, charset_t to,
-		      		void const *src, size_t srclen, void **dest)
+			       void const *src, size_t srclen, void **dest)
 {
 	size_t i_len, o_len, destlen;
 	size_t retval;
@@ -277,6 +277,8 @@ static size_t convert_string_talloc(TALLOC_CTX *ctx, charset_t from, charset_t t
 	void *alloced_string;
 	size_t dest_len;
 
+	/* FIXME: Ridiculous to allocate two buffers and then copy the string! */
+	
 	*dest = NULL;
 	dest_len=convert_string_allocate(from, to, src, srclen, &alloced_string);
 	if (dest_len == (size_t)-1)
@@ -291,21 +293,40 @@ static size_t convert_string_talloc(TALLOC_CTX *ctx, charset_t from, charset_t t
 size_t unix_strupper(const char *src, size_t srclen, char *dest, size_t destlen)
 {
 	size_t size;
-	smb_ucs2_t *buffer=(smb_ucs2_t*)cvtbuf;
-	size=convert_string(CH_UNIX, CH_UCS2, src, srclen, buffer, sizeof(cvtbuf));
-	if (!strupper_w(buffer) && (dest == src))
+	smb_ucs2_t *buffer;
+	
+	size = convert_string_allocate(CH_UNIX, CH_UCS2, src, srclen,
+				       (void **) &buffer);
+	if (size == -1) {
+		smb_panic("failed to create UCS2 buffer");
+	}
+	if (!strupper_w(buffer) && (dest == src)) {
+		free(buffer);
 		return srclen;
-	return convert_string(CH_UCS2, CH_UNIX, buffer, size, dest, destlen);
+	}
+	
+	size = convert_string(CH_UCS2, CH_UNIX, buffer, size, dest, destlen);
+	free(buffer);
+	return size;
 }
 
 size_t unix_strlower(const char *src, size_t srclen, char *dest, size_t destlen)
 {
 	size_t size;
-	smb_ucs2_t *buffer=(smb_ucs2_t*)cvtbuf;
-	size=convert_string(CH_UNIX, CH_UCS2, src, srclen, buffer, sizeof(cvtbuf));
-	if (!strlower_w(buffer) && (dest == src))
+	smb_ucs2_t *buffer;
+	
+	size = convert_string_allocate(CH_UNIX, CH_UCS2, src, srclen,
+				       (void **) &buffer);
+	if (size == -1) {
+		smb_panic("failed to create UCS2 buffer");
+	}
+	if (!strlower_w(buffer) && (dest == src)) {
+		free(buffer);
 		return srclen;
-	return convert_string(CH_UCS2, CH_UNIX, buffer, size, dest, destlen);
+	}
+	size = convert_string(CH_UCS2, CH_UNIX, buffer, size, dest, destlen);
+	free(buffer);
+	return size;
 }
 
 
@@ -645,11 +666,11 @@ size_t pull_ucs2_talloc(TALLOC_CTX *ctx, char **dest, const smb_ucs2_t *src)
  * @returns The number of bytes occupied by the string in the destination
  **/
 
-size_t pull_ucs2_allocate(void **dest, const smb_ucs2_t *src)
+size_t pull_ucs2_allocate(char **dest, const smb_ucs2_t *src)
 {
 	size_t src_len = (strlen_w(src)+1) * sizeof(smb_ucs2_t);
 	*dest = NULL;
-	return convert_string_allocate(CH_UCS2, CH_UNIX, src, src_len, dest);	
+	return convert_string_allocate(CH_UCS2, CH_UNIX, src, src_len, (void **)dest);	
 }
 
 /**
