@@ -1477,7 +1477,7 @@ do_checksum (krb5_context context,
 static krb5_error_code
 create_checksum(krb5_context context,
 		krb5_crypto crypto,
-		krb5_key_usage usage, /* not krb5_key_usage */
+		unsigned usage, /* not krb5_key_usage */
 		krb5_cksumtype type, /* 0 -> pick from crypto */
 		void *data,
 		size_t len,
