@@ -252,7 +252,7 @@ BOOL sid_split_rid(DOM_SID *sid, uint32 *rid)
  Return the last rid from the end of a sid
 *****************************************************************/  
 
-BOOL sid_peek_rid(DOM_SID *sid, uint32 *rid)
+BOOL sid_peek_rid(const DOM_SID *sid, uint32 *rid)
 {
 	if (!sid || !rid)
 		return False;		
@@ -269,7 +269,7 @@ BOOL sid_peek_rid(DOM_SID *sid, uint32 *rid)
  and check the sid against the exp_dom_sid  
 *****************************************************************/  
 
-BOOL sid_peek_check_rid(DOM_SID *exp_dom_sid,DOM_SID *sid, uint32 *rid)
+BOOL sid_peek_check_rid(const DOM_SID *exp_dom_sid, const DOM_SID *sid, uint32 *rid)
 {
 	if (!exp_dom_sid || !sid || !rid)
 		return False;
@@ -280,7 +280,7 @@ BOOL sid_peek_check_rid(DOM_SID *exp_dom_sid,DOM_SID *sid, uint32 *rid)
 		return False;
 	}
 	
-	return sid_peek_rid(sid,rid);
+	return sid_peek_rid(sid, rid);
 }
 
 /*****************************************************************
