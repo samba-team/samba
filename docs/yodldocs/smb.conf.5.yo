@@ -589,6 +589,8 @@ it() link(bf(machine password timeout))(machinepasswordtimeout)
 
 it() link(bf(mangled stack))(mangledstack)
 
+it() link(bf(map to guest))(maptoguest)
+
 it() link(bf(max disk size))(maxdisksize)
 
 it() link(bf(max log size))(maxlogsize)
@@ -876,8 +878,6 @@ it() link(bf(map archive))(maparchive)
 it() link(bf(map hidden))(maphidden)
 
 it() link(bf(map system))(mapsystem)
-
-it() link(bf(map to guest))(maptoguest)
 
 it() link(bf(max connections))(maxconnections)
 
