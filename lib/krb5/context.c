@@ -48,6 +48,44 @@ RCSID("$Id$");
 extern krb5_kt_ops krb4_fkt_ops;
 #endif
 
+/*
+ * Set the list of etypes `ret_etypes' from the configuration variable
+ * `name'
+ */
+
+static krb5_error_code
+set_etypes (krb5_context context,
+	    const char *name,
+	    krb5_enctype **ret_enctypes)
+{
+    char **etypes_str;
+    krb5_enctype *etypes;
+
+    etypes_str = krb5_config_get_strings(context, NULL, "libdefaults", 
+					 name, NULL);
+    if(etypes_str){
+	int i, j, k;
+	for(i = 0; etypes_str[i]; i++);
+	etypes = malloc((i+1) * sizeof(*etypes));
+	if (etypes == NULL) {
+	    krb5_config_free_strings (etypes_str);
+	    return ENOMEM;
+	}
+	for(j = 0, k = 0; j < i; j++) {
+	    if(krb5_string_to_enctype(context, etypes_str[j], &etypes[k]) == 0)
+		k++;
+	}
+	etypes[k] = ETYPE_NULL;
+	krb5_config_free_strings(etypes_str);
+	*ret_enctypes = etypes;
+    }
+    return 0;
+}
+
+/*
+ * read variables from the configuration file and set in `context'
+ */
+
 static krb5_error_code
 init_context_from_config_file(krb5_context context)
 {
@@ -59,22 +97,9 @@ init_context_from_config_file(krb5_context context)
     context->http_proxy = krb5_config_get_string(context, NULL, "libdefaults", 
 					   "http_proxy", NULL);
 
-    {
-	char **etypes;
-	etypes = krb5_config_get_strings(context, NULL, "libdefaults", 
-					 "default_etypes", NULL);
-	if(etypes){
-	    int i, j, k;
-	    for(i = 0; etypes[i]; i++);
-	    context->etypes = malloc((i+1) * sizeof(*context->etypes));
-	    for(j = 0, k = 0; j < i; j++) {
-		if(krb5_string_to_enctype(context, etypes[j], &context->etypes[k]) == 0)
-		    k++;
-	    }
-	    context->etypes[k] = ETYPE_NULL;
-	    krb5_config_free_strings(etypes);
-	}
-    }
+    set_etypes (context, "default_etypes", &context->etypes);
+    set_etypes (context, "default_etypes_des", &context->etypes_des);
+
     /* default keytab name */
     context->default_keytab = krb5_config_get_string(context, NULL, 
 					       "libdefaults", 
@@ -179,6 +204,7 @@ krb5_free_context(krb5_context context)
   int i;
 
   free(context->etypes);
+  free(context->etypes_des);
   krb5_free_host_realm (context, context->default_realms);
   krb5_config_file_free (context, context->cf);
   free_error_table (context->et_list);
@@ -230,7 +256,6 @@ krb5_set_default_in_tkt_etypes(krb5_context context,
     context->etypes = p;
     return 0;
 }
-
 
 
 krb5_error_code
