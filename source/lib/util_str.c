@@ -443,7 +443,11 @@ char *safe_strcpy(char *dest,const char *src, size_t maxlength)
 	}
 
 #ifdef DEVELOPER
-	dest[maxlength]='\0';
+	/* We intentionally write out at the extremity of the destination
+	 * string.  If the destination is too short (e.g. pstrcpy into mallocd
+	 * or fstring) then this should cause an error under a memory
+	 * checker. */
+	dest[maxlength] = '\0';
 #endif
 
 	if (!src) {
