@@ -28,11 +28,11 @@ PROG_LIBEXEC	= kxd
 PROGS = $(PROG_BIN) $(PROG_LIBEXEC)
 
 SOURCES_KX     = kx.c
-SOURCES_KXD    = kxd.c
+SOURCES_KXD    = kxd.c @XauWriteAuth_c@
 SOURCES_COMMON = common.c
 
 OBJECTS_KX     = kx.o common.o
-OBJECTS_KXD    = kxd.o common.o
+OBJECTS_KXD    = kxd.o common.o @XauWriteAuth_o@
 
 OBJECTS = $(OBJECTS_KX) $(OBJECTS_KXD)
 SOURCES = $(SOURCES_KX) $(SOURCES_KXD) $(SOURCES_COMMON)
@@ -84,11 +84,11 @@ kxd: $(OBJECTS_KXD)
 	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ $(OBJECTS_KXD) $(KLIB) $(LIBS)
 
 rxterm: rxterm.in
-	sed -e "s!%bindir%!$(bindir)!" $< > $@
+	sed -e "s!%bindir%!$(bindir)!" $(srcdir)/rxterm.in > $@
 	chmod +x $@
 
 rxtelnet: rxtelnet.in
-	sed -e "s!%bindir%!$(bindir)!" $< > $@
+	sed -e "s!%bindir%!$(bindir)!" $(srcdir)/rxtelnet.in > $@
 	chmod +x $@
 
 $(OBJECTS): ../../config.h
