@@ -86,7 +86,13 @@ If you get a "session request failed" then the server refused the
 connection. If it says "your server software is being unfriendly" then
 its probably because you have invalid command line parameters to smbd,
 or a similar fatal problem with the initial startup of smbd. Also
-check your config file for syntax errors with "testparm".
+check your config file for syntax errors with "testparm". 
+
+Another common cause of these two errors is having something already running 
+on port 139, such as Samba (ie smbd is running from inetd already) or something
+like Digital's Pathworks. Check your inetd.conf file before trying to start
+smbd as a daemon, it can avoid a lot of frustration!
+
 
 TEST 4:
 -------
