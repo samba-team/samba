@@ -11,9 +11,10 @@ m4_define([test_headers], [
 		#include <openssl/md4.h>
 		#include <openssl/md5.h>
 		#include <openssl/sha.h>
-		#define OPENSSL_DES_LIBDES_COMPATIBILITY
 		#include <openssl/des.h>
 		#include <openssl/rc4.h>
+		#include <openssl/aes.h>
+		#include <openssl/ui.h>
 		#include <openssl/rand.h>
 		#else
 		#include <md4.h>
@@ -21,6 +22,7 @@ m4_define([test_headers], [
 		#include <sha.h>
 		#include <des.h>
 		#include <rc4.h>
+		#include <aes.h>
 		#endif
 		#ifdef OLD_HASH_NAMES
 		typedef struct md4 MD4_CTX;
@@ -48,9 +50,11 @@ m4_define([test_body], [
 		SHA1_Init(&sha1);
 		#ifdef HAVE_OPENSSL
 		RAND_status();
+		UI_UTIL_read_pw_string(0,0,0,0);
 		#endif
 
-		des_cbc_encrypt(0, 0, 0, schedule, 0, 0);
+		AES_encrypt(0,0,0);
+		DES_cbc_encrypt(0, 0, 0, schedule, 0, 0);
 		RC4(0, 0, 0, 0);])
 
 
