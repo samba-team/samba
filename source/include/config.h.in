@@ -289,6 +289,8 @@
 #undef HAVE_SENDFILEV64
 #undef SOLARIS_SENDFILE_API
 #undef LDAP_SET_REBIND_PROC_ARGS
+#undef POSIX_ACL_NEEDS_MASK
+#undef BROKEN_GETGRNAM
 
 /* The number of bytes in a int.  */
 #undef SIZEOF_INT
