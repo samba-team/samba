@@ -2,17 +2,9 @@
  * Hash table functions
  */
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-RCSID("$Id$");
+#include "asn1_locl.h"
 
-#include <assert.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <limits.h>
-#include <ctype.h>
-#include "hash.h"
+RCSID("$Id$");
 
 static Hashentry *_search(Hashtab * htab,	/* The hash table */
 			  void *ptr);	/* And key */

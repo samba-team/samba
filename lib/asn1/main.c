@@ -1,10 +1,6 @@
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-RCSID("$Id$");
+#include "asn1_locl.h"
 
-#include <stdio.h>
-#include "symbol.h"
+RCSID("$Id$");
 
 extern FILE *yyin;
 

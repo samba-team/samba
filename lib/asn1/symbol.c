@@ -1,11 +1,6 @@
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "asn1_locl.h"
+
 RCSID("$Id$");
-#include <string.h>
-#include <stdlib.h>
-#include "symbol.h"
-#include "hash.h"
 
 static Hashtab *htab;
 
