@@ -144,7 +144,7 @@ struct pyconv py_DEVICEMODE[] = {
 	{ NULL }
 };
 
-/* Convert a security descriptor to a Python dict */
+/* Convert a SID to a Python dict */
 
 BOOL py_from_SID(PyObject **obj, DOM_SID *sid)
 {
