@@ -407,6 +407,11 @@ typedef struct sid_info
 /*
  * The complete list of SIDS belonging to this user.
  * Created when a vuid is registered.
+ * The definition of the user_sids array is as follows :
+ *
+ * token->user_sids[0] = primary user SID.
+ * token->user_sids[1] = primary group SID.
+ * token->user_sids[2-num_sids] = supplementary group SIDS.
  */
 
 #ifndef _NT_USER_TOKEN
