@@ -1,3 +1,7 @@
+2004-04-29  Love Hörquist Åstrand  <lha@it.su.se>
+
+	* kadmind.c: make kerberos4 support default turned off
+	
 2004-03-24  Johan Danielsson  <joda@pdc.kth.se>
 
 	* kadmin.8: update manpage
