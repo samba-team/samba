@@ -86,10 +86,10 @@ typedef struct kadm5_server_context {
     krb5_boolean my_context;
     struct kadm_func funcs;
     /* */
+    kadm5_config_params config;
     HDB *db;
     krb5_principal caller;
     unsigned acl_flags;
-    char *acl_file;
     kadm5_log_context log_context;
 }kadm5_server_context;
 
@@ -117,7 +117,8 @@ enum kadm_ops {
     kadm_get_princs
 };
 
-#define KADMIN_APPL_VERSION "KADM0.0"
+#define KADMIN_APPL_VERSION "KADM0.1"
+#define KADMIN_OLD_APPL_VERSION "KADM0.0"
 
 #define KADM5_LOG_SIGNAL HDB_DB_DIR "/signal"
 
@@ -262,6 +263,17 @@ kadm5_log_previous (krb5_storage *sp,
 		    time_t *timestamp,
 		    enum kadm_ops *op,
 		    u_int32_t *len);
+
+kadm5_ret_t
+_kadm5_marshal_params __P((krb5_context context, 
+			   kadm5_config_params *params, 
+			   krb5_data *out));
+
+kadm5_ret_t
+_kadm5_unmarshal_params __P((krb5_context context,
+			     krb5_data *in,
+			     kadm5_config_params *params));
+
 
 
 #endif /* __kadm5_private_h__ */
