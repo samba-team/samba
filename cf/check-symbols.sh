@@ -25,7 +25,7 @@ while test $# != 0 ;do
 done
 
 for a in "$@" $esym; do
-    symbols="\$3 !~ /^${a}/ ${symbols:+&&} ${symbols}"
+    symbols="\$3 !~ /^_?${a}/ ${symbols:+&&} ${symbols}"
 done
 
 (nm .libs/lib${lib}.a || nm .libs/lib${lib}.so*)  |
