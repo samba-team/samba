@@ -1,3 +1,15 @@
+2001-05-11  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/init_creds_pw.c: update to new prompter, use prompter
+	types and send two prompts at once when changning password
+	* lib/krb5/prompter_posix.c (krb5_prompter_posix): add name
+	* lib/krb5/krb5.h (krb5_prompt): add type
+	(krb5_prompter_fct): add anem
+
+	* lib/krb5/cache.c (krb5_cc_next_cred): transpose last two
+	paramaters to krb5_cc_next_cred (as MIT does, and not as they
+	document).  From "Jacques A. Vidrine" <n@nectar.com>
+
 2001-05-11  Johan Danielsson  <joda@pdc.kth.se>
 
 	* lib/krb5/Makefile.am: store-test
