@@ -93,5 +93,7 @@
 #endif
 
 #define ALLOC(X) ((X) = malloc(sizeof(*(X))))
+#define ALLOC_SEQ(X, N) do { (X)->len = (N); \
+(X)->val = calloc((X)->len, sizeof(*(X)->val)); } while(0)
 
 #endif /* __HEADERS_H__ */
