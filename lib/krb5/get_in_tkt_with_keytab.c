@@ -79,16 +79,10 @@ krb5_get_in_tkt_with_keytab (krb5_context context,
 			     krb5_creds *creds,
 			     krb5_kdc_rep *ret_as_reply)
 {
-    krb5_keytab_key_proc_args *a;
+    krb5_keytab_key_proc_args a;
 
-    a = malloc(sizeof(*a));
-    if (a == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
-	return ENOMEM;
-    }
-
-    a->principal = creds->client;
-    a->keytab    = keytab;
+    a.principal = creds->client;
+    a.keytab    = keytab;
 
     return krb5_get_in_tkt (context,
 			    options,
@@ -96,7 +90,7 @@ krb5_get_in_tkt_with_keytab (krb5_context context,
 			    etypes,
 			    pre_auth_types,
 			    krb5_keytab_key_proc,
-			    a,
+			    &a,
 			    NULL,
 			    NULL,
 			    creds,
