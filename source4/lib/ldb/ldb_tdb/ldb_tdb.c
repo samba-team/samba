@@ -403,10 +403,11 @@ static int msg_add_element(struct ldb_context *ldb,
 /*
   delete all elements having a specified attribute name
 */
-static int msg_delete_attribute(struct ldb_context *ldb,
+static int msg_delete_attribute(struct ldb_module *module,
+				struct ldb_context *ldb,
 				struct ldb_message *msg, const char *name)
 {
-	unsigned int i, count=0;
+	unsigned int i, j, count=0;
 	struct ldb_message_element *el2;
 
 	el2 = ldb_malloc_array_p(ldb, struct ldb_message_element, msg->num_elements);
@@ -419,6 +420,9 @@ static int msg_delete_attribute(struct ldb_context *ldb,
 		if (ldb_attr_cmp(msg->elements[i].name, name) != 0) {
 			el2[count++] = msg->elements[i];
 		} else {
+			for (j=0;j<msg->elements[i].num_values;j++) {
+				ltdb_index_del_value(module, msg->dn, &msg->elements[i], j);
+			}
 			ldb_free(ldb, msg->elements[i].values);
 		}
 	}
@@ -460,7 +464,7 @@ static int msg_delete_element(struct ldb_module *module,
 			}
 			el->num_values--;
 			if (el->num_values == 0) {
-				return msg_delete_attribute(ldb, msg, name);
+				return msg_delete_attribute(module, ldb, msg, name);
 			}
 			return 0;
 		}
@@ -532,7 +536,7 @@ int ltdb_modify_internal(struct ldb_module *module, const struct ldb_message *ms
 		case LDB_FLAG_MOD_REPLACE:
 			/* replace all elements of this attribute name with the elements
 			   listed. The attribute not existing is not an error */
-			msg_delete_attribute(ldb, &msg2, msg->elements[i].name);
+			msg_delete_attribute(module, ldb, &msg2, msg->elements[i].name);
 
 			/* add the replacement element, if not empty */
 			if (msg->elements[i].num_values != 0 &&
@@ -545,7 +549,7 @@ int ltdb_modify_internal(struct ldb_module *module, const struct ldb_message *ms
 			/* we could be being asked to delete all
 			   values or just some values */
 			if (msg->elements[i].num_values == 0) {
-				if (msg_delete_attribute(ldb, &msg2, 
+				if (msg_delete_attribute(module, ldb, &msg2, 
 							 msg->elements[i].name) != 0) {
 					ltdb->last_err_string = "No such attribute";
 					goto failed;
@@ -558,6 +562,9 @@ int ltdb_modify_internal(struct ldb_module *module, const struct ldb_message *ms
 						       msg->elements[i].name,
 						       &msg->elements[i].values[j]) != 0) {
 					ltdb->last_err_string = "No such attribute";
+					goto failed;
+				}
+				if (ltdb_index_del_value(module, msg->dn, &msg->elements[i], j) != 0) {
 					goto failed;
 				}
 			}
