@@ -15,6 +15,12 @@ PrincipalName ::=   SEQUENCE {
                     name-string[1]   SEQUENCE OF GeneralString
 }
 
+-- this is not part of RFC1510
+Principal ::=	    SEQUENCE {
+			name[0]		PrincipalName,
+			realm[1]	Realm
+}
+
 HostAddress ::=     SEQUENCE  {
                     addr-type[0]             INTEGER,
                     address[1]               OCTET STRING
