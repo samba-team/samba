@@ -940,6 +940,10 @@ size_t pull_ucs2(const void *base_ptr, char *dest, const void *src, size_t dest_
 		src_len &= ~1;
 	
 	ret = convert_string(CH_UCS2, CH_UNIX, src, src_len, dest, dest_len);
+	
+	if (src_len == (size_t)-1)
+		src_len = ret*2;
+		
 	if (dest_len)
 		dest[MIN(ret, dest_len-1)] = 0;
 	else 
