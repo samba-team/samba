@@ -47,7 +47,7 @@ static void nbench_log(struct nbench_private *private,
 	vasprintf(&s, format, ap);
 	va_end(ap);
 
-	//write(private->log_fd, s, strlen(s));
+	write(private->log_fd, s, strlen(s));
 	free(s);
 }
 
@@ -68,10 +68,7 @@ static void nbench_log(struct nbench_private *private,
 #define PASS_THRU_REQ_POST_ASYNC(req) do { \
 	req->async_states->status = status; \
 	if (!(req->async_states->state & NTVFS_ASYNC_STATE_ASYNC)) { \
-DEBUG(0,("NBENCH S 0x%04X: %s: %s 0x%X\n", req->mid, __FUNCTION__, nt_errstr(status),req->async_states->state)); \
 		req->async_states->send_fn(req); \
-	} else { \
-DEBUG(0,("NBENCH A 0x%04X: %s: %s\n", req->mid, __FUNCTION__, nt_errstr(status))); \
 	} \
 } while (0)
 
@@ -84,7 +81,6 @@ DEBUG(0,("NBENCH A 0x%04X: %s: %s\n", req->mid, __FUNCTION__, nt_errstr(status))
 #define PASS_THRU_REP_POST(req) do { \
 	ntvfs_async_state_pop(req); \
 	if (req->async_states->state & NTVFS_ASYNC_STATE_ASYNC) { \
-DEBUG(0,("NBENCH  A0x%04X: %s: %s\n", req->mid, __FUNCTION__, nt_errstr(req->async_states->status))); \
 		req->async_states->send_fn(req); \
 	} \
 } while (0)
@@ -106,7 +102,7 @@ static NTSTATUS nbench_connect(struct ntvfs_module_context *ntvfs,
 	if (!nprivates) {
 		return NT_STATUS_NO_MEMORY;
 	}
-#if 0
+
 	asprintf(&logname, "/tmp/nbenchlog%d.%u", ntvfs->depth, getpid());
 	nprivates->log_fd = sys_open(logname, O_WRONLY|O_CREAT|O_APPEND, 0644);
 	free(logname);
@@ -115,7 +111,7 @@ static NTSTATUS nbench_connect(struct ntvfs_module_context *ntvfs,
 		DEBUG(0,("Failed to open nbench log\n"));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
-#endif
+
 	ntvfs->private_data = nprivates;
 
 	status = ntvfs_next_connect(ntvfs, req, sharename);
