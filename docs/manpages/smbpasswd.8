@@ -3,12 +3,18 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMBPASSWD" "8" "01 February 2002" "" ""
+.TH "SMBPASSWD" "8" "03 April 2002" "" ""
 .SH NAME
 smbpasswd \- change a user's SMB password
 .SH SYNOPSIS
+.PP
+When run by root:
 .sp
-\fBsmbpasswd\fR [ \fB-a\fR ]  [ \fB-x\fR ]  [ \fB-d\fR ]  [ \fB-e\fR ]  [ \fB-D debuglevel\fR ]  [ \fB-n\fR ]  [ \fB-r <remote machine>\fR ]  [ \fB-R <name resolve order>\fR ]  [ \fB-m\fR ]  [ \fB-j DOMAIN\fR ]  [ \fB-U username[%password]\fR ]  [ \fB-h\fR ]  [ \fB-s\fR ]  [ \fB-w pass\fR ]  [ \fBusername\fR ] 
+\fBsmbpasswd\fR [ \fBoptions\fR ]  [ \fBusername\fR ]  [ \fBpassword\fR ] 
+.PP
+otherwise:
+.sp
+\fBsmbpasswd\fR [ \fBoptions\fR ]  [ \fBpassword\fR ] 
 .SH "DESCRIPTION"
 .PP
 This tool is part of the  Sambasuite.
@@ -50,56 +56,28 @@ directly, thus enabling changes to be made even if smbd is not
 running. 
 .SH "OPTIONS"
 .TP
-\fB-a\fR
-This option specifies that the username 
-following should be added to the local smbpasswd file, with the 
-new password typed (type <Enter> for the old password). This 
-option is ignored if the username following already exists in 
-the smbpasswd file and it is treated like a regular change 
-password command. Note that the user to be added must already exist 
-in the system password file (usually \fI/etc/passwd\fR)
-else the request to add the user will fail. 
-
-This option is only available when running smbpasswd 
-as root. 
+\fB-L\fR
+Run the smbpasswd command in local mode. This 
+allows a non-root user to specify the root-only options. This 
+is used in test environments where smbd is run as non-root. The 
+\fIsmbpasswd\fR file must have read/write 
+permissions for the user running the command.
 .TP
-\fB-x\fR
-This option specifies that the username 
-following should be deleted from the local smbpasswd file.
-
-This option is only available when running smbpasswd as 
-root.
+\fB-h\fR
+This option prints the help string for 
+\fBsmbpasswd\fR. 
 .TP
-\fB-d\fR
-This option specifies that the username following 
-should be disabled in the local smbpasswd 
-file. This is done by writing a 'D' flag 
-into the account control space in the smbpasswd file. Once this 
-is done all attempts to authenticate via SMB using this username 
-will fail. 
-
-If the smbpasswd file is in the 'old' format (pre-Samba 2.0 
-format) there is no space in the user's password entry to write
-this information and so the user is disabled by writing 'X' characters 
-into the password space in the smbpasswd file. See \fBsmbpasswd(5)
-\fRfor details on the 'old' and new password file formats.
-
-This option is only available when running smbpasswd as 
-root.
+\fB-s\fR
+This option causes smbpasswd to be silent (i.e. 
+not issue prompts) and to read its old and new passwords from 
+standard input, rather than from \fI/dev/tty\fR 
+(like the \fBpasswd(1)\fR program does). This option 
+is to aid people writing scripts to drive smbpasswd
 .TP
-\fB-e\fR
-This option specifies that the username following 
-should be enabled in the local smbpasswd file, 
-if the account was previously disabled. If the account was not 
-disabled this option has no effect. Once the account is enabled then 
-the user will be able to authenticate via SMB once again. 
-
-If the smbpasswd file is in the 'old' format, then \fB smbpasswd\fR will prompt for a new password for this user, 
-otherwise the account will be enabled by removing the 'D'
-flag from account control space in the \fI smbpasswd\fR file. See \fBsmbpasswd (5)\fR for 
-details on the 'old' and new password file formats. 
-
-This option is only available when running smbpasswd as root. 
+\fB-c smb.conf file\fR
+This option specifies that the configuration
+file specified should be used instead of the default value
+specified at compile time. 
 .TP
 \fB-D debuglevel\fR
 \fIdebuglevel\fR is an integer 
@@ -114,23 +92,6 @@ Levels above 1 will generate considerable amounts of log
 data, and should only be used when investigating a problem. Levels 
 above 3 are designed for use only by developers and generate
 HUGE amounts of log data, most of which is extremely cryptic. 
-.TP
-\fB-n\fR
-This option specifies that the username following 
-should have their password set to null (i.e. a blank password) in 
-the local smbpasswd file. This is done by writing the string "NO 
-PASSWORD" as the first part of the first password stored in the 
-smbpasswd file. 
-
-Note that to allow users to logon to a Samba server once 
-the password has been set to "NO PASSWORD" in the smbpasswd
-file the administrator must set the following parameter in the [global]
-section of the \fIsmb.conf\fR file : 
-
-\fBnull passwords = yes\fR
-
-This option is only available when running smbpasswd as 
-root.
 .TP
 \fB-r remote machine name\fR
 This option allows a user to specify what machine 
@@ -157,6 +118,131 @@ change).
 \fBNote\fR that Windows 95/98 do not have 
 a real password database so it is not possible to change passwords 
 specifying a Win95/98 machine as remote machine target. 
+.TP
+\fB-U username[%pass]\fR
+This option may only be used in conjunction 
+with the \fI-r\fR option. When changing
+a password on a remote machine it allows the user to specify 
+the user name on that machine whose password will be changed. It 
+is present to allow users who have different user names on 
+different systems to change these passwords. The optional
+%pass may be used to specify to old password.
+
+In particular, this parameter specifies the username
+used to create the machine account when invoked with -j
+.TP
+\fBThe following options are available only when the smbpasswd command is\fR
+.TP
+\fB-a\fR
+This option specifies that the username 
+following should be added to the local smbpasswd file, with the 
+new password typed (type <Enter> for the old password). This 
+option is ignored if the username following already exists in 
+the smbpasswd file and it is treated like a regular change 
+password command. Note that the user to be added must already exist 
+in the system password file (usually \fI/etc/passwd\fR)
+else the request to add the user will fail. 
+.TP
+\fB-d\fR
+This option specifies that the username following 
+should be disabled in the local smbpasswd 
+file. This is done by writing a 'D' flag 
+into the account control space in the smbpasswd file. Once this 
+is done all attempts to authenticate via SMB using this username 
+will fail. 
+
+If the smbpasswd file is in the 'old' format (pre-Samba 2.0 
+format) there is no space in the user's password entry to write
+this information and so the user is disabled by writing 'X' characters 
+into the password space in the smbpasswd file. See \fBsmbpasswd(5)
+\fRfor details on the 'old' and new password file formats.
+.TP
+\fB-e\fR
+This option specifies that the username following 
+should be enabled in the local smbpasswd file, 
+if the account was previously disabled. If the account was not 
+disabled this option has no effect. Once the account is enabled then 
+the user will be able to authenticate via SMB once again. 
+
+If the smbpasswd file is in the 'old' format, then \fB smbpasswd\fR will prompt for a new password for this user, 
+otherwise the account will be enabled by removing the 'D'
+flag from account control space in the \fI smbpasswd\fR file. See \fBsmbpasswd (5)\fR for 
+details on the 'old' and new password file formats. 
+.TP
+\fB-m\fR
+This option tells smbpasswd that the account 
+being changed is a MACHINE account. Currently this is used 
+when Samba is being used as an NT Primary Domain Controller.
+.TP
+\fB-n\fR
+This option specifies that the username following 
+should have their password set to null (i.e. a blank password) in 
+the local smbpasswd file. This is done by writing the string "NO 
+PASSWORD" as the first part of the first password stored in the 
+smbpasswd file. 
+
+Note that to allow users to logon to a Samba server once 
+the password has been set to "NO PASSWORD" in the smbpasswd
+file the administrator must set the following parameter in the [global]
+section of the \fIsmb.conf\fR file : 
+
+\fBnull passwords = yes\fR
+.TP
+\fB-w password\fR
+This parameter is only available is Samba
+has been configured to use the experimental
+\fB--with-ldapsam\fR option. The \fI-w\fR 
+switch is used to specify the password to be used with the 
+\fIldap admin 
+dn\fR. Note that the password is stored in
+the \fIprivate/secrets.tdb\fR and is keyed off 
+of the admin's DN. This means that if the value of \fIldap
+admin dn\fR ever changes, the password will beed to be 
+manually updated as well.
+.TP
+\fB-x\fR
+This option specifies that the username 
+following should be deleted from the local smbpasswd file.
+.TP
+\fB-j DOMAIN\fR
+This option is used to add a Samba server 
+into a Windows NT Domain, as a Domain member capable of authenticating 
+user accounts to any Domain Controller in the same way as a Windows 
+NT Server. See the \fBsecurity = domain\fR option in 
+the \fIsmb.conf(5)\fR man page. 
+
+This command can work both with and without the -U parameter. 
+
+When invoked with -U, that username (and optional password) are
+used to contact the PDC (which must be specified with -r) to both
+create a machine account, and to set a password on it.
+
+Alternately, if -U is omitted, Samba will contact its PDC
+and attempt to change the password on a pre-existing account. 
+
+In order to be used in this way, the Administrator for 
+the Windows NT Domain must have used the program "Server Manager 
+for Domains" to add the primary NetBIOS name of the Samba server 
+as a member of the Domain. 
+
+After this has been done, to join the Domain invoke \fB smbpasswd\fR with this parameter. smbpasswd will then 
+look up the Primary Domain Controller for the Domain (found in 
+the \fIsmb.conf\fR file in the parameter 
+\fIpassword server\fR and change the machine account 
+password used to create the secure Domain communication. 
+
+Either way, this password is then stored by smbpasswd in a TDB, 
+writeable only by root, called \fIsecrets.tdb\fR 
+
+Once this operation has been performed the \fI smb.conf\fR file may be updated to set the \fB security = domain\fR option and all future logins
+to the Samba server will be authenticated to the Windows NT 
+PDC. 
+
+Note that even though the authentication is being 
+done to the PDC all users accessing the Samba server must still 
+have a valid UNIX account on that machine. 
+The \fBwinbindd(8)\fR daemon can be used
+to create UNIX accounts for NT users.
 .TP
 \fB-R name resolve order\fR
 This option allows the user of smbpasswd to determine 
@@ -203,94 +289,15 @@ and without this parameter or any entry in the
 be attempted in this order. 
 .PP
 .TP
-\fB-m\fR
-This option tells smbpasswd that the account 
-being changed is a MACHINE account. Currently this is used 
-when Samba is being used as an NT Primary Domain Controller.
-
-This option is only available when running smbpasswd as root. 
-.TP
-\fB-j DOMAIN\fR
-This option is used to add a Samba server 
-into a Windows NT Domain, as a Domain member capable of authenticating 
-user accounts to any Domain Controller in the same way as a Windows 
-NT Server. See the \fBsecurity = domain\fR option in 
-the \fIsmb.conf(5)\fR man page. 
-
-This command can work both with and without the -U parameter. 
-
-When invoked with -U, that username (and optional password) are
-used to contact the PDC (which must be specified with -r) to both
-create a machine account, and to set a password on it.
-
-Alternately, if -U is omitted, Samba will contact its PDC
-and attempt to change the password on a pre-existing account. 
-
-In order to be used in this way, the Administrator for 
-the Windows NT Domain must have used the program "Server Manager 
-for Domains" to add the primary NetBIOS name of the Samba server 
-as a member of the Domain. 
-
-After this has been done, to join the Domain invoke \fB smbpasswd\fR with this parameter. smbpasswd will then 
-look up the Primary Domain Controller for the Domain (found in 
-the \fIsmb.conf\fR file in the parameter 
-\fIpassword server\fR and change the machine account 
-password used to create the secure Domain communication. 
-
-Either way, this password is then stored by smbpasswd in a TDB, 
-writeable only by root, called \fIsecrets.tdb\fR 
-
-Once this operation has been performed the \fI smb.conf\fR file may be updated to set the \fB security = domain\fR option and all future logins
-to the Samba server will be authenticated to the Windows NT 
-PDC. 
-
-Note that even though the authentication is being 
-done to the PDC all users accessing the Samba server must still 
-have a valid UNIX account on that machine. 
-The \fBwinbindd(8)\fR daemon can be used
-to create UNIX accounts for NT users.
-
-This option is only available when running smbpasswd as root. 
-.TP
-\fB-U username\fR
-This option may only be used in conjunction 
-with the \fI-r\fR option. When changing
-a password on a remote machine it allows the user to specify 
-the user name on that machine whose password will be changed. It 
-is present to allow users who have different user names on 
-different systems to change these passwords. 
-
-In particular, this parameter specifies the username
-used to create the machine account when invoked with -j
-.TP
-\fB-h\fR
-This option prints the help string for \fB smbpasswd\fR, selecting the correct one for running as root 
-or as an ordinary user. 
-.TP
-\fB-s\fR
-This option causes smbpasswd to be silent (i.e. 
-not issue prompts) and to read its old and new passwords from 
-standard input, rather than from \fI/dev/tty\fR 
-(like the \fBpasswd(1)\fR program does). This option 
-is to aid people writing scripts to drive smbpasswd
-.TP
-\fB-w password\fR
-This parameter is only available is Samba
-has been configured to use the experimental
-\fB--with-ldapsam\fR option. The \fI-w\fR 
-switch is used to specify the password to be used with the 
-\fIldap admin 
-dn\fR. Note that the password is stored in
-the \fIprivate/secrets.tdb\fR and is keyed off 
-of the admin's DN. This means that if the value of \fIldap
-admin dn\fR ever changes, the password will beed to be 
-manually updated as well.
-.TP
 \fBusername\fR
 This specifies the username for all of the 
 \fBroot only\fR options to operate on. Only root 
 can specify this parameter as only root has the permission needed 
 to modify attributes directly in the local smbpasswd file. 
+.TP
+\fBpassword\fR
+This specifies the new password. If this parameter
+is specified you will not be prompted for the new password.
 .SH "NOTES"
 .PP
 Since \fBsmbpasswd\fR works in client-server 

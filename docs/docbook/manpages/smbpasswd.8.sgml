@@ -13,23 +13,18 @@
 </refnamediv>
 
 <refsynopsisdiv>
+	<para>When run by root:</para>
 	<cmdsynopsis>
 		<command>smbpasswd</command>
-		<arg choice="opt">-a</arg>	
-		<arg choice="opt">-x</arg>	
-		<arg choice="opt">-d</arg>	
-		<arg choice="opt">-e</arg>	
-		<arg choice="opt">-D debuglevel</arg>	
-		<arg choice="opt">-n</arg>	
-		<arg choice="opt">-r &lt;remote machine&gt;</arg>	
-		<arg choice="opt">-R &lt;name resolve order&gt;</arg>	
-		<arg choice="opt">-m</arg>	
-		<arg choice="opt">-j DOMAIN</arg>	
-		<arg choice="opt">-U username[%password]</arg>	
-		<arg choice="opt">-h</arg>	
-		<arg choice="opt">-s</arg>	
-		<arg choice="opt">-w pass</arg>	
+		<arg choice="opt">options</arg>	
 		<arg choice="opt">username</arg>	
+		<arg choice="opt">password</arg>	
+	</cmdsynopsis>
+	<para>otherwise:</para>
+	<cmdsynopsis>
+		<command>smbpasswd</command>
+		<arg choice="opt">options</arg>	
+		<arg choice="opt">password</arg>	
 	</cmdsynopsis>
 </refsynopsisdiv>
 
@@ -80,76 +75,41 @@
 	<title>OPTIONS</title>
 	<variablelist>
 		<varlistentry>
-		<term>-a</term>
-		<listitem><para>This option specifies that the username 
-		following should be added to the local smbpasswd file, with the 
-		new password typed (type &lt;Enter&gt; for the old password). This 
-		option is ignored if the username following already exists in 
-		the smbpasswd file and it is treated like a regular change 
-		password command. Note that the user to be added must already exist 
-		in the system password file (usually <filename>/etc/passwd</filename>)
-		else the request to add the user will fail. </para>
-		
-		<para>This option is only available when running smbpasswd 
-		as root. </para></listitem>
-		</varlistentry>
-		
-		
-		
-		<varlistentry>
-		<term>-x</term>
-		<listitem><para>This option specifies that the username 
-		following should be deleted from the local smbpasswd file.
-		</para>
-
-		<para>This option is only available when running smbpasswd as 
-		root.</para></listitem>
-		</varlistentry>
-		
-		
-		
-		<varlistentry>
-		<term>-d</term>
-		<listitem><para>This option specifies that the username following 
-		should be <constant>disabled</constant> in the local smbpasswd 
-		file. This is done by writing a <constant>'D'</constant> flag 
-		into the account control space in the smbpasswd file. Once this 
-		is done all attempts to authenticate via SMB using this username 
-		will fail. </para>
-		
-		<para>If the smbpasswd file is in the 'old' format (pre-Samba 2.0 
-		format) there is no space in the user's password entry to write
-		this information and so the user is disabled by writing 'X' characters 
-		into the password space in the smbpasswd file. See <command>smbpasswd(5)
-		</command> for details on the 'old' and new password file formats.
-		</para>
-
-		<para>This option is only available when running smbpasswd as 
-		root.</para></listitem>
+		<term>-L</term>
+		<listitem><para>Run the smbpasswd command in local mode. This 
+		allows a non-root user to specify the root-only options. This 
+		is used in test environments where smbd is run as non-root. The 
+		<filename>smbpasswd</filename> file must have read/write 
+		permissions for the user running the command.</para></listitem>
 		</varlistentry>
 		
 		
 		<varlistentry>
-		<term>-e</term>
-		<listitem><para>This option specifies that the username following 
-		should be <constant>enabled</constant> in the local smbpasswd file, 
-		if the account was previously disabled. If the account was not 
-		disabled this option has no effect. Once the account is enabled then 
-		the user will be able to authenticate via SMB once again. </para>
+		<term>-h</term>
+		<listitem><para>This option prints the help string for 
+		<command>smbpasswd</command>. </para></listitem>
+		</varlistentry>
 		
-		<para>If the smbpasswd file is in the 'old' format, then <command>
-		smbpasswd</command> will prompt for a new password for this user, 
-		otherwise the account will be enabled by removing the <constant>'D'
-		</constant> flag from account control space in the <filename>
-		smbpasswd</filename> file. See <command>smbpasswd (5)</command> for 
-		details on the 'old' and new password file formats. </para>
-
-		<para>This option is only available when running smbpasswd as root. 
-		</para></listitem>
+		
+		<varlistentry>
+		<term>-s</term>
+		<listitem><para>This option causes smbpasswd to be silent (i.e. 
+		not issue prompts) and to read its old and new passwords from 
+		standard  input, rather than from <filename>/dev/tty</filename> 
+		(like the <command>passwd(1)</command> program does). This option 
+		is to aid people writing scripts to drive smbpasswd</para>
+		</listitem>
 		</varlistentry>
 		
 
+		<varlistentry>
+		<term>-c smb.conf file</term>
+		<listitem><para>This option specifies that the configuration
+		file specified should be used instead of the default value
+		specified at compile time. </para></listitem>
+		</varlistentry>
 
+		
 		<varlistentry>
 		<term>-D debuglevel</term>
 		<listitem><para><replaceable>debuglevel</replaceable> is an integer 
@@ -166,28 +126,6 @@
 		HUGE amounts of log data, most of which is extremely cryptic. 
 		</para></listitem>
 		</varlistentry>
-		
-		
-		
-		<varlistentry>
-		<term>-n</term>
-		<listitem><para>This option specifies that the username following 
-		should have their password set to null (i.e. a blank password) in 
-		the local smbpasswd file. This is done by writing the string "NO 
-		PASSWORD" as the first part of the first password stored in the 
-		smbpasswd file. </para>
-
-		<para>Note that to allow users to logon to a Samba server once 
-		the password has been set to "NO PASSWORD" in the smbpasswd
-		file the administrator must set the following parameter in the [global]
-		section of the <filename>smb.conf</filename> file : </para>
-		
-		<para><command>null passwords = yes</command></para> 
-		
-		<para>This option is only available when running smbpasswd as 
-		root.</para></listitem>
-		</varlistentry>
-		
 		
 		
 		<varlistentry>
@@ -221,45 +159,73 @@
 		
 		
 		<varlistentry>
-		<term>-R name resolve order</term>
-		<listitem><para>This option allows the user of smbpasswd to determine 
-		what name resolution services to use when looking up the NetBIOS
-		name of the host being connected to. </para>
+		<term>-U username[%pass]</term>
+		<listitem><para>This option may only be used in conjunction 
+		with the <parameter>-r</parameter> option. When changing
+		a password on a remote machine it allows the user to specify 
+		the user name on that machine whose password will be changed. It 
+		is present to allow users who have different user names on 
+		different systems to change these passwords. The optional
+		%pass may be used to specify to old password.</para>
 
-		<para>The options are :"lmhosts", "host", "wins" and "bcast". They cause 
-		names to be resolved as follows : </para>
-			<itemizedlist>
-				<listitem><para><constant>lmhosts</constant> : Lookup an IP 
-            address in the Samba lmhosts file. If the line in lmhosts has 
-            no name type attached to the NetBIOS name (see the <ulink 
-            url="lmhosts.5.html">lmhosts(5)</ulink> for details) then
-            any name type matches for lookup.</para></listitem>
-
-            <listitem><para><constant>host</constant> : Do a standard host 
-            name to IP address resolution, using the system <filename>/etc/hosts
-            </filename>, NIS, or DNS lookups. This method of name resolution 
-            is operating system depended for instance on IRIX or Solaris this 
-            may be controlled by the <filename>/etc/nsswitch.conf</filename> 
-            file).  Note that this method is only used if the NetBIOS name 
-            type being queried is the 0x20 (server) name type, otherwise 
-            it is ignored.</para></listitem>
-
-            <listitem><para><constant>wins</constant> : Query a name with 
-            the IP address listed in the <parameter>wins server</parameter> 
-				parameter.  If no WINS server has been specified this method 
-				will be ignored.</para></listitem>
-
-            <listitem><para><constant>bcast</constant> : Do a broadcast on 
-            each of the known local interfaces listed in the
-            <parameter>interfaces</parameter> parameter. This is the least 
-				reliable of the name resolution methods as it depends on the 
-				target host being on a locally connected subnet.</para></listitem>
-		</itemizedlist>
+                <para>In particular, this parameter specifies the username
+                used to create the machine account when invoked with -j</para>
+                </listitem>
+		</varlistentry>
 		
-		<para>The default order is <command>lmhosts, host, wins, bcast</command> 
-		and without this parameter or any entry in the 
-		<filename>smb.conf</filename> file the name resolution methods will 
-		be attempted in this order. </para></listitem>
+		
+<varlistentry>
+<term>
+<command>The following options are available only when the smbpasswd command is
+run as root or in local mode.</command></term>
+<listitem><para></para></listitem>
+</varlistentry>
+
+		<varlistentry>
+		<term>-a</term>
+		<listitem><para>This option specifies that the username 
+		following should be added to the local smbpasswd file, with the 
+		new password typed (type &lt;Enter&gt; for the old password). This 
+		option is ignored if the username following already exists in 
+		the smbpasswd file and it is treated like a regular change 
+		password command. Note that the user to be added must already exist 
+		in the system password file (usually <filename>/etc/passwd</filename>)
+		else the request to add the user will fail. </para></listitem>
+		</varlistentry>
+		
+		
+		<varlistentry>
+		<term>-d</term>
+		<listitem><para>This option specifies that the username following 
+		should be <constant>disabled</constant> in the local smbpasswd 
+		file. This is done by writing a <constant>'D'</constant> flag 
+		into the account control space in the smbpasswd file. Once this 
+		is done all attempts to authenticate via SMB using this username 
+		will fail. </para>
+		
+		<para>If the smbpasswd file is in the 'old' format (pre-Samba 2.0 
+		format) there is no space in the user's password entry to write
+		this information and so the user is disabled by writing 'X' characters 
+		into the password space in the smbpasswd file. See <command>smbpasswd(5)
+		</command> for details on the 'old' and new password file formats.
+		</para></listitem>
+		</varlistentry>
+		
+		
+		<varlistentry>
+		<term>-e</term>
+		<listitem><para>This option specifies that the username following 
+		should be <constant>enabled</constant> in the local smbpasswd file, 
+		if the account was previously disabled. If the account was not 
+		disabled this option has no effect. Once the account is enabled then 
+		the user will be able to authenticate via SMB once again. </para>
+		
+		<para>If the smbpasswd file is in the 'old' format, then <command>
+		smbpasswd</command> will prompt for a new password for this user, 
+		otherwise the account will be enabled by removing the <constant>'D'
+		</constant> flag from account control space in the <filename>
+		smbpasswd</filename> file. See <command>smbpasswd (5)</command> for 
+		details on the 'old' and new password file formats. </para></listitem>
 		</varlistentry>
 		
 		
@@ -268,8 +234,48 @@
 		<listitem><para>This option tells smbpasswd that the account 
 		being changed is a MACHINE account. Currently this is used 
 		when Samba is being used as an NT Primary Domain Controller.</para>
+		</listitem>
+		</varlistentry>
+		
+		
+		<varlistentry>
+		<term>-n</term>
+		<listitem><para>This option specifies that the username following 
+		should have their password set to null (i.e. a blank password) in 
+		the local smbpasswd file. This is done by writing the string "NO 
+		PASSWORD" as the first part of the first password stored in the 
+		smbpasswd file. </para>
 
-		<para>This option is only available when running smbpasswd as root. 	
+		<para>Note that to allow users to logon to a Samba server once 
+		the password has been set to "NO PASSWORD" in the smbpasswd
+		file the administrator must set the following parameter in the [global]
+		section of the <filename>smb.conf</filename> file : </para>
+		
+		<para><command>null passwords = yes</command></para></listitem>
+		</varlistentry>
+		
+		
+		<varlistentry>
+		<term>-w password</term>
+		<listitem><para>This parameter is only available is Samba
+		has been configured to use the experimental
+		<command>--with-ldapsam</command> option. The <parameter>-w</parameter> 
+		switch is used to specify the password to be used with the 
+		<ulink url="smb.conf.5.html#LDAPADMINDN"><parameter>ldap admin 
+		dn</parameter></ulink>.  Note that the password is stored in
+		the <filename>private/secrets.tdb</filename> and is keyed off 
+		of the admin's DN.  This means that if the value of <parameter>ldap
+		admin dn</parameter> ever changes, the password will beed to be 
+		manually updated as well.
+		</para>
+		</listitem>
+		</varlistentry>
+		
+		
+		<varlistentry>
+		<term>-x</term>
+		<listitem><para>This option specifies that the username 
+		following should be deleted from the local smbpasswd file.
 		</para></listitem>
 		</varlistentry>
 		
@@ -316,66 +322,50 @@
 		done to the PDC all users accessing the Samba server must still 
 		have a valid UNIX account on that machine.  
                 The <command>winbindd(8)</command> daemon can be used
-                to create UNIX accounts for NT users.</para>
-
-
-		<para>This option is only available when running smbpasswd as root. 
-		</para></listitem>
-		</varlistentry>
-		
-		
-		
-		<varlistentry>
-		<term>-U username</term>
-		<listitem><para>This option may only be used in conjunction 
-		with the <parameter>-r</parameter> option. When changing
-		a password on a remote machine it allows the user to specify 
-		the user name on that machine whose password will be changed. It 
-		is present to allow users who have different user names on 
-		different systems to change these passwords. </para>
-
-                <para>In particular, this parameter specifies the username
-                used to create the machine account when invoked with -j</para>
-                </listitem>
-
-
+                to create UNIX accounts for NT users.</para></listitem>
 		</varlistentry>
 		
 		
 		<varlistentry>
-		<term>-h</term>
-		<listitem><para>This option prints the help string for <command>
-		smbpasswd</command>, selecting the correct one for running as root 
-		or as an ordinary user. </para></listitem>
-		</varlistentry>
-		
-		
-		
-		<varlistentry>
-		<term>-s</term>
-		<listitem><para>This option causes smbpasswd to be silent (i.e. 
-		not issue prompts) and to read its old and new passwords from 
-		standard  input, rather than from <filename>/dev/tty</filename> 
-		(like the <command>passwd(1)</command> program does). This option 
-		is to aid people writing scripts to drive smbpasswd</para>
-		</listitem>
-		</varlistentry>
-		
+		<term>-R name resolve order</term>
+		<listitem><para>This option allows the user of smbpasswd to determine 
+		what name resolution services to use when looking up the NetBIOS
+		name of the host being connected to. </para>
 
-		<varlistentry>
-		<term>-w password</term>
-		<listitem><para>This parameter is only available is Samba
-		has been configured to use the experimental
-		<command>--with-ldapsam</command> option. The <parameter>-w</parameter> 
-		switch is used to specify the password to be used with the 
-		<ulink url="smb.conf.5.html#LDAPADMINDN"><parameter>ldap admin 
-		dn</parameter></ulink>.  Note that the password is stored in
-		the <filename>private/secrets.tdb</filename> and is keyed off 
-		of the admin's DN.  This means that if the value of <parameter>ldap
-		admin dn</parameter> ever changes, the password will beed to be 
-		manually updated as well.
-		</para>
-		</listitem>
+		<para>The options are :"lmhosts", "host", "wins" and "bcast". They cause 
+		names to be resolved as follows : </para>
+		<itemizedlist>
+			<listitem><para><constant>lmhosts</constant> : Lookup an IP 
+			address in the Samba lmhosts file. If the line in lmhosts has 
+			no name type attached to the NetBIOS name (see the <ulink 
+			url="lmhosts.5.html">lmhosts(5)</ulink> for details) then
+			any name type matches for lookup.</para></listitem>
+
+			<listitem><para><constant>host</constant> : Do a standard host 
+			name to IP address resolution, using the system <filename>/etc/hosts
+			</filename>, NIS, or DNS lookups. This method of name resolution 
+			is operating system depended for instance on IRIX or Solaris this 
+			may be controlled by the <filename>/etc/nsswitch.conf</filename> 
+			file).  Note that this method is only used if the NetBIOS name 
+			type being queried is the 0x20 (server) name type, otherwise 
+			it is ignored.</para></listitem>
+
+			<listitem><para><constant>wins</constant> : Query a name with 
+			the IP address listed in the <parameter>wins server</parameter> 
+			parameter.  If no WINS server has been specified this method 
+			will be ignored.</para></listitem>
+
+			<listitem><para><constant>bcast</constant> : Do a broadcast on 
+			each of the known local interfaces listed in the
+			<parameter>interfaces</parameter> parameter. This is the least 
+			reliable of the name resolution methods as it depends on the 
+			target host being on a locally connected subnet.</para></listitem>
+		</itemizedlist>
+		
+		<para>The default order is <command>lmhosts, host, wins, bcast</command> 
+		and without this parameter or any entry in the 
+		<filename>smb.conf</filename> file the name resolution methods will 
+		be attempted in this order. </para></listitem>
 		</varlistentry>
 		
 		
@@ -387,6 +377,15 @@
 		to modify attributes directly in the local smbpasswd file. 
 		</para></listitem>
 		</varlistentry>
+
+
+		<varlistentry>
+		<term>password</term>
+		<listitem><para>This specifies the new password. If this parameter
+		is specified you will not be prompted for the new password.
+		</para></listitem>
+		</varlistentry>
+
 	</variablelist>
 </refsect1>
 
