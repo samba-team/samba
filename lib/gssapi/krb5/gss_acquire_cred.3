@@ -366,6 +366,24 @@ described in
 and
 .Li RFC2744 .
 .Pp
+.Fn gss_display_name
+takes the gssapi name in
+.Fa input_name
+and put a printable form in
+.Fa output_name_buffer .
+.Fa output_name_buffer
+should be freed when done using
+.Fn gss_release_buffer .
+.Fa output_name_type
+can either be
+.Dv NULL
+or a pointer to a
+.Li gss_OID
+and will in the later case contain the OID type of the name.
+The name should only be used for printing.
+Access control should be done with the result of
+.Fn gss_export_name .
+.Pp
 .Fn gss_krb5_copy_ccache
 is an extension to the
 .Nm gssapi
