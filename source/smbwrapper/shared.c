@@ -82,7 +82,7 @@ static void lockit(void)
 	}
 	if (locked==0 && 
 	    fcntl_lock(shared_fd,SMB_F_SETLKW,0,1,F_WRLCK)==False) {
-		DEBUG(0,("ERROR: can't get smbw shared lock\n"));
+		DEBUG(0,("ERROR: can't get smbw shared lock (%s)\n", strerror(errno)));
 		exit(1);
 	}
 	locked++;
