@@ -20,7 +20,9 @@
 */
 
 #include "includes.h"
+#ifdef HAVE_LIBDL
 #include <dlfcn.h>
+#endif
 
 extern int DEBUGLEVEL;
 
@@ -115,6 +117,7 @@ struct vfs_ops default_vfs_ops = {
 /****************************************************************************
   call vfs_init function of loadable module
 ****************************************************************************/
+#ifdef HAVE_LIBDL
 BOOL do_vfs_init(char *vfs_object)
 {
     void *handle, (*fptr)(void);
@@ -139,6 +142,7 @@ BOOL do_vfs_init(char *vfs_object)
 
     return True;
 }
+#endif
 
 /****************************************************************************
   initialise default vfs hooks
@@ -154,6 +158,7 @@ int vfs_init_default(connection_struct *conn)
 /****************************************************************************
   initialise custom vfs hooks
 ****************************************************************************/
+#ifdef HAVE_LIBDL
 int vfs_init_custom(connection_struct *conn)
 {
     void *handle, *fptr;
@@ -189,12 +194,11 @@ int vfs_init_custom(connection_struct *conn)
     bcopy(&dl_ops, &conn->vfs_ops, sizeof(dl_ops));
     dlclose(handle);
 
-#if 0
     do_vfs_init(lp_vfsobj(SNUM(conn)));
-#endif
 
     return 0;
 }
+#endif
 
 /*******************************************************************
   check if a vfs file exists
@@ -233,7 +237,6 @@ ssize_t vfs_read_data(files_struct *fsp,char *buffer,size_t N)
     }
 #else /* WITH_SSL */
     ret = fsp->conn->vfs_ops.read(fd,buffer + total,N - total);
-    DEBUG(0, ("VFS_READ -> read %d/%d bytes\n", ret, N));
 #endif /* WITH_SSL */
 
     if (ret == 0)
