@@ -1163,5 +1163,9 @@ int asprintf(char **,const char *, ...) PRINTF_ATTRIBUTE(2,3);
 #define VA_COPY(dest, src) (dest) = (src)
 #endif
 
+#ifndef HAVE_TIMEGM
+time_t timegm(struct tm *tm);
+#endif
+
 #endif /* _INCLUDES_H */
 

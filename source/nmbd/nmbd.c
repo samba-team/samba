@@ -3,6 +3,7 @@
    NBT netbios routines and daemon - version 2
    Copyright (C) Andrew Tridgell 1994-1998
    Copyright (C) Jeremy Allison 1997-2002
+   Copyright (C) Jelmer Vernooij 2002 (Conversion to popt)
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -656,40 +657,31 @@ static BOOL init_structs(void)
 }
 
 /**************************************************************************** **
- Usage on the program.
- **************************************************************************** */
-
-static void usage(char *pname)
-{
-
-  printf( "Usage: %s [-DaiohV] [-H lmhosts file] [-d debuglevel] [-l log basename]\n", pname );
-  printf( "       [-n name] [-p port] [-s configuration file]\n" );
-  printf( "\t-D                    Become a daemon (default)\n" );
-  printf( "\t-a                    Append to log file (default)\n" );
-  printf( "\t-i                    Run interactive (not a daemon)\n" );
-  printf( "\t-o                    Overwrite log file, don't append\n" );
-  printf( "\t-h                    Print usage\n" );
-  printf( "\t-V                    Print version\n" );
-  printf( "\t-H hosts file         Load a netbios hosts file\n" );
-  printf( "\t-d debuglevel         Set the debuglevel\n" );
-  printf( "\t-l log basename.      Basename for log/debug files\n" );
-  printf( "\t-n netbiosname.       Primary netbios name\n" );
-  printf( "\t-p port               Listen on the specified port\n" );
-  printf( "\t-s configuration file Configuration file name\n" );
-  printf( "\n");
-}
-
-
-/**************************************************************************** **
  main program
  **************************************************************************** */
- int main(int argc,char *argv[])
+ int main(int argc, const char *argv[])
 {
-  int opt;
-  extern char *optarg;
-  extern BOOL  append_log;
-  BOOL opt_interactive = False;
-  pstring logfile;
+	extern BOOL append_log;
+	static BOOL opt_interactive = False;
+	poptContext pc;
+	struct poptOption long_options[] = {
+	POPT_AUTOHELP
+	{"daemon", 'D', POPT_ARG_VAL, &is_daemon, True, "Become a daemon(default)" },
+	{"log-append", 'a', POPT_ARG_VAL, &append_log, True, "Append to log file" },
+	{"interactive", 'i', POPT_ARG_VAL, &opt_interactive, True, "Run interactive (not a daemon)" },
+	{"log-overwrite", 'o', POPT_ARG_VAL, &append_log, False, "Overwrite log file, don't append" },
+	{"hosts", 'H', POPT_ARG_STRING, dyn_LMHOSTSFILE, 'H', "Load a netbios hosts file"},
+	{"port", 'p', POPT_ARG_INT, &global_nmb_port, NMB_PORT, "Listen on the specified port" },
+	{NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_debug },
+	{NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_configfile },
+	{NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_socket_options },
+	{NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_version },
+	{NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_netbios_name },
+	{NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_log_base },
+	{ NULL }
+	};
+	int opt;
+	pstring logfile;
 
   append_log = True;  /* Default, override with '-o' option. */
 
@@ -702,13 +694,6 @@ static void usage(char *pname)
 
   slprintf(logfile, sizeof(logfile)-1, "%s/log.nmbd", dyn_LOGFILEBASE);
   lp_set_logfile(logfile);
-
-  /* this is for people who can't start the program correctly */
-  while (argc > 1 && (*argv[1] != '-'))
-  {
-    argv++;
-    argc--;
-  }
 
   fault_setup((void (*)(void *))fault_continue );
 
@@ -730,70 +715,13 @@ static void usage(char *pname)
 #if defined(SIGUSR2)
   BlockSignals(True, SIGUSR2);
 #endif
+  pc = poptGetContext("nmbd", argc, argv, long_options, 0);
+  
+  while((opt = poptGetNextOpt(pc)) != -1)
+    { }
 
-  while( EOF != 
-         (opt = getopt( argc, argv, "Vaos:T:I:C:bAB:N:Rn:l:d:Dp:hSH:G:f:i" )) )
-    {
-      switch (opt)
-        {
-        case 's':
-          pstrcpy(dyn_CONFIGFILE, optarg);
-          break;          
-        case 'N':
-        case 'B':
-        case 'I':
-        case 'C':
-        case 'G':
-          DEBUG(0,("Obsolete option '%c' used\n",opt));
-          break;
-        case 'i':
-          opt_interactive = True;
-          break;
-        case 'H':
-          pstrcpy(dyn_LMHOSTSFILE, optarg);
-          break;
-        case 'n':
-          pstrcpy(global_myname,optarg);
-          strupper(global_myname);
-          break;
-        case 'l':
-          slprintf(logfile, sizeof(logfile)-1, "%s/log.nmbd", optarg);
-          lp_set_logfile(logfile);
-          break;
-        case 'a':
-          append_log = True;
-          break;
-        case 'o':
-          append_log = False;
-          break;
-        case 'D':
-          is_daemon = True;
-          break;
-        case 'd':
-          DEBUGLEVEL = atoi(optarg);
-          break;
-        case 'p':
-          global_nmb_port = atoi(optarg);
-          break;
-        case 'h':
-          usage(argv[0]);
-          exit(0);
-          break;
-        case 'V':
-	  printf( "Version %s\n", VERSION );
-          exit(0);
-          break;
-        default:
-          if( !is_a_socket(0) )
-          {
-	    DEBUG(0,("Incorrect program usage - is the command line correct?\n"));
-            usage(argv[0]);
-            exit(0);
-          }
-          break;
-        }
-    }
-
+  poptFreeContext(pc);
+  
   setup_logging( argv[0], opt_interactive );
 
   reopen_logs();

@@ -208,6 +208,7 @@ int main(int argc, const char *argv[])
 
 	pc = poptGetContext(NULL, argc, argv, long_options, 
 			    POPT_CONTEXT_KEEP_FIRST);
+	poptSetOtherOptionHelp(pc, "[OPTION...] <config-file> [host-name] [host-ip]");
 
 	while((opt = poptGetNextOpt(pc)) != -1);
 

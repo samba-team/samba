@@ -696,9 +696,9 @@ static void wizard_page(void)
 		/* Now determine smb.conf WINS settings */
 		if (lp_wins_support())
 			winstype = 1;
-/*		if (strlen(lp_wins_server_list()) != 0 )
- *		winstype = 2;
- */		
+		if (lp_wins_server_list() && strlen(*lp_wins_server_list()))
+ 		        winstype = 2;
+ 		
 
 		/* Do we have a homes share? */
 		have_home = lp_servicenumber(HOMES_NAME);
