@@ -1279,7 +1279,24 @@ AC_ARG_WITH(afs,
     AC_MSG_RESULT(no)
     ;;
   esac ],
-  AC_MSG_RESULT(no)
+  [OLIBS="$LIBS"
+   LIBS="$LIBS -lpam"
+   AC_TRY_LINK(
+   [#include <security/pam_appl.h>],
+   [int pam_error;struct pam_handle *pamh;struct pam_conv PAM_conversation;   
+   char *user; pam_error = pam_start("test", user, &PAM_conversation, &pamh);
+   ],
+   ac_cv_header_security_pam_appl_h=yes,
+   ac_cv_header_security_pam_appl_h=no,
+   )
+   LIBS="$OLIBS"
+   if test $ac_cv_header_security_pam_appl_h = yes; then
+     AC_MSG_RESULT(yes)
+     AC_DEFINE(WITH_PAM)
+     LIBS="$LIBS -lpam"
+   else
+     AC_MSG_RESULT(no)
+   fi]
 )
 
 
