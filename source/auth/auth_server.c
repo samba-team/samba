@@ -375,9 +375,7 @@ use this machine as the password server.\n"));
 	if NT_STATUS_IS_OK(nt_status) {
 		struct passwd *pass = Get_Pwnam(user_info->internal_username.str);
 		if (pass) {
-			if (!make_server_info_pw(server_info, pass)) { 
-				nt_status = NT_STATUS_NO_MEMORY;
-			}
+			nt_status = make_server_info_pw(server_info, pass);
 		} else {
 			nt_status = NT_STATUS_NO_SUCH_USER;
 		}

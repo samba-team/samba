@@ -131,7 +131,7 @@ void conn_close_all(void)
 	connection_struct *conn, *next;
 	for (conn=Connections;conn;conn=next) {
 		next=conn->next;
-		close_cnum(conn, (uint16)-1);
+		close_cnum(conn, conn->vuid);
 	}
 }
 
@@ -155,6 +155,27 @@ BOOL conn_idle_all(time_t t, int deadtime)
 	}
 
 	return allidle;
+}
+
+/****************************************************************************
+clear a vuid out of the validity cache, and as the 'owner' of a connection.
+****************************************************************************/
+void conn_clear_vuid_cache(uint16 vuid)
+{
+	connection_struct *conn;
+	int i;
+
+	for (conn=Connections;conn;conn=conn->next) {
+		if (conn->vuid == vuid) {
+			conn->vuid = UID_FIELD_INVALID;
+		}
+
+		for (i=0;i<conn->vuid_cache.entries && i< VUID_CACHE_SIZE;i++) {
+			if (conn->vuid_cache.list[i] == vuid) {
+				conn->vuid_cache.list[i] = UID_FIELD_INVALID;
+			}
+		}
+	}
 }
 
 /****************************************************************************
@@ -191,7 +212,6 @@ void conn_free(connection_struct *conn)
 		conn->ngroups = 0;
 	}
 
-	delete_nt_token(&conn->nt_user_token);
 	free_namearray(conn->veto_list);
 	free_namearray(conn->hide_list);
 	free_namearray(conn->veto_oplock_list);
