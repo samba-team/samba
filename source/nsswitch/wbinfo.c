@@ -447,9 +447,10 @@ static BOOL wbinfo_auth(char *username)
                (result == NSS_STATUS_SUCCESS) ? "succeeded" : "failed");
 
 	if (response.data.auth.nt_status)
-		d_printf("error code was %s (0x%x)\n", 
+		d_printf("error code was %s (0x%x)\nerror messsage was: %s\n", 
 			 response.data.auth.nt_status_string, 
-			 response.data.auth.nt_status);
+			 response.data.auth.nt_status,
+			 response.data.auth.error_string);
 
         return result == NSS_STATUS_SUCCESS;
 }
@@ -502,9 +503,10 @@ static BOOL wbinfo_auth_crap(char *username)
                (result == NSS_STATUS_SUCCESS) ? "succeeded" : "failed");
 
 	if (response.data.auth.nt_status)
-		d_printf("error code was %s (0x%x)\n", 
+		d_printf("error code was %s (0x%x)\nerror messsage was: %s\n", 
 			 response.data.auth.nt_status_string, 
-			 response.data.auth.nt_status);
+			 response.data.auth.nt_status,
+			 response.data.auth.error_string);
 
         return result == NSS_STATUS_SUCCESS;
 }
