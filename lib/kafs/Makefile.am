@@ -12,7 +12,7 @@ endif
 lib_LIBRARIES = $(AFSLIBS)
 #EXTRA_LIBRARIES = afslib.so
 
-libkafs_a_SOURCES = afssys.c afskrb5.c
+libkafs_a_SOURCES = afssys.c afskrb.c afskrb5.c common.c
 #afslib_so_SOURCES = afslib.c
 
 
