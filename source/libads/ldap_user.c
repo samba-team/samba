@@ -38,7 +38,7 @@ ADS_STATUS ads_find_user_acct(ADS_STRUCT *ads, void **res, const char *user)
 }
 
 ADS_STATUS ads_add_user_acct(ADS_STRUCT *ads, const char *user, 
-			     const char *fullname)
+			     const char *container, const char *fullname)
 {
 	TALLOC_CTX *ctx;
 	ADS_MODLIST mods;
@@ -57,7 +57,7 @@ ADS_STATUS ads_add_user_acct(ADS_STRUCT *ads, const char *user,
 
 	if (!(upn = talloc_asprintf(ctx, "%s@%s", user, ads->config.realm)))
 		goto done;
-	if (!(new_dn = talloc_asprintf(ctx, "cn=%s,cn=Users,%s", name, 
+	if (!(new_dn = talloc_asprintf(ctx, "cn=%s,%s,%s", name, container,
 				       ads->config.bind_path)))
 		goto done;
 	if (!(controlstr = talloc_asprintf(ctx, "%u", UF_NORMAL_ACCOUNT)))
@@ -80,7 +80,7 @@ ADS_STATUS ads_add_user_acct(ADS_STRUCT *ads, const char *user,
 }
 
 ADS_STATUS ads_add_group_acct(ADS_STRUCT *ads, const char *group, 
-			      const char *comment)
+			      const char *container, const char *comment)
 {
 	TALLOC_CTX *ctx;
 	ADS_MODLIST mods;
@@ -93,7 +93,7 @@ ADS_STATUS ads_add_group_acct(ADS_STRUCT *ads, const char *group,
 
 	status = ADS_ERROR(LDAP_NO_MEMORY);
 
-	if (!(new_dn = talloc_asprintf(ctx, "cn=%s,cn=Users,%s", group, 
+	if (!(new_dn = talloc_asprintf(ctx, "cn=%s,%s,%s", group, container,
 				       ads->config.bind_path)))
 		goto done;
 	if (!(mods = ads_init_mods(ctx)))
@@ -102,7 +102,7 @@ ADS_STATUS ads_add_group_acct(ADS_STRUCT *ads, const char *group,
 	ads_mod_str(ctx, &mods, "cn", group);
 	ads_mod_strlist(ctx, &mods, "objectClass",objectClass);
 	ads_mod_str(ctx, &mods, "name", group);
-	if (comment)
+	if (comment && *comment) 
 		ads_mod_str(ctx, &mods, "description", comment);
 	ads_mod_str(ctx, &mods, "sAMAccountName", group);
 	status = ads_gen_add(ads, new_dn, mods);
