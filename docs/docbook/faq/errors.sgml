@@ -159,4 +159,12 @@ the smb.conf man page.
 </para>
 
 </sect1>
+
+<sect1>
+<title>Until a few minutes after samba has started, clients get the error "Domain Controller Unavailable"</title>
+<para>
+A domain controller has to announce on the network who it is. This usually takes a while.
+</para>
+</sect1>
+
 </chapter>
