@@ -221,6 +221,8 @@ char *lp_domain_other_sids(void);
 char *lp_domain_groups(void);
 char *lp_domain_admin_users(void);
 char *lp_domain_guest_users(void);
+char *lp_domain_hostsallow(void);
+char *lp_domain_hostsdeny(void);
 BOOL lp_dns_proxy(void);
 BOOL lp_wins_support(void);
 BOOL lp_wins_proxy(void);
@@ -847,7 +849,6 @@ int get_rpc_pipe_num(char *buf, int where);
 
 /*The following definitions come from  rpc_pipes/pipenetlog.c  */
 
-BOOL get_md4pw(char *md4pw, char *mach_acct);
 BOOL api_netlogrpcTNP(int cnum,int uid, char *param,char *data,
 		     int mdrcnt,int mprcnt,
 		     char **rdata,char **rparam,
@@ -1050,6 +1051,7 @@ char *smb_errstr(char *inbuf);
 int pw_file_lock(char *name, int type, int secs);
 int pw_file_unlock(int fd);
 struct smb_passwd *get_smbpwnam(char *name);
+BOOL add_smbpwnam(struct smb_passwd* pwd);
 
 /*The following definitions come from  status.c  */
 
