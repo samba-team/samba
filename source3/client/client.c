@@ -44,7 +44,7 @@ static int io_bufsize = 64512;
 extern struct in_addr ipzero;
 
 static int name_type = 0x20;
-
+static int max_protocol = PROTOCOL_NT1;
 extern pstring user_socket_options;
 
 static int process_tok(fstring tok);
@@ -1923,6 +1923,8 @@ struct cli_state *do_connect(char *server, char *share)
 		return NULL;
 	}
 
+	c->protocol = max_protocol;
+
 	if (!cli_session_request(c, &calling, &called)) {
 		char *p;
 		DEBUG(0,("session request to %s failed (%s)\n", 
@@ -2474,7 +2476,7 @@ static int do_message_op(void)
 			pstrcpy(term_code, optarg);
 			break;
 		case 'm':
-			/* no longer supported */
+			max_protocol = interpret_protocol(optarg, max_protocol);
 			break;
 		case 'W':
 			pstrcpy(workgroup,optarg);
