@@ -1,5 +1,7 @@
 Changes in release 0.1g:
 
+ * kgetcred: new program for explicitly obtaining tickets
+ * configure fixes
  * krb5-aware kx
  * bug fixes
 
