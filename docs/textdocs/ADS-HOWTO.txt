@@ -11,25 +11,19 @@ the code develops.
 
 Pieces you need before you begin:
 
-- a Windows 2000 server running at least service pack 2
+- a Windows 2000 server 
 - the latest CVS source code for Samba. See http://cvs.samba.org/ for how to
   fetch this.
 - the MIT kerberos development libraries (either install from the
   above sources or use a package). Under debian you need "libkrb5-dev"
   and "krb5-user". The heimdal libraries will not work.
-- Cyrys SASL, including the gssapi mechanism.
-- the OpenLDAP development libraries. These must be compiled
-  with Cyrus SASL enabled.
+- the OpenLDAP development libraries. 
 
 On RedHat this means you should have at least: 
 
 krb5-workstation (for kinit)
 krb5-libs (for linking with)
 krb5-devel (because you are compiling from source)
-cyrus
-cyrus-sasl
-cyrus-sasl-devel
-cyrus-sasl-gssapi
 
 in addition to the standard development environment.
 
@@ -39,20 +33,20 @@ to get them off CD2.
 Also check that you have the latest copy of this HOWTO. It is
 available from http://samba.org/ftp/tridge/kerberos/HOWTO
 
-
 Step 1: Compile Samba
   
   If your kerberos libraries are in a non-standard location then
-  remember to add the configure option --with-krb5=DIR. For example,
-  on RedHat you will need --with-krb5=/usr/kerberos
+  remember to add the configure option --with-krb5=DIR. 
 
-  After you run configure make sure that include/config.h contains a
-  line like this:
+  After you run configure make sure that include/config.h contains 
+  lines like this:
 
   #define HAVE_KRB5 1
+  #define HAVE_LDAP 1
 
-  If it doesn't then configure did not find your krb5 libraries. Look
-  in config.log to figure out why and fix it.
+  If it doesn't then configure did not find your krb5 libraries or
+  your ldap libraries. Look in config.log to figure out why and fix
+  it.
 
   Then compile and install Samba as usual. You must use at least the
   following 3 options in smb.conf:
@@ -61,6 +55,9 @@ Step 1: Compile Samba
   ads server = your.kerberos.server
   security = ADS
   encrypt passwords = yes
+
+  Strictly speaking, you can omit the realm name and you can use an IP
+  address for the ads server. In that case Samba will auto-detect these.
 
   You do *not* need a smbpasswd file, although it won't do any harm
   and if you have one then Samba will be able to fall back to normal
@@ -73,16 +70,13 @@ Step 2: Setup your /etc/krb5.conf
 
   The minimal configuration for krb5.conf is:
 
-    [libdefaults]
-	    default_realm = YOUR.KERBEROS.REALM
-
     [realms]
     YOUR.KERBEROS.REALM = {
 	kdc = your.kerberos.server
     }
 
 
-  Test your config by doing a "kinit USERNAME" and making sure that
+  Test your config by doing a "kinit USERNAME@REALM" and making sure that
   your password is accepted by the Win2000 KDC. 
 
   NOTE: The realm must be uppercase. 
@@ -121,12 +115,6 @@ Step 3: Create the computer account
        - Samba must be reconfigured (remove config.cache) and
          recompiled (make clean all install) after the kerberos libs
          and headers are installed.
-    - "Unknown authentication method"
-       - the cyrus-sasl-gssapi package is not installed.  
-         The RPM (assuming RedHat 7.2) is on CD2
-
-    - "ads_add_machine_acct: Invalid DN syntax"
-       - The 'realm' paramater has not been added to your smb.conf
     
 
 Step 4: Test your server setup
