@@ -239,7 +239,7 @@ static BOOL get_md4pw(char *md4pw, char *mach_name, char *mach_acct)
 	}
 
 	become_root(True);
-	smb_pass = getsampwnam(mach_acct);
+	smb_pass = getsmbpwnam(mach_acct);
 	unbecome_root(True);
 
 	if (smb_pass != NULL)
@@ -391,7 +391,7 @@ static void api_net_srv_pwset( int uid,
 		DEBUG(3,("Server Password Set Wksta:[%s]\n", mach_acct));
 
 		become_root(True);
-		smb_pass = getsampwnam(mach_acct);
+		smb_pass = getsmbpwnam(mach_acct);
 		unbecome_root(True);
 
 		if (smb_pass != NULL)
@@ -414,7 +414,7 @@ static void api_net_srv_pwset( int uid,
 			smb_pass->acct_ctrl     = ACB_WSTRUST;
 
 			become_root(True);
-			ret = mod_sampwd_entry(smb_pass,False);
+			ret = mod_smbpwd_entry(smb_pass,False);
 			unbecome_root(True);
 
 			if (ret)
@@ -632,7 +632,7 @@ static void api_net_sam_logon( int uid,
     DEBUG(3,("User:[%s]\n", samlogon_user));
 
     become_root(True);
-    smb_pass = getsampwnam(samlogon_user);
+    smb_pass = getsmbpwnam(samlogon_user);
     unbecome_root(True);
 
     if (smb_pass == NULL)

@@ -917,5 +917,5 @@ BOOL setldappwpos(void *vp, unsigned long tok)
 }
 
 #else
-static void dummy_function(void) { } /* stop some compilers complaining */
+ void dummy_function(void) { } /* stop some compilers complaining */
 #endif

@@ -35,21 +35,21 @@ static char s_readbuf[16 * 1024];
  do not call this function directly.  use passdb.c instead.
 
  ****************************************************************/
-void *startsmbpwent(BOOL update)
+void *startsmbfilepwent(BOOL update)
 {
   FILE *fp = NULL;
   char *pfile = lp_smb_passwd_file();
 
   if (!*pfile) {
-    DEBUG(0, ("startsmbpwent: No SMB password file set\n"));
+    DEBUG(0, ("startsmbfilepwent: No SMB password file set\n"));
     return (NULL);
   }
-  DEBUG(10, ("startsmbpwent: opening file %s\n", pfile));
+  DEBUG(10, ("startsmbfilepwent: opening file %s\n", pfile));
 
   fp = fopen(pfile, update ? "r+b" : "rb");
 
   if (fp == NULL) {
-    DEBUG(0, ("startsmbpwent: unable to open file %s\n", pfile));
+    DEBUG(0, ("startsmbfilepwent: unable to open file %s\n", pfile));
     return NULL;
   }
 
@@ -58,7 +58,7 @@ void *startsmbpwent(BOOL update)
 
   if (!pw_file_lock(fileno(fp), (update ? F_WRLCK : F_RDLCK), 5, &pw_file_lock_depth))
   {
-    DEBUG(0, ("startsmbpwent: unable to lock file %s\n", pfile));
+    DEBUG(0, ("startsmbfilepwent: unable to lock file %s\n", pfile));
     fclose(fp);
     return NULL;
   }
@@ -73,13 +73,13 @@ void *startsmbpwent(BOOL update)
 /***************************************************************
  End enumeration of the smbpasswd list.
 ****************************************************************/
-void endsmbpwent(void *vp)
+void endsmbfilepwent(void *vp)
 {
   FILE *fp = (FILE *)vp;
 
   pw_file_unlock(fileno(fp), &pw_file_lock_depth);
   fclose(fp);
-  DEBUG(7, ("endsmbpwent: closed password file.\n"));
+  DEBUG(7, ("endsmbfilepwent: closed password file.\n"));
 }
 
 /*************************************************************************
@@ -92,9 +92,9 @@ void endsmbpwent(void *vp)
  do not call this function directly.  use passdb.c instead.
 
  *************************************************************************/
-struct sam_passwd *getsmb21pwent(void *vp)
+struct sam_passwd *getsmbfile21pwent(void *vp)
 {
-	struct smb_passwd *pw_buf = getsmbpwent(vp);
+	struct smb_passwd *pw_buf = getsmbfilepwent(vp);
 	static struct sam_passwd user;
 	struct passwd *pwfile;
 
@@ -187,7 +187,7 @@ struct sam_passwd *getsmb21pwent(void *vp)
  do not call this function directly.  use passdb.c instead.
 
  *************************************************************************/
-struct smb_passwd *getsmbpwent(void *vp)
+struct smb_passwd *getsmbfilepwent(void *vp)
 {
   /* Static buffers we will return. */
   static struct smb_passwd pw_buf;
@@ -202,7 +202,7 @@ struct smb_passwd *getsmbpwent(void *vp)
   long            linebuf_len;
 
   if(fp == NULL) {
-    DEBUG(0,("getsmbpwent: Bad password file pointer.\n"));
+    DEBUG(0,("getsmbfilepwent: Bad password file pointer.\n"));
     return NULL;
   }
 
@@ -237,10 +237,10 @@ struct smb_passwd *getsmbpwent(void *vp)
       linebuf[linebuf_len - 1] = '\0';
 
 #ifdef DEBUG_PASSWORD
-    DEBUG(100, ("getsmbpwent: got line |%s|\n", linebuf));
+    DEBUG(100, ("getsmbfilepwent: got line |%s|\n", linebuf));
 #endif
     if ((linebuf[0] == 0) && feof(fp)) {
-      DEBUG(4, ("getsmbpwent: end of file reached\n"));
+      DEBUG(4, ("getsmbfilepwent: end of file reached\n"));
       break;
     }
     /*
@@ -259,12 +259,12 @@ struct smb_passwd *getsmbpwent(void *vp)
      */
 
     if (linebuf[0] == '#' || linebuf[0] == '\0') {
-      DEBUG(6, ("getsmbpwent: skipping comment or blank line\n"));
+      DEBUG(6, ("getsmbfilepwent: skipping comment or blank line\n"));
       continue;
     }
     p = (unsigned char *) strchr(linebuf, ':');
     if (p == NULL) {
-      DEBUG(0, ("getsmbpwent: malformed password entry (no :)\n"));
+      DEBUG(0, ("getsmbfilepwent: malformed password entry (no :)\n"));
       continue;
     }
     /*
@@ -278,7 +278,7 @@ struct smb_passwd *getsmbpwent(void *vp)
 
     p++;		/* Go past ':' */
     if (!isdigit(*p)) {
-      DEBUG(0, ("getsmbpwent: malformed password entry (uid not number)\n"));
+      DEBUG(0, ("getsmbfilepwent: malformed password entry (uid not number)\n"));
       continue;
     }
 
@@ -288,7 +288,7 @@ struct smb_passwd *getsmbpwent(void *vp)
       p++;
 
     if (*p != ':') {
-      DEBUG(0, ("getsmbpwent: malformed password entry (no : after uid)\n"));
+      DEBUG(0, ("getsmbfilepwent: malformed password entry (no : after uid)\n"));
       continue;
     }
 
@@ -306,7 +306,7 @@ struct smb_passwd *getsmbpwent(void *vp)
 
     if (*p == '*' || *p == 'X') {
       /* Password deliberately invalid - end here. */
-      DEBUG(10, ("getsmbpwent: entry invalidated for user %s\n", user_name));
+      DEBUG(10, ("getsmbfilepwent: entry invalidated for user %s\n", user_name));
       pw_buf.smb_nt_passwd = NULL;
       pw_buf.smb_passwd = NULL;
       pw_buf.acct_ctrl |= ACB_DISABLED;
@@ -314,12 +314,12 @@ struct smb_passwd *getsmbpwent(void *vp)
     }
 
     if (linebuf_len < (PTR_DIFF(p, linebuf) + 33)) {
-      DEBUG(0, ("getsmbpwent: malformed password entry (passwd too short)\n"));
+      DEBUG(0, ("getsmbfilepwent: malformed password entry (passwd too short)\n"));
       continue;
     }
 
     if (p[32] != ':') {
-      DEBUG(0, ("getsmbpwent: malformed password entry (no terminating :)\n"));
+      DEBUG(0, ("getsmbfilepwent: malformed password entry (no terminating :)\n"));
       continue;
     }
 
@@ -328,7 +328,7 @@ struct smb_passwd *getsmbpwent(void *vp)
       pw_buf.acct_ctrl |= ACB_PWNOTREQ;
     } else {
       if (!pdb_gethexpwd((char *)p, (char *)smbpwd)) {
-        DEBUG(0, ("getsmbpwent: Malformed Lanman password entry (non hex chars)\n"));
+        DEBUG(0, ("getsmbfilepwent: Malformed Lanman password entry (non hex chars)\n"));
         continue;
       }
       pw_buf.smb_passwd = smbpwd;
@@ -351,7 +351,7 @@ struct smb_passwd *getsmbpwent(void *vp)
                   the NT password. */
     }
 
-    DEBUG(5, ("getsmbpwent: returning passwd entry for user %s, uid %d\n",
+    DEBUG(5, ("getsmbfilepwent: returning passwd entry for user %s, uid %d\n",
 			  user_name, uidval));
 
     if (*p == '[')
@@ -400,7 +400,7 @@ struct smb_passwd *getsmbpwent(void *vp)
     return &pw_buf;
   }
 
-  DEBUG(5,("getsmbpwent: end of file reached.\n"));
+  DEBUG(5,("getsmbfilepwent: end of file reached.\n"));
   return NULL;
 }
 
@@ -411,7 +411,7 @@ struct smb_passwd *getsmbpwent(void *vp)
  do not call this function directly.  use passdb.c instead.
 
 *************************************************************************/
-unsigned long getsmbpwpos(void *vp)
+unsigned long getsmbfilepwpos(void *vp)
 {
   return (unsigned long)ftell((FILE *)vp);
 }
@@ -423,7 +423,7 @@ unsigned long getsmbpwpos(void *vp)
  do not call this function directly.  use passdb.c instead.
 
 *************************************************************************/
-BOOL setsmbpwpos(void *vp, unsigned long tok)
+BOOL setsmbfilepwpos(void *vp, unsigned long tok)
 {
   return !fseek((FILE *)vp, tok, SEEK_SET);
 }
@@ -434,7 +434,7 @@ BOOL setsmbpwpos(void *vp, unsigned long tok)
  do not call this function directly.  use passdb.c instead.
 
 *************************************************************************/
-BOOL add_smb21pwd_entry(struct sam_passwd *newpwd)
+BOOL add_smbfile21pwd_entry(struct sam_passwd *newpwd)
 {
 	return False;
 }
@@ -445,7 +445,7 @@ BOOL add_smb21pwd_entry(struct sam_passwd *newpwd)
  do not call this function directly.  use passdb.c instead.
 
 *************************************************************************/
-BOOL add_smbpwd_entry(struct smb_passwd *newpwd)
+BOOL add_smbfilepwd_entry(struct smb_passwd *newpwd)
 {
   char *pfile = lp_smb_passwd_file();
   struct smb_passwd *pwd = NULL;
@@ -461,10 +461,10 @@ BOOL add_smbpwd_entry(struct smb_passwd *newpwd)
   unsigned char *p;
 
   /* Open the smbpassword file - for update. */
-  fp = startsmbpwent(True);
+  fp = startsmbfilepwent(True);
 
   if (fp == NULL) {
-    DEBUG(0, ("add_smbpwd_entry: unable to open file.\n"));
+    DEBUG(0, ("add_smbfilepwd_entry: unable to open file.\n"));
     return False;
   }
 
@@ -472,10 +472,10 @@ BOOL add_smbpwd_entry(struct smb_passwd *newpwd)
    * Scan the file, a line at a time and check if the name matches.
    */
 
-  while ((pwd = getsmbpwent(fp)) != NULL) {
+  while ((pwd = getsmbfilepwent(fp)) != NULL) {
     if (strequal(newpwd->smb_name, pwd->smb_name)) {
-      DEBUG(0, ("add_smbpwd_entry: entry with name %s already exists\n", pwd->smb_name));
-      endsmbpwent(fp);
+      DEBUG(0, ("add_smbfilepwd_entry: entry with name %s already exists\n", pwd->smb_name));
+      endsmbfilepwent(fp);
       return False;
     }
   }
@@ -490,18 +490,18 @@ BOOL add_smbpwd_entry(struct smb_passwd *newpwd)
   fd = fileno(fp);
 
   if((offpos = lseek(fd, 0, SEEK_END)) == -1) {
-    DEBUG(0, ("add_smbpwd_entry(lseek): Failed to add entry for user %s to file %s. \
+    DEBUG(0, ("add_smbfilepwd_entry(lseek): Failed to add entry for user %s to file %s. \
 Error was %s\n", newpwd->smb_name, pfile, strerror(errno)));
-    endsmbpwent(fp);
+    endsmbfilepwent(fp);
     return False;
   }
 
   new_entry_length = strlen(newpwd->smb_name) + 1 + 15 + 1 + 32 + 1 + 32 + 1 + 5 + 1 + 13 + 2;
 
   if((new_entry = (char *)malloc( new_entry_length )) == NULL) {
-    DEBUG(0, ("add_smbpwd_entry(malloc): Failed to add entry for user %s to file %s. \
+    DEBUG(0, ("add_smbfilepwd_entry(malloc): Failed to add entry for user %s to file %s. \
 Error was %s\n", newpwd->smb_name, pfile, strerror(errno)));
-    endsmbpwent(fp);
+    endsmbfilepwent(fp);
     return False;
   }
 
@@ -545,26 +545,26 @@ Error was %s\n", newpwd->smb_name, pfile, strerror(errno)));
                      (uint32)time(NULL));
 
 #ifdef DEBUG_PASSWORD
-  DEBUG(100, ("add_smbpwd_entry(%d): new_entry_len %d entry_len %d made line |%s|", 
+  DEBUG(100, ("add_smbfilepwd_entry(%d): new_entry_len %d entry_len %d made line |%s|", 
 		             fd, new_entry_length, strlen(new_entry), new_entry));
 #endif
 
   if ((wr_len = write(fd, new_entry, strlen(new_entry))) != strlen(new_entry)) {
-    DEBUG(0, ("add_smbpwd_entry(write): %d Failed to add entry for user %s to file %s. \
+    DEBUG(0, ("add_smbfilepwd_entry(write): %d Failed to add entry for user %s to file %s. \
 Error was %s\n", wr_len, newpwd->smb_name, pfile, strerror(errno)));
 
     /* Remove the entry we just wrote. */
     if(ftruncate(fd, offpos) == -1) {
-      DEBUG(0, ("add_smbpwd_entry: ERROR failed to ftruncate file %s. \
+      DEBUG(0, ("add_smbfilepwd_entry: ERROR failed to ftruncate file %s. \
 Error was %s. Password file may be corrupt ! Please examine by hand !\n", 
              newpwd->smb_name, strerror(errno)));
     }
 
-    endsmbpwent(fp);
+    endsmbfilepwent(fp);
     return False;
   }
 
-  endsmbpwent(fp);
+  endsmbfilepwent(fp);
   return True;
 }
 
@@ -579,7 +579,7 @@ Error was %s. Password file may be corrupt ! Please examine by hand !\n",
  do not call this function directly.  use passdb.c instead.
 
 ************************************************************************/
-BOOL mod_smb21pwd_entry(struct sam_passwd* pwd, BOOL override)
+BOOL mod_smbfile21pwd_entry(struct sam_passwd* pwd, BOOL override)
 {
 	return False;
 }
@@ -595,7 +595,7 @@ BOOL mod_smb21pwd_entry(struct sam_passwd* pwd, BOOL override)
  do not call this function directly.  use passdb.c instead.
 
 ************************************************************************/
-BOOL mod_smbpwd_entry(struct smb_passwd* pwd, BOOL override)
+BOOL mod_smbfilepwd_entry(struct smb_passwd* pwd, BOOL override)
 {
   /* Static buffers we will return. */
   static pstring  user_name;
@@ -623,12 +623,12 @@ BOOL mod_smbpwd_entry(struct smb_passwd* pwd, BOOL override)
     DEBUG(0, ("No SMB password file set\n"));
     return False;
   }
-  DEBUG(10, ("mod_smbpwd_entry: opening file %s\n", pfile));
+  DEBUG(10, ("mod_smbfilepwd_entry: opening file %s\n", pfile));
 
   fp = fopen(pfile, "r+");
 
   if (fp == NULL) {
-    DEBUG(0, ("mod_smbpwd_entry: unable to open file %s\n", pfile));
+    DEBUG(0, ("mod_smbfilepwd_entry: unable to open file %s\n", pfile));
     return False;
   }
   /* Set a 16k buffer to do more efficient reads */
@@ -637,7 +637,7 @@ BOOL mod_smbpwd_entry(struct smb_passwd* pwd, BOOL override)
   lockfd = fileno(fp);
 
   if (!pw_file_lock(lockfd, F_WRLCK, 5, &pw_file_lock_depth)) {
-    DEBUG(0, ("mod_smbpwd_entry: unable to lock file %s\n", pfile));
+    DEBUG(0, ("mod_smbfilepwd_entry: unable to lock file %s\n", pfile));
     fclose(fp);
     return False;
   }
@@ -679,11 +679,11 @@ BOOL mod_smbpwd_entry(struct smb_passwd* pwd, BOOL override)
     }
 
 #ifdef DEBUG_PASSWORD
-    DEBUG(100, ("mod_smbpwd_entry: got line |%s|\n", linebuf));
+    DEBUG(100, ("mod_smbfilepwd_entry: got line |%s|\n", linebuf));
 #endif
 
     if ((linebuf[0] == 0) && feof(fp)) {
-      DEBUG(4, ("mod_smbpwd_entry: end of file reached\n"));
+      DEBUG(4, ("mod_smbfilepwd_entry: end of file reached\n"));
       break;
     }
 
@@ -701,14 +701,14 @@ BOOL mod_smbpwd_entry(struct smb_passwd* pwd, BOOL override)
      */
 
     if (linebuf[0] == '#' || linebuf[0] == '\0') {
-      DEBUG(6, ("mod_smbpwd_entry: skipping comment or blank line\n"));
+      DEBUG(6, ("mod_smbfilepwd_entry: skipping comment or blank line\n"));
       continue;
     }
 
     p = (unsigned char *) strchr(linebuf, ':');
 
     if (p == NULL) {
-      DEBUG(0, ("mod_smbpwd_entry: malformed password entry (no :)\n"));
+      DEBUG(0, ("mod_smbfilepwd_entry: malformed password entry (no :)\n"));
       continue;
     }
 
@@ -726,13 +726,13 @@ BOOL mod_smbpwd_entry(struct smb_passwd* pwd, BOOL override)
 
   if (!found_entry) return False;
 
-  DEBUG(6, ("mod_smbpwd_entry: entry exists\n"));
+  DEBUG(6, ("mod_smbfilepwd_entry: entry exists\n"));
 
   /* User name matches - get uid and password */
   p++;		/* Go past ':' */
 
   if (!isdigit(*p)) {
-    DEBUG(0, ("mod_smbpwd_entry: malformed password entry (uid not number)\n"));
+    DEBUG(0, ("mod_smbfilepwd_entry: malformed password entry (uid not number)\n"));
     pw_file_unlock(lockfd, &pw_file_lock_depth);
     fclose(fp);
     return False;
@@ -741,7 +741,7 @@ BOOL mod_smbpwd_entry(struct smb_passwd* pwd, BOOL override)
   while (*p && isdigit(*p))
     p++;
   if (*p != ':') {
-    DEBUG(0, ("mod_smbpwd_entry: malformed password entry (no : after uid)\n"));
+    DEBUG(0, ("mod_smbfilepwd_entry: malformed password entry (no : after uid)\n"));
     pw_file_unlock(lockfd, &pw_file_lock_depth);
     fclose(fp);
     return False;
@@ -759,21 +759,21 @@ BOOL mod_smbpwd_entry(struct smb_passwd* pwd, BOOL override)
 
   if (!override && (*p == '*' || *p == 'X')) {
     /* Password deliberately invalid - end here. */
-    DEBUG(10, ("mod_smbpwd_entry: entry invalidated for user %s\n", user_name));
+    DEBUG(10, ("mod_smbfilepwd_entry: entry invalidated for user %s\n", user_name));
     pw_file_unlock(lockfd, &pw_file_lock_depth);
     fclose(fp);
     return False;
   }
 
   if (linebuf_len < (PTR_DIFF(p, linebuf) + 33)) {
-    DEBUG(0, ("mod_smbpwd_entry: malformed password entry (passwd too short)\n"));
+    DEBUG(0, ("mod_smbfilepwd_entry: malformed password entry (passwd too short)\n"));
     pw_file_unlock(lockfd,&pw_file_lock_depth);
     fclose(fp);
     return (False);
   }
 
   if (p[32] != ':') {
-    DEBUG(0, ("mod_smbpwd_entry: malformed password entry (no terminating :)\n"));
+    DEBUG(0, ("mod_smbfilepwd_entry: malformed password entry (no terminating :)\n"));
     pw_file_unlock(lockfd,&pw_file_lock_depth);
     fclose(fp);
     return False;
@@ -790,14 +790,14 @@ BOOL mod_smbpwd_entry(struct smb_passwd* pwd, BOOL override)
   p += 33; /* Move to the first character of the line after
               the lanman password. */
   if (linebuf_len < (PTR_DIFF(p, linebuf) + 33)) {
-    DEBUG(0, ("mod_smbpwd_entry: malformed password entry (passwd too short)\n"));
+    DEBUG(0, ("mod_smbfilepwd_entry: malformed password entry (passwd too short)\n"));
     pw_file_unlock(lockfd,&pw_file_lock_depth);
     fclose(fp);
     return (False);
   }
 
   if (p[32] != ':') {
-    DEBUG(0, ("mod_smbpwd_entry: malformed password entry (no terminating :)\n"));
+    DEBUG(0, ("mod_smbfilepwd_entry: malformed password entry (no terminating :)\n"));
     pw_file_unlock(lockfd,&pw_file_lock_depth);
     fclose(fp);
     return False;
@@ -860,7 +860,7 @@ BOOL mod_smbpwd_entry(struct smb_passwd* pwd, BOOL override)
   fd = fileno(fp);
 
   if (lseek(fd, pwd_seekpos - 1, SEEK_SET) != pwd_seekpos - 1) {
-    DEBUG(0, ("mod_smbpwd_entry: seek fail on file %s.\n", pfile));
+    DEBUG(0, ("mod_smbfilepwd_entry: seek fail on file %s.\n", pfile));
     pw_file_unlock(lockfd,&pw_file_lock_depth);
     fclose(fp);
     return False;
@@ -868,14 +868,14 @@ BOOL mod_smbpwd_entry(struct smb_passwd* pwd, BOOL override)
 
   /* Sanity check - ensure the character is a ':' */
   if (read(fd, &c, 1) != 1) {
-    DEBUG(0, ("mod_smbpwd_entry: read fail on file %s.\n", pfile));
+    DEBUG(0, ("mod_smbfilepwd_entry: read fail on file %s.\n", pfile));
     pw_file_unlock(lockfd,&pw_file_lock_depth);
     fclose(fp);
     return False;
   }
 
   if (c != ':')	{
-    DEBUG(0, ("mod_smbpwd_entry: check on passwd file %s failed.\n", pfile));
+    DEBUG(0, ("mod_smbfilepwd_entry: check on passwd file %s failed.\n", pfile));
     pw_file_unlock(lockfd,&pw_file_lock_depth);
     fclose(fp);
     return False;
@@ -921,12 +921,12 @@ BOOL mod_smbpwd_entry(struct smb_passwd* pwd, BOOL override)
   }
 
 #ifdef DEBUG_PASSWORD
-  DEBUG(100,("mod_smbpwd_entry: "));
+  DEBUG(100,("mod_smbfilepwd_entry: "));
   dump_data(100, ascii_p16, wr_len);
 #endif
 
   if (write(fd, ascii_p16, wr_len) != wr_len) {
-    DEBUG(0, ("mod_smbpwd_entry: write failed in passwd file %s\n", pfile));
+    DEBUG(0, ("mod_smbfilepwd_entry: write failed in passwd file %s\n", pfile));
     pw_file_unlock(lockfd,&pw_file_lock_depth);
     fclose(fp);
     return False;

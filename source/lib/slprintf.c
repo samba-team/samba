@@ -83,7 +83,7 @@ int vslprintf(char *str, int n, char *format, va_list ap)
 }
 
 #ifdef __STDC__
-int slprintf(char *str, int n, char *format, ...)
+ int slprintf(char *str, int n, char *format, ...)
 {
 #else
  int slprintf(va_alist)

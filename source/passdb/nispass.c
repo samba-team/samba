@@ -98,8 +98,8 @@ static char *make_nisname_from_user_rid(uint32 rid)
 {
 	static pstring nisname;
 
-	safe_strcpy(nisname, "[user_rid=", sizeof(nisname));
-	slprintf(nisname, sizeof(nisname), "%s%d", nisname, rid);
+	safe_strcpy(nisname, "[user_rid=", sizeof(nisname)-1);
+	slprintf(nisname, sizeof(nisname)-1, "%s%d", nisname, rid);
 	safe_strcat(nisname, "], passwd.org_dir", sizeof(nisname)-strlen(nisname)-1);
 
 	return nisname;
@@ -112,8 +112,8 @@ static char *make_nisname_from_uid(int uid)
 {
 	static pstring nisname;
 
-	safe_strcpy(nisname, "[uid=", sizeof(nisname));
-	slprintf(nisname, sizeof(nisname), "%s%d", nisname, uid);
+	safe_strcpy(nisname, "[uid=", sizeof(nisname)-1);
+	slprintf(nisname, sizeof(nisname)-1, "%s%d", nisname, uid);
 	safe_strcat(nisname, "], passwd.org_dir", sizeof(nisname)-strlen(nisname)-1);
 
 	return nisname;
@@ -126,7 +126,7 @@ static char *make_nisname_from_name(char *user_name)
 {
 	static pstring nisname;
 
-	safe_strcpy(nisname, "[name=", sizeof(nisname));
+	safe_strcpy(nisname, "[name=", sizeof(nisname)-1);
 	safe_strcat(nisname, user_name, sizeof(nisname) - strlen(nisname) - 1);
 	safe_strcat(nisname, "], passwd.org_dir", sizeof(nisname) - strlen(nisname) - 1);
 
@@ -214,7 +214,7 @@ BOOL add_nisp21pwd_entry(struct sam_passwd *newpwd)
 
 	pfile = lp_smb_passwd_file();
 
-	safe_strcpy(user_name, newpwd->smb_name, sizeof(user_name));
+	safe_strcpy(user_name, newpwd->smb_name, sizeof(user_name)-1);
 
 	nisname = make_nisname_from_name(user_name);
 
@@ -229,7 +229,7 @@ BOOL add_nisp21pwd_entry(struct sam_passwd *newpwd)
 
 	user_obj = NIS_RES_OBJECT(nis_user);
 
-	safe_strcpy(nisname, "[name=", sizeof(nisname));
+	safe_strcpy(nisname, "[name=", sizeof(nisname)-1);
 	safe_strcat(nisname, ENTRY_VAL(user_obj,0),sizeof(nisname)-strlen(nisname)-1);
 	safe_strcat(nisname, "],", sizeof(nisname)-strlen(nisname)-1);
 	safe_strcat(nisname, pfile, sizeof(nisname)-strlen(nisname)-1);
@@ -437,7 +437,7 @@ struct sam_passwd *getnisp21pwnam(char *name)
 	DEBUG(10, ("getnisppwnam: search by name: %s\n", name));
 	DEBUG(10, ("getnisppwnam: using NIS+ table %s\n", lp_smb_passwd_file()));
 
-	slprintf(nisname, sizeof(nisname), "[name=%s],%s", name, lp_smb_passwd_file());
+	slprintf(nisname, sizeof(nisname)-1, "[name=%s],%s", name, lp_smb_passwd_file());
 
 	/* Search the table. */
 	gotalarm = 0;
@@ -482,7 +482,7 @@ struct sam_passwd *getnisp21pwuid(int smb_userid)
 	DEBUG(10, ("getnisppwuid: search by uid: %d\n", smb_userid));
 	DEBUG(10, ("getnisppwuid: using NIS+ table %s\n", lp_smb_passwd_file()));
 
-	slprintf(nisname, sizeof(nisname), "[uid=%d],%s", smb_userid, lp_smb_passwd_file());
+	slprintf(nisname, sizeof(nisname)-1, "[uid=%d],%s", smb_userid, lp_smb_passwd_file());
 
 	/* Search the table. */
 	gotalarm = 0;
@@ -508,5 +508,5 @@ struct sam_passwd *getnisp21pwuid(int smb_userid)
 }
 
 #else
-static void dummy_function(void) { } /* stop some compilers complaining */
+ void nisplus_dummy_function(void) { } /* stop some compilers complaining */
 #endif /* USE_NISPLUS_DB */

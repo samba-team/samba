@@ -43,6 +43,133 @@ static char *known_nt_pipes[] = {
   NULL
 };
 
+/****************************************************************************
+  reply to an NT create and X call.
+****************************************************************************/
+
+THIS IS JUST CRIBBED FROM REPLY.C AT PRESENT AND IS A WORK
+IN PROGRESS. JRA.
+
+int reply_ntcreate_and_X(char *inbuf,char *outbuf,int length,int bufsize)
+{  
+  pstring fname;
+  int cnum = SVAL(inbuf,smb_tid);
+  int fnum = -1;
+  int smb_mode = SVAL(inbuf,smb_vwv3);
+  int smb_attr = SVAL(inbuf,smb_vwv5);
+  /* Breakout the oplock request bits so we can set the
+     reply bits separately. */
+  BOOL ex_oplock_request = EXTENDED_OPLOCK_REQUEST(inbuf);
+  BOOL core_oplock_request = CORE_OPLOCK_REQUEST(inbuf);
+  BOOL oplock_request = ex_oplock_request | core_oplock_request;
+#if 0
+  int open_flags = SVAL(inbuf,smb_vwv2);
+  int smb_sattr = SVAL(inbuf,smb_vwv4);
+  uint32 smb_time = make_unix_date3(inbuf+smb_vwv6);
+#endif 
+  int smb_ofun = SVAL(inbuf,smb_vwv8);
+  int unixmode;
+  int size=0,fmode=0,mtime=0,rmode=0;
+  struct stat sbuf;
+  int smb_action = 0;
+  BOOL bad_path = False;
+  files_struct *fsp;
+    
+  /* If it's an IPC, pass off the pipe handler. */
+  if (IS_IPC(cnum))
+    return reply_open_pipe_and_X(inbuf,outbuf,length,bufsize);
+    
+  /* XXXX we need to handle passed times, sattr and flags */
+    
+  pstrcpy(fname,smb_buf(inbuf));
+  unix_convert(fname,cnum,0,&bad_path);
+    
+  fnum = find_free_file();
+  if (fnum < 0)
+    return(ERROR(ERRSRV,ERRnofids));
+  if (!check_name(fname,cnum))
+  { 
+    if((errno == ENOENT) && bad_path)
+    {
+      unix_ERR_class = ERRDOS;
+      unix_ERR_code = ERRbadpath;
+    }
+    Files[fnum].reserved = False;
+    return(UNIXERROR(ERRDOS,ERRnoaccess));
+  } 
+  
+  unixmode = unix_mode(cnum,smb_attr | aARCH);
+    
+  open_file_shared(fnum,cnum,fname,smb_mode,smb_ofun,unixmode,
+           oplock_request, &rmode,&smb_action);
+
+  fsp = &Files[fnum];
+    
+  if (!fsp->open)
+  { 
+    if((errno == ENOENT) && bad_path)
+    {
+      unix_ERR_class = ERRDOS;
+      unix_ERR_code = ERRbadpath;
+    }
+    Files[fnum].reserved = False;
+    return(UNIXERROR(ERRDOS,ERRnoaccess));
+  } 
+  
+  if (fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
+    close_file(fnum,False);
+    return(ERROR(ERRDOS,ERRnoaccess));
+  } 
+  
+  size = sbuf.st_size;
+  fmode = dos_mode(cnum,fname,&sbuf);
+  mtime = sbuf.st_mtime;
+  if (fmode & aDIR) {
+    close_file(fnum,False);
+    return(ERROR(ERRDOS,ERRnoaccess));
+  } 
+  
+  /* If the caller set the extended oplock request bit
+     and we granted one (by whatever means) - set the
+     correct bit for extended oplock reply.
+   */
+    
+  if (ex_oplock_request && lp_fake_oplocks(SNUM(cnum))) {
+    smb_action |= EXTENDED_OPLOCK_GRANTED;
+  } 
+  
+  if(ex_oplock_request && fsp->granted_oplock) {
+    smb_action |= EXTENDED_OPLOCK_GRANTED;
+  } 
+  
+  /* If the caller set the core oplock request bit
+     and we granted one (by whatever means) - set the
+     correct bit for core oplock reply.
+   */
+    
+  if (core_oplock_request && lp_fake_oplocks(SNUM(cnum))) {
+    CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
+  } 
+  
+  if(core_oplock_request && fsp->granted_oplock) {
+    CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
+  } 
+  
+  set_message(outbuf,15,0,True);
+  SSVAL(outbuf,smb_vwv2,fnum);
+  SSVAL(outbuf,smb_vwv3,fmode);
+  if(lp_dos_filetime_resolution(SNUM(cnum)) )
+    put_dos_date3(outbuf,smb_vwv4,mtime & ~1);
+  else
+    put_dos_date3(outbuf,smb_vwv4,mtime);
+  SIVAL(outbuf,smb_vwv6,size);
+  SSVAL(outbuf,smb_vwv8,rmode);
+  SSVAL(outbuf,smb_vwv11,smb_action);
+    
+  chain_fnum = fnum;
+    
+  return chain_reply(inbuf,outbuf,length,bufsize);
+}   
 
 /****************************************************************************
   reply to an unsolicited SMBNTtranss - just ignore it!
