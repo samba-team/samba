@@ -385,8 +385,6 @@ char *file_load(char *fname, size_t *size)
 
 	if (sys_fstat(fd, &sbuf) != 0) return NULL;
 
-	if (sbuf.st_size == 0) return NULL;
-
 	p = (char *)malloc(sbuf.st_size+1);
 	if (!p) return NULL;
 

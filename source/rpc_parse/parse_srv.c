@@ -54,8 +54,10 @@ static BOOL srv_io_share_info1_str(char *desc, SH_INFO_1_STR *sh1, prs_struct *p
 
 	if(!prs_align(ps))
 		return False;
-
 	if(!smb_io_unistr2("", &sh1->uni_netname, True, ps, depth))
+		return False;
+
+	if(!prs_align(ps))
 		return False;
 	if(!smb_io_unistr2("", &sh1->uni_remark, True, ps, depth))
 		return False;
@@ -131,12 +133,20 @@ static BOOL srv_io_share_info2_str(char *desc, SH_INFO_2_STR *sh2, prs_struct *p
 
 	if(!prs_align(ps))
 		return False;
-
 	if(!smb_io_unistr2("", &sh2->uni_netname, True, ps, depth))
+		return False;
+
+	if(!prs_align(ps))
 		return False;
 	if(!smb_io_unistr2("", &sh2->uni_remark, True, ps, depth))
 		return False;
+
+	if(!prs_align(ps))
+		return False;
 	if(!smb_io_unistr2("", &sh2->uni_path, True, ps, depth))
+		return False;
+
+	if(!prs_align(ps))
 		return False;
 	if(!smb_io_unistr2("", &sh2->uni_passwd, True, ps, depth))
 		return False;
