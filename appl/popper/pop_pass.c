@@ -39,6 +39,8 @@ pop_pass (POP *p)
     }
 
     if (!p->kerberosp) {
+	 char tkt[MaxPathLen];
+
 	 /*  We don't accept connections from users with null passwords */
 	 if (pw->pw_passwd == NULL)
 	      return (pop_msg(p,
@@ -46,11 +48,16 @@ pop_pass (POP *p)
 			      "Password supplied for \"%s\" is incorrect.",
 			      p->user));
 
-	if (krb_verify_user(p->user, "", lrealm, p->pop_parm[1], 1) &&
-	    verify_unix_user(p->user, p->pop_parm[1]))
-	     return (pop_msg(p,POP_FAILURE,
-			     "Password supplied for \"%s\" is incorrect.",
-			     p->user));
+	 sprintf (tkt, TKT_ROOT "_popper.%d", (int)getpid());
+	 krb_set_tkt_string (tkt);
+	 if (krb_verify_user(p->user, "", lrealm, p->pop_parm[1], 1, "pop") &&
+	     verify_unix_user(p->user, p->pop_parm[1])) {
+	      dest_tkt ();
+	      return (pop_msg(p,POP_FAILURE,
+			      "Password supplied for \"%s\" is incorrect.",
+			      p->user));
+	 }
+	 dest_tkt ();
     } else {
 	 if (kuserok (&kdata, p->user)) {
 	      pop_log(p, POP_FAILURE,
