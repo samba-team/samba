@@ -103,34 +103,36 @@ as_rep(krb5_context context,
 
     if(req->padata == NULL || req->padata->len < 1 ||
        req->padata->val->padata_type != pa_enc_timestamp) {
-	PA_DATA foo;
-	u_char buf[16];
-	size_t len;
-	krb5_data foo_data;
+	if(require_enc_timestamp){
+	    PA_DATA foo;
+	    u_char buf[16];
+	    size_t len;
+	    krb5_data foo_data;
 
-	foo.padata_type = pa_enc_timestamp;
-	foo.padata_value.length = 0;
-	foo.padata_value.data   = NULL;
+	    foo.padata_type = pa_enc_timestamp;
+	    foo.padata_value.length = 0;
+	    foo.padata_value.data   = NULL;
 
-	encode_PA_DATA(buf + sizeof(buf) - 1,
-		       sizeof(buf),
-		       &foo,
-		       &len);
-	foo_data.length = len;
-	foo_data.data   = buf + sizeof(buf) - len;
+	    encode_PA_DATA(buf + sizeof(buf) - 1,
+			   sizeof(buf),
+			   &foo,
+			   &len);
+	    foo_data.length = len;
+	    foo_data.data   = buf + sizeof(buf) - len;
 
-	ret = KRB5KDC_ERR_PREAUTH_REQUIRED;
-	krb5_mk_error(context,
-		      ret,
-		      "Need to use PA-ENC-TIMESTAMP",
-		      &foo_data,
-		      client_princ,
-		      server_princ,
-		      0,
-		      reply);
+	    ret = KRB5KDC_ERR_PREAUTH_REQUIRED;
+	    krb5_mk_error(context,
+			  ret,
+			  "Need to use PA-ENC-TIMESTAMP",
+			  &foo_data,
+			  client_princ,
+			  server_princ,
+			  0,
+			  reply);
 	
-	kdc_log(0, "No PA-ENC-TIMESTAMP -- %s", client_name);
-	goto out2;
+	    kdc_log(0, "No PA-ENC-TIMESTAMP -- %s", client_name);
+	    goto out2;
+	}
     } else {
 	krb5_data ts_data;
 	PA_ENC_TS_ENC p;
@@ -139,9 +141,9 @@ as_rep(krb5_context context,
 	EncryptedData enc_data;
 
 	ret = decode_EncryptedData(req->padata->val->padata_value.data,
-				 req->padata->val->padata_value.length,
-				 &enc_data,
-				 &len);
+				   req->padata->val->padata_value.length,
+				   &enc_data,
+				   &len);
 	if (ret) {
 	    ret = KRB5KRB_AP_ERR_BAD_INTEGRITY;
 	    kdc_log(0, "Failed to decode PA-DATA -- %s", client_name);
