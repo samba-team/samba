@@ -106,9 +106,11 @@ static NTSTATUS sesssetup_nt1(struct smbsrv_request *req, union smb_sesssetup *s
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	status = req->smb_conn->negotiate.auth_context->check_ntlm_password(req->smb_conn->negotiate.auth_context, 
-								       user_info, 
-								       &server_info);
+	status = req->smb_conn->negotiate
+		.auth_context->check_ntlm_password(req->smb_conn->negotiate
+						    .auth_context, 
+						   user_info, 
+						   &server_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		return nt_status_squash(status);
 	}
