@@ -159,7 +159,7 @@ krb5_get_kdc_cred(krb5_context context,
      */
 
     ret = krb5_sendto_kdc (context, &enc, &in_creds->server->realm, &resp);
-    if (ret)
+
 	goto out;
 
     memset(&rep, 0, sizeof(rep));
@@ -169,6 +169,8 @@ krb5_get_kdc_cred(krb5_context context,
 			     NULL,
 			     NULL,
 			     NULL);
+	if(ret == 0 && rep.part2.nonce != req.req_body.nonce)
+	    ret = KRB5KRB_AP_ERR_MODIFIED;
 	krb5_free_kdc_rep(context, &rep);
     }else if(decode_KRB_ERROR(resp.data, resp.length, &error, &len) == 0){
 #if 0
