@@ -204,7 +204,6 @@ objectClass: top
 objectClass: foreignSecurityPrincipal
 cn: $sid
 description: $desc
-distinguishedName: CN=$sid,CN=ForeignSecurityPrincipals,\${BASEDN}
 instanceType: 4
 whenCreated: \${LDAPTIME}
 whenChanged: \${LDAPTIME}
