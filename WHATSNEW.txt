@@ -14,13 +14,13 @@ Major new features:
     join a ADS realm as a member server and authenticate 
     users using LDAP/Kerberos.
 
-2)  Unicode support. Samba will now negotiate UNICODE on the wire and
-    internally there is now a much better infrastructure for multi-byte
-    and UNICODE character sets.
+2)  Unicode support. Samba will now negotiate UNICODE on the wire 
+    and internally there is now a much better infrastructure for 
+    multi-byte and UNICODE character sets.
 
-3)  New authentication system. The internal authentication system has
-    been almost completely rewritten. Most of the changes are internal,
-    but the new auth system is also very configurable.
+3)  New authentication system. The internal authentication system 
+    has been almost completely rewritten. Most of the changes are 
+    internal, but the new auth system is also very configurable.
 
 4)  New default filename mangling system.
 
@@ -32,11 +32,11 @@ Major new features:
 6)  Samba now negotiates NT-style status32 codes on the wire. This
     improves error handling a lot.
 
-7)  Better Windows 2000/XP/2003 printing support including publishing 
+7)  Better Windows 2000/XP/2003 printing support including publishing
     printer attributes in active directory.
 
-8)  New loadable module support for passdb backends and 
-    character sets.
+8)  New loadable module support for passdb backends and character 
+    sets.
 
 9)  New default dual-daemon winbindd support for better performance.
 
@@ -53,6 +53,9 @@ Major new features:
 
 14) Full support for client and server SMB signing to ensure
     compatibility with default Windows 2003 security settings.
+
+15) Improvement of ACL mapping features based on code donated by
+    Andreas Grünbacher.
 
 
 Plus lots of other improvements!
