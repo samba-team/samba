@@ -1630,4 +1630,18 @@ struct ip_service {
 	unsigned port;
 };
 
+/* Used by the SMB signing functions. */
+
+typedef struct smb_sign_info {
+	void (*sign_outgoing_message)(char *outbuf, struct smb_sign_info *si);
+	BOOL (*check_incoming_message)(char *inbuf, struct smb_sign_info *si);
+	void (*free_signing_context)(struct smb_sign_info *si);
+	void *signing_context;
+
+	BOOL negotiated_smb_signing;
+	BOOL allow_smb_signing;
+	BOOL doing_signing;
+	BOOL mandatory_signing;
+} smb_sign_info;
+
 #endif /* _SMB_H */
