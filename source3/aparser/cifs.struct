@@ -529,8 +529,10 @@ typedef struct _R_SMB {
 	uint8 reh;
 	uint16 err;
 	uint8 flg;
-	uint8 flg2;
-	uint8 reb[13];
+	uint16 flg2;
+	uint16 reserved;
+	uint8 SecuritySignature[8]; 
+	uint16 pad;
 	uint16 tid;
 	uint16 pid;
 	uint16 uid;
@@ -557,8 +559,10 @@ typedef struct _Q_SMB {
 	uint8 reh;
 	uint16 err;
 	uint8 flg;
-	uint8 flg2;
-	uint8 reb[13];
+	uint16 flg2;
+	uint16 reserved;
+	uint8 SecuritySignature[8]; 
+	uint16 pad;
 	uint16 tid;
 	uint16 pid;
 	uint16 uid;
