@@ -3,621 +3,621 @@
 #include "includes.h"
 
 
-NTSTATUS dcerpc_wks_QueryInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct wks_QueryInfo *r)
+NTSTATUS dcerpc_wkssvc_QueryInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct wkssvc_QueryInfo *r)
 {
 	NTSTATUS status;
 
         if (p->flags & DCERPC_DEBUG_PRINT_IN) {
-		NDR_PRINT_IN_DEBUG(wks_QueryInfo, r);		
+		NDR_PRINT_IN_DEBUG(wkssvc_QueryInfo, r);		
 	}
 
-	status = dcerpc_ndr_request(p, DCERPC_WKS_QUERYINFO, mem_ctx,
-				    (ndr_push_fn_t) ndr_push_wks_QueryInfo,
-				    (ndr_pull_fn_t) ndr_pull_wks_QueryInfo,
+	status = dcerpc_ndr_request(p, DCERPC_WKSSVC_QUERYINFO, mem_ctx,
+				    (ndr_push_fn_t) ndr_push_wkssvc_QueryInfo,
+				    (ndr_pull_fn_t) ndr_pull_wkssvc_QueryInfo,
 				    r);
 
         if (NT_STATUS_IS_OK(status) && (p->flags & DCERPC_DEBUG_PRINT_OUT)) {
-		NDR_PRINT_OUT_DEBUG(wks_QueryInfo, r);		
+		NDR_PRINT_OUT_DEBUG(wkssvc_QueryInfo, r);		
 	}
 
 	return status;
 }
 
-NTSTATUS dcerpc_wks_SetInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct wks_SetInfo *r)
+NTSTATUS dcerpc_wkssvc_SetInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct wkssvc_SetInfo *r)
 {
 	NTSTATUS status;
 
         if (p->flags & DCERPC_DEBUG_PRINT_IN) {
-		NDR_PRINT_IN_DEBUG(wks_SetInfo, r);		
+		NDR_PRINT_IN_DEBUG(wkssvc_SetInfo, r);		
 	}
 
-	status = dcerpc_ndr_request(p, DCERPC_WKS_SETINFO, mem_ctx,
-				    (ndr_push_fn_t) ndr_push_wks_SetInfo,
-				    (ndr_pull_fn_t) ndr_pull_wks_SetInfo,
+	status = dcerpc_ndr_request(p, DCERPC_WKSSVC_SETINFO, mem_ctx,
+				    (ndr_push_fn_t) ndr_push_wkssvc_SetInfo,
+				    (ndr_pull_fn_t) ndr_pull_wkssvc_SetInfo,
 				    r);
 
         if (NT_STATUS_IS_OK(status) && (p->flags & DCERPC_DEBUG_PRINT_OUT)) {
-		NDR_PRINT_OUT_DEBUG(wks_SetInfo, r);		
+		NDR_PRINT_OUT_DEBUG(wkssvc_SetInfo, r);		
 	}
 
 	return status;
 }
 
-NTSTATUS dcerpc_WKS_NETRWKSTAUSERENUM(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct WKS_NETRWKSTAUSERENUM *r)
+NTSTATUS dcerpc_WKSSVC_NETRWKSTAUSERENUM(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct WKSSVC_NETRWKSTAUSERENUM *r)
 {
 	NTSTATUS status;
 
         if (p->flags & DCERPC_DEBUG_PRINT_IN) {
-		NDR_PRINT_IN_DEBUG(WKS_NETRWKSTAUSERENUM, r);		
+		NDR_PRINT_IN_DEBUG(WKSSVC_NETRWKSTAUSERENUM, r);		
 	}
 
-	status = dcerpc_ndr_request(p, DCERPC_WKS_NETRWKSTAUSERENUM, mem_ctx,
-				    (ndr_push_fn_t) ndr_push_WKS_NETRWKSTAUSERENUM,
-				    (ndr_pull_fn_t) ndr_pull_WKS_NETRWKSTAUSERENUM,
+	status = dcerpc_ndr_request(p, DCERPC_WKSSVC_NETRWKSTAUSERENUM, mem_ctx,
+				    (ndr_push_fn_t) ndr_push_WKSSVC_NETRWKSTAUSERENUM,
+				    (ndr_pull_fn_t) ndr_pull_WKSSVC_NETRWKSTAUSERENUM,
 				    r);
 
         if (NT_STATUS_IS_OK(status) && (p->flags & DCERPC_DEBUG_PRINT_OUT)) {
-		NDR_PRINT_OUT_DEBUG(WKS_NETRWKSTAUSERENUM, r);		
+		NDR_PRINT_OUT_DEBUG(WKSSVC_NETRWKSTAUSERENUM, r);		
 	}
 
 	return status;
 }
 
-NTSTATUS dcerpc_WKS_NETRWKSTAUSERGETINFO(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct WKS_NETRWKSTAUSERGETINFO *r)
+NTSTATUS dcerpc_WKSSVC_NETRWKSTAUSERGETINFO(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct WKSSVC_NETRWKSTAUSERGETINFO *r)
 {
 	NTSTATUS status;
 
         if (p->flags & DCERPC_DEBUG_PRINT_IN) {
-		NDR_PRINT_IN_DEBUG(WKS_NETRWKSTAUSERGETINFO, r);		
+		NDR_PRINT_IN_DEBUG(WKSSVC_NETRWKSTAUSERGETINFO, r);		
 	}
 
-	status = dcerpc_ndr_request(p, DCERPC_WKS_NETRWKSTAUSERGETINFO, mem_ctx,
-				    (ndr_push_fn_t) ndr_push_WKS_NETRWKSTAUSERGETINFO,
-				    (ndr_pull_fn_t) ndr_pull_WKS_NETRWKSTAUSERGETINFO,
+	status = dcerpc_ndr_request(p, DCERPC_WKSSVC_NETRWKSTAUSERGETINFO, mem_ctx,
+				    (ndr_push_fn_t) ndr_push_WKSSVC_NETRWKSTAUSERGETINFO,
+				    (ndr_pull_fn_t) ndr_pull_WKSSVC_NETRWKSTAUSERGETINFO,
 				    r);
 
         if (NT_STATUS_IS_OK(status) && (p->flags & DCERPC_DEBUG_PRINT_OUT)) {
-		NDR_PRINT_OUT_DEBUG(WKS_NETRWKSTAUSERGETINFO, r);		
+		NDR_PRINT_OUT_DEBUG(WKSSVC_NETRWKSTAUSERGETINFO, r);		
 	}
 
 	return status;
 }
 
-NTSTATUS dcerpc_WKS_NETRWKSTAUSERSETINFO(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct WKS_NETRWKSTAUSERSETINFO *r)
+NTSTATUS dcerpc_WKSSVC_NETRWKSTAUSERSETINFO(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct WKSSVC_NETRWKSTAUSERSETINFO *r)
 {
 	NTSTATUS status;
 
         if (p->flags & DCERPC_DEBUG_PRINT_IN) {
-		NDR_PRINT_IN_DEBUG(WKS_NETRWKSTAUSERSETINFO, r);		
+		NDR_PRINT_IN_DEBUG(WKSSVC_NETRWKSTAUSERSETINFO, r);		
 	}
 
-	status = dcerpc_ndr_request(p, DCERPC_WKS_NETRWKSTAUSERSETINFO, mem_ctx,
-				    (ndr_push_fn_t) ndr_push_WKS_NETRWKSTAUSERSETINFO,
-				    (ndr_pull_fn_t) ndr_pull_WKS_NETRWKSTAUSERSETINFO,
+	status = dcerpc_ndr_request(p, DCERPC_WKSSVC_NETRWKSTAUSERSETINFO, mem_ctx,
+				    (ndr_push_fn_t) ndr_push_WKSSVC_NETRWKSTAUSERSETINFO,
+				    (ndr_pull_fn_t) ndr_pull_WKSSVC_NETRWKSTAUSERSETINFO,
 				    r);
 
         if (NT_STATUS_IS_OK(status) && (p->flags & DCERPC_DEBUG_PRINT_OUT)) {
-		NDR_PRINT_OUT_DEBUG(WKS_NETRWKSTAUSERSETINFO, r);		
+		NDR_PRINT_OUT_DEBUG(WKSSVC_NETRWKSTAUSERSETINFO, r);		
 	}
 
 	return status;
 }
 
-NTSTATUS dcerpc_wks_TransportEnum(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct wks_TransportEnum *r)
+NTSTATUS dcerpc_wkssvc_TransportEnum(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct wkssvc_TransportEnum *r)
 {
 	NTSTATUS status;
 
         if (p->flags & DCERPC_DEBUG_PRINT_IN) {
-		NDR_PRINT_IN_DEBUG(wks_TransportEnum, r);		
+		NDR_PRINT_IN_DEBUG(wkssvc_TransportEnum, r);		
 	}
 
-	status = dcerpc_ndr_request(p, DCERPC_WKS_TRANSPORTENUM, mem_ctx,
-				    (ndr_push_fn_t) ndr_push_wks_TransportEnum,
-				    (ndr_pull_fn_t) ndr_pull_wks_TransportEnum,
+	status = dcerpc_ndr_request(p, DCERPC_WKSSVC_TRANSPORTENUM, mem_ctx,
+				    (ndr_push_fn_t) ndr_push_wkssvc_TransportEnum,
+				    (ndr_pull_fn_t) ndr_pull_wkssvc_TransportEnum,
 				    r);
 
         if (NT_STATUS_IS_OK(status) && (p->flags & DCERPC_DEBUG_PRINT_OUT)) {
-		NDR_PRINT_OUT_DEBUG(wks_TransportEnum, r);		
+		NDR_PRINT_OUT_DEBUG(wkssvc_TransportEnum, r);		
 	}
 
 	return status;
 }
 
-NTSTATUS dcerpc_WKS_NETRWKSTATRANSPORTADD(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct WKS_NETRWKSTATRANSPORTADD *r)
+NTSTATUS dcerpc_WKSSVC_NETRWKSTATRANSPORTADD(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct WKSSVC_NETRWKSTATRANSPORTADD *r)
 {
 	NTSTATUS status;
 
         if (p->flags & DCERPC_DEBUG_PRINT_IN) {
-		NDR_PRINT_IN_DEBUG(WKS_NETRWKSTATRANSPORTADD, r);		
+		NDR_PRINT_IN_DEBUG(WKSSVC_NETRWKSTATRANSPORTADD, r);		
 	}
 
-	status = dcerpc_ndr_request(p, DCERPC_WKS_NETRWKSTATRANSPORTADD, mem_ctx,
-				    (ndr_push_fn_t) ndr_push_WKS_NETRWKSTATRANSPORTADD,
-				    (ndr_pull_fn_t) ndr_pull_WKS_NETRWKSTATRANSPORTADD,
+	status = dcerpc_ndr_request(p, DCERPC_WKSSVC_NETRWKSTATRANSPORTADD, mem_ctx,
+				    (ndr_push_fn_t) ndr_push_WKSSVC_NETRWKSTATRANSPORTADD,
+				    (ndr_pull_fn_t) ndr_pull_WKSSVC_NETRWKSTATRANSPORTADD,
 				    r);
 
         if (NT_STATUS_IS_OK(status) && (p->flags & DCERPC_DEBUG_PRINT_OUT)) {
-		NDR_PRINT_OUT_DEBUG(WKS_NETRWKSTATRANSPORTADD, r);		
+		NDR_PRINT_OUT_DEBUG(WKSSVC_NETRWKSTATRANSPORTADD, r);		
 	}
 
 	return status;
 }
 
-NTSTATUS dcerpc_WKS_NETRWKSTATRANSPORTDEL(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct WKS_NETRWKSTATRANSPORTDEL *r)
+NTSTATUS dcerpc_WKSSVC_NETRWKSTATRANSPORTDEL(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct WKSSVC_NETRWKSTATRANSPORTDEL *r)
 {
 	NTSTATUS status;
 
         if (p->flags & DCERPC_DEBUG_PRINT_IN) {
-		NDR_PRINT_IN_DEBUG(WKS_NETRWKSTATRANSPORTDEL, r);		
+		NDR_PRINT_IN_DEBUG(WKSSVC_NETRWKSTATRANSPORTDEL, r);		
 	}
 
-	status = dcerpc_ndr_request(p, DCERPC_WKS_NETRWKSTATRANSPORTDEL, mem_ctx,
-				    (ndr_push_fn_t) ndr_push_WKS_NETRWKSTATRANSPORTDEL,
-				    (ndr_pull_fn_t) ndr_pull_WKS_NETRWKSTATRANSPORTDEL,
+	status = dcerpc_ndr_request(p, DCERPC_WKSSVC_NETRWKSTATRANSPORTDEL, mem_ctx,
+				    (ndr_push_fn_t) ndr_push_WKSSVC_NETRWKSTATRANSPORTDEL,
+				    (ndr_pull_fn_t) ndr_pull_WKSSVC_NETRWKSTATRANSPORTDEL,
 				    r);
 
         if (NT_STATUS_IS_OK(status) && (p->flags & DCERPC_DEBUG_PRINT_OUT)) {
-		NDR_PRINT_OUT_DEBUG(WKS_NETRWKSTATRANSPORTDEL, r);		
+		NDR_PRINT_OUT_DEBUG(WKSSVC_NETRWKSTATRANSPORTDEL, r);		
 	}
 
 	return status;
 }
 
-NTSTATUS dcerpc_WKS_NETRUSEADD(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct WKS_NETRUSEADD *r)
+NTSTATUS dcerpc_WKSSVC_NETRUSEADD(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct WKSSVC_NETRUSEADD *r)
 {
 	NTSTATUS status;
 
         if (p->flags & DCERPC_DEBUG_PRINT_IN) {
-		NDR_PRINT_IN_DEBUG(WKS_NETRUSEADD, r);		
+		NDR_PRINT_IN_DEBUG(WKSSVC_NETRUSEADD, r);		
 	}
 
-	status = dcerpc_ndr_request(p, DCERPC_WKS_NETRUSEADD, mem_ctx,
-				    (ndr_push_fn_t) ndr_push_WKS_NETRUSEADD,
-				    (ndr_pull_fn_t) ndr_pull_WKS_NETRUSEADD,
+	status = dcerpc_ndr_request(p, DCERPC_WKSSVC_NETRUSEADD, mem_ctx,
+				    (ndr_push_fn_t) ndr_push_WKSSVC_NETRUSEADD,
+				    (ndr_pull_fn_t) ndr_pull_WKSSVC_NETRUSEADD,
 				    r);
 
         if (NT_STATUS_IS_OK(status) && (p->flags & DCERPC_DEBUG_PRINT_OUT)) {
-		NDR_PRINT_OUT_DEBUG(WKS_NETRUSEADD, r);		
+		NDR_PRINT_OUT_DEBUG(WKSSVC_NETRUSEADD, r);		
 	}
 
 	return status;
 }
 
-NTSTATUS dcerpc_WKS_NETRUSEGETINFO(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct WKS_NETRUSEGETINFO *r)
+NTSTATUS dcerpc_WKSSVC_NETRUSEGETINFO(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct WKSSVC_NETRUSEGETINFO *r)
 {
 	NTSTATUS status;
 
         if (p->flags & DCERPC_DEBUG_PRINT_IN) {
-		NDR_PRINT_IN_DEBUG(WKS_NETRUSEGETINFO, r);		
+		NDR_PRINT_IN_DEBUG(WKSSVC_NETRUSEGETINFO, r);		
 	}
 
-	status = dcerpc_ndr_request(p, DCERPC_WKS_NETRUSEGETINFO, mem_ctx,
-				    (ndr_push_fn_t) ndr_push_WKS_NETRUSEGETINFO,
-				    (ndr_pull_fn_t) ndr_pull_WKS_NETRUSEGETINFO,
+	status = dcerpc_ndr_request(p, DCERPC_WKSSVC_NETRUSEGETINFO, mem_ctx,
+				    (ndr_push_fn_t) ndr_push_WKSSVC_NETRUSEGETINFO,
+				    (ndr_pull_fn_t) ndr_pull_WKSSVC_NETRUSEGETINFO,
 				    r);
 
         if (NT_STATUS_IS_OK(status) && (p->flags & DCERPC_DEBUG_PRINT_OUT)) {
-		NDR_PRINT_OUT_DEBUG(WKS_NETRUSEGETINFO, r);		
+		NDR_PRINT_OUT_DEBUG(WKSSVC_NETRUSEGETINFO, r);		
 	}
 
 	return status;
 }
 
-NTSTATUS dcerpc_WKS_NETRUSEDEL(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct WKS_NETRUSEDEL *r)
+NTSTATUS dcerpc_WKSSVC_NETRUSEDEL(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct WKSSVC_NETRUSEDEL *r)
 {
 	NTSTATUS status;
 
         if (p->flags & DCERPC_DEBUG_PRINT_IN) {
-		NDR_PRINT_IN_DEBUG(WKS_NETRUSEDEL, r);		
+		NDR_PRINT_IN_DEBUG(WKSSVC_NETRUSEDEL, r);		
 	}
 
-	status = dcerpc_ndr_request(p, DCERPC_WKS_NETRUSEDEL, mem_ctx,
-				    (ndr_push_fn_t) ndr_push_WKS_NETRUSEDEL,
-				    (ndr_pull_fn_t) ndr_pull_WKS_NETRUSEDEL,
+	status = dcerpc_ndr_request(p, DCERPC_WKSSVC_NETRUSEDEL, mem_ctx,
+				    (ndr_push_fn_t) ndr_push_WKSSVC_NETRUSEDEL,
+				    (ndr_pull_fn_t) ndr_pull_WKSSVC_NETRUSEDEL,
 				    r);
 
         if (NT_STATUS_IS_OK(status) && (p->flags & DCERPC_DEBUG_PRINT_OUT)) {
-		NDR_PRINT_OUT_DEBUG(WKS_NETRUSEDEL, r);		
+		NDR_PRINT_OUT_DEBUG(WKSSVC_NETRUSEDEL, r);		
 	}
 
 	return status;
 }
 
-NTSTATUS dcerpc_WKS_NETRUSEENUM(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct WKS_NETRUSEENUM *r)
+NTSTATUS dcerpc_WKSSVC_NETRUSEENUM(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct WKSSVC_NETRUSEENUM *r)
 {
 	NTSTATUS status;
 
         if (p->flags & DCERPC_DEBUG_PRINT_IN) {
-		NDR_PRINT_IN_DEBUG(WKS_NETRUSEENUM, r);		
+		NDR_PRINT_IN_DEBUG(WKSSVC_NETRUSEENUM, r);		
 	}
 
-	status = dcerpc_ndr_request(p, DCERPC_WKS_NETRUSEENUM, mem_ctx,
-				    (ndr_push_fn_t) ndr_push_WKS_NETRUSEENUM,
-				    (ndr_pull_fn_t) ndr_pull_WKS_NETRUSEENUM,
+	status = dcerpc_ndr_request(p, DCERPC_WKSSVC_NETRUSEENUM, mem_ctx,
+				    (ndr_push_fn_t) ndr_push_WKSSVC_NETRUSEENUM,
+				    (ndr_pull_fn_t) ndr_pull_WKSSVC_NETRUSEENUM,
 				    r);
 
         if (NT_STATUS_IS_OK(status) && (p->flags & DCERPC_DEBUG_PRINT_OUT)) {
-		NDR_PRINT_OUT_DEBUG(WKS_NETRUSEENUM, r);		
+		NDR_PRINT_OUT_DEBUG(WKSSVC_NETRUSEENUM, r);		
 	}
 
 	return status;
 }
 
-NTSTATUS dcerpc_WKS_NETRMESSAGEBUFFERSEND(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct WKS_NETRMESSAGEBUFFERSEND *r)
+NTSTATUS dcerpc_WKSSVC_NETRMESSAGEBUFFERSEND(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct WKSSVC_NETRMESSAGEBUFFERSEND *r)
 {
 	NTSTATUS status;
 
         if (p->flags & DCERPC_DEBUG_PRINT_IN) {
-		NDR_PRINT_IN_DEBUG(WKS_NETRMESSAGEBUFFERSEND, r);		
+		NDR_PRINT_IN_DEBUG(WKSSVC_NETRMESSAGEBUFFERSEND, r);		
 	}
 
-	status = dcerpc_ndr_request(p, DCERPC_WKS_NETRMESSAGEBUFFERSEND, mem_ctx,
-				    (ndr_push_fn_t) ndr_push_WKS_NETRMESSAGEBUFFERSEND,
-				    (ndr_pull_fn_t) ndr_pull_WKS_NETRMESSAGEBUFFERSEND,
+	status = dcerpc_ndr_request(p, DCERPC_WKSSVC_NETRMESSAGEBUFFERSEND, mem_ctx,
+				    (ndr_push_fn_t) ndr_push_WKSSVC_NETRMESSAGEBUFFERSEND,
+				    (ndr_pull_fn_t) ndr_pull_WKSSVC_NETRMESSAGEBUFFERSEND,
 				    r);
 
         if (NT_STATUS_IS_OK(status) && (p->flags & DCERPC_DEBUG_PRINT_OUT)) {
-		NDR_PRINT_OUT_DEBUG(WKS_NETRMESSAGEBUFFERSEND, r);		
+		NDR_PRINT_OUT_DEBUG(WKSSVC_NETRMESSAGEBUFFERSEND, r);		
 	}
 
 	return status;
 }
 
-NTSTATUS dcerpc_WKS_NETRWORKSTATIONSTATISTICSGET(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct WKS_NETRWORKSTATIONSTATISTICSGET *r)
+NTSTATUS dcerpc_WKSSVC_NETRWORKSTATIONSTATISTICSGET(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct WKSSVC_NETRWORKSTATIONSTATISTICSGET *r)
 {
 	NTSTATUS status;
 
         if (p->flags & DCERPC_DEBUG_PRINT_IN) {
-		NDR_PRINT_IN_DEBUG(WKS_NETRWORKSTATIONSTATISTICSGET, r);		
+		NDR_PRINT_IN_DEBUG(WKSSVC_NETRWORKSTATIONSTATISTICSGET, r);		
 	}
 
-	status = dcerpc_ndr_request(p, DCERPC_WKS_NETRWORKSTATIONSTATISTICSGET, mem_ctx,
-				    (ndr_push_fn_t) ndr_push_WKS_NETRWORKSTATIONSTATISTICSGET,
-				    (ndr_pull_fn_t) ndr_pull_WKS_NETRWORKSTATIONSTATISTICSGET,
+	status = dcerpc_ndr_request(p, DCERPC_WKSSVC_NETRWORKSTATIONSTATISTICSGET, mem_ctx,
+				    (ndr_push_fn_t) ndr_push_WKSSVC_NETRWORKSTATIONSTATISTICSGET,
+				    (ndr_pull_fn_t) ndr_pull_WKSSVC_NETRWORKSTATIONSTATISTICSGET,
 				    r);
 
         if (NT_STATUS_IS_OK(status) && (p->flags & DCERPC_DEBUG_PRINT_OUT)) {
-		NDR_PRINT_OUT_DEBUG(WKS_NETRWORKSTATIONSTATISTICSGET, r);		
+		NDR_PRINT_OUT_DEBUG(WKSSVC_NETRWORKSTATIONSTATISTICSGET, r);		
 	}
 
 	return status;
 }
 
-NTSTATUS dcerpc_WKS_NETRLOGONDOMAINNAMEADD(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct WKS_NETRLOGONDOMAINNAMEADD *r)
+NTSTATUS dcerpc_WKSSVC_NETRLOGONDOMAINNAMEADD(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct WKSSVC_NETRLOGONDOMAINNAMEADD *r)
 {
 	NTSTATUS status;
 
         if (p->flags & DCERPC_DEBUG_PRINT_IN) {
-		NDR_PRINT_IN_DEBUG(WKS_NETRLOGONDOMAINNAMEADD, r);		
+		NDR_PRINT_IN_DEBUG(WKSSVC_NETRLOGONDOMAINNAMEADD, r);		
 	}
 
-	status = dcerpc_ndr_request(p, DCERPC_WKS_NETRLOGONDOMAINNAMEADD, mem_ctx,
-				    (ndr_push_fn_t) ndr_push_WKS_NETRLOGONDOMAINNAMEADD,
-				    (ndr_pull_fn_t) ndr_pull_WKS_NETRLOGONDOMAINNAMEADD,
+	status = dcerpc_ndr_request(p, DCERPC_WKSSVC_NETRLOGONDOMAINNAMEADD, mem_ctx,
+				    (ndr_push_fn_t) ndr_push_WKSSVC_NETRLOGONDOMAINNAMEADD,
+				    (ndr_pull_fn_t) ndr_pull_WKSSVC_NETRLOGONDOMAINNAMEADD,
 				    r);
 
         if (NT_STATUS_IS_OK(status) && (p->flags & DCERPC_DEBUG_PRINT_OUT)) {
-		NDR_PRINT_OUT_DEBUG(WKS_NETRLOGONDOMAINNAMEADD, r);		
+		NDR_PRINT_OUT_DEBUG(WKSSVC_NETRLOGONDOMAINNAMEADD, r);		
 	}
 
 	return status;
 }
 
-NTSTATUS dcerpc_WKS_NETRLOGONDOMAINNAMEDEL(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct WKS_NETRLOGONDOMAINNAMEDEL *r)
+NTSTATUS dcerpc_WKSSVC_NETRLOGONDOMAINNAMEDEL(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct WKSSVC_NETRLOGONDOMAINNAMEDEL *r)
 {
 	NTSTATUS status;
 
         if (p->flags & DCERPC_DEBUG_PRINT_IN) {
-		NDR_PRINT_IN_DEBUG(WKS_NETRLOGONDOMAINNAMEDEL, r);		
+		NDR_PRINT_IN_DEBUG(WKSSVC_NETRLOGONDOMAINNAMEDEL, r);		
 	}
 
-	status = dcerpc_ndr_request(p, DCERPC_WKS_NETRLOGONDOMAINNAMEDEL, mem_ctx,
-				    (ndr_push_fn_t) ndr_push_WKS_NETRLOGONDOMAINNAMEDEL,
-				    (ndr_pull_fn_t) ndr_pull_WKS_NETRLOGONDOMAINNAMEDEL,
+	status = dcerpc_ndr_request(p, DCERPC_WKSSVC_NETRLOGONDOMAINNAMEDEL, mem_ctx,
+				    (ndr_push_fn_t) ndr_push_WKSSVC_NETRLOGONDOMAINNAMEDEL,
+				    (ndr_pull_fn_t) ndr_pull_WKSSVC_NETRLOGONDOMAINNAMEDEL,
 				    r);
 
         if (NT_STATUS_IS_OK(status) && (p->flags & DCERPC_DEBUG_PRINT_OUT)) {
-		NDR_PRINT_OUT_DEBUG(WKS_NETRLOGONDOMAINNAMEDEL, r);		
+		NDR_PRINT_OUT_DEBUG(WKSSVC_NETRLOGONDOMAINNAMEDEL, r);		
 	}
 
 	return status;
 }
 
-NTSTATUS dcerpc_WKS_NETRJOINDOMAIN(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct WKS_NETRJOINDOMAIN *r)
+NTSTATUS dcerpc_WKSSVC_NETRJOINDOMAIN(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct WKSSVC_NETRJOINDOMAIN *r)
 {
 	NTSTATUS status;
 
         if (p->flags & DCERPC_DEBUG_PRINT_IN) {
-		NDR_PRINT_IN_DEBUG(WKS_NETRJOINDOMAIN, r);		
+		NDR_PRINT_IN_DEBUG(WKSSVC_NETRJOINDOMAIN, r);		
 	}
 
-	status = dcerpc_ndr_request(p, DCERPC_WKS_NETRJOINDOMAIN, mem_ctx,
-				    (ndr_push_fn_t) ndr_push_WKS_NETRJOINDOMAIN,
-				    (ndr_pull_fn_t) ndr_pull_WKS_NETRJOINDOMAIN,
+	status = dcerpc_ndr_request(p, DCERPC_WKSSVC_NETRJOINDOMAIN, mem_ctx,
+				    (ndr_push_fn_t) ndr_push_WKSSVC_NETRJOINDOMAIN,
+				    (ndr_pull_fn_t) ndr_pull_WKSSVC_NETRJOINDOMAIN,
 				    r);
 
         if (NT_STATUS_IS_OK(status) && (p->flags & DCERPC_DEBUG_PRINT_OUT)) {
-		NDR_PRINT_OUT_DEBUG(WKS_NETRJOINDOMAIN, r);		
+		NDR_PRINT_OUT_DEBUG(WKSSVC_NETRJOINDOMAIN, r);		
 	}
 
 	return status;
 }
 
-NTSTATUS dcerpc_WKS_NETRUNJOINDOMAIN(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct WKS_NETRUNJOINDOMAIN *r)
+NTSTATUS dcerpc_WKSSVC_NETRUNJOINDOMAIN(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct WKSSVC_NETRUNJOINDOMAIN *r)
 {
 	NTSTATUS status;
 
         if (p->flags & DCERPC_DEBUG_PRINT_IN) {
-		NDR_PRINT_IN_DEBUG(WKS_NETRUNJOINDOMAIN, r);		
+		NDR_PRINT_IN_DEBUG(WKSSVC_NETRUNJOINDOMAIN, r);		
 	}
 
-	status = dcerpc_ndr_request(p, DCERPC_WKS_NETRUNJOINDOMAIN, mem_ctx,
-				    (ndr_push_fn_t) ndr_push_WKS_NETRUNJOINDOMAIN,
-				    (ndr_pull_fn_t) ndr_pull_WKS_NETRUNJOINDOMAIN,
+	status = dcerpc_ndr_request(p, DCERPC_WKSSVC_NETRUNJOINDOMAIN, mem_ctx,
+				    (ndr_push_fn_t) ndr_push_WKSSVC_NETRUNJOINDOMAIN,
+				    (ndr_pull_fn_t) ndr_pull_WKSSVC_NETRUNJOINDOMAIN,
 				    r);
 
         if (NT_STATUS_IS_OK(status) && (p->flags & DCERPC_DEBUG_PRINT_OUT)) {
-		NDR_PRINT_OUT_DEBUG(WKS_NETRUNJOINDOMAIN, r);		
+		NDR_PRINT_OUT_DEBUG(WKSSVC_NETRUNJOINDOMAIN, r);		
 	}
 
 	return status;
 }
 
-NTSTATUS dcerpc_WKS_NETRRENAMEMACHINEINDOMAIN(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct WKS_NETRRENAMEMACHINEINDOMAIN *r)
+NTSTATUS dcerpc_WKSSVC_NETRRENAMEMACHINEINDOMAIN(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct WKSSVC_NETRRENAMEMACHINEINDOMAIN *r)
 {
 	NTSTATUS status;
 
         if (p->flags & DCERPC_DEBUG_PRINT_IN) {
-		NDR_PRINT_IN_DEBUG(WKS_NETRRENAMEMACHINEINDOMAIN, r);		
+		NDR_PRINT_IN_DEBUG(WKSSVC_NETRRENAMEMACHINEINDOMAIN, r);		
 	}
 
-	status = dcerpc_ndr_request(p, DCERPC_WKS_NETRRENAMEMACHINEINDOMAIN, mem_ctx,
-				    (ndr_push_fn_t) ndr_push_WKS_NETRRENAMEMACHINEINDOMAIN,
-				    (ndr_pull_fn_t) ndr_pull_WKS_NETRRENAMEMACHINEINDOMAIN,
+	status = dcerpc_ndr_request(p, DCERPC_WKSSVC_NETRRENAMEMACHINEINDOMAIN, mem_ctx,
+				    (ndr_push_fn_t) ndr_push_WKSSVC_NETRRENAMEMACHINEINDOMAIN,
+				    (ndr_pull_fn_t) ndr_pull_WKSSVC_NETRRENAMEMACHINEINDOMAIN,
 				    r);
 
         if (NT_STATUS_IS_OK(status) && (p->flags & DCERPC_DEBUG_PRINT_OUT)) {
-		NDR_PRINT_OUT_DEBUG(WKS_NETRRENAMEMACHINEINDOMAIN, r);		
+		NDR_PRINT_OUT_DEBUG(WKSSVC_NETRRENAMEMACHINEINDOMAIN, r);		
 	}
 
 	return status;
 }
 
-NTSTATUS dcerpc_WKS_NETRVALIDATENAME(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct WKS_NETRVALIDATENAME *r)
+NTSTATUS dcerpc_WKSSVC_NETRVALIDATENAME(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct WKSSVC_NETRVALIDATENAME *r)
 {
 	NTSTATUS status;
 
         if (p->flags & DCERPC_DEBUG_PRINT_IN) {
-		NDR_PRINT_IN_DEBUG(WKS_NETRVALIDATENAME, r);		
+		NDR_PRINT_IN_DEBUG(WKSSVC_NETRVALIDATENAME, r);		
 	}
 
-	status = dcerpc_ndr_request(p, DCERPC_WKS_NETRVALIDATENAME, mem_ctx,
-				    (ndr_push_fn_t) ndr_push_WKS_NETRVALIDATENAME,
-				    (ndr_pull_fn_t) ndr_pull_WKS_NETRVALIDATENAME,
+	status = dcerpc_ndr_request(p, DCERPC_WKSSVC_NETRVALIDATENAME, mem_ctx,
+				    (ndr_push_fn_t) ndr_push_WKSSVC_NETRVALIDATENAME,
+				    (ndr_pull_fn_t) ndr_pull_WKSSVC_NETRVALIDATENAME,
 				    r);
 
         if (NT_STATUS_IS_OK(status) && (p->flags & DCERPC_DEBUG_PRINT_OUT)) {
-		NDR_PRINT_OUT_DEBUG(WKS_NETRVALIDATENAME, r);		
+		NDR_PRINT_OUT_DEBUG(WKSSVC_NETRVALIDATENAME, r);		
 	}
 
 	return status;
 }
 
-NTSTATUS dcerpc_WKS_NETRGETJOININFORMATION(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct WKS_NETRGETJOININFORMATION *r)
+NTSTATUS dcerpc_WKSSVC_NETRGETJOININFORMATION(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct WKSSVC_NETRGETJOININFORMATION *r)
 {
 	NTSTATUS status;
 
         if (p->flags & DCERPC_DEBUG_PRINT_IN) {
-		NDR_PRINT_IN_DEBUG(WKS_NETRGETJOININFORMATION, r);		
+		NDR_PRINT_IN_DEBUG(WKSSVC_NETRGETJOININFORMATION, r);		
 	}
 
-	status = dcerpc_ndr_request(p, DCERPC_WKS_NETRGETJOININFORMATION, mem_ctx,
-				    (ndr_push_fn_t) ndr_push_WKS_NETRGETJOININFORMATION,
-				    (ndr_pull_fn_t) ndr_pull_WKS_NETRGETJOININFORMATION,
+	status = dcerpc_ndr_request(p, DCERPC_WKSSVC_NETRGETJOININFORMATION, mem_ctx,
+				    (ndr_push_fn_t) ndr_push_WKSSVC_NETRGETJOININFORMATION,
+				    (ndr_pull_fn_t) ndr_pull_WKSSVC_NETRGETJOININFORMATION,
 				    r);
 
         if (NT_STATUS_IS_OK(status) && (p->flags & DCERPC_DEBUG_PRINT_OUT)) {
-		NDR_PRINT_OUT_DEBUG(WKS_NETRGETJOININFORMATION, r);		
+		NDR_PRINT_OUT_DEBUG(WKSSVC_NETRGETJOININFORMATION, r);		
 	}
 
 	return status;
 }
 
-NTSTATUS dcerpc_WKS_NETRGETJOINABLEOUS(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct WKS_NETRGETJOINABLEOUS *r)
+NTSTATUS dcerpc_WKSSVC_NETRGETJOINABLEOUS(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct WKSSVC_NETRGETJOINABLEOUS *r)
 {
 	NTSTATUS status;
 
         if (p->flags & DCERPC_DEBUG_PRINT_IN) {
-		NDR_PRINT_IN_DEBUG(WKS_NETRGETJOINABLEOUS, r);		
+		NDR_PRINT_IN_DEBUG(WKSSVC_NETRGETJOINABLEOUS, r);		
 	}
 
-	status = dcerpc_ndr_request(p, DCERPC_WKS_NETRGETJOINABLEOUS, mem_ctx,
-				    (ndr_push_fn_t) ndr_push_WKS_NETRGETJOINABLEOUS,
-				    (ndr_pull_fn_t) ndr_pull_WKS_NETRGETJOINABLEOUS,
+	status = dcerpc_ndr_request(p, DCERPC_WKSSVC_NETRGETJOINABLEOUS, mem_ctx,
+				    (ndr_push_fn_t) ndr_push_WKSSVC_NETRGETJOINABLEOUS,
+				    (ndr_pull_fn_t) ndr_pull_WKSSVC_NETRGETJOINABLEOUS,
 				    r);
 
         if (NT_STATUS_IS_OK(status) && (p->flags & DCERPC_DEBUG_PRINT_OUT)) {
-		NDR_PRINT_OUT_DEBUG(WKS_NETRGETJOINABLEOUS, r);		
+		NDR_PRINT_OUT_DEBUG(WKSSVC_NETRGETJOINABLEOUS, r);		
 	}
 
 	return status;
 }
 
-NTSTATUS dcerpc_WKS_NETRJOINDOMAIN2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct WKS_NETRJOINDOMAIN2 *r)
+NTSTATUS dcerpc_WKSSVC_NETRJOINDOMAIN2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct WKSSVC_NETRJOINDOMAIN2 *r)
 {
 	NTSTATUS status;
 
         if (p->flags & DCERPC_DEBUG_PRINT_IN) {
-		NDR_PRINT_IN_DEBUG(WKS_NETRJOINDOMAIN2, r);		
+		NDR_PRINT_IN_DEBUG(WKSSVC_NETRJOINDOMAIN2, r);		
 	}
 
-	status = dcerpc_ndr_request(p, DCERPC_WKS_NETRJOINDOMAIN2, mem_ctx,
-				    (ndr_push_fn_t) ndr_push_WKS_NETRJOINDOMAIN2,
-				    (ndr_pull_fn_t) ndr_pull_WKS_NETRJOINDOMAIN2,
+	status = dcerpc_ndr_request(p, DCERPC_WKSSVC_NETRJOINDOMAIN2, mem_ctx,
+				    (ndr_push_fn_t) ndr_push_WKSSVC_NETRJOINDOMAIN2,
+				    (ndr_pull_fn_t) ndr_pull_WKSSVC_NETRJOINDOMAIN2,
 				    r);
 
         if (NT_STATUS_IS_OK(status) && (p->flags & DCERPC_DEBUG_PRINT_OUT)) {
-		NDR_PRINT_OUT_DEBUG(WKS_NETRJOINDOMAIN2, r);		
+		NDR_PRINT_OUT_DEBUG(WKSSVC_NETRJOINDOMAIN2, r);		
 	}
 
 	return status;
 }
 
-NTSTATUS dcerpc_WKS_NETRUNJOINDOMAIN2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct WKS_NETRUNJOINDOMAIN2 *r)
+NTSTATUS dcerpc_WKSSVC_NETRUNJOINDOMAIN2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct WKSSVC_NETRUNJOINDOMAIN2 *r)
 {
 	NTSTATUS status;
 
         if (p->flags & DCERPC_DEBUG_PRINT_IN) {
-		NDR_PRINT_IN_DEBUG(WKS_NETRUNJOINDOMAIN2, r);		
+		NDR_PRINT_IN_DEBUG(WKSSVC_NETRUNJOINDOMAIN2, r);		
 	}
 
-	status = dcerpc_ndr_request(p, DCERPC_WKS_NETRUNJOINDOMAIN2, mem_ctx,
-				    (ndr_push_fn_t) ndr_push_WKS_NETRUNJOINDOMAIN2,
-				    (ndr_pull_fn_t) ndr_pull_WKS_NETRUNJOINDOMAIN2,
+	status = dcerpc_ndr_request(p, DCERPC_WKSSVC_NETRUNJOINDOMAIN2, mem_ctx,
+				    (ndr_push_fn_t) ndr_push_WKSSVC_NETRUNJOINDOMAIN2,
+				    (ndr_pull_fn_t) ndr_pull_WKSSVC_NETRUNJOINDOMAIN2,
 				    r);
 
         if (NT_STATUS_IS_OK(status) && (p->flags & DCERPC_DEBUG_PRINT_OUT)) {
-		NDR_PRINT_OUT_DEBUG(WKS_NETRUNJOINDOMAIN2, r);		
+		NDR_PRINT_OUT_DEBUG(WKSSVC_NETRUNJOINDOMAIN2, r);		
 	}
 
 	return status;
 }
 
-NTSTATUS dcerpc_WKS_NETRRENAMEMACHINEINDOMAIN2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct WKS_NETRRENAMEMACHINEINDOMAIN2 *r)
+NTSTATUS dcerpc_WKSSVC_NETRRENAMEMACHINEINDOMAIN2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct WKSSVC_NETRRENAMEMACHINEINDOMAIN2 *r)
 {
 	NTSTATUS status;
 
         if (p->flags & DCERPC_DEBUG_PRINT_IN) {
-		NDR_PRINT_IN_DEBUG(WKS_NETRRENAMEMACHINEINDOMAIN2, r);		
+		NDR_PRINT_IN_DEBUG(WKSSVC_NETRRENAMEMACHINEINDOMAIN2, r);		
 	}
 
-	status = dcerpc_ndr_request(p, DCERPC_WKS_NETRRENAMEMACHINEINDOMAIN2, mem_ctx,
-				    (ndr_push_fn_t) ndr_push_WKS_NETRRENAMEMACHINEINDOMAIN2,
-				    (ndr_pull_fn_t) ndr_pull_WKS_NETRRENAMEMACHINEINDOMAIN2,
+	status = dcerpc_ndr_request(p, DCERPC_WKSSVC_NETRRENAMEMACHINEINDOMAIN2, mem_ctx,
+				    (ndr_push_fn_t) ndr_push_WKSSVC_NETRRENAMEMACHINEINDOMAIN2,
+				    (ndr_pull_fn_t) ndr_pull_WKSSVC_NETRRENAMEMACHINEINDOMAIN2,
 				    r);
 
         if (NT_STATUS_IS_OK(status) && (p->flags & DCERPC_DEBUG_PRINT_OUT)) {
-		NDR_PRINT_OUT_DEBUG(WKS_NETRRENAMEMACHINEINDOMAIN2, r);		
+		NDR_PRINT_OUT_DEBUG(WKSSVC_NETRRENAMEMACHINEINDOMAIN2, r);		
 	}
 
 	return status;
 }
 
-NTSTATUS dcerpc_WKS_NETRVALIDATENAME2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct WKS_NETRVALIDATENAME2 *r)
+NTSTATUS dcerpc_WKSSVC_NETRVALIDATENAME2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct WKSSVC_NETRVALIDATENAME2 *r)
 {
 	NTSTATUS status;
 
         if (p->flags & DCERPC_DEBUG_PRINT_IN) {
-		NDR_PRINT_IN_DEBUG(WKS_NETRVALIDATENAME2, r);		
+		NDR_PRINT_IN_DEBUG(WKSSVC_NETRVALIDATENAME2, r);		
 	}
 
-	status = dcerpc_ndr_request(p, DCERPC_WKS_NETRVALIDATENAME2, mem_ctx,
-				    (ndr_push_fn_t) ndr_push_WKS_NETRVALIDATENAME2,
-				    (ndr_pull_fn_t) ndr_pull_WKS_NETRVALIDATENAME2,
+	status = dcerpc_ndr_request(p, DCERPC_WKSSVC_NETRVALIDATENAME2, mem_ctx,
+				    (ndr_push_fn_t) ndr_push_WKSSVC_NETRVALIDATENAME2,
+				    (ndr_pull_fn_t) ndr_pull_WKSSVC_NETRVALIDATENAME2,
 				    r);
 
         if (NT_STATUS_IS_OK(status) && (p->flags & DCERPC_DEBUG_PRINT_OUT)) {
-		NDR_PRINT_OUT_DEBUG(WKS_NETRVALIDATENAME2, r);		
+		NDR_PRINT_OUT_DEBUG(WKSSVC_NETRVALIDATENAME2, r);		
 	}
 
 	return status;
 }
 
-NTSTATUS dcerpc_WKS_NETRGETJOINABLEOUS2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct WKS_NETRGETJOINABLEOUS2 *r)
+NTSTATUS dcerpc_WKSSVC_NETRGETJOINABLEOUS2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct WKSSVC_NETRGETJOINABLEOUS2 *r)
 {
 	NTSTATUS status;
 
         if (p->flags & DCERPC_DEBUG_PRINT_IN) {
-		NDR_PRINT_IN_DEBUG(WKS_NETRGETJOINABLEOUS2, r);		
+		NDR_PRINT_IN_DEBUG(WKSSVC_NETRGETJOINABLEOUS2, r);		
 	}
 
-	status = dcerpc_ndr_request(p, DCERPC_WKS_NETRGETJOINABLEOUS2, mem_ctx,
-				    (ndr_push_fn_t) ndr_push_WKS_NETRGETJOINABLEOUS2,
-				    (ndr_pull_fn_t) ndr_pull_WKS_NETRGETJOINABLEOUS2,
+	status = dcerpc_ndr_request(p, DCERPC_WKSSVC_NETRGETJOINABLEOUS2, mem_ctx,
+				    (ndr_push_fn_t) ndr_push_WKSSVC_NETRGETJOINABLEOUS2,
+				    (ndr_pull_fn_t) ndr_pull_WKSSVC_NETRGETJOINABLEOUS2,
 				    r);
 
         if (NT_STATUS_IS_OK(status) && (p->flags & DCERPC_DEBUG_PRINT_OUT)) {
-		NDR_PRINT_OUT_DEBUG(WKS_NETRGETJOINABLEOUS2, r);		
+		NDR_PRINT_OUT_DEBUG(WKSSVC_NETRGETJOINABLEOUS2, r);		
 	}
 
 	return status;
 }
 
-NTSTATUS dcerpc_WKS_NETRADDALTERNATECOMPUTERNAME(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct WKS_NETRADDALTERNATECOMPUTERNAME *r)
+NTSTATUS dcerpc_WKSSVC_NETRADDALTERNATECOMPUTERNAME(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct WKSSVC_NETRADDALTERNATECOMPUTERNAME *r)
 {
 	NTSTATUS status;
 
         if (p->flags & DCERPC_DEBUG_PRINT_IN) {
-		NDR_PRINT_IN_DEBUG(WKS_NETRADDALTERNATECOMPUTERNAME, r);		
+		NDR_PRINT_IN_DEBUG(WKSSVC_NETRADDALTERNATECOMPUTERNAME, r);		
 	}
 
-	status = dcerpc_ndr_request(p, DCERPC_WKS_NETRADDALTERNATECOMPUTERNAME, mem_ctx,
-				    (ndr_push_fn_t) ndr_push_WKS_NETRADDALTERNATECOMPUTERNAME,
-				    (ndr_pull_fn_t) ndr_pull_WKS_NETRADDALTERNATECOMPUTERNAME,
+	status = dcerpc_ndr_request(p, DCERPC_WKSSVC_NETRADDALTERNATECOMPUTERNAME, mem_ctx,
+				    (ndr_push_fn_t) ndr_push_WKSSVC_NETRADDALTERNATECOMPUTERNAME,
+				    (ndr_pull_fn_t) ndr_pull_WKSSVC_NETRADDALTERNATECOMPUTERNAME,
 				    r);
 
         if (NT_STATUS_IS_OK(status) && (p->flags & DCERPC_DEBUG_PRINT_OUT)) {
-		NDR_PRINT_OUT_DEBUG(WKS_NETRADDALTERNATECOMPUTERNAME, r);		
+		NDR_PRINT_OUT_DEBUG(WKSSVC_NETRADDALTERNATECOMPUTERNAME, r);		
 	}
 
 	return status;
 }
 
-NTSTATUS dcerpc_WKS_NETRREMOVEALTERNATECOMPUTERNAME(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct WKS_NETRREMOVEALTERNATECOMPUTERNAME *r)
+NTSTATUS dcerpc_WKSSVC_NETRREMOVEALTERNATECOMPUTERNAME(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct WKSSVC_NETRREMOVEALTERNATECOMPUTERNAME *r)
 {
 	NTSTATUS status;
 
         if (p->flags & DCERPC_DEBUG_PRINT_IN) {
-		NDR_PRINT_IN_DEBUG(WKS_NETRREMOVEALTERNATECOMPUTERNAME, r);		
+		NDR_PRINT_IN_DEBUG(WKSSVC_NETRREMOVEALTERNATECOMPUTERNAME, r);		
 	}
 
-	status = dcerpc_ndr_request(p, DCERPC_WKS_NETRREMOVEALTERNATECOMPUTERNAME, mem_ctx,
-				    (ndr_push_fn_t) ndr_push_WKS_NETRREMOVEALTERNATECOMPUTERNAME,
-				    (ndr_pull_fn_t) ndr_pull_WKS_NETRREMOVEALTERNATECOMPUTERNAME,
+	status = dcerpc_ndr_request(p, DCERPC_WKSSVC_NETRREMOVEALTERNATECOMPUTERNAME, mem_ctx,
+				    (ndr_push_fn_t) ndr_push_WKSSVC_NETRREMOVEALTERNATECOMPUTERNAME,
+				    (ndr_pull_fn_t) ndr_pull_WKSSVC_NETRREMOVEALTERNATECOMPUTERNAME,
 				    r);
 
         if (NT_STATUS_IS_OK(status) && (p->flags & DCERPC_DEBUG_PRINT_OUT)) {
-		NDR_PRINT_OUT_DEBUG(WKS_NETRREMOVEALTERNATECOMPUTERNAME, r);		
+		NDR_PRINT_OUT_DEBUG(WKSSVC_NETRREMOVEALTERNATECOMPUTERNAME, r);		
 	}
 
 	return status;
 }
 
-NTSTATUS dcerpc_WKS_NETRSETPRIMARYCOMPUTERNAME(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct WKS_NETRSETPRIMARYCOMPUTERNAME *r)
+NTSTATUS dcerpc_WKSSVC_NETRSETPRIMARYCOMPUTERNAME(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct WKSSVC_NETRSETPRIMARYCOMPUTERNAME *r)
 {
 	NTSTATUS status;
 
         if (p->flags & DCERPC_DEBUG_PRINT_IN) {
-		NDR_PRINT_IN_DEBUG(WKS_NETRSETPRIMARYCOMPUTERNAME, r);		
+		NDR_PRINT_IN_DEBUG(WKSSVC_NETRSETPRIMARYCOMPUTERNAME, r);		
 	}
 
-	status = dcerpc_ndr_request(p, DCERPC_WKS_NETRSETPRIMARYCOMPUTERNAME, mem_ctx,
-				    (ndr_push_fn_t) ndr_push_WKS_NETRSETPRIMARYCOMPUTERNAME,
-				    (ndr_pull_fn_t) ndr_pull_WKS_NETRSETPRIMARYCOMPUTERNAME,
+	status = dcerpc_ndr_request(p, DCERPC_WKSSVC_NETRSETPRIMARYCOMPUTERNAME, mem_ctx,
+				    (ndr_push_fn_t) ndr_push_WKSSVC_NETRSETPRIMARYCOMPUTERNAME,
+				    (ndr_pull_fn_t) ndr_pull_WKSSVC_NETRSETPRIMARYCOMPUTERNAME,
 				    r);
 
         if (NT_STATUS_IS_OK(status) && (p->flags & DCERPC_DEBUG_PRINT_OUT)) {
-		NDR_PRINT_OUT_DEBUG(WKS_NETRSETPRIMARYCOMPUTERNAME, r);		
+		NDR_PRINT_OUT_DEBUG(WKSSVC_NETRSETPRIMARYCOMPUTERNAME, r);		
 	}
 
 	return status;
 }
 
-NTSTATUS dcerpc_WKS_NETRENUMERATECOMPUTERNAMES(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct WKS_NETRENUMERATECOMPUTERNAMES *r)
+NTSTATUS dcerpc_WKSSVC_NETRENUMERATECOMPUTERNAMES(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct WKSSVC_NETRENUMERATECOMPUTERNAMES *r)
 {
 	NTSTATUS status;
 
         if (p->flags & DCERPC_DEBUG_PRINT_IN) {
-		NDR_PRINT_IN_DEBUG(WKS_NETRENUMERATECOMPUTERNAMES, r);		
+		NDR_PRINT_IN_DEBUG(WKSSVC_NETRENUMERATECOMPUTERNAMES, r);		
 	}
 
-	status = dcerpc_ndr_request(p, DCERPC_WKS_NETRENUMERATECOMPUTERNAMES, mem_ctx,
-				    (ndr_push_fn_t) ndr_push_WKS_NETRENUMERATECOMPUTERNAMES,
-				    (ndr_pull_fn_t) ndr_pull_WKS_NETRENUMERATECOMPUTERNAMES,
+	status = dcerpc_ndr_request(p, DCERPC_WKSSVC_NETRENUMERATECOMPUTERNAMES, mem_ctx,
+				    (ndr_push_fn_t) ndr_push_WKSSVC_NETRENUMERATECOMPUTERNAMES,
+				    (ndr_pull_fn_t) ndr_pull_WKSSVC_NETRENUMERATECOMPUTERNAMES,
 				    r);
 
         if (NT_STATUS_IS_OK(status) && (p->flags & DCERPC_DEBUG_PRINT_OUT)) {
-		NDR_PRINT_OUT_DEBUG(WKS_NETRENUMERATECOMPUTERNAMES, r);		
+		NDR_PRINT_OUT_DEBUG(WKSSVC_NETRENUMERATECOMPUTERNAMES, r);		
 	}
 
 	return status;

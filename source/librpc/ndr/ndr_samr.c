@@ -113,8 +113,14 @@ NTSTATUS ndr_push_samr_EnumDomainGroups(struct ndr_push *ndr, struct samr_EnumDo
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_push_samr_CREATE_USER_IN_DOMAIN(struct ndr_push *ndr, struct samr_CREATE_USER_IN_DOMAIN *r)
+NTSTATUS ndr_push_samr_CreateUser(struct ndr_push *ndr, struct samr_CreateUser *r)
 {
+	NDR_CHECK(ndr_push_policy_handle(ndr, r->in.handle));
+	NDR_CHECK(ndr_push_ptr(ndr, r->in.username));
+	if (r->in.username) {
+		NDR_CHECK(ndr_push_samr_Name(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.username));
+	}
+	NDR_CHECK(ndr_push_uint32(ndr, r->in.access_mask));
 
 	return NT_STATUS_OK;
 }
@@ -144,8 +150,31 @@ NTSTATUS ndr_push_samr_EnumDomainAliases(struct ndr_push *ndr, struct samr_EnumD
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_push_samr_GET_ALIAS_MEMBERSHIP(struct ndr_push *ndr, struct samr_GET_ALIAS_MEMBERSHIP *r)
+NTSTATUS ndr_push_samr_Sids(struct ndr_push *ndr, int ndr_flags, struct samr_Sids *r)
 {
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_push_struct_start(ndr));
+	NDR_CHECK(ndr_push_align(ndr, 4));
+	NDR_CHECK(ndr_push_uint32(ndr, r->count));
+	NDR_CHECK(ndr_push_ptr(ndr, r->sids));
+	ndr_push_struct_end(ndr);
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+	if (r->sids) {
+		NDR_CHECK(ndr_push_uint32(ndr, r->count));
+		NDR_CHECK(ndr_push_array(ndr, NDR_SCALARS|NDR_BUFFERS, r->sids, sizeof(r->sids[0]), r->count, (ndr_push_flags_fn_t)ndr_push_dom_sid2));
+	}
+done:
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_push_samr_GetAliasMembership(struct ndr_push *ndr, struct samr_GetAliasMembership *r)
+{
+	NDR_CHECK(ndr_push_policy_handle(ndr, r->in.handle));
+	NDR_CHECK(ndr_push_ptr(ndr, r->in.sids));
+	if (r->in.sids) {
+		NDR_CHECK(ndr_push_samr_Sids(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.sids));
+	}
 
 	return NT_STATUS_OK;
 }
@@ -271,8 +300,12 @@ NTSTATUS ndr_push_samr_OpenUser(struct ndr_push *ndr, struct samr_OpenUser *r)
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_push_samr_DELETE_DOM_USER(struct ndr_push *ndr, struct samr_DELETE_DOM_USER *r)
+NTSTATUS ndr_push_samr_DeleteUser(struct ndr_push *ndr, struct samr_DeleteUser *r)
 {
+	NDR_CHECK(ndr_push_ptr(ndr, r->in.handle));
+	if (r->in.handle) {
+		NDR_CHECK(ndr_push_policy_handle(ndr, r->in.handle));
+	}
 
 	return NT_STATUS_OK;
 }
@@ -1015,8 +1048,28 @@ NTSTATUS ndr_pull_samr_EnumDomainGroups(struct ndr_pull *ndr, struct samr_EnumDo
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_samr_CREATE_USER_IN_DOMAIN(struct ndr_pull *ndr, struct samr_CREATE_USER_IN_DOMAIN *r)
+NTSTATUS ndr_pull_samr_CreateUser(struct ndr_pull *ndr, struct samr_CreateUser *r)
 {
+	uint32 _ptr_acct_handle;
+	uint32 _ptr_rid;
+	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_acct_handle));
+	if (_ptr_acct_handle) {
+		NDR_ALLOC(ndr, r->out.acct_handle);
+	} else {
+		r->out.acct_handle = NULL;
+	}
+	if (r->out.acct_handle) {
+		NDR_CHECK(ndr_pull_policy_handle(ndr, r->out.acct_handle));
+	}
+	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_rid));
+	if (_ptr_rid) {
+		NDR_ALLOC(ndr, r->out.rid);
+	} else {
+		r->out.rid = NULL;
+	}
+	if (r->out.rid) {
+		NDR_CHECK(ndr_pull_uint32(ndr, r->out.rid));
+	}
 	NDR_CHECK(ndr_pull_NTSTATUS(ndr, &r->out.result));
 
 	return NT_STATUS_OK;
@@ -1067,8 +1120,49 @@ NTSTATUS ndr_pull_samr_EnumDomainAliases(struct ndr_pull *ndr, struct samr_EnumD
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_samr_GET_ALIAS_MEMBERSHIP(struct ndr_pull *ndr, struct samr_GET_ALIAS_MEMBERSHIP *r)
+NTSTATUS ndr_pull_samr_Rids(struct ndr_pull *ndr, int ndr_flags, struct samr_Rids *r)
 {
+	uint32 _ptr_rids;
+	NDR_CHECK(ndr_pull_struct_start(ndr));
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_align(ndr, 4));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->count));
+	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_rids));
+	if (_ptr_rids) {
+		NDR_ALLOC(ndr, r->rids);
+	} else {
+		r->rids = NULL;
+	}
+	ndr_pull_struct_end(ndr);
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+	if (r->rids) {
+	{
+		uint32 _array_size;
+		NDR_CHECK(ndr_pull_uint32(ndr, &_array_size));
+		if (r->count > _array_size) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should be %u", _array_size, r->count);
+		}
+	}
+		NDR_ALLOC_N_SIZE(ndr, r->rids, r->count, sizeof(r->rids[0]));
+		NDR_CHECK(ndr_pull_array_uint32(ndr, NDR_SCALARS|NDR_BUFFERS, r->rids, r->count));
+	}
+done:
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_pull_samr_GetAliasMembership(struct ndr_pull *ndr, struct samr_GetAliasMembership *r)
+{
+	uint32 _ptr_rids;
+	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_rids));
+	if (_ptr_rids) {
+		NDR_ALLOC(ndr, r->out.rids);
+	} else {
+		r->out.rids = NULL;
+	}
+	if (r->out.rids) {
+		NDR_CHECK(ndr_pull_samr_Rids(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.rids));
+	}
 	NDR_CHECK(ndr_pull_NTSTATUS(ndr, &r->out.result));
 
 	return NT_STATUS_OK;
@@ -1429,8 +1523,18 @@ NTSTATUS ndr_pull_samr_OpenUser(struct ndr_pull *ndr, struct samr_OpenUser *r)
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_samr_DELETE_DOM_USER(struct ndr_pull *ndr, struct samr_DELETE_DOM_USER *r)
+NTSTATUS ndr_pull_samr_DeleteUser(struct ndr_pull *ndr, struct samr_DeleteUser *r)
 {
+	uint32 _ptr_handle;
+	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_handle));
+	if (_ptr_handle) {
+		NDR_ALLOC(ndr, r->out.handle);
+	} else {
+		r->out.handle = NULL;
+	}
+	if (r->out.handle) {
+		NDR_CHECK(ndr_pull_policy_handle(ndr, r->out.handle));
+	}
 	NDR_CHECK(ndr_pull_NTSTATUS(ndr, &r->out.result));
 
 	return NT_STATUS_OK;
@@ -2858,18 +2962,41 @@ void ndr_print_samr_EnumDomainGroups(struct ndr_print *ndr, const char *name, in
 	ndr->depth--;
 }
 
-void ndr_print_samr_CREATE_USER_IN_DOMAIN(struct ndr_print *ndr, const char *name, int flags, struct samr_CREATE_USER_IN_DOMAIN *r)
+void ndr_print_samr_CreateUser(struct ndr_print *ndr, const char *name, int flags, struct samr_CreateUser *r)
 {
-	ndr_print_struct(ndr, name, "samr_CREATE_USER_IN_DOMAIN");
+	ndr_print_struct(ndr, name, "samr_CreateUser");
 	ndr->depth++;
 	if (flags & NDR_IN) {
-		ndr_print_struct(ndr, "in", "samr_CREATE_USER_IN_DOMAIN");
+		ndr_print_struct(ndr, "in", "samr_CreateUser");
 	ndr->depth++;
+	ndr_print_ptr(ndr, "handle", r->in.handle);
+	ndr->depth++;
+		ndr_print_policy_handle(ndr, "handle", r->in.handle);
+	ndr->depth--;
+	ndr_print_ptr(ndr, "username", r->in.username);
+	ndr->depth++;
+	if (r->in.username) {
+		ndr_print_samr_Name(ndr, "username", r->in.username);
+	}
+	ndr->depth--;
+	ndr_print_uint32(ndr, "access_mask", r->in.access_mask);
 	ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
-		ndr_print_struct(ndr, "out", "samr_CREATE_USER_IN_DOMAIN");
+		ndr_print_struct(ndr, "out", "samr_CreateUser");
 	ndr->depth++;
+	ndr_print_ptr(ndr, "acct_handle", r->out.acct_handle);
+	ndr->depth++;
+	if (r->out.acct_handle) {
+		ndr_print_policy_handle(ndr, "acct_handle", r->out.acct_handle);
+	}
+	ndr->depth--;
+	ndr_print_ptr(ndr, "rid", r->out.rid);
+	ndr->depth++;
+	if (r->out.rid) {
+		ndr_print_uint32(ndr, "rid", *r->out.rid);
+	}
+	ndr->depth--;
 	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
@@ -2971,18 +3098,62 @@ void ndr_print_samr_EnumDomainAliases(struct ndr_print *ndr, const char *name, i
 	ndr->depth--;
 }
 
-void ndr_print_samr_GET_ALIAS_MEMBERSHIP(struct ndr_print *ndr, const char *name, int flags, struct samr_GET_ALIAS_MEMBERSHIP *r)
+void ndr_print_samr_Sids(struct ndr_print *ndr, const char *name, struct samr_Sids *r)
 {
-	ndr_print_struct(ndr, name, "samr_GET_ALIAS_MEMBERSHIP");
+	ndr_print_struct(ndr, name, "samr_Sids");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "count", r->count);
+	ndr_print_ptr(ndr, "sids", r->sids);
+	ndr->depth++;
+	if (r->sids) {
+		ndr_print_array(ndr, "sids", r->sids, sizeof(r->sids[0]), r->count, (ndr_print_fn_t)ndr_print_dom_sid2);
+	}
+	ndr->depth--;
+	ndr->depth--;
+}
+
+void ndr_print_samr_Rids(struct ndr_print *ndr, const char *name, struct samr_Rids *r)
+{
+	ndr_print_struct(ndr, name, "samr_Rids");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "count", r->count);
+	ndr_print_ptr(ndr, "rids", r->rids);
+	ndr->depth++;
+	if (r->rids) {
+		ndr_print_array_uint32(ndr, "rids", r->rids, r->count);
+	}
+	ndr->depth--;
+	ndr->depth--;
+}
+
+void ndr_print_samr_GetAliasMembership(struct ndr_print *ndr, const char *name, int flags, struct samr_GetAliasMembership *r)
+{
+	ndr_print_struct(ndr, name, "samr_GetAliasMembership");
 	ndr->depth++;
 	if (flags & NDR_IN) {
-		ndr_print_struct(ndr, "in", "samr_GET_ALIAS_MEMBERSHIP");
+		ndr_print_struct(ndr, "in", "samr_GetAliasMembership");
 	ndr->depth++;
+	ndr_print_ptr(ndr, "handle", r->in.handle);
+	ndr->depth++;
+		ndr_print_policy_handle(ndr, "handle", r->in.handle);
+	ndr->depth--;
+	ndr_print_ptr(ndr, "sids", r->in.sids);
+	ndr->depth++;
+	if (r->in.sids) {
+		ndr_print_samr_Sids(ndr, "sids", r->in.sids);
+	}
+	ndr->depth--;
 	ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
-		ndr_print_struct(ndr, "out", "samr_GET_ALIAS_MEMBERSHIP");
+		ndr_print_struct(ndr, "out", "samr_GetAliasMembership");
 	ndr->depth++;
+	ndr_print_ptr(ndr, "rids", r->out.rids);
+	ndr->depth++;
+	if (r->out.rids) {
+		ndr_print_samr_Rids(ndr, "rids", r->out.rids);
+	}
+	ndr->depth--;
 	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
@@ -3472,18 +3643,30 @@ void ndr_print_samr_OpenUser(struct ndr_print *ndr, const char *name, int flags,
 	ndr->depth--;
 }
 
-void ndr_print_samr_DELETE_DOM_USER(struct ndr_print *ndr, const char *name, int flags, struct samr_DELETE_DOM_USER *r)
+void ndr_print_samr_DeleteUser(struct ndr_print *ndr, const char *name, int flags, struct samr_DeleteUser *r)
 {
-	ndr_print_struct(ndr, name, "samr_DELETE_DOM_USER");
+	ndr_print_struct(ndr, name, "samr_DeleteUser");
 	ndr->depth++;
 	if (flags & NDR_IN) {
-		ndr_print_struct(ndr, "in", "samr_DELETE_DOM_USER");
+		ndr_print_struct(ndr, "in", "samr_DeleteUser");
 	ndr->depth++;
+	ndr_print_ptr(ndr, "handle", r->in.handle);
+	ndr->depth++;
+	if (r->in.handle) {
+		ndr_print_policy_handle(ndr, "handle", r->in.handle);
+	}
+	ndr->depth--;
 	ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
-		ndr_print_struct(ndr, "out", "samr_DELETE_DOM_USER");
+		ndr_print_struct(ndr, "out", "samr_DeleteUser");
 	ndr->depth++;
+	ndr_print_ptr(ndr, "handle", r->out.handle);
+	ndr->depth++;
+	if (r->out.handle) {
+		ndr_print_policy_handle(ndr, "handle", r->out.handle);
+	}
+	ndr->depth--;
 	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}

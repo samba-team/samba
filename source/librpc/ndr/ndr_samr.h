@@ -16,11 +16,11 @@
 #define DCERPC_SAMR_SET_DOMAIN_INFO 9
 #define DCERPC_SAMR_CREATE_DOM_GROUP 10
 #define DCERPC_SAMR_ENUMDOMAINGROUPS 11
-#define DCERPC_SAMR_CREATE_USER_IN_DOMAIN 12
+#define DCERPC_SAMR_CREATEUSER 12
 #define DCERPC_SAMR_ENUMDOMAINUSERS 13
 #define DCERPC_SAMR_CREATE_DOM_ALIAS 14
 #define DCERPC_SAMR_ENUMDOMAINALIASES 15
-#define DCERPC_SAMR_GET_ALIAS_MEMBERSHIP 16
+#define DCERPC_SAMR_GETALIASMEMBERSHIP 16
 #define DCERPC_SAMR_LOOKUP_NAMES 17
 #define DCERPC_SAMR_LOOKUP_RIDS 18
 #define DCERPC_SAMR_OPENGROUP 19
@@ -39,7 +39,7 @@
 #define DCERPC_SAMR_DEL_ALIASMEM 32
 #define DCERPC_SAMR_GET_MEMBERS_IN_ALIAS 33
 #define DCERPC_SAMR_OPENUSER 34
-#define DCERPC_SAMR_DELETE_DOM_USER 35
+#define DCERPC_SAMR_DELETEUSER 35
 #define DCERPC_SAMR_QUERYUSERINFO 36
 #define DCERPC_SAMR_SET_USERINFO 37
 #define DCERPC_SAMR_CHANGE_PASSWORD_USER 38
@@ -337,11 +337,16 @@ struct samr_EnumDomainGroups {
 
 };
 
-struct samr_CREATE_USER_IN_DOMAIN {
+struct samr_CreateUser {
 	struct {
+		struct policy_handle *handle;
+		struct samr_Name *username;
+		uint32 access_mask;
 	} in;
 
 	struct {
+		struct policy_handle *acct_handle;
+		uint32 *rid;
 		NTSTATUS result;
 	} out;
 
@@ -390,11 +395,24 @@ struct samr_EnumDomainAliases {
 
 };
 
-struct samr_GET_ALIAS_MEMBERSHIP {
+struct samr_Sids {
+	uint32 count;
+	struct dom_sid2 *sids;
+};
+
+struct samr_Rids {
+	uint32 count;
+	uint32 *rids;
+};
+
+struct samr_GetAliasMembership {
 	struct {
+		struct policy_handle *handle;
+		struct samr_Sids *sids;
 	} in;
 
 	struct {
+		struct samr_Rids *rids;
 		NTSTATUS result;
 	} out;
 
@@ -644,11 +662,13 @@ struct samr_OpenUser {
 
 };
 
-struct samr_DELETE_DOM_USER {
+struct samr_DeleteUser {
 	struct {
+		struct policy_handle *handle;
 	} in;
 
 	struct {
+		struct policy_handle *handle;
 		NTSTATUS result;
 	} out;
 

@@ -26,7 +26,7 @@ static BOOL test_QueryInfo(struct dcerpc_pipe *p,
 			   TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
-	struct wks_QueryInfo r;
+	struct wkssvc_QueryInfo r;
 	uint16 levels[] = {100, 101, 102};
 	int i;
 	BOOL ret = True;
@@ -36,7 +36,7 @@ static BOOL test_QueryInfo(struct dcerpc_pipe *p,
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		r.in.level = levels[i];
 		printf("testing QueryInfo level %u\n", r.in.level);
-		status = dcerpc_wks_QueryInfo(p, mem_ctx, &r);
+		status = dcerpc_wkssvc_QueryInfo(p, mem_ctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("QueryInfo level %u failed - %s\n", r.in.level, nt_errstr(status));
 			ret = False;
@@ -51,11 +51,11 @@ static BOOL test_TransportEnum(struct dcerpc_pipe *p,
 			       TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
-	struct wks_TransportEnum r;
+	struct wkssvc_TransportEnum r;
 	BOOL ret = True;
-	struct wks_TransportInfo info;
+	struct wkssvc_TransportInfo info;
 	uint32 resume_handle = 0;
-	struct wks_TransportInfoArray info_array;
+	struct wkssvc_TransportInfoArray info_array;
 
 	ZERO_STRUCT(info);
 	ZERO_STRUCT(info_array);
@@ -70,7 +70,7 @@ static BOOL test_TransportEnum(struct dcerpc_pipe *p,
 	r.out.resume_handle = &resume_handle;
 
 	printf("testing TransportEnum\n");
-	status = dcerpc_wks_TransportEnum(p, mem_ctx, &r);
+	status = dcerpc_wkssvc_TransportEnum(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("TransportEnum failed - %s\n", nt_errstr(status));
 		ret = False;
