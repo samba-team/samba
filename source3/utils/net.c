@@ -469,7 +469,7 @@ static struct functable net_func[] = {
 	if (!*global_myname) {
 		char *p2;
 
-		fstrcpy(global_myname, myhostname());
+		pstrcpy(global_myname, myhostname());
 		p2 = strchr_m(global_myname, '.');
 		if (p2) 
                         *p2 = 0;
