@@ -292,12 +292,12 @@ static struct smb_passwd *getsmbfilepwent(void *vp)
     p++;		/* Go past ':' */
 
     if(*p == '-') {
-      DEBUG(0, ("getsmbfilepwent: uids in the smbpasswd file must not be negative.\n"));
+      DEBUG(0, ("getsmbfilepwent: uids in the smbpasswd file must not be negative for user: %s.\n", user_name));
       continue;
     }
 
     if (!isdigit(*p)) {
-      DEBUG(0, ("getsmbfilepwent: malformed password entry (uid not number)\n"));
+      DEBUG(0, ("getsmbfilepwent: malformed password entry (uid not number) for user: %s.\n", user_name));
       continue;
     }
 
@@ -307,7 +307,7 @@ static struct smb_passwd *getsmbfilepwent(void *vp)
       p++;
 
     if (*p != ':') {
-      DEBUG(0, ("getsmbfilepwent: malformed password entry (no : after uid)\n"));
+      DEBUG(0, ("getsmbfilepwent: malformed password entry (no : after uid) for user: %s.\n", user_name));
       continue;
     }
 
@@ -333,12 +333,12 @@ static struct smb_passwd *getsmbfilepwent(void *vp)
     }
 
     if (linebuf_len < (PTR_DIFF(p, linebuf) + 33)) {
-      DEBUG(0, ("getsmbfilepwent: malformed password entry (passwd too short)\n"));
+      DEBUG(0, ("getsmbfilepwent: malformed password entry (passwd too short) for user %s\n", user_name));
       continue;
     }
 
     if (p[32] != ':') {
-      DEBUG(0, ("getsmbfilepwent: malformed password entry (no terminating :)\n"));
+      DEBUG(0, ("getsmbfilepwent: malformed password entry (no terminating :) for user %s\n", user_name));
       continue;
     }
 
@@ -347,7 +347,7 @@ static struct smb_passwd *getsmbfilepwent(void *vp)
       pw_buf.acct_ctrl |= ACB_PWNOTREQ;
     } else {
       if (!pdb_gethexpwd((char *)p, smbpwd)) {
-        DEBUG(0, ("getsmbfilepwent: Malformed Lanman password entry (non hex chars)\n"));
+        DEBUG(0, ("getsmbfilepwent: Malformed Lanman password entry (non hex chars) for user %s\n", user_name));
         continue;
       }
       pw_buf.smb_passwd = smbpwd;
