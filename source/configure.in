@@ -126,6 +126,25 @@ AC_ARG_WITH(logfilebase,
     ;;
   esac])
 
+AC_ARG_WITH(cfenc,
+[  --with-cfenc=HEADERDIR  Use internal CoreFoundation encoding API
+			  for optimization (Mac OS X/Darwin only)],
+[
+# May be in source $withval/CoreFoundation/StringEncodings.subproj.
+# Should have been in framework $withval/CoreFoundation.framework/Headers.
+for d in \
+    $withval/CoreFoundation/StringEncodings.subproj \
+    $withval/StringEncodings.subproj \
+    $withval/CoreFoundation.framework/Headers \
+    $withval/Headers \
+    $withval
+do
+    if test -r $d/CFStringEncodingConverter.h; then
+        ln -sfh $d include/CoreFoundation
+    fi
+done
+])
+
 AC_SUBST(configdir)
 AC_SUBST(lockdir)
 AC_SUBST(piddir)
@@ -199,6 +218,10 @@ dnl Checks for programs.
 ##
 OLD_CFLAGS=${CFLAGS}
 AC_PROG_CC
+CFLAGS=${OLD_CFLAGS}
+
+OLD_CFLAGS=${CFLAGS}
+AC_PROG_CPP
 CFLAGS=${OLD_CFLAGS}
 
 AC_PROG_INSTALL
@@ -430,7 +453,7 @@ case "$host_os" in
 	  *)
 		CPPFLAGS="$CPPFLAGS -D_SYSV"
 		AC_DEFINE(_SYSV, 1, [Whether to enable System V compatibility])
-   esac
+    esac
     ;;
 #
 # Tests needed for SINIX large file support.
@@ -502,15 +525,15 @@ main() {
 #endif
 }
 ], [LINUX_LFS_SUPPORT=yes], [LINUX_LFS_SUPPORT=no], [LINUX_LFS_SUPPORT=cross])
-        CPPFLAGS="$old_CPPFLAGS"
-        if test x$LINUX_LFS_SUPPORT = xyes ; then
-          CPPFLAGS="-D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE $CPPFLAGS"
-		  AC_DEFINE(_LARGEFILE64_SOURCE, 1, [Whether to enable large file support])
-          AC_DEFINE(_FILE_OFFSET_BITS, 64, [File offset bits])
-          AC_DEFINE(_GNU_SOURCE, 1, [Whether to use GNU libc extensions])
-        fi
-       AC_MSG_RESULT([$LINUX_LFS_SUPPORT])
-		;;
+	CPPFLAGS="$old_CPPFLAGS"
+	if test x$LINUX_LFS_SUPPORT = xyes ; then
+		CPPFLAGS="-D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE $CPPFLAGS"
+		AC_DEFINE(_LARGEFILE64_SOURCE, 1, [Whether to enable large file support])
+		AC_DEFINE(_FILE_OFFSET_BITS, 64, [File offset bits])
+		AC_DEFINE(_GNU_SOURCE, 1, [Whether to use GNU libc extensions])
+	fi
+	AC_MSG_RESULT([$LINUX_LFS_SUPPORT])
+	;;
 
 #
 # MacOS X is the *only* system that uses compose character in utf8. This
@@ -528,10 +551,16 @@ main() {
 # use that instead of plain dlsym.
 
 		AC_CHECK_LIB(dl,dlopen)
-		AC_CHECK_FUNCS(dlsym_prepend_underscore,
-		[CPPFLAGS="$CPPFLAGS -Ddlsym=dlsym_prepend_underscore"])
+		AC_CHECK_FUNCS(dlsym_prepend_underscore,[CPPFLAGS="$CPPFLAGS -Ddlsym=dlsym_prepend_underscore"])
 
-		;;   
+#Add a system specific charset module.
+
+		default_shared_modules="$default_shared_modules charset_macosxfs"
+		old_CPPFLAGS="$CPPFLAGS"
+		CPPFLAGS="-Iinclude $CPPFLAGS" 
+		AC_CHECK_HEADERS([CoreFoundation/CFStringEncodingConverter.h], [], [AC_CHECK_HEADERS([CFStringEncodingConverter.h])])
+		CPPFLAGS="$old_CPPFLAGS"
+		;;
     *hurd*)
         AC_MSG_CHECKING([for LFS support])
         old_CPPFLAGS="$CPPFLAGS"
@@ -4164,6 +4193,7 @@ SMB_SUBSYSTEM(IDMAP,sam/idmap.o)
 SMB_MODULE(charset_weird, modules/weird.o, "bin/weird.$SHLIBEXT", CHARSET)
 SMB_MODULE(charset_CP850, modules/CP850.o, "bin/CP850.$SHLIBEXT", CHARSET)
 SMB_MODULE(charset_CP437, modules/CP437.o, "bin/CP437.$SHLIBEXT", CHARSET)
+SMB_MODULE(charset_macosxfs, modules/charset_macosxfs.o,"bin/macosxfs.$SHLIBEXT", CHARSET)
 SMB_SUBSYSTEM(CHARSET,lib/iconv.o)
 
 SMB_MODULE(auth_rhosts, \$(AUTH_RHOSTS_OBJ), "bin/rhosts.$SHLIBEXT", AUTH)
