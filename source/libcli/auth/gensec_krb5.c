@@ -367,14 +367,14 @@ static NTSTATUS gensec_krb5_client_start(struct gensec_security *gensec_security
 			char *password;
 			time_t kdc_time = 0;
 			nt_status = gensec_get_password(gensec_security, 
-							gensec_security->mem_ctx, 
+							gensec_security, 
 							&password);
 			if (!NT_STATUS_IS_OK(nt_status)) {
 				return nt_status;
 			}
 
 			ret = kerberos_kinit_password_cc(gensec_krb5_state->krb5_context, gensec_krb5_state->krb5_ccache, 
-							 gensec_get_client_principal(gensec_security, gensec_security->mem_ctx), 
+							 gensec_get_client_principal(gensec_security, gensec_security), 
 							 password, NULL, &kdc_time);
 
 			/* cope with ticket being in the future due to clock skew */

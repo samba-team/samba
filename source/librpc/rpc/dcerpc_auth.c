@@ -58,7 +58,7 @@ NTSTATUS dcerpc_bind_auth3(struct dcerpc_pipe *p, uint8_t auth_type, uint8_t aut
 	}
 	
 	if (!p->security_state.generic_state) {
-		status = gensec_client_start(&p->security_state.generic_state);
+		status = gensec_client_start(p, &p->security_state.generic_state);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
@@ -136,7 +136,7 @@ NTSTATUS dcerpc_bind_alter(struct dcerpc_pipe *p, uint8_t auth_type, uint8_t aut
 	}
 	
 	if (!p->security_state.generic_state) {
-		status = gensec_client_start(&p->security_state.generic_state);
+		status = gensec_client_start(p, &p->security_state.generic_state);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
