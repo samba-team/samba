@@ -513,6 +513,7 @@ _kadm5_set_keys_randomly (kadm5_server_context *context,
 					       &kblock[i]);
 	    if (ret)
 		goto out;
+	    kblock[i].keytype = keys[i].key.keytype;
 	} else {
 	    ret = krb5_generate_random_keyblock (context->context,
 						 keys[i].key.keytype,
