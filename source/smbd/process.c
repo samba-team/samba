@@ -1057,7 +1057,11 @@ static int setup_select_timeout(void)
 	select_timeout *= 1000;
 
 	t = change_notify_timeout();
-	if (t != -1) select_timeout = MIN(select_timeout, t*1000);
+	if (t != -1)
+		select_timeout = MIN(select_timeout, t*1000);
+
+	if (print_notify_messages_pending())
+		select_timeout = MIN(select_timeout, 1000);
 
 	return select_timeout;
 }
@@ -1209,6 +1213,10 @@ machine %s in domain %s.\n", global_myname, global_myworkgroup ));
    */
   force_check_log_size();
   check_log_size();
+
+  /* Send any queued printer notify message to interested smbd's. */
+
+  print_notify_send_messages();
 
   /*
    * Modify the select timeout depending upon
