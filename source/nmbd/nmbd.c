@@ -561,6 +561,10 @@ static void usage(char *pname)
     return -1;
   }
 
+#ifndef SYNC_DNS
+  start_async_dns();
+#endif
+
   if (!reload_services(False))
     return(-1);	
 
@@ -589,10 +593,6 @@ static void usage(char *pname)
     DEBUG(2,("%s becoming a daemon\n",timestring()));
     become_daemon();
   }
-
-#ifndef SYNC_DNS
-  start_async_dns();
-#endif
 
   if (*pidFile)
     {
