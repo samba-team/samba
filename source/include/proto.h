@@ -70,6 +70,11 @@ void charset_initialise(void);
 void codepage_initialise(int client_codepage);
 void add_char_string(char *s);
 
+/*The following definitions come from  lib/crc32.c  */
+
+void crc32_build_table(void);
+uint32 crc32_calc_buffer( uint32 count, uchar *buffer);
+
 /*The following definitions come from  lib/debug.c  */
 
 void sig_usr2( int sig );
@@ -1495,7 +1500,7 @@ BOOL prs_uninotstr2(BOOL charmode, char *name, prs_struct *ps, int depth, UNINOT
 BOOL prs_string2(BOOL charmode, char *name, prs_struct *ps, int depth, STRING2 *str);
 BOOL prs_unistr2(BOOL charmode, char *name, prs_struct *ps, int depth, UNISTR2 *str);
 BOOL prs_unistr(char *name, prs_struct *ps, int depth, UNISTR *str);
-BOOL prs_string(char *name, prs_struct *ps, int depth, char *str, uint16 len);
+BOOL prs_string(char *name, prs_struct *ps, int depth, char *str, uint16 len, uint16 max_buf_size);
 
 /*The following definitions come from  rpc_parse/parse_reg.c  */
 
@@ -1533,15 +1538,23 @@ void smb_io_rpc_hdr_ba(char *desc,  RPC_HDR_BA *rpc, prs_struct *ps, int depth);
 void make_rpc_hdr_req(RPC_HDR_REQ *hdr, uint32 data_len, uint16 opnum);
 void smb_io_rpc_hdr_req(char *desc,  RPC_HDR_REQ *rpc, prs_struct *ps, int depth);
 void smb_io_rpc_hdr_resp(char *desc,  RPC_HDR_RESP *rpc, prs_struct *ps, int depth);
-void make_rpc_auth_ntlmssp_req(RPC_AUTH_NTLMSSP_REQ *req,
-				fstring ntlmssp_str, uint32 ntlmssp_ver,
-				uint32 unknown_0, fstring myname, fstring domain);
-void smb_io_rpc_auth_ntlmssp_req(char *desc, RPC_AUTH_NTLMSSP_REQ *req, prs_struct *ps, int depth);
+void make_rpc_auth_ntlmssp_neg(RPC_AUTH_NTLMSSP_NEG *neg,
+				uint32 neg_flgs,
+				fstring myname, fstring domain);
+void smb_io_rpc_auth_ntlmssp_neg(char *desc, RPC_AUTH_NTLMSSP_NEG *neg, prs_struct *ps, int depth);
+void make_rpc_auth_verifier(RPC_AUTH_VERIFIER *rav,
+				uint8 auth_type, uint8 auth_level,
+				uint8 stub_type_len,
+				char *signature, uint32 msg_type);
+void smb_io_rpc_auth_verifier(char *desc, RPC_AUTH_VERIFIER *rav, prs_struct *ps, int depth);
+void make_rpc_auth_ntlmssp_chal(RPC_AUTH_NTLMSSP_CHAL *chl,
+				uint32 neg_flags,
+				uint8 challenge[8]);
+void smb_io_rpc_auth_ntlmssp_chal(char *desc, RPC_AUTH_NTLMSSP_CHAL *chl, prs_struct *ps, int depth);
 void make_rpc_auth_ntlmssp_resp(RPC_AUTH_NTLMSSP_RESP *rsp,
-				uint8 auth_type, uint8 auth_level, uint8 stub_type_len,
-				fstring ntlmssp_str, uint32 ntlmssp_ver,
-				uint32 unknown_1, uint32 unknown_2, uint32 unknown_3,
-				uint8 data[16]);
+				uchar lm_resp[24], uchar nt_resp[24],
+				char *domain, char *user, char *wks,
+				uint32 neg_flags);
 void smb_io_rpc_auth_ntlmssp_resp(char *desc, RPC_AUTH_NTLMSSP_RESP *rsp, prs_struct *ps, int depth);
 
 /*The following definitions come from  rpc_parse/parse_samr.c  */
@@ -2318,6 +2331,7 @@ int smbw_chmod(const char *fname, mode_t newmode);
 off_t smbw_lseek(int fd, off_t offset, int whence);
 int smbw_dup(int fd);
 int smbw_dup2(int fd, int fd2);
+int smbw_fork(void);
 
 /*The following definitions come from  smbwrapper/smbw_dir.c  */
 

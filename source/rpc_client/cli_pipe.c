@@ -293,9 +293,10 @@ static BOOL create_rpc_bind_req(prs_struct *rhdr,
                                 RPC_IFACE *abstract, RPC_IFACE *transfer,
                                 char *my_name, char *domain)
 {
-	RPC_HDR_RB        hdr_rb;
-	RPC_HDR           hdr;
-	RPC_AUTH_NTLMSSP_REQ ntlmssp_req;
+	RPC_HDR_RB           hdr_rb;
+	RPC_HDR              hdr;
+	RPC_AUTH_VERIFIER    auth_verifier;
+	RPC_AUTH_NTLMSSP_NEG ntlmssp_neg;
 
 	/* create the bind request RPC_HDR_RB */
 	make_rpc_hdr_rb(&hdr_rb, 0x1630, 0x1630, 0x0,
@@ -307,12 +308,17 @@ static BOOL create_rpc_bind_req(prs_struct *rhdr,
 
 	if (auth_req != NULL)
 	{
-		/*
-		 * I have a feeling this is broken right now... JRA.
-		 */
-		make_rpc_auth_ntlmssp_req(&ntlmssp_req, "NTLMSSP", 0x1,
-		       0x0000b2b3, my_name, domain);
-		smb_io_rpc_auth_ntlmssp_req("", &ntlmssp_req, auth_req, 0);
+		make_rpc_auth_verifier(&auth_verifier,
+		                       0x0a, 0x06, 0x00,
+		                       "NTLMSSP", NTLMSSP_NEGOTIATE);
+
+		smb_io_rpc_auth_verifier("auth_verifier", &auth_verifier, auth_req, 0);
+		mem_realloc_data(auth_req->data, auth_req->offset);
+
+		make_rpc_auth_ntlmssp_neg(&ntlmssp_neg,
+		                       0x0000b2b3, my_name, domain);
+
+		smb_io_rpc_auth_ntlmssp_neg("ntlmssp_neg", &ntlmssp_neg, auth_req, 0);
 		mem_realloc_data(auth_req->data, auth_req->offset);
 	}
 

@@ -241,7 +241,7 @@ BOOL prs_unistr(char *name, prs_struct *ps, int depth, UNISTR *str)
  (up to max size of pstring - 1024 chars).
 
  ********************************************************************/
-BOOL prs_string(char *name, prs_struct *ps, int depth, char *str, uint16 len)
+BOOL prs_string(char *name, prs_struct *ps, int depth, char *str, uint16 len, uint16 max_buf_size)
 {
 	char *q = mem_data(&(ps->data), ps->offset);
 	uint8 *start = (uint8*)q;
@@ -265,7 +265,7 @@ BOOL prs_string(char *name, prs_struct *ps, int depth, char *str, uint16 len)
 
 		q++;
 
-	} while (i < sizeof(pstring) && (len == 0 ? str[i] != 0 : i < len) );
+	} while (i < max_buf_size && (len == 0 ? str[i] != 0 : i < len) );
 
 	ps->offset += i+1;
 
