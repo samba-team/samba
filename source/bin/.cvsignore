@@ -28,6 +28,7 @@ smbcontrol
 smbcquotas
 smbd
 smbfilter
+smbget
 smbgroupedit
 smbiconv
 smbmnt
