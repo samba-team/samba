@@ -36,7 +36,10 @@
 #define real_chmod(fn, mode)		(syscall(SYS_chmod,(fn), (mode)))
 #define real_chown(fn, owner, group)	(syscall(SYS_chown,(fn),(owner),(group)))
 
+#ifdef SYS_getdents
 #define real_getdents(fd, dirp, count)	(syscall(SYS_getdents, (fd), (dirp), (count)))
+#endif
+
 #define real_link(fn1, fn2)		(syscall(SYS_link, (fn1), (fn2)))
 
 #define real_open(fn,flags,mode)	(syscall(SYS_open, (fn), (flags), (mode)))

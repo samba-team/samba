@@ -20,7 +20,6 @@
 */
 
 #include "includes.h"
-#include "wrapper.h"
 
 extern int DEBUGLEVEL;
 

@@ -129,6 +129,7 @@
 #undef HAVE_IRIX_SPECIFIC_CAPABILITIES
 #undef KRB4_AUTH
 #undef SEEKDIR_RETURNS_VOID
+#undef HAVE_DIRENT_D_OFF
 
 /* The number of bytes in a int.  */
 #undef SIZEOF_INT

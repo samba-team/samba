@@ -20,7 +20,7 @@
 */
 
 #include "includes.h"
-#include "wrapper.h"
+#include "realcalls.h"
 
 extern pstring smbw_cwd;
 extern fstring smbw_prefix;
@@ -321,15 +321,19 @@ int smbw_getdents(unsigned int fd, struct dirent *dirp, int count)
 	}
 
 	while (count>=DIRP_SIZE && (dir->offset < dir->count)) {
+#if HAVE_DIRENT_D_OFF
 		dirp->d_off = (dir->offset+1)*DIRP_SIZE;
+#endif
 		dirp->d_reclen = DIRP_SIZE;
 		fstrcpy(&dirp->d_name[0], dir->list[dir->offset].name);
 		dirp->d_ino = smbw_inode(dir->list[dir->offset].name);
 		dir->offset++;
 		count -= dirp->d_reclen;
+#if HAVE_DIRENT_D_OFF
 		if (dir->offset == dir->count) {
 			dirp->d_off = -1;
 		}
+#endif
 		dirp = (struct dirent *)(((char *)dirp) + DIRP_SIZE);
 		n++;
 	}
