@@ -69,7 +69,8 @@ get_cred(krb5_context context, krb5_ccache id,
     krb5_error_code ret;
     krb5_creds in_creds, *out_creds;
 
-    if(krb_get_cred((char*)name, (char*)inst, (char*)krealm, c) == 0)
+    ret = krb_get_cred((char*)name, (char*)inst, (char*)krealm, c);
+    if(ret == 0 && krb_life_to_time(c->issue_date, c->lifetime) > time(NULL))
 	return 0;
 
     memset(&in_creds, 0, sizeof(in_creds));
