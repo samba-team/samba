@@ -1,4 +1,8 @@
-2003-02-16  Love  <lha@stacken.kth.se>
+2003-02-17 Love Hörquist Åstrand <lha@it.su.se>
+
+	* configure.in: add AM_MAINTAINER_MODE
+	
+2003-02-16 Love Hörquist Åstrand <lha@it.su.se>
 
 	* **/*.[0-9]: add copyright/licenses on all manpages
 
