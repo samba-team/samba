@@ -2323,8 +2323,10 @@ BOOL net_io_q_sam_logon(char *desc,  NET_Q_SAM_LOGON *q_l, prs_struct *ps, int d
 BOOL net_io_r_sam_logon(char *desc,  NET_R_SAM_LOGON *r_l, prs_struct *ps, int depth);
 BOOL net_io_q_sam_logoff(char *desc,  NET_Q_SAM_LOGOFF *q_l, prs_struct *ps, int depth);
 BOOL net_io_r_sam_logoff(char *desc,  NET_R_SAM_LOGOFF *r_l, prs_struct *ps, int depth);
-BOOL make_q_sam_sync(NET_Q_SAM_SYNC *q_s, char *srv_name, char *cli_name,
-		     DOM_CRED *cli_creds, uint32 database_id);
+BOOL make_q_sam_sync(NET_Q_SAM_SYNC *q_s,
+				const char *srv_name,
+				const char *cli_name,
+				DOM_CRED *cli_creds, uint32 database_id);
 BOOL net_io_q_sam_sync(char *desc, NET_Q_SAM_SYNC *q_s, prs_struct *ps, int depth);
 BOOL make_sam_delta_hdr(SAM_DELTA_HDR *delta, uint16 type, uint32 rid);
 BOOL make_sam_account_info(SAM_ACCOUNT_INFO *info, char *user_name,
