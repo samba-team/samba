@@ -323,7 +323,7 @@ class DomainHandle(SamrHandle):
 
         call_fn(dcerpc.dcerpc_samr_OpenUser, self.pipe, r)
 
-        return UserHandle(pipe, r.data_out.user_handle)
+        return UserHandle(self.pipe, r.data_out.user_handle)
 
     def OpenGroup(self, rid, access_mask = 0x02000000):
 
@@ -363,7 +363,24 @@ class DomainHandle(SamrHandle):
         r.data_in.sid = sid
 
         call_fn(dcerpc.dcerpc_samr_RemoveMemberFromForeignDomain, self.pipe, r)
-    
+
+    def LookupNames(self, names):
+
+        r = dcerpc.samr_LookupNames()
+        r.data_in.domain_handle = self.handle
+        r.data_in.num_names = len(names)
+        r.data_in.names = dcerpc.new_samr_String_array(len(names))
+
+        for i in range(len(names)):
+            s = dcerpc.samr_String()
+            s.string = names[i]
+            dcerpc.samr_String_array_setitem(r.data_in.names, i, s)
+
+        call_fn(dcerpc.dcerpc_samr_LookupNames, self.pipe, r)
+
+        return ([dcerpc.uint32_array_getitem(r.data_out.rids.ids, i) for i in range(r.data_out.rids.count)],
+                [dcerpc.uint32_array_getitem(r.data_out.types.ids, i) for i in range(r.data_out.types.count)])
+
 
 class UserHandle(SamrHandle):
 
@@ -371,8 +388,10 @@ class UserHandle(SamrHandle):
 
         r = dcerpc.samr_DeleteUser()
         r.data_in.user_handle = self.handle
-
+        
         call_fn(dcerpc.dcerpc_samr_DeleteUser, self.pipe, r)
+
+        self.handle = None
     
 
 class GroupHandle(SamrHandle):
