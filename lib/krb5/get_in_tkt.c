@@ -463,7 +463,7 @@ init_as_req (krb5_context context,
     if (addrs)
 	ret = krb5_copy_addresses(context, addrs, a->req_body.addresses);
     else
-	ret = krb5_get_all_client_addrs (a->req_body.addresses);
+	ret = krb5_get_all_client_addrs (context, a->req_body.addresses);
     if (ret)
 	return ret;
 
