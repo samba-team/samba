@@ -140,6 +140,7 @@ AC_SUBST(PAM_MOD)
 AC_SUBST(PDBEDIT)
 AC_SUBST(WRAP)
 AC_SUBST(WRAP32)
+AC_SUBST(WRAPPROG)
 AC_SUBST(PICFLAG)
 AC_SUBST(PICSUFFIX)
 AC_SUBST(SHLIBEXT)
@@ -1724,22 +1725,25 @@ AC_ARG_WITH(smbwrapper,
   yes)
     AC_MSG_RESULT(yes)
     AC_DEFINE(WITH_SMBWRAPPER)
-	WRAP="bin/smbsh bin/smbwrapper.$SHLIBEXT"
+	WRAPPROG="bin/smbsh"
+	WRAP="smbwrapper.$SHLIBEXT"
 
 	if test x$ATTEMPT_WRAP32_BUILD = x; then
 		WRAP32=""
 	else
-			WRAP32=bin/smbwrapper.32.$SHLIBEXT
+			WRAP32=smbwrapper.32.$SHLIBEXT
 	fi
 
 # Conditions under which smbwrapper should not be built.
 
 	if test x$PICFLAG = x; then
 	   echo No support for PIC code - disabling smbwrapper and smbsh
+	   WRAPPROG=""
 	   WRAP=""
 	   WRAP32=""
 	elif test x$ac_cv_func_syscall = xno; then
 	   AC_MSG_RESULT([No syscall() -- disabling smbwrapper and smbsh])
+	   WRAPPROG=""
 	   WRAP=""
 	   WRAP32=""
 	fi
