@@ -71,8 +71,8 @@ static NTSTATUS try_trans2(struct cli_state *cli,
 			   &rparam, rparam_len,
 			   &rdata, rdata_len);
 
-	if (rdata) free(rdata);
-	if (rparam) free(rparam);
+	SAFE_FREE(rdata);
+	SAFE_FREE(rparam);
 
 	return cli_nt_error(cli);
 }
@@ -273,8 +273,8 @@ static NTSTATUS try_nttrans(struct cli_state *cli,
 			     &rparam, rparam_len,
 			     &rdata, rdata_len);
 
-	if (rdata) free(rdata);
-	if (rparam) free(rparam);
+	SAFE_FREE(rdata);
+	SAFE_FREE(rparam);
 
 	return cli_nt_error(cli);
 }
