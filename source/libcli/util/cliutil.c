@@ -20,6 +20,8 @@
 */
 
 #include "includes.h"
+#include "libcli/raw/libcliraw.h"
+
 /*******************************************************************
  Functions nicked from lib/util.c needed by client.
 *******************************************************************/

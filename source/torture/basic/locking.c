@@ -22,6 +22,7 @@
 */
 
 #include "includes.h"
+#include "libcli/raw/libcliraw.h"
 
 /*
   This test checks for two things:

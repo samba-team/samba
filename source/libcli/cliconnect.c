@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "libcli/raw/libcliraw.h"
 
 /*
   wrapper around smbcli_sock_connect()

@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "libcli/raw/libcliraw.h"
 
 /*******************************************************************
 put a dos date into a buffer (time/date format)

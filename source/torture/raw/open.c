@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "libcli/raw/libcliraw.h"
 
 /* enum for whether reads/writes are possible on a file */
 enum rdwr_mode {RDWR_NONE, RDWR_RDONLY, RDWR_WRONLY, RDWR_RDWR};
