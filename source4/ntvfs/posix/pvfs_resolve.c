@@ -527,7 +527,7 @@ NTSTATUS pvfs_resolve_name_fd(struct pvfs_state *pvfs, int fd,
 		 be someone trying to exploit a race
 		 condition. Certainly we don't want to continue
 		 operating on this file */
-		DEBUG(0,("pvfs: WARNING: file '%s' changed during resole - failing\n",
+		DEBUG(0,("pvfs: WARNING: file '%s' changed during resolve - failing\n",
 			 name->full_name));
 		return NT_STATUS_UNEXPECTED_IO_ERROR;
 	}

@@ -34,10 +34,9 @@ static NTSTATUS pvfs_setfileinfo_rename(struct pvfs_state *pvfs,
 					struct pvfs_filename *name,
 					struct smb_rename_information *r)
 {
-#if 0
 	NTSTATUS status;
 	struct pvfs_filename *name2;
-	char *base_dir, *p;
+	char *new_name, *p;
 
 	/* renames are only allowed within a directory */
 	if (strchr_m(r->new_name, '\\')) {
@@ -49,22 +48,61 @@ static NTSTATUS pvfs_setfileinfo_rename(struct pvfs_state *pvfs,
 		return NT_STATUS_FILE_IS_A_DIRECTORY;
 	}
 
-	/* work out the base directory that the source file is in */
-	base_dir = talloc_strdup(name, name->full_name);
-	p = strrchr(base_dir, '/');
+	/* w2k3 does not appear to allow relative rename */
+	if (r->root_fid != 0) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	/* construct the fully qualified windows name for the new file name */
+	new_name = talloc_strdup(req, name->original_name);
+	if (new_name == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	p = strrchr_m(new_name, '\\');
+	if (p == NULL) {
+		return NT_STATUS_OBJECT_NAME_INVALID;
+	}
 	*p = 0;
 
+	new_name = talloc_asprintf(req, "%s\\%s", new_name, r->new_name);
+	if (new_name == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	/* resolve the new name */
-	status = pvfs_resolve_partial(pvfs, req, base_dir, r->new_name, &name2);
+	status = pvfs_resolve_name(pvfs, name, new_name, PVFS_RESOLVE_NO_WILDCARD, &name2);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	if (name2->exists && !r->overwrite) {
-		return NT_STATUS_OBJECT_NAME_COLLISION;
+	/* if the destination exists, then check the rename is allowed */
+	if (name2->exists) {
+		if (strcmp(name2->full_name, name->full_name) == 0) {
+			/* rename to same name is null-op */
+			return NT_STATUS_OK;
+		}
+
+		if (!r->overwrite) {
+			return NT_STATUS_OBJECT_NAME_COLLISION;
+		}
+
+		status = pvfs_can_delete(pvfs, name2);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION)) {
+			return NT_STATUS_ACCESS_DENIED;
+		}
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 	}
-#endif
-	return NT_STATUS_UNSUCCESSFUL;
+
+	if (rename(name->full_name, name2->full_name) == -1) {
+		return map_nt_error_from_unix(errno);
+	}
+
+	name->full_name = talloc_steal(name, name2->full_name);
+	name->original_name = talloc_steal(name, name2->original_name);
+
+	return NT_STATUS_OK;
 }
 
 /*
