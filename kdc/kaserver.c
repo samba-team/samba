@@ -257,7 +257,6 @@ create_reply_ticket (struct rx_header *hdr,
 		     krb5_data *reply)
 {
     KTEXT_ST ticket;
-    Key *ekey = NULL;
     des_cblock session;
     krb5_storage *sp;
     krb5_data enc_data;
@@ -267,15 +266,13 @@ create_reply_ticket (struct rx_header *hdr,
     size_t pad;
 
     /* create the ticket */
-    ekey = unseal_key(skey);
 
     des_new_random_key(&session);
 
     krb_create_ticket (&ticket, 0, name, instance, realm,
 		       addr->sin_addr.s_addr,
 		       &session, life, kdc_time,
-		       sname, sinstance, ekey->key.keyvalue.data);
-    hdb_free_key (ekey);
+		       sname, sinstance, skey->key.keyvalue.data);
 
     /* create the encrypted part of the reply */
     sp = krb5_storage_emem ();
@@ -435,20 +432,15 @@ do_authenticate (struct rx_header *hdr,
     }
 
     /* try to decode the `request' */
-    {
-	Key *ekey = unseal_key(ckey);
-
-	memcpy (&key, ekey->key.keyvalue.data, sizeof(key));
-	hdb_free_key(ekey);
-	des_set_key (&key, schedule);
-	des_pcbc_encrypt ((des_cblock *)request.data,
-			  (des_cblock *)request.data,
-			  request.length,
-			  schedule,
-			  &key,
-			  DES_DECRYPT);
-	memset (&schedule, 0, sizeof(schedule));
-    }
+    memcpy (&key, ckey->key.keyvalue.data, sizeof(key));
+    des_set_key (&key, schedule);
+    des_pcbc_encrypt ((des_cblock *)request.data,
+		      (des_cblock *)request.data,
+		      request.length,
+		      schedule,
+		      &key,
+		      DES_DECRYPT);
+    memset (&schedule, 0, sizeof(schedule));
 
     /* check for the magic label */
     if (memcmp ((char *)request.data + 4, "gTGS", 4) != 0) {
@@ -613,11 +605,7 @@ do_getticket (struct rx_header *hdr,
     }
 
     /* decrypt the incoming ticket */
-    {
-	Key *ekey = unseal_key(kkey);
-	memcpy (&key, ekey->key.keyvalue.data, sizeof(key));
-	hdb_free_key(ekey);
-    }
+    memcpy (&key, kkey->key.keyvalue.data, sizeof(key));
 
     /* unpack the ticket */
     {

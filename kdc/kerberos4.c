@@ -121,7 +121,7 @@ do_version4(unsigned char *buf,
     krb5_storage *sp;
     krb5_error_code ret;
     hdb_entry *client = NULL, *server = NULL;
-    Key *ckey, *skey, *ekey;
+    Key *ckey, *skey;
     int8_t pvno;
     int8_t msg_type;
     int lsb;
@@ -216,18 +216,14 @@ do_version4(unsigned char *buf,
 	    des_cblock session;
 
 	    des_new_random_key(&session);
-	    ekey = unseal_key(skey);
 
 	    krb_create_ticket(&ticket, 0, name, inst, v4_realm,
 			      addr->sin_addr.s_addr, session, life, kdc_time, 
-			      sname, sinst, ekey->key.keyvalue.data);
-	    hdb_free_key(ekey);
+			      sname, sinst, skey->key.keyvalue.data);
 	
-	    ekey = unseal_key(ckey);
 	    create_ciph(&cipher, session, sname, sinst, v4_realm,
 			life, server->kvno, &ticket, kdc_time, 
-			ekey->key.keyvalue.data);
-	    hdb_free_key(ekey);
+			ckey->key.keyvalue.data);
 	    memset(&session, 0, sizeof(session));
 	    r = create_auth_reply(name, inst, realm, req_time, 0, 
 				  client->pw_end ? *client->pw_end : 0, 
@@ -295,9 +291,7 @@ do_version4(unsigned char *buf,
 	memset(&auth, 0, sizeof(auth));
 	memcpy(&auth.dat, buf, pos);
 	auth.length = pos;
-	ekey = unseal_key(tkey);
-	krb_set_key(ekey->key.keyvalue.data, 0);
-	hdb_free_key(ekey);
+	krb_set_key(tkey->key.keyvalue.data, 0);
 	{
 	    int e;
 	    e = krb_rd_req(&auth, "krbtgt", realm, 
@@ -379,11 +373,9 @@ do_version4(unsigned char *buf,
 	    KTEXT r;
 	    des_cblock session;
 	    des_new_random_key(&session);
-	    ekey = unseal_key(skey);
 	    krb_create_ticket(&ticket, 0, ad.pname, ad.pinst, ad.prealm,
 			      addr->sin_addr.s_addr, &session, life, kdc_time,
-			      sname, sinst, ekey->key.keyvalue.data);
-	    hdb_free_key(ekey);
+			      sname, sinst, skey->key.keyvalue.data);
 	    
 	    create_ciph(&cipher, session, sname, sinst, v4_realm,
 			life, server->kvno, &ticket,
