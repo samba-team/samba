@@ -151,9 +151,16 @@ static BOOL brl_conflict_other(struct lock_struct *lck1, struct lock_struct *lck
 	if (lck1->lock_type == READ_LOCK && lck2->lock_type == READ_LOCK) 
 		return False;
 
-	if (brl_same_context(&lck1->context, &lck2->context) &&
-				lck1->fnum == lck2->fnum)
-		return False;
+	/*
+	 * Incoming WRITE locks conflict with existing READ locks even
+	 * if the context is the same. JRA. See LOCKTEST7 in smbtorture.
+	 */
+
+	if (!(lck2->lock_type == WRITE_LOCK && lck1->lock_type == READ_LOCK)) {
+		if (brl_same_context(&lck1->context, &lck2->context) &&
+					lck1->fnum == lck2->fnum)
+			return False;
+	}
 
 	if (lck1->start >= (lck2->start + lck2->size) ||
 	    lck2->start >= (lck1->start + lck1->size)) return False;
