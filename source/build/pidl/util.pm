@@ -68,7 +68,10 @@ sub CleanData($)
     if (ref($v) eq "ARRAY") {
 	foreach my $i (0 .. $#{$v}) {
 	    CleanData($v->[$i]);
-	    if (ref($v->[$i]) eq "ARRAY" && $#{$v->[$i]}==-1) { delete($v->[$i]); next; }
+	    if (ref($v->[$i]) eq "ARRAY" && $#{$v->[$i]}==-1) { 
+		    $v->[$i] = undef; 
+		    next; 
+	    }
 	}
 	# this removes any undefined elements from the array
 	@{$v} = grep { defined $_ } @{$v};
