@@ -48,7 +48,7 @@ check for existance of a trans2 call
 ****************************************************************************/
 static NTSTATUS try_trans2(struct smbcli_state *cli, 
 			   int op,
-			   char *param, char *data,
+			   uint8_t *param, uint8_t *data,
 			   int param_len, int data_len,
 			   int *rparam_len, int *rdata_len)
 {
@@ -85,7 +85,7 @@ static NTSTATUS try_trans2(struct smbcli_state *cli,
 static NTSTATUS try_trans2_len(struct smbcli_state *cli, 
 			     const char *format,
 			     int op, int level,
-			     char *param, char *data,
+			     uint8_t *param, uint8_t *data,
 			     int param_len, int *data_len,
 			     int *rparam_len, int *rdata_len)
 {
@@ -123,7 +123,7 @@ static BOOL trans2_op_exists(struct smbcli_state *cli, int op)
 	int data_len = 0;
 	int param_len = 0;
 	int rparam_len, rdata_len;
-	pstring param, data;
+	uint8_t param[1024], data[1024];
 	NTSTATUS status1, status2;
 
 	memset(data, 0, sizeof(data));
@@ -158,7 +158,7 @@ static BOOL scan_trans2(struct smbcli_state *cli, int op, int level,
 	int data_len = 0;
 	int param_len = 0;
 	int rparam_len, rdata_len;
-	pstring param, data;
+	uint8_t param[1024], data[1024];
 	NTSTATUS status;
 
 	memset(data, 0, sizeof(data));
@@ -324,7 +324,7 @@ check for existence of a nttrans call
 ****************************************************************************/
 static NTSTATUS try_nttrans(struct smbcli_state *cli, 
 			    int op,
-			    char *param, char *data,
+			    uint8_t *param, uint8_t *data,
 			    int param_len, int data_len,
 			    int *rparam_len, int *rdata_len)
 {
@@ -367,7 +367,7 @@ static NTSTATUS try_nttrans(struct smbcli_state *cli,
 static NTSTATUS try_nttrans_len(struct smbcli_state *cli, 
 			     const char *format,
 			     int op, int level,
-			     char *param, char *data,
+			     uint8_t *param, uint8_t *data,
 			     int param_len, int *data_len,
 			     int *rparam_len, int *rdata_len)
 {
@@ -405,7 +405,7 @@ static BOOL scan_nttrans(struct smbcli_state *cli, int op, int level,
 	int data_len = 0;
 	int param_len = 0;
 	int rparam_len, rdata_len;
-	pstring param, data;
+	uint8_t param[1024], data[1024];
 	NTSTATUS status;
 
 	memset(data, 0, sizeof(data));

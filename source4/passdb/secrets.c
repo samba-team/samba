@@ -56,7 +56,7 @@ void secrets_shutdown(void)
 BOOL secrets_init(void)
 {
 	pstring fname;
-	char dummy;
+	uint8_t dummy;
 
 	if (tdb)
 		return True;

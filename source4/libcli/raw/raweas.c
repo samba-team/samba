@@ -129,7 +129,7 @@ uint_t ea_pull_struct(const DATA_BLOB *blob,
 		return 0;
 	}
 
-	ea->name.s = talloc_strndup(mem_ctx, blob->data+4, nlen);
+	ea->name.s = talloc_strndup(mem_ctx, (const char *)(blob->data+4), nlen);
 	ea->name.private_length = nlen;
 	ea->value = data_blob_talloc(mem_ctx, NULL, vlen+1);
 	if (!ea->value.data) return 0;

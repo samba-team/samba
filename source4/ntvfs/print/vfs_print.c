@@ -74,7 +74,7 @@ static NTSTATUS print_ioctl(struct ntvfs_module_context *ntvfs,
 
 		data_blob_clear(&io->ioctl.out.blob);
 
-		p = io->ioctl.out.blob.data;
+		p = (char *)io->ioctl.out.blob.data;
 		SSVAL(p,0, 1 /* REWRITE: fsp->rap_print_jobid */);
 		push_string(p+2, lp_netbios_name(), 15, STR_TERMINATE|STR_ASCII);
 		push_string(p+18, lp_servicename(req->tcon->service), 13, STR_TERMINATE|STR_ASCII);
