@@ -54,10 +54,9 @@ extern uint16 nb_type; /* samba's NetBIOS name type */
 /*******************************************************************
   occasionally check to see if the master browser is around
   ******************************************************************/
-void check_master_browser(void)
+void check_master_browser(time_t t)
 {
   static time_t lastrun=0;
-  time_t t = time(NULL);
   struct subnet_record *d;
 
   if (!lastrun) lastrun = t;
@@ -474,9 +473,8 @@ void become_nonmaster(struct subnet_record *d, struct work_record *work,
 /*******************************************************************
   run the election
   ******************************************************************/
-void run_elections(void)
+void run_elections(time_t t)
 {
-  time_t t = time(NULL);
   static time_t lastime = 0;
   
   struct subnet_record *d;

@@ -252,14 +252,13 @@ struct subnet_record *add_subnet_entry(struct in_addr bcast_ip,
 /*******************************************************************
   write out browse.dat
   ******************************************************************/
-void write_browse_list(void)
+void write_browse_list(time_t t)
 {
   struct subnet_record *d;
   pstring fname,fnamenew;
   FILE *f;
 
   static time_t lasttime = 0;
-  time_t t = time(NULL);
 
   if (!lasttime) lasttime = t;
   if (!updatedlists || t - lasttime < 5) return;
