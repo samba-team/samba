@@ -417,7 +417,7 @@ kerberos5_is(Authenticator *ap, unsigned char *data, int cnt)
 	}
 
 	if ((ap->way & AUTH_HOW_MASK) == AUTH_HOW_MUTUAL) {
-	    ret = krb5_mk_rep(context, &auth_context, &outbuf);
+	    ret = krb5_mk_rep(context, auth_context, &outbuf);
 	    if (ret) {
 		Data(ap, KRB_REJECT,
 		     "krb5_mk_rep failed", -1);

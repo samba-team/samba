@@ -318,7 +318,7 @@ end_fwd:
     krb5_data outbuf;
 
     kret = krb5_mk_rep (gssapi_krb5_context,
-			&(*context_handle)->auth_context,
+			(*context_handle)->auth_context,
 			&outbuf);
     if (kret) {
       ret = GSS_S_FAILURE;

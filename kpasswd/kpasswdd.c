@@ -163,7 +163,7 @@ reply_priv (krb5_auth_context auth_context,
     krb5_data e_data;
 
     ret = krb5_mk_rep (context,
-		       &auth_context,
+		       auth_context,
 		       &ap_rep_data);
     if (ret) {
 	krb5_warn (context, ret, "Could not even generate error reply");
