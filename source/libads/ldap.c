@@ -107,7 +107,7 @@ ADS_STATUS ads_do_paged_search(ADS_STRUCT *ads, const char *bind_path,
 	}
 	ber_flatten(berelem, &berval);
 	PagedResults.ldctl_oid = ADS_PAGE_CTL_OID;
-	PagedResults.ldctl_iscritical = (char) 0;
+	PagedResults.ldctl_iscritical = (char) 1;
 	PagedResults.ldctl_value.bv_len = berval->bv_len;
 	PagedResults.ldctl_value.bv_val = berval->bv_val;
 
