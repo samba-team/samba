@@ -411,9 +411,30 @@
 		);
 
 	/* Function:           0x1d */
-	NTSTATUS SETSECRET ();
+	typedef [flag(NDR_PAHEX)] struct {
+		uint32 length;
+		uint32 size;
+		[size_is(size),length_is(length)] uint8 *data;
+	} lsa_DATA_BUF;
+
+	NTSTATUS lsa_SetSecret(
+		[in,ref]     policy_handle *handle,
+		[in]         lsa_DATA_BUF     *new_val,
+		[in]         lsa_DATA_BUF     *old_val
+		);
+
+	typedef struct {
+		lsa_DATA_BUF *buf;
+	} lsa_DATA_BUF_PTR;
+
 	/* Function:         0x1e */
-	NTSTATUS QUERYSECRET ();
+	NTSTATUS lsa_QuerySecret (
+		[in,ref]     policy_handle *handle,
+		[in,out]     lsa_DATA_BUF_PTR  *new_val,
+		[in,out]     NTTIME            *new_mtime,
+		[in,out]     lsa_DATA_BUF_PTR  *old_val,
+		[in,out]     NTTIME            *old_mtime
+		);
 
 	/* Function:     0x1f */
 	NTSTATUS LOOKUPPRIVVALUE ();
