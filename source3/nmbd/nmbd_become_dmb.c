@@ -81,8 +81,8 @@ in workgroup %s on subnet %s\n",
   bzero((char *)&work->dmb_name, sizeof(work->dmb_name));
   putip((char *)&work->dmb_addr, &ipzero);
 
-  DEBUG(0,("\n ***** Samba server %s has stopped being a domain master browser \
-for workgroup %s on subnet %s *****\n\n", myname, work->work_group, subrec->subnet_name));
+  DEBUG(0,("\n%s ***** Samba server %s has stopped being a domain master browser \
+for workgroup %s on subnet %s *****\n\n", timestring(), myname, work->work_group, subrec->subnet_name));
 
 }
 
@@ -214,8 +214,9 @@ in workgroup %s on subnet %s\n",
   /* Tell the namelist writer to write out a change. */
   subrec->work_changed = True;
 
-  DEBUG(0,("\n ***** Samba server %s is now a domain master browser \
-for workgroup %s on subnet %s *****\n\n", myname, work->work_group, subrec->subnet_name));
+  DEBUG(0,("\n%s ***** Samba server %s is now a domain master browser for \
+workgroup %s on subnet %s *****\n\n", timestring(),myname, work->work_group, 
+subrec->subnet_name));
 
   if(subrec == unicast_subnet)
   {
@@ -312,9 +313,9 @@ Continuing with domain master code.\n",
   }
   else
   {
-    DEBUG(0,("become_domain_master_query_success: There is already a domain \
+    DEBUG(0,("%s become_domain_master_query_success: There is already a domain \
 master browser at IP %s for workgroup %s registered on subnet %s.\n",
-          inet_ntoa(ip), nmbname->name, subrec->subnet_name));
+          timestring(), inet_ntoa(ip), nmbname->name, subrec->subnet_name));
   }
 }
 
