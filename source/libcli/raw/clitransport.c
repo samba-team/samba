@@ -298,7 +298,7 @@ static void cli_transport_finish_recv(struct cli_transport *transport)
 
 		req->in.buffer = buffer;
 		talloc_steal(transport->mem_ctx, req->mem_ctx, buffer);
-		req->in.size = len + NBT_HDR_SIZE;
+		req->in.size = len;
 		req->in.allocated = req->in.size;
 		goto async;
 	}
@@ -322,7 +322,7 @@ static void cli_transport_finish_recv(struct cli_transport *transport)
 	/* fill in the 'in' portion of the matching request */
 	req->in.buffer = buffer;
 	talloc_steal(transport->mem_ctx, req->mem_ctx, buffer);
-	req->in.size = len + NBT_HDR_SIZE;
+	req->in.size = len;
 	req->in.allocated = req->in.size;
 
 	/* handle non-SMB replies */
