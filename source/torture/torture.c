@@ -4378,11 +4378,11 @@ static BOOL run_eatest(int dummy)
 	}
 
 	/* Setting EA's to zero length deletes them. Test this */
-	printf("Now deleting all EA's....\n");
+	printf("Now deleting all EA's - case indepenent....\n");
 
 	for (i = 0; i < 20; i++) {
 		fstring ea_name;
-		slprintf(ea_name, sizeof(ea_name), "EA_%d", i);
+		slprintf(ea_name, sizeof(ea_name), "ea_%d", i);
 		if (!cli_set_ea_path(cli, fname, ea_name, "", 0)) {
 			printf("ea_set of name %s failed - %s\n", ea_name, cli_errstr(cli));
 			return False;
