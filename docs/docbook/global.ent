@@ -407,8 +407,7 @@ an Active Directory environment.
 <!ENTITY ID-BUGS SYSTEM "bugreport">
 <!ENTITY ID-SECURITY-LEVEL SYSTEM "securitylevels">
 <!ENTITY ID-SPEED SYSTEM "speed">
-<!ENTITY ID-BROWSING SYSTEM "improved-browsing">
-<!ENTITY ID-BROWSING-Quick SYSTEM "Browsing-Quick">
+<!ENTITY ID-NetworkBrowsing SYSTEM "network-browsing">
 <!ENTITY ID-GROUP-MAPPING-HOWTO SYSTEM "groupmapping">
 <!ENTITY ID-Portability SYSTEM "Portability">
 <!ENTITY ID-Other-Clients SYSTEM "Other-Clients">
@@ -451,8 +450,7 @@ an Active Directory environment.
 
 <!ENTITY ADS-HOWTO SYSTEM "projdoc/ADS-HOWTO.sgml">
 <!ENTITY AdvancedNetworkAdmin SYSTEM "projdoc/AdvancedNetworkAdmin.sgml">
-<!ENTITY BROWSING SYSTEM "projdoc/Browsing.sgml">
-<!ENTITY BROWSING-Quick SYSTEM "projdoc/Browsing-Quickguide.sgml">
+<!ENTITY NetworkBrowsing SYSTEM "projdoc/NetworkBrowsing.sgml">
 <!ENTITY BUGS SYSTEM "projdoc/Bugs.sgml">
 <!ENTITY CUPS SYSTEM "projdoc/CUPS-printing.sgml">
 <!ENTITY CVS-Access SYSTEM "projdoc/CVS-Access.sgml">
@@ -463,6 +461,7 @@ an Active Directory environment.
 <!ENTITY GROUP-MAPPING-HOWTO SYSTEM "projdoc/GROUP-MAPPING-HOWTO.sgml">
 <!ENTITY IntegratingWithWindows SYSTEM "projdoc/Integrating-with-Windows.sgml">
 <!ENTITY IntroSMB SYSTEM "projdoc/IntroSMB.sgml">
+<!ENTITY locking SYSTEM "projdoc/locking.sgml">
 <!ENTITY MS-Dfs-Setup SYSTEM "projdoc/msdfs_setup.sgml">
 <!ENTITY NT-Security SYSTEM "projdoc/NT_Security.sgml">
 <!ENTITY NT4Migration SYSTEM "projdoc/NT4Migration.sgml">
