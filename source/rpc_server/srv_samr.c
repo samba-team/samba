@@ -1879,15 +1879,21 @@ static BOOL _api_samr_create_user(POLICY_HND dom_pol, UNISTR2 user_account, uint
 	 * to create a user. JRA.
 	 */
 
-	/* add the user in the /etc/passwd file or the unix authority system */
+	/*
+	 * add the user in the /etc/passwd file or the unix authority system.
+	 * We don't check if the smb_create_user() function succed or not for 2 reasons:
+	 * a) local_password_change() checks for us if the /etc/passwd account really exists
+	 * b) smb_create_user() would return an error if the account already exists
+	 * and as it could return an error also if it can't create the account, it would be tricky.
+	 *
+	 * So we go the easy way, only check after if the account exists.
+	 * JFM (2/3/2001), to clear any possible bad understanding (-:
+	 */
 
 	pstrcpy(add_script, lp_adduser_script());
 
-	if(*add_script && smb_create_user(mach_acct, NULL) != 0) {
-		DEBUG(0,("Could not create the unix account\n"));
-		close_lsa_policy_hnd(user_pol);
-		return NT_STATUS_ACCESS_DENIED;
-	}
+	if(*add_script)
+	 	smb_create_user(mach_acct, NULL);
 
 	/* add the user in the smbpasswd file or the Samba authority database */
 	if (!local_password_change(mach_acct, local_flags, NULL, err_str, 
@@ -2355,10 +2361,10 @@ static BOOL set_user_info_23(SAM_USER_INFO_23 *id23, uint32 rid)
 	copy_sam_passwd(&new_pwd, pwd);
 	copy_id23_to_sam_passwd(&new_pwd, id23);
 
-	if (!decode_pw_buffer((char*)id23->pass, buf, 256, &len))
-		return False;
+	memset(buf, 0, sizeof(pstring));
 
-	nt_lm_owf_gen(buf, nt_hash, lm_hash);
+	if (!decode_pw_buffer((char*)id23->pass, buf, 256, &len, nt_hash, lm_hash))
+		return False;
 
 	new_pwd.smb_passwd = lm_hash;
 	new_pwd.smb_nt_passwd = nt_hash;
@@ -2387,7 +2393,7 @@ static BOOL set_user_info_23(SAM_USER_INFO_23 *id23, uint32 rid)
 /*******************************************************************
  set_user_info_24
  ********************************************************************/
-static BOOL set_user_info_24(const SAM_USER_INFO_24 *id24, uint32 rid)
+static BOOL set_user_info_24(SAM_USER_INFO_24 *id24, uint32 rid)
 {
 	struct sam_passwd *pwd = getsam21pwrid(rid);
 	struct sam_passwd new_pwd;
@@ -2402,14 +2408,10 @@ static BOOL set_user_info_24(const SAM_USER_INFO_24 *id24, uint32 rid)
 	pdb_init_sam(&new_pwd);
 	copy_sam_passwd(&new_pwd, pwd);
 
-	memset(buf, 0, sizeof(buf));
+	memset(buf, 0, sizeof(pstring));
 
-	if (!decode_pw_buffer((char*)id24->pass, buf, 256, &len))
+	if (!decode_pw_buffer((char*)id24->pass, buf, 256, &len, nt_hash, lm_hash))
 		return False;
-
-	DEBUG(5,("set_user_info_24:nt_lm_owf_gen\n"));
-
-	nt_lm_owf_gen(buf, nt_hash, lm_hash);
 
 	new_pwd.smb_passwd = lm_hash;
 	new_pwd.smb_nt_passwd = nt_hash;

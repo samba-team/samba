@@ -953,8 +953,9 @@ void SMBOWFencrypt(uchar passwd[16], uchar *c8, uchar p24[24]);
 void NTLMSSPOWFencrypt(uchar passwd[8], uchar *ntlmchalresp, uchar p24[24]);
 void SMBNTencrypt(uchar *passwd, uchar *c8, uchar *p24);
 BOOL make_oem_passwd_hash(char data[516], const char *passwd, uchar old_pw_hash[16], BOOL unicode);
-BOOL decode_pw_buffer(char buffer[516], char *new_pwrd,
-		      int new_pwrd_size, uint32 *new_pw_len);
+BOOL decode_pw_buffer(char in_buffer[516], char *new_pwrd,
+		      int new_pwrd_size, uint32 *new_pw_len,
+		      uchar nt_p16[16], uchar p16[16]);
 
 /*The following definitions come from  libsmb/smberr.c  */
 
