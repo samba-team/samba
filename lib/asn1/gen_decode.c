@@ -301,7 +301,7 @@ generate_type_decode (Symbol *s)
     
     decode_type ("data", s->type);
     fprintf (codefile, 
-	     "*size = ret;\n"
+	     "if(size) *size = ret;\n"
 	     "return 0;\n");
     break;
   default:
@@ -363,31 +363,8 @@ generate_seq_type_decode (Symbol *s)
 	     "}\n",
 	     s->gen_name);
     fprintf (codefile, 
-	     "*size = ret;\n"
+	     "if(size) *size = ret;\n"
 	     "return 0;\n");
 
     fprintf (codefile, "}\n\n");
 }
-
-
-#if 0
-static void
-generate_type_decode (Symbol *s)
-{
-  fprintf (headerfile,
-	   "int decode_%s(unsigned char *, int, %s *);\n",
-	   s->gen_name, s->gen_name);
-
-  fprintf (codefile, "int\n"
-	   "decode_%s(unsigned char *p, int len, %s *data)\n"
-	   "{\n"
-	   "int ret = 0, reallen;\n"
-	   "int l, i;\n\n",
-	   s->gen_name, s->gen_name);
-
-  decode_type ("data", s->type);
-  fprintf (codefile, "return ret;\n"
-	   "}\n\n");
-}
-#endif
-

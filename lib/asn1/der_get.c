@@ -65,7 +65,7 @@ der_get_int (unsigned char *p, size_t len, unsigned *ret, size_t *size)
     while (len--)
 	val = val * 256 + *p++;
     *ret = val;
-    *size = oldlen;
+    if(size) *size = oldlen;
     return 0;
 }
 
@@ -79,7 +79,7 @@ der_get_length (unsigned char *p, size_t len, size_t *val, size_t *size)
     v = *p++;
     if (v < 128) {
 	*val = v;
-	*size = 1;
+	if(size) *size = 1;
     } else {
 	int e;
 	size_t l;
@@ -87,7 +87,7 @@ der_get_length (unsigned char *p, size_t len, size_t *val, size_t *size)
 
 	if(v == 0x80){
 	    *val = ASN1_INDEFINITE;
-	    *size = 1;
+	    if(size) *size = 1;
 	    return 0;
 	}
 	v &= 0x7F;
@@ -96,7 +96,7 @@ der_get_length (unsigned char *p, size_t len, size_t *val, size_t *size)
 	e = der_get_int (p, v, &tmp, &l);
 	if(e) return e;
 	*val = tmp;
-	*size = l + 1;
+	if(size) *size = l + 1;
     }
     return 0;
 }
@@ -121,7 +121,7 @@ der_get_general_string (unsigned char *p, size_t len,
     memcpy (s, p, slen);
     s[slen] = '\0';
     *str = s;
-    *size = slen + l;
+    if(size) *size = slen + l;
     return 0;
 }
 
@@ -143,7 +143,7 @@ der_get_octet_string (unsigned char *p, size_t len,
     if (data->data == NULL && data->length != 0)
 	return ENOMEM;
     memcpy (data->data, p, slen);
-    *size = slen + l;
+    if(size) *size = slen + l;
     return 0;
 }
 
@@ -156,7 +156,7 @@ der_get_tag (unsigned char *p, size_t len, Der_class *class, Der_type *type,
     *class = ((*p) >> 6) & 0x03;
     *type = ((*p) >> 5) & 0x01;
     *tag = (*p) & 0x1F;
-    *size = 1;
+    if(size) *size = 1;
     return 0;
 }
 
@@ -178,7 +178,7 @@ der_match_tag (unsigned char *p, size_t len, Der_class class, Der_type type,
 	return ASN1_MISPLACED_FIELD;
     if(tag < thistag)
 	return ASN1_MISSING_FIELD;
-    *size = l;
+    if(size) *size = l;
     return 0;
 }
 
@@ -200,7 +200,7 @@ der_match_tag_and_length (unsigned char *p, size_t len,
     p += l;
     len -= l;
     ret += l;
-    *size = ret;
+    if(size) *size = ret;
     return 0;
 }
 
@@ -226,7 +226,7 @@ decode_integer (unsigned char *p, size_t len, unsigned *num, size_t *size)
     p += l;
     len -= l;
     ret += l;
-    *size = ret;
+    if(size) *size = ret;
     return 0;
 }
 
@@ -248,7 +248,7 @@ decode_general_string (unsigned char *p, size_t len,
     p += l;
     len -= l;
     ret += l;
-    *size = ret;
+    if(size) *size = ret;
     return 0;
 }
 
@@ -270,7 +270,7 @@ decode_octet_string (unsigned char *p, size_t len,
     p += l;
     len -= l;
     ret += l;
-    *size = ret;
+    if(size) *size = ret;
     return 0;
 }
 
@@ -315,7 +315,7 @@ decode_generalized_time (unsigned char *p, size_t len, time_t *t, size_t *size)
     times[k.length] = 0;
     generalizedtime2time (times, t);
     free (times);
-    *size = ret;
+    if(size) *size = ret;
     return 0;
 }
 
