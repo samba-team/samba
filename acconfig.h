@@ -42,6 +42,9 @@
 /*  Define this if struct utmpx have ut_syslen  */
 #undef HAVE_UT_SYSLEN
 
+/*  Define this if you have a struct sockaddr_in6 */
+#undef HAVE_SOCKADDR_IN6
+
 /* define if you have h_errno */
 #undef HAVE_H_ERRNO
 
