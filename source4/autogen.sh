@@ -4,8 +4,8 @@
 
 ## insert all possible names (only works with 
 ## autoconf 2.x
-TESTAUTOHEADER="autoheader autoheader-2.53"
-TESTAUTOCONF="autoconf autoconf-2.53"
+TESTAUTOHEADER="autoheader autoheader-2.53 autoheader2.50"
+TESTAUTOCONF="autoconf autoconf-2.53 autoconf2.50"
 
 AUTOHEADERFOUND="0"
 AUTOCONFFOUND="0"
