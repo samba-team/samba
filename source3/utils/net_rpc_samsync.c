@@ -162,7 +162,7 @@ int rpc_samdump(int argc, const char **argv)
 	}
 
 	if (!secrets_fetch_trust_account_password(lp_workgroup(), trust_password, NULL)) {
-		d_printf("Could not retrieve domain trust secret");
+		d_printf("Could not retrieve domain trust secret\n");
 		goto fail;
 	}
 	
@@ -267,6 +267,7 @@ fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
 	SAM_ACCOUNT *sam_account=NULL;
 	GROUP_MAP map;
 	struct group *grp;
+	DOM_SID sid;
 
 	fstrcpy(account, unistr2_static(&delta->uni_acct_name));
 	d_printf("Creating account: %s\n", account);
@@ -319,12 +320,14 @@ fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
 	sam_account_from_delta(sam_account, delta);
 
 	if (!pdb_add_sam_account(sam_account)) {
-		DEBUG(1, ("SAM Account for %s already existed, updating\n",
+		DEBUG(1, ("SAM Account for %s already exists, updating\n",
 			  account));
 		pdb_update_sam_account(sam_account);
 	}
 
-	if (!pdb_getgrsid(&map, *pdb_get_group_sid(sam_account), False)) {
+	sid = *pdb_get_group_sid(sam_account);
+
+	if (!pdb_getgrsid(&map, sid, False)) {
 		DEBUG(0, ("Primary group of %s has no mapping!\n",
 			  pdb_get_username(sam_account)));
 		pdb_free_sam(&sam_account);
@@ -332,7 +335,8 @@ fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
 	}
 
 	if (!(grp = getgrgid(map.gid))) {
-		DEBUG(0, ("Could not find unix group %d\n", map.gid));
+		DEBUG(0, ("Could not find unix group %d for user %s (group SID=%s)\n", 
+			  map.gid, pdb_get_username(sam_account), sid_string_static(&sid)));
 		pdb_free_sam(&sam_account);
 		return NT_STATUS_NO_SUCH_GROUP;
 	}
@@ -450,8 +454,8 @@ fetch_group_mem_info(uint32 rid, SAM_GROUP_MEM_INFO *delta)
 		sid_append_rid(&member_sid, delta->rids[i]);
 
 		if (!pdb_getsampwsid(member, &member_sid)) {
-			DEBUG(1, ("Found bogus group member: %d\n",
-				  delta->rids[i]));
+			DEBUG(1, ("Found bogus group member: %d (member_sid=%s group=%s)\n",
+				  delta->rids[i], sid_string_static(&member_sid), grp->gr_name));
 			pdb_free_sam(&member);
 			continue;
 		}
@@ -680,7 +684,7 @@ int rpc_vampire(int argc, const char **argv)
 
 	if (!secrets_fetch_trust_account_password(lp_workgroup(),
 						  trust_password, NULL)) {
-		d_printf("Could not retrieve domain trust secret");
+		d_printf("Could not retrieve domain trust secret\n");
 		goto fail;
 	}
 	
