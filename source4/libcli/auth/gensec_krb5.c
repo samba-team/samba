@@ -611,39 +611,48 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 	struct dom_sid *sid;
 	char *p;
 	char *principal;
+	const char *username;
+	const char *realm;
 
 	*session_info_out = NULL;
-
-	nt_status = make_server_info(gensec_security, &server_info, gensec_krb5_state->peer_principal);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		return nt_status;
-	}
-
-	server_info->guest = False;
-
-	principal = talloc_strdup(server_info, gensec_krb5_state->peer_principal);
-	p = strchr(principal, '@');
-	if (p) {
-		*p = '\0';
-	}
-	server_info->account_name = principal;
-	server_info->domain = talloc_strdup(server_info, p++);
-	if (!server_info->domain) {
-		free_server_info(&server_info);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	nt_status = make_session_info(server_info, &session_info);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		free_server_info(&server_info);
-		return nt_status;
-	}
 
 	/* IF we have the PAC - otherwise (TODO) we need to get this
 	 * data from elsewere - local ldb, or lookup of some
 	 * kind... */
 
+	principal = talloc_strdup(gensec_krb5_state, gensec_krb5_state->peer_principal);
+	p = strchr(principal, '@');
+	if (p) {
+		*p = '\0';
+	}
+	p++;
+	username = principal;
+	realm = p;
+	
 	if (logon_info) {
+		nt_status = make_server_info(gensec_krb5_state, &server_info, gensec_krb5_state->peer_principal);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			return nt_status;
+		}
+		
+		server_info->guest = False;
+		
+		server_info->account_name = talloc_strdup(server_info, principal);
+		server_info->domain = talloc_strdup(server_info, realm);
+		if (!server_info->domain) {
+			free_server_info(&server_info);
+			return NT_STATUS_NO_MEMORY;
+		}
+		
+		/* references the server_info into the session_info */
+		nt_status = make_session_info(gensec_krb5_state, server_info, &session_info);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			free_server_info(&server_info);
+			return nt_status;
+		}
+
+		talloc_free(server_info);
+
 		ptoken = talloc_p(session_info, struct nt_user_token);
 		if (!ptoken) {
 			return NT_STATUS_NO_MEMORY;
@@ -666,15 +675,36 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 		
 		for (;ptoken->num_sids < logon_info->groups_count; ptoken->num_sids++) {
 			sid = dom_sid_dup(session_info, logon_info->dom_sid);
-			ptoken->user_sids[ptoken->num_sids] = dom_sid_add_rid(session_info, sid, logon_info->groups[ptoken->num_sids - 2].rid);
+			ptoken->user_sids[ptoken->num_sids]
+				= dom_sid_add_rid(session_info, sid, 
+						  logon_info->groups[ptoken->num_sids - 2].rid);
 		}
 		
 		debug_nt_user_token(DBGC_AUTH, 0, ptoken);
 		
 		session_info->nt_user_token = ptoken;
 	} else {
-		session_info->nt_user_token = NULL;
+		TALLOC_CTX *mem_ctx = talloc_named(gensec_krb5_state, 0, "PAC-less session info discovery for %s@%s", username, realm);
+		if (!mem_ctx) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		nt_status = sam_get_server_info(username, realm, gensec_krb5_state, &server_info);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			talloc_free(mem_ctx);
+			return nt_status;
+		}
+
+		/* references the server_info into the session_info */
+		nt_status = make_session_info(gensec_krb5_state, server_info, &session_info);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			talloc_free(mem_ctx);
+			return nt_status;
+		}
+
+		talloc_free(mem_ctx);
 	}
+
+	talloc_free(principal);
 
 	nt_status = gensec_krb5_session_key(gensec_security, &session_info->session_key);
 
