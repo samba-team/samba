@@ -484,7 +484,7 @@ static uint32 net_login_network(NET_ID_INFO_2 *id2, SAM_ACCOUNT *sampass)
 
 	if (id2->hdr_nt_chal_resp.str_str_len == 24 && nt_pwd != NULL)	{
 		if(smb_password_check((char *)id2->nt_chal_resp.buffer, nt_pwd, id2->lm_chal)) 
-			return NT_STATUS_NO_PROBLEMO;
+			return NT_STATUS_NOPROBLEMO;
 		else
 			return NT_STATUS_WRONG_PASSWORD;
 	}
@@ -501,7 +501,7 @@ static uint32 net_login_network(NET_ID_INFO_2 *id2, SAM_ACCOUNT *sampass)
 		smb_password_check((char *)id2->lm_chal_resp.buffer,
 		                   lanman_pwd, id2->lm_chal)) 
 	{
-		return NT_STATUS_NO_PROBLEMO;
+		return NT_STATUS_NOPROBLEMO;
 	}
 
 

@@ -3828,7 +3828,7 @@ uint32 printer_write_default_dev(int snum, const PRINTER_DEFAULT *printer_defaul
 		DEBUG(5,("printer_write_default_dev: Access denied for printer %s\n",
 			lp_servicename(snum) ));
 		result = ERRnoaccess;
-		/*result = NT_STATUS_NO_PROBLEMO;*/
+		/*result = NT_STATUS_NOPROBLEMO;*/
 		goto done;
 	}
 

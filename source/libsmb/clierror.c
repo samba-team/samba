@@ -197,7 +197,7 @@ int cli_error(struct cli_state *cli, uint8 *eclass, uint32 *num, uint32 *nt_rpc_
 		case ERRrename: return EEXIST;
 		case ERRbadshare: return EBUSY;
 		case ERRlock: return EBUSY;
-		case ERROR_INVALID_NAME: return ENOENT;
+		case ERRinvalidname: return ENOENT;
 		case ERRnosuchshare: return ENODEV;
 		}
 	}
