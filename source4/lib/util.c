@@ -705,15 +705,18 @@ char *name_to_fqdn(TALLOC_CTX *mem_ctx, const char *name)
 
 char *lock_path(TALLOC_CTX* mem_ctx, const char *name)
 {
-	char *fname;
+	char *fname, *dname;
 
-	fname = talloc_strdup(mem_ctx, lp_lockdir());
-	trim_string(fname,"","/");
+	dname = talloc_strdup(mem_ctx, lp_lockdir());
+	trim_string(dname,"","/");
 	
-	if (!directory_exist(fname,NULL))
-		mkdir(fname,0755);
+	if (!directory_exist(dname,NULL)) {
+		mkdir(dname,0755);
+	}
 	
-	fname = talloc_asprintf(mem_ctx, "%s/%s", fname, name);
+	fname = talloc_asprintf(mem_ctx, "%s/%s", dname, name);
+
+	talloc_free(dname);
 
 	return fname;
 }

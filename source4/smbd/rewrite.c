@@ -19,18 +19,12 @@ BOOL share_access_check(struct smbsrv_request *req, struct smbsrv_tcon *tcon, in
 { return True; }
 
 /*
- * initialize an smb process
+ * initialize an smb process. Guaranteed to be called only once per
+ * smbd instance (so it can assume it is starting from scratch, and
+ * delete temporary files etc)
  */
 void smbd_process_init(void)
 {
-	TALLOC_CTX *mem_ctx;
-
-	mem_ctx = talloc_init("smbd_process_init talloc");
-	if (!mem_ctx) {
-		DEBUG(0,("smbd_process_init: ERROR: No memory\n"));
-		exit(1);
-	}
-
 	/* possibly reload the services file. */
 	reload_services(NULL, True);
 
@@ -39,9 +33,7 @@ void smbd_process_init(void)
 			DEBUG(2,("Changed root to %s\n", lp_rootdir()));
 	}
 
-	/* Start old-style secrets subsystem */
-	
-	talloc_destroy(mem_ctx);
+	service_cleanup_tmp_files();
 }
 
 void init_subsystems(void)
