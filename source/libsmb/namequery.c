@@ -862,7 +862,14 @@ static BOOL internal_resolve_name(const char *name, int name_type,
 	}
     return True;
   }
-  
+ 
+  /* Check netbios name cache */
+
+  if (namecache_fetch(name, name_type, return_iplist, return_count)) {
+    /* This could be a negative response */
+    return (*return_count > 0);
+  }
+
   pstrcpy(name_resolve_list, lp_name_resolve_order());
   ptr = name_resolve_list;
   if (!ptr || !*ptr)

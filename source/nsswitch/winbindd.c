@@ -297,6 +297,9 @@ static void process_request(struct winbindd_cli_state *state)
 		if (state->request.cmd == table->cmd) {
 			DEBUG(10,("process_request: request fn %s\n", table->winbindd_cmd_name ));
 			state->response.result = table->fn(state);
+			if (state->response.nt_status)
+				DEBUG(10, ("returning extended error 0x%08x\n",
+					   state->response.nt_status));
 			break;
 		}
 	}
@@ -619,7 +622,7 @@ static void process_loop(int accept_sock)
 
 					if (state->read_buf_len >= sizeof(uint32)
 					    && *(uint32 *) &state->request != sizeof(state->request)) {
-						DEBUG(0,("process_loop: Invalid request size (%d) send, should be (%d)\n",
+						DEBUG(0,("process_loop: Invalid request size (%d) sent, should be (%d)\n",
 								*(uint32 *) &state->request, sizeof(state->request)));
 
 						remove_client(state);
@@ -657,6 +660,11 @@ static void process_loop(int accept_sock)
 
 			flush_caches();
 			reload_services_file(True);
+#if 0 /* Notised at present. */
+			namecache_flush();
+#endif
+			winbindd_cm_flush();
+
 			do_sighup = False;
 		}
 
@@ -810,6 +818,10 @@ int main(int argc, char **argv)
 		return 1;
 
 	}
+
+#if 0 /* Notised at present. */
+	namecache_enable();	/* Enable netbios namecache */
+#endif
 
 	/* Get list of domains we look up requests for.  This includes the
 	   domain which we are a member of as well as any trusted

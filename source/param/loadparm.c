@@ -286,6 +286,7 @@ typedef struct
 	BOOL bHideLocalUsers;
 	BOOL bUseMmap;
 	BOOL bUnixExtensions;
+	int name_cache_timeout;
 }
 global;
 
@@ -882,6 +883,7 @@ static struct parm_struct parm_table[] = {
 	{"max disk size", P_INTEGER, P_GLOBAL, &Globals.maxdisksize, NULL, NULL, 0},
 	{"max open files", P_INTEGER, P_GLOBAL, &Globals.max_open_files, NULL, NULL, 0},
 	{"min print space", P_INTEGER, P_LOCAL, &sDefault.iMinPrintSpace, NULL, NULL, FLAG_PRINT},
+	{"name cache timeout", P_INTEGER, P_GLOBAL, &Globals.name_cache_timeout, NULL, NULL, 0},
 	{"read size", P_INTEGER, P_GLOBAL, &Globals.ReadSize, NULL, NULL, 0},
 	
 	{"socket options", P_GSTRING, P_GLOBAL, user_socket_options, NULL, NULL, 0},
@@ -1447,6 +1449,8 @@ static void init_globals(void)
 
 	Globals.bHostMSDfs = False;
 
+	 Globals.name_cache_timeout = 660; /* In seconds */
+
 	/*
 	 * This must be done last as it checks the value in 
 	 * client_code_page.
@@ -1694,6 +1698,7 @@ FN_GLOBAL_INTEGER(lp_min_passwd_length, &Globals.min_passwd_length)
 FN_GLOBAL_INTEGER(lp_oplock_break_wait_time, &Globals.oplock_break_wait_time)
 FN_GLOBAL_INTEGER(lp_lock_spin_count, &Globals.iLockSpinCount)
 FN_GLOBAL_INTEGER(lp_lock_sleep_time, &Globals.iLockSpinTime)
+FN_GLOBAL_INTEGER(lp_name_cache_timeout, &Globals.name_cache_timeout)
 FN_LOCAL_STRING(lp_preexec, szPreExec)
 FN_LOCAL_STRING(lp_postexec, szPostExec)
 FN_LOCAL_STRING(lp_rootpreexec, szRootPreExec)

@@ -10,12 +10,13 @@ int main(int argc, char **argv);
 /* The following definitions come from nsswitch/winbindd_cache.c  */
 
 void wcache_flush_cache(void);
+void winbindd_check_cache_size(time_t t);
 struct cache_entry *centry_start(struct winbindd_domain *domain, NTSTATUS status);
 
 /* The following definitions come from nsswitch/winbindd_cm.c  */
 
-CLI_POLICY_HND *cm_get_lsa_handle(char *domain);
-CLI_POLICY_HND *cm_get_sam_handle(char *domain);
+NTSTATUS cm_get_lsa_handle(char *domain, CLI_POLICY_HND **return_hnd);
+NTSTATUS cm_get_sam_handle(char *domain, CLI_POLICY_HND **return_hnd);
 CLI_POLICY_HND *cm_get_sam_dom_handle(char *domain, DOM_SID *domain_sid);
 CLI_POLICY_HND *cm_get_sam_user_handle(char *domain, DOM_SID *domain_sid,
 				       uint32 user_rid);
@@ -24,6 +25,7 @@ CLI_POLICY_HND *cm_get_sam_group_handle(char *domain, DOM_SID *domain_sid,
 NTSTATUS cm_get_netlogon_cli(char *domain, unsigned char *trust_passwd,
 			     struct cli_state **cli);
 void winbindd_cm_status(void);
+void winbindd_cm_flush(void);
 
 /* The following definitions come from nsswitch/winbindd_group.c  */
 

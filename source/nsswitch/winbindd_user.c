@@ -3,7 +3,7 @@
 
    Winbind daemon - user related functions
 
-   Copyright (C) Tim Potter 2000
+   Copyright (C) Tim Potter 2000,2002
    Copyright (C) Jeremy Allison 2001.
    
    This program is free software; you can redistribute it and/or modify
@@ -555,13 +555,29 @@ enum winbindd_result winbindd_list_users(struct winbindd_cli_state *state)
 		methods = domain->methods;
 
 		/* Query display info */
-		status = methods->query_user_list(domain, mem_ctx, 
-						  &num_entries, &info);
+
+		status = methods->query_user_list(
+			domain, mem_ctx, &num_entries, &info);
+
+		/* If an error occured on this domain, set the extended error 
+                   info and continue to the next domain. If we receive
+		   NT_STATUS_MORE_PROCESSING_REQUIRED then cached data was 
+                   returned but we couldn't contact the DC for the sequence 
+                   number. */
+
+		if (!NT_STATUS_IS_OK(status)) {
+			state->response.nt_status = NT_STATUS_V(status);
+			if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED))
+				continue;
+		}
+
+		/* No entries for this domain */
 
 		if (num_entries == 0)
 			continue;
 
 		/* Allocate some memory for extra data */
+
 		total_entries += num_entries;
 			
 		ted = Realloc(extra_data, sizeof(fstring) * total_entries);

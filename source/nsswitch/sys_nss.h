@@ -1,5 +1,5 @@
-#ifndef _NSSWITCH_NSS_H
-#define _NSSWITCH_NSS_H
+#ifndef _NSSWITCH_SYS_NSS_H
+#define _NSSWITCH_SYS_NSS_H
 /* 
    Unix SMB/CIFS implementation.
 
@@ -101,4 +101,4 @@ typedef enum
 
 #endif
 
-#endif /* _NSSWITCH_NSS_H */
+#endif /* _NSSWITCH_SYS_NSS_H */

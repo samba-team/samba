@@ -174,6 +174,14 @@ void sys_select_signal(void);
 int sys_select(int maxfd, fd_set *readfds, fd_set *writefds, fd_set *errorfds, struct timeval *tval);
 int sys_select_intr(int maxfd, fd_set *readfds, fd_set *writefds, fd_set *errorfds, struct timeval *tval);
 
+/* The following definitions come from lib/sendfile.c  */
+
+ssize_t sys_sendfile(int outfd, int infd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count);
+ssize_t sys_sendfile(int outfd, int infd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count);
+ssize_t sys_sendfile(int outfd, int infd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count);
+ssize_t sys_sendfile(int outfd, int infd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count);
+ssize_t sys_sendfile(int outfd, int infd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count);
+
 /* The following definitions come from lib/signal.c  */
 
 void BlockSignals(BOOL block,int signum);
@@ -687,6 +695,15 @@ NTSTATUS dos_to_ntstatus(int eclass, int ecode);
 void ntstatus_to_dos(NTSTATUS ntstatus, uint8 *eclass, uint32 *ecode);
 NTSTATUS werror_to_ntstatus(WERROR error);
 WERROR ntstatus_to_werror(NTSTATUS error);
+
+/* The following definitions come from libsmb/namecache.c  */
+
+BOOL namecache_enable(void);
+void namecache_store(const char *name, int name_type,
+		     int num_names, struct in_addr *ip_list);
+BOOL namecache_fetch(const char *name, int name_type, struct in_addr **ip_list,
+		     int *num_names);
+void namecache_flush(void);
 
 /* The following definitions come from libsmb/namequery.c  */
 
@@ -1314,6 +1331,7 @@ BOOL strcsequal(const char *s1,const char *s2);
 int strwicmp(char *psz1, char *psz2);
 void strlower(char *s);
 void strupper(char *s);
+char *strupper_static(const char *s);
 void strnorm(char *s);
 BOOL strisnormal(char *s);
 void string_replace(char *s,char oldc,char newc);
@@ -2042,6 +2060,7 @@ int lp_min_passwd_length(void);
 int lp_oplock_break_wait_time(void);
 int lp_lock_spin_count(void);
 int lp_lock_sleep_time(void);
+int lp_name_cache_timeout(void);
 char *lp_preexec(int );
 char *lp_postexec(int );
 char *lp_rootpreexec(int );
