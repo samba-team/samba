@@ -1,3 +1,7 @@
+1999-10-17  Assar Westerlund  <assar@sics.se>
+
+	* Makefile.am (kadmin_LDADD): add LIB_dlopen
+
 1999-10-01  Assar Westerlund  <assar@sics.se>
 
 	* ank.c (add_one_principal): `password' can cactually be NULL in
