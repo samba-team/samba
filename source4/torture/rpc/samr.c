@@ -32,6 +32,9 @@
 static BOOL test_QueryUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 			       struct policy_handle *handle);
 
+static BOOL test_QueryUserInfo2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+				struct policy_handle *handle);
+
 static BOOL test_QueryAliasInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			       struct policy_handle *handle);
 
@@ -507,6 +510,10 @@ static BOOL test_user_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	}
 
 	if (!test_QueryUserInfo(p, mem_ctx, handle)) {
+		ret = False;
+	}
+
+	if (!test_QueryUserInfo2(p, mem_ctx, handle)) {
 		ret = False;
 	}
 
@@ -1034,6 +1041,33 @@ static BOOL test_QueryUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
+static BOOL test_QueryUserInfo2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+				struct policy_handle *handle)
+{
+	NTSTATUS status;
+	struct samr_QueryUserInfo2 r;
+	uint16 levels[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+			   11, 12, 13, 14, 16, 17, 20, 21};
+	int i;
+	BOOL ret = True;
+
+	for (i=0;i<ARRAY_SIZE(levels);i++) {
+		printf("Testing QueryUserInfo2 level %u\n", levels[i]);
+
+		r.in.handle = handle;
+		r.in.level = levels[i];
+
+		status = dcerpc_samr_QueryUserInfo2(p, mem_ctx, &r);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("QueryUserInfo2 level %u failed - %s\n", 
+			       levels[i], nt_errstr(status));
+			ret = False;
+		}
+	}
+
+	return ret;
+}
+
 static BOOL test_OpenUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 			  struct policy_handle *handle, uint32 rid)
 {
@@ -1060,6 +1094,10 @@ static BOOL test_OpenUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	}
 
 	if (!test_QueryUserInfo(p, mem_ctx, &acct_handle)) {
+		ret = False;
+	}
+
+	if (!test_QueryUserInfo2(p, mem_ctx, &acct_handle)) {
 		ret = False;
 	}
 
@@ -1315,6 +1353,51 @@ static BOOL test_GetDisplayEnumerationIndex(struct dcerpc_pipe *p, TALLOC_CTX *m
 			       levels[i], nt_errstr(status));
 			ret = False;
 		}
+
+		init_samr_Name(&r.in.name, "zzzzzzzz");
+
+		status = dcerpc_samr_GetDisplayEnumerationIndex(p, mem_ctx, &r);
+		if (!NT_STATUS_EQUAL(NT_STATUS_NO_MORE_ENTRIES, status)) {
+			printf("GetDisplayEnumerationIndex level %u failed - %s\n", 
+			       levels[i], nt_errstr(status));
+			ret = False;
+		}
+	}
+	
+	return ret;	
+}
+
+static BOOL test_GetDisplayEnumerationIndex2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+					     struct policy_handle *handle)
+{
+	NTSTATUS status;
+	struct samr_GetDisplayEnumerationIndex2 r;
+	BOOL ret = True;
+	uint16 levels[] = {1, 2, 3, 4, 5};
+	int i;
+
+	for (i=0;i<ARRAY_SIZE(levels);i++) {
+		printf("Testing GetDisplayEnumerationIndex2 level %u\n", levels[i]);
+
+		r.in.handle = handle;
+		r.in.level = levels[i];
+		init_samr_Name(&r.in.name, TEST_USERNAME);
+
+		status = dcerpc_samr_GetDisplayEnumerationIndex2(p, mem_ctx, &r);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("GetDisplayEnumerationIndex2 level %u failed - %s\n", 
+			       levels[i], nt_errstr(status));
+			ret = False;
+		}
+
+		init_samr_Name(&r.in.name, "zzzzzzzz");
+
+		status = dcerpc_samr_GetDisplayEnumerationIndex2(p, mem_ctx, &r);
+		if (!NT_STATUS_EQUAL(NT_STATUS_NO_MORE_ENTRIES, status)) {
+			printf("GetDisplayEnumerationIndex2 level %u failed - %s\n", 
+			       levels[i], nt_errstr(status));
+			ret = False;
+		}
 	}
 	
 	return ret;	
@@ -1341,6 +1424,35 @@ static BOOL test_QueryDisplayInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		status = dcerpc_samr_QueryDisplayInfo(p, mem_ctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("QueryDisplayInfo level %u failed - %s\n", 
+			       levels[i], nt_errstr(status));
+			ret = False;
+		}
+	}
+	
+	return ret;	
+}
+
+static BOOL test_QueryDisplayInfo2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+				  struct policy_handle *handle)
+{
+	NTSTATUS status;
+	struct samr_QueryDisplayInfo2 r;
+	BOOL ret = True;
+	uint16 levels[] = {1, 2, 3, 4, 5};
+	int i;
+
+	for (i=0;i<ARRAY_SIZE(levels);i++) {
+		printf("Testing QueryDisplayInfo2 level %u\n", levels[i]);
+
+		r.in.handle = handle;
+		r.in.level = levels[i];
+		r.in.start_idx = 0;
+		r.in.max_entries = 1000;
+		r.in.buf_size = (uint32)-1;
+
+		status = dcerpc_samr_QueryDisplayInfo2(p, mem_ctx, &r);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("QueryDisplayInfo2 level %u failed - %s\n", 
 			       levels[i], nt_errstr(status));
 			ret = False;
 		}
@@ -1395,6 +1507,34 @@ static BOOL test_QueryDomainInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				ret = False;
 				continue;
 			}
+		}
+	}
+
+	return True;	
+}
+
+
+static BOOL test_QueryDomainInfo2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+				  struct policy_handle *handle)
+{
+	NTSTATUS status;
+	struct samr_QueryDomainInfo2 r;
+	uint16 levels[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13};
+	int i;
+	BOOL ret = True;
+
+	for (i=0;i<ARRAY_SIZE(levels);i++) {
+		printf("Testing QueryDomainInfo2 level %u\n", levels[i]);
+
+		r.in.handle = handle;
+		r.in.level = levels[i];
+
+		status = dcerpc_samr_QueryDomainInfo2(p, mem_ctx, &r);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("QueryDomainInfo2 level %u failed - %s\n", 
+			       r.in.level, nt_errstr(status));
+			ret = False;
+			continue;
 		}
 	}
 
@@ -1756,6 +1896,10 @@ static BOOL test_OpenDomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		ret = False;
 	}
 
+	if (!test_QueryDomainInfo2(p, mem_ctx, &domain_handle)) {
+		ret = False;
+	}
+
 	if (!test_EnumDomainUsers(p, mem_ctx, &domain_handle)) {
 		ret = False;
 	}
@@ -1772,7 +1916,15 @@ static BOOL test_OpenDomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		ret = False;
 	}
 
+	if (!test_QueryDisplayInfo2(p, mem_ctx, &domain_handle)) {
+		ret = False;
+	}
+
 	if (!test_GetDisplayEnumerationIndex(p, mem_ctx, &domain_handle)) {
+		ret = False;
+	}
+
+	if (!test_GetDisplayEnumerationIndex2(p, mem_ctx, &domain_handle)) {
 		ret = False;
 	}
 
