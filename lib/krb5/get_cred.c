@@ -548,7 +548,7 @@ get_cred_from_kdc_flags(krb5_context context,
 	}
     }
     if(krb5_realm_compare(context, in_creds->client, in_creds->server))
-	return -1; /* XXX */
+	return KRB5_CC_NOTFOUND;
     /* XXX this can loop forever */
     while(1){
 	general_string tgt_inst;
