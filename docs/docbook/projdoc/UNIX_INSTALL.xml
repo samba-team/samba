@@ -15,12 +15,12 @@
 
 	<para>
 	Binary packages of samba are included in almost any Linux or
-	Unix distribution. There are also some packages available at 
+	UNIX distribution. There are also some packages available at 
 	<ulink url="http://samba.org/">the samba homepage</ulink>.
 	</para>
 
-	<para>If you need to compile samba from source, check the 
-	<link linkend="compiling">appropriate appendix chapter</link>.</para>
+	<para>If you need to compile samba from source, check 
+		<link linkend="compiling">the chapter about compiling samba from scratch</link>.</para>
 
 	<para>If you have already installed samba, or if your operating system
 	was pre-installed with samba, then you may not need to bother with this
@@ -55,39 +55,39 @@
 	</para>
 
 	<para>
-	<programlisting>
-	[global]
-		workgroup = MYGROUP
+	<smbconfexample>
+		<title>Simplest possible smb.conf file</title>
+<smbconfsection>[global]</smbconfsection>
+<smbconfoption><name>workgroup</name><value>&example.workgroup;</value></smbconfoption>
 
-	[homes]
-		guest ok = no
-		read only = no
-	</programlisting>
+<smbconfsection>[homes]</smbconfsection>
+<smbconfoption><name>guest ok</name><value>no</value></smbconfoption>
+<smbconfoption><name>read only</name><value>no</value></smbconfoption>
+	</smbconfexample>
 	</para>
 	
 	<para>
 	This will allow connections by anyone with an account on the server, using either
-	their login name or "<parameter>homes</parameter>" as the service name.
+	their login name or <smbconfsection>homes</smbconfsection>" as the service name.
 	(Note that the workgroup that Samba must also be set.)
 	</para>
 	
 	<para>
-	Make sure you put the <filename>smb.conf</filename> file in the same place 
-	you specified in the <filename>Makefile</filename> (the default is to 
-	look for it in <filename>/usr/local/samba/lib/</filename>).
+	Make sure you put the &smb.conf; file in the correct place 
+	(usually in <filename>/etc/samba</filename>).
 	</para>
 
 	<para>
 	For more information about security settings for the 
-	<parameter>[homes]</parameter> share please refer to the chapter 
-	<link linkend="securing-samba">Securing Samba</link>.
+	<smbconfsection>[homes]</smbconfsection> share please refer to 
+	<link linkend="securing-samba">"Securing Samba"</link>.
 	</para>
 
 <sect3>
 	<title>Test your config file with <command>testparm</command></title>
 
 	<para>
-	It's important that you test the validity of your <filename>smb.conf</filename>
+	It's important that you test the validity of your &smb.conf;
 	file using the &testparm; program. If testparm runs OK
 	then it will list the loaded services. If not it will give an error message.
 	</para>
@@ -115,7 +115,7 @@
 
 	<para>
 	To launch SWAT just run your favorite web browser and 
-	point it at <ulink url="http://localhost:901/">http://localhost:901/</ulink>. Replace
+	point it at <ulink url="http://localhost:901/" noescape="1">http://localhost:901/</ulink>. Replace
 	<replaceable>localhost</replaceable>
 	with the name of the computer you are running samba on if you 
 	are running samba on a different computer than your browser.
@@ -134,8 +134,9 @@
 	<title>Try listing the shares available on your 
 	server</title>
 
-	<para><prompt>$ </prompt><userinput>smbclient -L 
-	<replaceable>yourhostname</replaceable></userinput></para>
+<para><screen>
+&prompt;<userinput>smbclient -L <replaceable>yourhostname</replaceable></userinput>
+</screen></para>
 
 	<para>You should get back a list of shares available on 
 	your server. If you don't then something is incorrectly setup. 
@@ -153,51 +154,55 @@
 <sect1>
 	<title>Try connecting with the unix client</title>
 	
-	<para><prompt>$ </prompt><userinput>smbclient <replaceable>
-	//yourhostname/aservice</replaceable></userinput></para>
+	<para>
+<screen>
+&prompt;<userinput>smbclient <replaceable> //yourhostname/aservice</replaceable></userinput>
+</screen></para>
 	
 	<para>Typically the <replaceable>yourhostname</replaceable> 
 	would be the name of the host where you installed &smbd;. 
 	The <replaceable>aservice</replaceable> is 
 	any service you have defined in the &smb.conf;
-	file. Try your user name if you just have a <parameter>[homes]</parameter>
+	file. Try your user name if you just have a <smbconfsection>[homes]</smbconfsection>
 	section
 	in &smb.conf;.</para>
 
 	<para>For example if your unix host is <replaceable>bambi</replaceable>
 	and your login name is <replaceable>fred</replaceable> you would type:</para>
 
-	<para><prompt>$ </prompt><userinput>smbclient //<replaceable>bambi</replaceable>/<replaceable>fred</replaceable>
-	</userinput></para>
+<para><screen>
+&prompt;<userinput>smbclient //<replaceable>bambi</replaceable>/<replaceable>fred</replaceable></userinput>
+</screen></para>
 </sect1>
 
 <sect1>
-	<title>Try connecting from a DOS, WfWg, Win9x, WinNT, 
-	Win2k, OS/2, etc... client</title>
-	
-	<para>Try mounting disks. eg:</para>
+	<title>Try connecting from another SMB client</title>
 
-	<para><prompt>C:\WINDOWS\> </prompt><userinput>net use d: \\servername\service
-	</userinput></para>
+	<para>Try mounting disks. from a DOS, Windows or OS/2 client, eg:</para>
+
+	<para><screen>
+&dosprompt;<userinput>net use d: \\servername\service</userinput>
+</screen></para>
 
 	<para>Try printing. eg:</para>
 
-	<para><prompt>C:\WINDOWS\> </prompt><userinput>net use lpt1:
-	\\servername\spoolservice</userinput></para>
+	<para>
+<screen>
+&dosprompt;<userinput>net use lpt1:	\\servername\spoolservice</userinput>
+</screen></para>
 
-	<para><prompt>C:\WINDOWS\> </prompt><userinput>print filename
-	</userinput></para>
+<para>
+<screen>&dosprompt;<userinput>print filename</userinput>
+</screen></para>
 </sect1>
 
 <sect1>
 	<title>What If Things Don't Work?</title>
 	
-	<para>Then you might read the file chapter 
-	<link linkend="diagnosis">Diagnosis</link> and the 
-	FAQ. If you are still stuck then try to follow 
-	the <link linkend="problems">Analysing and Solving Problems chapter</link>
+	<para>Then you might read the file chapter <link linkend="diagnosis">diagnosis</link>
+	and the FAQ. If you are still stuck then refer to <link linkend="problems">"Analysing and solving problems"</link>.
 	Samba has been successfully installed at thousands of sites worldwide,
-	so maybe someone else has hit your problem and has overcome it. </para>
+	so maybe someone else has hit your problem and has overcome it.</para>
 
 </sect1>
 
@@ -209,55 +214,7 @@ The following questions and issues get raised on the samba mailing list over and
 </para>
 
 <sect2>
-<title>Why are so many smbd processes eating memory?</title>
-
-<para>
-<quote>
-Site that is running Samba on an AIX box. They are sharing out about 2 terabytes using samba.
-Samba was installed using smitty and the binaries. We seem to be experiencing a memory problem
-with this box.  When I do a <command>svmon -Pu</command> the monitoring program shows that &smbd; has several
-processes of smbd running:
-</quote>
-</para>
-
-<para>
-	<quote>
-Is samba suppose to start this many different smbd processes?  Or does it run as one smbd process?  Also
-is it normal for it to be taking up this much memory?
-</quote>
-</para>
-
-<para>
-<screen>
-Inuse * 4096 = amount of memory being used by this process
-
-     Pid Command        Inuse      Pin     Pgsp  Virtual   64-bit    Mthrd
-   20950 smbd           33098     1906      181     5017        N        N
-   22262 smbd            9104     1906      5410
-   21060 smbd            9048     1906      181     5479        N        N
-   25972 smbd            8678     1906      181     5109        N        N
-   24524 smbd            8674     1906      181     5105        N        N
-   19262 smbd            8582     1906      181     5013        N        N
-   20722 smbd            8572     1906      181     5003        N        N
-   21454 smbd            8572     1906      181     5003        N        N
-   28946 smbd            8567     1906      181     4996        N        N
-   24076 smbd            8566     1906      181     4996        N        N
-   20138 smbd            8566     1906      181     4996        N        N
-   17608 smbd            8565     1906      181     4996        N        N
-   21820 smbd            8565     1906      181     4996        N        N
-   26940 smbd            8565     1906      181     4996        N        N
-   19884 smbd            8565     1906      181     4996        N        N
-    9912 smbd            8565     1906      181     4996        N        N
-   25800 smbd            8564     1906      181     4995        N        N
-   20452 smbd            8564     1906      181     4995        N        N
-   18592 smbd            8562     1906      181     4993        N        N
-   28216 smbd            8521     1906      181     4954        N        N
-   19110 smbd            8404     1906      181     4862        N        N
-
-   Total memory used:  841,592,832 bytes
-</screen>
-</para>
-
+	<title>Large number of smbd processes</title>
 
 <para>
 Samba consists on three core programs:
@@ -285,10 +242,27 @@ run in "split mode" (in which case there will be two instances).
 </sect2>
 
 	<sect2>
-	<title>I'm getting "open_oplock_ipc: Failed to get local UDP socket for address 100007f. Error was Cannot assign requested" in the logs</title>
-    <para>Your loopback device isn't working correctly. Make sure it's running.  </para>
+		<title>"open_oplock_ipc: Failed to get local UDP socket for address 100007f. Error was Cannot assign requested"</title>
+	<para>Your loopback device isn't working correctly. Make sure it's configured properly. The loopback device is an internal (virtual) network device with 
+		the ip address 127.0.0.1. Read your OS documentation for details 
+	on how to configure the loopback on your system.</para>
 	</sect2>
 
+	<sect2>
+		<title>"<errorname>The network name cannot be found</errorname>"</title>
+
+		<para>
+			This error can be caused by one of these misconfigurations:
+		</para>
+
+		<itemizedlist>
+			<listitem><para>You specified an nonexisting <smbconfoption><name>path</name></smbconfoption> for the share in &smb.conf; </para></listitem>
+			<listitem><para>The user you are trying to access the share with does not 
+					have sufficient permissions to access the <smbconfoption><name>path</name></smbconfoption> for the share. Both read (r) and access (x) should be possible.</para></listitem>
+			<listitem><para>The share you are trying to access does not exist.</para></listitem>
+	</itemizedlist>
+
+	</sect2>
 </sect1>
 
 </chapter>

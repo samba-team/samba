@@ -7,7 +7,7 @@
     <parameter moreinfo="none">security</parameter></link> option is set to 
     <constant>server</constant> or <constant>domain</constant>.  
     If it is set to no, then attempts to connect to a resource from 
-    a domain or workgroup other than the one which <ulink url="smbd.8.html">smbd</ulink> is running 
+    a domain or workgroup other than the one which smbd is running 
     in will fail, even if that domain is trusted by the remote server 
     doing the authentication.</para>
 		

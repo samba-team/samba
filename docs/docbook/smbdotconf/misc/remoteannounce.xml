@@ -27,8 +27,7 @@
 	addresses of the remote networks, but can also be the IP addresses 
 	of known browse masters if your network config is that stable.</para>
 
-	<para>See the documentation file <ulink url="improved-browsing.html">BROWSING</ulink> 
-	in the <filename moreinfo="none">docs/</filename> directory.</para>
+	<para>See <link linkend="NetworkBrowsing"/>.</para>
 		
 	<para>Default: <command moreinfo="none">remote announce = &lt;empty string&gt;</command></para>
 </listitem>

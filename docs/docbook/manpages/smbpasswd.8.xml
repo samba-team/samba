@@ -1,8 +1,7 @@
-<?xml version="1.0" encoding="iso8859-1"?>
-<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN"
-                  "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd" [
-
-<!ENTITY % globalentities SYSTEM './../global.ent'> %globalentities;
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN" "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd" [
+				  
+<!ENTITY % globalentities SYSTEM '../global.ent'> %globalentities;
 ]>
 <refentry id="smbpasswd.8">
 
@@ -318,8 +317,7 @@
 		has been configured to use the experimental
 		<command>--with-ldapsam</command> option. The <parameter>-w</parameter> 
 		switch is used to specify the password to be used with the 
-		<ulink url="smb.conf.5.html#LDAPADMINDN"><parameter>ldap admin 
-		dn</parameter></ulink>.  Note that the password is stored in
+		<smbconfoption><name>ldap admin dn</name></smbconfoption>.  Note that the password is stored in
 		the <filename>secrets.tdb</filename> and is keyed off 
 		of the admin's DN.  This means that if the value of <parameter>ldap
 		admin dn</parameter> ever changes, the password will need to be 
@@ -370,9 +368,7 @@
 	allow "localhost" access to the smbd. </para>
 
 	<para>In addition, the smbpasswd command is only useful if Samba
-	has been set up to use encrypted passwords. See the document <ulink url="pwencrypt.html">
-	"LanMan and NT Password Encryption in Samba"</ulink> in the docs directory for details 
-	on how to do this. </para>
+	has been set up to use encrypted passwords. </para>
 </refsect1>
 
 

@@ -3,13 +3,7 @@
 <chapterinfo>
 	&author.jerry;
 	&author.jelmer;
-	<author>
-		<firstname>David</firstname><surname>Bannon</surname>
-		<affiliation>
-			<orgname>Samba Team</orgname>
-			<address><email>dbannon@samba.org</email></address>
-		</affiliation>
-	</author>
+	&author.dbannon;
 	<pubdate>8 Apr 2003</pubdate>
 </chapterinfo>
 
@@ -24,10 +18,20 @@ general SMB topics such as browsing.</para>
 <sect1>
 <title>Diagnostics tools</title>
 
+<para>With SMB networking, it is often not immediately clear what 
+the cause is of a certain problem. Samba itself provides rather 
+useful information, but in some cases you might have to fall back 
+to using a <emphasis>sniffer</emphasis>. A sniffer is a program that 
+listens on your LAN, analyses the data sent on it and displays it 
+on the screen.</para>
+
+<sect2>
+<title>Debugging with Samba itself</title>
+
   <para>
 One of the best diagnostic tools for debugging problems is Samba itself.  
 You can use the <option>-d option</option> for both &smbd; and &nmbd; to specify what 
-<parameter>debug level</parameter> at which to run.  See the man pages on smbd, nmbd  and 
+<smbconfoption><name>debug level</name></smbconfoption> at which to run.  See the man pages on smbd, nmbd  and 
 smb.conf for more information on debugging options.  The debug 
 level can range from 1 (the default) to 10 (100 for debugging passwords).
 </para>
@@ -52,17 +56,44 @@ Some useful samba commands worth investigating:
 </para>
 	
 <screen>
-	<prompt>$ </prompt><userinput>testparm | more</userinput>
-	<prompt>$ </prompt><userinput>smbclient -L //{netbios name of server}</userinput>
+&prompt;<userinput>testparm | more</userinput>
+&prompt;<userinput>smbclient -L //{netbios name of server}</userinput>
 </screen>
-   
+
+</sect2>
+
+<sect2>
+	<title>Tcpdump</title>
+  
+<para><ulink url="http://www.tcpdump.org/">Tcpdump</ulink> was the first 
+unix sniffer with SMB support. It is a command-line utility and 
+nowadays, it's SMB support is somewhat less then that of ethereal 
+and tethereal.</para>
+
+</sect2>
+
+<sect2>
+	<title>Ethereal</title>
+
 <para>
-An SMB enabled version of tcpdump is available from 
-<ulink url="http://www.tcpdump.org/">http://www.tcpdup.org/</ulink>.
-Ethereal, another good packet sniffer for Unix and Win32
-hosts, can be downloaded from <ulink 
-url="http://www.ethereal.com/">http://www.ethereal.com</ulink>.
-</para>
+<ulink url="http://www.ethereal.com/">Ethereal</ulink> is a graphical 
+sniffer, available for both unix (Gtk) and Windows. Ethereal's 
+SMB support is very good.</para>
+
+<para>For details on the use of ethereal, read the well-written 
+ethereal User Guide.</para>
+
+<para>
+Listen for data on ports 137, 138, 139 and 445. E.g. 
+use the filter <userinput>port 137 or port 138 or port 139 or port 445</userinput>.</para>
+
+<para>A console version of ethereal is available as well and is called 
+<command>tethereal</command>.</para>
+
+</sect2>
+
+<sect2>
+<title>The Windows Network Monitor</title>
 	
 <para>
 For tracing things on the Microsoft Windows NT, Network Monitor 
@@ -76,10 +107,8 @@ local subnet.  Be aware that Ethereal can read and write netmon
 formatted files.
 </para>
 
-</sect1>
-
-<sect1>
-<title>Installing 'Network Monitor' on an NT Workstation or a Windows 9x box</title>
+<sect3>
+<title>Installing 'Network Monitor' on an NT Workstation</title>
 
 <para>
 Installing netmon on an NT workstation requires a couple 
@@ -144,14 +173,18 @@ permissions as you deem appropriate for your site. You will need
 administrative rights on the NT box to run netmon.
 </para>
 
+</sect3>
+<sect3>
+<title>Installing 'Network Monitor' on an 9x Workstation</title>
 <para>
 To install Netmon on a Windows 9x box install the network monitor agent 
 from the Windows 9x CD (<filename>\admin\nettools\netmon</filename>).  There is a readme 
 file located with the netmon driver files on the CD if you need 
 information on how to do this.  Copy the files from a working 
 Netmon installation.
-</para> 
-
+</para>
+</sect3>
+</sect2>
 </sect1>
 
 <sect1>
@@ -159,15 +192,14 @@ Netmon installation.
 <itemizedlist>
 
 <listitem><para>See how Scott Merrill simulates a BDC behavior at 
-       <ulink url="http://www.skippy.net/linux/smb-howto.html">
+       <ulink noescape="1" url="http://www.skippy.net/linux/smb-howto.html">
        http://www.skippy.net/linux/smb-howto.html</ulink>. </para></listitem>
 
 <listitem><para>FTP site for older SMB specs: 
-       <ulink url="ftp://ftp.microsoft.com/developr/drg/CIFS/">
+       <ulink noescape="1" url="ftp://ftp.microsoft.com/developr/drg/CIFS/">
        ftp://ftp.microsoft.com/developr/drg/CIFS/</ulink></para></listitem>
 
 </itemizedlist>
-<!-- FIXME: Merge with Further Resources -->
 
 </sect1>
 
@@ -176,14 +208,14 @@ Netmon installation.
 
 <para>
 There are a number of Samba related mailing lists. Go to <ulink 
-url="http://samba.org">http://samba.org</ulink>, click on your nearest mirror
+noescape="1" url="http://samba.org">http://samba.org</ulink>, click on your nearest mirror
 and then click on <command>Support</command> and then click on <command>
 Samba related mailing lists</command>.
 </para>
 
 <para>
 For questions relating to Samba TNG go to
-<ulink url="http://www.samba-tng.org/">http://www.samba-tng.org/</ulink> 
+<ulink noescape="1" url="http://www.samba-tng.org/">http://www.samba-tng.org/</ulink> 
 It has been requested that you don't post questions about Samba-TNG to the
 main stream Samba lists.</para>
  
@@ -193,12 +225,12 @@ If you post a message to one of the lists please observe the following guide lin
 
 <itemizedlist>
 
-<listitem><para> Always remember that the developers are volunteers, they are 
+<listitem><para>Always remember that the developers are volunteers, they are 
 not paid and they never guarantee to produce a particular feature at 
 a particular time. Any time lines are 'best guess' and nothing more.
 </para></listitem>
 
-<listitem><para> Always mention what version of samba you are using and what 
+<listitem><para>Always mention what version of samba you are using and what 
 operating system its running under. You should probably list the
 relevant sections of your &smb.conf; file, at least the options 
 in [global] that affect PDC support.</para></listitem>
@@ -244,10 +276,9 @@ smb.conf in their attach directory?</para></listitem>
 
 <para>To have your name removed from a samba mailing list, go to the
 same place you went to to get on it. Go to <ulink 
-url="http://lists.samba.org/">http://lists.samba.org</ulink>, 
+	noescape="1" url="http://lists.samba.org/">http://lists.samba.org</ulink>, 
 click on your nearest mirror and then click on <command>Support</command> and 
-then click on <command> Samba related mailing lists</command>. Or perhaps see 
-<ulink url="http://lists.samba.org/mailman/roster/samba-ntdom">here</ulink>
+then click on <command> Samba related mailing lists</command>. 
 </para>
 
 <para>

@@ -2,20 +2,21 @@
 <chapterinfo>
 	&author.jht;
 	&author.jeremy;
+	<author>&person.jelmer;<contrib>drawing</contrib></author>
 	<pubdate>May 10, 2003</pubdate>
 </chapterinfo>
 <title>File, Directory and Share Access Controls</title>
 
+<indexterm><primary>ACLs</primary></indexterm>
 <para>
 Advanced MS Windows users are frequently perplexed when file, directory and share manipulation of
 resources shared via Samba do not behave in the manner they might expect. MS Windows network
-administrators are often confused regarding network access controls and what is the best way to
-provide users with the type of access they need while protecting resources from the consequences
-of untoward access capabilities.
+administrators are often confused regarding network access controls and how to
+provide users with the access they need while protecting resources from unauthorised access.
 </para>
 
 <para>
-Unix administrators frequently are not familiar with the MS Windows environment and in particular
+Many UNIX administrators are unfamiliar with the MS Windows environment and in particular
 have difficulty in visualizing what the MS Windows user wishes to achieve in attempts to set file
 and directory access permissions. 
 </para>
@@ -23,12 +24,13 @@ and directory access permissions.
 <para>
 The problem lies in the differences in how file and directory permissions and controls work
 between the two environments. This difference is one that Samba can not completely hide, even
-though it does try to make the chasm transparent.
+though it does try to bridge the chasm to a degree.
 </para>
 
+<indexterm><primary>Extended Attributes</primary></indexterm>
 <para>
 POSIX Access Control List technology has been available (along with Extended Attributes)
-for Unix for many years, yet there is little evidence today of any significant use. This
+for UNIX for many years, yet there is little evidence today of any significant use. This
 explains to some extent the slow adoption of ACLs into commercial Linux products. MS Windows
 administrators are astounded at this given that ACLs were a foundational capability of the now
 decade old MS Windows NT operating system.
@@ -41,12 +43,11 @@ for delivering the best environment for MS Windows desktop users.
 </para>
 
 <para>
-This is an opportune point to mention that it should be borne in mind that Samba was created to
-provide a means of interoperability and interchange of data between two operating environments
-that are quite different. It was never the intent to make Unix/Linux like MS Windows NT. Instead
-the purpose was an is to provide a sufficient level of exchange of data between the two environments.
-What is available today extends well beyond early plans and expectations, yet the gap continues to
-shrink.
+This is an opportune point to mention that Samba was created to provide a means of interoperability
+and interchange of data between differing operating environments. Samba has no intent change
+UNIX/Linux into a platform like MS Windows. Instead the purpose was and is to provide a sufficient
+level of exchange of data between the two environments.  What is available today extends well
+beyond early plans and expectations, yet the gap continues to shrink.
 </para>
 
 <sect1>
@@ -60,17 +61,17 @@ shrink.
 	<itemizedlist>
 	<title>Samba Access Control Facilities</title>
 		<listitem><para>
-		<emphasis>Unix File and Directory Permissions</emphasis>
+		<emphasis>UNIX File and Directory Permissions</emphasis>
 		</para>
 
 			<para>
-			Samba honours and implements Unix file system access controls. Users
+			Samba honours and implements UNIX file system access controls. Users
 			who access a Samba server will do so as a particular MS Windows user.
 			This information is passed to the Samba server as part of the logon or
 			connection setup process. Samba uses this user identity to validate
 			whether or not the user should be given access to file system resources
 			(files and directories). This chapter provides an overview for those
-			to whom the Unix permissions and controls are a little strange or unknown.
+			to whom the UNIX permissions and controls are a little strange or unknown.
 			</para>
 		</listitem>
 
@@ -102,13 +103,13 @@ shrink.
 		</listitem>
 
 		<listitem><para>
-		<emphasis>MS Windows ACLs through Unix POSIX ACLs</emphasis>
+		<emphasis>MS Windows ACLs through UNIX POSIX ACLs</emphasis>
 		</para>
 
 			<para>
-			The use of POSIX ACLs on Unix/Linux is possible ONLY if the underlying
+			The use of POSIX ACLs on UNIX/Linux is possible ONLY if the underlying
 			operating system supports them. If not, then this option will not be
-			available to you. Current Unix technology platforms have native support
+			available to you. Current UNIX technology platforms have native support
 			for POSIX ACLs. There are patches for the Linux kernel that provide
 			this also. Sadly, few Linux platforms ship today with native ACLs and
 			Extended Attributes enabled. This chapter has pertinent information
@@ -124,16 +125,18 @@ shrink.
 
 <para>
 Perhaps the most important recognition to be made is the simple fact that MS Windows NT4 / 200x / XP
-implement a totally divergent file system technology from what is provided in the Unix operating system
+implement a totally divergent file system technology from what is provided in the UNIX operating system
 environment. Firstly we should consider what the most significant differences are, then we shall look
 at how Samba helps to bridge the differences.
 </para>
 
+<indexterm><primary>NTFS</primary></indexterm>
+<indexterm><primary>File System</primary></indexterm>
 	<sect2>
-	<title>MS Windows NTFS Comparison with Unix File Systems</title>
+	<title>MS Windows NTFS Comparison with UNIX File Systems</title>
 
 	<para>
-	Samba operates on top of the Unix file system. This means it is subject to Unix file system conventions
+	Samba operates on top of the UNIX file system. This means it is subject to UNIX file system conventions
 	and permissions. It also means that if the MS Windows networking environment requires file system
 	behaviour that differs from unix file system behaviour then somehow Samba is responsible for emulating
 	that in a transparent and consistent manner.
@@ -152,12 +155,12 @@ at how Samba helps to bridge the differences.
 			<term>Name Space</term>
 			<listitem>
 		<para>
-		MS Windows NT4 / 200x/ XP files names may be up to 254 characters long, Unix file names
+		MS Windows NT4 / 200x/ XP files names may be up to 254 characters long, UNIX file names
 		may be 1023 characters long. In MS Windows file extensions indicate particular file types,
-		in Unix this is not so rigorously observed as all names are considered arbitrary. 
+		in UNIX this is not so rigorously observed as all names are considered arbitrary. 
 		</para>
 		<para>
-		What MS Windows calls a Folder, Unix calls a directory,
+		What MS Windows calls a Folder, UNIX calls a directory.
 		</para>
 			</listitem>
 		</varlistentry>
@@ -166,25 +169,26 @@ at how Samba helps to bridge the differences.
 			<term>Case Sensitivity</term>
 			<listitem>
 		<para>
-		MS Windows file names are generally Upper Case if made up of 8.3 (ie: 8 character file name
+		<indexterm><primary>8.3</primary><secondary>file names</secondary></indexterm>
+		MS Windows file names are generally upper case if made up of 8.3 (ie: 8 character file name
 		and 3 character extension. If longer than 8.3 file names are Case Preserving, and Case
 		Insensitive.
 		</para>
 		<para>
-		Unix file and directory names are Case Sensitive and Case Preserving. Samba implements the
-		MS Windows file name behaviour, but it does so as a user application. The Unix file system
+		UNIX file and directory names are case sensitive and case preserving. Samba implements the
+		MS Windows file name behaviour, but it does so as a user application. The UNIX file system
 		provides no mechanism to perform case insensitive file name lookups. MS Windows does this
 		by default. This means that Samba has to carry the processing overhead to provide features
-		that are NOT native to the Unix operating system environment.
+		that are NOT native to the UNIX operating system environment.
 		</para>
 		<para>
-		Consider the following, all are unique Unix names but one single MS Windows file name:
+		Consider the following, all are unique UNIX names but one single MS Windows file name:
 		<computeroutput>
 				MYFILE.TXT
 				MyFile.txt
 				myfile.txt
 		</computeroutput>
-		So clearly, In an MS Windows file name space these three files CAN NOT co-exist! But in Unix 
+		So clearly, In an MS Windows file name space these three files CAN NOT co-exist! But in UNIX 
 		they can. So what should Samba do if all three are present? Answer, the one that is lexically
 		first will be accessible to MS Windows users, the others are invisible and unaccessible - any
 		other solution would be suicidal.
@@ -196,7 +200,7 @@ at how Samba helps to bridge the differences.
 			<term>Directory Separators</term>
 			<listitem>
 		<para>
-		MS Windows and DOS uses the back-slash '\' as a directory delimiter, Unix uses the forward-slash '/'
+		MS Windows and DOS uses the back-slash '\' as a directory delimiter, UNIX uses the forward-slash '/'
 		as it's directory delimiter. This is transparently handled by Samba.
 		</para>
 			</listitem>
@@ -207,9 +211,9 @@ at how Samba helps to bridge the differences.
 			<listitem>
 		<para>
 		MS Windows products support a notion of drive letters, like <command>C:</command> to represent
-		disk partitions. Unix has NO concept if separate identifiers for file partitions since each
+		disk partitions. UNIX has NO concept if separate identifiers for file partitions since each
 		such file system is <filename>mounted</filename> to become part of the over-all directory tree.
-		The Unix directory tree begins at '/', just like the root of a DOS drive is specified like
+		The UNIX directory tree begins at '/', just like the root of a DOS drive is specified like
 		<command>C:\</command>.
 		</para>
 			</listitem>
@@ -219,9 +223,9 @@ at how Samba helps to bridge the differences.
 			<term>File Naming Conventions</term>
 			<listitem>
 		<para>
-		MS Windows generally never experiences file names that begin with a '.', while in Unix these
+		MS Windows generally never experiences file names that begin with a '.', while in UNIX these
 		are commonly found in a user's home directory. Files that begin with a '.' are typically
-		either start up files for various Unix applications, or they may be files that contain
+		either start up files for various UNIX applications, or they may be files that contain
 		start-up configuration data.
 		</para>
 			</listitem>
@@ -231,12 +235,16 @@ at how Samba helps to bridge the differences.
 			<term>Links and Short-Cuts</term>
 			<listitem>
 		<para>
+		<indexterm><primary>Links</primary><secondary>hard</secondary></indexterm>
+		<indexterm><primary>Links</primary><secondary>soft</secondary></indexterm>
+		<indexterm><primary>Short-Cuts</primary></indexterm>
+
 		MS Windows make use of "links and Short-Cuts" that are actually special types of files that will
-		redirect an attempt to execute the file to the real location of the file. Unix knows of file and directory
+		redirect an attempt to execute the file to the real location of the file. UNIX knows of file and directory
 		links, but they are entirely different from what MS Windows users are used to.
 		</para>
 		<para>
-		Symbolic links are files in Unix that contain the actual location of the data (file OR directory). An
+		Symbolic links are files in UNIX that contain the actual location of the data (file OR directory). An
 		operation (like read or write) will operate directly on the file referenced. Symbolic links are also
 		referred to as 'soft links'. A hard link is something that MS Windows is NOT familiar with. It allows
 		one physical file to be known simultaneously by more than one file name.
@@ -247,8 +255,8 @@ at how Samba helps to bridge the differences.
 
 	<para>
 	There are many other subtle differences that may cause the MS Windows administrator some temporary discomfort
-	in the process of becoming familiar with Unix/Linux. These are best left for a text that is dedicated to the
-	purpose of Unix/Linux training/education.
+	in the process of becoming familiar with UNIX/Linux. These are best left for a text that is dedicated to the
+	purpose of UNIX/Linux training/education.
 	</para>
 
 	</sect2>
@@ -262,7 +270,7 @@ at how Samba helps to bridge the differences.
 		<title>Managing directories with unix and windows</title>
 		<tgroup align="center" cols="3">
 		<thead>
-		<row><entry>Action</entry><entry>MS Windows Command</entry><entry>Unix Command</entry></row>
+		<row><entry>Action</entry><entry>MS Windows Command</entry><entry>UNIX Command</entry></row>
 		</thead>
 	
 		<tbody>
@@ -281,66 +289,43 @@ at how Samba helps to bridge the differences.
 
 	<para>
 	The network administrator is strongly advised to read foundational training manuals and reference materials
-	regarding file and directory permissions maintenance. Much can be achieved with the basic Unix permissions
+	regarding file and directory permissions maintenance. Much can be achieved with the basic UNIX permissions
 	without having to resort to more complex facilities like POSIX Access Control Lists (ACLs) or Extended
 	Attributes (EAs).
 	</para>
 
 	<para>
-	Unix/Linux file and directory access permissions involves setting three (3) primary sets of data and one (1) control set.
-	A Unix file listing looks as follows:-
+	UNIX/Linux file and directory access permissions involves setting three (3) primary sets of data and one (1) control set.
+	A UNIX file listing looks as follows:-
 
-	<screen>
-	<prompt>jht@frodo:~/stuff> </prompt><userinput>ls -la</userinput>
-	total 632
-	drwxr-xr-x   13 jht   users      816 2003-05-12 22:56 .
-	drwxr-xr-x   37 jht   users     3800 2003-05-12 22:29 ..
-	d---------    2 jht   users       48 2003-05-12 22:29 muchado00
-	d--x--x--x    2 jht   users       48 2003-05-12 22:29 muchado01
-	dr-xr-xr-x    2 jht   users       48 2003-05-12 22:29 muchado02
-	drwxrwxrwx    2 jht   users       48 2003-05-12 22:29 muchado03
-	drw-rw-rw-    2 jht   users       48 2003-05-12 22:29 muchado04
-	d-w--w--w-    2 jht   users       48 2003-05-12 22:29 muchado05
-	dr--r--r--    2 jht   users       48 2003-05-12 22:29 muchado06
-	drwxrwxrwt    2 jht   users       48 2003-05-12 22:29 muchado07
-	drwsrwsrwx    2 jht   users       48 2003-05-12 22:29 muchado08
-	----------    1 jht   users     1242 2003-05-12 22:31 mydata00.lst
-	---x--x--x    1 jht   users     1674 2003-05-12 22:33 mydata01.lst
-	--w--w--w-    1 jht   users     7754 2003-05-12 22:33 mydata02.lst
-	--wx-wx-wx    1 jht   users   260179 2003-05-12 22:33 mydata03.lst
-	-r--r--r--    1 jht   users    21017 2003-05-12 22:32 mydata04.lst
-	-r-xr-xr-x    1 jht   users   206339 2003-05-12 22:32 mydata05.lst
-	-rw-rw-rw-    1 jht   users    41105 2003-05-12 22:32 mydata06.lst
-	-rwxrwxrwx    1 jht   users    19312 2003-05-12 22:32 mydata07.lst
-	<prompt>jht@frodo:~/stuff></prompt>
-	</screen>
+<screen>
+&prompt;<userinput>ls -la</userinput>
+total 632
+drwxr-xr-x   13 maryo   gnomes      816 2003-05-12 22:56 .
+drwxrwxr-x   37 maryo   gnomes     3800 2003-05-12 22:29 ..
+dr-xr-xr-x    2 maryo   gnomes       48 2003-05-12 22:29 muchado02
+drwxrwxrwx    2 maryo   gnomes       48 2003-05-12 22:29 muchado03
+drw-rw-rw-    2 maryo   gnomes       48 2003-05-12 22:29 muchado04
+d-w--w--w-    2 maryo   gnomes       48 2003-05-12 22:29 muchado05
+dr--r--r--    2 maryo   gnomes       48 2003-05-12 22:29 muchado06
+drwsrwsrwx    2 maryo   gnomes       48 2003-05-12 22:29 muchado08
+----------    1 maryo   gnomes     1242 2003-05-12 22:31 mydata00.lst
+--w--w--w-    1 maryo   gnomes     7754 2003-05-12 22:33 mydata02.lst
+-r--r--r--    1 maryo   gnomes    21017 2003-05-12 22:32 mydata04.lst
+-rw-rw-rw-    1 maryo   gnomes    41105 2003-05-12 22:32 mydata06.lst
+&prompt;
+</screen>
 	</para>
 
 	<para>
-	The columns above represent (from left to right): permissions, no blocks used, owner, group, size (bytes), access date, access time, file name.
+	The columns above represent (from left to right): permissions, number of hard links to file, owner, group, size (bytes), access date, access time, file name.
 	</para>
 
 	<para>
-	The permissions field is made up of:
-
-	<programlisting>
-	<comment> JRV: Put this into a diagram of some sort</comment>
-	[ type  ] [ users ] [ group ] [ others ]   [File, Directory Permissions]
-	[ d | l ] [ r w x ] [ r w x ] [ r w x  ]
-	  |   |     | | |     | | |     | | |
-	  |   |     | | |     | | |     | | |-----> Can Execute, List files
-	  |   |     | | |     | | |     | |-------> Can Write,   Create files
-	  |   |     | | |     | | |     |---------> Can Read,    Read files
-	  |   |     | | |     | | |---------------> Can Execute, List files
-	  |   |     | | |     | |-----------------> Can Write,   Create files
-	  |   |     | | |     |-------------------> Can Read,    Read files
-	  |   |     | | |-------------------------> Can Execute, List files
-	  |   |     | |---------------------------> Can Write,   Create files
-	  |   |     |-----------------------------> Can Read,    Read files
-	  |   |-----------------------------------> Is a symbolic Link
-	  |---------------------------------------> Is a directory
-	</programlisting>
+		An overview of the permissions field can be found in <link linkend="access1">the image below</link>.
 	</para>
+
+	<image scale="40"><imagedescription>Overview of unix permissions field</imagedescription><imagefile>access1</imagefile></image>
 
 	<para>
 	Any bit flag may be unset. An unset bit flag is the equivalent of 'Can NOT' and is represented as a '-' character.
@@ -357,7 +342,7 @@ at how Samba helps to bridge the differences.
 	</para>
 
 	<para>
-	Additional possibilities in the [type] field are: c = character device, b = block device, p = pipe device, s = Unix Domain Socket.
+	Additional possibilities in the [type] field are: c = character device, b = block device, p = pipe device, s = UNIX Domain Socket.
 	</para>
 
 	<para>
@@ -403,10 +388,10 @@ Before using any of the following options please refer to the man page for &smb.
 
 	<para>
 	User and group based controls can prove very useful. In some situations it is distinctly desirable to affect all
-	file system operations as if a single user is doing this, the use of the <parameter>force user</parameter> and 
-	<parameter>force group</parameter> behaviour will achieve this. In other situations it may be necessary to affect a
+	file system operations as if a single user is doing this, the use of the <smbconfoption><name>force user</name></smbconfoption> and 
+	<smbconfoption><name>force group</name></smbconfoption> behaviour will achieve this. In other situations it may be necessary to affect a
 	paranoia level of control to ensure that only particular authorised persons will be able to access a share or
-	it's contents, here the use of the <parameter>valid users</parameter> or the <parameter>invalid users</parameter> may
+	it's contents, here the use of the <smbconfoption><name>valid users</name></smbconfoption> or the <smbconfoption><name>invalid users</name></smbconfoption> may
 	be most useful.
 	</para>
 
@@ -417,8 +402,10 @@ Before using any of the following options please refer to the man page for &smb.
 	Samba being removed and an alternative solution being adopted.
 	</para>
 
-	<table frame='all'><title>User and Group Based Controls</title>
+	<table frame='all' pgwide='0'><title>User and Group Based Controls</title>
 	<tgroup cols='2'>
+		<colspec align="left"/>
+		<colspec align="justify"/>
 		<thead>
 		<row>
 			<entry align="center">Control Parameter</entry>
@@ -427,7 +414,7 @@ Before using any of the following options please refer to the man page for &smb.
 		</thead>
 		<tbody>
 		<row>
-			<entry>admin users</entry>
+			<entry><smbconfoption><name>admin users</name></smbconfoption></entry>
 			<entry><para>
 			List of users who will be granted administrative privileges on the share.
 			They will do all file operations as the super-user (root).  
@@ -436,59 +423,59 @@ Before using any of the following options please refer to the man page for &smb.
 			</para></entry>
 		</row>
 		<row>
-			<entry>force group</entry>
+			<entry><smbconfoption><name>force group</name></smbconfoption></entry>
 			<entry><para>
 			Specifies a UNIX group name that will be assigned as the default primary group
 			for all users connecting to this service.
 			</para></entry>
 		</row>
 		<row>
-			<entry>force user</entry>
+			<entry><smbconfoption><name>force user</name></smbconfoption></entry>
 			<entry><para>
 			Specifies a UNIX user name that will be assigned as the default user for all users connecting to this service.
 			This is useful for sharing files. Incorrect use can cause security problems.
 			</para></entry>
 		</row>
 		<row>
-			<entry>guest ok</entry>
+			<entry><smbconfoption><name>guest ok</name></smbconfoption></entry>
 			<entry><para>
 			If this parameter is set for a service, then no password is required to connect to the service. Privileges will be 
 			those of the  guest account.
 			</para></entry>
 		</row>
 		<row>
-			<entry>invalid users</entry>
+			<entry><smbconfoption><name>invalid users</name></smbconfoption></entry>
 			<entry><para>
 			List of users that should not be allowed to login to this service.
 			</para></entry>
 		</row>
 		<row>
-			<entry>only user</entry>
+			<entry><smbconfoption><name>only user</name></smbconfoption></entry>
 			<entry><para>
 			Controls whether connections with usernames not in the user list will be allowed.
 			</para></entry>
 		</row>
 		<row>
-			<entry>read list</entry>
+			<entry><smbconfoption><name>read list</name></smbconfoption></entry>
 			<entry><para>
 			List of users that are given read-only access to a service. Users in this list
 			will not be given write access, no matter what the  read only  option is set to. 
 			</para></entry>
 		</row>
 		<row>
-			<entry>username</entry>
+			<entry><smbconfoption><name>username</name></smbconfoption></entry>
 			<entry><para>
 			Refer to the &smb.conf; man page for more information - this is a complex and potentially misused parameter.
 			</para></entry>
 		</row>
 		<row>
-			<entry>valid users</entry>
+			<entry><smbconfoption><name>valid users</name></smbconfoption></entry>
 			<entry><para>
 			List of users that should be allowed to login to this service.
 			</para></entry>
 		</row>
 		<row>
-			<entry>write list</entry>
+			<entry><smbconfoption><name>write list</name></smbconfoption></entry>
 			<entry><para>
 			List of users that are given read-write access to a service.
 			</para></entry>
@@ -510,7 +497,9 @@ Before using any of the following options please refer to the man page for &smb.
 	</para>
 
 	<table frame='all'><title>File and Directory Permission Based Controls</title>
-	<tgroup cols='2'>
+		<tgroup cols='2'>
+			<colspec align="left"/>
+			<colspec align="justify"/>
 		<thead>
 		<row>
 			<entry align="center">Control Parameter</entry>
@@ -519,67 +508,67 @@ Before using any of the following options please refer to the man page for &smb.
 		</thead>
 		<tbody>
 		<row>
-			<entry>create mask</entry>
+			<entry><smbconfoption><name>create mask</name></smbconfoption></entry>
 			<entry><para>
 			Refer to the &smb.conf; man page.
 			</para></entry>
 		</row>
 		<row>
-			<entry>directory mask</entry>
+			<entry><smbconfoption><name>directory mask</name></smbconfoption></entry>
 			<entry><para>
 			The octal modes used when converting DOS modes to UNIX modes when creating UNIX directories.
 			See also: directory security mask.
 			</para></entry></row>
 		<row>
-			<entry>dos filemode</entry>
+			<entry><smbconfoption><name>dos filemode</name></smbconfoption></entry>
 			<entry><para>
 			Enabling this parameter allows a user who has write access to the file to modify the permissions on it.
 			</para></entry>
 		</row>
 		<row>
-			<entry>force create mode</entry>
+			<entry><smbconfoption><name>force create mode</name></smbconfoption></entry>
 			<entry><para>
 			This parameter specifies a set of UNIX mode bit permissions that will always be set on a file created by Samba.
 			</para></entry>
 		</row>
 		<row>
-			<entry>force directory mode</entry>
+			<entry><smbconfoption><name>force directory mode</name></smbconfoption></entry>
 			<entry><para>
 			This parameter specifies a set of UNIX mode bit permissions that will always be set on a directory created by Samba.
 			</para></entry>
 		</row>
 		<row>
-			<entry>force directory security mode</entry>	
+			<entry><smbconfoption><name>force directory security mode</name></smbconfoption></entry>
 			<entry><para>
 			Controls UNIX permission bits modified when a Windows NT client is manipulating UNIX permissions on a directory
 			</para></entry>
 		</row>
 		<row>
-			<entry>force security mode</entry>
+			<entry><smbconfoption><name>force security mode</name></smbconfoption></entry>
 			<entry><para>
 			Controls UNIX permission bits modified when a Windows NT client manipulates UNIX permissions.
 			</para></entry>
 		</row>
 		<row>
-			<entry>hide unreadable</entry>
+			<entry><smbconfoption><name>hide unreadable</name></smbconfoption></entry>
 			<entry><para>
 			Prevents clients from seeing the existence of files that cannot be read.
 			</para></entry>
 		</row>
 		<row>
-			<entry>hide unwriteable files</entry>
+			<entry><smbconfoption><name>hide unwriteable files</name></smbconfoption></entry>
 			<entry><para>
 			Prevents clients from seeing the existence of files that cannot be written to. Unwriteable directories are shown as usual. 
 			</para></entry>
 		</row>
 		<row>
-			<entry>nt acl support</entry>
+			<entry><smbconfoption><name>nt acl support</name></smbconfoption></entry>
 			<entry><para>
 			This parameter controls whether smbd will attempt to map UNIX permissions into Windows NT access control lists.
 			</para></entry>
 		</row>
 		<row>
-			<entry>security mask</entry>
+			<entry><smbconfoption><name>security mask</name></smbconfoption></entry>
 			<entry><para>
 			Controls UNIX permission bits modified when a Windows NT client is manipulating the UNIX permissions on a file.
 			</para></entry>
@@ -594,12 +583,14 @@ Before using any of the following options please refer to the man page for &smb.
 	<title>Miscellaneous Controls</title>
 
 	<para>
-	The following are documented because of the prevalence of administrators creating inadvertant barriers to file
+	The following are documented because of the prevalence of administrators creating inadvertent barriers to file
 	access by not understanding the full implications of &smb.conf; file settings.
 	</para>
 
 	<table frame='all'><title>Other Controls</title>
 	<tgroup cols='2'>
+		<colspec align="justify"/>
+		<colspec align="justify"/>
 		<thead>
 		<row>
 			<entry align="center">Control Parameter</entry>
@@ -608,58 +599,58 @@ Before using any of the following options please refer to the man page for &smb.
 		</thead>
 		<tbody>
 		<row>
-			<entry>case sensitive, default case, short preserve case</entry>
+			<entry><smbconfoption><name>case sensitive</name></smbconfoption>, <smbconfoption><name>default case</name></smbconfoption>, <smbconfoption><name>short preserve case</name></smbconfoption></entry>
 			<entry><para>
 			This means that all file name lookup will be done in a case sensitive manner. 
 			Files will be created with the precise filename Samba received from the MS Windows client.
 			</para></entry>
 		</row>
 		<row>
-			<entry>csc policy</entry>
+			<entry><smbconfoption><name>csc policy</name></smbconfoption></entry>
 			<entry><para>
 			Client Side Caching Policy - parallels MS Windows client side file caching capabilities.
 			</para></entry>
 		</row>
 		<row>
-			<entry>dont descend</entry>
+			<entry><smbconfoption><name>dont descend</name></smbconfoption></entry>
 			<entry><para>
 			Allows to specify a comma-delimited list of directories that the server should always show as empty.
 			</para></entry>
 		</row>
 		<row>
-			<entry>dos filetime resolution</entry>
+			<entry><smbconfoption><name>dos filetime resolution</name></smbconfoption></entry>
 			<entry><para>
 			This option is mainly used as a compatibility option for Visual C++ when used against Samba shares.
 			</para></entry>
 		</row>
 		<row>
-			<entry>dos filetimes</entry>
+			<entry><smbconfoption><name>dos filetimes</name></smbconfoption></entry>
 			<entry><para>
 			DOS and Windows allows users to change file time stamps if they can write to the file. POSIX semantics prevent this.
 			This options allows DOS and Windows behaviour.
 			</para></entry>
 		</row>
 		<row>
-			<entry>fake oplocks</entry>
+			<entry><smbconfoption><name>fake oplocks</name></smbconfoption></entry>
 			<entry><para>
 			Oplocks are the way that SMB clients get permission from a server to locally cache file operations. If a server grants an
 			oplock then the client is free to assume that it is the only one accessing the file and it will aggressively cache file data.
 			</para></entry>
 		</row>
 		<row>
-			<entry>hide dot files, hide files, veto files</entry>
+			<entry><smbconfoption><name>hide dot files</name></smbconfoption>, <smbconfoption><name>hide files</name></smbconfoption>, <smbconfoption><name>veto files</name></smbconfoption></entry>
 			<entry><para>
 			Note: MS Windows Explorer allows over-ride of files marked as hidden so they will still be visible.
 			</para></entry>
 		</row>
 		<row>
-			<entry>read only</entry>
+			<entry><smbconfoption><name>read only</name></smbconfoption></entry>
 			<entry><para>
 			If this parameter is yes, then users of a service may not create or modify files in the service's directory.
 			</para></entry>
 		</row>
 		<row>
-			<entry>veto files</entry>
+			<entry><smbconfoption><name>veto files</name></smbconfoption></entry>
 			<entry><para>
 			List of files and directories that are neither visible nor accessible.
 			</para></entry>
@@ -733,7 +724,7 @@ Before using any of the following options please refer to the man page for &smb.
 
 			<para>
 			On <application>MS Windows NT4/200x/XP</application> system access control lists on the share itself are set using native
-			tools, usually from filemanager. For example, in Windows 200x: right click on the shared folder,
+			tools, usually from file manager. For example, in Windows 200x: right click on the shared folder,
 			then select <guimenuitem>Sharing</guimenuitem>, then click on <guilabel>Permissions</guilabel>. The default 
 			Windows NT4/200x permission allows <emphasis>Everyone</emphasis> Full Control on the Share.
 			</para>
@@ -783,26 +774,31 @@ Before using any of the following options please refer to the man page for &smb.
 </sect1>
 
 <sect1>
-<title>MS Windows Access Control Lists and Unix Interoperability</title>
+<title>MS Windows Access Control Lists and UNIX Interoperability</title>
 
 	<sect2>
 		<title>Managing UNIX permissions Using NT Security Dialogs</title>
 
-		<para>Windows NT clients can use their native security settings 
-		dialog box to view and modify the underlying UNIX permissions.</para>
+		<para>
+		Windows NT clients can use their native security settings dialog box to view and modify the
+		underlying UNIX permissions.
+		</para>
 
-		<para>Note that this ability is careful not to compromise 
-		the security of the UNIX host Samba is running on, and 
-		still obeys all the file permission rules that a Samba 
-		administrator can set.</para>
+		<para>
+		Note that this ability is careful not to compromise the security of the UNIX host Samba is running on, and 
+		still obeys all the file permission rules that a Samba administrator can set.
+		</para>
+
+		<para>
+		Samba does not attempt to go beyond POSIX ACLs, so that the various finer-grained access control
+		options provided in Windows are actually ignore.
+		</para> 
 
 		<note>
 		<para>
-		All access to Unix/Linux system file via Samba is controlled at
-		the operating system file access control level. When trying to
-		figure out file access problems it is vitally important to identify
-		the identity of the Windows user as it is presented by Samba at
-		the point of file access. This can best be determined from the
+		All access to UNIX/Linux system files via Samba is controlled by the operating system file access controls.
+		When trying to figure out file access problems it is vitally important to find the identity of the Windows
+		user as it is presented by Samba at the point of file access. This can best be determined from the
 		Samba log files.
 		</para>
 		</note>
@@ -811,93 +807,89 @@ Before using any of the following options please refer to the man page for &smb.
 	<sect2>
 		<title>Viewing File Security on a Samba Share</title>
 
-		<para>From an NT4/2000/XP client, single-click with the right 
-		mouse button on any file or directory in a Samba mounted 
-		drive letter or UNC path. When the menu pops-up, click 
-		on the <guilabel>Properties</guilabel> entry at the bottom of 
-		the menu. This brings up the file properties dialog
-		box. Click on the tab <guilabel>Security</guilabel> and you 
-		will see three buttons, <guibutton>Permissions</guibutton>,	 
-		<guibutton>Auditing</guibutton>, and <guibutton>Ownership</guibutton>. 
-		The <guibutton>Auditing</guibutton> button will cause either 
-		an error message <errorname>A requested privilege is not held 
-		by the client</errorname> to appear if the user is not the 
-		NT Administrator, or a dialog which is intended to allow an 
-		Administrator to add auditing requirements to a file if the 
-		user is logged on as the NT Administrator. This dialog is 
-		non-functional with a Samba share at this time, as the only 
-		useful button, the <guibutton>Add</guibutton> button will not currently 
-		allow a list of users to be seen.</para>
+		<para>
+		From an NT4/2000/XP client, single-click with the right mouse button on any file or directory in a Samba
+		mounted drive letter or UNC path. When the menu pops-up, click on the <guilabel>Properties</guilabel>
+		entry at the bottom of the menu. This brings up the file properties dialog box. Click on the tab
+		<guilabel>Security</guilabel> and you will see three buttons, <guibutton>Permissions</guibutton>,
+		<guibutton>Auditing</guibutton>, and <guibutton>Ownership</guibutton>. The <guibutton>Auditing</guibutton>
+		button will cause either an error message <errorname>A requested privilege is not held by the client</errorname>
+		to appear if the user is not the NT Administrator, or a dialog which is intended to allow an Administrator
+		to add auditing requirements to a file if the user is logged on as the NT Administrator. This dialog is
+		non-functional with a Samba share at this time, as the only useful button, the <guibutton>Add</guibutton>
+		button will not currently allow a list of users to be seen.
+		</para>
 
 	</sect2>
 
 	<sect2>
 		<title>Viewing file ownership</title>
 
-		<para>Clicking on the <guibutton>Ownership</guibutton> button 
-		brings up a dialog box telling you who owns the given file. The 
-		owner name will be of the form :</para>
+		<para>
+		Clicking on the <guibutton>Ownership</guibutton> button brings up a dialog box telling you who owns
+		the given file. The owner name will be of the form:
+		</para>
 
-		<para><command>"SERVER\user (Long name)"</command></para>
+		<para>
+		<command>"SERVER\user (Long name)"</command>
+		</para>
 
-		<para>Where <replaceable>SERVER</replaceable> is the NetBIOS name of 
-		the Samba server, <replaceable>user</replaceable> is the user name of 
-		the UNIX user who owns the file, and <replaceable>(Long name)</replaceable>
-		is the descriptive string identifying the user (normally found in the
-		GECOS field of the UNIX password database). Click on the 
-		<guibutton>Close </guibutton> button to remove this dialog.</para>
+		<para>
+		Where <replaceable>SERVER</replaceable> is the NetBIOS name of the Samba server, <replaceable>user</replaceable>
+		is the user name of the UNIX user who owns the file, and <replaceable>(Long name)</replaceable> is the
+		descriptive string identifying the user (normally found in the GECOS field of the UNIX password database).
+		Click on the <guibutton>Close </guibutton> button to remove this dialog.
+		</para>
 
-		<para>If the parameter <parameter>nt acl support</parameter>
-		is set to <constant>false</constant> then the file owner will 
-		be shown as the NT user <constant>"Everyone"</constant>.</para>
+		<para>
+		If the parameter <smbconfoption><name>nt acl support</name></smbconfoption> is set to <constant>false</constant>
+		then the file owner will be shown as the NT user <constant>"Everyone"</constant>.
+		</para>
 
-		<para>The <guibutton>Take Ownership</guibutton> button will not allow 
-		you to change the ownership of this file to yourself (clicking on 
-		it will display a dialog box complaining that the user you are 
-		currently logged onto the NT client cannot be found). The reason 
-		for this is that changing the ownership of a file is a privileged 
-		operation in UNIX, available only to the <emphasis>root</emphasis> 
-		user. As clicking on this button causes NT to attempt to change 
-		the ownership of a file to the current user logged into the NT 
-		client this will not work with Samba at this time.</para>
+		<para>
+		The <guibutton>Take Ownership</guibutton> button will not allow you to change the ownership of this file to
+		yourself (clicking on it will display a dialog box complaining that the user you are currently logged onto
+		the NT client cannot be found). The reason for this is that changing the ownership of a file is a privileged
+		operation in UNIX, available only to the <emphasis>root</emphasis> user. As clicking on this button causes
+		NT to attempt to change the ownership of a file to the current user logged into the NT client this will
+		not work with Samba at this time.</para>
 
-		<para>There is an NT chown command that will work with Samba 
-		and allow a user with Administrator privilege connected 
-		to a Samba server as root to change the ownership of 
-		files on both a local NTFS filesystem or remote mounted NTFS 
-		or Samba drive. This is available as part of the <application>Seclib
-		</application> NT security library written by Jeremy Allison of 
-		the Samba Team, available from the main Samba ftp site.</para>
+		<para>
+		There is an NT chown command that will work with Samba and allow a user with Administrator privilege connected 
+		to a Samba server as root to change the ownership of files on both a local NTFS filesystem or remote mounted NTFS 
+		or Samba drive. This is available as part of the <application>Seclib</application> NT security library written
+		by Jeremy Allison of the Samba-Team, available from the main Samba FTP site.</para>
 
 	</sect2>
 
 	<sect2>
 		<title>Viewing File or Directory Permissions</title>
 
-		<para>The third button is the <guibutton>Permissions</guibutton> 
-		button. Clicking on this brings up a dialog box that shows both 
-		the permissions and the UNIX owner of the file or directory. 
-		The owner is displayed in the form :</para>
+		<para>
+		The third button is the <guibutton>Permissions</guibutton> button. Clicking on this brings up a dialog box
+		that shows both the permissions and the UNIX owner of the file or directory. The owner is displayed in the form:
+		</para>
 
 		<para><command>"<replaceable>SERVER</replaceable>\
 				<replaceable>user</replaceable> 
 				<replaceable>(Long name)</replaceable>"</command></para>
 
-		<para>Where <replaceable>SERVER</replaceable> is the NetBIOS name of 
-		the Samba server, <replaceable>user</replaceable> is the user name of 
-		the UNIX user who owns the file, and <replaceable>(Long name)</replaceable>
-		is the descriptive string identifying the user (normally found in the
+		<para>Where <replaceable>SERVER</replaceable> is the NetBIOS name of the Samba server,
+		<replaceable>user</replaceable> is the user name of the UNIX user who owns the file, and
+		<replaceable>(Long name)</replaceable> is the descriptive string identifying the user (normally found in the
 		GECOS field of the UNIX password database).</para>
 
-		<para>If the parameter <parameter>nt acl support</parameter>
-		is set to <constant>false</constant> then the file owner will 
-		be shown as the NT user <constant>"Everyone"</constant> and the 
-		permissions will be shown as NT "Full Control".</para>
+		<para>
+		If the parameter <smbconfoption><name>nt acl support</name></smbconfoption> is set to <constant>false</constant>
+		then the file owner will be shown as the NT user <constant>"Everyone"</constant> and the permissions will be
+		shown as NT "Full Control".
+		</para>
 
 
-		<para>The permissions field is displayed differently for files 
-		and directories, so I'll describe the way file permissions 
-		are displayed first.</para>
+		<para>
+		The permissions field is displayed differently for files and directories, so I'll describe the way file permissions 
+		are displayed first.
+		</para>
 
 		<sect3>
 			<title>File Permissions</title>
@@ -921,7 +913,7 @@ Before using any of the following options please refer to the man page for &smb.
 			"Special Access"</constant> in the NT display list.</para>
 
 			<para>But what happens if the file has no permissions allowed 
-			for a particular UNIX user group or world component ? In order 
+			for a particular UNIX user group or world component? In order 
 			to  allow "no permissions" to be seen and modified then Samba 
 			overloads the NT <command>"Take Ownership"</command> ACL attribute 
 			(which has no meaning in UNIX) and reports a component with 
@@ -963,7 +955,7 @@ Before using any of the following options please refer to the man page for &smb.
 		with the standard Samba permission masks and mapping of DOS 
 		attributes that need to also be taken into account.</para>
 
-		<para>If the parameter <parameter>nt acl support</parameter>
+		<para>If the parameter <smbconfoption><name>nt acl support</name></smbconfoption>
 		is set to <constant>false</constant> then any attempt to set 
 		security permissions will fail with an <errorname>"Access Denied"
 		</errorname> message.</para>
@@ -1013,37 +1005,36 @@ Before using any of the following options please refer to the man page for &smb.
 		to control interaction with the standard Samba create mask parameters.
 		These are :
 
-		<simplelist>
-			<member><parameter>security mask</parameter></member>
-			<member><parameter>force security mode</parameter></member>
-			<member><parameter>directory security mask</parameter></member>
-			<member><parameter>force directory security mode</parameter></member>
-		</simplelist>
+		<itemizedlist>
+			<listitem><para><smbconfoption><name>security mask</name></smbconfoption></para></listitem>
+			<listitem><para><smbconfoption><name>force security mode</name></smbconfoption></para></listitem>
+			<listitem><para><smbconfoption><name>directory security mask</name></smbconfoption></para></listitem>
+			<listitem><para><smbconfoption><name>force directory security mode</name></smbconfoption></para></listitem>
+	</itemizedlist>
 
 		</para>
 
 		<para>Once a user clicks <guibutton>OK</guibutton> to apply the 
 		permissions Samba maps the given permissions into a user/group/world 
 		r/w/x triplet set, and then will check the changed permissions for a 
-		file against the bits set in the <ulink url="smb.conf.5.html#SECURITYMASK"> 
-		<parameter>security mask</parameter></ulink> parameter. Any bits that 
+		file against the bits set in the  
+		<smbconfoption><name>security mask</name></smbconfoption> parameter. Any bits that 
 		were changed that are not set to '1' in this parameter are left alone 
 		in the file permissions.</para>
 
-		<para>Essentially, zero bits in the <parameter>security mask</parameter>
+		<para>Essentially, zero bits in the <smbconfoption><name>security mask</name></smbconfoption>
 		mask may be treated as a set of bits the user is <emphasis>not</emphasis> 
 		allowed to change, and one bits are those the user is allowed to change.
 		</para>
 
 		<para>If not set explicitly this parameter is set to the same value as 
-		the <ulink url="smb.conf.5.html#CREATEMASK"><parameter>create mask
-		</parameter></ulink> parameter. To allow a user to modify all the
+			the <smbconfoption><name>create mask</name></smbconfoption>	parameter. To allow a user to modify all the
 		user/group/world permissions on a file, set this parameter 
 		to 0777.</para>
 
 		<para>Next Samba checks the changed permissions for a file against 
-		the bits set in the <ulink url="smb.conf.5.html#FORCESECURITYMODE">
-		<parameter>force security mode</parameter></ulink> parameter. Any bits 
+		the bits set in the 
+		<smbconfoption><name>force security mode</name></smbconfoption> parameter. Any bits 
 		that were changed that correspond to bits set to '1' in this parameter 
 		are forced to be set.</para>
 
@@ -1052,12 +1043,11 @@ Before using any of the following options please refer to the man page for &smb.
 		modifying security on a file, the user has always set to be 'on'.</para>
 
 		<para>If not set explicitly this parameter is set to the same value 
-		as the <ulink url="smb.conf.5.html#FORCECREATEMODE"><parameter>force 
-		create mode</parameter></ulink> parameter.
+			as the <smbconfoption><name>force create mode</name></smbconfoption> parameter.
 		To allow a user to modify all the user/group/world permissions on a file
 		with no restrictions set this parameter to 000.</para>
 
-		<para>The <parameter>security mask</parameter> and <parameter>force 
+		<para>The <smbconfoption><name>security mask</name></smbconfoption> and <parameter>force 
 		security mode</parameter> parameters are applied to the change 
 		request in that order.</para>
 
@@ -1068,11 +1058,11 @@ Before using any of the following options please refer to the man page for &smb.
 		</parameter> parameter instead of <parameter>force security mode
 		</parameter>.</para>
 
-		<para>The <parameter>directory security mask</parameter> parameter 
+		<para>The <smbconfoption><name>directory security mask</name></smbconfoption> parameter 
 		by default is set to the same value as the <parameter>directory mask
 		</parameter> parameter and the <parameter>force directory security 
 		mode</parameter> parameter by default is set to the same value as 
-		the <parameter>force directory mode</parameter> parameter. </para>
+		the <smbconfoption><name>force directory mode</name></smbconfoption> parameter. </para>
 
 		<para>In this way Samba enforces the permission restrictions that 
 		an administrator can set on a Samba share, whilst still allowing users 
@@ -1084,23 +1074,24 @@ Before using any of the following options please refer to the man page for &smb.
 		parameters in the &smb.conf; file in that share specific section :
 		</para>
 
-		<simplelist>
-			<member><parameter>security mask = 0777</parameter></member>
-			<member><parameter>force security mode = 0</parameter></member>
-			<member><parameter>directory security mask = 0777</parameter></member>
-			<member><parameter>force directory security mode = 0</parameter></member>
-		</simplelist>
+		<smbconfblock>
+			<smbconfoption><name>security mask</name><value>0777</value></smbconfoption>
+			<smbconfoption><name>force security mode</name><value>0</value></smbconfoption>
+			<smbconfoption><name>directory security mask</name><value>0777</value></smbconfoption>
+			<smbconfoption><name>force directory security mode</name><value>0</value></smbconfoption>
+		</smbconfblock>
 	</sect2>
 
 	<sect2>
-		<title>Interaction with the standard Samba file attribute 
-		mapping</title>
+		<title>Interaction with the standard Samba file attribute mapping</title>
 
+		<note>
 		<para>Samba maps some of the DOS attribute bits (such as "read 
 		only") into the UNIX permissions of a file. This means there can 
 		be a conflict between the permission bits set via the security 
 		dialog and the permission bits set by the file attribute mapping.
 		</para>
+		</note>
 
 		<para>One way this can show up is if a file has no UNIX read access
 		for the owner it will show up as "read only" in the standard 
@@ -1146,7 +1137,6 @@ are examples taken from the mailing list in recent times.
 	</para>
 
 	<procedure>
-	<title>Example Solution:</title>
 		<step>
 			<para>
 			Go to the top of the directory that is shared
@@ -1156,17 +1146,17 @@ are examples taken from the mailing list in recent times.
 		<step>
 			<para>
 			Set the ownership to what ever public owner and group you want
-			<programlisting>
-			find 'directory_name' -type d -exec chown user.group {}\;
-			find 'directory_name' -type d -exec chmod 6775 'directory_name'
-			find 'directory_name' -type f -exec chmod 0775 {} \;
-			find 'directory_name' -type f -exec chown user.group {}\;
-			</programlisting>
+<screen>
+&prompt;find 'directory_name' -type d -exec chown user.group {}\;
+&prompt;find 'directory_name' -type d -exec chmod 6775 'directory_name'
+&prompt;find 'directory_name' -type f -exec chmod 0775 {} \;
+&prompt;find 'directory_name' -type f -exec chown user.group {}\;
+</screen>
 			</para>
 
 			<note><para>
 			The above will set the 'sticky bit' on all directories. Read your
-			Unix/Linux man page on what that does. It causes the OS to assign 
+			UNIX/Linux man page on what that does. It causes the OS to assign 
 			to all files created in the directories the ownership of the 
 			directory.
 			</para></note>
@@ -1175,62 +1165,62 @@ are examples taken from the mailing list in recent times.
 			<para>
 
 			Directory is: <replaceable>/foodbar</replaceable>
-			<screen>
-				<prompt>$ </prompt><userinput>chown jack.engr /foodbar</userinput>
-			</screen>
+<screen>
+&prompt;<userinput>chown jack.engr /foodbar</userinput>
+</screen>
 			</para>
 
-			<note><para>
+			<note>
 				<para>This is the same as doing:</para>
-				<screen>
-					<prompt>$ </prompt><userinput>chown jack /foodbar</userinput>
-					<prompt>$ </prompt><userinput>chgrp engr /foodbar</userinput>
-				</screen>
-			</para></note>
+<screen>
+&prompt;<userinput>chown jack /foodbar</userinput>
+&prompt;<userinput>chgrp engr /foodbar</userinput>
+</screen>
+			</note>
 		</step>
 		<step>
 			<para>Now do: 
 
-			<screen>
-				<prompt>$ </prompt><userinput>chmod 6775 /foodbar</userinput>
-				<prompt>$ </prompt><userinput>ls -al /foodbar/..</userinput>
-			</screen>
+<screen>
+&prompt;<userinput>chmod 6775 /foodbar</userinput>
+&prompt;<userinput>ls -al /foodbar/..</userinput>
+</screen>
 
 			</para>
 		
 			<para>You should see:
-			<screen>
-				drwsrwsr-x  2 jack  engr    48 2003-02-04 09:55 foodbar
-			</screen>
+<screen>
+drwsrwsr-x  2 jack  engr    48 2003-02-04 09:55 foodbar
+</screen>
 			</para>
 		</step>
 		<step>
 
 		<para>Now do:
-			<screen>
-				<prompt>$ </prompt><userinput>su - jill</userinput>
-				<prompt>$ </prompt><userinput>cd /foodbar</userinput>
-				<prompt>$ </prompt><userinput>touch Afile</userinput>
-				<prompt>$ </prompt><userinput>ls -al</userinput>
-			</screen>
+<screen>
+&prompt;<userinput>su - jill</userinput>
+&prompt;<userinput>cd /foodbar</userinput>
+&prompt;<userinput>touch Afile</userinput>
+&prompt;<userinput>ls -al</userinput>
+</screen>
 		</para>
 
 		<para>
 		You should see that the file <filename>Afile</filename> created by Jill will have ownership
 		and permissions of Jack, as follows:
-		<screen>
-		-rw-r--r--  1 jack  engr     0 2003-02-04 09:57 Afile
-		</screen>
+<screen>
+-rw-r--r--  1 jack  engr     0 2003-02-04 09:57 Afile
+</screen>
 		</para>
 		</step>
 
 		<step>
 		<para>
 		Now in your &smb.conf; for the share add:
-		<programlisting>
-		force create mode = 0775
-		force directory mode = 6775
-		</programlisting>
+		<smbconfblock>
+<smbconfoption><name>force create mode</name><value>0775</value></smbconfoption>
+<smbconfoption><name>force direcrtory mode</name><value>6775</value></smbconfoption>
+		</smbconfblock>
 		</para>
 
 		<note><para>
@@ -1241,10 +1231,10 @@ are examples taken from the mailing list in recent times.
 		
 		<para>
 		An alternative is to set in the &smb.conf; entry for the share:
-		<programlisting>
-		force user = jack
-		force group = engr
-		</programlisting>
+		<smbconfblock>
+<smbconfoption><name>force user</name><value>jack</value></smbconfoption>
+<smbconfoption><name>force group</name><value>engr</value></smbconfoption>
+		</smbconfblock>
 		</para>
 	</step>
 	</procedure>
@@ -1252,14 +1242,49 @@ are examples taken from the mailing list in recent times.
 
 
 	<sect2>
-		<title>I have set force user and Samba still makes <emphasis>root</emphasis> the owner of all the files
-			I touch!</title>
+		<title>I have set force user but Samba still makes <emphasis>root</emphasis> the owner of all the files I touch!</title>
 		<para>
-			When you have a user in 'admin users', Samba will always do file operations for
-			this user as <emphasis>root</emphasis>, even if <parameter>force user</parameter> has been set.
+			When you have a user in <smbconfoption><name>admin users</name></smbconfoption>, samba will always do file operations for
+			this user as <emphasis>root</emphasis>, even if <smbconfoption><name>force user</name></smbconfoption> has been set.
 		</para>
 	</sect2>
 	
+	<sect2>
+		<title>MS Word with Samba changes owner of file</title>
+
+		<para>
+		<emphasis>Question:</emphasis> <quote>When userB saves a word document that is owned by userA the updated file is now owned by userB.
+		Why is Samba doing this? How do I fix this?</quote>
+		</para>
+
+		<para>
+		<emphasis>Answer:</emphasis> Word does the following when you modify/change a Word document: Word Creates a NEW document with
+		a temporary name, Word then closes the old document and deletes it, Word then renames the new document to the original document name.
+		There is NO mechanism by which Samba CAN IN ANY WAY know that the new document really should be owned by the owners
+		of the original file. Samba has no way of knowing that the file will be renamed by MS Word.  As far as Samba is able
+		to tell, the file that gets created is a NEW file, not one that the application (Word) is updating.
+		</para>
+
+		<para>
+		There is a work-around to solve the permissions problem. That work-around involves understanding how you can manage file
+		system behaviour from within the &smb.conf; file, as well as understanding how Unix file systems work. Set on the directory
+		in which you are changing word documents: <command>chmod g+s 'directory_name'</command> This ensures that all files will
+		be created with the group that owns the directory. In smb.conf share declaration section set:
+		</para>
+
+		<para>
+		<smbconfblock>
+                <smbconfoption><name>force create mode</name><value>0660</value></smbconfoption>
+                <smbconfoption><name>force directory mode</name><value>0770</value></smbconfoption>
+		</smbconfblock>
+		</para>
+
+		<para>
+		These two settings will ensure that all directories and files that get created in the share will be read/writable by the
+		owner and group set on the directory itself.
+		</para>
+		
+	</sect2>
 
 </sect1>
 

@@ -9,8 +9,7 @@
 
 <para>
 Before you continue reading in this section, please make sure that you are comfortable
-with configuring a Samba Domain Controller as described in the
-<link linkend="samba-pdc">Domain Control</link> chapter.
+with configuring a Samba Domain Controller as described in <link linkend="samba-pdc">chapter on setting up Samba as a PDC</link>.
 </para>
 
 <sect1>
@@ -20,19 +19,19 @@ with configuring a Samba Domain Controller as described in the
 This is one of the most difficult chapters to summarise. It does not matter what we say here
 for someone will still draw conclusions and / or approach the Samba-Team with expectations
 that are either not yet capable of being delivered, or that can be achieved far more
-effectively using a totally different approach. Since this HOWTO is already so large and
-extensive, we have taken the decision to provide sufficient (but not comprehensive)
-information regarding Backup Domain Control. In the event that you should have a persistent
-concern that is not addressed in this HOWTO document then please email 
+effectively using a totally different approach. In the event that you should have a persistent
+concern that is not addressed in this book then please email
 <ulink url="mailto:jht@samba.org">John H Terpstra</ulink> clearly setting out your requirements
 and / or question and we will do our best to provide a solution.
 </para>
 
 <para>
 Samba-3 is capable of acting as a Backup Domain Controller to another Samba Primary Domain
-Controller. A Samba-3 PDC can operate with an LDAP Account backend. The Samba-3 BDC can
-operate with a slave LDAP server for the Account backend. This effectively gives samba a high
-degree of scalability. This is a very sweet (nice) solution for large organisations.
+Controller. A Samba-3 PDC can operate with an LDAP Account backend. The LDAP backend can be
+either a common master LDAP server, or a slave server. The use of a slave LDAP server has the
+benefit that when the master is down clients may still be able to log onto the network.
+This effectively gives samba a high degree of scalability iand is a very sweet (nice) solution
+for large organisations.
 </para>
 
 <para>
@@ -74,8 +73,9 @@ lets consider each possible option and look at the pro's and con's for each theo
 	</listitem>
 		
 	<listitem><para>
-	Passdb Backend is tdbsam based, BDCs use cron based "net rpc vampire" to
-	suck down the Accounts database from the PDC
+	Passdb Backend is tdbsam based, BDCs use cron based <emphasis>net rpc vampire</emphasis> to
+	obtain the Accounts database from the PDC and place them into the Samba SAM.
+	<emphasis>net rpc vampire</emphasis> is a Samba function of the "net" command.
 	</para>
 
 	<para>
@@ -225,19 +225,21 @@ Server Manager for Domains.
 <para>
 Since version 2.2 Samba officially supports domain logons for all current Windows Clients,
 including Windows NT4, 2003 and XP Professional. For samba to be enabled as a PDC some
-parameters in the <parameter>[global]</parameter>-section of the &smb.conf; have to be set:
+parameters in the <smbconfsection>[global]</smbconfsection>-section of the &smb.conf; have to be set:
 </para>
 
-<para><programlisting>
-	workgroup = SAMBA
-	domain master = yes
-	domain logons = yes
-</programlisting></para>
+<para><smbconfexample>
+<title>Minimal smb.conf for being a PDC</title>
+<smbconfoption><name>workgroup</name><value>&example.workgroup;</value></smbconfoption>
+<smbconfoption><name>domain master</name><value>yes</value></smbconfoption>
+<smbconfoption><name>domain logons</name><value>yes</value></smbconfoption>
+</smbconfexample></para>
 
 <para>
-Several other things like a <parameter>[homes]</parameter> and a <parameter>[netlogon]</parameter> share also need to be set along with
+Several other things like a <smbconfsection>[homes]</smbconfsection> and a
+<smbconfsection>[netlogon]</smbconfsection> share also need to be set along with
 settings for the profile path, the users home drive, etc.. This will not be covered in this
-chapter, for more information please refer to the chapter on <link linkend="samba-pdc">Domain Control</link>.
+chapter, for more information please refer to <link linkend="samba-pdc">the chapter about samba as a PDC</link>.
 </para>
 
 </sect3>
@@ -298,8 +300,8 @@ Several things have to be done:
 <listitem><para>
 	The domain SID has to be the same on the PDC and the BDC. This used to
 	be stored in the file private/MACHINE.SID. This file is not created
-	anymore since Samba 2.2.5 or even earlier. Nowadays the domain SID is
-	stored in the file private/secrets.tdb. Simply copying the secrets.tdb
+	since Samba 2.2.5. Nowadays the domain SID is stored in the file
+	private/secrets.tdb. Simply copying the secrets.tdb
 	from the PDC to the BDC does not work, as the BDC would
 	generate a new SID for itself and override the domain SID with this
 	new BDC SID.</para>
@@ -308,13 +310,13 @@ Several things have to be done:
 	To retrieve the domain SID from the PDC or an existing BDC and store it in the
 	secrets.tdb, execute:
 	</para>
-	<screen>
-	&rootprompt;<userinput>net rpc getsid</userinput>
-	</screen>
+<screen>
+&rootprompt;<userinput>net rpc getsid</userinput>
+</screen>
 	</listitem>
 
 	<listitem><para>
-	The Unix user database has to be synchronized from the PDC to the
+	The UNIX user database has to be synchronized from the PDC to the
 	BDC. This means that both the /etc/passwd and /etc/group have to be
 	replicated from the PDC to the BDC. This can be done manually
 	whenever changes are made, or the PDC is set up as a NIS master
@@ -350,20 +352,37 @@ Several things have to be done:
 Finally, the BDC has to be found by the workstations. This can be done by setting:
 </para>
 
-<para><programlisting>
-	workgroup = SAMBA
-	domain master = no
-	domain logons = yes
-</programlisting></para>
+<para><smbconfexample>
+<title>Minimal setup for being a BDC</title>
+<smbconfoption><name>workgroup</name><value>&example.workgroup;</value></smbconfoption>
+<smbconfoption><name>domain master</name><value>no</value></smbconfoption>
+<smbconfoption><name>domain logons</name><value>yes</value></smbconfoption>
+<smbconfoption><name>idmap backend</name><value>ldapsam://slave-ldap.quenya.org</value></smbconfoption>
+</smbconfexample></para>
 
 <para>
-in the <parameter>[global]</parameter>-section of the &smb.conf; of the BDC. This makes the BDC
+In the <smbconfsection>[global]</smbconfsection>-section of the &smb.conf; of the BDC. This makes the BDC
 only register the name SAMBA&lt;#1c&gt; with the WINS server. This is no
 problem as the name SAMBA&lt;#1c&gt; is a NetBIOS group name that is meant to
-be registered by more than one machine. The parameter 'domain master =
-no' forces the BDC not to register SAMBA&lt;#1b&gt; which as a unique NetBIOS
+be registered by more than one machine. The parameter
+<smbconfoption><name>domain master</name><value>no</value></smbconfoption>
+forces the BDC not to register SAMBA&lt;#1b&gt; which as a unique NetBIOS
 name is reserved for the Primary Domain Controller.
 </para>
+
+<para>
+The <parameter>idmap backend</parameter> will redirect the <command>winbindd</command> utility to
+use the LDAP database to resolve all UIDs and GIDs for UNIX accounts.
+</para>
+
+<note><para>
+Samba-3 has introduced a new ID mapping facility. One of the features of this facility is that it
+allows greater flexibility in how user and group IDs are handled in respect of NT Domain User and Group
+SIDs. One of the new facilities provides for explicitly ensuring that UNIX / Linux UID and GID values
+will be consistent on the PDC, all BDCs and all Domain Member servers. The parameter that controls this
+is called <parameter>idmap backend</parameter>. Please refer to the man page for &smb.conf; for more information
+regarding it's behaviour. Do NOT set this parameter except where an LDAP backend (ldapsam) is in use.
+</para></note>
 
 </sect2>
 </sect1>
@@ -402,16 +421,11 @@ an slave LDAP server for each BDC, and a master LDAP server for the PDC.
 <para>
 With version 2.2, no. The native NT4 SAM replication protocols have not yet been fully
 implemented. The Samba Team is working on understanding and implementing the protocols,
-but this work has not been finished for version 2.2.
+but this work has not been finished for Samba-3.
 </para>
 
 <para>
-With version 3.0, the work on both the replication protocols and a suitable storage
-mechanism has progressed, and some form of NT4 BDC support is expected soon.
-</para>
-
-<para>
-Can I get the benefits of a BDC with Samba?  Yes. The main reason for implementing a
+Can I get the benefits of a BDC with Samba?  Yes, but only to a Samba PDC. The main reason for implementing a
 BDC is availability. If the PDC is a Samba machine, a second Samba machine can be set up to
 service logon requests whenever the PDC is down.
 </para>

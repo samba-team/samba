@@ -12,7 +12,7 @@
 	<para>See also the <link linkend="MSDFSROOT"><parameter moreinfo="none">
 	msdfs root</parameter></link> share  level  parameter.  For
 	more  information  on  setting  up a Dfs tree on Samba,
-	refer to <ulink url="msdfs_setup.html">msdfs_setup.html</ulink>.
+	refer to <link linkend="msdfs"/>.
 	</para>
 		
 	<para>Default: <command moreinfo="none">host msdfs = no</command></para>

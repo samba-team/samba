@@ -1,8 +1,7 @@
-<?xml version="1.0" encoding="iso8859-1"?>
-<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN"
-                  "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd" [
-
-<!ENTITY % globalentities SYSTEM './../global.ent'> %globalentities;
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN" "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd" [
+				  
+<!ENTITY % globalentities SYSTEM '../global.ent'> %globalentities;
 ]>
 <refentry id="pdbedit.8">
 
@@ -31,6 +30,7 @@
 		<arg choice="opt">-p profile</arg>	
 		<arg choice="opt">-a</arg>	
 		<arg choice="opt">-m</arg>	
+		<arg choice="opt">-r</arg>	
 		<arg choice="opt">-x</arg>	
 		<arg choice="opt">-i passdb-backend</arg>	
 		<arg choice="opt">-e passdb-backend</arg>   
@@ -40,6 +40,7 @@
 		<arg choice="opt">-s configfile</arg>
 		<arg choice="opt">-P account-policy</arg>
 		<arg choice="opt">-C value</arg>
+		<arg choice="opt">-c account-control</arg>
 	</cmdsynopsis>
 </refsynopsisdiv>
 

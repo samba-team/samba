@@ -62,7 +62,7 @@ that are specified when a file is open.
 </para>
 
 <para>
-Record locking semantics under Unix are very different from record locking under
+Record locking semantics under UNIX are very different from record locking under
 Windows. Versions of Samba before 2.2 have tried to use the native fcntl() unix
 system call to implement proper record locking between different Samba clients.
 This can not be fully correct due to several reasons. The simplest is the fact
@@ -75,29 +75,29 @@ many more differences, too many to be listed here.
 <para>
 Samba 2.2 and above implements record locking completely independent of the
 underlying unix system. If a byte range lock that the client requests happens
-to fall into the range 0-2^31, Samba hands this request down to the Unix system.
+to fall into the range 0-2^31, Samba hands this request down to the UNIX system.
 All other locks can not be seen by unix anyway.
 </para>
 
 <para>
-Strictly a SMB server should check for locks before every read and write call on
-a file. Unfortunately with the way fcntl() works this can be slow and may overstress
+Strictly an SMB server should check for locks before every read and write call on
+a file. Unfortunately with the way fcntl() works this can be slow and may over-stress
 the <command>rpc.lockd</command>. It is also almost always unnecessary as clients are supposed to
 independently make locking calls before reads and writes anyway if locking is
 important to them. By default Samba only makes locking calls when explicitly asked
-to by a client, but if you set <parameter>strict locking = yes</parameter> then it
+to by a client, but if you set <smbconfoption><name>strict locking</name><value>yes</value></smbconfoption> then it
 will make lock checking calls on every read and write.
 </para>
 
 <para>
-You can also disable byte range locking completely using <parameter>locking = no</parameter>.
+You can also disable byte range locking completely using <smbconfoption><name>locking</name><value>no</value></smbconfoption>.
 This is useful for those shares that don't support locking or don't need it
 (such as cdroms). In this case Samba fakes the return codes of locking calls to
 tell clients that everything is OK.
 </para>
 
 <para>
-The second class of locking is the <parameter>deny modes</parameter>. These 
+The second class of locking is the <emphasis>deny modes</emphasis>. These 
 are set by an application when it opens a file to determine what types of
 access should be allowed simultaneously with its open. A client may ask for
 <constant>DENY_NONE</constant>, <constant>DENY_READ</constant>, 
@@ -328,19 +328,19 @@ in a performance bottleneck.
 </sect3>
 
 <sect3>
-<title>Unix or NFS Client Accessed Files</title>
+<title>UNIX or NFS Client Accessed Files</title>
 
 <para>
-Local Unix and NFS clients access files without a mandatory
+Local UNIX and NFS clients access files without a mandatory
 file locking mechanism.  Thus, these client platforms are incapable of
 initiating an oplock break request from the server to a Windows client
-that has a file cached. Local Unix or NFS file access can therefore
+that has a file cached. Local UNIX or NFS file access can therefore
 write to a file that has been cached by a Windows client, which
 exposes the file to likely data corruption.
 </para>
 
 <para>
-If files are shared between Windows clients, and either local Unix 
+If files are shared between Windows clients, and either local UNIX 
 or NFS users, then turn opportunistic locking off.
 </para>
 
@@ -409,7 +409,7 @@ the share.
 <title>Beware of Force User</title>
 
 <para>
-Samba includes an &smb.conf; parameter called <parameter>force user</parameter> that changes
+Samba includes an &smb.conf; parameter called <smbconfoption><name>force user</name></smbconfoption> that changes
 the user accessing a share from the incoming user to whatever user is
 defined by the smb.conf variable.  If opportunistic locking is enabled
 on a share, the change in user access causes an oplock break to be sent
@@ -426,7 +426,7 @@ Avoid the combination of the following:
 
 <itemizedlist>
 	<listitem><para>
-	<parameter>force user</parameter> in the &smb.conf; share configuration.
+	<smbconfoption><name>force user</name></smbconfoption> in the &smb.conf; share configuration.
 	</para></listitem>
 
 	<listitem><para>
@@ -449,8 +449,8 @@ administrator to adjust various properties of the oplock mechanism to
 account for timing and usage levels.  These parameters provide good
 versatility for implementing oplocks in environments where they would
 likely cause problems.  The parameters are: 
-<parameter>oplock break wait time</parameter>,
-<parameter>oplock contention limit</parameter>.
+<smbconfoption><name>oplock break wait time</name></smbconfoption>,
+<smbconfoption><name>oplock contention limit</name></smbconfoption>.
 </para>
 
 <para>
@@ -514,7 +514,7 @@ enabled and disabled.
 <para>
 Opportunistic Locking is a unique Windows file locking feature.  It is
 not really file locking, but is included in most discussions of Windows
-file locking, so is considered a defacto locking feature.
+file locking, so is considered a de facto locking feature.
 Opportunistic Locking is actually part of the Windows client file
 caching mechanism.  It is not a particularly robust or reliable feature
 when implemented on the variety of customized networks that exist in
@@ -557,7 +557,7 @@ oplock aware at this time.
 
 <para>
 Unless your system supports kernel oplocks, you should disable oplocks if you are
-accessing the same files from both Unix/Linux and SMB clients. Regardless, oplocks should
+accessing the same files from both UNIX/Linux and SMB clients. Regardless, oplocks should
 always be disabled if you are sharing a database file (e.g., Microsoft Access) between
 multiple clients, as any break the first client receives will affect synchronisation of
 the entire file (not just the single record), which will result in a noticeable performance
@@ -594,11 +594,11 @@ You can disable oplocks on a per-share basis with the following:
 </para>
 
 <para>
-<programlisting>
-[acctdata]
-	oplocks = False
-	level2 oplocks = False
-</programlisting>
+<smbconfblock>
+<smbconfsection>[acctdata]</smbconfsection>
+<smbconfoption><name>oplocks</name><value>False</value></smbconfoption>
+<smbconfoption><name>level2 oplocks</name><value>False</value></smbconfoption>
+</smbconfblock>
 </para>
 
 <para>
@@ -611,9 +611,9 @@ Alternately, you could disable oplocks on a per-file basis within the share:
 </para>
 
 <para>
-<programlisting>
-	veto oplock files = /*.mdb/*.MDB/*.dbf/*.DBF/
-</programlisting>
+	<smbconfblock>
+<smbconfoption><name>veto oplock files</name><value>/*.mdb/*.MDB/*.dbf/*.DBF/</value></smbconfoption>
+</smbconfblock>
 </para>
 
 <para>
@@ -641,10 +641,9 @@ basis in the &smb.conf; file.
 </para>
 
 <para>
-<programlisting>
-[global]
-kernel oplocks = yes
-</programlisting>
+	<smbconfblock>
+<smbconfoption><name>kernel oplocks</name><value>yes</value></smbconfoption>
+</smbconfblock>
 The default is "no".
 </para>
 
@@ -663,17 +662,18 @@ enabled on a per-share basis, or globally for the entire server, in the
 </para>
 
 <para>
-<programlisting><title>Example Veto OpLock Settings</title>
-[global]
-        veto oplock files = /filename.htm/*.txt/
+<smbconfexample>
+	<title>Share with some files oplocked</title>
+<smbconfsection>[global]</smbconfsection>
+<smbconfoption><name>veto oplock files</name><value>/filename.htm/*.txt/</value></smbconfoption>
 
-[share_name]
-        veto oplock files = /*.exe/filename.ext/
-</programlisting>
+<smbconfsection>[share_name]</smbconfsection>
+<smbconfoption><name>veto oplock files</name><value>/*.exe/filename.ext/</value></smbconfoption>
+</smbconfexample>
 </para>
 
 <para>
-<emphasis>Oplock break wait time</emphasis> is an &smb.conf; parameter that adjusts the time
+	<smbconfoption><name>oplock break wait time</name></smbconfoption> is an &smb.conf; parameter that adjusts the time
 interval for Samba to reply to an oplock break request.  Samba
 recommends "DO NOT CHANGE THIS PARAMETER UNLESS YOU HAVE READ AND
 UNDERSTOOD THE SAMBA OPLOCK CODE."  Oplock Break Wait Time can only be
@@ -681,10 +681,9 @@ configured globally in the &smb.conf; file:
 </para>
 
 <para>
-<programlisting>
-[global]
-          oplock break wait time =  0 (default)
-</programlisting>
+	<smbconfblock>
+<smbconfoption><name>oplock break wait time</name><value> 0 (default)</value></smbconfoption>
+</smbconfblock>
 </para>
 
 <para>
@@ -698,13 +697,13 @@ the entire server, in the &smb.conf; file:
 </para>
 
 <para>
-<programlisting>
-[global]
-          oplock break contention limit =  2 (default)
+	<smbconfexample>
+<smbconfsection>[global]</smbconfsection>
+<smbconfoption><name>oplock break contention limit</name><value> 2 (default)</value></smbconfoption>
 
-[share_name]
-         oplock break contention limit =  2 (default)
-</programlisting>
+<smbconfsection>[share_name]</smbconfsection>
+<smbconfoption><name>oplock break contention limit</name><value> 2 (default)</value></smbconfoption>
+</smbconfexample>
 </para>
 
 </sect3>
@@ -919,7 +918,7 @@ potentially cause loss of cached data.
 <title>Persistent Data Corruption</title>
 
 <para>
-If you have applied all of the settings discussed in this paper but data corruption problems
+If you have applied all of the settings discussed in this chapter but data corruption problems
 and other symptoms persist, here are some additional things to check out:
 </para>
 
@@ -984,20 +983,41 @@ so far:
 	<title>locking.tdb error messages</title>
 
 	<para>
-	<screen>
-	> We are seeing lots of errors in the samba logs like:
-	>
-	>    tdb(/usr/local/samba_2.2.7/var/locks/locking.tdb): rec_read bad magic
-	> 0x4d6f4b61 at offset=36116
-	>
-	> What do these mean?
-	</screen>
+	<quote>
+	We are seeing lots of errors in the samba logs like:
+</quote>
+<programlisting>
+tdb(/usr/local/samba_2.2.7/var/locks/locking.tdb): rec_read bad magic
+ 0x4d6f4b61 at offset=36116
+</programlisting>
+<quote>
+	What do these mean?
+	</quote>
 	</para>
 
 	<para>
 	Corrupted tdb.  Stop all instances of smbd, delete locking.tdb, restart smbd.
 	</para>
 
+	</sect2>
+
+	<sect2>
+		<title>Problems saving files in MS Office on Windows XP</title>
+
+		<para>This is a bug in Windows XP. More information can be 
+			found in <ulink url="http://support.microsoft.com/?id=812937">Microsoft Knowledge Base article 812937</ulink>.</para>
+
+	</sect2>
+
+	<sect2>
+
+		<title>Long delays deleting files over network with XP SP1</title>
+		
+		<para><quote>It sometimes takes approximately 35 seconds to delete files over the network after XP SP1 has been applied</quote></para>
+
+		<para>This is a bug in Windows XP. More information can be 
+			found in <ulink url="http://support.microsoft.com/?id=811492">
+				Microsoft Knowledge Base article 811492</ulink>.</para>
 	</sect2>
 
 </sect1>
@@ -1019,22 +1039,22 @@ Section of the Microsoft MSDN Library on opportunistic locking:
 Opportunistic Locks, Microsoft Developer Network (MSDN), Windows Development &gt;
 Windows Base Services &gt; Files and I/O &gt; SDK Documentation &gt; File Storage &gt; File Systems
 &gt; About File Systems &gt; Opportunistic Locks, Microsoft Corporation.
-<ulink url="http://msdn.microsoft.com/library/en-us/fileio/storage_5yk3.asp">http://msdn.microsoft.com/library/en-us/fileio/storage_5yk3.asp</ulink>
+<ulink noescape="1" url="http://msdn.microsoft.com/library/en-us/fileio/storage_5yk3.asp">http://msdn.microsoft.com/library/en-us/fileio/storage_5yk3.asp</ulink>
 </para>
 
 <para>
 Microsoft Knowledge Base Article Q224992 "Maintaining Transactional Integrity with OPLOCKS",
-Microsoft Corporation, April 1999, <ulink url="http://support.microsoft.com/default.aspx?scid=kb;en-us;Q224992">http://support.microsoft.com/default.aspx?scid=kb;en-us;Q224992</ulink>.
+Microsoft Corporation, April 1999, <ulink noescape="1" url="http://support.microsoft.com/default.aspx?scid=kb;en-us;Q224992">http://support.microsoft.com/default.aspx?scid=kb;en-us;Q224992</ulink>.
 </para>
 
 <para>
 Microsoft Knowledge Base Article Q296264 "Configuring Opportunistic Locking in Windows 2000",
-Microsoft Corporation, April 2001, <ulink url="http://support.microsoft.com/default.aspx?scid=kb;en-us;Q296264">http://support.microsoft.com/default.aspx?scid=kb;en-us;Q296264</ulink>.
+Microsoft Corporation, April 2001, <ulink noescape="1" url="http://support.microsoft.com/default.aspx?scid=kb;en-us;Q296264">http://support.microsoft.com/default.aspx?scid=kb;en-us;Q296264</ulink>.
 </para>
 
 <para>
 Microsoft Knowledge Base Article Q129202 "PC Ext: Explanation of Opportunistic Locking on Windows NT",
- Microsoft Corporation, April 1995, <ulink url="http://support.microsoft.com/default.aspx?scid=kb;en-us;Q129202">http://support.microsoft.com/default.aspx?scid=kb;en-us;Q129202</ulink>.
+ Microsoft Corporation, April 1995, <ulink noescape="1" url="http://support.microsoft.com/default.aspx?scid=kb;en-us;Q129202">http://support.microsoft.com/default.aspx?scid=kb;en-us;Q129202</ulink>.
 </para>
 
 </sect1>

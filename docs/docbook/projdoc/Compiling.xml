@@ -1,13 +1,13 @@
 <chapter id="compiling">
 <chapterinfo>
 	&author.jelmer;
-	<author><surname>Someone; Jerry perhaps?</surname></author>
+	&author.tridge;
 	
 	<pubdate> 22 May 2001 </pubdate>
 	<pubdate> 18 March 2003 </pubdate>
 </chapterinfo>
 
-<title>How to compile SAMBA</title>
+<title>How to compile Samba</title>
 
 <para>
 You can obtain the samba source from the
@@ -17,6 +17,8 @@ you can download samba from CVS or using rsync.
 
 <sect1>
 <title>Access Samba source code via CVS</title>
+
+<indexterm><primary>CVS</primary></indexterm>
 
 <sect2>
 <title>Introduction</title>
@@ -31,7 +33,7 @@ detailed in this chapter.
 
 <para>
 This chapter is a modified version of the instructions found at
-<ulink url="http://samba.org/samba/cvs.html">http://samba.org/samba/cvs.html</ulink>
+<ulink noescape="1" url="http://samba.org/samba/cvs.html">http://samba.org/samba/cvs.html</ulink>
 </para>
 
 </sect2>
@@ -49,6 +51,8 @@ of accessing the CVS server on this host.
 <sect3>
 <title>Access via CVSweb</title>
 
+<indexterm><primary>CVS</primary><secondary>web</secondary></indexterm>
+
 <para>
 You can access the source code via your 
 favourite WWW browser. This allows you to access the contents of 
@@ -59,7 +63,7 @@ listing between any two versions on the repository.
 
 <para>
 Use the URL : <ulink
-url="http://samba.org/cgi-bin/cvsweb">http://samba.org/cgi-bin/cvsweb</ulink>
+noescape="1"	url="http://samba.org/cgi-bin/cvsweb">http://samba.org/cgi-bin/cvsweb</ulink>
 </para>
 </sect3>
 
@@ -78,7 +82,7 @@ just a casual browser.
 <para>
 To download the latest cvs source code, point your
 browser at the URL :
-<ulink url="http://www.cyclic.com/">http://www.cyclic.com/</ulink>.
+<ulink noescape="1" url="http://www.cyclic.com/">http://www.cyclic.com/</ulink>.
 and click on the 'How to get cvs' link. CVS is free software under 
 the GNU GPL (as is Samba).  Note that there are several graphical CVS clients
 which provide a graphical interface to the sometimes mundane CVS commands.
@@ -167,11 +171,14 @@ on this system just substitute the correct package name
 <sect1>
 	<title>Accessing the samba sources via rsync and ftp</title>
 
+	<indexterm><primary>rsync</primary></indexterm>
+	<indexterm><primary>ftp</primary></indexterm>
+
 	<para>
 	pserver.samba.org also exports unpacked copies of most parts of the CVS
-	tree at <ulink url="ftp://pserver.samba.org/pub/unpacked">ftp://pserver.samba.org/pub/unpacked</ulink> and also via anonymous rsync at 
-	<ulink url="rsync://pserver.samba.org/ftp/unpacked/">rsync://pserver.samba.org/ftp/unpacked/</ulink>. I recommend using rsync rather than ftp.
-	See <ulink url="http://rsync.samba.org/">the rsync homepage</ulink> for more info on rsync.                       
+	tree at <ulink noescape="1" url="ftp://pserver.samba.org/pub/unpacked">ftp://pserver.samba.org/pub/unpacked</ulink> and also via anonymous rsync at 
+	<ulink noescape="1" url="rsync://pserver.samba.org/ftp/unpacked/">rsync://pserver.samba.org/ftp/unpacked/</ulink>. I recommend using rsync rather than ftp.
+	See <ulink noescape="1" url="http://rsync.samba.org/">the rsync homepage</ulink> for more info on rsync.                       
 	</para>
 
 	<para>
@@ -197,17 +204,19 @@ With that said, go ahead and download the following files:
 </para>
 
 <para><screen>
-<prompt>$ </prompt><userinput> wget http://us1.samba.org/samba/ftp/samba-2.2.8a.tar.asc</userinput>
-<prompt>$ </prompt><userinput> wget http://us1.samba.org/samba/ftp/samba-pubkey.asc</userinput>
+&prompt;<userinput>wget http://us1.samba.org/samba/ftp/samba-2.2.8a.tar.asc</userinput>
+&prompt;<userinput>wget http://us1.samba.org/samba/ftp/samba-pubkey.asc</userinput>
 </screen></para>
 
+
 <para>
+<indexterm><primary>GPG</primary></indexterm>
 The first file is the PGP signature for the Samba source file; the other is the Samba public
 PGP key itself. Import the public PGP key with:
 </para>
 
 <screen>
-	<prompt>$ </prompt><userinput>gpg --import samba-pubkey.asc</userinput>
+&prompt;<userinput>gpg --import samba-pubkey.asc</userinput>
 </screen>
 
 <para>
@@ -215,8 +224,8 @@ And verify the Samba source code integrity with:
 </para>
 
 <screen>
-	<prompt>$ </prompt><userinput>gzip -d samba-2.2.8a.tar.gz</userinput>
-	<prompt>$ </prompt><userinput>gpg --verify samba-2.2.8a.tar.asc</userinput>
+&prompt;<userinput>gzip -d samba-2.2.8a.tar.gz</userinput>
+&prompt;<userinput>gpg --verify samba-2.2.8a.tar.asc</userinput>
 </screen>
 
 <para>
@@ -226,51 +235,58 @@ then all is well. The warnings about trust relationships can be ignored. An
 example of what you would not want to see would be:
 </para>
 
+<para>
 <computeroutput>
      gpg: BAD signature from "Samba Distribution Verification Key"
-</computeroutput>
+ </computeroutput>
+ </para>
 
 </sect1>
 
 <sect1>
 	<title>Building the Binaries</title>
 	
-	<para>To do this, first run the program <userinput>./configure
+<indexterm><primary>configure</primary></indexterm>
+
+	<para>
+		To do this, first run the program <userinput>./configure
 	</userinput> in the source directory. This should automatically 
 	configure Samba for your operating system. If you have unusual 
 	needs then you may wish to run</para>
 	
-	<para>&rootprompt;<userinput>./configure --help
-	</userinput></para>
+<para><screen>&rootprompt;<userinput>./configure --help
+</userinput></screen></para>
 	
 	<para>first to see what special options you can enable.
 	Then executing</para>
+
+<indexterm><primary>make</primary></indexterm>
 	
-	<para>&rootprompt;<userinput>make</userinput></para>
+<para><screen>&rootprompt;<userinput>make</userinput></screen></para>
 	
 	<para>will create the binaries. Once it's successfully 
 	compiled you can use </para>
 	
-	<para>&rootprompt;<userinput>make install</userinput></para>
+<para><screen>&rootprompt;<userinput>make install</userinput></screen></para>
 	
 	<para>to install the binaries and manual pages. You can 
 	separately install the binaries and/or man pages using</para>
 	
-	<para>&rootprompt;<userinput>make installbin
-	</userinput></para>
+<para><screen>&rootprompt;<userinput>make installbin
+</userinput></screen></para>
 	
 	<para>and</para>
 	
-	<para>&rootprompt;<userinput>make installman
-	</userinput></para>
+	<para><screen>&rootprompt;<userinput>make installman
+	</userinput></screen></para>
 
 	<para>Note that if you are upgrading for a previous version 
 	of Samba you might like to know that the old versions of 
 	the binaries will be renamed with a ".old" extension. You 
 	can go back to the previous version with</para>
 	
-	<para>&rootprompt;<userinput>make revert
-	</userinput></para>
+<para><screen>&rootprompt;<userinput>make revert
+</userinput></screen></para>
 	
 	<para>if you find this version a disaster!</para>
 
@@ -311,10 +327,10 @@ example of what you would not want to see would be:
 
 	<para>On Debian you need to install the following packages:</para>
 	<para>
-		<simplelist>
-			<member>libkrb5-dev</member>
-			<member>krb5-user</member>
-		</simplelist>
+		<itemizedlist>
+			<listitem><para>libkrb5-dev</para></listitem>
+			<listitem><para>krb5-user</para></listitem>
+		</itemizedlist>
 	</para>
 	</sect3>
 
@@ -323,11 +339,11 @@ example of what you would not want to see would be:
 
 	<para>On RedHat this means you should have at least: </para>
 	<para>
-		<simplelist>
-			<member>krb5-workstation (for kinit)</member>
-			<member>krb5-libs (for linking with)</member>
-			<member>krb5-devel (because you are compiling from source)</member>
-		</simplelist>
+		<itemizedlist>
+			<listitem><para>krb5-workstation (for kinit)</para></listitem>
+			<listitem><para>krb5-libs (for linking with)</para></listitem>
+			<listitem><para>krb5-devel (because you are compiling from source)</para></listitem>
+		</itemizedlist>
 	</para>
 
 	<para>in addition to the standard development environment.</para>
@@ -344,11 +360,14 @@ example of what you would not want to see would be:
 <sect1>
 	<title>Starting the &smbd; and &nmbd;</title>
 
+	<indexterm><primary>inetd</primary></indexterm>
+
 	<para>You must choose to start &smbd; and &nmbd; either
 	as daemons or from <application>inetd</application>. Don't try
 	to do both!  Either you can put them in <filename>
 	inetd.conf</filename> and have them started on demand
-	by <application>inetd</application>, or you can start them as
+	by <application>inetd</application> or <application>xinetd</application>, 
+	or you can start them as
 	daemons either from the command line or in <filename>
 	/etc/rc.local</filename>. See the man pages for details
 	on the command line options. Take particular care to read
@@ -363,6 +382,8 @@ example of what you would not want to see would be:
 	<sect2>
 		<title>Starting from inetd.conf</title>
 
+		<indexterm><primary>inetd</primary></indexterm>
+		
 		<note>
 		<para>The following will be different if 
 		you use NIS, NIS+ or LDAP to distribute services maps.</para>
@@ -388,7 +409,11 @@ example of what you would not want to see would be:
 
 		<para>The exact syntax of <filename>/etc/inetd.conf</filename> 
 		varies between unixes. Look at the other entries in inetd.conf 
-		for a guide.</para>
+		for a guide. </para>
+
+		<indexterm><primary>xinetd</primary></indexterm>
+		<para>Some distributions use xinetd instead of inetd. Consult the 
+		xinetd manual for configuration information.</para>
 
 		<note><para>Some unixes already have entries like netbios_ns 
 		(note the underscore) in <filename>/etc/services</filename>. 
@@ -396,8 +421,9 @@ example of what you would not want to see would be:
 		<filename>/etc/inetd.conf</filename> to make them consistent.
 		</para></note>
 
+		<indexterm><primary>ifconfig</primary></indexterm>
 		<note><para>On many systems you may need to use the 
-		<parameter>interfaces</parameter> option in &smb.conf; to specify the IP
+		<smbconfoption><name>interfaces</name></smbconfoption> option in &smb.conf; to specify the IP
 		address and netmask of your interfaces. Run 
 		<application>ifconfig</application> 
 		as root if you don't know what the broadcast is for your
@@ -412,13 +438,19 @@ example of what you would not want to see would be:
 		from <command>inetd</command>.</para></warning>
 
 		<para>Restart <application>inetd</application>, perhaps just send 
-			it a HUP. If you have installed an earlier version of &nmbd; then
-			you may need to kill &nmbd; as well.</para>
+			it a HUP. </para>
+
+		<screen>
+			&rootprompt;<userinput>killall -HUP inetd</userinput>
+		</screen>
+		
 	</sect2>
 	
 	<sect2>
 		<title>Alternative: starting it as a daemon</title>
 
+		<indexterm><primary>daemon</primary></indexterm>
+		
 		<para>To start the server as a daemon you should create 
 		a script something like this one, perhaps calling 
 		it <filename>startsmb</filename>.</para>
@@ -443,23 +475,6 @@ example of what you would not want to see would be:
 		you may like to look at the <filename>examples/svr4-startup</filename>
 		script to make Samba fit into that system.</para></note>
 	</sect2>
-</sect1>
-
-<sect1>
-<title>Common Errors</title>
-
-<para><quote>
-I'm using gcc 3 and I've compiled Samba-3 from the CVS and the 
-binaries are very large files (40 Mb and 20 Mb). I've the same result with
-<option>--enable-shared</option>  ?
-</quote>
-</para>
-
-<para>
-The dwarf format used by GCC 3 for storing debugging symbols is very inefficient.	
-Strip the binaries, don't compile with -g or compile with -gstabs.
-</para>
-
 </sect1>
 
 </chapter>

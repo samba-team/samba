@@ -1,8 +1,7 @@
 <chapter id="Other-Clients">
 <chapterinfo>
-	&author.jmcd;
 	&author.jelmer;
-	
+	<author>&person.jmcd;<contrib>OS/2</contrib></author>
 	<pubdate>5 Mar 2001</pubdate>
 </chapterinfo>
 
@@ -14,7 +13,7 @@
 <title>Macintosh clients?</title>
 
 <para>
-Yes. <ulink url="http://www.thursby.com/">Thursby</ulink> now has a CIFS Client / Server called <ulink url="http://www.thursby.com/products/dave.html">DAVE</ulink>
+	Yes. <ulink url="http://www.thursby.com/">Thursby</ulink> now has a CIFS Client / Server called <ulink url="http://www.thursby.com/products/dave.html">DAVE</ulink>
 </para>
 
 <para>
@@ -36,8 +35,10 @@ the Macintosh.  The two free implementations are
 What Samba offers MS
 Windows users, these packages offer to Macs.  For more info on these
 packages, Samba, and Linux (and other UNIX-based systems) see
-<ulink url="http://www.eats.com/linux_mac_win.html">http://www.eats.com/linux_mac_win.html</ulink>
+<ulink noescape="1" url="http://www.eats.com/linux_mac_win.html">http://www.eats.com/linux_mac_win.html</ulink>
 </para>
+
+<para>Newer versions of the Macintosh (Mac OS X) include Samba.</para>
 
 </sect1>
 
@@ -45,20 +46,16 @@ packages, Samba, and Linux (and other UNIX-based systems) see
 <title>OS2 Client</title>
 
 	<sect2>
-		<title>How can I configure OS/2 Warp Connect or 
-		OS/2 Warp 4 as a client for Samba?</title>
+		<title>Configuring OS/2 Warp Connect or 
+			OS/2 Warp 4 as a client for Samba</title>
 
-		<para>A more complete answer to this question can be 
-		found on <ulink url="http://carol.wins.uva.nl/~leeuw/samba/warp.html">
-		http://carol.wins.uva.nl/~leeuw/samba/warp.html</ulink>.</para>
-		
 		<para>Basically, you need three components:</para>
 		
-		<simplelist>
-			<member>The File and Print Client ('IBM Peer')</member>
-			<member>TCP/IP ('Internet support') </member>
-			<member>The "NetBIOS over TCP/IP" driver ('TCPBEUI')</member>
-		</simplelist>
+		<itemizedlist>
+			<listitem><para>The File and Print Client ('IBM Peer')</para></listitem>
+			<listitem><para>TCP/IP ('Internet support') </para></listitem>
+			<listitem><para>The "NetBIOS over TCP/IP" driver ('TCPBEUI')</para></listitem>
+		</itemizedlist>
 		
 		<para>Installing the first two together with the base operating 
 		system on a blank system is explained in the Warp manual. If Warp 
@@ -83,16 +80,14 @@ packages, Samba, and Linux (and other UNIX-based systems) see
 	</sect2>
 	
 	<sect2>
-		<title>How can I configure OS/2 Warp 3 (not Connect), 
-		OS/2 1.2, 1.3 or 2.x for Samba?</title>
+		<title>Configuring OS/2 Warp 3 (not Connect), 
+			OS/2 1.2, 1.3 or 2.x for Samba</title>
 		
 		<para>You can use the free Microsoft LAN Manager 2.2c Client 
 		for OS/2 from 
-		<ulink url="ftp://ftp.microsoft.com/BusSys/Clients/LANMAN.OS2/">
+		<ulink noescape="1" url="ftp://ftp.microsoft.com/BusSys/Clients/LANMAN.OS2/">
 		ftp://ftp.microsoft.com/BusSys/Clients/LANMAN.OS2/</ulink>.
-   	See <ulink url="http://carol.wins.uva.nl/~leeuw/lanman.html">
-		http://carol.wins.uva.nl/~leeuw/lanman.html</ulink> for 
-		more information on how to install and use this client. In 
+		 In 
 		a nutshell, edit the file \OS2VER in the root directory of 
 		the OS/2 boot partition and add the lines:</para>
 		
@@ -105,24 +100,22 @@ packages, Samba, and Linux (and other UNIX-based systems) see
 		<para>before you install the client. Also, don't use the 
 		included NE2000 driver because it is buggy. Try the NE2000 
 		or NS2000 driver from 
-		<ulink url="ftp://ftp.cdrom.com/pub/os2/network/ndis/">
+		<ulink noescape="1" url="ftp://ftp.cdrom.com/pub/os2/network/ndis/">
  		ftp://ftp.cdrom.com/pub/os2/network/ndis/</ulink> instead.
 		</para>
 	</sect2>
 	
 	<sect2>
-		<title>How do I get printer driver download working 
-		for OS/2 clients?</title>
+		<title>Printer driver download for for OS/2 clients?</title>
 
-		<para>First, create a share called <parameter>[PRINTDRV]</parameter> that is 
+		<para>First, create a share called <smbconfsection>[PRINTDRV]</smbconfsection> that is 
 		world-readable.  Copy your OS/2 driver files there.  Note 
 		that the .EA_ files must still be separate, so you will need 
 		to use the original install files, and not copy an installed 
 		driver from an OS/2 system.</para>
 		
 		<para>Install the NT driver first for that printer.  Then, 
-		add to your &smb.conf; a parameter, <parameter>os2 driver map = 
-		<replaceable>filename</replaceable></parameter>.  Then, in the file 
+			add to your &smb.conf; a parameter, <smbconfoption><name>os2 driver map</name><value><replaceable>filename</replaceable></value></smbconfoption>.  Then, in the file 
 		specified by <replaceable>filename</replaceable>, map the 
 		name of the NT driver name to the OS/2 driver name as 
 		follows:</para>
@@ -148,7 +141,7 @@ packages, Samba, and Linux (and other UNIX-based systems) see
 <title>Windows for Workgroups</title>
 
 <sect2>
-<title>Use latest TCP/IP stack from Microsoft</title>
+<title>Latest TCP/IP stack from Microsoft</title>
 
 <para>Use the latest TCP/IP stack from Microsoft if you use Windows
 for Workgroups. 
@@ -194,7 +187,7 @@ Often WfWg will totally ignore a password you give it in a dialog box.
 </sect2>
 
 <sect2>
-<title>Configure WfW password handling</title>
+	<title>Configuring WfW password handling</title>
 
 <para>
 There is a program call admincfg.exe
@@ -203,7 +196,7 @@ type <userinput>EXPAND A:\ADMINCFG.EX_ C:\WINDOWS\ADMINCFG.EXE</userinput>.
 Then add an icon
 for it via the <application>Program Manager</application> <guimenu>New</guimenu> Menu. 
 This program allows you to control how WFW handles passwords.  ie disable Password Caching etc
-for use with <parameter>security = user</parameter>
+for use with <smbconfoption><name>security</name><value>user</value></smbconfoption>
 </para>
 
 </sect2>
@@ -211,7 +204,7 @@ for use with <parameter>security = user</parameter>
 <sect2>
 <title>Case handling of passwords</title>
 
-<para>Windows for Workgroups uppercases the password before sending it to the server. Unix passwords can be case-sensitive though. Check the <ulink url="smb.conf.5.html">smb.conf(5)</ulink> information on <parameter>password level</parameter> to specify what characters samba should try to uppercase when checking.</para>
+<para>Windows for Workgroups uppercases the password before sending it to the server. Unix passwords can be case-sensitive though. Check the &smb.conf; information on <smbconfoption><name>password level</name></smbconfoption> to specify what characters samba should try to uppercase when checking.</para>
 
 </sect2>
 
@@ -230,8 +223,8 @@ It is presumably a WfWg bug.</para>
 <title>Speed improvement</title>
 
 <para>
-Note that some people have found that setting <parameter>DefaultRcvWindow</parameter> in
-the <parameter>[MSTCP]</parameter> section of the 
+	Note that some people have found that setting <parameter>DefaultRcvWindow</parameter> in
+the <smbconfsection>[MSTCP]</smbconfsection> section of the 
 <filename>SYSTEM.INI</filename> file under WfWg to 3072 gives a
 big improvement. I don't know why.
 </para>
@@ -304,15 +297,15 @@ likely occur if it is not.
 <para> 
 In order to serve profiles successfully to Windows 2000 SP2 
 clients (when not operating as a PDC), Samba must have 
-<parameter>nt acl support = no</parameter>
+<smbconfoption><name>nt acl support</name><value>no</value></smbconfoption>
 added to the file share which houses the roaming profiles.
 If this is not done, then the Windows 2000 SP2 client will
 complain about not being able to access the profile (Access 
 Denied) and create multiple copies of it on disk (DOMAIN.user.001,
 DOMAIN.user.002, etc...).  See the 
-<ulink url="smb.conf.5.html">smb.conf(5)</ulink> man page
+&smb.conf; man page
 for more details on this option.  Also note that the 
-<parameter>nt acl support</parameter> parameter was formally a global parameter in
+<smbconfoption><name>nt acl support</name></smbconfoption> parameter was formally a global parameter in
 releases prior to Samba 2.2.2.
 </para>
 
@@ -320,14 +313,15 @@ releases prior to Samba 2.2.2.
 The following is a minimal profile share:
 </para>
 
-<para><programlisting>
-	[profile]
-		path = /export/profile
-		create mask = 0600
-		directory mask = 0700
-		nt acl support = no
-		read only = no
-</programlisting></para>
+<para><smbconfexample>
+		<title>Minimal profile share</title>
+<smbconfsection>[profile]</smbconfsection>
+<smbconfoption><name>path</name><value>/export/profile</value></smbconfoption>
+<smbconfoption><name>create mask</name><value>0600</value></smbconfoption>
+<smbconfoption><name>directory mask</name><value>0700</value></smbconfoption>
+<smbconfoption><name>nt acl support</name><value>no</value></smbconfoption>
+<smbconfoption><name>read only</name><value>no</value></smbconfoption>
+</smbconfexample></para>
 
 <para>
 The reason for this bug is that the Win2k SP2 client copies
@@ -339,7 +333,7 @@ for the <errorname>access denied</errorname> message.
 </para>
 
 <para>
-By disabling the <parameter>nt acl support</parameter> parameter, Samba will send
+By disabling the <smbconfoption><name>nt acl support</name></smbconfoption> parameter, Samba will send
 the Win2k client a response to the QuerySecurityDescriptor
 trans2 call which causes the client to set a default ACL
 for the profile. This default ACL includes 
@@ -356,7 +350,7 @@ create accounts on the Samba host for Domain users.</para></note>
 <title>Windows NT 3.1</title>
 
 <para>If you have problems communicating across routers with Windows 
-NT 3.1 workstations, read <ulink url="http://support.microsoft.com/default.aspx?scid=kb;[LN];Q103765">this Microsoft Knowledge Base article</ulink>.
+NT 3.1 workstations, read <ulink url="http://support.microsoft.com/default.aspx?scid=kb;Q103765">this Microsoft Knowledge Base article</ulink>.
 
 </para>
 

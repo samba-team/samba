@@ -73,15 +73,15 @@ following (for example):
 </para>
 
 <para>
-<programlisting>
-	logon path = \\profileserver\profileshare\profilepath\%U\moreprofilepath
-</programlisting>
+<smbconfblock>
+<smbconfoption><name>logon path</name><value>\\profileserver\profileshare\profilepath\%U\moreprofilepath</value></smbconfoption>
+</smbconfblock>
 
 	This is typically implemented like:
 
-<programlisting>
-		logon path = \\%L\Profiles\%u
-</programlisting>
+<smbconfblock>
+<smbconfoption><name>logon path</name><value>\\%L\Profiles\%u</value></smbconfoption>
+</smbconfblock>
 where %L translates to the name of the Samba server and %u translates to the user name
 </para>
 
@@ -97,7 +97,7 @@ semantics of %L and %N, as well as %U and %u.
 <note>
 <para>
 MS Windows NT/2K clients at times do not disconnect a connection to a server
-between logons. It is recommended to NOT use the <parameter>homes</parameter>
+between logons. It is recommended to NOT use the <smbconfsection>homes</smbconfsection>
 meta-service name as part of the profile share path.
 </para>
 </note>
@@ -107,7 +107,7 @@ meta-service name as part of the profile share path.
 <title>Windows 9x / Me User Profiles</title>
 
 <para>
-	To support Windows 9x / Me clients, you must use the <parameter>logon home</parameter> parameter. Samba has
+	To support Windows 9x / Me clients, you must use the <smbconfoption><name>logon home</name></smbconfoption> parameter. Samba has
 now been fixed so that <userinput>net use /home</userinput> now works as well, and it, too, relies
 on the <command>logon home</command> parameter.
 </para>
@@ -115,11 +115,11 @@ on the <command>logon home</command> parameter.
 <para>
 By using the logon home parameter, you are restricted to putting Win9x / Me
 profiles in the user's home directory.   But wait! There is a trick you
-can use. If you set the following in the <parameter>[global]</parameter> section of your &smb.conf; file:
+can use. If you set the following in the <smbconfsection>[global]</smbconfsection> section of your &smb.conf; file:
 </para>
-<para><programlisting>
-	logon home = \\%L\%U\.profiles
-</programlisting></para>
+<para><smbconfblock>
+<smbconfoption><name>logon home</name><value>\\%L\%U\.profiles</value></smbconfoption>
+</smbconfblock></para>
 
 <para>
 then your Windows 9x / Me clients will dutifully put their clients in a subdirectory
@@ -130,7 +130,7 @@ of your home directory called <filename>.profiles</filename> (thus making them h
 Not only that, but <userinput>net use /home</userinput> will also work, because of a feature in
 Windows 9x / Me. It removes any directory stuff off the end of the home directory area
 and only uses the server and share portion. That is, it looks like you
-specified <filename>\\%L\%U</filename> for <parameter>logon home</parameter>.
+specified <filename>\\%L\%U</filename> for <smbconfoption><name>logon home</name></smbconfoption>.
 </para>
 </sect3>
 
@@ -139,13 +139,13 @@ specified <filename>\\%L\%U</filename> for <parameter>logon home</parameter>.
 
 <para>
 You can support profiles for both Win9X and WinNT clients by setting both the
-<parameter>logon home</parameter> and <parameter>logon path</parameter> parameters. For example:
+<smbconfoption><name>logon home</name></smbconfoption> and <smbconfoption><name>logon path</name></smbconfoption> parameters. For example:
 </para>
 
-<para><programlisting>
-	logon home = \\%L\%u\.profiles
-	logon path = \\%L\profiles\%u
-</programlisting></para>
+<para><smbconfblock>
+<smbconfoption><name>logon home</name><value>\\%L\%u\.profiles</value></smbconfoption>
+<smbconfoption><name>logon path</name><value>\\%L\profiles\%u</value></smbconfoption>
+</smbconfblock></para>
 
 </sect3>
 <sect3>
@@ -166,10 +166,10 @@ There are three ways of doing this:
 		<listitem><para>
 		Affect the following settings and ALL clients
 		will be forced to use a local profile:
-		<programlisting>
-			logon home =
-			logon path =
-		</programlisting>
+		<smbconfblock>
+			<smbconfoption><name>logon home</name></smbconfoption>
+			<smbconfoption><name>logon path</name></smbconfoption>
+		</smbconfblock>
 		</para></listitem>
 	</varlistentry>
 
@@ -178,6 +178,7 @@ There are three ways of doing this:
 		<listitem><para>
 		By using the Microsoft Management Console gpedit.msc to instruct your MS Windows XP machine to use only a local profile. This of course modifies registry settings. The full path to the option is:
 		<!-- FIXME: Diagram for this ? -->
+		<!-- FIXME: Yes, a diagram will help - JHT -->
 	<programlisting>
 	Local Computer Policy\
 		Computer Configuration\
@@ -228,9 +229,9 @@ as are folders <filename>Start Menu</filename>, <filename>Desktop</filename>,
 <filename>Programs</filename> and <filename>Nethood</filename>.
 These directories and their contents will be merged with the local
 versions stored in <filename>c:\windows\profiles\username</filename> on subsequent logins,
-taking the most recent from each.  You will need to use the <parameter>[global]</parameter>
-options <parameter>preserve case = yes</parameter>, <parameter>short preserve case = yes</parameter> and
-<parameter>case sensitive = no</parameter> in order to maintain capital letters in shortcuts
+taking the most recent from each.  You will need to use the <smbconfsection>[global]</smbconfsection>
+options <smbconfoption><name>preserve case</name><value>yes</value></smbconfoption>, <smbconfoption><name>short preserve case</name><value>yes</value></smbconfoption> and
+<smbconfoption><name>case sensitive</name><value>no</value></smbconfoption> in order to maintain capital letters in shortcuts
 in any of the profile folders.
 </para>
 
@@ -281,13 +282,13 @@ supports it), user name and user's password.
 
 <para>
 Once the user has been successfully validated, the Windows 9x / Me machine
-will inform you that <computeroutput>The user has not logged on before' and asks you
-	if you wish to save the user's preferences?</computeroutput>  Select <guibutton>yes</guibutton>.
+will inform you that <computeroutput>The user has not logged on before</computeroutput> and asks you
+<computeroutput>Do you wish to save the user's preferences?</computeroutput>. Select <guibutton>yes</guibutton>.
 </para>
 
 <para>
 Once the Windows 9x / Me client comes up with the desktop, you should be able
-to examine the contents of the directory specified in the <parameter>logon path</parameter>
+to examine the contents of the directory specified in the <smbconfoption><name>logon path</name></smbconfoption>
 on the samba server and verify that the <filename>Desktop</filename>, <filename>Start Menu</filename>,
 <filename>Programs</filename> and <filename>Nethood</filename> folders have been created.
 </para>
@@ -305,7 +306,7 @@ the newest folders and short-cuts from each set.
 If you have made the folders / files read-only on the samba server,
 then you will get errors from the Windows 9x / Me machine on logon and logout, as
 it attempts to merge the local and the remote profile.  Basically, if
-you have any errors reported by the Windows 9x / Me machine, check the Unix file
+you have any errors reported by the Windows 9x / Me machine, check the UNIX file
 permissions and ownership rights on the profile directory contents,
 on the samba server.
 </para>
@@ -315,6 +316,25 @@ If you have problems creating user profiles, you can reset the user's
 local desktop cache, as shown below.  When this user then next logs in,
 they will be told that they are logging in "for the first time".
 </para>
+
+	<warning>
+		<para>
+        Before deleting the contents of the
+        directory listed in the ProfilePath (this is likely to be
+	<filename>c:\windows\profiles\username)</filename>, ask them if they
+	have any important files stored on their desktop or in their start menu. 
+	Delete the contents of the directory ProfilePath (making a backup if any
+	of the files are needed).
+        </para>
+
+        <para>
+	This will have the effect of removing the local (read-only hidden
+	system file) user.DAT in their profile directory, as well as the
+	local "desktop", "nethood", "start menu" and "programs" folders.
+        </para>
+	</warning>
+
+
 
 <orderedlist>
 	<listitem>
@@ -342,23 +362,6 @@ they will be told that they are logging in "for the first time".
 		<para>[Exit the registry editor].</para>
 	</listitem>
 
-	<warning>
-		<para>
-        Before deleting the contents of the
-        directory listed in the ProfilePath (this is likely to be
-	<filename>c:\windows\profiles\username)</filename>, ask them if they
-	have any important files stored on their desktop or in their start menu. 
-	Delete the contents of the directory ProfilePath (making a backup if any
-	of the files are needed).
-        </para>
-
-        <para>
-	This will have the effect of removing the local (read-only hidden
-	system file) user.DAT in their profile directory, as well as the
-	local "desktop", "nethood", "start menu" and "programs" folders.
-        </para>
-	</warning>
-
 	<listitem>
         <para>
 			search for the user's .PWL password-caching file in the <filename>c:\windows</filename>
@@ -374,7 +377,7 @@ they will be told that they are logging in "for the first time".
 
 	<listitem>
         <para>
-			check the contents of the profile path (see <parameter>logon path</parameter> described
+			check the contents of the profile path (see <smbconfoption><name>logon path</name></smbconfoption> described
 			above), and delete the <filename>user.DAT</filename> or <filename>user.MAN</filename> file for the user,
         making a backup if required.
         </para>
@@ -403,13 +406,13 @@ differences are with the equivalent samba trace.
 <para>
 When a user first logs in to a Windows NT Workstation, the profile
 NTuser.DAT is created.  The profile location can be now specified
-through the <parameter>logon path</parameter> parameter.
+through the <smbconfoption><name>logon path</name></smbconfoption> parameter.
 </para>
 
 <para>
 There is a parameter that is now available for use with NT Profiles:
-<parameter>logon drive</parameter>.  This should be set to <filename>H:</filename> or any other drive, and
-should be used in conjunction with the new "logon home" parameter.
+<smbconfoption><name>logon drive</name></smbconfoption>.  This should be set to <filename>H:</filename> or any other drive, and
+should be used in conjunction with the new <smbconfoption><name>logon home</name></smbconfoption> parameter.
 </para>
 
 <para>
@@ -481,8 +484,7 @@ profile on the MS Windows workstation as follows:
 	profile must be accessible.
 	</para>
 
-	<note><para>You will need to log on if a logon box opens up. Eg: In the connect
-	as: <replaceable>MIDEARTH</replaceable>\root, password: <replaceable>mypassword</replaceable>.</para></note>
+	<note><para>You will need to log on if a logon box opens up. Eg: In the connect as: <replaceable>DOMAIN</replaceable>\root, password: <replaceable>mypassword</replaceable>.</para></note>
 	</step>
 
 	<step><para>
@@ -500,7 +502,7 @@ profile on the MS Windows workstation as follows:
 </procedure>
 
 <para>
-Done. You now have a profile that can be edited using the samba-3.0.0
+Done. You now have a profile that can be edited using the samba
 <command>profiles</command> tool.
 </para>
 
@@ -511,8 +513,8 @@ storage of mail data. That keeps desktop profiles usable.
 </para>
 </note>
 
-<note>
 <procedure>
+	<title>Windows XP Service Pack 1</title>
 <step><para>
 This is a security check new to Windows XP (or maybe only
 Windows XP service pack 1).  It can be disabled via a group policy in
@@ -562,7 +564,6 @@ On the XP workstation log in with an Administrator account.
 
 	<step><para>Reboot</para></step>
 </procedure>
-</note>
 </sect3>
 </sect2>
 
@@ -582,9 +583,9 @@ on again with the newer version of MS Windows.
 
 <para>
 If you then want to share the same Start Menu / Desktop with W9x/Me, you will
-need to specify a common location for the profiles. The smb.conf parameters
-that need to be common are <parameter>logon path</parameter> and
-<parameter>logon home</parameter>.
+need to specify a common location for the profiles. The &smb.conf; parameters
+that need to be common are <smbconfoption><name>logon path</name></smbconfoption> and
+<smbconfoption><name>logon home</name></smbconfoption>.
 </para>
 
 <para>
@@ -658,12 +659,6 @@ Follow the above for every profile you need to migrate.
 <para>
 You should obtain the SID of your NT4 domain. You can use smbpasswd to do
 this. Read the man page.</para>
-
-<para>
-With Samba-3.0.0 alpha code you can import all you NT4 domain accounts
-using the net samsync method. This way you can retain your profile
-settings as well as all your users.
-</para>
 
 </sect3>
 
@@ -844,10 +839,10 @@ customisable per user depending on the profile settings chosen/created.
 When a new user first logs onto an MS Windows NT4 machine a new profile is created from:
 </para>
 
-<simplelist>
-	<member>All Users settings</member>
-	<member>Default User settings (contains the default NTUser.DAT file)</member>
-</simplelist>
+<itemizedlist>
+	<listitem><para>All Users settings</para></listitem>
+	<listitem><para>Default User settings (contains the default NTUser.DAT file)</para></listitem>
+</itemizedlist>
 
 <para>
 When a user logs onto an MS Windows NT4 machine that is a member of a Microsoft security domain
@@ -903,8 +898,8 @@ also remain stored in the same way, unless the following registry key is created
 
 <para>
 <programlisting>
-	HKEY_LOCAL_MACHINE\SYSTEM\Software\Microsoft\Windows NT\CurrentVersion\winlogon\
-	"DeleteRoamingCache"=dword:00000001
+HKEY_LOCAL_MACHINE\SYSTEM\Software\Microsoft\Windows NT\CurrentVersion\
+winlogon\"DeleteRoamingCache"=dword:00000001
 </programlisting>
 
 In which case, the local copy (in <filename>%SystemRoot%\Profiles\%USERNAME%</filename>) will be
@@ -1013,7 +1008,7 @@ login name of the user.
 
 	<note>
 	<para>
-	This path translates, in Samba parlance, to the &smb.conf; <parameter>[NETLOGON]</parameter> share. The directory
+	This path translates, in Samba parlance, to the &smb.conf; <smbconfsection>[NETLOGON]</smbconfsection> share. The directory
 	should be created at the root of this share and must be called <filename>Default Profile</filename>.
 	</para>
 	</note>
@@ -1124,7 +1119,7 @@ You could also use:
 <para>
 	in which case the default folders will be stored in the server named <replaceable>SambaServer</replaceable>
 in the share called <replaceable>FolderShare</replaceable> under a directory that has the name of the MS Windows
-user as seen by the Linux/Unix file system.
+user as seen by the Linux/UNIX file system.
 </para>
 
 <para>
@@ -1137,7 +1132,10 @@ MS Windows 200x/XP profiles may be <emphasis>Local</emphasis> or <emphasis>Roami
 A roaming profile will be cached locally unless the following registry key is created:
 </para>
 
-<para><filename>HKEY_LOCAL_MACHINE\SYSTEM\Software\Microsoft\Windows NT\CurrentVersion\winlogon\"DeleteRoamingCache"=dword:00000001</filename></para>
+<para>
+<programlisting>
+HKEY_LOCAL_MACHINE\SYSTEM\Software\Microsoft\Windows NT\CurrentVersion\
+	winlogon\"DeleteRoamingCache"=dword:00000001</programlisting></para>
 
 <para>
 In which case, the local cache copy will be deleted on logout.
@@ -1153,7 +1151,7 @@ The following are some typical errors/problems/questions that have been asked.
 </para>
 
 <sect2>
-<title>How does one set up roaming profiles for just one (or a few) user/s or group/s?</title>
+<title>Setting up roaming profiles for just a few user's or group's?</title>
 
 <para>
 With samba-2.2.x the choice you have is to enable or disable roaming
@@ -1171,8 +1169,8 @@ machine.
 </para>
 
 <para>
-With samba-3.0.0 (soon to be released) you can have a global profile
-setting in smb.conf _AND_ you can over-ride this by per-user settings
+With samba-3 you can have a global profile
+setting in &smb.conf; _AND_ you can over-ride this by per-user settings
 using the Domain User Manager (as with MS Windows NT4/ Win 2Kx).
 </para>
 
@@ -1181,11 +1179,11 @@ In any case, you can configure only one profile per user. That profile can
 be either:
 </para>
 
-<simplelist>
-	<member>A profile unique to that user</member>
-	<member>A mandatory profile (one the user can not change)</member>
-	<member>A group profile (really should be mandatory ie:unchangable)</member>
-</simplelist>
+<itemizedlist>
+	<listitem><para>A profile unique to that user</para></listitem>
+	<listitem><para>A mandatory profile (one the user can not change)</para></listitem>
+	<listitem><para>A group profile (really should be mandatory ie:unchangable)</para></listitem>
+</itemizedlist>
 
 </sect2>
 
@@ -1193,65 +1191,68 @@ be either:
 <title>Can NOT use Roaming Profiles</title>
 
 <para>
+A user requested the following:
 <quote>
- I dont want Roaming profile to be implemented, I just want to give users
- local profiles only.
-...
- Please help me I am totally lost with this error from past two days I tried
- everything and googled around quite a bit but of no help. Please help me.
+I do not want Roaming profiles to be implemented. I want to give users a local profile alone.  ... 
+Please help me I am totally lost with this error. For the past two days I tried everything, I googled
+around but found no useful pointers. Please help me.
 </quote></para>
 
 <para>
-Your choices are:
-<!-- FIXME: Write to whole sentences -->
+The choices are:
+</para>
 
 <variablelist>
 	<varlistentry>
-		<term>Local profiles</term>
+		<term>Local profiles:</term> 
 		<listitem><para>
-			I know of no registry keys that will allow auto-deletion of LOCAL profiles on log out
+		I know of no registry keys that will allow auto-deletion of LOCAL profiles on log out
 		</para></listitem>
 	</varlistentry>
 	
 	<varlistentry>
-		<term>Roaming profiles</term>
+		<term>Roaming profiles:</term> 
 		<listitem><para>
-			<simplelist>
-				<member>can use auto-delete on logout option</member>
-				<member>requires a registry key change on workstation</member>
-			</simplelist>
-
-			Your choices are:
-
-			<variablelist>
-				<varlistentry>
-					<term>Personal Roaming profiles</term>
-					<listitem><para>
-						- should be preserved on a central server
-						- workstations 'cache' (store) a local copy
-                        - used in case the profile can not be downloaded
-                        at next logon
-					</para></listitem>
-				</varlistentry>
-
-				<varlistentry>
-					<term>Group profiles</term>
-					<listitem><para>- loaded from a central place</para></listitem>
-				</varlistentry>
-
-				<varlistentry>
-					<term>Mandatory profiles</term>
-					<listitem><para>
-						- can be personal or group
-						- can NOT be changed (except by an administrator
-					</para></listitem>
-				</varlistentry>
-			</variablelist>
+		As a user logs onto the network a centrally stored profile is copied to the workstation
+		to form a local profile. This local profile will persist (remain on the workstation disk)
+		unless a registry key is changed that will cause this profile to be automatically deleted
+		on logout.
 		</para></listitem>
 	</varlistentry>
 </variablelist>
 
+<para>
+The <emphasis>Roaming Profile</emphasis> choices are:
 </para>
+
+<variablelist>
+	<varlistentry>
+		<term>Personal Roaming profiles</term> 
+		<listitem><para>
+		These are typically stored in a profile share on a central (or conveniently located
+		local) server.
+		</para>
+
+		<para>
+		Workstations 'cache' (store) a local copy of the profile. This cached copy is used when
+		the profile can not be downloaded at next logon.
+		</para></listitem>
+	</varlistentry>
+
+	<varlistentry>
+		<term>Group profiles</term> 
+		<listitem><para>These are loaded from a central profile server</para></listitem>
+	</varlistentry>
+
+	<varlistentry>
+		<term>Mandatory profiles</term> 
+		<listitem><para>
+		Mandatory profiles can be created for a user as well as for any group that a user
+		is a member of. Mandatory profiles can NOT be changed by ordinary users. Only the administrator
+		can change or reconfigure a mandatory profile.
+		</para></listitem>
+	</varlistentry>
+</variablelist>
 
 <para>
 A WinNT4/2K/XP profile can vary in size from 130KB to off the scale.
@@ -1271,56 +1272,53 @@ a problem free site.
 
 <para>
 Microsoft's answer to the PST problem is to store all email in an MS
-Exchange Server back-end. But this is another story ...!
+Exchange Server back-end. This removes the need for a PST file.
 </para>
 
 <para>
-So, having LOCAL profiles means:
-
-<simplelist>
-	<member>If lots of users user each machine - lot's of local disk storage needed for local profiles</member>
-	<member>Every workstation the user logs into has it's own profile - can be very different from machine to machine</member>
-</simplelist>
-
-On the other hand, having roaming profiles means:
-<simplelist>
-	<member>The network administrator can control EVERY aspect of user profiles</member>
-	<member>With the use of mandatory profiles - a drastic reduction in network management overheads</member>
-	<member>User unhappiness about not being able to change their profiles soon fades as they get used to being able to work reliably</member>
-</simplelist>
-
+LOCAL profiles mean:
 </para>
+
+<itemizedlist>
+	<listitem><para>If each machine is used my many users then much local disk storage is needed for local profiles</para></listitem>
+	<listitem><para>Every workstation the user logs into has it's own profile, these can be very different from machine to machine</para></listitem>
+</itemizedlist>
 
 <para>
-I have managed and installed MANY NT/2K networks and have NEVER found one
-where users who move from machine to machine are happy with local
-profiles. In the long run local profiles bite them.
+On the other hand, use of roaming profiles means:
 </para>
+
+<itemizedlist>
+	<listitem><para>The network administrator can control the desktop environment of all users.</para></listitem>
+	<listitem><para>Use of mandatory profiles drasitcally reduces network management overheads.</para></listitem>
+	<listitem><para>In the long run users will be experience fewer problems.</para></listitem>
+</itemizedlist>
 
 </sect2>
 
-<!-- FIXME: Everything below this is a mess. I didn't quite understand it -  Jelmer -->
-
 <sect2>
-	<title>Changing the default profile</title>
+<title>Changing the default profile</title>
 
-<para><quote>
-When the client tries to logon to the PDC it looks for a profile to download
-where do I put this default profile.
+<para>
+<emphasis>Question:</emphasis>
+<quote>
+When the client logs onto the domain controller it searches for a profile to download,
+where do I put this default profile?
 </quote></para>
 
 <para>
-Firstly, your samba server need to be configured as a domain controller.
+Firstly, the samba server needs to be configured as a domain controller.
+This can be done by setting in &smb.conf;:
 </para>
 
-<programlisting>
-	server = user
-    os level = 32 (or more)
-	domain logons = Yes
-</programlisting>
+<smbconfblock>
+<smbconfoption><name>security</name><value>user</value></smbconfoption>
+<smbconfoption><name>os level</name><value>32 (or more)</value></smbconfoption>
+<smbconfoption><name>domain logons</name><value>Yes</value></smbconfoption>
+</smbconfblock>
 
 <para>
-Plus you need to have a <parameter>[netlogon]</parameter> share that is world readable.
+There must be an <smbconfsection>[netlogon]</smbconfsection> share that is world readable.
 It is a good idea to add a logon script to pre-set printer and
 drive connections. There is also a facility for automatically
 synchronizing the workstation time clock with that of the logon
@@ -1329,23 +1327,26 @@ server (another good thing to do).
 
 <note><para>
 To invoke auto-deletion of roaming profile from the local
-workstation cache (disk storage) you need to use the <application>Group Policy Editor</application>
+workstation cache (disk storage) use the <application>Group Policy Editor</application>
 to create a file called <filename>NTConfig.POL</filename> with the appropriate entries. This
-file needs to be located in the <parameter>netlogon</parameter> share root directory.</para></note>
+file needs to be located in the <smbconfsection>netlogon</smbconfsection> share root directory.</para></note>
 
 <para>
-Oh, of course the windows clients need to be members of the domain.
-Workgroup machines do NOT do network logons - so they never see domain
-profiles.
+Windows clients need to be members of the domain. Workgroup machines do NOT use network logons so
+they do not interoperate with domain profiles.
 </para>
 
 <para>
-Secondly, for roaming profiles you need:
+For roaming profiles add to &smb.conf;:
+</para>
 
-        logon path = \\%N\profiles\%U   (with some such path)
-        logon drive = H:                (Z: is the default)
-
-        Plus you need a PROFILES share that is world writable.
+<para>
+<smbconfblock>
+<smbconfoption><name>logon path</name><value>\\%N\profiles\%U</value></smbconfoption>
+<smbconfcomment>Default logon drive is Z:</smbconfcomment>
+<smbconfoption><name>logon drive</name><value>H:</value></smbconfoption>
+<smbconfcomment>This requires a PROFILES share that is world writable.</smbconfcomment>
+</smbconfblock>
 </para>
 
 </sect2>

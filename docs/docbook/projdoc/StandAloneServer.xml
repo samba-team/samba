@@ -69,9 +69,9 @@ the Samba server is NOT a member of a domain security context.
 
 <para>
 Through the use of PAM (Pluggable Authentication Modules) and nsswitch
-(the name service switcher) the source of authentication may reside on 
+(the name service switcher, which maintains the unix user database) the source of authentication may reside on 
 another server. We would be inclined to call this the authentication server.
-This means that the Samba server may use the local Unix/Linux system password database
+This means that the Samba server may use the local UNIX/Linux system password database
 (<filename>/etc/passwd</filename> or <filename>/etc/shadow</filename>), may use a
 local smbpasswd file, or may use
 an LDAP back end, or even via PAM and Winbind another CIFS/SMB server
@@ -89,7 +89,7 @@ attempt a high level of creativity and to introduce too much complexity in
 server and network design.
 </para>
 
-<sect2>
+<sect2 id="RefDocServer">
 <title>Reference Documentation Server</title>
 
 <para>
@@ -97,23 +97,23 @@ Configuration of a read-only data server that EVERYONE can access is very simple
 Here is the smb.conf file that will do this. Assume that all the reference documents
 are stored in the directory /export, that the documents are owned by a user other than
 nobody. No home directories are shared, that are no users in the <filename>/etc/passwd</filename>
-Unix system database. This is a very simple system to administer.
+UNIX system database. This is a very simple system to administer.
 </para>
 
-<programlisting>
-	# Global parameters
-	[global]
-		workgroup = MYGROUP
-		netbios name = REFDOCS
-		security = SHARE
-		passdb backend = guest
-		wins server = 192.168.1.1
-
-	[data]
-		comment = Data
-		path = /export
-		guest only = Yes
-</programlisting>
+<smbconfexample>
+<title>smb.conf for Reference Documentation Server</title>
+<smbconfcomment> Global parameters</smbconfcomment>
+<smbconfsection>[global]</smbconfsection>
+<smbconfoption><name>workgroup</name><value>&example.workgroup;</value></smbconfoption>
+<smbconfoption><name>netbios name</name><value>&example.server.samba;</value></smbconfoption>
+<smbconfoption><name>security</name><value>SHARE</value></smbconfoption>
+<smbconfoption><name>passdb backend</name><value>guest</value></smbconfoption>
+<smbconfoption><name>wins server</name><value>192.168.1.1</value></smbconfoption>
+<smbconfsection>[data]</smbconfsection>
+<smbconfoption><name>comment</name><value>Data</value></smbconfoption>
+<smbconfoption><name>path</name><value>/export</value></smbconfoption>
+<smbconfoption><name>guest only</name><value>Yes</value></smbconfoption>
+</smbconfexample>
 
 <para>
 In the above example the machine name is set to REFDOCS, the workgroup is set to the name
@@ -125,7 +125,7 @@ we do use it.
 
 </sect2>
 
-<sect2>
+<sect2 id="SimplePrintServer">
 <title>Central Print Serving</title>
 
 <para>
@@ -141,7 +141,7 @@ on your system.
 
 	<listitem><para>
 	The print spooling and processing system on our print server will be CUPS.
-	(Please refer to the <link linkend="CUPS-printing">CUPS Printing</link> chapter for more information).
+	(Please refer to <link linkend="CUPS-printing">the chapter about CUPS</link> for more information).
 	</para></listitem>
 
 	<listitem><para>
@@ -166,13 +166,13 @@ the anonymous (guest) user, two things will be required:
 <itemizedlist>
 <title>Enabling Anonymous Printing</title>
 	<listitem><para>
-	The Unix/Linux system must have a <command>guest</command> account.
+	The UNIX/Linux system must have a <command>guest</command> account.
 	The default for this is usually the account <command>nobody</command>.
 	To find the correct name to use for your version of Samba do the 
 	following:
-	<screen>
-<prompt>$ </prompt><userinput>testparm -s -v | grep "guest account"</userinput>
-	</screen>
+<screen>
+&prompt;<userinput>testparm -s -v | grep "guest account"</userinput>
+</screen>
 	Then make sure that this account exists in your system password
 	database (<filename>/etc/passwd</filename>).
 	</para></listitem>
@@ -181,34 +181,36 @@ the anonymous (guest) user, two things will be required:
 	The directory into which Samba will spool the file must have write
 	access for the guest account. The following commands will ensure that
 	this directory is available for use:
-	<screen>
+<screen>
 &rootprompt;<userinput>mkdir /var/spool/samba</userinput>
 &rootprompt;<userinput>chown nobody.nobody /var/spool/samba</userinput>
 &rootprompt;<userinput>chmod a+rwt /var/spool/samba</userinput>
-	</screen>
+</screen>
 	</para></listitem>
 </itemizedlist>
 
 <para>
-<programlisting>
-	# Global parameters
-	[global]
-		workgroup = MYGROUP
-		netbios name = PTRSVR1
-		security = SHARE
-		passdb backend = guest
-		wins server = 192.168.1.1
+	<smbconfexample>
+	<title>smb.conf for anonymous printing</title>
+<smbconfcomment> Global parameters</smbconfcomment>
+<smbconfsection>[global]</smbconfsection>
+<smbconfoption><name>workgroup</name><value>&example.workgroup;</value></smbconfoption>
+<smbconfoption><name>netbios name</name><value>&example.server.samba;</value></smbconfoption>
+<smbconfoption><name>security</name><value>SHARE</value></smbconfoption>
+<smbconfoption><name>passdb backend</name><value>guest</value></smbconfoption>
+<smbconfoption><name>wins server</name><value>&example.server.wins;</value></smbconfoption>
+<smbconfoption><name>printing</name><value>cups</value></smbconfoption>
+<smbconfoption><name>printcap name</name><value>cups</value></smbconfoption>
 
-	[printers]
-		comment = All Printers
-		path = /var/spool/samba
-		printer admin = root
-		guest ok = Yes
-		printable = Yes
-		printing = cups
-		use client driver = Yes
-		browseable = No
-</programlisting>
+<smbconfsection>[printers]</smbconfsection>
+<smbconfoption><name>comment</name><value>All Printers</value></smbconfoption>
+<smbconfoption><name>path</name><value>/var/spool/samba</value></smbconfoption>
+<smbconfoption><name>printer admin</name><value>root</value></smbconfoption>
+<smbconfoption><name>guest ok</name><value>Yes</value></smbconfoption>
+<smbconfoption><name>printable</name><value>Yes</value></smbconfoption>
+<smbconfoption><name>use client driver</name><value>Yes</value></smbconfoption>
+<smbconfoption><name>browseable</name><value>No</value></smbconfoption>
+</smbconfexample>
 </para>
 
 </sect2>
