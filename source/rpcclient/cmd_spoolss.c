@@ -663,7 +663,7 @@ static NTSTATUS cmd_spoolss_getdriver(struct cli_state *cli,
 	/* Open a printer handle */
 
 	werror = cli_spoolss_open_printer_ex(cli, mem_ctx, printername, "", 
-					     MAXIMUM_ALLOWED_ACCESS, 
+					     PRINTER_ACCESS_USE,
 					     servername, user, &pol);
 
 	result = werror_to_ntstatus(werror);
@@ -676,19 +676,25 @@ static NTSTATUS cmd_spoolss_getdriver(struct cli_state *cli,
 	opened_hnd = True;
 
 	/* loop through and print driver info level for each architecture */
-	for (i=0; archi_table[i].long_archi!=NULL; i++) 
-	{
-		result = cli_spoolss_getprinterdriver(cli, mem_ctx, &pol, info_level, 
-						       archi_table[i].long_archi, &ctr);
-		if (!NT_STATUS_IS_OK(result)) {
-			continue;
-		}
 
+	for (i=0; archi_table[i].long_archi!=NULL; i++) {
+		uint32 needed;
+
+		werror = cli_spoolss_getprinterdriver(
+			cli, mem_ctx, 0, &needed, &pol, info_level, 
+			archi_table[i].long_archi, &ctr);
+
+		if (W_ERROR_V(werror) == ERRinsufficientbuffer)
+			werror = cli_spoolss_getprinterdriver(
+				cli, mem_ctx, needed, NULL, &pol, info_level, 
+				archi_table[i].long_archi, &ctr);
+
+		if (!W_ERROR_IS_OK(werror))
+			continue;
 			
 		printf ("\n[%s]\n", archi_table[i].long_archi);
-		switch (info_level) 
-		{
-			
+
+		switch (info_level) {
 		case 1:
 			display_print_driver_1 (ctr.info1);
 			break;
