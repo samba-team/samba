@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -66,6 +66,10 @@ init_error_table(const char **msgs, long base, int count)
     return 0;
 }
 
+static void
+default_proc (const char *whoami, long code, const char *fmt, va_list args)
+    __attribute__((__format__(__printf__, 3, 0)));
+ 
 static void
 default_proc (const char *whoami, long code, const char *fmt, va_list args)
 {
