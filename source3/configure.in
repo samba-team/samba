@@ -14,18 +14,27 @@ AC_SUBST(PICFLAG)
 AC_PROG_AWK
 
 AC_CANONICAL_SYSTEM
+AC_VALIDATE_CACHE_SYSTEM_TYPE
+SAMBA_MAINTAINER_MODE
 
+
+
+# this bit needs to be modified for each OS that is suported by
+# smbwrapper. You need to specify how to created a shared library and
+# how to compile C code to produce PIC object files
+
+# these are the defaults, good for lots of systems
 PICFLAG="-fpic"
 HOST_OS="$host_os"
+LDSHFLAGS="-shared";;
 
+# and these are for particular systems
 case "$host_os" in
-	*linux*)   AC_DEFINE(LINUX)
-                   LDSHFLAGS="-shared";;
+	*linux*)   AC_DEFINE(LINUX);;
         *solaris*) AC_DEFINE(SUNOS5)
                    LDSHFLAGS="-G";;
         *sunos*) AC_DEFINE(SUNOS4);;
         *irix*) AC_DEFINE(IRIX)
-                LDSHFLAGS="-shared"
 		WRAP32=smbwrapper/smbwrapper.32.so
 		PICFLAG="-KPIC"
 		;;
@@ -36,9 +45,6 @@ case "$host_os" in
         *sco*) AC_DEFINE(SCO);;
         *next2*) AC_DEFINE(NEXT2);;
 esac
-
-AC_VALIDATE_CACHE_SYSTEM_TYPE
-SAMBA_MAINTAINER_MODE
 
 AC_INLINE
 AC_HEADER_STDC
