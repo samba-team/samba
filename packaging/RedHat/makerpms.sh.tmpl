@@ -1,27 +1,52 @@
 #!/bin/sh
-# Copyright (C) John H Terpstra 1998
+# Copyright (C) John H Terpstra 1998-2002
 # Updated for RPM 3 by Jochen Wiedmann, joe@ispsoft.de
 # Changed for a generic tar file rebuild by abartlet@pcug.org.au
+# Changed by John H Terpstra to build on RH7.2 - should also work for earlier versions jht@samba.org
+
+# The following allows environment variables to override the target directories
+#   the alternative is to have a file in your home directory calles .rpmmacros
+#   containing the following:
+#   %_topdir  /home/mylogin/redhat
+#
+# Note: Under this directory rpm expects to find the same directories that are under the
+#   /usr/src/redhat directory
+#
+if [ -x ~/.rpmmacros ]; then
+	TOPDIR=`awk '/topdir/ {print $2}' < ~/.rpmmacros`
+	if [ z$TOPDIR <> "z" ]; then
+		SPECDIR=${TOPDIR}/SPECS
+		SRCDIR=${TOPDIR}/SOURCES
+	fi
+fi
+
 SPECDIR=${SPECDIR:-/usr/src/redhat/SPECS}
 SRCDIR=${SRCDIR:-/usr/src/redhat/SOURCES}
+
+# At this point the SPECDIR and SRCDIR vaiables must have a value!
+
 USERID=`id -u`
 GRPID=`id -g`
 VERSION='PVERSION'
 
-rm -f ../../samba2.*.spec
+RPMVER=`rpm --version | awk '{print $3}'`
+echo The RPM Version on this machine is: $RPMVER
 
-case `rpm --version | awk '{print $3}'` in
-    2.*)
-       sed -e "s/MANDIR_MACRO/\%\{prefix\}\/man/g" < samba2.spec > samba2.rpm2.spec
-       cp samba2.rpm2.spec ../../
+case $RPMVER in
+    2*)
+       echo Building for RPM v2.x
+       sed -e "s/MANDIR_MACRO/\%\{prefix\}\/man/g" < samba2.spec > samba.spec
+       sed -e "s/MANDIR_MACRO/\%\{prefix\}\/man/g" < samba2-devel.spec > samba-devel.spec
        ;;
-    3.*)
-       sed -e "s/MANDIR_MACRO/\%\{prefix\}\/man/g" < samba2.spec > samba2.rpm3.spec
-       cp samba2.rpm3.spec ../../
+    3*)
+       echo Building for RPM v3.x
+       sed -e "s/MANDIR_MACRO/\%\{prefix\}\/man/g" < samba2.spec > samba.spec
+       sed -e "s/MANDIR_MACRO/\%\{prefix\}\/man/g" < samba2-devel.spec > samba-devel.spec
        ;;
-    4.*)
-       sed -e "s/MANDIR_MACRO/\%\{_mandir\}/g" < samba2.spec > samba2.rpm4.spec
-       cp samba2.rpm4.spec ../../
+    4*)
+       echo Building for RPM v4.x
+       sed -e "s/MANDIR_MACRO/\%\{_mandir\}/g" < samba2.spec > samba.spec
+       sed -e "s/MANDIR_MACRO/\%\{_mandir\}/g" < samba2-devel.spec > samba-devel.spec
        ;;
     *)
        echo "Unknown RPM version: `rpm --version`"
@@ -31,20 +56,28 @@ esac
 
 ( cd ../../source; if [ -f Makefile ]; then make distclean; fi )
 ( cd ../../.. ; chown -R ${USERID}.${GRPID} samba-${VERSION} )
+
+# We do this to make sure that the package always has the current version in it''s name
 if [ z$1 = z"devel" ]; then
 	(cd ../../.. ; mv samba samba-${VERSION} )
 fi
-( cd ../../.. ; tar --exclude=CVS -czvf ${SRCDIR}/samba-${VERSION}.tar.gz samba-${VERSION}/samba2.*.spec samba-${VERSION} )
 
-cp samba2*spec ${SPECDIR}
+( cd ../../.. ; tar --exclude=CVS -czvf ${SRCDIR}/samba-${VERSION}.tar.gz samba-${VERSION} )
 
-if [ z$1 = z"devel" ]; then
+cp -av samba.spec ${SPECDIR}
+cp -av samba-devel.spec ${SPECDIR}
+
+if [ z$1 = "zdevel" ]; then
+	echo Restoring source samba directory name
 	( cd ../../.. ; mv samba-${VERSION} samba )
-	if [ -x samba2-devel.spec ]; then
-		mv samba2.spec samba2-normal.spec
-		cp samba2-devel.spec samba2.spec
-	fi
+	echo Getting Ready to build Developmental Build
+	cd ${SPECDIR}
+	rpm -ba -v samba-devel.spec
+else
+	echo Getting Ready to build release package
+	cd ${SPECDIR}
+	rpm -ba -v --clean --rmsource samba.spec
 fi
-cd ${SPECDIR}
-rpm -ba -v samba2.spec
+
+echo Done.
 
