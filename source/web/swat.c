@@ -908,7 +908,7 @@ static void shares_page(void)
 		printf("</table>\n");
 	}
 
-	if (parm_filter & FLAG_ADVANCED) {
+	if (parm_filter == FLAG_ADVANCED) {
 		printf("<input type=hidden name=\"Advanced\" value=1>\n");
 	}
 
@@ -1252,7 +1252,7 @@ static void printers_page(void)
 		printf("</table>\n");
 	}
 
-	if (parm_filter & FLAG_ADVANCED) {
+	if (parm_filter == FLAG_ADVANCED) {
 		printf("<input type=hidden name=\"Advanced\" value=1>\n");
 	}
 
