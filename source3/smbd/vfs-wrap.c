@@ -115,8 +115,10 @@ int vfswrap_mkdir(connection_struct *conn, char *path, mode_t mode)
 		 * group permission bits. This is not what we want, as it will
 		 * mess up any inherited ACL bits that were set. JRA.
 		 */
+		int saved_errno = errno; /* We may get ENOSYS */
 		if (conn->vfs_ops.chmod_acl != NULL) {
-			conn->vfs_ops.chmod_acl(conn, path, mode);
+			if ((conn->vfs_ops.chmod_acl(conn, path, mode) == -1) && (errno == ENOSYS))
+				errno = saved_errno;
 		}
 	}
 
@@ -351,11 +353,15 @@ int vfswrap_chmod(connection_struct *conn, char *path, mode_t mode)
 	 * group owner bits directly. JRA.
 	 */
 
+	
 	if (conn->vfs_ops.chmod_acl != NULL) {
+		int saved_errno = errno; /* We might get ENOSYS */
 		if ((result = conn->vfs_ops.chmod_acl(conn, path, mode)) == 0) {
 			END_PROFILE(syscall_chmod);
 			return result;
 		}
+		/* Error - return the old errno. */
+		errno = saved_errno;
 	}
 
     result = chmod(path, mode);

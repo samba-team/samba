@@ -1236,7 +1236,6 @@ static int map_acl_perms_to_permset(mode_t mode, SMB_ACL_PERMSET_T *p_permset)
 
 static void arrange_posix_perms( char *filename, canon_ace **pp_list_head)
 {
-	extern DOM_SID global_sid_World;
 	canon_ace *list_head = *pp_list_head;
 	canon_ace *owner_ace = NULL;
 	canon_ace *other_ace = NULL;
@@ -2126,15 +2125,11 @@ static int chmod_acl_internals( SMB_ACL_T posix_acl, mode_t mode)
 
 int chmod_acl(char *name, mode_t mode)
 {
-	int saved_errno = errno;
 	SMB_ACL_T posix_acl = NULL;
 	int ret = -1;
 
-	if ((posix_acl = sys_acl_get_file(name, SMB_ACL_TYPE_ACCESS)) == NULL) {
-		if (errno == ENOSYS)
-			errno = saved_errno;
+	if ((posix_acl = sys_acl_get_file(name, SMB_ACL_TYPE_ACCESS)) == NULL)
 		return -1;
-	}
 
 	if ((ret = chmod_acl_internals(posix_acl, mode)) == -1)
 		goto done;
@@ -2154,15 +2149,11 @@ int chmod_acl(char *name, mode_t mode)
 
 int fchmod_acl(int fd, mode_t mode)
 {
-	int saved_errno = errno;
 	SMB_ACL_T posix_acl = NULL;
 	int ret = -1;
 
-	if ((posix_acl = sys_acl_get_fd(fd)) == NULL) {
-		if (errno == ENOSYS)
-			errno = saved_errno;
+	if ((posix_acl = sys_acl_get_fd(fd)) == NULL)
 		return -1;
-	}
 
 	if ((ret = chmod_acl_internals(posix_acl, mode)) == -1)
 		goto done;
