@@ -674,14 +674,12 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 				return ERROR_NT(NT_STATUS_OBJECT_PATH_NOT_FOUND);
 			}
 
-
 			/*
 			  we need to handle the case when we get a
 			  relative open relative to a file and the
 			  pathname is blank - this is a reopen!
 			  (hint from demyn plantenberg)
 			*/
-			
 
 			END_PROFILE(SMBntcreateX);
 			return(ERROR_DOS(ERRDOS,ERRbadfid));
