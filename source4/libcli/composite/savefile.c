@@ -37,6 +37,7 @@ struct savefile_state {
 	struct smb_composite_savefile *io;
 	union smb_open *io_open;
 	union smb_write *io_write;
+	struct smbcli_request *req;
 };
 
 
@@ -46,8 +47,8 @@ struct savefile_state {
 static NTSTATUS setup_close(struct smbcli_composite *c, 
 			    struct smbcli_tree *tree, uint16_t fnum)
 {
+	struct savefile_state *state = c->private;
 	union smb_close *io_close;
-	struct smbcli_request *req = c->req;
 
 	/* nothing to write, setup the close */
 	io_close = talloc(c, union smb_close);
@@ -57,14 +58,13 @@ static NTSTATUS setup_close(struct smbcli_composite *c,
 	io_close->close.in.fnum = fnum;
 	io_close->close.in.write_time = 0;
 
-	req = smb_raw_close_send(tree, io_close);
-	NT_STATUS_HAVE_NO_MEMORY(req);
+	state->req = smb_raw_close_send(tree, io_close);
+	NT_STATUS_HAVE_NO_MEMORY(state->req);
 
 	/* call the handler again when the close is done */
 	c->stage = SAVEFILE_CLOSE;
-	req->async.fn = savefile_handler;
-	req->async.private = c;
-	c->req = req;
+	state->req->async.fn = savefile_handler;
+	state->req->async.private = c;
 
 	return NT_STATUS_OK;
 }
@@ -78,12 +78,11 @@ static NTSTATUS savefile_open(struct smbcli_composite *c,
 {
 	struct savefile_state *state = c->private;
 	union smb_write *io_write;
-	struct smbcli_request *req = c->req;
-	struct smbcli_tree *tree = req->tree;
+	struct smbcli_tree *tree = state->req->tree;
 	NTSTATUS status;
 	uint32_t max_xmit = tree->session->transport->negotiate.max_xmit;
 
-	status = smb_raw_open_recv(c->req, c, state->io_open);
+	status = smb_raw_open_recv(state->req, c, state->io_open);
 	NT_STATUS_NOT_OK_RETURN(status);
 	
 	if (io->in.size == 0) {
@@ -103,14 +102,13 @@ static NTSTATUS savefile_open(struct smbcli_composite *c,
 	io_write->writex.in.data      = io->in.data;
 	state->io_write = io_write;
 
-	req = smb_raw_write_send(tree, io_write);
-	NT_STATUS_HAVE_NO_MEMORY(req);
+	state->req = smb_raw_write_send(tree, io_write);
+	NT_STATUS_HAVE_NO_MEMORY(state->req);
 
 	/* call the handler again when the first write is done */
 	c->stage = SAVEFILE_WRITE;
-	req->async.fn = savefile_handler;
-	req->async.private = c;
-	c->req = req;
+	state->req->async.fn = savefile_handler;
+	state->req->async.private = c;
 	talloc_free(state->io_open);
 
 	return NT_STATUS_OK;
@@ -125,12 +123,11 @@ static NTSTATUS savefile_write(struct smbcli_composite *c,
 			      struct smb_composite_savefile *io)
 {
 	struct savefile_state *state = c->private;
-	struct smbcli_request *req = c->req;
-	struct smbcli_tree *tree = req->tree;
+	struct smbcli_tree *tree = state->req->tree;
 	NTSTATUS status;
 	uint32_t max_xmit = tree->session->transport->negotiate.max_xmit;
 
-	status = smb_raw_write_recv(c->req, state->io_write);
+	status = smb_raw_write_recv(state->req, state->io_write);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	state->total_written += state->io_write->writex.out.nwritten;
@@ -147,13 +144,12 @@ static NTSTATUS savefile_write(struct smbcli_composite *c,
 					       io->in.size - state->total_written);
 	state->io_write->writex.in.data = io->in.data + state->total_written;
 
-	req = smb_raw_write_send(tree, state->io_write);
-	NT_STATUS_HAVE_NO_MEMORY(req);
+	state->req = smb_raw_write_send(tree, state->io_write);
+	NT_STATUS_HAVE_NO_MEMORY(state->req);
 
 	/* call the handler again when the write is done */
-	req->async.fn = savefile_handler;
-	req->async.private = c;
-	c->req = req;
+	state->req->async.fn = savefile_handler;
+	state->req->async.private = c;
 
 	return NT_STATUS_OK;
 }
@@ -167,7 +163,7 @@ static NTSTATUS savefile_close(struct smbcli_composite *c,
 	struct savefile_state *state = c->private;
 	NTSTATUS status;
 
-	status = smbcli_request_simple_recv(c->req);
+	status = smbcli_request_simple_recv(state->req);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	if (state->total_written != io->in.size) {
@@ -224,7 +220,6 @@ struct smbcli_composite *smb_composite_savefile_send(struct smbcli_tree *tree,
 {
 	struct smbcli_composite *c;
 	struct savefile_state *state;
-	struct smbcli_request *req;
 	union smb_open *io_open;
 
 	c = talloc_zero(tree, struct smbcli_composite);
@@ -255,14 +250,13 @@ struct smbcli_composite *smb_composite_savefile_send(struct smbcli_tree *tree,
 	state->io_open = io_open;
 
 	/* send the open on its way */
-	req = smb_raw_open_send(tree, io_open);
-	if (req == NULL) goto failed;
+	state->req = smb_raw_open_send(tree, io_open);
+	if (state->req == NULL) goto failed;
 
 	/* setup the callback handler */
-	req->async.fn = savefile_handler;
-	req->async.private = c;
+	state->req->async.fn = savefile_handler;
+	state->req->async.private = c;
 	c->private = state;
-	c->req = req;
 
 	return c;
 
