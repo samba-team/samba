@@ -1008,6 +1008,8 @@ void cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 	int plen = 0;
 	int len = 0;
 	UNISTR2 upw;
+	fstring ascii_pwd;
+	BOOL use_ascii_pwd = False;
 
 	BOOL res = True;
 	POLICY_HND lsa_pol;
@@ -1045,6 +1047,7 @@ void cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 	argv++;
 
 	safe_strcpy(acct_name, argv[0], sizeof(acct_name) - 1);
+	strlower(acct_name);
 	len = strlen(acct_name) - 1;
 	if (acct_name[len] == '$')
 	{
@@ -1075,13 +1078,8 @@ void cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 			}
 			case 'p':
 			{
-				fstring pwd;
-				safe_strcpy(pwd, optarg, sizeof(pwd) - 1);
-				make_unistr2(&upw, pwd, strlen(pwd));
-				ascii_to_unibuf(upwb, pwd, strlen(pwd) * 2);
-				password = upwb;
-				plen = upw.uni_str_len * 2;
-				memset(pwd, 0, sizeof(pwd));
+				safe_strcpy(ascii_pwd, optarg, sizeof(ascii_pwd) - 1);
+				use_ascii_pwd = True;
 				break;
 			}
 		}
@@ -1135,16 +1133,10 @@ void cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 
 	report(out_hnd, "Domain: %s Name: %s ACB: %s\n",
 	       domain, acct_name,
-	       pwdb_encode_acct_ctrl(acb_info,
-				     NEW_PW_FORMAT_SPACE_PADDED_LEN));
+	       pwdb_encode_acct_ctrl(acb_info, NEW_PW_FORMAT_SPACE_PADDED_LEN));
 
 	if (acb_info == ACB_WSTRUST || acb_info == ACB_SVRTRUST)
 	{
-#if 0
-		uint8 rnd_data[512];
-		int i, j;
-#endif
-
 		if (password != NULL)
 		{
 			report(out_hnd,
@@ -1153,25 +1145,39 @@ void cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 			return;
 		}
 
-		upw.uni_str_len = 0xc;
-		upw.uni_max_len = 0xc;
-#if 0
-		upw.uni_str_len = 0x78;
-		upw.uni_max_len = 0x78;
-		generate_random_buffer(rnd_data, sizeof(rnd_data), True);
-		for (j = 0, i = 0; i < 0x78 && j < sizeof(rnd_data); j++, i++)
+		if (join_domain)
 		{
-			for (; j < sizeof(rnd_data) && rnd_data[j] == 0; j++)
-			{
-			}
+			upw.uni_str_len = 0xc;
+			upw.uni_max_len = 0xc;
 
-			upw.buffer[i] = rnd_data[j];
+			password = (char *)upw.buffer;
+			plen = upw.uni_str_len * 2;
+			generate_random_buffer(password, plen, True);
 		}
-#endif
-		password = (char *)upw.buffer;
-		plen = upw.uni_str_len * 2;
-		generate_random_buffer(password, plen, True);
+		else
+		{
+			safe_strcpy(ascii_pwd, name, sizeof(ascii_pwd)-1);
+			strlower(ascii_pwd);
+			use_ascii_pwd = True;
+
+			report(out_hnd,
+			       "Resetting Trust Account to insecure, initial, well-known value: \"%s\"\n", ascii_pwd);
+			report(out_hnd,
+			       "%s can now be joined to the domain, which should\n", name);
+			report(out_hnd,
+			       "be done on a private, secure network as soon as possible\n");
+		}
 	}
+
+	if (use_ascii_pwd)
+	{
+		make_unistr2(&upw, ascii_pwd, strlen(ascii_pwd));
+		ascii_to_unibuf(upwb, ascii_pwd, strlen(ascii_pwd) * 2);
+		password = upwb;
+		plen = upw.uni_str_len * 2;
+	}
+
+	ZERO_STRUCT(ascii_pwd);
 
 	if (join_domain)
 	{
