@@ -434,7 +434,7 @@ BOOL check_priv_in_privilege(PRIVILEGE_SET *priv_set, LUID_ATTR set)
 }
 
 /****************************************************************************
-remove a privilege to a privilege array
+remove a privilege from a privilege array
 ****************************************************************************/
 BOOL remove_privilege(PRIVILEGE_SET *priv_set, LUID_ATTR set)
 {
@@ -1187,7 +1187,25 @@ int smb_delete_group(char *unix_group)
 }
 
 /****************************************************************************
- Create a UNIX group on demand.
+ Set a user's primary UNIX group.
+****************************************************************************/
+int smb_set_primary_group(const char *unix_group, const char* unix_user)
+{
+	pstring add_script;
+	int ret;
+
+	pstrcpy(add_script, lp_setprimarygroup_script());
+	if (! *add_script) return -1;
+	all_string_sub(add_script, "%g", unix_group, sizeof(add_script));
+	all_string_sub(add_script, "%u", unix_user, sizeof(add_script));
+	ret = smbrun(add_script,NULL);
+	DEBUG(3,("smb_set_primary_group: "
+		 "Running the command `%s' gave %d\n",add_script,ret));
+	return ret;
+}
+
+/****************************************************************************
+ Add a user to a UNIX group.
 ****************************************************************************/
 
 int smb_add_user_group(char *unix_group, char *unix_user)
@@ -1205,7 +1223,7 @@ int smb_add_user_group(char *unix_group, char *unix_user)
 }
 
 /****************************************************************************
- Delete a UNIX group on demand.
+ Delete a user from a UNIX group
 ****************************************************************************/
 
 int smb_delete_user_group(const char *unix_group, const char *unix_user)
