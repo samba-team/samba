@@ -1869,7 +1869,7 @@ WERROR _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDESC
 		r_u->status = WERR_ACCESS_DENIED;
 		goto error_exit;
 	}
-    became_user = True;
+	became_user = True;
 
 	unistr2_to_ascii(filename, &q_u->uni_file_name, sizeof(filename));
 	unix_convert(filename, conn, NULL, &bad_path, &st);
