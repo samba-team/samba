@@ -12,15 +12,13 @@
 <sect1>
 
 	<title>Joining an NT Domain with Samba 3.0</title>
-<!--changed by RS: IMHO, this would read better and be easier to reference as a listrather than written out in paragraph form-->
-	<para>
-	<variablelist>
-	<varlistentry><term>"Assumptions:"</term>
-	<listitem>NetBIOS name: <constant>SERV1</constant></listitem>
-	<listitem>Win2K/NT domain name: <constant>DOM</constant></listitem>
-	<listitem>Domain's PDC NetBIOS name: <constant>DOMPDC</constant></listitem>
-	<listitem>Domain's BDC NetBIOS names: <constant>DOMBDC1</constant> and <constant>DOMBDC2</constant></listitem>
-	</variablelist>
+	<para><emphasis>Assumptions:</emphasis>
+	<programlisting>
+		NetBIOS name: SERV1
+		Win2K/NT domain name: DOM
+		Domain's PDC NetBIOS name: DOMPDC
+		Domain's BDC NetBIOS names: DOMBDC1 and DOMBDC2
+	</programlisting>
 	</para>
 
 	<para>First, you must edit your &smb.conf; file to tell Samba it should
