@@ -357,7 +357,7 @@
 #ifdef LARGE_SMB_OFF_T
 #define SOFF_T(p, ofs, v) (SIVAL(p,ofs,(v)&0xFFFFFFFF), SIVAL(p,(ofs)+4,(v)>>32))
 #else 
-#define SOFF_T(p, ofs, v) SIVAL(p,ofs,v)
+#define SOFF_T(p, ofs, v) (SIVAL(p,ofs,v),SIVAL(p,(ofs)+4,0))
 #endif
 
 
@@ -610,13 +610,6 @@ union semun {
 #if defined(HAVE_CRYPT16) && defined(HAVE_GETAUTHUID)
 #define ULTRIX_AUTH 1
 #endif
-
-/* This is the naughty bit.  Autoconf should declare these symbols if
-   it finds that GNU Readline is installed.  */
-
-#define HAVE_LIBREADLINE
-#define HAVE_READLINE_READLINE_H
-#define HAVE_READLINE_HISTORY_H
 
 #ifdef HAVE_LIBREADLINE
 #  ifdef HAVE_READLINE_READLINE_H

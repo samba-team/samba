@@ -36,7 +36,8 @@ AC_CHECK_HEADERS(sys/filio.h string.h strings.h stdlib.h sys/socket.h)
 AC_CHECK_HEADERS(sys/mount.h sys/vfs.h sys/fs/s5param.h sys/filsys.h termios.h)
 AC_CHECK_HEADERS(sys/statfs.h sys/dustat.h sys/statvfs.h stdarg.h sys/sockio.h)
 AC_CHECK_HEADERS(shadow.h netinet/tcp.h sys/security.h security/pam_appl.h)
-AC_CHECK_HEADERS(stropts.h poll.h )
+AC_CHECK_HEADERS(stropts.h poll.h readline.h history.h readline/readline.h)
+AC_CHECK_HEADERS(readline/history.h)
 
 AC_CHECK_SIZEOF(int)
 AC_CHECK_SIZEOF(long)
@@ -122,6 +123,14 @@ if test "$ac_cv_lib_pam_pam_authenticate" = "yes"; then
   ac_cv_func_pam_authenticate=yes
   AC_DEFINE(HAVE_PAM_AUTHENTICATE)
 fi])
+fi
+
+###############################################
+# test for where we get readline() from
+if test "$ac_cv_header_readline_h" = "yes" ||
+   test "$ac_cv_header_readline_readline_h" = "yes"; then
+  AC_CHECK_LIB(readline,readline)
+  AC_DEFINE(HAVE_LIBREADLINE)
 fi
 
 # The following test taken from the cvs sources

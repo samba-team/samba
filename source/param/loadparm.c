@@ -231,6 +231,7 @@ typedef struct
   BOOL bTimestampLogs;
   BOOL bNTSmbSupport;
   BOOL bStatCache;
+  BOOL bKernelOplocks;
 } global;
 
 static global Globals;
@@ -691,6 +692,7 @@ static struct parm_struct parm_table[] =
   {"Locking Options", P_SEP, P_SEPARATOR},
   {"blocking locks",   P_BOOL,    P_LOCAL,  &sDefault.bBlockingLocks,    NULL,   NULL,  0},
   {"fake oplocks",     P_BOOL,    P_LOCAL,  &sDefault.bFakeOplocks,     NULL,   NULL,  0},
+  {"kernel oplocks",   P_BOOL,    P_GLOBAL, &Globals.bKernelOplocks,    NULL,   NULL,  FLAG_GLOBAL},
   {"locking",          P_BOOL,    P_LOCAL,  &sDefault.bLocking,         NULL,   NULL,  FLAG_GLOBAL},
   {"ole locking compatibility",   P_BOOL,    P_GLOBAL,  &Globals.bOleLockingCompat,   NULL,   NULL,  FLAG_GLOBAL},
   {"oplocks",          P_BOOL,    P_LOCAL,  &sDefault.bOpLocks,         NULL,   NULL,  FLAG_GLOBAL},
@@ -906,6 +908,12 @@ static void init_globals(void)
   Globals.bWINSproxy = False;
 
   Globals.bDNSproxy = True;
+
+  /*
+   * smbd will check after starting to see if this value
+   * should be set to "true" or not.
+   */
+  Globals.bKernelOplocks = False;
 
   /*
    * This must be done last as it checks the value in 
@@ -1150,6 +1158,7 @@ FN_GLOBAL_BOOL(lp_passwd_chat_debug,&Globals.bPasswdChatDebug)
 FN_GLOBAL_BOOL(lp_ole_locking_compat,&Globals.bOleLockingCompat)
 FN_GLOBAL_BOOL(lp_nt_smb_support,&Globals.bNTSmbSupport)
 FN_GLOBAL_BOOL(lp_stat_cache,&Globals.bStatCache)
+FN_GLOBAL_BOOL(lp_kernel_oplocks,&Globals.bKernelOplocks)
 
 FN_GLOBAL_INTEGER(lp_os_level,&Globals.os_level)
 FN_GLOBAL_INTEGER(lp_max_ttl,&Globals.max_ttl)
@@ -2641,4 +2650,13 @@ int lp_minor_announce_version(void)
 void lp_set_name_resolve_order(char *new_order)
 { 
   Globals.szNameResolveOrder = new_order;
+}
+
+/***********************************************************
+ Set the real value of kernel oplocks (called by smbd).
+************************************************************/
+
+void lp_set_kernel_oplocks(BOOL val)
+{
+  Globals.bKernelOplocks = val;
 }

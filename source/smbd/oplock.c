@@ -26,7 +26,11 @@ extern int DEBUGLEVEL;
 /* Oplock ipc UDP socket. */
 int oplock_sock = -1;
 uint16 oplock_port = 0;
+#if defined(HAVE_KERNEL_OPLOCKS)
+static int oplock_pipes[2];
+#endif /* HAVE_KERNEL_OPLOCKS */
 
+int oplock
 /* Current number of oplocks we have outstanding. */
 int32 global_oplocks_open = 0;
 BOOL global_oplock_break = False;
@@ -678,3 +682,60 @@ BOOL attempt_close_oplocked_file(files_struct *fsp)
   return False;
 }
 
+void check_kernel_oplocks(BOOL *have_oplocks)
+{
+  static BOOL done;
+  int fd;
+  int pfd[2];
+  pstring tmpname;
+
+  /*
+   * We only do this check once on startup.
+   */
+
+  if(done)
+    return;
+
+  done = True;
+  *have_oplocks = False
+
+#if defined(HAVE_KERNEL_OPLOCKS)
+  slprintf( tmpname, sizeof(tmpname)-1, "/tmp/ot.%d.XXXXXX", getpid());
+  mktemp(tmpname);
+
+  if(pipe(pfd) != 0) {
+    DEBUG(0,("check_kernel_oplocks: Unable to create pipe. Error was %s\n",
+          strerror(errno) ));
+    return;
+  }
+
+  if((fd = open(tmpname, O_RDWR)) < 0) {
+    DEBUG(0,("check_kernel_oplocks: Unable to open temp test file %s. Error was %s\n",
+          tmpname, strerror(errno) ));
+    unlink( tmpname );
+    close(pfd[0]);
+    close(pfd[1]);
+    return;
+  }
+
+  unlink( tmpname );
+
+  if(fcntl(fd, F_OPLKREG, pfd[1]) == -1) {
+    DEBUG(0,("check_kernel_oplocks: Kernel oplocks are not available on this machine. \
+Disabling kernel oplock supprt.\n" ));
+    close(pfd[0]);
+    close(pfd[1]);
+    close(fd);
+    return;
+  }
+
+  fcntl(fd, F_OPLKACK, OP_REVOKE);
+  close(pfd[0]);
+  close(pfd[1]);
+  close(fd);
+
+  DEBUG(3,("check_kernel_oplocks: Kernel oplocks enabled.\n"));
+
+  *have_oplocks = True;
+#endif /* HAVE_KERNEL_OPLOCKS */
+}
