@@ -79,7 +79,7 @@ static void mark_packet_signed(struct cli_state *cli)
 static BOOL signing_good(struct cli_state *cli, BOOL good) 
 {
 	DEBUG(10, ("got SMB signature of\n"));
-	dump_data(10,&cli->outbuf[smb_ss_field] , 8);
+	dump_data(10,&cli->inbuf[smb_ss_field] , 8);
 
 	if (good && !cli->sign_info.doing_signing) {
 		cli->sign_info.doing_signing = True;
@@ -147,31 +147,47 @@ static BOOL cli_simple_check_incoming_message(struct cli_state *cli)
 	BOOL good;
 	unsigned char calc_md5_mac[16];
 	unsigned char server_sent_mac[8];
+	unsigned char sequence_buf[8];
 	struct MD5Context md5_ctx;
 	struct smb_basic_signing_context *data = cli->sign_info.signing_context;
+	const size_t offset_end_of_sig = (smb_ss_field + 8);
 
 	/*
 	 * Firstly put the sequence number into the first 4 bytes.
 	 * and zero out the next 4 bytes.
 	 */
 
+	SIVAL(sequence_buf, 0, data->reply_seq_num);
+	SIVAL(sequence_buf, 4, 0);
+
+	if (smb_len(cli->inbuf) < (offset_end_of_sig - 4)) {
+		DEBUG(1, ("Can't check signature on short packet! smb_len = %u\n", smb_len(cli->inbuf)));
+		return False;
+	}
+
+	/* get a copy of the server-sent mac */
 	memcpy(server_sent_mac, &cli->inbuf[smb_ss_field], sizeof(server_sent_mac));
-
-	DEBUG(10, ("got SMB signature of\n"));
-	dump_data(10, server_sent_mac, 8);
-
-	SIVAL(cli->inbuf, smb_ss_field, data->reply_seq_num);
-	SIVAL(cli->inbuf, smb_ss_field + 4, 0);
-
+	
 	/* Calculate the 16 byte MAC and place first 8 bytes into the field. */
 	MD5Init(&md5_ctx);
 	MD5Update(&md5_ctx, data->mac_key.data, 
 		  data->mac_key.length); 
-	MD5Update(&md5_ctx, cli->inbuf + 4, smb_len(cli->inbuf));
+	MD5Update(&md5_ctx, cli->inbuf + 4, smb_ss_field - 4);
+	MD5Update(&md5_ctx, sequence_buf, sizeof(sequence_buf));
+	
+	MD5Update(&md5_ctx, cli->inbuf + offset_end_of_sig, 
+		  smb_len(cli->inbuf) - (offset_end_of_sig - 4));
 	MD5Final(calc_md5_mac, &md5_ctx);
 
 	good = (memcmp(server_sent_mac, calc_md5_mac, 8) == 0);
 	
+	if (!good) {
+		DEBUG(5, ("BAD SIG: wanted SMB signature of\n"));
+		dump_data(5, calc_md5_mac, 8);
+		
+		DEBUG(5, ("BAD SIG: got SMB signature of\n"));
+		dump_data(5, server_sent_mac, 8);
+	}
 	return signing_good(cli, good);
 }
 
@@ -213,7 +229,7 @@ BOOL cli_simple_set_signing(struct cli_state *cli, const uchar user_session_key[
 	memcpy(&data->mac_key.data[0], user_session_key, 16);
 	memcpy(&data->mac_key.data[16],response.data, MIN(response.length, 40 - 16));
 
-	/* Initialize the sequence number */
+	/* Initialise the sequence number */
 	data->send_seq_num = 0;
 
 	cli->sign_info.sign_outgoing_message = cli_simple_sign_outgoing_message;
@@ -348,7 +364,7 @@ static void cli_null_free_signing_context(struct cli_state *cli)
  SMB signing - NULL implementation - setup the MAC key.
 
  @note Used as an initialisation only - it will not correctly
-       shut down a real signing mechinism
+       shut down a real signing mechanism
 */
 
 BOOL cli_null_set_signing(struct cli_state *cli)
