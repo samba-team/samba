@@ -179,6 +179,7 @@ int dos_chdir(char *dname);
 int dos_utime(char *fname,struct utimbuf *times);
 int dos_rename(char *from, char *to);
 int dos_chmod(char *fname,mode_t mode);
+char *sys_getwd(char *s);
 char *dos_getwd(char *s);
 int sys_chown(char *fname,uid_t uid,gid_t gid);
 int sys_chroot(char *dname);
@@ -385,12 +386,15 @@ BOOL cli_getatr(struct cli_state *cli, char *fname,
 		int *attr, uint32 *size, time_t *t);
 BOOL cli_setatr(struct cli_state *cli, char *fname, int attr, time_t t);
 BOOL cli_qpathinfo(struct cli_state *cli, char *fname, 
-		   time_t *c_time, time_t *a_time, time_t *m_time, uint32 *size);
+		   time_t *c_time, time_t *a_time, time_t *m_time, 
+		   uint32 *size, int *mode);
 BOOL cli_qpathinfo2(struct cli_state *cli, char *fname, 
 		    time_t *c_time, time_t *a_time, time_t *m_time, 
 		    time_t *w_time, uint32 *size);
 BOOL cli_qfileinfo(struct cli_state *cli, int fnum, 
-		   time_t *c_time, time_t *a_time, time_t *m_time, uint32 *size);
+		   time_t *c_time, time_t *a_time, time_t *m_time, 
+		   uint32 *size, int *mode);
+int cli_list(struct cli_state *cli,char *Mask,int attribute,void (*fn)(file_info *));
 BOOL cli_oem_change_password(struct cli_state *cli, char *user, char *new_password,
                              char *old_password);
 BOOL cli_negprot(struct cli_state *cli);

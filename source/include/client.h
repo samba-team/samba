@@ -28,7 +28,7 @@
  * These definitions depend on smb.h
  */
 
-typedef struct
+typedef struct file_info
 {
   SMB_OFF_T size;
   int mode;
