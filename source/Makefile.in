@@ -635,10 +635,10 @@ rpc_client_proto:
 	  $(RPC_CLIENT_OBJ)
 
 etags:
-	etags `find . -name "*.[ch]" | grep -v /CVS/`
+	etags `find $(srcdir) -name "*.[ch]" | grep -v /CVS/`
 
 ctags:
-	ctags `find . -name "*.[ch]" | grep -v /CVS/`
+	ctags `find $(srcdir) -name "*.[ch]" | grep -v /CVS/`
 
 realclean: clean
 	-rm -f config.log $(PROGS) $(SPROGS) bin/.dummy
