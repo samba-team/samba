@@ -114,7 +114,7 @@ static BOOL ldap_open_connection (LDAP ** ldap_struct)
 {
 	int port;
 	int version;
-	int tls;
+	int tls, rc;
 	uid_t uid = geteuid();
 	struct passwd* pass;
 	
