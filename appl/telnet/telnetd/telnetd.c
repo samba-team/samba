@@ -692,9 +692,9 @@ doit(struct sockaddr *who, int who_len)
     }
 #endif	/* _SC_CRAY_SECURE_SYS */
 
-    error = getnameinfo (who, who_len, host_addr, sizeof(host_addr),
-			 NULL, 0, 
-			 registerd_host_only ? NI_NAMEREQD : 0);
+    error = getnameinfo_verified (who, who_len, host_addr, sizeof(host_addr),
+				  NULL, 0, 
+				  registerd_host_only ? NI_NAMEREQD : 0);
     if (error)
 	fatal(net, "Couldn't resolve your address into a host name.\r\n\
 Please contact your net administrator");
