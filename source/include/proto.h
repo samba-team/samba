@@ -573,6 +573,7 @@ char *sid_to_string(fstring sidstr_out, DOM_SID *sid);
 BOOL string_to_sid(DOM_SID *sidout, char *sidstr);
 BOOL sid_append_rid(DOM_SID *sid, uint32 rid);
 BOOL sid_split_rid(DOM_SID *sid, uint32 *rid);
+BOOL sid_peek_rid(DOM_SID *sid, uint32 *rid);
 void sid_copy(DOM_SID *dst, const DOM_SID *src);
 DOM_SID *sid_dup(DOM_SID *src);
 BOOL sid_linearize(char *outbuf, size_t len, DOM_SID *sid);
