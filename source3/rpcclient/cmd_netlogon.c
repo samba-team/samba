@@ -266,14 +266,14 @@ static NTSTATUS cmd_netlogon_sam_logon(struct cli_state *cli,
 {
         unsigned char trust_passwd[16];
         NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-        int validation_level = 3;
+        int logon_type = NET_LOGON_TYPE;
         char *username, *password;
 
         /* Check arguments */
 
         if (argc < 3 || argc > 4) {
                 fprintf(stderr, "Usage: samlogon <username> <password> "
-                        "[validation level]\n");
+                        "[logon_type]\n");
                 return NT_STATUS_OK;
         }
 
@@ -281,7 +281,7 @@ static NTSTATUS cmd_netlogon_sam_logon(struct cli_state *cli,
         password = argv[2];
 
         if (argc == 4)
-                sscanf(argv[3], "%i", &validation_level);
+                sscanf(argv[3], "%i", &logon_type);
 
         /* Authenticate ourselves with the domain controller */
 
@@ -306,7 +306,7 @@ static NTSTATUS cmd_netlogon_sam_logon(struct cli_state *cli,
         /* Perform the sam logon */
 
         result = cli_netlogon_sam_logon(cli, mem_ctx, username, password,
-                                        validation_level);
+                                        logon_type);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
