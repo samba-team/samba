@@ -1,5 +1,5 @@
 ###################################################
-# Samba4 parser generator for IDL structures
+# Samba4 NDR parser generator for IDL structures
 # Copyright tridge@samba.org 2000-2003
 # Copyright tpot@samba.org 2001
 # Copyright jelmer@samba.org 2004
@@ -10,8 +10,8 @@ package IdlParser;
 use strict;
 use needed;
 
-# the list of needed functions
-my %structs;
+# list of known types
+my %typedefs;
 
 sub pidl($)
 {
@@ -184,20 +184,7 @@ sub struct_alignment
 	for my $e (@{$s->{ELEMENTS}}) {
 		my $a = 1;
 
-		if (!util::need_wire_pointer($e)
-		    && defined $structs{$e->{TYPE}}) {
-			if ($structs{$e->{TYPE}}->{DATA}->{TYPE} eq "STRUCT") {
-				$a = struct_alignment($structs{$e->{TYPE}}->{DATA});
-			} elsif ($structs{$e->{TYPE}}->{DATA}->{TYPE} eq "UNION") {
-				if (defined $structs{$e->{TYPE}}->{DATA}) {
-					$a = union_alignment($structs{$e->{TYPE}}->{DATA});
-				}
-			} elsif ($structs{$e->{TYPE}}->{DATA}->{TYPE} eq "ENUM") {
-				$a = util::type_align($e);
-			}
-		} else {
-			$a = util::type_align($e);
-		}
+		$a = align_type($e);
 
 		if ($align < $a) {
 			$align = $a;
@@ -222,17 +209,7 @@ sub union_alignment
 			next;
 		}
 
-		if (!util::need_wire_pointer($e)
-		    && defined $structs{$e->{DATA}->{TYPE}}) {
-			my $s = $structs{$e->{DATA}->{TYPE}};
-			if ($s->{DATA}->{TYPE} eq "STRUCT") {
-				$a = struct_alignment($s->{DATA});
-			} elsif ($s->{DATA}->{TYPE} eq "UNION") {
-				$a = union_alignment($s->{DATA});
-			}
-		} else {
-			$a = util::type_align($e->{DATA});
-		}
+		$a = align_type($e->{DATA});
 
 		if ($align < $a) {
 			$align = $a;
@@ -240,6 +217,28 @@ sub union_alignment
 	}
 
 	return $align;
+}
+
+#####################################################################
+# align a type
+sub align_type
+{
+	my $e = shift;
+
+	if (!util::need_wire_pointer($e)
+	    && defined $typedefs{$e->{TYPE}}) {
+		if ($typedefs{$e->{TYPE}}->{DATA}->{TYPE} eq "STRUCT") {
+			return struct_alignment($typedefs{$e->{TYPE}}->{DATA});
+		} elsif ($typedefs{$e->{TYPE}}->{DATA}->{TYPE} eq "UNION") {
+			if (defined $typedefs{$e->{TYPE}}->{DATA}) {
+				return union_alignment($typedefs{$e->{TYPE}}->{DATA});
+			}
+		} elsif ($typedefs{$e->{TYPE}}->{DATA}->{TYPE} eq "ENUM") {
+			return util::type_align($e);
+		}
+	} else {
+		return util::type_align($e);
+	}
 }
 
 #####################################################################
@@ -457,7 +456,7 @@ sub ParseElementPullSwitch($$$$)
 
 	my $cprefix = util::c_pull_prefix($e);
 
-	my $utype = $structs{$e->{TYPE}};
+	my $utype = $typedefs{$e->{TYPE}};
 
 	check_null_pointer($switch_var);
 
@@ -511,7 +510,7 @@ sub ParseElementPushSwitch($$$$)
 
 	check_null_pointer($switch_var);
 
-	my $utype = $structs{$e->{TYPE}};
+	my $utype = $typedefs{$e->{TYPE}};
 	if (!defined $utype ||
 	    !util::has_property($utype, "nodiscriminant")) {
 		my $e2 = find_sibling($e, $switch);
@@ -1713,10 +1712,10 @@ sub ParseInterface($)
 
 	foreach my $d (@{$data}) {
 		if ($d->{TYPE} eq "DECLARE") {
-		    $structs{$d->{NAME}} = $d;
+		    $typedefs{$d->{NAME}} = $d;
 		}
 		if ($d->{TYPE} eq "TYPEDEF") {
-		    $structs{$d->{NAME}} = $d;
+		    $typedefs{$d->{NAME}} = $d;
 		}
 	}
 
@@ -1812,3 +1811,14 @@ sub Parse($$)
 }
 
 1;
+
+#Each type can:
+#
+#- Generate push fn
+#- Generate pull fn
+#- Generate print fn
+#- Generate push array fn
+#- Generate pull array fn
+#- Generate print fn
+#- align size
+#- "push prefix"
