@@ -85,6 +85,12 @@ typedef struct parse_struct
 
 	struct parse_struct *next;
 
+	int depth; /* The current struct depth */
+	GENERIC_LIST *pending_stack; /* list of pendings stack */
+
+	/* bleh */
+	TALLOC_CTX *mem_ctx;
+
 	uint32 struct_end;
 
 }
@@ -99,6 +105,9 @@ prs_struct;
 
 #define MARSHALLING(ps) (!(ps)->io)
 #define UNMARSHALLING(ps) ((ps)->io)
+
+typedef BOOL (* GenericParseCB) (const char *name, void *item, prs_struct *ps);
+
 
 #include "rpc_spoolss.h"
 

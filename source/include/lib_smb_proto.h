@@ -388,7 +388,7 @@ BOOL make_strhdr2(STRHDR2 *hdr, uint32 max_len, uint32 len, uint32 buffer);
 BOOL smb_io_strhdr2(char *desc, STRHDR2 *hdr, prs_struct *ps, int depth);
 BOOL make_uni_hdr(UNIHDR *hdr, int len);
 BOOL make_unihdr_from_unistr2(UNIHDR *hdr, const UNISTR2 *str);
-BOOL smb_io_unihdr(char *desc,  UNIHDR *hdr, prs_struct *ps, int depth);
+BOOL smb_io_unihdr(const char *desc,  UNIHDR *hdr, prs_struct *ps, int depth);
 BOOL make_buf_hdr(BUFHDR *hdr, int max_len, int len);
 BOOL smb_io_hdrbuf_pre(char *desc, BUFHDR *hdr, prs_struct *ps, int depth, uint32 *offset);
 BOOL smb_io_hdrbuf_post(char *desc, BUFHDR *hdr, prs_struct *ps, int depth, 
@@ -398,7 +398,7 @@ BOOL make_bufhdr2(BUFHDR2 *hdr, uint32 info_level, uint32 length, uint32 buffer)
 BOOL smb_io_bufhdr2(char *desc, BUFHDR2 *hdr, prs_struct *ps, int depth);
 BOOL make_uni_hdr2(UNIHDR2 *hdr, int len);
 BOOL make_unihdr2_from_unistr2(UNIHDR2 *hdr, const UNISTR2 *str);
-BOOL smb_io_unihdr2(char *desc,  UNIHDR2 *hdr2, prs_struct *ps, int depth);
+BOOL smb_io_unihdr2(const char *desc,  UNIHDR2 *hdr2, prs_struct *ps, int depth);
 BOOL make_unistr(UNISTR *str, char *buf);
 BOOL smb_io_unistr(char *desc,  UNISTR *uni, prs_struct *ps, int depth);
 BOOL make_buffer3_uint32(BUFFER3 *str, uint32 val);
@@ -421,7 +421,14 @@ BOOL make_string2(STRING2 *str, const char *buf, int len);
 BOOL make_buf_string2(STRING2 *str, uint32 *ptr, const char *buf);
 BOOL smb_io_string2(char *desc,  STRING2 *str2, uint32 buffer, prs_struct *ps, int depth);
 BOOL make_unistr2(UNISTR2 *str, const char *buf, int len);
-BOOL smb_io_unistr2(char *desc,  UNISTR2 *uni2, uint32 buffer, prs_struct *ps, int depth);
+BOOL smb_io_unistr2(const char *desc, UNISTR2 *uni2, uint32 buffer,
+		    prs_struct *ps, int depth);
+BOOL smb_io_unistr2_x(const char *name, UNISTR2 *uni2,
+		      prs_struct *ps, int flags);
+BOOL smb_io_null_x(const char *name, void *foo,
+		   prs_struct *ps, int flags);
+BOOL smb_io_unistr2_with_hdr(const char *name, UNISTR2 *uni2,
+			     prs_struct *ps, int flags);
 BOOL smb_io_gid(char *desc,  DOM_GID *gid, prs_struct *ps, int depth);
 BOOL smb_io_pol_hnd(char *desc,  POLICY_HND *pol, prs_struct *ps, int depth);
 BOOL smb_io_unistr3(char *desc,  UNISTR3 *name, prs_struct *ps, int depth);
@@ -710,7 +717,7 @@ BOOL prs_copy(prs_struct *ps, const prs_struct *from);
 BOOL prs_buf_copy(char *copy_into, const prs_struct *buf,
 		  uint32 offset, uint32 len);
 void prs_struct_free(prs_struct **buf);
-void prs_free_data(prs_struct *buf);
+void prs_free_data(prs_struct *ps);
 BOOL prs_realloc_data(prs_struct *buf, size_t new_size);
 BOOL prs_grow_data(prs_struct *buf, BOOL io, int new_size, BOOL force_grow);
 uint32 prs_buf_len(const prs_struct *buf);
@@ -725,6 +732,14 @@ void prs_force_dynamic(prs_struct *ps);
 uint32 prs_data_size(prs_struct *ps);
 uint32 prs_offset(prs_struct *ps);
 BOOL prs_set_offset(prs_struct *ps, uint32 offset);
+void prs_set_depth(prs_struct *ps, int depth);
+void prs_inc_depth(prs_struct *ps);
+void prs_dec_depth(prs_struct *ps);
+int prs_depth(prs_struct *ps);
+BOOL prs_start_pending(prs_struct *ps, const char *comment);
+BOOL prs_add_pending(prs_struct *ps, GenericParseCB fn,
+		     const char *name, void *item);
+BOOL prs_stop_pending(prs_struct *ps);
 void prs_mem_free(prs_struct *ps);
 BOOL prs_append_some_prs_data(prs_struct *dst, prs_struct *src, int32 start,
 			      uint32 len);

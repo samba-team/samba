@@ -1977,6 +1977,7 @@ typedef struct policy_cache
 }
 policy_cache;
 
+#include "util_list.h"
 #include "ntdomain.h"
 #include "nt_printing.h"
 

@@ -4,6 +4,7 @@
    Samba memory buffer functions
    Copyright (C) Andrew Tridgell              1992-2000
    Copyright (C) Luke Kenneth Casson Leighton 1996-2000
+   Copyright (C) Elrond                            2000
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -22,6 +23,10 @@
 
 #include "includes.h"
 #include "sma.h"
+
+
+static void prs_clean_pending(prs_struct *ps, BOOL show);
+
 
 /*******************************************************************
  SMA stuff
@@ -69,6 +74,8 @@ void prs_debug(prs_struct *ps, int depth, const char *desc,
 	       const char *fn_name)
 {
 	CHECK_STRUCT(ps);
+	if (depth == -1)
+		depth = ps->depth;
 	DEBUG(5 + depth, ("%s%06x %s %s\n",
 			  tab_depth(depth), ps->offset, fn_name, desc));
 }
@@ -109,6 +116,9 @@ BOOL prs_init(prs_struct *ps, uint32 size, uint8 align, BOOL io)
 
 	ps->start = 0;
 	ps->end = 0;
+
+	ps->pending_stack = NULL;
+	ps->depth = 0;
 
 	ps->next = NULL;
 
@@ -329,20 +339,27 @@ static void prs_free_chain(prs_struct **buf)
 /*******************************************************************
  frees a memory buffer.
  ********************************************************************/
-void prs_free_data(prs_struct *buf)
+void prs_free_data(prs_struct *ps)
 {
-	if (buf == NULL)
+	if (ps == NULL)
 		return;
 
-	if (buf->data != NULL)
+	if (ps->data != NULL)
 	{
-		CHECK_STRUCT(buf);
+		CHECK_STRUCT(ps);
 		/* delete data in this structure */
 		/* prs_sma_region should realy already be initialised */
-		sma_free(prs_sma_region, buf->data);
-		buf->data = NULL;
+		sma_free(prs_sma_region, ps->data);
+		ps->data = NULL;
 	}
-	buf->data_size = 0;
+	ps->data_size = 0;
+
+	if (generic_list_first(ps->pending_stack, NULL))
+	{
+		DEBUG(1, ("WARNING: prs_free_data: "
+			  "There are still pending entries\n"));
+	}
+	prs_clean_pending(ps, False);
 }
 
 /*******************************************************************
@@ -650,6 +667,246 @@ BOOL prs_set_offset(prs_struct *ps, uint32 offset)
 }
 
 /*******************************************************************
+ Set the current depth (external interface).
+ ********************************************************************/
+void prs_set_depth(prs_struct *ps, int depth)
+{
+	if (! ps)
+		return;
+
+	if (depth != -1)
+		ps->depth = depth;
+}
+
+/*******************************************************************
+ Modify the current depth (external interface).
+ ********************************************************************/
+void prs_inc_depth(prs_struct *ps)
+{
+	if (! ps)
+		return;
+
+	ps->depth++;
+}
+
+void prs_dec_depth(prs_struct *ps)
+{
+	if (! ps)
+		return;
+
+	ps->depth--;
+}
+
+/*******************************************************************
+ Get the current depth (external interface).
+ ********************************************************************/
+int prs_depth(prs_struct *ps)
+{
+	if (! ps)
+		return 0;
+
+	return ps->depth;
+}
+
+/*******************************************************************
+ ********************************************************************/
+typedef struct _PendingItem
+{
+	GenericParseCB fn;
+	char *name;
+	void *item;
+	int depth;
+} PendingItem;
+
+typedef struct _PendingStackItem
+{
+	char *name;
+	GENERIC_LIST *fns;
+} PendingStackItem;
+
+
+BOOL prs_start_pending(prs_struct *ps, const char *comment)
+{
+	PendingStackItem *st;
+
+	CHECK_STRUCT(ps);
+
+	prs_debug(ps, -1, comment, "prs_start_pending:");
+	prs_inc_depth(ps);
+
+	if (! ps->pending_stack)
+		ps->pending_stack = generic_list_new();
+
+	if (! ps->pending_stack)
+	{
+		DEBUG(0, ("WARNING: prs_start_pending failed\n"));
+		return False;
+	}
+
+	st = g_new(PendingStackItem, 1);
+
+	if (! st)
+	{
+		DEBUG(0, ("WARNING: prs_start_pending: No mem for st\n"));
+		return False;
+	}
+
+	st->fns = generic_list_new();
+	if (!st->fns)
+		return False;
+
+	st->name = comment ? strdup(comment) : NULL;
+
+	return generic_list_prepend(ps->pending_stack, st, 0);
+}
+
+BOOL prs_add_pending(prs_struct *ps, GenericParseCB fn,
+		     const char *name, void *item)
+{
+	PendingStackItem *psi;
+	PendingItem *pi;
+
+	CHECK_STRUCT(ps);
+
+	psi = generic_list_first(ps->pending_stack, NULL);
+	if (! psi)
+	{
+		DEBUG(0, ("WARNING: prs_add_pending(%s) called without "
+			  "prs_start_pending\n", name));
+		return False;
+	}
+
+	pi = g_new(PendingItem, 1);
+	if (! pi)
+	{
+		DEBUG(0, ("WARNING: prs_add_pending(%s): No memory\n", name));
+		return False;
+	}
+
+	pi->fn = fn;
+	pi->name = name ? strdup(name) : NULL;
+	pi->item = item;
+	pi->depth = ps->depth;
+
+	prs_debug(ps, -1, name, "add_pending:");
+
+	return generic_list_append(psi->fns, pi, 0);
+}
+
+static void prs_clean_pending(prs_struct *ps, BOOL show)
+{
+	PendingStackItem *psi;
+	PendingItem *pi;
+	GENERIC_LIST *l;
+
+	while((psi = generic_list_first(ps->pending_stack, NULL)))
+	{
+		generic_list_remove(ps->pending_stack, psi, NULL);
+
+		l = psi->fns;
+
+		while ((pi = generic_list_first(l, NULL)))
+		{
+			generic_list_remove(l, pi, NULL);
+
+			if (show)
+			{
+				ps->depth = pi->depth;
+
+				prs_debug(ps, -1, pi->name, "missing:");
+			}
+
+			safe_free(pi->name);
+			safe_free(pi);
+		}
+
+		generic_list_destroy(l);
+
+		safe_free(psi->name);
+		safe_free(psi);
+	}
+
+	generic_list_destroy(ps->pending_stack);
+	ps->pending_stack = NULL;
+}
+
+BOOL prs_stop_pending(prs_struct *ps)
+{
+	PendingStackItem *psi;
+	PendingItem *pi;
+	GENERIC_LIST *l;
+	int old_depth;
+	BOOL ret = True;
+
+	CHECK_STRUCT(ps);
+
+	psi = generic_list_first(ps->pending_stack, NULL);
+	if (! psi)
+	{
+		DEBUG(0, ("WARNING: prs_stop_pending without start\n"));
+		return False;
+	}
+
+	prs_dec_depth(ps);
+	prs_debug(ps, -1, psi->name, "prs_stop_pending starting:");
+
+	old_depth = ps->depth;
+
+	l = psi->fns;
+
+	while ((pi = generic_list_first(l, NULL)))
+	{
+		generic_list_remove(l, pi, NULL);
+
+		ps->depth = pi->depth;
+
+		prs_debug(ps, -1, pi->name, "pending_do:");
+
+		if (pi->fn)
+		{
+			ret = pi->fn(pi->name, pi->item, ps);
+		}
+		else
+		{
+			prs_debug(ps, -1, pi->name, "NULL");
+			ret = True;
+		}
+
+		if (! ret)
+		{
+			DEBUG(5, ("WARNING: parse for %s failed\n", pi->name));
+		}
+
+		safe_free(pi->name);
+		safe_free(pi);
+
+		if (! ret)
+		{
+			break;
+		}
+	}
+
+	if (! ret)
+	{
+		/* show the missing stuff */
+		prs_clean_pending(ps, True);
+	}
+
+	ps->depth = old_depth;
+
+	if (ret)
+	{
+		/* just clean the list up */
+		generic_list_remove(ps->pending_stack, psi, NULL);
+		prs_debug(ps, -1, psi->name, "prs_stop_pending finished:");
+		safe_free(psi->name);
+		safe_free(psi);
+	}
+
+	return ret;
+}
+
+/*******************************************************************
  Delete the memory in a parse structure - if we own it.
  ********************************************************************/
 
@@ -705,6 +962,8 @@ BOOL _prs_uint8(char *name, prs_struct *ps, int depth, uint8 *data8)
 	CHECK_STRUCT(ps);
 	if (ps->error)
 		return False;
+	if (depth == -1)
+		depth = ps->depth;
 	if (!prs_grow(ps, ps->offset + 1))
 	{
 		return False;
@@ -732,6 +991,8 @@ BOOL _prs_uint16(char *name, prs_struct *ps, int depth, uint16 *data16)
 	CHECK_STRUCT(ps);
 	if (ps->error)
 		return False;
+	if (depth == -1)
+		depth = ps->depth;
 	if (!prs_grow(ps, ps->offset + 2))
 	{
 		return False;
@@ -790,6 +1051,8 @@ BOOL _prs_uint32(char *name, prs_struct *ps, int depth, uint32 *data32)
 	CHECK_STRUCT(ps);
 	if (ps->error)
 		return False;
+	if (depth == -1)
+		depth = ps->depth;
 	if (!prs_grow(ps, ps->offset + 4))
 	{
 		return False;
@@ -831,6 +1094,8 @@ BOOL _prs_uint8s(BOOL charmode, char *name, prs_struct *ps, int depth,
 
 	if (ps->error)
 		return False;
+	if (depth == -1)
+		depth = ps->depth;
 	end_offset = ps->offset + len * sizeof(uint8);
 	if (!prs_grow(ps, end_offset))
 	{
@@ -865,6 +1130,8 @@ BOOL _prs_uint16s(BOOL charmode, char *name, prs_struct *ps, int depth,
 	CHECK_STRUCT(ps);
 	if (ps->error)
 		return False;
+	if (depth == -1)
+		depth = ps->depth;
 
 	if (len == 0)
 	{
@@ -905,6 +1172,8 @@ BOOL _prs_uint32s(BOOL charmode, char *name, prs_struct *ps, int depth,
 	CHECK_STRUCT(ps);
 	if (ps->error)
 		return False;
+	if (depth == -1)
+		depth = ps->depth;
 
 	if (len == 0)
 	{
@@ -946,6 +1215,8 @@ BOOL _prs_buffer2(BOOL charmode, char *name, prs_struct *ps, int depth,
 	CHECK_STRUCT(ps);
 	if (ps->error)
 		return False;
+	if (depth == -1)
+		depth = ps->depth;
 
 	if (str->buf_len == 0)
 	{
@@ -987,6 +1258,8 @@ BOOL _prs_string2(BOOL charmode, char *name, prs_struct *ps, int depth,
 	CHECK_STRUCT(ps);
 	if (ps->error)
 		return False;
+	if (depth == -1)
+		depth = ps->depth;
 
 	if (str->str_str_len == 0)
 	{
@@ -1028,6 +1301,8 @@ BOOL _prs_unistr2(BOOL charmode, char *name, prs_struct *ps, int depth,
 	CHECK_STRUCT(ps);
 	if (ps->error)
 		return False;
+	if (depth == -1)
+		depth = ps->depth;
 
 	if (str->uni_str_len == 0)
 	{
@@ -1069,6 +1344,8 @@ BOOL prs_unistr3(BOOL charmode, char *name, UNISTR3 * str,
 	CHECK_STRUCT(ps);
 	if (ps->error)
 		return False;
+	if (depth == -1)
+		depth = ps->depth;
 
 	if (str->uni_str_len == 0)
 	{
@@ -1107,6 +1384,8 @@ BOOL _prs_unistr(char *name, prs_struct *ps, int depth, UNISTR * str)
 	CHECK_STRUCT(ps);
 	if (ps->error)
 		return False;
+	if (depth == -1)
+		depth = ps->depth;
 	start = (uint8 *)prs_data(ps, ps->offset);
 
 	do
@@ -1154,6 +1433,8 @@ BOOL _prs_string(char *name, prs_struct *ps, int depth, char *str,
 	CHECK_STRUCT(ps);
 	if (ps->error)
 		return False;
+	if (depth == -1)
+		depth = ps->depth;
 
 	len_limited = len == 0 || !ps->io;
 
@@ -1211,6 +1492,8 @@ BOOL _prs_uint16_pre(char *name, prs_struct *ps, int depth, uint16 *data16,
 	CHECK_STRUCT(ps);
 	if (ps->error)
 		return False;
+	if (depth == -1)
+		depth = ps->depth;
 	(*offset) = ps->offset;
 	if (ps->io)
 	{
@@ -1234,6 +1517,8 @@ BOOL _prs_uint16_post(char *name, prs_struct *ps, int depth, uint16 *data16,
 	CHECK_STRUCT(ps);
 	if (ps->error)
 		return False;
+	if (depth == -1)
+		depth = ps->depth;
 	if (!ps->io)
 	{
 		/* storing: go back and do a retrospective job.  i hate this */
@@ -1261,6 +1546,8 @@ BOOL _prs_uint32_pre(char *name, prs_struct *ps, int depth, uint32 *data32,
 	CHECK_STRUCT(ps);
 	if (ps->error)
 		return False;
+	if (depth == -1)
+		depth = ps->depth;
 	(*offset) = ps->offset;
 	if (ps->io)
 	{
@@ -1284,6 +1571,8 @@ BOOL _prs_uint32_post(char *name, prs_struct *ps, int depth, uint32 *data32,
 	CHECK_STRUCT(ps);
 	if (ps->error)
 		return False;
+	if (depth == -1)
+		depth = ps->depth;
 	if (!ps->io)
 	{
 		/* storing: go back and do a retrospective job.  i hate this */

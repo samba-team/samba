@@ -1765,21 +1765,24 @@ BOOL lsa_io_q_enum_privs(char *desc, LSA_Q_ENUM_PRIVS * q_q,
 reads or writes a structure.
 ********************************************************************/
 static BOOL lsa_io_priv_entries(char *desc, LSA_PRIV_ENTRY *entries,
-				uint32 count, prs_struct *ps, int depth)
+				uint32 count, prs_struct *ps)
 {
 	uint32 i;
+	int depth;
 
 	if (entries == NULL)
 		return False;
 
-	prs_debug(ps, depth, desc, "lsa_io_priv_entries");
-	depth++;
+	prs_debug(ps, -1, desc, "lsa_io_priv_entries");
+	prs_inc_depth(ps);
+	depth = prs_depth(ps);
 
 	prs_align(ps);
 
 	for (i = 0; i < count; i++)
 	{
 		fstring tmp;
+#if 0
 		if (MARSHALLING(ps))
 		{
 			make_unihdr_from_unistr2(&entries[i].hdr_name,
@@ -1788,9 +1791,16 @@ static BOOL lsa_io_priv_entries(char *desc, LSA_PRIV_ENTRY *entries,
 		slprintf(tmp, sizeof(tmp), "hdr_name[%d]", i);
 		if (!smb_io_unihdr(tmp, &entries[i].hdr_name, ps, depth))
 			return False;
+#else
+		slprintf(tmp, sizeof(tmp), "name[%d]", i);
+		if (!smb_io_unistr2_with_hdr(tmp, &entries[i].name, ps, 0))
+			goto fail;
+#endif
+
 		prs_uint32("luid_low ", ps, depth, &entries[i].luid_low);
 		prs_uint32("luid_high", ps, depth, &entries[i].luid_high);
 	}
+#if 0
 	for (i = 0; i < count; i++)
 	{
 		fstring tmp;
@@ -1800,8 +1810,13 @@ static BOOL lsa_io_priv_entries(char *desc, LSA_PRIV_ENTRY *entries,
 			return False;
 		prs_align(ps);
 	}
+#endif
 
+	prs_dec_depth(ps);
 	return True;
+fail:
+	prs_dec_depth(ps);
+	return False;
 }
 
 /*******************************************************************
@@ -1831,8 +1846,12 @@ BOOL lsa_io_r_enum_privs(char *desc, LSA_R_ENUM_PRIVS * r_q,
 		{
 			return False;
 		}
-		if (!lsa_io_priv_entries("", r_q->privs, r_q->count2,
-					 ps, depth))
+		prs_set_depth(ps, depth);
+		if (!prs_start_pending(ps, "array of privs"))
+			return False;
+		if (!lsa_io_priv_entries("", r_q->privs, r_q->count2, ps))
+			return False;
+		if (!prs_stop_pending(ps))
 			return False;
 	}
 
@@ -1862,11 +1881,21 @@ BOOL lsa_io_q_priv_get_dispname(char *desc, LSA_Q_PRIV_GET_DISPNAME * q_q,
 	{
 		make_unihdr_from_unistr2(&q_q->hdr_name, &q_q->name);
 	}
+#if 0
 	if (!smb_io_unihdr("hdr_name", &q_q->hdr_name, ps, depth))
 		return False;
 	if (!smb_io_unistr2("name", &q_q->name, q_q->hdr_name.buffer,
 			    ps, depth))
 		return False;
+#else
+	prs_set_depth(ps, depth);
+	if (!prs_start_pending(ps, "priv_name"))
+		return False;
+	if (!smb_io_unistr2_with_hdr("name", &q_q->name, ps, 0))
+		return False;
+	if (!prs_stop_pending(ps))
+		return False;
+#endif
 
 	prs_uint16("lang_id    ", ps, depth, &q_q->lang_id);
 	prs_uint16("lang_id_sys", ps, depth, &q_q->lang_id_sys);
@@ -1888,26 +1917,20 @@ BOOL lsa_io_r_priv_get_dispname(char *desc, LSA_R_PRIV_GET_DISPNAME * r_q,
 
 	prs_align(ps);
 
+	prs_set_depth(ps, depth);
+	if (!prs_start_pending(ps, "description text"))
+		return False;
+
 	prs_uint32("ptr_info", ps, depth, &r_q->ptr_info);
 
 	if (r_q->ptr_info)
 	{
-		uint32 old_align;
-		if (MARSHALLING(ps))
-		{
-			make_unihdr_from_unistr2(&r_q->hdr_desc, &r_q->desc);
-		}
-		if (!smb_io_unihdr("hdr_desc", &r_q->hdr_desc, ps, depth))
+		if (!smb_io_unistr2_with_hdr("desc", &r_q->desc, ps, 0))
 			return False;
-
-		/* Don't align after desc */
-		old_align = ps->align;
-		ps->align = 0;
-		if (!smb_io_unistr2("desc", &r_q->desc, r_q->hdr_desc.buffer,
-				    ps, depth))
-			return False;
-		ps->align = old_align;
 	}
+
+	if (!prs_stop_pending(ps))
+		return False;
 
 	prs_uint16("lang_id", ps, depth, &r_q->lang_id);
 	prs_align(ps);
