@@ -201,7 +201,6 @@ static int set_user_info (char *username, char *fullname, char *homedir, char *d
 static int new_user (char *username, char *fullname, char *homedir, char *drive, char *script, char *profile)
 {
 	SAM_ACCOUNT sam_pwent;
-	BOOL ret;
 	struct passwd  *pwd = NULL;
 	uchar new_p16[16];
 	uchar new_nt_p16[16];
