@@ -339,12 +339,18 @@ static void set_updating_pid(fstring printer_name, BOOL delete)
 
 static void send_queue_message(const char *printer_name, uint32 high, uint32 low)
 {
-	char msg[8 + sizeof(fstring)];
-	SIVAL(msg,0,low);
-	SIVAL(msg,4,high);
-	fstrcpy(&msg[8], printer_name);
+	char msg[sizeof(PRINTER_MESSAGE_INFO)];
+	PRINTER_MESSAGE_INFO info;
 
-	message_send_all(conn_tdb_ctx(), MSG_PRINTER_NOTIFY, msg, 8 + strlen(printer_name) + 1, False, NULL);
+	ZERO_STRUCT(info);
+
+	info.low = low;
+	info.high = high;
+	info.flags = 0;
+	fstrcpy(info.printer_name, printer_name);
+	memcpy( msg, &info, sizeof(PRINTER_MESSAGE_INFO));
+
+	message_send_all(conn_tdb_ctx(), MSG_PRINTER_NOTIFY, msg, sizeof(PRINTER_MESSAGE_INFO), False, NULL);
 }
 
 /****************************************************************************
