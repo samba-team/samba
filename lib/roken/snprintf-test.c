@@ -51,6 +51,8 @@ try (const char *format, ...)
     ret = vsnprintf (buf1, sizeof(buf1), format, ap);
     if (ret >= sizeof(buf1))
 	errx (1, "increase buf and try again");
+    va_end (ap);
+    va_start (ap, format);
     vsprintf (buf2, format, ap);
     ret = strcmp (buf1, buf2);
     if (ret)
