@@ -158,7 +158,11 @@ max can be %d\n",
 			s = fd_listenset[i] = open_socket_in(SOCK_STREAM, port, 0, ifip->s_addr, True);
 			if(s == -1)
 				return False;
-				/* ready to listen */
+
+			/* ready to listen */
+			set_socket_options(s,"SO_KEEPALIVE"); 
+			set_socket_options(s,user_socket_options);
+      
 			if (listen(s, 5) == -1) {
 				DEBUG(0,("listen: %s\n",strerror(errno)));
 				close(s);
@@ -178,6 +182,9 @@ max can be %d\n",
 			return(False);
 		
 		/* ready to listen */
+		set_socket_options(s,"SO_KEEPALIVE"); 
+		set_socket_options(s,user_socket_options);
+
 		if (listen(s, 5) == -1) {
 			DEBUG(0,("open_sockets: listen: %s\n",
 				 strerror(errno)));
