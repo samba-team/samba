@@ -488,8 +488,6 @@ BOOL get_any_dc_name(char *domain, fstring srv_name)
 	pstring remote_machine;
 	char *p;
 
-	DEBUG(3, ("looking up dc name for domain %s\n", domain));
-
 	p = lp_passwordserver();
 
 	if (!*p) 
@@ -505,8 +503,11 @@ BOOL get_any_dc_name(char *domain, fstring srv_name)
 
 	/* Iterate over password server list */
 
+ tryagain:
+
 	while(!connected_ok && next_token(&p, remote_machine, LIST_SEP, 
 					  sizeof(remote_machine))) {
+
 		if (strequal(remote_machine, "*")) {
 
 			/* Connect to a random DC on the network */
@@ -514,6 +515,7 @@ BOOL get_any_dc_name(char *domain, fstring srv_name)
 			connected_ok = find_connect_pdc(domain, &dest_ip);
 
 		} else {
+			fstring the_domain;
 
 			/* Connect to specific DC */
 
@@ -523,8 +525,27 @@ BOOL get_any_dc_name(char *domain, fstring srv_name)
 				continue;
 			}
 
+			/* Check that this DC is actually a member of the
+			   domain we are interested in */
+
+			if (!name_status_find(0x1b, dest_ip, the_domain) ||
+			    !strequal(the_domain, domain)) {
+				DEBUG(1, ("get_any_dc_name(): dc %s not a member of domain %s (%s)\n",
+					  remote_machine, domain, the_domain));
+				connected_ok = False;
+				continue;
+			}
+
 			connected_ok = attempt_connect_dc(domain, dest_ip);
 		}
+	}
+
+	/* All our specified password servers are broken so try again with
+	   ones that may not have been specified. */
+
+	if (!connected_ok && !strequal(p, "*")) {
+		p = "*";
+		goto tryagain;
 	}
 
  done:
