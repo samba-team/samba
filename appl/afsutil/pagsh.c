@@ -66,18 +66,20 @@ RCSID("$Id$");
 
 static int help_flag;
 static int version_flag;
+static int c_flag;
 
-struct getargs args[] = {
+struct getargs getargs[] = {
+    { NULL,	'c', arg_flag, &c_flag },
     { "version", 0,  arg_flag, &version_flag },
     { "help",	'h', arg_flag, &help_flag },
 };
 
-static int num_args = sizeof(args) / sizeof(args[0]);
+static int num_args = sizeof(getargs) / sizeof(getargs[0]);
 
 static void
 usage(int ecode)
 {
-    arg_printusage(args, num_args, NULL, "[cell]... [path]...");
+    arg_printusage(getargs, num_args, NULL, "command [args...]");
     exit(ecode);
 }
 
@@ -95,6 +97,20 @@ main(int argc, char **argv)
   char *path;
   char **args;
   int i;
+  int optind = 0;
+
+  set_progname(argv[0]);
+  if(getarg(getargs, num_args, argc, argv, &optind))
+      usage(1);
+  if(help_flag)
+      usage(0);
+  if(version_flag) {
+      print_version(NULL);
+      exit(0);
+  }
+
+  argc -= optind;
+  argv += optind;
 
 #ifdef KRB5
   snprintf (tf, sizeof(tf), "%sXXXXXX", KRB5_DEFAULT_CCROOT);
@@ -119,8 +135,6 @@ main(int argc, char **argv)
       errx (1, "Out of memory allocating %lu bytes",
 	    (unsigned long)((argc + 10)*sizeof(char *)));
   
-  argv++;
-
   if(*argv == NULL) {
     path = getenv("SHELL");
     if(path == NULL){
@@ -128,7 +142,6 @@ main(int argc, char **argv)
       path = strdup(pw->pw_shell);
     }
   } else {
-    if(strcmp(*argv, "-c") ==  0) argv++;
     path = strdup(*argv++);
   }
   if (path == NULL)
