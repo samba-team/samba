@@ -54,7 +54,7 @@ ATTRIB_MAP_ENTRY attrib_map_v22[] = {
 	{ LDAP_ATTR_CN,			"cn"		},
 	{ LDAP_ATTR_DISPLAY_NAME,	"displayName"	},
 	{ LDAP_ATTR_HOME_PATH,		"smbHome"	},
-	{ LDAP_ATTR_HOME_DRIVE,		"homeDrives"	},
+	{ LDAP_ATTR_HOME_DRIVE,		"homeDrive"	},
 	{ LDAP_ATTR_LOGON_SCRIPT,	"scriptPath"	},
 	{ LDAP_ATTR_PROFILE_PATH,	"profilePath"	},
 	{ LDAP_ATTR_DESC,		"description"	},
