@@ -118,7 +118,7 @@ int vfswrap_rename(char *old, char *new)
 
 void vfswrap_sync_file(struct connection_struct *conn, files_struct *fsp)
 {
-    return sys_sync_file(conn, fsp);
+    sys_sync_file(conn, fsp);
 }
 
 int vfswrap_stat(char *fname, SMB_STRUCT_STAT *sbuf)
