@@ -72,6 +72,8 @@ krb5_get_credentials (krb5_context context,
      * Prepare Tgs_Req.
      */
 
+    memset(&a, 0, sizeof(a));
+
     err = krb5_get_default_in_tkt_etypes (context,
 					  (krb5_enctype**)&a.req_body.etype.val);
     if (err)
@@ -87,7 +89,9 @@ krb5_get_credentials (krb5_context context,
 
     a.pvno = 5;
     a.msg_type = krb_tgs_req;
+    /*
     memset (&a.req_body.kdc_options, 0, sizeof(a.req_body.kdc_options));
+    */
     /* a.kdc_options */
 
     a.req_body.realm = malloc(in_creds->server->realm.length + 1);
@@ -105,21 +109,21 @@ krb5_get_credentials (krb5_context context,
     a.req_body.enc_authorization_data = NULL;
 
     {
-      char buf[1024];
-      int len;
-      struct md4 m;
-      Checksum c;
-
-      len = encode_KDC_REQ_BODY(buf + sizeof(buf) - 1, sizeof(buf),
-				&a.req_body);
-      md4_init(&m);
-      md4_update(&m, buf + sizeof(buf) - len, len);
-      c.cksumtype = rsa_md4;
-      c.checksum.length = 16;
-      c.checksum.data = malloc(16);
-      md4_finito(&m, c.checksum.data);
-      krb5_build_authenticator (context, in_creds->client,
-				&c, NULL, &authenticator);
+	unsigned char buf[1024];
+	int len;
+	struct md4 m;
+	Checksum c;
+	
+	len = encode_KDC_REQ_BODY(buf + sizeof(buf) - 1, sizeof(buf),
+				  &a.req_body);
+	md4_init(&m);
+	md4_update(&m, buf + sizeof(buf) - len, len);
+	c.cksumtype = rsa_md4;
+	c.checksum.length = 16;
+	c.checksum.data = malloc(16);
+	md4_finito(&m, c.checksum.data);
+	krb5_build_authenticator (context, in_creds->client,
+				  &c, NULL, &authenticator);
     }
     
     {
