@@ -22,20 +22,95 @@
 
 #include "printing.h"
 
-/*
- * Print notification routines
- */
+static TALLOC_CTX *send_ctx;
+
+static struct notify_queue {
+	struct notify_queue *next, *prev;
+	void *buf;
+	size_t buflen;
+} *notify_queue_head = NULL;
+
+/*******************************************************************
+ Used to decide if we need a short select timeout.
+*******************************************************************/
+
+BOOL print_notify_messages_pending(void)
+{
+	return (notify_queue_head != NULL);
+}
+
+/*******************************************************************
+ Actually send the batched messages.
+*******************************************************************/
+
+void print_notify_send_messages(void)
+{
+	TDB_CONTEXT *tdb;
+	char *buf;
+	struct notify_queue *pq;
+	size_t msg_count = 0, offset = 0;
+
+	if (!print_notify_messages_pending())
+		return;
+
+	if (!send_ctx)
+		return;
+
+	tdb = conn_tdb_ctx();
+
+	if (!tdb) {
+		DEBUG(3, ("Failed to open connections database in send_spoolss_notify2_msg\n"));
+		return;
+	}
+	
+	/* Count the space needed to send the messages. */
+	for (pq = notify_queue_head; pq; pq = pq->next, msg_count++)
+		offset += (pq->buflen + 4);
+		
+	offset += 4; /* For count. */
+
+	buf = talloc(send_ctx, offset);
+	if (!buf) {
+		DEBUG(0,("print_notify_send_messages: Out of memory\n"));
+		talloc_destroy_pool(send_ctx);
+		return;
+	}
+
+	offset = 0;
+	SIVAL(buf,offset,msg_count);
+	offset += 4;
+	for (pq = notify_queue_head; pq; pq = pq->next) {
+		SIVAL(buf,offset,pq->buflen);
+		offset += 4;
+		memcpy(buf + offset, pq->buf, pq->buflen);
+		offset += pq->buflen;
+	}
+
+	message_send_all(tdb, MSG_PRINTER_NOTIFY2, buf, offset, False, NULL);
+	talloc_destroy_pool(send_ctx);
+	notify_queue_head = NULL;
+}
+
+/*******************************************************************
+ Batch up print notify messages.
+*******************************************************************/
 
 static void send_spoolss_notify2_msg(struct spoolss_notify_msg *msg)
 {
 	char *buf = NULL;
-	int buflen = 0, len;
-	TDB_CONTEXT *tdb;
+	size_t buflen = 0, len;
+	struct notify_queue *pnqueue;
 
 	/* Let's not waste any time with this */
 
 	if (lp_disable_spoolss())
 		return;
+
+	if (!send_ctx)
+		send_ctx = talloc_init_named("print notify queue");
+
+	if (!send_ctx)
+		goto fail;
 
 	/* Flatten data into a message */
 
@@ -59,24 +134,27 @@ again:
 				msg->len, msg->notify.data);
 
 	if (buflen != len) {
-		buf = Realloc(buf, len);
+		buf = talloc_realloc(send_ctx, buf, len);
+		if (!buf)
+			goto fail;
 		buflen = len;
 		goto again;
 	}
 
-	/* Send message */
+	/* Store the message on the pending queue. */
 
-	tdb = conn_tdb_ctx();
+	pnqueue = talloc(send_ctx, sizeof(*pnqueue));
+	if (!pnqueue)
+		goto fail;
 
-	if (!tdb) {
-		DEBUG(3, ("Failed to open connections database in send_spoolss_notify2_msg\n"));
-		goto done;
-	}
-	
-	message_send_all(tdb, MSG_PRINTER_NOTIFY2, buf, buflen, False, NULL);
+	pnqueue->buf = buf;
+	pnqueue->buflen = buflen;
+	DLIST_ADD(notify_queue_head, pnqueue);
+	return;
 
-done:
-	SAFE_FREE(buf);
+  fail:
+
+	DEBUG(0,("send_spoolss_notify2_msg: Out of memory.\n"));
 }
 
 static void send_notify_field_values(const char *printer_name, uint32 type,
