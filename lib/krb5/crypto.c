@@ -70,6 +70,7 @@ struct krb5_crypto_data {
 #define F_PSEUDO	16	/* not a real protocol type */
 #define F_SPECIAL	32	/* backwards */
 #define F_DISABLED	64	/* enctype/checksum disabled */
+#define F_PADCMS	128	/* padding done like in CMS */
 
 struct salt_type {
     krb5_salttype type;
@@ -2885,7 +2886,7 @@ static struct encryption_type enctype_aes128_cbc_none = {
     &keytype_aes128,
     &checksum_none,
     NULL,
-    F_PSEUDO,
+    F_PSEUDO|F_PADCMS,
     AES_CBC_encrypt,
 };
 static unsigned aes_192_cbc_num[] = { 2, 16, 840, 1, 101, 3, 4, 1, 22 };
@@ -2900,7 +2901,7 @@ static struct encryption_type enctype_aes192_cbc_none = {
     &keytype_aes192,
     &checksum_none,
     NULL,
-    F_PSEUDO,
+    F_PSEUDO|F_PADCMS,
     AES_CBC_encrypt,
 };
 static unsigned aes_256_cbc_num[] = { 2, 16, 840, 1, 101, 3, 4, 1, 42 };
@@ -2915,7 +2916,7 @@ static struct encryption_type enctype_aes256_cbc_none = {
     &keytype_aes256,
     &checksum_none,
     NULL,
-    F_PSEUDO,
+    F_PSEUDO|F_PADCMS,
     AES_CBC_encrypt,
 };
 #endif /* ENABLE_AES */
@@ -3332,7 +3333,7 @@ encrypt_internal(krb5_context context,
 		 krb5_data *result,
 		 void *ivec)
 {
-    size_t sz, block_sz, checksum_sz;
+    size_t sz, block_sz, checksum_sz, padsize = 0;
     Checksum cksum;
     unsigned char *p, *q;
     krb5_error_code ret;
@@ -3342,6 +3343,11 @@ encrypt_internal(krb5_context context,
     
     sz = et->confoundersize + checksum_sz + len;
     block_sz = (sz + et->padsize - 1) &~ (et->padsize - 1); /* pad */
+    if (et->flags & F_PADCMS) {
+	padsize = et->padsize - (sz % et->padsize);
+	if (padsize == et->padsize)
+	    block_sz += et->padsize;
+    }
     p = calloc(1, block_sz);
     if(p == NULL) {
 	krb5_set_error_string(context, "malloc: out of memory");
@@ -3374,6 +3380,12 @@ encrypt_internal(krb5_context context,
     ret = _key_schedule(context, &crypto->key, crypto->params);
     if(ret)
 	goto fail;
+    if (et->flags & F_PADCMS) {
+	int i;
+	q = p + len;
+	for (i = 0; i < padsize; i++)
+	    q[i] = padsize;
+    }
 #ifdef CRYPTO_DEBUG
     krb5_crypto_debug(context, 1, block_sz, crypto->key.key);
 #endif
