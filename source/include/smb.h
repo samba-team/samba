@@ -4,6 +4,8 @@
    SMB parameters and setup
    Copyright (C) Andrew Tridgell 1992-1997
    Copyright (C) John H Terpstra 1996-1997
+   Copyright (C) Luke Kenneth Casson Leighton 1996-1997
+   Copyright (C) Paul Ashton 1997
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -254,6 +256,42 @@ implemented */
 typedef char pstring[1024];
 typedef char fstring[128];
 typedef fstring string;
+
+
+/* NETLOGON opcodes and data structures */
+
+#define NET_QUERYFORPDC	     7 /* Query for PDC */
+#define NET_QUERYFORPDC_R   12 /* Response to Query for PDC */
+#define NET_SAMLOGON        18
+#define NET_SAMLOGON_R      19
+
+/* Allowable account control bits */
+#define ACB_DISABLED   1 /* 1 = User account disabled */
+#define ACB_HOMDIRREQ  2 /* 1 = Home directory required */
+#define ACB_PWNOTREQ   4 /* 1 = User password not required */
+#define ACB_TEMPDUP      /* 1 = Temporary duplicate account */
+#define ACB_NORMAL       /* 1 = Normal user account */
+#define ACB_MNS          /* 1 = MNS logon user account */
+#define ACB_DOMTRUST     /* 1 = Interdomain trust account */
+#define ACB_WSTRUST      /* 1 = Workstation trust account */
+#define ACB_SVRTRUST     /* 1 = Server trust account */
+#define ACB_PWNOEXP      /* 1 = User password does not expire */
+#define ACB_AUTOLOCK     /* 1 = Account auto locked */
+
+#define LSA_OPENPOLICY      0x2c
+#define LSA_QUERYINFOPOLICY 0x07
+#define LSA_ENUMTRUSTDOM    0x0d
+#define LSA_REQCHAL         0x04
+#define LSA_SVRPWSET        0x06
+#define LSA_SAMLOGON        0x02
+#define LSA_AUTH2           0x0f
+#define LSA_CLOSE           0x00
+
+/* unknown .... */
+#define LSA_OPENSECRET      0xFF
+#define LSA_LOOKUPSIDS      0xFE
+#define LSA_LOOKUPNAMES     0xFD
+#define LSA_SAMLOGOFF       0xFC
 
 
 /* 32 bit time (sec) since 01jan1970 - cifs6.txt, section 3.5, page 30 */
