@@ -1,5 +1,9 @@
 2003-09-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* Makefile.am: add and enable check program default_keys
+	
+	* default_keys.c: test program for _kadm5_generate_key_set
+	
 	* init_c.c: use
 	krb5_get_init_creds_opt_alloc/krb5_get_init_creds_opt_free
 
