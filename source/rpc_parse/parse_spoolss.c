@@ -319,7 +319,7 @@ reads or writes an NOTIFY INFO DATA structure.
 
 static BOOL smb_io_notify_info_data(char *desc,SPOOL_NOTIFY_INFO_DATA *data, prs_struct *ps, int depth)
 {
-	uint32 useless_ptr=0xADDE0FF0;
+	uint32 useless_ptr=0x0FF0ADDE;
 	
 	prs_debug(ps, depth, desc, "smb_io_notify_info_data");
 	depth++;
@@ -6765,7 +6765,7 @@ BOOL make_spoolss_q_reply_rrpcn(SPOOL_Q_REPLY_RRPCN *q_u, POLICY_HND *hnd,
 	q_u->unknown0=0x0;
 	q_u->unknown1=0x0;
 
-	q_u->info_ptr=0xaddee11e;
+	q_u->info_ptr=0x0FF0ADDE;
 
 	q_u->info.version=2;
 	

@@ -2928,13 +2928,11 @@ void construct_info_data(SPOOL_NOTIFY_INFO_DATA *info_data, uint16 type, uint16 
 	info_data->field    = field;
 	info_data->reserved = 0;
 
-	if (type == JOB_NOTIFY_TYPE)
-		info_data->id = id;
-	else 
-		info_data->id = 0;
-
 	info_data->size     = size_of_notify_info_data(type, field);
 	info_data->enc_type = type_of_notify_info_data(type, field);
+
+	info_data->id = id;
+
 }
 
 
@@ -3110,16 +3108,17 @@ static WERROR printserver_notify_info(pipes_struct *p, POLICY_HND *hnd,
 			continue;
 		
 		for (snum=0; snum<n_services; snum++)
+		{
 			if ( lp_browseable(snum) && lp_snum_ok(snum) && lp_print_ok(snum) )
-				if (construct_notify_printer_info
-				    (info, snum, option_type, id, mem_ctx))
-					id++;
+				construct_notify_printer_info ( info, snum, option_type, snum, mem_ctx );
+		}
 	}
-			
+
+#if 0			
 	/*
 	 * Debugging information, don't delete.
 	 */
-	/*
+
 	DEBUG(1,("dumping the NOTIFY_INFO\n"));
 	DEBUGADD(1,("info->version:[%d], info->flags:[%d], info->count:[%d]\n", info->version, info->flags, info->count));
 	DEBUGADD(1,("num\ttype\tfield\tres\tid\tsize\tenc_type\n"));
@@ -3129,7 +3128,7 @@ static WERROR printserver_notify_info(pipes_struct *p, POLICY_HND *hnd,
 		i, info->data[i].type, info->data[i].field, info->data[i].reserved,
 		info->data[i].id, info->data[i].size, info->data[i].enc_type));
 	}
-	*/
+#endif
 	
 	return WERR_OK;
 }
