@@ -58,16 +58,19 @@ all: $(LIB) $(PROGS)
 Wall:
 	make CFLAGS="-g -Wall -Wno-comment -Wmissing-prototypes -Wmissing-declarations -D__USE_FIXED_PROTOTYPES__"
 
+COM = $(CC) -c $(CPPFLAGS) $(DEFS) -I../../include -I$(srcdir) $(PICFLAGS)
+
 .c.o:
-	$(CC) -c $(CPPFLAGS) $(DEFS) -I../../include -I$(srcdir) $(CFLAGS) $(PICFLAGS) $<
+	$(COM) $(CFLAGS) $<
 
 # Compile this file without debug if using gcc
 des_enc.o: des_enc.c
-	@echo "Compiling des_enc.o without debug info"
 	@if test "$(CC)" = gcc; then\
-	  $(CC) -c $(CPPFLAGS) $(DEFS) -I../../include -I$(srcdir) -fomit-frame-pointer -O3 $(PICFLAGS) $(srcdir)/des_enc.c; \
+	  echo "$(COM) -fomit-frame-pointer -O3 $(srcdir)/des_enc.c"; \
+	  $(COM) -fomit-frame-pointer -O3 $(srcdir)/des_enc.c; \
 	else \
-	  $(CC) -c $(CPPFLAGS) $(DEFS) -I../../include -I$(srcdir) $(CFLAGS) $(PICFLAGS) $(srcdir)/des_enc.c; \
+	  echo "$(COM) $(CFLAGS) $(srcdir)/des_enc.c"; \
+	  $(COM) $(CFLAGS) $(srcdir)/des_enc.c; \
 	fi
 
 install: all
