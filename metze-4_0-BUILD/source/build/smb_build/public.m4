@@ -406,5 +406,5 @@ dnl		1: outputfile
 dnl		)
 AC_DEFUN([SMB_AC_OUTPUT],
 [
-	AC_OUTPUT([],[],[_SMB_BUILD_CORE([$1])])
+	AC_OUTPUT([$1],[],[_SMB_BUILD_CORE([[$1][.in]])])
 ])

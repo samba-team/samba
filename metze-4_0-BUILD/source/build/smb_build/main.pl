@@ -6,4 +6,6 @@
 ###  Released under the GNU GPL				###
 ###########################################################
 
-print "Here's the new build system!\n";
+
+my $CTX = 0;
+create_makefile_in($CTX);

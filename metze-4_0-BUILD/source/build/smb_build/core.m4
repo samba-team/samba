@@ -32,6 +32,7 @@ my %binaries;
 _SMB_ACEOF
 
 cat >> config.smb_build.pl < build/smb_build/config_mk.pl
+cat >> config.smb_build.pl < build/smb_build/makefile.pl
 
 cat >> config.smb_build.pl <<\_SMB_ACEOF
 ###########################################################
