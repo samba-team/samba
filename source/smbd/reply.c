@@ -2553,9 +2553,18 @@ int reply_mv(char *inbuf,char *outbuf)
   unix_convert(name,cnum,0);
   unix_convert(newname,cnum,newname_last_component);
 
+  /*
+   * Split the old name into directory and last component
+   * strings. Note that unix_convert may have stripped off a 
+   * leading ./ from both name and newname if the rename is 
+   * at the root of the share. We need to make sure either both
+   * name and newname contain a / character or neither of them do
+   * as this is checked in resolve_wildcards().
+   */
+
   p = strrchr(name,'/');
   if (!p) {
-    strcpy(directory,"./");
+    strcpy(directory,".");
     strcpy(mask,name);
   } else {
     *p = 0;
@@ -2570,32 +2579,45 @@ int reply_mv(char *inbuf,char *outbuf)
   has_wild = strchr(mask,'*') || strchr(mask,'?');
 
   if (!has_wild) {
+    BOOL is_short_name = is_8_3(name, True);
+
+    /* Add a terminating '/' to the directory name. */
     strcat(directory,"/");
     strcat(directory,mask);
 
-    DEBUG(3,("reply_mv : case_sensitive = %d, case_preserve = %d, name = %s, newname = %s, newname_last_component = %s\n", case_sensitive, case_preserve, name, newname, newname_last_component));
+    /* Ensure newname contains a '/' also */
+    if(strrchr(newname,'/') == 0) {
+      pstring tmpstr;
+
+      strcpy(tmpstr, "./");
+      strcat(tmpstr, newname);
+      strcpy(newname, tmpstr);
+    }
+  
+    DEBUG(3,("reply_mv : case_sensitive = %d, case_preserve = %d, short case preserve = %d, directory = %s, newname = %s, newname_last_component = %s, is_8_3 = %d\n", 
+            case_sensitive, case_preserve, short_case_preserve, directory, 
+            newname, newname_last_component, is_short_name));
 
     /*
      * Check for special case with case preserving and not
-     * case sensitive, if name and newname are identical,
+     * case sensitive, if directory and newname are identical,
      * and the old last component differs from the original
      * last component only by case, then we should allow
      * the rename (user is trying to change the case of the
      * filename).
      */
-    if((case_sensitive == False) && ((case_preserve == True) || 
-            ((short_case_preserve == True) && is_8_3(name, True))) &&
-       strcsequal(name, newname)) {
+    if((case_sensitive == False) && ( ((case_preserve == True) && (is_short_name == False)) || 
+            ((short_case_preserve == True) && (is_short_name == True))) &&
+       strcsequal(directory, newname)) {
       pstring newname_modified_last_component;
 
       /*
        * Get the last component of the modified name.
+       * Note that we guarantee that newname contains a '/'
+       * character above.
        */
       p = strrchr(newname,'/');
-      if (!p)
-	strcpy(newname_modified_last_component,name);
-      else
-	strcpy(newname_modified_last_component,p+1);
+      strcpy(newname_modified_last_component,p+1);
 
       if(strcsequal(newname_modified_last_component, 
 		    newname_last_component) == False) {
@@ -2603,10 +2625,7 @@ int reply_mv(char *inbuf,char *outbuf)
 	 * Replace the modified last component with
 	 * the original.
 	 */
-	if(p)
-	  strcpy(p+1, newname_last_component);
-	else
-	  strcpy(newname, newname_last_component);
+        strcpy(p+1, newname_last_component);
       }
     }
 
@@ -2615,7 +2634,8 @@ int reply_mv(char *inbuf,char *outbuf)
 	!file_exist(newname,NULL) &&
 	!sys_rename(directory,newname)) count++;
 
-    DEBUG(3,("reply_mv : doing rename on %s -> %s\n",directory,newname));
+    DEBUG(3,("reply_mv : %s doing rename on %s -> %s\n",(count != 0) ? "succeeded" : "failed",
+                         directory,newname));
 
     if (!count) exists = file_exist(directory,NULL);
     if (!count && exists && file_exist(newname,NULL)) {
