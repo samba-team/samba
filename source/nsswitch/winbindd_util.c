@@ -280,6 +280,8 @@ BOOL lookup_domain_sid(char *domain_name, struct winbindd_domain *domain)
 
     /* Get controller name for domain */
     if (!resolve_dc_name(domain_name, domain->controller)) {
+	    DEBUG(0, ("Could not resolve domain controller for domain %s\n",
+		      domain_name));
 	    return False;
     }
 
@@ -731,7 +733,9 @@ BOOL check_domain_env(char *domain_env, char *domain)
 	char *tmp = domain_env;
 
 	while(next_token(&tmp, name, ",", sizeof(fstring))) {
-		return strequal(name, domain);
+		if (strequal(name, domain)) {
+			return True;
+		}
 	}
 
 	return False;
