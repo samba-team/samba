@@ -328,7 +328,7 @@ static void send_queue_message(const char *printer_name, uint32 high, uint32 low
 	SIVAL(msg,4,high);
 	fstrcpy(&msg[8], printer_name);
 
-	message_send_all(conn_tdb_ctx(), MSG_PRINTER_NOTIFY, msg, 8 + strlen(printer_name) + 1, False);
+	message_send_all(conn_tdb_ctx(), MSG_PRINTER_NOTIFY, msg, 8 + strlen(printer_name) + 1, False, NULL);
 }
 
 /****************************************************************************
