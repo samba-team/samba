@@ -231,8 +231,6 @@ BOOL torture_rpc_mgmt(int dummy)
 			continue;
 		}
 	
-		p->flags |= DCERPC_DEBUG_PRINT_BOTH;
-
 		if (!test_is_server_listening(p, mem_ctx)) {
 			ret = False;
 		}
