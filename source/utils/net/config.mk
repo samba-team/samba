@@ -5,7 +5,8 @@
 [BINARY::net]
 OBJ_FILES = \
 		utils/net/net.o \
-		utils/net/net_password.o
+		utils/net/net_password.o \
+		utils/net/net_time.o
 REQUIRED_SUBSYSTEMS = \
 		CONFIG \
 		LIBCMDLINE \
