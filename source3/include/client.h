@@ -45,7 +45,7 @@ typedef struct file_info
 	time_t atime;
 	time_t ctime;
 	pstring name;
-	char short_name[13];
+	char short_name[13*3]; /* the *3 is to cope with multi-byte */
 } file_info;
 
 struct print_job_info
