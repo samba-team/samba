@@ -179,7 +179,7 @@ inode = %.0f. (%s)\n",
 		return False;
 	}
 	
-	DEBUG(3,("set_file_oplock: got kernel oplock on file %s, dev = %x, inode = %.0f, file_id = %ul\n",
+	DEBUG(3,("set_file_oplock: got kernel oplock on file %s, dev = %x, inode = %.0f, file_id = %lu\n",
 		  fsp->fsp_name, (unsigned int)fsp->dev, (double)fsp->inode, fsp->file_id));
 
 	return True;
@@ -197,7 +197,7 @@ static void linux_release_kernel_oplock(files_struct *fsp)
 		 * oplock state of this file.
 		 */
 		int state = fcntl(fsp->fd, F_GETLEASE, 0);
-		dbgtext("release_kernel_oplock: file %s, dev = %x, inode = %.0f file_id = %ul has kernel \
+		dbgtext("release_kernel_oplock: file %s, dev = %x, inode = %.0f file_id = %lu has kernel \
 oplock state of %x.\n", fsp->fsp_name, (unsigned int)fsp->dev,
                         (double)fsp->inode, fsp->file_id, state );
 	}
@@ -208,7 +208,7 @@ oplock state of %x.\n", fsp->fsp_name, (unsigned int)fsp->dev,
 	if (linux_setlease(fsp->fd, F_UNLCK) == -1) {
 		if (DEBUGLVL(0)) {
 			dbgtext("release_kernel_oplock: Error when removing kernel oplock on file " );
-			dbgtext("%s, dev = %x, inode = %.0f, file_id = %ul. Error was %s\n",
+			dbgtext("%s, dev = %x, inode = %.0f, file_id = %lu. Error was %s\n",
 				fsp->fsp_name, (unsigned int)fsp->dev, 
 				(double)fsp->inode, fsp->file_id, strerror(errno) );
 		}
@@ -233,7 +233,7 @@ static BOOL linux_kernel_oplock_parse(char *msg_start, int msg_len, SMB_INO_T *i
 	memcpy((char *)dev, msg_start+KERNEL_OPLOCK_BREAK_DEV_OFFSET, sizeof(*dev));
 	memcpy((char *)file_id, msg_start+KERNEL_OPLOCK_BREAK_FILEID_OFFSET, sizeof(*file_id));
 
-	DEBUG(3,("kernel oplock break request for file dev = %x, inode = %.0f, file_id = %ul\n", 
+	DEBUG(3,("kernel oplock break request for file dev = %x, inode = %.0f, file_id = %lu\n", 
 		(unsigned int)*dev, (double)*inode, *file_id));
 
 	return True;
