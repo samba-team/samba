@@ -608,9 +608,9 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 			if (*smb_apasswd || !Get_Pwnam(user,True))
 			{
 				strcpy(user, lp_guestaccount(-1));
-				DEBUG(3,("Registered username %s for guest access\n",user));
-				guest = True;
 			}
+			DEBUG(3,("Registered username %s for guest access\n",user));
+			guest = True;
 		}
 	}
 
