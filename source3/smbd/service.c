@@ -194,7 +194,7 @@ int find_service(char *service)
 connection_struct *make_connection(char *service,char *user,char *password, int pwlen, char *dev,uint16 vuid, int *ecode)
 {
 	int snum;
-	struct passwd *pass = NULL;
+	const struct passwd *pass = NULL;
 	BOOL guest = False;
 	BOOL force = False;
 	extern int Client;

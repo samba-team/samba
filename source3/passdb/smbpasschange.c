@@ -69,7 +69,7 @@ BOOL local_password_change(char *user_name,
 				char *err_str, size_t err_str_len,
 				char *msg_str, size_t msg_str_len)
 {
-	struct passwd  *pwd;
+	const struct passwd  *pwd;
 	struct smb_passwd *smb_pwent;
 	static struct smb_passwd new_pwent;
 	static uchar           new_p16[16];

@@ -163,7 +163,7 @@ become the guest user
 BOOL become_guest(void)
 {
   BOOL ret;
-  static struct passwd *pass=NULL;
+  static const struct passwd *pass=NULL;
 
   if (initial_uid != 0) 
     return(True);

@@ -364,7 +364,7 @@ static BOOL unix_name_to_nt_name_info(DOM_NAME_MAP *map, DOM_MAP_TYPE type)
 
 	if (type == DOM_MAP_USER)
 	{
-		struct passwd *pwptr = Get_Pwnam(map->unix_name, False);
+		const struct passwd *pwptr = Get_Pwnam(map->unix_name, False);
 		if (pwptr == NULL)
 		{
 			DEBUG(0,("unix_name_to_nt_name_info: Get_Pwnam for user %s\
