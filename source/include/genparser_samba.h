@@ -16,6 +16,10 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#error SAMBA4 clean up
+#error this file should be (re)moved 
+#error and all unused stuff should go
+
 #ifndef _GENPARSER_SAMBA_H
 #define _GENPARSER_SAMBA_H
 

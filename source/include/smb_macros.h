@@ -73,47 +73,15 @@
 
 #define SMB_ASSERT_ARRAY(a,n) SMB_ASSERT((sizeof(a)/sizeof((a)[0])) >= (n))
 
-/* these are useful macros for checking validity of handles */
-#define OPEN_FSP(fsp)    ((fsp) && !(fsp)->is_directory)
-#define OPEN_CONN(conn)    ((conn) && (conn)->open)
-#define IS_IPC(conn)       ((conn) && (conn)->ipc)
-#define IS_PRINT(conn)       ((conn) && (conn)->printer)
-#define FNUM_OK(fsp,c) (OPEN_FSP(fsp) && (c)==(fsp)->conn)
-
-#define CHECK_FSP(fsp,conn) if (!FNUM_OK(fsp,conn)) \
-				return(ERROR_DOS(ERRDOS,ERRbadfid)); \
-			else if((fsp)->fd == -1) \
-				return(ERROR_DOS(ERRDOS,ERRbadaccess))
-
-#define CHECK_READ(fsp) if (!(fsp)->can_read) \
-				return(ERROR_DOS(ERRDOS,ERRbadaccess))
-#define CHECK_WRITE(fsp) if (!(fsp)->can_write) \
-				return(ERROR_DOS(ERRDOS,ERRbadaccess))
-
-#define CHECK_ERROR(fsp) if (HAS_CACHED_ERROR(fsp)) \
-				return(CACHED_ERROR(fsp))
-
-#define ERROR_WAS_LOCK_DENIED(status) (NT_STATUS_EQUAL((status), NT_STATUS_LOCK_NOT_GRANTED) || \
-				NT_STATUS_EQUAL((status), NT_STATUS_FILE_LOCK_CONFLICT) )
-
 /* translates a connection number into a service number */
 #define SNUM(conn)         ((conn)?(conn)->service:-1)
 
 /* access various service details */
 #define SERVICE(snum)      (lp_servicename(snum))
-#define PRINTERNAME(snum)  (lp_printername(snum))
+#define PRINTERNAME_NOTUSED(snum)  (lp_printername(snum))
 #define CAN_WRITE(conn)    (!conn->read_only)
 #define VALID_SNUM(snum)   (lp_snum_ok(snum))
 #define GUEST_OK(snum)     (VALID_SNUM(snum) && lp_guest_ok(snum))
-#define GUEST_ONLY(snum)   (VALID_SNUM(snum) && lp_guest_only(snum))
-#define CAN_SETDIR(snum)   (!lp_no_set_dir(snum))
-#define CAN_PRINT(conn)    ((conn) && lp_print_ok((conn)->service))
-#define MAP_HIDDEN(conn)   ((conn) && lp_map_hidden((conn)->service))
-#define MAP_SYSTEM(conn)   ((conn) && lp_map_system((conn)->service))
-#define MAP_ARCHIVE(conn)   ((conn) && lp_map_archive((conn)->service))
-#define IS_HIDDEN_PATH(conn,path)  ((conn) && is_in_path((path),(conn)->hide_list))
-#define IS_VETO_PATH(conn,path)  ((conn) && is_in_path((path),(conn)->veto_list))
-#define IS_VETO_OPLOCK_PATH(conn,path)  ((conn) && is_in_path((path),(conn)->veto_oplock_list))
 
 /* 
  * Used by the stat cache code to check if a returned
@@ -134,29 +102,6 @@
 #define ABS(a) ((a)>0?(a):(-(a)))
 #endif
 
-/* Macros to get at offsets within smb_lkrng and smb_unlkrng
-   structures. We cannot define these as actual structures
-   due to possible differences in structure packing
-   on different machines/compilers. */
-
-#define SMB_LPID_OFFSET(indx) (10 * (indx))
-#define SMB_LKOFF_OFFSET(indx) ( 2 + (10 * (indx)))
-#define SMB_LKLEN_OFFSET(indx) ( 6 + (10 * (indx)))
-#define SMB_LARGE_LPID_OFFSET(indx) (20 * (indx))
-#define SMB_LARGE_LKOFF_OFFSET_HIGH(indx) (4 + (20 * (indx)))
-#define SMB_LARGE_LKOFF_OFFSET_LOW(indx) (8 + (20 * (indx)))
-#define SMB_LARGE_LKLEN_OFFSET_HIGH(indx) (12 + (20 * (indx)))
-#define SMB_LARGE_LKLEN_OFFSET_LOW(indx) (16 + (20 * (indx)))
-
-/* Macro to cache an error in a write_bmpx_struct */
-#define CACHE_ERROR(w,c,e) ((w)->wr_errclass = (c), (w)->wr_error = (e), \
-                w->wr_discard = True, -1)
-/* Macro to test if an error has been cached for this fnum */
-#define HAS_CACHED_ERROR(fsp) ((fsp)->wbmpx_ptr && \
-                (fsp)->wbmpx_ptr->wr_discard)
-/* Macro to turn the cached error into an error packet */
-#define CACHED_ERROR(fsp) cached_error_packet(outbuf,fsp,__LINE__,__FILE__)
-
 /* these are the datagram types */
 #define DGRAM_DIRECT_UNIQUE 0x10
 
@@ -166,8 +111,6 @@
 
 /* this is how errors are generated */
 #define UNIXERROR(defclass,deferror) unix_error_packet(outbuf,defclass,deferror,__LINE__,__FILE__)
-
-#define SMB_ROUNDUP(x,r) ( ((x)%(r)) ? ( (((x)+(r))/(r))*(r) ) : (x))
 
 /* REWRITE TODO: remove these smb_xxx macros */
 #define smb_buf(buf) (((char *)(buf)) + MIN_SMB_SIZE + CVAL(buf,HDR_WCT+4)*2)
@@ -238,53 +181,5 @@ copy an IP address from one buffer to another
 ****************************************************************************/
 
 #define dos_format(fname) string_replace(fname,'/','\\')
-
-/*******************************************************************
- vfs stat wrapper that calls internal2unix.
-********************************************************************/
-
-#define vfs_stat(conn, fname, st) ((conn)->vfs_ops.stat((conn), fname,(st)))
-
-/*******************************************************************
- vfs lstat wrapper that calls internal2unix.
-********************************************************************/
-
-#define vfs_lstat(conn, fname, st) ((conn)->vfs_ops.lstat((conn), fname,(st)))
-
-/*******************************************************************
- vfs fstat wrapper
-********************************************************************/
-
-#define vfs_fstat(fsp, fd, st) ((fsp)->conn->vfs_ops.fstat((fsp),(fd),(st)))
-
-/*******************************************************************
- vfs rmdir wrapper that calls internal2unix.
-********************************************************************/
-
-#define vfs_rmdir(conn,fname) ((conn)->vfs_ops.rmdir((conn),fname))
-
-/*******************************************************************
- vfs Unlink wrapper that calls internal2unix.
-********************************************************************/
-
-#define vfs_unlink(conn, fname) ((conn)->vfs_ops.unlink((conn),fname))
-
-/*******************************************************************
- vfs chmod wrapper that calls internal2unix.
-********************************************************************/
-
-#define vfs_chmod(conn,fname,mode) ((conn)->vfs_ops.chmod((conn),fname,(mode)))
-
-/*******************************************************************
- vfs chown wrapper that calls internal2unix.
-********************************************************************/
-
-#define vfs_chown(conn,fname,uid,gid) ((conn)->vfs_ops.chown((conn),fname,(uid),(gid)))
-
-/*******************************************************************
- A wrapper for vfs_chdir().
-********************************************************************/
-
-#define vfs_chdir(conn,fname) ((conn)->vfs_ops.chdir((conn),fname))
 
 #endif /* _SMB_MACROS_H */

@@ -20,13 +20,18 @@
 
 #include "includes.h"
 
-/* need to move this from here!! need some sleep ... */
-struct current_user current_user;
 
+#if 1
+int smbrun(char *cmd, int *outfd)
+{
+	#warning smbrun() needs a rewrite: struct current_user is gone!
+	DEBUG(0,("smbrun() needs a rewrite: struct current_user is gone!\n"));
+	return -1;
+}
+#else
 /****************************************************************************
 This is a utility function of smbrun().
 ****************************************************************************/
-
 static int setup_out_fd(void)
 {  
 	int fd;
@@ -169,3 +174,4 @@ int smbrun(char *cmd, int *outfd)
 	exit(82);
 	return 1;
 }
+#endif

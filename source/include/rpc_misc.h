@@ -20,8 +20,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include "ntdomain.h"
-
 #ifndef _RPC_MISC_H /* _RPC_MISC_H */
 #define _RPC_MISC_H 
 

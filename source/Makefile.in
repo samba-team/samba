@@ -117,7 +117,7 @@ LIB_OBJ = lib/version.o lib/charcnv.o lib/debug.o lib/fault.o \
 	  nsswitch/wb_client.o nsswitch/wb_common.o \
 	  lib/pam_errors.o intl/lang_tdb.o lib/account_pol.o \
 	  lib/gencache.o $(TDB_OBJ) \
-	  lib/module.o lib/genparser.o \
+	  lib/module.o \
 	  lib/ldap_escape.o lib/events.o lib/mutex.o
 
 LIB_SMBD_OBJ = lib/util_smbd.o $(LIB_OBJ)
@@ -218,15 +218,15 @@ SMBD_RPC_OBJ = rpc_server/dcerpc_server.o rpc_server/dcesrv_auth.o \
 		rpc_server/dcerpc_tcp.o rpc_server/handles.o @DCERPC_STATIC@
 
 SMBD_OBJ_SRV = smbd/connection.o \
-	       smbd/session.o \
-           smbd/password.o smbd/conn.o \
-           smbd/negprot.o smbd/request.o \
-           smbd/reply.o smbd/sesssetup.o \
-	   smbd/trans2.o smbd/search.o smbd/nttrans.o \
-           lib/sysacls.o lib/server_mutex.o \
-           smbd/build_options.o smbd/service.o \
-	   smbd/rewrite.o $(SMBD_RPC_OBJ) \
-	       $(SMBD_NTVFS_OBJ) @SMBD_EXTRA_OBJS@ 
+		smbd/session.o \
+		smbd/password.o smbd/conn.o \
+		smbd/negprot.o smbd/request.o \
+		smbd/reply.o smbd/sesssetup.o \
+		smbd/trans2.o smbd/search.o smbd/nttrans.o \
+		lib/server_mutex.o \
+		smbd/build_options.o smbd/service.o \
+		smbd/rewrite.o $(SMBD_RPC_OBJ) \
+		$(SMBD_NTVFS_OBJ) @SMBD_EXTRA_OBJS@ 
 
 PROCESS_MODEL_OBJ = smbd/process.o smbd/process_model.o smbd/process_standard.o \
 			smbd/process_single.o
