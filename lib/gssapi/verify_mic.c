@@ -1,6 +1,4 @@
 #include "gssapi_locl.h"
-#include <des.h>
-#include <md5.h>
 
 RCSID("$Id$");
 
@@ -15,10 +13,11 @@ OM_uint32 gss_verify_mic
   u_char *p;
   size_t len;
   struct md5 md5;
-  u_char hash[16];
+  u_char hash[16], seq_data[8];
   des_key_schedule schedule;
   des_cblock key;
   des_cblock zero;
+  int32_t seq_number;
 
   p = token_buffer->value;
   len = GSS_KRB5_MECHANISM->length + 28;
@@ -40,6 +39,7 @@ OM_uint32 gss_verify_mic
   p += 4;
   p += 16;
 
+  /* verify checksum */
   md5_init (&md5);
   md5_update (&md5, p - 24, 8);
   md5_update (&md5, message_buffer->value,
@@ -52,8 +52,39 @@ OM_uint32 gss_verify_mic
   des_set_key (&key, schedule);
   des_cbc_cksum ((des_cblock *)hash,
 		 (des_cblock *)hash, sizeof(hash), schedule, &zero);
-  if (memcmp (p - 8, hash, 8) != 0)
+  if (memcmp (p - 8, hash, 8) != 0) {
+    memset (key, 0, sizeof(key));
+    memset (schedule, 0, sizeof(schedule));
     return GSS_S_BAD_MIC;
+  }
+
+  /* verify sequence number */
+  
+  krb5_auth_getremoteseqnumber (gssapi_krb5_context,
+				context_handle->auth_context,
+				&seq_number);
+  seq_data[0] = (seq_number >> 0)  & 0xFF;
+  seq_data[1] = (seq_number >> 8)  & 0xFF;
+  seq_data[2] = (seq_number >> 16) & 0xFF;
+  seq_data[3] = (seq_number >> 24) & 0xFF;
+  memset (seq_data + 4,
+	  (context_handle->more_flags & LOCAL) ? 0 : 0xFF,
+	  4);
+
+  p -= 16;
+  des_set_key (&key, schedule);
+  des_cbc_encrypt (p, p, 8, schedule, hash, DES_DECRYPT);
+
+  memset (key, 0, sizeof(key));
+  memset (schedule, 0, sizeof(schedule));
+
+  if (memcmp (p, seq_data, 8) != 0) {
+    return GSS_S_BAD_MIC;
+  }
+
+  krb5_auth_setremoteseqnumber (gssapi_krb5_context,
+				context_handle->auth_context,
+				++seq_number);
 
   return GSS_S_COMPLETE;
 }
