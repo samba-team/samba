@@ -1,19 +1,27 @@
 #!/bin/sh
-# Pass the build base directory to the packaging script
+# Pass the Samba distribution base directory to the packaging script
 #
 if [ $# = 0 ]
 then
-	echo "Usage: $0 BUILD_BASE_DIRECTORY\n"
+	echo "Usage: $0 BASE_DIRECTORY\n"
 	exit 1
 fi
-BUILDBASE=$1
-# Build the codepages before packaging
-CODEPAGELIST="437 737 850 852 861 932 866 949 950 936"
-for p in $CODEPAGELIST; do
-	echo Creating codepage file $BUILDBASE/source/codepages/codepage.$p
-	$BUILDBASE/source/bin/make_smbcodepage c $p $BUILDBASE/source/codepages/codepage_def.$p $BUILDBASE/source/codepages/codepage.$p
-done
+#
+if [ ! -d $1 ]; then
+	echo "Source build directory $1 does not exist."
+	exit 1
+fi
 
+# Set up the prototype file from the static_prototype
+if [ -f prototype ]; then
+	rm prototype
+fi
+cp static_prototype prototype
+
+# Add the dynamic part to the prototype file
+./dyngen_prototype.sh $1 >> prototype
+
+# Create the package
 pkgmk -o -d /tmp -b $1 -f prototype
 if [ $? = 0 ]
 then
