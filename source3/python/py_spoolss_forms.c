@@ -20,6 +20,8 @@
 
 #include "includes.h"
 #include "Python.h"
+
+#include "python/py_conv.h"
 #include "python/py_spoolss.h"
 
 struct pyconv py_FORM[] = {
