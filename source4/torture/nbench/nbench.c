@@ -21,8 +21,8 @@
 #include "includes.h"
 
 int nbench_line_count = 0;
-static int timelimit = 300;
-static const char *loadfile;
+static int timelimit = 600;
+static char *loadfile;
 
 #define ival(s) strtol(s, NULL, 0)
 
@@ -188,5 +188,3 @@ BOOL torture_nbench(int dummy)
 	       1.0e-6 * nbio_total() / t);
 	return correct;
 }
-
-
