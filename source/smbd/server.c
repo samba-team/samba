@@ -4681,6 +4681,8 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
 	  int flags = smb_messages[match].flags;
           /* In share mode security we must ignore the vuid. */
 	  uint16 session_tag = (lp_security() == SEC_SHARE) ? UID_FIELD_INVALID : SVAL(inbuf,smb_uid);
+          /* Ensure this value is replaced in the incoming packet. */
+          SSVAL(inbuf,smb_uid,session_tag);
 
 	  /* does this protocol need to be run as root? */
 	  if (!(flags & AS_USER))
