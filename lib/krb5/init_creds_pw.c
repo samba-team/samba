@@ -37,8 +37,8 @@ RCSID("$Id$");
 
 static int
 get_config_time (krb5_context context,
-		 char *realm,
-		 char *name,
+		 const char *realm,
+		 const char *name,
 		 int def)
 {
     int ret;
@@ -57,24 +57,6 @@ get_config_time (krb5_context context,
     if (ret >= 0)
 	return ret;
     return def;
-}
-
-static krb5_boolean
-get_config_bool (krb5_context context,
-		 char *realm,
-		 char *name)
-{
-    return krb5_config_get_bool (context,
-				 NULL,
-				 "realms",
-				 realm,
-				 name,
-				 NULL)
-	|| krb5_config_get_bool (context,
-				 NULL,
-				 "libdefaults",
-				 name,
-				 NULL);
 }
 
 static krb5_error_code
@@ -111,22 +93,11 @@ init_cred (krb5_context context,
     if (options->flags & KRB5_GET_INIT_CREDS_OPT_TKT_LIFE)
 	tmp = options->tkt_life;
     else
-	tmp = get_config_time (context,
-			       *client_realm,
-			       "ticket_lifetime",
-			       10 * 60 * 60);
+	tmp = 10 * 60 * 60;
     cred->times.endtime = now + tmp;
 
-    tmp = 0;
     if (options->flags & KRB5_GET_INIT_CREDS_OPT_RENEW_LIFE)
-	tmp = options->renew_life;
-    else
-	tmp = get_config_time (context,
-			       *client_realm,
-			       "renew_lifetime",
-			       0);
-    if (tmp)
-	cred->times.renew_till = now + tmp;
+	cred->times.renew_till = tmp;
 
     if (in_tkt_service) {
 	krb5_realm server_realm;
@@ -231,17 +202,9 @@ get_init_creds_common(krb5_context context,
 
     if (options->flags & KRB5_GET_INIT_CREDS_OPT_FORWARDABLE)
 	flags->b.forwardable = options->forwardable;
-    else
-	flags->b.forwardable = get_config_bool (context,
-						*client_realm,
-						"forwardable");
 
     if (options->flags & KRB5_GET_INIT_CREDS_OPT_PROXIABLE)
 	flags->b.proxiable = options->proxiable;
-    else
-	flags->b.proxiable = get_config_bool (context,
-					      *client_realm,
-					      "proxiable");
 
     if (start_time)
 	flags->b.postdated = 1;
