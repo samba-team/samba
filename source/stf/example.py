@@ -26,8 +26,13 @@ class OnePlusOne(comfychair.TestCase):
     def runtest(self):
         self.assert_(1 + 1 == 2)
 
+class FailTest(comfychair.TestCase):
+    def runtest(self):
+        self.assert_(1 + 1 == 3)
+
 tests = [OnePlusOne]
+extra_tests = [FailTest]
 
 if __name__ == '__main__':
-    comfychair.main(tests)
+    comfychair.main(tests, extra_tests=extra_tests)
 
