@@ -1,3 +1,18 @@
+2002-08-20  Johan Danielsson  <joda@pdc.kth.se>
+
+	* strlcat.c: add some consistency checks
+
+	* strlcpy.c: make the logic simpler, and handle dst_sz == 0
+
+2002-08-19  Johan Danielsson  <joda@pdc.kth.se>
+
+	* resolve.h: prefix these functions to avoid conflicts with other
+	packages
+
+2002-08-14  Johan Danielsson  <joda@pdc.kth.se>
+
+	* strsep_copy.c: don't write to buf if len == 0
+
 2002-05-31  Assar Westerlund  <assar@pdc.kth.se>
 
 	* Makefile.am: *_LDADD: add LDADD, so that libroken is used
