@@ -516,6 +516,19 @@ void *MemMove(void *dest,void *src,int size)
 }
 #endif
 
+/* ************************************************************************* **
+ * Duplicate a block of memory.
+ * ************************************************************************* **
+ */
+void *mem_dup( void *from, int size )
+  {
+  void *tmp;
+
+  tmp = malloc( size );
+  if( NULL != tmp )
+    (void)memcpy( tmp, from, size );
+  return( tmp );
+  } /* mem_dup */
 
 /****************************************************************************
 prompte a dptr (to make it recently used)
