@@ -29,8 +29,8 @@ Requires    	: libpam >= 0.66, SysVinit-scripts >= 1.04-6
 BuildRoot   	: /tmp/%{Name}-%{Version}
 
 Source: ftp://ftp.samba.org/pub/samba/%{Name}-%{Version}-%{date}.tar.gz
-Patch0: %{Name}-%{Version}-smbmount.patch
-Patch1: %{Name}-%{Version}-install.patch
+#Patch0: %{Name}-%{Version}-smbmount.patch
+#Patch1: %{Name}-%{Version}-install.patch
 #Patch2: %{Name}-%{Version}-smbconf.patch
 
 
@@ -199,8 +199,8 @@ server. Please use it with care. If you do not need it then do NOT install.
 
 %Prep
 %setup -n samba
-%patch0 -p1
-%patch1 -p1
+#%patch0 -p1
+#%patch1 -p1
 #%patch2 -p1
 
 # instead of patch (to help configuration) ...   ;^)
@@ -219,11 +219,14 @@ for i in {cvs.,change-}log; do [ ! -f ../$i ] || mv ../$i source; done
 mv swat/help/welcome.html docs
 %{fixUP} -vT docs -e '
   s:/usr/local/samba/bin/(smb(client|run)):/usr/bin/$1:g +
-  s:/usr/local/samba/bin/((s|n)mbd|swat):/usr/sbin/$1:g +
+  s:/usr/local/samba/bin/((s|n)mbd|swat|smbstatus):/usr/sbin/$1:g +
   s:/usr/local/samba/var/locks:/var/lock/samba.d: +
   s:/usr/local/samba/(var|lib)/log:/var/log/samba.d/smb: +
   s:/usr/local/samba/swat:/usr/share/samba/swat:g +
-  s:/usr/local/samba/lib:%{EtcSamba}:g;
+  s:/usr/local/samba/lib:%{EtcSamba}:g +
+  s:/usr/local/samba/printers:/var/spool/samba:g +
+  s:/usr/local/samba/private/smbpasswd:/usr/bin/smbpasswd:g +
+  s:/usr/local/samba/netlogon:%{LSBservedir}/netlogon:g;
 '
 mv docs/welcome.html swat/help
 for i in docs/*/smb.conf.5*; do
@@ -238,10 +241,37 @@ done
   s:/usr/local/etc/:/etc/: +
   s:/usr/local/:/usr/:;
 '
-%{fixUP} -vT docs/textdocs/ENCRYPTION.txt -e '
+%{fixUP} -vT docs/docbook/projdoc/ENCRYPTION.sgml -e '
   s:/usr/local/samba/private:%{EtcSamba}:g +
   s:mksmbpasswd.sh:mksmbpasswd:g +
   s:the Samba source directory:/usr/bin:;
+'
+%{fixUP} -vT docs/htmldocs/make_smbcodepage.1.html -e '
+  s:/usr/local/samba:/usr/bin/:g;
+'
+for i in htmldocs/DOMAIN_MEMBER.html htmldocs/Samba-HOWTO-Collection.html \
+         htmldocs/samba-pdc-faq.html htmldocs/samba-pdc-howto.html \
+         htmldocs/smbclient.1.html htmldocs/smbd.8.html \
+         docbook/projdoc/DOMAIN_MEMBER.sgml docbook/howto/DOMAIN_MEMBER.sgml \
+         docbook/faq/samba-pdc-faq.sgml docbook/howto/samba-pdc-howto.sgml \
+         docbook/manpages/smbclient.1.sgml docbook/manpages/smbd.8.sgml \
+	 docbook/projdoc/ENCRYPTION.sgml textdocs/samba-pdc-faq.txt \
+	 textdocs/samba-pdc-howto.txt manpages/smbclient.1 manpages/smbd.8 ; do
+%{fixUP} -vT docs/$i -e '
+    s:/usr/local/samba/private/FOREST.SLEEPY.SID:/var/lock/samba.d/FOREST.SLEEPY.SID: +
+    s:/usr/local/samba/private:/usr/bin:g +
+    s:/usr/local/samba/bin:/usr/bin:g +
+    s:/usr/local/sbin:/usr/sbin:g +
+    s:/usr/local/src/samba:/usr/src/samba:g ;'
+done
+%{fixUP} -vT docs/docbook/manpages/make_smbcodepage.1.sgml -e '
+  s:/usr/local/samba:/usr/bin:g ;
+'
+%{fixUP} -vT docs/htmldocs/samba-pdc-faq.html -e '
+  s:/usr/local/src:/usr/src:g ;
+'
+%{fixUP} -vT docs/textdocs/PRINTER_DRIVER.txt -e '
+  s:/usr/local/samba/printer:/var/spool/samba:g ;
 '
 # End of DirtyHack(TM)
 
@@ -259,6 +289,7 @@ CFLAGS="$RPM_OPT_FLAGS" LDFLAGS="-s" ./configure \
 	--with-swatdir='$(DESTDIR)/usr/share/swat' \
 	--with-swatdir='$(DESTDIR)/usr/share/swat' \
 	--with-sambabook='$(DESTDIR)/usr/share/swat/using_samba' \
+	--with-configdir='$(DESTDIR)'%{EtcSamba} \
 	--without-smbwrapper \
 	--with-smbmount \
 	--with-pam \
@@ -291,10 +322,10 @@ mkdir -p $DESTDIR%{EtcSamba}/codepages/src $DESTDIR/sbin
 make -C source  install
 make LOGFILEBASE=/var/log/samba.d -C source install
 
-strip $DESTDIR/usr/bin/smb{mnt,umount} $DESTDIR/sbin/mount.smbfs
+strip $DESTDIR/usr/bin/smb{mnt,umount}
 #mv $DESTDIR/usr/bin/{make,add,conv}* $DESTDIR/usr/sbin
 
-#cp -p source/codepages/codepage_def.??? $DESTDIR%{EtcSamba}/codepages/src
+cp -p source/codepages/codepage_def.??? $DESTDIR%{EtcSamba}/codepages/src
 
 # Install the nsswitch library extension file
 install -m 755 source/nsswitch/libnss_wins.so $DESTDIR/lib/libnss_wins.so.2.0
@@ -341,6 +372,7 @@ done
 ln -s make_smbcodepage  $DESTDIR/usr/bin/mksmbcodepage
 ln -s make_smbpasswd $DESTDIR/usr/bin/mksmbpasswd
 ln -sf convert_smbpasswd $DESTDIR/usr/bin/convertsmbpasswd
+ln -s ../usr/bin/smbmnt $DESTDIR/sbin/mount.smbfs
 
 cat <<-'EoH' > $DESTDIR%{EtcSamba}/lmhosts
 	127.0.0.1 localhost
@@ -349,7 +381,7 @@ EoH
 
 DOCD="$DESTDIR/%{_defaultdocdir}/samba-%{Version}"; mkdir -p $DOCD
 ln -sf ../Copyrights/GPL-2.0  $DOCD/COPYING
-cp -p README Manifest Read-Manifest-Now $DOCD
+cp -p README README-smbmount Manifest Read-Manifest-Now $DOCD
 cp -p WHATSNEW.txt Roadmap $DOCD
 cp -a docs examples $DOCD
 
@@ -357,6 +389,7 @@ mv $DOCD/docs/htmldocs/wfw_slip.htm $DOCD/docs/wfw_slip.html
 
 rm -rf $DOCD/docs/{htmldocs,manpages,yodldocs}
 rm -rf $DOCD/examples/{svr4-startup,printing}
+rm -rf $DOCD/CVS $DOCD/*/CVS $DOCD/*/*/CVS $DOCD/*/*/*/CVS
 
 cp -p swat/README $DOCD/README.swat
 
@@ -385,8 +418,8 @@ Samba					base
 %{LSBservedir}				config-IGNORED
 ^/(etc|var|home|tmp)			config-IGNORED
 swat					swat
-doc/samba-[^/]+/$			base
-doc/samba- 				doc
+%{_defaultdocdir}/samba-[^/]+/$		base
+%{_defaultdocdir}/samba- 		doc
 tmp					IGNORED
 man					IGNORED
 @default@
@@ -395,10 +428,10 @@ cat << 'EOF' | %{mkLists} -f -a samba
 \.old$					IGNORED
 Samba/README.txt			base
 ^/etc					config-IGNORED
-/doc/samba-[^/]+/(COPYING|README$)	base
+%{_defaultdocdir}/samba-[^/]+/(COPYING|README$)	base
 libnss_wins.so				base
-doc/samba-[^/]+/(COPYING|README$)	base
-/doc/samba- 				doc
+%{_defaultdocdir}/samba-[^/]+/(COPYING|README$)	base
+%{_defaultdocdir}/samba- 		doc
 smb(mount|mnt|umount)			smbfs
 mount.smbfs				smbfs
 swat					swat
@@ -471,4 +504,4 @@ lisa --inetd disable swat $1
 
 %ChangeLog
 * Mon Jan 01 1997 ...
-$Id: samba2.spec.tmpl,v 1.1.6.8 2001/02/26 16:58:26 jht Exp $
+$Id: samba2.spec.tmpl,v 1.1.6.10 2001/04/11 01:57:03 jht Exp $
