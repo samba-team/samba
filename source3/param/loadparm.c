@@ -136,7 +136,10 @@ typedef struct
 	char *szSocketAddress;
 	char *szNISHomeMapName;
 	char *szAnnounceVersion;	/* This is initialised in init_globals */
+	char *szWorkgroup;
+	char *szNetbiosName;
 	char **szNetbiosAliases;
+	char *szNetbiosScope;
 	char *szDomainOtherSIDs;
 	char *szNameResolveOrder;
 	char *szPanicAction;
@@ -722,12 +725,12 @@ static struct parm_struct parm_table[] = {
 	{"comment", P_STRING, P_LOCAL, &sDefault.comment, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_SHARE | FLAG_PRINT | FLAG_DEVELOPER},
 	{"path", P_STRING, P_LOCAL, &sDefault.szPath, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_SHARE | FLAG_PRINT | FLAG_DEVELOPER},
 	{"directory", P_STRING, P_LOCAL, &sDefault.szPath, NULL, NULL, FLAG_HIDE},
-	{"workgroup", P_USTRING, P_GLOBAL, NULL, handle_workgroup, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
+	{"workgroup", P_USTRING, P_GLOBAL, &Globals.szWorkgroup, handle_workgroup, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
 	{"realm", P_USTRING, P_GLOBAL, &Globals.szRealm, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
 	{"ADS server", P_STRING, P_GLOBAL, &Globals.szADSserver, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
-	{"netbios name", P_UGSTRING, P_GLOBAL, NULL, handle_netbios_name, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
+	{"netbios name", P_USTRING, P_GLOBAL, &Globals.szNetbiosName, handle_netbios_name, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
 	{"netbios aliases", P_LIST, P_GLOBAL, &Globals.szNetbiosAliases, handle_netbios_aliases, NULL, FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
-	{"netbios scope", P_UGSTRING, P_GLOBAL, NULL, handle_netbios_scope, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"netbios scope", P_USTRING, P_GLOBAL, &Globals.szNetbiosScope, handle_netbios_scope, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"server string", P_STRING, P_GLOBAL, &Globals.szServerString, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED  | FLAG_DEVELOPER},
 	{"interfaces", P_LIST, P_GLOBAL, &Globals.szInterfaces, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
 	{"bind interfaces only", P_BOOL, P_GLOBAL, &Globals.bBindInterfacesOnly, NULL, NULL, FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
@@ -1274,7 +1277,13 @@ static void init_globals(void)
 	 * Allow the default PASSWD_CHAT to be overridden in local.h.
 	 */
 	string_set(&Globals.szPasswdChat, DEFAULT_PASSWD_CHAT);
+	
+	set_global_myname(myhostname());
+	string_set(&Globals.szNetbiosName,global_myname());
+
 	set_global_myworkgroup(WORKGROUP);
+	string_set(&Globals.szWorkgroup, lp_workgroup());
+	
 	string_set(&Globals.szPasswdProgram, "");
 	string_set(&Globals.szPrintcapname, PRINTCAP_NAME);
 	string_set(&Globals.szPidDir, dyn_PIDDIR);
@@ -2568,28 +2577,41 @@ BOOL lp_file_list_changed(void)
 
 static BOOL handle_netbios_name(const char *pszParmValue, char **ptr)
 {
+	BOOL ret;
 	pstring netbios_name;
 
 	pstrcpy(netbios_name, pszParmValue);
 
 	standard_sub_basic(current_user_info.smb_name, netbios_name,sizeof(netbios_name));
 
-	set_global_myname(netbios_name);
 
+	ret = set_global_myname(netbios_name);
+	string_set(&Globals.szNetbiosName,global_myname());
+	
 	DEBUG(4, ("handle_netbios_name: set global_myname to: %s\n",
 	       global_myname()));
 
-	return (True);
+	return ret;
 }
 
 static BOOL handle_workgroup(const char *pszParmValue, char **ptr)
 {
-	return set_global_myworkgroup(pszParmValue);
+	BOOL ret;
+	
+	ret = set_global_myworkgroup(pszParmValue);
+	string_set(&Globals.szWorkgroup,lp_workgroup());
+	
+	return ret;
 }
 
 static BOOL handle_netbios_scope(const char *pszParmValue, char **ptr)
 {
-	return set_global_scope(pszParmValue);
+	BOOL ret;
+	
+	ret = set_global_scope(pszParmValue);
+	string_set(&Globals.szNetbiosScope,global_scope());
+
+	return ret;
 }
 
 static BOOL handle_netbios_aliases(const char *pszParmValue, char **ptr)

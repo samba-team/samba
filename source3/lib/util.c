@@ -248,13 +248,7 @@ BOOL init_names(void)
 	int n;
 
 	if (global_myname() == NULL || *global_myname() == '\0') {
-		fstring name;
-
-		fstrcpy( name, myhostname() );
-		p = strchr( name, '.' );
-		if (p)
-			*p = 0;
-		if (!set_global_myname(name)) {
+		if (!set_global_myname(myhostname())) {
 			DEBUG( 0, ( "init_structs: malloc fail.\n" ) );
 			return False;
 		}
