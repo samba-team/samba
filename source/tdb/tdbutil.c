@@ -219,16 +219,23 @@ int32 tdb_change_int32_atomic(TDB_CONTEXT *tdb, char *keystr, int32 *oldval, int
 		return -1;
 
 	if ((val = tdb_fetch_int32(tdb, keystr)) == -1) {
-		if (tdb_error(tdb) != TDB_ERR_NOEXIST)
+		/* The lookup failed */
+		if (tdb_error(tdb) != TDB_ERR_NOEXIST) {
+			/* but not becouse it didn't exist */
 			goto err_out;
+		}
 
+		/* Start with 'old' value */
 		val = *oldval;
 
 	} else {
+		/* It worked, set return value (oldval) to tdb data */
 		*oldval = val;
-		val += change_val;
 	}
 		
+	/* Increment value for storage and return next time */
+	val += change_val;
+
 	if (tdb_store_int32(tdb, keystr, val) == -1)
 		goto err_out;
 
@@ -248,28 +255,36 @@ BOOL tdb_change_uint32_atomic(TDB_CONTEXT *tdb, char *keystr, uint32 *oldval, ui
 {
 	uint32 val;
 	BOOL ret = False;
-
+ 
 	if (tdb_lock_bystring(tdb, keystr) == -1)
 		return False;
-
+ 
 	if (!tdb_fetch_uint32(tdb, keystr, &val)) {
-		if (tdb_error(tdb) != TDB_ERR_NOEXIST)
+		/* It failed */
+		if (tdb_error(tdb) != TDB_ERR_NOEXIST) {
+			/* and not becouse it didn't exist */
 			goto err_out;
-
+		}
+ 
+		/* Start with 'old' value */
 		val = *oldval;
-
+ 
 	} else {
+		/* it worked, set return value (oldval) to tdb data */
 		*oldval = val;
-		val += change_val;
+ 
 	}
-		
+ 
+	/* get a new value to store */
+	val += change_val;
+ 
 	if (!tdb_store_uint32(tdb, keystr, val))
 		goto err_out;
-
+ 
 	ret = True;
-
+ 
   err_out:
-
+ 
 	tdb_unlock_bystring(tdb, keystr);
 	return ret;
 }
