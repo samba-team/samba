@@ -657,18 +657,51 @@
 		uint32    idx;
 		uint32    rid;
 		uint32    acct_flags;
-		samr_Name username;
+		samr_Name account_name;
 		samr_Name full_name;
 		samr_Name description;
-	} samr_DispEntry1;
+	} samr_DispEntryGeneral;
 
 	typedef struct {
 		uint32 count;
-		[size_is(count)] samr_DispEntry1 *entries;
-	} samr_DispInfo1;
+		[size_is(count)] samr_DispEntryGeneral *entries;
+	} samr_DispInfoGeneral;
+
+	typedef struct {
+		uint32    idx;
+		uint32    rid;
+		uint32    acct_flags;
+		samr_Name account_name;
+		samr_Name description;
+	} samr_DispEntryFull;
+
+	typedef struct {
+		uint32 count;
+		[size_is(count)] samr_DispEntryFull *entries;
+	} samr_DispInfoFull;
+
+	typedef struct {
+		[value(strlen_m(r->name))] uint16 name_len;
+		[value(strlen_m(r->name))] uint16 name_size;
+		ascstr *name;
+	} samr_AsciiName;	
+
+	typedef struct {
+		uint32    idx;
+		samr_AsciiName account_name;
+	} samr_DispEntryAscii;
+
+	typedef struct {
+		uint32 count;
+		[size_is(count)] samr_DispEntryAscii *entries;
+	} samr_DispInfoAscii;
 
 	typedef union {
-		[case(1)] samr_DispInfo1 info1;
+		[case(1)] samr_DispInfoGeneral info1;/* users */
+		[case(2)] samr_DispInfoFull info2; /* trust accounts? */
+		[case(3)] samr_DispInfoFull info3; /* groups */
+		[case(4)] samr_DispInfoAscii info4; /* users */
+		[case(5)] samr_DispInfoAscii info5; /* groups */
 	} samr_DispInfo;
 
 	NTSTATUS samr_QueryDisplayInfo(

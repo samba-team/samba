@@ -48,4 +48,11 @@ interface misc
 		[relative] security_acl *dacl; /* user (discretionary) ACL */
 	} security_descriptor;
 
+	/* we declare this noprint so we can supply
+	   a nicer pretty-print routine */
+	typedef [public, noprint] struct {
+		uint8 data[20];
+	} policy_handle;
+
+
 }
