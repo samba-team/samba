@@ -108,6 +108,8 @@ static void tdb_mmap(TDB_CONTEXT *tdb)
 			TDB_LOG((tdb, 2, "tdb_mmap failed for size %d (%s)\n", 
 				 tdb->map_size, strerror(errno)));
 		}
+	} else {
+		tdb->map_ptr = NULL;
 	}
 #else
 	tdb->map_ptr = NULL;
@@ -994,11 +996,11 @@ static int write_lock_record(TDB_CONTEXT *tdb, tdb_off off)
 	for (i = &tdb->travlocks; i; i = i->next)
 		if (i->off == off)
 			return -1;
-	return tdb_brlock(tdb, off, F_WRLCK, F_SETLK, 1);
+	return tdb_brlock(tdb, off, F_WRLCK, F_SETLKW, 1);
 }
 static int write_unlock_record(TDB_CONTEXT *tdb, tdb_off off)
 {
-	return tdb_brlock(tdb, off, F_UNLCK, F_SETLK, 0);
+	return tdb_brlock(tdb, off, F_UNLCK, F_SETLKW, 0);
 }
 /* fcntl locks don't stack: avoid unlocking someone else's */
 static int unlock_record(TDB_CONTEXT *tdb, tdb_off off)
