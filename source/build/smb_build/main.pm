@@ -18,19 +18,22 @@ use strict;
 
 sub smb_build_main($)
 {
-	our $SMB_BUILD_CTX = shift;
+	my $INPUT = shift;
+	my %SMB_BUILD_CTX = (
+		INPUT => $INPUT
+	);
 
-	input::check($SMB_BUILD_CTX);
+	input::check(\%SMB_BUILD_CTX);
 	
-	depend::create_depend($SMB_BUILD_CTX);
+	depend::create_depend(\%SMB_BUILD_CTX);
 
-	output::create_output($SMB_BUILD_CTX);
+	output::create_output(\%SMB_BUILD_CTX);
 
-	makefile::create_makefile_in($SMB_BUILD_CTX);
+	makefile::create_makefile_in(\%SMB_BUILD_CTX);
 
-	smb_build_h::create_smb_build_h($SMB_BUILD_CTX);
+	smb_build_h::create_smb_build_h(\%SMB_BUILD_CTX);
 
-	dump::dump_ctx($SMB_BUILD_CTX);
+	dump::dump_ctx(\%SMB_BUILD_CTX);
 
 
 	return 0;

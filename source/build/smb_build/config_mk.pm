@@ -220,8 +220,8 @@ sub _fetch_array_from_config_mk($$$)
 	my $filename = shift;
 	my $section = shift;
 	my $key = shift;
-	my @val = ();
 	my $result;
+	my $val = "";
 
 	$result = _get_parse_results($filename);
 
@@ -230,12 +230,12 @@ sub _fetch_array_from_config_mk($$$)
 	}
 
 	if (defined($result->{$section}{$key})) {
-		@val = input::str2array($result->{$section}{$key}{VAL});
+		$val = $result->{$section}{$key}{VAL};
 	} elsif (defined($result->{DEFAULT}{$key})) {
-		@val = input::str2array($result->{DEFAULT}{$key}{VAL});
-	}	
+		$val = $result->{DEFAULT}{$key}{VAL};
+	} 
 
-	return @val;
+	return input::str2array($val);
 }
 
 ###########################################################
