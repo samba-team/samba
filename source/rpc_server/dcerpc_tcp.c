@@ -78,7 +78,7 @@ static void add_socket_rpc(struct server_service *service,
 				continue;
 			}
 
-			/* remeber the enpoint of this socket */
+			/* remember the endpoint of this socket */
 			dcesrv_sock->endpoint		= e;
 			dcesrv_sock->dcesrv_ctx		= dce_ctx;
 

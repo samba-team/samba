@@ -52,7 +52,12 @@ static NTSTATUS winreg_bind(struct dcesrv_call_state *dc, const struct dcesrv_in
 	struct _privatedata *data;
 	WERROR error;
 	data = talloc_p(dc->conn, struct _privatedata);
-	error = reg_open(&data->registry, "dir", "/tmp/reg", "");
+	error = reg_create(&data->registry);
+
+	/* FIXME: This should happen somewhere after configuration... */
+	reg_import_hive(data->registry, "nt4", "NTUSER.DAT", "", "HKEY_CURRENT_USER");
+	reg_import_hive(data->registry, "ldb", "ldb:///", "", "HKEY_LOCAL_MACHINE");
+
 	if(!W_ERROR_IS_OK(error)) return werror_to_ntstatus(error);
 	dc->conn->private = data;
 	return NT_STATUS_OK;
@@ -76,15 +81,15 @@ static NTSTATUS winreg_bind(struct dcesrv_call_state *dc, const struct dcesrv_in
 	return WERR_OK; \
 }
 
-func_winreg_OpenHive(HKCR,"\\HKEY_CLASSES_ROOT")
-func_winreg_OpenHive(HKCU,"\\HKEY_CURRENT_USER")
-func_winreg_OpenHive(HKLM,"\\HKEY_LOCAL_MACHINE")
-func_winreg_OpenHive(HKPD,"\\HKEY_PERFORMANCE_DATA")
-func_winreg_OpenHive(HKU,"\\HKEY_USERS")
-func_winreg_OpenHive(HKCC,"\\HKEY_CC")
-func_winreg_OpenHive(HKDD,"\\HKEY_DD")
-func_winreg_OpenHive(HKPT,"\\HKEY_PT")
-func_winreg_OpenHive(HKPN,"\\HKEY_PN")
+func_winreg_OpenHive(HKCR,"HKEY_CLASSES_ROOT")
+func_winreg_OpenHive(HKCU,"HKEY_CURRENT_USER")
+func_winreg_OpenHive(HKLM,"HKEY_LOCAL_MACHINE")
+func_winreg_OpenHive(HKPD,"HKEY_PERFORMANCE_DATA")
+func_winreg_OpenHive(HKU,"HKEY_USERS")
+func_winreg_OpenHive(HKCC,"HKEY_CC")
+func_winreg_OpenHive(HKDD,"HKEY_DD")
+func_winreg_OpenHive(HKPT,"HKEY_PT")
+func_winreg_OpenHive(HKPN,"HKEY_PN")
 
 /* 
   winreg_CloseKey 

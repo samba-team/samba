@@ -12,6 +12,18 @@ ADD_OBJ_FILES = \
 ################################################
 
 ################################################
+# Start MODULE dcerpc_IOXIDResolver
+[MODULE::dcerpc_IOXIDResolver]
+INIT_OBJ_FILES = \
+		rpc_server/dcom/oxidresolver.o
+REQUIRED_SUBSYSTEMS = \
+		DCERPC_COMMON
+# End MODULE dcerpc_IOXIDResolver
+################################################
+
+
+
+################################################
 # Start SUBSYSTEM SAMDB
 [SUBSYSTEM::SAMDB]
 INIT_OBJ_FILES = \
