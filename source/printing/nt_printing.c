@@ -3508,6 +3508,7 @@ BOOL nt_printing_getsec(char *printername, SEC_DESC_BUF **secdesc_ctr)
 	char *temp;
 
 	mem_ctx = talloc_init();
+
 	if (mem_ctx == NULL)
 		return False;
 
@@ -3522,14 +3523,24 @@ BOOL nt_printing_getsec(char *printername, SEC_DESC_BUF **secdesc_ctr)
 	if (tdb_prs_fetch(tdb, key, &ps, mem_ctx)!=0 ||
 	    !sec_io_desc_buf("nt_printing_getsec", secdesc_ctr, &ps, 1)) {
 
-		DEBUG(4,("using default secdesc for %s\n", printername));
+		DEBUG(4,("creating default secdesc for %s\n", printername));
 
 		if (!(*secdesc_ctr = construct_default_printer_sdb())) {
 			talloc_destroy(mem_ctx);
 			return False;
 		}
 
+                /* Save default security descriptor for later */
+
+                prs_init(&ps, (uint32)sec_desc_size((*secdesc_ctr)->sec) +
+                         sizeof(SEC_DESC_BUF), 4, mem_ctx, MARSHALL);
+
+                if (sec_io_desc_buf("nt_printing_setsec", secdesc_ctr, &ps, 1))
+                        tdb_prs_store(tdb, key, &ps);
+
 		talloc_destroy(mem_ctx);
+                prs_mem_free(&ps);
+
 		return True;
 	}
 
@@ -3678,12 +3689,10 @@ BOOL print_access_check(struct current_user *user, int snum, int access_type)
 
 	if (!user) user = &current_user;
 
-	/* Always allow root or printer admins to do anything */
+	/* Always printer admins to do anything */
 
-	if (user->uid == 0 ||
-	    user_in_list(uidtoname(user->uid), lp_printer_admin(snum))) {
-		return True;
-	}
+        if (user->conn->printer_admin)
+                return True;
 
 	/* Get printer name */
 
