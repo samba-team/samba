@@ -54,7 +54,7 @@ BOOL getgroups_user(const char *user, gid_t primary_gid, gid_t **ret_groups, int
 		
 		gid_t *groups_tmp;
 		
-		groups_tmp = SMB_REALLOC(temp_groups, gid_t, max_grp);
+		groups_tmp = SMB_REALLOC_ARRAY(temp_groups, gid_t, max_grp);
 		
 		if (!groups_tmp) {
 			SAFE_FREE(temp_groups);
