@@ -255,10 +255,9 @@ BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
 	p += 4;
 	SIVAL(p,0,stype);
 	p += 4;
-	
-	pstrcpy(p, workgroup);
-	unix_to_dos(p, True);
-	p = skip_string(p,1);
+
+	p += clistr_push(cli, p, workgroup, -1, 
+			 CLISTR_TERMINATE | CLISTR_CONVERT);
 	
 	if (cli_api(cli, 
                     param, PTR_DIFF(p,param), 8,        /* params, length, max */
@@ -275,29 +274,38 @@ BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
 			count=SVAL(rparam,4);
 			p = rdata;
 					
-
 			if (!(stype&0x80000000)) {
 			  for (i = 0;i < count;i++, p += 26) {
-				char *sname = p;
-				int comment_offset = (IVAL(p,22) & 0xFFFF)-converter;
-				char *cmnt = comment_offset?(rdata+comment_offset):"";
-				if (comment_offset < 0 || comment_offset > rdrcnt) continue;
+				  fstring sname, cmnt;
+				  int comment_offset = (IVAL(p,22) & 0xFFFF)-converter;
+				  char *cptr = comment_offset?(rdata+comment_offset):NULL;
+				  if (comment_offset < 0 || comment_offset > rdrcnt) continue;
 
-				stype = IVAL(p,18) & ~SV_TYPE_LOCAL_LIST_ONLY;
-
-				dos_to_unix(sname, True);
-				dos_to_unix(cmnt, True);
-				fn(sname, stype, cmnt, state);
+				  stype = IVAL(p,18) & ~SV_TYPE_LOCAL_LIST_ONLY;
+				  clistr_pull(cli, sname, p, 
+					      sizeof(fstring), -1, 
+					      CLISTR_TERMINATE | 
+					      CLISTR_CONVERT);
+				  fstrcpy(cmnt, "");
+				  if (cptr) {
+					  clistr_pull(cli, cmnt, cptr, 
+						      sizeof(fstring), -1, 
+						      CLISTR_TERMINATE | 
+						      CLISTR_CONVERT);
+				  }
+				  fn(sname, stype, cmnt, state);
 			  }
 			}
 			else {
 			  for (i = 0; i < count; i++, p+= 16) {
-			    char *sname = p;
-			    
-			    dos_to_unix(sname, True);
+				  fstring sname;
 
-			    fn(sname, stype, NULL, state);
+				  clistr_pull(cli, sname, p, 
+					      sizeof(fstring), -1, 
+					      CLISTR_TERMINATE | 
+					      CLISTR_CONVERT);
 
+				  fn(sname, stype, NULL, state);
 			  }
 			}
 		}
