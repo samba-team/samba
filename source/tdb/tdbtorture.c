@@ -74,7 +74,8 @@ static void addrec_db(void)
 	free(d);
 }
 
-static int traverse_fn(TDB_CONTEXT *db, TDB_DATA key, TDB_DATA dbuf, void* state)
+static int traverse_fn(TDB_CONTEXT *db, TDB_DATA key, TDB_DATA dbuf,
+                       void *state)
 {
 	tdb_delete(db, key);
 	return 0;

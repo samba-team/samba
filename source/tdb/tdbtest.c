@@ -168,7 +168,7 @@ static void addrec_gdbm(void)
 	free(d);
 }
 
-static int traverse_fn(TDB_CONTEXT *db, TDB_DATA key, TDB_DATA dbuf, void* state)
+static int traverse_fn(TDB_CONTEXT *db, TDB_DATA key, TDB_DATA dbuf, void *state)
 {
 #if 0
 	printf("[%s] [%s]\n", key.dptr, dbuf.dptr);
