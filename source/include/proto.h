@@ -1021,7 +1021,7 @@ struct parm_struct *lp_next_parameter(int snum, int *i, int allparameters);
 BOOL lp_snum_ok(int iService);
 BOOL lp_loaded(void);
 void lp_killunused(BOOL (*snumused)(int ));
-BOOL lp_load(char *pszFname,BOOL global_only);
+BOOL lp_load(char *pszFname,BOOL global_only, BOOL save_defaults, BOOL add_ipc);
 int lp_numservices(void);
 void lp_dump(FILE *f);
 int lp_servicenumber(char *pszServiceName);
