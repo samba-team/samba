@@ -45,7 +45,7 @@ do {								\
 } while (0)
 
 static int _smb_add_user(pam_handle_t *pamh, unsigned int ctrl,
-                         const char *name, SAM_ACCOUNT *sampass);
+                         const char *name, SAM_ACCOUNT *sampass, BOOL exist);
 
 /*
  * pam_sm_authenticate() authenticates users against the samba password file.
@@ -64,6 +64,7 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
     SAM_ACCOUNT *sampass = NULL;
     extern BOOL in_client;
     const char *name;
+    BOOL found;
 
     /* Points to memory managed by the PAM library. Do not free. */
     char *p = NULL;
@@ -101,15 +102,15 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 
     pdb_init_sam(&sampass);
     
-    pdb_getsampwnam( sampass, name );
+    found = pdb_getsampwnam( sampass, name );
 
     if (on( SMB_MIGRATE, ctrl )) {
-	retval = _smb_add_user(pamh, ctrl, name, sampass);
+	retval = _smb_add_user(pamh, ctrl, name, sampass, found);
 	pdb_free_sam(sampass);
 	AUTH_RETURN;
     }
 
-    if (sampass == NULL) {
+    if (!found) {
         _log_err(LOG_ALERT, "Failed to find entry for user %s.", name);
         retval = PAM_USER_UNKNOWN;
 	pdb_free_sam(sampass);
@@ -168,7 +169,7 @@ int pam_sm_setcred(pam_handle_t *pamh, int flags,
 
 /* Helper function for adding a user to the db. */
 static int _smb_add_user(pam_handle_t *pamh, unsigned int ctrl,
-                         const char *name, SAM_ACCOUNT *sampass)
+                         const char *name, SAM_ACCOUNT *sampass, BOOL exist)
 {
     pstring err_str;
     pstring msg_str;
@@ -190,7 +191,7 @@ static int _smb_add_user(pam_handle_t *pamh, unsigned int ctrl,
     }
 
     /* Add the user to the db if they aren't already there. */
-    if (sampass == NULL) {
+   if (!exist) {
 	retval = local_password_change( name, LOCAL_ADD_USER,
 	                                 pass, err_str,
 	                                 sizeof(err_str),
@@ -208,8 +209,8 @@ static int _smb_add_user(pam_handle_t *pamh, unsigned int ctrl,
 	pass = NULL;
 
 	return PAM_IGNORE;
-    }
-
+   }
+   else {
     /* Change the user's password IFF it's null. */
     if ((pdb_get_lanman_passwd(sampass) == NULL) && (pdb_get_acct_ctrl(sampass) & ACB_PWNOTREQ))
     {
@@ -226,6 +227,8 @@ static int _smb_add_user(pam_handle_t *pamh, unsigned int ctrl,
 	    make_remark( pamh, ctrl, PAM_TEXT_INFO, msg_str );
 	}
     }
+   }
+    
     pass = NULL;
 
     return PAM_IGNORE;
