@@ -1746,6 +1746,10 @@ struct nmb_name {
 #define MAP_TO_GUEST_ON_BAD_USER 1
 #define MAP_TO_GUEST_ON_BAD_PASSWORD 2
 
-#endif /* _SMB_H */
+/*
+ * SMB UCS2 (16-bit unicode) internal type.
+ */
 
-/* _SMB_H */
+typedef uint16 smb_ucs2_t;
+
+#endif /* _SMB_H */

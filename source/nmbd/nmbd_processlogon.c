@@ -135,14 +135,16 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 
       fstrcpy(reply_name,my_name);
       fstrcpy(q, reply_name);
+
       q = skip_string(q, 1); /* PDC name */
 
       if (strcmp(mailslot, NT_LOGON_MAILSLOT)==0) {
         q = align2(q, buf);
 
-        PutUniCode(q, my_name); /* PDC name */
+        PutUniCode(q, my_name, sizeof(pstring)); /* PDC name */
         q = skip_unicode_string(q, 1); 
-        PutUniCode(q, global_myworkgroup); /* Domain name*/
+
+        PutUniCode(q, global_myworkgroup,sizeof(pstring)); /* Domain name*/
         q = skip_unicode_string(q, 1); 
 
         SIVAL(q, 0, ntversion);
@@ -215,11 +217,11 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
       SSVAL(q, 0, SAMLOGON_R);
       q += 2;
 
-      PutUniCode(q, reply_name);
+      PutUniCode(q, reply_name,sizeof(pstring));
       q = skip_unicode_string(q, 1);
       unistrcpy(q, uniuser);
       q = skip_unicode_string(q, 1); /* User name (workstation trust account) */
-      PutUniCode(q, lp_workgroup());
+      PutUniCode(q, lp_workgroup(),sizeof(pstring));
       q = skip_unicode_string(q, 1); /* Domain name. */
 
       SIVAL(q, 0, ntversion);

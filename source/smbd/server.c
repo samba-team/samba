@@ -441,8 +441,6 @@ void exit_server(char *reason)
 ****************************************************************************/
 static void init_structs(void )
 {
-	get_myname(myhostname,NULL);
-
 	/*
 	 * Set the machine NETBIOS name if not already
 	 * set from the config file.
@@ -635,6 +633,12 @@ static void usage(char *pname)
 		DEBUG(0,("ERROR: Samba is not configured correctly for the word size on your machine\n"));
 		exit(1);
 	}
+
+	/*
+	 * Do this before reload_services.
+	 */
+
+	get_myname( myhostname, NULL);
 
 	if (!reload_services(False))
 		return(-1);	

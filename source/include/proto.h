@@ -395,7 +395,7 @@ void split_at_last_component(char *path, char *front, char sep, char *back);
 
 /*The following definitions come from  lib/util_unistr.c  */
 
-int PutUniCode(char *dst,char *src);
+int PutUniCode(char *dst,char *src, ssize_t len);
 char *skip_unicode_string(char *buf,int n);
 char *unistrn2(uint16 *src, int len);
 char *unistr2(uint16 *src);
@@ -403,9 +403,11 @@ char *unistr2_to_str(UNISTR2 *str);
 uint32 buffer2_to_uint32(BUFFER2 *str);
 char *buffer2_to_str(BUFFER2 *str);
 char *buffer2_to_multistr(BUFFER2 *str);
-int struni2(char *dst, const char *src);
+size_t struni2(char *dst, const char *src, size_t max_len);
 char *unistr(char *buf);
 int unistrcpy(char *dst, char *src);
+void default_unicode_map(void);
+BOOL load_unicode_map(int codepage);
 
 /*The following definitions come from  libsmb/clientgen.c  */
 

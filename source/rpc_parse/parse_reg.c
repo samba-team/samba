@@ -964,7 +964,7 @@ void init_reg_r_info(REG_R_INFO *r_r,
 				uint32 status)
 {
 	uint8 buf[512];
-	int len = struni2((char *)buf, os_type);
+	int len = struni2((char *)buf, os_type, sizeof(buf));
 
 	r_r->ptr1 = 1;
 	r_r->level = level;
