@@ -530,6 +530,7 @@ static void usage(char *pname)
 	   are crazy enough to have it setuid */
 
 	gain_root_privilege();
+	gain_root_group_privilege();
 
 	fault_setup((void (*)(void *))exit_server);
 	CatchSignal(SIGTERM , SIGNAL_CAST dflt_sig);
@@ -700,10 +701,10 @@ static void usage(char *pname)
 		pidfile_create("smbd");
 	}
 
-	if (!open_sockets(is_daemon,port))
+	if (!locking_init(0))
 		exit(1);
 
-	if (!locking_init(0))
+	if (!open_sockets(is_daemon,port))
 		exit(1);
 
 	if(!initialize_password_db())
