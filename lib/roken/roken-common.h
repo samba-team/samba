@@ -312,4 +312,7 @@ void pid_file_delete (char **);
 int
 read_environment(const char *file, char ***env);
 
+void warnerr(int doerrno, const char *fmt, va_list ap)
+     __attribute__ ((format (printf, 2, 0)));
+
 #endif /* __ROKEN_COMMON_H__ */
