@@ -1,11 +1,12 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
 <HTML
 ><HEAD
 ><TITLE
 >smbpasswd</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.77"></HEAD
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"></HEAD
 ><BODY
 CLASS="REFENTRY"
 BGCOLOR="#FFFFFF"
@@ -15,9 +16,7 @@ VLINK="#840084"
 ALINK="#0000FF"
 ><H1
 ><A
-NAME="SMBPASSWD"
-></A
->smbpasswd</H1
+NAME="SMBPASSWD">smbpasswd</H1
 ><DIV
 CLASS="REFNAMEDIV"
 ><A
@@ -29,20 +28,18 @@ NAME="AEN5"
 ><DIV
 CLASS="REFSYNOPSISDIV"
 ><A
-NAME="AEN8"
-></A
-><H2
+NAME="AEN8"><H2
 >Synopsis</H2
 ><P
 ><B
 CLASS="COMMAND"
 >smbpasswd</B
->  [-a] [-x] [-d] [-e] [-D debuglevel] [-n] [-r &lt;remote machine&gt;] [-R &lt;name resolve order&gt;] [-m] [-U username[%password]] [-h] [-s] [-w pass] [username]</P
+> [-a] [-x] [-d] [-e] [-D debuglevel] [-n] [-r &#60;remote machine&#62;] [-R &#60;name resolve order&#62;] [-m] [-U username[%password]] [-h] [-s] [-w pass] [-i] [-L] [username]</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN25"
+NAME="AEN27"
 ></A
 ><H2
 >DESCRIPTION</H2
@@ -54,12 +51,9 @@ TARGET="_top"
 > suite.</P
 ><P
 >The smbpasswd program has several different 
-	functions, depending on whether it is run by the <SPAN
-CLASS="emphasis"
-><I
+	functions, depending on whether it is run by the <I
 CLASS="EMPHASIS"
 >root</I
-></SPAN
 > 
 	user or not. When run as a normal user it allows the user to change 
 	the password used for their SMB sessions on any machines that store 
@@ -75,12 +69,9 @@ CLASS="COMMAND"
 CLASS="COMMAND"
 >smbpasswd</B
 > differs from how the passwd program works 
-	however in that it is not <SPAN
-CLASS="emphasis"
-><I
+	however in that it is not <I
 CLASS="EMPHASIS"
 >setuid root</I
-></SPAN
 > but works in 
 	a client-server mode and communicates with a locally running
 	<B
@@ -100,7 +91,7 @@ CLASS="FILENAME"
 	was typed correctly. No passwords will be echoed on the screen 
 	whilst being typed. If you have a blank SMB password (specified by 
 	the string "NO PASSWORD" in the smbpasswd file) then just press 
-	the &lt;Enter&gt; key when asked for your old password. </P
+	the &#60;Enter&#62; key when asked for your old password. </P
 ><P
 >smbpasswd can also be used by a normal user to change their
 	SMB password on remote machines, such as Windows NT Primary Domain 
@@ -119,7 +110,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN41"
+NAME="AEN43"
 ></A
 ><H2
 >OPTIONS</H2
@@ -134,7 +125,7 @@ CLASS="VARIABLELIST"
 ><P
 >This option specifies that the username 
 		following should be added to the local smbpasswd file, with the 
-		new password typed (type &lt;Enter&gt; for the old password). This 
+		new password typed (type &#60;Enter&#62; for the old password). This 
 		option is ignored if the username following already exists in 
 		the smbpasswd file and it is treated like a regular change 
 		password command.  Note that the default passdb backends require 
@@ -303,12 +294,9 @@ CLASS="PARAMETER"
 		copy of the user account database and will not allow the password 
 		change).</P
 ><P
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Note</I
-></SPAN
 > that Windows 95/98 do not have 
 		a real password database so it is not possible to change passwords 
 		specifying a Win95/98  machine as remote machine target. </P
@@ -499,16 +487,31 @@ CLASS="PARAMETER"
 		</P
 ></DD
 ><DT
+>-i</DT
+><DD
+><P
+>This option tells smbpasswd that the account 
+		being changed is an interdomain trust account. Currently this is used 
+		when Samba is being used as an NT Primary Domain Controller. 
+		The account contains the info about another trusted domain.</P
+><P
+>This option is only available when running smbpasswd as root.
+		</P
+></DD
+><DT
+>-L</DT
+><DD
+><P
+>Run in local mode.</P
+></DD
+><DT
 >username</DT
 ><DD
 ><P
 >This specifies the username for all of the 
-		<SPAN
-CLASS="emphasis"
-><I
+		<I
 CLASS="EMPHASIS"
 >root only</I
-></SPAN
 > options to operate on. Only root 
 		can specify this parameter as only root has the permission needed 
 		to modify attributes directly in the local smbpasswd file. 
@@ -520,7 +523,7 @@ CLASS="EMPHASIS"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN162"
+NAME="AEN173"
 ></A
 ><H2
 >NOTES</H2
@@ -563,7 +566,7 @@ CLASS="FILENAME"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN172"
+NAME="AEN183"
 ></A
 ><H2
 >VERSION</H2
@@ -574,7 +577,7 @@ NAME="AEN172"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN175"
+NAME="AEN186"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -597,7 +600,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN181"
+NAME="AEN192"
 ></A
 ><H2
 >AUTHOR</H2

@@ -525,6 +525,7 @@ void setup_logging(const char *pname, BOOL interactive)
 	if (interactive) {
 		stdout_logging = True;
 		dbf = x_stdout;
+		x_setbuf( x_stdout, NULL );
 	}
 #ifdef WITH_SYSLOG
 	else {

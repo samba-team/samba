@@ -3,12 +3,12 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "WINBINDD" "8" "26 November 2002" "" ""
+.TH "WINBINDD" "8" "03 January 2003" "" ""
 .SH NAME
 winbindd \- Name Service Switch daemon for resolving names  from NT servers
 .SH SYNOPSIS
 
-\fBwinbindd\fR [ \fB-i\fR ] [ \fB-B\fR ] [ \fB-d <debug level>\fR ] [ \fB-s <smb config file>\fR ] [ \fB-n\fR ]
+\fBwinbindd\fR [ \fB-F\fR ] [ \fB-S\fR ] [ \fB-i\fR ] [ \fB-B\fR ] [ \fB-d <debug level>\fR ] [ \fB-s <smb config file>\fR ] [ \fB-n\fR ]
 
 .SH "DESCRIPTION"
 .PP
@@ -74,6 +74,23 @@ resolve hostnames from \fI/etc/hosts\fR and then from the
 WINS server.
 .SH "OPTIONS"
 .TP
+\fB-F\fR
+If specified, this parameter causes
+the main \fBwinbindd\fR process to not daemonize,
+i.e. double-fork and disassociate with the terminal.
+Child processes are still created as normal to service
+each connection request, but the main process does not
+exit. This operation mode is suitable for running
+\fBwinbindd\fR under process supervisors such
+as \fBsupervise\fR and \fBsvscan\fR
+from Daniel J. Bernstein's \fBdaemontools\fR
+package, or the AIX process monitor.
+.TP
+\fB-S\fR
+If specified, this parameter causes
+\fBwinbindd\fR to log to standard output rather
+than a file.
+.TP
 \fB-d debuglevel\fR
 Sets the debuglevel to an integer between 
 0 and 100. 0 is for no debugging and 100 is for reams and 
@@ -84,7 +101,9 @@ level 100 (see BUGS.txt).
 Tells \fBwinbindd\fR to not 
 become a daemon and detach from the current terminal. This 
 option is used by developers when interactive debugging 
-of \fBwinbindd\fR is required. 
+of \fBwinbindd\fR is required.
+\fBwinbindd\fR also logs to standard output,
+as if the \fB-S\fR parameter had been given.
 .TP
 \fB-n\fR
 Disable caching. This means winbindd will 

@@ -1,11 +1,12 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
 <HTML
 ><HEAD
 ><TITLE
 >pdbedit</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.77"></HEAD
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"></HEAD
 ><BODY
 CLASS="REFENTRY"
 BGCOLOR="#FFFFFF"
@@ -15,9 +16,7 @@ VLINK="#840084"
 ALINK="#0000FF"
 ><H1
 ><A
-NAME="PDBEDIT"
-></A
->pdbedit</H1
+NAME="PDBEDIT">pdbedit</H1
 ><DIV
 CLASS="REFNAMEDIV"
 ><A
@@ -29,20 +28,18 @@ NAME="AEN5"
 ><DIV
 CLASS="REFSYNOPSISDIV"
 ><A
-NAME="AEN8"
-></A
-><H2
+NAME="AEN8"><H2
 >Synopsis</H2
 ><P
 ><B
 CLASS="COMMAND"
 >pdbedit</B
->  [-l] [-v] [-w] [-u username] [-f fullname] [-h homedir] [-d drive] [-s script] [-p profile] [-a] [-m] [-x] [-i passdb-backend] [-e passdb-backend] [-b passdb-backend] [-D debuglevel]</P
+> [-l] [-v] [-w] [-u username] [-f fullname] [-h homedir] [-D drive] [-S script] [-p profile] [-a] [-m] [-x] [-i passdb-backend] [-e passdb-backend] [-b passdb-backend] [-d debuglevel] [-s configfile] [-P account-policy] [-V value]</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN27"
+NAME="AEN30"
 ></A
 ><H2
 >DESCRIPTION</H2
@@ -68,7 +65,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN34"
+NAME="AEN37"
 ></A
 ><H2
 >OPTIONS</H2
@@ -91,11 +88,20 @@ CLASS="COMMAND"
 >pdbedit -l</B
 ></P
 ><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="90%"
+><TR
+><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 >		sorce:500:Simo Sorce
 		samba:45:Test User
 		</PRE
+></TD
+></TR
+></TABLE
 ></P
 ></DD
 ><DT
@@ -111,6 +117,12 @@ CLASS="COMMAND"
 >pdbedit -l -v</B
 ></P
 ><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="90%"
+><TR
+><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 >		---------------
@@ -132,6 +144,9 @@ CLASS="PROGRAMLISTING"
 		Logon Script:   
 		Profile Path:   \\BERSERKER\profile
 		</PRE
+></TD
+></TR
+></TABLE
 ></P
 ></DD
 ><DT
@@ -158,11 +173,20 @@ CLASS="COMMAND"
 >pdbedit -l -w</B
 ></P
 ><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="90%"
+><TR
+><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 >		sorce:500:508818B733CE64BEAAD3B435B51404EE:D2A2418EFC466A8A0F6B1DBB5C3DB80C:[UX         ]:LCT-00000000:
 		samba:45:0F2B255F7B67A7A9AAD3B435B51404EE:BC281CE3F53B6A5146629CD4751D3490:[UX         ]:LCT-3BFA1E8D:
 		</PRE
+></TD
+></TR
+></TABLE
 ></P
 ></DD
 ><DT
@@ -171,19 +195,13 @@ CLASS="PROGRAMLISTING"
 ><P
 >This option specifies the username to be
 		used for the operation requested (listing, adding, removing).
-		It is <SPAN
-CLASS="emphasis"
-><I
+		It is <I
 CLASS="EMPHASIS"
 >required</I
-></SPAN
 > in add, remove and modify
-		operations and <SPAN
-CLASS="emphasis"
-><I
+		operations and <I
 CLASS="EMPHASIS"
 >optional</I
-></SPAN
 > in list
 		operations.</P
 ></DD
@@ -215,7 +233,7 @@ CLASS="COMMAND"
 		</P
 ></DD
 ><DT
->-d drive</DT
+>-D drive</DT
 ><DD
 ><P
 >This option can be used while adding or
@@ -229,7 +247,7 @@ CLASS="COMMAND"
 		</P
 ></DD
 ><DT
->-s script</DT
+>-S script</DT
 ><DD
 ><P
 >This option can be used while adding or
@@ -269,10 +287,19 @@ CLASS="COMMAND"
 CLASS="COMMAND"
 >pdbedit -a -u sorce</B
 >
-		<PRE
+		<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="90%"
+><TR
+><TD
+><PRE
 CLASS="PROGRAMLISTING"
 >new password:
 		retype new password</PRE
+></TD
+></TR
+></TABLE
 >
                 </P
 ></DD
@@ -352,13 +379,78 @@ CLASS="COMMAND"
 >pdbedit -b xml:/root/pdb-backup.xml -l</B
 ></P
 ></DD
+><DT
+>-P account-policy</DT
+><DD
+><P
+>Display an account policy</P
+><P
+>Valid policies are: minimum password age, reset count minutes, disconnect time,
+		user must logon to change password, password history, lockout duration, min password length,
+		maximum password age and bad lockout attempt.</P
+><P
+>Example: <B
+CLASS="COMMAND"
+>pdbedit -P "bad lockout attempt"</B
+></P
+><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="90%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+>		account policy value for bad lockout attempt is 0
+		</PRE
+></TD
+></TR
+></TABLE
+></P
+></DD
+><DT
+>-V account-policy-value</DT
+><DD
+><P
+>Sets an account policy to a specified value. 
+		This option may only be used in conjunction
+		with the <TT
+CLASS="PARAMETER"
+><I
+>-P</I
+></TT
+> option.
+		</P
+><P
+>Example: <B
+CLASS="COMMAND"
+>pdbedit -P "bad lockout attempt" -V 3</B
+></P
+><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="90%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+>		account policy value for bad lockout attempt was 0
+		account policy value for bad lockout attempt is now 3
+		</PRE
+></TD
+></TR
+></TABLE
+></P
+></DD
 ></DL
 ></DIV
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN140"
+NAME="AEN161"
 ></A
 ><H2
 >NOTES</H2
@@ -368,7 +460,7 @@ NAME="AEN140"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN143"
+NAME="AEN164"
 ></A
 ><H2
 >VERSION</H2
@@ -379,7 +471,7 @@ NAME="AEN143"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN146"
+NAME="AEN167"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -399,7 +491,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN151"
+NAME="AEN172"
 ></A
 ><H2
 >AUTHOR</H2

@@ -32,6 +32,12 @@ extern BOOL global_in_nmbd;
 /* are we running as a daemon ? */
 static BOOL is_daemon = False;
 
+/* fork or run in foreground ? */
+static BOOL Fork = True;
+
+/* log to standard output ? */
+static BOOL log_stdout = False;
+
 /* have we found LanMan clients yet? */
 BOOL found_lm_clients = False;
 
@@ -590,6 +596,8 @@ static BOOL open_sockets(BOOL isdaemon, int port)
 	POPT_AUTOHELP
 	{"daemon", 'D', POPT_ARG_VAL, &is_daemon, True, "Become a daemon(default)" },
 	{"interactive", 'i', POPT_ARG_VAL, &opt_interactive, True, "Run interactive (not a daemon)" },
+	{"foreground", 'F', POPT_ARG_VAL, &Fork, False, "Run daemon in foreground (for daemontools & etc)" },
+	{"log-stdout", 'S', POPT_ARG_VAL, &log_stdout, True, "Log to stdout" },
 	{"hosts", 'H', POPT_ARG_STRING, dyn_LMHOSTSFILE, 'H', "Load a netbios hosts file"},
 	{"port", 'p', POPT_ARG_INT, &global_nmb_port, NMB_PORT, "Listen on the specified port" },
 	{NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_debug },
@@ -639,8 +647,18 @@ static BOOL open_sockets(BOOL isdaemon, int port)
     { }
 
   poptFreeContext(pc);
-  
-  setup_logging( argv[0], opt_interactive );
+
+  if ( opt_interactive ) {
+    Fork = False;
+    log_stdout = True;
+  }
+
+  if ( log_stdout && Fork ) {
+    DEBUG(0,("ERROR: Can't log to stdout (-S) unless daemon is in foreground (-F) or interactive (-i)\n"));
+    exit(1);
+  }
+
+  setup_logging( argv[0], log_stdout );
 
   reopen_logs();
 
@@ -672,7 +690,7 @@ static BOOL open_sockets(BOOL isdaemon, int port)
   if (is_daemon && !opt_interactive)
   {
     DEBUG( 2, ( "Becoming a daemon.\n" ) );
-    become_daemon();
+    become_daemon(Fork);
   }
 
 #if HAVE_SETPGID
