@@ -275,7 +275,6 @@ BOOL samr_io_q_open_domain(char *desc, SAMR_Q_OPEN_DOMAIN * q_u,
 	prs_uint32("flags", ps, depth, &(q_u->flags));
 
 	smb_io_dom_sid2("sid", &(q_u->dom_sid), ps, depth);
-	prs_align(ps);
 
 	return True;
 }
