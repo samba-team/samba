@@ -2439,7 +2439,7 @@ static NTSTATUS ldapsam_setsamgrent(struct pdb_methods *my_methods,
 
 static void ldapsam_endsamgrent(struct pdb_methods *my_methods)
 {
-	return ldapsam_endsampwent(my_methods);
+	ldapsam_endsampwent(my_methods);
 }
 
 static NTSTATUS ldapsam_getsamgrent(struct pdb_methods *my_methods,
