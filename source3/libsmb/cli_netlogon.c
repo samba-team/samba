@@ -34,13 +34,13 @@ struct cli_state *cli_netlogon_initialise(struct cli_state *cli,
 
 /* Logon Control 2 */
 
-uint32 cli_netlogon_logon_ctrl2(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-				uint32 query_level)
+NTSTATUS cli_netlogon_logon_ctrl2(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+                                  uint32 query_level)
 {
 	prs_struct qbuf, rbuf;
 	NET_Q_LOGON_CTRL2 q;
 	NET_R_LOGON_CTRL2 r;
-	uint32 result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
@@ -70,6 +70,145 @@ uint32 cli_netlogon_logon_ctrl2(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	}
 
 	result = r.status;
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/****************************************************************************
+Generate the next creds to use.  Yuck - this is a cut&paste from another
+file.  They should be combined at some stage.  )-:
+****************************************************************************/
+
+static void gen_next_creds( struct cli_state *cli, DOM_CRED *new_clnt_cred)
+{
+  /*
+   * Create the new client credentials.
+   */
+
+  cli->clnt_cred.timestamp.time = time(NULL);
+
+  memcpy(new_clnt_cred, &cli->clnt_cred, sizeof(*new_clnt_cred));
+
+  /* Calculate the new credentials. */
+  cred_create(cli->sess_key, &(cli->clnt_cred.challenge),
+              new_clnt_cred->timestamp, &(new_clnt_cred->challenge));
+
+}
+
+/* Sam synchronisation */
+
+NTSTATUS cli_netlogon_sam_sync(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+                               uint32 database_id, uint32 *num_deltas,
+                               SAM_DELTA_HDR **hdr_deltas, 
+                               SAM_DELTA_CTR **deltas)
+{
+	prs_struct qbuf, rbuf;
+	NET_Q_SAM_SYNC q;
+	NET_R_SAM_SYNC r;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+        DOM_CRED clnt_creds;
+        char sess_key[16];
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Initialise input parameters */
+
+        gen_next_creds(cli, &clnt_creds);
+
+	init_net_q_sam_sync(&q, cli->srv_name_slash, cli->clnt_name_slash + 2,
+                            &clnt_creds, database_id);
+
+	/* Marshall data and send request */
+
+	if (!net_io_q_sam_sync("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, NET_SAM_SYNC, &qbuf, &rbuf)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	/* Unmarshall response */
+
+	if (!net_io_r_sam_sync("", sess_key, &r, &rbuf, 0)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+        /* Return results */
+
+	result = r.status;
+        *num_deltas = r.num_deltas2;
+        *hdr_deltas = r.hdr_deltas;
+        *deltas = r.deltas;
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/* Sam synchronisation */
+
+NTSTATUS cli_netlogon_sam_deltas(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+                                 uint32 database_id, UINT64_S seqnum,
+                                 uint32 *num_deltas, 
+                                 SAM_DELTA_HDR **hdr_deltas, 
+                                 SAM_DELTA_CTR **deltas)
+{
+	prs_struct qbuf, rbuf;
+	NET_Q_SAM_DELTAS q;
+	NET_R_SAM_DELTAS r;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+        DOM_CRED clnt_creds;
+        char sess_key[16];
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Initialise input parameters */
+
+        gen_next_creds(cli, &clnt_creds);
+
+	init_net_q_sam_deltas(&q, cli->srv_name_slash, 
+                              cli->clnt_name_slash + 2, &clnt_creds, 
+                              database_id, seqnum);
+
+	/* Marshall data and send request */
+
+	if (!net_io_q_sam_deltas("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, NET_SAM_DELTAS, &qbuf, &rbuf)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	/* Unmarshall response */
+
+	if (!net_io_r_sam_deltas("", sess_key, &r, &rbuf, 0)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+        /* Return results */
+
+	result = r.status;
+        *num_deltas = r.num_deltas2;
+        *hdr_deltas = r.hdr_deltas;
+        *deltas = r.deltas;
 
  done:
 	prs_mem_free(&qbuf);
