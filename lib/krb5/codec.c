@@ -189,8 +189,9 @@ krb5_encode_EncKrbCredPart (krb5_context context,
 			    EncKrbCredPart *t,
 			    size_t *len)
 {
-    krb5_error_code ret;
+    krb5_error_code ret = 0;
     int i;
+
     for(i = 0; i < t->ticket_info.len; i++)
 	if((ret = krb5_decode_keyblock(context, &t->ticket_info.val[i].key, 0)))
 	    break;
@@ -207,6 +208,7 @@ krb5_decode_ETYPE_INFO (krb5_context context,
 {
     krb5_error_code ret;
     int i;
+
     ret = decode_ETYPE_INFO((void*)data, length, t, len);
     if(ret)
 	return ret;
@@ -224,7 +226,8 @@ krb5_encode_ETYPE_INFO (krb5_context context,
 			ETYPE_INFO *t,
 			size_t *len)
 {
-    krb5_error_code ret;
+    krb5_error_code ret = 0;
+
     int i;
     /* XXX this will break, since we need one key-info for each enctype */
     /* XXX or do we? */
