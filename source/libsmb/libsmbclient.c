@@ -584,6 +584,13 @@ SMBCSRV *smbc_server(SMBCCTX *context,
 		return NULL;
 	}
 
+	if (context->flags & SMB_CTX_FLAG_USE_KERBEROS) {
+		c.use_kerberos = True;
+	}
+	if (context->flags & SMB_CTX_FLAG_FALLBACK_AFTER_KERBEROS) {
+		c.fallback_after_kerberos = True;
+	}
+
 	c.timeout = context->timeout;
 
         /* Force use of port 139 for first try, so browse lists can work */
@@ -648,8 +655,9 @@ SMBCSRV *smbc_server(SMBCCTX *context,
 			       password, strlen(password),
 			       password, strlen(password),
 			       workgroup) &&
-	    /* try an anonymous login if it failed */
-	    !cli_session_setup(&c, "", "", 1,"", 0, workgroup)) {
+			/* Try an anonymous login if it failed and this was allowed by flags. */
+			((context->flags & SMBCCTX_FLAG_NO_AUTO_ANONYMOUS_LOGON) ||
+			!cli_session_setup(&c, "", "", 1,"", 0, workgroup))) {
 		cli_shutdown(&c);
 		errno = EPERM;
 		return NULL;

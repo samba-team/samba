@@ -455,9 +455,15 @@ struct _SMBCCTX {
 	 * do _NOT_ touch this from your program !
 	 */
 	struct smbc_internal_data * internal;
+
+	int flags;
 	
 };
 
+/* Flags for SMBCCTX->flags */
+#define SMB_CTX_FLAG_USE_KERBEROS (1 << 0)
+#define SMB_CTX_FLAG_FALLBACK_AFTER_KERBEROS (1 << 1)
+#define SMBCCTX_FLAG_NO_AUTO_ANONYMOUS_LOGON (1 << 2) /* don't try to do automatic anon login */
 
 /**@ingroup misc
  * Create a new SBMCCTX (a context).
