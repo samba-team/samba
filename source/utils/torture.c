@@ -25,7 +25,6 @@
 
 #include "includes.h"
 
-static struct cli_state cli;
 static fstring host, workgroup, share, password, username, myname;
 static char *sockops="";
 
@@ -45,62 +44,61 @@ static double end_timer()
 }
 
 
-static int open_connection(void)
+static BOOL open_connection(struct cli_state *c)
 {
-	if (!cli_initialise(&cli) || !cli_connect(&cli, host, NULL)) {
+	if (!cli_initialise(c) || !cli_connect(c, host, NULL)) {
 		printf("Failed to connect with %s\n", host);
+		return False;
 	}
 
-	if (!cli_session_request(&cli, host, 0x20, myname)) {
+	if (!cli_session_request(c, host, 0x20, myname)) {
 		printf("%s rejected the session\n",host);
-		cli_shutdown(&cli);
-		return -1;
+		cli_shutdown(c);
+		return False;
 	}
 
-	if (!cli_negprot(&cli)) {
-		printf("%s rejected the negprot (%s)\n",host, cli_errstr(&cli));
-		cli_shutdown(&cli);
-		return -1;
+	if (!cli_negprot(c)) {
+		printf("%s rejected the negprot (%s)\n",host, cli_errstr(c));
+		cli_shutdown(c);
+		return False;
 	}
 
-	if (!cli_session_setup(&cli, username, password, strlen(password),
+	if (!cli_session_setup(c, username, password, strlen(password),
 			       "", 0, workgroup)) {
-		printf("%s rejected the sessionsetup (%s)\n", host, cli_errstr(&cli));
-		cli_shutdown(&cli);
-		return -1;
+		printf("%s rejected the sessionsetup (%s)\n", host, cli_errstr(c));
+		cli_shutdown(c);
+		return False;
 	}
 
-	if (!cli_send_tconX(&cli, share, "A:", password, strlen(password)+1)) {
-		printf("%s refused tree connect (%s)\n", host, cli_errstr(&cli));
-		cli_shutdown(&cli);
-		return -1;
+	if (!cli_send_tconX(c, share, "A:", password, strlen(password)+1)) {
+		printf("%s refused tree connect (%s)\n", host, cli_errstr(c));
+		cli_shutdown(c);
+		return False;
 	}
 
-	return 0;
+	return True;
 }
 
 
 
-static void close_connection(void)
+static void close_connection(struct cli_state *c)
 {
-	if (!cli_tdis(&cli)) {
-		printf("tdis failed (%s)\n", cli_errstr(&cli));
+	if (!cli_tdis(c)) {
+		printf("tdis failed (%s)\n", cli_errstr(c));
 	}
 
-	cli_shutdown(&cli);
+	cli_shutdown(c);
 }
 
 
-
-
-static BOOL wait_lock(int fnum, uint32 offset, uint32 len)
+static BOOL wait_lock(struct cli_state *c, int fnum, uint32 offset, uint32 len)
 {
-	while (!cli_lock(&cli, fnum, offset, len, -1)) {
+	while (!cli_lock(c, fnum, offset, len, -1)) {
 		int eclass, num;
-		cli_error(&cli, &eclass, &num);
+		cli_error(c, &eclass, &num);
 		if (eclass != ERRDOS || num != ERRlock) {
 			printf("lock failed (%s)\n", 
-			       cli_errstr(&cli));
+			       cli_errstr(c));
 			return False;
 		}
 	}
@@ -108,7 +106,7 @@ static BOOL wait_lock(int fnum, uint32 offset, uint32 len)
 }
 
 
-static int rw_torture(int numops)
+static BOOL rw_torture(struct cli_state *c, int numops)
 {
 	char *lockfname = "\\torture.lck";
 	fstring fname;
@@ -117,13 +115,13 @@ static int rw_torture(int numops)
 	int pid2, pid = getpid();
 	int i;
 
-	fnum2 = cli_open(&cli, lockfname, O_RDWR | O_CREAT | O_EXCL, 
+	fnum2 = cli_open(c, lockfname, O_RDWR | O_CREAT | O_EXCL, 
 			 DENY_NONE);
 	if (fnum2 == -1)
-		fnum2 = cli_open(&cli, lockfname, O_RDWR, DENY_NONE);
+		fnum2 = cli_open(c, lockfname, O_RDWR, DENY_NONE);
 	if (fnum2 == -1) {
-		printf("open of %s failed (%s)\n", lockfname, cli_errstr(&cli));
-		return -1;
+		printf("open of %s failed (%s)\n", lockfname, cli_errstr(c));
+		return False;
 	}
 
 
@@ -134,46 +132,46 @@ static int rw_torture(int numops)
 		}
 		sprintf(fname,"\\torture.%u", n);
 
-		if (!wait_lock(fnum2, n*sizeof(int), sizeof(int))) {
-			return -1;
+		if (!wait_lock(c, fnum2, n*sizeof(int), sizeof(int))) {
+			return False;
 		}
 
-		fnum = cli_open(&cli, fname, O_RDWR | O_CREAT | O_TRUNC, DENY_ALL);
+		fnum = cli_open(c, fname, O_RDWR | O_CREAT | O_TRUNC, DENY_ALL);
 		if (fnum == -1) {
-			printf("open failed (%s)\n", cli_errstr(&cli));
+			printf("open failed (%s)\n", cli_errstr(c));
 			break;
 		}
 
-		if (cli_write(&cli, fnum, (char *)&pid, 0, sizeof(pid)) != sizeof(pid)) {
-			printf("write failed (%s)\n", cli_errstr(&cli));
+		if (cli_write(c, fnum, (char *)&pid, 0, sizeof(pid)) != sizeof(pid)) {
+			printf("write failed (%s)\n", cli_errstr(c));
 		}
 
 		pid2 = 0;
 
-		if (cli_read(&cli, fnum, (char *)&pid2, 0, sizeof(pid)) != sizeof(pid)) {
-			printf("read failed (%s)\n", cli_errstr(&cli));
+		if (cli_read(c, fnum, (char *)&pid2, 0, sizeof(pid)) != sizeof(pid)) {
+			printf("read failed (%s)\n", cli_errstr(c));
 		}
 
 		if (pid2 != pid) {
 			printf("data corruption!\n");
 		}
 
-		if (!cli_close(&cli, fnum)) {
-			printf("close failed (%s)\n", cli_errstr(&cli));
+		if (!cli_close(c, fnum)) {
+			printf("close failed (%s)\n", cli_errstr(c));
 		}
 
-		if (!cli_unlink(&cli, fname)) {
-			printf("unlink failed (%s)\n", cli_errstr(&cli));
+		if (!cli_unlink(c, fname)) {
+			printf("unlink failed (%s)\n", cli_errstr(c));
 		}
 
-		if (!cli_unlock(&cli, fnum2, n*sizeof(int), sizeof(int), -1)) {
-			printf("unlock failed (%s)\n", cli_errstr(&cli));
+		if (!cli_unlock(c, fnum2, n*sizeof(int), sizeof(int), -1)) {
+			printf("unlock failed (%s)\n", cli_errstr(c));
 		}
 	}
 
 	printf("%d\n", i);
 
-	return 0;
+	return True;
 }
 
 static void usage(void)
@@ -195,15 +193,246 @@ static void usage(void)
 
 static void run_torture(int numops)
 {
-	if (open_connection() == 0) {
+	static struct cli_state cli;
+
+	if (open_connection(&cli)) {
 		cli_sockopt(&cli, sockops);
 
 		printf("pid %d OK\n", getpid());
 
-		rw_torture(numops);
+		rw_torture(&cli, numops);
 
-		close_connection();
+		close_connection(&cli);
 	}
+}
+
+/*
+  This test checks for two things:
+
+  1) correct support for retaining locks over a close (ie. the server
+     must not use posix semantics)
+  2) support for lock timeouts
+ */
+static void run_locktest1(void)
+{
+	static struct cli_state cli1, cli2;
+	char *fname = "\\locktest.lck";
+	int fnum1, fnum2, fnum3;
+	time_t t1, t2;
+
+	if (!open_connection(&cli1) || !open_connection(&cli2)) {
+		return;
+	}
+	cli_sockopt(&cli1, sockops);
+	cli_sockopt(&cli2, sockops);
+
+	printf("starting locktest1\n");
+
+	cli_unlink(&cli1, fname);
+
+	fnum1 = cli_open(&cli1, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE);
+	if (fnum1 == -1) {
+		printf("open of %s failed (%s)\n", fname, cli_errstr(&cli1));
+		return;
+	}
+	fnum2 = cli_open(&cli1, fname, O_RDWR, DENY_NONE);
+	if (fnum2 == -1) {
+		printf("open2 of %s failed (%s)\n", fname, cli_errstr(&cli1));
+		return;
+	}
+	fnum3 = cli_open(&cli2, fname, O_RDWR, DENY_NONE);
+	if (fnum3 == -1) {
+		printf("open3 of %s failed (%s)\n", fname, cli_errstr(&cli2));
+		return;
+	}
+
+	if (!cli_lock(&cli1, fnum1, 0, 4, 0)) {
+		printf("lock1 failed (%s)\n", cli_errstr(&cli1));
+		return;
+	}
+
+
+	if (cli_lock(&cli2, fnum3, 0, 4, 0)) {
+		printf("lock2 succeeded! This is a locking bug\n");
+		return;
+	} else {
+		int eclass, num;
+		cli_error(&cli2, &eclass, &num);
+		if (eclass != ERRDOS || num != ERRlock) {
+			printf("error should have been ERRDOS/ERRlock (%s)\n", 
+			       cli_errstr(&cli2));
+			return;
+		}
+	}
+
+
+	printf("Testing lock timeouts\n");
+	t1 = time(NULL);
+	if (cli_lock(&cli2, fnum3, 0, 4, 10*1000)) {
+		printf("lock3 succeeded! This is a locking bug\n");
+		return;
+	} else {
+		int eclass, num;
+		cli_error(&cli2, &eclass, &num);
+		if (eclass != ERRDOS || num != ERRlock) {
+			printf("error should have been ERRDOS/ERRlock (%s)\n", 
+			       cli_errstr(&cli2));
+			return;
+		}
+	}
+	t2 = time(NULL);
+
+	if (t2 - t1 < 5) {
+		printf("This server appears not to support timed lock requests\n");
+	}
+
+	if (!cli_close(&cli1, fnum2)) {
+		printf("close1 failed (%s)\n", cli_errstr(&cli1));
+		return;
+	}
+
+	if (cli_lock(&cli2, fnum3, 0, 4, 0)) {
+		printf("lock4 succeeded! This is a locking bug\n");
+		return;
+	} else {
+		int eclass, num;
+		cli_error(&cli2, &eclass, &num);
+		if (eclass != ERRDOS || num != ERRlock) {
+			printf("error should have been ERRDOS/ERRlock (%s)\n", 
+			       cli_errstr(&cli2));
+			return;
+		}
+	}
+
+	if (!cli_close(&cli1, fnum1)) {
+		printf("close2 failed (%s)\n", cli_errstr(&cli1));
+		return;
+	}
+
+	if (!cli_close(&cli2, fnum3)) {
+		printf("close3 failed (%s)\n", cli_errstr(&cli2));
+		return;
+	}
+
+	if (!cli_unlink(&cli1, fname)) {
+		printf("unlink failed (%s)\n", cli_errstr(&cli1));
+		return;
+	}
+
+
+	close_connection(&cli1);
+	close_connection(&cli2);
+
+	printf("Passed locktest1\n");
+}
+
+
+/*
+  This test checks that 
+
+  1) the server supports multiple locking contexts on the one SMB
+  connection, distinguished by PID.  
+
+  2) the server correctly fails overlapping locks made by the same PID (this
+     goes against POSIX behaviour, which is why it is tricky to implement)
+
+  3) the server denies unlock requests by an incorrect client PID
+*/
+static void run_locktest2(void)
+{
+	static struct cli_state cli;
+	char *fname = "\\locktest.lck";
+	int fnum1, fnum2, fnum3;
+
+	if (!open_connection(&cli)) {
+		return;
+	}
+
+	cli_sockopt(&cli, sockops);
+
+	printf("starting locktest2\n");
+
+	cli_unlink(&cli, fname);
+
+	cli_setpid(&cli, 1);
+
+	fnum1 = cli_open(&cli, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE);
+	if (fnum1 == -1) {
+		printf("open of %s failed (%s)\n", fname, cli_errstr(&cli));
+		return;
+	}
+
+	fnum2 = cli_open(&cli, fname, O_RDWR, DENY_NONE);
+	if (fnum2 == -1) {
+		printf("open2 of %s failed (%s)\n", fname, cli_errstr(&cli));
+		return;
+	}
+
+	cli_setpid(&cli, 2);
+
+	fnum3 = cli_open(&cli, fname, O_RDWR, DENY_NONE);
+	if (fnum3 == -1) {
+		printf("open3 of %s failed (%s)\n", fname, cli_errstr(&cli));
+		return;
+	}
+
+	cli_setpid(&cli, 1);
+
+	if (!cli_lock(&cli, fnum1, 0, 4, 0)) {
+		printf("lock1 failed (%s)\n", cli_errstr(&cli));
+		return;
+	}
+
+	if (cli_lock(&cli, fnum2, 0, 4, 0)) {
+		printf("lock2 succeeded! This is a locking bug\n");
+	} else {
+		int eclass, num;
+		cli_error(&cli, &eclass, &num);
+		if (eclass != ERRDOS || num != ERRlock) {
+			printf("error should have been ERRDOS/ERRlock (%s)\n", 
+			       cli_errstr(&cli));
+			return;
+		}
+	}
+
+	cli_setpid(&cli, 2);
+
+	if (cli_unlock(&cli, fnum1, 0, 4, 0)) {
+		printf("unlock1 succeeded! This is a locking bug\n");
+	}
+
+	if (cli_lock(&cli, fnum3, 0, 4, 0)) {
+		printf("lock3 succeeded! This is a locking bug\n");
+	} else {
+		int eclass, num;
+		cli_error(&cli, &eclass, &num);
+		if (eclass != ERRDOS || num != ERRlock) {
+			printf("error should have been ERRDOS/ERRlock (%s)\n", 
+			       cli_errstr(&cli));
+			return;
+		}
+	}
+
+	cli_setpid(&cli, 1);
+
+	if (!cli_close(&cli, fnum1)) {
+		printf("close1 failed (%s)\n", cli_errstr(&cli));
+		return;
+	}
+
+	if (!cli_close(&cli, fnum2)) {
+		printf("close2 failed (%s)\n", cli_errstr(&cli));
+		return;
+	}
+
+	if (!cli_close(&cli, fnum3)) {
+		printf("close3 failed (%s)\n", cli_errstr(&cli));
+		return;
+	}
+
+	close_connection(&cli);
+
+	printf("locktest2 finished\n");
 }
 
 
@@ -316,6 +545,9 @@ static void create_procs(int nprocs, int numops)
 	start_timer();
 	create_procs(nprocs, numops);
 	printf("rw_torture: %g secs\n", end_timer());
+
+	run_locktest1();
+	run_locktest2();
 
 	return(0);
 }

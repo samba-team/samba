@@ -1072,3 +1072,13 @@ void cli_sockopt(struct cli_state *cli, char *options)
 {
 	set_socket_options(cli->fd, options);
 }
+
+/****************************************************************************
+set the PID to use for smb messages. Return the old pid.
+****************************************************************************/
+int cli_setpid(struct cli_state *cli, int pid)
+{
+	int ret = cli->pid;
+	cli->pid = pid;
+	return ret;
+}
