@@ -240,7 +240,7 @@ static FILE	*getdatasock (char *);
 static char	*gunique (char *);
 static RETSIGTYPE	 lostconn (int);
 static int	 receive_data (FILE *, FILE *);
-static void	 send_data (FILE *, FILE *, off_t);
+static void	 send_data (FILE *, FILE *);
 static struct passwd * sgetpwnam (char *);
 static void	 usage(void);
 
@@ -283,7 +283,7 @@ parse_auth_level(char *str)
 	else if(strcmp(p, "none") == 0)
 	    ret |= AUTH_PLAIN|AUTH_FTP;
 	else
-	    warnx("bad value for -a");
+	    warnx("bad value for -a: `%s'", p);
     }
     return ret;	    
 }
@@ -958,10 +958,7 @@ retrieve(char *cmd, char *name)
 			fin = ftpd_popen(line, "r", 0, 0);
 			closefunc = ftpd_pclose;
 			st.st_size = -1;
-#ifdef HAVE_ST_BLKSIZE
-			st.st_blksize = BUFSIZ;
 			cmd = line;
-#endif
 		    }
 		}
 	} else {
@@ -970,9 +967,6 @@ retrieve(char *cmd, char *name)
 		fin = ftpd_popen(line, "r", 1, 0);
 		closefunc = ftpd_pclose;
 		st.st_size = -1;
-#ifdef HAVE_ST_BLKSIZE
-		st.st_blksize = BUFSIZ;
-#endif
 	}
 	if (fin == NULL) {
 		if (errno != 0) {
@@ -1014,11 +1008,7 @@ retrieve(char *cmd, char *name)
 	if (dout == NULL)
 		goto done;
 	set_buffer_size(fileno(dout), 0);
-#ifdef HAVE_ST_BLKSIZE
-	send_data(fin, dout, st.st_blksize);
-#else
-	send_data(fin, dout, BUFSIZ);
-#endif
+	send_data(fin, dout);
 	fclose(dout);
 	data = -1;
 	pdata = -1;
@@ -1249,10 +1239,11 @@ dataconn(char *name, off_t size, char *mode)
  * NB: Form isn't handled.
  */
 static void
-send_data(FILE *instr, FILE *outstr, off_t blksize)
+send_data(FILE *instr, FILE *outstr)
 {
 	int c, cnt, filefd, netfd;
-	char *buf;
+	static char *buf;
+	static size_t bufsize;
 	int i = 0;
 	char s[1024];
 
@@ -1313,19 +1304,22 @@ send_data(FILE *instr, FILE *outstr, off_t blksize)
 	
 #endif
 	if(transflag){
-	    if ((buf = malloc(10 * blksize)) == NULL) {
+	    struct stat st;
+
+	    netfd = fileno(outstr);
+	    filefd = fileno(instr);
+	    buf = alloc_buffer (buf, &bufsize,
+				fstat(filefd, &st) >= 0 ? &st : NULL);
+	    if (buf == NULL) {
 		transflag = 0;
 		perror_reply(451, "Local resource failure: malloc");
 		return;
 	    }
-	    netfd = fileno(outstr);
-	    filefd = fileno(instr);
-	    while ((cnt = read(filefd, buf, 10 * blksize)) > 0 &&
+	    while ((cnt = read(filefd, buf, bufsize)) > 0 &&
 		   auth_write(netfd, buf, cnt) == cnt)
 		byte_count += cnt;
 	    auth_write(netfd, buf, 0); /* to end an encrypted stream */
 	    transflag = 0;
-	    free(buf);
 	    if (cnt != 0) {
 		if (cnt < 0)
 		    goto file_err;
@@ -1360,18 +1354,29 @@ static int
 receive_data(FILE *instr, FILE *outstr)
 {
     int cnt, bare_lfs = 0;
-    char buf[100*BUFSIZ];
+    static char *buf;
+    static size_t bufsize;
+    struct stat st;
 
     transflag++;
     if (setjmp(urgcatch)) {
 	transflag = 0;
 	return (-1);
     }
+
+    buf = alloc_buffer (buf, &bufsize,
+			fstat(fileno(outstr), &st) >= 0 ? &st : NULL);
+    if (buf == NULL) {
+	transflag = 0;
+	perror_reply(451, "Local resource failure: malloc");
+	return -1;
+    }
+    
     switch (type) {
 
     case TYPE_I:
     case TYPE_L:
-	while ((cnt = auth_read(fileno(instr), buf, sizeof(buf))) > 0) {
+	while ((cnt = auth_read(fileno(instr), buf, bufsize)) > 0) {
 	    if (write(fileno(outstr), buf, cnt) != cnt)
 		goto file_err;
 	    byte_count += cnt;
@@ -1390,12 +1395,13 @@ receive_data(FILE *instr, FILE *outstr)
     {
 	char *p, *q;
 	int cr_flag = 0;
-	while ((cnt = auth_read(fileno(instr), buf+cr_flag, 
-				sizeof(buf)-cr_flag)) > 0){
+	while ((cnt = auth_read(fileno(instr),
+				buf + cr_flag, 
+				bufsize - cr_flag)) > 0){
 	    byte_count += cnt;
 	    cnt += cr_flag;
 	    cr_flag = 0;
-	    for(p = buf, q = buf; p < buf + cnt;){
+	    for(p = buf, q = buf; p < buf + cnt;) {
 		if(*p == '\n')
 		    bare_lfs++;
 		if(*p == '\r')
