@@ -443,6 +443,22 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 		}
 	}
 
+	/* setup an initial sec_desc is required */
+	if (io->ntcreatex.in.sec_desc) {
+		union smb_setfileinfo set;
+
+		set.set_secdesc.file.fnum = fnum;
+		set.set_secdesc.in.secinfo_flags = DACL_SECURITY_INFORMATION;
+		set.set_secdesc.in.sd = io->ntcreatex.in.sec_desc;
+
+		status = pvfs_acl_set(pvfs, req, name, fd, &set);
+		if (!NT_STATUS_IS_OK(status)) {
+			idr_remove(pvfs->idtree_fnum, fnum);
+			close(fd);
+			return status;
+		}
+	}
+
 	/* form the lock context used for byte range locking and
 	   opendb locking */
 	status = pvfs_locking_key(name, f->handle, &f->handle->odb_locking_key);
