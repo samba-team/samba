@@ -1,3 +1,7 @@
+2005-03-21  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: use $(LIB_roken)
+
 2005-03-16  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* display_status.c (gssapi_krb5_set_error_string): pass in the
