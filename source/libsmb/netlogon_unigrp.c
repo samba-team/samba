@@ -22,6 +22,7 @@
 */
 
 #include "includes.h"
+#define UNIGROUP_PREFIX "UNIGROUP"
 
 /*
     Handle for netlogon_unigrp.tdb database. It is used internally
@@ -50,17 +51,22 @@ BOOL uni_group_cache_init(void)
 BOOL  uni_group_cache_store_netlogon(TALLOC_CTX *mem_ctx, NET_USER_INFO_3 *user)
 {
 	TDB_DATA key,data;
-        fstring keystr;
-        int i;
+        fstring keystr, sid_string;
+	DOM_SID user_sid;
+        unsigned int i;
 
 	if (!uni_group_cache_init()) {
 		DEBUG(0,("uni_group_cache_store_netlogon: cannot open netlogon_unigrp.tdb for write!\n"));
 		return False;
 	}
 
-	/* Prepare key as DOMAIN-SID/USER-RID string */
-	slprintf(keystr, sizeof(keystr), "%s/%d", 
-		 sid_string_static(&user->dom_sid.sid), user->user_rid);
+	sid_copy(&user_sid, &user->dom_sid.sid);
+	sid_append_rid(&user_sid, user->user_rid);
+
+	/* Prepare key as USER-SID string */
+	slprintf(keystr, sizeof(keystr), "%s/%s",
+		 UNIGROUP_PREFIX,
+		 sid_to_string(sid_string, &user_sid));
 	key.dptr = keystr;
 	key.dsize = strlen(keystr) + 1;
 	
@@ -90,14 +96,15 @@ BOOL  uni_group_cache_store_netlogon(TALLOC_CTX *mem_ctx, NET_USER_INFO_3 *user)
     and elements are array[0] ... array[num_elements-1]
     
 */
-uint32* uni_group_cache_fetch(DOM_SID *domain, uint32 user_rid,
+DOM_SID **uni_group_cache_fetch(DOM_SID *domain, DOM_SID *user_sid,
 			      TALLOC_CTX *mem_ctx, uint32 *num_groups)
 {
 	TDB_DATA key,data;
 	fstring keystr;
-	uint32 *groups;
+	DOM_SID **groups;
 	uint32 i;
 	uint32 group_count;
+	fstring sid_string;
 	
 	if (!domain) {
 		DEBUG(1,("uni_group_cache_fetch: expected non-null domain sid\n"));
@@ -123,8 +130,9 @@ uint32* uni_group_cache_fetch(DOM_SID *domain, uint32 user_rid,
 	*num_groups = 0;
 	
 	/* Fetch universal groups */
-	slprintf(keystr, sizeof(keystr), "%s/%d", 
-		 sid_string_static(domain), user_rid);
+	slprintf(keystr, sizeof(keystr), "%s/%s", 
+		 UNIGROUP_PREFIX,
+		 sid_to_string(sid_string, user_sid));
 	key.dptr = keystr;
 	key.dsize = strlen(keystr) + 1;
 	data = tdb_fetch(netlogon_unigrp_tdb, key);
@@ -136,12 +144,17 @@ uint32* uni_group_cache_fetch(DOM_SID *domain, uint32 user_rid,
 	
 	/* Transfer data to receiver's memory context */
 	group_count = IVAL(&((uint32*)data.dptr)[0],0);
-	groups = talloc(mem_ctx, (group_count)*sizeof(uint32));
+	groups = talloc(mem_ctx, (group_count)*sizeof(*groups));
 	if (groups) {
 		for(i=0; i<group_count; i++) {
-			groups[i] = IVAL(&((uint32*)data.dptr)[i+1],0);
+			groups[i] = talloc(mem_ctx, sizeof(**groups));
+			if (!groups[i]) {
+				DEBUG(1,("uni_group_cache_fetch: cannot allocate uni groups in receiver's memory context\n"));
+				return NULL;
+			}
+			sid_copy(groups[i], domain);
+			sid_append_rid(groups[i], IVAL(&((uint32*)data.dptr)[i+1],0));
 		}
-		
 	} else {
 		DEBUG(1,("uni_group_cache_fetch: cannot allocate uni groups in receiver's memory context\n"));
 	}

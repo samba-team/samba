@@ -895,12 +895,13 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 	poptFreeContext(pc);
-	register_msg_pool_usage();
 
 	/* Loop waiting for requests */
 
 	process_loop();
 
+	trustdom_cache_shutdown();
 	uni_group_cache_shutdown();
+
 	return 0;
 }

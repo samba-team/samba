@@ -373,7 +373,7 @@ static NTSTATUS cm_open_connection(const char *domain, const int pipe_index,
 		}
 		
 		result = cli_full_connection(&new_conn->cli, global_myname(), new_conn->controller, 
-			&dc_ip, 0, "IPC$", "IPC", ipc_username, ipc_domain, 
+					     &dc_ip, 0, "IPC$", "IPC", ipc_username, ipc_domain, 
 					     ipc_password, CLI_FULL_CONNECTION_ANNONYMOUS_FALLBACK, &retry);
 		
 		secrets_named_mutex_release(new_conn->controller);

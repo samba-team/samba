@@ -4,6 +4,7 @@
    Winbind ADS backend functions
 
    Copyright (C) Andrew Tridgell 2001
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2003
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -88,13 +89,6 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 	return ads;
 }
 
-/* useful utility */
-static void sid_from_rid(struct winbindd_domain *domain, uint32 rid, DOM_SID *sid)
-{
-	sid_copy(sid, &domain->sid);
-	sid_append_rid(sid, rid);
-}
-
 
 /* Query display info for a realm. This is the basic user list fn */
 static NTSTATUS query_user_list(struct winbindd_domain *domain,
@@ -143,7 +137,9 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 	for (msg = ads_first_entry(ads, res); msg; msg = ads_next_entry(ads, msg)) {
 		char *name, *gecos;
 		DOM_SID sid;
-		uint32 rid, group;
+		DOM_SID *sid2;
+		DOM_SID *group_sid;
+		uint32 group;
 		uint32 atype;
 
 		if (!ads_pull_uint32(ads, msg, "sAMAccountType", &atype) ||
@@ -163,15 +159,20 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 			continue;
 		}
 
-		if (!sid_peek_check_rid(&domain->sid, &sid, &rid)) {
-			DEBUG(1,("No rid for %s !?\n", name));
-			continue;
+		sid2 = talloc(mem_ctx, sizeof(*sid2));
+		if (!sid2) {
+			status = NT_STATUS_NO_MEMORY;
+			goto done;
 		}
+
+		sid_copy(sid2, &sid);
+
+		group_sid = rid_to_talloced_sid(domain, mem_ctx, group);
 
 		(*info)[i].acct_name = name;
 		(*info)[i].full_name = gecos;
-		(*info)[i].user_rid = rid;
-		(*info)[i].group_rid = group;
+		(*info)[i].user_sid = sid2;
+		(*info)[i].group_sid = group_sid;
 		i++;
 	}
 
@@ -296,6 +297,7 @@ static NTSTATUS enum_local_groups(struct winbindd_domain *domain,
 
 /* convert a single name to a sid in a domain */
 static NTSTATUS name_to_sid(struct winbindd_domain *domain,
+			    TALLOC_CTX *mem_ctx,
 			    const char *name,
 			    DOM_SID *sid,
 			    enum SID_NAME_USE *type)
@@ -328,13 +330,13 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 }
 
 
-/* convert a DN to a name, rid and name type 
+/* convert a DN to a name, SID and name type 
    this might become a major speed bottleneck if groups have
    lots of users, in which case we could cache the results
 */
 static BOOL dn_lookup(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
 		      const char *dn,
-		      char **name, uint32 *name_type, uint32 *rid)
+		      char **name, uint32 *name_type, DOM_SID *sid)
 {
 	char *exp;
 	void *res = NULL;
@@ -342,7 +344,6 @@ static BOOL dn_lookup(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
 			       "objectSid", "sAMAccountType", NULL};
 	ADS_STATUS rc;
 	uint32 atype;
-	DOM_SID sid;
 	char *escaped_dn = escape_ldap_string_alloc(dn);
 
 	if (!escaped_dn) {
@@ -365,8 +366,7 @@ static BOOL dn_lookup(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
 	}
 	(*name_type) = ads_atype_map(atype);
 
-	if (!ads_pull_sid(ads, res, "objectSid", &sid) || 
-	    !sid_peek_rid(&sid, rid)) {
+	if (!ads_pull_sid(ads, res, "objectSid", sid)) {
 		goto failed;
 	}
 
@@ -381,60 +381,63 @@ failed:
 /* Lookup user information from a rid */
 static NTSTATUS query_user(struct winbindd_domain *domain, 
 			   TALLOC_CTX *mem_ctx, 
-			   uint32 user_rid, 
+			   DOM_SID *sid, 
 			   WINBIND_USERINFO *info)
 {
 	ADS_STRUCT *ads = NULL;
 	const char *attrs[] = {"userPrincipalName", 
 			       "sAMAccountName",
-			       "name", "objectSid", 
+			       "name", 
 			       "primaryGroupID", NULL};
 	ADS_STATUS rc;
 	int count;
 	void *msg = NULL;
 	char *exp;
-	DOM_SID sid;
 	char *sidstr;
+	uint32 group_rid;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	DOM_SID *sid2;
+	fstring sid_string;
 
 	DEBUG(3,("ads: query_user\n"));
-
-	sid_from_rid(domain, user_rid, &sid);
 
 	ads = ads_cached_connection(domain);
 	if (!ads) goto done;
 
-	sidstr = sid_binstring(&sid);
+	sidstr = sid_binstring(sid);
 	asprintf(&exp, "(objectSid=%s)", sidstr);
 	rc = ads_search_retry(ads, &msg, exp, attrs);
 	free(exp);
 	free(sidstr);
 	if (!ADS_ERR_OK(rc)) {
-		DEBUG(1,("query_user(rid=%d) ads_search: %s\n", user_rid, ads_errstr(rc)));
+		DEBUG(1,("query_user(sid=%s) ads_search: %s\n", sid_to_string(sid_string, sid), ads_errstr(rc)));
 		goto done;
 	}
 
 	count = ads_count_replies(ads, msg);
 	if (count != 1) {
-		DEBUG(1,("query_user(rid=%d): Not found\n", user_rid));
+		DEBUG(1,("query_user(sid=%s): Not found\n", sid_to_string(sid_string, sid)));
 		goto done;
 	}
 
 	info->acct_name = ads_pull_username(ads, mem_ctx, msg);
 	info->full_name = ads_pull_string(ads, mem_ctx, msg, "name");
-	if (!ads_pull_sid(ads, msg, "objectSid", &sid)) {
-		DEBUG(1,("No sid for %d !?\n", user_rid));
-		goto done;
-	}
-	if (!ads_pull_uint32(ads, msg, "primaryGroupID", &info->group_rid)) {
-		DEBUG(1,("No primary group for %d !?\n", user_rid));
+
+	if (!ads_pull_uint32(ads, msg, "primaryGroupID", &group_rid)) {
+		DEBUG(1,("No primary group for %s !?\n", sid_to_string(sid_string, sid)));
 		goto done;
 	}
 	
-	if (!sid_peek_check_rid(&domain->sid,&sid, &info->user_rid)) {
-		DEBUG(1,("No rid for %d !?\n", user_rid));
+	sid2 = talloc(mem_ctx, sizeof(*sid2));
+	if (!sid2) {
+		status = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
+	sid_copy(sid2, sid);
+	
+	info->user_sid = sid2;
+
+	info->group_sid = rid_to_talloced_sid(domain, mem_ctx, group_rid);
 
 	status = NT_STATUS_OK;
 
@@ -445,12 +448,91 @@ done:
 	return status;
 }
 
+/* Lookup groups a user is a member of - alternate method, for when
+   tokenGroups are not available. */
+static NTSTATUS lookup_usergroups_alt(struct winbindd_domain *domain,
+				      TALLOC_CTX *mem_ctx,
+				      const char *user_dn, 
+				      DOM_SID *primary_group,
+				      uint32 *num_groups, DOM_SID ***user_gids)
+{
+	ADS_STATUS rc;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	int count;
+	void *res = NULL;
+	void *msg = NULL;
+	char *exp;
+	ADS_STRUCT *ads;
+	const char *group_attrs[] = {"objectSid", NULL};
+
+	ads = ads_cached_connection(domain);
+	if (!ads) goto done;
+
+	/* buggy server, no tokenGroups.  Instead lookup what groups this user
+	   is a member of by DN search on member*/
+	if (asprintf(&exp, "(&(member=%s)(objectClass=group))", user_dn) == -1) {
+		DEBUG(1,("lookup_usergroups(dn=%s) asprintf failed!\n", user_dn));
+		return NT_STATUS_NO_MEMORY;
+	}
+	
+	rc = ads_search_retry(ads, &res, exp, group_attrs);
+	free(exp);
+	
+	if (!ADS_ERR_OK(rc)) {
+		DEBUG(1,("lookup_usergroups ads_search member=%s: %s\n", user_dn, ads_errstr(rc)));
+		return ads_ntstatus(rc);
+	}
+	
+	count = ads_count_replies(ads, res);
+	if (count == 0) {
+		DEBUG(5,("lookup_usergroups: No supp groups found\n"));
+		
+		status = ads_ntstatus(rc);
+		goto done;
+	}
+	
+	(*user_gids) = talloc_zero(mem_ctx, sizeof(**user_gids) * (count + 1));
+	(*user_gids)[0] = primary_group;
+	
+	*num_groups = 1;
+	
+	for (msg = ads_first_entry(ads, res); msg; msg = ads_next_entry(ads, msg)) {
+		DOM_SID group_sid;
+		
+		if (!ads_pull_sid(ads, msg, "objectSid", &group_sid)) {
+			DEBUG(1,("No sid for this group ?!?\n"));
+			continue;
+		}
+		
+		if (sid_equal(&group_sid, primary_group)) continue;
+		
+		(*user_gids)[*num_groups] = talloc(mem_ctx, sizeof(***user_gids));
+		if (!(*user_gids)[*num_groups]) {
+			status = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
+
+		sid_copy((*user_gids)[*num_groups], &group_sid);
+
+		(*num_groups)++;
+			
+	}
+
+	status = NT_STATUS_OK;
+
+	DEBUG(3,("ads lookup_usergroups (alt) for dn=%s\n", user_dn));
+done:
+	if (res) ads_msgfree(ads, res);
+	if (msg) ads_msgfree(ads, msg);
+
+	return status;
+}
 
 /* Lookup groups a user is a member of. */
 static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 				  TALLOC_CTX *mem_ctx,
-				  uint32 user_rid, 
-				  uint32 *num_groups, uint32 **user_gids)
+				  DOM_SID *sid, 
+				  uint32 *num_groups, DOM_SID ***user_gids)
 {
 	ADS_STRUCT *ads = NULL;
 	const char *attrs[] = {"distinguishedName", NULL};
@@ -462,63 +544,94 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	char *user_dn;
 	DOM_SID *sids;
 	int i;
-	uint32 primary_group;
-	DOM_SID sid;
+	DOM_SID *primary_group;
+	uint32 primary_group_rid;
 	char *sidstr;
+	fstring sid_string;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 
-	*num_groups = 0;
-
 	DEBUG(3,("ads: lookup_usergroups\n"));
-
-	(*num_groups) = 0;
-
-	sid_from_rid(domain, user_rid, &sid);
+	*num_groups = 0;
 
 	ads = ads_cached_connection(domain);
 	if (!ads) goto done;
 
-	sidstr = sid_binstring(&sid);
-	asprintf(&exp, "(objectSid=%s)", sidstr);
+	if (!(sidstr = sid_binstring(sid))) {
+		DEBUG(1,("lookup_usergroups(sid=%s) sid_binstring returned NULL\n", sid_to_string(sid_string, sid)));
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+	if (asprintf(&exp, "(objectSid=%s)", sidstr) == -1) {
+		free(sidstr);
+		DEBUG(1,("lookup_usergroups(sid=%s) asprintf failed!\n", sid_to_string(sid_string, sid)));
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
 	rc = ads_search_retry(ads, &msg, exp, attrs);
 	free(exp);
 	free(sidstr);
+
 	if (!ADS_ERR_OK(rc)) {
-		DEBUG(1,("lookup_usergroups(rid=%d) ads_search: %s\n", user_rid, ads_errstr(rc)));
+		DEBUG(1,("lookup_usergroups(sid=%s) ads_search: %s\n", sid_to_string(sid_string, sid), ads_errstr(rc)));
 		goto done;
 	}
 
 	user_dn = ads_pull_string(ads, mem_ctx, msg, "distinguishedName");
+	if (!user_dn) {
+		DEBUG(1,("lookup_usergroups(sid=%s) ads_search did not return a a distinguishedName!\n", sid_to_string(sid_string, sid)));
+		if (msg) ads_msgfree(ads, msg);
+		goto done;
+	}
 
 	if (msg) ads_msgfree(ads, msg);
 
 	rc = ads_search_retry_dn(ads, &msg, user_dn, attrs2);
 	if (!ADS_ERR_OK(rc)) {
-		DEBUG(1,("lookup_usergroups(rid=%d) ads_search tokenGroups: %s\n", user_rid, ads_errstr(rc)));
+		DEBUG(1,("lookup_usergroups(sid=%s) ads_search tokenGroups: %s\n", sid_to_string(sid_string, sid), ads_errstr(rc)));
 		goto done;
 	}
 
-	if (!ads_pull_uint32(ads, msg, "primaryGroupID", &primary_group)) {
-		DEBUG(1,("%s: No primary group for rid=%d !?\n", domain->name, user_rid));
+	if (!ads_pull_uint32(ads, msg, "primaryGroupID", &primary_group_rid)) {
+		DEBUG(1,("%s: No primary group for sid=%s !?\n", domain->name, sid_to_string(sid_string, sid)));
 		goto done;
 	}
 
-	count = ads_pull_sids(ads, mem_ctx, msg, "tokenGroups", &sids) + 1;
-	(*user_gids) = (uint32 *)talloc_zero(mem_ctx, sizeof(uint32) * count);
-	(*user_gids)[(*num_groups)++] = primary_group;
+	primary_group = rid_to_talloced_sid(domain, mem_ctx, primary_group_rid);
 
-	for (i=1;i<count;i++) {
-		uint32 rid;
-		if (!sid_peek_check_rid(&domain->sid, &sids[i-1], &rid)) continue;
-		(*user_gids)[*num_groups] = rid;
+	count = ads_pull_sids(ads, mem_ctx, msg, "tokenGroups", &sids);
+
+	if (msg) ads_msgfree(ads, msg);
+
+	/* there must always be at least one group in the token, 
+	   unless we are talking to a buggy Win2k server */
+	if (count == 0) {
+		return lookup_usergroups_alt(domain, mem_ctx, user_dn, 
+					     primary_group,
+					     num_groups, user_gids);
+	}
+
+	(*user_gids) = talloc_zero(mem_ctx, sizeof(**user_gids) * (count + 1));
+	(*user_gids)[0] = primary_group;
+	
+	*num_groups = 1;
+	
+	for (i=0;i<count;i++) {
+		if (sid_equal(&sids[i], primary_group)) continue;
+		
+		(*user_gids)[*num_groups] = talloc(mem_ctx, sizeof(***user_gids));
+		if (!(*user_gids)[*num_groups]) {
+			status = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
+
+		sid_copy((*user_gids)[*num_groups], &sids[i]);
 		(*num_groups)++;
 	}
 
 	status = NT_STATUS_OK;
-	DEBUG(3,("ads lookup_usergroups for rid=%d\n", user_rid));
+	DEBUG(3,("ads lookup_usergroups for sid=%s\n", sid_to_string(sid_string, sid)));
 done:
-	if (msg) ads_msgfree(ads, msg);
-
 	return status;
 }
 
@@ -527,11 +640,10 @@ done:
  */
 static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 				TALLOC_CTX *mem_ctx,
-				uint32 group_rid, uint32 *num_names, 
-				uint32 **rid_mem, char ***names, 
+				DOM_SID *group_sid, uint32 *num_names, 
+				DOM_SID ***sid_mem, char ***names, 
 				uint32 **name_types)
 {
-	DOM_SID group_sid;
 	ADS_STATUS rc;
 	int count;
 	void *res=NULL;
@@ -542,14 +654,14 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	const char *attrs[] = {"member", NULL};
 	char **members;
 	int i, num_members;
+	fstring sid_string;
 
 	*num_names = 0;
 
 	ads = ads_cached_connection(domain);
 	if (!ads) goto done;
 
-	sid_from_rid(domain, group_rid, &group_sid);
-	sidstr = sid_binstring(&group_sid);
+	sidstr = sid_binstring(group_sid);
 
 	/* search for all members of the group */
 	asprintf(&exp, "(objectSid=%s)",sidstr);
@@ -581,24 +693,30 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	for (i=0;members[i];i++) /* noop */ ;
 	num_members = i;
 
-	(*rid_mem) = talloc_zero(mem_ctx, sizeof(uint32) * num_members);
-	(*name_types) = talloc_zero(mem_ctx, sizeof(uint32) * num_members);
-	(*names) = talloc_zero(mem_ctx, sizeof(char *) * num_members);
+	(*sid_mem) = talloc_zero(mem_ctx, sizeof(**sid_mem) * num_members);
+	(*name_types) = talloc_zero(mem_ctx, sizeof(**name_types) * num_members);
+	(*names) = talloc_zero(mem_ctx, sizeof(**names) * num_members);
 
 	for (i=0;i<num_members;i++) {
-		uint32 name_type, rid;
+		uint32 name_type;
 		char *name;
+		DOM_SID sid;
 
-		if (dn_lookup(ads, mem_ctx, members[i], &name, &name_type, &rid)) {
+		if (dn_lookup(ads, mem_ctx, members[i], &name, &name_type, &sid)) {
 		    (*names)[*num_names] = name;
 		    (*name_types)[*num_names] = name_type;
-		    (*rid_mem)[*num_names] = rid;
+		    (*sid_mem)[*num_names] = talloc(mem_ctx, sizeof(***sid_mem));
+		    if (!(*sid_mem)[*num_names]) {
+			    status = NT_STATUS_NO_MEMORY;
+			    goto done;
+		    }
+		    sid_copy((*sid_mem)[*num_names], &sid);
 		    (*num_names)++;
 		}
 	}	
 
 	status = NT_STATUS_OK;
-	DEBUG(3,("ads lookup_groupmem for rid=%d\n", group_rid));
+	DEBUG(3,("ads lookup_groupmem for sid=%s\n", sid_to_string(sid_string, group_sid)));
 done:
 	if (res) ads_msgfree(ads, res);
 

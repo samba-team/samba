@@ -179,7 +179,7 @@ void rescan_trusted_domains(BOOL force)
 		int i;
 
 		result = domain->methods->trusted_domains(domain, mem_ctx, &num_domains,
-							  &names, &alt_names, &dom_sids);
+		                                          &names, &alt_names, &dom_sids);
 		if (!NT_STATUS_IS_OK(result)) {
 			continue;
 		}
@@ -188,9 +188,12 @@ void rescan_trusted_domains(BOOL force)
 		   the access methods of its parent */
 		for(i = 0; i < num_domains; i++) {
 			DEBUG(10,("Found domain %s\n", names[i]));
-			add_trusted_domain(names[i], 
-					   alt_names?alt_names[i]:NULL, 
-					   domain->methods, &dom_sids[i]);
+			add_trusted_domain(names[i], alt_names?alt_names[i]:NULL,
+			                   domain->methods, &dom_sids[i]);
+			
+			/* store trusted domain in the cache */
+			trustdom_cache_store(names[i], alt_names ? alt_names[i] : NULL,
+			                     &dom_sids[i], t + WINBINDD_RESCAN_FREQ);
 		}
 	}
 
@@ -268,14 +271,20 @@ BOOL winbindd_lookup_sid_by_name(struct winbindd_domain *domain,
 				 enum SID_NAME_USE *type)
 {
 	NTSTATUS result;
-        
+        TALLOC_CTX *mem_ctx;
 	/* Don't bother with machine accounts */
-        
+
 	if (name[strlen(name) - 1] == '$')
 		return False;
 
+	mem_ctx = talloc_init("lookup_sid_by_name for %s\n", name);
+	if (!mem_ctx) 
+		return False;
+        
 	/* Lookup name */
-	result = domain->methods->name_to_sid(domain, name, sid, type);
+	result = domain->methods->name_to_sid(domain, mem_ctx, name, sid, type);
+
+	talloc_destroy(mem_ctx);
         
 	/* Return rid and type if lookup successful */
 	if (!NT_STATUS_IS_OK(result)) {
@@ -549,3 +558,20 @@ int winbindd_num_clients(void)
 {
 	return _num_clients;
 }
+
+/* Help with RID -> SID conversion */
+
+DOM_SID *rid_to_talloced_sid(struct winbindd_domain *domain,
+				    TALLOC_CTX *mem_ctx,
+				    uint32 rid) 
+{
+	DOM_SID *sid;
+	sid = talloc(mem_ctx, sizeof(*sid));
+	if (!sid) {
+		smb_panic("rid_to_to_talloced_sid: talloc for DOM_SID failed!\n");
+	}
+	sid_copy(sid, &domain->sid);
+	sid_append_rid(sid, rid);
+	return sid;
+}
+	
