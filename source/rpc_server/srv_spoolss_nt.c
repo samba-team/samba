@@ -882,7 +882,7 @@ uint32 _spoolss_getprinterdata(POLICY_HND *handle, UNISTR2 *valuename,
 	}
 	
 	if (*needed > *out_size)
-		return ERROR_INSUFFICIENT_BUFFER;
+		return ERROR_MORE_DATA;
 	else
 		return NT_STATUS_NO_PROBLEMO;
 }
@@ -2919,7 +2919,7 @@ uint32 _spoolss_startdocprinter(POLICY_HND *handle, uint32 level,
 	 */
 	
 	if (info_1->p_datatype != 0) {
-		unistr2_to_ascii(datatype, &info_1->docname, sizeof(datatype));
+		unistr2_to_ascii(datatype, &info_1->datatype, sizeof(datatype));
 		if (strcmp(datatype, "RAW") != 0) {
 			(*jobid)=0;
 			return ERROR_INVALID_DATATYPE;
@@ -4525,7 +4525,25 @@ uint32 _spoolss_enumprinterdata(POLICY_HND *handle, uint32 idx,
 	 */
 	if ( (in_value_len==0) && (in_data_len==0) ) {
 		DEBUGADD(6,("Activating NT mega-hack to find sizes\n"));
-		
+
+		/*
+		 * NT can ask for a specific parameter size - we need to return NO_MORE_ITEMS
+		 * if this parameter size doesn't exist.
+		 * Ok - my opinion here is that the client is not asking for the greatest
+		 * possible size of all the parameters, but is asking specifically for the size needed
+		 * for this specific parameter. In that case we can remove the loop below and
+		 * simplify this lookup code considerably. JF - comments welcome. JRA.
+		 */
+
+		if (!get_specific_param_by_index(*printer, 2, idx, value, &data, &type, &data_len)) {
+			safe_free(data);
+			free_a_printer(&printer, 2);
+			return ERROR_NO_MORE_ITEMS;
+		}
+
+		safe_free(data);
+		data = NULL;
+
 		param_index=0;
 		biggest_valuesize=0;
 		biggest_datasize=0;
@@ -4537,7 +4555,20 @@ uint32 _spoolss_enumprinterdata(POLICY_HND *handle, uint32 idx,
 			DEBUG(6,("current values: [%d], [%d]\n", biggest_valuesize, biggest_datasize));
 
 			safe_free(data);
+			data = NULL;
 			param_index++;
+		}
+
+		/*
+		 * I think this is correct, it doesn't break APW and
+		 * allows Gerald's Win32 test programs to work correctly,
+		 * but may need altering.... JRA.
+		 */
+
+		if (param_index == 0) {
+			/* No parameters found. */
+			free_a_printer(&printer, 2);
+			return ERROR_NO_MORE_ITEMS;
 		}
 
 		/* the value is an UNICODE string but realvaluesize is the length in bytes including the leading 0 */
