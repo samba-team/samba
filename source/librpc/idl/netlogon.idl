@@ -612,7 +612,7 @@ interface netlogon
 		uint8 computer_name[16];
 		uint32 timecreated;
 		uint32 serial_number;
-	} UAS_INFO_0;
+	} netr_UAS_INFO_0;
 
 	typedef struct {
 		[flag(NDR_REMAINING)] DATA_BLOB blob;
@@ -623,36 +623,36 @@ interface netlogon
 		[in]     unistr computername,
 		[in]     netr_Authenticator credential,
 		[in,out] netr_Authenticator return_authenticator,
-		[in]     UAS_INFO_0 uas,
+		[in]     netr_UAS_INFO_0 uas,
 		[in]     uint32 count,
 		[in]     uint32 level,
 		[in]     uint32 buffersize,
 		[out,subcontext(4)] netr_AccountBuffer buffer,
 		[out]    uint32 count_returned,
 		[out]    uint32 total_entries,
-		[out]    UAS_INFO_0 recordid
+		[out]    netr_UAS_INFO_0 recordid
 		);
 
-#if 0
 
 	/*****************/
 	/* Function 0x0A */
 
 	NTSTATUS netr_AccountSync(
-		[in][string] wchar_t *logonserver,
-		[in][string][ref] wchar_t *computername,
-		[in][ref] AUTHENTICATOR credential,
-		[in][out][ref] AUTHENTICATOR return_authenticator,
-		[out][ref][size_is(count_returned)] uint8 *Buffer,
-		[out][ref] uint32 count_returned,
-		[out][ref] uint32 total_entries,
-		[out][ref] uint32 next_reference,
-		[in][long] reference,
-		[in][long] level,
-		[in][long] buffersize,
-		[in][out][ref] UAS_INFO_0 recordid,
+		[in]      unistr *logonserver,
+		[in]      unistr computername,
+		[in]      netr_Authenticator credential,
+		[in,out]  netr_Authenticator return_authenticator,
+		[in]      uint32 reference,
+		[in]      uint32 level,
+		[in]      uint32 buffersize,
+		[out,subcontext(4)] netr_AccountBuffer buffer,
+		[out]     uint32 count_returned,
+		[out]     uint32 total_entries,
+		[out]     uint32 next_reference,
+		[in,out]  netr_UAS_INFO_0 recordid
 		);
 
+#if 0
 
 	/*****************/
 	/* Function 0x0B */
