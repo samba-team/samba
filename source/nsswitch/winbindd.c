@@ -4,7 +4,7 @@
 
    Winbind daemon for ntdom nss module
 
-   Copyright (C) Tim Potter 2000
+   Copyright (C) by Tim Potter 2000, 2001
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -610,6 +610,18 @@ static void process_loop(int accept_sock)
 					/* Read data */
                     
 					client_read(state);
+
+#if 0
+					/* If we have the start of a
+					 * packet, then check the
+					 * length field to make sure
+					 * the client's not talking
+					 * Mock Swedish. */
+					if (state->read_buf_len >= sizeof(int)
+					    && *(int *) state->buf != sizeof(state->request)) {
+						BORK_BORK_BORK();
+					}
+#endif
                     
 					/* A request packet might be 
 					   complete */
