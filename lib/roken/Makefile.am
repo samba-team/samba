@@ -29,7 +29,6 @@ libroken_a_SOURCES =				\
 	roken_gethostby.c			\
 	signal.c				\
 	snprintf.c				\
-	strcasecmp.c				\
 	verify.c				\
 	warnerr.c
 
