@@ -411,13 +411,13 @@ BOOL make_samr_q_open_domain(SAMR_Q_OPEN_DOMAIN *q_u,
 				const DOM_SID *sid);
 BOOL samr_io_q_open_domain(char *desc,  SAMR_Q_OPEN_DOMAIN *q_u, prs_struct *ps, int depth);
 BOOL samr_io_r_open_domain(char *desc,  SAMR_R_OPEN_DOMAIN *r_u, prs_struct *ps, int depth);
-BOOL make_samr_q_unknown_2c(SAMR_Q_UNKNOWN_2C *q_u, POLICY_HND *user_pol);
-BOOL samr_io_q_unknown_2c(char *desc,  SAMR_Q_UNKNOWN_2C *q_u, prs_struct *ps, int depth);
-BOOL make_samr_r_unknown_2c(SAMR_R_UNKNOWN_2C *q_u, uint32 status);
-BOOL samr_io_r_unknown_2c(char *desc,  SAMR_R_UNKNOWN_2C *r_u, prs_struct *ps, int depth);
-BOOL make_samr_q_unknown_3(SAMR_Q_UNKNOWN_3 *q_u,
+BOOL make_samr_q_get_usrdom_pwinfo(SAMR_Q_GET_USRDOM_PWINFO *q_u, POLICY_HND *user_pol);
+BOOL samr_io_q_get_usrdom_pwinfo(char *desc,  SAMR_Q_GET_USRDOM_PWINFO *q_u, prs_struct *ps, int depth);
+BOOL make_samr_r_get_usrdom_pwinfo(SAMR_R_GET_USRDOM_PWINFO *q_u, uint32 status);
+BOOL samr_io_r_get_usrdom_pwinfo(char *desc,  SAMR_R_GET_USRDOM_PWINFO *r_u, prs_struct *ps, int depth);
+BOOL make_samr_q_query_sec_obj(SAMR_Q_QUERY_SEC_OBJ *q_u,
 				POLICY_HND *user_pol, uint16 switch_value);
-BOOL samr_io_q_unknown_3(char *desc,  SAMR_Q_UNKNOWN_3 *q_u, prs_struct *ps, int depth);
+BOOL samr_io_q_query_sec_obj(char *desc,  SAMR_Q_QUERY_SEC_OBJ *q_u, prs_struct *ps, int depth);
 BOOL make_samr_q_query_dom_info(SAMR_Q_QUERY_DOMAIN_INFO *q_u,
 				POLICY_HND *domain_pol, uint16 switch_value);
 BOOL samr_io_q_query_dom_info(char *desc,  SAMR_Q_QUERY_DOMAIN_INFO *q_u, prs_struct *ps, int depth);
@@ -435,7 +435,7 @@ BOOL make_sam_sid_stuff(SAM_SID_STUFF *stf,
 				uint16 unknown_2, uint16 unknown_3,
 				uint32 unknown_4, uint16 unknown_6, uint16 unknown_7,
 				int num_sid3s);
-BOOL samr_io_r_unknown_3(char *desc,  SAMR_R_UNKNOWN_3 *r_u, prs_struct *ps, int depth);
+BOOL samr_io_r_query_sec_obj(char *desc,  SAMR_R_QUERY_SEC_OBJ *r_u, prs_struct *ps, int depth);
 BOOL make_sam_entry(SAM_ENTRY *sam, uint32 len_sam_name, uint32 rid);
 BOOL make_samr_q_enum_dom_users(SAMR_Q_ENUM_DOM_USERS *q_e, POLICY_HND *pol,
 				uint32 start_idx, 
@@ -808,9 +808,9 @@ BOOL samr_io_r_connect(char *desc,  SAMR_R_CONNECT *r_u, prs_struct *ps, int dep
 BOOL make_samr_q_connect_anon(SAMR_Q_CONNECT_ANON *q_u);
 BOOL samr_io_q_connect_anon(char *desc,  SAMR_Q_CONNECT_ANON *q_u, prs_struct *ps, int depth);
 BOOL samr_io_r_connect_anon(char *desc,  SAMR_R_CONNECT_ANON *r_u, prs_struct *ps, int depth);
-BOOL make_samr_q_unknown_38(SAMR_Q_UNKNOWN_38 *q_u, const char *srv_name);
-BOOL samr_io_q_unknown_38(char *desc,  SAMR_Q_UNKNOWN_38 *q_u, prs_struct *ps, int depth);
-BOOL samr_io_r_unknown_38(char *desc,  SAMR_R_UNKNOWN_38 *r_u, prs_struct *ps, int depth);
+BOOL make_samr_q_get_dom_pwinfo(SAMR_Q_GET_DOM_PWINFO *q_u, const char *srv_name);
+BOOL samr_io_q_get_dom_pwinfo(char *desc,  SAMR_Q_GET_DOM_PWINFO *q_u, prs_struct *ps, int depth);
+BOOL samr_io_r_get_dom_pwinfo(char *desc,  SAMR_R_GET_DOM_PWINFO *r_u, prs_struct *ps, int depth);
 BOOL make_enc_passwd(SAMR_ENC_PASSWD *pwd, const char pass[512]);
 BOOL samr_io_enc_passwd(char *desc, SAMR_ENC_PASSWD *pwd, prs_struct *ps, int depth);
 BOOL make_enc_hash(SAMR_ENC_HASH *hsh, const uchar hash[16]);

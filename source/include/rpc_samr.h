@@ -356,43 +356,43 @@ typedef struct r_samr_close_hnd_info
 
 
 /****************************************************************************
-SAMR_Q_UNKNOWN_2C - a "set user info" occurs just after this
+SAMR_Q_GET_USRDOM_PWINFO - a "set user info" occurs just after this
 *****************************************************************************/
 
-/* SAMR_Q_UNKNOWN_2C */
-typedef struct q_samr_unknown_2c_info
+/* SAMR_Q_GET_USRDOM_PWINFO */
+typedef struct q_samr_usrdom_pwinfo_info
 {
 	POLICY_HND user_pol;          /* policy handle */
 
-} SAMR_Q_UNKNOWN_2C;
+} SAMR_Q_GET_USRDOM_PWINFO;
 
 
 /****************************************************************************
-SAMR_R_UNKNOWN_2C - a "set user info" occurs just after this
+SAMR_R_GET_USRDOM_PWINFO - a "set user info" occurs just after this
 *****************************************************************************/
 
-/* SAMR_R_UNKNOWN_2C */
-typedef struct r_samr_unknown_2c_info
+/* SAMR_R_GET_USRDOM_PWINFO */
+typedef struct r_samr_usrdom_pwinfo_info
 {
 	uint32 unknown_0; /* 0x0016 0000 */
 	uint32 unknown_1; /* 0x0000 0000 */
 	uint32 status; 
 
-} SAMR_R_UNKNOWN_2C;
+} SAMR_R_GET_USRDOM_PWINFO;
 
 
 /****************************************************************************
-SAMR_Q_UNKNOWN_3 - info level 4.  returns SIDs.
+SAMR_Q_QUERY_SEC_OBJ - info level 4.  returns SIDs.
 *****************************************************************************/
 
-/* SAMR_Q_UNKNOWN_3 - probably get domain info... */
-typedef struct q_samr_unknown_3_info
+/* SAMR_Q_QUERY_SEC_OBJ - probably get domain info... */
+typedef struct q_samr_query_sec_obj_info
 {
 	POLICY_HND user_pol;          /* policy handle */
 	uint16 switch_value;     /* 0x0000 0004 */
 	/* uint8 pad[2] */
 
-} SAMR_Q_UNKNOWN_3;
+} SAMR_Q_QUERY_SEC_OBJ;
 
 /* DOM_SID3 example:
    0x14 0x035b 0x0002 S-1-1
@@ -442,8 +442,8 @@ typedef struct sid_stuff_info
 
 } SAM_SID_STUFF;
 
-/* SAMR_R_UNKNOWN_3 - probably an open */
-typedef struct r_samr_unknown_3_info
+/* SAMR_R_QUERY_SEC_OBJ - probably an open */
+typedef struct r_samr_query_sec_obj_info
 {
 	uint32 ptr_0;
 	uint32 sid_stuff_len0;
@@ -455,7 +455,7 @@ typedef struct r_samr_unknown_3_info
 
 	uint32 status;         /* return status */
 
-} SAMR_R_UNKNOWN_3;
+} SAMR_R_QUERY_SEC_OBJ;
 
 
 /****************************************************************************
@@ -1621,24 +1621,24 @@ typedef struct r_samr_connect_info
 
 } SAMR_R_CONNECT;
 
-/* SAMR_Q_UNKNOWN_38 */
-typedef struct q_samr_unknown_38
+/* SAMR_Q_GET_DOM_PWINFO */
+typedef struct q_samr_get_dom_pwinfo
 {
 	uint32 ptr; 
 	UNIHDR  hdr_srv_name;
 	UNISTR2 uni_srv_name;
 
-} SAMR_Q_UNKNOWN_38;
+} SAMR_Q_GET_DOM_PWINFO;
 
-/* SAMR_R_UNKNOWN_38 */
-typedef struct r_samr_unknown_38
+/* SAMR_R_GET_DOM_PWINFO */
+typedef struct r_samr_get_dom_pwinfo
 {
 	uint16 unk_0;
 	uint16 unk_1;
 	uint16 unk_2;
 	uint32 status;
 
-} SAMR_R_UNKNOWN_38;
+} SAMR_R_GET_DOM_PWINFO;
 
 /* SAMR_ENC_PASSWD */
 typedef struct enc_passwd_info

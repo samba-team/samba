@@ -95,12 +95,12 @@ BOOL samr_chgpasswd_user( struct cli_connection *con,
 /****************************************************************************
 do a SAMR unknown 0x38 command
 ****************************************************************************/
-BOOL samr_unknown_38(struct cli_connection *con, const char *srv_name)
+BOOL samr_get_dom_pwinfo(struct cli_connection *con, const char *srv_name)
 {
 	prs_struct data;
 	prs_struct rdata;
 
-	SAMR_Q_UNKNOWN_38 q_e;
+	SAMR_Q_GET_DOM_PWINFO q_e;
 	BOOL valid_un8 = False;
 
 	/* create and send a MSRPC command with api SAMR_ENUM_DOM_USERS */
@@ -108,27 +108,27 @@ BOOL samr_unknown_38(struct cli_connection *con, const char *srv_name)
 	prs_init(&data , 0, 4, False);
 	prs_init(&rdata, 0, 4, True );
 
-	DEBUG(4,("SAMR Unknown 38 server:%s\n", srv_name));
+	DEBUG(4,("SAMR Query Domain Password Info server:%s\n", srv_name));
 
-	make_samr_q_unknown_38(&q_e, srv_name);
+	make_samr_q_get_dom_pwinfo(&q_e, srv_name);
 
 	/* turn parameters into data stream */
-	samr_io_q_unknown_38("", &q_e, &data, 0);
+	samr_io_q_get_dom_pwinfo("", &q_e, &data, 0);
 
 	/* send the data on \PIPE\ */
 	if (rpc_con_pipe_req(con, SAMR_GET_DOM_PWINFO, &data, &rdata))
 	{
-		SAMR_R_UNKNOWN_38 r_e;
+		SAMR_R_GET_DOM_PWINFO r_e;
 		BOOL p;
 
-		samr_io_r_unknown_38("", &r_e, &rdata, 0);
+		samr_io_r_get_dom_pwinfo("", &r_e, &rdata, 0);
 
 		p = rdata.offset != 0;
 #if 0
 		if (p && r_e.status != 0)
 		{
 			/* report error code */
-			DEBUG(4,("SAMR_R_UNKNOWN_38: %s\n", get_nt_error_msg(r_e.status)));
+			DEBUG(4,("SAMR_R_GET_DOM_PWINFO: %s\n", get_nt_error_msg(r_e.status)));
 			p = False;
 		}
 #endif

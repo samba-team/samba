@@ -200,9 +200,9 @@ static BOOL tdb_set_userinfo_23(TDB_CONTEXT *tdb, uint32 rid,
 }
 
 /*******************************************************************
- samr_reply_unknown_2c
+ samr_reply_get_usrdom_pwinfo
  ********************************************************************/
-uint32 _samr_unknown_2c(const POLICY_HND *user_pol,
+uint32 _samr_get_usrdom_pwinfo(const POLICY_HND *user_pol,
 				uint32 *unknown_0,
 				uint32 *unknown_1)
 {
@@ -218,15 +218,15 @@ uint32 _samr_unknown_2c(const POLICY_HND *user_pol,
 	*unknown_0 = 0x00150000;
 	*unknown_1 = 0x00000000;
 
-	DEBUG(5,("samr_unknown_2c: %d\n", __LINE__));
+	DEBUG(5,("samr_get_usrdom_pwinfo: %d\n", __LINE__));
 
 	return 0x0;
 }
 
 /*******************************************************************
- samr_reply_unknown_3
+ samr_reply_query_sec_obj
  ********************************************************************/
-uint32 _samr_unknown_3(const POLICY_HND *user_pol, SAM_SID_STUFF *sid_stuff)
+uint32 _samr_query_sec_obj(const POLICY_HND *user_pol, SAM_SID_STUFF *sid_stuff)
 {
 	uint32 rid;
 	DOM_SID usr_sid;
@@ -251,7 +251,7 @@ uint32 _samr_unknown_3(const POLICY_HND *user_pol, SAM_SID_STUFF *sid_stuff)
 				0x00000014, 0x0002, 0x0070,
 				2);
 
-	DEBUG(5,("samr_unknown_3: %d\n", __LINE__));
+	DEBUG(5,("samr_query_sec_obj: %d\n", __LINE__));
 
 	return 0x0;
 }

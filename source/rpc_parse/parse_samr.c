@@ -235,11 +235,11 @@ BOOL samr_io_r_open_domain(char *desc,  SAMR_R_OPEN_DOMAIN *r_u, prs_struct *ps,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL make_samr_q_unknown_2c(SAMR_Q_UNKNOWN_2C *q_u, POLICY_HND *user_pol)
+BOOL make_samr_q_get_usrdom_pwinfo(SAMR_Q_GET_USRDOM_PWINFO *q_u, POLICY_HND *user_pol)
 {
 	if (q_u == NULL) return False;
 
-	DEBUG(5,("samr_make_samr_q_unknown_2c\n"));
+	DEBUG(5,("samr_make_samr_q_get_usrdom_pwinfo\n"));
 
 	memcpy(&q_u->user_pol, user_pol, sizeof(q_u->user_pol));
 
@@ -250,11 +250,11 @@ BOOL make_samr_q_unknown_2c(SAMR_Q_UNKNOWN_2C *q_u, POLICY_HND *user_pol)
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL samr_io_q_unknown_2c(char *desc,  SAMR_Q_UNKNOWN_2C *q_u, prs_struct *ps, int depth)
+BOOL samr_io_q_get_usrdom_pwinfo(char *desc,  SAMR_Q_GET_USRDOM_PWINFO *q_u, prs_struct *ps, int depth)
 {
 	if (q_u == NULL) return False;
 
-	prs_debug(ps, depth, desc, "samr_io_q_unknown_2c");
+	prs_debug(ps, depth, desc, "samr_io_q_get_usrdom_pwinfo");
 	depth++;
 
 	prs_align(ps);
@@ -268,11 +268,11 @@ BOOL samr_io_q_unknown_2c(char *desc,  SAMR_Q_UNKNOWN_2C *q_u, prs_struct *ps, i
 /*******************************************************************
 makes a structure.
 ********************************************************************/
-BOOL make_samr_r_unknown_2c(SAMR_R_UNKNOWN_2C *q_u, uint32 status)
+BOOL make_samr_r_get_usrdom_pwinfo(SAMR_R_GET_USRDOM_PWINFO *q_u, uint32 status)
 {
 	if (q_u == NULL) return False;
 
-	DEBUG(5,("samr_make_r_unknown_2c\n"));
+	DEBUG(5,("samr_make_r_get_usrdom_pwinfo\n"));
 
 	q_u->unknown_0 = 0x00150000;
 	q_u->unknown_1 = 0x00000000;
@@ -285,11 +285,11 @@ BOOL make_samr_r_unknown_2c(SAMR_R_UNKNOWN_2C *q_u, uint32 status)
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL samr_io_r_unknown_2c(char *desc,  SAMR_R_UNKNOWN_2C *r_u, prs_struct *ps, int depth)
+BOOL samr_io_r_get_usrdom_pwinfo(char *desc,  SAMR_R_GET_USRDOM_PWINFO *r_u, prs_struct *ps, int depth)
 {
 	if (r_u == NULL) return False;
 
-	prs_debug(ps, depth, desc, "samr_io_r_unknown_2c");
+	prs_debug(ps, depth, desc, "samr_io_r_get_usrdom_pwinfo");
 	depth++;
 
 	prs_align(ps);
@@ -304,12 +304,12 @@ BOOL samr_io_r_unknown_2c(char *desc,  SAMR_R_UNKNOWN_2C *r_u, prs_struct *ps, i
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL make_samr_q_unknown_3(SAMR_Q_UNKNOWN_3 *q_u,
+BOOL make_samr_q_query_sec_obj(SAMR_Q_QUERY_SEC_OBJ *q_u,
 				POLICY_HND *user_pol, uint16 switch_value)
 {
 	if (q_u == NULL) return False;
 
-	DEBUG(5,("samr_make_samr_q_unknown_3\n"));
+	DEBUG(5,("samr_make_samr_q_query_sec_obj\n"));
 
 	memcpy(&q_u->user_pol, user_pol, sizeof(q_u->user_pol));
 	q_u->switch_value = switch_value;
@@ -321,11 +321,11 @@ BOOL make_samr_q_unknown_3(SAMR_Q_UNKNOWN_3 *q_u,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL samr_io_q_unknown_3(char *desc,  SAMR_Q_UNKNOWN_3 *q_u, prs_struct *ps, int depth)
+BOOL samr_io_q_query_sec_obj(char *desc,  SAMR_Q_QUERY_SEC_OBJ *q_u, prs_struct *ps, int depth)
 {
 	if (q_u == NULL) return False;
 
-	prs_debug(ps, depth, desc, "samr_io_q_unknown_3");
+	prs_debug(ps, depth, desc, "samr_io_q_query_sec_obj");
 	depth++;
 
 	prs_align(ps);
@@ -779,7 +779,7 @@ static BOOL sam_io_sid_stuff(char *desc,  SAM_SID_STUFF *stf, prs_struct *ps, in
 }
 
 /*******************************************************************
-reads or writes a SAMR_R_UNKNOWN_3 structure.
+reads or writes a SAMR_R_QUERY_SEC_OBJ structure.
 
 this one's odd, because the daft buggers use a different mechanism
 for writing out the array of sids. they put the number of sids in
@@ -790,7 +790,7 @@ is put at the beginning of the data stream.
 wierd.  
 
 ********************************************************************/
-BOOL samr_io_r_unknown_3(char *desc,  SAMR_R_UNKNOWN_3 *r_u, prs_struct *ps, int depth)
+BOOL samr_io_r_query_sec_obj(char *desc,  SAMR_R_QUERY_SEC_OBJ *r_u, prs_struct *ps, int depth)
 {
 	int ptr_len0=0;
 	int ptr_len1=0;
@@ -798,7 +798,7 @@ BOOL samr_io_r_unknown_3(char *desc,  SAMR_R_UNKNOWN_3 *r_u, prs_struct *ps, int
 
 	if (r_u == NULL) return False;
 
-	prs_debug(ps, depth, desc, "samr_io_r_unknown_3");
+	prs_debug(ps, depth, desc, "samr_io_r_query_sec_obj");
 	depth++;
 
 	prs_align(ps);
@@ -6078,15 +6078,15 @@ BOOL samr_io_r_connect_anon(char *desc,  SAMR_R_CONNECT_ANON *r_u, prs_struct *p
 }
 
 /*******************************************************************
-makes a SAMR_Q_UNKNOWN_38 structure.
+makes a SAMR_Q_GET_DOM_PWINFO structure.
 ********************************************************************/
-BOOL make_samr_q_unknown_38(SAMR_Q_UNKNOWN_38 *q_u, const char *srv_name)
+BOOL make_samr_q_get_dom_pwinfo(SAMR_Q_GET_DOM_PWINFO *q_u, const char *srv_name)
 {
 	int len_srv_name = strlen(srv_name);
 
 	if (q_u == NULL) return False;
 
-	DEBUG(5,("make_samr_q_unknown_38\n"));
+	DEBUG(5,("make_samr_q_get_dom_pwinfo\n"));
 
 	q_u->ptr = 1;
 	make_uni_hdr(&(q_u->hdr_srv_name), len_srv_name);
@@ -6099,11 +6099,11 @@ BOOL make_samr_q_unknown_38(SAMR_Q_UNKNOWN_38 *q_u, const char *srv_name)
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL samr_io_q_unknown_38(char *desc,  SAMR_Q_UNKNOWN_38 *q_u, prs_struct *ps, int depth)
+BOOL samr_io_q_get_dom_pwinfo(char *desc,  SAMR_Q_GET_DOM_PWINFO *q_u, prs_struct *ps, int depth)
 {
 	if (q_u == NULL) return False;
 
-	prs_debug(ps, depth, desc, "samr_io_q_unknown_38");
+	prs_debug(ps, depth, desc, "samr_io_q_get_dom_pwinfo");
 	depth++;
 
 	prs_align(ps);
@@ -6123,11 +6123,11 @@ BOOL samr_io_q_unknown_38(char *desc,  SAMR_Q_UNKNOWN_38 *q_u, prs_struct *ps, i
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL samr_io_r_unknown_38(char *desc,  SAMR_R_UNKNOWN_38 *r_u, prs_struct *ps, int depth)
+BOOL samr_io_r_get_dom_pwinfo(char *desc,  SAMR_R_GET_DOM_PWINFO *r_u, prs_struct *ps, int depth)
 {
 	if (r_u == NULL) return False;
 
-	prs_debug(ps, depth, desc, "samr_io_r_unknown_38");
+	prs_debug(ps, depth, desc, "samr_io_r_get_dom_pwinfo");
 	depth++;
 
 	prs_align(ps);
@@ -6227,7 +6227,7 @@ BOOL samr_io_enc_hash(char *desc, SAMR_ENC_HASH *hsh, prs_struct *ps, int depth)
 }
 
 /*******************************************************************
-makes a SAMR_R_UNKNOWN_38 structure.
+makes a SAMR_R_GET_DOM_PWINFO structure.
 ********************************************************************/
 BOOL make_samr_q_chgpasswd_user(SAMR_Q_CHGPASSWD_USER *q_u,
 				const char *dest_host, const char *user_name,

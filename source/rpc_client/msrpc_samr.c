@@ -1886,7 +1886,7 @@ BOOL msrpc_sam_ntpasswd_set(const char* srv_name, const char *user,
 			     samr_creds != NULL ? &cli_ntlmssp_fns : NULL,
 	                     (void*)samr_creds) : False;
 
-	res1 = res  ? samr_unknown_38(con, srv_name) : False;
+	res1 = res  ? samr_get_dom_pwinfo(con, srv_name) : False;
 	res1 = res1 ? samr_chgpasswd_user(con, srv_name, user,
 	                                   nt_newpass, nt_hshhash,
 	                                   lm_newpass, lm_hshhash) : False;

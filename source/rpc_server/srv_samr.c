@@ -66,35 +66,35 @@ static void api_samr_open_domain( rpcsrv_struct *p, prs_struct *data, prs_struct
 }
 
 /*******************************************************************
- api_samr_unknown_2c
+ api_samr_usrdom_pwinfo
  ********************************************************************/
-static void api_samr_unknown_2c( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
+static void api_samr_get_usrdom_pwinfo( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
 {
-	SAMR_Q_UNKNOWN_2C q_u;
-	SAMR_R_UNKNOWN_2C r_u;
-	samr_io_q_unknown_2c("", &q_u, data, 0);
+	SAMR_Q_GET_USRDOM_PWINFO q_u;
+	SAMR_R_GET_USRDOM_PWINFO r_u;
+	samr_io_q_get_usrdom_pwinfo("", &q_u, data, 0);
 
-	r_u.status = _samr_unknown_2c(&q_u.user_pol,
+	r_u.status = _samr_get_usrdom_pwinfo(&q_u.user_pol,
 	                              &r_u.unknown_0, &r_u.unknown_1);
 
-	samr_io_r_unknown_2c("", &r_u, rdata, 0);
+	samr_io_r_get_usrdom_pwinfo("", &r_u, rdata, 0);
 }
 
 
 /*******************************************************************
- api_samr_unknown_3
+ api_samr_query_sec_obj
  ********************************************************************/
-static void api_samr_unknown_3( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
+static void api_samr_query_sec_obj( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
 {
-	SAMR_Q_UNKNOWN_3 q_u;
-	SAMR_R_UNKNOWN_3 r_u;
+	SAMR_Q_QUERY_SEC_OBJ q_u;
+	SAMR_R_QUERY_SEC_OBJ r_u;
 
 	ZERO_STRUCT(r_u);
 	ZERO_STRUCT(q_u);
 
-	samr_io_q_unknown_3("", &q_u, data, 0);
+	samr_io_q_query_sec_obj("", &q_u, data, 0);
 
-	r_u.status = _samr_unknown_3(&q_u.user_pol, &r_u.sid_stuff);
+	r_u.status = _samr_query_sec_obj(&q_u.user_pol, &r_u.sid_stuff);
 
 	if (r_u.status == 0)
 	{
@@ -102,7 +102,7 @@ static void api_samr_unknown_3( rpcsrv_struct *p, prs_struct *data, prs_struct *
 		r_u.ptr_1 = 1;
 	}
 		
-	samr_io_r_unknown_3("", &r_u, rdata, 0);
+	samr_io_r_query_sec_obj("", &r_u, rdata, 0);
 }
 
 
@@ -575,19 +575,19 @@ static void api_samr_chgpasswd_user( rpcsrv_struct *p, prs_struct *data, prs_str
 
 
 /*******************************************************************
- api_samr_unknown_38
+ api_samr_get_dom_pwinfo
  ********************************************************************/
-static void api_samr_unknown_38( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
+static void api_samr_get_dom_pwinfo( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
 {
-	SAMR_Q_UNKNOWN_38 q_u;
-	SAMR_R_UNKNOWN_38 r_u;
+	SAMR_Q_GET_DOM_PWINFO q_u;
+	SAMR_R_GET_DOM_PWINFO r_u;
 
-	samr_io_q_unknown_38("", &q_u, data, 0);
-	r_u.status = _samr_unknown_38(&q_u.uni_srv_name,
+	samr_io_q_get_dom_pwinfo("", &q_u, data, 0);
+	r_u.status = _samr_get_dom_pwinfo(&q_u.uni_srv_name,
 	                    &r_u.unk_0,
 	                    &r_u.unk_1,
 	                    &r_u.unk_2);
-	samr_io_r_unknown_38("", &r_u, rdata, 0);
+	samr_io_r_get_dom_pwinfo("", &r_u, rdata, 0);
 }
 
 
@@ -940,14 +940,14 @@ static struct api_struct api_samr_cmds [] =
 	{ "SAMR_QUERY_GROUPINFO"  , SAMR_QUERY_GROUPINFO  , api_samr_query_groupinfo  },
 	{ "SAMR_CREATE_USER"      , SAMR_CREATE_USER      , api_samr_create_user      },
 	{ "SAMR_LOOKUP_RIDS"      , SAMR_LOOKUP_RIDS      , api_samr_lookup_rids      },
-	{ "SAMR_GET_DOM_PWINFO"   , SAMR_GET_DOM_PWINFO   , api_samr_unknown_38       },
+	{ "SAMR_GET_DOM_PWINFO"   , SAMR_GET_DOM_PWINFO   , api_samr_get_dom_pwinfo       },
 	{ "SAMR_CHGPASSWD_USER"   , SAMR_CHGPASSWD_USER   , api_samr_chgpasswd_user   },
 	{ "SAMR_OPEN_ALIAS"       , SAMR_OPEN_ALIAS       , api_samr_open_alias       },
 	{ "SAMR_OPEN_GROUP"       , SAMR_OPEN_GROUP       , api_samr_open_group       },
 	{ "SAMR_OPEN_DOMAIN"      , SAMR_OPEN_DOMAIN      , api_samr_open_domain      },
 	{ "SAMR_LOOKUP_DOMAIN"    , SAMR_LOOKUP_DOMAIN    , api_samr_lookup_domain    },
-	{ "SAMR_QUERY_SEC_OBJECT" , SAMR_QUERY_SEC_OBJECT , api_samr_unknown_3        },
-	{ "SAMR_GET_USRDOM_PWINFO", SAMR_GET_USRDOM_PWINFO, api_samr_unknown_2c       },
+	{ "SAMR_QUERY_SEC_OBJECT" , SAMR_QUERY_SEC_OBJECT , api_samr_query_sec_obj    },
+	{ "SAMR_GET_USRDOM_PWINFO", SAMR_GET_USRDOM_PWINFO, api_samr_get_usrdom_pwinfo},
 	{ NULL                    , 0                     , NULL                      }
 };
 

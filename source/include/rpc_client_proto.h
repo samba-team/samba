@@ -295,7 +295,7 @@ BOOL samr_chgpasswd_user( struct cli_connection *con,
 		const char *srv_name, const char *user_name,
 		const char nt_newpass[516], const uchar nt_oldhash[16],
 		const char lm_newpass[516], const uchar lm_oldhash[16]);
-BOOL samr_unknown_38(struct cli_connection *con, const char *srv_name);
+BOOL samr_get_dom_pwinfo(struct cli_connection *con, const char *srv_name);
 BOOL samr_query_dom_info(  POLICY_HND *domain_pol, uint16 switch_value,
 				SAM_UNK_CTR *ctr);
 uint32 samr_enum_domains(  POLICY_HND *pol,
