@@ -308,7 +308,6 @@ void _cleanup_failures( pam_handle_t * pamh, void *fl, int err )
 int _smb_verify_password( pam_handle_t * pamh, SAM_ACCOUNT *sampass,
 			  const char *p, unsigned int ctrl )
 {
-    uchar hash_pass[16];
     uchar lm_pw[16];
     uchar nt_pw[16];
     int retval = PAM_AUTH_ERR;
@@ -375,7 +374,6 @@ int _smb_verify_password( pam_handle_t * pamh, SAM_ACCOUNT *sampass,
         pam_get_item( pamh, PAM_SERVICE, (const void **)&service );
 
         if (data_name != NULL) {
-	    int type;
             struct _pam_failed_auth *new = NULL;
             const struct _pam_failed_auth *old = NULL;
 
@@ -401,7 +399,7 @@ int _smb_verify_password( pam_handle_t * pamh, SAM_ACCOUNT *sampass,
                       service ? service : "**unknown**", name);
                     new->count = 1;
                 }
-		if (!sid_to_uid(pdb_get_user_sid(sampass, &(new->id), &type))) {
+		if (!sid_to_uid(pdb_get_user_sid(sampass), &(new->id))) {
                     _log_err(LOG_NOTICE,
                       "failed auth request by %s for service %s as %s",
                       uidtoname(getuid()),
