@@ -144,7 +144,7 @@ ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T of
 #elif defined(SOLARIS_SENDFILE_API)
 
 /*
- * Solaris sendfile code written by Pierre Belanger <belanger@yahoo.com>.
+ * Solaris sendfile code written by Pierre Belanger <belanger@pobox.com>.
  */
 
 #include <sys/sendfile.h>
@@ -162,14 +162,13 @@ ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T of
 		vec[0].sfv_fd = SFV_FD_SELF;
 		vec[0].sfv_flag = 0;
 		vec[0].sfv_off = header->data;
-		vec[0].sfv_len = header->length;
+		vec[0].sfv_len = hdr_len = header->length;
 
 		vec[1].sfv_fd = fromfd;
 		vec[1].sfv_flag = 0;
 		vec[1].sfv_off = offset;
 		vec[1].sfv_len = count;
 
-		hdr_len = header->length;
 	} else {
 		sfvcnt = 1;
 
