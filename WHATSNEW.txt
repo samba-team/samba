@@ -1,14 +1,13 @@
-              WHATS NEW IN Samba 2.2.3a  - 6th February 2002
+              WHATS NEW IN Samba 2.2.4  - 2nd May 2002
               ==============================================
 
 This is the latest stable release of Samba. This is the version that all
 production Samba servers should be running for all current bug-fixes.
 
-There are several important scaling bugs that have been fixed in this release
-for large server systems so an upgrade is recommended.
+Older release notes for Samba 2.2.x follow.
 
-Change from 2.2.3
------------------
+-----------------------------------------------------------------------------
+The release notes for 2.2.3a follow :
 
 This is a minor bugfix release for the 2.2.3 release. The 2.2.3
 release had a problem that was visible to Windows 2000 Explorer
@@ -25,6 +24,12 @@ corrected.
 
 The cvs.log file is no longer included with this release, as it adds
 13Mb to the size of the release, and is easily available on the Web.
+
+-----------------------------------------------------------------------------
+The release notes for 2.2.3 follow :
+
+There are several important scaling bugs that have been fixed in this release
+for large server systems so an upgrade is recommended.
 
 LDAP update
 -----------
@@ -55,7 +60,7 @@ winbindd and wbinfo.
 
 Note that winbindd is not installed by default.
 
-New/Changed parameters in 2.2.3a
+New/Changed parameters in 2.2.3
 --------------------------------
 
 For more information on these parameters, see the man pages for
@@ -131,16 +136,15 @@ systems to do the nsswitch WINS lookup). Fixed by SGI.
 41). Fix delete on close semantics.
 42). Stop opening all files with O_NONBLOCK !
 43). Use O_NOFOLLOW for systems that have it and don't want symlinks.
-44). Ensure NT suplementary groups get added to user token.
+44). Ensure NT supplementary groups get added to user token.
 45). Try and mitigate effects of DNS timeout (do less lookups).
 46). Added current user connection context stack.
 47). Fixes to utmp code.
 48). smbw code tidyups.
 49). Added tdb open log code. Several tdb fixes.
 
-Older release notes for Samba 2.2.x follow.
-
 -----------------------------------------------------------------------------
+The release notes for 2.2.2 follow :
 
 New daemon included - winbindd
 ------------------------------
@@ -162,7 +166,7 @@ The current version of winbindd shipped in 2.2.2 does have some
 memory leaks, which will be addressed for the next Samba release,
 so it is advisable to monitor the winbind process. This code is
 being used in production by several vendors, so the leaks are
-managable. In addition, this version of winbind does not work
+manageable. In addition, this version of winbind does not work
 correctly against a Samba PDC, due to some missing calls on the
 PDC side. These problems are being addressed for the next Samba
 release, but it was thought better to release the code now rather
@@ -270,7 +274,7 @@ Quota problems on a Linux 2.4 kernel.
 -------------------------------------
 
 Currently the quota interfaces have diverged between the Linus
-2.4.x kernels and the Alan Cox 2.4.x kernels (the Alan Cox varients
+2.4.x kernels and the Alan Cox 2.4.x kernels (the Alan Cox variants
 are shipped with RedHat). Running quota-enabled Samba compiled on
 an Alan Cox kernel works correctly on an Alan Cox kernel (the one
 shipped by default with RedHat 7.x) but fails on a Linus kernel.
@@ -290,7 +294,7 @@ LDAP, NIS+ and Samba TDB.
 5). Quota fixups on Linux.
 6). libsmbclient stand-alone code added. Can be built as a shared library
 under Linux.
-7). Tru64 ACL suppport added.
+7). Tru64 ACL support added.
 8). winbindd option added.
 9). Realloc fail tidyup fixes all over the code.
 10). Large improvement in hash table code efficiency - would be found with
@@ -329,14 +333,12 @@ from other smbd daemons whilst client kept us busy.
 37). Fixes for setting/getting NT ACLs - improved POSIX mapping both ways.
 38). Removed unused readbmpx/writebmpx code.
 39). Attempt to fix Linux 2.4.x quota mess.
-40). Improved ctemp code for Windows 2000 compatibilty.
+40). Improved ctemp code for Windows 2000 compatibility.
 41). Finally understood difference between set EOF and set allocation requests.
 Added strict allocate parameter to help.
 42). Correctly return name types on name to SID lookups.
 43). tdb spinlock code update.
 44). Use pread/pwrite on systems that have it to fix race condition in tdb code.
-
-Older release notes for Samba 2.2.x follow.
 
 -----------------------------------------------------------------------------
 The release notes for 2.2.1a follow :
@@ -381,14 +383,14 @@ as some other Samba code paths.
 
 hide unreadable
 
-Prevents clients from seeing the existance of files that cannot
+Prevents clients from seeing the existence of files that cannot
 be read. Off by default.
 
 enhanced browsing
 
-Turn on/off the enhanced Samba browing functionality (*1B names).
+Turn on/off the enhanced Samba browsing functionality (*1B names).
 Default is "on". Can prevent eternal machines in workgroups when
-WINS servers are not synchronised.
+WINS servers are not synchronized.
 
 Removed parameters.
 -------------------
@@ -419,7 +421,7 @@ Changes in 2.2.1
 14). Prevent invalid '/' characters in workgroup names.
 15). Removed more static arrays in SAMR code.
 16). Client code is now UNICODE on the wire.
-17). Fix 2 second timstamp resolution everywhere if dos timestamp set to yes.
+17). Fix 2 second timestamp resolution everywhere if dos timestamp set to yes.
 18). All tdb opens now going through logging function.
 19). Add pam password changing and pam restrictions code.
 20). Printer driver management improvements (delete driver).
@@ -437,7 +439,7 @@ Changes in 2.2.1
 29). Swat fixes for being run with xinetd that doesn't set the umask.
 30). Fix for slow writes with Win9x Explorer clients. Emulates Microsoft
      TCP stack early ack specification error.
-31). Changed lock & persistant tdb directory to /var/cache/samba by default on
+31). Changed lock & persistent tdb directory to /var/cache/samba by default on
      RedHat and Mandrake as they clear the /var/lock/samba directory on reboot.
 
 -----------------------------------------------------------------------------
@@ -572,7 +574,7 @@ This release contains support for the following filesystems:
 	FreeBSD (with external patch)
 
 Other platforms will be supported as resources are
-available to test and implement the encessary modules. If
+available to test and implement the necessary modules. If
 you are interested in writing the support for a particular
 ACL filesystem, please join the samba-technical mailing
 list and coordinate your efforts. 
@@ -624,13 +626,13 @@ data is disabled. To begin collecting data use the smbcontrol
 program to turn on profiling (see the smbcontrol man page).
 Profile information collection can be enabled for nmbd, all smbd
 processes or one or more selected processes. The profiling
-data collected is the aggragate for all processes that have
+data collected is the aggregate for all processes that have
 profiling enabled.
 
 With samba compiled for profile data collection, you may see
 a very slight degradation in performance even with profiling
 collection turned off. On initial tests with NetBench on an
-SGI Origin 200 server, this degradation was not measureable 
+SGI Origin 200 server, this degradation was not measurable 
 with profile collection off compared to no profile collection
 compiled into samba. 
 
