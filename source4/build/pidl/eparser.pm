@@ -471,6 +471,8 @@ sub RewriteC($$$)
 	# interested in for ehtereal parsers.
 	#
 
+	next, if /^\#include \"includes.h\"/;
+
 	# Remove the NDR_CHECK() macro calls.  Ethereal take care of
 	# this for us as part of the tvbuff_t structure.
 
