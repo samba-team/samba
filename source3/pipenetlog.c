@@ -520,13 +520,15 @@ static void api_lsa_sam_logon( user_struct *vuser,
 		extern pstring myname;
 		uint32 r_uid;
 		uint32 r_gid;
+		UNISTR2 *uni_samlogon_user = &(q_l.sam_id.auth.id1.uni_user_name);
 
 		dummy_time.low  = 0xffffffff;
 		dummy_time.high = 0x7fffffff;
 
 		get_myname(myname, NULL);
 
-		pstrcpy(samlogon_user, unistr2(q_l.sam_id.auth.id1.uni_user_name.buffer));
+		pstrcpy(samlogon_user, unistrn2(uni_samlogon_user->buffer,
+		                                uni_samlogon_user->uni_str_len));
 
 		DEBUG(3,("SAM Logon. Domain:[%s].  User:[%s]\n",
 		          lp_workgroup(), samlogon_user));
@@ -643,13 +645,13 @@ BOOL api_netlogrpcTNP(int cnum,int uid, char *param,char *data,
 		return True;
 	}
 
-	DEBUG(4,("netlogon TransactNamedPipe op %x\n",hdr.cancel_count));
+	DEBUG(4,("netlogon TransactNamedPipe op %x\n",hdr.reserved));
 
 	if ((vuser = get_valid_user_struct(uid)) == NULL) return False;
 
 	DEBUG(3,("Username of UID %d is %s\n", vuser->uid, vuser->name));
 
-	switch (hdr.cancel_count)
+	switch (hdr.reserved)
 	{
 		case LSA_REQCHAL:
 		{
@@ -693,7 +695,7 @@ BOOL api_netlogrpcTNP(int cnum,int uid, char *param,char *data,
 
 		default:
 		{
-  			DEBUG(4, ("**** netlogon, unknown code: %lx\n", hdr.cancel_count));
+  			DEBUG(4, ("**** netlogon, unknown code: %lx\n", hdr.reserved));
 			break;
 		}
 	}

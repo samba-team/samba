@@ -697,6 +697,7 @@ BOOL send_packet(struct packet_struct *p)
     {
     case NMB_PACKET:
       len = build_nmb(buf,p);
+      debug_nmb_packet(p);
       break;
 
     case DGRAM_PACKET:
