@@ -266,13 +266,6 @@ typedef struct data_blob {
 #include "smb_interfaces.h"
 #include "librpc/ndr/libndr.h"
 
-typedef struct userdom_struct {
-	fstring smb_name; /* user name from the client */
-	fstring unix_name; /* unix user name of a validated user */
-	fstring full_name; /* to store full name (such as "Joe Bloggs") from gecos field of password file */
-	fstring domain; /* domain that the client specified */
-} userdom_struct;
-
 
 /* used for server information: client, nameserv and ipc */
 struct server_info_struct

@@ -26,8 +26,6 @@
 
 BOOL global_machine_password_needs_changing = False;
 
-extern userdom_struct current_user_info;
-
 
 /*
   resolve the name of a DC in ways appropriate for an ADS domain mode
