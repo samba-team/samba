@@ -320,6 +320,11 @@ static NTSTATUS ldapsam_delete_entry(struct ldapsam_privates *ldap_state,
 		   really exist. */
 
 		for (attrib = attrs; *attrib != NULL; attrib++) {
+			/* Don't delete LDAP_ATTR_MOD_TIMESTAMP attribute. */
+			if (strequal(*attrib, get_userattr_key2string(ldap_state->schema_ver,
+						LDAP_ATTR_MOD_TIMESTAMP))) {
+				continue;
+			}
 			if (strequal(*attrib, name)) {
 				DEBUG(10, ("ldapsam_delete_entry: deleting "
 					   "attribute %s\n", name));
