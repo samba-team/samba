@@ -51,7 +51,8 @@
 /* Changed to version 7 to include the get_nt_acl info parameter. JRA. */
 /* Changed to version 8 includes EA calls. JRA. */
 /* Changed to version 9 to include the get_shadow_data call. --metze */
-#define SMB_VFS_INTERFACE_VERSION 9
+/* Changed to version 10 to include pread/pwrite calls. */
+#define SMB_VFS_INTERFACE_VERSION 10
 
 
 /* to bug old modules witch are trying to compile with the old functions */
@@ -107,7 +108,9 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_OPEN,
 	SMB_VFS_OP_CLOSE,
 	SMB_VFS_OP_READ,
+	SMB_VFS_OP_PREAD,
 	SMB_VFS_OP_WRITE,
+	SMB_VFS_OP_PWRITE,
 	SMB_VFS_OP_LSEEK,
 	SMB_VFS_OP_SENDFILE,
 	SMB_VFS_OP_RENAME,
@@ -213,7 +216,9 @@ struct vfs_ops {
 		int (*open)(struct vfs_handle_struct *handle, struct connection_struct *conn, const char *fname, int flags, mode_t mode);
 		int (*close)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd);
 		ssize_t (*read)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, void *data, size_t n);
+		ssize_t (*pread)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, void *data, size_t n, SMB_OFF_T offset);
 		ssize_t (*write)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, const void *data, size_t n);
+		ssize_t (*pwrite)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, const void *data, size_t n, SMB_OFF_T offset);
 		SMB_OFF_T (*lseek)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, SMB_OFF_T offset, int whence);
 		ssize_t (*sendfile)(struct vfs_handle_struct *handle, int tofd, files_struct *fsp, int fromfd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count);
 		int (*rename)(struct vfs_handle_struct *handle, struct connection_struct *conn, const char *old, const char *new);
@@ -311,7 +316,9 @@ struct vfs_ops {
 		struct vfs_handle_struct *open;
 		struct vfs_handle_struct *close;
 		struct vfs_handle_struct *read;
+		struct vfs_handle_struct *pread;
 		struct vfs_handle_struct *write;
+		struct vfs_handle_struct *pwrite;
 		struct vfs_handle_struct *lseek;
 		struct vfs_handle_struct *sendfile;
 		struct vfs_handle_struct *rename;

@@ -111,9 +111,19 @@ static ssize_t skel_read(vfs_handle_struct *handle, files_struct *fsp, int fd, v
 	return vfswrap_read(NULL, fsp, fd, data, n);
 }
 
+static ssize_t skel_pread(vfs_handle_struct *handle, struct files_struct *fsp, int fd, void *data, size_t n, SMB_OFF_T offset)
+{
+	return vfswrap_pread(NULL, fsp, fd, data, n, offset);
+}
+
 static ssize_t skel_write(vfs_handle_struct *handle, files_struct *fsp, int fd, const void *data, size_t n)
 {
 	return vfswrap_write(NULL, fsp, fd, data, n);
+}
+
+ssize_t skel_pwrite(vfs_handle_struct *handle, struct files_struct *fsp, int fd, const void *data, size_t n, SMB_OFF_T offset)
+{
+	return vfswrap_pwrite(NULL, fsp, fd, data, n, offset);
 }
 
 static SMB_OFF_T skel_lseek(vfs_handle_struct *handle, files_struct *fsp, int filedes, SMB_OFF_T offset, int whence)
@@ -488,7 +498,9 @@ static vfs_op_tuple skel_op_tuples[] = {
 	{SMB_VFS_OP(skel_open),				SMB_VFS_OP_OPEN,		SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(skel_close),			SMB_VFS_OP_CLOSE,		SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(skel_read),				SMB_VFS_OP_READ,		SMB_VFS_LAYER_OPAQUE},
+	{SMB_VFS_OP(skel_pread),			SMB_VFS_OP_PREAD,		SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(skel_write),			SMB_VFS_OP_WRITE,		SMB_VFS_LAYER_OPAQUE},
+	{SMB_VFS_OP(skel_pwrite),			SMB_VFS_OP_PWRITE,		SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(skel_lseek),			SMB_VFS_OP_LSEEK,		SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(skel_rename),			SMB_VFS_OP_RENAME,		SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(skel_fsync),			SMB_VFS_OP_FSYNC,		SMB_VFS_LAYER_OPAQUE},
