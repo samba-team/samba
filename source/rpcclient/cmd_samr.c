@@ -161,9 +161,9 @@ static void display_sam_unk_info_2(SAM_UNK_INFO_2 *info2)
 	printf("Total Aliases:\t%d\n", info2->num_local_grps);
 	
 	printf("Sequence No:\t%d\n", info2->seq_num.low);
-	
-	printf("Unknown 0:\t0x%x\n", info2->unknown_0);
-	printf("Unknown 1:\t0x%x\n", info2->unknown_1);
+
+	printf("Force Logoff:\t%d\n", (int)nt_time_to_unix_abs(&info2->logout));
+
 	printf("Unknown 4:\t0x%x\n", info2->unknown_4);
 	printf("Unknown 5:\t0x%x\n", info2->unknown_5);
 	printf("Unknown 6:\t0x%x\n", info2->unknown_6);

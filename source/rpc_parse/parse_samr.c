@@ -697,10 +697,10 @@ inits a structure.
 
 void init_unk_info2(SAM_UNK_INFO_2 * u_2,
 			const char *comment, const char *domain, const char *server,
-			uint32 seq_num, uint32 num_users, uint32 num_groups, uint32 num_alias)
+			uint32 seq_num, uint32 num_users, uint32 num_groups, uint32 num_alias, NTTIME nt_logout)
 {
-	u_2->unknown_0 = 0x00000000;
-	u_2->unknown_1 = 0x80000000;
+	u_2->logout.low = nt_logout.low;
+	u_2->logout.high = nt_logout.high;
 
 	u_2->seq_num.low = seq_num;
 	u_2->seq_num.high = 0x00000000;
@@ -736,9 +736,7 @@ static BOOL sam_io_unk_info2(const char *desc, SAM_UNK_INFO_2 * u_2,
 	prs_debug(ps, depth, desc, "sam_io_unk_info2");
 	depth++;
 
-	if(!prs_uint32("unknown_0", ps, depth, &u_2->unknown_0)) /* 0x0000 0000 */
-		return False;
-	if(!prs_uint32("unknown_1", ps, depth, &u_2->unknown_1)) /* 0x8000 0000 */
+	if(!smb_io_time("logout", &u_2->logout, ps, depth))
 		return False;
 	if(!smb_io_unihdr("hdr_comment", &u_2->hdr_comment, ps, depth))
 		return False;
