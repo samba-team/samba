@@ -1900,3 +1900,44 @@ BOOL lsa_io_r_enum_sids(char *desc, LSA_R_ENUM_SIDS *r_q,
 
 	return True;
 }
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+BOOL lsa_io_q_open_trusted_dom(char *desc, LSA_Q_OPEN_TRUSTED_DOM * q_o,
+			       prs_struct *ps, int depth)
+{
+	if (q_o == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "lsa_io_q_open_trusted_dom");
+	depth++;
+
+	if(!smb_io_pol_hnd("", &q_o->hnd, ps, depth))
+		return False;
+
+	if(!smb_io_dom_sid2("trusted sid", &q_o->sid, ps, depth))
+		return False;
+
+	prs_align(ps);
+	prs_uint32("des_access", ps, depth, &(q_o->des_access));
+
+	return True;
+}
+
+BOOL lsa_io_r_open_trusted_dom(char *desc, LSA_R_OPEN_TRUSTED_DOM * r_p,
+			       prs_struct *ps, int depth)
+{
+	if (r_p == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "lsa_io_r_open_trusted_dom");
+	depth++;
+
+	if(!smb_io_pol_hnd("", &r_p->hnd, ps, depth))
+		return False;
+
+	prs_uint32("status", ps, depth, &r_p->status);
+
+	return True;
+}

@@ -188,6 +188,10 @@ BOOL lsa_io_r_priv_get_dispname(char *desc, LSA_R_PRIV_GET_DISPNAME * r_q,
 				prs_struct *ps, int depth);
 BOOL lsa_io_r_enum_sids(char *desc, LSA_R_ENUM_SIDS *r_q,
 			prs_struct *ps, int depth);
+BOOL lsa_io_q_open_trusted_dom(char *desc, LSA_Q_OPEN_TRUSTED_DOM * q_o,
+			       prs_struct *ps, int depth);
+BOOL lsa_io_r_open_trusted_dom(char *desc, LSA_R_OPEN_TRUSTED_DOM * r_p,
+			       prs_struct *ps, int depth);
 
 /*The following definitions come from  rpc_parse/parse_netsec.c  */
 

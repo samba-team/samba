@@ -30,6 +30,8 @@
 #include "nterr.h"
 #include "sids.h"
 
+#define POL_TYPE_LSA_TRUST_SID  2
+
 #if 0
 /****************************************************************************
  set secret tdb database
@@ -136,6 +138,46 @@ static BOOL get_tdbsecname(struct policy_cache *cache, const POLICY_HND * hnd,
 	return False;
 }
 
+/****************************************************************************
+****************************************************************************/
+static BOOL set_lsa_trust_sid(struct policy_cache *cache, POLICY_HND *hnd,
+			      const DOM_SID *sid)
+{
+	DOM_SID *dev = sid_dup(sid);
+
+	if (dev == NULL)
+	{
+		DEBUG(1, ("set_lsa_trust_sid: NULL-sid\n"));
+		return False;
+	}
+	if (set_policy_state(cache, hnd, NULL, dev))
+	{
+		fstring tmp;
+		DEBUG(3, ("Policy set sid=%s\n", sid_to_string(tmp, sid)));
+		policy_hnd_set_state_type(cache, hnd,
+					  POL_TYPE_LSA_TRUST_SID);
+		return True;
+	}
+	free(dev);
+	return False;
+}
+
+/****************************************************************************
+****************************************************************************/
+static const DOM_SID *get_lsa_trust_sid(struct policy_cache *cache,
+					const POLICY_HND *hnd)
+{
+	if (!policy_hnd_check_state_type(cache, hnd, POL_TYPE_LSA_TRUST_SID))
+	{
+		DEBUG(1, ("WARNING: get_lsa_trust_sid: "
+			  "handle has wrong type!\n"));
+		return NULL;
+	}
+
+	return get_policy_state_info(cache, hnd);
+}
+
+
 /***************************************************************************
 lsa_reply_open_policy2
  ***************************************************************************/
@@ -185,18 +227,57 @@ uint32 _lsa_open_policy(const UNISTR2 * server_name, POLICY_HND * hnd,
 /***************************************************************************
 _lsa_enum_trust_dom
  ***************************************************************************/
-uint32 _lsa_enum_trust_dom(POLICY_HND * hnd, uint32 * enum_ctx,
-			   uint32 * num_doms, UNISTR2 ** uni_names,
-			   DOM_SID *** sids)
+uint32 _lsa_enum_trust_dom(POLICY_HND * hnd, uint32 *enum_ctx,
+			   uint32 *ret_num_doms, UNISTR2 **uni_names,
+			   DOM_SID ***sids)
 {
+	char **doms = NULL;
+	uint32 num_doms = 0, i;
+
 	/* Should send on something good */
 
-	*enum_ctx = 0;
-	*num_doms = 0;
-	*uni_names = NULL;
+	if (enum_ctx==NULL || ret_num_doms==NULL || uni_names==NULL
+	    || sids==NULL)
+		return NT_STATUS_INVALID_PARAMETER;
+
+	enumtrustdoms(&doms, &num_doms);
+
+	if (*enum_ctx != 0 || num_doms == 0)
+	{
+		*enum_ctx = 0;
+		*ret_num_doms = 0;
+		*uni_names = NULL;
+		*sids = NULL;
+		return 0x8000001a;
+	}
+
+	*ret_num_doms = 0;
 	*sids = NULL;
 
-	return 0x80000000 | NT_STATUS_UNABLE_TO_FREE_VM;
+	*uni_names = g_new(UNISTR2, num_doms);
+
+	for (i = 0; i < num_doms; i++)
+	{
+		const DOM_SID *dom_sid;
+		dom_sid = map_wk_name_to_sid(doms[i], NULL, NULL);
+
+		if (dom_sid == NULL)
+		{
+			DEBUG(2, ("WARNING: _lsa_enum_trust_dom: SID for "
+				  "trusted domain %s not found\n", doms[i]));
+			continue;
+		}
+
+		strupper(doms[i]);
+		unistr2_assign_ascii_str(&((*uni_names)[i]), doms[i]);
+		add_sid_to_array(ret_num_doms, sids, dom_sid);
+	}
+
+	*enum_ctx = *ret_num_doms;
+
+	free_char_array(num_doms, doms);
+
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /***************************************************************************
@@ -748,11 +829,11 @@ uint32 _lsa_open_secret(const POLICY_HND * hnd,
 	tdb = open_secret_db(O_RDWR);
 	if (tdb == NULL)
 	{
-		DEBUG(0,
-		      ("_lsa_open_secret: couldn't open secret_db. Possible attack?"));
-		DEBUG(0,
-		      ("\nuid=%d, gid=%d, euid=%d, egid=%d\n", (int)getuid(),
-		       (int)getgid(), (int)geteuid(), (int)getegid()));
+		DEBUG(0, ("WARNING: _lsa_open_secret: "
+			  "couldn't open secret_db. Possible attack?\n"));
+		DEBUGADD(0, ("uid=%d, gid=%d, euid=%d, egid=%d\n",
+			     (int)getuid(), (int)getgid(),
+			     (int)geteuid(), (int)getegid()));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -884,3 +965,48 @@ uint32 _lsa_priv_get_dispname(const POLICY_HND *hnd,
 	return NT_STATUS_NOPROBLEMO;
 }
 
+uint32 _lsa_open_trusted_dom(const POLICY_HND *hnd, const DOM_SID *sid,
+			     uint32 des_access, POLICY_HND *hnd_dom)
+{
+	if (hnd == NULL || sid == NULL || hnd_dom == NULL)
+		return NT_STATUS_INVALID_PARAMETER;
+
+	if (find_policy_by_hnd(get_global_hnd_cache(), hnd) == -1)
+	{
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	/* get a (unique) handle.  open a policy on it. */
+	if (!open_policy_hnd_link(get_global_hnd_cache(),
+				  hnd, hnd_dom, des_access))
+	{
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	policy_hnd_set_name(get_global_hnd_cache(),
+			    hnd_dom, "trusted domain (open)");
+
+	if (!set_lsa_trust_sid(get_global_hnd_cache(), hnd_dom, sid))
+	{
+		close_policy_hnd(get_global_hnd_cache(), hnd_dom);
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	return NT_STATUS_NOPROBLEMO;
+}
+
+uint32 _lsa_delete_object(POLICY_HND *hnd)
+{
+	if (hnd == NULL)
+		return NT_STATUS_INVALID_PARAMETER;
+
+	/*
+	 * Just for the fun of it, we close the handle and
+	 * fake the delete. ;-)
+	 */
+	if (!close_policy_hnd(get_global_hnd_cache(), hnd))
+	{
+		return NT_STATUS_INVALID_HANDLE;
+	}
+	return NT_STATUS_NOPROBLEMO;
+}

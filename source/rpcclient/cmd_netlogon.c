@@ -216,7 +216,7 @@ void cmd_netlogon_pwset(struct client_info *info, int argc, char *argv[])
 /****************************************************************************
 experimental nt trusted domain list.
 ****************************************************************************/
-void cmd_netlogon_dom_list(struct client_info *info, int argc, char *argv[])
+uint32 cmd_netlogon_dom_list(struct client_info *info, int argc, char *argv[])
 {
 	uint32 status;
 	fstring domains;
@@ -238,8 +238,10 @@ void cmd_netlogon_dom_list(struct client_info *info, int argc, char *argv[])
 		ZERO_STRUCT(domains);
 	}
 
-	report(out_hnd, "cmd_nt_login: login (%s) test succeeded: %s\n",
-	       domains, BOOLSTR(status == 0x0));
+	report(out_hnd, "trusted_dom_list: (%s) succeeded: %s\n",
+	       domains, get_nt_error_msg(status));
+
+	return status;
 }
 
 /****************************************************************************

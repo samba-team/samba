@@ -1019,9 +1019,9 @@ uint32 _lsa_open_policy2(const UNISTR2 * server_name, POLICY_HND * hnd,
 			 const LSA_OBJ_ATTR * attr, uint32 des_access);
 uint32 _lsa_open_policy(const UNISTR2 * server_name, POLICY_HND * hnd,
 			const LSA_OBJ_ATTR * attr, uint32 des_access);
-uint32 _lsa_enum_trust_dom(POLICY_HND * hnd, uint32 * enum_ctx,
-			   uint32 * num_doms, UNISTR2 ** uni_names,
-			   DOM_SID *** sids);
+uint32 _lsa_enum_trust_dom(POLICY_HND * hnd, uint32 *enum_ctx,
+			   uint32 *ret_num_doms, UNISTR2 **uni_names,
+			   DOM_SID ***sids);
 uint32 _lsa_lookup_names(const POLICY_HND * pol,
 			 uint32 num_entries, const UNISTR2 * name,
 			 DOM_R_REF * ref, DOM_RID2 ** ret_rid2,
@@ -1052,6 +1052,9 @@ uint32 _lsa_priv_get_dispname(const POLICY_HND *hnd,
 			      const UNISTR2 *name,
 			      uint16 lang_id, uint16 lang_id_sys,
 			      UNISTR2 **desc, uint16 *ret_lang_id);
+uint32 _lsa_open_trusted_dom(const POLICY_HND *hnd, const DOM_SID *sid,
+			     uint32 des_access, POLICY_HND *hnd_dom);
+uint32 _lsa_delete_object(POLICY_HND *hnd);
 
 /*The following definitions come from  msdfs/msdfs.c  */
 
@@ -2213,7 +2216,7 @@ uint32 cmd_lsa_enum_sids(struct client_info *info, int argc, char *argv[]);
 /*The following definitions come from  rpcclient/cmd_netlogon.c  */
 
 void cmd_netlogon_pwset(struct client_info *info, int argc, char *argv[]);
-void cmd_netlogon_dom_list(struct client_info *info, int argc, char *argv[]);
+uint32 cmd_netlogon_dom_list(struct client_info *info, int argc, char *argv[]);
 void cmd_netlogon_login_test(struct client_info *info, int argc, char *argv[]);
 uint32 cmd_netlogon_domain_test(struct client_info *info,
 				int argc, char *argv[]);

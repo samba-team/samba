@@ -132,39 +132,6 @@ BOOL cli_send_smb(struct cli_state *cli);
 void cli_setup_packet(struct cli_state *cli);
 void cli_safe_smb_errstr(struct cli_state *cli, char *msg, size_t len);
 void cli_safe_errstr(struct cli_state *cli, char *err_msg, size_t msglen);
-BOOL cli_api_pipe(struct cli_state *cli, char *pipe_name, int pipe_name_len,
-                  uint16 *setup, uint32 setup_count, uint32 max_setup_count,
-                  char *params, uint32 param_count, uint32 max_param_count,
-                  char *data, uint32 data_count, uint32 max_data_count,
-                  char **rparam, uint32 *rparam_count,
-                  char **rdata, uint32 *rdata_count);
-BOOL cli_api(struct cli_state *cli,
-	     char *param, int prcnt, int mprcnt,
-	     char *data, int drcnt, int mdrcnt,
-	     char **rparam, int *rprcnt,
-	     char **rdata, int *rdrcnt);
-BOOL cli_NetWkstaUserLogon(struct cli_state *cli,char *user, char *workstation);
-int cli_RNetShareEnum(struct cli_state *cli, void (*fn)(const char *, uint32, const char *));
-BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
-		       void (*fn)(const char *, uint32, const char *));
-size_t cli_read_one(struct cli_state *cli, int fnum, char *buf, off_t offset, size_t size);
-size_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_t size, BOOL overlap);
-ssize_t cli_write(struct cli_state *cli,
-		  int fnum, uint16 write_mode,
-		  char *buf, off_t offset, size_t size, size_t bytes_left);
-BOOL cli_qpathinfo(struct cli_state *cli, const char *fname, 
-		   time_t *c_time, time_t *a_time, time_t *m_time, 
-		   size_t *size, uint16 *mode);
-BOOL cli_qpathinfo2(struct cli_state *cli, const char *fname, 
-		    time_t *c_time, time_t *a_time, time_t *m_time, 
-		    time_t *w_time, size_t *size, uint16 *mode,
-		    SMB_INO_T *ino);
-BOOL cli_qfileinfo(struct cli_state *cli, int fnum, 
-		   uint16 *mode, size_t *size,
-		   time_t *c_time, time_t *a_time, time_t *m_time, 
-		   time_t *w_time, SMB_INO_T *ino);
-BOOL cli_oem_change_password(struct cli_state *cli, const char *user, const char *new_password,
-                             const char *old_password);
 void cli_init_creds(struct cli_state *cli, const struct ntuser_creds *usr);
 struct cli_state *cli_initialise(struct cli_state *cli);
 void cli_close_socket(struct cli_state *cli);
@@ -217,6 +184,45 @@ BOOL cli_message_end(struct cli_state *cli, int grp);
 int cli_print_queue(struct cli_state *cli, 
 		    void (*fn)(struct print_job_info *));
 int cli_printjob_del(struct cli_state *cli, int job);
+
+/*The following definitions come from  libsmb/clirap.c  */
+
+BOOL cli_api_pipe(struct cli_state *cli, char *pipe_name, int pipe_name_len,
+                  uint16 *setup, uint32 setup_count, uint32 max_setup_count,
+                  char *params, uint32 param_count, uint32 max_param_count,
+                  char *data, uint32 data_count, uint32 max_data_count,
+                  char **rparam, uint32 *rparam_count,
+                  char **rdata, uint32 *rdata_count);
+BOOL cli_api(struct cli_state *cli,
+	     char *param, int prcnt, int mprcnt,
+	     char *data, int drcnt, int mdrcnt,
+	     char **rparam, int *rprcnt,
+	     char **rdata, int *rdrcnt);
+BOOL cli_NetWkstaUserLogon(struct cli_state *cli,char *user, char *workstation);
+int cli_RNetShareEnum(struct cli_state *cli, void (*fn)(const char *, uint32, const char *));
+BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
+		       void (*fn)(const char *, uint32, const char *));
+BOOL cli_oem_change_password(struct cli_state *cli, const char *user, const char *new_password,
+                             const char *old_password);
+BOOL cli_qpathinfo(struct cli_state *cli, const char *fname, 
+		   time_t *c_time, time_t *a_time, time_t *m_time, 
+		   size_t *size, uint16 *mode);
+BOOL cli_qpathinfo2(struct cli_state *cli, const char *fname, 
+		    time_t *c_time, time_t *a_time, time_t *m_time, 
+		    time_t *w_time, size_t *size, uint16 *mode,
+		    SMB_INO_T *ino);
+BOOL cli_qfileinfo(struct cli_state *cli, int fnum, 
+		   uint16 *mode, size_t *size,
+		   time_t *c_time, time_t *a_time, time_t *m_time, 
+		   time_t *w_time, SMB_INO_T *ino);
+
+/*The following definitions come from  libsmb/clireadwrite.c  */
+
+size_t cli_read_one(struct cli_state *cli, int fnum, char *buf, off_t offset, size_t size);
+size_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_t size, BOOL overlap);
+ssize_t cli_write(struct cli_state *cli,
+		  int fnum, uint16 write_mode,
+		  char *buf, off_t offset, size_t size, size_t bytes_left);
 
 /*The following definitions come from  libsmb/clitrans.c  */
 

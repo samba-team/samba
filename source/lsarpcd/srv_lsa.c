@@ -163,9 +163,9 @@ static BOOL api_lsa_enum_trust_dom(prs_struct *data, prs_struct *rdata)
 		return False;
 	}
 
-	/* construct reply.  return status is always 0x0 */
+	enum_context = q_e.enum_context;
 
-	status = _lsa_enum_trust_dom(NULL, &enum_context, &num_doms,
+	status = _lsa_enum_trust_dom(&q_e.pol, &enum_context, &num_doms,
 				     &uni_names, &sids);
 
 	make_r_enum_trust_dom(&r_e, enum_context,
@@ -496,6 +496,52 @@ static BOOL api_lsa_priv_get_dispname(prs_struct *data, prs_struct *rdata)
 }
 
 /***************************************************************************
+ api_lsa_open_trusted_dom
+ ***************************************************************************/
+static BOOL api_lsa_open_trusted_dom(prs_struct *data, prs_struct *rdata)
+{
+	LSA_R_OPEN_TRUSTED_DOM r_o;
+	LSA_Q_OPEN_TRUSTED_DOM q_o;
+
+	ZERO_STRUCT(r_o);
+	ZERO_STRUCT(q_o);
+
+	if (!lsa_io_q_open_trusted_dom("", &q_o, data, 0))
+	{
+		return False;
+	}
+
+	r_o.status = _lsa_open_trusted_dom(&q_o.hnd,
+					   &q_o.sid.sid, q_o.des_access,
+					   &r_o.hnd);
+
+	return lsa_io_r_open_trusted_dom("", &r_o, rdata, 0);
+}
+
+/***************************************************************************
+ api_lsa_delete_object
+ ***************************************************************************/
+static BOOL api_lsa_delete_object(prs_struct *data, prs_struct *rdata)
+{
+	LSA_R_CLOSE r_c;
+	LSA_Q_CLOSE q_c;
+
+	ZERO_STRUCT(q_c);
+	ZERO_STRUCT(r_c);
+
+	if (!lsa_io_q_close("lsa_delete_object", &q_c, data, 0))
+	{
+		return False;
+	}
+
+	r_c.pol = q_c.pol;	/* in/out */
+
+	r_c.status = _lsa_delete_object(&r_c.pol);
+
+	return lsa_io_r_close("lsa_delete_object", &r_c, rdata, 0);
+}
+
+/***************************************************************************
  \PIPE\ntlsa commands
  ***************************************************************************/
 static const struct api_struct api_lsa_cmds[] = {
@@ -515,6 +561,9 @@ static const struct api_struct api_lsa_cmds[] = {
 	{"LSA_PRIV_GET_DISPNAME", LSA_PRIV_GET_DISPNAME, api_lsa_priv_get_dispname},
 	{"LSA_ADD_ACC_PRIVS", LSA_ADD_ACC_PRIVS, NULL},
 	{"LSA_REM_ACC_PRIVS", LSA_REM_ACC_PRIVS, NULL},
+	{"LSA_OPEN_TRUSTED_DOM", LSA_OPEN_TRUSTED_DOM, api_lsa_open_trusted_dom},
+	{"LSA_DELETE", LSA_DELETE, NULL},
+	{"LSA_DELETE_OBJECT", LSA_DELETE_OBJECT, api_lsa_delete_object},
 	{NULL, 0, NULL}
 };
 

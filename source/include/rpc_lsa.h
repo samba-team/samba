@@ -89,6 +89,7 @@ enum SID_NAME_USE
 
 /* ntlsa pipe */
 #define LSA_CLOSE              0x00
+#define LSA_DELETE             0x01
 #define LSA_ENUM_PRIVS         0x02
 #define LSA_QUERYSECOBJECT     0x03
 #define LSA_OPENPOLICY         0x06
@@ -99,10 +100,12 @@ enum SID_NAME_USE
 #define LSA_LOOKUPNAMES        0x0e
 #define LSA_LOOKUPSIDS         0x0f
 #define LSA_CREATESECRET       0x10
+#define LSA_OPEN_TRUSTED_DOM   0x19
 #define LSA_OPENSECRET         0x1c
 #define LSA_SETSECRET          0x1d
 #define LSA_QUERYSECRET        0x1e
 #define LSA_PRIV_GET_DISPNAME  0x21
+#define LSA_DELETE_OBJECT      0x22
 #define LSA_ADD_ACC_PRIVS      0x25
 #define LSA_REM_ACC_PRIVS      0x26
 #define LSA_OPENPOLICY2        0x2c
@@ -608,5 +611,20 @@ typedef struct lsa_r_enum_sids
 	uint32 status;
 } LSA_R_ENUM_SIDS;
 
+
+/* LSA_Q_OPEN_TRUSTED_DOM */
+typedef struct lsa_q_open_trusted_dom
+{
+	POLICY_HND hnd;
+	DOM_SID2 sid;
+	uint32 des_access;
+} LSA_Q_OPEN_TRUSTED_DOM;
+
+/* LSA_R_OPEN_TRUSTED_DOM */
+typedef struct lsa_r_open_trusted_dom
+{
+	POLICY_HND hnd;
+	uint32 status;
+} LSA_R_OPEN_TRUSTED_DOM;
 
 #endif /* _RPC_LSA_H */
