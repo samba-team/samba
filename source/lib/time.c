@@ -42,7 +42,19 @@ int extra_time_offset = 0;
 #define TIME_T_MAX (~ (time_t) 0 - TIME_T_MIN)
 #endif
 
+/*******************************************************************
+ External access to time_t_min and time_t_max.
+********************************************************************/
 
+time_t get_time_t_min(void)
+{
+	return TIME_T_MIN;
+}
+
+time_t get_time_t_max(void)
+{
+	return TIME_T_MAX;
+}
 
 /*******************************************************************
 a gettimeofday wrapper
@@ -305,6 +317,12 @@ void unix_to_nt_time(NTTIME *nt, time_t t)
 		nt->high = 0;
 		return;
 	}
+	if (t == TIME_T_MAX)
+	{
+		nt->low = 0xffffffff;
+		nt->high = 0x7fffffff;
+		return;
+	}		
 	if (t == -1)
 	{
 		nt->low = 0xffffffff;

@@ -1240,6 +1240,7 @@ BOOL smb_io_cred(char *desc,  DOM_CRED *cred, prs_struct *ps, int depth)
 
 	if(!smb_io_chal ("", &cred->challenge, ps, depth))
 		return False;
+
 	if(!smb_io_utime("", &cred->timestamp, ps, depth))
 		return False;
 

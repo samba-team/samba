@@ -6,7 +6,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2001-09-25 13:07-0700\n"
+"POT-Creation-Date: 2001-10-01 23:40-0700\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -402,1298 +402,1310 @@ msgstr ""
 msgid "File"
 msgstr ""
 
-#: param/loadparm.c:641
+#: param/loadparm.c:644
 msgid "Base Options"
 msgstr ""
 
-#: param/loadparm.c:643
+#: param/loadparm.c:646
 msgid "dos charset"
 msgstr ""
 
-#: param/loadparm.c:644
+#: param/loadparm.c:647
 msgid "unix charset"
 msgstr ""
 
-#: param/loadparm.c:645
+#: param/loadparm.c:648
 msgid "display charset"
 msgstr ""
 
-#: param/loadparm.c:646
+#: param/loadparm.c:649
 msgid "comment"
 msgstr ""
 
-#: param/loadparm.c:647
+#: param/loadparm.c:650
 msgid "path"
 msgstr ""
 
-#: param/loadparm.c:648
+#: param/loadparm.c:651
 msgid "directory"
 msgstr ""
 
-#: param/loadparm.c:649
+#: param/loadparm.c:652
 msgid "workgroup"
 msgstr ""
 
-#: param/loadparm.c:650
+#: param/loadparm.c:653
 msgid "netbios name"
 msgstr ""
 
-#: param/loadparm.c:651
+#: param/loadparm.c:654
 msgid "netbios aliases"
 msgstr ""
 
-#: param/loadparm.c:652
+#: param/loadparm.c:655
 msgid "netbios scope"
 msgstr ""
 
-#: param/loadparm.c:653
+#: param/loadparm.c:656
 msgid "server string"
 msgstr ""
 
-#: param/loadparm.c:654
+#: param/loadparm.c:657
 msgid "interfaces"
 msgstr ""
 
-#: param/loadparm.c:655
+#: param/loadparm.c:658
 msgid "bind interfaces only"
 msgstr ""
 
-#: param/loadparm.c:657
+#: param/loadparm.c:660
 msgid "Security Options"
 msgstr ""
 
-#: param/loadparm.c:659
+#: param/loadparm.c:662
 msgid "security"
 msgstr ""
 
-#: param/loadparm.c:660
+#: param/loadparm.c:663
 msgid "encrypt passwords"
 msgstr ""
 
-#: param/loadparm.c:661
+#: param/loadparm.c:664
 msgid "update encrypted"
 msgstr ""
 
-#: param/loadparm.c:662
+#: param/loadparm.c:665
 msgid "allow trusted domains"
 msgstr ""
 
-#: param/loadparm.c:663
+#: param/loadparm.c:666
 msgid "alternate permissions"
 msgstr ""
 
-#: param/loadparm.c:664
+#: param/loadparm.c:667
 msgid "hosts equiv"
 msgstr ""
 
-#: param/loadparm.c:665
+#: param/loadparm.c:668
 msgid "min passwd length"
 msgstr ""
 
-#: param/loadparm.c:666
+#: param/loadparm.c:669
 msgid "min password length"
 msgstr ""
 
-#: param/loadparm.c:667
+#: param/loadparm.c:670
 msgid "map to guest"
 msgstr ""
 
-#: param/loadparm.c:668
+#: param/loadparm.c:671
 msgid "null passwords"
 msgstr ""
 
-#: param/loadparm.c:669
+#: param/loadparm.c:672
 msgid "obey pam restrictions"
 msgstr ""
 
-#: param/loadparm.c:670
+#: param/loadparm.c:673
 msgid "password server"
 msgstr ""
 
-#: param/loadparm.c:671
+#: param/loadparm.c:674
 msgid "smb passwd file"
 msgstr ""
 
-#: param/loadparm.c:672
+#: param/loadparm.c:675
 msgid "private dir"
 msgstr ""
 
-#: param/loadparm.c:673
+#: param/loadparm.c:676
 msgid "passdb module path"
 msgstr ""
 
-#: param/loadparm.c:674
+#: param/loadparm.c:677
 msgid "root directory"
 msgstr ""
 
-#: param/loadparm.c:675
+#: param/loadparm.c:678
 msgid "root dir"
 msgstr ""
 
-#: param/loadparm.c:676
+#: param/loadparm.c:679
 msgid "root"
 msgstr ""
 
-#: param/loadparm.c:678
+#: param/loadparm.c:681
 msgid "pam password change"
 msgstr ""
 
-#: param/loadparm.c:679
+#: param/loadparm.c:682
 msgid "passwd program"
 msgstr ""
 
-#: param/loadparm.c:680
+#: param/loadparm.c:683
 msgid "passwd chat"
 msgstr ""
 
-#: param/loadparm.c:681
+#: param/loadparm.c:684
 msgid "passwd chat debug"
 msgstr ""
 
-#: param/loadparm.c:682
+#: param/loadparm.c:685
 msgid "username map"
 msgstr ""
 
-#: param/loadparm.c:683
+#: param/loadparm.c:686
 msgid "password level"
 msgstr ""
 
-#: param/loadparm.c:684
+#: param/loadparm.c:687
 msgid "username level"
 msgstr ""
 
-#: param/loadparm.c:685
+#: param/loadparm.c:688
 msgid "unix password sync"
 msgstr ""
 
-#: param/loadparm.c:686
+#: param/loadparm.c:689
 msgid "restrict anonymous"
 msgstr ""
 
-#: param/loadparm.c:687
+#: param/loadparm.c:690
 msgid "lanman auth"
 msgstr ""
 
-#: param/loadparm.c:688
+#: param/loadparm.c:691
 msgid "ntlm auth"
 msgstr ""
 
-#: param/loadparm.c:689
+#: param/loadparm.c:692
 msgid "plaintext to smbpasswd"
 msgstr ""
 
-#: param/loadparm.c:690
+#: param/loadparm.c:693
 msgid "use rhosts"
 msgstr ""
 
-#: param/loadparm.c:692
+#: param/loadparm.c:695
 msgid "username"
 msgstr ""
 
-#: param/loadparm.c:693
+#: param/loadparm.c:696
 msgid "user"
 msgstr ""
 
-#: param/loadparm.c:694
+#: param/loadparm.c:697
 msgid "users"
 msgstr ""
 
-#: param/loadparm.c:696
+#: param/loadparm.c:699
 msgid "guest account"
 msgstr ""
 
-#: param/loadparm.c:697
+#: param/loadparm.c:700
 msgid "invalid users"
 msgstr ""
 
-#: param/loadparm.c:698
+#: param/loadparm.c:701
 msgid "valid users"
 msgstr ""
 
-#: param/loadparm.c:699
+#: param/loadparm.c:702
 msgid "admin users"
 msgstr ""
 
-#: param/loadparm.c:700
+#: param/loadparm.c:703
 msgid "read list"
 msgstr ""
 
-#: param/loadparm.c:701
+#: param/loadparm.c:704
 msgid "write list"
 msgstr ""
 
-#: param/loadparm.c:702
+#: param/loadparm.c:705
 msgid "printer admin"
 msgstr ""
 
-#: param/loadparm.c:703
+#: param/loadparm.c:706
 msgid "force user"
 msgstr ""
 
-#: param/loadparm.c:704
+#: param/loadparm.c:707
 msgid "force group"
 msgstr ""
 
-#: param/loadparm.c:705
+#: param/loadparm.c:708
 msgid "group"
 msgstr ""
 
-#: param/loadparm.c:707
+#: param/loadparm.c:710
 msgid "read only"
 msgstr ""
 
-#: param/loadparm.c:708
+#: param/loadparm.c:711
 msgid "write ok"
 msgstr ""
 
-#: param/loadparm.c:709
+#: param/loadparm.c:712
 msgid "writeable"
 msgstr ""
 
-#: param/loadparm.c:710
+#: param/loadparm.c:713
 msgid "writable"
 msgstr ""
 
-#: param/loadparm.c:712
+#: param/loadparm.c:715
 msgid "create mask"
 msgstr ""
 
-#: param/loadparm.c:713
+#: param/loadparm.c:716
 msgid "create mode"
 msgstr ""
 
-#: param/loadparm.c:714
+#: param/loadparm.c:717
 msgid "force create mode"
 msgstr ""
 
-#: param/loadparm.c:715
+#: param/loadparm.c:718
 msgid "security mask"
 msgstr ""
 
-#: param/loadparm.c:716
+#: param/loadparm.c:719
 msgid "force security mode"
 msgstr ""
 
-#: param/loadparm.c:717
+#: param/loadparm.c:720
 msgid "directory mask"
 msgstr ""
 
-#: param/loadparm.c:718
+#: param/loadparm.c:721
 msgid "directory mode"
 msgstr ""
 
-#: param/loadparm.c:719
+#: param/loadparm.c:722
 msgid "force directory mode"
 msgstr ""
 
-#: param/loadparm.c:720
+#: param/loadparm.c:723
 msgid "directory security mask"
 msgstr ""
 
-#: param/loadparm.c:721
+#: param/loadparm.c:724
 msgid "force directory security mode"
 msgstr ""
 
-#: param/loadparm.c:722
+#: param/loadparm.c:725
 msgid "inherit permissions"
 msgstr ""
 
-#: param/loadparm.c:723
+#: param/loadparm.c:726
 msgid "guest only"
 msgstr ""
 
-#: param/loadparm.c:724
+#: param/loadparm.c:727
 msgid "only guest"
 msgstr ""
 
-#: param/loadparm.c:726
+#: param/loadparm.c:729
 msgid "guest ok"
 msgstr ""
 
-#: param/loadparm.c:727
+#: param/loadparm.c:730
 msgid "public"
 msgstr ""
 
-#: param/loadparm.c:729
+#: param/loadparm.c:732
 msgid "only user"
 msgstr ""
 
-#: param/loadparm.c:730
+#: param/loadparm.c:733
 msgid "hosts allow"
 msgstr ""
 
-#: param/loadparm.c:731
+#: param/loadparm.c:734
 msgid "allow hosts"
 msgstr ""
 
-#: param/loadparm.c:732
+#: param/loadparm.c:735
 msgid "hosts deny"
 msgstr ""
 
-#: param/loadparm.c:733
+#: param/loadparm.c:736
 msgid "deny hosts"
 msgstr ""
 
-#: param/loadparm.c:736
+#: param/loadparm.c:739
 msgid "Secure Socket Layer Options"
 msgstr ""
 
-#: param/loadparm.c:737
+#: param/loadparm.c:740
 msgid "ssl"
 msgstr ""
 
-#: param/loadparm.c:739
+#: param/loadparm.c:742
 msgid "ssl hosts"
 msgstr ""
 
-#: param/loadparm.c:740
+#: param/loadparm.c:743
 msgid "ssl hosts resign"
 msgstr ""
 
-#: param/loadparm.c:741
+#: param/loadparm.c:744
 msgid "ssl CA certDir"
 msgstr ""
 
-#: param/loadparm.c:742
+#: param/loadparm.c:745
 msgid "ssl CA certFile"
 msgstr ""
 
-#: param/loadparm.c:743
+#: param/loadparm.c:746
 msgid "ssl server cert"
 msgstr ""
 
-#: param/loadparm.c:744
+#: param/loadparm.c:747
 msgid "ssl server key"
 msgstr ""
 
-#: param/loadparm.c:745
+#: param/loadparm.c:748
 msgid "ssl client cert"
 msgstr ""
 
-#: param/loadparm.c:746
+#: param/loadparm.c:749
 msgid "ssl client key"
 msgstr ""
 
-#: param/loadparm.c:747
-msgid "ssl require clientcert"
-msgstr ""
-
-#: param/loadparm.c:748
-msgid "ssl require servercert"
-msgstr ""
-
-#: param/loadparm.c:749
-msgid "ssl ciphers"
-msgstr ""
-
 #: param/loadparm.c:750
-msgid "ssl version"
+msgid "ssl egd socket"
 msgstr ""
 
 #: param/loadparm.c:751
-msgid "ssl compatibility"
+msgid "ssl entropy file"
+msgstr ""
+
+#: param/loadparm.c:752
+msgid "ssl entropy bytes"
+msgstr ""
+
+#: param/loadparm.c:753
+msgid "ssl require clientcert"
 msgstr ""
 
 #: param/loadparm.c:754
-msgid "Logging Options"
+msgid "ssl require servercert"
 msgstr ""
 
 #: param/loadparm.c:755
-msgid "log level"
+msgid "ssl ciphers"
 msgstr ""
 
 #: param/loadparm.c:756
-msgid "debuglevel"
+msgid "ssl version"
 msgstr ""
 
 #: param/loadparm.c:757
-msgid "syslog"
+msgid "ssl compatibility"
 msgstr ""
 
-#: param/loadparm.c:758
-msgid "syslog only"
-msgstr ""
-
-#: param/loadparm.c:759
-msgid "log file"
+#: param/loadparm.c:760
+msgid "Logging Options"
 msgstr ""
 
 #: param/loadparm.c:761
-msgid "max log size"
+msgid "log level"
 msgstr ""
 
 #: param/loadparm.c:762
-msgid "timestamp logs"
+msgid "debuglevel"
 msgstr ""
 
 #: param/loadparm.c:763
-msgid "debug timestamp"
+msgid "syslog"
 msgstr ""
 
 #: param/loadparm.c:764
-msgid "debug hires timestamp"
+msgid "syslog only"
 msgstr ""
 
 #: param/loadparm.c:765
-msgid "debug pid"
+msgid "log file"
 msgstr ""
 
-#: param/loadparm.c:766
-msgid "debug uid"
+#: param/loadparm.c:767
+msgid "max log size"
 msgstr ""
 
 #: param/loadparm.c:768
-msgid "Protocol Options"
+msgid "timestamp logs"
+msgstr ""
+
+#: param/loadparm.c:769
+msgid "debug timestamp"
 msgstr ""
 
 #: param/loadparm.c:770
-msgid "protocol"
+msgid "debug hires timestamp"
 msgstr ""
 
 #: param/loadparm.c:771
-msgid "large readwrite"
+msgid "debug pid"
 msgstr ""
 
 #: param/loadparm.c:772
-msgid "max protocol"
-msgstr ""
-
-#: param/loadparm.c:773
-msgid "min protocol"
+msgid "debug uid"
 msgstr ""
 
 #: param/loadparm.c:774
-msgid "unicode"
-msgstr ""
-
-#: param/loadparm.c:775
-msgid "read bmpx"
+msgid "Protocol Options"
 msgstr ""
 
 #: param/loadparm.c:776
-msgid "read raw"
+msgid "protocol"
 msgstr ""
 
 #: param/loadparm.c:777
-msgid "write raw"
+msgid "large readwrite"
+msgstr ""
+
+#: param/loadparm.c:778
+msgid "max protocol"
 msgstr ""
 
 #: param/loadparm.c:779
-msgid "nt pipe support"
+msgid "min protocol"
 msgstr ""
 
 #: param/loadparm.c:780
-msgid "nt acl support"
+msgid "unicode"
 msgstr ""
 
 #: param/loadparm.c:781
-msgid "announce version"
+msgid "read bmpx"
 msgstr ""
 
 #: param/loadparm.c:782
-msgid "announce as"
+msgid "read raw"
 msgstr ""
 
 #: param/loadparm.c:783
-msgid "max mux"
+msgid "write raw"
 msgstr ""
 
-#: param/loadparm.c:784
-msgid "max xmit"
+#: param/loadparm.c:785
+msgid "nt pipe support"
 msgstr ""
 
 #: param/loadparm.c:786
-msgid "name resolve order"
+msgid "nt acl support"
 msgstr ""
 
 #: param/loadparm.c:787
-msgid "max packet"
+msgid "announce version"
 msgstr ""
 
 #: param/loadparm.c:788
-msgid "packet size"
+msgid "announce as"
 msgstr ""
 
 #: param/loadparm.c:789
-msgid "max ttl"
+msgid "max mux"
 msgstr ""
 
 #: param/loadparm.c:790
-msgid "max wins ttl"
-msgstr ""
-
-#: param/loadparm.c:791
-msgid "min wins ttl"
+msgid "max xmit"
 msgstr ""
 
 #: param/loadparm.c:792
-msgid "time server"
+msgid "name resolve order"
+msgstr ""
+
+#: param/loadparm.c:793
+msgid "max packet"
 msgstr ""
 
 #: param/loadparm.c:794
-msgid "Tuning Options"
+msgid "packet size"
+msgstr ""
+
+#: param/loadparm.c:795
+msgid "max ttl"
 msgstr ""
 
 #: param/loadparm.c:796
-msgid "change notify timeout"
+msgid "max wins ttl"
 msgstr ""
 
 #: param/loadparm.c:797
-msgid "deadtime"
+msgid "min wins ttl"
 msgstr ""
 
 #: param/loadparm.c:798
-msgid "getwd cache"
+msgid "time server"
 msgstr ""
 
-#: param/loadparm.c:799
-msgid "keepalive"
-msgstr ""
-
-#: param/loadparm.c:801
-msgid "lpq cache time"
+#: param/loadparm.c:800
+msgid "Tuning Options"
 msgstr ""
 
 #: param/loadparm.c:802
-msgid "max smbd processes"
+msgid "change notify timeout"
 msgstr ""
 
 #: param/loadparm.c:803
-msgid "max connections"
+msgid "deadtime"
 msgstr ""
 
 #: param/loadparm.c:804
-msgid "paranoid server security"
+msgid "getwd cache"
 msgstr ""
 
 #: param/loadparm.c:805
-msgid "max disk size"
-msgstr ""
-
-#: param/loadparm.c:806
-msgid "max open files"
+msgid "keepalive"
 msgstr ""
 
 #: param/loadparm.c:807
-msgid "min print space"
+msgid "lpq cache time"
 msgstr ""
 
 #: param/loadparm.c:808
-msgid "read size"
+msgid "max smbd processes"
+msgstr ""
+
+#: param/loadparm.c:809
+msgid "max connections"
 msgstr ""
 
 #: param/loadparm.c:810
-msgid "socket options"
+msgid "paranoid server security"
 msgstr ""
 
 #: param/loadparm.c:811
-msgid "stat cache size"
+msgid "max disk size"
 msgstr ""
 
 #: param/loadparm.c:812
-msgid "strict allocate"
+msgid "max open files"
 msgstr ""
 
 #: param/loadparm.c:813
-msgid "strict sync"
+msgid "min print space"
 msgstr ""
 
 #: param/loadparm.c:814
-msgid "sync always"
-msgstr ""
-
-#: param/loadparm.c:815
-msgid "use mmap"
+msgid "read size"
 msgstr ""
 
 #: param/loadparm.c:816
-msgid "hostname lookups"
+msgid "socket options"
 msgstr ""
 
 #: param/loadparm.c:817
-msgid "write cache size"
+msgid "stat cache size"
+msgstr ""
+
+#: param/loadparm.c:818
+msgid "strict allocate"
 msgstr ""
 
 #: param/loadparm.c:819
-msgid "Printing Options"
+msgid "strict sync"
+msgstr ""
+
+#: param/loadparm.c:820
+msgid "sync always"
 msgstr ""
 
 #: param/loadparm.c:821
-msgid "total print jobs"
+msgid "use mmap"
 msgstr ""
 
 #: param/loadparm.c:822
-msgid "max print jobs"
+msgid "hostname lookups"
 msgstr ""
 
 #: param/loadparm.c:823
-msgid "load printers"
-msgstr ""
-
-#: param/loadparm.c:824
-msgid "printcap name"
+msgid "write cache size"
 msgstr ""
 
 #: param/loadparm.c:825
-msgid "printcap"
-msgstr ""
-
-#: param/loadparm.c:826
-msgid "printable"
+msgid "Printing Options"
 msgstr ""
 
 #: param/loadparm.c:827
-msgid "print ok"
+msgid "total print jobs"
 msgstr ""
 
 #: param/loadparm.c:828
-msgid "postscript"
+msgid "max print jobs"
 msgstr ""
 
 #: param/loadparm.c:829
-msgid "printing"
+msgid "load printers"
 msgstr ""
 
 #: param/loadparm.c:830
-msgid "print command"
+msgid "printcap name"
 msgstr ""
 
 #: param/loadparm.c:831
-msgid "disable spoolss"
+msgid "printcap"
 msgstr ""
 
 #: param/loadparm.c:832
-msgid "lpq command"
+msgid "printable"
 msgstr ""
 
 #: param/loadparm.c:833
-msgid "lprm command"
+msgid "print ok"
 msgstr ""
 
 #: param/loadparm.c:834
-msgid "lppause command"
+msgid "postscript"
 msgstr ""
 
 #: param/loadparm.c:835
-msgid "lpresume command"
+msgid "printing"
 msgstr ""
 
 #: param/loadparm.c:836
-msgid "queuepause command"
+msgid "print command"
 msgstr ""
 
 #: param/loadparm.c:837
-msgid "queueresume command"
+msgid "disable spoolss"
+msgstr ""
+
+#: param/loadparm.c:838
+msgid "lpq command"
 msgstr ""
 
 #: param/loadparm.c:839
-msgid "enumports command"
+msgid "lprm command"
 msgstr ""
 
 #: param/loadparm.c:840
-msgid "addprinter command"
+msgid "lppause command"
 msgstr ""
 
 #: param/loadparm.c:841
-msgid "deleteprinter command"
+msgid "lpresume command"
 msgstr ""
 
 #: param/loadparm.c:842
-msgid "show add printer wizard"
+msgid "queuepause command"
 msgstr ""
 
 #: param/loadparm.c:843
-msgid "os2 driver map"
+msgid "queueresume command"
 msgstr ""
 
 #: param/loadparm.c:845
-msgid "printer name"
+msgid "enumports command"
 msgstr ""
 
 #: param/loadparm.c:846
-msgid "printer"
+msgid "addprinter command"
 msgstr ""
 
 #: param/loadparm.c:847
-msgid "use client driver"
+msgid "deleteprinter command"
 msgstr ""
 
 #: param/loadparm.c:848
-msgid "printer driver"
+msgid "show add printer wizard"
 msgstr ""
 
 #: param/loadparm.c:849
-msgid "printer driver file"
+msgid "os2 driver map"
 msgstr ""
 
-#: param/loadparm.c:850
-msgid "printer driver location"
+#: param/loadparm.c:851
+msgid "printer name"
 msgstr ""
 
 #: param/loadparm.c:852
-msgid "Filename Handling"
+msgid "printer"
 msgstr ""
 
 #: param/loadparm.c:853
-msgid "strip dot"
+msgid "use client driver"
+msgstr ""
+
+#: param/loadparm.c:854
+msgid "printer driver"
 msgstr ""
 
 #: param/loadparm.c:855
-msgid "mangled stack"
+msgid "printer driver file"
 msgstr ""
 
 #: param/loadparm.c:856
-msgid "default case"
-msgstr ""
-
-#: param/loadparm.c:857
-msgid "case sensitive"
+msgid "printer driver location"
 msgstr ""
 
 #: param/loadparm.c:858
-msgid "casesignames"
+msgid "Filename Handling"
 msgstr ""
 
 #: param/loadparm.c:859
-msgid "preserve case"
-msgstr ""
-
-#: param/loadparm.c:860
-msgid "short preserve case"
+msgid "strip dot"
 msgstr ""
 
 #: param/loadparm.c:861
-msgid "mangle case"
+msgid "mangled stack"
 msgstr ""
 
 #: param/loadparm.c:862
-msgid "mangling char"
+msgid "default case"
 msgstr ""
 
 #: param/loadparm.c:863
-msgid "hide dot files"
+msgid "case sensitive"
 msgstr ""
 
 #: param/loadparm.c:864
-msgid "hide unreadable"
+msgid "casesignames"
 msgstr ""
 
 #: param/loadparm.c:865
-msgid "delete veto files"
+msgid "preserve case"
 msgstr ""
 
 #: param/loadparm.c:866
-msgid "veto files"
+msgid "short preserve case"
 msgstr ""
 
 #: param/loadparm.c:867
-msgid "hide files"
+msgid "mangle case"
 msgstr ""
 
 #: param/loadparm.c:868
-msgid "veto oplock files"
+msgid "mangling char"
 msgstr ""
 
 #: param/loadparm.c:869
-msgid "map system"
+msgid "hide dot files"
 msgstr ""
 
 #: param/loadparm.c:870
-msgid "map hidden"
+msgid "hide unreadable"
 msgstr ""
 
 #: param/loadparm.c:871
-msgid "map archive"
+msgid "delete veto files"
 msgstr ""
 
 #: param/loadparm.c:872
-msgid "mangled names"
+msgid "veto files"
 msgstr ""
 
 #: param/loadparm.c:873
-msgid "mangled map"
+msgid "hide files"
 msgstr ""
 
 #: param/loadparm.c:874
-msgid "stat cache"
+msgid "veto oplock files"
+msgstr ""
+
+#: param/loadparm.c:875
+msgid "map system"
 msgstr ""
 
 #: param/loadparm.c:876
-msgid "Domain Options"
+msgid "map hidden"
+msgstr ""
+
+#: param/loadparm.c:877
+msgid "map archive"
 msgstr ""
 
 #: param/loadparm.c:878
-msgid "domain admin group"
+msgid "mangled names"
 msgstr ""
 
 #: param/loadparm.c:879
-msgid "domain guest group"
+msgid "mangled map"
+msgstr ""
+
+#: param/loadparm.c:880
+msgid "stat cache"
 msgstr ""
 
 #: param/loadparm.c:882
-msgid "groupname map"
+msgid "Domain Options"
+msgstr ""
+
+#: param/loadparm.c:884
+msgid "domain admin group"
 msgstr ""
 
 #: param/loadparm.c:885
-msgid "machine password timeout"
+msgid "domain guest group"
 msgstr ""
 
-#: param/loadparm.c:887
-msgid "Logon Options"
-msgstr ""
-
-#: param/loadparm.c:889
-msgid "add user script"
-msgstr ""
-
-#: param/loadparm.c:890
-msgid "delete user script"
+#: param/loadparm.c:888
+msgid "groupname map"
 msgstr ""
 
 #: param/loadparm.c:891
-msgid "add group script"
-msgstr ""
-
-#: param/loadparm.c:892
-msgid "delete group script"
+msgid "machine password timeout"
 msgstr ""
 
 #: param/loadparm.c:893
-msgid "add user to group script"
-msgstr ""
-
-#: param/loadparm.c:894
-msgid "delete user from group script"
+msgid "Logon Options"
 msgstr ""
 
 #: param/loadparm.c:895
-msgid "add machine script"
+msgid "add user script"
 msgstr ""
 
 #: param/loadparm.c:896
-msgid "shutdown script"
+msgid "delete user script"
 msgstr ""
 
 #: param/loadparm.c:897
-msgid "abort shutdown script"
+msgid "add group script"
+msgstr ""
+
+#: param/loadparm.c:898
+msgid "delete group script"
 msgstr ""
 
 #: param/loadparm.c:899
-msgid "logon script"
+msgid "add user to group script"
 msgstr ""
 
 #: param/loadparm.c:900
-msgid "logon path"
+msgid "delete user from group script"
 msgstr ""
 
 #: param/loadparm.c:901
-msgid "logon drive"
+msgid "add machine script"
 msgstr ""
 
 #: param/loadparm.c:902
-msgid "logon home"
+msgid "shutdown script"
 msgstr ""
 
 #: param/loadparm.c:903
-msgid "domain logons"
+msgid "abort shutdown script"
 msgstr ""
 
 #: param/loadparm.c:905
-msgid "Browse Options"
+msgid "logon script"
+msgstr ""
+
+#: param/loadparm.c:906
+msgid "logon path"
 msgstr ""
 
 #: param/loadparm.c:907
-msgid "os level"
+msgid "logon drive"
 msgstr ""
 
 #: param/loadparm.c:908
-msgid "lm announce"
+msgid "logon home"
 msgstr ""
 
 #: param/loadparm.c:909
-msgid "lm interval"
-msgstr ""
-
-#: param/loadparm.c:910
-msgid "preferred master"
+msgid "domain logons"
 msgstr ""
 
 #: param/loadparm.c:911
-msgid "prefered master"
-msgstr ""
-
-#: param/loadparm.c:912
-msgid "local master"
+msgid "Browse Options"
 msgstr ""
 
 #: param/loadparm.c:913
-msgid "domain master"
+msgid "os level"
 msgstr ""
 
 #: param/loadparm.c:914
-msgid "browse list"
+msgid "lm announce"
 msgstr ""
 
 #: param/loadparm.c:915
-msgid "browseable"
+msgid "lm interval"
 msgstr ""
 
 #: param/loadparm.c:916
-msgid "browsable"
+msgid "preferred master"
 msgstr ""
 
 #: param/loadparm.c:917
-msgid "enhanced browsing"
+msgid "prefered master"
+msgstr ""
+
+#: param/loadparm.c:918
+msgid "local master"
 msgstr ""
 
 #: param/loadparm.c:919
-msgid "WINS Options"
+msgid "domain master"
 msgstr ""
 
 #: param/loadparm.c:920
-msgid "dns proxy"
+msgid "browse list"
 msgstr ""
 
 #: param/loadparm.c:921
-msgid "wins proxy"
+msgid "browseable"
+msgstr ""
+
+#: param/loadparm.c:922
+msgid "browsable"
 msgstr ""
 
 #: param/loadparm.c:923
-msgid "wins server"
-msgstr ""
-
-#: param/loadparm.c:924
-msgid "wins support"
+msgid "enhanced browsing"
 msgstr ""
 
 #: param/loadparm.c:925
-msgid "wins hook"
+msgid "WINS Options"
+msgstr ""
+
+#: param/loadparm.c:926
+msgid "dns proxy"
 msgstr ""
 
 #: param/loadparm.c:927
-msgid "Locking Options"
+msgid "wins proxy"
 msgstr ""
 
 #: param/loadparm.c:929
-msgid "blocking locks"
+msgid "wins server"
 msgstr ""
 
 #: param/loadparm.c:930
-msgid "fake oplocks"
+msgid "wins support"
 msgstr ""
 
 #: param/loadparm.c:931
-msgid "kernel oplocks"
+msgid "wins hook"
 msgstr ""
 
-#: param/loadparm.c:932
-msgid "locking"
-msgstr ""
-
-#: param/loadparm.c:934
-msgid "oplocks"
+#: param/loadparm.c:933
+msgid "Locking Options"
 msgstr ""
 
 #: param/loadparm.c:935
-msgid "level2 oplocks"
+msgid "blocking locks"
 msgstr ""
 
 #: param/loadparm.c:936
-msgid "oplock break wait time"
+msgid "fake oplocks"
 msgstr ""
 
 #: param/loadparm.c:937
-msgid "oplock contention limit"
+msgid "kernel oplocks"
 msgstr ""
 
 #: param/loadparm.c:938
-msgid "posix locking"
-msgstr ""
-
-#: param/loadparm.c:939
-msgid "strict locking"
+msgid "locking"
 msgstr ""
 
 #: param/loadparm.c:940
-msgid "share modes"
+msgid "oplocks"
+msgstr ""
+
+#: param/loadparm.c:941
+msgid "level2 oplocks"
+msgstr ""
+
+#: param/loadparm.c:942
+msgid "oplock break wait time"
 msgstr ""
 
 #: param/loadparm.c:943
-msgid "Ldap Options"
+msgid "oplock contention limit"
+msgstr ""
+
+#: param/loadparm.c:944
+msgid "posix locking"
 msgstr ""
 
 #: param/loadparm.c:945
-msgid "ldap server"
+msgid "strict locking"
 msgstr ""
 
 #: param/loadparm.c:946
-msgid "ldap port"
-msgstr ""
-
-#: param/loadparm.c:947
-msgid "ldap suffix"
-msgstr ""
-
-#: param/loadparm.c:948
-msgid "ldap filter"
+msgid "share modes"
 msgstr ""
 
 #: param/loadparm.c:949
-msgid "ldap root"
+msgid "Ldap Options"
 msgstr ""
 
-#: param/loadparm.c:950
-msgid "ldap root passwd"
+#: param/loadparm.c:951
+msgid "ldap server"
+msgstr ""
+
+#: param/loadparm.c:952
+msgid "ldap port"
 msgstr ""
 
 #: param/loadparm.c:953
-msgid "Miscellaneous Options"
+msgid "ldap suffix"
 msgstr ""
 
 #: param/loadparm.c:954
-msgid "add share command"
+msgid "ldap filter"
 msgstr ""
 
 #: param/loadparm.c:955
-msgid "change share command"
+msgid "ldap root"
 msgstr ""
 
 #: param/loadparm.c:956
-msgid "delete share command"
-msgstr ""
-
-#: param/loadparm.c:958
-msgid "config file"
+msgid "ldap root passwd"
 msgstr ""
 
 #: param/loadparm.c:959
-msgid "preload"
+msgid "Miscellaneous Options"
 msgstr ""
 
 #: param/loadparm.c:960
-msgid "auto services"
+msgid "add share command"
 msgstr ""
 
 #: param/loadparm.c:961
-msgid "lock dir"
+msgid "change share command"
 msgstr ""
 
 #: param/loadparm.c:962
-msgid "lock directory"
+msgid "delete share command"
 msgstr ""
 
 #: param/loadparm.c:964
-msgid "utmp directory"
+msgid "config file"
 msgstr ""
 
 #: param/loadparm.c:965
-msgid "wtmp directory"
+msgid "preload"
 msgstr ""
 
 #: param/loadparm.c:966
-msgid "utmp"
+msgid "auto services"
 msgstr ""
 
-#: param/loadparm.c:969
-msgid "default service"
+#: param/loadparm.c:967
+msgid "lock dir"
+msgstr ""
+
+#: param/loadparm.c:968
+msgid "lock directory"
 msgstr ""
 
 #: param/loadparm.c:970
-msgid "default"
+msgid "utmp directory"
 msgstr ""
 
 #: param/loadparm.c:971
-msgid "message command"
+msgid "wtmp directory"
 msgstr ""
 
 #: param/loadparm.c:972
-msgid "dfree command"
-msgstr ""
-
-#: param/loadparm.c:973
-msgid "remote announce"
-msgstr ""
-
-#: param/loadparm.c:974
-msgid "remote browse sync"
+msgid "utmp"
 msgstr ""
 
 #: param/loadparm.c:975
-msgid "socket address"
+msgid "default service"
 msgstr ""
 
 #: param/loadparm.c:976
-msgid "homedir map"
+msgid "default"
 msgstr ""
 
 #: param/loadparm.c:977
-msgid "time offset"
+msgid "message command"
 msgstr ""
 
 #: param/loadparm.c:978
-msgid "NIS homedir"
+msgid "dfree command"
 msgstr ""
 
 #: param/loadparm.c:979
-msgid "-valid"
+msgid "remote announce"
+msgstr ""
+
+#: param/loadparm.c:980
+msgid "remote browse sync"
 msgstr ""
 
 #: param/loadparm.c:981
-msgid "copy"
+msgid "socket address"
 msgstr ""
 
 #: param/loadparm.c:982
-msgid "include"
+msgid "homedir map"
 msgstr ""
 
 #: param/loadparm.c:983
-msgid "exec"
+msgid "time offset"
 msgstr ""
 
 #: param/loadparm.c:984
-msgid "preexec"
+msgid "NIS homedir"
 msgstr ""
 
-#: param/loadparm.c:986
-msgid "preexec close"
+#: param/loadparm.c:985
+msgid "-valid"
 msgstr ""
 
 #: param/loadparm.c:987
-msgid "postexec"
+msgid "copy"
 msgstr ""
 
 #: param/loadparm.c:988
-msgid "root preexec"
+msgid "include"
 msgstr ""
 
 #: param/loadparm.c:989
-msgid "root preexec close"
+msgid "exec"
 msgstr ""
 
 #: param/loadparm.c:990
-msgid "root postexec"
-msgstr ""
-
-#: param/loadparm.c:991
-msgid "available"
+msgid "preexec"
 msgstr ""
 
 #: param/loadparm.c:992
-msgid "volume"
+msgid "preexec close"
 msgstr ""
 
 #: param/loadparm.c:993
-msgid "fstype"
+msgid "postexec"
 msgstr ""
 
 #: param/loadparm.c:994
-msgid "set directory"
+msgid "root preexec"
 msgstr ""
 
 #: param/loadparm.c:995
-msgid "source environment"
+msgid "root preexec close"
 msgstr ""
 
 #: param/loadparm.c:996
-msgid "wide links"
+msgid "root postexec"
 msgstr ""
 
 #: param/loadparm.c:997
-msgid "follow symlinks"
+msgid "available"
 msgstr ""
 
 #: param/loadparm.c:998
-msgid "dont descend"
+msgid "volume"
 msgstr ""
 
 #: param/loadparm.c:999
-msgid "magic script"
+msgid "fstype"
 msgstr ""
 
 #: param/loadparm.c:1000
-msgid "magic output"
+msgid "set directory"
 msgstr ""
 
 #: param/loadparm.c:1001
-msgid "delete readonly"
+msgid "source environment"
 msgstr ""
 
 #: param/loadparm.c:1002
-msgid "dos filemode"
+msgid "wide links"
 msgstr ""
 
 #: param/loadparm.c:1003
-msgid "dos filetimes"
+msgid "follow symlinks"
 msgstr ""
 
 #: param/loadparm.c:1004
-msgid "dos filetime resolution"
+msgid "dont descend"
+msgstr ""
+
+#: param/loadparm.c:1005
+msgid "magic script"
 msgstr ""
 
 #: param/loadparm.c:1006
-msgid "fake directory create times"
+msgid "magic output"
 msgstr ""
 
 #: param/loadparm.c:1007
-msgid "panic action"
+msgid "delete readonly"
 msgstr ""
 
 #: param/loadparm.c:1008
-msgid "hide local users"
+msgid "dos filemode"
 msgstr ""
 
-#: param/loadparm.c:1011
-msgid "VFS options"
+#: param/loadparm.c:1009
+msgid "dos filetimes"
+msgstr ""
+
+#: param/loadparm.c:1010
+msgid "dos filetime resolution"
+msgstr ""
+
+#: param/loadparm.c:1012
+msgid "fake directory create times"
 msgstr ""
 
 #: param/loadparm.c:1013
-msgid "vfs object"
+msgid "panic action"
 msgstr ""
 
 #: param/loadparm.c:1014
-msgid "vfs options"
+msgid "hide local users"
 msgstr ""
 
 #: param/loadparm.c:1017
-msgid "msdfs root"
+msgid "VFS options"
 msgstr ""
 
-#: param/loadparm.c:1018
-msgid "host msdfs"
+#: param/loadparm.c:1019
+msgid "vfs object"
 msgstr ""
 
 #: param/loadparm.c:1020
-msgid "Winbind options"
-msgstr ""
-
-#: param/loadparm.c:1022
-msgid "winbind uid"
+msgid "vfs options"
 msgstr ""
 
 #: param/loadparm.c:1023
-msgid "winbind gid"
+msgid "msdfs root"
 msgstr ""
 
 #: param/loadparm.c:1024
-msgid "template homedir"
-msgstr ""
-
-#: param/loadparm.c:1025
-msgid "template shell"
+msgid "host msdfs"
 msgstr ""
 
 #: param/loadparm.c:1026
-msgid "winbind separator"
-msgstr ""
-
-#: param/loadparm.c:1027
-msgid "winbind cache time"
+msgid "Winbind options"
 msgstr ""
 
 #: param/loadparm.c:1028
-msgid "winbind enum users"
+msgid "winbind uid"
 msgstr ""
 
 #: param/loadparm.c:1029
+msgid "winbind gid"
+msgstr ""
+
+#: param/loadparm.c:1030
+msgid "template homedir"
+msgstr ""
+
+#: param/loadparm.c:1031
+msgid "template shell"
+msgstr ""
+
+#: param/loadparm.c:1032
+msgid "winbind separator"
+msgstr ""
+
+#: param/loadparm.c:1033
+msgid "winbind cache time"
+msgstr ""
+
+#: param/loadparm.c:1034
+msgid "winbind enum users"
+msgstr ""
+
+#: param/loadparm.c:1035
 msgid "winbind enum groups"
 msgstr ""
