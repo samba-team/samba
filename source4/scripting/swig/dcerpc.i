@@ -285,6 +285,16 @@ NTSTATUS dcerpc_pipe_connect(struct dcerpc_pipe **OUT,
                              const char *username,
                              const char *password);
 
+/* Run this test after each wrapped function */
+
+%exception {
+	$action
+	if (!NT_STATUS_IS_OK(result)) {
+		set_ntstatus_exception(NT_STATUS_V(result));
+		return NULL;
+	}
+}
+
 %include "librpc/gen_ndr/misc.i"
 %include "librpc/gen_ndr/lsa.i"
 %include "librpc/gen_ndr/samr.i"
