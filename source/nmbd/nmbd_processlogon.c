@@ -86,13 +86,15 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
              machine,inet_ntoa(p->ip),user,token));
 
       q = outbuf;
-      SSVAL(q, 0, 6); q += 2;
+      SSVAL(q, 0, 6);
+      q += 2;
 
       fstrcpy(reply_name, "\\\\");
       fstrcat(reply_name, my_name);
       fstrcpy(q, reply_name); q = skip_string(q, 1); /* PDC name */
 
-      SSVAL(q, 0, token); q += 2;
+      SSVAL(q, 0, token);
+      q += 2;
 
       dump_data(4, outbuf, PTR_DIFF(q, outbuf));
 
@@ -118,17 +120,22 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 
       q = skip_unicode_string(q, 1);
 
-      ntversion = IVAL(q, 0); q += 4;
-      lmnttoken = SVAL(q, 0); q += 2;
-      lm20token = SVAL(q, 0); q += 2;
+      ntversion = IVAL(q, 0);
+      q += 4;
+      lmnttoken = SVAL(q, 0);
+      q += 2;
+      lm20token = SVAL(q, 0);
+      q += 2;
 
       /* Construct reply. */
 
       q = outbuf;
-      SSVAL(q, 0, QUERYFORPDC_R); q += 2;
+      SSVAL(q, 0, QUERYFORPDC_R);
+      q += 2;
 
       fstrcpy(reply_name,my_name);
-      fstrcpy(q, reply_name); q = skip_string(q, 1); /* PDC name */
+      fstrcpy(q, reply_name);
+      q = skip_string(q, 1); /* PDC name */
 
       if (strcmp(mailslot, NT_LOGON_MAILSLOT)==0) {
         q = align2(q, buf);
@@ -138,9 +145,12 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
         PutUniCode(q, global_myworkgroup); /* Domain name*/
         q = skip_unicode_string(q, 1); 
 
-        SIVAL(q, 0, ntversion); q += 4;
-        SSVAL(q, 0, lmnttoken); q += 2;
-        SSVAL(q, 0, lm20token); q += 2;
+        SIVAL(q, 0, ntversion);
+        q += 4;
+        SSVAL(q, 0, lmnttoken);
+        q += 2;
+        SSVAL(q, 0, lm20token);
+        q += 2;
       }
 
       DEBUG(3,("process_logon_packet: GETDC request from %s at IP %s, \
@@ -169,11 +179,16 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
       uniuser = skip_unicode_string(unicomp,1);
       getdc = skip_unicode_string(uniuser,1);
       q = skip_string(getdc,1);
-      domainsidsize = IVAL(q, 0); q += 4;
+      q += 4;
+      domainsidsize = IVAL(q, 0);
+      q += 4;
       q += domainsidsize + 3;
-      ntversion = IVAL(q, 0); q += 4;
-      lmnttoken = SVAL(q, 0); q += 2;
-      lm20token = SVAL(q, 0); q += 2;
+      ntversion = IVAL(q, 0);
+      q += 4;
+      lmnttoken = SVAL(q, 0);
+      q += 2;
+      lm20token = SVAL(q, 0);
+      q += 2;
 
       DEBUG(3,("process_logon_packet: SAMLOGON sidsize %d ntv %d\n", domainsidsize, ntversion));
 
@@ -212,15 +227,22 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
       /* Construct reply. */
 
       q = outbuf;
-      SSVAL(q, 0, SAMLOGON_R); q += 2;
+      SSVAL(q, 0, SAMLOGON_R);
+      q += 2;
 
-      PutUniCode(q, reply_name); q = skip_unicode_string(q, 1);
-      unistrcpy(q, uniuser); q = skip_unicode_string(q, 1); /* User name (workstation trust account) */
-      PutUniCode(q, lp_workgroup()); q = skip_unicode_string(q, 1); /* Domain name. */
+      PutUniCode(q, reply_name);
+      q = skip_unicode_string(q, 1);
+      unistrcpy(q, uniuser);
+      q = skip_unicode_string(q, 1); /* User name (workstation trust account) */
+      PutUniCode(q, lp_workgroup());
+      q = skip_unicode_string(q, 1); /* Domain name. */
 
-      SIVAL(q, 0, ntversion); q += 4;
-      SSVAL(q, 0, lmnttoken); q += 2;
-      SSVAL(q, 0, lm20token); q += 2;
+      SIVAL(q, 0, ntversion);
+      q += 4;
+      SSVAL(q, 0, lmnttoken);
+      q += 2;
+      SSVAL(q, 0, lm20token);
+      q += 2;
 
       dump_data(4, outbuf, PTR_DIFF(q, outbuf));
 
