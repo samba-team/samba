@@ -87,7 +87,7 @@ static NTSTATUS DeleteUser_byname(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 */
 struct test_join *torture_join_domain(const char *machine_name, 
 				      const char *domain,
-				      uint16 acct_flags,
+				      uint16_t acct_flags,
 				      const char **machine_password)
 {
 	NTSTATUS status;

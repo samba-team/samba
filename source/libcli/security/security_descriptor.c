@@ -194,7 +194,7 @@ BOOL security_descriptor_equal(const struct security_descriptor *sd1,
 */
 BOOL security_descriptor_mask_equal(const struct security_descriptor *sd1, 
 				    const struct security_descriptor *sd2, 
-				    uint32 mask)
+				    uint32_t mask)
 {
 	if (sd1 == sd2) return True;
 	if (!sd1 || !sd2) return False;
