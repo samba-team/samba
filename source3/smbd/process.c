@@ -74,7 +74,7 @@ static struct pending_message_list *smb_oplock_queue;
  for processing.
 ****************************************************************************/
 
-static BOOL push_message(struct pending_message_list **pplist_head, char *buf, int msg_len)
+static BOOL push_message(char *buf, int msg_len)
 {
 	struct pending_message_list *tmp_msg;
 	struct pending_message_list *msg = (struct pending_message_list *)
@@ -95,7 +95,7 @@ static BOOL push_message(struct pending_message_list **pplist_head, char *buf, i
 	memcpy(msg->msg_buf, buf, msg_len);
 	msg->msg_len = msg_len;
 
-	DLIST_ADD_END(*pplist_head, msg, tmp_msg);
+	DLIST_ADD_END(smb_oplock_queue, msg, tmp_msg);
 
 	/* Push the MID of this packet on the signing queue. */
 	srv_defer_sign_response(SVAL(buf,smb_mid));
@@ -110,7 +110,7 @@ static BOOL push_message(struct pending_message_list **pplist_head, char *buf, i
 
 BOOL push_oplock_pending_smb_message(char *buf, int msg_len)
 {
-	return push_message(&smb_oplock_queue, buf, msg_len);
+	return push_message(buf, msg_len);
 }
 
 /****************************************************************************
