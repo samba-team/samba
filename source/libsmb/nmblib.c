@@ -998,7 +998,7 @@ struct packet_struct *receive_nmb_packet(int fd, int t, int trn_id)
 
 /****************************************************************************
   receive a UDP/138 packet either via UDP or from the unexpected packet
-  queue. The packet must be a reply packet and have the specified dgm_id
+  queue. The packet must be a reply packet and have the specified mailslot name
   The timeout is in milliseconds
   ***************************************************************************/
 struct packet_struct *receive_dgram_packet(int fd, int t, char *mailslot_name)
