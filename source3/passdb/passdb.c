@@ -1213,3 +1213,32 @@ BOOL lookup_local_name(char *domain, char *user, DOM_SID *psid, uint8 *psid_name
 
 	return True;
 }
+
+/****************************************************************************
+ Create a list of SIDS for a user - primary and group.
+ This is really the wrong way to do this and needs to go via winbind. JRA.
+****************************************************************************/
+
+BOOL setup_user_sids(user_struct *vuser)
+{
+    extern DOM_SID global_sam_sid;
+
+	sid_copy(&vuser->user_sid, &global_sam_sid);
+	sid_append_rid( &vuser->user_sid, pdb_uid_to_user_rid(vuser->uid));
+
+	if (vuser->n_groups != 0) {
+		int i;
+
+		vuser->group_sids = (DOM_SID *)malloc(sizeof(DOM_SID) * vuser->n_groups);
+
+		if (vuser->group_sids == NULL)
+			return False;
+
+		for (i = 0; i < vuser->n_groups; i++) {
+			sid_copy(&vuser->group_sids[i], &global_sam_sid);
+			sid_append_rid( &vuser->group_sids[i], pdb_gid_to_group_rid(vuser->groups[i]));
+		}
+	}
+
+	return True;
+}
