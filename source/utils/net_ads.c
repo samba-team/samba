@@ -197,13 +197,20 @@ static int net_ads_leave(int argc, const char **argv)
 	ADS_STRUCT *ads = NULL;
 	ADS_STATUS rc;
 	extern pstring global_myname;
-
-	if (!(ads = ads_startup())) {
-		return -1;
-	}
+	extern char *opt_user_name;
+	extern char *opt_password;
 
 	if (!secrets_init()) {
 		DEBUG(1,("Failed to initialise secrets database\n"));
+		return -1;
+	}
+
+	if (!opt_password) {
+		asprintf(&opt_user_name, "%s$", global_myname);
+		opt_password = secrets_fetch_machine_password();
+	}
+
+	if (!(ads = ads_startup())) {
 		return -1;
 	}
 
@@ -252,7 +259,7 @@ static int net_ads_join(int argc, const char **argv)
 	ads_msgfree(ads, res);
 
 	if (rc.error_type == ADS_ERROR_LDAP && rc.rc == LDAP_NO_SUCH_OBJECT) {
-		d_printf("ads_join_realm: organisational unit %s does not exist (dn:%s)\n", 
+		d_printf("ads_join_realm: organizational unit %s does not exist (dn:%s)\n", 
 			 org_unit, dn);
 		return -1;
 	}
