@@ -80,10 +80,9 @@ init(int argc, char **argv)
 	
 	/* Create `krbtgt/REALM' */
 	ent.keyblock.keytype = KEYTYPE_DES;
-	ent.keyblock.contents.length = 8;
-	ent.keyblock.contents.data = malloc(ent.keyblock.contents.length);
-	des_rand_data(ent.keyblock.contents.data, 
-		      ent.keyblock.contents.length);
+	ent.keyblock.keyvalue.length = 8;
+	ent.keyblock.keyvalue.data = malloc(ent.keyblock.keyvalue.length);
+	des_new_random_key(ent.keyblock.keyvalue.data);
 	ent.kvno = 1;
 	ent.max_life = max_life;
 	ent.max_renew = max_renew;
@@ -106,8 +105,8 @@ init(int argc, char **argv)
 			     "default",
 			     NULL);
 	ent.keyblock.keytype = KEYTYPE_DES;
-	ent.keyblock.contents.length = 0;
-	ent.keyblock.contents.data = NULL;
+	ent.keyblock.keyvalue.length = 0;
+	ent.keyblock.keyvalue.data = NULL;
 	ent.kvno = 1;
 	ent.max_life = default_life;
 	ent.max_renew = default_renew;

@@ -40,10 +40,10 @@ ext_keytab(int argc, char **argv)
     krb5_copy_principal (context, ent.principal, &key_entry.principal);
     key_entry.vno = ent.kvno;
     key_entry.keyblock.keytype = ent.keyblock.keytype;
-    key_entry.keyblock.contents.length = 0;
-    krb5_data_copy(&key_entry.keyblock.contents,
-		   ent.keyblock.contents.data,
-		   ent.keyblock.contents.length);
+    key_entry.keyblock.keyvalue.length = 0;
+    krb5_data_copy(&key_entry.keyblock.keyvalue,
+		   ent.keyblock.keyvalue.data,
+		   ent.keyblock.keyvalue.length);
 
     ret = krb5_kt_default (context, &kid);
     if (ret) {

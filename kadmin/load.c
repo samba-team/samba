@@ -84,13 +84,13 @@ doit(char *filename, int merge)
 	}
 	
 	ent.keyblock.keytype = KEYTYPE_DES;
-	ent.keyblock.contents.data = malloc(strlen(e.key)/2+1);
+	ent.keyblock.keyvalue.data = malloc(strlen(e.key)/2+1);
 	for(i = 1; i < strlen(e.key) - 1; i += 2){
 	    unsigned tmp;
 	    sscanf(e.key + i, "%2x", &tmp);
-	    ((unsigned char *)ent.keyblock.contents.data)[i/2] = tmp;
+	    ((unsigned char *)ent.keyblock.keyvalue.data)[i/2] = tmp;
 	}
-	ent.keyblock.contents.length = i / 2;
+	ent.keyblock.keyvalue.length = i / 2;
 	ent.kvno = atoi(e.kvno);
 	ent.max_life = atoi(e.max_life);
 	ent.max_renew = atoi(e.max_renew);

@@ -20,10 +20,10 @@ key2str(krb5_keyblock *key)
     int i;
     if(s)
 	free(s);
-    s = malloc(key->contents.length/2+10);
+    s = malloc(key->keyvalue.length/2+10);
     sprintf(s, "%d:", key->keytype);
-    p = (unsigned char*)key->contents.data;
-    for(i = 0; i < key->contents.length; i++)
+    p = (unsigned char*)key->keyvalue.data;
+    for(i = 0; i < key->keyvalue.length; i++)
 	sprintf(s + strlen(s), "%02x", p[i]);
     return s;
 }
