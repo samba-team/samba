@@ -1233,7 +1233,7 @@ int sys_dup2(int oldfd, int newfd)
  Wrapper for Admin Logs.
 ****************************************************************************/
 
-void sys_adminlog(int priority, const char *format_str, ...) 
+ void sys_adminlog(int priority, const char *format_str, ...) 
 {
 	va_list ap;
 	int ret;
