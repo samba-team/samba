@@ -232,10 +232,6 @@ void brl_init(int read_only)
 		DEBUG(0,("Failed to open byte range locking database\n"));
 		return;
 	}
-
-	/* delete any dead locks */
-	if (!read_only)
-		tdb_traverse(tdb, delete_fn, &check_self);
 }
 
 /****************************************************************************
@@ -248,10 +244,6 @@ void brl_shutdown(int read_only)
 
 	if (!tdb)
 		return;
-
-	/* delete any dead locks */
-	if (!read_only)
-		tdb_traverse(tdb, delete_fn, &check_self);
 
 	tdb_close(tdb);
 }
