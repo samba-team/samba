@@ -151,7 +151,8 @@ edit_time (const char *prompt, krb5_deltat *value, int *mask, int bit)
 	get_response(prompt, buf, resp, sizeof(resp));
 	if (str2deltat(resp, &tmp) == 0) {
 	    *value = tmp;
-	    *mask |= bit;
+	    if (tmp)
+		*mask |= bit;
 	    break;
 	} else if(*resp == '?') {
 	    print_time_table (stderr);
@@ -172,7 +173,9 @@ edit_attributes (const char *prompt, krb5_flags *attr, int *mask, int bit)
 	krb5_flags tmp;
 
 	get_response("Attributes", buf, resp, sizeof(resp));
-	if (str2attr(resp, &tmp) == 0) {
+	if (resp[0] == '\0')
+	    break;
+	else if (str2attr(resp, &tmp) == 0) {
 	    *attr = tmp;
 	    *mask |= bit;
 	    break;
@@ -182,6 +185,7 @@ edit_attributes (const char *prompt, krb5_flags *attr, int *mask, int bit)
 	    fprintf (stderr, "Unable to parse '%s'\n", resp);
 	}
     }
+    return 0;
 }
 
 int
