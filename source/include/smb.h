@@ -1037,6 +1037,15 @@ struct parm_struct
 /* DesiredAccess */
 #if 0
 /* TODO.... JRA */
+#define SPECIFIC_RIGHTS_MASK 0x00FFFFL
+#define STANDARD_RIGHTS_MASK 0xFF0000L
+#define DELETE_ACCESS        (1L<<16)
+#define READ_CONTROL_ACCESS  (1L<<17)
+#define WRITE_DAC_ACCESS     (1L<<18)
+#define WRITE_OWNER_ACCESS   (1L<<19)
+#define SYNCHRONIZE_ACCESS   (1L<<20)
+#define SYSTEM_SECURITY_ACCESS (1L<<24)
+
 #define GENERIC_READ xxx?
 #define GENERIC_WRITE xxx?
 #endif
