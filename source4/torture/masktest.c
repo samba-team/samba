@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "dynconfig.h"
 #include "client.h"
 #include "libcli/raw/libcliraw.h"
 #include "system/time.h"

@@ -22,6 +22,7 @@
 */
 
 #include "includes.h"
+#include "dynconfig.h"
 #include "client.h"
 #include "lib/cmdline/popt_common.h"
 #include "librpc/gen_ndr/ndr_srvsvc.h"

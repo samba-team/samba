@@ -592,4 +592,16 @@ typedef uint64_t HYPER_T;
 /* passed to br lock code */
 enum brl_type {READ_LOCK, WRITE_LOCK, PENDING_READ_LOCK, PENDING_WRITE_LOCK};
 
+/* string manipulation flags - see clistr.c and srvstr.c */
+#define STR_TERMINATE 1
+#define STR_UPPER 2
+#define STR_ASCII 4
+#define STR_UNICODE 8
+#define STR_NOALIGN 16
+#define STR_NO_RANGE_CHECK 32
+#define STR_LEN8BIT 64
+#define STR_TERMINATE_ASCII 128 /* only terminate if ascii */
+#define STR_LEN_NOTERM 256 /* the length field is the unterminated length */
+
+
 #endif /* _SMB_H */
