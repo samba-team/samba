@@ -74,6 +74,7 @@ static BOOL bLoaded = False;
 #define VALID(i) ServicePtrs[i]->valid
 
 static BOOL do_parameter(const char *, const char *);
+static BOOL do_parameter_var(const char *pszParmName, const char *fmt, ...);
 
 static BOOL defaults_saved = False;
 
@@ -109,7 +110,6 @@ typedef struct
 	char *szSAM_URL;
 	char *szSPOOLSS_URL;
 	char *szPrivateDir;
-	char **szPassdbBackend;
 	char **szPreloadModules;
 	char *szPasswordServer;
 	char *szSocketOptions;
@@ -149,7 +149,6 @@ typedef struct
 	BOOL bWinbindUseDefaultDomain;
 	char *szIDMapBackend;
 	char *szGuestaccount;
-	int mangled_stack;
 	int max_mux;
 	int max_xmit;
 	int pwordlevel;
@@ -174,19 +173,7 @@ typedef struct
 	int winbind_cache_time;
 	int iLockSpinCount;
 	int iLockSpinTime;
-	char *szLdapMachineSuffix;
-	char *szLdapUserSuffix;
-#ifdef WITH_LDAP_SAMCONFIG
-	int ldap_port;
-	char *szLdapServer;
-#endif
 	char *socket_options;
-	int ldap_ssl;
-	char *szLdapSuffix;
-	char *szLdapFilter;
-	char *szLdapAdminDn;
-	BOOL ldap_trust_ids;
-	int ldap_passwd_sync; 
 	BOOL bDNSproxy;
 	BOOL bWINSsupport;
 	BOOL bWINSproxy;
@@ -195,7 +182,6 @@ typedef struct
 	BOOL bDomainMaster;
 	BOOL bDomainLogons;
 	BOOL bEncryptPasswords;
-	BOOL bUpdateEncrypt;
 	BOOL bNullPasswords;
 	BOOL bObeyPamRestrictions;
 	BOOL bLoadPrinters;
@@ -205,7 +191,6 @@ typedef struct
 	BOOL bTimeServer;
 	BOOL bBindInterfacesOnly;
 	BOOL bPamPasswordChange;
-	BOOL bUnixPasswdSync;
 	BOOL bNTSmbSupport;
 	BOOL bNTStatusSupport;
 	BOOL bAllowTrustedDomains;
@@ -365,10 +350,6 @@ static BOOL handle_winbind_uid(const char *pszParmValue, char **ptr);
 static BOOL handle_winbind_gid(const char *pszParmValue, char **ptr);
 static BOOL handle_non_unix_account_range(const char *pszParmValue, char **ptr);
 
-static BOOL handle_ldap_machine_suffix ( const char *pszParmValue, char **ptr );
-static BOOL handle_ldap_user_suffix ( const char *pszParmValue, char **ptr );
-static BOOL handle_ldap_suffix ( const char *pszParmValue, char **ptr );
-
 static void set_server_role(void);
 static void set_default_server_announce_type(void);
 
@@ -409,38 +390,6 @@ static const struct enum_list enum_printing[] = {
 	{PRINT_TEST, "test"},
 	{PRINT_VLP, "vlp"},
 #endif /* DEVELOPER */
-	{-1, NULL}
-};
-
-static const struct enum_list enum_ldap_ssl[] = {
-#ifdef WITH_LDAP_SAMCONFIG
-	{LDAP_SSL_ON, "Yes"},
-	{LDAP_SSL_ON, "yes"},
-	{LDAP_SSL_ON, "on"},
-	{LDAP_SSL_ON, "On"},
-#endif
-	{LDAP_SSL_OFF, "no"},
-	{LDAP_SSL_OFF, "No"},
-	{LDAP_SSL_OFF, "off"},
-	{LDAP_SSL_OFF, "Off"},
-	{LDAP_SSL_START_TLS, "start tls"},
-	{LDAP_SSL_START_TLS, "Start_tls"},
-	{-1, NULL}
-};
-
-static const struct enum_list enum_ldap_passwd_sync[] = {
-	{LDAP_PASSWD_SYNC_ON, "Yes"},
-	{LDAP_PASSWD_SYNC_ON, "yes"},
-	{LDAP_PASSWD_SYNC_ON, "on"},
-	{LDAP_PASSWD_SYNC_ON, "On"},
-	{LDAP_PASSWD_SYNC_OFF, "no"},
-	{LDAP_PASSWD_SYNC_OFF, "No"},
-	{LDAP_PASSWD_SYNC_OFF, "off"},
-	{LDAP_PASSWD_SYNC_OFF, "Off"},
-#ifdef LDAP_EXOP_X_MODIFY_PASSWD	
-	{LDAP_PASSWD_SYNC_ONLY, "Only"},
-	{LDAP_PASSWD_SYNC_ONLY, "only"},
-#endif /* LDAP_EXOP_X_MODIFY_PASSWD */	
 	{-1, NULL}
 };
 
@@ -576,7 +525,6 @@ static struct parm_struct parm_table[] = {
 	{"security", P_ENUM, P_GLOBAL, &Globals.security, NULL, enum_security, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
 	{"auth methods", P_LIST, P_GLOBAL, &Globals.AuthMethods, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
 	{"encrypt passwords", P_BOOL, P_GLOBAL, &Globals.bEncryptPasswords, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
-	{"update encrypted", P_BOOL, P_GLOBAL, &Globals.bUpdateEncrypt, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"allow trusted domains", P_BOOL, P_GLOBAL, &Globals.bAllowTrustedDomains, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"hosts equiv", P_STRING, P_GLOBAL, &Globals.szHostsEquiv, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"idmap backend", P_STRING, P_GLOBAL, &Globals.szIDMapBackend, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
@@ -587,7 +535,6 @@ static struct parm_struct parm_table[] = {
 	{"sam database", P_STRING, P_GLOBAL, &Globals.szSAM_URL, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"spoolss database", P_STRING, P_GLOBAL, &Globals.szSPOOLSS_URL, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"private dir", P_STRING, P_GLOBAL, &Globals.szPrivateDir, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"passdb backend", P_LIST, P_GLOBAL, &Globals.szPassdbBackend, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"non unix account range", P_STRING, P_GLOBAL, &Globals.szNonUnixAccountRange, handle_non_unix_account_range, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"root directory", P_STRING, P_GLOBAL, &Globals.szRootdir, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"root dir", P_STRING, P_GLOBAL, &Globals.szRootdir, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
@@ -599,7 +546,6 @@ static struct parm_struct parm_table[] = {
 	{"passwd chat", P_STRING, P_GLOBAL, &Globals.szPasswdChat, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"password level", P_INTEGER, P_GLOBAL, &Globals.pwordlevel, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"username level", P_INTEGER, P_GLOBAL, &Globals.unamelevel, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"unix password sync", P_BOOL, P_GLOBAL, &Globals.bUnixPasswdSync, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"restrict anonymous", P_INTEGER, P_GLOBAL, &Globals.restrict_anonymous, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"lanman auth", P_BOOL, P_GLOBAL, &Globals.bLanmanAuth, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"ntlm auth", P_BOOL, P_GLOBAL, &Globals.bNTLMAuth, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
@@ -696,7 +642,6 @@ static struct parm_struct parm_table[] = {
 
 	{"Filename Handling", P_SEP, P_SEPARATOR},
 	
-	{"mangled stack", P_INTEGER, P_GLOBAL, &Globals.mangled_stack, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"map system", P_BOOL, P_LOCAL, &sDefault.bMap_system, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL},
 	{"map hidden", P_BOOL, P_LOCAL, &sDefault.bMap_hidden, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL},
 	{"map archive", P_BOOL, P_LOCAL, &sDefault.bMap_archive, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL},
@@ -750,21 +695,6 @@ static struct parm_struct parm_table[] = {
 	{"posix locking", P_BOOL, P_LOCAL, &sDefault.bPosixLocking, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL},
 	{"strict locking", P_BOOL, P_LOCAL, &sDefault.bStrictLocking, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL},
 	{"share modes", P_BOOL, P_LOCAL,  &sDefault.bShareModes, NULL, NULL, FLAG_SHARE|FLAG_GLOBAL},
-
-	{"Ldap Options", P_SEP, P_SEPARATOR},
-	
-#ifdef WITH_LDAP_SAMCONFIG
-	{"ldap server", P_STRING, P_GLOBAL, &Globals.szLdapServer, NULL, NULL, 0},
-	{"ldap port", P_INTEGER, P_GLOBAL, &Globals.ldap_port, NULL, NULL, 0}, 
-#endif
-	{"ldap suffix", P_STRING, P_GLOBAL, &Globals.szLdapSuffix, handle_ldap_suffix, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"ldap machine suffix", P_STRING, P_GLOBAL, &Globals.szLdapMachineSuffix, handle_ldap_machine_suffix, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"ldap user suffix", P_STRING, P_GLOBAL, &Globals.szLdapUserSuffix, handle_ldap_user_suffix, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"ldap filter", P_STRING, P_GLOBAL, &Globals.szLdapFilter, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"ldap admin dn", P_STRING, P_GLOBAL, &Globals.szLdapAdminDn, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"ldap ssl", P_ENUM, P_GLOBAL, &Globals.ldap_ssl, NULL, enum_ldap_ssl, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"ldap passwd sync", P_ENUM, P_GLOBAL, &Globals.ldap_passwd_sync, NULL, enum_ldap_passwd_sync, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"ldap trust ids", P_BOOL, P_GLOBAL, &Globals.ldap_trust_ids, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 
 	{"Miscellaneous Options", P_SEP, P_SEPARATOR},
 	
@@ -823,103 +753,103 @@ static void init_printer_values(void)
 		case PRINT_AIX:
 		case PRINT_LPRNT:
 		case PRINT_LPROS2:
-			string_set(&sDefault.szLpqcommand, "lpq -P'%p'");
-			string_set(&sDefault.szLprmcommand, "lprm -P'%p' %j");
-			string_set(&sDefault.szPrintcommand,
+			do_parameter("Lpqcommand", "lpq -P'%p'");
+			do_parameter("Lprmcommand", "lprm -P'%p' %j");
+			do_parameter("Printcommand",
 				   "lpr -r -P'%p' %s");
 			break;
 
 		case PRINT_LPRNG:
 		case PRINT_PLP:
-			string_set(&sDefault.szLpqcommand, "lpq -P'%p'");
-			string_set(&sDefault.szLprmcommand, "lprm -P'%p' %j");
-			string_set(&sDefault.szPrintcommand,
+			do_parameter("Lpqcommand", "lpq -P'%p'");
+			do_parameter("Lprmcommand", "lprm -P'%p' %j");
+			do_parameter("Printcommand",
 				   "lpr -r -P'%p' %s");
-			string_set(&sDefault.szQueuepausecommand,
+			do_parameter("Queuepausecommand",
 				   "lpc stop '%p'");
-			string_set(&sDefault.szQueueresumecommand,
+			do_parameter("Queueresumecommand",
 				   "lpc start '%p'");
-			string_set(&sDefault.szLppausecommand,
+			do_parameter("Lppausecommand",
 				   "lpc hold '%p' %j");
-			string_set(&sDefault.szLpresumecommand,
+			do_parameter("Lpresumecommand",
 				   "lpc release '%p' %j");
 			break;
 
 		case PRINT_CUPS:
 #ifdef HAVE_CUPS
-			string_set(&sDefault.szLpqcommand, "");
-			string_set(&sDefault.szLprmcommand, "");
-			string_set(&sDefault.szPrintcommand, "");
-			string_set(&sDefault.szLppausecommand, "");
-			string_set(&sDefault.szLpresumecommand, "");
-			string_set(&sDefault.szQueuepausecommand, "");
-			string_set(&sDefault.szQueueresumecommand, "");
+			do_parameter("Lpqcommand", "");
+			do_parameter("Lprmcommand", "");
+			do_parameter("Printcommand", "");
+			do_parameter("Lppausecommand", "");
+			do_parameter("Lpresumecommand", "");
+			do_parameter("Queuepausecommand", "");
+			do_parameter("Queueresumecommand", "");
 
-	                string_set(&Globals.szPrintcapname, "cups");
+	                do_parameter("Printcapname", "cups");
 #else
-			string_set(&sDefault.szLpqcommand,
+			do_parameter("Lpqcommand",
 			           "/usr/bin/lpstat -o '%p'");
-			string_set(&sDefault.szLprmcommand,
+			do_parameter("Lprmcommand",
 			           "/usr/bin/cancel '%p-%j'");
-			string_set(&sDefault.szPrintcommand,
+			do_parameter("Printcommand",
 			           "/usr/bin/lp -d '%p' %s; rm %s");
-			string_set(&sDefault.szLppausecommand,
+			do_parameter("Lppausecommand",
 				   "lp -i '%p-%j' -H hold");
-			string_set(&sDefault.szLpresumecommand,
+			do_parameter("Lpresumecommand",
 				   "lp -i '%p-%j' -H resume");
-			string_set(&sDefault.szQueuepausecommand,
+			do_parameter("Queuepausecommand",
 			           "/usr/bin/disable '%p'");
-			string_set(&sDefault.szQueueresumecommand,
+			do_parameter("Queueresumecommand",
 			           "/usr/bin/enable '%p'");
-			string_set(&Globals.szPrintcapname, "lpstat");
+			do_parameter("Printcapname", "lpstat");
 #endif /* HAVE_CUPS */
 			break;
 
 		case PRINT_SYSV:
 		case PRINT_HPUX:
-			string_set(&sDefault.szLpqcommand, "lpstat -o%p");
-			string_set(&sDefault.szLprmcommand, "cancel %p-%j");
-			string_set(&sDefault.szPrintcommand,
+			do_parameter("Lpqcommand", "lpstat -o%p");
+			do_parameter("Lprmcommand", "cancel %p-%j");
+			do_parameter("Printcommand",
 				   "lp -c -d%p %s; rm %s");
-			string_set(&sDefault.szQueuepausecommand,
+			do_parameter("Queuepausecommand",
 				   "disable %p");
-			string_set(&sDefault.szQueueresumecommand,
+			do_parameter("Queueresumecommand",
 				   "enable %p");
 #ifndef HPUX
-			string_set(&sDefault.szLppausecommand,
+			do_parameter("Lppausecommand",
 				   "lp -i %p-%j -H hold");
-			string_set(&sDefault.szLpresumecommand,
+			do_parameter("Lpresumecommand",
 				   "lp -i %p-%j -H resume");
 #endif /* HPUX */
 			break;
 
 		case PRINT_QNX:
-			string_set(&sDefault.szLpqcommand, "lpq -P%p");
-			string_set(&sDefault.szLprmcommand, "lprm -P%p %j");
-			string_set(&sDefault.szPrintcommand, "lp -r -P%p %s");
+			do_parameter("Lpqcommand", "lpq -P%p");
+			do_parameter("Lprmcommand", "lprm -P%p %j");
+			do_parameter("Printcommand", "lp -r -P%p %s");
 			break;
 
 		case PRINT_SOFTQ:
-			string_set(&sDefault.szLpqcommand, "qstat -l -d%p");
-			string_set(&sDefault.szLprmcommand,
+			do_parameter("Lpqcommand", "qstat -l -d%p");
+			do_parameter("Lprmcommand",
 				   "qstat -s -j%j -c");
-			string_set(&sDefault.szPrintcommand,
+			do_parameter("Printcommand",
 				   "lp -d%p -s %s; rm %s");
-			string_set(&sDefault.szLppausecommand,
+			do_parameter("Lppausecommand",
 				   "qstat -s -j%j -h");
-			string_set(&sDefault.szLpresumecommand,
+			do_parameter("Lpresumecommand",
 				   "qstat -s -j%j -r");
 			break;
 #ifdef DEVELOPER
 	case PRINT_TEST:
 	case PRINT_VLP:
-		string_set(&sDefault.szPrintcommand, "vlp print %p %s");
-		string_set(&sDefault.szLpqcommand, "vlp lpq %p");
-		string_set(&sDefault.szLprmcommand, "vlp lprm %p %j");
-		string_set(&sDefault.szLppausecommand, "vlp lppause %p %j");
-		string_set(&sDefault.szLpresumecommand, "vlp lpresum %p %j");
-		string_set(&sDefault.szQueuepausecommand, "vlp queuepause %p");
-		string_set(&sDefault.szQueueresumecommand, "vlp queueresume %p");
+		do_parameter("Printcommand", "vlp print %p %s");
+		do_parameter("Lpqcommand", "vlp lpq %p");
+		do_parameter("Lprmcommand", "vlp lprm %p %j");
+		do_parameter("Lppausecommand", "vlp lppause %p %j");
+		do_parameter("Lpresumecommand", "vlp lpresum %p %j");
+		do_parameter("Queuepausecommand", "vlp queuepause %p");
+		do_parameter("Queueresumecommand", "vlp queueresume %p");
 		break;
 #endif /* DEVELOPER */
 
@@ -932,7 +862,6 @@ static void init_printer_values(void)
 ***************************************************************************/
 static void init_globals(void)
 {
-	pstring s;
 	int i;
 
 	DEBUG(3, ("Initialising global parameters\n"));
@@ -956,163 +885,122 @@ static void init_globals(void)
 
 	init_printer_values();
 
-	string_set(&sDefault.fstype, FSTYPE_STRING);
-	string_set(&sDefault.ntvfs_handler, "default");
+	do_parameter("fstype", FSTYPE_STRING);
+	do_parameter("ntvfs handler", "default");
 
-	Globals.dcerpc_ep_servers = str_list_make("epmapper srvsvc wkssvc rpcecho samr netlogon lsarpc spoolss", NULL);
-
-	Globals.server_services = str_list_make("smb rpc", NULL);
-
-	Globals.AuthMethods = str_list_make("guest sam_ignoredomain", NULL);
-
-	string_set(&Globals.szSMBPasswdFile, dyn_SMB_PASSWD_FILE);
-	string_set(&Globals.szPrivateDir, dyn_PRIVATE_DIR);
-	asprintf(&Globals.szSAM_URL, "tdb://%s/sam.ldb", dyn_PRIVATE_DIR);
-	asprintf(&Globals.szSPOOLSS_URL, "tdb://%s/spoolss.ldb", dyn_PRIVATE_DIR);
-
-	string_set(&Globals.szGuestaccount, GUEST_ACCOUNT);
+	do_parameter("dcerpc endpoint servers", "epmapper srvsvc wkssvc rpcecho samr netlogon lsarpc spoolss");
+	do_parameter("server services", "smb rpc");
+	do_parameter("auth methods", "guest sam_ignoredomain");
+	do_parameter("smb passwd file", dyn_SMB_PASSWD_FILE);
+	do_parameter("private dir", dyn_PRIVATE_DIR);
+	do_parameter_var("sam database", "tdb://%s/sam.ldb", dyn_PRIVATE_DIR);
+	do_parameter_var("spoolss database", "tdb://%s/spoolss.ldb", dyn_PRIVATE_DIR);
+	do_parameter("guest account", GUEST_ACCOUNT);
 
 	/* using UTF8 by default allows us to support all chars */
-	string_set(&Globals.unix_charset, "UTF8");
+	do_parameter("unix charset", "UTF8");
 
 	/* Use codepage 850 as a default for the dos character set */
-	string_set(&Globals.dos_charset, "CP850");
+	do_parameter("dos charset", "CP850");
 
 	/*
 	 * Allow the default PASSWD_CHAT to be overridden in local.h.
 	 */
-	string_set(&Globals.szPasswdChat, DEFAULT_PASSWD_CHAT);
+	do_parameter("passwd chat", DEFAULT_PASSWD_CHAT);
+
+	do_parameter("passwd program", "");
+	do_parameter("printcap name", PRINTCAP_NAME);
 	
-	string_set(&Globals.szPasswdProgram, "");
-	string_set(&Globals.szPrintcapname, PRINTCAP_NAME);
-	string_set(&Globals.szPidDir, dyn_PIDDIR);
-	string_set(&Globals.szLockDir, dyn_LOCKDIR);
-	string_set(&Globals.szSocketAddress, "0.0.0.0");
-	pstrcpy(s, "Samba ");
-	pstrcat(s, SAMBA_VERSION_STRING);
-	string_set(&Globals.szServerString, s);
-	slprintf(s, sizeof(s) - 1, "%d.%d", DEFAULT_MAJOR_VERSION,
-		 DEFAULT_MINOR_VERSION);
-	string_set(&Globals.szAnnounceVersion, s);
+	do_parameter("pid directory", dyn_PIDDIR);
+	do_parameter("lock dir", dyn_LOCKDIR);
+	do_parameter("socket address", "0.0.0.0");
+	do_parameter_var("server string", "Samba %s", SAMBA_VERSION_STRING);
 
-	string_set(&Globals.szLogonDrive, "");
-	/* %N is the NIS auto.home server if -DAUTOHOME is used, else same as %L */
-	string_set(&Globals.szLogonHome, "\\\\%N\\%U");
-	string_set(&Globals.szLogonPath, "\\\\%N\\%U\\profile");
+	do_parameter_var("announce version", "%d.%d", 
+			 DEFAULT_MAJOR_VERSION,
+			 DEFAULT_MINOR_VERSION);
 
-	string_set(&Globals.szPasswordServer, "*");
+	do_parameter("logon drive", "");
 
-	Globals.bLoadPrinters = True;
-	Globals.mangled_stack = 50;
-	Globals.max_mux = 50;	/* This is *needed* for profile support. */
-	Globals.max_xmit = 4356; /* the value w2k3 chooses */
-	Globals.lpqcachetime = 10;
-	Globals.bDisableSpoolss = False;
-	Globals.pwordlevel = 0;
-	Globals.unamelevel = 0;
-	Globals.bLargeReadwrite = True;
-	Globals.minprotocol = PROTOCOL_CORE;
-	Globals.security = SEC_USER;
-	Globals.paranoid_server_security = True;
-	Globals.bEncryptPasswords = True;
-	Globals.bUpdateEncrypt = False;
-	Globals.bReadRaw = True;
-	Globals.bWriteRaw = True;
-	Globals.bNullPasswords = False;
-	Globals.bObeyPamRestrictions = False;
-	Globals.max_ttl = 60 * 60 * 24 * 3;	/* 3 days default. */
-	Globals.max_wins_ttl = 60 * 60 * 24 * 6;	/* 6 days default. */
-	Globals.min_wins_ttl = 60 * 60 * 6;	/* 6 hours default. */
-	Globals.machine_password_timeout = 60 * 60 * 24 * 7;	/* 7 days default. */
-	Globals.lm_announce = 2;	/* = Auto: send only if LM clients found */
-	Globals.lm_interval = 60;
-	Globals.announce_as = ANNOUNCE_AS_NT_SERVER;
+	do_parameter("logon home", "\\\\%N\\%U");
+	do_parameter("logon path", "\\\\%N\\%U\\profile");
+	do_parameter("password server", "*");
 
-	Globals.bTimeServer = False;
-	Globals.bBindInterfacesOnly = False;
-	Globals.bUnixPasswdSync = False;
-	Globals.bPamPasswordChange = False;
-	Globals.bUnicode = True;	/* Do unicode on the wire by default */
-	Globals.bNTStatusSupport = True; /* Use NT status by default. */
-	Globals.restrict_anonymous = 0;
-	Globals.bClientLanManAuth = True;	/* Do use the LanMan hash if it is available */
-	Globals.bLanmanAuth = True;	/* Do use the LanMan hash if it is available */
-	Globals.bNTLMAuth = True;	/* Do use NTLMv1 if it is available (otherwise NTLMv2) */
+	do_parameter("load printers", "True");
+
+	do_parameter("max mux", "50");
+	do_parameter("max xmit", "4356");
+	do_parameter("lpqcachetime", "10");
+	do_parameter("DisableSpoolss", "False");
+	do_parameter("password level", "0");
+	do_parameter("username level", "0");
+	do_parameter("LargeReadwrite", "True");
+	do_parameter("minprotocol", "CORE");
+	do_parameter("security", "USER");
+	do_parameter("paranoid server security", "True");
+	do_parameter("EncryptPasswords", "True");
+	do_parameter("ReadRaw", "True");
+	do_parameter("WriteRaw", "True");
+	do_parameter("NullPasswords", "False");
+	do_parameter("ObeyPamRestrictions", "False");
+	do_parameter("lm announce", "Auto");	
+	do_parameter("lm interval", "60");
+	do_parameter("announce as", "NT SERVER");
+
+	do_parameter("TimeServer", "False");
+	do_parameter("BindInterfacesOnly", "False");
+	do_parameter("PamPasswordChange", "False");
+	do_parameter("Unicode", "True");
+	do_parameter("restrict anonymous", "0");
+	do_parameter("ClientLanManAuth", "True");
+	do_parameter("LanmanAuth", "True");
+	do_parameter("NTLMAuth", "True");
 	
-	Globals.enhanced_browsing = True; 
-	Globals.iLockSpinCount = 3; /* Try 2 times. */
-	Globals.iLockSpinTime = 10; /* usec. */
+	do_parameter("enhanced browsing", "True"); 
+	do_parameter("LockSpinCount", "3");
+	do_parameter("LockSpinTime", "10");
 #ifdef MMAP_BLACKLIST
-	Globals.bUseMmap = False;
+	do_parameter("UseMmap", "False");
 #else
-	Globals.bUseMmap = True;
+	do_parameter("UseMmap", "True");
 #endif
-	Globals.bUnixExtensions = False;
+	do_parameter("UnixExtensions", "False");
 
 	/* hostname lookups can be very expensive and are broken on
 	   a large number of sites (tridge) */
-	Globals.bHostnameLookups = False;
+	do_parameter("HostnameLookups", "False");
 
-#ifdef WITH_LDAP_SAMCONFIG
-	string_set(&Globals.szLdapServer, "localhost");
-	Globals.ldap_port = 636;
-	Globals.szPassdbBackend = str_list_make("ldapsam guest", NULL);
-#else
-	Globals.szPassdbBackend = str_list_make("smbpasswd guest", NULL);
-#endif /* WITH_LDAP_SAMCONFIG */
+	do_parameter("PreferredMaster", "Auto");
+	do_parameter("os level", "20");
+	do_parameter("LocalMaster", "True");
+	do_parameter("DomainMaster", "Auto");	/* depending on bDomainLogons */
+	do_parameter("DomainLogons", "False");
+	do_parameter("WINSsupport", "False");
+	do_parameter("WINSproxy", "False");
 
-	string_set(&Globals.szLdapSuffix, "");
-	string_set(&Globals.szLdapMachineSuffix, "");
-	string_set(&Globals.szLdapUserSuffix, "");
+	do_parameter("DNSproxy", "True");
 
-	string_set(&Globals.szLdapFilter, "(&(uid=%u)(objectclass=sambaAccount))");
-	string_set(&Globals.szLdapAdminDn, "");
-	Globals.ldap_ssl = LDAP_SSL_ON;
-	Globals.ldap_passwd_sync = LDAP_PASSWD_SYNC_OFF;
+	do_parameter("AllowTrustedDomains", "True");
 
-/* these parameters are set to defaults that are more appropriate
-   for the increasing samba install base:
+	do_parameter("TemplateShell", "/bin/false");
+	do_parameter("TemplateHomedir", "/home/%D/%U");
+	do_parameter("WinbindSeparator", "\\");
 
-   as a member of the workgroup, that will possibly become a
-   _local_ master browser (lm = True).  this is opposed to a forced
-   local master browser startup (pm = True).
+	do_parameter("winbind cache time", "15");
+	do_parameter("WinbindEnumUsers", "True");
+	do_parameter("WinbindEnumGroups", "True");
+	do_parameter("WinbindUseDefaultDomain", "False");
 
-   doesn't provide WINS server service by default (wsupp = False),
-   and doesn't provide domain master browser services by default, either.
+	do_parameter("IDMapBackend", "tdb");
 
-*/
+	do_parameter("name cache timeout", "660"); /* In seconds */
 
-	Globals.bPreferredMaster = Auto;	/* depending on bDomainMaster */
-	Globals.os_level = 20;
-	Globals.bLocalMaster = True;
-	Globals.bDomainMaster = Auto;	/* depending on bDomainLogons */
-	Globals.bDomainLogons = False;
-	Globals.bWINSsupport = False;
-	Globals.bWINSproxy = False;
+	do_parameter("client signing", "Yes");
+	do_parameter("server signing", "Yes");
 
-	Globals.bDNSproxy = True;
+	do_parameter("use spnego", "True");
 
-	Globals.bAllowTrustedDomains = True;
-
-	string_set(&Globals.szTemplateShell, "/bin/false");
-	string_set(&Globals.szTemplateHomedir, "/home/%D/%U");
-	string_set(&Globals.szWinbindSeparator, "\\");
-
-	Globals.winbind_cache_time = 15;
-	Globals.bWinbindEnumUsers = True;
-	Globals.bWinbindEnumGroups = True;
-	Globals.bWinbindUseDefaultDomain = False;
-
-	string_set(&Globals.szIDMapBackend, "tdb");
-
-	Globals.name_cache_timeout = 660; /* In seconds */
-
-	Globals.bUseSpnego = True;
-
-	Globals.client_signing = SMB_SIGNING_SUPPORTED;
-	Globals.server_signing = SMB_SIGNING_SUPPORTED;
-
-	Globals.smb_ports = str_list_make(SMB_PORTS, NULL);
+	do_parameter("smb ports", SMB_PORTS);
 }
 
 static TALLOC_CTX *lp_talloc;
@@ -1248,7 +1136,6 @@ FN_GLOBAL_LIST(lp_interfaces, &Globals.szInterfaces)
 FN_GLOBAL_STRING(lp_socket_address, &Globals.szSocketAddress)
 static FN_GLOBAL_STRING(lp_announce_version, &Globals.szAnnounceVersion)
 FN_GLOBAL_LIST(lp_netbios_aliases, &Globals.szNetbiosAliases)
-FN_GLOBAL_LIST(lp_passdb_backend, &Globals.szPassdbBackend)
 FN_GLOBAL_LIST(lp_preload_modules, &Globals.szPreloadModules)
 FN_GLOBAL_STRING(lp_panic_action, &Globals.szPanicAction)
 FN_GLOBAL_STRING(lp_adduser_script, &Globals.szAddUserScript)
@@ -1267,19 +1154,6 @@ FN_GLOBAL_BOOL(lp_winbind_enum_groups, &Globals.bWinbindEnumGroups)
 FN_GLOBAL_BOOL(lp_winbind_use_default_domain, &Globals.bWinbindUseDefaultDomain)
 FN_GLOBAL_STRING(lp_idmap_backend, &Globals.szIDMapBackend)
 
-#ifdef WITH_LDAP_SAMCONFIG
-FN_GLOBAL_STRING(lp_ldap_server, &Globals.szLdapServer)
-FN_GLOBAL_INTEGER(lp_ldap_port, &Globals.ldap_port)
-#endif
-FN_GLOBAL_STRING(lp_ldap_suffix, &Globals.szLdapSuffix)
-FN_GLOBAL_STRING(lp_ldap_machine_suffix, &Globals.szLdapMachineSuffix)
-FN_GLOBAL_STRING(lp_ldap_user_suffix, &Globals.szLdapUserSuffix)
-FN_GLOBAL_STRING(lp_ldap_filter, &Globals.szLdapFilter)
-FN_GLOBAL_STRING(lp_ldap_admin_dn, &Globals.szLdapAdminDn)
-FN_GLOBAL_INTEGER(lp_ldap_ssl, &Globals.ldap_ssl)
-FN_GLOBAL_INTEGER(lp_ldap_passwd_sync, &Globals.ldap_passwd_sync)
-FN_GLOBAL_BOOL(lp_ldap_trust_ids, &Globals.ldap_trust_ids)
-
 FN_GLOBAL_BOOL(lp_disable_netbios, &Globals.bDisableNetbios)
 FN_GLOBAL_BOOL(lp_dns_proxy, &Globals.bDNSproxy)
 FN_GLOBAL_BOOL(lp_wins_support, &Globals.bWINSsupport)
@@ -1294,11 +1168,9 @@ FN_GLOBAL_BOOL(lp_writeraw, &Globals.bWriteRaw)
 FN_GLOBAL_BOOL(lp_null_passwords, &Globals.bNullPasswords)
 FN_GLOBAL_BOOL(lp_obey_pam_restrictions, &Globals.bObeyPamRestrictions)
 FN_GLOBAL_BOOL(lp_encrypted_passwords, &Globals.bEncryptPasswords)
-FN_GLOBAL_BOOL(lp_update_encrypted, &Globals.bUpdateEncrypt)
 static FN_GLOBAL_BOOL(lp_time_server, &Globals.bTimeServer)
 FN_GLOBAL_BOOL(lp_bind_interfaces_only, &Globals.bBindInterfacesOnly)
 FN_GLOBAL_BOOL(lp_pam_password_change, &Globals.bPamPasswordChange)
-FN_GLOBAL_BOOL(lp_unix_password_sync, &Globals.bUnixPasswdSync)
 FN_GLOBAL_BOOL(lp_unicode, &Globals.bUnicode)
 FN_GLOBAL_BOOL(lp_nt_status_support, &Globals.bNTStatusSupport)
 FN_GLOBAL_BOOL(lp_allow_trusted_domains, &Globals.bAllowTrustedDomains)
@@ -2305,92 +2177,6 @@ static BOOL handle_non_unix_account_range(const char *pszParmValue, char **ptr)
 	return True;
 }
 
-/***************************************************************************
- Handle the ldap machine suffix option.
-***************************************************************************/
-
-static BOOL handle_ldap_machine_suffix( const char *pszParmValue, char **ptr)
-{
-       pstring suffix;
-       
-       pstrcpy(suffix, pszParmValue);
-
-       if (! *Globals.szLdapSuffix ) {
-               string_set( ptr, suffix );
-               return True;
-       }
-
-       if (! strstr(suffix, Globals.szLdapSuffix) ) {
-               if ( *pszParmValue )
-                       pstrcat(suffix, ",");
-               pstrcat(suffix, Globals.szLdapSuffix);
-       }
-       string_set( ptr, suffix );
-       return True;
-}
-
-/***************************************************************************
- Handle the ldap user suffix option.
-***************************************************************************/
-
-static BOOL handle_ldap_user_suffix( const char *pszParmValue, char **ptr)
-{
-       pstring suffix;
-       
-       pstrcpy(suffix, pszParmValue);
-
-       if (! *Globals.szLdapSuffix ) {
-               string_set( ptr, suffix );
-               return True;
-       }
-       
-       if (! strstr(suffix, Globals.szLdapSuffix) ) {
-               if ( *pszParmValue )
-                       pstrcat(suffix, ",");
-               pstrcat(suffix, Globals.szLdapSuffix);
-       }
-       string_set( ptr, suffix );
-       return True;
-}
-
-/***************************************************************************
- Handle setting ldap suffix and determines whether ldap machine suffix needs
- to be set as well.
-***************************************************************************/
-
-static BOOL handle_ldap_suffix( const char *pszParmValue, char **ptr)
-{
-       pstring suffix;
-       pstring user_suffix;
-       pstring machine_suffix;	
-  	          
-       pstrcpy(suffix, pszParmValue);
-
-       if (! *Globals.szLdapMachineSuffix )
-               string_set(&Globals.szLdapMachineSuffix, suffix);
-       if (! *Globals.szLdapUserSuffix ) 
-               string_set(&Globals.szLdapUserSuffix, suffix);
-         
-       if (! strstr(Globals.szLdapMachineSuffix, suffix)) {
-               pstrcpy(machine_suffix, Globals.szLdapMachineSuffix);
-               if ( *Globals.szLdapMachineSuffix )
-                       pstrcat(machine_suffix, ",");
-               pstrcat(machine_suffix, suffix);
-               string_set(&Globals.szLdapMachineSuffix, machine_suffix);       
-       }
-
-       if (! strstr(Globals.szLdapUserSuffix, suffix)) {
-               pstrcpy(user_suffix, Globals.szLdapUserSuffix);
-               if ( *Globals.szLdapUserSuffix )
-                       pstrcat(user_suffix, ",");
-               pstrcat(user_suffix, suffix);   
-               string_set(&Globals.szLdapUserSuffix, user_suffix);
-       } 
-
-       string_set(ptr, suffix); 
-
-       return True;
-}
 
 /***************************************************************************
  Initialise a copymap.
@@ -2590,6 +2376,11 @@ BOOL lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 					break;
 				}
 			}
+			if (!parm_table[parmnum].enum_list[i].name) {
+				DEBUG(0,("Unknown enumerated value '%s' for '%s'\n", 
+					 pszParmValue, pszParmName));
+				return False;
+			}
 			break;
 		case P_SEP:
 			break;
@@ -2607,10 +2398,25 @@ static BOOL do_parameter(const char *pszParmName, const char *pszParmValue)
 	if (!bInGlobalSection && bGlobalOnly)
 		return (True);
 
-	DEBUGADD(4, ("doing parameter %s = %s\n", pszParmName, pszParmValue));
-
 	return (lp_do_parameter(bInGlobalSection ? -2 : iServiceIndex,
 				pszParmName, pszParmValue));
+}
+
+/*
+  variable argument do parameter
+*/
+static BOOL do_parameter_var(const char *pszParmName, const char *fmt, ...)
+{
+	char *s;
+	BOOL ret;
+	va_list ap;
+
+	va_start(ap, fmt);	
+	s = talloc_vasprintf(NULL, fmt, ap);
+	va_end(ap);
+	ret = do_parameter(pszParmName, s);
+	talloc_free(s);
+	return ret;
 }
 
 
