@@ -111,9 +111,10 @@ AM_CONDITIONAL(AIX4, test "`uname`" = AIX -a "`uname -v`" = 4)
 aix_dynamic_afs=yes
 AM_CONDITIONAL(AIX_DYNAMIC_AFS, test "$aix_dynamic_afs" = yes)dnl
 
+AC_FIND_FUNC_NO_LIBS(dlopen, dl)
+
 if test "`uname`" = AIX ;then
 	if test "$aix_dynamic_afs" = yes; then
-		AC_FIND_FUNC_NO_LIBS(dlopen, dl)
 		if test "$ac_cv_funclib_dlopen" = yes; then
 			AIX_EXTRA_KAFS=
 		elif test "$ac_cv_funclib_dlopen" != no; then
@@ -223,30 +224,97 @@ AC_STRUCT_TM
 dnl Checks for header files.
 AC_HEADER_STDC
 
-AC_CHECK_HEADERS(arpa/ftp.h arpa/inet.h arpa/nameser.h arpa/telnet.h )
-AC_CHECK_HEADERS(bind/bitypes.h bsdsetjmp.h crypt.h)
-AC_CHECK_HEADERS(curses.h db_185.h db.h dbm.h dirent.h err.h errno.h)
-AC_CHECK_HEADERS(fcntl.h fnmatch.h grp.h inttypes.h limits.h)
-AC_CHECK_HEADERS(maillock.h ndbm.h)
-AC_CHECK_HEADERS(net/if.h netdb.h)
-AC_CHECK_HEADERS(netinet/in.h netinet/in6.h netinet/in6_var.h)
-AC_CHECK_HEADERS(netinet/in6_machtypes.h netinet/in_systm.h)
-AC_CHECK_HEADERS(netinet/ip.h netinet/tcp.h netinfo/ni.h netinet6/in6.h)
-AC_CHECK_HEADERS(paths.h pty.h pwd.h)
-AC_CHECK_HEADERS(io.h resolv.h rpcsvc/dbm.h)
-AC_CHECK_HEADERS(sac.h security/pam_modules.h sgtty.h shadow.h siad.h)
-AC_CHECK_HEADERS(signal.h stropts.h)
-AC_CHECK_HEADERS(sys/bitypes.h sys/category.h sys/file.h sys/filio.h)
-AC_CHECK_HEADERS(sys/ioccom.h sys/ioctl.h)
-AC_CHECK_HEADERS(sys/param.h sys/proc.h sys/pty.h sys/ptyio.h)
-AC_CHECK_HEADERS(sys/ptyvar.h sys/resource.h sys/select.h)
-AC_CHECK_HEADERS(sys/socket.h sys/sockio.h sys/stat.h sys/stream.h)
-AC_CHECK_HEADERS(sys/stropts.h sys/strtty.h sys/str_tty.h sys/syscall.h)
-AC_CHECK_HEADERS(sys/sysctl.h sys/time.h sys/timeb.h sys/times.h)
-AC_CHECK_HEADERS(sys/termio.h sys/tty.h sys/types.h sys/uio.h sys/un.h)
-AC_CHECK_HEADERS(sys/utsname.h sys/wait.h syslog.h term.h termio.h)
-AC_CHECK_HEADERS(termios.h time.h tmpdir.h udb.h unistd.h util.h)
-AC_CHECK_HEADERS(utmp.h utmpx.h)
+AC_CHECK_HEADERS([\
+	arpa/ftp.h				\
+	arpa/inet.h				\
+	arpa/nameser.h				\
+	arpa/telnet.h				\
+	bind/bitypes.h				\
+	bsdsetjmp.h				\
+	crypt.h					\
+	curses.h				\
+	db.h					\
+	db_185.h				\
+	dbm.h					\
+	dirent.h				\
+	dlfcn.h					\
+	err.h					\
+	errno.h					\
+	fcntl.h					\
+	fnmatch.h				\
+	grp.h					\
+	inttypes.h				\
+	io.h					\
+	limits.h				\
+	maillock.h				\
+	ndbm.h					\
+	net/if.h				\
+	netdb.h					\
+	netinet/in.h				\
+	netinet/in6.h				\
+	netinet/in6_machtypes.h			\
+	netinet/in6_var.h			\
+	netinet/in_systm.h			\
+	netinet/ip.h				\
+	netinet/tcp.h				\
+	netinet6/in6.h				\
+	netinfo/ni.h				\
+	paths.h					\
+	pty.h					\
+	pwd.h					\
+	resolv.h				\
+	rpcsvc/dbm.h				\
+	sac.h					\
+	security/pam_modules.h			\
+	sgtty.h					\
+	shadow.h				\
+	siad.h					\
+	signal.h				\
+	stropts.h				\
+	sys/bitypes.h				\
+	sys/category.h				\
+	sys/file.h				\
+	sys/filio.h				\
+	sys/ioccom.h				\
+	sys/ioctl.h				\
+	sys/param.h				\
+	sys/proc.h				\
+	sys/pty.h				\
+	sys/ptyio.h				\
+	sys/ptyvar.h				\
+	sys/resource.h				\
+	sys/select.h				\
+	sys/socket.h				\
+	sys/sockio.h				\
+	sys/stat.h				\
+	sys/str_tty.h				\
+	sys/stream.h				\
+	sys/stropts.h				\
+	sys/strtty.h				\
+	sys/syscall.h				\
+	sys/sysctl.h				\
+	sys/termio.h				\
+	sys/time.h				\
+	sys/timeb.h				\
+	sys/times.h				\
+	sys/tty.h				\
+	sys/types.h				\
+	sys/uio.h				\
+	sys/un.h				\
+	sys/utsname.h				\
+	sys/wait.h				\
+	syslog.h				\
+	term.h					\
+	termio.h				\
+	termios.h				\
+	time.h					\
+	tmpdir.h				\
+	udb.h					\
+	unistd.h				\
+	util.h					\
+	utmp.h					\
+	utmpx.h					\
+])
 
 AM_CONDITIONAL(have_err_h, test "$ac_cv_header_err_h" = yes)
 AM_CONDITIONAL(have_fnmatch_h, test "$ac_cv_header_fnmatch_h" = yes)
