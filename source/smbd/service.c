@@ -334,7 +334,7 @@ connection_struct *make_connection(char *service,char *password,
 	ZERO_STRUCT(user);
 
 	/* This must ONLY BE CALLED AS ROOT. As it exits this function as root. */
-	if ((euid = geteuid()) != 0) {
+	if (!non_root_mode() && (euid = geteuid()) != 0) {
 		DEBUG(0,("make_connection: PANIC ERROR. Called as nonroot (%u)\n", (unsigned int)euid ));
 		smb_panic("make_connection: PANIC ERROR. Called as nonroot\n");
 	}
