@@ -139,6 +139,18 @@ void echo_TestSurrounding(echo_Surrounding *data)
 	data->x *= 2;
 }
 
+short echo_TestDoublePointer(short ***data)
+{
+	if (!*data) {
+		return 0;
+	}
+	if (!**data) {
+		return 0;
+	}
+	printf("Incoming double pointer: %d\n", ***data);
+	return ***data;
+}
+
 void main(int argc, char **argv)
 {
 	RPC_STATUS status;
