@@ -48,7 +48,8 @@ struct ldb_context *ldb_connect(const char *url, unsigned int flags,
 				const char *options[])
 {
 
-	if (strncmp(url, "tdb:", 4) == 0) {
+	if (strncmp(url, "tdb:", 4) == 0 ||
+	    strchr(url, ':') == NULL) {
 		return ltdb_connect(url, flags, options);
 	}
 
