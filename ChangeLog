@@ -1,5 +1,12 @@
 2004-10-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/pkinit.c: stop using AlgorithmIdentifierNonOpt, add
+	openssl engine support for private key
+
+	* lib/krb5/crypto.c: support padding as its done in CMS
+	
+	* kdc/pkinit.c: improve error logging
+	
 	* kdc/pkinit.c: stop using AlgorithmIdentifierNonOpt
 	
 2004-09-30 Love Hörnquist Åstrand <lha@it.su.se>
