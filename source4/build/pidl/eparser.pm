@@ -117,7 +117,8 @@ sub type2ft($)
  
     return "FT_UINT$1" if $t =~ /uint(8|16|32|64)/;
     return "FT_INT$1" if $t =~ /int(8|16|32|64)/;
-    return "FT_UINT64", if ($t eq "HYPER_T" or $t eq "NTTIME");
+    return "FT_UINT64", if $t eq "HYPER_T" or $t eq "NTTIME"
+	or $t eq "NTTIME_1sec" or $t eq "NTTIME_hyper";
     
     # Type is an enum
 
