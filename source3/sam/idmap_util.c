@@ -348,7 +348,7 @@ BOOL idmap_init_wellknown_sids(void)
 
 		for (i = 0; i < num_entries; i++) {
 			id.gid = map[i].gid;
-			idmap_set_mapping(&(map[i].sid), id, ID_GROUPID);
+			idmap_set_mapping(&map[i].sid, id, ID_GROUPID);
 		}
 		SAFE_FREE(map);
 	}
