@@ -24,8 +24,6 @@
 
 #include "includes.h"
 
-#ifdef WITH_NISPLUS_SAM
-
 #ifdef BROKEN_NISPLUS_INCLUDE_FILES
 
 /*
@@ -1555,11 +1553,7 @@ NTSTATUS pdb_init_nisplussam (PDB_CONTEXT * pdb_context,
 	return NT_STATUS_OK;
 }
 
-#else
-NTSTATUS pdb_init_nisplussam (PDB_CONTEXT * c, PDB_METHODS ** m,
-			      const char *l)
+int pdb_nisplus_init(void)
 {
-	DEBUG (0, ("nisplus sam not compiled in!\n"));
-	return NT_STATUS_UNSUCCESSFUL;
+	return smb_register_passdb("nisplussam", pdb_init_nisplussam, PASSDB_INTERFACE_VERSION);
 }
-#endif /* WITH_NISPLUS_SAM */

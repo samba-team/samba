@@ -87,6 +87,8 @@ int smb_probe_module(const char *subsystem, const char *module)
 	pstrcat(full_path, module);
 	pstrcat(full_path, ".");
 	pstrcat(full_path, shlib_ext());
+
+	DEBUG(5, ("Probing module %s: Trying to load from %s\n", module, full_path));
 	
 	return smb_load_module(full_path);
 }

@@ -1443,11 +1443,7 @@ static BOOL api_samr_set_dom_info(pipes_struct *p)
  array of \PIPE\samr operations
  ********************************************************************/
 
-#ifdef RPC_SAMR_DYNAMIC
-int init_module(void)
-#else
 int rpc_samr_init(void)
-#endif
 {
   static struct api_struct api_samr_cmds [] =
     {

@@ -28,7 +28,6 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_PASSDB
 
-#ifdef HAVE_LDAP
 /* TODO:
 *  persistent connections: if using NSS LDAP, many connections are made
 *      however, using only one within Samba would be nice
@@ -2611,20 +2610,9 @@ NTSTATUS pdb_init_ldapsam_nua(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method
 	return NT_STATUS_OK;
 }
 
-
-#else
-
-NTSTATUS pdb_init_ldapsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const char *location)
+int pdb_ldap_init(void)
 {
-	DEBUG(0, ("ldap not detected at configure time, ldapsam not availalble!\n"));
-	return NT_STATUS_UNSUCCESSFUL;
+	smb_register_passdb("ldapsam", pdb_init_ldapsam, PASSDB_INTERFACE_VERSION);
+	smb_register_passdb("ldapsam_nua", pdb_init_ldapsam_nua, PASSDB_INTERFACE_VERSION);
+	return TRUE;
 }
-
-NTSTATUS pdb_init_ldapsam_nua(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const char *location)
-{
-	DEBUG(0, ("ldap not dectected at configure time, ldapsam_nua not available!\n"));
-	return NT_STATUS_UNSUCCESSFUL;
-}
-
-
-#endif

@@ -24,39 +24,14 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_PASSDB
 
-/** List of various built-in passdb modules */
-static const struct {
-    const char *name;
-    /* Function to create a member of the pdb_methods list */
-    pdb_init_function init;
-} builtin_pdb_init_functions[] = {
-	{ "smbpasswd", pdb_init_smbpasswd },
-	{ "smbpasswd_nua", pdb_init_smbpasswd_nua },
-	{ "tdbsam", pdb_init_tdbsam },
-	{ "tdbsam_nua", pdb_init_tdbsam_nua },
-	{ "ldapsam", pdb_init_ldapsam },
-	{ "ldapsam_nua", pdb_init_ldapsam_nua },
-	{ "unixsam", pdb_init_unixsam },
-	{ "guest", pdb_init_guestsam },
-	{ "nisplussam", pdb_init_nisplussam },
-	{ NULL, NULL}
-};
+static struct pdb_init_function_entry *backends = NULL;
 
-static struct pdb_init_function_entry *backends;
-static void lazy_initialize_passdb(void);
-
-static void lazy_initialize_passdb()
+static void lazy_initialize_passdb(void)
 {
-	int i;
-	static BOOL initialised = False;
-	
-	if(!initialised) {
-		initialised = True;
-
-		for(i = 0; builtin_pdb_init_functions[i].name; i++) {
-			smb_register_passdb(builtin_pdb_init_functions[i].name, builtin_pdb_init_functions[i].init, PASSDB_INTERFACE_VERSION);
-		}
-	}
+	static BOOL initialized = FALSE;
+	if(initialized)return;
+	static_init_pdb;
+	initialized = TRUE;
 }
 
 BOOL smb_register_passdb(const char *name, pdb_init_function init, int version) 
@@ -451,13 +426,18 @@ static NTSTATUS make_pdb_methods_name(struct pdb_methods **methods, struct pdb_c
 	entry = pdb_find_backend_entry(module_name);
 	
 	/* Try to find a module that contains this module */
-	if(!entry) { 
-		smb_probe_module("passdb", module_name);
-		entry = pdb_find_backend_entry(module_name);
+	if (!entry) { 
+		DEBUG(2,("No builtin backend found, trying to load plugin\n"));
+		if(smb_probe_module("passdb", module_name) && !(entry = pdb_find_backend_entry(module_name))) {
+			DEBUG(0,("Plugin is available, but doesn't register passdb backend %s\n", module_name));
+			SAFE_FREE(module_name);
+			return NT_STATUS_UNSUCCESSFUL;
+		}
 	}
 	
 	/* No such backend found */
 	if(!entry) { 
+		DEBUG(0,("No builtin nor plugin backend for %s found\n", module_name));
 		SAFE_FREE(module_name);
 		return NT_STATUS_INVALID_PARAMETER;
 	}

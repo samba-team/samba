@@ -564,12 +564,7 @@ NTSTATUS xmlsam_init(PDB_CONTEXT * pdb_context, PDB_METHODS ** pdb_method,
 	return NT_STATUS_OK;
 }
 
-int init_module(void);
-
-int init_module() 
+int pdb_xml_init(void) 
 {
-	if(smb_register_passdb("xml", xmlsam_init, PASSDB_INTERFACE_VERSION))
-		return 0;
-
-	return 1;
+	return smb_register_passdb("xml", xmlsam_init, PASSDB_INTERFACE_VERSION);
 }

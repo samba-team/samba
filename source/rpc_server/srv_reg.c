@@ -373,11 +373,7 @@ static BOOL api_reg_save_key(pipes_struct *p)
  array of \PIPE\reg operations
  ********************************************************************/
 
-#ifdef RPC_REG_DYNAMIC
-int init_module(void)
-#else
 int rpc_reg_init(void)
-#endif
 {
   static struct api_struct api_reg_cmds[] =
     {

@@ -526,11 +526,7 @@ static BOOL api_srv_net_file_set_secdesc(pipes_struct *p)
 \PIPE\srvsvc commands
 ********************************************************************/
 
-#ifdef RPC_SVC_DYNAMIC
-int init_module(void)
-#else
 int rpc_srv_init(void)
-#endif
 {
   static const struct api_struct api_srv_cmds[] =
     {
