@@ -167,45 +167,9 @@ proto (int sock, const char *hostname, const char *service)
     return 0;
 }
 
-static int
-doit (const char *hostname, int port, const char *service)
-{
-    struct in_addr **h;
-    struct hostent *hostent;
-
-    hostent = gethostbyname (hostname);
-    if (hostent == NULL)
-	errx (1, "gethostbyname '%s' failed: %s",
-	      hostname,
-	      hstrerror(h_errno));
-
-    for (h = (struct in_addr **)hostent->h_addr_list;
-	*h != NULL;
-	 ++h) {
-	struct sockaddr_in addr;
-	int s;
-
-	memset (&addr, 0, sizeof(addr));
-	addr.sin_family = AF_INET;
-	addr.sin_port   = port;
-	addr.sin_addr   = **h;
-
-	s = socket (AF_INET, SOCK_STREAM, 0);
-	if (s < 0)
-	    err (1, "socket");
-	if (connect (s, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
-	    warn ("connect(%s)", hostname);
-	    close (s);
-	    continue;
-	}
-	return proto (s, hostname, service);
-    }
-    return 1;
-}
-
 int
 main(int argc, char **argv)
 {
     int port = client_setup(&context, &argc, argv);
-    return doit (argv[argc], port, service);
+    return client_doit (argv[argc], port, service, proto);
 }

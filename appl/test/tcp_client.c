@@ -125,52 +125,9 @@ proto (int sock, const char *hostname, const char *service)
     return 0;
 }
 
-static int
-doit (const char *hostname, int port, const char *service)
-{
-    struct hostent *hostent = NULL;
-    char **h;
-    int error;
-    int af;
-
-#ifdef HAVE_IPV6    
-    if (hostent == NULL)
-	hostent = getipnodebyname (hostname, AF_INET6, 0, &error);
-#endif
-    if (hostent == NULL)
-	hostent = getipnodebyname (hostname, AF_INET, 0, &error);
-
-    if (hostent == NULL)
-	errx(1, "gethostbyname '%s' failed: %s", hostname, hstrerror(error));
-
-    af = hostent->h_addrtype;
-
-    for (h = hostent->h_addr_list; *h != NULL; ++h) {
-	struct sockaddr_storage sa_ss;
-	struct sockaddr *sa = (struct sockaddr *)&sa_ss;
-	int s;
-
-	sa->sa_family = af;
-	socket_set_address_and_port (sa, *h, port);
-
-	s = socket (af, SOCK_STREAM, 0);
-	if (s < 0)
-	    err (1, "socket");
-	if (connect (s, sa, socket_sockaddr_size(sa)) < 0) {
-	    warn ("connect(%s)", hostname);
-	    close (s);
-	    continue;
-	}
-	freehostent (hostent);
-	return proto (s, hostname, service);
-    }
-    freehostent (hostent);
-    return 1;
-}
-
 int
 main(int argc, char **argv)
 {
     int port = client_setup(&context, &argc, argv);
-    return doit (argv[argc], port, service);
+    return client_doit (argv[argc], port, service, proto);
 }
