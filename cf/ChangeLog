@@ -1,5 +1,9 @@
 1999-05-14  Assar Westerlund  <assar@sics.se>
 
+	* check-netinet-ip-and-tcp.m4: new file for checking for
+ 	netinet/{ip,tcp}.h.  These are special as they on Irix 6.5.3
+	require <standards.h> to be included in advance.
+ 
 	* check-xau.m4: we also need to check for XauFilename since it's
  	used by appl/kx.  And on Irix 6.5 that function requires linking
  	with -lX11.
