@@ -1759,14 +1759,6 @@ only use %d.\n", (count*2) + 2, FD_SETSIZE));
 }
 
 /****************************************************************************
-do any signal triggered processing
-***************************************************************************/
-static void nmbd_async_processing(void)
-{
-	message_dispatch();
-}
-
-/****************************************************************************
   Listens for NMB or DGRAM packets, and queues them.
   return True if the socket is dead
 ***************************************************************************/
@@ -1826,9 +1818,6 @@ BOOL listen_for_packets(BOOL run_election)
   BlockSignals(True, SIGTERM);
 
   if(selrtn == -1) {
-	  if (errno == EINTR) {
-		  nmbd_async_processing();
-	  }
 	  return False;
   }
 

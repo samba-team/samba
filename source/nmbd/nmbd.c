@@ -312,6 +312,9 @@ static void process(void)
   {
     time_t t = time(NULL);
 
+    /* check for internal messages */
+    message_dispatch();
+
     /*
      * Check all broadcast subnets to see if
      * we need to run an election on any of them.
@@ -490,9 +493,6 @@ static void process(void)
 
     /* free up temp memory */
     lp_talloc_free();
-
-    /* check for internal messages */
-    message_init();
   }
 } /* process */
 
@@ -795,6 +795,7 @@ static void usage(char *pname)
 
   pidfile_create("nmbd");
   message_init();
+  message_register(MSG_FORCE_ELECTION, nmbd_message_election);
 
   DEBUG( 3, ( "Opening sockets %d\n", global_nmb_port ) );
 

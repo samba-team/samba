@@ -43,7 +43,7 @@ static int received_signal;
 
 struct message_rec {
 	int msg_version;
-	enum message_type msg_type;
+	int msg_type;
 	pid_t dest;
 	pid_t src;
 	size_t len;
@@ -52,8 +52,8 @@ struct message_rec {
 /* we have a linked list of dispatch handlers */
 static struct dispatch_fns {
 	struct dispatch_fns *next, *prev;
-	enum message_type msg_type;
-	void (*fn)(enum message_type msg_type, pid_t pid, void *buf, size_t len);
+	int msg_type;
+	void (*fn)(int msg_type, pid_t pid, void *buf, size_t len);
 } *dispatch_fns;
 
 /****************************************************************************
@@ -124,7 +124,7 @@ static BOOL message_notify(pid_t pid)
 /****************************************************************************
 send a message to a particular pid
 ****************************************************************************/
-BOOL message_send_pid(pid_t pid, enum message_type msg_type, void *buf, size_t len)
+BOOL message_send_pid(pid_t pid, int msg_type, void *buf, size_t len)
 {
 	TDB_DATA kbuf;
 	TDB_DATA dbuf;
@@ -150,7 +150,7 @@ BOOL message_send_pid(pid_t pid, enum message_type msg_type, void *buf, size_t l
 		if (!p) goto failed;
 
 		memcpy(p, &rec, sizeof(rec));
-		memcpy(p+sizeof(rec), buf, len);
+		if (len > 0) memcpy(p+sizeof(rec), buf, len);
 
 		dbuf.dptr = p;
 		dbuf.dsize = len + sizeof(rec);
@@ -165,7 +165,7 @@ BOOL message_send_pid(pid_t pid, enum message_type msg_type, void *buf, size_t l
 
 	memcpy(p, dbuf.dptr, dbuf.dsize);
 	memcpy(p+dbuf.dsize, &rec, sizeof(rec));
-	memcpy(p+dbuf.dsize+sizeof(rec), buf, len);
+	if (len > 0) memcpy(p+dbuf.dsize+sizeof(rec), buf, len);
 
 	dbuf.dptr = p;
 	dbuf.dsize += len + sizeof(rec);
@@ -187,7 +187,7 @@ BOOL message_send_pid(pid_t pid, enum message_type msg_type, void *buf, size_t l
 /****************************************************************************
 retrieve the next message for the current process
 ****************************************************************************/
-static BOOL message_recv(enum message_type *msg_type, pid_t *src, void **buf, size_t *len)
+static BOOL message_recv(int *msg_type, pid_t *src, void **buf, size_t *len)
 {
 	TDB_DATA kbuf;
 	TDB_DATA dbuf;
@@ -207,10 +207,15 @@ static BOOL message_recv(enum message_type *msg_type, pid_t *src, void **buf, si
 		goto failed;
 	}
 
-	(*buf) = (void *)malloc(rec.len);
-	if (!(*buf)) goto failed;
+	if (rec.len > 0) {
+		(*buf) = (void *)malloc(rec.len);
+		if (!(*buf)) goto failed;
 
-	memcpy(*buf, dbuf.dptr+sizeof(rec), rec.len);
+		memcpy(*buf, dbuf.dptr+sizeof(rec), rec.len);
+	} else {
+		*buf = NULL;
+	}
+
 	*len = rec.len;
 	*msg_type = rec.msg_type;
 	*src = rec.src;
@@ -236,7 +241,7 @@ so you can register multiple handlers for a message
 ****************************************************************************/
 void message_dispatch(void)
 {
-	enum message_type msg_type;
+	int msg_type;
 	pid_t src;
 	void *buf;
 	size_t len;
@@ -258,8 +263,8 @@ void message_dispatch(void)
 /****************************************************************************
 register a dispatch function for a particular message type
 ****************************************************************************/
-void message_register(enum message_type msg_type, 
-		      void (*fn)(enum message_type msg_type, pid_t pid, void *buf, size_t len))
+void message_register(int msg_type, 
+		      void (*fn)(int msg_type, pid_t pid, void *buf, size_t len))
 {
 	struct dispatch_fns *dfn;
 
