@@ -4502,8 +4502,8 @@ NTSTATUS _samr_set_dom_info(pipes_struct *p, SAMR_Q_SET_DOMAIN_INFO *q_u, SAMR_R
 		case 0x07:
 			break;
 		case 0x0c:
-			u_lock_duration=nt_time_to_unix_abs(&q_u->ctr->info.inf12.duration);
-			u_reset_time=nt_time_to_unix_abs(&q_u->ctr->info.inf12.reset_count);
+			u_lock_duration=nt_time_to_unix_abs(&q_u->ctr->info.inf12.duration)/60;
+			u_reset_time=nt_time_to_unix_abs(&q_u->ctr->info.inf12.reset_count)/60;
 			
 			account_policy_set(AP_LOCK_ACCOUNT_DURATION, (int)u_lock_duration);
 			account_policy_set(AP_RESET_COUNT_TIME, (int)u_reset_time);
