@@ -1434,6 +1434,8 @@ char *strdup(char *s);
 #define FLAGS2_32_BIT_ERROR_CODES     0x4000 
 #define FLAGS2_UNICODE_STRINGS        0x8000
 
+#define FLAGS2_WIN2K_SIGNATURE        0xC852 /* Hack alert ! For now... JRA. */
+
 /* Capabilities.  see ftp.microsoft.com/developr/drg/cifs/cifs/cifs4.txt */
 
 #define CAP_RAW_MODE         0x0001
@@ -1448,6 +1450,7 @@ char *strdup(char *s);
 #define CAP_NT_FIND          0x0200
 #define CAP_DFS              0x1000
 #define CAP_LARGE_READX      0x4000
+#define CAP_EXTENDED_SECURITY 0x80000000
 
 /* protocol types. It assumes that higher protocols include lower protocols
    as subsets */

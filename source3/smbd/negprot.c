@@ -379,7 +379,10 @@ int reply_negprot(connection_struct *conn,
     set_remote_arch(RA_WIN95);
     break;
   case ARCH_WINNT:
-    set_remote_arch(RA_WINNT);
+   if(SVAL(inbuf,smb_flg2)==FLAGS2_WIN2K_SIGNATURE)
+     set_remote_arch(RA_WIN2K);
+   else
+     set_remote_arch(RA_WINNT);
     break;
   case ARCH_WIN2K:
     set_remote_arch(RA_WIN2K);
