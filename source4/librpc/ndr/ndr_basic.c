@@ -486,9 +486,6 @@ NTSTATUS ndr_push_unique_ptr(struct ndr_push *ndr, const void *p)
 {
 	uint32_t ptr = 0;
 	if (p) {
-		/* we do this to ensure that we generate unique ref ids,
-		   which means we can handle the case where a MS programmer
-		   forgot to mark a pointer as unique */
 		ndr->ptr_count++;
 		ptr = ndr->ptr_count;
 	}

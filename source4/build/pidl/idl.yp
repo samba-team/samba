@@ -374,28 +374,8 @@ sub parse_idl($$)
 	my $idl = $self->YYParse( yylex => \&_Lexer, yyerror => \&_Error );
 
 	foreach my $x (@{$idl}) {
-		# Add [in] ORPCTHIS *this, [out] ORPCTHAT *that
-		# for 'object' interfaces
-		if (util::has_property($x, "object")) {
-			foreach my $e (@{$x->{DATA}}) {
-				if($e->{TYPE} eq "FUNCTION") {
-					$e->{PROPERTIES}->{object} = 1;
-					unshift(@{$e->{ELEMENTS}}, 
-                        { 'NAME' => 'ORPCthis',
-                          'POINTERS' => 0,
-                          'PROPERTIES' => { 'in' => '1' },
-                          'TYPE' => 'ORPCTHIS'
-                        });
-					unshift(@{$e->{ELEMENTS}},
-                        { 'NAME' => 'ORPCthat',
-                          'POINTERS' => 0,
-                          'PROPERTIES' => { 'out' => '1' },
-						  'TYPE' => 'ORPCTHAT'
-                        });
-				}
-			}
-		}
-		
+		NdrParser::InterfaceORPC($x);
+
 		# Do the inheritance
 		if (defined($x->{BASE}) and $x->{BASE} ne "") {
 			my $parent = util::get_interface($idl, $x->{BASE});
