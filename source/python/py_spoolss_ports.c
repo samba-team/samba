@@ -37,12 +37,17 @@ PyObject *spoolss_enumports(PyObject *self, PyObject *args, PyObject *kw)
 	/* Parse parameters */
 
 	if (!PyArg_ParseTupleAndKeywords(
-		    args, kw, "s|iO!", kwlist, &server, &level,
-		    &PyDict_Type, &creds))
+		    args, kw, "s|iO", kwlist, &server, &level, &creds))
 		return NULL;
 	
 	if (server[0] == '\\' && server[1] == '\\')
 		server += 2;
+
+	if (creds && creds != Py_None && !PyDict_Check(creds)) {
+		PyErr_SetString(PyExc_TypeError, 
+				"credentials must be dictionary or None");
+		return NULL;
+	}
 
 	if (!(cli = open_pipe_creds(server, creds, PIPE_SPOOLSS, &errstr))) {
 		PyErr_SetString(spoolss_error, errstr);

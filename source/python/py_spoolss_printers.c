@@ -34,7 +34,7 @@ PyObject *spoolss_openprinter(PyObject *self, PyObject *args, PyObject *kw)
 	struct cli_state *cli;
 
 	if (!PyArg_ParseTupleAndKeywords(
-		    args, kw, "s|O!i", kwlist, &unc_name, &PyDict_Type, &creds,
+		    args, kw, "s|Oi", kwlist, &unc_name, &creds,
 		    &desired_access))
 		return NULL;
 
@@ -48,6 +48,12 @@ PyObject *spoolss_openprinter(PyObject *self, PyObject *args, PyObject *kw)
 	if (strchr(server, '\\')) {
 		char *c = strchr(server, '\\');
 		*c = 0;
+	}
+
+	if (creds && creds != Py_None && !PyDict_Check(creds)) {
+		PyErr_SetString(PyExc_TypeError, 
+				"credentials must be dictionary or None");
+		return NULL;
 	}
 
 	if (!(cli = open_pipe_creds(server, creds, PIPE_SPOOLSS, &errstr))) {
@@ -286,12 +292,18 @@ PyObject *spoolss_enumprinters(PyObject *self, PyObject *args, PyObject *kw)
 	/* Parse parameters */
 
 	if (!PyArg_ParseTupleAndKeywords(
-		    args, kw, "s|siiO!", kwlist, &server, &name, &level, 
-		    &flags, &PyDict_Type, &creds))
+		    args, kw, "s|siiO", kwlist, &server, &name, &level, 
+		    &flags, &creds))
 		return NULL;
 	
 	if (server[0] == '\\' && server[1] == '\\')
 		server += 2;
+
+	if (creds && creds != Py_None && !PyDict_Check(creds)) {
+		PyErr_SetString(PyExc_TypeError, 
+				"credentials must be dictionary or None");
+		return NULL;
+	}
 
 	if (!(cli = open_pipe_creds(server, creds, PIPE_SPOOLSS, &errstr))) {
 		PyErr_SetString(spoolss_error, errstr);

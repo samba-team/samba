@@ -38,8 +38,8 @@ PyObject *spoolss_enumprinterdrivers(PyObject *self, PyObject *args,
 	/* Parse parameters */
 
 	if (!PyArg_ParseTupleAndKeywords(
-		    args, kw, "s|iO!s", kwlist, &server, &level, &PyDict_Type,
-		    &creds, &arch))
+		    args, kw, "s|iOs", kwlist, &server, &level, &creds,
+		    &arch)) 
 		return NULL;
 	
 	if (server[0] != '\\' || server[1] != '\\') {
@@ -48,6 +48,12 @@ PyObject *spoolss_enumprinterdrivers(PyObject *self, PyObject *args,
 	}
 
 	server += 2;
+
+	if (creds && creds != Py_None && !PyDict_Check(creds)) {
+		PyErr_SetString(PyExc_TypeError, 
+				"credentials must be dictionary or None");
+		return NULL;
+	}
 
 	/* Call rpc function */
 	
@@ -248,8 +254,8 @@ PyObject *spoolss_getprinterdriverdir(PyObject *self, PyObject *args,
 	/* Parse parameters */
 
 	if (!PyArg_ParseTupleAndKeywords(
-		    args, kw, "s|isO!", kwlist, &server, &level,
-		    &arch, &PyDict_Type, &creds))
+		    args, kw, "s|isO", kwlist, &server, &level,
+		    &arch, &creds))
 		return NULL;
 
 	if (server[0] != '\\' || server[1] != '\\') {
@@ -258,6 +264,12 @@ PyObject *spoolss_getprinterdriverdir(PyObject *self, PyObject *args,
 	}
 
 	server += 2;
+
+	if (creds && creds != Py_None && !PyDict_Check(creds)) {
+		PyErr_SetString(PyExc_TypeError, 
+				"credentials must be dictionary or None");
+		return NULL;
+	}
 
 	/* Call rpc function */
 
@@ -324,12 +336,18 @@ PyObject *spoolss_addprinterdriver(PyObject *self, PyObject *args,
 	} dinfo;
 
 	if (!PyArg_ParseTupleAndKeywords(
-		    args, kw, "sO!|O!", kwlist, &server, &PyDict_Type,
-		    &info, &PyDict_Type, &creds))
+		    args, kw, "sO!|O", kwlist, &server, &PyDict_Type,
+		    &info, &creds))
 		return NULL;
 	
 	if (server[0] == '\\' && server[1] == '\\')
 		server += 2;
+
+	if (creds && creds != Py_None && !PyDict_Check(creds)) {
+		PyErr_SetString(PyExc_TypeError, 
+				"credentials must be dictionary or None");
+		return NULL;
+	}
 
 	if (!(mem_ctx = talloc_init())) {
 		PyErr_SetString(
