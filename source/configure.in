@@ -4611,6 +4611,7 @@ SMB_MODULE(vfs_cap, \$(VFS_CAP_OBJ), "bin/cap.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_expand_msdfs, \$(VFS_EXPAND_MSDFS_OBJ), "bin/expand_msdfs.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_shadow_copy, \$(VFS_SHADOW_COPY_OBJ), "bin/shadow_copy.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_afsacl, \$(VFS_AFSACL_OBJ), "bin/afsacl.$SHLIBEXT", VFS)
+SMB_MODULE(vfs_catia, \$(VFS_AFSACL_OBJ), "bin/catia.$SHLIBEXT", VFS)
 SMB_SUBSYSTEM(VFS,smbd/vfs.o)
 
 SMB_MODULE(config_ldap, param/config_ldap.o, "bin/config_ldap.$SHLIBEXT", CONFIG, [ CONFIG_LIBS="$CONFIG_LIBS $LDAP_LIBS" "$SMBLDAP" ])
