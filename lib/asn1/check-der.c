@@ -89,8 +89,9 @@ test_integer (void)
 static int
 test_one_int(int val)
 {
-    int len, ret, len_len, dval;
+    int ret, dval;
     unsigned char *buf;
+    size_t len_len, len;
 
     len = _heim_len_int(val);
 
@@ -106,8 +107,8 @@ test_one_int(int val)
 	return 1;
     }
     if (len != len_len) {
-	printf("integer %d encode fail with %d len %d, result len %d\n",
-	       val, ret, len, len_len);
+	printf("integer %d encode fail with %d len %lu, result len %lu\n",
+	       val, ret, (unsigned long)len, (unsigned long)len_len);
 	return 1;
     }
 
@@ -117,8 +118,8 @@ test_one_int(int val)
 	return 1;
     }
     if (len != len_len) {
-	printf("integer %d decoded diffrent len %d != %d",
-	       val, len, len_len);
+	printf("integer %d decoded diffrent len %lu != %lu",
+	       val, (unsigned long)len, (unsigned long)len_len);
 	return 1;
     }
     if (val != dval) {
