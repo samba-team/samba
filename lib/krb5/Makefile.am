@@ -46,6 +46,7 @@ ERR_FILES = krb5_err.c heim_err.c k524_err.c
 libkrb5_la_CPPFLAGS = -DBUILD_KRB5_LIB
 
 libkrb5_la_SOURCES =				\
+	acache.c				\
 	acl.c					\
 	add_et_list.c				\
 	addr_families.c				\
