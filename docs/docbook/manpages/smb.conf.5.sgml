@@ -630,8 +630,6 @@
 		<listitem><para><link linkend="DISABLESPOOLSS"><parameter>disable spoolss</parameter></link></para></listitem>
 		<listitem><para><link linkend="DISPLAYCHARSET"><parameter>display charset</parameter></link></para></listitem>
 		<listitem><para><link linkend="DNSPROXY"><parameter>dns proxy</parameter></link></para></listitem>
-		<listitem><para><link linkend="DOMAINADMINGROUP"><parameter>domain admin group</parameter></link></para></listitem>
-		<listitem><para><link linkend="DOMAINGUESTGROUP"><parameter>domain guest group</parameter></link></para></listitem>
 		<listitem><para><link linkend="DOMAINLOGONS"><parameter>domain logons</parameter></link></para></listitem>
 		<listitem><para><link linkend="DOMAINMASTER"><parameter>domain master</parameter></link></para></listitem>
 		<listitem><para><link linkend="DOSCHARSET"><parameter>dos charset</parameter></link></para></listitem>
@@ -762,7 +760,6 @@
 		<listitem><para><link linkend="UNIXPASSWORDSYNC"><parameter>unix password sync</parameter></link></para></listitem>
 		<listitem><para><link linkend="UPDATEENCRYPTED"><parameter>update encrypted</parameter></link></para></listitem>
 		<listitem><para><link linkend="USEMMAP"><parameter>use mmap</parameter></link></para></listitem>
-		<listitem><para><link linkend="USERHOSTS"><parameter>use rhosts</parameter></link></para></listitem>
 		<listitem><para><link linkend="USERNAMELEVEL"><parameter>username level</parameter></link></para></listitem>
 		<listitem><para><link linkend="USERNAMEMAP"><parameter>username map</parameter></link></para></listitem>
 		<listitem><para><link linkend="UTMP"><parameter>utmp</parameter></link></para></listitem>
@@ -897,7 +894,6 @@
 		<listitem><para><link linkend="SETDIRECTORY"><parameter>set directory</parameter></link></para></listitem>
 		<listitem><para><link linkend="SHAREMODES"><parameter>share modes</parameter></link></para></listitem>
 		<listitem><para><link linkend="SHORTPRESERVECASE"><parameter>short preserve case</parameter></link></para></listitem>
-		<listitem><para><link linkend="STATUS"><parameter>status</parameter></link></para></listitem>
 		<listitem><para><link linkend="STRICTALLOCATE"><parameter>strict allocate</parameter></link></para></listitem>
 		<listitem><para><link linkend="STRICTLOCKING"><parameter>strict locking</parameter></link></para></listitem>
 		<listitem><para><link linkend="STRICTSYNC"><parameter>strict sync</parameter></link></para></listitem>
@@ -2288,53 +2284,6 @@
 		wins support</parameter></link>.</para>
 
 		<para>Default: <command>dns proxy = yes</command></para></listitem>
-		</varlistentry>
-
-
-
-		<varlistentry>
-		<term><anchor id="DOMAINADMINGROUP">domain admin group (G)</term>
-		<listitem><para>This parameter is intended as a temporary solution
-		to enable users to be a member of the "Domain Admins" group when 
-		a Samba host is acting as a PDC.  A complete solution will be provided
-		by a system for mapping Windows NT/2000 groups onto UNIX groups.
-		Please note that this parameter has a somewhat confusing name.  It 
-		accepts a list of usernames and of group names in standard 
-		<filename>smb.conf</filename>	notation.
-		</para>
-		
-		<para>See also <link linkend="DOMAINGUESTGROUP"><parameter>domain
-		guest group</parameter></link>, <link linkend="DOMAINLOGONS"><parameter>domain
-		logons</parameter></link>
-		</para>
-		
-		<para>Default: <emphasis>no domain administrators</emphasis></para>
-		<para>Example: <command>domain admin group = root @wheel</command></para>
-		</listitem>
-		</varlistentry>
-
-
-
-
-		<varlistentry>
-		<term><anchor id="DOMAINGUESTGROUP">domain guest group (G)</term>
-		<listitem><para>This parameter is intended as a temporary solution
-		to enable users to be a member of the "Domain Guests" group when 
-		a Samba host is acting as a PDC.  A complete solution will be provided
-		by a system for mapping Windows NT/2000 groups onto UNIX groups.
-		Please note that this parameter has a somewhat confusing name.  It 
-		accepts a list of usernames and of group names in standard 
-		<filename>smb.conf</filename>	notation.
-		</para>
-		
-		<para>See also <link linkend="DOMAINADMINGROUP"><parameter>domain
-		admin group</parameter></link>, <link linkend="DOMAINLOGONS"><parameter>domain
-		logons</parameter></link>
-		</para>		
-		
-		<para>Default: <emphasis>no domain guests</emphasis></para>
-		<para>Example: <command>domain guest group = nobody @guest</command></para>
-		</listitem>
 		</varlistentry>
 
 
@@ -5849,7 +5798,7 @@
 
 
 		<varlistentry>
-		<term><anchor id="PRELOAD">preload</term>
+		<term><anchor id="PRELOAD">preload (G)</term>
 		<listitem><para>This is a list of services that you want to be 
 		automatically added to the browse lists. This is most useful 
 		for homes and printers services that would otherwise not be 
@@ -7258,22 +7207,6 @@
 
 
 		<varlistentry>
-		<term><anchor id="STATUS">status (G)</term>
-		<listitem><para>This enables or disables logging of connections 
-		to a status file that <ulink url="smbstatus.1.html">smbstatus(1)</ulink>
-		can read.</para>
-
-		<para>With this disabled <command>smbstatus</command> won't be able
-		to tell you what connections are active. You should never need to
-		change this parameter.</para>
-
-		<para>Default: <command>status = yes</command></para>
-		</listitem>
-		</varlistentry>
-
-
-		
-		<varlistentry>
 		<term><anchor id="STRICTALLOCATE">strict allocate (S)</term>
 		<listitem><para>This is a boolean that controls the handling of 
 		disk space allocation in the server. When this is set to <constant>yes</constant> 
@@ -7632,26 +7565,6 @@
 		</listitem>
 		</varlistentry>
 
-
-
-
-		<varlistentry>
-		<term><anchor id="USERHOSTS">use rhosts (G)</term>
-		<listitem><para>If this global parameter is <constant>true</constant>, it specifies 
-		that the UNIX user's <filename>.rhosts</filename> file in their home directory 
-		will be read to find the names of hosts and users who will be allowed 
-		access without specifying a password.</para>
-
-		<para><emphasis>NOTE:</emphasis> The use of <parameter>use rhosts
-		</parameter> can be a major security hole. This is because you are 
-		trusting the PC to supply the correct username. It is very easy to 
-		get a PC to supply a false username. I recommend that the <parameter>
-		use rhosts</parameter> option be only used if you really know what 
-		you are doing.</para>
-
-		<para>Default: <command>use rhosts = no</command></para>
-		</listitem>
-		</varlistentry>
 
 
 
@@ -8199,7 +8112,7 @@ veto files = /.AppleDouble/.bin/.AppleDesktop/Network Trash Folder/
 		<varlistentry>
 		<term>winbind use default domain</term>
 		
-		<term><anchor id="WINBINDUSEDEFAULTDOMAIN">winbind use default domain</term>
+		<term><anchor id="WINBINDUSEDEFAULTDOMAIN">winbind use default domain (G)</term>
 		<listitem><para>This parameter specifies whether the <ulink url="winbindd.8.html">
 		winbindd(8)</ulink>
 		daemon should operate on users without domain component in their username.  
