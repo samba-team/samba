@@ -218,21 +218,21 @@ void copy_id21_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_21 *from)
 		SAFE_FREE(newstr);
 	}
 	
-	if ((from->fields_present & ACCT_RID) &&
-	    (from->user_rid == 0)) {
-		DEBUG(10, ("INFO_21: Asked to set User RID to 0 !? Skipping change!\n"));
-	} else if (from->user_rid != pdb_get_user_rid(to)) {
-		DEBUG(10,("INFO_21 USER_RID: %u -> %u NOT UPDATED!\n",pdb_get_user_rid(to),from->user_rid));
-		/* we really allow this ??? metze */
-		/* pdb_set_user_sid_from_rid(to, from->user_rid, PDB_CHANGED);*/
+	if (from->fields_present & ACCT_RID) {
+		if (from->user_rid == 0) {
+			DEBUG(10, ("INFO_21: Asked to set User RID to 0 !? Skipping change!\n"));
+		} else if (from->user_rid != pdb_get_user_rid(to)) {
+			DEBUG(10,("INFO_21 USER_RID: %u -> %u NOT UPDATED!\n",pdb_get_user_rid(to),from->user_rid));
+		}
 	}
 	
-	if ((from->fields_present & ACCT_PRIMARY_GID) &&
-	    (from->group_rid == 0)) {
-		DEBUG(10, ("INFO_21: Asked to set Group RID to 0 !? Skipping change!\n"));
-	} else if (from->group_rid != pdb_get_group_rid(to)) {
-		DEBUG(10,("INFO_21 GROUP_RID: %u -> %u\n",pdb_get_group_rid(to),from->group_rid));
-		pdb_set_group_sid_from_rid(to, from->group_rid, PDB_CHANGED);
+	if (from->fields_present & ACCT_PRIMARY_GID) {
+		if (from->group_rid == 0) {
+			DEBUG(10, ("INFO_21: Asked to set Group RID to 0 !? Skipping change!\n"));
+		} else if (from->group_rid != pdb_get_group_rid(to)) {
+			DEBUG(10,("INFO_21 GROUP_RID: %u -> %u\n",pdb_get_group_rid(to),from->group_rid));
+			pdb_set_group_sid_from_rid(to, from->group_rid, PDB_CHANGED);
+		}
 	}
 	
 	if (from->fields_present & ACCT_FLAGS) {
@@ -474,21 +474,21 @@ void copy_id23_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_23 *from)
 		SAFE_FREE(newstr);
 	}
 	
-	if ((from->fields_present & ACCT_RID) &&
-	    (from->user_rid == 0)) {
-		DEBUG(10, ("INFO_23: Asked to set User RID to 0 !? Skipping change!\n"));
-	} else if (from->user_rid != pdb_get_user_rid(to)) {
-		DEBUG(10,("INFO_23 USER_RID: %u -> %u NOT UPDATED!\n",pdb_get_user_rid(to),from->user_rid));
-		/* we really allow this ??? metze */
-		/* pdb_set_user_sid_from_rid(to, from->user_rid, PDB_CHANGED);*/
+	if (from->fields_present & ACCT_RID) {
+		if (from->user_rid == 0) {
+			DEBUG(10, ("INFO_23: Asked to set User RID to 0 !? Skipping change!\n"));
+		} else if (from->user_rid != pdb_get_user_rid(to)) {
+			DEBUG(10,("INFO_23 USER_RID: %u -> %u NOT UPDATED!\n",pdb_get_user_rid(to),from->user_rid));
+		}
 	}
 
-	if ((from->fields_present & ACCT_PRIMARY_GID) &&
-	    (from->group_rid == 0)) {
-		DEBUG(10, ("INFO_23: Asked to set Group RID to 0 !? Skipping change!\n"));
-	} else if (from->group_rid != pdb_get_group_rid(to)) {
-		DEBUG(10,("INFO_23 GROUP_RID: %u -> %u\n",pdb_get_group_rid(to),from->group_rid));
-		pdb_set_group_sid_from_rid(to, from->group_rid, PDB_CHANGED);
+	if (from->fields_present & ACCT_PRIMARY_GID) {
+		if  (from->group_rid == 0) {
+			DEBUG(10, ("INFO_23: Asked to set Group RID to 0 !? Skipping change!\n"));
+		} else if (from->group_rid != pdb_get_group_rid(to)) {
+			DEBUG(10,("INFO_23 GROUP_RID: %u -> %u\n",pdb_get_group_rid(to),from->group_rid));
+			pdb_set_group_sid_from_rid(to, from->group_rid, PDB_CHANGED);
+		}
 	}
 	
 	if (from->fields_present & ACCT_FLAGS) {
