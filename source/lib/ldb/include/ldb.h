@@ -300,7 +300,7 @@ int ldb_msg_find_int(const struct ldb_message *msg,
 		     int default_value);
 unsigned int ldb_msg_find_uint(const struct ldb_message *msg, 
 			       const char *attr_name,
-			       int default_value);
+			       unsigned int default_value);
 double ldb_msg_find_double(const struct ldb_message *msg, 
 			   const char *attr_name,
 			   double default_value);
