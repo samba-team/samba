@@ -74,6 +74,9 @@ struct smbsrv_tcon {
 /* the context for a single SMB request. This is passed to any request-context 
    functions */
 struct smbsrv_request {
+	/* the smbsrv_connection needs a list of requests queued for send */
+	struct smbsrv_request *next, *prev;
+
 	/* the server_context contains all context specific to this SMB socket */
 	struct smbsrv_connection *smb_conn;
 
@@ -289,4 +292,8 @@ struct smbsrv_connection {
 
 	/* this holds a partially received request */
 	struct smbsrv_request *partial_req;
+
+	/* this holds list of replies that are waiting to be sent
+	   to the client */
+	struct smbsrv_request *pending_send;
 };
