@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -54,7 +54,7 @@ extern struct dbinfo {
 } *databases;
 extern HDB **db;
 extern int num_db;
-extern char *port_str;
+extern const char *port_str;
 extern krb5_addresses explicit_addresses;
 
 extern int enable_http;
