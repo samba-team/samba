@@ -465,10 +465,9 @@ void unix_to_nt_time_abs(NTTIME *nt, time_t t)
 	nt->low=~nt->low;
 }
 
-
 /****************************************************************************
-take an NTTIME structure, containing high / low time.  convert to unix time.
-lkclXXXX this may need 2 SIVALs not a memcpy.  we'll see...
+take a Unix time and convert to an NTTIME structure and place in buffer 
+pointed to by p.
 ****************************************************************************/
 void put_long_date(char *p,time_t t)
 {
