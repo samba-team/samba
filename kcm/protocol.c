@@ -1011,7 +1011,7 @@ kcm_dispatch(krb5_context context,
 	return ENOMEM;
     }
 
-    if (client->pid == 0) {
+    if (client->pid == -1) {
 	kcm_log(0, "Client had invalid process number");
 	ret = KRB5_FCC_INTERNAL;
 	goto out;
