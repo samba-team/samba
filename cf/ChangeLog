@@ -1,5 +1,29 @@
 2002-05-19  Johan Danielsson  <joda@pdc.kth.se>
 
+	* roken-frag.m4: don't AC_LIBOBJ more than one function at a time
+
+	* find-if-not-broken.m4: s/AC_LIBOBJ/rk_LIBOBJ/
+
+	* broken2.m4: s/AC_LIBOBJ/rk_LIBOBJ/
+
+	* broken.m4: s/AC_LIBOBJ/rk_LIBOBJ/
+
+	* misc.m4: automake can't handle macros passed to AC_LIBOBJ, so
+	add an alias to it called rk_LIBOBJ; this requires that the
+	relevant source are manually included in roken/Makefile.am
+
+	* aix.m4: ac_enable --diable-dynamic-afs
+
+	* roken-frag.m4: use AC_LIBOBJ
+
+	* krb-func-getcwd-broken.m4: use AC_LIBOBJ
+
+	* find-if-not-broken.m4: use AC_LIBOBJ
+
+	* broken2.m4: use AC_LIBOBJ
+
+	* broken.m4: use AC_LIBOBJ
+
 	* aix.m4: recognise aix5
 	
 2002-05-17  Johan Danielsson  <joda@pdc.kth.se>
