@@ -1139,7 +1139,16 @@
 		
 		<varlistentry><term><anchor id="ADDGROUPSCRIPT">add group script (G)</term>
 		<listitem><para>This is the full pathname to a script that will 
-		be run <emphasis>AS ROOT</emphasis> by <ulink url="smbd.8.html">smbd(8)</ulink> when a new group is requested. It will expand any <parameter>%g</parameter> to the group name passed.  This script is only useful for installations using the Windows NT domain administration tools.
+		be run <emphasis>AS ROOT</emphasis> by <ulink
+                url="smbd.8.html">smbd(8)</ulink> when a new group is
+                requested. It will expand any
+                <parameter>%g</parameter> to the group name passed.
+                This script is only useful for installations using the
+                Windows NT domain administration tools. The script is
+                free to create a group with an arbitrary name to
+                circumvent unix group name restrictions. In that case
+                the script must print the numeric gid of the created
+                group on stdout.
 		</para></listitem>
 		</varlistentry>
 
