@@ -21,7 +21,7 @@
 #include "includes.h"
 #include "ldap_parse.h"
 
-char char_from_hex(char a, char b) {
+static char char_from_hex(char a, char b) {
 	char m, l;
 
 	if ('0' <= a  && a <= '9') {
@@ -47,7 +47,7 @@ char char_from_hex(char a, char b) {
 	return ((m << 4) + l);
 }
 
-char *parse_slash(char *p, char *end) {
+static char *parse_slash(char *p, char *end) {
 	switch (*(p + 1)) {
 	case ',':
 	case '=':
