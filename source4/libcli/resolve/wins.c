@@ -1,7 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
 
-   broadcast name resolution module
+   wins name resolution module
 
    Copyright (C) Andrew Tridgell 2005
    
@@ -26,52 +26,33 @@
 #include "libcli/composite/composite.h"
 
 /*
-  broadcast name resolution method - async send
+  wins name resolution method - async send
  */
-struct smbcli_composite *resolve_name_bcast_send(struct nbt_name *name, 
+struct smbcli_composite *resolve_name_wins_send(struct nbt_name *name, 
 						 struct event_context *event_ctx)
 {
-	int num_interfaces = iface_count();
-	const char **address_list;
-	struct smbcli_composite *c;
-	int i;
-
-	address_list = talloc_array(NULL, const char *, num_interfaces+1);
+	const char **address_list = lp_wins_server_list();
 	if (address_list == NULL) return NULL;
-
-	for (i=0;i<num_interfaces;i++) {
-		struct ipv4_addr *ip = iface_n_bcast(i);
-		address_list[i] = talloc_strdup(address_list, sys_inet_ntoa(*ip));
-		if (address_list[i] == NULL) {
-			talloc_free(address_list);
-			return NULL;
-		}
-	}
-	address_list[i] = NULL;
-
-	c = resolve_name_nbtlist_send(name, event_ctx, address_list, True, False);
-	talloc_free(address_list);
-
-	return c;	
+	return resolve_name_nbtlist_send(name, event_ctx, address_list, False, True);
 }
 
 /*
-  broadcast name resolution method - recv side
+  wins name resolution method - recv side
  */
-NTSTATUS resolve_name_bcast_recv(struct smbcli_composite *c, 
+NTSTATUS resolve_name_wins_recv(struct smbcli_composite *c, 
 				 TALLOC_CTX *mem_ctx, const char **reply_addr)
 {
 	return resolve_name_nbtlist_recv(c, mem_ctx, reply_addr);
 }
 
 /*
-  broadcast name resolution method - sync call
+  wins name resolution method - sync call
  */
-NTSTATUS resolve_name_bcast(struct nbt_name *name, 
+NTSTATUS resolve_name_wins(struct nbt_name *name, 
 			    TALLOC_CTX *mem_ctx,
 			    const char **reply_addr)
 {
-	struct smbcli_composite *c = resolve_name_bcast_send(name, NULL);
-	return resolve_name_bcast_recv(c, mem_ctx, reply_addr);
+	struct smbcli_composite *c = resolve_name_wins_send(name, NULL);
+	return resolve_name_wins_recv(c, mem_ctx, reply_addr);
 }
 
