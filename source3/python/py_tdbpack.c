@@ -588,14 +588,32 @@ pytdbpack_pack_data(const char *format_str,
 			return NULL;
 
 		if (ch == 'w') {
-			unsigned long val_long = PyInt_AsLong(val_obj);
+			unsigned long val_long;
+			PyObject *long_obj;
+			
+			if (!(long_obj = PyNumber_Long(val_obj))) {
+				pytdbpack_bad_type(ch, "Long", val_obj);
+				return NULL;
+			}
+			
+			val_long = PyLong_AsUnsignedLong(long_obj);
 			(packed)[0] = val_long & 0xff;
 			(packed)[1] = (val_long >> 8) & 0xff;
 			(packed) += 2;
+			Py_DECREF(long_obj);
 		}
 		else if (ch == 'd') {
 			/* 4-byte LE number */
-			pack_uint32(PyInt_AsLong(val_obj), &packed);
+			PyObject *long_obj;
+			
+			if (!(long_obj = PyNumber_Long(val_obj))) {
+				pytdbpack_bad_type(ch, "Long", val_obj);
+				return NULL;
+			}
+			
+			pack_uint32(PyLong_AsUnsignedLong(long_obj), &packed);
+
+			Py_DECREF(long_obj);
 		}
 		else if (ch == 'p') {
 			/* "Pointer" value -- in the subset of DCERPC used by Samba,
