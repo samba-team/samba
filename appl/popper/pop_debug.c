@@ -67,36 +67,13 @@ loop(int s)
     }
 }
 
-void
-usage()
+static int
+get_socket (char *host, int port)
 {
-    fprintf(stderr, "Usage: %s [-p port] hostname\n", __progname);
-    exit(1);
-}
-
-int
-main(int argc, char **argv)
-{
-    int c;
-    int port;
-    char *host;
+    struct sockaddr_in sa;
     struct hostent *hp;
     int s;
-    struct sockaddr_in sa;
-    set_progname(argv[0]);
-    port = k_getportbyname("kpop", "tcp", htons(1109));
-    while ((c = getopt(argc,argv, "p:")) != EOF){
-	switch(c){
-	case 'p':
-	    port = htons(atoi(optarg));
-	    break;
-	default:
-	    usage();
-	}
-    }
-    if(argc - optind != 1)
-	usage();
-    host = argv[optind];
+
     hp = gethostbyname(host);
     if(hp == NULL)
 	err(1, "%s", host);
@@ -109,28 +86,173 @@ main(int argc, char **argv)
     memcpy(&sa.sin_addr, hp->h_addr, sizeof(sa.sin_addr));
     if(connect(s, (struct sockaddr*)&sa, sizeof(sa)) < 0)
 	err(1, "connect");
-    {
-	KTEXT_ST ticket;
-	MSG_DAT msg_data;
-	CREDENTIALS cred;
-	des_key_schedule sched;
-	int ret;
-	
-	ret = krb_sendauth(0,
-			   s,
-			   &ticket, 
-			   "pop",
-			   host,
-			   krb_realmofhost(host),
-			   getpid(),
-			   &msg_data,
-			   &cred,
-			   sched,
-			   NULL,
-			   NULL,
-			   "KPOPV0.1");
-	if(ret)
-	    errx(1, "krb_sendauth: %s", krb_get_err_text(ret));
-	loop(s);
+    return s;
+}
+
+#ifdef KRB4
+static int
+doit_v4 (char *host, int port)
+{
+    KTEXT_ST ticket;
+    MSG_DAT msg_data;
+    CREDENTIALS cred;
+    des_key_schedule sched;
+    int ret;
+    int s = get_socket (host, port);
+
+    ret = krb_sendauth(0,
+		       s,
+		       &ticket, 
+		       "pop",
+		       host,
+		       krb_realmofhost(host),
+		       getpid(),
+		       &msg_data,
+		       &cred,
+		       sched,
+		       NULL,
+		       NULL,
+		       "KPOPV0.1");
+    if(ret) {
+	warnx("krb_sendauth: %s", krb_get_err_text(ret));
+	return 1;
     }
+    loop(s);
+}
+#endif
+
+static int
+doit_v5 (char *host, int port)
+{
+    krb5_error_code ret;
+    krb5_context context;
+    krb5_ccache ccache;
+    krb5_auth_context auth_context = NULL;
+    krb5_principal server;
+    int s = get_socket (host, port);
+
+    krb5_init_context (&context);
+    
+    krb5_cc_default (context, &ccache);
+
+    ret = krb5_sname_to_principal (context,
+				   host,
+				   "pop",
+				   KRB5_NT_SRV_HST,
+				   &server);
+    if (ret) {
+	warnx ("krb5_sname_to_principal: %s",
+	       krb5_get_err_text (context, ret));
+	return 1;
+    }
+    ret = krb5_sendauth (context,
+			 &auth_context,
+			 &s,
+			 "KPOPV1.0",
+			 NULL,
+			 server,
+			 0,
+			 NULL,
+			 NULL,
+			 ccache,
+			 NULL,
+			 NULL,
+			 NULL);
+     if (ret) {
+	 warnx ("krb5_sendauth: %s",
+		krb5_get_err_text (context, ret));
+	 return 1;
+     }
+     loop (s);
+}
+
+
+
+#ifdef KRB4
+static int use_v4 = 0;
+#endif
+static int use_v5 = 1;
+static char *port_str;
+static int do_version;
+static int do_help;
+
+struct getargs args[] = {
+#ifdef KRB4
+    { "krb4",	'4', arg_flag,		&use_v4,	"Use Kerberos V4",
+      NULL },
+#endif
+    { "krb5",	'5', arg_flag,		&use_v5,	"Use Kerberos V5",
+      NULL },
+    { "port",	'p', arg_string,	&port_str,	"Use this port",
+      "number-or-service" },
+    { "version", 0,  arg_flag,		&do_version,	"Print version",
+      NULL },
+    { "help",	 0,  arg_flag,		&do_help,	NULL,
+      NULL }
+};
+
+static void
+usage (int ret)
+{
+    arg_printusage (args,
+		    sizeof(args) / sizeof(args[0]),
+		    "hostname");
+    exit (ret);
+}
+
+int
+main(int argc, char **argv)
+{
+    int port = 0;
+    int ret = 1;
+    char *host;
+    struct hostent *hp;
+    int s;
+    struct sockaddr_in sa;
+    int optind;
+
+    set_progname(argv[0]);
+
+    if (getarg (args, sizeof(args) / sizeof(args[0]), argc, argv,
+		&optind))
+	usage (1);
+
+    argc -= optind;
+    argv += optind;
+
+    if (do_help)
+	usage (0);
+
+    if (do_version) {
+	printf ("%s (%s-%s)\n", __progname, PACKAGE, VERSION);
+	return 0;
+    }
+	
+    if (argc < 1)
+	usage (1);
+
+    if (port_str) {
+	struct servent *s = getservbyname (port_str, "tcp");
+
+	if (s)
+	    port = s->s_port;
+	else {
+	    char *ptr;
+
+	    port = strtol (port_str, &ptr, 10);
+	    if (port == 0 && ptr == port_str)
+		errx (1, "Bad port `%s'", port_str);
+	    port = htons(port);
+	}
+    }
+
+    if (ret && use_v5) {
+	ret = doit_v5 (argv[0], port);
+    }
+#ifdef KRB4
+    if (ret && use_v4) {
+	ret = doit_v4 (argv[0], port);
+    }
+#endif
+    return ret;
 }
