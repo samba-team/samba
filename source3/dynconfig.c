@@ -43,3 +43,5 @@ char const *dyn_SBINDIR = SBINDIR,
 pstring dyn_CONFIGFILE = CONFIGFILE; /**< Location of smb.conf file. **/
 
 pstring dyn_LOGFILEBASE; /**< Log file directory. **/
+
+pstring dyn_LMHOSTSFILE; /**< Statically configured LanMan hosts. **/

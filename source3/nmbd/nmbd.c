@@ -32,7 +32,6 @@ int ClientNMB       = -1;
 int ClientDGRAM     = -1;
 int global_nmb_port = -1;
 
-static pstring host_file;
 extern pstring global_myname;
 extern fstring global_myworkgroup;
 extern char **my_netbios_names;
@@ -668,7 +667,6 @@ static void usage(char *pname)
   append_log = True;  /* Default, override with '-o' option. */
 
   global_nmb_port = NMB_PORT;
-  *host_file = 0;
   global_in_nmbd = True;
 
   StartupTime = time(NULL);
@@ -679,10 +677,6 @@ static void usage(char *pname)
 
   slprintf(debugf, sizeof(debugf)-1, "%s/log.nmbd", dyn_LOGFILEBASE);
   setup_logging( argv[0], False );
-
-#ifdef LMHOSTSFILE
-  pstrcpy( host_file, LMHOSTSFILE );
-#endif
 
   /* this is for people who can't start the program correctly */
   while (argc > 1 && (*argv[1] != '-'))
@@ -728,7 +722,7 @@ static void usage(char *pname)
           DEBUG(0,("Obsolete option '%c' used\n",opt));
           break;
         case 'H':
-          pstrcpy(host_file,optarg);
+          pstrcpy(dyn_LMHOSTSFILE, optarg);
           break;
         case 'n':
           pstrcpy(global_myname,optarg);
@@ -838,11 +832,8 @@ static void usage(char *pname)
   }
 
   /* Load in any static local names. */ 
-  if ( *host_file )
-  {
-    load_lmhosts_file(host_file);
-    DEBUG(3,("Loaded hosts file\n"));
-  }
+  load_lmhosts_file(dyn_LMHOSTSFILE);
+  DEBUG(3,("Loaded hosts file %s\n", dyn_LMHOSTSFILE));
 
   /* If we are acting as a WINS server, initialise data structures. */
   if( !initialise_wins() )
