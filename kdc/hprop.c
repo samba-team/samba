@@ -134,14 +134,14 @@ conv_db(void *arg, Principal *p)
 
     ALLOC(ent.pw_end);
     *ent.pw_end = p->exp_date;
-    ret = krb5_make_principal(context, &ent.created_by.principal,
+    ret = krb5_make_principal(pd->context, &ent.created_by.principal,
 			      realm,
 			      "kadmin",
 			      "hprop",
 			      NULL);
     ent.created_by.time = time(NULL);
     ALLOC(ent.modified_by);
-    krb5_425_conv_principal(context, p->mod_name, p->mod_instance, realm,
+    krb5_425_conv_principal(pd->context, p->mod_name, p->mod_instance, realm,
 			    &ent.modified_by->principal);
     ent.modified_by->time = p->mod_date;
 
@@ -154,7 +154,7 @@ conv_db(void *arg, Principal *p)
 
     {
 	krb5_data data;
-	ret = hdb_entry2value(context, &ent, &data);
+	ret = hdb_entry2value(pd->context, &ent, &data);
 	if(ret) return ret;
 	
 	ret = send_priv(pd->context, pd->auth_context, &data, pd->sock);
