@@ -5383,6 +5383,7 @@ BOOL convert_specific_param(NT_PRINTER_PARAM **param, const UNISTR2 *value,
 	}
 		
 	DEBUGADD(6,("\tvalue:[%s], len:[%d]\n",(*param)->value, (*param)->data_len));
+	dump_data(10, (*param)->data, (*param)->data_len);
 
 	return True;
 }

@@ -44,7 +44,7 @@ int max_recv = BUFFER_SIZE;
 
 extern int last_message;
 extern int global_oplock_break;
-extern pstring sesssetup_user;
+extern userdom_struct current_user_info;
 extern char *last_inbuf;
 extern char *InBuffer;
 extern char *OutBuffer;
@@ -671,7 +671,7 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
     SSVAL(inbuf,smb_uid,session_tag);
 
     /*
-     * Ensure the correct username is in sesssetup_user.
+     * Ensure the correct username is in current_user_info.
      * This is a really ugly bugfix for problems with
      * multiple session_setup_and_X's being done and
      * allowing %U and %G substitutions to work correctly.
@@ -687,7 +687,7 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
       if(session_tag != UID_FIELD_INVALID)
         vuser = get_valid_user_struct(session_tag);           
       if(vuser != NULL)
-        pstrcpy( sesssetup_user, vuser->user.smb_name);
+        current_user_info = vuser->user;
     }
 
     /* does this protocol need to be run as root? */
@@ -773,7 +773,7 @@ static int construct_reply(char *inbuf,char *outbuf,int size,int bufsize)
   Keep track of the number of running smbd's. This functionality is used to
   'hard' limit Samba overhead on resource constrained systems. 
 ****************************************************************************/
-static BOOL smbd_process_limit()
+static BOOL smbd_process_limit(void)
 {
 	int  total_smbds;
 	
@@ -819,7 +819,7 @@ void process_smb(char *inbuf, char *outbuf)
 	     parsing code from hosts not in the hosts allow list */
 	  if (smbd_process_limit() ||
 		  !check_access(smbd_server_fd(), lp_hostsallow(-1), lp_hostsdeny(-1))) {
-		  /* send a negative session response "not listining on calling
+		  /* send a negative session response "not listening on calling
 		   name" */
 		  static unsigned char buf[5] = {0x83, 0, 0, 1, 0x81};
 		  DEBUG( 1, ( "Connection denied from %s\n",

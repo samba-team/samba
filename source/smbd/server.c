@@ -412,7 +412,7 @@ static BOOL dump_core(void)
 /****************************************************************************
 update the current smbd process count
 ****************************************************************************/
-static void decrement_smbd_process_count()
+static void decrement_smbd_process_count(void)
 {
 	int total_smbds;
 

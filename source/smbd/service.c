@@ -33,7 +33,7 @@ extern BOOL case_mangle;
 extern BOOL case_sensitive;
 extern BOOL use_mangled_map;
 extern fstring remote_machine;
-extern pstring sesssetup_user;
+extern userdom_struct current_user_info;
 extern fstring remote_machine;
 
 
@@ -234,11 +234,11 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 				return(make_connection(dos_username,user,password,pwlen,dev,vuid,ecode));
 			}
 		} else {
-			/* Security = share. Try with sesssetup_user
+			/* Security = share. Try with current_user_info.smb_name
 			 * as the username.  */
-			if(*sesssetup_user) {
+			if(*current_user_info.smb_name) {
 				fstring dos_username;
-				fstrcpy(user,sesssetup_user);
+				fstrcpy(user,current_user_info.smb_name);
 				fstrcpy(dos_username, user);
 				unix_to_dos(dos_username, True);
 				return(make_connection(dos_username,user,password,pwlen,dev,vuid,ecode));

@@ -36,7 +36,7 @@ extern char magic_char;
 extern BOOL case_sensitive;
 extern BOOL case_preserve;
 extern BOOL short_case_preserve;
-extern pstring sesssetup_user;
+extern userdom_struct current_user_info;
 extern pstring global_myname;
 extern fstring global_myworkgroup;
 extern int global_oplock_break;
@@ -880,7 +880,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
       guest = True;
   }
 
-  pstrcpy(sesssetup_user,user);
+  pstrcpy(current_user_info.smb_name,user);
 
   reload_services(True);
 
@@ -894,10 +894,10 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
 
   /* if the username exists as a domain/username pair on the unix system then use 
      that */
-  if (!getpwnam(user)) {
+  if (!sys_getpwnam(user)) {
 	  pstring user2;
 	  slprintf(user2,sizeof(user2),"%s%s%s", dos_to_unix(domain,False), lp_winbind_separator(), user);
-	  if (getpwnam(user2)) {
+	  if (sys_getpwnam(user2)) {
 		  DEBUG(3,("Using unix username %s\n", user2));
 		  pstrcpy(user, user2);
 	  }
@@ -1043,7 +1043,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
   /* register the name and uid as being validated, so further connections
      to a uid can get through without a password, on the same VC */
 
-  sess_vuid = register_vuid(uid,gid,user,sesssetup_user,domain,guest);
+  sess_vuid = register_vuid(uid,gid,user,current_user_info.smb_name,domain,guest);
  
   SSVAL(outbuf,smb_uid,sess_vuid);
   SSVAL(inbuf,smb_uid,sess_vuid);

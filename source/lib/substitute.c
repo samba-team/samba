@@ -26,7 +26,7 @@ extern int DEBUGLEVEL;
 
 fstring local_machine="";
 fstring remote_arch="UNKNOWN";
-pstring sesssetup_user="";
+userdom_struct current_user_info;
 pstring samlogon_user="";
 BOOL sam_logon_in_ssb = False;
 fstring remote_proto="UNKNOWN";
@@ -206,7 +206,7 @@ void standard_sub_advanced(int snum, char *user, char *connectpath, gid_t gid, c
 		int l = sizeof(pstring) - (int)(p-str);
 		
 		switch (*(p+1)) {
-		case 'U' : string_sub(p,"%U",sam_logon_in_ssb?samlogon_user:sesssetup_user,l); break;
+		case 'U' : string_sub(p,"%U",sam_logon_in_ssb?samlogon_user:current_user_info.smb_name,l); break;
 		case 'G' :
 			if ((pass = Get_Pwnam(user,False))!=NULL) {
 				string_sub(p,"%G",gidtoname(pass->pw_gid),l);
@@ -214,6 +214,7 @@ void standard_sub_advanced(int snum, char *user, char *connectpath, gid_t gid, c
 				p += 2;
 			}
 			break;
+		case 'D' : string_sub(p,"%D", current_user_info.domain,l); break;
 		case 'N' : string_sub(p,"%N", automount_server(user),l); break;
 		case 'H':
 			if ((home = get_user_home_dir(user))) {
