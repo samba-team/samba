@@ -934,7 +934,6 @@ struct pwd_info
 	uchar sess_key[16];
 };
 
-#include "rpc_misc.h"
 #include "rpc_secdes.h"
 
 typedef struct user_struct
