@@ -141,6 +141,11 @@ out2:
 static void
 str2data (krb5_data *d,
 	  const char *fmt,
+	  ...) __attribute__ ((format (printf, 2, 3)));
+
+static void
+str2data (krb5_data *d,
+	  const char *fmt,
 	  ...)
 {
     va_list args;
