@@ -203,8 +203,16 @@ typedef struct krb5_keytab_entry {
   krb5_keyblock keyblock;
 } krb5_keytab_entry;
 
+typedef struct krb5_storage{
+    void *data;
+    size_t (*fetch)(struct krb5_storage*, void*, size_t);
+    size_t (*store)(struct krb5_storage*, void*, size_t);
+    off_t (*seek)(struct krb5_storage*, off_t, int);
+} krb5_storage;
+
 typedef struct krb5_kt_cursor {
-  int fd;
+    int fd;
+    krb5_storage *sp;
 } krb5_kt_cursor;
 
 typedef struct krb5_auth_context_data{
@@ -537,6 +545,17 @@ struct error_list {
 };
 
 const char *krb5_get_err_text(krb5_context context, long code);
+
+
+/* XXX these are glue functions and really don't belong here */
+
+krb5_error_code krb5_principal2principalname (PrincipalName *p, 
+					      krb5_principal from);
+krb5_error_code principalname2krb5_principal (krb5_principal *principal,
+					      PrincipalName from,
+					      char *realm);
+
+#include "store.h"
 
 #endif /* __KRB5_H__ */
 
