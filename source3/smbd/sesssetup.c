@@ -681,6 +681,13 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 	DEBUG(3,("sesssetupX:name=[%s]\\[%s]@[%s]\n", domain, user, remote_machine));
 
 	if (*user) {
+		if (global_spnego_negotiated) {
+			
+			/* This has to be here, becouse this is a perfectly valid behaviour for guest logons :-( */
+			
+			DEBUG(0,("reply_sesssetup_and_X:  Rejecting attempt at 'normal' session setup after negotiating spnego.\n"));
+			return ERROR_NT(NT_STATUS_UNSUCCESSFUL);
+		}
 		pstrcpy(sub_user, user);
 	} else {
 		pstrcpy(sub_user, lp_guestaccount());
@@ -704,13 +711,6 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 	}
 	
 	if (!*user) {
-		if (global_spnego_negotiated) {
-
-			/* This has to be here, becouse this is a perfectly valid behaviour for guest logons :-( */
-
-			DEBUG(0,("reply_sesssetup_and_X:  Rejecting attempt at 'normal' session setup after negotiating spnego.\n"));
-			return ERROR_NT(NT_STATUS_UNSUCCESSFUL);
-		}
 
 		nt_status = check_guest_password(&server_info);
 
