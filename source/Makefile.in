@@ -149,6 +149,7 @@ RPC_CLIENT_OBJ = \
 		rpc_client/cli_wkssvc.o   \
 		rpc_client/cli_srvsvc.o   \
 		rpc_client/cli_samr.o  \
+		rpc_client/cli_spoolss.o \
 		rpc_client/cli_reg.o \
 		rpc_client/cli_connect.o \
 		rpc_client/cli_use.o \
@@ -239,8 +240,14 @@ SMBPASSWD_OBJ = utils/smbpasswd.o lib/msrpc-client.o $(PARAM_OBJ) \
 		$(LIBSMB_OBJ) $(PASSDB_OBJ) \
                 $(UBIQX_OBJ) $(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) $(LIB_OBJ)
 
-RPCCLIENT_OBJ = rpcclient/rpcclient.o \
-	     lib/cmd_interp.o lib/msrpc-client.o \
+RPCCLIENT_OBJ1 = rpcclient/rpcclient.o \
+		lib/cmd_interp.o \
+	   	lib/msrpc-client.o \
+		rpcclient/spoolss_cmds.o rpcclient/cmd_spoolss.o \
+		rpcclient/display_spool.o rpcclient/display_sec.o \
+		rpc_client/msrpc_spoolss.o
+
+RPCCLIENT_OBJ = $(RPCCLIENT_OBJ1) \
              $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
              $(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) $(PASSDB_OBJ)
 
@@ -300,7 +307,7 @@ SMBFILTER_OBJ = utils/smbfilter.o $(LIBSMB_OBJ) $(PARAM_OBJ) \
                  $(UBIQX_OBJ) $(LIB_OBJ)
 
 PROTO_OBJ = $(SMBD_OBJ) $(NMBD_OBJ) $(SWAT_OBJ) $(CLIENT_OBJ) \
-	    $(SMBWRAPPER_OBJ) $(SMBTORTURE_OBJ)
+	    $(SMBWRAPPER_OBJ) $(SMBTORTURE_OBJ) $(RPCCLIENT_OBJ1)
 
 NSS_OBJ_0 = nsswitch/wins.o $(PARAM_OBJ) $(UBIQX_OBJ) $(LIBSMB_OBJ) $(LIB_OBJ) $(NSSWINS_OBJ)
 NSS_OBJ = $(NSS_OBJ_0:.o=.po)
