@@ -1,3 +1,7 @@
+Sun Nov 22 10:40:09 1998  Assar Westerlund  <assar@sics.se>
+
+	* Makefile.in (WFLAGS): set
+
 Mon May 25 05:24:56 1998  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.in (clean): try to remove shared library debris

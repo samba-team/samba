@@ -1,3 +1,14 @@
+Sun Nov 22 10:46:23 1998  Assar Westerlund  <assar@sics.se>
+
+	* sl.c (sl_command_loop): remove unused variable
+
+	* ss.c (ss_error): remove unused variable
+
+	* make_cmds.c: include err.h
+	(main): remove unused variable
+
+	* Makefile.in (WFLAGS): set
+
 Sun Sep 27 01:28:21 1998  Assar Westerlund  <assar@sics.se>
 
 	* make_cmds.c: clean-up and simplification

@@ -1,3 +1,9 @@
+Sun Nov 22 10:33:29 1998  Assar Westerlund  <assar@sics.se>
+
+	* pop_pass.c (pop_pass): try to always log
+
+	* Makefile.in (WFLAGS): set
+
 Fri Jul 10 01:14:25 1998  Assar Westerlund  <assar@sics.se>
 
 	* pop_init.c: s/net_read/pop_net_read/

@@ -1,3 +1,7 @@
+Sun Nov 22 10:36:45 1998  Assar Westerlund  <assar@sics.se>
+
+	* Makefile.in (WFLAGS): set
+
 Wed Jul  8 01:37:37 1998  Assar Westerlund  <assar@sics.se>
 
 	* xnlock.c (main): create place-holder ticket file with

@@ -1,9 +1,18 @@
+Sun Nov 22 10:31:53 1998  Assar Westerlund  <assar@sics.se>
+
+	* Makefile.in (WFLAGS): set
+
 Wed Nov 18 20:25:37 1998  Assar Westerlund  <assar@sics.se>
 
 	* rxtelnet.in: new argument -n for not starting any terminal
  	emulator
 
 	* kx.c (doit_passive): parse $DISPLAY correctly
+
+Fri Oct  2 06:34:51 1998  Assar Westerlund  <assar@sics.se>
+
+	* kx.c (doit_active): check DISPLAY to figure out what local
+ 	socket to connect to.  From Åke Sandgren <ake@cs.umu.se>
 
 Thu Oct  1 23:02:29 1998  Johan Danielsson  <joda@hella.pdc.kth.se>
 

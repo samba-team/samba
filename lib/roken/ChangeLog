@@ -1,3 +1,11 @@
+Sun Nov 22 10:23:07 1998  Assar Westerlund  <assar@sics.se>
+
+	* Makefile.in (WFLAGS): set
+
+	* k_getpwnam.c (k_getpwnam): check for `struct spwd'
+
+	* k_getpwuid.c (k_getpwuid): check for `struct spwd'
+
 Tue Sep  8 05:18:31 1998  Assar Westerlund  <assar@sics.se>
 
 	* recvmsg.c (recvmsg): patch from bpreece@unity.ncsu.edu

@@ -1,3 +1,12 @@
+Sun Nov 22 10:39:02 1998  Assar Westerlund  <assar@sics.se>
+
+	* compile_et.h: include ctype and roken
+
+	* compile_et.c: include err.h
+	(generate_h): remove unused variable
+
+	* Makefile.in (WFLAGS): set
+
 Fri Nov 20 06:58:59 1998  Assar Westerlund  <assar@sics.se>
 
 	* lex.l: undef ECHO to work around AIX lex bug

@@ -1,3 +1,7 @@
+Sun Nov 22 10:34:54 1998  Assar Westerlund  <assar@sics.se>
+
+	* Makefile.in (WFLAGS): set
+
 Thu Nov 19 01:17:33 1998  Assar Westerlund  <assar@sics.se>
 
 	* push_locl.h: add <hesiod.h>

@@ -1,3 +1,9 @@
+Sun Nov 22 10:32:50 1998  Assar Westerlund  <assar@sics.se>
+
+	* otpprint.c: more braces
+
+	* Makefile.in (WFLAGS): set
+
 Sun Dec 21 09:31:30 1997  Assar Westerlund  <assar@sics.se>
 
 	* otp.c (renew): don't set the OTP if the reading of the string

@@ -1,3 +1,16 @@
+Sun Nov 22 10:28:20 1998  Assar Westerlund  <assar@sics.se>
+
+	* ftpd/ftpd.c (retrying): support on-the-fly decompression
+
+	* ftpd/Makefile.in (WFLAGS): set
+
+	* ftp/ruserpass.c (guess_domain): new function
+	(ruserpass): use it
+
+	* common/Makefile.in (WFLAGS): set
+
+	* Makefile.in (WFLAGS): set
+
 Wed Nov 18 21:47:55 1998  Assar Westerlund  <assar@sics.se>
 
 	* ftp/main.c (main): new option `-p' for enable passive mode.
