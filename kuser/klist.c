@@ -108,6 +108,8 @@ main (int argc, char **argv)
     int verbose = 0;
     int c;
 
+    set_progname (argv[0]);
+
     while((c = getopt(argc, argv, "v")) != -1){
 	switch(c){
 	case 'v':
