@@ -1,5 +1,7 @@
 2001-06-20  Johan Danielsson  <joda@pdc.kth.se>
 
+	* getdtablesize.c: fix typo in obviously never used sysctl case
+
 	* simple_exec.c: rename check_status to wait_for_process, and
 	export it; function pipe_execv similar to popen, but with more
 	control over input and output
