@@ -232,6 +232,23 @@
 #undef LINUX_QUOTAS_1
 #undef LINUX_QUOTAS_2
 
+/* Define to the name of the distribution.  */
+#undef PACKAGE
+/* Define to the version of the distribution.  */
+#undef VERSION
+/* Define if your locale.h file contains LC_MESSAGES.  */
+#undef HAVE_LC_MESSAGES
+/* Define to 1 if NLS is requested.  */
+#undef ENABLE_NLS
+/* Define as 1 if you have gettext and don't want to use GNU gettext.  */
+#undef HAVE_GETTEXT
+/* Define as 1 if you have the stpcpy function.  */
+#undef HAVE_STPCPY
+/* ???? (rkawa) */
+#undef I18N_SWAT
+/* Define to the default SWAT language for old browsers. */
+#undef I18N_DEFAULT_PREF_LANG
+
 /* The number of bytes in a int.  */
 #undef SIZEOF_INT
 
@@ -798,6 +815,9 @@
 
 /* Define if you have the <limits.h> header file.  */
 #undef HAVE_LIMITS_H
+
+/* Define if you have the <locale.h> header file.  */
+#undef HAVE_LOCALE_H
 
 /* Define if you have the <memory.h> header file.  */
 #undef HAVE_MEMORY_H

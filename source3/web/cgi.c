@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include "smb.h"
+#include "webintl.h"
 
 #define MAX_VARIABLES 10000
 
@@ -447,6 +448,7 @@ static void cgi_download(char *file)
 	char buf[1024];
 	int fd, l, i;
 	char *p;
+	int nLangDesc;
 
 	/* sanitise the filename */
 	for (i=0;file[i];i++) {
@@ -460,7 +462,11 @@ static void cgi_download(char *file)
 		cgi_setup_error("404 File Not Found","",
 				"The requested file was not found");
 	}
+#if I18N_SWAT
+	fd = sys_open(ln_get_pref_file(file, &st, &nLangDesc),O_RDONLY,0);
+#else
 	fd = sys_open(file,O_RDONLY,0);
+#endif 
 	if (fd == -1) {
 		cgi_setup_error("404 File Not Found","",
 				"The requested file was not found");
@@ -478,7 +484,10 @@ static void cgi_download(char *file)
 		}
 	}
 	printf("Expires: %s\r\n", http_timestring(time(NULL)+EXPIRY_TIME));
-
+#if I18N_SWAT
+	if(ln_get_lang(nLangDesc))
+		printf("Content-Language: %s\r\n", ln_get_lang(nLangDesc));
+#endif
 	printf("Content-Length: %d\r\n\r\n", (int)st.st_size);
 	while ((l=read(fd,buf,sizeof(buf)))>0) {
 		fwrite(buf, 1, l, stdout);
@@ -508,6 +517,11 @@ void cgi_setup(char *rootdir, int auth_required)
 
 	/* Handle the possability we might be running as non-root */
 	sec_init();
+
+#if I18N_SWAT
+	if(getenv("HTTP_ACCEPT_LANGUAGE")) /* if running as a cgi program */
+		ln_negotiate_language(getenv("HTTP_ACCEPT_LANGUAGE"));
+#endif
 
 	/* maybe we are running under a web server */
 	if (getenv("CONTENT_LENGTH") || getenv("REQUEST_METHOD")) {
@@ -543,6 +557,10 @@ void cgi_setup(char *rootdir, int auth_required)
 			authenticated = cgi_handle_authorization(&line[15]);
 		} else if (strncasecmp(line,"Content-Length: ", 16)==0) {
 			content_length = atoi(&line[16]);
+#if I18N_SWAT
+		} else if (strncasecmp(line,"Accept-Language: ", 17)==0) {
+			ln_negotiate_language(&line[17]);
+#endif
 		}
 		/* ignore all other requests! */
 	}

@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "webintl.h"
 
 static pid_t smbd_pid;
 
@@ -36,19 +37,19 @@ static void print_share_mode(share_mode_entry *e, char *fname)
 	printf("<tr><td>%d</td>",(int)e->pid);
 	printf("<td>");
 	switch ((e->share_mode>>4)&0xF) {
-	case DENY_NONE: printf("DENY_NONE"); break;
-	case DENY_ALL:  printf("DENY_ALL   "); break;
-	case DENY_DOS:  printf("DENY_DOS   "); break;
-	case DENY_READ: printf("DENY_READ  "); break;
-	case DENY_WRITE:printf("DENY_WRITE "); break;
+	case DENY_NONE: printf(_("DENY_NONE")); break;
+	case DENY_ALL:  printf(_("DENY_ALL   ")); break;
+	case DENY_DOS:  printf(_("DENY_DOS   ")); break;
+	case DENY_READ: printf(_("DENY_READ  ")); break;
+	case DENY_WRITE:printf(_("DENY_WRITE ")); break;
 	}
 	printf("</td>");
 
 	printf("<td>");
 	switch (e->share_mode&0xF) {
-	case 0: printf("RDONLY     "); break;
-	case 1: printf("WRONLY     "); break;
-	case 2: printf("RDWR       "); break;
+	case 0: printf(_("RDONLY     ")); break;
+	case 1: printf(_("WRONLY     ")); break;
+	case 2: printf(_("RDWR       ")); break;
 	}
 	printf("</td>");
 
@@ -56,15 +57,15 @@ static void print_share_mode(share_mode_entry *e, char *fname)
 	if((e->op_type & 
 	    (EXCLUSIVE_OPLOCK|BATCH_OPLOCK)) == 
 	   (EXCLUSIVE_OPLOCK|BATCH_OPLOCK))
-		printf("EXCLUSIVE+BATCH ");
+		printf(_("EXCLUSIVE+BATCH "));
 	else if (e->op_type & EXCLUSIVE_OPLOCK)
-		printf("EXCLUSIVE       ");
+		printf(_("EXCLUSIVE       "));
 	else if (e->op_type & BATCH_OPLOCK)
-		printf("BATCH           ");
+		printf(_("BATCH           "));
 	else if (e->op_type & LEVEL_II_OPLOCK)
-		printf("LEVEL_II        ");
+		printf(_("LEVEL_II        "));
 	else
-		printf("NONE            ");
+		printf(_("NONE            "));
 	printf("</td>");
 
 	printf("<td>%s</td><td>%s</td></tr>\n",
@@ -107,7 +108,7 @@ static int traverse_fn2(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void* st
 
 	printf("<tr><td>%d</td><td>%s</td><td>%s</td><td>%s</td>\n",
 	       (int)crec.pid,
-	       crec.machine,crec.addr,
+	       crec.machine, crec.addr,
 	       tstring(crec.start));
 	if (geteuid() == 0) {
 		printf("<td><input type=submit value=\"X\" name=\"kill_%d\"></td>\n",
@@ -190,18 +191,18 @@ void status_page(void)
 	tdb = tdb_open_log(lock_path("connections.tdb"), 0, TDB_DEFAULT, O_RDONLY, 0);
 	if (tdb) tdb_traverse(tdb, traverse_fn1, NULL);
 
-	printf("<H2>Server Status</H2>\n");
+	printf("<H2>%s</H2>\n", _("Server Status"));
 
 	printf("<FORM method=post>\n");
 
 	if (!autorefresh) {
-		printf("<input type=submit value=\"Auto Refresh\" name=autorefresh>\n");
-		printf("<br>Refresh Interval: ");
+		printf("<input type=submit value=\"%s\" name=autorefresh>\n", _("Auto Refresh"));
+		printf("<br>%s", _("Refresh Interval: "));
 		printf("<input type=text size=2 name=\"refresh_interval\" value=%d>\n", 
 		       refresh_interval);
 	} else {
-		printf("<input type=submit value=\"Stop Refreshing\" name=norefresh>\n");
-		printf("<br>Refresh Interval: %d\n", refresh_interval);
+		printf("<input type=submit value=\"%s\" name=norefresh>\n", _("Stop Refreshing"));
+		printf("<br>%s%d\n", _("Refresh Interval: "), refresh_interval);
 		printf("<input type=hidden name=refresh value=1>\n");
 	}
 
@@ -215,40 +216,40 @@ void status_page(void)
 
 	printf("<table>\n");
 
-	printf("<tr><td>version:</td><td>%s</td></tr>",VERSION);
+	printf("<tr><td>%s</td><td>%s</td></tr>", _("version:"), VERSION);
 
 	fflush(stdout);
-	printf("<tr><td>smbd:</td><td>%srunning</td>\n",smbd_running()?"":"not ");
+	printf("<tr><td>%s</td><td>%s</td>\n", _("smbd:"), smbd_running()?_("running"):_("not running"));
 	if (geteuid() == 0) {
 	    if (smbd_running()) {
-		printf("<td><input type=submit name=\"smbd_stop\" value=\"Stop smbd\"></td>\n");
+		printf("<td><input type=submit name=\"smbd_stop\" value=\"%s\"></td>\n", _("Stop smbd"));
 	    } else {
-		printf("<td><input type=submit name=\"smbd_start\" value=\"Start smbd\"></td>\n");
+		printf("<td><input type=submit name=\"smbd_start\" value=\"%s\"></td>\n", _("Start smbd"));
 	    }
-	    printf("<td><input type=submit name=\"smbd_restart\" value=\"Restart smbd\"></td>\n");
+	    printf("<td><input type=submit name=\"smbd_restart\" value=\"%s\"></td>\n", _("Restart smbd"));
 	}
 	printf("</tr>\n");
 
 	fflush(stdout);
-	printf("<tr><td>nmbd:</td><td>%srunning</td>\n",nmbd_running()?"":"not ");
+	printf("<tr><td>%s</td><td>%s</td>\n", _("nmbd:"), nmbd_running()?_("running"):_("not running"));
 	if (geteuid() == 0) {
 	    if (nmbd_running()) {
-		printf("<td><input type=submit name=\"nmbd_stop\" value=\"Stop nmbd\"></td>\n");
+		printf("<td><input type=submit name=\"nmbd_stop\" value=\"%s\"></td>\n", _("Stop nmbd"));
 	    } else {
-		printf("<td><input type=submit name=\"nmbd_start\" value=\"Start nmbd\"></td>\n");
+		printf("<td><input type=submit name=\"nmbd_start\" value=\"%s\"></td>\n", _("Start nmbd"));
 	    }
-	    printf("<td><input type=submit name=\"nmbd_restart\" value=\"Restart nmbd\"></td>\n");
+	    printf("<td><input type=submit name=\"nmbd_restart\" value=\"%s\"></td>\n", _("Restart nmbd"));
 	}
 	printf("</tr>\n");
 
 	printf("</table>\n");
 	fflush(stdout);
 
-	printf("<p><h3>Active Connections</h3>\n");
+	printf("<p><h3>%s</h3>\n", _("Active Connections"));
 	printf("<table border=1>\n");
-	printf("<tr><th>PID</th><th>Client</th><th>IP address</th><th>Date</th>\n");
+	printf("<tr><th>%s</th><th>%s</th><th>%s</th><th>%s</th>\n", _("PID"), _("Client"), _("IP address"), _("Date"));
 	if (geteuid() == 0) {
-		printf("<th>Kill</th>\n");
+		printf("<th>%s</th>\n", _("Kill"));
 	}
 	printf("</tr>\n");
 
@@ -256,17 +257,18 @@ void status_page(void)
 
 	printf("</table><p>\n");
 
-	printf("<p><h3>Active Shares</h3>\n");
+	printf("<p><h3>%s</h3>\n", _("Active Shares"));
 	printf("<table border=1>\n");
-	printf("<tr><th>Share</th><th>User</th><th>Group</th><th>PID</th><th>Client</th><th>Date</th></tr>\n\n");
+	printf("<tr><th>%s</th><th>%s</th><th>%s</th><th>%s</th><th>%s</th><th>%s</th></tr>\n\n",
+		_("Share"), _("User"), _("Group"), _("PID"), _("Client"), _("Date"));
 
 	if (tdb) tdb_traverse(tdb, traverse_fn3, NULL);
 
 	printf("</table><p>\n");
 
-	printf("<h3>Open Files</h3>\n");
+	printf("<h3>%s</h3>\n", _("Open Files"));
 	printf("<table border=1>\n");
-	printf("<tr><th>PID</th><th>Sharing</th><th>R/W</th><th>Oplock</th><th>File</th><th>Date</th></tr>\n");
+	printf("<tr><th>%s</th><th>%s</th><th>%s</th><th>%s</th><th>%s</th><th>%s</th></tr>\n", _("PID"), _("Sharing"), _("R/W"), _("Oplock"), _("File"), _("Date"));
 
 	locking_init(1);
 	share_mode_forall(print_share_mode);
