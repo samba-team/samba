@@ -1151,6 +1151,24 @@ static void cmd_del(void)
 	do_list(mask, attribute,do_del,False,False);
 }
 
+/****************************************************************************
+****************************************************************************/
+static void cmd_open(void)
+{
+	pstring mask;
+	fstring buf;
+	
+	pstrcpy(mask,cur_dir);
+	
+	if (!next_token(NULL,buf,NULL,sizeof(buf))) {
+		DEBUG(0,("del <filename>\n"));
+		return;
+	}
+	pstrcat(mask,buf);
+
+	cli_open(cli, mask, O_RDWR, DENY_ALL);
+}
+
 
 /****************************************************************************
 remove a directory
@@ -1417,6 +1435,7 @@ struct
   {"more",cmd_more,"<remote name> view a remote file with your pager",{COMPL_REMOTE,COMPL_NONE}},  
   {"mask",cmd_select,"<mask> mask all filenames against this",{COMPL_REMOTE,COMPL_NONE}},
   {"del",cmd_del,"<mask> delete all matching files",{COMPL_REMOTE,COMPL_NONE}},
+  {"open",cmd_open,"<mask> open a file",{COMPL_REMOTE,COMPL_NONE}},
   {"rm",cmd_del,"<mask> delete all matching files",{COMPL_REMOTE,COMPL_NONE}},
   {"mkdir",cmd_mkdir,"<directory> make a directory",{COMPL_NONE,COMPL_NONE}},
   {"md",cmd_mkdir,"<directory> make a directory",{COMPL_NONE,COMPL_NONE}},
@@ -1834,7 +1853,7 @@ static void get_password_file(void)
 /****************************************************************************
 handle a -L query
 ****************************************************************************/
-static int do_host_query(char *query_host, int port)
+static int do_host_query(char *query_host)
 {
 	cli = do_connect(query_host, "IPC$");
 	if (!cli)
@@ -1852,7 +1871,7 @@ static int do_host_query(char *query_host, int port)
 /****************************************************************************
 handle a tar operation
 ****************************************************************************/
-static int do_tar_op(int port, char *base_directory)
+static int do_tar_op(char *base_directory)
 {
 	int ret;
 	cli = do_connect(desthost, service);
@@ -2147,7 +2166,7 @@ static int do_message_op(void)
 	DEBUG( 3, ( "Client started (version %s).\n", VERSION ) );
 
 	if (tar_type) {
-		return do_tar_op(port, base_directory);
+		return do_tar_op(base_directory);
 	}
 
 	if ((p=strchr(query_host,'#'))) {
@@ -2157,7 +2176,7 @@ static int do_message_op(void)
 	}
   
 	if (*query_host) {
-		return do_host_query(query_host, port);
+		return do_host_query(query_host);
 	}
 
 	if (message) {
