@@ -53,6 +53,8 @@ static SL_cmd cmds[] = {
       "create key in database and add to keytab" },
     { "list",		kt_list,	"list",
       "shows contents of a keytab" },
+    { "purge",		kt_purge,	"purge",
+      "remove old and superceeded entries" },
     { "remove", 	kt_remove,	"remove",
       "remove key from keytab" },
     { "srvconvert",	srvconv,	"srvconvert [flags]",
