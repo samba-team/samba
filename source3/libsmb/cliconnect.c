@@ -184,18 +184,13 @@ static BOOL cli_session_setup_plaintext(struct cli_state *cli, char *user,
 					char *pass, char *workgroup)
 {
 	uint32 capabilities = cli_session_setup_capabilities(cli);
-	fstring pword;
-	int passlen;
 	char *p;
-
 	int push_flags = STR_TERMINATE;
 
 	if (capabilities & CAP_UNICODE)
 		push_flags |= STR_UNICODE;
 	else
 		push_flags |= STR_ASCII;
-
-	passlen = clistr_push(cli, pword, pass, sizeof(pword), push_flags);
 
 	set_message(cli->outbuf,13,0,True);
 	SCVAL(cli->outbuf,smb_com,SMBsesssetupX);
