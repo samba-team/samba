@@ -35,12 +35,15 @@
 #define WINBINDD_DOMAIN_ENV  "WINBINDD_DOMAIN" /* Environment variables */
 #define WINBINDD_DONT_ENV    "_NO_WINBINDD"
 
+/* Update this when you change the interface.  */
+
+#define WINBIND_INTERFACE_VERSION 2
+
 /* Socket commands */
 
-/* Update this when you change the interface.  */
-#define WINBIND_INTERFACE_VERSION 1
-
 enum winbindd_cmd {
+
+	WINBINDD_INTERFACE_VERSION,    /* Always a well known value */
 
 	/* Get users and groups */
 
@@ -88,7 +91,6 @@ enum winbindd_cmd {
 	WINBINDD_CHECK_MACHACC,     /* Check machine account pw works */
 	WINBINDD_PING,              /* Just tell me winbind is running */
 	WINBINDD_INFO,              /* Various bit of info.  Currently just tidbits */
-	WINBINDD_INTERFACE_VERSION, /* *TRY* to keep this in the same place... */
 
 	/* Placeholder for end of cmd list */
 
@@ -98,6 +100,7 @@ enum winbindd_cmd {
 /* Winbind request structure */
 
 struct winbindd_request {
+	uint32 length;
 	enum winbindd_cmd cmd;   /* Winbindd command to execute */
 	pid_t pid;               /* pid of calling process */
 
@@ -144,7 +147,7 @@ struct winbindd_response {
     
 	/* Header information */
 
-	int length;                           /* Length of response */
+	uint32 length;                        /* Length of response */
 	enum winbindd_result result;          /* Result code */
 
 	/* Fixed length return data */
