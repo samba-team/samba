@@ -1695,7 +1695,7 @@ static size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
       init_sec_ace(&ace_list[num_acls++], &owner_sid, owner_acl_type,
                    owner_access, 0);
 
-	if(group_access.mask)
+    if(group_access.mask)
       init_sec_ace(&ace_list[num_acls++], &group_sid, grp_acl_type,
                    group_access, 0);
 
@@ -1755,9 +1755,8 @@ static int call_nt_transact_query_security_desc(connection_struct *conn,
    * Get the permissions to return.
    */
 
-  if((sec_desc_size = get_nt_acl(fsp, &psd)) == 0) {
+  if((sec_desc_size = get_nt_acl(fsp, &psd)) == 0)
     return(UNIXERROR(ERRDOS,ERRnoaccess));
-  }
 
   DEBUG(3,("call_nt_transact_query_security_desc: sec_desc_size = %d.\n", sec_desc_size));
 
@@ -2056,7 +2055,7 @@ security descriptor.\n"));
    * Now check some basics about the sd we got.
    */
 
-  if(psd->dacl == NULL || psd->dacl->num_aces > 3) {
+  if(psd->dacl == NULL || psd->dacl->num_aces > 3 || psd->dacl->num_aces == 0) {
     free_sec_desc(&psd);
     DEBUG(3,("call_nt_transact_set_security_desc: invalid security descriptor.\n"));
     return(UNIXERROR(ERRDOS,ERRnoaccess));
