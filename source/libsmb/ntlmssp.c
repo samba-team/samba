@@ -393,7 +393,7 @@ static NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 				 &neg_flags,
 				 &cliname,
 				 &domname)) {
-			DEBUG(1, ("ntlmssp_server_negotiate: failed to parse NTLMSSP:\n"));
+			DEBUG(1, ("ntlmssp_server_negotiate: failed to parse NTLMSSP Negotiate:\n"));
 			dump_data(2, (const char *)request.data, request.length);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
@@ -539,8 +539,6 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 			 &workstation,
 			 &encrypted_session_key,
 			 &auth_flags)) {
-		DEBUG(1, ("ntlmssp_server_auth: failed to parse NTLMSSP:\n"));
-		dump_data(2, (const char *)request.data, request.length);
 		SAFE_FREE(domain);
 		SAFE_FREE(user);
 		SAFE_FREE(workstation);
@@ -563,7 +561,7 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 				 &domain, 
 				 &user, 
 				 &workstation)) {
-			DEBUG(1, ("ntlmssp_server_auth: failed to parse NTLMSSP:\n"));
+			DEBUG(1, ("ntlmssp_server_auth: failed to parse NTLMSSP (tried both formats):\n"));
 			dump_data(2, (const char *)request.data, request.length);
 			SAFE_FREE(domain);
 			SAFE_FREE(user);
