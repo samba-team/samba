@@ -5,6 +5,10 @@
 	* lib/krb5/Makefile.am (libkrb5_la_LIBADD): add library
 	dependencies
 
+2000-12-10  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/krb5/auth_context.c: implement krb5_auth_con_{get,set}rcache
+
 2000-12-08  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/krb5.h (krb5_enctype): add ETYPE_DES3_CBC_NONE_IVEC as
