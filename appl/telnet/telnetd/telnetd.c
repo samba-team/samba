@@ -172,7 +172,10 @@ char valid_opts[] = {
 	's',
 #endif
 	'L', ':',
+#ifdef AUTHENTICATION
+	'y',
 	'z',
+#endif
 	'\0'
 };
 
@@ -370,6 +373,9 @@ int main(int argc, char **argv)
 			 */
 			auth_disable_name(optarg);
 			break;
+		case 'y':
+		  no_warn = 1;
+		  break;
 		case 'z':
 		  log_unauth = 1;
 		  break;
@@ -585,7 +591,7 @@ usage()
 	fprintf(stderr, " [-S tos]");
 #endif
 #ifdef	AUTHENTICATION
-	fprintf(stderr, " [-X auth-type] [-z]");
+	fprintf(stderr, " [-X auth-type] [-y] [-z]");
 #endif
 	fprintf(stderr, " [-u utmp_hostname_length] [-U]");
 	fprintf(stderr, " [port]\n");

@@ -104,3 +104,6 @@ struct clocks_t clocks;
 
 /* whether to log unauthenticated login attempts */
 int log_unauth;
+
+/* do not print warning if connection is not encrypted */
+int no_warn;

@@ -1339,7 +1339,7 @@ startslave(char *host, int autologin, char *autoname)
 	  "\r\n*** Connection not encrypted! "
 	  "Communication may be eavesdropped. ***\r\n";
 #ifdef ENCRYPTION
-	if (encrypt_output == 0 || decrypt_input == 0)
+	if (!no_warn && (encrypt_output == 0 || decrypt_input == 0))
 #endif
 	  writenet((unsigned char*)tbuf, strlen(tbuf));
       }
@@ -1609,8 +1609,9 @@ void start_login(char *host, int autologin, char *name)
 #endif
 #if	defined (AUTHENTICATION)
 	if (auth_level < 0 || autologin != AUTH_VALID) {
-		printf("User not authenticated. "
-		       "Using plaintext username and password\r\n");
+		if(!no_warn)
+		  printf("User not authenticated. "
+			 "Using plaintext username and password\r\n");
 		if(log_unauth) {
 		  char *u;
 		  if(name[0]) u = name;

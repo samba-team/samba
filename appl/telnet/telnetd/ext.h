@@ -221,6 +221,7 @@ struct clocks_t{
 extern struct clocks_t clocks;
 
 extern int log_unauth;
+extern int no_warn;
 
 
 #if	defined(CRAY2) && defined(UNICOS5)
