@@ -37,7 +37,7 @@
 
 #if 0
 /*
-  we don't need this right now, but will once we add more backend 
+  we don't need this right now, but will once we add some backend 
   options
 */
 
@@ -110,13 +110,16 @@ static int lldb_delete(struct ldb_context *ldb, const char *dn)
 */
 static int lldb_msg_free(struct ldb_context *ldb, struct ldb_message *msg)
 {
-	int i;
+	int i, j;
 	free(msg->dn);
 	for (i=0;i<msg->num_elements;i++) {
 		free(msg->elements[i].name);
-		if (msg->elements[i].value.data) {
-			free(msg->elements[i].value.data);
+		for (j=0;j<msg->elements[i].num_values;j++) {
+			if (msg->elements[i].values[j].data) {
+				free(msg->elements[i].values[j].data);
+			}
 		}
+		free(msg->elements[i].values);
 	}
 	if (msg->elements) free(msg->elements);
 	free(msg);
@@ -155,7 +158,7 @@ static int lldb_add_msg_attr(struct ldb_message *msg,
 	}
 
 	el = realloc_p(msg->elements, struct ldb_message_element, 
-		       msg->num_elements + count);
+		       msg->num_elements + 1);
 	if (!el) {
 		errno = ENOMEM;
 		return -1;
@@ -163,21 +166,33 @@ static int lldb_add_msg_attr(struct ldb_message *msg,
 
 	msg->elements = el;
 
-	for (i=0;i<count;i++) {
-		msg->elements[msg->num_elements].name = strdup(attr);
-		if (!msg->elements[msg->num_elements].name) {
-			return -1;
-		}
-		msg->elements[msg->num_elements].value.data = malloc(bval[i]->bv_len);
-		if (!msg->elements[msg->num_elements].value.data) {
-			free(msg->elements[msg->num_elements].name);
-			return -1;
-		}
-		memcpy(msg->elements[msg->num_elements].value.data, 
-		       bval[i]->bv_val, bval[i]->bv_len);
-		msg->elements[msg->num_elements].value.length = bval[i]->bv_len;
-		msg->num_elements++;
+	el = &msg->elements[msg->num_elements];
+
+	el->name = strdup(attr);
+	if (!el->name) {
+		errno = ENOMEM;
+		return -1;
 	}
+	el->flags = 0;
+
+	el->num_values = 0;
+	el->values = malloc_array_p(struct ldb_val, count);
+	if (!el->values) {
+		errno = ENOMEM;
+		return -1;
+	}
+
+	for (i=0;i<count;i++) {
+		el->values[i].data = malloc(bval[i]->bv_len);
+		if (!el->values[i].data) {
+			return -1;
+		}
+		memcpy(el->values[i].data, bval[i]->bv_val, bval[i]->bv_len);
+		el->values[i].length = bval[i]->bv_len;
+		el->num_values++;
+	}
+
+	msg->num_elements++;
 
 	return 0;
 }
@@ -309,7 +324,7 @@ static void lldb_mods_free(LDAPMod **mods)
 static LDAPMod **lldb_msg_to_mods(const struct ldb_message *msg, int use_flags)
 {
 	LDAPMod **mods;
-	int i, num_vals, num_mods = 0;
+	int i, j, num_mods = 0;
 
 	/* allocate maximum number of elements needed */
 	mods = malloc_array_p(LDAPMod *, msg->num_elements+1);
@@ -320,30 +335,7 @@ static LDAPMod **lldb_msg_to_mods(const struct ldb_message *msg, int use_flags)
 	mods[0] = NULL;
 
 	for (i=0;i<msg->num_elements;i++) {
-
-		if (i > 0 && 
-		    (!use_flags || 
-		     (msg->elements[i].flags == msg->elements[i-1].flags)) &&
-		    strcmp(msg->elements[i].name, msg->elements[i-1].name) == 0) {
-			struct berval **b;
-			/* when attributes are repeated we need to extend the
-			   existing bvals array */
-			b = realloc_p(mods[num_mods-1]->mod_vals.modv_bvals, 
-				      struct berval *, num_vals+2);
-			if (!b) {
-				goto failed;
-			}
-			mods[num_mods-1]->mod_vals.modv_bvals = b;
-			b[num_vals+1] = NULL;
-			b[num_vals] = malloc_p(struct berval);
-			if (!b[num_vals]) goto failed;
-			b[num_vals]->bv_val = msg->elements[i].value.data;
-			b[num_vals]->bv_len = msg->elements[i].value.length;
-			num_vals++;
-			continue;
-		}
-
-		num_vals = 1;
+		const struct ldb_message_element *el = &msg->elements[i];
 
 		mods[num_mods] = malloc_p(LDAPMod);
 		if (!mods[num_mods]) {
@@ -352,7 +344,7 @@ static LDAPMod **lldb_msg_to_mods(const struct ldb_message *msg, int use_flags)
 		mods[num_mods+1] = NULL;
 		mods[num_mods]->mod_op = LDAP_MOD_BVALUES;
 		if (use_flags) {
-			switch (msg->elements[i].flags & LDB_FLAG_MOD_MASK) {
+			switch (el->flags & LDB_FLAG_MOD_MASK) {
 			case LDB_FLAG_MOD_ADD:
 				mods[num_mods]->mod_op |= LDAP_MOD_ADD;
 				break;
@@ -364,18 +356,22 @@ static LDAPMod **lldb_msg_to_mods(const struct ldb_message *msg, int use_flags)
 				break;
 			}
 		}
-		mods[num_mods]->mod_type = msg->elements[i].name;
-		mods[num_mods]->mod_vals.modv_bvals = malloc_array_p(struct berval *, 2);
+		mods[num_mods]->mod_type = el->name;
+		mods[num_mods]->mod_vals.modv_bvals = malloc_array_p(struct berval *, 
+								     1+el->num_values);
 		if (!mods[num_mods]->mod_vals.modv_bvals) {
 			goto failed;
 		}
-		mods[num_mods]->mod_vals.modv_bvals[0] = malloc_p(struct berval);
-		if (!mods[num_mods]->mod_vals.modv_bvals[0]) {
-			goto failed;
+
+		for (j=0;j<el->num_values;j++) {
+			mods[num_mods]->mod_vals.modv_bvals[j] = malloc_p(struct berval);
+			if (!mods[num_mods]->mod_vals.modv_bvals[j]) {
+				goto failed;
+			}
+			mods[num_mods]->mod_vals.modv_bvals[j]->bv_val = el->values[j].data;
+			mods[num_mods]->mod_vals.modv_bvals[j]->bv_len = el->values[j].length;
 		}
-		mods[num_mods]->mod_vals.modv_bvals[0]->bv_val = msg->elements[i].value.data;
-		mods[num_mods]->mod_vals.modv_bvals[0]->bv_len = msg->elements[i].value.length;
-		mods[num_mods]->mod_vals.modv_bvals[1] = NULL;
+		mods[num_mods]->mod_vals.modv_bvals[j] = NULL;
 		num_mods++;
 	}
 

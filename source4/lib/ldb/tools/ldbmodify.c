@@ -25,9 +25,9 @@
 /*
  *  Name: ldb
  *
- *  Component: ldbadd
+ *  Component: ldbmodify
  *
- *  Description: utility to add records - modelled on ldapadd
+ *  Description: utility to modify records - modelled on ldapmodify
  *
  *  Author: Andrew Tridgell
  */
@@ -55,14 +55,18 @@
 	}
 
 	while ((ldif = ldif_read_file(stdin))) {
-
-		if (ldif->changetype != LDB_CHANGETYPE_ADD &&
-		    ldif->changetype != LDB_CHANGETYPE_NONE) {
-			fprintf(stderr, "Only CHANGETYPE_ADD records allowed\n");
+		switch (ldif->changetype) {
+		case LDB_CHANGETYPE_NONE:
+		case LDB_CHANGETYPE_ADD:
+			ret = ldb_add(ldb, &ldif->msg);
+			break;
+		case LDB_CHANGETYPE_DELETE:
+			ret = ldb_delete(ldb, ldif->msg.dn);
+			break;
+		case LDB_CHANGETYPE_MODIFY:
+			ret = ldb_modify(ldb, &ldif->msg);
 			break;
 		}
-
-		ret = ldb_add(ldb, &ldif->msg);
 		if (ret != 0) {
 			fprintf(stderr, "ERR: \"%s\" on DN %s\n", 
 				ldb_errstring(ldb), ldif->msg.dn);
@@ -75,7 +79,7 @@
 
 	ldb_close(ldb);
 
-	printf("Added %d records with %d failures\n", count, failures);
+	printf("Modified %d records with %d failures\n", count, failures);
 	
 	return 0;
 }

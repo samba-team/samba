@@ -32,6 +32,10 @@
  *  Author: Andrew Tridgell
  */
 
+/*
+  see RFC2849 for the LDIF format definition
+*/
+
 #include "includes.h"
 
 
@@ -176,40 +180,71 @@ static int base64_encode_f(int (*fprintf_fn)(void *, const char *, ...), void *p
 	return ret;
 }
 
+
+static const struct {
+	const char *name;
+	enum ldb_changetype changetype;
+} ldb_changetypes[] = {
+	{"add",    LDB_CHANGETYPE_ADD},
+	{"delete", LDB_CHANGETYPE_DELETE},
+	{"modify", LDB_CHANGETYPE_MODIFY},
+	{NULL, 0}
+};
+
 /*
   write to ldif, using a caller supplied write method
 */
 int ldif_write(int (*fprintf_fn)(void *, const char *, ...), 
 	       void *private,
-	       const struct ldb_message *msg)
+	       const struct ldb_ldif *ldif)
 {
-	int i;
+	int i, j;
 	int total=0, ret;
+	const struct ldb_message *msg;
+
+	msg = &ldif->msg;
 
 	ret = fprintf_fn(private, "dn: %s\n", msg->dn);
 	CHECK_RET;
 
+	if (ldif->changetype != LDB_CHANGETYPE_NONE) {
+		for (i=0;ldb_changetypes[i].name;i++) {
+			if (ldb_changetypes[i].changetype == ldif->changetype) {
+				break;
+			}
+		}
+		if (!ldb_changetypes[i].name) {
+			fprintf(stderr,"Invalid changetype\n");
+			return -1;
+		}
+		ret = fprintf_fn(private, "changetype: %s\n", ldb_changetypes[i].name);
+		CHECK_RET;
+	}
+
 	for (i=0;i<msg->num_elements;i++) {
-		if (ldb_should_b64_encode(&msg->elements[i].value)) {
-			ret = fprintf_fn(private, "%s:: ", msg->elements[i].name);
-			CHECK_RET;
-			ret = base64_encode_f(fprintf_fn, private, 
-					      msg->elements[i].value.data, 
-					      msg->elements[i].value.length,
-					      strlen(msg->elements[i].name)+3);
-			CHECK_RET;
-			ret = fprintf_fn(private, "\n");
-			CHECK_RET;
-		} else {
-			ret = fprintf_fn(private, "%s: ", msg->elements[i].name);
-			CHECK_RET;
-			ret = fold_string(fprintf_fn, private,
-					  msg->elements[i].value.data,
-					  msg->elements[i].value.length,
-					  strlen(msg->elements[i].name)+2);
-			CHECK_RET;
-			ret = fprintf_fn(private, "\n");
-			CHECK_RET;
+		for (j=0;j<msg->elements[i].num_values;j++) {
+			if (ldb_should_b64_encode(&msg->elements[i].values[j])) {
+				ret = fprintf_fn(private, "%s:: ", 
+						 msg->elements[i].name);
+				CHECK_RET;
+				ret = base64_encode_f(fprintf_fn, private, 
+						      msg->elements[i].values[j].data, 
+						      msg->elements[i].values[j].length,
+						      strlen(msg->elements[i].name)+3);
+				CHECK_RET;
+				ret = fprintf_fn(private, "\n");
+				CHECK_RET;
+			} else {
+				ret = fprintf_fn(private, "%s: ", msg->elements[i].name);
+				CHECK_RET;
+				ret = fold_string(fprintf_fn, private,
+						  msg->elements[i].values[j].data,
+						  msg->elements[i].values[j].length,
+						  strlen(msg->elements[i].name)+2);
+				CHECK_RET;
+				ret = fprintf_fn(private, "\n");
+				CHECK_RET;
+			}
 		}
 	}
 	ret = fprintf_fn(private,"\n");
@@ -235,7 +270,7 @@ static char *next_chunk(int (*fgetc_fn)(void *), void *private)
 	int in_comment = 0;
 
 	while ((c = fgetc_fn(private)) != EOF) {
-		if (chunk_size == alloc_size) {
+		if (chunk_size+1 >= alloc_size) {
 			char *c2;
 			alloc_size += 1024;
 			c2 = realloc_p(chunk, char, alloc_size);
@@ -279,6 +314,10 @@ static char *next_chunk(int (*fgetc_fn)(void *), void *private)
 		chunk[chunk_size++] = c;
 	}
 
+	if (chunk) {
+		chunk[chunk_size] = 0;
+	}
+
 	return chunk;
 }
 
@@ -288,6 +327,13 @@ static int next_attr(char **s, char **attr, struct ldb_val *value)
 {
 	char *p;
 	int base64_encoded = 0;
+
+	if (strncmp(*s, "-\n", 2) == 0) {
+		value->length = 0;
+		*attr = "-";
+		*s += 2;
+		return 0;
+	}
 
 	p = strchr(*s, ':');
 	if (!p) {
@@ -336,26 +382,63 @@ static int next_attr(char **s, char **attr, struct ldb_val *value)
 /*
   free a message from a ldif_read
 */
-void ldif_read_free(struct ldb_message *msg)
+void ldif_read_free(struct ldb_ldif *ldif)
 {
+	struct ldb_message *msg = &ldif->msg;
+	int i;
+	for (i=0;i<msg->num_elements;i++) {
+		if (msg->elements[i].values) free(msg->elements[i].values);
+	}
 	if (msg->elements) free(msg->elements);
 	if (msg->private) free(msg->private);
-	free(msg);
+	free(ldif);
+}
+
+/*
+  add an empty element
+*/
+static int msg_add_empty(struct ldb_message *msg, const char *name, unsigned flags)
+{
+	struct ldb_message_element *el2, *el;
+
+	el2 = realloc_p(msg->elements, struct ldb_message_element, msg->num_elements+1);
+	if (!el2) {
+		errno = ENOMEM;
+		return -1;
+	}
+	
+	msg->elements = el2;
+
+	el = &msg->elements[msg->num_elements];
+	
+	el->name = name;
+	el->num_values = 0;
+	el->values = NULL;
+	el->flags = flags;
+
+	msg->num_elements++;
+
+	return 0;
 }
 
 /*
  read from a LDIF source, creating a ldb_message
 */
-struct ldb_message *ldif_read(int (*fgetc_fn)(void *), void *private)
+struct ldb_ldif *ldif_read(int (*fgetc_fn)(void *), void *private)
 {
+	struct ldb_ldif *ldif;
 	struct ldb_message *msg;
 	char *attr=NULL, *chunk=NULL, *s;
 	struct ldb_val value;
+	unsigned flags = 0;
 
 	value.data = NULL;
 
-	msg = malloc_p(struct ldb_message);
-	if (!msg) return NULL;
+	ldif = malloc_p(struct ldb_ldif);
+	if (!ldif) return NULL;
+
+	ldif->changetype = LDB_CHANGETYPE_NONE;
+	msg = &ldif->msg;
 
 	msg->dn = NULL;
 	msg->elements = NULL;
@@ -383,22 +466,86 @@ struct ldb_message *ldif_read(int (*fgetc_fn)(void *), void *private)
 	msg->dn = value.data;
 
 	while (next_attr(&s, &attr, &value) == 0) {
-		msg->elements = realloc_p(msg->elements, 
-					  struct ldb_message_element, 
-					  msg->num_elements+1);
-		if (!msg->elements) {
-			goto failed;
+		struct ldb_message_element *el;
+		int empty = 0;
+
+		if (strcmp(attr, "changetype") == 0) {
+			int i;
+			for (i=0;ldb_changetypes[i].name;i++) {
+				if (strcmp((char *)value.data, ldb_changetypes[i].name) == 0) {
+					ldif->changetype = ldb_changetypes[i].changetype;
+					break;
+				}
+			}
+			if (!ldb_changetypes[i].name) {
+				fprintf(stderr,"Bad changetype '%s'\n",
+					(char *)value.data);
+			}
+			flags = 0;
+			continue;
 		}
-		msg->elements[msg->num_elements].flags = 0;
-		msg->elements[msg->num_elements].name = attr;
-		msg->elements[msg->num_elements].value = value;
-		msg->num_elements++;
+
+		if (strcmp(attr, "add") == 0) {
+			flags = LDB_FLAG_MOD_ADD;
+			empty = 1;
+		}
+		if (strcmp(attr, "delete") == 0) {
+			flags = LDB_FLAG_MOD_DELETE;
+			empty = 1;
+		}
+		if (strcmp(attr, "replace") == 0) {
+			flags = LDB_FLAG_MOD_REPLACE;
+			empty = 1;
+		}
+		if (strcmp(attr, "-") == 0) {
+			flags = 0;
+			continue;
+		}
+
+		if (empty) {
+			if (msg_add_empty(msg, (char *)value.data, flags) != 0) {
+				goto failed;
+			}
+			continue;
+		}
+		
+		el = &msg->elements[msg->num_elements-1];
+
+		if (msg->num_elements > 0 && strcmp(attr, el->name) == 0 &&
+		    flags == el->flags) {
+			/* its a continuation */
+			el->values = 
+				realloc_p(el->values, struct ldb_val, el->num_values+1);
+			if (!el->values) {
+				goto failed;
+			}
+			el->values[el->num_values] = value;
+			el->num_values++;
+		} else {
+			/* its a new attribute */
+			msg->elements = realloc_p(msg->elements, 
+						  struct ldb_message_element, 
+						  msg->num_elements+1);
+			if (!msg->elements) {
+				goto failed;
+			}
+			msg->elements[msg->num_elements].flags = flags;
+			msg->elements[msg->num_elements].name = attr;
+			el = &msg->elements[msg->num_elements];
+			el->values = malloc_p(struct ldb_val);
+			if (!el->values) {
+				goto failed;
+			}
+			el->num_values = 1;
+			el->values[0] = value;
+			msg->num_elements++;
+		}
 	}
 
-	return msg;
+	return ldif;
 
 failed:
-	if (msg) ldif_read_free(msg);
+	if (ldif) ldif_read_free(ldif);
 	return NULL;
 }
 
@@ -417,7 +564,7 @@ static int fgetc_file(void *private)
 	return fgetc(state->f);
 }
 
-struct ldb_message *ldif_read_file(FILE *f)
+struct ldb_ldif *ldif_read_file(FILE *f)
 {
 	struct ldif_read_file_state state;
 	state.f = f;
@@ -441,7 +588,7 @@ static int fgetc_string(void *private)
 	return EOF;
 }
 
-struct ldb_message *ldif_read_string(const char *s)
+struct ldb_ldif *ldif_read_string(const char *s)
 {
 	struct ldif_read_string_state state;
 	state.s = s;
@@ -468,9 +615,9 @@ static int fprintf_file(void *private, const char *fmt, ...)
 	return ret;
 }
 
-int ldif_write_file(FILE *f, const struct ldb_message *msg)
+int ldif_write_file(FILE *f, const struct ldb_ldif *ldif)
 {
 	struct ldif_write_file_state state;
 	state.f = f;
-	return ldif_write(fprintf_file, &state, msg);
+	return ldif_write(fprintf_file, &state, ldif);
 }

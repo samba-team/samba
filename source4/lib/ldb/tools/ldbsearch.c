@@ -45,7 +45,7 @@
 	const char *ldb_url;
 	const char *basedn = NULL;
 	int opt;
-	enum ldb_scope scope = LDB_SCOPE_DEFAULT;
+	enum ldb_scope scope = LDB_SCOPE_SUBTREE;
 
 	ldb_url = getenv("LDB_URL");
 	if (!ldb_url) {
@@ -98,15 +98,20 @@
 	ret = ldb_search(ldb, basedn, scope, expression, attrs, &msgs);
 
 	if (ret == -1) {
-		printf("search failed\n");
+		printf("search failed - %s\n", ldb_errstring(ldb));
 		exit(1);
 	}
 
 	printf("# returned %d records\n", ret);
 
 	for (i=0;i<ret;i++) {
+		struct ldb_ldif ldif;
 		printf("# record %d\n", i+1);
-		ldif_write_file(stdout, msgs[i]);
+
+		ldif.changetype = LDB_CHANGETYPE_NONE;
+		ldif.msg = *msgs[i];
+
+		ldif_write_file(stdout, &ldif);
 	}
 
 	if (ret > 0) {

@@ -40,11 +40,15 @@
 */
 static void msg_free_all_parts(struct ldb_message *msg)
 {
-	int i;
+	int i, j;
 	if (msg->dn) free(msg->dn);
 	for (i=0;i<msg->num_elements;i++) {
 		if (msg->elements[i].name) free(msg->elements[i].name);
-		if (msg->elements[i].value.data) free(msg->elements[i].value.data);
+		for (j=0;j<msg->elements[i].num_values;j++) {
+			if (msg->elements[i].values[j].data) 
+				free(msg->elements[i].values[j].data);
+		}
+		if (msg->elements[i].values) free(msg->elements[i].values);
 	}
 	free(msg->elements);
 	free(msg);
@@ -53,6 +57,7 @@ static void msg_free_all_parts(struct ldb_message *msg)
 
 /*
   TODO: this should take advantage of the sorted nature of the message
+
   return index of the attribute, or -1 if not found
 */
 int ldb_msg_find_attr(const struct ldb_message *msg, const char *attr)
@@ -69,7 +74,7 @@ int ldb_msg_find_attr(const struct ldb_message *msg, const char *attr)
 /*
   duplicate a ldb_val structure
 */
-static struct ldb_val ldb_val_dup(const struct ldb_val *v)
+struct ldb_val ldb_val_dup(const struct ldb_val *v)
 {
 	struct ldb_val v2;
 	v2.length = v->length;
@@ -98,7 +103,8 @@ static struct ldb_val ldb_val_dup(const struct ldb_val *v)
 */
 static int msg_add_element(struct ldb_message *ret, const struct ldb_message_element *el)
 {
-	struct ldb_message_element *e2;
+	int i;
+	struct ldb_message_element *e2, *elnew;
 
 	e2 = realloc_p(ret->elements, struct ldb_message_element, ret->num_elements+1);
 	if (!e2) {
@@ -106,14 +112,30 @@ static int msg_add_element(struct ldb_message *ret, const struct ldb_message_ele
 	}
 	ret->elements = e2;
 	
-	e2[ret->num_elements].name = strdup(el->name);
-	if (!e2[ret->num_elements].name) {
+	elnew = &e2[ret->num_elements];
+
+	elnew->name = strdup(el->name);
+	if (!elnew->name) {
 		return -1;
 	}
-	e2[ret->num_elements].value = ldb_val_dup(&el->value);
-	if (e2[ret->num_elements].value.length != el->value.length) {
-		return -1;
+
+	if (el->num_values) {
+		elnew->values = malloc_array_p(struct ldb_val, el->num_values);
+		if (!elnew->values) {
+			return -1;
+		}
+	} else {
+		elnew->values = NULL;
 	}
+
+	for (i=0;i<el->num_values;i++) {
+		elnew->values[i] = ldb_val_dup(&el->values[i]);
+		if (elnew->values[i].length != el->values[i].length) {
+			return -1;
+		}
+	}
+
+	elnew->num_values = el->num_values;
 
 	ret->num_elements++;
 
@@ -215,8 +237,12 @@ int ltdb_has_wildcard(const struct ldb_val *val)
 */
 void ltdb_search_dn1_free(struct ldb_context *ldb, struct ldb_message *msg)
 {
-	free(msg->dn);
-	free(msg->private);
+	int i;
+	if (msg->dn) free(msg->dn);
+	if (msg->private) free(msg->private);
+	for (i=0;i<msg->num_elements;i++) {
+		if (msg->elements[i].values) free(msg->elements[i].values);
+	}
 	if (msg->elements) free(msg->elements);
 }
 
@@ -375,7 +401,7 @@ static int search_func(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, voi
 	/* see if it matches the given expression */
 	if (!ldb_message_match(sinfo->ldb, &msg, sinfo->tree, 
 			       sinfo->base, sinfo->scope)) {
-		if (msg.elements) free(msg.elements);
+		ltdb_unpack_data_free(&msg);
 		return 0;
 	}
 
@@ -385,7 +411,7 @@ static int search_func(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, voi
 		sinfo->failures++;
 	}
 
-	if (msg.elements) free(msg.elements);
+	ltdb_unpack_data_free(&msg);
 
 	return ret;
 }

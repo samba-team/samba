@@ -73,7 +73,8 @@ struct ldb_val {
 struct ldb_message_element {
 	unsigned int flags;
 	char *name;
-	struct ldb_val value;
+	unsigned int num_values;
+	struct ldb_val *values;
 };
 
 
@@ -88,6 +89,20 @@ struct ldb_message {
 	void *private; /* private to the backend */
 };
 
+enum ldb_changetype {
+	LDB_CHANGETYPE_NONE=0,
+	LDB_CHANGETYPE_ADD,
+	LDB_CHANGETYPE_DELETE,
+	LDB_CHANGETYPE_MODIFY
+};
+
+/*
+  a ldif record - from ldif_read
+*/
+struct ldb_ldif {
+	enum ldb_changetype changetype;
+	struct ldb_message msg;
+};
 
 enum ldb_scope {LDB_SCOPE_DEFAULT=-1, 
 		LDB_SCOPE_BASE=0, 
@@ -196,9 +211,9 @@ const char *ldb_errstring(struct ldb_context *ldb);
 */
 int ldif_write(int (*fprintf_fn)(void *, const char *, ...), 
 	       void *private,
-	       const struct ldb_message *msg);
-void ldif_read_free(struct ldb_message *msg);
-struct ldb_message *ldif_read(int (*fgetc_fn)(void *), void *private);
-struct ldb_message *ldif_read_file(FILE *f);
-struct ldb_message *ldif_read_string(const char *s);
-int ldif_write_file(FILE *f, const struct ldb_message *msg);
+	       const struct ldb_ldif *ldif);
+void ldif_read_free(struct ldb_ldif *);
+struct ldb_ldif *ldif_read(int (*fgetc_fn)(void *), void *private);
+struct ldb_ldif *ldif_read_file(FILE *f);
+struct ldb_ldif *ldif_read_string(const char *s);
+int ldif_write_file(FILE *f, const struct ldb_ldif *msg);
