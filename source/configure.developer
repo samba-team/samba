@@ -1,2 +1,2 @@
 #!/bin/sh
-`dirname $0`/configure --enable-developer $*
+`dirname $0`/configure --enable-developer "$@"
