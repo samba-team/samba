@@ -798,7 +798,7 @@ BOOL check_oem_password(char *user,
 
 	if (pdb_get_nt_passwd(sampass) == NULL && nt_pass_set) {
 		if (acct_ctrl & ACB_PWNOTREQ) {
-			pdb_set_nt_passwd(sampass, null_pw);
+			pdb_set_nt_passwd(sampass, null_ntpw);
 			nt_pw = pdb_get_nt_passwd(sampass);
 			if (!nt_pw)
 				return False;
