@@ -1666,17 +1666,69 @@ void cmd_sam_query_dispinfo(struct client_info *info)
 /****************************************************************************
 experimental SAM domain info query.
 ****************************************************************************/
-void cmd_sam_query_dominfo(struct client_info *info)
+BOOL sam_query_dominfo(struct client_info *info, DOM_SID *sid1,
+				uint32 switch_value, SAM_UNK_CTR *ctr)
 {
 	uint16 fnum;
 	fstring srv_name;
+	BOOL res = True;
+	BOOL res1 = True;
+	BOOL res2 = True;
+	uint32 ace_perms = 0x02000000; /* absolutely no idea. */
+
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, info->dest_host);
+	strupper(srv_name);
+
+	/* open SAMR session.  negotiate credentials */
+	res = res ? cli_nt_session_open(smb_cli, PIPE_SAMR, &fnum) : False;
+
+	/* establish a connection. */
+	res = res ? samr_connect(smb_cli, fnum, 
+				srv_name, 0x02000000,
+				&info->dom.samr_pol_connect) : False;
+
+	/* connect to the domain */
+	res1 = res ? samr_open_domain(smb_cli, fnum, 
+	            &info->dom.samr_pol_connect, ace_perms, sid1,
+	            &info->dom.samr_pol_open_domain) : False;
+
+	/* send a samr 0x8 command */
+	res2 = res ? samr_query_dom_info(smb_cli, fnum,
+	            &info->dom.samr_pol_open_domain, switch_value, ctr) : False;
+
+	res1 = res1 ? samr_close(smb_cli, fnum,
+	            &info->dom.samr_pol_connect) : False;
+
+	res = res ? samr_close(smb_cli, fnum, 
+	            &info->dom.samr_pol_open_domain) : False;
+
+	/* close the session */
+	cli_nt_session_close(smb_cli, fnum);
+
+	if (res2)
+	{
+		DEBUG(5,("sam_query_dominfo: succeeded\n"));
+	}
+	else
+	{
+		DEBUG(5,("sam_query_dominfo: failed\n"));
+	}
+
+	return res2;
+}
+
+
+/****************************************************************************
+experimental SAM domain info query.
+****************************************************************************/
+void cmd_sam_query_dominfo(struct client_info *info)
+{
 	fstring domain;
 	fstring sid;
 	DOM_SID sid1;
-	BOOL res = True;
 	fstring info_str;
 	uint32 switch_value = 2;
-	uint32 ace_perms = 0x02000000; /* absolutely no idea. */
 	SAM_UNK_CTR ctr;
 
 	sid_to_string(sid, &info->dom.level5_sid);
@@ -1690,46 +1742,16 @@ void cmd_sam_query_dominfo(struct client_info *info)
 
 	string_to_sid(&sid1, sid);
 
-	fstrcpy(srv_name, "\\\\");
-	fstrcat(srv_name, info->dest_host);
-	strupper(srv_name);
-
 	if (next_token(NULL, info_str, NULL, sizeof(info_str)))
 	{
 		switch_value = strtoul(info_str, (char**)NULL, 10);
 	}
 
 	report(out_hnd, "SAM Query Domain Info: info level %d\n", switch_value);
-	report(out_hnd, "From: %s To: %s Domain: %s SID: %s\n",
-	                  info->myhostname, srv_name, domain, sid);
+	report(out_hnd, "From: %s Domain: %s SID: %s\n",
+	                  info->myhostname, domain, sid);
 
-	/* open SAMR session.  negotiate credentials */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_SAMR, &fnum) : False;
-
-	/* establish a connection. */
-	res = res ? samr_connect(smb_cli, fnum, 
-				srv_name, 0x02000000,
-				&info->dom.samr_pol_connect) : False;
-
-	/* connect to the domain */
-	res = res ? samr_open_domain(smb_cli, fnum, 
-	            &info->dom.samr_pol_connect, ace_perms, &sid1,
-	            &info->dom.samr_pol_open_domain) : False;
-
-	/* send a samr 0x8 command */
-	res = res ? samr_query_dom_info(smb_cli, fnum,
-	            &info->dom.samr_pol_open_domain, switch_value, &ctr) : False;
-
-	res = res ? samr_close(smb_cli, fnum,
-	            &info->dom.samr_pol_connect) : False;
-
-	res = res ? samr_close(smb_cli, fnum, 
-	            &info->dom.samr_pol_open_domain) : False;
-
-	/* close the session */
-	cli_nt_session_close(smb_cli, fnum);
-
-	if (res)
+	if (sam_query_dominfo(info, &sid1, switch_value, &ctr))
 	{
 		DEBUG(5,("cmd_sam_query_dominfo: succeeded\n"));
 		display_sam_unk_ctr(out_hnd, ACTION_HEADER   , switch_value, &ctr);

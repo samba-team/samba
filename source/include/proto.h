@@ -3183,6 +3183,8 @@ int msrpc_sam_enum_users(struct client_info *info,
 void cmd_sam_enum_users(struct client_info *info);
 void cmd_sam_query_user(struct client_info *info);
 void cmd_sam_query_dispinfo(struct client_info *info);
+BOOL sam_query_dominfo(struct client_info *info, DOM_SID *sid1,
+				uint32 switch_value, SAM_UNK_CTR *ctr);
 void cmd_sam_query_dominfo(struct client_info *info);
 void cmd_sam_enum_aliases(struct client_info *info);
 void cmd_sam_enum_groups(struct client_info *info);

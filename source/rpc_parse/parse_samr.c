@@ -543,11 +543,12 @@ void samr_io_r_query_dom_info(char *desc, SAMR_R_QUERY_DOMAIN_INFO *r_u, prs_str
 	prs_align(ps);
 
 	prs_uint32("ptr_0       ", ps, depth, &(r_u->ptr_0));
-	prs_uint16("switch_value", ps, depth, &(r_u->switch_value));
-	prs_align(ps);
 
 	if (r_u->ptr_0 != 0 && r_u->ctr != NULL)
 	{
+		prs_uint16("switch_value", ps, depth, &(r_u->switch_value));
+		prs_align(ps);
+
 		switch (r_u->switch_value)
 		{
 			case 0x07:
