@@ -329,10 +329,10 @@ ssize_t cli_write(struct cli_state *cli,
 	int block = cli->max_xmit - (smb_size+32);
 	int blocks = (size + (block-1)) / block;
 
-	if(cli->max_mux == 0) {
-		mpx = 1;
-	} else {
+	if(cli->max_mux > 1) {
 		mpx = cli->max_mux-1;
+	} else {
+		mpx = 1;
 	}
 
 	while (received < blocks) {
