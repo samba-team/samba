@@ -669,7 +669,7 @@ extern int errno;
 #include "librpc/rpc/dcerpc.h"
 
 #include "rpc_server/dcerpc_server.h"
-#include "context.h"
+#include "smb_server/smb_server.h"
 #include "ntvfs/ntvfs.h"
 #include "cli_context.h"
 #include "registry.h"
