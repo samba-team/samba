@@ -35,14 +35,11 @@
 #undef HAVE_FSTAT
 #endif
 
-/* The tdb_set_lock_alarm() function requires the SIG_ATOMIC_T
-   function from includes.h */
+/* The tdb_set_lock_alarm() function requires the sig_atomic_t type */
 
 #include "include/config.h"
-#if defined(HAVE_SIG_ATOMIC_T_TYPE)
-typedef sig_atomic_t SIG_ATOMIC_T;
-#else
-typedef int SIG_ATOMIC_T;
+#if !defined(HAVE_SIG_ATOMIC_T_TYPE)
+typedef int sig_atomic_t
 #endif
 
 #if (__GNUC__ >= 3)
@@ -140,7 +137,7 @@ int tdb_lockall(TDB_CONTEXT *tdb);
 void tdb_unlockall(TDB_CONTEXT *tdb);
 
 /* Low level locking functions: use with care */
-void tdb_set_lock_alarm(SIG_ATOMIC_T *palarm);
+void tdb_set_lock_alarm(sig_atomic_t *palarm);
 int tdb_chainlock(TDB_CONTEXT *tdb, TDB_DATA key);
 int tdb_chainunlock(TDB_CONTEXT *tdb, TDB_DATA key);
 
