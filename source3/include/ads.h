@@ -11,8 +11,15 @@ typedef struct {
 	char *kdc_server;
 	int ldap_port;
 	char *bind_path;
+	time_t last_attempt;
 } ADS_STRUCT;
 
+
+/* time between reconnect attempts */
+#define ADS_RECONNECT_TIME 5
+
+/* timeout on searches */
+#define ADS_SEARCH_TIMEOUT 10
 
 #define UF_DONT_EXPIRE_PASSWD           0x10000
 #define UF_MNS_LOGON_ACCOUNT            0x20000
