@@ -145,6 +145,44 @@ AC_C_INLINE
 
 AC_PATH_XTRA
 
+dnl 
+dnl See if there is any X11 present
+dnl
+AC_PATH_XTRA
+if test "$no_x" = "yes" ; then
+	MAKE_X_PROGS_BIN=""
+	MAKE_X_PROGS_LIBEXEC=""
+else
+	MAKE_X_PROGS_BIN='$(X_PROGS_BIN)'
+	MAKE_X_PROGS_LIBEXEC='$(X_PROGS_LIBEXEC)'
+fi
+AC_SUBST(MAKE_X_PROGS_BIN)dnl
+AC_SUBST(MAKE_X_PROGS_LIBEXEC)dnl
+
+save_CFLAGS="$CFLAGS"
+CFLAGS="$X_CFLAGS $CFLAGS"
+save_LIBS="$LIBS"
+dnl LIBS="$X_LIBS $X_PRE_LIBS $X_EXTRA_LIBS $LIBS"
+LIBS="$X_PRE_LIBS $X_EXTRA_LIBS $LIBS"
+save_LDFLAGS="$LDFLAGS"
+LDFLAGS="$LDFLAGS $X_LIBS"
+
+AC_FIND_FUNC_NO_LIBS(XauReadAuth, Xau X11)
+ac_xxx="$LIBS"
+LIBS="$LIB_XauReadAuth $LIBS"
+AC_CHECK_FUNCS(XauWriteAuth)
+if test "$ac_cv_func_XauWriteAuth" != "yes"; then
+  XauWriteAuth_c=writeauth.c
+  XauWriteAuth_o=writeauth.o
+fi
+AC_SUBST(XauWriteAuth_c)dnl
+AC_SUBST(XauWriteAuth_o)dnl
+LIBS="$ac_xxx"
+
+CFLAGS=$save_CFLAGS
+LIBS=$save_LIBS
+LDFLAGS=$save_LDFLAGS
+
 dnl AM_C_PROTOTYPES
 
 dnl Checks for typedefs, structures, and compiler characteristics.
@@ -486,6 +524,23 @@ fi
 dnl AC_SUBST(STREAMSPTY)
 AC_MSG_RESULT($krb_cv_sys_streamspty)
 
+dnl This is done by AC_OUTPUT but we need the result here.
+
+test "x$prefix" = xNONE && prefix=$ac_default_prefix
+test "x$exec_prefix" = xNONE && exec_prefix='${prefix}'
+
+for i in bin lib libexec sbin; do
+	i=${i}dir
+	foo=`echo $i | tr 'xindiscernible' 'XINDISCERNIBLE'`
+	x="\$${i}"
+	eval y="$x"
+	while test "x$y" != "x$x"; do
+		x="$y"
+		eval y="$x"
+	done
+	AC_DEFINE_UNQUOTED($foo,"$x")
+done
+
 AC_OUTPUT(Makefile 			\
 	include/Makefile		\
 	include/kadm5/Makefile		\
@@ -510,6 +565,8 @@ AC_OUTPUT(Makefile 			\
 	kdc/Makefile			\
 	appl/Makefile			\
 	appl/test/Makefile		\
+	appl/kauth/Makefile		\
+	appl/kx/Makefile		\
 	appl/rsh/Makefile		\
 	appl/popper/Makefile		\
 	appl/push/Makefile		\
