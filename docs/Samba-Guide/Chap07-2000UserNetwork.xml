@@ -991,7 +991,7 @@ added: "cn=PIOps,ou=Groups,dc=abmas,dc=biz" (00000013)
 <screen>
 &rootprompt; rcldap start
 &rootprompt; chkconfig ldap on
-&rootprompt; slurpd start
+&rootprompt; rcslurpd start
 &rootprompt; chkconfig slurpd on
 </screen>
 	    <indexterm>
@@ -1003,7 +1003,7 @@ added: "cn=PIOps,ou=Groups,dc=abmas,dc=biz" (00000013)
 	<step><para><indexterm>
 	      <primary>smbldap-useradd.pl</primary>
 	    </indexterm>
-		On the master slave server you may now add an account to validate that replication
+		On the master ldap server you may now add an account to validate that replication
 		is working. Assuming the configuration shown in Chapter 6, execute:
 <screen>
 &rootprompt; /var/lib/samba/sbin/smbldap-useradd.pl -a fruitloop
