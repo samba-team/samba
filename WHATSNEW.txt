@@ -90,9 +90,10 @@ details
 2)  Enforce 'client plaintext auth', 'client lanman auth' and 'client
     ntlmv2 auth'
 3)  Correct timestamp problem on 64-bit machines (bug #140)
-4)  Add extra debugging staements to winbindd for tracking down
+4)  Add extra debugging statements to winbindd for tracking down
     failures
-5)  Fix bug when aliased 'winbind uid/gid' parameters
+5)  Fix bug when aliased 'winbind uid/gid' parameters are used
+	'winbind uid/gid' are now replaced with 'idmap uid/gid'
 6)  Added an auth flag that indicates if we should be allowed 
     to fallback to NTLMSSP for SASL if krb5 fails
 7)  Fixed the bug that forced us not to use the winbindd cache when 
@@ -108,7 +109,7 @@ details
 14) Add trivial extension to 'net' to dump current local idmap
     and restore mappings as well
 15) Modify 'net rpc vampire' to add new and existing users to
-    both the idmap and the SAM.
+    both the idmap and the SAM. This code needs further testing.
 16) Fix crash bug in ADS searches 
 17) Build libnss_wins.so as part of nsswitch target (bug #160)
 18) Make net rpc vampire return an error if the sam sync RPC 
@@ -130,7 +131,7 @@ details
     joined using NT4 protocols to a native mode AD domain
 29) Fix backend method selection for trusted NT 4 (or 2k 
     mixed mode) domains 
-30) Fixed bug that caused us to enuemrate dmain local groups
+30) Fixed bug that caused us to enuemrate domain local groups
     from native mode AD domains other than our own
 31) Correct group enumeration for viewing in the Windows 
     security tab (bug #110)
@@ -139,7 +140,7 @@ details
     backwards compatibility
 34) Fix winbindd_idmap tdb upgrades from a 2.2 installation
     ( if you installed beta1, be sure to 
-      'mv idmap.tdb winbindd_idamap.tdb' )
+      'mv idmap.tdb winbindd_idmap.tdb' )
 35) Fix pdb_ldap segfaults, and wrong default values for 
     ldapsam_compat
 36) Enable negative connection cache for winbindd's ADS backend 
@@ -189,7 +190,7 @@ Building
 --------
 
 Many of the options to the GNU autoconf script have been modified 
-in the 3.0 release.  The most noticeable are
+in the 3.0 release.  The most noticeable are:
 
   * removal of --with-tdbsam (is now included by default; see section
     on passdb backends and authentication for more details)
