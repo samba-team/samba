@@ -888,8 +888,8 @@ pass(char *passwd)
 
 	/* some clients insists on sending a password */
 	if (logged_in && askpasswd == 0){
-	     reply(230, "Dumpucko!");
-	     return;
+	    reply(230, "Password not necessary");
+	    return;
 	}
 
 	if (logged_in || askpasswd == 0) {
