@@ -1,3 +1,11 @@
+2000-12-01  Assar Westerlund  <assar@sics.se>
+
+	* configure.in: remove configure-time generation of krb5-config
+	* tools/Makefile.am: add generation of krb5-config at make-time
+	instead of configure-time
+
+	* tools/krb5-config.in: add --prefix and --exec-prefix
+
 2000-11-30  Assar Westerlund  <assar@sics.se>
 
 	* tools/Makefile.am: add krb5-config.1
