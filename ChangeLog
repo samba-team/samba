@@ -1,3 +1,10 @@
+2000-02-02  Assar Westerlund  <assar@sics.se>
+
+	* kdc/kerberos4.c (do_version4): look at check_ticket_addresses
+	and emulate that by setting krb_ignore_ip_address (not a great
+	interface but it doesn't seem like the time to go around fixing
+	libkrb stuff now)
+
 2000-02-01  Johan Danielsson  <joda@pdc.kth.se>
 
 	* kuser/kinit.c: change --noaddresses into --no-addresses
