@@ -1,4 +1,3 @@
-
 /* 
  *  Unix SMB/Netbios implementation.
  *  Version 1.9.
@@ -22,11 +21,6 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-
-
-#ifdef SYSLOG
-#undef SYSLOG
-#endif
 
 #include "includes.h"
 
@@ -55,7 +49,6 @@ static BOOL rpc_read(struct cli_state *cli, prs_struct *rdata, uint32 data_to_re
 	int stream_offset = 0;
 	int num_read;
 	char *pdata;
-	uint32 err;
 	int extra_data_size = ((int)*rdata_offset) + ((int)data_to_read) - (int)prs_data_size(rdata);
 
 	DEBUG(5,("rpc_read: data_to_read: %u rdata offset: %u extra_data_size: %d\n",
@@ -77,16 +70,21 @@ static BOOL rpc_read(struct cli_state *cli, prs_struct *rdata, uint32 data_to_re
 
 	do /* read data using SMBreadX */
 	{
+		uint32 ecode;
+		uint8 eclass;
+
 		if (size > (size_t)data_to_read)
 			size = (size_t)data_to_read;
 
-		num_read = (int)cli_read(cli, cli->nt_pipe_fnum, pdata, (off_t)stream_offset, size);
+		num_read = (int)cli_read_one(cli, cli->nt_pipe_fnum, pdata, (off_t)stream_offset, size);
 
 		DEBUG(5,("rpc_read: num_read = %d, read offset: %d, to read: %d\n",
 		          num_read, stream_offset, data_to_read));
 
-		if (cli_error(cli, NULL, &err, NULL)) {
-			DEBUG(0,("rpc_read: Error %u in cli_read\n", (unsigned int)err ));
+		if (cli_error(cli, &eclass, &ecode, NULL) && 
+		    (eclass != ERRDOS && ecode != ERRmoredata)) {
+			DEBUG(0,("rpc_read: Error %d/%u in cli_read\n", 
+				 eclass, (unsigned int)ecode));
 			return False;
 		}
 
@@ -328,7 +326,6 @@ static BOOL rpc_api_pipe(struct cli_state *cli, uint16 cmd, prs_struct *data, pr
 	char *rparam = NULL;
 	uint32 rparam_len = 0;
 	uint16 setup[2];
-	uint32 err;
 	BOOL first = True;
 	BOOL last  = True;
 	RPC_HDR rhdr;
@@ -338,15 +335,19 @@ static BOOL rpc_api_pipe(struct cli_state *cli, uint16 cmd, prs_struct *data, pr
 	uint32 rdata_len = 0;
 	uint32 current_offset = 0;
 
-	/* 
-	 * Create setup parameters - must be in native byte order.
-	 */
+	/* Create setup parameters - must be in native byte order. */
+
 	setup[0] = cmd; 
 	setup[1] = cli->nt_pipe_fnum; /* Pipe file handle. */
 
-	DEBUG(5,("rpc_api_pipe: cmd:%x fnum:%x\n", (int)cmd, (int)cli->nt_pipe_fnum));
+	DEBUG(5,("rpc_api_pipe: cmd:%x fnum:%x\n", (int)cmd, 
+		 (int)cli->nt_pipe_fnum));
 
-	/* send the data: receive a response. */
+	/* Send the RPC request and receive a response.  For short RPC
+	   calls (about 1024 bytes or so) the RPC request and response
+	   appears in a SMBtrans request and response.  Larger RPC
+	   responses are received further on. */
+
 	if (!cli_api_pipe(cli, "\\PIPE\\",
 	          setup, 2, 0,                     /* Setup, length, max */
 	          NULL, 0, 0,                      /* Params, length, max */
@@ -358,9 +359,7 @@ static BOOL rpc_api_pipe(struct cli_state *cli, uint16 cmd, prs_struct *data, pr
 		return False;
 	}
 
-	/*
-	 * Throw away returned params - we know we won't use them.
-	 */
+	/* Throw away returned params - we know we won't use them. */
 
 	if(rparam) {
 		free(rparam);
@@ -374,7 +373,8 @@ static BOOL rpc_api_pipe(struct cli_state *cli, uint16 cmd, prs_struct *data, pr
 	}
 
 	/*
-	 * Give this memory as dynamically allocated to the return parse struct.
+	 * Give this memory as dynamically allocated to the return parse
+	 * struct.  
 	 */
 
 	prs_give_memory(rdata, prdata, rdata_len, True);
@@ -407,13 +407,15 @@ static BOOL rpc_api_pipe(struct cli_state *cli, uint16 cmd, prs_struct *data, pr
 	DEBUG(5,("rpc_api_pipe: len left: %u smbtrans read: %u\n",
 	          (unsigned int)len, (unsigned int)rdata_len ));
 
-	/* check if data to be sent back was too large for one SMB. */
-	/* err status is only informational: the _real_ check is on the length */
+	/* check if data to be sent back was too large for one SMBtrans */
+	/* err status is only informational: the _real_ check is on the
+           length */
+
 	if (len > 0) { 
 		/* || err == (0x80000000 | STATUS_BUFFER_OVERFLOW)) */
-		/*
-		 * Read the rest of the first response PDU.
-		 */
+
+		/* Read the remaining part of the first response fragment */
+
 		if (!rpc_read(cli, rdata, len, &current_offset)) {
 			prs_mem_free(rdata);
 			return False;
@@ -446,7 +448,8 @@ static BOOL rpc_api_pipe(struct cli_state *cli, uint16 cmd, prs_struct *data, pr
 	}
 
 	/*
-	 * Read more fragments until we get the last one.
+	 * Read more fragments using SMBreadX until we get one with the
+	 * last bit set.
 	 */
 
 	while (!last) {
@@ -454,6 +457,8 @@ static BOOL rpc_api_pipe(struct cli_state *cli, uint16 cmd, prs_struct *data, pr
 		int num_read;
 		char hdr_data[RPC_HEADER_LEN+RPC_HDR_RESP_LEN];
 		prs_struct hps;
+		uint8 eclass;
+		uint32 ecode;
 
 		/*
 		 * First read the header of the next PDU.
@@ -462,9 +467,11 @@ static BOOL rpc_api_pipe(struct cli_state *cli, uint16 cmd, prs_struct *data, pr
 		prs_init(&hps, 0, cli->mem_ctx, UNMARSHALL);
 		prs_give_memory(&hps, hdr_data, sizeof(hdr_data), False);
 
-		num_read = cli_read(cli, cli->nt_pipe_fnum, hdr_data, 0, RPC_HEADER_LEN+RPC_HDR_RESP_LEN);
-		if (cli_error(cli, NULL, &err, NULL)) {
-			DEBUG(0,("rpc_api_pipe: cli_read error : %d\n", err ));
+		num_read = cli_read_one(cli, cli->nt_pipe_fnum, hdr_data, 0, RPC_HEADER_LEN+RPC_HDR_RESP_LEN);
+		if (cli_error(cli, &eclass, &ecode, NULL) &&
+		    (eclass != ERRDOS && ecode != ERRmoredata)) {
+			DEBUG(0,("rpc_api_pipe: cli_read error : %d/%d\n", 
+				 eclass, ecode));
 			return False;
 		}
 
