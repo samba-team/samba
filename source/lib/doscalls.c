@@ -33,6 +33,7 @@
 
 extern int DEBUGLEVEL;
 
+#if 0 /* Use vfs_unlink. */
 /*******************************************************************
  Unlink wrapper that calls dos_to_unix.
 ********************************************************************/
@@ -41,6 +42,7 @@ int dos_unlink(char *fname)
 {
   return(unlink(dos_to_unix(fname,False)));
 }
+#endif
 
 /*******************************************************************
  Open() wrapper that calls dos_to_unix.
@@ -85,10 +87,12 @@ char *dos_readdirname(DIR *p)
  A chown() wrapper that calls dos_to_unix.
 ********************************************************************/
 
+#if 0 /* Use vfs_chown. */
 int dos_chown(char *fname, uid_t uid, gid_t gid)
 {
   return(sys_chown(dos_to_unix(fname,False),uid,gid));
 }
+#endif
 
 /*******************************************************************
  A stat() wrapper that calls dos_to_unix.
@@ -134,6 +138,7 @@ int dos_rmdir(char *dname)
   return(rmdir(dos_to_unix(dname,False)));
 }
 
+#if 0 /* VFS */
 /*******************************************************************
  chdir() - call dos_to_unix.
 ********************************************************************/
@@ -142,6 +147,7 @@ int dos_chdir(char *dname)
 {
   return(chdir(dos_to_unix(dname,False)));
 }
+#endif
 
 /*******************************************************************
  Utime() - call dos_to_unix.
@@ -282,6 +288,7 @@ int dos_chmod(char *fname,mode_t mode)
   return(chmod(dos_to_unix(fname,False),mode));
 }
 
+#if 0 /* VFS */
 /*******************************************************************
  Getwd - takes a UNIX directory name and returns the name
  in dos format.
@@ -295,6 +302,7 @@ char *dos_getwd(char *unix_path)
 		unix_to_dos(wd, True);
 	return wd;
 }
+#endif /* VFS */
 
 /*******************************************************************
  Check if a DOS file exists.  Use vfs_file_exist function instead.
@@ -332,165 +340,4 @@ time_t dos_file_modtime(char *fname)
 SMB_OFF_T dos_file_size(char *file_name)
 {
   return get_file_size(dos_to_unix(file_name, False));
-}
-
-/*******************************************************************
- A wrapper for dos_chdir().
-********************************************************************/
-
-int dos_ChDir(char *path)
-{
-  int res;
-  static pstring LastDir="";
-
-  if (strcsequal(path,"."))
-    return(0);
-
-  if (*path == '/' && strcsequal(LastDir,path))
-    return(0);
-
-  DEBUG(3,("dos_ChDir to %s\n",path));
-
-  res = dos_chdir(path);
-  if (!res)
-    pstrcpy(LastDir,path);
-  return(res);
-}
-
-/* number of list structures for a caching GetWd function. */
-#define MAX_GETWDCACHE (50)
-
-struct
-{
-  SMB_DEV_T dev; /* These *must* be compatible with the types returned in a stat() call. */
-  SMB_INO_T inode; /* These *must* be compatible with the types returned in a stat() call. */
-  char *dos_path; /* The pathname in DOS format. */
-  BOOL valid;
-} ino_list[MAX_GETWDCACHE];
-
-BOOL use_getwd_cache=True;
-
-/****************************************************************************
- Prompte a ptr (to make it recently used)
-****************************************************************************/
-
-static void array_promote(char *array,int elsize,int element)
-{
-  char *p;
-  if (element == 0)
-    return;
-
-  p = (char *)malloc(elsize);
-
-  if (!p)
-    {
-      DEBUG(5,("Ahh! Can't malloc\n"));
-      return;
-    }
-  memcpy(p,array + element * elsize, elsize);
-  memmove(array + elsize,array,elsize*element);
-  memcpy(array,p,elsize);
-  free(p);
-}
-
-/*******************************************************************
- Return the absolute current directory path - given a UNIX pathname.
- Note that this path is returned in DOS format, not UNIX
- format.
-********************************************************************/
-
-char *dos_GetWd(char *path)
-{
-  pstring s;
-  static BOOL getwd_cache_init = False;
-  SMB_STRUCT_STAT st, st2;
-  int i;
-
-  *s = 0;
-
-  if (!use_getwd_cache)
-    return(dos_getwd(path));
-
-  /* init the cache */
-  if (!getwd_cache_init)
-  {
-    getwd_cache_init = True;
-    for (i=0;i<MAX_GETWDCACHE;i++)
-    {
-      string_set(&ino_list[i].dos_path,"");
-      ino_list[i].valid = False;
-    }
-  }
-
-  /*  Get the inode of the current directory, if this doesn't work we're
-      in trouble :-) */
-
-  if (sys_stat(".",&st) == -1)
-  {
-    DEBUG(0,("Very strange, couldn't stat \".\" path=%s\n", path));
-    return(dos_getwd(path));
-  }
-
-
-  for (i=0; i<MAX_GETWDCACHE; i++)
-    if (ino_list[i].valid)
-    {
-
-      /*  If we have found an entry with a matching inode and dev number
-          then find the inode number for the directory in the cached string.
-          If this agrees with that returned by the stat for the current
-          directory then all is o.k. (but make sure it is a directory all
-          the same...) */
-
-      if (st.st_ino == ino_list[i].inode &&
-          st.st_dev == ino_list[i].dev)
-      {
-        if (dos_stat(ino_list[i].dos_path,&st2) == 0)
-        {
-          if (st.st_ino == st2.st_ino &&
-              st.st_dev == st2.st_dev &&
-              (st2.st_mode & S_IFMT) == S_IFDIR)
-          {
-            pstrcpy (path, ino_list[i].dos_path);
-
-            /* promote it for future use */
-            array_promote((char *)&ino_list[0],sizeof(ino_list[0]),i);
-            return (path);
-          }
-          else
-          {
-            /*  If the inode is different then something's changed,
-                scrub the entry and start from scratch. */
-            ino_list[i].valid = False;
-          }
-        }
-      }
-    }
-
-
-  /*  We don't have the information to hand so rely on traditional methods.
-      The very slow getcwd, which spawns a process on some systems, or the
-      not quite so bad getwd. */
-
-  if (!dos_getwd(s))
-  {
-    DEBUG(0,("dos_GetWd: dos_getwd call failed, errno %s\n",strerror(errno)));
-    return (NULL);
-  }
-
-  pstrcpy(path,s);
-
-  DEBUG(5,("dos_GetWd %s, inode %.0f, dev %.0f\n",s,(double)st.st_ino,(double)st.st_dev));
-
-  /* add it to the cache */
-  i = MAX_GETWDCACHE - 1;
-  string_set(&ino_list[i].dos_path,s);
-  ino_list[i].dev = st.st_dev;
-  ino_list[i].inode = st.st_ino;
-  ino_list[i].valid = True;
-
-  /* put it at the top of the list */
-  array_promote((char *)&ino_list[0],sizeof(ino_list[0]),i);
-
-  return (path);
 }

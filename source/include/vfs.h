@@ -184,9 +184,16 @@ struct vfs_ops {
     int (*lstat)(char *path, SMB_STRUCT_STAT *sbuf);
     int (*unlink)(char *path);
     int (*chmod)(char *path, mode_t mode);
+	int (*chown)(char *path, uid_t uid, gid_t gid);
+	int (*chdir)(char *path);
+	char *(*getwd)(char *buf);
     int (*utime)(char *path, struct utimbuf *times);
 	int (*ftruncate)(int fd, SMB_OFF_T offset);
 	BOOL (*lock)(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type);
+#if 0
+	size_t (*get_nt_acl)(files_struct *fsp, SEC_DESC **ppdesc);
+	BOOL (*set_nt_acl)(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd);
+#endif
 };
 
 struct vfs_options {

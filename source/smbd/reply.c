@@ -1100,7 +1100,7 @@ int reply_getatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
     unix_convert(fname,conn,0,&bad_path,&sbuf);
     if (check_name(fname,conn))
     {
-      if (VALID_STAT(sbuf) || dos_stat(fname,&sbuf) == 0)
+      if (VALID_STAT(sbuf) || vfs_stat(conn,fname,&sbuf) == 0)
       {
         mode = dos_mode(conn,fname,&sbuf);
         size = sbuf.st_size;
