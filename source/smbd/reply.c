@@ -3300,8 +3300,9 @@ int reply_printqueue(connection_struct *conn,
 
 	{
 		print_queue_struct *queue = NULL;
+		print_status_struct status;
 		char *p = smb_buf(outbuf) + 3;
-		int count = print_queue_status(SNUM(conn), &queue,NULL);
+		int count = print_queue_status(SNUM(conn), &queue, &status);
 		int num_to_get = ABS(max_count);
 		int first = (max_count>0?start_index:start_index+max_count+1);
 		int i;
