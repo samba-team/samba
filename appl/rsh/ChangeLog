@@ -1,3 +1,7 @@
+2001-11-30  Johan Danielsson  <joda@pdc.kth.se>
+
+	* rshd.c: make the syslog messages somewhat more informative
+
 2001-08-15  Johan Danielsson  <joda@pdc.kth.se>
 
 	* rsh.c: only complain about encryption flag when old
