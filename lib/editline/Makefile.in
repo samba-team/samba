@@ -30,7 +30,7 @@ LIBPREFIX = @LIBPREFIX@
 LDSHARED = @LDSHARED@
 LIB = $(LIBNAME).$(LIBEXT)
 
-LIB_DEPS = @LIB_tgetent@ -lc
+LIB_DEPS = -lc
 
 SOURCES = edit_compat.c editline.c complete.c sysunix.c
 
