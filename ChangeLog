@@ -1,3 +1,14 @@
+1999-11-14  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/krb5.h (krb5_context_data): add `scan_interfaces'
+	* lib/krb5/get_addrs.c (krb5_get_all_client_addrs): make interaces
+ 	scanning optional
+	* lib/krb5/context.c (init_context_from_config_file): set
+ 	`scan_interfaces'
+
+	* lib/krb5/Makefile.am (libkrb5_la_SOURCES): add add_et_list.c
+	* lib/krb5/add_et_list.c (krb5_add_et_list): new function
+
 1999-11-12  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/get_default_realm.c (krb5_get_default_realm,
