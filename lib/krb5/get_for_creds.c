@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2003 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2004 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -283,7 +283,7 @@ krb5_get_forwarded_creds (krb5_context	    context,
 	krb5_const_realm realm;
 
 	realm = krb5_principal_get_realm(context, out_creds->server);
-	krb5_appdefault_boolean(context, NULL, realm, "no-addresses", FALSE,
+	krb5_appdefault_boolean(context, NULL, realm, "no-addresses", paddrs == NULL,
 				&noaddr);
 	if (!noaddr) {
 	    ret = krb5_make_addrport (context,
@@ -301,6 +301,11 @@ krb5_get_forwarded_creds (krb5_context	    context,
 	    krb5_const_realm realm;
 
 	    realm = krb5_principal_get_realm(context, out_creds->server);
+	    /* Is this correct, and should we use the paddrs == NULL
+               trick here as well? Having an address-less ticket may
+               indicate that we don't know our own global address, but
+               it does not necessary mean that we don't know the
+               server's. */
 	    krb5_appdefault_boolean(context, NULL, realm, "no-addresses",
 				    FALSE, &noaddr);
 	    if (!noaddr) {
