@@ -704,6 +704,11 @@ if test $space = no; then
   fi
 fi
 
+echo "checking configure summary"
+AC_TRY_RUN([#include "tests/summary.c"],
+           echo "configure OK";,
+	   echo ERROR - summary failure. Aborting config; exit 1)
+
 
 AC_OUTPUT(Makefile tests/dummy client/dummy lib/dummy ubiqx/dummy
 web/dummy param/dummy nmbd/dummy smbd/dummy rpc_server/dummy
