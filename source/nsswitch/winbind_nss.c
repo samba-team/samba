@@ -659,6 +659,17 @@ static NSS_STATUS fill_pwent(struct passwd *result,
 
 	strcpy(result->pw_shell, pw->pw_shell);
 
+	/* The struct passwd for Solaris has some extra fields which must
+	   be initialised or nscd crashes. */
+
+#if HAVE_PASSWD_PW_COMMENT
+	result->pw_comment = "";
+#endif
+
+#if HAVE_PASSWD_PW_AGE
+	result->pw_age = "";
+#endif
+
 	return NSS_STATUS_SUCCESS;
 }
 
