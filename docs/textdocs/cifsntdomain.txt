@@ -400,8 +400,8 @@ include, but are not limited to:
     UINT64        logon ID
     UNIHDR        user name unicode header
     UNIHDR        workgroup name unicode header
-    char[16]      rc4 LM OWF Password
-    char[16]      rc4 NT OWF Password
+    char[16]      arc4 LM OWF Password
+    char[16]      arc4 NT OWF Password
     UNISTR2       domain name unicode string
     UNISTR2       user name unicode string
     UNISTR2       workstation name unicode string
@@ -1334,7 +1334,7 @@ ntowf(): NT hash
 PW: md4(machine_password) == md4(lsadump $machine.acc) ==
 pwdump(machine$) (initially) == md4(lmowf(unicode(machine)))
 
-RC4(K,Lk,D,Ld): RC4 encryption of data D of length Ld with key K of
+ARC4(K,Lk,D,Ld): ARC4 encryption of data D of length Ld with key K of
 length Lk
 
 v[m..n(,l)]: subset of v from bytes m to n, optionally padded with
@@ -1363,7 +1363,7 @@ password and the domain controller may refuse to update it depending
 on registry settings. This will also occur weekly afterwards.
 
 C: Tc = Time(), Rc' = Cred(Ks,Rc+Tc) C->S ServerPasswordSet,Rc',Tc,
-rc4(Ks[0..7,16],lmowf(randompassword()) C: Rc = Cred(Ks,Rc+Tc+1) S:
+arc4(Ks[0..7,16],lmowf(randompassword()) C: Rc = Cred(Ks,Rc+Tc+1) S:
 assert(Rc' == Cred(Ks,Rc+Tc)), Ts = Time() S: Rs' = Cred(Ks,Rs+Tc+1)
 S->C Rs',Ts C: assert(Rs' == Cred(Ks,Rs+Tc+1)) S: Rs = Rs'
 
@@ -1371,7 +1371,7 @@ User: U with password P wishes to login to the domain (incidental data
 such as workstation and domain omitted)
 
 C: Tc = Time(), Rc' = Cred(Ks,Rc+Tc) C->S NetLogonSamLogon,Rc',Tc,U,
-rc4(Ks[0..7,16],16,ntowf(P),16), rc4(Ks[0..7,16],16,lmowf(P),16) S:
+arc4(Ks[0..7,16],16,ntowf(P),16), arc4(Ks[0..7,16],16,lmowf(P),16) S:
 assert(Rc' == Cred(Ks,Rc+Tc)) assert(passwords match those in SAM) S:
 Ts = Time()
 
@@ -1400,7 +1400,7 @@ can't find a use for.  However its time is used as the timestamp
 returned by the server.
 
 The password OWFs should NOT be sent over the network reversibly
-encrypted. They should be sent using RC4(Ks,md4(owf)) with the server
+encrypted. They should be sent using ARC4(Ks,md4(owf)) with the server
 computing the same function using the owf values in the SAM.
 
 
