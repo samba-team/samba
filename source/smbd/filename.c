@@ -148,7 +148,7 @@ BOOL unix_convert(pstring name,connection_struct *conn,char *saved_last_componen
 	}
 
 	if (!conn->case_sensitive && (!conn->case_preserve || (mangle_is_8_3(name, False) && !conn->short_case_preserve)))
-		strnorm(name, conn->case_sensitive);
+		strnorm(name, lp_defaultcase(SNUM(conn)));
 
 	start = name;
 	pstrcpy(orig_path, name);
@@ -293,7 +293,7 @@ BOOL unix_convert(pstring name,connection_struct *conn,char *saved_last_componen
 				 */
 
 				if (!conn->case_preserve && (!strhasupper(start) || !strhaslower(start)))		
-					strnorm(start, conn->case_sensitive);
+					strnorm(start, lp_defaultcase(SNUM(conn)));
 
 				/*
 				 * check on the mangled stack to see if we can recover the 
