@@ -208,7 +208,7 @@ doit_passive (kx_context *kc)
      u_char msg[1024], *p;
      int len;
      u_int32_t tmp;
-     char *host = kc->host;
+     const char *host = kc->host;
 
      otherside = connect_host (kc);
 
@@ -354,7 +354,7 @@ doit_active (kx_context *kc)
     size_t rem;
     u_int32_t other_port;
     int error;
-    char *host = kc->host;
+    const char *host = kc->host;
 
     otherside = connect_host (kc);
     if (otherside < 0)
@@ -574,7 +574,7 @@ doit (kx_context *kc, int passive_flag)
  */
 
 static int
-doit_v4 (char *host, int port, char *user, 
+doit_v4 (const char *host, int port, const char *user, 
 	 int passive_flag, int debug_flag, int keepalive_flag, int tcp_flag)
 {
     int ret;
@@ -597,7 +597,7 @@ doit_v4 (char *host, int port, char *user,
  */
 
 static int
-doit_v5 (char *host, int port, char *user,
+doit_v5 (const char *host, int port, const char *user,
 	 int passive_flag, int debug_flag, int keepalive_flag, int tcp_flag)
 {
     int ret;
@@ -625,7 +625,7 @@ static int krb_debug_flag	= 0;
 static int use_v5		= 0;
 #endif
 static char *port_str		= NULL;
-static char *user		= NULL;
+static const char *user		= NULL;
 static int tcp_flag		= 0;
 static int passive_flag		= 0;
 static int keepalive_flag	= 1;
@@ -719,14 +719,9 @@ main(int argc, char **argv)
     }
 
     if (user == NULL) {
-	user = getenv ("USERNAME");
-	if (user == NULL) {
-	    struct passwd *pwd = getpwuid (getuid ());
-
-	    if (pwd == NULL)
-		errx (1, "who are you?");
-	    user = pwd->pw_name;
-	}
+	user = get_default_username ();
+	if (user == NULL)
+	    errx (1, "who are you?");
     }
 
     if (!passive_flag)
