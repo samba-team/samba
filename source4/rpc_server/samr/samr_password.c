@@ -332,7 +332,7 @@ NTSTATUS samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 	/* check LM verifier */
 	if (lm_pwd && r->in.lm_verifier != NULL) {
 		E_deshash(new_pass, new_lm_hash);
-		E_old_pw_hash(new_lm_hash, lm_pwd->hash, lm_verifier.hash);
+		E_old_pw_hash(new_nt_hash, lm_pwd->hash, lm_verifier.hash);
 		if (memcmp(lm_verifier.hash, r->in.lm_verifier->hash, 16) != 0) {
 			status = NT_STATUS_WRONG_PASSWORD;
 			goto failed;
