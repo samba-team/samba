@@ -39,6 +39,7 @@ static const struct table_node archi_table[]= {
 	{"Windows NT R4000",     "W32MIPS",	2 },
 	{"Windows NT Alpha_AXP", "W32ALPHA",	2 },
 	{"Windows NT PowerPC",   "W32PPC",	2 },
+	{"Windows IA64",         "IA64",        3 },
 	{NULL,                   "",		-1 }
 };
 
@@ -1125,6 +1126,13 @@ static WERROR cmd_spoolss_enum_drivers(struct cli_state *cli,
 			werror = cli_spoolss_enumprinterdrivers(
 				cli, mem_ctx, needed, NULL, info_level, 
 				archi_table[i].long_archi, &returned, &ctr);
+
+		if (W_ERROR_V(werror) == W_ERROR_V(WERR_INVALID_ENVIRONMENT)) {
+			printf ("Server does not support environment [%s]\n", 
+				archi_table[i].long_archi);
+			werror = WERR_OK;
+			continue;
+		}
 
 		if (returned == 0)
 			continue;

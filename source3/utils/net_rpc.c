@@ -2351,6 +2351,7 @@ rpc_share_add_internals(const DOM_SID *domain_sid, const char *domain_name,
 	uint32 type=0; /* only allow disk shares to be added */
 	uint32 num_users=0, perms=0;
 	char *password=NULL; /* don't allow a share password */
+	uint32 level = 2;
 
 	path = strchr(sharename, '=');
 	if (!path)
@@ -2359,7 +2360,8 @@ rpc_share_add_internals(const DOM_SID *domain_sid, const char *domain_name,
 
 	result = cli_srvsvc_net_share_add(cli, mem_ctx, sharename, type,
 					  opt_comment, perms, opt_maxusers,
-					  num_users, path, password);
+					  num_users, path, password, 
+					  level, NULL);
 	return W_ERROR_IS_OK(result) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
@@ -2492,6 +2494,458 @@ rpc_share_list_internals(const DOM_SID *domain_sid, const char *domain_name,
 }
 
 /** 
+ * Migrate shares from a remote RPC server to the local RPC srever
+ *
+ * All parameters are provided by the run_rpc_command function, except for
+ * argc, argv which are passes through. 
+ *
+ * @param domain_sid The domain sid acquired from the remote server
+ * @param cli A cli_state connected to the server.
+ * @param mem_ctx Talloc context, destoyed on completion of the function.
+ * @param argc  Standard main() style argc
+ * @param argv  Standard main() style argv.  Initial components are already
+ *              stripped
+ *
+ * @return Normal NTSTATUS return.
+ **/
+static NTSTATUS 
+rpc_share_migrate_shares_internals(const DOM_SID *domain_sid, const char *domain_name, 
+				   struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+				   int argc, const char **argv)
+{
+	WERROR result;
+	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
+	SRV_SHARE_INFO_CTR ctr_src;
+	ENUM_HND hnd;
+	uint32 type = 0; /* only allow disk shares to be added */
+	uint32 num_uses = 0, perms = 0, max_uses = 0;
+	char *password = NULL; /* don't allow a share password */
+	uint32 preferred_len = 0xffffffff, i;
+	BOOL got_dst_srvsvc_pipe = False;
+	struct cli_state *cli_dst = NULL;
+	uint32 level = 502; /* includes secdesc */
+	SEC_DESC *share_sd = NULL;
+
+	init_enum_hnd(&hnd, 0);
+
+	result = cli_srvsvc_net_share_enum(
+			cli, mem_ctx, level, &ctr_src, preferred_len, &hnd);
+	if (!W_ERROR_IS_OK(result))
+		goto done;
+
+	/* connect local PI_SRVSVC */
+        nt_status = connect_local_pipe(&cli_dst, PI_SRVSVC, &got_dst_srvsvc_pipe);
+        if (!NT_STATUS_IS_OK(nt_status))
+                return nt_status;
+
+
+	for (i = 0; i < ctr_src.num_entries; i++) {
+
+		fstring netname = "", remark = "", path = "";
+		/* reset error-code */
+		nt_status = NT_STATUS_UNSUCCESSFUL;
+
+		rpcstr_pull_unistr2_fstring(
+			netname, &ctr_src.share.info502[i].info_502_str.uni_netname);
+		rpcstr_pull_unistr2_fstring(
+			remark, &ctr_src.share.info502[i].info_502_str.uni_remark);
+		rpcstr_pull_unistr2_fstring(
+			path, &ctr_src.share.info502[i].info_502_str.uni_path);
+		num_uses 	= ctr_src.share.info502[i].info_502.num_uses;
+		max_uses 	= ctr_src.share.info502[i].info_502.max_uses;
+		perms		= ctr_src.share.info502[i].info_502.perms;
+
+
+		if (opt_acls)
+			share_sd = dup_sec_desc(
+				mem_ctx, ctr_src.share.info502[i].info_502_str.sd);
+
+		/* since we do not have NetShareGetInfo implemented in samba3 we 
+		   only can skip inside the enum-ctr_src */
+		if (argc == 1) {
+			char *one_share = talloc_strdup(mem_ctx, argv[0]);
+			if (!strequal(netname, one_share))
+				continue;
+		}
+
+		/* skip builtin shares */
+		/* FIXME: should print$ be added too ? */
+		if (strequal(netname,"IPC$") || strequal(netname,"ADMIN$") || 
+		    strequal(netname,"global")) 
+			continue;
+
+		/* only work with file-shares */
+		if (!cli_send_tconX(cli, netname, "A:", "", 0)) {
+			d_printf("skipping [%s]. not a file share.\n", netname);
+			continue;
+		}
+
+		if (!cli_tdis(cli)) 
+			goto done;
+
+
+		/* finallly add the share on the dst server 
+		   please note that samba currently does not allow to 
+		   add a share without existing directory */
+
+		printf("migrating: [%s], path: %s, comment: %s, %s share-ACLs\n", 
+			netname, path, remark, opt_acls ? "including" : "without" );
+
+		if (opt_verbose && opt_acls)
+			display_sec_desc(share_sd);
+
+		result = cli_srvsvc_net_share_add(cli_dst, mem_ctx, netname, type,
+						  remark, perms, max_uses,
+						  num_uses, path, password, 
+						  level, share_sd);
+	
+                if (W_ERROR_V(result) == W_ERROR_V(WERR_ALREADY_EXISTS)) {
+			printf("share does already exist\n");
+			continue;
+                }
+	
+		if (!W_ERROR_IS_OK(result)) {
+			printf("cannot add share: %s\n", dos_errstr(result));
+			goto done;
+		}
+
+	}
+
+	nt_status = NT_STATUS_OK;
+
+done:
+	if (got_dst_srvsvc_pipe) {
+		cli_nt_session_close(cli_dst);
+		cli_shutdown(cli_dst);
+	}
+
+	return nt_status;
+
+}
+
+/** 
+ * Migrate shares from a rpc-server to another
+ *
+ * @param argc  Standard main() style argc
+ * @param argv  Standard main() style argv.  Initial components are already
+ *              stripped
+ *
+ * @return A shell status integer (0 for success)
+ **/
+static int rpc_share_migrate_shares(int argc, const char **argv)
+{
+
+	return run_rpc_command(NULL, PI_SRVSVC, 0, 
+			       rpc_share_migrate_shares_internals,
+			       argc, argv);
+}
+
+typedef struct copy_clistate {
+	TALLOC_CTX *mem_ctx;
+	struct cli_state *cli_share_src;
+	struct cli_state *cli_share_dst;
+	const char *cwd;
+} copy_clistate;
+
+
+/**
+ * Copy a file/dir 
+ *
+ * @param f	file_info
+ * @param mask	current search mask
+ * @param state	arg-pointer
+ *
+ **/
+static void copy_fn(file_info *f, const char *mask, void *state)
+{
+	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
+	struct copy_clistate *local_state = (struct copy_clistate *)state;
+	fstring filename, new_mask, dir;
+
+	if (strequal(f->name, ".") || strequal(f->name, "..")) 
+		return;
+
+	DEBUG(3,("got mask: %s, name: %s\n", mask, f->name));
+
+	/* DIRECTORY */
+	if (f->mode & aDIR) {
+
+		DEBUG(3,("got dir: %s\n", f->name));
+
+		fstrcpy(dir, local_state->cwd);
+		fstrcat(dir, "\\");
+		fstrcat(dir, f->name);
+
+		/* create that directory */
+		nt_status = net_copy_file(local_state->mem_ctx, 
+					  local_state->cli_share_src, 
+					  local_state->cli_share_dst, 
+					  dir, dir, 
+					  opt_acls? True : False, False);
+
+		if (!NT_STATUS_IS_OK(nt_status)) 
+			printf("could not copy dir %s: %s\n", 
+				dir, nt_errstr(nt_status));
+
+		/* search below that directory */
+		fstrcpy(new_mask, dir);
+		fstrcat(new_mask, "\\*");
+
+		if (!sync_files(local_state->mem_ctx, 
+				local_state->cli_share_src, 
+				local_state->cli_share_dst, 
+				new_mask, dir))
+
+			printf("could not sync files\n");
+			
+		return;
+	}
+
+
+	/* FILE */
+	fstrcpy(filename, local_state->cwd);
+	fstrcat(filename, "\\");
+	fstrcat(filename, f->name);
+
+	DEBUG(3,("got file: %s\n", filename));
+
+	nt_status = net_copy_file(local_state->mem_ctx, 
+				  local_state->cli_share_src, 
+				  local_state->cli_share_dst, 
+				  filename, filename, 
+				  opt_acls? True : False, True);
+
+	if (!NT_STATUS_IS_OK(nt_status)) 
+		printf("could not copy file %s: %s\n", 
+			filename, nt_errstr(nt_status));
+
+}
+
+/**
+ * sync files, can be called recursivly to list files 
+ * and then call copy_fn for each file 
+ *
+ * @param mem_ctx	TALLOC_CTX
+ * @param cli_share_src	a connected share on the originating server
+ * @param cli_share_dst	a connected share on the destination server
+ * @param mask		the current search mask
+ * @param cwd		the current path
+ *
+ * @return 		Boolean result
+ **/
+BOOL sync_files(TALLOC_CTX *mem_ctx, 
+		struct cli_state *cli_share_src, 
+		struct cli_state *cli_share_dst,
+		pstring mask, fstring cwd)
+
+{
+
+	uint16 attribute = aSYSTEM | aHIDDEN | aDIR;
+	struct copy_clistate clistate;
+
+	clistate.mem_ctx 	= mem_ctx;
+	clistate.cli_share_src 	= cli_share_src;
+	clistate.cli_share_dst 	= cli_share_dst;
+	clistate.cwd 		= cwd;
+
+	DEBUG(3,("calling cli_list with mask: %s\n", mask));
+
+	if (cli_list(cli_share_src, mask, attribute, copy_fn, &clistate) == -1) {
+		d_printf("listing %s failed with error: %s\n", 
+			mask, cli_errstr(cli_share_src));
+		return False;
+	}
+
+	return True;
+}
+
+
+/** 
+ * Sync all files inside a remote share to another share (over smb)
+ *
+ * All parameters are provided by the run_rpc_command function, except for
+ * argc, argv which are passes through. 
+ *
+ * @param domain_sid The domain sid acquired from the remote server
+ * @param cli A cli_state connected to the server.
+ * @param mem_ctx Talloc context, destoyed on completion of the function.
+ * @param argc  Standard main() style argc
+ * @param argv  Standard main() style argv.  Initial components are already
+ *              stripped
+ *
+ * @return Normal NTSTATUS return.
+ **/
+static NTSTATUS 
+rpc_share_migrate_files_internals(const DOM_SID *domain_sid, const char *domain_name, 
+				  struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				  int argc, const char **argv)
+{
+	WERROR result;
+	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
+	SRV_SHARE_INFO_CTR ctr_src;
+	ENUM_HND hnd;
+	uint32 preferred_len = 0xffffffff, i;
+	uint32 level = 2;
+	struct cli_state *cli_share_src = NULL;
+	struct cli_state *cli_share_dst = NULL;
+	BOOL got_src_share = False;
+	BOOL got_dst_share = False;
+	pstring mask;
+	extern struct in_addr loopback_ip;
+
+	init_enum_hnd(&hnd, 0);
+
+	result = cli_srvsvc_net_share_enum(
+			cli, mem_ctx, level, &ctr_src, preferred_len, &hnd);
+
+	if (!W_ERROR_IS_OK(result))
+		goto done;
+
+	for (i = 0; i < ctr_src.num_entries; i++) {
+
+		fstring netname = "", remark = "", path = "";
+
+		rpcstr_pull_unistr2_fstring(
+			netname, &ctr_src.share.info2[i].info_2_str.uni_netname);
+		rpcstr_pull_unistr2_fstring(
+			remark, &ctr_src.share.info2[i].info_2_str.uni_remark);
+		rpcstr_pull_unistr2_fstring(
+			path, &ctr_src.share.info2[i].info_2_str.uni_path);
+
+		/* since we do not have NetShareGetInfo implemented in samba3 we 
+		   only can skip inside the enum-ctr_src */
+		if (argc == 1) {
+			char *one_share = talloc_strdup(mem_ctx, argv[0]);
+			if (!strequal(netname, one_share))
+				continue;
+		}
+
+		/* skip builtin and hidden shares 
+		   In particular, one might not want to mirror whole discs :) */
+		if (strequal(netname,"IPC$") || strequal(netname,"ADMIN$"))
+			continue;
+		
+		if (strequal(netname, "print$") || netname[1] == '$') {
+			d_printf("skipping  [%s]: builtin/hidden share\n", netname);
+			continue;
+		}
+
+		if (opt_exclude && in_list(netname, (char *)opt_exclude, False)) {
+			printf("excluding [%s]\n", netname);
+			continue;
+		} 
+
+		/* only work with file-shares */
+		if (!cli_send_tconX(cli, netname, "A:", "", 0)) {
+			d_printf("skipping  [%s]: not a file share.\n", netname);
+			continue;
+		}
+
+		if (!cli_tdis(cli))
+			return NT_STATUS_UNSUCCESSFUL;
+
+		printf("syncing   [%s] files and directories %s ACLs\n", 
+			netname, opt_acls ? "including" : "without");
+
+
+	        /* open share source */
+		nt_status = connect_to_service(&cli_share_src, &cli->dest_ip, 
+					       cli->desthost, netname, "A:");
+		if (!NT_STATUS_IS_OK(nt_status))
+			goto done;
+
+		got_src_share = True;
+
+
+	        /* open share destination */
+		nt_status = connect_to_service(&cli_share_dst, &loopback_ip, 
+					       "127.0.0.1", netname, "A:");
+		if (!NT_STATUS_IS_OK(nt_status))
+			goto done;
+
+		got_dst_share = True;
+
+
+		/* now call the filesync */
+		pstrcpy(mask, "\\*");
+
+		if (!sync_files(mem_ctx, cli_share_src, cli_share_dst, mask, NULL)) {
+			d_printf("could not sync files for share: %s\n", netname);
+			nt_status = NT_STATUS_UNSUCCESSFUL;
+			goto done;
+		}
+		
+	}
+
+	nt_status = NT_STATUS_OK;
+
+done:
+
+	if (got_src_share)
+		cli_shutdown(cli_share_src);
+
+	if (got_dst_share)
+		cli_shutdown(cli_share_dst);
+		
+	return nt_status;
+
+}
+
+static int rpc_share_migrate_files(int argc, const char **argv)
+{
+	return run_rpc_command(NULL, PI_SRVSVC, 0, 
+			       rpc_share_migrate_files_internals,
+			       argc, argv);
+}
+
+/** 
+ * Migrate shares (including share-definitions, share-acls and files with acls)
+ * from one server to another
+ *
+ * @param argc  Standard main() style argc
+ * @param argv  Standard main() style argv.  Initial components are already
+ *              stripped
+ *
+ * @return A shell status integer (0 for success)
+ *
+ **/
+static int rpc_share_migrate_all(int argc, const char **argv)
+{
+	int ret;
+
+	ret = run_rpc_command(NULL, PI_SRVSVC, 0, rpc_share_migrate_shares_internals, argc, argv);
+	if (ret)
+		return ret;
+#if 0
+	ret = run_rpc_command(NULL, PI_SRVSVC, 0, rpc_share_migrate_shares_security_internals, argc, argv);
+	if (ret)
+		return ret;
+#endif
+	return run_rpc_command(NULL, PI_SRVSVC, 0, rpc_share_migrate_files_internals, argc, argv);
+}
+
+
+/** 
+ * 'net rpc share migrate' entrypoint.
+ * @param argc  Standard main() style argc
+ * @param argv  Standard main() style argv.  Initial components are already
+ *              stripped
+ **/
+static int rpc_share_migrate(int argc, const char **argv)
+{
+
+	struct functable func[] = {
+		{"all", 	rpc_share_migrate_all},
+		{"files", 	rpc_share_migrate_files},
+/*		{"security", 	rpc_share_migrate_security},*/
+		{"shares", 	rpc_share_migrate_shares},
+		{NULL, NULL}
+	};
+
+	return net_run_function(argc, argv, func, rpc_share_usage);
+}
+
+/** 
  * 'net rpc share' entrypoint.
  * @param argc  Standard main() style argc
  * @param argv  Standard main() style argv.  Initial components are already
@@ -2503,6 +2957,7 @@ int net_rpc_share(int argc, const char **argv)
 	struct functable func[] = {
 		{"add", rpc_share_add},
 		{"delete", rpc_share_delete},
+		{"migrate", rpc_share_migrate},
 		{NULL, NULL}
 	};
 
@@ -3570,6 +4025,227 @@ static int rpc_vampire(int argc, const char **argv) {
 	return run_rpc_command(NULL, PI_NETLOGON, NET_FLAGS_ANONYMOUS, rpc_vampire_internals,
 			       argc, argv);
 }
+
+/** 
+ * Migrate everything from a print-server
+ *
+ * @param argc  Standard main() style argc
+ * @param argv  Standard main() style argv.  Initial components are already
+ *              stripped
+ *
+ * @return A shell status integer (0 for success)
+ *
+ * The order is important !
+ * To successfully add drivers the print-queues have to exist !
+ * Applying ACLs should be the last step, because you're easily locked out
+ *
+ **/
+static int rpc_printer_migrate_all(int argc, const char **argv)
+{
+	int ret;
+
+	ret = run_rpc_command(NULL, PI_SPOOLSS, 0, rpc_printer_migrate_printers_internals, argc, argv);
+	if (ret)
+		return ret;
+
+	ret = run_rpc_command(NULL, PI_SPOOLSS, 0, rpc_printer_migrate_drivers_internals, argc, argv);
+	if (ret)
+		return ret;
+
+	ret = run_rpc_command(NULL, PI_SPOOLSS, 0, rpc_printer_migrate_forms_internals, argc, argv);
+	if (ret)
+		return ret;
+
+	ret = run_rpc_command(NULL, PI_SPOOLSS, 0, rpc_printer_migrate_settings_internals, argc, argv);
+	if (ret)
+		return ret;
+
+	return run_rpc_command(NULL, PI_SPOOLSS, 0, rpc_printer_migrate_security_internals, argc, argv);
+
+}
+
+/** 
+ * Migrate print-drivers from a print-server
+ *
+ * @param argc  Standard main() style argc
+ * @param argv  Standard main() style argv.  Initial components are already
+ *              stripped
+ *
+ * @return A shell status integer (0 for success)
+ **/
+static int rpc_printer_migrate_drivers(int argc, const char **argv)
+{
+
+	return run_rpc_command(NULL, PI_SPOOLSS, 0, 
+			       rpc_printer_migrate_drivers_internals,
+			       argc, argv);
+}
+
+/** 
+ * Migrate print-forms from a print-server
+ *
+ * @param argc  Standard main() style argc
+ * @param argv  Standard main() style argv.  Initial components are already
+ *              stripped
+ *
+ * @return A shell status integer (0 for success)
+ **/
+static int rpc_printer_migrate_forms(int argc, const char **argv)
+{
+
+	return run_rpc_command(NULL, PI_SPOOLSS, 0, 
+			       rpc_printer_migrate_forms_internals,
+			       argc, argv);
+}
+
+/** 
+ * Migrate printers from a print-server
+ *
+ * @param argc  Standard main() style argc
+ * @param argv  Standard main() style argv.  Initial components are already
+ *              stripped
+ *
+ * @return A shell status integer (0 for success)
+ **/
+static int rpc_printer_migrate_printers(int argc, const char **argv)
+{
+
+	return run_rpc_command(NULL, PI_SPOOLSS, 0, 
+			       rpc_printer_migrate_printers_internals,
+			       argc, argv);
+}
+
+/** 
+ * Migrate printer-ACLs from a print-server
+ *
+ * @param argc  Standard main() style argc
+ * @param argv  Standard main() style argv.  Initial components are already
+ *              stripped
+ *
+ * @return A shell status integer (0 for success)
+ **/
+static int rpc_printer_migrate_security(int argc, const char **argv)
+{
+
+	return run_rpc_command(NULL, PI_SPOOLSS, 0, 
+			       rpc_printer_migrate_security_internals,
+			       argc, argv);
+}
+
+/** 
+ * Migrate printer-settings from a print-server
+ *
+ * @param argc  Standard main() style argc
+ * @param argv  Standard main() style argv.  Initial components are already
+ *              stripped
+ *
+ * @return A shell status integer (0 for success)
+ **/
+static int rpc_printer_migrate_settings(int argc, const char **argv)
+{
+
+	return run_rpc_command(NULL, PI_SPOOLSS, 0, 
+			       rpc_printer_migrate_settings_internals,
+			       argc, argv);
+}
+
+/** 
+ * 'net rpc printer' entrypoint.
+ * @param argc  Standard main() style argc
+ * @param argv  Standard main() style argv.  Initial components are already
+ *              stripped
+ **/
+
+int rpc_printer_migrate(int argc, const char **argv) 
+{
+
+	/* ouch: when addriver and setdriver are called from within
+	   rpc_printer_migrate_drivers_internals, the printer-queue already
+	   *has* to exist */
+
+	struct functable func[] = {
+		{"all", 	rpc_printer_migrate_all},
+		{"drivers", 	rpc_printer_migrate_drivers},
+		{"forms", 	rpc_printer_migrate_forms},
+		{"help", 	rpc_printer_usage},
+		{"printers", 	rpc_printer_migrate_printers},
+		{"security", 	rpc_printer_migrate_security},
+		{"settings", 	rpc_printer_migrate_settings},
+		{NULL, NULL}
+	};
+
+	return net_run_function(argc, argv, func, rpc_printer_usage);
+}
+
+
+/** 
+ * List printers on a remote RPC server
+ *
+ * @param argc  Standard main() style argc
+ * @param argv  Standard main() style argv.  Initial components are already
+ *              stripped
+ *
+ * @return A shell status integer (0 for success)
+ **/
+static int rpc_printer_list(int argc, const char **argv)
+{
+
+	return run_rpc_command(NULL, PI_SPOOLSS, 0, 
+			       rpc_printer_list_internals,
+			       argc, argv);
+}
+
+/** 
+ * List printer-drivers on a remote RPC server
+ *
+ * @param argc  Standard main() style argc
+ * @param argv  Standard main() style argv.  Initial components are already
+ *              stripped
+ *
+ * @return A shell status integer (0 for success)
+ **/
+static int rpc_printer_driver_list(int argc, const char **argv)
+{
+
+	return run_rpc_command(NULL, PI_SPOOLSS, 0, 
+			       rpc_printer_driver_list_internals,
+			       argc, argv);
+}
+
+/** 
+ * Display rpc printer help page.
+ * @param argc  Standard main() style argc
+ * @param argv  Standard main() style argv.  Initial components are already
+ *              stripped
+ **/
+int rpc_printer_usage(int argc, const char **argv)
+{
+        return net_help_printer(argc, argv);
+}
+
+/** 
+ * 'net rpc printer' entrypoint.
+ * @param argc  Standard main() style argc
+ * @param argv  Standard main() style argv.  Initial components are already
+ *              stripped
+ **/
+int net_rpc_printer(int argc, const char **argv) 
+{
+	struct functable func[] = {
+		{"list", rpc_printer_list},
+		{"migrate", rpc_printer_migrate},
+		{"driver", rpc_printer_driver_list},
+		{NULL, NULL}
+	};
+
+	if (argc == 0)
+		return run_rpc_command(NULL, PI_SPOOLSS, 0, 
+			       rpc_printer_list_internals,
+			       argc, argv);
+
+	return net_run_function(argc, argv, func, rpc_printer_usage);
+}
+
 /****************************************************************************/
 
 
@@ -3590,6 +4266,7 @@ int net_rpc_usage(int argc, const char **argv)
         d_printf("  net rpc password <username> [<password>] -Uadmin_username%%admin_pass");
 	d_printf("  net rpc group \t\tto list groups\n");
 	d_printf("  net rpc share \t\tto add, delete, and list shares\n");
+	d_printf("  net rpc printer \t\tto list and migrate printers\n");
 	d_printf("  net rpc file \t\t\tto list open files\n");
 	d_printf("  net rpc changetrustpw \tto change the trust account password\n");
 	d_printf("  net rpc getsid \t\tfetch the domain sid into the local secrets.tdb\n");
@@ -3659,6 +4336,7 @@ int net_rpc(int argc, const char **argv)
 		{"group", net_rpc_group},
 		{"share", net_rpc_share},
 		{"file", net_rpc_file},
+		{"printer", net_rpc_printer},
 		{"changetrustpw", net_rpc_changetrustpw},
 		{"trustdom", rpc_trustdom},
 		{"abortshutdown", rpc_shutdown_abort},
