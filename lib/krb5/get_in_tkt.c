@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -43,7 +43,7 @@ RCSID("$Id$");
 krb5_error_code
 krb5_init_etype (krb5_context context,
 		 unsigned *len,
-		 unsigned **val,
+		 int **val,
 		 const krb5_enctype *etypes)
 {
     int i;
@@ -63,7 +63,7 @@ krb5_init_etype (krb5_context context,
     for (i = 0; tmp[i]; ++i)
 	;
     *len = i;
-    *val = malloc(i * sizeof(unsigned));
+    *val = malloc(i * sizeof(int));
     if (*val == NULL) {
 	ret = ENOMEM;
 	goto cleanup;
