@@ -1,7 +1,5 @@
-#ifdef HAVE_CONFIG_H
-#include <config.h>
+#include "krb_locl.h"
 RCSID("$Id$");
-#endif
 
 #ifndef HAVE_GETTIMEOFDAY
 /*
