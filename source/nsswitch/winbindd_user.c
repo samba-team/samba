@@ -27,7 +27,7 @@
 
 static BOOL winbindd_fill_pwent(char *domain_name, char *name, 
 				uint32 user_rid, uint32 group_rid, 
-                                char *full_name, struct winbindd_pw *pw)
+				char *full_name, struct winbindd_pw *pw)
 {
 	extern userdom_struct current_user_info;
 	fstring name_domain, name_user;
@@ -87,6 +87,12 @@ static BOOL winbindd_fill_pwent(char *domain_name, char *name,
 	return True;
 }
 
+/************************************************************************
+ Empty static struct for negative caching.
+*************************************************************************/
+
+static struct winbindd_pw negative_pw_cache_entry;
+
 /* Return a password structure from a username.  Specify whether cached data 
    can be returned. */
 
@@ -122,22 +128,28 @@ enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state
 
 	/* Check for cached user entry */
 
-	if (winbindd_fetch_user_cache_entry(domain, name_user,
-					    &state->response.data.pw))
+	if (winbindd_fetch_user_cache_entry(domain, name_user, &state->response.data.pw)) {
+		/* Check if this is a negative cache entry. */
+		if (memcmp(&negative_pw_cache_entry, &state->response.data.pw,
+						sizeof(state->response.data.pw)) == 0)
+			return WINBINDD_ERROR;
 		return WINBINDD_OK;
-	
+	}
+
 	slprintf(name, sizeof(name) - 1, "%s\\%s", name_domain, name_user);
 	
 	/* Get rid and name type from name */
 
 	if (!winbindd_lookup_sid_by_name(name, &user_sid, &name_type)) {
 		DEBUG(1, ("user '%s' does not exist\n", name_user));
+		winbindd_store_user_cache_entry(domain, name_user, &negative_pw_cache_entry);
 		return WINBINDD_ERROR;
 	}
 
 	if (name_type != SID_NAME_USER) {
 		DEBUG(1, ("name '%s' is not a user name: %d\n", name_user, 
 			  name_type));
+		winbindd_store_user_cache_entry(domain, name_user, &negative_pw_cache_entry);
 		return WINBINDD_ERROR;
 	}
 	
@@ -155,6 +167,7 @@ enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state
 	if (!winbindd_lookup_userinfo(domain, mem_ctx, user_rid, &user_info)) {
 		DEBUG(1, ("pwnam_from_user(): error getting user info for "
 			  "user '%s'\n", name_user));
+		winbindd_store_user_cache_entry(domain, name_user, &negative_pw_cache_entry);
 		return WINBINDD_ERROR;
 	}
     
@@ -171,19 +184,18 @@ enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state
 	if (!winbindd_fill_pwent(name_domain, state->request.data.username, 
 				 user_rid, group_rid, gecos_name,
 				 &state->response.data.pw)) {
+		winbindd_store_user_cache_entry(domain, name_user, &negative_pw_cache_entry);
 		return WINBINDD_ERROR;
 	}
 	
-	winbindd_store_user_cache_entry(domain, name_user, 
-					&state->response.data.pw);
+	winbindd_store_user_cache_entry(domain, name_user, &state->response.data.pw);
 	
 	return WINBINDD_OK;
 }       
 
 /* Return a password structure given a uid number */
 
-enum winbindd_result winbindd_getpwnam_from_uid(struct winbindd_cli_state 
-                                                *state)
+enum winbindd_result winbindd_getpwnam_from_uid(struct winbindd_cli_state *state)
 {
 	DOM_SID user_sid;
 	struct winbindd_domain *domain;
@@ -192,7 +204,7 @@ enum winbindd_result winbindd_getpwnam_from_uid(struct winbindd_cli_state
 	enum SID_NAME_USE name_type;
 	SAM_USERINFO_CTR *user_info;
 	gid_t gid;
-        TALLOC_CTX *mem_ctx;
+	TALLOC_CTX *mem_ctx;
 	
 	/* Bug out if the uid isn't in the winbind range */
 
@@ -216,9 +228,14 @@ enum winbindd_result winbindd_getpwnam_from_uid(struct winbindd_cli_state
 
 	if (winbindd_fetch_uid_cache_entry(domain, 
 					   state->request.data.uid,
-					   &state->response.data.pw))
+					   &state->response.data.pw)) {
+		/* Check if this is a negative cache entry. */
+		if (memcmp(&negative_pw_cache_entry, &state->response.data.pw,
+						sizeof(state->response.data.pw)) == 0)
+			return WINBINDD_ERROR;
 		return WINBINDD_OK;
-	
+	}
+
 	/* Get name and name type from rid */
 
 	sid_copy(&user_sid, &domain->sid);
@@ -230,6 +247,7 @@ enum winbindd_result winbindd_getpwnam_from_uid(struct winbindd_cli_state
 		sid_to_string(temp, &user_sid);
 		DEBUG(1, ("Could not lookup sid %s\n", temp));
 
+		winbindd_store_uid_cache_entry(domain, state->request.data.uid, &negative_pw_cache_entry);
 		return WINBINDD_ERROR;
 	}
 	
@@ -247,6 +265,7 @@ enum winbindd_result winbindd_getpwnam_from_uid(struct winbindd_cli_state
 	if (!winbindd_lookup_userinfo(domain, mem_ctx, user_rid, &user_info)) {
 		DEBUG(1, ("pwnam_from_uid(): error getting user info for "
 			  "user '%s'\n", user_name));
+		winbindd_store_uid_cache_entry(domain, state->request.data.uid, &negative_pw_cache_entry);
 		return WINBINDD_ERROR;
 	}
 	
@@ -267,11 +286,12 @@ enum winbindd_result winbindd_getpwnam_from_uid(struct winbindd_cli_state
 	/* Fill in password structure */
 
 	if (!winbindd_fill_pwent(domain->name, user_name, user_rid, group_rid,
-				 gecos_name, &state->response.data.pw))
+				 gecos_name, &state->response.data.pw)) {
+		winbindd_store_uid_cache_entry(domain, state->request.data.uid, &negative_pw_cache_entry);
 		return WINBINDD_ERROR;
+	}
 	
-	winbindd_store_uid_cache_entry(domain, state->request.data.uid,
-				       &state->response.data.pw);
+	winbindd_store_uid_cache_entry(domain, state->request.data.uid, &state->response.data.pw);
 	
 	return WINBINDD_OK;
 }
@@ -284,65 +304,66 @@ enum winbindd_result winbindd_getpwnam_from_uid(struct winbindd_cli_state
 
 enum winbindd_result winbindd_setpwent(struct winbindd_cli_state *state)
 {
-        struct winbindd_domain *tmp;
+	struct winbindd_domain *tmp;
         
-        DEBUG(3, ("[%5d]: setpwent\n", state->pid));
+	DEBUG(3, ("[%5d]: setpwent\n", state->pid));
         
-        /* Check user has enabled this */
+	/* Check user has enabled this */
         
-        if (!lp_winbind_enum_users())
-                return WINBINDD_ERROR;
+	if (!lp_winbind_enum_users())
+		return WINBINDD_ERROR;
 
-        /* Free old static data if it exists */
+	/* Free old static data if it exists */
         
-        if (state->getpwent_state != NULL) {
-                free_getent_state(state->getpwent_state);
-                state->getpwent_state = NULL;
-        }
+	if (state->getpwent_state != NULL) {
+		free_getent_state(state->getpwent_state);
+		state->getpwent_state = NULL;
+	}
         
-        /* Create sam pipes for each domain we know about */
+	/* Create sam pipes for each domain we know about */
         
-        if (domain_list == NULL)
-                get_domain_info();
+	if (domain_list == NULL)
+		get_domain_info();
 
-        for(tmp = domain_list; tmp != NULL; tmp = tmp->next) {
-                struct getent_state *domain_state;
+	for(tmp = domain_list; tmp != NULL; tmp = tmp->next) {
+		struct getent_state *domain_state;
                 
-                /* Skip domains other than WINBINDD_DOMAIN environment
-                   variable */
+		/*
+		 * Skip domains other than WINBINDD_DOMAIN environment
+		 * variable.
+		 */
                 
-                if ((strcmp(state->request.domain, "") != 0) &&
-                    !check_domain_env(state->request.domain, tmp->name))
-                        continue;
+		if ((strcmp(state->request.domain, "") != 0) &&
+				!check_domain_env(state->request.domain, tmp->name))
+			continue;
 
-                /* Create a state record for this domain */
+		/* Create a state record for this domain */
                 
-                if ((domain_state = (struct getent_state *)
-                     malloc(sizeof(struct getent_state))) == NULL)
-                        return WINBINDD_ERROR;
+		if ((domain_state = (struct getent_state *)malloc(sizeof(struct getent_state))) == NULL)
+			return WINBINDD_ERROR;
                 
-                ZERO_STRUCTP(domain_state);
+		ZERO_STRUCTP(domain_state);
 
-                domain_state->domain = tmp;
+		domain_state->domain = tmp;
 
-                /* Add to list of open domains */
+		/* Add to list of open domains */
                 
-                DLIST_ADD(state->getpwent_state, domain_state);
-        }
+		DLIST_ADD(state->getpwent_state, domain_state);
+	}
         
-        return WINBINDD_OK;
+	return WINBINDD_OK;
 }
 
 /* Close file pointer to ntdom passwd database */
 
 enum winbindd_result winbindd_endpwent(struct winbindd_cli_state *state)
 {
-        DEBUG(3, ("[%5d]: endpwent\n", state->pid));
+	DEBUG(3, ("[%5d]: endpwent\n", state->pid));
 
-        free_getent_state(state->getpwent_state);    
-        state->getpwent_state = NULL;
+	free_getent_state(state->getpwent_state);    
+	state->getpwent_state = NULL;
         
-        return WINBINDD_OK;
+	return WINBINDD_OK;
 }
 
 /* Get partial list of domain users for a domain.  We fill in the sam_entries,
@@ -360,14 +381,14 @@ static BOOL get_sam_user_entries(struct getent_state *ent)
 	SAM_DISPINFO_CTR ctr;
 	struct getpwent_user *name_list = NULL;
 	uint32 group_rid;
-        BOOL result = False;
-        TALLOC_CTX *mem_ctx;
+	BOOL result = False;
+	TALLOC_CTX *mem_ctx;
 
 	if (ent->got_all_sam_entries)
 		return False;
 
-        if (!(mem_ctx = talloc_init()))
-                return False;
+	if (!(mem_ctx = talloc_init()))
+		return False;
 
 	ZERO_STRUCT(info1);
 	ZERO_STRUCT(ctr);
@@ -466,15 +487,15 @@ static BOOL get_sam_user_entries(struct getent_state *ent)
 	
 	ent->sam_entries = name_list;
 	ent->sam_entry_index = 0;
-	ent->got_all_sam_entries = (NT_STATUS_V(status) != 
-                                    NT_STATUS_V(STATUS_MORE_ENTRIES));
+	ent->got_all_sam_entries = (NT_STATUS_V(status) != NT_STATUS_V(STATUS_MORE_ENTRIES));
 
 	result = ent->num_sam_entries > 0;
 
  done:
-        talloc_destroy(mem_ctx);
 
-        return result;
+	talloc_destroy(mem_ctx);
+
+	return result;
 }
 
 /* Fetch next passwd entry from ntdom database */
