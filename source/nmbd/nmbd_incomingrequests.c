@@ -176,8 +176,9 @@ void process_name_refresh_request(struct subnet_record *subrec,
        and send an error reply back.
      */
     DEBUG(0,("process_name_refresh_request: unicast name registration request \
-received for name %s from IP %s on subnet %s. Error - should be sent to WINS server\n",
+received for name %s from IP %s on subnet %s.\n",
           nmb_namestr(question), inet_ntoa(from_ip), subrec->subnet_name));
+    DEBUG(0,("Error - should be sent to WINS server\n"));
     
     send_name_registration_response(FMT_ERR, 0, p);
     return;

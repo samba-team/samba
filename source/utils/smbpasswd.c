@@ -589,6 +589,8 @@ int main(int argc, char **argv)
 
 	codepage_initialise(lp_client_code_page());
 
+	load_interfaces();
+
 	/* Check the effective uid - make sure we are not setuid */
 	if ((geteuid() == (uid_t)0) && (getuid() != (uid_t)0)) {
 		fprintf(stderr, "smbpasswd must *NOT* be setuid root.\n");
