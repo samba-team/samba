@@ -104,9 +104,13 @@ char* smb_io_unihdr(BOOL io, UNIHDR *hdr, char *q, char *base, int align, int de
 
 	q = align_offset(q, base, align);
 	
-	DBG_RW_SVAL("uni_max_len", depth, base, io, q, hdr->uni_max_len); q += 4;
-	DBG_RW_SVAL("uni_str_len", depth, base, io, q, hdr->uni_str_len); q += 4;
+	DBG_RW_SVAL("uni_str_len", depth, base, io, q, hdr->uni_str_len); q += 2;
+	DBG_RW_SVAL("uni_max_len", depth, base, io, q, hdr->uni_max_len); q += 2;
 	DBG_RW_IVAL("undoc      ", depth, base, io, q, hdr->undoc      ); q += 4;
+
+	/* oops! XXXX maybe issue a warning that this is happening... */
+	if (hdr->uni_max_len > MAX_UNISTRLEN) hdr->uni_max_len = MAX_UNISTRLEN;
+	if (hdr->uni_str_len > MAX_UNISTRLEN) hdr->uni_str_len = MAX_UNISTRLEN;
 
 	return q;
 }

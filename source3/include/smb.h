@@ -772,7 +772,7 @@ typedef struct lsa_q_user_info
 	UNIHDR hdr_logon_dom; /* logon domain unicode string header */
 
 	uint32 buffer_dom_id; /* undocumented logon domain id pointer */
-	char padding[40];    /* unused padding bytes? */
+	char padding[40];    /* unused padding bytes.  expansion room */
 
 	uint32 num_other_sids; /* 0 - num_sids */
 	uint32 buffer_other_sids; /* NULL - undocumented pointer to SIDs. */
