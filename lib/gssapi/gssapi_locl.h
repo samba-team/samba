@@ -53,6 +53,7 @@
 #include <krb5.h>
 #include <des.h>
 #include <krb5_locl.h>
+#include <der.h>
 
 extern krb5_context gssapi_krb5_context;
 
