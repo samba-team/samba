@@ -96,8 +96,7 @@ scrub_file (int fd)
     pos = lseek(fd, 0, SEEK_END);
     if (pos < 0)
         return errno;
-    pos = lseek(fd, 0, SEEK_SET);
-    if (pos < 0)
+    if (lseek(fd, 0, SEEK_SET) < 0)
         return errno;
     memset(buf, 0, sizeof(buf));
     while(pos > 0) {
