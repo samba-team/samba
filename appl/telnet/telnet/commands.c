@@ -1581,9 +1581,17 @@ env_init(void)
 
 		/* If this is not the full name, try to get it via DNS */
 		if (strchr(hbuf, '.') == 0) {
-			struct hostent *he = roken_gethostbyname(hbuf);
-			if (he != NULL)
-				strlcpy(hbuf, he->h_name, 256);
+			struct addrinfo hints, *ai;
+			int error;
+
+			memset (&hints, 0, sizeof(hints));
+			hints.ai_flags = AI_CANONNAME;
+
+			error = getaddrinfo (hbuf, NULL, &hints, &ai);
+			if (error == 0) {
+				strlcpy (hbuf, ai->ai_canonname, 256);
+				freeaddrinfo (ai);
+			}
 		}
 
 		asprintf (&cp, "%s%s", hbuf, cp2);
@@ -2048,7 +2056,6 @@ cmdrc(char *m1, char *m2)
 int
 tn(int argc, char **argv)
 {
-    struct hostent *host = 0;
 #ifdef HAVE_IPV6
     struct sockaddr_in6 sin6;
 #endif
@@ -2118,93 +2125,6 @@ tn(int argc, char **argv)
     if (hostp == 0)
 	goto usage;
 
-#if	defined(IP_OPTIONS) && defined(IPPROTO_IP)
-    if (hostp[0] == '@' || hostp[0] == '!') {
-	if ((hostname = strrchr(hostp, ':')) == NULL)
-	    hostname = strrchr(hostp, '@');
-	hostname++;
-	srp = 0;
-	temp = sourceroute(hostp, &srp, &srlen);
-	if (temp == 0) {
-	    fprintf (stderr, "%s: %s\r\n", srp ? srp : "", hstrerror(h_errno));
-	    setuid(getuid());
-	    return 0;
-	} else if (temp == -1) {
-	    printf("Bad source route option: %s\r\n", hostp);
-	    setuid(getuid());
-	    return 0;
-	} else {
-	    abort();
-	}
-    } else {
-#endif
-	memset (&sin, 0, sizeof(sin));
-#ifdef HAVE_IPV6
-	memset (&sin6, 0, sizeof(sin6));
-
-	if(inet_pton(AF_INET6, hostp, &sin6.sin6_addr)) {
-	    sin6.sin6_family = family = AF_INET6;
-	    sa = (struct sockaddr *)&sin6;
-	    sa_size = sizeof(sin6);
-	    strlcpy(_hostname, hostp, sizeof(_hostname));
-	    hostname =_hostname;
-	} else
-#endif
-	if(inet_aton(hostp, &sin.sin_addr)){
-	    sin.sin_family = family = AF_INET;
-	    sa = (struct sockaddr *)&sin;
-	    sa_size = sizeof(sin);
-	    strlcpy(_hostname, hostp, sizeof(_hostname));
-	    hostname = _hostname;
-	} else {
-#ifdef HAVE_GETHOSTBYNAME2
-#ifdef HAVE_IPV6
-	    host = gethostbyname2(hostp, AF_INET6);
-	    if(host == NULL)
-#endif
-		host = gethostbyname2(hostp, AF_INET);
-#else
-	    host = roken_gethostbyname(hostp);
-#endif
-	    if (host) {
-		strlcpy(_hostname, host->h_name, sizeof(_hostname));
-		family = host->h_addrtype;
-		addr_list = host->h_addr_list;
-
-		switch(family) {
-		case AF_INET:
-		    memset(&sin, 0, sizeof(sin));
-		    sa_size = sizeof(sin);
-		    sa = (struct sockaddr *)&sin;
-		    sin.sin_family = family;
-		    sin.sin_addr   = *((struct in_addr *)(*addr_list));
-		    break;
-#ifdef HAVE_IPV6
-		case AF_INET6:
-		    memset(&sin6, 0, sizeof(sin6));
-		    sa_size = sizeof(sin6);
-		    sa = (struct sockaddr *)&sin6;
-		    sin6.sin6_family = family;
-		    sin6.sin6_addr   = *((struct in6_addr *)(*addr_list));
-		    break;
-#endif
-		default:
-		    fprintf(stderr, "Bad address family: %d\n", family);
-		    return 0;
-		}
-
-		_hostname[sizeof(_hostname)-1] = '\0';
-		hostname = _hostname;
-	    } else {
-	        fprintf (stderr, "%s: %s\r\n", hostp ? hostp : "",
-			 hstrerror(h_errno));
-		setuid(getuid());
-		return 0;
-	    }
-	}
-#if	defined(IP_OPTIONS) && defined(IPPROTO_IP)
-    }
-#endif
     if (portp) {
 	if (*portp == '-') {
 	    portp++;
@@ -2236,105 +2156,86 @@ tn(int argc, char **argv)
 	}
 	telnetport = 1;
     }
-    do {
-	switch(family) {
-	case AF_INET:
-	    sin.sin_port = port;
-	    printf("Trying %s...\r\n", inet_ntoa(sin.sin_addr));
-	    break;
-#ifdef HAVE_IPV6
-	case AF_INET6: {
-#ifndef INET6_ADDRSTRLEN
-#define INET6_ADDRSTRLEN 46 
-#endif
 
-	    char buf[INET6_ADDRSTRLEN];
+    {
+	struct addrinfo *ai, *a, hints;
+	int error;
+	char portstr[NI_MAXSERV];
 
-	    sin6.sin6_port = port;
-#ifdef HAVE_INET_NTOP
-	    printf("Trying %s...\r\n", inet_ntop(AF_INET6,
-						 &sin6.sin6_addr,
-						 buf,
-						 sizeof(buf)));
-#endif
-	    break;
-	}
-#endif
-	default:
-	    abort();
-	}
+	memset (&hints, 0, sizeof(hints));
+	hints.ai_socktype = SOCK_STREAM;
+	hints.ai_protocol = IPPROTO_TCP;
+	hints.ai_flags    = AI_CANONNAME;
 
+	snprintf (portstr, sizeof(portstr), "%u", ntohs(port));
 
-	net = socket(family, SOCK_STREAM, 0);
-	setuid(getuid());
-	if (net < 0) {
-	    perror("telnet: socket");
+	error = getaddrinfo (hostp, portstr, &hints, &ai);
+	if (error) {
+	    fprintf (stderr, "%s: %s\r\n", hostp, gai_strerror (error));
+	    setuid (getuid ());
 	    return 0;
 	}
+	strlcpy (_hostname, ai->ai_canonname, sizeof(_hostname));
+	hostname = _hostname;
+
+	for (a = ai; a != NULL && connected == 0; a = a->ai_next) {
+	    char addrstr[256];
+
+	    if (getnameinfo (a->ai_addr, a->ai_addrlen,
+			     addrstr, sizeof(addrstr),
+			     NULL, 0, NI_NUMERICHOST) != 0)
+		strlcpy (addrstr, "unknown address", sizeof(addrstr));
+			     
+	    printf("Trying %s...\r\n", addrstr);
+
+	    net = socket (a->ai_family, a->ai_socktype, a->ai_protocol);
+	    setuid (getuid ());
+	    if (net < 0) {
+		warn ("telnet: socket");
+		continue;
+	    }
 #if	defined(IP_OPTIONS) && defined(IPPROTO_IP) && defined(HAVE_SETSOCKOPT)
-	if (srp && setsockopt(net, IPPROTO_IP, IP_OPTIONS, (void *)srp,
-			      srlen) < 0)
+	    if (srp && setsockopt(net, IPPROTO_IP, IP_OPTIONS,
+				      (void *)srp, srlen) < 0)
 		perror("setsockopt (IP_OPTIONS)");
 #endif
 #if	defined(IPPROTO_IP) && defined(IP_TOS)
-	{
+	    {
 # if	defined(HAVE_GETTOSBYNAME)
-	    struct tosent *tp;
-	    if (tos < 0 && (tp = gettosbyname("telnet", "tcp")))
-		tos = tp->t_tos;
+		struct tosent *tp;
+		if (tos < 0 && (tp = gettosbyname("telnet", "tcp")))
+		    tos = tp->t_tos;
 # endif
-	    if (tos < 0)
-		tos = 020;	/* Low Delay bit */
-	    if (tos
-		&& (setsockopt(net, IPPROTO_IP, IP_TOS,
-		    (void *)&tos, sizeof(int)) < 0)
-		&& (errno != ENOPROTOOPT))
+		if (tos < 0)
+		    tos = 020;	/* Low Delay bit */
+		if (tos
+		    && (setsockopt(net, IPPROTO_IP, IP_TOS,
+				   (void *)&tos, sizeof(int)) < 0)
+		    && (errno != ENOPROTOOPT))
 		    perror("telnet: setsockopt (IP_TOS) (ignored)");
-	}
-#endif	/* defined(IPPROTO_IP) && defined(IP_TOS) */
-
-	if (debug && SetSockOpt(net, SOL_SOCKET, SO_DEBUG, 1) < 0) {
-		perror("setsockopt (SO_DEBUG)");
-	}
-
-	if (connect(net, sa, sa_size) < 0) {
-	    if (host && addr_list[1]) {
-		int oerrno = errno;
-
-		switch(family) {
-		case AF_INET :
-		    fprintf(stderr, "telnet: connect to address %s: ",
-			    inet_ntoa(sin.sin_addr));
-		    sin.sin_addr = *((struct in_addr *)(*++addr_list));
-		    break;
-#ifdef HAVE_IPV6
-		case AF_INET6: {
-		    char buf[INET6_ADDRSTRLEN];
-
-		    fprintf(stderr, "telnet: connect to address %s: ",
-			    inet_ntop(AF_INET6, &sin6.sin6_addr, buf,
-				      sizeof(buf)));
-		    sin6.sin6_addr = *((struct in6_addr *)(*++addr_list));
-		    break;
-		}
-#endif
-		default:
-		    abort();
-		}
-		    
-		errno = oerrno;
-		perror(NULL);
-		NetClose(net);
-		continue;
 	    }
-	    perror("telnet: Unable to connect to remote host");
-	    return 0;
-	}
-	connected++;
+#endif	/* defined(IPPROTO_IP) && defined(IP_TOS) */
+	    if (debug && SetSockOpt(net, SOL_SOCKET, SO_DEBUG, 1) < 0) {
+		perror("setsockopt (SO_DEBUG)");
+	    }
+
+	    if (connect (net, a->ai_addr, a->ai_addrlen) < 0) {
+		fprintf (stderr, "telnet: connect to address %s: %s\n",
+			 addrstr, strerror(errno));
+		NetClose(net);
+		if (a->ai_next != NULL) {
+		    continue;
+		} else {
+		    freeaddrinfo (ai);
+		    return 0;
+		}
+	    }
+	    ++connected;
 #if	defined(AUTHENTICATION) || defined(ENCRYPTION)
-	auth_encrypt_connect(connected);
+	    auth_encrypt_connect(connected);
 #endif
-    } while (connected == 0);
+	}
+    }
     cmdrc(hostp, hostname);
     if (autologin && user == NULL)
 	user = (char *)get_default_username ();
@@ -2546,6 +2447,8 @@ help(int argc, char **argv)
 }
 
 
+#if 0 /* XXX - broken */
+
 #if	defined(IP_OPTIONS) && defined(IPPROTO_IP)
 
 /*
@@ -2690,4 +2593,5 @@ sourceroute(char *arg, char **cpp, int *lenp)
 	*lenp = lsrp - *cpp;
 	return(sin_addr.s_addr);
 }
+#endif
 #endif
