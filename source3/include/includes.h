@@ -220,13 +220,15 @@
 #include <sys/sem.h>
 #endif
 
+#if 0
 /*
- * Seems to be needed by some OS's that complain
- * about struct rtentry not being defined.
- */
- 
+ *  I have removed this as it prevents compilation under SCO Server
+ *  3.2. If you need to add it back in then please add a comment as to
+ *  why it's needed and what OS it's needed for so we can work out how
+ *  to test for it properly (tridge) */
 #ifdef HAVE_NET_ROUTE_H
 #include <net/route.h>
+#endif
 #endif
 
 #ifdef HAVE_NET_IF_H
