@@ -248,7 +248,7 @@ create_and_write_cookie (char *xauthfile,
      struct in_addr loopback;
      struct hostent *h;
 
-     k_gethostname (hostname, sizeof(hostname));
+     gethostname (hostname, sizeof(hostname));
      loopback.s_addr = htonl(INADDR_LOOPBACK);
      
      auth.family = FamilyLocal;
