@@ -44,6 +44,7 @@ static TDB_CONTEXT *tdb_printers; /* used for printers files */
 
 GENERIC_MAPPING printer_generic_mapping = {
 	PRINTER_READ,
+	PRINTER_WRITE,
 	PRINTER_EXECUTE,
 	PRINTER_ALL_ACCESS
 };
@@ -3098,8 +3099,6 @@ static WERROR save_driver_init_2(NT_PRINTER_INFO_LEVEL *printer, NT_PRINTER_PARA
 			status = WERR_NOMEM;
 			goto done;
 		}
-	
-		memset(nt_devmode, 0x0, sizeof(NT_DEVICEMODE));
 	
 		ZERO_STRUCTP(nt_devmode);
 
