@@ -151,10 +151,10 @@ int net_help_file(int argc, const char **argv)
 
 int net_help_status(int argc, const char **argv)
 {
-	d_printf("  net status sessions [parseable]"
-		 "\t\t\tShow list of open sessions\n");
-	d_printf("  net status shares [parseable]"
-		 "\t\t\tShow list of open shares\n");
+	d_printf("  net status sessions [parseable] "
+		 "Show list of open sessions\n");
+	d_printf("  net status shares [parseable]   "
+		 "Show list of open shares\n");
 	return -1;
 }
 
