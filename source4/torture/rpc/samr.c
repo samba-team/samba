@@ -630,8 +630,8 @@ static BOOL test_SetAliasInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		r.in.alias_handle = handle;
 		r.in.level = levels[i];
 		switch (r.in.level) {
-		    case 2 : init_samr_String(&r.in.info.name,TEST_ALIASNAME); break;
-		    case 3 : init_samr_String(&r.in.info.description,
+		    case 2 : init_samr_String(&r.in.info->name,TEST_ALIASNAME); break;
+		    case 3 : init_samr_String(&r.in.info->description,
 				"Test Description, should test I18N as well"); break;
 		}
 

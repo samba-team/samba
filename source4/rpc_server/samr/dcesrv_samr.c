@@ -1599,7 +1599,75 @@ static NTSTATUS samr_SetMemberAttributesOfGroup(struct dcesrv_call_state *dce_ca
 static NTSTATUS samr_OpenAlias(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct samr_OpenAlias *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct samr_domain_state *d_state;
+	struct samr_account_state *a_state;
+	struct dcesrv_handle *h;
+	const char *aliasname, *sidstr;
+	struct ldb_message **msgs;
+	struct dcesrv_handle *g_handle;
+	const char * const attrs[2] = { "sAMAccountName", NULL };
+	int ret;
+
+	ZERO_STRUCTP(r->out.alias_handle);
+
+	DCESRV_PULL_HANDLE(h, r->in.domain_handle, SAMR_HANDLE_DOMAIN);
+
+	d_state = h->data;
+
+	/* form the alias SID */
+	sidstr = talloc_asprintf(mem_ctx, "%s-%u", d_state->domain_sid,
+				 r->in.rid);
+	if (sidstr == NULL)
+		return NT_STATUS_NO_MEMORY;
+
+	/* search for the group record */
+	ret = samdb_search(d_state->sam_ctx,
+			   mem_ctx, d_state->domain_dn, &msgs, attrs,
+			   "(&(objectSid=%s)(objectclass=group)"
+			   "(|(grouptype=%s)(grouptype=%s)))",
+			   sidstr,
+			   ldb_hexstr(mem_ctx, GTYPE_SECURITY_BUILTIN_LOCAL_GROUP),
+			   ldb_hexstr(mem_ctx, GTYPE_SECURITY_DOMAIN_LOCAL_GROUP));
+	if (ret == 0) {
+		return NT_STATUS_NO_SUCH_ALIAS;
+	}
+	if (ret != 1) {
+		DEBUG(0,("Found %d records matching sid %s\n", ret, sidstr));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	aliasname = samdb_result_string(msgs[0], "sAMAccountName", NULL);
+	if (aliasname == NULL) {
+		DEBUG(0,("sAMAccountName field missing for sid %s\n", sidstr));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	a_state = talloc_p(d_state, struct samr_account_state);
+	if (!a_state) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	a_state->sam_ctx = d_state->sam_ctx;
+	a_state->access_mask = r->in.access_mask;
+	a_state->domain_state = talloc_reference(a_state, d_state);
+	a_state->account_dn = talloc_steal(a_state, msgs[0]->dn);
+	a_state->account_sid = talloc_steal(a_state, sidstr);
+	a_state->account_name = talloc_strdup(a_state, aliasname);
+	if (!a_state->account_name) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* create the policy handle */
+	g_handle = dcesrv_handle_new(dce_call->conn, SAMR_HANDLE_ALIAS);
+	if (!g_handle) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	g_handle->data = a_state;
+	g_handle->destroy = samr_handle_destroy;
+
+	*r->out.alias_handle = g_handle->wire_handle;
+
+	return NT_STATUS_OK;
 }
 
 
@@ -1609,7 +1677,52 @@ static NTSTATUS samr_OpenAlias(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 static NTSTATUS samr_QueryAliasInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct samr_QueryAliasInfo *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct dcesrv_handle *h;
+	struct samr_account_state *a_state;
+	struct ldb_message *msg, **res;
+	const char * const attrs[4] = { "sAMAccountName", "description",
+					"numMembers", NULL };
+	int ret;
+
+	r->out.info = NULL;
+
+	DCESRV_PULL_HANDLE(h, r->in.alias_handle, SAMR_HANDLE_ALIAS);
+
+	a_state = h->data;
+
+	/* pull all the alias attributes */
+	ret = samdb_search(a_state->sam_ctx, mem_ctx, NULL, &res, attrs,
+			   "dn=%s", a_state->account_dn);
+	if (ret != 1) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+	msg = res[0];
+
+	/* allocate the info structure */
+	r->out.info = talloc_p(mem_ctx, union samr_AliasInfo);
+	if (r->out.info == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	ZERO_STRUCTP(r->out.info);
+
+	switch(r->in.level) {
+	case AliasInfoAll:
+		QUERY_STRING(msg, all.name.string, "sAMAccountName");
+		QUERY_UINT  (msg, all.num_members, "numMembers");
+		QUERY_STRING(msg, all.description.string, "description");
+		break;
+	case AliasInfoName:
+		QUERY_STRING(msg, name.string, "sAMAccountName");
+		break;
+	case AliasInfoDescription:
+		QUERY_STRING(msg, description.string, "description");
+		break;
+	default:
+		r->out.info = NULL;
+		return NT_STATUS_INVALID_INFO_CLASS;
+	}
+	
+	return NT_STATUS_OK;
 }
 
 
@@ -1619,7 +1732,42 @@ static NTSTATUS samr_QueryAliasInfo(struct dcesrv_call_state *dce_call, TALLOC_C
 static NTSTATUS samr_SetAliasInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct samr_SetAliasInfo *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct dcesrv_handle *h;
+	struct samr_account_state *a_state;
+	struct ldb_message mod, *msg = &mod;
+	int ret;
+
+	DCESRV_PULL_HANDLE(h, r->in.alias_handle, SAMR_HANDLE_ALIAS);
+
+	a_state = h->data;
+
+	ZERO_STRUCT(mod);
+	mod.dn = talloc_strdup(mem_ctx, a_state->account_dn);
+	if (!mod.dn) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	switch (r->in.level) {
+	case AliasInfoDescription:
+		SET_STRING(msg, description.string,         "description");
+		break;
+	case AliasInfoName:
+		/* On W2k3 this does not change the name, it changes the
+		 * sAMAccountName attribute */
+		SET_STRING(msg, name.string,                "sAMAccountName");
+		break;
+	default:
+		return NT_STATUS_INVALID_INFO_CLASS;
+	}
+
+	/* modify the samdb record */
+	ret = samdb_replace(a_state->sam_ctx, mem_ctx, &mod);
+	if (ret != 0) {
+		/* we really need samdb.c to return NTSTATUS */
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	return NT_STATUS_OK;
 }
 
 
