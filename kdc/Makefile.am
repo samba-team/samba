@@ -2,7 +2,7 @@
 
 AUTOMAKE_OPTIONS = no-dependencies foreign
 
-INCLUDES = -I$(top_builddir)/include $(INCLUDE_krb4)
+INCLUDES = $(WFLAGS) -I$(top_builddir)/include $(INCLUDE_krb4)
 
 bin_PROGRAMS = string2key
 
