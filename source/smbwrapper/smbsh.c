@@ -92,7 +92,7 @@ int main(int argc, char *argv[])
 		smbw_setshared("PASSWORD", p);
 	}
 
-	smbw_setenv("PS1", "smbsh$ ");
+	setenv("PS1", "smbsh$ ");
 
 	sys_getwd(wd);
 
@@ -101,18 +101,18 @@ int main(int argc, char *argv[])
 	smbw_setshared(line, wd);
 
 	slprintf(line,sizeof(line)-1,"%s/smbwrapper.so", libd);
-	smbw_setenv("LD_PRELOAD", line);
+	etenv("LD_PRELOAD", line);
 
 	slprintf(line,sizeof(line)-1,"%s/smbwrapper.32.so", libd);
 
 	if (file_exist(line, NULL)) {
 		slprintf(line,sizeof(line)-1,"%s/smbwrapper.32.so:DEFAULT", libd);
-		smbw_setenv("_RLD_LIST", line);
+		setenv("_RLD_LIST", line);
 		slprintf(line,sizeof(line)-1,"%s/smbwrapper.so:DEFAULT", libd);
-		smbw_setenv("_RLDN32_LIST", line);
+		setenv("_RLDN32_LIST", line);
 	} else {
 		slprintf(line,sizeof(line)-1,"%s/smbwrapper.so:DEFAULT", libd);
-		smbw_setenv("_RLD_LIST", line);
+		setenv("_RLD_LIST", line);
 	}
 
 	{
