@@ -91,7 +91,7 @@ static void send_sync_message(void)
 
         DEBUG(3, ("sending sam synchronisation message\n"));
         
-        message_send_all(tdb, MSG_SMB_SAM_SYNC, NULL, 0, False);
+        message_send_all(tdb, MSG_SMB_SAM_SYNC, NULL, 0, False, NULL);
 
         tdb_close(tdb);
 }

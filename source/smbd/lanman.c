@@ -1724,7 +1724,7 @@ static BOOL api_RNetShareAdd(connection_struct *conn,uint16 vuid, char *param,ch
       goto error_exit;
     } else {
       SAFE_FREE(command);
-      message_send_all(conn_tdb_ctx(), MSG_SMB_CONF_UPDATED, NULL, 0, False);
+      message_send_all(conn_tdb_ctx(), MSG_SMB_CONF_UPDATED, NULL, 0, False, NULL);
     }
   } else return False;
 

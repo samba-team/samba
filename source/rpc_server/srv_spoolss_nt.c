@@ -690,7 +690,7 @@ static BOOL srv_spoolss_sendnotify(pipes_struct *p, POLICY_HND *handle)
 	/*srv_spoolss_receive_message(printer);*/
 	DEBUG(10,("srv_spoolss_sendnotify: Sending message about printer %s\n", printer ));
 
-	message_send_all(conn_tdb_ctx(), MSG_PRINTER_NOTIFY, printer, strlen(printer) + 1, False); /* Null terminate... */
+	broadcast_printer_notify(printer);
 
 	return True;
 }	
