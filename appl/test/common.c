@@ -88,9 +88,9 @@ common_setup(krb5_context *context, int *argc, char **argv,
 	else {
 	    char *ptr;
 
-	    port = strtol (optarg, &ptr, 10);
-	    if (port == 0 && ptr == optarg)
-		errx (1, "Bad port `%s'", optarg);
+	    port = strtol (port_str, &ptr, 10);
+	    if (port == 0 && ptr == port_str)
+		errx (1, "Bad port `%s'", port_str);
 	    port = htons(port);
 	}
     }
