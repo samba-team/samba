@@ -15,7 +15,4 @@ if test "$rk_cv_sys_nextstep" = "yes"; then
   CFLAGS="$CFLAGS -posix"
   LIBS="$LIBS -posix"
 fi
-AH_BOTTOM([#if defined(HAVE_SGTTY_H) && defined(__NeXT__)
-#define SGTTY
-#endif])
 ])
