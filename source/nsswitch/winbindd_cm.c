@@ -766,7 +766,8 @@ NTSTATUS cm_get_netlogon_cli(char *domain, unsigned char *trust_passwd,
 		return result;
 	}
 	
-	result = new_cli_nt_setup_creds(conn->cli, trust_passwd);
+	result = new_cli_nt_setup_creds(conn->cli, (lp_server_role() == ROLE_DOMAIN_MEMBER) ?
+					SEC_CHAN_WKSTA : SEC_CHAN_BDC, trust_passwd);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(0, ("error connecting to domain password server: %s\n",
@@ -779,7 +780,8 @@ NTSTATUS cm_get_netlogon_cli(char *domain, unsigned char *trust_passwd,
 			}
 			
 			/* Try again */
-			result = new_cli_nt_setup_creds(conn->cli, trust_passwd);
+			result = new_cli_nt_setup_creds(conn->cli, (lp_server_role() == ROLE_DOMAIN_MEMBER) ?
+							SEC_CHAN_WKSTA : SEC_CHAN_BDC, trust_passwd);
 		}
 		
 		if (!NT_STATUS_IS_OK(result)) {

@@ -93,14 +93,15 @@ Ensure that the server credential returned matches the session key
 encrypt of the server challenge originally received. JRA.
 ****************************************************************************/
 
-NTSTATUS new_cli_net_auth2(struct cli_state *cli, uint16 sec_chan, 
+NTSTATUS new_cli_net_auth2(struct cli_state *cli, 
+			   uint16 sec_chan, 
                            uint32 neg_flags, DOM_CHAL *srv_chal)
 {
         prs_struct qbuf, rbuf;
         NET_Q_AUTH_2 q;
         NET_R_AUTH_2 r;
         NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-        extern pstring global_myname;
+	extern pstring global_myname;
 
         prs_init(&qbuf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
         prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
@@ -163,7 +164,8 @@ password ?).\n", cli->desthost ));
 /* Initialize domain session credentials */
 
 NTSTATUS new_cli_nt_setup_creds(struct cli_state *cli, 
-                                unsigned char mach_pwd[16])
+				uint16 sec_chan,
+                                const unsigned char mach_pwd[16])
 {
         DOM_CHAL clnt_chal;
         DOM_CHAL srv_chal;
@@ -185,7 +187,7 @@ NTSTATUS new_cli_nt_setup_creds(struct cli_state *cli,
         /**************** Long-term Session key **************/
 
         /* calculate the session key */
-        cred_session_key(&clnt_chal, &srv_chal, (char *)mach_pwd, 
+        cred_session_key(&clnt_chal, &srv_chal, mach_pwd, 
                          cli->sess_key);
         memset((char *)cli->sess_key+8, '\0', 8);
 
@@ -201,8 +203,7 @@ NTSTATUS new_cli_nt_setup_creds(struct cli_state *cli,
          * Receive an auth-2 challenge response and check it.
          */
         
-	result = new_cli_net_auth2(cli, (lp_server_role() == ROLE_DOMAIN_MEMBER) ?
-				   SEC_CHAN_WKSTA : SEC_CHAN_BDC, 0x000001ff, 
+	result = new_cli_net_auth2(cli, sec_chan, 0x000001ff, 
 				   &srv_chal);
 	if (!NT_STATUS_IS_OK(result)) {
                 DEBUG(0,("cli_nt_setup_creds: auth2 challenge failed %s\n",

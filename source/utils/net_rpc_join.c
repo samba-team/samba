@@ -273,7 +273,9 @@ int net_rpc_join(int argc, const char **argv)
 		goto done;
 	}
 	
-	CHECK_RPC_ERR(new_cli_nt_setup_creds(cli, stored_md4_trust_password),
+	CHECK_RPC_ERR(new_cli_nt_setup_creds(cli, 
+					     (acb_info & ACB_SVRTRUST) ? SEC_CHAN_BDC : SEC_CHAN_WKSTA, 
+					     stored_md4_trust_password),
 			  "error in domain join verification");
 	
 	retval = 0;		/* Success! */

@@ -35,7 +35,8 @@ static NTSTATUS just_change_the_password(struct cli_state *cli, TALLOC_CTX *mem_
 					 unsigned char new_trust_passwd_hash[16])
 {
 	NTSTATUS result;
-	result = new_cli_nt_setup_creds(cli, orig_trust_passwd_hash);
+	result = new_cli_nt_setup_creds(cli, (lp_server_role() == ROLE_DOMAIN_MEMBER) ?
+				   SEC_CHAN_WKSTA : SEC_CHAN_BDC, orig_trust_passwd_hash);
 	
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(0,("just_change_the_password: unable to setup creds (%s)!\n",
