@@ -391,3 +391,59 @@ PyObject *spoolss_hnd_deleteprinterdataex(PyObject *self, PyObject *args, PyObje
 	Py_INCREF(Py_None);
 	return Py_None;
 }
+
+PyObject *spoolss_hnd_enumprinterkey(PyObject *self, PyObject *args,
+				     PyObject *kw)
+{
+	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
+	static char *kwlist[] = { "key", NULL };
+	char *keyname;
+	WERROR werror;
+	uint32 needed, keylist_len;
+	uint16 *keylist;
+	PyObject *result;
+
+	/* Parse parameters */
+
+	if (!PyArg_ParseTupleAndKeywords(args, kw, "s", kwlist, &keyname))
+		return NULL;
+
+	/* Call rpc function */
+
+	werror = cli_spoolss_enumprinterkey(
+		hnd->cli, hnd->mem_ctx, 0, &needed, &hnd->pol,
+		keyname, &keylist, &keylist_len);
+
+	if (W_ERROR_V(werror) == ERRmoredata) 
+		werror = cli_spoolss_enumprinterkey(
+			hnd->cli, hnd->mem_ctx, needed, NULL, &hnd->pol,
+			keyname, &keylist, &keylist_len);
+
+	if (!W_ERROR_IS_OK(werror)) {
+		PyErr_SetObject(spoolss_werror, py_werror_tuple(werror));
+		return NULL;
+	}
+
+	result = from_unistr_list(keylist);
+
+	return result;
+}
+
+#if 0
+
+PyObject *spoolss_hnd_deleteprinterkey(PyObject *self, PyObject *args,
+				       PyObject *kw)
+{
+	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
+	static char *kwlist[] = { "key", NULL };
+	char *keyname;
+	WERROR werror;
+
+	if (!PyArg_ParseTupleAndKeywords(args, kw, "s", kwlist, &keyname))
+		return NULL;
+
+	Py_INCREF(Py_None);
+	return Py_None;
+}
+
+#endif
