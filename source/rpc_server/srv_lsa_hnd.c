@@ -29,6 +29,16 @@
 #endif
 
 /****************************************************************************
+ Hack as handles need to be persisant over lsa pipe closes so long as a samr
+ pipe is open. JRA.
+****************************************************************************/
+
+static BOOL is_samr_lsa_pipe(const char *pipe_name)
+{
+	return (strstr(pipe_name, "samr") || strstr(pipe_name, "lsa"));
+}
+
+/****************************************************************************
  Initialise a policy handle list on a pipe. Handle list is shared between all
  pipes of the same name.
 ****************************************************************************/
@@ -39,7 +49,8 @@ BOOL init_pipe_handle_list(pipes_struct *p, char *pipe_name)
 	struct handle_list *hl = NULL;
 
 	for (plist = get_first_pipe(); plist; plist = get_next_pipe(plist)) {
-		if (strequal( plist->name, pipe_name)) {
+		if (strequal( plist->name, pipe_name) ||
+			(is_samr_lsa_pipe(plist->name) && is_samr_lsa_pipe(pipe_name))) {
 			if (!plist->pipe_handles) {
 				pstring msg;
 				slprintf(msg, sizeof(msg)-1, "init_pipe_handles: NULL pipe_handle pointer in pipe %s",
