@@ -235,7 +235,7 @@ static BOOL test_one_file(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	if (s) { \
 		if (!s->sname1.field1.s || \
 		    strcmp(s->sname1.field1.s, v.sname2.out.field2.s) || \
-		    wire_bad_flags(&s->sname1.field1, flags)) { \
+		    wire_bad_flags(&s->sname1.field1, flags, cli)) { \
 			printf("(%d) %s/%s [%s] != %s/%s [%s]\n", \
 			       __LINE__, \
 				#sname1, #field1, s->sname1.field1.s, \
@@ -249,7 +249,7 @@ static BOOL test_one_file(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	if (s) { \
 		if (!s->sname1.field1.s || \
 		    strcmp(s->sname1.field1.s, fname) || \
-		    wire_bad_flags(&s->sname1.field1, flags)) { \
+		    wire_bad_flags(&s->sname1.field1, flags, cli)) { \
 			printf("(%d) %s/%s [%s] != %s\n", \
 			       __LINE__, \
 				#sname1, #field1, s->sname1.field1.s, \
