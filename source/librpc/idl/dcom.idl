@@ -79,7 +79,7 @@ interface ObjectRpcBaseTypes
 		uint32 size; /* Num extents. */
 		uint32 reserved; /* Must be zero. */
 		/*FIXME[size_is((size+1)&~1,), unique] ORPC_EXTENT **extent; extents */
-		[size_is(size),unique] ORPC_EXTENT extent[];
+		[size_is(size)] ORPC_EXTENT extent[];
 	} ORPC_EXTENT_ARRAY;
 
 
