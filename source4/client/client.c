@@ -2229,6 +2229,7 @@ static BOOL browse_host(const char *query_host)
 		talloc_destroy(mem_ctx);
 		return False;
 	}
+	talloc_steal(mem_ctx, p);
 
 	r.in.server_unc = talloc_asprintf(mem_ctx,"\\\\%s",dcerpc_server_name(p));
 	r.in.level = 1;
@@ -2252,10 +2253,11 @@ static BOOL browse_host(const char *query_host)
 		}
 	} while (NT_STATUS_IS_OK(status) && W_ERROR_EQUAL(r.out.result, WERR_MORE_DATA));
 
+	talloc_destroy(mem_ctx);
+
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(r.out.result)) {
 		d_printf("Failed NetShareEnumAll %s - %s/%s\n", 
 			 binding, nt_errstr(status), win_errstr(r.out.result));
-		talloc_destroy(mem_ctx);
 		return False;
 	}
 
