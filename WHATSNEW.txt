@@ -99,7 +99,7 @@ o   Volker Lendecke <vl@samba.org>
     * Don't show the 'afs username map' in the SWAT basic view.
     * Fix SMB signing issues in relation to failed NTLMSSP logins.
     * BUG 924: Fix return codes in smbtorture harness.
-    * Don't lower-case usernames before handing it to AFS code.
+    * Always lower-case usernames before handing it to AFS code.
 
     
 o   Jianliang Lu <j.lu@tiesse.com>
