@@ -132,6 +132,55 @@ static int nt_printq_status(int v)
 }
 
 /****************************************************************************
+ Functions to handle SPOOL_NOTIFY_OPTION struct stored in Printer_entry.
+****************************************************************************/
+
+static void free_spool_notify_option(SPOOL_NOTIFY_OPTION **pp)
+{
+	SPOOL_NOTIFY_OPTION *sp = *pp;
+
+	*pp = NULL;
+
+	if (!sp)
+		return;
+
+	if (sp->ctr.type)
+		safe_free(sp->ctr.type);
+
+	free(sp);
+
+}
+
+/****************************************************************************
+ Functions to duplicate a SPOOL_NOTIFY_OPTION struct stored in Printer_entry.
+****************************************************************************/
+
+SPOOL_NOTIFY_OPTION *dup_spool_notify_option(SPOOL_NOTIFY_OPTION *sp)
+{
+	SPOOL_NOTIFY_OPTION *new_sp = malloc(sizeof(SPOOL_NOTIFY_OPTION));
+
+	if (!sp)
+		return NULL;
+
+	new_sp = (SPOOL_NOTIFY_OPTION *)malloc(sizeof(SPOOL_NOTIFY_OPTION));
+	if (!new_sp)
+		return NULL;
+
+	*new_sp = *sp;
+
+	if (sp->ctr.count) {
+		new_sp->ctr.type = (SPOOL_NOTIFY_OPTION_TYPE *)memdup(sp->ctr.type, sizeof(SPOOL_NOTIFY_OPTION_TYPE) * sp->ctr.count);
+
+		if (!new_sp->ctr.type) {
+			safe_free(new_sp);
+			return NULL;
+		}
+	}
+
+	return new_sp;
+}
+
+/****************************************************************************
   initialise printer handle states...
 ****************************************************************************/
 void init_printer_hnd(void)
@@ -240,6 +289,7 @@ static BOOL srv_spoolss_replycloseprinter(POLICY_HND *handle)
 /****************************************************************************
   close printer index by handle
 ****************************************************************************/
+
 static BOOL close_printer_handle(POLICY_HND *hnd)
 {
 	Printer_entry *Printer = find_printer_index_by_hnd(hnd);
@@ -258,8 +308,7 @@ static BOOL close_printer_handle(POLICY_HND *hnd)
 	Printer->notify.options=0;
 	Printer->notify.localmachine[0]='\0';
 	Printer->notify.printerlocal=0;
-	safe_free(Printer->notify.option);
-	Printer->notify.option=NULL;
+	free_spool_notify_option(&Printer->notify.option);
 	Printer->notify.client_connected=False;
 
 	clear_handle(hnd);
@@ -1315,9 +1364,14 @@ uint32 _spoolss_rffpcnex(pipes_struct *p, SPOOL_Q_RFFPCNEX *q_u, SPOOL_R_RFFPCNE
 	}
 
 	Printer->notify.flags=flags;
-	Printer->notify.options=options;
 	Printer->notify.printerlocal=printerlocal;
-	Printer->notify.option=option;
+
+	if (Printer->notify.option)
+		free_spool_notify_option(&Printer->notify.option);
+
+	Printer->notify.options=options;
+	Printer->notify.option=dup_spool_notify_option(option);
+
 	unistr2_to_ascii(Printer->notify.localmachine, localmachine, sizeof(Printer->notify.localmachine)-1);
 
 	/* connect to the client machine and send a ReplyOpenPrinter */
@@ -2271,8 +2325,7 @@ static uint32 printserver_notify_info(const POLICY_HND *hnd,
 		
 		for (snum=0; snum<n_services; snum++)
 			if ( lp_browseable(snum) && lp_snum_ok(snum) && lp_print_ok(snum) )
-				if (construct_notify_printer_info
-				    (info, snum, option_type, id, mem_ctx))
+				if (construct_notify_printer_info(info, snum, option_type, id, mem_ctx))
 					id++;
 	}
 			
@@ -2327,9 +2380,7 @@ static uint32 printer_notify_info(POLICY_HND *hnd, SPOOL_NOTIFY_INFO *info,
 		
 		switch ( option_type->type ) {
 		case PRINTER_NOTIFY_TYPE:
-			if(construct_notify_printer_info(info, snum, 
-							 option_type, id,
-							 mem_ctx))  
+			if(construct_notify_printer_info(info, snum, option_type, id, mem_ctx))  
 				id--;
 			break;
 			
@@ -2339,8 +2390,7 @@ static uint32 printer_notify_info(POLICY_HND *hnd, SPOOL_NOTIFY_INFO *info,
 			memset(&status, 0, sizeof(status));	
 			count = print_queue_status(snum, &queue, &status);
 
-			if (get_a_printer(&printer, 2, 
-					  lp_servicename(snum)) != 0)
+			if (get_a_printer(&printer, 2, lp_servicename(snum)) != 0)
 				goto done;
 
 			for (j=0; j<count; j++) {
@@ -4601,9 +4651,7 @@ uint32 _spoolss_fcpn(pipes_struct *p, SPOOL_Q_FCPN *q_u, SPOOL_R_FCPN *r_u)
 	Printer->notify.localmachine[0]='\0';
 	Printer->notify.printerlocal=0;
 	if (Printer->notify.option)
-		safe_free(Printer->notify.option->ctr.type);
-	safe_free(Printer->notify.option);
-	Printer->notify.option=NULL;
+		free_spool_notify_option(&Printer->notify.option);
 	Printer->notify.client_connected=False;
 
 	return NT_STATUS_NO_PROBLEMO;
