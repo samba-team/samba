@@ -88,6 +88,28 @@ it also defines lots of intermediate macros, just ignore those :-)
 
 */
 
+/* some switch macros that do both store and read to and from SMB buffers */
+
+#define RW_PCVAL(read,inbuf,outbuf,len) \
+                if (read) { PCVAL (inbuf,0,outbuf,len) } \
+                else      { PSCVAL(inbuf,0,outbuf,len) }
+
+#define RW_PSVAL(read,inbuf,outbuf,len) \
+                if (read) { PSVAL (inbuf,0,outbuf,len) } \
+                else      { PSSVAL(inbuf,0,outbuf,len) }
+
+#define RW_CVAL(read, inbuf, outbuf, offset) \
+                if (read) (outbuf) = CVAL (inbuf,offset); \
+                else                 SCVAL(inbuf,offset,outbuf);
+
+#define RW_IVAL(read, inbuf, outbuf, offset) \
+                if (read) (outbuf)= IVAL (inbuf,offset); \
+                else                SIVAL(inbuf,offset,outbuf);
+
+#define RW_SVAL(read, inbuf, outbuf, offset) \
+                if (read) (outbuf)= SVAL (inbuf,offset); \
+                else                SSVAL(inbuf,offset,outbuf);
+
 #undef CAREFUL_ALIGNMENT
 
 /* we know that the 386 can handle misalignment and has the "right" 
@@ -123,14 +145,41 @@ it also defines lots of intermediate macros, just ignore those :-)
    WARNING: This section is dependent on the length of int16 and int32
    being correct 
 */
+
+/* get single value from an SMB buffer */
 #define SVAL(buf,pos) (*(uint16 *)((char *)(buf) + (pos)))
 #define IVAL(buf,pos) (*(uint32 *)((char *)(buf) + (pos)))
 #define SVALS(buf,pos) (*(int16 *)((char *)(buf) + (pos)))
 #define IVALS(buf,pos) (*(int32 *)((char *)(buf) + (pos)))
+
+/* store single value in an SMB buffer */
 #define SSVAL(buf,pos,val) SVAL(buf,pos)=((uint16)(val))
 #define SIVAL(buf,pos,val) IVAL(buf,pos)=((uint32)(val))
 #define SSVALS(buf,pos,val) SVALS(buf,pos)=((int16)(val))
 #define SIVALS(buf,pos,val) IVALS(buf,pos)=((int32)(val))
+
+#define SMBMACRO(macro,buf,pos,val,len,size) \
+{ int l; for (l = 0; l < (len); l++) (val)[l] = macro((buf), (pos) + (size)*l); }
+
+#define SSMBMACRO(macro,buf,pos,val,len,size) \
+{ int l; for (l = 0; l < (len); l++) macro((buf), (pos) + (size)*l, (val)[l]); }
+
+/* reads multiple data from an SMB buffer */
+#define PCVAL(buf,pos,val,len) SMBMACRO(CVAL,buf,pos,val,len,1)
+#define PSVAL(buf,pos,val,len) SMBMACRO(SVAL,buf,pos,val,len,2)
+#define PIVAL(buf,pos,val,len) SMBMACRO(IVAL,buf,pos,val,len,4)
+#define PCVALS(buf,pos,val,len) SMBMACRO(CVALS,buf,pos,val,len,1)
+#define PSVALS(buf,pos,val,len) SMBMACRO(SVALS,buf,pos,val,len,2)
+#define PIVALS(buf,pos,val,len) SMBMACRO(IVALS,buf,pos,val,len,4)
+
+/* stores multiple data in an SMB buffer */
+#define PSCVAL(buf,pos,val,len) SSMBMACRO(SCVAL,buf,pos,val,len,1)
+#define PSSVAL(buf,pos,val,len) SSMBMACRO(SSVAL,buf,pos,val,len,2)
+#define PSIVAL(buf,pos,val,len) SSMBMACRO(SIVAL,buf,pos,val,len,4)
+#define PSCVALS(buf,pos,val,len) SSMBMACRO(SCVALS,buf,pos,val,len,1)
+#define PSSVALS(buf,pos,val,len) SSMBMACRO(SSVALS,buf,pos,val,len,2)
+#define PSIVALS(buf,pos,val,len) SSMBMACRO(SIVALS,buf,pos,val,len,4)
+
 #endif
 
 
