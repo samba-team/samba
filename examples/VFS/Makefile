@@ -12,7 +12,7 @@ SAMBA_SRC = ../../source
 SAMBA_INCL = ../../source/include
 UBIQX_SRC = ../../source/ubiqx
 SMBWR_SRC = ../../source/smbwrapper
-CFLAGS = -I$(SAMBA_SRC) -I$(SAMBA_INCL) -I$(UBIQX_SRC) -I$(SMBWR_SRC) -Wall -O -D_LARGEFILE64_SOURCE -D_GNU_SOURCE
+CFLAGS = -I$(SAMBA_SRC) -I$(SAMBA_INCL) -I$(UBIQX_SRC) -I$(SMBWR_SRC) -Wall -O -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
 VFS_OBJS = audit.so skel.so recycle.so
 
 # Default target

@@ -76,10 +76,6 @@ cannot be set in the smb.conf file. nmbd will abort with this setting.\n");
 		printf("ERROR: tdb directory %s does not exist\n",
 		       lp_piddir());
 		ret = 1;
-	} else if ((st.st_mode & 0777) != 0755) {
-		printf("WARNING: pid directory %s should have permissions 0755 for browsing to work\n",
-		       lp_piddir());
-		ret = 1;
 	}
 
 	/*
