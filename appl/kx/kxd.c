@@ -73,7 +73,7 @@ fatal (kx_context *kc, int fd, char *format, ...)
     p = msg;
     *p++ = ERROR;
     vsnprintf ((char *)p + 4, sizeof(msg) - 5, format, args);
-    syslog (LOG_ERR, (char *)p + 4);
+    syslog (LOG_ERR, "%s", (char *)p + 4);
     len = strlen ((char *)p + 4);
     p += KRB_PUT_INT (len, p, 4, 4);
     p += len;
