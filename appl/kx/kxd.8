@@ -1,0 +1,22 @@
+.\" $Id$
+.\"
+.Dd August 26, 1996
+.Dt KXD 8
+.Os KTH-KRB
+.Sh NAME
+.Nm kxd
+.Nd
+securely forward X conections
+.Sh SYNOPSIS
+.Nm
+.Sh DESCRIPTION
+This is the deamon for
+.Nm kx .
+.Sh EXAMPLES
+Put the following in
+.Pa inetd.conf :
+.Bd -literal
+kx	stream	tcp	nowait	root	/usr/athena/libexec/kxd	kxd
+.Ed
+.Sh SEE ALSO
+.Xr kx 1

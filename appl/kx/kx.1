@@ -1,0 +1,75 @@
+.\" $Id$
+.\"
+.Dd August 26, 1996
+.Dt KX 1
+.Os KTH-KRB
+.Sh NAME
+.Nm kx
+.Nd
+securely forward X conections
+.Sh SYNOPSIS
+.Nm
+.Ar host
+.Sh DESCRIPTION
+The
+.Nm
+forwards a X connection from a remote client to a local screen through
+an authenticated and encrypted stream.
+.Sh EXAMPLES
+To forward a connection from host
+.Va foo
+to host 
+.Va bar
+(where the display is), you might do the following.
+.Bl -enum
+.It
+Login to
+.Va foo .
+.It
+Move your X-cookie from
+.Va bar 
+to
+.Va foo .
+.Pp
+The cookie you should move is the one used for unix-domain
+connections, like:
+.Bd -literal
+bar.baz.com/unix:0  MIT-MAGIC-COOKIE-1  bf40ca5d710d80e400541a9ff0fb7ebc
+.Ed
+.Pp
+On
+.Va foo ,
+type the following
+.Bd -literal
+xauth add `hostname`/unix:1 . bf40ca5d710d80e400541a9ff0fb7ebc
+.Ed
+.It
+Assuming you have added
+.Nm kxd
+to 
+.Pa inet.conf
+on
+.Va bar ,
+just start
+.Nm kx
+on 
+.Va foo :
+.Bd -literal
+kx bar&
+.Ed
+.It
+Start any X applications on
+.Va foo ,
+remember to use display 1.
+.Bd -literal
+xclock -display :1
+.Ed
+.El
+.Sh SEE ALSO
+.Xr kxd 8
+.Sh BUGS
+Only works if the unix-sockets are located in 
+.Pa /tmp/.X11-unix .
+.Pp
+Can only be used by one person at a time (since it only uses display
+#1).
