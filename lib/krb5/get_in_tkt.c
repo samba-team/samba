@@ -358,7 +358,7 @@ krb5_get_in_tkt(krb5_context context,
 	KRB_ERROR error;
 	int ret2;
 
-	ret2 = decode_KRB_ERROR(resp.data, resp.length, &error, &size);
+	ret2 = krb5_rd_error(context, &resp, &error);
 	krb5_data_free(&resp);
 	if (ret2 == 0) {
 	    /* XXX */
@@ -366,7 +366,7 @@ krb5_get_in_tkt(krb5_context context,
 		fprintf (stderr,
 			 "get_in_tkt: KRB_ERROR: %s\n", *(error.e_text));
 	    free_KRB_ERROR (&error);
-	    return error.error_code + KRB5KDC_ERR_NONE;
+	    return error.error_code;
 	}
 	return ret;
     }

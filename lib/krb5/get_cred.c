@@ -176,7 +176,7 @@ krb5_get_kdc_cred(krb5_context context,
 	if(ret == 0 && rep.part2.nonce != req.req_body.nonce)
 	    ret = KRB5KRB_AP_ERR_MODIFIED;
 	krb5_free_kdc_rep(context, &rep);
-    }else if(decode_KRB_ERROR(resp.data, resp.length, &error, &len) == 0){
+    }else if(krb5_rd_error(context, &resp, &error) == 0){
 #if 0
 	krb5_principal princ;
 	char *name;
@@ -190,7 +190,7 @@ krb5_get_kdc_cred(krb5_context context,
 		    krb5_get_err_text(context, error.error_code));
 	fprintf(stderr, " (code %d)\n", error.error_code);
 #endif
-	ret = error.error_code + KRB5KDC_ERR_NONE;
+	ret = error.error_code;
 	free_KRB_ERROR(&error);
     }else
 	ret = KRB5KRB_AP_ERR_MSG_TYPE;
