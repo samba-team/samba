@@ -47,10 +47,8 @@ sub DumpElement($)
 	($res .= DumpProperties($element->{PROPERTIES}));
     $res .= DumpType($element->{TYPE});
     $res .= " ";
-    if ($element->{POINTERS}) {
-	for (my($i)=0; $i < $element->{POINTERS}; $i++) {
+	for my $i (1..$element->{POINTERS}) {
 	    $res .= "*";
-	}
     }
     $res .= "$element->{NAME}";
     (defined $element->{ARRAY_LEN}) && ($res .= "[$element->{ARRAY_LEN}]");

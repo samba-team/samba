@@ -11,8 +11,14 @@ use strict;
 use needed;
 
 # list of known types
-our %typedefs;
-our %typefamily;
+my %typedefs;
+my %typefamily;
+
+sub get_typedef($)
+{
+	my $n = shift;
+	return $typedefs{$n};
+}
 
 sub RegisterPrimitives()
 {
@@ -534,7 +540,7 @@ sub ParseElementPushScalar($$$)
 	} elsif (util::is_inline_array($e)) {
 		ParseArrayPush($e, "r->", "NDR_SCALARS");
 	} elsif (need_wire_pointer($e)) {
-		pidl "NDR_CHECK(ndr_push_unique_ptr(ndr, $var_prefix$e->{NAME}));";
+		ParseElementPushPtr($e, $var_prefix, $ndr_flags);
 	} elsif (need_alloc($e)) {
 		# no scalar component
 	} elsif (my $switch = util::has_property($e, "switch_is")) {
@@ -547,6 +553,18 @@ sub ParseElementPushScalar($$$)
 
 	end_flags($e);
 }
+
+#####################################################################
+# parse a pointer in a struct element or function
+sub ParseElementPushPtr($$$)
+{
+	my $e = shift;
+	my $var_prefix = shift;
+	my $ndr_flags = shift;
+
+	pidl "NDR_CHECK(ndr_push_unique_ptr(ndr, $var_prefix$e->{NAME}));";
+}
+
 
 #####################################################################
 # print scalars in a structure element
@@ -710,19 +728,7 @@ sub ParseElementPullScalar($$$)
 	if (util::is_inline_array($e)) {
 		ParseArrayPull($e, "r->", "NDR_SCALARS");
 	} elsif (need_wire_pointer($e)) {
-		pidl "NDR_CHECK(ndr_pull_unique_ptr(ndr, &_ptr_$e->{NAME}));";
-		pidl "if (_ptr_$e->{NAME}) {";
-		indent;
-		pidl "NDR_ALLOC(ndr, $var_prefix$e->{NAME});";
-		if (util::has_property($e, "relative")) {
-			pidl "NDR_CHECK(ndr_pull_relative_ptr1(ndr, $var_prefix$e->{NAME}, _ptr_$e->{NAME}));";
-		}
-		deindent;
-		pidl "} else {";
-		indent;
-		pidl "$var_prefix$e->{NAME} = NULL;";
-		deindent;
-		pidl "}";
+		ParseElementPullPtr($e, $var_prefix, $ndr_flags);
 	} elsif (need_alloc($e)) {
 		# no scalar component
 	} elsif (my $switch = util::has_property($e, "switch_is")) {
@@ -735,13 +741,32 @@ sub ParseElementPullScalar($$$)
 	if (my $range = util::has_property($e, "range")) {
 		my ($low, $high) = split(/ /, $range, 2);
 		pidl "if ($var_prefix$e->{NAME} < $low || $var_prefix$e->{NAME} > $high) {";
-		indent;
-		pidl "return ndr_pull_error(ndr, NDR_ERR_RANGE, \"value out of range\");";
-		deindent;
+		pidl "\treturn ndr_pull_error(ndr, NDR_ERR_RANGE, \"value out of range\");";
 		pidl "}";
 	}
 
 	end_flags($e);
+}
+
+#####################################################################
+# parse a pointer in a struct element or function
+sub ParseElementPullPtr($$$)
+{
+	my($e) = shift;
+	my($var_prefix) = shift;
+	my($ndr_flags) = shift;
+
+	pidl "NDR_CHECK(ndr_pull_unique_ptr(ndr, &_ptr_$e->{NAME}));";
+	pidl "if (_ptr_$e->{NAME}) {";
+	indent;
+	pidl "NDR_ALLOC(ndr, $var_prefix$e->{NAME});";
+	if (util::has_property($e, "relative")) {
+		pidl "NDR_CHECK(ndr_pull_relative_ptr1(ndr, $var_prefix$e->{NAME}, _ptr_$e->{NAME}));";
+	}
+	deindent;
+	pidl "} else {";
+	pidl "\t$var_prefix$e->{NAME} = NULL;";
+	pidl "}";
 }
 
 #####################################################################
