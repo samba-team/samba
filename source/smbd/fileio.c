@@ -130,6 +130,20 @@ static ssize_t real_write_file(files_struct *fsp,char *data,SMB_OFF_T pos, size_
 	if (ret != -1) {
 		fsp->pos += ret;
 
+		/*
+		 * It turns out that setting the last write time from a Windows
+		 * client stops any subsequent writes from updating the write time.
+		 * Doing this after the write gives a race condition here where
+		 * a stat may see the changed write time before we reset it here,
+		 * but it's cheaper than having to store the write time in shared
+		 * memory and look it up using dev/inode across all running smbd's.
+		 * The 99% solution will hopefully be good enough in this case. JRA.
+		 */
+
+		if (fsp->pending_modtime) {
+			set_filetime(fsp->conn, fsp->fsp_name, fsp->pending_modtime);
+		}
+
 /* Yes - this is correct - writes don't update this. JRA. */
 /* Found by Samba4 tests. */
 #if 0
