@@ -647,11 +647,17 @@ as_rep(KDC_REQ *req,
     {
 	char *cet;
 	char *set;
-	krb5_enctype_to_string(context, cetype, &cet);
-	krb5_enctype_to_string(context, setype, &set);
-	kdc_log(5, "Using %s/%s", cet, set);
-	free(cet);
-	free(set);
+
+	ret = krb5_enctype_to_string(context, cetype, &cet);
+	if(ret == 0) {
+	    ret = krb5_enctype_to_string(context, setype, &set);
+	    if (ret == 0) {
+		kdc_log(5, "Using %s/%s", cet, set);
+		free(set);
+	    } else
+	    free(cet);
+	} else
+	    kdc_log(5, "Using e-types %d/%d", cetype, setype);
     }
     
     {
