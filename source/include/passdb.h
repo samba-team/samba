@@ -262,7 +262,7 @@ typedef struct sam_trust_passwd {
 		uint16 flags;			/* flags */
 		size_t uni_name_len;		/* unicode name length */
 		smb_ucs2_t uni_name[32];	/* unicode domain name */
-		fstring pass;			/* trust password */
+		DATA_BLOB pass;			/* trust password */
 		time_t mod_time;		/* last change time */
 		DOM_SID domain_sid;		/* trusted domain sid */
 	} private;

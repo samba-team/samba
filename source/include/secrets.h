@@ -63,6 +63,11 @@
 #define PASS_MACHINE_TRUST_ADS      (PASS_TRUST_ADS | PASS_TRUST_MACHINE)
 #define PASS_DOMAIN_TRUST_ADS       (PASS_TRUST_ADS | PASS_TRUST_DOMAIN)
 
+/* Returns secure channel parameter, based on trust flags, for rpc netlogon calls */
+#define SCHANNEL_TYPE(flags) ((flags & PASS_TRUST_MACHINE) ? SEC_CHAN_WKSTA : \
+			      ((flags & PASS_TRUST_SERVER) ? SEC_CHAN_BDC : \
+			       ((flags & PASS_TRUST_DOMAIN) ? SEC_CHAN_DOMAIN : 0)))
+
 #define SECRETS_PASSWORDS_MIGRATED  "SECRETS/PASS_MIGRATED"
 
 /* structure for storing machine account password
