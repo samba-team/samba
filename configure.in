@@ -778,7 +778,6 @@ fi
 
 dnl readline
 
-AC_FIND_FUNC_NO_LIBS(el_init, edit, [], [], [$LIB_tgetent])
 ac_foo=no
 if test "$with_readline" = yes; then
 	:
