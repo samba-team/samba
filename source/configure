@@ -1110,7 +1110,7 @@ test -z "$INSTALL_SCRIPT" && INSTALL_SCRIPT='${INSTALL_PROGRAM}'
 
 test -z "$INSTALL_DATA" && INSTALL_DATA='${INSTALL} -m 644'
 
-for ac_prog in mawk gawk nawk awk
+for ac_prog in gawk mawk nawk awk
 do
 # Extract the first word of "$ac_prog", so it can be a program name with args.
 set dummy $ac_prog; ac_word=$2
@@ -8773,8 +8773,8 @@ EOF
 			BLDSHARED="true"
 			LDSHFLAGS="-Wl,-bexpall,-bM:SRE,-bnoentry"
 			DYNEXP="-Wl,-brtl,-bexpall"
-				PICFLAG="-O2"
-			if test "${GCC}" != "yes; then
+			PICFLAG="-O2"
+			if test "${GCC}" != "yes"; then
 				## for funky AIX compiler using strncpy()
 				CFLAGS="$CFLAGS -D_LINUX_SOURCE_COMPAT -qmaxmem=32000"
 			fi
