@@ -54,7 +54,7 @@ NTSTATUS pvfs_read(struct ntvfs_module_context *ntvfs,
 	if (req->flags2 & FLAGS2_READ_PERMIT_EXECUTE) {
 		mask |= SA_RIGHT_FILE_EXECUTE;
 	}
-	if (!(f->handle->access_mask & mask)) {
+	if (!(f->access_mask & mask)) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 

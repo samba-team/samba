@@ -100,8 +100,6 @@ struct pvfs_file_handle {
 	DATA_BLOB locking_key;
 
 	uint32_t create_options;
-	uint32_t share_access;
-	uint32_t access_mask;
 
 	/* this is set by the mode_information level. What does it do? */
 	uint32_t mode;
@@ -123,6 +121,10 @@ struct pvfs_file {
 	uint16_t fnum;
 
 	struct pvfs_state *pvfs;
+
+	uint32_t impersonation;
+	uint32_t share_access;
+	uint32_t access_mask;
 
 	/* we need to remember the session it was opened on,
 	   as it is illegal to operate on someone elses fnum */
