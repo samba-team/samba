@@ -1867,29 +1867,35 @@ ARCFOUR_subdecrypt(krb5_context context,
  * draft-brezak-win2k-krb-rc4-hmac-03.txt
  */
 
-static int
-usage2arcfour (int usage)
+static krb5_error_code
+usage2arcfour (krb5_context context, int *usage)
 {
-    switch (usage) {
+    switch (*usage) {
     case KRB5_KU_PA_ENC_TIMESTAMP :
-	return 1;
+	*usage = 1;
+	return 0;
     case KRB5_KU_TICKET :
-	return 8;
+	*usage = 8;
     case KRB5_KU_AS_REP_ENC_PART :
-	return 8;
+	*usage = 8;
+	return 0;
     case KRB5_KU_TGS_REQ_AUTH_DAT_SESSION :
     case KRB5_KU_TGS_REQ_AUTH_DAT_SUBKEY :
     case KRB5_KU_TGS_REQ_AUTH_CKSUM :
     case KRB5_KU_TGS_REQ_AUTH :
-	return 7;
+	*usage = 7;
+	return 0;
     case KRB5_KU_TGS_REP_ENC_PART_SESSION :
     case KRB5_KU_TGS_REP_ENC_PART_SUB_KEY :
-	return 8;
+	*usage = 8;
+	return 0;
     case KRB5_KU_AP_REQ_AUTH_CKSUM :
     case KRB5_KU_AP_REQ_AUTH :
     case KRB5_KU_AP_REQ_ENC_PART :
-	return 11;
+	*usage = 11;
+	return 0;
     case KRB5_KU_KRB_PRIV :
+	*usage = 0;
 	return 0;
     case KRB5_KU_KRB_CRED :
     case KRB5_KU_KRB_SAFE_CKSUM :
@@ -1903,7 +1909,8 @@ usage2arcfour (int usage)
     case KRB5_KU_USAGE_SIGN :
     case KRB5_KU_USAGE_SEQ :
     default :
-	abort ();
+	krb5_set_error_string(context, "unknown arcfour usage type %d", *usage);
+	return KRB5_PROG_ETYPE_NOSUPP;
     }
 }
 
@@ -1916,7 +1923,9 @@ ARCFOUR_encrypt(krb5_context context,
 		int usage,
 		void *ivec)
 {
-    usage = usage2arcfour (usage);
+    krb5_error_code ret;
+    if((ret = usage2arcfour (context, &usage)) != 0)
+	return ret;
 
     if (encrypt)
 	return ARCFOUR_subencrypt (context, key, data, len, usage, ivec);
