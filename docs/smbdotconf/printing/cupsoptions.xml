@@ -12,8 +12,8 @@
 
    <para>You can pass any generic print option known to CUPS (as listed
    in the CUPS "Software Users' Manual").  You can also pass any printer
-   specific option (as listed in "lpoptions -d <printername> -l")
-   valid for the target queue(s).</para>
+   specific option (as listed in "lpoptions -d printername -l")
+   valid for the target queue.</para>
 
    <para>You should set this parameter to <constant>raw</constant> if your CUPS server 
    <filename>error_log</filename> file contains messages such as
