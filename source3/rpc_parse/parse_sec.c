@@ -137,36 +137,46 @@ static void sec_io_desc(char *desc, SEC_DESC *t, prs_struct *ps, int depth)
 
 	if (IS_BITS_SET_ALL(t->type, SEC_DESC_DACL_PRESENT))
 	{
-		prs_uint32_post("off_dacl    ", ps, depth, &(t->off_dacl     ), off_dacl     , old_offset);
+		prs_uint32_post("off_dacl    ", ps, depth, &(t->off_dacl     ), off_dacl     , ps->offset - old_offset);
+		ps->offset = old_offset + t->off_dacl;
 		sec_io_acl     ("dacl"        , &t->dacl       , ps, depth);
 		prs_align(ps);
 	}
 	else
 	{
-		prs_uint32_post("off_dacl    ", ps, depth, &(t->off_dacl     ), off_dacl     , old_offset);
+		prs_uint32_post("off_dacl    ", ps, depth, &(t->off_dacl     ), off_dacl     , 0);
 	}
 
 	if (IS_BITS_SET_ALL(t->type, SEC_DESC_SACL_PRESENT))
 	{
-		prs_uint32_post("off_sacl  ", ps, depth, &(t->off_sacl  ), off_sacl  , old_offset);
+		prs_uint32_post("off_sacl  ", ps, depth, &(t->off_sacl  ), off_sacl  , ps->offset - old_offset);
+		ps->offset = old_offset + t->off_sacl;
 		sec_io_acl     ("sacl"      , &t->sacl       , ps, depth);
 		prs_align(ps);
 	}
 	else
 	{
-		prs_uint32_post("off_sacl  ", ps, depth, &(t->off_sacl  ), off_sacl  , ps->offset);
+		prs_uint32_post("off_sacl  ", ps, depth, &(t->off_sacl  ), off_sacl  , 0);
 	}
 
-	prs_uint32_post("off_owner_sid", ps, depth, &(t->off_owner_sid), off_owner_sid, old_offset);
+	prs_uint32_post("off_owner_sid", ps, depth, &(t->off_owner_sid), off_owner_sid, ps->offset - old_offset);
 	if (t->off_owner_sid != 0)
 	{
+		if (ps->io)
+		{
+			ps->offset = old_offset + t->off_owner_sid;
+		}
 		smb_io_dom_sid("owner_sid ", &t->owner_sid , ps, depth);
 		prs_align(ps);
 	}
 
-	prs_uint32_post("off_grp_sid  ", ps, depth, &(t->off_grp_sid  ), off_grp_sid  , old_offset);
+	prs_uint32_post("off_grp_sid  ", ps, depth, &(t->off_grp_sid  ), off_grp_sid  , ps->offset - old_offset);
 	if (t->off_grp_sid != 0)
 	{
+		if (ps->io)
+		{
+			ps->offset = old_offset + t->off_grp_sid;
+		}
 		smb_io_dom_sid("grp_sid", &t->grp_sid, ps, depth);
 		prs_align(ps);
 	}
@@ -193,7 +203,9 @@ reads or writes a SEC_DESC_BUF structure.
 void sec_io_desc_buf(char *desc, SEC_DESC_BUF *sec, prs_struct *ps, int depth)
 {
 	uint32 off_len;
+	uint32 off_max_len;
 	uint32 old_offset;
+	uint32 size;
 
 	if (sec == NULL) return;
 
@@ -202,7 +214,7 @@ void sec_io_desc_buf(char *desc, SEC_DESC_BUF *sec, prs_struct *ps, int depth)
 
 	prs_align(ps);
 	
-	prs_uint32    ("max_len", ps, depth, &(sec->max_len));
+	prs_uint32_pre("max_len", ps, depth, &(sec->max_len), &off_max_len);
 	prs_uint32    ("undoc  ", ps, depth, &(sec->undoc  ));
 	prs_uint32_pre("len    ", ps, depth, &(sec->len    ), &off_len);
 
@@ -214,6 +226,8 @@ void sec_io_desc_buf(char *desc, SEC_DESC_BUF *sec, prs_struct *ps, int depth)
 		sec_io_desc("sec   ", sec->sec, ps, depth);
 	}
 
-	prs_uint32_post("len    ", ps, depth, &(sec->len    ), off_len    , old_offset);
+	size = ps->offset - old_offset;
+	prs_uint32_post("max_len", ps, depth, &(sec->max_len), off_max_len, size == 0 ? sec->max_len : size);
+	prs_uint32_post("len    ", ps, depth, &(sec->len    ), off_len    , size);
 }
 

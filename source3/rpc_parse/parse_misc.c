@@ -319,15 +319,14 @@ void smb_io_hdrbuf_pre(char *desc,  BUFHDR *hdr, prs_struct *ps, int depth, uint
  does nothing on reading, as that is already handled by ...._pre()
  ********************************************************************/
 void smb_io_hdrbuf_post(char *desc,  BUFHDR *hdr, prs_struct *ps, int depth, 
-				uint32 ptr_hdrbuf, uint32 start_offset)
+				uint32 ptr_hdrbuf, uint32 max_len, uint32 len)
 {
 	if (!ps->io)
 	{
 		/* storing: go back and do a retrospective job.  i hate this */
-		int data_size = ps->offset - start_offset;
 		uint32 old_offset = ps->offset;
 
-		make_buf_hdr(hdr, data_size, data_size);
+		make_buf_hdr(hdr, max_len, len);
 		ps->offset = ptr_hdrbuf;
 		smb_io_hdrbuf(desc, hdr, ps, depth);
 		ps->offset = old_offset;

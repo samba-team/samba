@@ -717,6 +717,101 @@ void cmd_reg_create_key(struct client_info *info)
 /****************************************************************************
 nt registry security info
 ****************************************************************************/
+void cmd_reg_test_key_sec(struct client_info *info)
+{
+	BOOL res = True;
+	BOOL res3 = True;
+	BOOL res4 = True;
+
+	POLICY_HND key_pol;
+	fstring full_keyname;
+	fstring key_name;
+
+	/*
+	 * security info
+	 */
+
+	uint32 sec_buf_size;
+	SEC_DESC_BUF sec_buf;
+
+	DEBUG(5, ("cmd_reg_get_key_sec: smb_cli->fd:%d\n", smb_cli->fd));
+
+	if (!next_token(NULL, full_keyname, NULL, sizeof(full_keyname)))
+	{
+		fprintf(out_hnd, "reggetsec <key_name>\n");
+		return;
+	}
+
+	/* open WINREG session. */
+	res = res ? cli_nt_session_open(smb_cli, PIPE_WINREG) : False;
+
+	/* open registry receive a policy handle */
+	res = res ? do_reg_connect(smb_cli, full_keyname, key_name,
+				&info->dom.reg_pol_connect) : False;
+
+	if ((*key_name) != 0)
+	{
+		/* open an entry */
+		res3 = res  ? do_reg_open_entry(smb_cli, &info->dom.reg_pol_connect,
+					 key_name, 0x02000000, &key_pol) : False;
+	}
+	else
+	{
+		memcpy(&key_pol, &info->dom.reg_pol_connect, sizeof(key_pol));
+	}
+
+	/* open an entry */
+	res3 = res ? do_reg_open_entry(smb_cli, &info->dom.reg_pol_connect,
+				 key_name, 0x02000000, &key_pol) : False;
+
+	/* query key sec info.  first call sets sec_buf_size. */
+	sec_buf_size = 0;
+	sec_buf.sec = NULL;
+
+	res4 = res3 ? do_reg_get_key_sec(smb_cli, &key_pol,
+				&sec_buf_size, &sec_buf) : False;
+	
+	res4 = res4 ? do_reg_get_key_sec(smb_cli, &key_pol,
+				&sec_buf_size, &sec_buf) : False;
+
+	if (res4 && sec_buf.len > 0 && sec_buf.sec != NULL)
+	{
+		display_sec_desc(out_hnd, ACTION_HEADER   , sec_buf.sec);
+		display_sec_desc(out_hnd, ACTION_ENUMERATE, sec_buf.sec);
+		display_sec_desc(out_hnd, ACTION_FOOTER   , sec_buf.sec);
+
+		res4 = res4 ? do_reg_set_key_sec(smb_cli, &key_pol,
+				sec_buf_size, sec_buf.sec) : False;
+
+		free(sec_buf.sec);
+	}
+
+	/* close the key handle */
+	if ((*key_name) != 0)
+	{
+		res3 = res3 ? do_reg_close(smb_cli, &key_pol) : False;
+	}
+
+	/* close the registry handles */
+	res  = res  ? do_reg_close(smb_cli, &info->dom.reg_pol_connect) : False;
+
+	/* close the session */
+	cli_nt_session_close(smb_cli);
+
+	if (res && res3 && res4)
+	{
+		DEBUG(5,("cmd_reg_test2: query succeeded\n"));
+		fprintf(out_hnd,"Registry Test2\n");
+	}
+	else
+	{
+		DEBUG(5,("cmd_reg_test2: query failed\n"));
+	}
+}
+
+/****************************************************************************
+nt registry security info
+****************************************************************************/
 void cmd_reg_get_key_sec(struct client_info *info)
 {
 	BOOL res = True;
@@ -796,12 +891,11 @@ void cmd_reg_get_key_sec(struct client_info *info)
 
 	if (res && res3 && res4)
 	{
-		DEBUG(5,("cmd_reg_test2: query succeeded\n"));
-		fprintf(out_hnd,"Registry Test2\n");
+		DEBUG(5,("cmd_reg_get_key_sec: query succeeded\n"));
 	}
 	else
 	{
-		DEBUG(5,("cmd_reg_test2: query failed\n"));
+		DEBUG(5,("cmd_reg_get_key_sec: query failed\n"));
 	}
 }
 
