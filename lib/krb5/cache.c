@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2003 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2004 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -378,6 +378,27 @@ krb5_cc_next_cred (krb5_context context,
     return id->ops->get_next(context, id, cursor, creds);
 }
 
+/* like krb5_cc_next_cred, but allow for selective retrieval */
+
+krb5_error_code
+krb5_cc_next_cred_match(krb5_context context,
+			const krb5_ccache id,
+			krb5_cc_cursor * cursor,
+			krb5_creds * creds,
+			krb5_flags whichfields,
+			const krb5_creds * mcreds)
+{
+    krb5_error_code ret;
+    while (1) {
+	ret = krb5_cc_next_cred(context, id, cursor, creds);
+	if (ret)
+	    return ret;
+	if (mcreds == NULL || krb5_compare_creds(context, whichfields, mcreds, creds))
+	    return 0;
+	krb5_free_creds_contents(context, creds);
+    }
+}
+
 /*
  * Destroy the cursor `cursor'.
  */
@@ -426,9 +447,12 @@ krb5_cc_set_flags(krb5_context context,
  */
 
 krb5_error_code
-krb5_cc_copy_cache(krb5_context context,
-		   const krb5_ccache from,
-		   krb5_ccache to)
+krb5_cc_copy_cache_match(krb5_context context,
+			 const krb5_ccache from,
+			 krb5_ccache to,
+			 krb5_flags whichfields,
+			 const krb5_creds * mcreds,
+			 unsigned int *matched)
 {
     krb5_error_code ret;
     krb5_cc_cursor cursor;
@@ -436,25 +460,39 @@ krb5_cc_copy_cache(krb5_context context,
     krb5_principal princ;
 
     ret = krb5_cc_get_principal(context, from, &princ);
-    if(ret)
+    if (ret)
 	return ret;
     ret = krb5_cc_initialize(context, to, princ);
-    if(ret){
+    if (ret) {
 	krb5_free_principal(context, princ);
 	return ret;
     }
     ret = krb5_cc_start_seq_get(context, from, &cursor);
-    if(ret){
+    if (ret) {
 	krb5_free_principal(context, princ);
 	return ret;
     }
-    while(ret == 0 && krb5_cc_next_cred(context, from, &cursor, &cred) == 0){
+    if (matched)
+	*matched = 0;
+    while (ret == 0 &&
+	   krb5_cc_next_cred_match(context, from, &cursor, &cred,
+				   whichfields, mcreds) == 0) {
+	if (matched)
+	    (*matched)++;
 	ret = krb5_cc_store_cred(context, to, &cred);
-	krb5_free_creds_contents (context, &cred);
+	krb5_free_creds_contents(context, &cred);
     }
     krb5_cc_end_seq_get(context, from, &cursor);
     krb5_free_principal(context, princ);
     return ret;
+}
+
+krb5_error_code
+krb5_cc_copy_cache(krb5_context context,
+		   const krb5_ccache from,
+		   krb5_ccache to)
+{
+    return krb5_cc_copy_cache_match(context, from, to, 0, NULL, NULL);
 }
 
 /*

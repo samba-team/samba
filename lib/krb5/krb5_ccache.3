@@ -1,4 +1,4 @@
-.\" Copyright (c) 2003 Kungliga Tekniska Högskolan
+.\" Copyright (c) 2003-2004 Kungliga Tekniska Högskolan
 .\" (Royal Institute of Technology, Stockholm, Sweden).
 .\" All rights reserved.
 .\"
@@ -55,7 +55,8 @@
 .Nm krb5_cc_get_type ,
 .Nm krb5_cc_get_version ,
 .Nm krb5_cc_initialize ,
-.Nm krb5_cc_next_cred
+.Nm krb5_cc_next_cred ,
+.Nm krb5_cc_next_cred_match ,
 .Nm krb5_cc_register ,
 .Nm krb5_cc_remove_cred ,
 .Nm krb5_cc_resolve ,
@@ -207,6 +208,15 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Fa "const krb5_ccache id"
 .Fa "krb5_cc_cursor *cursor"
 .Fa "krb5_creds *creds"
+.Fc
+.Ft krb5_error_code
+.Fo krb5_cc_next_cred_match
+.Fa "krb5_context *context"
+.Fa "const krb5_ccache id"
+.Fa "krb5_cc_cursor *cursor"
+.Fa "krb5_creds *creds"
+.Fa "krb5_flags whichfields"
+.Fa "const krb5_creds *mcreds"
 .Fc
 .Sh DESCRIPTION
 The
@@ -376,6 +386,16 @@ in
 and advance
 .Fa cursor .
 Return 0 or an error code.
+.Pp
+.Fn krb5_cc_next_cred_match
+is similar to
+.Fn krb5_cc_next_cred
+except that it will only return creds matching 
+.Fa whichfields
+and
+.Fa mcreds
+(as interpreted by 
+.Xr krb5_compare_creds 3 . )
 .Pp
 .Fn krb5_cc_end_seq_get
 Destroys the cursor
