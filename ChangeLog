@@ -1,3 +1,7 @@
+Sun Mar 21 14:08:30 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* lib/krb5/Makefile.am: create krb5-private.h
+
 Sat Mar 20 00:08:59 1999  Assar Westerlund  <assar@sics.se>
 
 	* configure.in (gethostname): remove duplicate
