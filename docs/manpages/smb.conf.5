@@ -378,7 +378,7 @@ negotiation\&. It can be one of CORE, COREPLUS, LANMAN1, LANMAN2 or NT1\&.
 machine\&. Only some are recognized, and those may not be 100%
 reliable\&. It currently recognizes Samba, WfWg, WinNT and
 Win95\&. Anything else will be known as "UNKNOWN"\&. If it gets it wrong
-then sending a level 3 log to \fIsamba-bugs@samba\&.anu\&.edu\&.au\fP
+then sending a level 3 log to \fIsamba-bugs@samba\&.org\fP
 should allow it to be fixed\&.
 .IP 
 .IP o 
@@ -551,6 +551,9 @@ parameter for details\&.  Note that some are synonyms\&.
 \fBdomain controller\fP
 .IP 
 .IP o 
+\fBdomain group map\fP
+.IP 
+.IP o 
 \fBdomain groups\fP
 .IP 
 .IP o 
@@ -612,6 +615,9 @@ parameter for details\&.  Note that some are synonyms\&.
 .IP 
 .IP o 
 \fBload printers\fP
+.IP 
+.IP o 
+\fBlocal group map\fP
 .IP 
 .IP o 
 \fBlocal master\fP
@@ -2010,20 +2016,20 @@ See also the parameter \fBwins support\fP\&.
 \fBdomain admin group (G)\fP
 .IP 
 This is an \fBEXPERIMENTAL\fP parameter that is part of the unfinished
-Samba NT Domain Controller Code\&. It may be removed in a later release\&.
+Samba NT Domain Controller Code\&.  It has been removed as of November 98\&.
 To work with the latest code builds that may have more support for
 Samba NT Domain Controller functionality please subscribe to the
 mailing list \fBSamba-ntdom\fP available by sending email to
-\fIlistproc@samba\&.anu\&.edu\&.au\fP
+\fIlistproc@samba\&.org\fP
 .IP 
 .IP "\fBdomain admin users (G)\fP" 
 .IP 
 This is an \fBEXPERIMENTAL\fP parameter that is part of the unfinished
-Samba NT Domain Controller Code\&. It may be removed in a later release\&.
+Samba NT Domain Controller Code\&. It has been removed as of November 98\&.
 To work with the latest code builds that may have more support for
 Samba NT Domain Controller functionality please subscribe to the
 mailing list \fBSamba-ntdom\fP available by sending email to
-\fIlistproc@samba\&.anu\&.edu\&.au\fP
+\fIlistproc@samba\&.org\fP
 .IP 
 .IP "\fBdomain controller (G)\fP" 
 .IP 
@@ -2031,32 +2037,90 @@ This is a \fBDEPRECATED\fP parameter\&. It is currently not used within
 the Samba source and should be removed from all current smb\&.conf
 files\&. It is left behind for compatibility reasons\&.
 .IP 
+.IP "\fBdomain group map (G)\fP" 
+.IP 
+This option allows you to specify a file containing unique mappings
+of individual NT Domain Group names (in any domain) to UNIX group
+names\&.  This allows NT domain groups to be presented correctly to
+NT users, despite the lack of native support for the NT Security model
+(based on VAX/VMS) in UNIX\&.  The reader is advised to become familiar
+with the NT Domain system and its administration\&.
+.IP 
+This option is used in conjunction with \fB\'local group map\'\fP
+and \fB\'username map\'\fP\&.  The use of these three
+options is trivial and often unnecessary in the case where Samba is
+not expected to interact with any other SAM databases (whether local
+workstations or Domain Controllers)\&.
+.IP 
+The map file is parsed line by line\&.  If any line begins with a \f(CW\'#\'\fP
+or a \f(CW\';\'\fP then it is ignored\&.  Each line should contain a single UNIX
+group name on the left then an NT Domain Group name on the right\&.
+The line can be either of the form:
+.IP 
+\f(CW  UNIXgroupname	\e\eDOMAIN_NAME\e\eDomainGroupName \fP
+.IP 
+or:
+.IP 
+\f(CW  UNIXgroupname	DomainGroupName \fP
+.IP 
+In the case where Samba is either an \fBEXPERIMENTAL\fP Domain Controller
+or it is a member of a domain using \fB"security = domain"\fP,
+the latter format can be used: the default Domain name is the Samba Server\'s
+Domain name, specified by \fB"workgroup = MYGROUP"\fP\&.
+.IP 
+Any UNIX groups that are \fINOT\fP specified in this map file are assumed
+to be Domain Groups\&.
+.IP 
+In this case, when Samba is an \fBEXPERIMENTAL\fP Domain Controller, Samba
+will present \fIALL\fP such unspecified UNIX groups as its own NT Domain
+Groups, with the same name\&.
+.IP 
+In the case where Samba is member of a domain using
+\fB"security = domain"\fP, Samba will check the UNIX name with
+its Domain Controller (see \fB"password server"\fP)
+as if it was an NT Domain Group\&.  If the UNIX group is not an NT Group,
+such unspecified (unmapped) UNIX groups which also are not NT Domain
+Groups are treated as Local Groups in the Samba Server\'s local SAM database\&.
+NT Administrators will recognise these as Workstation Local Groups,
+which are managed by running \fBUSRMGR\&.EXE\fP and selecting a remote
+Domain named "\e\eWORKSTATION_NAME", or by running \fBMUSRMGR\&.EXE\fP on
+a local Workstation\&.
+.IP 
+Note that adding an entry to map an arbitrary NT group in an arbitrary
+Domain to an arbitrary UNIX group requires the following: that the UNIX
+group exists on the UNIX server; that the NT Domain Group exists in the
+specified NT Domain; that the UNIX Server knows about the specified Domain; 
+that all the UNIX users (who are expecting to access the Samba
+Server as the correct NT user and with the correct NT group permissions)
+in the UNIX group be mapped to the correct NT Domain users in the specified
+NT Domain using \fB\'username map\'\fP\&.
+.IP 
 .IP "\fBdomain groups (G)\fP" 
 .IP 
 This is an \fBEXPERIMENTAL\fP parameter that is part of the unfinished
-Samba NT Domain Controller Code\&. It may be removed in a later release\&.
+Samba NT Domain Controller Code\&. It has been removed as of November 98\&.
 To work with the latest code builds that may have more support for
 Samba NT Domain Controller functionality please subscribe to the
 mailing list \fBSamba-ntdom\fP available by sending email to
-\fIlistproc@samba\&.anu\&.edu\&.au\fP
+\fIlistproc@samba\&.org\fP
 .IP 
 .IP "\fBdomain guest group (G)\fP" 
 .IP 
 This is an \fBEXPERIMENTAL\fP parameter that is part of the unfinished
-Samba NT Domain Controller Code\&. It may be removed in a later release\&.
+Samba NT Domain Controller Code\&. It has been removed as of November 98\&.
 To work with the latest code builds that may have more support for
 Samba NT Domain Controller functionality please subscribe to the
 mailing list \fBSamba-ntdom\fP available by sending email to
-\fIlistproc@samba\&.anu\&.edu\&.au\fP
+\fIlistproc@samba\&.org\fP
 .IP 
 .IP "\fBdomain guest users (G)\fP" 
 .IP 
 This is an \fBEXPERIMENTAL\fP parameter that is part of the unfinished
-Samba NT Domain Controller Code\&. It may be removed in a later release\&.
+Samba NT Domain Controller Code\&. It has been removed as of November 98\&.
 To work with the latest code builds that may have more support for
 Samba NT Domain Controller functionality please subscribe to the
 mailing list \fBSamba-ntdom\fP available by sending email to
-\fIlistproc@samba\&.anu\&.edu\&.au\fP
+\fIlistproc@samba\&.org\fP
 .IP 
 .IP "\fBdomain logons (G)\fP" 
 .IP 
@@ -2771,6 +2835,64 @@ will be loaded for browsing by default\&. See the
 .IP 
 \fBExample:\fP
 \f(CW	load printers = no\fP
+.IP 
+.IP "\fBlocal group map (G)\fP" 
+.IP 
+This option allows you to specify a file containing unique mappings
+of individual NT Local Group names (in any domain) to UNIX group
+names\&.  This allows NT Local groups (aliases) to be presented correctly to
+NT users, despite the lack of native support for the NT Security model
+(based on VAX/VMS) in UNIX\&.  The reader is advised to become familiar
+with the NT Domain system and its administration\&.
+.IP 
+This option is used in conjunction with \fB\'domain group map\'\fP
+and \fB\'username map\'\fP\&.  The use of these three
+options is trivial and often unnecessary in the case where Samba
+is not expected to interact with any other SAM databases (whether local
+workstations or Domain Controllers)\&.
+.IP 
+The map file is parsed line by line\&.  If any line begins with a \f(CW\'#\'\fP
+or a \f(CW\';\'\fP then it is ignored\&.  Each line should contain a single UNIX
+group name on the left then an NT Local Group name on the right\&.
+The line can be either of the form:
+.IP 
+\f(CW  UNIXgroupname	\e\eDOMAIN_NAME\e\eLocalGroupName \fP
+.IP 
+or:
+.IP 
+\f(CW  UNIXgroupname	LocalGroupName \fP
+.IP 
+In the case where Samba is either an \fBEXPERIMENTAL\fP Domain Controller
+or it is a member of a domain using \fB"security = domain"\fP,
+the latter format can be used: the default Domain name is the Samba Server\'s
+Domain name, specified by \fB"workgroup = MYGROUP"\fP\&.
+.IP 
+Any UNIX groups that are \fINOT\fP specified in this map file are treated
+as Local Groups depending on the role of the Samba Server\&.
+.IP 
+When Samba is an \fBEXPERIMENTAL\fP Domain Controller, Samba
+will present \fIALL\fP unspecified UNIX groups as its own NT Domain
+Groups, with the same name, and \fINOT\fP as Local Groups\&.
+.IP 
+In the case where Samba is member of a domain using
+\fB"security = domain"\fP, Samba will check the UNIX name with
+its Domain Controller (see \fB"password server"\fP)
+as if it was an NT Domain Group\&.  If the UNIX group is not an NT Group,
+such unspecified (unmapped) UNIX groups which also are not NT Domain
+Groups are treated as Local Groups in the Samba Server\'s local SAM database\&.
+NT Administrators will recognise these as Workstation Local Groups,
+which are managed by running \fBUSRMGR\&.EXE\fP and selecting a remote
+Domain named "\e\eWORKSTATION_NAME", or by running \fBMUSRMGR\&.EXE\fP on
+a local Workstation\&.
+.IP 
+Note that adding an entry to map an arbitrary NT group in an arbitrary
+Domain to an arbitrary UNIX group requires the following: that the UNIX
+group exists on the UNIX server; that the NT Local Group exists in the
+specified NT Domain; that the UNIX Server knows about the specified Domain; 
+that all the UNIX users (who are expecting to access the Samba
+Server as the correct NT user and with the correct NT group permissions)
+in the UNIX group be mapped to the correct NT Domain users in the specified
+NT Domain using \fB\'username map\'\fP\&.
 .IP 
 .IP "\fBlocal master (G)\fP" 
 .IP 
@@ -5139,7 +5261,7 @@ You may find that on some systems Samba will say "Unknown socket
 option" when you supply an option\&. This means you either incorrectly 
 typed it or you need to add an include file to includes\&.h for your OS\&. 
 If the latter is the case please send the patch to
-\fIsamba-bugs@samba\&.anu\&.edu\&.au\fP\&.
+\fIsamba-bugs@samba\&.org\fP\&.
 .IP 
 Any of the supported socket options may be combined in any way you
 like, as long as your OS allows it\&.
@@ -6089,10 +6211,10 @@ need to set this to \f(CW"yes"\fP for some older clients\&.
 .IP 
 .IP "\fBwins server (G)\fP" 
 .IP 
-This specifies the DNS name (or IP address) of the WINS server that
-\fBnmbd\fP should register with\&. If you have a WINS
-server on your network then you should set this to the WINS servers
-name\&.
+This specifies the IP address (or DNS name: IP address for preference)
+of the WINS server that \fBnmbd\fP should register with\&.
+If you have a WINS server on your network then you should set this to
+the WINS server\'s IP\&.
 .IP 
 You should point this at your WINS server if you have a
 multi-subnetted network\&.
@@ -6137,6 +6259,7 @@ workgroup = MYGROUP
 .IP "\fBwritable (S)\fP" 
 .IP 
 Synonym for \fB"writeable"\fP for people who can\'t spell :-)\&.
+Pronounced "ritter-bull"\&.
 .IP 
 .IP "\fBwrite list (S)\fP" 
 .IP 
@@ -6231,7 +6354,7 @@ This man page is correct for version 2\&.0 of the Samba suite\&.
 .SH "AUTHOR" 
 .IP 
 The original Samba software and related utilities were created by
-Andrew Tridgell \fIsamba-bugs@samba\&.anu\&.edu\&.au\fP\&. Samba is now developed
+Andrew Tridgell \fIsamba-bugs@samba\&.org\fP\&. Samba is now developed
 by the Samba Team as an Open Source project similar to the way the
 Linux kernel is developed\&.
 .IP 
@@ -6240,7 +6363,7 @@ sources were converted to YODL format (another excellent piece of Open
 Source software, available at
 \fBftp://ftp\&.icce\&.rug\&.nl/pub/unix/\fP)
 and updated for the Samba2\&.0 release by Jeremy Allison\&.
-\fIsamba-bugs@samba\&.anu\&.edu\&.au\fP\&.
+\fIsamba-bugs@samba\&.org\fP\&.
 .IP 
 See \fBsamba (7)\fP to find out how to get a full
 list of contributors and details on how to submit bug reports,
