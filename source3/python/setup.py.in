@@ -111,6 +111,15 @@ setup(
               library_dirs = ["/usr/kerberos/lib"],
               extra_objects = obj_list),
 
+    # SAMR pipe module
+
+    Extension(name = "samr",
+              sources = [samba_srcdir + "python/py_samr.c",
+                         samba_srcdir + "python/py_common.c"],
+              libraries = lib_list,
+              library_dirs = ["/usr/kerberos/lib"],
+              extra_objects = obj_list),
+
     # winbind client module
 
     Extension(name = "winbind",
