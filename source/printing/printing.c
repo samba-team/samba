@@ -2184,6 +2184,7 @@ static BOOL get_stored_queue_info(struct tdb_print_db *pdb, int snum, int *pcoun
 		queue[total_count].page_count = pjob->page_count;
 		queue[total_count].status = pjob->status;
 		queue[total_count].priority = 1;
+		queue[total_count].time = pjob->starttime;
 		fstrcpy(queue[total_count].fs_user, pjob->user);
 		fstrcpy(queue[total_count].fs_file, pjob->jobname);
 		total_count++;
