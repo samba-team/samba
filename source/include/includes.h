@@ -798,9 +798,11 @@ struct printjob;
 #define OSF1_ENH_SEC 1
 #endif
 
+#if 0
 #ifndef ALLOW_CHANGE_PASSWORD
 #if (defined(HAVE_TERMIOS_H) && defined(HAVE_DUP2) && defined(HAVE_SETSID))
 #define ALLOW_CHANGE_PASSWORD 1
+#endif
 #endif
 #endif
 

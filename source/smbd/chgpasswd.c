@@ -642,6 +642,7 @@ BOOL check_lanman_password(char *user, uchar * pass1,
 BOOL change_lanman_password(SAM_ACCOUNT *sampass, uchar * pass1,
 			    uchar * pass2)
 {
+#ifdef ALLOW_CHANGE_PASSWORD
 	static uchar null_pw[16];
 	uchar unenc_new_pw[16];
 	BOOL ret;
@@ -687,6 +688,9 @@ BOOL change_lanman_password(SAM_ACCOUNT *sampass, uchar * pass1,
 	unbecome_root();
 
 	return ret;
+#else /* ALLOW_CHANGE_PASSWORD */
+	return False;
+#endif /* ALLOW_CHANGE_PASSWORD */
 }
 
 /***********************************************************
@@ -696,6 +700,7 @@ BOOL pass_oem_change(char *user,
 		     uchar * lmdata, uchar * lmhash,
 		     uchar * ntdata, uchar * nthash)
 {
+#ifdef ALLOW_CHANGE_PASSWORD
 	fstring new_passwd;
 	SAM_ACCOUNT *sampass = NULL;
 	BOOL ret = check_oem_password(user, lmdata, lmhash, ntdata, nthash,
@@ -721,6 +726,9 @@ BOOL pass_oem_change(char *user,
 	pdb_free_sam(sampass);
 
 	return ret;
+#else /* ALLOW_CHANGE_PASSWORD */
+	return False;
+#endif /* ALLOW_CHANGE_PASSWORD */
 }
 
 /***********************************************************
@@ -894,6 +902,7 @@ BOOL check_oem_password(char *user,
 BOOL change_oem_password(SAM_ACCOUNT *hnd, char *new_passwd,
 			 BOOL override)
 {
+#ifdef ALLOW_CHANGE_PASSWORD
 	BOOL ret;
 	uchar new_nt_p16[16];
 	uchar new_p16[16];
@@ -913,6 +922,9 @@ BOOL change_oem_password(SAM_ACCOUNT *hnd, char *new_passwd,
 	memset(new_passwd, '\0', strlen(new_passwd));
 
 	return ret;
+#else /* ALLOW_CHANGE_PASSWORD */
+	return False;
+#endif /* ALLOW_CHANGE_PASSWORD */
 }
 
 /***********************************************************
