@@ -1787,6 +1787,7 @@ int print_queue_snum(char *qname);
 BOOL print_queue_pause(struct current_user *user, int snum, int *errcode);
 BOOL print_queue_resume(struct current_user *user, int snum, int *errcode);
 BOOL print_queue_purge(struct current_user *user, int snum, int *errcode);
+void process_print_queue(time_t t);
 #endif
 
 /*The following definitions come from  profile/profile.c  */

@@ -300,6 +300,14 @@ static void print_queue_update(int snum)
 	fstring keystr;
 	TDB_DATA data, key;
  
+	/*
+	 * Update the cache time FIRST ! Stops others doing this
+	 * if the lpq takes a long time.
+	 */
+
+	slprintf(keystr, sizeof(keystr), "CACHE/%s", lp_servicename(snum));
+	tdb_store_int(tdb, keystr, (int)time(NULL));
+
 	slprintf(tmp_file, sizeof(tmp_file), "%s/smblpq.%d", path, local_pid);
 
 	unlink(tmp_file);
@@ -380,7 +388,11 @@ static void print_queue_update(int snum)
 	key.dsize = strlen(keystr);
 	tdb_store(tdb, key, data, TDB_REPLACE);	
 
-	/* update the cache time */
+	/*
+	 * Update the cache time again. We want to do this call
+	 * as little as possible...
+	 */
+
 	slprintf(keystr, sizeof(keystr), "CACHE/%s", lp_servicename(snum));
 	tdb_store_int(tdb, keystr, (int)time(NULL));
 }
@@ -1008,7 +1020,36 @@ BOOL print_queue_purge(struct current_user *user, int snum, int *errcode)
 	}
 
 	print_cache_flush(snum);
+	safe_free(queue);
 
 	return True;
+}
+
+/****************************************************************************
+ Periodically run a status on all the queues to ensure the tdb doesn't grow.
+ Note that this will have no effect if the client is doing its own status
+ queries. This code is here to clean up jobs submitted by non-Windows printer
+ clients (eg. smbclient) that never do a status check.
+****************************************************************************/
+
+void process_print_queue(time_t t)
+{
+	static time_t last_check_time;
+	int services = lp_numservices();
+	print_queue_struct *queue;
+	print_status_struct status;
+	int snum;
+
+	if ((t != (time_t)-1) && ((t - last_check_time) < lp_lpqcachetime()))
+		return;
+
+	last_check_time = t;
+
+	for (snum = 0; snum < services; snum++) {
+		if (lp_snum_ok(snum) && lp_print_ok(snum) && lp_browseable(snum)) {
+			(void)print_queue_status(snum, &queue,&status);
+			safe_free(queue);
+		}
+	}
 }
 #undef OLD_NTDOMAIN

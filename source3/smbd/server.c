@@ -422,6 +422,10 @@ void exit_server(char *reason)
 
     respond_to_all_remaining_local_messages();
 
+	/* Don't do this on every exit... */
+	if (sys_random() % 10)
+		process_print_queue(time(NULL));
+
 #ifdef WITH_DFS
 	if (dcelogin_atmost_once) {
 		dfs_unlogin();
