@@ -66,44 +66,32 @@ loop(int s)
 static int
 get_socket (const char *hostname, int port)
 {
-    struct hostent *hostent = NULL;
-    char **h;
-    int error;
-    int af;
+    int ret;
+    struct addrinfo *ai, *a;
+    struct addrinfo hints;
+    char portstr[NI_MAXSERV];
+    
+    memset (&hints, 0, sizeof(hints));
+    hints.ai_socktype = SOCK_STREAM;
+    snprintf (portstr, sizeof(portstr), "%d", ntohs(port));
+    ret = getaddrinfo (hostname, portstr, &hints, &ai);
+    if (ret)
+	errx (1, "getaddrinfo %s: %s", hostname, gai_strerror (ret));
 
-#ifdef HAVE_IPV6    
-    if (hostent == NULL)
-	hostent = getipnodebyname (hostname, AF_INET6, 0, &error);
-#endif
-    if (hostent == NULL)
-	hostent = getipnodebyname (hostname, AF_INET, 0, &error);
-
-    if (hostent == NULL)
-	errx(1, "gethostbyname '%s' failed: %s", hostname, hstrerror(error));
-
-    af = hostent->h_addrtype;
-
-    for (h = hostent->h_addr_list; *h != NULL; ++h) {
-	struct sockaddr_storage sa_ss;
-	struct sockaddr *sa = (struct sockaddr *)&sa_ss;
+    for (a = ai; a != NULL; a = a->ai_next) {
 	int s;
 
-	sa->sa_family = af;
-	socket_set_address_and_port (sa, *h, port);
-
-	s = socket (af, SOCK_STREAM, 0);
+	s = socket (a->ai_family, a->ai_socktype, a->ai_protocol);
 	if (s < 0)
-	    err (1, "socket");
-	if (connect (s, sa, socket_sockaddr_size(sa)) < 0) {
-	    warn ("connect(%s)", hostname);
+	    continue;
+	if (connect (s, a->ai_addr, a->ai_addrlen) < 0) {
 	    close (s);
 	    continue;
 	}
-	freehostent (hostent);
+	freeaddrinfo (ai);
 	return s;
     }
-    freehostent (hostent);
-    exit (1);
+    err (1, "failed to connect to %s", hostname);
 }
 
 #ifdef KRB4
