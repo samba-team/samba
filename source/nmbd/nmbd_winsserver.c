@@ -667,7 +667,7 @@ void wins_process_name_registration_request(struct subnet_record *subrec,
   int ttl = get_ttl_from_packet(nmb);
   struct name_record *namerec = NULL;
   struct in_addr from_ip;
-  BOOL registering_group_name = (nb_flags & NB_GROUP) ? True : False;;
+  BOOL registering_group_name = (nb_flags & NB_GROUP) ? True : False;
 
   putip((char *)&from_ip,&nmb->additional->rdata[2]);
 
