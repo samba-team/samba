@@ -114,6 +114,11 @@ static struct cli_use *cli_find(const char* srv_name,
 {
 	int i;
 	const char *sv_name = srv_name;
+	struct user_credentials null_usr;
+
+	copy_user_creds(&null_usr, usr_creds);
+	usr_creds = &null_usr;
+		
 	if (strnequal("\\\\", sv_name, 2))
 	{
 		sv_name = &sv_name[2];
