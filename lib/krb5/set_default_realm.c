@@ -67,7 +67,7 @@ string_to_list (krb5_context context, const char *s, krb5_realm **list)
 
 krb5_error_code
 krb5_set_default_realm(krb5_context context,
-		       char *realm)
+		       const char *realm)
 {
     krb5_error_code ret = 0;
     krb5_realm *realms = NULL;
