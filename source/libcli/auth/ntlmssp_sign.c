@@ -53,7 +53,7 @@ static void NTLMSSPcalc_ap(uint8_t *hash, uint8_t *data, int len)
     hash[257] = index_j;
 }
 
-static void calc_hash(uint8_t hash[258], const char *key, size_t key_len)
+static void calc_hash(uint8_t hash[258], const uint8 *key, size_t key_len)
 {
 	uint8_t j = 0;
 	int ind;
@@ -451,7 +451,9 @@ NTSTATUS ntlmssp_sign_init(struct ntlmssp_state *ntlmssp_state)
 	} else {
 		DEBUG(5, ("NTLMSSP Sign/Seal - using NTLM1\n"));
 
-		calc_hash(ntlmssp_state->ntlmssp_hash, (const char *)(ntlmssp_state->session_key.data), 16);
+		calc_hash(ntlmssp_state->ntlmssp_hash, 
+			  ntlmssp_state->session_key.data, 
+			  ntlmssp_state->session_key.length);
 		dump_data_pw("NTLMSSP hash:\n", ntlmssp_state->ntlmssp_hash,
 			     sizeof(ntlmssp_state->ntlmssp_hash));
 	}
