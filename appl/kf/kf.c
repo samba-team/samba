@@ -309,43 +309,38 @@ proto (int sock, const char *hostname, const char *service)
 static int
 doit (const char *hostname, int port, const char *service)
 {
-    struct hostent *hostent = NULL;
-    char **h;
+    struct addrinfo *ai, *a;
+    struct addrinfo hints;
     int error;
-    int af;
+    char portstr[NI_MAXSERV];
 
-#ifdef HAVE_IPV6    
-    if (hostent == NULL)
-	hostent = getipnodebyname (hostname, AF_INET6, 0, &error);
-#endif
-    if (hostent == NULL)
-	hostent = getipnodebyname (hostname, AF_INET, 0, &error);
+    memset (&hints, 0, sizeof(hints));
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_protocol = IPPROTO_TCP;
 
-    if (hostent == NULL)
-	errx(1, "gethostbyname '%s' failed: %s", hostname, hstrerror(error));
+    snprintf (portstr, sizeof(portstr), "%u", ntohs(port));
 
-    af = hostent->h_addrtype;
+    error = getaddrinfo (hostname, portstr, &hints, &ai);
+    if (error) {
+	errx (1, "getaddrinfo(%s): %s", hostname, gai_strerror(error));
+    }
 
-    for (h = hostent->h_addr_list; *h != NULL; ++h) {
-	struct sockaddr_storage sa_ss;
-	struct sockaddr *sa = (struct sockaddr *)&sa_ss;
+    for (a = ai; a != NULL; a = a->ai_next) {
 	int s;
 
-	sa->sa_family = af;
-	socket_set_address_and_port (sa, *h, port);
-
-	s = socket (af, SOCK_STREAM, 0);
+	s = socket (a->ai_family, a->ai_socktype, a->ai_protocol);
 	if (s < 0)
-	    err (1, "socket");
-	if (connect (s, sa, socket_sockaddr_size(sa)) < 0) {
+	    continue;
+	if (connect (s, a->ai_addr, a->ai_addrlen) < 0) {
 	    warn ("connect(%s)", hostname);
 	    close (s);
 	    continue;
 	}
-	freehostent (hostent);
+	freeaddrinfo (ai);
 	return proto (s, hostname, service);
     }
-    freehostent (hostent);
+    warnx ("failed to contact %s", hostname);
+    freeaddrinfo (ai);
     return 1;
 }
 
