@@ -52,6 +52,87 @@ extern BOOL in_client;
  */
 static int smbc_initialized = 0;
 
+static int 
+hex2int( unsigned int _char )
+{
+    if ( _char >= 'A' && _char <='F')
+	return _char - 'A' + 10;
+    if ( _char >= 'a' && _char <='f')
+	return _char - 'a' + 10;
+    if ( _char >= '0' && _char <='9')
+	return _char - '0';
+    return -1;
+}
+
+static void 
+decode_urlpart(char *segment, size_t sizeof_segment)
+{
+    int old_length = strlen(segment);
+    int new_length = 0;
+    int new_length2 = 0;
+    int i = 0;
+    pstring new_segment;
+    char *new_usegment = 0;
+
+    if ( !old_length ) {
+	return;
+    }
+
+    /* make a copy of the old one */
+    new_usegment = (char*)malloc( old_length * 3 + 1 );
+
+    while( i < old_length ) {
+	int bReencode = False;
+	unsigned char character = segment[ i++ ];
+	if ((character <= ' ') || (character > 127))
+	    bReencode = True;
+
+	new_usegment [ new_length2++ ] = character;
+	if (character == '%' ) {
+	    int a = i+1 < old_length ? hex2int( segment[i] ) : -1;
+	    int b = i+1 < old_length ? hex2int( segment[i+1] ) : -1;
+	    if ((a == -1) || (b == -1)) { /* Only replace if sequence is valid */
+		/* Contains stray %, make sure to re-encode! */
+		bReencode = True;
+	    } else {
+		/* Valid %xx sequence */
+		character = a * 16 + b; /* Replace with value of %dd */
+		if (!character)
+		    break; /* Stop at %00 */
+
+		new_usegment [ new_length2++ ] = (unsigned char) segment[i++];
+		new_usegment [ new_length2++ ] = (unsigned char) segment[i++];
+	    }
+	}
+	if (bReencode) {
+	    unsigned int c = character / 16;
+	    new_length2--;
+	    new_usegment [ new_length2++ ] = '%';
+
+	    c += (c > 9) ? ('A' - 10) : '0';
+	    new_usegment[ new_length2++ ] = c;
+
+	    c = character % 16;
+	    c += (c > 9) ? ('A' - 10) : '0';
+	    new_usegment[ new_length2++ ] = c;
+	}
+
+	new_segment [ new_length++ ] = character;
+    }
+    new_segment [ new_length ] = 0;
+
+    free(new_usegment);
+
+    /* realloc it with unix charset */
+    pull_utf8_allocate((void**)&new_usegment, new_segment);
+
+    /* this assumes (very safely) that removing %aa sequences
+       only shortens the string */
+    strncpy(segment, new_usegment, sizeof_segment);
+
+    free(new_usegment);
+}
+
 /*
  * Function to parse a path and turn it into components
  *
@@ -97,7 +178,7 @@ smbc_parse_path(SMBCCTX *context, const char *fname, char *server, char *share, 
 	p += 2;  /* Skip the // or \\  */
 
 	if (*p == (char)0)
-		return 0;
+	    goto decoding;
 
 	if (*p == '/') {
 
@@ -158,7 +239,7 @@ smbc_parse_path(SMBCCTX *context, const char *fname, char *server, char *share, 
 
 	}
 
-	if (*p == (char)0) return 0;  /* That's it ... */
+	if (*p == (char)0) goto decoding;  /* That's it ... */
   
 	if (!next_token(&p, share, "/", sizeof(fstring))) {
 
@@ -167,8 +248,15 @@ smbc_parse_path(SMBCCTX *context, const char *fname, char *server, char *share, 
 	}
 
 	pstrcpy(path, p);
-  
+
 	all_string_sub(path, "/", "\\", 0);
+
+ decoding:
+	decode_urlpart(path, sizeof(pstring));
+	decode_urlpart(server, sizeof(fstring));
+	decode_urlpart(share, sizeof(fstring));
+	decode_urlpart(user, sizeof(fstring));
+	decode_urlpart(password, sizeof(fstring));
 
 	return 0;
 }
@@ -267,15 +355,16 @@ int smbc_remove_unused_server(SMBCCTX * context, SMBCSRV * srv)
  */
 
 SMBCSRV *smbc_server(SMBCCTX *context,
-		     char *server, char *share, 
-		     char *workgroup, char *username, 
-		     char *password)
+		     const char *server, const char *share, 
+		     fstring workgroup, fstring username, 
+		     fstring password)
 {
 	SMBCSRV *srv=NULL;
 	int auth_called = 0;
 	struct cli_state c;
 	struct nmb_name called, calling;
-	char *p, *server_n = server;
+	char *p;
+	const char *server_n = server;
 	fstring group;
 	pstring ipenv;
 	struct in_addr ip;
@@ -729,27 +818,6 @@ static int smbc_close_ctx(SMBCCTX *context, SMBCFILE *file)
 
 	}
 
-	if (!file->file) {
-
-		return context->closedir(context, file);
-
-	}
-
-	if (!cli_close(&file->srv->cli, file->cli_fd)) {
-		DEBUG(3, ("cli_close failed on %s. purging server.\n", 
-			  file->fname));
-		/* Deallocate slot and remove the server 
-		 * from the server cache if unused */
-		errno = smbc_errno(context, &file->srv->cli);  
-		srv = file->srv;
-		DLIST_REMOVE(context->internal->_files, file);
-		SAFE_FREE(file->fname);
-		SAFE_FREE(file);
-		context->callbacks.remove_unused_server_fn(context, srv);
-
-		return -1;
-	}
-
 	DLIST_REMOVE(context->internal->_files, file);
 	SAFE_FREE(file->fname);
 	SAFE_FREE(file);
@@ -1003,12 +1071,16 @@ static off_t smbc_lseek_ctx(SMBCCTX *context, SMBCFILE *file, off_t offset, int 
 
 	case SEEK_END:
 		if (!cli_qfileinfo(&file->srv->cli, file->cli_fd, NULL, &size, NULL, NULL,
-				   NULL, NULL, NULL) &&
-		    !cli_getattrE(&file->srv->cli, file->cli_fd, NULL, &size, NULL, NULL,
-				  NULL)) {
-
+				   NULL, NULL, NULL)) 
+		{
+		    SMB_BIG_UINT b_size = size;
+		    if (!cli_getattrE(&file->srv->cli, file->cli_fd, NULL, &b_size, NULL, NULL,
+				      NULL)) 
+		    {
 			errno = EINVAL;
 			return -1;
+		    } else
+			size = b_size;
 		}
 		file->offset = size + offset;
 		break;
@@ -1206,12 +1278,15 @@ static int smbc_fstat_ctx(SMBCCTX *context, SMBCFILE *file, struct stat *st)
 	}
 
 	if (!cli_qfileinfo(&file->srv->cli, file->cli_fd,
-			   &mode, &size, &c_time, &a_time, &m_time, NULL, &ino) &&
-	    !cli_getattrE(&file->srv->cli, file->cli_fd,
-			  &mode, &size, &c_time, &a_time, &m_time)) {
+			   &mode, &size, &c_time, &a_time, &m_time, NULL, &ino)) {
+	    SMB_BIG_UINT b_size = size;
+	    if (!cli_getattrE(&file->srv->cli, file->cli_fd,
+			  &mode, &b_size, &c_time, &a_time, &m_time)) {
 
 		errno = EINVAL;
 		return -1;
+	    } else
+		size = b_size;
 
 	}
 
@@ -1264,6 +1339,13 @@ static int add_dirent(SMBCFILE *dir, const char *name, const char *comment, uint
 {
 	struct smbc_dirent *dirent;
 	int size;
+	char *u_name = NULL, *u_comment = NULL;
+	size_t u_name_len = 0, u_comment_len = 0;
+
+	if (name)
+	    u_name_len = push_utf8_allocate(&u_name, name);
+	if (comment)
+	    u_comment_len = push_utf8_allocate(&u_comment, comment);
 
 	/*
 	 * Allocate space for the dirent, which must be increased by the 
@@ -1271,8 +1353,7 @@ static int add_dirent(SMBCFILE *dir, const char *name, const char *comment, uint
 	 * The null on the name is already accounted for.
 	 */
 
-	size = sizeof(struct smbc_dirent) + (name?strlen(name):0) +
-		(comment?strlen(comment):0) + 1; 
+	size = sizeof(struct smbc_dirent) + u_name_len + u_comment_len + 1;
     
 	dirent = malloc(size);
 
@@ -1321,14 +1402,17 @@ static int add_dirent(SMBCFILE *dir, const char *name, const char *comment, uint
 	dir->dir_end->dirent = dirent;
 	
 	dirent->smbc_type = type;
-	dirent->namelen = (name?strlen(name):0);
-	dirent->commentlen = (comment?strlen(comment):0);
+	dirent->namelen = u_name_len;
+	dirent->commentlen = u_comment_len;
 	dirent->dirlen = size;
   
-	strncpy(dirent->name, (name?name:""), dirent->namelen + 1);
+	strncpy(dirent->name, (u_name?u_name:""), dirent->namelen + 1);
 
 	dirent->comment = (char *)(&dirent->name + dirent->namelen + 1);
-	strncpy(dirent->comment, (comment?comment:""), dirent->commentlen + 1);
+	strncpy(dirent->comment, (u_comment?u_comment:""), dirent->commentlen + 1);
+	
+	SAFE_FREE(u_comment);
+	SAFE_FREE(u_name);
 
 	return 0;
 
@@ -1394,7 +1478,8 @@ dir_list_fn(file_info *finfo, const char *mask, void *state)
 
 static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
 {
-	fstring server, share, user, password, workgroup;
+	fstring server, share, user, password;
+	pstring workgroup;
 	pstring path;
 	SMBCSRV *srv  = NULL;
 	SMBCFILE *dir = NULL;
@@ -1402,29 +1487,29 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
 
 	if (!context || !context->internal ||
 	    !context->internal->_initialized) {
-
+	        DEBUG(4, ("no valid context\n"));
 		errno = EINVAL;
 		return NULL;
 
 	}
 
 	if (!fname) {
-    
+		DEBUG(4, ("no valid fname\n"));
 		errno = EINVAL;
 		return NULL;
-
 	}
 
 	if (smbc_parse_path(context, fname, server, share, path, user, password)) {
-
+	        DEBUG(4, ("no valid path\n"));
 		errno = EINVAL;
 		return NULL;
-
 	}
+
+	DEBUG(4, ("parsed path: fname='%s' server='%s' share='%s' path='%s'\n", fname, server, share, path));
 
 	if (user[0] == (char)0) fstrcpy(user, context->user);
 
-	fstrcpy(workgroup, context->workgroup);
+	pstrcpy(workgroup, context->workgroup);
 
 	dir = malloc(sizeof(*dir));
 
@@ -1445,64 +1530,74 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
 	dir->dir_list = dir->dir_next = dir->dir_end = NULL;
 
 	if (server[0] == (char)0) {
-
+	    struct in_addr server_ip;
 		if (share[0] != (char)0 || path[0] != (char)0) {
-    
+
 			errno = EINVAL;
 			if (dir) {
 				SAFE_FREE(dir->fname);
 				SAFE_FREE(dir);
 			}
 			return NULL;
-
 		}
 
 		/* We have server and share and path empty ... so list the workgroups */
                 /* first try to get the LMB for our workgroup, and if that fails,     */
                 /* try the DMB                                                        */
 
-		if (!(resolve_name(context->workgroup, &rem_ip, 0x1d) ||
-                      resolve_name(context->workgroup, &rem_ip, 0x1b))) {
-      
-			errno = EINVAL;  /* Something wrong with smb.conf? */
+		pstrcpy(workgroup, lp_workgroup());
+
+		if (!find_master_ip(workgroup, &server_ip)) {
+		    struct user_auth_info u_info;
+		    struct cli_state *cli;
+
+		    DEBUG(4, ("Unable to find master browser for workgroup %s\n", 
+			      workgroup));
+
+		    /* find the name of the server ... */
+		    pstrcpy(u_info.username, user);
+		    pstrcpy(u_info.password, password);
+
+		    if (!(cli = get_ipc_connect_master_ip_bcast(workgroup, &u_info))) {
+			DEBUG(4, ("Unable to find master browser by "
+				  "broadcast\n"));
+			errno = ENOENT;
 			return NULL;
+		    }
 
-		}
+		    fstrcpy(server, cli->desthost);
 
-		dir->dir_type = SMBC_WORKGROUP;
-
-		/* find the name of the server ... */
-
-		if (!name_status_find("*", 0, 0, rem_ip, server)) {
-
-			DEBUG(0,("Could not get the name of local/domain master browser for server %s\n", server));
-			errno = EINVAL;
+		    cli_shutdown(cli);
+		} else {
+		    if (!name_status_find("*", 0, 0, server_ip, server)) {
+			errno = ENOENT;
 			return NULL;
+		    }
+		}	
 
-		}
+		DEBUG(4, ("using workgroup %s %s\n", workgroup, server));
 
-		/*
-		 * Get a connection to IPC$ on the server if we do not already have one
-		 */
+               /*
+                * Get a connection to IPC$ on the server if we do not already have one
+                */
 
 		srv = smbc_server(context, server, "IPC$", workgroup, user, password);
 
-		if (!srv) {
-
-			if (dir) {
-				SAFE_FREE(dir->fname);
-				SAFE_FREE(dir);
-			}
-			
-			return NULL;
-
-		}
-
+               if (!srv) {
+		   
+		   if (dir) {
+		       SAFE_FREE(dir->fname);
+		       SAFE_FREE(dir);
+		   }
+		   return NULL;
+	       }
+		   
 		dir->srv = srv;
+		dir->dir_type = SMBC_WORKGROUP;
 
 		/* Now, list the stuff ... */
 
-		if (!cli_NetServerEnum(&srv->cli, workgroup, 0x80000000, list_fn,
+		if (!cli_NetServerEnum(&srv->cli, workgroup, SV_TYPE_DOMAIN_ENUM, list_fn,
 				       (void *)dir)) {
 
 			if (dir) {
@@ -1560,7 +1655,7 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
 				srv = smbc_server(context, buserver, "IPC$", workgroup, user, password);
 
 				if (!srv) {
-
+				        DEBUG(0, ("got no contact to IPC$\n"));
 					if (dir) {
 						SAFE_FREE(dir->fname);
 						SAFE_FREE(dir);
@@ -2058,6 +2153,7 @@ static int smbc_rmdir_ctx(SMBCCTX *context, const char *fname)
 
 static off_t smbc_telldir_ctx(SMBCCTX *context, SMBCFILE *dir)
 {
+	off_t ret_val; /* Squash warnings about cast */
 
 	if (!context || !context->internal ||
 	    !context->internal->_initialized) {
@@ -2081,7 +2177,11 @@ static off_t smbc_telldir_ctx(SMBCCTX *context, SMBCFILE *dir)
 
 	}
 
-	return (off_t) dir->dir_next;
+	/*
+	 * We return the pointer here as the offset
+	 */
+	ret_val = (int)dir->dir_next;
+	return ret_val;
 
 }
 
@@ -2121,8 +2221,9 @@ struct smbc_dir_list *smbc_check_dir_ent(struct smbc_dir_list *list,
 
 static int smbc_lseekdir_ctx(SMBCCTX *context, SMBCFILE *dir, off_t offset)
 {
-	struct smbc_dirent *dirent = (struct smbc_dirent *)offset;
-	struct smbc_dir_list *list_ent = NULL;
+	long int l_offset = offset;  /* Handle problems of size */
+	struct smbc_dirent *dirent = (struct smbc_dirent *)l_offset;
+	struct smbc_dir_list *list_ent = (struct smbc_dir_list *)NULL;
 
 	if (!context || !context->internal ||
 	    !context->internal->_initialized) {
@@ -2569,10 +2670,10 @@ SMBCCTX * smbc_init_context(SMBCCTX * context)
 	if (!smbc_initialized) {
 		/* Do some library wide intialisations the first time we get called */
 
-		/* Do we still need this ? */
-		DEBUGLEVEL = 10;
+		/* Set this to what the user wants */
+		DEBUGLEVEL = context->debug;
 		
-		setup_logging( "libsmbclient", False);
+		setup_logging( "libsmbclient", True);
 
 		/* Here we would open the smb.conf file if needed ... */
 		
@@ -2587,13 +2688,16 @@ SMBCCTX * smbc_init_context(SMBCCTX * context)
 		if (!lp_load(conf, True, False, False)) {
 
 			/*
-			 * Hmmm, what the hell do we do here ... we could not parse the
-			 * config file ... We must return an error ... and keep info around
-			 * about why we failed
+			 * Well, if that failed, try the dyn_CONFIGFILE
+			 * Which points to the standard locn, and if that
+			 * fails, silently ignore it and use the internal
+			 * defaults ...
 			 */
-			
-			errno = ENOENT; /* FIXME: Figure out the correct error response */
-			return NULL;
+
+		   if (!lp_load(dyn_CONFIGFILE, True, False, False)) {
+		      DEBUG(5, ("Could not load either config file: %s or %s\n",
+			     conf, dyn_CONFIGFILE));
+		   }
 		}
 
 		reopen_logs();  /* Get logging working ... */
@@ -2640,8 +2744,8 @@ SMBCCTX * smbc_init_context(SMBCCTX * context)
 			slprintf(context->netbios_name, 16, "smbc%s%d", context->user, pid);
 		}
 	}
-	DEBUG(0,("Using netbios name %s.\n", context->netbios_name));
-	
+
+	DEBUG(1, ("Using netbios name %s.\n", context->netbios_name));
 
 	if (!context->workgroup) {
 		if (lp_workgroup()) {
@@ -2652,7 +2756,8 @@ SMBCCTX * smbc_init_context(SMBCCTX * context)
 			context->workgroup = strdup("samba");
 		}
 	}
-	DEBUG(0,("Using workgroup %s.\n", context->workgroup));
+
+	DEBUG(1, ("Using workgroup %s.\n", context->workgroup));
 					
 	/* shortest timeout is 1 second */
 	if (context->timeout > 0 && context->timeout < 1000) 

@@ -50,8 +50,8 @@ struct smbc_server_cache {
  * This function is only used if the external cache is not enabled 
  */
 static int smbc_add_cached_server(SMBCCTX * context, SMBCSRV * new,
-				  char * server, char * share, 
-				  char * workgroup, char * username)
+				  const char * server, const char * share, 
+				  const char * workgroup, const char * username)
 {
 	struct smbc_server_cache * srvcache = NULL;
 
@@ -108,8 +108,8 @@ static int smbc_add_cached_server(SMBCCTX * context, SMBCSRV * new,
  * returns server_fd on success, -1 on error (not found)
  * This function is only used if the external cache is not enabled 
  */
-static SMBCSRV * smbc_get_cached_server(SMBCCTX * context, char * server, 
-				  char * share, char * workgroup, char * user)
+static SMBCSRV * smbc_get_cached_server(SMBCCTX * context, const char * server, 
+				  const char * share, const char * workgroup, const char * user)
 {
 	struct smbc_server_cache * srv = NULL;
 	

@@ -153,53 +153,16 @@ AC_SUBST(LIBSMBCLIENT)
 AC_SUBST(PRINTLIBS)
 AC_SUBST(AUTHLIBS)
 AC_SUBST(ACLLIBS)
+AC_SUBST(ADSLIBS)
+AC_SUBST(PASSDBLIBS)
+AC_SUBST(KRB5_LIBS)
+AC_SUBST(LDAP_LIBS)
+AC_SUBST(LDAP_OBJ)
 AC_SUBST(SHLIB_PROGS)
 AC_SUBST(SMBWRAPPER)
 AC_SUBST(EXTRA_BIN_PROGS)
 AC_SUBST(EXTRA_SBIN_PROGS)
 AC_SUBST(EXTRA_ALL_TARGETS)
-dnl For the DYNAMIC RPC stuff
-dnl The complicated _YES and _NO stuff allows us to avoid a dependency
-dnl on GNU Make.
-AC_SUBST(LSA_DYNAMIC_YES)
-AC_SUBST(LSA_DYNAMIC_NO)
-LSA_DYNAMIC_YES="#"
-LSA_DYNAMIC_NO=
-AC_SUBST(NETLOG_DYNAMIC_YES)
-AC_SUBST(NETLOG_DYNAMIC_NO)
-NETLOG_DYNAMIC_YES="#"
-NETLOG_DYNAMIC_NO=
-AC_SUBST(SAMR_DYNAMIC_YES)
-AC_SUBST(SAMR_DYNAMIC_NO)
-SAMR_DYNAMIC_YES="#"
-SAMR_DYNAMIC_NO=
-AC_SUBST(SVC_DYNAMIC_YES)
-AC_SUBST(SVC_DYNAMIC_NO)
-SVC_DYNAMIC_YES="#"
-SVC_DYNAMIC_NO=
-AC_SUBST(WKS_DYNAMIC_YES)
-AC_SUBST(WKS_DYNAMIC_NO)
-WKS_DYNAMIC_YES="#"
-WKS_DYNAMIC_NO=
-AC_SUBST(REG_DYNAMIC_YES)
-AC_SUBST(REG_DYNAMIC_NO)
-REG_DYNAMIC_YES="#"
-REG_DYNAMIC_NO=
-AC_SUBST(SPOOLSS_DYNAMIC_YES)
-AC_SUBST(SPOOLSS_DYNAMIC_NO)
-SPOOLSS_DYNAMIC_YES="#"
-SPOOLSS_DYNAMIC_NO=
-AC_SUBST(DFS_DYNAMIC_YES)
-AC_SUBST(DFS_DYNAMIC_NO)
-DFS_DYNAMIC_YES="#"
-DFS_DYNAMIC_NO=
-AC_SUBST(ECHO_DYNAMIC_YES)
-AC_SUBST(ECHO_DYNAMIC_NO)
-ECHO_DYNAMIC_YES="#"
-ECHO_DYNAMIC_NO=
-
-# compile with optimization and without debugging by default
-CFLAGS="-O ${CFLAGS}"
 
 AC_ARG_ENABLE(debug, 
 [  --enable-debug          Turn on compiler debugging information (default=no)],
@@ -227,70 +190,18 @@ then
 	LIBS="$LIBS -ldmalloc"	
 fi
 
-AC_ARG_ENABLE(dynrpc,  [  --enable-dynrpc         Enable dynamic RPC modules [default=no]])
-
-if test x$enable_dynrpc = xyes
-then
-	enable_dynrpc=lsa,samr,reg,wks,netlog,dfs
-fi
-
-if test x$enable_dynrpc != xno
-then
-	for i in `echo $enable_dynrpc | sed -e's/,/ /g'` 
-         do case $i in lsa)
-	  LSA_DYNAMIC_YES=
-	  LSA_DYNAMIC_NO="#"
-          AC_DEFINE(RPC_LSA_DYNAMIC, 1,
-                    [Define to make the LSA pipe dynamic])
-	 ;; samr)
-          SAMR_DYNAMIC_YES=
-          SAMR_DYNAMIC_NO="#"
-	  AC_DEFINE(RPC_SAMR_DYNAMIC, 1, 
-	            [Define to make the SAMR pipe dynamic])
-	 ;; svc)
-          SVC_DYNAMIC_YES=
-          SVC_DYNAMIC_NO="#"
-	  AC_DEFINE(RPC_SVC_DYNAMIC, 1, 
-	            [Define to make the SRVSVC pipe dynamic])
-	 ;; wks)
-          WKS_DYNAMIC_YES=
-          WKS_DYNAMIC_NO="#"
-	  AC_DEFINE(RPC_WKS_DYNAMIC, 1, 
-	            [Define to make the WKSSVC pipe dynamic])
-	 ;; netlog)
-          NETLOG_DYNAMIC_YES=
-          NETLOG_DYNAMIC_NO="#"
-	  AC_DEFINE(RPC_NETLOG_DYNAMIC, 1, 
-	            [Define to make the NETLOGON pipe dynamic])
-	 ;; reg)
-          REG_DYNAMIC_YES=
-          REG_DYNAMIC_NO="#"
-	  AC_DEFINE(RPC_REG_DYNAMIC, 1, 
-	            [Define to make the WINREG pipe dynamic])
-	 ;; spoolss)
-          SPOOLSS_DYNAMIC_YES=
-          SPOOLSS_DYNAMIC_NO="#"
-	  AC_DEFINE(RPC_SPOOLSS_DYNAMIC, 1, 
-	            [Define to make the SPOOLSS pipe dynamic])
-	 ;; dfs)
-          DFS_DYNAMIC_YES=
-          DFS_DYNAMIC_NO="#"
-	  AC_DEFINE(RPC_DFS_DYNAMIC, 1, 
-	            [Define to make the NETDFS pipe dynamic])
-	 ;; echo)
-          ECHO_DYNAMIC_YES=
-          ECHO_DYNAMIC_NO="#"
-	  AC_DEFINE(RPC_ECHO_DYNAMIC, 1, 
-	            [Define to make the ECHO pipe dynamic])
-	 ;; esac
-         done
-fi
-
 dnl Checks for programs.
 AC_PROG_CC
 AC_PROG_INSTALL
 AC_PROG_AWK
 AC_PATH_PROG(PERL, perl)
+
+# compile with optimization and without debugging by default, but
+# allow people to set their own preference.
+if test "x$CFLAGS" = x
+then
+  CFLAGS="-O ${CFLAGS}"
+fi
 
 dnl Check if we use GNU ld
 LD=ld
@@ -341,7 +252,7 @@ if test "x$enable_developer" = xyes; then
 fi
 
 dnl These are preferably build shared, and static if dlopen() is not available
-default_shared_modules="vfs_recycle vfs_audit vfs_extd_audit vfs_fake_perms vfs_netatalk"
+default_shared_modules="vfs_recycle vfs_audit vfs_extd_audit vfs_netatalk"
 
 #
 # Config CPPFLAG settings for strange OS's that must be set
@@ -574,7 +485,7 @@ AC_CHECK_HEADERS(sys/param.h ctype.h sys/wait.h sys/resource.h sys/ioctl.h sys/i
 AC_CHECK_HEADERS(sys/mman.h sys/filio.h sys/priv.h sys/shm.h string.h strings.h stdlib.h sys/socket.h)
 AC_CHECK_HEADERS(sys/mount.h sys/vfs.h sys/fs/s5param.h sys/filsys.h termios.h termio.h)
 AC_CHECK_HEADERS(sys/termio.h sys/statfs.h sys/dustat.h sys/statvfs.h stdarg.h sys/sockio.h)
-AC_CHECK_HEADERS(security/pam_modules.h security/_pam_macros.h ldap.h lber.h dlfcn.h)
+AC_CHECK_HEADERS(security/pam_modules.h security/_pam_macros.h dlfcn.h)
 AC_CHECK_HEADERS(sys/syslog.h syslog.h execinfo.h)
 
 # In valgrind 1.0.x, it's just valgrind.h.  In 1.9.x+ there's a
@@ -1085,7 +996,7 @@ if test "$enable_shared" = "yes"; then
 			;;
 		*aix*) AC_DEFINE(AIX,1,[Whether the host os is aix])
 			BLDSHARED="true"
-			LDSHFLAGS="-Wl,-bexpall,-bM:SRE,-bnoentry"
+			LDSHFLAGS="-Wl,-bexpall,-bM:SRE,-bnoentry,-berok"
 			DYNEXP="-Wl,-brtl,-bexpall"
 			PICFLAG="-O2"
 			if test "${GCC}" != "yes"; then
@@ -2161,7 +2072,13 @@ fi
 AC_MSG_RESULT($with_ads_support)
 
 FOUND_KRB5=no
+KRB5_LIBS=""
 if test x"$with_ads_support" = x"yes"; then
+
+ac_save_CFLAGS="$CFLAGS"
+ac_save_LIBS="$LIBS"
+CFLAGS=""
+LIBS=""
 
   #################################################
   # check for krb5-config from recent MIT and Heimdal kerberos 5
@@ -2319,19 +2236,22 @@ fi
   ########################################################
   # now see if we can find the krb5 libs in standard paths
   # or as specified above
-  AC_CHECK_LIB(krb5, krb5_mk_req_extended, [LIBS="$LIBS -lkrb5";
+  AC_CHECK_LIB(krb5, krb5_mk_req_extended, [KRB5_LIBS="$LIBS -lkrb5";
+		KRB5_CFLAGS="$CFLAGS";
         AC_DEFINE(HAVE_KRB5,1,[Whether KRB5 is available])])
 
   ########################################################
   # now see if we can find the gssapi libs in standard paths
-  AC_CHECK_LIB(gssapi_krb5, gss_display_status, [LIBS="$LIBS -lgssapi_krb5";
+  AC_CHECK_LIB(gssapi_krb5, gss_display_status, [KRB5_LIBS="$KRB5_LIBS -lgssapi_krb5";
         AC_DEFINE(HAVE_GSSAPI,1,[Whether GSSAPI is available])])
 
+LIBS="$ac_save_LIBS"; CFLAGS="$ac_save_CFLAGS"
 fi
 
 ########################################################
 # Compile with LDAP support?
 
+LDAP_OBJ=""
 with_ldap_support=yes
 AC_MSG_CHECKING([whether to use LDAP])
 
@@ -2346,6 +2266,8 @@ AC_ARG_WITH(ldap,
 AC_MSG_RESULT($with_ldap_support)
 
 if test x"$with_ldap_support" = x"yes"; then
+ac_save_LIBS="$LIBS"
+LIBS=""
 
   ##################################################################
   # we might need the lber lib on some systems. To avoid link errors
@@ -2356,7 +2278,9 @@ if test x"$with_ldap_support" = x"yes"; then
   # now see if we can find the ldap libs in standard paths
   if test x$have_ldap != xyes; then
   AC_CHECK_LIB(ldap, ldap_domain2hostlist, [LIBS="$LIBS -lldap";
+	LDAP_OBJ=lib/ldap.o;
 	AC_DEFINE(HAVE_LDAP,1,[Whether ldap is available])])
+	AC_CHECK_HEADERS([ldap.h lber.h], [default_static_modules="$default_static_modules pdb_ldap"])
 
 	########################################################
 	# If we have LDAP, does it's rebind procedure take 2 or 3 arguments?
@@ -2368,19 +2292,29 @@ if test x"$with_ldap_support" = x"yes"; then
 	#include <ldap.h>], [ldap_set_rebind_proc(0, 0, 0);], [pam_ldap_cv_ldap_set_rebind_proc=3], [pam_ldap_cv_ldap_set_rebind_proc=2]) ])
 	AC_DEFINE_UNQUOTED(LDAP_SET_REBIND_PROC_ARGS, $pam_ldap_cv_ldap_set_rebind_proc, [Number of arguments to ldap_set_rebind_proc])
   fi
+  
+LDAP_LIBS="$LIBS";
+LIBS="$ac_save_LIBS";
+else
+    # Can't have ADS support without LDAP
+    if test x"$with_ads_support" = x"yes"; then
+       AC_MSG_ERROR(Active directory support requires LDAP)
+    fi
+fi
+
+if test x"$with_ads_support" = x"yes"; then
+	ADSLIBS="$LDAP_LIBS $KRB5_LIBS"
 fi
 
 ########################################################
 # Compile with MySQL support?
-AM_PATH_MYSQL([0.11.0],[MODULE_MYSQL="bin/pdb_mysql.$SHLIBEXT"],[MODULE_MYSQL=])
+AM_PATH_MYSQL([0.11.0],[default_shared_modules="$default_shared_modules pdb_mysql"],[])
 CFLAGS="$CFLAGS $MYSQL_CFLAGS"
-AC_SUBST(MODULE_MYSQL)
 
 ########################################################
 # Compile with XML support?
-AM_PATH_XML2([2.0.0],[MODULE_XML="bin/pdb_xml.$SHLIBEXT"],[MODULE_XML=])
+AM_PATH_XML2([2.0.0],[default_shared_modules="$default_shared_modules pdb_xml"],[])
 CFLAGS="$CFLAGS $XML_CFLAGS"
-AC_SUBST(MODULE_XML)
 
 #################################################
 # check for automount support
@@ -3427,12 +3361,15 @@ AC_MSG_CHECKING(whether to use included popt)
 if test x"$INCLUDED_POPT" = x"yes"; then
     AC_MSG_RESULT(yes)
     BUILD_POPT='$(POPT_OBJS)'
+	POPTLIBS='$(POPT_OBJS)'
     FLAGS1="-I$srcdir/popt"
 else
     AC_MSG_RESULT(no)
-    LIBS="$LIBS -lpopt"
+	BUILD_POPT=""
+    POPTLIBS="-lpopt"
 fi
 AC_SUBST(BUILD_POPT)
+AC_SUBST(POPTLIBS)
 AC_SUBST(FLAGS1)
 
 #################################################
@@ -3540,7 +3477,6 @@ SMB_SUBSYSTEM(AUTH)
 SMB_MODULE(vfs_recycle, \$(VFS_RECYCLE_OBJ), "bin/recycle.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_audit, \$(VFS_AUDIT_OBJ), "bin/audit.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_extd_audit, \$(VFS_EXTD_AUDIT_OBJ), "bin/extd_audit.$SHLIBEXT", VFS)
-SMB_MODULE(vfs_fake_perms, \$(VFS_FAKE_PERMS_OBJ), "bin/fake_perms.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_netatalk, \$(VFS_NETATALK_OBJ), "bin/netatalk.$SHLIBEXT", VFS)
 SMB_SUBSYSTEM(VFS)
 
