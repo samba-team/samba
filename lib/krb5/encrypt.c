@@ -231,11 +231,16 @@ krb5_encrypt_EncryptedData(krb5_context context,
 			   void *ptr,
 			   size_t len,
 			   int etype,
+			   int kvno,
 			   const krb5_keyblock *keyblock,
 			   EncryptedData *result)
 {
     result->etype = etype;
-    result->kvno = NULL;
+    if(kvno){
+	result->kvno = malloc(sizeof(*result->kvno));
+	*result->kvno = kvno;
+    }else
+	result->kvno = NULL;
     return krb5_encrypt(context, ptr, len, etype, keyblock, &result->cipher);
 }
 
