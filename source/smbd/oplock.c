@@ -1162,7 +1162,7 @@ void release_level_2_oplocks_on_change(files_struct *fsp)
 		}
 	}
 
-	SAFE_FREE((char *)share_list);
+	SAFE_FREE(share_list);
 	unlock_share_entry_fsp(fsp);
 
 	/* Paranoia check... */
