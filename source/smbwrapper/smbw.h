@@ -29,3 +29,29 @@
 #define SMBW_DIR_MODE (S_IFDIR | 0755)
 
 #define SMBW_PWD_ENV "PWD"
+
+
+struct smbw_server {
+	struct smbw_server *next, *prev;
+	struct cli_state cli;
+	char *server_name;
+	char *share_name;
+	dev_t dev;
+};
+
+struct smbw_file {
+	struct smbw_file *next, *prev;
+	int cli_fd, fd;
+	char *fname;
+	off_t offset;
+	struct smbw_server *srv;
+};
+
+struct smbw_dir {
+	struct smbw_dir *next, *prev;
+	int fd;
+	int offset, count, malloced;
+	struct smbw_server *srv;
+	struct file_info *list;
+	char *path;
+};

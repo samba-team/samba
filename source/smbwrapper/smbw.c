@@ -23,42 +23,16 @@
 #include "smbw.h"
 #include "wrapper.h"
 
-static pstring smb_cwd;
-
-struct smbw_server {
-	struct smbw_server *next, *prev;
-	struct cli_state cli;
-	char *server_name;
-	char *share_name;
-	dev_t dev;
-};
-
-struct smbw_file {
-	struct smbw_file *next, *prev;
-	int cli_fd, fd;
-	char *fname;
-	off_t offset;
-	struct smbw_server *srv;
-};
-
-struct smbw_dir {
-	struct smbw_dir *next, *prev;
-	int fd;
-	int offset, count, malloced;
-	struct smbw_server *srv;
-	struct file_info *list;
-	char *path;
-};
+pstring smb_cwd;
 
 static struct smbw_file *smbw_files;
-static struct smbw_dir *smbw_dirs;
 static struct smbw_server *smbw_srvs;
 
-static struct bitmap *file_bmap;
-static pstring local_machine;
+struct bitmap *smbw_file_bmap;
+extern pstring global_myname;
 extern int DEBUGLEVEL;
 
-static int smbw_busy;
+int smbw_busy=0;
 
 /***************************************************** 
 initialise structures
@@ -85,8 +59,8 @@ void smbw_init(void)
 		dbf = fopen(p, "a");
 	}
 
-	file_bmap = bitmap_allocate(SMBW_MAX_OPEN);
-	if (!file_bmap) {
+	smbw_file_bmap = bitmap_allocate(SMBW_MAX_OPEN);
+	if (!smbw_file_bmap) {
 		exit(1);
 	}
 
@@ -100,7 +74,7 @@ void smbw_init(void)
 		exit(1);
 	}
 
-	get_myname(local_machine,NULL);
+	get_myname(global_myname,NULL);
 
 	if ((p=getenv("SMBW_DEBUG"))) {
 		DEBUGLEVEL = atoi(p);
@@ -358,11 +332,13 @@ return a connection to a server (existing or new)
 struct smbw_server *smbw_server(char *server, char *share)
 {
 	struct smbw_server *srv=NULL;
-	static struct cli_state c;
+	struct cli_state c;
 	char *username;
 	char *password;
 	char *workgroup;
 	struct nmb_name called, calling;
+
+	ZERO_STRUCT(c);
 
 	username = getenv("SMBW_USER");
 	if (!username) username = getenv("USER");
@@ -391,7 +367,7 @@ struct smbw_server *smbw_server(char *server, char *share)
 		return NULL;
 	}
 
-	make_nmb_name(&calling, local_machine, 0x0, "");
+	make_nmb_name(&calling, global_myname, 0x0, "");
 	make_nmb_name(&called , server, 0x20, "");
 
 	if (!cli_session_request(&c, &calling, &called)) {
@@ -485,32 +461,6 @@ struct smbw_file *smbw_file(int fd)
 	return NULL;
 }
 
-/***************************************************** 
-map a fd to a smbw_dir structure
-*******************************************************/
-struct smbw_dir *smbw_dir(int fd)
-{
-	struct smbw_dir *dir;
-
-	for (dir=smbw_dirs;dir;dir=dir->next) {
-		if (dir->fd == fd) return dir;
-	}
-	return NULL;
-}
-
-/***************************************************** 
-check if a DIR* is one of ours
-*******************************************************/
-int smbw_dirp(DIR *dirp)
-{
-	struct smbw_dir *d = (struct smbw_dir *)dirp;
-	struct smbw_dir *dir;
-
-	for (dir=smbw_dirs;dir;dir=dir->next) {
-		if (dir == d) return 1;
-	}
-	return 0;
-}
 
 /***************************************************** 
 setup basic info in a stat structure
@@ -538,12 +488,16 @@ void smbw_setup_stat(struct stat *st, char *fname, size_t size, int mode)
 try to do a QPATHINFO and if that fails then do a getatr
 this is needed because win95 sometimes refuses the qpathinfo
 *******************************************************/
-static BOOL smbw_getatr(struct smbw_server *srv, char *path, 
-			uint32 *mode, size_t *size, 
-			time_t *c_time, time_t *a_time, time_t *m_time)
+BOOL smbw_getatr(struct smbw_server *srv, char *path, 
+		 uint32 *mode, size_t *size, 
+		 time_t *c_time, time_t *a_time, time_t *m_time)
 {
+	DEBUG(5,("sending qpathinfo\n"));
+
 	if (cli_qpathinfo(&srv->cli, path, c_time, a_time, m_time,
 			  size, mode)) return True;
+
+	DEBUG(5,("qpathinfo OK\n"));
 
 	/* if this is NT then don't bother with the getatr */
 	if (srv->cli.capabilities & CAP_NT_SMBS) return False;
@@ -554,150 +508,6 @@ static BOOL smbw_getatr(struct smbw_server *srv, char *path,
 	}
 	return False;
 }
-
-/***************************************************** 
-free a smbw_dir structure and all entries
-*******************************************************/
-static void free_dir(struct smbw_dir *dir)
-{
-	if (dir->list) {
-		free(dir->list);
-	}
-	if (dir->path) free(dir->path);
-	ZERO_STRUCTP(dir);
-	free(dir);
-}
-
-
-static struct smbw_dir *cur_dir;
-
-/***************************************************** 
-add a entry to a directory listing
-*******************************************************/
-void smbw_dir_add(struct file_info *finfo)
-{
-	DEBUG(5,("%s\n", finfo->name));
-
-	if (cur_dir->malloced == cur_dir->count) {
-		cur_dir->list = (struct file_info *)Realloc(cur_dir->list, 
-							    sizeof(cur_dir->list[0])*
-							    (cur_dir->count+100));
-		if (!cur_dir->list) {
-			/* oops */
-			return;
-		}
-		cur_dir->malloced += 100;
-	}
-
-	cur_dir->list[cur_dir->count] = *finfo;
-	cur_dir->count++;
-}
-
-/***************************************************** 
-add a entry to a directory listing
-*******************************************************/
-void smbw_share_add(const char *share, uint32 type, const char *comment)
-{
-	struct file_info finfo;
-
-	ZERO_STRUCT(finfo);
-
-	pstrcpy(finfo.name, share);
-	finfo.mode = aRONLY | aDIR;	
-
-	smbw_dir_add(&finfo);
-}
-
-
-/***************************************************** 
-open a directory on the server
-*******************************************************/
-int smbw_dir_open(const char *fname)
-{
-	fstring server, share;
-	pstring path;
-	struct smbw_server *srv=NULL;
-	struct smbw_dir *dir=NULL;
-	pstring mask;
-	int fd;
-	char *s;
-
-	DEBUG(4,("%s\n", __FUNCTION__));
-
-	if (!fname) {
-		errno = EINVAL;
-		return -1;
-	}
-
-	smbw_init();
-
-	/* work out what server they are after */
-	s = smbw_parse_path(fname, server, share, path);
-
-	DEBUG(4,("dir_open share=%s\n", share));
-
-	/* get a connection to the server */
-	srv = smbw_server(server, share);
-	if (!srv) {
-		/* smbw_server sets errno */
-		goto failed;
-	}
-
-	dir = (struct smbw_dir *)malloc(sizeof(*dir));
-	if (!dir) {
-		errno = ENOMEM;
-		goto failed;
-	}
-
-	ZERO_STRUCTP(dir);
-
-	cur_dir = dir;
-
-	slprintf(mask, sizeof(mask)-1, "%s\\*", path);
-	string_sub(mask,"\\\\","\\");
-
-	if (strcmp(share,"IPC$") == 0) {
-		DEBUG(4,("doing NetShareEnum\n"));
-		if (cli_RNetShareEnum(&srv->cli, smbw_share_add) <= 0) {
-			errno = smbw_errno(&srv->cli);
-			goto failed;
-		}
-	} else {
-		if (cli_list(&srv->cli, mask, aHIDDEN|aSYSTEM|aDIR, 
-			     smbw_dir_add) <= 0) {
-			errno = smbw_errno(&srv->cli);
-			goto failed;
-		}
-	}
-
-	cur_dir = NULL;
-	
-	fd = bitmap_find(file_bmap, 0);
-	if (fd == -1) {
-		errno = EMFILE;
-		goto failed;
-	}
-
-	DLIST_ADD(smbw_dirs, dir);
-	
-	bitmap_set(file_bmap, fd);
-
-	dir->fd = fd + SMBW_FD_OFFSET;
-	dir->srv = srv;
-	dir->path = strdup(s);
-
-	DEBUG(4,("  -> %d\n", dir->count));
-
-	return dir->fd;
-
- failed:
-	if (dir) {
-		free_dir(dir);
-	}
-
-	return -1;
-}
-
 
 /***************************************************** 
 a wrapper for open()
@@ -762,14 +572,14 @@ int smbw_open(const char *fname, int flags, mode_t mode)
 		goto failed;
 	}
 	file->srv = srv;
-	file->fd = bitmap_find(file_bmap, 0);
+	file->fd = bitmap_find(smbw_file_bmap, 0);
 
 	if (file->fd == -1) {
 		errno = EMFILE;
 		goto failed;
 	}
 
-	bitmap_set(file_bmap, file->fd);
+	bitmap_set(smbw_file_bmap, file->fd);
 
 	file->fd += SMBW_FD_OFFSET;
 
@@ -792,31 +602,6 @@ int smbw_open(const char *fname, int flags, mode_t mode)
 	}
 	smbw_busy--;
 	return -1;
-}
-
-
-/***************************************************** 
-a wrapper for fstat() on a directory
-*******************************************************/
-int smbw_dir_fstat(int fd, struct stat *st)
-{
-	struct smbw_dir *dir;
-
-	DEBUG(4,("%s\n", __FUNCTION__));
-
-	dir = smbw_dir(fd);
-	if (!dir) {
-		errno = EBADF;
-		return -1;
-	}
-
-	ZERO_STRUCTP(st);
-
-	smbw_setup_stat(st, "", dir->count*sizeof(struct dirent), aDIR);
-
-	st->st_dev = dir->srv->dev;
-
-	return 0;
 }
 
 /***************************************************** 
@@ -989,31 +774,6 @@ ssize_t smbw_write(int fd, void *buf, size_t count)
 }
 
 /***************************************************** 
-close a directory handle
-*******************************************************/
-int smbw_dir_close(int fd)
-{
-	struct smbw_dir *dir;
-
-	DEBUG(4,("%s\n", __FUNCTION__));
-
-	dir = smbw_dir(fd);
-	if (!dir) {
-		DEBUG(4,("%s(%d)\n", __FUNCTION__, __LINE__));
-		errno = EBADF;
-		return -1;
-	}
-
-	bitmap_clear(file_bmap, dir->fd - SMBW_FD_OFFSET);
-	
-	DLIST_REMOVE(smbw_dirs, dir);
-
-	free_dir(dir);
-
-	return 0;
-}
-
-/***************************************************** 
 a wrapper for close()
 *******************************************************/
 int smbw_close(int fd)
@@ -1038,7 +798,7 @@ int smbw_close(int fd)
 	}
 
 
-	bitmap_clear(file_bmap, file->fd - SMBW_FD_OFFSET);
+	bitmap_clear(smbw_file_bmap, file->fd - SMBW_FD_OFFSET);
 	
 	DLIST_REMOVE(smbw_files, file);
 
@@ -1059,45 +819,6 @@ int smbw_fcntl(int fd, int cmd, long arg)
 {
 	DEBUG(4,("%s\n", __FUNCTION__));
 	return 0;
-}
-
-
-/***************************************************** 
-a wrapper for getdents()
-*******************************************************/
-int smbw_getdents(unsigned int fd, struct dirent *dirp, int count)
-{
-	struct smbw_dir *dir;
-	int n=0;
-
-	DEBUG(4,("%s\n", __FUNCTION__));
-
-	smbw_busy++;
-
-	dir = smbw_dir(fd);
-	if (!dir) {
-		errno = EBADF;
-		smbw_busy--;
-		return -1;
-	}
-	
-	while (count>=sizeof(*dirp) && (dir->offset < dir->count)) {
-		dirp->d_off = (dir->offset+1)*sizeof(*dirp);
-		dirp->d_reclen = sizeof(*dirp);
-		safe_strcpy(&dirp->d_name[0], dir->list[dir->offset].name, 
-			    sizeof(dirp->d_name)-1);
-		dirp->d_ino = smbw_inode(dir->list[dir->offset].name);
-		dir->offset++;
-		count -= dirp->d_reclen;
-		if (dir->offset == dir->count) {
-			dirp->d_off = -1;
-		}
-		dirp++;
-		n++;
-	}
-
-	smbw_busy--;
-	return n*sizeof(*dirp);
 }
 
 
@@ -1129,84 +850,6 @@ int smbw_readlink(const char *path, char *buf, size_t bufsize)
 	DEBUG(4,("readlink(%s) not a link\n", path));
 
 	errno = EINVAL;
-	return -1;
-}
-
-
-/***************************************************** 
-a wrapper for chdir()
-*******************************************************/
-int smbw_chdir(const char *name)
-{
-	struct smbw_server *srv;
-	fstring server, share;
-	pstring path;
-	uint32 mode = aDIR;
-	char *cwd;
-
-	smbw_init();
-
-	if (smbw_busy) return real_chdir(cwd);
-
-	smbw_busy++;
-
-	if (!name) {
-		errno = EINVAL;
-		goto failed;
-	}
-
-	DEBUG(4,("%s (%s)\n", __FUNCTION__, name));
-
-	/* work out what server they are after */
-	cwd = smbw_parse_path(name, server, share, path);
-
-	if (strncmp(cwd,SMBW_PREFIX,strlen(SMBW_PREFIX))) {
-		if (real_chdir(cwd) == 0) {
-			DEBUG(4,("set SMBW_CWD to %s\n", cwd));
-			pstrcpy(smb_cwd, cwd);
-			if (setenv(SMBW_PWD_ENV, smb_cwd, 1)) {
-				DEBUG(4,("setenv failed\n"));
-			}
-			goto success;
-		}
-		errno = ENOENT;
-		goto failed;
-	}
-
-	/* get a connection to the server */
-	srv = smbw_server(server, share);
-	if (!srv) {
-		/* smbw_server sets errno */
-		goto failed;
-	}
-
-	if (strcmp(share,"IPC$") &&
-	    !smbw_getatr(srv, path, 
-			 &mode, NULL, NULL, NULL, NULL)) {
-		errno = smbw_errno(&srv->cli);
-		goto failed;
-	}
-
-	if (!(mode & aDIR)) {
-		errno = ENOTDIR;
-		goto failed;
-	}
-
-	DEBUG(4,("set SMBW_CWD2 to %s\n", cwd));
-	pstrcpy(smb_cwd, cwd);
-	if (setenv(SMBW_PWD_ENV, smb_cwd, 1)) {
-		DEBUG(4,("setenv failed\n"));
-	}
-
-	/* we don't want the old directory to be busy */
-	real_chdir("/");
-
- success:
-	smbw_busy--;
-	return 0;
-
- failed:
-	smbw_busy--;
 	return -1;
 }
 
@@ -1449,44 +1092,6 @@ int smbw_chmod(const char *fname, mode_t newmode)
 	return -1;
 }
 
-
-/***************************************************** 
-a wrapper for lseek() on directories
-*******************************************************/
-off_t smbw_dir_lseek(int fd, off_t offset, int whence)
-{
-	struct smbw_dir *dir;
-	off_t ret;
-
-	DEBUG(4,("%s offset=%d whence=%d\n", __FUNCTION__, 
-		 (int)offset, whence));
-
-	dir = smbw_dir(fd);
-	if (!dir) {
-		errno = EBADF;
-		return -1;
-	}
-
-	switch (whence) {
-	case SEEK_SET:
-		dir->offset = offset/sizeof(struct dirent);
-		break;
-	case SEEK_CUR:
-		dir->offset += offset/sizeof(struct dirent);
-		break;
-	case SEEK_END:
-		dir->offset = (dir->count * sizeof(struct dirent)) + offset;
-		dir->offset /= sizeof(struct dirent);
-		break;
-	}
-
-	ret = dir->offset * sizeof(struct dirent);
-
-	DEBUG(4,("   -> %d\n", (int)ret));
-
-	return ret;
-}
-
 /***************************************************** 
 a wrapper for lseek()
 *******************************************************/
@@ -1530,206 +1135,3 @@ off_t smbw_lseek(int fd, off_t offset, int whence)
 	return file->offset;
 }
 
-
-/***************************************************** 
-a wrapper for mkdir()
-*******************************************************/
-int smbw_mkdir(const char *fname, mode_t mode)
-{
-	struct smbw_server *srv;
-	fstring server, share;
-	pstring path;
-
-	DEBUG(4,("%s (%s)\n", __FUNCTION__, fname));
-
-	if (!fname) {
-		errno = EINVAL;
-		return -1;
-	}
-
-	smbw_init();
-
-	smbw_busy++;
-
-	/* work out what server they are after */
-	smbw_parse_path(fname, server, share, path);
-
-	/* get a connection to the server */
-	srv = smbw_server(server, share);
-	if (!srv) {
-		/* smbw_server sets errno */
-		goto failed;
-	}
-
-	if (!cli_mkdir(&srv->cli, path)) {
-		errno = smbw_errno(&srv->cli);
-		goto failed;
-	}
-
-	smbw_busy--;
-	return 0;
-
- failed:
-	smbw_busy--;
-	return -1;
-}
-
-/***************************************************** 
-a wrapper for rmdir()
-*******************************************************/
-int smbw_rmdir(const char *fname)
-{
-	struct smbw_server *srv;
-	fstring server, share;
-	pstring path;
-
-	DEBUG(4,("%s (%s)\n", __FUNCTION__, fname));
-
-	if (!fname) {
-		errno = EINVAL;
-		return -1;
-	}
-
-	smbw_init();
-
-	smbw_busy++;
-
-	/* work out what server they are after */
-	smbw_parse_path(fname, server, share, path);
-
-	/* get a connection to the server */
-	srv = smbw_server(server, share);
-	if (!srv) {
-		/* smbw_server sets errno */
-		goto failed;
-	}
-
-	if (!cli_rmdir(&srv->cli, path)) {
-		errno = smbw_errno(&srv->cli);
-		goto failed;
-	}
-
-	smbw_busy--;
-	return 0;
-
- failed:
-	smbw_busy--;
-	return -1;
-}
-
-
-/***************************************************** 
-a wrapper for getcwd()
-*******************************************************/
-char *smbw_getcwd(char *buf, size_t size)
-{
-	smbw_init();
-
-	if (smbw_busy) {
-		return __getcwd(buf, size);
-	}
-
-	smbw_busy++;
-
-	if (!buf) {
-		if (size <= 0) size = strlen(smb_cwd)+1;
-		buf = (char *)malloc(size);
-		if (!buf) {
-			errno = ENOMEM;
-			smbw_busy--;
-			return NULL;
-		}
-	}
-
-	if (strlen(smb_cwd) > size-1) {
-		errno = ERANGE;
-		smbw_busy--;
-		return NULL;
-	}
-
-	safe_strcpy(buf, smb_cwd, size);
-
-	smbw_busy--;
-	return buf;
-}
-
-/***************************************************** 
-a wrapper for fchdir()
-*******************************************************/
-int smbw_fchdir(unsigned int fd)
-{
-	struct smbw_dir *dir;
-
-	DEBUG(4,("%s\n", __FUNCTION__));
-
-	smbw_busy++;
-
-	dir = smbw_dir(fd);
-	if (!dir) {
-		errno = EBADF;
-		smbw_busy--;
-		return -1;
-	}	
-
-	smbw_busy--;
-	
-	return chdir(dir->path);
-}
-
-/***************************************************** 
-open a directory on the server
-*******************************************************/
-DIR *smbw_opendir(const char *fname)
-{
-	int fd;
-
-	smbw_busy++;
-
-	fd = smbw_dir_open(fname);
-
-	if (fd == -1) {
-		smbw_busy--;
-		return NULL;
-	}
-
-	smbw_busy--;
-
-	return (DIR *)smbw_dir(fd);
-}
-
-/***************************************************** 
-read one entry from a directory
-*******************************************************/
-struct dirent *smbw_readdir(struct smbw_dir *d)
-{
-	static struct dirent de;
-
-	if (smbw_getdents(d->fd, &de, sizeof(struct dirent)) > 0) 
-		return &de;
-
-	return NULL;
-}
-
-/***************************************************** 
-close a DIR*
-*******************************************************/
-int smbw_closedir(struct smbw_dir *d)
-{
-	return smbw_close(d->fd);
-}
-
-/***************************************************** 
-seek in a directory
-*******************************************************/
-void smbw_seekdir(struct smbw_dir *d, off_t offset)
-{
-	smbw_dir_lseek(d->fd,offset, SEEK_SET);
-}
-
-/***************************************************** 
-current loc in a directory
-*******************************************************/
-off_t smbw_telldir(struct smbw_dir *d)
-{
-	return smbw_dir_lseek(d->fd,0,SEEK_CUR);
-}
