@@ -3832,7 +3832,7 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd);
 /*The following definitions come from  smbd/vfs-wrap.c  */
 
 int vfswrap_dummy_connect(connection_struct *conn, char *service, char *user);
-void vfswrap_dummy_disconnect(void);
+void vfswrap_dummy_disconnect(connection_struct *conn);
 SMB_BIG_UINT vfswrap_disk_free(connection_struct *conn, char *path, BOOL small_query, SMB_BIG_UINT *bsize, 
 			       SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize);
 DIR *vfswrap_opendir(connection_struct *conn, char *fname);

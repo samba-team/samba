@@ -34,7 +34,7 @@ int vfswrap_dummy_connect(connection_struct *conn, char *service, char *user)
     return 0;    /* Return >= 0 for success */
 }
 
-void vfswrap_dummy_disconnect(void)
+void vfswrap_dummy_disconnect(connection_struct *conn)
 {
 }
 
