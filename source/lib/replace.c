@@ -447,7 +447,7 @@ char *rep_inet_ntoa(struct in_addr ip)
 	tm2.tm_isdst = tm3.tm_isdst;
 	t = mktime(&tm2);
 	if (zone == -1) {
-		zone = get_time_zone();
+		zone = get_time_zone(t);
 	}
 	t -= zone;
 
