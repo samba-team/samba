@@ -2959,7 +2959,7 @@ void make_samr_q_add_aliasmem(SAMR_Q_ADD_ALIASMEM *q_u, POLICY_HND *hnd,
 	DEBUG(5,("make_samr_q_add_aliasmem\n"));
 
 	memcpy(&(q_u->alias_pol), hnd, sizeof(q_u->alias_pol));
-	sid_copy(&q_u->sid, sid);
+	make_dom_sid2(&q_u->sid, sid);
 }
 
 
@@ -2975,8 +2975,8 @@ void samr_io_q_add_aliasmem(char *desc,  SAMR_Q_ADD_ALIASMEM *q_u, prs_struct *p
 
 	prs_align(ps);
 
-	smb_io_pol_hnd("alias_pol", &(q_u->alias_pol), ps, depth); 
-	smb_io_dom_sid("sid      ", &(q_u->sid      ), ps, depth); 
+	smb_io_pol_hnd ("alias_pol", &(q_u->alias_pol), ps, depth); 
+	smb_io_dom_sid2("sid      ", &(q_u->sid      ), ps, depth); 
 }
 
 /*******************************************************************
