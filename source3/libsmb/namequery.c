@@ -202,7 +202,7 @@ BOOL name_status_find(const char *q_name, int q_type, int type, struct in_addr t
 	if (i == count)
 		goto done;
 
-	pull_ascii(name, status[i].name, 16, 15, STR_TERMINATE);
+	pull_ascii_nstring(name, status[i].name);
 
 	/* Store the result in the cache. */
 	/* but don't store an entry for 0x1c names here.  Here we have 
