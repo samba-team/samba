@@ -1,3 +1,7 @@
+Thu Mar 18 11:22:28 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* Makefile.am: include Makefile.am.common
+
 Mon Mar 15 17:36:41 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* rnd_keys.c (des_rand_data): if not using setitimer, block
