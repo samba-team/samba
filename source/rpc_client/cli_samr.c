@@ -362,7 +362,7 @@ BOOL do_samr_open_user(struct cli_state *cli, int t_idx, uint16 fnum,
 do a SAMR Open Domain
 ****************************************************************************/
 BOOL do_samr_open_domain(struct cli_state *cli, int t_idx, uint16 fnum, 
-				POLICY_HND *connect_pol, uint32 rid, char *sid,
+				POLICY_HND *connect_pol, uint32 rid, DOM_SID *sid,
 				POLICY_HND *domain_pol)
 {
 	prs_struct data;

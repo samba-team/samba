@@ -247,8 +247,8 @@ void lsa_io_q_enum_trust_dom(char *desc,  LSA_Q_ENUM_TRUST_DOM *q_e, prs_struct 
 makes an LSA_R_ENUM_TRUST_DOM structure.
 ********************************************************************/
 void make_r_enum_trust_dom(LSA_R_ENUM_TRUST_DOM *r_e,
-				uint32 enum_context, char *domain_name, char *domain_sid,
-				uint32 status)
+                           uint32 enum_context, char *domain_name, DOM_SID *domain_sid,
+                           uint32 status)
 {
 	if (r_e == NULL) return;
 

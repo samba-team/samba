@@ -79,57 +79,74 @@ rid_name domain_group_rids[] =
 };
 
 
-int make_dom_gids(char *gids_str, DOM_GID *gids)
+int make_dom_gids(char *gids_str, DOM_GID **ppgids)
 {
-	char *ptr;
-	pstring s2;
-	int count;
+  char *ptr;
+  pstring s2;
+  int count;
+  DOM_GID *gids;
 
-	DEBUG(4,("make_dom_gids: %s\n", gids_str));
+  *ppgids = NULL;
 
-	if (gids_str == NULL || *gids_str == 0) return 0;
+  DEBUG(4,("make_dom_gids: %s\n", gids_str));
 
-	for (count = 0, ptr = gids_str; next_token(&ptr, s2, NULL) && count < LSA_MAX_GROUPS; count++) 
-	{
-		/* the entries are of the form GID/ATTR, ATTR being optional.*/
-		char *attr;
-		uint32 rid = 0;
-		int i;
+  if (gids_str == NULL || *gids_str == 0)
+    return 0;
 
-		attr = strchr(s2,'/');
-		if (attr) *attr++ = 0;
-		if (!attr || !*attr) attr = "7"; /* default value for attribute is 7 */
+  for (count = 0, ptr = gids_str; next_token(&ptr, s2, NULL); count++)
+    ;
 
-		/* look up the RID string and see if we can turn it into a rid number */
-		for (i = 0; domain_alias_rids[i].name != NULL; i++)
-		{
-			if (strequal(domain_alias_rids[i].name, s2))
-			{
-				rid = domain_alias_rids[i].rid;
-				break;
-			}
-		}
+  gids = (DOM_GID *)malloc( sizeof(DOM_GID) * count );
+  if(!gids)
+  {
+    DEBUG(0,("make_dom_gids: malloc fail !\n"));
+    return 0;
+  }
 
-		if (rid == 0) rid = atoi(s2);
+  for (count = 0, ptr = gids_str; next_token(&ptr, s2, NULL) && 
+                       count < LSA_MAX_GROUPS; count++) 
+  {
+    /* the entries are of the form GID/ATTR, ATTR being optional.*/
+    char *attr;
+    uint32 rid = 0;
+    int i;
 
-		if (rid == 0)
-		{
-			DEBUG(1,("make_dom_gids: unknown well-known alias RID %s/%s\n",
-			          s2, attr));
-			count--;
-		}
-		else
-		{
-			gids[count].g_rid = rid;
-			gids[count].attr  = atoi(attr);
+    attr = strchr(s2,'/');
+    if (attr)
+      *attr++ = 0;
 
-			DEBUG(5,("group id: %d attr: %d\n",
-			          gids[count].g_rid,
-			          gids[count].attr));
-		}
-	}
+    if (!attr || !*attr)
+      attr = "7"; /* default value for attribute is 7 */
 
-	return count;
+    /* look up the RID string and see if we can turn it into a rid number */
+    for (i = 0; domain_alias_rids[i].name != NULL; i++)
+    {
+      if (strequal(domain_alias_rids[i].name, s2))
+      {
+        rid = domain_alias_rids[i].rid;
+        break;
+      }
+    }
+
+    if (rid == 0)
+      rid = atoi(s2);
+
+    if (rid == 0)
+    {
+      DEBUG(1,("make_dom_gids: unknown well-known alias RID %s/%s\n", s2, attr));
+      count--;
+    }
+    else
+    {
+      gids[count].g_rid = rid;
+      gids[count].attr  = atoi(attr);
+
+      DEBUG(5,("group id: %d attr: %d\n", gids[count].g_rid, gids[count].attr));
+    }
+  }
+
+  *ppgids = gids;
+  return count;
 }
 
 /*******************************************************************

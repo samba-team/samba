@@ -427,13 +427,13 @@ BOOL chgpasswd(char *name,char *oldpass,char *newpass, BOOL as_root)
   return(chat_with_program(passwordprogram,name,chatsequence, as_root));
 }
 
-#else
+#else /* ALLOW_CHANGE_PASSWORD */
 BOOL chgpasswd(char *name,char *oldpass,char *newpass, BOOL as_root)
 {
   DEBUG(0,("Password changing not compiled in (user=%s)\n",name));
   return(False);
 }
-#endif
+#endif /* ALLOW_CHANGE_PASSWORD */
 
 /***********************************************************
  Code to check the lanman hashed password.

@@ -78,7 +78,7 @@ void samr_io_r_close_hnd(char *desc,  SAMR_R_CLOSE_HND *r_u, prs_struct *ps, int
 reads or writes a structure.
 ********************************************************************/
 void make_samr_q_open_domain(SAMR_Q_OPEN_DOMAIN *q_u,
-				POLICY_HND *connect_pol, uint32 rid, char *sid)
+				POLICY_HND *connect_pol, uint32 rid, DOM_SID *sid)
 {
 	if (q_u == NULL) return;
 
@@ -204,11 +204,11 @@ void samr_io_q_unknown_3(char *desc,  SAMR_Q_UNKNOWN_3 *q_u, prs_struct *ps, int
 
  calculate length by adding up the size of the components.
  ********************************************************************/
-void make_dom_sid3(DOM_SID3 *sid3, uint16 unk_0, uint16 unk_1, char *sid)
+void make_dom_sid3(DOM_SID3 *sid3, uint16 unk_0, uint16 unk_1, char *sidstr)
 {
 	if (sid3 == NULL) return;
 
-	make_dom_sid(&(sid3->sid), sid);
+	string_to_sid(&(sid3->sid), sidstr);
 	sid3->len = 2 + 8 + sid3->sid.num_auths * 4;
 }
 
