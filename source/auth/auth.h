@@ -85,10 +85,10 @@ struct auth_serversupplied_info
 	NTTIME allow_password_change;
 	NTTIME force_password_change;
 
-	uint16 logon_count;
-	uint16 bad_password_count;
+	uint16_t logon_count;
+	uint16_t bad_password_count;
 
-	uint32 acct_flags;
+	uint32_t acct_flags;
 
 	BOOL authenticated;
 };

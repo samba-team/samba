@@ -1328,7 +1328,7 @@ const char *dcerpc_server_name(struct dcerpc_pipe *p)
 /*
   get the dcerpc auth_level for a open connection
 */
-uint32 dcerpc_auth_level(struct dcerpc_connection *c) 
+uint32_t dcerpc_auth_level(struct dcerpc_connection *c) 
 {
 	uint8_t auth_level;
 

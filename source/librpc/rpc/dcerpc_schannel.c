@@ -501,7 +501,7 @@ NTSTATUS dcerpc_bind_auth_schannel(struct dcerpc_pipe *p,
 }
 
 static BOOL dcerpc_schannel_have_feature(struct gensec_security *gensec_security,
-					  uint32 feature)
+					  uint32_t feature)
 {
 	if (feature & (GENSEC_FEATURE_SESSION_KEY | 
 		       GENSEC_FEATURE_SIGN | 

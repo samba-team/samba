@@ -97,7 +97,7 @@ NTSTATUS pvfs_fill_dos_info(struct pvfs_state *pvfs, struct pvfs_filename *name,
 /*
   return a set of unix file permissions for a new file or directory
 */
-mode_t pvfs_fileperms(struct pvfs_state *pvfs, uint32 attrib)
+mode_t pvfs_fileperms(struct pvfs_state *pvfs, uint32_t attrib)
 {
 	mode_t mode = S_IRUSR;
 

@@ -1220,7 +1220,7 @@ BOOL ldap_decode(struct asn1_data *data, struct ldap_message *msg)
 }
 
 BOOL ldap_parse_basic_url(TALLOC_CTX *mem_ctx, const char *url,
-			  char **host, uint16 *port, BOOL *ldaps)
+			  char **host, uint16_t *port, BOOL *ldaps)
 {
 	int tmp_port = 0;
 	char protocol[11];

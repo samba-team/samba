@@ -525,7 +525,7 @@ NTSTATUS brl_remove_pending(struct brl_context *brl,
 NTSTATUS brl_locktest(struct brl_context *brl,
 		      DATA_BLOB *file_key, 
 		      uint16_t fnum,
-		      uint16 smbpid, 
+		      uint16_t smbpid, 
 		      uint64_t start, uint64_t size, 
 		      enum brl_type lock_type)
 {

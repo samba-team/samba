@@ -219,7 +219,7 @@ static NTSTATUS smb_send_trans_request(struct dcerpc_connection *c, DATA_BLOB *b
 {
         struct smb_private *smb = c->transport.private;
         struct smb_trans2 *trans;
-        uint16 setup[2];
+        uint16_t setup[2];
 	struct smb_trans_state *state;
 
 	state = talloc(smb, struct smb_trans_state);
