@@ -1308,7 +1308,7 @@ static void close_filestruct(files_struct *fsp)
 {   
 	connection_struct *conn = fsp->conn;
     
-	file_free(fsp); 
+	fsp->reserved = False;
 	fsp->open = False;
 	fsp->is_directory = False; 
     
@@ -1388,22 +1388,21 @@ void close_file(files_struct *fsp, BOOL normal_close)
   
 void close_directory(files_struct *fsp)
 {
+	/* TODO - walk the list of pending
+	   change notify requests and free
+	   any pertaining to this fsp. */
 
-  /* TODO - walk the list of pending
-     change notify requests and free
-     any pertaining to this fsp. */
+	remove_pending_change_notify_requests_by_fid(fsp);
 
-  remove_pending_change_notify_requests_by_fid(fsp);
-
-  /*
-   * Do the code common to files and directories.
-   */
-  close_filestruct(fsp);
-
-  if (fsp->fsp_name)
-    string_free(&fsp->fsp_name);
-
-  file_free(fsp);
+	/*
+	 * Do the code common to files and directories.
+	 */
+	close_filestruct(fsp);
+	
+	if (fsp->fsp_name)
+		string_free(&fsp->fsp_name);
+	
+	file_free(fsp);
 }
 
 /****************************************************************************
