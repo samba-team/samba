@@ -115,6 +115,7 @@ krb5_error_code do_version4(unsigned char*, size_t, krb5_data*,
 
 void loop (void);
 
+void kdc_openlog(krb5_config_section *cf);
 void kdc_log(int, const char *fmt, ...);
 char* kdc_log_msg_va(int, const char*, va_list);
 char* kdc_log_msg(int, const char*, ...);

@@ -41,13 +41,27 @@ RCSID("$Id$");
 
 static krb5_log_facility *logf;
 
+void
+kdc_openlog(krb5_config_section *cf)
+{
+    char **s, **p;
+    krb5_initlog(context, "kdc", &logf);
+    s = krb5_config_get_strings(cf, "kdc", "logging", NULL);
+
+    if(s == NULL)
+	s = krb5_config_get_strings(context->cf, "logging", "kdc", NULL);
+    if(s){
+	for(p = s; *p; p++)
+	    krb5_addlog_dest(context, logf, *p);
+	krb5_config_free_strings(s);
+    }else
+	krb5_addlog_dest(context, logf, "0-1/FILE:" HDB_DB_DIR "/kdc.log");
+}
+
 char*
 kdc_log_msg_va(int level, const char *fmt, va_list ap)
 {
     char *msg;
-    if(logf == NULL)
-	krb5_openlog(context, "kdc", &logf);
-    
     krb5_vlog_msg(context, logf, &msg, level, fmt, ap);
     return msg;
 }

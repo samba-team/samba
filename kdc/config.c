@@ -111,7 +111,7 @@ configure(int argc, char **argv)
     }
     
     if(config_file == NULL)
-	config_file = "kdc.conf";
+	config_file = HDB_DB_DIR "/kdc.conf";
     
     if(krb5_config_parse_file(config_file, &cf))
 	goto end;
@@ -171,6 +171,7 @@ configure(int argc, char **argv)
     else
 	kdc_warn_pwexpire = 0;
     
+    kdc_openlog(cf);
     krb5_config_file_free (cf);
 end:
     if(max_request == 0)
