@@ -1,7 +1,7 @@
 /* 
  *  Unix SMB/Netbios implementation.
  *  Version 3.0
- *  Routines to change 
+ *  Routines to change trust account passwords.
  *  Copyright (C) Andrew Bartlett                   2001.
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -113,4 +113,3 @@ NTSTATUS trust_pw_find_change_and_store_it(struct cli_state *cli, TALLOC_CTX *me
 	return trust_pw_change_and_store_it(cli, mem_ctx, old_trust_passwd_hash);
 	
 }					 
-
