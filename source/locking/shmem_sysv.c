@@ -33,11 +33,7 @@ extern int DEBUGLEVEL;
 #define SHM_MAGIC 0x53484100
 #define SHM_VERSION 2
 
-#ifdef SHM_R
 #define IPC_PERMS ((SHM_R | SHM_W) | (SHM_R>>3) | (SHM_R>>6))
-#else
-#define IPC_PERMS 0644
-#endif
 
 
 #ifdef SECURE_SEMAPHORES

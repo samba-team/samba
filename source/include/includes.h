@@ -46,16 +46,12 @@
 #endif
 
 
-/* if we have both SYSV IPC and shared mmap then we need to choose. For most
-   systems it is much faster to use SYSV IPC, but under Linux it is
-   about 5 times faster to use fcntl, so for Linux systems we force
-   fcntl based locking */
+/* if we have both SYSV IPC and shared mmap then we need to
+   choose. For most systems it is much faster to use SYSV IPC. We used
+   to make an exception for Linux, but now Linux 2.2 has made it
+   better to use sysv if possible */
 #if (defined(HAVE_SYSV_IPC) && defined(HAVE_SHARED_MMAP))
-# ifdef LINUX
-#  undef HAVE_SYSV_IPC
-# else
 #  undef HAVE_SHARED_MMAP
-# endif
 #endif
 
 
@@ -572,6 +568,10 @@ extern int errno;
 
 #include "nterr.h"
 
+#ifdef WITH_PROFILE
+#include "profile.h"
+#endif
+
 #ifndef MAXCODEPAGELINES
 #define MAXCODEPAGELINES 256
 #endif
@@ -703,6 +703,14 @@ union semun {
 
 #ifndef O_ACCMODE
 #define O_ACCMODE (O_RDONLY | O_WRONLY | O_RDWR)
+#endif
+
+#ifndef SHM_R
+#define SHM_R (0400)
+#endif
+
+#ifndef SHM_W
+#define SHM_W (0200)
 #endif
 
 #if defined(HAVE_CRYPT16) && defined(HAVE_GETAUTHUID)

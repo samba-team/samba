@@ -875,6 +875,25 @@ AC_ARG_WITH(syslog,
 )
 
 #################################################
+# check for a shared memory profiling support
+AC_MSG_CHECKING(whether to use profiling)
+AC_ARG_WITH(profile,
+[  --with-profile     Include profile support
+  --without-profile  Don't include profile support (default)],
+[ case "$withval" in
+  yes)
+    AC_MSG_RESULT(yes)
+    AC_DEFINE(WITH_PROFILE)
+    ;;
+  *)
+    AC_MSG_RESULT(no)
+    ;;
+  esac ],
+  AC_MSG_RESULT(no)
+)
+
+
+#################################################
 # check for experimental netatalk resource fork support
 AC_MSG_CHECKING(whether to support netatalk)
 AC_ARG_WITH(netatalk,

@@ -618,7 +618,14 @@ static void usage(char *pname)
 		return(-1);	
 
 	init_structs();
-	
+
+#ifdef WITH_PROFILE
+	if (!profile_setup(False)) {
+		DEBUG(0,("ERROR: failed to setup profiling\n"));
+		return -1;
+	}
+#endif
+
 	/*
 	 * Set the machine NETBIOS name if not already
 	 * set from the config file.
