@@ -23,13 +23,14 @@
 
 int net_rpc_usage(int argc, const char **argv) 
 {
-	d_printf("\nNot implemented\n");
+	d_printf("  net rpc join \tto join a domin \n");
 	return -1;
 }
 
 int net_rpc(int argc, const char **argv)
 {
 	struct functable func[] = {
+		{"join", net_rpc_join},
 		{NULL, NULL}
 	};
 	return net_run_function(argc, argv, func, net_rpc_usage);

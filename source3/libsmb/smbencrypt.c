@@ -262,27 +262,20 @@ void SMBsesskeygen_ntv1(const uchar kr[16],
 }
 
 /***********************************************************
- encode a password buffer
+ encode a password buffer.  The caller gets to figure out 
+ what to put in it.
 ************************************************************/
-BOOL encode_pw_buffer(char buffer[516], const char *new_pass,
-		      int new_pw_len, BOOL nt_pass_set)
+BOOL encode_pw_buffer(char buffer[516], char *new_pw, int new_pw_length)
 {
 	generate_random_buffer((unsigned char *)buffer, 516, True);
 
-	if (nt_pass_set) {
-		new_pw_len *= 2;
-		push_ucs2(NULL, &buffer[512 - new_pw_len], new_pass,
-			  new_pw_len, 0);
-	} else {
-		push_ascii(&buffer[512 - new_pw_len], new_pass,
-			   new_pw_len, 0);
-	}
+	memcpy(&buffer[512 - new_pw_length], new_pw, new_pw_length);
 
 	/* 
 	 * The length of the new password is in the last 4 bytes of
 	 * the data buffer.
 	 */
-	SIVAL(buffer, 512, new_pw_len);
+	SIVAL(buffer, 512, new_pw_length);
 
 	return True;
 }

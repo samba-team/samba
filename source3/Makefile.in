@@ -320,7 +320,10 @@ CLIENT_OBJ = client/client.o client/clitar.o \
              $(READLINE_OBJ)
 
 NET_OBJ = utils/net.o utils/net_ads.o utils/net_rap.o utils/net_rpc.o \
-	$(LIBSMB_OBJ) $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ)
+	utils/net_rpc_join.o \
+	$(LIBSMB_OBJ) $(LIBMSRPC_OBJ) $(RPC_PARSE_OBJ) $(PASSDB_OBJ) \
+	$(GROUPDB_OBJ) $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
+	$(NECESSARY_BECAUSE_SAMBA_DEPENDENCIES_ARE_SO_BROKEN_OBJ)
 
 CUPS_OBJ = client/smbspool.o $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) $(LIB_OBJ)
 
