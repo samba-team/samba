@@ -784,7 +784,7 @@ is one of our (WINS server) names. Denying registration.\n", namestr(question) )
   if(namerec != NULL)
   {
     char ud[sizeof(struct userdata_struct) + sizeof(struct packet_struct *)];
-    struct userdata_struct *userdata = (struct userdata_struct *)&ud;
+    struct userdata_struct *userdata = (struct userdata_struct *)ud;
 
     /*
      * First send a WACK to the registering machine.
@@ -1059,7 +1059,7 @@ is one of our (WINS server) names. Denying registration.\n", namestr(question) )
   if(namerec != NULL)
   {
     char ud[sizeof(struct userdata_struct) + sizeof(struct packet_struct *)];
-    struct userdata_struct *userdata = (struct userdata_struct *)&ud;
+    struct userdata_struct *userdata = (struct userdata_struct *)ud;
 
     /*
      * First send a WACK to the registering machine.
@@ -1202,7 +1202,7 @@ void send_wins_name_query_response(int rcode, struct packet_struct *p,
 
   if(rcode == 0)
   {
-    int same_net_index;
+    int same_net_index = -1;
 
     ttl = (namerec->death_time != PERMANENT_TTL) ?
              namerec->death_time - p->timestamp : lp_max_wins_ttl();
@@ -1229,7 +1229,6 @@ void send_wins_name_query_response(int rcode, struct packet_struct *p,
        * ones we know the netmask for.
        */
 
-      same_net_index = -1;
       i = 0;
 
       if(is_local_net(p->ip))

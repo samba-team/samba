@@ -320,6 +320,23 @@ Printer: humprn@hum-fak (printing disabled)
   Status: finished operations at Fri Jun 21 10:10:32 1996
  Rank  Owner           Class Job Files                           Size Time
 1      magnus@hum-fak      A 387 /var/spool/smb/netbudget.xls    21230 10:50:53
+
+******************************************************************************
+
+NEW FOR LPRng-3.3.5 !
+
+<reinelt@eunet.at> 
+This will not happen anymore: with LPRng-3.3.5 there is always a blank between
+the filename and the size, and the format has changed:
+
+Printer: lj6@lizard  'HP LaserJet 6P'
+ Queue: 2 printable jobs
+ Server: pid 11941 active
+ Unspooler: pid 11942 active
+ Status: printed all 1818 bytes at 19:49:59
+ Rank   Owner/ID                   Class Job  Files               Size Time
+active  root@lizard+937                A  937 (stdin)            1818 19:49:58
+2       root@lizard+969                A  969 junk.txt           2170 19:50:12
  
 ****************************************************************************/
 static BOOL parse_lpq_lprng(char *line,print_queue_struct *buf,BOOL first)
@@ -367,6 +384,12 @@ LPRng source changes.  This is from version 2.3.0.  Magnus  */
   string tok[LPRNG_NTOK];
   int count=0;
 
+#ifdef OLD_LPRNG
+/* We only need this bugfix for older versions of lprng - current
+   information is that version 3.3.5 must not have this line
+   in order to work correctly.
+*/
+
 /* 
 Need to insert one space in front of the size, to be able to use
 next_token() unchanged.  I would have liked to be able to insert a
@@ -378,6 +401,7 @@ A long spool-path will just waste significant chars of the file name.
 */
 
   line[JOBSIZE_POS-1]=' ';
+#endif /* OLD_LPRNG */
 
   /* handle the case of "(stdin)" as a filename */
   string_sub(line,"stdin","STDIN");

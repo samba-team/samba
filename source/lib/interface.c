@@ -48,11 +48,15 @@ static void default_netmask(struct in_addr *inm, struct in_addr *iad)
 	** Guess a netmask based on the class of the IP address given.
 	*/
 	switch((ntohl(iad->s_addr) & 0xE0000000)) {
-	case 0:		/* Class A addr */
+        case 0x00000000:     /* Class A addr */
+        case 0x20000000:
+        case 0x40000000:
+        case 0x60000000:
 		inm->s_addr = htonl(0xFF000000);
 		break;
 		
 	case 0x80000000:	/* Class B addr */
+        case 0xA0000000:
 		inm->s_addr = htonl(0xFFFF0000);
 		break;
 		
