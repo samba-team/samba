@@ -47,6 +47,7 @@ RCSID("$Id$");
 
 struct gss_data {
     gss_ctx_id_t context_hdl;
+    char *client_name;
 };
 
 static int
@@ -164,11 +165,27 @@ gss_adat(void *app_data, void *buf, size_t len)
 	}
     }
     if(maj_stat == GSS_S_COMPLETE){
+	char *name;
+	gss_buffer_desc export_name;
+	maj_stat = gss_export_name(&min_stat, client_name, &export_name);
+	if(maj_stat != 0) {
+	    reply(500, "Error exporting name");
+	    goto out;
+	}
+	name = realloc(export_name.value, export_name.length + 1);
+	if(name == NULL) {
+	    reply(500, "Out of memory");
+	    free(export_name.value);
+	    goto out;
+	}
+	name[export_name.length] = '\0';
+	d->client_name = name;
 	if(p)
 	    reply(235, "ADAT=%s", p);
 	else
 	    reply(235, "ADAT Complete");
 	sec_complete = 1;
+
     } else if(maj_stat == GSS_S_CONTINUE_NEEDED)
 	if(p)
 	    reply(335, "ADAT=%s", p);
@@ -176,15 +193,12 @@ gss_adat(void *app_data, void *buf, size_t len)
 	    reply(335, "OK, need more data");
     else
 	reply(535, "foo?");
+out:
     free(p);
     return 0;
 }
 
-static int
-gss_userok()
-{
-    return 0;
-}
+int gss_userok(void*, char*);
 
 struct sec_server_mech gss_server_mech = {
     "GSSAPI",
