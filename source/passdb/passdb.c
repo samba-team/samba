@@ -1214,6 +1214,7 @@ BOOL lookup_local_name(char *domain, char *user, DOM_SID *psid, uint8 *psid_name
 	return True;
 }
 
+#if 0
 /****************************************************************************
  Create a list of SIDS for a user - primary and group.
  This is really the wrong way to do this and needs to go via winbind. JRA.
@@ -1242,3 +1243,4 @@ BOOL setup_user_sids(user_struct *vuser)
 
 	return True;
 }
+#endif
