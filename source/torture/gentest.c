@@ -1256,7 +1256,7 @@ static BOOL handler_ntrename(int instance)
 	parm[0].ntrename.in.old_name = gen_fname();
 	parm[0].ntrename.in.new_name = gen_fname();
 	parm[0].ntrename.in.attrib = gen_attrib();
-	parm[0].ntrename.in.root_fid = gen_root_fid(instance);
+	parm[0].ntrename.in.unknown = gen_bits_mask2(0, 0xFFFFFFF);
 	parm[0].ntrename.in.flags = gen_rename_flags();
 
 	GEN_COPY_PARM;

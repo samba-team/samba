@@ -512,3 +512,52 @@ BOOL torture_nttrans_scan(int dummy)
 	printf("nttrans scan finished\n");
 	return True;
 }
+
+
+/* scan for valid base SMB requests */
+BOOL torture_smb_scan(int dummy)
+{
+	static struct cli_state *cli;
+	int op;
+	struct cli_request *req;
+	NTSTATUS status;
+
+	for (op=0x0;op<=0xFF;op++) {
+		if (op == SMBreadbraw) continue;
+
+		if (!torture_open_connection(&cli)) {
+			return False;
+		}
+
+		req = cli_request_setup(cli->tree, op, 0, 0);
+
+		if (!cli_request_send(req)) {
+			cli_request_destroy(req);
+			break;
+		}
+
+		usleep(10000);
+		if (cli_transport_pending(cli->transport)) {
+			status = cli_request_simple_recv(req);
+			printf("op=0x%x status=%s\n", op, nt_errstr(status));
+			torture_close_connection(cli);
+			continue;
+		}
+
+		sleep(1);
+		if (cli_transport_pending(cli->transport)) {
+			status = cli_request_simple_recv(req);
+			printf("op=0x%x status=%s\n", op, nt_errstr(status));
+		} else {
+			printf("op=0x%x no reply\n", op);
+			cli_request_destroy(req);
+			continue; /* don't attempt close! */
+		}
+
+		torture_close_connection(cli);
+	}
+
+
+	printf("smb scan finished\n");
+	return True;
+}

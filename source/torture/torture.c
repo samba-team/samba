@@ -3929,6 +3929,7 @@ static struct {
 	{"SCAN-TRANS2", torture_trans2_scan, 0},
 	{"SCAN-NTTRANS", torture_nttrans_scan, 0},
 	{"SCAN-ALIASES", torture_trans2_aliases, 0},
+	{"SCAN-SMB", torture_smb_scan, 0},
 	{NULL, NULL, 0}};
 
 
