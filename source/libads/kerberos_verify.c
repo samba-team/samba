@@ -78,12 +78,14 @@ static BOOL ads_keytab_verify_ticket(krb5_context context, krb5_auth_context aut
 			if (!(ret = krb5_rd_req(context, &auth_context, p_packet, NULL, NULL, NULL, pp_tkt))) {
 				krb5_free_unparsed_name(context, princ_name);
 				princ_name = NULL;
-				DEBUG(10,("ads_keytab_verify_ticket: enc type [%u] decrypted message !\n",
+				unsigned int keytype;
 #ifdef HAVE_KRB5_KEYTAB_ENTRY_KEYBLOCK
-					(unsigned int) kt_entry.keyblock.keytype));
+				keytype = (unsigned int) kt_entry.keyblock.keytype;
 #else
-					(unsigned int) kt_entry.key.enctype));
+				keytype = (unsigned int) kt_entry.key.enctype;
 #endif
+				DEBUG(10,("ads_keytab_verify_ticket: enc type [%u] decrypted message !\n",
+					  keytype));
 				auth_ok = True;
 				break;
 			}
