@@ -43,6 +43,7 @@ int forwardable_flag	= -1;
 int proxiable_flag	= -1;
 int renewable_flag	= -1;
 int renew_flag		= 0;
+int pac_flag		= -1;
 int validate_flag	= 0;
 int version_flag	= 0;
 int help_flag		= 0;
@@ -59,10 +60,10 @@ int use_keytab		= 0;
 char *keytab_str	= NULL;
 int do_afslog		= -1;
 int get_v4_tgt		= -1;
-#ifdef KRB4
-int convert_524;
-#endif
+int convert_524		= 0;
 int fcache_version;
+
+static char *krb4_cc_name;
 
 static struct getargs args[] = {
     /* 
@@ -76,10 +77,10 @@ static struct getargs args[] = {
      */
     { "524init", 	'4', arg_flag, &get_v4_tgt,
       "obtain version 4 TGT" },
-#ifdef KRB4
+
     { "524convert", 	'9', arg_flag, &convert_524,
       "only convert ticket to version 4" },
-#endif
+
     { "afslog", 	0  , arg_flag, &do_afslog,
       "obtain afs tokens"  },
 
@@ -133,6 +134,9 @@ static struct getargs args[] = {
 
     { "anonymous",	0,   arg_flag,	&anonymous_flag,
       "request an anonymous ticket" },
+
+    { "request-pac",	0,   arg_flag,	&pac_flag,
+      "request a Windows PAC" },
 
     { "version", 	0,   arg_flag, &version_flag },
     { "help",		0,   arg_flag, &help_flag }
@@ -292,6 +296,7 @@ do_524init(krb5_context context, krb5_ccache ccache,
 	   krb5_creds *creds, const char *server)
 {
     krb5_error_code ret;
+
     struct credentials c;
     krb5_creds in_creds, *real_creds;
 
@@ -428,6 +433,9 @@ get_new_tickets(krb5_context context,
 	krb5_get_init_creds_opt_set_proxiable (opt, proxiable_flag);
     if(anonymous_flag != -1)
 	krb5_get_init_creds_opt_set_anonymous (opt, anonymous_flag);
+    if (pac_flag != -1)
+	krb5_get_init_creds_opt_set_paq_request(context, opt, 
+						pac_flag ? TRUE : FALSE);
 
     if (!addrs_flag) {
 	no_addrs.len = 0;
@@ -629,18 +637,20 @@ main (int argc, char **argv)
 		     krb5_cc_get_type(context, ccache),
 		     krb5_cc_get_name(context, ccache));
 	    setenv("KRB5CCNAME", s, 1);
-#ifdef KRB4
-	    {
+	    if (get_v4_tgt) {
 		int fd;
-		snprintf(s, sizeof(s), "%s_XXXXXX", TKT_ROOT);
-		if((fd = mkstemp(s)) >= 0) {
+		if (asprintf(&krb4_cc_name, "%s_XXXXXXXXXXX", TKT_ROOT) < 0)
+		    krb5_errx(context, 1, "out of memory");
+		if((fd = mkstemp(krb4_cc_name)) >= 0) {
 		    close(fd);
-		    setenv("KRBTKFILE", s, 1);
-		    if (k_hasafs ())
-			k_setpag();
+		    setenv("KRBTKFILE", krb4_cc_name, 1);
+		} else {
+		    free(krb4_cc_name);
+		    krb4_cc_name = NULL;
 		}
 	    }
-#endif
+	    if (k_hasafs ())
+		k_setpag();
 	} else
 	    ret = krb5_cc_default (context, &ccache);
     }
@@ -681,28 +691,23 @@ main (int argc, char **argv)
 	free_getarg_strings(&extra_addresses);
     }
 
-    
     if(renew_flag || validate_flag) {
 	ret = renew_validate(context, renew_flag, validate_flag, 
 			     ccache, server, ticket_life);
 	exit(ret != 0);
     }
 
-#ifdef KRB4
     if(!convert_524)
-#endif
 	get_new_tickets(context, principal, ccache, ticket_life);
 
-    if(get_v4_tgt)
+    if(get_v4_tgt || convert_524)
 	do_524init(context, ccache, NULL, server);
     if(do_afslog && k_hasafs())
 	krb5_afslog(context, ccache, NULL, NULL);
     if(argc > 1) {
 	simple_execvp(argv[1], argv+1);
 	krb5_cc_destroy(context, ccache);
-#ifdef KRB4
-	dest_tkt();
-#endif
+	_krb5_krb_dest_tkt(context, krb4_cc_name);
 	if(k_hasafs())
 	    k_unlog();
     } else 
