@@ -757,6 +757,7 @@ void talloc_report_full(const void *ptr, FILE *f)
 		(unsigned long)talloc_total_blocks(ptr));
 
 	talloc_report_depth(ptr, f, 1);
+	fflush(f);
 }
 
 /*
@@ -784,7 +785,7 @@ void talloc_report(const void *ptr, FILE *f)
 			(unsigned long)talloc_total_size(c+1),
 			(unsigned long)talloc_total_blocks(c+1));
 	}
-
+	fflush(f);
 }
 
 /*
