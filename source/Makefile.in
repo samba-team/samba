@@ -396,7 +396,7 @@ WINBINDD_OBJ = \
 WBINFO_OBJ = nsswitch/wbinfo.o libsmb/smbencrypt.o libsmb/smbdes.o \
 	passdb/secrets.o
 
-WINBIND_NSS_OBJ = nsswitch/winbind_nss.o nsswitch/wb_common.o nsswitch/winbind_nss_solaris.o
+WINBIND_NSS_OBJ = nsswitch/winbind_nss.o nsswitch/wb_common.o @WINBIND_NSS_EXTRA_OBJS@
 
 WINBIND_NSS_PICOBJS = $(WINBIND_NSS_OBJ:.o=.po)
 
@@ -640,7 +640,7 @@ bin/winbindd: $(WINBINDD_OBJ) bin/.dummy
 
 nsswitch/libnss_winbind.so: $(WINBIND_NSS_PICOBJS)
 	@echo "Linking $@"
-	@$(SHLD) @LDSHFLAGS@ -o $@ $(WINBIND_NSS_PICOBJS)
+	@$(SHLD) @LDSHFLAGS@ -o $@ $(WINBIND_NSS_PICOBJS) @WINBIND_NSS_EXTRA_LIBS@
 
 nsswitch/pam_winbind.so: $(PAM_WINBIND_OBJ) bin/.dummy
 	@echo Linking $@

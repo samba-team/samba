@@ -2704,12 +2704,12 @@ else
 #line 2705 "configure"
 #include "confdefs.h"
 #include <stdio.h>
-main()
+int main()
 {
   FILE *f=fopen("conftestval", "w");
-  if (!f) exit(1);
+  if (!f) return(1);
   fprintf(f, "%d\n", sizeof(int));
-  exit(0);
+  return(0);
 }
 EOF
 if { (eval echo configure:2716: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
@@ -2743,12 +2743,12 @@ else
 #line 2744 "configure"
 #include "confdefs.h"
 #include <stdio.h>
-main()
+int main()
 {
   FILE *f=fopen("conftestval", "w");
-  if (!f) exit(1);
+  if (!f) return(1);
   fprintf(f, "%d\n", sizeof(long));
-  exit(0);
+  return(0);
 }
 EOF
 if { (eval echo configure:2755: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
@@ -2782,12 +2782,12 @@ else
 #line 2783 "configure"
 #include "confdefs.h"
 #include <stdio.h>
-main()
+int main()
 {
   FILE *f=fopen("conftestval", "w");
-  if (!f) exit(1);
+  if (!f) return(1);
   fprintf(f, "%d\n", sizeof(short));
-  exit(0);
+  return(0);
 }
 EOF
 if { (eval echo configure:2794: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
@@ -12948,9 +12948,18 @@ echo "configure:12947: checking whether to build winbind" >&5
 # Initially, the value of $host_os decides whether winbind is supported
 
 case "$host_os" in 
-        *linux*|*solaris*|*irix*|*hpux11*)
+        *linux*|*irix*)
 		HAVE_WINBIND=yes
                 ;;
+	*solaris*)
+		HAVE_WINBIND=yes
+		WINBIND_NSS_EXTRA_OBJS="nsswitch/winbind_nss_solaris"
+		WINBIND_NSS_EXTGRA_LIBS="-lsocket"
+		;;
+	*hpux11*)
+		HAVE_WINBIND=yes
+		WINBIND_NSS_EXTRA_OBJS="nsswitch/winbind_nss_solaris"
+		;;
         *)
 		HAVE_WINBIND=no
                 winbind_no_reason=", unsupported on $host_os"
@@ -13015,6 +13024,8 @@ fi
 
 
 
+
+
 #################################################
 # final configure stuff
 echo "checking configure summary"
@@ -13022,11 +13033,11 @@ if test "$cross_compiling" = yes; then
   :
 else
   cat > conftest.$ac_ext <<EOF
-#line 13026 "configure"
+#line 13037 "configure"
 #include "confdefs.h"
 #include "${srcdir-.}/tests/summary.c"
 EOF
-if { (eval echo configure:13030: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
+if { (eval echo configure:13041: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
 then
   echo "configure OK";
 else
@@ -13228,6 +13239,8 @@ s%@WINBIND_TARGETS@%$WINBIND_TARGETS%g
 s%@WINBIND_STARGETS@%$WINBIND_STARGETS%g
 s%@WINBIND_LTARGETS@%$WINBIND_LTARGETS%g
 s%@WINBIND_PAM_TARGETS@%$WINBIND_PAM_TARGETS%g
+s%@WINBIND_NSS_EXTRA_OBJS@%$WINBIND_NSS_EXTRA_OBJS%g
+s%@WINBIND_NSS_EXTRA_LIBS@%$WINBIND_NSS_EXTRA_LIBS%g
 s%@builddir@%$builddir%g
 
 CEOF
