@@ -1913,7 +1913,7 @@ static uint32 dump_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 
 			break;
 		}
 		default:
-			DEBUGADD(1,("Level not implemented\n"));
+			DEBUGADD(106,("dump_a_printer_driver: Level %u not implemented\n", (unsigned int)level));
 			result=1;
 			break;
 	}
@@ -1970,7 +1970,6 @@ static int pack_devicemode(NT_DEVICEMODE *nt_devmode, char *buf, int buflen)
 			nt_devmode->panningheight,
 			nt_devmode->private);
 
-	
 	if (nt_devmode->private) {
 		len += tdb_pack(buf+len, buflen-len, "B",
 				nt_devmode->driverextra,
@@ -2700,7 +2699,7 @@ static uint32 dump_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level)
 			break;
 		}
 		default:
-			DEBUGADD(1,("Level not implemented\n"));
+			DEBUGADD(106,("dump_a_printer: Level %u not implemented\n", (unsigned int)level));
 			result=1;
 			break;
 	}
