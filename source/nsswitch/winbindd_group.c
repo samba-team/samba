@@ -691,8 +691,8 @@ enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state)
 			goto tryagain;
 		}
 
-		DEBUG(10, ("got gid %lu for group %x\n", (unsigned long)group_gid,
-			   name_list[ent->sam_entry_index].rid));
+		DEBUG(10, ("got gid %lu for group %lu\n", (unsigned long)group_gid,
+			   (unsigned long)name_list[ent->sam_entry_index].rid));
 		
 		/* Fill in group entry */
 
