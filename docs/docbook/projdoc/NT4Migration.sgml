@@ -51,7 +51,7 @@ is not lost.
 
 	e. net rpc join -S NT4PDC -w DOMNAME -U Administrator%passwd
 
-	f. net rpc campire -S NT4PDC -U administrator%passwd
+	f. net rpc vampire -S NT4PDC -U administrator%passwd
 
 	g. pdbedit -l
 
