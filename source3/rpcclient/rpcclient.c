@@ -784,7 +784,7 @@ static BOOL process( struct client_info *info, char *cmd_str)
 		fprintf(out_hnd, "%s", CNV_LANG(pline));
 		fflush(out_hnd);
 
-		cli_net_wait_keyboard();
+		cli_use_wait_keyboard();
 
 		/* and get a response */
 		if (!fgets(line,1000,stdin))
