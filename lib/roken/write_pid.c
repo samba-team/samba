@@ -49,7 +49,7 @@ pid_file_write (const char *progname)
     FILE *fp;
     char *ret;
 
-    asprintf (&ret, _PATH_VARRUN "%s.pid", progname);
+    asprintf (&ret, "%s%s.pid", _PATH_VARRUN, progname);
     if (ret == NULL)
 	return NULL;
     fp = fopen (ret, "w");
@@ -70,4 +70,24 @@ pid_file_delete (char **filename)
 	free (*filename);
 	*filename = NULL;
     }
+}
+
+static char *pidfile_path;
+
+static void
+pidfile_cleanup(void)
+{
+    if(pidfile_path != NULL)
+	pid_file_delete(&pidfile_path);
+}
+
+void
+pidfile(const char *basename)
+{
+    if(pidfile_path != NULL)
+	return;
+    if(basename == NULL)
+	basename = __progname;
+    pidfile_path = pid_file_write(basename);
+    atexit(pidfile_cleanup);
 }
