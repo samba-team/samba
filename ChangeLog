@@ -1,5 +1,10 @@
 1999-11-12  Assar Westerlund  <assar@sics.se>
 
+	* lib/krb5/get_default_realm.c (krb5_get_default_realm,
+	krb5_get_default_realms): set realms if they were unset
+	* lib/krb5/context.c (init_context_from_config_file): don't
+	initialize default realms here.  it's done lazily instead.
+	
 	* lib/krb5/krb5.h (KRB5_TC_*): make constants unsigned
 	* lib/asn1/gen_glue.c (generate_2int, generate_units): make sure
 	bit constants are unsigned
@@ -8,6 +13,7 @@
 
 	* configure.in: remove duplicate test for setsockopt test for
 	struct tm.tm_isdst
+
 	* lib/krb5/get_in_tkt.c (krb5_get_in_cred): generate
 	preauthentication information if we get back ERR_PREAUTH_REQUIRED
 	* lib/krb5/init_creds_pw.c (krb5_get_init_creds_password): remove
