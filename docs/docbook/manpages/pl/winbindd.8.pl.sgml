@@ -17,27 +17,16 @@
     <cmdsynopsis>
       <command>winbindd</command>
       <arg choice="opt">-i</arg>
-      <arg choice="opt">-S</arg>
-      <arg choice="opt">-r</arg>
-      <arg choice="opt">-A</arg>
-      <arg choice="opt">-h</arg>
-      <arg choice="opt">-B &lt;adres rozglaszania&gt;</arg>
-      <arg choice="opt">-U &lt;adres unicast&gt;</arg>
       <arg choice="opt">-d &lt;poziom debugowania&gt;</arg>
       <arg choice="opt">-s &lt;plik konfiguracyjny smb&gt;</arg>
-      <arg choice="opt">-i &lt;zakres NetBIOS&gt;</arg>
-      <arg choice="opt">-T</arg>
-      <arg choice="req">name</arg>
     </cmdsynopsis>
 </refsynopsisdiv>
 
 <refsect1>
     <title>OPIS</title>
 
-    <para>To narzêdzie jest czê¶ci± wersji 3.0 pakietu <ulink
-	url="samba.7.html">Samba</ulink> i posiada funkcjonalno¶æ
-      która jeszcze nie jest zaimplementowana w g³ównej wersji
-      Samby.</para>
+    <para>Ten program jest czê¶ci± pakietu <ulink url="samba.7.html">
+	Samba</ulink>.</para>
 
     <para><command>winbindd</command> jest demonem który dostarcza
       us³ug do funkcjonalno¶ci Prze³±cznika Us³ug Nazewniczych
@@ -151,7 +140,7 @@ group:          files winbind
 
     <variablelist>
       <varlistentry>
-	<term>separator winbind</term>
+	<term>winbind separator</term>
 	<listitem><para>Opcja separatora winbind pozwala ci okre¶liæ
 	    jak nazwy domen NT i u¿ytkowników s± ³±czone w nazwê
 	    u¿ytkownika unix gdy jest ona prezentowana u¿ytkownikom.
@@ -330,23 +319,22 @@ auth       required      /lib/security/pam_pwdb.so use_first_pass shadow nullok
       </command></para>
 
     <para>Nastêpnym krokiem bêdzie przy³±czenie siê do domeny. Aby to zrobiæ
-      u¿yj programu <command>samedit</command> w ten sposób:</para>
+      u¿yj programu <command>smbpasswd</command> w ten sposób:</para>
 
-    <para><command>samedit -S '*' -W DOMENA -UAdministrator</command></para>
+    <para><command>smbpasswd -j DOMENA -r PDC -U Administrator</command></para>
 
     <para>Nazwa u¿ytkownika po <parameter>-U</parameter> mo¿e byæ nazw±
       ka¿dego u¿ytkownika Domeny który ma przywileje administracyjne.
-      Nastêpnie z programu <command>samedit</command> uruchom polecenie:
-    </para>
+      Zast±p nazwê "DOMENA" swoj± nazw± domeny, a nazwê "PDC" nazw± swojego
+      PDC.</para>
 
-    <para><command>createuser MASZYNA$ -j DOMENA -L</command></para>
-
-    <para>To zak³ada, ¿e twoja domena nazywa siê "DOMENA" a twoja stacja
-      robocza Samba nazywa siê "MASZYNA".</para>
-
-    <para>Nastêpnie skopiuj <filename>libnss_winbind.so.2</filename>
+    <para>Nastêpnie skopiuj <filename>libnss_winbind.so</filename>
       do <filename>/lib</filename>, a <filename>pam_winbind.so</filename>
-      do <filename>/lib/security/</filename>.</para>
+      do <filename>/lib/security/</filename>. Potrzebne jest dowi±zanie
+      symboliczne z <filename>/lib/libnss_winbind.so</filename> do
+      <filename>/lib/libnss_winbind.so.2</filename>. Je¶li u¿ywasz
+      starszej wersji glibc, wtedy celem dowi±zania powinien byæ
+      <filename>/lib/libnss_winbind.so.1</filename>.</para>
 
     <para>Na koniec, utwórz <filename>smb.conf</filename> zawieraj±cy
       dyrektywy jak poni¿ej:</para>
@@ -366,7 +354,7 @@ auth       required      /lib/security/pam_pwdb.so use_first_pass shadow nullok
 
     <para>Teraz uruchom <command>winbindd</command> i powiniene¶
       zauwa¼yæ, ¿e twoja baza danych u¿ytkowników i grup jest
-      powiêkszona o twoich u¿ytkowników i grupy NT, i ¿e mo¿esz
+      powiêkszona o twoich u¿ytkowników i grupy NT, oraz ¿e mo¿esz
       zalogowaæ siê do twojego systemu unix jako u¿ytkownik z
       domeny, przy u¿yciu sk³adni DOMENA+u¿ytkownik jako nazwa
       u¿ytkownika. Mo¿esz chcieæ skorzystaæ z poleceñ <command>
@@ -385,15 +373,23 @@ auth       required      /lib/security/pam_pwdb.so use_first_pass shadow nullok
       ¿eby <command>winbindd</command> dzia³a³. <command>winbindd
       </command> sprawdza listê zaufanych domen (trusted domains)
       dla serwera Windows NT przy starcie i gdy odbierze sygna³
-      SIGHUP.</para>
+      SIGHUP. W ten sposób, aby dzia³aj±cy <command>winbindd</command>
+      dowiedzia³ siê o nowych relacjach zaufania miêdzy serwerami,
+      musi otrzymaæ sygna³ SIGHUP.</para>
 
-    <para>PAM jest naprawdê prosty do zdekonfigurowania. Upewnij siê
-      ¿e wiesz co robisz modyfikuj±c jego pliki konfiguracyjne. Mo¿liwe
-      jest ustawienie PAM w taki sposób, ¿e nie bêdziesz siê ju¿
-      móg³ zalogowaæ do systemu.</para>
+    <para>Procesy klienckie odwzorowuj±ce nazwy poprzez modu³ nsswitch
+      <command>winbindd</command> czytaj± zmienn± ¶rodowiskow± o nazwie
+      <envar>$WINBINDD_DOMAIN</envar>. Je¶li ta zmienna zawiera listê
+      nazw domen Windows NT odddzielonych przecinkami, to winbindd odwzoruje
+      tylko u¿ytkowników i grupy w tych domenach Windows NT.</para>
+
+    <para>Naprawdê ³atwo jest zdekonfigurowaæ PAM. Upewnij siê ¿e wiesz
+      co robisz, modyfikuj±c jego pliki konfiguracyjne. Mo¿na ustawiæ
+      PAM w taki sposób, ¿e nie bêdziesz siê ju¿ móg³ zalogowaæ
+      do systemu.</para>
 
     <para>Je¶li na wiêcej ni¿ jednej maszynie UNIX dzia³a <command>
-	winbindd</command>, wówczas generalnie identyfikatory
+	winbindd</command> wówczas - generalnie - identyfikatory
       u¿ytkowników i grup alokowane przez winbindd nie bêd± takie
       same. Bêd± one poprawne tylko dla lokalnej maszyny.</para>
 
@@ -485,8 +481,7 @@ auth       required      /lib/security/pam_pwdb.so use_first_pass shadow nullok
     <title>WERSJA</title>
 
     <para>Ta strona podrêcznika jest poprawna dla wersji 2.2 pakietu
-      Samba. Jednak¿e winbindd nie jest jeszcze dostêpny w stabilnym
-      wydaniu Samby.</para>
+      Samba.</para>
 </refsect1>
 
 <refsect1>

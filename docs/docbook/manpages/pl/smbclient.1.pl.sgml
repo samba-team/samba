@@ -19,7 +19,6 @@
       <arg choice="opt">haslo</arg>
       <arg choice="opt">-b rozmiarbufora</arg>
       <arg choice="opt">-D katalog</arg>
-      <arg choice="opt">-S serwer</arg>
       <arg choice="opt">-U nazwauzytkownika</arg>
       <arg choice="opt">-W gruparobocza</arg>
       <arg choice="opt">-M &lt;nazwa NetBIOS&gt;</arg>
@@ -164,7 +163,7 @@
 	    </parameter>) w pliku smb.conf.</para>
 
 	  <para>Domy¶lna kolejno¶æ to lmhosts, host, wins, bcast, i bez tego parametru
-	    oraz ¿adnego wpisu <parameter>name resolve order</parameter> w pliku smb.conf,
+	    oraz ¿adnego wpisu <parameter>name resolve order</parameter> w pliku <filename>smb.conf</filename>,
 	    metody odwzorowania nazw bêd± wypróbowywane w tej kolejno¶ci.</para></listitem>
       </varlistentry>
 
@@ -202,10 +201,10 @@
 	<term>-i zakres</term>
 	<listitem><para>To okre¶la zakres NetBIOS którego smbclient u¿yje do
 	    komunikacji podczas generowania nazw NetBIOS. Po detale dotycz±ce  u¿ycia
-	    zakresów NetBIOS, zajrzyj do rfc1001.txt i rfc1002.txt. Zakresy NetBIOS s±
-	    <emphasis>bardzo</emphasis> rzadko u¿ywane, wiêc ustawiaj ten parametr
-	    tylko je¶li jeste¶ administratorem wszystkich systemów NetBIOS z którymi siê
-	    komunikujesz.</para></listitem>
+	    zakresów NetBIOS, zajrzyj do <filename>rfc1001.txt</filename> i <filename>
+	      rfc1002.txt</filename>. Zakresy NetBIOS s± <emphasis>bardzo</emphasis>
+	    rzadko u¿ywane, wiêc ustawiaj ten parametr tylko je¶li jeste¶ administratorem
+	    wszystkich systemów NetBIOS z którymi siê komunikujesz.</para></listitem>
       </varlistentry>
 
       <varlistentry>
@@ -228,7 +227,7 @@
 
       <varlistentry>
 	<term>-d poziomdebugowania</term>
-	<listitem><para>poziom debugowania jest liczb± ca³kowit± od 0 do 10, lub
+	<listitem><para><replaceable>poziomdebugowania</replaceable> jest liczb± ca³kowit± od 0 do 10, lub
 	    liter± 'A'.</para>
 
 	  <para>Domy¶ln± warto¶ci±, je¶li ten parametr nie jest okre¶lony, jest
@@ -243,11 +242,11 @@
 	  <para>Poziomy ponad 1 bêd± generowaæ znaczne ilo¶ci informacji logu i
 	    powinny byæ u¿ywane tylko podczas ¶ledzenia problemu. Poziomy ponad 3
 	    s± zaprojektowane tylko dla u¿ytku developerów i generuj± OGROMNE ilo¶ci
-	    danych logu, w wiêkszo¶ci ekstremalnie zagadkowych. Je¶li poziom
-	    debugowania jest ustawiony na literê 'A', wtedy <emphasis>wszystkie
-	    </emphasis> wiadomo¶ci debugowe bêd± wy¶wietlane. To ustawienie jest
-	    tylko dla developerów (i ludzi którzy <emphasis>naprawdê</emphasis> chc±
-	    wiedzieæ jak pracuje kod wewn±trz).</para>
+	    danych logu, w wiêkszo¶ci ekstremalnie zagadkowych. Je¶li <replaceable>
+	      poziomdebugowania</replaceable> jest ustawiony na literê 'A', wtedy
+	    <emphasis>wszystkie</emphasis> wiadomo¶ci debugowe bêd± wy¶wietlane.
+	    To ustawienie jest tylko dla developerów (i ludzi którzy <emphasis>
+	      naprawdê</emphasis> chc± wiedzieæ jak pracuje kod wewn±trz).</para>
 
 	  <para>Zauwa¿, ¿e okre¶lanie tego parametru tutaj uniewa¿ni parametr
 	    <parameter>log level</parameter> w pliku <filename>smb.conf(5)</filename>.
@@ -264,9 +263,9 @@
 
       <varlistentry>
 	<term>-l nazwaplikulogu</term>
-	<listitem><para>Je¶li jest okre¶lona, nazwaplikulogu okre¶la  bazow±
-	    nazwê pliku w którym dane operacyjne z dzia³aj±cego klienta bêd± logowane.
-	  </para></listitem>
+	<listitem><para>Je¶li jest okre¶lona, <replaceable>nazwaplikulogu</replaceable>
+	    okre¶la  bazow± nazwê pliku w którym dane operacyjne z dzia³aj±cego
+	    klienta bêd± logowane.</para></listitem>
       </varlistentry>
 
       <varlistentry>
@@ -290,7 +289,7 @@
 
       <varlistentry>
 	<term>-I adres IP</term>
-	<listitem><para>adres IP jest adresem serwera do którego smbclient ma
+	<listitem><para><replaceable>adres IP</replaceable> jest adresem serwera do którego smbclient ma
 	    siê pod³±czyæ. Powinien byæ okre¶lony w standardowej notacji "a.b.c.d".
 	  </para>
 
@@ -364,11 +363,11 @@ password = &lt;wartosc&gt;
       <varlistentry>
 	<term>-L</term>
 	<listitem><para>Ta opcja pozwala ci zobaczyæ jakie us³ugi s±
-	    dostêpne na serwerze. U¿yjesz jej jako CW"smbclient -L host"
-	    i lista powinna siê  pojawiæ. Opcja <parameter>-I</parameter>
-	    mo¿e byæ u¿yteczna, je¶li twoje  nazwy NetBIOS nie pasuj± do
-	    twoich nazw hostów tcp/ip dns lub je¶li  próbujesz dosiêgn±æ
-	    hosta w innej sieci.</para>
+	    dostêpne na serwerze. U¿yjesz jej jako <command>smbclient -L
+	      host</command> i lista powinna siê  pojawiæ. Opcja
+	    <parameter>-I</parameter> mo¿e byæ u¿yteczna, je¶li twoje
+	    nazwy NetBIOS nie pasuj± do twoich nazw hostów tcp/ip dns
+	    lub je¶li  próbujesz dosiêgn±æ hosta w innej sieci.</para>
 	</listitem>
       </varlistentry>
 

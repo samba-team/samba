@@ -23,7 +23,7 @@
 	<arg choice="opt">-R kolejnosc odwzorowywania nazw</arg>
 	<arg choice="opt">-m</arg>
 	<arg choice="opt">-j DOMENA</arg>
-	<arg choice="opt">-U nazwauzytkownika</arg>
+	<arg choice="opt">-U nazwauzytkownika[%password]</arg>
 	<arg choice="opt">-h</arg>
 	<arg choice="opt">-s</arg>
 	<arg choice="opt">nazwauzytkownika</arg>

@@ -149,16 +149,15 @@
 
     <para>Program wbinfo zwraca 0 je¶li operacja zakoñczy siê sukcesem,
       lub 1 je¶li operacja zakoñczy siê niepowodzeniem. Je¶li demon
-      <command>winbindd(8)</command> nie dzia³a, wbinfo bêdzie zawsze
-      zwraca³ niepowodzenie.</para>
+      <command>winbindd(8)</command> nie dzia³a, <command>wbinfo</command>
+      bêdzie zawsze zwraca³ niepowodzenie.</para>
 </refsect1>
 
 <refsect1>
     <title>WERSJA</title>
 
     <para>Ta strona podrêcznika jest poprawna dla wersji 2.2 pakietu
-      Samba. Jednak¿e winbindd nie jest jeszcze dostêpny w stabilnym
-      wydaniu Samby.</para>
+      Samba.</para>
 </refsect1>
 
 <refsect1>

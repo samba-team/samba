@@ -24,7 +24,7 @@
 <refsect1>
     <title>OPIS</title>
 
-    <para>Ten program jest czê¶ci± pakietu <ulink url="samba.7.html">
+    <para>Ten program jest czê¶ci± pakietu <ulink url="samba.7.pl.html">
 	Samba</ulink>.</para>
 
     <para><command>make_smbcodepage</command> kompiluje lub dekompiluje
@@ -177,8 +177,8 @@
 <refsect1>
     <title>ZOBACZ TE¯</title>
 
-    <para><ulink url="smbd.8.html"><command>smbd(8)</command></ulink>, 
-      <ulink url="smb.conf.5.html">smb.conf(5)</ulink>
+    <para><ulink url="smbd.8.pl.html"><command>smbd(8)</command></ulink>, 
+      <ulink url="smb.conf.5.pl.html">smb.conf(5)</ulink>
     </para>
 </refsect1>
 

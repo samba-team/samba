@@ -12,10 +12,8 @@
 </refnamediv>
 
 <refsynopsisdiv>
-    <title>SYNOPSIS</title>
-
     <para><filename>lmhosts</filename> jest plikiem mapuj±cym
-      nazwy <ulink url="samba.7.html">Samba</ulink> NetBIOS na
+      nazwy <ulink url="samba.7.pl.html">Samba</ulink> NetBIOS na
       adresy IP.</para>
 </refsynopsisdiv>
 
@@ -23,7 +21,7 @@
     <title>OPIS</title>
 
     <para>Ten plik jest czê¶ci± pakietu
-      <ulink url="samba.7.html"> Samba</ulink>.</para>
+      <ulink url="samba.7.pl.html">Samba</ulink>.</para>
 
     <para><filename>lmhosts</filename> jest plikiem mapuj±cym
       nazwy <emphasis>Samba</emphasis> NetBIOS na adresy IP.
@@ -80,23 +78,23 @@
 
     <para>Domy¶ln± lokalizacja pliku <filename>lmhosts</filename>
       jest ten sam katalog w którym znajduje siê plik
-      <ulink url="smb.conf.5.html">smb.conf(5)</ulink>.</para>
+      <ulink url="smb.conf.5.pl.html">smb.conf(5)</ulink>.</para>
 </refsect1>
 
 <refsect1>
     <title>WERSJA</title>
 
-    <para>Ta strona podrêcznika jest poprawna dla wersji 2.0
+    <para>Ta strona podrêcznika jest poprawna dla wersji 2.2
       pakietu Samba.</para>
 </refsect1>
 
 <refsect1>
     <title>ZOBACZ TE¯</title>
-    <para><ulink url="smbclient.1.html"><command>smbclient(1)
+    <para><ulink url="smbclient.1.pl.html"><command>smbclient(1)
 	</command></ulink>,
-      <ulink url="smb.conf.5.html#NAMERESOLVEORDER">smb.conf(5)
-      </ulink>, <ulink url="smbpasswd.8.html"><command>smbpasswd(8)
-      </command></ulink>, <ulink url="samba.7.html">samba(7)</ulink>
+      <ulink url="smb.conf.5.pl.html#NAMERESOLVEORDER">smb.conf(5)
+      </ulink>, <ulink url="smbpasswd.8.pl.html"><command>smbpasswd(8)
+      </command></ulink>, <ulink url="samba.7.pl.html">samba(7)</ulink>
     </para>
 </refsect1>
 

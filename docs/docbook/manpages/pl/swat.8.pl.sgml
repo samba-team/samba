@@ -12,10 +12,8 @@
 </refnamediv>
 
 <refsynopsisdiv>
-    <title>SYNOPSIS</title>
-
     <cmdsynopsis>
-      <command>nmblookup</command>
+      <command>swat</command>
       <arg choice="opt">-s &lt;plik konfiguracyjny smb&gt;</arg>
       <arg choice="opt">-a</arg>
     </cmdsynopsis>

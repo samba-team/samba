@@ -31,7 +31,7 @@
 <refsect1>
       <title>OPIS</title>
       
-      <para>Ten program jest czê¶ci± pakietu <ulink url="samba.7.html">
+      <para>Ten program jest czê¶ci± pakietu <ulink url="samba.7.pl.html">
       Samba</ulink>.</para>
 
       <para><command>rpcclient</command> jest programem dla developerów,
@@ -49,7 +49,7 @@
 	<term>serwer</term>
 	<listitem><para>nazwa NetBIOS serwera do którego chcesz siê pod³±czyc.
 	    Serwer mo¿e byæ jakimkolwiek serwerem SMB/CIFS. Nazwa jest odwzorowana
-	    przy u¿yciu linii <ulink url="smb.conf.5.html#NAMERESOLVEORDER">
+	    przy u¿yciu linii <ulink url="smb.conf.5.pl.html#NAMERESOLVEORDER">
 	      <parameter>name resolve order</parameter></ulink> lub przy u¿yciu
 	    opcji z <filename>smb.conf(5)</filename>.</para>
 	</listitem>
@@ -94,9 +94,9 @@
 
       <varlistentry>
 	<term>-l pliklogu</term>
-	<listitem><para>Nazwa dla plików logu/debugowania. ".klient" zostanie
-	    dopisane. Plik logu nigdy nie jest usuwany przez klienta.
-	  </para></listitem>
+	<listitem><para>Nazwa dla plików logu/debugowania. Rozszerzenie
+	    ".klient" zostanie dopisane. Plik logu nigdy nie jest usuwany
+	    przez klienta.</para></listitem>
       </varlistentry>
 
       <varlistentry>
@@ -143,10 +143,10 @@
 	<varlistentry>
 	  <term>-W domena</term>
 	  <listitem><para>Ustawia domenê SMB dla nazwy u¿ytkownika. Uniewa¿nia
-	  to domy¶lne ustawienie domeny, która jest domen± serwera okre¶lonego za
-	  pomoc± opcji <parameter>-S</parameter>. Je¶li podana domena jest taka
-	  sama jak nazwa NetBIOS serwera spowoduje to, ¿e klient zostanie zalogowany
-	  przy u¿yciu lokalnego SAM serwera (w przeciwieñstwie do SAM domeny).
+	  to domy¶lne ustawienie domeny, która jest domen± zdefiniowan± w <filename>
+	  smb.conf</filename>. Je¶li podana domena jest taka sama jak nazwa
+	  NetBIOS serwera spowoduje to, ¿e klient zostanie zalogowany przy
+	  u¿yciu lokalnego SAM serwera (w przeciwieñstwie do SAM domeny).
 	  </para></listitem>
 	</varlistentry>
 
@@ -159,8 +159,10 @@
       <para><emphasis>LSARPC</emphasis></para>
       <itemizedlist>
 	<listitem><para><command>lsaquery</command></para></listitem>
-	<listitem><para><command>lookupsids</command></para></listitem>
-	<listitem><para><command>lookupnames</command></para></listitem>
+	<listitem><para><command>lookupsids</command> - Odwzoruj listê SIDów na nazwy
+	u¿ytkowników.</para></listitem>
+	<listitem><para><command>lookupnames</command> - Odwzoruj listê nazw
+	  u¿ytkowników na SIDy.</para></listitem>
 	<listitem><para><command>enumtrusts</command></para></listitem>
       </itemizedlist>
 
@@ -170,6 +172,10 @@
 	<listitem><para><command>querygroup</command></para></listitem>
 	<listitem><para><command>queryusergroups</command></para></listitem>
 	<listitem><para><command>querygroupmem</command></para></listitem>
+        <listitem><para><command>queryaliasmem</command></para></listitem>
+        <listitem><para><command>querydispinfo</command></para></listitem>
+        <listitem><para><command>querydominfo</command></para></listitem>
+        <listitem><para><command>enumdomgroups</command></para></listitem>
       </itemizedlist>
 
       <para><emphasis>SPOOLSS</emphasis></para>
@@ -180,7 +186,7 @@
 	    sterowniku drukarki na serwerze. Zwróæ uwagê¿, ¿e pliki sterownika powinny
 	    ju¿ byæ w katalogu zwracanym przez <command>getdriverdir</command>. Mo¿liwe
 	    warto¶ci dla <parameter>arch</parameter> s± takie same, jak w poleceniu
-	    <command>getdriverdir</command>. Parametr <parameter>konfig</parameter>
+	    <command>getdriverdir</command>. Parametr <parameter>config</parameter>
 	    jest zdefiniowany jak poni¿ej.</para>
 
 	  <para><programlisting>
@@ -202,6 +208,19 @@
 	  byæ "NULL". Na zdalnym serwerze wydruku NT, Monitor Drukarki dla sterownika
 	  musi byæ zainicjalizowany przed dodaniem sterownika albo wywo³anie RPC zakoñczy
 	  siê b³êdem.</para></listitem>
+
+        <listitem><para><command>addprinter &lt;nazwadrukarki&gt; &lt;nazwawspoludzialu&gt;
+	    &lt;nazwasterownika&gt; &lt;port&gt;</command>
+	  - Dodaj drukarkê na zdalnym serwerze. Bêdzie ona automatycznie wspó³dzielona.
+	  B±d¼ ¶wiadom faktu, ¿e sterownik drukarki musi ju¿ byæ zainstalowany
+	  na serwerze (zobacz <command>adddriver</command>) a <parameter>port</parameter>
+	  musi byæ poprawn± nazw± portu (zobacz <command>enumports</command>).</para>
+	</listitem>
+
+        <listitem><para><command>deldriver</command> - Usuñ okre¶lony sterownik drukarki
+	  dla wszystkich architektur. Nie usuwa to z serwera w³a¶ciwych plików sterownika,
+	  tylko wpis na li¶cie sterowników serwera.</para>
+        </listitem>
 
 	<listitem><para><command>enumdata</command> - Wymienia wszystkie dane na
 	    temat ustawienia drukarki przechowywane na serwerze. W klientach Windows NT,
@@ -284,21 +303,12 @@
 	    debugowania u¿ywany do rejestrowania informacji.</para>
 	</listitem>
 
-	<listitem><para><command>help</command> - Wy¶wietla listê wszystkich
+	<listitem><para><command>help (?)</command> - Wy¶wietla listê wszystkich
 	  znanych poleceñ lub rozszerszon± pomoc na temat konkretnego polecenia.</para>
 	</listitem>
 
 	<listitem><para><command>quit (exit)</command> - Wychodzi z  programu
 	    <command>rpcclient</command>.</para>
-	</listitem>
-
-	<listitem><para><command>set</command> - Ustawia ró¿ne opcje linii poleceñ
-	      dla rpcclient podczas aktywnej sesji.</para>
-	</listitem>
-
-	<listitem><para><command>use</command> - £±czy z odleg³ym serwerem SMB.
-	    <command>rpcclient</command> posiada mo¿liwo¶æ utrzymywania po³±czeñ
-	    z wieloma serwerami jednocze¶nie.</para>
 	</listitem>
     </itemizedlist>
 
@@ -341,13 +351,13 @@
 <refsect1>
       <title>AUTOR</title>
 
-      <para>Oryginalne oprogramowanie Samba i programy dodatkowe zosta³y stworzone przez
-	Andrew Tridgella. Samba jest teraz rozwijana przez Zespó³ Samba jako projekt
-	Open Source w sposób podobny do j±dra Linux.</para>
+      <para>Pierwotnie, oprogramowanie Samba i programy dodatkowe zosta³y stworzone
+        przez Andrew Tridgella. Samba jest teraz rozwijana przez Zespó³ Samba jako
+        projekt Open Source w sposób podobny do j±dra Linux.</para>
 
-      <para>Oryginalna strona podrêcznika by³a napisana przez Matthew Geddesa,
-	Luke'a Kenntha Cassona i przepisana przez Geralda Cartera. Konwersja
-	do DocBook dla Samba 2.2 zosta³a wykonana przez Geralda Cartera.
+      <para>Pierwotnie, strona podrêcznika by³a napisana przez Matthew Geddesa,
+	Luke'a Kennth Casson Leightona i przepisana przez Geralda Cartera.
+        Konwersja do DocBook dla Samba 2.2 zosta³a wykonana przez Geralda Cartera.
 	T³umaczenie na jêzyk polski oraz konwersjê polskiej wersji do DocBook
 	wykona³ Rafa³ Szcze¶niak.</para>
 </refsect1>

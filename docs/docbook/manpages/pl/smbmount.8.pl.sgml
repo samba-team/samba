@@ -68,7 +68,14 @@
 	    wtedy u¿yta jest zmienna ¶rodowiskowa <envar>PASSWD</envar>.
 	    Je¶li nie mo¿na znale¼æ ¿adnego has³a, <command>smbmount</command>
 	    poprosi o nie chyba, ¿e opcja go¶cia (guest option) jest podana.
-	  </para></listitem>
+	  </para>
+
+	  <para>Zauwa¿ ¿e has³o które zawiera znak rozdzielaj±cy argumenty
+	    (np. przecinek ',') nie zostanie poprawnie sparsowane w linii
+	    poleceñ. Tym niemniej, to samo has³o zdefiniowane w zmiennej
+	    ¶rodowiskowej <envar>PASSWD</envar> lub w pliku referencji (zobacz
+	    ni¿ej) bêdzie odczytane poprawnie.</para>
+	</listitem>
       </varlistentry>
 
       <varlistentry>

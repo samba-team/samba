@@ -33,7 +33,7 @@ NetBIOS dla klientów</refpurpose>
 <refsect1>
     <title>OPIS</title>
 
-    <para>Ten program jest czê¶ci± pakietu <ulink url="samba.7.html">Samba
+    <para>Ten program jest czê¶ci± pakietu <ulink url="samba.7.pl.html">Samba
       </ulink>.</para>
 
     <para><command>nmbd</command> jest serwerem który rozumie i mo¿e
@@ -55,7 +55,7 @@ NetBIOS dla klientów</refpurpose>
       W ten sposób <command>nmbd</command> odpowie na rozg³aszane pytania o
       w³asn± nazwê(y). Dodatkowe nazwy do odpowiadania dla <command>nmbd</command>
       mog± byæ ustawione poprzez parametry w pliku konfiguracyjnym
-      <ulink url="smb.conf.5.html"><filename>smb.conf(5)</filename></ulink>.
+      <ulink url="smb.conf.5.pl.html"><filename>smb.conf(5)</filename></ulink>.
     </para>
 
     <para><command>nmbd</command> mo¿e byæ rownie¿ u¿yty jako serwer WINS
@@ -72,7 +72,7 @@ NetBIOS dla klientów</refpurpose>
 </refsect1>
 
 <refsect1>
-    <title>OPTIONS</title>
+    <title>OPCJE</title>
 
     <variablelist>
       <varlistentry>
@@ -122,7 +122,7 @@ NetBIOS dla klientów</refpurpose>
 	  <para>Plik lmhosts jest list± nazw NetBIOS i adresów IP która jest
 	    ³adowana serwer <command>nmbd</command> i u¿ywana przez mechanizm
 	    odwzorowania nazw <parameter>name resolve order</parameter>
-	    opisany w <ulink url="smb.conf.5.html"><filename>smb.conf(5)
+	    opisany w <ulink url="smb.conf.5.pl.html"><filename>smb.conf(5)
 	    </filename></ulink> do rozwi±zywania zapytañ o nazwy NetBIOS
 	    potrzebne serwerowi. Zauwa¿, zawarto¶æ tego pliku <emphasis>NIE
 	    </emphasis> jest u¿ywana przez <command>nmbd</command> do
@@ -135,7 +135,7 @@ NetBIOS dla klientów</refpurpose>
 	    cze¶æ procesu jej budowania. Powszechnymi warto¶ciami domy¶lnymi s±
 	    <filename>/usr/local/samba/lib/lmhosts</filename>,
 	    <filename>/usr/samba/lib/lmhosts</filename> lub <filename>/etc/lmhosts
-	    </filename>. Zobacz stronê podrêcznika <ulink url="lmhosts.5.html">
+	    </filename>. Zobacz stronê podrêcznika <ulink url="lmhosts.5.pl.html">
 	    <filename>lmhosts(5)</filename></ulink> ¿eby dowiedzieæ siê szczegó³ów
 	    o zawarto¶æi tego pliku.
 	  </para>
@@ -164,7 +164,7 @@ NetBIOS dla klientów</refpurpose>
 
 	  <para>Zauwa¿, ¿e okre¶lanie tego parametru tutaj spowoduje, ¿e bêdzie on
 	  nadrzêdny w stosunku do parametru <parameter>log level</parameter> w pliku
-	  <ulink url="smb.conf.5.html"><filename>smb.conf(5)</filename></ulink>.
+	  <ulink url="smb.conf.5.pl.html"><filename>smb.conf(5)</filename></ulink>.
 	  </para>
 	</listitem>
       </varlistentry>
@@ -188,9 +188,9 @@ NetBIOS dla klientów</refpurpose>
 	<term>-n glowna nazwa NetBIOS</term>
 	<listitem><para>Ta opcja pozwala ci podaæ nazwe NetBIOS której Samba u¿ywa
 	    dla siebie. Jest to identyczne z ustawieniem parametru <parameter>
-	    NetBIOS name</parameter> w pliku <ulink url="smb.conf.5.html"><filename>
+	    NetBIOS name</parameter> w pliku <ulink url="smb.conf.5.pl.html"><filename>
 	    smb.conf(5)</filename></ulink>, lecz spowoduje uniewa¿nienie nazwy podanej
-	    w pliku <ulink url="smb.conf.5.html"><filename>smb.conf(5)</filename>
+	    w pliku <ulink url="smb.conf.5.pl.html"><filename>smb.conf(5)</filename>
 	    </ulink> je¶li taka juz tam jest.</para>
 	</listitem>
       </varlistentry>
@@ -213,7 +213,7 @@ NetBIOS dla klientów</refpurpose>
 	    zmienione, gdy Samba jest autokonfigurowana.</para>
 
 	  <para>Podany plik zawiera szczegó³y konfiguracyjne wymagane przez serwer.
-	  Zobacz <ulink url="smb.conf.5.html"><filename>smb.conf(5)</filename></ulink>
+	  Zobacz <ulink url="smb.conf.5.pl.html"><filename>smb.conf(5)</filename></ulink>
 	  aby uzyskaæ wiecej informacji.<para>
 	</listitem>
       </varlistentry>
@@ -256,22 +256,22 @@ NetBIOS dla klientów</refpurpose>
       <varlistentry>
 	<term><filename>/usr/local/samba/lib/smb.conf</filename></term>
 	<listitem><para>Jest to domy¶lna lokalizacja pliku konfiguracyjnego
-	    serwera <ulink url="smb.conf.5.html"><filename>smb.conf</filename>
+	    serwera <ulink url="smb.conf.5.pl.html"><filename>smb.conf</filename>
 	    </ulink>. Inne powszechne miejsca w których systemy instaluj± ten
 	    plik to <filename>/usr/samba/lib/smb.conf</filename>
 	    i <filename>/etc/smb.conf</filename>.</para>
 
 	  <para>Gdy <command>nmbd</command> dzia³a jako serwer WINS (zobacz
-	    parametr <ulink url="smb.conf.5.html#winssupport">wins support</ulink>
-	    na stronie <ulink url="smb.conf.5.html"><filename>smb.conf(5)</filename>
+	    parametr <ulink url="smb.conf.5.pl.html#winssupport">wins support</ulink>
+	    na stronie <ulink url="smb.conf.5.pl.html"><filename>smb.conf(5)</filename>
 	    </ulink>), bêdzie on przechowywa³ bazê danych WINS w pliku <filename>
 	    wins.dat</filename> w katalogu <filename>var/locks</filename>
 	    skonfigurowanym w jakimkolwiek katalogu, w którym Samba mia³a siê
 	    zainstalowac.</para>
 
 	  <para>Je¶li <command>nmbd</command> funkcjonuje jako <emphasis>browse
-	      master</emphasis> (zobacz parametr <ulink url="smb.conf.5.html#localmaster">
-	      local master</ulink> na stronie podrêcznika <ulink url="smb.conf.5.html">
+	      master</emphasis> (zobacz parametr <ulink url="smb.conf.5.pl.html#localmaster">
+	      local master</ulink> na stronie podrêcznika <ulink url="smb.conf.pl.5.html">
 	      <filename>smb.conf(5)</filename></ulink>), <command>nmbd</command>
 	      bêdzie przechowywa³ baze danych przegl±dania w pliku <filename>
 	      browse.dat</filename> w katalogu <filename>var/locks</filename>
@@ -297,12 +297,13 @@ NetBIOS dla klientów</refpurpose>
       <filename>/usr/local/samba/var/locks</filename> (lub w podkatalogu <filename>
       var/locks</filename> katalogu, w którym Samba mia³a siê zainstalowaæ). To równie¿
       spowoduje, ¿e <command>nmbd</command> zrzuci swoj± bazê danych serwera w pliku
-      <filename>log.nmb</filename>. Dodatkowo, poziom debugowania w logu nmbd mo¿e
-      byæ zwiêkszony przez wysy³anie mu SIGUSR1 (<command>kill -USR1 &lt;nmbd-pid&gt;
-      </command>) i obni¿any przez wysy³anie mu SIGUSR2
-      (<command>kill -USR2 &lt;nmbd-pid&gt;</command>). Jest to po to, aby umo¿liwiæ
-      diagnozowanie przej¶ciowych problemów podczas, gdy normalnie dzia³a niski
-      poziom logu.</para>
+      <filename>log.nmb</filename>.</para>
+
+    <para>Poziom debugowania w logu nmbd mo¿e byæ zwiêkszony lub zmniejszony przy
+      u¿yciu programu <ulink url="smbcontrol.1.pl.html"><command>smbcontrol</command>
+      </ulink> (sygna³y SIGUSR[1|2] nie s± ju¿ u¿ywane w Samba 2.2). Jest to po to,
+      aby umo¿liwiæ diagnozowanie przej¶ciowych problemów podczas gdy, normalnie
+      dzia³a niski poziom logu.</para>
 </refsect1>
 
 <refsect1>
@@ -315,11 +316,11 @@ NetBIOS dla klientów</refpurpose>
 <refsect1>
     <title>ZOBACZ TE¯</title>
 
-    <para><command>inetd(8)</command>, <ulink url="smbd.8.html"><command>
-      smbd(8)</command></ulink>, <ulink url="smb.conf.5.html"><filename>
-      smb.conf(5)</filename></ulink>, <ulink url="smbclient.1.html"><command>
-      smbclient(1)</command></ulink>, <ulink url="testparm.1.html"><command>
-      testparm(1)</command></ulink>, <ulink url="tertprns.1.html"><command>
+    <para><command>inetd(8)</command>, <ulink url="smbd.8.pl.html"><command>
+      smbd(8)</command></ulink>, <ulink url="smb.conf.5.pl.html"><filename>
+      smb.conf(5)</filename></ulink>, <ulink url="smbclient.1.pl.html"><command>
+      smbclient(1)</command></ulink>, <ulink url="testparm.1.pl.html"><command>
+      testparm(1)</command></ulink>, <ulink url="tertprns.1.pl.html"><command>
       testprns(1)</command></ulink>, i Internetowe RFC <filename>rfc1001.txt
       </filename>, <filename>rfc1002.txt</filename>. Dodatkowo specyfikacja
       CIFS (poprzednio SMB) jest dostêpna jako link ze strony web:

@@ -2,17 +2,17 @@
 <refentry id="samba" lang="pl">
 
 <refmeta>
-    <refentrytitle>Samba</refentrytitle>
+    <refentrytitle>samba</refentrytitle>
     <manvolnum>7</manvolnum>
 </refmeta>
 
 <refnamediv>
-    <refname>Samba</refname>
+    <refname>samba</refname>
     <refpurpose> Samba - serwer plików SMB/CIFS Windows dla Unixa</refpurpose>
 </refnamediv>
 
 <refsynopsisdiv>
-    <cmdsynopsis><command>Samba</command></cmdsynopsis>
+    <cmdsynopsis><command>samba</command></cmdsynopsis>
 </refsynopsisdiv>
 
 <refsect1>

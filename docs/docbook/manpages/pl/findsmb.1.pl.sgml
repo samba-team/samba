@@ -22,14 +22,14 @@
 <refsect1>
     <title>OPIS</title>
 
-    <para>Ten skrypt perlowy jest czê¶ci± pakietu <ulink url="samba.7.html">
+    <para>Ten skrypt perlowy jest czê¶ci± pakietu <ulink url="samba.7.pl.html">
 	Samba</ulink>.</para>
 
     <para><command>findsmb</command> jest skryptem perlowym który
       wypisuje kilka informacji o maszynach w podsieci, które
       odpowiadaj± na pytania o nazwy SMB (SMB name query requests).
-      U¿ywa programów <ulink url="nmblookup.1.html"><command>
-	  nmblookup(1)</command></ulink> i <ulink url="smbclient.1.html">
+      U¿ywa programów <ulink url="nmblookup.1.pl.html"><command>
+	  nmblookup(1)</command></ulink> i <ulink url="smbclient.1.pl.html">
 	<command>smbclient(1)</command></ulink> ¿eby uzyskaæ te
       informacje.</para>
 </refsect1>
@@ -67,7 +67,7 @@
       operacyjnym lub wersji serwera.</para>
 
     <para>Polecenie musi byæ uruchomione w systemie bez uruchomionego
-      <ulink url="nmbd.8.html"><command>nmbd(8)</command></ulink>.
+      <ulink url="nmbd.8.pl.html"><command>nmbd(8)</command></ulink>.
       Je¶li <command>nmbd(8)</command> dzia³a w systemie, otrzymasz
       tylko adres IP i nazwê DNS maszyny. Aby otrzymaæ odpowiednie
       odpowiedzi od Windows 95 i Windows 98, polecenie musi zostaæ
@@ -104,9 +104,9 @@ IP ADDR         NETBIOS NAME   WORKGROUP/OS/VERSION
 <refsect1>
     <title>ZOBACZ TE¯</title>
 
-    <para><ulink url="nmbd.8.html"><command>nmbd(8)</command></ulink>,
-      <ulink url="smbclient.1.html"><command>smbclient(1)
-	</command></ulink>, i <ulink url="nmblookup.1.html">
+    <para><ulink url="nmbd.8.pl.html"><command>nmbd(8)</command></ulink>,
+      <ulink url="smbclient.1.pl.html"><command>smbclient(1)
+	</command></ulink>, i <ulink url="nmblookup.1.pl.html">
 	<command>nmblookup(1)</command></ulink></para>
 </refsect1>
 

@@ -33,7 +33,7 @@
 <refsect1>
     <title>OPIS</title>
 
-    <para>Ten program jest czê¶ci± pakietu <ulink url="samba.7.html">
+    <para>Ten program jest czê¶ci± pakietu <ulink url="samba.7.pl.html">
 	Samba</ulink>.
     </para>
 
@@ -85,7 +85,7 @@
 	    powoduje, ¿e Windows 95 ignoruje port ¼ród³owy pakietu z ¿±daniem i
 	    odpowiada na port 137 UDP. Niestety, w wiêkszo¶ci systemow UNIX
 	    prawa root'a s± potrzebne do tego, ¿eby podwi±zaæ siê do tego portu.
-	    W dodatku, je¶li demon <ulink url="nmbd.8.html">nmbd(8)</ulink>
+	    W dodatku, je¶li demon <ulink url="nmbd.8.pl.html">nmbd(8)</ulink>
 	    dzia³a na tej maszynie, rownie¿ podwi±zuje siê do tego portu.
 	  </para></listitem>
       </varlistentry>
@@ -108,7 +108,7 @@
 	<listitem><para>Wysy³a zapytanie na podany adres rozg³aszania. Bez tej
 	    opcji, domy¶lnym zachowaniem programu nmblookup jest wys³anie zapytania
 	    na adres rozg³aszania interfejsów sieciowych albo jako auto-wykrywany,
-	    albo zdefiniowany w parametrze <ulink url="smb.conf.5.html#interfaces">
+	    albo zdefiniowany w parametrze <ulink url="smb.conf.5.pl.html#interfaces">
 	    <parameter>interfaces</parameter></ulink> w pliku <filename>smb.conf (5)
 	    </filename>.
       </varlistentry>
@@ -141,8 +141,8 @@
 	  </para>
 
 	  <para>Zauwa¿, ¿e okre¶lanie tego parametru tutaj spowoduje, ¿e bêdzie on
-	    nadrzêdny w stosunku do parametru <ulink url="smb.conf.5.html#loglevel">
-	    <parameter>log level</parameter></ulink> w pliku <ulink url="smb.conf.5.html">
+	    nadrzêdny w stosunku do parametru <ulink url="smb.conf.5.pl.html#loglevel">
+	    <parameter>log level</parameter></ulink> w pliku <ulink url="smb.conf.5.pl.html">
 	    <filename>smb.conf(5)</filename></ulink>.
 	  </para>
       </varlistentry>
@@ -150,7 +150,7 @@
       <varlistentry>
 	<term>-s &lt;smb.conf&gt;</term>
 	<listitem><para>Ten parametr okre¶la ¶cie¿kê do pliku konfiguracyjnego
-	    Samby, <ulink url="smb.conf.5.html">smb.conf(5)</ulink>. Plik ten
+	    Samby, <ulink url="smb.conf.5.pl.html">smb.conf(5)</ulink>. Plik ten
 	    kontroluje wszystkie aspekty ustawieñ Samby na danej maszynie.
 	  </para></listitem>
       </varlistentry>
@@ -202,7 +202,7 @@
 
     <para>Na przyk³ad, polecenie:</para>
 
-    <para><command>nmblookup -U samba.org -R IRIX#1B'</command></para>
+    <para><command>nmblookup -U samba.org -R 'IRIX#1B'</command></para>
 
     <para>zapyta³oby serwer WINS samba.org o nadrzedn± przegl±darkê
       domeny (typ nazwy 1B) w grupie roboczej IRIX.</para>
@@ -220,9 +220,9 @@
 <refsect1>
     <title>ZOBACZ TE¯</title>
 
-    <para><ulink url="samba.7.html"><command>samba(7)</command></ulink>,
-      <ulink url="nmbd.8.html"><command>nmbd(8)</command></ulink>,
-      <ulink url="smb.conf.5.html"><command>smb.conf(5)</command></ulink>
+    <para><ulink url="samba.7.pl.html"><command>samba(7)</command></ulink>,
+      <ulink url="nmbd.8.pl.html"><command>nmbd(8)</command></ulink>,
+      <ulink url="smb.conf.5.pl.html"><command>smb.conf(5)</command></ulink>
     </para>
 </refsect1>
 

@@ -468,6 +468,34 @@
 </refsect1>
 
 <refsect1>
+    <title>INTERAKCJE Z PAM</title>
+    <para>Samba u¿ywa PAM do autentykacji (gdy otrzyma has³o w czystym
+      tek¶cie), do sprawdzania kont (czy to konto jest zablokowane ?)
+      i do zarz±dzania sesj±. Stopieñ w jakim samba wspiera PAM jest
+      ograniczony przez protokó³ SMB i parameter smb.conf <ulink
+	url="smb.conf.5.html#OBEYPAMRESTRICTIONS"><parameter>obey pam
+	  restrictions</parameter></ulink>. Gdy jest ustawiony, stosowane
+      s± nastêpuj±ce restrykcje:</para>
+
+    <itemizedlist>
+      <listitem><para><emphasis>Walidacja Kont (Account Validation)</emphasis>:
+	  Ka¿dy dostêp do serwera samba jest sprawdzany przez PAM, ¿eby
+	  zobaczyæ czy konto jest wa¿ne, nie jest zablokowane i mo¿e
+	  logowaæ sie w tym czasie. Dotyczy to równie¿ szyfrowanych
+	  logowañ.</para></listitem>
+
+      <listitem><para><emphasis>Zarz±dzanie Sesj± (Session Management)</emphasis>:
+	  Gdy nie jest u¿ywane zabezpieczenie na poziomie wspó³udzia³u
+	  (share level security), u¿ytkownicy musz± przej¶æ sprawdzanie
+	  sesji w PAM zanim dostêp bêdzie im przyznany. Jednak¿e zwróæ
+	  uwagê, ¿e jest to omijane w zabezpieczeniu na poziomie wspó³udzia³u.
+	  Zwróæ równie¿ uwage na to, ¿e niektóre starsze pliki konfiguracyjne
+	  PAM mog± potrzebowaæ dodania linii do wsparcia sesji.</para>
+      </listitem>
+    </itemizedlist>
+</refsect1>
+
+<refsect1>
     <title>TESTOWANIE INSTALACJI</title>
 
     <para>Uruchamiaj±c serwer jako demona, uruchom go zanim
@@ -531,12 +559,11 @@
       sposobem na zakoñczenie smbd jest wys³anie mu sygna³u SIGTERM
       (-15) i zaczekanie, a¿ "umrze sam".</para>
 
-    <para>Poziom debugowania smbd mo¿e byæ zwiêkszony przez u¿ycie
-      sygna³u SIGUSR2 (<command>kill -USR2 &lt;smbd-pid&gt;</command>)
-      i zmniejszony sygna³em SIGUSR2 (<command>kill -USR2 &lt;smbd-pid&gt;
-      </command>). Taka mo¿liwo¶æ istnieje po to, ¿eby mo¿na by³o
-      diagnozowaæ przej¶ciowe problemy, ca³y czas dzia³aj±c z normalnie
-      niskim poziomem logu.</para>
+    <para>Poziom debugowania w logu smbd mo¿e byæ zwiêkszony lub zmniejszony
+      przy u¿yciu programu <ulink url="smbcontrol.1.html"><command>smbcontrol
+	</command></ulink> (sygna³y SIGUSR[1|2] nie s± ju¿ u¿ywane w Samba 2.2).
+      Jest to po to, aby umo¿liwiæ diagnozowanie przej¶ciowych problemów,
+      podczas gdy normalnie dzia³a niski poziom logu.</para>
 
     <para>Zauwa¿, ¿e w miarê jak przechwytywanie sygna³u wysy³a zapis
       informacji debuguj±cych, nie s± one rozprowadzane w smbd. Zatem
