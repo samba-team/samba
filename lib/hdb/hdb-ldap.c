@@ -42,7 +42,8 @@ RCSID("$Id$");
 #include <ctype.h>
 #include <sys/un.h>
 
-static krb5_error_code LDAP__connect(krb5_context context, HDB * db);
+static krb5_error_code LDAP__connect(krb5_context context, HDB *);
+static krb5_error_code LDAP_close(krb5_context context, HDB *);
 
 static krb5_error_code
 LDAP_message2entry(krb5_context context, HDB * db, LDAPMessage * msg,
@@ -163,6 +164,20 @@ LDAP_no_size_limit(krb5_context context, LDAP *lp)
 	return HDB_ERR_BADVERSION;
     }
     return 0;
+}
+
+static int
+check_ldap(krb5_context context, HDB *db, int ret)
+{
+    switch (ret) {
+    case LDAP_SUCCESS:
+	return 0;
+    case LDAP_SERVER_DOWN:
+	LDAP_close(context, db);
+	return 1;
+    default:
+	return 1;
+    }
 }
 
 static krb5_error_code
@@ -744,7 +759,7 @@ LDAP_dn2principal(krb5_context context, HDB * db, const char *dn,
     rc = ldap_search_s(HDB2LDAP(db), dn, LDAP_SCOPE_SUBTREE,
 		       "(objectclass=krb5Principal)", krb5principal_attrs,
 		       0, &res);
-    if (rc != LDAP_SUCCESS) {
+    if (check_ldap(context, db, rc)) {
 	krb5_set_error_string(context, "ldap_search_s: %s",
 			      ldap_err2string(rc));
 	ret = HDB_ERR_NOENTRY;
@@ -803,7 +818,7 @@ LDAP__lookup_princ(krb5_context context,
 
     rc = ldap_search_s(HDB2LDAP(db), HDB2BASE(db), LDAP_SCOPE_SUBTREE, filter, 
 		       krb5kdcentry_attrs, 0, msg);
-    if (rc != LDAP_SUCCESS) {
+    if (check_ldap(context, db, rc)) {
 	krb5_set_error_string(context, "ldap_search_s: %s",
 			      ldap_err2string(rc));
 	ret = HDB_ERR_NOENTRY;
@@ -831,7 +846,7 @@ LDAP__lookup_princ(krb5_context context,
 
 	rc = ldap_search_s(HDB2LDAP(db), HDB2BASE(db), LDAP_SCOPE_SUBTREE, 
 			   filter, krb5kdcentry_attrs, 0, msg);
-	if (rc != LDAP_SUCCESS) {
+	if (check_ldap(context, db, rc)) {
 	    krb5_set_error_string(context, "ldap_search_s: %s",
 				  ldap_err2string(rc));
 	    ret = HDB_ERR_NOENTRY;
@@ -1335,6 +1350,9 @@ LDAP_seq(krb5_context context, HDB * db, unsigned flags, hdb_entry * entry)
 	    ret = HDB_ERR_NOENTRY;
 	    HDBSETMSGID(db, -1);
 	    break;
+	case LDAP_SERVER_DOWN:
+	    LDAP_close(context, db);
+	    /* fall though */
 	case 0:
 	case -1:
 	default:
@@ -1565,16 +1583,15 @@ LDAP_store(krb5_context context, HDB * db, unsigned flags,
 	errfn = "ldap_modify_s";
     }
 
-    if (rc == LDAP_SUCCESS) {
-	ret = 0;
-    } else {
+    if (check_ldap(context, db, rc)) {
 	char *ld_error = NULL;
 	ldap_get_option(HDB2LDAP(db), LDAP_OPT_ERROR_STRING,
 			&ld_error);
 	krb5_set_error_string(context, "%s: %s (dn=%s) %s: %s", 
 			      errfn, name, dn, ldap_err2string(rc), ld_error);
 	ret = HDB_ERR_CANT_LOCK_DB;
-    }
+    } else
+	ret = 0;
 
   out:
     /* free stuff */
