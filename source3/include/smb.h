@@ -149,8 +149,6 @@ typedef int BOOL;
 
 #include "doserr.h"
 
-#include "pstring.h"
-
 /*
  * SMB UCS2 (16-bit unicode) internal type.
  */

@@ -685,6 +685,9 @@ extern int errno;
 #define NGROUPS_MAX 32 /* Guess... */
 #endif
 
+/* Our own pstrings and fstrings */
+#include "pstring.h"
+
 /* Lists, trees, caching, database... */
 #include "xfile.h"
 #include "intl.h"
@@ -700,7 +703,6 @@ extern int errno;
 #include "trans2.h"
 #include "nterr.h"
 #include "messages.h"
-#include "util_list.h"
 #include "charset.h"
 #include "dynconfig.h"
 
