@@ -35,6 +35,26 @@
 
 #define CHECK_READ_ONLY(req) do { if (lp_readonly(req->conn->service)) return NT_STATUS_ACCESS_DENIED; } while (0)
 
+#ifndef HAVE_PREAD
+static ssize_t pread(int __fd, void *__buf, size_t __nbytes, off_t __offset)
+{
+	if (lseek(__fd, __offset, SEEK_SET) != __offset) {
+		return -1;
+	}
+	return read(__fd, __buf, __nbytes);
+}
+#endif
+
+#ifndef HAVE_PWRITE
+static ssize_t pwrite(int __fd, const void *__buf, size_t __nbytes, off_t __offset)
+{
+	if (lseek(__fd, __offset, SEEK_SET) != __offset) {
+		return -1;
+	}
+	return write(__fd, __buf, __nbytes);
+}
+#endif
+
 /*
   connect to a share - used when a tree_connect operation comes
   in. For a disk based backend we needs to ensure that the base
@@ -151,7 +171,7 @@ static NTSTATUS svfs_map_fileinfo(struct request_context *req, union smb_fileinf
 	struct svfs_dir *dir = NULL;
 	char *pattern = NULL;
 	int i;
-	char *s, *short_name;
+	const char *s, *short_name;
 
 	s = strrchr(unix_path, '/');
 	if (s) {

@@ -11,6 +11,9 @@ AC_ARG_WITH(pthreads,
 [ case "$withval" in
 	yes)
 		AC_MSG_RESULT(yes)
+		if test x"$ac_cv_func_pread" != x"yes" -o x"$ac_cv_func_pwrite" != x"yes";then
+			AC_MSG_ERROR([You cannot enable threads when you don't have pread/pwrite!])
+		fi
 		SMB_MODULE_DEFAULT(process_model_thread,STATIC)
 		SMB_EXT_LIB_ENABLE(PTHREAD,YES)
 	;;
