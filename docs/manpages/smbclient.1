@@ -1,4 +1,4 @@
-.TH SMBCLIENT 1 "08 Jan 1998" "smbclient 1.9.18"
+.TH SMBCLIENT 1 "19 Feb 1998" "smbclient 1.9.18p3"
 .SH NAME
 smbclient \- ftp-like Lan Manager client program
 .SH SYNOPSIS
@@ -19,6 +19,9 @@ smbclient \- ftp-like Lan Manager client program
 ] [
 .B \-I
 .I IP number
+] [
+.B \-R
+.I name resolve order
 ] [
 .B \-N
 ] [
@@ -87,6 +90,11 @@ on the Lan Manager server "lanman", you would use the servicename
 Note that the server name required is NOT necessarily the host name of the
 server! The name required is a Lan Manager server name, which may or may not
 be the same as the hostname of the machine running the server.
+
+With Samba 1.9.18p4 the server name is looked up according to the
+"name resolve order=" parameter in the smb.conf file, allowing an
+administrator to change the order and methods by which server names
+are looked up.
 .RE
 
 .B password
@@ -112,6 +120,15 @@ on an uppercase password. Lowercase or mixed case passwords may be
 rejected by these servers.
 
 Be cautious about including passwords in scripts.
+.RE
+
+.B \-R name resolve order
+
+.RS 3
+This parameter will override the default name resolution order of the
+server listed in the "name resolve order" parameter in smb.conf. This
+is useful to force name resolution to take place by a particular method.
+This command line parameter only exists in Samba 1.9.18p4 and above.
 .RE
 
 .B \-A

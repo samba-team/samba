@@ -433,6 +433,8 @@ message command
 
 min wins ttl
 
+name resolve order
+
 netbios aliases
 
 netbios name
@@ -577,6 +579,8 @@ dos filetimes
 dos filetime resolution
 
 exec
+
+fake directory create times
 
 fake oplocks
 
@@ -1349,13 +1353,44 @@ the two timestamps to match, and Visual C++ is happy.
 .SS encrypt passwords (G)
 
 This boolean controls whether encrypted passwords will be negotiated
-with the client. Note that this option has no effect if you haven't
-compiled in the necessary des libraries and encryption code. It
-defaults to no.
+with the client. Note that Windows NT 4.0 SP3 and above will by default
+expect encrypted passwords unless a registry entry is changed. To use
+encrypted passwords in Samba see the file docs/ENCRYPTION.txt.
 
 .SS exec (S)
 
 This is an alias for preexec
+
+.SS fake directory create times (S)
+NTFS and Windows VFAT file systems keep a create time for all files
+and directories. This is not the same as the ctime - status change
+time - that Unix keeps, so Samba by default reports the earliest
+of the various times Unix does keep. Setting this parameter for a
+share causes Samba to always report midnight 1-1-1980 as
+the create time for directories.
+
+This option is mainly used as a compatibility option for Visual C++ 
+when used against Samba shares. Visual C++ generated makefiles
+have the object directory as a dependency for each object file,
+and a make rule to create the directory. Also, when NMAKE
+compares timestamps it uses the creation time when examining
+a directory. Thus the object directory will be created if it does
+not exist, but once it does exist it will always have an earlier
+timestamp than the object files it contains.
+
+However, Unix time semantics mean that the create time reported
+by Samba will be updated whenever a file is created or deleted
+in the directory. NMAKE therefore finds all object files in the
+object directory bar the last one built are out of date compared
+to the directory and rebuilds them. Enabling this option ensures
+directories always predate their contents and an NMAKE build will
+proceed as expected.
+
+.B Default:
+        fake directory create times = False
+
+.B Example:
+        fake directory create times = True
 
 .SS fake oplocks (S)
 
@@ -2373,6 +2408,40 @@ The default is 6 hours (21600 seconds).
 .B Default:
         min wins ttl = 21600
 
+.SS name resolve order (G)
+
+This option is used by the programs smbd, nmbd and smbclient to determine
+what naming services and in what order to resolve host names to IP addresses.
+This option is most useful in smbclient. The option takes a space separated
+string of different name resolution options. These are "lmhosts", "host",
+"wins" and "bcast". They cause names to be resolved as follows :
+
+lmhosts : Lookup an IP address in the Samba lmhosts file.
+host    : Do a standard host name to IP address resolution, using the
+          system /etc/hosts, NIS, or DNS lookups. This method of name
+          resolution is operating system depended (for instance on Solaris
+          this may be controlled by the /etc/nsswitch.conf file).
+wins    : Query a name with the IP address listed in the "wins server ="
+          parameter. If no WINS server has been specified this method will
+          be ignored.
+bcast   : Do a broadcast on each of the known local interfaces listed in
+          the "interfaces =" parameter. This is the least reliable of the
+          name resolution methods as it depends on the target host being
+          on a locally connected subnet.
+
+The default order is lmhosts, host, wins, bcast and these name resolution
+methods will be attempted in this order.
+
+This option was first introduced in Samba 1.9.18p4.
+
+.B Default:
+        name resolve order = lmhosts host wins bcast
+
+.Example:
+        name resolve order = lmhosts bcast host
+
+This will cause the local lmhosts file to be examined first, followed
+by a broadcast attempt, followed by a normal system hostname lookup.
 
 .SS netbios aliases (G)
 
@@ -2595,6 +2664,10 @@ This options sets the name of the password server to use. It must be a
 netbios name, so if the machine's netbios name is different from its
 internet name then you may have to add its netbios name to
 /etc/hosts.
+
+Note that with Samba 1.9.18p4 and above the name of the password
+server is looked up using the parameter "name resolve order=" and
+so may resolved by any method and order described in that parameter.
 
 The password server much be a machine capable of using the "LM1.2X002"
 or the "LM NT 0.12" protocol, and it must be in user level security
@@ -3869,6 +3942,7 @@ transferring data from clients.
 
 .B Example:
  	write raw = no
+
 .SH NOTE ABOUT USERNAME/PASSWORD VALIDATION
 There are a number of ways in which a user can connect to a
 service. The server follows the following steps in determining if it
