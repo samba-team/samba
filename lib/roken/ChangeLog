@@ -1,3 +1,7 @@
+Thu Feb 12 03:30:08 1998  Assar Westerlund  <assar@sics.se>
+
+	* parse_time.c (print_time_table): don't return a void value.
+
 Thu Jan 22 21:23:23 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 	* getarg.c: Fix long form of negative flags.
