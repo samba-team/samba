@@ -415,7 +415,7 @@ check_addresses(HostAddresses *addresses, const struct sockaddr *from)
     if(addresses == NULL)
 	return allow_null_ticket_addresses;
     
-    ret = krb5_sockaddr2address (from, &addr);
+    ret = krb5_sockaddr2address (context, from, &addr);
     if(ret)
 	return FALSE;
 
@@ -805,17 +805,17 @@ as_rep(KDC_REQ *req,
     if (client->pw_end
 	&& (kdc_warn_pwexpire == 0
 	    || kdc_time + kdc_warn_pwexpire <= *client->pw_end)) {
-	ek.last_req.val[ek.last_req.len].lr_type  = 6;
+	ek.last_req.val[ek.last_req.len].lr_type  = LR_PW_EXPTIME;
 	ek.last_req.val[ek.last_req.len].lr_value = *client->pw_end;
 	++ek.last_req.len;
     }
     if (client->valid_end) {
-	ek.last_req.val[ek.last_req.len].lr_type  = 7;
+	ek.last_req.val[ek.last_req.len].lr_type  = LR_ACCT_EXPTIME;
 	ek.last_req.val[ek.last_req.len].lr_value = *client->valid_end;
 	++ek.last_req.len;
     }
     if (ek.last_req.len == 0) {
-	ek.last_req.val[ek.last_req.len].lr_type  = 0;
+	ek.last_req.val[ek.last_req.len].lr_type  = LR_NONE;
 	ek.last_req.val[ek.last_req.len].lr_value = 0;
 	++ek.last_req.len;
     }
