@@ -37,7 +37,9 @@ AFS_EXTRA_OBJS	= @AFS_EXTRA_OBJS@
 AFS_EXTRA_LIBS	= @AFS_EXTRA_LIBS@
 LIB = $(LIBNAME).$(LIBEXT) $(AFS_EXTRA_LIBS)
 
-SOURCES = afssys.c afskrb.c common.c afslib.c issuid.c 
+SOURCES = afssys.c afskrb.c common.c afslib.c
+
+EXTRA_SOURCE = issuid.c
 
 OBJECTS = afssys.o afskrb.o common.o issuid.o $(AFS_EXTRA_OBJS)
 
@@ -67,7 +69,7 @@ TAGS: $(SOURCES)
 check:
 
 clean:
-	rm -f $(LIB) *.o *.a
+	rm -f $(LIB) *.o *.a $(EXTRASOURCE)
 
 mostlyclean: clean
 
@@ -103,5 +105,5 @@ $(OBJECTS): ../../include/config.h
 
 .PHONY: all Wall install uninstall check clean mostlyclean distclean realclean dist
 
-issuid.c: $(srcdir)/../roken/issuid.c
+issuid.c:
 	$(LN_S) $(srcdir)/../roken/issuid.c .
