@@ -109,13 +109,8 @@ BOOL do_lock(files_struct *fsp,connection_struct *conn,
     return False;
   }
 
-#ifdef LARGE_SMB_OFF_T
   DEBUG(10,("do_lock: lock type %d start=%.0f len=%.0f requested for file %s\n",
         lock_type, (double)offset, (double)count, fsp->fsp_name ));
-#else /* LARGE_SMB_OFF_T */
-  DEBUG(10,("do_lock: lock type %d start=%d len=%d requested for file %s\n",
-        lock_type, (int)offset, (int)count, fsp->fsp_name ));
-#endif /* LARGE_SMB_OFF_T */
 
   if (OPEN_FSP(fsp) && fsp->can_lock && (fsp->conn == conn))
     ok = fcntl_lock(fsp->fd_ptr->fd,SMB_F_SETLK,offset,count,
@@ -141,13 +136,8 @@ BOOL do_unlock(files_struct *fsp,connection_struct *conn,
   if (!lp_locking(SNUM(conn)))
     return(True);
 
-#ifdef LARGE_SMB_OFF_T
   DEBUG(10,("do_unlock: unlock start=%.0f len=%.0f requested for file %s\n",
         (double)offset, (double)count, fsp->fsp_name ));
-#else
-  DEBUG(10,("do_unlock: unlock start=%d len=%d requested for file %s\n",
-        (int)offset, (int)count, fsp->fsp_name ));
-#endif
 
   if (OPEN_FSP(fsp) && fsp->can_lock && (fsp->conn == conn))
     ok = fcntl_lock(fsp->fd_ptr->fd,SMB_F_SETLK,offset,count,F_UNLCK);
