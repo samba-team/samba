@@ -38,7 +38,7 @@ SMB_OFF_T seek_file(files_struct *fsp,SMB_OFF_T pos)
   if (fsp->print_file && lp_postscript(fsp->conn->service))
     offset = 3;
 
-  seek_ret = fsp->conn->vfs_ops.lseek(fsp->fd,pos+offset,SEEK_SET);
+  seek_ret = fsp->conn->vfs_ops.lseek(fsp,fsp->fd,pos+offset,SEEK_SET);
 
   /*
    * We want to maintain the fiction that we can seek
@@ -117,7 +117,7 @@ ssize_t read_file(files_struct *fsp,char *data,SMB_OFF_T pos,size_t n)
   }
   
   if (n > 0) {
-    readret = fsp->conn->vfs_ops.read(fsp->fd,data,n);
+    readret = fsp->conn->vfs_ops.read(fsp,fsp->fd,data,n);
     if (readret == -1)
       return -1;
     if (readret > 0) ret += readret;
@@ -164,7 +164,7 @@ ssize_t write_file(files_struct *fsp, char *data, SMB_OFF_T pos, size_t n)
     SMB_STRUCT_STAT st;
     fsp->modified = True;
 
-    if (fsp->conn->vfs_ops.fstat(fsp->fd,&st) == 0) {
+    if (fsp->conn->vfs_ops.fstat(fsp,fsp->fd,&st) == 0) {
       int dosmode = dos_mode(fsp->conn,fsp->fsp_name,&st);
       if (MAP_ARCHIVE(fsp->conn) && !IS_DOS_ARCHIVE(dosmode)) {	
         file_chmod(fsp->conn,fsp->fsp_name,dosmode | aARCH,&st);
@@ -683,7 +683,7 @@ void sync_file(connection_struct *conn, files_struct *fsp)
 {
     if(lp_strict_sync(SNUM(conn)) && fsp->fd != -1) {
       flush_write_cache(fsp, SYNC_FLUSH);
-      conn->vfs_ops.fsync(fsp->fd);
+      conn->vfs_ops.fsync(fsp,fsp->fd);
     }
 }
 #undef OLD_NTDOMAIN

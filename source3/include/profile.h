@@ -1,3 +1,5 @@
+#ifndef _PROFILE_H_
+#define _PROFILE_H_
 /* 
    Unix SMB/Netbios implementation.
    Version 1.9.
@@ -25,14 +27,300 @@
 
 #define PROF_SHMEM_KEY ((key_t)0x07021999)
 #define PROF_SHM_MAGIC 0x6349985
-#define PROF_SHM_VERSION 1
+#define PROF_SHM_VERSION 2
+
+/* time values in the following structure are in milliseconds */
 
 struct profile_struct {
 	int prof_shm_magic;
 	int prof_shm_version;
+/* general counters */
 	unsigned smb_count; /* how many SMB packets we have processed */
 	unsigned uid_changes; /* how many times we change our effective uid */
+/* system call counters */
+	unsigned syscall_opendir_count;
+	unsigned syscall_opendir_time;
+	unsigned syscall_readdir_count;
+	unsigned syscall_readdir_time;
+	unsigned syscall_mkdir_count;
+	unsigned syscall_mkdir_time;
+	unsigned syscall_rmdir_count;
+	unsigned syscall_rmdir_time;
+	unsigned syscall_closedir_count;
+	unsigned syscall_closedir_time;
+	unsigned syscall_open_count;
+	unsigned syscall_open_time;
+	unsigned syscall_close_count;
+	unsigned syscall_close_time;
+	unsigned syscall_read_count;
+	unsigned syscall_read_time;
+	unsigned syscall_read_bytes;	/* bytes read with read syscall */
+	unsigned syscall_write_count;
+	unsigned syscall_write_time;
+	unsigned syscall_write_bytes;	/* bytes written with write syscall */
+	unsigned syscall_lseek_count;
+	unsigned syscall_lseek_time;
+	unsigned syscall_rename_count;
+	unsigned syscall_rename_time;
+	unsigned syscall_fsync_count;
+	unsigned syscall_fsync_time;
+	unsigned syscall_stat_count;
+	unsigned syscall_stat_time;
+	unsigned syscall_fstat_count;
+	unsigned syscall_fstat_time;
+	unsigned syscall_lstat_count;
+	unsigned syscall_lstat_time;
+	unsigned syscall_unlink_count;
+	unsigned syscall_unlink_time;
+	unsigned syscall_chmod_count;
+	unsigned syscall_chmod_time;
+	unsigned syscall_chown_count;
+	unsigned syscall_chown_time;
+	unsigned syscall_chdir_count;
+	unsigned syscall_chdir_time;
+	unsigned syscall_getwd_count;
+	unsigned syscall_getwd_time;
+	unsigned syscall_utime_count;
+	unsigned syscall_utime_time;
+	unsigned syscall_ftruncate_count;
+	unsigned syscall_ftruncate_time;
+	unsigned syscall_fcntl_lock_count;
+	unsigned syscall_fcntl_lock_time;
+/* stat cache counters */
+	unsigned statcache_lookups;
+	unsigned statcache_misses;
+	unsigned statcache_hits;
+/* write cache counters */
+	unsigned writecache_read_hits;
+	unsigned writecache_abutted_writes;
+	unsigned writecache_total_writes;
+	unsigned writecache_non_oplock_writes;
+	unsigned writecache_direct_writes;
+	unsigned writecache_init_writes;
+	unsigned writecache_flushed_writes[NUM_FLUSH_REASONS];
+	unsigned writecache_num_perfect_writes;
+	unsigned writecache_num_write_caches;
+	unsigned writecache_allocated_write_caches;
+/* counters for individual SMB types */
+	unsigned SMBmkdir_count;	/* create directory */
+	unsigned SMBmkdir_time;
+	unsigned SMBrmdir_count;	/* delete directory */
+	unsigned SMBrmdir_time;
+	unsigned SMBopen_count;		/* open file */
+	unsigned SMBopen_time;
+	unsigned SMBcreate_count;	/* create file */
+	unsigned SMBcreate_time;
+	unsigned SMBclose_count;	/* close file */
+	unsigned SMBclose_time;
+	unsigned SMBflush_count;	/* flush file */
+	unsigned SMBflush_time;
+	unsigned SMBunlink_count;	/* delete file */
+	unsigned SMBunlink_time;
+	unsigned SMBmv_count;		/* rename file */
+	unsigned SMBmv_time;
+	unsigned SMBgetatr_count;	/* get file attributes */
+	unsigned SMBgetatr_time;
+	unsigned SMBsetatr_count;	/* set file attributes */
+	unsigned SMBsetatr_time;
+	unsigned SMBread_count;		/* read from file */
+	unsigned SMBread_time;
+	unsigned SMBwrite_count;	/* write to file */
+	unsigned SMBwrite_time;
+	unsigned SMBlock_count;		/* lock byte range */
+	unsigned SMBlock_time;
+	unsigned SMBunlock_count;	/* unlock byte range */
+	unsigned SMBunlock_time;
+	unsigned SMBctemp_count;	/* create temporary file */
+	unsigned SMBctemp_time;
+	/* SMBmknew stats are currently combined with SMBcreate */
+	unsigned SMBmknew_count;	/* make new file */
+	unsigned SMBmknew_time;
+	unsigned SMBchkpth_count;	/* check directory path */
+	unsigned SMBchkpth_time;
+	unsigned SMBexit_count;		/* process exit */
+	unsigned SMBexit_time;
+	unsigned SMBlseek_count;	/* seek */
+	unsigned SMBlseek_time;
+	unsigned SMBlockread_count;	/* Lock a range and read */
+	unsigned SMBlockread_time;
+	unsigned SMBwriteunlock_count;	/* Unlock a range then write */
+	unsigned SMBwriteunlock_time;
+	unsigned SMBreadbraw_count;	/* read a block of data with no smb header */
+	unsigned SMBreadbraw_time;
+	unsigned SMBreadBmpx_count;	/* read block multiplexed */
+	unsigned SMBreadBmpx_time;
+	unsigned SMBreadBs_count;	/* read block (secondary response) */
+	unsigned SMBreadBs_time;
+	unsigned SMBwritebraw_count;	/* write a block of data with no smb header */
+	unsigned SMBwritebraw_time;
+	unsigned SMBwriteBmpx_count;	/* write block multiplexed */
+	unsigned SMBwriteBmpx_time;
+	unsigned SMBwriteBs_count;	/* write block (secondary request) */
+	unsigned SMBwriteBs_time;
+	unsigned SMBwritec_count;	/* secondary write request */
+	unsigned SMBwritec_time;
+	unsigned SMBsetattrE_count;	/* set file attributes expanded */
+	unsigned SMBsetattrE_time;
+	unsigned SMBgetattrE_count;	/* get file attributes expanded */
+	unsigned SMBgetattrE_time;
+	unsigned SMBlockingX_count;	/* lock/unlock byte ranges and X */
+	unsigned SMBlockingX_time;
+	unsigned SMBtrans_count;	/* transaction - name, bytes in/out */
+	unsigned SMBtrans_time;
+	unsigned SMBtranss_count;	/* transaction (secondary request/response) */
+	unsigned SMBtranss_time;
+	unsigned SMBioctl_count;	/* IOCTL */
+	unsigned SMBioctl_time;
+	unsigned SMBioctls_count;	/* IOCTL  (secondary request/response) */
+	unsigned SMBioctls_time;
+	unsigned SMBcopy_count;		/* copy */
+	unsigned SMBcopy_time;
+	unsigned SMBmove_count;		/* move */
+	unsigned SMBmove_time;
+	unsigned SMBecho_count;		/* echo */
+	unsigned SMBecho_time;
+	unsigned SMBwriteclose_count;	/* write a file then close it */
+	unsigned SMBwriteclose_time;
+	unsigned SMBopenX_count;	/* open and X */
+	unsigned SMBopenX_time;
+	unsigned SMBreadX_count;	/* read and X */
+	unsigned SMBreadX_time;
+	unsigned SMBwriteX_count;	/* write and X */
+	unsigned SMBwriteX_time;
+	unsigned SMBtrans2_count;	/* TRANS2 protocol set */
+	unsigned SMBtrans2_time;
+	unsigned SMBtranss2_count;	/* TRANS2 protocol set, secondary command */
+	unsigned SMBtranss2_time;
+	unsigned SMBfindclose_count;	/* Terminate a TRANSACT2_FINDFIRST */
+	unsigned SMBfindclose_time;
+	unsigned SMBfindnclose_count;	/* Terminate a TRANSACT2_FINDNOTIFYFIRST */
+	unsigned SMBfindnclose_time;
+	unsigned SMBtcon_count;		/* tree connect */
+	unsigned SMBtcon_time;
+	unsigned SMBtdis_count;		/* tree disconnect */
+	unsigned SMBtdis_time;
+	unsigned SMBnegprot_count;	/* negotiate protocol */
+	unsigned SMBnegprot_time;
+	unsigned SMBsesssetupX_count;	/* Session Set Up & X (including User Logon) */
+	unsigned SMBsesssetupX_time;
+	unsigned SMBulogoffX_count;	/* user logoff */
+	unsigned SMBulogoffX_time;
+	unsigned SMBtconX_count;	/* tree connect and X*/
+	unsigned SMBtconX_time;
+	unsigned SMBdskattr_count;	/* get disk attributes */
+	unsigned SMBdskattr_time;
+	unsigned SMBsearch_count;	/* search directory */
+	unsigned SMBsearch_time;
+	/* SBMffirst stats combined with SMBsearch */
+	unsigned SMBffirst_count;	/* find first */
+	unsigned SMBffirst_time;
+	/* SBMfunique stats combined with SMBsearch */
+	unsigned SMBfunique_count;	/* find unique */
+	unsigned SMBfunique_time;
+	unsigned SMBfclose_count;	/* find close */
+	unsigned SMBfclose_time;
+	unsigned SMBnttrans_count;	/* NT transact */
+	unsigned SMBnttrans_time;
+	unsigned SMBnttranss_count;	/* NT transact secondary */
+	unsigned SMBnttranss_time;
+	unsigned SMBntcreateX_count;	/* NT create and X */
+	unsigned SMBntcreateX_time;
+	unsigned SMBntcancel_count;	/* NT cancel */
+	unsigned SMBntcancel_time;
+	unsigned SMBsplopen_count;	/* open print spool file */
+	unsigned SMBsplopen_time;
+	unsigned SMBsplwr_count;	/* write to print spool file */
+	unsigned SMBsplwr_time;
+	unsigned SMBsplclose_count;	/* close print spool file */
+	unsigned SMBsplclose_time;
+	unsigned SMBsplretq_count;	/* return print queue */
+	unsigned SMBsplretq_time;
+	unsigned SMBsends_count;	/* send single block message */
+	unsigned SMBsends_time;
+	unsigned SMBsendb_count;	/* send broadcast message */
+	unsigned SMBsendb_time;
+	unsigned SMBfwdname_count;	/* forward user name */
+	unsigned SMBfwdname_time;
+	unsigned SMBcancelf_count;	/* cancel forward */
+	unsigned SMBcancelf_time;
+	unsigned SMBgetmac_count;	/* get machine name */
+	unsigned SMBgetmac_time;
+	unsigned SMBsendstrt_count;	/* send start of multi-block message */
+	unsigned SMBsendstrt_time;
+	unsigned SMBsendend_count;	/* send end of multi-block message */
+	unsigned SMBsendend_time;
+	unsigned SMBsendtxt_count;	/* send text of multi-block message */
+	unsigned SMBsendtxt_time;
+	unsigned SMBinvalid_count;	/* invalid command */
+	unsigned SMBinvalid_time;
+/* Pathworks setdir command */
+	unsigned pathworks_setdir_count;
+	unsigned pathworks_setdir_time;
+/* These are the TRANS2 sub commands */
+	unsigned Trans2_open_count;
+	unsigned Trans2_open_time;
+	unsigned Trans2_findfirst_count;
+	unsigned Trans2_findfirst_time;
+	unsigned Trans2_findnext_count;
+	unsigned Trans2_findnext_time;
+	unsigned Trans2_qfsinfo_count;
+	unsigned Trans2_qfsinfo_time;
+	unsigned Trans2_setfsinfo_count;
+	unsigned Trans2_setfsinfo_time;
+	unsigned Trans2_qpathinfo_count;
+	unsigned Trans2_qpathinfo_time;
+	unsigned Trans2_setpathinfo_count;
+	unsigned Trans2_setpathinfo_time;
+	unsigned Trans2_qfileinfo_count;
+	unsigned Trans2_qfileinfo_time;
+	unsigned Trans2_setfileinfo_count;
+	unsigned Trans2_setfileinfo_time;
+	unsigned Trans2_fsctl_count;
+	unsigned Trans2_fsctl_time;
+	unsigned Trans2_ioctl_count;
+	unsigned Trans2_ioctl_time;
+	unsigned Trans2_findnotifyfirst_count;
+	unsigned Trans2_findnotifyfirst_time;
+	unsigned Trans2_findnotifynext_count;
+	unsigned Trans2_findnotifynext_time;
+	unsigned Trans2_mkdir_count;
+	unsigned Trans2_mkdir_time;
+	unsigned Trans2_session_setup_count;
+	unsigned Trans2_session_setup_time;
+	unsigned Trans2_get_dfs_referral_count;
+	unsigned Trans2_get_dfs_referral_time;
+	unsigned Trans2_report_dfs_inconsistancy_count;
+	unsigned Trans2_report_dfs_inconsistancy_time;
+/* These are the NT transact sub commands. */
+	unsigned NT_transact_create_count;
+	unsigned NT_transact_create_time;
+	unsigned NT_transact_ioctl_count;
+	unsigned NT_transact_ioctl_time;
+	unsigned NT_transact_set_security_desc_count;
+	unsigned NT_transact_set_security_desc_time;
+	unsigned NT_transact_notify_change_count;
+	unsigned NT_transact_notify_change_time;
+	unsigned NT_transact_rename_count;
+	unsigned NT_transact_rename_time;
+	unsigned NT_transact_query_security_desc_count;
+	unsigned NT_transact_query_security_desc_time;
 };
 
 
 extern struct profile_struct *profile_p;
+
+#define INC_PROFILE_COUNT(x) if (profile_p) profile_p->x++
+#define DEC_PROFILE_COUNT(x) if (profile_p) profile_p->x--
+#define ADD_PROFILE_COUNT(x,y) if (profile_p) profile_p->x += (y)
+
+#define START_PROFILE(x) \
+	struct timeval starttime; \
+	struct timeval endtime; \
+	GetTimeOfDay(&starttime); \
+	INC_PROFILE_COUNT(x##_count)
+
+#define END_PROFILE(y) \
+	GetTimeOfDay(&endtime); \
+	ADD_PROFILE_COUNT((y##_time),TvalDiff(&starttime,&endtime))
+
+#endif

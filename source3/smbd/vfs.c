@@ -83,7 +83,7 @@ int vfs_init_default(connection_struct *conn)
 {
     DEBUG(3, ("Initialising default vfs hooks\n"));
 
-    memcpy(&conn->vfs_ops, &default_vfs_ops, sizeof(conn->vfs_ops));
+    memcpy(&conn->vfs_ops, &default_vfs_ops, sizeof(struct vfs_ops));
     return True;
 }
 
@@ -94,7 +94,6 @@ int vfs_init_default(connection_struct *conn)
 #ifdef HAVE_LIBDL
 BOOL vfs_init_custom(connection_struct *conn)
 {
-    void *handle;
     struct vfs_ops *ops, *(*fptr)(struct vfs_options *options);
 
     DEBUG(3, ("Initialising custom vfs hooks from %s\n",
@@ -102,19 +101,15 @@ BOOL vfs_init_custom(connection_struct *conn)
 
     /* Open object file */
 
-    handle = dlopen(lp_vfsobj(SNUM(conn)), RTLD_NOW | RTLD_GLOBAL);
-    conn->vfs_conn->dl_handle = handle;
-
-    if (!handle) {
-	DEBUG(0, ("Error opening %s: %s\n", lp_vfsobj(SNUM(conn)),
-		  dlerror()));
-	return False;
+    if ((conn->dl_handle = dlopen(lp_vfsobj(SNUM(conn)), RTLD_NOW | RTLD_GLOBAL)) == NULL) {
+		DEBUG(0, ("Error opening %s: %s\n", lp_vfsobj(SNUM(conn)), dlerror()));
+		return False;
     }
 
     /* Get handle on vfs_init() symbol */
 
     fptr = (struct vfs_ops *(*)(struct vfs_options *))
-	    dlsym(handle, "vfs_init");
+	    dlsym(conn->dl_handle, "vfs_init");
 
     if (fptr == NULL) {
 	DEBUG(0, ("No vfs_init() symbol found in %s\n", 
@@ -133,7 +128,7 @@ BOOL vfs_init_custom(connection_struct *conn)
        There's probably a neater way to do this then a whole bunch of
        if statements. */ 
 
-    memcpy(&conn->vfs_ops, ops, sizeof(conn->vfs_ops));
+    memcpy(&conn->vfs_ops, ops, sizeof(struct vfs_ops));
     
     if (conn->vfs_ops.connect == NULL) {
 	conn->vfs_ops.connect = default_vfs_ops.connect;
@@ -265,16 +260,16 @@ BOOL vfs_init_custom(connection_struct *conn)
 
 int vfs_stat(connection_struct *conn, char *fname, SMB_STRUCT_STAT *st)
 {
-	return(conn->vfs_ops.stat(dos_to_unix(fname,False),st));
+	return(conn->vfs_ops.stat(conn, dos_to_unix(fname,False),st));
 } 
 
 /*******************************************************************
  vfs fstat wrapper that calls dos_to_unix.
 ********************************************************************/
 
-int vfs_fstat(connection_struct *conn, int fd, SMB_STRUCT_STAT *st)
+int vfs_fstat(files_struct *fsp, int fd, SMB_STRUCT_STAT *st)
 {
-	return(conn->vfs_ops.fstat(fd,st));
+	return(fsp->conn->vfs_ops.fstat(fsp,fd,st));
 } 
 
 /*******************************************************************
@@ -310,7 +305,7 @@ int vfs_mkdir(connection_struct *conn, char *fname, mode_t mode)
 	SMB_STRUCT_STAT sbuf;
 
 	pstrcpy(name,dos_to_unix(fname,False)); /* paranoia copy */
-	if(!(ret=conn->vfs_ops.mkdir(name,mode))) {
+	if(!(ret=conn->vfs_ops.mkdir(conn,name,mode))) {
 		/* 
 		 * Check if high bits should have been set,
 		 * then (if bits are missing): add them.
@@ -324,12 +319,21 @@ int vfs_mkdir(connection_struct *conn, char *fname, mode_t mode)
 }
 
 /*******************************************************************
+ vfs rmdir wrapper that calls dos_to_unix.
+********************************************************************/
+
+int vfs_rmdir(connection_struct *conn, char *fname)
+{
+	return(conn->vfs_ops.rmdir(conn,dos_to_unix(fname,False)));
+} 
+
+/*******************************************************************
  vfs Unlink wrapper that calls dos_to_unix.
 ********************************************************************/
 
 int vfs_unlink(connection_struct *conn, char *fname)
 {
-	return(conn->vfs_ops.unlink(dos_to_unix(fname,False)));
+	return(conn->vfs_ops.unlink(conn,dos_to_unix(fname,False)));
 } 
 
 /*******************************************************************
@@ -338,7 +342,7 @@ int vfs_unlink(connection_struct *conn, char *fname)
 
 int vfs_chmod(connection_struct *conn, char *fname,mode_t mode)
 {
-	return(conn->vfs_ops.chmod(dos_to_unix(fname,False), mode));
+	return(conn->vfs_ops.chmod(conn,dos_to_unix(fname,False), mode));
 } 
 
 /*******************************************************************
@@ -347,7 +351,7 @@ int vfs_chmod(connection_struct *conn, char *fname,mode_t mode)
 
 int vfs_chown(connection_struct *conn, char *fname, uid_t uid, gid_t gid)
 {
-	return(conn->vfs_ops.chown(dos_to_unix(fname,False), uid, gid));
+	return(conn->vfs_ops.chown(conn,dos_to_unix(fname,False), uid, gid));
 } 
 
 /*******************************************************************
@@ -356,7 +360,7 @@ int vfs_chown(connection_struct *conn, char *fname, uid_t uid, gid_t gid)
 
 int vfs_chdir(connection_struct *conn, char *fname)
 {
-	return(conn->vfs_ops.chdir(dos_to_unix(fname,False)));
+	return(conn->vfs_ops.chdir(conn,dos_to_unix(fname,False)));
 } 
 
 /*******************************************************************
@@ -366,7 +370,7 @@ int vfs_chdir(connection_struct *conn, char *fname)
 char *vfs_getwd(connection_struct *conn, char *unix_path)
 {
     char *wd;
-    wd = conn->vfs_ops.getwd(unix_path);
+    wd = conn->vfs_ops.getwd(conn,unix_path);
     if (wd)
         unix_to_dos(wd, True);
     return wd;
@@ -400,7 +404,7 @@ ssize_t vfs_write_data(files_struct *fsp,char *buffer,size_t N)
 
   while (total < N)
   {
-    ret = fsp->conn->vfs_ops.write(fsp->fd,buffer + total,N - total);
+    ret = fsp->conn->vfs_ops.write(fsp,fsp->fd,buffer + total,N - total);
 
     if (ret == -1) return -1;
     if (ret == 0) return total;
@@ -477,16 +481,14 @@ SMB_OFF_T vfs_transfer_file(int in_fd, files_struct *in_fsp,
 
     if (s > ret) {
       ret += in_fsp ? 
-	  in_fsp->conn->vfs_ops.read(in_fsp->fd,buf1+ret,s-ret) : read(in_fd,buf1+ret,s-ret);
+	  in_fsp->conn->vfs_ops.read(in_fsp,in_fsp->fd,buf1+ret,s-ret) : read(in_fd,buf1+ret,s-ret);
     }
 
-    if (ret > 0)
-    {
-	if (out_fsp) {
-	    ret2 = out_fsp->conn->vfs_ops.write(out_fsp->fd,buf1,ret);
-	} else {
-	    ret2= (out_fd != -1) ? write_data(out_fd,buf1,ret) : ret;
-	}
+    if (ret > 0) {
+		if (out_fsp)
+		    ret2 = out_fsp->conn->vfs_ops.write(out_fsp,out_fsp->fd,buf1,ret);
+		else
+		    ret2= (out_fd != -1) ? write_data(out_fd,buf1,ret) : ret;
     }
 
       if (ret2 > 0) total += ret2;
@@ -513,7 +515,7 @@ char *vfs_readdirname(connection_struct *conn, void *p)
 	if (!p)
 		return(NULL);
   
-	ptr = (struct dirent *)conn->vfs_ops.readdir(p);
+	ptr = (struct dirent *)conn->vfs_ops.readdir(conn,p);
 	if (!ptr)
 		return(NULL);
 
