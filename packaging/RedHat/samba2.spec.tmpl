@@ -4,7 +4,7 @@ Version: PVERSION
 Release: PRELEASE
 Copyright: GNU GPL version 2
 Group: Networking
-Source: http://download.samba.org/samba/ftp/samba-%{version}.tar.gz
+Source: http://download.samba.org/samba/ftp/samba-%{version}.tar.bz2
 Packager: Gerald Carter [Samba-Team] <jerry@samba.org>
 Requires: pam >= 0.72 kernel >= 2.2.1 glibc >= 2.1.2
 Prereq: chkconfig fileutils
@@ -172,9 +172,6 @@ make -j${NUMCPU} bin/smbspool
 
 ## Build VFS modules
 cd ../examples/VFS
-CFLAGS="$RPM_OPT_FLAGS $EXTRA" ./configure \
-        --prefix=%{prefix} \
-        --localstatedir=/var
 make
 
 
@@ -247,11 +244,9 @@ install -m755 source/nsswitch/pam_winbind.so $RPM_BUILD_ROOT/lib/security
 install -m755 source/bin/pam_smbpass.so $RPM_BUILD_ROOT/lib/security
 
 # Install the VFS modules
-install -m755 examples/VFS/recycle/recycle.so $RPM_BUILD_ROOT%{prefix}/lib/samba/vfs
-install -m644 examples/VFS/recycle/recycle.conf $RPM_BUILD_ROOT/etc/samba/
-install -m755 examples/VFS/block/block.so $RPM_BUILD_ROOT%{prefix}/lib/samba/vfs
-install -m644 examples/VFS/block/samba-block.conf $RPM_BUILD_ROOT/etc/samba/
+install -m755 examples/VFS/recycle.so $RPM_BUILD_ROOT%{prefix}/lib/samba/vfs
 install -m755 examples/VFS/audit.so $RPM_BUILD_ROOT%{prefix}/lib/samba/vfs
+install -m755 examples/VFS/netatalk.so $RPM_BUILD_ROOT%{prefix}/lib/samba/vfs
 
 # clean out VFS directory since it will get installed as documentation later
 (cd examples/VFS; make clean)
@@ -505,9 +500,6 @@ fi
 %{prefix}/bin/findsmb
 %{prefix}/bin/smbstatus
 %{prefix}/bin/nmblookup
-%{prefix}/bin/make_smbcodepage
-%{prefix}/bin/make_unicodemap
-%{prefix}/bin/make_printerdef
 %{prefix}/bin/smbpasswd
 %{prefix}/bin/smbtar
 %{prefix}/bin/smbprint
@@ -526,8 +518,6 @@ fi
 %{prefix}/share/swat/using_samba/*
 %config(noreplace) /etc/samba/lmhosts
 %config(noreplace) /etc/samba/smb.conf
-%config(noreplace) /etc/samba/recycle.conf
-%config(noreplace) /etc/samba/samba-block.conf
 %config(noreplace) /etc/samba/smbusers
 /etc/samba/samba.stack
 /etc/samba/samba.xinetd
@@ -539,7 +529,6 @@ MANDIR_MACRO/man1/*
 MANDIR_MACRO/man5/*
 MANDIR_MACRO/man7/*
 MANDIR_MACRO/man8/*
-%dir /etc/codepages/*
 %attr(755,root,root) %dir /var/cache/samba
 %dir /var/log/samba
 %dir /var/run/samba
