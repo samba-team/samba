@@ -1,5 +1,8 @@
 2004-07-14  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/krb5_set_password.3: nroff and spelling, from Jonathan
+	Stone <jonathan@dsg.stanford.edu>
+
 	* lib/krb5/changepw.c (process_reply): cast ssize_t to long and
 	print that From NetBSD via Havard Eidnes.
 	
