@@ -810,7 +810,7 @@ BOOL open_any_socket_out(struct sockaddr_in *addrs, int num_addrs,
 	int *sockets;
 	BOOL good_connect;
 
-	fd_set wr_fds;
+	fd_set r_fds, wr_fds;
 	struct timeval tv;
 	int maxfd;
 
@@ -840,6 +840,9 @@ BOOL open_any_socket_out(struct sockaddr_in *addrs, int num_addrs,
 
 	for (i=0; i<num_addrs; i++) {
 
+		if (sockets[i] == -1)
+			continue;
+
 		if (connect(sockets[i], (struct sockaddr *)&(addrs[i]),
 			    sizeof(*addrs)) == 0) {
 			/* Rather unlikely as we are non-blocking, but it
@@ -853,6 +856,10 @@ BOOL open_any_socket_out(struct sockaddr_in *addrs, int num_addrs,
 			/* These are the error messages that something is
 			   progressing. */
 			good_connect = True;
+		} else if (errno != 0) {
+			/* There was a direct error */
+			close(sockets[i]);
+			sockets[i] = -1;
 		}
 	}
 
@@ -865,9 +872,13 @@ BOOL open_any_socket_out(struct sockaddr_in *addrs, int num_addrs,
 
 	maxfd = 0;
 	FD_ZERO(&wr_fds);
+	FD_ZERO(&r_fds);
 
 	for (i=0; i<num_addrs; i++) {
+		if (sockets[i] == -1)
+			continue;
 		FD_SET(sockets[i], &wr_fds);
+		FD_SET(sockets[i], &r_fds);
 		if (sockets[i]>maxfd)
 			maxfd = sockets[i];
 	}
@@ -875,7 +886,7 @@ BOOL open_any_socket_out(struct sockaddr_in *addrs, int num_addrs,
 	tv.tv_sec = 0;
 	tv.tv_usec = connect_loop;
 
-	res = sys_select(maxfd+1, NULL, &wr_fds, NULL, &tv);
+	res = sys_select(maxfd+1, &r_fds, &wr_fds, NULL, &tv);
 
 	if (res < 0)
 		goto done;
@@ -885,21 +896,24 @@ BOOL open_any_socket_out(struct sockaddr_in *addrs, int num_addrs,
 
 	for (i=0; i<num_addrs; i++) {
 
-		int sockerr, sockerr_len;
-		
-		if (!FD_ISSET(sockets[i], &wr_fds))
+		if (sockets[i] == -1)
 			continue;
 
-		sockerr_len = sizeof(sockerr);
+		/* Stevens, Network Programming says that if there's a
+		 * successful connect, the socket is only writable. Upon an
+		 * error, it's both readable and writable. */
 
-		res = getsockopt(sockets[i], SOL_SOCKET, SO_ERROR, &sockerr,
-				 &sockerr_len);
+		if (FD_ISSET(sockets[i], &r_fds) &&
+		    FD_ISSET(sockets[i], &wr_fds)) {
+			/* readable and writable, so it's an error */
+			close(sockets[i]);
+			sockets[i] = -1;
+			continue;
+		}
 
-		if (res < 0)
-			goto done;
-
-		if (sockerr == 0) {
-			/* Hey, we got a connection */
+		if (!FD_ISSET(sockets[i], &r_fds) &&
+		    FD_ISSET(sockets[i], &wr_fds)) {
+			/* Only writable, so it's connected */
 			resulting_index = i;
 			goto done;
 		}
