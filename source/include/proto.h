@@ -373,42 +373,6 @@ struct share_ops *locking_shm_init(int ronly);
 
 struct share_ops *locking_slow_init(int ronly);
 
-/*The following definitions come from  lsaparse.c  */
-
-void make_q_open_pol(LSA_Q_OPEN_POL *r_q, char *server_name,
-			uint32 attributes, uint32 sec_qos,
-			uint16 desired_access);
-char* lsa_io_q_open_pol(BOOL io, LSA_Q_OPEN_POL *r_q, char *q, char *base, int align, int depth);
-char* lsa_io_r_open_pol(BOOL io, LSA_R_OPEN_POL *r_p, char *q, char *base, int align, int depth);
-void make_q_query(LSA_Q_QUERY_INFO *q_q, LSA_POL_HND *hnd, uint16 info_class);
-char* lsa_io_q_query(BOOL io, LSA_Q_QUERY_INFO *q_q, char *q, char *base, int align, int depth);
-void make_q_close(LSA_Q_CLOSE *q_c, LSA_POL_HND *hnd);
-char* lsa_io_q_close(BOOL io, LSA_Q_CLOSE *q_c, char *q, char *base, int align, int depth);
-void make_r_close(LSA_R_CLOSE *q_r, LSA_POL_HND *hnd);
-char* lsa_io_r_close(BOOL io, LSA_R_CLOSE *r_c, char *q, char *base, int align, int depth);
-char* lsa_io_r_query(BOOL io, LSA_R_QUERY_INFO *r_q, char *q, char *base, int align, int depth);
-char* lsa_io_q_lookup_sids(BOOL io, LSA_Q_LOOKUP_SIDS *q_s, char *q, char *base, int align, int depth);
-char* lsa_io_r_lookup_sids(BOOL io, LSA_R_LOOKUP_SIDS *r_s, char *q, char *base, int align, int depth);
-char* lsa_io_q_lookup_rids(BOOL io, LSA_Q_LOOKUP_RIDS *q_r, char *q, char *base, int align, int depth);
-char* lsa_io_r_lookup_rids(BOOL io, LSA_R_LOOKUP_RIDS *r_r, char *q, char *base, int align, int depth);
-void make_q_req_chal(LSA_Q_REQ_CHAL *q_c,
-				char *logon_srv, char *logon_clnt,
-				DOM_CHAL *clnt_chal);
-char* lsa_io_q_req_chal(BOOL io, LSA_Q_REQ_CHAL *q_c, char *q, char *base, int align, int depth);
-char* lsa_io_r_req_chal(BOOL io, LSA_R_REQ_CHAL *r_c, char *q, char *base, int align, int depth);
-void make_q_auth_2(LSA_Q_AUTH_2 *q_a,
-		char *logon_srv, char *acct_name, uint16 sec_chan, char *comp_name,
-		DOM_CHAL *clnt_chal, uint32 clnt_flgs);
-char* lsa_io_q_auth_2(BOOL io, LSA_Q_AUTH_2 *q_a, char *q, char *base, int align, int depth);
-char* lsa_io_r_auth_2(BOOL io, LSA_R_AUTH_2 *r_a, char *q, char *base, int align, int depth);
-char* lsa_io_q_srv_pwset(BOOL io, LSA_Q_SRV_PWSET *q_s, char *q, char *base, int align, int depth);
-char* lsa_io_r_srv_pwset(BOOL io, LSA_R_SRV_PWSET *r_s, char *q, char *base, int align, int depth);
-char* lsa_io_user_info(BOOL io, LSA_USER_INFO *usr, char *q, char *base, int align, int depth);
-char* lsa_io_q_sam_logon(BOOL io, LSA_Q_SAM_LOGON *q_l, char *q, char *base, int align, int depth);
-char* lsa_io_r_sam_logon(BOOL io, LSA_R_SAM_LOGON *r_l, char *q, char *base, int align, int depth);
-char* lsa_io_q_sam_logoff(BOOL io, LSA_Q_SAM_LOGOFF *q_l, char *q, char *base, int align, int depth);
-char* lsa_io_r_sam_logoff(BOOL io, LSA_R_SAM_LOGOFF *r_l, char *q, char *base, int align, int depth);
-
 /*The following definitions come from  mangle.c  */
 
 int str_checksum(char *s);
@@ -656,44 +620,6 @@ void sync_browse_lists(struct subnet_record *d, struct work_record *work,
 BOOL do_nt_login(char *desthost, char *myhostname,
 				int Client, int cnum);
 
-/*The following definitions come from  ntclientlsa.c  */
-
-BOOL do_lsa_open_policy(uint16 fnum, uint32 call_id,
-			char *server_name, LSA_POL_HND *hnd);
-BOOL do_lsa_query_info_pol(uint16 fnum, uint32 call_id,
-			LSA_POL_HND *hnd, uint16 info_class,
-			fstring domain_name, pstring domain_sid);
-BOOL do_lsa_close(uint16 fnum, uint32 call_id,
-			LSA_POL_HND *hnd);
-
-/*The following definitions come from  ntclientnet.c  */
-
-BOOL do_lsa_req_chal(uint16 fnum, uint32 call_id,
-		char *desthost, char *myhostname,
-        DOM_CHAL *clnt_chal, DOM_CHAL *srv_chal);
-BOOL do_lsa_auth2(uint16 fnum, uint32 call_id,
-		char *logon_srv, char *acct_name, uint16 sec_chan, char *comp_name,
-        DOM_CHAL *clnt_chal, uint32 neg_flags, DOM_CHAL *srv_chal);
-BOOL do_lsa_sam_logon(uint16 fnum, uint32 call_id,
-		uint32 sess_key[2], DOM_CRED *sto_clnt_cred,
-		char *logon_srv, char *comp_name,
-        DOM_CRED *clnt_cred, DOM_CRED *rtn_cred,
-		uint16 logon_level, uint16 switch_value, DOM_ID_INFO_1 *id1,
-		LSA_USER_INFO *user_info,
-		DOM_CRED *srv_cred);
-BOOL do_lsa_sam_logoff(uint16 fnum, uint32 call_id,
-		uint32 sess_key[2], DOM_CRED *sto_clnt_cred,
-		char *logon_srv, char *comp_name,
-        DOM_CRED *clnt_cred, DOM_CRED *rtn_cred,
-		uint16 logon_level, uint16 switch_value, DOM_ID_INFO_1 *id1,
-		DOM_CRED *srv_cred);
-
-/*The following definitions come from  ntclientpipe.c  */
-
-uint16 open_rpc_pipe(char *inbuf, char *outbuf, char *rname, int Client, int cnum);
-BOOL bind_rpc_pipe(char *pipe_name, uint16 fnum, uint32 call_id,
-				RPC_IFACE *abstract, RPC_IFACE *transfer);
-
 /*The following definitions come from  params.c  */
 
 BOOL pm_process( char *FileName,
@@ -728,53 +654,6 @@ BOOL server_validate(char *user, char *domain,
 
 BOOL pcap_printername_ok(char *pszPrintername, char *pszPrintcapname);
 void pcap_printer_fn(void (*fn)());
-
-/*The following definitions come from  pipenetlog.c  */
-
-BOOL get_md4pw(char *md4pw, char *mach_acct);
-BOOL api_netlogrpcTNP(int cnum,int uid, char *param,char *data,
-		     int mdrcnt,int mprcnt,
-		     char **rdata,char **rparam,
-		     int *rdata_len,int *rparam_len);
-
-/*The following definitions come from  pipentlsa.c  */
-
-BOOL api_ntLsarpcTNP(int cnum,int uid, char *param,char *data,
-		     int mdrcnt,int mprcnt,
-		     char **rdata,char **rparam,
-		     int *rdata_len,int *rparam_len);
-
-/*The following definitions come from  pipes.c  */
-
-char *get_pipe_name(int pnum);
-int reply_open_pipe_and_X(char *inbuf,char *outbuf,int length,int bufsize);
-int reply_pipe_close(char *inbuf,char *outbuf);
-BOOL api_LsarpcSNPHS(int cnum,int uid, char *param,char *data,
-		     int mdrcnt,int mprcnt,
-		     char **rdata,char **rparam,
-		     int *rdata_len,int *rparam_len);
-BOOL api_LsarpcTNP(int cnum,int uid, char *param,char *data,
-		     int mdrcnt,int mprcnt,
-		     char **rdata,char **rparam,
-		     int *rdata_len,int *rparam_len);
-
-/*The following definitions come from  pipesrvsvc.c  */
-
-BOOL api_srvsvcTNP(int cnum,int uid, char *param,char *data,
-		     int mdrcnt,int mprcnt,
-		     char **rdata,char **rparam,
-		     int *rdata_len,int *rparam_len);
-
-/*The following definitions come from  pipeutil.c  */
-
-void initrpcreply(char *inbuf, char *q);
-void endrpcreply(char *inbuf, char *q, int datalen, int rtnval, int *rlen);
-BOOL name_to_rid(char *user_name, uint32 *u_rid, uint32 *g_rid);
-char *dom_sid_to_string(DOM_SID *sid);
-int make_dom_sids(char *sids_str, DOM_SID *sids, int max_sids);
-int make_dom_gids(char *gids_str, DOM_GID *gids);
-int create_rpc_request(uint32 call_id, uint8 op_num, char *q, int data_len);
-int create_rpc_reply(uint32 call_id, char *q, int data_len);
 
 /*The following definitions come from  predict.c  */
 
@@ -939,87 +818,6 @@ void E_md4hash(uchar *passwd, uchar *p16);
 void SMBNTencrypt(uchar *passwd, uchar *c8, uchar *p24);
 void nt_lm_owf_gen(char *pwd, char *nt_p16, char *p16);
 
-/*The following definitions come from  smbparse.c  */
-
-char* smb_io_utime(BOOL io, UTIME *t, char *q, char *base, int align, int depth);
-char* smb_io_time(BOOL io, NTTIME *nttime, char *q, char *base, int align, int depth);
-void make_dom_sid(DOM_SID *sid, char *domsid);
-char* smb_io_dom_sid(BOOL io, DOM_SID *sid, char *q, char *base, int align, int depth);
-void make_uni_hdr(UNIHDR *hdr, int max_len, int len, uint16 terminate);
-char* smb_io_unihdr(BOOL io, UNIHDR *hdr, char *q, char *base, int align, int depth);
-void make_uni_hdr2(UNIHDR2 *hdr, int max_len, int len, uint16 terminate);
-char* smb_io_unihdr2(BOOL io, UNIHDR2 *hdr2, char *q, char *base, int align, int depth);
-void make_unistr(UNISTR *str, char *buf);
-char* smb_io_unistr(BOOL io, UNISTR *uni, char *q, char *base, int align, int depth);
-void make_unistr2(UNISTR2 *str, char *buf, int len);
-char* smb_io_unistr2(BOOL io, UNISTR2 *uni2, char *q, char *base, int align, int depth);
-void make_dom_sid2(DOM_SID2 *sid2, char *sid_str);
-char* smb_io_dom_sid2(BOOL io, DOM_SID2 *sid2, char *q, char *base, int align, int depth);
-void make_dom_rid2(DOM_RID2 *rid2, uint32 rid);
-char* smb_io_dom_rid2(BOOL io, DOM_RID2 *rid2, char *q, char *base, int align, int depth);
-void make_clnt_srv(DOM_CLNT_SRV *log, char *logon_srv, char *comp_name);
-char* smb_io_clnt_srv(BOOL io, DOM_CLNT_SRV *log, char *q, char *base, int align, int depth);
-void make_log_info(DOM_LOG_INFO *log, char *logon_srv, char *acct_name,
-		uint16 sec_chan, char *comp_name);
-char* smb_io_log_info(BOOL io, DOM_LOG_INFO *log, char *q, char *base, int align, int depth);
-char* smb_io_chal(BOOL io, DOM_CHAL *chal, char *q, char *base, int align, int depth);
-char* smb_io_cred(BOOL io, DOM_CRED *cred, char *q, char *base, int align, int depth);
-void make_clnt_info2(DOM_CLNT_INFO2 *clnt,
-				char *logon_srv, char *comp_name,
-				DOM_CRED *clnt_cred);
-char* smb_io_clnt_info2(BOOL io, DOM_CLNT_INFO2 *clnt, char *q, char *base, int align, int depth);
-char* smb_io_clnt_info(BOOL io, DOM_CLNT_INFO *clnt, char *q, char *base, int align, int depth);
-void make_logon_id(DOM_LOGON_ID *log, uint32 log_id_low, uint32 log_id_high);
-char* smb_io_logon_id(BOOL io, DOM_LOGON_ID *log, char *q, char *base, int align, int depth);
-void make_arc4_owf(ARC4_OWF *hash, char data[16]);
-char* smb_io_arc4_owf(BOOL io, ARC4_OWF *hash, char *q, char *base, int align, int depth);
-void make_id_info1(DOM_ID_INFO_1 *id, char *domain_name,
-				uint32 param_ctrl, uint32 log_id_low, uint32 log_id_high,
-				char *user_name, char *wksta_name,
-				char arc4_lm_owf[16], char arc4_nt_owf[16]);
-char* smb_io_id_info1(BOOL io, DOM_ID_INFO_1 *id, char *q, char *base, int align, int depth);
-void make_sam_info(DOM_SAM_INFO *sam,
-				char *logon_srv, char *comp_name, DOM_CRED *clnt_cred,
-				DOM_CRED *rtn_cred, uint16 logon_level, uint16 switch_value,
-				DOM_ID_INFO_1 *id1);
-char* smb_io_sam_info(BOOL io, DOM_SAM_INFO *sam, char *q, char *base, int align, int depth);
-char* smb_io_gid(BOOL io, DOM_GID *gid, char *q, char *base, int align, int depth);
-void make_rpc_hdr(RPC_HDR *hdr, enum RPC_PKT_TYPE pkt_type, uint8 frag,
-				uint32 call_id, int data_len);
-char* smb_io_rpc_hdr(BOOL io, RPC_HDR *rpc, char *q, char *base, int align, int depth);
-void make_rpc_iface(RPC_IFACE *ifc, char data[16], uint32 version);
-char* smb_io_rpc_iface(BOOL io, RPC_IFACE *ifc, char *q, char *base, int align, int depth);
-void make_rpc_addr_str(RPC_ADDR_STR *str, char *name);
-char* smb_io_rpc_addr_str(BOOL io, RPC_ADDR_STR *str, char *q, char *base, int align, int depth);
-void make_rpc_hdr_bba(RPC_HDR_BBA *bba, uint16 max_tsize, uint16 max_rsize, uint32 assoc_gid);
-char* smb_io_rpc_hdr_bba(BOOL io, RPC_HDR_BBA *rpc, char *q, char *base, int align, int depth);
-void make_rpc_hdr_rb(RPC_HDR_RB *rpc, 
-				uint16 max_tsize, uint16 max_rsize, uint32 assoc_gid,
-				uint32 num_elements, uint16 context_id, uint8 num_syntaxes,
-				RPC_IFACE *abstract, RPC_IFACE *transfer);
-char* smb_io_rpc_hdr_rb(BOOL io, RPC_HDR_RB *rpc, char *q, char *base, int align, int depth);
-void make_rpc_results(RPC_RESULTS *res, 
-				uint8 num_results, uint16 result, uint16 reason);
-char* smb_io_rpc_results(BOOL io, RPC_RESULTS *res, char *q, char *base, int align, int depth);
-void make_rpc_hdr_ba(RPC_HDR_BA *rpc, 
-				uint16 max_tsize, uint16 max_rsize, uint32 assoc_gid,
-				char *pipe_addr,
-				uint8 num_results, uint16 result, uint16 reason,
-				RPC_IFACE *transfer);
-char* smb_io_rpc_hdr_ba(BOOL io, RPC_HDR_BA *rpc, char *q, char *base, int align, int depth);
-void make_obj_attr(LSA_OBJ_ATTR *attr, uint32 attributes, uint32 sec_qos);
-char* smb_io_obj_attr(BOOL io, LSA_OBJ_ATTR *attr, char *q, char *base, int align, int depth);
-void make_rpc_hdr_rr(RPC_HDR_RR *hdr, enum RPC_PKT_TYPE pkt_type,
-				uint32 call_id, int data_len, uint8 opnum);
-char* smb_io_rpc_hdr_rr(BOOL io, RPC_HDR_RR *rpc, char *q, char *base, int align, int depth);
-char* smb_io_pol_hnd(BOOL io, LSA_POL_HND *pol, char *q, char *base, int align, int depth);
-char* smb_io_dom_query_3(BOOL io, DOM_QUERY_3 *d_q, char *q, char *base, int align, int depth);
-char* smb_io_dom_query_5(BOOL io, DOM_QUERY_3 *d_q, char *q, char *base, int align, int depth);
-char* smb_io_dom_query(BOOL io, DOM_QUERY *d_q, char *q, char *base, int align, int depth);
-char* smb_io_dom_r_ref(BOOL io, DOM_R_REF *r_r, char *q, char *base, int align, int depth);
-char* smb_io_dom_name(BOOL io, DOM_NAME *name, char *q, char *base, int align, int depth);
-char* smb_io_neg_flags(BOOL io, NEG_FLAGS *neg, char *q, char *base, int align, int depth);
-
 /*The following definitions come from  smbpass.c  */
 
 int pw_file_lock(char *name, int type, int secs);
@@ -1031,14 +829,6 @@ struct smb_passwd *get_smbpwnam(char *name);
 
 /*The following definitions come from  smbrun.c  */
 
-
-/*The following definitions come from  srvparse.c  */
-
-char* srv_io_share_info1_str(BOOL io, SH_INFO_1_STR *sh1, char *q, char *base, int align, int depth);
-char* srv_io_share_info1(BOOL io, SH_INFO_1 *sh1, char *q, char *base, int align, int depth);
-char* srv_io_share_1_ctr(BOOL io, SHARE_INFO_1_CTR *ctr, char *q, char *base, int align, int depth);
-char* srv_io_q_net_share_enum(BOOL io, SRV_Q_NET_SHARE_ENUM *q_n, char *q, char *base, int align, int depth);
-char* srv_io_r_net_share_enum(BOOL io, SRV_R_NET_SHARE_ENUM *r_n, char *q, char *base, int align, int depth);
 
 /*The following definitions come from  status.c  */
 
