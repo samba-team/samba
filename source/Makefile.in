@@ -802,8 +802,12 @@ uninstallbin:
 uninstallscripts:
 	@$(SHELL) $(srcdir)/script/uninstallscripts.sh $(INSTALLPERMS) $(BINDIR) $(SCRIPTS)
 
+# Toplevel clean files
+TOPFILES=dynconfig.o dynconfig.po
+
 clean: delheaders
-	-rm -f core */*~ *~ */*.o */*.po */*.po32 */*.@SHLIBEXT@ $(PROGS) $(SPROGS) .headers.stamp 
+	-rm -f core */*~ *~ */*.o */*.po */*.po32 */*.@SHLIBEXT@ \
+	$(TOPFILES) $(PROGS) $(SPROGS) .headers.stamp
 
 winbindd_proto:
 	@cd $(srcdir) && $(SHELL) script/mkproto.sh $(AWK) \
