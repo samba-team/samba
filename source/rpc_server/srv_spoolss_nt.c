@@ -1735,6 +1735,17 @@ static WERROR get_printer_dataex( TALLOC_CTX *ctx, NT_PRINTER_INFO_LEVEL *printe
 }
 
 /****************************************************************************
+ Internal routine for removing printerdata
+ ***************************************************************************/
+
+static WERROR delete_printer_dataex( NT_PRINTER_INFO_LEVEL *printer, char *key, char *value )
+{
+	delete_printer_data( printer->info_2, key, value );
+	
+	return mod_a_printer(*printer, 2);
+}
+
+/****************************************************************************
  Internal routine for storing printerdata
  ***************************************************************************/
 
@@ -7211,9 +7222,7 @@ WERROR _spoolss_deleteprinterdata(pipes_struct *p, SPOOL_Q_DELETEPRINTERDATA *q_
 
 	unistr2_to_ascii( valuename, value, sizeof(valuename)-1 );
 
-	status = delete_printer_data( printer->info_2, SPOOL_PRINTERDATA_KEY, valuename );
-	if ( W_ERROR_IS_OK(status) )
-		status = mod_a_printer(*printer, 2);
+	status = delete_printer_dataex( printer, SPOOL_PRINTERDATA_KEY, valuename );
 
 	free_a_printer(&printer, 2);
 
@@ -7894,7 +7903,7 @@ done:
 }
 
 /********************************************************************
- * spoolss_setprinterdata
+ * spoolss_setprinterdataex
  ********************************************************************/
 
 WERROR _spoolss_setprinterdataex(pipes_struct *p, SPOOL_Q_SETPRINTERDATAEX *q_u, SPOOL_R_SETPRINTERDATAEX *r_u)
@@ -7993,9 +8002,7 @@ WERROR _spoolss_deleteprinterdataex(pipes_struct *p, SPOOL_Q_DELETEPRINTERDATAEX
 	unistr2_to_ascii( valuename, value, sizeof(valuename)-1 );
 	unistr2_to_ascii( keyname, key, sizeof(keyname)-1 );
 
-	status = delete_printer_data( printer->info_2, keyname, valuename );
-	if ( W_ERROR_IS_OK(status) )
-		status = mod_a_printer(*printer, 2);
+	status = delete_printer_dataex( printer, keyname, valuename );
 
 	free_a_printer(&printer, 2);
 
@@ -8116,6 +8123,7 @@ WERROR _spoolss_deleteprinterkey(pipes_struct *p, SPOOL_Q_DELETEPRINTERKEY *q_u,
         unistr2_to_ascii(key, &q_u->keyname, sizeof(key) - 1);
  
 	status = delete_all_printer_data( printer->info_2, key );	
+
 	if ( W_ERROR_IS_OK(status) )
 		status = mod_a_printer(*printer, 2);
 	
