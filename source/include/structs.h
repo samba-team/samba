@@ -135,5 +135,6 @@ struct lsa_RightSet;
 
 struct ldb_val;
 
+struct smbcli_composite;
 struct smb_composite_loadfile;
-
+struct smb_composite_savefile;

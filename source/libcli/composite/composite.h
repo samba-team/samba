@@ -45,6 +45,9 @@ struct smbcli_composite {
 	/* the parameters of the whole composite function */
 	void *composite_parms;
 
+	/* a private pointer for use by the composite code */
+	void *private;
+
 	/* status code when finished */
 	NTSTATUS status;
 
@@ -53,7 +56,6 @@ struct smbcli_composite {
 		void (*fn)(struct smbcli_composite *);
 		void *private;
 	} async;
-	
 };
 
 
@@ -69,4 +71,16 @@ struct smb_composite_loadfile {
 		uint8_t *data;
 		uint32_t size;
 	} out;
+};
+
+/*
+  a composite open/write(s)/close request that saves a whole file from
+  memory. Used as a demo of the composite system.
+*/
+struct smb_composite_savefile {
+	struct {
+		const char *fname;
+		uint8_t *data;
+		uint32_t size;
+	} in;
 };

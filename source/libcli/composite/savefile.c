@@ -18,7 +18,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 /*
-  a composite API for loading a whole file into memory
+  a composite API for saving a whole file from memory
 */
 
 #include "includes.h"
@@ -27,10 +27,14 @@
 #include "librpc/gen_ndr/ndr_security.h"
 
 /* the stages of this call */
-enum loadfile_stage {LOADFILE_OPEN, LOADFILE_READ, LOADFILE_CLOSE};
+enum savefile_stage {SAVEFILE_OPEN, SAVEFILE_WRITE, SAVEFILE_CLOSE};
 
 
-static void loadfile_handler(struct smbcli_request *req);
+static void savefile_handler(struct smbcli_request *req);
+
+struct savefile_state {
+	off_t total_written;
+};
 
 
 /*
@@ -41,7 +45,7 @@ static NTSTATUS setup_close(struct smbcli_composite *c,
 {
 	union smb_close *io_close;
 
-	/* nothing to read, setup the close */
+	/* nothing to write, setup the close */
 	io_close = talloc(c, union smb_close);
 	NT_STATUS_HAVE_NO_MEMORY(io_close);
 	
@@ -53,8 +57,8 @@ static NTSTATUS setup_close(struct smbcli_composite *c,
 	NT_STATUS_HAVE_NO_MEMORY(c->req);
 
 	/* call the handler again when the close is done */
-	c->stage = LOADFILE_CLOSE;
-	c->req->async.fn = loadfile_handler;
+	c->stage = SAVEFILE_CLOSE;
+	c->req->async.fn = savefile_handler;
 	c->req->async.private = c;
 	c->req_parms = io_close;
 
@@ -63,53 +67,44 @@ static NTSTATUS setup_close(struct smbcli_composite *c,
 
 /*
   called when the open is done - pull the results and setup for the
-  first readx, or close if the file is zero size
+  first writex, or close if the file is zero size
 */
-static NTSTATUS loadfile_open(struct smbcli_composite *c, 
-			      struct smb_composite_loadfile *io)
+static NTSTATUS savefile_open(struct smbcli_composite *c, 
+			      struct smb_composite_savefile *io)
 {
 	union smb_open *io_open = c->req_parms;
 	struct smbcli_tree *tree = c->req->tree;
-	union smb_read *io_read;
+	union smb_write *io_write;
 	NTSTATUS status;
+	uint32_t max_xmit = tree->session->transport->negotiate.max_xmit;
 
 	status = smb_raw_open_recv(c->req, c, io_open);
 	NT_STATUS_NOT_OK_RETURN(status);
 	
-	/* don't allow stupidly large loads */
-	if (io_open->ntcreatex.out.size > 100*1000*1000) {
-		return NT_STATUS_INSUFFICIENT_RESOURCES;
-	}
-
-	/* allocate space for the file data */
-	io->out.size = io_open->ntcreatex.out.size;
-	io->out.data = talloc_array(c, uint8_t, io->out.size);
-	NT_STATUS_HAVE_NO_MEMORY(io->out.data);
-
-	if (io->out.size == 0) {
+	if (io->in.size == 0) {
 		return setup_close(c, tree, io_open->ntcreatex.out.fnum);
 	}
 
-	/* setup for the read */
-	io_read = talloc(c, union smb_read);
-	NT_STATUS_HAVE_NO_MEMORY(io_read);
+	/* setup for the first write */
+	io_write = talloc(c, union smb_write);
+	NT_STATUS_HAVE_NO_MEMORY(io_write);
 	
-	io_read->readx.level        = RAW_READ_READX;
-	io_read->readx.in.fnum      = io_open->ntcreatex.out.fnum;
-	io_read->readx.in.offset    = 0;
-	io_read->readx.in.mincnt    = MIN(32768, io->out.size);
-	io_read->readx.in.maxcnt    = io_read->readx.in.mincnt;
-	io_read->readx.in.remaining = 0;
-	io_read->readx.out.data     = io->out.data;
+	io_write->writex.level        = RAW_WRITE_WRITEX;
+	io_write->writex.in.fnum      = io_open->ntcreatex.out.fnum;
+	io_write->writex.in.offset    = 0;
+	io_write->writex.in.wmode     = 0;
+	io_write->writex.in.remaining = 0;
+	io_write->writex.in.count     = MIN(max_xmit - 100, io->in.size);
+	io_write->writex.in.data      = io->in.data;
 
-	c->req = smb_raw_read_send(tree, io_read);
+	c->req = smb_raw_write_send(tree, io_write);
 	NT_STATUS_HAVE_NO_MEMORY(c->req);
 
-	/* call the handler again when the first read is done */
-	c->stage = LOADFILE_READ;
-	c->req->async.fn = loadfile_handler;
+	/* call the handler again when the first write is done */
+	c->stage = SAVEFILE_WRITE;
+	c->req->async.fn = savefile_handler;
 	c->req->async.private = c;
-	c->req_parms = io_read;
+	c->req_parms = io_write;
 	talloc_free(io_open);
 
 	return NT_STATUS_OK;
@@ -117,35 +112,39 @@ static NTSTATUS loadfile_open(struct smbcli_composite *c,
 
 
 /*
-  called when a read is done - pull the results and setup for the
-  next read, or close if the file is all done
+  called when a write is done - pull the results and setup for the
+  next write, or close if the file is all done
 */
-static NTSTATUS loadfile_read(struct smbcli_composite *c, 
-			      struct smb_composite_loadfile *io)
+static NTSTATUS savefile_write(struct smbcli_composite *c, 
+			      struct smb_composite_savefile *io)
 {
-	union smb_read *io_read = c->req_parms;
+	union smb_write *io_write = c->req_parms;
 	struct smbcli_tree *tree = c->req->tree;
+	struct savefile_state *state = c->private;
 	NTSTATUS status;
+	uint32_t max_xmit = tree->session->transport->negotiate.max_xmit;
 
-	status = smb_raw_read_recv(c->req, io_read);
+	status = smb_raw_write_recv(c->req, io_write);
 	NT_STATUS_NOT_OK_RETURN(status);
+
+	state->total_written += io_write->writex.out.nwritten;
 	
 	/* we might be done */
-	if (io_read->readx.in.offset +
-	    io_read->readx.out.nread == io->out.size) {
-		return setup_close(c, tree, io_read->readx.in.fnum);
+	if (io_write->writex.out.nwritten != io_write->writex.in.count ||
+	    state->total_written == io->in.size) {
+		return setup_close(c, tree, io_write->writex.in.fnum);
 	}
 
-	/* setup for the next read */
-	io_read->readx.in.offset += io_read->readx.out.nread;
-	io_read->readx.in.mincnt = MIN(32768, io->out.size - io_read->readx.in.offset);
-	io_read->readx.out.data = io->out.data + io_read->readx.in.offset;
+	/* setup for the next write */
+	io_write->writex.in.offset = state->total_written;
+	io_write->writex.in.count = MIN(max_xmit - 100, io->in.size - state->total_written);
+	io_write->writex.in.data = io->in.data + state->total_written;
 
-	c->req = smb_raw_read_send(tree, io_read);
+	c->req = smb_raw_write_send(tree, io_write);
 	NT_STATUS_HAVE_NO_MEMORY(c->req);
 
-	/* call the handler again when the read is done */
-	c->req->async.fn = loadfile_handler;
+	/* call the handler again when the write is done */
+	c->req->async.fn = savefile_handler;
 	c->req->async.private = c;
 
 	return NT_STATUS_OK;
@@ -154,13 +153,18 @@ static NTSTATUS loadfile_read(struct smbcli_composite *c,
 /*
   called when the close is done, check the status and cleanup
 */
-static NTSTATUS loadfile_close(struct smbcli_composite *c, 
-			       struct smb_composite_loadfile *io)
+static NTSTATUS savefile_close(struct smbcli_composite *c, 
+			       struct smb_composite_savefile *io)
 {
 	NTSTATUS status;
+	struct savefile_state *state = c->private;
 
 	status = smbcli_request_simple_recv(c->req);
 	NT_STATUS_NOT_OK_RETURN(status);
+
+	if (state->total_written != io->in.size) {
+		return NT_STATUS_DISK_FULL;
+	}
 	
 	c->state = SMBCLI_REQUEST_DONE;
 	if (c->async.fn) {
@@ -172,26 +176,26 @@ static NTSTATUS loadfile_close(struct smbcli_composite *c,
 						     
 
 /*
-  handler for completion of a sub-request in loadfile
+  handler for completion of a sub-request in savefile
 */
-static void loadfile_handler(struct smbcli_request *req)
+static void savefile_handler(struct smbcli_request *req)
 {
 	struct smbcli_composite *c = req->async.private;
-	struct smb_composite_loadfile *io = c->composite_parms;
+	struct smb_composite_savefile *io = c->composite_parms;
 
 	/* when this handler is called, the stage indicates what
 	   call has just finished */
 	switch (c->stage) {
-	case LOADFILE_OPEN:
-		c->status = loadfile_open(c, io);
+	case SAVEFILE_OPEN:
+		c->status = savefile_open(c, io);
 		break;
 
-	case LOADFILE_READ:
-		c->status = loadfile_read(c, io);
+	case SAVEFILE_WRITE:
+		c->status = savefile_write(c, io);
 		break;
 
-	case LOADFILE_CLOSE:
-		c->status = loadfile_close(c, io);
+	case SAVEFILE_CLOSE:
+		c->status = savefile_close(c, io);
 		break;
 	}
 
@@ -204,21 +208,27 @@ static void loadfile_handler(struct smbcli_request *req)
 }
 
 /*
-  composite loadfile call - does an openx followed by a number of readx calls,
+  composite savefile call - does an openx followed by a number of writex calls,
   followed by a close
 */
-struct smbcli_composite *smb_composite_loadfile_send(struct smbcli_tree *tree, 
-						     struct smb_composite_loadfile *io)
+struct smbcli_composite *smb_composite_savefile_send(struct smbcli_tree *tree, 
+						     struct smb_composite_savefile *io)
 {
 	struct smbcli_composite *c;
 	union smb_open *io_open;
+	struct savefile_state *state;
 
 	c = talloc_zero(tree, struct smbcli_composite);
 	if (c == NULL) goto failed;
 
 	c->state = SMBCLI_REQUEST_SEND;
-	c->stage = LOADFILE_OPEN;
+	c->stage = SAVEFILE_OPEN;
 	c->composite_parms = io;
+
+	state = talloc(c, struct savefile_state);
+	if (state == NULL) goto failed;
+
+	state->total_written = 0;
 
 	/* setup for the open */
 	io_open = talloc_zero(c, union smb_open);
@@ -226,10 +236,10 @@ struct smbcli_composite *smb_composite_loadfile_send(struct smbcli_tree *tree,
 	
 	io_open->ntcreatex.level               = RAW_OPEN_NTCREATEX;
 	io_open->ntcreatex.in.flags            = NTCREATEX_FLAGS_EXTENDED;
-	io_open->ntcreatex.in.access_mask      = SEC_FILE_READ_DATA;
+	io_open->ntcreatex.in.access_mask      = SEC_FILE_WRITE_DATA;
 	io_open->ntcreatex.in.file_attr        = FILE_ATTRIBUTE_NORMAL;
 	io_open->ntcreatex.in.share_access     = NTCREATEX_SHARE_ACCESS_READ | NTCREATEX_SHARE_ACCESS_WRITE;
-	io_open->ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
+	io_open->ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN_IF;
 	io_open->ntcreatex.in.impersonation    = NTCREATEX_IMPERSONATION_ANONYMOUS;
 	io_open->ntcreatex.in.fname            = io->in.fname;
 
@@ -238,9 +248,10 @@ struct smbcli_composite *smb_composite_loadfile_send(struct smbcli_tree *tree,
 	if (c->req == NULL) goto failed;
 
 	/* setup the callback handler */
-	c->req->async.fn = loadfile_handler;
+	c->req->async.fn = savefile_handler;
 	c->req->async.private = c;
 	c->req_parms = io_open;
+	c->private = state;
 
 	return c;
 
@@ -251,31 +262,23 @@ failed:
 
 
 /*
-  composite loadfile call - recv side
+  composite savefile call - recv side
 */
-NTSTATUS smb_composite_loadfile_recv(struct smbcli_composite *c, TALLOC_CTX *mem_ctx)
+NTSTATUS smb_composite_savefile_recv(struct smbcli_composite *c)
 {
 	NTSTATUS status;
-
 	status = smb_composite_wait(c);
-
-	if (NT_STATUS_IS_OK(status)) {
-		struct smb_composite_loadfile *io = c->composite_parms;
-		talloc_steal(mem_ctx, io->out.data);
-	}
-
 	talloc_free(c);
 	return status;
 }
 
 
 /*
-  composite loadfile call - sync interface
+  composite savefile call - sync interface
 */
-NTSTATUS smb_composite_loadfile(struct smbcli_tree *tree, 
-				TALLOC_CTX *mem_ctx,
-				struct smb_composite_loadfile *io)
+NTSTATUS smb_composite_savefile(struct smbcli_tree *tree, 
+				struct smb_composite_savefile *io)
 {
-	struct smbcli_composite *c = smb_composite_loadfile_send(tree, io);
-	return smb_composite_loadfile_recv(c, mem_ctx);
+	struct smbcli_composite *c = smb_composite_savefile_send(tree, io);
+	return smb_composite_savefile_recv(c);
 }

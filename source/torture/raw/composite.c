@@ -26,23 +26,56 @@
 
 #define BASEDIR "\\composite"
 
+/*
+  test a simple savefile/loadfile combination
+*/
 static BOOL test_loadfile(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
 	const char *fname = BASEDIR "\\test.txt";
-	int fnum;
 	NTSTATUS status;
-	struct smb_composite_loadfile io;
-	
-	fnum = create_complex_file(cli, mem_ctx, fname);
-	smbcli_close(cli->tree, fnum);
+	struct smb_composite_savefile io1;
+	struct smb_composite_loadfile io2;
+	char *data;
+	size_t len = random() % 100000;
 
-	io.in.fname = fname;
+	data = talloc_array(mem_ctx, uint8_t, len);
 
-	status = smb_composite_loadfile(cli->tree, mem_ctx, &io);
+	generate_random_buffer(data, len);
+
+	io1.in.fname = fname;
+	io1.in.data  = data;
+	io1.in.size  = len;
+
+	printf("testing savefile\n");
+
+	status = smb_composite_savefile(cli->tree, &io1);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("savefile failed: %s\n", nt_errstr(status));
+		return False;
+	}
+
+	io2.in.fname = fname;
+
+	printf("testing loadfile\n");
+
+	status = smb_composite_loadfile(cli->tree, mem_ctx, &io2);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Loadfile failed: %s\n", nt_errstr(status));
 		return False;
 	}
+
+	if (io2.out.size != len) {
+		printf("wrong length in returned data - %d should be %d\n",
+		       io2.out.size, len);
+		return False;
+	}
+
+	if (memcmp(io2.out.data, data, len) != 0) {
+		printf("wrong data in loadfile!\n");
+		return False;
+	}
+
+	talloc_free(data);
 
 	return True;
 }
