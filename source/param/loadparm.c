@@ -2657,7 +2657,16 @@ static void add_to_file_list(const char *fname, const char *subfname)
 BOOL lp_file_list_changed(void)
 {
 	struct file_lists *f = file_lists;
-	DEBUG(6, ("lp_file_list_changed()\n"));
+	char *username;
+
+ 	DEBUG(6, ("lp_file_list_changed()\n"));
+
+	/* get the username for substituion -- preference to the current_user_info */
+	if ( strlen( current_user_info.smb_name ) != 0 )
+		username = current_user_info.smb_name;
+	else
+		username = sub_get_smb_name();
+		
 
 	while (f) {
 		pstring n2;
@@ -3806,9 +3815,18 @@ BOOL lp_load(const char *pszFname, BOOL global_only, BOOL save_defaults,
 	pstring n2;
 	BOOL bRetval;
 	param_opt_struct *data, *pdata;
+	char *username;
 
 	pstrcpy(n2, pszFname);
-	standard_sub_basic(current_user_info.smb_name, n2,sizeof(n2));
+	
+	/* get the username for substituion -- preference to the current_user_info */
+	
+	if ( strlen( current_user_info.smb_name ) != 0 )
+		username = current_user_info.smb_name;
+	else
+		username = sub_get_smb_name();
+		
+	standard_sub_basic( username, n2,sizeof(n2) );
 
 	add_to_file_list(pszFname, n2);
 

@@ -116,6 +116,11 @@ void sub_set_smb_name(const char *name)
 	alpha_strcpy(smb_user_name,tmp,SAFE_NETBIOS_CHARS,sizeof(smb_user_name)-1);
 }
 
+char* sub_get_smb_name( void )
+{
+	return smb_user_name;
+}
+
 /*******************************************************************
  Setup the strings used by substitutions. Called per packet. Ensure
  %U name is set correctly also.
