@@ -744,8 +744,7 @@ spnego_reply
     } else {
 	MechTypeList mechlist;
 	MechType m0;
-	char mechtypelist_buf[256];
-	size_t mechtypelist_sz;
+	size_t buf_len;
 	gss_buffer_desc mic_buf, mech_buf;
 
 	mechlist.len = 1;
@@ -761,26 +760,23 @@ spnego_reply
 	    return GSS_S_FAILURE;
 	}
 
-	ret = encode_MechTypeList(mechtypelist_buf
-				  + sizeof(mechtypelist_buf) - 1,
-				  sizeof(mechtypelist_buf),
-				  &mechlist, &mechtypelist_sz);
+	ASN1_MALLOC_ENCODE(MechTypeList, mech_buf.value, mech_buf.length,
+			   &mechlist, &buf_len, ret);
 	if (ret) {
 	    free_NegTokenTarg(&targ);
 	    free_oid(&m0);
 	    *minor_status = ENOMEM;
 	    return GSS_S_FAILURE;
 	}
-
-	mech_buf.length = mechtypelist_sz;
-	mech_buf.value  = mechtypelist_buf
-	    + sizeof(mechtypelist_buf) - mechtypelist_sz;
+	if (mech_buf.length != buf_len)
+	    abort();
 
 	mic_buf.length = targ.mechListMIC->length;
 	mic_buf.value  = targ.mechListMIC->data;
 
 	ret = gss_verify_mic(minor_status, *context_handle,
 			     &mech_buf, &mic_buf, NULL);
+	free(mech_buf.value);
 	free_oid(&m0);
     }
     free_NegTokenTarg(&targ);
@@ -811,6 +807,9 @@ spnego_initial
     u_char *buf;
     size_t buf_size, buf_len;
     krb5_data data;
+#if 1
+    size_t ni_len;
+#endif
 
     memset (&ni, 0, sizeof(ni));
 
@@ -905,12 +904,13 @@ spnego_initial
 
 	ASN1_MALLOC_ENCODE(NegotiationToken, buf, buf_size,
 			   &nt, &buf_len, ret);
-
-	data.data   = buf;
-	data.length = buf_len;
+	if (buf_size != buf_len)
+	    abort();
     }
 #else
-    buf_size = 1024;
+    ni_len = length_NegTokenInit(&ni);
+    buf_size = 1 + length_len(ni_len) + ni_len;
+
     buf = malloc(buf_size);
     if (buf == NULL) {
 	free_NegTokenInit(&ni);
@@ -918,48 +918,36 @@ spnego_initial
 	return GSS_S_FAILURE;
     }
 
-    do {
-	ret = encode_NegTokenInit(buf + buf_size -1,
-				  buf_size,
-				  &ni, &buf_len);
-	if (ret == 0) {
-	    size_t tmp;
+    ret = encode_NegTokenInit(buf + buf_size - 1,
+			      ni_len,
+			      &ni, &buf_len);
+    if (ret == 0 && ni_len != buf_len)
+	abort();
 
-	    ret = der_put_length_and_tag(buf + buf_size - buf_len - 1,
-					 buf_size - buf_len,
-					 buf_len,
-					 CONTEXT,
-					 CONS,
-					 0,
-					 &tmp);
-	    if (ret == 0)
-		buf_len += tmp;
-	}
-	if (ret) {
-	    if (ret == ASN1_OVERFLOW) {
-		u_char *tmp;
+    if (ret == 0) {
+	size_t tmp;
 
-		buf_size *= 2;
-		tmp = realloc (buf, buf_size);
-		if (tmp == NULL) {
-		    *minor_status = ENOMEM;
-		    free(buf);
-		    free_NegTokenInit(&ni);
-		    return GSS_S_FAILURE;
-		}
-		buf = tmp;
-	    } else {
-		*minor_status = ret;
-		free(buf);
-		free_NegTokenInit(&ni);
-		return GSS_S_FAILURE;
-	    }
-	}
-    } while (ret == ASN1_OVERFLOW);
+	ret = der_put_length_and_tag(buf + buf_size - buf_len - 1,
+				     buf_size - buf_len,
+				     buf_len,
+				     CONTEXT,
+				     CONS,
+				     0,
+				     &tmp);
+	if (ret == 0 && tmp + buf_len != buf_size)
+	    abort();
+    }
+    if (ret) {
+	*minor_status = ret;
+	free(buf);
+	free_NegTokenInit(&ni);
+	return GSS_S_FAILURE;
+    }
 
-    data.data   = buf + buf_size - buf_len;
-    data.length = buf_len;
 #endif
+    data.data   = buf;
+    data.length = buf_size;
+
     free_NegTokenInit(&ni);
     if (ret)
 	return ret;
