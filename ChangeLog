@@ -1,5 +1,8 @@
 1999-08-12  Assar Westerlund  <assar@sics.se>
 
+	* kdc/hpropd.c: add inetd flag.  default means try to figure out
+ 	if stdin is a socket or not.
+
 	* Makefile.am (ACLOCAL): just use `cf', this variable is only used
  	when the current directory is $(top_srcdir) anyways and having
  	$(top_srcdir) there breaks if it's a relative path
