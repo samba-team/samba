@@ -55,6 +55,7 @@ krb5_mk_priv(krb5_context context,
   u_char buf[1024];
   size_t len;
   unsigned tmp_seq;
+  krb5_keyblock *key;
 
   part.user_data = *userdata;
   gettimeofday (&tv, NULL);
@@ -80,8 +81,17 @@ krb5_mk_priv(krb5_context context,
   s.enc_part.etype = auth_context->enctype;
   s.enc_part.kvno = NULL;
 
+  /* XXX - Is this right? */
+
+  if (auth_context->local_subkey.keytype)
+      key = &auth_context->local_subkey;
+  else if (auth_context->remote_subkey.keytype)
+      key = &auth_context->remote_subkey;
+  else
+      key = &auth_context->key;
+
   r = krb5_encrypt (context, buf + sizeof(buf) - len, len,
-		    s.enc_part.etype, &auth_context->key, &s.enc_part.cipher);
+		    s.enc_part.etype, key, &s.enc_part.cipher);
   if (r)
     return r;
 
