@@ -492,6 +492,50 @@ done:
 }
 
 
+/* convert a DN to a name, rid and name type 
+   this might become a major speed bottleneck if groups have
+   lots of users, in which case we could cache the results
+*/
+static BOOL dn_lookup(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
+		      const char *dn,
+		      char **name, uint32 *name_type, uint32 *rid)
+{
+	char *exp;
+	void *res = NULL;
+	const char *attrs[] = {"userPrincipalName", "sAMAccountName",
+			       "objectSid", "sAMAccountType", NULL};
+	ADS_STATUS rc;
+	uint32 atype;
+	DOM_SID sid;
+
+	asprintf(&exp, "(distinguishedName=%s)", dn);
+	rc = ads_search_retry(ads, &res, exp, attrs);
+	free(exp);
+	if (!ADS_ERR_OK(rc)) {
+		goto failed;
+	}
+
+	(*name) = pull_username(ads, mem_ctx, res);
+
+	if (!ads_pull_uint32(ads, res, "sAMAccountType", &atype)) {
+		goto failed;
+	}
+	(*name_type) = ads_atype_map(atype);
+
+	if (!ads_pull_sid(ads, res, "objectSid", &sid) || 
+	    !sid_peek_rid(&sid, rid)) {
+		goto failed;
+	}
+
+	if (res) ads_msgfree(ads, res);
+	return True;
+
+failed:
+	if (res) ads_msgfree(ads, res);
+	return False;
+}
+
+
 /* convert a sid to a distnguished name */
 static NTSTATUS sid_to_distinguished_name(struct winbindd_domain *domain,
 					  TALLOC_CTX *mem_ctx,
@@ -678,7 +722,9 @@ done:
 	return status;
 }
 
-
+/*
+  find the members of a group, given a group rid and domain
+ */
 static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 				TALLOC_CTX *mem_ctx,
 				uint32 group_rid, uint32 *num_names, 
@@ -686,14 +732,16 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 				uint32 **name_types)
 {
 	DOM_SID group_sid;
-	const char *attrs[] = {"userPrincipalName", "sAMAccountName",
-			       "objectSid", "sAMAccountType", NULL};
 	ADS_STATUS rc;
 	int count;
-	void *res=NULL, *msg=NULL;
+	void *res=NULL;
 	ADS_STRUCT *ads = NULL;
-	char *exp, *dn = NULL;
+	char *exp;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	char *sidstr;
+	const char *attrs[] = {"member", NULL};
+	char **members;
+	int i, num_members;
 
 	*num_names = 0;
 
@@ -701,17 +749,14 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	if (!ads) goto done;
 
 	sid_from_rid(domain, group_rid, &group_sid);
-	status = sid_to_distinguished_name(domain, mem_ctx, &group_sid, &dn);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(3,("Failed to find distinguishedName for %s\n", sid_string_static(&group_sid)));
-		return status;
-	}
+	sidstr = sid_binstring(&group_sid);
 
-	/* search for all users who have that group sid as primary group or as member */
-	asprintf(&exp, "(&(objectCategory=user)(|(primaryGroupID=%d)(memberOf=%s)))",
-		 group_rid, dn);
+	/* search for all members of the group */
+	asprintf(&exp, "(objectSid=%s)",sidstr);
 	rc = ads_search_retry(ads, &res, exp, attrs);
 	free(exp);
+	free(sidstr);
+
 	if (!ADS_ERR_OK(rc)) {
 		DEBUG(1,("query_user_list ads_search: %s\n", ads_errstr(rc)));
 		goto done;
@@ -723,29 +768,33 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 		goto done;
 	}
 
-	(*rid_mem) = talloc_zero(mem_ctx, sizeof(uint32) * count);
-	(*name_types) = talloc_zero(mem_ctx, sizeof(uint32) * count);
-	(*names) = talloc_zero(mem_ctx, sizeof(char *) * count);
+	members = ads_pull_strings(ads, mem_ctx, res, "member");
+	if (!members) {
+		/* no members? ok ... */
+		status = NT_STATUS_OK;
+		goto done;
+	}
 
-	for (msg = ads_first_entry(ads, res); msg; msg = ads_next_entry(ads, msg)) {
-		uint32 atype, rid;
-		DOM_SID sid;
+	/* now we need to turn a list of members into rids, names and name types 
+	   the problem is that the members are in the form of distinguised names
+	*/
+	for (i=0;members[i];i++) /* noop */ ;
+	num_members = i;
 
-		(*names)[*num_names] = pull_username(ads, mem_ctx, msg);
-		if (!ads_pull_uint32(ads, msg, "sAMAccountType", &atype)) {
-			continue;
+	(*rid_mem) = talloc_zero(mem_ctx, sizeof(uint32) * num_members);
+	(*name_types) = talloc_zero(mem_ctx, sizeof(uint32) * num_members);
+	(*names) = talloc_zero(mem_ctx, sizeof(char *) * num_members);
+
+	for (i=0;i<num_members;i++) {
+		uint32 name_type, rid;
+		char *name;
+
+		if (dn_lookup(ads, mem_ctx, members[i], &name, &name_type, &rid)) {
+		    (*names)[*num_names] = name;
+		    (*name_types)[*num_names] = name_type;
+		    (*rid_mem)[*num_names] = rid;
+		    (*num_names)++;
 		}
-		(*name_types)[*num_names] = ads_atype_map(atype);
-		if (!ads_pull_sid(ads, msg, "objectSid", &sid)) {
-			DEBUG(1,("No sid for %s !?\n", (*names)[*num_names]));
-			continue;
-		}
-		if (!sid_peek_check_rid(&domain->sid, &sid, &rid)) {
-			DEBUG(1,("No rid for %s !?\n", (*names)[*num_names]));
-			continue;
-		}
-		(*rid_mem)[*num_names] = rid;
-		(*num_names)++;
 	}	
 
 	status = NT_STATUS_OK;
@@ -755,6 +804,7 @@ done:
 
 	return status;
 }
+
 
 /* find the sequence number for a domain */
 static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)

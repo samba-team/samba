@@ -1294,6 +1294,41 @@ char *ads_pull_string(ADS_STRUCT *ads,
 }
 
 /**
+ * pull an array of strings from a ADS result
+ * @param ads connection to ads server
+ * @param mem_ctx TALLOC_CTX to use for allocating result string
+ * @param msg Results of search
+ * @param field Attribute to retrieve
+ * @return Result strings in talloc context
+ **/
+char **ads_pull_strings(ADS_STRUCT *ads, 
+		       TALLOC_CTX *mem_ctx, void *msg, const char *field)
+{
+	char **values;
+	char **ret = NULL;
+	int i, n;
+
+	values = ldap_get_values(ads->ld, msg, field);
+	if (!values) return NULL;
+
+	for (i=0;values[i];i++) /* noop */ ;
+	n = i;
+
+	ret = talloc(mem_ctx, sizeof(char *) * (n+1));
+
+	for (i=0;i<n;i++) {
+		if (pull_utf8_talloc(mem_ctx, (void **)&ret[i], values[i]) == -1) {
+			return NULL;
+		}
+	}
+	ret[i] = NULL;
+
+	ldap_value_free(values);
+	return ret;
+}
+
+
+/**
  * pull a single uint32 from a ADS result
  * @param ads connection to ads server
  * @param msg Results of search
