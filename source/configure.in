@@ -3187,7 +3187,7 @@ AC_ARG_WITH(sys-quotas,
   AC_MSG_RESULT(${samba_cv_TRY_SYS_QUOTAS})
 )
 
-if test x"$samba_cv_TRY_SYS_QUOTAS" = x"auto"; then
+if test x"$samba_cv_TRY_SYS_QUOTAS" != x"no"; then
 AC_MSG_CHECKING(whether to try the lib/sysquotas.c interface on ${host_os})
   case "$host_os" in
 	*linux*)
