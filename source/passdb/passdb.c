@@ -794,20 +794,6 @@ BOOL local_lookup_sid(const DOM_SID *sid, char *name, enum SID_NAME_USE *psid_na
 		return True;
 	}
 
-	if (rid == DOMAIN_USER_RID_ADMIN) {
-		const char **admin_list = lp_admin_users(-1);
-		*psid_name_use = SID_NAME_USER;
-		if (admin_list) {
-			const char *p = *admin_list;
-			if(!next_token(&p, name, NULL, sizeof(fstring))) {
-				fstrcpy(name, "Administrator");
-			}
-		} else {
-			fstrcpy(name, "Administrator");
-		}
-		return True;
-	}
-
 	if (algorithmic_pdb_rid_is_user(rid)) {
 		uid_t uid;
 		struct passwd *pw = NULL;
