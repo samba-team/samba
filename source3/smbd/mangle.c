@@ -799,12 +799,12 @@ static void do_fwd_mangled_map(char *s, char *MangledMap)
     }
   } /* do_fwd_mangled_map */
 
-/* ************************************************************************** **
+/*****************************************************************************
  * do the actual mangling to 8.3 format
- *
- * ************************************************************************** **
+ * the buffer must be able to hold 13 characters (including the null)
+ *****************************************************************************
  */
-void mangle_name_83( char *s, int s_len )
+void mangle_name_83( char *s)
   {
   int csum = str_checksum(s);
   char *p;
@@ -907,7 +907,7 @@ void mangle_name_83( char *s, int s_len )
 
   csum = csum % (36*36);
 
-  (void)slprintf( s, s_len - 1, "%s%c%c%c",
+  (void)slprintf(s, 12, "%s%c%c%c",
                  base, magic_char, base36( csum/36 ), base36( csum ) );
 
   if( *extension )
@@ -917,12 +917,13 @@ void mangle_name_83( char *s, int s_len )
     }
 
   DEBUG( 5, ( "%s\n", s ) );
+
   } /* mangle_name_83 */
 
-/* ************************************************************************** **
+/*****************************************************************************
  * Convert a filename to DOS format.  Return True if successful.
  *
- *  Input:  OutName - Source *and* destination buffer.
+ *  Input:  OutName - Source *and* destination buffer. 
  *
  *                    NOTE that OutName must point to a memory space that
  *                    is at least 13 bytes in size!
@@ -939,47 +940,46 @@ void mangle_name_83( char *s, int s_len )
  *  Output: Returns False only if the name wanted mangling but the share does
  *          not have name mangling turned on.
  *
- * ************************************************************************** **
+ * ****************************************************************************
  */
-BOOL name_map_mangle( char *OutName, BOOL need83, int snum )
-  {
-  DEBUG(5,
-    ("name_map_mangle( %s, %s, %d )\n", OutName, need83?"TRUE":"FALSE", snum) );
+BOOL name_map_mangle(char *OutName, BOOL need83, int snum)
+{
+	char *map;
+	DEBUG(5,("name_map_mangle( %s, %s, %d )\n", 
+		 OutName, need83?"TRUE":"FALSE", snum));
 
 #ifdef MANGLE_LONG_FILENAMES
-  if( !need83 && is_illegal_name(OutName) )
-    need83 = True;
+	if( !need83 && is_illegal_name(OutName) )
+		need83 = True;
 #endif  
 
-  /* apply any name mappings */
-  {
-  char *map = lp_mangled_map( snum );
+	/* apply any name mappings */
+	map = lp_mangled_map(snum);
 
-  if( map && *map )
-    do_fwd_mangled_map( OutName, map );
-  }
+	if (map && *map) {
+		do_fwd_mangled_map( OutName, map );
+	}
 
-  /* check if it's already in 8.3 format */
-  if( need83 && !is_8_3( OutName, True ) )
-    {
-    char *tmp;  /* kludge -- mangle_name_83() overwrites the source string    */
-                /* but cache_mangled_name() needs both.  crh 09-Apr-1998      */
+	/* check if it's already in 8.3 format */
+	if (need83 && !is_8_3(OutName, True)) {
+		char *tmp; 
 
-    if( !lp_manglednames( snum ) )
-      return( False );
+		if (!lp_manglednames(snum)) {
+			return(False);
+		}
 
-    /* mangle it into 8.3 */
-    tmp = strdup( OutName );
-    mangle_name_83( OutName, strlen(OutName) );
-    if( tmp )
-      {
-      cache_mangled_name( OutName, tmp );  
-      free( tmp );
-      }
-    }
+		/* mangle it into 8.3 */
+		tmp = strdup(OutName);
+		mangle_name_83(OutName);
 
-  DEBUG( 5, ("name_map_mangle() ==> [%s]\n", OutName) );
-  return( True );
-  } /* name_map_mangle */
+		if(tmp) {
+			cache_mangled_name(OutName, tmp);
+			free(tmp);
+		}
+	}
+
+	DEBUG(5,("name_map_mangle() ==> [%s]\n", OutName));
+	return(True);
+} /* name_map_mangle */
 
 /* ========================================================================== */
