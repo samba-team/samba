@@ -430,7 +430,7 @@ static int pvfs_retry_destructor(void *ptr)
 /*
   retry an open
 */
-static void pvfs_open_retry(void *private, BOOL timed_out)
+static void pvfs_open_retry(void *private, enum pvfs_wait_notice reason)
 {
 	struct pvfs_open_retry *r = private;
 	struct ntvfs_module_context *ntvfs = r->ntvfs;
@@ -438,9 +438,15 @@ static void pvfs_open_retry(void *private, BOOL timed_out)
 	union smb_open *io = r->io;
 	NTSTATUS status;
 
+	/* w2k3 ignores SMBntcancel for outstanding open requests. It's probably
+	   just a bug in their server, but we better do the same */
+	if (reason == PVFS_WAIT_CANCEL) {
+		return;
+	}
+
 	talloc_free(r->wait_handle);
 
-	if (timed_out) {
+	if (reason == PVFS_WAIT_TIMEOUT) {
 		/* if it timed out, then give the failure
 		   immediately */
 		talloc_free(r);
