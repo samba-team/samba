@@ -616,14 +616,14 @@ Parameters take the for "parameter=value".  Common options include:</para>
 
 <para>Add a new group mapping entry</para>
 
-<para>net groupmap add {rid=int|sid=string} unixgroup=string [type={domain|local|builtin}] [ntgroup=string] [comment=string]</para>
+<para>net groupmap add {rid=int|sid=string} unixgroup=string [type={domain|local}] [ntgroup=string] [comment=string]</para>
 
 </refsect3>
 
 <refsect3>
 <title>GROUPMAP DELETE</title>
 
-<para>Delete a group mapping entry</para>
+<para>Delete a group mapping entry. If more then one group name matches, the first entry found is deleted.</para>
 
 <para>net groupmap delete {ntgroup=string|sid=SID}</para>
 
@@ -634,7 +634,7 @@ Parameters take the for "parameter=value".  Common options include:</para>
 
 <para>Update en existing group entry</para>
 
-<para>net groupmap modify {ntgroup=string|sid=SID} [unixgroup=string] [comment=string] [type={domain|local}</para>
+<para>net groupmap modify {ntgroup=string|sid=SID} [unixgroup=string] [comment=string] [type={domain|local}]</para>
 </refsect3>
 
 <refsect3>
