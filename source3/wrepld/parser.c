@@ -54,8 +54,6 @@ check if the buffer has that much data
 ****************************************************************************/
 static BOOL check_buffer(struct BUFFER *buffer, int more)
 {
-	char *temp;
-
 	DEBUG(10,("check_buffer: size is: %d offet is:%d growing by %d\n", buffer->length, buffer->offset, more));
 	
 	if (buffer->offset+more > buffer->length) {
