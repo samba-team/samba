@@ -27,6 +27,14 @@
 */
 
 #include "includes.h"
+
+/* This symbol is used in both includes.h and Python.h which causes an
+   annoying compiler warning. */
+
+#ifdef HAVE_FSTAT
+#undef HAVE_FSTAT
+#endif
+
 #include "Python.h"
 
 /* Tdb exception */
