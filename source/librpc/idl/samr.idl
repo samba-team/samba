@@ -861,19 +861,58 @@
 
 	/************************/
 	/* Function    0x2e     */
-	NTSTATUS samr_QUERY_INFORMATION_DOMAIN2();
+
+	/*
+	  how is this different from QueryDomainInfo ??
+	*/
+	NTSTATUS samr_QueryDomainInfo2(
+		[in,ref]      policy_handle *handle,
+		[in]          uint16 level,
+		[out,switch_is(level)] samr_DomainInfo *info
+		);
 
 	/************************/
 	/* Function    0x2f     */
-	NTSTATUS samr_QUERY_INFORMATION_USER2();
+
+	/*
+	  how is this different from QueryUserInfo ??
+	*/
+	NTSTATUS samr_QueryUserInfo2(
+		[in,ref]                  policy_handle *handle,
+		[in]                      uint16 level,
+		[out,switch_is(level)]    samr_UserInfo *info
+		);
 
 	/************************/
 	/* Function    0x30     */
-	NTSTATUS samr_QUERY_DISPINFO2();
+
+	/*
+	  how is this different from QueryDisplayInfo??
+	*/
+	NTSTATUS samr_QueryDisplayInfo2(
+		[in,ref]    policy_handle *handle,
+		[in]        uint16 level,
+		[in]        uint32 start_idx,
+		[in]        uint32 max_entries,
+		[in]        uint32 buf_size,
+		[out]       uint32 total_size,
+		[out]       uint32 returned_size,
+		[out,switch_is(level)] samr_DispInfo info
+		);
 
 	/************************/
 	/* Function    0x31     */
-	NTSTATUS samr_GET_DISPLAY_ENUMERATION_INDEX2();
+
+	/*
+	  how is this different from GetDisplayEnumerationIndex ??
+	*/
+	NTSTATUS samr_GetDisplayEnumerationIndex2(
+		[in,ref]    policy_handle *handle,
+		[in]        uint16 level,
+		[in]        samr_Name name,
+		[out]       uint32 idx
+		);
+
 
 	/************************/
 	/* Function    0x32     */
