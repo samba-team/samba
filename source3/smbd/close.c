@@ -143,9 +143,18 @@ void close_file(files_struct *fsp, BOOL normal_close)
 
     if (normal_close && last_reference && delete_on_close) {
         DEBUG(5,("close_file: file %s. Delete on close was set - deleting file.\n"));
-		if(dos_unlink(fsp->fsp_name) != 0)
-          DEBUG(0,("close_file: file %s. Delete on close was set and unlink failed \
+		if(dos_unlink(fsp->fsp_name) != 0) {
+
+          /*
+           * This call can potentially fail as another smbd may have
+           * had the file open with delete on close set and deleted
+           * it when its last reference to this file went away. Hence
+           * we log this but not at debug level zero.
+           */
+
+          DEBUG(5,("close_file: file %s. Delete on close was set and unlink failed \
 with error %s\n", fsp->fsp_name, strerror(errno) ));
+        }
     }
 
 	if(fsp->granted_oplock == True)
