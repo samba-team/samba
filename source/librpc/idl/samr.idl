@@ -326,8 +326,40 @@
 		samr_Name comment;
 	} samr_UserInfo1;
 
+	typedef struct {
+		samr_Name comment;
+		uint32 foo1;
+		uint32 foo2;
+		uint16 country_code;
+		uint16 code_page;
+	} samr_UserInfo2;
+
+	typedef struct {
+		samr_Name username;
+		samr_Name full_name;
+		uint32 Rid;
+		uint32 primary_group_rid;
+		samr_Name home_directory;
+		samr_Name home_drive;
+		samr_Name logon_script;
+		samr_Name profile;
+		samr_Name workstations;
+		NTTIME last_logon;
+		NTTIME last_logoff;
+		NTTIME last_pwd_change;
+		NTTIME allow_pwd_change;
+		NTTIME force_pwd_change; /* uncertain about this one */
+		uint32 units_per_week;
+		[size_is(1260), length_is(units_per_week/8)] uint8 *logon_hours;
+		uint16 bad_pwd_count;
+		uint16 num_logons;
+		uint32 acct_flags;
+	} samr_UserInfo3;
+
 	typedef union {
 		case(1) samr_UserInfo1 info1;
+		case(2) samr_UserInfo2 info2;
+		case(3) samr_UserInfo3 info3;
 	} samr_UserInfo;
 
 	NTSTATUS samr_QueryUserInfo(

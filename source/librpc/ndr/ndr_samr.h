@@ -522,8 +522,40 @@ struct samr_UserInfo1 {
 	struct samr_Name comment;
 };
 
+struct samr_UserInfo2 {
+	struct samr_Name comment;
+	uint32 foo1;
+	uint32 foo2;
+	uint16 country_code;
+	uint16 code_page;
+};
+
+struct samr_UserInfo3 {
+	struct samr_Name username;
+	struct samr_Name full_name;
+	uint32 Rid;
+	uint32 primary_group_rid;
+	struct samr_Name home_directory;
+	struct samr_Name home_drive;
+	struct samr_Name logon_script;
+	struct samr_Name profile;
+	struct samr_Name workstations;
+	NTTIME last_logon;
+	NTTIME last_logoff;
+	NTTIME last_pwd_change;
+	NTTIME allow_pwd_change;
+	NTTIME max_storage;
+	uint32 units_per_week;
+	uint8 *logon_hours;
+	uint16 bad_pwd_count;
+	uint16 num_logons;
+	uint32 acct_flags;
+};
+
 union samr_UserInfo {
 /* [case(1)] */ struct samr_UserInfo1 info1;
+/* [case(2)] */ struct samr_UserInfo2 info2;
+/* [case(3)] */ struct samr_UserInfo3 info3;
 };
 
 struct samr_QueryUserInfo {

@@ -79,7 +79,9 @@ struct ndr_print {
 enum ndr_err_code {
 	NDR_ERR_CONFORMANT_SIZE,
 	NDR_ERR_ARRAY_SIZE,
-	NDR_ERR_BAD_SWITCH
+	NDR_ERR_BAD_SWITCH,
+	NDR_ERR_OFFSET,
+	NDR_ERR_LENGTH
 };
 
 /*
