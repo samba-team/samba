@@ -53,6 +53,37 @@ you are interested in writing the support for a particular
 ACL filesystem, please join the samba-technical mailing
 list and coordinate your efforts. 
 
+Support for collection of profile information. A shared 
+memory area has been created which contains counters for
+the number of calls to and the amount of time spent in
+various system calls and smb transactions. See the file
+profile.h for a complete listing of the information 
+collected. Sample code for a samba pmda (collection agent
+for Performance Co-Pilot) has been included in the pcp
+directory. 
+
+To enable the profile data collection code in samba, you 
+must compile samba with profile support (run configure with 
+the --with-profile option). On startup, collection of data
+is disabled. To begin collecting data use the smbcontrol
+program to turn on profiling (see the smbcontrol man page).
+Profile information collection can be enabled for all smbd
+processes or one or more selected processes. The profiling
+data collected is the aggragate for all processes that have
+profiling enabled.
+
+With samba compiled for profile data collection, you may see
+a very slight degradation in performance even with profiling
+collection turned off. On initial tests with NetBench on an
+SGI Origin 200 server, this degradation was not measureable 
+with profile collection off compared to no profile collection
+compiled into samba. 
+
+With count profile collection enabled on all clients, the 
+degradation was less than 2%. With full profile collection 
+enabled on all clients, the degradation was about 8.5%. 
+
+
 =====================================================================
 
 If you think you have found a bug please email a report to :
