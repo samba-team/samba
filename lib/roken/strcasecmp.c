@@ -86,6 +86,8 @@ static const unsigned char charmap[] = {
 	'\370', '\371', '\372', '\373', '\374', '\375', '\376', '\377',
 };
 
+#ifndef HAVE_STRCASECMP
+
 int
 strcasecmp(const char *s1, const char *s2)
 {
@@ -98,6 +100,10 @@ strcasecmp(const char *s1, const char *s2)
 			return (0);
 	return (cm[*us1] - cm[*--us2]);
 }
+
+#endif /* HAVE_STRCASECMP */
+
+#ifndef HAVE_STRNCASECMP
 
 int
 strncasecmp(const char *s1, const char *s2, size_t n)
@@ -116,3 +122,5 @@ strncasecmp(const char *s1, const char *s2, size_t n)
 	}
 	return (0);
 }
+
+#endif /* HAVE_STRNCASECMP */
