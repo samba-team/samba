@@ -3,6 +3,7 @@
    SMB client
    Copyright (C) Andrew Tridgell 1994-1998
    Copyright (C) Simo Sorce 2001-2002
+   Copyright (C) Jelmer Vernooij 2003
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -27,28 +28,24 @@
 #define REGISTER 0
 #endif
 
-const char prog_name[] = "smbclient";
-
 struct cli_state *cli;
 extern BOOL in_client;
-extern BOOL AllowDebugChange;
 static int port = 0;
 pstring cur_dir = "\\";
 static pstring cd_path = "";
 static pstring service;
 static pstring desthost;
-static pstring password;
 static pstring username;
+static pstring password;
 static pstring workgroup;
-static char *cmdstr;
-static BOOL got_user;
-static BOOL got_pass;
-static int io_bufsize = 64512;
 static BOOL use_kerberos;
+static BOOL got_pass;
+static char *cmdstr = NULL;
+
+static int io_bufsize = 64512;
 
 static int name_type = 0x20;
 static int max_protocol = PROTOCOL_NT1;
-extern pstring user_socket_options;
 
 static int process_tok(fstring tok);
 static int cmd_help(void);
@@ -1060,7 +1057,7 @@ static int do_put(char *rname, char *lname, BOOL reput)
 {
 	int fnum;
 	XFILE *f;
-	int start = 0;
+	size_t start = 0;
 	off_t nread = 0;
 	char *buf = NULL;
 	int maxwrite = io_bufsize;
@@ -2473,102 +2470,6 @@ static int process(char *base_directory)
 }
 
 /****************************************************************************
-usage on the program
-****************************************************************************/
-static void usage(char *pname)
-{
-  d_printf("Usage: %s service <password> [options]", pname);
-
-  d_printf("\nVersion %s\n",VERSION);
-  d_printf("\t-s smb.conf           pathname to smb.conf file\n");
-  d_printf("\t-O socket_options     socket options to use\n");
-  d_printf("\t-R name resolve order use these name resolution services only\n");
-  d_printf("\t-M host               send a winpopup message to the host\n");
-  d_printf("\t-i scope              use this NetBIOS scope\n");
-  d_printf("\t-N                    don't ask for a password\n");
-  d_printf("\t-n netbios name.      Use this name as my netbios name\n");
-  d_printf("\t-d debuglevel         set the debuglevel\n");
-  d_printf("\t-p port               connect to the specified port\n");
-  d_printf("\t-l log basename.      Basename for log/debug files\n");
-  d_printf("\t-h                    Print this help message.\n");
-  d_printf("\t-I dest IP            use this IP to connect to\n");
-  d_printf("\t-E                    write messages to stderr instead of stdout\n");
-  d_printf("\t-k                    use kerberos (active directory) authentication\n");
-  d_printf("\t-U username           set the network username\n");
-  d_printf("\t-L host               get a list of shares available on a host\n");
-  d_printf("\t-t terminal code      terminal i/o code {sjis|euc|jis7|jis8|junet|hex}\n");
-  d_printf("\t-m max protocol       set the max protocol level\n");
-  d_printf("\t-A filename           get the credentials from a file\n");
-  d_printf("\t-W workgroup          set the workgroup name\n");
-  d_printf("\t-T<c|x>IXFqgbNan      command line tar\n");
-  d_printf("\t-D directory          start from directory\n");
-  d_printf("\t-c command string     execute semicolon separated commands\n");
-  d_printf("\t-b xmit/send buffer   changes the transmit/send buffer (default: 65520)\n");
-  d_printf("\n");
-}
-
-
-/****************************************************************************
-get a password from a a file or file descriptor
-exit on failure
-****************************************************************************/
-static void get_password_file(void)
-{
-	int fd = -1;
-	char *p;
-	BOOL close_it = False;
-	pstring spec;
-	char pass[128];
-		
-	if ((p = getenv("PASSWD_FD")) != NULL) {
-		pstrcpy(spec, "descriptor ");
-		pstrcat(spec, p);
-		sscanf(p, "%d", &fd);
-		close_it = False;
-	} else if ((p = getenv("PASSWD_FILE")) != NULL) {
-		fd = sys_open(p, O_RDONLY, 0);
-		pstrcpy(spec, p);
-		if (fd < 0) {
-			fprintf(stderr, "Error opening PASSWD_FILE %s: %s\n",
-				spec, strerror(errno));
-			exit(1);
-		}
-		close_it = True;
-	}
-
-	for(p = pass, *p = '\0'; /* ensure that pass is null-terminated */
-	    p && p - pass < sizeof(pass);) {
-		switch (read(fd, p, 1)) {
-		case 1:
-			if (*p != '\n' && *p != '\0') {
-				*++p = '\0'; /* advance p, and null-terminate pass */
-				break;
-			}
-		case 0:
-			if (p - pass) {
-				*p = '\0'; /* null-terminate it, just in case... */
-				p = NULL; /* then force the loop condition to become false */
-				break;
-			} else {
-				fprintf(stderr, "Error reading password from file %s: %s\n",
-					spec, "empty password\n");
-				exit(1);
-			}
-			
-		default:
-			fprintf(stderr, "Error reading password from file %s: %s\n",
-				spec, strerror(errno));
-			exit(1);
-		}
-	}
-	pstrcpy(password, pass);
-	if (close_it)
-		close(fd);
-}	
-
-
-
-/****************************************************************************
 handle a -L query
 ****************************************************************************/
 static int do_host_query(char *query_host)
@@ -2677,17 +2578,13 @@ static void remember_query_host(const char *arg,
  int main(int argc,char *argv[])
 {
 	fstring base_directory;
-	char *pname = argv[0];
 	int opt;
-	extern char *optarg;
-	extern int optind;
-	int old_debug;
 	pstring query_host;
 	BOOL message = False;
 	extern char tar_type;
 	pstring term_code;
-	pstring new_name_resolve_order;
-	pstring logfile;
+	const char *new_name_resolve_order = NULL;
+	poptContext pc;
 	char *p;
 	int rc = 0;
 
@@ -2700,305 +2597,132 @@ static void remember_query_host(const char *arg,
 	*query_host = 0;
 	*base_directory = 0;
 
-	*new_name_resolve_order = 0;
+	setup_logging(argv[0],True);
 
-	DEBUGLEVEL = 2;
-	AllowDebugChange = False;
- 
-	setup_logging(pname,True);
-
-	/*
-	 * If the -E option is given, be careful not to clobber stdout
-	 * before processing the options.  28.Feb.99, richard@hacom.nl.
-	 * Also pre-parse the -s option to get the service file name.
-	 */
-
-	for (opt = 1; opt < argc; opt++) {
-		if (strcmp(argv[opt], "-E") == 0)
-			dbf = x_stderr;
-		else if(strncmp(argv[opt], "-s", 2) == 0) {
-			if(argv[opt][2] != '\0')
-				pstrcpy(dyn_CONFIGFILE, &argv[opt][2]);
-			else if(argv[opt+1] != NULL) {
-				/*
-				 * At least one more arg left.
-				 */
-				pstrcpy(dyn_CONFIGFILE, argv[opt+1]);
-			} else {
-				usage(pname);
-				exit(1);
-			}
-		}
-	}
+	struct poptOption long_options[] = {
+		POPT_AUTOHELP
+		POPT_COMMON_SAMBA
+		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_debug },
+		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_configfile },
+		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_version },
+		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_socket_options }, 
+		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_log_base },
+		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_netbios_name },
+		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_scope },
+		POPT_CREDENTIALS
+		{ "name-resolve", 'R', POPT_ARG_STRING, &new_name_resolve_order, 'R', "Use these name resolution services only", "NAME-RESOLVE-ORDER" },
+		{ "message", 'M', POPT_ARG_STRING, NULL, 'M', "Send message", "HOST" },
+		{ "ip-address", 'I', POPT_ARG_STRING, NULL, 'I', "Use this IP to connect to", "IP" },
+		{ "stderr", 'E', POPT_ARG_NONE, NULL, 'E', "Write messages to stderr instead of stdout" },
+		{ "list", 'L', POPT_ARG_STRING, NULL, 'L', "Get a list of shares available on a host", "HOST" },
+		{ "terminal", 't', POPT_ARG_STRING, NULL, 't', "Terminal I/O code {sjis|euc|jis7|jis8|junet|hex}", "CODE" },
+		{ "max-protocol", 'm', POPT_ARG_STRING, NULL, 'm', "Set the max protocol level", "LEVEL" },
+		{ "tar", 'T', POPT_ARG_STRING, NULL, 'T', "Command line tar", "<c|x>IXFqgbNan" },
+		{ "directory", 'D', POPT_ARG_STRING, NULL, 'D', "Start from directory", "DIR" },
+		{ "command", 'c', POPT_ARG_STRING, &cmdstr, 'c', "Execute semicolon separated commands" }, 
+		{ "send-buffer", 'b', POPT_ARG_INT, NULL, 'b', "Changes the transmit/send buffer", "BYTES" },
+		{ "port", 'p', POPT_ARG_INT, &port, 'p', "Port to connect to", "PORT" },
+		{ 0, 0, 0, 0 }
+	};
+	
+	pc = poptGetContext("smbclient", argc, (const char **) argv, long_options, 
+				POPT_CONTEXT_KEEP_FIRST);
+	poptSetOtherOptionHelp(pc, "service <password>");
 
 	in_client = True;   /* Make sure that we tell lp_load we are */
 
-	old_debug = DEBUGLEVEL;
-	if (!lp_load(dyn_CONFIGFILE,True,False,False)) {
-		fprintf(stderr, "%s: Can't load %s - run testparm to debug it\n",
-			prog_name, dyn_CONFIGFILE);
-	}
-	DEBUGLEVEL = old_debug;
-	
-	pstrcpy(workgroup,lp_workgroup());
-
-	load_interfaces();
-
-	if (getenv("USER")) {
-		pstrcpy(username,getenv("USER"));
-
-		/* modification to support userid%passwd syntax in the USER var
-		   25.Aug.97, jdblair@uab.edu */
-
-		if ((p=strchr_m(username,'%'))) {
-			*p = 0;
-			pstrcpy(password,p+1);
-			got_pass = True;
-			memset(strchr_m(getenv("USER"),'%')+1,'X',strlen(password));
-		}
-	}
-
-	/* modification to support PASSWD environmental var
-	   25.Aug.97, jdblair@uab.edu */
-	if (getenv("PASSWD")) {
-		pstrcpy(password,getenv("PASSWD"));
-		got_pass = True;
-	}
-
-	if (getenv("PASSWD_FD") || getenv("PASSWD_FILE")) {
-		get_password_file();
-		got_pass = True;
-	}
-
-	if (*username == 0 && getenv("LOGNAME")) {
-		pstrcpy(username,getenv("LOGNAME"));
-	}
-
-	if (*username == 0) {
-		pstrcpy(username,"GUEST");
-	}
-
-	if (argc < 2) {
-		usage(pname);
-		exit(1);
-	}
-
-	/* FIXME: At the moment, if the user should happen to give the
-	 * options ahead of the service name (in standard Unix
-	 * fashion) then smbclient just spits out the usage message
-	 * with no explanation of what in particular was wrong.  Is
-	 * there any reason we can't just parse out the service name
-	 * and password after running getopt?? -- mbp */
-	if (*argv[1] != '-') {
-		pstrcpy(service,argv[1]);  
-		/* Convert any '/' characters in the service name to '\' characters */
-		string_replace( service, '/','\\');
-		argc--;
-		argv++;
-		
-		if (count_chars(service,'\\') < 3) {
-			usage(pname);
-			d_printf("\n%s: Not enough '\\' characters in service\n",service);
-			exit(1);
-		}
-
-		if (argc > 1 && (*argv[1] != '-')) {
-			got_pass = True;
-			pstrcpy(password,argv[1]);  
-			memset(argv[1],'X',strlen(argv[1]));
-			argc--;
-			argv++;
-		}
-	}
-
-	while ((opt = 
-		getopt(argc, argv,"s:O:R:M:i:Nn:d:Pp:l:hI:EU:L:t:m:W:T:D:c:b:A:k")) != EOF) {
+	while ((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
-		case 's':
-			pstrcpy(dyn_CONFIGFILE, optarg);
-			break;
-		case 'O':
-			pstrcpy(user_socket_options,optarg);
-			break;	
-		case 'R':
-			pstrcpy(new_name_resolve_order, optarg);
-			break;
 		case 'M':
 			/* Messages are sent to NetBIOS name type 0x3
 			 * (Messenger Service).  Make sure we default
 			 * to port 139 instead of port 445. srl,crh
 			 */
 			name_type = 0x03; 
-			pstrcpy(desthost,optarg);
-			if( 0 == port )
-				port = 139;
+			pstrcpy(desthost,poptGetOptArg(pc));
+			if( 0 == port ) port = 139;
  			message = True;
  			break;
- 		case 'i':
-			set_global_scope(optarg);
-			break;
-		case 'N':
-			got_pass = True;
-			break;
-		case 'n':
-			set_global_myname(optarg);
-			break;
-		case 'd':
-			if (*optarg == 'A')
-				DEBUGLEVEL = 10000;
-			else
-				DEBUGLEVEL = atoi(optarg);
-			break;
-		case 'P':
-			/* not needed anymore */
-			break;
-		case 'p':
-			port = atoi(optarg);
-			break;
-		case 'l':
-			slprintf(logfile,sizeof(logfile)-1, "%s.client",optarg);
-			lp_set_logfile(logfile);
-			break;
-		case 'h':
-			usage(pname);
-			exit(0);
-			break;
 		case 'I':
 			{
-				dest_ip = *interpret_addr2(optarg);
+				dest_ip = *interpret_addr2(poptGetOptArg(pc));
 				if (is_zero_ip(dest_ip))
 					exit(1);
 				have_ip = True;
 			}
 			break;
 		case 'E':
-			display_set_stderr();
 			dbf = x_stderr;
-			break;
-		case 'U':
-			{
-				char *lp;
-
-				got_user = True;
-				pstrcpy(username,optarg);
-				if ((lp=strchr_m(username,'%'))) {
-					*lp = 0;
-					pstrcpy(password,lp+1);
-					got_pass = True;
-					memset(strchr_m(optarg,'%')+1,'X',strlen(password));
-				}
-			}
-			break;
-
-		case 'A':
-			{
- 	 			XFILE *auth;
-        	                fstring buf;
-                        	uint16 len = 0;
-				char *ptr, *val, *param;
-                               
-	                        if ((auth=x_fopen(optarg, O_RDONLY, 0)) == NULL)
-				{
-					/* fail if we can't open the credentials file */
-					d_printf("ERROR: Unable to open credentials file!\n");
-					exit (-1);
-				}
-                                
-				while (!x_feof(auth))
-				{  
-					/* get a line from the file */
-					if (!x_fgets(buf, sizeof(buf), auth))
-						continue;
-					len = strlen(buf);
-					
-					if ((len) && (buf[len-1]=='\n'))
-					{
-						buf[len-1] = '\0';
-						len--;
-					}	
-					if (len == 0)
-						continue;
-					
-					/* break up the line into parameter & value.
-					   will need to eat a little whitespace possibly */
-					param = buf;
-					if (!(ptr = strchr_m (buf, '=')))
-						continue;
-					val = ptr+1;
-					*ptr = '\0';
-					
-					/* eat leading white space */
-					while ((*val!='\0') && ((*val==' ') || (*val=='\t')))
-						val++;
-					
-					if (strwicmp("password", param) == 0)
-					{
-						pstrcpy(password, val);
-						got_pass = True;
-					}
-					else if (strwicmp("username", param) == 0)
-						pstrcpy(username, val);
-					else if (strwicmp("domain", param) == 0)
-						pstrcpy(workgroup,val);
-					memset(buf, 0, sizeof(buf));
-				}
-				x_fclose(auth);
-			}
+			display_set_stderr();
 			break;
 
 		case 'L':
-			remember_query_host(optarg, query_host);
+			remember_query_host(poptGetOptArg(pc), query_host);
 			break;
 		case 't':
-			pstrcpy(term_code, optarg);
+			pstrcpy(term_code, poptGetOptArg(pc));
 			break;
 		case 'm':
-			max_protocol = interpret_protocol(optarg, max_protocol);
-			break;
-		case 'W':
-			pstrcpy(workgroup,optarg);
+			max_protocol = interpret_protocol(poptGetOptArg(pc), max_protocol);
 			break;
 		case 'T':
-			if (!tar_parseargs(argc, argv, optarg, optind)) {
-				usage(pname);
+			if (!tar_parseargs(argc, argv, poptGetOptArg(pc), optind)) {
+				poptPrintUsage(pc, stderr, 0);
 				exit(1);
 			}
 			break;
 		case 'D':
-			fstrcpy(base_directory,optarg);
-			break;
-		case 'c':
-			cmdstr = optarg;
+			fstrcpy(base_directory,poptGetOptArg(pc));
 			break;
 		case 'b':
-			io_bufsize = MAX(1, atoi(optarg));
+			io_bufsize = MAX(1, atoi(poptGetOptArg(pc)));
 			break;
-		case 'k':
-#ifdef HAVE_KRB5
-			use_kerberos = True;
-#else
-			d_printf("No kerberos support compiled in\n");
-			exit(1);
-#endif
-			break;
-		default:
-			usage(pname);
+		}
+	}
+
+	if (!lp_load(dyn_CONFIGFILE,True,False,False)) {
+		fprintf(stderr, "%s: Can't load %s - run testparm to debug it\n",
+			argv[0], dyn_CONFIGFILE);
+	}
+	
+	poptGetArg(pc);
+	
+	load_interfaces();
+
+	if(poptPeekArg(pc)) {
+		pstrcpy(service,poptGetArg(pc));  
+		/* Convert any '/' characters in the service name to '\' characters */
+		string_replace(service, '/','\\');
+
+		if (count_chars(service,'\\') < 3) {
+			d_printf("\n%s: Not enough '\\' characters in service\n",service);
+			poptPrintUsage(pc, stderr, 0);
 			exit(1);
 		}
 	}
 
-	if (use_kerberos && !got_user)
-			got_pass = True;
+	if (poptPeekArg(pc)) { 
+		cmdline_auth_info.got_pass = True;
+		pstrcpy(cmdline_auth_info.password,poptGetArg(pc));  
+	}
 
 	init_names();
 
-	if(*new_name_resolve_order)
+	if(new_name_resolve_order)
 		lp_set_name_resolve_order(new_name_resolve_order);
 
 	if (!tar_type && !*query_host && !*service && !message) {
-		usage(pname);
+		poptPrintUsage(pc, stderr, 0);
 		exit(1);
 	}
+
+	poptFreeContext(pc);
+
+	pstrcpy(username, cmdline_auth_info.username);
+	pstrcpy(password, cmdline_auth_info.password);
+	pstrcpy(workgroup, cmdline_auth_info.workgroup);
+	use_kerberos = cmdline_auth_info.use_kerberos;
+	got_pass = cmdline_auth_info.got_pass;
 
 	DEBUG( 3, ( "Client started (version %s).\n", VERSION ) );
 
