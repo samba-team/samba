@@ -2675,6 +2675,77 @@ static BOOL run_xcopy(int dummy)
 	return correct;
 }
 
+/*
+  Test rename on files open with share delete and no share delete.
+ */
+static BOOL run_rename(int dummy)
+{
+	static struct cli_state cli1;
+	char *fname = "\\test.txt";
+	char *fname1 = "\\test1.txt";
+	BOOL correct = True;
+	int fnum1, fnum2;
+
+	printf("starting rename test\n");
+	
+	if (!torture_open_connection(&cli1)) {
+		return False;
+	}
+	
+	cli_unlink(&cli1, fname);
+	cli_unlink(&cli1, fname1);
+	fnum1 = cli_nt_create_full(&cli1, fname, GENERIC_READ_ACCESS, FILE_ATTRIBUTE_NORMAL,
+				   FILE_SHARE_READ, FILE_OVERWRITE_IF, 0);
+
+	if (fnum1 == -1) {
+		printf("First open failed - %s\n", cli_errstr(&cli1));
+		return False;
+	}
+
+	if (!cli_rename(&cli1, fname, fname1)) {
+		printf("First rename failed (this is correct) - %s\n", cli_errstr(&cli1));
+	} else {
+		printf("First rename succeeded - this should have failed !\n");
+		correct = False;
+	}
+
+	if (!cli_close(&cli1, fnum1)) {
+		printf("close - 1 failed (%s)\n", cli_errstr(&cli1));
+		return False;
+	}
+
+	cli_unlink(&cli1, fname);
+	cli_unlink(&cli1, fname1);
+	fnum1 = cli_nt_create_full(&cli1, fname,GENERIC_READ_ACCESS, FILE_ATTRIBUTE_NORMAL,
+				   FILE_SHARE_DELETE|FILE_SHARE_READ, FILE_OVERWRITE_IF, 0);
+
+	if (fnum1 == -1) {
+		printf("Second open failed - %s\n", cli_errstr(&cli1));
+		return False;
+	}
+
+	if (!cli_rename(&cli1, fname, fname1)) {
+		printf("Second rename failed - this should have succeeded - %s\n", cli_errstr(&cli1));
+		correct = False;
+	} else {
+		printf("Second rename succeeded\n");
+	}
+
+	if (!cli_close(&cli1, fnum1)) {
+		printf("close - 2 failed (%s)\n", cli_errstr(&cli1));
+		return False;
+	}
+
+	cli_unlink(&cli1, fname);
+	cli_unlink(&cli1, fname1);
+
+	if (!torture_close_connection(&cli1)) {
+		correct = False;
+	}
+	
+	return correct;
+}
+
 
 /*
   Test open mode returns on read-only files.
@@ -3138,6 +3209,7 @@ static struct {
 	{"RW3",  run_readwritelarge, 0},
 	{"OPEN", run_opentest, 0},
 	{"XCOPY", run_xcopy, 0},
+	{"RENAME", run_rename, 0},
 	{"DELETE", run_deletetest, 0},
 	{"W2K", run_w2ktest, 0},
 	{"TRANS2SCAN", torture_trans2_scan, 0},
