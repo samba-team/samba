@@ -65,6 +65,9 @@ add_command(char *function,
 	    unsigned flags)
 {
     struct command_list *cl = malloc(sizeof(*cl));
+
+    if (cl == NULL)
+	err (1, "malloc");
     cl->function = function;
     cl->help = help;
     cl->aliases = aliases;
@@ -111,21 +114,31 @@ quote(const char *str)
 static void
 generate_commands(void)
 {
-    char base[128];
-    char cfn[128];
-    const char *p;
+    char *base;
+    char *cfn;
+    char *p;
+
     p = strrchr(table_name, '/');
     if(p == NULL)
 	p = table_name;
     else
 	p++;
-    strcpy(base, p);
+
+    base = strdup (p);
+    if (base == NULL)
+	err (1, "strdup");
+
     p = strrchr(base, '.');
     if(p)
-	*p == '\0';
+	*p = '\0';
     
-    snprintf(cfn, sizeof(cfn), "%s.c", base);
+    asprintf(&cfn, "%s.c", base);
+    if (cfn == NULL)
+	err (1, "asprintf");
+
     c_file = fopen(cfn, "w");
+    if (c_file == NULL)
+	err (1, "cannot fopen %s", cfn);
     
     fprintf(c_file, "/* Generated from %s */\n", filename);
     fprintf(c_file, "\n");
@@ -146,8 +159,7 @@ generate_commands(void)
 	    /* XXX hack for ss_quit */
 	    if(strcmp(cl->function, "ss_quit") == 0) {
 		fprintf(c_file, "int %s (int, char**);\n", cl->function);
-		fprintf(c_file, "#define _ss_quit_wrap ss_quit\n\n", 
-			cl->function, cl->function);
+		fprintf(c_file, "#define _ss_quit_wrap ss_quit\n\n"); 
 		continue;
 	    }
 	    fprintf(c_file, "void %s (int, char**);\n", cl->function);
@@ -180,6 +192,8 @@ generate_commands(void)
 	fprintf(c_file, "\n");
     }
     fclose(c_file);
+    free(base);
+    free(cfn);
 }
 
 int
