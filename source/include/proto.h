@@ -2726,6 +2726,8 @@ BOOL make_spoolss_q_getprinterdata(SPOOL_Q_GETPRINTERDATA *q_u,
                                 const POLICY_HND *handle,
                                 UNISTR2 *valuename, uint32 size);
 BOOL spoolss_io_q_getprinterdata(char *desc, SPOOL_Q_GETPRINTERDATA *q_u, prs_struct *ps, int depth);
+BOOL spoolss_io_q_deleteprinterdata(char *desc, SPOOL_Q_DELETEPRINTERDATA *q_u, prs_struct *ps, int depth);
+BOOL spoolss_io_r_deleteprinterdata(char *desc, SPOOL_R_DELETEPRINTERDATA *r_u, prs_struct *ps, int depth);
 BOOL spoolss_io_r_getprinterdata(char *desc, SPOOL_R_GETPRINTERDATA *r_u, prs_struct *ps, int depth);
 BOOL make_spoolss_q_closeprinter(SPOOL_Q_CLOSEPRINTER *q_u, POLICY_HND *hnd);
 BOOL spoolss_io_q_abortprinter(char *desc, SPOOL_Q_ABORTPRINTER *q_u, prs_struct *ps, int depth);
@@ -3187,6 +3189,7 @@ uint32 _spoolss_setprinterdata( POLICY_HND *handle,
 				const uint8 *data,
 				uint32 real_len,
 				uint32 numeric_data);
+uint32 _spoolss_deleteprinterdata( POLICY_HND *handle, const UNISTR2 *value);
 uint32 _spoolss_addform( POLICY_HND *handle,
 				uint32 level,
 				const FORM *form);
