@@ -714,7 +714,10 @@ static BOOL parse_lpq_entry(int snum,char *line,
 #endif
 
   /* We don't want the newline in the status message. */
-  line[strcspn(line,"\n")] = (char)NULL;
+  {
+    char *p = strchr(line,'\n');
+    if (p) *p = 0;
+  }
 
   if (status && !ret)
     {
