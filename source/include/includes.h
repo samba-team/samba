@@ -611,6 +611,31 @@ union semun {
 #define ULTRIX_AUTH 1
 #endif
 
+/* This is the naughty bit.  Autoconf should declare these symbols if
+   it finds that GNU Readline is installed.  */
+
+#define HAVE_LIBREADLINE
+#define HAVE_READLINE_READLINE_H
+#define HAVE_READLINE_HISTORY_H
+
+#ifdef HAVE_LIBREADLINE
+#  ifdef HAVE_READLINE_READLINE_H
+#    include <readline/readline.h>
+#    ifdef HAVE_READLINE_HISTORY_H
+#      include <readline/history.h>
+#    endif
+#  else
+#    ifdef HAVE_READLINE_H
+#      include <readline.h>
+#      ifdef HAVE_HISTORY_H
+#        include <history.h>
+#      endif
+#    else
+#      undef HAVE_LIBREADLINE
+#    endif
+#  endif
+#endif
+
 #ifndef HAVE_STRDUP
 char *strdup(const char *s);
 #endif
