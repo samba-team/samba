@@ -201,24 +201,26 @@ login (char *host)
     strlcpy(username, user, sizeof(username));
     n = command("USER %s", user);
     if (n == CONTINUE) {
-	if(sec_complete)
-	    pass = myname;
-	else if (pass == NULL) {
+	if (pass == NULL) {
 	    char prompt[128];
 	    if(myname && 
-	       (!strcmp(user, "ftp") || !strcmp(user, "anonymous"))){
+	       (!strcmp(user, "ftp") || !strcmp(user, "anonymous"))) {
 		snprintf(defaultpass, sizeof(defaultpass), 
 			 "%s@%s", myname, mydomain);
 		snprintf(prompt, sizeof(prompt), 
 			 "Password (%s): ", defaultpass);
-	    }else{
+	    } else if (sec_complete) {
+		pass = myname;
+	    } else {
 		*defaultpass = '\0';
 		snprintf(prompt, sizeof(prompt), "Password: ");
 	    }
-	    pass = defaultpass;
-	    des_read_pw_string (tmp, sizeof (tmp), prompt, 0);
-	    if (tmp[0])
-		pass = tmp;
+	    if (pass == NULL) {
+		pass = defaultpass;
+		des_read_pw_string (tmp, sizeof (tmp), prompt, 0);
+		if (tmp[0])
+		    pass = tmp;
+	    }
 	}
 	n = command ("PASS %s", pass);
     }
