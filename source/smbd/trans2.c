@@ -2208,6 +2208,9 @@ NTSTATUS set_delete_on_close_over_all(files_struct *fsp, BOOL delete_on_close)
 	DEBUG(10,("set_delete_on_close_over_all: %s delete on close flag for fnum = %d, file %s\n",
 		delete_on_close ? "Adding" : "Removing", fsp->fnum, fsp->fsp_name ));
 
+	if (fsp->is_directory || fsp->is_stat)
+		return NT_STATUS_OK;
+
 	if (lock_share_entry_fsp(fsp) == False)
 		return NT_STATUS_ACCESS_DENIED;
 
