@@ -30,10 +30,10 @@ struct change_data {
 	unsigned int num_entries; /* Zero or the number of files in the directory. */
 };
 
-
 /****************************************************************************
  Create the hash we will use to determine if the contents changed.
 *****************************************************************************/
+
 static BOOL notify_hash(connection_struct *conn, char *path, uint32 flags, 
 			struct change_data *data, struct change_data *old_data)
 {
@@ -47,7 +47,8 @@ static BOOL notify_hash(connection_struct *conn, char *path, uint32 flags,
 
 	ZERO_STRUCTP(data);
 
-	if(vfs_stat(conn,path, &st) == -1) return False;
+	if(vfs_stat(conn,path, &st) == -1)
+		return False;
 
 	data->modify_time = st.st_mtime;
 	data->status_time = st.st_ctime;
@@ -73,10 +74,12 @@ static BOOL notify_hash(connection_struct *conn, char *path, uint32 flags,
 	 * larger than the max time_t value).
 	 */
 
-	if (!(flags & (FILE_NOTIFY_CHANGE_SIZE|FILE_NOTIFY_CHANGE_LAST_WRITE))) return True;
+	if (!(flags & (FILE_NOTIFY_CHANGE_SIZE|FILE_NOTIFY_CHANGE_LAST_WRITE)))
+		return True;
 
 	dp = OpenDir(conn, path, True);
-	if (dp == NULL)	return False;
+	if (dp == NULL)
+		return False;
 
 	data->num_entries = 0;
 	
@@ -88,7 +91,8 @@ static BOOL notify_hash(connection_struct *conn, char *path, uint32 flags,
 	p = &full_name[fullname_len];
 	
 	while ((fname = ReadDirName(dp))) {
-		if(strequal(fname, ".") || strequal(fname, "..")) continue;		
+		if(strequal(fname, ".") || strequal(fname, ".."))
+			continue;		
 
 		data->num_entries++;
 		safe_strcpy(p, fname, remaining_len);
@@ -107,15 +111,16 @@ static BOOL notify_hash(connection_struct *conn, char *path, uint32 flags,
 	return True;
 }
 
-
 /****************************************************************************
-register a change notify request
+ Register a change notify request.
 *****************************************************************************/
+
 static void *hash_register_notify(connection_struct *conn, char *path, uint32 flags)
 {
 	struct change_data data;
 
-	if (!notify_hash(conn, path, flags, &data, NULL)) return NULL;
+	if (!notify_hash(conn, path, flags, &data, NULL))
+		return NULL;
 
 	data.last_check_time = time(NULL);
 
@@ -160,17 +165,18 @@ static BOOL hash_check_notify(connection_struct *conn, uint16 vuid, char *path, 
 }
 
 /****************************************************************************
-remove a change notify data structure
+ Remove a change notify data structure.
 *****************************************************************************/
+
 static void hash_remove_notify(void *datap)
 {
 	SAFE_FREE(datap);
 }
 
-
 /****************************************************************************
-setup hash based change notify
+ Setup hash based change notify.
 ****************************************************************************/
+
 struct cnotify_fns *hash_notify_init(void) 
 {
 	static struct cnotify_fns cnotify;
@@ -182,7 +188,6 @@ struct cnotify_fns *hash_notify_init(void)
 
 	return &cnotify;
 }
-
 
 /*
   change_notify_reply_packet(cnbp->request_buf,ERRSRV,ERRaccess);
