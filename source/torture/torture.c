@@ -4360,7 +4360,6 @@ static BOOL run_eatest(int dummy)
 		}
 	}
 	
-	                                                                                       
 	if (!cli_get_ea_list_path(cli, fname, mem_ctx, &num_eas, &ea_list)) {
 		printf("ea_get list failed - %s\n", cli_errstr(cli));
 		correct = False;
@@ -4370,6 +4369,34 @@ static BOOL run_eatest(int dummy)
 	for (i = 0; i < num_eas; i++) {
 		printf("%d: ea_name = %s. Val = ", i, ea_list[i].name);
 		dump_data(0, ea_list[i].value.data, ea_list[i].value.length);
+	}
+
+	/* Setting EA's to zero length deletes them. Test this */
+	printf("Now deleting all EA's....\n");
+
+	for (i = 0; i < 20; i++) {
+		fstring ea_name;
+		slprintf(ea_name, sizeof(ea_name), "EA_%d", i);
+		if (!cli_set_ea_path(cli, fname, ea_name, "", 0)) {
+			printf("ea_set of name %s failed - %s\n", ea_name, cli_errstr(cli));
+			return False;
+		}
+	}
+	
+	if (!cli_get_ea_list_path(cli, fname, mem_ctx, &num_eas, &ea_list)) {
+		printf("ea_get list failed - %s\n", cli_errstr(cli));
+		correct = False;
+	}
+
+	printf("num_eas = %d\n", num_eas);
+	for (i = 0; i < num_eas; i++) {
+		printf("%d: ea_name = %s. Val = ", i, ea_list[i].name);
+		dump_data(0, ea_list[i].value.data, ea_list[i].value.length);
+	}
+
+	if (num_eas != 0) {
+		printf("deleting EA's failed.\n");
+		correct = False;
 	}
 
 	talloc_destroy(mem_ctx);
