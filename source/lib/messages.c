@@ -111,6 +111,11 @@ BOOL message_init(void)
 
 	message_register(MSG_PING, ping_message);
 
+	/* Register some debugging related messages */
+
+	register_msg_pool_usage();
+	register_dmalloc_msgs();
+
 	return True;
 }
 
