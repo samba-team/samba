@@ -568,7 +568,7 @@
 	/* this is also used in samr and netlogon */
 	typedef [public, flag(NDR_PAHEX)] struct {
 		uint16 units_per_week;
-		[size_is(1260), length_is(units_per_week/8)] uint8 *bitmap;
+		[size_is(1260), length_is(units_per_week/8)] uint8 *bits;
 	} samr_LogonHours;
 
 	typedef struct {

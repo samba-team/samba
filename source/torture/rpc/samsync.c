@@ -453,7 +453,7 @@ static BOOL samsync_handle_user(TALLOC_CTX *mem_ctx, struct samsync_state *samsy
 	TEST_INT_EQUAL(q.out.info->info21.logon_hours.units_per_week, 
 		       user->logon_hours.units_per_week);
 	if (ret) {
-		if (memcmp(q.out.info->info21.logon_hours.bitmap, user->logon_hours.bitmap, 
+		if (memcmp(q.out.info->info21.logon_hours.bits, user->logon_hours.bits, 
 			   q.out.info->info21.logon_hours.units_per_week/8) != 0) {
 			printf("Logon hours mismatch\n");
 			ret = False;
