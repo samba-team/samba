@@ -3,7 +3,7 @@ AC_REVISION($Revision$)
 AC_INIT(lib/krb5/send_to_kdc.c)
 AM_CONFIG_HEADER(include/config.h)
 
-AM_INIT_AUTOMAKE(heimdal,0.1f)
+AM_INIT_AUTOMAKE(heimdal,0.1g)
 
 AC_PREFIX_DEFAULT(/usr/heimdal)
 
@@ -413,6 +413,23 @@ AC_CHECK_FUNCS(unlockpt vasnprintf vasprintf vhangup)
 AC_CHECK_FUNCS(yp_get_default_domain)
 
 AC_CHECK_GETPWNAM_R_POSIX
+
+AC_FIND_FUNC_NO_LIBS(getsockopt, ,
+[#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#ifdef HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif],
+[0,0,0,0,0])
+AC_FIND_FUNC_NO_LIBS(setsockopt, ,
+[#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#ifdef HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif],
+[0,0,0,0,0])
 
 dnl Cray stuff
 AC_CHECK_FUNCS(getudbnam setlim)
