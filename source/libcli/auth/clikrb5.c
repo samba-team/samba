@@ -181,6 +181,7 @@
 	krb5_error_code rc;
 	int num_kdcs, i;
 	struct sockaddr *sa;
+	struct addrinfo **ai;
 
 	*addr_pp = NULL;
 	*naddrs = 0;
@@ -210,10 +211,19 @@
 		return -1;
 	}
 
+	*addr_pp = malloc(sizeof(struct sockaddr) * num_kdcs);
 	memset(*addr_pp, '\0', sizeof(struct sockaddr) * num_kdcs );
 
 	for (i = 0; i < num_kdcs && (rc = krb5_krbhst_next(ctx, hnd, &hinfo) == 0); i++) {
-		if (hinfo->ai->ai_family == AF_INET)
+
+#if defined(HAVE_KRB5_KRBHST_GET_ADDRINFO)
+		rc = krb5_krbhst_get_addrinfo(ctx, hinfo, ai);
+		if (rc) {
+			DEBUG(0,("krb5_krbhst_get_addrinfo failed: %s\n", error_message(rc)));
+			return rc;
+		}
+#endif
+		if (hinfo->ai && hinfo->ai->ai_family == AF_INET) 
 			memcpy(&sa[i], hinfo->ai->ai_addr, sizeof(struct sockaddr));
 	}
 
