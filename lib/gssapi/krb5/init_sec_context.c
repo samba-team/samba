@@ -430,10 +430,16 @@ init_auth
     if (flags & GSS_C_MUTUAL_FLAG) {
 	return GSS_S_CONTINUE_NEEDED;
     } else {
+	int32_t seq_number;
+	
+	krb5_auth_getremoteseqnumber (gssapi_krb5_context,
+				      (*context_handle)->auth_context,
+				      &seq_number);
+
 	ret = gssapi_msg_order_create(minor_status,
 				      &(*context_handle)->order,
 				      gssapi_msg_order_f(flags),
-				      0, 0);
+				      seq_number, 0);
 	if (ret)
 	    goto failure;
 
