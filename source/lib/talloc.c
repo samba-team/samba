@@ -381,6 +381,9 @@ void *talloc_memdup(TALLOC_CTX *t, const void *p, size_t size)
 /** strdup with a talloc */
 char *talloc_strdup(TALLOC_CTX *t, const char *p)
 {
+	if (!p) {
+		return NULL;
+	}
 	return talloc_memdup(t, p, strlen(p) + 1);
 }
 
