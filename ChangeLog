@@ -1,5 +1,11 @@
 2000-08-16  Assar Westerlund  <assar@sics.se>
 
+	* lib/krb5/Makefile.am: bump version to 13:0:0
+
+	* lib/hdb/Makefile.am: set version to 6:1:0
+
+	* configure.in: do getmsg testing the same way as in krb4
+
 	* lib/krb5/config_file.c (krb5_config_parse_file_debug): make sure
  	of closing the file on error
 
