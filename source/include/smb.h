@@ -25,7 +25,12 @@
 #ifndef _SMB_H
 #define _SMB_H
 
+#if defined(LARGE_SMB_OFF_T)
+#define BUFFER_SIZE (128*1024)
+#else /* no large readwrite possible */
 #define BUFFER_SIZE (0xFFFF)
+#endif
+
 #define SAFETY_MARGIN 1024
 #define LARGE_WRITEX_HDR_SIZE 65
 
