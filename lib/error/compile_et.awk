@@ -2,7 +2,7 @@
 # $Id$
 #
 
-$1 == "error_table" {
+$1 == "error_table" || $1 == "et" {
 	name = $2
 	base = 0
 	for(i = 1; i <= 4; i++){
@@ -25,6 +25,7 @@ $1 == "error_table" {
 	print "#include <stddef.h>" > c_file # NULL
 	print "#include <stdlib.h>" > c_file # malloc
 	print "#include <error.h>" > c_file
+	print "#include <" h_file ">" > c_file
 	print "" > c_file
 	print "static const char *text[] = {" > c_file
 
@@ -37,7 +38,7 @@ $1 == "error_table" {
 	print "" > h_file
 	print "void initialize_" name "_error_table(struct error_table**);" > h_file
 	print "" > h_file
-	print "enum " name "_error_number{" > h_file
+	print "typedef enum " name "_error_number{" > h_file
 	print "\tERROR_TABLE_BASE_" name " = " base "," > h_file
 	next
 }
@@ -52,15 +53,15 @@ function end_file(c_file, h_file){
 	print "    if (et == NULL)" > c_file
 	print "        return;" > c_file
 	print "    et->msgs = text;" > c_file
-	print "    et->n_msgs = " number ";" > c_file
-	print "    et->base = " base ";" > c_file
+	print "    et->n_msgs = " name "_num_errors;" > c_file
+	print "    et->base = ERROR_TABLE_BASE_" name ";" > c_file
 	print "    et->next = *list;" > c_file
 	print "    *list = et;" > c_file
 	print "}" > c_file
 	close(c_file)
 
 	print "\t" name "_num_errors = " number > h_file
-	print "};" > h_file
+	print "} " name "_error_number;" > h_file
 	print "" > h_file
 	print "#endif /* " H_FILE " */" > h_file
 	close(h_file)
@@ -86,11 +87,10 @@ $1 == "prefix" {
 }
 
 $1 == "error_code" {
-	code = $0
-	sub("error_code[ \t]+", "", code)
+	code = $2
 	sub(",.*", "", code)
 	code = prefix code
-	string = $0
+	string = $tmp
 	sub("[^,]*,", "", string)
 	sub("[ \t]*", "", string)
 	print_line(code, string, number)
