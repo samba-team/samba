@@ -232,3 +232,32 @@ BOOL query_name(struct subnet_record *subrec, char *name, int type,
   }
   return False;
 }
+
+/****************************************************************************
+ Try and query for a name from nmbd acting as a WINS server.
+****************************************************************************/
+
+BOOL query_name_from_wins_server(struct in_addr ip_to, 
+                   char *name, int type,
+                   query_name_success_function success_fn,
+                   query_name_fail_function fail_fn, 
+                   struct userdata_struct *userdata)
+{
+  struct nmb_name nmbname;
+
+  make_nmb_name(&nmbname, name, type, scope);
+
+  if(queue_query_name_from_wins_server( ip_to,
+        query_name_response,
+        query_name_timeout_response,
+        success_fn,
+        fail_fn,
+        userdata,
+        &nmbname) == NULL)
+  {
+    DEBUG(0,("query_name_from_wins_server: Failed to send packet trying to query name %s\n",
+          namestr(&nmbname)));
+    return True;
+  }
+  return False;
+}
