@@ -27,11 +27,13 @@ static state_table states[] = {
         {trans,  "rset", 0,  0,  pop_rset,   {trans, trans}},
         {trans,  "top",  2,  2,  pop_send,   {trans, trans}},
         {trans,  "last", 0,  0,  pop_last,   {trans, trans}},
-        {trans,  "xtnd", 1,  99, pop_xtnd,   {trans, trans}},
         {trans,  "quit", 0,  0,  pop_updt,   {halt,  halt}},
 	{trans,  "help", 0,  0,  pop_help,   {trans, trans}},
 #ifdef UIDL
         {trans,  "uidl", 0,  1,  pop_uidl,   {trans, trans}},
+#endif
+#ifdef XOVER
+	{trans,	"xover", 0,  0,	 pop_xover,  {trans, trans}},
 #endif
         {(state) 0,  NULL,   0,  0,  NULL,       {halt,  halt}},
 };

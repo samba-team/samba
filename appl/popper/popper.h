@@ -288,8 +288,6 @@ int pop_send(POP *p);
 int pop_stat(POP *p);
 int pop_updt(POP *p);
 int pop_user(POP *p);
-int pop_xmit(POP *p);
-int pop_xtnd(POP *p);
 #ifdef UIDL
 int pop_uidl(POP *p);
 #endif
@@ -299,7 +297,6 @@ int pop_xover(POP *p);
 int pop_help(POP *p);
 state_table *pop_get_command(POP *p, char *mp);
 void pop_lower(char *buf);
-xtnd_table *pop_get_subcommand(POP *p);
 
 int pop_log(POP *p, int stat, char *format, ...)
 #ifdef __GNUC__
