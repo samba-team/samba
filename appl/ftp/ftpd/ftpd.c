@@ -1246,6 +1246,26 @@ bad:
 	return (NULL);
 }
 
+static int
+accept_with_timeout(int socket, 
+		    struct sockaddr *address,
+		    size_t *address_len,
+		    struct timeval *timeout)
+{
+    int ret;
+    fd_set rfd;
+    FD_ZERO(&rfd);
+    FD_SET(socket, &rfd);
+    ret = select(socket + 1, &rfd, NULL, NULL, timeout);
+    if(ret < 0)
+	return ret;
+    if(ret == 0) {
+	errno = ETIMEDOUT;
+	return -1;
+    }
+    return accept(socket, address, address_len);
+}
+
 static FILE *
 dataconn(const char *name, off_t size, const char *mode)
 {
@@ -1262,10 +1282,13 @@ dataconn(const char *name, off_t size, const char *mode)
 	if (pdata >= 0) {
 		struct sockaddr_storage from_ss;
 		struct sockaddr *from = (struct sockaddr *)&from_ss;
+		struct timeval timeout;
 		int s;
 		socklen_t fromlen = sizeof(from_ss);
 
-		s = accept(pdata, from, &fromlen);
+		timeout.tv_sec = 15;
+		timeout.tv_usec = 0;
+		s = accept_with_timeout(pdata, from, &fromlen, &timeout);
 		if (s < 0) {
 			reply(425, "Can't open data connection.");
 			close(pdata);
