@@ -40,27 +40,134 @@ static TDB_CONTEXT *tdb;
 
 int global_smbpid;
 
-
 /****************************************************************************
-remove any locks on this fd
+ Remove any locks on this fd.
 ****************************************************************************/
+
 void locking_close_file(files_struct *fsp)
 {
-	if (!lp_locking(SNUM(fsp->conn))) return;
+	if (!lp_locking(SNUM(fsp->conn)))
+		return;
 
-	brl_close(fsp->dev, fsp->inode, 
-		  getpid(), fsp->conn->cnum, fsp->fnum);
+	if(lp_posix_locking(SNUM(fsp->conn))) {
+		/*
+		 * We need to release all POSIX locks we have on this
+		 * fd.
+		 */
+	}
+
+	/*
+	 * Now release all the tdb locks.
+	 */
+
+	brl_close(fsp->dev, fsp->inode, getpid(), fsp->conn->cnum, fsp->fnum);
+
+	/*
+	 * We now need to search our open file list for any other
+	 * fd open on this file with outstanding POSIX locks. If we
+	 * don't find one, great, just return. If we do find one then
+	 * we have to add this file descriptor to the 'pending close'
+	 * list of that fd, to stop the POSIX problem where the locks
+	 * on *that* fd will get lost when we close this one. POSIX
+	 * braindamage... JRA.
+	 */
+
+	/* Placeholder for code here.... */
 }
 
+/****************************************************************************
+ Debugging aid :-).
+****************************************************************************/
+
+static const char *lock_type_name(enum brl_type lock_type)
+{
+	return (lock_type == READ_LOCK) ? "READ" : "WRITE";
+}
+
+/****************************************************************************
+ Check to see if the given unsigned lock range is within the possible POSIX
+ range. Modifies the given args to be in range if possible, just returns
+ False if not.
+****************************************************************************/
+
+static BOOL posix_lock_in_range(SMB_OFF_T *p_offset, SMB_OFF_T *p_count)
+{
+	/* Placeholder. */
+	return True;
+}
+
+/****************************************************************************
+ POSIX function to see if a file region is locked. Returns True if the
+ lock could be granted, False if not.
+****************************************************************************/
+
+static BOOL posix_locktest(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u_count, enum brl_type lock_type)
+{
+	SMB_OFF_T offset = (SMB_OFF_T)u_offset;
+	SMB_OFF_T count = (SMB_OFF_T)u_count;
+
+	DEBUG(10,("posix_locktest: File %s, offset = %.0f, count = %.0f, type = %s\n",
+			fsp->fsp_name, (double)offset, (double)count, lock_type_name(lock_type) ));
+
+	if(!posix_lock_in_range(&offset, &count))
+		return True;
+
+	/* Placeholder - for now always return that the lock could be granted. */
+	return True;
+}
+
+/****************************************************************************
+ POSIX function to acquire a lock. Returns True if the
+ lock could be granted, False if not.
+****************************************************************************/
+
+static BOOL get_posix_lock(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u_count, enum brl_type lock_type)
+{
+	SMB_OFF_T offset = (SMB_OFF_T)u_offset;
+	SMB_OFF_T count = (SMB_OFF_T)u_count;
+
+	DEBUG(10,("get_posix_lock: File %s, offset = %.0f, count = %.0f, type = %s\n",
+			fsp->fsp_name, (double)offset, (double)count, lock_type_name(lock_type) ));
+
+	if(!posix_lock_in_range(&offset, &count))
+		return True;
+
+	/* Placeholder - for now always return that the lock could be granted. */
+	fsp->num_posix_locks++;
+	return True;
+}
+
+/****************************************************************************
+ POSIX function to release a lock. Returns True if the
+ lock could be granted, False if not.
+****************************************************************************/
+
+static BOOL release_posix_lock(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u_count)
+{
+	SMB_OFF_T offset = (SMB_OFF_T)u_offset;
+	SMB_OFF_T count = (SMB_OFF_T)u_count;
+
+	DEBUG(10,("release_posix_lock: File %s, offset = %.0f, count = %.0f\n",
+			fsp->fsp_name, (double)offset, (double)count ));
+
+	if(!posix_lock_in_range(&offset, &count))
+		return True;
+
+	/* Placeholder - for now always return that the lock could be granted. */
+	fsp->num_posix_locks--;
+	return True;
+}
 
 /****************************************************************************
  Utility function called to see if a file region is locked.
 ****************************************************************************/
+
 BOOL is_locked(files_struct *fsp,connection_struct *conn,
 	       SMB_BIG_UINT count,SMB_BIG_UINT offset, 
 	       enum brl_type lock_type)
 {
 	int snum = SNUM(conn);
+	BOOL ret;
 	
 	if (count == 0)
 		return(False);
@@ -68,15 +175,28 @@ BOOL is_locked(files_struct *fsp,connection_struct *conn,
 	if (!lp_locking(snum) || !lp_strict_locking(snum))
 		return(False);
 
-	return !brl_locktest(fsp->dev, fsp->inode, 
+	ret = !brl_locktest(fsp->dev, fsp->inode, 
 			     global_smbpid, getpid(), conn->cnum, 
 			     offset, count, lock_type);
-}
 
+	/*
+	 * There is no lock held by an SMB daemon, check to
+	 * see if there is a POSIX lock from a UNIX or NFS process.
+	 * Note that as an optimisation we only bother to
+	 * check this if the file is not exclusively
+	 * oplocked. JRA.
+	 */
+
+	if(!ret && !EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type) && lp_posix_locking(snum))
+		ret = !posix_locktest(fsp, offset, count, lock_type);
+
+	return ret;
+}
 
 /****************************************************************************
  Utility function called by locking requests.
 ****************************************************************************/
+
 BOOL do_lock(files_struct *fsp,connection_struct *conn,
              SMB_BIG_UINT count,SMB_BIG_UINT offset,enum brl_type lock_type,
              int *eclass,uint32 *ecode)
@@ -92,14 +212,33 @@ BOOL do_lock(files_struct *fsp,connection_struct *conn,
 		return False;
 	}
 	
-	DEBUG(10,("do_lock: lock type %d start=%.0f len=%.0f requested for file %s\n",
-		  lock_type, (double)offset, (double)count, fsp->fsp_name ));
+	DEBUG(10,("do_lock: lock type %s start=%.0f len=%.0f requested for file %s\n",
+		  lock_type_name(lock_type), (double)offset, (double)count, fsp->fsp_name ));
 
 	if (OPEN_FSP(fsp) && fsp->can_lock && (fsp->conn == conn)) {
 		ok = brl_lock(fsp->dev, fsp->inode, fsp->fnum,
 			      global_smbpid, getpid(), conn->cnum, 
 			      offset, count, 
 			      lock_type);
+
+		if(ok && lp_posix_locking(SNUM(conn))) {
+
+			/*
+			 * Try and get a POSIX lock on this range.
+			 */
+
+			ok = get_posix_lock(fsp, offset, count, lock_type);
+
+			if(!ok) {
+				/*
+				 * We failed to map - we must now remove the brl
+				 * lock entry.
+				 */
+				(void)brl_unlock(fsp->dev, fsp->inode, fsp->fnum,
+								global_smbpid, getpid(), conn->cnum, 
+								offset, count);
+			}
+		}
 	}
 
 	if (!ok) {
@@ -130,6 +269,15 @@ BOOL do_unlock(files_struct *fsp,connection_struct *conn,
 		ok = brl_unlock(fsp->dev, fsp->inode, fsp->fnum,
 				global_smbpid, getpid(), conn->cnum, 
 				offset, count);
+
+		if(ok && lp_posix_locking(SNUM(conn))) {
+
+			/*
+			 * Release the POSIX lock on this range.
+			 */
+
+			(void)release_posix_lock(fsp, offset, count);
+		}
 	}
    
 	if (!ok) {

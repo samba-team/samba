@@ -524,6 +524,7 @@ typedef struct files_struct
 	time_t pending_modtime;
 	int oplock_type;
 	int sent_oplock_break;
+	unsigned int num_posix_locks;
 	BOOL open;
 	BOOL can_lock;
 	BOOL can_read;
