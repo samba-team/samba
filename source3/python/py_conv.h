@@ -32,4 +32,4 @@ struct pyconv {
 PyObject *from_struct(void *s, struct pyconv *conv);
 void to_struct(void *s, PyObject *dict, struct pyconv *conv);
 
-#endif _PY_SPOOLSS_CONV_H
+#endif /* _PY_SPOOLSS_CONV_H */
