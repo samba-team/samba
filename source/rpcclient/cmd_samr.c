@@ -476,7 +476,7 @@ void cmd_sam_lookup_rids(struct client_info *info, int argc, char *argv[])
 	if (argc < 2)
 	{
 		report(out_hnd,
-		       "samlookupnames [-d <domain>] <name> [<name> ...]\n");
+		       "samlookuprids [-d <domain>] <rid> [<rid> ...]\n");
 		return;
 	}
 
