@@ -1,3 +1,7 @@
+2003-04-08  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* admin/ktutil.8: typos, from jmc <jmc@acn.waw.pl>
+	
 2003-04-06  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/krb5.3: s/kerberos/Kerberos/
