@@ -285,7 +285,7 @@ krb5_get_server_rcache(krb5_context context,
     }
     strvisx(tmp, piece->data, piece->length, VIS_WHITE | VIS_OCTAL);
 #ifdef HAVE_GETEUID
-    asprintf(&name, "FILE:rc_%s_%u", tmp, geteuid());
+    asprintf(&name, "FILE:rc_%s_%u", tmp, (unsigned)geteuid());
 #else
     asprintf(&name, "FILE:rc_%s", tmp);
 #endif
