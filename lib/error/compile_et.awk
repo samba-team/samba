@@ -12,14 +12,22 @@ $1 == "error_table" || $1 == "et" {
 	if(base >= 2147483648){ # 0x80000000
 		base = -(4294967295 - base + 1) # 0xffffffff
 	}
-	sub("\\..*$", "", name)
+	split(name, x, "\\.")
+	name=x[1]
 # for normal awk:
 #	split(name, foo, "\\.")
 #	name = foo[1]
 	c_file = name "_err.c"
 	h_file = name "_err.h"
-	H_FILE = "__" toupper(h_file) "__"
-	gsub("[^A-Z0-9_]", "_", H_FILE)
+	h = ""
+#	gsub("[^a-zA-Z0-9]", "_", H_FILE)
+	for(i = 1; i <= length(h_file); i++){
+		c = substr(h_file, i, 1)
+		if(c ~ /[^a-zA-Z0-9]/)
+			c = "_"
+		h = h c
+	}
+	H_FILE= "__" h "__"
 	number = 0
 	print "/* Generated from " FILENAME " */" > c_file
 	print "#include <stddef.h>" > c_file # NULL
@@ -43,7 +51,33 @@ $1 == "error_table" || $1 == "et" {
 	next
 }
 
-function end_file(c_file, h_file){
+$1 == "index" {
+	newnumber = $2
+	for(; number < newnumber; number++) {
+#		printf("\t%s = %d,\n", toupper(name) "_ERROR_" number, base+ number) > h_file
+		printf("\t/* %3d */ %s,\n", number, "\"Reserved error number " number "\"") > c_file
+	}
+	next
+}
+$1 == "prefix" {
+	prefix = $2
+	if(prefix != "")
+		prefix = prefix "_"
+	next
+}
+
+$1 == "error_code" {
+	code = $2
+	split(code, x, ",")
+	code = prefix x[1]
+	split($0, x, "\"")
+	string = x[2]
+	printf("\t%s = %d,\n", code, number + base) > h_file
+	printf("\t/* %3d */ \"%s\",\n", number, string) > c_file
+	number++;
+	next
+}
+END {
 	print "\tNULL" > c_file
 	print "};" > c_file
 	print "" > c_file
@@ -65,38 +99,4 @@ function end_file(c_file, h_file){
 	print "" > h_file
 	print "#endif /* " H_FILE " */" > h_file
 	close(h_file)
-}
-
-function print_line(name, string, value) {
-	printf("\t%s = %d,\n", name, value + base) > h_file
-	printf("\t/* %3d */ %s,\n", value, string) > c_file
-}
-
-$1 == "index" {
-	newnumber = $2
-	for(; number < newnumber; number++)
-		print_line(toupper(name)"_ERROR_" number, 
-				"\"Reserved error number " number "\"", number)
-	next
-}
-$1 == "prefix" {
-	prefix = $2
-	if(prefix != "")
-		prefix = prefix "_"
-	next
-}
-
-$1 == "error_code" {
-	code = $2
-	sub(",.*", "", code)
-	code = prefix code
-	string = $tmp
-	sub("[^,]*,", "", string)
-	sub("[ \t]*", "", string)
-	print_line(code, string, number)
-	number++;
-	next
-}
-END {
-	end_file(c_file, h_file)
 }
