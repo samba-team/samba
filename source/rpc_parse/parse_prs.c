@@ -851,12 +851,12 @@ BOOL prs_buffer2(BOOL charmode, char *name, prs_struct *ps, int depth, BUFFER2 *
 BOOL prs_string2(BOOL charmode, char *name, prs_struct *ps, int depth, STRING2 *str)
 {
 	int i;
-	char *q = prs_mem_get(ps, str->str_str_len);
+	char *q = prs_mem_get(ps, str->str_max_len);
 	if (q == NULL)
 		return False;
 
 	if (UNMARSHALLING(ps)) {
-		str->buffer = (unsigned char *)prs_alloc_mem(ps,str->str_str_len);
+		str->buffer = (unsigned char *)prs_alloc_mem(ps,str->str_max_len);
 		if (str->buffer == NULL)
 			return False;
 	}
