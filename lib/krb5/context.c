@@ -45,9 +45,11 @@ krb5_init_context(krb5_context *context)
 {
     krb5_context p;
     int val;
-    char *config_file = NULL;
+    const char *config_file = NULL;
     const char * tmp;
-    
+    krb5_config_section *tmp_cf;
+    krb5_error_code ret;
+
     ALLOC(p, 1);
     if(!p)
 	return ENOMEM;
@@ -58,10 +60,16 @@ krb5_init_context(krb5_context *context)
 
     if(!issuid())
 	config_file = getenv("KRB5_CONFIG");
-    if (config_file != NULL)
-	krb5_config_parse_file (config_file, &p->cf);
+    if (config_file == NULL)
+	config_file = krb5_config_file;
+
+    ret = krb5_config_parse_file (config_file, &tmp_cf);
+
+    if (ret == 0)
+	p->cf = tmp_cf;
     else
-	krb5_config_parse_file (krb5_config_file, &p->cf);
+	krb5_warnx (p, "Unable to parse config file %s.  Ignoring.",
+		    config_file); /* XXX */
 
     p->max_skew = 5 * 60;
     val = krb5_config_get_time (p, NULL, "libdefaults", "clockskew", NULL);
