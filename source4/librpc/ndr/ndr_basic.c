@@ -657,7 +657,7 @@ NTSTATUS ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
 
 	case LIBNDR_FLAG_STR_NULLTERM:
 		if (byte_mul == 1) {
-			len1 = strnlen(ndr->data+ndr->offset, ndr->data_size - ndr->offset);
+			len1 = ascii_len_n(ndr->data+ndr->offset, ndr->data_size - ndr->offset);
 		} else {
 			len1 = utf16_len_n(ndr->data+ndr->offset, ndr->data_size - ndr->offset);
 		}
