@@ -81,8 +81,7 @@ static BOOL fill_protocol_tower(TALLOC_CTX *mem_ctx, struct epm_towers *twr,
 		/* on a SMB pipe ... */
 		twr->floors[3].lhs.protocol = EPM_PROTOCOL_SMB;
 		twr->floors[3].lhs.info.lhs_data = data_blob(NULL, 0);
-		twr->floors[3].rhs.smb.unc = talloc_asprintf(mem_ctx, "\\PIPE\\%s", 
-								   e->ep_description.info.smb_pipe);
+		twr->floors[3].rhs.smb.unc = talloc_strdup(mem_ctx, e->ep_description.info.smb_pipe);
 		
 		/* on an NetBIOS link ... */
 		twr->floors[4].lhs.protocol = EPM_PROTOCOL_NETBIOS;
