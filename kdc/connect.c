@@ -679,6 +679,7 @@ handle_tcp(struct descr *d, int index, int min_free)
     if(d[index].len > 4 && d[index].buf[0] == 0) {
 	ret = handle_vanilla_tcp (&d[index]);
     } else if(enable_http &&
+	      d[index].len >= 4 &&
 	      strncmp((char *)d[index].buf, "GET ", 4) == 0 && 
 	      strncmp((char *)d[index].buf + d[index].len - 4,
 		      "\r\n\r\n", 4) == 0) {
