@@ -176,6 +176,10 @@ kauth(char *principal, char *ticket)
     char *p;
     int ret;
   
+    if(get_command_prot() != prot_private) {
+	reply(500, "Request denied (bad protection level)");
+	return;
+    }
     ret = krb_parse_name(principal, &pr);
     if(ret){
 	reply(500, "Bad principal: %s.", krb_get_err_text(ret));
