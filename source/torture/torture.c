@@ -1569,6 +1569,139 @@ static BOOL run_locktest6(int dummy)
 	return True;
 }
 
+static BOOL run_locktest7(int dummy)
+{
+	static struct cli_state cli1;
+	const char *fname = "\\lockt7.lck";
+	int fnum1;
+	char buf[200];
+	BOOL correct = False;
+
+	if (!torture_open_connection(&cli1)) {
+		return False;
+	}
+
+	cli_sockopt(&cli1, sockops);
+
+	printf("starting locktest7\n");
+
+	cli_unlink(&cli1, fname);
+
+	fnum1 = cli_open(&cli1, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE);
+
+	memset(buf, 0, sizeof(buf));
+
+	if (cli_write(&cli1, fnum1, 0, buf, 0, sizeof(buf)) != sizeof(buf)) {
+		printf("Failed to create file\n");
+		goto fail;
+	}
+
+	cli_setpid(&cli1, 1);
+
+	if (!cli_lock(&cli1, fnum1, 130, 4, 0, READ_LOCK)) {
+		printf("Unable to apply read lock on range 130:4, error was %s\n", cli_errstr(&cli1));
+		goto fail;
+	} else {
+		printf("pid1 successfully locked range 130:4 for READ\n");
+	}
+
+	if (cli_read(&cli1, fnum1, buf, 130, 4) != 4) {
+		printf("pid1 unable to read the range 130:4, error was %s\n", cli_errstr(&cli1));
+		goto fail;
+	} else {
+		printf("pid1 successfully read the range 130:4\n");
+	}
+
+	if (cli_write(&cli1, fnum1, 0, buf, 130, 4) != 4) {
+		printf("pid1 unable to write to the range 130:4, error was %s\n", cli_errstr(&cli1));
+		if (NT_STATUS_V(cli_nt_error(&cli1)) != NT_STATUS_V(NT_STATUS_FILE_LOCK_CONFLICT)) {
+			printf("Incorrect error (should be NT_STATUS_FILE_LOCK_CONFLICT)\n");
+			goto fail;
+		}
+	} else {
+		printf("pid1 successfully wrote to the range 130:4 (should be denied)\n");
+		goto fail;
+	}
+
+	cli_setpid(&cli1, 2);
+
+	if (cli_read(&cli1, fnum1, buf, 130, 4) != 4) {
+		printf("pid2 unable to read the range 130:4, error was %s\n", cli_errstr(&cli1));
+	} else {
+		printf("pid2 successfully read the range 130:4\n");
+	}
+
+	if (cli_write(&cli1, fnum1, 0, buf, 130, 4) != 4) {
+		printf("pid2 unable to write to the range 130:4, error was %s\n", cli_errstr(&cli1));
+		if (NT_STATUS_V(cli_nt_error(&cli1)) != NT_STATUS_V(NT_STATUS_FILE_LOCK_CONFLICT)) {
+			printf("Incorrect error (should be NT_STATUS_FILE_LOCK_CONFLICT)\n");
+			goto fail;
+		}
+	} else {
+		printf("pid2 successfully wrote to the range 130:4 (should be denied)\n");
+		goto fail;
+	}
+
+	cli_setpid(&cli1, 1);
+	cli_unlock(&cli1, fnum1, 130, 4);
+
+	if (!cli_lock(&cli1, fnum1, 130, 4, 0, WRITE_LOCK)) {
+		printf("Unable to apply write lock on range 130:4, error was %s\n", cli_errstr(&cli1));
+		goto fail;
+	} else {
+		printf("pid1 successfully locked range 130:4 for WRITE\n");
+	}
+
+	if (cli_read(&cli1, fnum1, buf, 130, 4) != 4) {
+		printf("pid1 unable to read the range 130:4, error was %s\n", cli_errstr(&cli1));
+		goto fail;
+	} else {
+		printf("pid1 successfully read the range 130:4\n");
+	}
+
+	if (cli_write(&cli1, fnum1, 0, buf, 130, 4) != 4) {
+		printf("pid1 unable to write to the range 130:4, error was %s\n", cli_errstr(&cli1));
+		goto fail;
+	} else {
+		printf("pid1 successfully wrote to the range 130:4\n");
+	}
+
+	cli_setpid(&cli1, 2);
+
+	if (cli_read(&cli1, fnum1, buf, 130, 4) != 4) {
+		printf("pid2 unable to read the range 130:4, error was %s\n", cli_errstr(&cli1));
+		if (NT_STATUS_V(cli_nt_error(&cli1)) != NT_STATUS_V(NT_STATUS_FILE_LOCK_CONFLICT)) {
+			printf("Incorrect error (should be NT_STATUS_FILE_LOCK_CONFLICT)\n");
+			goto fail;
+		}
+	} else {
+		printf("pid2 successfully read the range 130:4 (should be denied)\n");
+		goto fail;
+	}
+
+	if (cli_write(&cli1, fnum1, 0, buf, 130, 4) != 4) {
+		printf("pid2 unable to write to the range 130:4, error was %s\n", cli_errstr(&cli1));
+		if (NT_STATUS_V(cli_nt_error(&cli1)) != NT_STATUS_V(NT_STATUS_FILE_LOCK_CONFLICT)) {
+			printf("Incorrect error (should be NT_STATUS_FILE_LOCK_CONFLICT)\n");
+			goto fail;
+		}
+	} else {
+		printf("pid2 successfully wrote to the range 130:4 (should be denied)\n");
+		goto fail;
+	}
+
+	cli_unlock(&cli1, fnum1, 130, 0);
+	correct = True;
+
+fail:
+	cli_close(&cli1, fnum1);
+	cli_unlink(&cli1, fname);
+	torture_close_connection(&cli1);
+
+	printf("finished locktest7\n");
+	return correct;
+}
+
 /*
 test whether fnums and tids open on one VC are available on another (a major
 security hole)
@@ -3956,6 +4089,7 @@ static struct {
 	{"LOCK4",  run_locktest4,  0},
 	{"LOCK5",  run_locktest5,  0},
 	{"LOCK6",  run_locktest6,  0},
+	{"LOCK7",  run_locktest7,  0},
 	{"UNLINK", run_unlinktest, 0},
 	{"BROWSE", run_browsetest, 0},
 	{"ATTR",   run_attrtest,   0},
