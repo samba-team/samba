@@ -46,4 +46,9 @@ int k_pioctl __P((char *a_path,
 int k_unlog __P((void));
 int k_setpag __P((void));
 
+#define _PATH_VICE		"/usr/vice/etc/"
+#define _PATH_THISCELL 		_PATH_VICE "ThisCell"
+#define _PATH_CELLSERVDB 	_PATH_VICE "CellServDB"
+#define _PATH_THESECELLS	_PATH_VICE "TheseCells"
+
 #endif /* __KAFS_H */
