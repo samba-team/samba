@@ -6,9 +6,9 @@ cd $1
 
 ver=`sed -n 's/AM_INIT_AUTOMAKE(.*,\(.*\))/\1/p' configure.in`
 M="*   This is version $ver.   *"
-echo $M | sed -e 's/./*/'
-echo $M
-echo $M | sed -e 's/./*/'
+echo "$M" | sed -e 's/./*/'
+echo "$M"
+echo "$M" | sed -e 's/./*/'
 
 ed -s configure.in << END
 /test -z/s,^,#,
@@ -33,5 +33,6 @@ for i in krb5 hdb; do (cd lib/$i; perl ../../cf/make-proto.pl \
 	s/.*=//; 
 	s/\s+/ /g; 
 	print;' Makefile.in`)
+done
 rm fix-export make-release make-release.el
 find . -name .cvsignore -print | xargs rm
