@@ -48,6 +48,7 @@ url="http://www.fsf.org/licenses/gpl.txt">http://www.fsf.org/licenses/gpl.txt</u
 and how to configure the parts of samba you will most likely need.
 PLEASE read this.</para>
 </partintro>
+&IntroSMB;
 &UNIX-INSTALL;
 &BROWSING-Quick;
 &Passdb;
