@@ -223,22 +223,6 @@ SPOOL_NOTIFY_OPTION *dup_spool_notify_option(SPOOL_NOTIFY_OPTION *sp)
 }
 
 /****************************************************************************
- Return a user struct for a pipe user.
-****************************************************************************/
-
-static struct current_user *get_current_user(struct current_user *user, pipes_struct *p)
-{
-	if (p->ntlmssp_auth_validated) {
-		memcpy(user, &p->pipe_user, sizeof(struct current_user));
-	} else {
-		extern struct current_user current_user;
-		memcpy(user, &current_user, sizeof(struct current_user));
-	}
-
-	return user;
-}
-
-/****************************************************************************
   find printer index by handle
 ****************************************************************************/
 
