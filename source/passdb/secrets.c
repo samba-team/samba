@@ -45,6 +45,12 @@ static void get_rand_seed(int *new_seed)
 	}
 }
 
+/* close the secrets database */
+void secrets_shutdown(void)
+{
+	talloc_free(tdb);
+}
+
 /* open up the secrets database */
 BOOL secrets_init(void)
 {
