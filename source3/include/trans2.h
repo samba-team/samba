@@ -307,6 +307,17 @@ Byte offset   Type     name                description
 #define SMB_FILE_TRACKING_INFORMATION			1036
 #define SMB_FILE_MAXIMUM_INFORMATION			1037
 
+/* NT passthough levels for qfsinfo. */
+
+#define SMB_FS_VOLUME_INFORMATION			1001
+#define SMB_FS_LABEL_INFORMATION			1002
+#define SMB_FS_SIZE_INFORMATION				1003
+#define SMB_FS_DEVICE_INFORMATION			1004
+#define SMB_FS_ATTRIBUTE_INFORMATION			1005
+#define SMB_FS_CONTROL_INFORMATION			1006
+#define SMB_FS_FULL_SIZE_INFORMATION			1007
+#define SMB_FS_OBJECTID_INFORMATION			1008
+
 /* UNIX CIFS Extensions - created by HP */
 /*
  * UNIX CIFS Extensions have the range 0x200 - 0x2FF reserved.
@@ -321,34 +332,39 @@ Byte offset   Type     name                description
 #define SMB_QUERY_FILE_UNIX_BASIC      0x200   /* UNIX File Info*/
 #define SMB_SET_FILE_UNIX_BASIC        0x200
 
-#define MODE_NO_CHANGE                 -1     /* file mode value which */
+#define MODE_NO_CHANGE                 0xFFFFFFFF     /* file mode value which */
                                               /* means "don't change it" */
+#define UID_NO_CHANGE                  0xFFFFFFFF
+#define GID_NO_CHANGE                  0xFFFFFFFF
+
 /*
- LARGE_INTEGER EndOfFile                File size
- LARGE_INTEGER Blocks                   Number of bytes used on disk (st_blocks).
- LARGE_INTEGER CreationTime             Creation time
- LARGE_INTEGER LastAccessTime           Last access time
- LARGE_INTEGER LastModificationTime     Last modification time
- LARGE_INTEGER Uid                      Numeric user id for the owner
- LARGE_INTEGER Gid                      Numeric group id of owner
- ULONG Type                             Enumeration specifying the pathname type:
-                                         0 -- File
-                                         1 -- Directory
-                                         2 -- Symbolic link
-                                         3 -- Character device
-                                         4 -- Block device
-                                         5 -- FIFO (named pipe)
-                                         6 -- Unix domain socket
+Offset Size         Name
+0      LARGE_INTEGER EndOfFile                File size
+8      LARGE_INTEGER Blocks                   Number of bytes used on disk (st_blocks).
+16     LARGE_INTEGER CreationTime             Creation time
+24     LARGE_INTEGER LastAccessTime           Last access time
+32     LARGE_INTEGER LastModificationTime     Last modification time
+40     LARGE_INTEGER Uid                      Numeric user id for the owner
+48     LARGE_INTEGER Gid                      Numeric group id of owner
+56     ULONG Type                             Enumeration specifying the pathname type:
+                                              0 -- File
+                                              1 -- Directory
+                                              2 -- Symbolic link
+                                              3 -- Character device
+                                              4 -- Block device
+                                              5 -- FIFO (named pipe)
+                                              6 -- Unix domain socket
 
- LARGE_INTEGER devmajor                 Major device number if type is device
- LARGE_INTEGER devminor                 Minor device number if type is device
- LARGE_INTEGER uniqueid                 This is a server-assigned unique id for the file. The client
-                                        will typically map this onto an inode number. The scope of
-                                        uniqueness is the share.
- LARGE_INTEGER permissions              Standard UNIX file permissions  - see below.
- LARGE_INTEGER nlinks                   The number of directory entries that map to this entry
-                                          (number of hard links)
+60     LARGE_INTEGER devmajor                 Major device number if type is device
+68     LARGE_INTEGER devminor                 Minor device number if type is device
+76     LARGE_INTEGER uniqueid                 This is a server-assigned unique id for the file. The client
+                                              will typically map this onto an inode number. The scope of
+                                              uniqueness is the share.
+84     LARGE_INTEGER permissions              Standard UNIX file permissions  - see below.
+92     LARGE_INTEGER nlinks                   The number of directory entries that map to this entry
+                                              (number of hard links)
 
+100 - end.
 */
 
 /* UNIX filetype mappings. */
@@ -366,7 +382,7 @@ Byte offset   Type     name                description
  * Oh this is fun. "Standard UNIX permissions" has no
  * meaning in POSIX. We need to define the mapping onto
  * and off the wire as this was not done in the original HP
- * code. JRA.
+ * spec. JRA.
  */
 
 #define UNIX_X_OTH			0000001
@@ -395,5 +411,28 @@ Byte offset   Type     name                description
 #define SMB_SET_FILE_UNIX_HLINK        0x203
 
 #define SMB_FIND_FILE_UNIX             0x202
+
+/*
+ Info level for QVOLINFO - returns version of CIFS UNIX extensions, plus
+ 64-bits worth of capability fun :-).
+*/
+
+#define SMB_CIFS_UNIX_QUERY_INFO      0x200
+
+/* Returns the following.
+
+  UINT16             major version number
+  UINT16             minor version number
+  LARGE_INTEGER      capability bitfield
+
+*/
+
+#define CIFS_UNIX_MAJOR_VERSION 1
+#define CIFS_UNIX_MINOR_VERSION 0
+
+#define CIFS_UNIX_FCNTL_LOCKS_CAP           0x1
+#define CIFS_UNIX_POSIX_ACLS_CAP            0x2
+
+/* ... more as we think of them :-). */
 
 #endif
