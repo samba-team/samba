@@ -1567,6 +1567,9 @@ BOOL secrets_store(char *key, void *data, size_t size);
 BOOL secrets_delete(char *key);
 BOOL secrets_store_domain_sid(char *domain, DOM_SID *sid);
 BOOL secrets_fetch_domain_sid(char *domain, DOM_SID *sid);
+BOOL secrets_fetch_trust_account_password(char *domain, uint8 ret_pwd[16],
+					  time_t *pass_last_set_time);
+BOOL secrets_store_trust_account_password(char *domain, uint8 new_pwd[16]);
 
 /*The following definitions come from  passdb/smbpass.c  */
 
@@ -1585,8 +1588,6 @@ BOOL local_password_change(char *user_name, int local_flags,
 BOOL pw_file_lock(int fd, int type, int secs, int *plock_depth);
 BOOL pw_file_unlock(int fd, int *plock_depth);
 BOOL trust_password_delete(char *domain);
-BOOL get_trust_account_password(char *domain, unsigned char *ret_pwd, time_t *pass_last_set_time);
-BOOL set_trust_account_password(char *domain, unsigned char *md4_new_pwd);
 
 /*The following definitions come from  printing/load.c  */
 
