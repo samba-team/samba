@@ -60,6 +60,37 @@ static BOOL api_net_req_chal(pipes_struct *p)
 }
 
 /*************************************************************************
+ api_net_auth:
+ *************************************************************************/
+
+static BOOL api_net_auth(pipes_struct *p)
+{
+	NET_Q_AUTH q_u;
+	NET_R_AUTH r_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	/* grab the challenge... */
+	if(!net_io_q_auth("", &q_u, data, 0)) {
+		DEBUG(0,("api_net_auth: Failed to unmarshall NET_Q_AUTH.\n"));
+		return False;
+	}
+
+	r_u.status = _net_auth(p, &q_u, &r_u);
+
+	/* store the response in the SMB stream */
+	if(!net_io_r_auth("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_net_auth: Failed to marshall NET_R_AUTH.\n"));
+		return False;
+	}
+
+	return True;
+}
+
+/*************************************************************************
  api_net_auth_2:
  *************************************************************************/
 
@@ -257,6 +288,7 @@ static BOOL api_net_logon_ctrl2(pipes_struct *p)
 static struct api_struct api_net_cmds [] =
 {
 	{ "NET_REQCHAL"       , NET_REQCHAL       , api_net_req_chal       }, 
+	{ "NET_AUTH"          , NET_AUTH          , api_net_auth           }, 
 	{ "NET_AUTH2"         , NET_AUTH2         , api_net_auth_2         }, 
 	{ "NET_SRVPWSET"      , NET_SRVPWSET      , api_net_srv_pwset      }, 
 	{ "NET_SAMLOGON"      , NET_SAMLOGON      , api_net_sam_logon      }, 
