@@ -262,6 +262,20 @@ void kerberos_set_creds_enctype(krb5_creds *pcreds, int enctype)
 #endif
 }
 
+krb5_boolean kerberos_compatible_enctypes(krb5_context context,
+				  krb5_enctype enctype1,
+				  krb5_enctype enctype2)
+{
+#if defined(HAVE_KRB5_C_ENCTYPE_COMPARE)
+	krb5_boolean similar = 0;
+
+	krb5_c_enctype_compare(context, enctype1, enctype2, &similar);
+	return similar;
+#elif defined(HAVE_KRB5_ENCTYPES_COMPATIBLE_KEYS)
+	return krb5_enctypes_compatible_keys(context, enctype1, enctype2);
+#endif
+}
+
 static BOOL ads_cleanup_expired_creds(krb5_context context, 
 				      krb5_ccache  ccache,
 				      krb5_creds  *credsp)
