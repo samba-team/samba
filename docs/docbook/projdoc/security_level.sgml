@@ -128,6 +128,13 @@ That real authentication server can be another Samba server or can be a
 Windows NT server, the later natively capable of encrypted password support.
 </para>
 
+<note><para>
+<emphasis>Server</emphasis> level security is incompatible with what is known 
+as </empahsis>schannel</emphasis> or "sign and seal" protocols. This means that
+if you want to use <empahsis>server</emphasis> level security you must disable
+the use of "sign and seal" on all machines on your network.
+</para></note>
+
 <sect3>
 <title>Configuring Samba for Seemless Windows Network Integration</title>
 
@@ -270,7 +277,7 @@ all authentication requests to be passed through to the domain controllers.
 <title>Samba as a member of an MS Windows NT security domain</title>
 
 <para>
-This method involves additon of the following paramters in the &smb.conf; file:
+This method involves addition of the following parameters in the &smb.conf; file:
 </para>
 
 <para><programlisting>
@@ -297,7 +304,9 @@ MS Windows NT security domain. This is done as follows:
 	</para></listitem>
 	
 	<listitem><para>Next, on the Linux system execute: 
-	<command>smbpasswd -r PDC_NAME -j DOMAIN_NAME</command>
+	<command>smbpasswd -r PDC_NAME -j DOMAIN_NAME</command> (samba 2.x)
+
+	<command>net join -U administrator%password</command>   (samba-3)
 	</para></listitem>
 </itemizedlist>
 
