@@ -1,8 +1,6 @@
-Thu Nov  4 03:30:49 1999  Assar Westerlund  <assar@juguete.sics.se>
+1999-11-04  Assar Westerlund  <assar@sics.se>
 
 	* Release 0.2d
-
-1999-11-04  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/Makefile.am: bump version to 5:0:0 to be safe
  	(krb5_context_data has changed and some code do (might) access
