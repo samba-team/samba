@@ -65,7 +65,7 @@ void map_username(char *user)
 
   if (strequal(user,last_from)) {
     DEBUG(3,("Mapped user %s to %s\n",user,last_to));
-    strcpy(user,last_to);
+    fstrcpy(user,last_to);
     return;
   }
   
@@ -191,7 +191,7 @@ struct passwd *Get_Pwnam(char *user,BOOL allow_change)
   if (ret) return(ret);
 
   if (allow_change)
-    strcpy(user,user2);
+    fstrcpy(user,user2);
 
   return(NULL);
 }

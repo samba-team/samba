@@ -121,7 +121,7 @@ static BOOL dump_core(void)
 {
   char *p;
   pstring dname;
-  strcpy(dname,debugf);
+  pstrcpy(dname,debugf);
   if ((p=strrchr(dname,'/'))) *p=0;
   strcat(dname,"/corefiles");
   mkdir(dname,0700);
@@ -188,10 +188,10 @@ BOOL reload_services(BOOL test)
   if (lp_loaded())
     {
       pstring fname;
-      strcpy(fname,lp_configfile());
+      pstrcpy(fname,lp_configfile());
       if (file_exist(fname,NULL) && !strcsequal(fname,servicesf))
 	{
-	  strcpy(servicesf,fname);
+	  pstrcpy(servicesf,fname);
 	  test = False;
 	}
     }
@@ -276,7 +276,7 @@ static void load_hosts_file(char *fname)
       
       if (strchr(flags,'M')) {
 	source = SELF;
-	strcpy(myname,name);
+	pstrcpy(myname,name);
       }
       
       ipaddr = *interpret_addr2(ip);
@@ -371,7 +371,7 @@ static BOOL init_structs()
   pstring nbname;
 
   if (! *myname) {
-    strcpy(myname,myhostname);
+    fstrcpy(myname,myhostname);
     p = strchr(myname,'.');
     if (p) *p = 0;
   }
@@ -422,7 +422,7 @@ static BOOL init_structs()
   /* Terminate name list */
   my_netbios_names[namecount++]=NULL;
   
-  strcpy(local_machine,myname);
+  fstrcpy(local_machine,myname);
   trim_string(local_machine," "," ");
   p = strchr(local_machine,' ');
   if (p) 
@@ -501,7 +501,7 @@ static void usage(char *pname)
           strncpy(pidFile, optarg, sizeof(pidFile));
           break;
 	case 's':
-	  strcpy(servicesf,optarg);
+	  pstrcpy(servicesf,optarg);
 	  break;	  
 	case 'N':
 	case 'B':
@@ -511,17 +511,17 @@ static void usage(char *pname)
 	  DEBUG(0,("Obsolete option '%c' used\n",opt));
 	  break;
 	case 'H':
-	  strcpy(host_file,optarg);
+	  pstrcpy(host_file,optarg);
 	  break;
 	case 'n':
-	  strcpy(myname,optarg);
+	  pstrcpy(myname,optarg);
 	  strupper(myname);
 	  break;
 	case 'l':
 	  sprintf(debugf,"%s.nmb",optarg);
 	  break;
 	case 'i':
-	  strcpy(scope,optarg);
+	  pstrcpy(scope,optarg);
 	  strupper(scope);
 	  break;
 	case 'D':
@@ -564,7 +564,7 @@ static void usage(char *pname)
 
   reload_services(True);
 
-  strcpy(myworkgroup, lp_workgroup());
+  pstrcpy(myworkgroup, lp_workgroup());
 
   if (strequal(myworkgroup,"*")) {
     DEBUG(0,("ERROR: a workgroup name of * is no longer supported\n"));

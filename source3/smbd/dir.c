@@ -461,7 +461,7 @@ BOOL get_dir_entry(int cnum,char *mask,int dirtype,char *fname,int *size,int *mo
       
       matched = False;
 
-      strcpy(filename,dname);      
+      pstrcpy(filename,dname);      
 
       if ((strcmp(filename,mask) == 0) ||
 	  (name_map_mangle(filename,True,SNUM(cnum)) &&
