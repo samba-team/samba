@@ -92,6 +92,7 @@ void cmd_sam_ntchange_pwd(struct client_info *info)
 	/* open SAMR session.  */
 	res = res ? cli_nt_session_open(smb_cli, PIPE_SAMR) : False;
 
+#if 0
 	/* establish a connection. */
 	res = res ? do_samr_get_dom_pwinfo(smb_cli, srv_name) : False;
 
@@ -100,6 +101,7 @@ void cmd_sam_ntchange_pwd(struct client_info *info)
 	                                   srv_name, smb_cli->user_name,
 	                                   nt_newpass, nt_hshhash,
 	                                   lm_newpass, lm_hshhash) : False;
+#endif
 	/* close the session */
 	cli_nt_session_close(smb_cli);
 
@@ -154,8 +156,10 @@ void cmd_sam_test(struct client_info *info)
 	/* open SAMR session.  */
 	res = res ? cli_nt_session_open(smb_cli, PIPE_SAMR) : False;
 
+#if 0
 	/* establish a connection. */
 	res = res ? do_samr_get_dom_pwinfo(smb_cli, srv_name) : False;
+#endif
 
 	/* close the session */
 	cli_nt_session_close(smb_cli);
@@ -584,10 +588,12 @@ void cmd_sam_enum_aliases(struct client_info *info)
 	            &info->dom.samr_pol_connect, admin_rid, &sid1,
 	            &info->dom.samr_pol_open_domain) : False;
 
+#if 0
 	/* send a query on the aliase */
 	res = res ? do_samr_query_lookup_rids(smb_cli,
 	            &info->dom.samr_pol_open_domain, admin_rid, num_aliases, alias_rid,
 	            &num_aliases, alias_names, num_als_usrs) : False;
+#endif
 
 	if (res)
 	{

@@ -404,9 +404,11 @@ enum client_action
 
 	printf("Please use rpcclient from the SAMBA_TNG cvs tag.\n");
 	printf("Please refer to http://samba.org/cvs.html for details.\n");
+/*
 #ifndef DEBUG_PASSWORD
 	exit(-1);
 #endif
+*/
 
 	out_hnd = stdout;
 	fstrcpy(debugf, argv[0]);

@@ -93,6 +93,7 @@ void cmd_netlogon_login_test(struct client_info *info)
 
 	res = res ? cli_nt_setup_creds(smb_cli, trust_passwd) : False;
 
+#if 0 
 	/* change the machine password? */
 	if (global_machine_password_needs_changing)
 	{
@@ -108,6 +109,7 @@ void cmd_netlogon_login_test(struct client_info *info)
 
 		memset(new_trust_passwd, 0, 16);
 	}
+#endif
 
 	memset(trust_passwd, 0, 16);
 

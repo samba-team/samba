@@ -1093,9 +1093,9 @@ void display_sec_acl(FILE *out_hnd, enum action_type action, SEC_ACL *sec_acl)
 				int i;
 				for (i = 0; i < sec_acl->num_aces; i++)
 				{
-					display_sec_ace(out_hnd, ACTION_HEADER   , &sec_acl->ace_list[i]);
-					display_sec_ace(out_hnd, ACTION_ENUMERATE, &sec_acl->ace_list[i]);
-					display_sec_ace(out_hnd, ACTION_FOOTER   , &sec_acl->ace_list[i]);
+					display_sec_ace(out_hnd, ACTION_HEADER   , &sec_acl->ace[i]);
+					display_sec_ace(out_hnd, ACTION_ENUMERATE, &sec_acl->ace[i]);
+					display_sec_ace(out_hnd, ACTION_FOOTER   , &sec_acl->ace[i]);
 				}
 			}
 				
