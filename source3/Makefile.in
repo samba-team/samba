@@ -468,7 +468,7 @@ MNT_OBJ = client/smbmnt.o
 UMOUNT_OBJ = client/smbumount.o
 
 NMBLOOKUP_OBJ = utils/nmblookup.o $(PARAM_OBJ) $(UBIQX_OBJ) $(LIBNMB_OBJ) \
-               $(LIB_OBJ)
+               $(LIB_OBJ) $(POPT_LIB_OBJ)
 
 SMBTORTURE_OBJ1 = torture/torture.o torture/nbio.o torture/scanner.o torture/utable.o \
 		torture/denytest.o torture/mangle_test.o 
@@ -786,9 +786,9 @@ bin/smbgroupedit@EXEEXT@: $(SMBGROUPEDIT_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SMBGROUPEDIT_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/nmblookup@EXEEXT@: $(NMBLOOKUP_OBJ) bin/.dummy
+bin/nmblookup@EXEEXT@: $(NMBLOOKUP_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(NMBLOOKUP_OBJ) $(LDFLAGS) $(LIBS)
+	@$(CC) $(FLAGS) -o $@ $(NMBLOOKUP_OBJ) $(LDFLAGS) $(LIBS) @BUILD_POPT@
 
 bin/smbtorture@EXEEXT@: $(SMBTORTURE_OBJ) bin/.dummy
 	@echo Linking $@

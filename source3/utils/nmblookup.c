@@ -2,6 +2,7 @@
    Unix SMB/CIFS implementation.
    NBT client - used to lookup netbios names
    Copyright (C) Andrew Tridgell 1994-1998
+   Copyright (C) Jelmer Vernooij 2003 (Conversion to popt)
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -52,31 +53,6 @@ static BOOL open_sockets(void)
 
   DEBUG(3, ("Socket opened.\n"));
   return True;
-}
-
-
-/****************************************************************************
-usage on the program
-****************************************************************************/
-static void usage(void)
-{
-  d_printf("Usage: nmblookup [options] name\n");
-  d_printf("Version %s\n",VERSION);
-  d_printf("\t-d debuglevel         set the debuglevel\n");
-  d_printf("\t-B broadcast address  the address to use for broadcasts\n");
-  d_printf("\t-f                    list the NMB flags returned\n");
-  d_printf("\t-U unicast   address  the address to use for unicast\n");
-  d_printf("\t-M                    searches for a master browser\n");
-  d_printf("\t-R                    set recursion desired in packet\n");
-  d_printf("\t-S                    lookup node status as well\n");
-  d_printf("\t-T                    translate IP addresses into names\n");
-  d_printf("\t-r                    Use root port 137 (Win95 only replies to this)\n");
-  d_printf("\t-A                    Do a node status on <name> as an IP Address\n");
-  d_printf("\t-i NetBIOS scope      Use the given NetBIOS scope for name queries\n");
-  d_printf("\t-s smb.conf file      Use the given path to the smb.conf file\n");
-  d_printf("\t-h                    Print this help message.\n");
-  d_printf("\n  If you specify -M and name is \"-\", nmblookup looks up __MSBROWSE__<01>\n");
-  d_printf("\n");
 }
 
 /****************************************************************************
@@ -211,130 +187,108 @@ int main(int argc,char *argv[])
   int opt;
   unsigned int lookup_type = 0x0;
   fstring lookup;
-  extern int optind;
-  extern char *optarg;
   BOOL find_master=False;
-  int i;
   BOOL lookup_by_ip = False;
-  int commandline_debuglevel = -2;
+  poptContext pc;
 
-  DEBUGLEVEL = 1;
-  /* Prevent smb.conf setting from overridding */
-  AllowDebugChange = False;
-
+  struct poptOption long_options[] = {
+	  POPT_AUTOHELP
+	  { "broadcast", 'b', POPT_ARG_STRING, NULL, 'B', "Specify address to use for broadcasts", "BROADCAST-ADDRESS" },
+	  { "flags", 'f', POPT_ARG_VAL, &give_flags, True, "List the NMB flags returned" },
+	  { "unicast", 'U', POPT_ARG_NONE, NULL, 'U', "Specify address to use for unicast" },
+	  { "master-browser", 'M', POPT_ARG_VAL, &find_master, True, "Search for a master browser" },
+	  { "recursion", 'R', POPT_ARG_VAL, &recursion_desired, True, "Set recursion desired in package" },
+	  { "status", 'S', POPT_ARG_VAL, &find_status, True, "Lookup node status as well" },
+	  { "translate", 'T', POPT_ARG_NONE, NULL, 'T', "Translate IP addresses into names" },
+	  { "root-port", 'r', POPT_ARG_VAL, &RootPort, True, "Use root port 137 (Win95 only replies to this)" },
+	  { "lookup-by-ip", 'A', POPT_ARG_VAL, &lookup_by_ip, True, "Do a node status on <name> as an IP Address" },
+	  POPT_COMMON_SAMBA
+	  { NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_scope },
+	  { NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_configfile },
+	  { NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_debug },
+	  { 0, 0, 0, 0 }
+  };
+	
   *lookup = 0;
 
   setup_logging(argv[0],True);
 
-  while ((opt = getopt(argc, argv, "d:fB:U:i:s:SMrhART")) != EOF)
-    switch (opt)
-      {
-      case 'B':
-	bcast_addr = *interpret_addr2(optarg);
-	got_bcast = True;
-	use_bcast = True;
-	break;
-      case 'f':
-	give_flags = True;
-	break;
-      case 'U':
-	bcast_addr = *interpret_addr2(optarg);
-	got_bcast = True;
-	use_bcast = False;
-	break;
-      case 'T':
-        translate_addresses = !translate_addresses;
-	break;
-      case 'i':
-	set_global_scope(optarg);
-	break;
-      case 'M':
-	find_master = True;
-	break;
-      case 'S':
-	find_status = True;
-	break;
-      case 'R':
-	recursion_desired = True;
-	break;
-      case 'd':
-	commandline_debuglevel = DEBUGLEVEL = atoi(optarg);
-	break;
-      case 's':
-	pstrcpy(dyn_CONFIGFILE, optarg);
-	break;
-      case 'r':
-        RootPort = True;
-        break;
-      case 'h':
-	usage();
-	exit(0);
-	break;
-      case 'A':
-        lookup_by_ip = True;
-        break;
-      default:
-	usage();
-	exit(1);
-      }
+  pc = poptGetContext("nmblookup", argc, (const char **)argv, long_options, 
+					  POPT_CONTEXT_KEEP_FIRST);
 
-  if (argc < 2) {
-    usage();
-    exit(1);
+  poptSetOtherOptionHelp(pc, "<NODE> ...");
+
+  while ((opt = poptGetNextOpt(pc)) != -1)
+	  switch (opt)
+	  {
+	  case 'B':
+		  bcast_addr = *interpret_addr2(optarg);
+		  got_bcast = True;
+		  use_bcast = True;
+		  break;
+	  case 'U':
+		  bcast_addr = *interpret_addr2(optarg);
+		  got_bcast = True;
+		  use_bcast = False;
+		  break;
+	  case 'T':
+		  translate_addresses = !translate_addresses;
+		  break;
+	  }
+
+  poptGetArg(pc); /* Remove argv[0] */
+
+  if(!poptPeekArg(pc)) { 
+	  poptPrintUsage(pc, stderr, 0);
+	  exit(1);
   }
 
   if (!lp_load(dyn_CONFIGFILE,True,False,False)) {
-    fprintf(stderr, "Can't load %s - run testparm to debug it\n", dyn_CONFIGFILE);
+	  fprintf(stderr, "Can't load %s - run testparm to debug it\n", dyn_CONFIGFILE);
   }
-
-  /*
-   * Ensure we reset DEBUGLEVEL if someone specified it
-   * on the command line.
-   */
-
-  if(commandline_debuglevel != -2)
-    DEBUGLEVEL = commandline_debuglevel;
 
   load_interfaces();
   if (!open_sockets()) return(1);
 
-  for (i=optind;i<argc;i++)
+  while(poptPeekArg(pc))
   {
-      char *p;
-      struct in_addr ip;
+	  char *p;
+	  struct in_addr ip;
 
-      fstrcpy(lookup,argv[i]);
+	  fstrcpy(lookup,poptGetArg(pc));
 
-      if(lookup_by_ip)
-      {
-        fstrcpy(lookup,"*");
-        ip = *interpret_addr2(argv[i]);
-	do_node_status(ServerFD, lookup, lookup_type, ip);
-        continue;
-      }
+	  if(lookup_by_ip)
+	  {
+		  ip = *interpret_addr2(lookup);
+		  fstrcpy(lookup,"*");
+		  do_node_status(ServerFD, lookup, lookup_type, ip);
+		  continue;
+	  }
 
-      if (find_master) {
-	if (*lookup == '-') {
-	  fstrcpy(lookup,"\01\02__MSBROWSE__\02");
-	  lookup_type = 1;
-	} else {
-	  lookup_type = 0x1d;
-	}
-      }
+	  if (find_master) {
+		  if (*lookup == '-') {
+			  fstrcpy(lookup,"\01\02__MSBROWSE__\02");
+			  lookup_type = 1;
+		  } else {
+			  lookup_type = 0x1d;
+		  }
+	  }
 
-      p = strchr_m(lookup,'#');
-      if (p) {
-        *p = '\0';
-        sscanf(++p,"%x",&lookup_type);
-      }
+	  p = strchr_m(lookup,'#');
+	  if (p) {
+		  *p = '\0';
+		  sscanf(++p,"%x",&lookup_type);
+	  }
 
-      if (!query_one(lookup, lookup_type)) {
-	d_printf( "name_query failed to find name %s", lookup );
-        if( 0 != lookup_type )
-          d_printf( "#%02x", lookup_type );
-        d_printf( "\n" );
-      }
+	  if (!query_one(lookup, lookup_type)) {
+		  d_printf( "name_query failed to find name %s", lookup );
+		  if( 0 != lookup_type )
+			  d_printf( "#%02x", lookup_type );
+		  d_printf( "\n" );
+	  }
   }
-  
+
+  poptFreeContext(pc);
+
   return(0);
 }
