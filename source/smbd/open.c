@@ -115,67 +115,55 @@ Error was %s\n",
 
 	} else {
 		/* We've already done an lstat into psbuf, and we know it's a directory. If
-		   we can do an open/fstat and the dev/ino are the same then we can safely
-		   fchown without races. This works under Linux - but should just fail gracefully
-		   if any step on the way fails. JRA */
+		   we can cd into the directory and the dev/ino are the same then we can safely
+		   chown without races as we're locking the directory in place by being in it.
+		   This should work on any UNIX (thanks tridge :-). JRA.
+		*/
 
-		BOOL need_close_fsp = False;
+		pstring saved_dir;
 		SMB_STRUCT_STAT sbuf;
-		int fd = -1;
 
-		if (!fsp) {
-			int action;
-			fsp = open_directory(conn, fname, psbuf, FILE_GENERIC_READ,
-					SET_DENY_MODE(DENY_NONE)|SET_OPEN_MODE(DOS_OPEN_RDONLY),
-					FILE_EXISTS_OPEN, &action);
-			if (!fsp) {
-				DEBUG(10,("change_owner_to_parent: open_directory on %s failed. Error was %s\n",
-					fname, strerror(errno) ));
-				return;
-			}
-			need_close_fsp = True;
-		} 
-		fd = SMB_VFS_OPEN(conn,fname,O_RDONLY,0);
-		if (fd == -1) {
-			DEBUG(10,("change_owner_to_parent: failed to VFS_OPEN directory %s. Error was %s\n",
-				fname, strerror(errno) ));
+		if (!vfs_GetWd(conn,saved_dir)) {
+			DEBUG(0,("change_owner_to_parent: failed to get current working directory\n"));
+			return;
+		}
+
+		/* Chdir into the new path. */
+		if (vfs_ChDir(conn, fname) == -1) {
+			DEBUG(0,("change_owner_to_parent: failed to change current working directory to %s. \
+Error was %s\n", fname, strerror(errno) ));
 			goto out;
 		}
-		ret = SMB_VFS_FSTAT(fsp,fd,&sbuf);
-		if (ret == -1) {
-			DEBUG(10,("change_owner_to_parent: failed to VFS_STAT directory %s. Error was %s\n",
-				fname, strerror(errno) ));
+
+		if (SMB_VFS_STAT(conn,".",&sbuf) == -1) {
+			DEBUG(0,("change_owner_to_parent: failed to stat directory '.' (%s) \
+Error was %s\n", fname, strerror(errno)));
 			goto out;
 		}
 
 		/* Ensure we're pointing at the same place. */
-		if (sbuf.st_dev != psbuf->st_dev || sbuf.st_ino != psbuf->st_ino || !S_ISDIR(sbuf.st_mode)) {
-			DEBUG(0,("change_owner_to_parent: device/inode/mode on director %s changed. Refusing to fchown !\n",
+		if (sbuf.st_dev != psbuf->st_dev || sbuf.st_ino != psbuf->st_ino || sbuf.st_mode != psbuf->st_mode ) {
+			DEBUG(0,("change_owner_to_parent: device/inode/mode on directory %s changed. Refusing to chown !\n",
 				fname ));
 			goto out;
 		}
 
 		become_root();
-		ret = SMB_VFS_FCHOWN(fsp, fd, parent_st.st_uid, (gid_t)-1);
+		ret = SMB_VFS_CHOWN(conn, ".", parent_st.st_uid, (gid_t)-1);
 		unbecome_root();
 		if (ret == -1) {
-			DEBUG(10,("change_owner_to_parent: failed to fchown directory %s to parent directory uid %u. \
+			DEBUG(10,("change_owner_to_parent: failed to chown directory %s to parent directory uid %u. \
 Error was %s\n",
 				fname, (unsigned int)parent_st.st_uid, strerror(errno) ));
 			goto out;
 		}
 
-		DEBUG(10,("change_owner_to_parent: changed new directory %s to parent directory uid %u.\n",
+		DEBUG(10,("change_owner_to_parent: changed ownership of new directory %s to parent directory uid %u.\n",
 			fname, (unsigned int)parent_st.st_uid ));
 
   out:
 
-		if (fd != -1) {
-			SMB_VFS_CLOSE(fsp,fd);
-		}
-		if (need_close_fsp) {
-			close_file(fsp, False);
-		}
+		vfs_ChDir(conn,saved_dir);
 	}
 }
 
