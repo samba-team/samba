@@ -438,6 +438,7 @@ write_stats(krb5_context context, slave *slaves, u_int32_t current_version)
 
     while (slaves) {
 	krb5_address addr;
+	krb5_error_code ret;
 	rtbl_add_column_entry(tbl, SLAVE_NAME, slaves->name);
 	ret = krb5_sockaddr2address (context, 
 				     (struct sockaddr*)&slaves->addr, &addr);
