@@ -136,6 +136,18 @@ void display_sam_info_1(SAM_ENTRY1 *e1, SAM_STR1 *s1)
 	printf("Desc: %s\n", tmp);
 }
 
+void display_sam_info_4(SAM_ENTRY4 *e4, SAM_STR4 *s4)
+{
+	int i;
+
+	printf("index: %d ", e4->user_idx);
+	
+	printf("Account: ");
+	for (i=0; i<s4->acct_name.str_str_len; i++)
+		printf("%c", s4->acct_name.buffer[i]);
+	printf("\n");
+
+}
 /**********************************************************************
  * Query user information 
  */
@@ -533,20 +545,28 @@ static NTSTATUS cmd_samr_query_dispinfo(struct cli_state *cli,
 {
 	POLICY_HND connect_pol, domain_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	uint32 start_idx, max_entries, num_entries, i;
+	uint32 start_idx=0, max_entries=250, num_entries, i;
 	uint16 info_level = 1;
 	SAM_DISPINFO_CTR ctr;
 	SAM_DISPINFO_1 info1;
 
-	if (argc != 1) {
-		printf("Usage: %s\n", argv[0]);
+	if (argc > 4) {
+		printf("Usage: %s [info level] [start index] [max entries]\n", argv[0]);
 		return NT_STATUS_OK;
 	}
 
+	if (argc >= 2)
+		info_level = atoi(argv[1]);
+
+	if (argc >= 3)
+		 start_idx = atoi(argv[2]);
+
+	if (argc >= 4)
+		 max_entries = atoi(argv[3]);
+
 	/* Get sam policy handle */
 
-	result = cli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
-				  &connect_pol);
+	result = cli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, &connect_pol);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
@@ -562,9 +582,6 @@ static NTSTATUS cmd_samr_query_dispinfo(struct cli_state *cli,
 
 	/* Query display info */
 
-	start_idx = 0;
-	max_entries = 250;
-
 	ZERO_STRUCT(ctr);
 	ZERO_STRUCT(info1);
 
@@ -575,8 +592,14 @@ static NTSTATUS cmd_samr_query_dispinfo(struct cli_state *cli,
 					 &num_entries, max_entries, &ctr);
 
 	for (i = 0; i < num_entries; i++) {
-		display_sam_info_1(&ctr.sam.info1->sam[i],
-				   &ctr.sam.info1->str[i]);
+		switch (info_level) {
+		case 1:
+			display_sam_info_1(&ctr.sam.info1->sam[i], &ctr.sam.info1->str[i]);
+			break;
+		case 4:
+			display_sam_info_4(&ctr.sam.info4->sam[i], &ctr.sam.info4->str[i]);
+			break;
+		}
 	}
 
  done:
