@@ -1152,8 +1152,10 @@ DOM_SID *local_uid_to_sid(DOM_SID *psid, uid_t uid)
 		DEBUG(4,("local_uid_to_sid: User %s [uid == %lu] has no samba account\n",
 			unix_pw->pw_name, (unsigned long)uid));
 
-		return algorithmic_uid_to_sid( psid, uid);
+		algorithmic_uid_to_sid( psid, uid);
 	}
+
+	pdb_free_sam(&sampw);
 
 	DEBUG(10,("local_uid_to_sid:  uid (%d) -> SID %s (%s).\n", 
 		(unsigned int)uid, sid_string_static(psid), unix_pw->pw_name));
