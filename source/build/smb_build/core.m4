@@ -68,8 +68,11 @@ $SMB_INFO_BINARIES
 
 smb_build_main(\$SMB_BUILD_CTX);
 
-0;
 _SMB_ACEOF
+
+if test x"$debug" = x"yes";then
+	cat >> config.smb_build.pl < build/smb_build/dump.pl
+fi
 
 $PERL ./config.smb_build.pl || exit $?
 
