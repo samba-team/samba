@@ -718,7 +718,7 @@ objectclass ( 1.3.6.1.4.1.7165.2.2.3 NAME 'sambaAccount' SUP top AUXILIARY
 			The OID's are owned by the Samba Team and as such is legal to be openly published.
 			If you translate the schema to be used with Netscape DS, please
 			submit the modified schema file as a patch to
-			<ulink url="mailto:jerry@samba.org">jerry@samba.org</ulink>
+			<ulink url="mailto:jerry@samba.org">jerry@samba.org</ulink>.
 			</para>
 
 			<para>
@@ -865,7 +865,7 @@ index   default               sub
 		</itemizedlist>
 
 			<para>
-			These are described in the <ulink url="smb.conf.5.html">smb.conf(5)</ulink> man
+			These are described in the &smb.conf; man
 			page and so will not be repeated here.  However, a sample smb.conf file for
 			use with an LDAP directory could appear as
 			</para>
@@ -1051,8 +1051,8 @@ index   default               sub
 				<listitem><para><constant>smbHome</constant>: The homeDirectory property specifies the path of
 				the home directory for the user. The string can be null. If homeDrive is set and specifies
 				a drive letter, homeDirectory should be a UNC path. The path must be a network
-				UNC path of the form \\server\share\directory. This value can be a null string.
-				Refer to the "logon home" parameter in the smb.conf(5) man page for more information.
+				UNC path of the form <filename>\\server\share\directory</filename>. This value can be a null string.
+				Refer to the <command>logon home</command> parameter in the &smb.conf; man page for more information.
 				</para></listitem>
 
 				<listitem><para><constant>userWorkstation</constant>: character string value currently unused.
@@ -1069,7 +1069,7 @@ index   default               sub
 
 			<para>
 			The majority of these parameters are only used when Samba is acting as a PDC of
-			a domain (refer to the <ulink url="Samba-PDC-HOWTO.html">Samba-PDC-HOWTO</ulink> for details on
+			a domain (refer to the <link linkend="pdc">Samba as a primary domain controller</link> chapter for details on
 			how to configure Samba as a Primary Domain Controller). The following four attributes
 			are only stored with the sambaAccount entry if the values are non-default values:
 			</para>
@@ -1091,7 +1091,7 @@ index   default               sub
 			this value is used.  However, if this attribute does not exist, then the value
 			of the <parameter>logon home</parameter> parameter is used in its place.  Samba
 			will only write the attribute value to the directory entry if the value is
-			something other than the default (e.g. \\MOBY\becky).
+			something other than the default (e.g. <filename>\\MOBY\becky</filename>).
 			</para>
 
 		</sect3>
@@ -1160,7 +1160,7 @@ index   default               sub
 		<title>Password synchronisation</title>
 
 		<para>
-		Since 3.0 Samba can update the non-samba (LDAP) password stored with an account. When
+		Since version 3.0 samba can update the non-samba (LDAP) password stored with an account. When
 		using pam_ldap, this allows changing both unix and windows passwords at once.
 		</para>
 
@@ -1196,7 +1196,7 @@ index   default               sub
 		<title>ldap trust ids</title>
 
 		<para>
-		LDAP Performance can be approved by using the <command>ldap trust ids</command> parameter.
+		LDAP Performance can be improved by using the <command>ldap trust ids</command> parameter.
 		See the <ulink url="smb.conf.5.html#LDAPTRUSTIDS">smb.conf</ulink> manpage for details.
 		</para>
 
@@ -1241,7 +1241,7 @@ index   default               sub
 			</para>
 
 			<para>
-			Additional options can be given thru the smb.conf file in the [global] section.
+				Additional options can be given thru the &smb.conf; file in the <command>[global]</command> section.
 			</para>
 
 	<para>
@@ -1258,7 +1258,7 @@ index   default               sub
 			<warning>
 			<para>
 			Since the password for the mysql user is stored in the 
-			smb.conf file, you should make the the smb.conf file 
+			&smb.conf; file, you should make the the &smb.conf; file 
 			readable only to the user that runs samba. This is considered a security 
 			bug and will be fixed soon.
 			</para>
@@ -1384,10 +1384,6 @@ index   default               sub
 
 		<para>
 		<programlisting>
-		In your smb.conf file [globals]:
-			passdb backend = tdbsam, smbpasswd, guest
-
-
 		then execute (as root):
 			pdbedit -i smbpasswd -e tdbsam
 		</programlisting>
@@ -1400,6 +1396,8 @@ index   default               sub
 
 <para>
 Put stuff here
+- People forget to put their users in their backend and then complain samba 
+  won't authorize them
 </para>
 
 </sect1>
