@@ -4068,6 +4068,23 @@ static void process(void)
 	  }
 	}
 
+      if (trans_num == 0) {
+	      /* on the first packet, check the global hosts allow/ hosts
+		 deny parameters before doing any parsing of the packet
+		 passed to us by the client.  This prevents attacks on our
+		 parsing code from hosts not in the hosts allow list */
+	      if (!check_access(-1)) {
+		      /* send a negative session response "not listining 
+			 on calling name" */
+		      static unsigned char buf[5] = {0x83, 0, 0, 1, 0x81};
+		      DEBUG(1,("%s Connection denied from %s\n",
+			       timestring(),client_addr()));
+		      send_smb(Client,(char *)buf);
+		      exit_server("connection denied");
+	      }
+      }
+
+
       msg_type = CVAL(InBuffer,0);
       msg_flags = CVAL(InBuffer,1);
       type = CVAL(InBuffer,smb_com);
