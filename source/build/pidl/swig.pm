@@ -337,10 +337,10 @@ sub ParseFunction($)
 
     # Output typemap
 
-    $result .= "%typemap(argout) struct $fn->{NAME} * {\n";
+    $result .= "%typemap(argout) struct $fn->{NAME} * (PyObject *temp) {\n";
     $result .= "\tTALLOC_CTX *mem_ctx = talloc_init(\"typemap(argout) $fn->{NAME}\");\n\n";
 
-    $result .= "\tresultobj = $fn->{NAME}_ptr_to_python(mem_ctx, \$1";
+    $result .= "\ttemp = $fn->{NAME}_ptr_to_python(mem_ctx, \$1";
 
     foreach my $e (@{$fn->{DATA}}) {
 	if ((my $switch_is = util::has_property($e, "switch_is"))) {
@@ -349,6 +349,10 @@ sub ParseFunction($)
     }
 
     $result .= ");\n\n";
+
+    $result .= "\tPyDict_SetItemString(temp, \"result\", resultobj);\n";
+    $result .= "\tresultobj = temp;\n";
+
     $result .= "\ttalloc_free(mem_ctx);\n";
     $result .= "}\n\n";
 
