@@ -495,7 +495,7 @@ int main (int argc, char **argv)
 	poptGetArg(pc); /* Drop argv[0], the program name */
 
 	if (user_name == NULL) {
-		user_name = strdup(poptGetArg(pc));
+		user_name = poptGetArg(pc);
 	}
 
 	if (!lp_load(dyn_CONFIGFILE,True,False,False)) {
@@ -503,6 +503,9 @@ int main (int argc, char **argv)
 		exit(1);
 	}
 
+	if(lp_modules())
+		smb_load_modules(lp_modules());
+	
 	if (!init_names())
 		exit(1);
 
