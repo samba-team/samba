@@ -2986,7 +2986,7 @@ void make_enc_passwd(SAMR_ENC_PASSWD *pwd, char pass[512])
 	if (pwd == NULL) return;
 
 	pwd->ptr = 1;
-	memcpy(&(pwd->pass), pass, sizeof(pwd->pass)); 
+	memcpy(pwd->pass, pass, sizeof(pwd->pass)); 
 }
 
 /*******************************************************************
@@ -3013,7 +3013,7 @@ void make_enc_hash(SAMR_ENC_HASH *hsh, uchar hash[16])
 	if (hsh == NULL) return;
 
 	hsh->ptr = 1;
-	memcpy(&(hsh->hash), hash, sizeof(hsh->hash));
+	memcpy(hsh->hash, hash, sizeof(hsh->hash));
 }
 
 /*******************************************************************
