@@ -1912,7 +1912,7 @@ struct smbc_dirent *smbc_readdir(unsigned int fd)
 
 		/* Hmmm, do I even need to copy it? */
 
-		bcopy(dirent, smbc_local_dirent, dirent->dirlen); /* Copy the dirent */
+		memcpy(smbc_local_dirent, dirent, dirent->dirlen); /* Copy the dirent */
 		dirp = (struct smbc_dirent *)smbc_local_dirent;
 		dirp->comment = (char *)(&dirp->name + dirent->namelen + 1);
 		fe->dir_next = fe->dir_next->next;
@@ -2001,7 +2001,7 @@ int smbc_getdents(unsigned int fd, struct smbc_dirent *dirp, int count)
 
 		dirent = dir->dirent;
 
-		bcopy(dirent, ndir, reqd); /* Copy the data in ... */
+		memcpy(ndir, dirent, reqd); /* Copy the data in ... */
     
 		((struct smbc_dirent *)ndir)->comment = 
 			(char *)(&((struct smbc_dirent *)ndir)->name + dirent->namelen + 1);

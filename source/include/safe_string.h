@@ -22,6 +22,11 @@
 #ifndef _SAFE_STRING_H
 #define _SAFE_STRING_H
 
+#ifdef bcopy
+#undef bcopy
+#endif /* bcopy */
+#define bcopy(src,dest,size) __ERROR__XX__NEVER_USE_BCOPY___;
+
 #ifdef strcpy
 #undef strcpy
 #endif /* strcpy */
