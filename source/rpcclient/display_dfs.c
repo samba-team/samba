@@ -28,7 +28,7 @@ extern FILE* out_hnd;
 /*
  * Dfs namespace enumeration (info level 1)
  */
-void display_dfs_enum_1(FILE *hnd, DFS_INFO_CTR *ctr)
+static void display_dfs_enum_1(FILE *hnd, DFS_INFO_CTR *ctr)
 {
   int i=0;
   for(i=0;i<ctr->num_entries;i++)
@@ -44,7 +44,7 @@ void display_dfs_enum_1(FILE *hnd, DFS_INFO_CTR *ctr)
 /*
  * Dfs namespace enumeration (info level 2)
  */
-void display_dfs_enum_2(FILE *hnd, DFS_INFO_CTR *ctr)
+static void display_dfs_enum_2(FILE *hnd, DFS_INFO_CTR *ctr)
 {
   int i=0;
   for(i=0;i<ctr->num_entries;i++)
@@ -77,7 +77,7 @@ void display_dfs_enum_2(FILE *hnd, DFS_INFO_CTR *ctr)
 /*
  * Dfs namespace enumeration (info level 3:storages)
  */
-void display_dfs_enum_3_storages(FILE *hnd, DFS_INFO_3 *info3)
+static void display_dfs_enum_3_storages(FILE *hnd, DFS_INFO_3 *info3)
 {
   int i=0;
   if((info3 == NULL) || (info3->storages==NULL))
@@ -102,7 +102,7 @@ void display_dfs_enum_3_storages(FILE *hnd, DFS_INFO_3 *info3)
 /*
  * Dfs namespace enumeration (info level 3)
  */
-void display_dfs_enum_3(FILE *hnd, DFS_INFO_CTR *ctr)
+static void display_dfs_enum_3(FILE *hnd, DFS_INFO_CTR *ctr)
 {
   int i=0;
 

@@ -57,7 +57,7 @@ struct cli_connection
 };
 
 static struct cli_connection **con_list = NULL;
-uint32 num_cons = 0;
+static uint32 num_cons = 0;
 
 void init_connections(void)
 {

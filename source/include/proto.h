@@ -338,11 +338,6 @@ void MD5Transform(uint32 buf[4], const uchar inext[64]);
 BOOL receive_msrpc(int fd, prs_struct * data, unsigned int timeout);
 BOOL msrpc_send(int fd, prs_struct * ps);
 BOOL msrpc_receive(int fd, prs_struct * ps);
-BOOL ncalrpc_l_connect(struct msrpc_local *msrpc, const char *pipe_name);
-void ncalrpc_l_close_socket(struct msrpc_local *msrpc);
-void ncalrpc_l_sockopt(struct msrpc_local *msrpc, char *options);
-BOOL ncalrpc_l_connect_auth(struct msrpc_local *msrpc,
-			    const vuser_key * key, const char *pipename);
 struct msrpc_local *ncalrpc_l_initialise(struct msrpc_local *msrpc,
 					 const vuser_key * key);
 void ncalrpc_l_shutdown(struct msrpc_local *msrpc);
@@ -765,13 +760,13 @@ BOOL string_to_sid(DOM_SID *sidout, const char *sidstr);
 BOOL sid_append_rid(DOM_SID *sid, uint32 rid);
 BOOL sid_split_rid(DOM_SID *sid, uint32 *rid);
 void sid_copy(DOM_SID *dst, const DOM_SID *src);
+DOM_SID *sid_dup(const DOM_SID *src);
 BOOL sid_front_equal(const DOM_SID *sid1, const DOM_SID *sid2);
 BOOL sid_equal(const DOM_SID *sid1, const DOM_SID *sid2);
-int sid_size(const DOM_SID *sid);
-DOM_SID *sid_dup(const DOM_SID *src);
 BOOL read_sid(char *domain_name, DOM_SID *sid);
 BOOL write_sid(char *domain_name, DOM_SID *sid);
 BOOL create_new_sid(DOM_SID *sid);
+int sid_size(const DOM_SID *sid);
 
 /*The following definitions come from  lib/util_sock.c  */
 
@@ -3197,10 +3192,6 @@ void display_at_job_info(FILE *out_hnd, enum action_type action,
 
 /*The following definitions come from  rpcclient/display_dfs.c  */
 
-void display_dfs_enum_1(FILE *hnd, DFS_INFO_CTR *ctr);
-void display_dfs_enum_2(FILE *hnd, DFS_INFO_CTR *ctr);
-void display_dfs_enum_3_storages(FILE *hnd, DFS_INFO_3 *info3);
-void display_dfs_enum_3(FILE *hnd, DFS_INFO_CTR *ctr);
 void display_dfs_enum(FILE *hnd, char *srv_name, DFS_INFO_CTR *ctr);
 
 /*The following definitions come from  rpcclient/display_event.c  */

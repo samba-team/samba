@@ -115,8 +115,9 @@ BOOL string_to_sid(DOM_SID *sidout, const char *sidstr)
 }
 
 /*****************************************************************
- add a rid to the end of a sid
+ Add a rid to the end of a sid
 *****************************************************************/  
+
 BOOL sid_append_rid(DOM_SID *sid, uint32 rid)
 {
 	if (sid->num_auths < MAXSUBAUTHS)
@@ -128,8 +129,9 @@ BOOL sid_append_rid(DOM_SID *sid, uint32 rid)
 }
 
 /*****************************************************************
- removes the last rid from the end of a sid
+ Removes the last rid from the end of a sid
 *****************************************************************/  
+
 BOOL sid_split_rid(DOM_SID *sid, uint32 *rid)
 {
 	if (sid->num_auths > 0)
@@ -145,11 +147,15 @@ BOOL sid_split_rid(DOM_SID *sid, uint32 *rid)
 }
 
 /*****************************************************************
- copies a sid
+ Copies a sid
 *****************************************************************/  
+
 void sid_copy(DOM_SID *dst, const DOM_SID *src)
 {
 	int i;
+
+	dst->sid_rev_num = src->sid_rev_num;
+	dst->num_auths = src->num_auths;
 
 	for (i = 0; i < 6; i++)
 	{
@@ -160,9 +166,25 @@ void sid_copy(DOM_SID *dst, const DOM_SID *src)
 	{
 		dst->sub_auths[i] = src->sub_auths[i];
 	}
+}
 
-	dst->num_auths   = src->num_auths;
-	dst->sid_rev_num = src->sid_rev_num;
+/*****************************************************************
+ Duplicates a sid - mallocs the target.
+*****************************************************************/
+
+DOM_SID *sid_dup(const DOM_SID *src)
+{
+  DOM_SID *dst;
+
+  if(!src)
+    return NULL;
+
+  if((dst = (DOM_SID*)malloc(sizeof(DOM_SID))) != NULL) {
+	memset(dst, '\0', sizeof(DOM_SID));
+	sid_copy( dst, src);
+  }
+
+  return dst;
 }
 
 /*****************************************************************
@@ -215,38 +237,6 @@ BOOL sid_equal(const DOM_SID *sid1, const DOM_SID *sid2)
 	return True;
 }
 
-
-/*****************************************************************
- calculates size of a sid
-*****************************************************************/  
-int sid_size(const DOM_SID *sid)
-{
-	if (sid == NULL)
-	{
-		return 0;
-	}
-	return sid->num_auths * sizeof(uint32) + 8;
-}
-
-
-/*****************************************************************
- Duplicates a sid - mallocs the target.
-*****************************************************************/
-
-DOM_SID *sid_dup(const DOM_SID *src)
-{
-  DOM_SID *dst;
-
-  if(!src)
-    return NULL;
-
-  if((dst = (DOM_SID*)malloc(sizeof(DOM_SID))) != NULL) {
-       memset(dst, '\0', sizeof(DOM_SID));
-       sid_copy( dst, src);
-  }
-
-  return dst;
-}
 
 
 /****************************************************************************
@@ -360,7 +350,7 @@ BOOL read_sid(char *domain_name, DOM_SID *sid)
 	}
 	close(fd);
 	return True;
-}   
+}
 
 
 /****************************************************************************
@@ -539,4 +529,17 @@ BOOL create_new_sid(DOM_SID *sid)
 
 	return True;
 }
-  
+
+
+/*****************************************************************
+ Calculates size of a sid.
+*****************************************************************/  
+
+int sid_size(const DOM_SID *sid)
+{
+	if (sid == NULL)
+	{
+		return 0;
+	}
+	return sid->num_auths * sizeof(uint32) + 8;
+}

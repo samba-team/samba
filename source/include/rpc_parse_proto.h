@@ -8,11 +8,6 @@
 BOOL receive_msrpc(int fd, prs_struct * data, unsigned int timeout);
 BOOL msrpc_send(int fd, prs_struct * ps);
 BOOL msrpc_receive(int fd, prs_struct * ps);
-BOOL ncalrpc_l_connect(struct msrpc_local *msrpc, const char *pipe_name);
-void ncalrpc_l_close_socket(struct msrpc_local *msrpc);
-void ncalrpc_l_sockopt(struct msrpc_local *msrpc, char *options);
-BOOL ncalrpc_l_connect_auth(struct msrpc_local *msrpc,
-			    const vuser_key * key, const char *pipename);
 struct msrpc_local *ncalrpc_l_initialise(struct msrpc_local *msrpc,
 					 const vuser_key * key);
 void ncalrpc_l_shutdown(struct msrpc_local *msrpc);
@@ -161,8 +156,6 @@ BOOL make_r_enum_trust_dom(LSA_R_ENUM_TRUST_DOM * r_e, int32 enum_context,
 BOOL lsa_io_r_enum_trust_dom(char *desc, LSA_R_ENUM_TRUST_DOM * r_e,
 			     prs_struct * ps, int depth);
 void lsa_free_r_enum_trust_dom(LSA_R_ENUM_TRUST_DOM * r_e);
-BOOL lsa_io_r_query(char *desc, LSA_R_QUERY_INFO * r_q, prs_struct * ps,
-		    int depth);
 BOOL make_lsa_sid_enum(LSA_SID_ENUM * sen, uint32 num_entries, DOM_SID **sids);
 BOOL make_q_lookup_sids(LSA_Q_LOOKUP_SIDS * q_l, POLICY_HND *hnd,
 			int num_sids, DOM_SID ** sids, uint16 level);
@@ -181,10 +174,8 @@ BOOL lsa_io_q_close(char *desc, LSA_Q_CLOSE * q_c, prs_struct * ps, int depth);
 BOOL lsa_io_r_close(char *desc, LSA_R_CLOSE * r_c, prs_struct * ps, int depth);
 BOOL make_dom_rid2(DOM_RID2 *rid2, uint32 rid, uint16 type, uint32 idx);
 BOOL smb_io_dom_rid2(char *desc,  DOM_RID2 *rid2, prs_struct *ps, int depth);
-BOOL lsa_io_dom_query_2(char *desc, DOM_QUERY_2 *d_q,
-			prs_struct *ps, int depth);
-BOOL lsa_io_dom_query_3(char *desc,  DOM_QUERY_3 *d_q, prs_struct *ps, int depth);
-BOOL lsa_io_dom_query_5(char *desc,  DOM_QUERY_3 *d_q, prs_struct *ps, int depth);
+BOOL lsa_io_r_query(char *desc, LSA_R_QUERY_INFO * r_q,
+		    prs_struct *ps, int depth);
 
 /*The following definitions come from  rpc_parse/parse_misc.c  */
 

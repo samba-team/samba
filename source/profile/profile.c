@@ -30,10 +30,6 @@
 
 extern int DEBUGLEVEL;
 
-#define SHMEM_KEY ((key_t)0x07021999)
-#define SHM_MAGIC 0x6349985
-#define SHM_VERSION 1
-
 #define IPC_PERMS ((SHM_R | SHM_W) | (SHM_R>>3) | (SHM_R>>6))
 
 static int shm_id;
@@ -52,13 +48,13 @@ BOOL profile_setup(BOOL rdonly)
 
  again:
 	/* try to use an existing key */
-	shm_id = shmget(SHMEM_KEY, 0, 0);
+	shm_id = shmget(PROF_SHMEM_KEY, 0, 0);
 	
 	/* if that failed then create one. There is a race condition here
 	   if we are running from inetd. Bad luck. */
 	if (shm_id == -1) {
 		if (read_only) return False;
-		shm_id = shmget(SHMEM_KEY, sizeof(*profile_p), 
+		shm_id = shmget(PROF_SHMEM_KEY, sizeof(*profile_p), 
 				IPC_CREAT | IPC_EXCL | IPC_PERMS);
 	}
 	
@@ -101,6 +97,8 @@ BOOL profile_setup(BOOL rdonly)
 
 	if (!read_only && (shm_ds.shm_nattch == 1)) {
 		memset((char *)profile_p, 0, sizeof(*profile_p));
+		profile_p->prof_shm_magic = PROF_SHM_MAGIC;
+		profile_p->prof_shm_version = PROF_SHM_VERSION;
 		DEBUG(3,("Initialised profile area\n"));
 	}
 

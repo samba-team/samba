@@ -1059,58 +1059,6 @@ void lsa_free_r_enum_trust_dom(LSA_R_ENUM_TRUST_DOM * r_e)
 }
 
 /*******************************************************************
-reads or writes an LSA_R_QUERY_INFO structure.
-********************************************************************/
-BOOL lsa_io_r_query(char *desc, LSA_R_QUERY_INFO * r_q, prs_struct * ps,
-		    int depth)
-{
-	if (r_q == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "lsa_io_r_query");
-	depth++;
-
-	prs_uint32("undoc_buffer", ps, depth, &(r_q->undoc_buffer));
-
-	if (r_q->undoc_buffer != 0)
-	{
-		prs_uint16("info_class", ps, depth, &(r_q->info_class));
-		prs_align(ps);
-
-		switch (r_q->info_class)
-		{
-			case 2:
-			{
-				lsa_io_dom_query_2("", &(r_q->dom.id2), ps,
-						   depth);
-				break;
-			}
-			case 3:
-			{
-				lsa_io_dom_query_3("", &(r_q->dom.id3), ps,
-						   depth);
-				break;
-			}
-			case 5:
-			{
-				lsa_io_dom_query_5("", &(r_q->dom.id3), ps,
-						   depth);
-				break;
-			}
-			default:
-			{
-				/* PANIC! */
-				break;
-			}
-		}
-	}
-
-	prs_uint32("status", ps, depth, &(r_q->status));
-
-	return True;
-}
-
-/*******************************************************************
 makes a LSA_SID_ENUM structure.
 ********************************************************************/
 BOOL make_lsa_sid_enum(LSA_SID_ENUM * sen, uint32 num_entries, DOM_SID **sids)
@@ -1555,8 +1503,8 @@ static BOOL lsa_io_dom_query(char *desc,  DOM_QUERY *d_q, prs_struct *ps, int de
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL lsa_io_dom_query_2(char *desc, DOM_QUERY_2 *d_q,
-			prs_struct *ps, int depth)
+static BOOL lsa_io_dom_query_2(char *desc, DOM_QUERY_2 *d_q,
+			       prs_struct *ps, int depth)
 {
 	uint32 ptr = 1;
 
@@ -1592,7 +1540,7 @@ BOOL lsa_io_dom_query_2(char *desc, DOM_QUERY_2 *d_q,
 /*******************************************************************
 reads or writes a dom query structure.
 ********************************************************************/
-BOOL lsa_io_dom_query_3(char *desc,  DOM_QUERY_3 *d_q, prs_struct *ps, int depth)
+static BOOL lsa_io_dom_query_3(char *desc,  DOM_QUERY_3 *d_q, prs_struct *ps, int depth)
 {
 	lsa_io_dom_query("", d_q, ps, depth);
 
@@ -1602,9 +1550,61 @@ BOOL lsa_io_dom_query_3(char *desc,  DOM_QUERY_3 *d_q, prs_struct *ps, int depth
 /*******************************************************************
 reads or writes a dom query structure.
 ********************************************************************/
-BOOL lsa_io_dom_query_5(char *desc,  DOM_QUERY_3 *d_q, prs_struct *ps, int depth)
+static BOOL lsa_io_dom_query_5(char *desc,  DOM_QUERY_3 *d_q, prs_struct *ps, int depth)
 {
 	lsa_io_dom_query("", d_q, ps, depth);
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes an LSA_R_QUERY_INFO structure.
+********************************************************************/
+BOOL lsa_io_r_query(char *desc, LSA_R_QUERY_INFO * r_q,
+		    prs_struct *ps, int depth)
+{
+	if (r_q == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "lsa_io_r_query");
+	depth++;
+
+	prs_uint32("undoc_buffer", ps, depth, &(r_q->undoc_buffer));
+
+	if (r_q->undoc_buffer != 0)
+	{
+		prs_uint16("info_class", ps, depth, &(r_q->info_class));
+		prs_align(ps);
+
+		switch (r_q->info_class)
+		{
+			case 2:
+			{
+				lsa_io_dom_query_2("", &(r_q->dom.id2), ps,
+						   depth);
+				break;
+			}
+			case 3:
+			{
+				lsa_io_dom_query_3("", &(r_q->dom.id3), ps,
+						   depth);
+				break;
+			}
+			case 5:
+			{
+				lsa_io_dom_query_5("", &(r_q->dom.id3), ps,
+						   depth);
+				break;
+			}
+			default:
+			{
+				/* PANIC! */
+				break;
+			}
+		}
+	}
+
+	prs_uint32("status", ps, depth, &(r_q->status));
 
 	return True;
 }

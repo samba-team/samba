@@ -146,7 +146,7 @@ BOOL msrpc_receive(int fd, prs_struct * ps)
 /****************************************************************************
 open the msrpcent sockets
 ****************************************************************************/
-BOOL ncalrpc_l_connect(struct msrpc_local *msrpc, const char *pipe_name)
+static BOOL ncalrpc_l_connect(struct msrpc_local *msrpc, const char *pipe_name)
 {
 	fstring path;
 	fstring pname;
@@ -170,7 +170,7 @@ BOOL ncalrpc_l_connect(struct msrpc_local *msrpc, const char *pipe_name)
 /****************************************************************************
 close the socket descriptor
 ****************************************************************************/
-void ncalrpc_l_close_socket(struct msrpc_local *msrpc)
+static void ncalrpc_l_close_socket(struct msrpc_local *msrpc)
 {
 	if (msrpc->fd != -1)
 	{
@@ -183,7 +183,7 @@ void ncalrpc_l_close_socket(struct msrpc_local *msrpc)
 /****************************************************************************
 set socket options on a open connection
 ****************************************************************************/
-void ncalrpc_l_sockopt(struct msrpc_local *msrpc, char *options)
+static void ncalrpc_l_sockopt(struct msrpc_local *msrpc, char *options)
 {
 	set_socket_options(msrpc->fd, options);
 }
@@ -229,8 +229,8 @@ static BOOL ncalrpc_l_authenticate(struct msrpc_local *msrpc)
 	return len == sizeof(status) && status == 0x0;
 }
 
-BOOL ncalrpc_l_connect_auth(struct msrpc_local *msrpc,
-			    const vuser_key * key, const char *pipename)
+static BOOL ncalrpc_l_connect_auth(struct msrpc_local *msrpc,
+				   const vuser_key * key, const char *pipename)
 {
 	ZERO_STRUCTP(msrpc);
 	if (!ncalrpc_l_initialise(msrpc, key))
