@@ -1,7 +1,7 @@
 #include "bsd_locl.h"
 
 #ifndef HAVE_STRDUP
-static char *
+char *
 strdup(const char *old)
 {
 	char *t = malloc(strlen(old)+1);
