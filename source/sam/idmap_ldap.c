@@ -507,9 +507,6 @@ static NTSTATUS ldap_get_sid_from_id(DOM_SID *sid, unid_t id, int id_type)
 		LDAP_OBJ_IDMAP_ENTRY, type,  
 		((id_type & ID_USERID) ? (unsigned long)id.uid : (unsigned long)id.gid));
 		
-
-	DEBUG(5,("ldap_get_sid_from_id: Searching \"%s\"\n", filter ));
-		 
 	attr_list = get_attr_list( sidmap_attr_list );
 	rc = smbldap_search(ldap_state.smbldap_state, suffix, LDAP_SCOPE_SUBTREE, 
 		filter, attr_list, 0, &result);
@@ -579,8 +576,6 @@ static NTSTATUS ldap_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID *si
 		type = get_attr_key2string( sidmap_attr_list, LDAP_ATTR_GIDNUMBER );
 	else 
 		type = get_attr_key2string( sidmap_attr_list, LDAP_ATTR_UIDNUMBER );
-
-	DEBUG(10,("ldap_get_id_from_sid: Searching for \"%s\"\n", filter));
 
 	/* do the search and check for errors */
 
