@@ -1,3 +1,9 @@
+Sun Jul 13 00:32:16 1997  Assar Westerlund  <assar@sics.se>
+
+	* appl/telnet, appl/rsh: Conditionalize the krb4-support.
+
+	* configure.in: Test for krb4
+
 Sat Jul 12 17:14:12 1997  Assar Westerlund  <assar@sics.se>
 
 	* kdc/kerberos5.c: check if the pre-auth was decrypted properly.
