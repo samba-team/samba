@@ -78,7 +78,7 @@ PyObject *from_struct(void *s, struct pyconv *conv)
 
 /* Convert a Python dict to a structure */
 
-void to_struct(void *s, PyObject *dict, struct pyconv *conv)
+BOOL to_struct(void *s, PyObject *dict, struct pyconv *conv)
 {
 	int i;
 
@@ -86,6 +86,9 @@ void to_struct(void *s, PyObject *dict, struct pyconv *conv)
 		PyObject *obj;
 		
 		obj = PyDict_GetItemString(dict, conv[i].name);
+
+		if (!obj)
+			return False;
 		
 		switch (conv[i].type) {
 		case PY_UNISTR: {
@@ -123,4 +126,6 @@ void to_struct(void *s, PyObject *dict, struct pyconv *conv)
 			break;
 		}
 	}
+
+	return True;
 }
