@@ -72,6 +72,10 @@ sub ValidElement($)
 		fatal(el_name($e) . " : length_is() on non-array element");
 	}
 
+	if (defined (util::has_property($e, "subcontext_size")) and not defined(util::has_property($e, "subcontext"))) {
+		fatal(el_name($e) . " : subcontext_size() on non-subcontext element");
+	}
+
 	if (!$e->{POINTERS} && (
 		util::has_property($e, "ptr") or
 		util::has_property($e, "unique") or
