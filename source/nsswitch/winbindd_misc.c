@@ -23,10 +23,71 @@
 
 #include "winbindd.h"
 
+/************************************************************************
+form a key for fetching a domain trust password
+************************************************************************/
+static char *trust_keystr(char *domain)
+{
+	static fstring keystr;
+	slprintf(keystr,sizeof(keystr),"%s/%s", SECRETS_MACHINE_ACCT_PASS, domain);
+	return keystr;
+}
+
+/************************************************************************
+ Routine to get the trust account password for a domain.
+************************************************************************/
+static BOOL _get_trust_account_password(char *domain, unsigned char *ret_pwd, 
+                                        time_t *pass_last_set_time)
+{
+	struct machine_acct_pass *pass;
+	size_t size;
+
+	if (!(pass = secrets_fetch(trust_keystr(domain), &size)) ||
+	    size != sizeof(*pass)) return False;
+
+	if (pass_last_set_time) *pass_last_set_time = pass->mod_time;
+	memcpy(ret_pwd, pass->hash, 16);
+	free(pass);
+	return True;
+}
+
 enum winbindd_result winbindd_check_machine_acct(struct winbindd_cli_state
 						 *state)
 {
-	return WINBINDD_ERROR;
+	uchar trust_passwd[16], ntpw[16], lmpw[16];
+	extern pstring global_myname;
+	NET_USER_INFO_3 info3;
+	fstring server;
+	uint32 status;
+
+	/* Get trust account password */
+
+	if (!_get_trust_account_password(lp_workgroup(), trust_passwd,
+					 NULL)) {
+		return WINBINDD_ERROR;
+	}
+
+	/* Check password of non-existent user */
+
+	nt_lm_owf_gen("__dummy__", ntpw, lmpw);
+	
+	slprintf(server, sizeof(server), "\\\\%s", server_state.controller);
+
+	ZERO_STRUCT(info3);
+
+	status = domain_client_validate_backend(server, 
+					        "__dummy__", lp_workgroup(),
+						global_myname, SEC_CHAN_WKSTA,
+						trust_passwd,
+						NULL,
+						lmpw, sizeof(lmpw),
+						ntpw, sizeof(ntpw), &info3);
+
+	/* Secret is good if status code is NT_STATUS_NO_SUCH_USER */
+
+	state->response.data.num_entries = (status == NT_STATUS_NO_SUCH_USER);
+
+	return WINBINDD_OK;
 }
 
 enum winbindd_result winbindd_list_trusted_domains(struct winbindd_cli_state

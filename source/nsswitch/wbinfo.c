@@ -64,6 +64,25 @@ static BOOL wbinfo_list_domains(void)
 
 static BOOL wbinfo_check_secret(void)
 {
+	struct winbindd_response response;
+	BOOL result;
+
+	ZERO_STRUCT(response);
+
+	result = winbindd_request(WINBINDD_CHECK_MACHACC, NULL, &response) ==
+		NSS_STATUS_SUCCESS;
+
+	if (result) {
+
+		if (response.data.num_entries) {
+			printf("Secret is good\n");
+		} else {
+			printf("Secret is bad\n");
+		}
+
+		return True;
+	}
+
 	return False;
 }
 
