@@ -546,7 +546,7 @@ static BOOL process(char *base_directory)
 
       /* display a prompt */
       DEBUG(0,("smb: %s> ", CNV_LANG(cur_dir)));
-      fflush(dbf);
+      dbgflush();
 
       wait_keyboard(InBuffer);
   
