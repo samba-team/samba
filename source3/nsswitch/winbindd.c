@@ -329,6 +329,7 @@ static struct dispatch_table dispatch_table[] = {
 	/* Miscellaneous */
 
 	{ WINBINDD_CHECK_MACHACC, winbindd_check_machine_acct, "CHECK_MACHACC" },
+	{ WINBINDD_PING, winbindd_ping, "PING" },
 
 	/* End of list */
 
