@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 200 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -104,7 +104,9 @@ emem_seek(krb5_storage *sp, off_t offset, int whence)
 static void
 emem_free(krb5_storage *sp)
 {
-    free(((emem_storage*)sp->data)->base);
+    emem_storage *s = sp->data;
+    memset(s->base, 0, s->len);
+    free(s->base);
 }
 
 krb5_storage *
