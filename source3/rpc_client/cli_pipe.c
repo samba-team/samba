@@ -973,7 +973,7 @@ static BOOL rpc_pipe_bind(struct cli_state *cli, uint16 fnum,
 			                     rpc_call_id,
 			                     &hdra, &hdr_autha, &auth_resp);
 			                    
-			pwd_get_lm_nt_owf(&cli->pwd, lm_owf, NULL, NULL);
+			pwd_get_lm_nt_owf(&cli->pwd, lm_owf, NULL, NULL, NULL);
 			pwd_get_lm_nt_16(&cli->pwd, lm_hash, NULL);
 			NTLMSSPOWFencrypt(lm_hash, lm_owf, p24);
 			{

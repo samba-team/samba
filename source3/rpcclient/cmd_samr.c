@@ -1891,6 +1891,9 @@ void cmd_sam_set_userinfo(struct client_info *info)
 		{
 			encode_pw_buffer(pwbuf, password,
 			               strlen(password), True);
+#ifdef DEBUG_PASSWORD
+			dump_data(100, smb_cli->sess_key, 16);
+#endif
 			SamOEMhash(pwbuf, smb_cli->sess_key, 1);
 		}
 
