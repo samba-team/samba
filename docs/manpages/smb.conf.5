@@ -86,7 +86,7 @@ write access to the path \f(CW/home/bar\fP\&. The share is accessed via
 the share name "foo":
 .PP 
 
-.DS 
+.nf 
  
 
 
@@ -95,7 +95,7 @@ the share name "foo":
  		writeable = true
 
 
-.DE 
+.fi 
  
 
 .PP 
@@ -106,7 +106,7 @@ is via calls to open, write to and close a spool file\&. The
 as the default guest user (specified elsewhere):
 .PP 
 
-.DS 
+.nf 
  
 
  	[aprinter]
@@ -115,7 +115,7 @@ as the default guest user (specified elsewhere):
  		printable = true
  		guest ok = true
 
-.DE 
+.fi 
  
 
 .PP 
@@ -175,13 +175,13 @@ section can specify, though some make more sense than others\&. The
 following is a typical and suitable [homes] section:
 .IP 
 
-.DS 
+.nf 
  
 
  	[homes]
  		writeable = yes
 
-.DE 
+.fi 
  
 
 .IP 
@@ -237,7 +237,7 @@ directory with the sticky bit set on it\&. A typical \fB[printers]\fP entry
 would look like this:
 .IP 
 
-.DS 
+.nf 
  
 
  	[printers]
@@ -245,7 +245,7 @@ would look like this:
  		guest ok = yes
  		printable = yes 
 
-.DE 
+.fi 
  
 
 .IP 
@@ -256,10 +256,10 @@ pseudo-printcap\&. This is a file consisting of one or more lines like
 this:
 .IP 
 
-.DS 
+.nf 
  
         alias|alias|alias|alias\&.\&.\&.    
-.DE 
+.fi 
  
 
 .IP 
@@ -377,7 +377,7 @@ negotiation\&. It can be one of CORE, COREPLUS, LANMAN1, LANMAN2 or NT1\&.
 machine\&. Only some are recognized, and those may not be 100%
 reliable\&. It currently recognizes Samba, WfWg, WinNT and
 Win95\&. Anything else will be known as "UNKNOWN"\&. If it gets it wrong
-then sending a level 3 log to \fIsamba@samba\&.org\fP
+then sending a level 3 log to samba@samba\&.org
 should allow it to be fixed\&.
 .IP 
 .IP o 
@@ -1993,7 +1993,7 @@ interesting things\&.
 .IP 
 \fBExample:\fP
 
-.DS 
+.nf 
  
 
 	default service = pub
@@ -2001,7 +2001,7 @@ interesting things\&.
 	[pub]
 		path = /%S
 
-.DE 
+.fi 
  
 
 .IP 
@@ -2138,26 +2138,26 @@ and remaining space will be used\&.\fP
 Where the script dfree (which must be made executable) could be:
 .IP 
 
-.DS 
+.nf 
  
 
 	#!/bin/sh
 	df $1 | tail -1 | awk \'{print $2" "$4}\'
 
-.DE 
+.fi 
  
 
 .IP 
 or perhaps (on Sys V based systems):
 .IP 
 
-.DS 
+.nf 
  
 
 	#!/bin/sh
 	/usr/bin/df -k $1 | tail -1 | awk \'{print $3" "$5}\'
 
-.DE 
+.fi 
  
 
 .IP 
@@ -2267,7 +2267,7 @@ Samba NT Domain Controller Code\&. It may be removed in a later release\&.
 To work with the latest code builds that may have more support for
 Samba NT Domain Controller functionality please subscribe to the
 mailing list \fBSamba-ntdom\fP available by sending email to
-\fIlistproc@samba\&.org\fP
+listproc@samba\&.org
 .IP 
 .IP "\fBdomain admin users (G)\fP" 
 .IP 
@@ -2276,7 +2276,7 @@ Samba NT Domain Controller Code\&. It may be removed in a later release\&.
 To work with the latest code builds that may have more support for
 Samba NT Domain Controller functionality please subscribe to the
 mailing list \fBSamba-ntdom\fP available by sending email to
-\fIlistproc@samba\&.org\fP
+listproc@samba\&.org
 .IP 
 .IP "\fBdomain groups (G)\fP" 
 .IP 
@@ -2285,7 +2285,7 @@ Samba NT Domain Controller Code\&. It may be removed in a later release\&.
 To work with the latest code builds that may have more support for
 Samba NT Domain Controller functionality please subscribe to the
 mailing list \fBSamba-ntdom\fP available by sending email to
-\fIlistproc@samba\&.org\fP
+listproc@samba\&.org
 .IP 
 .IP "\fBdomain guest group (G)\fP" 
 .IP 
@@ -2294,7 +2294,7 @@ Samba NT Domain Controller Code\&. It may be removed in a later release\&.
 To work with the latest code builds that may have more support for
 Samba NT Domain Controller functionality please subscribe to the
 mailing list \fBSamba-ntdom\fP available by sending email to
-\fIlistproc@samba\&.org\fP
+listproc@samba\&.org
 .IP 
 .IP "\fBdomain guest users (G)\fP" 
 .IP 
@@ -2303,7 +2303,7 @@ Samba NT Domain Controller Code\&. It may be removed in a later release\&.
 To work with the latest code builds that may have more support for
 Samba NT Domain Controller functionality please subscribe to the
 mailing list \fBSamba-ntdom\fP available by sending email to
-\fIlistproc@samba\&.org\fP
+listproc@samba\&.org
 .IP 
 .IP "\fBdomain logons (G)\fP" 
 .IP 
@@ -2796,13 +2796,13 @@ files"\fP and \fB"case sensitive"\fP\&.
 .IP 
 \fBDefault\fP
 
-.DS 
+.nf 
  
 
 	No files or directories are hidden by this option (dot files are
 	hidden by default because of the "hide dot files" option)\&.
 
-.DE 
+.fi 
  
 
 .IP 
@@ -4480,20 +4480,20 @@ debug"\fP\&.
 .IP 
 \fBExample:\fP 
 
-.DS 
+.nf 
  
  passwd chat = "*Enter OLD password*" %o\en "*Enter NEW password*" %n\en "*Reenter NEW password*" %n\en "*Password changed*"
 
-.DE 
+.fi 
  
 
 .IP 
 \fBDefault:\fP
 
-.DS 
+.nf 
  
        passwd chat = *old*password* %o\en *new*password* %n\en *new*password* %n\en *changed*
-.DE 
+.fi 
  
 
 .IP 
@@ -4745,12 +4745,12 @@ An interesting example is to send the users a welcome message every
 time they log in\&. Maybe a message of the day? Here is an example:
 .IP 
 
-.DS 
+.nf 
  
 
 	preexec = csh -c \'echo \e"Welcome to %S!\e" | /usr/local/samba/bin/smbclient -M %m -I %I\' &
 
-.DE 
+.fi 
  
 
 .IP 
@@ -4923,7 +4923,7 @@ to obtain a printer list\&.
 A minimal printcap file would look something like this:
 .IP 
 
-.DS 
+.nf 
  
 
 	print1|My Printer 1
@@ -4932,7 +4932,7 @@ A minimal printcap file would look something like this:
 	print4|My Printer 4
 	print5|My Printer 5
 
-.DE 
+.fi 
  
 
 .IP 
@@ -5807,7 +5807,7 @@ You may find that on some systems Samba will say "Unknown socket
 option" when you supply an option\&. This means you either incorrectly 
 typed it or you need to add an include file to includes\&.h for your OS\&. 
 If the latter is the case please send the patch to
-\fIsamba@samba\&.org\fP\&.
+samba@samba\&.org\&.
 .IP 
 Any of the supported socket options may be combined in any way you
 like, as long as your OS allows it\&.
@@ -6474,13 +6474,13 @@ information on how this parameter determines access to the services\&.
 .IP 
 \fBExamples:\fP
 
-.DS 
+.nf 
  
 
  	username = fred
  	username = fred, mary, jack, jane, @users, @pcgroup
 
-.DE 
+.fi 
  
 
 .IP 
@@ -6564,13 +6564,13 @@ and map the rest to guest\&. Note the use of the \f(CW\'!\'\fP to tell Samba
 to stop processing if it gets a match on that line\&.
 .IP 
 
-.DS 
+.nf 
  
 
 	!sys = mary fred
 	guest = *
 
-.DE 
+.fi 
  
 
 .IP 
@@ -6686,14 +6686,14 @@ is a pointless thing to do as it\'s already there) you could do one of
 the following
 .IP 
 
-.DS 
+.nf 
  
 
 	valid chars = Z
 	valid chars = z:Z
 	valid chars = 0132:0172
 
-.DE 
+.fi 
  
 
 .IP 
@@ -6710,13 +6710,13 @@ See also the \fB"client code page"\fP parameter\&.
 .IP 
 \fBDefault:\fP
 
-.DS 
+.nf 
  
 
 	Samba defaults to using a reasonable set of valid characters
 	for English systems
 
-.DE 
+.fi 
  
 
 .IP 
@@ -6728,7 +6728,7 @@ them\&.
 .IP 
 NOTE: It is actually quite difficult to correctly produce a \fB"valid
 chars"\fP line for a particular system\&. To automate the process
-\fItino@augsburg\&.net\fP has written a package called \fB"validchars"\fP
+tino@augsburg\&.net has written a package called \fB"validchars"\fP
 which will automatically produce a complete \fB"valid chars"\fP line for
 a given client system\&. Look in the examples/validchars/ subdirectory
 of your Samba source code distribution for this package\&.
@@ -6792,7 +6792,7 @@ sensitive"\fP\&.
 Example 1\&.
 .IP 
 
-.DS 
+.nf 
  
 
 
@@ -6802,14 +6802,14 @@ Example 1\&.
 
 	veto files = /*Security*/*\&.tmp/*root*/
 
-.DE 
+.fi 
  
 
 .IP 
 Example 2\&.
 .IP 
 
-.DS 
+.nf 
  
 
     Veto the Apple specific files that a NetAtalk server
@@ -6817,7 +6817,7 @@ Example 2\&.
 
     veto files = /\&.AppleDouble/\&.bin/\&.AppleDesktop/Network Trash Folder/
 
-.DE 
+.fi 
  
 
 .IP 
@@ -7037,14 +7037,14 @@ permitting), but only via spooling operations\&.
 .IP 
 \fBExamples:\fP
 
-.DS 
+.nf 
  
 
  	read only = no
  	writeable = yes
  	write ok = yes
 
-.DE 
+.fi 
  
 
 .IP 
@@ -7083,7 +7083,7 @@ This man page is correct for version 2\&.0 of the Samba suite\&.
 .SH "AUTHOR" 
 .PP 
 The original Samba software and related utilities were created by
-Andrew Tridgell \fIsamba@samba\&.org\fP\&. Samba is now developed
+Andrew Tridgell samba@samba\&.org\&. Samba is now developed
 by the Samba Team as an Open Source project similar to the way the
 Linux kernel is developed\&.
 .PP 
@@ -7092,7 +7092,7 @@ sources were converted to YODL format (another excellent piece of Open
 Source software, available at
 \fBftp://ftp\&.icce\&.rug\&.nl/pub/unix/\fP)
 and updated for the Samba2\&.0 release by Jeremy Allison\&.
-\fIsamba@samba\&.org\fP\&.
+samba@samba\&.org\&.
 .PP 
 See \fBsamba (7)\fP to find out how to get a full
 list of contributors and details on how to submit bug reports,
