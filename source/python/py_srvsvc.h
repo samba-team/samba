@@ -23,4 +23,8 @@
 
 #include "python/py_common.h"
 
+/* The following definitions come from python/py_srvsv.c */
+
+BOOL py_from_SRV_INFO_101(PyObject **dict, SRV_INFO_101 *info);
+
 #endif /* _PY_SRVSVC_H */
