@@ -1,3 +1,8 @@
+Tue Mar 24 00:40:33 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* lib/krb5/keytab.c: MIT compatible changes: add and use sizes to
+ 	keytab entries, and change default keytab to `/etc/krb5.keytab'.
+
 Mon Mar 23 23:43:59 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 	* lib/gssapi/wrap.c: Use `gss_krb5_getsomekey'.
