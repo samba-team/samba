@@ -245,8 +245,8 @@ struct cli_state *cli_initialise(struct cli_state *cli)
 	cli->timeout = 20000; /* Timeout is in milliseconds. */
 	cli->bufsize = CLI_BUFFER_SIZE+4;
 	cli->max_xmit = cli->bufsize;
-	cli->outbuf = (char *)malloc(cli->bufsize);
-	cli->inbuf = (char *)malloc(cli->bufsize);
+	cli->outbuf = (char *)malloc(cli->bufsize+SAFETY_MARGIN);
+	cli->inbuf = (char *)malloc(cli->bufsize+SAFETY_MARGIN);
 	cli->oplock_handler = cli_oplock_ack;
 
 	cli->use_spnego = lp_client_use_spnego();
