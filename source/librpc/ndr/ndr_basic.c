@@ -144,11 +144,10 @@ NTSTATUS ndr_pull_unique_ptr(struct ndr_pull *ndr, uint32_t *v)
 */
 NTSTATUS ndr_pull_ref_ptr(struct ndr_pull *ndr, uint32_t *v)
 {
-	NTSTATUS status;
 	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, v));
 	/* ref pointers always point to data */
 	*v = 1;
-	return status;
+	return NT_STATUS_OK;
 }
 
 /*
