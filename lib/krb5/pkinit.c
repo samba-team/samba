@@ -707,7 +707,7 @@ pk_mk_padata(krb5_context context,
     } else if (compat & COMPAT_19) {
 	PA_PK_AS_REQ_19 req_19;
 
-	pa_type = KRB5_PADATA_PK_AS_REQ;
+	pa_type = KRB5_PADATA_PK_AS_REQ_19;
 
 	memset(&req_19, 0, sizeof(req_19));
 
