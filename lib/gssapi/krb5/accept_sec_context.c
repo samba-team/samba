@@ -83,9 +83,11 @@ OM_uint32 gss_accept_sec_context
   gssapi_krb5_init ();
 
   if (*context_handle == GSS_C_NO_CONTEXT) {
-    *context_handle = malloc(sizeof(**context_handle));
-    if (*context_handle == GSS_C_NO_CONTEXT)
-      return GSS_S_FAILURE;
+      *context_handle = malloc(sizeof(**context_handle));
+    if (*context_handle == GSS_C_NO_CONTEXT) {
+	*minor_status = ENOMEM;
+	return GSS_S_FAILURE;
+    }
   }
 
   (*context_handle)->auth_context =  NULL;
@@ -116,8 +118,10 @@ OM_uint32 gss_accept_sec_context
   ret = gssapi_krb5_decapsulate (input_token_buffer,
 				 &indata,
 				 "\x01\x00");
-  if (ret)
-    goto failure;
+  if (ret) {
+      kret = 0;
+      goto failure;
+  }
 
   if (acceptor_cred_handle == GSS_C_NO_CREDENTIAL) {
       if (gss_keytab != NULL) {
@@ -204,8 +208,10 @@ OM_uint32 gss_accept_sec_context
     ret = gssapi_krb5_encapsulate (&outbuf,
 				   output_token,
 				   "\x02\x00");
-    if (ret)
+    if (ret) {
+	kret = 0;
       goto failure;
+    }
   } else {
     output_token->length = 0;
   }
@@ -223,5 +229,6 @@ failure:
 			 (*context_handle)->target);
   free (*context_handle);
   *context_handle = GSS_C_NO_CONTEXT;
+  *minor_status = kret;
   return GSS_S_FAILURE;
 }
