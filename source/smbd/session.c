@@ -32,9 +32,8 @@ extern fstring remote_machine;
 
 static TDB_CONTEXT *tdb;
 /* called when a session is created */
-BOOL session_claim(uint16 vuid)
+BOOL session_claim(user_struct *vuser)
 {
-	user_struct *vuser = get_valid_user_struct(vuid);
 	int i;
 	TDB_DATA data;
 	struct sessionid sessionid;
@@ -47,7 +46,7 @@ BOOL session_claim(uint16 vuid)
 
 	/* don't register sessions for the guest user - its just too
 	   expensive to go through pam session code for browsing etc */
-	if (strequal(vuser->user.unix_name,lp_guestaccount(-1))) {
+	if (vuser->guest) {
 		return True;
 	}
 
@@ -119,9 +118,8 @@ BOOL session_claim(uint16 vuid)
 }
 
 /* called when a session is destroyed */
-void session_yield(uint16 vuid)
+void session_yield(user_struct *vuser)
 {
-	user_struct *vuser = get_valid_user_struct(vuid);
 	TDB_DATA dbuf;
 	struct sessionid sessionid;
 	TDB_DATA key;		

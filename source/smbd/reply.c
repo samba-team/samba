@@ -35,10 +35,8 @@ extern char magic_char;
 extern BOOL case_sensitive;
 extern BOOL case_preserve;
 extern BOOL short_case_preserve;
-extern userdom_struct current_user_info;
 extern pstring global_myname;
 extern int global_oplock_break;
-uint32 global_client_caps = 0;
 unsigned int smb_echo_count = 0;
 
 extern fstring remote_machine;

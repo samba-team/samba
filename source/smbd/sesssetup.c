@@ -22,6 +22,8 @@
 
 #include "includes.h"
 
+uint32 global_client_caps = 0;
+
 #if HAVE_KRB5
 /****************************************************************************
 reply to a session setup spnego negotiate packet for kerberos
@@ -339,7 +341,7 @@ static int reply_spnego_auth(connection_struct *conn, char *inbuf, char *outbuf,
 		return ERROR_NT(nt_status_squash(nt_status));
 	}
 
-	sess_vuid = register_vuid(server_info, user, False);
+	sess_vuid = register_vuid(server_info, user);
 
 	free_server_info(&server_info);
   
@@ -370,12 +372,18 @@ static int reply_spnego_anonymous(connection_struct *conn, char *inbuf, char *ou
 {
 	int sess_vuid;
 	char *p;
+	auth_usersupplied_info *user_info = NULL;
 	auth_serversupplied_info *server_info = NULL;
+
+	NTSTATUS nt_status;
 
 	DEBUG(3,("Got anonymous request\n"));
 
-	make_server_info_guest(&server_info);
-	sess_vuid = register_vuid(server_info, lp_guestaccount(-1), True);
+	make_user_info_guest(&user_info);
+
+	nt_status = check_password(user_info, &server_info);
+
+	sess_vuid = register_vuid(server_info, lp_guestaccount(-1));
 	free_server_info(&server_info);
   
 	if (sess_vuid == -1) {
@@ -405,7 +413,6 @@ static int reply_sesssetup_and_X_spnego(connection_struct *conn, char *inbuf,cha
 {
 	uint8 *p;
 	DATA_BLOB blob1;
-	extern uint32 global_client_caps;
 	int ret;
 
 	DEBUG(3,("Doing spnego session setup\n"));
@@ -463,14 +470,13 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 	DATA_BLOB nt_resp;
 	DATA_BLOB plaintext_password;
 	pstring user;
+	pstring sub_user; /* Sainitised username for substituion */
 	fstring domain;
 	fstring native_os;
 	fstring native_lanman;
-	BOOL guest=False;
 	static BOOL done_sesssetup = False;
 	extern BOOL global_encrypted_passwords_negotiated;
 	extern BOOL global_spnego_negotiated;
-	extern uint32 global_client_caps;
 	extern int Protocol;
 	extern fstring remote_machine;
 	extern userdom_struct current_user_info;
@@ -478,6 +484,8 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 
 	auth_usersupplied_info *user_info = NULL;
 	auth_serversupplied_info *server_info = NULL;
+
+	NTSTATUS nt_status;
 
 	BOOL doencrypt = global_encrypted_passwords_negotiated;
 
@@ -626,18 +634,20 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 
 	DEBUG(3,("sesssetupX:name=[%s]\\[%s]@[%s]\n", domain, user, remote_machine));
 
-	/* If no username is sent use the guest account */
-	if (!*user) {
-		pstrcpy(user,lp_guestaccount(-1));
-		guest = True;
-	} else {
+	if (*user) {
 		if (global_spnego_negotiated) {
 			DEBUG(0,("reply_sesssetup_and_X:  Rejecting attempt at 'normal' session setup after negotiating spnego.\n"));
 			return ERROR_NT(NT_STATUS_UNSUCCESSFUL);
 		}
 	}
 
-	pstrcpy(current_user_info.smb_name,user);
+	if (*user) {
+		pstrcpy(sub_user, user);
+	} else {
+		pstrcpy(sub_user, lp_guestaccount(-1));
+	}
+
+	pstrcpy(current_user_info.smb_name,sub_user);
 
 	reload_services(True);
 	
@@ -648,9 +658,10 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 		data_blob_free(&nt_resp);
 		data_blob_clear_free(&plaintext_password);
 
-		guest = True;
-		map_username(user);
-		add_session_user(user);
+		map_username(sub_user);
+		add_session_user(sub_user);
+		/* Then force it to null for the benfit of the code below */
+		*user = 0;
 	}
 	
 	if (done_sesssetup && lp_restrict_anonymous()) {
@@ -673,48 +684,43 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 			return ERROR_DOS(ERRDOS,ERRnoaccess);
 		}
 	}
+
+	if (!make_user_info_for_reply(&user_info, 
+				      user, domain, 
+				      lm_resp, nt_resp,
+				      plaintext_password, doencrypt)) {
+		return ERROR_NT(NT_STATUS_NO_MEMORY);
+	}
 	
-	if (!guest) {
-		NTSTATUS nt_status;
-		if (!make_user_info_for_reply(&user_info, 
-					      user, domain, 
-					      lm_resp, nt_resp,
-					      plaintext_password, doencrypt)) {
-			return ERROR_NT(NT_STATUS_NO_MEMORY);
-		}
-		
-		nt_status = check_password(user_info, &server_info); 
-		
-		free_user_info(&user_info);
-		
-		data_blob_free(&lm_resp);
-		data_blob_free(&nt_resp);
-		data_blob_clear_free(&plaintext_password);
-		
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			if NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_SUCH_USER) {
-				if ((lp_map_to_guest() == MAP_TO_GUEST_ON_BAD_USER) || 
-				    (lp_map_to_guest() == MAP_TO_GUEST_ON_BAD_PASSWORD)) {
-					DEBUG(3,("No such user %s [%s] - using guest account\n",user, domain));
-					pstrcpy(user,lp_guestaccount(-1));
-					guest = True;
-					
-				}
-			} else if NT_STATUS_EQUAL(nt_status, NT_STATUS_WRONG_PASSWORD) {
-				if (lp_map_to_guest() == MAP_TO_GUEST_ON_BAD_PASSWORD) {
-					pstrcpy(user,lp_guestaccount(-1));
-					DEBUG(3,("Registered username %s for guest access\n",user));
-					guest = True;
-				}
-				/* Match WinXP and don't give the game away */
-				return ERROR_NT(NT_STATUS_LOGON_FAILURE);
+	nt_status = check_password(user_info, &server_info); 
+	
+	free_user_info(&user_info);
+	
+	data_blob_free(&lm_resp);
+	data_blob_free(&nt_resp);
+	data_blob_clear_free(&plaintext_password);
+	
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		if NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_SUCH_USER) {
+			if ((lp_map_to_guest() == MAP_TO_GUEST_ON_BAD_USER) || 
+			    (lp_map_to_guest() == MAP_TO_GUEST_ON_BAD_PASSWORD)) {
+				
+				DEBUG(3,("No such user %s [%s] - using guest account\n",user, domain));
+				make_server_info_guest(&server_info);
+				nt_status = NT_STATUS_OK;
 			}
-			
-			if (!guest) {
-				free_server_info(&server_info);
-				return ERROR_NT(nt_status_squash(nt_status));
-			}  
+
+		} else if NT_STATUS_EQUAL(nt_status, NT_STATUS_WRONG_PASSWORD) {			
+			if (lp_map_to_guest() == MAP_TO_GUEST_ON_BAD_PASSWORD) {				
+				DEBUG(3,("Registered username %s for guest access\n",user));
+				make_server_info_guest(&server_info);
+				nt_status = NT_STATUS_OK;
+			}
 		}
+	}
+	
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return ERROR_NT(nt_status_squash(nt_status));
 	}
 	
 	/* it's ok - setup a reply */
@@ -731,10 +737,8 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 		/* perhaps grab OS version here?? */
 	}
 	
-	if (guest) {
+	if (server_info->guest) {
 		SSVAL(outbuf,smb_vwv2,1);
-		free_server_info(&server_info);
-		make_server_info_guest(&server_info);
 	} else {
 		const char *home_dir = pdb_get_homedir(server_info->sam_account);
 		const char *username = pdb_get_username(server_info->sam_account);
@@ -747,7 +751,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 	/* register the name and uid as being validated, so further connections
 	   to a uid can get through without a password, on the same VC */
 
-	sess_vuid = register_vuid(server_info, user, guest);
+	sess_vuid = register_vuid(server_info, sub_user);
 
 	free_server_info(&server_info);
   

@@ -597,7 +597,7 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 
 	free_user_info(&user_info);
 	
-	DEBUG(5, ("_net_sam_logon: exiting with status %s\n", 
+	DEBUG(5, ("_net_sam_logon: check_password returned status %s\n", 
 		  get_nt_error_msg(status)));
 
 	/* Check account and password */
@@ -605,6 +605,13 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 	if (NT_STATUS_IS_ERR(status)) {
 		free_server_info(&server_info);
 		return status;
+	}
+
+	if (server_info->guest) {
+		/* We don't like guest domain logons... */
+		DEBUG(5,("_net_sam_logon: Attempted domain logon as GUEST denied.\n"));
+		free_server_info(&server_info);
+		return NT_STATUS_LOGON_FAILURE;
 	}
 
 	/* This is the point at which, if the login was successful, that
