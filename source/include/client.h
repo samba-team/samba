@@ -110,8 +110,8 @@ struct cli_state {
 	int readbraw_supported;
 	int writebraw_supported;
 	int timeout; /* in milliseconds. */
-	int max_xmit;
-	int max_mux;
+	size_t max_xmit;
+	size_t max_mux;
 	char *outbuf;
 	char *inbuf;
 	unsigned int bufsize;
