@@ -715,6 +715,7 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 {
 	struct winbind_cache *cache = get_cache(domain);
 
+	/* we don't cache this call */
 	return cache->backend->trusted_domains(domain, mem_ctx, num_domains, 
 					       names, dom_sids);
 }
@@ -724,6 +725,7 @@ static NTSTATUS domain_sid(struct winbindd_domain *domain, DOM_SID *sid)
 {
 	struct winbind_cache *cache = get_cache(domain);
 
+	/* we don't cache this call */
 	return cache->backend->domain_sid(domain, sid);
 }
 
