@@ -281,7 +281,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 
 	/* shall we let them in? */
 	if (!authorise_login(snum,user,password,pwlen,&guest,&force,vuid)) {
-		DEBUG( 2, ( "Invalid username/password for %s\n", service ) );
+		DEBUG( 2, ( "Invalid username/password for %s [%s]\n", service, user ) );
 		*ecode = ERRbadpw;
 		return NULL;
 	}

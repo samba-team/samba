@@ -1273,11 +1273,52 @@ typedef struct spool_printer_driver_info_level_3
 }
 SPOOL_PRINTER_DRIVER_INFO_LEVEL_3;
 
+/* SPOOL_PRINTER_DRIVER_INFO_LEVEL_6 structure */
+typedef struct {
+	uint32	dummy1;
+	uint32	version;
+	uint32 name_ptr;
+	uint32 environment_ptr;
+	uint32 driverpath_ptr;
+	uint32 datafile_ptr;
+	uint32 configfile_ptr;
+	uint32 helpfile_ptr;
+	uint32 monitorname_ptr;
+	uint32 defaultdatatype_ptr;
+	uint32 dependentfiles_len;
+	uint32 dependentfiles_ptr;
+	uint32 previousnames_len;
+	uint32 previousnames_ptr;
+	NTTIME	driverdate;
+	UINT64_S	driverversion;
+	uint32	dummy4;
+	uint32 mfgname_ptr;
+	uint32 oemurl_ptr;
+	uint32 hardwareid_ptr;
+	uint32 provider_ptr;
+	UNISTR2	name;
+	UNISTR2	environment;
+	UNISTR2	driverpath;
+	UNISTR2	datafile;
+	UNISTR2	configfile;
+	UNISTR2	helpfile;
+	UNISTR2	monitorname;
+	UNISTR2	defaultdatatype;
+	BUFFER5	dependentfiles;
+	BUFFER5	previousnames;
+	UNISTR2	mfgname;
+	UNISTR2	oemurl;
+	UNISTR2	hardwareid;
+	UNISTR2	provider;
+} SPOOL_PRINTER_DRIVER_INFO_LEVEL_6;
+
+
 typedef struct spool_printer_driver_info_level
 {
 	uint32 level;
 	uint32 ptr;
 	SPOOL_PRINTER_DRIVER_INFO_LEVEL_3 *info_3;
+	SPOOL_PRINTER_DRIVER_INFO_LEVEL_6 *info_6;
 }
 SPOOL_PRINTER_DRIVER_INFO_LEVEL;
 

@@ -571,7 +571,11 @@ static BOOL convert_printer_driver_info(const SPOOL_PRINTER_DRIVER_INFO_LEVEL *u
 	switch (level) {
 		case 3: 
 			printer->info_3=NULL;
-			uni_2_asc_printer_driver_3(uni->info_3, &(printer->info_3));						
+			uni_2_asc_printer_driver_3(uni->info_3, &(printer->info_3));
+			break;
+		case 6: 
+			printer->info_6=NULL;
+			uni_2_asc_printer_driver_6(uni->info_6, &(printer->info_6));
 			break;
 		default:
 			break;
@@ -2378,6 +2382,9 @@ static void construct_printer_driver_info_1(DRIVER_INFO_1 *info, int snum,
 	NT_PRINTER_INFO_LEVEL printer;
 	NT_PRINTER_DRIVER_INFO_LEVEL driver;
 
+	ZERO_STRUCT(driver);
+	ZERO_STRUCT(printer);
+
 	get_a_printer(&printer, 2, lp_servicename(snum) );
 	get_a_printer_driver(&driver, 3, printer.info_2->drivername, architecture);	
 	
@@ -2431,7 +2438,10 @@ static void construct_printer_driver_info_2(DRIVER_INFO_2 *info, int snum, fstri
 {
 	NT_PRINTER_INFO_LEVEL printer;
 	NT_PRINTER_DRIVER_INFO_LEVEL driver;
-	
+
+	ZERO_STRUCT(printer);
+	ZERO_STRUCT(driver);
+
 	get_a_printer(&printer, 2, lp_servicename(snum) );
 	get_a_printer_driver(&driver, 3, printer.info_2->drivername, architecture);	
 
@@ -2525,7 +2535,10 @@ static void construct_printer_driver_info_3(DRIVER_INFO_3 *info, int snum,
 {	
 	NT_PRINTER_INFO_LEVEL printer;
 	NT_PRINTER_DRIVER_INFO_LEVEL driver;
-	
+
+	ZERO_STRUCT(printer);
+	ZERO_STRUCT(driver);
+
 	get_a_printer(&printer, 2, lp_servicename(snum) );	
 	get_a_printer_driver(&driver, 3, printer.info_2->drivername, architecture);	
 
@@ -3245,6 +3258,8 @@ static uint32 enumprinterdrivers_level1(fstring *list, fstring servername, fstri
 	NT_PRINTER_DRIVER_INFO_LEVEL driver;
 	DRIVER_INFO_1 *driver_info_1=NULL;
 
+	ZERO_STRUCT(driver);
+
 	if((driver_info_1=(DRIVER_INFO_1 *)malloc(*returned * sizeof(DRIVER_INFO_1))) == NULL)
 		return ERROR_NOT_ENOUGH_MEMORY;
 
@@ -3291,6 +3306,8 @@ static uint32 enumprinterdrivers_level2(fstring *list, fstring servername, fstri
 	int i;
 	NT_PRINTER_DRIVER_INFO_LEVEL driver;
 	DRIVER_INFO_2 *driver_info_2=NULL;
+
+	ZERO_STRUCT(driver);
 
 	if (*returned > 0 && 
 	    !(driver_info_2=(DRIVER_INFO_2 *)malloc(*returned * sizeof(DRIVER_INFO_2))))
@@ -3339,6 +3356,8 @@ static uint32 enumprinterdrivers_level3(fstring *list, fstring servername, fstri
 	int i;
 	NT_PRINTER_DRIVER_INFO_LEVEL driver;
 	DRIVER_INFO_3 *driver_info_3=NULL;
+
+	ZERO_STRUCT(driver);
 
 	if((driver_info_3=(DRIVER_INFO_3 *)malloc((*returned)*sizeof(DRIVER_INFO_3))) == NULL)
 		return ERROR_NOT_ENOUGH_MEMORY;
@@ -3736,6 +3755,8 @@ uint32 _spoolss_addprinterdriver( const UNISTR2 *server_name,
 				const SPOOL_PRINTER_DRIVER_INFO_LEVEL *info)
 {
 	NT_PRINTER_DRIVER_INFO_LEVEL driver;
+
+	ZERO_STRUCT(driver);
 	
 	convert_printer_driver_info(info, &driver, level);
 
@@ -3743,6 +3764,7 @@ uint32 _spoolss_addprinterdriver( const UNISTR2 *server_name,
 		return ERROR_ACCESS_DENIED;
 
 	safe_free(driver.info_3);
+	safe_free(driver.info_6);
 
 	return NT_STATUS_NO_PROBLEMO;
 }
@@ -3775,7 +3797,7 @@ static uint32 getprinterdriverdir_level_1(UNISTR2 *name, UNISTR2 *uni_environmen
 
 	fill_driverdir_1(info, chaine);
 	
-	*needed += spoolss_size_driverdir_info_1(info);							    
+	*needed += spoolss_size_driverdir_info_1(info);
 
 	if (!alloc_buffer_size(buffer, *needed)) {
 		safe_free(info);

@@ -293,4 +293,10 @@ typedef struct lsa_policy_info
 
 } POLICY_HND;
 
+typedef struct uint64_s
+{
+	uint32 low;
+	uint32 high;
+} UINT64_S;
+
 #endif /* _RPC_MISC_H */

@@ -27,6 +27,25 @@ extern int DEBUGLEVEL;
 
 
 /*******************************************************************
+dump a prs to a file
+ ********************************************************************/
+void prs_dump(char *name, int level, prs_struct *ps)
+{
+	int fd;
+	pstring fname;
+	if (DEBUGLEVEL < 50) return;
+	slprintf(fname,sizeof(fname), "/tmp/%s_%d.prs", name, level);
+	fd = open(fname, O_WRONLY|O_CREAT|O_EXCL, 0644);
+	if (fd != -1) {
+		write(fd, ps->data_p + ps->data_offset, ps->buffer_size - ps->data_offset);
+		close(fd);
+		DEBUG(0,("created %s\n", fname));
+	}
+}
+
+
+
+/*******************************************************************
  debug output for parsing info.
 
  XXXX side-effect of this function is to increase the debug depth XXXX
@@ -427,7 +446,6 @@ BOOL prs_uint32(char *name, prs_struct *ps, int depth, uint32 *data32)
 
 	return True;
 }
-
 
 /******************************************************************
  Stream an array of uint8s. Length is number of uint8s.
