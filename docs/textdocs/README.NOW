@@ -1,8 +1,6 @@
-The files in the directory have either yet to
-converted into SGML/DocBook format or are outdated.
-To create ASCII versions of the documentation
-in the ../htmldocs/ directory, run
+All old text documents have been converted to docbook.
+To create ASCII versions of the official documentation
+run the following command in ../docbook/:
 
-	$ lynx -dump file.html > file.txt
-
+	$ make txt
 
