@@ -183,7 +183,7 @@ GSS-API library (libgssapi, -lgssapi)
 .Fc
 .Ft OM_uint32
 .Fo gss_export_name
-.Fa "OM_uint32  * minor_status"
+.Fa "OM_uint32 * minor_status"
 .Fa "const gss_name_t input_name"
 .Fa "gss_buffer_t exported_name"
 .Fc
@@ -419,7 +419,7 @@ Heimdals GSS-API implementation supports the following mechanisms
 .El
 .Pp
 GSS-API have generic name types that all mechanism are supposed to
-implement (if possible)
+implement (if possible):
 .Bl -bullet
 .It
 .Li GSS_C_NT_USER_NAME
@@ -436,7 +436,7 @@ implement (if possible)
 .El
 .Pp
 GSS-API implementations that supports Kerberos 5 have some additional
-name types
+name types:
 .Bl -bullet
 .It
 .Li GSS_KRB5_NT_PRINCIPAL_NAME
@@ -527,7 +527,7 @@ must not be used for acccess control.
 .Fn gss_display_name
 takes the gss name in
 .Fa input_name
-and put a printable form in
+and puts a printable form in
 .Fa output_name_buffer .
 .Fa output_name_buffer
 should be freed when done using
@@ -537,7 +537,7 @@ can either be
 .Dv NULL
 or a pointer to a
 .Li gss_OID
-and will in the later case contain the OID type of the name.
+and will in the latter case contain the OID type of the name.
 The name must only be used for printing.
 If access control is needed, see section
 .Sx ACCESS CONTROL .
@@ -573,13 +573,13 @@ returned.
 .Fn gss_seal ,
 and
 .Fn gss_unseal
-are part of the GSS-API V1 interface and are obsolete. The functions
-should not be used for new applications.
+are part of the GSS-API V1 interface and are obsolete.
+The functions should not be used for new applications.
 They are provided so that version 1 applications can link against the
 library.
 .Sh EXTENSIONS
 .Fn gss_krb5_copy_ccache
-will extract the krb5 credential that are transfered from the
+will extract the krb5 credentials that are transferred from the
 initiator to the acceptor when using token delegation in the Kerberos
 mechanism.
 The acceptor receives the delegated token in the last argument to
@@ -598,7 +598,7 @@ with
 upon success.
 .Pp
 .Fn gss_krb5_compat_des3_mic
-turns on or off the compatibly with older version of Heimdal using
+turns on or off the compatibility with older version of Heimdal using
 des3 get and verify mic, this is way to programmatically set the
 [gssapi]broken_des3_mic and [gssapi]correct_des3_mic flags (see
 COMPATIBILITY section in
