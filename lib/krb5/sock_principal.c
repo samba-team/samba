@@ -82,9 +82,16 @@ krb5_sock_to_principal (krb5_context context,
 	    }
     }
 
-    return krb5_sname_to_principal (context,
-				    hname,
-				    sname,
-				    type,
-				    ret_princ);
+    hname = strdup(hname);
+    if (hname == NULL) {
+	krb5_set_error_string (context, "malloc: out of memory");
+	return ENOMEM;
+    }
+    ret = krb5_sname_to_principal (context,
+				   hname,
+				   sname,
+				   type,
+				   ret_princ);
+    free(hname);
+    return ret;
 }
