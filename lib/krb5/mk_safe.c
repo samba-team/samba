@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -93,6 +93,7 @@ krb5_mk_safe(krb5_context context,
   ret = krb5_create_checksum(context, 
 			     crypto,
 			     KRB5_KU_KRB_SAFE_CKSUM,
+			     0,
 			     buf + buf_size - len,
 			     len,
 			     &s.cksum);
