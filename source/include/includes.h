@@ -731,6 +731,7 @@ extern int errno;
 #include "context.h"
 #include "ntvfs/ntvfs.h"
 #include "cli_context.h"
+#include "registry.h"
 
 
 /* used in net.c */

@@ -138,6 +138,9 @@ NTVFS_LIBS = @NTVFS_LIBS@
 DCERPC_OBJS = @DCERPC_OBJS@
 DCERPC_LIBS = @DCERPC_LIBS@
 
+REG_OBJS = @REG_OBJS@
+REG_LIBS = @REG_LIBS@
+
 TORTURE_RAW_OBJS = @TORTURE_RAW_OBJS@
 
 TORTURE_RPC_OBJS = @TORTURE_RPC_OBJS@
@@ -187,9 +190,14 @@ NDRDUMP_OBJS = utils/ndrdump.o utils/rewrite.o \
 		$(LIBSMB_OBJS) $(CONFIG_OBJS) $(LIBBASIC_OBJS)
 NDRDUMP_LIBS =	$(LIBSMB_LIBS) $(CONFIG_LIBS) $(LIBBASIC_LIBS)
 
+REGTREE_OBJ = $(REG_OBJS) lib/registry/tools/regtree.o $(LIBBASIC_OBJS) $(CONFIG_OBJS) $(LIBSMB_OBJS)
+REGSHELL_OBJ = $(REG_OBJS) lib/registry/tools/regshell.o $(LIBBASIC_OBJS) $(CONFIG_OBJS) $(LIBCMDLINE_OBJS) $(LIBSMB_OBJS)
+REGPATCH_OBJ = $(REG_OBJS) lib/registry/tools/regpatch.o $(LIBBASIC_OBJS) $(CONFIG_OBJS) $(LIBSMB_OBJS)
+REGDIFF_OBJ = $(REG_OBJS) lib/registry/tools/regdiff.o $(LIBBASIC_OBJS) $(CONFIG_OBJS) $(LIBSMB_OBJS)
+
 PROTO_OBJ = 	$(SERVER_OBJS) $(PROCESS_MODEL_OBJS) $(CLIENT_OBJS) $(TORTURE_OBJS) \
 		$(DCERPC_OBJS) $(SMB_OBJS) $(AUTH_OBJS) $(PASSDB_OBJS) $(NTVFS_OBJS) \
-		$(LIBBASIC_OBJS) $(CONFIG_OBJS) $(LIBCMDLINE_OBJS) $(LIBSMB_OBJS)
+		$(LIBBASIC_OBJS) $(CONFIG_OBJS) $(LIBCMDLINE_OBJS) $(LIBSMB_OBJS) $(REG_OBJS)
 
 
 ######################################################################
@@ -333,6 +341,23 @@ bin/locktest@EXEEXT@: $(LOCKTEST_OBJS) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(LOCKTEST_OBJS) $(LDFLAGS) $(LOCKTEST_LIBS)
 
+
+bin/regshell@EXEEXT@: $(REGSHELL_OBJ) bin/.dummy
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(REGSHELL_OBJ) $(LDFLAGS) $(LIBS) $(REG_LIBS) $(LIBCMDLINE_LIBS)
+
+bin/regtree@EXEEXT@: $(REGTREE_OBJ) bin/.dummy
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(REGTREE_OBJ) $(LDFLAGS) $(LIBS) $(REG_LIBS)
+
+bin/regpatch@EXEEXT@: $(REGPATCH_OBJ) bin/.dummy
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(REGPATCH_OBJ) $(LDFLAGS) $(LIBS) $(REG_LIBS)
+
+bin/regdiff@EXEEXT@: $(REGDIFF_OBJ) bin/.dummy
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(REGDIFF_OBJ) $(LDFLAGS) $(LIBS) $(REG_LIBS)
+ 
 install: installbin installtorture installdat 
 
 # DESTDIR is used here to prevent packagers wasting their time

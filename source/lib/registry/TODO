@@ -1,0 +1,27 @@
+- support subtrees
+- ../../, /bla/blie support in regshell
+- use memory pools?
+- get rid of all the nasty memory leaks..
+- security stuff
+- finish 'regpatch'
+- clean up code
+- rpc_server
+
+reg_backend_dir:
+ - value support
+ 
+reg_backend_nt4:
+ - write support
+
+reg_backend_rpc:
+ - value enum support
+ - write support
+ 
+reg_backend_ldb:
+ - implement
+
+reg_backend_wine.c:
+ - implement
+
+regpatch.c: 
+ - test/finish
