@@ -220,23 +220,6 @@
 		</varlistentry>
 		
 		
-		<varlistentry>
-		<term>-l logfilename</term>
-		<listitem><para>If specified, <replaceable>logfilename</replaceable> specifies a base filename 
-		into which operational data from the running client will be 
-		logged. </para>
-
-		<para>The default base name is specified at compile time.</para>
-
-		<para>The base name is used to generate actual log file names.
-		For example, if the name specified was "log", the debug file 
-		would be <filename>log.client</filename>.</para>
-		
-		<para>The log file generated is never removed by the client. 		
-		</para></listitem>
-		</varlistentry>
-		
-		
 		&stdarg.help;
 		
 		<varlistentry>
