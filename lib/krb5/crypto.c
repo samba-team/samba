@@ -2398,58 +2398,28 @@ ARCFOUR_subdecrypt(krb5_context context,
 /*
  * convert the usage numbers used in
  * draft-ietf-cat-kerb-key-derivation-00.txt to the ones in
- * draft-brezak-win2k-krb-rc4-hmac-03.txt
+ * draft-brezak-win2k-krb-rc4-hmac-04.txt
  */
 
 static krb5_error_code
 usage2arcfour (krb5_context context, int *usage)
 {
     switch (*usage) {
-    case KRB5_KU_PA_ENC_TIMESTAMP :
-	*usage = 1;
-	return 0;
-    case KRB5_KU_TICKET :
-	*usage = 2;
-	return 0;
-    case KRB5_KU_AS_REP_ENC_PART :
+    case KRB5_KU_AS_REP_ENC_PART : /* 3 */
+    case KRB5_KU_TGS_REP_ENC_PART_SUB_KEY : /* 9 */
 	*usage = 8;
 	return 0;
-    case KRB5_KU_TGS_REQ_AUTH_DAT_SESSION :
-    case KRB5_KU_TGS_REQ_AUTH_DAT_SUBKEY :
-    case KRB5_KU_TGS_REQ_AUTH_CKSUM :
-    case KRB5_KU_TGS_REQ_AUTH :
-	*usage = 7;
-	return 0;
-    case KRB5_KU_TGS_REP_ENC_PART_SESSION :
-    case KRB5_KU_TGS_REP_ENC_PART_SUB_KEY :
-	*usage = 8;
-	return 0;
-    case KRB5_KU_AP_REQ_AUTH_CKSUM :
-    case KRB5_KU_AP_REQ_AUTH :
-    case KRB5_KU_AP_REQ_ENC_PART :
-	*usage = 11;
-	return 0;
-    case KRB5_KU_KRB_PRIV :
-	*usage = 0;
-	return 0;
-    case KRB5_KU_USAGE_SEAL :
+    case KRB5_KU_USAGE_SEAL :  /* 22 */
 	*usage = 13;
 	return 0;
-    case KRB5_KU_USAGE_SIGN :
-	*usage = 15;
+    case KRB5_KU_USAGE_SIGN : /* 23 */
+        *usage = 15;
+        return 0;
+    case KRB5_KU_USAGE_SEQ: /* 24 */
+	*usage = 0;
 	return 0;
-    case KRB5_KU_KRB_CRED :
-    case KRB5_KU_KRB_SAFE_CKSUM :
-    case KRB5_KU_OTHER_ENCRYPTED :
-    case KRB5_KU_OTHER_CKSUM :
-    case KRB5_KU_KRB_ERROR :
-    case KRB5_KU_AD_KDC_ISSUED :
-    case KRB5_KU_MANDATORY_TICKET_EXTENSION :
-    case KRB5_KU_AUTH_DATA_TICKET_EXTENSION :
-    case KRB5_KU_USAGE_SEQ :
     default :
-	krb5_set_error_string(context, "unknown arcfour usage type %d", *usage);
-	return KRB5_PROG_ETYPE_NOSUPP;
+	return 0;
     }
 }
 
