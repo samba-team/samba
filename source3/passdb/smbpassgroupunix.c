@@ -125,7 +125,6 @@ static struct smb_passwd *getsmbfilegrpent(void *vp,
 	for (i = 0; i < unixgrps; i++)
 	{
 		DOM_SID sid;
-		uint8 type;
 		char *unix_grpname;
 		uint32 status;
 		uint32 rid;
