@@ -400,17 +400,7 @@ return a unix errno from a SMB error pair
 *******************************************************/
 int smbw_errno(struct cli_state *c)
 {
-	uint8 eclass;
-	uint32 ecode;
-	int ret;
-
-	ret = cli_error(c, &eclass, &ecode, NULL);
-
-	if (ret) {
-		DEBUG(3,("smbw_error %d %d (0x%x) -> %d\n", 
-			 (int)eclass, (int)ecode, (int)ecode, ret));
-	}
-	return ret;
+	return cli_errno(c);
 }
 
 /* Return a username and password given a server and share name */
