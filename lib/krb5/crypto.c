@@ -402,7 +402,7 @@ ARCFOUR_random_key(krb5_context context, krb5_keyblock *key)
 static void
 ARCFOUR_schedule(krb5_context context, struct key_data *kd)
 {
-    ARCFOUR_set_key (kd->schedule->data,
+    RC4_set_key (kd->schedule->data,
 		 kd->key->keyvalue.length, kd->key->keyvalue.data);
 }
 
