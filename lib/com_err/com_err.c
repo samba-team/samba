@@ -48,16 +48,18 @@ RCSID("$Id$");
 
 struct et_list *_et_list;
 
+
 const char *
 error_message (long code)
 {
     static char msg[128];
     const char *p = com_right(_et_list, code);
-    if(p){
+    if(p == NULL)
+	p = strerror(code);
+    if(p != NULL && *p != '\0')
 	strcpy_truncate(msg, p, sizeof(msg));
-    } else{
+    else 
 	snprintf(msg, sizeof(msg), "Unknown error %d", code);
-    }
     return msg;
 }
 
