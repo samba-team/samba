@@ -2187,6 +2187,12 @@ static BOOL init_group_from_ldap(struct ldapsam_privates *ldap_state,
 				  temp)) {
 		DEBUG(3, ("Attribute displayName not found\n"));
 		temp[0] = '\0';
+		if (!get_single_attribute(ldap_state->ldap_struct, entry, "cn",
+					  temp)) {
+			DEBUG(0, ("Attributes cn not found either "
+				  "for gidNumber(%i)\n",map->gid));
+			return False;
+		}
 	}
 	fstrcpy(map->nt_name, temp);
 
@@ -2194,12 +2200,6 @@ static BOOL init_group_from_ldap(struct ldapsam_privates *ldap_state,
 				  temp)) {
 		DEBUG(3, ("Attribute description not found\n"));
 		temp[0] = '\0';
-		if (!get_single_attribute(ldap_state->ldap_struct, entry, "cn",
-					  temp)) {
-			DEBUG(0, ("Attributes cn not found either "
-				  "for gidNumber(%i)\n",map->gid));
-			return False;
-		}
 	}
 	fstrcpy(map->comment, temp);
 
