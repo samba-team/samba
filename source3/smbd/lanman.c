@@ -1964,7 +1964,7 @@ static BOOL api_SetUserPassword(connection_struct *conn,uint16 vuid, char *param
                    * to touch the unix db unless we have admin permission.
 		   */
 		  
-		  if(lp_unix_password_sync() && IS_SAM_UNIX_USER(server->sam_account) 
+		  if(lp_unix_password_sync() && IS_SAM_UNIX_USER(server_info->sam_account) 
 		     && !chgpasswd(pdb_get_username(server_info->sam_account),
 				   pass1,pass2,False)) {
 			  SSVAL(*rparam,0,NERR_badpass);
