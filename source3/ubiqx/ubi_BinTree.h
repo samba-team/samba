@@ -28,7 +28,31 @@
  *
  * -------------------------------------------------------------------------- **
  *
- * Log: ubi_BinTree.h,v
+ * Log: ubi_BinTree.h,v 
+ * Revision 4.10  2000/06/06 20:38:40  crh
+ * In the ReplaceNode() function, the old node header was being copied
+ * to the new node header using a byte-by-byte copy.  This was causing
+ * the 'insure' software testing program to report a memory leak.  The
+ * fix was to do a simple assignement: *newnode = *oldnode;
+ * This quieted the (errant) memory leak reports and is probably a bit
+ * faster than the bytewise copy.
+ *
+ * Revision 4.9  2000/01/08 23:24:30  crh
+ * Clarified a variety of if( pointer ) lines, replacing them with
+ * if( NULL != pointer ).  This is more correct, and I have heard
+ * of at least one (obscure?) system out there that uses a non-zero
+ * value for NULL.
+ * Also, speed improvement in Neighbor().  It was comparing pointers
+ * when it could have compared two gender values.  The pointer
+ * comparison was somewhat indirect (does pointer equal the pointer
+ * of the parent of the node pointed to by pointer).  Urq.
+ *
+ * Revision 4.8  1999/09/22 03:40:30  crh
+ * Modified ubi_btTraverse() and ubi_btKillTree().  They now return an
+ * unsigned long indicating the number of nodes processed.  The change
+ * is subtle.  An empty tree formerly returned False, and now returns
+ * zero.
+ *
  * Revision 4.7  1998/10/21 06:15:07  crh
  * Fixed bugs in FirstOf() and LastOf() reported by Massimo Campostrini.
  * See function comments.
@@ -670,37 +694,49 @@ ubi_btNodePtr ubi_btLastOf( ubi_btRootPtr RootPtr,
    * ------------------------------------------------------------------------ **
    */
 
-ubi_trBool ubi_btTraverse( ubi_btRootPtr   RootPtr,
-                           ubi_btActionRtn EachNode,
-                           void           *UserData );
+unsigned long ubi_btTraverse( ubi_btRootPtr   RootPtr,
+                              ubi_btActionRtn EachNode,
+                              void           *UserData );
   /* ------------------------------------------------------------------------ **
    * Traverse a tree in sorted order (non-recursively).  At each node, call
    * (*EachNode)(), passing a pointer to the current node, and UserData as the
    * second parameter.
+   *
    *  Input:   RootPtr  -  a pointer to an ubi_btRoot structure that indicates
    *                       the tree to be traversed.
-   *           EachNode -  a pointer to a function to be called at each node
+   *           EachNode -  a pointer to a function to be called at each node  
    *                       as the node is visited.
    *           UserData -  a generic pointer that may point to anything that
    *                       you choose.
-   *  Output:  A boolean value.  FALSE if the tree is empty, otherwise TRUE.
+   *           
+   *  Output:  A count of the number of nodes visited.  This will be zero
+   *           if the tree is empty.
+   *             
    * ------------------------------------------------------------------------ **
    */
 
-ubi_trBool ubi_btKillTree( ubi_btRootPtr     RootPtr,
-                           ubi_btKillNodeRtn FreeNode );
+
+unsigned long ubi_btKillTree( ubi_btRootPtr     RootPtr,
+                              ubi_btKillNodeRtn FreeNode );
   /* ------------------------------------------------------------------------ **
    * Delete an entire tree (non-recursively) and reinitialize the ubi_btRoot
-   * structure.  Note that this function will return FALSE if either parameter
-   * is NULL.
+   * structure.  Return a count of the number of nodes deleted.
    *
    *  Input:   RootPtr  -  a pointer to an ubi_btRoot structure that indicates
    *                       the root of the tree to delete.
    *           FreeNode -  a function that will be called for each node in the
    *                       tree to deallocate the memory used by the node.
    *
-   *  Output:  A boolean value.  FALSE if either input parameter was NULL, else
-   *           TRUE.
+   *  Output:  The number of nodes removed from the tree.
+   *           A value of 0 will be returned if:
+   *           - The tree actually contains 0 entries.
+   *           - the value of <RootPtr> is NULL, in which case the tree is
+   *             assumed to be empty
+   *           - the value of <FreeNode> is NULL, in which case entries
+   *             cannot be removed, so 0 is returned.  *Make sure that you
+   *             provide a valid value for <FreeNode>*.
+   *           In all other cases, you should get a positive value equal to
+   *           the value of RootPtr->count upon entry. 
    *
    * ------------------------------------------------------------------------ **
    */

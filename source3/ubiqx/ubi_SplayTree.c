@@ -37,6 +37,9 @@
  * -------------------------------------------------------------------------- **
  *
  * Log: ubi_SplayTree.c,v 
+ * Revision 4.5  2000/01/08 23:26:49  crh
+ * Added ubi_trSplay() macro, which does a type cast for us.
+ *
  * Revision 4.4  1998/06/04 21:29:27  crh
  * Upper-cased defined constants (eg UBI_BINTREE_H) in some header files.
  * This is more "standard", and is what people expect.  Weird, eh?
@@ -163,8 +166,8 @@
  */
 
 static char ModuleID[] = "ubi_SplayTree\n\
-\tRevision: 4.4 \n\
-\tDate: 1998/06/04 21:29:27 \n\
+\tRevision: 4.5 \n\
+\tDate: 2000/01/08 23:26:49 \n\
 \tAuthor: crh \n";
 
 
