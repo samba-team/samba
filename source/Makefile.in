@@ -764,7 +764,8 @@ WINBINDD_OBJ = \
 		$(LIBNMB_OBJ) $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
 		$(NSSWINS_OBJ) $(SIDDB_OBJ) $(LIBSMB_OBJ)
 
-WBINFO_OBJ = nsswitch/wbinfo.o nsswitch/wb_common.o
+WBINFO_OBJ = nsswitch/wbinfo.o nsswitch/wb_common.o libsmb/smbencrypt.o \
+	lib/hmacmd5.o libsmb/smbdes.o lib/md5.o
 
 WINBIND_NSS_OBJ = nsswitch/winbind_nss.o nsswitch/wb_common.o
 
@@ -1150,9 +1151,9 @@ bin/winbindd: $(WINBINDD_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(LINK) -o $@ $(WINBINDD_OBJ)
 
-bin/wbinfo: $(WBINFO_OBJ) $(LIBSAMBA_OBJ) bin/.dummy
+bin/wbinfo: $(WBINFO_OBJ) $(SAMBALIB) bin/.dummy
 	@echo Linking $@
-	@$(LINK) -o $@ $(WBINFO_OBJ) $(LIBSAMBA_OBJ) $(LIBS)
+	@$(LINK) -o $@ $(WBINFO_OBJ) $(SAMBALIB) $(LIBS)
 
 nsswitch/@nssmodule@: $(WINBIND_NSS_PICOBJS)
 	@echo "Linking $@"
