@@ -399,7 +399,7 @@ static uint32 cmd_spoolss_getprinter(int argc, char **argv)
 	}
 
 	if ((result = cli_spoolss_open_printer_ex(
-		&cli, argv[1], "", PRINTER_ALL_ACCESS, global_myname,
+		&cli, argv[1], "", MAXIMUM_ALLOWED_ACCESS, global_myname,
 		username, &pol)) != NT_STATUS_NOPROBLEMO) {
 		goto done;
 	}
