@@ -31,10 +31,14 @@ NSS_STATUS winbindd_request(int req_type,
 			    struct winbindd_request *request,
 			    struct winbindd_response *response);
 
-static char get_winbind_separator(void)
+static char winbind_separator(void)
 {
 	struct winbindd_response response;
-	char winbind_separator;
+	static BOOL got_sep;
+	static char sep;
+
+	if (got_sep)
+		return sep;
 
 	ZERO_STRUCT(response);
 
@@ -47,16 +51,16 @@ static char get_winbind_separator(void)
 		return *lp_winbind_separator();
 	}
 
-	winbind_separator = response.data.info.winbind_separator;
+	sep = response.data.info.winbind_separator;
+	got_sep = True;
 
-	if (!winbind_separator) {
+	if (!sep) {
 		d_printf("winbind separator was NULL!\n");
 		/* HACK: (this module should not call lp_ funtions) */
-		return *lp_winbind_separator();
+		sep = *lp_winbind_separator();
 	}
 	
-	return winbind_separator;
-
+	return sep;
 }
 
 static char *get_winbind_domain(void)
@@ -85,10 +89,11 @@ static char *get_winbind_domain(void)
 /* Copy of parse_domain_user from winbindd_util.c.  Parse a string of the
    form DOMAIN/user into a domain and a user */
 
-static BOOL parse_wbinfo_domain_user(const char *domuser, fstring domain, fstring user)
+static BOOL parse_wbinfo_domain_user(const char *domuser, fstring domain, 
+				     fstring user)
 {
 
-	char *p = strchr(domuser,get_winbind_separator());
+	char *p = strchr(domuser,winbind_separator());
 
 	if (!p) {
 		fstrcpy(user, domuser);
@@ -100,6 +105,7 @@ static BOOL parse_wbinfo_domain_user(const char *domuser, fstring domain, fstrin
 	fstrcpy(domain, domuser);
 	domain[PTR_DIFF(p, domuser)] = 0;
 	strupper(domain);
+
 	return True;
 }
 
@@ -143,9 +149,8 @@ static BOOL wbinfo_list_domains(void)
 	/* Send request */
 
 	if (winbindd_request(WINBINDD_LIST_TRUSTDOM, NULL, &response) !=
-	    NSS_STATUS_SUCCESS) {
+	    NSS_STATUS_SUCCESS)
 		return False;
-	}
 
 	/* Display response */
 
@@ -170,12 +175,13 @@ static BOOL wbinfo_show_sequence(void)
 	ZERO_STRUCT(response);
 
 	/* Send request */
+
 	if (winbindd_request(WINBINDD_SHOW_SEQUENCE, NULL, &response) !=
-	    NSS_STATUS_SUCCESS) {
+	    NSS_STATUS_SUCCESS)
 		return False;
-	}
 
 	/* Display response */
+
 	if (response.extra_data) {
 		char *extra_data = (char *)response.extra_data;
 		d_printf("%s", extra_data);
@@ -199,12 +205,11 @@ static BOOL wbinfo_check_secret(void)
 
         if (result) {
 
-                if (response.data.num_entries == 0) {
+                if (response.data.num_entries == 0)
                         d_printf("Secret is good\n");
-                } else {
+                else
                         d_printf("Secret is bad\n0x%08x\n", 
 			       response.data.num_entries);
-                }
 
                 return True;
         }
@@ -225,10 +230,10 @@ static BOOL wbinfo_uid_to_sid(uid_t uid)
 	/* Send request */
 
 	request.data.uid = uid;
+
 	if (winbindd_request(WINBINDD_UID_TO_SID, &request, &response) !=
-	    NSS_STATUS_SUCCESS) {
+	    NSS_STATUS_SUCCESS)
 		return False;
-	}
 
 	/* Display response */
 
@@ -250,10 +255,10 @@ static BOOL wbinfo_gid_to_sid(gid_t gid)
 	/* Send request */
 
 	request.data.gid = gid;
+
 	if (winbindd_request(WINBINDD_GID_TO_SID, &request, &response) !=
-	    NSS_STATUS_SUCCESS) {
+	    NSS_STATUS_SUCCESS)
 		return False;
-	}
 
 	/* Display response */
 
@@ -275,10 +280,10 @@ static BOOL wbinfo_sid_to_uid(char *sid)
 	/* Send request */
 
 	fstrcpy(request.data.sid, sid);
+
 	if (winbindd_request(WINBINDD_SID_TO_UID, &request, &response) !=
-	    NSS_STATUS_SUCCESS) {
+	    NSS_STATUS_SUCCESS)
 		return False;
-	}
 
 	/* Display response */
 
@@ -298,10 +303,10 @@ static BOOL wbinfo_sid_to_gid(char *sid)
 	/* Send request */
 
 	fstrcpy(request.data.sid, sid);
+
 	if (winbindd_request(WINBINDD_SID_TO_GID, &request, &response) !=
-	    NSS_STATUS_SUCCESS) {
+	    NSS_STATUS_SUCCESS)
 		return False;
-	}
 
 	/* Display response */
 
@@ -323,14 +328,16 @@ static BOOL wbinfo_lookupsid(char *sid)
 	/* Send off request */
 
 	fstrcpy(request.data.sid, sid);
+
 	if (winbindd_request(WINBINDD_LOOKUPSID, &request, &response) !=
-	    NSS_STATUS_SUCCESS) {
+	    NSS_STATUS_SUCCESS)
 		return False;
-	}
 
 	/* Display response */
 
-	d_printf("[%s]\\[%s] %d\n", response.data.name.dom_name, response.data.name.name, response.data.name.type);
+	d_printf("%s%c%s %d\n", response.data.name.dom_name, 
+		 winbind_separator(), response.data.name.name, 
+		 response.data.name.type);
 
 	return True;
 }
@@ -347,12 +354,12 @@ static BOOL wbinfo_lookupname(char *name)
 	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
 
-	parse_wbinfo_domain_user(name, request.data.name.dom_name, request.data.name.name);
+	parse_wbinfo_domain_user(name, request.data.name.dom_name, 
+				 request.data.name.name);
 
 	if (winbindd_request(WINBINDD_LOOKUPNAME, &request, &response) !=
-	    NSS_STATUS_SUCCESS) {
+	    NSS_STATUS_SUCCESS)
 		return False;
-	}
 
 	/* Display response */
 
@@ -392,7 +399,9 @@ static BOOL wbinfo_auth(char *username)
         d_printf("plaintext password authentication %s\n", 
                (result == NSS_STATUS_SUCCESS) ? "succeeded" : "failed");
 
-	d_printf("error code was %s (0x%x)\n", response.data.auth.nt_status_string, response.data.auth.nt_status);
+	d_printf("error code was %s (0x%x)\n", 
+		 response.data.auth.nt_status_string, 
+		 response.data.auth.nt_status);
 
         return result == NSS_STATUS_SUCCESS;
 }
@@ -464,9 +473,8 @@ static BOOL print_domain_users(void)
 	ZERO_STRUCT(response);
 
 	if (winbindd_request(WINBINDD_LIST_USERS, NULL, &response) !=
-	    NSS_STATUS_SUCCESS) {
+	    NSS_STATUS_SUCCESS)
 		return False;
-	}
 
 	/* Look through extra data */
 
@@ -494,9 +502,8 @@ static BOOL print_domain_groups(void)
 	ZERO_STRUCT(response);
 
 	if (winbindd_request(WINBINDD_LIST_GROUPS, NULL, &response) !=
-	    NSS_STATUS_SUCCESS) {
+	    NSS_STATUS_SUCCESS)
 		return False;
-	}
 
 	/* Look through extra data */
 
@@ -534,9 +541,12 @@ static BOOL wbinfo_set_auth_user(char *username)
 
 	/* Store in secrets.tdb */
 
-	if (!secrets_store(SECRETS_AUTH_USER, username, strlen(username) + 1) ||
-	    !secrets_store(SECRETS_AUTH_DOMAIN, domain, strlen(domain) + 1) ||
-		!secrets_store(SECRETS_AUTH_PASSWORD, password, strlen(password) + 1)) {
+	if (!secrets_store(SECRETS_AUTH_USER, username, 
+			   strlen(username) + 1) ||
+	    !secrets_store(SECRETS_AUTH_DOMAIN, domain, 
+			   strlen(domain) + 1) ||
+	    !secrets_store(SECRETS_AUTH_PASSWORD, password,
+			   strlen(password) + 1)) {
 		d_fprintf(stderr, "error storing authenticated user info\n");
 		return False;
 	}
@@ -583,7 +593,8 @@ static void usage(void)
 /* Main program */
 
 enum {
-	OPT_SET_AUTH_USER = 1000
+	OPT_SET_AUTH_USER = 1000,
+	OPT_SEQUENCE,
 };
 
 int main(int argc, char **argv)
@@ -595,11 +606,12 @@ int main(int argc, char **argv)
 	static char *string_arg;
 	static int int_arg;
 	BOOL got_command = False;
-	enum {OPT_SEQUENCE=1};
 
 	struct poptOption long_options[] = {
 
-		/* longName, shortName, argInfo, argPtr, value, descrip, argDesc */
+		/* longName, shortName, argInfo, argPtr, value, descrip, 
+		   argDesc */
+
 		{ "help", 'h', POPT_ARG_NONE, 0, 'h' },
 		{ "domain-users", 'u', POPT_ARG_NONE, 0, 'u' },
 		{ "domain-groups", 'g', POPT_ARG_NONE, 0, 'g' },
@@ -611,7 +623,7 @@ int main(int argc, char **argv)
 		{ "sid-to-gid", 'Y', POPT_ARG_STRING, &string_arg, 'Y' },
 		{ "check-secret", 't', POPT_ARG_NONE, 0, 't' },
 		{ "trusted-domains", 'm', POPT_ARG_NONE, 0, 'm' },
-		{ "sequence", OPT_SEQUENCE, POPT_ARG_NONE, 0, OPT_SEQUENCE },
+		{ "sequence", 0, POPT_ARG_NONE, 0, OPT_SEQUENCE },
 		{ "user-groups", 'r', POPT_ARG_STRING, &string_arg, 'r' },
  		{ "authenticate", 'a', POPT_ARG_STRING, &string_arg, 'a' },
 		{ "set-auth-user", 0, POPT_ARG_STRING, &string_arg, OPT_SET_AUTH_USER },
@@ -626,9 +638,8 @@ int main(int argc, char **argv)
 
 		fstrcpy(global_myname, myhostname());
 		p = strchr(global_myname, '.');
-		if (p) {
+		if (p)
 			*p = 0;
-		}
 	}
 
 	if (!lp_load(dyn_CONFIGFILE, True, False, False)) {
@@ -652,8 +663,7 @@ int main(int argc, char **argv)
 
 	while((opt = poptGetNextOpt(pc)) != -1) {
 		if (got_command) {
-			d_fprintf(stderr, "No more than one command may be specified "
-				"at once.\n");
+			d_fprintf(stderr, "No more than one command may be specified at once.\n");
 			exit(1);
 		}
 		got_command = True;
