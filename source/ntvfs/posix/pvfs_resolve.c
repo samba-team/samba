@@ -180,8 +180,9 @@ static NTSTATUS pvfs_case_search(struct pvfs_state *pvfs, struct pvfs_filename *
 static NTSTATUS pvfs_unix_path(struct pvfs_state *pvfs, const char *cifs_name,
 			       uint_t flags, struct pvfs_filename *name)
 {
-	char *ret, *p;
+	char *ret, *p, *p_start;
 	size_t len;
+	int num_components=0;
 
 	name->original_name = talloc_strdup(name, cifs_name);
 	name->stream_name = NULL;
@@ -217,6 +218,7 @@ static NTSTATUS pvfs_unix_path(struct pvfs_state *pvfs, const char *cifs_name,
 
 	/* now do an in-place conversion of '\' to '/', checking
 	   for legal characters */
+	p_start = p;
 	while (*p) {
 		size_t c_size;
 		codepoint_t c = next_codepoint(p, &c_size);
@@ -228,6 +230,7 @@ static NTSTATUS pvfs_unix_path(struct pvfs_state *pvfs, const char *cifs_name,
 				return NT_STATUS_ILLEGAL_CHARACTER;
 			}
 			*p = '/';
+			num_components++;
 			break;
 		case ':':
 			if (!(flags & PVFS_RESOLVE_STREAMS)) {
@@ -252,6 +255,18 @@ static NTSTATUS pvfs_unix_path(struct pvfs_state *pvfs, const char *cifs_name,
 		case '/':
 		case '|':
 			return NT_STATUS_ILLEGAL_CHARACTER;
+		case '.':
+			if (p[1] != '.' ||
+			    (p[2] != '\\' && p[2] != 0) ||
+			    (p != p_start && p[-1] != '/')) {
+				break;
+			}
+			/* its definately a .. component */
+			num_components--;
+			if (num_components <= 0) {
+				return NT_STATUS_OBJECT_PATH_SYNTAX_BAD;
+			}
+			break;
 		}
 
 		p += c_size;
