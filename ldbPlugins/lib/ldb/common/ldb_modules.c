@@ -34,8 +34,10 @@
  */
 
 #include "includes.h"
-#include "system/filesys.h"
 #include "dlinklist.h"
+#include <sys/types.h> 
+#include <sys/stat.h> 
+#include <unistd.h> 
 
 #define LDB_MODULE_PREFIX	"modules"
 #define LDB_MODULE_PREFIX_LEN	7
@@ -80,10 +82,10 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 
 	if (!modules) { /* no modules in the options, look for @MODULES in the db */
 		int ret, j, k;
-		const char * attrs[] = { "@MODULE" };
-		struct ldb_message **msgs;
+		char * attrs[] = { "@MODULE" };
+		struct ldb_message **msg;
 
-		ret = ldb_search(ldb, "", LDB_SCOPE_BASE, "dn=@MODULES", (const char * const *)attrs, &msgs);
+		ret = ldb_search(ldb, "", LDB_SCOPE_BASE, "dn=@MODULES", (const char * const *)attrs, &msg);
 		if (ret == 0) {
 			ldb_debug(ldb, LDB_DEBUG_TRACE, "no modules required by the db\n");
 		} else {
@@ -96,15 +98,15 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 				return -1;
 			}
 
-			for (j = 0; j < msgs[0]->num_elements; j++) {
-				for (k = 0; k < msgs[0]->elements[j].num_values; k++) {
+			for (j = 0; j < msg[0]->num_elements; j++) {
+				for (k = 0; k < msg[0]->elements[j].num_values; k++) {
 					pn++;
 					modules = ldb_realloc_array(ldb, modules, sizeof(char *), pn);
 					if (!modules) {
 						ldb_debug(ldb, LDB_DEBUG_FATAL, "Out of Memory in register_modules()\n");
 						return -1;
 					}
-					modules[pn - 1] = ldb_strndup(ldb, msgs[0]->elements[j].values[k].data, msgs[0]->elements[j].values[k].length);
+					modules[pn - 1] = ldb_strndup(ldb, msg[0]->elements[j].values[k].data, msg[0]->elements[j].values[k].length);
 					if (!modules[pn - 1]) {
 						ldb_debug(ldb, LDB_DEBUG_FATAL, "Out of Memory in register_modules()\n");
 						return -1;
@@ -112,7 +114,7 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 				}
 			}
 		}
-		ldb_search_free(ldb, msgs);
+		ldb_search_free(ldb, msg);
 	}
 
 	if (modules) {
@@ -128,7 +130,17 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 				DLIST_ADD(ldb->modules, current);
 				continue;
 			}
-
+#if 0
+			if (strcmp(modules[i], "schema") == 0) {
+				current = schema_module_init(ldb, options);
+				if (!current) {
+					ldb_debug(ldb, LDB_DEBUG_FATAL, "function 'init_module' in %s fails\n", modules[i]);
+					return -1;
+				}
+				DLIST_ADD(ldb->modules, current);
+				continue;
+			}
+#endif
 #ifdef HAVE_DLOPEN_DISABLED
 		{
 			void *handle;
@@ -196,12 +208,12 @@ int ldb_next_search(struct ldb_module *module,
 	return module->next->ops->search(module->next, base, scope, expression, attrs, res);
 }
 
-int ldb_next_search_free(struct ldb_module *module, struct ldb_message **msgs)
+int ldb_next_search_free(struct ldb_module *module, struct ldb_message **msg)
 {
 	if (!module->next) {
 		return -1;
 	}
-	return module->next->ops->search_free(module->next, msgs);
+	return module->next->ops->search_free(module->next, msg);
 }
 
 int ldb_next_add_record(struct ldb_module *module, const struct ldb_message *message)
