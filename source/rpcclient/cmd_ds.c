@@ -38,7 +38,7 @@ static NTSTATUS cmd_ds_dsrole_getprimarydominfo(struct cli_state *cli,
 		
 		if ( ctr.basic->flags & DSROLE_PRIMARY_DS_RUNNING )	{
 			printf( "Directory Service is running.\n");
-			printf( "Domain is in %s mode.\n", (ctr.basic->flags & DSROLE_PRIMARY_DS_MIXED_MODE) ? "mized" : "native" );
+			printf( "Domain is in %s mode.\n", (ctr.basic->flags & DSROLE_PRIMARY_DS_MIXED_MODE) ? "mixed" : "native" );
 		}
 		else
 			printf( "Directory Service not running on server\n");
