@@ -150,6 +150,17 @@ static int reply_spnego_kerberos(connection_struct *conn,
 
 	/* the password is good - let them in */
 	pw = smb_getpwnam(user,False);
+	if (!pw && !strstr(user, lp_winbind_separator())) {
+		char *user2;
+		/* try it with a winbind domain prefix */
+		asprintf(&user2, "%s%s%s", lp_workgroup(), lp_winbind_separator(), user);
+		pw = smb_getpwnam(user2,False);
+		if (pw) {
+			free(user);
+			user = user2;
+		}
+	}
+
 	if (!pw) {
 		DEBUG(1,("Username %s is invalid on this system\n",user));
 		return ERROR_NT(NT_STATUS_NO_SUCH_USER);
