@@ -195,7 +195,7 @@ int main(int argc,char *argv[])
 	  POPT_AUTOHELP
 	  { "broadcast", 'b', POPT_ARG_STRING, NULL, 'B', "Specify address to use for broadcasts", "BROADCAST-ADDRESS" },
 	  { "flags", 'f', POPT_ARG_VAL, &give_flags, True, "List the NMB flags returned" },
-	  { "unicast", 'U', POPT_ARG_NONE, NULL, 'U', "Specify address to use for unicast" },
+	  { "unicast", 'U', POPT_ARG_STRING, NULL, 'U', "Specify address to use for unicast" },
 	  { "master-browser", 'M', POPT_ARG_VAL, &find_master, True, "Search for a master browser" },
 	  { "recursion", 'R', POPT_ARG_VAL, &recursion_desired, True, "Set recursion desired in package" },
 	  { "status", 'S', POPT_ARG_VAL, &find_status, True, "Lookup node status as well" },
