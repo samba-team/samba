@@ -14,6 +14,25 @@ RCSID("$Id$");
 #include <netinet/in.h>
 #include <netdb.h>
 
+/* this is for broken Solaris */
+#ifndef HAVE_GETHOSTID 
+
+#include <sys/systeminfo.h>
+
+static long gethostid(void)
+{
+  static int flag=0;
+  static long hostid;
+  if(!flag){
+    char s[32];
+    sysinfo(SI_HW_SERIAL, s, 32);
+    sscanf(s, "%u", &hostid);
+    flag=1;
+  }
+  return hostid;
+}
+#endif
+
 /*
  * Create a sequence of random 64 bit blocks.
  * The sequence is indexed with a long long and 
@@ -75,25 +94,6 @@ des_new_random_key(des_cblock *key)
   return(0);
 }
 
-/* this is for broken Solaris */
-#ifndef HAVE_GETHOSTID 
-
-#include <sys/systeminfo.h>
-
-static long gethostid(void)
-{
-  static int flag=0;
-  static long hostid;
-  if(!flag){
-    char s[32];
-    sysinfo(SI_HW_SERIAL, s, 32);
-    sscanf(s, "%u", &hostid);
-    flag=1;
-  }
-  return hostid;
-}
-#endif
-
 /*
  * des_init_random_number_generator:
  *
@@ -141,7 +141,7 @@ des_init_random_number_generator(des_cblock *seed)
   des_set_random_generator_seed(&new_key);
 }
 
-/* This is for backwards compatibility */
+/* This is for backwards compatibility. */
 int
 des_random_key(unsigned char *ret)
 {
