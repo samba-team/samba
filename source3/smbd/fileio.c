@@ -707,8 +707,8 @@ static BOOL setup_write_cache(files_struct *fsp, SMB_OFF_T file_size)
 	DO_PROFILE_INC(writecache_allocated_write_caches);
 	allocated_write_caches++;
 
-	DEBUG(10,("setup_write_cache: File %s allocated write cache size %u\n",
-		fsp->fsp_name, wcp->alloc_size ));
+	DEBUG(10,("setup_write_cache: File %s allocated write cache size %lu\n",
+		fsp->fsp_name, (unsigned long)wcp->alloc_size ));
 
 	return True;
 }
@@ -725,7 +725,7 @@ void set_filelen_write_cache(files_struct *fsp, SMB_OFF_T file_size)
 		if (fsp->wcp->data_size != 0) {
 			pstring msg;
 			slprintf(msg, sizeof(msg)-1, "set_filelen_write_cache: size change \
-on file %s with write cache size = %u\n", fsp->fsp_name, fsp->wcp->data_size );
+on file %s with write cache size = %lu\n", fsp->fsp_name, (unsigned long)fsp->wcp->data_size );
 			smb_panic(msg);
 		}
 		fsp->wcp->file_size = file_size;
