@@ -33,6 +33,9 @@
  *		-i,--scope
  */
 
+
+enum {OPT_OPTION=1};
+
 static struct cmdline_auth_info cmdline_auth_info;
 
 static void popt_common_callback(poptContext con, 
@@ -40,7 +43,6 @@ static void popt_common_callback(poptContext con,
 			   const struct poptOption *opt,
 			   const char *arg, const void *data)
 {
-	pstring logfile;
 	const char *pname;
 	
 	/* Find out basename of current program */
@@ -52,8 +54,9 @@ static void popt_common_callback(poptContext con,
 		pname++;
 
 	if (reason == POPT_CALLBACK_REASON_PRE) {
-		pstr_sprintf(logfile, "%s/log.%s", dyn_LOGFILEBASE, pname);
+		char *logfile = talloc_asprintf(NULL, "%s/log.%s", dyn_LOGFILEBASE, pname);
 		lp_set_cmdline("log file", logfile);
+		talloc_free(logfile);
 		return;
 	}
 
@@ -81,8 +84,9 @@ static void popt_common_callback(poptContext con,
 
 	case 'l':
 		if (arg) {
-			pstr_sprintf(logfile, "%s/log.%s", arg, pname);
+			char *logfile = talloc_asprintf(NULL, "%s/log.%s", arg, pname);
 			lp_set_cmdline("log file", logfile);
+			talloc_free(logfile);
 		}
 		break;
 		
@@ -105,6 +109,13 @@ static void popt_common_callback(poptContext con,
 	case 'R':
 		lp_set_cmdline("name resolve order", arg);
 		break;
+
+	case OPT_OPTION:
+		if (!lp_set_option(arg)) {
+			fprintf(stderr, "Error setting option '%s'\n", arg);
+			exit(1);
+		}
+		break;
 	}
 }
 
@@ -123,6 +134,7 @@ struct poptOption popt_common_samba[] = {
 	{ NULL, 0, POPT_ARG_CALLBACK|POPT_CBFLAG_PRE, popt_common_callback },
 	{ "debuglevel", 'd', POPT_ARG_STRING, NULL, 'd', "Set debug level", "DEBUGLEVEL" },
 	{ "configfile", 's', POPT_ARG_STRING, NULL, 's', "Use alternative configuration file", "CONFIGFILE" },
+	{ "option",       0, POPT_ARG_STRING, NULL, OPT_OPTION, "Set smb.conf option from command line", "name=value" },
 	{ "log-basename", 'l', POPT_ARG_STRING, NULL, 'l', "Basename for log/debug files", "LOGFILEBASE" },
 	POPT_TABLEEND
 };
