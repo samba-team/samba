@@ -425,6 +425,65 @@ name types
 .Li GSS_KRB5_NT_STRING_UID_NAME
 .El
 .Pp
+In GSS-API, names have two forms, internal names and contiguous string
+names.
+.Bl -bullet
+.It
+.Li Internal name and mechanism name
+.Pp
+Internal names are implementation specific representation of
+a GSS-API name.
+.Li Mechanism names
+special form of internal names corresponds to one and only one mechanism.
+.Pp
+In GSS-API an internal name is stored in a
+.Dv gss_name_t .
+.It
+.Li Contiguous string name and exported name
+.Pp
+Contiguous string names are gssapi names stored in a
+.Dv OCTET STRING
+that together with a name type identifier (OID) uniquely specifies a
+gss-name.
+A special form of the contiguous string name is the exported name that
+have a OID embedded in the string to make it unique.
+Exported name have the nametype
+.Dv GSS_C_NT_EXPORT_NAME .
+.Pp
+In GSS-API an contiguous string name is stored in a
+.Dv gss_buffer_t .
+.Pp
+Exported names also have the property that they are specified by the
+mechanism itself and compatible between diffrent GSS-API
+implementations.
+.El
+.Sh ACCESS CONTROL
+There are two ways of comparing GSS-API names, either comparing two
+internal names with each other or two contiguous string names with
+either other.
+.Pp
+To compare two internal names with each other, import (if needed) the
+names with
+.Fn gss_import_name
+into the GSS-API implementation and the compare the imported name with
+.Fn gss_compare_name .
+.Pp
+Importing names can be slow, so when its possible to store exported
+names in the access control list, comparing contiguous string name
+might be better.
+.Pp
+when comparing contiguous string name, first export them into a
+.Dv GSS_C_NT_EXPORT_NAME
+name with
+.Fn gss_export_name
+and then compare with
+.Xr memcmp 3 .
+.Pp
+The resulting name from
+.Fn gss_display_name
+must not be used for acccess control.
+.Sh FUNCTIONS
+.Pp
 .Fn gss_display_name
 takes the gss name in
 .Fa input_name
@@ -439,10 +498,21 @@ can either be
 or a pointer to a
 .Li gss_OID
 and will in the later case contain the OID type of the name.
-The name should only be used for printing.
-Access control should be done with the result of
-.Fn gss_export_name .
+The name must only be used for printing.
+If access control is needed, see section 
+.Sx ACCESS CONTROL .
 .Pp
+.Fn gss_inquire_context
+returns information about the context.
+Information is available even after the context have expired.
+.Fa mech_type
+argument should be considered readonly and must not be released.
+.Fa src_name
+and
+.Fn dest_name
+are both mechanims names and must be released with
+.Fn gss_release_name
+when no longer used.
 .Pp
 .Nm gss_context_time
 will return the amount of time (in seconds) of the context is still
@@ -471,7 +541,7 @@ Kerberos mechanism.
 The acceptor receives the delegated token in the last argument to
 .Fn gss_accept_sec_context .
 .Pp
-.Nm gss_krb5_compat_des3_mic
+.Fn gss_krb5_compat_des3_mic
 turns on or off the compatibly with older version of Heimdal using
 des3 get and verify mic, this is way to programmatically set the
 [gssapi]broken_des3_mic and [gssapi]correct_des3_mic flags (see
@@ -480,9 +550,9 @@ COMPATIBILITY section in
 If the CPP symbol
 .Dv GSS_C_KRB5_COMPAT_DES3_MIC
 is present,
-.Nm gss_krb5_compat_des3_mic
+.Fn gss_krb5_compat_des3_mic
 exists.
-.Nm gss_krb5_compat_des3_mic
+.Fn gss_krb5_compat_des3_mic
 will be removed in a later version of the GSS-API library.
 .Sh SEE ALSO
 .Xr krb5 3 ,
