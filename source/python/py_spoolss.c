@@ -281,6 +281,18 @@ Set the form given by the dictionary argument."},
            METH_VARARGS | METH_KEYWORDS,
           "Delete printer data." },
 
+        { "getprinterdataex", (PyCFunction)spoolss_hnd_getprinterdataex,
+           METH_VARARGS | METH_KEYWORDS,
+          "Get printer data." },
+
+        { "setprinterdataex", (PyCFunction)spoolss_hnd_setprinterdataex,
+           METH_VARARGS | METH_KEYWORDS,
+          "Set printer data." },
+
+        { "enumprinterdataex", (PyCFunction)spoolss_hnd_enumprinterdataex,
+           METH_VARARGS | METH_KEYWORDS,
+          "Enumerate printer data." },
+
         { "deleteprinterdataex", (PyCFunction)spoolss_hnd_deleteprinterdataex,
            METH_VARARGS | METH_KEYWORDS,
           "Delete printer data." },
