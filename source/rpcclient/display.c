@@ -1476,7 +1476,7 @@ static void print_reg_value(FILE *out_hnd, char *val_name, uint32 val_type, BUFF
 	{
 		case 0x01: /* unistr */
 		{
-			unistr_to_ascii(valstr, value->buffer,
+			unibuf_to_ascii(valstr, value->buffer,
 					MIN(value->buf_len, sizeof(valstr)-1));
 			fprintf(out_hnd,"\t%s:\t%s:\t%s\n", val_name, type, valstr);
 			break;

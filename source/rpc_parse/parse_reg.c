@@ -767,7 +767,7 @@ void make_reg_r_info(REG_R_INFO *r_r,
 
 	if (r_r == NULL || os_type == NULL) return;
 
-	len = strlen(os_type) * 2;
+	len = strlen(os_type);
 
 	r_r->ptr1 = 1;
 	r_r->level = level;
@@ -775,11 +775,8 @@ void make_reg_r_info(REG_R_INFO *r_r,
 	r_r->ptr_type = 1;
 	make_buffer2(&(r_r->uni_type), os_type, len);
 
-	r_r->ptr2 = 1;
-	r_r->unknown_0 = len;
-
-	r_r->ptr3 = 1;
-	r_r->unknown_1 = len;
+	r_r->ptr2 = r_r->ptr3 = 1;
+	r_r->unknown_0 = r_r->unknown_1 = len * 2;
 
 	r_r->status = status;
 }

@@ -564,7 +564,8 @@ void make_id_info1(NET_ID_INFO_1 *id, char *domain_name,
 	make_uni_hdr(&(id->hdr_domain_name), len_domain_name);
 
 	id->param_ctrl = param_ctrl;
-	make_logon_id(&(id->logon_id), log_id_low, log_id_high);
+	id->logon_id.low = log_id_low;
+	id->logon_id.high = log_id_high;
 
 	make_uni_hdr(&(id->hdr_user_name  ), len_user_name  );
 	make_uni_hdr(&(id->hdr_wksta_name ), len_wksta_name );
@@ -627,7 +628,7 @@ static void net_io_id_info1(char *desc,  NET_ID_INFO_1 *id, prs_struct *ps, int 
 		smb_io_unihdr("unihdr", &(id->hdr_domain_name), ps, depth);
 
 		prs_uint32("param_ctrl", ps, depth, &(id->param_ctrl));
-		smb_io_logon_id("", &(id->logon_id), ps, depth);
+		smb_io_bigint("", &(id->logon_id), ps, depth);
 
 		smb_io_unihdr("unihdr", &(id->hdr_user_name  ), ps, depth);
 		smb_io_unihdr("unihdr", &(id->hdr_wksta_name ), ps, depth);
@@ -680,7 +681,8 @@ void make_id_info2(NET_ID_INFO_2 *id, char *domain_name,
 	make_uni_hdr(&(id->hdr_domain_name), len_domain_name);
 
 	id->param_ctrl = param_ctrl;
-	make_logon_id(&(id->logon_id), log_id_low, log_id_high);
+	id->logon_id.low = log_id_low;
+	id->logon_id.high = log_id_high;
 
 	make_uni_hdr(&(id->hdr_user_name  ), len_user_name  );
 	make_uni_hdr(&(id->hdr_wksta_name ), len_wksta_name );
@@ -729,7 +731,7 @@ static void net_io_id_info2(char *desc,  NET_ID_INFO_2 *id, prs_struct *ps, int 
 		smb_io_unihdr("unihdr", &(id->hdr_domain_name), ps, depth);
 
 		prs_uint32("param_ctrl", ps, depth, &(id->param_ctrl));
-		smb_io_logon_id("", &(id->logon_id), ps, depth);
+		smb_io_bigint("", &(id->logon_id), ps, depth);
 
 		smb_io_unihdr("unihdr", &(id->hdr_user_name  ), ps, depth);
 		smb_io_unihdr("unihdr", &(id->hdr_wksta_name ), ps, depth);
@@ -1117,4 +1119,478 @@ void net_io_r_sam_logoff(char *desc,  NET_R_SAM_LOGOFF *r_l, prs_struct *ps, int
 	prs_uint32("status      ", ps, depth, &(r_l->status));
 }
 
+/*******************************************************************
+makes a NET_Q_SAM_SYNC structure.
+********************************************************************/
+void make_q_sam_sync(NET_Q_SAM_SYNC *q_s, char *srv_name, char *cli_name,
+		     DOM_CRED *cli_creds, uint32 database_id)
+{
+	if (q_s == NULL) return;
 
+	DEBUG(5,("make_q_sam_sync\n"));
+
+	make_unistr2(&(q_s->uni_srv_name), srv_name, strlen(srv_name)+1);
+	make_unistr2(&(q_s->uni_cli_name), cli_name, strlen(cli_name)+1);
+
+	memcpy(&(q_s->cli_creds), cli_creds, sizeof(q_s->cli_creds));
+	memset(&(q_s->ret_creds), 0, sizeof(q_s->ret_creds));
+
+	q_s->database_id = database_id;
+	q_s->restart_state = 0;
+	q_s->sync_context = 0;
+	q_s->max_size = 0xffff;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+void net_io_q_sam_sync(char *desc, NET_Q_SAM_SYNC *q_s, prs_struct *ps, int depth)
+{
+	if (q_s == NULL) return;
+
+	prs_debug(ps, depth, desc, "net_io_q_sam_sync");
+	depth++;
+
+	smb_io_unistr2("", &(q_s->uni_srv_name), True, ps, depth);
+	smb_io_unistr2("", &(q_s->uni_cli_name), True, ps, depth);
+
+	smb_io_cred("", &(q_s->cli_creds), ps, depth);
+	smb_io_cred("", &(q_s->ret_creds), ps, depth);
+
+	prs_uint32("database_id  ", ps, depth, &(q_s->database_id  ));
+	prs_uint32("restart_state", ps, depth, &(q_s->restart_state));
+	prs_uint32("sync_context ", ps, depth, &(q_s->sync_context ));
+
+	prs_uint32("max_size", ps, depth, &(q_s->max_size));
+}
+
+/*******************************************************************
+makes a SAM_DELTA_HDR structure.
+********************************************************************/
+void make_sam_delta_hdr(SAM_DELTA_HDR *delta, uint16 type, uint32 rid)
+{
+	if (delta == NULL) return;
+
+	DEBUG(5,("make_sam_delta_hdr\n"));
+
+	delta->type2 = delta->type = type;
+	delta->target_rid = rid;
+
+	delta->type3 = type;
+	delta->ptr_delta = 1;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+static void net_io_sam_delta_hdr(char *desc, SAM_DELTA_HDR *delta, prs_struct *ps, int depth)
+{
+	if (delta == NULL) return;
+
+	prs_debug(ps, depth, desc, "net_io_sam_delta_hdr");
+	depth++;
+
+	prs_uint16("type",       ps, depth, &(delta->type      ));
+	prs_uint16("type2",      ps, depth, &(delta->type2     ));
+	prs_uint32("target_rid", ps, depth, &(delta->target_rid));
+
+	prs_uint32("type3",      ps, depth, &(delta->type3     ));
+	prs_uint32("ptr_delta",  ps, depth, &(delta->ptr_delta ));
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+static void net_io_sam_domain_info(char *desc, SAM_DOMAIN_INFO *info, prs_struct *ps, int depth)
+{
+	if (info == NULL) return;
+
+	prs_debug(ps, depth, desc, "net_io_sam_domain_info");
+	depth++;
+
+	smb_io_unihdr("hdr_dom_name" , &(info->hdr_dom_name) , ps, depth);
+	smb_io_unihdr("hdr_oem_info" , &(info->hdr_oem_info) , ps, depth);
+
+	smb_io_bigint("force_logoff" , &(info->force_logoff) , ps, depth);
+	prs_uint16("min_pwd_len"     , ps, depth, &(info->min_pwd_len    ));
+	prs_uint16("pwd_history_len" , ps, depth, &(info->pwd_history_len));
+	smb_io_bigint("max_pwd_age"  , &(info->max_pwd_age)  , ps, depth);
+	smb_io_bigint("min_pwd_age"  , &(info->min_pwd_age)  , ps, depth);
+	smb_io_bigint("dom_mod_count", &(info->dom_mod_count), ps, depth);
+	smb_io_time("creation_time"  , &(info->creation_time), ps, depth);
+
+	smb_io_bufhdr2("hdr_sec_desc", &(info->hdr_sec_desc) , ps, depth);
+	smb_io_unihdr ("hdr_unknown" , &(info->hdr_unknown)  , ps, depth);
+
+	smb_io_unistr2("uni_dom_name", &(info->uni_dom_name),
+		       info->hdr_dom_name.buffer, ps, depth);
+	smb_io_unistr2("buf_oem_info", &(info->buf_oem_info),
+		       info->hdr_oem_info.buffer, ps, depth);
+
+	smb_io_buffer4("buf_sec_desc", &(info->buf_sec_desc),
+		       info->hdr_sec_desc.buffer, ps, depth);
+	smb_io_unistr2("buf_unknown" , &(info->buf_unknown ),
+		       info->hdr_unknown .buffer, ps, depth);
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+static void net_io_sam_group_info(char *desc, SAM_GROUP_INFO *info, prs_struct *ps, int depth)
+{
+	if (info == NULL) return;
+
+	prs_debug(ps, depth, desc, "net_io_sam_group_info");
+	depth++;
+
+	smb_io_unihdr ("hdr_grp_name", &(info->hdr_grp_name), ps, depth);
+	smb_io_gid    ("gid",          &(info->gid),          ps, depth);
+	smb_io_unihdr ("hdr_grp_desc", &(info->hdr_grp_desc), ps, depth);
+	smb_io_bufhdr2("hdr_sec_desc", &(info->hdr_sec_desc), ps, depth);
+	ps->offset += 48;
+
+	smb_io_unistr2("uni_grp_name", &(info->uni_grp_name),
+		       info->hdr_grp_name.buffer, ps, depth);
+	smb_io_unistr2("uni_grp_desc", &(info->uni_grp_desc),
+		       info->hdr_grp_name.buffer, ps, depth);
+	smb_io_buffer4("buf_sec_desc", &(info->buf_sec_desc),
+		       info->hdr_sec_desc.buffer, ps, depth);
+}
+
+/*******************************************************************
+makes a SAM_ACCOUNT_INFO structure.
+********************************************************************/
+void make_sam_account_info(SAM_ACCOUNT_INFO *info, char *user_name,
+			   char *full_name, uint32 user_rid, uint32 group_rid,
+			   char *home_dir, char *dir_drive, char *logon_script,
+			   char *acct_desc, uint32 acb_info, char *profile)
+{
+	int len_user_name = strlen(user_name);
+	int len_full_name = strlen(full_name);
+	int len_home_dir = strlen(home_dir);
+	int len_dir_drive = strlen(dir_drive);
+	int len_logon_script = strlen(logon_script);
+	int len_acct_desc = strlen(acct_desc);
+	int len_profile = strlen(profile);
+
+	DEBUG(5,("make_sam_account_info\n"));
+
+        make_uni_hdr(&(info->hdr_acct_name   ), len_user_name   );
+        make_uni_hdr(&(info->hdr_full_name   ), len_full_name   );
+        make_uni_hdr(&(info->hdr_home_dir    ), len_home_dir    );
+        make_uni_hdr(&(info->hdr_dir_drive   ), len_dir_drive   );
+        make_uni_hdr(&(info->hdr_logon_script), len_logon_script);
+        make_uni_hdr(&(info->hdr_acct_desc   ), len_acct_desc   );
+        make_uni_hdr(&(info->hdr_profile     ), len_profile     );
+
+	/* not present */
+        make_uni_hdr(&(info->hdr_comment), 0);
+	make_bufhdr2(&(info->hdr_pwd_info), 0, 0, 0);
+	make_bufhdr2(&(info->hdr_sec_desc), 0, 0, 0);
+
+	info->user_rid = user_rid;
+	info->group_rid = group_rid;
+
+	init_nt_time(&(info->time_1));
+	init_nt_time(&(info->time_2));
+	init_nt_time(&(info->time_3));
+	init_nt_time(&(info->time_4));
+	init_nt_time(&(info->time_5));
+
+	info->logon_divs = 0xA8;
+	info->ptr_logon_hrs = 0; /* Don't care right now */
+
+	info->acb_info = acb_info;
+	info->unknown4 = 0x4EC;
+	info->unknown5 = 0;
+
+	make_unistr2(&(info->uni_acct_name), user_name, len_user_name+1);
+	make_unistr2(&(info->uni_full_name), full_name, len_full_name+1);
+	make_unistr2(&(info->uni_home_dir ), home_dir , len_home_dir +1);
+	make_unistr2(&(info->uni_dir_drive), dir_drive, len_dir_drive+1);
+	make_unistr2(&(info->uni_logon_script), logon_script, len_logon_script+1);
+	make_unistr2(&(info->uni_acct_desc), acct_desc, len_acct_desc+1);
+	make_unistr2(&(info->uni_profile  ), profile  , len_profile  +1);
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+static void net_io_sam_account_info(char *desc, SAM_ACCOUNT_INFO *info, prs_struct *ps, int depth)
+{
+	if (info == NULL) return;
+
+	prs_debug(ps, depth, desc, "net_io_sam_account_info");
+	depth++;
+
+	smb_io_unihdr("hdr_acct_name", &(info->hdr_acct_name), ps, depth);
+	smb_io_unihdr("hdr_full_name", &(info->hdr_full_name), ps, depth);
+
+	prs_uint32("user_rid ", ps, depth, &(info->user_rid ));
+	prs_uint32("group_rid", ps, depth, &(info->group_rid));
+
+	smb_io_unihdr("hdr_home_dir "   , &(info->hdr_home_dir ), ps, depth);
+	smb_io_unihdr("hdr_dir_drive"   , &(info->hdr_dir_drive), ps, depth);
+	smb_io_unihdr("hdr_logon_script", &(info->hdr_logon_script), ps, depth);
+	smb_io_unihdr("hdr_acct_desc"   , &(info->hdr_acct_desc), ps, depth);
+
+	smb_io_time("time_1", &(info->time_1), ps, depth);
+	smb_io_time("time_2", &(info->time_2), ps, depth);
+	smb_io_time("time_3", &(info->time_3), ps, depth);
+
+	prs_uint32("logon_divs   ", ps, depth, &(info->logon_divs   ));
+	prs_uint32("ptr_logon_hrs", ps, depth, &(info->ptr_logon_hrs));
+
+	smb_io_time("time_4", &(info->time_4), ps, depth);
+	smb_io_time("time_5", &(info->time_5), ps, depth);
+	prs_uint32("acb_info", ps, depth, &(info->acb_info));
+	ps->offset += 36;
+
+	smb_io_unihdr("hdr_comment", &(info->hdr_comment), ps, depth);
+	ps->offset += 12;
+
+	smb_io_bufhdr2("hdr_pwd_info", &(info->hdr_pwd_info), ps, depth);
+	smb_io_bufhdr2("hdr_sec_desc", &(info->hdr_sec_desc), ps, depth);
+	smb_io_unihdr ("hdr_profile ", &(info->hdr_profile) , ps, depth);
+	ps->offset += 36; /* includes that stupid NTTIME, ignore for now */
+
+	smb_io_unistr2("uni_acct_name", &(info->uni_acct_name),
+		       info->hdr_acct_name.buffer, ps, depth);
+	smb_io_unistr2("uni_full_name", &(info->uni_full_name),
+		       info->hdr_full_name.buffer, ps, depth);
+	smb_io_unistr2("uni_home_dir ", &(info->uni_home_dir ),
+		       info->hdr_home_dir .buffer, ps, depth);
+	smb_io_unistr2("uni_dir_drive", &(info->uni_dir_drive),
+		       info->hdr_dir_drive.buffer, ps, depth);
+	smb_io_unistr2("uni_logon_script", &(info->uni_logon_script),
+		       info->hdr_logon_script.buffer, ps, depth);
+	smb_io_unistr2("uni_acct_desc", &(info->uni_acct_desc),
+		       info->hdr_acct_desc.buffer, ps, depth);
+
+	prs_uint32("unknown4", ps, depth, &(info->unknown4));
+	prs_uint32("unknown5", ps, depth, &(info->unknown5));
+
+	smb_io_buffer4("buf_logon_hrs", &(info->buf_logon_hrs),
+		       info->ptr_logon_hrs, ps, depth);
+	smb_io_unistr2("uni_comment"  , &(info->uni_comment  ),
+		       info->hdr_comment.buffer, ps, depth);
+	smb_io_buffer4("buf_pwd_info" , &(info->buf_pwd_info ),
+		       info->hdr_pwd_info.buffer, ps, depth);
+	smb_io_buffer4("buf_sec_desc" , &(info->buf_sec_desc ),
+		       info->hdr_sec_desc.buffer, ps, depth);
+	smb_io_unistr2("uni_profile"  , &(info->uni_profile  ),
+		       info->hdr_profile.buffer, ps, depth);
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+static void net_io_sam_group_mem_info(char *desc, SAM_GROUP_MEM_INFO *info, prs_struct *ps, int depth)
+{
+	int i;
+	fstring tmp;
+
+	if (info == NULL) return;
+
+	prs_debug(ps, depth, desc, "net_io_sam_group_mem_info");
+	depth++;
+
+	prs_align(ps);
+	prs_uint32("ptr_rids   ", ps, depth, &(info->ptr_rids   ));
+	prs_uint32("ptr_attribs", ps, depth, &(info->ptr_attribs));
+	prs_uint32("num_members", ps, depth, &(info->num_members));
+	ps->offset += 16;
+
+	if (info->ptr_rids != 0)
+	{
+		prs_uint32("num_members2", ps, depth, &(info->num_members2));
+		if (info->num_members2 != info->num_members)
+		{
+			/* RPC fault */
+			return;
+		}
+
+		SMB_ASSERT_ARRAY(info->rids, info->num_members2);
+
+		for (i = 0; i < info->num_members2; i++)
+		{
+			prs_grow(ps);
+			slprintf(tmp, sizeof(tmp) - 1, "rids[%02d]", i);
+			prs_uint32(tmp, ps, depth, &(info->rids[i]));
+		}
+	}
+
+	if (info->ptr_attribs != 0)
+	{
+		prs_uint32("num_members3", ps, depth, &(info->num_members3));
+		if (info->num_members3 != info->num_members)
+		{
+			/* RPC fault */
+			return;
+		}
+
+		SMB_ASSERT_ARRAY(info->attribs, info->num_members3);
+
+		for (i = 0; i < info->num_members3; i++)
+		{
+			prs_grow(ps);
+			slprintf(tmp, sizeof(tmp) - 1, "attribs[%02d]", i);
+			prs_uint32(tmp, ps, depth, &(info->attribs[i]));
+		}
+	}
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+static void net_io_sam_alias_info(char *desc, SAM_ALIAS_INFO *info, prs_struct *ps, int depth)
+{
+	if (info == NULL) return;
+
+	prs_debug(ps, depth, desc, "net_io_sam_alias_info");
+	depth++;
+
+	smb_io_unihdr ("hdr_als_name", &(info->hdr_als_name), ps, depth);
+	prs_uint32("als_rid", ps, depth, &(info->als_rid));
+	smb_io_bufhdr2("hdr_sec_desc", &(info->hdr_sec_desc), ps, depth);
+	smb_io_unihdr ("hdr_als_desc", &(info->hdr_als_desc), ps, depth);
+	ps->offset += 40;
+
+	smb_io_unistr2("uni_als_name", &(info->uni_als_name),
+		       info->hdr_als_name.buffer, ps, depth);
+	smb_io_buffer4("buf_sec_desc", &(info->buf_sec_desc),
+		       info->hdr_sec_desc.buffer, ps, depth);
+	smb_io_unistr2("uni_als_desc", &(info->uni_als_desc),
+		       info->hdr_als_name.buffer, ps, depth);
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+static void net_io_sam_alias_mem_info(char *desc, SAM_ALIAS_MEM_INFO *info, prs_struct *ps, int depth)
+{
+	int i;
+	fstring tmp;
+
+	if (info == NULL) return;
+
+	prs_debug(ps, depth, desc, "net_io_sam_alias_mem_info");
+	depth++;
+
+	prs_align(ps);
+	prs_uint32("num_members", ps, depth, &(info->num_members));
+	prs_uint32("ptr_members", ps, depth, &(info->ptr_members));
+	ps->offset += 16;
+
+	if (info->ptr_members != 0)
+	{
+		prs_uint32("num_sids", ps, depth, &(info->num_sids));
+		if (info->num_sids != info->num_members)
+		{
+			/* RPC fault */
+			return;
+		}
+
+		SMB_ASSERT_ARRAY(info->ptr_sids, info->num_sids);
+
+		for (i = 0; i < info->num_sids; i++)
+		{
+			prs_grow(ps);
+			slprintf(tmp, sizeof(tmp) - 1, "ptr_sids[%02d]", i);
+			prs_uint32(tmp, ps, depth, &(info->ptr_sids[i]));
+		}
+
+		SMB_ASSERT_ARRAY(info->sids, info->num_sids);
+
+		for (i = 0; i < info->num_sids; i++)
+		{
+			if (info->ptr_sids[i] != 0)
+			{
+				prs_grow(ps);
+				slprintf(tmp, sizeof(tmp) - 1, "sids[%02d]", i);
+				smb_io_dom_sid2(tmp, &(info->sids[i]), ps, depth);
+			}
+		}
+	}
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+static void net_io_sam_delta_ctr(char *desc, SAM_DELTA_CTR *delta, uint32 type, prs_struct *ps, int depth)
+{
+	if (delta == NULL) return;
+
+	prs_debug(ps, depth, desc, "net_io_sam_delta_ctr");
+	depth++;
+
+	switch (type)
+	{
+	case 1:
+		net_io_sam_domain_info("", &(delta->domain_info), ps, depth);
+		break;
+	case 2:
+		net_io_sam_group_info("", &(delta->group_info), ps, depth);
+		break;
+	case 5:
+		net_io_sam_account_info("", &(delta->account_info), ps, depth);
+		break;
+	case 8:
+		net_io_sam_group_mem_info("", &(delta->grp_mem_info), ps, depth);
+		break;
+	case 9:
+		net_io_sam_alias_info("", &(delta->alias_info), ps, depth);
+		break;
+	case 0xC:
+		net_io_sam_alias_mem_info("", &(delta->als_mem_info), ps, depth);
+		break;
+	default:
+		DEBUG(0, ("Replication error: Unknown delta type %x\n", type));
+	}
+
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+void net_io_r_sam_sync(char *desc, NET_R_SAM_SYNC *r_s, prs_struct *ps, int depth)
+{
+	int i;
+
+	if (r_s == NULL) return;
+
+	prs_debug(ps, depth, desc, "net_io_r_sam_sync");
+	depth++;
+
+	smb_io_cred("", &(r_s->srv_creds), ps, depth);
+	prs_uint32("sync_context", ps, depth, &(r_s->sync_context));
+
+	prs_uint32("ptr_deltas", ps, depth, &(r_s->ptr_deltas));
+	if (r_s->ptr_deltas != 0)
+	{
+		prs_uint32("num_deltas ", ps, depth, &(r_s->num_deltas ));
+		prs_uint32("ptr_deltas2", ps, depth, &(r_s->ptr_deltas2));
+		if (r_s->ptr_deltas2 != 0)
+		{
+			prs_uint32("num_deltas2", ps, depth, &(r_s->num_deltas2));
+			if (r_s->num_deltas2 != r_s->num_deltas)
+			{
+				/* RPC fault */
+				return;
+			}
+
+			for (i = 0; i < r_s->num_deltas2; i++)
+			{
+				net_io_sam_delta_hdr("", &r_s->hdr_deltas[i], ps, depth);
+			}
+
+			for (i = 0; i < r_s->num_deltas2; i++)
+			{
+				net_io_sam_delta_ctr("", &r_s->deltas[i],
+				          r_s->hdr_deltas[i].type3, ps, depth);
+			}
+		}
+	}
+
+	prs_uint32("status", ps, depth, &(r_s->status));
+}

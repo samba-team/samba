@@ -28,6 +28,21 @@
 extern int DEBUGLEVEL;
 
 
+/*******************************************************************
+reads or writes a BIGINT structure.
+********************************************************************/
+void smb_io_bigint(char *desc, BIGINT *bigint, prs_struct *ps, int depth)
+{
+	if (bigint == NULL) return;
+
+	prs_debug(ps, depth, desc, "smb_io_bigint");
+	depth++;
+
+	prs_align(ps);
+	
+	prs_uint32("low ", ps, depth, &(bigint->low ));
+	prs_uint32("high", ps, depth, &(bigint->high));
+}
 
 /*******************************************************************
 reads or writes a UTIME type.
@@ -311,6 +326,7 @@ void smb_io_hdrbuf_post(char *desc,  BUFHDR *hdr, prs_struct *ps, int depth,
 		ps->offset = old_offset;
 	}
 }
+
 /*******************************************************************
 reads or writes a BUFHDR structure.
 ********************************************************************/
@@ -329,6 +345,32 @@ void smb_io_hdrbuf(char *desc,  BUFHDR *hdr, prs_struct *ps, int depth)
 	/* oops! XXXX maybe issue a warning that this is happening... */
 	if (hdr->buf_max_len > MAX_BUFFERLEN) hdr->buf_max_len = MAX_BUFFERLEN;
 	if (hdr->buf_len     > MAX_BUFFERLEN) hdr->buf_len     = MAX_BUFFERLEN;
+}
+
+/*******************************************************************
+creates a BUFHDR2 structure.
+********************************************************************/
+void make_bufhdr2(BUFHDR2 *hdr, uint32 info_level, uint32 length, uint32 buffer)
+{
+	hdr->info_level = info_level;
+	hdr->length     = length;
+	hdr->buffer     = buffer;
+}
+
+/*******************************************************************
+reads or writes a BUFHDR2 structure.
+********************************************************************/
+void smb_io_bufhdr2(char *desc, BUFHDR2 *hdr, prs_struct *ps, int depth)
+{
+	if (hdr == NULL) return;
+
+	prs_debug(ps, depth, desc, "smb_io_bufhdr2");
+	depth++;
+
+	prs_align(ps);
+	prs_uint32("info_level", ps, depth, &(hdr->info_level));
+	prs_uint32("length    ", ps, depth, &(hdr->length    ));
+	prs_uint32("buffer    ", ps, depth, &(hdr->buffer    ));
 }
 
 /*******************************************************************
@@ -456,6 +498,27 @@ void smb_io_buffer3(char *desc,  BUFFER3 *buf3, prs_struct *ps, int depth)
 }
 
 /*******************************************************************
+reads or writes a BUFFER4 structure.
+********************************************************************/
+void smb_io_buffer4(char *desc, BUFFER4 *buf4, uint32 buffer, prs_struct *ps, int depth)
+{
+	if ((buf4 == NULL) || (buffer == 0)) return;
+
+	prs_debug(ps, depth, desc, "smb_io_buffer4");
+	depth++;
+
+	prs_align(ps);
+	prs_uint32("buf_len", ps, depth, &(buf4->buf_len));
+
+	if (buf4->buf_len > MAX_BUFFERLEN)
+	{
+		buf4->buf_len = MAX_BUFFERLEN;
+	}
+
+	prs_uint8s(True, "buffer", ps, depth, buf4->buffer, buf4->buf_len);
+}
+
+/*******************************************************************
 creates a BUFFER2 structure.
 ********************************************************************/
 void make_buffer2(BUFFER2 *str, const char *buf, int len)
@@ -463,12 +526,11 @@ void make_buffer2(BUFFER2 *str, const char *buf, int len)
 	ZERO_STRUCTP(str);
 
 	/* set up string lengths. */
-	str->buf_max_len = len;
+	str->buf_max_len = str->buf_len = len * 2;
 	str->undoc       = 0;
-	str->buf_len     = len;
 
-	/* store the string (wide chars) */
-	ascii_to_unistr(str->buffer, buf, len);
+	/* store the string */
+	ascii_to_unibuf(str->buffer, buf, len);
 }
 
 /*******************************************************************
@@ -907,35 +969,6 @@ void smb_io_clnt_info(char *desc,  DOM_CLNT_INFO *clnt, prs_struct *ps, int dept
 	
 	smb_io_log_info("", &(clnt->login), ps, depth);
 	smb_io_cred    ("", &(clnt->cred ), ps, depth);
-}
-
-/*******************************************************************
-makes a DOM_LOGON_ID structure.
-********************************************************************/
-void make_logon_id(DOM_LOGON_ID *log, uint32 log_id_low, uint32 log_id_high)
-{
-	if (log == NULL) return;
-
-	DEBUG(5,("make_logon_id: %d\n", __LINE__));
-
-	log->low  = log_id_low;
-	log->high = log_id_high;
-}
-
-/*******************************************************************
-reads or writes a DOM_LOGON_ID structure.
-********************************************************************/
-void smb_io_logon_id(char *desc,  DOM_LOGON_ID *log, prs_struct *ps, int depth)
-{
-	if (log == NULL) return;
-
-	prs_debug(ps, depth, desc, "smb_io_logon_id");
-	depth++;
-
-	prs_align(ps);
-	
-	prs_uint32("low ", ps, depth, &(log->low ));
-	prs_uint32("high", ps, depth, &(log->high));
 }
 
 /*******************************************************************

@@ -101,7 +101,7 @@ void cmd_netlogon_login_test(struct client_info *info)
 	{
 		unsigned char new_trust_passwd[16];
 		generate_random_buffer(new_trust_passwd, 16, True);
-		res = res ? cli_nt_srv_pwset(smb_cli, nt_pipe_fnum, new_trust_passwd) : False;
+		res = res ? cli_nt_srv_pwset(smb_cli, nt_pipe_fnum, new_trust_passwd, SEC_CHAN_WKSTA) : False;
 
 		if (res)
 		{
@@ -174,3 +174,31 @@ void cmd_netlogon_domain_test(struct client_info *info)
 		nt_trust_dom, BOOLSTR(res));
 }
 
+/****************************************************************************
+experimental SAM synchronisation.
+****************************************************************************/
+void cmd_sam_sync(struct client_info *info)
+{
+	uint16 nt_pipe_fnum;
+	BOOL res = True;
+	unsigned char trust_passwd[16];
+
+	DEBUG(5,("Attempting SAM Synchronisation with PDC\n"));
+
+	res = res ? trust_get_passwd(trust_passwd, smb_cli->domain, info->myhostname) : False;
+
+	/* open NETLOGON session.  negotiate credentials */
+	res = res ? cli_nt_session_open(smb_cli, PIPE_NETLOGON, &nt_pipe_fnum) : False;
+
+	res = res ? cli_nt_setup_creds(smb_cli, nt_pipe_fnum, smb_cli->mach_acct,
+	                               trust_passwd, SEC_CHAN_BDC) : False;
+
+	res = res ? cli_net_sam_sync(smb_cli, nt_pipe_fnum, 0) : False;
+
+	memset(trust_passwd, 0, 16);
+
+	/* close the session */
+	cli_nt_session_close(smb_cli, nt_pipe_fnum);
+
+	fprintf(out_hnd,"cmd_sam_sync: test succeeded: %s\n", BOOLSTR(res));
+}

@@ -80,7 +80,8 @@ BOOL cli_nt_setup_creds(struct cli_state *cli, uint16 fnum,
  Set machine password.
  ****************************************************************************/
 
-BOOL cli_nt_srv_pwset(struct cli_state *cli, uint16 fnum, unsigned char *new_hashof_trust_pwd)
+BOOL cli_nt_srv_pwset(struct cli_state *cli, uint16 fnum,
+		      unsigned char *new_hashof_trust_pwd, uint16 sec_chan)
 {
   unsigned char processed_new_pwd[16];
 
@@ -94,7 +95,7 @@ BOOL cli_nt_srv_pwset(struct cli_state *cli, uint16 fnum, unsigned char *new_has
   cred_hash3( processed_new_pwd, new_hashof_trust_pwd, cli->sess_key, 1);
 
   /* send client srv_pwset challenge */
-  return cli_net_srv_pwset(cli, fnum, processed_new_pwd);
+  return cli_net_srv_pwset(cli, fnum, processed_new_pwd, sec_chan);
 }
 
 /****************************************************************************

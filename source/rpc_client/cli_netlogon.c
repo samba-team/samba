@@ -257,14 +257,14 @@ BOOL cli_net_req_chal(struct cli_state *cli, uint16 nt_pipe_fnum, DOM_CHAL *clnt
 LSA Server Password Set.
 ****************************************************************************/
 
-BOOL cli_net_srv_pwset(struct cli_state *cli, uint16 nt_pipe_fnum, uint8 hashed_mach_pwd[16])
+BOOL cli_net_srv_pwset(struct cli_state *cli, uint16 nt_pipe_fnum,
+		       uint8 hashed_mach_pwd[16], uint16 sec_chan_type)
 {
   prs_struct rbuf;
   prs_struct buf; 
   DOM_CRED new_clnt_cred;
   NET_Q_SRV_PWSET q_s;
   BOOL ok = False;
-  uint16 sec_chan_type = 2;
 
   gen_next_creds( cli, &new_clnt_cred);
 
@@ -473,13 +473,68 @@ password ?).\n", cli->desthost ));
   return ok;
 }
 
+/***************************************************************************
+Synchronise SAM Database (requires SEC_CHAN_BDC).
+****************************************************************************/
+BOOL cli_net_sam_sync(struct cli_state *cli, uint16 nt_pipe_fnum, uint32 database_id)
+{
+	NET_Q_SAM_SYNC q_s;
+	prs_struct rbuf;
+	prs_struct buf; 
+	DOM_CRED new_clnt_cred;
+	BOOL ok = False;
+	
+	gen_next_creds(cli, &new_clnt_cred);
+	
+	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
+	prs_init(&rbuf, 0,    4, SAFETY_MARGIN, True );
+	
+	/* create and send a MSRPC command with api NET_SAM_SYNC */
+	
+	make_q_sam_sync(&q_s, cli->srv_name_slash, global_myname,
+			&new_clnt_cred, database_id);
+	
+	/* turn parameters into data stream */
+	net_io_q_sam_sync("", &q_s,  &buf, 0);
+	
+	/* send the data on \PIPE\ */
+	if (rpc_api_pipe_req(cli, nt_pipe_fnum, NET_SAM_SYNC, &buf, &rbuf))
+	{
+		NET_R_SAM_SYNC r_s;
+		
+		net_io_r_sam_sync("", &r_s, &rbuf, 0);
+		ok = (rbuf.offset != 0);
+		
+		if (ok && r_s.status != 0)
+		{
+			/* report error code */
+			DEBUG(0,("cli_net_sam_sync: %s\n", get_nt_error_msg(r_s.status)));
+			cli->nt_error = r_s.status;
+			ok = False;
+		}
+		
+		/* Update the credentials. */
+		if (ok && !clnt_deal_with_creds(cli->sess_key, &(cli->clnt_cred), &(r_s.srv_creds)))
+		{
+			DEBUG(0,("cli_net_sam_sync: server %s replied with bad credential (bad machine password ?).\n", cli->desthost));
+			ok = False;
+		}
+	}
+	
+	prs_mem_free(&rbuf);
+	prs_mem_free(&buf );
+	
+	return ok;
+}
+
 /*********************************************************
  Change the domain password on the PDC.
 **********************************************************/
 
 static BOOL modify_trust_password( char *domain, char *remote_machine, 
                           unsigned char orig_trust_passwd_hash[16],
-                          unsigned char new_trust_passwd_hash[16])
+                          unsigned char new_trust_passwd_hash[16],
+                          uint16 sec_chan)
 {
   uint16 nt_pipe_fnum;
   struct cli_state cli;
@@ -575,7 +630,7 @@ machine %s. Error was : %s.\n", remote_machine, cli_errstr(&cli)));
   } 
   
   if(cli_nt_setup_creds(&cli, nt_pipe_fnum,
-     cli.mach_acct, orig_trust_passwd_hash, SEC_CHAN_WKSTA) == False) {
+     cli.mach_acct, orig_trust_passwd_hash, sec_chan) == False) {
     DEBUG(0,("modify_trust_password: unable to setup the PDC credentials to machine \
 %s. Error was : %s.\n", remote_machine, cli_errstr(&cli)));
     cli_nt_session_close(&cli, nt_pipe_fnum);
@@ -584,7 +639,7 @@ machine %s. Error was : %s.\n", remote_machine, cli_errstr(&cli)));
     return False;
   } 
 
-  if( cli_nt_srv_pwset( &cli, nt_pipe_fnum, new_trust_passwd_hash ) == False) {
+  if( cli_nt_srv_pwset( &cli, nt_pipe_fnum, new_trust_passwd_hash, sec_chan ) == False) {
     DEBUG(0,("modify_trust_password: unable to change password for machine %s in domain \
 %s to Domain controller %s. Error was %s.\n", global_myname, domain, remote_machine, 
                             cli_errstr(&cli)));
@@ -607,7 +662,8 @@ machine %s. Error was : %s.\n", remote_machine, cli_errstr(&cli)));
  update.
 ************************************************************************/
 
-BOOL change_trust_account_password( char *domain, char *remote_machine_list)
+BOOL change_trust_account_password(char *domain, char *remote_machine_list,
+					uint16 sec_chan)
 {
   fstring remote_machine;
   unsigned char old_trust_passwd_hash[16];
@@ -631,7 +687,7 @@ account password for domain %s.\n", domain));
 		   LIST_SEP, sizeof(remote_machine))) {
     strupper(remote_machine);
     if(modify_trust_password( domain, remote_machine, 
-                              old_trust_passwd_hash, new_trust_passwd_hash)) {
+                old_trust_passwd_hash, new_trust_passwd_hash, sec_chan)) {
       DEBUG(0,("%s : change_trust_account_password: Changed password for \
 domain %s.\n", timestring(), domain));
       /*
