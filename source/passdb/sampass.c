@@ -79,6 +79,7 @@ static BOOL string_empty (const char *str)
 static struct sam_passwd *getsamfile21pwent(void *vp)
 {
 	struct sam_passwd *user;
+	user_struct *vuser;
 
 	static pstring full_name;
 	static pstring home_dir;
@@ -98,16 +99,19 @@ static struct sam_passwd *getsamfile21pwent(void *vp)
 
 	/*
 	 * get all the other gubbins we need.  substitute unix name for %U
-	 * as putting the nt name in is a bit meaningless.
 	 */
 
+	vuser = get_valid_user_struct(get_sec_ctx());
+
 	pstrcpy(full_name    , "");
-	pstrcpy(logon_script , lp_logon_script       (NULL));
-	pstrcpy(profile_path , lp_logon_path         (NULL));
-	pstrcpy(home_drive   , lp_logon_drive        (NULL));
-	pstrcpy(home_dir     , lp_logon_home         (NULL));
+	pstrcpy(logon_script , lp_logon_script       (vuser));
+	pstrcpy(profile_path , lp_logon_path         (vuser));
+	pstrcpy(home_drive   , lp_logon_drive        (vuser));
+	pstrcpy(home_dir     , lp_logon_home         (vuser));
 	pstrcpy(acct_desc    , "");
 	pstrcpy(workstations , "");
+
+	vuid_free_user_struct(vuser);
 
 	/* 
 	   only overwrite values with defaults IIF specific backend

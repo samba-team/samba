@@ -22,9 +22,7 @@
 */
 
 /* 
- * algorithmic implementation of a SURS (sid to uid resolution) table.
- * only does the local SAM, does NOT even do domain membership.
- * repeat: this is for the LOCAL SAM only, not even the BUILTIN domain.
+ * LDAP implementation of a SURS (sid to uid resolution) table.
  */
 
 #include "includes.h"
@@ -34,142 +32,34 @@
 #include "sids.h"
 #include "ldapdb.h"
 
-extern int DEBUGLEVEL;
-
-#if 0
-/*******************************************************************
- converts a RID to a UNIX ID. NOTE: IS SOMETHING SPECIFIC TO SAMBA
- ********************************************************************/
-static BOOL nt5ldap_sursalg_rid_to_unix_id(LDAPDB *hds, uint32 rid, uint32 *id, int type)
-{
-	BOOL ret;
-
-	if (id == NULL) 
-		return False;
-
-	if (!ldapdb_lookup_by_rid(hds, rid))
-		return False;
-
-	switch (type)
-	{
-		case RID_TYPE_USER:
-			ret = ldapdb_get_uint32(hds, "uidNumber", id);
-			break;
-		case RID_TYPE_GROUP:
-		case RID_TYPE_ALIAS:
-			ret = ldapdb_get_uint32(hds, "gidNumber", id);
-			break;
-		default:
-			ret = False;
-	}
-
-	return ret;
-}
-
-/*******************************************************************
- converts UNIX uid to an NT User RID. NOTE: IS SOMETHING SPECIFIC TO SAMBA
- ********************************************************************/
-static BOOL nt5ldap_sursalg_user_rid_to_uid(LDAPDB *hds, uint32 user_rid, uint32 *id)
-{
-	return nt5ldap_sursalg_rid_to_unix_id(hds, user_rid, id, RID_TYPE_USER);
-}
-
-/*******************************************************************
- converts NT Group RID to a UNIX uid. NOTE: IS SOMETHING SPECIFIC TO SAMBA
- ********************************************************************/
-static BOOL nt5ldap_sursalg_group_rid_to_gid(LDAPDB *hds, uint32 group_rid, uint32 *id)
-{
-	return nt5ldap_sursalg_rid_to_unix_id(hds, group_rid, id, RID_TYPE_GROUP);
-}
-
-/*******************************************************************
- converts NT Alias RID to a UNIX uid. NOTE: IS SOMETHING SPECIFIC TO SAMBA
- ********************************************************************/
-static BOOL nt5ldap_sursalg_alias_rid_to_gid(LDAPDB *hds, uint32 alias_rid, uint32 *id)
-{
-	return nt5ldap_sursalg_rid_to_unix_id(hds, alias_rid, id, RID_TYPE_ALIAS);
-}
-
-/*******************************************************************
- converts NT Group RID to a UNIX uid. NOTE: IS SOMETHING SPECIFIC TO SAMBA
- ********************************************************************/
-static uint32 nt5ldap_sursalg_gid_to_group_rid(LDAPDB *hds, uint32 gid)
-{
-	uint32 ret;
-
-	if (!ldapdb_lookup_by_posix_gid(hds, gid) ||
-	    !ldapdb_get_rid(hds, "objectSid", &ret))
-		ret = 0xffffffff; /* XXX */
-
-	return ret;
-}
-
 /******************************************************************
- converts UNIX gid to an NT Alias RID. NOTE: IS SOMETHING SPECIFIC TO SAMBA
+ converts SID + SID_NAME_USE type to a UNIX id.
  ********************************************************************/
-static uint32 nt5ldap_sursalg_gid_to_alias_rid(LDAPDB *hds, uint32 gid)
+BOOL surs_nt5ldap_sam_sid_to_unixid(LDAPDB *hds, DOM_SID * sid, uint32 type,
+				    uint32 * id, BOOL create)
 {
-	uint32 ret;
-
-	if (!ldapdb_lookup_by_posix_gid(hds, gid) ||
-	    !ldapdb_get_rid(hds, "objectSid", &ret))
-		ret = 0xffffffff; /* XXX */
-
-	return ret;
-}
-
-/*******************************************************************
- converts UNIX uid to an NT User RID. NOTE: IS SOMETHING SPECIFIC TO SAMBA
- ********************************************************************/
-static uint32 nt5ldap_sursalg_uid_to_user_rid(LDAPDB *hds, uint32 uid)
-{
-	uint32 ret;
-
-	if (!ldapdb_lookup_by_posix_uid(hds, uid) ||
-	    !ldapdb_get_rid(hds, "objectSid", &ret))
-		ret = 0xffffffff; /* XXX */
-
-	return ret;
-}
-#endif
-
-/******************************************************************
- converts SID + SID_NAME_USE type to a UNIX id.  the Domain SID is,
- and can only be, our own SID.
- ********************************************************************/
-BOOL surs_nt5ldap_sam_sid_to_unixid(LDAPDB *hds, DOM_SID *sid, uint32 type, uint32 *id)
-{
-	BOOL ret;
-
 	if (!ldapdb_lookup_by_sid(hds, sid))
 		return False;
 
 	switch (type)
 	{
 		case RID_TYPE_USER:
-			ret = ldapdb_get_uint32(hds, "uidNumber", id);
-			break;
+			return ldapdb_get_uint32(hds, "uidNumber", id);
 		case RID_TYPE_GROUP:
 		case RID_TYPE_ALIAS:
-			ret = ldapdb_get_uint32(hds, "gidNumber", id);
-			break;
+			return ldapdb_get_uint32(hds, "gidNumber", id);
 		default:
-			ret = False;
+			break;
 	}
 
-	/* Fallback to default impl */
-	if (!ret)
-		ret = sursalg_sam_sid_to_unixid(sid, type, id);
-
-	return ret;
+	return False;
 }
 
 /******************************************************************
- converts UNIX gid + SID_NAME_USE type to a SID.  the Domain SID is,
- and can only be, our own SID.
+ converts UNIX gid + SID_NAME_USE type to a SID.  
  ********************************************************************/
-BOOL surs_nt5ldap_unixid_to_sam_sid(LDAPDB *hds, uint32 id, uint32 type, DOM_SID *sid,
-				BOOL create)
+BOOL surs_nt5ldap_unixid_to_sam_sid(LDAPDB *hds, uint32 id, uint32 type,
+				    DOM_SID * sid, BOOL create)
 {
 	char *attribute;
 	fstring filter;
@@ -179,25 +69,27 @@ BOOL surs_nt5ldap_unixid_to_sam_sid(LDAPDB *hds, uint32 id, uint32 type, DOM_SID
 	switch (type)
 	{
 		case SID_NAME_USER:
+		{
 			attribute = "uidNumber";
 			break;
+		}
 		case SID_NAME_ALIAS:
 		case SID_NAME_DOM_GRP:
 		case SID_NAME_WKN_GRP:
+		{
 			attribute = "gidNumber";
 			break;
+		}
 		default:
+		{
 			return False;
+		}
 	}
 
-	slprintf(filter, sizeof(filter)-1, "(&(objectSid=*)(%s=%d))", attribute, id);
-	ret = ldapdb_search(hds, NULL, filter, attrs, 1) && ldapdb_get_sid(hds, "objectSid", sid);
-
-	/* Fallback to default impl */
-	if (!ret)
-		ret = sursalg_unixid_to_sam_sid(id, type, sid, create);
-
-	return ret;
+	slprintf(filter, sizeof(filter) - 1, "(&(objectSid=*)(%s=%d))",
+		 attribute, id);
+	return ldapdb_search(hds, NULL, filter, attrs, 1)
+		&& ldapdb_get_sid(hds, "objectSid", sid);
 }
 
 #endif /* WITH_NT5LDAP */

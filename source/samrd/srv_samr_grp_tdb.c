@@ -479,7 +479,7 @@ uint32 _samr_create_dom_group(const POLICY_HND *domain_pol,
 	}
 
 	/* create a User SID for the unix group */
-	if (!sursalg_unixid_to_sam_sid(uxgrp->gr_gid, SID_NAME_DOM_GRP,
+	if (!surs_unixid_to_sam_sid(uxgrp->gr_gid, SID_NAME_DOM_GRP,
 				       &grp_sid, True))
 	{
 		DEBUG(0, ("create group: unix gid %d to RID failed\n",

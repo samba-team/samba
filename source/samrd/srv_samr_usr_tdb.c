@@ -800,7 +800,7 @@ uint32 _samr_create_user(const POLICY_HND *domain_pol,
 
 		for (i = 0; i < n_groups; i++)
 		{
-			if (sursalg_unixid_to_sam_sid(groups[i],
+			if (surs_unixid_to_sam_sid(groups[i],
 						      SID_NAME_ALIAS,
 						      &grp_sid, True))
 			{
@@ -818,7 +818,7 @@ uint32 _samr_create_user(const POLICY_HND *domain_pol,
 					num_alss++;
 				}
 			}
-			if (sursalg_unixid_to_sam_sid(groups[i],
+			if (surs_unixid_to_sam_sid(groups[i],
 						      SID_NAME_DOM_GRP,
 						      &grp_sid, True))
 			{
@@ -842,7 +842,7 @@ uint32 _samr_create_user(const POLICY_HND *domain_pol,
 	}
 
 	/* create a User SID for the unix user */
-	if (!sursalg_unixid_to_sam_sid(pass->pw_uid, SID_NAME_USER, &usr_sid,
+	if (!surs_unixid_to_sam_sid(pass->pw_uid, SID_NAME_USER, &usr_sid,
 				       True))
 	{
 		DEBUG(0, ("create user: unix uid %d to RID failed\n",
@@ -851,7 +851,7 @@ uint32 _samr_create_user(const POLICY_HND *domain_pol,
 	}
 
 	/* create a Group SID for the unix user */
-	if (!sursalg_unixid_to_sam_sid
+	if (!surs_unixid_to_sam_sid
 	    (pass->pw_gid, SID_NAME_DOM_GRP, &grp_sid, True))
 	{
 		DEBUG(0, ("create user: unix uid %d to RID failed\n",
