@@ -135,13 +135,13 @@ static int writefile(int f, char *b, int n)
   read from a file with LF->CR/LF translation if appropriate. return the 
   number read. read approx n bytes.
 ****************************************************************************/
-static int readfile(char *b, int size, int n, FILE *f)
+static int readfile(char *b, int n, FILE *f)
 {
 	int i;
 	int c;
 
 	if (!translation || (size != 1))
-		return(fread(b,size,n,f));
+		return fread(b,1,n,f);
   
 	i = 0;
 	while (i < (n - 1) && (i < BUFFER_SIZE)) {
@@ -1023,7 +1023,7 @@ static void do_put(char *rname,char *lname)
 		int n = maxwrite;
 		int ret;
 
-		if ((n = readfile(buf,1,n,f)) < 1) {
+		if ((n = readfile(buf,n,f)) < 1) {
 			if((n == 0) && feof(f))
 				break; /* Empty local file. */
 
