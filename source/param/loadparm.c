@@ -293,7 +293,7 @@ static service sDefault =
   NULL,    /* szMagicOutput */
   NULL,    /* szMangledMap */
   NULL,    /* szVetoFiles */
-  DEFAULT_FILES_TO_HIDE,    /* szVetoFiles */
+  DEFAULT_FILES_TO_HIDE,    /* szHideFiles */
   NULL,    /* comment */
   NULL,    /* force user */
   NULL,    /* force group */

@@ -291,6 +291,7 @@ typedef unsigned short mode_t;
 #include <arpa/inet.h>
 #include <rpcsvc/ypclnt.h>
 #include <termios.h>
+#include <sys/stropts.h>
 #ifndef USE_LIBDES
 #include <crypt.h>
 #endif /* USE_LIBDES */
