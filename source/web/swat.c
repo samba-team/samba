@@ -897,11 +897,13 @@ static void printers_page(void)
 	}
 	printf("</tr>");
 	printf("</table>\n");
-	printf("<table>\n");
 
-	printf("<tr><td><input type=submit name=createshare value=\"Create Printer\"></td>\n");
-	printf("<td><input type=text size=30 name=newshare></td></tr>\n");
-	printf("</table>");
+	if (have_write_access) {
+		printf("<table>\n");
+		printf("<tr><td><input type=submit name=createshare value=\"Create Printer\"></td>\n");
+		printf("<td><input type=text size=30 name=newshare></td></tr>\n");
+		printf("</table>");
+	}
 
 
 	if (snum >= 0) {
