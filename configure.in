@@ -657,10 +657,6 @@ AH_BOTTOM([#undef BINDIR
 #undef LIBEXECDIR
 #undef SBINDIR])
 
-if false; then
-	# hack to shut up automake
-	LIBOBJS="$LIBOBJS make-print-version.o"
-fi
 LTLIBOBJS=`echo "$LIBOBJS" | sed 's/\.o/\.lo/g'`
 AC_SUBST(LTLIBOBJS)
 AC_CONFIG_FILES(Makefile 		\
