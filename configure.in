@@ -300,6 +300,8 @@ AC_BROKEN(seteuid strcasecmp strncasecmp strcpy_truncate strdup strerror)
 AC_BROKEN(strftime strlwr strnlen strsep strtok_r strupr swab)
 AC_BROKEN(unsetenv verr verrx vsyslog vwarn vwarnx warn warnx writev)
 
+AC_FIND_FUNC_NO_LIBS(crypt, crypt)dnl
+
 AC_CACHE_CHECK(if realloc if broken, ac_cv_func_realloc_broken, [
 ac_cv_func_realloc_broken=no
 AC_TRY_RUN([
