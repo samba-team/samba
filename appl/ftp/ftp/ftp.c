@@ -576,6 +576,18 @@ copy_stream(FILE *from, FILE *to)
     return bytes;
 }
 
+static void
+set_buffer_size(int fd, int read)
+{
+#if defined(SO_RCVBUF) && defined(SO_SNDBUF)
+    size_t size = 1048576;
+    while(size >= 131072 && 
+	  setsockopt(fd, SOL_SOCKET, read ? SO_RCVBUF : SO_SNDBUF, 
+		     &size, sizeof(size)) < 0)
+	size /= 2;
+#endif
+}
+
 void
 sendrequest(char *cmd, char *local, char *remote, int printnames)
 {
@@ -714,7 +726,8 @@ sendrequest(char *cmd, char *local, char *remote, int printnames)
 	dout = dataconn(lmode);
 	if (dout == NULL)
 		goto abort;
-	(void) gettimeofday(&start, (struct timezone *)0);
+	set_buffer_size(fileno(dout), 0);
+	gettimeofday(&start, (struct timezone *)0);
 	oldintp = signal(SIGPIPE, SIG_IGN);
 	switch (curtype) {
 
@@ -916,6 +929,7 @@ recvrequest(char *cmd, char *local, char *remote, char *lmode, int printnames)
 	din = dataconn("r");
 	if (din == NULL)
 		goto abort;
+	set_buffer_size(fileno(din), 1);
 	if (strcmp(local, "-") == 0)
 		fout = stdout;
 	else if (*local == '|') {
@@ -1271,8 +1285,10 @@ ptransfer(char *direction, long int bytes,
 {
     struct timeval td;
     float s;
-    long bs;
-
+    float bs;
+    int prec;
+    char *unit;
+    
     if (verbose) {
 	td.tv_sec = t1->tv_sec - t0->tv_sec;
 	td.tv_usec = t1->tv_usec - t0->tv_usec;
@@ -1282,8 +1298,21 @@ ptransfer(char *direction, long int bytes,
 	}
 	s = td.tv_sec + (td.tv_usec / 1000000.);
 	bs = bytes / (s?s:1);
-	printf("%ld bytes %s in %.3g seconds (%ld bytes/s)\n",
-	       bytes, direction, s, bs);
+	if(bs >= 1048576){
+	    bs /= 1048576;
+	    unit = "M";
+	    prec = 2;
+	}else if(bs >= 1024){
+	    bs /= 1024;
+	    unit = "k";
+	    prec = 1;
+	}else{
+	    unit = "";
+	    prec = 0;
+	}
+	
+	printf("%ld bytes %s in %.3g seconds (%.*f %sbytes/s)\n",
+	       bytes, direction, s, prec, bs, unit);
     }
 }
 
