@@ -74,7 +74,7 @@ static void usage(void)
 		printf("  -e                   enable user\n");
 		printf("  -n                   set no password\n");
 		printf("  -m                   machine trust account\n");
-#ifdef WITH_LDAP
+#ifdef WITH_LDAP_SAM
 		printf("  -w                   ldap admin password\n");
 #endif
 	}
@@ -540,7 +540,7 @@ static BOOL password_change(const char *remote_machine, char *user_name,
 	return ret;
 }
 
-#ifdef WITH_LDAP
+#ifdef WITH_LDAP_SAM
 /*******************************************************************
  Store the LDAP admin password in secrets.tdb
  ******************************************************************/
@@ -573,7 +573,7 @@ static int process_root(int argc, char *argv[])
 	int local_flags = 0;
 	BOOL stdin_passwd_get = False;
 	fstring user_name, user_password;
-#ifdef WITH_LDAP
+#ifdef WITH_LDAP_SAM
 	fstring ldap_secret;
 #endif
 	char *new_domain = NULL;
@@ -624,7 +624,7 @@ static int process_root(int argc, char *argv[])
 			stdin_passwd_get = True;
 			break;
 		case 'w':
-#ifdef WITH_LDAP
+#ifdef WITH_LDAP_SAM
 			local_flags |= LOCAL_SET_LDAP_ADMIN_PW;
 			fstrcpy(ldap_secret, optarg);
 #else
@@ -663,7 +663,7 @@ static int process_root(int argc, char *argv[])
 	argc -= optind;
 	argv += optind;
 
-#ifdef WITH_LDAP
+#ifdef WITH_LDAP_SAM
 	if (local_flags & LOCAL_SET_LDAP_ADMIN_PW)
 	{
 		printf("Setting stored password for \"%s\" in secrets.tdb\n", 
