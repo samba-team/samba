@@ -604,8 +604,10 @@ static NTSTATUS netr_LogonSamLogonWithFlags(struct dcesrv_call_state *dce_call, 
 	}
 	
 	/* Don't crypt an all-zero key, it would give away the NETLOGON pipe session key */
-	if (memcmp(sam->key.key, zeros,  
-		   sizeof(sam->key.key)) != 0) {
+	/* It appears that level 6 is not individually encrypted */
+	if ((r->in.validation_level != 6) 
+	    && memcmp(sam->key.key, zeros,  
+		      sizeof(sam->key.key)) != 0) {
 		creds_arcfour_crypt(pipe_state->creds, 
 				    sam->key.key, 
 				    sizeof(sam->key.key));
@@ -619,8 +621,10 @@ static NTSTATUS netr_LogonSamLogonWithFlags(struct dcesrv_call_state *dce_call, 
 	}
 	
 	/* Don't crypt an all-zero key, it would give away the NETLOGON pipe session key */
-	if (memcmp(sam->LMSessKey.key, zeros,  
-		   sizeof(sam->LMSessKey.key)) != 0) {
+	/* It appears that level 6 is not individually encrypted */
+	if ((r->in.validation_level != 6) 
+	    && memcmp(sam->LMSessKey.key, zeros,  
+		      sizeof(sam->LMSessKey.key)) != 0) {
 		creds_arcfour_crypt(pipe_state->creds, 
 				    sam->LMSessKey.key, 
 				    sizeof(sam->LMSessKey.key));
