@@ -47,12 +47,16 @@
  * entry point syscalls.
  */
 
-#if SunOS == 4
+#if SunOS == 40
 #define AFS_SYSCALL	31
 #endif
 
-#if SunOS == 5
+#if SunOS >= 50 && SunOS < 57
 #define AFS_SYSCALL	105
+#endif
+
+#if SunOS == 57
+#define AFS_SYSCALL	73
 #endif
 
 #if defined(__hpux)
