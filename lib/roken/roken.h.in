@@ -200,6 +200,10 @@ size_t strnlen(const char*, size_t);
 char *strsep(char**, const char*);
 #endif
 
+#if !defined(HAVE_STRSEP_COPY) || defined(NEED_STRSEP_COPY_PROTO)
+ssize_t strsep_copy(const char**, const char*, char*, size_t);
+#endif
+
 #ifndef HAVE_STRCASECMP
 int strcasecmp(const char *s1, const char *s2);
 #endif
