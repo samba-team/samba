@@ -21,6 +21,127 @@
 
 #include "includes.h"
 
+/**************************/
+/* srvsvc_NetCharDev      */
+/**************************/
+static BOOL test_NetCharDevGetInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+				const char *devname)
+{
+	NTSTATUS status;
+	struct srvsvc_NetCharDevGetInfo r;
+	uint32_t levels[] = {0, 1};
+	int i;
+	BOOL ret = True;
+
+	r.in.server_unc = talloc_asprintf(mem_ctx,"\\\\%s",dcerpc_server_name(p));
+	r.in.device_name = devname;
+
+	for (i=0;i<ARRAY_SIZE(levels);i++) {
+		ZERO_STRUCT(r.out);
+		r.in.level = levels[i];
+		printf("testing NetCharDevGetInfo level %u on device '%s'\n",
+			r.in.level, r.in.device_name);
+		status = dcerpc_srvsvc_NetCharDevGetInfo(p, mem_ctx, &r);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("NetCharDevGetInfo level %u on device '%s' failed - %s\n",
+				r.in.level, r.in.device_name, nt_errstr(status));
+			ret = False;
+			continue;
+		}
+		if (!W_ERROR_IS_OK(r.out.result)) {
+			printf("NetCharDevGetInfo level %u on device '%s' failed - %s\n",
+				r.in.level, r.in.device_name, win_errstr(r.out.result));
+			continue;
+		}
+	}
+
+	return ret;
+}
+
+static BOOL test_NetCharDevControl(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+				const char *devname)
+{
+	NTSTATUS status;
+	struct srvsvc_NetCharDevControl r;
+	uint32_t opcodes[] = {0, 1};
+	int i;
+	BOOL ret = True;
+
+	r.in.server_unc = talloc_asprintf(mem_ctx,"\\\\%s",dcerpc_server_name(p));
+	r.in.device_name = devname;
+
+	for (i=0;i<ARRAY_SIZE(opcodes);i++) {
+		ZERO_STRUCT(r.out);
+		r.in.opcode = opcodes[i];
+		printf("testing NetCharDevControl opcode %u on device '%s'\n", 
+			r.in.opcode, r.in.device_name);
+		status = dcerpc_srvsvc_NetCharDevControl(p, mem_ctx, &r);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("NetCharDevControl opcode %u failed - %s\n", r.in.opcode, nt_errstr(status));
+			ret = False;
+			continue;
+		}
+		if (!W_ERROR_IS_OK(r.out.result)) {
+			printf("NetCharDevControl opcode %u failed - %s\n", r.in.opcode, win_errstr(r.out.result));
+			continue;
+		}
+	}
+
+	return ret;
+}
+
+static BOOL test_NetCharDevEnum(struct dcerpc_pipe *p, 
+			   TALLOC_CTX *mem_ctx)
+{
+	NTSTATUS status;
+	struct srvsvc_NetCharDevEnum r;
+	struct srvsvc_NetCharDevCtr0 c0;
+	uint32 levels[] = {0, 1};
+	int i;
+	BOOL ret = True;
+
+	r.in.server_unc = talloc_asprintf(mem_ctx,"\\\\%s",dcerpc_server_name(p));
+	r.in.ctr.ctr0 = &c0;
+	r.in.ctr.ctr0->count = 0;
+	r.in.ctr.ctr0->array = NULL;
+	r.in.max_buffer = (uint32)-1;
+	r.in.resume_handle = NULL;
+
+	for (i=0;i<ARRAY_SIZE(levels);i++) {
+		int j;
+
+
+		ZERO_STRUCT(r.out);
+		r.in.level = levels[i];
+		printf("testing NetCharDevEnum level %u\n", r.in.level);
+		status = dcerpc_srvsvc_NetCharDevEnum(p, mem_ctx, &r);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("NetCharDevEnum level %u failed - %s\n", r.in.level, nt_errstr(status));
+			ret = False;
+			continue;
+		}
+		if (!W_ERROR_IS_OK(r.out.result)) {
+			printf("NetCharDevEnum level %u failed - %s\n", r.in.level, win_errstr(r.out.result));
+			continue;
+		}
+
+		/* call test_NetCharDevGetInfo and test_NetCharDevControl for each returned share */
+		if (r.in.level == 1) {
+			for (j=0;j<r.out.ctr.ctr1->count;j++) {
+				const char *device;
+				device = r.out.ctr.ctr1->array[j].device;
+				if (!test_NetCharDevGetInfo(p, mem_ctx, device)) {
+					ret = False;
+				}
+				if (!test_NetCharDevControl(p, mem_ctx, device)) {
+					ret = False;
+				}
+			}
+		}
+	}
+
+	return ret;
+}
 
 static BOOL test_NetConnEnum(struct dcerpc_pipe *p, 
 			   TALLOC_CTX *mem_ctx)
@@ -367,6 +488,10 @@ BOOL torture_rpc_srvsvc(int dummy)
 					DCERPC_SRVSVC_VERSION);
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
+	}
+
+	if (!test_NetCharDevEnum(p, mem_ctx)) {
+		ret = False;
 	}
 
 	if (!test_NetConnEnum(p, mem_ctx)) {
