@@ -557,6 +557,12 @@ static BOOL get_dcs(TALLOC_CTX *mem_ctx, const struct winbindd_domain *domain,
 		if (!resolve_name(dcname, &ip, 0x20))
 			continue;
 
+		/* Even if we got the dcname, double check the name to use for
+		 * the netlogon auth2 */
+
+		if (!name_status_find(domain->name, 0x1c, 0x20, ip, dcname))
+			continue;
+
 		add_one_dc_unique(mem_ctx, domain->name, dcname, ip,
 				  dcs, num_dcs);
 	}
