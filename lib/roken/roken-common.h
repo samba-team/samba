@@ -191,12 +191,13 @@
 /* flags for getaddrinfo() */
 
 #ifndef AI_PASSIVE
-
 #define AI_PASSIVE	0x01
 #define AI_CANONNAME	0x02
-#define AI_NUMERICHOST	0x04
-
 #endif /* AI_PASSIVE */
+
+#ifndef AI_NUMERICHOST
+#define AI_NUMERICHOST	0x04
+#endif
 
 /* flags for getnameinfo() */
 
