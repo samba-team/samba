@@ -551,7 +551,7 @@ dev = %x, inode = %.0f\n", old_shares[i].op_type, fname, (unsigned int)dev, (dou
            * as exlusive.... The process *must* be dead.... 
            */
 
-          DEBUG(0,("open_mode_check: exlusive oplock left by process %d after break ! For file %s,
+          DEBUG(0,("open_mode_check: exlusive oplock left by process %d after break ! For file %s, \
 dev = %x, inode = %.0f. Deleting it to continue...\n", (int)broken_entry.pid, fname, (unsigned int)dev, (double)inode));
 
           if (process_exists(broken_entry.pid)) {
