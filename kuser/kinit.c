@@ -66,8 +66,7 @@ int do_afslog		= -1;
 int get_v4_tgt		= -1;
 int convert_524		= 0;
 int fcache_version;
-char *pk_cert_file	= NULL;
-char *pk_key_file	= NULL;
+char *pk_user_id	= NULL;
 char *pk_x509_anchors	= NULL;
 int pk_use_dh		= -1;
 
@@ -147,13 +146,11 @@ static struct getargs args[] = {
       "request a Windows PAC" },
 
 #ifdef PKINIT
-    {  "certificate",  'C',  arg_string, &pk_cert_file,
-       "principal's public key certificate", "filename"},
-       
-    {  "private-key",  'K',  arg_string, &pk_key_file,
-       "principal's private key", "filename" },
+    {  "pk-user",	'C',	arg_string,	&pk_user_id,
+       "principal's public/private/certificate identifier",
+       "id" },
 
-    {  "x509-anchors",       'D',  arg_string, &pk_x509_anchors,
+    {  "x509-anchors",	'D',  arg_string, &pk_x509_anchors,
        "directory with CA certificates", "directory" },
 
     {  "pkinit-use-dh",       0,  arg_flag, &pk_use_dh,
@@ -461,13 +458,12 @@ get_new_tickets(krb5_context context,
     if (pac_flag != -1)
 	krb5_get_init_creds_opt_set_pac_request(context, opt, 
 						pac_flag ? TRUE : FALSE);
-    if (pk_cert_file || pk_key_file) {
+    if (pk_user_id) {
 	int flags = 0;
 	if (pk_use_dh == 1)
 	    flags |= 1;
 	ret = krb5_get_init_creds_opt_set_pkinit(context, opt,
-						 pk_cert_file,
-						 pk_key_file,
+						 pk_user_id,
 						 pk_x509_anchors,
 						 flags,
 						 NULL,
@@ -537,7 +533,7 @@ get_new_tickets(krb5_context context,
 					  server,
 					  opt);
 	krb5_kt_close(context, kt);
-    } else if (pk_key_file) {
+    } else if (pk_user_id) {
 	ret = krb5_get_init_creds_password (context,
 					    &cred,
 					    principal,
