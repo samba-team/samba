@@ -84,7 +84,7 @@ void process_logon_packet(struct packet_struct *p, char *buf,int len,
 	memset(outbuf, 0, sizeof(outbuf));
 
 	if (!lp_domain_logons()) {
-		DEBUG(3,("process_logon_packet: Logon packet received from IP %s and domain \
+		DEBUG(5,("process_logon_packet: Logon packet received from IP %s and domain \
 logons are not enabled.\n", inet_ntoa(p->ip) ));
 		return;
 	}
@@ -92,7 +92,7 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 	pstrcpy(my_name, global_myname());
 
 	code = SVAL(buf,0);
-	DEBUG(1,("process_logon_packet: Logon from %s: code = 0x%x\n", inet_ntoa(p->ip), code));
+	DEBUG(4,("process_logon_packet: Logon from %s: code = 0x%x\n", inet_ntoa(p->ip), code));
 
 	switch (code) {
 		case 0:    
@@ -112,7 +112,7 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 				pull_ascii_fstring(user_str, user);
 				pull_ascii_fstring(getdc_str, getdc);
 
-				DEBUG(3,("process_logon_packet: Domain login request from %s at IP %s user=%s token=%x\n",
+				DEBUG(5,("process_logon_packet: Domain login request from %s at IP %s user=%s token=%x\n",
 					mach_str,inet_ntoa(p->ip),user_str,token));
 
 				q = outbuf;
@@ -211,7 +211,7 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 
 				pull_ascii_fstring(mach_str, machine);
 
-				DEBUG(3,("process_logon_packet: GETDC request from %s at IP %s, \
+				DEBUG(5,("process_logon_packet: GETDC request from %s at IP %s, \
 reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 					mach_str,inet_ntoa(p->ip), reply_name, lp_workgroup(),
 					QUERYFORPDC_R, (uint32)ntversion, (uint32)lmnttoken,
@@ -248,14 +248,14 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 				domainsidsize = IVAL(q, 0);
 				q += 4;
 
-				DEBUG(3,("process_logon_packet: SAMLOGON sidsize %d, len = %d\n", domainsidsize, len));
+				DEBUG(5,("process_logon_packet: SAMLOGON sidsize %d, len = %d\n", domainsidsize, len));
 
 				if (domainsidsize < (len - PTR_DIFF(q, buf)) && (domainsidsize != 0)) {
 					q += domainsidsize;
 					q = ALIGN4(q, buf);
 				}
 
-				DEBUG(3,("process_logon_packet: len = %d PTR_DIFF(q, buf) = %ld\n", len, (unsigned long)PTR_DIFF(q, buf) ));
+				DEBUG(5,("process_logon_packet: len = %d PTR_DIFF(q, buf) = %ld\n", len, (unsigned long)PTR_DIFF(q, buf) ));
 
 				if (len - PTR_DIFF(q, buf) > 8) {
 					/* with NT5 clients we can sometimes
@@ -284,12 +284,12 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 				 */
 				pull_ucs2_pstring(ascuser, uniuser);
 				pull_ucs2_fstring(asccomp, unicomp);
-				DEBUG(3,("process_logon_packet: SAMLOGON user %s\n", ascuser));
+				DEBUG(5,("process_logon_packet: SAMLOGON user %s\n", ascuser));
 
 				fstrcpy(reply_name, "\\\\"); /* Here it wants \\LOGONSERVER. */
 				fstrcat(reply_name, my_name);
 
-				DEBUG(3,("process_logon_packet: SAMLOGON request from %s(%s) for %s, returning logon svr %s domain %s code %x token=%x\n",
+				DEBUG(5,("process_logon_packet: SAMLOGON request from %s(%s) for %s, returning logon svr %s domain %s code %x token=%x\n",
 					asccomp,inet_ntoa(p->ip), ascuser, reply_name, lp_workgroup(),
 				SAMLOGON_R ,lmnttoken));
 
