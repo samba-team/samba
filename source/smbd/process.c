@@ -717,6 +717,7 @@ void init_smbsession(struct event_context *ev, struct model_ops *model_ops, int 
 	struct server_context *smb;
 	TALLOC_CTX *mem_ctx;
 	struct fd_event fde;
+	char *socket_addr;
 
 	set_socket_options(fd,"SO_KEEPALIVE");
 	set_socket_options(fd, lp_socket_options());
@@ -736,8 +737,9 @@ void init_smbsession(struct event_context *ev, struct model_ops *model_ops, int 
 
 	/* set an initial client name based on its IP address. This will be replaced with
 	   the netbios name later if it gives us one */
-	sub_set_remote_machine(strdup(get_socket_addr(smb->mem_ctx, fd)));
-	smb->socket.client_addr = get_socket_addr(smb->mem_ctx, fd);
+	socket_addr = get_socket_addr(smb->mem_ctx, fd);
+	sub_set_remote_machine(socket_addr);
+	smb->socket.client_addr = socket_addr;
 
 	/* now initialise a few default values associated with this smb socket */
 	smb->negotiate.max_send = 0xFFFF;
