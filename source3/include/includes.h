@@ -722,7 +722,7 @@ union semun {
    filename_completion_function() */
 
 #  ifndef HAVE_READLINE_FCF_PROTO
-extern char *filename_completion_function ();
+char *filename_completion_function(void);
 #  endif
 
 #endif
