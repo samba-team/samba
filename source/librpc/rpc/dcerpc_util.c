@@ -440,25 +440,10 @@ static NTSTATUS dcerpc_floor_set_rhs_data(TALLOC_CTX *mem_ctx, struct epm_floor 
 		return NT_STATUS_OK;
 
 	case EPM_PROTOCOL_IP:
-		floor->rhs.ip.address = 0;
-
-		/* Only try to put in a IPv4 address. Windows 2003 just returns 
-		 * 0.0.0.0 for IPv6 addresses */
 		if (strlen(data) > 0) {
-		    struct addrinfo hints, *res;
-
- 		  	memset(&hints, 0, sizeof(struct addrinfo));
-
-			hints.ai_family = AF_INET;
-			hints.ai_protocol = PF_INET;
-
-			if (getaddrinfo(data, NULL, &hints, &res) < 0) {
-				return NT_STATUS_BAD_NETWORK_NAME;
-			}
-
-			floor->rhs.ip.address = ntohl(((struct sockaddr_in *)res->ai_addr)->sin_addr.s_addr);
-
-			freeaddrinfo(res);
+			floor->rhs.ip.address = interpret_addr(data);
+		} else {
+			floor->rhs.ip.address = 0;
 		}
 		return NT_STATUS_OK;
 
