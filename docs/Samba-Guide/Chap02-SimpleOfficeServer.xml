@@ -14,10 +14,10 @@
 	<para>
 	This chapter lays the groundwork for understanding the basics of Samba operation. 
 	Instead of a bland technical discussion, each principle is demonstrated by way of a 
-	real-world scenario for which a working solution<footnote>The examples given mirror those documented
+	real-world scenario for which a working solution<footnote><para>The examples given mirror those documented
 	in TOSHARG Chapter 2, Section 2.3.1. You may gain additional insight from the Stand-alone server
 	configurations covered in TOSHARG sections 2.3.1.2 through 2.3.1.4.
-	</footnote> is fully described.
+	</para></footnote> is fully described.
 	</para>
 
 	<para>
@@ -75,10 +75,8 @@
 	Anyone should be able to access the plans at any time and without barriers or difficulty.
 	</para>
 
-	<para><indexterm>
-	    <primary>Red Hat</primary>
-	    <primary>Fedora</primary>
-	  </indexterm>
+	<para><indexterm><primary>Red Hat</primary></indexterm>
+		<indexterm><primary>Fedora</primary></indexterm>
 	Mr. Bob Jordan has asked you to install the new server as economically as possible. The central
 	server has a Pentium-IV 1.6GHz CPU, 768MB RAM, a 20GB IDE boot drive, a 160GB IDE second disk
 	to store plans, and a 100-base-T Ethernet card. You have already installed Red Hat Fedora Core2 and
@@ -114,11 +112,11 @@
 
 		<para>
 		It is not necessary to have specific users on the server. The site has a method for storing
-		all design files (plans). Each plan is stored in a directory that is named YYYYWW<footnote>
+		all design files (plans). Each plan is stored in a directory that is named YYYYWW<footnote><para>
 		This information is given purely as an example of how data may be stored in such a way that it
 		will be easy to locate records at a later date. The example is not meant to imply any instructions
 		that may be construed as essential to the design of the solution, this is something you will almost
-		certainly want to determine for yourself.</footnote>, where
+		certainly want to determine for yourself.</para></footnote>, where
 		YYYY is the year, and WW is the week of the year. This arrangement allows work to be stored
 		by week of year to preserve the filing technique the site is familiar with.
 		There is another customer directory that is alphabetically listed. At the top level are 26
@@ -785,6 +783,7 @@ C:\WINDOWS: regedit ME-dpwc.reg
 				On each Windows Me workstation, configure a network drive mapping to drive <filename>G:</filename>
 				that redirects to the uniform naming convention (UNC) resource 
 				<filename>\\server\office</filename>. Make this a permanent drive connection as follows:
+				</para>
 					<procedure>
 						<step><para>
 							<menuchoice>
@@ -808,11 +807,12 @@ C:\WINDOWS: regedit ME-dpwc.reg
 						</para></step>
 
 					</procedure>
-				</para></step>
+				</step>
 
 				<step><para>
 				On each workstation, install the Funds Tracking and Management software following the
 				manufacturer's instructions.
+				</para>
 					<procedure>
 					<step><para>
 					During installation, you are prompted for the name of the Windows 98
@@ -829,7 +829,7 @@ C:\WINDOWS: regedit ME-dpwc.reg
 					continue. The software now completes the installation.
 					</para></step>
 					</procedure>
-				</para></step>
+				</step>
 
 				<step><para>
 				Install an office automation software package of the customer's choice. Either Microsoft
@@ -839,6 +839,7 @@ C:\WINDOWS: regedit ME-dpwc.reg
 
 				<step><para>
 				Install a printer on each using the following steps:
+				</para>
 
 					<procedure>
 						<step><para>
@@ -872,8 +873,8 @@ C:\WINDOWS: regedit ME-dpwc.reg
 						dialog panel. Right-click <menuchoice>
 							<guiicon>HP LaserJet 5/5M Postscript</guiicon>
 							<guimenuitem>Properties</guimenuitem>
-							<guimenusub>Details (Tab)</guimenusub>
-							<guimenubutton>Add Port</guimenubutton>
+							<guisubmenu>Details (Tab)</guisubmenu>
+							<guimenuitem>Add Port</guimenuitem>
 							</menuchoice>.
 						</para></step>
 
@@ -894,7 +895,7 @@ C:\WINDOWS: regedit ME-dpwc.reg
 
 					</procedure>
 
-				</para></step>
+				</step>
 
 			</procedure>
 
@@ -1123,10 +1124,10 @@ C:\WINDOWS: regedit ME-dpwc.reg
 			</para></step>
 
 			<step><para>
-			Install the &smb.conf; file shown<footnote>This example makes use of the 
+					Install the &smb.conf; file shown<footnote><para>This example makes use of the 
 			<parameter>smbpasswd</parameter> file. It does so in an obtuse way since the use of 
 			the <parameter>passdb backend</parameter> has not been specified in the &smb.conf; 
-			file. This means that you are depending on correct default behavior.</footnote> 
+			file. This means that you are depending on correct default behavior.</para></footnote> 
 			in <link linkend="acctconf"/>.
 			</para></step>
 
@@ -1225,6 +1226,7 @@ application/octet-stream
 			On Alan's workstation, use Windows explorer to migrate the files from the old server
 			to the new server. The new server should appear in the <guimenu>Network Neighborhood</guimenu>
 			with the name of the old server (<constant>CASHPOOL</constant>).
+			</para>
 
 				<procedure>
 
@@ -1250,7 +1252,7 @@ application/octet-stream
 					</para></step>
 
 				</procedure>
-			</para></step>
+			</step>
 
 			<step><para>
 			Verify that the files are being copied correctly from the Windows NT4 machine to the Samba-3 server.
@@ -1323,7 +1325,7 @@ application/octet-stream
 	is to expose some of the hidden implications.
 	</para>
 
-	<qandaset defaultlabel="chap02qa" type="number">
+	<qandaset defaultlabel="chap02qa">
 	<qandaentry>
 	<question>
 
