@@ -66,12 +66,16 @@ Providing custom Internet and networking solutions.
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
+WASHINGTON - USA
+
 Olympic Peninsula Consulting; 1241 Lansing Ave W., Bremerton, WA 98312-4343
 telephone 1+ 360 792 6938; mailto:opc@aa.net; http://www.aa.net/~opc;
 Unix Systems and TCP/IP Network design, programming, and administration.
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
+CALIFORNIA - USA
+
 Craftwork Solutions Inc. 
 
 Craftwork Solutions Inc. is dedicated to providing the best possible
@@ -213,6 +217,8 @@ Experience with: ULTRIX, Digital UNIX, SunOS, WfW 3.11, Win95, WNT 3.51
 ----------------------------------------------------------
 
 ----------------------------------------------------------
+LEICESTERSHIRE - ENGLAND
+
 TECTONIC LIMITED
 WESTWOOD
 78 LOUGHBOROUGH ROAD
@@ -269,6 +275,7 @@ Piscataway, NJ 08855                                    Fax  : 908-981-1858
    high speed, enterprise network design and deployment.
 ------------------------------------------------------------------------------
 
+------------------------------------------------------------------------------
 FAREHAM - ENGLAND
 
 High Field Technology Ltd
@@ -301,18 +308,6 @@ have samba installations on Linx, SunOS and DEC OSF.  Our biggest site
 has 4 Suns and 3 Linux servers running Samba which are serving a network
 of about 50 PC's running WFWg and Win95.
 -----------------------------------------------------------------------
-
------------------------------------------------------------------------
-CALIFORNIA - USA
-
-Ron Halstead
-Open Systems Consulting
-3098-4 Lakemont Drive
-San Ramon, CA 94583 (San Francisco Bay Area)
-(510) 735-7529
-halstead@ix.netcom.com
------------------------------------------------------------------------
-
 
 -----------------------------------------------------------------------
 MELBOURNE - AUSTRALIA
@@ -360,7 +355,6 @@ David J. Fenwick                                          Asset Software, Inc.
 President                                                      djf@assetsw.com
 ------------------------------------------------------------------------------
 
-
 ------------------------------------------------------------------------------
 WELLINGTON - NEW ZEALAND
 
@@ -374,8 +368,6 @@ New Zealand
 Phone (025) 518-574
 Email: ttcdg@cyberspace.co.nz
 ------------------------------------------------------------------------------
-
-
 
 ------------------------------------------------------------------------------
 PRAHA (PRAGUE) - CZECH
@@ -407,7 +399,6 @@ SEOUL KOREA
 SAMBA Experience : SunOS, Solaris, Linux, SCO-Unix, Win95/NT/3.1
 ------------------------------------------------------------------------------
 
-
 ------------------------------------------------------------------------------
 UNITED STATES
 
@@ -426,10 +417,7 @@ To contact Stelias about custom arrangments, send email to
 info@stelias.com.
 ------------------------------------------------------------------------------
 
-
-
 ------------------------------------------------------------------------------
-
 BAY AREA, SILICON VALLEY  CALIFORNIA - USA
 
 Adital Corp.
@@ -451,12 +439,7 @@ NT/WIN95/WFW client/server connectivity.
 
 We can help you defining and specifying your product as well as designing, 
 implementing, testing, upgrading and maintaining it.
-
-
-
 ------------------------------------------------------------------------------
-
-
 
 ------------------------------------------------------------------------------
 CALIFORNIA - USA
@@ -470,7 +453,6 @@ http://www.steam.com/
 cliff@steam.com
 ------------------------------------------------------------------------------
 
-
 ------------------------------------------------------------------------------
 PERTH - AUSTRALIA
 
@@ -479,9 +461,7 @@ E-mail: bcook@wantree.com.au
 Mobile: 015 999 330   (International +61 15 999 330)
 Experience: Samba on FreeBSD, Linux, Solaris (Sparc), Sunos-4
             Microsoft networking using NT/NTAS, Win95, WFW311, DOS
-
 ------------------------------------------------------------------------------
-
 
 ------------------------------------------------------------------------------
 GOETTINGEN - GERMANY
@@ -545,3 +525,97 @@ I would also like to implement an alternative SMB client for NT and 95.
 This would allow samba to offer secure and authenticated file and print
 access, to the extent that the laws of your country permit.
 ------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+WASHINGTON STATE - USA
+
+Brian Meyer
+Personal Data Services                  
+9792 Edmonds Way Suite 121
+Seattle, Washington 98020 USA
+Voice:  (206) 365-8212
+E-mail: admin@pdsnorth.com
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+ONTARIO - CANADA
+
+WW Works Inc.
+3201 Maderna Road
+Burlington, Ontario
+Canada   L7M 2W4
+
+Contact:  Wade Weppler
+(905) 332-5844
+FAX:  (905) 332-5535
+
+Information Systems Sales and Consulting.
+Specializing in Turnkey Windows NT Network environments with emphasis on
+Legacy UNIX System integration using Samba.
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+UTRECHT - NETHERLANDS
+
+Van den Hout Creative Communications
+Koos van den Hout
+Email : koos@kzdoos.xs4all.nl
+Phone : +31-30-2871002
+Fax : +31-30-2817051
+Samba experience: Setup and configuration for Linux, Solaris, web
+publishing related usage.
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+Dreieich - GERMANY
+
+A. G. Schindler <schindler@az1.de>
+c/o Alpha Zero One Gmbh
+Frankfurter Str. 141
+D - 63303 Dreieich
+Germany
+
+AZ1 is a company of Value Added Resellers (VARs) of Digital Equipment
+Corp. products and solution provider for Industry Applications.
+
+We're providing commercial support for Samba running on DEC hardware
+under Digital Unix (R), Digital OpenVMS (R) and Linux.
+
+Contract based and hotline support available. Fast response on-site
+support coming soon for the Franfurt / Main area.
+
+Pathworks or WinNT to Samba migrators welcome !
+
+Please contact us via:     schindler@az1.de
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+Groningen - The Netherlands
+
+Company: Le Reseau netwerksystemen BV
+Address: Bieslookstraat 31
+City:    Groningen
+Zip:     NL-9731 HH
+Country: The Netherlands
+
+We already offer commercial support on Linux and other Unices. Together with
+an application house we have developed a office automation environment which
+heavily depends on Samba. This environment consists of a Linux application
+server which is also the Samba server. A NT server for standard office
+applications. A firewall for Internet connectivity. And a large number of
+DOS/Win3.x/W95 clients that connect to the different machines. User's home
+directories are mounted through Sambe.
+
+We also support other Unices like Solaris, SunOS, HP-UX, Digital Unix and
+AIX.
+
+Sincerely,
+
+Arthur Donkers
+Le Reseau
+
+email : arthur@reseau.nl
+phone : (+31) 595 552431
+URL http://www.reseau.nl
+------------------------------------------------------------------------------
+
