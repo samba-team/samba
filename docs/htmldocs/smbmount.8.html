@@ -1,0 +1,264 @@
+<HTML
+><HEAD
+><TITLE
+>smbmount</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.57"></HEAD
+><BODY
+CLASS="REFENTRY"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><H1
+><A
+NAME="SMBMOUNT"
+>smbmount</A
+></H1
+><DIV
+CLASS="REFNAMEDIV"
+><A
+NAME="AEN5"
+></A
+><H2
+>Name</H2
+>smbmount&nbsp;--&nbsp;mount and smbfs filesystem</DIV
+><DIV
+CLASS="REFSYNOPSISDIV"
+><A
+NAME="AEN8"
+></A
+><H2
+>Synopsis</H2
+><P
+><B
+CLASS="COMMAND"
+>smbumount</B
+>  {service} {mount-point} [-o options]</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN14"
+></A
+><H2
+>DESCRIPTION</H2
+><P
+><B
+CLASS="COMMAND"
+>smbmount</B
+> mounts a SMB filesystem. It 
+	is usually invoked as <B
+CLASS="COMMAND"
+>mount.smb</B
+> from 
+	the <B
+CLASS="COMMAND"
+>mount(8)</B
+> command when using the 
+	"-t smb" option. The kernel must support the smbfs filesystem. </P
+><P
+>Options to smbmount are specified as a comma separated list 
+	of key=value pairs.</P
+><P
+><I
+CLASS="EMPHASIS"
+>NOTE:</I
+> <B
+CLASS="COMMAND"
+>smbmount</B
+> 
+	calls <B
+CLASS="COMMAND"
+>smbmnt(8)</B
+> to do the actual mount. You 
+	must make sure that <B
+CLASS="COMMAND"
+>smbmnt</B
+> is in the path so 
+	that it can be found. </P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN26"
+></A
+><H2
+>OPTIONS</H2
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+>username=&lt;arg&gt;</DT
+><DD
+><P
+>specifies the username to connect as. If
+		this is not given then the environment variable <TT
+CLASS="PARAMETER"
+><I
+>		$USER</I
+></TT
+> is used. This option can also take the 
+		form "user%password" or "user/workgroup" or 
+		"user/workgroup%password" to allow the password and workgroup 
+		to be specified as part of the username.</P
+></DD
+><DT
+>password=&lt;arg&gt;</DT
+><DD
+><P
+>specifies the SMB password. If not given then 
+		<B
+CLASS="COMMAND"
+>smbmount</B
+> will prompt for a passeword, unless 
+		the guest option is given. </P
+></DD
+><DT
+>netbiosname=&lt;arg&gt;</DT
+><DD
+><P
+>sets the source NetBIOS name. It defaults 
+		to the local hostname. </P
+></DD
+><DT
+>uid=&lt;arg&gt;</DT
+><DD
+><P
+>sets the uid that files will be mounted as. 
+		It may be specified as either a username or a numeric uid.
+		</P
+></DD
+><DT
+>gid=&lt;arg&gt;</DT
+><DD
+><P
+>sets the gid that files will be mounted as. 
+		It may be specified as either a groupname or a numeric 
+		gid. </P
+></DD
+><DT
+>port=&lt;arg&gt;</DT
+><DD
+><P
+>sets the remote SMB port number. The default 
+		is 139. </P
+></DD
+><DT
+>fmask=&lt;arg&gt;</DT
+><DD
+><P
+>sets the file mask. This determines the 
+		permissions that remote files have in the local filesystem. 
+		The default is based on the current umask. </P
+></DD
+><DT
+>dmask=&lt;arg&gt;</DT
+><DD
+><P
+>sets the directory mask. This deterines the 
+		permissions that remote directories have in the local filesystem. 
+		The default is based on the current umask. </P
+></DD
+><DT
+>debug=&lt;arg&gt;</DT
+><DD
+><P
+>sets the debug level. This is useful for 
+		tracking down SMB connection problems. </P
+></DD
+><DT
+>ip=&lt;arg&gt;</DT
+><DD
+><P
+>sets the destination host or IP address.
+		</P
+></DD
+><DT
+>workgroup=&lt;arg&gt;</DT
+><DD
+><P
+>sets the workgroup on the destination </P
+></DD
+><DT
+>sockopt=&lt;arg&gt;</DT
+><DD
+><P
+>sets the TCP socket options. See the <A
+HREF="smb.conf.5.html#SOCKETOPTIONS"
+TARGET="_top"
+><TT
+CLASS="FILENAME"
+>smb.conf
+		</TT
+></A
+> <TT
+CLASS="PARAMETER"
+><I
+>socket options</I
+></TT
+> option.
+		</P
+></DD
+><DT
+>scope=&lt;arg&gt;</DT
+><DD
+><P
+>sets the NetBIOS scope </P
+></DD
+><DT
+>guest</DT
+><DD
+><P
+>don't prompt for a password </P
+></DD
+><DT
+>ro</DT
+><DD
+><P
+>mount read-only </P
+></DD
+><DT
+>rw</DT
+><DD
+><P
+>mount read-write </P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN98"
+></A
+><H2
+>AUTHOR</H2
+><P
+>The current maintainer of smbfs and the userspace
+	tools <B
+CLASS="COMMAND"
+>smbmount</B
+>, <B
+CLASS="COMMAND"
+>smbumount</B
+>,
+	and <B
+CLASS="COMMAND"
+>smbmnt</B
+> is <A
+HREF="mailto:urban@teststation.com"
+TARGET="_top"
+>Urban Widmark</A
+></P
+><P
+>The conversion of this manpage for Samba 2.2 was performed 
+	by Gerald Carter</P
+></DIV
+></BODY
+></HTML
+>
