@@ -32,7 +32,6 @@
  */
 
 #include "hprop.h"
-#include "hdb-private.h"
 
 RCSID("$Id$");
 
