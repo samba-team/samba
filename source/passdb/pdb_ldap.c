@@ -7,6 +7,7 @@
    Copyright (C) Andrew Bartlett		2002-2003
    Copyright (C) Stefan (metze) Metzmacher	2002-2003
    Copyright (C) Simo Sorce			2003
+   Copyright (C) Rafal Szczesniak               2004
     
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
