@@ -13,7 +13,7 @@
 	</author>
 	
 		
-	<pubdate> (26 Apr 2001) </pubdate>
+	<pubdate> (3 May 2001) </pubdate>
 </chapterinfo>
 
 <title>Printing Support in Samba 2.2.x</title>
@@ -59,14 +59,25 @@ SPOOLSS support includes:</para>
 There has been some initial confusion about what all this means
 and whether or not it is a requirement for printer drivers to be 
 installed on a Samba host in order to support printing from Windows 
-clients.  Windows NT/2000 clients require that the Samba server
-possesses a valid driver for the printer.  This requirement is 
-the price to pay for support MSRPC printing calls and the design
-requirements laid out for Samba.  Windows 9x clients do not require 
-that the Samba host has a driver installed  for the given printer.
-Samba does not use these drivers in any way to process spooled files.
-They are utilized entirely by the clients.
+clients.  A bug existed in Samba 2.2.0 which made Windows NT/2000 clients 
+require that the Samba server possess a valid driver for the printer.  
+This is fixed in Samba 2.2.1 and once again, Windows NT/2000 clients
+can use the local APW for installing drivers to be used with a Samba 
+served printer.  This is the same behavior exhibited by Windows 9x clients.
+As a side note, Samba does not use these drivers in any way to process 
+spooled files.  They are utilized entirely by the clients.
 </para>
+
+<para>
+The following MS KB article, may be of some help if you are dealing with
+Windows 2000 clients:  <emphasis>How to Add Printers with No User 
+Interaction in Windows 2000</emphasis>
+</para>
+
+<para>
+<ulink url="http://support.microsoft.com/support/kb/articles/Q189/1/05.ASP">http://support.microsoft.com/support/kb/articles/Q189/1/05.ASP</ulink>
+</para>
+
 </sect1>
 
 
@@ -223,8 +234,10 @@ that matches the printer shares defined on your Samba host.
 
 <para>The initial listing of printers in the Samba host's 
 Printers folder will have no real printer driver assigned 
-to them.  By default, Samba set the driver name to 
+to them.  By default, in Samba 2.2.0 this driver name was set to 
 <emphasis>NO PRINTER DRIVER AVAILABLE FOR THIS PRINTER</emphasis>.
+Later versions changed this to a NULL string to allow the use
+tof the local Add Printer Wizard on NT/2000 clients.
 Attempting to view the printer properties for a printer
 which has this default driver assigned will result in 
 the error message:</para>
