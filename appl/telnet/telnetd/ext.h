@@ -54,9 +54,7 @@ extern int	restartany;	/* restart output on any character state */
 #ifdef DIAGNOSTICS
 extern int	diagnostic;	/* telnet diagnostic capabilities */
 #endif /* DIAGNOSTICS */
-#if	defined(SecurID)
-extern int	require_SecurID;
-#endif
+extern int	require_otp;
 #if	defined(AUTHENTICATION)
 extern int	auth_level;
 #endif
