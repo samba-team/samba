@@ -251,7 +251,7 @@ static uint32 write_this_workgroup_name( struct subnet_record *subrec,
 {
 	struct subnet_record *ssub;
 
-	if(strnequal(lp_workgroup(), work->work_group, sizeof(nstring)-1))
+	if(strequal(lp_workgroup(), work->work_group))
 		return 0;
 
 	/* This is a workgroup we have seen on a broadcast subnet. All
