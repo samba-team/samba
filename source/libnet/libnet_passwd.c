@@ -43,7 +43,7 @@ static NTSTATUS libnet_ChangePassword_samr(struct libnet_context *ctx, TALLOC_CT
 	struct samr_OemChangePasswordUser2 oe2;
 	struct samr_ChangePasswordUser2 pw2;
 	struct samr_ChangePasswordUser3 pw3;
-	struct samr_Name server, account;
+	struct samr_String server, account;
 	struct samr_AsciiName a_server, a_account;
 	struct samr_CryptPassword nt_pass, lm_pass;
 	struct samr_Password nt_verifier, lm_verifier;
@@ -67,8 +67,8 @@ static NTSTATUS libnet_ChangePassword_samr(struct libnet_context *ctx, TALLOC_CT
 	}
 
 	/* prepare password change for account */
-	server.name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(c.pdc.out.dcerpc_pipe));
-	account.name = r->samr.in.account_name;
+	server.string = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(c.pdc.out.dcerpc_pipe));
+	account.string = r->samr.in.account_name;
 
 	E_md4hash(r->samr.in.oldpassword, old_nt_hash);
 	E_md4hash(r->samr.in.newpassword, new_nt_hash);
@@ -163,8 +163,8 @@ ChangePasswordUser2:
 
 OemChangePasswordUser2:
 	/* prepare samr_OemChangePasswordUser2 */
-	a_server.name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(c.pdc.out.dcerpc_pipe));
-	a_account.name = r->samr.in.account_name;
+	a_server.string = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(c.pdc.out.dcerpc_pipe));
+	a_account.string = r->samr.in.account_name;
 
 	encode_pw_buffer(lm_pass.data, r->samr.in.newpassword, STR_ASCII);
 	arcfour_crypt(lm_pass.data, old_lm_hash, 516);
@@ -308,7 +308,7 @@ static NTSTATUS libnet_SetPassword_samr(struct libnet_context *ctx, TALLOC_CTX *
 	struct samr_Connect sc;
 	struct policy_handle p_handle;
 	struct samr_LookupDomain ld;
-	struct samr_Name d_name;
+	struct samr_String d_name;
 	struct samr_OpenDomain od;
 	struct policy_handle d_handle;
 	struct samr_LookupNames ln;
@@ -362,7 +362,7 @@ static NTSTATUS libnet_SetPassword_samr(struct libnet_context *ctx, TALLOC_CTX *
 	}
 
 	/* prepare samr_LookupDomain */
-	d_name.name = r->samr.in.domain_name;
+	d_name.string = r->samr.in.domain_name;
 	ld.in.connect_handle = &p_handle;
 	ld.in.domain = &d_name;
 
@@ -412,12 +412,12 @@ static NTSTATUS libnet_SetPassword_samr(struct libnet_context *ctx, TALLOC_CTX *
 	/* prepare samr_LookupNames */
 	ln.in.domain_handle = &d_handle;
 	ln.in.num_names = 1;
-	ln.in.names = talloc_array_p(mem_ctx, struct samr_Name, 1);
+	ln.in.names = talloc_array_p(mem_ctx, struct samr_String, 1);
 	if (!ln.in.names) {
 		r->samr.out.error_string = "Out of Memory";
 		return NT_STATUS_NO_MEMORY;
 	}
-	ln.in.names[0].name = r->samr.in.account_name;
+	ln.in.names[0].string = r->samr.in.account_name;
 
 	/* 5. do a samr_LookupNames to get the users rid */
 	status = dcerpc_samr_LookupNames(c.pdc.out.dcerpc_pipe, mem_ctx, &ln);
