@@ -334,12 +334,6 @@ typedef struct pdb_context
 					       DOM_SID **aliases,
 					       int *num_aliases);
 
-	NTSTATUS (*pdb_get_account_policy)(struct pdb_context *context,
-					   int policy_index, int *value);
-
-	NTSTATUS (*pdb_set_account_policy)(struct pdb_context *context,
-					   int policy_index, int value);
-
 	void (*free_fn)(struct pdb_context **);
 	
 	TALLOC_CTX *mem_ctx;
@@ -430,12 +424,6 @@ typedef struct pdb_methods
 					   const DOM_SID *members,
 					   int num_members,
 					   DOM_SID **aliases, int *num);
-
-	NTSTATUS (*get_account_policy)(struct pdb_methods *methods,
-				       int policy_index, int *value);
-
-	NTSTATUS (*set_account_policy)(struct pdb_methods *methods,
-				       int policy_index, int value);
 
 	void *private_data;  /* Private data of some kind */
 	
