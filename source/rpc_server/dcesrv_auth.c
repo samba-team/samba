@@ -184,6 +184,10 @@ BOOL dcesrv_auth_request(struct dcesrv_call_state *call)
 		return False;
 	}
 
+	if (!(pkt->drep[0] & DCERPC_DREP_LE)) {
+		ndr->flags |= LIBNDR_FLAG_BIGENDIAN;
+	}
+
 	status = ndr_pull_dcerpc_auth(ndr, NDR_SCALARS|NDR_BUFFERS, &auth);
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
@@ -232,13 +236,17 @@ BOOL dcesrv_auth_response(struct dcesrv_call_state *call,
 
 	/* non-signed packets are simple */
 	if (!dce->auth_state.auth_info || !dce->auth_state.ntlmssp_state) {
-		status = dcerpc_push_auth(blob, call->mem_ctx, pkt, NULL, 0);
+		status = dcerpc_push_auth(blob, call->mem_ctx, pkt, NULL);
 		return NT_STATUS_IS_OK(status);
 	}
 
 	ndr = ndr_push_init_ctx(call->mem_ctx);
 	if (!ndr) {
 		return False;
+	}
+
+	if (pkt->drep[0] & DCERPC_DREP_LE) {
+		ndr->flags |= LIBNDR_FLAG_BIGENDIAN;
 	}
 
 	status = ndr_push_dcerpc_packet(ndr, NDR_SCALARS|NDR_BUFFERS, pkt);
@@ -286,8 +294,8 @@ BOOL dcesrv_auth_response(struct dcesrv_call_state *call,
 	/* fill in the fragment length and auth_length, we can't fill
 	   in these earlier as we don't know the signature length (it
 	   could be variable length) */
-	SSVAL(blob->data,  DCERPC_FRAG_LEN_OFFSET, blob->length);
-	SSVAL(blob->data,  DCERPC_AUTH_LEN_OFFSET, dce->auth_state.auth_info->credentials.length);
+	dcerpc_set_frag_length(blob, blob->length);
+	dcerpc_set_auth_length(blob, dce->auth_state.auth_info->credentials.length);
 
 	data_blob_free(&dce->auth_state.auth_info->credentials);
 

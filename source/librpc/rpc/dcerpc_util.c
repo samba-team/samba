@@ -223,8 +223,7 @@ const struct dcerpc_interface_table *idl_iface_by_uuid(const char *uuid)
 */
 NTSTATUS dcerpc_push_auth(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, 
 			  struct dcerpc_packet *pkt,
-			  struct dcerpc_auth *auth_info,
-			  unsigned flags)
+			  struct dcerpc_auth *auth_info)
 {
 	NTSTATUS status;
 	struct ndr_push *ndr;
@@ -234,7 +233,7 @@ NTSTATUS dcerpc_push_auth(DATA_BLOB *blob, TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (flags & DCERPC_PUSH_BIGENDIAN) {
+	if (!(pkt->drep[0] & DCERPC_DREP_LE)) {
 		ndr->flags |= LIBNDR_FLAG_BIGENDIAN;
 	}
 
