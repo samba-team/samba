@@ -2865,7 +2865,7 @@ NTSTATUS set_delete_on_close_over_all(files_struct *fsp, BOOL delete_on_close)
  Returns true if this pathname is within the share, and thus safe.
 ****************************************************************************/
 
-static int ensure_link_is_safe(connection_struct *conn, const char *link_dest_in, char *link_dest_out)
+static int ensure_link_is_safe(connection_struct *conn, const char *link_dest_in)
 {
 #ifdef PATH_MAX
 	char resolved_name[PATH_MAX+1];
@@ -2881,9 +2881,6 @@ static int ensure_link_is_safe(connection_struct *conn, const char *link_dest_in
 
 	pstrcpy(link_dest, link_dest_in);
 	unix_convert(link_dest,conn,0,&bad_path,&sbuf);
-
-	/* Store the UNIX converted path. */
-	pstrcpy(link_dest_out, link_dest);
 
 	p = strrchr_m(link_dest, '/');
 	if (p) {
@@ -2998,7 +2995,8 @@ NTSTATUS hardlink_internals(connection_struct *conn, char *oldname, char *newnam
 		return NT_STATUS_FILE_IS_A_DIRECTORY;
 	}
 
-	if (ensure_link_is_safe(conn, oldname, oldname) != 0)
+	/* Ensure this is within the share. */
+	if (!reduce_name(conn, oldname) != 0)
 		return NT_STATUS_ACCESS_DENIED;
 
 	DEBUG(10,("hardlink_internals: doing hard link %s -> %s\n", newname, oldname ));
@@ -3522,7 +3520,7 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 					pstrcpy(rel_name, "./");
 				}
 				pstrcat(rel_name, link_target);
-				if (ensure_link_is_safe(conn, rel_name, rel_name) != 0) {
+				if (ensure_link_is_safe(conn, rel_name) != 0) {
 					return(UNIXERROR(ERRDOS,ERRnoaccess));
 				}
 
