@@ -128,7 +128,7 @@ struct ndr_push *ndr_push_init_ctx(TALLOC_CTX *mem_ctx)
 
 	ndr->flags = 0;
 	ndr->alloc_size = NDR_BASE_MARSHALL_SIZE;
-	ndr->data = talloc(ndr, ndr->alloc_size);
+	ndr->data = talloc_array_p(ndr, uint8_t, ndr->alloc_size);
 	if (!ndr->data) {
 		return NULL;
 	}

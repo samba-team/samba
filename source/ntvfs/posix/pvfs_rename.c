@@ -35,7 +35,7 @@ static const char *pvfs_resolve_wildcard_component(TALLOC_CTX *mem_ctx,
 	char *dest, *d;
 
 	/* the length is bounded by the length of the two strings combined */
-	dest = talloc(mem_ctx, strlen(fname) + strlen(pattern) + 1);
+	dest = talloc_size(mem_ctx, strlen(fname) + strlen(pattern) + 1);
 	if (dest == NULL) {
 		return NULL;
 	}

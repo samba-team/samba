@@ -120,7 +120,7 @@ void req_setup_reply(struct smbsrv_request *req, uint_t wct, uint_t buflen)
 	/* over allocate by a small amount */
 	req->out.allocated = req->out.size + REQ_OVER_ALLOCATION; 
 
-	req->out.buffer = talloc(req, req->out.allocated);
+	req->out.buffer = talloc_size(req, req->out.allocated);
 	if (!req->out.buffer) {
 		smbsrv_terminate_connection(req->smb_conn, "allocation failed");
 		return;

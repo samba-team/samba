@@ -660,7 +660,7 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result)
 static const char *blob2string_talloc(TALLOC_CTX *mem_ctx,
 				      DATA_BLOB blob)
 {
-	char *result = talloc(mem_ctx, blob.length+1);
+	char *result = talloc_size(mem_ctx, blob.length+1);
 	memcpy(result, blob.data, blob.length);
 	result[blob.length] = '\0';
 	return result;
@@ -859,7 +859,7 @@ BOOL ldap_decode(struct asn1_data *data, struct ldap_message *msg)
 			asn1_start_tag(data, ASN1_CONTEXT_SIMPLE(0));
 			pwlen = asn1_tag_remaining(data);
 			if (pwlen != 0) {
-				char *pw = talloc(msg->mem_ctx, pwlen+1);
+				char *pw = talloc_size(msg->mem_ctx, pwlen+1);
 				asn1_read(data, pw, pwlen);
 				pw[pwlen] = '\0';
 				r->creds.password = pw;
@@ -1040,7 +1040,7 @@ BOOL ldap_decode(struct asn1_data *data, struct ldap_message *msg)
 		asn1_start_tag(data,
 			       ASN1_APPLICATION_SIMPLE(LDAP_TAG_DelRequest));
 		len = asn1_tag_remaining(data);
-		dn = talloc(msg->mem_ctx, len+1);
+		dn = talloc_size(msg->mem_ctx, len+1);
 		if (dn == NULL)
 			break;
 		asn1_read(data, dn, len);
@@ -1073,7 +1073,7 @@ BOOL ldap_decode(struct asn1_data *data, struct ldap_message *msg)
 			char *newsup;
 			asn1_start_tag(data, ASN1_CONTEXT_SIMPLE(0));
 			len = asn1_tag_remaining(data);
-			newsup = talloc(msg->mem_ctx, len+1);
+			newsup = talloc_size(msg->mem_ctx, len+1);
 			if (newsup == NULL)
 				break;
 			asn1_read(data, newsup, len);

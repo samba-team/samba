@@ -58,7 +58,7 @@ static NTSTATUS test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			       sizeof(ninfo.challenge));
 	if (nt_hash) {
 		ninfo.nt.length = 24;
-		ninfo.nt.data = talloc(mem_ctx, 24);
+		ninfo.nt.data = talloc_size(mem_ctx, 24);
 		SMBOWFencrypt(nt_hash->hash, ninfo.challenge, ninfo.nt.data);
 	} else {
 		ninfo.nt.length = 0;
@@ -67,7 +67,7 @@ static NTSTATUS test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	
 	if (lm_hash) {
 		ninfo.lm.length = 24;
-		ninfo.lm.data = talloc(mem_ctx, 24);
+		ninfo.lm.data = talloc_size(mem_ctx, 24);
 		SMBOWFencrypt(lm_hash->hash, ninfo.challenge, ninfo.lm.data);
 	} else {
 		ninfo.lm.length = 0;

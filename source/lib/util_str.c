@@ -669,7 +669,7 @@ char *strlower_talloc(TALLOC_CTX *ctx, const char *src)
 
 	/* this takes advantage of the fact that upper/lower can't
 	   change the length of a character by more than 1 byte */
-	dest = talloc(ctx, 2*(strlen(src))+1);
+	dest = talloc_size(ctx, 2*(strlen(src))+1);
 	if (dest == NULL) {
 		return NULL;
 	}
@@ -704,7 +704,7 @@ char *strupper_talloc(TALLOC_CTX *ctx, const char *src)
 
 	/* this takes advantage of the fact that upper/lower can't
 	   change the length of a character by more than 1 byte */
-	dest = talloc(ctx, 2*(strlen(src))+1);
+	dest = talloc_size(ctx, 2*(strlen(src))+1);
 	if (dest == NULL) {
 		return NULL;
 	}
@@ -1030,7 +1030,7 @@ const char *str_format_nbt_domain(TALLOC_CTX *mem_ctx, const char *s)
 	if (!s || !*s) {
 		return talloc_strdup(mem_ctx, "");
 	}
-	ret = talloc(mem_ctx, strlen(s)+2);
+	ret = talloc_size(mem_ctx, strlen(s)+2);
 	if (!ret) {
 		return ret;
 	}
@@ -1133,7 +1133,7 @@ char *attrib_string(TALLOC_CTX *mem_ctx, uint32_t attrib)
 	};
 	char *ret;
 
-	ret = talloc(mem_ctx, ARRAY_SIZE(attr_strs)+1);
+	ret = talloc_size(mem_ctx, ARRAY_SIZE(attr_strs)+1);
 	if (!ret) {
 		return NULL;
 	}

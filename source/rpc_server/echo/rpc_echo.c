@@ -37,11 +37,10 @@ static NTSTATUS echo_EchoData(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 		return NT_STATUS_OK;
 	}
 
-	r->out.out_data = talloc(mem_ctx, r->in.len);
+	r->out.out_data = talloc_memdup(mem_ctx, r->in.in_data, r->in.len);
 	if (!r->out.out_data) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	memcpy(r->out.out_data, r->in.in_data, r->in.len);
 
 	return NT_STATUS_OK;
 }

@@ -412,7 +412,7 @@ static NTSTATUS pvfs_reduce_name(TALLOC_CTX *mem_ctx, const char **fname, uint_t
 	}
 
 	/* rebuild the name */
-	ret = talloc(mem_ctx, len+1);
+	ret = talloc_size(mem_ctx, len+1);
 	if (ret == NULL) {
 		talloc_free(s);
 		return NT_STATUS_NO_MEMORY;

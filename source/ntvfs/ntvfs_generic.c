@@ -713,8 +713,10 @@ NTSTATUS ntvfs_map_fileinfo(struct smbsrv_request *req, union smb_fileinfo *info
 	case RAW_FILEINFO_STREAM_INFORMATION:
 		info->stream_info.out.num_streams = info2->generic.out.num_streams;
 		if (info->stream_info.out.num_streams > 0) {
-			info->stream_info.out.streams = talloc(req, 
-				info->stream_info.out.num_streams * sizeof(struct stream_struct));
+			info->stream_info.out.streams = 
+				talloc_array_p(req, 
+					       struct stream_struct,
+					       info->stream_info.out.num_streams);
 			if (!info->stream_info.out.streams) {
 				DEBUG(2,("ntvfs_map_fileinfo: no memory for %d streams\n",
 					info->stream_info.out.num_streams));
@@ -751,8 +753,9 @@ NTSTATUS ntvfs_map_fileinfo(struct smbsrv_request *req, union smb_fileinfo *info
 	case RAW_FILEINFO_ALL_EAS:
 		info->all_eas.out.num_eas = info2->generic.out.num_eas;
 		if (info->all_eas.out.num_eas > 0) {
-			info->all_eas.out.eas = talloc(req, 
-				info->all_eas.out.num_eas * sizeof(struct ea_struct));
+			info->all_eas.out.eas = talloc_array_p(req, 
+							       struct ea_struct,
+							       info->all_eas.out.num_eas);
 			if (!info->all_eas.out.eas) {
 				DEBUG(2,("ntvfs_map_fileinfo: no memory for %d eas\n",
 					info->all_eas.out.num_eas));

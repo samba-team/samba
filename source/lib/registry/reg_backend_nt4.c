@@ -917,7 +917,7 @@ static WERROR vk_to_val(TALLOC_CTX *mem_ctx, struct registry_key *parent, VK_HDR
 
 	if (dat_len&0x7FFFFFFF) {
 
-		char *dtmp = (char *)talloc(mem_ctx, dat_len&0x7FFFFFFF);
+		char *dtmp = talloc_size(mem_ctx, dat_len&0x7FFFFFFF);
 
 		if ((dat_len&0x80000000) == 0) { /* The data is pointed to by the offset */
 			char *dat_ptr = LOCN(regf->base, dat_off);

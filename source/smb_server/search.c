@@ -45,7 +45,7 @@
 
 /* useful wrapper for talloc with NO_MEMORY reply */
 #define REQ_TALLOC(ptr) do { \
-	ptr = talloc(req, sizeof(*(ptr))); \
+	ptr = talloc_size(req, sizeof(*(ptr))); \
 	if (!ptr) { \
 		req_reply_error(req, NT_STATUS_NO_MEMORY); \
 		return; \

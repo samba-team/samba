@@ -62,8 +62,8 @@ static BOOL test_echodata(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 
 	printf("\nTesting EchoData\n");
 
-	data_in = talloc(mem_ctx, len);
-	data_out = talloc(mem_ctx, len);
+	data_in = talloc_size(mem_ctx, len);
+	data_out = talloc_size(mem_ctx, len);
 	for (i=0;i<len;i++) {
 		data_in[i] = i;
 	}
@@ -109,7 +109,7 @@ static BOOL test_sourcedata(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 
 	printf("\nTesting SourceData\n");
 
-	data_out = talloc(mem_ctx, len);
+	data_out = talloc_size(mem_ctx, len);
 
 	r.in.len = len;
 	r.out.data = data_out;
@@ -144,7 +144,7 @@ static BOOL test_sinkdata(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 
 	printf("\nTesting SinkData\n");
 
-	data_in = talloc(mem_ctx, len);
+	data_in = talloc_size(mem_ctx, len);
 	for (i=0;i<len;i++) {
 		data_in[i] = i+1;
 	}

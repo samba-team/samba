@@ -649,7 +649,7 @@ BOOL ldap_find_single_string(struct ldap_message *msg, const char *attr,
 	if (!ldap_find_single_value(msg, attr, &blob))
 		return False;
 
-	*value = talloc(mem_ctx, blob.length+1);
+	*value = talloc_size(mem_ctx, blob.length+1);
 
 	if (*value == NULL)
 		return False;
