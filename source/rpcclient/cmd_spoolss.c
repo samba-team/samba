@@ -184,9 +184,19 @@ static void display_print_info_1(PRINTER_INFO_1 *i1)
 	fstring name;
 	fstring comm;
 
-	rpcstr_pull(desc, i1->description.buffer, sizeof(desc), 0, STR_TERMINATE);
-	rpcstr_pull(name, i1->name.buffer, sizeof(name), 0, STR_TERMINATE);
-	rpcstr_pull(comm, i1->comment.buffer, sizeof(comm), 0, STR_TERMINATE);
+	desc[0] = name[0] = comm[0] = 0;
+
+	if (i1->description.buffer)
+		rpcstr_pull(desc, i1->description.buffer, sizeof(desc), 0, 
+			    STR_TERMINATE);
+
+	if (i1->name.buffer)
+		rpcstr_pull(name, i1->name.buffer, sizeof(name), 0, 
+			    STR_TERMINATE);
+
+	if (i1->comment.buffer)
+		rpcstr_pull(comm, i1->comment.buffer, sizeof(comm), 0, 
+			    STR_TERMINATE);
 
 	printf("\tflags:[0x%x]\n", i1->flags);
 	printf("\tname:[%s]\n", name);
