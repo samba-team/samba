@@ -201,6 +201,12 @@ static int reply_nt1(char *outbuf)
 	  capabilities |= CAP_RAW_MODE;
   }
 
+
+  /* until the unicode conversion is complete have it disabled by default */
+  if (getenv("SMBD_USE_UNICODE")) {
+	  capabilities |= CAP_UNICODE;
+  }
+
 #ifdef WITH_MSDFS
   if(lp_host_msdfs())
 	capabilities |= CAP_DFS;

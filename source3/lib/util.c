@@ -354,6 +354,15 @@ void set_message_bcc(char *buf,int num_bytes)
 }
 
 /*******************************************************************
+  setup only the byte count for a smb message, using the end of the
+  message as a marker
+********************************************************************/
+void set_message_end(void *outbuf,void *end_ptr)
+{
+	set_message_bcc(outbuf,PTR_DIFF(end_ptr,smb_buf(outbuf)));
+}
+
+/*******************************************************************
 reduce a file name, removing .. elements.
 ********************************************************************/
 void dos_clean_name(char *s)
