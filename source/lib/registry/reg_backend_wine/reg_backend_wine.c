@@ -26,7 +26,7 @@ static REG_OPS reg_backend_wine = {
 	.name = "wine",
 };
 
-NTSTATUS reg_wine_init(void)
+NTSTATUS registry_wine_init(void)
 {
 	register_backend("registry", &reg_backend_wine);
 	return NT_STATUS_OK;

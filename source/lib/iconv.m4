@@ -63,4 +63,4 @@ if test x"$ICONV_FOUND" = x"no" -o x"$samba_cv_HAVE_NATIVE_ICONV" != x"yes" ; th
     Install libiconv from http://freshmeat.net/projects/libiconv/ for better charset compatibility!])
 fi
 
-SMB_SUBSYSTEM(CHARSET,lib/iconv.o,lib/charcnv.o)
+SMB_SUBSYSTEM(CHARSET,lib/iconv.o,lib/charcnv.o,[${TMP_CHARSET_LIBS}])

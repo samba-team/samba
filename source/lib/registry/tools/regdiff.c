@@ -21,7 +21,7 @@
 
 #include "includes.h"
 
-void writediff(REG_KEY *oldkey, REG_KEY *newkey, FILE *out)
+static void writediff(REG_KEY *oldkey, REG_KEY *newkey, FILE *out)
 {
 	int i;
 	REG_KEY *t1, *t2;

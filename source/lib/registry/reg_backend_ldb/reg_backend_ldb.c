@@ -21,7 +21,7 @@
 #include "includes.h"
 #include "lib/registry/common/registry.h"
 
-char *reg_path_to_ldb(TALLOC_CTX *mem_ctx, const char *path)
+static char *reg_path_to_ldb(TALLOC_CTX *mem_ctx, const char *path)
 {
 	char *ret = talloc_strdup(mem_ctx, "(dn=");
 	char *begin = (char *)path;
@@ -116,7 +116,7 @@ static struct registry_ops reg_backend_ldb = {
 	.fetch_subkeys = ldb_fetch_subkeys,
 };
 
-NTSTATUS reg_ldb_init(void)
+NTSTATUS registry_ldb_init(void)
 {
 	return register_backend("registry", &reg_backend_ldb);
 }

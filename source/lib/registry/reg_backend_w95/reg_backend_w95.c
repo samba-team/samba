@@ -361,7 +361,7 @@ static struct registry_ops reg_backend_w95 = {
 	.get_subkey_by_index = w95_get_subkey_by_index,
 };
 
-NTSTATUS reg_w95_init(void)
+NTSTATUS registry_w95_init(void)
 {
 	return register_backend("registry", &reg_backend_w95);
 }

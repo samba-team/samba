@@ -664,7 +664,7 @@ static CMD_FILE *cmd_file_create(const char *file)
 
 char *str_type(unsigned char type);
 
-int nt_apply_reg_command_file(REG_KEY *root, const char *cmd_file_name)
+static int nt_apply_reg_command_file(REG_KEY *root, const char *cmd_file_name)
 {
 	CMD *cmd;
 	BOOL modified = False;

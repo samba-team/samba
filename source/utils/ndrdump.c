@@ -82,7 +82,7 @@ static void show_functions(const struct dcerpc_interface_table *p)
 	exit(1);
 }
 
-int main(int argc, char *argv[])
+ int main(int argc, char *argv[])
 {
 	const struct dcerpc_interface_table *p;
 	const struct dcerpc_interface_call *f;

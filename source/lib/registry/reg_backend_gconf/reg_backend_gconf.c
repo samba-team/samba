@@ -194,7 +194,7 @@ static struct registry_ops reg_backend_gconf = {
 	 */
 };
 
-NTSTATUS reg_gconf_init(void)
+NTSTATUS registry_gconf_init(void)
 {
 	return register_backend("registry", &reg_backend_gconf);
 }

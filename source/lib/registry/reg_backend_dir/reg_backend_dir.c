@@ -138,7 +138,7 @@ static struct registry_ops reg_backend_dir = {
 	.del_value = reg_dir_del_value,
 };
 
-NTSTATUS reg_dir_init(void)
+NTSTATUS registry_dir_init(void)
 {
 	return register_backend("registry", &reg_backend_dir);
 }

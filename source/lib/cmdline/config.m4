@@ -72,8 +72,10 @@ AC_CHECK_LIB(readline, rl_completion_matches,
 TMP_LIBCMDLINE_OBJS="lib/cmdline/readline.o lib/cmdline/popt_common.o"
 TMP_LIBCMDLINE_LIBS="$TERMLIBS"
 
+#hack...
+LIBS="$LIBS $TERMLIBS"
+
 SMB_SUBSYSTEM(LIBCMDLINE,[],
 		[${TMP_LIBCMDLINE_OBJS}],
-		[],
-		[],
-		[${TMP_LIBCMDLINE_LIBS}])
+		[ALLLIBS],
+		[LIBPOPT])
