@@ -396,6 +396,16 @@ static void process(void)
      * (nmbd_packets.c)
      */
     retransmit_or_expire_response_records(t);
+
+    /*
+     * check to see if any remote browse sync child processes have completed
+     */
+    sync_check_completion();
+
+    /*
+     * regularly sync with any other DMBs we know about 
+     */
+    sync_all_dmbs(t);
   }
 } /* process */
 

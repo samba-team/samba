@@ -579,6 +579,7 @@ void dmb_expire_and_sync_browser_lists(time_t t);
 void announce_and_sync_with_domain_master_browser( struct subnet_record *subrec,
                                                    struct work_record *work);
 void collect_all_workgroup_names_from_wins_server(time_t t);
+void sync_all_dmbs(time_t t);
 
 /*The following definitions come from  nmbd/nmbd_elections.c  */
 
@@ -835,6 +836,13 @@ BOOL create_subnets(void);
 BOOL we_are_a_wins_client(void);
 struct subnet_record *get_next_subnet_maybe_unicast(struct subnet_record *subrec);
 struct subnet_record *get_next_subnet_maybe_unicast_or_wins_server(struct subnet_record *subrec);
+
+/*The following definitions come from  nmbd/nmbd_synclists.c  */
+
+void sync_browse_lists(struct work_record *work,
+		       char *name, int nm_type, 
+		       struct in_addr ip, BOOL local, BOOL servers);
+void sync_check_completion(void);
 
 /*The following definitions come from  nmbd/nmbd_winsproxy.c  */
 
