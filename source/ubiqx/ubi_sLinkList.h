@@ -3,11 +3,11 @@
 /* ========================================================================== **
  *                              ubi_sLinkList.h
  *
- *  Copyright (C) 1997 by Christopher R. Hertel
+ *  Copyright (C) 1997, 1998 by Christopher R. Hertel
  *
  *  Email: crh@ubiqx.mn.org
  * -------------------------------------------------------------------------- **
- *  This module implements a really simple singly-linked list.
+ *  This module implements a simple singly-linked list.
  * -------------------------------------------------------------------------- **
  *
  *  This library is free software; you can redistribute it and/or
@@ -26,12 +26,50 @@
  *
  * -------------------------------------------------------------------------- **
  *
+ * Log: ubi_sLinkList.h,v
+ * Revision 0.4  1998/03/10 02:22:39  crh
+ * Combined ubi_StackQueue and ubi_sLinkList into one module.  Redesigned
+ * the functions and macros.  Not a complete rewrite but close to it.
+ *
+ * Revision 0.3  1998/01/03 02:00:02  crh
+ * Added ubi_slCount() macro.
+ *
  * Revision 0.2  1997/10/21 03:36:14  crh
  * Added parameter <After> in function Insert().  Made necessary changes
  * to macro AddHead() and added macro AddHere().
  *
  * Revision 0.1  1997/10/16 02:54:08  crh
  * Initial Revision.
+ *
+ * -------------------------------------------------------------------------- **
+ *  This module implements a singly-linked list which may also be used as a 
+ *  queue or a stack.  For a queue, entries are added at the tail and removed
+ *  from the head of the list.  For a stack, the entries are entered and
+ *  removed from the head of the list.  A traversal of the list will always
+ *  start at the head of the list and proceed toward the tail.  This is all
+ *  mind-numbingly simple, but I'm surprised by the number of programs out
+ *  there which re-implement this a dozen or so times.
+ *
+ *  Note:  When the list header is initialized, the Tail pointer is set to
+ *         point to the Head pointer.  This simplifies things a great deal,
+ *         except that you can't initialize a stack or queue by simply
+ *         zeroing it out.  One sure way to initialize the header is to call
+ *         ubi_slInit().  Another option would be something like this:
+ *
+ *         static ubi_slList MyList = { NULL, (ubi_slNodePtr)&MyList, 0 };
+ *
+ *         See ubi_slInit() and the ubi_slList structure for more info.
+ *
+ *        + Also, note that this module is similar to the ubi_dLinkList
+ *          module.  There are three key differences:
+ *          - This is a singly-linked list, the other is a doubly-linked
+ *            list.
+ *          - In this module, if the list is empty, the tail pointer will
+ *            point back to the head of the list as described above.  This
+ *            is not done in ubi_dLinkList.
+ *          - The ubi_slRemove() function, by necessity, removed the 'next'
+ *            node.  In ubi_dLinkList, the ubi_dlRemove() function removes
+ *            the 'current' node. 
  *
  * ========================================================================== **
  */
@@ -59,6 +97,7 @@ typedef ubi_slNode *ubi_slNodePtr;
 typedef struct
   {
   ubi_slNodePtr Head;
+  ubi_slNodePtr Tail;
   unsigned long count;
   } ubi_slList;
 
@@ -67,31 +106,64 @@ typedef ubi_slList *ubi_slListPtr;
 /* ========================================================================== **
  * Macros...
  * 
+ *  ubi_slCount   - Returns the current number of entries in the list.
+ *
  *  ubi_slAddHead - Add a new node at the head of the list.
+ *  ubi_slAddNext - Add a new node following the indicated node.
+ *  ubi_slAddTail - Add a new node to the tail of the list.
+ *                  Note: AddTail evaluates the L parameter twice.
+ *
  *  ubi_slRemHead - Remove the node at the head of the list, if any.
+ *  ubi_slRemNext - Remove the node following the given node.
+ *
  *  ubi_slFirst   - Return a pointer to the first node in the list, if any.
  *  ubi_slNext    - Given a node, return a pointer to the next node.
+ *  ubi_slLast    - Return a pointer to the last node in the list, if any.
+ *
+ *  ubi_slPush    - Add a node at the head of the list (synonym of AddHead).
+ *  ubi_slPop     - Remove a node at the head of the list (synonym of RemHead).
+ *  ubi_slEnqueue - Add a node at the tail of the list (sysnonym of AddTail).
+ *  ubi_slDequeue - Remove a node at the head of the list (synonym of RemHead).
  *
  *  Note that all of these provide type casting of the parameters.  The
  *  Add and Rem macros are nothing more than nice front-ends to the
- *  Insert and Remove operations.
+ *  Insert and Remove functions.
+ *
+ *  Also note that there the First, Next and Last macros do no parameter
+ *  checking!
  *
  */
+
+#define ubi_slCount( L ) (((ubi_slListPtr)(L))->count)
 
 #define ubi_slAddHead( L, N ) \
         ubi_slInsert( (ubi_slListPtr)(L), (ubi_slNodePtr)(N), NULL )
 
-#define ubi_slAddHere( L, N, P ) \
+#define ubi_slAddNext( L, N, A ) \
         ubi_slInsert( (ubi_slListPtr)(L), \
                       (ubi_slNodePtr)(N), \
-                      (ubi_slNodePtr)(P) )
+                      (ubi_slNodePtr)(A) )
 
-#define ubi_slRemHead( L ) ubi_slRemove( (ubi_slListPtr)(L) )
+#define ubi_slAddTail( L, N ) \
+        ubi_slInsert( (ubi_slListPtr)(L), \
+                      (ubi_slNodePtr)(N), \
+                     ((ubi_slListPtr)(L))->Tail )
+
+#define ubi_slRemHead( L ) ubi_slRemove( (ubi_slListPtr)(L), NULL )
+
+#define ubi_slRemNext( L, N ) \
+        ubi_slRemove( (ubi_slListPtr)(L), (ubi_slNodePtr)(N) )
 
 #define ubi_slFirst( L ) (((ubi_slListPtr)(L))->Head)
 
 #define ubi_slNext( N )  (((ubi_slNodePtr)(N))->Next)
 
+#define ubi_slLast( L )  (((ubi_slListPtr)(L))->Tail)
+
+#define ubi_slPush    ubi_slAddHead
+#define ubi_slPop     ubi_slRemHead
+#define ubi_slEnqueue ubi_slAddTail
+#define ubi_slDequeue ubi_slRemHead
 
 /* ========================================================================== **
  * Function prototypes...
@@ -114,7 +186,7 @@ ubi_slNodePtr ubi_slInsert( ubi_slListPtr ListPtr,
                             ubi_slNodePtr New,
                             ubi_slNodePtr After );
   /* ------------------------------------------------------------------------ **
-   * Insert a new node at the head of the list.
+   * Add a node to the list.
    *
    *  Input:  ListPtr - A pointer to the list into which the node is to
    *                    be inserted.
@@ -129,14 +201,18 @@ ubi_slNodePtr ubi_slInsert( ubi_slListPtr ListPtr,
    * ------------------------------------------------------------------------ **
    */
 
-ubi_slNodePtr ubi_slRemove( ubi_slListPtr ListPtr );
+ubi_slNodePtr ubi_slRemove( ubi_slListPtr ListPtr, ubi_slNodePtr After );
   /* ------------------------------------------------------------------------ **
-   * Remove a node from the head of the list.
+   * Remove the node followng <After>.  If <After> is NULL, remove from the
+   * head of the list.
    *
    *  Input:  ListPtr - A pointer to the list from which the node is to be
    *                    removed.
+   *          After   - Pointer to the node preceeding the node to be
+   *                    removed.
    *
-   *  Output: A pointer to the node that was removed.
+   *  Output: A pointer to the node that was removed, or NULL if the list is
+   *          empty.
    *
    * ------------------------------------------------------------------------ **
    */

@@ -1,7 +1,7 @@
 /* ========================================================================== **
  *                              ubi_SplayTree.c
  *
- *  Copyright (C) 1993-1995 by Christopher R. Hertel
+ *  Copyright (C) 1993-1998 by Christopher R. Hertel
  *
  *  Email: crh@ubiqx.mn.org
  * -------------------------------------------------------------------------- **
@@ -15,6 +15,8 @@
  *  References: "Self-Adjusting Binary Search Trees", by Daniel Sleator and
  *              Robert Tarjan.  Journal of the Association for Computing
  *              Machinery Vol 32, No. 3, July 1985 pp. 652-686
+ *
+ *    See also: http://www.cs.cmu.edu/~sleator/
  *
  * -------------------------------------------------------------------------- **
  *
@@ -35,6 +37,13 @@
  * -------------------------------------------------------------------------- **
  *
  * Log: ubi_SplayTree.c,v
+ * Revision 4.0  1998/03/10 03:41:33  crh
+ * Minor comment changes.  The revision number is now 4.0 to match the
+ * BinTree and AVLtree modules.
+ *
+ * Revision 2.7  1998/01/24 06:37:08  crh
+ * Added a URL for more information.
+ *
  * Revision 2.6  1997/12/23 04:01:12  crh
  * In this version, all constants & macros defined in the header file have
  * the ubi_tr prefix.  Also cleaned up anything that gcc complained about
@@ -80,10 +89,9 @@
  *
  * To further complicate matters, only those portions of the base module
  * (ubi_BinTree) that were superceeded in the new module had the new names.
- * For example, if you were using ubi_AVLtree, the AVL node structure was
- * named "ubi_avlNode", but the root structure was still "ubi_btRoot".  Using
- * SplayTree, the locate function was called "ubi_sptLocate", but the next
- * and previous functions remained "ubi_btNext" and "ubi_btPrev".
+ * For example, if you were using ubi_SplayTree, the locate function was
+ * called "ubi_sptLocate", but the next and previous functions remained
+ * "ubi_btNext" and "ubi_btPrev".
  *
  * This was not too terrible if you were familiar with the modules and knew
  * exactly which tree model you wanted to use.  If you wanted to be able to
@@ -123,8 +131,8 @@
  */
 
 static char ModuleID[] = "ubi_SplayTree\n\
-\tRevision: 2.6\n\
-\tDate: 1997/12/23 04:01:12\n\
+\tRevision: 4.0\n\
+\tDate: 1998/03/10 03:41:33\n\
 \tAuthor: crh\n";
 
 
@@ -466,3 +474,4 @@ int ubi_sptModuleID( int size, char *list[] )
   } /* ubi_sptModuleID */
 
 /* ================================ The End ================================= */
+

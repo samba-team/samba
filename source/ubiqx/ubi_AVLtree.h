@@ -3,7 +3,7 @@
 /* ========================================================================== **
  *                              ubi_AVLtree.h
  *
- *  Copyright (C) 1991-1997 by Christopher R. Hertel
+ *  Copyright (C) 1991-1998 by Christopher R. Hertel
  *
  *  Email: crh@ubiqx.mn.org
  * -------------------------------------------------------------------------- **
@@ -35,6 +35,14 @@
  *
  * -------------------------------------------------------------------------- **
  * Log: ubi_AVLtree.h,v
+ * Revision 4.0  1998/03/10 03:34:45  crh
+ * Major changes.
+ * By adding the AVL balance field to the base ubi_btNode structure, I no
+ * longer need AVL-specific ReplaceNode(), SwapNodes(), and InitNode()
+ * functions.  The Remove() function is also simplified.  It's all much
+ * cleaner.
+ * This is rev. 4.0.  The 3.x series was dropped.
+ *
  * Revision 2.5  1997/12/23 04:00:15  crh
  * In this version, all constants & macros defined in the header file have
  * the ubi_tr prefix.  Also cleaned up anything that gcc complained about
@@ -95,10 +103,9 @@
  *
  * To further complicate matters, only those portions of the base module
  * (ubi_BinTree) that were superceeded in the new module had the new names.
- * For example, if you were using ubi_AVLtree, the AVL node structure was
- * named "ubi_avlNode", but the root structure was still "ubi_btRoot".  Using
- * SplayTree, the locate function was called "ubi_sptLocate", but the next
- * and previous functions remained "ubi_btNext" and "ubi_btPrev".
+ * For example, if you were using ubi_SplayTree, the locate function was
+ * called "ubi_sptLocate", but the next and previous functions remained
+ * "ubi_btNext" and "ubi_btPrev".
  *
  * This was not too terrible if you were familiar with the modules and knew
  * exactly which tree model you wanted to use.  If you wanted to be able to
@@ -126,70 +133,22 @@
 
 #include "ubi_BinTree.h"   /* Base erg binary tree support.       */
 
-/*  ------------------------------------------------------------------------- **
- *  AVL Tree Node Structure:  This structure defines the basic elements of
- *       the AVL tree nodes.  In general you *SHOULD NOT PLAY WITH THESE
- *       FIELDS*!  But, of course, I have to put the structure into this
- *       header so that you can use the structure as a building block.
- *
- *  The fields are as follows:
- *    Link     -  An array of pointers.  These pointers are manipulated by the
- *                BT and AVL routines, and indicate the left and right child
- *                nodes, plus the parent node.  By keeping track of the parent
- *                pointer, we avoid the need for recursive routines or hand-
- *                tooled stacks to keep track of our path back to the root.
- *                The use of these pointers is subject to change without
- *                notice.
- *    gender   -  For tree rebalancing purposes, it is necessary that each node
- *                know whether it is the left or right child of its parent, or
- *                if it is the root.  This information is stored in this field.
- *    balance  -  This field is also needed for AVL balancing purposes.  It
- *                indicates which subtree of the current node is longer, or if
- *                the subtrees are, in fact, balanced with respect to each
- *                other.
- *  ------------------------------------------------------------------------- **
- */
-
-typedef struct ubi_avlNodeStruct {
-  struct ubi_avlNodeStruct
-         *Link[3];      /* Normal Binary Tree Node type.                      */
-  char    gender;       /* The node is either the RIGHT or LEFT child of its  */
-                        /* parent, or is the root node.                       */
-  char    balance;      /* In an AVL tree, each node is the root of a subtree */
-                        /* that may be balanced, or be one node longer to the */
-                        /* right or left.  This field keeps track of the      */
-                        /* balance value of each node.                        */
-    } ubi_avlNode;
-
-typedef ubi_avlNode *ubi_avlNodePtr;    /* a Pointer to an AVL node */
-
 /* -------------------------------------------------------------------------- **
  *  Function prototypes.
  * -------------------------------------------------------------------------- **
  */
 
-ubi_avlNodePtr ubi_avlInitNode( ubi_avlNodePtr NodePtr );
-  /* ------------------------------------------------------------------------ **
-   * Initialize a tree node.
-   *
-   *  Input:   NodePtr  - a pointer to a ubi_btNode structure to be
-   *                      initialized.
-   *  Output:  a pointer to the initialized ubi_avlNode structure (ie. the
-   *           same as the input pointer).
-   * ------------------------------------------------------------------------ **
-   */
-
-ubi_trBool ubi_avlInsert( ubi_btRootPtr   RootPtr,
-                          ubi_avlNodePtr  NewNode,
-                          ubi_btItemPtr   ItemPtr,
-                          ubi_avlNodePtr *OldNode );
+ubi_trBool ubi_avlInsert( ubi_btRootPtr  RootPtr,
+                          ubi_btNodePtr  NewNode,
+                          ubi_btItemPtr  ItemPtr,
+                          ubi_btNodePtr *OldNode );
   /* ------------------------------------------------------------------------ **
    * This function uses a non-recursive algorithm to add a new element to
    * the tree.
    *
    *  Input:   RootPtr  -  a pointer to the ubi_btRoot structure that indicates
    *                       the root of the tree to which NewNode is to be added.
-   *           NewNode  -  a pointer to an ubi_avlNode structure that is NOT
+   *           NewNode  -  a pointer to an ubi_btNode structure that is NOT
    *                       part of any tree.
    *           ItemPtr  -  A pointer to the sort key that is stored within
    *                       *NewNode.  ItemPtr MUST point to information stored
@@ -228,8 +187,8 @@ ubi_trBool ubi_avlInsert( ubi_btRootPtr   RootPtr,
    * ------------------------------------------------------------------------ **
    */
 
-ubi_avlNodePtr ubi_avlRemove( ubi_btRootPtr  RootPtr,
-                              ubi_avlNodePtr DeadNode );
+ubi_btNodePtr ubi_avlRemove( ubi_btRootPtr RootPtr,
+                             ubi_btNodePtr DeadNode );
   /* ------------------------------------------------------------------------ **
    * This function removes the indicated node from the tree, after which the
    * tree is rebalanced.
@@ -273,60 +232,14 @@ int ubi_avlModuleID( int size, char *list[] );
  * type by including the appropriate module header.
  */
 
-#undef ubi_trNode
-#undef ubi_trNodePtr
-#define ubi_trNode    ubi_avlNode
-#define ubi_trNodePtr ubi_avlNodePtr
-
-#undef ubi_trInitNode
-#define ubi_trInitNode( Np ) ubi_avlInitNode( (ubi_avlNodePtr)(Np) )
-
 #undef ubi_trInsert
 #define ubi_trInsert( Rp, Nn, Ip, On ) \
-        ubi_avlInsert( (ubi_btRootPtr)(Rp), (ubi_avlNodePtr)(Nn), \
-                       (ubi_btItemPtr)(Ip), (ubi_avlNodePtr *)(On) )
+        ubi_avlInsert( (ubi_btRootPtr)(Rp), (ubi_btNodePtr)(Nn), \
+                       (ubi_btItemPtr)(Ip), (ubi_btNodePtr *)(On) )
 
 #undef ubi_trRemove
 #define ubi_trRemove( Rp, Dn ) \
-        ubi_avlRemove( (ubi_btRootPtr)(Rp), (ubi_avlNodePtr)(Dn) )
-
-#undef ubi_trLocate
-#define ubi_trLocate( Rp, Ip, Op ) \
-        (ubi_avlNodePtr)ubi_btLocate( (ubi_btRootPtr)(Rp), \
-                                      (ubi_btItemPtr)(Ip), \
-                                      (ubi_trCompOps)(Op) )
-
-#undef ubi_trFind
-#define ubi_trFind( Rp, Ip ) \
-        (ubi_avlNodePtr)ubi_btFind( (ubi_btRootPtr)(Rp), (ubi_btItemPtr)(Ip) )
-
-#undef ubi_trNext
-#define ubi_trNext( P ) (ubi_avlNodePtr)ubi_btNext( (ubi_btNodePtr)(P) )
-
-#undef ubi_trPrev
-#define ubi_trPrev( P ) (ubi_avlNodePtr)ubi_btPrev( (ubi_btNodePtr)(P) )
-
-#undef ubi_trFirst
-#define ubi_trFirst( P ) (ubi_avlNodePtr)ubi_btFirst( (ubi_btNodePtr)(P) )
-
-#undef ubi_trLast
-#define ubi_trLast( P ) (ubi_avlNodePtr)ubi_btLast( (ubi_btNodePtr)(P) )
-
-#undef ubi_trFirstOf
-#define ubi_trFirstOf( Rp, Ip, P ) \
-        (ubi_avlNodePtr)ubi_btFirstOf( (ubi_btRootPtr)(Rp), \
-                       (ubi_btItemPtr)(Ip), \
-                       (ubi_btNodePtr)(P) )
-
-#undef ubi_trLastOf
-#define ubi_trLastOf( Rp, Ip, P ) \
-        (ubi_avlNodePtr)ubi_btLastOf( (ubi_btRootPtr)(Rp), \
-                                      (ubi_btItemPtr)(Ip), \
-                                      (ubi_btNodePtr)(P) )
-
-#undef ubi_trLeafNode
-#define ubi_trLeafNode( Nd ) \
-        (ubi_avlNodePtr)ubi_btLeafNode( (ubi_btNodePtr)(Nd) )
+        ubi_avlRemove( (ubi_btRootPtr)(Rp), (ubi_btNodePtr)(Dn) )
 
 #undef ubi_trModuleID
 #define ubi_trModuleID( s, l ) ubi_avlModuleID( s, l )
