@@ -1,3 +1,7 @@
+2002-04-24  Johan Danielsson  <joda@pdc.kth.se>
+
+	* ftp/ftp.c: fix buffer overrun when receiving long replies
+
 2002-04-02  Johan Danielsson  <joda@pdc.kth.se>
 
 	* ftpd/popen.c: make sure gl_pathc != 0 before referencing
