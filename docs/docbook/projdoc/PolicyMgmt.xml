@@ -110,9 +110,9 @@ here is incomplete - you are warned.
 
 	<para>
 	Use the Group Policy Editor to create a policy file that specifies the location of
-	user profiles and/or the <filename>My Documents</filename> etc.  stuff. Then
-	save these settings in a file called <filename>Config.POL</filename> that needs to
-	be placed in the root of the <parameter>[NETLOGON]</parameter> share. If Win98 is configured to log onto
+	user profiles and/or the <filename>My Documents</filename> etc. Then save these
+	settings in a file called <filename>Config.POL</filename> that needs to be placed in the
+	root of the <parameter>[NETLOGON]</parameter> share. If Win98 is configured to log onto
 	the Samba Domain, it will automatically read this file and update the Win9x/Me registry
 	of the machine as it logs on.
 	</para>

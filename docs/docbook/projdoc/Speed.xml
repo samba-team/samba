@@ -9,9 +9,10 @@
 		</affiliation>
 	</author>
 	&author.jelmer;
+	&author.jht;
 </chapterinfo>
 
-<title>Samba performance issues</title>
+<title>Samba Performance Tuning</title>
 
 <sect1>
 <title>Comparisons</title>
