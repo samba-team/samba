@@ -27,8 +27,8 @@
   create file handles with convenient numbers for sniffers
 */
 #define PVFS_MIN_FILE_FNUM 0x100
-#define PVFS_MIN_NEW_FNUM 0x200
-#define PVFS_MIN_DIR_FNUM 0x1000
+#define PVFS_MIN_NEW_FNUM  0x200
+#define PVFS_MIN_DIR_FNUM  0x300
 
 /*
   find open file handle given fnum
@@ -64,8 +64,8 @@ static int pvfs_dir_fd_destructor(void *p)
 
 	if (f->create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE) {
 		if (rmdir(f->name->full_name) != 0) {
-			DEBUG(0,("pvfs_close: failed to rmdir '%s'\n", 
-				 f->name->full_name));
+			DEBUG(0,("pvfs_close: failed to rmdir '%s' - %s\n", 
+				 f->name->full_name, strerror(errno)));
 		}
 	}
 
@@ -214,8 +214,8 @@ static int pvfs_fd_destructor(void *p)
 
 	if (f->create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE) {
 		if (unlink(f->name->full_name) != 0) {
-			DEBUG(0,("pvfs_close: failed to delete '%s'\n", 
-				 f->name->full_name));
+			DEBUG(0,("pvfs_close: failed to delete '%s' - %s\n", 
+				 f->name->full_name, strerror(errno)));
 		}
 	}
 
