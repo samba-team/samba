@@ -1,3 +1,7 @@
+2000-04-03  Assar Westerlund  <assar@sics.se>
+
+	* del_enctype.c (del_enctype): set ignore correctly
+
 2000-04-02  Assar Westerlund  <assar@sics.se>
 
 	* kadmin.c (main): make parse errors a fatal error
