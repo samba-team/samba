@@ -222,7 +222,7 @@ parameter may be treated as a set of bits that, when modifying security on a fil
 user has always set to be 'on'.
 
 If not set explicitly this parameter is set to the same value as the
-link(bf(force create mode))(forcecreatemode) parameter to provide compatibility
+url(bf("force create mode"))(smb.conf.5.html#forcecreatemode) parameter to provide compatibility
 with Samba 2.0.4 where the permission change facility was introduced.
 To allow a user to modify all the user/group/world permissions on a file,
 with no restrictions set this parameter to 000.
