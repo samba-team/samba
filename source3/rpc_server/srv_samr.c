@@ -1870,6 +1870,11 @@ static BOOL _api_samr_create_user(POLICY_HND dom_pol, UNISTR2 user_account, uint
 	 * to create a user. JRA.
 	 */
 
+	/* add the user in the /etc/passwd file or the unix authority system */
+	if (lp_adduser_script())
+		smb_create_user(mach_acct);
+
+	/* add the user in the smbpasswd file or the Samba authority database */
 	if (!local_password_change(mach_acct, local_flags, NULL, err_str, sizeof(err_str), msg_str, sizeof(msg_str))) {
 		DEBUG(0, ("%s\n", err_str));
 		close_lsa_policy_hnd(user_pol);
@@ -2340,6 +2345,13 @@ static BOOL set_user_info_23(SAM_USER_INFO_23 *id23, uint32 rid)
 	new_pwd.smb_passwd = lm_hash;
 	new_pwd.smb_nt_passwd = nt_hash;
 
+	/* update the UNIX password */
+	if (lp_unix_password_sync())
+		if(!chgpasswd(new_pwd.smb_name, "", buf, True))
+			return False;
+
+	memset(buf, 0, sizeof(buf));
+
 	if(!mod_sam21pwd_entry(&new_pwd, True))
 		return False;
 	
@@ -2372,6 +2384,14 @@ static BOOL set_user_info_24(const SAM_USER_INFO_24 *id24, uint32 rid)
 	new_pwd.smb_passwd = lm_hash;
 	new_pwd.smb_nt_passwd = nt_hash;
 
+	/* update the UNIX password */
+	if (lp_unix_password_sync())
+		if(!chgpasswd(new_pwd.smb_name, "", buf, True))
+			return False;
+
+	memset(buf, 0, sizeof(buf));
+
+	/* update the SAMBA password */
 	if(!mod_sam21pwd_entry(&new_pwd, True))
 		return False;
 
@@ -2381,19 +2401,25 @@ static BOOL set_user_info_24(const SAM_USER_INFO_24 *id24, uint32 rid)
 /*******************************************************************
  samr_reply_set_userinfo
  ********************************************************************/
-static uint32 _samr_set_userinfo(POLICY_HND *pol, uint16 switch_value, SAM_USERINFO_CTR *ctr, uint16 vuid)
+static uint32 _samr_set_userinfo(POLICY_HND *pol, uint16 switch_value, SAM_USERINFO_CTR *ctr, pipes_struct *p)
 {
 	uint32 rid = 0x0;
 	DOM_SID sid;
-	user_struct *vuser = NULL;
+	struct current_user user;
+	struct smb_passwd *smb_pass;
+	unsigned char sess_key[16];
 
-	DEBUG(5, ("samr_reply_set_userinfo: %d\n", __LINE__));
+	DEBUG(5, ("_samr_set_userinfo: %d\n", __LINE__));
+
+	if (p->ntlmssp_auth_validated) {
+		memcpy(&user, &p->pipe_user, sizeof(user));
+	} else {
+		extern struct current_user current_user;
+		memcpy(&user, &current_user, sizeof(user));
+	}
 
 	/* search for the handle */
 	if (find_lsa_policy_by_hnd(pol) == -1)
-		return NT_STATUS_INVALID_HANDLE;
-
-	if ((vuser = get_valid_user_struct(vuid)) == NULL)
 		return NT_STATUS_INVALID_HANDLE;
 
 	/* find the policy handle.  open a policy on it. */
@@ -2402,12 +2428,30 @@ static uint32 _samr_set_userinfo(POLICY_HND *pol, uint16 switch_value, SAM_USERI
 
 	sid_split_rid(&sid, &rid);
 
-	DEBUG(5, ("samr_reply_set_userinfo: rid:0x%x, level:%d\n", rid, switch_value));
+	DEBUG(5, ("_samr_set_userinfo: rid:0x%x, level:%d\n", rid, switch_value));
 
 	if (ctr == NULL) {
-		DEBUG(5, ("samr_reply_set_userinfo: NULL info level\n"));
+		DEBUG(5, ("_samr_set_userinfo: NULL info level\n"));
 		return NT_STATUS_INVALID_INFO_CLASS;
 	}
+
+
+	/* 
+	 * We need the NT hash of the user who is changing the user's password.
+	 * This NT hash is used to generate a "user session key"
+	 * This "user session key" is in turn used to encrypt/decrypt the user's password.
+	 */
+
+	become_root();
+	smb_pass = getsmbpwuid(user.uid);
+	unbecome_root();
+	if(smb_pass == NULL) {
+		DEBUG(0,("_samr_set_userinfo: Unable to get smbpasswd entry for uid %u\n", (unsigned int)user.uid ));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+		
+	memset(sess_key, '\0', 16);
+	mdfour(sess_key, smb_pass->smb_nt_passwd, 16);
 
 	/* ok!  user info levels (lots: see MSDEV help), off we go... */
 	switch (switch_value) {
@@ -2417,14 +2461,13 @@ static uint32 _samr_set_userinfo(POLICY_HND *pol, uint16 switch_value, SAM_USERI
 			break;
 
 		case 24:
-			SamOEMhash(ctr->info.id24->pass, vuser->dc.sess_key, True);
+			SamOEMhash(ctr->info.id24->pass, sess_key, 1);
 			if (!set_user_info_24(ctr->info.id24, rid))
 				return NT_STATUS_ACCESS_DENIED;
 			break;
 
 		case 23:
-		DEBUG(5, ("samr_reply_set_userinfo: sess key:[%s]\n", credstr(vuser->dc.sess_key)));
-			SamOEMhash(ctr->info.id23->pass, vuser->dc.sess_key, 1);
+			SamOEMhash(ctr->info.id23->pass, sess_key, 1);
 			if (!set_user_info_23(ctr->info.id23, rid))
 				return NT_STATUS_ACCESS_DENIED;
 			break;
@@ -2459,7 +2502,7 @@ static BOOL api_samr_set_userinfo(pipes_struct *p)
 		return False;
 	}
 
-	r_u.status = _samr_set_userinfo(&q_u.pol, q_u.switch_value, &ctr, p->vuid);
+	r_u.status = _samr_set_userinfo(&q_u.pol, q_u.switch_value, &ctr, p);
 
 	free_samr_q_set_userinfo(&q_u);
 	

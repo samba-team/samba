@@ -3709,6 +3709,7 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 int reply_unknown(char *inbuf,char *outbuf);
 int reply_ioctl(connection_struct *conn,
 		char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
+int smb_create_user(char *unix_user);
 int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize);
 int reply_chkpth(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
 int reply_getatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
