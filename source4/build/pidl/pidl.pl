@@ -70,6 +70,7 @@ sub ShowHelp()
              --server              create server boilerplate
              --template            print a template for a pipe
              --eparser             create an ethereal parser
+             --swig                create swig wrapper file
              --diff                run diff on the idl and dumped output
              --keep                keep the .pidl file
            \n";
