@@ -55,6 +55,7 @@ AC_CHECK_HEADERS([\
 	errno.h					\
 	err.h					\
 	fcntl.h					\
+	ifaddrs.h				\
 	gdbm/ndbm.h				\
 	grp.h					\
 	ndbm.h					\
@@ -99,6 +100,7 @@ AC_REQUIRE([CHECK_NETINET_IP_AND_TCP])
 
 AM_CONDITIONAL(have_err_h, test "$ac_cv_header_err_h" = yes)
 AM_CONDITIONAL(have_fnmatch_h, test "$ac_cv_header_fnmatch_h" = yes)
+AM_CONDITIONAL(have_ifaddrs_h, test "$ac_cv_header_ifaddrs_h" = yes)
 AM_CONDITIONAL(have_vis_h, test "$ac_cv_header_vis_h" = yes)
 
 dnl Check for functions and libraries
