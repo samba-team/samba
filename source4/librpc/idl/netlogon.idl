@@ -750,23 +750,23 @@ interface netlogon
 		[in,out,ref] uint32 *negotiate_flags
 		);
 
-#if 0
 
 	/*****************/
 	/* Function 0x10 */
 
 	NTSTATUS netr_DatabaseSync2(
-		[in][string][ref] wchar_t *logon_server, # REF!!!
-		[in][string][ref] wchar_t *computername,
-		[in][ref] AUTHENTICATOR credential,
-		[in][out][ref] AUTHENTICATOR return_authenticator,
-		[in] uint32 database_id,
-		[in] uint16 restart_state,
-		[in][out][ref] uint32 *sync_context,
-		[in] uint32 preferredmaximumlength,
-		[out] netr_DELTA_ENUM_ARRAY *delta_enum_array
+		[in]     unistr logon_server,
+		[in]     unistr computername,
+		[in]     netr_Authenticator credential,
+		[in,out] netr_Authenticator return_authenticator,
+		[in]     uint32 database_id,
+		[in]     uint16 restart_state,
+		[in,out] uint32 sync_context,
+		[in]     uint32 preferredmaximumlength,
+		[out]    netr_DELTA_ENUM_ARRAY *delta_enum_array
 		);
 
+#if 0
 
 	/*****************/
 	/* Function 0x11 */
