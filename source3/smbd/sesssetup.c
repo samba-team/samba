@@ -143,7 +143,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 	DATA_BLOB ticket;
 	char *client, *p, *domain;
 	fstring netbios_domain_name;
-	const struct passwd *pw;
+	struct passwd *pw;
 	char *user;
 	int sess_vuid;
 	NTSTATUS ret;
@@ -154,6 +154,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 	uint8 tok_id[2];
 	BOOL foreign = False;
 	DATA_BLOB nullblob = data_blob(NULL, 0);
+	fstring real_username;
 
 	ZERO_STRUCT(ticket);
 	ZERO_STRUCT(auth_data);
@@ -239,7 +240,9 @@ static int reply_spnego_kerberos(connection_struct *conn,
 
 	asprintf(&user, "%s%c%s", domain, *lp_winbind_separator(), client);
 	
-	pw = smb_getpwnam( user );
+	/* lookup the passwd struct, create a new user if necessary */
+
+	pw = smb_getpwnam( user, real_username, True );
 	
 	if (!pw) {
 		DEBUG(1,("Username %s is invalid on this system\n",user));
@@ -251,10 +254,11 @@ static int reply_spnego_kerberos(connection_struct *conn,
 
 	/* setup the string used by %U */
 	
-	sub_set_smb_name(pw->pw_name);
+	sub_set_smb_name( real_username );
 	reload_services(True);
 	
-	if (!NT_STATUS_IS_OK(ret = make_server_info_pw(&server_info,pw))) {
+	if (!NT_STATUS_IS_OK(ret = make_server_info_pw(&server_info, real_username, pw))) 
+	{
 		DEBUG(1,("make_server_info_from_pw failed!\n"));
 		SAFE_FREE(user);
 		SAFE_FREE(client);

@@ -757,6 +757,7 @@ Fill a server_info struct from a SAM_ACCOUNT with their groups
 ***************************************************************************/
 
 static NTSTATUS add_user_groups(auth_serversupplied_info **server_info, 
+				const char * unix_username,
 				SAM_ACCOUNT *sampass,
 				uid_t uid, gid_t gid)
 {
@@ -770,7 +771,7 @@ static NTSTATUS add_user_groups(auth_serversupplied_info **server_info,
 	BOOL is_guest;
 	uint32 rid;
 
-	nt_status = get_user_groups(pdb_get_username(sampass), uid, gid, 
+	nt_status = get_user_groups(unix_username, uid, gid, 
 		&n_groupSIDs, &groupSIDs, &unix_groups);
 		
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -828,9 +829,11 @@ NTSTATUS make_server_info_sam(auth_serversupplied_info **server_info,
 	
 	passwd_free(&pwd);
 
-	if (!NT_STATUS_IS_OK(nt_status = add_user_groups(server_info, sampass, 
+	if (!NT_STATUS_IS_OK(nt_status = add_user_groups(server_info, pdb_get_username(sampass), 
+							 sampass,
 							 (*server_info)->uid, 
-							 (*server_info)->gid))) {
+							 (*server_info)->gid))) 
+	{
 		free_server_info(server_info);
 		return nt_status;
 	}
@@ -848,7 +851,9 @@ NTSTATUS make_server_info_sam(auth_serversupplied_info **server_info,
  to a SAM_ACCOUNT
 ***************************************************************************/
 
-NTSTATUS make_server_info_pw(auth_serversupplied_info **server_info, const struct passwd *pwd)
+NTSTATUS make_server_info_pw(auth_serversupplied_info **server_info, 
+                             char *unix_username,
+			     struct passwd *pwd)
 {
 	NTSTATUS nt_status;
 	SAM_ACCOUNT *sampass = NULL;
@@ -861,11 +866,13 @@ NTSTATUS make_server_info_pw(auth_serversupplied_info **server_info, const struc
 
 	(*server_info)->sam_account    = sampass;
 
-	if (!NT_STATUS_IS_OK(nt_status = add_user_groups(server_info, sampass, pwd->pw_uid, pwd->pw_gid))) {
+	if (!NT_STATUS_IS_OK(nt_status = add_user_groups(server_info, unix_username,
+		sampass, pwd->pw_uid, pwd->pw_gid))) 
+	{
 		return nt_status;
 	}
 
-	(*server_info)->unix_name = smb_xstrdup(pwd->pw_name);
+	(*server_info)->unix_name = smb_xstrdup(unix_username);
 
 	(*server_info)->sam_fill_level = SAM_FILL_ALL;
 	(*server_info)->uid = pwd->pw_uid;
@@ -924,52 +931,30 @@ static NTSTATUS fill_sam_account(TALLOC_CTX *mem_ctx,
 				 SAM_ACCOUNT **sam_account)
 {
 	fstring dom_user;
+	fstring real_username;
 	struct passwd *passwd;
 
 	fstr_sprintf(dom_user, "%s%s%s", domain, lp_winbind_separator(), 
 		username);
 
-	passwd = Get_Pwnam(dom_user);
-	
-	if ( passwd ) {
-		char *p;
-		
-		/* make sure we get the case of the username correct */
-		/* work around 'winbind use default domain = yes' */
-		
-		p = strchr( passwd->pw_name, *lp_winbind_separator() );
-		if ( !p ) 
-			fstr_sprintf(dom_user, "%s%s%s", domain, 
-				lp_winbind_separator(), passwd->pw_name);
-		else 
-			fstrcpy( dom_user, passwd->pw_name );
-	}
-	else {
-		/* if the lookup for DOMAIN\username failed, try again 
-		   with just 'username'.  This is need for accessing the server
-		   as a trust user that actually maps to a local account */
+	/* get the passwd struct but don't create the user if he/she 
+	   does not exist.  We were explicitly called from a following
+	   a winbindd authentication request so we should assume that 
+	   nss_winbindd is working */
 
-		fstrcpy( dom_user, username );
-		passwd = Get_Pwnam( dom_user );
-		
-		/* make sure we get the case of the username correct */
-		if ( passwd )
-			fstrcpy( dom_user, passwd->pw_name );
-	}
-
-	if ( !passwd )
+	if ( !(passwd = smb_getpwnam( dom_user, real_username, True )) )
 		return NT_STATUS_NO_SUCH_USER;
 
 	*uid = passwd->pw_uid;
 	*gid = passwd->pw_gid;
 
-	/* This is pointless -- there is no suport for differeing 
+	/* This is pointless -- there is no suport for differing 
 	   unix and windows names.  Make sure to always store the 
 	   one we actually looked up and succeeded. Have I mentioned
 	   why I hate the 'winbind use default domain' parameter?   
 	                                 --jerry              */
 	   
-	*found_username = talloc_strdup(mem_ctx, dom_user);
+	*found_username = talloc_strdup( mem_ctx, real_username );
 	
 	DEBUG(5,("fill_sam_account: located username was [%s]\n",
 		*found_username));
@@ -983,40 +968,72 @@ static NTSTATUS fill_sam_account(TALLOC_CTX *mem_ctx,
  the username if we fallback to the username only.
  ****************************************************************************/
  
-struct passwd *smb_getpwnam( char *domuser )
+struct passwd *smb_getpwnam( char *domuser, fstring save_username, BOOL create )
 {
 	struct passwd *pw = NULL;
 	char *p;
 	fstring mapped_username;
-
-	pw = Get_Pwnam( domuser );
-	if ( pw )
-		return pw;
-
-	/* fallback to looking up just the username */
-
-	p = strchr( domuser, *lp_winbind_separator() );
-
+	
+	/* we only save a copy of the username it has been mangled 
+	   by winbindd use default domain */
+	   
+	save_username[0] = '\0';
+	
+	/* save a local copy of the username and run it through the 
+	   username map */
+	   
+	fstrcpy( mapped_username, domuser );
+	map_username( mapped_username );	
+	
+	p = strchr_m( mapped_username, *lp_winbind_separator() );
+	
+	/* code for a DOMAIN\user string */
+	
 	if ( p ) {
-		p += 1;
-		fstrcpy( mapped_username, p );
-		map_username( mapped_username );	
-		pw = Get_Pwnam(mapped_username);
-		if (!pw) {
-			/* Don't add a machine account. */
-			if (mapped_username[strlen(mapped_username)-1] == '$')
-				return NULL;
+		pw = Get_Pwnam( domuser );
+		if ( pw ) {	
+			/* make sure we get the case of the username correct */
+			/* work around 'winbind use default domain = yes' */
 
-			/* Create local user if requested. */
-			p = strchr( mapped_username, *lp_winbind_separator() );
-			if (p)
-				p += 1;
+			if ( !strchr_m( pw->pw_name, *lp_winbind_separator() ) ) {
+				char *domain;
+				
+				domain = mapped_username;
+				*p = '\0';
+				fstr_sprintf(save_username, "%s%c%s", domain, *lp_winbind_separator(), pw->pw_name);
+			}
 			else
-				p = mapped_username;
-			auth_add_user_script(NULL, p);
-			return Get_Pwnam(p);
+				fstrcpy( save_username, pw->pw_name );
+
+			/* whew -- done! */		
+			return pw;
 		}
+
+		/* setup for lookup of just the username */
+		p++;
+		fstrcpy( mapped_username, p );
+
 	}
+	
+	/* just lookup a plain username */
+	
+	pw = Get_Pwnam(mapped_username);
+		
+	/* Create local user if requested. */
+	
+	if ( !pw && create ) {
+		/* Don't add a machine account. */
+		if (mapped_username[strlen(mapped_username)-1] == '$')
+			return NULL;
+
+		auth_add_user_script(NULL, mapped_username);
+		pw = Get_Pwnam(mapped_username);
+	}
+	
+	/* one last check for a valid passwd struct */
+	
+	if ( pw )
+		fstrcpy( save_username, pw->pw_name );
 
 	return pw;
 }
