@@ -1950,6 +1950,7 @@ fi
     ;;
   esac ],
   AC_MSG_RESULT(no)
+  AC_DEFINE(HAVE_NO_ACLS)
 )
 
 echo "checking configure summary"
