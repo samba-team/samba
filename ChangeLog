@@ -1,3 +1,7 @@
+1999-08-09  Johan Danielsson  <joda@pdc.kth.se>
+
+	* configure.in: check for setproctitle
+
 1999-08-05  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/principal.c (krb5_sname_to_principal): remember to call
