@@ -34,8 +34,8 @@ static void winbindd_fill_grent(struct winbindd_gr *gr, char *gr_name,
 
     /* Group name and password */
 
-    strncpy(gr->gr_name, gr_name, sizeof(gr->gr_name) - 1);
-    strncpy(gr->gr_passwd, "x", sizeof(gr->gr_passwd) - 1);
+    safe_strcpy(gr->gr_name, gr_name, sizeof(gr->gr_name) - 1);
+    safe_strcpy(gr->gr_passwd, "x", sizeof(gr->gr_passwd) - 1);
 }
 
 /* Fill in group membership */
@@ -238,10 +238,9 @@ static BOOL winbindd_fill_grent_mem(struct winbindd_domain *domain,
             ZERO_STRUCT(name_part2);
 
             the_name = names[i];
-            next_token(&the_name, name_part1, "/\\", sizeof(fstring));
-            next_token(NULL, name_part2, "", sizeof(fstring));
+	    parse_domain_user(the_name, name_part1, name_part2);
 
-            if (strcmp(name_part2, "") != 0) {
+            if (strcmp(name_part1, "") != 0) {
                 name_dom = name_part1;
                 name_user = name_part2;
 
@@ -399,7 +398,7 @@ static BOOL winbindd_fill_grent_mem(struct winbindd_domain *domain,
             for(temp = sorted_groupmem_list; temp; temp = temp->next) {
                 int len = strlen(temp->name) + 1;
                 
-                strncpy(head, temp->name, len);
+                safe_strcpy(head, temp->name, len);
                 head[len - 1] = ',';
                 head += len;
             }
@@ -453,8 +452,7 @@ enum winbindd_result winbindd_getgrnam_from_group(struct winbindd_cli_state
     memset(name_group, 0, sizeof(fstring));
 
     tmp = state->request.data.groupname;
-    next_token(&tmp, name_domain, "/\\", sizeof(fstring));
-    next_token(NULL, name_group, "", sizeof(fstring));
+    parse_domain_user(tmp, name_domain, name_group);
 
     /* Reject names that don't have a domain - i.e name_domain contains the
        entire name. */
