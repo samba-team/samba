@@ -195,11 +195,17 @@ static struct cli_state *do_connection(char *service)
 			       password, strlen(password),
 			       password, strlen(password),
 			       workgroup)) {
-		DEBUG(0,("%d: session setup failed: %s\n",
-			 getpid(), cli_errstr(c)));
-		cli_shutdown(c);
-		SAFE_FREE(c);
-		return NULL;
+		/* if a password was not supplied then try again with a
+			null username */
+		if (password[0] || !username[0] ||
+				!cli_session_setup(c, "", "", 0, "", 0, workgroup)) {
+			DEBUG(0,("%d: session setup failed: %s\n",
+				getpid(), cli_errstr(c)));
+			cli_shutdown(c);
+			SAFE_FREE(c);
+			return NULL;
+		}
+		DEBUG(0,("Anonymous login successful\n"));
 	}
 
 	DEBUG(4,("%d: session setup ok\n", getpid()));
@@ -776,6 +782,7 @@ static void parse_mount_smb(int argc, char **argv)
 				fprintf(stderr, "Unhandled option: %s\n", opteq+1);
 				exit(1);
 			} else if(!strcmp(opts, "guest")) {
+				*password = '\0';
 				got_pass = True;
 			} else if(!strcmp(opts, "rw")) {
 				mount_ro = 0;
@@ -815,6 +822,15 @@ static void parse_mount_smb(int argc, char **argv)
 
 	/* here we are interactive, even if run from autofs */
 	setup_logging("mount.smbfs",True);
+
+	/* CLI_FORCE_ASCII=false makes smbmount negotiate unicode. The default
+	   is to not announce any unicode capabilities as current smbfs does
+	   not support it. */
+	p = getenv("CLI_FORCE_ASCII");
+	if (p && !strcmp(p, "false"))
+		unsetenv("CLI_FORCE_ASCII");
+	else
+		setenv("CLI_FORCE_ASCII", "true", 1);
 
 	TimeInit();
 	
