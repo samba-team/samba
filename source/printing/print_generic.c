@@ -54,14 +54,31 @@ run a given print command
 a null terminated list of value/substitute pairs is provided
 for local substitution strings
 ****************************************************************************/
-static int print_run_command(int snum,char *command, 
-			     char *outfile,
-			     ...)
+
+#ifdef HAVE_STDARG_H
+static int print_run_command(int snum,char *command, char *outfile, ...)
 {
+#else /* HAVE_STDARG_H */
+static int print_run_command(va_alist)
+va_dcl
+{
+	int snum;
+	char *command, *outfile;
+#endif /* HAVE_STDARG_H */
+
 	pstring syscmd;
 	char *p, *arg;
 	int ret;
 	va_list ap;
+
+#ifdef HAVE_STDARG_H
+	va_start(ap, outfile);
+#else /* HAVE_STDARG_H */
+	va_start(ap);
+	snum = va_arg(ap,int);
+	command = va_arg(ap,char *);
+	outfile = va_arg(ap,char *);
+#endif /* HAVE_STDARG_H */
 
 	if (!command || !*command) return -1;
 
@@ -72,7 +89,6 @@ static int print_run_command(int snum,char *command,
 
 	pstrcpy(syscmd, command);
 
-	va_start(ap, outfile);
 	while ((arg = va_arg(ap, char *))) {
 		char *value = va_arg(ap,char *);
 		pstring_sub(syscmd, arg, value);
