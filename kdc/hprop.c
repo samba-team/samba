@@ -457,11 +457,11 @@ ka_dump(struct prop_data *pd, const char *file, const char *cell)
 	krb5_err(pd->context, 1, errno, "open(%s)", file);
     read_block(pd->context, fd, 0, &header, sizeof(header));
     if(header.version1 != header.version2)
-	krb5_errx(pd->context, 1, "Version mismatch in header: %d/%d", 
-		  ntohl(header.version1), ntohl(header.version2));
+	krb5_errx(pd->context, 1, "Version mismatch in header: %ld/%ld",
+		  (long)ntohl(header.version1), (long)ntohl(header.version2));
     if(ntohl(header.version1) != 5)
-	krb5_errx(pd->context, 1, "Unknown database version %d (expected 5)", 
-		  ntohl(header.version1));
+	krb5_errx(pd->context, 1, "Unknown database version %ld (expected 5)", 
+		  (long)ntohl(header.version1));
     for(i = 0; i < ntohl(header.hashsize); i++){
 	int32_t pos = ntohl(header.hash[i]);
 	while(pos){
