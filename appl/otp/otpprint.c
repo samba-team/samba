@@ -56,15 +56,13 @@ print (int argc,
        char **argv,
        int count,
        OtpAlgorithm *alg,
-       int hexp,
-       int extendedp)
+       void (*print_fn)(OtpKey, char *))
 {
   char pw[64];
   OtpKey key;
   int n;
   int i;
   char *seed;
-  char *ext;
 
   if (argc != 2)
     usage ();
@@ -73,22 +71,12 @@ print (int argc,
   if (des_read_pw_string (pw, sizeof(pw), "Pass-phrase: ", 0))
     return 1;
   alg->init (key, pw, seed);
-  if (extendedp)
-    if (hexp)
-      ext = "hex:";
-    else
-      ext = "word:";
-  else
-    ext = "";
   for (i = 0; i < n; ++i) {
-    char s[30];
+    char s[64];
 
     alg->next (key);
     if (i >= n - count) {
-      if (hexp)
-	otp_print_hex (key, s);
-      else
-	otp_print_stddict (key, s);
+      (*print_fn)(key, s);
       printf ("%d: %s%s\n", i + 1, ext, s);
     }
   }
@@ -102,6 +90,7 @@ main (int argc, char **argv)
   int count = 10;
   int hexp = 0;
   int extendedp = 0;
+  void (*fn)(OtpKey, char *);
   OtpAlgorithm *alg = otp_find_alg (OTP_ALG_DEFAULT);
 
   prog = argv[0];
@@ -132,5 +121,16 @@ main (int argc, char **argv)
   argc -= optind;
   argv += optind;
 
-  return print (argc, argv, count, alg, hexp, extendedp);
+  if (hexp)
+    if (extendedp)
+      fn = otp_print_hex_extended;
+    else
+      fn = otp_print_hex;
+  else
+    if (extendedp)
+      fn = otp_print_stddict_extended;
+    else
+      fn = otp_print_stddict;
+
+  return print (argc, argv, count, alg, fn);
 }
