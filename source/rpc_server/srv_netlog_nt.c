@@ -428,8 +428,7 @@ uint32 _net_sam_logoff(pipes_struct *p, NET_Q_SAM_LOGOFF *q_u, NET_R_SAM_LOGOFF 
 
 static uint32 net_login_interactive(NET_ID_INFO_1 *id1, SAM_ACCOUNT *sampass, pipes_struct *p)
 {
-	uint32 status = 0x0;
-
+	uint8    *stored_nt_pwd, *stored_lanman_pwd;
 	char nt_pwd[16];
 	char lm_pwd[16];
 	unsigned char key[16];
@@ -462,12 +461,32 @@ static uint32 net_login_interactive(NET_ID_INFO_1 *id1, SAM_ACCOUNT *sampass, pi
 	dump_data(100, nt_pwd, 16);
 #endif
 
-	if (memcmp(pdb_get_lanman_passwd(sampass), lm_pwd, 16) != 0 ||
-	    memcmp(pdb_get_nt_passwd(sampass), nt_pwd, 16) != 0) {
-		status = NT_STATUS_WRONG_PASSWORD;
+	/* JRA. Check the NT password first if it exists - this is a higher quality 
+           password, if it exists and it doesn't match - fail. */
+
+	stored_nt_pwd = pdb_get_nt_passwd(sampass);
+
+	if (stored_nt_pwd) {
+		if (memcmp(stored_nt_pwd, nt_pwd, 16) != 0) {
+			DEBUG(10,("net_login_interactive: NT password for user %s doesn't match.\n",
+				sampass->username));
+			return NT_STATUS_WRONG_PASSWORD;
+		} else
+			return NT_STATUS_OK;
 	}
 
-	return status;
+	stored_lanman_pwd = pdb_get_lanman_passwd(sampass);
+
+	if (stored_lanman_pwd && lp_lanman_auth()) {
+		if (memcmp(stored_lanman_pwd, lm_pwd, 16) != 0) {
+			DEBUG(10,("net_login_interactive: lanman password for user %s doesn't match.\n",
+				sampass->username));
+			return NT_STATUS_WRONG_PASSWORD;
+		} else
+			return NT_STATUS_OK;
+	}
+
+	return NT_STATUS_WRONG_PASSWORD;
 }
 
 /*************************************************************************
