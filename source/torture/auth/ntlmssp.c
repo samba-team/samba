@@ -27,7 +27,7 @@ BOOL torture_ntlmssp_self_check(int dummy)
 	DATA_BLOB sig, expected_sig;
 	NTSTATUS status;
 
-	if (!NT_STATUS_IS_OK(ntlmssp_client_start(&ntlmssp_state))) {
+	if (!NT_STATUS_IS_OK(ntlmssp_client_start(NULL, &ntlmssp_state))) {
 		return False;
 	}
 
@@ -45,7 +45,7 @@ BOOL torture_ntlmssp_self_check(int dummy)
 	}
 
 	data = strhex_to_data_blob("6a43494653");
-	ntlmssp_sign_packet(ntlmssp_state, ntlmssp_state->mem_ctx, 
+	ntlmssp_sign_packet(ntlmssp_state, ntlmssp_state, 
 			    data.data, data.length, data.data, data.length, &sig);
 
 	expected_sig = strhex_to_data_blob("01000000e37f97f2544f4d7e00000000");
@@ -64,7 +64,7 @@ BOOL torture_ntlmssp_self_check(int dummy)
 
 	ntlmssp_end(&ntlmssp_state);
 
-	if (!NT_STATUS_IS_OK(ntlmssp_client_start(&ntlmssp_state))) {
+	if (!NT_STATUS_IS_OK(ntlmssp_client_start(NULL, &ntlmssp_state))) {
 		return False;
 	}
 
@@ -82,7 +82,7 @@ BOOL torture_ntlmssp_self_check(int dummy)
 	}
 
 	data = strhex_to_data_blob("6a43494653");
-	ntlmssp_sign_packet(ntlmssp_state, ntlmssp_state->mem_ctx, 
+	ntlmssp_sign_packet(ntlmssp_state, ntlmssp_state, 
 			    data.data, data.length, data.data, data.length, &sig);
 
 	expected_sig = strhex_to_data_blob("0100000078010900397420fe0e5a0f89");

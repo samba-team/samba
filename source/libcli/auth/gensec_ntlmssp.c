@@ -24,7 +24,6 @@
 #include "includes.h"
 
 struct gensec_ntlmssp_state {
-	TALLOC_CTX *mem_ctx;
 	struct auth_context *auth_context;
 	struct auth_serversupplied_info *server_info;
 	struct ntlmssp_state *ntlmssp_state;
@@ -125,13 +124,13 @@ static NTSTATUS auth_ntlmssp_check_password(struct ntlmssp_state *ntlmssp_state,
 	}
 	if (gensec_ntlmssp_state->server_info->user_session_key.length) {
 		DEBUG(10, ("Got NT session key of length %u\n", gensec_ntlmssp_state->server_info->user_session_key.length));
-		*user_session_key = data_blob_talloc(ntlmssp_state->mem_ctx, 
+		*user_session_key = data_blob_talloc(ntlmssp_state, 
 						   gensec_ntlmssp_state->server_info->user_session_key.data,
 						   gensec_ntlmssp_state->server_info->user_session_key.length);
 	}
 	if (gensec_ntlmssp_state->server_info->lm_session_key.length) {
 		DEBUG(10, ("Got LM session key of length %u\n", gensec_ntlmssp_state->server_info->lm_session_key.length));
-		*lm_session_key = data_blob_talloc(ntlmssp_state->mem_ctx, 
+		*lm_session_key = data_blob_talloc(ntlmssp_state, 
 						   gensec_ntlmssp_state->server_info->lm_session_key.data,
 						   gensec_ntlmssp_state->server_info->lm_session_key.length);
 	}
@@ -142,17 +141,11 @@ static NTSTATUS gensec_ntlmssp_start(struct gensec_security *gensec_security)
 {
 	struct gensec_ntlmssp_state *gensec_ntlmssp_state;
 	
-	TALLOC_CTX *mem_ctx = talloc_init("gensec_ntlmssp");
-	if (!mem_ctx) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	gensec_ntlmssp_state = talloc_p(mem_ctx, struct gensec_ntlmssp_state);
+	gensec_ntlmssp_state = talloc_p(gensec_security, struct gensec_ntlmssp_state);
 	if (!gensec_ntlmssp_state) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	gensec_ntlmssp_state->mem_ctx = mem_ctx;
 	gensec_ntlmssp_state->ntlmssp_state = NULL;
 	gensec_ntlmssp_state->auth_context = NULL;
 	gensec_ntlmssp_state->server_info = NULL;
@@ -175,7 +168,8 @@ static NTSTATUS gensec_ntlmssp_server_start(struct gensec_security *gensec_secur
 
 	gensec_ntlmssp_state = gensec_security->private_data;
 
-	if (!NT_STATUS_IS_OK(nt_status = ntlmssp_server_start(&gensec_ntlmssp_state->ntlmssp_state))) {
+	if (!NT_STATUS_IS_OK(nt_status = ntlmssp_server_start(gensec_security,
+							      &gensec_ntlmssp_state->ntlmssp_state))) {
 		return nt_status;
 	}
 
@@ -221,7 +215,8 @@ static NTSTATUS gensec_ntlmssp_client_start(struct gensec_security *gensec_secur
 	}
 
 	gensec_ntlmssp_state = gensec_security->private_data;
-	status = ntlmssp_client_start(&gensec_ntlmssp_state->ntlmssp_state);
+	status = ntlmssp_client_start(gensec_security, 
+				      &gensec_ntlmssp_state->ntlmssp_state);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -265,7 +260,7 @@ static NTSTATUS gensec_ntlmssp_client_start(struct gensec_security *gensec_secur
 		return status;
 	}
 
-	status = gensec_get_password(gensec_security, gensec_ntlmssp_state->mem_ctx, &password);
+	status = gensec_get_password(gensec_security, gensec_ntlmssp_state, &password);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -410,7 +405,7 @@ static void gensec_ntlmssp_end(struct gensec_security *gensec_security)
 	if (gensec_ntlmssp_state->server_info) {
 		free_server_info(&gensec_ntlmssp_state->server_info);
 	}
-	talloc_destroy(gensec_ntlmssp_state->mem_ctx);
+	talloc_free(gensec_ntlmssp_state);
 	gensec_security->private_data = NULL;
 }
 
