@@ -84,25 +84,18 @@ main(int argc, char **argv)
   int i;
 
 #ifdef KRB5
-  do {
-    snprintf(tf, sizeof(tf), "%s%u_%u", KRB5_DEFAULT_CCROOT,
-	     (unsigned int)getuid(),
-	     (unsigned int)(getpid()*time(0)));
-    f = open(tf + strlen("FILE:"), O_CREAT|O_EXCL|O_RDWR);
-  } while(f < 0);
-  close(f);
-  unlink(tf + strlen("FILE:"));
+  snprintf (tf, sizeof(tf), "%sXXXXXX", KRB5_DEFAULT_CCROOT);
+  f = mkstemp (tf + 5);
+  close (f);
+  unlink (tf + 5);
   setenv("KRB5CCNAME", tf, 1);
 #endif
 
 #ifdef KRB4
-  do {
-    snprintf(tf, sizeof(tf), "%s%u_%u", TKT_ROOT, (unsigned int)getuid(),
-            (unsigned int)(getpid()*time(0)));
-    f = open(tf, O_CREAT|O_EXCL|O_RDWR);
-  } while(f < 0);
-  close(f);
-  unlink(tf);
+  snprintf (tf, sizeof(tf), "%s_XXXXXX", TKT_ROOT);
+  f = mkstemp (tf);
+  close (f);
+  unlink (tf);
   setenv("KRBTKFILE", tf, 1);
 #endif
 
@@ -145,6 +138,7 @@ main(int argc, char **argv)
   if(k_hasafs())
     k_setpag();
 
+  unsetenv("PAGPID");
   execvp(path, args);
   if (errno == ENOENT) {
       char **sh_args = malloc ((i + 2) * sizeof(char *));
