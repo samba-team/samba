@@ -137,6 +137,9 @@ int tdb_store(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, int flag);
    store an element in the database, replacing any existing element
    with the same key 
 
+   If flag==TDB_INSERT then don't overwrite an existing entry
+   If flag==TDB_MODIFY then don't create a new entry
+
    return 0 on success, -1 on failure
 
 ----------------------------------------------------------------------

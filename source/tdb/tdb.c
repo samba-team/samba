@@ -200,7 +200,7 @@ static int tdb_oob(TDB_CONTEXT *tdb, tdb_off offset)
 	if ((offset <= tdb->map_size) || (tdb->fd == -1)) return 0;
 
 	fstat(tdb->fd, &st);
-	if (st.st_size <= (ssize_t)offset) {
+	if (st.st_size <= (size_t)offset) {
 		tdb->ecode = TDB_ERR_IO;
 		return -1;
 	}
@@ -641,8 +641,7 @@ int tdb_update(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf)
 	tdb_lock(tdb, BUCKET(hash));
 	rec_ptr = tdb_find(tdb, key, hash, &rec);
 
-	if (!rec_ptr)
-	{
+	if (!rec_ptr) {
 		tdb->ecode = TDB_ERR_NOEXIST;
 		goto out;
 	}

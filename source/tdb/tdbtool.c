@@ -7,11 +7,52 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/time.h>
+#include <ctype.h>
 #include "tdb.h"
 
 /* a tdb tool for manipulating a tdb database */
 
 static TDB_CONTEXT *tdb;
+
+
+static void print_asc(unsigned char *buf,int len)
+{
+	int i;
+	for (i=0;i<len;i++)
+		printf("%c",isprint(buf[i])?buf[i]:'.');
+}
+
+static void print_data(unsigned char *buf,int len)
+{
+	int i=0;
+	if (len<=0) return;
+	printf("[%03X] ",i);
+	for (i=0;i<len;) {
+		printf("%02X ",(int)buf[i]);
+		i++;
+		if (i%8 == 0) printf(" ");
+		if (i%16 == 0) {      
+			print_asc(&buf[i-16],8); printf(" ");
+			print_asc(&buf[i-8],8); printf("\n");
+			if (i<len) printf("[%03X] ",i);
+		}
+	}
+	if (i%16) {
+		int n;
+		
+		n = 16 - (i%16);
+		printf(" ");
+		if (n>8) printf(" ");
+		while (n--) printf("   ");
+		
+		n = i%16;
+		if (n > 8) n = 8;
+		print_asc(&buf[i-(i%16)],n); printf(" ");
+		n = (i%16) - n;
+		if (n>0) print_asc(&buf[i-n],n); 
+		printf("\n");    
+	}
+}
 
 static void help(void)
 {
@@ -136,9 +177,10 @@ static void delete_tdb(void)
 
 static int print_rec(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, void *state)
 {
-	printf("%*.*s : %*.*s\n", 
-	       (int)key.dsize, (int)key.dsize, key.dptr, 
-	       (int)dbuf.dsize, (int)dbuf.dsize, dbuf.dptr);
+	printf("\nkey %d bytes\n", key.dsize);
+	print_data(key.dptr, key.dsize);
+	printf("data %d bytes\n", dbuf.dsize);
+	print_data(dbuf.dptr, dbuf.dsize);
 	return 0;
 }
 
