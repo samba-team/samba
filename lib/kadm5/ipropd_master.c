@@ -424,6 +424,9 @@ main(int argc, char **argv)
 	struct timeval to = {30, 0};
 	u_int32_t vers;
 
+	if (signal_fd >= FD_SETSIZE || listen_fd >= FD_SETSIZE)
+	    krb5_errx (context, 1, "fd too large");
+
 	FD_ZERO(&readset);
 	FD_SET(signal_fd, &readset);
 	max_fd = max(max_fd, signal_fd);
