@@ -391,6 +391,7 @@ main(int argc, char **argv)
 		/* reply(220,) must follow */
 	}
 	gethostname(hostname, sizeof(hostname));
+	
 	reply(220, "%s FTP server (%s"
 #ifdef KRB5
 	      "+%s"
@@ -406,6 +407,7 @@ main(int argc, char **argv)
 	      ,krb4_version
 #endif
 	      );
+
 	setjmp(errcatch);
 	for (;;)
 	    yyparse();
@@ -694,106 +696,128 @@ checkaccess(char *name)
 #undef	ALLOWED
 #undef	NOT_ALLOWED
 
+/* output contents of /etc/issue.net, or /etc/issue */
+static void
+show_issue(int code)
+{
+    FILE *f;
+    char buf[128];
+
+    f = fopen("/etc/issue.net", "r");
+    if(f == NULL)
+	f = fopen("/etc/issue", "r");
+    if(f){
+	while(fgets(buf, sizeof(buf), f)){
+	    buf[strcspn(buf, "\r\n")] = '\0';
+	    lreply(code, buf, strlen(buf));
+	}
+	fclose(f);
+    }
+}
+
 int do_login(int code, char *passwd)
 {
-        FILE *fd;
-	login_attempts = 0;		/* this time successful */
-	if (setegid((gid_t)pw->pw_gid) < 0) {
-		reply(550, "Can't set gid.");
-		return -1;
-	}
-	initgroups(pw->pw_name, pw->pw_gid);
+    FILE *fd;
+    login_attempts = 0;		/* this time successful */
+    if (setegid((gid_t)pw->pw_gid) < 0) {
+	reply(550, "Can't set gid.");
+	return -1;
+    }
+    initgroups(pw->pw_name, pw->pw_gid);
 
-	/* open wtmp before chroot */
-	ftpd_logwtmp(ttyline, pw->pw_name, remotehost);
-	logged_in = 1;
+    /* open wtmp before chroot */
+    ftpd_logwtmp(ttyline, pw->pw_name, remotehost);
+    logged_in = 1;
 
-	dochroot = checkuser(_PATH_FTPCHROOT, pw->pw_name);
-	if (guest) {
-		/*
-		 * We MUST do a chdir() after the chroot. Otherwise
-		 * the old current directory will be accessible as "."
-		 * outside the new root!
-		 */
-		if (chroot(pw->pw_dir) < 0 || chdir("/") < 0) {
-			reply(550, "Can't set guest privileges.");
-			return -1;
-		}
-	} else if (dochroot) {
-		if (chroot(pw->pw_dir) < 0 || chdir("/") < 0) {
-			reply(550, "Can't change root.");
-			return -1;
-		}
-	} else if (chdir(pw->pw_dir) < 0) {
-		if (chdir("/") < 0) {
-			reply(530, "User %s: can't change directory to %s.",
-			    pw->pw_name, pw->pw_dir);
-			return -1;
-		} else
-			lreply(code, "No directory! Logging in with home=/");
-	}
-	if (seteuid((uid_t)pw->pw_uid) < 0) {
-		reply(550, "Can't set uid.");
-		return -1;
-	}
+    dochroot = checkuser(_PATH_FTPCHROOT, pw->pw_name);
+    if (guest) {
 	/*
-	 * Display a login message, if it exists.
-	 * N.B. reply(code,) must follow the message.
+	 * We MUST do a chdir() after the chroot. Otherwise
+	 * the old current directory will be accessible as "."
+	 * outside the new root!
 	 */
-	if ((fd = fopen(_PATH_FTPLOGINMESG, "r")) != NULL) {
-		char *cp, line[LINE_MAX];
-
-		while (fgets(line, sizeof(line), fd) != NULL) {
-			if ((cp = strchr(line, '\n')) != NULL)
-				*cp = '\0';
-			lreply(code, "%s", line);
-		}
+	if (chroot(pw->pw_dir) < 0 || chdir("/") < 0) {
+	    reply(550, "Can't set guest privileges.");
+	    return -1;
 	}
-	if (guest) {
-		reply(code, "Guest login ok, access restrictions apply.");
-#ifdef HAVE_SETPROCTITLE
-		snprintf (proctitle, sizeof(proctitle),
-			  "%s: anonymous/%s",
-			  remotehost,
-			  passwd);
-#endif /* HAVE_SETPROCTITLE */
-		if (logging) {
-			char data_addr[256];
-
-			if (inet_ntop (his_addr->sa_family,
-				       socket_get_address(his_addr),
-				       data_addr, sizeof(data_addr)) == NULL)
-				strcpy_truncate (data_addr, "unknown address",
-						 sizeof(data_addr));
-
-			syslog(LOG_INFO, "ANONYMOUS FTP LOGIN FROM %s(%s), %s",
-			       remotehost, 
-			       data_addr,
-			       passwd);
-		}
-	} else {
-		reply(code, "User %s logged in.", pw->pw_name);
-#ifdef HAVE_SETPROCTITLE
-		snprintf(proctitle, sizeof(proctitle), "%s: %s", remotehost, pw->pw_name);
-		setproctitle(proctitle);
-#endif /* HAVE_SETPROCTITLE */
-		if (logging) {
-			char data_addr[256];
-
-			if (inet_ntop (his_addr->sa_family,
-				       socket_get_address(his_addr),
-				       data_addr, sizeof(data_addr)) == NULL)
-				strcpy_truncate (data_addr, "unknown address",
-						 sizeof(data_addr));
-
-			syslog(LOG_INFO, "FTP LOGIN FROM %s(%s) as %s",
-			       remotehost,
-			       data_addr,
-			       pw->pw_name);
-		}
+    } else if (dochroot) {
+	if (chroot(pw->pw_dir) < 0 || chdir("/") < 0) {
+	    reply(550, "Can't change root.");
+	    return -1;
 	}
-	umask(defumask);
-	return 0;
+    } else if (chdir(pw->pw_dir) < 0) {
+	if (chdir("/") < 0) {
+	    reply(530, "User %s: can't change directory to %s.",
+		  pw->pw_name, pw->pw_dir);
+	    return -1;
+	} else
+	    lreply(code, "No directory! Logging in with home=/");
+    }
+    if (seteuid((uid_t)pw->pw_uid) < 0) {
+	reply(550, "Can't set uid.");
+	return -1;
+    }
+    /*
+     * Display a login message, if it exists.
+     * N.B. reply(code,) must follow the message.
+     */
+    if ((fd = fopen(_PATH_FTPLOGINMESG, "r")) != NULL) {
+	char *cp, line[LINE_MAX];
+
+	while (fgets(line, sizeof(line), fd) != NULL) {
+	    if ((cp = strchr(line, '\n')) != NULL)
+		*cp = '\0';
+	    lreply(code, "%s", line);
+	}
+    }
+    if (guest) {
+	show_issue(code);
+	reply(code, "Guest login ok, access restrictions apply.");
+#ifdef HAVE_SETPROCTITLE
+	snprintf (proctitle, sizeof(proctitle),
+		  "%s: anonymous/%s",
+		  remotehost,
+		  passwd);
+	setproctitle(proctitle);
+#endif /* HAVE_SETPROCTITLE */
+	if (logging) {
+	    char data_addr[256];
+
+	    if (inet_ntop (his_addr->sa_family,
+			   socket_get_address(his_addr),
+			   data_addr, sizeof(data_addr)) == NULL)
+		strcpy_truncate (data_addr, "unknown address",
+				 sizeof(data_addr));
+
+	    syslog(LOG_INFO, "ANONYMOUS FTP LOGIN FROM %s(%s), %s",
+		   remotehost, 
+		   data_addr,
+		   passwd);
+	}
+    } else {
+	show_issue(code);
+	reply(code, "User %s logged in.", pw->pw_name);
+#ifdef HAVE_SETPROCTITLE
+	snprintf(proctitle, sizeof(proctitle), "%s: %s", remotehost, pw->pw_name);
+	setproctitle(proctitle);
+#endif /* HAVE_SETPROCTITLE */
+	if (logging) {
+	    char data_addr[256];
+
+	    if (inet_ntop (his_addr->sa_family,
+			   socket_get_address(his_addr),
+			   data_addr, sizeof(data_addr)) == NULL)
+		strcpy_truncate (data_addr, "unknown address",
+				 sizeof(data_addr));
+
+	    syslog(LOG_INFO, "FTP LOGIN FROM %s(%s) as %s",
+		   remotehost,
+		   data_addr,
+		   pw->pw_name);
+	}
+    }
+    umask(defumask);
+    return 0;
 }
 
 /*
@@ -1291,30 +1315,24 @@ send_data(FILE *instr, FILE *outstr)
 		struct stat st;
 		char *chunk;
 		int in = fileno(instr);
-		if(fstat(in, &st) == 0 && S_ISREG(st.st_mode)) {
+		if(fstat(in, &st) == 0 && S_ISREG(st.st_mode) 
+		   && st.st_size > 0) {
 		    /*
 		     * mmap zero bytes has potential of loosing, don't do it.
 		     */
-		    if (st.st_size > 0) {
-			chunk = mmap(0, st.st_size, PROT_READ,
-				     MAP_SHARED, in, 0);
-			if((void *)chunk != (void *)MAP_FAILED) {
-			    cnt = st.st_size - restart_point;
-			    sec_write(fileno(outstr),
-				      chunk + restart_point,
-				      cnt);
-			    if (munmap(chunk, st.st_size) < 0)
-				warn ("munmap");
-			    sec_fflush(outstr);
-			    byte_count = cnt;
-			    transflag = 0;
-			}
-		    } else {
+		    chunk = mmap(0, st.st_size, PROT_READ,
+				 MAP_SHARED, in, 0);
+		    if((void *)chunk != (void *)MAP_FAILED) {
+			cnt = st.st_size - restart_point;
+			sec_write(fileno(outstr), chunk + restart_point, cnt);
+			if (munmap(chunk, st.st_size) < 0)
+			    warn ("munmap");
+			sec_fflush(outstr);
+			byte_count = cnt;
 			transflag = 0;
 		    }
 		}
 	    }
-	
 #endif
 	if(transflag) {
 	    struct stat st;
