@@ -634,6 +634,44 @@ domain = &lt;value&gt;
 		</varlistentry>
 		
 		
+		<varlistentry>
+		<term>altname file</term>
+		<listitem><para>The client will request that the server return
+		the "alternate" name (the 8.3 name) for a file or directory.
+		</para></listitem>
+		</varlistentry>
+		
+		
+		<varlistentry>
+		<term>cancel jobid0 [jobid1] ... [jobidN]</term>
+		<listitem><para>The client will request that the server cancel
+		the printjobs identified by the given numeric print job ids.
+		</para></listitem>
+		</varlistentry>
+		
+		
+		
+		<varlistentry>
+		<term>chmod file mode in octal</term>
+		<listitem><para>This command depends on the server supporting the CIFS
+		UNIX extensions and will fail if the server does not. The client requests that the server
+		change the UNIX permissions to the given octal mode, in standard UNIX format.
+		</para></listitem>
+		</varlistentry>
+		
+		
+		
+		<varlistentry>
+		<term>chown file uid gid</term>
+		<listitem><para>This command depends on the server supporting the CIFS
+		UNIX extensions and will fail if the server does not. The client requests that the server
+		change the UNIX user and group ownership to the given decimal values. Note there is
+		currently no way to remotely look up the UNIX uid and gid values for a given name.
+		This may be addressed in future versions of the CIFS UNIX extensions.
+		</para></listitem>
+		</varlistentry>
+		
+		
 		
 		<varlistentry>
 		<term>cd [directory name]</term>
@@ -700,6 +738,17 @@ domain = &lt;value&gt;
 		</varlistentry>
 		
 		
+		<varlistentry>
+		<term>link source destination</term>
+		<listitem><para>This command depends on the server supporting the CIFS
+		UNIX extensions and will fail if the server does not. The client requests that the server
+		create a hard link between the source and destination files. The source file
+		must not exist.
+		</para></listitem>
+		</varlistentry>
+
+
+
 		<varlistentry>
 		<term>lowercase</term>
 		<listitem><para>Toggle lowercasing of filenames for the get and 
@@ -878,6 +927,30 @@ domain = &lt;value&gt;
 		
 		
 		<varlistentry>
+		<term>setmode &lt;filename&gt; &lt;perm=[+|\-]rsha&gt;</term>
+		<listitem><para>A version of the DOS attrib command to set 
+		file permissions. For example: </para>
+
+		<para><command>setmode myfile +r </command></para>
+		
+		<para>would make myfile read only. </para></listitem>
+		</varlistentry>
+
+
+		
+		<varlistentry>
+		<term>symlink source destination</term>
+		<listitem><para>This command depends on the server supporting the CIFS
+		UNIX extensions and will fail if the server does not. The client requests that the server
+		create a symbolic hard link between the source and destination files. The source file
+		must not exist. Note that the server will not create a link to any path that lies 
+		outside the currently connected share. This is enforced by the Samba server.
+		</para></listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
 		<term>tar &lt;c|x&gt;[IXbgNa]</term>
 		<listitem><para>Performs a tar operation - see the <parameter>-T
 		</parameter> command line option above. Behavior may be affected 
@@ -906,16 +979,6 @@ domain = &lt;value&gt;
 		read/write share). </para></listitem>
 		</varlistentry>
 		
-		
-		<varlistentry>
-		<term>setmode &lt;filename&gt; &lt;perm=[+|\-]rsha&gt;</term>
-		<listitem><para>A version of the DOS attrib command to set 
-		file permissions. For example: </para>
-
-		<para><command>setmode myfile +r </command></para>
-		
-		<para>would make myfile read only. </para></listitem>
-		</varlistentry>
 		
 	</variablelist>
 </refsect1>

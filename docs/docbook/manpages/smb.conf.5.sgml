@@ -747,6 +747,7 @@
 		<listitem><para><link linkend="TIMESERVER"><parameter>time server</parameter></link></para></listitem>
 		<listitem><para><link linkend="TIMESTAMPLOGS"><parameter>timestamp logs</parameter></link></para></listitem>
 		<listitem><para><link linkend="TOTALPRINTJOBS"><parameter>total print jobs</parameter></link></para></listitem>
+		<listitem><para><link linkend="UNIXEXTENSIONS"><parameter>unix extensions</parameter></link></para></listitem>
 		<listitem><para><link linkend="UNIXPASSWORDSYNC"><parameter>unix password sync</parameter></link></para></listitem>
 		<listitem><para><link linkend="UPDATEENCRYPTED"><parameter>update encrypted</parameter></link></para></listitem>
 		<listitem><para><link linkend="USEMMAP"><parameter>use mmap</parameter></link></para></listitem>
@@ -7498,6 +7499,22 @@
 		
 		<para>Default: <command>total print jobs = 0</command></para>
 		<para>Example: <command>total print jobs = 5000</command></para>
+		</listitem>
+		</varlistentry>
+
+
+
+
+		<varlistentry>
+		<term><anchor id="UNIXEXTENSIONS">unix extensions(G)</term>
+		<listitem><para>This boolean parameter controls whether Samba 
+		implments the CIFS UNIX extensions, as defined by HP. These
+		extensions enable CIFS to server UNIX clients to UNIX servers
+		better, and allow such things as symbolic links, hard links etc.
+		These extensions require a similarly enabled client, and are of
+		no current use to Windows clients.</para>
+
+		<para>Default: <command>unix extensions = no</command></para>
 		</listitem>
 		</varlistentry>
 
