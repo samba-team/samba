@@ -511,6 +511,10 @@ you will get this warning only once (for all trust accounts)\n", unix_name));
 
 	if (!sid_front_equal(&global_sam_sid, &gmep.sid))
 	{
+		fstring sid_str;
+		sid_to_string(sid_str, &gmep.sid);
+		DEBUG(0,("UNIX User %s Primary Group is in the wrong domain! %s\n",
+		          sam->unix_name, sid_str));
 		return NULL;
 	}
 

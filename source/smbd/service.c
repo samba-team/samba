@@ -92,8 +92,9 @@ int find_service(char *service)
    if (iService < 0)
    {
       char *phome_dir = get_home_dir(service);
+	pstring home_dir;
 
-      if(!phome_dir)
+      if(phome_dir == NULL)
       {
         /*
          * Try mapping the servicename, it may
@@ -109,9 +110,10 @@ int find_service(char *service)
       if (phome_dir)
       {   
         int iHomeService;
+	pstrcpy(home_dir, phome_dir);
         if ((iHomeService = lp_servicenumber(HOMES_NAME)) >= 0)
         {
-          lp_add_home(service,iHomeService,phome_dir);
+          lp_add_home(service,iHomeService,home_dir);
           iService = lp_servicenumber(service);
         }
       }
