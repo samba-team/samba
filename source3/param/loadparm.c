@@ -146,6 +146,7 @@ typedef struct
   int max_mux;
   int max_packet;
   int pwordlevel;
+  int unamelevel;
   int deadtime;
   int maxprotocol;
   int security;
@@ -449,6 +450,7 @@ struct parm_struct
   {"max packet",       P_INTEGER, P_GLOBAL, &Globals.max_packet,        NULL},
   {"packet size",      P_INTEGER, P_GLOBAL, &Globals.max_packet,        NULL},
   {"password level",   P_INTEGER, P_GLOBAL, &Globals.pwordlevel,        NULL},
+  {"username level",   P_INTEGER, P_GLOBAL, &Globals.unamelevel,        NULL},
   {"keepalive",        P_INTEGER, P_GLOBAL, &keepalive,                 NULL},
   {"deadtime",         P_INTEGER, P_GLOBAL, &Globals.deadtime,          NULL},
   {"time offset",      P_INTEGER, P_GLOBAL, &extra_time_offset,         NULL},
@@ -619,6 +621,7 @@ static void init_globals(void)
   Globals.max_mux = 50; /* This is *needed* for profile support. */
   Globals.lpqcachetime = 10;
   Globals.pwordlevel = 0;
+  Globals.unamelevel = 0;
   Globals.deadtime = 0;
   Globals.max_log_size = 5000;
   Globals.maxprotocol = PROTOCOL_NT1;
@@ -865,6 +868,7 @@ FN_GLOBAL_INTEGER(lp_maxmux,&Globals.max_mux)
 FN_GLOBAL_INTEGER(lp_maxpacket,&Globals.max_packet)
 FN_GLOBAL_INTEGER(lp_keepalive,&keepalive)
 FN_GLOBAL_INTEGER(lp_passwordlevel,&Globals.pwordlevel)
+FN_GLOBAL_INTEGER(lp_usernamelevel,&Globals.unamelevel)
 FN_GLOBAL_INTEGER(lp_readsize,&Globals.ReadSize)
 FN_GLOBAL_INTEGER(lp_shmem_size,&Globals.shmem_size)
 FN_GLOBAL_INTEGER(lp_shmem_hash_size,&Globals.shmem_hash_size)

@@ -4418,6 +4418,7 @@ static void usage(char *pname)
   extern char tar_type;
   static pstring servicesf = CONFIGFILE;
   pstring term_code;
+  char *p;
 
 #ifdef KANJI
   strcpy(term_code, KANJI);
@@ -4443,10 +4444,27 @@ static void usage(char *pname)
   umask(myumask);
 
   if (getenv("USER"))
+  {
+    strcpy(username,getenv("USER"));
+
+    /* modification to support userid%passwd syntax in the USER var
+       25.Aug.97, jdblair@uab.edu */
+
+    if ((p=strchr(username,'%')))
     {
-      strcpy(username,getenv("USER"));
-      strupper(username);
+      *p = 0;
+      strcpy(password,p+1);
+      got_pass = True;
+      memset(strchr(getenv("USER"),'%')+1,'X',strlen(password));
     }
+    strupper(username);
+  }
+
+ /* modification to support PASSWD environmental var
+  25.Aug.97, jdblair@uab.edu */
+
+  if (getenv("PASSWD"))
+    strcpy(password,getenv("PASSWD"));
 
   if (*username == 0 && getenv("LOGNAME"))
     {
