@@ -34,7 +34,7 @@ if test "$ac_cv_sys_man_format" = "" -a "$GROFF" ; then
 	done
 fi
 if test "$ac_cv_sys_man_format"; then
-	ac_cv_sys_man_format="$ac_cv_sys_man_format \$< > \$@"
+	ac_cv_sys_man_format="$ac_cv_sys_man_format \[$]< > \[$]@"
 fi
 ])
 if test "$ac_cv_sys_man_format"; then
@@ -43,12 +43,12 @@ if test "$ac_cv_sys_man_format"; then
 fi
 AM_CONDITIONAL(CATMAN, test "$CATMAN")
 AC_CACHE_CHECK(extension of pre-formatted manual pages,ac_cv_sys_catman_ext,
-if grep _suffix /etc/man.conf > /dev/null 2>&1; then
+[if grep _suffix /etc/man.conf > /dev/null 2>&1; then
 	ac_cv_sys_catman_ext=0
 else
 	ac_cv_sys_catman_ext=number
 fi
-)
+])
 if test "$ac_cv_sys_catman_ext" = number; then
 	CATMANEXT='$$ext'
 else
