@@ -2107,7 +2107,7 @@ if test x$FOUND_KRB5 = x"no"; then
 #################################################
 # see if this box has the SuSE location for the heimdal kerberos implementation
 AC_MSG_CHECKING(for /usr/include/heimdal)
-if test -d /usr/include/heimdal; then
+if test -d /usr/include/heimdal -a -f /usr/lib/heimdal/lib/libkrb5.a; then
     LIBS="$LIBS -lkrb5"
     CFLAGS="$CFLAGS -I/usr/include/heimdal"
     CPPFLAGS="$CPPFLAGS -I/usr/include/heimdal"
@@ -2122,7 +2122,7 @@ if test x$FOUND_KRB5 = x"no"; then
 #################################################
 # see if this box has the RedHat location for kerberos
 AC_MSG_CHECKING(for /usr/kerberos)
-if test -d /usr/kerberos; then
+if test -d /usr/kerberos -a -f /usr/kerberos/lib/libkrb5.a; then
     LIBS="$LIBS -lkrb5"
     LDFLAGS="$LDFLAGS -L/usr/kerberos/lib"
     CFLAGS="$CFLAGS -I/usr/kerberos/include"
