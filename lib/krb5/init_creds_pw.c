@@ -45,6 +45,7 @@ typedef struct krb5_get_init_creds_ctx {
     unsigned nonce;
 
     AS_REQ as_req;
+    int pa_counter;
 
     const char *password;
     krb5_s2k_proc key_proc;
@@ -690,11 +691,9 @@ pa_etype_info2(krb5_context context,
     memset(&e, 0, sizeof(e));
     ret = decode_ETYPE_INFO2(data->data, data->length, &e, &sz);
     if (ret)
-	return NULL;
-    if (e.len == 0) {
-	free_ETYPE_INFO2(&e);
-	return NULL;
-    }
+	goto out;
+    if (e.len == 0)
+	goto out;
     for (j = 0; j < asreq->req_body.etype.len; j++) {
 	for (i = 0; i < e.len; i++) {
 	    if (asreq->req_body.etype.val[j] == e.val[i].etype) {
@@ -721,6 +720,7 @@ pa_etype_info2(krb5_context context,
 	    }
 	}
     }
+ out:
     free_ETYPE_INFO2(&e);
     return NULL;
 }
@@ -740,11 +740,9 @@ pa_etype_info(krb5_context context,
     memset(&e, 0, sizeof(e));
     ret = decode_ETYPE_INFO(data->data, data->length, &e, &sz);
     if (ret)
-	return NULL;
-    if (e.len == 0) {
-	free_ETYPE_INFO(&e);
-	return NULL;
-    }
+	goto out;
+    if (e.len == 0)
+	goto out;
     for (j = 0; j < asreq->req_body.etype.len; j++) {
 	for (i = 0; i < e.len; i++) {
 	    if (asreq->req_body.etype.val[j] == e.val[i].etype) {
@@ -774,6 +772,7 @@ pa_etype_info(krb5_context context,
 	    }
 	}
     }
+ out:
     free_ETYPE_INFO(&e);
     return NULL;
 }
@@ -809,13 +808,23 @@ struct pa_info {
 				      heim_octet_string *);
 };
 
-static struct pa_info preauth_prefs[] = {
+static struct pa_info pa_prefs[] = {
     { KRB5_PADATA_ETYPE_INFO2, pa_etype_info2 },
     { KRB5_PADATA_ETYPE_INFO, pa_etype_info },
     { KRB5_PADATA_PW_SALT, pa_pw_or_afs3_salt },
     { KRB5_PADATA_AFS3_SALT, pa_pw_or_afs3_salt }
 };
     
+static PA_DATA *
+find_pa_data(const METHOD_DATA *md, int type)
+{
+    int i;
+    for (i = 0; i < md->len; i++)
+	if (md->val[i].padata_type == type)
+	    return &md->val[i];
+    return NULL;
+}
+
 static struct pa_info_data *
 process_pa_info(krb5_context context, 
 		const krb5_principal client, 
@@ -823,23 +832,43 @@ process_pa_info(krb5_context context,
 		struct pa_info_data *paid,
 		METHOD_DATA *md)
 {
-    int i, j;
-    struct pa_info *info;
+    struct pa_info_data *p = NULL;
+    int i;
 
-    for (i = 0; i < sizeof(preauth_prefs)/sizeof(preauth_prefs[0]); i++) {
-	info = &preauth_prefs[i];
-	for (j = 0; j < md->len; j++)
-	    if (info->type == md->val[j].padata_type) {
-		paid->salt.salttype = info->type;
-		return (*info->salt_info)(context, client, asreq,
-					  paid, &md->val[j].padata_value);
-	    }
+    for (i = 0; p == NULL && i < sizeof(pa_prefs)/sizeof(pa_prefs[0]); i++) {
+	PA_DATA *pa = find_pa_data(md, pa_prefs[i].type);
+	if (pa == NULL)
+	    continue;
+	paid->salt.salttype = pa_prefs[i].type;
+	p = (*pa_prefs[i].salt_info)(context, client, asreq,
+				     paid, &pa->padata_value);
     }
-    return NULL;
+    return p;
+}
+
+static int
+pa_add_pa(krb5_context context, METHOD_DATA *md,
+	  int type, void *buf, size_t len)
+{
+    PA_DATA *pa;
+
+    pa = realloc (md->val, (md->len + 1) * sizeof(*md->val));
+    if (pa == NULL) {
+	krb5_set_error_string(context, "malloc: out of memory");
+	return ENOMEM;
+    }
+    md->val = pa;
+
+    pa[md->len].padata_type = type;
+    pa[md->len].padata_value.length = len;
+    pa[md->len].padata_value.data = buf;
+    md->len++;    
+
+    return 0;
 }
 
 static krb5_error_code
-make_pa_enc_timestamp(krb5_context context, PA_DATA *pa, 
+make_pa_enc_timestamp(krb5_context context, METHOD_DATA *md, 
 		      krb5_enctype etype, krb5_keyblock *key)
 {
     PA_ENC_TS_ENC p;
@@ -885,10 +914,11 @@ make_pa_enc_timestamp(krb5_context context, PA_DATA *pa,
 	return ret;
     if(buf_size != len)
 	krb5_abortx(context, "internal error in ASN.1 encoder");
-    pa->padata_type = KRB5_PADATA_ENC_TIMESTAMP;
-    pa->padata_value.length = len;
-    pa->padata_value.data = buf;
-    return 0;
+
+    ret = pa_add_pa(context, md, KRB5_PADATA_ENC_TIMESTAMP, buf, len);
+    if (ret)
+	free(buf);
+    return ret;
 }
 
 static krb5_error_code
@@ -903,7 +933,6 @@ add_enc_ts_padata(krb5_context context,
 		  krb5_data *s2kparams)
 {
     krb5_error_code ret;
-    PA_DATA *pa2;
     krb5_salt salt2;
     krb5_enctype *ep;
     int i;
@@ -919,12 +948,6 @@ add_enc_ts_padata(krb5_context context,
 	for (ep = enctypes; *ep != ETYPE_NULL; ep++)
 	    netypes++;
     }
-    pa2 = realloc (md->val, (md->len + netypes) * sizeof(*md->val));
-    if (pa2 == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
-	return ENOMEM;
-    }
-    md->val = pa2;
 
     for (i = 0; i < netypes; ++i) {
 	krb5_keyblock *key;
@@ -933,12 +956,10 @@ add_enc_ts_padata(krb5_context context,
 			  *salt, s2kparams, &key);
 	if (ret)
 	    continue;
-	ret = make_pa_enc_timestamp (context, &md->val[md->len],
-				     enctypes[i], key);
+	ret = make_pa_enc_timestamp (context, md, enctypes[i], key);
 	krb5_free_keyblock (context, key);
 	if (ret)
 	    return ret;
-	++md->len;
     }
     if(salt == &salt2)
 	krb5_free_salt(context, salt2);
@@ -1005,7 +1026,6 @@ pa_data_add_pac_request(krb5_context context,
     size_t len, length;
     krb5_error_code ret;
     PA_PAC_REQUEST req;
-    PA_DATA *pa;
     void *buf;
     
     switch (ctx->req_pac) {
@@ -1022,22 +1042,12 @@ pa_data_add_pac_request(krb5_context context,
 		       &req, &len, ret);
     if (ret)
 	return ret;
-    
     if(len != length)
 	krb5_abortx(context, "internal error in ASN.1 encoder");
 
-    pa = realloc (md->val, (md->len + 1) * sizeof(*md->val));
-    if (pa == NULL) {
+    ret = pa_add_pa(context, md, KRB5_PADATA_PA_PAC_REQUEST, buf, len);
+    if (ret)
 	free(buf);
-	krb5_set_error_string(context, "malloc: out of memory");
-	return ENOMEM;
-    }
-    md->val = pa;
-
-    pa[md->len].padata_type = KRB5_PADATA_PA_PAC_REQUEST;
-    pa[md->len].padata_value.length = len;
-    pa[md->len].padata_value.data = buf;
-
     md->len++;    
 
     return 0;
@@ -1138,17 +1148,14 @@ init_cred_loop(krb5_context context,
 {
     krb5_error_code ret;
     krb5_kdc_rep rep;
+    METHOD_DATA md;
     krb5_data resp;
     size_t len;
-    krb5_keyblock *key;
     size_t size;
-    int pa_counter;
-    METHOD_DATA md;
     int send_to_kdc_flags = 0;
 
     memset(&md, 0, sizeof(md));
     memset(&rep, 0, sizeof(rep));
-    key = NULL;
 
     if (ret_as_reply)
 	memset(ret_as_reply, 0, sizeof(*ret_as_reply));
@@ -1165,8 +1172,11 @@ init_cred_loop(krb5_context context,
 
 #define MAX_PA_COUNTER 3 
 
-    for (pa_counter = 0; pa_counter < MAX_PA_COUNTER; pa_counter++) {
+    ctx->pa_counter = 0;
+    while (ctx->pa_counter < MAX_PA_COUNTER) {
 	krb5_data req;
+
+	ctx->pa_counter++;
 
 	if (ctx->as_req.padata) {
 	    free_METHOD_DATA(ctx->as_req.padata);
@@ -1254,25 +1264,28 @@ init_cred_loop(krb5_context context,
 	}
     }
 
-    ret = process_pa_data_to_key(context, ctx, creds, 
-				 &ctx->as_req, &rep, &key);
-    if (ret)
-	goto out;
+    {
+	krb5_keyblock *key = NULL;
 
-    ret = _krb5_extract_ticket(context,
-			       &rep,
-			       creds,
-			       key,
-			       NULL,
-			       KRB5_KU_AS_REP_ENC_PART,
-			       NULL,
-			       ctx->nonce,
-			       FALSE,
-			       ctx->flags.b.request_anonymous,
-			       NULL,
-			       NULL);
-    krb5_free_keyblock(context, key);
-
+	ret = process_pa_data_to_key(context, ctx, creds, 
+				     &ctx->as_req, &rep, &key);
+	if (ret)
+	    goto out;
+	
+	ret = _krb5_extract_ticket(context,
+				   &rep,
+				   creds,
+				   key,
+				   NULL,
+				   KRB5_KU_AS_REP_ENC_PART,
+				   NULL,
+				   ctx->nonce,
+				   FALSE,
+				   ctx->flags.b.request_anonymous,
+				   NULL,
+				   NULL);
+	krb5_free_keyblock(context, key);
+    }
 out:
     free_METHOD_DATA(&md);
     memset(&md, 0, sizeof(md));
