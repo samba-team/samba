@@ -8119,7 +8119,7 @@ WERROR _spoolss_deleteprinterkey(pipes_struct *p, SPOOL_Q_DELETEPRINTERKEY *q_u,
 	fstring key;
 	
 	if (!Printer) {
-		DEBUG(2,("_spoolss_deleteprinterkey: Invalid handle (%s:%u:%u).\n", OUR_HANDLE(handle)));
+		DEBUG(2,("_spoolss_deleteprinterkey: Invalid handle (%s:%u:%u).\n", OUR_HANDLE(&q_u->handle)));
 		return WERR_BADFID;
 	}
 	
