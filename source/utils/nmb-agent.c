@@ -44,8 +44,6 @@ struct sock_redir
 	int c_trn_id;
 	int s_trn_id;
 	struct nmb_state *n;
-	time_t time;
-
 };
 
 static uint32 num_socks = 0;
@@ -138,7 +136,6 @@ static struct sock_redir *sock_redir_get(int fd)
 	sock->c = fd;
 	sock->s = -1;
 	sock->n = NULL;
-	sock->time = time(NULL);
 
 	DEBUG(10,("sock_redir_get:\tfd:\t%d\t\n", fd));
 
@@ -234,7 +231,7 @@ static BOOL process_cli_sock(struct sock_redir **sock)
 	return True;
 }
 
-static BOOL process_srv_sock(struct sock_redir *sock)
+static BOOL process_srv_sock(int fd)
 {
 	int nmb_id;
 	int tr_id;
@@ -242,7 +239,7 @@ static BOOL process_srv_sock(struct sock_redir *sock)
 
 	struct packet_struct *p;
 
-	p = receive_packet(sock->s, NMB_PACKET, 0);
+	p = receive_packet(fd, NMB_PACKET, 0);
 	if (p == NULL)
 	{
 		return False;
@@ -381,8 +378,6 @@ static void start_agent(void)
 			continue;
 		}
 
-		DEBUG(10,("select received\n"));
-
 		if (FD_ISSET(s, &fds))
 		{
 			FD_CLR(s, &fds);
@@ -412,14 +407,14 @@ static void start_agent(void)
 			{
 				continue;
 			}
-			if (socks[i]->s == -1)
+			if (socks[i]->n == NULL)
 			{
 				continue;
 			}
 			if (FD_ISSET(socks[i]->s, &fds))
 			{
 				FD_CLR(socks[i]->s, &fds);
-				if (!process_srv_sock(socks[i]))
+				if (!process_srv_sock(socks[i]->s))
 				{
 					sock_redir_free(socks[i]);
 					socks[i] = NULL;
@@ -429,9 +424,9 @@ static void start_agent(void)
 	}
 }
 
-/**************************************************************************** **
+/******************************************************************************
  open the socket communication
- **************************************************************************** */
+ *****************************************************************************/
 static BOOL open_sockets(BOOL isdaemon, int port)
 {
   /* The sockets opened here will be used to receive broadcast
