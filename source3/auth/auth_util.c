@@ -198,7 +198,6 @@ BOOL make_user_info_map(auth_usersupplied_info **user_info,
 	map_username(internal_username); 
 	
 	if (lp_allow_trusted_domains()) {
-		char *user;
 		/* the client could have given us a workstation name
 		   or other crap for the workgroup - we really need a
 		   way of telling if this domain name is one of our
@@ -209,15 +208,19 @@ BOOL make_user_info_map(auth_usersupplied_info **user_info,
 		   on winbind, but until we have a better method this
 		   will have to do 
 		*/
-		asprintf(&user, "%s%s%s", 
-			 client_domain, lp_winbind_separator(), 
-			 smb_name);
-		if (Get_Pwnam(user) != NULL) {
-			domain = client_domain;
-		} else {
-			domain = lp_workgroup();
+
+		domain = client_domain;
+
+		if ((smb_name) && (*smb_name)) { /* Don't do this for guests */
+			char *user;
+			asprintf(&user, "%s%s%s", 
+				 client_domain, lp_winbind_separator(), 
+				 smb_name);
+			if (Get_Pwnam(user) == NULL) {
+				domain = lp_workgroup();
+			}
+			free(user);
 		}
-		free(user);
 	} else {
 		domain = lp_workgroup();
 	}
