@@ -133,7 +133,7 @@ BOOL torture_casetable(int dummy)
 	memset(equiv, 0, sizeof(equiv));
 
 	cli_deltree(cli->tree, "\\utable");
-	if (!cli_mkdir(cli->tree, "\\utable")) {
+	if (NT_STATUS_IS_ERR(cli_mkdir(cli->tree, "\\utable"))) {
 		printf("Failed to create utable directory!\n");
 		return False;
 	}
@@ -163,8 +163,8 @@ BOOL torture_casetable(int dummy)
 
 		size = 0;
 
-		if (!cli_qfileinfo(cli->tree, fnum, NULL, &size, 
-				   NULL, NULL, NULL, NULL, NULL)) continue;
+		if (NT_STATUS_IS_ERR(cli_qfileinfo(cli->tree, fnum, NULL, &size, 
+						   NULL, NULL, NULL, NULL, NULL))) continue;
 
 		if (size > 0) {
 			/* found a character equivalence! */

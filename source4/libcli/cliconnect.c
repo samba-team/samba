@@ -53,28 +53,26 @@ BOOL cli_transport_establish(struct cli_state *cli,
 }
 
 /* wrapper around smb_raw_negotiate() */
-BOOL cli_negprot(struct cli_state *cli)
+NTSTATUS cli_negprot(struct cli_state *cli)
 {
-	NTSTATUS status;
-	status = smb_raw_negotiate(cli->transport);
-	return NT_STATUS_IS_OK(status);
+	return smb_raw_negotiate(cli->transport);
 }
 
 /* wrapper around smb_raw_session_setup() */
-BOOL cli_session_setup(struct cli_state *cli, 
-		       const char *user, 
-		       const char *password, 
-		       const char *domain)
+NTSTATUS cli_session_setup(struct cli_state *cli, 
+			   const char *user, 
+			   const char *password, 
+			   const char *domain)
 {
 	union smb_sesssetup setup;
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx;
 
 	cli->session = cli_session_init(cli->transport);
-	if (!cli->session) return False;
+	if (!cli->session) return NT_STATUS_UNSUCCESSFUL;
 
 	mem_ctx = talloc_init("cli_session_setup");
-	if (!mem_ctx) return False;
+	if (!mem_ctx) return NT_STATUS_NO_MEMORY;
 
 	setup.generic.level = RAW_SESSSETUP_GENERIC;
 	setup.generic.in.sesskey = cli->transport->negotiate.sesskey;
@@ -91,19 +89,19 @@ BOOL cli_session_setup(struct cli_state *cli,
 
 	talloc_destroy(mem_ctx);
 
-	return NT_STATUS_IS_OK(status);
+	return status;
 }
 
 /* wrapper around smb_tree_connect() */
-BOOL cli_send_tconX(struct cli_state *cli, const char *sharename, const char *devtype,
-		    const char *password)
+NTSTATUS cli_send_tconX(struct cli_state *cli, const char *sharename, 
+			const char *devtype, const char *password)
 {
 	union smb_tcon tcon;
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS status;
 
 	cli->tree = cli_tree_init(cli->session);
-	if (!cli->tree) return False;
+	if (!cli->tree) return NT_STATUS_UNSUCCESSFUL;
 
 	cli->tree->reference_count++;
 
@@ -115,9 +113,8 @@ BOOL cli_send_tconX(struct cli_state *cli, const char *sharename, const char *de
 	tcon.tconx.in.device = devtype;
 	
 	mem_ctx = talloc_init("tcon");
-	if (!mem_ctx) {
-		return False;
-	}
+	if (!mem_ctx)
+		return NT_STATUS_NO_MEMORY;
 
 	status = smb_tree_connect(cli->tree, mem_ctx, &tcon);
 
@@ -125,7 +122,7 @@ BOOL cli_send_tconX(struct cli_state *cli, const char *sharename, const char *de
 
 	talloc_destroy(mem_ctx);
 
-	return NT_STATUS_IS_OK(status);
+	return status;
 }
 
 
@@ -182,11 +179,9 @@ done:
 /*
   disconnect the tree
 */
-BOOL cli_tdis(struct cli_state *cli)
+NTSTATUS cli_tdis(struct cli_state *cli)
 {
-	NTSTATUS status;
-	status = smb_tree_disconnect(cli->tree);
-	return NT_STATUS_IS_OK(status);
+	return smb_tree_disconnect(cli->tree);
 }
 
 /****************************************************************************

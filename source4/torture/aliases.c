@@ -371,7 +371,7 @@ static void setpathinfo_aliases(struct cli_state *cli)
 
 	gen_set_aliases(cli, &t2, 0);
 
-	if (!cli_unlink(cli->tree, fname)) {
+	if (NT_STATUS_IS_ERR(cli_unlink(cli->tree, fname))) {
 		printf("unlink: %s\n", cli_errstr(cli->tree));
 	}
 	talloc_destroy(mem_ctx);

@@ -124,7 +124,7 @@ BOOL torture_raw_chkpath(int dummy)
 		printf("Failed to clean " BASEDIR "\n");
 		return False;
 	}
-	if (!cli_mkdir(cli->tree, BASEDIR)) {
+	if (NT_STATUS_IS_ERR(cli_mkdir(cli->tree, BASEDIR))) {
 		printf("Failed to create " BASEDIR " - %s\n", cli_errstr(cli->tree));
 		return False;
 	}

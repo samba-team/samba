@@ -42,7 +42,7 @@ static BOOL test_one(struct cli_state *cli, const char *name)
 		return False;
 	}
 
-	if (!cli_close(cli->tree, fnum)) {
+	if (NT_STATUS_IS_ERR(cli_close(cli->tree, fnum))) {
 		printf("close of %s failed (%s)\n", name, cli_errstr(cli->tree));
 		return False;
 	}
@@ -55,7 +55,7 @@ static BOOL test_one(struct cli_state *cli, const char *name)
 	}
 
 	snprintf(name2, sizeof(name2), "\\mangle_test\\%s", shortname);
-	if (!cli_unlink(cli->tree, name2)) {
+	if (NT_STATUS_IS_ERR(cli_unlink(cli->tree, name2))) {
 		printf("unlink of %s  (%s) failed (%s)\n", 
 		       name2, name, cli_errstr(cli->tree));
 		return False;
@@ -67,13 +67,13 @@ static BOOL test_one(struct cli_state *cli, const char *name)
 		printf("open2 of %s failed (%s)\n", name2, cli_errstr(cli->tree));
 		return False;
 	}
-	if (!cli_close(cli->tree, fnum)) {
+	if (NT_STATUS_IS_ERR(cli_close(cli->tree, fnum))) {
 		printf("close of %s failed (%s)\n", name, cli_errstr(cli->tree));
 		return False;
 	}
 
 	/* and unlink by long name */
-	if (!cli_unlink(cli->tree, name)) {
+	if (NT_STATUS_IS_ERR(cli_unlink(cli->tree, name))) {
 		printf("unlink2 of %s  (%s) failed (%s)\n", 
 		       name, name2, cli_errstr(cli->tree));
 		failures++;
@@ -170,7 +170,7 @@ BOOL torture_mangle(int dummy)
 	cli_unlink(cli->tree, "\\mangle_test\\*");
 	cli_rmdir(cli->tree, "\\mangle_test");
 
-	if (!cli_mkdir(cli->tree, "\\mangle_test")) {
+	if (NT_STATUS_IS_ERR(cli_mkdir(cli->tree, "\\mangle_test"))) {
 		printf("ERROR: Failed to make directory\n");
 		return False;
 	}
@@ -190,7 +190,7 @@ BOOL torture_mangle(int dummy)
 	}
 
 	cli_unlink(cli->tree, "\\mangle_test\\*");
-	if (!cli_rmdir(cli->tree, "\\mangle_test")) {
+	if (NT_STATUS_IS_ERR(cli_rmdir(cli->tree, "\\mangle_test"))) {
 		printf("ERROR: Failed to remove directory\n");
 		return False;
 	}

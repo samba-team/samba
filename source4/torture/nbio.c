@@ -118,7 +118,7 @@ void nb_setup(struct cli_state *cli)
 
 void nb_unlink(const char *fname)
 {
-	if (!cli_unlink(c->tree, fname)) {
+	if (NT_STATUS_IS_ERR(cli_unlink(c->tree, fname))) {
 #if NBDEBUG
 		printf("(%d) unlink %s failed (%s)\n", 
 		       line_count, fname, cli_errstr(c));
@@ -201,7 +201,7 @@ void nb_close(int handle)
 {
 	int i;
 	i = find_handle(handle);
-	if (!cli_close(c->tree, ftable[i].fd)) {
+	if (NT_STATUS_IS_ERR(cli_close(c->tree, ftable[i].fd))) {
 		printf("(%d) close failed on handle %d\n", line_count, handle);
 		exit(1);
 	}
@@ -210,7 +210,7 @@ void nb_close(int handle)
 
 void nb_rmdir(const char *fname)
 {
-	if (!cli_rmdir(c->tree, fname)) {
+	if (NT_STATUS_IS_ERR(cli_rmdir(c->tree, fname))) {
 		printf("ERROR: rmdir %s failed (%s)\n", 
 		       fname, cli_errstr(c->tree));
 		exit(1);
@@ -219,7 +219,7 @@ void nb_rmdir(const char *fname)
 
 void nb_rename(const char *old, const char *new)
 {
-	if (!cli_rename(c->tree, old, new)) {
+	if (NT_STATUS_IS_ERR(cli_rename(c->tree, old, new))) {
 		printf("ERROR: rename %s %s failed (%s)\n", 
 		       old, new, cli_errstr(c->tree));
 		exit(1);

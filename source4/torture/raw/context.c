@@ -60,7 +60,7 @@ static BOOL test_session(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	printf("TESTING SESSION HANDLING\n");
 
 	if (cli_deltree(cli->tree, BASEDIR) == -1 ||
-	    !cli_mkdir(cli->tree, BASEDIR)) {
+	    NT_STATUS_IS_ERR(cli_mkdir(cli->tree, BASEDIR))) {
 		printf("Unable to setup %s - %s\n", BASEDIR, cli_errstr(cli->tree));
 		return False;
 	}
@@ -168,7 +168,7 @@ static BOOL test_tree(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	printf("TESTING TREE HANDLING\n");
 
 	if (cli_deltree(cli->tree, BASEDIR) == -1 ||
-	    !cli_mkdir(cli->tree, BASEDIR)) {
+	    NT_STATUS_IS_ERR(cli_mkdir(cli->tree, BASEDIR))) {
 		printf("Unable to setup %s - %s\n", BASEDIR, cli_errstr(cli->tree));
 		return False;
 	}
@@ -270,7 +270,7 @@ static BOOL test_pid(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	printf("TESTING PID HANDLING\n");
 
 	if (cli_deltree(cli->tree, BASEDIR) == -1 ||
-	    !cli_mkdir(cli->tree, BASEDIR)) {
+	    NT_STATUS_IS_ERR(cli_mkdir(cli->tree, BASEDIR))) {
 		printf("Unable to setup %s - %s\n", BASEDIR, cli_errstr(cli->tree));
 		return False;
 	}
