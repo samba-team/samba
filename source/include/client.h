@@ -137,7 +137,7 @@ struct cli_state {
 
 	/* was this structure allocated by cli_initialise? If so, then
 			free in cli_shutdown() */
-	BOOL allocated
+	BOOL allocated;
 };
 
 #endif /* _CLIENT_H */
