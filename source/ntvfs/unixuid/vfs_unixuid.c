@@ -41,6 +41,7 @@ static NTSTATUS sid_to_unixuid(struct ntvfs_module_context *ntvfs,
 	void *ctx;
 	struct ldb_message **res;
 	const char *sidstr;
+	uint_t atype;
 
 	ctx = talloc(req, 0);
 	sidstr = dom_sid_string(ctx, sid);
@@ -53,7 +54,8 @@ static NTSTATUS sid_to_unixuid(struct ntvfs_module_context *ntvfs,
 	}
 
 	/* make sure its a user, not a group */
-	if (samdb_result_uint(res[0], "sAMAccountType", 0) != ATYPE_NORMAL_ACCOUNT) {
+	atype = samdb_result_uint(res[0], "sAMAccountType", 0);
+	if (atype && atype != ATYPE_NORMAL_ACCOUNT) {
 		DEBUG(0,("sid_to_unixuid: sid %s is not ATYPE_NORMAL_ACCOUNT\n", sidstr));
 		talloc_free(ctx);
 		return NT_STATUS_ACCESS_DENIED;
@@ -95,7 +97,7 @@ static NTSTATUS sid_to_unixuid(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_OK;
 	}
 
-	DEBUG(0,("No sAMAccountName for sid %s!?\n", sidstr));
+	DEBUG(0,("sid_to_unixuid: no unixID, unixName or sAMAccountName for sid %s\n", sidstr));
 
 	talloc_free(ctx);
 	return NT_STATUS_ACCESS_DENIED;
@@ -115,6 +117,7 @@ static NTSTATUS sid_to_unixgid(struct ntvfs_module_context *ntvfs,
 	void *ctx;
 	struct ldb_message **res;
 	const char *sidstr;
+	uint_t atype;
 
 	ctx = talloc(req, 0);
 	sidstr = dom_sid_string(ctx, sid);
@@ -127,7 +130,8 @@ static NTSTATUS sid_to_unixgid(struct ntvfs_module_context *ntvfs,
 	}
 
 	/* make sure its not a user */
-	if (samdb_result_uint(res[0], "sAMAccountType", 0) == ATYPE_NORMAL_ACCOUNT) {
+	atype = samdb_result_uint(res[0], "sAMAccountType", 0);
+	if (atype && atype == ATYPE_NORMAL_ACCOUNT) {
 		DEBUG(0,("sid_to_unixgid: sid %s is a ATYPE_NORMAL_ACCOUNT\n", sidstr));
 		talloc_free(ctx);
 		return NT_STATUS_ACCESS_DENIED;
@@ -169,7 +173,7 @@ static NTSTATUS sid_to_unixgid(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_OK;
 	}
 
-	DEBUG(0,("No sAMAccountName for sid %s!?\n", sidstr));
+	DEBUG(0,("sid_to_unixgid: no unixID, unixName or sAMAccountName for sid %s\n", sidstr));
 
 	talloc_free(ctx);
 	return NT_STATUS_ACCESS_DENIED;
