@@ -184,7 +184,7 @@ enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state *stat
 				 user_rid, group_rid, gecos_name,
 				 &state->response.data.pw)) {
 		winbindd_store_user_cache_entry(domain, name_user, &negative_pw_cache_entry);
-		talloc_destroy(mem_ctx);
+		/* talloc_destroy(mem_ctx); Surely this is wrong */
 		return WINBINDD_ERROR;
 	}
 	
