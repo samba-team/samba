@@ -1277,7 +1277,7 @@ again:
  Attempt a NetBIOS session request, falling back to *SMBSERVER if needed.
 ****************************************************************************/
 
-BOOL attempt_netbios_session_request(struct cli_state *cli, char *srchost, char *desthost,
+BOOL attempt_netbios_session_request(struct cli_state *cli, const char *srchost, const char *desthost,
                                      struct in_addr *pdest_ip)
 {
 	struct nmb_name calling, called;
