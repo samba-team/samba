@@ -29,7 +29,7 @@
  by NT and 2 is used by OS/2
 ****************************************************************************/
 
-static int interpret_long_filename(struct cli_state *cli,
+static size_t interpret_long_filename(struct cli_state *cli,
 				   int level,char *p,file_info *finfo)
 {
 	extern file_info def_finfo;
@@ -130,12 +130,12 @@ static int interpret_long_filename(struct cli_state *cli,
 			clistr_pull(cli, finfo->name, p,
 				    sizeof(finfo->name),
 				    namelen, 0);
-			return SVAL(base, 0);
+			return (size_t)IVAL(base, 0);
 		}
 	}
 	
 	DEBUG(1,("Unknown long filename format %d\n",level));
-	return(SVAL(p,0));
+	return (size_t)IVAL(base,0);
 }
 
 /****************************************************************************
@@ -168,6 +168,7 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 	unsigned int param_len, data_len;	
 	uint16 setup;
 	pstring param;
+	const char *mnt;
 
 	/* NT uses 260, OS/2 uses 2. Both accept 1. */
 	info_level = (cli->capabilities&CAP_NT_SMBS)?260:1;
@@ -271,6 +272,10 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 
 		/* we might need the lastname for continuations */
 		for (p2=p,i=0;i<ff_searchcount;i++) {
+			if ((info_level == 260) && (i == ff_searchcount-1)) {
+				/* Last entry - fixup the last offset length. */
+				SIVAL(p2,0,PTR_DIFF((rdata + data_len),p2));
+			}
 			p2 += interpret_long_filename(cli,info_level,p2,&finfo);
 		}
 
@@ -308,11 +313,10 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 		First = False;
 	}
 
+	mnt = cli_cm_get_mntpoint( cli );
+
 	for (p=dirlist,i=0;i<total_received;i++) {
-		const char *mnt = cli_cm_get_mntpoint( cli );
-		
 		p += interpret_long_filename(cli,info_level,p,&finfo);
-		
 		fn( mnt,&finfo, Mask, state );
 	}
 
