@@ -3336,3 +3336,101 @@ NTSTATUS _samr_unknown_2d(pipes_struct *p, SAMR_Q_UNKNOWN_2D *q_u, SAMR_R_UNKNOW
 	DEBUG(0,("_samr_unknown_2d: Not yet implemented.\n"));
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
+
+/*******************************************************************
+ _samr_unknown_2e
+ ********************************************************************/
+
+NTSTATUS _samr_unknown_2e(pipes_struct *p, SAMR_Q_UNKNOWN_2E *q_u, SAMR_R_UNKNOWN_2E *r_u)
+{
+    SAM_UNK_CTR *ctr;
+
+	if ((ctr = (SAM_UNK_CTR *)talloc_zero(p->mem_ctx, sizeof(SAM_UNK_CTR))) == NULL)
+		return NT_STATUS_NO_MEMORY;
+
+    ZERO_STRUCTP(ctr);
+
+    r_u->status = NT_STATUS_OK;
+
+    DEBUG(5,("_samr_unknown_2e: %d\n", __LINE__));
+
+    /* find the policy handle.  open a policy on it. */
+    if (!find_policy_by_hnd(p, &q_u->domain_pol, NULL))
+        return NT_STATUS_INVALID_HANDLE;
+
+    switch (q_u->switch_value) {
+        case 0x01:
+            init_unk_info1(&ctr->info.inf1);
+            break;
+        case 0x02:
+			/* The time call below is to get a sequence number for the sam. FIXME !!! JRA. */
+            init_unk_info2(&ctr->info.inf2, global_myworkgroup, global_myname, (uint32) time(NULL));
+            break;
+        case 0x03:
+            init_unk_info3(&ctr->info.inf3);
+            break;
+        case 0x05:
+            init_unk_info5(&ctr->info.inf5, global_myname);
+            break;
+        case 0x06:
+            init_unk_info6(&ctr->info.inf6);
+            break;
+        case 0x07:
+            init_unk_info7(&ctr->info.inf7);
+            break;
+        case 0x0c:
+            init_unk_info12(&ctr->info.inf12);
+            break;
+        default:
+            return NT_STATUS_INVALID_INFO_CLASS;
+    }
+
+    init_samr_r_samr_unknown_2e(r_u, q_u->switch_value, ctr, NT_STATUS_OK);
+
+    DEBUG(5,("_samr_unknown_2e: %d\n", __LINE__));
+
+    return r_u->status;
+}
+
+/*******************************************************************
+ _samr_
+ ********************************************************************/
+
+NTSTATUS _samr_set_dom_info(pipes_struct *p, SAMR_Q_SET_DOMAIN_INFO *q_u, SAMR_R_SET_DOMAIN_INFO *r_u)
+{
+	r_u->status = NT_STATUS_OK;
+
+	DEBUG(5,("_samr_set_dom_info: %d\n", __LINE__));
+
+	/* find the policy handle.  open a policy on it. */
+	if (!find_policy_by_hnd(p, &q_u->domain_pol, NULL))
+		return NT_STATUS_INVALID_HANDLE;
+
+	DEBUG(0,("_samr_set_dom_info: switch_value: %d\n", q_u->switch_value));
+
+	switch (q_u->switch_value) {
+        case 0x01:
+            break;
+        case 0x02:
+            break;
+        case 0x03:
+           break;
+        case 0x05:
+            break;
+        case 0x06:
+            break;
+        case 0x07:
+           break;
+        case 0x0c:
+             break;
+        default:
+            return NT_STATUS_INVALID_INFO_CLASS;
+	}
+
+	init_samr_r_set_domain_info(r_u, NT_STATUS_OK);
+
+	DEBUG(5,("_samr_set_dom_info: %d\n", __LINE__));
+
+	return r_u->status;
+}
+
