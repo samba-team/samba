@@ -20,7 +20,7 @@ automake
 (cd lib/krb5; perl ../../cf/make-proto.pl `perl -e '
 	do { 
 		$_ = <>; 
-	} until(/libkrb5_a_SOURCES/); 
+	} until(/libkrb5_la_SOURCES/); 
 	while(/\\\\\s*$/s){ 
 		$_ = $_ . <>;
 	} 
