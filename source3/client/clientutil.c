@@ -126,6 +126,13 @@ BOOL cli_receive_trans_response(char *inbuf,int trans,int *data_len,
     {
       this_data = SVAL(inbuf,smb_drcnt);
       this_param = SVAL(inbuf,smb_prcnt);
+
+      if (this_data + *data_len > total_data ||
+	  this_param + *param_len > total_param) {
+	      DEBUG(1,("Data overflow in cli_receive_trans_response\n"));
+	      return False;
+      }
+
       if (this_data)
 	memcpy(*data + SVAL(inbuf,smb_drdisp),
 	       smb_base(inbuf) + SVAL(inbuf,smb_droff),
@@ -452,6 +459,11 @@ BOOL cli_send_login(char *inbuf, char *outbuf, BOOL start_session, BOOL use_setu
 
       /* send a session setup command */
       bzero(outbuf,smb_size);
+
+      if (passlen > MAX_PASSWORD_LENGTH) {
+	      DEBUG(1,("password too long %d\n", passlen));
+	      return False;
+      }
 
       if (Protocol < PROTOCOL_NT1) {
 	set_message(outbuf,10,1 + strlen(username) + passlen,True);
