@@ -31,6 +31,9 @@ interface dcerpc
 		[flag(NDR_REMAINING)] DATA_BLOB auth_info;
 	} dcerpc_bind;
 
+
+	const uint8 DCERPC_REQUEST_LENGTH = 24;
+
 	typedef struct {
 		uint32 alloc_hint;
 		uint16 context_id;
@@ -61,6 +64,8 @@ interface dcerpc
 		uint32 num_versions;
 		uint32 versions[num_versions];
 	} dcerpc_bind_nak;
+
+	const uint8 DCERPC_RESPONSE_LENGTH = 24;
 
 	typedef struct {
 		uint32 alloc_hint;
@@ -139,6 +144,10 @@ interface dcerpc
 	const uint8 DCERPC_PFC_FLAG_FIRST  = 0x01;
 	const uint8 DCERPC_PFC_FLAG_LAST   = 0x02;
 	const uint8 DCERPC_PFC_FLAG_NOCALL = 0x20;
+
+	/* these offsets are needed by the signing code */
+	const uint8 DCERPC_FRAG_LEN_OFFSET =  8;
+	const uint8 DCERPC_AUTH_LEN_OFFSET = 10;
 
 	typedef [public] struct {
 		uint8 rpc_vers;		/* RPC version */

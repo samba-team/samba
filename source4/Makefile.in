@@ -200,6 +200,7 @@ LIBRAW_NDR_OBJ = librpc/ndr/ndr.o librpc/ndr/ndr_basic.o librpc/ndr/ndr_sec.o \
 		librpc/gen_ndr/ndr_mgmt.o
 
 LIBRAW_RPC_OBJ = librpc/rpc/dcerpc.o librpc/rpc/dcerpc_auth.o \
+		librpc/rpc/dcerpc_util.o \
 		librpc/rpc/dcerpc_smb.o librpc/rpc/dcerpc_tcp.o \
 		librpc/gen_rpc/rpc_echo.o librpc/gen_rpc/rpc_lsa.o \
 		librpc/gen_rpc/rpc_dfs.o librpc/gen_rpc/rpc_spoolss.o \

@@ -43,6 +43,7 @@ struct dcerpc_pipe *dcerpc_pipe_init(void)
 	p->call_id = 1;
 	p->auth_info = NULL;
 	p->ntlmssp_state = NULL;
+	p->flags = 0;
 
 	return p;
 }
@@ -222,7 +223,8 @@ static NTSTATUS dcerpc_push_request_sign(struct dcerpc_pipe *p,
 
 	/* sign the packet */
 	status = ntlmssp_sign_packet(p->ntlmssp_state, 
-				     ndr->data+24, ndr->offset-24,
+				     ndr->data + DCERPC_REQUEST_LENGTH, 
+				     ndr->offset - DCERPC_REQUEST_LENGTH,
 				     &p->auth_info->credentials);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -237,9 +239,11 @@ static NTSTATUS dcerpc_push_request_sign(struct dcerpc_pipe *p,
 	/* extract the whole packet as a blob */
 	*blob = ndr_push_blob(ndr);
 
-	/* fill in the fragment length and auth_length */
-	SSVAL(blob->data,  8, blob->length);
-	SSVAL(blob->data, 10, p->auth_info->credentials.length);
+	/* fill in the fragment length and auth_length, we can't fill
+	   in these earlier as we don't know the signature length (it
+	   could be variable length) */
+	SSVAL(blob->data,  DCERPC_FRAG_LEN_OFFSET, blob->length);
+	SSVAL(blob->data,  DCERPC_AUTH_LEN_OFFSET, p->auth_info->credentials.length);
 
 	data_blob_free(&p->auth_info->credentials);
 
@@ -422,7 +426,7 @@ NTSTATUS dcerpc_request(struct dcerpc_pipe *p,
 
 	/* we can write a full max_recv_frag size, minus the dcerpc
 	   request header size */
-	chunk_size = p->srv_max_recv_frag - 24;
+	chunk_size = p->srv_max_recv_frag - DCERPC_REQUEST_LENGTH;
 
 	pkt.ptype = DCERPC_PKT_REQUEST;
 	pkt.call_id = p->call_id++;
