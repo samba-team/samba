@@ -940,7 +940,7 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
      */
 
     int current_pos, start_pos;
-    char *dname;
+    char *dname = NULL;
     void *dirptr = conn->dirptr;
     start_pos = TellDir(dirptr);
     for(current_pos = start_pos; current_pos >= 0; current_pos--)
@@ -957,7 +957,8 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
        * here.
        */
 
-      name_map_mangle( dname, False, SNUM(conn));
+      if(dname != NULL)
+        name_map_mangle( dname, False, SNUM(conn));
 
       if(dname && strcsequal( resume_name, dname))
       {
@@ -984,9 +985,10 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
          * here.
          */
 
-        name_map_mangle( dname, False, SNUM(conn));
+        if(dname != NULL)
+          name_map_mangle( dname, False, SNUM(conn));
 
-        if(strcsequal( resume_name, dname))
+        if(dname && strcsequal( resume_name, dname))
         {
           SeekDir(dirptr, current_pos+1);
           DEBUG(7,("call_trans2findnext: got match at pos %d\n", current_pos+1 ));

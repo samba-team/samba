@@ -268,7 +268,7 @@ BOOL get_trust_account_password( unsigned char *ret_pwd, time_t *pass_last_set_t
   p = &linebuf[37];
 
   for(i = 0; i < 8; i++) {
-    if(p[i] == '\0' || !isxdigit(p[i])) {
+    if(p[i] == '\0' || !isxdigit((int)p[i])) {
       DEBUG(0,("get_trust_account_password: Malformed trust password file (no timestamp).\n"));
 #ifdef DEBUG_PASSWORD
       DEBUG(100,("get_trust_account_password: line = |%s|\n", linebuf));

@@ -110,11 +110,9 @@ static void asyncdns_process(void)
   WINS db that our parent is going to write.
  **************************************************************************** */
 
-static int sig_term(void)
+static void sig_term(int sig)
 {
   _exit(0);
-  /* Keep compiler happy.. */
-  return 0;
 }
 
 /***************************************************************************

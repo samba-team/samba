@@ -340,7 +340,7 @@ static BOOL smb_shm_register_process(char *processreg_file, pid_t pid, BOOL *oth
 	 {
 	    /* erase old pid */
             DEBUG(5,("smb_shm_register_process : erasing stale record for pid %d (seek_back = %d)\n",
-                      other_pid, seek_back));
+                      (int)other_pid, seek_back));
 	    other_pid = (pid_t)0;
 	    erased_slot = lseek(smb_shm_processes_fd, seek_back, SEEK_CUR);
 	    write(smb_shm_processes_fd, &other_pid, sizeof(other_pid));
@@ -362,7 +362,8 @@ static BOOL smb_shm_register_process(char *processreg_file, pid_t pid, BOOL *oth
    if(free_slot < 0)
       free_slot = lseek(smb_shm_processes_fd, 0, SEEK_END);
 
-   DEBUG(5,("smb_shm_register_process : writing record for pid %d at offset %d\n",pid,free_slot));
+   DEBUG(5,("smb_shm_register_process : writing record for pid %d at offset %d\n",
+         (int)pid,free_slot));
    lseek(smb_shm_processes_fd, free_slot, SEEK_SET);
    if(write(smb_shm_processes_fd, &pid, sizeof(pid)) < 0)
    {
@@ -395,12 +396,12 @@ static BOOL smb_shm_unregister_process(char *processreg_file, pid_t pid)
    
    while ((nb_read = read(smb_shm_processes_fd, &other_pid, sizeof(other_pid))) > 0)
    {
-      DEBUG(5,("smb_shm_unregister_process : read record for pid %d\n",other_pid));
+      DEBUG(5,("smb_shm_unregister_process : read record for pid %d\n",(int)other_pid));
       if(other_pid == pid)
       {
 	 /* erase pid */
          DEBUG(5,("smb_shm_unregister_process : erasing record for pid %d (seek_val = %d)\n",
-                     other_pid, seek_back));
+                     (int)other_pid, seek_back));
 	 other_pid = (pid_t)0;
 	 erased_slot = lseek(smb_shm_processes_fd, seek_back, SEEK_CUR);
 	 if(write(smb_shm_processes_fd, &other_pid, sizeof(other_pid)) < 0)
@@ -423,7 +424,8 @@ static BOOL smb_shm_unregister_process(char *processreg_file, pid_t pid)
    
    if(!found)
    {
-      DEBUG(0,("ERROR smb_shm_unregister_process : couldn't find pid %d in file %s\n",pid,processreg_file));
+      DEBUG(0,("ERROR smb_shm_unregister_process : couldn't find pid %d in file %s\n",
+            (int)pid,processreg_file));
       close(smb_shm_processes_fd);
       return False;
    }
@@ -540,7 +542,8 @@ static BOOL smb_shm_close( void )
    }
 
    smb_shm_global_lock();
-   DEBUG(5,("calling smb_shm_unregister_process(%s, %d)\n", smb_shm_processreg_name, getpid()));
+   DEBUG(5,("calling smb_shm_unregister_process(%s, %d)\n", 
+         smb_shm_processreg_name, (int)getpid()));
    smb_shm_unregister_process(smb_shm_processreg_name, getpid());
    smb_shm_global_unlock();
    

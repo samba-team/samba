@@ -564,8 +564,9 @@ struct shmem_ops *sysv_shm_open(int ronly)
 		}
 
 		if (sem_id == -1) {
-			DEBUG(0,("Can't create or use semaphore %s\n", 
+			DEBUG(0,("Can't create or use semaphore [1]. Error was %s\n", 
 				 strerror(errno)));
+            return NULL;
 		}   
 
 		if (sem_id != -1) {
@@ -574,6 +575,7 @@ struct shmem_ops *sysv_shm_open(int ronly)
 				if (semctl(sem_id, i, SETVAL, su) != 0) {
 					DEBUG(1,("Failed to init semaphore %d. Error was %s\n",
                           i, strerror(errno)));
+                    return NULL;
 				}
 			}
 		}
@@ -582,7 +584,7 @@ struct shmem_ops *sysv_shm_open(int ronly)
 		sem_id = semget(SEMAPHORE_KEY, 0, 0);
 	}
 	if (sem_id == -1) {
-		DEBUG(0,("Can't create or use semaphore.Error was %s\n", 
+		DEBUG(0,("Can't create or use semaphore [2]. Error was %s\n", 
 			 strerror(errno)));
 		return NULL;
 	}   
@@ -609,6 +611,7 @@ struct shmem_ops *sysv_shm_open(int ronly)
 			if (semctl(sem_id, 0, SETVAL, su) != 0) {
 				DEBUG(0,("ERROR: Failed to clear global lock. Error was %s\n",
                       strerror(errno)));
+                return NULL;
 			}
 		}
 
@@ -616,6 +619,7 @@ struct shmem_ops *sysv_shm_open(int ronly)
 		if (semctl(sem_id, 0, IPC_SET, su) != 0) {
 			DEBUG(0,("ERROR shmctl : can't IPC_SET. Error was %s\n",
                   strerror(errno)));
+            return NULL;
 		}
 	}
 
@@ -632,6 +636,8 @@ struct shmem_ops *sysv_shm_open(int ronly)
 			if (semctl(sem_id, i, SETVAL, su) != 0) {
 				DEBUG(0,("ERROR: Failed to clear IPC lock %d. Error was %s\n",
                       i, strerror(errno)));
+		        global_unlock();
+                return NULL;
 			}
 		}
 	}
@@ -679,6 +685,8 @@ struct shmem_ops *sysv_shm_open(int ronly)
 	   mapping processes */
 	if (shmctl(shm_id, IPC_STAT, &shm_ds) != 0) {
 		DEBUG(0,("ERROR shmctl : can't IPC_STAT. Error was %s\n", strerror(errno)));
+        global_unlock();
+        return NULL;
 	}
 
 	if (!read_only) {

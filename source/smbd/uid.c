@@ -96,7 +96,7 @@ static BOOL become_uid(int uid)
 #endif
       {
 	DEBUG(0,("Couldn't set uid %d currently set to (%d,%d)\n",
-		 uid,getuid(), geteuid()));
+		 uid,(int)getuid(), (int)geteuid()));
 	if (uid > 32000) {
 		DEBUG(0,("Looks like your OS doesn't like high uid values - try using a different account\n"));
 	}
@@ -133,7 +133,7 @@ static BOOL become_gid(int gid)
 #endif
       {
 	DEBUG(0,("Couldn't set gid %d currently set to (%d,%d)\n",
-		 gid,getgid(),getegid()));
+		 gid,(int)getgid(),(int)getegid()));
 	if (gid > 32000) {
 		DEBUG(0,("Looks like your OS doesn't like high gid values - try using a different account\n"));
 	}
@@ -290,7 +290,7 @@ BOOL become_user(connection_struct *conn, uint16 vuid)
 	current_user.vuid = vuid;
 
 	DEBUG(5,("become_user uid=(%d,%d) gid=(%d,%d)\n",
-		 getuid(),geteuid(),getgid(),getegid()));
+		 (int)getuid(),(int)geteuid(),(int)getgid(),(int)getegid()));
   
 	return(True);
 }
@@ -340,7 +340,7 @@ BOOL unbecome_user(void )
     DEBUG( 0, ( "chdir(%s) failed in unbecome_user\n", OriginalDir ) );
 
   DEBUG(5,("unbecome_user now uid=(%d,%d) gid=(%d,%d)\n",
-	getuid(),geteuid(),getgid(),getegid()));
+	(int)getuid(),(int)geteuid(),(int)getgid(),(int)getegid()));
 
   current_user.conn = NULL;
   current_user.vuid = UID_FIELD_INVALID;

@@ -71,6 +71,14 @@
 #include <string.h>
 #endif
 
+#ifdef HAVE_STRINGS_H
+#include <strings.h>
+#endif
+
+#ifdef HAVE_MEMORY_H
+#include <memory.h>
+#endif
+
 #ifdef HAVE_MALLOC_H
 #include <malloc.h>
 #endif
@@ -239,6 +247,10 @@
 
 #ifdef HAVE_COMPAT_H
 #include <compat.h>
+#endif
+
+#ifdef HAVE_RPCSVC_YPCLNT_H
+#include <rpcsvc/ypclnt.h>
 #endif
 
 #ifndef uchar
@@ -468,6 +480,10 @@ int ftruncate(int f,long l);
 /* stupid glibc */
 int setresuid(uid_t ruid, uid_t euid, uid_t suid);
 int setresgid(gid_t rgid, gid_t egid, gid_t sgid);
+#endif
+
+#if !defined(HAVE_BZERO) && defined(HAVE_MEMSET)
+#define bzero(a,b) memset((a),'\0',(b))
 #endif
 
 #endif /* _INCLUDES_H */

@@ -452,6 +452,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 		int ret = nt_open_pipe(fname, conn, inbuf, outbuf, &fnum);
 		if(ret != 0)
 			return ret;
+		fsp = &Files[fnum];
 		smb_action = FILE_WAS_OPENED;
 	} else {
 
@@ -667,7 +668,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 
 	
 	DEBUG(5,("reply_ntcreate_and_X: open fnum = %d, name = %s\n",
-		 fnum, fsp?fsp->fsp_name:"NULL"));
+		 fnum, fsp->fsp_name));
 
 	return chain_reply(inbuf,outbuf,length,bufsize);
 }

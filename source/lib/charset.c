@@ -161,7 +161,7 @@ void charset_initialise(void)
   }
 
   for (i=0;i<=127;i++) {
-    if (isalnum((char)i) || strchr("._^$~!#%&-{}()@'`",(char)i))
+    if (isalnum(i) || strchr("._^$~!#%&-{}()@'`",(char)i))
       add_dos_char(i,False,0,False);
   }
 
@@ -172,8 +172,8 @@ void charset_initialise(void)
     /* Some systems have buggy isupper/islower for characters
        above 127. Best not to rely on them. */
     if(i < 128) {
-      if (isupper(c)) lower_char_map[i] = tolower(c);
-      if (islower(c)) upper_char_map[i] = toupper(c);
+      if (isupper((int)c)) lower_char_map[i] = tolower(c);
+      if (islower((int)c)) upper_char_map[i] = toupper(c);
     }
   }
 }

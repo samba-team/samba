@@ -127,7 +127,7 @@ BOOL parse_byte(char *buf, unsigned char *bp)
 
 BOOL parse_bool(char *buf, unsigned char *bp)
 {
-  if(isdigit(*buf))
+  if(isdigit((int)*buf))
   {
     char *endptr = NULL;
 

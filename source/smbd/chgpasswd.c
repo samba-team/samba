@@ -342,7 +342,7 @@ BOOL chat_with_program(char *passwordprogram,char *name,char *chatsequence, BOOL
 
     if(as_root)
       become_root(False);
-    DEBUG(3,("Dochild for user %s (uid=%d,gid=%d)\n",name,getuid(),getgid()));
+    DEBUG(3,("Dochild for user %s (uid=%d,gid=%d)\n",name,(int)getuid(),(int)getgid()));
     chstat = dochild(master, slavedev, name, passwordprogram, as_root);
 
     if(as_root)
@@ -404,7 +404,7 @@ BOOL chgpasswd(char *name,char *oldpass,char *newpass, BOOL as_root)
 
   len = strlen(oldpass); 
   for(i = 0; i < len; i++) {
-    if(iscntrl(oldpass[i])) {
+    if(iscntrl((int)oldpass[i])) {
       DEBUG(0,("chat_with_program: oldpass contains control characters (disallowed).\n"));
       return False;
     }
@@ -412,7 +412,7 @@ BOOL chgpasswd(char *name,char *oldpass,char *newpass, BOOL as_root)
 
   len = strlen(newpass);
   for(i = 0; i < len; i++) {
-    if(iscntrl(newpass[i])) {
+    if(iscntrl((int)newpass[i])) {
       DEBUG(0,("chat_with_program: newpass contains control characters (disallowed).\n"));
       return False;
     }

@@ -113,7 +113,7 @@ struct smb_passwd *iterate_getsmbpwuid(uid_t smb_userid)
 	struct smb_passwd *pwd = NULL;
 	void *fp = NULL;
 
-	DEBUG(10, ("iterate_getsmbpwuid: search by smb_userid: %x\n", smb_userid));
+	DEBUG(10, ("iterate_getsmbpwuid: search by smb_userid: %x\n", (int)smb_userid));
 
 	/* Open the smb password database - not for update. */
 	fp = startsmbpwent(False);
@@ -129,7 +129,7 @@ struct smb_passwd *iterate_getsmbpwuid(uid_t smb_userid)
 
 	if (pwd != NULL)
 	{
-		DEBUG(10, ("iterate_getsmbpwuid: found by smb_userid: %x\n", smb_userid));
+		DEBUG(10, ("iterate_getsmbpwuid: found by smb_userid: %x\n", (int)smb_userid));
 	}
 
 	endsmbpwent(fp);
@@ -370,7 +370,7 @@ struct sam_passwd *iterate_getsam21pwuid(uid_t uid)
 	struct sam_passwd *pwd = NULL;
 	void *fp = NULL;
 
-	DEBUG(10, ("iterate_getsam21pwuid: search by uid: %x\n", uid));
+	DEBUG(10, ("iterate_getsam21pwuid: search by uid: %x\n", (int)uid));
 
 	/* Open the smb password file - not for update. */
 	fp = startsmbpwent(False);
@@ -386,7 +386,7 @@ struct sam_passwd *iterate_getsam21pwuid(uid_t uid)
 
 	if (pwd != NULL)
 	{
-		DEBUG(10, ("iterate_getsam21pwuid: found by smb_userid: %x\n", uid));
+		DEBUG(10, ("iterate_getsam21pwuid: found by smb_userid: %x\n", (int)uid));
 	}
 
 	endsmbpwent(fp);
@@ -599,7 +599,7 @@ static time_t get_time_from_string(char *p)
 
 	for (i = 0; i < 8; i++)
 	{
-		if (p[i] == '\0' || !isxdigit(p[i]))
+		if (p[i] == '\0' || !isxdigit((int)p[i]))
 		break;
 	}
 	if (i == 8)

@@ -106,7 +106,7 @@ static int string_match(char *tok,char *s)
 		if (strncmp(tok, s, tok_len) == 0)
 			return (True);
 	} else if ((cut = strchr(tok, '/')) != 0) {	/* netnumber/netmask */
-		if (isdigit(s[0]) && masked_match(tok, cut, s))
+		if (isdigit((int)s[0]) && masked_match(tok, cut, s))
 			return (True);
 	}
 	return (False);
