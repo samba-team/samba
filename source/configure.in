@@ -1193,7 +1193,7 @@ AC_ARG_WITH(ssl,
 	;;
         * )
           CFLAGS="-I${withval}/include $CFLAGS"
-	  LIBS="-lssl -l crypto $LIBS"
+	  LIBS="-lssl -lcrypto $LIBS"
   	  LDFLAGS="-L${withval}/lib $LDFLAGS"
 	;;
 	esac
