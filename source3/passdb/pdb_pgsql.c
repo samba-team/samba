@@ -104,10 +104,15 @@ static NTSTATUS row_to_sam_account ( PGresult *r, long row, SAM_ACCOUNT *u )
   pdb_set_logon_count            ( u, PQgetlong ( r, row, 27 ), PDB_SET ) ;
   pdb_set_unknown_6            ( u, PQgetlong ( r, row, 28 ), PDB_SET ) ;
   
-  if ( !PQgetisnull( r, row, 18 ) ) string_to_sid( &sid, PQgetvalue( r, row, 18 ) ) ;
-  pdb_set_user_sid ( u, &sid, PDB_SET ) ;
-  if ( !PQgetisnull( r, row, 19 ) ) string_to_sid( &sid, PQgetvalue( r, row, 19 ) ) ;
-  pdb_set_group_sid( u, &sid, PDB_SET ) ;
+  if ( !PQgetisnull( r, row, 18 ) ) {
+    string_to_sid( &sid, PQgetvalue( r, row, 18 ) ) ;
+    pdb_set_user_sid ( u, &sid, PDB_SET ) ;
+  }
+
+  if ( !PQgetisnull( r, row, 19 ) ) {
+    string_to_sid( &sid, PQgetvalue( r, row, 19 ) ) ;
+    pdb_set_group_sid( u, &sid, PDB_SET ) ;
+  }
   
   if ( pdb_gethexpwd( PQgetvalue( r, row, 20 ), temp ), PDB_SET ) pdb_set_lanman_passwd( u, temp, PDB_SET ) ;
   if ( pdb_gethexpwd( PQgetvalue( r, row, 21 ), temp ), PDB_SET ) pdb_set_nt_passwd    ( u, temp, PDB_SET ) ;
@@ -146,7 +151,7 @@ static NTSTATUS pgsqlsam_setsampwent(struct pdb_methods *methods, BOOL update, u
   }
   else
   {
-    DEBUG( 5, ("pgsqlsam_setsampwent succeeded(%llu results)!\n", PQntuples(data->pwent)) ) ;
+    DEBUG( 5, ("pgsqlsam_setsampwent succeeded(%d results)!\n", PQntuples(data->pwent)) ) ;
     retval = NT_STATUS_OK ;
   }
   
