@@ -21,7 +21,7 @@ MANPAGES_NAMES=findsmb.1 smbclient.1 \
 	smbcacls.1 smbsh.1 winbindd.8 \
 	tdbbackup.8 vfstest.1 \
 	profiles.1 smbtree.1 ntlm_auth.1 \
-	editreg.1 smbcquotas.1
+	editreg.1 smbcquotas.1 log2pcap.1
 
 ## This part contains only rules. You shouldn't need to change it 
 ## if you are adding docs
