@@ -844,6 +844,11 @@ static BOOL resolve_lmhosts(const char *name, int name_type,
  Resolve via "hosts" method.
 *********************************************************/
 
+#define DNS_CACHE_TIMEOUT 30
+
+static fstring cached_failed_name; /* Which name failed last */
+static time_t cached_failed_time;  /* When this name failed */
+
 static BOOL resolve_hosts(const char *name,
                          struct in_addr **return_iplist, int *return_count)
 {
@@ -858,6 +863,25 @@ static BOOL resolve_hosts(const char *name,
 
 	DEBUG(3,("resolve_hosts: Attempting host lookup for name %s<0x20>\n", name));
 	
+	if (strequal(name, cached_failed_name)) {
+		time_t now = time(NULL);
+		
+		/* Has someone changed the time on us? */
+
+		if (now < cached_failed_time)
+			cached_failed_time = 0;
+
+		/* Return false if we look up the same name that
+		   failed last time. */
+
+		if ((now - cached_failed_time) < DNS_CACHE_TIMEOUT) {
+			DEBUG(0, ("resolve_hosts: returning negative cache for name %s\n", name));
+			return False;
+		}
+
+		DEBUG(10, ("resolve_hosts: negative cache for %s has expired\n", name));
+	}
+
 	if (((hp = sys_gethostbyname(name)) != NULL) && (hp->h_addr != NULL)) {
 		struct in_addr return_ip;
 		putip((char *)&return_ip,(char *)hp->h_addr);
@@ -870,6 +894,14 @@ static BOOL resolve_hosts(const char *name,
 		*return_count = 1;
 		return True;
 	}
+
+	/* Store details of last failed lookup */
+
+	fstrcpy(cached_failed_name, name);
+	cached_failed_time = time(NULL);
+
+	DEBUG(3, ("resolve_hosts: saving failed name %s\n", name));
+
         /* BEGIN_ADMIN_LOG */
 	{
 		BOOL parse_ok;
