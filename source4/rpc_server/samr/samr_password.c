@@ -34,10 +34,10 @@ NTSTATUS samr_ChangePasswordUser(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	struct samr_account_state *a_state;
 	struct ldb_message **res, mod, *msg;
 	int ret;
-	struct samr_Hash *lmPwdHash=NULL, *ntPwdHash=NULL;
 	struct samr_Hash new_lmPwdHash, new_ntPwdHash, checkHash;
+	uint8 *lm_pwd, *nt_pwd;
 	NTSTATUS status = NT_STATUS_OK;
-	const char * const attrs[] = { "lmPwdHash", "ntPwdHash" , NULL };
+	const char * const attrs[] = { "lmPwdHash", "ntPwdHash" , "unicodePwd", NULL };
 
 	DCESRV_PULL_HANDLE(h, r->in.handle, SAMR_HANDLE_USER);
 
@@ -66,37 +66,33 @@ NTSTATUS samr_ChangePasswordUser(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 		return NT_STATUS_LM_CROSS_ENCRYPTION_REQUIRED;
 	}
 
-	ret = samdb_result_hashes(mem_ctx, msg, "lmPwdHash", &lmPwdHash);
-	if (ret != 1) {
-		return NT_STATUS_WRONG_PASSWORD;
-	}
-	ret = samdb_result_hashes(mem_ctx, msg, "ntPwdHash", &ntPwdHash);
-	if (ret != 1) {
+	status = samdb_result_passwords(mem_ctx, msg, &lm_pwd, &nt_pwd);
+	if (!NT_STATUS_IS_OK(status) || !lm_pwd || !nt_pwd) {
 		return NT_STATUS_WRONG_PASSWORD;
 	}
 
 	/* decrypt and check the new lm hash */
-	D_P16(lmPwdHash->hash, r->in.new_lm_crypted->hash, new_lmPwdHash.hash);
+	D_P16(lm_pwd, r->in.new_lm_crypted->hash, new_lmPwdHash.hash);
 	D_P16(new_lmPwdHash.hash, r->in.old_lm_crypted->hash, checkHash.hash);
-	if (memcmp(checkHash.hash, lmPwdHash->hash, 16) != 0) {
+	if (memcmp(checkHash.hash, lm_pwd, 16) != 0) {
 		return NT_STATUS_WRONG_PASSWORD;
 	}
 
 	/* decrypt and check the new nt hash */
-	D_P16(ntPwdHash->hash, r->in.new_nt_crypted->hash, new_ntPwdHash.hash);
+	D_P16(nt_pwd, r->in.new_nt_crypted->hash, new_ntPwdHash.hash);
 	D_P16(new_ntPwdHash.hash, r->in.old_nt_crypted->hash, checkHash.hash);
-	if (memcmp(checkHash.hash, ntPwdHash->hash, 16) != 0) {
+	if (memcmp(checkHash.hash, nt_pwd, 16) != 0) {
 		return NT_STATUS_WRONG_PASSWORD;
 	}
 	
 	/* check the nt cross hash */
-	D_P16(lmPwdHash->hash, r->in.nt_cross->hash, checkHash.hash);
+	D_P16(lm_pwd, r->in.nt_cross->hash, checkHash.hash);
 	if (memcmp(checkHash.hash, new_ntPwdHash.hash, 16) != 0) {
 		return NT_STATUS_WRONG_PASSWORD;
 	}
 
 	/* check the lm cross hash */
-	D_P16(ntPwdHash->hash, r->in.lm_cross->hash, checkHash.hash);
+	D_P16(nt_pwd, r->in.lm_cross->hash, checkHash.hash);
 	if (memcmp(checkHash.hash, new_lmPwdHash.hash, 16) != 0) {
 		return NT_STATUS_WRONG_PASSWORD;
 	}
@@ -138,9 +134,9 @@ NTSTATUS samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call, TALLOC_
 	const char *user_dn, *domain_dn;
 	int ret;
 	struct ldb_message **res, mod;
-	const char * const attrs[] = { "objectSid", "lmPwdHash", NULL };
+	const char * const attrs[] = { "objectSid", "lmPwdHash", "unicodePwd", NULL };
 	const char *domain_sid;
-	struct samr_Hash *lmPwdHash;
+	uint8 *lm_pwd;
 
 	if (pwbuf == NULL) {
 		return NT_STATUS_WRONG_PASSWORD;
@@ -167,14 +163,13 @@ NTSTATUS samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call, TALLOC_
 
 	user_dn = res[0]->dn;
 
-	ret = samdb_result_hashes(mem_ctx, res[0], "lmPwdHash", &lmPwdHash);
-	if (ret != 1) {
-		samdb_close(sam_ctx);
+	status = samdb_result_passwords(mem_ctx, res[0], &lm_pwd, NULL);
+	if (!NT_STATUS_IS_OK(status) || !lm_pwd) {
 		return NT_STATUS_WRONG_PASSWORD;
 	}
 
 	/* decrypt the password we have been given */
-	SamOEMhash(pwbuf->data, lmPwdHash->hash, 516);
+	SamOEMhash(pwbuf->data, lm_pwd, 516);
 
 	if (!decode_pw_buffer(pwbuf->data, new_pass, sizeof(new_pass),
 			      &new_pass_len, STR_ASCII)) {
@@ -226,16 +221,6 @@ NTSTATUS samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call, TALLOC_
 
 	samdb_close(sam_ctx);
 	return NT_STATUS_OK;
-}
-
-
-/* 
-  samr_ChangePasswordUser2 
-*/
-NTSTATUS samr_ChangePasswordUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-				  struct samr_ChangePasswordUser2 *r)
-{
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
@@ -387,9 +372,9 @@ failed:
 		goto failed;
 	}
 
-	dominfo->min_pwd_len         = samdb_result_uint(res[0],  "minPwdLength", 0);
-	dominfo->password_properties = samdb_result_uint(res[0],  "pwdProperties", 0);
-	dominfo->password_history    = samdb_result_uint(res[0],  "pwdHistoryLength", 0);
+	dominfo->min_pwd_len         = samdb_result_uint (res[0], "minPwdLength", 0);
+	dominfo->password_properties = samdb_result_uint (res[0], "pwdProperties", 0);
+	dominfo->password_history    = samdb_result_uint (res[0], "pwdHistoryLength", 0);
 	dominfo->max_password_age    = samdb_result_int64(res[0], "maxPwdAge", 0);
 	dominfo->min_password_age    = samdb_result_int64(res[0], "minPwdAge", 0);
 
@@ -397,6 +382,27 @@ failed:
 }
 
 
+/* 
+  samr_ChangePasswordUser2 
+
+  easy - just a subset of samr_ChangePasswordUser3
+*/
+NTSTATUS samr_ChangePasswordUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+				  struct samr_ChangePasswordUser2 *r)
+{
+	struct samr_ChangePasswordUser3 r2;
+
+	r2.in.server = r->in.server;
+	r2.in.account = r->in.account;
+	r2.in.nt_password = r->in.nt_password;
+	r2.in.nt_verifier = r->in.nt_verifier;
+	r2.in.lm_change = r->in.lm_change;
+	r2.in.lm_password = r->in.lm_password;
+	r2.in.lm_verifier = r->in.lm_verifier;
+	r2.in.password3 = NULL;
+
+	return samr_ChangePasswordUser3(dce_call, mem_ctx, &r2);
+}
 
 
 /*
