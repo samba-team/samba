@@ -4715,6 +4715,7 @@ BOOL sam_io_user_info11(char *desc,  SAM_USER_INFO_11 *usr, prs_struct *ps, int 
 BOOL make_sam_user_info24(SAM_USER_INFO_24 *usr,
 	const char newpass[516], uint16 passlen)
 {
+	DEBUG(10,("make_sam_user_info24: passlen: %d\n", passlen));
 	memcpy(usr->pass, newpass, sizeof(usr->pass));
 	usr->unk_0 = passlen;
 
@@ -5733,6 +5734,7 @@ BOOL make_samr_q_set_userinfo(SAMR_Q_SET_USERINFO *q_u,
 
 	if (!cli_get_usr_sesskey(hnd, sess_key))
 	{
+		DEBUG(0,("make_samr_set_userinfo: could not obtain session key\n"));
 		return False;
 	}
 	if (!make_samr_userinfo_ctr(q_u->ctr, sess_key, switch_value, info))

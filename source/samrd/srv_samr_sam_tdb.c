@@ -137,7 +137,8 @@ static uint32 tdb_samr_connect( POLICY_HND *pol, uint32 ace_perms)
 	TDB_CONTEXT *sam_tdb = NULL;
 
 	/* get a (unique) handle.  open a policy on it. */
-	if (!open_policy_hnd(get_global_hnd_cache(), pol, ace_perms))
+	if (!open_policy_hnd(get_global_hnd_cache(),
+		get_sec_ctx(), pol, ace_perms))
 	{
 		return NT_STATUS_ACCESS_DENIED;
 	}

@@ -125,6 +125,7 @@ static void reg_reply_open(REG_Q_OPEN_HKLM *q_r, prs_struct *rdata)
 	r_u.status = NT_STATUS_NOPROBLEMO;
 	/* get a (unique) handle.  open a policy on it. */
 	if (r_u.status == 0x0 && !open_policy_hnd(get_global_hnd_cache(),
+		get_sec_ctx(),
 	                                          &r_u.pol, q_r->access_mask))
 	{
 		r_u.status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
@@ -172,7 +173,8 @@ static void reg_reply_open_entry(REG_Q_OPEN_ENTRY *q_u,
 		status = NT_STATUS_INVALID_HANDLE;
 	}
 
-	if (status == 0x0 && !open_policy_hnd(get_global_hnd_cache(), &pol, q_u->access_mask))
+	if (status == 0x0 && !open_policy_hnd(get_global_hnd_cache(),
+		get_sec_ctx(), &pol, q_u->access_mask))
 	{
 		status = NT_STATUS_TOO_MANY_SECRETS; /* ha ha very droll */
 	}

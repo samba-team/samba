@@ -72,7 +72,8 @@ BOOL event_open(const char* srv_name, const char *log, POLICY_HND *hnd)
 			DEBUG(0,("event_open: unk_6 or unk_7 is an access mask\n"));
 			/*copy handle */
 			memcpy(hnd->data, r.pol.data, sizeof(hnd->data));
-			valid_pol = register_policy_hnd(get_global_hnd_cache(), hnd, 0x01) &&
+			valid_pol = register_policy_hnd(get_global_hnd_cache(), cli_con_sec_ctx(con),
+			                                hnd, 0x01) &&
 			            set_policy_con(get_global_hnd_cache(), hnd, con, 
 			                                 cli_connection_unlink);
 		}

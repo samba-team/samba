@@ -307,7 +307,8 @@ uint32 samr_open_by_nt5ldaprid( LDAPDB *hds,
 				POLICY_HND *pol, uint32 access_mask, uint32 rid)
 {
 	/* get a (unique) handle.  open a policy on it. */
-	if (!open_policy_hnd(get_global_hnd_cache(), pol, access_mask))
+	if (!open_policy_hnd(get_global_hnd_cache(),
+		get_sec_ctx(), pol, access_mask))
 	{
 		return NT_STATUS_ACCESS_DENIED;
 	}

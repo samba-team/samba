@@ -156,15 +156,17 @@ static BOOL get_sampwd_entries(SAM_USER_INFO_21 *pw_buf,
 /*******************************************************************
  opens a samr group by rid, returns a policy handle.
  ********************************************************************/
-static uint32 samr_open_by_sid(const DOM_SID *dom_sid,
+static uint32 samr_open_by_sid( const POLICY_HND *parent_pol,
+				const DOM_SID *dom_sid,
 				POLICY_HND *pol,
 				uint32 access_mask,
 				uint32 rid)
 {
 	DOM_SID sid;
-
+	
 	/* get a (unique) handle.  open a policy on it. */
-	if (!open_policy_hnd(get_global_hnd_cache(), pol, access_mask))
+	if (!open_policy_hnd_link(get_global_hnd_cache(),
+		parent_pol, pol, access_mask))
 	{
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -217,7 +219,8 @@ uint32 _samr_open_domain(const POLICY_HND *connect_pol,
 	}
 
 	/* get a (unique) handle.  open a policy on it. */
-	if (!open_policy_hnd(get_global_hnd_cache(), domain_pol, ace_perms))
+	if (!open_policy_hnd_link(get_global_hnd_cache(),
+		connect_pol, domain_pol, ace_perms))
 	{
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -1601,7 +1604,8 @@ uint32 _samr_open_user(const POLICY_HND *domain_pol,
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
-	return samr_open_by_sid(&sid, user_pol, access_mask, user_rid);
+	return samr_open_by_sid(domain_pol, &sid, user_pol,
+	                        access_mask, user_rid);
 }
 
 
@@ -1940,7 +1944,7 @@ uint32 _samr_set_userinfo(const POLICY_HND *pol, uint16 switch_value,
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	if (!cli_get_usr_sesskey(pol, user_sess_key))
+	if (!pol_get_usr_sesskey(get_global_hnd_cache(), pol, user_sess_key))
 	{
 		return NT_STATUS_INVALID_HANDLE;
 	}
@@ -2173,7 +2177,8 @@ uint32 _samr_create_dom_alias(const POLICY_HND *domain_pol,
 	*rid = grp.rid = 0xffffffff;
 
 	*rid = grp.rid;
-	status = samr_open_by_sid(&dom_sid, alias_pol, access_mask, grp.rid);
+	status = samr_open_by_sid(domain_pol, &dom_sid, alias_pol,
+	                          access_mask, grp.rid);
 
 	if (status != 0x0)
 	{
@@ -2225,7 +2230,7 @@ uint32 _samr_create_dom_group(const POLICY_HND *domain_pol,
 	grp.attr = 0x07;
 
 	*rid = grp.rid;
-	status = samr_open_by_sid(&dom_sid, group_pol,
+	status = samr_open_by_sid(domain_pol, &dom_sid, group_pol,
 	                              access_mask, grp.rid);
 	if (status != 0x0)
 	{
@@ -2357,7 +2362,8 @@ uint32 _samr_create_user(const POLICY_HND *domain_pol,
 	*unknown_0 = 0x000703ff;
 	*user_rid = sam_pass->user_rid;
 
-	return samr_open_by_sid(&sid, user_pol, access_mask, *user_rid);
+	return samr_open_by_sid(domain_pol, &sid, user_pol,
+	                        access_mask, *user_rid);
 }
 
 /*******************************************************************
@@ -2368,7 +2374,8 @@ uint32 _samr_connect_anon(const UNISTR2 *srv_name, uint32 access_mask,
 
 {
 	/* get a (unique) handle.  open a policy on it. */
-	if (!open_policy_hnd(get_global_hnd_cache(), connect_pol, access_mask))
+	if (!open_policy_hnd(get_global_hnd_cache(),
+		get_sec_ctx(), connect_pol, access_mask))
 	{
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -2383,7 +2390,8 @@ uint32 _samr_connect(const UNISTR2 *srv_name, uint32 access_mask,
 				POLICY_HND *connect_pol)
 {
 	/* get a (unique) handle.  open a policy on it. */
-	if (!open_policy_hnd(get_global_hnd_cache(), connect_pol, access_mask))
+	if (!open_policy_hnd(get_global_hnd_cache(),
+		get_sec_ctx(), connect_pol, access_mask))
 	{
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -2413,7 +2421,7 @@ uint32 _samr_open_alias(const POLICY_HND *domain_pol,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	return samr_open_by_sid(&sid, alias_pol, access_mask, alias_rid);
+	return samr_open_by_sid(domain_pol, &sid, alias_pol, access_mask, alias_rid);
 }
 
 /*******************************************************************
@@ -2437,7 +2445,7 @@ uint32 _samr_open_group(const POLICY_HND *domain_pol, uint32 access_mask,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	return samr_open_by_sid(&sid, group_pol, access_mask, group_rid);
+	return samr_open_by_sid(domain_pol, &sid, group_pol, access_mask, group_rid);
 }
 
 /*******************************************************************

@@ -214,7 +214,8 @@ static BOOL get_printhndinfo(struct policy_cache *cache, const POLICY_HND *hnd,
  ****************************************************************************/
 static BOOL open_printer_hnd(POLICY_HND *hnd, uint32 access_mask)
 {
-	if (!open_policy_hnd(get_global_hnd_cache(), hnd, access_mask))
+	if (!open_policy_hnd(get_global_hnd_cache(),
+		get_sec_ctx(), hnd, access_mask))
 	{
 		return False;
 	}

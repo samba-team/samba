@@ -43,7 +43,8 @@ uint32 _lsa_open_policy2(const UNISTR2 *server_name, POLICY_HND *hnd,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	/* get a (unique) handle.  open a policy on it. */
-	if (!open_policy_hnd(get_global_hnd_cache(), hnd, des_access))
+	if (!open_policy_hnd(get_global_hnd_cache(),
+		get_sec_ctx(), hnd, des_access))
 	{
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -64,7 +65,8 @@ uint32 _lsa_open_policy(const UNISTR2 *server_name, POLICY_HND *hnd,
 	}
 
 	/* get a (unique) handle.  open a policy on it. */
-	if (!open_policy_hnd(get_global_hnd_cache(), hnd, des_access))
+	if (!open_policy_hnd(get_global_hnd_cache(),
+		get_sec_ctx(), hnd, des_access))
 	{
 		return NT_STATUS_ACCESS_DENIED;
 	}

@@ -248,6 +248,7 @@ BOOL spoolss_open_printer_ex( const char *printername,
 			memcpy(hnd, r_o.handle.data, sizeof(hnd->data));
 
 			valid_pol = register_policy_hnd(get_global_hnd_cache(),
+			                                cli_con_sec_ctx(con),
 			                                hnd, des_access) &&
 			            set_policy_con(get_global_hnd_cache(),
 				               hnd, con, 

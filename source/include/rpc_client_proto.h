@@ -35,9 +35,10 @@ BOOL cli_connection_getsrv(const char* srv_name, const char* pipe_name,
 				struct cli_connection **con);
 BOOL cli_connection_get(const POLICY_HND *pol, struct cli_connection **con);
 BOOL cli_pol_link(POLICY_HND *to, const POLICY_HND *from);
+BOOL cli_get_usr_sesskey(const POLICY_HND *pol, uchar usr_sess_key[16]);
 BOOL cli_set_con_usr_sesskey(struct cli_connection *con,
 				const uchar usr_sess_key[16]);
-BOOL cli_get_con_usr_sesskey(struct cli_connection *con, uchar usr_sess_key[16]);
+const vuser_key *cli_con_sec_ctx(struct cli_connection *con);
 struct cli_auth_fns *cli_conn_get_authfns(struct cli_connection *con);
 void *cli_conn_get_auth_creds(struct cli_connection *con);
 void *cli_conn_get_auth_info(struct cli_connection *con);
@@ -46,7 +47,6 @@ struct ntuser_creds *cli_conn_get_usercreds(struct cli_connection *con);
 struct ntdom_info * cli_conn_get_ntinfo(struct cli_connection *con);
 BOOL cli_get_con_sesskey(struct cli_connection *con, uchar sess_key[16]);
 BOOL cli_con_get_srvname(struct cli_connection *con, char *srv_name);
-BOOL cli_get_usr_sesskey(const POLICY_HND *pol, uchar usr_sess_key[16]);
 BOOL cli_get_sesskey(const POLICY_HND *pol, uchar sess_key[16]);
 BOOL cli_get_sesskey_srv(const char* srv_name, uchar sess_key[16]);
 void cli_con_gen_next_creds(struct cli_connection *con,

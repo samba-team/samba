@@ -32,6 +32,18 @@ extern struct current_user current_user;
 pstring OriginalDir;
 
 /****************************************************************************
+get the current security context vuid key
+****************************************************************************/
+const vuser_key *get_sec_ctx(void)
+{
+	if (current_user.key.vuid != UID_FIELD_INVALID)
+	{
+		return &current_user.key;
+	}
+	return NULL;
+}
+
+/****************************************************************************
 initialise the uid routines
 ****************************************************************************/
 void init_uid(void)

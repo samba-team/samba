@@ -492,7 +492,7 @@ uint32 _samr_set_userinfo(const POLICY_HND *pol, uint16 switch_value,
 
 	DEBUG(5,("samr_reply_set_userinfo: rid:0x%x\n", rid));
 
-	if (!cli_get_usr_sesskey(pol, user_sess_key))
+	if (!pol_get_usr_sesskey(get_global_hnd_cache(), pol, user_sess_key))
 	{
 		return NT_STATUS_INVALID_HANDLE;
 	}

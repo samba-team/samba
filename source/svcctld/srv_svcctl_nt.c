@@ -108,7 +108,8 @@ uint32 _svc_open_service(const POLICY_HND *scman_pol,
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	if (!open_policy_hnd(get_global_hnd_cache(), pol, des_access))
+	if (!open_policy_hnd(get_global_hnd_cache(),
+		get_sec_ctx(), pol, des_access))
 	{
 		return NT_STATUS_TOO_MANY_SECRETS; /* ha ha very droll */
 	}
@@ -203,7 +204,8 @@ uint32 _svc_open_sc_man(const UNISTR2 *uni_srv_name,
 {
 	fstring name;
 
-	if (!open_policy_hnd(get_global_hnd_cache(), pol, des_access))
+	if (!open_policy_hnd(get_global_hnd_cache(),
+		get_sec_ctx(), pol, des_access))
 	{
 		return NT_STATUS_TOO_MANY_SECRETS; /* ha ha very droll */
 	}

@@ -3,9 +3,9 @@
  *  Unix SMB/Netbios implementation.
  *  Version 1.9.
  *  RPC Pipe client / server routines
- *  Copyright (C) Andrew Tridgell              1992-1998,
- *  Copyright (C) Luke Kenneth Casson Leighton 1996-1998,
- *  Copyright (C) Paul Ashton                  1997-1998.
+ *  Copyright (C) Andrew Tridgell              1992-2000,
+ *  Copyright (C) Luke Kenneth Casson Leighton 1996-2000,
+ *  Copyright (C) Paul Ashton                  1997-2000.
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -103,8 +103,8 @@ BOOL reg_connect( const char* srv_name,
 
 	if (res)
 	{
-		if (!register_policy_hnd(get_global_hnd_cache(), reg_hnd,
-		                         access_mask) ||
+		if (!register_policy_hnd(get_global_hnd_cache(), cli_con_sec_ctx(con),
+		                         reg_hnd, access_mask) ||
 		    !set_policy_con(get_global_hnd_cache(), reg_hnd, con, 
 						 cli_connection_unlink))
 		{

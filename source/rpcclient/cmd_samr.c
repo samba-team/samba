@@ -2403,7 +2403,7 @@ void cmd_sam_set_userinfo(struct client_info *info, int argc, char *argv[])
 		if (usr != NULL)
 		{
 			res1 = set_samr_set_userinfo( &pol_dom,
-					    switch_value, rids[0], usr);
+					    switch_value, rids[0], &ctr);
 		}
 	}
 

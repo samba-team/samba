@@ -441,8 +441,33 @@ BOOL cli_pol_link(POLICY_HND *to, const POLICY_HND *from)
 	/* fix this when access masks are actually working! */
 	DEBUG(10,("cli_pol_link: lkclXXXX - MAXIMUM_ALLOWED access_mask\n"));
 
-	return register_policy_hnd(get_global_hnd_cache(), to, 0x02000000) &&
+	return dup_policy_hnd(get_global_hnd_cache(), to, from) &&
 	       set_policy_con(get_global_hnd_cache(), to, con, NULL);
+}
+
+/****************************************************************************
+set a user session key associated with a connection 
+****************************************************************************/
+BOOL cli_get_usr_sesskey(const POLICY_HND *pol, uchar usr_sess_key[16])
+{
+	struct ntdom_info *nt;
+	struct cli_connection *con;
+	if (!cli_connection_get(pol, &con))
+	{
+		return False;
+	}
+	if (con == NULL)
+	{
+		return False;
+	}
+	nt = cli_conn_get_ntinfo(con);
+	if (nt != NULL)
+	{
+		memcpy(usr_sess_key,nt->usr_sess_key,sizeof(nt->usr_sess_key));
+	}
+
+
+	return True;
 }
 
 /****************************************************************************
@@ -467,9 +492,9 @@ BOOL cli_set_con_usr_sesskey(struct cli_connection *con,
 }
 
 /****************************************************************************
-get a user session key associated with a connection 
+ get auth functions associated with an msrpc session.
 ****************************************************************************/
-BOOL cli_get_con_usr_sesskey(struct cli_connection *con, uchar usr_sess_key[16])
+const vuser_key *cli_con_sec_ctx(struct cli_connection *con)
 {
 	struct ntdom_info *nt;
 	if (con == NULL)
@@ -477,16 +502,11 @@ BOOL cli_get_con_usr_sesskey(struct cli_connection *con, uchar usr_sess_key[16])
 		return False;
 	}
 	nt = cli_conn_get_ntinfo(con);
-	if (nt != NULL)
+	if (nt != NULL && nt->key.vuid != UID_FIELD_INVALID)
 	{
-		memcpy(usr_sess_key, nt->usr_sess_key, sizeof(nt->usr_sess_key));
+		return &nt->key;
 	}
-	else
-	{
-		memset(usr_sess_key, 0, sizeof(nt->usr_sess_key));
-	}
-
-	return True;
+	return NULL;
 }
 
 /****************************************************************************
@@ -631,22 +651,6 @@ BOOL cli_con_get_srvname(struct cli_connection *con, char *srv_name)
 	}
 	
 	return True;
-}
-
-/****************************************************************************
-get a user session key associated with a connection associated with a
-policy handle.
-****************************************************************************/
-BOOL cli_get_usr_sesskey(const POLICY_HND *pol, uchar usr_sess_key[16])
-{
-	struct cli_connection *con = NULL;
-
-	if (!cli_connection_get(pol, &con))
-	{
-		return False;
-	}
-
-	return cli_get_con_usr_sesskey(con, usr_sess_key);
 }
 
 /****************************************************************************

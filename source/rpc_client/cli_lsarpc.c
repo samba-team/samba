@@ -260,6 +260,7 @@ BOOL lsa_open_policy(const char *system_name, POLICY_HND *hnd,
 			memcpy(hnd, r_o.pol.data, sizeof(hnd->data));
 			
 			valid_pol = register_policy_hnd(get_global_hnd_cache(),
+			                                cli_con_sec_ctx(con),
 			                                hnd, des_access) &&
 			            set_policy_con(get_global_hnd_cache(),
 			                                 hnd, con, 
@@ -336,6 +337,7 @@ BOOL lsa_open_policy2( const char *system_name, POLICY_HND *hnd,
 			/* ok, at last: we're happy. return the policy handle */
 			memcpy(hnd, r_o.pol.data, sizeof(hnd->data));
 			valid_pol = register_policy_hnd(get_global_hnd_cache(),
+			                                cli_con_sec_ctx(con),
 			                                hnd, des_access) &&
 			            set_policy_con(get_global_hnd_cache(),
 			                                 hnd, con, 

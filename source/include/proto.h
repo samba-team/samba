@@ -348,6 +348,7 @@ char *rep_inet_ntoa(struct in_addr ip);
 
 /*The following definitions come from  lib/set_uid.c  */
 
+const vuser_key *get_sec_ctx(void);
 void init_uid(void);
 BOOL become_uid(uid_t uid);
 BOOL become_gid(gid_t gid);
@@ -625,15 +626,32 @@ void *open_file_if_modified(const char *filename, char *mode, time_t *lastmodifi
 struct policy_cache *get_global_hnd_cache(void);
 struct policy_cache *init_policy_cache(int num_pol_hnds);
 void free_policy_cache(struct policy_cache *cache);
-BOOL register_policy_hnd(struct policy_cache *cache, POLICY_HND *hnd,
+BOOL dup_policy_hnd(struct policy_cache *cache,
+				POLICY_HND *hnd,
+				const POLICY_HND *from);
+BOOL register_policy_hnd(struct policy_cache *cache,
+				const vuser_key *key,
+				POLICY_HND *hnd,
 				uint32 access_mask);
-BOOL open_policy_hnd(struct policy_cache *cache, POLICY_HND *hnd,
+BOOL open_policy_hnd(struct policy_cache *cache, 
+				const vuser_key *key,
+				POLICY_HND *hnd,
+				uint32 access_mask);
+BOOL open_policy_hnd_link(struct policy_cache *cache, 
+				const POLICY_HND *parent_hnd,
+				POLICY_HND *hnd,
 				uint32 access_mask);
 int find_policy_by_hnd(struct policy_cache *cache, const POLICY_HND *hnd);
 BOOL set_policy_state(struct policy_cache *cache, POLICY_HND *hnd, 
 				void(*fn)(void*), void *dev);
 void *get_policy_state_info(struct policy_cache *cache, const POLICY_HND *hnd);
 BOOL close_policy_hnd(struct policy_cache *cache, POLICY_HND *hnd);
+BOOL policy_link_key(struct policy_cache *cache, const POLICY_HND *hnd,
+				POLICY_HND *to);
+const vuser_key *get_policy_vuser_key(struct policy_cache *cache,
+				const POLICY_HND *hnd);
+BOOL pol_get_usr_sesskey(struct policy_cache *cache, const POLICY_HND *hnd,
+				uchar usr_sess_key[16]);
 
 /*The following definitions come from  lib/util_pwdb.c  */
 
@@ -2071,9 +2089,10 @@ BOOL cli_connection_getsrv(const char* srv_name, const char* pipe_name,
 				struct cli_connection **con);
 BOOL cli_connection_get(const POLICY_HND *pol, struct cli_connection **con);
 BOOL cli_pol_link(POLICY_HND *to, const POLICY_HND *from);
+BOOL cli_get_usr_sesskey(const POLICY_HND *pol, uchar usr_sess_key[16]);
 BOOL cli_set_con_usr_sesskey(struct cli_connection *con,
 				const uchar usr_sess_key[16]);
-BOOL cli_get_con_usr_sesskey(struct cli_connection *con, uchar usr_sess_key[16]);
+const vuser_key *cli_con_sec_ctx(struct cli_connection *con);
 struct cli_auth_fns *cli_conn_get_authfns(struct cli_connection *con);
 void *cli_conn_get_auth_creds(struct cli_connection *con);
 void *cli_conn_get_auth_info(struct cli_connection *con);
@@ -2082,7 +2101,6 @@ struct ntuser_creds *cli_conn_get_usercreds(struct cli_connection *con);
 struct ntdom_info * cli_conn_get_ntinfo(struct cli_connection *con);
 BOOL cli_get_con_sesskey(struct cli_connection *con, uchar sess_key[16]);
 BOOL cli_con_get_srvname(struct cli_connection *con, char *srv_name);
-BOOL cli_get_usr_sesskey(const POLICY_HND *pol, uchar usr_sess_key[16]);
 BOOL cli_get_sesskey(const POLICY_HND *pol, uchar sess_key[16]);
 BOOL cli_get_sesskey_srv(const char* srv_name, uchar sess_key[16]);
 void cli_con_gen_next_creds(struct cli_connection *con,

@@ -670,6 +670,7 @@ BOOL samr_connect(  const char *srv_name, uint32 access_mask,
 		{
 			memcpy(connect_pol, &r_o.connect_pol, sizeof(r_o.connect_pol));
 			valid_pol = register_policy_hnd(get_global_hnd_cache(),
+			                                cli_con_sec_ctx(con),
 			                                connect_pol,
 			                                access_mask) &&
 			            set_policy_con(get_global_hnd_cache(),
@@ -2283,6 +2284,7 @@ BOOL samr_set_userinfo(  POLICY_HND *pol, uint16 switch_value, void* usr)
 	prs_init(&rdata, 0, 4, True );
 
 	q_o.ctr = &ctr;
+
 	/* store the parameters */
 	make_samr_q_set_userinfo(&q_o, pol, switch_value, usr);
 
