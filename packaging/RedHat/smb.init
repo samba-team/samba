@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# chkconfig: 345 91 35
+# chkconfig: 345 81 35
 # description: Starts and stops the Samba smbd and nmbd daemons \
 #	       used to provide SMB network services.
 
