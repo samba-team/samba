@@ -38,7 +38,11 @@ can be one of the following:
 .Op Fl -no-salt
 .Xc
 Adds a key to the keytab. Options that are not specified will be
-prompted for.
+prompted for. This requires that you know the password of the
+principal to add; if what you really want is to add a new principal to
+the keytab, you should consider the
+.Ar get
+command, which talks to the kadmin server.
 .It change Xo
 .Op Fl r Ar realm
 .Op Fl -realm= Ns Ar realm
@@ -96,6 +100,14 @@ Removes the specified key or keys. Not specifying a
 removes keys with any version number. Not specifying a
 .Ar enctype
 removes keys of any type.
+.It rename Xo
+.Ar from-principal
+.Ar to-principal
+.Xc
+Renames all entries in the keytab that match the
+.Ar from-principal
+to 
+.Ar to-principal .
 .It purge Xo
 .Op Fl -age= Ns Ar age
 .Xc
