@@ -42,6 +42,8 @@ RCSID("$Id$");
 
 void yyerror (char *s);
 long name2number(const char *str);
+
+extern char *yytext;
 %}
 
 %union {
@@ -56,20 +58,25 @@ long name2number(const char *str);
 %%
 
 file		: /* */ 
-		| statements
+		| header statements end
 		;
 
-statements	: statement
-		| statements statement
+header		: id et
+		| et
 		;
 
-statement	: ET STRING
+id		: ID STRING
+		{
+		    id_str = $2;
+		}
+		;
+
+et		: ET STRING
 		{
 		    base = name2number($2);
 		    strncpy(name, $2, sizeof(name));
 		    name[sizeof(name) - 1] = '\0';
 		    free($2);
-		    prologue();
 		}
 		| ET STRING STRING
 		{
@@ -78,18 +85,16 @@ statement	: ET STRING
 		    name[sizeof(name) - 1] = '\0';
 		    free($2);
 		    free($3);
-		    prologue();
 		}
-		| INDEX NUMBER 
+		;
+
+statements	: statement
+		| statements statement
+		;
+
+statement	: INDEX NUMBER 
 		{
-		    for(; number < $2; number++) {
-			/* 
-			fprintf(h_file, "\t%s_ERROR_%d = %d,\n", 
-				name, number, base + number);
-				*/
-			fprintf(c_file, "\t/* %03d */ \"Reserved %s error (%d)\",\n",
-				number, name, number);
-		    }
+			number = $2;
 		}
 		| PREFIX STRING
 		{
@@ -105,18 +110,21 @@ statement	: ET STRING
 		}
 		| EC STRING ',' STRING
 		{
-		    fprintf(h_file, "\t%s%s = %d,\n", 
-			    prefix ? prefix : "", $2, number + base);
-		    fprintf(c_file, "\t/* %03d */ \"%s\",\n", number, $4);
-		    free($2);
-		    free($4);
+		    struct error_code *ec = malloc(sizeof(*ec));
+		    ec->number = number;
+		    if(prefix && *prefix != '\0') {
+			ec->name = malloc(strlen(prefix) + strlen($2) + 1);
+			strcpy(ec->name, prefix);
+				strcat(ec->name, $2);
+				free($2);
+		    } else
+			ec->name = $2;
+		    ec->string = $4;
+		    APPEND(codes, ec);
 		    number++;
 		}
-		| ID STRING
-		{
-			id_str = $2;
-		}
-		| END
+		;
+end		: END
 		{
 			return;
 		}
