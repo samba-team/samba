@@ -186,7 +186,8 @@ static struct tdb_print_db *get_print_db_byname(const char *printername)
 		DLIST_ADD(print_db_head, p);
 	}
 
-	pstrcpy(printdb_path, lock_path(printername));
+	pstrcpy(printdb_path, lock_path("printing/"));
+	pstrcat(printdb_path, printername);
 	pstrcat(printdb_path, ".tdb");
 	p->tdb = tdb_open_log(printdb_path, 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
 	if (!p->tdb) {
@@ -217,11 +218,15 @@ BOOL print_backend_init(void)
 {
 	struct printer_queueid_map *p;
 	char *sversion = "INFO/version";
+	pstring printing_path;
 
 	if (local_pid == sys_getpid())
 		return True;
 
 	unlink(lock_path("printing.tdb"));
+	pstrcpy(printing_path,lock_path("printing"));
+	mkdir(printing_path,0755);
+
 	local_pid = sys_getpid();
 
 	/* handle a Samba upgrade */
