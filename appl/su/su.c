@@ -56,8 +56,8 @@ RCSID("$Id$");
 #endif
 #ifdef KRB4
 #include <krb.h>
-#include <kafs.h>
 #endif
+#include <kafs.h>
 #include <err.h>
 #include <roken.h>
 #include <getarg.h>
@@ -253,13 +253,11 @@ krb5_start_session(void)
     set_tkfile();
     esetenv("KRBTKFILE", tkfile, 1);
             
-#ifdef KRB4
     /* convert creds? */
     if(k_hasafs()) {
 	if (k_setpag() == 0)
 	    krb5_afslog(context, ccache2, NULL, NULL);
     }
-#endif
             
     krb5_cc_close(context, ccache2);
     krb5_cc_destroy(context, ccache);
