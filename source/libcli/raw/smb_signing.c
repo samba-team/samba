@@ -50,20 +50,6 @@ static BOOL set_smb_signing_common(struct smbcli_transport *transport)
 	return True;
 }
 
-/***********************************************************
- SMB signing - Common code for 'real' implementations
-************************************************************/
-static BOOL set_smb_signing_real_common(struct smbcli_transport *transport) 
-{
-	if (transport->negotiate.sign_info.mandatory_signing) {
-		DEBUG(5, ("Mandatory SMB signing enabled!\n"));
-	}
-
-	DEBUG(5, ("SMB signing enabled!\n"));
-
-	return True;
-}
-
 static void mark_packet_signed(struct request_buffer *out) 
 {
 	uint16_t flags2;
@@ -268,9 +254,11 @@ BOOL smbcli_transport_simple_set_signing(struct smbcli_transport *transport,
 		return False;
 	}
 
-	if (!set_smb_signing_real_common(transport)) {
-		return False;
+	if (transport->negotiate.sign_info.mandatory_signing) {
+		DEBUG(5, ("Mandatory SMB signing enabled!\n"));
 	}
+
+	DEBUG(5, ("SMB signing enabled!\n"));
 
 	data = smb_xmalloc(sizeof(*data));
 	transport->negotiate.sign_info.signing_context = data;
