@@ -1,5 +1,8 @@
 Fri Aug  8 05:51:02 1997  Assar Westerlund  <assar@sics.se>
 
+	* lib/krb5/get_cred.c: clean-up and try to free memory even when
+ 	there're errors
+
 	* lib/krb5/get_cred.c: adapt to new `extract_ticket'
 
 	* lib/krb5/get_in_tkt.c: reorganize.  check everything and try to
