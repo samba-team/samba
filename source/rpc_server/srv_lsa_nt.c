@@ -980,8 +980,6 @@ NTSTATUS _lsa_open_account(pipes_struct *p, LSA_Q_OPENACCOUNT *q_u, LSA_R_OPENAC
 {
 	struct lsa_info *handle;
 	struct lsa_info *info;
-	fstring name, dom_name;
-	enum SID_NAME_USE type;
 
 	/* find the connection policy handle. */
 	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&handle))
