@@ -150,7 +150,6 @@ char	tmpline[10240];
 char	hostname[MaxHostNameLen];
 char	remotehost[MaxHostNameLen];
 static char ttyline[20];
-char	*tty = ttyline;		/* for klogin */
 
 /* Default level for security, 0 allow any kind of connection, 1 only
    authorized and anonymous connections, 2 only authorized */
@@ -374,7 +373,7 @@ main(int argc, char **argv)
 	debug = 0;
 
 	/* set this here so klogin can use it... */
-	(void)sprintf(ttyline, "ftp%d", getpid());
+	sprintf(ttyline, "ftp%d", getpid());
 
 
 	/*	(void) freopen(_PATH_DEVNULL, "w", stderr); */
@@ -752,18 +751,15 @@ pass(char *passwd)
 			goto skip;
 		}
 #endif
-		rval = klogin(pw->pw_name, passwd);
-		if (rval == 0)
-			goto skip;
-
-		/* the strcmp does not catch null passwords! */
-		if (pw == NULL || *pw->pw_passwd == 0 ||
-		    strcmp((char*)crypt(passwd, pw->pw_passwd), pw->pw_passwd)){
-		    rval = 1;	 /* failure */
-		    goto skip;
+		{
+		    char realm[REALM_SZ];
+		    if((rval = krb_get_lrealm(realm, 1)) == KSUCCESS)
+			rval = krb_verify_user(pw->pw_name, "", realm, 
+					       passwd, 1, NULL);
 		}
-		rval = 0;
 
+		if (rval != 0)
+		    rval = unix_verify_user(pw->pw_name, passwd);
 skip:
 		/*
 		 * If rval == 1, the user failed the authentication check
