@@ -64,24 +64,6 @@ BOOL init_mangle_tdb(void)
 	return True;
 }
 
-/* trasform a dos charset string in a terminated unicode string */
-static int dos_to_ucs2(void *dest, const char *src, int dest_len)
-{
-	int len=0;
-	int src_len = strlen(src) + 1;
-
-	/* treat a pstring as "unlimited" length */
-	if (dest_len == -1) {
-		dest_len = sizeof(pstring);
-	}
-
-	/* ucs2 is always a multiple of 2 bytes */
-	dest_len &= ~1;
-
-	len = convert_string(CH_DOS, CH_UCS2, src, src_len, dest, dest_len);
-	return len;
-}
-
 /* trasform a unicode string into a dos charset string */
 static int ucs2_to_dos(char *dest, const smb_ucs2_t *src, int dest_len)
 {
