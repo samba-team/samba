@@ -73,10 +73,9 @@ def string_to_sid(string):
 
         string = string[match.end():]
     
-    print map(type, sub_auths)
-
     return {'sid_rev_num': sid_rev_num, 'id_auth': id_auth,
             'num_auths': num_auths, 'sub_auths': sub_auths}
+
 
 class SamrHandle:
 
@@ -91,6 +90,7 @@ class SamrHandle:
         r['handle'] = self.handle
 
         dcerpc.samr_Close(self.pipe, r)
+
 
 class ConnectHandle(SamrHandle):
 
@@ -139,19 +139,68 @@ class ConnectHandle(SamrHandle):
 
         result = dcerpc.samr_OpenDomain(self.pipe, r)
 
-        return DomainHandle(pipe, result['domain_handle'])
+        return DomainHandle(self.pipe, result['domain_handle'])
+
 
 class DomainHandle(SamrHandle):
 
     def QueryDomainInfo(self, level = 2):
 
         r = {}
-        r['domain_handle'] = self.domain_handle
+        r['domain_handle'] = self.handle
         r['level'] = level
 
-        result = dcerpc.samr_QueryDomainInfo(pipe, r)
+        result = dcerpc.samr_QueryDomainInfo(self.pipe, r)
 
         return result
+
+    def QueryDomainInfo2(self, level = 2):
+
+        r = {}
+        r['domain_handle'] = self.handle
+        r['level'] = level
+
+        result = dcerpc.samr_QueryDomainInfo2(self.pipe, r)
+
+        return result
+
+    def EnumDomainGroups(self):
+
+        r = {}
+        r['domain_handle'] = self.handle
+        r['resume_handle'] = 0
+        r['max_size'] = 1000
+
+        result = dcerpc.samr_EnumDomainGroups(self.pipe, r)
+
+        return result
+
+    def EnumDomainAliases(self):
+
+        r = {}
+        r['domain_handle'] = self.handle
+        r['resume_handle'] = 0
+        # acct_flags in SamrEnumerateAliasesInDomain has probably
+        # no meaning so use 0xffffffff like W2K
+        r['acct_flags'] = 0xffffffff
+        r['max_size'] = 1000
+
+        result = dcerpc.samr_EnumDomainAliases(self.pipe, r)
+
+        return result
+
+    def EnumDomainUsers(self, user_account_flags = 16):
+
+        r = {}
+        r['domain_handle'] = self.handle
+        r['resume_handle'] = 0
+        r['acct_flags'] = user_account_flags
+        r['max_size'] = 1000
+
+        result = dcerpc.samr_EnumDomainUsers(self.pipe, r)
+
+        return result
+
 
 def Connect(pipe, system_name = None, access_mask = 0x02000000):
     """Connect to the SAMR pipe."""
