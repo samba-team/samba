@@ -1,4 +1,4 @@
-@node Kerberos 4 issues, Windows 2000 compatability, Things in search for a better place, Top
+@node Kerberos 4 issues, Migration, Things in search for a better place, Top
 @comment  node-name,  next,  previous,  up
 @chapter Kerberos 4 issues
 
@@ -153,13 +153,12 @@ the @samp{[libdefaults]} section.
 
 @subsection Converting a database
 
-The database conversion is done with @samp{hprop}. Assuming that you
-have the @samp{kadmin/hprop} key in the keytab @file{hprop.keytab}, you
-can run this command to propagate the database to the machine called
+The database conversion is done with @samp{hprop}. You can run this
+command to propagate the database to the machine called
 @samp{slave-server} (which should be running a @samp{hpropd}).
 
 @example
-hprop -4 -E -k hprop.keytab slave-server
+hprop -4 -E slave-server
 @end example
 
 @section Version 4 Kadmin

@@ -1,4 +1,4 @@
-@node Windows 2000 compatability, Acknowledgments, Kerberos 4 issues, Top
+@node Windows 2000 compatability, Acknowledgments, Migration, Top
 @comment  node-name,  next,  previous,  up
 @chapter Windows 2000 compatability
 
@@ -216,7 +216,7 @@ required.
 
 Microsoft seems also to have forgotten to implement the checksum
 algorithms @samp{rsa-md4-des} and @samp{rsa-md5-des}. This can make Name
-mapping @xref{Create account mappings} fail if a @code{des-cbc-md5} key
+mapping (@pxref{Create account mappings}) fail if a @code{des-cbc-md5} key
 is used. To make the KDC return only @code{des-cbc-crc} you must delete
 the @code{des-cbc-md5} key from the kdc using the @code{kadmin
 del_enctype} command.
@@ -270,6 +270,9 @@ Basicly it say that you can add a registry key
 @code{HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Lsa\Kerberos\Parameters\LogLevel}
 with value DWORD equal to 1, and then you'll get logging in the Event
 Logger.
+
+@item Access to the active directory through LDAP
+@url{http://msdn.microsoft.com/library/techart/kerberossamp.htm}
 
 @end itemize
 
