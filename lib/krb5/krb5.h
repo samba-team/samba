@@ -371,6 +371,7 @@ typedef struct krb5_context_data {
     const char *time_fmt;
     krb5_boolean log_utc;
     const char *default_keytab;
+    const char *default_keytab_modify;
     krb5_boolean use_admin_kdc;
     krb5_addresses *extra_addresses;
     krb5_boolean scan_interfaces;	/* `ifconfig -a' */
