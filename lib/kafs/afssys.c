@@ -40,6 +40,8 @@
 
 RCSID("$Id$");
 
+int _kafs_debug; /* this should be done in a better way */
+
 /* Magic to get AIX syscalls to work */
 #ifdef _AIX
 
@@ -71,16 +73,23 @@ aix_setup(void)
      * If we are root or running setuid don't trust AFSLIBPATH!
      */
     if (getuid() != 0 && !isSuid() && (p = getenv("AFSLIBPATH")) != NULL)
-	strcpy(path, p);
+	snprintf(path, sizeof(path), "%s", p);
     else
 	snprintf(path, sizeof(path), "%s/afslib.so", LIBDIR);
 	
-    ptr = dlopen(path, 0);
-    if(ptr){
-	Setpag = (int (*)(void))dlsym(ptr, "aix_setpag");
-	Pioctl = (int (*)(char*, int, 
-			  struct ViceIoctl*, int))dlsym(ptr, "aix_pioctl");
+    ptr = dlopen(path, RTLD_NOW);
+    if(ptr == NULL) {
+	if(_kafs_debug) {
+	    if(errno == ENOEXEC && (p = dlerror()) != NULL)
+		warnx("%s: %s", path, p);
+	    else if (errno != ENOENT)
+		warn("%s", path);
+	}
+	return;
     }
+    Setpag = (int (*)(void))dlsym(ptr, "aix_setpag");
+    Pioctl = (int (*)(char*, int, 
+		      struct ViceIoctl*, int))dlsym(ptr, "aix_pioctl");
 #endif
 }
 #endif /* _AIX */
