@@ -30,6 +30,60 @@ extern int DEBUGLEVEL;
 
 
 /*******************************************************************
+reads or writes a UTIME type.
+********************************************************************/
+static BOOL smb_io_utime(char *desc,  UTIME *t, prs_struct *ps, int depth)
+{
+	if (t == NULL) return False;
+
+	prs_debug(ps, depth, desc, "smb_io_utime");
+	depth++;
+
+	prs_align(ps);
+	
+	prs_uint32 ("time", ps, depth, &(t->time));
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a DOM_CHAL structure.
+********************************************************************/
+static BOOL smb_io_chal(char *desc, DOM_CHAL *chal, prs_struct *ps, int depth)
+{
+	if (chal == NULL) return False;
+
+	prs_debug(ps, depth, desc, "smb_io_chal");
+	depth++;
+
+	prs_align(ps);
+
+	prs_uint8s(False, "data", ps, depth, chal->data, 8);
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a DOM_CRED structure.
+********************************************************************/
+static BOOL smb_io_cred(char *desc, DOM_CRED *cred, prs_struct *ps, int depth)
+{
+	if (cred == NULL) return False;
+
+	prs_debug(ps, depth, desc, "smb_io_cred");
+	depth++;
+
+	prs_align(ps);
+	
+	if (!smb_io_chal ("", &(cred->challenge), ps, depth))
+		return False;
+	if (!smb_io_utime("", &(cred->timestamp), ps, depth))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
 makes a DOM_CLNT_SRV structure.
 ********************************************************************/
 static BOOL make_clnt_srv(DOM_CLNT_SRV * log,

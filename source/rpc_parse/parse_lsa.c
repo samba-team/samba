@@ -640,7 +640,7 @@ BOOL make_q_open_secret(LSA_Q_OPEN_SECRET * q_o, const POLICY_HND *pol_hnd,
 {
 	int len = strlen(secret_name);
 
-	if (q_o == NULL)
+	if (q_o == NULL || pol_hnd == NULL)
 		return False;
 
 	DEBUG(5, ("make_q_open_secret"));
@@ -701,8 +701,8 @@ BOOL lsa_io_r_open_secret(char *desc, LSA_R_OPEN_SECRET * r_o,
 /*******************************************************************
 reads or writes an LSA_SECRET_VALUE structure.
 ********************************************************************/
-BOOL lsa_io_secret_value(char *desc, LSA_SECRET_VALUE * value,
-			 prs_struct * ps, int depth)
+static BOOL lsa_io_secret_value(char *desc, LSA_SECRET_VALUE * value,
+				prs_struct *ps, int depth)
 {
 	if (value == NULL)
 		return False;

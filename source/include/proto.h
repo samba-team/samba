@@ -1365,9 +1365,7 @@ uint32 _lsa_open_secret(const POLICY_HND * hnd,
 			POLICY_HND * hnd_secret);
 uint32 _lsa_enum_privs(POLICY_HND *hnd, uint32 unk0, uint32 unk1,
 		       uint32 *count, LSA_PRIV_ENTRY **entries);
-
 uint32 _lsa_unk_2d(const UNISTR2 uni_servername, LSA_R_UNK_2D* r_u);
-
 uint32 _lsa_priv_get_dispname(const POLICY_HND *hnd,
 			      const UNISTR2 *name,
 			      uint16 lang_id, uint16 lang_id_sys,
@@ -2498,8 +2496,6 @@ BOOL make_buf_string2(STRING2 *str, uint32 *ptr, const char *buf);
 BOOL smb_io_string2(char *desc,  STRING2 *str2, uint32 buffer, prs_struct *ps, int depth);
 BOOL make_unistr2(UNISTR2 *str, const char *buf, int len);
 BOOL smb_io_unistr2(char *desc,  UNISTR2 *uni2, uint32 buffer, prs_struct *ps, int depth);
-BOOL smb_io_chal(char *desc,  DOM_CHAL *chal, prs_struct *ps, int depth);
-BOOL smb_io_cred(char *desc,  DOM_CRED *cred, prs_struct *ps, int depth);
 BOOL smb_io_gid(char *desc,  DOM_GID *gid, prs_struct *ps, int depth);
 BOOL smb_io_pol_hnd(char *desc,  POLICY_HND *pol, prs_struct *ps, int depth);
 BOOL smb_io_unistr3(char *desc,  UNISTR3 *name, prs_struct *ps, int depth);

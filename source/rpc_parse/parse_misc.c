@@ -48,23 +48,6 @@ BOOL smb_io_bigint(char *desc, BIGINT *bigint, prs_struct *ps, int depth)
 }
 
 /*******************************************************************
-reads or writes a UTIME type.
-********************************************************************/
-static BOOL smb_io_utime(char *desc,  UTIME *t, prs_struct *ps, int depth)
-{
-	if (t == NULL) return False;
-
-	prs_debug(ps, depth, desc, "smb_io_utime");
-	depth++;
-
-	prs_align(ps);
-	
-	prs_uint32 ("time", ps, depth, &(t->time));
-
-	return True;
-}
-
-/*******************************************************************
 reads or writes an NTTIME structure.
 ********************************************************************/
 BOOL smb_io_time(char *desc,  NTTIME *nttime, prs_struct *ps, int depth)
@@ -951,41 +934,6 @@ BOOL smb_io_unistr2(char *desc,  UNISTR2 *uni2, uint32 buffer, prs_struct *ps, i
 		depth++;
 		ZERO_STRUCTP(uni2);
 	}
-
-	return True;
-}
-
-/*******************************************************************
-reads or writes a DOM_CHAL structure.
-********************************************************************/
-BOOL smb_io_chal(char *desc,  DOM_CHAL *chal, prs_struct *ps, int depth)
-{
-	if (chal == NULL) return False;
-
-	prs_debug(ps, depth, desc, "smb_io_chal");
-	depth++;
-
-	prs_align(ps);
-	
-	prs_uint8s (False, "data", ps, depth, chal->data, 8);
-
-	return True;
-}
-
-/*******************************************************************
-reads or writes a DOM_CRED structure.
-********************************************************************/
-BOOL smb_io_cred(char *desc,  DOM_CRED *cred, prs_struct *ps, int depth)
-{
-	if (cred == NULL) return False;
-
-	prs_debug(ps, depth, desc, "smb_io_cred");
-	depth++;
-
-	prs_align(ps);
-	
-	smb_io_chal ("", &(cred->challenge), ps, depth);
-	smb_io_utime("", &(cred->timestamp), ps, depth);
 
 	return True;
 }
