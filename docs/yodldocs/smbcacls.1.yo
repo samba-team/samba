@@ -1,0 +1,85 @@
+manpage(smbcacls htmlcommand((1)))(1)(3 Dec 2000)(Samba)(SAMBA)
+
+label(NAME)
+manpagename(smbcacls)(Set or get ACLs on an NT file)
+
+label(SYNOPSIS)
+manpagesynopsis() 
+
+bf(smbcacls) //server/share filename link(-U username)(minusU)
+[link(-A acls)(minusA)] [link(-M acls)(minusM)] 
+[link(-D acls)(minusD)] [link(-S acls)(minusS)] 
+[link(-n)(minusn)] [link(-h)(minush)]
+
+label(DESCRIPTION)
+manpagedescription()
+
+The bf(smbcacls) program manipulates NT Access Control Lists (ACLs) on
+SMB file shares.
+
+label(OPTIONS)
+manpageoptions()
+
+The following options are available to the bf(smbcacls) program:
+
+startdit()
+
+label(minusA)
+dit(bf(-A acls))
+
+Add the ACLs specified to the ACL list.
+
+label(minusM)
+dit(bf(-M acls))
+
+Modify the mask value (permissions) for the ACLs specified on the command
+line.  An error will be printed if the ACL specified is not already present
+in the ACL list
+
+label(minusD)
+dit(bf(-D acls))
+
+Delete any ACLs specfied on the command line.  An error is printed if any
+of the ACLs specified are not present in the ACL list.
+
+label(minusS)
+dit(bf(-S acls))
+
+This command deletes the current ACLs for the file or directory and
+replaces them with the ACLs specified on the command line.
+
+label(minusU)
+dit(bf(-U username))
+
+Specifies a username used to connect to the specified service.  The
+username may be of the form tt(username) in which case the user is
+prompted to enter in a password and the workgroup specified in the
+url(bf(smb.conf))(smb.conf.5.html) file is used, or tt(username%password)
+or tt(DOMAIN\username%password) and the password and workgroup names are
+used as provided.
+
+label(minusn)
+dit(bf(-n))
+
+This option displays all ACL information in numeric format.  The default is
+to convert SIDs to names and ACE types and masks to a readable string
+format. 
+
+label(minush)
+dit(bf(-h))
+
+Print usage information on the bf(smbcacls) program
+
+enddit()
+
+label(EXIT STATUS)
+manpagesection(EXIT STATUS)
+
+label(AUTHOR)
+manpageauthor()
+
+The original Samba software and related utilities were created by
+Andrew Tridgell. Samba is now developed by the Samba Team as an Open
+Source project.
+
+bf(smbcacls) was written by Andrew Tridgell and Tim Potter.

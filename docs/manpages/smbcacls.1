@@ -1,0 +1,71 @@
+.TH "smbcacls " "1" "3 Dec 2000" "Samba" "SAMBA" 
+.PP 
+.SH "NAME" 
+smbcacls \- Set or get ACLs on an NT file
+.PP 
+.SH "SYNOPSIS" 
+.PP 
+\fBsmbcacls\fP //server/share filename -U username
+[-A acls] [-M acls] 
+[-D acls] [-S acls] 
+[-n] [-h]
+.PP 
+.SH "DESCRIPTION" 
+.PP 
+The \fBsmbcacls\fP program manipulates NT Access Control Lists (ACLs) on
+SMB file shares\&.
+.PP 
+.SH "OPTIONS" 
+.PP 
+The following options are available to the \fBsmbcacls\fP program:
+.PP 
+.IP 
+.IP "\fB-A acls\fP" 
+.IP 
+Add the ACLs specified to the ACL list\&.
+.IP 
+.IP "\fB-M acls\fP" 
+.IP 
+Modify the mask value (permissions) for the ACLs specified on the command
+line\&.  An error will be printed if the ACL specified is not already present
+in the ACL list
+.IP 
+.IP "\fB-D acls\fP" 
+.IP 
+Delete any ACLs specfied on the command line\&.  An error is printed if any
+of the ACLs specified are not present in the ACL list\&.
+.IP 
+.IP "\fB-S acls\fP" 
+.IP 
+This command deletes the current ACLs for the file or directory and
+replaces them with the ACLs specified on the command line\&.
+.IP 
+.IP "\fB-U username\fP" 
+.IP 
+Specifies a username used to connect to the specified service\&.  The
+username may be of the form \f(CWusername\fP in which case the user is
+prompted to enter in a password and the workgroup specified in the
+\fBsmb\&.conf\fP file is used, or \f(CWusername%password\fP
+or \f(CWDOMAIN\eusername%password\fP and the password and workgroup names are
+used as provided\&.
+.IP 
+.IP "\fB-n\fP" 
+.IP 
+This option displays all ACL information in numeric format\&.  The default is
+to convert SIDs to names and ACE types and masks to a readable string
+format\&. 
+.IP 
+.IP "\fB-h\fP" 
+.IP 
+Print usage information on the \fBsmbcacls\fP program
+.IP 
+.PP 
+.SH "EXIT STATUS" 
+.PP 
+.SH "AUTHOR" 
+.PP 
+The original Samba software and related utilities were created by
+Andrew Tridgell\&. Samba is now developed by the Samba Team as an Open
+Source project\&.
+.PP 
+\fBsmbcacls\fP was written by Andrew Tridgell and Tim Potter\&.
