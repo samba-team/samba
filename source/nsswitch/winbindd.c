@@ -221,6 +221,7 @@ static struct dispatch_table dispatch_table[] = {
 	{ WINBINDD_GETPWENT, winbindd_getpwent, "GETPWENT" },
 
 	{ WINBINDD_GETGROUPS, winbindd_getgroups, "GETGROUPS" },
+	{ WINBINDD_GETUSERSIDS, winbindd_getusersids, "GETUSERSIDS" },
 
 	/* Group functions */
 
