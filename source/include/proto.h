@@ -2376,6 +2376,7 @@ int real_utimes(const char *name, struct timeval tv[2]);
 void smbw_setup_shared(void);
 char *smbw_getshared(const char *name);
 void smbw_setshared(const char *name, const char *val);
+int smbw_setenv(const char *name, const char *value);
 
 /*The following definitions come from  smbwrapper/smbw.c  */
 
