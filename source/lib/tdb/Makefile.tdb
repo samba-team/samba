@@ -1,0 +1,29 @@
+#
+# Makefile for tdb directory
+#
+
+CFLAGS = -DSTANDALONE -DTDB_DEBUG -g -DHAVE_MMAP=1 -Iinclude
+CC = gcc
+
+PROGS = bin/tdbtest bin/tdbtool bin/tdbtorture
+TDB_OBJ = common/tdb.o common/spinlock.o
+
+default: $(PROGS)
+
+bin/tdbtest: tools/tdbtest.o $(TDB_OBJ)
+	$(CC) $(CFLAGS) -o tdbtest tools/tdbtest.o $(TDB_OBJ) -lgdbm
+
+bin/tdbtool: tools/tdbtool.o $(TDB_OBJ)
+	$(CC) $(CFLAGS) -o tdbtool tools/tdbtool.o $(TDB_OBJ)
+
+bin/tdbtorture: tools/tdbtorture.o $(TDB_OBJ)
+	$(CC) $(CFLAGS) -o tdbtorture tools/tdbtorture.o $(TDB_OBJ)
+
+bin/tdbdump: tools/tdbdump.o $(TDB_OBJ)
+	$(CC) $(CFLAGS) -o tdbdump tools/tdbdump.o $(TDB_OBJ)
+
+bin/tdbbackup: tools/tdbbackup.o $(TDB_OBJ)
+	$(CC) $(CFLAGS) -o tdbbackup tools/tdbbackup.o $(TDB_OBJ)
+
+clean:
+	rm -f $(PROGS) common/*.o *~ *.bak */*~ */*.bak *% core test.db test.tdb test.gdbm
