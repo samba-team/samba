@@ -1,5 +1,5 @@
 !==
-!== BUGS.txt for Samba release 1.9.18alpha7 30 Oct 1997
+!== BUGS.txt for Samba release 1.9.18alpha8 30 Oct 1997
 !==
 Contributor:	Samba Team
 Updated:	June 27, 1997
