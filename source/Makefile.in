@@ -612,27 +612,27 @@ bin/.dummy:
 	  dir=bin $(MAKEDIR); fi
 	@: >> $@ || : > $@ # what a fancy emoticon!
 
-bin/libmsrpc.la: $(LIBMSRPC_LTOBJS)
+bin/libmsrpc.la: $(LIBMSRPC_LTOBJS) bin/.dummy
 	@echo Linking shared library $@
 	$(LINK) -o $@ -rpath $(LIBDIR) -version-info 0:1:0 \
 	  $(LIBMSRPC_LTOBJS)
 
-bin/libnmb.la: $(LIBNMB_LTOBJS)
+bin/libnmb.la: $(LIBNMB_LTOBJS) bin/.dummy
 	@echo Linking shared library $@
 	$(LINK) -o $@ -rpath $(LIBDIR) -version-info 0:1:0 \
 	  $(LIBNMB_LTOBJS)
 
-bin/libsmbpw.la: $(LIBSMBPW_LTOBJS)
+bin/libsmbpw.la: $(LIBSMBPW_LTOBJS) bin/.dummy
 	@echo Linking shared library $@
 	$(LINK) -o $@ -rpath $(LIBDIR) -version-info 0:1:0 \
 	  $(LIBSMBPW_LTOBJS)
 
-bin/libsmb.la: $(LIBSMB_LTOBJS)
+bin/libsmb.la: $(LIBSMB_LTOBJS) bin/.dummy
 	@echo Linking shared library $@
 	$(LINK) -o $@ -rpath $(LIBDIR) -version-info 0:1:0 \
 	  $(LIBSMB_LTOBJS)
 
-bin/libsamba.la: $(LIBSAMBA_LTOBJS)
+bin/libsamba.la: $(LIBSAMBA_LTOBJS) bin/.dummy
 	@echo Linking shared library $@
 	$(LINK) -o $@ -rpath $(LIBDIR) -version-info 0:1:0 \
 	  $(LIBSAMBA_LTOBJS)
@@ -846,7 +846,7 @@ ctags:
 
 realclean: clean
 	-rm -f config.log $(PROGS) $(SPROGS) bin/.dummy
-	-rmdir bin
+	-rmdir -fr bin
 
 distclean: realclean
 	-rm -f include/config.h include/stamp-h Makefile
