@@ -477,8 +477,8 @@ void cli_signing_trans_stop(struct cli_state *cli)
 	if (!cli->sign_info.doing_signing)
 		return;
 
-	if (data->trans_info)
-		SAFE_FREE(data->trans_info);
+	SAFE_FREE(data->trans_info);
+	data->trans_info = NULL;
 
 	data->send_seq_num += 2;
 }
@@ -598,10 +598,11 @@ static void srv_sign_outgoing_message(char *outbuf, struct smb_sign_info *si)
 	struct smb_basic_signing_context *data = si->signing_context;
 	uint32 send_seq_number = data->send_seq_num;
 	BOOL was_deferred_packet;
+	uint16 mid;
 
 	if (!si->doing_signing) {
 		if (si->allow_smb_signing && si->negotiated_smb_signing) {
-			uint16 mid = SVAL(outbuf, smb_mid);
+			mid = SVAL(outbuf, smb_mid);
 
 			was_deferred_packet = get_sequence_for_reply(&data->outstanding_packet_list, 
 						    mid, &send_seq_number);
@@ -632,10 +633,13 @@ static void srv_sign_outgoing_message(char *outbuf, struct smb_sign_info *si)
 	/* mark the packet as signed - BEFORE we sign it...*/
 	mark_packet_signed(outbuf);
 
+	mid = SVAL(outbuf, smb_mid);
+
 	/* See if this is a reply for a deferred packet. */
-	was_deferred_packet = get_sequence_for_reply(&data->outstanding_packet_list, 
-				    SVAL(outbuf, smb_mid), 
-				    &send_seq_number);
+	was_deferred_packet = get_sequence_for_reply(&data->outstanding_packet_list, mid, &send_seq_number);
+
+	if (data->trans_info && (data->trans_info->mid == mid))
+		send_seq_number = data->trans_info->send_seq_num;
 
 	simple_packet_signature(data, outbuf, send_seq_number, calc_md5_mac);
 
@@ -647,7 +651,7 @@ static void srv_sign_outgoing_message(char *outbuf, struct smb_sign_info *si)
 /*	cli->outbuf[smb_ss_field+2]=0; 
 	Uncomment this to test if the remote server actually verifies signatures...*/
 
-	if (!was_deferred_packet)
+	if (!was_deferred_packet && !data->trans_info)
 		data->send_seq_num++;
 }
 
@@ -661,6 +665,7 @@ static BOOL srv_check_incoming_message(char *inbuf, struct smb_sign_info *si)
 	uint32 reply_seq_number;
 	unsigned char calc_md5_mac[16];
 	unsigned char *server_sent_mac;
+	uint mid;
 
 	struct smb_basic_signing_context *data = si->signing_context;
 
@@ -672,12 +677,16 @@ static BOOL srv_check_incoming_message(char *inbuf, struct smb_sign_info *si)
 		return False;
 	}
 
+	mid = SVAL(inbuf, smb_mid);
+
 	/* Oplock break requests store an outgoing mid in the packet list. */
-	if (!get_sequence_for_reply(&data->outstanding_packet_list, 
-				    SVAL(inbuf, smb_mid), 
-				    &reply_seq_number)) {
-		reply_seq_number = data->send_seq_num;
-		data->send_seq_num++;
+	if (!get_sequence_for_reply(&data->outstanding_packet_list, mid, &reply_seq_number)) {
+		if (data->trans_info && (data->trans_info->mid == mid)) {
+			reply_seq_number = data->trans_info->reply_seq_num;
+		} else {
+			reply_seq_number = data->send_seq_num;
+			data->send_seq_num++;
+		}
 	}
 
 	simple_packet_signature(data, inbuf, reply_seq_number, calc_md5_mac);
@@ -808,6 +817,49 @@ BOOL srv_is_signing_active(void)
 {
 	return srv_sign_info.doing_signing;
 }
+
+/***********************************************************
+ Tell server code we are in a multiple trans reply state.
+************************************************************/
+
+void srv_signing_trans_start(uint16 mid)
+{
+	struct smb_basic_signing_context *data;
+
+	if (!srv_sign_info.doing_signing)
+		return;
+
+	data = (struct smb_basic_signing_context *)srv_sign_info.signing_context;
+
+	data->trans_info = smb_xmalloc(sizeof(struct trans_info_context));
+	ZERO_STRUCTP(data->trans_info);
+
+	data->trans_info->reply_seq_num = data->send_seq_num-1;
+	data->trans_info->mid = mid;
+	data->trans_info->send_seq_num = data->send_seq_num;
+
+	/* Increment now in case we need to send a non-trans
+	 * reply in the middle of the trans stream. */
+	data->send_seq_num++;
+}
+
+/***********************************************************
+ Tell server code we are out of a multiple trans reply state.
+************************************************************/
+
+void srv_signing_trans_stop(void)
+{
+	struct smb_basic_signing_context *data;
+
+	if (!srv_sign_info.doing_signing)
+		return;
+
+	data = (struct smb_basic_signing_context *)srv_sign_info.signing_context;
+
+	SAFE_FREE(data->trans_info);
+	data->trans_info = NULL;
+}
+
 
 /***********************************************************
  Turn on signing from this packet onwards. 

@@ -2321,6 +2321,8 @@ due to being in oplock break state.\n", (unsigned int)function_code ));
 		dump_data(10, data, data_count);
 	}
 
+	srv_signing_trans_start(SVAL(inbuf,smb_mid));
+
 	if(num_data_sofar < total_data_count || num_params_sofar < total_parameter_count) {
 		/* We need to send an interim response then receive the rest
 			of the parameter/data bytes */
@@ -2484,6 +2486,7 @@ due to being in oplock break state.\n", (unsigned int)function_code ));
 			SAFE_FREE(params);
 			SAFE_FREE(data);
 			END_PROFILE(SMBnttrans);
+			srv_signing_trans_stop();
 			return ERROR_DOS(ERRSRV,ERRerror);
 	}
 
@@ -2493,6 +2496,8 @@ due to being in oplock break state.\n", (unsigned int)function_code ));
 		returns a value other than -1 when it wants to send
 		an error packet. 
 	*/
+
+	srv_signing_trans_stop();
 
 	SAFE_FREE(setup);
 	SAFE_FREE(params);
@@ -2504,6 +2509,7 @@ due to being in oplock break state.\n", (unsigned int)function_code ));
 
  bad_param:
 
+	srv_signing_trans_stop();
 	SAFE_FREE(params);
 	SAFE_FREE(data);
 	SAFE_FREE(setup);
