@@ -161,9 +161,7 @@ char valid_opts[] = {
 #ifdef	SecurID
 	's',
 #endif
-#ifdef NEW_LOGIN
 	'L', ':',
-#endif
 	'\0'
 };
 
@@ -359,11 +357,9 @@ main(argc, argv)
 			break;
 #endif	/* AUTHENTICATION */
 
-#ifdef NEW_LOGIN
 		case 'L':
 			new_login = optarg;
 			break;
-#endif /* EXEC_LOGIN */
 			
 		default:
 			fprintf(stderr, "telnetd: %c: unknown option\n", ch);

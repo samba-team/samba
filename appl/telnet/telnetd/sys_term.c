@@ -177,6 +177,8 @@ int ttyfd = -1;
 # endif
 #endif	/* USE_TERMIO */
 
+char *new_login = LOGIN_PATH;
+
 /*
  * init_termbuf()
  * copy_termbuf(cp)
@@ -1819,10 +1821,10 @@ start_login(host, autologin, name)
 	}
 #endif
 
-	execv(LOGIN_PATH, argv.argv);
+	execv(new_login, argv.argv);
 
-	syslog(LOG_ERR, "%s: %m\n", _PATH_LOGIN);
-	fatalperror(net, _PATH_LOGIN);
+	syslog(LOG_ERR, "%s: %m\n", new_login);
+	fatalperror(net, new_login);
 	/*NOTREACHED*/
 }
 
