@@ -1121,7 +1121,7 @@ int open_socket_out(int type, struct in_addr *addr, int port, int timeout)
 
 	if (ret < 0)
 	{
-		DEBUG(1, ("error connecting to %s:%d (%s)\n",
+		DEBUG(3, ("error connecting to %s:%d (%s)\n",
 			  inet_ntoa(*addr), port, strerror(errno)));
 		close(res);
 		return -1;
