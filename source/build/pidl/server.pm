@@ -42,17 +42,25 @@ sub Boilerplate_Iface($)
 	pidl "\tNULL};\n\n";
 
 	pidl "
-static NTSTATUS $name\_op_bind(struct dcesrv_call_state *dce_call, const struct dcesrv_interface *iface)
+static NTSTATUS $name\__op_bind(struct dcesrv_call_state *dce_call, const struct dcesrv_interface *iface)
 {
-	return NT_STATUS_OK;	
+#ifdef DCESRV_INTERFACE_$uname\_BIND
+	return DCESRV_INTERFACE_$uname\_BIND(dce_call,iface);
+#else
+	return NT_STATUS_OK;
+#endif
 }
 
-static void $name\_op_unbind(struct dcesrv_connection *dce_conn, const struct dcesrv_interface *iface)
+static void $name\__op_unbind(struct dcesrv_connection *dce_conn, const struct dcesrv_interface *iface)
 {
-	return;	
+#ifdef DCESRV_INTERFACE_$uname\_UNBIND
+	DCESRV_INTERFACE_$uname\_UNBIND(dce_conn,iface);
+#else
+	return;
+#endif
 }
 
-static NTSTATUS $name\_op_dispatch(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, void *r)
+static NTSTATUS $name\__op_dispatch(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, void *r)
 {
 	uint16 opnum = dce_call->pkt.u.request.opnum;
 
@@ -61,9 +69,9 @@ static NTSTATUS $name\_op_dispatch(struct dcesrv_call_state *dce_call, TALLOC_CT
 
 static const struct dcesrv_interface $name\_interface = {
 	&dcerpc_table_$name,
-	$name\_op_bind,
-	$name\_op_unbind,
-	$name\_op_dispatch
+	$name\__op_bind,
+	$name\__op_unbind,
+	$name\__op_dispatch
 };
 
 ";
@@ -88,7 +96,7 @@ sub Boilerplate_Ep_Server($)
 	}
 
 	pidl "
-static NTSTATUS $name\_op_init_server(struct dcesrv_context *dce_ctx, const struct dcesrv_endpoint_server *ep_server)
+static NTSTATUS $name\__op_init_server(struct dcesrv_context *dce_ctx, const struct dcesrv_endpoint_server *ep_server)
 {
 	int i;
 
@@ -106,7 +114,7 @@ static NTSTATUS $name\_op_init_server(struct dcesrv_context *dce_ctx, const stru
 	return NT_STATUS_OK;
 }
 
-static BOOL $name\_op_interface_by_uuid(struct dcesrv_interface *iface, const char *uuid, uint32 if_version)
+static BOOL $name\__op_interface_by_uuid(struct dcesrv_interface *iface, const char *uuid, uint32 if_version)
 {
 	if ($name\_interface.ndr->if_version == if_version &&
 		strcmp($name\_interface.ndr->uuid, uuid)==0) {
@@ -117,7 +125,7 @@ static BOOL $name\_op_interface_by_uuid(struct dcesrv_interface *iface, const ch
 	return False;
 }
 
-static BOOL $name\_op_interface_by_name(struct dcesrv_interface *iface, const char *name)
+static BOOL $name\__op_interface_by_name(struct dcesrv_interface *iface, const char *name)
 {
 	if (strcmp($name\_interface.ndr->name, name)==0) {
 		memcpy(iface,&$name\_interface, sizeof(*iface));
@@ -136,10 +144,10 @@ NTSTATUS dcerpc_$name\_init(void)
 	ep_server.name = \"$name\";
 
 	/* fill in all the operations */
-	ep_server.init_server = $name\_op_init_server;
+	ep_server.init_server = $name\__op_init_server;
 
-	ep_server.interface_by_uuid = $name\_op_interface_by_uuid;
-	ep_server.interface_by_name = $name\_op_interface_by_name;
+	ep_server.interface_by_uuid = $name\__op_interface_by_uuid;
+	ep_server.interface_by_name = $name\__op_interface_by_name;
 
 	/* register ourselves with the DCERPC subsystem. */
 	ret = register_backend(\"dcerpc\", &ep_server);
