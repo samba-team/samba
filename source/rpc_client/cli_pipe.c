@@ -95,7 +95,7 @@ static BOOL rpc_read(struct cli_state *cli, int pipe_idx, prs_struct *rdata, uin
 		if (size > (size_t)data_to_read)
 			size = (size_t)data_to_read;
 
-		num_read = (int)cli_read(cli, cli->nt_pipe_fnum, pdata, (off_t)stream_offset, size);
+		num_read = (int)cli_read(cli, cli->nt_pipe_fnum[pipe_idx], pdata, (off_t)stream_offset, size);
 
 		DEBUG(5,("rpc_read: num_read = %d, read offset: %d, to read: %d\n",
 		          num_read, stream_offset, data_to_read));
@@ -416,9 +416,9 @@ static BOOL rpc_api_pipe(struct cli_state *cli, int pipe_idx, prs_struct *data, 
 	/* Create setup parameters - must be in native byte order. */
 
 	setup[0] = TRANSACT_DCERPCCMD; 
-	setup[1] = cli->nt_pipe_fnum; /* Pipe file handle. */
+	setup[1] = cli->nt_pipe_fnum[pipe_idx]; /* Pipe file handle. */
 
-	DEBUG(5,("rpc_api_pipe: fnum:%x\n", (int)cli->nt_pipe_fnum));
+	DEBUG(5,("rpc_api_pipe: fnum:%x\n", (int)cli->nt_pipe_fnum[pipe_idx]));
 
 	/* Send the RPC request and receive a response.  For short RPC
 	   calls (about 1024 bytes or so) the RPC request and response
@@ -442,7 +442,7 @@ static BOOL rpc_api_pipe(struct cli_state *cli, int pipe_idx, prs_struct *data, 
 
 	if (prdata == NULL) {
 		DEBUG(0,("rpc_api_pipe: pipe %x failed to return data.\n",
-			(int)cli->nt_pipe_fnum));
+			(int)cli->nt_pipe_fnum[pipe_idx]));
 		return False;
 	}
 
@@ -470,7 +470,7 @@ static BOOL rpc_api_pipe(struct cli_state *cli, int pipe_idx, prs_struct *data, 
 	}
 
 	if (rhdr.pkt_type == RPC_BINDNACK) {
-		DEBUG(3, ("Bind NACK received on pipe %x!\n", (int)cli->nt_pipe_fnum));
+		DEBUG(3, ("Bind NACK received on pipe %x!\n", (int)cli->nt_pipe_fnum[pipe_idx]));
 		prs_mem_free(rdata);
 		return False;
 	}
@@ -485,7 +485,7 @@ static BOOL rpc_api_pipe(struct cli_state *cli, int pipe_idx, prs_struct *data, 
 	}
 
 	if (rhdr.pkt_type != expected_pkt_type) {
-		DEBUG(3, ("Connection to pipe %x got an unexpected RPC packet type - %d, not %d\n", (int)cli->nt_pipe_fnum, rhdr.pkt_type, expected_pkt_type));
+		DEBUG(3, ("Connection to pipe %x got an unexpected RPC packet type - %d, not %d\n", (int)cli->nt_pipe_fnum[pipe_idx], rhdr.pkt_type, expected_pkt_type));
 		prs_mem_free(rdata);
 		return False;
 	}
@@ -557,7 +557,7 @@ static BOOL rpc_api_pipe(struct cli_state *cli, int pipe_idx, prs_struct *data, 
 		prs_init(&hps, 0, cli->mem_ctx, UNMARSHALL);
 		prs_give_memory(&hps, hdr_data, sizeof(hdr_data), False);
 
-		num_read = cli_read(cli, cli->nt_pipe_fnum, hdr_data, 0, RPC_HEADER_LEN+RPC_HDR_RESP_LEN);
+		num_read = cli_read(cli, cli->nt_pipe_fnum[pipe_idx], hdr_data, 0, RPC_HEADER_LEN+RPC_HDR_RESP_LEN);
 		if (cli_is_dos_error(cli)) {
                         cli_dos_error(cli, &eclass, &ecode);
                         if (eclass != ERRDOS && ecode != ERRmoredata) {
@@ -1093,7 +1093,7 @@ BOOL rpc_api_pipe_req(struct cli_state *cli, int pipe_idx, uint8 op_num,
 			ret = rpc_api_pipe(cli, pipe_idx, &outgoing_packet, 
 					   rdata, RPC_RESPONSE);
 		else {
-			cli_write(cli, cli->nt_pipe_fnum, 0x0008,
+			cli_write(cli, cli->nt_pipe_fnum[pipe_idx], 0x0008,
 				   prs_data_p(&outgoing_packet),
 				   data_sent, data_len);
 		}
@@ -1126,14 +1126,14 @@ static BOOL rpc_pipe_set_hnd_state(struct cli_state *cli, int pipe_idx, const ch
 		return False;
 
 	DEBUG(5,("Set Handle state Pipe[%x]: %s - device state:%x\n",
-	cli->nt_pipe_fnum, pipe_name, device_state));
+	cli->nt_pipe_fnum[pipe_idx], pipe_name, device_state));
 
 	/* create parameters: device state */
 	SSVAL(param, 0, device_state);
 
 	/* create setup parameters. */
 	setup[0] = 0x0001; 
-	setup[1] = cli->nt_pipe_fnum; /* pipe file handle.  got this from an SMBOpenX. */
+	setup[1] = cli->nt_pipe_fnum[pipe_idx]; /* pipe file handle.  got this from an SMBOpenX. */
 
 	/* send the data on \PIPE\ */
 	if (cli_api_pipe(cli, "\\PIPE\\",
@@ -1289,7 +1289,7 @@ static BOOL rpc_send_auth_reply(struct cli_state *cli, int pipe_idx, prs_struct 
 		return False;
 	}
 
-	if ((ret = cli_write(cli, cli->nt_pipe_fnum, 0x8, prs_data_p(&rpc_out), 
+	if ((ret = cli_write(cli, cli->nt_pipe_fnum[pipe_idx], 0x8, prs_data_p(&rpc_out), 
 			0, (size_t)prs_offset(&rpc_out))) != (ssize_t)prs_offset(&rpc_out)) {
 		DEBUG(0,("rpc_send_auth_reply: cli_write failed. Return was %d\n", (int)ret));
 		prs_mem_free(&rpc_out);
@@ -1316,7 +1316,7 @@ static BOOL rpc_pipe_bind(struct cli_state *cli, int pipe_idx, const char *my_na
 	if ( (pipe_idx < 0) || (pipe_idx >= PI_MAX_PIPES) )
 		return False;
 
-	DEBUG(5,("Bind RPC Pipe[%x]: %s\n", cli->nt_pipe_fnum, pipe_names[pipe_idx].client_pipe));
+	DEBUG(5,("Bind RPC Pipe[%x]: %s\n", cli->nt_pipe_fnum[pipe_idx], pipe_names[pipe_idx].client_pipe));
 
 	if (!valid_pipe_name(pipe_idx, &abstract, &transfer))
 		return False;
@@ -1439,7 +1439,7 @@ BOOL cli_nt_session_open(struct cli_state *cli, const int pipe_idx)
 	/* At the moment we can't have more than one pipe open over
            a cli connection. )-: */
 
-	SMB_ASSERT(cli->nt_pipe_fnum == 0);
+	SMB_ASSERT(cli->nt_pipe_fnum[pipe_idx] == 0);
 	
 	/* The pipe index must fall within our array */
 
@@ -1452,7 +1452,7 @@ BOOL cli_nt_session_open(struct cli_state *cli, const int pipe_idx)
 			return False;
 		}
 
-		cli->nt_pipe_fnum = (uint16)fnum;
+		cli->nt_pipe_fnum[pipe_idx] = (uint16)fnum;
 	} else {
 		if ((fnum = cli_open(cli, pipe_names[pipe_idx].client_pipe, O_CREAT|O_RDWR, DENY_NONE)) == -1) {
 			DEBUG(1,("cli_nt_session_open: cli_open failed on pipe %s to machine %s.  Error was %s\n",
@@ -1460,14 +1460,14 @@ BOOL cli_nt_session_open(struct cli_state *cli, const int pipe_idx)
 			return False;
 		}
 
-		cli->nt_pipe_fnum = (uint16)fnum;
+		cli->nt_pipe_fnum[pipe_idx] = (uint16)fnum;
 
 		/**************** Set Named Pipe State ***************/
 		if (!rpc_pipe_set_hnd_state(cli, pipe_idx, pipe_names[pipe_idx].client_pipe, 0x4300)) {
 			DEBUG(0,("cli_nt_session_open: pipe hnd state failed.  Error was %s\n",
 				  cli_errstr(cli)));
-			cli_close(cli, cli->nt_pipe_fnum);
-			cli->nt_pipe_fnum = 0;
+			cli_close(cli, cli->nt_pipe_fnum[pipe_idx]);
+			cli->nt_pipe_fnum[pipe_idx] = 0;
 			return False;
 		}
 	}
@@ -1477,8 +1477,8 @@ BOOL cli_nt_session_open(struct cli_state *cli, const int pipe_idx)
 	if (!rpc_pipe_bind(cli, pipe_idx, global_myname())) {
 		DEBUG(2,("cli_nt_session_open: rpc bind to %s failed\n",
 			 get_pipe_name_from_index(pipe_idx)));
-		cli_close(cli, cli->nt_pipe_fnum);
-		cli->nt_pipe_fnum = 0;
+		cli_close(cli, cli->nt_pipe_fnum[pipe_idx]);
+		cli->nt_pipe_fnum[pipe_idx] = 0;
 		return False;
 	}
 
@@ -1554,7 +1554,7 @@ NTSTATUS cli_nt_establish_netlogon(struct cli_state *cli, int sec_chan,
 	memcpy(cli->auth_info.sess_key, cli->sess_key,
 	       sizeof(cli->auth_info.sess_key));
 
-	cli->saved_netlogon_pipe_fnum = cli->nt_pipe_fnum;
+	cli->saved_netlogon_pipe_fnum = cli->nt_pipe_fnum[PI_NETLOGON];
 
 	cli->pipe_auth_flags = AUTH_PIPE_NETSEC;
 	cli->pipe_auth_flags |= AUTH_PIPE_SIGN;
@@ -1574,7 +1574,7 @@ NTSTATUS cli_nt_establish_netlogon(struct cli_state *cli, int sec_chan,
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 		
-		cli->nt_pipe_fnum = (uint16)fnum;
+		cli->nt_pipe_fnum[PI_NETLOGON] = (uint16)fnum;
 	} else {
 		if ((fnum = cli_open(cli, PIPE_NETLOGON,
 				     O_CREAT|O_RDWR, DENY_NONE)) == -1) {
@@ -1585,20 +1585,20 @@ NTSTATUS cli_nt_establish_netlogon(struct cli_state *cli, int sec_chan,
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 
-		cli->nt_pipe_fnum = (uint16)fnum;
+		cli->nt_pipe_fnum[PI_NETLOGON] = (uint16)fnum;
 
 		/**************** Set Named Pipe State ***************/
 		if (!rpc_pipe_set_hnd_state(cli, PI_NETLOGON, PIPE_NETLOGON, 0x4300)) {
 			DEBUG(0,("Pipe hnd state failed.  Error was %s\n",
 				  cli_errstr(cli)));
-			cli_close(cli, cli->nt_pipe_fnum);
+			cli_close(cli, cli->nt_pipe_fnum[PI_NETLOGON]);
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
 	
 	if (!rpc_pipe_bind(cli, PI_NETLOGON, global_myname())) {
 		DEBUG(2,("rpc bind to %s failed\n", PIPE_NETLOGON));
-		cli_close(cli, cli->nt_pipe_fnum);
+		cli_close(cli, cli->nt_pipe_fnum[PI_NETLOGON]);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -1645,8 +1645,8 @@ NTSTATUS cli_nt_setup_netsec(struct cli_state *cli, int sec_chan, int auth_flags
 	memcpy(cli->auth_info.sess_key, cli->sess_key,
 	       sizeof(cli->auth_info.sess_key));
 
-	cli->saved_netlogon_pipe_fnum = cli->nt_pipe_fnum;
-	cli->nt_pipe_fnum = 0;
+	cli->saved_netlogon_pipe_fnum = cli->nt_pipe_fnum[PI_NETLOGON];
+	cli->nt_pipe_fnum[PI_NETLOGON] = 0;
 
 	/* doing schannel, not per-user auth */
 	cli->pipe_auth_flags = auth_flags;
