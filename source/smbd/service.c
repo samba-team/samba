@@ -533,7 +533,7 @@ connection_struct *make_connection(char *service, DATA_BLOB password,
 		
 	conn->nt_user_token = create_nt_token(conn->uid, conn->gid, 
 					      conn->ngroups, conn->groups,
-					      guest);
+					      guest, NULL);
 
 	/*
 	 * New code to check if there's a share security descripter

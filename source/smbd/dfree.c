@@ -121,7 +121,7 @@ static SMB_BIG_UINT disk_free(const char *path, BOOL small_query,
 	} else
 		sys_fsusage(path, dfree, dsize);
 
-	if (disk_quotas((char *)path, &bsize_q, &dfree_q, &dsize_q)) {
+	if (disk_quotas(path, &bsize_q, &dfree_q, &dsize_q)) {
 		(*bsize) = bsize_q;
 		(*dfree) = MIN(*dfree,dfree_q);
 		(*dsize) = MIN(*dsize,dsize_q);

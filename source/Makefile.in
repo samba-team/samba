@@ -399,7 +399,7 @@ WINBINDD_OBJ1 = \
 
 NECESSARY_BECAUSE_SAMBA_DEPENDENCIES_ARE_SO_BROKEN_OBJ = \
 		libsmb/domain_client_validate.o smbd/auth_util.o \
-		rpc_client/cli_netlogon.o rpc_client/cli_login.o 
+		rpc_client/cli_netlogon.o rpc_client/cli_login.o
 
 WINBINDD_OBJ = \
 		$(WINBINDD_OBJ1) $(NOPROTO_OBJ) $(PASSDB_OBJ) \

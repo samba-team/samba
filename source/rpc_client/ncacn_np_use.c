@@ -74,7 +74,7 @@ static BOOL ncacn_np_establish_connection(struct ncacn_np *cli,
                 return False;
         }
         /* if (!cli_nt_session_open(cli->smb, pipe_name, &cli->fnum))  by JERRY */
-        if (!cli_nt_session_open(cli->smb, (char *)pipe_name))
+        if (!cli_nt_session_open(cli->smb, pipe_name))
         {
                 cli_net_use_del(srv_name, ntc, False, NULL);
                 return False;
@@ -328,19 +328,16 @@ static struct ncacn_np_use *ncacn_np_find(const char *srv_name,
                         continue;
                 }
                 if (!reuse
-                    && !pwd_compare((struct pwd_info *)&usr_creds->pwd, &c->cli->smb->pwd))
+                    && !pwd_compare(&usr_creds->pwd, &c->cli->smb->pwd))
                 {
                         DEBUG(100, ("password doesn't match\n"));
                         continue;
                 }
                 if (usr_creds->domain[0] == 0)
-                {
                         return c;
-                }
+
                 if (strequal(usr_creds->domain, c->cli->smb->domain))
-                {
                         return c;
-                }
         }
 
         return NULL;

@@ -352,25 +352,41 @@ NTSTATUS domain_client_validate(const auth_usersupplied_info *user_info,
 		}
 	}
 
-        /* Store the user group information in the server_info returned to
-           the caller. */
+	/* Store the user group information in the server_info returned to the caller. */
 	
-	if (NT_STATUS_IS_OK(status)) {
-		if (((*server_info)->group_rids = malloc(info3.num_groups2 *
-						      sizeof(uint32))) == NULL) {
-			DEBUG(1, ("out of memory allocating rid group membership\n"));
+	if (NT_STATUS_IS_OK(status) && (info3.num_groups2 != 0)) {
+		DOM_SID domain_sid;
+		int i;
+		NT_USER_TOKEN *ptok;
+		auth_serversupplied_info *pserver_info = *server_info;
+
+		if ((pserver_info->ptok = malloc( sizeof(NT_USER_TOKEN) ) ) == NULL) {
+			DEBUG(0, ("domain_client_validate: out of memory allocating rid group membership\n"));
 			status = NT_STATUS_NO_MEMORY;
 			free_server_info(server_info);
-		} else {
-			int i;
-			
-			(*server_info)->n_rids = info3.num_groups2;
-			
-			for (i = 0; i < (*server_info)->n_rids; i++) {
-				(*server_info)->group_rids[i] = info3.gids[i].g_rid;
-				DEBUG(5, ("** adding group rid 0x%x\n",
-					  info3.gids[i].g_rid));
-			}
+			goto done;
+		}
+
+		ptok = pserver_info->ptok;
+		ptok->num_sids = (size_t)info3.num_groups2;
+
+		if ((ptok->user_sids = (DOM_SID *)malloc( sizeof(DOM_SID) * ptok->num_sids )) == NULL) {
+			DEBUG(0, ("domain_client_validate: Out of memory allocating group SIDS\n"));
+			status = NT_STATUS_NO_MEMORY;
+			free_server_info(server_info);
+			goto done;
+		}
+ 
+		if (!secrets_fetch_domain_sid(lp_workgroup(), &domain_sid)) {
+			DEBUG(0, ("domain_client_validate: unable to fetch domain sid.\n"));
+			status = NT_STATUS_NO_MEMORY;
+			free_server_info(server_info);
+			goto done;
+		}
+ 
+		for (i = 0; i < ptok->num_sids; i++) {
+			sid_copy(&ptok->user_sids[i], &domain_sid);
+			sid_append_rid(&ptok->user_sids[i], info3.gids[i].g_rid);
 		}
 	}
 
@@ -389,6 +405,8 @@ NTSTATUS domain_client_validate(const auth_usersupplied_info *user_info,
 		}
 	}
 #endif /* 0 */
+
+  done:
 
 	/* Note - once the cli stream is shutdown the mem_ctx used
 	   to allocate the other_sids and gids structures has been deleted - so

@@ -77,10 +77,9 @@ typedef struct serversupplied_info
 	int n_groups;
 	gid_t *groups;
 
-        /* NT group information taken from the info3 structure */
+	/* NT group information taken from the info3 structure */
 
-        int n_rids;
-        uint32 *group_rids;
+	NT_USER_TOKEN *ptok;
 	
 	uchar session_key[16];
 	

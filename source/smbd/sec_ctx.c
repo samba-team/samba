@@ -169,46 +169,6 @@ int get_current_groups(int *p_ngroups, gid_t **p_groups)
 }
 
 /****************************************************************************
- Delete a SID token.
-****************************************************************************/
-
-void delete_nt_token(NT_USER_TOKEN **pptoken)
-{
-    if (*pptoken) {
-		NT_USER_TOKEN *ptoken = *pptoken;
-        SAFE_FREE( ptoken->user_sids );
-        ZERO_STRUCTP(ptoken);
-    }
-    SAFE_FREE(*pptoken);
-}
-
-/****************************************************************************
- Duplicate a SID token.
-****************************************************************************/
-
-NT_USER_TOKEN *dup_nt_token(NT_USER_TOKEN *ptoken)
-{
-	NT_USER_TOKEN *token;
-
-	if (!ptoken)
-		return NULL;
-
-    if ((token = (NT_USER_TOKEN *)malloc( sizeof(NT_USER_TOKEN) ) ) == NULL)
-        return NULL;
-
-    ZERO_STRUCTP(token);
-
-    if ((token->user_sids = (DOM_SID *)memdup( ptoken->user_sids, sizeof(DOM_SID) * ptoken->num_sids )) == NULL) {
-        SAFE_FREE(token);
-        return NULL;
-    }
-
-    token->num_sids = ptoken->num_sids;
-
-	return token;
-}
-
-/****************************************************************************
  Initialize the groups a user belongs to.
 ****************************************************************************/
 

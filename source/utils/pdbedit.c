@@ -79,10 +79,10 @@ static int print_sam_info (SAM_ACCOUNT *sam_pwent, BOOL verbosity, BOOL smbpwdst
 	
 	if (verbosity) {
 		printf ("username:       %s\n", sam_pwent->username);
-		printf ("user ID/Group:  %d/%d\n", sam_pwent->uid,
-						  sam_pwent->gid);
-		printf ("user RID/GRID:  %d/%d\n", sam_pwent->user_rid,
-						  sam_pwent->group_rid);
+		printf ("user ID/Group:  %u/%u\n", (unsigned int)sam_pwent->uid,
+						  (unsigned int)sam_pwent->gid);
+		printf ("user RID/GRID:  %u/%u\n", (unsigned int)sam_pwent->user_rid,
+						  (unsigned int)sam_pwent->group_rid);
 		printf ("Full Name:      %s\n", sam_pwent->full_name);
 		printf ("Home Directory: %s\n", sam_pwent->home_dir);
 		printf ("HomeDir Drive:  %s\n", sam_pwent->dir_drive);
