@@ -255,6 +255,13 @@ kadmind_dispatch(void *kadm_handle, krb5_boolean initial,
 	    krb5_free_principal(context->context, princ);
 	    goto fail;
 	}
+	/* n_key_data will be squeezed into an int16_t below. */
+	if (n_key_data < 0 || n_key_data >= 1 << 16 ||
+	    n_key_data > UINT_MAX/sizeof(*key_data)) {
+	    ret = ERANGE;
+	    krb5_free_principal(context->context, princ);
+	    goto fail;
+	}
 
 	key_data = malloc (n_key_data * sizeof(*key_data));
 	if (key_data == NULL) {

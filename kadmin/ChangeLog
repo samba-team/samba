@@ -1,3 +1,8 @@
+2002-09-09  Jacques Vidrine  <nectar@kth.se>
+
+	* server.c (kadmind_dispatch): while decoding arguments for
+	kadm_chpass_with_key, sanity check the number of keys given
+
 2002-09-04  Johan Danielsson  <joda@pdc.kth.se>
 
 	* load.c (parse_generation): return if there is no generation
