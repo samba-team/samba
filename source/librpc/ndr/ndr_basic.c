@@ -1198,7 +1198,7 @@ NTSTATUS GUID_from_string(const char *s, struct GUID *guid)
 /*
   its useful to be able to display these in debugging messages
 */
-const char *GUID_string(TALLOC_CTX *mem_ctx, const struct GUID *guid)
+char *GUID_string(TALLOC_CTX *mem_ctx, const struct GUID *guid)
 {
 	return talloc_asprintf(mem_ctx, 
 			       "%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x",
@@ -1211,7 +1211,7 @@ const char *GUID_string(TALLOC_CTX *mem_ctx, const struct GUID *guid)
 			       guid->node[4], guid->node[5]);
 }
 
-const char *GUID_string2(TALLOC_CTX *mem_ctx, const struct GUID *guid)
+char *GUID_string2(TALLOC_CTX *mem_ctx, const struct GUID *guid)
 {
 	return talloc_asprintf(mem_ctx, 
 			       "{%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x}",
