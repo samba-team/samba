@@ -80,6 +80,10 @@ typedef short int16;
 typedef int int32;
 #endif
 
+#ifndef uint8
+typedef unsigned char uint8;
+#endif
+
 #ifndef uint16
 typedef unsigned short uint16;
 #endif
@@ -416,7 +420,7 @@ typedef struct gid_info
 
 } DOM_GID;
 
-/* RPC_HEADER - ms rpc header */
+/* RPC_HDR - ms rpc header */
 typedef struct rpc_hdr_info
 {
   uint8  major; /* 5 - RPC major version */
@@ -431,7 +435,7 @@ typedef struct rpc_hdr_info
   uint16 context_id; /* 0 - presentation context identifier */
   uint8  cancel_count; /* 0 - cancel count */
   uint8  reserved; /* 0 - reserved */
-} RPC_HEADER;
+} RPC_HDR;
 
 
 struct smb_passwd {

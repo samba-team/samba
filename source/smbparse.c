@@ -354,21 +354,32 @@ char* smb_io_gid(BOOL io, DOM_GID *gid, char *q, char *base, int align)
 	return q;
 }
 
-#if 0
 /*******************************************************************
-reads or writes a structure.
+reads or writes an RPC_HDR structure.
 ********************************************************************/
- char* smb_io_(BOOL io, *, char *q, char *base, int align)
+char* smb_io_rpc_hdr(BOOL io, RPC_HDR *rpc, char *q, char *base, int align)
 {
-	if (== NULL) return NULL;
+	if (rpc == NULL) return NULL;
 
-	q = align_offset(q, base, align);
-	
-	RW_IVAL(io, q, , 0); q += 4;
+	/* reserved should be zero: enforce it */
+	rpc->reserved = 0;
+
+	RW_CVAL(io, q, rpc->major, 0); q++;
+	RW_CVAL(io, q, rpc->minor, 0); q++;
+	RW_CVAL(io, q, rpc->pkt_type, 0); q++;
+	RW_CVAL(io, q, rpc->frag, 0); q++;
+	RW_IVAL(io, q, rpc->pack_type, 0); q += 4;
+	RW_SVAL(io, q, rpc->frag_len, 0); q += 2;
+	RW_SVAL(io, q, rpc->auth_len, 0); q += 2;
+	RW_IVAL(io, q, rpc->call_id, 0); q += 4;
+	RW_SVAL(io, q, rpc->alloc_hint, 0); q += 2;
+	RW_CVAL(io, q, rpc->context_id, 0); q++;
+	RW_CVAL(io, q, rpc->reserved, 0); q++;
 
 	return q;
 }
 
+#if 0
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
