@@ -51,7 +51,7 @@ utmpx_update(struct utmpx *ut, char *line, const char *user, const char *host)
 int
 utmpx_login(char *line, const char *user, const char *host)
 {
-    struct utmpx *ut;
+    struct utmpx *ut, save_ut;
     pid_t   mypid = getpid();
     int     ret = (-1);
 
@@ -69,7 +69,8 @@ utmpx_login(char *line, const char *user, const char *host)
 	    && (   ut->ut_type == INIT_PROCESS
 		|| ut->ut_type == LOGIN_PROCESS
 		|| ut->ut_type == USER_PROCESS)) {
-	    utmpx_update(ut, line, user, host);
+	    save_ut = *ut;
+	    utmpx_update(&save_ut, line, user, host);
 	    ret = 0;
 	    break;
 	}
