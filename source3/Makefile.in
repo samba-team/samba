@@ -635,7 +635,7 @@ WINBIND_NSS_PICOBJS = $(WINBIND_NSS_OBJ:.o=.@PICSUFFIX@) lib/snprintf.@PICSUFFIX
 POPT_OBJS=popt/findme.o popt/popt.o popt/poptconfig.o \
           popt/popthelp.o popt/poptparse.o
 
-TDBBACKUP_OBJ = tdb/tdbbackup.o tdb/tdbback.o $(TDBBASE_OBJ)
+TDBBACKUP_OBJ = tdb/tdbbackup.o tdb/tdbback.o lib/snprintf.o $(TDBBASE_OBJ)
 
 NTLM_AUTH_OBJ = utils/ntlm_auth.o $(LIBSAMBA_OBJ) $(POPT_LIB_OBJ) \
 		libsmb/asn1.o libsmb/spnego.o libsmb/clikrb5.o libads/kerberos.o \
