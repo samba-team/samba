@@ -138,7 +138,7 @@ sub start_flags($)
 	my $e = shift;
 	my $flags = util::has_property($e, "flag");
 	if (defined $flags) {
-		pidl "\t{ uint32 _flags_save_$e->{TYPE} = ndr->flags;\n";
+		pidl "\t{ uint32_t _flags_save_$e->{TYPE} = ndr->flags;\n";
 		pidl "\tndr->flags |= $flags;\n";
 	}
 }
@@ -299,7 +299,7 @@ sub ParseArrayPull($$$)
 
 		# non fixed arrays encode the size just before the array
 		pidl "\t{\n";
-		pidl "\t\tuint32 _array_size;\n";
+		pidl "\t\tuint32_t _array_size;\n";
 		pidl "\t\tNDR_CHECK(ndr_pull_uint32(ndr, &_array_size));\n";
 		if ($size =~ /r->in/) {
 			pidl "\t\tif (!(ndr->flags & LIBNDR_FLAG_REF_ALLOC) && _array_size != $size) {\n";
@@ -333,7 +333,7 @@ sub ParseArrayPull($$$)
 
 	if (my $length = util::has_property($e, "length_is")) {
 		$length = find_size_var($e, $length, $var_prefix);
-		pidl "\t\tuint32 _offset, _length;\n";
+		pidl "\t\tuint32_t _offset, _length;\n";
 		pidl "\t\tNDR_CHECK(ndr_pull_uint32(ndr, &_offset));\n";
 		pidl "\t\tNDR_CHECK(ndr_pull_uint32(ndr, &_length));\n";
 		pidl "\t\tif (_offset != 0) return ndr_pull_error(ndr, NDR_ERR_OFFSET, \"Bad array offset 0x%08x\", _offset);\n";
@@ -777,7 +777,7 @@ sub ParseStructPull($)
 	my $e = $struct->{ELEMENTS}[-1];
 	if (defined $e->{ARRAY_LEN} && $e->{ARRAY_LEN} eq "*") {
 		$conform_e = $e;
-		pidl "\tuint32 _conformant_size;\n";
+		pidl "\tuint32_t _conformant_size;\n";
 		$conform_e->{CONFORMANT_SIZE} = "_conformant_size";
 	}
 
@@ -785,7 +785,7 @@ sub ParseStructPull($)
 	foreach my $e (@{$struct->{ELEMENTS}}) {
 		if (util::need_wire_pointer($e) &&
 		    !util::has_property($e, "relative")) {
-			pidl "\tuint32 _ptr_$e->{NAME};\n";
+			pidl "\tuint32_t _ptr_$e->{NAME};\n";
 		}
 	}
 
@@ -935,7 +935,7 @@ sub ParseUnionPull($)
 		if ($el->{TYPE} eq "UNION_ELEMENT") {
 			my $e2 = $el->{DATA};
 			if ($e2->{POINTERS}) {
-				pidl "\t\tuint32 _ptr_$e2->{NAME};\n";
+				pidl "\t\tuint32_t _ptr_$e2->{NAME};\n";
 			}
 			ParseElementPullScalar($el->{DATA}, "r->", "NDR_SCALARS");
 		}
@@ -1033,7 +1033,7 @@ sub ParseTypedefPush($)
 	}
 
 	if ($e->{DATA}->{TYPE} eq "UNION") {
-		pidl $static . "NTSTATUS ndr_push_$e->{NAME}(struct ndr_push *ndr, int ndr_flags, uint16 level, union $e->{NAME} *r)";
+		pidl $static . "NTSTATUS ndr_push_$e->{NAME}(struct ndr_push *ndr, int ndr_flags, uint16_t level, union $e->{NAME} *r)";
 		pidl "\n{\n";
 		ParseTypePush($e->{DATA});
 		pidl "\treturn NT_STATUS_OK;\n";
@@ -1063,7 +1063,7 @@ sub ParseTypedefPull($)
 	}
 
 	if ($e->{DATA}->{TYPE} eq "UNION") {
-		pidl $static . "NTSTATUS ndr_pull_$e->{NAME}(struct ndr_pull *ndr, int ndr_flags, uint16 level, union $e->{NAME} *r)";
+		pidl $static . "NTSTATUS ndr_pull_$e->{NAME}(struct ndr_pull *ndr, int ndr_flags, uint16_t level, union $e->{NAME} *r)";
 		pidl "\n{\n";
 		ParseTypePull($e->{DATA});
 		pidl "\treturn NT_STATUS_OK;\n";
@@ -1087,7 +1087,7 @@ sub ParseTypedefPrint($)
 	}
 
 	if ($e->{DATA}->{TYPE} eq "UNION") {
-		pidl "void ndr_print_$e->{NAME}(struct ndr_print *ndr, const char *name, uint16 level, union $e->{NAME} *r)";
+		pidl "void ndr_print_$e->{NAME}(struct ndr_print *ndr, const char *name, uint16_t level, union $e->{NAME} *r)";
 		pidl "\n{\n";
 		pidl "\tndr_print_union(ndr, name, level, \"$e->{NAME}\");\n";
 		ParseTypePrint($e->{DATA});
@@ -1248,7 +1248,7 @@ sub ParseFunctionPull($)
 	# declare any internal pointers we need
 	foreach my $e (@{$fn->{DATA}}) {
 		if (util::need_wire_pointer($e)) {
-			pidl "\tuint32 _ptr_$e->{NAME};\n";
+			pidl "\tuint32_t _ptr_$e->{NAME};\n";
 		}
 	}
 
