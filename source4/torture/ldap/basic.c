@@ -82,7 +82,7 @@ static BOOL test_search_rootDSE(struct ldap_connection *conn, char **basedn)
 	conn->searchid = 0;
 	conn->next_msgid = 30;
 
-	msg = new_ldap_message();
+	msg = new_ldap_message(conn);
 	if (!msg) {
 		return False;
 	}
@@ -147,7 +147,7 @@ static BOOL test_compare_sasl(struct ldap_connection *conn, const char *basedn)
 
 	conn->next_msgid = 55;
 
-	msg = new_ldap_message();
+	msg = new_ldap_message(conn);
 	if (!msg) {
 		return False;
 	}
@@ -200,7 +200,7 @@ BOOL torture_ldap_basic(void)
 
 	url = talloc_asprintf(mem_ctx, "ldap://%s/", host);
 
-	status = torture_ldap_connection(&conn, url, userdn, secret);
+	status = torture_ldap_connection(mem_ctx, &conn, url, userdn, secret);
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}
