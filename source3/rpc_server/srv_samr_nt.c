@@ -3365,7 +3365,7 @@ NTSTATUS _samr_add_aliasmem(pipes_struct *p, SAMR_Q_ADD_ALIASMEM *q_u, SAMR_R_AD
 	} else {
 		if (sid_compare(&alias_sid, &global_sid_Builtin)>0) {
 			DEBUG(10, ("adding member on BUILTIN SID\n"));
-			if( !get_local_group_from_sid(&alias_sid, &map))
+			if( !get_builtin_group_from_sid(&alias_sid, &map))
 				return NT_STATUS_NO_SUCH_ALIAS;
 
 		} else
