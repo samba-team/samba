@@ -951,8 +951,9 @@ BOOL cli_chkpath(struct cli_state *cli, const char *path)
 	char *p;
 	
 	pstrcpy(path2,path);
-	trim_string(path2,NULL,"\\");
-	if (!*path2) *path2 = '\\';
+	trim_char(path2,'\0','\\');
+	if (!*path2)
+		*path2 = '\\';
 	
 	memset(cli->outbuf,'\0',smb_size);
 	set_message(cli->outbuf,0,0,True);

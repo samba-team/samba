@@ -66,11 +66,12 @@ void stat_cache_add( const char *full_orig_name, const char *orig_translated_pat
 		return;
 
 	/*
-	 * Don't cache trivial valid directory entries.
+	 * Don't cache trivial valid directory entries such as . and ..
 	 */
 
-	if((*full_orig_name == '\0') || (strcmp(full_orig_name, ".") == 0) ||
-			(strcmp(full_orig_name, "..") == 0))
+	if((*full_orig_name == '\0') || (full_orig_name[0] == '.' && 
+				((full_orig_name[1] == '\0') ||
+				 (full_orig_name[1] == '.' && full_orig_name[1] == '\0'))))
 		return;
 
 	/*

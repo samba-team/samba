@@ -1558,8 +1558,8 @@ static char *lp_string(const char *s)
 		lp_talloc = talloc_init("lp_talloc");
 
 	tmpstr = alloc_sub_basic(current_user_info.smb_name, s);
-	if (trim_string(tmpstr, "\"", "\"")) {
-		if (strchr(tmpstr,'"') != NULL) {
+	if (trim_char(tmpstr, '\"', '\"')) {
+		if (strchr(tmpstr,'\"') != NULL) {
 			SAFE_FREE(tmpstr);
 			tmpstr = alloc_sub_basic(current_user_info.smb_name,s);
 		}
@@ -3112,7 +3112,7 @@ BOOL lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 			pstr_sprintf(param_key, "%s:", pszParmName);
 			slen = strlen(param_key);
 			pstrcat(param_key, sep+1);
-			trim_string(param_key+slen, " ", " ");
+			trim_char(param_key+slen, ' ', ' ');
 			not_added = True;
 			data = (snum < 0) ? Globals.param_opt : 
 				ServicePtrs[snum]->param_opt;

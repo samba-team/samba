@@ -261,7 +261,7 @@ BOOL init_names(void)
 	}			
 
 	fstrcpy( local_machine, global_myname() );
-	trim_string( local_machine, " ", " " );
+	trim_char( local_machine, ' ', ' ' );
 	p = strchr( local_machine, ' ' );
 	if (p)
 		*p = 0;
@@ -603,68 +603,6 @@ void unix_clean_name(char *s)
 	}  
 
 	trim_string(s,NULL,"/..");
-}
-
-/*******************************************************************
- Convert '\' to '/'.
- Reduce a file name, removing or reducing /../ , /./ , // elements.
- Remove also any trailing . and /
- Return a new allocated string.
-********************************************************************/
-
-smb_ucs2_t *unix_clean_path(const smb_ucs2_t *s)
-{
-	smb_ucs2_t *ns;
-	smb_ucs2_t *p, *r, *t;
-
-	DEBUG(3, ("unix_clean_path\n")); /*  [%unicode]\n")); */
-	if(!s)
-		return NULL;
-
-	/* convert '\' to '/' */
-	ns = strdup_w(s);
-	if (!ns)
-		return NULL;
-	unix_format_w(ns);
-
-	/* remove all double slashes */
-	p = ns;
-	ns = all_string_sub_wa(p, "//", "/");
-	SAFE_FREE(p);
-	if (!ns)
-		return NULL;
-
-	/* remove any /./ */
-	p = ns;
-	ns = all_string_sub_wa(p, "/./", "/");
-	SAFE_FREE(p);
-	if (!ns)
-		return NULL;
-
-	/* reduce any /../ */
-	t = ns;
-	while (*t && (r = strstr_wa(t, "/.."))) {
-		t = &(r[3]);
-		if (*t == UCS2_CHAR('/') || *t == 0) {
-			*r = 0;
-			p = strrchr_w(ns, UCS2_CHAR('/'));
-			if (!p)
-				p = ns;
-			if (*t == 0)
-				*p = 0;
-			else
-				memmove(p, t, (strlen_w(t) + 1) * sizeof(smb_ucs2_t));
-			t = p;
-		}
-	}
-
-	/* remove any leading ./ trailing /. */
-	trim_string_wa(ns, "./", "/.");
-
-	/* remove any leading and trailing / */
-	trim_string_wa(ns, "/", "/");
-
-	return ns;
 }
 
 /****************************************************************************
@@ -2205,7 +2143,7 @@ char *lock_path(const char *name)
 	static pstring fname;
 
 	pstrcpy(fname,lp_lockdir());
-	trim_string(fname,"","/");
+	trim_char(fname,'\0','/');
 	
 	if (!directory_exist(fname,NULL))
 		mkdir(fname,0755);
@@ -2225,7 +2163,7 @@ char *pid_path(const char *name)
 	static pstring fname;
 
 	pstrcpy(fname,lp_piddir());
-	trim_string(fname,"","/");
+	trim_char(fname,'\0','/');
 
 	if (!directory_exist(fname,NULL))
 		mkdir(fname,0755);

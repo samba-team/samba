@@ -259,7 +259,7 @@ static int expect(int master, char *issue, char *expected)
 				/* Eat leading/trailing whitespace before match. */
 				pstring str;
 				pstrcpy( str, buffer);
-				trim_string( str, " ", " ");
+				trim_char( str, ' ', ' ');
 
 				if ((match = (unix_wild_match(expected, str) == 0)))
 					timeout = 200;

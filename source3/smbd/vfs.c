@@ -233,10 +233,10 @@ BOOL vfs_init_custom(connection_struct *conn, const char *vfs_object)
 	if (p) {
 		*p = 0;
 		module_param = p+1;
-		trim_string(module_param, " ", " ");
+		trim_char(module_param, ' ', ' ');
 	}
 
-	trim_string(module_name, " ", " ");
+	trim_char(module_name, ' ', ' ');
 
 	/* First, try to load the module with the new module system */
 	if((entry = vfs_find_backend_entry(module_name)) || 

@@ -879,9 +879,8 @@ size_t pull_ucs2(const void *base_ptr, char *dest, const void *src, size_t dest_
 	}
 
 	if (flags & STR_TERMINATE) {
-		if (src_len == (size_t)-1) {
-			src_len = strlen_w(src)*2 + 2;
-		} else {
+		/* src_len -1 is the default for null terminated strings. */
+		if (src_len != (size_t)-1) {
 			size_t len = strnlen_w(src, src_len/2);
 			if (len < src_len/2)
 				len++;
@@ -1051,4 +1050,3 @@ size_t align_string(const void *base_ptr, const char *p, int flags)
 	}
 	return 0;
 }
-
