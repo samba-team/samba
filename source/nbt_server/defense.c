@@ -100,7 +100,7 @@ void nbtd_request_defense(struct nbt_name_socket *nbtsock,
 	name = &packet->questions[0].name;
 
 	iname = nbtd_find_iname(iface, name, NBT_NM_ACTIVE);
-	if (iname != NULL) {
+	if (iname != NULL && !(iname->nb_flags & NBT_NM_GROUP)) {
 		DEBUG(2,("Defending name %s<%02x> on %s against %s\n",
 			 name->name, name->type, iface->bcast_address, src_address));
 		nbtd_name_defense_reply(nbtsock, packet, src_address, src_port,
