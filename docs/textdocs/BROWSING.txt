@@ -1,5 +1,5 @@
 Author/s:	Many (Thanks to Luke, Jeremy, Andrew, etc.)
-Updated:	June 29, 1997
+Updated:	October 12, 1997
 Status:		Current - For VERY Advanced Users ONLY
 
 Summary: This describes how to configure Samba for improved browsing.
