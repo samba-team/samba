@@ -20,6 +20,8 @@
 
 #include "includes.h"
 
+#ifdef WITH_QUOTAS
+
 static SMB_BIG_UINT limit_nt2unix(SMB_BIG_UINT in, SMB_BIG_UINT bsize)
 {
 	SMB_BIG_UINT ret = (SMB_BIG_UINT)0;
@@ -257,3 +259,5 @@ void destroy_quota_handle(void **pqt_handle)
 
 	return;
 }
+
+#endif /* WITH_QUOTAS */
