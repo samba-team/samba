@@ -504,7 +504,7 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
         if (flags & AS_GUEST) 
           flags &= ~AS_USER;
         else
-          return(ERROR(ERRSRV,ERRinvnid));
+          return(ERROR(ERRSRV,ERRaccess));
       }
       /* this code is to work around a bug is MS client 3 without
          introducing a security hole - it needs to be able to do
