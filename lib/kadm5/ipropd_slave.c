@@ -345,7 +345,7 @@ main(int argc, char **argv)
     master = argv[0];
 
     pidfile (NULL);
-    krb5_openlog (context, "ipropd-master", &log_facility);
+    krb5_openlog (context, "ipropd-slave", &log_facility);
     krb5_set_warn_dest(context, log_facility);
 
     ret = krb5_kt_register(context, &hdb_kt_ops);
@@ -427,4 +427,4 @@ main(int argc, char **argv)
     }
     
     return 0;
-    }
+}
