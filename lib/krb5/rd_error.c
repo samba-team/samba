@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -53,4 +53,19 @@ krb5_rd_error(krb5_context context,
 	return ret;
     result->error_code += KRB5KDC_ERR_NONE;
     return 0;    
+}
+
+void
+krb5_free_error_contents (krb5_context context,
+			  krb5_error *error)
+{
+    free_KRB_ERROR(error);
+}
+
+void
+krb5_free_error (krb5_context context,
+		 krb5_error *error)
+{
+    krb5_free_error_contents (context, error);
+    free (error);
 }
