@@ -97,6 +97,9 @@ find_etype(hdb_entry *princ, krb5_enctype *etypes, unsigned len,
     for(i = 0; ret != 0 && i < len ; i++) {
 	Key *key = NULL;
 
+	if (krb5_enctype_is_disabled(context, etypes[i]))
+	    continue;
+
 	while (hdb_next_enctype2key(context, princ, etypes[i], &key) == 0) {
 	    if (key->key.keyvalue.length == 0) {
 		ret = KRB5KDC_ERR_NULL_KEY;
@@ -331,12 +334,15 @@ get_pa_etype_info(METHOD_DATA *md, hdb_entry *client,
 
     for(j = 0; j < etypes_len; j++) {
 	for(i = 0; i < client->keys.len; i++) {
-	    if(client->keys.val[i].key.keytype == etypes[j])
+	    if(client->keys.val[i].key.keytype == etypes[j]) {
+ 		if (krb5_enctype_is_disabled(context, etypes[j]))
+ 		    continue;
 		if((ret = make_etype_info_entry(&pa.val[n++], 
 						&client->keys.val[i])) != 0) {
 		    free_ETYPE_INFO(&pa);
 		    return ret;
 		}
+	    }
 	}
     }
     for(i = 0; i < client->keys.len; i++) {
@@ -344,6 +350,8 @@ get_pa_etype_info(METHOD_DATA *md, hdb_entry *client,
 	    if(client->keys.val[i].key.keytype == etypes[j])
 		goto skip;
 	}
+	if (krb5_enctype_is_disabled(context, client->keys.val[i].key.keytype))
+	    continue;
 	if((ret = make_etype_info_entry(&pa.val[n++], 
 					&client->keys.val[i])) != 0) {
 	    free_ETYPE_INFO(&pa);
@@ -399,6 +407,8 @@ make_etype_info2_entry(ETYPE_INFO2_ENTRY *ent, Key *key)
     } else
 	ent->salt = NULL;
 
+    ent->s2kparams = NULL;
+
     switch (key->key.keytype) {
 #ifdef ENABLE_AES
     case KEYTYPE_AES128:
@@ -416,7 +426,6 @@ make_etype_info2_entry(ETYPE_INFO2_ENTRY *ent, Key *key)
 	break;
 #endif
     default:
-	ent->s2kparams = NULL;
 	break;
     }
     return 0;
@@ -474,6 +483,8 @@ get_pa_etype_info2(METHOD_DATA *md, hdb_entry *client,
     for(j = 0; j < etypes_len; j++) {
 	for(i = 0; i < client->keys.len; i++) {
 	    if(client->keys.val[i].key.keytype == etypes[j]) {
+		if (krb5_enctype_is_disabled(context, etypes[j]))
+		    continue;
 		if((ret = make_etype_info2_entry(&pa.val[n++], 
 						 &client->keys.val[i])) != 0) {
 		    free_ETYPE_INFO2(&pa);
@@ -487,6 +498,8 @@ get_pa_etype_info2(METHOD_DATA *md, hdb_entry *client,
 	    if(client->keys.val[i].key.keytype == etypes[j])
 		goto skip;
 	}
+	if (krb5_enctype_is_disabled(context, client->keys.val[i].key.keytype))
+	    continue;
 	if((ret = make_etype_info2_entry(&pa.val[n++],
 					 &client->keys.val[i])) != 0) {
 	    free_ETYPE_INFO2(&pa);
@@ -730,6 +743,7 @@ as_rep(KDC_REQ *req,
 
 	    ret = pk_check_client(context, 
 				  client_princ, 
+				  client,
 				  pkp,
 				  &client_cert);
 	    if (ret) {
