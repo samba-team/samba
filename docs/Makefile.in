@@ -32,13 +32,14 @@ endif
 
 # Paths
 OUTPUTDIR = output
+ARCHIVEDIR = output/archive
 SRCDIR = @srcdir@
 MANDIR=$(OUTPUTDIR)/manpages
 EPSTOPDF = @EPSTOPDF@
-MANPROJDOC = manpages
-PROJDOC = projdoc
+MANPAGEDIR = manpages
+HOWTODIR = howto
 MAKEINDEX = @MAKEINDEX@
-IMAGEPROJDIR = $(PROJDOC)/imagefiles
+IMAGEPROJDIR = $(HOWTODIR)/imagefiles
 GUIDEDOC = guide
 EXAMPLESDIR = examples
 DEVDOC = devdoc
@@ -47,21 +48,21 @@ PSDIR = $(OUTPUTDIR)
 PDFDIR = $(OUTPUTDIR)
 DVIDIR = $(OUTPUTDIR)
 TXTDIR = $(OUTPUTDIR)/textdocs
-FAQPROJDOC = faq
+FAQHOWTODIR = faq
 FAQDIR = $(OUTPUTDIR)/faq
 HTMLDIR=$(OUTPUTDIR)/htmldocs
 PLUCKERDIR=$(OUTPUTDIR)/plucker
 
 # Lists of files to process
 LATEX_FIGURES = xslt/figures/caution.pdf xslt/figures/important.pdf xslt/figures/note.pdf xslt/figures/tip.pdf xslt/figures/warning.pdf
-MANPAGES_SOURCES = $(wildcard $(MANPROJDOC)/*.?.xml)
-MANPAGES = $(patsubst $(MANPROJDOC)/%.xml,$(MANDIR)/%,$(MANPAGES_SOURCES)) $(MANDIR)/smb.conf.5
-MANPAGES_HTML = $(patsubst $(MANPROJDOC)/%.xml,$(HTMLDIR)/%.html,$(MANPAGES_SOURCES)) $(HTMLDIR)/smb.conf.5.html
-MANPAGES_PLUCKER = $(patsubst $(MANPROJDOC)/%.xml,$(PLUCKERDIR)/%.pdb,$(MANPAGES_SOURCES)) $(PLUCKERDIR)/smb.conf.5.pdb
+MANPAGES_SOURCES = $(wildcard $(MANPAGEDIR)/*.?.xml)
+MANPAGES = $(patsubst $(MANPAGEDIR)/%.xml,$(MANDIR)/%,$(MANPAGES_SOURCES)) $(MANDIR)/smb.conf.5
+MANPAGES_HTML = $(patsubst $(MANPAGEDIR)/%.xml,$(HTMLDIR)/%.html,$(MANPAGES_SOURCES)) $(HTMLDIR)/smb.conf.5.html
+MANPAGES_PLUCKER = $(patsubst $(MANPAGEDIR)/%.xml,$(PLUCKERDIR)/%.pdb,$(MANPAGES_SOURCES)) $(PLUCKERDIR)/smb.conf.5.pdb
 
-PROJDOC_IMAGES_PNG = $(wildcard $(IMAGEPROJDIR)/*.png)
-PROJDOC_IMAGES_EPS=$(patsubst %.png,%.eps,$(wildcard $(IMAGEPROJDIR)/*.png))
-PROJDOC_DEPS = $(PROJDOC)/*.xml $(PROJDOC)/attributions.xml $(MANPROJDOC)/*.xml $(SMBDOTCONFDOC)/smb.conf.5.xml $(SMBDOTCONFDOC)/parameters.all.xml $(SMBDOTCONFDOC)/parameters.global.xml $(SMBDOTCONFDOC)/parameters.service.xml 
+HOWTODIR_IMAGES_PNG = $(wildcard $(IMAGEPROJDIR)/*.png)
+HOWTODIR_IMAGES_EPS=$(patsubst %.png,%.eps,$(wildcard $(IMAGEPROJDIR)/*.png))
+HOWTODIR_DEPS = $(HOWTODIR)/*.xml $(HOWTODIR)/attributions.xml $(MANPAGEDIR)/*.xml $(SMBDOTCONFDOC)/smb.conf.5.xml $(SMBDOTCONFDOC)/parameters.all.xml $(SMBDOTCONFDOC)/parameters.global.xml $(SMBDOTCONFDOC)/parameters.service.xml 
 DEVDOC_DEPS = $(DEVDOC)/*.xml $(DEVDOC)/attributions.xml
 
 all: 
@@ -101,7 +102,7 @@ txt: $(TXTDIR) $(TXTDIR)/Samba-HOWTO-Collection.txt $(TXTDIR)/Samba-Developers-G
 htmlman: $(HTMLDIR) $(MANPAGES_HTML) CSS
 
 htmlfaq: $(HTMLDIR) CSS
-	$(XSLTPROC) --stringparam base.dir "$(FAQDIR)/" --stringparam root.filename samba-faq xslt/html-chunk.xsl $(FAQPROJDOC)/sambafaq.xml
+	$(XSLTPROC) --stringparam base.dir "$(FAQDIR)/" --stringparam root.filename samba-faq xslt/html-chunk.xsl $(FAQHOWTODIR)/sambafaq.xml
 html-single: $(HTMLDIR) CSS $(HTMLDIR)/Samba-HOWTO-Collection.html  $(HTMLDIR)/Samba-Developers-Guide.html
 	@if [ ! -d $(HTMLDIR)/images/ ]; then \
 		mkdir $(HTMLDIR)/images/; \
@@ -122,7 +123,7 @@ tex: Samba-HOWTO-Collection.tex Samba-Developers-Guide.tex gpl.tex
 plucker: html-single htmlman htmlfaq $(PLUCKERDIR) $(MANPAGES_PLUCKER) $(PLUCKERDIR)/Samba-Developers-Guide.pdb $(PLUCKERDIR)/Samba-HOWTO-Collection.pdb
 	$(PLUCKERBUILD) -v -M2 --stayonhost  --noimages --zlib-compression -H file:$(FAQDIR)/samba-faq.html -f samba-faq -p $(PLUCKERDIR)
 
-Samba-HOWTO-Collection.xml: $(PROJDOC)/samba-doc.xml $(PROJDOC_DEPS)
+Samba-HOWTO-Collection.xml: $(HOWTODIR)/index.xml $(HOWTODIR_DEPS)
 	$(XSLTPROC) --stringparam noreference 1 --xinclude --output $@ xslt/expand-sambadoc.xsl $<
 
 Samba-Guide.xml: $(GUIDEDOC)/guide-main.xml
@@ -131,7 +132,7 @@ Samba-Guide.xml: $(GUIDEDOC)/guide-main.xml
 Samba-Developers-Guide.xml: $(DEVDOC)/dev-doc.xml $(DEVDOC_DEPS)
 	$(XSLTPROC) --stringparam noreference 1 --xinclude --output $@ xslt/expand-sambadoc.xsl $<
 
-$(PROJDOC)/attributions.xml: $(PROJDOC)/samba-doc.xml
+$(HOWTODIR)/attributions.xml: $(HOWTODIR)/index.xml
 	@echo > $@ # Make sure we don't get recursive dependencies, etc!
 	$(XSLTPROC) --output $@ xslt/generate-attributions.xsl $<
 
@@ -144,11 +145,11 @@ clean:
 	    $(PDFDIR)/*.pdf $(FAQDIR)/*.html $(HTMLDIR)/*html $(HTMLDIR)/samba.css
 	rm -f xslt/figures/*pdf
 	rm -f $(SMBDOTCONFDOC)/parameters.*.xml $(DVIDIR)/*.dvi
-	rm -f samba-doc.* dev-doc.* $(PROJDOC)/changelog.xml $(PROJDOC)/attributions.xml $(DEVDOC)/attributions.xml
+	rm -f samba-doc.* dev-doc.* $(HOWTODIR)/changelog.xml $(HOWTODIR)/attributions.xml $(DEVDOC)/attributions.xml
 	rm -f Samba-HOWTO-Collection.*
 	rm -f Samba-Developers-Guide.*
 	rm -f Samba-Guide.*
-	rm -f $(IMAGEPROJDIR)/*.eps $(MANPROJDOC)/smb.conf.5.xml
+	rm -f $(IMAGEPROJDIR)/*.eps $(MANPAGEDIR)/smb.conf.5.xml
 	rm -f $(PLUCKERDIR)/*.pdb
 
 # Text files
@@ -175,7 +176,7 @@ $(PDFDIR)/%.pdf: %.tex latexfigures gpl.tex
 	-$(PDFLATEX) $<
 	mv $(patsubst %.tex,%.pdf,$<) $@
 
-epsimages: $(PROJDOC_IMAGES_EPS)
+epsimages: $(HOWTODIR_IMAGES_EPS)
 
 # DVI files
 $(DVIDIR)/%.dvi: %.tex epsimages gpl.tex
@@ -206,7 +207,7 @@ $(PLUCKERDIR):
 CSS: $(HTMLDIR) xslt/html/samba.css
 	cp xslt/html/samba.css $(HTMLDIR)/
 
-$(HTMLDIR)/Samba-HOWTO-Collection.html: Samba-HOWTO-Collection.xml $(PROJDOC_DEPS) $(PROJDOC_IMAGES_PNG)
+$(HTMLDIR)/Samba-HOWTO-Collection.html: Samba-HOWTO-Collection.xml $(HOWTODIR_DEPS) $(HOWTODIR_IMAGES_PNG)
 	$(XSLTPROC) --output $@ xslt/html.xsl $<
 
 $(HTMLDIR)/Samba-Developers-Guide.html: Samba-Developers-Guide.xml $(DEVDOC_DEPS)
@@ -218,7 +219,7 @@ $(HTMLDIR)/%.html: %.xml
 $(PLUCKERDIR)/%.pdb: $(HTMLDIR)/%.html
 	$(PLUCKERBUILD) -v -M1 --stayonhost  --noimages --zlib-compression -H file:$< -f $(patsubst $(PLUCKERDIR)/%.pdb,%,$@) -p $(PLUCKERDIR)
 
-%.xml: $(MANPROJDOC)/%.xml
+%.xml: $(MANPAGEDIR)/%.xml
 	$(XSLTPROC) --stringparam noreference 1 --output $@ xslt/expand-sambadoc.xsl $<
 
 # Manpages
@@ -263,7 +264,7 @@ undocumented: $(SMBDOTCONFDOC)/parameters.all.xml
 $(EXAMPLESDIR):
 	mkdir $(EXAMPLESDIR)
 
-files: $(PROJDOC)/samba-doc.xml $(PROJDOC)/attributions.xml $(EXAMPLESDIR)
+files: $(HOWTODIR)/index.xml $(HOWTODIR)/attributions.xml $(EXAMPLESDIR)
 	$(XSLTPROC) xslt/extract-smbfiles.xsl $< > /dev/null
 
 samples: $(EXAMPLESDIR) Samba-HOWTO-Collection.xml
@@ -275,3 +276,10 @@ guide: $(PDFDIR)/Samba-Guide.pdf
 
 %/changelog.xml: % $(wildcard %/CVS/*)
 	$(CVS2CL) --stdout --xml $< | $(XSLTPROC) --output $@ xslt/genchangelog.xsl -
+
+$(ARCHIVEDIR):
+	mkdir $(ARCHIVEDIR)
+
+archive: $(ARCHIVEDIR) guide howto
+	cp $(PDFDIR)/Samba-HOWTO-Collection.pdf $(ARCHIVEDIR)/TOSHARG-`date +%Y%m%d`.pdf
+	cp $(PDFDIR)/Samba-Guide.pdf $(ARCHIVEDIR)/S3bE-`date +%Y%m%d`.pdf
