@@ -391,6 +391,8 @@ int sys_chroot(const char *dname)
 		DEBUG(1,("WARNING: no chroot!\n"));
 		done=1;
 	}
+	errno = ENOSYS;
+	return -1;
 #else
 	return(chroot(dname));
 #endif

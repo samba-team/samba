@@ -1429,6 +1429,7 @@ FN_GLOBAL_BOOL(lp_stat_cache, &Globals.bStatCache)
 FN_GLOBAL_BOOL(lp_allow_trusted_domains, &Globals.bAllowTrustedDomains)
 FN_GLOBAL_BOOL(lp_restrict_anonymous, &Globals.bRestrictAnonymous)
 FN_GLOBAL_BOOL(lp_host_msdfs, &Globals.bHostMSDfs)
+FN_GLOBAL_BOOL(lp_kernel_oplocks, &Globals.bKernelOplocks)
 FN_GLOBAL_INTEGER(lp_os_level, &Globals.os_level)
 FN_GLOBAL_INTEGER(lp_max_ttl, &Globals.max_ttl)
 FN_GLOBAL_INTEGER(lp_max_wins_ttl, &Globals.max_wins_ttl)
@@ -3436,37 +3437,6 @@ int lp_minor_announce_version(void)
 void lp_set_name_resolve_order(char *new_order)
 {
 	Globals.szNameResolveOrder = new_order;
-}
-
-/***********************************************************
- Set the flag that says if kernel oplocks are available 
- (called by smbd).
-************************************************************/
-
-static BOOL kernel_oplocks_available = False;
-
-void lp_set_kernel_oplocks(BOOL val)
-{
-	/*
-	 * Only set this to True if kerenl
-	 * oplocks are really available and were
-	 * turned on in the smb.conf file.
-	 */
-
-	if (Globals.bKernelOplocks && val)
-		kernel_oplocks_available = True;
-	else
-		kernel_oplocks_available = False;
-}
-
-/***********************************************************
- Return True if kernel oplocks are available and were turned
- on in smb.conf.
-************************************************************/
-
-BOOL lp_kernel_oplocks(void)
-{
-	return kernel_oplocks_available;
 }
 
 /***********************************************************
