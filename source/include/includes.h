@@ -773,28 +773,6 @@ extern int errno;
 #include "librpc/ndr/libndr.h"
 #include "librpc/rpc/dcerpc.h"
 
-/*
- * Type for wide character dirent structure.
- * Only d_name is defined by POSIX.
- */
-
-typedef struct smb_wdirent {
-	wpstring        d_name;
-} SMB_STRUCT_WDIRENT;
-
-/*
- * Type for wide character passwd structure.
- */
-
-typedef struct smb_wpasswd {
-	wfstring       pw_name;
-	char           *pw_passwd;
-	uid_t          pw_uid;
-	gid_t          pw_gid;
-	wpstring       pw_gecos;
-	wpstring       pw_dir;
-	wpstring       pw_shell;
-} SMB_STRUCT_WPASSWD;
 
 /* used in net.c */
 struct functable {
@@ -803,19 +781,7 @@ struct functable {
 };
 
 
-/* Defines for wisXXX functions. */
-#define UNI_UPPER    0x1
-#define UNI_LOWER    0x2
-#define UNI_DIGIT    0x4
-#define UNI_XDIGIT   0x8
-#define UNI_SPACE    0x10
-
 #include "nsswitch/nss.h"
-
-/* forward declaration from printing.h to get around 
-   header file dependencies */
-
-struct printjob;
 
 /***** automatically generated prototypes *****/
 #include "proto.h"
@@ -830,23 +796,6 @@ struct printjob;
 
 #ifndef QSORT_CAST
 #define QSORT_CAST (int (*)(const void *, const void *))
-#endif
-
-#ifndef DEFAULT_PRINTING
-#ifdef HAVE_CUPS
-#define DEFAULT_PRINTING PRINT_CUPS
-#define PRINTCAP_NAME "cups"
-#elif defined(SYSV)
-#define DEFAULT_PRINTING PRINT_SYSV
-#define PRINTCAP_NAME "lpstat"
-#else
-#define DEFAULT_PRINTING PRINT_BSD
-#define PRINTCAP_NAME "/etc/printcap"
-#endif
-#endif
-
-#ifndef PRINTCAP_NAME
-#define PRINTCAP_NAME "/etc/printcap"
 #endif
 
 #ifndef SIGCLD

@@ -284,6 +284,9 @@ NTVFS_POSIX_OBJ = ntvfs/posix/vfs_posix.o
 SMBD_NTVFS_OBJ = ntvfs/ntvfs_base.o ntvfs/ntvfs_util.o \
 	ntvfs/ntvfs_generic.o @NTVFS_STATIC@
 
+SMBD_RPC_OBJ = rpc_server/dcerpc_server.o \
+		rpc_server/rpc_echo.o
+
 SMBD_OBJ_SRV = smbd/connection.o \
 	       smbd/session.o \
            smbd/password.o smbd/conn.o \
@@ -292,7 +295,7 @@ SMBD_OBJ_SRV = smbd/connection.o \
 	   smbd/trans2.o smbd/search.o smbd/nttrans.o \
            lib/sysacls.o lib/server_mutex.o \
            smbd/build_options.o smbd/service.o \
-	   smbd/rewrite.o \
+	   smbd/rewrite.o $(SMBD_RPC_OBJ) \
 	       $(SMBD_NTVFS_OBJ) @SMBD_EXTRA_OBJS@ 
 
 PROCESS_MODEL_OBJ = smbd/process.o smbd/process_model.o smbd/process_standard.o \
@@ -395,7 +398,7 @@ LIBSMBCLIENT_OBJ = libcli/libcliclient.o libcli/libcli_compat.o \
 LIBBIGBALLOFMUD_MAJOR = 0
 
 LIBBIGBALLOFMUD_OBJ = $(LIB_OBJ) $(PARAM_OBJ) $(SECRETS_OBJ) \
-	$(LIBSMB_OBJ) $(LIBMSRPC_OBJ) $(RPC_PARSE_OBJ) $(PASSDB_OBJ) \
+	$(LIBSMB_OBJ) $(RPC_PARSE_OBJ) $(PASSDB_OBJ) \
 	$(GROUPDB_OBJ) $(KRBCLIENT_OBJ)
 
 LIBBIGBALLOFMUD_PICOBJS = $(LIBBIGBALLOFMUD_OBJ:.o=.po)
@@ -414,7 +417,6 @@ NET_OBJ1 = utils/net.o utils/net_ads.o utils/net_ads_cldap.o utils/net_help.o \
 NET_OBJ = $(NET_OBJ1) $(SECRETS_OBJ) $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) \
 	  $(RPC_PARSE_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
 	  $(PARAM_OBJ) $(LIB_OBJ) \
-	  $(LIBMSRPC_OBJ) $(LIBMSRPC_SERVER_OBJ) \
 	  $(LIBADS_OBJ) $(LIBADS_SERVER_OBJ) $(POPT_LIB_OBJ)
 
 CUPS_OBJ = client/smbspool.o $(PARAM_OBJ) $(LIBSMB_OBJ) \
@@ -487,19 +489,9 @@ LOCKTEST2_OBJ = torture/locktest2.o $(LOCKING_OBJ) $(LIBSMB_OBJ) \
 SMBCACLS_OBJ = utils/smbcacls.o $(LOCKING_OBJ) $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) \
 		$(PARAM_OBJ) \
                  $(LIB_OBJ) $(RPC_PARSE_OBJ) $(PASSDB_GET_SET_OBJ) \
-		 $(LIBMSRPC_OBJ) $(SECRETS_OBJ)
+		 $(SECRETS_OBJ)
 
 TALLOCTORT_OBJ = lib/talloctort.o  $(LIB_OBJ) $(PARAM_OBJ)
-
-RPCTORTURE_OBJ = torture/rpctorture.o \
-             rpcclient/display.o \
-             rpcclient/cmd_lsarpc.o \
-             rpcclient/cmd_wkssvc.o \
-             rpcclient/cmd_samr.o \
-             rpcclient/cmd_srvsvc.o \
-             rpcclient/cmd_netlogon.o \
-             $(PARAM_OBJ) $(LIBSMB_OBJ) $(LIB_OBJ) $(KRBCLIENT_OBJ) \
-             $(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) $(PASSDB_GET_SET_OBJ)
 
 DEBUG2HTML_OBJ = utils/debug2html.o ubiqx/debugparse.o
 
@@ -510,8 +502,7 @@ PROTO_OBJ = $(SMBD_OBJ_SRV) \
 	    $(SMBD_OBJ_MAIN) $(PROCESS_MODEL_OBJ) \
 	    $(NMBD_OBJ1) $(SWAT_OBJ1) $(LIBSMB_OBJ) \
 	    $(LIBRAW_OBJ) $(LIBDFS_OBJ) $(LIBCLIUTIL) $(LIBCLIAUTH_OBJ) \
-	    $(SMBW_OBJ1) $(SMBWRAPPER_OBJ1) $(SMBTORTURE_OBJ1) $(RPCCLIENT_OBJ1) \
-	    $(LIBMSRPC_OBJ) $(LIBMSRPC_SERVER_OBJ) $(RPC_CLIENT_OBJ) \
+	    $(SMBW_OBJ1) $(SMBWRAPPER_OBJ1) $(SMBTORTURE_OBJ1) \
 	    $(RPC_PIPE_OBJ) $(RPC_PARSE_OBJ) $(KRBCLIENT_OBJ) \
 	    $(AUTH_OBJ) $(PARAM_OBJ) $(LOCKING_OBJ) $(SECRETS_OBJ) \
 	    $(PRINTING_OBJ) $(PRINTBACKEND_OBJ) $(OPLOCK_OBJ) $(NOTIFY_OBJ) \
@@ -559,7 +550,7 @@ WINBINDD_OBJ1 = \
 WINBINDD_OBJ = \
 		$(WINBINDD_OBJ1) $(PASSDB_GET_SET_OBJ) \
 		$(PARAM_OBJ) $(LIB_OBJ) \
-		$(LIBSMB_OBJ) $(LIBMSRPC_OBJ) $(RPC_PARSE_OBJ) \
+		$(LIBSMB_OBJ) $(RPC_PARSE_OBJ) \
 		$(PROFILE_OBJ) $(UNIGRP_OBJ) \
 		$(SECRETS_OBJ) $(LIBADS_OBJ) $(KRBCLIENT_OBJ)
 
@@ -716,10 +707,6 @@ bin/swat@EXEEXT@: $(SWAT_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SWAT_OBJ) $(LDFLAGS) $(DYNEXP) $(PRINTLIBS) \
 	  $(AUTHLIBS) $(LIBS) 
-
-bin/rpcclient@EXEEXT@: $(RPCCLIENT_OBJ) @BUILD_POPT@ bin/.dummy
-	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(RPCCLIENT_OBJ) $(LDFLAGS) $(DYNEXP) $(TERMLDFLAGS) $(TERMLIBS) $(LIBS) @BUILD_POPT@
 
 bin/smbclient@EXEEXT@: $(CLIENT_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
@@ -963,9 +950,6 @@ bin/pam_smbpass.@SHLIBEXT@: $(PAM_SMBPASS_PICOOBJ)
 	@echo "Linking shared library $@"
 	$(SHLD) $(LDSHFLAGS) -o $@ $(PAM_SMBPASS_PICOOBJ) -lpam $(DYNEXP) $(LIBS) -lc
 
-bin/libmsrpc.a: $(LIBMSRPC_PICOBJ)
-	-$(AR) -rc $@ $(LIBMSRPC_PICOBJ) 
-
 bin/tdbbackup@EXEEXT@: $(TDBBACKUP_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(TDBBACKUP_OBJ)
@@ -1014,7 +998,7 @@ installclientlib:
 # Python extensions
 
 PYTHON_OBJS = $(LIB_OBJ) $(LIBSMB_OBJ) $(RPC_PARSE_OBJ) \
-	$(PARAM_OBJ) $(LIBMSRPC_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
+	$(PARAM_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
 	$(SECRETS_OBJ) $(KRBCLIENT_OBJ)
 
 python_ext: $(PYTHON_OBJS)
