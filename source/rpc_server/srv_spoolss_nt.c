@@ -1339,18 +1339,19 @@ static void spoolss_notify_job_name(int snum, SPOOL_NOTIFY_INFO_DATA *data, prin
 static void spoolss_notify_job_status_string(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 	char *p = "unknown";
+
 	switch (queue->status) {
 	case LPQ_QUEUED:
-		p = "QUEUED";
+		p = "Queued";
 		break;
 	case LPQ_PAUSED:
-		p = "PAUSED";
+		p = "";    /* NT provides the paused string */
 		break;
 	case LPQ_SPOOLING:
-		p = "SPOOLING";
+		p = "Spooling";
 		break;
 	case LPQ_PRINTING:
-		p = "PRINTING";
+		p = "Printing";
 		break;
 	}
 	data->notify_data.data.length=(uint32)((dos_PutUniCode((char *)data->notify_data.data.string,
@@ -3324,8 +3325,7 @@ static uint32 control_printer(POLICY_HND *handle, uint32 command,
 			      pipes_struct *p)
 {
 	struct current_user user;
-	int snum;
-	int errcode = ERROR_INVALID_FUNCTION;
+	int snum, errcode = ERROR_INVALID_FUNCTION;
 	Printer_entry *Printer = find_printer_index_by_hnd(handle);
 
 	get_current_user(&user, p);
@@ -3355,6 +3355,8 @@ static uint32 control_printer(POLICY_HND *handle, uint32 command,
 			errcode = 0;
 		}
 		break;
+	default:
+		return ERROR_INVALID_LEVEL;
 	}
 
 	return errcode;
@@ -3830,6 +3832,7 @@ static uint32 update_printer(POLICY_HND *handle, uint32 level,
 
  done:
 	free_a_printer(&printer, 2);
+	free_a_printer(&old_printer, 2);
 
 	srv_spoolss_sendnotify(handle);
 
@@ -4131,17 +4134,12 @@ uint32 _spoolss_schedulejob( POLICY_HND *handle, uint32 jobid)
 
 /****************************************************************************
 ****************************************************************************/
-uint32 _spoolss_setjob( POLICY_HND *handle,
-				uint32 jobid,
-				uint32 level,
-                pipes_struct *p,
-				JOB_INFO *ctr,
-				uint32 command)
-
+uint32 _spoolss_setjob(POLICY_HND *handle, uint32 jobid, uint32 level,
+		       pipes_struct *p, JOB_INFO *ctr, uint32 command)
 {
 	struct current_user user;
-	int snum;
 	print_status_struct prt_status;
+	int snum, errcode = ERROR_INVALID_FUNCTION;
 		
 	memset(&prt_status, 0, sizeof(prt_status));
 
@@ -4158,28 +4156,26 @@ uint32 _spoolss_setjob( POLICY_HND *handle,
 	switch (command) {
 	case JOB_CONTROL_CANCEL:
 	case JOB_CONTROL_DELETE:
-		if (print_job_delete(&user, jobid)) {
-			srv_spoolss_sendnotify(handle);
-			return 0x0;
+		if (print_job_delete(&user, jobid, &errcode)) {
+			errcode = 0;
 		}
 		break;
 	case JOB_CONTROL_PAUSE:
-		if (print_job_pause(&user, jobid)) {
-			srv_spoolss_sendnotify(handle);
-			return 0x0;
+		if (print_job_pause(&user, jobid, &errcode)) {
+			errcode = 0;
 		}		
 		break;
+	case JOB_CONTROL_RESTART:
 	case JOB_CONTROL_RESUME:
-		if (print_job_resume(&user, jobid)) {
-			srv_spoolss_sendnotify(handle);
-			return 0x0;
+		if (print_job_resume(&user, jobid, &errcode)) {
+			errcode = 0;
 		}
 		break;
 	default:
 		return ERROR_INVALID_LEVEL;
 	}
 
-	return ERROR_INVALID_HANDLE;
+	return errcode;
 }
 
 /****************************************************************************
