@@ -1349,7 +1349,6 @@ static uint32 check_nua_rid_is_avail(struct ldapsam_privates *ldap_state, uint32
 
 	if (ldapsam_search_one_user_by_rid(ldap_state, final_rid, &result) != LDAP_SUCCESS) {
 		DEBUG(0, ("Cannot allocate NUA RID %d (0x%x), as the confirmation search failed!\n", final_rid, final_rid));
-		ldap_msgfree(result);
 		return 0;
 	}
 
@@ -1420,7 +1419,6 @@ static uint32 search_top_nua_rid(struct ldapsam_privates *ldap_state)
 		DEBUGADD(3, ("Query was: %s, %s\n", lp_ldap_suffix(), final_filter));
 
 		free(final_filter);
-		ldap_msgfree(result);
 		result = NULL;
 		return 0;
 	}
@@ -1739,6 +1737,10 @@ static NTSTATUS ldapsam_delete_sam_account(struct pdb_methods *my_methods, SAM_A
 	DEBUG (3, ("Deleting user %s from LDAP.\n", sname));
 
 	rc = ldapsam_search_one_user_by_name(ldap_state, sname, &result);
+	if (rc != LDAP_SUCCESS) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
 	if (ldap_count_entries (ldap_state->ldap_struct, result) == 0) {
 		DEBUG (0, ("User doesn't exit!\n"));
 		ldap_msgfree (result);
@@ -1790,6 +1792,9 @@ static NTSTATUS ldapsam_update_sam_account(struct pdb_methods *my_methods, SAM_A
 	}
 	
 	rc = ldapsam_search_one_user_by_name(ldap_state, pdb_get_username(newpwd), &result);
+	if (rc != LDAP_SUCCESS) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
 
 	if (ldap_count_entries(ldap_state->ldap_struct, result) == 0) {
 		DEBUG(0, ("No user to modify!\n"));
@@ -1839,6 +1844,9 @@ static NTSTATUS ldapsam_add_sam_account(struct pdb_methods *my_methods, SAM_ACCO
 	}
 
 	rc = ldapsam_search_one_user_by_name (ldap_state, username, &result);
+	if (rc != LDAP_SUCCESS) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
 
 	if (ldap_count_entries(ldap_state->ldap_struct, result) != 0) {
 		DEBUG(0,("User already in the base, with samba properties\n"));
@@ -1849,6 +1857,10 @@ static NTSTATUS ldapsam_add_sam_account(struct pdb_methods *my_methods, SAM_ACCO
 
 	slprintf (filter, sizeof (filter) - 1, "uid=%s", username);
 	rc = ldapsam_search_one_user(ldap_state, filter, &result);
+	if (rc != LDAP_SUCCESS) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
 	num_result = ldap_count_entries(ldap_state->ldap_struct, result);
 	
 	if (num_result > 1) {
