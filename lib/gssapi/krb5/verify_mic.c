@@ -303,14 +303,9 @@ gss_verify_mic_internal
 					  qop_state, key, type);
 	break;
     default :
-#ifdef HAVE_GSSAPI_CFX
 	ret = _gssapi_verify_mic_cfx (minor_status, context_handle,
 				      message_buffer, token_buffer, qop_state,
 				      key);
-#else
-	*minor_status = (OM_uint32)KRB5_PROG_ETYPE_NOSUPP;
-	ret = GSS_S_FAILURE;
-#endif
 	break;
     }
     krb5_free_keyblock (gssapi_krb5_context, key);
