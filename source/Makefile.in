@@ -70,7 +70,7 @@ SWATDIR = @swatdir@
 # the directory where lock files go
 LOCKDIR = @lockdir@
 
-# the directorty where pid files go
+# the directory where pid files go
 PIDDIR = @piddir@
 # man pages language(s)
 man_langs = "@manlangs@"
