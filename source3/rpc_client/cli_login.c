@@ -31,8 +31,9 @@ extern pstring global_myname;
 Initialize domain session credentials.
 ****************************************************************************/
 
-BOOL cli_nt_setup_creds(struct cli_state *cli, unsigned char mach_pwd[16])
+NTSTATUS cli_nt_setup_creds(struct cli_state *cli, unsigned char mach_pwd[16])
 {
+  NTSTATUS result;
   DOM_CHAL clnt_chal;
   DOM_CHAL srv_chal;
 
@@ -46,7 +47,7 @@ BOOL cli_nt_setup_creds(struct cli_state *cli, unsigned char mach_pwd[16])
   if (!cli_net_req_chal(cli, &clnt_chal, &srv_chal))
   {
     DEBUG(0,("cli_nt_setup_creds: request challenge failed\n"));
-    return False;
+    return NT_STATUS_UNSUCCESSFUL;
   }
 
   /**************** Long-term Session key **************/
@@ -66,14 +67,16 @@ BOOL cli_nt_setup_creds(struct cli_state *cli, unsigned char mach_pwd[16])
    * Receive an auth-2 challenge response and check it.
    */
 
-  if (!cli_net_auth2(cli, (lp_server_role() == ROLE_DOMAIN_MEMBER) ?
-                     SEC_CHAN_WKSTA : SEC_CHAN_BDC, 0x000001ff, &srv_chal))
+  result = cli_net_auth2(cli, (lp_server_role() == ROLE_DOMAIN_MEMBER) ?
+                         SEC_CHAN_WKSTA : SEC_CHAN_BDC, 0x000001ff, &srv_chal);
+  
+  if (!NT_STATUS_IS_OK(result))
   {
     DEBUG(0,("cli_nt_setup_creds: auth2 challenge failed\n"));
-    return False;
+    return result;
   }
 
-  return True;
+  return NT_STATUS_OK;
 }
 
 /****************************************************************************

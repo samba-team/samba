@@ -212,7 +212,9 @@ static NTSTATUS cmd_netlogon_sam_sync(struct cli_state *cli, int argc,
 		goto done;
 	}        
 
-        if (!cli_nt_setup_creds(cli, trust_passwd)) {
+        result = cli_nt_setup_creds(cli, trust_passwd);
+
+        if (!NT_STATUS_IS_OK(result)) {
                 DEBUG(0, ("Error initialising session creds\n"));
                 goto done;
         }
@@ -285,7 +287,9 @@ static NTSTATUS cmd_netlogon_sam_deltas(struct cli_state *cli, int argc,
 		goto done;
 	}        
 
-        if (!cli_nt_setup_creds(cli, trust_passwd)) {
+        result = cli_nt_setup_creds(cli, trust_passwd);
+
+        if (!NT_STATUS_IS_OK(result)) {
                 DEBUG(0, ("Error initialising session creds\n"));
                 goto done;
         }
