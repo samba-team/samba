@@ -190,7 +190,7 @@ NTSTATUS pvfs_acl_set(struct pvfs_state *pvfs,
 {
 	struct xattr_NTACL *acl;
 	uint32_t secinfo_flags = info->set_secdesc.in.secinfo_flags;
-	struct security_descriptor *new_sd, *sd;
+	struct security_descriptor *new_sd, *sd, orig_sd;
 	NTSTATUS status;
 	uid_t uid = -1;
 	gid_t gid = -1;
@@ -217,6 +217,7 @@ NTSTATUS pvfs_acl_set(struct pvfs_state *pvfs,
 	}
 
 	new_sd = info->set_secdesc.in.sd;
+	orig_sd = *sd;
 
 	uid = name->st.st_uid;
 	gid = name->st.st_gid;
@@ -265,7 +266,12 @@ NTSTATUS pvfs_acl_set(struct pvfs_state *pvfs,
 		}
 	}
 
-	status = pvfs_acl_save(pvfs, name, fd, acl);
+	/* we avoid saving if the sd is the same. This means when clients
+	   copy files and end up copying the default sd that we don't
+	   needlessly use xattrs */
+	if (!security_descriptor_equal(sd, &orig_sd)) {
+		status = pvfs_acl_save(pvfs, name, fd, acl);
+	}
 
 	return status;
 }
