@@ -686,9 +686,28 @@
 	} samr_CryptPassword;
 
 	typedef struct {
+		samr_UserInfo21 info;
+		samr_CryptPassword password;
+	} samr_UserInfo23;
+
+	typedef struct {
 		samr_CryptPassword password;
 		uint16 pw_len;
 	} samr_UserInfo24;
+
+	typedef struct {
+		uint8 data[532];
+	} samr_CryptPasswordEx;
+
+	typedef struct {
+		samr_UserInfo21 info;
+		samr_CryptPasswordEx password;
+	} samr_UserInfo25;
+
+	typedef struct {
+		samr_CryptPasswordEx password;
+		uint16 pw_len;
+	} samr_UserInfo26;
 
 	typedef union {
 		[case(1)] samr_UserInfo1 info1;
@@ -709,7 +728,10 @@
 		[case(17)] samr_UserInfo17 info17;
 		[case(20)] samr_UserInfo20 info20;
 		[case(21)] samr_UserInfo21 info21;
+		[case(23)] samr_UserInfo23 info23;
 		[case(24)] samr_UserInfo24 info24;
+		[case(25)] samr_UserInfo25 info25;
+		[case(26)] samr_UserInfo26 info26;
 	} samr_UserInfo;
 
 	NTSTATUS samr_QueryUserInfo(
