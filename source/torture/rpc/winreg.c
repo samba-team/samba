@@ -21,6 +21,13 @@
 
 #include "includes.h"
 
+static void init_winreg_String(struct winreg_String *name, const char *s)
+{
+	name->name = s;
+	name->name_len = 2*strlen_m(s);
+	name->name_size = name->name_len;
+}
+
 static BOOL test_GetVersion(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 			    struct policy_handle *handle)
 {
@@ -61,6 +68,47 @@ static BOOL test_CloseKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return True;
 }
 
+static BOOL test_FlushKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+			  struct policy_handle *handle)
+{
+	NTSTATUS status;
+	struct winreg_FlushKey r;
+
+	printf("\ntesting FlushKey\n");
+
+	r.in.handle = handle;
+
+	status = dcerpc_winreg_FlushKey(p, mem_ctx, &r);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("FlushKey failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	return True;
+}
+
+static BOOL test_DeleteKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+			   struct policy_handle *handle, char *key)
+{
+	NTSTATUS status;
+	struct winreg_DeleteKey r;
+
+	printf("\ntesting DeleteKey\n");
+
+	r.in.handle = handle;
+	init_winreg_String(&r.in.key, key);	
+
+	status = dcerpc_winreg_DeleteKey(p, mem_ctx, &r);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("DeleteKey failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	return True;
+}
+
 static BOOL test_OpenHKLM(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
@@ -85,6 +133,10 @@ static BOOL test_OpenHKLM(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	}
 
 	if (!test_GetVersion(p, mem_ctx, &handle)) {
+		ret = False;
+	}
+
+	if (!test_DeleteKey(p, mem_ctx, &handle, "spottyfoot")) {
 		ret = False;
 	}
 
