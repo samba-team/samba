@@ -155,8 +155,8 @@ LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
 	     $(LIBADS_OBJ)
 
 LIBMSRPC_OBJ = libsmb/cli_lsarpc.o libsmb/cli_samr.o libsmb/cli_spoolss.o \
-	       libsmb/cli_netlogon.o libsmb/cli_srvsvc.o libsmb/cli_dfs.o \
-	       libsmb/cli_reg.o libsmb/trust_passwd.o\
+	       libsmb/cli_netlogon.o libsmb/cli_srvsvc.o libsmb/cli_wkssvc.o \
+	       libsmb/cli_dfs.o libsmb/cli_reg.o libsmb/trust_passwd.o\
 	       rpc_client/cli_pipe.o libsmb/cli_pipe_util.o
 
 LIBMSRPC_PICOBJ = $(LIBMSRPC_OBJ:.o=.po)
