@@ -632,6 +632,9 @@ int tdb_update(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf)
             return -1;
         }
 
+	/* initialise error code to ok, first */
+	tdb->ecode = 0;
+
 	/* find which hash bucket it is in */
 	hash = tdb_hash(&key);
 
@@ -639,7 +642,10 @@ int tdb_update(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf)
 	rec_ptr = tdb_find(tdb, key, hash, &rec);
 
 	if (!rec_ptr)
+	{
+		tdb->ecode = TDB_ERR_NOEXIST;
 		goto out;
+	}
 
 	/* must be long enough */
 	if (rec.rec_len < key.dsize + dbuf.dsize)
@@ -1033,16 +1039,24 @@ int tdb_store(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, int flag)
 		return -1;
 	}
 
-	/* check for it _not_ existing, on modify. */
-	if (flag == TDB_MODIFY && !tdb_exists(tdb, key)) {
-		tdb->ecode = TDB_ERR_NOEXIST;
-		return -1;
-	}
-
 	/* first try in-place update, on modify or replace. */
 	if (flag != TDB_INSERT && tdb_update(tdb, key, dbuf) == 0) {
 		return 0;
 	}
+
+	/* check for it _not_ existing, from error code of the update. */
+	if (flag == TDB_MODIFY && tdb->ecode == TDB_ERR_NOEXIST) {
+		return -1;
+	}
+
+	/* reset the error code potentially set by the tdb_update() */
+	tdb->ecode = 0;
+
+	/*
+	 * now we're into insert / modify / replace of a record
+	 * which we know could not be optimised by an in-place
+	 * store (for various reasons).
+	 */
 
 	rec_ptr = tdb_allocate(tdb, key.dsize + dbuf.dsize);
 	if (rec_ptr == 0) {
