@@ -3067,7 +3067,7 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 	create_file_sids(&sbuf, &file_owner_sid, &file_grp_sid);
 
 	acl_perms = unpack_canon_ace( fsp, &sbuf, &file_owner_sid, &file_grp_sid,
-									&file_ace_list, &dir_ace_list, security_info_sent, psd);
+					&file_ace_list, &dir_ace_list, security_info_sent, psd);
 
 	/* Ignore W2K traverse DACL set. */
 	if (file_ace_list || dir_ace_list) {

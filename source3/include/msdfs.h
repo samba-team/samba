@@ -72,6 +72,13 @@ struct dfs_path
              return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED,	\
 			       ERRSRV, ERRbadpath);; }		
 
+#define RESOLVE_DFSPATH_WCARD(name, conn, inbuf, outbuf)           	\
+{ if ((SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES) &&       	\
+      lp_host_msdfs() && lp_msdfs_root(SNUM(conn)) &&		\
+      dfs_redirect(name,conn,True))				\
+             return ERROR_BOTH(NT_STATUS_PATH_NOT_COVERED,	\
+			       ERRSRV, ERRbadpath);; }		
+
 #define init_dfsroot(conn, inbuf, outbuf)                    	\
 { if (lp_msdfs_root(SNUM(conn)) && lp_host_msdfs()) {        	\
         DEBUG(2,("Serving %s as a Dfs root\n", 			\
