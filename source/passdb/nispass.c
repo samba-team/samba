@@ -29,12 +29,108 @@ extern int      DEBUGLEVEL;
 static int gotalarm;
 
 /***************************************************************
- Signal function to tell us we timed out.
+
+ the fields for the NIS+ table, generated from mknissmbpwtbl.sh, are:
+
+    	name=S,nogw=r 
+    	uid=S,nogw=r 
+		user_rid=S,nogw=r
+		smb_grpid=,nw+r
+		group_rid=,nw+r
+		acb=,nw+r
+		          
+    	lmpwd=C,nw=,g=r,o=rm 
+    	ntpwd=C,nw=,g=r,o=rm 
+		                     
+		logon_t=,nw+r 
+		logoff_t=,nw+r 
+		kick_t=,nw+r 
+		pwdlset_t=,nw+r 
+		pwdlchg_t=,nw+r 
+		pwdmchg_t=,nw+r 
+		                
+		full_name=,nw+r 
+		home_dir=,nw+r 
+		dir_drive=,nw+r 
+		logon_script=,nw+r 
+		profile_path=,nw+r 
+		acct_desc=,nw+r 
+		workstations=,nw+r 
+		                   
+		hours=,nw+r 
+
 ****************************************************************/
 
+#define NPF_NAME          0
+#define NPF_UID           1
+#define NPF_USER_RID      2
+#define NPF_SMB_GRPID     3
+#define NPF_GROUP_RID     4
+#define NPF_ACB           5
+#define NPF_LMPWD         6
+#define NPF_NTPWD         7
+#define NPF_LOGON_T       8
+#define NPF_LOGOFF_T      9
+#define NPF_PWDLSET_T     10
+#define NPF_PWDLCHG_T     11
+#define NPF_PWDMCHG_T     12
+#define NPF_FULL_NAME     13
+#define NPF_HOME_DIR      14
+#define NPF_DIR_DRIVE     15
+#define NPF_LOGON_SCRIPT  16
+#define NPF_PROFILE_PATH  17
+#define NPF_ACCT_DESC     18
+#define NPF_WORKSTATIONS  19
+#define NPF_HOURS         20
+
+/***************************************************************
+ Signal function to tell us we timed out.
+****************************************************************/
 static void gotalarm_sig(void)
 {
   gotalarm = 1;
+}
+
+/***************************************************************
+ make_nisname_from_user_rid
+ ****************************************************************/
+static char *make_nisname_from_user_rid(uint32 rid)
+{
+	static pstring nisname;
+
+	safe_strcpy(nisname, "[user_rid=", sizeof(nisname));
+	slprintf(nisname, sizeof(nisname), "%s%d", nisname, rid);
+	safe_strcat(nisname, "], passwd.org_dir", sizeof(nisname)-strlen(nisname)-1);
+
+	return nisname;
+}
+
+/***************************************************************
+ make_nisname_from_uid
+ ****************************************************************/
+static char *make_nisname_from_uid(int uid)
+{
+	static pstring nisname;
+
+	safe_strcpy(nisname, "[uid=", sizeof(nisname));
+	slprintf(nisname, sizeof(nisname), "%s%d", nisname, uid);
+	safe_strcat(nisname, "], passwd.org_dir", sizeof(nisname)-strlen(nisname)-1);
+
+	return nisname;
+}
+
+/***************************************************************
+ make_nisname_from_name
+ ****************************************************************/
+static char *make_nisname_from_name(char *user_name)
+{
+	static pstring nisname;
+
+	safe_strcpy(nisname, "[name=", sizeof(nisname));
+	safe_strcat(nisname, user_name, sizeof(nisname) - strlen(nisname) - 1);
+	safe_strcat(nisname, "], passwd.org_dir", sizeof(nisname) - strlen(nisname) - 1);
+
+	return nisname;
 }
 
 /***************************************************************
@@ -130,7 +226,7 @@ BOOL add_nisppwd_entry(struct smb_passwd *newpwd)
 
 	BOOL            add_user = True;
 	char           *pfile;
-	pstring nisname;
+	char           *nisname;
 	nis_result	*nis_user;
 	nis_result *result = NULL,
 	*tblresult = NULL, 
@@ -142,13 +238,7 @@ BOOL add_nisppwd_entry(struct smb_passwd *newpwd)
 
 	safe_strcpy(user_name, newpwd->smb_name, sizeof(user_name));
 
-	safe_strcpy(nisname, "[name=", sizeof(nisname));
-	safe_strcat(nisname, user_name, sizeof(nisname) - strlen(nisname) -1);
-	safe_strcat(nisname, "],passwd.org_dir", sizeof(nisname)-strlen(nisname)-1);
-
-	safe_strcpy(nisname, "[uid=", sizeof(nisname));
-	slprintf(nisname, sizeof(nisname), "%s%d", nisname, newpwd->smb_userid);
-	safe_strcat(nisname, "],passwd.org_dir", sizeof(nisname)-strlen(nisname)-1);
+	nisname = make_nisname_from_name(user_name);
 
 	nis_user = nis_list(nisname, FOLLOW_PATH | EXPAND_NAME | HARD_LOOKUP, NULL, NULL);
 
@@ -158,10 +248,6 @@ BOOL add_nisppwd_entry(struct smb_passwd *newpwd)
 		        nis_sperrno(nis_user->status)));
 		return False;
 	}
-
-	/*
-	* Calculate the SMB (lanman) hash functions of both old and new passwords.
-	*/
 
 	user_obj = NIS_RES_OBJECT(nis_user);
 
@@ -343,23 +429,23 @@ static BOOL make_smb_from_nisp(struct smb_passwd *pw_buf, nis_result *result)
 	obj = &NIS_RES_OBJECT(result)[0];
 
 	/* Check the lanman password column. */
-	p = (uchar *)ENTRY_VAL(obj, 2);
-	if (strlen((char *)p) != 32 || !pdb_gethexpwd((char *)p, (char *)smbpwd))
+	p = (uchar *)ENTRY_VAL(obj, NPF_LMPWD);
+	if (strlen((char *)p) != 32 || !gethexpwd((char *)p, (char *)smbpwd))
 	{
 		DEBUG(0, ("make_smb_from_nisp: malformed LM pwd entry.\n"));
 		return False;
 	}
 
 	/* Check the NT password column. */
-	p = (uchar *)ENTRY_VAL(obj, 3);
-	if (strlen((char *)p) != 32 || !pdb_gethexpwd((char *)p, (char *)smbntpwd))
+	p = (uchar *)ENTRY_VAL(obj, NPF_NTPWD);
+	if (strlen((char *)p) != 32 || !gethexpwd((char *)p, (char *)smbntpwd))
 	{
 		DEBUG(0, ("make_smb_from_nisp: malformed NT pwd entry\n"));
 		return False;
 	}
 
-	strncpy(user_name, ENTRY_VAL(obj, 0), sizeof(user_name));
-	uidval = atoi(ENTRY_VAL(obj, 1));
+	strncpy(user_name, ENTRY_VAL(obj, NPF_NAME), sizeof(user_name));
+	uidval = atoi(ENTRY_VAL(obj, NPF_UID));
 
 	pw_buf->smb_name      = user_name;
 	pw_buf->smb_userid    = uidval;		
