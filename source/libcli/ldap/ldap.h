@@ -91,6 +91,7 @@ struct ldap_BindResponse {
 };
 
 struct ldap_UnbindRequest {
+	uint8_t __dummy;
 };
 
 enum ldap_scope {
