@@ -494,6 +494,11 @@ glob1(Char *pattern, glob_t *pglob)
  * of recursion for each segment in the pattern that contains one or more
  * meta characters.
  */
+
+#if !defined(S_ISLNK) && defined(S_IFLNK) && defined(S_IFMT)
+#define S_ISLNK(mode) (((mode) & S_IFMT) == S_IFLNK)
+#endif
+
 static int
 glob2(Char *pathbuf, Char *pathend, Char *pattern, glob_t *pglob)
 {
