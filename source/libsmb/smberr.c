@@ -245,18 +245,6 @@ char *smb_dos_errstr(char *inbuf)
 	return(ret);
 }
 
-
-/*****************************************************************************
- returns an WERROR error message.
- *****************************************************************************/
-char *werror_str(WERROR status)
-{
-	static fstring msg;
-	slprintf(msg, sizeof(msg), "WIN32 code 0x%08x", W_ERROR_V(status));
-	return msg;
-}
-
-
 /*****************************************************************************
 map a unix errno to a win32 error
  *****************************************************************************/
