@@ -293,6 +293,34 @@ gets it wrong then sending me a level 3 log should allow me to fix it.
 There are some quite creative things that can be done with these
 substitutions and other smb.conf options.
 
+.B New for 1.9.18p3 and above.
+
+Thanks to a patch from Branko Cibej, Samba can now expand environment
+variables in the smb.conf file.
+
+To embed an environment variable, use the syntax :
+
+%$(ENVIRONMENT_VARIABLE_NAME)
+
+(substitute 'ENVIRONMENT_VARIABLE_NAME' with the name of the
+environment variable you wish to have substituted at this point.
+
+The entire '%$(ENVIRONMENT_VARIABLE_NAME)' string will be replaced
+by the contents of the environment variable. If a non-existing
+environment variable is specified, the original string will be
+left alone (and will probably cause a parsing error in the smb.conf
+at that point).
+
+Remember, the environment used will be that of the smbd/nmbd process,
+not that of the connecting user. As this is usually started at boot 
+time, then it will be very different from that of a normal user. 
+Remember to add any special variables into the environment before 
+starting the master smbd/nmbd.
+
+If smbd/nmbd is run from inetd, then the environment used will be
+inherited from inetd. In this case you will need to specify
+any special variables before starting inetd.
+
 .SS NAME MANGLING
 
 Samba supports "name mangling" so that DOS and Windows clients can use
@@ -516,7 +544,13 @@ use rhosts
 
 valid chars
 
-veto files
+win95 bug compatibility
+
+wins proxy
+
+wins server
+
+wins support
 
 workgroup
 
@@ -625,6 +659,8 @@ max connections
 
 min print space
 
+networkstation user login
+
 only guest
 
 only user
@@ -684,6 +720,8 @@ username
 users
 
 valid users
+
+veto files
 
 veto oplock files
 
@@ -2391,6 +2429,20 @@ server listed there.
 .B Example:
 	nis homedir = true
 
+.SS networkstation user login (G)
+This global parameter (new for 1.9.18p3) affects server level security.
+With this set (recommended) samba will do a full NetWkstaUserLogon to
+confirm that the client really should have login rights. This can cause
+problems with machines in trust relationships in which case you can
+disable it here, but be warned, we have heard that some NT machines
+will then allow anyone in with any password! Make sure you test it.
+
+.B Default:
+	networkstation user login = yes
+
+.B Example:
+	networkstation user login = no
+
 .SS null passwords (G)
 Allow or disallow access to accounts that have null passwords. 
 
@@ -3175,19 +3227,18 @@ Pathworks documentation for details.
  	set directory = yes
 
 .SS shared file entries (G)
-This parameter is only useful when Samba has been compiled with FAST_SHARE_MODES.
-It specifies the number of hash bucket entries used for share file locking.
-You should never change this parameter unless you have studied the source 
-and know what you are doing.
-
-.B Default
-	shared file entries = 113
+This parameter has been removed (as of Samba 1.9.18 and above). The new
+System V shared memory code prohibits the user from allocating the
+share hash bucket size directly.
 
 .SS shared mem size (G)
 This parameter is only useful when Samba has been compiled with FAST_SHARE_MODES.
 It specifies the size of the shared memory (in bytes) to use between smbd 
 processes. You should never change this parameter unless you have studied 
-the source and know what you are doing.
+the source and know what you are doing. This parameter defaults to 1024
+multiplied by the setting of the maximum number of open files in the
+file local.h in the Samba source code. MAX_OPEN_FILES is normally set
+to 100, so this parameter defaults to 102400 bytes.
 
 .B Default
 	shared mem size = 102400
@@ -3736,6 +3787,28 @@ only to areas that are outside the directory tree being exported.
 .B Example:
  	wide links = no
 
+.SS win95 bug compatibility (G)
+
+This boolean controls the behavior of smbd with respect to the reporting
+of 'access time' on files and directories. With this set to true, Samba
+will return the modify time (UNIX mtime) as the access time to the client.
+
+This is sometimes desirable due to the fact that in Windows, a files
+access time is only updated when the file is closed, whereas on UNIX,
+a files access time is updated as soon as it is read. For Visual C++
+to work correctly on a Samba share with oplocks, it is desirable to
+set this parameter to 'yes'. This parameter also causes Samba to
+swap the Date and Time information in two of the trans2 SMB calls,
+as a Windows 95 server does. Other bug-for-bug compatible fixes
+will also be turned on by setting this flag as the need arises
+to be bug compatible with a Windows 95 server.
+
+.B Default:
+        win95 bug compatibility = no
+
+.B Example:
+        win95 bug compatibility = yes
+
 .SS wins proxy (G)
 
 This is a boolean that controls if nmbd will respond to broadcast name
@@ -3757,8 +3830,8 @@ network.
 
 .SS wins support (G)
 
-This boolean controls if Samba will act as a WINS server. You should
-not set this to true unless you have a multi-subnetted network and
+This boolean controls if the nmbd process in Samba will act as a WINS server. 
+You should not set this to true unless you have a multi-subnetted network and
 you wish a particular nmbd to be your WINS server. Note that you
 should *NEVER* set this to true on more than one machine in your
 network.

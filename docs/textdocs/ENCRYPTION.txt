@@ -22,7 +22,7 @@ How does it work ?
 
 LanManager encryption is somewhat similar to UNIX password
 encryption. The server uses a file containing a hashed value of a
-users password.  This is created by taking the users paintext
+users password.  This is created by taking the users plaintext
 password, capitalising it, and either truncating to 14 bytes (or
 padding to 14 bytes with null bytes). This 14 byte value is used as
 two 56 bit DES keys to encrypt a 'magic' eight byte value, forming a

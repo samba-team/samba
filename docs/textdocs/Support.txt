@@ -38,7 +38,7 @@ Region                             Number of entries
     ASIA                                          1
     AUSTRALIA & NEW ZEALAND                      18
     CANADA                                        8
-    EUROPE                                       38
+    EUROPE                                       39
     MIDDLE EAST                                   1
 
 AFRICA
@@ -1364,31 +1364,36 @@ Samba experience:  BSD/OS, Linux, LynxOS <==> WFWG, NT
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
-LEICESTERSHIRE - ENGLAND
+LEICESTERSHIRE  ENGLAND
 
 TECTONIC LIMITED
 WESTWOOD
 78 LOUGHBOROUGH ROAD
 QUORN
+LOUGHBOROUGH
 LEICESTERSHIRE
 LE12 8DX
+UNITED KINGDOM
 
-TELEPHONE 01509-620922
-FAX       01509-620933
+Telephone: +44 (0) 1509 620922  Fax: +44 (0) 1509 620933
 
-Contact Samantha Hull
+Contact: Nick Berry     nick.berry@tectonic.co.uk
 
-We are unix orientated but also specialise in pc to unix communications, we 
-know and understand pc-nfs, (hence our interest in samba).
-we support sunos, solaris 1.x and 2.x, hp-ux 9.0 and 10.0, osf (or dec unix, 
-whichever you prefer), winnt, wfwg and win95.
+Tectonic is a Unix specialist company, with the expertise to provide
+consultancy and integrated solutions for a wide range of Information
+Technology needs.  We support three major Unix operating systems (Solaris,
+AIX and HP-UX) and PC operating systems including Windows NT, Windows 95
+and Windows for Workgroups.  Tectonic is truly an Open Systems company.
 
-We are already talking to a couple of very large samba users here in the uk. 
-Tectonic are in the process of creating the UK SAMBA USER GROUP and would
-appreciate any feedback or queries.
+Tectonic has been using Samba in house and providing support since 1995.
+We currently support a dozen large organizations in varying business
+sectors including business critical areas.
 
-For samba support, and for details on the UK SAMBA USER GROUP, please contact
-me at: sam@tectonic.demon.co.uk
+Tectonic provides Samba support, technical expertise, upgrades and
+information bulletins.
+
+For more information about support please contact:
+nick.berry@tectonic.co.uk
 
 ------------------------------------------------------------------------------
 
@@ -1924,6 +1929,24 @@ http://www.id.ibs.se/ibsid
         
 We have offices in about 20 cities in Sweden and can provide commercial 
 support for Samba.
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+BERN - SWITZERLAND
+
+Charles Bueche           e-mail : cbueche@worldcom.ch
+Les Morels 9             phone  : +41.(0)79.330.00.70
+2515 Preles              fax    : +41.(0)32.315.52.16
+Switzerland
+
+I have used Samba for more than 4 years across several 
+large Swiss companies. I offer support on planing, 
+configuration and maintenance of Samba. My primary 
+platform is Sun Solaris, but I can also support 
+Samba on SunOS, HP, DEC-UNIX, or Linux.
+
+Other duties includes security audits (Inter- & Intranet),
+Sun High Availability and Checkpoint Firewall-1.
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
