@@ -206,11 +206,17 @@ extracts a
 .Fa sa .
 .Pp
 .Fn krb5_addr2sockaddr
-extracts the
+sets the
 struct sockaddr
 .Fa sockaddr
+from
+.Fa addr
 and
 .Fa port .
+.Fa Sa_size
+should be initially contain the size of the
+.Fa sa ,
+and after the call, it will contain the actual length of the address.
 .Pp
 .Fn krb5_max_sockaddr_size
 returns the max size of the
