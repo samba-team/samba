@@ -1687,6 +1687,7 @@ void start_login(char *host, int autologin, char *name)
 	} /* else */ /* esc@magic.fi; removed stupid else */
 #endif
 	if (getenv("USER")) {
+	        addarg(&argv, "--");
 		addarg(&argv, getenv("USER"));
 #if	defined(LOGIN_ARGS) && defined(NO_LOGIN_P)
 		{
