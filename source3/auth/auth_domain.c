@@ -84,8 +84,6 @@ static NTSTATUS connect_to_domain_password_server(struct cli_state **cli,
 		}
 	}
 
-	standard_sub_basic(current_user_info.smb_name, remote_machine, sizeof(remote_machine));
-  
 	if (ismyip(dest_ip)) {
 		DEBUG(1,("connect_to_domain_password_server: Password server loop - not using password server %s\n",
 			 remote_machine));
