@@ -405,7 +405,7 @@ int smbw_errno(struct cli_state *c)
 	uint32 ecode;
 	int ret;
 
-	ret = cli_error(c, &eclass, &ecode, NULL);
+	ret = cli_dos_error(c, &eclass, &ecode);
 
 	if (ret) {
 		DEBUG(3,("smbw_error %d %d (0x%x) -> %d\n", 
