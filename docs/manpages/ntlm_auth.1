@@ -3,29 +3,54 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMBSTATUS" "1" "17 April 2003" "" ""
+.TH "NTLM_AUTH" "1" "17 April 2003" "" ""
 
 .SH NAME
-smbstatus \- report on current Samba connections
+ntlm_auth \- tool to allow external access to Winbind's NTLM authentication function
 .SH SYNOPSIS
 
-\fBsmbstatus\fR [ \fB-P\fR ] [ \fB-b\fR ] [ \fB-d <debug level>\fR ] [ \fB-v\fR ] [ \fB-L\fR ] [ \fB-B\fR ] [ \fB-p\fR ] [ \fB-S\fR ] [ \fB-s <configuration file>\fR ] [ \fB-u <username>\fR ]
+\fBntlm_auth\fR [ \fB-d debuglevel\fR ] [ \fB-l logfile\fR ] [ \fB-s <smb config file>\fR ]
 
 .SH "DESCRIPTION"
 .PP
 This tool is part of the \fBSamba\fR(7) suite.
 .PP
-\fBsmbstatus\fR is a very simple program to 
-list the current Samba connections.
+\fBntlm_auth\fR is a helper utility that authenticates 
+users using NT/LM authentication. It returns 0 if the users is authenticated
+successfully and 1 if access was denied. ntlm_auth uses winbind to access 
+the user and authentication data for a domain. This utility 
+is only to be used by other programs (currently squid).
 .SH "OPTIONS"
 .TP
-\fB-P|--profile\fR
-If samba has been compiled with the 
-profiling option, print only the contents of the profiling 
-shared memory area.
+\fB--helper-protocol=PROTO\fR
+Operate as a stdio-based helper
 .TP
-\fB-b|--brief\fR
-gives brief output.
+\fB--username=USERNAME\fR
+Specify username of user to authenticate
+.TP
+\fB--domain=DOMAIN\fR
+Specify domain of user to authenticate
+.TP
+\fB--workstation=WORKSTATION\fR
+Specify the workstation the user authenticated from
+.TP
+\fB--challenge=STRING\fR
+challenge (HEX encoded)
+.TP
+\fB--lm-response=RESPONSE\fR
+LM Response to the challenge (HEX encoded)
+.TP
+\fB--nt-response=RESPONSE\fR
+NT or NTLMv2 Response to the challenge (HEX encoded)
+.TP
+\fB--password=PASSWORD\fR
+User's plaintext password
+.TP
+\fB--request-lm-key\fR
+Retreive LM session key
+.TP
+\fB--request-nt-key\fR
+Request NT key
 .TP
 \fB-V\fR
 Prints the version number for 
@@ -68,35 +93,12 @@ File name for log/debug files. The extension
 ".client" will be appended. The log file is
 never removed by the client.
 .TP
-\fB-v|--verbose\fR
-gives verbose output.
-.TP
-\fB-L|--locks\fR
-causes smbstatus to only list locks.
-.TP
-\fB-B|--byterange\fR
-causes smbstatus to include byte range locks.
-.TP
-\fB-p|--processes\fR
-print a list of \fBsmbd\fR(8) processes and exit. 
-Useful for scripting.
-.TP
-\fB-S|--shares\fR
-causes smbstatus to only list shares.
-.TP
 \fB-h|--help\fR
 Print a summary of command line options.
-.TP
-\fB-u|--user=<username>\fR
-selects information relevant to 
-\fIusername\fR only.
 .SH "VERSION"
 .PP
-This man page is correct for version 3.0 of 
-the Samba suite.
-.SH "SEE ALSO"
-.PP
-\fBsmbd\fR(8) and \fBsmb.conf\fR(5).
+This man page is correct for version 3.0 of the Samba 
+suite.
 .SH "AUTHOR"
 .PP
 The original Samba software and related utilities 
@@ -104,9 +106,4 @@ were created by Andrew Tridgell. Samba is now developed
 by the Samba Team as an Open Source project similar 
 to the way the Linux kernel is developed.
 .PP
-The original Samba man pages were written by Karl Auer. 
-The man page sources were converted to YODL format (another 
-excellent piece of Open Source software, available at  ftp://ftp.icce.rug.nl/pub/unix/ <URL:ftp://ftp.icce.rug.nl/pub/unix/>) and updated for the Samba 2.0 
-release by Jeremy Allison.  The conversion to DocBook for 
-Samba 2.2 was done by Gerald Carter. The conversion to DocBook XML 4.2
-for Samba 3.0 was done by Alexander Bokovoy.
+The ntlm_auth manpage was written by Jelmer Vernooij.

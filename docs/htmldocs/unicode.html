@@ -1,0 +1,301 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML
+><HEAD
+><TITLE
+>Unicode/Charsets</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.7"><LINK
+REL="HOME"
+TITLE="SAMBA Project Documentation"
+HREF="samba-howto-collection.html"><LINK
+REL="UP"
+TITLE="Advanced Configuration"
+HREF="optional.html"><LINK
+REL="PREVIOUS"
+TITLE="Securing Samba"
+HREF="securing-samba.html"><LINK
+REL="NEXT"
+TITLE="Appendixes"
+HREF="appendixes.html"></HEAD
+><BODY
+CLASS="CHAPTER"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>SAMBA Project Documentation</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="securing-samba.html"
+ACCESSKEY="P"
+>Prev</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+></TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="appendixes.html"
+ACCESSKEY="N"
+>Next</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="CHAPTER"
+><H1
+><A
+NAME="UNICODE"
+></A
+>Chapter 26. Unicode/Charsets</H1
+><DIV
+CLASS="TOC"
+><DL
+><DT
+><B
+>Table of Contents</B
+></DT
+><DT
+>26.1. <A
+HREF="unicode.html#AEN4127"
+>What are charsets and unicode?</A
+></DT
+><DT
+>26.2. <A
+HREF="unicode.html#AEN4136"
+>Samba and charsets</A
+></DT
+><DT
+>26.3. <A
+HREF="unicode.html#AEN4155"
+>Conversion from old names</A
+></DT
+></DL
+></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN4127"
+>26.1. What are charsets and unicode?</A
+></H1
+><P
+>Computers communicate in numbers. In texts, each number will be 
+translated to a corresponding letter. The meaning that will be assigned 
+to a certain number depends on the <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>character set(charset)</I
+></SPAN
+> that is used. 
+A charset can be seen as a table that is used to translate numbers to 
+letters. Not all computers use the same charset (there are charsets 
+with German umlauts, Japanese characters, etc). Usually a charset contains 
+256 characters, which means that storing a character with it takes 
+exactly one byte. </P
+><P
+>There are also charsets that support even more characters, 
+but those need twice(or even more) as much storage space. These 
+charsets can contain <B
+CLASS="COMMAND"
+>256 * 256 = 65536</B
+> characters, which
+is more then all possible characters one could think of. They are called 
+multibyte charsets (because they use more then one byte to 
+store one character). </P
+><P
+>A standardised multibyte charset is unicode, info available at 
+<A
+HREF="http://www.unicode.org/"
+TARGET="_top"
+>www.unicode.org</A
+>. 
+Big advantage of using a multibyte charset is that you only need one; no 
+need to make sure two computers use the same charset when they are 
+communicating.</P
+><P
+>Old windows clients used to use single-byte charsets, named 
+'codepages' by microsoft. However, there is no support for 
+negotiating the charset to be used in the smb protocol. Thus, you 
+have to make sure you are using the same charset when talking to an old client.
+Newer clients (Windows NT, 2K, XP) talk unicode over the wire.</P
+></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN4136"
+>26.2. Samba and charsets</A
+></H1
+><P
+>As of samba 3.0, samba can (and will) talk unicode over the wire. Internally, 
+samba knows of three kinds of character sets: </P
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+>unix charset</DT
+><DD
+><P
+>		This is the charset used internally by your operating system. 
+		The default is <CODE
+CLASS="CONSTANT"
+>ASCII</CODE
+>, which is fine for most 
+		systems.
+		</P
+></DD
+><DT
+>display charset</DT
+><DD
+><P
+>This is the charset samba will use to print messages
+		on your screen. It should generally be the same as the <B
+CLASS="COMMAND"
+>unix charset</B
+>.
+		</P
+></DD
+><DT
+>dos charset</DT
+><DD
+><P
+>This is the charset samba uses when communicating with 
+		DOS and Windows 9x clients. It will talk unicode to all newer clients.
+		The default depends on the charsets you have installed on your system.
+		Run <B
+CLASS="COMMAND"
+>testparm -v | grep "dos charset"</B
+> to see 
+		what the default is on your system. 
+		</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN4155"
+>26.3. Conversion from old names</A
+></H1
+><P
+>Because previous samba versions did not do any charset conversion, 
+characters in filenames are usually not correct in the unix charset but only 
+for the local charset used by the DOS/Windows clients.</P
+><P
+>The following script from Steve Langasek converts all 
+filenames from CP850 to the iso8859-15 charset.</P
+><P
+><SAMP
+CLASS="PROMPT"
+>#</SAMP
+><KBD
+CLASS="USERINPUT"
+>find <VAR
+CLASS="REPLACEABLE"
+>/path/to/share</VAR
+> -type f -exec bash -c 'CP="{}"; ISO=`echo -n "$CP" | iconv -f cp850 \
+  -t iso8859-15`; if [ "$CP" != "$ISO" ]; then mv "$CP" "$ISO"; fi' \;</KBD
+></P
+></DIV
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="securing-samba.html"
+ACCESSKEY="P"
+>Prev</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="samba-howto-collection.html"
+ACCESSKEY="H"
+>Home</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="appendixes.html"
+ACCESSKEY="N"
+>Next</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>Securing Samba</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="optional.html"
+ACCESSKEY="U"
+>Up</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>Appendixes</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>
