@@ -124,4 +124,7 @@
 #define ALLOC(X, N) (X) = calloc((N), sizeof(*(X)))
 #define ALLOC_SEQ(X, N) do { (X)->len = (N); ALLOC((X)->val, (N)); } while(0)
 
+/* should this be public? */
+#define KEYTAB_DEFAULT "FILE:/etc/krb5.keytab"
+
 #endif /* __KRB5_LOCL_H__ */
