@@ -11,25 +11,15 @@
 
 <refnamediv>
 	<refname>ntlm_auth</refname>
-	<refpurpose>tool for executing client side 
-	MS-RPC functions</refpurpose>
+	<refpurpose>tool to allow external access to Winbind's NTLM authentication function</refpurpose>
 </refnamediv>
 
 <refsynopsisdiv>
 	<cmdsynopsis>
 		<command>ntlm_auth</command>
-		<arg choice="opt">-A authfile</arg>
-		<arg choice="opt">-c &lt;command string&gt;</arg>
 		<arg choice="opt">-d debuglevel</arg>
-		<arg choice="opt">-h</arg>
 		<arg choice="opt">-l logfile</arg>
-		<arg choice="opt">-N</arg>
 		<arg choice="opt">-s &lt;smb config file&gt;</arg>
-		<arg choice="opt">-U username[%password]</arg>
-		<arg choice="opt">-W workgroup</arg>
-		<arg choice="opt">-N</arg>
-		<arg choice="opt">-I destinationIP</arg>
-		<arg choice="req">server</arg>
 	</cmdsynopsis>
 </refsynopsisdiv>
 
@@ -75,7 +65,7 @@
 	<varlistentry>
 	<term>--workstation=WORKSTATION</term>
 	<listitem><para>
-	Specify workstation of user to authenticate
+	Specify the workstation the user authenticated from
 	</para></listitem>
 	</varlistentry>
 
