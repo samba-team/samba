@@ -6,7 +6,7 @@
   (re-search-forward "AM_INIT_AUTOMAKE(heimdal,\\(.*\\))")
   (replace-match heimdal-version nil nil nil 1)
   (goto-char 1)
-  (re-search-forward "AC_INIT(heimdal, *\\([^,]*\\))")
+  (re-search-forward "AC_INIT(heimdal, *\\(.*\\),)")
   (replace-match heimdal-version nil nil nil 1)
   (save-buffer)
   ;;(vc-checkin "configure.in" nil version-string)
