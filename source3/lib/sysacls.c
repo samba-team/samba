@@ -655,14 +655,37 @@ int sys_acl_set_permset(SMB_ACL_ENTRY_T entry_d, SMB_ACL_PERMSET_T permset_d)
 	return 0;
 }
 
-int sys_acl_valid(SMB_ACL_T acl_d)
+/*
+ * sort the ACL and check it for validity
+ *
+ * if it's a minimal ACL with only 4 entries then we
+ * need to recalculate the mask permissions to make
+ * sure that they are the same as the GROUP_OBJ
+ * permissions as required by the UnixWare acl() system call.
+ *
+ * (note: since POSIX allows minimal ACLs which only contain
+ * 3 entries - ie there is no mask entry - we should, in theory,
+ * check for this and add a mask entry if necessary - however
+ * we "know" that the caller of this interface always specifies
+ * a mask so, in practice "this never happens" (tm) - if it *does*
+ * happen aclsort() will fail and return an error and someone will
+ * have to fix it ...)
+ */
+
+static int acl_sort(SMB_ACL_T acl_d)
 {
-	if (aclsort(acl_d->count, 1, acl_d->acl) != 0) {
+	int     fixmask = (acl_d->count <= 4);
+
+	if (aclsort(acl_d->count, fixmask, acl_d->acl) != 0) {
 		errno = EINVAL;
 		return -1;
 	}
-
 	return 0;
+}
+ 
+int sys_acl_valid(SMB_ACL_T acl_d)
+{
+	return acl_sort(acl_d);
 }
 
 int sys_acl_set_file(const char *name, SMB_ACL_TYPE_T type, SMB_ACL_T acl_d)
@@ -678,7 +701,7 @@ int sys_acl_set_file(const char *name, SMB_ACL_TYPE_T type, SMB_ACL_T acl_d)
 		return -1;
 	}
 
-	if (stat(name, &s) != 0) {
+	if (acl_sort(acl_d) != 0) {
 		return -1;
 	}
 
@@ -690,6 +713,9 @@ int sys_acl_set_file(const char *name, SMB_ACL_TYPE_T type, SMB_ACL_T acl_d)
 	 * since the acl() system call will replace both
 	 * the access ACLs and the default ACLs (if any)
 	 */
+	if (stat(name, &s) != 0) {
+		return -1;
+	}
 	if (S_ISDIR(s.st_mode)) {
 		SMB_ACL_T	acc_acl;
 		SMB_ACL_T	def_acl;
@@ -698,13 +724,11 @@ int sys_acl_set_file(const char *name, SMB_ACL_TYPE_T type, SMB_ACL_T acl_d)
 
 		if (type == SMB_ACL_TYPE_ACCESS) {
 			acc_acl = acl_d;
-			def_acl = 
-			tmp_acl = sys_acl_get_file(name, SMB_ACL_TYPE_DEFAULT);
+			def_acl = tmp_acl = sys_acl_get_file(name, SMB_ACL_TYPE_DEFAULT);
 
 		} else {
 			def_acl = acl_d;
-			acc_acl = 
-			tmp_acl = sys_acl_get_file(name, SMB_ACL_TYPE_ACCESS);
+			acc_acl = tmp_acl = sys_acl_get_file(name, SMB_ACL_TYPE_ACCESS);
 		}
 
 		if (tmp_acl == NULL) {
@@ -714,9 +738,8 @@ int sys_acl_set_file(const char *name, SMB_ACL_TYPE_T type, SMB_ACL_T acl_d)
 		/*
 		 * allocate a temporary buffer for the complete ACL
 		 */
-		acl_count	= acc_acl->count + def_acl->count;
-		acl_p		=
-		acl_buf		= malloc(acl_count * sizeof(acl_buf[0]));
+		acl_count = acc_acl->count + def_acl->count;
+		acl_p = acl_buf = malloc(acl_count * sizeof(acl_buf[0]));
 
 		if (acl_buf == NULL) {
 			sys_acl_free_acl(tmp_acl);
@@ -747,12 +770,7 @@ int sys_acl_set_file(const char *name, SMB_ACL_TYPE_T type, SMB_ACL_T acl_d)
 		return -1;
 	}
 
-	if (aclsort(acl_count, 1, acl_p) != 0) {
-		errno = EINVAL;
-		ret = -1;
-	} else {
-		ret = acl(name, SETACL, acl_count, acl_p);
-	}
+	ret = acl(name, SETACL, acl_count, acl_p);
 
 	if (acl_buf) {
 		free(acl_buf);
@@ -763,12 +781,31 @@ int sys_acl_set_file(const char *name, SMB_ACL_TYPE_T type, SMB_ACL_T acl_d)
 
 int sys_acl_set_fd(int fd, SMB_ACL_T acl_d)
 {
-	if (aclsort(acl_d->count, 1, acl_d->acl) != 0) {
-		errno = EINVAL;
+	if (acl_sort(acl_d) {
 		return -1;
 	}
 
 	return facl(fd, SETACL, acl_d->count, &acl_d->acl[0]);
+}
+
+int sys_acl_delete_def_file(const char *path)
+{
+	SMB_ACL_T	acl_d;
+	int		ret;
+
+	/*
+	 * fetching the access ACL and rewriting it has
+	 * the effect of deleting the default ACL
+	 */
+	if ((acl_d = sys_acl_get_file(path, SMB_ACL_TYPE_ACCESS)) == NULL) {
+		return -1;
+	}
+
+	ret = acl(path, SETACL, acl_d->count, acl_d->acl);
+
+	sys_acl_free_acl(acl_d);
+	
+	return ret;
 }
 
 int sys_acl_free_text(char *text)
