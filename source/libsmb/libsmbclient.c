@@ -487,9 +487,8 @@ struct smbc_server *smbc_server(char *server, char *share,
  * and insist that fn must be non-null.
  */
 
-int smbc_init(smbc_get_auth_data_fn fn, const char *wgroup, int debug)
+int smbc_init(smbc_get_auth_data_fn fn, int debug)
 {
-  static pstring workgroup;
   pstring conf;
   int p, pid;
   char *user = NULL, *host = NULL, *home = NULL, *pname="libsmbclient";
@@ -532,7 +531,6 @@ int smbc_init(smbc_get_auth_data_fn fn, const char *wgroup, int debug)
    */
 
   slprintf(my_netbios_name, 16, "smbc%s%d", user, pid);
-  pstrcpy(workgroup, wgroup);
 
   charset_initialise();
 
