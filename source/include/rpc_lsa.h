@@ -537,7 +537,6 @@ typedef struct
 	POLICY_HND pol; /* policy handle */
 	DOM_SID2 sid;
 	UNISTR2_ARRAY rights;
-	uint32 count;
 } LSA_Q_ADD_ACCT_RIGHTS;
 
 /* LSA_R_ADD_ACCT_RIGHTS - LSA add account rights */
@@ -562,7 +561,6 @@ typedef struct
 {
 	NTSTATUS status;
 } LSA_R_REMOVE_ACCT_RIGHTS;
-
 
 /* LSA_Q_PRIV_GET_DISPNAME - LSA get privilege display name */
 typedef struct lsa_q_priv_get_dispname

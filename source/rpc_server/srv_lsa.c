@@ -642,6 +642,100 @@ static BOOL api_lsa_query_info2(pipes_struct *p)
 }
 
 
+
+/***************************************************************************
+ api_lsa_enum_acctrights
+ ***************************************************************************/
+static BOOL api_lsa_enum_acct_rights(pipes_struct *p)
+{
+	LSA_Q_ENUM_ACCT_RIGHTS q_u;
+	LSA_R_ENUM_ACCT_RIGHTS r_u;
+	
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	if(!lsa_io_q_enum_acct_rights("", &q_u, data, 0)) {
+		DEBUG(0,("api_lsa_enum_acct_rights: failed to unmarshall LSA_Q_ENUM_ACCT_RIGHTS.\n"));
+		return False;
+	}
+
+	r_u.status = _lsa_enum_acct_rights(p, &q_u, &r_u);
+
+	/* store the response in the SMB stream */
+	if(!lsa_io_r_enum_acct_rights("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_lsa_enum_acct_rights: Failed to marshall LSA_R_ENUM_ACCT_RIGHTS.\n"));
+		return False;
+	}
+
+	return True;
+}
+
+
+/***************************************************************************
+ api_lsa_add_acctrights
+ ***************************************************************************/
+static BOOL api_lsa_add_acct_rights(pipes_struct *p)
+{
+	LSA_Q_ADD_ACCT_RIGHTS q_u;
+	LSA_R_ADD_ACCT_RIGHTS r_u;
+	
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	if(!lsa_io_q_add_acct_rights("", &q_u, data, 0)) {
+		DEBUG(0,("api_lsa_add_acct_rights: failed to unmarshall LSA_Q_ADD_ACCT_RIGHTS.\n"));
+		return False;
+	}
+
+	r_u.status = _lsa_add_acct_rights(p, &q_u, &r_u);
+
+	/* store the response in the SMB stream */
+	if(!lsa_io_r_add_acct_rights("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_lsa_add_acct_rights: Failed to marshall LSA_R_ADD_ACCT_RIGHTS.\n"));
+		return False;
+	}
+
+	return True;
+}
+
+
+/***************************************************************************
+ api_lsa_remove_acctrights
+ ***************************************************************************/
+static BOOL api_lsa_remove_acct_rights(pipes_struct *p)
+{
+	LSA_Q_REMOVE_ACCT_RIGHTS q_u;
+	LSA_R_REMOVE_ACCT_RIGHTS r_u;
+	
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	if(!lsa_io_q_remove_acct_rights("", &q_u, data, 0)) {
+		DEBUG(0,("api_lsa_remove_acct_rights: failed to unmarshall LSA_Q_REMOVE_ACCT_RIGHTS.\n"));
+		return False;
+	}
+
+	r_u.status = _lsa_remove_acct_rights(p, &q_u, &r_u);
+
+	/* store the response in the SMB stream */
+	if(!lsa_io_r_remove_acct_rights("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_lsa_remove_acct_rights: Failed to marshall LSA_R_REMOVE_ACCT_RIGHTS.\n"));
+		return False;
+	}
+
+	return True;
+}
+
+
 /***************************************************************************
  \PIPE\ntlsa commands
  ***************************************************************************/
@@ -673,7 +767,10 @@ int rpc_lsa_init(void)
       { "LSA_ADDPRIVS"        , LSA_ADDPRIVS        , api_lsa_addprivs         },
       { "LSA_REMOVEPRIVS"     , LSA_REMOVEPRIVS     , api_lsa_removeprivs      },
       { "LSA_QUERYSECOBJ"     , LSA_QUERYSECOBJ     , api_lsa_query_secobj     },
-      { "LSA_QUERYINFO2"      , LSA_QUERYINFO2      , api_lsa_query_info2      }
+      { "LSA_QUERYINFO2"      , LSA_QUERYINFO2      , api_lsa_query_info2      },
+      { "LSA_ENUMACCTRIGHTS"  , LSA_ENUMACCTRIGHTS  , api_lsa_enum_acct_rights },
+      { "LSA_ADDACCTRIGHTS"   , LSA_ADDACCTRIGHTS   , api_lsa_add_acct_rights  },
+      { "LSA_REMOVEACCTRIGHTS", LSA_REMOVEACCTRIGHTS, api_lsa_remove_acct_rights},
     };
 
   return rpc_pipe_register_commands("lsarpc", "lsass", api_lsa_cmds, 
