@@ -1935,7 +1935,7 @@ BOOL lp_add_home(const char *pszHomename, int iDefaultService,
 	ServicePtrs[i]->bBrowseable = sDefault.bBrowseable;
 
 	DEBUG(3,
-	      ("adding home's share [%s] for user %s at %s\n", pszHomename, 
+	      ("adding home's share [%s] for user '%s' at '%s'\n", pszHomename, 
 	       user, newHomedir));
 	
 	return (True);
