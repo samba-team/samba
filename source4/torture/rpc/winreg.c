@@ -23,6 +23,12 @@
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_winreg.h"
 
+static void init_initshutdown_String(TALLOC_CTX *mem_ctx, struct initshutdown_String *name, const char *s)
+{
+	name->name = talloc(mem_ctx, struct initshutdown_String_sub);
+	name->name->name = s;
+}
+
 static void init_winreg_String(struct winreg_String *name, const char *s)
 {
 	name->name = s;
@@ -555,10 +561,11 @@ static BOOL test_InitiateSystemShutdown(struct dcerpc_pipe *p, TALLOC_CTX *mem_c
 {
 	struct winreg_InitiateSystemShutdown r;
 	NTSTATUS status;
+	uint16_t hostname = 0x0;
 	
-	r.in.hostname = NULL;
-	r.in.message = talloc(mem_ctx, struct winreg_String);
-	init_winreg_String(r.in.message, msg);
+	r.in.hostname = &hostname;
+	r.in.message = talloc(mem_ctx, struct initshutdown_String);
+	init_initshutdown_String(mem_ctx, r.in.message, msg);
 	r.in.force_apps = 1;
 	r.in.timeout = timeout;
 	r.in.reboot = 1;
@@ -583,10 +590,11 @@ static BOOL test_InitiateSystemShutdownEx(struct dcerpc_pipe *p, TALLOC_CTX *mem
 {
 	struct winreg_InitiateSystemShutdownEx r;
 	NTSTATUS status;
+	uint16_t hostname = 0x0;
 	
-	r.in.hostname = NULL;
-	r.in.message = talloc(mem_ctx, struct winreg_String);
-	init_winreg_String(r.in.message, msg);
+	r.in.hostname = &hostname;
+	r.in.message = talloc(mem_ctx, struct initshutdown_String);
+	init_initshutdown_String(mem_ctx, r.in.message, msg);
 	r.in.force_apps = 1;
 	r.in.timeout = timeout;
 	r.in.reboot = 1;

@@ -918,6 +918,20 @@ NTSTATUS ndr_push_string(struct ndr_push *ndr, int ndr_flags, const char *s)
 		ndr->offset += byte_mul*(c_len+1);
 		break;
 
+	case LIBNDR_FLAG_STR_LEN4|LIBNDR_FLAG_STR_NOTERM:
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, c_len));
+		NDR_PUSH_NEED_BYTES(ndr, byte_mul*c_len);
+		ret = convert_string(CH_UNIX, chset, 
+				     s, s_len,
+				     ndr->data+ndr->offset, byte_mul*c_len);
+		if (ret == -1) {
+			return ndr_push_error(ndr, NDR_ERR_CHARCNV, 
+					      "Bad character conversion");
+		}
+		ndr->offset += byte_mul*c_len;
+		break;
+
 	case LIBNDR_FLAG_STR_SIZE4:
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, c_len + c_len_term));
 		NDR_PUSH_NEED_BYTES(ndr, byte_mul*(c_len+1));
