@@ -1,6 +1,6 @@
 # $Id$
 
-include $(top_srcdir)/Makefile.am.common
+include $(top_srcdir)/cf/Makefile.am.common
 
 INCLUDES += $(INCLUDE_krb4) -DLIBDIR=\"$(libdir)\" $(AFS_EXTRA_DEFS)
 
