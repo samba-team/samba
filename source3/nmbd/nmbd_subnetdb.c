@@ -180,6 +180,7 @@ static struct subnet_record *make_subnet(char *name, enum subnet_type type,
     DEBUG(0,("make_subnet: malloc fail for subnet name !\n"));
     close(nmb_sock);
     close(dgram_sock);
+    ZERO_STRUCTP(subrec);
     free((char *)subrec);
     return(NULL);
   }

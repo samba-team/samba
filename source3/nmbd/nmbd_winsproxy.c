@@ -191,6 +191,7 @@ static void wins_proxy_userdata_free_fn(struct userdata_struct *userdata)
   p->locked = False;
 
   free_packet(p);
+  ZERO_STRUCTP(userdata);
   free((char *)userdata);
 }
 

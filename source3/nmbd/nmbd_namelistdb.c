@@ -111,6 +111,8 @@ void remove_name_from_namelist( struct subnet_record *subrec,
 
   if(namerec->data.ip != NULL)
     free((char *)namerec->data.ip);
+
+  ZERO_STRUCTP(namerec);
   free((char *)namerec);
 
   subrec->namelist_changed = True;
@@ -218,6 +220,8 @@ struct name_record *add_name_to_subnet( struct subnet_record *subrec,
   if( NULL == namerec->data.ip )
   {
      DEBUG( 0, ( "add_name_to_subnet: malloc fail when creating ip_flgs.\n" ) );
+
+     ZERO_STRUCTP(namerec);
      free( (char *)namerec );
      return NULL;
   }

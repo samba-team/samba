@@ -56,6 +56,7 @@ void remove_all_servers(struct work_record *work)
     if (work->serverlist == servrec)
       work->serverlist = servrec->next;
 
+    ZERO_STRUCTP(servrec);
     free((char *)servrec);
 
   }
@@ -120,6 +121,7 @@ void remove_server_from_workgroup(struct work_record *work, struct server_record
   if (work->serverlist == servrec) 
     work->serverlist = servrec->next; 
 
+  ZERO_STRUCTP(servrec);
   free((char *)servrec);
   work->subnet->work_changed = True;
 }

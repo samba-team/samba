@@ -80,16 +80,19 @@ void remove_response_record(struct subnet_record *subrec,
 
   if(rrec->userdata)
   {
-    if(rrec->userdata->free_fn)
-      (*rrec->userdata->free_fn)(rrec->userdata);
-    else
-      free((char *)rrec->userdata);
+	  if(rrec->userdata->free_fn) {
+		  (*rrec->userdata->free_fn)(rrec->userdata);
+	  } else {
+		  ZERO_STRUCTP(rrec->userdata);
+		  free((char *)rrec->userdata);
+	  }
   }
 
   /* Ensure we can delete. */
   rrec->packet->locked = False;
   free_packet(rrec->packet);
 
+  ZERO_STRUCTP(rrec);
   free((char *)rrec);
 
   num_response_packets--; /* count of total number of packets still around */
@@ -135,6 +138,7 @@ struct response_record *make_response_record( struct subnet_record *subrec,
       if((rrec->userdata = (*userdata->copy_fn)(userdata)) == NULL)
       {
         DEBUG(0,("make_response_queue_record: copy fail for userdata.\n"));
+	ZERO_STRUCTP(rrec);
         free(rrec);
         return NULL;
       }
@@ -146,6 +150,7 @@ struct response_record *make_response_record( struct subnet_record *subrec,
            malloc(sizeof(struct userdata_struct)+userdata->userdata_len)) == NULL)
       {
         DEBUG(0,("make_response_queue_record: malloc fail for userdata.\n"));
+	ZERO_STRUCTP(rrec);
         free(rrec);
         return NULL;
       }

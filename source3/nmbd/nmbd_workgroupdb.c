@@ -158,6 +158,7 @@ static struct work_record *remove_workgroup_from_subnet(struct subnet_record *su
     if (subrec->workgrouplist == work)
       subrec->workgrouplist = work->next; 
   
+    ZERO_STRUCTP(work);
     free((char *)work);
   }
   
