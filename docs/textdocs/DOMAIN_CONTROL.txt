@@ -1,5 +1,5 @@
 !==
-!== DOMAIN_CONTROL.txt for Samba release 2.0.0-beta1 13 Nov 1998
+!== DOMAIN_CONTROL.txt for Samba release 2.1.0prealpha 981204
 !==
 Initial Release:	August 22, 1996
 Contributor:		John H Terpstra <samba-bugs@samba.org>
@@ -28,7 +28,7 @@ this. Please read the file docs/NTDOMAIN.txt for more information on this.
 ============================================================================
 
 Windows NT Server can be installed as either a plain file and print server
-(WORKGROUP workstaion or server) or as a server that participates in Domain
+(WORKGROUP workstation or server) or as a server that participates in Domain
 Control (DOMAIN member, Primary Domain controller or Backup Domain controller).
 
 The same is true for OS/2 Warp Server, Digital Pathworks and other similar

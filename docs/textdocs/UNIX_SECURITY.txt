@@ -1,5 +1,5 @@
 !==
-!== UNIX_SECURITY.txt for Samba release 2.0.0-beta1 13 Nov 1998
+!== UNIX_SECURITY.txt for Samba release 2.1.0prealpha 981204
 !==
 Contributor:	John H Terpstra <jht@samba.org>
 Date:		July 5, 1998
@@ -46,7 +46,11 @@ valid users list for the share.
 Note that only user works in conjunction with the users= list,
 so to get the behavior you require, add the line :
 
-user = %S
+users = %S
+
+this is equivalent to:
+
+valid users = %S
 
 to the definition of the [homes] share, as recommended in
 the smb.conf man page.

@@ -1,5 +1,5 @@
 !==
-!== SSLeay.txt for Samba release 2.0.0-beta1 13 Nov 1998
+!== SSLeay.txt for Samba release 2.1.0prealpha 981204
 !==
 Contributor: Christian Starkjohann <cs@obdev.at>
 Date:        May 29, 1998
