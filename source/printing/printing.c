@@ -1111,7 +1111,7 @@ BOOL print_notify_pid_list(const char *printername, TALLOC_CTX *mem_ctx, size_t 
 	struct tdb_print_db *pdb;
 	TDB_DATA data;
 	BOOL ret = True;
-	size_t i, num_pids;
+	size_t i, num_pids, offset;
 	pid_t *pid_list;
 
 	*p_num_pids = 0;
@@ -1141,10 +1141,8 @@ BOOL print_notify_pid_list(const char *printername, TALLOC_CTX *mem_ctx, size_t 
 		goto done;
 	}
 
-	for( i = 0; i < data.dsize; i += 8) {
-		pid_t pid = (pid_t)IVAL(data.dptr, i);
-		pid_list[i] = pid;
-	}
+	for( i = 0, offset = 0; offset < data.dsize; offset += 8, i++)
+		pid_list[i] = (pid_t)IVAL(data.dptr, offset);
 
 	*pp_pid_list = pid_list;
 	*p_num_pids = num_pids;
