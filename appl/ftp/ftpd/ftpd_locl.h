@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1998 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -143,15 +143,15 @@
 
 #include "roken.h"
 
+#ifdef KRB5
+#include <krb5.h>
+#endif /* KRB5 */
+
 #ifdef KRB4
 #include <krb.h>
 #include <kafs.h>
 #endif
  
-#ifdef KRB5
-#include <krb5.h>
-#endif /* KRB5 */
-
 #ifdef OTP
 #include <otp.h>
 #endif
