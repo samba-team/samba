@@ -191,7 +191,7 @@ NTSTATUS smb_password_ok(SAM_ACCOUNT *sampass, const auth_usersupplied_info *use
 			if (smb_pwd_check_ntlmv2( user_info->nt_resp.buffer, 
 						  user_info->nt_resp.len, 
 						  nt_pw, 
-						  user_info->chal, sampass->username, 
+						  user_info->chal, user_info->smb_username.str, 
 						  user_info->requested_domain.str,
 						  (char *)server_info->session_key))
 			{
