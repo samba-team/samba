@@ -188,7 +188,6 @@ NTSTATUS smbcli_full_connection(TALLOC_CTX *parent_ctx,
 	(*ret_cli)->tree = tree;
 	(*ret_cli)->session = tree->session;
 	(*ret_cli)->transport = tree->session->transport;
-	talloc_steal(*ret_cli, tree->session->transport->socket);
 	
 done:
 	talloc_free(mem_ctx);
