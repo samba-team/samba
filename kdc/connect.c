@@ -396,12 +396,13 @@ static void
 addr_to_string(struct sockaddr *addr, size_t addr_len, char *str, size_t len)
 {
     krb5_address a;
-    krb5_sockaddr2address(context, addr, &a);
-    if(krb5_print_address(&a, str, len, &len) == 0) {
+    if(krb5_sockaddr2address(context, addr, &a) == 0) {
+	if(krb5_print_address(&a, str, len, &len) == 0) {
+	    krb5_free_address(context, &a);
+	    return;
+	}
 	krb5_free_address(context, &a);
-	return;
     }
-    krb5_free_address(context, &a);
     snprintf(str, len, "<family=%d>", addr->sa_family);
 }
 
