@@ -91,8 +91,8 @@ static BOOL test_ping_speed(TALLOC_CTX *mem_ctx)
 		DATA_BLOB data;
 		NTSTATUS status1, status2;
 
-		data.data = discard_const_p(char, "testing");
-		data.length = strlen(data.data);
+		data.data = discard_const_p(void, "testing");
+		data.length = strlen((const char *)data.data);
 
 		status1 = messaging_send(msg_ctx, 1, MY_PING, &data);
 		status2 = messaging_send(msg_ctx, 1, MY_PING, NULL);

@@ -124,8 +124,8 @@ char *sess_decrypt_string(DATA_BLOB *blob, const DATA_BLOB *session_key)
 			 IVAL(out.data, 4)));
 		return NULL;
 	}
-		
-	ret = strndup(out.data+8, slen);
+
+	ret = strndup((const char *)(out.data+8), slen);
 
 	data_blob_free(&out);
 
