@@ -48,6 +48,7 @@ static void tdb_log(TDB_CONTEXT *tdb, int level, const char *format, ...)
 	va_start(ap, format);
 	vfprintf(stdout, format, ap);
 	va_end(ap);
+	fflush(stdout);
 }
 
 static void compare_db(void)
