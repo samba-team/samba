@@ -7113,7 +7113,7 @@ WERROR _spoolss_setprinterdataex(pipes_struct *p, SPOOL_Q_SETPRINTERDATAEX *q_u,
 
         unistr2_to_ascii(key, &q_u->key, sizeof(key) - 1);
 
-        if (strcmp(key, "PrinterDriverData") == 0)
+        if (strcmp(key, "PrinterDriverData") != 0)
 	        return WERR_INVALID_PARAM;
 		
 	ZERO_STRUCT(q_u_local);	
