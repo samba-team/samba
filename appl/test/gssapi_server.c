@@ -38,6 +38,7 @@
 
 #include "test_locl.h"
 #include <gssapi.h>
+#include "gss_common.h"
 RCSID("$Id$");
 
 static int
@@ -100,7 +101,8 @@ proto (int sock, const char *service)
     if (GSS_ERROR(maj_stat))
 	abort ();
 
-    printf ("User is `%.*s'\n", name_token.length, name_token.value);
+    printf ("User is `%.*s'\n", (int)name_token.length,
+	    (char *)name_token.value);
 
     /* gss_verify_mic */
 
@@ -115,7 +117,8 @@ proto (int sock, const char *service)
     if (GSS_ERROR(maj_stat))
 	abort ();
 
-    printf ("gss_verify_mic: %.*s\n", input_token->length, input_token->value);
+    printf ("gss_verify_mic: %.*s\n", (int)input_token->length,
+	    (char *)input_token->value);
 
     /* gss_unwrap */
 
@@ -130,7 +133,8 @@ proto (int sock, const char *service)
     if(GSS_ERROR(maj_stat))
 	abort ();
 
-    printf ("gss_unwrap: %.*s\n", output_token->length, output_token->value);
+    printf ("gss_unwrap: %.*s\n", (int)output_token->length,
+	    (char *)output_token->value);
 
     return 0;
 }
