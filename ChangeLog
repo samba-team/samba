@@ -1,3 +1,7 @@
+Mon Sep 22 11:44:27 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
+
+	* lib/krb5/generate_subkey.c: Use krb5_generate_random_keyblock.
+
 Sun Sep 21 15:19:23 1997  Assar Westerlund  <assar@sics.se>
 
 	* kdc/connect.c: use new addr_families functions
