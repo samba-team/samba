@@ -184,6 +184,14 @@ BOOL asn1_write_BOOLEAN2(ASN1_DATA *data, BOOL v)
 	return !data->has_error;
 }
 
+BOOL asn1_read_BOOLEAN2(ASN1_DATA *data, BOOL *v)
+{
+	asn1_start_tag(data, ASN1_BOOLEAN);
+	asn1_read_uint8(data, (uint8 *)v);
+	asn1_end_tag(data);
+	return !data->has_error;
+}
+
 /* check a BOOLEAN */
 BOOL asn1_check_BOOLEAN(ASN1_DATA *data, BOOL v)
 {
@@ -364,6 +372,24 @@ BOOL asn1_read_sequence_until(int sock, ASN1_DATA *data,
 
 	data->ofs = 0;
 	
+	return True;
+}
+
+/* Get the length to be expected in buf */
+BOOL asn1_object_length(uint8_t *buf, size_t buf_length,
+			uint8 tag, size_t *result)
+{
+	ASN1_DATA data;
+
+	/* Fake the asn1_load to avoid the memdup, this is just to be able to
+	 * re-use the length-reading in asn1_start_tag */
+	ZERO_STRUCT(data);
+	data.data = buf;
+	data.length = buf_length;
+	if (!asn1_start_tag(&data, tag))
+		return False;
+	*result = asn1_tag_remaining(&data)+data.ofs;
+	asn1_end_tag(&data);
 	return True;
 }
 
