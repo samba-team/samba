@@ -51,7 +51,7 @@ typedef struct
 		uint16 length;
 		uint8 protocol;
 		struct {
-			RPC_UUID uuid;
+			struct uuid uuid;
 			uint16 version;
 		} uuid;
 	} lhs;

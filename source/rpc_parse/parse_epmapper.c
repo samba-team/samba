@@ -88,9 +88,9 @@ NTSTATUS init_epm_floor(EPM_FLOOR *floor, uint8 protocol)
  inits an EPM_FLOOR structure with a UUID
 ********************************************************************/
 NTSTATUS init_epm_floor_uuid(EPM_FLOOR *floor,
-			     const RPC_UUID *uuid, uint16 version)
+			     const struct uuid uuid, uint16 version)
 {
-	memcpy(&floor->lhs.uuid.uuid, uuid, sizeof(*uuid));
+	memcpy(&floor->lhs.uuid.uuid, &uuid, sizeof(uuid));
 	floor->lhs.uuid.version = version;
 	floor->rhs.unknown = 0;
 	return init_epm_floor(floor, EPM_FLOOR_UUID);
@@ -166,7 +166,7 @@ BOOL epm_io_floor(const char *desc, EPM_FLOOR *floor,
 
 	switch (floor->lhs.protocol) {
 	case EPM_FLOOR_UUID:
-		if (!smb_io_rpc_uuid("uuid", &floor->lhs.uuid.uuid, ps, depth))
+		if (!smb_io_uuid("uuid", &floor->lhs.uuid.uuid, ps, depth))
 			return False;
 		if (!prs_uint16("version", ps, depth, 
 				&floor->lhs.uuid.version))

@@ -43,7 +43,7 @@ void _epm_map(pipes_struct *ps, const EPM_Q_MAP *q_u, EPM_R_MAP *r_u)
 		switch (q_u->tower->floors[i].lhs.protocol) {
                 case EPM_FLOOR_UUID:
 			init_epm_floor_uuid(&floors[i],
-					    &q_u->tower->floors[i].
+					    q_u->tower->floors[i].
 					    lhs.uuid.uuid,
 					    q_u->tower->floors[i].
 					    lhs.uuid.version);

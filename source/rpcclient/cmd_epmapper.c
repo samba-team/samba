@@ -34,19 +34,21 @@ static NTSTATUS cmd_epm_map(struct cli_state *cli,
 	uint32 numtowers;
 	/* need to allow all this stuff to be passed in, but
 	   for now, it demonstrates the call */
-	RPC_UUID if_uuid = {0xe3514235, 0x4b06, 0x11d1, \
-			    { 0xab, 0x04, 0x00, 0xc0,   \
-			      0x4f, 0xc2, 0xdc, 0xd2 }},
-		syn_uuid = {0x8a885d04, 0x1ceb, 0x11c9, \
-			    { 0x9f, 0xe8, 0x08, 0x00,   \
-			      0x2b, 0x10, 0x48, 0x60 }};
+	struct uuid if_uuid = {0xe3514235, 0x4b06, 0x11d1, \
+			       { 0xab, 0x04 },             \
+			       { 0x00, 0xc0,               \
+				 0x4f, 0xc2, 0xdc, 0xd2 } },
+		   syn_uuid = {0x8a885d04, 0x1ceb, 0x11c9, \
+			       { 0x9f, 0xe8 },             \
+			       { 0x08, 0x00,               \
+				 0x2b, 0x10, 0x48, 0x60 } };
 
 	NTSTATUS result;
 
 	ZERO_STRUCT(handle);
 	numtowers = 1;
-	init_epm_floor_uuid(&floors[0], &if_uuid, 4);
-	init_epm_floor_uuid(&floors[1], &syn_uuid, 2);
+	init_epm_floor_uuid(&floors[0], if_uuid, 4);
+	init_epm_floor_uuid(&floors[1], syn_uuid, 2);
 	init_epm_floor_rpc(&floors[2]);
 
 	/* sample for netbios named pipe query 	
