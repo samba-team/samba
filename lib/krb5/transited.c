@@ -310,7 +310,7 @@ krb5_domain_x500_decode(krb5_context context,
     
     if(tr.length == 0) {
 	*realms = NULL;
-	num_realms = 0;
+	*num_realms = 0;
 	return 0;
     }
 
