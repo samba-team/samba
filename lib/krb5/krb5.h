@@ -68,24 +68,7 @@ typedef octet_string krb5_data;
 struct krb5_crypto_data;
 typedef struct krb5_crypto_data *krb5_crypto;
 
-typedef enum krb5_cksumtype { 
-  CKSUMTYPE_NONE		= 0,
-  CKSUMTYPE_CRC32		= 1,
-  CKSUMTYPE_RSA_MD4		= 2,
-  CKSUMTYPE_RSA_MD4_DES		= 3,
-  CKSUMTYPE_DES_MAC		= 4,
-  CKSUMTYPE_DES_MAC_K		= 5,
-  CKSUMTYPE_RSA_MD4_DES_K	= 6,
-  CKSUMTYPE_RSA_MD5		= 7,
-  CKSUMTYPE_RSA_MD5_DES		= 8,
-  CKSUMTYPE_RSA_MD5_DES3	= 9,
-/*  CKSUMTYPE_SHA1		= 10,*/
-  CKSUMTYPE_HMAC_SHA1_DES3	= 12,
-  CKSUMTYPE_SHA1		= 1000, /* correct value? */
-  CKSUMTYPE_HMAC_MD5		= -138, /* unofficial microsoft number */
-  CKSUMTYPE_HMAC_MD5_ENC	= -1138 /* even more unofficial */
-} krb5_cksumtype;
-
+typedef CKSUMTYPE krb5_cksumtype;
 
 typedef enum krb5_enctype { 
   ETYPE_NULL			= 0,
@@ -105,13 +88,7 @@ typedef enum krb5_enctype {
   ETYPE_DES3_CBC_NONE		= 0x1001
 } krb5_enctype;
 
-typedef enum krb5_preauthtype {
-  KRB5_PADATA_NONE		= 0,
-  KRB5_PADATA_AP_REQ,
-  KRB5_PADATA_TGS_REQ		= 1,
-  KRB5_PADATA_ENC_TIMESTAMP	= 2,
-  KRB5_PADATA_ENC_SECURID
-} krb5_preauthtype;
+typedef PADATA_TYPE krb5_preauthtype;
 
 typedef enum krb5_key_usage {
     KRB5_KU_PA_ENC_TIMESTAMP = 1,
@@ -185,8 +162,8 @@ typedef enum krb5_key_usage {
 } krb5_key_usage;
 
 typedef enum krb5_salttype {
-    KRB5_PW_SALT = pa_pw_salt,
-    KRB5_AFS3_SALT = pa_afs3_salt
+    KRB5_PW_SALT = KRB5_PADATA_PW_SALT,
+    KRB5_AFS3_SALT = KRB5_PADATA_AFS3_SALT
 }krb5_salttype;
 
 typedef struct krb5_salt {
@@ -390,16 +367,6 @@ typedef struct krb5_context_data {
     int num_kt_types;			/* # of registered keytab types */
     struct krb5_keytab_data *kt_types;  /* registered keytab types */
 } krb5_context_data;
-
-enum {
-  KRB5_NT_UNKNOWN	= 0,
-  KRB5_NT_PRINCIPAL	= 1,
-  KRB5_NT_SRV_INST	= 2,
-  KRB5_NT_SRV_HST	= 3,
-  KRB5_NT_SRV_XHST	= 4,
-  KRB5_NT_UID		= 5
-};
-
 
 typedef struct krb5_ticket {
     EncTicketPart ticket;
