@@ -109,6 +109,16 @@ in workgroup %s on subnet %s\n",
   /* Tell the namelist writer to write out a change. */
   subrec->work_changed = True;
 
+  /*
+   * Add the WORKGROUP<1C> name to the UNICAST subnet with the IP address
+   * for this subnet so we will respond to queries on this name.
+   */
+  {
+	  struct nmb_name nmbname;
+	  make_nmb_name(&nmbname,global_myworkgroup,0x1c);
+	  insert_permanent_name_into_unicast(subrec, &nmbname, 0x1c);
+  }
+
   DEBUG(0,("become_logon_server_success: Samba is now a logon server \
 for workgroup %s on subnet %s\n", work->work_group, subrec->subnet_name));
 }
