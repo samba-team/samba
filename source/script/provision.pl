@@ -364,6 +364,14 @@ system("ldbadd -H newsam.ldb newsam.ldif");
 
 print "done\n";
 
+unlink("newrootdse.ldb");
+
+print "creating newrootdse.ldb ...\n";
+
+system("ldbadd -H newrootdse.ldb rootdse.ldif");
+
+print "done\n";
+
 print "generating dns zone file ...\n";
 
 $data = FileLoad("provision.zone") || die "Unable to load provision.zone\n";
@@ -398,6 +406,8 @@ print "
 Installation:
 - Please move newsam.ldb to sam.ldb in the private/ directory of your
   Samba4 installation
+- Please move newrootdse.ldb to rootdse.ldb in the private/ directory
+  of your Samba4 installation
 - Please use $dnsdomain.zone to in BIND dns server
 ";
 
