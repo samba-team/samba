@@ -206,7 +206,7 @@ int dos_mode(int cnum,char *path,struct stat *sbuf)
 	  ((sbuf->st_mode & S_IWUSR) && current_user.uid==sbuf->st_uid) ||
 	  ((sbuf->st_mode & S_IWGRP) && 
 	   in_group(sbuf->st_gid,current_user.gid,
-		    current_user.ngroups,current_user.igroups))))
+		    current_user.ngroups,current_user.groups))))
       result |= aRONLY;
   } else {
     if ((sbuf->st_mode & S_IWUSR) == 0)
@@ -356,7 +356,7 @@ int file_utime(int cnum, char *fname, struct utimbuf *times)
 	       ((sb.st_mode & S_IWUSR) && current_user.uid==sb.st_uid) ||
 	       ((sb.st_mode & S_IWGRP) &&
 		in_group(sb.st_gid,current_user.gid,
-			 current_user.ngroups,current_user.igroups)))) {
+			 current_user.ngroups,current_user.groups)))) {
 		  /* We are allowed to become root and change the filetime. */
 		  become_root(False);
 		  ret = sys_utime(fname, times);
@@ -3567,14 +3567,13 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
 
   /* groups stuff added by ih */
   pcon->ngroups = 0;
-  pcon->igroups = NULL;
   pcon->groups = NULL;
 
   if (!IS_IPC(cnum))
     {
       /* Find all the groups this uid is in and store them. Used by become_user() */
       setup_groups(pcon->user,pcon->uid,pcon->gid,
-                  &pcon->ngroups,&pcon->igroups,&pcon->groups);
+                  &pcon->ngroups,&pcon->groups);
       
       /* check number of connections */
       if (!claim_connection(cnum,
@@ -4267,11 +4266,8 @@ void close_cnum(int cnum, uint16 vuid)
   num_connections_open--;
   if (Connections[cnum].ngroups && Connections[cnum].groups)
     {
-      if (Connections[cnum].igroups != (int *)Connections[cnum].groups)
-	free(Connections[cnum].groups);
-      free(Connections[cnum].igroups);
+      free(Connections[cnum].groups);
       Connections[cnum].groups = NULL;
-      Connections[cnum].igroups = NULL;
       Connections[cnum].ngroups = 0;
     }
 

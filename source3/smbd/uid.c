@@ -242,7 +242,6 @@ BOOL become_user(connection_struct *conn, int cnum, uint16 vuid)
     uid = conn->uid;
     gid = conn->gid;
     current_user.groups = conn->groups;
-    current_user.igroups = conn->igroups;
     current_user.ngroups = conn->ngroups;
   }
   else
@@ -258,7 +257,6 @@ BOOL become_user(connection_struct *conn, int cnum, uint16 vuid)
       gid = conn->gid;
     current_user.ngroups = vuser->n_groups;
     current_user.groups  = vuser->groups;
-    current_user.igroups = vuser->igroups;
   }
 
   if (initial_uid == 0)

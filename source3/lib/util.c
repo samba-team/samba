@@ -635,17 +635,17 @@ void close_sockets(void )
 /****************************************************************************
 determine whether we are in the specified group
 ****************************************************************************/
-BOOL in_group(gid_t group, int current_gid, int ngroups, int *groups)
+BOOL in_group(gid_t group, int current_gid, int ngroups, GID_T *groups)
 {
-  int i;
+	int i;
 
-  if (group == current_gid) return(True);
+	if (group == current_gid) return(True);
 
-  for (i=0;i<ngroups;i++)
-    if (group == groups[i])
-      return(True);
+	for (i=0;i<ngroups;i++)
+		if (group == groups[i])
+			return(True);
 
-  return(False);
+	return(False);
 }
 
 /****************************************************************************
