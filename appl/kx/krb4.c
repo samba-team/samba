@@ -71,7 +71,7 @@ krb4_authenticate (kx_context *kc, int s)
     krb4_kx_context *c = (krb4_kx_context *)kc->data;
     const char *host = kc->host;
 
-    if (kc->thisaddr.ss_family != AF_INET) {
+    if (kc->thisaddr->sa_family != AF_INET) {
 	warnx ("%s: used Kerberos v4 authentiocation on on non-IP4 address", 
 	       host);
 	return -1;
@@ -84,15 +84,15 @@ krb4_authenticate (kx_context *kc, int s)
 	if (krb_get_our_ip_for_realm(krb_realmofhost(kc->host),
 				     &natAddr) == KSUCCESS
 	    || krb_get_our_ip_for_realm (NULL, &natAddr) == KSUCCESS)
-	    ((struct sockaddr_in *)&kc->thisaddr)->sin_addr = natAddr;
+	    ((struct sockaddr_in *)kc->thisaddr)->sin_addr = natAddr;
     }
 #endif
 
     status = krb_sendauth (KOPT_DO_MUTUAL, s, &text, "rcmd",
 			   (char *)host, krb_realmofhost (host),
 			   getpid(), &msg, &cred, c->schedule,
-			   (struct sockaddr_in *)&kc->thisaddr,
-			   (struct sockaddr_in *)&kc->thataddr, KX_VERSION);
+			   (struct sockaddr_in *)kc->thisaddr,
+			   (struct sockaddr_in *)kc->thataddr, KX_VERSION);
     if (status != KSUCCESS) {
 	warnx ("%s: %s", host, krb_get_err_text(status));
 	return -1;
@@ -128,8 +128,8 @@ krb4_read (kx_context *kc,
     if (krb_net_read (fd, buf, l) != l)
 	return -1;
     status = krb_rd_priv (buf, l, c->schedule, &c->key,
-			  (struct sockaddr_in *)&kc->thataddr,
-			  (struct sockaddr_in *)&kc->thisaddr, &msg);
+			  (struct sockaddr_in *)kc->thataddr,
+			  (struct sockaddr_in *)kc->thisaddr, &msg);
     if (status != RD_AP_OK) {
 	warnx ("krb4_read: %s", krb_get_err_text(status));
 	return -1;
@@ -156,8 +156,8 @@ krb4_write(kx_context *kc,
     if (outbuf == NULL)
 	return -1;
     outlen = krb_mk_priv ((void *)buf, outbuf, len, c->schedule, &c->key,
-			  (struct sockaddr_in *)&kc->thisaddr,
-			  (struct sockaddr_in *)&kc->thataddr);
+			  (struct sockaddr_in *)kc->thisaddr,
+			  (struct sockaddr_in *)kc->thataddr);
     if (outlen < 0) {
 	free (outbuf);
 	return -1;
@@ -312,7 +312,7 @@ recv_v4_auth (kx_context *kc, int sock, u_char *buf)
     AUTH_DAT auth;
     des_key_schedule schedule;
 
-    if (kc->thisaddr.ss_family != AF_INET)
+    if (kc->thisaddr->sa_family != AF_INET)
 	return -1;
 
     if (memcmp (buf, KRB_SENDAUTH_VERS, 4) != 0)
@@ -333,8 +333,8 @@ recv_v4_auth (kx_context *kc, int sock, u_char *buf)
 			   &ticket,
 			   "rcmd",
 			   instance,
-			   (struct sockaddr_in *)&kc->thataddr,
-			   (struct sockaddr_in *)&kc->thisaddr,
+			   (struct sockaddr_in *)kc->thataddr,
+			   (struct sockaddr_in *)kc->thisaddr,
 			   &auth,
 			   "",
 			   schedule,

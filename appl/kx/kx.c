@@ -136,9 +136,9 @@ connect_host (kx_context *kc)
     if (getsockname (s, thisaddr, &addrlen) < 0 ||
 	addrlen != a->ai_addrlen)
 	err(1, "getsockname(%s)", kc->host);
-    memcpy (&kc->thisaddr, thisaddr, sizeof(kc->thisaddr));
+    memcpy (&kc->__ss_this, thisaddr, sizeof(kc->__ss_this));
     kc->thisaddr_len = addrlen;
-    memcpy (&kc->thataddr, a->ai_addr, sizeof(kc->thataddr));
+    memcpy (&kc->__ss_that, a->ai_addr, sizeof(kc->__ss_that));
     kc->thataddr_len = a->ai_addrlen;
     freeaddrinfo (ai);
     if ((*kc->authenticate)(kc, s))

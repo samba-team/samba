@@ -43,6 +43,8 @@ void
 context_set (kx_context *kc, const char *host, const char *user, int port,
 	     int debug_flag, int keepalive_flag, int tcp_flag)
 {
+    kc->thisaddr        = (struct sockaddr*)&kc->__ss_this;
+    kc->thataddr        = (struct sockaddr*)&kc->__ss_that;
     kc->host		= host;
     kc->user		= user;
     kc->port		= port;

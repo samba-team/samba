@@ -121,20 +121,22 @@ recv_conn (int sock, kx_context *kc,
      int len;
      u_int32_t tmp32;
 
-     addrlen = sizeof(kc->thisaddr);
-     if (getsockname (sock, (struct sockaddr *)&kc->thisaddr, &addrlen) < 0) {
+     addrlen = sizeof(kc->__ss_this);
+     kc->thisaddr = (struct sockaddr*)&kc->__ss_this;
+     if (getsockname (sock, kc->thisaddr, &addrlen) < 0) {
 	 syslog (LOG_ERR, "getsockname: %m");
 	 exit (1);
      }
      kc->thisaddr_len = addrlen;
      addrlen = sizeof(kc->thataddr);
-     if (getpeername (sock, (struct sockaddr *)&kc->thataddr, &addrlen) < 0) {
+     kc->thataddr = (struct sockaddr*)&kc->__ss_that;
+     if (getpeername (sock, kc->thataddr, &addrlen) < 0) {
 	 syslog (LOG_ERR, "getpeername: %m");
 	 exit (1);
      }
      kc->thataddr_len = addrlen;
 
-     getnameinfo_verified ((struct sockaddr *)&kc->thataddr, 
+     getnameinfo_verified (kc->thataddr, 
 			   kc->thataddr_len,
 			   remotehost, sizeof(remotehost),
 			   NULL, 0, 0);
@@ -294,12 +296,14 @@ doit_conn (kx_context *kc,
 	   int fd, int meta_sock, int flags, int cookiesp)
 {
     int sock, sock2, port;
-    struct sockaddr_storage addr;
-    struct sockaddr_storage thisaddr;
+    struct sockaddr_storage __ss_addr;
+    struct sockaddr *addr = (struct sockaddr*)&__ss_addr;
+    struct sockaddr_storage __ss_thisaddr;
+    struct sockaddr *thisaddr = (struct sockaddr*)&__ss_thisaddr;
     socklen_t addrlen;
     u_char msg[1024], *p;
 
-    sock = socket (kc->thisaddr.ss_family, SOCK_STREAM, 0);
+    sock = socket (kc->thisaddr->sa_family, SOCK_STREAM, 0);
     if (sock < 0) {
 	syslog (LOG_ERR, "socket: %m");
 	return 1;
@@ -311,25 +315,25 @@ doit_conn (kx_context *kc,
     }
 #endif
 #if defined(SO_KEEPALIVE) && defined(HAVE_SETSOCKOPT)
-     if (flags & KEEP_ALIVE) {
-	 int one = 1;
+    if (flags & KEEP_ALIVE) {
+	int one = 1;
 
-	 setsockopt (sock, SOL_SOCKET, SO_KEEPALIVE, (void *)&one,
-		     sizeof(one));
-     }
+	setsockopt (sock, SOL_SOCKET, SO_KEEPALIVE, (void *)&one,
+		    sizeof(one));
+    }
 #endif
-    memset (&addr, 0, sizeof(addr));
-    addr.ss_family = kc->thisaddr.ss_family;
-    if (kc->thisaddr_len > sizeof(addr)) {
+    memset (&__ss_addr, 0, sizeof(__ss_addr));
+    addr->sa_family = kc->thisaddr->sa_family;
+    if (kc->thisaddr_len > sizeof(__ss_addr)) {
 	syslog(LOG_ERR, "error in af");
 	return 1;
     }
-    if (bind (sock, (struct sockaddr *)&addr, kc->thisaddr_len) < 0) {
+    if (bind (sock, addr, kc->thisaddr_len) < 0) {
 	syslog (LOG_ERR, "bind: %m");
 	return 1;
     }
-    addrlen = sizeof(addr);
-    if (getsockname (sock, (struct sockaddr *)&addr, &addrlen) < 0) {
+    addrlen = sizeof(__ss_addr);
+    if (getsockname (sock, addr, &addrlen) < 0) {
 	syslog (LOG_ERR, "getsockname: %m");
 	return 1;
     }
@@ -337,7 +341,7 @@ doit_conn (kx_context *kc,
 	syslog (LOG_ERR, "listen: %m");
 	return 1;
     }
-    port = socket_get_port((struct sockaddr *)&addr);
+    port = socket_get_port(addr);
 
     p = msg;
     *p++ = NEW_CONN;
@@ -348,8 +352,8 @@ doit_conn (kx_context *kc,
 	return 1;
     }
 
-    addrlen = sizeof(thisaddr);
-    sock2 = accept (sock, (struct sockaddr *)&thisaddr, &addrlen);
+    addrlen = sizeof(__ss_thisaddr);
+    sock2 = accept (sock, thisaddr, &addrlen);
     if (sock2 < 0) {
 	syslog (LOG_ERR, "accept: %m");
 	return 1;
@@ -527,17 +531,18 @@ doit_passive (kx_context *kc,
 	    for (i = 0; i < nsockets; ++i) {
 		if (FD_ISSET(sockets[i].fd, &fds)) {
 		    if (sockets[i].flags == TCP) {
-			struct sockaddr_storage peer;
-			socklen_t len = sizeof(peer);
+			struct sockaddr_storage __ss_peer;
+			struct sockaddr *peer = (struct sockaddr*)&__ss_peer;
+			socklen_t len = sizeof(__ss_peer);
 
 			fd = accept (sockets[i].fd,
-				     (struct sockaddr *)&peer,
+				     peer,
 				     &len);
 			if (fd < 0 && errno != EINTR)
 			    syslog (LOG_ERR, "accept: %m");
 
 			/* XXX */
-			if (fd >= 0 && suspicious_address (fd, &peer)) {
+			if (fd >= 0 && suspicious_address (fd, peer)) {
 			    close (fd);
 			    fd = -1;
 			    errno = EINTR;

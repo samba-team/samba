@@ -166,7 +166,7 @@ int create_and_write_cookie (char *xauthfile,
 int verify_and_remove_cookies (int fd, int sock, int cookiesp);
 int replace_cookie(int xserver, int fd, char *filename, int cookiesp);
 
-int suspicious_address (int sock, struct sockaddr_storage *addr);
+int suspicious_address (int sock, struct sockaddr *addr);
 
 #define KX_PORT 2111
 
@@ -197,7 +197,10 @@ struct kx_context {
     int debug_flag;
     int keepalive_flag;
     int tcp_flag;
-    struct sockaddr_storage thisaddr, thataddr;
+    struct sockaddr_storage __ss_this;
+    struct sockaddr_storage __ss_that;
+    struct sockaddr *thisaddr;
+    struct sockaddr *thataddr;
     socklen_t thisaddr_len, thataddr_len;
     void *data;
 };

@@ -405,11 +405,9 @@ create_and_write_cookie (char *xauthfile,
      int fd;
      FILE *f;
      char hostname[MaxHostNameLen];
-     struct in_addr loopback;
      int saved_errno;
 
      gethostname (hostname, sizeof(hostname));
-     loopback.s_addr = htonl(INADDR_LOOPBACK);
      
      auth.family = FamilyLocal;
      auth.address = hostname;
@@ -454,11 +452,6 @@ create_and_write_cookie (char *xauthfile,
 
      auth.family  = FamilyWild;
      auth.address_length = 0;
-
-#if 0 /* XXX */
-     auth.address = (char *)&loopback;
-     auth.address_length = sizeof(loopback);
-#endif
 
      if (XauWriteAuth(f, &auth) == 0) {
 	 saved_errno = errno;
@@ -754,12 +747,12 @@ replace_cookie(int xserver, int fd, char *filename, int cookiesp) /* XXX */
  */
 
 int
-suspicious_address (int sock, struct sockaddr_storage *addr)
+suspicious_address (int sock, struct sockaddr *addr)
 {
     char data[40];
     socklen_t len = sizeof(data);
 
-    switch (addr->ss_family) {
+    switch (addr->sa_family) {
     case AF_INET:
 	return ((struct sockaddr_in *)addr)->sin_addr.s_addr != 
 	    htonl(INADDR_LOOPBACK)
