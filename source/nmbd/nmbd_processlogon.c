@@ -52,7 +52,6 @@ void process_logon_packet(struct packet_struct *p, char *buf, int len,
 	char *getdc;
 	char *uniuser;		/* Unicode user name. */
 	char *unicomp;		/* Unicode computer name. */
-	BOOL dgram_unique = (dgram->header.msg_type == DGRAM_UNIQUE);
 
 	memset(outbuf, 0, sizeof(outbuf));
 
@@ -70,8 +69,8 @@ logons are not enabled.\n",
 
 	code = SVAL(buf, 0);
 	DEBUG(1,
-	      ("process_logon_packet: %s-packet Logon from %s: code = %x\n",
-	       dgram_unique ? "Unique" : "Group", inet_ntoa(p->ip), code));
+	      ("process_logon_packet: Logon from %s: code = %x\n",
+	       inet_ntoa(p->ip), code));
 
 	switch (code)
 	{
