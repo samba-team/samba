@@ -1228,11 +1228,11 @@ ADS_STATUS ads_add_service_principal_name(ADS_STRUCT *ads, const char *machine_n
 	ADS_STATUS ret;
 	TALLOC_CTX *ctx;
 	LDAPMessage *res = NULL;
-	char *host_spn, *host_upn, *psp1, *psp2;
+	char *host_spn, *host_upn, *psp1, *psp2, *psp3;
 	ADS_MODLIST mods;
 	fstring my_fqdn;
 	char *dn_string = NULL;
-	const char *servicePrincipalName[3] = {NULL, NULL, NULL};
+	const char *servicePrincipalName[4] = {NULL, NULL, NULL, NULL};
 
 	ret = ads_find_machine_acct(ads, (void **)&res, machine_name);
 	if (!ADS_ERR_OK(ret) || ads_count_replies(ads, res) != 1) {
@@ -1251,6 +1251,8 @@ ADS_STATUS ads_add_service_principal_name(ADS_STRUCT *ads, const char *machine_n
 	}
 
 	name_to_fqdn(my_fqdn, machine_name);
+	strlower_m(my_fqdn);
+
 	if (!(host_spn = talloc_asprintf(ctx, "HOST/%s", my_fqdn))) {
 		talloc_destroy(ctx);
 		ads_msgfree(ads, res);
@@ -1273,6 +1275,17 @@ ADS_STATUS ads_add_service_principal_name(ADS_STRUCT *ads, const char *machine_n
 	strlower_m(&psp2[strlen(spn)]);
 	DEBUG(5,("ads_add_service_principal_name: INFO: Adding %s to host %s\n", psp2, machine_name));
 	servicePrincipalName[1] = psp2;
+
+	/* Add another principal in case the realm != the DNS domain, so that
+	 * the KDC doesn't send "server principal unknown" errors to clients
+	 * which use the DNS name in determining service principal names. */
+	psp3 = talloc_asprintf(ctx, "%s/%s", spn, my_fqdn);
+	strupper_m(psp3);
+	strlower_m(&psp3[strlen(spn)]);
+	if (strcmp(psp2, psp3) != 0) {
+		DEBUG(5,("ads_add_service_principal_name: INFO: Adding %s to host %s\n", psp3, machine_name));
+		servicePrincipalName[2] = psp3;
+	}
 
 	if (!(mods = ads_init_mods(ctx))) {
 		talloc_destroy(ctx);
@@ -1325,12 +1338,13 @@ static ADS_STATUS ads_add_machine_acct(ADS_STRUCT *ads, const char *machine_name
 	ADS_MODLIST mods;
 	const char *objectClass[] = {"top", "person", "organizationalPerson",
 				     "user", "computer", NULL};
-	const char *servicePrincipalName[5] = {NULL, NULL, NULL, NULL, NULL};
-	char *psp, *psp2;
+	const char *servicePrincipalName[7] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL};
+	char *psp, *psp2, *psp3, *psp4;
 	unsigned acct_control;
 	unsigned exists=0;
 	fstring my_fqdn;
 	LDAPMessage *res = NULL;
+	int i, next_spn;
 
 	if (!(ctx = talloc_init("ads_add_machine_acct")))
 		return ADS_ERROR(LDAP_NO_MEMORY);
@@ -1383,6 +1397,30 @@ static ADS_STATUS ads_add_machine_acct(ADS_STRUCT *ads, const char *machine_name
 			       ads->config.realm);
 	strlower_m(&psp2[5]);
 	servicePrincipalName[3] = psp2;
+
+	/* Ensure servicePrincipalName[4] and [5] are unique. */
+	strlower_m(my_fqdn);
+	psp3 = talloc_asprintf(ctx, "CIFS/%s", my_fqdn);
+	strlower_m(&psp3[5]);
+
+	next_spn = 4;
+	for (i = 0; i < next_spn; i++) {
+		if (strequal(servicePrincipalName[i], psp3))
+			break;
+	}
+	if (i == next_spn) {
+		servicePrincipalName[next_spn++] = psp3;
+	}
+
+	psp4 = talloc_asprintf(ctx, "HOST/%s", my_fqdn);
+	strlower_m(&psp4[5]);
+	for (i = 0; i < next_spn; i++) {
+		if (strequal(servicePrincipalName[i], psp3))
+			break;
+	}
+	if (i == next_spn) {
+		servicePrincipalName[next_spn++] = psp4;
+	}
 
 	if (!(samAccountName = talloc_asprintf(ctx, "%s$", machine_name))) {
 		goto done;
@@ -1683,14 +1721,14 @@ ADS_STATUS ads_join_realm(ADS_STRUCT *ads, const char *machine_name,
 
 	status = ads_add_machine_acct(ads, machine, account_type, org_unit);
 	if (!ADS_ERR_OK(status)) {
-		DEBUG(0, ("ads_add_machine_acct (%s): %s\n", machine, ads_errstr(status)));
+		DEBUG(0, ("ads_join_realm: ads_add_machine_acct failed (%s): %s\n", machine, ads_errstr(status)));
 		SAFE_FREE(machine);
 		return status;
 	}
 
 	status = ads_find_machine_acct(ads, (void **)&res, machine);
 	if (!ADS_ERR_OK(status)) {
-		DEBUG(0, ("Host account test failed for machine %s\n", machine));
+		DEBUG(0, ("ads_join_realm: Host account test failed for machine %s\n", machine));
 		SAFE_FREE(machine);
 		return status;
 	}
