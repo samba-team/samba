@@ -9,6 +9,8 @@ if test "x$PDFLATEX" = x; then
    AC_MSG_ERROR("pdflatex is required")
 fi
 
+AC_PATH_PROG(XMLTO, xmlto)
+
 DOC_BUILD_DATE=`date '+%d-%m-%Y'`
 AC_SUBST(DOC_BUILD_DATE)
 
