@@ -354,6 +354,34 @@ extern int opterr;
 extern const char *__progname;
 #endif
 
+/*
+ * kludges and such
+ */
+
+#ifdef GETHOSTBYNAME_PROTO_COMPATIBLE
+#define roken_gethostbyname(x) gethostbyname(x)
+#else
+#define roken_gethostbyname(x) gethostbyname((char *)x)
+#endif
+
+#ifdef GETHOSTBYADDR_PROTO_COMPATIBLE
+#define roken_gethostbyaddr(a, l, t) gethostbyaddr(a, l, t)
+#else
+#define roken_gethostbyaddr(a, l, t) gethostbyaddr((char *)a, l, t)
+#endif
+
+#ifdef GETSERVBYNAME_PROTO_COMPATIBLE
+#define roken_getservbyname(x,y) getservbyname(x,y)
+#else
+#define roken_getservbyname(x,y) getservbyname((char *)x, (char *)y)
+#endif
+
+#ifdef OPENLOG_PROTO_COMPATIBLE
+#define roken_openlog(a,b,c) openlog(a,b,c)
+#else
+#define roken_openlog(a,b,c) openlog((char *)a,b,c)
+#endif
+
 void set_progname(char *argv0);
 
 #ifndef F_OK
@@ -370,6 +398,10 @@ void set_progname(char *argv0);
 
 #ifndef _PATH_DEVNULL
 #define _PATH_DEVNULL "/dev/null"
+#endif
+
+#ifndef MAXPATHLEN
+#define MAXPATHLEN (1024+4)
 #endif
 
 #endif /*  __ROKEN_H__ */
