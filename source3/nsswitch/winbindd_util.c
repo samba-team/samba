@@ -508,9 +508,8 @@ BOOL winbindd_param_init(void)
     /* Parse winbind uid and winbind_gid parameters */
 
     if (!(parse_id_list(lp_winbind_uid(), True) &&
-          parse_id_list(lp_winbind_gid(), False))) {
+          parse_id_list(lp_winbind_gid(), False)))
         return False;
-    }
 
     /* Check for reversed uid and gid ranges */
         
@@ -559,9 +558,8 @@ BOOL check_domain_env(char *domain_env, char *domain)
 	char *tmp = domain_env;
 
 	while(next_token(&tmp, name, ",", sizeof(fstring))) {
-		if (strequal(name, domain)) {
+		if (strequal(name, domain))
 			return True;
-		}
 	}
 
 	return False;
@@ -573,9 +571,15 @@ void parse_domain_user(char *domuser, fstring domain, fstring user)
 {
 	char *p;
 	char *sep = lp_winbind_separator();
-	if (!sep) sep = "\\";
+
+	if (!sep) 
+                sep = "\\";
+
 	p = strchr(domuser,*sep);
-	if (!p) p = strchr(domuser,'\\');
+
+	if (!p) 
+                p = strchr(domuser,'\\');
+
 	if (!p) {
 		fstrcpy(domain,"");
 		fstrcpy(user, domuser);
