@@ -268,6 +268,8 @@ static BOOL parse_lpq_lprng(char *line,print_queue_struct *buf,BOOL first)
       /* FIXME: Using fstrcat rather than other means is a bit
        * inefficient; this might be a problem for enormous queues with
        * many fields. */
+      /* FIXME: Perhaps we should at some point convert from Unix to
+	 internal codepage?  Or is that done later? */
       fstrcat(buf->fs_file, " ");
       fstrcat(buf->fs_file, tokarr[i]);
     }
