@@ -688,14 +688,19 @@ krb5_print_address (const krb5_address *addr,
 
     if (a == NULL) {
 	char *s;
-	size_t l;
+	int l;
 	int i;
+
 	s = str;
 	l = snprintf(s, len, "TYPE_%d:", addr->addr_type);
+	if (l < 0)
+	    return EINVAL;
 	s += l;
 	len -= l;
 	for(i = 0; i < addr->address.length; i++) {
 	    l = snprintf(s, len, "%02x", ((char*)addr->address.data)[i]);
+	    if (l < 0)
+		return EINVAL;
 	    len -= l;
 	    s += l;
 	}
