@@ -546,6 +546,7 @@ BOOL pm_process( char *FileName,
     if( NULL == bufr )
       {
       DEBUG(0,("%s memory allocation failure.\n", func));
+      fclose(InFile);
       return( False );
       }
     result = Parse( InFile, sfunc, pfunc );
@@ -553,6 +554,8 @@ BOOL pm_process( char *FileName,
     bufr  = NULL;
     bSize = 0;
     }
+
+  fclose(InFile);
 
   if( !result )                               /* Generic failure. */
     {
