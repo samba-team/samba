@@ -206,7 +206,7 @@ file dev = %d, ino = %d in hash_bucket %d\n", dev, inode, hash_entry));
   {
     DEBUG(0,("ERROR:get_share_modes (FAST_SHARE_MODES): Deleting old share mode \
 record due to old locking version %d for file dev = %d, inode = %d in hash \
-bucket %d",file_scanner_p->locking_version, dev, inode, hash_entry));
+bucket %d\n", file_scanner_p->locking_version, dev, inode, hash_entry));
     if(file_prev_p == file_scanner_p)
       mode_array[hash_entry] = file_scanner_p->next_offset;
     else
@@ -270,7 +270,7 @@ for dev = %d, ino = %d, hashbucket %d\n", file_scanner_p->num_share_mode_entries
 
       DEBUG(0,("get_share_modes (FAST_SHARE_MODES): process %d no longer exists and \
 it left a share mode entry with mode 0x%X for file dev = %d, ino = %d in hash \
-bucket (number of entries now = %d)\n", 
+bucket %d (number of entries now = %d)\n", 
             pid, entry_scanner_p->share_mode, dev, inode, hash_entry,
             file_scanner_p->num_share_mode_entries));
 
@@ -316,8 +316,7 @@ hash bucket %d has a share mode record but no entries - deleting\n",
   }
 
   DEBUG(5,("get_share_modes (FAST_SHARE_MODES): file with dev %d, inode %d in \
-hash bucket %d returning %d entries\n", dev, inode, hash_entry,
-                         num_entries_copied));
+hash bucket %d returning %d entries\n", dev, inode, hash_entry, num_entries_copied));
 
   return(num_entries_copied);
 }  
@@ -878,8 +877,8 @@ for share file %s (%s)\n", fname, strerror(errno)));
   if (IVAL(buf,SMF_VERSION_OFFSET) != LOCKING_VERSION) {
     DEBUG(0,("ERROR: read_share_file: share file %s has incorrect \
 locking version (was %d, should be %d).\n",fname, 
-           IVAL(buf,SMF_VERSION_OFFSET), LOCKING_VERSION));
-    if(buf)
+                    IVAL(buf,SMF_VERSION_OFFSET), LOCKING_VERSION));
+   if(buf)
       free(buf);
     delete_share_file(cnum, fname);
     return -1;
