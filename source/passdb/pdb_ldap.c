@@ -93,7 +93,7 @@ static BOOL ldap_open_connection (LDAP ** ldap_struct)
 
 	/* check that the user is in the domain admin group for connecting */
 
-	if (!user_in_list(pass->pw_name, lp_domain_admin_group()) {
+	if (!user_in_list(pass->pw_name, lp_domain_admin_group())) {
 		DEBUG(0, ("ldap_open_connection: cannot access LDAP when not a member of domain admin group..\n"));
 		return False;
 	}
