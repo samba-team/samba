@@ -50,6 +50,6 @@ strlcat (char *dst, const char *src, size_t dst_sz)
 {
     size_t len = strlen(dst);
 
-    return len + strcpy_truncate (dst + len, src, dst_sz - len);
+    return len + strlcpy (dst + len, src, dst_sz - len);
 }
 #endif
