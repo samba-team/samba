@@ -131,8 +131,8 @@ static BOOL init_sam_from_buffer (struct tdbsam_privates *tdb_state,
 	}
 
 	if ((tdb_state->permit_non_unix_accounts) 
-	    && (pdb_get_user_rid(sampass) >= tdb_state->low_nua_rid)
-	    && (pdb_get_user_rid(sampass) <= tdb_state->high_nua_rid)) {
+	    && (user_rid >= tdb_state->low_nua_rid)
+	    && (user_rid <= tdb_state->high_nua_rid)) {
 		
 	} else {
 		struct passwd *pw;
@@ -142,7 +142,7 @@ static BOOL init_sam_from_buffer (struct tdbsam_privates *tdb_state,
 		 * to try case permutations
 		 */
 		if (!username || !(pw=getpwnam_alloc(username))) {
-			DEBUG(0,("tdb_sam: getpwnam_alloc(%s) return NULL.  User does not exist!\n", 
+			DEBUG(0,("tdbsam: getpwnam_alloc(%s) return NULL.  User does not exist!\n", 
 			          username?username:"NULL"));
 			ret = False;
 			goto done;
@@ -842,6 +842,8 @@ NTSTATUS pdb_init_tdbsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, con
 		return nt_status;
 	}
 
+	(*pdb_method)->name = "tdbsam";
+
 	(*pdb_method)->setsampwent = tdbsam_setsampwent;
 	(*pdb_method)->endsampwent = tdbsam_endsampwent;
 	(*pdb_method)->getsampwent = tdbsam_getsampwent;
@@ -850,8 +852,6 @@ NTSTATUS pdb_init_tdbsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, con
 	(*pdb_method)->add_sam_account = tdbsam_add_sam_account;
 	(*pdb_method)->update_sam_account = tdbsam_update_sam_account;
 	(*pdb_method)->delete_sam_account = tdbsam_delete_sam_account;
-
-	/* TODO: Setup private data and free */
 
 	tdb_state = talloc_zero(pdb_context->mem_ctx, sizeof(struct tdbsam_privates));
 
@@ -885,6 +885,8 @@ NTSTATUS pdb_init_tdbsam_nua(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method,
 	if (!NT_STATUS_IS_OK(nt_status = pdb_init_tdbsam(pdb_context, pdb_method, location))) {
 		return nt_status;
 	}
+
+	(*pdb_method)->name = "tdbsam_nua";
 
 	tdb_state = (*pdb_method)->private_data;
 	

@@ -174,12 +174,27 @@ static NTSTATUS make_pdb_context(struct pdb_context **context)
  Make a pdb_context, given a text string.
 *******************************************************************/
 
-NTSTATUS make_pdb_context_name(struct pdb_context **context, char *selected) 
+NTSTATUS make_pdb_context_name(struct pdb_context **context, const char *selected) 
 {
 	/* HINT: Don't store 'selected' becouse its often an lp_ string and will 'go away' */
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	int i;
+	char *module_name = smb_xstrdup(selected);
+	char *module_location = NULL;
+	char *p;
+
+	p = strchr(module_name, ':');
 	
+	if (p) {
+		*p = 0;
+	
+		module_location = p+1;
+		
+		trim_string(module_location, " ", " ");
+	}
+
+	trim_string(module_name, " ", " ");
+
 	if (!NT_STATUS_IS_OK(nt_status = make_pdb_context(context))) {
 		return nt_status;
 	}
@@ -187,13 +202,12 @@ NTSTATUS make_pdb_context_name(struct pdb_context **context, char *selected)
 	DEBUG(5,("Attempting to find an passdb backend to match %s\n", selected));
 	for (i = 0; builtin_pdb_init_functions[i].name; i++)
 	{
-		if (strequal(builtin_pdb_init_functions[i].name, selected))
+		if (strequal(builtin_pdb_init_functions[i].name, module_name))
 		{
-			DEBUG(5,("Found pdb backend %s (at pos %d)\n", selected, i));
+			DEBUG(5,("Found pdb backend %s (at pos %d)\n", module_location, i));
 			if (NT_STATUS_IS_OK(nt_status 
-					    = builtin_pdb_init_functions[i].init(*context, &(*context)->pdb_selected, NULL))) {
+					    = builtin_pdb_init_functions[i].init(*context, &(*context)->pdb_selected, module_location))) {
 				DEBUG(5,("pdb backend %s has a valid init\n", selected));
-				(*context)->pdb_selected->name = builtin_pdb_init_functions[i].name;
 			} else {
 				DEBUG(0,("pdb backend %s did not correctly init (error was %s)\n", selected, get_nt_error_msg(nt_status)));
 				(*context)->pdb_selected = NULL;
