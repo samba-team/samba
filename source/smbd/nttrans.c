@@ -28,6 +28,7 @@ extern int global_oplock_break;
 extern BOOL case_sensitive;
 extern BOOL case_preserve;
 extern BOOL short_case_preserve;
+extern uint32 global_client_caps;
 
 static char *known_nt_pipes[] = {
   "\\LANMAN",
@@ -84,9 +85,6 @@ static int send_nt_replies(char *inbuf, char *outbuf, int bufsize, uint32 nt_err
   set_message(outbuf,18,0,True);
 
   if(nt_error != 0) {
-    /* NT Error. */
-    SSVAL(outbuf,smb_flg2, SVAL(outbuf,smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);
-
     ERROR(0,nt_error);
   }
 
@@ -693,9 +691,12 @@ int reply_ntcreate_and_X(connection_struct *conn,
                    smb_buflen(inbuf),fname_len);
 
         if( strchr(fname, ':')) {
-          SSVAL(outbuf, smb_flg2, SVAL(outbuf, smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);
           END_PROFILE(SMBntcreateX);
-          return(ERROR(0, NT_STATUS_OBJECT_PATH_NOT_FOUND));
+          if (global_client_caps & CAP_STATUS32) {
+            return(ERROR(0, NT_STATUS_OBJECT_PATH_NOT_FOUND));
+          } else {
+             return(ERROR(ERRDOS,ERRbadpath));
+          }
         }
 	END_PROFILE(SMBntcreateX);
         return(ERROR(ERRDOS,ERRbadfid));
@@ -834,9 +835,12 @@ int reply_ntcreate_and_X(connection_struct *conn,
 
 				if (create_options & FILE_NON_DIRECTORY_FILE) {
 					restore_case_semantics(file_attributes);
-					SSVAL(outbuf, smb_flg2, SVAL(outbuf, smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);
 					END_PROFILE(SMBntcreateX);
-					return(ERROR(0, NT_STATUS_FILE_IS_A_DIRECTORY));
+					if (global_client_caps & CAP_STATUS32) {
+						return(ERROR(0, NT_STATUS_FILE_IS_A_DIRECTORY));
+					} else {
+						return(ERROR(ERRDOS,ERRbadaccess));
+					}
 				}
 	
 				oplock_request = 0;
@@ -1217,8 +1221,11 @@ static int call_nt_transact_create(connection_struct *conn,
                             total_parameter_count - 53 - fname_len, fname_len);
 
       if( strchr(fname, ':')) {
-          SSVAL(outbuf, smb_flg2, SVAL(outbuf, smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);
-          return(ERROR(0, NT_STATUS_OBJECT_PATH_NOT_FOUND));
+          if (global_client_caps & CAP_STATUS32) {
+            return(ERROR(0, NT_STATUS_OBJECT_PATH_NOT_FOUND));
+          } else {
+            return(ERROR(ERRDOS,ERRbadpath));
+          }
       }
 
       return(ERROR(ERRDOS,ERRbadfid));
@@ -1324,8 +1331,11 @@ static int call_nt_transact_create(connection_struct *conn,
 
 			if (create_options & FILE_NON_DIRECTORY_FILE) {
 				restore_case_semantics(file_attributes);
-				SSVAL(outbuf, smb_flg2, SVAL(outbuf, smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);
-				return(ERROR(0, NT_STATUS_FILE_IS_A_DIRECTORY));
+				if (global_client_caps & CAP_STATUS32) {
+					return(ERROR(0, NT_STATUS_FILE_IS_A_DIRECTORY));
+				} else {
+					return(ERROR(ERRDOS, ERRbadaccess));
+				}
 			}
 	
 			oplock_request = 0;

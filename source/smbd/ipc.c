@@ -100,8 +100,7 @@ void send_trans_reply(char *outbuf,
 
 	set_message(outbuf,10,1+align+this_ldata+this_lparam,True);
 
-	if (buffer_too_large)
-	{
+	if (buffer_too_large) {
 		/* issue a buffer size warning.  on a DCE/RPC pipe, expect an SMBreadX... */
 		if (!(global_client_caps & CAP_STATUS32 )) { 
 			/* Win9x version. */

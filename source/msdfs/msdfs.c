@@ -594,10 +594,10 @@ int setup_dfs_referral(char* pathname, int max_referral_level, char** ppdata)
 int dfs_path_error(char* inbuf, char* outbuf)
 {
 	if(global_client_caps & CAP_STATUS32) {
-		SSVAL(outbuf,smb_flg2,SVAL(outbuf,smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);
-		return(ERROR(0,0xc0000000|NT_STATUS_PATH_NOT_COVERED));
+		return(ERROR(0,NT_STATUS_PATH_NOT_COVERED));
+	} else {
+		return(ERROR(ERRSRV,ERRbadpath)); 
 	}
-	return(ERROR(ERRSRV,ERRbadpath)); 
 }
 
 /**********************************************************************
