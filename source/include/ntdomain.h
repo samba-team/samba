@@ -26,18 +26,18 @@
 
 
 /* dce/rpc support */
-#include "lib/rpc/include/rpc_dce.h"
+#include "rpc_dce.h"
 
 /* miscellaneous structures / defines */
-#include "lib/rpc/include/rpc_misc.h"
+#include "rpc_misc.h"
 
 /* different dce/rpc pipes */
-#include "lib/rpc/include/rpc_lsa.h"
-#include "lib/rpc/include/rpc_netlogon.h"
-#include "lib/rpc/include/rpc_reg.h"
-#include "lib/rpc/include/rpc_samr.h"
-#include "lib/rpc/include/rpc_srvsvc.h"
-#include "lib/rpc/include/rpc_wkssvc.h"
+#include "rpc_lsa.h"
+#include "rpc_netlogon.h"
+#include "rpc_reg.h"
+#include "rpc_samr.h"
+#include "rpc_srvsvc.h"
+#include "rpc_wkssvc.h"
 
 /* 
  * A bunch of stuff that was put into smb.h
