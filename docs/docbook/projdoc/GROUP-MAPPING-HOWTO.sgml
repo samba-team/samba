@@ -57,7 +57,7 @@ domadm:x:502:joe,john,mary
 
 <listitem><para>Map this domadm group to the <command>domain admins</command> group by running the command:</para>
 
-<para><command>smbgroupedit -c "Domain Admins" -u domadm</command></para></listitem>
+<para><userinput>smbgroupedit -c "Domain Admins" -u domadm</userinput></para></listitem>
 
 </orderedlist>
 
@@ -74,6 +74,6 @@ your samba PDC. Flag that group as a domain group by running:
 <para><command>smbgroupedit -a unixgroup -td</command></para>
 
 <para>You can list the various groups in the mapping database like this</para>
-<para><command>smbgroupedit -v</command></para>
+<para><userinput>smbgroupedit -v</userinput></para>
 
 </chapter>

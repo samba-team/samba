@@ -8,20 +8,25 @@
 <!ENTITY email.patches 'samba-patches@samba.org'>
 <!ENTITY email.jelmer  'jelmer@samba.org'>
 
-<!-- Author entities -->
-<!ENTITY author.jelmer '
-<author>
-<firstname>Jelmer</firstname><surname>Vernooij</surname>
-<affiliation><orgname>The Samba Team</orgname><address><email>jelmer@samba.org</email></address></affiliation>
-</author>
-'>
 
-<!ENTITY author.jerry '
-<author>
-<firstname>Gerald (Jerry)</firstname><surname>Carter</surname>
-<affiliation><orgname>Samba Team</orgname><address><email>jerry@samba.org</email></address></affiliation>
-</author>
-'>
+<!-- Author entities -->
+<!ENTITY person.jelmer '
+<firstname>Jelmer</firstname><surname>Vernooij</surname>
+<affiliation>
+	<orgname>The Samba Team</orgname>
+	<address><email>jelmer@samba.org</email></address>
+</affiliation>'>
+
+<!ENTITY author.jelmer '<author>&person.jelmer;</author>'>
+
+<!ENTITY person.jerry '
+<firstname>Gerald</firstname><surname>Carter</surname><othername>(Jerry)</othername>
+<affiliation>
+	<orgname>Samba Team</orgname>
+	<address><email>jerry@samba.org</email></address>
+</affiliation>'>
+
+<!ENTITY author.jerry '<author>&person.jerry;</author>'>
 
 <!ENTITY author.jeremy '
 <author>
@@ -32,14 +37,43 @@
 	</affiliation>
 </author>'>
 
-<!ENTITY author.jht '
+<!ENTITY person.jht '
+<firstname>John H</firstname><surname>Terpstra</surname>
+<affiliation>
+	<orgname>Samba Team</orgname>
+	<address><email>jht@samba.org</email></address>
+</affiliation>
+'>
+
+<!ENTITY author.jht '<author>&person.jht;</author>'>
+
+<!ENTITY author.tridge '
 <author>
-	<firstname>John H</firstname><surname>Terpstra</surname>
+	<firstname>Andrew</firstname><surname>Tridgell</surname>
 	<affiliation>
 		<orgname>Samba Team</orgname>
-		<address><email>jht@samba.org</email></address>
+		<address><email>tridge@samba.org</email></address>
 	</affiliation>
 </author>'>
+
+<!ENTITY author.jmcd '
+<author>
+	<firstname>Jim</firstname><surname>McDonough</surname>
+	<affiliation>
+		<orgname>IBM</orgname>
+		<address><email>jmcd@us.ibm.com</email></address>
+	</affiliation>
+</author>'>
+
+<!ENTITY author.vl '
+<author>
+	<firstname>Volker</firstname><surname>Lendecke</surname>
+	<affiliation>
+		<orgname>Samba Team</orgname>
+		<address><email>Volker.Lendecke@SerNet.DE</email></address>
+	</affiliation>
+</author>'>
+
 
 <!-- URL's -->
 <!ENTITY url.samba.cvsinfo 'http://pserver.samba.org/samba/cvs.html'>

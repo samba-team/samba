@@ -1,15 +1,7 @@
 <chapter id="ProfileMgmt">
 <chapterinfo>
-        <author>
-                <firstname>John H</firstname><surname>Terpstra</surname>
-                <affiliation>
-                        <orgname>Samba Team</orgname>
-                        <address>
-                        <email>jht@samba.org</email>
-                        </address>
-                </affiliation>
-        </author>
-        <pubdate>April 3 2003</pubdate>
+	&author.jht;
+    <pubdate>April 3 2003</pubdate>
 </chapterinfo>
 
 <title>Desktop Profile Management</title>

@@ -1,16 +1,7 @@
 <chapter id="Other-Clients">
 <chapterinfo>
-	<author>
-		<firstname>Jim</firstname><surname>McDonough</surname>
-		<affiliation>
-			<orgname>IBM</orgname>
-		</affiliation>
-		<firstname>Jelmer</firstname><surname>Vernooij</surname>
-		<affiliation>
-			<orgname>Samba Team</orgname>
-			<address>jelmer@samba.org</address>
-		</affiliation>
-	</author>
+	&author.jmcd;
+	&author.jelmer;
 	
 	<pubdate>5 Mar 2001</pubdate>
 </chapterinfo>
@@ -334,8 +325,8 @@ for the profile. This default ACL includes
 
 <para><command>DOMAIN\user 	"Full Control"</command></para>
 
-<para><emphasis>NOTE : This bug does not occur when using winbind to
-create accounts on the Samba host for Domain users.</emphasis></para>
+<note><para>This bug does not occur when using winbind to
+create accounts on the Samba host for Domain users.</para></note>
 
 </sect1>
 

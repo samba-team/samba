@@ -1,9 +1,6 @@
 <chapter id="upgrading-to-3.0">
 <chapterinfo>
-	<author>
-		<firstname>Jelmer</firstname><surname>Vernooij</surname>
-		<affiliation>Samba Team</affiliation>
-	</author>
+	&author.jelmer;
 	<pubdate>25 October 2002</pubdate>
 </chapterinfo>
 
@@ -12,7 +9,11 @@
 <sect1>
 <title>Charsets</title>
 
-FIXME
+<para>You might experience problems with special characters 
+when communicating with old DOS clients. Codepage 
+support has changed in samba 3.0. Read the chapter
+Unicode support for details.
+</para>
 
 </sect1>
 

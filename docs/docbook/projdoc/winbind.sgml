@@ -1,6 +1,5 @@
 <chapter id="winbind">
 
-
 <chapterinfo>
 	<authorgroup>
 	<author>
@@ -10,32 +9,15 @@
 			<address><email>tpot@linuxcare.com.au</email></address>
 		</affiliation>
 	</author>
-	<author>
-		<firstname>Andrew</firstname><surname>Tridgell</surname>
-		<affiliation>
-			<orgname>Samba Team</orgname>
-			<address><email>tridge@linuxcare.com.au</email></address>
-		</affiliation>
-	</author>
-	<author>
-		<firstname>John</firstname><surname>Trostel</surname>
-		<affiliation>
-			<orgname>Snapserver</orgname>
-			<address><email>jtrostel@snapserver.com</email></address>
-		</affiliation>
-	</author>
+	&author.tridge;
+	&author.jht;
 	<author>
 		<firstname>Naag</firstname><surname>Mummaneni</surname>
 		<affiliation>
 			<address><email>getnag@rediffmail.com</email></address>
 		</affiliation>
 	</author>
-	<author>
-		<firstname>Jelmer</firstname><surname>Vernooij</surname>
-		<affiliation>
-			<address><email>jelmer@nl.linux.org</email></address>
-		</affiliation>
-	</author>
+	&author.jelmer;
 	</authorgroup>
 	<pubdate>27 June 2002</pubdate>
 </chapterinfo>

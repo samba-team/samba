@@ -6,7 +6,6 @@
 		</affiliation>
 	</author>
 
-
 	<pubdate> (5 July 1998) </pubdate>
 </chapterinfo>
 
@@ -69,15 +68,15 @@ regardless of whether it is NT, Samba or any other type of domain master
 that is providing this service.
 </para>
 
-<para>
-[Note that nmbd can be configured as a WINS server, but it is not
+<note><para>
+Nmbd can be configured as a WINS server, but it is not
 necessary to specifically use samba as your WINS server.  MS Windows
 NT4, Server or Advanced Server 2000 or 2003 can be configured as
 your WINS server.  In a mixed NT/2000/2003 server and samba environment on
 a Wide Area Network, it is recommended that you use the Microsoft
 WINS server capabilities.  In a samba-only environment, it is
 recommended that you use one and only one Samba server as your WINS server.
-</para>
+</para></note>
 
 <para>
 To get browsing to work you need to run nmbd as usual, but will need

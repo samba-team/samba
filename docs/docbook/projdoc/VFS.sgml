@@ -1,10 +1,10 @@
 <chapter id="VFS">
 <chapterinfo>
-	<author><firstname>Jelmer</firstname><surname>Vernooij</surname></author>
+	&author.jelmer;
+	&author.jht;
 	<author><firstname>Alexander</firstname><surname>Bokovoy</surname></author>
 	<author><firstname>Tim</firstname><surname>Potter</surname></author>
 	<author><firstname>Simo</firstname><surname>Sorce</surname></author>
-	<author><firstname>John H</firstname><surname>Terpstra</surname></author>
 </chapterinfo>
 <title>Stackable VFS modules</title>
 

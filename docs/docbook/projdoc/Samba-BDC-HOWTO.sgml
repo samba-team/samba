@@ -1,14 +1,7 @@
 <chapter id="samba-bdc">
 
-
 <chapterinfo>
-	<author>
-		<firstname>Volker</firstname><surname>Lendecke</surname>
-		<affiliation>
-			<orgname>Samba Team</orgname>
-			<address><email>Volker.Lendecke@SerNet.DE</email></address>
-		</affiliation>
-	</author>
+	&author.vl;
 	<pubdate> (26 Apr 2001) </pubdate>
 </chapterinfo>
 

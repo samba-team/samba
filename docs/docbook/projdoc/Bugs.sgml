@@ -1,6 +1,7 @@
 <chapter id="bugreport">
 
 <chapterinfo>
+	&author.jelmer;
 	<author>
 		<affiliation>
 			<orgname>Samba Team</orgname>
@@ -15,7 +16,7 @@
 <title>Introduction</title>
 
 <para>
-The email address for bug reports for stable releases is <ulink url="samba@samba.org">samba@samba.org</ulink>. 
+The email address for bug reports for stable releases is <ulink url="mailto:samba@samba.org">samba@samba.org</ulink>. 
 Bug reports for alpha releases should go to <ulink url="mailto:samba-technical@samba.org">samba-technical@samba.org</ulink>.
 </para>
 
@@ -61,7 +62,7 @@ file for correct syntax.
 </para>
 
 <para>
-Have you run through the <ulink url="Diagnosis.html">diagnosis</ulink>? 
+Have you run through the <link linkend="Diagnosis">diagnosis</link>? 
 This is very important.
 </para>
 

@@ -5,6 +5,7 @@
 			<orgname>Samba Team</orgname>
 		</affiliation>
 	</author>
+	&author.jelmer;
 	
 	<pubdate> (22 May 2001) </pubdate>
 	<pubdate> 18 March 2003 </pubdate>

@@ -1,15 +1,7 @@
 <chapter id="pam">
 <chapterinfo>
-        <author>
-		<firstname>John</firstname><surname>Terpstra</surname>
-                <affiliation>
-                        <orgname>Samba Team</orgname>
-			<address>
-			<email>jht@samba.org</email>
-			</address>
-                </affiliation>
-        </author>
-        <pubdate> (Jun 21 2001) </pubdate>
+	&author.jht;
+    <pubdate> (Jun 21 2001) </pubdate>
 </chapterinfo>
  
 <title>PAM Configuration for Centrally Managed Authentication</title>
@@ -80,8 +72,8 @@ PAM allows use of replacable modules. Those available on a
 sample system include:
 </para>
 
-<para><programlisting>
-	$ /bin/ls /lib/security
+<para><prompt>$</prompt><userinput>/bin/ls /lib/security</userinput>
+<programlisting>
 	pam_access.so    pam_ftp.so          pam_limits.so     
 	pam_ncp_auth.so  pam_rhosts_auth.so  pam_stress.so     
 	pam_cracklib.so  pam_group.so        pam_listfile.so   
