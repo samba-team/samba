@@ -179,6 +179,7 @@ smbc_parse_path(const char *fname, char *server, char *share, char *path,
 		char *user, char *password) /* FIXME, lengths of strings */
 {
   static pstring s;
+  pstring userinfo;
   char *p;
   int len;
   fstring workgroup;
@@ -215,7 +216,47 @@ smbc_parse_path(const char *fname, char *server, char *share, char *path,
 
   }
 
-  /* ok, its for us. Now parse out the server, share etc. */
+  /*
+   * ok, its for us. Now parse out the server, share etc. 
+   *
+   * However, we want to parse out [[domain;]user[:password]@] if it
+   * exists ...
+   */
+
+  if (strchr(p, '@')) { 
+    pstring username, passwd, domain;
+    char *u = userinfo;
+
+    next_token(&p, userinfo, "@", sizeof(fstring));
+
+    username[0] = passwd[0] = domain[0] = 0;
+
+    if (strchr(u, ';')) {
+      
+      next_token(&u, domain, ";", sizeof(fstring));
+
+    }
+
+    if (strchr(u, ':')) {
+
+      next_token(&u, username, ":", sizeof(fstring));
+
+      pstrcpy(passwd, u);
+
+    }
+    else {
+
+      pstrcpy(username, u);
+
+    }
+
+    if (username[0])
+      strncpy(user, username, sizeof(fstring));  /* FIXME, size and domain */
+
+    if (passwd[0])
+      strncpy(password, passwd, sizeof(fstring)); /* FIXME, size */
+
+  }
 
   if (!next_token(&p, server, "/", sizeof(fstring))) {
 
@@ -298,14 +339,18 @@ struct smbc_server *smbc_server(char *server, char *share,
     return NULL;
   }
 
-  /* Pick up the auth info here, once we know we need to connect */
+  /* 
+   * Pick up the auth info here, once we know we need to connect
+   * But only if we do not have a username and password ...
+   */
 
-  smbc_auth_fn(server, share, workgroup, sizeof(fstring),
-	       username, sizeof(fstring), password, sizeof(fstring));
+  if (!username[0] || !password[0])
+    smbc_auth_fn(server, share, workgroup, sizeof(fstring),
+		 username, sizeof(fstring), password, sizeof(fstring));
 
   /* 
    * However, smbc_auth_fn may have picked up info relating to an 
-   * existing connection, so try for and existing connection again ...
+   * existing connection, so try for an existing connection again ...
    */
 
   for (srv=smbc_srvs;srv;srv=srv->next) {
@@ -437,6 +482,9 @@ struct smbc_server *smbc_server(char *server, char *share,
 
 /*
  *Initialise the library etc 
+ *
+ * We accept valiv values for debug from 0 to 100,
+ * and insist that fn must be non-null.
  */
 
 int smbc_init(smbc_get_auth_data_fn fn, const char *wgroup, int debug)
@@ -445,6 +493,18 @@ int smbc_init(smbc_get_auth_data_fn fn, const char *wgroup, int debug)
   pstring conf;
   int p, pid;
   char *user = NULL, *host = NULL, *home = NULL, *pname="libsmbclient";
+
+  /*
+   * Next lot ifdef'd out until test suite fixed ...
+   */
+#ifdef 0 
+  if (!fn || debug < 0 || debug > 100) {
+
+    errno = EINVAL;
+    return -1;
+
+  }
+#endif
 
   smbc_initialized = 1;
   smbc_auth_fn = fn;
@@ -584,6 +644,7 @@ int smbc_open(const char *fname, int flags, mode_t mode)
 
   if (!srv) {
 
+    if (errno == EPERM) errno = EACCES;
     return -1;  /* smbc_server sets errno */
 
   }
@@ -891,7 +952,7 @@ int smbc_unlink(const char *fname)
       else {
 
 	if (IS_DOS_DIR(mode))
-	  errno = EPERM;
+	  errno = EISDIR;
 	else
 	  errno = saverr;  /* Restore this */
 
