@@ -557,7 +557,7 @@ size_t count_chars(const char *s,char c)
 {
 	smb_ucs2_t *ptr;
 	int count;
-	smb_ucs2_t *alloc_tmpbuf;
+	smb_ucs2_t *alloc_tmpbuf = NULL;
 
 	if (push_ucs2_allocate(&alloc_tmpbuf, s) == (size_t)-1) {
 		return 0;
@@ -567,6 +567,7 @@ size_t count_chars(const char *s,char c)
 		if(*ptr==UCS2_CHAR(c))
 			count++;
 
+	SAFE_FREE(alloc_tmpbuf);
 	return(count);
 }
 
