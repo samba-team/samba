@@ -39,7 +39,7 @@ static SIG_ATOMIC_T fd_pending_array[FD_PENDING_SIZE];
 #endif
 
 #ifndef RT_SIGNAL_LEASE
-#define RT_SIGNAL_LEASE 33
+#define RT_SIGNAL_LEASE (SIGRTMIN+1)
 #endif
 
 #ifndef F_SETSIG
@@ -295,6 +295,9 @@ struct kernel_oplocks *linux_init_kernel_oplocks(void)
 	koplocks.parse_message = linux_kernel_oplock_parse;
 	koplocks.msg_waiting = linux_oplock_msg_waiting;
 	koplocks.notification_fd = -1;
+
+	/* the signal can start off blocked due to a bug in bash */
+	BlockSignals(False, RT_SIGNAL_LEASE);
 
 	DEBUG(3,("Linux kernel oplocks enabled\n"));
 
