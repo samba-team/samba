@@ -218,7 +218,7 @@ NTSTATUS cli_lsa_close(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 NTSTATUS cli_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
                              POLICY_HND *pol, int num_sids, DOM_SID *sids, 
-                             char ***names, uint32 **types, int *num_names)
+                             char ***domains, char ***names, uint32 **types, int *num_names)
 {
 	prs_struct qbuf, rbuf;
 	LSA_Q_LOOKUP_SIDS q;
@@ -279,6 +279,12 @@ NTSTATUS cli_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	(*num_names) = r.mapped_count;
 	result = NT_STATUS_OK;
 
+	if (!((*domains) = (char **)talloc(mem_ctx, sizeof(char *) * r.mapped_count))) {
+		DEBUG(0, ("cli_lsa_lookup_sids(): out of memory\n"));
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
 	if (!((*names) = (char **)talloc(mem_ctx, sizeof(char *) * r.mapped_count))) {
 		DEBUG(0, ("cli_lsa_lookup_sids(): out of memory\n"));
 		result = NT_STATUS_UNSUCCESSFUL;
@@ -292,7 +298,7 @@ NTSTATUS cli_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	}
 		
 	for (i = 0; i < r.mapped_count; i++) {
-		fstring name, dom_name, full_name;
+		fstring name, dom_name;
 		uint32 dom_idx = t_names.name[i].domain_idx;
 
 		/* Translate optimised name through domain index array */
@@ -304,13 +310,15 @@ NTSTATUS cli_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 			rpcstr_pull_unistr2_fstring(
                                 name, &t_names.uni_name[i]);
 
-			slprintf(full_name, sizeof(full_name) - 1,
-				 "%s%s%s", dom_name, 
-                                 (dom_name[0] && name[0]) ? 
-				 lp_winbind_separator() : "", name);
-
-			(*names)[i] = talloc_strdup(mem_ctx, full_name);
+			(*names)[i] = talloc_strdup(mem_ctx, name);
+			(*domains)[i] = talloc_strdup(mem_ctx, dom_name);
 			(*types)[i] = t_names.name[i].sid_name_use;
+			
+			if (((*names)[i] == NULL) || ((*domains)[i] == NULL)) {
+				DEBUG(0, ("cli_lsa_lookup_sids(): out of memory\n"));
+				result = NT_STATUS_UNSUCCESSFUL;
+				goto done;
+			}
 
 		} else {
 			(*names)[i] = NULL;
@@ -328,7 +336,7 @@ NTSTATUS cli_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /** Lookup a list of names */
 
 NTSTATUS cli_lsa_lookup_names(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-                              POLICY_HND *pol, int num_names, const char **names, 
+                              POLICY_HND *pol, int num_names, const char **dom_names, const char **names, 
                               DOM_SID **sids, uint32 **types, int *num_sids)
 {
 	prs_struct qbuf, rbuf;
@@ -348,7 +356,7 @@ NTSTATUS cli_lsa_lookup_names(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Marshall data and send request */
 
-	init_q_lookup_names(mem_ctx, &q, pol, num_names, names);
+	init_q_lookup_names(mem_ctx, &q, pol, num_names, dom_names, names);
 
 	if (!lsa_io_q_lookup_names("", &q, &qbuf, 0) ||
 	    !rpc_api_pipe_req(cli, LSA_LOOKUPNAMES, &qbuf, &rbuf)) {

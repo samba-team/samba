@@ -216,6 +216,7 @@ struct winbindd_domain *find_domain_from_sid(DOM_SID *sid)
 /* Lookup a sid in a domain from a name */
 
 BOOL winbindd_lookup_sid_by_name(struct winbindd_domain *domain, 
+				 const char *dom_name,
 				 const char *name, DOM_SID *sid, 
 				 enum SID_NAME_USE *type)
 {
@@ -244,6 +245,8 @@ BOOL winbindd_lookup_sid_by_name(struct winbindd_domain *domain,
  *
  * @param name On success, set to the name corresponding to @p sid.
  * 
+ * @param dom_name On success, set to the 'domain name' corresponding to @p sid.
+ * 
  * @param type On success, contains the type of name: alias, group or
  * user.
  *
@@ -251,6 +254,7 @@ BOOL winbindd_lookup_sid_by_name(struct winbindd_domain *domain,
  * are set, otherwise False.
  **/
 BOOL winbindd_lookup_name_by_sid(DOM_SID *sid,
+				 fstring dom_name,
 				 fstring name,
 				 enum SID_NAME_USE *type)
 {
@@ -277,6 +281,7 @@ BOOL winbindd_lookup_name_by_sid(DOM_SID *sid,
 	/* Return name and type if successful */
         
 	if ((rv = NT_STATUS_IS_OK(result))) {
+		fstrcpy(dom_name, domain->name);
 		fstrcpy(name, names);
 	} else {
 		*type = SID_NAME_UNKNOWN;
@@ -367,28 +372,6 @@ BOOL parse_domain_user(const char *domuser, fstring domain, fstring user)
 	}
 	strupper(domain);
 	return True;
-}
-
-/* 
-   Strip domain name if it is same as default domain name and 
-    winbind use default domain = true
-    
-   it assumes that name is actually fstring so that memory management
-   isn't needed.
-*/
-void strip_domain_name_if_needed(fstring *name)
-{
-	if(lp_winbind_use_default_domain()) {
-		char *sep = lp_winbind_separator();
-		char *new_name = strchr(*name, *sep);
-		if(new_name) {
-			*new_name = 0;
-			if (!strcmp(global_myworkgroup, *name)) {
-			    new_name++;
-			    safe_strcpy(*name, new_name, sizeof(fstring));
-			} else *new_name = *sep;
-		}
-	}
 }
 
 /*

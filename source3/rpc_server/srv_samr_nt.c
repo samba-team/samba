@@ -656,12 +656,12 @@ static NTSTATUS get_group_alias_entries(TALLOC_CTX *ctx, DOMAIN_GRP **d_grp, DOM
 		SAFE_FREE(map);
 		
 	} else if (sid_equal(sid, &global_sam_sid) && !lp_hide_local_users()) {
-		char *sep;
 		struct sys_grent *glist;
 		struct sys_grent *grp;
 		struct passwd *pw;
+		gid_t winbind_gid_low, winbind_gid_high;
 	
-		sep = lp_winbind_separator();
+		lp_winbind_gid(&winbind_gid_low, &winbind_gid_high);
 
 		/* local aliases */
 		/* we return the UNIX groups here.  This seems to be the right */
@@ -691,7 +691,7 @@ static NTSTATUS get_group_alias_entries(TALLOC_CTX *ctx, DOMAIN_GRP **d_grp, DOM
 				continue;
 
 			/* Don't return winbind groups as they are not local! */
-			if (strchr_m(smap.nt_name, *sep) != NULL) {
+			if ((grp->gr_gid >= winbind_gid_low)&&(grp->gr_gid <= winbind_gid_high)) {
 				DEBUG(10,("get_group_alias_entries: not returing %s, not local.\n", smap.nt_name ));
 				continue;
 			}

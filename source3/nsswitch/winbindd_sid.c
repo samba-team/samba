@@ -33,6 +33,7 @@ enum winbindd_result winbindd_lookupsid(struct winbindd_cli_state *state)
 	DOM_SID sid, tmp_sid;
 	uint32 rid;
 	fstring name;
+	fstring dom_name;
 
 	DEBUG(3, ("[%5d]: lookupsid %s\n", state->pid, 
 		  state->request.data.sid));
@@ -52,12 +53,11 @@ enum winbindd_result winbindd_lookupsid(struct winbindd_cli_state *state)
 
 	/* Lookup the sid */
 
-	if (!winbindd_lookup_name_by_sid(&sid, name, &type)) {
+	if (!winbindd_lookup_name_by_sid(&sid, dom_name, name, &type)) {
 		return WINBINDD_ERROR;
 	}
 
-	string_sub(name, "\\", lp_winbind_separator(), sizeof(fstring));
-	fstrcpy(state->response.data.name.name, name);
+	fill_domain_username(state->response.data.name.name, dom_name, name);
 	state->response.data.name.type = type;
 
 	return WINBINDD_OK;
@@ -68,7 +68,7 @@ enum winbindd_result winbindd_lookupsid(struct winbindd_cli_state *state)
 enum winbindd_result winbindd_lookupname(struct winbindd_cli_state *state)
 {
 	enum SID_NAME_USE type;
-	fstring sid_str, name_domain, name_user, name;
+	fstring sid_str, name_domain, name_user;
 	DOM_SID sid;
 	struct winbindd_domain *domain;
 	DEBUG(3, ("[%5d]: lookupname %s\n", state->pid,
@@ -77,8 +77,6 @@ enum winbindd_result winbindd_lookupname(struct winbindd_cli_state *state)
 	if (!parse_domain_user(state->request.data.name, name_domain, name_user))
 		return WINBINDD_ERROR;
 
-	snprintf(name, sizeof(name), "%s\\%s", name_domain, name_user);
-
 	if ((domain = find_domain_from_name(name_domain)) == NULL) {
 		DEBUG(0, ("could not find domain entry for domain %s\n", 
 			  name_domain));
@@ -86,7 +84,7 @@ enum winbindd_result winbindd_lookupname(struct winbindd_cli_state *state)
 	}
 
 	/* Lookup name from PDC using lsa_lookup_names() */
-	if (!winbindd_lookup_sid_by_name(domain, name, &sid, &type)) {
+	if (!winbindd_lookup_sid_by_name(domain, name_domain, name_user, &sid, &type)) {
 		return WINBINDD_ERROR;
 	}
 
