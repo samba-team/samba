@@ -1,3 +1,9 @@
+1999-10-28  Assar Westerlund  <assar@sics.se>
+
+	* md5crypt_test.c: change the test case.  apparently we should not
+ 	include $ after the salt.  also make it print more useful stuff
+ 	when failing.
+
 1999-10-20  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.am: bump version to 0:2:0
