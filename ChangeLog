@@ -1,3 +1,10 @@
+2001-03-02  Assar Westerlund  <assar@sics.se>
+
+	* kuser/kinit.c (main): only request a renewable ticket when
+	explicitly requested.  it still gets a renewable one if the renew
+	life is specified
+	* kuser/kinit.c (renew_validate): treat -1 as flags not being set
+
 2001-02-27  Johan Danielsson  <joda@pdc.kth.se>
 
 	* lib/krb5/get_cred.c: implement krb5_get_cred_from_kdc_opt
