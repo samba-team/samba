@@ -76,7 +76,10 @@ hookup (const char *host, int port)
 	code = -1;
 	return NULL;
     }
-    strlcpy (hostnamebuf, ai->ai_canonname, sizeof(hostnamebuf));
+    if (ai->ai_canonname != NULL)
+	strlcpy (hostnamebuf, ai->ai_canonname, sizeof(hostnamebuf));
+    else
+	strlcpy (hostnamebuf, host, sizeof(hostnamebuf));
     hostname = hostnamebuf;
 
     for (a = ai; a != NULL; a = a->ai_next) {
