@@ -66,9 +66,9 @@ void E_md4hash(const char *passwd, uchar p16[16])
 }
 
 /**
- * Creates the MD4 Hash of the users password in NT UNICODE.
+ * Creates the DES forward-only Hash of the users password in DOS ASCII charset
  * @param passwd password in 'unix' charset.
- * @param p16 return password hashed with md4, caller allocated 16 byte buffer
+ * @param p16 return password hashed with DES, caller allocated 16 byte buffer
  */
  
 void E_deshash(const char *passwd, uchar p16[16])
@@ -77,7 +77,7 @@ void E_deshash(const char *passwd, uchar p16[16])
 	ZERO_STRUCT(dospwd);
 	ZERO_STRUCTP(p16);
 	
-	/* Password must be converted to DOS charset - null terminated. */
+	/* Password must be converted to DOS charset - null terminated, uppercase. */
 	push_ascii(dospwd, (const char *)passwd, sizeof(dospwd), STR_UPPER|STR_TERMINATE);
 
 	E_P16(dospwd, p16);
@@ -175,7 +175,7 @@ void NTLMSSPOWFencrypt(const uchar passwd[8], const uchar *ntlmchalresp, uchar p
 
 /* Does the NT MD4 hash then des encryption. */
  
-void SMBNTencrypt(const uchar *passwd, uchar *c8, uchar *p24)
+void SMBNTencrypt(const char *passwd, uchar *c8, uchar *p24)
 {
 	uchar p21[21];
  

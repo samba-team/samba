@@ -54,9 +54,6 @@ static BOOL cli_session_setup_lanman2(struct cli_state *cli, char *user,
 		return False;
 	}
 
-	/* Lanman2 cannot use SMB signing. */
-	cli->sign_info.use_smb_signing = False;
-
 	/* if in share level security then don't send a password now */
 	if (!(cli->sec_mode & NEGOTIATE_SECURITY_USER_LEVEL)) {
 		passlen = 0;
@@ -269,10 +266,10 @@ static BOOL cli_session_setup_nt1(struct cli_state *cli, char *user,
 		/* non encrypted password supplied. Ignore ntpass. */
 		passlen = 24;
 		ntpasslen = 24;
-		SMBencrypt((uchar *)pass,cli->secblob.data,(uchar *)pword);
-		SMBNTencrypt((uchar *)pass,cli->secblob.data,(uchar *)ntpword);
+		SMBencrypt(pass,cli->secblob.data,(uchar *)pword);
+		SMBNTencrypt(pass,cli->secblob.data,(uchar *)ntpword);
 		if (!cli->sign_info.use_smb_signing && cli->sign_info.negotiated_smb_signing) {
-			cli_calculate_mac_key(cli, (uchar *)pass, (uchar *)ntpword);
+			cli_calculate_mac_key(cli, pass, (uchar *)ntpword);
 			tried_signing = True;
 		}
 	} else {
@@ -482,8 +479,8 @@ static BOOL cli_session_setup_ntlmssp(struct cli_state *cli, char *user,
 
 	/* encrypt the password with the challenge */
 	memcpy(challenge, chal1.data + 24, 8);
-	SMBencrypt((unsigned char *)pass, challenge,lmhash);
-	SMBNTencrypt((unsigned char *)pass, challenge,nthash);
+	SMBencrypt(pass, challenge,lmhash);
+	SMBNTencrypt(pass, challenge,nthash);
 
 #if 0
 	file_save("nthash.dat", nthash, 24);
