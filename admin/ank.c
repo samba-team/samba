@@ -94,7 +94,7 @@ doit2(HDB *db, hdb_entry *ent, int mod)
 	time_t t;
 	if(ent->max_life){
 	    char *p;
-	    asprintf(&p, "%ds", *ent->max_life);
+	    asprintf(&p, "%d seconds", *ent->max_life);
 	    t = gettime ("Max ticket life", p, 1);
 	    free(p);
 	}else{
@@ -110,7 +110,7 @@ doit2(HDB *db, hdb_entry *ent, int mod)
 	}
 	if(ent->max_renew){
 	    char *p;
-	    asprintf(&p, "%ds", *ent->max_renew);
+	    asprintf(&p, "%d seconds", *ent->max_renew);
 	    t = gettime ("Max renewable life", p, 1);
 	    free(p);
 	}else{
@@ -132,16 +132,16 @@ doit2(HDB *db, hdb_entry *ent, int mod)
 	    break;
 	fprintf(stderr, "Please answer yes or no.\n");
     }
-    if(!mod){
-	ent->keys.len = 1;
-	ent->keys.val = calloc(1, sizeof(*ent->keys.val));
-    }
     if(mod == 0 || buf[0] == 'y'){
 	krb5_data salt;
 	des_read_pw_string(buf, sizeof(buf), "Password:", 1);
-	if(strcasecmp(buf, "random") == 0)
+	if(strcasecmp(buf, "random") == 0) {
+	    ent->keys.len = 0;
+	    ent->keys.val = NULL;
 	    init_des_key(ent);
-	else{
+	} else{
+	    ent->keys.len = 1;
+	    ent->keys.val = calloc(1, sizeof(*ent->keys.val));
 	    set_keys(ent, buf);
 	}
     }
