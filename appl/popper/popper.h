@@ -16,6 +16,7 @@
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
+#include "protos.h"
 #define DEBUG
 #define RETURN_PATH_HANDLING
 #endif
@@ -43,7 +44,9 @@
 #define FALSE           0
 #define NEWLINE         '\n'
 
+#ifndef MAXHOSTNAMELEN
 #define MAXHOSTNAMELEN  256
+#endif
 #define MAXUSERNAMELEN  65
 #define MAXDROPLEN      64
 #define MAXLINELEN      1024
