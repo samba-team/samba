@@ -37,6 +37,7 @@ RCSID("$Id$");
 #endif
 
 #include <signal.h>
+#include "roken.h"
 
 /*
  * We would like to always use this signal but there is a link error
