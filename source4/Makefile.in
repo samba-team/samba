@@ -6,36 +6,25 @@
 # Copyright (C) 2003 Anthony Liguori <aliguor@us.ibm.com>
 # Copyright (C) 2003 James Myers <myersjj@samba.org>
 # Copyright (C) 2002-2003 Jelmer Vernooij <jelmer@samba.org>
+# Copyright (C) 2004 Stefan Metzmacher <metze@samba.org>
 ###########################################################################
 
 prefix=@prefix@
 exec_prefix=@exec_prefix@
-mandir=@mandir@
 
 LIBS=@LIBS@ 
 CC=@CC@
 SHLD=@SHLD@
 CFLAGS=@CFLAGS@
 CPPFLAGS=@CPPFLAGS@
-EXEEXT=@EXEEXT@
 LDFLAGS=@LDFLAGS@
 LDSHFLAGS=@LDSHFLAGS@ @LDFLAGS@ @CFLAGS@
 AWK=@AWK@
 PERL=@PERL@
 DYNEXP=@DYNEXP@
-PYTHON=@PYTHON@
 
 TERMLDFLAGS=@TERMLDFLAGS@
 TERMLIBS=@TERMLIBS@
-PRINTLIBS=@PRINTLIBS@
-AUTHLIBS=@AUTHLIBS@
-ACLLIBS=@ACLLIBS@
-
-LINK=$(CC) $(FLAGS) $(LDFLAGS)
-
-INSTALLCMD=@INSTALL@
-INSTALLCLIENTCMD_SH=@INSTALLCLIENTCMD_SH@
-INSTALLCLIENTCMD_A=@INSTALLCLIENTCMD_A@
 
 VPATH=@srcdir@
 srcdir=@srcdir@
@@ -44,15 +33,10 @@ SHELL=/bin/sh
 
 BASEDIR= @prefix@
 BINDIR = @bindir@
-# sbindir is mapped to bindir when compiling SAMBA in 2.0.x compatibility mode.
 SBINDIR = @sbindir@
 LIBDIR = @libdir@
-VFSLIBDIR = $(LIBDIR)/vfs
-PDBLIBDIR = $(LIBDIR)/pdb
-RPCLIBDIR = $(LIBDIR)/rpc
 CONFIGDIR = @configdir@
 VARDIR = @localstatedir@
-MANDIR = @mandir@
 
 # The permissions to give the executables
 INSTALLPERMS = 0755
@@ -66,33 +50,22 @@ LMHOSTSFILE = $(CONFIGDIR)/lmhosts
 
 # This is where smbpasswd et al go
 PRIVATEDIR = @privatedir@
-
 SMB_PASSWD_FILE = $(PRIVATEDIR)/smbpasswd
-PRIVATE_DIR = $(PRIVATEDIR)
-DATADIR = @datadir@
-
-# This is where SWAT images and help files go
-SWATDIR = @swatdir@
 
 # the directory where lock files go
 LOCKDIR = @lockdir@
 
 # the directory where pid files go
 PIDDIR = @piddir@
-# man pages language(s)
-man_langs = "@manlangs@"
-
-LIBSMBCLIENT_MAJOR=0
-LIBSMBCLIENT_MINOR=1
-
 
 FLAGS = $(CFLAGS) @FLAGS1@ -Iinclude -I$(srcdir)/include -I$(srcdir)/ubiqx -I. $(CPPFLAGS) -I$(srcdir)
+FLAGS32 =
 
-PASSWD_FLAGS = -DSMB_PASSWD_FILE=\"$(SMB_PASSWD_FILE)\" -DPRIVATE_DIR=\"$(PRIVATE_DIR)\"
+PASSWD_FLAGS = -DSMB_PASSWD_FILE=\"$(SMB_PASSWD_FILE)\" -DPRIVATE_DIR=\"$(PRIVATEDIR)\"
 PATH_FLAGS1 = -DCONFIGFILE=\"$(CONFIGFILE)\"  -DSBINDIR=\"$(SBINDIR)\"
-PATH_FLAGS2 = $(PATH_FLAGS1) -DBINDIR=\"$(BINDIR)\" -DDRIVERFILE=\"$(DRIVERFILE)\" 
+PATH_FLAGS2 = $(PATH_FLAGS1) -DBINDIR=\"$(BINDIR)\" 
 PATH_FLAGS3 = $(PATH_FLAGS2) -DLMHOSTSFILE=\"$(LMHOSTSFILE)\" 
-PATH_FLAGS4 = $(PATH_FLAGS3) -DSWATDIR=\"$(SWATDIR)\"  -DLOCKDIR=\"$(LOCKDIR)\" -DPIDDIR=\"$(PIDDIR)\"
+PATH_FLAGS4 = $(PATH_FLAGS3) -DLOCKDIR=\"$(LOCKDIR)\" -DPIDDIR=\"$(PIDDIR)\"
 PATH_FLAGS5 = $(PATH_FLAGS4) -DLIBDIR=\"$(LIBDIR)\" \
 	      -DLOGFILEBASE=\"$(LOGFILEBASE)\" -DSHLIBEXT=\"@SHLIBEXT@\"
 PATH_FLAGS6 = $(PATH_FLAGS5) -DCONFIGDIR=\"$(CONFIGDIR)\"
@@ -100,34 +73,24 @@ PATH_FLAGS = $(PATH_FLAGS6) $(PASSWD_FLAGS)
 
 # Note that all executable programs now provide for an optional executable suffix.
 
-SBIN_PROGS = bin/smbd@EXEEXT@ bin/nmbd@EXEEXT@ bin/swat@EXEEXT@ \
-	bin/wrepld@EXEEXT@ @EXTRA_SBIN_PROGS@ 
+SBIN_PROGS = bin/smbd@EXEEXT@
 
-BIN_PROGS1 = bin/smbclient@EXEEXT@ bin/net@EXEEXT@ bin/smbspool@EXEEXT@ \
-	bin/testparm@EXEEXT@ bin/testprns@EXEEXT@ bin/smbstatus@EXEEXT@ 
-BIN_PROGS2 = bin/smbcontrol@EXEEXT@ bin/smbtree@EXEEXT@ bin/tdbbackup@EXEEXT@ \
-	bin/nmblookup@EXEEXT@ bin/pdbedit@EXEEXT@
-BIN_PROGS3 = bin/smbpasswd@EXEEXT@ bin/rpcclient@EXEEXT@ bin/smbcacls@EXEEXT@ \
-	bin/profiles@EXEEXT@ bin/smbgroupedit@EXEEXT@ bin/ntlm_auth@EXEEXT@ \
-	bin/editreg@EXEEXT@
+BIN_PROGS = bin/smbclient@EXEEXT@ 
 
-TORTURE_PROGS = bin/smbtorture@EXEEXT@ bin/gentest@EXEEXT@
-#bin/msgtest@EXEEXT@ \
-#	bin/masktest@EXEEXT@ bin/locktest@EXEEXT@ \
-#	bin/locktest2@EXEEXT@ bin/nsstest@EXEEXT@ bin/vfstest@EXEEXT@ \
+TORTURE_PROGS = bin/smbtorture@EXEEXT@ \
+		bin/gentest@EXEEXT@ \
+		bin/locktest@EXEEXT@ \
+		bin/masktest@EXEEXT@ \
+		bin/ndrdump@EXEEXT@
 
-BIN_PROGS = $(BIN_PROGS1) $(BIN_PROGS2) $(BIN_PROGS3) @EXTRA_BIN_PROGS@
-
-SHLIBS = @SHLIB_PROGS@ @LIBSMBCLIENT@
-
-SCRIPTS = $(srcdir)/script/smbtar $(srcdir)/script/addtosmbpass $(srcdir)/script/convert_smbpasswd \
-	  $(builddir)/script/findsmb
-
-# QUOTAOBJS=@QUOTAOBJS@
-
-VFS_MODULES = @NTVFS_MODULES@
 CHARSET_MODULES = @CHARSET_MODULES@
-MODULES = $(NTVFS_MODULES) $(CHARSET_MODULES)
+CHARSET_LIBDIR = $(LIBDIR)/charset
+DCERPC_MODULES = @DCERPC_MODULES@
+DCERPC_LIBDIR = $(LIBDIR)/dcerpc
+NTVFS_MODULES = @NTVFS_MODULES@
+NTVFS_LIBDIR = $(LIBDIR)/ntvfs
+
+MODULES = $(CHARSET_MODULES) $(DCERPC_MODULES) $(NTVFS_MODULES)
 
 ######################################################################
 # object file lists
@@ -164,16 +127,6 @@ READLINE_OBJ = lib/readline.o
 POPT_LIB_OBJ = lib/popt_common.o 
 
 PARAM_OBJ = param/loadparm.o param/params.o dynconfig.o
-
-KRBCLIENT_OBJ = libads/kerberos.o
-
-#LIBADS_OBJ = libads/ldap.o libads/ldap_printer.o libads/sasl.o \
-#	     libads/krb5_setpw.o libads/ldap_user.o \
-#	     libads/ads_struct.o libads/ads_status.o \
-#             libads/disp_sec.o libads/ads_utils.o libads/ldap_utils.o \
-#	     libads/ads_ldap.o
-
-#LIBADS_SERVER_OBJ = libads/util.o libads/kerberos_verify.o
 
 SECRETS_OBJ = passdb/secrets.o
 
@@ -223,15 +176,13 @@ LIBRAW_OBJ = libcli/raw/rawfile.o libcli/raw/smb_signing.o  \
 	     libcli/raw/rawfileinfo.o libcli/raw/rawnotify.o \
 	     libcli/raw/rawioctl.o libcli/raw/rawacl.o \
 	     $(LIBRAW_NDR_OBJ) $(LIBRAW_RPC_OBJ) $(LIBSAMBA_OBJ) $(LIBCLIUTIL_OBJ) \
-	     $(RPC_PARSE_OBJ1) $(LIBNMB_OBJ) $(KRBCLIENT_OBJ) $(LIBCLIAUTH_OBJ) 
+	     $(LIBNMB_OBJ) $(LIBCLIAUTH_OBJ) 
 
 LIBSMB_OBJ = libcli/clireadwrite.o libcli/cliconnect.o \
 	     libcli/clifile.o libcli/clilist.o libcli/clitrans2.o  \
 	     libcli/climessage.o \
 	     libcli/clideltree.o \
 	     $(LIBRAW_OBJ)
-
-#LOCKING_OBJ = locking/locking.o locking/brlock.o locking/posix.o
 
 PASSDB_GET_SET_OBJ = passdb/pdb_get_set.o
 
@@ -241,28 +192,12 @@ PASSDB_OBJ = $(PASSDB_GET_SET_OBJ) passdb/passdb.o passdb/pdb_interface.o \
 		passdb/pdb_unix.o passdb/pdb_guest.o passdb/util_sam_sid.o \
 		passdb/pdb_compat.o passdb/pdb_nisplus.o
 
-XML_OBJ = modules/xml.o
-MYSQL_OBJ = modules/mysql.o
-DEVEL_HELP_OBJ = modules/developer.o
-
-
-
-#PROFILE_OBJ = profile/profile.o
-
-# OPLOCK_OBJ = smbd/oplock.o smbd/oplock_irix.o smbd/oplock_linux.o
-
-# NOTIFY_OBJ = smbd/notify.o smbd/notify_hash.o smbd/notify_kernel.o
-
 PLAINTEXT_AUTH_OBJ = auth/pampass.o auth/pass_check.o
-
-# UNIGRP_OBJ = libcli/netlogon_unigrp.o 
 
 AUTH_OBJ = auth/auth.o auth/auth_sam.o \
 	   auth/auth_unix.o auth/auth_util.o	\
 	   auth/auth_builtin.o auth/auth_compat.o auth/auth_ntlmssp.o \
-	   $(PLAINTEXT_AUTH_OBJ) $(UNIGRP_OBJ)
-
-MANGLE_OBJ = smbd/mangle.o smbd/mangle_hash.o smbd/mangle_map.o smbd/mangle_hash2.o
+	   $(PLAINTEXT_AUTH_OBJ)
 
 SMBD_OBJ_MAIN = smbd/server.o
 
@@ -306,137 +241,18 @@ SMBD_OBJ_SRV = smbd/connection.o \
 PROCESS_MODEL_OBJ = smbd/process.o smbd/process_model.o smbd/process_standard.o \
 			smbd/process_single.o
 
-# lib/util_seaccess.o 
-
-# printing/printfsp.o
-
 SMBD_OBJ_BASE = $(PROCESS_MODEL_OBJ) $(SMBD_OBJ_SRV) \
-		$(MSDFS_OBJ) $(PARAM_OBJ) \
-		$(SECRETS_OBJ) \
-		$(PASSDB_OBJ)  \
-		$(AUTH_OBJ) $(GROUPDB_OBJ) \
-		$(LIB_SMBD_OBJ) $(POPT_LIB_OBJ) $(LIBSMB_OBJ)		
+		$(PARAM_OBJ) $(SECRETS_OBJ) $(PASSDB_OBJ)  \
+		$(AUTH_OBJ) $(LIB_SMBD_OBJ) $(POPT_LIB_OBJ) $(LIBSMB_OBJ)
 
 SMBD_OBJ = $(SMBD_OBJ_MAIN) $(SMBD_OBJ_BASE)
 
-NMBD_OBJ1 = nmbd/asyncdns.o nmbd/nmbd.o nmbd/nmbd_become_dmb.o \
-            nmbd/nmbd_become_lmb.o nmbd/nmbd_browserdb.o \
-            nmbd/nmbd_browsesync.o nmbd/nmbd_elections.o \
-            nmbd/nmbd_incomingdgrams.o nmbd/nmbd_incomingrequests.o \
-            nmbd/nmbd_lmhosts.o nmbd/nmbd_logonnames.o nmbd/nmbd_mynames.o \
-            nmbd/nmbd_namelistdb.o nmbd/nmbd_namequery.o \
-            nmbd/nmbd_nameregister.o nmbd/nmbd_namerelease.o \
-            nmbd/nmbd_nodestatus.o nmbd/nmbd_packets.o \
-            nmbd/nmbd_processlogon.o nmbd/nmbd_responserecordsdb.o \
-            nmbd/nmbd_sendannounce.o nmbd/nmbd_serverlistdb.o \
-            nmbd/nmbd_subnetdb.o nmbd/nmbd_winsproxy.o nmbd/nmbd_winsserver.o \
-            nmbd/nmbd_workgroupdb.o nmbd/nmbd_synclists.o
-
-NMBD_OBJ = $(NMBD_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) \
-           $(PROFILE_OBJ) $(LIB_OBJ) $(SECRETS_OBJ) $(POPT_LIB_OBJ)
-
-WREPL_OBJ1 = wrepld/server.o wrepld/process.o wrepld/parser.o wrepld/socket.o \
-             wrepld/partners.o
-
-WREPL_OBJ = $(WREPL_OBJ1)  $(PARAM_OBJ) \
-	    $(PROFILE_OBJ) $(LIB_OBJ)
-
-SWAT_OBJ1 = web/cgi.o web/diagnose.o web/startstop.o web/statuspage.o \
-           web/swat.o web/neg_lang.o 
-
-SWAT_OBJ = $(SWAT_OBJ1) $(PRINTING_OBJ) $(LIBSMB_OBJ) $(LOCKING_OBJ) \
-           $(PARAM_OBJ) $(PASSDB_OBJ) $(SECRETS_OBJ) $(KRBCLIENT_OBJ) \
-	   $(LIB_OBJ) $(GROUPDB_OBJ) $(PLAINTEXT_AUTH_OBJ)
-
-SMBSH_OBJ = smbwrapper/smbsh.o smbwrapper/shared.o \
-            $(PARAM_OBJ) $(LIB_OBJ)
-
-STATUS_OBJ = utils/status.o utils/rewrite.o $(LOCKING_OBJ) $(PARAM_OBJ) \
-             $(PROFILE_OBJ) $(LIB_OBJ) $(POPT_LIB_OBJ)
-
-SMBCONTROL_OBJ = utils/smbcontrol.o $(LOCKING_OBJ) $(PARAM_OBJ) \
-	$(PROFILE_OBJ) $(LIB_OBJ) utils/rewrite.o 
-#	printing/notify.o printing/printing_db.o
-
-SMBTREE_OBJ = utils/smbtree.o $(LOCKING_OBJ) $(PARAM_OBJ) \
-             $(PROFILE_OBJ) $(LIB_OBJ) $(LIBSMB_OBJ) \
-	     $(KRBCLIENT_OBJ)
-
-TESTPARM_OBJ = utils/testparm.o \
-               $(PARAM_OBJ) $(LIB_OBJ) $(POPT_LIB_OBJ)
-
-TESTPRNS_OBJ = utils/testprns.o $(PARAM_OBJ) $(PRINTING_OBJ) $(LIB_OBJ)
-
-SMBPASSWD_OBJ = utils/smbpasswd.o $(PARAM_OBJ) $(SECRETS_OBJ) \
-		$(LIBSMB_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ)\
-                $(LIB_OBJ) $(KRBCLIENT_OBJ)
-
-PDBEDIT_OBJ = utils/pdbedit.o $(PARAM_OBJ) $(PASSDB_OBJ) $(LIBSAMBA_OBJ) \
-		$(LIB_OBJ) $(GROUPDB_OBJ) $(SECRETS_OBJ) \
-		$(POPT_LIB_OBJ)
-
-SMBGROUPEDIT_OBJ = utils/smbgroupedit.o $(GROUPDB_OBJ) $(PARAM_OBJ) \
-		$(LIBSAMBA_OBJ) $(PASSDB_OBJ) $(SECRETS_OBJ) $(LIB_OBJ)
-
-PAM_WINBIND_OBJ = nsswitch/pam_winbind.po nsswitch/wb_common.po lib/snprintf.po
-
-#SMBW_OBJ1 = smbwrapper/smbw.o \
-#		smbwrapper/smbw_dir.o smbwrapper/smbw_stat.o \
-#		smbwrapper/realcalls.o smbwrapper/shared.o \
-#		smbwrapper/smbw_cache.o
-
-SMBW_OBJ = $(SMBW_OBJ1) $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) $(PARAM_OBJ) \
-                $(LIB_OBJ)
-
-SMBWRAPPER_OBJ1 = smbwrapper/wrapped.o
-
-SMBWRAPPER_OBJ = $(SMBW_OBJ) $(SMBWRAPPER_OBJ1)
-
-LIBSMBCLIENT_OBJ = libcli/libcliclient.o libcli/libcli_compat.o \
-		   libcli/libcli_cache.o $(LIB_OBJ) \
-	  	   $(LIBSMB_OBJ) $(PARAM_OBJ)
-
-# This shared library is intended for linking with unit test programs
-# to test Samba internals.  It's called libbigballofmud.so to
-# discourage casual usage.
-
-LIBBIGBALLOFMUD_MAJOR = 0
-
-LIBBIGBALLOFMUD_OBJ = $(LIB_OBJ) $(PARAM_OBJ) $(SECRETS_OBJ) \
-	$(LIBSMB_OBJ) $(RPC_PARSE_OBJ) $(PASSDB_OBJ) \
-	$(GROUPDB_OBJ) $(KRBCLIENT_OBJ)
-
-LIBBIGBALLOFMUD_PICOBJS = $(LIBBIGBALLOFMUD_OBJ:.o=.po)
 
 CLIENT_OBJ1 = client/client.o client/clitar.o libcli/raw/clirewrite.o
 
 CLIENT_OBJ = $(CLIENT_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) \
 	     $(LIB_OBJ) \
-             $(READLINE_OBJ) $(POPT_LIB_OBJ) 
-
-NET_OBJ1 = utils/net.o utils/net_ads.o utils/net_ads_cldap.o utils/net_help.o \
-	   utils/net_rap.o utils/net_rpc.o utils/net_rpc_samsync.o \
-	   utils/net_rpc_join.o utils/net_time.o utils/net_lookup.o \
-	   utils/net_cache.o
-
-NET_OBJ = $(NET_OBJ1) $(SECRETS_OBJ) $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) \
-	  $(RPC_PARSE_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
-	  $(PARAM_OBJ) $(LIB_OBJ) \
-	  $(LIBADS_OBJ) $(LIBADS_SERVER_OBJ) $(POPT_LIB_OBJ)
-
-CUPS_OBJ = client/smbspool.o $(PARAM_OBJ) $(LIBSMB_OBJ) \
-	  $(LIB_OBJ) $(KRBCLIENT_OBJ)
-
-MOUNT_OBJ = client/smbmount.o \
-             $(PARAM_OBJ) $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) $(LIB_OBJ) 
-
-MNT_OBJ = client/smbmnt.o             	
-
-UMOUNT_OBJ = client/smbumount.o
-
-NMBLOOKUP_OBJ = utils/nmblookup.o $(PARAM_OBJ) $(LIBNMB_OBJ) \
-               $(LIB_OBJ)
-
+             $(READLINE_OBJ) $(POPT_LIB_OBJ)
 
 SMBTORTURE_RAW_OBJ = torture/raw/qfsinfo.o torture/raw/qfileinfo.o torture/raw/setfileinfo.o \
 		torture/raw/search.o torture/raw/close.o torture/raw/open.o torture/raw/mkdir.o \
@@ -456,130 +272,37 @@ SMBTORTURE_OBJ1 = torture/torture.o torture/torture_util.o torture/nbio.o tortur
 		$(SMBTORTURE_RPC_OBJ)
 
 SMBTORTURE_OBJ = $(SMBTORTURE_OBJ1) $(SECRETS_OBJ) \
-	$(LIBSMB_OBJ) $(LIBDFS_OBJ) $(PARAM_OBJ) $(LIB_OBJ)
+		$(LIBSMB_OBJ) $(PARAM_OBJ) $(LIB_OBJ)
 
-NDRDUMP_OBJ = utils/ndrdump.o utils/rewrite.o \
-	$(LIBSMB_OBJ) $(LIBDFS_OBJ) $(PARAM_OBJ) $(LIB_OBJ)
-
+GENTEST_OBJ = torture/gentest.o torture/torture_util.o $(LIBSMB_OBJ) $(PARAM_OBJ) \
+		$(LIB_OBJ) libcli/raw/clirewrite.o
 
 MASKTEST_OBJ = torture/masktest.o $(LIBSMB_OBJ) $(PARAM_OBJ) \
-                 $(LIB_OBJ) libcli/raw/clirewrite.o
-
-MSGTEST_OBJ = torture/msgtest.o $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) $(PARAM_OBJ) \
-                 $(LIB_OBJ)
+		$(LIB_OBJ) libcli/raw/clirewrite.o
 
 LOCKTEST_OBJ = torture/locktest.o $(LOCKING_OBJ) $(LIBSMB_OBJ) $(PARAM_OBJ) \
-                 $(LIB_OBJ) libcli/raw/clirewrite.o
+		$(LIB_OBJ) libcli/raw/clirewrite.o
 
-GENTEST_OBJ = torture/gentest.o torture/torture_util.o $(LOCKING_OBJ) $(LIBSMB_OBJ) $(PARAM_OBJ) \
-                 $(LIB_OBJ) libcli/raw/clirewrite.o
-
-NSSTEST_OBJ = torture/nsstest.o $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) $(PARAM_OBJ) \
-                 $(LIB_OBJ)
-
-SMBICONV_OBJ = torture/smbiconv.o $(LIB_OBJ) $(PARAM_OBJ) utils/rewrite.o $(LIB_POPT_OBJ)
-
-VFSTEST_OBJ = torture/cmd_vfs.o torture/vfstest.o $(READLINE_OBJ)
-
-VFS_AUDIT_OBJ = modules/vfs_audit.o
-VFS_EXTD_AUDIT_OBJ = modules/vfs_extd_audit.o
-VFS_RECYCLE_OBJ = modules/vfs_recycle.o
-VFS_NETATALK_OBJ = modules/vfs_netatalk.o
-VFS_FAKE_PERMS_OBJ = modules/vfs_fake_perms.o
-
-LOCKTEST2_OBJ = torture/locktest2.o $(LOCKING_OBJ) $(LIBSMB_OBJ) \
-		$(KRBCLIENT_OBJ) $(PARAM_OBJ) \
-                 $(LIB_OBJ)
-
-SMBCACLS_OBJ = utils/smbcacls.o $(LOCKING_OBJ) $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) \
-		$(PARAM_OBJ) \
-                 $(LIB_OBJ) $(RPC_PARSE_OBJ) $(PASSDB_GET_SET_OBJ) \
-		 $(SECRETS_OBJ)
-
-TALLOCTORT_OBJ = lib/talloctort.o  $(LIB_OBJ) $(PARAM_OBJ)
-
-DEBUG2HTML_OBJ = utils/debug2html.o ubiqx/debugparse.o
-
-SMBFILTER_OBJ = utils/smbfilter.o $(LIBSMB_OBJ) $(PARAM_OBJ) \
-                 $(LIB_OBJ) $(KRBCLIENT_OBJ) 
+NDRDUMP_OBJ = utils/ndrdump.o utils/rewrite.o \
+		$(LIBSMB_OBJ) $(PARAM_OBJ) $(LIB_OBJ)
 
 PROTO_OBJ = $(SMBD_OBJ_SRV) \
 	    $(SMBD_OBJ_MAIN) $(PROCESS_MODEL_OBJ) \
-	    $(NMBD_OBJ1) $(SWAT_OBJ1) $(LIBSMB_OBJ) \
-	    $(LIBRAW_OBJ) $(LIBDFS_OBJ) $(LIBCLIUTIL) $(LIBCLIAUTH_OBJ) \
-	    $(SMBW_OBJ1) $(SMBWRAPPER_OBJ1) $(SMBTORTURE_OBJ1) \
-	    $(RPC_PIPE_OBJ) $(RPC_PARSE_OBJ) $(KRBCLIENT_OBJ) \
-	    $(AUTH_OBJ) $(PARAM_OBJ) $(LOCKING_OBJ) $(SECRETS_OBJ) \
-	    $(PRINTING_OBJ) $(PRINTBACKEND_OBJ) $(OPLOCK_OBJ) $(NOTIFY_OBJ) \
-	    $(QUOTAOBJS) $(PASSDB_OBJ) $(GROUPDB_OBJ) $(MSDFS_OBJ) \
-	    $(READLINE_OBJ) $(PROFILE_OBJ) $(LIBADS_OBJ) $(LIBADS_SERVER_OBJ) \
-	    $(LIB_SMBD_OBJ) $(SAM_OBJ) $(REGISTRY_OBJ) $(POPT_LIB_OBJ) \
-	    $(RPC_LSA_OBJ) $(RPC_NETLOG_OBJ) $(RPC_SAMR_OBJ) $(RPC_REG_OBJ) \
-	    $(RPC_SVC_OBJ) $(RPC_WKS_OBJ) $(RPC_DFS_OBJ) $(RPC_SPOOLSS_OBJ) \
-	    $(CLIENT_OBJ1)
-
-NSS_OBJ_0 = nsswitch/wins.o $(PARAM_OBJ) $(LIBSMB_OBJ) \
-	    $(LIB_OBJ) $(NSSWINS_OBJ)
-
-NSS_OBJ = $(NSS_OBJ_0:.o=.po)
-
-PICOBJS = $(SMBWRAPPER_OBJ:.o=.po)
-PICOBJS32 = $(SMBWRAPPER_OBJ:.o=.po32)
-LIBSMBCLIENT_PICOBJS = $(LIBSMBCLIENT_OBJ:.o=.po)
-
-PAM_SMBPASS_OBJ_0 = pam_smbpass/pam_smb_auth.o pam_smbpass/pam_smb_passwd.o \
-               pam_smbpass/pam_smb_acct.o pam_smbpass/support.o \
-               libcli/smbencrypt.o libcli/smbdes.o libcli/nterr.o \
-               $(PARAM_OBJ) $(LIB_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
-               $(SECRETS_OBJ)
-
-PAM_SMBPASS_PICOOBJ = $(PAM_SMBPASS_OBJ_0:.o=.po)
-
-WINBINDD_OBJ1 = \
-		nsswitch/winbindd.o       \
-		nsswitch/winbindd_user.o  \
-		nsswitch/winbindd_group.o \
-		nsswitch/winbindd_idmap.o \
-		nsswitch/winbindd_idmap_tdb.o \
-		nsswitch/winbindd_util.o  \
-		nsswitch/winbindd_cache.o \
-		nsswitch/winbindd_pam.o   \
-		nsswitch/winbindd_sid.o   \
-		nsswitch/winbindd_misc.o  \
-		nsswitch/winbindd_cm.o \
-		nsswitch/winbindd_wins.o \
-		nsswitch/winbindd_rpc.o \
-		nsswitch/winbindd_ads.o \
-		nsswitch/winbindd_dual.o
-
-WINBINDD_OBJ = \
-		$(WINBINDD_OBJ1) $(PASSDB_GET_SET_OBJ) \
-		$(PARAM_OBJ) $(LIB_OBJ) \
-		$(LIBSMB_OBJ) $(RPC_PARSE_OBJ) \
-		$(PROFILE_OBJ) $(UNIGRP_OBJ) \
-		$(SECRETS_OBJ) $(LIBADS_OBJ) $(KRBCLIENT_OBJ)
-
-WBINFO_OBJ = nsswitch/wbinfo.o libcli/smbencrypt.o libcli/smbdes.o $(POPT_LIB_OBJ)
-
-WINBIND_NSS_OBJ = nsswitch/winbind_nss.o nsswitch/wb_common.o @WINBIND_NSS_EXTRA_OBJS@
-
-WINBIND_NSS_PICOBJS = $(WINBIND_NSS_OBJ:.o=.po)
+	    $(LIBSMB_OBJ) \
+	    $(LIBRAW_OBJ) $(LIBCLIAUTH_OBJ) \
+	    $(SMBTORTURE_OBJ1) \
+	    $(AUTH_OBJ) $(PARAM_OBJ) $(SECRETS_OBJ) \
+	    $(PASSDB_OBJ) \
+	    $(READLINE_OBJ) $(CLIENT_OBJ1) \
+	    $(LIB_SMBD_OBJ) $(POPT_LIB_OBJ) \
 
 POPT_OBJS=popt/findme.o popt/popt.o popt/poptconfig.o \
           popt/popthelp.o popt/poptparse.o
 
-TDBBACKUP_OBJ = tdb/tdbbackup.o $(TDBBASE_OBJ)
-
-NTLM_AUTH_OBJ = utils/ntlm_auth.o $(LIBNTLMSSP_OBJ) $(LIBSAMBA_OBJ) $(POPT_LIB_OBJ)
-
 ######################################################################
 # now the rules...
 ######################################################################
-all: SHOWFLAGS bin/smbd bin/smbclient bin/smbtorture bin/locktest bin/masktest bin/gentest
-
-pam_smbpass : SHOWFLAGS bin/pam_smbpass.@SHLIBEXT@
-
-smbwrapper : SHOWFLAGS @SMBWRAPPER@
+all: SHOWFLAGS $(SBIN_PROGS) $(BIN_PROGS) $(TORTURE_PROGS) $(MODULES)
 
 torture : SHOWFLAGS $(TORTURE_PROGS)
 
@@ -589,27 +312,9 @@ gentest: SHOWFLAGS bin/gentest@EXEEXT@
 
 masktest : SHOWFLAGS bin/masktest@EXEEXT@
 
-msgtest : SHOWFLAGS bin/msgtest@EXEEXT@
-
 locktest : SHOWFLAGS bin/locktest@EXEEXT@
 
-smbcacls : SHOWFLAGS bin/smbcacls@EXEEXT@
-
-locktest2 : SHOWFLAGS bin/locktest2@EXEEXT@
-
-rpctorture : SHOWFLAGS bin/rpctorture@EXEEXT@
-
-debug2html : SHOWFLAGS bin/debug2html@EXEEXT@
-
-smbfilter : SHOWFLAGS bin/smbfilter@EXEEXT@
-
-talloctort : SHOWFLAGS bin/talloctort@EXEEXT@
-
-nsswitch : SHOWFLAGS bin/winbindd@EXEEXT@ bin/wbinfo@EXEEXT@ nsswitch/libnss_winbind.@SHLIBEXT@ nsswitch/pam_winbind.@SHLIBEXT@
-
-wins : SHOWFLAGS nsswitch/libnss_wins.@SHLIBEXT@
-
-modules: SHOWFLAGS proto_exists $(VFS_MODULES) $(PDB_MODULES) $(MODULES)
+modules: SHOWFLAGS proto_exists $(MODULES)
 
 everything: all
 
@@ -697,89 +402,13 @@ bin/.dummy:
 
 bin/smbd@EXEEXT@: $(SMBD_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMBD_OBJ) $(LDFLAGS) $(DYNEXP) $(PRINTLIBS) \
-	  $(AUTHLIBS) $(ACLLIBS) $(LIBS) $(PTHREAD_LIB) @SMBD_EXTRA_LIBS@ @BUILD_POPT@
-
-bin/nmbd@EXEEXT@: $(NMBD_OBJ) @BUILD_POPT@ bin/.dummy
-	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(NMBD_OBJ) $(LDFLAGS) $(LIBS) @BUILD_POPT@
-
-bin/wrepld@EXEEXT@: $(WREPL_OBJ) bin/.dummy
-	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(WREPL_OBJ) $(LDFLAGS) $(LIBS) 
-
-bin/swat@EXEEXT@: $(SWAT_OBJ) bin/.dummy
-	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SWAT_OBJ) $(LDFLAGS) $(DYNEXP) $(PRINTLIBS) \
-	  $(AUTHLIBS) $(LIBS) 
+	@$(CC) $(FLAGS) -o $@ $(SMBD_OBJ) $(LDFLAGS) $(DYNEXP) \
+	  $(LIBS) @SMBD_EXTRA_LIBS@ @BUILD_POPT@
 
 bin/smbclient@EXEEXT@: $(CLIENT_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(CLIENT_OBJ) $(LDFLAGS) $(TERMLDFLAGS) $(TERMLIBS) $(LIBS) @BUILD_POPT@
 
-bin/net@EXEEXT@: $(NET_OBJ) @BUILD_POPT@ bin/.dummy
-	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(NET_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) @BUILD_POPT@
-
-bin/profiles@EXEEXT@: utils/profiles.o bin/.dummy
-	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ utils/profiles.o $(LDFLAGS) $(LIBS)
-
-bin/editreg@EXEEXT@: utils/editreg.o bin/.dummy
-	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ utils/editreg.o $(LDFLAGS) $(LIBS)
-
-bin/smbspool@EXEEXT@: $(CUPS_OBJ) bin/.dummy
-	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(CUPS_OBJ) $(LDFLAGS) $(LIBS)
-
-bin/smbmount@EXEEXT@: $(MOUNT_OBJ) bin/.dummy
-	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(MOUNT_OBJ) $(LDFLAGS) $(LIBS)
-
-bin/smbmnt@EXEEXT@: $(MNT_OBJ) bin/.dummy
-	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(MNT_OBJ) $(LDFLAGS) 
-
-bin/smbumount@EXEEXT@: $(UMOUNT_OBJ) bin/.dummy
-	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(UMOUNT_OBJ) $(LDFLAGS)
-
-bin/testparm@EXEEXT@: $(TESTPARM_OBJ) @BUILD_POPT@ bin/.dummy
-	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(TESTPARM_OBJ) $(LDFLAGS) $(LIBS) @BUILD_POPT@
-
-bin/testprns@EXEEXT@: $(TESTPRNS_OBJ) bin/.dummy
-	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(TESTPRNS_OBJ) $(LDFLAGS) $(PRINTLIBS) $(LIBS)
-
-bin/smbstatus@EXEEXT@: $(STATUS_OBJ) @BUILD_POPT@ bin/.dummy
-	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(STATUS_OBJ) $(LDFLAGS) $(LIBS) @BUILD_POPT@
-
-bin/smbcontrol@EXEEXT@: $(SMBCONTROL_OBJ) bin/.dummy
-	@echo Linking $@
-	@$(CC) -DUSING_SMBCONTROL $(FLAGS) -o $@ $(SMBCONTROL_OBJ) $(LDFLAGS) $(LIBS)
-
-bin/smbtree@EXEEXT@: $(SMBTREE_OBJ) bin/.dummy
-	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMBTREE_OBJ) $(LDFLAGS) $(LIBS)
-
-bin/smbpasswd@EXEEXT@: $(SMBPASSWD_OBJ) bin/.dummy
-	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMBPASSWD_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS)
-
-bin/pdbedit@EXEEXT@: $(PDBEDIT_OBJ) @BUILD_POPT@ bin/.dummy
-	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(PDBEDIT_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) @BUILD_POPT@
-
-bin/smbgroupedit@EXEEXT@: $(SMBGROUPEDIT_OBJ) bin/.dummy
-	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMBGROUPEDIT_OBJ) $(LDFLAGS) $(LIBS)
-
-bin/nmblookup@EXEEXT@: $(NMBLOOKUP_OBJ) bin/.dummy
-	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(NMBLOOKUP_OBJ) $(LDFLAGS) $(LIBS)
 
 bin/smbtorture@EXEEXT@: $(SMBTORTURE_OBJ) bin/.dummy
 	@echo Linking $@
@@ -793,187 +422,15 @@ bin/gentest@EXEEXT@: $(GENTEST_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(GENTEST_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/talloctort@EXEEXT@: $(TALLOCTORT_OBJ) bin/.dummy
-	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(TALLOCTORT_OBJ) $(LDFLAGS) $(LIBS)
-
 bin/masktest@EXEEXT@: $(MASKTEST_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(MASKTEST_OBJ) $(LDFLAGS) $(LIBS)
-
-bin/msgtest@EXEEXT@: $(MSGTEST_OBJ) bin/.dummy
-	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(MSGTEST_OBJ) $(LDFLAGS) $(LIBS)
-
-bin/smbcacls@EXEEXT@: $(SMBCACLS_OBJ) bin/.dummy
-	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMBCACLS_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS)
 
 bin/locktest@EXEEXT@: $(LOCKTEST_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(LOCKTEST_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/nsstest@EXEEXT@: $(NSSTEST_OBJ) bin/.dummy
-	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(NSSTEST_OBJ) $(LDFLAGS) $(LIBS)
-
-bin/smbiconv@EXEEXT@: $(SMBICONV_OBJ) @BUILD_POPT@ bin/.dummy
-	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMBICONV_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) @BUILD_POPT@
-
-bin/vfstest@EXEEXT@: $(VFSTEST_OBJ) @BUILD_POPT@ bin/.dummy
-	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(VFSTEST_OBJ) $(LDFLAGS) $(TERMLDFLAGS) $(TERMLIBS) $(DYNEXP) $(PRINTLIBS) $(AUTHLIBS) $(ACLLIBS) $(LIBS) @BUILD_POPT@
-
-bin/locktest2@EXEEXT@: $(LOCKTEST2_OBJ) bin/.dummy
-	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(LOCKTEST2_OBJ) $(LDFLAGS) $(LIBS)
-
-bin/rpctorture@EXEEXT@: $(RPCTORTURE_OBJ) bin/.dummy
-	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(RPCTORTURE_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS)
-
-bin/debug2html@EXEEXT@: $(DEBUG2HTML_OBJ) bin/.dummy
-	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(DEBUG2HTML_OBJ) $(LDFLAGS) $(LIBS)
-
-bin/smbfilter@EXEEXT@: $(SMBFILTER_OBJ) bin/.dummy
-	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMBFILTER_OBJ) $(LDFLAGS) $(LIBS)
-
-bin/smbw_sample@EXEEXT@: $(SMBW_OBJ) utils/smbw_sample.o bin/.dummy
-	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMBW_OBJ) utils/smbw_sample.o $(LDFLAGS) $(LIBS)
-
-bin/smbsh@EXEEXT@: $(SMBSH_OBJ) bin/.dummy
-	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMBSH_OBJ) $(LDFLAGS) $(LIBS)
-
-bin/smbwrapper.@SHLIBEXT@: $(PICOBJS) bin/.dummy
-	@echo Linking shared library $@
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(PICOBJS) $(LIBS) \
-		@SONAMEFLAG@`basename $@`
-
-bin/smbwrapper.32.@SHLIBEXT@: $(PICOBJS32)
-	@echo Linking shared library $@
-	@$(SHLD) -32 $(LDSHFLAGS) -o $@ $(PICOBJS32) $(LIBS) \
-		@SONAMEFLAG@`basename $@`
-
-bin/libsmbclient.@SHLIBEXT@: $(LIBSMBCLIENT_PICOBJS)
-	@echo Linking libsmbclient shared library $@
-	$(SHLD) $(LDSHFLAGS) -o $@ $(LIBSMBCLIENT_PICOBJS) $(LDFLAGS) $(LIBS) \
-		@SONAMEFLAG@`basename $@`.$(LIBSMBCLIENT_MAJOR)
-
-bin/libsmbclient.a: $(LIBSMBCLIENT_PICOBJS)
-	@echo Linking libsmbclient non-shared library $@
-	-$(AR) -rc $@ $(LIBSMBCLIENT_PICOBJS) 
-
-LIBRPC_OBJS = $(LIBRAW_RPC_OBJ)
-
-LIBRPC_MAJOR=1
-LIBRPC_PICOBJS = $(LIBRPC_OBJS:.o=.po)
-
-bin/librpc.@SHLIBEXT@: $(LIBRPC_PICOBJS)
-	@echo Linking librpc shared library $@
-	$(SHLD) $(LDSHFLAGS) -o $@ $(LIBRPC_PICOBJS) $(LDFLAGS) $(LIBS) \
-		@SONAMEFLAG@`basename $@`.$(LIBRPC_MAJOR)
-
-bin/librpc.a: $(LIBRPC_PICOBJS)
-	@echo Linking librpc non-shared library $@
-	-$(AR) -rc $@ $(LIBRPC_PICOBJS) 
-
-bin/libbigballofmud.@SHLIBEXT@: $(LIBBIGBALLOFMUD_PICOBJS)
-	@echo Linking bigballofmud shared library $@
-	$(SHLD) $(LDSHFLAGS) -o $@ $(LIBBIGBALLOFMUD_PICOBJS) $(LIBS) \
-		@SONAMEFLAG@`basename $@`.$(LIBBIGBALLOFMUD_MAJOR)
-
-libsmbclient: bin/libsmbclient.a @LIBSMBCLIENT_SHARED@
-
-nsswitch/libnss_wins.@SHLIBEXT@: $(NSS_OBJ)
-	@echo "Linking $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(NSS_OBJ) -lc \
-		@SONAMEFLAG@`basename $@`
-
-bin/winbindd@EXEEXT@: $(WINBINDD_OBJ) bin/.dummy
-	@echo Linking $@
-	@$(LINK) -o $@ $(WINBINDD_OBJ) $(DYNEXP) $(LIBS)
-
-nsswitch/libns_winbind.@SHLIBEXT@: $(WINBIND_NSS_PICOBJS)
-	@echo "Linking $@"
-	@$(SHLD) @LDSHFLAGS@ -o $@ $(WINBIND_NSS_PICOBJS) @WINBIND_NSS_EXTRA_LIBS@ \
-		@SONAMEFLAG@`basename $@`
-
-nsswitch/libnss_winbind.@SHLIBEXT@: $(WINBIND_NSS_PICOBJS)
-	@echo "Linking $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(WINBIND_NSS_PICOBJS) @WINBIND_NSS_EXTRA_LIBS@ \
-		@SONAMEFLAG@`basename $@`
-
-nsswitch/pam_winbind.@SHLIBEXT@: $(PAM_WINBIND_OBJ) bin/.dummy
-	@echo Linking $@
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(PAM_WINBIND_OBJ) \
-		@SONAMEFLAG@`basename $@` -lpam
-
-bin/mysql.@SHLIBEXT@: $(MYSQL_OBJ)
-	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(MYSQL_OBJ) @MYSQL_LIBS@ \
-		@SONAMEFLAG@`basename $@`
-
-bin/developer.@SHLIBEXT@: $(DEVEL_HELP_OBJ)
-	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(DEVEL_HELP_OBJ) \
-		@SONAMEFLAG@`basename $@`
-
-bin/xml.@SHLIBEXT@: $(XML_OBJ)
-	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(XML_OBJ) @XML_LIBS@ \
-		@SONAMEFLAG@`basename $@`
-
-bin/vfs_audit.@SHLIBEXT@: $(VFS_AUDIT_OBJ)
-	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_AUDIT_OBJ) \
-		@SONAMEFLAG@`basename $@`
-
-bin/vfs_extd_audit.@SHLIBEXT@: $(VFS_EXTD_AUDIT_OBJ)
-	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_AUDIT_OBJ) \
-		@SONAMEFLAG@`basename $@`
-
-bin/vfs_recycle.@SHLIBEXT@: $(VFS_RECYCLE_OBJ)
-	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_RECYCLE_OBJ) \
-		@SONAMEFLAG@`basename $@`
-
-bin/vfs_netatalk.@SHLIBEXT@: $(VFS_NETATALK_OBJ)
-	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_NETATALK_OBJ) \
-		@SONAMEFLAG@`basename $@`
-
-bin/vfs_fake_perms.@SHLIBEXT@: $(VFS_FAKE_PERMS_OBJ)
-	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_FAKE_PERMS_OBJ) \
-		@SONAMEFLAG@`basename $@`
-
-bin/wbinfo@EXEEXT@: $(WBINFO_OBJ) $(PARAM_OBJ) $(LIB_OBJ) \
-		$(SECRETS_OBJ) @BUILD_POPT@ bin/.dummy
-	@echo Linking $@
-	@$(LINK) -o $@ $(WBINFO_OBJ) $(PARAM_OBJ) $(LIB_OBJ) \
-		$(SECRETS_OBJ) $(LIBS) @BUILD_POPT@
-
-bin/ntlm_auth@EXEEXT@: $(NTLM_AUTH_OBJ) $(PARAM_OBJ) $(LIB_OBJ) \
-		@BUILD_POPT@ bin/.dummy
-	@echo Linking $@
-	@$(LINK) -o $@ $(NTLM_AUTH_OBJ) $(PARAM_OBJ) $(LIB_OBJ) \
-		$(LIBS) @BUILD_POPT@
-
-bin/pam_smbpass.@SHLIBEXT@: $(PAM_SMBPASS_PICOOBJ)
-	@echo "Linking shared library $@"
-	$(SHLD) $(LDSHFLAGS) -o $@ $(PAM_SMBPASS_PICOOBJ) -lpam $(DYNEXP) $(LIBS) -lc
-
-bin/tdbbackup@EXEEXT@: $(TDBBACKUP_OBJ) bin/.dummy
-	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(TDBBACKUP_OBJ)
-
-install: installbin installman installscripts installdat installswat 
+install: installbin installdat 
 
 # DESTDIR is used here to prevent packagers wasting their time
 # duplicating the Makefile. Remove it and you will have the privelege
@@ -984,7 +441,8 @@ install: installbin installman installscripts installdat installswat
 # is not used
 
 installdirs:
-	@$(SHELL) $(srcdir)/script/installdirs.sh $(DESTDIR)$(BASEDIR) $(DESTDIR)$(BINDIR) $(DESTDIR)$(SBINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(DESTDIR)$(PRIVATEDIR) $(DESTDIR)$(VFSLIBDIR) $(DESTDIR)$(PDBLIBDIR) $(DESTDIR)$(PIDDIR) $(DESTDIR)$(LOCKDIR)
+	@$(SHELL) $(srcdir)/script/installdirs.sh $(DESTDIR)$(BASEDIR) $(DESTDIR)$(BINDIR) $(DESTDIR)$(SBINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(DESTDIR)$(PRIVATEDIR) $(DESTDIR)$(PIDDIR) $(DESTDIR)$(LOCKDIR)
+	@$(SHELL) $(srcdir)/script/installdirs.sh $(DESTDIR)$(BASEDIR) $(DESTDIR)$(CHARSET_LIBDIR) $(DESTDIR)$(DCERPC_LIBDIR) $(DESTDIR)$(NTVFS_LIBDIR)
 
 installservers: all installdirs
 	@$(SHELL) $(srcdir)/script/installbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(SBINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(SBIN_PROGS)
@@ -993,34 +451,17 @@ installbin: all installdirs
 	@$(SHELL) $(srcdir)/script/installbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(SBINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(SBIN_PROGS)
 	@$(SHELL) $(srcdir)/script/installbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(BINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(BIN_PROGS)
 
-	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(RPCLIBDIR) $(RPC_MODULES)
-
 installmodules: all installdirs
-	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(VFSLIBDIR) $(VFS_MODULES)
-	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(PDBLIBDIR) $(PDB_MODULES)
-
-installscripts: installdirs
-	@$(SHELL) $(srcdir)/script/installscripts.sh $(INSTALLPERMS) $(DESTDIR)$(BINDIR) $(SCRIPTS)
+	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(NTVFS_LIBDIR) $(NTVFS_MODULES)
+	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(DCERPC_LIBDIR) $(DCERPC_MODULES)
+	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(CHARSET_LIBDIR) $(CHARSET_MODULES)
 
 installdat: installdirs
 	@$(SHELL) $(srcdir)/script/installdat.sh $(DESTDIR)$(LIBDIR) $(srcdir)
 
-installswat: installdirs
-	@$(SHELL) $(srcdir)/script/installswat.sh $(DESTDIR)$(SWATDIR) $(srcdir)
-
-installclientlib:
-	-$(INSTALLCLIENTCMD_SH) bin/libsmbclient.@SHLIBEXT@ $(DESTDIR)${prefix}/lib
-	-$(INSTALLCLIENTCMD_A) bin/libsmbclient.a $(DESTDIR)${prefix}/lib
-	-$(INSTALLCMD) -d $(DESTDIR)${prefix}/include
-	-$(INSTALLCMD) include/libsmbclient.h $(DESTDIR)${prefix}/include
-
 # revert to the previously installed version
 revert:
 	@$(SHELL) $(srcdir)/script/revert.sh $(SBINDIR) $(SBIN_PROGS) 
-	@$(SHELL) $(srcdir)/script/revert.sh $(BINDIR) $(BIN_PROGS) $(SCRIPTS)
-
-installman:
-	@$(SHELL) $(srcdir)/script/installman.sh $(DESTDIR)$(MANDIR) $(srcdir) $(man_langs) "@ROFF@"
 
 .PHONY: showlayout
 
@@ -1031,26 +472,17 @@ showlayout:
 	@echo "  sbindir: $(SBINDIR)"
 	@echo "  libdir:  $(LIBDIR)"
 	@echo "  vardir:  $(VARDIR)"
-	@echo "  mandir:  $(MANDIR)"
 
-
-uninstall: uninstallman uninstallbin uninstallscripts
-
-uninstallman:
-	@$(SHELL) $(srcdir)/script/uninstallman.sh $(DESTDIR)$(MANDIR) $(srcdir) $(man_langs)
+uninstall: uninstallbin
 
 uninstallbin:
 	@$(SHELL) $(srcdir)/script/uninstallbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(SBINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(DESTDIR)$(SBIN_PROGS)
 	@$(SHELL) $(srcdir)/script/uninstallbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(BINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(DESTDIR)$(BIN_PROGS)
-	@$(SHELL) $(srcdir)/script/uninstallmodules.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(RPCLIBDIR) $(DESTDIR)$(RPC_MODULES)
 
 uninstallmodules:
-	@$(SHELL) $(srcdir)/script/uninstallmodules.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(VFSLIBDIR) $(DESTDIR)$(VFS_MODULES)
-	@$(SHELL) $(srcdir)/script/uninstallmodules.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(PDBLIBDIR) $(DESTDIR)$(PDB_MODULES)
-	@$(SHELL) $(srcdir)/script/uninstallmodules.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(MODULES)
-
-uninstallscripts:
-	@$(SHELL) $(srcdir)/script/uninstallscripts.sh $(INSTALLPERMS) $(DESTDIR)$(BINDIR) $(SCRIPTS)
+	@$(SHELL) $(srcdir)/script/uninstallmodules.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(NTVFS_LIBDIR) $(DESTDIR)$(NTVFS_MODULES)
+	@$(SHELL) $(srcdir)/script/uninstallmodules.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(DCERPC_LIBDIR) $(DESTDIR)$(DCERPC_MODULES)
+	@$(SHELL) $(srcdir)/script/uninstallmodules.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(CHARSET_LIBDIR) $(DESTDIR)$(CHARSET_MODULES)
 
 # Toplevel clean files
 TOPFILES=dynconfig.o dynconfig.po
@@ -1091,12 +523,6 @@ proto_test:
 
 .PHONY: headers proto
 
-etags:
-	etags `find $(srcdir) -name "*.[ch]" | grep -v /CVS/`
-
-ctags:
-	ctags `find $(srcdir) -name "*.[ch]" | grep -v /CVS/`
-
 realclean: clean delheaders
 	-rm -f config.log $(BIN_PROGS) $(MODULES) $(SBIN_PROGS) bin/.dummy script/findsmb
 
@@ -1106,6 +532,25 @@ distclean: realclean
 	-rm -f config.status config.cache so_locations
 	-rm -rf .deps
 
+# when configure.in is updated, reconfigure
+$(srcdir)/configure: $(srcdir)/configure.in
+	@echo "WARNING: you need to rerun ./autogen.sh"
+
+config.status: $(srcdir)/configure
+	@echo "WARNING: you need to run configure"
+
+Makefile: $(srcdir)/Makefile.in config.status
+	@echo "WARNING: you need to run ./config.status"
+
+
+#Some Maintainer stuff
+
+etags:
+	etags `find $(srcdir) -name "*.[ch]" | grep -v /CVS/`
+
+ctags:
+	ctags `find $(srcdir) -name "*.[ch]" | grep -v /CVS/`
+
 # this target is really just for my use. It only works on a limited
 # range of machines and is used to produce a list of potentially
 # dead (ie. unused) functions in the code. (tridge)
@@ -1114,16 +559,6 @@ finddead:
 	nm */*.o |grep 'T ' | $(AWK) '{print $$3}' | sort -u > nmfns.txt
 	comm -13 nmused.txt nmfns.txt 
 
-
-# when configure.in is updated, reconfigure
-$(srcdir)/configure: $(srcdir)/configure.in
-	@echo "WARNING: you need to rerun autoconf"
-
-config.status: $(srcdir)/configure
-	@echo "WARNING: you need to run configure"
-
-Makefile: $(srcdir)/Makefile.in config.status
-	@echo "WARNING: you need to run ./config.status"
 
 test_prefix=/tmp/test-samba
 # Run regression suite using the external "satyr" framework
@@ -1145,7 +580,7 @@ check:
 # `installcheck'
 #      Perform installation tests (if any).  The user must build and
 #      install the program before running the tests.  You should not
-#      assume that `$(bindir)' is in the search path.
+#      assume that `$(BINDIR)' is in the search path.
 
 dangerous-installcheck:
 	mkdir -p $(BASEDIR)/lib
