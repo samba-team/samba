@@ -238,6 +238,7 @@ winbind_callback(nsd_file_t **rqp, int fd)
 		free_response(&response);
 		return(do_list(1,rq));
 	    case WINBINDD_GETGRENT:
+	    case WINBINDD_GETGRLST:
 		nsd_logprintf(NSD_LOG_MIN, 
 			"callback (winbind) - %d GETGRENT responses\n",
 			response.data.num_entries);
@@ -1060,6 +1061,7 @@ _nss_winbind_getgrent_r(struct group *result,
 	NSS_STATUS ret;
 	static struct winbindd_request request;
 	static int called_again;
+	enum winbindd_cmd cmd;
 
 #ifdef DEBUG_NSS
 	fprintf(stderr, "[%5d]: getgrent\n", getpid());
@@ -1083,7 +1085,17 @@ _nss_winbind_getgrent_r(struct group *result,
 
 	request.data.num_entries = MAX_GETGRENT_USERS;
 
-	ret = winbindd_request(WINBINDD_GETGRENT, &request, 
+	/* this is a hack to work around the fact that posix doesn't
+	 define a 'list groups' call and listing all group members can
+	 be *very* expensive. We use an environment variable to give
+	 us a saner call (tridge) */
+	if (getenv("WINBIND_GETGRLST")) {
+		cmd = WINBINDD_GETGRLST;
+	} else {
+		cmd = WINBINDD_GETGRENT;
+	}
+
+	ret = winbindd_request(cmd, &request, 
 			       &getgrent_response);
 
 	if (ret == NSS_STATUS_SUCCESS) {

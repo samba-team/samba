@@ -41,6 +41,8 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 	uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
 	int i;
 
+	DEBUG(3,("rpc: query_user_list\n"));
+
 	*num_entries = 0;
 	*info = NULL;
 
@@ -133,6 +135,8 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 	*num_entries = 0;
 	*info = NULL;
 
+	DEBUG(3,("rpc: enum_dom_groups\n"));
+
 	if (!(hnd = cm_get_sam_handle(domain->name))) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -192,6 +196,8 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 	uint32 *types = NULL;
 	const char *full_name;
 
+	DEBUG(3,("rpc: name_to_sid name=%s\n", name));
+
 	if (!(mem_ctx = talloc_init_named("name_to_sid[rpc] for [%s]\\[%s]", domain->name, name))) {
 		DEBUG(0, ("talloc_init failed!\n"));
 		return NT_STATUS_NO_MEMORY;
@@ -239,6 +245,8 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 	uint32 *types;
 	NTSTATUS status;
 
+	DEBUG(3,("rpc: sid_to_name\n"));
+
 	if (!(hnd = cm_get_lsa_handle(domain->name)))
 		return NT_STATUS_UNSUCCESSFUL;
         
@@ -270,6 +278,8 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	POLICY_HND dom_pol, user_pol;
 	BOOL got_dom_pol = False, got_user_pol = False;
 	SAM_USERINFO_CTR *ctr;
+
+	DEBUG(3,("rpc: query_user rid=%u\n", user_rid));
 
 	/* Get sam handle */
 	if (!(hnd = cm_get_sam_handle(domain->name)))
@@ -335,6 +345,8 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	BOOL got_dom_pol = False, got_user_pol = False;
 	DOM_GID *user_groups;
 	int i;
+
+	DEBUG(3,("rpc: lookup_usergroups rid=%u\n", user_rid));
 
 	*num_groups = 0;
 
@@ -406,6 +418,8 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
         POLICY_HND dom_pol, group_pol;
         uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
         BOOL got_dom_pol = False, got_group_pol = False;
+
+	DEBUG(3,("rpc: lookup_groupmem rid=%u\n", group_rid));
 
 	*num_names = 0;
 
@@ -509,6 +523,8 @@ static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 	BOOL got_dom_pol = False;
 	uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
 
+	DEBUG(3,("rpc: sequence_number\n"));
+
 	*seq = DOM_SEQUENCE_NONE;
 
 	if (!(mem_ctx = talloc_init_named("sequence_number[rpc]")))
@@ -566,6 +582,8 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 	uint32 enum_ctx = 0;
 	uint32 pref_num_domains = 5;
 
+	DEBUG(3,("rpc: trusted_domains\n"));
+
 	*num_domains = 0;
 
 	if (!(hnd = cm_get_lsa_handle(lp_workgroup())))
@@ -585,6 +603,8 @@ static NTSTATUS domain_sid(struct winbindd_domain *domain, DOM_SID *sid)
 	TALLOC_CTX *mem_ctx;
 	CLI_POLICY_HND *hnd;
 	fstring level5_dom;
+
+	DEBUG(3,("rpc: domain_sid\n"));
 
 	if (!(mem_ctx = talloc_init_named("domain_sid[rpc]")))
 		return NT_STATUS_NO_MEMORY;

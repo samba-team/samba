@@ -189,6 +189,7 @@ void do_dual_daemon(void)
 				break;
 				
 			case WINBINDD_GETGRENT:
+			case WINBINDD_GETGRLST:
 				winbindd_setgrent(&state);
 				break;
 			default:
