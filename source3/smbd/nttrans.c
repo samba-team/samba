@@ -1494,8 +1494,6 @@ static int call_nt_transact_notify_change(connection_struct *conn, char *inbuf, 
 	DEBUG(3,("call_nt_transact_notify_change: notify change called on directory \
 name = %s\n", fsp->fsp_name ));
 
-	srv_defer_sign_response(SVAL(inbuf,smb_mid));
-
 	return -1;
 }
 
