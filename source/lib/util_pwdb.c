@@ -641,6 +641,8 @@ BOOL pwdb_initialise(BOOL is_server)
 		}
 	}
 
+	create_sidmap_table();
+
 	return initialise_password_db();
 }
 
