@@ -69,10 +69,8 @@ BOOL cli_receive_smb(struct cli_state *cli)
         /* If the server is not responding, note that now */
 	if (!ret) {
 		cli->smb_read_error = smb_read_error;
-		if (cli->timeout > 0) {
-			close(cli->fd);
-			cli->fd = -1;
-		}
+		close(cli->fd);
+		cli->fd = -1;
 	}
 
 	return ret;
