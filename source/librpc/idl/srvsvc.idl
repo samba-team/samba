@@ -1024,14 +1024,12 @@
 		[in,out]  uint32 *resume_handle
 		);
 
+/**************************/
+/* srvsvc_NetStatistics   */
+/**************************/
 	/******************/
 	/* Function: 0x18 */
 	WERROR srvsvc_NETRSERVERSTATISTICSGET(
-		);
-
-	/******************/
-	/* Function: 0x19 */
-	WERROR srvsvc_NETRSERVERTRANSPORTADD(
 		);
 
 /**************************/
@@ -1102,6 +1100,11 @@
 		[case(3)] srvsvc_NetTransportCtr3 *ctr3;
 		[default];
 	} srvsvc_NetTransportCtr;
+
+	/******************/
+	/* Function: 0x19 */
+	WERROR srvsvc_NETRSERVERTRANSPORTADD(
+		);
 
 	/******************/
 	/* Function: 0x1a */
