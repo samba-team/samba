@@ -385,6 +385,9 @@ static int tdb_new_database(TDB_CONTEXT *tdb, int hash_size)
 	/* create the header */
 	header.version = TDB_VERSION;
 	header.hash_size = hash_size;
+	lseek(tdb->fd, 0, SEEK_SET);
+	ftruncate(tdb->fd, 0);
+
 	if (write(tdb->fd, &header, sizeof(header)) != sizeof(header)) return -1;
 
 	/* the freelist and hash pointers */
