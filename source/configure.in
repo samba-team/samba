@@ -843,7 +843,7 @@ AC_CHECK_FUNCS(setpriv setgidx setuidx setgroups sysconf mktime rename ftruncate
 AC_CHECK_FUNCS(lstat64 fopen64 atexit grantpt dup2 lseek64 ftruncate64 readdir64)
 AC_CHECK_FUNCS(fseek64 fseeko64 ftell64 ftello64 setluid getpwanam setlinebuf)
 AC_CHECK_FUNCS(srandom random srand rand setenv usleep strcasecmp fcvt fcvtl symlink readlink)
-AC_CHECK_FUNCS(syslog vsyslog getgrouplist timegm)
+AC_CHECK_FUNCS(syslog vsyslog timegm)
 AC_CHECK_FUNCS(setlocale nl_langinfo)
 # setbuffer, shmget, shm_open are needed for smbtorture
 AC_CHECK_FUNCS(setbuffer shmget shm_open backtrace_symbols)
@@ -865,6 +865,38 @@ AC_CHECK_FUNCS(__sys_llseek llseek _llseek __llseek readdir64 _readdir64 __readd
 AC_CHECK_FUNCS(pread _pread __pread pread64 _pread64 __pread64)
 AC_CHECK_FUNCS(pwrite _pwrite __pwrite pwrite64 _pwrite64 __pwrite64)
 AC_CHECK_FUNCS(open64 _open64 __open64 creat64)
+
+#
+# 
+#
+case "$host_os" in
+    *linux*)
+       # glibc <= 2.3.2 has a broken getgrouplist
+       AC_TRY_RUN([
+#include <unistd.h>
+#include <sys/utsname.h>
+main() {
+       /* glibc up to 2.3 has a broken getgrouplist */
+#if defined(__GLIBC__) && defined(__GLIBC_MINOR__)
+       int libc_major = __GLIBC__;
+       int libc_minor = __GLIBC_MINOR__;
+
+       if (libc_major < 2)
+              exit(1);
+       if ((libc_major == 2) && (libc_minor <= 3))
+              exit(1);
+#endif
+       exit(0);
+}
+], [linux_getgrouplist_ok=yes], [linux_getgrouplist_ok=no])
+       if test x"$linux_getgrouplist_ok" = x"yes"; then
+          AC_DEFINE(HAVE_GETGROUPLIST, 1, [Have good getgrouplist])
+       fi
+       ;;
+    *)
+       AC_CHECK_FUNCS(getgrouplist)
+       ;;
+esac
 
 #
 # stat64 family may need <sys/stat.h> on some systems, notably ReliantUNIX
