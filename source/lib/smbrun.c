@@ -185,10 +185,12 @@ int smbrun(char *cmd,char *outfile,BOOL shared)
 			     instead use exit codes for debugging */
 	}
 	
+#ifndef __INSURE__
 	/* close all other file descriptors, leaving only 0, 1 and 2. 0 and
 	   2 point to /dev/null from the startup code */
 	for (fd=3;fd<256;fd++) close(fd);
-	
+#endif
+
 	execl("/bin/sh","sh","-c",cmd,NULL);  
 	
 	/* not reached */
