@@ -32,7 +32,7 @@ diff -uNr samba-3.0.0beta2.orig/source/Makefile.in samba-3.0.0beta2/source/Makef
  PATH_FLAGS = $(PATH_FLAGS6) $(PASSWD_FLAGS)
  
  # Note that all executable programs now provide for an optional executable suffix.
-@@ -1200,7 +1208,7 @@
+@@ -1203,7 +1211,7 @@
  	@$(SHELL) $(srcdir)/script/installscripts.sh $(INSTALLPERMS) $(DESTDIR)$(BINDIR) $(SCRIPTS)
  
  installdat: installdirs
@@ -192,7 +192,7 @@ diff -uNr samba-3.0.0beta2.orig/source/lib/account_pol.c samba-3.0.0beta2/source
 diff -uNr samba-3.0.0beta2.orig/source/lib/util.c samba-3.0.0beta2/source/lib/util.c
 --- samba-3.0.0beta2.orig/source/lib/util.c	2003-07-02 23:26:47.000000000 -0500
 +++ samba-3.0.0beta2/source/lib/util.c	2003-07-02 23:19:02.000000000 -0500
-@@ -2252,6 +2252,61 @@
+@@ -2190,6 +2190,61 @@
  }
  
  /**
@@ -298,18 +298,17 @@ diff -uNr samba-3.0.0beta2.orig/source/libsmb/samlogon_cache.c samba-3.0.0beta2/
  				   TDB_DEFAULT, O_RDWR, 0600);
  		if (!tdb) {
  			DEBUG(5, ("netsamlogon_clear_cached_user: failed to open cache\n"));
-diff -uNr samba-3.0.0beta2.orig/source/nmbd/nmbd_serverlistdb.c samba-3.0.0beta2/source/nmbd/nmbd_serverlistdb.c
---- samba-3.0.0beta2.orig/source/nmbd/nmbd_serverlistdb.c	2003-07-02 23:26:47.000000000 -0500
-+++ samba-3.0.0beta2/source/nmbd/nmbd_serverlistdb.c	2003-07-02 23:19:02.000000000 -0500
+--- samba_3_0/source/nmbd/nmbd_serverlistdb.c.orig	2003-09-08 10:53:13.000000000 -0400
++++ samba_3_0/source/nmbd/nmbd_serverlistdb.c	2003-09-08 11:22:03.000000000 -0400
 @@ -327,7 +327,7 @@
  
-   updatecount++;
+ 	updatecount++;
      
--  pstrcpy(fname,lp_lockdir());
-+  pstrcpy(fname,dyn_CACHEDIR());
-   trim_string(fname,NULL,"/");
-   pstrcat(fname,"/");
-   pstrcat(fname,SERVER_LIST);
+-	pstrcpy(fname,lp_lockdir());
++	pstrcpy(fname,dyn_CACHEDIR());
+ 	trim_char(fname,'\0' ,'/');
+ 	pstrcat(fname,"/");
+ 	pstrcat(fname,SERVER_LIST);
 --- samba-3.0.0rc2/source/nmbd/nmbd_winsserver.c.orig	2003-08-28 17:42:44.000000000 -0400
 +++ samba-3.0.0rc2/source/nmbd/nmbd_winsserver.c	2003-08-31 08:09:11.000000000 -0400
 @@ -228,7 +228,7 @@
@@ -345,7 +344,7 @@ diff -uNr samba-3.0.0beta2.orig/source/nsswitch/winbindd_cache.c samba-3.0.0beta
 diff -uNr samba-3.0.0beta2.orig/source/nsswitch/winbindd_util.c samba-3.0.0beta2/source/nsswitch/winbindd_util.c
 --- samba-3.0.0beta2.orig/source/nsswitch/winbindd_util.c	2003-07-01 15:44:25.000000000 -0500
 +++ samba-3.0.0beta2/source/nsswitch/winbindd_util.c	2003-07-02 23:19:02.000000000 -0500
-@@ -800,7 +800,7 @@
+@@ -813,7 +813,7 @@
  	SMB_STRUCT_STAT stbuf;
  	TDB_CONTEXT *idmap_tdb;
  
