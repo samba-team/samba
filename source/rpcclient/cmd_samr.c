@@ -1207,6 +1207,24 @@ static void req_user_info(struct client_info *info, uint16 fnum,
 	}
 }
 
+static void query_groupinfo(struct client_info *info, uint16 fnum,
+				uint32 group_rid)
+{
+	GROUP_INFO_CTR ctr;
+
+	/* send group info query */
+	if (get_samr_query_groupinfo(smb_cli, fnum,
+				      &info->dom.samr_pol_open_domain,
+				      group_rid, 1, &ctr))
+	{
+#if 0
+		display_samr_groupinfo(out_hnd, ACTION_HEADER   , &ctr);
+		display_samr_groupinfo(out_hnd, ACTION_ENUMERATE, &ctr);
+		display_samr_groupinfo(out_hnd, ACTION_FOOTER   , &ctr);
+#endif
+	}
+}
+
 static void req_group_info(struct client_info *info, uint16 fnum,
 				uint32 user_rid)
 {
@@ -1422,14 +1440,14 @@ void cmd_sam_enum_users(struct client_info *info)
 			        user_rid,
 			        info->dom.sam[user_idx].acct_name);
 
-			if (request_user_info)
-			{
-				req_user_info(info, fnum, user_rid);
-			}
-
 			if (request_group_info)
 			{
 				req_group_info(info, fnum, user_rid);
+			}
+
+			if (request_user_info)
+			{
+				req_user_info(info, fnum, user_rid);
 			}
 
 			if (request_alias_info)
@@ -1863,9 +1881,11 @@ void cmd_sam_enum_groups(struct client_info *info)
 	DOM_SID sid1;
 	BOOL res = True;
 	BOOL request_member_info = False;
+	BOOL request_group_info = False;
 	uint32 ace_perms = 0x02000000; /* access control permissions. */
 	fstring tmp;
 	uint32 group_idx;
+	int i;
 
 	sid_copy(&sid1, &info->dom.level5_sid);
 
@@ -1883,9 +1903,18 @@ void cmd_sam_enum_groups(struct client_info *info)
 	strupper(srv_name);
 
 	/* a bad way to do token parsing... */
-	if (next_token(NULL, tmp, NULL, sizeof(tmp)))
+	for (i = 0; i < 2; i++)
 	{
-		request_member_info |= strequal(tmp, "-m");
+		/* a bad way to do token parsing... */
+		if (next_token(NULL, tmp, NULL, sizeof(tmp)))
+		{
+			request_member_info |= strequal(tmp, "-m");
+			request_group_info  |= strequal(tmp, "-g");
+		}
+		else
+		{
+			break;
+		}
 	}
 
 	fprintf(out_hnd, "SAM Enumerate Groups\n");
@@ -1928,6 +1957,10 @@ void cmd_sam_enum_groups(struct client_info *info)
 					  group_rid,
 					  info->dom.sam[group_idx].acct_name);
 
+			if (request_group_info)
+			{
+				query_groupinfo(info, fnum, group_rid);
+			}
 			if (request_member_info)
 			{
 				req_groupmem_info(info, fnum, group_rid);

@@ -1266,6 +1266,63 @@ BOOL samr_create_dom_alias(struct cli_state *cli, uint16 fnum,
 	return valid_pol;
 }
 
+#if 0
+/****************************************************************************
+do a SAMR Get Alias Info
+****************************************************************************/
+BOOL samr_get_aliasinfo(struct cli_state *cli, uint16 fnum, 
+				POLICY_HND *alias_pol, ALIAS_INFO_CTR *ctr)
+{
+	prs_struct data;
+	prs_struct rdata;
+
+	SAMR_Q_GET_ALIASINFO q_o;
+	BOOL valid_pol = False;
+
+	if (alias_pol == NULL || ctr == NULL) return False;
+
+	/* create and send a MSRPC command with api SAMR_GET_ALIASINFO */
+
+	prs_init(&data , 1024, 4, SAFETY_MARGIN, False);
+	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
+
+	DEBUG(4,("SAMR Get Alias Info\n"));
+
+	/* store the parameters */
+	make_samr_q_get_aliasinfo(&q_o, alias_pol, ctr);
+
+	/* turn parameters into data stream */
+	samr_io_q_get_aliasinfo("", &q_o,  &data, 0);
+
+	/* send the data on \PIPE\ */
+	if (rpc_api_pipe_req(cli, fnum, SAMR_GET_ALIASINFO, &data, &rdata))
+	{
+		SAMR_R_GET_ALIASINFO r_o;
+		BOOL p;
+
+		samr_io_r_get_aliasinfo("", &r_o, &rdata, 0);
+		p = rdata.offset != 0;
+
+		if (p && r_o.status != 0)
+		{
+			/* report error code */
+			DEBUG(0,("SAMR_R_GET_ALIASINFO: %s\n", get_nt_error_msg(r_o.status)));
+			p = False;
+		}
+
+		if (p)
+		{
+			valid_pol = True;
+		}
+	}
+
+	prs_mem_free(&data   );
+	prs_mem_free(&rdata  );
+
+	return valid_pol;
+}
+#endif
+
 /****************************************************************************
 do a SAMR Set Alias Info
 ****************************************************************************/
