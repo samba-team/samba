@@ -707,6 +707,16 @@ void ndr_print_array_uint8(struct ndr_print *ndr, const char *name,
 {
 	int i;
 
+	if (count <= 32 && (ndr->flags & LIBNDR_PRINT_ARRAY_HEX)) {
+		char s[65];
+		for (i=0;i<count;i++) {
+			snprintf(&s[i*2], 3, "%02x", data[i]);
+		}
+		s[i*2] = 0;
+		ndr->print(ndr, "%-25s: %s", name, s);
+		return;
+	}
+
 	ndr->print(ndr, "%s: ARRAY(%d)", name, count);
 	ndr->depth++;
 	for (i=0;i<count;i++) {
@@ -829,15 +839,4 @@ NTSTATUS ndr_pull_DATA_BLOB(struct ndr_pull *ndr, DATA_BLOB *blob)
 	*blob = data_blob_talloc(ndr->mem_ctx, ndr->data+ndr->offset, length);
 	ndr->offset += length;
 	return NT_STATUS_OK;
-}
-
-
-void ndr_print_policy_handle(struct ndr_print *ndr, const char *name, struct policy_handle *r)
-{
-	ndr->print(ndr, "%-25s: policy_handle %02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x", 
-		   name, 
-		   r->data[0], r->data[1], r->data[2], r->data[3], r->data[4], 
-		   r->data[5], r->data[6], r->data[7], r->data[8], r->data[9], 
-		   r->data[10], r->data[11], r->data[12], r->data[13], r->data[14], 
-		   r->data[15], r->data[16], r->data[17], r->data[18], r->data[19]);
 }
