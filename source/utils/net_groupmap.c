@@ -294,9 +294,11 @@ int net_groupmap_modify(int argc, const char **argv)
 	fstring ntcomment = "";
 	fstring type = "";
 	fstring ntgroup = "";
+	fstring unixgrp = "";
 	fstring sid_string = "";
 	enum SID_NAME_USE sid_type = SID_NAME_UNKNOWN;
 	int i;
+	gid_t gid;
 
 	/* get the options */
 	for ( i=0; i<argc; i++ ) {
@@ -321,6 +323,13 @@ int net_groupmap_modify(int argc, const char **argv)
 				return -1;
 			}				
 		}
+		else if ( !StrnCaseCmp(argv[i], "unixgroup", strlen("unixgroup")) ) {
+			fstrcpy( unixgrp, get_string_param( argv[i] ) );
+			if ( !unixgrp[0] ) {
+				d_printf("must supply a group name\n");
+				return -1;
+			}				
+		}
 		else if ( !StrnCaseCmp(argv[i], "type", strlen("type")) )  {
 			fstrcpy( type, get_string_param( argv[i] ) );
 			switch ( type[0] ) {
@@ -341,7 +350,7 @@ int net_groupmap_modify(int argc, const char **argv)
 	}
 	
 	if ( !ntgroup[0] && !sid_string[0] ) {
-		d_printf("Usage: net groupmap modify {ntgroup=<string>|sid=<SID>} [comment=<string>] [type=<domain|local>\n");
+		d_printf("Usage: net groupmap modify {ntgroup=<string>|sid=<SID>} [comment=<string>] [unixgroup=<string>] [type=<domain|local>]\n");
 		return -1;
 	}
 
@@ -386,6 +395,17 @@ int net_groupmap_modify(int argc, const char **argv)
 		
 	if ( ntgroup[0] )
 		fstrcpy( map.nt_name, ntgroup );
+		
+	if ( unixgrp[0] ) {
+		gid = nametogid( unixgrp );
+		if ( gid == -1 ) {
+			d_printf("Unable to lookup UNIX group %s.  Make sure the group exists.\n",
+				unixgrp);
+			return -1;
+		}
+		
+		map.gid = gid;
+	}
 
 #if 0
 	/* Change the privilege if new one */
