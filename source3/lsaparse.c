@@ -31,7 +31,7 @@ char* lsa_io_r_open_pol(BOOL io, LSA_R_OPEN_POL *r_p, char *q, char *base, int a
 {
 	if (r_p == NULL) return NULL;
 
-	DEBUG(5,("%slsa_io_r_open_pol\n", tab_depth(depth)));
+	DEBUG(5,("%s%04x lsa_io_r_open_pol\n", tab_depth(depth), PTR_DIFF(q, base)));
 	depth++;
 
 	q = smb_io_pol_hnd(io, &(r_p->pol), q, base, align, depth);
@@ -78,12 +78,12 @@ char* lsa_io_r_query(BOOL io, LSA_R_QUERY_INFO *r_q, char *q, char *base, int al
 		{
 			case 3:
 			{
-				q = smb_io_dom_query_3(io, &(r_q->dom.id3), q, base, align);
+				q = smb_io_dom_query_3(io, &(r_q->dom.id3), q, base, align, depth);
 				break;
 			}
 			case 5:
 			{
-				q = smb_io_dom_query_5(io, &(r_q->dom.id3), q, base, align);
+				q = smb_io_dom_query_5(io, &(r_q->dom.id3), q, base, align, depth);
 				break;
 			}
 			default:
@@ -128,7 +128,7 @@ char* lsa_io_q_lookup_sids(BOOL io, LSA_Q_LOOKUP_SIDS *q_s, char *q, char *base,
 
 	for (i = 0; i < q_s->num_entries; i++)
 	{
-		q = smb_io_dom_sid(io, &(q_s->dom_sids[i]), q, base, align); /* domain SIDs to be looked up. */
+		q = smb_io_dom_sid(io, &(q_s->dom_sids[i]), q, base, align, depth); /* domain SIDs to be looked up. */
 	}
 
 	DBG_RW_PCVAL("undoc", depth, base, io, q, q_s->undoc, 16); q += 16; /* completely undocumented 16 bytes */
@@ -150,7 +150,7 @@ char* lsa_io_r_lookup_sids(BOOL io, LSA_R_LOOKUP_SIDS *r_s, char *q, char *base,
 
 	q = align_offset(q, base, align);
 	
-	q = smb_io_dom_r_ref(io, &(r_s->dom_ref), q, base, align); /* domain reference info */
+	q = smb_io_dom_r_ref(io, &(r_s->dom_ref), q, base, align, depth); /* domain reference info */
 
 	DBG_RW_IVAL("num_entries", depth, base, io, q, r_s->num_entries); q += 4;
 	DBG_RW_IVAL("undoc_buffer", depth, base, io, q, r_s->undoc_buffer); q += 4;
@@ -158,7 +158,7 @@ char* lsa_io_r_lookup_sids(BOOL io, LSA_R_LOOKUP_SIDS *r_s, char *q, char *base,
 
 	for (i = 0; i < r_s->num_entries2; i++)
 	{
-		q = smb_io_dom_sid2(io, &(r_s->dom_sid[i]), q, base, align); /* domain SIDs being looked up */
+		q = smb_io_dom_sid2(io, &(r_s->dom_sid[i]), q, base, align, depth); /* domain SIDs being looked up */
 	}
 
 	DBG_RW_IVAL("num_entries3", depth, base, io, q, r_s->num_entries3); q += 4;
@@ -191,7 +191,7 @@ char* lsa_io_q_lookup_rids(BOOL io, LSA_Q_LOOKUP_RIDS *q_r, char *q, char *base,
 
 	for (i = 0; i < q_r->num_entries; i++)
 	{
-		q = smb_io_dom_name(io, &(q_r->lookup_name[i]), q, base, 0); /* names to be looked up */
+		q = smb_io_dom_name(io, &(q_r->lookup_name[i]), q, base, align, depth); /* names to be looked up */
 	}
 
 	DBG_RW_PCVAL("undoc", depth, base, io, q, q_r->undoc, UNKNOWN_LEN); q += UNKNOWN_LEN; /* completely undocumented bytes of unknown length */
@@ -213,7 +213,7 @@ char* lsa_io_r_lookup_rids(BOOL io, LSA_R_LOOKUP_RIDS *r_r, char *q, char *base,
 
 	q = align_offset(q, base, align);
 	
-	q = smb_io_dom_r_ref(io, &(r_r->dom_ref), q, base, align); /* domain reference info */
+	q = smb_io_dom_r_ref(io, &(r_r->dom_ref), q, base, align, depth); /* domain reference info */
 
 	DBG_RW_IVAL("num_entries", depth, base, io, q, r_r->num_entries); q += 4;
 	DBG_RW_IVAL("undoc_buffer", depth, base, io, q, r_r->undoc_buffer); q += 4;
@@ -221,7 +221,7 @@ char* lsa_io_r_lookup_rids(BOOL io, LSA_R_LOOKUP_RIDS *r_r, char *q, char *base,
 
 	for (i = 0; i < r_r->num_entries2; i++)
 	{
-		q = smb_io_dom_rid2(io, &(r_r->dom_rid[i]), q, base, align); /* domain RIDs being looked up */
+		q = smb_io_dom_rid2(io, &(r_r->dom_rid[i]), q, base, align, depth); /* domain RIDs being looked up */
 	}
 
 	DBG_RW_IVAL("num_entries3", depth, base, io, q, r_r->num_entries3); q += 4;
@@ -243,9 +243,11 @@ char* lsa_io_q_req_chal(BOOL io, LSA_Q_REQ_CHAL *q_c, char *q, char *base, int a
 
 	q = align_offset(q, base, align);
     
-	q = smb_io_unistr2(io, &(q_c->uni_logon_srv), q, base, align); /* logon server unicode string */
-	q = smb_io_unistr2(io, &(q_c->uni_logon_clnt), q, base, align); /* logon client unicode string */
-	q = smb_io_chal(io, &(q_c->clnt_chal), q, base, align); /* client challenge */
+	DBG_RW_IVAL("undoc_buffer", depth, base, io, q, q_c->undoc_buffer); q += 4;
+
+	q = smb_io_unistr2(io, &(q_c->uni_logon_srv), q, base, align, depth); /* logon server unicode string */
+	q = smb_io_unistr2(io, &(q_c->uni_logon_clnt), q, base, align, depth); /* logon client unicode string */
+	q = smb_io_chal(io, &(q_c->clnt_chal), q, base, align, depth); /* client challenge */
 
 	return q;
 }
@@ -262,7 +264,7 @@ char* lsa_io_r_req_chal(BOOL io, LSA_R_REQ_CHAL *r_c, char *q, char *base, int a
 
 	q = align_offset(q, base, align);
     
-	q = smb_io_chal(io, &(r_c->srv_chal), q, base, align); /* server challenge */
+	q = smb_io_chal(io, &(r_c->srv_chal), q, base, align, depth); /* server challenge */
 
 	DBG_RW_IVAL("status", depth, base, io, q, r_c->status); q += 4;
 
@@ -282,9 +284,9 @@ char* lsa_io_q_auth_2(BOOL io, LSA_Q_AUTH_2 *q_a, char *q, char *base, int align
 
 	q = align_offset(q, base, align);
     
-	q = smb_io_log_info (io, &(q_a->clnt_id), q, base, align); /* client identification info */
-	q = smb_io_chal     (io, &(q_a->clnt_chal), q, base, align); /* client-calculated credentials */
-	q = smb_io_neg_flags(io, &(q_a->clnt_flgs), q, base, align);
+	q = smb_io_log_info (io, &(q_a->clnt_id), q, base, align, depth); /* client identification info */
+	q = smb_io_chal     (io, &(q_a->clnt_chal), q, base, align, depth); /* client-calculated credentials */
+	q = smb_io_neg_flags(io, &(q_a->clnt_flgs), q, base, align, depth);
 
 	return q;
 }
@@ -301,8 +303,8 @@ char* lsa_io_r_auth_2(BOOL io, LSA_R_AUTH_2 *r_a, char *q, char *base, int align
 
 	q = align_offset(q, base, align);
     
-	q = smb_io_chal     (io, &(r_a->srv_chal), q, base, align); /* server challenge */
-	q = smb_io_neg_flags(io, &(r_a->srv_flgs), q, base, align);
+	q = smb_io_chal     (io, &(r_a->srv_chal), q, base, align, depth); /* server challenge */
+	q = smb_io_neg_flags(io, &(r_a->srv_flgs), q, base, align, depth);
 
 	DBG_RW_IVAL("status", depth, base, io, q, r_a->status); q += 4;
 
@@ -322,7 +324,7 @@ char* lsa_io_q_srv_pwset(BOOL io, LSA_Q_SRV_PWSET *q_s, char *q, char *base, int
 
 	q = align_offset(q, base, align);
     
-	q = smb_io_clnt_info(io, &(q_s->clnt_id), q, base, align); /* client identification/authentication info */
+	q = smb_io_clnt_info(io, &(q_s->clnt_id), q, base, align, depth); /* client identification/authentication info */
 	DBG_RW_PCVAL("pwd", depth, base, io, q, q_s->pwd, 16); q += 16; /* new password - undocumented */
 
 	return q;
@@ -340,7 +342,7 @@ char* lsa_io_r_srv_pwset(BOOL io, LSA_R_SRV_PWSET *r_s, char *q, char *base, int
 
 	q = align_offset(q, base, align);
     
-	q = smb_io_cred(io, &(r_s->srv_cred), q, base, align); /* server challenge */
+	q = smb_io_cred(io, &(r_s->srv_cred), q, base, align, depth); /* server challenge */
 
 	DBG_RW_IVAL("status", depth, base, io, q, r_s->status); q += 4;
 
@@ -365,19 +367,19 @@ char* lsa_io_user_info(BOOL io, LSA_USER_INFO *usr, char *q, char *base, int ali
 	
 	DBG_RW_IVAL("", depth, base, io, q, usr->undoc_buffer); q += 4;
 
-	q = smb_io_time(io, &(usr->logon_time)           , q, base, align); /* logon time */
-	q = smb_io_time(io, &(usr->logoff_time)          , q, base, align); /* logoff time */
-	q = smb_io_time(io, &(usr->kickoff_time)         , q, base, align); /* kickoff time */
-	q = smb_io_time(io, &(usr->pass_last_set_time)   , q, base, align); /* password last set time */
-	q = smb_io_time(io, &(usr->pass_can_change_time) , q, base, align); /* password can change time */
-	q = smb_io_time(io, &(usr->pass_must_change_time), q, base, align); /* password must change time */
+	q = smb_io_time(io, &(usr->logon_time)           , q, base, align, depth); /* logon time */
+	q = smb_io_time(io, &(usr->logoff_time)          , q, base, align, depth); /* logoff time */
+	q = smb_io_time(io, &(usr->kickoff_time)         , q, base, align, depth); /* kickoff time */
+	q = smb_io_time(io, &(usr->pass_last_set_time)   , q, base, align, depth); /* password last set time */
+	q = smb_io_time(io, &(usr->pass_can_change_time) , q, base, align, depth); /* password can change time */
+	q = smb_io_time(io, &(usr->pass_must_change_time), q, base, align, depth); /* password must change time */
 
-	q = smb_io_unihdr(io, &(usr->hdr_user_name)   , q, base, align); /* username unicode string header */
-	q = smb_io_unihdr(io, &(usr->hdr_full_name)   , q, base, align); /* user's full name unicode string header */
-	q = smb_io_unihdr(io, &(usr->hdr_logon_script), q, base, align); /* logon script unicode string header */
-	q = smb_io_unihdr(io, &(usr->hdr_profile_path), q, base, align); /* profile path unicode string header */
-	q = smb_io_unihdr(io, &(usr->hdr_home_dir)    , q, base, align); /* home directory unicode string header */
-	q = smb_io_unihdr(io, &(usr->hdr_dir_drive)   , q, base, align); /* home directory drive unicode string header */
+	q = smb_io_unihdr(io, &(usr->hdr_user_name)   , q, base, align, depth); /* username unicode string header */
+	q = smb_io_unihdr(io, &(usr->hdr_full_name)   , q, base, align, depth); /* user's full name unicode string header */
+	q = smb_io_unihdr(io, &(usr->hdr_logon_script), q, base, align, depth); /* logon script unicode string header */
+	q = smb_io_unihdr(io, &(usr->hdr_profile_path), q, base, align, depth); /* profile path unicode string header */
+	q = smb_io_unihdr(io, &(usr->hdr_home_dir)    , q, base, align, depth); /* home directory unicode string header */
+	q = smb_io_unihdr(io, &(usr->hdr_dir_drive)   , q, base, align, depth); /* home directory drive unicode string header */
 
 	DBG_RW_SVAL("logon_count", depth, base, io, q, usr->logon_count ); q += 2;  /* logon count */
 	DBG_RW_SVAL("bad_pw_count", depth, base, io, q, usr->bad_pw_count); q += 2; /* bad password count */
@@ -390,8 +392,8 @@ char* lsa_io_user_info(BOOL io, LSA_USER_INFO *usr, char *q, char *base, int ali
 
 	DBG_RW_PCVAL("", depth, base, io, q, usr->sess_key, 16); q += 16; /* unused user session key */
 
-	q = smb_io_unihdr(io, &(usr->hdr_logon_srv), q, base, align); /* logon server unicode string header */
-	q = smb_io_unihdr(io, &(usr->hdr_logon_dom), q, base, align); /* logon domain unicode string header */
+	q = smb_io_unihdr(io, &(usr->hdr_logon_srv), q, base, align, depth); /* logon server unicode string header */
+	q = smb_io_unihdr(io, &(usr->hdr_logon_dom), q, base, align, depth); /* logon domain unicode string header */
 
 	DBG_RW_IVAL("buffer_dom_id", depth, base, io, q, usr->buffer_dom_id); q += 4; /* undocumented logon domain id pointer */
 	DBG_RW_PCVAL("padding", depth, base, io, q, usr->padding, 40); q += 40; /* unused padding bytes? */
@@ -399,27 +401,27 @@ char* lsa_io_user_info(BOOL io, LSA_USER_INFO *usr, char *q, char *base, int ali
 	DBG_RW_IVAL("num_other_sids", depth, base, io, q, usr->num_other_sids); q += 4; /* 0 - num_sids */
 	DBG_RW_IVAL("buffer_other_sids", depth, base, io, q, usr->buffer_other_sids); q += 4; /* NULL - undocumented pointer to SIDs. */
 	
-	q = smb_io_unistr2(io, &(usr->uni_user_name)   , q, base, align); /* username unicode string */
-	q = smb_io_unistr2(io, &(usr->uni_full_name)   , q, base, align); /* user's full name unicode string */
-	q = smb_io_unistr2(io, &(usr->uni_logon_script), q, base, align); /* logon script unicode string */
-	q = smb_io_unistr2(io, &(usr->uni_profile_path), q, base, align); /* profile path unicode string */
-	q = smb_io_unistr2(io, &(usr->uni_home_dir)    , q, base, align); /* home directory unicode string */
-	q = smb_io_unistr2(io, &(usr->uni_dir_drive)   , q, base, align); /* home directory drive unicode string */
+	q = smb_io_unistr2(io, &(usr->uni_user_name)   , q, base, align, depth); /* username unicode string */
+	q = smb_io_unistr2(io, &(usr->uni_full_name)   , q, base, align, depth); /* user's full name unicode string */
+	q = smb_io_unistr2(io, &(usr->uni_logon_script), q, base, align, depth); /* logon script unicode string */
+	q = smb_io_unistr2(io, &(usr->uni_profile_path), q, base, align, depth); /* profile path unicode string */
+	q = smb_io_unistr2(io, &(usr->uni_home_dir)    , q, base, align, depth); /* home directory unicode string */
+	q = smb_io_unistr2(io, &(usr->uni_dir_drive)   , q, base, align, depth); /* home directory drive unicode string */
 
 	DBG_RW_IVAL("num_groups2", depth, base, io, q, usr->num_groups2); q += 4;        /* num groups */
 	for (i = 0; i < usr->num_groups2; i++)
 	{
-		q = smb_io_gid(io, &(usr->gids[i]), q, base, align); /* group info */
+		q = smb_io_gid(io, &(usr->gids[i]), q, base, align, depth); /* group info */
 	}
 
-	q = smb_io_unistr2(io, &( usr->uni_logon_srv), q, base, align); /* logon server unicode string */
-	q = smb_io_unistr2(io, &( usr->uni_logon_dom), q, base, align); /* logon domain unicode string */
+	q = smb_io_unistr2(io, &( usr->uni_logon_srv), q, base, align, depth); /* logon server unicode string */
+	q = smb_io_unistr2(io, &( usr->uni_logon_dom), q, base, align, depth); /* logon domain unicode string */
 
-	q = smb_io_dom_sid(io, &(usr->dom_sid), q, base, align);           /* domain SID */
+	q = smb_io_dom_sid(io, &(usr->dom_sid), q, base, align, depth);           /* domain SID */
 
 	for (i = 0; i < usr->num_other_sids; i++)
 	{
-		q = smb_io_dom_sid(io, &(usr->other_sids[i]), q, base, align); /* other domain SIDs */
+		q = smb_io_dom_sid(io, &(usr->other_sids[i]), q, base, align, depth); /* other domain SIDs */
 	}
 
 	return q;
@@ -437,7 +439,7 @@ char* lsa_io_q_sam_logon(BOOL io, LSA_Q_SAM_LOGON *q_l, char *q, char *base, int
 
 	q = align_offset(q, base, align);
 	
-	q = smb_io_sam_info(io, &(q_l->sam_id), q, base, align);           /* domain SID */
+	q = smb_io_sam_info(io, &(q_l->sam_id), q, base, align, depth);           /* domain SID */
 
 	return q;
 }
@@ -455,7 +457,7 @@ char* lsa_io_r_sam_logon(BOOL io, LSA_R_SAM_LOGON *r_l, char *q, char *base, int
 	q = align_offset(q, base, align);
 	
 	DBG_RW_IVAL("buffer_creds", depth, base, io, q, r_l->buffer_creds); q += 4; /* undocumented buffer pointer */
-	q = smb_io_cred(io, &(r_l->srv_creds), q, base, align); /* server credentials.  server time stamp appears to be ignored. */
+	q = smb_io_cred(io, &(r_l->srv_creds), q, base, align, depth); /* server credentials.  server time stamp appears to be ignored. */
 
 	DBG_RW_IVAL("buffer_user", depth, base, io, q, r_l->buffer_user); q += 4;
 	if (r_l->buffer_user != 0)
@@ -482,7 +484,7 @@ char* lsa_io_q_sam_logoff(BOOL io, LSA_Q_SAM_LOGOFF *q_l, char *q, char *base, i
 
 	q = align_offset(q, base, align);
 	
-	q = smb_io_sam_info(io, &(q_l->sam_id), q, base, align);           /* domain SID */
+	q = smb_io_sam_info(io, &(q_l->sam_id), q, base, align, depth);           /* domain SID */
 
 	return q;
 }
@@ -500,7 +502,7 @@ char* lsa_io_r_sam_logoff(BOOL io, LSA_R_SAM_LOGOFF *r_l, char *q, char *base, i
 	q = align_offset(q, base, align);
 	
 	DBG_RW_IVAL("buffer_creds", depth, base, io, q, r_l->buffer_creds); q += 4; /* undocumented buffer pointer */
-	q = smb_io_cred(io, &(r_l->srv_creds), q, base, align); /* server credentials.  server time stamp appears to be ignored. */
+	q = smb_io_cred(io, &(r_l->srv_creds), q, base, align, depth); /* server credentials.  server time stamp appears to be ignored. */
 
 	DBG_RW_IVAL("status", depth, base, io, q, r_l->status); q += 4;
 

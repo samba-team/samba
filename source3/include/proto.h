@@ -818,32 +818,32 @@ void SMBNTencrypt(uchar *passwd, uchar *c8, uchar *p24);
 
 /*The following definitions come from  smbparse.c  */
 
-char* smb_io_utime(BOOL io, UTIME *t, char *q, char *base, int align);
-char* smb_io_time(BOOL io, NTTIME *nttime, char *q, char *base, int align);
-char* smb_io_dom_sid(BOOL io, DOM_SID *sid, char *q, char *base, int align);
-char* smb_io_unihdr(BOOL io, UNIHDR *hdr, char *q, char *base, int align);
-char* smb_io_unihdr2(BOOL io, UNIHDR2 *hdr2, char *q, char *base, int align);
-char* smb_io_unistr(BOOL io, UNISTR *uni, char *q, char *base, int align);
-char* smb_io_unistr2(BOOL io, UNISTR2 *uni2, char *q, char *base, int align);
-char* smb_io_dom_sid2(BOOL io, DOM_SID2 *sid2, char *q, char *base, int align);
-char* smb_io_dom_rid2(BOOL io, DOM_RID2 *rid2, char *q, char *base, int align);
-char* smb_io_log_info(BOOL io, DOM_LOG_INFO *log, char *q, char *base, int align);
-char* smb_io_chal(BOOL io, DOM_CHAL *chal, char *q, char *base, int align);
-char* smb_io_cred(BOOL io, DOM_CRED *cred, char *q, char *base, int align);
-char* smb_io_clnt_info(BOOL io, DOM_CLNT_INFO *clnt, char *q, char *base, int align);
-char* smb_io_logon_id(BOOL io, DOM_LOGON_ID *log, char *q, char *base, int align);
-char* smb_io_arc4_owf(BOOL io, ARC4_OWF *hash, char *q, char *base, int align);
-char* smb_io_id_info1(BOOL io, DOM_ID_INFO_1 *id, char *q, char *base, int align);
-char* smb_io_sam_info(BOOL io, DOM_SAM_INFO *sam, char *q, char *base, int align);
-char* smb_io_gid(BOOL io, DOM_GID *gid, char *q, char *base, int align);
-char* smb_io_rpc_hdr(BOOL io, RPC_HDR *rpc, char *q, char *base, int align);
+char* smb_io_utime(BOOL io, UTIME *t, char *q, char *base, int align, int depth);
+char* smb_io_time(BOOL io, NTTIME *nttime, char *q, char *base, int align, int depth);
+char* smb_io_dom_sid(BOOL io, DOM_SID *sid, char *q, char *base, int align, int depth);
+char* smb_io_unihdr(BOOL io, UNIHDR *hdr, char *q, char *base, int align, int depth);
+char* smb_io_unihdr2(BOOL io, UNIHDR2 *hdr2, char *q, char *base, int align, int depth);
+char* smb_io_unistr(BOOL io, UNISTR *uni, char *q, char *base, int align, int depth);
+char* smb_io_unistr2(BOOL io, UNISTR2 *uni2, char *q, char *base, int align, int depth);
+char* smb_io_dom_sid2(BOOL io, DOM_SID2 *sid2, char *q, char *base, int align, int depth);
+char* smb_io_dom_rid2(BOOL io, DOM_RID2 *rid2, char *q, char *base, int align, int depth);
+char* smb_io_log_info(BOOL io, DOM_LOG_INFO *log, char *q, char *base, int align, int depth);
+char* smb_io_chal(BOOL io, DOM_CHAL *chal, char *q, char *base, int align, int depth);
+char* smb_io_cred(BOOL io, DOM_CRED *cred, char *q, char *base, int align, int depth);
+char* smb_io_clnt_info(BOOL io, DOM_CLNT_INFO *clnt, char *q, char *base, int align, int depth);
+char* smb_io_logon_id(BOOL io, DOM_LOGON_ID *log, char *q, char *base, int align, int depth);
+char* smb_io_arc4_owf(BOOL io, ARC4_OWF *hash, char *q, char *base, int align, int depth);
+char* smb_io_id_info1(BOOL io, DOM_ID_INFO_1 *id, char *q, char *base, int align, int depth);
+char* smb_io_sam_info(BOOL io, DOM_SAM_INFO *sam, char *q, char *base, int align, int depth);
+char* smb_io_gid(BOOL io, DOM_GID *gid, char *q, char *base, int align, int depth);
+char* smb_io_rpc_hdr(BOOL io, RPC_HDR *rpc, char *q, char *base, int align, int depth);
 char* smb_io_pol_hnd(BOOL io, LSA_POL_HND *pol, char *q, char *base, int align, int depth);
-char* smb_io_dom_query_3(BOOL io, DOM_QUERY_3 *d_q, char *q, char *base, int align);
-char* smb_io_dom_query_5(BOOL io, DOM_QUERY_3 *d_q, char *q, char *base, int align);
-char* smb_io_dom_query(BOOL io, DOM_QUERY *d_q, char *q, char *base, int align);
-char* smb_io_dom_r_ref(BOOL io, DOM_R_REF *r_r, char *q, char *base, int align);
-char* smb_io_dom_name(BOOL io, DOM_NAME *name, char *q, char *base, int align);
-char* smb_io_neg_flags(BOOL io, NEG_FLAGS *neg, char *q, char *base, int align);
+char* smb_io_dom_query_3(BOOL io, DOM_QUERY_3 *d_q, char *q, char *base, int align, int depth);
+char* smb_io_dom_query_5(BOOL io, DOM_QUERY_3 *d_q, char *q, char *base, int align, int depth);
+char* smb_io_dom_query(BOOL io, DOM_QUERY *d_q, char *q, char *base, int align, int depth);
+char* smb_io_dom_r_ref(BOOL io, DOM_R_REF *r_r, char *q, char *base, int align, int depth);
+char* smb_io_dom_name(BOOL io, DOM_NAME *name, char *q, char *base, int align, int depth);
+char* smb_io_neg_flags(BOOL io, NEG_FLAGS *neg, char *q, char *base, int align, int depth);
 
 /*The following definitions come from  smbpass.c  */
 
