@@ -821,18 +821,18 @@ static int setup_select_timeout(void)
  Check if services need reloading.
 ****************************************************************************/
 
-void check_reload(int time)
+void check_reload(int t)
 {
   static time_t last_smb_conf_reload_time = 0;
 
   if(last_smb_conf_reload_time == 0)
-    last_smb_conf_reload_time = time;
+    last_smb_conf_reload_time = t;
 
-  if (reload_after_sighup || (time >= last_smb_conf_reload_time+SMBD_RELOAD_CHECK))
+  if (reload_after_sighup || (t >= last_smb_conf_reload_time+SMBD_RELOAD_CHECK))
   {
     reload_services(True);
     reload_after_sighup = False;
-    last_smb_conf_reload_time = time;
+    last_smb_conf_reload_time = t;
   }
 }
 
