@@ -807,7 +807,7 @@ BOOL pass_check(char *user,char *password, int pwlen, struct passwd *pwd,
 
 		spass = getspnam(pass->pw_name);
 		if (spass && spass->sp_pwdp) {
-			pass->pw_passwd = spass->sp_pwdp;
+			pstrcpy(pass->pw_passwd,spass->sp_pwdp);
 		}
 	}
 #elif defined(IA_UINFO)
@@ -827,7 +827,7 @@ BOOL pass_check(char *user,char *password, int pwlen, struct passwd *pwd,
 	{
 		struct pr_passwd *pr_pw = getprpwnam(pass->pw_name);
 		if (pr_pw && pr_pw->ufld.fd_encrypt)
-			pass->pw_passwd = pr_pw->ufld.fd_encrypt;
+			pstrcpy(pass->pw_passwd,pr_pw->ufld.fd_encrypt);
 	}
 #endif
 

@@ -1114,7 +1114,7 @@ BOOL lookup_local_rid(uint32 rid, char *name, uint8 *psid_name_use)
 				fstrcpy(name, "Guest");
 		} else {
 			uid_t uid = pdb_user_rid_to_uid(rid);
-			struct passwd *pass = getpwuid(uid);
+			struct passwd *pass = sys_getpwuid(uid);
 
 			*psid_name_use = SID_NAME_USER;
 

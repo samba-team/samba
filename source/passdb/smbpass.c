@@ -333,7 +333,7 @@ static struct sam_passwd *getsmbfile21pwent(void *vp)
 
 	if (pw_buf == NULL) return NULL;
 
-	pwfile = getpwnam(pw_buf->smb_name);
+	pwfile = sys_getpwnam(pw_buf->smb_name);
 	if (pwfile == NULL)
 	{
 		DEBUG(0,("getsmbfile21pwent: smbpasswd database is corrupt!\n"));
