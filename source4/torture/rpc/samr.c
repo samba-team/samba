@@ -1176,6 +1176,135 @@ static BOOL test_QueryDomainInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return True;	
 }
 
+void add_string_to_array(TALLOC_CTX *mem_ctx,
+			 const char *str, const char ***strings, int *num)
+{
+	*strings = talloc_realloc(mem_ctx, *strings,
+				  ((*num)+1) * sizeof(**strings));
+
+	if (*strings == NULL)
+		return;
+
+	(*strings)[*num] = str;
+	*num += 1;
+
+	return;
+}
+
+/* Test whether querydispinfo level 5 and enumdomgroups return the same
+   set of group names. */
+
+static BOOL test_GroupList(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+			   struct policy_handle *handle)
+{
+	struct samr_EnumDomainGroups q1;
+	struct samr_QueryDisplayInfo q2;
+	NTSTATUS status;
+	uint32 resume_handle=0;
+	int i;
+	BOOL ret = True;
+
+	int num_names = 0;
+	const char **names = NULL;
+
+	printf("Testing coherency of querydispinfo vs enumdomgroups\n");
+
+	q1.in.handle = handle;
+	q1.in.resume_handle = &resume_handle;
+	q1.in.max_size = 5;
+	q1.out.resume_handle = &resume_handle;
+
+	status = STATUS_MORE_ENTRIES;
+	while (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
+		status = dcerpc_samr_EnumDomainGroups(p, mem_ctx, &q1);
+
+		if (!NT_STATUS_IS_OK(status) &&
+		    !NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES))
+			break;
+
+		for (i=0; i<q1.out.sam->count; i++) {
+			add_string_to_array(mem_ctx,
+					    q1.out.sam->entries[i].name.name,
+					    &names, &num_names);
+		}
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("EnumDomainGroups failed - %s\n", nt_errstr(status));
+		return False;
+	}
+	
+	if (!q1.out.sam) {
+		return False;
+	}
+
+	q2.in.handle = handle;
+	q2.in.level = 5;
+	q2.in.start_idx = 0;
+	q2.in.max_entries = 5;
+	q2.in.buf_size = (uint32)-1;
+
+	status = STATUS_MORE_ENTRIES;
+	while (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
+		status = dcerpc_samr_QueryDisplayInfo(p, mem_ctx, &q2);
+
+		if (!NT_STATUS_IS_OK(status) &&
+		    !NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES))
+			break;
+
+		for (i=0; i<q2.out.info.info5.count; i++) {
+			char *name;
+			size_t namelen;
+			int j;
+			BOOL found = False;
+
+			/* Querydisplayinfo returns ascii -- convert */
+
+			namelen = convert_string_allocate(CH_DISPLAY, CH_UNIX,
+							  q2.out.info.info5.entries[i].account_name.name,
+							  q2.out.info.info5.entries[i].account_name.name_len,
+							  (void **)&name);
+			name = realloc(name, namelen+1);
+			name[namelen] = 0;
+
+			for (j=0; j<num_names; j++) {
+				if (names[j] == NULL)
+					continue;
+				/* Hmm. No strequal in samba4 */
+				if (strequal(names[j], name)) {
+					names[j] = NULL;
+					found = True;
+					break;
+				}
+			}
+
+			if (!found) {
+				printf("QueryDisplayInfo gave name [%s] that EnumDomainGroups did not\n",
+				       name);
+				ret = False;
+			}
+		}
+		q2.in.start_idx += q2.out.info.info5.count;
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("QueryDisplayInfo level 5 failed - %s\n",
+		       nt_errstr(status));
+		ret = False;
+	}
+
+	for (i=0; i<num_names; i++) {
+		if (names[i] != NULL) {
+			printf("EnumDomainGroups gave name [%s] that QueryDisplayInfo did not\n",
+			       names[i]);
+			ret = False;
+		}
+	}
+
+	return ret;
+}
+
+
 static BOOL test_OpenDomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 			    struct policy_handle *handle, struct dom_sid *sid)
 {
@@ -1235,6 +1364,10 @@ static BOOL test_OpenDomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	}
 
 	if (!test_QueryDisplayInfo(p, mem_ctx, &domain_handle)) {
+		ret = False;
+	}
+
+	if (!test_GroupList(p, mem_ctx, &domain_handle)) {
 		ret = False;
 	}
 
