@@ -397,7 +397,7 @@ WINBIND_NSS_PICOBJS = $(WINBIND_NSS_OBJ:.o=.po)
 # now the rules...
 ######################################################################
 
-all : CHECK $(SPROGS) $(PROGS) 
+all : CHECK include/proto.h $(SPROGS) $(PROGS) 
 
 # removed SHLIBS until it compiles on more platforms (tridge)
 # $(SHLIBS)
@@ -709,9 +709,11 @@ winbindd_proto:
 	  -h _WINBINDD_PROTO_H_ nsswitch/winbindd_proto.h \
 	  $(WINBINDD_OBJ1)
 
-proto: 
+include/proto.h: 
 	@echo rebuilding include/proto.h
 	@cd $(srcdir) && $(AWK) -f script/mkproto.awk `echo $(PROTO_OBJ) | tr ' ' '\n' | sed -e 's/\.o/\.c/g' | sort -u | egrep -v 'ubiqx/|wrapped'` > include/proto.h
+
+proto: include/proto.h
 
 etags:
 	etags `find $(srcdir) -name "*.[ch]" | grep -v /CVS/`
