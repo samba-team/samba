@@ -282,7 +282,7 @@
 		NT Server. See the <command>security = domain</command> option in 
 		the <filename>smb.conf(5)</filename> man page. </para>
 
-                <para>This command can work both with and without the -U parameter.
+                <para>This command can work both with and without the -U parameter. </para>
 
                 <para>When invoked with -U, that username (and optional password) are
                 used to contact the PDC (which must be specified with -r) to both
@@ -301,7 +301,7 @@
 		look up the Primary Domain Controller for the Domain (found in 
 		the <filename>smb.conf</filename> file in the parameter 
 		<parameter>password server</parameter> and change the machine account 
-		password used to create the secure Domain communication.  
+		password used to create the secure Domain communication.  </para>
 
                 <para>Either way, this password is then stored by smbpasswd in a TDB, 
                 writeable only by root, called <filename>secrets.tdb</filename> </para>
