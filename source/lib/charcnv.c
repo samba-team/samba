@@ -284,7 +284,7 @@ size_t convert_string(charset_t from, charset_t to,
 
 		/* If all characters are ascii, fast path here. */
 		while ((srclen >= 2) && destlen) {
-			if ((lastp = *p) <= 0x7f && p[1] == 0) {
+			if (((lastp = *p) <= 0x7f) && (p[1] == 0)) {
 				*q++ = *p;
 				if (srclen != (size_t)-1) {
 					srclen -= 2;
@@ -296,7 +296,7 @@ size_t convert_string(charset_t from, charset_t to,
 					break;
 			} else {
 				if (srclen == (size_t)-1) {
-					srclen = strlen_w((const void *)p)+2;
+					srclen = (strlen_w((const smb_ucs2_t *)p)+1) * 2;
 				}
 				return retval + convert_string_internal(from, to, p, srclen, q, destlen);
 			}
@@ -542,7 +542,7 @@ char *strdup_upper(const char *s)
 
 		strupper_w(buffer);
 	
-		size = convert_string(CH_UCS2, CH_UNIX, buffer, sizeof(buffer), out_buffer, sizeof(out_buffer));
+		size = convert_string(CH_UCS2, CH_UNIX, buffer, -1, out_buffer, sizeof(out_buffer));
 		if (size == -1) {
 			return NULL;
 		}
