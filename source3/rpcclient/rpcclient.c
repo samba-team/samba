@@ -124,6 +124,8 @@ struct
   {"lookupsids", cmd_lsa_lookup_sids,  "Resolve names from SIDs"},
   {"lookupnames",cmd_lsa_lookup_names,  "Resolve SIDs from names"},
   {"enumusers",  cmd_sam_enum_users,   "SAM User Database Query (experimental!)"},
+  {"addgroupmem",cmd_sam_add_groupmem,"<group rid> [member rid1] [member rid2] ... SAM Add Domain Group Member"},
+  {"addaliasmem",cmd_sam_add_aliasmem,"<alias rid> [member sid1] [member sid2] ... SAM Add Domain Alias Member"},
   {"creategroup",cmd_sam_create_dom_group,"SAM Create Domain Group"},
   {"createalias",cmd_sam_create_dom_alias,"SAM Create Domain Alias"},
   {"ntpass",     cmd_sam_ntchange_pwd, "NT SAM Password Change"},

@@ -192,10 +192,12 @@ BOOL lsa_lookup_names(struct cli_state *cli,
 			for (i = 0; i < (*num_sids); i++)
 			{
 				uint32 dom_idx = t_rids[i].rid_idx;
+				uint32 dom_rid = t_rids[i].rid;
 				DOM_SID *sid = &(*sids)[i];
 				if (dom_idx != 0xffffffff)
 				{
 					sid_copy(sid, &ref.ref_dom[dom_idx].ref_dom.sid);
+					sid_append_rid(sid, dom_rid);
 				}
 				else
 				{

@@ -350,7 +350,6 @@ static void samr_reply_enum_dom_users(SAMR_Q_ENUM_DOM_USERS *q_u,
 	int total_entries;
 
 	r_e.status = 0x0;
-	r_e.total_num_entries = 0;
 
 	/* find the policy handle.  open a policy on it. */
 	if (r_e.status == 0x0 && (find_lsa_policy_by_hnd(&(q_u->pol)) == -1))
@@ -364,8 +363,8 @@ static void samr_reply_enum_dom_users(SAMR_Q_ENUM_DOM_USERS *q_u,
 	get_sampwd_entries(pass, 0, &total_entries, &num_entries, MAX_SAM_ENTRIES, q_u->acb_mask);
 	unbecome_root(True);
 
-	make_samr_r_enum_dom_users(&r_e, total_entries,
-	                           q_u->unknown_0, num_entries,
+	make_samr_r_enum_dom_users(&r_e, 
+	                           0x00000000, num_entries,
 	                           pass, r_e.status);
 
 	/* store the response in the SMB stream */
