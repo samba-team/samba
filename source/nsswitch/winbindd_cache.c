@@ -527,6 +527,14 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 
 do_cached:	
 
+	/* Retry on NT_STATUS_UNSUCCESSFUL to avoid caching a failed 
+           result for cr1168. */
+
+	if (NT_STATUS_V(centry->status) == NT_STATUS_V(NT_STATUS_UNSUCCESSFUL)){
+		centry->status = NT_STATUS_OK;
+		goto do_query;
+	}
+
 	/* If we are returning cached data and the domain controller
 	   is down then we don't know whether the data is up to date
 	   or not.  Return NT_STATUS_MORE_PROCESSING_REQUIRED to
@@ -569,7 +577,7 @@ do_query:
 		}
 
 	} while (NT_STATUS_V(status) == NT_STATUS_V(NT_STATUS_UNSUCCESSFUL) && 
-		 (retry++ < 2));
+		 (retry++ < 5));
 
 	/* and save it */
 	refresh_sequence_number(domain, True);
