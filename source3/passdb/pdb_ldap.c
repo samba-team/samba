@@ -202,7 +202,7 @@ static ATTRIB_MAP_ENTRY attrib_map_v30[] = {
 	{ LDAP_ATTR_KICKOFF_TIME,	"sambaKickoffTime"	},
 	{ LDAP_ATTR_CN,			"cn"			},
 	{ LDAP_ATTR_DISPLAY_NAME,	"displayName"		},
-	{ LDAP_ATTR_HOME_DRIVE,		"sambaHoneDrive"	},
+	{ LDAP_ATTR_HOME_DRIVE,		"sambaHomeDrive"	},
 	{ LDAP_ATTR_HOME_PATH,		"sambaHomePath"		},
 	{ LDAP_ATTR_LOGON_SCRIPT,	"sambaLogonScript"	},
 	{ LDAP_ATTR_PROFILE_PATH,	"sambaProfilePath"	},
@@ -1957,7 +1957,7 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 
 	pdb_set_domain(sampass, domain, PDB_DEFAULT);
 	pdb_set_nt_username(sampass, nt_username, PDB_SET);
-	
+
 	/* deal with different attributes between the schema first */
 	
 	if ( ldap_state->schema_ver == SCHEMAVER_SAMBASAMACCOUNT ) 
@@ -1968,7 +1968,7 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 			pdb_set_user_sid_from_string(sampass, temp, PDB_SET);
 		}
 		
-		if (!get_single_attribute(ldap_state->ldap_struct, entry, 
+		if (get_single_attribute(ldap_state->ldap_struct, entry, 
 			get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_PRIMARY_GROUP_SID), temp)) 
 		{
 			pdb_set_group_sid_from_string(sampass, temp, PDB_SET);			
