@@ -918,7 +918,7 @@ fetch_sam_entry(SAM_DELTA_HDR *hdr_delta, SAM_DELTA_CTR *delta,
 	}
 }
 
-static void
+static NTSTATUS
 fetch_database(struct cli_state *cli, unsigned db_type, DOM_CRED *ret_creds,
 	       DOM_SID dom_sid)
 {
@@ -930,9 +930,8 @@ fetch_database(struct cli_state *cli, unsigned db_type, DOM_CRED *ret_creds,
         SAM_DELTA_CTR *deltas;
         uint32 num_deltas;
 
-	if (!(mem_ctx = talloc_init("fetch_database"))) {
-		return;
-	}
+	if (!(mem_ctx = talloc_init("fetch_database")))
+		return NT_STATUS_NO_MEMORY;
 
 	switch( db_type ) {
 	case SAM_DATABASE_DOMAIN:
@@ -964,11 +963,15 @@ fetch_database(struct cli_state *cli, unsigned db_type, DOM_CRED *ret_creds,
 			for (i = 0; i < num_deltas; i++) {
 				fetch_sam_entry(&hdr_deltas[i], &deltas[i], dom_sid);
 			}
-		}
+		} else
+			return result;
+
 		sync_context += 1;
 	} while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
 
 	talloc_destroy(mem_ctx);
+
+	return result;
 }
 
 /* dump sam database via samsync rpc calls */
@@ -1009,10 +1012,27 @@ int rpc_vampire(int argc, const char **argv)
 	}
 
 	dom_sid = *get_global_sam_sid();
-	fetch_database(cli, SAM_DATABASE_DOMAIN, &ret_creds, dom_sid);
+	result = fetch_database(cli, SAM_DATABASE_DOMAIN, &ret_creds, dom_sid);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		d_printf("Failed to fetch domain database: %s\n",
+			 nt_errstr(result));
+		if (NT_STATUS_EQUAL(result, NT_STATUS_NOT_SUPPORTED))
+			d_printf("Perhaps %s is a Windows 2000 native mode "
+				 "domain?\n", lp_workgroup());
+		goto fail;
+	}
 
 	sid_copy(&dom_sid, &global_sid_Builtin);
-	fetch_database(cli, SAM_DATABASE_BUILTIN, &ret_creds, dom_sid);
+
+	result = fetch_database(cli, SAM_DATABASE_BUILTIN, &ret_creds, 
+				dom_sid);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		d_printf("Failed to fetch builtin database: %s\n",
+			 nt_errstr(result));
+		goto fail;
+	}	
 
 	/* Currently we crash on PRIVS somewhere in unmarshalling */
 	/* Dump_database(cli, SAM_DATABASE_PRIVS, &ret_creds); */
@@ -1022,8 +1042,8 @@ int rpc_vampire(int argc, const char **argv)
         return 0;
 
 fail:
-	if (cli) {
+	if (cli)
 		cli_nt_session_close(cli);
-	}
+
 	return -1;
 }
