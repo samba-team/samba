@@ -433,7 +433,7 @@ union smb_fileinfo {
 		enum smb_fileinfo_level level;
 		union smb_fileinfo_in in;
 
-		struct smb_all_eas {
+		struct smb_ea_list {
 			/* the ea_size is implied by the list */
 			uint_t num_eas;
 			struct ea_struct *eas;
@@ -1037,7 +1037,8 @@ enum smb_open_level {
 		 RAW_OPEN_OPEN, RAW_OPEN_OPENX, 
 		 RAW_OPEN_MKNEW, RAW_OPEN_CREATE, 
 		 RAW_OPEN_CTEMP, RAW_OPEN_SPLOPEN,
-		 RAW_OPEN_NTCREATEX, RAW_OPEN_T2OPEN};
+		 RAW_OPEN_NTCREATEX, RAW_OPEN_T2OPEN,
+		 RAW_OPEN_NTTRANS_CREATE};
 
 /* the generic interface is defined to be equal to the NTCREATEX interface */
 #define RAW_OPEN_GENERIC RAW_OPEN_NTCREATEX
@@ -1063,6 +1064,11 @@ union smb_open {
 			 uint64_t file_id if create_options has the
 			 NTCREATEX_OPTIONS_OPEN_BY_FILE_ID flag set */
 			const char *fname;
+
+			/* these last 2 elements are only used in the
+			   NTTRANS varient of the call */
+			struct security_descriptor *sec_desc;
+			struct smb_ea_list *ea_list;
 		} in;
 
 		struct {
