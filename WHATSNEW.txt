@@ -108,6 +108,7 @@ details:
     when winbind is running on a Samba PDC.
 11) Fix unitiailized timestamp where merging print_jobs and 
     lpq listing.
+12) Fix bug in debian packaging files affecting non-i386 platforms.
 
 
 Changes since 3.0rc2
