@@ -54,6 +54,10 @@ extern int smb_read_error;
 
 extern pstring user_socket_options;
 
+#ifdef DFS_AUTH
+extern int dcelogin_atmost_once;
+#endif /* DFS_AUTH */
+
 connection_struct Connections[MAX_CONNECTIONS];
 files_struct Files[MAX_OPEN_FILES];
 
