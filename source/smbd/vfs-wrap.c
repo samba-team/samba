@@ -93,19 +93,42 @@ DIR *vfswrap_opendir(vfs_handle_struct *handle, connection_struct *conn, const c
 	DIR *result;
 
 	START_PROFILE(syscall_opendir);
-	result = opendir(fname);
+	result = sys_opendir(fname);
 	END_PROFILE(syscall_opendir);
 	return result;
 }
 
-struct dirent *vfswrap_readdir(vfs_handle_struct *handle, connection_struct *conn, DIR *dirp)
+SMB_STRUCT_DIRENT *vfswrap_readdir(vfs_handle_struct *handle, connection_struct *conn, DIR *dirp)
 {
 	struct dirent *result;
 
 	START_PROFILE(syscall_readdir);
-	result = readdir(dirp);
+	result = sys_readdir(dirp);
 	END_PROFILE(syscall_readdir);
 	return result;
+}
+
+void vfswrap_seekdir(vfs_handle_struct *handle, connection_struct *conn, DIR *dirp, long offset)
+{
+	START_PROFILE(syscall_seekdir);
+	sys_seekdir(dirp, offset);
+	END_PROFILE(syscall_seekdir);
+}
+
+long vfswrap_telldir(vfs_handle_struct *handle, connection_struct *conn, DIR *dirp)
+{
+	long result;
+	START_PROFILE(syscall_telldir);
+	result = sys_telldir(dirp);
+	END_PROFILE(syscall_telldir);
+	return result;
+}
+
+void vfswrap_rewinddir(vfs_handle_struct *handle, connection_struct *conn, DIR *dirp)
+{
+	START_PROFILE(syscall_rewinddir);
+	sys_rewinddir(dirp);
+	END_PROFILE(syscall_rewinddir);
 }
 
 int vfswrap_mkdir(vfs_handle_struct *handle, connection_struct *conn, const char *path, mode_t mode)
@@ -152,7 +175,7 @@ int vfswrap_closedir(vfs_handle_struct *handle, connection_struct *conn, DIR *di
 	int result;
 
 	START_PROFILE(syscall_closedir);
-	result = closedir(dirp);
+	result = sys_closedir(dirp);
 	END_PROFILE(syscall_closedir);
 	return result;
 }

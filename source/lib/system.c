@@ -362,6 +362,19 @@ FILE *sys_fopen(const char *path, const char *type)
 }
 
 /*******************************************************************
+ An opendir wrapper that will deal with 64 bit filesizes.
+********************************************************************/
+
+DIR *sys_opendir(const char *name)
+{
+#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OPENDIR64)
+	return opendir64(name);
+#else
+	return opendir(name);
+#endif
+}
+
+/*******************************************************************
  A readdir wrapper that will deal with 64 bit filesizes.
 ********************************************************************/
 
@@ -371,6 +384,58 @@ SMB_STRUCT_DIRENT *sys_readdir(DIR *dirp)
 	return readdir64(dirp);
 #else
 	return readdir(dirp);
+#endif
+}
+
+/*******************************************************************
+ A seekdir wrapper that will deal with 64 bit filesizes.
+********************************************************************/
+
+void sys_seekdir(DIR *dirp, long offset)
+{
+#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_SEEKDIR64)
+	seekdir64(dirp, offset);
+#else
+	seekdir(dirp, offset);
+#endif
+}
+
+/*******************************************************************
+ A telldir wrapper that will deal with 64 bit filesizes.
+********************************************************************/
+
+long sys_telldir(DIR *dirp)
+{
+#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_TELLDIR64)
+	return (long)telldir64(dirp);
+#else
+	return (long)telldir(dirp);
+#endif
+}
+
+/*******************************************************************
+ A rewinddir wrapper that will deal with 64 bit filesizes.
+********************************************************************/
+
+void sys_rewinddir(DIR *dirp)
+{
+#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_REWINDDIR64)
+	rewinddir64(dirp);
+#else
+	rewinddir(dirp);
+#endif
+}
+
+/*******************************************************************
+ A close wrapper that will deal with 64 bit filesizes.
+********************************************************************/
+
+int sys_closedir(DIR *dirp)
+{
+#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_CLOSEDIR64)
+	return closedir64(dirp);
+#else
+	return closedir(dirp);
 #endif
 }
 

@@ -1,7 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
    VFS structures and parameters
-   Copyright (C) Jeremy Allison                         1999-2003
+   Copyright (C) Jeremy Allison                         1999-2004
    Copyright (C) Tim Potter				1999
    Copyright (C) Alexander Bokovoy			2002
    Copyright (C) Stefan (metze) Metzmacher		2003
@@ -55,7 +55,8 @@
 /* Changed to version 8 includes EA calls. JRA. */
 /* Changed to version 9 to include the get_shadow_data call. --metze */
 /* Changed to version 10 to include pread/pwrite calls. */
-#define SMB_VFS_INTERFACE_VERSION 10
+/* Changed to version 11 to include seekdir/telldir/rewinddir calls. JRA */
+#define SMB_VFS_INTERFACE_VERSION 11
 
 
 /* to bug old modules witch are trying to compile with the old functions */
@@ -102,6 +103,9 @@ typedef enum _vfs_op_type {
 
 	SMB_VFS_OP_OPENDIR,
 	SMB_VFS_OP_READDIR,
+	SMB_VFS_OP_SEEKDIR,
+	SMB_VFS_OP_TELLDIR,
+	SMB_VFS_OP_REWINDDIR,
 	SMB_VFS_OP_MKDIR,
 	SMB_VFS_OP_RMDIR,
 	SMB_VFS_OP_CLOSEDIR,
@@ -209,7 +213,10 @@ struct vfs_ops {
 		/* Directory operations */
 		
 		DIR *(*opendir)(struct vfs_handle_struct *handle, struct connection_struct *conn, const char *fname);
-		struct dirent *(*readdir)(struct vfs_handle_struct *handle, struct connection_struct *conn, DIR *dirp);
+		SMB_STRUCT_DIRENT *(*readdir)(struct vfs_handle_struct *handle, struct connection_struct *conn, DIR *dirp);
+		void (*seekdir)(struct vfs_handle_struct *handle, struct connection_struct *conn, DIR *dirp, long offset);
+		long (*telldir)(struct vfs_handle_struct *handle, struct connection_struct *conn, DIR *dirp);
+		void (*rewinddir)(struct vfs_handle_struct *handle, struct connection_struct *conn, DIR *dirp);
 		int (*mkdir)(struct vfs_handle_struct *handle, struct connection_struct *conn, const char *path, mode_t mode);
 		int (*rmdir)(struct vfs_handle_struct *handle, struct connection_struct *conn, const char *path);
 		int (*closedir)(struct vfs_handle_struct *handle, struct connection_struct *conn, DIR *dir);
@@ -310,6 +317,9 @@ struct vfs_ops {
 
 		struct vfs_handle_struct *opendir;
 		struct vfs_handle_struct *readdir;
+		struct vfs_handle_struct *seekdir;
+		struct vfs_handle_struct *telldir;
+		struct vfs_handle_struct *rewinddir;
 		struct vfs_handle_struct *mkdir;
 		struct vfs_handle_struct *rmdir;
 		struct vfs_handle_struct *closedir;
