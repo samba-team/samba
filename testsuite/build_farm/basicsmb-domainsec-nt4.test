@@ -2,7 +2,7 @@
 
 test_joindomain_nt4() {
 
-	smbpasswd -L -a -m buildfarm$
+	$prefix/bin/smbpasswd -L -a -m buildfarm$
 
 	echo $prefix/bin/net rpc join oldstyle -S localhost
         $prefix/bin/net rpc join oldstyle -S localhost
