@@ -41,6 +41,10 @@ dnl		1:name,
 dnl		2:default_build
 dnl		)
 dnl
+dnl SMB_SUBSYSTEM_NOPROTO(
+dnl		1:name
+dnl		)
+dnl
 dnl SMB_SUBSYSTEM(
 dnl		1:name,
 dnl		2:init_obj_files,
@@ -267,6 +271,14 @@ AC_DEFUN([SMB_SUBSYSTEM_ENABLE],
 	[SMB_SUBSYSTEM_ENABLE_][$1]="$2"
 ])
 
+dnl SMB_SUBSYSTEM_NOPROTO(
+dnl		1:name
+dnl		)
+AC_DEFUN([SMB_SUBSYSTEM_NOPROTO],
+[
+	[SMB_SUBSYSTEM_NOPROTO_][$1]="1"
+])
+
 dnl SMB_SUBSYSTEM(
 dnl		1:name,
 dnl		2:init_obj_files,
@@ -291,6 +303,7 @@ SMB_INFO_SUBSYSTEMS="$SMB_INFO_SUBSYSTEMS
 @{\$SMB_BUILD_CTX->{INPUT}{SUBSYSTEMS}{$1}{REQUIRED_SUBSYSTEMS}} = str2array(\"$5\");
 #
 \$SMB_BUILD_CTX->{INPUT}{SUBSYSTEMS}{$1}{ENABLE} = \"$[SMB_SUBSYSTEM_ENABLE_][$1]\";
+\$SMB_BUILD_CTX->{INPUT}{SUBSYSTEMS}{NOPROTO}{$1} = \"$[SMB_SUBSYSTEM_NOPROTO_][$1]\";
 # End Subsystem $1
 ###################################
 "
@@ -317,6 +330,7 @@ SMB_INFO_SUBSYSTEMS="$SMB_INFO_SUBSYSTEMS
 @{\$SMB_BUILD_CTX->{INPUT}{SUBSYSTEMS}{$1}{REQUIRED_SUBSYSTEMS}} = subsystem_get_array(\"$2\", \"$1\", \"REQUIRED_SUBSYSTEMS\");
 #
 \$SMB_BUILD_CTX->{INPUT}{SUBSYSTEMS}{$1}{ENABLE} = \"$[SMB_SUBSYSTEM_ENABLE_][$1]\";
+\$SMB_BUILD_CTX->{INPUT}{SUBSYSTEMS}{NOPROTO}{$1} = \"$[SMB_SUBSYSTEM_NOPROTO_][$1]\";
 # End Subsystem $1
 ###################################
 "
