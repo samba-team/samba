@@ -163,7 +163,7 @@ print_cred_verbose(krb5_context context, krb5_creds *cred)
 	}
 #endif
 	default:{
-	    char *p, *s;
+	    char *s;
 	    int i;
 	    krb5_address *a = &cred->addresses.val[j];
 	    s = malloc(a->address.length * 2 + 1);

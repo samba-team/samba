@@ -45,7 +45,6 @@ main(int argc, char **argv)
 {
     krb5_context context;
     krb5_error_code ret;
-    krb5_ccache cache;
     krb5_creds cred;
     krb5_preauthtype pre_auth_types[] = {KRB5_PADATA_ENC_TIMESTAMP};
     krb5_get_init_creds_opt get_options;
