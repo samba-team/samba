@@ -27,6 +27,7 @@ typedef unsigned char uint8;
 typedef unsigned short uint16;
 typedef unsigned short wchar;
 typedef unsigned uint32;
+typedef char *string;
 
 #ifndef _PSTRING
 
@@ -77,7 +78,7 @@ BOOL io_uint32(char *name, prs_struct *ps, int depth, uint32 *data32, unsigned f
 BOOL io_uint16(char *name, prs_struct *ps, int depth, uint16 *data16, unsigned flags);
 BOOL io_uint8(char *name, prs_struct *ps, int depth, uint8 *data8, unsigned flags);
 BOOL io_pointer(char *desc, prs_struct *ps, int depth, void **p, unsigned flags);
-BOOL io_fstring(char *name, prs_struct *ps, int depth, fstring *str, unsigned flags);
+BOOL io_string(char *name, prs_struct *ps, int depth, char **str, unsigned flags);
 BOOL io_wstring(char *name, prs_struct *ps, int depth, uint16 *data16s, int len, unsigned flags);
-BOOL io_uint8s(char *name, prs_struct *ps, int depth, uint8 *data8s, int len, unsigned flags);
+BOOL io_uint8s(char *name, prs_struct *ps, int depth, uint8 **data8s, int len, unsigned flags);
 

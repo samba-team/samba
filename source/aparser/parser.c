@@ -325,40 +325,44 @@ BOOL io_pointer(char *desc, prs_struct *ps, int depth, void **p, unsigned flags)
 /*******************************************************************
  Stream a null-terminated string.  
  ********************************************************************/
-BOOL io_fstring(char *name, prs_struct *ps, int depth, fstring *str, unsigned flags)
+BOOL io_string(char *name, prs_struct *ps, int depth, char **str, unsigned flags)
 {
 	char *q;
 	uint8 *start;
 	int i;
-	int len = sizeof(fstring)-1;
+	size_t len;
 
 	if (!(flags & PARSE_SCALARS)) return True;
 	
-	if (MARSHALLING(ps)) {
-		len = MIN(len, strlen(*str));
-	}
-
-	start = (uint8*)q;
-
-	for(i = 0; i < len; i++) {
-		q = prs_mem_get(ps, 1);
-		if (q == NULL)
+	if (UNMARSHALLING(ps)) {
+		*str = prs_mem_get(ps, 0);
+		if (*str == NULL)
 			return False;
+		len = strlen(*str);
+		ps->data_offset += len + 1;
+	}
+	else
+	{
+		len = strlen(*str);
+		start = (uint8*)q;
 
-		RW_CVAL(ps->io, q, (*str)[i],0);
-		if ((*str)[i] == 0)
-			break;
+		for(i = 0; i < len; i++) {
+			q = prs_mem_get(ps, 1);
+			if (q == NULL)
+				return False;
+
+			RW_CVAL(ps->io, q, (*str)[i],0);
+			if ((*str)[i] == 0)
+				break;
+			ps->data_offset++;
+		}
+
+		/* The terminating null. */
+		(*str)[i] = '\0';
+		RW_CVAL(ps->io, q, (*str)[i], 0);
+
 		ps->data_offset++;
 	}
-
-	/* The terminating null. */
-	(*str)[i] = '\0';
-
-	if (MARSHALLING(ps)) {
-		RW_CVAL(ps->io, q, (*str)[i], 0);
-	}
-
-	ps->data_offset++;
 
 	DEBUG(5,("%s %s: %s\n", tab_depth(depth), name, *str));
 	return True;
@@ -367,19 +371,28 @@ BOOL io_fstring(char *name, prs_struct *ps, int depth, fstring *str, unsigned fl
 /******************************************************************
  do IO on a byte array
  ********************************************************************/
-BOOL io_uint8s(char *name, prs_struct *ps, int depth, uint8 *data8s, int len, unsigned flags)
+BOOL io_uint8s(char *name, prs_struct *ps, int depth, uint8 **data8s, int len, unsigned flags)
 {
 	char *q;
+	size_t num_bytes = len * sizeof(uint8);
 
 	if (!(flags & PARSE_SCALARS)) return True;
 
 	if (!prs_align(ps, 2)) return False;
 
-	q = prs_mem_get(ps, len * sizeof(uint8));
+	q = prs_mem_get(ps, num_bytes);
 	if (q == NULL) return False;
 
-	DBG_RW_PCVAL(True, name, depth, ps->data_offset, ps->io, q, data8s, len)
-	ps->data_offset += (len * sizeof(uint8));
+	if (MARSHALLING(ps))
+	{
+		DBG_RW_PCVAL(True, name, depth, ps->data_offset, ps->io, q, *data8s, len)
+	}
+	else
+	{
+		*data8s = q;
+		dump_data(depth+5, q, num_bytes);
+	}
+	ps->data_offset += num_bytes;
 
 	return True;
 }
