@@ -309,6 +309,8 @@ BOOL prs_realloc_data(prs_struct *buf, size_t new_size)
 
 	prs_debug_out(buf, "prs_realloc_data - before", 200);
 
+	SMB_ASSERT(new_size >= 0);
+
 	if (new_size == 0)
 	{
 		prs_free_data(buf);
@@ -542,7 +544,7 @@ BOOL prs_add_data(prs_struct *ps, const char *data, int len)
 			   ps->data_size, new_size));
 		return False;
 	}
-	memcpy(to, data, len);
+	memcpy_zero(to, data, len);
 	return True;
 }
 
@@ -619,6 +621,7 @@ void prs_mem_free(prs_struct *ps)
 BOOL prs_append_some_prs_data(prs_struct *dst, prs_struct *src, int32 start,
 			      uint32 len)
 {
+	char *src_data;
 
 	/* 
 	 * JFM:
@@ -632,12 +635,15 @@ BOOL prs_append_some_prs_data(prs_struct *dst, prs_struct *src, int32 start,
 	 * mail me, call me, hit me before changing that piece of code.
 	 */
 
+	src_data = prs_data(src, start);
 	if (start == 0)
-		prs_add_data(dst, src->data, len);
+	{
+		prs_add_data(dst, src_data, len);
+	}
 	else
 	{
 		dst->data_size = 0;
-		prs_add_data(dst, src->data + start, len);
+		prs_add_data(dst, src_data, len);
 	}
 
 	dst->offset = dst->data_size;

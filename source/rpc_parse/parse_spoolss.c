@@ -1512,7 +1512,7 @@ static BOOL new_smb_io_relsecdesc(char *desc, NEW_BUFFER *buffer, int depth,
 		
 		if (*secdesc != NULL)
 		{
-			buffer->string_at_end -= 1024; /* HACK! */
+			buffer->string_at_end -= 512; /* HACK! */
 			
 			prs_set_offset(ps, buffer->string_at_end);
 			
