@@ -2105,88 +2105,6 @@ void cli_nt_set_ntlmssp_flgs(struct cli_state *cli, uint32 ntlmssp_flgs);
 BOOL cli_nt_session_open(struct cli_state *cli, char *pipe_name);
 void cli_nt_session_close(struct cli_state *cli);
 
-/*The following definitions come from  rpc_client/cli_reg.c  */
-
-BOOL do_reg_connect(struct cli_state *cli, char *full_keyname, char *key_name,
-				POLICY_HND *reg_hnd);
-BOOL do_reg_open_hklm(struct cli_state *cli, uint16 unknown_0, uint32 level,
-				POLICY_HND *hnd);
-BOOL do_reg_open_hku(struct cli_state *cli, uint16 unknown_0, uint32 level,
-				POLICY_HND *hnd);
-BOOL do_reg_flush_key(struct cli_state *cli, POLICY_HND *hnd);
-BOOL do_reg_query_key(struct cli_state *cli, POLICY_HND *hnd,
-				char *class, uint32 *class_len,
-				uint32 *num_subkeys, uint32 *max_subkeylen,
-				uint32 *max_subkeysize, uint32 *num_values,
-				uint32 *max_valnamelen, uint32 *max_valbufsize,
-				uint32 *sec_desc, NTTIME *mod_time);
-BOOL do_reg_unknown_1a(struct cli_state *cli, POLICY_HND *hnd, uint32 *unk);
-BOOL do_reg_query_info(struct cli_state *cli, POLICY_HND *hnd,
-				char *key_value, uint32* key_type);
-BOOL do_reg_set_key_sec(struct cli_state *cli, POLICY_HND *hnd, SEC_DESC_BUF *sec_desc_buf);
-BOOL do_reg_get_key_sec(struct cli_state *cli, POLICY_HND *hnd, uint32 *sec_buf_size, SEC_DESC_BUF **ppsec_desc_buf);
-BOOL do_reg_delete_val(struct cli_state *cli, POLICY_HND *hnd, char *val_name);
-BOOL do_reg_delete_key(struct cli_state *cli, POLICY_HND *hnd, char *key_name);
-BOOL do_reg_create_key(struct cli_state *cli, POLICY_HND *hnd,
-				char *key_name, char *key_class,
-				SEC_ACCESS *sam_access,
-				POLICY_HND *key);
-BOOL do_reg_enum_key(struct cli_state *cli, POLICY_HND *hnd,
-				int key_index, char *key_name,
-				uint32 *unk_1, uint32 *unk_2,
-				time_t *mod_time);
-BOOL do_reg_create_val(struct cli_state *cli, POLICY_HND *hnd,
-				char *val_name, uint32 type, BUFFER3 *data);
-BOOL do_reg_enum_val(struct cli_state *cli, POLICY_HND *hnd,
-				int val_index, int max_valnamelen, int max_valbufsize,
-				fstring val_name,
-				uint32 *val_type, BUFFER2 *value);
-BOOL do_reg_open_entry(struct cli_state *cli, POLICY_HND *hnd,
-				char *key_name, uint32 unk_0,
-				POLICY_HND *key_hnd);
-BOOL do_reg_close(struct cli_state *cli, POLICY_HND *hnd);
-
-/*The following definitions come from  rpc_client/cli_samr.c  */
-
-BOOL get_samr_query_usergroups(struct cli_state *cli, 
-				POLICY_HND *pol_open_domain, uint32 user_rid,
-				uint32 *num_groups, DOM_GID *gid);
-BOOL get_samr_query_userinfo(struct cli_state *cli, 
-				POLICY_HND *pol_open_domain,
-				uint32 info_level,
-				uint32 user_rid, SAM_USER_INFO_21 *usr);
-BOOL do_samr_chgpasswd_user(struct cli_state *cli,
-		char *srv_name, char *user_name,
-		char nt_newpass[516], uchar nt_oldhash[16],
-		char lm_newpass[516], uchar lm_oldhash[16]);
-BOOL do_samr_unknown_38(struct cli_state *cli, char *srv_name);
-BOOL do_samr_query_dom_info(struct cli_state *cli, 
-				POLICY_HND *domain_pol, uint16 switch_value);
-BOOL do_samr_enum_dom_users(struct cli_state *cli, 
-				POLICY_HND *pol, uint16 num_entries, uint16 unk_0,
-				uint16 acb_mask, uint16 unk_1, uint32 size,
-				struct acct_info **sam,
-				int *num_sam_users);
-BOOL do_samr_connect(struct cli_state *cli, 
-				char *srv_name, uint32 unknown_0,
-				POLICY_HND *connect_pol);
-BOOL do_samr_open_user(struct cli_state *cli, 
-				POLICY_HND *pol, uint32 unk_0, uint32 rid, 
-				POLICY_HND *user_pol);
-BOOL do_samr_open_domain(struct cli_state *cli, 
-				POLICY_HND *connect_pol, uint32 rid, DOM_SID *sid,
-				POLICY_HND *domain_pol);
-BOOL do_samr_query_unknown_12(struct cli_state *cli, 
-				POLICY_HND *pol, uint32 rid, uint32 num_gids, uint32 *gids,
-				uint32 *num_aliases,
-				fstring als_names    [MAX_LOOKUP_SIDS],
-				uint32  num_als_users[MAX_LOOKUP_SIDS]);
-BOOL do_samr_query_usergroups(struct cli_state *cli, 
-				POLICY_HND *pol, uint32 *num_groups, DOM_GID *gid);
-BOOL do_samr_query_userinfo(struct cli_state *cli, 
-				POLICY_HND *pol, uint16 switch_value, void* usr);
-BOOL do_samr_close(struct cli_state *cli, POLICY_HND *hnd);
-
 /*The following definitions come from  rpc_client/cli_spoolss_notify.c  */
 
 BOOL spoolss_disconnect_from_client( struct cli_state *cli);
@@ -2195,30 +2113,6 @@ BOOL cli_spoolss_reply_open_printer(struct cli_state *cli, char *printer, uint32
 BOOL cli_spoolss_reply_rrpcn(struct cli_state *cli, POLICY_HND *handle, 
 			     uint32 change_low, uint32 change_high, uint32 *status);
 BOOL cli_spoolss_reply_close_printer(struct cli_state *cli, POLICY_HND *handle, uint32 *status);
-
-/*The following definitions come from  rpc_client/cli_srvsvc.c  */
-
-BOOL do_srv_net_srv_conn_enum(struct cli_state *cli,
-			char *server_name, char *qual_name,
-			uint32 switch_value, SRV_CONN_INFO_CTR *ctr,
-			uint32 preferred_len,
-			ENUM_HND *hnd);
-BOOL do_srv_net_srv_sess_enum(struct cli_state *cli,
-			char *server_name, char *qual_name,
-			uint32 switch_value, SRV_SESS_INFO_CTR *ctr,
-			uint32 preferred_len,
-			ENUM_HND *hnd);
-BOOL do_srv_net_srv_share_enum(struct cli_state *cli,
-			char *server_name, 
-			uint32 switch_value, SRV_R_NET_SHARE_ENUM *r_o,
-			uint32 preferred_len, ENUM_HND *hnd);
-BOOL do_srv_net_srv_file_enum(struct cli_state *cli,
-			char *server_name, char *qual_name,
-			uint32 switch_value, SRV_FILE_INFO_CTR *ctr,
-			uint32 preferred_len,
-			ENUM_HND *hnd);
-BOOL do_srv_net_srv_get_info(struct cli_state *cli,
-			char *server_name, uint32 switch_value, SRV_INFO_CTR *ctr);
 
 /*The following definitions come from  rpc_client/cli_use.c  */
 
@@ -2232,12 +2126,6 @@ BOOL cli_net_use_del(const char *srv_name,
 		     BOOL force_close, BOOL *connection_closed);
 void cli_net_use_enum(uint32 *num_cons, struct use_info ***use);
 void cli_use_wait_keyboard(void);
-
-/*The following definitions come from  rpc_client/cli_wkssvc.c  */
-
-BOOL do_wks_query_info(struct cli_state *cli, 
-			char *server_name, uint32 switch_value,
-			WKS_INFO_100 *wks100);
 
 /*The following definitions come from  rpc_client/ncacn_np_use.c  */
 
@@ -3733,6 +3621,7 @@ BOOL api_srvsvc_rpc(pipes_struct *p);
 /*The following definitions come from  rpc_server/srv_srvsvc_nt.c  */
 
 BOOL share_info_db_init(void);
+void map_generic_share_sd_bits(SEC_DESC *psd);
 BOOL share_access_check(int snum, uint16 vuid, uint32 desired_access);
 uint32 _srv_net_srv_get_info(pipes_struct *p, SRV_Q_NET_SRV_GET_INFO *q_u, SRV_R_NET_SRV_GET_INFO *r_u);
 uint32 _srv_net_file_enum(pipes_struct *p, SRV_Q_NET_FILE_ENUM *q_u, SRV_R_NET_FILE_ENUM *r_u);
