@@ -1099,58 +1099,6 @@ static BOOL notify2_unpack_msg( SPOOLSS_NOTIFY_MSG *msg, struct timeval *tv, voi
 	return True;
 }
 
-/* ENUMJOB last timestamp list. */
-struct ejts_list {
-	struct ejts_list *next, *prev;
-	char *printer_name;
-	struct timeval tv;
-};
-
-static struct ejts_list *ejts_head;
-
-static struct ejts_list *find_enumjobs_timestamp(const char *printer_name)
-{
-	struct ejts_list *ejtsl;
-
-	for( ejtsl = ejts_head; ejtsl; ejtsl = ejtsl->next)
-		if (strequal(ejtsl->printer_name, printer_name))
-			return ejtsl;
-	return NULL;
-}
-
-static void set_enumjobs_timestamp(int snum)
-{
-	const char *printer_name = lp_const_servicename(snum);
-	struct ejts_list *ejtsl = find_enumjobs_timestamp(printer_name);
-
-	if (!ejtsl) {
-		ejtsl = (struct ejts_list *)malloc(sizeof(struct ejts_list));
-		if (!ejtsl)
-			return;
-		ejtsl->printer_name = strdup(printer_name);
-		if (!ejtsl->printer_name) {
-			SAFE_FREE(ejtsl);
-			return;
-		}
-		DLIST_ADD(ejts_head, ejtsl);
-	}
-
-	gettimeofday(&ejtsl->tv, NULL);
-}
-
-static int timeval_diff(struct timeval *tv1, struct timeval *tv2)
-{
-	if (tv1->tv_sec > tv2->tv_sec)
-		return 1;
-	if (tv1->tv_sec < tv2->tv_sec)
-		return -1;
-	if (tv1->tv_usec > tv2->tv_usec)
-		return 1;
-	if (tv1->tv_usec < tv2->tv_usec)
-		return -1;
-	return 0;
-}
-
 /********************************************************************
  Receive a notify2 message list
  ********************************************************************/
@@ -1214,29 +1162,6 @@ static void receive_notify2_message_list(int msg_type, pid_t src, void *msg, siz
 		notify2_unpack_msg( &notify, &msg_tv, msg_ptr, msg_len );
 		msg_ptr += msg_len;
 		
-		/* See if it is still relevent. */
-		if (notify.type == JOB_NOTIFY_TYPE) {
-			BOOL status_is_deleting = False;
-
-			if (notify.field == JOB_NOTIFY_STATUS && (notify.notify.value[0] & (JOB_STATUS_DELETING|JOB_STATUS_DELETED)))
-				status_is_deleting = True;
-
-			if (!status_is_deleting) {
-				struct ejts_list *ejtsl = find_enumjobs_timestamp(notify.printer);
-
-				if (ejtsl && (timeval_diff(&ejtsl->tv, &msg_tv) > 0)) {
-
-					DEBUG(10, ("receive_notify2_message_list: enumjobs ts = %u, %u, msg ts = %u, %u discarding\n",
-						(unsigned int)ejtsl->tv.tv_sec, (unsigned int)ejtsl->tv.tv_usec,
-						(unsigned int)msg_tv.tv_sec, (unsigned int)msg_tv.tv_usec ));
-
-					/* Message no longer relevent. Ignore it. */
-					if ( notify.len != 0 )
-						SAFE_FREE( notify.notify.data );
-					continue;
-				}
-			}
-		}
 		/* add to correct list in container */
 		
 		notify_msg_ctr_addmsg( &messages, &notify );
@@ -6518,7 +6443,6 @@ WERROR _spoolss_enumjobs( pipes_struct *p, SPOOL_Q_ENUMJOBS *q_u, SPOOL_R_ENUMJO
 	DEBUGADD(4,("count:[%d], status:[%d], [%s]\n", *returned, prt_status.status, prt_status.message));
 
 	if (*returned == 0) {
-		set_enumjobs_timestamp(snum);
 		SAFE_FREE(queue);
 		return WERR_OK;
 	}
@@ -6526,11 +6450,9 @@ WERROR _spoolss_enumjobs( pipes_struct *p, SPOOL_Q_ENUMJOBS *q_u, SPOOL_R_ENUMJO
 	switch (level) {
 	case 1:
 		wret = enumjobs_level1(queue, snum, buffer, offered, needed, returned);
-		set_enumjobs_timestamp(snum);
 		return wret;
 	case 2:
 		wret = enumjobs_level2(queue, snum, buffer, offered, needed, returned);
-		set_enumjobs_timestamp(snum);
 		return wret;
 	default:
 		SAFE_FREE(queue);
