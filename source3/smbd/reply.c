@@ -2250,6 +2250,10 @@ int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int leng
   int smb_doff = SVAL(inbuf,smb_vwv11);
   char *data;
 
+  /* If it's an IPC, pass off the pipe handler. */
+  if (IS_IPC(conn))
+    return reply_pipe_write_and_X(inbuf,outbuf,length,bufsize);
+
   CHECK_FSP(fsp,conn);
   CHECK_WRITE(fsp);
   CHECK_ERROR(fsp);

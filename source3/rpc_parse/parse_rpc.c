@@ -470,7 +470,7 @@ void make_rpc_auth_verifier(RPC_AUTH_VERIFIER *rav,
 	rav->stub_type_len = stub_type_len; /* 0x00 */
 	rav->padding       = 0; /* padding 0x00 */
 
-	rav->ptr_0 = 1; /* non-zero pointer to something */
+	rav->ptr_0 = 0x0014a0c0; /* non-zero pointer to something */
 
 	fstrcpy(rav->signature, signature); /* "NTLMSSP" */
 	rav->msg_type = msg_type; /* NTLMSSP_MESSAGE_TYPE */
@@ -511,7 +511,9 @@ void make_rpc_auth_ntlmssp_chal(RPC_AUTH_NTLMSSP_CHAL *chl,
 	chl->neg_flags = neg_flags; /* 0x0082b1 */
 
 	memcpy(chl->challenge, challenge, sizeof(chl->challenge)); 
+/*
 	bzero (chl->reserved ,            sizeof(chl->reserved)); 
+ */
 }
 
 /*******************************************************************
@@ -529,7 +531,9 @@ void smb_io_rpc_auth_ntlmssp_chal(char *desc, RPC_AUTH_NTLMSSP_CHAL *chl, prs_st
 	prs_uint32("neg_flags", ps, depth, &(chl->neg_flags)); /* 0x0000 82b1 */
 
 	prs_uint8s (False, "challenge", ps, depth, chl->challenge, sizeof(chl->challenge));
+/*
 	prs_uint8s (False, "reserved ", ps, depth, chl->reserved , sizeof(chl->reserved ));
+ */
 }
 
 /*******************************************************************
@@ -551,22 +555,19 @@ void make_rpc_auth_ntlmssp_resp(RPC_AUTH_NTLMSSP_RESP *rsp,
 	make_str_hdr(&rsp->hdr_lm_resp, lm_len, lm_len, 1);
 	make_str_hdr(&rsp->hdr_nt_resp, nt_len, nt_len, 1);
 	make_str_hdr(&rsp->hdr_domain , dom_len, dom_len, 1);
-#if BROKEN_CODE
 	make_str_hdr(&rsp->hdr_usr    , usr_len, usr_len, 1);
 	make_str_hdr(&rsp->hdr_wks    , wks_len, wks_len, 1);
 	make_str_hdr(&rsp->hdr_sess_key, 0, 0, 1);
-#endif
 
 	rsp->neg_flags = neg_flags;
 
-#if BROKEN_CODE
 	memcpy(&rsp->lm_resp, lm_resp, 24);
 	memcpy(&rsp->nt_resp, nt_resp, 24);
 	fstrcpy(rsp->domain, domain);
 	fstrcpy(rsp->user  , user  );
 	fstrcpy(rsp->wks   , wks   );
 	rsp->sess_key[0] = 0;
-#endif
+
 	
 }
 
@@ -583,22 +584,18 @@ void smb_io_rpc_auth_ntlmssp_resp(char *desc, RPC_AUTH_NTLMSSP_RESP *rsp, prs_st
 	smb_io_strhdr("hdr_lm_resp ", &rsp->hdr_lm_resp , ps, depth); 
 	smb_io_strhdr("hdr_nt_resp ", &rsp->hdr_nt_resp , ps, depth); 
 	smb_io_strhdr("hdr_domain  ", &rsp->hdr_domain  , ps, depth); 
-#if BROKEN_CODE
 	smb_io_strhdr("hdr_user    ", &rsp->hdr_usr     , ps, depth); 
 	smb_io_strhdr("hdr_wks     ", &rsp->hdr_wks     , ps, depth); 
 	smb_io_strhdr("hdr_sess_key", &rsp->hdr_sess_key, ps, depth); 
-#endif
 
 	prs_uint32("neg_flags", ps, depth, &(rsp->neg_flags)); /* 0x0000 82b1 */
 
-#if BROKEN_CODE
 	prs_string("sess_key", ps, depth, rsp->sess_key, rsp->hdr_sess_key.str_str_len, sizeof(rsp->sess_key)); 
 	prs_string("wks     ", ps, depth, rsp->wks     , rsp->hdr_wks     .str_str_len, sizeof(rsp->wks     )); 
 	prs_string("user    ", ps, depth, rsp->user    , rsp->hdr_usr     .str_str_len, sizeof(rsp->user    )); 
 	prs_string("domain  ", ps, depth, rsp->domain  , rsp->hdr_domain  .str_str_len, sizeof(rsp->domain  )); 
 	prs_string("nt_resp ", ps, depth, rsp->nt_resp , rsp->hdr_nt_resp .str_str_len, sizeof(rsp->nt_resp )); 
 	prs_string("lm_resp ", ps, depth, rsp->lm_resp , rsp->hdr_lm_resp .str_str_len, sizeof(rsp->lm_resp )); 
-#endif
 }
 
 #if 0

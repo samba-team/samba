@@ -67,6 +67,14 @@ void prs_mem_free(prs_struct *ps)
 }
 
 /*******************************************************************
+ link one parsing structure to another
+ ********************************************************************/
+void prs_link(prs_struct *ps, prs_struct const *const to)
+{
+	DEBUG(0,("NOT IMPLEMENTED\n"));
+}
+
+/*******************************************************************
  align a pointer to a multiple of align_offset bytes.  looks like it
  will work for offsets of 0, 2 and 4...
  ********************************************************************/

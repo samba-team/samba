@@ -47,7 +47,7 @@ enum NTLM_MESSAGE_TYPE
 	NTLMSSP_NEGOTIATE = 1,
 	NTLMSSP_CHALLENGE = 2,
 	NTLMSSP_AUTH      = 3,
-	NTLMSSP_UNKNOWN   = 4
+	NTLMSSP_UNKNOWN   = 4,
 };
 
 /* NTLMSSP negotiation flags */
@@ -220,7 +220,9 @@ typedef struct rpc_auth_ntlmssp_chal_info
 	uint32 neg_flags; /* 0x0000 82b1 */
 
 	uint8 challenge[8]; /* ntlm challenge */
+#if 0
 	uint8 reserved [8]; /* zeros */
+#endif
 
 } RPC_AUTH_NTLMSSP_CHAL;
 
@@ -231,17 +233,17 @@ typedef struct rpc_auth_ntlmssp_resp_info
 	STRHDR hdr_lm_resp; /* 24 byte response */
 	STRHDR hdr_nt_resp; /* 24 byte response */
 	STRHDR hdr_domain;
-	UNIHDR hdr_usr;
-	UNIHDR hdr_wks;
-	UNIHDR hdr_sess_key; /* NULL unless negotiated */
+	STRHDR hdr_usr;
+	STRHDR hdr_wks;
+	STRHDR hdr_sess_key; /* NULL unless negotiated */
 	uint32 neg_flags; /* 0x0000 82b1 */
 
-	fstring uni_sess_key;
-	fstring uni_wks;
-	fstring uni_usr;
-	fstring uni_domain;
-	fstring str_nt_resp;
-	fstring str_lm_resp;
+	fstring sess_key;
+	fstring wks;
+	fstring user;
+	fstring domain;
+	fstring nt_resp;
+	fstring lm_resp;
 
 } RPC_AUTH_NTLMSSP_RESP;
 
