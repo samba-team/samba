@@ -1,3 +1,7 @@
+2001-07-31  Assar Westerlund  <assar@sics.se>
+
+	* add-random-users.c (main): handle --version
+
 2001-07-30  Johan Danielsson  <joda@pdc.kth.se>
 
 	* load.c: increase line buffer to 8k
