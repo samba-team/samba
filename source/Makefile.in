@@ -203,10 +203,10 @@ LIB_OBJ = $(VERSION_OBJ) lib/charcnv.o lib/debug.o lib/fault.o \
 	  lib/tallocmsg.o lib/dmallocmsg.o libsmb/smb_signing.o \
 	  lib/md5.o lib/hmacmd5.o lib/iconv.o \
 	  nsswitch/wb_client.o $(WBCOMMON_OBJ) \
-	  lib/pam_errors.o intl/lang_tdb.o lib/account_pol.o \
+	  lib/pam_errors.o intl/lang_tdb.o \
 	  lib/adt_tree.o lib/gencache.o $(TDB_OBJ) \
 	  lib/module.o lib/ldap_escape.o @CHARSET_STATIC@ \
-	  lib/privileges.o lib/secdesc.o lib/secace.o lib/secacl.o
+	  lib/secdesc.o lib/secace.o lib/secacl.o 
 
 LIB_NONSMBD_OBJ = $(LIB_OBJ) lib/dummysmbd.o
 
@@ -312,7 +312,7 @@ PASSDB_OBJ = $(PASSDB_GET_SET_OBJ) passdb/passdb.o passdb/pdb_interface.o \
 		passdb/util_sam_sid.o passdb/pdb_compat.o \
 		passdb/lookup_sid.o \
 		passdb/login_cache.o @PDB_STATIC@ passdb/pdb_sql.o \
-		lib/system_smbd.o
+		lib/system_smbd.o lib/account_pol.o lib/privileges.o
 
 XML_OBJ = passdb/pdb_xml.o
 MYSQL_OBJ = passdb/pdb_mysql.o
@@ -507,8 +507,8 @@ LIBSMBCLIENT_OBJ = libsmb/libsmbclient.o libsmb/libsmb_compat.o \
 		   libsmb/libsmb_cache.o \
 		   $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
 	  	   $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) \
-		   $(LIBMSRPC_OBJ) $(RPC_PARSE_OBJ) $(PASSDB_GET_SET_OBJ) \
-		   $(SECRETS_OBJ) 
+		   $(LIBMSRPC_OBJ) $(RPC_PARSE_OBJ) \
+		   $(SECRETS_OBJ) $(PASSDB_OBJ) $(SMBLDAP_OBJ) $(GROUPDB_OBJ) $(DUMMYROOT_OBJ)
 
 # This shared library is intended for linking with unit test programs
 # to test Samba internals.  It's called libbigballofmud.so to
@@ -584,13 +584,15 @@ LOCKTEST2_OBJ = torture/locktest2.o $(PARAM_OBJ) $(LOCKING_OBJ) $(LIBSMB_OBJ) \
 
 SMBCACLS_OBJ = utils/smbcacls.o $(PARAM_OBJ) $(LIBSMB_OBJ) \
 			   $(KRBCLIENT_OBJ) $(LIB_NONSMBD_OBJ) $(RPC_PARSE_OBJ) \
-			   $(PASSDB_GET_SET_OBJ) $(LIBMSRPC_OBJ) $(SECRETS_OBJ) \
-			   $(POPT_LIB_OBJ) $(DCUTIL_OBJ) $(LIBADS_OBJ)
+			   $(LIBMSRPC_OBJ) $(SECRETS_OBJ) \
+			   $(POPT_LIB_OBJ) $(DCUTIL_OBJ) $(LIBADS_OBJ) \
+			   $(PASSDB_OBJ) $(SMBLDAP_OBJ) $(GROUPDB_OBJ) $(DUMMYROOT_OBJ)
 
 SMBCQUOTAS_OBJ = utils/smbcquotas.o $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) \
 		$(PARAM_OBJ) \
-		$(LIB_NONSMBD_OBJ) $(RPC_PARSE_OBJ) $(PASSDB_GET_SET_OBJ) \
-		$(LIBMSRPC_OBJ) $(SECRETS_OBJ) $(POPT_LIB_OBJ)
+		$(LIB_NONSMBD_OBJ) $(RPC_PARSE_OBJ) \
+		$(LIBMSRPC_OBJ) $(SECRETS_OBJ) $(POPT_LIB_OBJ) \
+		$(PASSDB_OBJ) $(SMBLDAP_OBJ) $(GROUPDB_OBJ) $(DUMMYROOT_OBJ)
 
 TALLOCTORT_OBJ = lib/talloctort.o $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) libsmb/nterr.o
 
