@@ -104,6 +104,10 @@
 #include <time.h>
 #endif
 
+#ifdef HAVE_PATHS_H
+#include <paths.h>
+#endif
+
 #include <roken-common.h>
 
 #if !defined(HAVE_SETSID) && defined(HAVE__SETSID)
