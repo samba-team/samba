@@ -121,7 +121,7 @@ typedef struct
 	char *szLogonPath;
 	char *szLogonDrive;
 	char *szLogonHome;
-	char *szWINSserver;
+	char **szWINSservers;
 	char **szInterfaces;
 	char *szRemoteAnnounce;
 	char *szRemoteBrowseSync;
@@ -521,7 +521,6 @@ static BOOL handle_netbios_name(char *pszParmValue, char **ptr);
 static BOOL handle_winbind_uid(char *pszParmValue, char **ptr);
 static BOOL handle_winbind_gid(char *pszParmValue, char **ptr);
 static BOOL handle_non_unix_account_range(char *pszParmValue, char **ptr);
-static BOOL handle_wins_server_list(char *pszParmValue, char **ptr);
 static BOOL handle_debug_list( char *pszParmValue, char **ptr );
 
 static BOOL handle_ldap_machine_suffix ( char *pszParmValue, char **ptr );
@@ -927,7 +926,7 @@ static struct parm_struct parm_table[] = {
 	{"dns proxy", P_BOOL, P_GLOBAL, &Globals.bDNSproxy, NULL, NULL, 0},
 	{"wins proxy", P_BOOL, P_GLOBAL, &Globals.bWINSproxy, NULL, NULL, 0},
 	
-	{"wins server", P_STRING, P_GLOBAL, &Globals.szWINSserver, handle_wins_server_list, NULL, FLAG_BASIC},
+	{"wins server", P_LIST, P_GLOBAL, &Globals.szWINSservers, NULL, NULL, FLAG_BASIC},
 	{"wins support", P_BOOL, P_GLOBAL, &Globals.bWINSsupport, NULL, NULL, FLAG_BASIC},
 	{"wins hook", P_STRING, P_GLOBAL, &Globals.szWINSHook, NULL, NULL, 0},
 	{"wins partners", P_STRING, P_GLOBAL, &Globals.szWINSPartners, NULL, NULL, 0},
@@ -1488,7 +1487,7 @@ FN_GLOBAL_CONST_STRING(lp_logon_drive, &Globals.szLogonDrive)
 FN_GLOBAL_CONST_STRING(lp_logon_home, &Globals.szLogonHome)
 FN_GLOBAL_STRING(lp_remote_announce, &Globals.szRemoteAnnounce)
 FN_GLOBAL_STRING(lp_remote_browse_sync, &Globals.szRemoteBrowseSync)
-FN_GLOBAL_STRING(lp_wins_server_list, &Globals.szWINSserver)
+FN_GLOBAL_LIST(lp_wins_server_list, &Globals.szWINSservers)
 FN_GLOBAL_LIST(lp_interfaces, &Globals.szInterfaces)
 FN_GLOBAL_STRING(lp_socket_address, &Globals.szSocketAddress)
 FN_GLOBAL_STRING(lp_nis_home_map_name, &Globals.szNISHomeMapName)
@@ -2614,19 +2613,6 @@ static BOOL handle_non_unix_account_range(char *pszParmValue, char **ptr)
 }
 
 /***************************************************************************
- Handle the WINS SERVER list
-***************************************************************************/
-static BOOL handle_wins_server_list( char *pszParmValue, char **ptr )
-  {
-  if( !wins_srv_load_list( pszParmValue ) )
-    return( False );  /* Parse failed. */
-
-  string_set( ptr, pszParmValue );
-  return( True );
-  }
-
-
-/***************************************************************************
  Handle the DEBUG level list
 ***************************************************************************/
 static BOOL handle_debug_list( char *pszParmValueIn, char **ptr )
@@ -3588,7 +3574,7 @@ BOOL lp_load(const char *pszFname, BOOL global_only, BOOL save_defaults,
 	/* Now we check bWINSsupport and set szWINSserver to 127.0.0.1 */
 	/* if bWINSsupport is true and we are in the client            */
 	if (in_client && Globals.bWINSsupport) {
-		string_set(&Globals.szWINSserver, "127.0.0.1");
+		lp_do_parameter(-1, "wins server", "127.0.0.1");
 	}
 
 	init_iconv();

@@ -603,10 +603,12 @@ BOOL name_register_wins(const char *name, int name_type)
   if (0 == wins_srv_count())
     return False;
 
+  sendto_ip = wins_srv_ip();
+
   if( DEBUGLVL( 4 ) )
     {
     dbgtext( "name_register_wins: Registering my name %s ", name );
-    dbgtext( "with WINS server %s.\n", wins_srv_name() );
+    dbgtext( "with WINS server %s.\n", inet_ntoa(sendto_ip));
     }
 
   sock = open_socket_in( SOCK_DGRAM, 0, 3, 
@@ -615,8 +617,6 @@ BOOL name_register_wins(const char *name, int name_type)
   if (sock == -1) return False;
 
   set_socket_options(sock, "SO_BROADCAST");     /* ????! crh */
-
-  sendto_ip = wins_srv_ip();
 
   if (num_interfaces > 1) {
 
