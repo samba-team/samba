@@ -25,10 +25,8 @@
 
 #define DEFAULT_KPASSWD_PORT	464
 #define KRB5_KPASSWD_VERS_CHANGEPW		1
-#ifndef KRB5_KPASSWD_VERS_SETPW
-#define KRB5_KPASSWD_VERS_SETPW			2
-#endif
-#define KRB5_KPASSWD_VERS_SETPW_MS		0xff80
+#define KRB5_KPASSWD_VERS_SETPW			0xff80
+#define KRB5_KPASSWD_VERS_SETPW_ALT		2
 #define KRB5_KPASSWD_ACCESSDENIED		5
 #define KRB5_KPASSWD_BAD_VERSION		6
 #define KRB5_KPASSWD_INITIAL_FLAG_NEEDED	7
@@ -140,7 +138,7 @@ static krb5_error_code build_kpasswd_request(uint16 pversion,
 	if (pversion  == KRB5_KPASSWD_VERS_CHANGEPW)
 		setpw = data_blob(passwd, strlen(passwd));
 	else if (pversion == KRB5_KPASSWD_VERS_SETPW ||
-		 pversion == KRB5_KPASSWD_VERS_SETPW_MS)
+		 pversion == KRB5_KPASSWD_VERS_SETPW_ALT)
 		setpw = encode_krb5_setpw(princ, passwd);
 	else
 		return EINVAL;
@@ -252,7 +250,7 @@ static krb5_error_code parse_setpw_reply(krb5_context context,
 
 	/* FIXME: According to standard there is only one type of reply */	
 	if (vnum != KRB5_KPASSWD_VERS_SETPW && 
-	    vnum != KRB5_KPASSWD_VERS_SETPW_MS && 
+	    vnum != KRB5_KPASSWD_VERS_SETPW_ALT && 
 	    vnum != KRB5_KPASSWD_VERS_CHANGEPW) {
 		DEBUG(1,("Bad vnum (%d) from kpasswd server\n", vnum));
 		return KRB5KDC_ERR_BAD_PVNO;
@@ -557,7 +555,7 @@ ADS_STATUS ads_krb5_set_password(const char *kdc_host, const char *princ,
 	/* we might have to call krb5_free_creds(...) from now on ... */
 
 	aret = do_krb5_kpasswd_request(context, kdc_host,
-				       KRB5_KPASSWD_VERS_SETPW_MS,
+				       KRB5_KPASSWD_VERS_SETPW,
 				       credsp, princ, newpw);
 
 	krb5_free_creds(context, credsp);
