@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -481,6 +481,29 @@ struct salt_type des3_salt_derived[] = {
 };
 
 krb5_error_code
+krb5_salttype_to_string (krb5_context context,
+			 krb5_enctype etype,
+			 krb5_salttype stype,
+			 char **string)
+{
+    struct encryption_type *e;
+    struct salt_type *st;
+
+    e = _find_enctype (etype);
+    if (e == NULL)
+	return KRB5_PROG_ETYPE_NOSUPP;
+    for (st = e->keytype->string_to_key; st && st->type; st++) {
+	if (st->type == stype) {
+	    *string = strdup (st->name);
+	    if (*string == NULL)
+		return ENOMEM;
+	    return 0;
+	}
+    }
+    return HEIM_ERR_SALTTYPE_NOSUPP;
+}
+
+krb5_error_code
 krb5_get_pw_salt(krb5_context context,
 		 krb5_const_principal principal,
 		 krb5_salt *salt)
@@ -799,7 +822,7 @@ RSA_MD5_DES_verify(krb5_context context,
     unsigned char res[16];
     des_cblock ivec;
     des_key_schedule *sched = key->schedule->data;
-    krb5_error_code ret;
+    krb5_error_code ret = 0;
 
     memset(&ivec, 0, sizeof(ivec));
     des_cbc_encrypt(C->checksum.data, 
@@ -857,7 +880,7 @@ RSA_MD5_DES3_verify(krb5_context context,
     unsigned char res[16];
     des_cblock ivec;
     des_key_schedule *sched = key->schedule->data;
-    krb5_error_code ret;
+    krb5_error_code ret = 0;
 
     memset(&ivec, 0, sizeof(ivec));
     des_ede3_cbc_encrypt(C->checksum.data, 
