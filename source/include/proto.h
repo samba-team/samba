@@ -2793,6 +2793,17 @@ int smbw_stat_printjob(struct smbw_server *srv,char *path,
 int smbw_fstat(int fd, struct stat *st);
 int smbw_stat(const char *fname, struct stat *st);
 
+/*The following definitions come from  tdb/tdb.c  */
+
+int tdb_update(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf);
+int tdb_exists(TDB_CONTEXT *tdb, TDB_DATA key);
+int tdb_traverse(TDB_CONTEXT *tdb, int (*fn)(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf));
+int tdb_delete(TDB_CONTEXT *tdb, TDB_DATA key);
+int tdb_store(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, int flag);
+int tdb_close(TDB_CONTEXT *tdb);
+int tdb_writelock(TDB_CONTEXT *tdb);
+int tdb_writeunlock(TDB_CONTEXT *tdb);
+
 /*The following definitions come from  utils/nbio.c  */
 
 void nb_setup(struct cli_state *cli);
