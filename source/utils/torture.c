@@ -99,6 +99,8 @@ static BOOL open_connection(struct cli_state *c)
 		return False;
 	}
 
+	cli->timeout = 120000; /* set a really long timeout (2 minutes) */
+
 	if (!cli_session_request(c, &calling, &called)) {
 		printf("%s rejected the session\n",host);
 		cli_shutdown(c);
