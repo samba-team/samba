@@ -963,18 +963,12 @@ clients is conservative and if followed will minimize problems - but it is not a
 		<title>Preliminary Advice &smbmdash; Dangers Can be Avoided</title>
 
 		<para>
-		When I was 8 years of age there was an old man who walked with a cane. He told the the 
-		kids of the neighborhood that when he was very yound he broke his leg. His parents could
-		not afford good medical care and they lived in the country when medical help was not readily
-		available, he suffered the consequences his whole life. His advice regarding how best
-		to mend a broken leg was <quote>never break a leg!</quote>
+		The best advice regarding how best to mend a broken leg was <quote>never break a leg!</quote>
 		</para>
 
 		<para>
-		New comers to Samba and LDAP seem to struggle a great deal at first. Many experience the
-		consequences of their first experience with the same emotions memory as the old Mr.
-		Williams referred to above. So here is my advice regarding the best way to remedy LDAP
-		and Samab problems: <quote>Avoid them like the plague!</quote>
+		New comers to Samba and LDAP seem to struggle a great deal at first.  If you want advice
+		regarding the best way to remedy LDAP and Samba problems: <quote>Avoid them like the plague!</quote>
 		</para>
 
 		<para>
@@ -1002,7 +996,27 @@ clients is conservative and if followed will minimize problems - but it is not a
 		<title>Debugging LDAP</title>
 
 		<para>
-		ZZ
+		In the example <filename>/etc/openldap/slapd.conf</filename> control file
+		(see <link linkend="ch6-dbconf"/>) there is an entry for <constant>loglevel	256</constant>.
+		To enable logging via the syslog infrastructure it is necessary to uncomment this parameter
+		and restart <command>slapd</command>.
+		</para>
+
+		<para>
+		LDAP log information can be directed into a file that is separate from the normal system
+		log files by changing the <filename>/etc/syslog.conf</filename> file so it has the following
+		contents:
+<screen>
+# Some foreign boot scripts require local7
+#
+local0,local1.*                 -/var/log/localmessages
+local2,local3.*                 -/var/log/localmessages
+local5.*                        -/var/log/localmessages
+local6,local7.*                 -/var/log/localmessages
+local4.*                        -/var/log/ldaplogs
+</screen>
+		In the above case, all LDAP related logs will be directed to the file
+		<filename>/var/log/ldaplogs</filename>. This makes it easy to track LDAP errors.
 		</para>
 
 		</sect4>
@@ -1011,7 +1025,112 @@ clients is conservative and if followed will minimize problems - but it is not a
 		<title>Debugging NSS_LDAP</title>
 
 		<para>
+		The basic mechanism for diagnosing problems with the nss_ldap utility involves adding to the
+		<filename>/etc/ldap.conf</filename> file the following parameters:
+<screen>
+debug 256
+logdir /data/logs
+</screen>
+		Create the log directory as follows:
+<screen>
+&rootprompt; mkdir /data/logs
+</screen>
 		</para>
+
+		<para>
+		The diagnostic process should follow the following steps:
+		</para>
+
+		<procedure>
+
+			<step><para>
+			Verify the <constant>nss_base_passwd, nss_base_shadow, nss_base_group</constant> entries
+			in the <filename>/etc/ldap.conf</filename> file and compare them closely with the directory
+			tree location that was chosen in when the directory was first created.
+			</para>
+
+			<para>
+			One was this can be done is by executing:
+<screen>
+&rootprompt; slapcat | grep Group | grep dn
+dn: ou=Groups,dc=abmas,dc=biz
+dn: cn=Domain Admins,ou=Groups,dc=abmas,dc=biz
+dn: cn=Domain Users,ou=Groups,dc=abmas,dc=biz
+dn: cn=Domain Guests,ou=Groups,dc=abmas,dc=biz
+dn: cn=Domain Computers,ou=Groups,dc=abmas,dc=biz
+dn: cn=Administrators,ou=Groups,dc=abmas,dc=biz
+dn: cn=Print Operators,ou=Groups,dc=abmas,dc=biz
+dn: cn=Backup Operators,ou=Groups,dc=abmas,dc=biz
+dn: cn=Replicators,ou=Groups,dc=abmas,dc=biz
+</screen>
+			The first line is the DIT entry point for the container for POSIX groups. The correct entry
+			for the <filename>/etc/ldap.conf</filename> for the <constant>nss_base_group</constant>
+			parameter therefore is the distinquished name (dn) as applied here:
+<screen>
+nss_base_group ou=Groups,dc=abmas,dc=biz?one
+</screen>
+			The same process may be followed to determine the appropriate dn for user accounts.
+			If the container for computer accounts is not the same as that for users (see the &smb.conf;
+			file entry for <constant>ldap machine suffix</constant>, it may be necessary to set the 
+			following DIT dn in the <filename>/etc/ldap.conf</filename>:
+<screen>
+nss_base_passwd dc=abmas,dc=biz?sub
+</screen>
+			This instructs LDAP to search for machine as well as user entries from the top of the DIT
+			down. This is inefficient, but at least should work.
+			</para></step>
+
+			<step><para>
+			Perform lookups such as:
+<screen>
+&rootprompt; getent passwd
+</screen>
+			Each such lookup will create an entry in the <filename>/data/log</filename> directory
+			for each such process executed. The contents of that file may provide a hint as to
+			the cause of the failure that is being investigated.
+			</para></step>
+
+			<step><para>
+			Check the contents of the <filename>/var/log/messages</filename> to see what error messages are being
+			generated as a result of the LDAP lookups. Here is an example of a successful lookup:
+<screen>
+slapd[12164]: conn=0 fd=10 ACCEPT from IP=127.0.0.1:33539
+(IP=0.0.0.0:389)
+slapd[12164]: conn=0 op=0 BIND dn="" method=128
+slapd[12164]: conn=0 op=0 RESULT tag=97 err=0 text=
+slapd[12164]: conn=0 op=1 SRCH base="" scope=0 deref=0
+filter="(objectClass=*)"
+slapd[12164]: conn=0 op=1 SEARCH RESULT tag=101 err=0
+nentries=1 text=
+slapd[12164]: conn=0 op=2 UNBIND
+slapd[12164]: conn=0 fd=10 closed
+slapd[12164]: conn=1 fd=10 ACCEPT from
+IP=127.0.0.1:33540 (IP=0.0.0.0:389)
+slapd[12164]: conn=1 op=0 BIND
+dn="cn=Manager,dc=abmas,dc=biz" method=128
+slapd[12164]: conn=1 op=0 BIND
+dn="cn=Manager,dc=abmas,dc=biz" mech=SIMPLE ssf=0
+slapd[12164]: conn=1 op=0 RESULT tag=97 err=0 text=
+slapd[12164]: conn=1 op=1 SRCH
+base="ou=People,dc=abmas,dc=biz" scope=1 deref=0
+filter="(objectClass=posixAccount)"
+slapd[12164]: conn=1 op=1 SRCH attr=uid userPassword
+uidNumber gidNumber cn
+homeDirectory loginShell gecos description objectClass
+slapd[12164]: conn=1 op=1 SEARCH RESULT tag=101 err=0
+nentries=2 text=
+slapd[12164]: conn=1 fd=10 closed
+
+</screen>
+			</para></step>
+
+			<step><para>
+			Check that the bindpw entry in the <filename>/etc/ldap.conf</filename> or in the
+			<filename>/etc/ldap.secrets</filename> file is correct. i.e.: As specified in the
+			<filename>/etc/openldap/slapd.conf</filename> file.
+			</para></step>
+
+		</procedure>
 
 		</sect4>
 
@@ -1019,6 +1138,39 @@ clients is conservative and if followed will minimize problems - but it is not a
 		<title>Debugging Samba</title>
 
 		<para>
+		The following parameters in the &smb.conf; file can be useful in tracking down Samba related problems:
+<screen>
+[global]
+	...
+	log level = 5
+	log file = /var/log/samba/%m.log
+	max log size = 0
+	...
+</screen>
+		This will result in the creation of a separate log file for every client from which connections
+		are made. The log file will be quite verbose and will grow continually. Do not forget to
+		change these lines to the following when debugging has been completed:
+<screen>
+[global]
+	...
+	log level = 1
+	log file = /var/log/samba/%m.log
+	max log size = 50
+	...
+</screen>
+		</para>
+
+		<para>
+		The log file can be analyzed by executing:
+<screen>
+&rootprompt; cd /var/log/samba
+&rootprompt; grep -v "^\[200" machine_name.log
+</screen>
+		</para>
+
+		<para>
+		Search for hints of what may have failed by lokking for the words <emphasis>fail</emphasis>
+		and <emphasis>error</emphasis>.
 		</para>
 
 		</sect4>
@@ -1027,6 +1179,10 @@ clients is conservative and if followed will minimize problems - but it is not a
 		<title>Debugging on the Windows Client</title>
 
 		<para>
+		MS Windows 2000 Professional and Windows  XP Professional clients are capable of being configured
+		to create a netlogon.log file that can be very helpful in diagnosing network logon problems. Search
+		the Microsoft knowledge base for detailed instructions. The techniques vary a little with each
+		version of MS Windows.
 		</para>
 
 		</sect4>
@@ -1721,9 +1877,12 @@ SID for domain MASSIVE is: S-1-5-21-3504140859-1010554828-2431957765
 	<smbconfoption><name>delete user script</name><value>/opt/IDEALX/sbin/smbldap-userdel "%u"</value></smbconfoption>
 	<smbconfoption><name>add group script</name><value>/opt/IDEALX/sbin/smbldap-groupadd -p "%g"</value></smbconfoption>
 	<smbconfoption><name>delete group script</name><value>/opt/IDEALX/sbin/smbldap-groupdel "%g"</value></smbconfoption>
-	<smbconfoption><name>add user to group script</name><value>/opt/IDEALX/sbin/smbldap-groupmod -m "%u" "%g"</value></smbconfoption>
-	<smbconfoption><name>delete user from group script</name><value>/opt/IDEALX/sbin/smbldap-groupmod -x "%u" "%g"</value></smbconfoption>
-	<smbconfoption><name>set primary group script</name><value>/opt/IDEALX/sbin/smbldap-usermod -g "%g" "%u"</value></smbconfoption>
+	<smbconfoption><name>add user to group script</name><value>/opt/IDEALX/sbin/</value></smbconfoption>
+<member><parameter>smbldap-groupmod -m "%u" "%g"</parameter></member>
+	<smbconfoption><name>delete user from group script</name><value>/opt/IDEALX/sbin/</value></smbconfoption>
+<member><parameter>smbldap-groupmod -x "%u" "%g"</parameter></member>
+	<smbconfoption><name>set primary group script</name><value>/opt/IDEALX/sbin/</value></smbconfoption>
+<member><parameter>smbldap-usermod -g "%g" "%u"</parameter></member>
 	<smbconfoption><name>add machine script</name><value>/opt/IDEALX/sbin/smbldap-useradd -w "%u"</value></smbconfoption>
 </smbconfexample>
 
@@ -2461,7 +2620,7 @@ chrisr:x:1002:513:System User:/home/chrisr:/bin/bash
 maryv:x:1003:513:System User:/home/maryv:/bin/bash
 </screen>
 		This demonstates that user account resolution via LDAP is working.
-		<para></step>
+		</para></step>
 
 		<step><para>
 		This step will determin
@@ -2631,7 +2790,7 @@ PIOps (S-1-5-21-3504140859-1010554828-2431957765-3005) -> PIOps
 		localhost interface with the <command>smbd</command> process. This account can be
 		easily created by joining the PDC to the Domain by executing the following command:
 <screen>
-&rootprompt; net rpc join -U root%not24get
+&rootprompt; net rpc join -S MASSIVE -U root%not24get
 </screen>
 		Note: Before executing this command on the PDC both <command>nmbd</command> and
 		<command>smbd</command> must be started so that the <command>net</command> command

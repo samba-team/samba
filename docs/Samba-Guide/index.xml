@@ -13,11 +13,13 @@
 		<version>20050304</version>
 	</bookinfo>
 	<?latex \clearpage ?>
+<!--- Leave the commented out lines they are needed for book production.
 	<para>boo</para>
 	<?latex \clearpage ?>
 	<para>boo</para>
 	<?latex \clearpage ?>
 	<para>boo</para>
+-->
 	<xi:include href="inside-cover.xml"/>
 	<xi:include href="acknowledgements.xml"/>
 	<xi:include href="foreword.xml"/>
