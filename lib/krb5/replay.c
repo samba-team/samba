@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -32,6 +32,7 @@
  */
 
 #include "krb5_locl.h"
+#include <vis.h>
 
 RCSID("$Id$");
 
@@ -82,6 +83,12 @@ const char *
 krb5_rc_default_name(krb5_context context)
 {
     return "FILE:/var/run/default_rcache";
+}
+
+const char *
+krb5_rc_default_type(krb5_context context)
+{
+    return "FILE";
 }
 
 krb5_error_code
@@ -211,6 +218,7 @@ krb5_rc_get_lifespan(krb5_context context,
     }
     return KRB5_RC_IO_UNKNOWN;
 }
+
 const char*
 krb5_rc_get_name(krb5_context context,
 		 krb5_rcache id)
@@ -225,3 +233,32 @@ krb5_rc_get_type(krb5_context context,
     return "FILE";
 }
 		 
+krb5_error_code
+krb5_get_server_rcache(krb5_context context, 
+		       const krb5_data *piece, 
+		       krb5_rcache *id)
+{
+    krb5_rcache rcache;
+    krb5_error_code ret;
+
+    char *tmp = malloc(4 * piece->length + 1);
+    char *name;
+    if(tmp == NULL)
+	return ENOMEM;
+    strvisx(tmp, piece->data, piece->length, VIS_WHITE | VIS_OCTAL);
+#ifdef HAVE_GETEUID
+    asprintf(&name, "FILE:rc_%s_%u", tmp, geteuid());
+#else
+    asprintf(&name, "FILE:rc_%s", tmp);
+#endif
+    free(tmp);
+    if(name == NULL)
+	return ENOMEM;
+
+    ret = krb5_rc_resolve_full(context, &rcache, name);
+    free(name);
+    if(ret)
+	return ret;
+    *id = rcache;
+    return ret;
+}
