@@ -330,6 +330,8 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 		return NULL;
 	}
   
+	add_session_user(user);
+		
 	conn = conn_new();
 	if (!conn) {
 		DEBUG(0,("Couldn't find free connection.\n"));
@@ -568,6 +570,21 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 		return NULL;
 	}
 	
+	/* execute any "preexec = " line */
+	if (*lp_preexec(SNUM(conn))) {
+		pstring cmd;
+		pstrcpy(cmd,lp_preexec(SNUM(conn)));
+		standard_sub_conn(conn,cmd);
+		ret = smbrun(cmd,NULL);
+		if (ret != 0 && lp_preexec_close(SNUM(conn))) {
+			DEBUG(1,("preexec gave %d - failing connection\n", ret));
+			yield_connection(conn, lp_servicename(SNUM(conn)), lp_max_connections(SNUM(conn)));
+			conn_free(conn);
+			*ecode = ERRsrverror;
+			return NULL;
+		}
+	}
+
 	if (vfs_ChDir(conn,conn->connectpath) != 0) {
 		DEBUG(0,("%s (%s) Can't change directory to %s (%s)\n",
 			 remote_machine, conn->client_address,
@@ -594,23 +611,6 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	}
 #endif
 	
-	add_session_user(user);
-		
-	/* execute any "preexec = " line */
-	if (*lp_preexec(SNUM(conn))) {
-		pstring cmd;
-		pstrcpy(cmd,lp_preexec(SNUM(conn)));
-		standard_sub_conn(conn,cmd);
-		ret = smbrun(cmd,NULL);
-		if (ret != 0 && lp_preexec_close(SNUM(conn))) {
-			DEBUG(1,("preexec gave %d - failing connection\n", ret));
-			yield_connection(conn, lp_servicename(SNUM(conn)), lp_max_connections(SNUM(conn)));
-			conn_free(conn);
-			*ecode = ERRsrverror;
-			return NULL;
-		}
-	}
-
 	/*
 	 * Print out the 'connected as' stuff here as we need
 	 * to know the effective uid and gid we will be using.
