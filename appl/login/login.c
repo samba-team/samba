@@ -493,6 +493,13 @@ do_login(const struct passwd *pwd, char *tty, char *ttyn)
 	if(rootlogin == 0)
 	    exit(1);
     }
+
+    /* make sure signals are set to default actions, apparently some
+       OS:es like to ignore SIGINT, which is not very convenient */
+    
+    for (i = 1; i < NSIG; ++i)
+	signal(i, SIG_DFL);
+
     /* all kinds of different magic */
 
 #ifdef HAVE_GETSPNAM
