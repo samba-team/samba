@@ -4871,7 +4871,16 @@ uint32 _spoolss_rfnpcnex( const POLICY_HND *handle,
 				const SPOOL_NOTIFY_OPTION *option,
 				uint32 *count,
 				SPOOL_NOTIFY_INFO *info);
-uint32 _spoolss_enumprinters(SPOOL_Q_ENUMPRINTERS *q_u, prs_struct *rdata);
+uint32 _spoolss_enumprinters(
+				uint32 flags,
+				const UNISTR2 *servername,
+				uint32 level,
+				const BUFFER *buffer,
+				uint32 buf_size,
+				uint32 *offered,
+				uint32 *needed,
+				PRINTER_INFO_CTR *ctr,
+				uint32 *returned);
 uint32 _spoolss_getprinter(SPOOL_Q_GETPRINTER *q_u, prs_struct *rdata);
 uint32 _spoolss_getprinterdriver2(SPOOL_Q_GETPRINTERDRIVER2 *q_u, prs_struct *rdata);
 uint32 _spoolss_startpageprinter(SPOOL_Q_STARTPAGEPRINTER *q_u, prs_struct *rdata);

@@ -644,150 +644,6 @@ static BOOL construct_printer_info_2(PRINTER_INFO_2 *printer, int snum, pstring 
 	return (True);
 }
 
-/********************************************************************
- * enum_printer_info_1
- * glue between spoolss_reply_enumprinters and construct_printer_info_1
- ********************************************************************/
-static BOOL enum_printer_info_1(PRINTER_INFO_1 **printer, int snum, int number)
-{
-	pstring servername;
-
-	*printer=(PRINTER_INFO_1 *)malloc(sizeof(PRINTER_INFO_1));
-	DEBUG(4,("Allocated memory for ONE PRINTER_INFO_1 at [%p]\n", *printer));	
-	pstrcpy(servername, global_myname);
-	if (!construct_printer_info_1(*printer, snum, servername))
-	{
-		free(*printer);
-		return (False);
-	}
-	else
-	{
-		return (True);
-	}
-}
-
-/********************************************************************
- * enum_printer_info_2
- * glue between spoolss_reply_enumprinters and construct_printer_info_2
- ********************************************************************/
-static BOOL enum_printer_info_2(PRINTER_INFO_2 **printer, int snum, int number)
-{
-	pstring servername;
-
-	*printer=(PRINTER_INFO_2 *)malloc(sizeof(PRINTER_INFO_2));
-	DEBUG(4,("Allocated memory for ONE PRINTER_INFO_2 at [%p]\n", *printer));	
-	pstrcpy(servername, global_myname);
-	if (!construct_printer_info_2(*printer, snum, servername))
-	{
-		free(*printer);
-		return (False);
-	}
-	else
-	{
-		return (True);
-	}
-}
-
-/********************************************************************
- * api_spoolss_reply_enumprinters
- *
- * called from api_spoolss_enumprinters (see this to understand)
- ********************************************************************/
-static void enum_all_printers_info_1(PRINTER_INFO_1 ***printers, uint32 *number)
-{
-	int snum;
-	int n_services=lp_numservices();
-	*printers=NULL;
-	*number=0;
-
-	for (snum=0;snum<n_services; snum++)
-	{
-		if (lp_browseable(snum) && lp_snum_ok(snum) && lp_print_ok(snum) )
-		{
-			DEBUG(4,("Found a printer: %s[%x]\n",lp_servicename(snum),snum));
-			*printers=Realloc(*printers, (*number+1)*sizeof(PRINTER_INFO_1 *));			
-			DEBUG(4,("ReAlloced memory for [%d] PRINTER_INFO_1 pointers at [%p]\n", *number+1, *printers));		
-			if (enum_printer_info_1( &((*printers)[*number]), snum, *number) )
-			{			
-				(*number)++;
-			}
-		}
-	}
-}
-
-/********************************************************************
- * api_spoolss_reply_enumprinters
- *
- * called from api_spoolss_enumprinters (see this to understand)
- ********************************************************************/
-static void enum_all_printers_info_2(PRINTER_INFO_2 ***printers, uint32 *number)
-{
-	int snum;
-	int n_services=lp_numservices();
-	*printers=NULL;
-	*number=0;
-
-	for (snum=0;snum<n_services; snum++)
-	{
-		if (lp_browseable(snum) && lp_snum_ok(snum) && lp_print_ok(snum) )
-		{
-			DEBUG(4,("Found a printer: %s[%x]\n",lp_servicename(snum),snum));
-			*printers=Realloc(*printers, (*number+1)*sizeof(PRINTER_INFO_2 *));			
-			DEBUG(4,("ReAlloced memory for [%d] PRINTER_INFO_2 pointers at [%p]\n", *number+1, *printers));			
-			if (enum_printer_info_2( &((*printers)[*number]), snum, *number) )
-			{			
-				(*number)++;
-			}
-		}
-	}
-}
-
-/********************************************************************
- * api_spoolss_reply_enumprinters
- *
- * called from api_spoolss_enumprinters (see this to understand)
- ********************************************************************/
-static void spoolss_reply_enumprinters(SPOOL_Q_ENUMPRINTERS *q_u, prs_struct *rdata)
-{
-	SPOOL_R_ENUMPRINTERS r_u;
-	
-	DEBUG(4,("Enumerating printers\n"));
-
-	memcpy(r_u.servername.buffer,q_u->servername.buffer,2*q_u->servername.uni_str_len);
-	r_u.servername.buffer[q_u->servername.uni_str_len]=0x0000;
-	r_u.returned=0;
-
-	switch (q_u->level)
-	{
-		case 1:
-			if ( (q_u->flags==PRINTER_ENUM_NAME) || (q_u->flags==PRINTER_ENUM_NETWORK) )
-				/*if (is_a_printerserver(q_u->servername))*/
-					enum_all_printers_info_1(&(r_u.printer.printers_1), &(r_u.returned) );
-				/*else	
-					enum_one_printer_info_1(&r_u);*/
-			break;
-		case 2:
-			if ( (q_u->flags==PRINTER_ENUM_NAME) || (q_u->flags==PRINTER_ENUM_NETWORK) )
-				/*if (is_a_printerserver(q_u->servername))*/
-					enum_all_printers_info_2(&(r_u.printer.printers_2), &(r_u.returned) );
-				/*else	
-					enum_one_printer_info_2(&r_u);*/
-			break;
-		case 3:		/* doesn't exist */
-			break;
-		case 4:		/* can't, always on local machine */
-			break;
-		case 5:
-			break;
-			
-	}
-	DEBUG(4,("%d printers enumerated\n", r_u.returned));
-	r_u.offered=q_u->buffer.size;
-	r_u.level=q_u->level;
-	r_u.status=0x0000;
-
-	spoolss_io_r_enumprinters("",&r_u,rdata,0);
-}
 
 /********************************************************************
  * api_spoolss_enumprinters
@@ -798,14 +654,34 @@ static void api_spoolss_enumprinters(rpcsrv_struct *p, prs_struct *data,
                                      prs_struct *rdata)
 {
 	SPOOL_Q_ENUMPRINTERS q_u;
+	SPOOL_R_ENUMPRINTERS r_u;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
 
 	spoolss_io_q_enumprinters("", &q_u, data, 0);
 
-	spoolss_reply_enumprinters(&q_u, rdata);
+	/* lkclXXX DAMN DAMN DAMN!  MICROSOFT @#$%S IT UP, AGAIN, AND WE
+	   HAVE TO DEAL WITH IT!  AGH!
+	 */
+	r_u.status = _spoolss_enumprinters(
+				q_u.flags,
+				&q_u.servername,
+				q_u.level,
+				&q_u.buffer,
+				q_u.buf_size,
+				&r_u.offered,
+				&r_u.needed,
+				&r_u.ctr,
+				&r_u.returned);
 	
-	spoolss_io_free_buffer(&(q_u.buffer));
-}
+	memcpy(r_u.servername.buffer,q_u.servername.buffer,
+	       2*q_u.servername.uni_str_len);
+	r_u.servername.buffer[q_u.servername.uni_str_len] = 0;
 
+	spoolss_io_free_buffer(&(q_u.buffer));
+	spoolss_io_r_enumprinters("",&r_u,rdata,0);
+}
 
 /****************************************************************************
 ****************************************************************************/

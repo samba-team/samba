@@ -1394,8 +1394,6 @@ uint32 _spoolss_rfnpcnex( const POLICY_HND *handle,
 	return NT_STATUS_INVALID_INFO_CLASS;
 }
 
-#if 0
-
 /********************************************************************
  * construct_printer_info_0
  * fill a printer_info_1 struct
@@ -1718,47 +1716,58 @@ static void enum_all_printers_info_2(PRINTER_INFO_2 ***printers, uint32 *number)
  *
  * called from api_spoolss_enumprinters (see this to understand)
  ********************************************************************/
-uint32 _spoolss_enumprinters(SPOOL_Q_ENUMPRINTERS *q_u, prs_struct *rdata)
+uint32 _spoolss_enumprinters(
+				uint32 flags,
+				const UNISTR2 *servername,
+				uint32 level,
+				const BUFFER *buffer,
+				uint32 buf_size,
+				uint32 *offered,
+				uint32 *needed,
+				PRINTER_INFO_CTR *ctr,
+				uint32 *returned)
 {
-	SPOOL_R_ENUMPRINTERS r_u;
-	
 	DEBUG(4,("Enumerating printers\n"));
 
-	memcpy(servername.buffer,servername.buffer,2*servername.uni_str_len);
-	servername.buffer[servername.uni_str_len]=0x0000;
-	returned=0;
+	(*returned)=0;
 
 	switch (level)
 	{
 		case 1:
-			if ( (flags==PRINTER_ENUM_NAME) || (flags==PRINTER_ENUM_NETWORK) )
+			if (flags == PRINTER_ENUM_NAME ||
+			    flags == PRINTER_ENUM_NETWORK )
+			{
 				/*if (is_a_printerserver(servername))*/
-					enum_all_printers_info_1(&(printer.printers_1), &(returned) );
+					enum_all_printers_info_1(&ctr->printer.printers_1, returned );
 				/*else	
 					enum_one_printer_info_1(&r_u);*/
-			break;
+				break;
+			}
 		case 2:
-			if ( (flags==PRINTER_ENUM_NAME) || (flags==PRINTER_ENUM_NETWORK) )
+			if (flags == PRINTER_ENUM_NAME ||
+			    flags == PRINTER_ENUM_NETWORK )
+			{
 				/*if (is_a_printerserver(servername))*/
-					enum_all_printers_info_2(&(printer.printers_2), &(returned) );
+					enum_all_printers_info_2(&ctr->printer.printers_2, returned );
 				/*else	
 					enum_one_printer_info_2(&r_u);*/
-			break;
+				break;
+			}
 		case 3:		/* doesn't exist */
-			break;
+			return NT_STATUS_INVALID_INFO_CLASS;
 		case 4:		/* can't, always on local machine */
 			break;
 		case 5:
-			break;
+			return NT_STATUS_INVALID_INFO_CLASS;
 			
 	}
-	DEBUG(4,("%d printers enumerated\n", returned));
-	offered=buffer.size;
-	level=level;
-	status=0x0000;
+	DEBUG(4,("%d printers enumerated\n", *returned));
+	(*offered) = buffer->size;
 
-	spoolss_io_r_enumprinters("",&r_u,rdata,0);
+	return 0x0;
 }
+
+#if 0
 
 /****************************************************************************
 ****************************************************************************/

@@ -805,19 +805,26 @@ typedef struct spool_q_enumprinters
 	uint32 buf_size;
 } SPOOL_Q_ENUMPRINTERS;
 
-typedef struct spool_r_enumprinters
+typedef struct printer_info_ctr_info
 {
-	uint32 offered;	 /* number of bytes offered */
-	uint32 needed;	 /* bytes needed */
-	uint32 returned; /* number of printers */
-	uint32 status;
-	uint32 level;
-	UNISTR servername;
 	union {
 		PRINTER_INFO_1 **printers_1;
 		PRINTER_INFO_2 **printers_2;
 		void *info;
 	} printer;
+
+} PRINTER_INFO_CTR;
+
+typedef struct spool_r_enumprinters
+{
+	uint32 offered;	 /* number of bytes offered */
+	uint32 needed;	 /* bytes needed */
+	uint32 level;
+	UNISTR servername;
+	PRINTER_INFO_CTR ctr;
+	uint32 returned; /* number of printers */
+	uint32 status;
+
 } SPOOL_R_ENUMPRINTERS;
 
 

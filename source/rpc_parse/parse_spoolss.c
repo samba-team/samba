@@ -1941,7 +1941,7 @@ BOOL make_spoolss_q_enumprinters(SPOOL_Q_ENUMPRINTERS *q_u,
 
 	q_u->flags = flags;
 
-	make_unistr2(&(q_u->servername), servername, len_name);
+	make_unistr2(&q_u->servername, servername, len_name);
 
 	q_u->level = level;
 	make_spoolss_buffer(&q_u->buffer, size);
@@ -1966,7 +1966,7 @@ BOOL spoolss_io_q_enumprinters(char *desc, SPOOL_Q_ENUMPRINTERS *q_u,
 	prs_uint32("flags", ps, depth, &(q_u->flags));
 	prs_uint32("useless ptr", ps, depth, &useless_ptr);
 
-	smb_io_unistr2("", &(q_u->servername),True,ps,depth);
+	smb_io_unistr2("", &q_u->servername,True,ps,depth);
 	prs_align(ps);
 
 	prs_uint32("level", ps, depth, &(q_u->level));
@@ -1987,12 +1987,12 @@ void free_r_enumprinters(SPOOL_R_ENUMPRINTERS *r_u)
 	{
 		case 1:			
 		{
-			free_print1_array(r_u->returned, r_u->printer.printers_1);
+			free_print1_array(r_u->returned, r_u->ctr.printer.printers_1);
 			break;
 		}
 		case 2:
 		{
-			free_print2_array(r_u->returned, r_u->printer.printers_2);
+			free_print2_array(r_u->returned, r_u->ctr.printer.printers_2);
 			break;
 		}
 	}
@@ -2032,11 +2032,11 @@ BOOL spoolss_io_r_enumprinters(char *desc,
 			switch (r_u->level)
 			{
 				case 1:
-					info1 = r_u->printer.printers_1[i];
+					info1 = r_u->ctr.printer.printers_1[i];
 					bufsize_required += spoolss_size_printer_info_1(info1);	
 					break;
 				case 2:
-					info2 = r_u->printer.printers_2[i];
+					info2 = r_u->ctr.printer.printers_2[i];
 					bufsize_required += spoolss_size_printer_info_2(info2);	
 					break;
 			}
@@ -2101,9 +2101,9 @@ BOOL spoolss_io_r_enumprinters(char *desc,
 				if (ps->io)
 				{
 					/* reading */
-					r_u->printer.printers_1[i] = add_print1_to_array(&tmp_ct, &r_u->printer.printers_1, NULL);
+					r_u->ctr.printer.printers_1[i] = add_print1_to_array(&tmp_ct, &r_u->ctr.printer.printers_1, NULL);
 				}
-				info1 = r_u->printer.printers_1[i];
+				info1 = r_u->ctr.printer.printers_1[i];
 				if (info1 == NULL)
 				{
 					return False;
@@ -2117,9 +2117,9 @@ BOOL spoolss_io_r_enumprinters(char *desc,
 				if (ps->io)
 				{
 					/* reading */
-					r_u->printer.printers_2[i] = add_print2_to_array(&tmp_ct, &r_u->printer.printers_2, NULL);
+					r_u->ctr.printer.printers_2[i] = add_print2_to_array(&tmp_ct, &r_u->ctr.printer.printers_2, NULL);
 				}
-				info2 = r_u->printer.printers_2[i];
+				info2 = r_u->ctr.printer.printers_2[i];
 				if (info2 == NULL)
 				{
 					return False;

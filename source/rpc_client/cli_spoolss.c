@@ -91,7 +91,7 @@ BOOL spoolss_enum_printers(uint32 flags, const char *srv_name,
 		{
 			/* ok, at last: we're happy. return the policy handle */
 			(*count) = r_o.returned;
-			(*printers) = r_o.printer.info;
+			(*printers) = r_o.ctr.printer.info;
 			valid_pol = True;
 		}
 	}
