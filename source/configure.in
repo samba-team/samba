@@ -688,6 +688,14 @@ if test x"$samba_cv_HAVE_UTIMBUF" = x"yes"; then
     AC_DEFINE(HAVE_UTIMBUF)
 fi
 
+AC_CACHE_CHECK([for ut_syslen in utmpx],samba_cv_HAVE_UX_UT_SYSLEN,[
+AC_TRY_COMPILE([#include <utmpx.h>],
+[struct utmpx ux;  ux.ut_syslen = 0;],
+samba_cv_HAVE_UX_UT_SYSLEN=yes,samba_cv_HAVE_UX_UT_SYSLEN=no,samba_cv_HAVE_UX_UT_SYSLEN=cross)])
+if test x"$samba_cv_HAVE_UX_UT_SYSLEN" = x"yes"; then
+    AC_DEFINE(HAVE_UX_UT_SYSLEN)
+fi 
+
 AC_CACHE_CHECK([for kernel oplock type definitions],samba_cv_HAVE_KERNEL_OPLOCKS,[
 AC_TRY_COMPILE([#include <sys/types.h>
 #include <fcntl.h>],
@@ -1138,7 +1146,7 @@ AC_ARG_WITH(dfs,
 AC_MSG_CHECKING(whether to use Kerberos IV)
 AC_ARG_WITH(krb4,
 [  --with-krb4=base-dir     Include Kerberos IV support
-  --without-krb4          Don't include Kerbers IV support (default)],
+  --without-krb4          Don't include Kerberos IV support (default)],
 [   AC_MSG_RESULT(yes)
     AC_DEFINE(KRB4_AUTH)
     AC_CHECK_LIB(resolv, dn_expand)
@@ -1153,7 +1161,7 @@ AC_ARG_WITH(krb4,
 AC_MSG_CHECKING(whether to use Kerberos 5)
 AC_ARG_WITH(krb5,
 [  --with-krb5=base-dir     Include Kerberos 5 support
-  --without-krb5          Don't include Kerbers 5 support (default)],
+  --without-krb5          Don't include Kerberos 5 support (default)],
 [   AC_MSG_RESULT(yes)
     AC_DEFINE(KRB5_AUTH)
     LIBS="$LIBS -ldes425 -lkrb5 -lcrypto -lcom_err"

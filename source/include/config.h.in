@@ -181,6 +181,7 @@
 #undef USE_SETUIDX
 #undef NEED_SGI_SEMUN_HACK
 #undef SYSCONF_SC_NGROUPS_MAX
+#undef HAVE_UX_UT_SYSLEN
 
 /* The number of bytes in a int.  */
 #undef SIZEOF_INT
@@ -794,6 +795,9 @@
 /* Define if you have the <sys/fs/s5param.h> header file.  */
 #undef HAVE_SYS_FS_S5PARAM_H
 
+/* Define if you have the <sys/fs/vx_quota.h> header file.  */
+#undef HAVE_SYS_FS_VX_QUOTA_H
+
 /* Define if you have the <sys/id.h> header file.  */
 #undef HAVE_SYS_ID_H
 
@@ -877,9 +881,6 @@
 
 /* Define if you have the <utmpx.h> header file.  */
 #undef HAVE_UTMPX_H
-
-/* Define if you have the <sys/fs/vx_quota.h> header file. */
-#undef HAVE_SYS_FS_VX_QUOTA_H
 
 /* Define if you have the cups library (-lcups).  */
 #undef HAVE_LIBCUPS
