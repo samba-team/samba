@@ -469,6 +469,7 @@ verify (krb5_auth_context *auth_context,
     return 0;
 out:
     krb5_free_ticket (context, *ticket);
+    ticket = NULL;
     return 1;
 }
 
@@ -652,6 +653,7 @@ char *realm_str;
 int version_flag;
 int help_flag;
 char *port_str;
+char *config_file;
 
 struct getargs args[] = {
 #ifdef HAVE_DLOPEN
@@ -662,6 +664,7 @@ struct getargs args[] = {
 #endif
     { "keytab", 'k', arg_string, &keytab_str, 
       "keytab to get authentication key from", "kspec" },
+    { "config-file", 'c', arg_string, &config_file },
     { "realm", 'r', arg_string, &realm_str, "default realm", "realm" },
     { "port",  'p', arg_string, &port_str, "port" },
     { "version", 0, arg_flag, &version_flag },
@@ -675,6 +678,7 @@ main (int argc, char **argv)
     int optind;
     krb5_keytab keytab;
     krb5_error_code ret;
+    char **files;
     int port;
     
     optind = krb5_program_setup(&context, argc, argv, args, num_args, NULL);
@@ -685,6 +689,18 @@ main (int argc, char **argv)
 	print_version(NULL);
 	exit(0);
     }
+
+    if (config_file == NULL)
+	config_file = HDB_DB_DIR "/kdc.conf";
+
+    ret = krb5_prepend_config_files_default(config_file, &files);
+    if (ret)
+	krb5_err(context, 1, ret, "getting configuration files");
+
+    ret = krb5_set_config_files(context, files);
+    krb5_free_config_files(files);
+    if (ret)
+	krb5_err(context, 1, ret, "reading configuration files");
 
     if(realm_str)
 	krb5_set_default_realm(context, realm_str);
