@@ -157,17 +157,6 @@ struct auth_methods
 
 };
 
-typedef NTSTATUS (*auth_init_function)(struct auth_context *, const char *, struct auth_methods **);
-
-struct auth_init_function_entry {
-	const char *name;
-	/* Function to create a member of the authmethods list */
-
-	auth_init_function init;
-
-	struct auth_init_function_entry *prev, *next;
-};
-
 struct auth_operations {
 	/* the name of the backend */
 	const char *name;
