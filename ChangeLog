@@ -1,5 +1,8 @@
 2001-07-24  Johan Danielsson  <joda@pdc.kth.se>
 
+	* lib/krb5/addr_families.c: add support for type
+	KRB5_ADDRESS_ADDRPORT
+
 	* lib/krb5/addr_families.c (krb5_address_order): complain about
 	unsuppored address types
 
