@@ -22,6 +22,14 @@ case "$host_os" in
         *next2*) AC_DEFINE(NEXT2);;
 esac
 
+if test x"$ac_cv_canonical_host" != x &&
+   test x"$ac_cv_canonical_host" != x"$host"; then
+   echo "system config has changed - remove config.cache"; exit 1;
+fi
+
+AC_CACHE_VAL(ac_cv_canonical_host, ac_cv_canonical_host=$host;)
+
+
 AC_INLINE
 AC_HEADER_STDC
 AC_HEADER_DIRENT
