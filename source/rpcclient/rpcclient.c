@@ -157,16 +157,23 @@ static char* next_command (char** cmdstr)
 {
 	static pstring 		command;
 	char			*p;
+	BOOL next_cmd = False;
 	
 	if (!cmdstr || !(*cmdstr))
 		return NULL;
 	
-	p = strchr(*cmdstr, ';');
-	if (p)
-		*p = '\0';
-	pstrcpy(command, *cmdstr);
-	*cmdstr = p;
+	printf("cmd = %s\n", *cmdstr);
 	
+	p = strchr(*cmdstr, ';');
+	if (p) {
+		next_cmd = True;
+		*p = '\0';
+	}
+	pstrcpy(command, *cmdstr);
+	*cmdstr = p;		
+	if (next_cmd) 
+		p++;
+		
 	return command;
 }
 
@@ -770,6 +777,7 @@ static void usage(void)
                 char    *p = cmdstr;
  
                 while((cmd=next_command(&p)) != NULL) {
+			printf("%s\n", cmd);
                         process_cmd(&cli, cmd);
                 }
  

@@ -5570,6 +5570,24 @@ BOOL make_spoolss_q_enumprinterdata(SPOOL_Q_ENUMPRINTERDATA *q_u,
 
 /*******************************************************************
 ********************************************************************/  
+BOOL make_spoolss_q_setprinterdata(SPOOL_Q_SETPRINTERDATA *q_u, TALLOC_CTX *ctx, const POLICY_HND *hnd,
+				char* value, char* data)
+{
+	UNISTR2 tmp;
+
+	memcpy(&q_u->handle, hnd, sizeof(q_u->handle));
+	q_u->type = REG_SZ;
+	init_unistr2(&q_u->value, value, strlen(value)+1);
+
+	init_unistr2(&tmp, data, strlen(data)+1);
+	q_u->max_len = q_u->real_len = tmp.uni_max_len*2;
+	q_u->data = talloc(ctx, q_u->real_len);
+	memcpy(q_u->data, tmp.buffer, q_u->real_len);
+	
+	return True;
+}
+/*******************************************************************
+********************************************************************/  
 
 BOOL spoolss_io_q_setprinterdata(char *desc, SPOOL_Q_SETPRINTERDATA *q_u, prs_struct *ps, int depth)
 {

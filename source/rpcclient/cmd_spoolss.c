@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/Netbios implementation.
    Version 2.2
    RPC pipe client
@@ -466,6 +466,7 @@ static NTSTATUS cmd_spoolss_getprinter(struct cli_state *cli,
 
 	if (argc == 1 || argc > 3) {
 		printf("Usage: %s <printername> [level]\n", argv[0]);
+		
 		return NT_STATUS_OK;
 	}
 
@@ -1078,12 +1079,12 @@ static NTSTATUS cmd_spoolss_setdriver(struct cli_state *cli,
 	fstrcpy  (user, cli->user_name);
 
 	/* get a printer handle */
-	result = cli_spoolss_open_printer_ex(cli, mem_ctx, printername, "", 
+	result = cli_spoolss_open_printer_ex(cli, mem_ctx, printername, "",
 					     MAXIMUM_ALLOWED_ACCESS, servername, user, &pol);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
- 
+
 	opened_hnd = True;
 
 	/* Get printer info */
@@ -1109,12 +1110,12 @@ done:
 	/* cleanup */
 	if (opened_hnd)
 		cli_spoolss_close_printer(cli, mem_ctx, &pol);
-	
-	return result;		
+
+	return result;
 }
 
 
-static NTSTATUS cmd_spoolss_deletedriver(struct cli_state *cli, 
+static NTSTATUS cmd_spoolss_deletedriver(struct cli_state *cli,
                                          TALLOC_CTX *mem_ctx,
                                          int argc, char **argv)
 {
@@ -1166,7 +1167,7 @@ static NTSTATUS cmd_spoolss_getprintprocdir(struct cli_state *cli,
 	asprintf(&servername, "\\\\%s", cli->desthost);
 	strupper(servername);
 
-	asprintf(&environment, "%s", (argc == 3) ? argv[2] : 
+	asprintf(&environment, "%s", (argc == 3) ? argv[2] :
 		 PRINTER_DRIVER_ARCHITECTURE);
 
 	result = cli_spoolss_getprintprocessordirectory(
@@ -1177,6 +1178,72 @@ static NTSTATUS cmd_spoolss_getprintprocdir(struct cli_state *cli,
 
 	SAFE_FREE(servername);
 	SAFE_FREE(environment);
+
+	return result;
+}
+
+static NTSTATUS cmd_spoolss_setprinterdata(struct cli_state *cli,
+					    TALLOC_CTX *mem_ctx,
+					    int argc, char **argv)
+{
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	fstring servername, printername, user;
+	POLICY_HND pol;
+	BOOL opened_hnd = False;
+	PRINTER_INFO_CTR ctr;
+	PRINTER_INFO_0 *info = NULL;
+
+	/* parse the command arguements */
+	if (argc != 4) {
+		printf ("Usage: %s <printer> <value> <data>\n", argv[0]);
+		return NT_STATUS_OK;
+        }
+
+	slprintf (servername, sizeof(fstring)-1, "\\\\%s", cli->desthost);
+	strupper (servername);
+	slprintf (printername, sizeof(fstring)-1, "%s\\%s", servername, argv[1]);
+	fstrcpy  (user, cli->user_name);
+
+	/* get a printer handle */
+	result = cli_spoolss_open_printer_ex(cli, mem_ctx, printername, "",
+					     MAXIMUM_ALLOWED_ACCESS, servername, user, &pol);
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	opened_hnd = True;
+	
+	printf("%s\n", timestring(True));
+	
+	result = cli_spoolss_getprinter(cli, mem_ctx, &pol, 0, &ctr);
+	info = ctr.printers_0;
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+	printf("\tchange_id (before set)\t:[0x%x]\n", info->change_id);
+	
+
+	/* Get printer info */
+	result = cli_spoolss_setprinterdata(cli, mem_ctx, &pol, argv[2], argv[3]);
+	if (!NT_STATUS_IS_OK(result)) {
+		printf ("Unable to set [%s=%s]!\n", argv[2], argv[3]);
+		goto done;
+	}
+	printf("\tSetPrinterData succeeded [%s: %s]\n", argv[2], argv[3]);
+
+	result = cli_spoolss_getprinter(cli, mem_ctx, &pol, 0, &ctr);
+	info = ctr.printers_0;
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+	printf("\tchange_id (after set)\t:[0x%x]\n", info->change_id);
+	printf("%s\n", timestring(True));
+
+
+done:
+	/* cleanup */
+	if (opened_hnd)
+		cli_spoolss_close_printer(cli, mem_ctx, &pol);
 
 	return result;
 }
@@ -1200,7 +1267,8 @@ struct cmd_set spoolss_commands[] = {
 	{ "getprinter", 	cmd_spoolss_getprinter, 	PIPE_SPOOLSS, "Get printer info",                    "" },
 	{ "openprinter",	cmd_spoolss_open_printer_ex,	PIPE_SPOOLSS, "Open printer handle",                 "" },
 	{ "setdriver",		cmd_spoolss_setdriver,		PIPE_SPOOLSS, "Set printer driver",                  "" },
-	{ "getprintprocdir",	cmd_spoolss_getprintprocdir, PIPE_SPOOLSS, "Get print processor directory",          "" },
+	{ "getprintprocdir",	cmd_spoolss_getprintprocdir,    PIPE_SPOOLSS, "Get print processor directory",          "" },
+	{ "setprinterdata",	cmd_spoolss_setprinterdata,     PIPE_SPOOLSS, "Set REG_SZ printer data",          "" },
 
 	{ NULL }
 };
