@@ -51,8 +51,8 @@ PyObject *spoolss_enumports(PyObject *self, PyObject *args, PyObject *kw)
 	/* Parse parameters */
 
 	if (!PyArg_ParseTupleAndKeywords(args, kw, "s|iO!", kwlist, 
-					 &server, &level, &PyDict_Type, 
-					 &creds))
+					 &server, &creds, &level, 
+					 &PyDict_Type))
 		return NULL;
 	
 	if (server[0] == '\\' && server[1] == '\\')
