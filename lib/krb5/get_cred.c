@@ -237,9 +237,11 @@ krb5_get_kdc_cred(krb5_context context,
 
     memset(&rep, 0, sizeof(rep));
     if(decode_TGS_REP(resp.data, resp.length, &rep.part1, &len) == 0){
-	krb5_copy_creds_contents (context,
-				  in_creds,
-				  *out_creds);
+	ret = krb5_copy_creds_contents (context,
+					in_creds,
+					*out_creds);
+	if(ret)
+	    goto out;
 
 #if 0
 	krb5_copy_principal (context,
