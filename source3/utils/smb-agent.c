@@ -41,9 +41,9 @@ extern int DEBUGLEVEL;
 struct sock_redir
 {
 	int c;
+	int s;
 	int mid_offset;
-	struct cli_state *s;
-
+	struct cli_state *n;
 };
 
 static uint32 num_socks = 0;
@@ -57,11 +57,12 @@ static void sock_redir_free(struct sock_redir *sock)
 {
 	close(sock->c);
 	sock->c = -1;
-	if (sock->s != NULL)
+	if (sock->n != NULL)
 	{
-		cli_net_use_del(sock->s->desthost, &sock->s->usr,
+		sock->n->fd = sock->s;
+		cli_net_use_del(sock->n->desthost, &sock->n->usr,
 		                False, NULL);
-		sock->s = NULL;
+		sock->n = NULL;
 	}
 	free(sock);
 }
@@ -118,7 +119,7 @@ void free_sock_redir(void)
 /****************************************************************************
 create a new sockent state from user credentials
 ****************************************************************************/
-static struct sock_redir *sock_redir_get(int fd, struct cli_state *cli)
+static struct sock_redir *sock_redir_get(int fd)
 {
 	struct sock_redir *sock = (struct sock_redir*)malloc(sizeof(*sock));
 
@@ -130,7 +131,7 @@ static struct sock_redir *sock_redir_get(int fd, struct cli_state *cli)
 	ZERO_STRUCTP(sock);
 
 	sock->c = fd;
-	sock->s = cli;
+	sock->n = NULL;
 	sock->mid_offset = mid_offset;
 
 	DEBUG(10,("sock_redir_get:\tfd:\t%d\tmidoff:\t%d\n", fd, mid_offset));
@@ -141,10 +142,10 @@ static struct sock_redir *sock_redir_get(int fd, struct cli_state *cli)
 /****************************************************************************
 init sock state
 ****************************************************************************/
-static void sock_add(int fd, struct cli_state *cli)
+static void sock_add(int fd)
 {
 	struct sock_redir *sock;
-	sock = sock_redir_get(fd, cli);
+	sock = sock_redir_get(fd);
 	if (sock != NULL)
 	{
 		add_sock_to_array(&num_socks, &socks, sock);
@@ -272,16 +273,16 @@ static struct cli_state *init_client_connection(int c)
 
 	if (new_con)
 	{
-		struct cli_state *s;
-		s = cli_net_use_add(srv_name, &usr, False);
+		struct cli_state *n;
+		n = cli_net_use_add(srv_name, &usr, False);
 
-		if (s == NULL)
+		if (n == NULL)
 		{
 			DEBUG(0,("Unable to connect to %s\n", srv_name));
 			return NULL;
 		}
 		
-		mid_offset += MIN(MAX(s->max_mux, 1), MAX_MAX_MUX_LIMIT);
+		mid_offset += MIN(MAX(n->max_mux, 1), MAX_MAX_MUX_LIMIT);
 
 		if (mid_offset > 0xffff)
 		{
@@ -289,13 +290,13 @@ static struct cli_state *init_client_connection(int c)
 		}
 		DEBUG(10,("new mid offset: %d\n", mid_offset));
 
-		if (write(c, s, sizeof(*s)) < 0)
+		if (write(c, n, sizeof(*n)) < 0)
 		{
 			DEBUG(0,("Could not write connection down pipe.\n"));
 			cli_net_use_del(srv_name, &usr, False, NULL);
 			return NULL;
 		}
-		return s;
+		return n;
 	}
 	return NULL;
 }
@@ -324,31 +325,31 @@ static void filter_reply(char *buf, int moff)
 
 }
 
-static BOOL process_cli_sock(struct sock_redir **sock)
+static BOOL process_cli_sock(struct sock_redir *sock)
 {
-	struct cli_state *s = (*sock)->s;
-	if (s == NULL)
+	struct cli_state *n = sock->n;
+	if (n == NULL)
 	{
-		s = init_client_connection((*sock)->c);
-		if (s == NULL)
+		n = init_client_connection(sock->c);
+		if (n == NULL)
 		{
 			return False;
 		}
-		(*sock)->s = s;
+		sock->n = n;
 	}
 	else
 	{
-		if (!receive_smb((*sock)->c, packet, 0))
+		if (!receive_smb(sock->c, packet, 0))
 		{
 			DEBUG(0,("client closed connection\n"));
 			return False;
 		}
 
-		filter_reply(packet, (*sock)->mid_offset);
+		filter_reply(packet, sock->mid_offset);
 		/* ignore keep-alives */
 		if (CVAL(packet, 0) != 0x85)
 		{
-			if (!send_smb(s->fd, packet))
+			if (!send_smb(sock->s, packet))
 			{
 				DEBUG(0,("server is dead\n"));
 				return False;
@@ -392,16 +393,16 @@ static BOOL process_srv_sock(int fd)
 	for (i = 0; i < num_socks; i++)
 	{
 		int moff;
-		if (socks[i] == NULL || socks[i]->s == NULL)
+		if (socks[i] == NULL || socks[i]->n == NULL)
 		{
 			continue;
 		}
 		moff = socks[i]->mid_offset;
 		DEBUG(10,("list:\tfd:\t%d\tmid:\t%d\tmoff:\t%d\n",
-		           socks[i]->s->fd,
-		           socks[i]->s->mid,
+		           socks[i]->s,
+		           socks[i]->n->mid,
 		           moff));
-		if (smbmid != socks[i]->s->mid + moff)
+		if (smbmid != socks[i]->n->mid + moff)
 		{
 			continue;
 		}
@@ -490,9 +491,9 @@ static void start_agent(void)
 				FD_SET(fd, &fds);
 				maxfd = MAX(maxfd, fd);
 
-				if (socks[i]->s != NULL)
+				if (socks[i]->n != NULL)
 				{
-					fd = socks[i]->s->fd;
+					fd = socks[i]->s;
 					FD_SET(fd, &fds);
 					maxfd = MAX(fd, maxfd);
 				}
@@ -513,7 +514,7 @@ static void start_agent(void)
 			c = accept(s, (struct sockaddr*)&addr, &in_addrlen);
 			if (c != -1)
 			{
-				sock_add(c, NULL);
+				sock_add(c);
 			}
 		}
 
@@ -526,7 +527,7 @@ static void start_agent(void)
 			if (FD_ISSET(socks[i]->c, &fds))
 			{
 				FD_CLR(socks[i]->c, &fds);
-				if (!process_cli_sock(&socks[i]))
+				if (!process_cli_sock(socks[i]))
 				{
 					sock_redir_free(socks[i]);
 					socks[i] = NULL;
@@ -536,14 +537,14 @@ static void start_agent(void)
 			{
 				continue;
 			}
-			if (socks[i]->s == NULL)
+			if (socks[i]->n == NULL)
 			{
 				continue;
 			}
-			if (FD_ISSET(socks[i]->s->fd, &fds))
+			if (FD_ISSET(socks[i]->s, &fds))
 			{
-				FD_CLR(socks[i]->s->fd, &fds);
-				if (!process_srv_sock(socks[i]->s->fd))
+				FD_CLR(socks[i]->s, &fds);
+				if (!process_srv_sock(socks[i]->s))
 				{
 					sock_redir_free(socks[i]);
 					socks[i] = NULL;
