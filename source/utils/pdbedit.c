@@ -43,13 +43,13 @@
 #define BIT_DELETE	0x00080000
 #define BIT_ACCPOLICY	0x00100000
 #define BIT_ACCPOLVAL	0x00200000
-#define BIT_RESERV_6	0x00400000
+#define BIT_ACCTCTRL	0x00400000
 #define BIT_RESERV_7	0x00800000
 #define BIT_IMPORT	0x01000000
 #define BIT_EXPORT	0x02000000
 
 #define MASK_ALWAYS_GOOD	0x0000001F
-#define MASK_USER_GOOD		0x00001F00
+#define MASK_USER_GOOD		0x00401F00
 
 /*********************************************************
  Add all currently available users to another db
@@ -234,7 +234,7 @@ static int print_users_list (struct pdb_context *in, BOOL verbosity, BOOL smbpwd
 static int set_user_info (struct pdb_context *in, const char *username, 
 			  const char *fullname, const char *homedir, 
 			  const char *drive, const char *script, 
-			  const char *profile)
+			  const char *profile, const char *account_control)
 {
 	SAM_ACCOUNT *sam_pwent=NULL;
 	BOOL ret;
@@ -258,6 +258,21 @@ static int set_user_info (struct pdb_context *in, const char *username,
 		pdb_set_logon_script(sam_pwent, script, PDB_CHANGED);
 	if (profile)
 		pdb_set_profile_path (sam_pwent, profile, PDB_CHANGED);
+
+	if (account_control) {
+		uint16 types = ACB_NORMAL|ACB_MNS|ACB_DOMTRUST|ACB_WSTRUST|ACB_SVRTRUST;
+		uint16 newflag = pdb_decode_acct_ctrl(account_control);
+
+		if (newflag & types) {
+			fprintf(stderr, "Can only set [NDHLX] flags\n");
+			pdb_free_sam(&sam_pwent);
+			return -1;
+		}
+
+		pdb_set_acct_ctrl(sam_pwent,
+				  (pdb_get_acct_ctrl(sam_pwent) & types) | newflag,
+				  PDB_CHANGED);
+	}
 	
 	if (NT_STATUS_IS_OK(in->pdb_update_sam_account (in, sam_pwent)))
 		print_user_info (in, username, True, False);
@@ -461,6 +476,7 @@ int main (int argc, char **argv)
 	static char *backend_out = NULL;
 	static char *logon_script = NULL;
 	static char *profile_path = NULL;
+	static char *account_control = NULL;
 	static char *account_policy = NULL;
 	static long int account_policy_value = 0;
 	BOOL account_policy_value_set = False;
@@ -489,6 +505,7 @@ int main (int argc, char **argv)
 		{"export",	'e', POPT_ARG_STRING, &backend_out, 0, "export user accounts to this backend", NULL},
 		{"account-policy",	'P', POPT_ARG_STRING, &account_policy, 0,"value of an account policy (like maximum password age)",NULL},
 		{"value",       'V', POPT_ARG_LONG, &account_policy_value, 'V',"set the account policy to this value", NULL},
+		{"account-control",	'c', POPT_ARG_STRING, &account_control, 0, "Values of account control", NULL},
 		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_debug },
 		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_configfile },
 		{0,0,0,0}
@@ -537,6 +554,7 @@ int main (int argc, char **argv)
 			(modify_user ? BIT_MODIFY : 0) +
 			(add_user ? BIT_CREATE : 0) +
 			(delete_user ? BIT_DELETE : 0) +
+			(account_control ? BIT_ACCTCTRL : 0) +
 			(account_policy ? BIT_ACCPOLICY : 0) +
 			(account_policy_value_set ? BIT_ACCPOLVAL : 0) +
 			(backend_in ? BIT_IMPORT : 0) +
@@ -664,7 +682,7 @@ int main (int argc, char **argv)
 					      home_dir,
 					      home_drive,
 					      logon_script,
-					      profile_path);
+					      profile_path, account_control);
 		}
 	}
 
