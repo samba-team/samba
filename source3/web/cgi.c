@@ -321,7 +321,7 @@ static int cgi_handle_authorization(char *line)
 /***************************************************************************
 is this root?
   ***************************************************************************/
-BOOL is_root(void)
+BOOL am_root(void)
 {
 	if ((C_user) && (strcmp(C_user,"root") == 0)) {
 		return( True);
@@ -411,7 +411,7 @@ void cgi_setup(char *rootdir, int auth_required)
 		char *x;
 
 		/* Save the users name if available */
-		if ((x = getenv("REMOTE_USER"))!=NULL) {
+		if ((x = getenv("REMOTE_USER"))) {
 			C_user = strdup(x);
 		} else {
 			C_user = "";

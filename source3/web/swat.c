@@ -405,7 +405,7 @@ static void show_main_buttons(void)
 	image_link("Home", "", "images/home.gif");
 
 	/* Root gets full functionality */
-	if ( is_root() == True) {
+	if (am_root() == True) {
 		image_link("Globals", "globals", "images/globals.gif");
 		image_link("Shares", "shares", "images/shares.gif");
 		image_link("Printers", "printers", "images/printers.gif");
@@ -632,7 +632,7 @@ static BOOL talk_to_smbpasswd(char *old, char *new)
 			/*
 			 * smbpasswd requires a regular old user to send their old password 
 			 */
-			if ( is_root() == False) {
+			if (am_root() == False) {
 				n = (strlen(old) <= (MAX_STRINGLEN)) ? strlen(old) : (MAX_STRINGLEN);
 				strncpy( line, old, n);
 				line[n] = '\n'; n++; /* add carriage return */
@@ -727,7 +727,7 @@ static BOOL talk_to_smbpasswd(char *old, char *new)
 
 		
 		/* Root can do more */
-		if (is_root() == True) {
+		if (am_root() == True) {
 			if (cgi_variable(add_user_flag)) {
 				/* 
 				 * Add a user 
@@ -838,7 +838,6 @@ static BOOL become_id(uid_t uid,gid_t gid)
 ****************************************************************************/
 static void chg_passwd(void)
 {
-	char *s;
 	struct passwd *pass = NULL;
 	BOOL rslt;
 
@@ -855,7 +854,7 @@ static void chg_passwd(void)
 	if (!cgi_variable(disable_user_flag)) {
 
 		/* If current user is not root, make sure old password has been specified */
-		if ((is_root() == False) &&  (strlen( cgi_variable(old_pswd)) <= 0)) {
+		if ((am_root() == False) &&  (strlen( cgi_variable(old_pswd)) <= 0)) {
 			printf("<p> Must specify \"Old Password\" \n");
 			return;
 		}
@@ -875,7 +874,7 @@ static void chg_passwd(void)
 	}
 
 	/* Get the UID/GID of the user, and become that user  */
-	if (is_root() == False) {
+	if (am_root() == False) {
 		pass = Get_Pwnam(cgi_variable(user),True);
 		if (pass == NULL) {
 			printf("<p> User uid unknown     \n");
@@ -902,7 +901,7 @@ static void chg_passwd(void)
 
 
 	rslt = talk_to_smbpasswd( cgi_variable(old_pswd), cgi_variable(new_pswd));
-	if (is_root() == False) {
+	if (am_root() == False) {
 		if (rslt == True) {
 			printf("<p> The passwd for '%s' has been changed. \n",cgi_variable(user));
 		} else {
@@ -919,7 +918,6 @@ static void chg_passwd(void)
 static void passwd_page(void)
 {
 	char *new_name;
-	int i;
 
 	printf("<H2>Password Manager</H2>\n");
 
@@ -941,7 +939,7 @@ static void passwd_page(void)
 	}
 
 	printf("<p> User Name        : <input type=text size=30 name=%s value=%s> \n", user, new_name);
-	if (is_root() == False) {
+	if (am_root() == False) {
 		printf("<p> Old Password: <input type=password size=30 name=%s>\n",old_pswd);
 	}
 	printf("<p> New Password: <input type=password size=30 name=%s>\n",new_pswd);
@@ -950,7 +948,7 @@ static void passwd_page(void)
 	printf("</select></td></tr><p>");
 	printf("<tr><td>");
 	printf("<input type=submit name=%s value=\"Change Password\">", chg_passwd_flag);
-	if (is_root() == True) {
+	if (am_root() == True) {
 		printf("<input type=submit name=%s value=\"Add New User\">", add_user_flag);
 		printf("<input type=submit name=%s value=\"Disable User\">", disable_user_flag);
 	}
@@ -1102,7 +1100,7 @@ static void printers_page(void)
 	page = cgi_pathinfo();
 
 	/* Root gets full functionality */
-	if ( is_root() == True) {
+	if (am_root() == True) {
 		if (strcmp(page, "globals")==0) {
 			globals_page();
 		} else if (strcmp(page,"shares")==0) {
