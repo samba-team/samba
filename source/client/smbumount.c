@@ -39,7 +39,7 @@ umount_ok(const char *mount_point)
 	/* we set O_NOFOLLOW to prevent users playing games with symlinks to
 	   umount filesystems they don't own */
         int fid = open(mount_point, O_RDONLY|O_NOFOLLOW, 0);
-        __kernel_uid_t mount_uid;
+        __kernel_uid32_t mount_uid;
 	
         if (fid == -1) {
                 fprintf(stderr, "Could not open %s: %s\n",
@@ -47,10 +47,14 @@ umount_ok(const char *mount_point)
                 return -1;
         }
         
-        if (ioctl(fid, SMB_IOC_GETMOUNTUID, &mount_uid) != 0) {
-                fprintf(stderr, "%s probably not smb-filesystem\n",
-                        mount_point);
-                return -1;
+        if (ioctl(fid, SMB_IOC_GETMOUNTUID32, &mount_uid) != 0) {
+                __kernel_uid_t mount_uid16;
+                if (ioctl(fid, SMB_IOC_GETMOUNTUID, &mount_uid16) != 0) {
+                        fprintf(stderr, "%s probably not smb-filesystem\n",
+                                mount_point);
+                        return -1;
+                }
+                mount_uid = mount_uid16;
         }
 
         if ((getuid() != 0)

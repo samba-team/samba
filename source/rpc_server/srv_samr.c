@@ -785,6 +785,7 @@ static BOOL api_samr_set_userinfo(pipes_struct *p)
 	if (!samr_io_q_set_userinfo("", &q_u, data, 0)) {
 		DEBUG(0,("api_samr_set_userinfo: Unable to unmarshall SAMR_Q_SET_USERINFO.\n"));
 		/* Fix for W2K SP2 */
+		/* what is that status-code ? - gd */
 		if (q_u.switch_value == 0x1a) {
 			setup_fault_pdu(p, NT_STATUS(0x1c000006));
 			return True;

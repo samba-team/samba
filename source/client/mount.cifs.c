@@ -290,7 +290,11 @@ static int parse_options(char * options, int * filesys_flags)
 			value++;
 		}
 
-		if (strncmp(data, "user", 4) == 0) {
+		if (strncmp(data, "users",5) == 0) {
+			if(!value || !*value) {
+				strncpy(data,",,,,,",5);
+			}
+		} else if (strncmp(data, "user", 4) == 0) {
 			if (!value || !*value) {
 				if(data[4] == '\0') {
 					if(verboseflag)

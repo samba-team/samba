@@ -230,7 +230,7 @@ typedef struct nttime_info
 #define ACB_MNS        0x0020  /* 1 = MNS logon user account */
 #define ACB_DOMTRUST   0x0040  /* 1 = Interdomain trust account */
 #define ACB_WSTRUST    0x0080  /* 1 = Workstation trust account */
-#define ACB_SVRTRUST   0x0100  /* 1 = Server trust account */
+#define ACB_SVRTRUST   0x0100  /* 1 = Server trust account (BDC) */
 #define ACB_PWNOEXP    0x0200  /* 1 = User password does not expire */
 #define ACB_AUTOLOCK   0x0400  /* 1 = Account auto locked */
  
@@ -1075,7 +1075,7 @@ struct bitmap {
 #define FILE_GENERIC_READ (STANDARD_RIGHTS_READ_ACCESS|FILE_READ_DATA|FILE_READ_ATTRIBUTES|\
 							FILE_READ_EA|SYNCHRONIZE_ACCESS)
 
-#define FILE_GENERIC_WRITE (STANDARD_RIGHTS_WRITE_ACCESS|FILE_WRITE_DATA|FILE_WRITE_ATTRIBUTES|\
+#define FILE_GENERIC_WRITE (STD_RIGHT_READ_CONTROL_ACCESS|FILE_WRITE_DATA|FILE_WRITE_ATTRIBUTES|\
 							FILE_WRITE_EA|FILE_APPEND_DATA|SYNCHRONIZE_ACCESS)
 
 #define FILE_GENERIC_EXECUTE (STANDARD_RIGHTS_EXECUTE_ACCESS|\

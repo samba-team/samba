@@ -61,7 +61,6 @@ static int smb_create_user(const char *domain, const char *unix_username, const 
 
 void auth_add_user_script(const char *domain, const char *username)
 {
-	uint32 rid;
 	/*
 	 * User validated ok against Domain controller.
 	 * If the admin wants us to try and create a UNIX
@@ -79,7 +78,6 @@ void auth_add_user_script(const char *domain, const char *username)
 		   
 		if ( !winbind_create_user(username, NULL) ) {
 			DEBUG(5,("auth_add_user_script: winbindd_create_user() failed\n"));
-			rid = 0;
 		}
 	}
 }
@@ -1515,7 +1513,19 @@ BOOL nt_token_check_domain_rid( NT_USER_TOKEN *token, uint32 rid )
 {
 	DOM_SID domain_sid;
 
-	sid_copy( &domain_sid, get_global_sam_sid() );
+	/* if we are a domain member, the get the domain SID, else for 
+	   a DC or standalone server, use our own SID */
+
+	if ( lp_server_role() == ROLE_DOMAIN_MEMBER ) {
+		if ( !secrets_fetch_domain_sid( lp_workgroup(), &domain_sid ) ) {
+			DEBUG(1,("nt_token_check_domain_rid: Cannot lookup SID for domain [%s]\n",
+				lp_workgroup()));
+			return False;
+		}
+	} 
+	else
+		sid_copy( &domain_sid, get_global_sam_sid() );
+
 	sid_append_rid( &domain_sid, rid );
 	
 	return nt_token_check_sid( &domain_sid, token );\

@@ -4,7 +4,7 @@
    Copyright Tim Potter <tpot@samba.org> 2000
    Copyright Andrew Bartlett <abartlet@samba.org> 2002
 
-   largely based on pam_userdb by Christian Gafton <gafton@redhat.com> 
+   largely based on pam_userdb by Cristian Gafton <gafton@redhat.com> 
    also contains large slabs of code from pam_unix by Elliot Lee <sopwith@redhat.com>
    (see copyright below for full details)
 */
@@ -696,7 +696,7 @@ PAM_EXTERN int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 		lctrl = ctrl;
 		
 		if (on(WINBIND_USE_AUTHTOK_ARG, lctrl)) {
-			ctrl = WINBIND_USE_FIRST_PASS_ARG | lctrl;
+			lctrl |= WINBIND_USE_FIRST_PASS_ARG;
 		}
 		retry = 0;
 		retval = PAM_AUTHTOK_ERR;

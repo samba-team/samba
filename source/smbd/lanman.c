@@ -32,8 +32,6 @@
 #endif
 #define CHECK_TYPES 0
 
-extern fstring local_machine;
-
 #define NERR_Success 0
 #define NERR_badpass 86
 #define NERR_notsupported 50
@@ -2372,7 +2370,7 @@ static BOOL api_RNetServerGetInfo(connection_struct *conn,uint16 vuid, char *par
   p = *rdata;
   p2 = p + struct_len;
   if (uLevel != 20) {
-    srvstr_push(NULL, p,local_machine,16, 
+    srvstr_push(NULL, p,get_local_machine_name(),16, 
 		STR_ASCII|STR_UPPER|STR_TERMINATE);
   }
   p += 16;
@@ -2387,7 +2385,7 @@ static BOOL api_RNetServerGetInfo(connection_struct *conn,uint16 vuid, char *par
 
       if ((count=get_server_info(SV_TYPE_ALL,&servers,lp_workgroup()))>0) {
 	for (i=0;i<count;i++) {
-	  if (strequal(servers[i].name,local_machine)) {
+	  if (strequal(servers[i].name,get_local_machine_name())) {
 	    servertype = servers[i].type;
 	    push_ascii(comment,servers[i].comment,sizeof(pstring),STR_TERMINATE);	    
 	  }
@@ -2460,7 +2458,7 @@ static BOOL api_NetWkstaGetInfo(connection_struct *conn,uint16 vuid, char *param
 
 
   SIVAL(p,0,PTR_DIFF(p2,*rdata)); /* host name */
-  pstrcpy(p2,local_machine);
+  pstrcpy(p2,get_local_machine_name());
   strupper_m(p2);
   p2 = skip_string(p2,1);
   p += 4;
@@ -2881,7 +2879,7 @@ static BOOL api_WWkstaUserLogon(connection_struct *conn,uint16 vuid, char *param
     {
       fstring mypath;
       fstrcpy(mypath,"\\\\");
-      fstrcat(mypath,local_machine);
+      fstrcat(mypath,get_local_machine_name());
       strupper_m(mypath);
       PACKS(&desc,"z",mypath); /* computer */
     }

@@ -29,8 +29,6 @@
 
 extern int max_send;
 
-extern fstring local_machine;
-
 #define NERR_notsupported 50
 
 extern int smb_read_error;
@@ -382,6 +380,7 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 	unsigned int dscnt = SVAL(inbuf,smb_vwv11);
 	unsigned int dsoff = SVAL(inbuf,smb_vwv12);
 	unsigned int suwcnt = CVAL(inbuf,smb_vwv13);
+	fstring local_machine_name;
 	START_PROFILE(SMBtrans);
 
 	memset(name, '\0',sizeof(name));
@@ -543,9 +542,11 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 	 * WinCE wierdness....
 	 */
 
-	if (name[0] == '\\' && (StrnCaseCmp(&name[1],local_machine, strlen(local_machine)) == 0) &&
-			(name[strlen(local_machine)+1] == '\\'))
-		name_offset = strlen(local_machine)+1;
+	fstrcpy( local_machine_name, get_local_machine_name() );
+
+	if (name[0] == '\\' && (StrnCaseCmp(&name[1],local_machine_name, strlen(local_machine_name)) == 0) &&
+			(name[strlen(local_machine_name)+1] == '\\'))
+		name_offset = strlen(local_machine_name)+1;
 
 	if (strnequal(&name[name_offset], "\\PIPE", strlen("\\PIPE"))) {
 		name_offset += strlen("\\PIPE");
