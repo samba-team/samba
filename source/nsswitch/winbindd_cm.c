@@ -446,21 +446,6 @@ static BOOL add_one_dc_unique(TALLOC_CTX *mem_ctx, const char *domain_name,
 	return True;
 }
 
-static BOOL add_string_to_array(TALLOC_CTX *mem_ctx,
-				const char *str, char ***array, int *num)
-{
-	char *dup_str = talloc_strdup(mem_ctx, str);
-
-	*array = TALLOC_REALLOC_ARRAY(mem_ctx, *array, char *, (*num)+1);
-
-	if ((*array == NULL) || (dup_str == NULL))
-		return False;
-
-	(*array)[*num] = dup_str;
-	*num += 1;
-	return True;
-}
-
 static BOOL add_sockaddr_to_array(TALLOC_CTX *mem_ctx,
 				  struct in_addr ip, uint16 port,
 				  struct sockaddr_in **addrs, int *num)

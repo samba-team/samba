@@ -2300,6 +2300,33 @@ void init_q_enum_acct_rights(LSA_Q_ENUM_ACCT_RIGHTS *q_q,
 }
 
 /*******************************************************************
+********************************************************************/
+NTSTATUS init_r_enum_acct_rights( LSA_R_ENUM_ACCT_RIGHTS *r_u, PRIVILEGE_SET *privileges )
+{
+	uint32 i;
+	char *privname;
+	const char **privname_array = NULL;
+	int num_priv = 0;
+
+	for ( i=0; i<privileges->count; i++ ) {
+		privname = luid_to_privilege_name( &privileges->set[i].luid );
+		if ( privname ) {
+			if ( !add_string_to_array( get_talloc_ctx(), privname, &privname_array, &num_priv ) ) 
+				return NT_STATUS_NO_MEMORY;
+		}
+	}
+
+	if ( num_priv ) {
+		if ( !init_unistr2_array( &r_u->rights, num_priv, privname_array ) ) 
+			return NT_STATUS_NO_MEMORY;
+
+		r_u->count = num_priv;
+	}
+
+	return NT_STATUS_OK;
+}
+
+/*******************************************************************
 reads or writes a LSA_Q_ENUM_ACCT_RIGHTS structure.
 ********************************************************************/
 BOOL lsa_io_q_enum_acct_rights(const char *desc, LSA_Q_ENUM_ACCT_RIGHTS *q_q, prs_struct *ps, int depth)
