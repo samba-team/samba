@@ -195,6 +195,7 @@ get_cred_kdc(krb5_context context, krb5_ccache id, krb5_kdc_flags flags,
     size_t len;
     
     krb5_generate_random_block(&nonce, sizeof(nonce));
+    nonce &= 0xffffffff;
     
     ret = init_tgs_req (context,
 			id,
