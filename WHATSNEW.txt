@@ -38,11 +38,10 @@ Major new features:
     completely rewritten. An internal database now stores mangling maps
     persistently. This needs lots of testing.
 
-5)  New "net" command. A new "net" command has been added. It is
-    somewhat similar to the "net" command in windows. Eventually we 
-    plan to replace a bunch of other utilities (such as smbpasswd) 
-    with subcommands in "net", at the moment only a few things are
-    implemented.
+5)  A new "net" command has been added. It is somewhat similar to 
+    the "net" command in windows. Eventually we plan to replace 
+    numerous other utilities (such as smbpasswd) with subcommands 
+    in "net".
 
 6)  Samba now negotiates NT-style status32 codes on the wire. This
     improves error handling a lot.
