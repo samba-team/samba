@@ -43,7 +43,7 @@ NTSTATUS cli_request_destroy(struct cli_request *req)
 	if (req->transport) {
 		/* remove it from the list of pending requests (a null op if
 		   its not in the list) */
-		DLIST_REMOVE(req->transport->pending_requests, req);
+		DLIST_REMOVE(req->transport->pending_recv, req);
 	}
 
 	/* ahh, its so nice to destroy a complex structure in such a
@@ -79,6 +79,7 @@ struct cli_request *cli_request_setup_nonsmb(struct cli_transport *transport, ui
 	ZERO_STRUCTP(req);
 
 	/* setup the request context */
+	req->state = CLI_REQUEST_INIT;
 	req->mem_ctx = mem_ctx;
 	req->transport = transport;
 	req->session = NULL;
@@ -266,32 +267,20 @@ static void cli_req_grow_data(struct cli_request *req, uint_t new_size)
 	SSVAL(req->out.vwv, VWV(req->out.wct), new_size);
 }
 
+
 /*
   send a message
 */
 BOOL cli_request_send(struct cli_request *req)
 {
-	uint_t ret;
-
 	if (IVAL(req->out.buffer, 0) == 0) {
 		_smb_setlen(req->out.buffer, req->out.size - NBT_HDR_SIZE);
 	}
 
 	cli_request_calculate_sign_mac(req);
 
-	ret = cli_sock_write(req->transport->socket, req->out.buffer, req->out.size);
+	cli_transport_send(req);
 
-	if (req->out.size != ret) {
-		req->transport->error.etype = ETYPE_SOCKET;
-		req->transport->error.e.socket_error = SOCKET_WRITE_ERROR;
-		DEBUG(0,("Error writing %d bytes to server - %s\n",
-			 (int)req->out.size, strerror(errno)));
-		return False;
-	}
-
-	/* add it to the list of pending requests */
-	DLIST_ADD(req->transport->pending_requests, req);
-	
 	return True;
 }
 
@@ -306,17 +295,8 @@ BOOL cli_request_receive(struct cli_request *req)
 	if (!req) return False;
 
 	/* keep receiving packets until this one is replied to */
-	while (!req->in.buffer) {
-		if (!cli_transport_select(req->transport)) {
-			req->status = NT_STATUS_UNSUCCESSFUL;
-			return False;
-		}
-
-		if (!cli_request_receive_next(req->transport)) {
-			cli_transport_dead(req->transport);
-			req->status = NT_STATUS_UNEXPECTED_NETWORK_ERROR;
-			return False;
-		}
+	while (req->state <= CLI_REQUEST_RECV) {
+		event_loop_once(req->transport->event.ctx);
 	}
 
 	return True;
@@ -327,7 +307,7 @@ BOOL cli_request_receive(struct cli_request *req)
   handle oplock break requests from the server - return True if the request was
   an oplock break
 */
-static BOOL handle_oplock_break(struct cli_transport *transport, uint_t len, const char *hdr, const char *vwv)
+BOOL handle_oplock_break(struct cli_transport *transport, uint_t len, const char *hdr, const char *vwv)
 {
 	/* we must be very fussy about what we consider an oplock break to avoid
 	   matching readbraw replies */
@@ -349,158 +329,6 @@ static BOOL handle_oplock_break(struct cli_transport *transport, uint_t len, con
 
 	return True;
 }
-
-
-/*
-  receive an async message from the server
-  this function assumes that the caller already knows that the socket is readable
-  and that there is a packet waiting
-
-  The packet is not actually returned by this function, instead any
-  registered async message handlers are called
-
-  return True if a packet was successfully received and processed
-  return False if the socket appears to be dead
-*/
-BOOL cli_request_receive_next(struct cli_transport *transport)
-{
-	BOOL ret;
-	int len;
-	char header[NBT_HDR_SIZE];
-	char *buffer, *hdr, *vwv;
-	TALLOC_CTX *mem_ctx;
-	struct cli_request *req;
-	uint16_t wct, mid = 0;
-
-	len = cli_sock_read(transport->socket, header, 4);
-	if (len != 4) {
-		return False;
-	}
-	
-	len = smb_len(header);
-
-	mem_ctx = talloc_init("cli_request_receive_next");
-	
-	/* allocate the incoming buffer at the right size */
-	buffer = talloc(mem_ctx, len+NBT_HDR_SIZE);
-	if (!buffer) {
-		talloc_destroy(mem_ctx);
-		return False;
-	}
-
-	/* fill in the already received header */
-	memcpy(buffer, header, NBT_HDR_SIZE);
-
-	ret = cli_sock_read(transport->socket, buffer + NBT_HDR_SIZE, len);
-	/* If the server is not responding, note that now */
-	if (ret != len) {
-		return False;
-	}
-
-	hdr = buffer+NBT_HDR_SIZE;
-	vwv = hdr + HDR_VWV;
-
-	/* see if it could be an oplock break request */
-	if (handle_oplock_break(transport, len, hdr, vwv)) {
-		goto done;
-	}
-
-	/* at this point we need to check for a readbraw reply, as these can be any length */
-	if (transport->readbraw_pending) {
-		transport->readbraw_pending = 0;
-
-		/* it must match the first entry in the pending queue as the client is not allowed
-		   to have outstanding readbraw requests */
-		req = transport->pending_requests;
-		if (!req) goto done;
-
-		req->in.buffer = buffer;
-		talloc_steal(mem_ctx, req->mem_ctx, buffer);
-		req->in.size = len + NBT_HDR_SIZE;
-		req->in.allocated = req->in.size;
-		goto async;
-	}
-
-	if (len >= MIN_SMB_SIZE) {
-		/* extract the mid for matching to pending requests */
-		mid = SVAL(hdr, HDR_MID);
-		wct = CVAL(hdr, HDR_WCT);
-	}
-
-	/* match the incoming request against the list of pending requests */
-	for (req=transport->pending_requests; req; req=req->next) {
-		if (req->mid == mid) break;
-	}
-
-	if (!req) {
-		DEBUG(3,("Discarding unmatched reply with mid %d\n", mid));
-		goto done;
-	}
-
-	/* fill in the 'in' portion of the matching request */
-	req->in.buffer = buffer;
-	talloc_steal(mem_ctx, req->mem_ctx, buffer);
-	req->in.size = len + NBT_HDR_SIZE;
-	req->in.allocated = req->in.size;
-
-	/* handle non-SMB replies */
-	if (req->in.size < NBT_HDR_SIZE + MIN_SMB_SIZE) {
-		goto done;
-	}
-
-	if (req->in.size < NBT_HDR_SIZE + MIN_SMB_SIZE + VWV(wct)) {
-		DEBUG(2,("bad reply size for mid %d\n", mid));
-		req->status = NT_STATUS_UNSUCCESSFUL;
-		goto done;
-	}
-
-	req->in.hdr = hdr;
-	req->in.vwv = vwv;
-	req->in.wct = wct;
-	if (req->in.size >= NBT_HDR_SIZE + MIN_SMB_SIZE + VWV(wct)) {
-		req->in.data = req->in.vwv + VWV(wct) + 2;
-		req->in.data_size = SVAL(req->in.vwv, VWV(wct));
-		if (req->in.size < NBT_HDR_SIZE + MIN_SMB_SIZE + VWV(wct) + req->in.data_size) {
-			DEBUG(3,("bad data size for mid %d\n", mid));
-			/* blergh - w2k3 gives a bogus data size values in some
-			   openX replies */
-			req->in.data_size = req->in.size - (NBT_HDR_SIZE + MIN_SMB_SIZE + VWV(wct));
-		}
-	}
-	req->in.ptr = req->in.data;
-	req->flags2 = SVAL(req->in.hdr, HDR_FLG2);
-
-	if (!(req->flags2 & FLAGS2_32_BIT_ERROR_CODES)) {
-		transport->error.etype = ETYPE_DOS;
-		transport->error.e.dos.eclass = CVAL(req->in.hdr,HDR_RCLS);
-		transport->error.e.dos.ecode = SVAL(req->in.hdr,HDR_ERR);
-		req->status = dos_to_ntstatus(transport->error.e.dos.eclass, 
-					      transport->error.e.dos.ecode);
-	} else {
-		transport->error.etype = ETYPE_NT;
-		transport->error.e.nt_status = NT_STATUS(IVAL(req->in.hdr, HDR_RCLS));
-		req->status = transport->error.e.nt_status;
-	}
-
-	if (!cli_request_check_sign_mac(req)) {
-		transport->error.etype = ETYPE_SOCKET;
-		transport->error.e.socket_error = SOCKET_READ_BAD_SIG;
-		return False;
-	};
-
-async:
-	/* if this request has an async handler then call that to
-	   notify that the reply has been received. This might destroy
-	   the request so it must happen last */
-	if (req->async.fn) {
-		req->async.fn(req);
-	}
-
-done:
-	talloc_destroy(mem_ctx);
-	return True;
-}
-
 
 /*
   wait for a reply to be received for a packet that just returns an error

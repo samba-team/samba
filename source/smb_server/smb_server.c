@@ -745,6 +745,7 @@ static void smbsrv_recv(struct server_connection *conn, time_t t, uint16_t flags
 
 	req = receive_smb_request(smb_conn);
 	if (!req) {
+		conn->event.fde->flags = 0;
 		smbsrv_terminate_connection(smb_conn, "receive error");
 		return;
 	}

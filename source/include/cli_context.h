@@ -134,7 +134,7 @@ struct cli_transport {
 	uint_t readbraw_pending:1;
 	
 	/* an idle function - if this is defined then it will be
-	   called once every period milliseconds while we are waiting
+	   called once every period seconds while we are waiting
 	   for a packet */
 	struct {
 		void (*func)(struct cli_transport *, void *);
@@ -151,7 +151,11 @@ struct cli_transport {
 				uint16_t ecode;
 			} dos;
 			NTSTATUS nt_status;
-			enum socket_error socket_error;
+			enum {SOCKET_READ_TIMEOUT,
+			      SOCKET_READ_EOF,
+			      SOCKET_READ_ERROR,
+			      SOCKET_WRITE_ERROR,
+			      SOCKET_READ_BAD_SIG} socket_error;
 			uint_t nbt_error;
 		} e;
 	} error;
@@ -164,12 +168,30 @@ struct cli_transport {
 		void *private;
 	} oplock;
 
-	/* a list of async requests that are pending on this connection */
-	struct cli_request *pending_requests;
+	/* a list of async requests that are pending for send on this connection */
+	struct cli_request *pending_send;
+
+	/* a list of async requests that are pending for receive on this connection */
+	struct cli_request *pending_recv;
 
 	/* remember the called name - some sub-protocols require us to
 	   know the server name */
 	struct nmb_name called;
+
+	/* a buffer for partially received SMB packets. */
+	struct {
+		uint8_t header[NBT_HDR_SIZE];
+		size_t req_size;
+		size_t received;
+		uint8_t *buffer;
+	} recv_buffer;
+
+	/* the event handle for waiting for socket IO */
+	struct {
+		struct event_context *ctx;
+		struct fd_event *fde;
+		struct timed_event *te;
+	} event;
 };
 
 /* this is the context for the user */
@@ -216,6 +238,15 @@ struct cli_tree {
 };
 
 
+/*
+  a client request moves between the following 4 states.
+*/
+enum cli_request_state {CLI_REQUEST_INIT, /* we are creating the request */
+			CLI_REQUEST_SEND, /* the request is in the outgoing socket Q */
+			CLI_REQUEST_RECV, /* we are waiting for a matching reply */
+			CLI_REQUEST_DONE, /* the request is finished */
+			CLI_REQUEST_ERROR}; /* a packet or transport level error has occurred */
+
 /* the context for a single SMB request. This is passed to any request-context 
  * functions (similar to context.h, the server version).
  * This will allow requests to be multi-threaded. */
@@ -225,6 +256,9 @@ struct cli_request {
 
 	/* a talloc context for the lifetime of this request */
 	TALLOC_CTX *mem_ctx;
+	
+	/* each request is in one of 4 possible states */
+	enum cli_request_state state;
 	
 	/* a request always has a transport context, nearly always has
 	   a session context and usually has a tree context */
