@@ -864,7 +864,7 @@ BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 
 	for (i = 0; i < rpc_lookup_size; i++) {
 	        if (strequal(rpc_lookup[i].pipe.clnt, p->name)) {
-                  DEBUG(0, ("api_pipe_bind_req: \\PIPE\\%s -> \\PIPE\\%s\n",
+                  DEBUG(3, ("api_pipe_bind_req: \\PIPE\\%s -> \\PIPE\\%s\n",
                             rpc_lookup[i].pipe.clnt, rpc_lookup[i].pipe.srv));
                   fstrcpy(p->pipe_srv_name, rpc_lookup[i].pipe.srv);
                   break;
@@ -889,7 +889,7 @@ BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 
                 for (i = 0; i < rpc_lookup_size; i++) {
                        if (strequal(rpc_lookup[i].pipe.clnt, p->name)) {
-                               DEBUG(0, ("api_pipe_bind_req: \\PIPE\\%s -> \\PIPE\\%s\n",
+                               DEBUG(3, ("api_pipe_bind_req: \\PIPE\\%s -> \\PIPE\\%s\n",
                                          rpc_lookup[i].pipe.clnt, rpc_lookup[i].pipe.srv));
                                fstrcpy(p->pipe_srv_name, rpc_lookup[i].pipe.srv);
                                break;
@@ -1362,8 +1362,8 @@ BOOL api_rpcTNP(pipes_struct *p, const char *rpc_name,
 
 	offset1 = prs_offset(&p->out_data.rdata);
 
-        fprintf(stderr, "api_rpc_cmds[%d].fn == %p\n", 
-                fn_num, api_rpc_cmds[fn_num].fn);
+        DEBUG(6, ("api_rpc_cmds[%d].fn == %p\n", 
+                fn_num, api_rpc_cmds[fn_num].fn));
 	/* do the actual command */
 	if(!api_rpc_cmds[fn_num].fn(p)) {
 		DEBUG(0,("api_rpcTNP: %s: %s failed.\n", rpc_name, api_rpc_cmds[fn_num].name));
