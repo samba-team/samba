@@ -548,6 +548,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	uint32 create_disposition = IVAL(inbuf,smb_ntcreate_CreateDisposition);
 	uint32 create_options = IVAL(inbuf,smb_ntcreate_CreateOptions);
 	uint16 root_dir_fid = (uint16)IVAL(inbuf,smb_ntcreate_RootDirectoryFid);
+	SMB_OFF_T allocation_size = 0;
 	int smb_ofun;
 	int smb_open_mode;
 	int smb_attr = (file_attributes & SAMBA_ATTRIBUTES_MASK);
@@ -571,7 +572,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 file_attributes = 0x%x, share_access = 0x%x, create_disposition = 0x%x \
 create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attributes,
 			share_access, create_disposition,
-			root_dir_fid, create_options ));
+			create_options, root_dir_fid ));
 
 	/* If it's an IPC, use the pipe handler. */
 
@@ -805,6 +806,22 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 		return ERROR_DOS(ERRDOS,ERRnoaccess);
 	} 
 	
+	/* Save the requested allocation size. */
+	allocation_size = IVAL(inbuf,smb_ntcreate_AllocationSize);
+#ifdef LARGE_SMB_OFF_T
+	allocation_size |= (((SMB_OFF_T)IVAL(inbuf,smb_ntcreate_AllocationSize + 4)) << 32);
+#endif
+	if (allocation_size && (allocation_size > file_len)) {
+		fsp->initial_allocation_size = SMB_ROUNDUP(allocation_size,SMB_ROUNDUP_ALLOCATION_SIZE);
+		if (vfs_allocate_file_space(fsp, fsp->initial_allocation_size) == -1) {
+			close_file(fsp,False);
+			END_PROFILE(SMBntcreateX);
+			return ERROR_NT(NT_STATUS_DISK_FULL);
+		}
+	} else {
+		fsp->initial_allocation_size = SMB_ROUNDUP(file_len,SMB_ROUNDUP_ALLOCATION_SIZE);
+	}
+
 	/* 
 	 * If the caller set the extended oplock request bit
 	 * and we granted one (by whatever means) - set the
@@ -869,7 +886,7 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 	p += 8;
 	SIVAL(p,0,fmode); /* File Attributes. */
 	p += 4;
-	SOFF_T(p, 0, get_allocation_size(&sbuf));
+	SOFF_T(p, 0, get_allocation_size(fsp,&sbuf));
 	p += 8;
 	SOFF_T(p,0,file_len);
 	p += 12;
@@ -1045,6 +1062,7 @@ static int call_nt_transact_create(connection_struct *conn,
 	uint32 create_options;
 	uint32 sd_len;
 	uint16 root_dir_fid;
+	SMB_OFF_T allocation_size = 0;
 	int smb_ofun;
 	int smb_open_mode;
 	int smb_attr;
@@ -1282,6 +1300,22 @@ static int call_nt_transact_create(connection_struct *conn,
 	
 	restore_case_semantics(file_attributes);
 
+	/* Save the requested allocation size. */
+	allocation_size = IVAL(params,12);
+#ifdef LARGE_SMB_OFF_T
+	allocation_size |= (((SMB_OFF_T)IVAL(params,16)) << 32);
+#endif
+	if (allocation_size && (allocation_size > file_len)) {
+		fsp->initial_allocation_size = SMB_ROUNDUP(allocation_size,SMB_ROUNDUP_ALLOCATION_SIZE);
+		if (vfs_allocate_file_space(fsp, fsp->initial_allocation_size) == -1) {
+			close_file(fsp,False);
+			END_PROFILE(SMBntcreateX);
+			return ERROR_NT(NT_STATUS_DISK_FULL);
+		}
+	} else {
+		fsp->initial_allocation_size = SMB_ROUNDUP(file_len,SMB_ROUNDUP_ALLOCATION_SIZE);
+	}
+
 	/* Realloc the size of parameters and data we will return */
 	params = Realloc(*ppparams, 69);
 	if(params == NULL)
@@ -1325,7 +1359,7 @@ static int call_nt_transact_create(connection_struct *conn,
 	p += 8;
 	SIVAL(p,0,fmode); /* File Attributes. */
 	p += 4;
-	SOFF_T(p, 0, get_allocation_size(&sbuf));
+	SOFF_T(p, 0, get_allocation_size(fsp,&sbuf));
 	p += 8;
 	SOFF_T(p,0,file_len);
 
