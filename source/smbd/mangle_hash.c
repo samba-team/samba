@@ -831,7 +831,7 @@ static void mangle_name_83( char *s)
  *
  * ****************************************************************************
  */
-static BOOL name_map_mangle(char *OutName, BOOL need83, BOOL cache83)
+static void name_map_mangle(char *OutName, BOOL need83, BOOL cache83)
 {
 	DEBUG(5,("name_map_mangle( %s, need83 = %s, cache83 = %s )\n", OutName,
 		need83 ? "True" : "False", cache83 ? "True" : "False" ));
@@ -858,7 +858,6 @@ static BOOL name_map_mangle(char *OutName, BOOL need83, BOOL cache83)
 	}
 
 	DEBUG(5,("name_map_mangle() ==> [%s]\n", OutName));
-	return(True);
 }
 
 /*

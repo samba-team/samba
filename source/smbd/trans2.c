@@ -680,8 +680,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			SIVAL(p,0,0); p += 4;
 			if (!was_8_3) {
 				fstrcpy(p+2,fname);
-				if(!mangle_map(p+2,True,True,SNUM(conn)))
-					(p+2)[12] = 0; 
+				mangle_map(p+2,True,True,SNUM(conn));
 				strupper(p+2);
 				SSVAL(p, 0, strlen(p+2));
 			} else {
@@ -1817,8 +1816,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 		pstrcpy(short_name,p);
 		/* Mangle if not already 8.3 */
 		if(!mangle_is_8_3(short_name, True)) {
-			if(!mangle_map(short_name,True,True,SNUM(conn)))
-				*short_name = '\0';
+			mangle_map(short_name,True,True,SNUM(conn));
 		}
 		strupper(short_name);
 		SSVAL(outbuf,smb_flg2,SVAL(outbuf,smb_flg2)|FLAGS2_UNICODE_STRINGS);

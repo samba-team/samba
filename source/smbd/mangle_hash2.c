@@ -471,7 +471,7 @@ static BOOL is_legal_name(const char *name)
 
   the name parameter must be able to hold 13 bytes
 */
-static BOOL name_map(char *name, BOOL need83, BOOL cache83)
+static void name_map(char *name, BOOL need83, BOOL cache83)
 {
 	char *dot_p;
 	char lead_char;
@@ -486,13 +486,13 @@ static BOOL name_map(char *name, BOOL need83, BOOL cache83)
 		/* if the name is already a valid 8.3 name then we don't need to 
 		   do anything */
 		if (is_8_3(name, False, False)) {
-			return True;
+			return;
 		}
 
 		/* if the caller doesn't strictly need 8.3 then just check for illegal 
 		   filenames */
 		if (!need83 && is_legal_name(name)) {
-			return True;
+			return;
 		}
 	}
 
@@ -574,7 +574,6 @@ static BOOL name_map(char *name, BOOL need83, BOOL cache83)
 	fstrcpy(name, new_name);
 
 	/* all done, we've managed to mangle it */
-	return True;
 }
 
 

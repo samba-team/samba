@@ -9,6 +9,6 @@ struct mangle_fns {
 	BOOL (*is_8_3)(const char *fname, BOOL check_case, BOOL allow_wildcards);
 	void (*reset)(void);
 	BOOL (*check_cache)(char *s);
-	BOOL (*name_map)(char *OutName, BOOL need83, BOOL cache83);
+	void (*name_map)(char *OutName, BOOL need83, BOOL cache83);
 };
 #endif /* _MANGLE_H_ */

@@ -105,7 +105,8 @@ BOOL mangle_check_cache(char *s)
 /* 
    map a long filename to a 8.3 name. 
  */
-BOOL mangle_map(char *OutName, BOOL need83, BOOL cache83, int snum)
+
+void mangle_map(char *OutName, BOOL need83, BOOL cache83, int snum)
 {
 	/* name mangling can be disabled for speed, in which case
 	   we just truncate the string */
@@ -113,11 +114,10 @@ BOOL mangle_map(char *OutName, BOOL need83, BOOL cache83, int snum)
 		if (need83) {
 			string_truncate(OutName, 12);
 		}
-		return True;
+		return;
 	}
 
 	/* invoke the inane "mangled map" code */
 	mangle_map_filename(OutName, snum);
-
-	return mangle_fns->name_map(OutName, need83, cache83);
+	mangle_fns->name_map(OutName, need83, cache83);
 }

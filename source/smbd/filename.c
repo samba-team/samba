@@ -54,16 +54,13 @@ static BOOL fname_equal(char *name1, char *name2)
  Mangle the 2nd name and check if it is then equal to the first name.
 ****************************************************************************/
 
-static BOOL mangled_equal(char *name1, char *name2, int snum)
+static BOOL mangled_equal(char *name1, const char *name2, int snum)
 {
 	pstring tmpname;
 
-	if (mangle_is_8_3(name2, True))
-		return False;
-
 	pstrcpy(tmpname,name2);
-	return mangle_map(tmpname,True,False,snum) &&
-		strequal(name1,tmpname);
+	mangle_map(tmpname,True,False,snum);
+	return strequal(name1,tmpname);
 }
 
 
@@ -434,7 +431,6 @@ static BOOL scan_directory(char *path, char *name,connection_struct *conn,BOOL d
   void *cur_dir;
   char *dname;
   BOOL mangled;
-  pstring name2;
 
   mangled = mangle_is_mangled(name);
 
@@ -469,14 +465,7 @@ static BOOL scan_directory(char *path, char *name,connection_struct *conn,BOOL d
         continue;
 
       /*
-       * dname here is the unmangled name.
-       */
-      pstrcpy(name2,dname);
-      if (!mangle_map(name2,False,True,SNUM(conn)))
-        continue;
-
-      /*
-       * At this point name2 is the mangled name, dname is the unmangled name.
+       * At this point dname is the unmangled name.
        * name is either mangled or not, depending on the state of the "mangled"
        * variable. JRA.
        */
@@ -486,7 +475,7 @@ static BOOL scan_directory(char *path, char *name,connection_struct *conn,BOOL d
        * against unmangled name.
        */
 
-      if ((mangled && mangled_equal(name,name2,SNUM(conn))) || fname_equal(name, dname)) {
+      if ((mangled && mangled_equal(name,dname,SNUM(conn))) || fname_equal(name, dname)) {
         /* we've found the file, change it's name and return */
         if (docache)
           DirCacheAdd(path,name,dname,SNUM(conn));
