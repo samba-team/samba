@@ -131,6 +131,10 @@ conv_db(void *arg, Principal *p)
 
     ALLOC(ent.max_life);
     *ent.max_life = krb_life_to_time(0, p->max_life);
+    if(*ent.max_life == (1 << 31) - 1){
+	free(ent.max_life);
+	ent.max_life = NULL;
+    }
 
     ALLOC(ent.pw_end);
     *ent.pw_end = p->exp_date;
@@ -312,7 +316,7 @@ int main(int argc, char **argv)
 	
 #ifdef KRB4
 	    if(v4_db)
-		e = kerb_db_iterate ((k_iter_proc_t)conv_db, NULL);
+		e = kerb_db_iterate ((k_iter_proc_t)conv_db, &pd);
 	    else
 #endif
 		ret = hdb_foreach(context, db, func, &pd);
