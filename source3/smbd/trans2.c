@@ -1554,7 +1554,7 @@ int reply_trans2(char *inbuf,char *outbuf,int length,int bufsize)
 
       while( num_data_sofar < total_data || num_params_sofar < total_params)
 	{
-	  if(!receive_smb(Client,inbuf, SMB_SECONDARY_WAIT*1000) ||
+	  if(!receive_smb(Client,inbuf, SMB_SECONDARY_WAIT) ||
 	     CVAL(inbuf, smb_com) != SMBtranss2)
 	    {
 	      outsize = set_message(outbuf,0,0,True);

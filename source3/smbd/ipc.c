@@ -2823,7 +2823,7 @@ int reply_trans(char *inbuf,char *outbuf)
     {
       int pcnt,poff,dcnt,doff,pdisp,ddisp;
       
-      if (!receive_smb(Client,inbuf, SMB_SECONDARY_WAIT*1000) ||
+      if (!receive_smb(Client,inbuf, SMB_SECONDARY_WAIT) ||
 	  CVAL(inbuf, smb_com) != SMBtrans)
 	{
 	  DEBUG(2,("Invalid secondary trans2 packet\n"));
