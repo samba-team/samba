@@ -10,7 +10,7 @@
 #include "config.h"
 #include "protos.h"
 #define KERBEROS
-RCSID("$Header$");
+RCSID("$Id$");
 #endif
 
 #include <stdio.h>
@@ -33,7 +33,7 @@ char name[100];
 char realm[REALM_SZ + 1];
 #endif
 
-char SPACE_STRING[] = "                                                      ";
+char *SPACE_STRING = "                                                      ";
 char STRING[] = "****************";
 #define MAX_PASSWD_LENGTH (sizeof(STRING))
 
@@ -495,7 +495,9 @@ Visibility(Widget w, XtPointer client_data, XEvent *event, Boolean *_b)
 }
 
 static void
-countdown(int* _t, XtIntervalId *_d)
+countdown(_t, _d)
+    int* _t;
+    XtIntervalId *_d;
 {
     int *timeout = _t;
     char buf[16];
@@ -827,6 +829,10 @@ main (int argc, char **argv)
     Widget override;
     XGCValues gcvalues;
     char **list;
+
+    srand(getpid());
+    for (i = 0; i < (sizeof(STRING)-2); i++)
+	STRING[i] = ((unsigned long)rand() % ('~' - ' ')) + ' ';
 
     locked_at = time(0);
 
