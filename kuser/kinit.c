@@ -45,6 +45,7 @@ int preauth = 1;
 int renewable;
 int version_flag = 0;
 int help_flag = 0;
+char *lifetime = NULL;
 
 struct getargs args[] = {
     { "forwardable",		'f', arg_flag, &forwardable, 
@@ -53,6 +54,8 @@ struct getargs args[] = {
       "disable preauthentication", NULL },
     { "renewable",		'r', arg_flag, &renewable, 
       "get renewable tickets", NULL },
+    { "lifetime",		'l', arg_string, &lifetime,
+      "lifetime of tickets", "seconds"},
     { "version", 		0,   arg_flag, &version_flag, 
       "print version", NULL },
     { "help",			0,   arg_flag, &help_flag, 
@@ -164,8 +167,15 @@ main (int argc, char **argv)
 
     cred.client = principal;
     cred.server = server;
-    cred.times.endtime = 0;
+    if (lifetime) {
+	int tmp = parse_time (lifetime, NULL);
+	if (tmp < 0)
+	    errx (1, "unparsable time: %s", lifetime);
 
+	cred.times.endtime = time(NULL) + tmp;
+    } else {
+	cred.times.endtime = 0;
+    }
     
     {
 	char *p;
