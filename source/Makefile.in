@@ -210,8 +210,7 @@ LIB_OBJ = $(VERSION_OBJ) lib/charcnv.o lib/debug.o lib/fault.o \
 	  lib/pam_errors.o intl/lang_tdb.o \
 	  lib/adt_tree.o lib/gencache.o $(TDB_OBJ) \
 	  lib/module.o lib/ldap_escape.o @CHARSET_STATIC@ \
-	  lib/secdesc.o lib/secace.o lib/secacl.o \
-	  lib/genparser.o lib/genparser_samba.o 
+	  lib/secdesc.o lib/secace.o lib/secacl.o 
 
 LIB_NONSMBD_OBJ = $(LIB_OBJ) lib/dummysmbd.o
 
@@ -1533,8 +1532,6 @@ headers:
 
 prebuiltheaders:
 	$(MAKE) include/tdbsam2_parse_info.h
-
-genparse: prebuiltheaders
 
 proto: headers 
 

@@ -1378,7 +1378,7 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 		return ERROR_NT(ntstatus);
 	}
 
-	RESOLVE_FINDFIRST_DFSPATH(directory, conn, inbuf, outbuf);
+	RESOLVE_DFSPATH(directory, conn, inbuf, outbuf);
 
 	unix_convert(directory,conn,0,&bad_path,&sbuf);
 	if (bad_path) {
