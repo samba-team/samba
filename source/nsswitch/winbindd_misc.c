@@ -104,10 +104,13 @@ enum winbindd_result winbindd_list_trusted_domains(struct winbindd_cli_state
 
 	DEBUG(3, ("[%5d]: list trusted domains\n", state->pid));
 
-        if (domain_list == NULL)
-                get_domain_info();
+	/* We need to refresh the trusted domain list as the domains may
+	   have changed since we last looked.  There may be a sequence
+	   number or something we should use but I haven't found it yet. */
 
-	for(domain = domain_list; domain; domain = domain->next) {
+	init_domain_list();
+
+	for(domain = domain_list(); domain; domain = domain->next) {
 
 		/* Skip own domain */
 

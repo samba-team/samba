@@ -102,11 +102,14 @@ enum winbindd_result winbindd_list_users(struct winbindd_cli_state *state);
 
 /* The following definitions come from nsswitch/winbindd_util.c  */
 
+struct winbindd_domain *domain_list(void);
+void free_domain_list(void);
+BOOL init_domain_list(void);
 struct winbindd_domain *find_domain_from_name(char *domain_name);
 struct winbindd_domain *find_domain_from_sid(DOM_SID *sid);
-BOOL get_domain_info(void);
 BOOL winbindd_lookup_sid_by_name(struct winbindd_domain *domain, 
-				 const char *name, DOM_SID *sid, enum SID_NAME_USE *type);
+				 const char *name, DOM_SID *sid, 
+				 enum SID_NAME_USE *type);
 BOOL winbindd_lookup_name_by_sid(DOM_SID *sid,
 				 fstring name,
 				 enum SID_NAME_USE *type);
