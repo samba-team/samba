@@ -286,6 +286,8 @@ repl_mutual
   krb5_free_ap_rep_enc_part (gssapi_krb5_context,
 			     repl);
 
+  output_token->length = 0;
+
   (*context_handle)->more_flags |= OPEN;
 
   return GSS_S_COMPLETE;
