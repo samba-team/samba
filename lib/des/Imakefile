@@ -4,12 +4,12 @@
 SRCS=   cbc_cksm.c cbc_enc.c ecb_enc.c pcbc_enc.c \
         qud_cksm.c rand_key.c read_pwd.c set_key.c str2key.c \
         enc_read.c enc_writ.c fcrypt.c cfb_enc.c \
-	3ecb_enc.c ofb_enc.c ofb64enc.c
+	ecb3_enc.c ofb_enc.c ofb64enc.c
 
 OBJS=   cbc_cksm.o cbc_enc.o ecb_enc.o pcbc_enc.o \
 	qud_cksm.o rand_key.o read_pwd.o set_key.o str2key.o \
 	enc_read.o enc_writ.o fcrypt.o cfb_enc.o \
-	3ecb_enc.o ofb_enc.o ofb64enc.o
+	ecb3_enc.o ofb_enc.o ofb64enc.o
 
 GENERAL=COPYRIGHT FILES INSTALL Imakefile README VERSION makefile times \
 	vms.com KERBEROS

@@ -59,20 +59,25 @@
 
 #endif /* HAVE_CONFIG_H */
 
-/* lib/des/des_locl.h */
-/* Copyright (C) 1995 Eric Young (eay@mincom.oz.au)
+/* crypto/des/des_locl.h */
+/* Copyright (C) 1995-1997 Eric Young (eay@mincom.oz.au)
  * All rights reserved.
- * 
- * This file is part of an SSL implementation written
+ *
+ * This package is an SSL implementation written
  * by Eric Young (eay@mincom.oz.au).
- * The implementation was written so as to conform with Netscapes SSL
- * specification.  This library and applications are
- * FREE FOR COMMERCIAL AND NON-COMMERCIAL USE
- * as long as the following conditions are aheared to.
+ * The implementation was written so as to conform with Netscapes SSL.
+ * 
+ * This library is free for commercial and non-commercial use as long as
+ * the following conditions are aheared to.  The following conditions
+ * apply to all code found in this distribution, be it the RC4, RSA,
+ * lhash, DES, etc., code; not just the SSL code.  The SSL documentation
+ * included with this distribution is covered by the same copyright terms
+ * except that the holder is Tim Hudson (tjh@mincom.oz.au).
  * 
  * Copyright remains Eric Young's, and as such any Copyright notices in
- * the code are not to be removed.  If this code is used in a product,
- * Eric Young should be given attribution as the author of the parts used.
+ * the code are not to be removed.
+ * If this package is used in a product, Eric Young should be given attribution
+ * as the author of the parts of the library used.
  * This can be in the form of a textual message at program startup or
  * in documentation (online or textual) provided with the package.
  * 
@@ -86,7 +91,13 @@
  *    documentation and/or other materials provided with the distribution.
  * 3. All advertising materials mentioning features or use of this software
  *    must display the following acknowledgement:
- *    This product includes software developed by Eric Young (eay@mincom.oz.au)
+ *    "This product includes cryptographic software written by
+ *     Eric Young (eay@mincom.oz.au)"
+ *    The word 'cryptographic' can be left out if the rouines from the library
+ *    being used are not cryptographic related :-).
+ * 4. If you include any Windows specific code (or a derivative thereof) from 
+ *    the apps directory (application code) you must include an acknowledgement:
+ *    "This product includes software written by Tim Hudson (tjh@mincom.oz.au)"
  * 
  * THIS SOFTWARE IS PROVIDED BY ERIC YOUNG ``AS IS'' AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -106,8 +117,23 @@
  * [including the GNU Public Licence.]
  */
 
+/* WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
+ *
+ * Always modify des_locl.org since des_locl.h is automatically generated from
+ * it during SSLeay configuration.
+ *
+ * WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
+ */
+
 #ifndef HEADER_DES_LOCL_H
 #define HEADER_DES_LOCL_H
+
+#if defined(WIN32) || defined(WIN16)
+#ifndef MSDOS
+#define MSDOS
+#endif
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #ifdef HAVE_UNISTD_H
@@ -118,22 +144,79 @@
 #endif
 #include "des.h"
 
-/* WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
- *
- * Always modify des_locl.org since des_locl.h is automatically generated from
- * it during SSLeay configuration.
- *
- * WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
- */
-
+#ifndef DES_DEFAULT_OPTIONS
 /* the following is tweaked from a config script, that is why it is a
  * protected undef/define */
 #ifndef DES_PTR
 #undef DES_PTR
 #endif
 
+/* This helps C compiler generate the correct code for multiple functional
+ * units.  It reduces register dependancies at the expense of 2 more
+ * registers */
+#ifndef DES_RISC1
+#undef DES_RISC1
+#endif
+
+#ifndef DES_RISC2
+#undef DES_RISC2
+#endif
+
+#if defined(DES_RISC1) && defined(DES_RISC2)
+YOU SHOULD NOT HAVE BOTH DES_RISC1 AND DES_RISC2 DEFINED!!!!!
+#endif
+
+/* Unroll the inner loop, this sometimes helps, sometimes hinders.
+ * Very mucy CPU dependant */
+#ifndef DES_UNROLL
+#undef DES_UNROLL
+#endif
+
+/* These default values were supplied by
+ * Peter Gutman <pgut001@cs.auckland.ac.nz>
+ * They are only used if nothing else has been defined */
+#if !defined(DES_PTR) && !defined(DES_RISC1) && !defined(DES_RISC2) && !defined(DES_UNROLL)
+/* Special defines which change the way the code is built depending on the
+   CPU and OS.  For SGI machines you can use _MIPS_SZLONG (32 or 64) to find
+   even newer MIPS CPU's, but at the moment one size fits all for
+   optimization options.  Older Sparc's work better with only UNROLL, but
+   there's no way to tell at compile time what it is you're running on */
+ 
+#if defined( sun )		/* Newer Sparc's */
+  #define DES_PTR
+  #define DES_RISC1
+  #define DES_UNROLL
+#elif defined( __ultrix )	/* Older MIPS */
+  #define DES_PTR
+  #define DES_RISC2
+  #define DES_UNROLL
+#elif defined( __osf1__ )	/* Alpha */
+  #define DES_PTR
+  #define DES_RISC2
+#elif defined ( _AIX )		/* RS6000 */
+  /* Unknown */
+#elif defined( __hpux )		/* HP-PA */
+  #define DES_UNROLL
+#elif defined( __aux )		/* 68K */
+  /* Unknown */
+#elif defined( __dgux )		/* 88K (but P6 in latest boxes) */
+  #define DES_UNROLL
+#elif defined( __sgi )		/* Newer MIPS */
+  #define DES_PTR
+  #define DES_RISC2
+  #define DES_UNROLL
+#elif defined( i386 )		/* x86 boxes, should be gcc */
+  #define DES_PTR
+  #define DES_RISC1
+  #define DES_UNROLL
+#endif /* Systems-specific speed defines */
+#endif
+
+#endif /* DES_DEFAULT_OPTIONS */
+
 #ifdef MSDOS		/* Visual C++ 2.1 (Windows NT/95) */
 #include <stdlib.h>
+#include <errno.h>
 #include <time.h>
 #include <io.h>
 #ifndef RAND
@@ -156,7 +239,6 @@
 
 #ifdef MSDOS
 #define getpid() 2
-extern int errno;
 #define RAND
 #undef NOPROTO
 #endif
@@ -236,6 +318,32 @@ extern int errno;
 				} \
 			}
 
+#if defined(WIN32)
+#define	ROTATE(a,n)	(_lrotr(a,n))
+#else
+#define	ROTATE(a,n)	(((a)>>(n))+((a)<<(32-(n))))
+#endif
+
+/* Don't worry about the LOAD_DATA() stuff, that is used by
+ * fcrypt() to add it's little bit to the front */
+
+#ifdef DES_FCRYPT
+
+#define LOAD_DATA_tmp(R,S,u,t,E0,E1) \
+	{ DES_LONG tmp; LOAD_DATA(R,S,u,t,E0,E1,tmp); }
+
+#define LOAD_DATA(R,S,u,t,E0,E1,tmp) \
+	t=R^(R>>16L); \
+	u=t&E0; t&=E1; \
+	tmp=(u<<16); u^=R^s[S  ]; u^=tmp; \
+	tmp=(t<<16); t^=R^s[S+1]; t^=tmp
+#else
+#define LOAD_DATA_tmp(a,b,c,d,e,f) LOAD_DATA(a,b,c,d,e,f,g)
+#define LOAD_DATA(R,S,u,t,E0,E1,tmp) \
+	u=R^s[S  ]; \
+	t=R^s[S+1]
+#endif
+
 /* The changes to this macro may help or hinder, depending on the
  * compiler and the achitecture.  gcc2 always seems to do well :-).
  * Inspired by Dana How <how@isl.stanford.edu>
@@ -244,47 +352,158 @@ extern int errno;
  * bytes, probably an issue of accessing non-word aligned objects :-( */
 #ifdef DES_PTR
 
-#define D_ENCRYPT(L,R,S) { \
-	u=((R^s[S  ])<<2);	\
-	t= R^s[S+1]; \
-	t=((t>>2)+(t<<30)); \
-	L^= (\
-	*(DES_LONG *)(&(des_SPtrans[1][0])+((t    )&0xfc))+ \
-	*(DES_LONG *)(&(des_SPtrans[3][0])+((t>> 8)&0xfc))+ \
-	*(DES_LONG *)(&(des_SPtrans[5][0])+((t>>16)&0xfc))+ \
-	*(DES_LONG *)(&(des_SPtrans[7][0])+((t>>24)&0xfc))+ \
-	*(DES_LONG *)(&(des_SPtrans[0][0])+((u    )&0xfc))+ \
-	*(DES_LONG *)(&(des_SPtrans[2][0])+((u>> 8)&0xfc))+ \
-	*(DES_LONG *)(&(des_SPtrans[4][0])+((u>>16)&0xfc))+ \
-	*(DES_LONG *)(&(des_SPtrans[6][0])+((u>>24)&0xfc))); }
-#else /* original version */
-#ifdef MSDOS
-#define D_ENCRYPT(L,R,S)	\
-	U.l=R^s[S+1]; \
-	T.s[0]=((U.s[0]>>4)|(U.s[1]<<12))&0x3f3f; \
-	T.s[1]=((U.s[1]>>4)|(U.s[0]<<12))&0x3f3f; \
-	U.l=(R^s[S  ])&0x3f3f3f3fL; \
-	L^=	des_SPtrans[1][(T.c[0])]| \
-		des_SPtrans[3][(T.c[1])]| \
-		des_SPtrans[5][(T.c[2])]| \
-		des_SPtrans[7][(T.c[3])]| \
-		des_SPtrans[0][(U.c[0])]| \
-		des_SPtrans[2][(U.c[1])]| \
-		des_SPtrans[4][(U.c[2])]| \
-		des_SPtrans[6][(U.c[3])];
+/* It recently occured to me that 0^0^0^0^0^0^0 == 0, so there
+ * is no reason to not xor all the sub items together.  This potentially
+ * saves a register since things can be xored directly into L */
+
+#if defined(DES_RISC1) || defined(DES_RISC2)
+#ifdef DES_RISC1
+#define D_ENCRYPT(LL,R,S) { \
+	unsigned int u1,u2,u3; \
+	LOAD_DATA(R,S,u,t,E0,E1,u1); \
+	u2=(int)u>>8L; \
+	u1=(int)u&0xfc; \
+	u2&=0xfc; \
+	t=ROTATE(t,4); \
+	u>>=16L; \
+	LL^= *(DES_LONG *)((unsigned char *)des_SP      +u1); \
+	LL^= *(DES_LONG *)((unsigned char *)des_SP+0x200+u2); \
+	u3=(int)(u>>8L); \
+	u1=(int)u&0xfc; \
+	u3&=0xfc; \
+	LL^= *(DES_LONG *)((unsigned char *)des_SP+0x400+u1); \
+	LL^= *(DES_LONG *)((unsigned char *)des_SP+0x600+u3); \
+	u2=(int)t>>8L; \
+	u1=(int)t&0xfc; \
+	u2&=0xfc; \
+	t>>=16L; \
+	LL^= *(DES_LONG *)((unsigned char *)des_SP+0x100+u1); \
+	LL^= *(DES_LONG *)((unsigned char *)des_SP+0x300+u2); \
+	u3=(int)t>>8L; \
+	u1=(int)t&0xfc; \
+	u3&=0xfc; \
+	LL^= *(DES_LONG *)((unsigned char *)des_SP+0x500+u1); \
+	LL^= *(DES_LONG *)((unsigned char *)des_SP+0x700+u3); }
+#endif
+#ifdef DES_RISC2
+#define D_ENCRYPT(LL,R,S) { \
+	unsigned int u1,u2,s1,s2; \
+	LOAD_DATA(R,S,u,t,E0,E1,u1); \
+	u2=(int)u>>8L; \
+	u1=(int)u&0xfc; \
+	u2&=0xfc; \
+	t=ROTATE(t,4); \
+	LL^= *(DES_LONG *)((unsigned char *)des_SP      +u1); \
+	LL^= *(DES_LONG *)((unsigned char *)des_SP+0x200+u2); \
+	s1=(int)(u>>16L); \
+	s2=(int)(u>>24L); \
+	s1&=0xfc; \
+	s2&=0xfc; \
+	LL^= *(DES_LONG *)((unsigned char *)des_SP+0x400+s1); \
+	LL^= *(DES_LONG *)((unsigned char *)des_SP+0x600+s2); \
+	u2=(int)t>>8L; \
+	u1=(int)t&0xfc; \
+	u2&=0xfc; \
+	LL^= *(DES_LONG *)((unsigned char *)des_SP+0x100+u1); \
+	LL^= *(DES_LONG *)((unsigned char *)des_SP+0x300+u2); \
+	s1=(int)(t>>16L); \
+	s2=(int)(t>>24L); \
+	s1&=0xfc; \
+	s2&=0xfc; \
+	LL^= *(DES_LONG *)((unsigned char *)des_SP+0x500+s1); \
+	LL^= *(DES_LONG *)((unsigned char *)des_SP+0x700+s2); }
+#endif
 #else
-#define D_ENCRYPT(Q,R,S) {\
-	u=(R^s[S  ]); \
-	t=R^s[S+1]; \
-	t=((t>>4L)+(t<<28L)); \
-	Q^=	des_SPtrans[1][(t     )&0x3f]| \
-		des_SPtrans[3][(t>> 8L)&0x3f]| \
-		des_SPtrans[5][(t>>16L)&0x3f]| \
-		des_SPtrans[7][(t>>24L)&0x3f]| \
-		des_SPtrans[0][(u     )&0x3f]| \
-		des_SPtrans[2][(u>> 8L)&0x3f]| \
-		des_SPtrans[4][(u>>16L)&0x3f]| \
-		des_SPtrans[6][(u>>24L)&0x3f]; }
+#define D_ENCRYPT(LL,R,S) { \
+	LOAD_DATA_tmp(R,S,u,t,E0,E1); \
+	t=ROTATE(t,4); \
+	LL^= \
+	*(DES_LONG *)((unsigned char *)des_SP      +((u     )&0xfc))^ \
+	*(DES_LONG *)((unsigned char *)des_SP+0x200+((u>> 8L)&0xfc))^ \
+	*(DES_LONG *)((unsigned char *)des_SP+0x400+((u>>16L)&0xfc))^ \
+	*(DES_LONG *)((unsigned char *)des_SP+0x600+((u>>24L)&0xfc))^ \
+	*(DES_LONG *)((unsigned char *)des_SP+0x100+((t     )&0xfc))^ \
+	*(DES_LONG *)((unsigned char *)des_SP+0x300+((t>> 8L)&0xfc))^ \
+	*(DES_LONG *)((unsigned char *)des_SP+0x500+((t>>16L)&0xfc))^ \
+	*(DES_LONG *)((unsigned char *)des_SP+0x700+((t>>24L)&0xfc)); }
+#endif
+
+#else /* original version */
+
+#if defined(DES_RISC1) || defined(DES_RISC2)
+#ifdef DES_RISC1
+#define D_ENCRYPT(LL,R,S) {\
+	unsigned int u1,u2,u3; \
+	LOAD_DATA(R,S,u,t,E0,E1,u1); \
+	u>>=2L; \
+	t=ROTATE(t,6); \
+	u2=(int)u>>8L; \
+	u1=(int)u&0x3f; \
+	u2&=0x3f; \
+	u>>=16L; \
+	LL^=des_SPtrans[0][u1]; \
+	LL^=des_SPtrans[2][u2]; \
+	u3=(int)u>>8L; \
+	u1=(int)u&0x3f; \
+	u3&=0x3f; \
+	LL^=des_SPtrans[4][u1]; \
+	LL^=des_SPtrans[6][u3]; \
+	u2=(int)t>>8L; \
+	u1=(int)t&0x3f; \
+	u2&=0x3f; \
+	t>>=16L; \
+	LL^=des_SPtrans[1][u1]; \
+	LL^=des_SPtrans[3][u2]; \
+	u3=(int)t>>8L; \
+	u1=(int)t&0x3f; \
+	u3&=0x3f; \
+	LL^=des_SPtrans[5][u1]; \
+	LL^=des_SPtrans[7][u3]; }
+#endif
+#ifdef DES_RISC2
+#define D_ENCRYPT(LL,R,S) {\
+	unsigned int u1,u2,s1,s2; \
+	LOAD_DATA(R,S,u,t,E0,E1,u1); \
+	u>>=2L; \
+	t=ROTATE(t,6); \
+	u2=(int)u>>8L; \
+	u1=(int)u&0x3f; \
+	u2&=0x3f; \
+	LL^=des_SPtrans[0][u1]; \
+	LL^=des_SPtrans[2][u2]; \
+	s1=(int)u>>16L; \
+	s2=(int)u>>24L; \
+	s1&=0x3f; \
+	s2&=0x3f; \
+	LL^=des_SPtrans[4][s1]; \
+	LL^=des_SPtrans[6][s2]; \
+	u2=(int)t>>8L; \
+	u1=(int)t&0x3f; \
+	u2&=0x3f; \
+	LL^=des_SPtrans[1][u1]; \
+	LL^=des_SPtrans[3][u2]; \
+	s1=(int)t>>16; \
+	s2=(int)t>>24L; \
+	s1&=0x3f; \
+	s2&=0x3f; \
+	LL^=des_SPtrans[5][s1]; \
+	LL^=des_SPtrans[7][s2]; }
+#endif
+
+#else
+
+#define D_ENCRYPT(LL,R,S) {\
+	LOAD_DATA_tmp(R,S,u,t,E0,E1); \
+	t=ROTATE(t,4); \
+	LL^=\
+		des_SPtrans[0][(u>> 2L)&0x3f]^ \
+		des_SPtrans[2][(u>>10L)&0x3f]^ \
+		des_SPtrans[4][(u>>18L)&0x3f]^ \
+		des_SPtrans[6][(u>>26L)&0x3f]^ \
+		des_SPtrans[1][(t>> 2L)&0x3f]^ \
+		des_SPtrans[3][(t>>10L)&0x3f]^ \
+		des_SPtrans[5][(t>>18L)&0x3f]^ \
+		des_SPtrans[7][(t>>26L)&0x3f]; }
 #endif
 #endif
 
@@ -348,4 +567,7 @@ extern int errno;
 	PERM_OP(r,l,tt,16,0x0000ffffL); \
 	PERM_OP(l,r,tt, 4,0x0f0f0f0fL); \
 	}
+
+extern const DES_LONG des_SPtrans[8][64];
+
 #endif

@@ -1,17 +1,22 @@
-/* lib/des/des.h */
-/* Copyright (C) 1995 Eric Young (eay@mincom.oz.au)
+/* crypto/des/des.h */
+/* Copyright (C) 1995-1997 Eric Young (eay@mincom.oz.au)
  * All rights reserved.
- * 
- * This file is part of an SSL implementation written
+ *
+ * This package is an SSL implementation written
  * by Eric Young (eay@mincom.oz.au).
- * The implementation was written so as to conform with Netscapes SSL
- * specification.  This library and applications are
- * FREE FOR COMMERCIAL AND NON-COMMERCIAL USE
- * as long as the following conditions are aheared to.
+ * The implementation was written so as to conform with Netscapes SSL.
+ * 
+ * This library is free for commercial and non-commercial use as long as
+ * the following conditions are aheared to.  The following conditions
+ * apply to all code found in this distribution, be it the RC4, RSA,
+ * lhash, DES, etc., code; not just the SSL code.  The SSL documentation
+ * included with this distribution is covered by the same copyright terms
+ * except that the holder is Tim Hudson (tjh@mincom.oz.au).
  * 
  * Copyright remains Eric Young's, and as such any Copyright notices in
- * the code are not to be removed.  If this code is used in a product,
- * Eric Young should be given attribution as the author of the parts used.
+ * the code are not to be removed.
+ * If this package is used in a product, Eric Young should be given attribution
+ * as the author of the parts of the library used.
  * This can be in the form of a textual message at program startup or
  * in documentation (online or textual) provided with the package.
  * 
@@ -25,7 +30,13 @@
  *    documentation and/or other materials provided with the distribution.
  * 3. All advertising materials mentioning features or use of this software
  *    must display the following acknowledgement:
- *    This product includes software developed by Eric Young (eay@mincom.oz.au)
+ *    "This product includes cryptographic software written by
+ *     Eric Young (eay@mincom.oz.au)"
+ *    The word 'cryptographic' can be left out if the rouines from the library
+ *    being used are not cryptographic related :-).
+ * 4. If you include any Windows specific code (or a derivative thereof) from 
+ *    the apps directory (application code) you must include an acknowledgement:
+ *    "This product includes software written by Tim Hudson (tjh@mincom.oz.au)"
  * 
  * THIS SOFTWARE IS PROVIDED BY ERIC YOUNG ``AS IS'' AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -47,6 +58,10 @@
 
 #ifndef HEADER_DES_H
 #define HEADER_DES_H
+
+#ifdef  __cplusplus
+extern "C" {
+#endif
 
 #include <stdio.h>
 
@@ -92,8 +107,10 @@ typedef struct des_ks_struct
 
 #define C_Block des_cblock
 #define Key_schedule des_key_schedule
+#ifdef KERBEROS
 #define ENCRYPT DES_ENCRYPT
 #define DECRYPT DES_DECRYPT
+#endif
 #define KEY_SZ DES_KEY_SZ
 #define string_to_key des_string_to_key
 #define read_pw_string des_read_pw_string
@@ -104,6 +121,7 @@ typedef struct des_ks_struct
 #define ecb_encrypt des_ecb_encrypt
 #define cbc_encrypt des_cbc_encrypt
 #define ncbc_encrypt des_ncbc_encrypt
+#define xcbc_encrypt des_xcbc_encrypt
 #define cbc_cksum des_cbc_cksum
 #define quad_cksum des_quad_cksum
 
@@ -122,6 +140,7 @@ extern int des_rw_mode;		/* defaults to DES_PCBC_MODE */
 #undef NOPROTO
 #endif
 #ifndef NOPROTO
+char *des_options(void);
 void des_ecb3_encrypt(des_cblock *input,des_cblock *output,
 	des_key_schedule ks1,des_key_schedule ks2,
 	des_key_schedule ks3, int enc);
@@ -131,6 +150,9 @@ void des_cbc_encrypt(des_cblock *input,des_cblock *output,long length,
 	des_key_schedule schedule,des_cblock *ivec,int enc);
 void des_ncbc_encrypt(des_cblock *input,des_cblock *output,long length,
 	des_key_schedule schedule,des_cblock *ivec,int enc);
+void des_xcbc_encrypt(des_cblock *input,des_cblock *output,long length,
+	des_key_schedule schedule,des_cblock *ivec,
+	des_cblock *inw,des_cblock *outw,int enc);
 void des_3cbc_encrypt(des_cblock *input,des_cblock *output,long length,
 	des_key_schedule sk1,des_key_schedule sk2,
 	des_cblock *ivec1,des_cblock *ivec2,int enc);
@@ -140,6 +162,10 @@ void des_ecb_encrypt(des_cblock *input,des_cblock *output,
 	des_key_schedule ks,int enc);
 void des_encrypt(DES_LONG *data,des_key_schedule ks, int enc);
 void des_encrypt2(DES_LONG *data,des_key_schedule ks, int enc);
+void des_encrypt3(DES_LONG *data, des_key_schedule ks1,
+	des_key_schedule ks2, des_key_schedule ks3);
+void des_decrypt3(DES_LONG *data, des_key_schedule ks1,
+	des_key_schedule ks2, des_key_schedule ks3);
 void des_ede3_cbc_encrypt(des_cblock *input, des_cblock *output, 
 	long length, des_key_schedule ks1, des_key_schedule ks2, 
 	des_key_schedule ks3, des_cblock *ivec, int enc);
@@ -154,6 +180,7 @@ int des_enc_read(int fd,char *buf,int len,des_key_schedule sched,
 	des_cblock *iv);
 int des_enc_write(int fd,char *buf,int len,des_key_schedule sched,
 	des_cblock *iv);
+char *des_fcrypt(const char *buf,const char *salt, char *ret);
 #ifdef PERL5
 char *des_crypt(const char *buf,const char *salt);
 #else
@@ -201,10 +228,12 @@ void des_generate_random_block(des_cblock *block);
 
 #else
 
+char *des_options();
 void des_ecb3_encrypt();
 DES_LONG des_cbc_cksum();
 void des_cbc_encrypt();
 void des_ncbc_encrypt();
+void des_xcbc_encrypt();
 void des_3cbc_encrypt();
 void des_cfb_encrypt();
 void des_ede3_cfb64_encrypt();
@@ -212,9 +241,12 @@ void des_ede3_ofb64_encrypt();
 void des_ecb_encrypt();
 void des_encrypt();
 void des_encrypt2();
+void des_encrypt3();
+void des_decrypt3();
 void des_ede3_cbc_encrypt();
 int des_enc_read();
 int des_enc_write();
+char *des_fcrypt();
 #ifdef PERL5
 char *des_crypt();
 #else
@@ -242,11 +274,18 @@ void des_cblock_print_file();
 /* The following functions are not in the normal unix build or the
  * SSLeay build.  When using the SSLeay build, use RAND_seed()
  * and RAND_bytes() instead. */
+#ifdef FreeBSD
 int des_new_random_key();
 void des_init_random_number_generator();
 void des_set_random_generator_seed();
 void des_set_sequence_number();
 void des_generate_random_block();
+#endif
 
 #endif
+
+#ifdef  __cplusplus
+}
+#endif
+
 #endif

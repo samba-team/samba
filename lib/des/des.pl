@@ -34,6 +34,8 @@
                  
 package des;
 
+eval("usr integer;") if (int($]) > 4);
+
 # The following 8 arrays are used in des_set_key
 @skb0=(
 # for C bits (numbered as per FIPS 46) 1 2 3 4 5 6 
@@ -408,9 +410,9 @@ sub doPC1
 	$t=(($b<<24)^$b)&0xff000000;
 	$b=$b^$t^(($t>>24)&0x000000ff);
 	$t=(($b<< 8)^$b)&0x00ff0000;
-	$b=$b^$t^($t>> 8);
+	$b=$b^$t^(($t>> 8)&0x00ffffff);
 	$t=(($b<<14)^$b)&0x33330000;
-	$b=$b^$t^($t>>14);
+	$b=$b^$t^(($t>>14)&0x0003ffff);
 	$b=(($b&0x00aa00aa)<<7)|(($b&0x55005500)>>7)|($b&0xaa55aa55);
 	$b=(($b>>8)&0x00ffffff)|((($a&0xf0000000)>>4)&0x0fffffff);
 	$a&=0x0fffffff;
@@ -478,10 +480,12 @@ sub main'des_ecb_encrypt
 		{
 		for ($i=0; $i<32; $i+=4)
 			{
-			$t=(($r<<1)|(($r>>31)&0x1))&0xffffffff;
+			$t=((($r&0x7fffffff)<<1)|(($r>>31)&0x00000001));
 			$u=$t^$ks[$i  ];
 			$t=$t^$ks[$i+1];
-			$t=((($t>>4)&0x0fffffff)|($t<<28))&0xffffffff;
+			$t2=(($t&0x0000000f)<<28);
+
+			$t=((($t>>4)&0x0fffffff)|(($t&0x0000000f)<<28));
 			$l^=	$SP1[ $t     &0x3f]|
 				$SP3[($t>> 8)&0x3f]|
 				$SP5[($t>>16)&0x3f]|

@@ -1,4 +1,59 @@
-Version 3.23 11/04/95
+Version 4.01 14/01/97
+	Even faster inner loop in the DES assember for x86 and a modification
+	for IP/FP which is faster on x86.  Both of these changes are
+	from Svend Olaf Mikkelsen <svolaf@inet.uni-c.dk>.  His
+	changes make the assember run %40 faster on a pentium.  This is just
+	a case of getting the instruction sequence 'just right'.
+	All credit to 'Svend' :-)
+	Quite a few special x86 'make' targets.
+	A libdes-l (lite) distribution.
+
+Version 4.00
+	After a bit of a pause, I'll up the major version number since this
+	is mostly a performace release.  I've added x86 assember and
+	added more options for performance.  A %28 speedup for gcc 
+	on a pentium and the assember is a %50 speedup.
+	MIPS CPU's, sparc and Alpha are the main CPU's with speedups.
+	Run des_opts to work out which options should be used.
+	DES_RISC1/DES_RISC2 use alternative inner loops which use
+	more registers but should give speedups on any CPU that does
+	dual issue (pentium).  DES_UNROLL unrolls the inner loop,
+	which costs in code size.
+
+Version 3.26
+	I've finally removed one of the shifts in D_ENCRYPT.  This
+	meant I've changed the des_SPtrans table (spr.h), the set_key()
+	function and some things in des_enc.c.  This has definitly
+	made things faster :-).  I've known about this one for some
+	time but I've been too lazy to follow it up :-).
+	Noticed that in the D_ENCRYPT() macro, we can just do L^=(..)^(..)^..
+	instead of L^=((..)|(..)|(..)..  This should save a register at
+	least.
+	Assember for x86.  The file to replace is des_enc.c, which is replaced
+	by one of the assember files found in asm.  Look at des/asm/readme
+	for more info.
+
+	/* Modification to fcrypt so it can be compiled to support
+	HPUX 10.x's long password format, define -DLONGCRYPT to use this.
+	Thanks to Jens Kupferschmidt <bt1cu@hpboot.rz.uni-leipzig.de>. */
+
+	SIGWINCH case put in des_read_passwd() so the function does not
+	'exit' if this function is recieved.
+
+Version 3.25 17/07/96
+	Modified read_pwd.c so that stdin can be read if not a tty.
+	Thanks to Jeff Barber <jeffb@issl.atl.hp.com> for the patches.
+	des_init_random_number_generator() shortened due to VMS linker
+	limits.
+	Added RSA's DESX cbc mode.  It is a form of cbc encryption, with 2
+	8 byte quantites xored before and after encryption.
+	des_xcbc_encryption() - the name is funny to preserve the des_
+	prefix on all functions.
+
+Version 3.24 20/04/96
+	The DES_PTR macro option checked and used by SSLeay configuration
+
+Version 3.23 11/04/96
 	Added DES_LONG.  If defined to 'unsigned int' on the DEC Alpha,
 	it gives a %20 speedup :-)
 	Fixed the problem with des.pl under perl5.  The patches were

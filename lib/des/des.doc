@@ -146,6 +146,20 @@ int enc);
 	des_cbc_encrypt accept that ivec is updates with the correct value
 	to pass in subsequent calls to des_ncbc_encrypt().  I advise using
 	des_ncbc_encrypt() instead of des_cbc_encrypt();
+
+void des_xcbc_encrypt(
+des_cblock *input,
+des_cblock *output,
+long length,
+des_key_schedule sk,
+des_cblock *ivec,
+des_cblock *inw,
+des_cblock *outw,
+int enc);
+	This is RSA's DESX mode of DES.  It uses inw and outw to
+	'whiten' the encryption.  inw and outw are secret (unlike the iv)
+	and are as such, part of the key.  So the key is sort of 24 bytes.
+	This is much better than cbc des.
 	
 void des_3cbc_encrypt(
 des_cblock *input,
@@ -303,12 +317,23 @@ des_cblock *ivec);
 	function is used by Kerberos v4 so that is why it stays in the
 	library.
 	
+char *des_fcrypt(
+const char *buf,
+const char *salt
+char *ret);
+	This is my fast version of the unix crypt(3) function.  This version
+	takes only a small amount of space relative to other fast
+	crypt() implementations.  This is different to the normal crypt
+	in that the third parameter is the buffer that the return value
+	is written into.  It needs to be at least 14 bytes long.  This
+	function is thread safe, unlike the normal crypt.
+
 char *crypt(
 const char *buf,
 const char *salt);
-	This is my fast version of the unix crypt(3) function.  This version
-	takes only a small amount of space relative to other fast
-	crypt() implementations.
+	This function calls des_fcrypt() with a static array passed as the
+	third parameter.  This emulates the normal non-thread safe semantics
+	of crypt(3).
 
 void des_string_to_key(
 char *str,

@@ -1,3 +1,5 @@
+#/usr/local/bin/perl
+
 sub lab_shift
 	{
 	local(*a,$n)=@_;
@@ -35,6 +37,42 @@ sub shift
 		@f=&shiftr(*a,-$n);
 		}
 	return(@f);
+	}
+
+sub rotate
+	{
+	local(*a,$n)=@_;
+	local(@f);
+
+	if ($n > 0)
+		{ @f=&rotatel(*a,$n); }
+	else
+		{ @f=&rotater(*a,-$n); }
+	return(@f);
+	}
+
+sub rotater
+	{
+	local(*a,$n)=@_;
+	local(@f,@g);
+
+	@f=&shiftr(*a,$n);
+	@g=&shiftl(*a,32-$n);
+	$#f=31;
+	$#g=31;
+	return(&or(*f,*g));
+	}
+
+sub rotatel
+	{
+	local(*a,$n)=@_;
+	local(@f,@g);
+
+	@f=&shiftl(*a,$n);
+	@g=&shiftr(*a,32-$n);
+	$#f=31;
+	$#g=31;
+	return(&or(*f,*g));
 	}
 
 sub shiftr

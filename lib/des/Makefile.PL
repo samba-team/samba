@@ -10,5 +10,5 @@ use ExtUtils::MakeMaker;
 	'OBJECT' => 'DES.o cbc_cksm.o cbc_enc.o ecb_enc.o pcbc_enc.o \
 	rand_key.o set_key.o str2key.o \
 	enc_read.o enc_writ.o fcrypt.o cfb_enc.o \
-	ecb3_enc.o ofb_enc.o cbc3_enc.o',
+	ecb3_enc.o ofb_enc.o cbc3_enc.o des_enc.o',
 	);
