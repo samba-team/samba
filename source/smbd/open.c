@@ -169,11 +169,15 @@ static BOOL open_file(files_struct *fsp,connection_struct *conn,
 
 		if (fsp->fd == -1)
 			ret = vfs_stat(conn, fname, psbuf);
-		else
+		else {
 			ret = vfs_fstat(fsp,fsp->fd,psbuf);
+			/* If we have an fd, this stat should succeed. */
+			if (ret == -1)
+				DEBUG(0,("Error doing fstat on open file %s (%s)\n", fname,strerror(errno) ));
+		}
 
+		/* For a non-io open, this stat failing means file not found. JRA */
 		if (ret == -1) {
-			DEBUG(0,("Error doing fstat on open file %s (%s)\n", fname,strerror(errno) ));
 			fd_close(conn, fsp);
 			return False;
 		}
