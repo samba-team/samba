@@ -507,7 +507,7 @@ static void init_mount(void)
 		fprintf(stderr,"smbmnt failed: %d\n", WEXITSTATUS(status));
 		/* FIXME: do some proper error handling */
 		exit(1);
-	} else if (WIFSIGNALLED(status)) {
+	} else if (WIFSIGNALED(status)) {
 		fprintf(stderr, "smbmnt killed by signal %d\n", WTERMSIG(status));
 		exit(1);
 	}
