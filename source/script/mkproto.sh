@@ -1,5 +1,8 @@
 #! /bin/sh
 
+LANG=C
+export LANG
+
 if [ $# -lt 3 ]
 then
   echo "Usage: $0 awk [-h headerdefine] outputheader proto_obj"
