@@ -1915,7 +1915,7 @@ static BOOL api_RDosPrintJobDel(connection_struct *conn,uint16 vuid, char *param
 /****************************************************************************
   Purge a print queue - or pause or resume it.
   ****************************************************************************/
-static BOOL api_WPrintQueuePurge(connection_struct *conn,uint16 vuid, char *param,char *data,
+static BOOL api_WPrintQueueCtrl(connection_struct *conn,uint16 vuid, char *param,char *data,
 				 int mdrcnt,int mprcnt,
 				 char **rdata,char **rparam,
 				 int *rdata_len,int *rparam_len)
@@ -3210,8 +3210,8 @@ struct
   {"NetWkstaGetInfo",	63,	api_NetWkstaGetInfo,0},
   {"DosPrintQEnum",	69,	api_DosPrintQEnum,0},
   {"DosPrintQGetInfo",	70,	api_DosPrintQGetInfo,0},
-  {"WPrintQueuePause",  74, api_WPrintQueuePurge,0},
-  {"WPrintQueueResume", 75, api_WPrintQueuePurge,0},
+  {"WPrintQueuePause",  74, api_WPrintQueueCtrl,0},
+  {"WPrintQueueResume", 75, api_WPrintQueueCtrl,0},
   {"WPrintJobEnumerate",76,	api_WPrintJobEnumerate,0},
   {"WPrintJobGetInfo",	77,	api_WPrintJobGetInfo,0},
   {"RDosPrintJobDel",	81,	api_RDosPrintJobDel,0},
@@ -3220,7 +3220,7 @@ struct
   {"WPrintDestEnum",	84,	api_WPrintDestEnum,0},
   {"WPrintDestGetInfo",	85,	api_WPrintDestGetInfo,0},
   {"NetRemoteTOD",	91,	api_NetRemoteTOD,0},
-  {"WPrintQueuePurge",	103,	api_WPrintQueuePurge,0},
+  {"WPrintQueuePurge",	103,	api_WPrintQueueCtrl,0},
   {"NetServerEnum",	104,	api_RNetServerEnum,0},
   {"WAccessGetUserPerms",105,	api_WAccessGetUserPerms,0},
   {"SetUserPassword",	115,	api_SetUserPassword,0},
