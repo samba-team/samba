@@ -6,6 +6,10 @@ Sun Jun  1 23:23:08 1997  Assar Westerlund  <assar@sics.se>
 
 Sun Jun  1 22:45:11 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
 
+	* lib/hdb/db.c: Merge fetch and store.
+
+	* admin: Merge to one program.
+
 	* lib/krb5/str2key.c: Fill in keytype and length.
 
 Sun Jun  1 16:31:23 1997  Assar Westerlund  <assar@sics.se>
