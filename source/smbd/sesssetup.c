@@ -62,12 +62,14 @@ static int reply_spnego_kerberos(connection_struct *conn,
 
 	ret = krb5_init_context(&context);
 	if (ret) {
+		DEBUG(1,("krb5_init_context failed (%s)\n", error_message(ret)));
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
 
 	ret = krb5_build_principal(context, &server, strlen(realm),
 				   realm, service, NULL);
 	if (ret) {
+		DEBUG(1,("krb5_build_principal failed (%s)\n", error_message(ret)));
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
 
@@ -76,12 +78,15 @@ static int reply_spnego_kerberos(connection_struct *conn,
 
 	if ((ret = krb5_rd_req(context, &auth_context, &packet, 
 				       server, keytab, NULL, &tkt))) {
-		DEBUG(3,("krb5_rd_req failed with code %08x\n", ret));
+		DEBUG(3,("krb5_rd_req failed (%s)\n", 
+			 error_message(ret)));
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
 
 	if ((ret = krb5_unparse_name(context, tkt->enc_part2->client,
 				     &client))) {
+		DEBUG(3,("krb5_unparse_name failed (%s)\n", 
+			 error_message(ret)));
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
 
