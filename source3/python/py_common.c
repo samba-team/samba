@@ -21,7 +21,7 @@
 #include "includes.h"
 #include "Python.h"
 
-#include "python/py_common.h"
+#include "python/py_common_proto.h"
 
 /* Return a tuple of (error code, error string) from a WERROR */
 
@@ -45,6 +45,9 @@ static BOOL initialised;
 
 void py_samba_init(void)
 {
+	extern pstring global_myname;
+	char *p;
+
 	if (initialised)
 		return;
 
@@ -57,6 +60,11 @@ void py_samba_init(void)
 
 	load_interfaces();
 	
+	fstrcpy(global_myname, myhostname());
+	p = strchr(global_myname, '.');
+	if (p)
+		*p = 0;
+
 	initialised = True;
 }
 
@@ -124,27 +132,17 @@ PyObject *py_setup_logging(PyObject *self, PyObject *args, PyObject *kw)
    be freed by calling free(). */
 
 struct cli_state *open_pipe_creds(char *server, PyObject *creds, 
-				  cli_pipe_fn *connect_fn, char **errstr)
+				  char *pipe_name, char **errstr)
 {
-	struct ntuser_creds nt_creds;
+	char *username = "", *password = "", *domain = "";
 	struct cli_state *cli;
+	NTSTATUS result;
+	struct in_addr server_ip;
+	extern pstring global_myname;
 	
-	cli = (struct cli_state *)malloc(sizeof(struct cli_state));
-	if (!cli) {
-		*errstr = strdup("out of memory");
-		return NULL;
-	}
-
-	ZERO_STRUCTP(cli);
-
-	/* Extract credentials from the python dictionary and initialise
-	   the ntuser_creds struct from them. */
-
-	ZERO_STRUCT(nt_creds);
-	nt_creds.pwd.null_pwd = True;
+	/* Extract credentials from the python dictionary */
 
 	if (creds && PyDict_Size(creds) > 0) {
-		char *username, *password, *domain;
 		PyObject *username_obj, *password_obj, *domain_obj;
 
 		/* Check credentials passed are valid.  This means the
@@ -172,24 +170,23 @@ struct cli_state *open_pipe_creds(char *server, PyObject *creds,
 
 		if (!username || !domain || !password)
 			goto creds_error;
-
-		/* Initialise nt_creds structure with passed creds */
-
-		fstrcpy(nt_creds.user_name, username);
-		fstrcpy(nt_creds.domain, domain);
-
-		if (lp_encrypted_passwords())
-			pwd_make_lm_nt_16(&nt_creds.pwd, password);
-		else
-			pwd_set_cleartext(&nt_creds.pwd, password);
-
-		nt_creds.pwd.null_pwd = False;
 	}
 
 	/* Now try to connect */
 
-	if (!connect_fn(cli, server, &nt_creds)) {
-		*errstr = strdup("error connecting to RPC pipe");
+	if (!resolve_name(server, &server_ip, 0x20))  {
+		asprintf(errstr, "unable to resolve %s", server);
+		return NULL;
+	}
+
+	result = cli_full_connection(
+		&cli, global_myname, server, &server_ip, 0, "IPC$", "IPC",
+		username, domain, password, strlen(password));
+	
+	if (!NT_STATUS_IS_OK(result) || !cli_nt_session_open(cli, pipe_name)) {
+		cli_shutdown(cli);
+		free(cli);
+		*errstr = strdup("pipe not available");
 		return NULL;
 	}
 
