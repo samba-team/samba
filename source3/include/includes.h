@@ -351,6 +351,8 @@
 #  endif
 #endif
 
+#define SMB_OFF_T_BITS (sizeof(SMB_OFF_T)*8)
+
 /*
  * Set the define that tells us if we can do 64 bit
  * NT SMB calls.
