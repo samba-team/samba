@@ -83,7 +83,7 @@ _kadm5_acl_init(kadm5_server_context *context)
 		continue;
 	    }
 	    krb5_free_principal(context->context, princ);
-	    p = strtok_r(NULL, " \t\n", &foo);
+	    p = strtok_r(NULL, "\n", &foo);
 	    if(p == NULL)
 		continue;
 	    flags = parse_flags(p, acl_units, 0);
