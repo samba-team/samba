@@ -921,12 +921,17 @@ BOOL print_job_end(int jobid)
 
 	snum = print_job_snum(jobid);
 
-	if (sys_fstat(pjob->fd, &sbuf) == 0)
+	if (sys_fstat(pjob->fd, &sbuf) == 0) {
 		pjob->size = sbuf.st_size;
-
-	close(pjob->fd);
-	pjob->fd = -1;
-
+		close(pjob->fd);
+		pjob->fd = -1;
+	} else {
+		/* Couldn't stat the job file, so something has gone wrong. Cleanup */
+		unlink(pjob->filename);
+		tdb_delete(tdb, print_key(jobid));
+		return False;
+	}
+	
 	if (pjob->size == 0) {
 		/* don't bother spooling empty files */
 		unlink(pjob->filename);
@@ -965,9 +970,9 @@ BOOL print_job_end(int jobid)
 	pjob->spooled = True;
 	print_job_store(jobid, pjob);
 
-	/* force update the database */
-	print_cache_flush(snum);
-	
+	/* make sure the database is up to date */
+	if (print_cache_expired(snum)) print_queue_update(snum);
+
 	/* Send a printer notify message */
 
 	printer_name = PRINTERNAME(snum);
@@ -1186,8 +1191,8 @@ BOOL print_queue_resume(struct current_user *user, int snum, int *errcode)
 		return False;
 	}
 
-	/* force update the database */
-	print_cache_flush(snum);
+	/* make sure the database is up to date */
+	if (print_cache_expired(snum)) print_queue_update(snum);
 
 	/* Send a printer notify message */
 
@@ -1216,7 +1221,7 @@ BOOL print_queue_purge(struct current_user *user, int snum, int *errcode)
 		}
 	}
 
-	print_cache_flush(snum);
+	print_queue_update(snum);
 	safe_free(queue);
 
 	/* Send a printer notify message */
