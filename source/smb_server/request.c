@@ -49,7 +49,7 @@ struct smbsrv_request *init_smb_request(struct smbsrv_connection *smb_conn)
 {
 	struct smbsrv_request *req;
 
-	smb_conn->socket.pkt_count++;
+	smb_conn->pkt_count++;
 
 	req = talloc_p(smb_conn, struct smbsrv_request);
 	if (!req) {
