@@ -414,7 +414,6 @@ case "$host_os" in
 				AC_DEFINE(_MAX_ALIGNMENT, 4, [Maximum alignment])
 				;;
       esac
-      DYNEXP="-Wl,-E"
       ;;
 
 #
