@@ -737,6 +737,10 @@ int cli_open(struct cli_state *cli, char *fname, int flags, int share_mode)
 		accessmode |= 1;
 	} 
 
+	if ((flags & O_SYNC) == O_SYNC) {
+		accessmode |= (1<<14);
+	}
+
 	bzero(cli->outbuf,smb_size);
 	bzero(cli->inbuf,smb_size);
 
