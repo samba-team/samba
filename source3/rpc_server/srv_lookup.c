@@ -333,7 +333,7 @@ uint32 lookup_alias_name(DOM_SID *sid, char *alias_name, uint8 *type)
 
 	sid_to_string(sid_str, sid);
 
-	DEBUG(2,("lookup_alias_name: sid: %d\n", sid_str));
+	DEBUG(2,("lookup_alias_name: sid: %s\n", sid_str));
 	DEBUG(2,(" NOT IMPLEMENTED\n"));
 
 	return 0xC0000000 | NT_STATUS_NONE_MAPPED;
