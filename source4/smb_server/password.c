@@ -58,8 +58,6 @@ void smbsrv_invalidate_vuid(struct smbsrv_connection *smb_conn, uint16_t vuid)
 
 	session_yield(sess);
 
-	free_session_info(&sess->session_info);
-
 	DLIST_REMOVE(smb_conn->sessions.session_list, sess);
 
 	/* clear the vuid from the 'cache' on each connection, and
@@ -135,8 +133,13 @@ uint16_t smbsrv_register_session(struct smbsrv_connection *smb_conn,
 	smb_conn->sessions.num_validated_vuids++;
 
 	/* use this to keep tabs on all our info from the authentication */
-	sess->session_info = session_info;
-	sess->gensec_ctx = gensec_ctx;
+	if (session_info) {
+		sess->session_info = talloc_reference(sess, session_info);
+	}
+
+	if (gensec_ctx) {
+		sess->gensec_ctx = talloc_reference(sess, gensec_ctx);
+	}
 
 	sess->smb_conn = smb_conn;
 	DLIST_ADD(smb_conn->sessions.session_list, sess);
