@@ -426,27 +426,22 @@ PRINTER_MESSAGE_INFO;
 
 /* this struct is undocumented */
 /* thanks to the ddk ... */
-typedef struct spool_user_1
-{
+typedef struct {
 	uint32 size;		/* length of user_name & client_name + 2? */
-	uint32 client_name_ptr;
-	uint32 user_name_ptr;
+	UNISTR2 *client_name;
+	UNISTR2 *user_name;
 	uint32 build;
 	uint32 major;
 	uint32 minor;
 	uint32 processor;
-	UNISTR2 client_name;
-	UNISTR2 user_name;
-}
-SPOOL_USER_1;
+} SPOOL_USER_1;
 
-typedef struct spool_user_ctr_info
-{
+typedef struct {
 	uint32 level;
-	uint32 ptr;
-	SPOOL_USER_1 user1;
-}
-SPOOL_USER_CTR;
+	union {
+		SPOOL_USER_1 *user1;
+	} user;
+} SPOOL_USER_CTR;
 
 /*
  * various bits in the DEVICEMODE.fields member
@@ -543,41 +538,33 @@ typedef struct _printer_default
 }
 PRINTER_DEFAULT;
 
-/* SPOOL_Q_OPEN_PRINTER request to open a printer */
-typedef struct spool_q_open_printer
-{
-	uint32 printername_ptr;
-	UNISTR2 printername;
-	PRINTER_DEFAULT printer_default;
-}
-SPOOL_Q_OPEN_PRINTER;
+/********************************************/
 
-/* SPOOL_R_OPEN_PRINTER reply to an open printer */
-typedef struct spool_r_open_printer
-{
+typedef struct {
+	UNISTR2 *printername;
+	PRINTER_DEFAULT printer_default;
+} SPOOL_Q_OPEN_PRINTER;
+
+typedef struct {
 	POLICY_HND handle;	/* handle used along all transactions (20*uint8) */
 	WERROR status;
-}
-SPOOL_R_OPEN_PRINTER;
+} SPOOL_R_OPEN_PRINTER;
 
-/* SPOOL_Q_OPEN_PRINTER_EX request to open a printer */
-typedef struct spool_q_open_printer_ex
-{
-	uint32 printername_ptr;
-	UNISTR2 printername;
+/********************************************/
+
+typedef struct {
+	UNISTR2 *printername;
 	PRINTER_DEFAULT printer_default;
 	uint32 user_switch;
 	SPOOL_USER_CTR user_ctr;
-}
-SPOOL_Q_OPEN_PRINTER_EX;
+} SPOOL_Q_OPEN_PRINTER_EX;
 
-/* SPOOL_R_OPEN_PRINTER_EX reply to an open printer */
-typedef struct spool_r_open_printer_ex
-{
+typedef struct {
 	POLICY_HND handle;	/* handle used along all transactions (20*uint8) */
 	WERROR status;
-}
-SPOOL_R_OPEN_PRINTER_EX;
+} SPOOL_R_OPEN_PRINTER_EX;
+
+/********************************************/
 
 typedef struct spool_notify_option_type
 {
@@ -1678,8 +1665,7 @@ SPOOL_R_ABORTPRINTER;
 
 typedef struct spool_q_addprinterex
 {
-	uint32 server_name_ptr;
-	UNISTR2 server_name;
+	UNISTR2 *server_name;
 	uint32 level;
 	SPOOL_PRINTER_INFO_LEVEL info;
 	DEVMODE_CTR devmode_ctr;

@@ -423,7 +423,7 @@ typedef struct lsa_q_lookup_sids
 	POLICY_HND          pol; /* policy handle */
 	LSA_SID_ENUM        sids;
 	LSA_TRANS_NAME_ENUM names;
-	LOOKUP_LEVEL        level;
+	uint16              level;
 	uint32              mapped_count;
 
 } LSA_Q_LOOKUP_SIDS;

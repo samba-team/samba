@@ -290,6 +290,8 @@ copy an IP address from one buffer to another
 #define TALLOC_REALLOC_ARRAY(ctx, ptr, type, count) (type *)talloc_realloc_array_((ctx),(ptr),sizeof(type),(count))
 
 #define PRS_ALLOC_MEM(ps, type, count) (type *)prs_alloc_mem_((ps),sizeof(type),(count))
+#define PRS_ALLOC_MEM_VOID(ps, size) prs_alloc_mem_((ps),(size),1)
+
 
 /* Get medieval on our ass about malloc.... */
 
@@ -338,6 +340,7 @@ copy an IP address from one buffer to another
 #define TALLOC_REALLOC_ARRAY(ctx, ptr, type, count) (type *)talloc_realloc_array((ctx),(ptr),sizeof(type),(count))
 
 #define PRS_ALLOC_MEM(ps, type, count) (type *)prs_alloc_mem((ps),sizeof(type),(count))
+#define PRS_ALLOC_MEM_VOID(ps, size) prs_alloc_mem((ps),(size),1)
 
 /* Regular malloc code. */
 

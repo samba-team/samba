@@ -63,8 +63,8 @@ static BOOL api_reg_close(pipes_struct *p)
 
 static BOOL api_reg_open_hklm(pipes_struct *p)
 {
-	REG_Q_OPEN_HKLM q_u;
-	REG_R_OPEN_HKLM r_u;
+	REG_Q_OPEN_HIVE q_u;
+	REG_R_OPEN_HIVE r_u;
 	prs_struct *data = &p->in_data.data;
 	prs_struct *rdata = &p->out_data.rdata;
 
@@ -72,12 +72,12 @@ static BOOL api_reg_open_hklm(pipes_struct *p)
 	ZERO_STRUCT(r_u);
 
 	/* grab the reg open */
-	if(!reg_io_q_open_hklm("", &q_u, data, 0))
+	if(!reg_io_q_open_hive("", &q_u, data, 0))
 		return False;
 
 	r_u.status = _reg_open_hklm(p, &q_u, &r_u);
 
-	if(!reg_io_r_open_hklm("", &r_u, rdata, 0))
+	if(!reg_io_r_open_hive("", &r_u, rdata, 0))
 		return False;
 
 	return True;
@@ -89,8 +89,8 @@ static BOOL api_reg_open_hklm(pipes_struct *p)
 
 static BOOL api_reg_open_hku(pipes_struct *p)
 {
-	REG_Q_OPEN_HKU q_u;
-	REG_R_OPEN_HKU r_u;
+	REG_Q_OPEN_HIVE q_u;
+	REG_R_OPEN_HIVE r_u;
 	prs_struct *data = &p->in_data.data;
 	prs_struct *rdata = &p->out_data.rdata;
 
@@ -98,12 +98,12 @@ static BOOL api_reg_open_hku(pipes_struct *p)
 	ZERO_STRUCT(r_u);
 
 	/* grab the reg open */
-	if(!reg_io_q_open_hku("", &q_u, data, 0))
+	if(!reg_io_q_open_hive("", &q_u, data, 0))
 		return False;
 
 	r_u.status = _reg_open_hku(p, &q_u, &r_u);
 
-	if(!reg_io_r_open_hku("", &r_u, rdata, 0))
+	if(!reg_io_r_open_hive("", &r_u, rdata, 0))
 		return False;
 
 	return True;
@@ -115,8 +115,8 @@ static BOOL api_reg_open_hku(pipes_struct *p)
 
 static BOOL api_reg_open_hkcr(pipes_struct *p)
 {
-	REG_Q_OPEN_HKCR q_u;
-	REG_R_OPEN_HKCR r_u;
+	REG_Q_OPEN_HIVE q_u;
+	REG_R_OPEN_HIVE r_u;
 	prs_struct *data = &p->in_data.data;
 	prs_struct *rdata = &p->out_data.rdata;
 
@@ -124,12 +124,12 @@ static BOOL api_reg_open_hkcr(pipes_struct *p)
 	ZERO_STRUCT(r_u);
 
 	/* grab the reg open */
-	if(!reg_io_q_open_hkcr("", &q_u, data, 0))
+	if(!reg_io_q_open_hive("", &q_u, data, 0))
 		return False;
 
 	r_u.status = _reg_open_hkcr(p, &q_u, &r_u);
 
-	if(!reg_io_r_open_hkcr("", &r_u, rdata, 0))
+	if(!reg_io_r_open_hive("", &r_u, rdata, 0))
 		return False;
 
 	return True;
@@ -216,6 +216,32 @@ static BOOL api_reg_shutdown(pipes_struct *p)
 }
 
 /*******************************************************************
+ api_reg_shutdown_ex
+ ********************************************************************/
+
+static BOOL api_reg_shutdown_ex(pipes_struct *p)
+{
+	REG_Q_SHUTDOWN_EX q_u;
+	REG_R_SHUTDOWN_EX r_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	/* grab the reg shutdown ex */
+	if(!reg_io_q_shutdown_ex("", &q_u, data, 0))
+		return False;
+
+	r_u.status = _reg_shutdown_ex(p, &q_u, &r_u);
+
+	if(!reg_io_r_shutdown_ex("", &r_u, rdata, 0))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
  api_reg_abort_shutdown
  ********************************************************************/
 
@@ -268,25 +294,25 @@ static BOOL api_reg_query_key(pipes_struct *p)
 }
 
 /*******************************************************************
- api_reg_unknown_1a
+ api_reg_getversion
  ********************************************************************/
 
-static BOOL api_reg_unknown_1a(pipes_struct *p)
+static BOOL api_reg_getversion(pipes_struct *p)
 {
-	REG_Q_UNKNOWN_1A q_u;
-	REG_R_UNKNOWN_1A r_u;
+	REG_Q_GETVERSION q_u;
+	REG_R_GETVERSION r_u;
 	prs_struct *data = &p->in_data.data;
 	prs_struct *rdata = &p->out_data.rdata;
 
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
 
-	if(!reg_io_q_unknown_1a("", &q_u, data, 0))
+	if(!reg_io_q_getversion("", &q_u, data, 0))
 		return False;
 
-	r_u.status = _reg_unknown_1a(p, &q_u, &r_u);
+	r_u.status = _reg_getversion(p, &q_u, &r_u);
 
-	if(!reg_io_r_unknown_1a("", &r_u, rdata, 0))
+	if(!reg_io_r_getversion("", &r_u, rdata, 0))
 		return False;
 
 	return True;
@@ -383,8 +409,9 @@ static struct api_struct api_reg_cmds[] =
       { "REG_QUERY_KEY"          , REG_QUERY_KEY          , api_reg_query_key        },
       { "REG_INFO"               , REG_INFO               , api_reg_info             },
       { "REG_SHUTDOWN"           , REG_SHUTDOWN           , api_reg_shutdown         },
+      { "REG_SHUTDOWN_EX"        , REG_SHUTDOWN_EX        , api_reg_shutdown_ex      },
       { "REG_ABORT_SHUTDOWN"     , REG_ABORT_SHUTDOWN     , api_reg_abort_shutdown   },
-      { "REG_UNKNOWN_1A"         , REG_UNKNOWN_1A         , api_reg_unknown_1a       },
+      { "REG_GETVERSION"         , REG_GETVERSION         , api_reg_getversion       },
       { "REG_SAVE_KEY"           , REG_SAVE_KEY           , api_reg_save_key         }
 };
 
