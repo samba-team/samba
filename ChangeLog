@@ -1,5 +1,9 @@
 2001-07-23  Johan Danielsson  <joda@pdc.kth.se>
 
+	* admin/get.c: don't open connection to server until we loop over
+	the principals, at that time we know the realm of the (first)
+	principal and we can default to that admin server
+
 	* admin: add a rename command
 
 2001-07-19  Assar Westerlund  <assar@sics.se>
