@@ -125,6 +125,9 @@ int reply_special(char *inbuf,char *outbuf)
 
 	smb_setlen(outbuf,0);
 	
+	DEBUG(20,("NBT message\n"));
+	dump_data(20, inbuf, smb_len(inbuf));
+
 	switch (msg_type) {
 	case 0x81: /* session request */
 		CVAL(outbuf,0) = 0x82;
