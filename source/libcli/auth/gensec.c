@@ -736,6 +736,11 @@ static NTSTATUS gensec_register(const void *_ops)
 {
 	const struct gensec_security_ops *ops = _ops;
 	
+	if (!lp_parm_bool(-1, "gensec", ops->name, True)) {
+		DEBUG(2,("gensec subsystem %s is disabled\n", ops->name));
+		return NT_STATUS_OK;
+	}
+
 	if (gensec_security_by_name(ops->name) != NULL) {
 		/* its already registered! */
 		DEBUG(0,("GENSEC backend '%s' already registered\n", 
