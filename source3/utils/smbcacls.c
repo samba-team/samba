@@ -436,6 +436,29 @@ static void sec_desc_print(FILE *f, SEC_DESC *sd)
 
 }
 
+/* Some systems seem to require unicode pathnames for the ntcreate&x call
+   despite Samba negotiating ascii filenames.  Try with unicode pathname if
+   the ascii version fails. */
+
+int do_cli_nt_create(struct cli_state *cli, char *fname, uint32 DesiredAccess)
+{
+	int result;
+
+	result = cli_nt_create(cli, fname, DesiredAccess);
+
+	if (result == -1) {
+		uint32 errnum, nt_rpc_error;
+		uint8 errclass;
+
+		cli_error(cli, &errclass, &errnum, &nt_rpc_error);
+
+		if (errclass == ERRDOS && errnum == ERRbadpath) {
+			result = cli_nt_create_uni(cli, fname, DesiredAccess);
+		}
+	}
+
+	return result;
+}
 
 /***************************************************** 
 dump the acls for a file
@@ -447,7 +470,7 @@ static void cacl_dump(struct cli_state *cli, char *filename)
 
 	if (test_args) return;
 
-	fnum = cli_nt_create(cli, filename, 0x20000);
+	fnum = do_cli_nt_create(cli, filename, 0x20000);
 	if (fnum == -1) {
 		printf("Failed to open %s: %s\n", filename, cli_errstr(cli));
 		return;
@@ -479,7 +502,10 @@ static void owner_set(struct cli_state *cli, enum chown_mode change_mode, char *
 	SEC_DESC *sd, *old;
 	size_t sd_size;
 
-	fnum = cli_nt_create(cli, filename, READ_CONTROL_ACCESS|WRITE_DAC_ACCESS|WRITE_OWNER_ACCESS);
+	fnum = do_cli_nt_create(cli, filename, 
+				READ_CONTROL_ACCESS | WRITE_DAC_ACCESS
+				| WRITE_OWNER_ACCESS);
+
 	if (fnum == -1) {
 		printf("Failed to open %s: %s\n", filename, cli_errstr(cli));
 		return;
@@ -521,9 +547,12 @@ static void cacl_set(struct cli_state *cli, char *filename,
 	if (!sd) return;
 	if (test_args) return;
 
-	/* the desired access below is the only one I could find that works with
-	   NT4, W2KP and Samba */
-	fnum = cli_nt_create(cli, filename, MAXIMUM_ALLOWED_ACCESS | 0x60000);
+	/* The desired access below is the only one I could find that works
+	   with NT4, W2KP and Samba */
+
+	fnum = do_cli_nt_create(cli, filename, 
+				MAXIMUM_ALLOWED_ACCESS | 0x60000);
+
 	if (fnum == -1) {
 		printf("Failed to open %s: %s\n", filename, cli_errstr(cli));
 		return;
@@ -859,6 +888,17 @@ You can string acls together with spaces, commas or newlines\n\
 	if (!test_args) {
 		cli = connect_one(share);
 		if (!cli) exit(1);
+	}
+
+
+	{
+		char *s;
+
+		s = filename;
+		while(*s) {
+			if (*s == '/') *s = '\\';
+			s++;
+		}
 	}
 
 	/* Perform requested action */
