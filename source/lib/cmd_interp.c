@@ -1293,7 +1293,8 @@ static void cmd_set(struct client_info *info, int argc, char *argv[])
 	if (IS_BITS_SET_ALL(cmd_set_options, CMD_INTER))
 	{
 		setup_logging(debugf, interactive);
-		reopen_logs();
+		if (! interactive)
+			reopen_logs();
 	}
 
 	strupper(global_myname);

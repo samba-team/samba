@@ -141,6 +141,40 @@ int sys_select(int maxfd, fd_set *r_fds, fd_set *w_fds, struct timeval *tval)
 #endif /* NO_SELECT */
 
 /*******************************************************************
+ A wrapper for usleep in case we don't have one.
+********************************************************************/
+
+int sys_usleep(long usecs)
+{
+#ifndef HAVE_USLEEP
+  struct timeval tval;
+#endif
+
+  /*
+   * We need this braindamage as the glibc usleep
+   * is not SPEC1170 complient... grumble... JRA.
+   */
+
+  if(usecs < 0 || usecs > 1000000) {
+    errno = EINVAL;
+    return -1;
+  }
+
+#if HAVE_USLEEP
+  usleep(usecs);
+  return 0;
+#else /* HAVE_USLEEP */
+  /*
+   * Fake it with select...
+   */
+  tval.tv_sec = 0;
+  tval.tv_usec = usecs/1000;
+  select(0,NULL,NULL,NULL,&tval);
+  return 0;
+#endif /* HAVE_USLEEP */
+}
+
+/*******************************************************************
 A stat() wrapper that will deal with 64 bit filesizes.
 ********************************************************************/
 

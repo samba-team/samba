@@ -517,19 +517,55 @@ char *http_timestring(time_t t)
 /****************************************************************************
  Return the date and time as a string
 ****************************************************************************/
+
 char *timestring(BOOL hires)
 {
 	static fstring TimeBuf;
-	time_t t = time(NULL);
-	struct tm *tm = LocalTime(&t);
+	struct timeval tp;
+	time_t t;
+	struct tm *tm;
 
+	if (hires) {
+		GetTimeOfDay(&tp);
+		t = (time_t)tp.tv_sec;
+	} else {
+		t = time(NULL);
+	}
+	tm = LocalTime(&t);
 	if (!tm) {
-		slprintf(TimeBuf,sizeof(TimeBuf)-1,"%ld seconds since the Epoch",(long)t);
+		if (hires) {
+			slprintf(TimeBuf,
+				 sizeof(TimeBuf)-1,
+				 "%ld.%06ld seconds since the Epoch",
+				 (long)tp.tv_sec, 
+				 (long)tp.tv_usec);
+		} else {
+			slprintf(TimeBuf,
+				 sizeof(TimeBuf)-1,
+				 "%ld seconds since the Epoch",
+				 (long)t);
+		}
 	} else {
 #ifdef HAVE_STRFTIME
-		strftime(TimeBuf,100,"%Y/%m/%d %T",tm);
+		if (hires) {
+			strftime(TimeBuf,sizeof(TimeBuf)-1,"%Y/%m/%d %H:%M:%S",tm);
+			slprintf(TimeBuf+strlen(TimeBuf),
+				 sizeof(TimeBuf)-1 - strlen(TimeBuf), 
+				 ".%06ld", 
+				 (long)tp.tv_usec);
+		} else {
+			strftime(TimeBuf,100,"%Y/%m/%d %H:%M:%S",tm);
+		}
 #else
-		fstrcpy(TimeBuf, asctime(tm));
+		if (hires) {
+			slprintf(TimeBuf, 
+				 sizeof(TimeBuf)-1, 
+				 "%s.%06ld", 
+				 asctime(tm), 
+				 (long)tp.tv_usec);
+		} else {
+			fstrcpy(TimeBuf, asctime(tm));
+		}
 #endif
 	}
 	return(TimeBuf);
