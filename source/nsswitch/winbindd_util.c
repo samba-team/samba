@@ -147,9 +147,13 @@ BOOL establish_connections(void)
 	static time_t lastt;
 	time_t t;
 
-	if (!initialised) {
-		initialised = True;
+	t = time(NULL);
+	if (t - lastt < WINBINDD_ESTABLISH_LOOP) {
+		return False;
+	}
+	lastt = t;
 
+	if (!initialised) {
 		fstrcpy(server_state.controller, lp_passwordserver());
 		if (strcmp(server_state.controller,"*") == 0) {
 			if (!resolve_dc_name(lp_workgroup(), server_state.controller)) {
@@ -163,13 +167,14 @@ BOOL establish_connections(void)
 			DEBUG(0, ("could not add record for domain %s\n", lp_workgroup()));
 			return False;
 		}
+
+		initialised = True;
 	}
 	
-	t = time(NULL);
-	if (t - lastt < WINBINDD_ESTABLISH_LOOP) {
-		return False;
+	if (!server_state.pwdb_initialised) {
+		server_state.pwdb_initialised = pwdb_initialise(False);
+		if (!server_state.pwdb_initialised) return False;
 	}
-	lastt = t;
 
 	/* Open lsa handle if it isn't already open */
 	if (!server_state.lsa_handle_open) {
@@ -177,6 +182,8 @@ BOOL establish_connections(void)
 			lsa_open_policy(server_state.controller, &server_state.lsa_handle, 
 					False, SEC_RIGHTS_MAXIMUM_ALLOWED);
 		if (!server_state.lsa_handle_open) return False;
+
+		/* now we can talk to the server we can get some info */
 		get_trusted_domains();
 	}
 

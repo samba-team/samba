@@ -603,13 +603,11 @@ int main(int argc, char **argv)
     }
     load_interfaces();
 
-    pwdb_initialise(False);
-
     ZERO_STRUCT(server_state);
 
     /* Winbind daemon initialisation */
     if (!winbindd_param_init()) {
-        return 1;
+	    return 1;
     }
 
     /* try to establish the connections now, but don't fail if we can't */

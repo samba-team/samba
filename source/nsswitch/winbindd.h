@@ -60,20 +60,17 @@ struct getent_state {
 /* Server state structure */
 
 struct winbindd_state {
-
-    /* Netbios name of PDC */
-
-    fstring controller;
-
-    /* User and group id pool */
-
-    uid_t uid_low, uid_high;               /* Range of uids to allocate */
-    gid_t gid_low, gid_high;               /* Range of gids to allocate */
-
-    /* Cached handle to lsa pipe */
-
-    POLICY_HND lsa_handle;
-    BOOL lsa_handle_open;
+	/* Netbios name of PDC */
+	fstring controller;
+	
+	/* User and group id pool */
+	uid_t uid_low, uid_high;               /* Range of uids to allocate */
+	gid_t gid_low, gid_high;               /* Range of gids to allocate */
+	
+	/* Cached handle to lsa pipe */
+	POLICY_HND lsa_handle;
+	BOOL lsa_handle_open;
+	BOOL pwdb_initialised;
 };
 
 extern struct winbindd_state server_state;  /* Server information */
