@@ -107,7 +107,7 @@ void nbtd_winsclient_refresh(struct nbtd_iface_name *iname)
 	/* setup a wins name refresh request */
 	io.in.name            = iname->name;
 	io.in.wins_servers    = lp_wins_server_list();
-	io.in.addresses       = nbtd_address_list(iface->nbtsrv, iname);
+	io.in.addresses       = nbtd_address_list(iface, iname);
 	io.in.nb_flags        = iname->nb_flags;
 	io.in.ttl             = iname->ttl;
 
