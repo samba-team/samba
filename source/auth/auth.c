@@ -307,7 +307,6 @@ static NTSTATUS make_auth_context_text_list(struct auth_context **auth_context, 
 {
 	struct auth_methods *list = NULL;
 	struct auth_methods *t = NULL;
-	int i;
 	NTSTATUS nt_status;
 
 	if (!text_list) {
@@ -338,7 +337,7 @@ static NTSTATUS make_auth_context_text_list(struct auth_context **auth_context, 
 
 		ops = auth_backend_byname(module_name);
 		if (!ops) {
-			DEBUG(5,("make_auth_context_text_list: Found auth method %s (at pos %d)\n", *text_list, i));
+			DEBUG(5,("make_auth_context_text_list: Found auth method %s\n", *text_list));
 			SAFE_FREE(module_name);
 			break;
 		}
