@@ -493,6 +493,12 @@ static BOOL cli_session_setup_spnego(struct cli_state *cli, char *user,
 	int i;
 	BOOL got_kerberos_mechanism = False;
 
+	/* the server might not even do spnego */
+	if (cli->secblob.length == 16) {
+		DEBUG(3,("server didn't supply a full spnego negprot\n"));
+		goto ntlmssp;
+	}
+
 	/* the server sent us the first part of the SPNEGO exchange in the negprot 
 	   reply */
 	if (!spnego_parse_negTokenInit(cli->secblob, guid, OIDs, &principle)) {
@@ -518,6 +524,8 @@ static BOOL cli_session_setup_spnego(struct cli_state *cli, char *user,
 #endif
 
 	free(principle);
+
+ntlmssp:
 
 	return cli_session_setup_ntlmssp(cli, user, pass, workgroup);
 }
@@ -576,12 +584,10 @@ BOOL cli_session_setup(struct cli_state *cli,
 		return cli_session_setup_plaintext(cli, user, pass, workgroup);
 	}
 
-#if HAVE_KRB5
 	/* if the server supports extended security then use SPNEGO */
 	if (cli->capabilities & CAP_EXTENDED_SECURITY) {
 		return cli_session_setup_spnego(cli, user, pass, workgroup);
 	}
-#endif
 
 	/* otherwise do a NT1 style session setup */
 	return cli_session_setup_nt1(cli, user, 
