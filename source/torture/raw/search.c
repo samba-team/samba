@@ -1241,6 +1241,7 @@ static BOOL test_ea_list(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	status = smb_raw_search_first(cli->tree, mem_ctx,
 				      &io, &result, multiple_search_callback);
 	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VALUE(result.count, 2);
 
 	nxt.t2fnext.level = RAW_SEARCH_EA_LIST;
 	nxt.t2fnext.in.handle = io.t2ffirst.out.handle;
