@@ -1,6 +1,7 @@
 #!/usr/bin/perl
 ##
 ## Example script to export ldap entries into an smbpasswd file format
+## using the Mozilla PerLDAP module.
 ##
 ## writen by jerry@samba.org
 ##
@@ -31,7 +32,7 @@ print "##\n";
 ## scheck for the existence of the posixAccount first
 $result = $ldap->search ( base => "$DN",
 			  scope => "sub",
-			  filter => "(objectclass=sambaAccount)"
+			  filter => "(objectclass=smbpasswordentry)"
 			);
 
 
