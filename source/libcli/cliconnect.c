@@ -76,12 +76,17 @@ NTSTATUS cli_session_setup(struct cli_state *cli,
 
 	setup.generic.level = RAW_SESSSETUP_GENERIC;
 	setup.generic.in.sesskey = cli->transport->negotiate.sesskey;
-	setup.generic.in.capabilities = CAP_UNICODE | CAP_STATUS32 | 
-		CAP_LARGE_FILES | CAP_NT_SMBS | CAP_LEVEL_II_OPLOCKS | 
-		CAP_W2K_SMBS | CAP_LARGE_READX | CAP_LARGE_WRITEX;
-	setup.generic.in.password = password;
-	setup.generic.in.user = user;
-	setup.generic.in.domain = domain;
+	setup.generic.in.capabilities = cli->transport->negotiate.capabilities;
+	if (!user || !user[0]) {
+		setup.generic.in.password = NULL;
+		setup.generic.in.user = "";
+		setup.generic.in.domain = "";
+		setup.generic.in.capabilities &= ~CAP_EXTENDED_SECURITY;
+	} else {
+		setup.generic.in.password = password;
+		setup.generic.in.user = user;
+		setup.generic.in.domain = domain;
+	}
 
 	status = smb_raw_session_setup(cli->session, mem_ctx, &setup);
 
