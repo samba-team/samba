@@ -1,0 +1,71 @@
+Unfortunately, the Resource Kit info is Win NT4/2K version specific.
+
+Here is a quick guide:
+
+1. On your NT4 Domain Controller, right click on 'My Computer', then
+select the tab labelled 'User Profiles'.
+
+2. Select a user profile you want to migrate and click on it.
+
+Note: I am using the term "migrate" lossely. You can copy a profile to
+create a group profile. You can give the user 'Everyone' rights to the
+profile you copy this to. That is what you need to do, since your samba
+domain is not a member of a trust relationship with your NT4 PDC.
+
+3. Click the 'Copy To' button.
+
+4. In the box labelled 'Copy Profile to' add your new path, eg:
+c:\temp\foobar
+
+5. Click on the button labelled 'Change' in the "Permitted to use" box.
+
+6. Click on the group 'Everyone' and then click OK. This closes the
+'chose user' box.
+
+7. Now click OK.
+
+Follow the above for every profile you need to migrate.
+
+
+Side bar Notes:
+---------------
+You should obtain the SID of your NT4 domain. You can use smbpasswd to do
+this. Read the man page.
+
+With Samba-3.0.0 alpha code you can import all you NT4 domain accounts
+using the net samsync method. This way you can retain your profile
+settings as well as all your users.
+
+Also Note:
+----------
+The above method can be used to create mandatory profiles also. To convert
+a group profile into a mandatory profile simply locate the NTUser.DAT file
+in the copied profile and rename it to NTUser.MAN.
+
+
+Next Note:
+----------
+The W2K professional resource kit has moveuser.exe:
+
+Description:
+
+   moveuser.exe changes the security of a profile from one user to another.
+   This allows the account domain to change, and/or the user name to change.
+
+
+Next Note:
+----------
+You can identify the SID by using GetSID.exe from the Windows NT Server 4.0
+Resource Kit.
+
+Windows NT 4.0 stores the local profile information in the registry under
+the following key:
+HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList
+
+Under the ProfileList key, there will be subkeys named with the SIDs of the
+users who have logged on to this computer. (To find the profile information
+for the user whose locally cached profile you want to move, find the SID for
+the user with the GetSID.exe utility.) Inside of the appropriate user's
+subkey, you will see a string value named ProfileImagePath.
+
+
