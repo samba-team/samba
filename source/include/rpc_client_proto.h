@@ -168,15 +168,6 @@ BOOL do_samr_query_userinfo(struct cli_state *cli,
 BOOL do_samr_close(struct cli_state *cli, POLICY_HND *hnd);
 #endif
 
-/*The following definitions come from  rpc_client/cli_spoolss_notify.c  */
-
-BOOL spoolss_disconnect_from_client( struct cli_state *cli);
-BOOL spoolss_connect_to_client( struct cli_state *cli, char *remote_machine);
-BOOL cli_spoolss_reply_open_printer(struct cli_state *cli, char *printer, uint32 localprinter, uint32 type, uint32 *status, POLICY_HND *handle);
-BOOL cli_spoolss_reply_rrpcn(struct cli_state *cli, POLICY_HND *handle, 
-			     uint32 change_low, uint32 change_high, uint32 *status);
-BOOL cli_spoolss_reply_close_printer(struct cli_state *cli, POLICY_HND *handle, uint32 *status);
-
 /*The following definitions come from  rpc_client/cli_srvsvc.c  */
 
 BOOL do_srv_net_srv_conn_enum(struct cli_state *cli,

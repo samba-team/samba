@@ -2621,8 +2621,8 @@ static uint32 get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharen
 			info.datatype,
 			info.parameters);
 
-	/* See note in check_printer_ok() for reasons for these attributes. JRR */
-	info.attributes |= PRINTER_ATTRIBUTE_SHARED | PRINTER_ATTRIBUTE_NETWORK;
+	/* Samba has to have shared raw drivers. */
+	info.attributes |= (PRINTER_ATTRIBUTE_SHARED | PRINTER_ATTRIBUTE_NETWORK); 
 
 	/* Restore the stripped strings. */
 	slprintf(info.servername, sizeof(info.servername)-1, "\\\\%s", get_called_name());
@@ -2865,11 +2865,46 @@ static uint32 set_driver_init_2(NT_PRINTER_INFO_LEVEL_2 *info_ptr)
 	ZERO_STRUCT(info.devmode->devicename);
 	fstrcpy(info.devmode->devicename, info_ptr->printername);
 
+
+	/*
+	 * NT/2k does not change out the entire DeviceMode of a printer
+	 * when changing the driver.  Only the driverextra, private, & 
+	 * driverversion fields.   --jerry  (Thu Mar 14 08:58:43 CST 2002)
+	 */
+
+#if 1	/* JERRY */
+
 	/* 
 	 * 	Bind the saved DEVMODE to the new the printer.
 	 */
+
+	DEBUG(10,("set_driver_init_2: Overwriting entire DEVMODE in printer [%s]\n", info_ptr->printername));
 	free_nt_devicemode(&info_ptr->devmode);
 	info_ptr->devmode = info.devmode;
+#else
+	/* copy the entire devmode if we currently don't have one */
+
+	if (!info_ptr->devmode) {
+		DEBUG(10,("set_driver_init_2: Current Devmode is NULL.  Copying entire Device Mode\n"));
+		info_ptr->devmode = info.devmode;
+	}
+	else {
+		/* only set the necessary fields */
+
+		DEBUG(10,("set_driver_init_2: Setting driverversion [0x%x] and private data [0x%x]\n",
+			info.devmode->driverversion, info.devmode->driverextra));
+
+		info_ptr->devmode->driverversion = info.devmode->driverversion;
+
+		SAFE_FREE(info_ptr->devmode->private);
+		info_ptr->devmode->private = NULL;
+
+		if (info.devmode->driverversion)
+			info_ptr->devmode->private = memdup(info.devmode->private, info.devmode->driverversion);
+
+		free_nt_devicemode(&info.devmode);
+	}
+#endif
 
 	DEBUG(10,("set_driver_init_2: Set printer [%s] init DEVMODE for driver [%s]\n",
 			info_ptr->printername, info_ptr->drivername));

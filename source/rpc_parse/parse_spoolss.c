@@ -4,8 +4,9 @@
  *  RPC Pipe client / server routines
  *  Copyright (C) Andrew Tridgell              1992-2000,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-2000,
- *  Copyright (C) Jean François Micouleau      1998-2000.
- *  Copyright (C) Gerald Carter                2000
+ *  Copyright (C) Jean François Micouleau      1998-2000,
+ *  Copyright (C) Gerald Carter                2000,
+ *  Copyright (C) Tim Potter		       2001.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -32,12 +33,12 @@ static uint32 str_len_uni(UNISTR *source)
 {
  	uint32 i=0;
 
-	if (!source->buffer) return 0;
+	if (!source->buffer)
+		return 0;
 
-	while (source->buffer[i]!=0x0000)
-	{
+	while (source->buffer[i])
 	 i++;
-	}
+
 	return i;
 }
 
@@ -185,6 +186,11 @@ static BOOL smb_io_doc_info_container(char *desc, DOC_INFO_CONTAINER *cont, prs_
 /*******************************************************************
 reads or writes an NOTIFY OPTION TYPE structure.
 ********************************************************************/  
+
+/* NOTIFY_OPTION_TYPE and NOTIFY_OPTION_TYPE_DATA are really one
+   structure.  The _TYPE structure is really the deferred referrants (i.e
+   the notify fields array) of the _TYPE structure. -tpot */
+
 static BOOL smb_io_notify_option_type(char *desc, SPOOL_NOTIFY_OPTION_TYPE *type, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "smb_io_notify_option_type");
@@ -410,8 +416,13 @@ BOOL smb_io_notify_info_data_strings(char *desc,SPOOL_NOTIFY_INFO_DATA *data,
 				return False;
 		}
 	}
+#if 0	/* JERRY */
+
+	/* Win2k does not seem to put this parse align here */
+
 	if(!prs_align(ps))
 		return False;
+#endif
 
 	return True;
 }
@@ -5843,6 +5854,73 @@ BOOL spoolss_io_r_replyopenprinter(char *desc, SPOOL_R_REPLYOPENPRINTER *r_u, pr
 /*******************************************************************
  * init a structure.
  ********************************************************************/
+BOOL make_spoolss_q_routerreplyprinter(SPOOL_Q_ROUTERREPLYPRINTER *q_u, POLICY_HND *hnd, 
+					uint32 condition, uint32 change_id)
+{
+
+	memcpy(&q_u->handle, hnd, sizeof(q_u->handle));
+
+	q_u->condition = condition;
+	q_u->change_id = change_id;
+
+	/* magic values */
+	q_u->unknown1 = 0x1;
+	memset(q_u->unknown2, 0x0, 5);
+	q_u->unknown2[0] = 0x1;
+
+	return True;
+}
+
+/*******************************************************************
+ Parse a SPOOL_Q_ROUTERREPLYPRINTER structure.
+********************************************************************/
+BOOL spoolss_io_q_routerreplyprinter (char *desc, SPOOL_Q_ROUTERREPLYPRINTER *q_u, prs_struct *ps, int depth)
+{
+
+	prs_debug(ps, depth, desc, "spoolss_io_q_routerreplyprinter");
+	depth++;
+
+	if (!prs_align(ps))
+		return False;
+
+	if(!smb_io_pol_hnd("printer handle",&q_u->handle,ps,depth))
+		return False;
+
+	if (!prs_uint32("condition", ps, depth, &q_u->condition))
+		return False;
+
+	if (!prs_uint32("unknown1", ps, depth, &q_u->unknown1))
+		return False;
+
+	if (!prs_uint32("change_id", ps, depth, &q_u->change_id))
+		return False;
+
+	if (!prs_uint8s(False, "private",  ps, depth, q_u->unknown2, 5))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ Parse a SPOOL_R_ROUTERREPLYPRINTER structure.
+********************************************************************/
+BOOL spoolss_io_r_routerreplyprinter (char *desc, SPOOL_R_ROUTERREPLYPRINTER *r_u, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "spoolss_io_r_routerreplyprinter");
+	depth++;
+
+	if (!prs_align(ps))
+		return False;
+
+	if (!prs_uint32("status", ps, depth, &r_u->status))
+		return False;
+
+	return True;		
+}
+
+/*******************************************************************
+ * init a structure.
+ ********************************************************************/
 BOOL make_spoolss_q_reply_closeprinter(SPOOL_Q_REPLYCLOSEPRINTER *q_u, POLICY_HND *hnd)
 {      
 	if (q_u == NULL)
@@ -5890,11 +5968,79 @@ BOOL spoolss_io_r_replycloseprinter(char *desc, SPOOL_R_REPLYCLOSEPRINTER *r_u, 
 	return True;		
 }
 
+#if 0	/* JERRY - not currently used but could be :-) */
+
+/*******************************************************************
+ Deep copy a SPOOL_NOTIFY_INFO_DATA structure
+ ******************************************************************/
+static BOOL copy_spool_notify_info_data(SPOOL_NOTIFY_INFO_DATA *dst, 
+				SPOOL_NOTIFY_INFO_DATA *src, int n)
+{
+	int i;
+
+	memcpy(dst, src, sizeof(SPOOL_NOTIFY_INFO_DATA)*n);
+	
+	for (i=0; i<n; i++) {
+		int len;
+		uint16 *s = NULL;
+		
+		if (src->size != POINTER) 
+			continue;
+		len = src->notify_data.data.length;
+		s = malloc(sizeof(uint16)*len);
+		if (s == NULL) {
+			DEBUG(0,("copy_spool_notify_info_data: malloc() failed!\n"));
+		return False;
+		}
+		
+		memcpy(s, src->notify_data.data.string, len*2);
+		dst->notify_data.data.string = s;
+	}
+
+	return True;		
+}
+
+/*******************************************************************
+ Deep copy a SPOOL_NOTIFY_INFO structure
+ ******************************************************************/
+static BOOL copy_spool_notify_info(SPOOL_NOTIFY_INFO *dst, SPOOL_NOTIFY_INFO *src)
+{
+	if (!dst) {
+		DEBUG(0,("copy_spool_notify_info: NULL destination pointer!\n"));
+		return False;
+	}
+		
+	dst->version = src->version;
+	dst->flags   = src->flags;
+	dst->count   = src->count;
+	
+	if (dst->count) 
+	{
+		dst->data = malloc(dst->count * sizeof(SPOOL_NOTIFY_INFO_DATA));
+		
+		DEBUG(10,("copy_spool_notify_info: allocating space for [%d] PRINTER_NOTIFY_INFO_DATA entries\n",
+			dst->count));
+
+		if (dst->data == NULL) {
+			DEBUG(0,("copy_spool_notify_info: malloc() failed for [%d] entries!\n", 
+				dst->count));
+			return False;
+		}
+		
+		return (copy_spool_notify_info_data(dst->data, src->data, src->count));
+	}
+	
+	return True;
+}
+#endif	/* JERRY */
+
 /*******************************************************************
  * init a structure.
  ********************************************************************/
+
 BOOL make_spoolss_q_reply_rrpcn(SPOOL_Q_REPLY_RRPCN *q_u, POLICY_HND *hnd,
-			        uint32 change_low, uint32 change_high)
+			        uint32 change_low, uint32 change_high,
+				SPOOL_NOTIFY_INFO *info)
 {      
 	if (q_u == NULL)
 		return False;
@@ -5907,11 +6053,23 @@ BOOL make_spoolss_q_reply_rrpcn(SPOOL_Q_REPLY_RRPCN *q_u, POLICY_HND *hnd,
 	q_u->unknown0=0x0;
 	q_u->unknown1=0x0;
 
-	q_u->info_ptr=1;
+	q_u->info_ptr=0xaddee11e;
 
 	q_u->info.version=2;
+	
+	if (info->count) {
+		DEBUG(10,("make_spoolss_q_reply_rrpcn: [%d] PRINTER_NOTIFY_INFO_DATA\n",
+			info->count));
+		q_u->info.version = info->version;
+		q_u->info.flags   = info->flags;
+		q_u->info.count   = info->count;
+		/* pointer field - be careful! */
+		q_u->info.data    = info->data;
+	}
+	else  {
 	q_u->info.flags=PRINTER_NOTIFY_INFO_DISCARDED;
 	q_u->info.count=0;
+	}
 
 	return True;
 }
@@ -6202,6 +6360,7 @@ static BOOL spoolss_io_printer_enum_values_ctr(char *desc, prs_struct *ps,
 	uint32	valuename_offset,
 		data_offset,
 		current_offset;
+	const uint32 basic_unit = 20; /* size of static portion of enum_values */
 	
 	prs_debug(ps, depth, desc, "spoolss_io_printer_enum_values_ctr");
 	depth++;	
@@ -6212,7 +6371,7 @@ static BOOL spoolss_io_printer_enum_values_ctr(char *desc, prs_struct *ps,
 	/* offset data begins at 20 bytes per structure * size_of_array.
 	   Don't forget the uint32 at the beginning */
 	
-	current_offset = 4 + (20*ctr->size_of_array);
+	current_offset = basic_unit * ctr->size_of_array;
 	
 	/* first loop to write basic enum_value information */
 	
@@ -6235,13 +6394,12 @@ static BOOL spoolss_io_printer_enum_values_ctr(char *desc, prs_struct *ps,
 		if (!prs_uint32("data_len", ps, depth, &ctr->values[i].data_len))
 			return False;
 			
-		current_offset = data_offset + ctr->values[i].data_len;
-	
+		current_offset = data_offset + ctr->values[i].data_len - basic_unit;
 	}
 
 	/* loop #2 for writing the dynamically size objects
-	   while viewing oncversations between Win2k -> Win2k,
-	   4-byte alignment does not seem to matter here   --jerrty */
+	   while viewing conversations between Win2k -> Win2k,
+	   4-byte alignment does not seem to matter here   --jerry */
 	
 	for (i=0; i<ctr->size_of_array; i++) 
 	{
