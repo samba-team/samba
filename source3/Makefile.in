@@ -214,8 +214,8 @@ LIBMSRPC_OBJ = rpc_client/cli_lsarpc.o rpc_client/cli_samr.o \
 	       rpc_client/cli_reg.o rpc_client/cli_pipe.o \
 	       rpc_client/cli_spoolss.o rpc_client/cli_spoolss_notify.o  \
 	       rpc_client/cli_ds.o libsmb/namequery_dc.o
-
-LIBMSRPC_SERVER_OBJ = libsmb/trust_passwd.o
+	       
+LIBMSRPC_SERVER_OBJ = libsmb/trusts_util.o
 
 REGOBJS_OBJ = registry/reg_objects.o
 REGISTRY_OBJ = registry/reg_frontend.o registry/reg_cachehook.o registry/reg_printing.o \

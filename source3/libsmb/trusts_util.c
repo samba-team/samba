@@ -1,7 +1,8 @@
 /* 
  *  Unix SMB/CIFS implementation.
- *  Routines to change trust account passwords.
- *  Copyright (C) Andrew Bartlett                   2001.
+ *  Routines to operate on various trust relationships
+ *  Copyright (C) Andrew Bartlett                   2001
+ *  Copyright (C) Rafal Szczesniak                  2003
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -113,4 +114,61 @@ NTSTATUS trust_pw_find_change_and_store_it(struct cli_state *cli, TALLOC_CTX *me
 	
 	return trust_pw_change_and_store_it(cli, mem_ctx, old_trust_passwd_hash);
 	
-}					 
+}
+
+
+/**
+ * Verify whether or not given domain is trusted.
+ *
+ * @param domain_name name of the domain to be verified
+ * @return true if domain is one of the trusted once or
+ *         false if otherwise
+ **/
+ 
+BOOL is_trusted_domain(const char* dom_name)
+{
+	int enum_ctx = 0;
+	const int trustdom_size = 10;
+	int num_domains, i;
+	TRUSTDOM **domains;
+	NTSTATUS result;
+	fstring trustdom_name;
+	DOM_SID trustdom_sid;
+	TALLOC_CTX *mem_ctx;
+	
+	/*
+	 * Query the secrets db as an ultimate source of information
+	 * about trusted domain names. This is PDC or BDC case.
+	 */
+	mem_ctx = talloc_init("is_trusted_domain");
+	
+	do {
+		result = secrets_get_trusted_domains(mem_ctx, &enum_ctx, trustdom_size,
+		                                     &num_domains, &domains);
+		/* compare each returned entry against incoming connection's domain */
+		for (i = 0; i < num_domains; i++) {
+			pull_ucs2_fstring(trustdom_name, domains[i]->name);
+			if (strequal(trustdom_name, dom_name)) {
+				talloc_destroy(mem_ctx);
+				return True;
+			}
+		}						
+	} while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
+		
+	/*
+	 * Query the trustdom_cache updated periodically. The only
+	 * way for domain member server.
+	 */
+	if (trustdom_cache_enable() &&
+		trustdom_cache_fetch(dom_name, &trustdom_sid)) {
+		trustdom_cache_shutdown();
+		return True;
+	}
+
+	/*
+	 * if nothing's been found, then give up here, although
+	 * the last resort might be to query the PDC.
+	 */
+	return False;
+}
+
