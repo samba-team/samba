@@ -1035,6 +1035,7 @@ int lp_lm_interval(void);
 int lp_machine_password_timeout(void);
 int lp_change_notify_timeout(void);
 int lp_stat_cache_size(void);
+int lp_map_to_guest(void);
 int lp_ldap_port(void);
 char *lp_preexec(int );
 char *lp_postexec(int );

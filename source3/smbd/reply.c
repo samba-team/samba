@@ -701,14 +701,21 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
     {
       if (lp_security() >= SEC_USER) 
       {
-#if (GUEST_SESSSETUP == 0)
-        return(ERROR(ERRSRV,ERRbadpw));
-#endif
-#if (GUEST_SESSSETUP == 1)
-       if (Get_Pwnam(user,True))
+        if (lp_map_to_guest() == NEVER_MAP_TO_GUEST)
           return(ERROR(ERRSRV,ERRbadpw));
-#endif
+
+        if (lp_map_to_guest() == MAP_TO_GUEST_ON_BAD_USER)
+        {
+         if (Get_Pwnam(user,True))
+            return(ERROR(ERRSRV,ERRbadpw));
+        }
+
+        /*
+         * ..else if lp_map_to_guest() == MAP_TO_GUEST_ON_BAD_PASSWORD
+         * Then always map to guest account - as done below.
+         */
       }
+
       if (*smb_apasswd || !Get_Pwnam(user,True))
          pstrcpy(user,lp_guestaccount(-1));
       DEBUG(3,("Registered username %s for guest access\n",user));

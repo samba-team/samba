@@ -104,29 +104,6 @@
 #define PRIME_NMBD 1
 #endif
 
-/* do you want session setups at user level security with a invalid
-   password to be rejected or allowed in as guest? WinNT rejects them
-   but it can be a pain as it means "net view" needs to use a password 
-
-   You have 3 choices:
-
-   GUEST_SESSSETUP = 0 means session setups with an invalid password
-   are rejected.
-
-   GUEST_SESSSETUP = 1 means session setups with an invalid password
-   are rejected, unless the username does not exist, in which case it
-   is treated as a guest login
-
-   GUEST_SESSSETUP = 2 means session setups with an invalid password
-   are treated as a guest login
-
-   Note that GUEST_SESSSETUP only has an effect in user or server
-   level security.
-   */
-#ifndef GUEST_SESSSETUP
-#define GUEST_SESSSETUP 0
-#endif
-
 /* the default pager to use for the client "more" command. Users can
    override this with the PAGER environment variable */
 #ifndef PAGER

@@ -471,7 +471,7 @@ void cmd_reg_create_val(struct client_info *info)
 	}
 		
 	DEBUG(10,("key data:\n"));
-	dump_data(10, value.buffer, value.buf_len);
+	dump_data(10, (char *)value.buffer, value.buf_len);
 
 	/* open WINREG session. */
 	res = res ? cli_nt_session_open(smb_cli, PIPE_WINREG) : False;

@@ -90,7 +90,7 @@ void make_reg_q_create_key(REG_Q_CREATE_KEY *q_c, POLICY_HND *hnd,
 	int len_name  = name  != NULL ? strlen(name ) + 1: 0;
 	int len_class = class != NULL ? strlen(class) + 1: 0;
 
-	static char data[] =
+	static unsigned char data[] =
 	{
 		0x01, 0x00, 0x00, 0x80,
 		0x00, 0x00, 0x00, 0x00,
