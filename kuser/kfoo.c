@@ -59,10 +59,11 @@ main(int argc, char **argv)
     krb5_parse_name(context, argv[1], &in.server);
     in.times.endtime = 0;
     ret = krb5_get_credentials(context, 0, cache, &in, &out);
-    
+
     if(ret){
 	printf("%s\n", krb5_get_err_text(context, ret));
 	exit(1);
     }
+    krb5_free_creds_contents(context, out);
     exit(0);
 }
