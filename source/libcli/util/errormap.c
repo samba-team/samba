@@ -51,6 +51,7 @@ static const struct {
 	NTSTATUS ntstatus;
 } ntstatus_to_dos_map[] = {
 	{ERRDOS,	ERRnofiles,	STATUS_NO_MORE_FILES},
+	{ERRDOS,	ERRnofiles,	NT_STATUS_NO_MORE_ENTRIES},
 	{ERRDOS,	ERRgeneral,	NT_STATUS_UNSUCCESSFUL},
 	{ERRDOS,	ERRbadfunc,	NT_STATUS_NOT_IMPLEMENTED},
 	{ERRDOS,	87,	NT_STATUS_INVALID_INFO_CLASS},
