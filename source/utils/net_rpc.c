@@ -678,6 +678,135 @@ static int rpc_user_delete(int argc, const char **argv)
 }
 
 /** 
+ * Set a password for a user on a remote RPC server
+ *
+ * All parameters are provided by the run_rpc_command function, except for
+ * argc, argv which are passes through. 
+ *
+ * @param domain_sid The domain sid acquired from the remote server
+ * @param cli A cli_state connected to the server.
+ * @param mem_ctx Talloc context, destoyed on completion of the function.
+ * @param argc  Standard main() style argc
+ * @param argv  Standard main() style argv.  Initial components are already
+ *              stripped
+ *
+ * @return Normal NTSTATUS return.
+ **/
+
+static NTSTATUS rpc_user_password_internals(const DOM_SID *domain_sid, 
+					    struct cli_state *cli, 
+					    TALLOC_CTX *mem_ctx, 
+					    int argc, const char **argv)
+{
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	POLICY_HND connect_pol, domain_pol, user_pol;
+	SAM_USERINFO_CTR ctr;
+	SAM_USER_INFO_24 p24;
+	uchar pwbuf[516];
+	const char *user;
+	const char *new_password;
+	char *prompt = NULL;
+
+	if (argc < 1) {
+		d_printf("User must be specified\n");
+		rpc_user_usage(argc, argv);
+		return NT_STATUS_OK;
+	}
+	
+	user = argv[0];
+
+	if (argv[1]) {
+		new_password = argv[1];
+	} else {
+		asprintf(&prompt, "Enter new password for %s:", user);
+		new_password = getpass(prompt);
+		SAFE_FREE(prompt);
+	}
+
+	/* Get sam policy and domain handles */
+
+	result = cli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
+				  &connect_pol);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
+				      MAXIMUM_ALLOWED_ACCESS,
+				      domain_sid, &domain_pol);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	/* Get handle on user */
+
+	{
+		uint32 *user_rids, num_rids, *name_types;
+		uint32 flags = 0x000003e8; /* Unknown */
+
+		result = cli_samr_lookup_names(cli, mem_ctx, &domain_pol,
+					       flags, 1, &user,
+					       &num_rids, &user_rids,
+					       &name_types);
+
+		if (!NT_STATUS_IS_OK(result)) {
+			goto done;
+		}
+
+		result = cli_samr_open_user(cli, mem_ctx, &domain_pol,
+					    MAXIMUM_ALLOWED_ACCESS,
+					    user_rids[0], &user_pol);
+
+		if (!NT_STATUS_IS_OK(result)) {
+			goto done;
+		}
+	}
+
+	/* Set password on account */
+
+	ZERO_STRUCT(ctr);
+	ZERO_STRUCT(p24);
+
+	encode_pw_buffer(pwbuf, new_password, STR_UNICODE);
+
+	init_sam_user_info24(&p24, (char *)pwbuf,24);
+
+	ctr.switch_value = 24;
+	ctr.info.id24 = &p24;
+
+	result = cli_samr_set_userinfo(cli, mem_ctx, &user_pol, 24, 
+				       &cli->user_session_key, &ctr);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	/* Display results */
+
+ done:
+	return result;
+
+}	
+
+/** 
+ * Set a user's password on a remote RPC server
+ *
+ * @param argc  Standard main() style argc
+ * @param argv  Standard main() style argv.  Initial components are already
+ *              stripped
+ *
+ * @return A shell status integer (0 for success)
+ **/
+
+static int rpc_user_password(int argc, const char **argv) 
+{
+	return run_rpc_command(NULL, PI_SAMR, 0, rpc_user_password_internals,
+			       argc, argv);
+}
+
+/** 
  * List user's groups on a remote RPC server
  *
  * All parameters are provided by the run_rpc_command function, except for
@@ -870,6 +999,7 @@ int net_rpc_user(int argc, const char **argv)
 		{"add", rpc_user_add},
 		{"info", rpc_user_info},
 		{"delete", rpc_user_delete},
+		{"password", rpc_user_password},
 		{NULL, NULL}
 	};
 	
@@ -2547,6 +2677,7 @@ int net_rpc(int argc, const char **argv)
 		{"oldjoin", net_rpc_oldjoin},
 		{"testjoin", net_rpc_testjoin},
 		{"user", net_rpc_user},
+		{"password", rpc_user_password},
 		{"group", net_rpc_group},
 		{"share", net_rpc_share},
 		{"file", net_rpc_file},
