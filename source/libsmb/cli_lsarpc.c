@@ -275,7 +275,8 @@ uint32 cli_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
                                 name, &t_names.uni_name[i]);
 
 			slprintf(full_name, sizeof(full_name) - 1,
-				 "%s%s%s", dom_name, dom_name[0] ? 
+				 "%s%s%s", dom_name, 
+                                 (dom_name[0] && name[0]) ? 
 				 lp_winbind_separator() : "", name);
 
 			(*names)[i] = talloc_strdup(mem_ctx, full_name);
