@@ -702,8 +702,8 @@ void make_rpc_auth_ntlmssp_resp(RPC_AUTH_NTLMSSP_RESP *rsp,
 
 	rsp->neg_flags = neg_flags;
 
-	memcpy(&rsp->lm_resp, lm_resp, 24);
-	memcpy(&rsp->nt_resp, nt_resp, 24);
+	memcpy(rsp->lm_resp, lm_resp, 24);
+	memcpy(rsp->nt_resp, nt_resp, 24);
 
 	if (IS_BITS_SET_ALL(neg_flags, NTLMSSP_NEGOTIATE_UNICODE))
 	{

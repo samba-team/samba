@@ -34,12 +34,12 @@
 /* -------------------------------------------------------------------------- **
  * Constants...
  *
- *  BSIZE - This internal constant is used only by dbg_test().  It is the
+ *  DBG_BSIZE - This internal constant is used only by dbg_test().  It is the
  *          size of the read buffer.  I've tested the function using a
- *          BSIZE value of 2.
+ *          DBG_BSIZE value of 2.
  */
 
-#define BSIZE 128
+#define DBG_BSIZE 128
 
 /* -------------------------------------------------------------------------- **
  * Functions...
@@ -258,14 +258,14 @@ void dbg_test( void )
    * ------------------------------------------------------------------------ **
    */
   {
-  char bufr[BSIZE];
+  char bufr[DBG_BSIZE];
   int  i;
   int  linecount  = 1;
   dbg_Token old   = dbg_null,
             new   = dbg_null,
             state = dbg_null;
 
-  while( fgets( bufr, BSIZE, stdin ) )
+  while( fgets( bufr, DBG_BSIZE, stdin ) )
     {
     for( i = 0; bufr[i]; i++ )
       {
