@@ -386,7 +386,7 @@ cleanup_princ:
 {
 	static krb5_data kdata;
 
-	kdata.data = krb5_principal_get_comp_string(context, principal, i);
+	kdata.data = discard_const(krb5_principal_get_comp_string(context, principal, i));
 	kdata.length = strlen(kdata.data);
 	return &kdata;
 }
