@@ -55,6 +55,9 @@ BOOL disk_quotas_vxfs(const pstring name, char *path, SMB_BIG_UINT *bsize, SMB_B
  */
 
 #include <linux/quota.h>
+#ifdef HAVE_LINUX_XQM_H
+#include <linux/xqm.h>
+#endif
 
 #include <mntent.h>
 #include <linux/unistd.h>
@@ -73,10 +76,35 @@ typedef struct _LINUX_SMB_DISK_QUOTA {
 } LINUX_SMB_DISK_QUOTA;
 
 /****************************************************************************
+ Abstract out the XFS Quota Manager quota get call.
+****************************************************************************/
+
+static int get_smb_linux_xfs_quota(char *path, uid_t euser_id, LINUX_SMB_DISK_QUOTA *dp)
+{
+       int ret = -1;
+#ifdef HAVE_LINUX_XQM_H
+       struct fs_disk_quota D;
+       ZERO_STRUCT(D);
+
+       if ((ret = quotactl(QCMD(Q_XGETQUOTA,USRQUOTA), path, euser_id, (caddr_t)&D)))
+               return ret;
+
+       dp->bsize = (SMB_BIG_UINT)512;
+       dp->softlimit = (SMB_BIG_UINT)D.d_blk_softlimit;
+       dp->hardlimit = (SMB_BIG_UINT)D.d_blk_hardlimit;
+       dp->ihardlimit = (SMB_BIG_UINT)D.d_ino_hardlimit;
+       dp->isoftlimit = (SMB_BIG_UINT)D.d_ino_softlimit;
+       dp->curinodes = (SMB_BIG_UINT)D.d_icount;
+       dp->curblocks = (SMB_BIG_UINT)D.d_bcount;
+#endif
+       return ret;
+}
+
+/****************************************************************************
  Abstract out the old and new Linux quota get calls.
 ****************************************************************************/
 
-static int get_smb_linux_quota(char *path, uid_t euser_id, LINUX_SMB_DISK_QUOTA *dp)
+static int get_smb_linux_vfs_quota(char *path, uid_t euser_id, LINUX_SMB_DISK_QUOTA *dp)
 {
 	int ret;
 #ifdef LINUX_QUOTAS_1
@@ -154,7 +182,10 @@ BOOL disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB
 
 	save_re_uid();
 	set_effective_uid(0);  
-	r=get_smb_linux_quota(mnt->mnt_fsname, euser_id, &D);
+	if (strcmp(mnt->mnt_type, "xfs") == 0)
+		r=get_smb_linux_xfs_quota(mnt->mnt_fsname, euser_id, &D);
+	else
+		r=get_smb_linux_vfs_quota(mnt->mnt_fsname, euser_id, &D);
 	restore_re_uid();
 
 	/* Use softlimit to determine disk space, except when it has been exceeded */

@@ -383,6 +383,9 @@ AC_CHECK_HEADERS(utmp.h utmpx.h lastlog.h)
 # For quotas on Veritas VxFS filesystems
 AC_CHECK_HEADERS(sys/fs/vx_quota.h)
 
+# For quotas on Linux XFS filesystems
+AC_CHECK_HEADERS(linux/xqm.h)
+
 AC_CHECK_SIZEOF(int,cross)
 AC_CHECK_SIZEOF(long,cross)
 AC_CHECK_SIZEOF(short,cross)
