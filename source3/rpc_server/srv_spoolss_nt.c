@@ -45,7 +45,7 @@ typedef struct _Printer{
 	BOOL open;
 	BOOL document_started;
 	BOOL page_started;
-	int jobid; /* jobid in printing backend */
+    int jobid; /* jobid in printing backend */
 	POLICY_HND printer_hnd;
 	BOOL printer_type;
 	union {
@@ -90,12 +90,30 @@ static uint32 smb_connections=0;
 static int nt_printj_status(int v)
 {
 	switch (v) {
-	case LPQ_PAUSED:
-		return PRINTER_STATUS_PAUSED;
 	case LPQ_QUEUED:
-	case LPQ_SPOOLING:
-	case LPQ_PRINTING:
 		return 0;
+	case LPQ_PAUSED:
+		return JOB_STATUS_PAUSED;
+	case LPQ_SPOOLING:
+		return JOB_STATUS_SPOOLING;
+	case LPQ_PRINTING:
+		return JOB_STATUS_PRINTING;
+	case LPQ_ERROR:
+		return JOB_STATUS_ERROR;
+	case LPQ_DELETING:
+		return JOB_STATUS_DELETING;
+	case LPQ_OFFLINE:
+		return JOB_STATUS_OFFLINE;
+	case LPQ_PAPEROUT:
+		return JOB_STATUS_PAPEROUT;
+	case LPQ_PRINTED:
+		return JOB_STATUS_PRINTED;
+	case LPQ_DELETED:
+		return JOB_STATUS_DELETED;
+	case LPQ_BLOCKED:
+		return JOB_STATUS_BLOCKED;
+	case LPQ_USER_INTERVENTION:
+		return JOB_STATUS_USER_INTERVENTION;
 	}
 	return 0;
 }
@@ -1785,9 +1803,16 @@ static void spoolss_notify_job_status_string(int snum,
 					     NT_PRINTER_INFO_LEVEL *printer, 
 					     TALLOC_CTX *mem_ctx)
 {
-	char *p = "unknown";
+	/*
+	 * Now we're returning job status codes we just return a "" here. JRA.
+	 */
+
+	char *p = "";
 	pstring temp;
 	uint32 len;
+
+#if 0 /* NO LONGER NEEDED - JRA. 02/22/2001 */
+	p = "unknown";
 
 	switch (queue->status) {
 	case LPQ_QUEUED:
@@ -1803,6 +1828,7 @@ static void spoolss_notify_job_status_string(int snum,
 		p = "Printing";
 		break;
 	}
+#endif /* NO LONGER NEEDED. */
 
 	len = (uint32)dos_PutUniCode(temp, p, sizeof(temp) - 2, True);
 
