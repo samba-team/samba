@@ -115,6 +115,13 @@ static void SidToString(fstring str, DOM_SID *sid)
 
 	if (numeric) return;
 
+        if (strcmp(str, "S-1-1-0") == 0) {
+
+                fstrcpy(str, "everyone");
+                return;
+
+        }
+
 	/* Ask LSA to convert the sid to a name */
 
 	if (!cacls_open_policy_hnd() ||
