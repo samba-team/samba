@@ -102,6 +102,9 @@ BOOL ds_io_r_getprimdominfo( char *desc, DS_R_GETPRIMDOMINFO *r_u, prs_struct *p
 				return False;
 		}
 	}
+
+	if ( !prs_align(ps) )
+		return False;
 	
 	if ( !prs_ntstatus("status", ps, depth, &r_u->status ) )
 		return False;		
