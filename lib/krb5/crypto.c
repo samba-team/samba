@@ -662,10 +662,8 @@ AES_string_to_key(krb5_context context,
     kd.schedule = NULL;
 
     ret = derive_key(context, et, &kd, "kerberos", strlen("kerberos"));
-
-    if (ret) {
-	krb5_data_free(&key->keyvalue);
-    } else {
+    krb5_free_keyblock_contents(context, key);
+    if (ret == 0) {
 	ret = krb5_copy_keyblock_contents(context, kd.key, key);
 	free_key_data(context, &kd);
     }
