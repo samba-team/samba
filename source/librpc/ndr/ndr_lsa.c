@@ -1498,6 +1498,7 @@ buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 		NDR_ALLOC_N_SIZE(ndr, r->set, r->count, sizeof(r->set[0]));
 		NDR_CHECK(ndr_pull_array(ndr, ndr_flags, (void **)r->set, sizeof(r->set[0]), r->count, (ndr_pull_flags_fn_t)ndr_pull_lsa_LUIDAttribute));
+		NDR_CHECK(ndr_pull_const_array_uint32(ndr, r->unknown, 1));
 done:
 	return NT_STATUS_OK;
 }
@@ -1510,6 +1511,10 @@ void ndr_print_lsa_PrivilegeSet(struct ndr_print *ndr, const char *name, struct 
 	ndr_print_ptr(ndr, "set", r->set);
 	ndr->depth++;
 		ndr_print_array(ndr, "set", r->set, sizeof(r->set[0]), r->count, (ndr_print_fn_t)ndr_print_lsa_LUIDAttribute);
+	ndr->depth--;
+	ndr_print_ptr(ndr, "unknown", r->unknown);
+	ndr->depth++;
+		ndr_print_array_uint32(ndr, "unknown", r->unknown, 1);
 	ndr->depth--;
 	ndr->depth--;
 }
@@ -1533,7 +1538,6 @@ NTSTATUS ndr_pull_lsa_EnumPrivsAccount(struct ndr_pull *ndr, struct lsa_EnumPriv
 	if (r->out.privs) {
 		NDR_CHECK(ndr_pull_lsa_PrivilegeSet(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.privs));
 	}
-	NDR_CHECK(ndr_pull_uint32(ndr, &r->out.unknown));
 	NDR_CHECK(ndr_pull_NTSTATUS(ndr, &r->out.result));
 
 	return NT_STATUS_OK;

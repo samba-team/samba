@@ -151,19 +151,28 @@ NTSTATUS ndr_pull_array_uint16(struct ndr_pull *ndr, uint16 *data, uint32 n)
 }
 
 /*
-  pull an array of uint32
+  pull a const array of uint32
 */
-NTSTATUS ndr_pull_array_uint32(struct ndr_pull *ndr, uint32 *data, uint32 n)
+NTSTATUS ndr_pull_const_array_uint32(struct ndr_pull *ndr, uint32 *data, uint32 n)
 {
-	uint32 len, i;
-	NDR_CHECK(ndr_pull_uint32(ndr, &len));
-	if (len != n) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}	
+	uint32 i;
 	for (i=0;i<n;i++) {
 		NDR_CHECK(ndr_pull_uint32(ndr, &data[i]));
 	}
 	return NT_STATUS_OK;
+}
+
+/*
+  pull an array of uint32
+*/
+NTSTATUS ndr_pull_array_uint32(struct ndr_pull *ndr, uint32 *data, uint32 n)
+{
+	uint32 len;
+	NDR_CHECK(ndr_pull_uint32(ndr, &len));
+	if (len != n) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}	
+	return ndr_pull_const_array_uint32(ndr, data, n);
 }
 
 
