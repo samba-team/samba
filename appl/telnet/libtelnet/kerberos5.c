@@ -413,9 +413,11 @@ kerberos5_is(Authenticator *ap, unsigned char *data, int cnt)
 		Data(ap, KRB_REJECT, (void *)msg, -1);
 		free(msg);
 	    }
+	    auth_finished (ap, AUTH_REJECT);
+	    krb5_free_keyblock_contents(context, key_block);
+	    break;
 	}
 	auth_finished(ap, AUTH_USER);
-
 	krb5_free_keyblock_contents(context, key_block);
 	
 	break;
@@ -717,7 +719,7 @@ kerberos5_forward(Authenticator *ap)
 				    &out_data);
     if (ret) {
 	if (auth_debug_mode)
-	    printf ("Kerberos V5: error gettting forwarded creds: %s\r\n",
+	    printf ("Kerberos V5: error getting forwarded creds: %s\r\n",
 		    krb5_get_err_text (context, ret));
 	return;
     }
