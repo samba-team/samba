@@ -190,8 +190,8 @@ size_t convert_string(charset_t from, charset_t to,
 				break;
 			case E2BIG:
 				reason="No more room"; 
-				DEBUG(0, ("convert_string: Required %l, available %l\n",
-					srclen, destlen));
+				DEBUG(0, ("convert_string: Required %lu, available %lu\n",
+					(unsigned long)srclen, (unsigned long)destlen));
 				/* we are not sure we need srclen bytes,
 			          may be more, may be less.
 				  We only know we need more than destlen

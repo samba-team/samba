@@ -133,7 +133,7 @@ static NTSTATUS make_user_info(auth_usersupplied_info **user_info,
 
 	*user_info = malloc(sizeof(**user_info));
 	if (!user_info) {
-		DEBUG(0,("malloc failed for user_info (size %l)\n", sizeof(*user_info)));
+		DEBUG(0,("malloc failed for user_info (size %lu)\n", (unsigned long)sizeof(*user_info)));
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -489,9 +489,9 @@ void debug_nt_user_token(int dbg_class, int dbg_lev, NT_USER_TOKEN *token)
 	
 	DEBUGC(dbg_class, dbg_lev, ("NT user token of user %s\n",
 				    sid_to_string(sid_str, &token->user_sids[0]) ));
-	DEBUGADDC(dbg_class, dbg_lev, ("contains %l SIDs\n", token->num_sids));
+	DEBUGADDC(dbg_class, dbg_lev, ("contains %lu SIDs\n", (unsigned long)token->num_sids));
 	for (i = 0; i < token->num_sids; i++)
-		DEBUGADDC(dbg_class, dbg_lev, ("SID[%3l]: %s\n", i, 
+		DEBUGADDC(dbg_class, dbg_lev, ("SID[%3lu]: %s\n", (unsigned long)i, 
 					       sid_to_string(sid_str, &token->user_sids[i])));
 }
 

@@ -1667,8 +1667,8 @@ uint32 init_buffer_from_sam (uint8 **buf, const SAM_ACCOUNT *sampass, BOOL size_
 	
 	/* check to make sure we got it correct */
 	if (buflen != len) {
-		DEBUG(0, ("init_buffer_from_sam: somthing odd is going on here: bufflen (%l) != len (%l) in tdb_pack operations!\n", 
-			  buflen, len));  
+		DEBUG(0, ("init_buffer_from_sam: somthing odd is going on here: bufflen (%lu) != len (%lu) in tdb_pack operations!\n", 
+			  (unsigned long)buflen, (unsigned long)len));  
 		/* error */
 		SAFE_FREE (*buf);
 		return (-1);
