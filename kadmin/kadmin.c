@@ -196,7 +196,7 @@ int
 main(int argc, char **argv)
 {
     krb5_error_code ret;
-    krb5_config_section *cf;
+    krb5_config_section *cf = NULL;
     kadm5_config_params conf;
     int optind = 0;
     int e;
@@ -269,10 +269,11 @@ main(int argc, char **argv)
     if(ret)
 	krb5_err(context, 1, ret, "kadm5_init_with_password");
     if (argc != 0)
-	exit(sl_command(cmd, argc, argv));
-
-    ret = sl_loop(cmd, "kadmin> ") != 0;
+	ret = sl_command (cmd, argc, argv);
+    else
+	ret = sl_loop (cmd, "kadmin> ") != 0;
     kadm5_destroy(kadm_handle);
+    krb5_config_file_free (cf);
     krb5_free_context(context);
     return ret;
 }
