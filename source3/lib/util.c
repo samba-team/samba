@@ -2877,12 +2877,12 @@ int open_socket_out(int type, struct in_addr *addr, int port ,int timeout)
 connect_again:
   ret = connect(res,(struct sockaddr *)&sock_out,sizeof(sock_out));
 
-  if (ret < 0 && errno == EINPROGRESS && loops--) {
+  if (ret < 0 && (errno == EINPROGRESS || errno == EALREADY) && loops--) {
     msleep(connect_loop);
     goto connect_again;
   }
 
-  if (ret < 0 && errno == EINPROGRESS) {
+  if (ret < 0 && (errno == EINPROGRESS || errno == EALREADY)) {
       DEBUG(2,("timeout connecting to %s:%d\n",inet_ntoa(*addr),port));
       close(res);
       return -1;
