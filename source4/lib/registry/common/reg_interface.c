@@ -119,7 +119,7 @@ WERROR reg_get_predefined_key_by_name(struct registry_context *ctx, const char *
 	int i;
 	
 	for (i = 0; predef_names[i].name; i++) {
-		if (!strcmp(predef_names[i].name, name)) return reg_get_predefined_key(ctx, predef_names[i].handle, key);
+		if (!strcasecmp(predef_names[i].name, name)) return reg_get_predefined_key(ctx, predef_names[i].handle, key);
 	}
 
 	DEBUG(1, ("No predefined key with name '%s'\n", name));
@@ -347,7 +347,7 @@ WERROR reg_key_get_subkey_by_name(TALLOC_CTX *mem_ctx, struct registry_key *key,
 	} else if(key->hive->functions->get_subkey_by_index) {
 		for(i = 0; W_ERROR_IS_OK(error); i++) {
 			error = reg_key_get_subkey_by_index(mem_ctx, key, i, subkey);
-			if(W_ERROR_IS_OK(error) && !strcmp((*subkey)->name, name)) {
+			if(W_ERROR_IS_OK(error) && !strcasecmp((*subkey)->name, name)) {
 				break;
 			}
 		}
@@ -378,7 +378,7 @@ WERROR reg_key_get_value_by_name(TALLOC_CTX *mem_ctx, struct registry_key *key, 
 	} else {
 		for(i = 0; W_ERROR_IS_OK(error); i++) {
 			error = reg_key_get_value_by_index(mem_ctx, key, i, val);
-			if(W_ERROR_IS_OK(error) && !strcmp((*val)->name, name)) {
+			if(W_ERROR_IS_OK(error) && !strcasecmp((*val)->name, name)) {
 				break;
 			}
 		}

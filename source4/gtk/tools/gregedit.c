@@ -379,6 +379,16 @@ static void on_open_gconf_activate                       (GtkMenuItem     *menui
 	registry_load_hive(root);
 }
 
+static void on_open_local_activate(GtkMenuItem *menuitem, gpointer user_data)
+{
+	WERROR error = reg_open_local(&registry);
+	if(!W_ERROR_IS_OK(error)) {
+		gtk_show_werror(mainwin, error);
+		return;
+	}
+	registry_load_root();
+}
+
 static void on_open_remote_activate(GtkMenuItem *menuitem, gpointer user_data)
 {
 	char *tmp;
@@ -661,6 +671,7 @@ static GtkWidget* create_mainwin (void)
 	GtkWidget *open_w95;
 	GtkWidget *open_gconf;
 	GtkWidget *open_remote;
+	GtkWidget *open_local;
 	GtkWidget *separatormenuitem1;
 	GtkWidget *quit;
 	GtkWidget *men_key;
@@ -694,6 +705,25 @@ static GtkWidget* create_mainwin (void)
 	menu_file_menu = gtk_menu_new ();
 	gtk_menu_item_set_submenu (GTK_MENU_ITEM (menu_file), menu_file_menu);
 
+	open_local = gtk_menu_item_new_with_mnemonic ("Open _Local");
+	gtk_container_add (GTK_CONTAINER (menu_file_menu), open_local);
+	g_signal_connect ((gpointer) open_local, "activate",
+					  	  G_CALLBACK (on_open_local_activate), NULL);
+
+	if(reg_has_backend("rpc")) {
+		open_remote = gtk_menu_item_new_with_mnemonic ("Open _Remote");
+		gtk_container_add (GTK_CONTAINER (menu_file_menu), open_remote);
+
+		g_signal_connect ((gpointer) open_remote, "activate",
+						  G_CALLBACK (on_open_remote_activate),
+						  NULL);
+	}
+
+	separatormenuitem1 = gtk_menu_item_new ();
+	gtk_container_add (GTK_CONTAINER (menu_file_menu), separatormenuitem1);
+	gtk_widget_set_sensitive (separatormenuitem1, FALSE);
+
+
 	if(reg_has_backend("nt4")) {
 		open_nt4 = gtk_image_menu_item_new_with_mnemonic("Open _NT4 file");
 		gtk_container_add (GTK_CONTAINER (menu_file_menu), open_nt4);
@@ -718,15 +748,6 @@ static GtkWidget* create_mainwin (void)
 
 		g_signal_connect ((gpointer) open_gconf, "activate",
 						  G_CALLBACK (on_open_gconf_activate),
-						  NULL);
-	}
-
-	if(reg_has_backend("rpc")) {
-		open_remote = gtk_menu_item_new_with_mnemonic ("Open _Remote");
-		gtk_container_add (GTK_CONTAINER (menu_file_menu), open_remote);
-
-		g_signal_connect ((gpointer) open_remote, "activate",
-						  G_CALLBACK (on_open_remote_activate),
 						  NULL);
 	}
 
