@@ -1827,6 +1827,19 @@ static void display_reg_value(REGISTRY_VALUE value)
 		printf("%s: REG_BINARY: unknown length value not displayed\n",
 		       value.valuename);
 		break;
+	case REG_MULTI_SZ: {
+		uint16 *curstr = (uint16 *) value.data_p;
+		uint8 *start = value.data_p;
+		printf("%s: REG_MULTI_SZ:\n", value.valuename);
+		while ((*curstr != 0) && 
+		       ((uint8 *) curstr < start + value.size)) {
+			rpcstr_pull(text, curstr, sizeof(text), -1, 
+				    STR_TERMINATE);
+			printf("  %s\n", text);
+			curstr += strlen(text) + 1;
+		}
+	}
+	break;
 	default:
 		printf("%s: unknown type %d\n", value.valuename, value.type);
 	}
@@ -1884,6 +1897,72 @@ static NTSTATUS cmd_spoolss_enum_data( struct cli_state *cli,
 	}
 	if (W_ERROR_V(result) == ERRnomoreitems)
 		result = W_ERROR(ERRsuccess);
+
+done:
+	if (got_hnd)
+		cli_spoolss_close_printer(cli, mem_ctx, &hnd);
+
+	return W_ERROR_IS_OK(result) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
+}
+
+/* enumerate data for a given key */
+
+static NTSTATUS cmd_spoolss_enum_data_ex( struct cli_state *cli, 
+					  TALLOC_CTX *mem_ctx, int argc, 
+					  char **argv)
+{
+	WERROR result;
+	uint32 needed, i;
+	BOOL got_hnd = False;
+	pstring printername;
+	fstring servername, user;
+	char *keyname = NULL;
+	POLICY_HND hnd;
+	REGVAL_CTR ctr;
+
+	if (argc != 3) {
+		printf("Usage: %s printername <keyname>\n", argv[0]);
+		return NT_STATUS_OK;
+	}
+	
+	keyname = argv[2];
+
+	/* Open printer handle */
+
+	slprintf(servername, sizeof(fstring)-1, "\\\\%s", cli->desthost);
+	strupper(servername);
+	fstrcpy(user, cli->user_name);
+	fstrcpy(printername, argv[1]);
+	slprintf(printername, sizeof(pstring)-1, "\\\\%s\\", cli->desthost);
+	strupper(printername);
+	pstrcat(printername, argv[1]);
+
+	result = cli_spoolss_open_printer_ex(cli, mem_ctx, printername, 
+					     "", MAXIMUM_ALLOWED_ACCESS, 
+					     servername, user, &hnd);
+
+	if (!W_ERROR_IS_OK(result))
+		goto done;
+ 
+	got_hnd = True;
+
+	/* Enumerate subkeys */
+
+	result = cli_spoolss_enumprinterdataex(
+		cli, mem_ctx, 0, &needed, &hnd, keyname, NULL);
+
+	if (W_ERROR_V(result) == ERRmoredata)
+		result = cli_spoolss_enumprinterdataex(
+			cli, mem_ctx, needed, NULL, &hnd, keyname, &ctr);
+
+	if (!W_ERROR_IS_OK(result))
+		goto done;
+
+	for (i=0; i < ctr.num_values; i++) {
+		display_reg_value(*(ctr.values[i]));
+	}
+
+	regval_ctr_destroy(&ctr);
 
 done:
 	if (got_hnd)
@@ -2055,6 +2134,7 @@ struct cmd_set spoolss_commands[] = {
 	{ "addprinter",		cmd_spoolss_addprinterex,	PI_SPOOLSS, "Add a printer",                       "" },
 	{ "deldriver",		cmd_spoolss_deletedriver,	PI_SPOOLSS, "Delete a printer driver",             "" },
 	{ "enumdata",		cmd_spoolss_enum_data,		PI_SPOOLSS, "Enumerate printer data",              "" },
+	{ "enumdataex",		cmd_spoolss_enum_data_ex,	PI_SPOOLSS, "Enumerate printer data for a key",    "" },
 	{ "enumkey",		cmd_spoolss_enum_printerkey,	PI_SPOOLSS, "Enumerate printer keys",              "" },
 	{ "enumjobs",		cmd_spoolss_enum_jobs,          PI_SPOOLSS, "Enumerate print jobs",                "" },
 	{ "enumports", 		cmd_spoolss_enum_ports, 	PI_SPOOLSS, "Enumerate printer ports",             "" },
