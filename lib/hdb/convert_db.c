@@ -43,7 +43,7 @@
 RCSID("$Id$");
 
 static krb5_error_code
-func(krb5_context context, HDB *db, hdb_entry *entry, void *data)
+update_keytypes(krb5_context context, HDB *db, hdb_entry *entry, void *data)
 {
     int i;
     int n = 0;
@@ -89,10 +89,25 @@ func(krb5_context context, HDB *db, hdb_entry *entry, void *data)
     return 0;
 }
 
+static krb5_error_code
+update_version2(krb5_context context, HDB *db, hdb_entry *entry, void *data)
+{
+    HDB *new = data;
+    if(!db->master_key_set) {
+	int i;
+	for(i = 0; i < entry->keys.len; i++) {
+	    free(entry->keys.val[i].mkvno);
+	    entry->keys.val[i].mkvno = NULL;
+	}
+    }
+    new->store(context, new, HDB_F_REPLACE, entry);
+    return 0;
+}
 
 char *old_database = HDB_DEFAULT_DB;
 char *new_database = HDB_DEFAULT_DB ".new";
 char *mkeyfile;
+int update_version;
 int help_flag;
 int version_flag;
 
@@ -103,6 +118,8 @@ struct getargs args[] = {
       "name of converted database", "file" },
     { "master-key",	0,	arg_string, &mkeyfile, 
       "v5 master key file", "file" },
+    { "update-version", 0, 	arg_flag, &update_version,
+      "update the database to the current version" },
     { "help",		'h',	arg_flag,   &help_flag },
     { "version",	0,	arg_flag,   &version_flag }
 };
@@ -155,12 +172,40 @@ main(int argc, char **argv)
     if (ret)
 	krb5_err(context, 1, ret, "hdb_set_master_key");
     ret = db->open(context, db, O_RDONLY, 0);
-    if(ret)
+    if(ret == HDB_ERR_BADVERSION) {
+	krb5_data tag;
+	krb5_data version;
+	int foo;
+	unsigned ver;
+	tag.data = HDB_DB_FORMAT_ENTRY;
+	tag.length = strlen(tag.data);
+	ret = (*db->_get)(context, db, tag, &version);
+	if(ret)
+	    krb5_errx(context, 1, "database is wrong version, "
+		      "but couldn't find version key (%s)", 
+		      HDB_DB_FORMAT_ENTRY);
+	foo = sscanf(version.data, "%u", &ver);
+	krb5_data_free (&version);
+	if(foo != 1)
+	    krb5_errx(context, 1, "database version is not a number");
+	if(ver == 1 && HDB_DB_FORMAT == 2) {
+	    krb5_warnx(context, "will upgrade database from version %d to %d", 
+		       ver, HDB_DB_FORMAT);
+	    krb5_warnx(context, "rerun to do other conversions");
+	    update_version = 1;
+	} else
+	    krb5_errx(context, 1, 
+		      "don't know how to upgrade from version %d to %d", 
+		      ver, HDB_DB_FORMAT);
+    } else if(ret)
 	krb5_err(context, 1, ret, "%s", old_database);
     ret = new->open(context, new, O_CREAT|O_EXCL|O_RDWR, 0600);
     if(ret)
 	krb5_err(context, 1, ret, "%s", new_database);
-    ret = hdb_foreach(context, db, 0, func, new);
+    if(update_version)
+	ret = hdb_foreach(context, db, 0, update_version2, new);
+    else
+	ret = hdb_foreach(context, db, 0, update_keytypes, new);
     if(ret != 0)
 	krb5_err(context, 1, ret, "hdb_foreach");
     db->close(context, db);
