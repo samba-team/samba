@@ -379,3 +379,26 @@ BOOL do_lsa_close(struct cli_state *cli, POLICY_HND *hnd)
 
 	return True;
 }
+
+/****************************************************************************
+obtain a server's SAM SID and save it in the secrets database
+****************************************************************************/
+
+BOOL cli_lsa_get_domain_sid(struct cli_state *cli, char *server)
+{
+	fstring domain, key;
+	POLICY_HND pol;
+	DOM_SID sid;
+	BOOL res, res2, res3;
+
+	res = cli_nt_session_open(cli, PIPE_LSARPC);
+	res2 = res ? do_lsa_open_policy(cli, server, &pol, 0) : False;
+	res3 = res2 ? do_lsa_query_info_pol(cli, &pol, 5, domain, &sid) : False;
+
+	res3 = res3 ? secrets_store_domain_sid(domain, &sid) : False;
+
+	res2 = res2 ? do_lsa_close(cli, &pol) : False;
+	cli_nt_session_close(cli);
+	
+	return res3;
+}

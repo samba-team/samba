@@ -579,7 +579,14 @@ Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
    * Ok - we have an anonymous connection to the IPC$ share.
    * Now start the NT Domain stuff :-).
    */
-    
+
+  if(cli_lsa_get_domain_sid(&cli, remote_machine) == False) {
+    DEBUG(0,("modify_trust_password: unable to obtain domain sid from %s. Error was : %s.\n", remote_machine, cli_errstr(&cli)));
+    cli_ulogoff(&cli);
+    cli_shutdown(&cli);
+    return False;
+  }
+
   if(cli_nt_session_open(&cli, PIPE_NETLOGON) == False) {
     DEBUG(0,("modify_trust_password: unable to open the domain client session to \
 machine %s. Error was : %s.\n", remote_machine, cli_errstr(&cli)));

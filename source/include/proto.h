@@ -1576,6 +1576,8 @@ BOOL secrets_init(void);
 void *secrets_fetch(char *key, size_t *size);
 BOOL secrets_store(char *key, void *data, size_t size);
 BOOL secrets_delete(char *key);
+BOOL secrets_store_domain_sid(char *domain, DOM_SID *sid);
+BOOL secrets_fetch_domain_sid(char *domain, DOM_SID *sid);
 
 /*The following definitions come from  passdb/smbpass.c  */
 
@@ -1711,6 +1713,7 @@ BOOL do_lsa_query_info_pol(struct cli_state *cli,
 			POLICY_HND *hnd, uint16 info_class,
 			fstring domain_name, DOM_SID *domain_sid);
 BOOL do_lsa_close(struct cli_state *cli, POLICY_HND *hnd);
+BOOL cli_lsa_get_domain_sid(struct cli_state *cli, char *server);
 
 /*The following definitions come from  rpc_client/cli_netlogon.c  */
 
