@@ -105,53 +105,49 @@ WERROR _svcctl_query_status(pipes_struct *p, SVCCTL_Q_QUERY_STATUS *q_u, SVCCTL_
 
 WERROR _svcctl_enum_services_status(pipes_struct *p, SVCCTL_Q_ENUM_SERVICES_STATUS *q_u, SVCCTL_R_ENUM_SERVICES_STATUS *r_u)
 {
-	ENUM_SERVICES_STATUS *services, *pservices;
+	ENUM_SERVICES_STATUS *services = NULL;
 	uint32 num_services = 0;
-	int i;
+	int i = 0;
 	size_t buffer_size;
 	WERROR result = WERR_OK;
+		
+	/* num_services = str_list_count( lp_enable_svcctl() ); */
+	num_services = 2;
 	
-	services = pservices = NULL;
+	if ( !(services = TALLOC_ARRAY( p->mem_ctx, ENUM_SERVICES_STATUS, num_services )) )
+		return WERR_NOMEM;
+		
+	DEBUG(8,("_svcctl_enum_services_status: Enumerating %d services\n", num_services));
+				
+	init_unistr( &services[i].servicename, "Spooler" );
+	init_unistr( &services[i].displayname, "Spooler" );
 	
-	if ( !lp_disable_spoolss() ) {
-		pservices = TALLOC_REALLOC_ARRAY( p->mem_ctx, services, ENUM_SERVICES_STATUS, num_services+1 );
-		if ( !pservices )
-			return WERR_NOMEM;
-			
-		services = pservices;
-		
-		init_unistr( &services[num_services].servicename, "Spooler" );
-		init_unistr( &services[num_services].displayname, "Spooler" );
-		services[num_services].status.type               = 0x110;
-		services[num_services].status.state              = SVCCTL_RUNNING;
-		services[num_services].status.controls_accepted  = 0x0;
-		services[num_services].status.win32_exit_code    = 0x0;
-		services[num_services].status.service_exit_code  = 0x0;
-		services[num_services].status.check_point        = 0x0;
-		services[num_services].status.wait_hint          = 0x0;
-		
-		num_services++;
-	}
+	services[i].status.type               = 0x110;
+	services[i].status.controls_accepted  = 0x0;
+	services[i].status.win32_exit_code    = 0x0;
+	services[i].status.service_exit_code  = 0x0;
+	services[i].status.check_point        = 0x0;
+	services[i].status.wait_hint          = 0x0;
+	if ( !lp_disable_spoolss() ) 
+		services[i].status.state              = SVCCTL_RUNNING;
+	else
+		services[i].status.state              = SVCCTL_STOPPED;
+
+	i++;		
 	
-	if ( lp_servicenumber("NETLOGON") != -1 ) {
-		pservices = TALLOC_REALLOC_ARRAY( p->mem_ctx, services, ENUM_SERVICES_STATUS, num_services+1 );
-		if ( !pservices )
-			return WERR_NOMEM;
-			
-		services = pservices;
-		
-		init_unistr( &services[num_services].servicename, "Netlogon" );
-		init_unistr( &services[num_services].displayname, "Net Logon" );
-		services[num_services].status.type               = 0x20;
-		services[num_services].status.state              = SVCCTL_RUNNING;
-		services[num_services].status.controls_accepted  = 0x0;
-		services[num_services].status.win32_exit_code    = 0x0;
-		services[num_services].status.service_exit_code  = 0x0;
-		services[num_services].status.check_point        = 0x0;
-		services[num_services].status.wait_hint          = 0x0;
-		
-		num_services++;	
-	}
+	init_unistr( &services[i].servicename, "Netlogon" );
+	init_unistr( &services[i].displayname, "Net Logon" );
+	
+	services[i].status.type               = 0x20;	
+	services[i].status.controls_accepted  = 0x0;
+	services[i].status.win32_exit_code    = 0x0;
+	services[i].status.service_exit_code  = 0x0;
+	services[i].status.check_point        = 0x0;
+	services[i].status.wait_hint          = 0x0;
+	if ( lp_servicenumber("NETLOGON") != -1 ) 
+		services[i].status.state              = SVCCTL_RUNNING;
+	else
+		services[i].status.state              = SVCCTL_STOPPED;
 	
 	buffer_size = 0;
 	for (i=0; i<num_services; i++ )
@@ -192,4 +188,24 @@ WERROR _svcctl_start_service(pipes_struct *p, SVCCTL_Q_START_SERVICE *q_u, SVCCT
 {
 	return WERR_ACCESS_DENIED;
 }
+
+/********************************************************************
+********************************************************************/
+
+WERROR _svcctl_enum_dependent_services( pipes_struct *p, SVCCTL_Q_ENUM_DEPENDENT_SERVICES *q_u, SVCCTL_R_ENUM_DEPENDENT_SERVICES *r_u )
+{
+	
+	/* we have to set the outgoing buffer size to the same as the 
+	   incoming buffer size (even in the case of failure */
+
+	rpcbuf_init( &r_u->buffer, q_u->buffer_size, p->mem_ctx );
+				
+	r_u->needed      = q_u->buffer_size;
+	
+	/* no dependent services...basically a stub function */
+	r_u->returned    = 0;
+
+	return WERR_OK;
+}
+
 

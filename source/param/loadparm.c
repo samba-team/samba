@@ -1598,7 +1598,7 @@ static void init_globals(void)
 
 	Globals.bEnablePrivileges = False;
 	
-	Globals.szServicesList = str_list_make( "", NULL );
+	Globals.szServicesList = str_list_make( "Spooler NETLOGON", NULL );
 }
 
 static TALLOC_CTX *lp_talloc;

@@ -170,6 +170,30 @@ static BOOL api_svcctl_enum_services_status(pipes_struct *p)
 /*******************************************************************
  ********************************************************************/
 
+static BOOL api_svcctl_enum_dependent_services(pipes_struct *p)
+{
+	SVCCTL_Q_ENUM_DEPENDENT_SERVICES q_u;
+	SVCCTL_R_ENUM_DEPENDENT_SERVICES r_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	if(!svcctl_io_q_enum_dependent_services("", &q_u, data, 0))
+		return False;
+
+	r_u.status = _svcctl_enum_dependent_services(p, &q_u, &r_u);
+
+	if(!svcctl_io_r_enum_dependent_services("", &r_u, rdata, 0))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ ********************************************************************/
+
 static BOOL api_svcctl_start_service(pipes_struct *p)
 {
 	SVCCTL_Q_START_SERVICE q_u;
@@ -203,6 +227,7 @@ static struct api_struct api_svcctl_cmds[] =
       { "SVCCTL_GET_DISPLAY_NAME"      , SVCCTL_GET_DISPLAY_NAME      , api_svcctl_get_display_name },
       { "SVCCTL_QUERY_STATUS"          , SVCCTL_QUERY_STATUS          , api_svcctl_query_status },
       { "SVCCTL_ENUM_SERVICES_STATUS_W", SVCCTL_ENUM_SERVICES_STATUS_W, api_svcctl_enum_services_status },
+      { "SVCCTL_ENUM_DEPENDENT_SERVICES_W", SVCCTL_ENUM_DEPENDENT_SERVICES_W, api_svcctl_enum_dependent_services },
       { "SVCCTL_START_SERVICE"         , SVCCTL_START_SERVICE         , api_svcctl_start_service }
 };
 

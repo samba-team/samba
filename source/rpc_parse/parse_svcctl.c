@@ -464,3 +464,59 @@ BOOL svcctl_io_r_start_service(const char *desc, SVCCTL_R_START_SERVICE *r_u, pr
 }
 
 
+/*******************************************************************
+********************************************************************/
+
+BOOL svcctl_io_q_enum_dependent_services(const char *desc, SVCCTL_Q_ENUM_DEPENDENT_SERVICES *q_u, prs_struct *ps, int depth)
+{
+	if (q_u == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "svcctl_io_q_enum_dependent_services");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!smb_io_pol_hnd("scm_pol", &q_u->handle, ps, depth))
+		return False;
+
+	if(!prs_uint32("state", ps, depth, &q_u->state))
+		return False;
+	if(!prs_uint32("buffer_size", ps, depth, &q_u->buffer_size))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+********************************************************************/
+
+BOOL svcctl_io_r_enum_dependent_services(const char *desc, SVCCTL_R_ENUM_DEPENDENT_SERVICES *r_u, prs_struct *ps, int depth)
+{
+	if (r_u == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "svcctl_io_r_enum_dependent_services");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if (!prs_rpcbuffer("", ps, depth, &r_u->buffer))
+		return False;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("needed", ps, depth, &r_u->needed))
+		return False;
+	if(!prs_uint32("returned", ps, depth, &r_u->returned))
+		return False;
+
+	if(!prs_werror("status", ps, depth, &r_u->status))
+		return False;
+
+	return True;
+}
+

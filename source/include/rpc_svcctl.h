@@ -168,5 +168,17 @@ typedef struct {
 	WERROR status;
 } SVCCTL_R_ENUM_SERVICES_STATUS;
 
+typedef struct {
+	POLICY_HND handle;
+	uint32 state;
+	uint32 buffer_size;
+} SVCCTL_Q_ENUM_DEPENDENT_SERVICES;
+
+typedef struct {
+	RPC_BUFFER buffer;
+	uint32 needed;
+	uint32 returned;
+	WERROR status;
+} SVCCTL_R_ENUM_DEPENDENT_SERVICES;
 #endif /* _RPC_SVCCTL_H */
 
