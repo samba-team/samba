@@ -47,6 +47,8 @@
 #include "cfx.h"
 #include "arcfour.h"
 
+#include "spnego_asn1.h"
+
 /*
  *
  */
@@ -185,6 +187,9 @@ _gssapi_decapsulate(OM_uint32 *minor_status,
 		    krb5_data *out_data,
 		    const gss_OID mech);
 
+
+ssize_t
+gssapi_krb5_get_mech (const u_char *, size_t, const u_char **);
 
 OM_uint32
 _gssapi_verify_pad(gss_buffer_t, size_t, size_t *);
