@@ -191,7 +191,7 @@ static enum SID_NAME_USE ads_atype_map(uint32 atype)
    use both the sAMAccountName and the userPrincipalName attributes 
    It seems that not all users have the userPrincipalName attribute set
 */
-char *pull_username(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, void *msg)
+static char *pull_username(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, void *msg)
 {
 	char *ret, *p;
 
