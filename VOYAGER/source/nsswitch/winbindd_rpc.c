@@ -355,13 +355,13 @@ NTSTATUS msrpc_sid_to_name(struct winbindd_domain *domain,
 			domain->name ));
 
 	if (domain->loopback)  {
-		struct acct_info info;
+		char *alias_name;
 
 		/* Is this an alias? */
 
-		if (pdb_get_aliasinfo(sid, &info)) {
+		if (pdb_get_aliasname(mem_ctx, sid, &alias_name)) {
 			*domain_name = talloc_strdup(mem_ctx, domain->name);
-			*name = talloc_strdup(mem_ctx, info.acct_name);
+			*name = alias_name;
 			*type = SID_NAME_ALIAS;
 
 			return NT_STATUS_OK;

@@ -142,9 +142,9 @@ add_expanded_sid(const DOM_SID *sid, char **members, int *num_members)
 			 * that. */
 			char *unix_name;
 			BOOL is_user;
-			if (nt_to_unix_name(names[i], &unix_name, &is_user)) {
-				names[i] = talloc_strdup(mem_ctx, unix_name);
-				SAFE_FREE(unix_name);
+			if (nt_to_unix_name(mem_ctx, names[i], &unix_name,
+					    &is_user)) {
+				names[i] = unix_name;
 			}
 		}
 

@@ -230,12 +230,6 @@ struct acct_info
     uint32 rid; /* domain-relative RID */
 };
 
-struct dom_grp_info
-{
-    fstring name; /* account name */
-    fstring desc; /* account name */
-};
-
 /*****************************************************************
  Functions to be implemented by the new (v2) passdb API 
 ****************************************************************/
@@ -245,7 +239,7 @@ struct dom_grp_info
  * this SAMBA will load. Increment this if *ANY* changes are made to the interface. 
  */
 
-#define PASSDB_INTERFACE_VERSION 5
+#define PASSDB_INTERFACE_VERSION 6
 
 typedef struct pdb_context 
 {
@@ -306,13 +300,9 @@ typedef struct pdb_context
 				     uint32 *num_aliases,
 				     struct acct_info **aliases);
 
-	NTSTATUS (*pdb_get_aliasinfo)(struct pdb_context *context,
-				      const DOM_SID *sid,
-				      struct acct_info *info);
-
-	NTSTATUS (*pdb_set_aliasinfo)(struct pdb_context *context,
-				      const DOM_SID *sid,
-				      struct acct_info *info);
+	NTSTATUS (*pdb_get_aliasname)(struct pdb_context *context,
+				      TALLOC_CTX *mem_ctx,
+				      const DOM_SID *sid, char **name);
 
 	NTSTATUS (*pdb_add_aliasmem)(struct pdb_context *context,
 				     const DOM_SID *alias,
@@ -396,13 +386,9 @@ typedef struct pdb_methods
 				 uint32 start_idx, uint32 max_entries,
 				 uint32 *num_aliases, struct acct_info **info);
 
-	NTSTATUS (*get_aliasinfo)(struct pdb_methods *methods,
-				  const DOM_SID *sid,
-				  struct acct_info *info);
-
-	NTSTATUS (*set_aliasinfo)(struct pdb_methods *methods,
-				  const DOM_SID *sid,
-				  struct acct_info *info);
+	NTSTATUS (*get_aliasname)(struct pdb_methods *methods,
+				  TALLOC_CTX *mem_ctx,
+				  const DOM_SID *sid, char **name);
 
 	NTSTATUS (*add_aliasmem)(struct pdb_methods *methods,
 				 const DOM_SID *alias, const DOM_SID *member);

@@ -1236,9 +1236,8 @@ NTSTATUS _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u,
 NTSTATUS _samr_query_aliasinfo(pipes_struct *p, SAMR_Q_QUERY_ALIASINFO *q_u, SAMR_R_QUERY_ALIASINFO *r_u)
 {
 	DOM_SID   sid;
-	struct acct_info info;
+	char *name, *comment;
 	uint32    acc_granted;
-	BOOL ret;
 
 	r_u->status = NT_STATUS_OK;
 
@@ -1251,24 +1250,21 @@ NTSTATUS _samr_query_aliasinfo(pipes_struct *p, SAMR_Q_QUERY_ALIASINFO *q_u, SAM
 		return r_u->status;
 	}
 
-	become_root();
-	ret = pdb_get_aliasinfo(&sid, &info);
-	unbecome_root();
-	
-	if ( !ret )
+	if (!pdb_get_aliasname(p->mem_ctx, &sid, &name))
 		return NT_STATUS_NO_SUCH_ALIAS;
+
+	pdb_get_group_comment(p->mem_ctx, name, &comment);
 
 	switch (q_u->switch_level) {
 	case 1:
 		r_u->ptr = 1;
 		r_u->ctr.switch_value1 = 1;
-		init_samr_alias_info1(&r_u->ctr.alias.info1,
-				      info.acct_name, 1, info.acct_desc);
+		init_samr_alias_info1(&r_u->ctr.alias.info1, name, 1, comment);
 		break;
 	case 3:
 		r_u->ptr = 1;
 		r_u->ctr.switch_value1 = 3;
-		init_samr_alias_info3(&r_u->ctr.alias.info3, info.acct_desc);
+		init_samr_alias_info3(&r_u->ctr.alias.info3, comment);
 		break;
 	default:
 		return NT_STATUS_INVALID_INFO_CLASS;
@@ -3974,7 +3970,8 @@ NTSTATUS _samr_set_groupinfo(pipes_struct *p, SAMR_Q_SET_GROUPINFO *q_u, SAMR_R_
 NTSTATUS _samr_set_aliasinfo(pipes_struct *p, SAMR_Q_SET_ALIASINFO *q_u, SAMR_R_SET_ALIASINFO *r_u)
 {
 	DOM_SID group_sid;
-	struct acct_info info;
+	char *name;
+	fstring comment;
 	ALIAS_INFO_CTR *ctr;
 	uint32 acc_granted;
 
@@ -3984,20 +3981,23 @@ NTSTATUS _samr_set_aliasinfo(pipes_struct *p, SAMR_Q_SET_ALIASINFO *q_u, SAMR_R_
 	if (!NT_STATUS_IS_OK(r_u->status = access_check_samr_function(acc_granted, SA_RIGHT_ALIAS_SET_INFO, "_samr_set_aliasinfo"))) {
 		return r_u->status;
 	}
+
+	if (!pdb_get_aliasname(p->mem_ctx, &group_sid, &name))
+		return NT_STATUS_NO_SUCH_ALIAS;
 		
 	ctr=&q_u->ctr;
 
 	switch (ctr->switch_value1) {
 		case 3:
-			unistr2_to_ascii(info.acct_desc,
+			unistr2_to_ascii(comment,
 					 &(ctr->alias.info3.uni_acct_desc),
-					 sizeof(info.acct_desc)-1);
+					 sizeof(comment)-1);
 			break;
 		default:
 			return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
-	if(!pdb_set_aliasinfo(&group_sid, &info)) {
+	if(!pdb_set_group_comment(name, comment)) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 

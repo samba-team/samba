@@ -704,6 +704,46 @@ static int net_groupmap_memberships(int argc, const char **argv)
 	return 0;
 }
 
+static void list_aliases_internals(const DOM_SID *sid)
+{
+	struct acct_info *aliases;
+	int i, num_aliases;
+
+	if (!pdb_enum_aliases(sid, 0, 1000000, &num_aliases, &aliases)) {
+		d_printf("Could not list aliases for domain %s\n",
+			 sid_string_static(sid));
+		return;
+	}
+
+	for (i=0; i<num_aliases; i++) {
+		DOM_SID alias_sid;
+
+		sid_copy(&alias_sid, sid);
+		sid_append_rid(&alias_sid, aliases[i].rid);
+
+		printf("%s: sid=%s comment=[%s]\n",
+		       aliases[i].acct_name, sid_string_static(&alias_sid),
+		       aliases[i].acct_desc);
+	}
+	SAFE_FREE(aliases);
+}
+
+static int net_groupmap_aliases(int argc, const char **argv)
+{
+	extern DOM_SID global_sid_Builtin;
+
+	if (argc != 0) {
+		d_printf("net groupmap aliases\n");
+		return -1;
+	}
+
+	list_aliases_internals(get_global_sam_sid());
+	list_aliases_internals(&global_sid_Builtin);
+	return 0;
+}
+
+	
+
 static int net_groupmap_comment(int argc, const char **argv)
 {
 	if (argc == 1) {
@@ -723,6 +763,59 @@ static int net_groupmap_comment(int argc, const char **argv)
 		return -1;
 	}
 
+	return 0;
+}
+
+static int net_groupmap_newalias(int argc, const char **argv)
+{
+	uint32 rid;
+	DOM_SID sid;
+
+	if (argc != 1) {
+		d_printf("net groupmap newalias <aliasname>\n");
+		return -1;
+	}
+
+	if (!NT_STATUS_IS_OK(pdb_create_alias(argv[0], &rid))) {
+		d_printf("Could not create alias %s\n", argv[0]);
+		return -1;
+	}
+
+	sid_copy(&sid, get_global_sam_sid());
+	sid_append_rid(&sid, rid);
+
+	printf("Created alias [%s] with SID %s\n", argv[0],
+	       sid_string_static(&sid));
+	return 0;
+}
+
+static int net_groupmap_delalias(int argc, const char **argv)
+{
+	uint32 rid;
+	DOM_SID sid;
+
+	if (argc != 1) {
+		d_printf("net groupmap delalias <aliasname>\n");
+		return -1;
+	}
+
+	if (!pdb_find_alias(argv[0], &sid)) {
+		d_printf("Could not find alias %s\n", argv[0]);
+		return -1;
+	}
+
+	if (!sid_check_is_in_our_domain(&sid)) {
+		d_printf("Can not delete %s as it's not in our "
+			 "primary domain\n", argv[0]);
+		return -1;
+	}
+
+	if (!pdb_delete_alias(&sid)) {
+		d_printf("Could not delete %s\n");
+		return -1;
+	}
+
+	printf("Deleted alias %s\n");
 	return 0;
 }
 
@@ -750,6 +843,12 @@ int net_help_groupmap(int argc, const char **argv)
 		"\n  Remove foreign group mapping entries\n");
 	d_printf("net groupmap comment"\
 		 "\n  Get/Set a group comment\n");
+	d_printf("net groupmap aliases"\
+		 "\n  List aliases\n");
+	d_printf("net groupmap newalias"\
+		 "\n  Create an alias\n");
+	d_printf("net groupmap delalias"\
+		 "\n  Delete an alias\n");
 	
 	return -1;
 }
@@ -771,6 +870,9 @@ int net_groupmap(int argc, const char **argv)
  		{"listmem", net_groupmap_listmem},
  		{"memberships", net_groupmap_memberships},
 		{"comment", net_groupmap_comment},
+		{"aliases", net_groupmap_aliases},
+		{"newalias", net_groupmap_newalias},
+		{"delalias", net_groupmap_delalias},
 		{"list", net_groupmap_list},
 		{"help", net_help_groupmap},
 		{NULL, NULL}
