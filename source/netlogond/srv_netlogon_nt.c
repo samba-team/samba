@@ -387,7 +387,7 @@ static uint32 net_login_network(NET_ID_INFO_2 * id2,
 uint32 _net_req_chal(const UNISTR2 *uni_logon_server,
 		     const UNISTR2 *uni_logon_client,
 		     const DOM_CHAL * clnt_chal,
-		     DOM_CHAL * srv_chal, uint16 remote_pid)
+		     DOM_CHAL * srv_chal, uint32 remote_pid)
 {
 	fstring trust_acct;
 	fstring trust_name;
@@ -583,7 +583,7 @@ uint32 _net_auth(const UNISTR2 *uni_logon_srv,
 		 uint16 sec_chan,
 		 const UNISTR2 *uni_comp_name,
 		 const DOM_CHAL * clnt_chal,
-		 DOM_CHAL * srv_chal, uint16 remote_pid)
+		 DOM_CHAL * srv_chal, uint32 remote_pid)
 {
 	UTIME srv_time;
 	fstring trust_name;
@@ -628,11 +628,14 @@ uint32 _net_auth(const UNISTR2 *uni_logon_srv,
 /*************************************************************************
  _net_auth_2
  *************************************************************************/
-uint32 _net_auth_2(const DOM_LOG_INFO * clnt_id,
+uint32 _net_auth_2(const UNISTR2 *uni_logon_srv,
+		   const UNISTR2 *uni_acct_name,
+		   uint16 sec_chan,
+		   const UNISTR2 *uni_comp_name,
 		   const DOM_CHAL * clnt_chal,
 		   const NEG_FLAGS * clnt_flgs,
 		   DOM_CHAL * srv_chal,
-		   NEG_FLAGS * srv_flgs, uint16 remote_pid)
+		   NEG_FLAGS * srv_flgs, uint32 remote_pid)
 {
 	UTIME srv_time;
 	fstring trust_name;
@@ -642,8 +645,7 @@ uint32 _net_auth_2(const DOM_LOG_INFO * clnt_id,
 
 	srv_time.time = 0;
 
-	unistr2_to_ascii(trust_name, &(clnt_id->uni_comp_name),
-			 sizeof(trust_name) - 1);
+	unistr2_to_ascii(trust_name, uni_comp_name, sizeof(trust_name) - 1);
 
 	if (!cred_get(remote_pid, global_sam_name, trust_name, &dc))
 	{
@@ -703,7 +705,7 @@ uint32 _net_auth_2(const DOM_LOG_INFO * clnt_id,
  *************************************************************************/
 uint32 _net_srv_pwset(const DOM_CLNT_INFO * clnt_id,
 		      const uint8 pwd[16],
-		      DOM_CRED * srv_cred, uint16 remote_pid)
+		      DOM_CRED * srv_cred, uint32 remote_pid)
 {
 	pstring trust_acct;
 	unsigned char hash3_pwd[16];
@@ -795,7 +797,7 @@ uint32 _net_srv_pwset(const DOM_CLNT_INFO * clnt_id,
 uint32 _net_sam_logon(const DOM_SAM_INFO * sam_id,
 		      uint16 validation_level,
 		      DOM_CRED * srv_creds,
-		      NET_USER_INFO_CTR * uctr, uint16 remote_pid,
+		      NET_USER_INFO_CTR * uctr, uint32 remote_pid,
 		      uint32 *auth_resp)
 {
 	UNISTR2 *uni_samusr = NULL;
@@ -994,8 +996,8 @@ uint32 _net_sam_logon(const DOM_SAM_INFO * sam_id,
 				/* interactive login. */
 				status =
 					net_login_interactive(&
-							      (sam_id->ctr->
-							       auth.id1),
+							      (sam_id->
+							       ctr->auth.id1),
 							      &dc);
 				(*auth_resp) = 1;
 				break;
@@ -1005,10 +1007,10 @@ uint32 _net_sam_logon(const DOM_SAM_INFO * sam_id,
 				/* network login.  lm challenge and 24 byte responses */
 				status =
 					net_login_network(&
-							  (sam_id->ctr->auth.
-							   id2), acb_info,
-							  &dc, usr_sess_key,
-lm_pw8);
+							  (sam_id->ctr->
+							   auth.id2),
+							  acb_info, &dc,
+usr_sess_key, lm_pw8);
 				padding = lm_pw8;
 				enc_user_sess_key = usr_sess_key;
 				(*auth_resp) = 1;
@@ -1111,7 +1113,7 @@ lm_pw8);
  _net_sam_logoff
  *************************************************************************/
 uint32 _net_sam_logoff(const DOM_SAM_INFO * sam_id,
-		       DOM_CRED * srv_creds, uint16 remote_pid)
+		       DOM_CRED * srv_creds, uint32 remote_pid)
 {
 	fstring trust_name;
 	struct dcinfo dc;
@@ -1157,7 +1159,7 @@ uint32 _net_sam_sync(const UNISTR2 *uni_srv_name,
 		     uint32 *num_deltas,
 		     uint32 *num_deltas2,
 		     SAM_DELTA_HDR * hdr_deltas, SAM_DELTA_CTR * deltas,
-		     uint16 remote_pid)
+		     uint32 remote_pid)
 {
 	fstring trust_name;
 

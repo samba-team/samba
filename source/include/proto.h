@@ -1246,7 +1246,7 @@ msrpc_service_fns *get_service_fns(void);
 uint32 _net_req_chal(const UNISTR2 *uni_logon_server,
 		     const UNISTR2 *uni_logon_client,
 		     const DOM_CHAL * clnt_chal,
-		     DOM_CHAL * srv_chal, uint16 remote_pid);
+		     DOM_CHAL * srv_chal, uint32 remote_pid);
 uint32 _net_logon_ctrl2(const UNISTR2 *uni_server_name,
 			uint32 function_code,
 			uint32 query_level,
@@ -1260,22 +1260,25 @@ uint32 _net_auth(const UNISTR2 *uni_logon_srv,
 		 uint16 sec_chan,
 		 const UNISTR2 *uni_comp_name,
 		 const DOM_CHAL * clnt_chal,
-		 DOM_CHAL * srv_chal, uint16 remote_pid);
-uint32 _net_auth_2(const DOM_LOG_INFO * clnt_id,
+		 DOM_CHAL * srv_chal, uint32 remote_pid);
+uint32 _net_auth_2(const UNISTR2 *uni_logon_srv,
+		   const UNISTR2 *uni_acct_name,
+		   uint16 sec_chan,
+		   const UNISTR2 *uni_comp_name,
 		   const DOM_CHAL * clnt_chal,
 		   const NEG_FLAGS * clnt_flgs,
 		   DOM_CHAL * srv_chal,
-		   NEG_FLAGS * srv_flgs, uint16 remote_pid);
+		   NEG_FLAGS * srv_flgs, uint32 remote_pid);
 uint32 _net_srv_pwset(const DOM_CLNT_INFO * clnt_id,
 		      const uint8 pwd[16],
-		      DOM_CRED * srv_cred, uint16 remote_pid);
+		      DOM_CRED * srv_cred, uint32 remote_pid);
 uint32 _net_sam_logon(const DOM_SAM_INFO * sam_id,
 		      uint16 validation_level,
 		      DOM_CRED * srv_creds,
-		      NET_USER_INFO_CTR * uctr, uint16 remote_pid,
+		      NET_USER_INFO_CTR * uctr, uint32 remote_pid,
 		      uint32 *auth_resp);
 uint32 _net_sam_logoff(const DOM_SAM_INFO * sam_id,
-		       DOM_CRED * srv_creds, uint16 remote_pid);
+		       DOM_CRED * srv_creds, uint32 remote_pid);
 uint32 _net_sam_sync(const UNISTR2 *uni_srv_name,
 		     const UNISTR2 *uni_cli_name,
 		     DOM_CRED * cli_creds,
@@ -1287,7 +1290,7 @@ uint32 _net_sam_sync(const UNISTR2 *uni_srv_name,
 		     uint32 *num_deltas,
 		     uint32 *num_deltas2,
 		     SAM_DELTA_HDR * hdr_deltas, SAM_DELTA_CTR * deltas,
-		     uint16 remote_pid);
+		     uint32 remote_pid);
 
 /*The following definitions come from  nmbd/asyncdns.c  */
 

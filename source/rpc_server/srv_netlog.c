@@ -106,7 +106,11 @@ static BOOL api_net_auth_2(rpcsrv_struct * p,
 	}
 
 	r_a.status =
-		_net_auth_2(&q_a.clnt_id, &q_a.clnt_chal, &q_a.clnt_flgs,
+		_net_auth_2(&q_a.clnt_id.uni_logon_srv,
+			    &q_a.clnt_id.uni_acct_name,
+			    q_a.clnt_id.sec_chan,
+			    &q_a.clnt_id.uni_comp_name,
+			    &q_a.clnt_chal, &q_a.clnt_flgs,
 			    &r_a.srv_chal, &r_a.srv_flgs, p->key.pid);
 
 	/* store the response in the SMB stream */
