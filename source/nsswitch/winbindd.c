@@ -793,8 +793,11 @@ int main(int argc, char **argv)
 
         fstrcpy(global_myworkgroup, lp_workgroup());
 
-	if (!interactive)
+	if (!interactive) {
 		become_daemon();
+		pidfile_create("winbindd");
+	}
+
 
 #if HAVE_SETPGID
 	/*
@@ -866,10 +869,6 @@ int main(int argc, char **argv)
 		DEBUG(0, ("failed to create socket\n"));
 		return 1;
 	}
-
-	/* Only create the pidfile when we're ready to receive requests. */
-	if (!interactive)
-		pidfile_create("winbindd");
 
 	/* Loop waiting for requests */
 
