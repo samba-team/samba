@@ -480,10 +480,16 @@
 		samr_String description;
 	} samr_AliasInfoAll;
 
+	typedef enum {
+		AliasInfoAll          = 1,
+		AliasInfoName         = 2,
+		AliasInfoDescription  = 3
+	} AliasInfo;
+
 	typedef union {
-		[case(1)] samr_AliasInfoAll all;
-		[case(2)] samr_String name;
-		[case(3)] samr_String description;
+		[case(AliasInfoAll)] samr_AliasInfoAll all;
+		[case(AliasInfoName)] samr_String name;
+		[case(AliasInfoDescription)] samr_String description;
 	} samr_AliasInfo;
 
 	NTSTATUS samr_QueryAliasInfo(
@@ -497,7 +503,7 @@
 	NTSTATUS samr_SetAliasInfo(
 		[in,ref]                  policy_handle  *alias_handle,
 		[in]                      uint16          level,
-		[in,switch_is(level)]     samr_AliasInfo  info
+		[in,switch_is(level),ref] samr_AliasInfo  *info
 		);
 
 	/************************/
