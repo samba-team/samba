@@ -1717,7 +1717,7 @@ void cmd_sam_set_userinfo2(struct client_info *info, int argc, char *argv[])
 
 		if (True)
 		{
-			SAM_USER_INFO_16 *p = malloc(sizeof(SAM_USER_INFO_16));
+			SAM_USER_INFO_16 *p = (SAM_USER_INFO_16 *)malloc(sizeof(SAM_USER_INFO_16));
 			p->acb_info = usr16.acb_info;
 
 			usr = (void*)p;

@@ -113,29 +113,49 @@ static struct cli_use *cli_find(const char* srv_name,
 		sv_name = &sv_name[2];
 	}
 
+	DEBUG(10,("cli_find: %s %s %s\n",
+			srv_name,
+			usr_creds->user_name,
+			usr_creds->domain));
+
 	for (i = 0; i < num_clis; i++)
 	{
-		uchar ntpw[16], clintpw[16];
 		char *cli_name = NULL;
+		struct cli_use *c = clis[i];
 
-		if (clis[i] == NULL) continue;
+		if (c == NULL) continue;
 
-		cli_name = clis[i]->cli->desthost;
+		cli_name = c->cli->desthost;
+
+		DEBUG(10,("cli_find[%d]: %s %s %s\n",
+				i, cli_name,
+		                c->cli->usr.user_name,
+				c->cli->usr.domain));
+				
 		if (strnequal("\\\\", cli_name, 2))
 		{
 			cli_name = &cli_name[2];
 		}
 
-		if (!strequal(cli_name, sv_name)) continue;
-
-		pwd_get_lm_nt_16(&usr_creds->pwd, NULL, ntpw);
-		pwd_get_lm_nt_16(&clis[i]->cli->usr.pwd, NULL, clintpw);
-
-		if (strequal(usr_creds->user_name, clis[i]->cli->usr.user_name) &&
-		    strequal(usr_creds->domain, clis[i]->cli->usr.domain) &&
-		    memcmp(ntpw, clintpw, 16) == 0)
+		if (!strequal(cli_name, sv_name))
 		{
-			return clis[i];
+			continue;
+		}
+		if (!strequal(usr_creds->user_name, c->cli->usr.user_name))
+		{
+			continue;
+		}
+		if (!pwd_compare(&usr_creds->pwd, &c->cli->usr.pwd))
+		{
+			continue;
+		}
+		if (usr_creds->domain[0] == 0)
+		{
+			return c;
+		}
+		if (strequal(usr_creds->domain, c->cli->usr.domain))
+		{
+			return c;
 		}
 	}
 
@@ -164,10 +184,7 @@ static struct cli_use *cli_use_get(const char* srv_name,
 		return NULL;
 	}
 
-	cli->cli->capabilities |= CAP_NT_SMBS | CAP_STATUS32;
 	cli_init_creds(cli->cli, usr_creds);
-
-	cli->cli->use_ntlmv2 = lp_client_ntlmv2();
 
 	return cli;
 }

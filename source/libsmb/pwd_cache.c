@@ -29,12 +29,12 @@ initialises a password structure
 ****************************************************************************/
 void pwd_init(struct pwd_info *pwd)
 {
-	bzero(pwd->password  , sizeof(pwd->password  ));
-	bzero(pwd->smb_lm_pwd, sizeof(pwd->smb_lm_pwd));
-	bzero(pwd->smb_nt_pwd, sizeof(pwd->smb_nt_pwd));
-	bzero(pwd->smb_lm_owf, sizeof(pwd->smb_lm_owf));
-	bzero(pwd->smb_nt_owf, sizeof(pwd->smb_nt_owf));
-	bzero(pwd->sess_key  , sizeof(pwd->sess_key  ));
+	ZERO_STRUCT(pwd->password  );
+	ZERO_STRUCT(pwd->smb_lm_pwd);
+	ZERO_STRUCT(pwd->smb_nt_pwd);
+	ZERO_STRUCT(pwd->smb_lm_owf);
+	ZERO_STRUCT(pwd->smb_nt_owf);
+	ZERO_STRUCT(pwd->sess_key  );
 	pwd->nt_owf_len = 0;
 
 	pwd->null_pwd  = True; /* safest option... */
@@ -63,6 +63,57 @@ void pwd_obfuscate_key(struct pwd_info *pwd, uint32 int_key, char *str_key)
 {
 }
 
+/****************************************************************************
+compares two passwords.  hmm, not as trivial as expected.  hmm.
+****************************************************************************/
+BOOL pwd_compare(struct pwd_info *pwd1, struct pwd_info *pwd2)
+{
+	pwd_deobfuscate(pwd1);
+	pwd_deobfuscate(pwd2);
+	if (pwd1->cleartext && pwd2->cleartext)
+	{
+		if (strequal(pwd1->password, pwd2->password))
+		{
+			pwd_obfuscate(pwd1);
+			pwd_obfuscate(pwd2);
+			return True;
+		}
+	}
+	if (pwd1->null_pwd && pwd2->null_pwd)
+	{
+		pwd_obfuscate(pwd1);
+		pwd_obfuscate(pwd2);
+		return True;
+	}
+	if (pwd1->crypted || pwd2->crypted)
+	{
+		DEBUG(5,("pwd_compare: cannot compare crypted passwords\n"));
+		pwd_obfuscate(pwd1);
+		pwd_obfuscate(pwd2);
+		return False;
+	}
+
+	if (!pwd1->crypted   && !pwd2->crypted &&
+	    !pwd1->null_pwd  && !pwd2->null_pwd &&
+	    !pwd1->cleartext && !pwd2->cleartext)
+	{
+		if (memcmp(pwd1->smb_nt_pwd, pwd2->smb_nt_pwd, 16) == 0)
+		{
+			pwd_obfuscate(pwd1);
+			pwd_obfuscate(pwd2);
+			return True;
+		}
+		if (memcmp(pwd1->smb_lm_pwd, pwd2->smb_lm_pwd, 16) == 0)
+		{
+			pwd_obfuscate(pwd1);
+			pwd_obfuscate(pwd2);
+			return True;
+		}
+	}
+	pwd_obfuscate(pwd1);
+	pwd_obfuscate(pwd2);
+	return False;
+}
 /****************************************************************************
 reads a password
 ****************************************************************************/
