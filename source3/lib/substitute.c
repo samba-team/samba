@@ -363,6 +363,9 @@ void standard_sub_basic(const char *smb_name, char *str,size_t len)
 		case 'I' :
 			string_sub(p,"%I", client_addr(),l);
 			break;
+		case 'i' :
+			string_sub(p,"%i", client_socket_addr(),l);
+			break;
 		case 'L' : 
 			if (local_machine_name && *local_machine_name)
 				string_sub(p,"%L", local_machine_name,l); 
