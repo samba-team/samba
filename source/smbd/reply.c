@@ -3639,8 +3639,17 @@ int reply_mv(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, in
   DEBUG(3,("reply_mv : %s -> %s\n",name,newname));
 
   outsize = rename_internals(conn, inbuf, outbuf, name, newname, False);
-  if(outsize == 0) 
+  if(outsize == 0) {
+
+	/*
+     * Win2k needs a changenotify request response before it will
+     * update after a rename..
+     */
+
+    process_pending_change_notify_queue((time_t)0);
+
     outsize = set_message(outbuf,0,0,True);
+  }
   
   return(outsize);
 }
