@@ -3101,11 +3101,10 @@ static BOOL resolve_wildcards(const char *name1, char *name2)
 
 	available_space = sizeof(pstring) - PTR_DIFF(pname2, name2);
 	
-	StrnCpy(pname2, root2, available_space-1);
-	available_space -= strlen(root2);
 	if (ext2[0]) {
-		strncat(pname2, ".", available_space-1);
-		strncat(pname2, ext2, available_space-2);
+		snprintf(pname2, available_space - 1, "%s.%s", root2, ext2);
+	} else {
+		StrnCpy(pname2, root2, available_space - 1);
 	}
 
 	return(True);
