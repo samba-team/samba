@@ -46,7 +46,7 @@ static void
 usage (void)
 {
   fprintf(stderr,
-	  "Usage: %s [-h] [-r] [-s] [-n count] [-f alg] num seed\n",
+	  "Usage: %s [-e] [-h] [-r] [-s] [-n count] [-f alg] num seed\n",
 	  prog);
   exit (1);
 }
@@ -160,13 +160,19 @@ set (int argc, char **argv, int count, OtpAlgorithm *alg, int hexp)
 }
 
 int
-print (int argc, char **argv, int count, OtpAlgorithm *alg, int hexp)
+print (int argc,
+       char **argv,
+       int count,
+       OtpAlgorithm *alg,
+       int hexp,
+       int extendedp)
 {
   char pw[64];
   OtpKey key;
   int n;
   int i;
   char *seed;
+  char *ext;
 
   if (argc != 2)
     usage ();
@@ -174,6 +180,13 @@ print (int argc, char **argv, int count, OtpAlgorithm *alg, int hexp)
   seed = argv[1];
   des_read_pw_string (pw, sizeof(pw), "Password: ", 0);
   alg->init (key, pw, seed);
+  if (extendedp)
+    if (hexp)
+      ext = "hex:";
+    else
+      ext = "word:";
+  else
+    ext = "";
   for (i = 0; i < n; ++i) {
     char s[30];
 
@@ -183,7 +196,7 @@ print (int argc, char **argv, int count, OtpAlgorithm *alg, int hexp)
 	otp_print_hex (key, s);
       else
 	otp_print_stddict (key, s);
-      printf ("%d: %s\n", i + 1, s);
+      printf ("%d: %s%s\n", i + 1, ext, s);
     }
   }
   return 0;
@@ -197,6 +210,7 @@ main (int argc, char **argv)
   int setp = 0;
   int hexp = 0;
   int renewp = 0;
+  int extendedp = 0;
   OtpAlgorithm *alg = otp_find_alg ("md4");
 
   prog = argv[0];
@@ -205,6 +219,9 @@ main (int argc, char **argv)
     switch (c) {
     case 'r' :
       renewp = 1;
+      break;
+    case 'e' :
+      extendedp = 1;
       break;
     case 'n' :
       count = atoi (optarg);
@@ -239,5 +256,5 @@ main (int argc, char **argv)
   else if (renewp)
     return renew (argc, argv, count, alg, hexp);
   else
-    return print (argc, argv, count, alg, hexp);
+    return print (argc, argv, count, alg, hexp, extendedp);
 }
