@@ -344,7 +344,7 @@ BOOL user_in_list(char *user,char *list)
 
     } else if (*tok == '&') {
 
-      if(tok[1] == '&') {
+      if(tok[1] == '+') {
         /*
          * Search netgroup list followed by UNIX list.
          */
