@@ -99,19 +99,19 @@ enum master_state
 
 enum state_type
 {
-	NAME_STATUS_DOM_SRV_CHK,
-	NAME_STATUS_SRV_CHK,
-	NAME_REGISTER_CHALLENGE,
-	NAME_REGISTER,
-	NAME_RELEASE,
-	NAME_QUERY_CONFIRM,
-	NAME_QUERY_ANNOUNCE_HOST,
-	NAME_QUERY_SYNC_LOCAL,
-	NAME_QUERY_SYNC_REMOTE,
-	NAME_QUERY_DOM_SRV_CHK,
-	NAME_QUERY_SRV_CHK,
-	NAME_QUERY_FIND_MST,
-	NAME_QUERY_MST_CHK
+    NAME_STATUS_DOM_SRV_CHK,
+    NAME_STATUS_SRV_CHK,
+    NAME_REGISTER_CHALLENGE,
+    NAME_REGISTER,
+    NAME_RELEASE,
+    NAME_QUERY_CONFIRM,
+    NAME_QUERY_ANNOUNCE_HOST,
+    NAME_QUERY_SYNC_LOCAL,
+    NAME_QUERY_SYNC_REMOTE,
+    NAME_QUERY_DOM_SRV_CHK,
+    NAME_QUERY_SRV_CHK,
+    NAME_QUERY_FIND_MST,
+    NAME_QUERY_MST_CHK
 };
 
 /* a netbios name structure */
@@ -119,6 +119,14 @@ struct nmb_name {
   char name[17];
   char scope[64];
   int name_type;
+};
+
+/* A server name and comment. */
+struct server_identity
+{
+    char *name;
+    char *comment;
+    struct server_identity *next;
 };
 
 /* a netbios flags + ip address structure */
@@ -148,16 +156,16 @@ struct name_record
 /* browse and backup server cache for synchronising browse list */
 struct browse_cache_record
 {
-	struct browse_cache_record *next;
-	struct browse_cache_record *prev;
+    struct browse_cache_record *next;
+    struct browse_cache_record *prev;
 
-	pstring name;
-	int type;
-	pstring group;
-	struct in_addr ip;
-	time_t sync_time;
-	BOOL synced;
-	BOOL local;
+    pstring name;
+    int type;
+    pstring group;
+    struct in_addr ip;
+    time_t sync_time;
+    BOOL synced;
+    BOOL local;
 };
 
 /* this is used to hold the list of servers in my domain, and is */
@@ -214,9 +222,10 @@ struct response_record
   int fd;
   int quest_type;
   struct nmb_name name;
-  int nb_flags;
+  struct nmb_ip reply;
   time_t ttl;
 
+  int token; /* unique workgroup token id */
   int server_type;
   fstring my_name;
   fstring my_comment;
@@ -224,7 +233,6 @@ struct response_record
   BOOL bcast;
   BOOL recurse;
   struct in_addr send_ip;
-  struct in_addr reply_to_ip;
 
   int num_msgs;
 

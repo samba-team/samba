@@ -119,26 +119,26 @@ void reopen_logs(void)
     {
       strcpy(fname,debugf);
       if (lp_loaded() && (*lp_logfile()))
-	strcpy(fname,lp_logfile());
+    strcpy(fname,lp_logfile());
 
       if (!strcsequal(fname,debugf) || !dbf || !file_exist(debugf,NULL))
-	{
-	  strcpy(debugf,fname);
-	  if (dbf) fclose(dbf);
-	  if (append_log)
-	    dbf = fopen(debugf,"a");
-	  else
-	    dbf = fopen(debugf,"w");
-	  if (dbf) setbuf(dbf,NULL);
-	}
+    {
+      strcpy(debugf,fname);
+      if (dbf) fclose(dbf);
+      if (append_log)
+        dbf = fopen(debugf,"a");
+      else
+        dbf = fopen(debugf,"w");
+      if (dbf) setbuf(dbf,NULL);
+    }
     }
   else
     {
       if (dbf)
-	{
-	  fclose(dbf);
-	  dbf = NULL;
-	}
+    {
+      fclose(dbf);
+      dbf = NULL;
+    }
     }
 }
 
@@ -204,13 +204,13 @@ va_dcl
 #endif  
     {
       if (!dbf) 
-	{
-      	  dbf = fopen(debugf,"w");
-	  if (dbf)
-	    setbuf(dbf,NULL);
-	  else
-	    return(0);
-	}
+    {
+          dbf = fopen(debugf,"w");
+      if (dbf)
+        setbuf(dbf,NULL);
+      else
+        return(0);
+    }
     }
 
 #ifdef SYSLOG
@@ -222,19 +222,19 @@ va_dcl
        * necessarily errors
        */
       static int priority_map[] = { 
-	LOG_ERR,     /* 0 */
-	LOG_WARNING, /* 1 */
-	LOG_NOTICE,  /* 2 */
-	LOG_INFO,    /* 3 */
+    LOG_ERR,     /* 0 */
+    LOG_WARNING, /* 1 */
+    LOG_NOTICE,  /* 2 */
+    LOG_INFO,    /* 3 */
       };
       int priority;
       pstring msgbuf;
       
       if (syslog_level >= sizeof(priority_map) / sizeof(priority_map[0]) ||
-	  syslog_level < 0)
-	priority = LOG_DEBUG;
+      syslog_level < 0)
+    priority = LOG_DEBUG;
       else
-	priority = priority_map[syslog_level];
+    priority = priority_map[syslog_level];
       
 #ifdef __STDC__
       va_start(ap, format_str);
@@ -312,9 +312,9 @@ BOOL next_token(char **ptr,char *buff,char *sep)
   for (quoted = False; *s && (quoted || !strchr(sep,*s)); s++)
     {
       if (*s == '\"') 
-	quoted = !quoted;
+    quoted = !quoted;
       else
-	*buff++ = *s;
+    *buff++ = *s;
     }
 
   *ptr = (*s) ? s+1 : s;  
@@ -387,34 +387,34 @@ void *MemMove(void *dest,void *src,int size)
     {
       /* we can forward copy */
       if (s-d >= sizeof(int) && 
-	  !(s%sizeof(int)) && !(d%sizeof(int)) && !(size%sizeof(int))) {
-	/* do it all as words */
-	int *idest = (int *)dest;
-	int *isrc = (int *)src;
-	size /= sizeof(int);
-	for (i=0;i<size;i++) idest[i] = isrc[i];
+      !(s%sizeof(int)) && !(d%sizeof(int)) && !(size%sizeof(int))) {
+    /* do it all as words */
+    int *idest = (int *)dest;
+    int *isrc = (int *)src;
+    size /= sizeof(int);
+    for (i=0;i<size;i++) idest[i] = isrc[i];
       } else {
-	/* simplest */
-	char *cdest = (char *)dest;
-	char *csrc = (char *)src;
-	for (i=0;i<size;i++) cdest[i] = csrc[i];
+    /* simplest */
+    char *cdest = (char *)dest;
+    char *csrc = (char *)src;
+    for (i=0;i<size;i++) cdest[i] = csrc[i];
       }
     }
   else
     {
       /* must backward copy */
       if (d-s >= sizeof(int) && 
-	  !(s%sizeof(int)) && !(d%sizeof(int)) && !(size%sizeof(int))) {
-	/* do it all as words */
-	int *idest = (int *)dest;
-	int *isrc = (int *)src;
-	size /= sizeof(int);
-	for (i=size-1;i>=0;i--) idest[i] = isrc[i];
+      !(s%sizeof(int)) && !(d%sizeof(int)) && !(size%sizeof(int))) {
+    /* do it all as words */
+    int *idest = (int *)dest;
+    int *isrc = (int *)src;
+    size /= sizeof(int);
+    for (i=size-1;i>=0;i--) idest[i] = isrc[i];
       } else {
-	/* simplest */
-	char *cdest = (char *)dest;
-	char *csrc = (char *)src;
-	for (i=size-1;i>=0;i--) cdest[i] = csrc[i];
+    /* simplest */
+    char *cdest = (char *)dest;
+    char *csrc = (char *)src;
+    for (i=size-1;i>=0;i--) cdest[i] = csrc[i];
       }      
     }
   return(dest);
@@ -486,7 +486,7 @@ struct
 #endif
   {NULL,0,0,0,0}};
 
-	
+    
 
 /****************************************************************************
 set user socket options
@@ -503,44 +503,44 @@ void set_socket_options(int fd, char *options)
       BOOL got_value = False;
 
       if ((p = strchr(tok,'=')))
-	{
-	  *p = 0;
-	  value = atoi(p+1);
-	  got_value = True;
-	}
+    {
+      *p = 0;
+      value = atoi(p+1);
+      got_value = True;
+    }
 
       for (i=0;socket_options[i].name;i++)
-	if (strequal(socket_options[i].name,tok))
-	  break;
+    if (strequal(socket_options[i].name,tok))
+      break;
 
       if (!socket_options[i].name)
-	{
-	  DEBUG(0,("Unknown socket option %s\n",tok));
-	  continue;
-	}
+    {
+      DEBUG(0,("Unknown socket option %s\n",tok));
+      continue;
+    }
 
       switch (socket_options[i].opttype)
-	{
-	case OPT_BOOL:
-	case OPT_INT:
-	  ret = setsockopt(fd,socket_options[i].level,
-			   socket_options[i].option,(char *)&value,sizeof(int));
-	  break;
+    {
+    case OPT_BOOL:
+    case OPT_INT:
+      ret = setsockopt(fd,socket_options[i].level,
+               socket_options[i].option,(char *)&value,sizeof(int));
+      break;
 
-	case OPT_ON:
-	  if (got_value)
-	    DEBUG(0,("syntax error - %s does not take a value\n",tok));
+    case OPT_ON:
+      if (got_value)
+        DEBUG(0,("syntax error - %s does not take a value\n",tok));
 
-	  {
-	    int on = socket_options[i].value;
-	    ret = setsockopt(fd,socket_options[i].level,
-			     socket_options[i].option,(char *)&on,sizeof(int));
-	  }
-	  break;	  
-	}
+      {
+        int on = socket_options[i].value;
+        ret = setsockopt(fd,socket_options[i].level,
+                 socket_options[i].option,(char *)&on,sizeof(int));
+      }
+      break;      
+    }
       
       if (ret != 0)
-	DEBUG(0,("Failed to set socket option %s\n",tok));
+    DEBUG(0,("Failed to set socket option %s\n",tok));
     }
 }
 
@@ -636,8 +636,8 @@ static int name_interpret(char *in,char *out)
   while (len--)
     {
       if (in[0] < 'A' || in[0] > 'P' || in[1] < 'A' || in[1] > 'P') {
-	*out = 0;
-	return(0);
+    *out = 0;
+    return(0);
       }
       *out = ((in[0]-'A')<<4) + (in[1]-'A');
       in += 2;
@@ -695,7 +695,7 @@ int name_mangle(char *In,char *Out,char name_type)
     {
       p = strchr(label, '.');
       if (p == 0)
-	p = label + strlen(label);
+    p = label + strlen(label);
       *out++ = p - label;
       memcpy(out, label, p - label);
       out += p - label;
@@ -772,7 +772,7 @@ char *attrib_string(int mode)
   if (mode & aARCH) strcat(attrstr,"A");
   if (mode & aHIDDEN) strcat(attrstr,"H");
   if (mode & aSYSTEM) strcat(attrstr,"S");
-  if (mode & aRONLY) strcat(attrstr,"R");	  
+  if (mode & aRONLY) strcat(attrstr,"R");     
 
   return(attrstr);
 }
@@ -781,7 +781,7 @@ char *attrib_string(int mode)
 /*******************************************************************
   case insensitive string compararison
 ********************************************************************/
-int StrCaseCmp(char *s, char *t)
+int StrCaseCmp(const char *s, const char *t)
 {
   for (; tolower(*s) == tolower(*t); ++s, ++t)
     if (!*s) return 0;
@@ -792,7 +792,7 @@ int StrCaseCmp(char *s, char *t)
 /*******************************************************************
   case insensitive string compararison, length limited
 ********************************************************************/
-int StrnCaseCmp(char *s, char *t, int n)
+int StrnCaseCmp(const char *s, const char *t, int n)
 {
   while (n-- && *s && *t) {
     if (tolower(*s) != tolower(*t)) return(tolower(*s) - tolower(*t));
@@ -806,7 +806,7 @@ int StrnCaseCmp(char *s, char *t, int n)
 /*******************************************************************
   compare 2 strings 
 ********************************************************************/
-BOOL strequal(char *s1,char *s2)
+BOOL strequal(const char *s1, const char *s2)
 {
   if (s1 == s2) return(True);
   if (!s1 || !s2) return(False);
@@ -845,18 +845,18 @@ void strlower(char *s)
   while (*s)
     {
 #ifdef KANJI
-	if (is_shift_jis (*s)) {
-	    s += 2;
-	} else if (is_kana (*s)) {
-	    s++;
-	} else {
-	    if (isupper(*s))
-		*s = tolower(*s);
-	    s++;
-	}
+    if (is_shift_jis (*s)) {
+        s += 2;
+    } else if (is_kana (*s)) {
+        s++;
+    } else {
+        if (isupper(*s))
+        *s = tolower(*s);
+        s++;
+    }
 #else
       if (isupper(*s))
-	  *s = tolower(*s);
+      *s = tolower(*s);
       s++;
 #endif /* KANJI */
     }
@@ -870,18 +870,18 @@ void strupper(char *s)
   while (*s)
     {
 #ifdef KANJI
-	if (is_shift_jis (*s)) {
-	    s += 2;
-	} else if (is_kana (*s)) {
-	    s++;
-	} else {
-	    if (islower(*s))
-		*s = toupper(*s);
-	    s++;
-	}
+    if (is_shift_jis (*s)) {
+        s += 2;
+    } else if (is_kana (*s)) {
+        s++;
+    } else {
+        if (islower(*s))
+        *s = toupper(*s);
+        s++;
+    }
 #else
       if (islower(*s))
-	*s = toupper(*s);
+    *s = toupper(*s);
       s++;
 #endif
     }
@@ -918,18 +918,18 @@ void string_replace(char *s,char oldc,char newc)
   while (*s)
     {
 #ifdef KANJI
-	if (is_shift_jis (*s)) {
-	    s += 2;
-	} else if (is_kana (*s)) {
-	    s++;
-	} else {
-	    if (oldc == *s)
-		*s = newc;
-	    s++;
-	}
+    if (is_shift_jis (*s)) {
+        s += 2;
+    } else if (is_kana (*s)) {
+        s++;
+    } else {
+        if (oldc == *s)
+        *s = newc;
+        s++;
+    }
 #else
       if (oldc == *s)
-	*s = newc;
+    *s = newc;
       s++;
 #endif /* KANJI */
     }
@@ -977,22 +977,22 @@ void show_msg(char *buf)
     return;
 
   DEBUG(5,("size=%d\nsmb_com=0x%x\nsmb_rcls=%d\nsmb_reh=%d\nsmb_err=%d\nsmb_flg=%d\nsmb_flg2=%d\n",
-	  smb_len(buf),
-	  (int)CVAL(buf,smb_com),
-	  (int)CVAL(buf,smb_rcls),
-	  (int)CVAL(buf,smb_reh),
-	  (int)SVAL(buf,smb_err),
-	  (int)CVAL(buf,smb_flg),
-	  (int)SVAL(buf,smb_flg2)));
+      smb_len(buf),
+      (int)CVAL(buf,smb_com),
+      (int)CVAL(buf,smb_rcls),
+      (int)CVAL(buf,smb_reh),
+      (int)SVAL(buf,smb_err),
+      (int)CVAL(buf,smb_flg),
+      (int)SVAL(buf,smb_flg2)));
   DEBUG(5,("smb_tid=%d\nsmb_pid=%d\nsmb_uid=%d\nsmb_mid=%d\nsmt_wct=%d\n",
-	  (int)SVAL(buf,smb_tid),
-	  (int)SVAL(buf,smb_pid),
-	  (int)SVAL(buf,smb_uid),
-	  (int)SVAL(buf,smb_mid),
-	  (int)CVAL(buf,smb_wct)));
+      (int)SVAL(buf,smb_tid),
+      (int)SVAL(buf,smb_pid),
+      (int)SVAL(buf,smb_uid),
+      (int)SVAL(buf,smb_mid),
+      (int)CVAL(buf,smb_wct)));
   for (i=0;i<(int)CVAL(buf,smb_wct);i++)
     DEBUG(5,("smb_vwv[%d]=%d (0x%X)\n",i,
-	  SVAL(buf,smb_vwv+2*i),SVAL(buf,smb_vwv+2*i)));
+      SVAL(buf,smb_vwv+2*i),SVAL(buf,smb_vwv+2*i)));
   bcc = (int)SVAL(buf,smb_vwv+2*(CVAL(buf,smb_wct)));
   DEBUG(5,("smb_bcc=%d\n",bcc));
   if (DEBUGLEVEL < 10)
@@ -1109,14 +1109,14 @@ BOOL trim_string(char *s,char *front,char *back)
       char *p = s;
       ret = True;
       while (1)
-	{
-	  if (!(*p = p[strlen(front)]))
-	    break;
-	  p++;
-	}
+    {
+      if (!(*p = p[strlen(front)]))
+        break;
+      p++;
+    }
     }
   while (back && *back && strlen(s) >= strlen(back) && 
-	 (strncmp(s+strlen(s)-strlen(back),back,strlen(back))==0))  
+     (strncmp(s+strlen(s)-strlen(back),back,strlen(back))==0))  
     {
       ret = True;
       s[strlen(s)-strlen(back)] = 0;
@@ -1145,9 +1145,9 @@ void dos_clean_name(char *s)
       strcpy(s1,p+3);
 
       if ((p=strrchr(s,'\\')) != NULL)
-	*p = 0;
+    *p = 0;
       else
-	*s = 0;
+    *s = 0;
       strcat(s,s1);
     }  
 
@@ -1176,9 +1176,9 @@ void unix_clean_name(char *s)
       strcpy(s1,p+3);
 
       if ((p=strrchr(s,'/')) != NULL)
-	*p = 0;
+    *p = 0;
       else
-	*s = 0;
+    *s = 0;
       strcat(s,s1);
     }  
 
@@ -1251,10 +1251,10 @@ char *GetWd(char *str)
     {
       getwd_cache_init = True;
       for (i=0;i<MAX_GETWDCACHE;i++)
-	{
-	  string_init(&ino_list[i].text,"");
-	  ino_list[i].valid = False;
-	}
+    {
+      string_init(&ino_list[i].text,"");
+      ino_list[i].valid = False;
+    }
     }
 
   /*  Get the inode of the current directory, if this doesn't work we're
@@ -1271,35 +1271,35 @@ char *GetWd(char *str)
     if (ino_list[i].valid)
       {
 
-	/*  If we have found an entry with a matching inode and dev number
-	    then find the inode number for the directory in the cached string.
-	    If this agrees with that returned by the stat for the current
-	    directory then all is o.k. (but make sure it is a directory all
-	    the same...) */
+    /*  If we have found an entry with a matching inode and dev number
+        then find the inode number for the directory in the cached string.
+        If this agrees with that returned by the stat for the current
+        directory then all is o.k. (but make sure it is a directory all
+        the same...) */
       
-	if (st.st_ino == ino_list[i].inode &&
-	    st.st_dev == ino_list[i].dev)
-	  {
-	    if (stat(ino_list[i].text,&st2) == 0)
-	      {
-		if (st.st_ino == st2.st_ino &&
-		    st.st_dev == st2.st_dev &&
-		    (st2.st_mode & S_IFMT) == S_IFDIR)
-		  {
-		    strcpy (str, ino_list[i].text);
+    if (st.st_ino == ino_list[i].inode &&
+        st.st_dev == ino_list[i].dev)
+      {
+        if (stat(ino_list[i].text,&st2) == 0)
+          {
+        if (st.st_ino == st2.st_ino &&
+            st.st_dev == st2.st_dev &&
+            (st2.st_mode & S_IFMT) == S_IFDIR)
+          {
+            strcpy (str, ino_list[i].text);
 
-		    /* promote it for future use */
-		    array_promote((char *)&ino_list[0],sizeof(ino_list[0]),i);
-		    return (str);
-		  }
-		else
-		  {
-		    /*  If the inode is different then something's changed, 
-			scrub the entry and start from scratch. */
-		    ino_list[i].valid = False;
-		  }
-	      }
-	  }
+            /* promote it for future use */
+            array_promote((char *)&ino_list[0],sizeof(ino_list[0]),i);
+            return (str);
+          }
+        else
+          {
+            /*  If the inode is different then something's changed, 
+            scrub the entry and start from scratch. */
+            ino_list[i].valid = False;
+          }
+          }
+      }
       }
 
 
@@ -1358,10 +1358,10 @@ BOOL reduce_name(char *s,char *dir,BOOL widelinks)
       unix_clean_name(s);
       /* can't have a leading .. */
       if (strncmp(s,"..",2) == 0 && (s[2]==0 || s[2]=='/'))
-	{
-	  DEBUG(3,("Illegal file name? (%s)\n",s));
-	  return(False);
-	}
+    {
+      DEBUG(3,("Illegal file name? (%s)\n",s));
+      return(False);
+    }
       return(True);
     }
   
@@ -1398,11 +1398,11 @@ BOOL reduce_name(char *s,char *dir,BOOL widelinks)
 
     if (p && (p != basename))
       {
-	*p = 0;
-	if (strcmp(p+1,".")==0)
-	  p[1]=0;
-	if (strcmp(p+1,"..")==0)
-	  *p = '/';
+    *p = 0;
+    if (strcmp(p+1,".")==0)
+      p[1]=0;
+    if (strcmp(p+1,"..")==0)
+      *p = '/';
       }
 
   if (ChDir(basename) != 0)
@@ -1432,17 +1432,17 @@ BOOL reduce_name(char *s,char *dir,BOOL widelinks)
 
     if (strncmp(newname,dir2,l) != 0)
       {
-	ChDir(wd);
-	DEBUG(2,("Bad access attempt? s=%s dir=%s newname=%s l=%d\n",s,dir2,newname,l));
-	return(False);
+    ChDir(wd);
+    DEBUG(2,("Bad access attempt? s=%s dir=%s newname=%s l=%d\n",s,dir2,newname,l));
+    return(False);
       }
 
     if (relative)
       {
-	if (newname[l] == '/')
-	  strcpy(s,newname + l + 1);
-	else
-	  strcpy(s,newname+l);
+    if (newname[l] == '/')
+      strcpy(s,newname + l + 1);
+    else
+      strcpy(s,newname+l);
       }
     else
       strcpy(s,newname);
@@ -1471,7 +1471,7 @@ static void expand_one(char *Mask,int len)
       pstring tmp;
       strcpy(tmp,Mask);  
       memset(tmp+l1,'?',lfill);
-      strcpy(tmp + l1 + lfill,Mask + l1 + 1);	
+      strcpy(tmp + l1 + lfill,Mask + l1 + 1);   
       strcpy(Mask,tmp);      
     }
 }
@@ -1508,10 +1508,10 @@ void expand_mask(char *Mask,BOOL doext)
     {
       strcpy(mext,"");
       if (strlen(mbeg) > 8)
-	{
-	  strcpy(mext,mbeg + 8);
-	  mbeg[8] = 0;
-	}
+    {
+      strcpy(mext,mbeg + 8);
+      mbeg[8] = 0;
+    }
     }
 
   if (*mbeg == 0)
@@ -1545,14 +1545,14 @@ BOOL strhasupper(char *s)
   while (*s) 
     {
 #ifdef KANJI
-	if (is_shift_jis (*s)) {
-	    s += 2;
-	} else if (is_kana (*s)) {
-	    s++;
-	} else {
-	    if (isupper(*s)) return(True);
-	    s++;
-	}
+    if (is_shift_jis (*s)) {
+        s += 2;
+    } else if (is_kana (*s)) {
+        s++;
+    } else {
+        if (isupper(*s)) return(True);
+        s++;
+    }
 #else 
       if (isupper(*s)) return(True);
       s++;
@@ -1569,14 +1569,14 @@ BOOL strhaslower(char *s)
   while (*s) 
     {
 #ifdef KANJI
-	if (is_shift_jis (*s)) {
-	    s += 2;
-	} else if (is_kana (*s)) {
-	    s++;
-	} else {
-	    if (islower(*s)) return(True);
-	    s++;
-	}
+    if (is_shift_jis (*s)) {
+        s += 2;
+    } else if (is_kana (*s)) {
+        s++;
+    } else {
+        if (islower(*s)) return(True);
+        s++;
+    }
 #else 
       if (islower(*s)) return(True);
       s++;
@@ -1594,7 +1594,7 @@ int count_chars(char *s,char c)
   while (*s) 
     {
       if (*s == c)
-	count++;
+    count++;
       s++;
     }
   return(count);
@@ -1756,13 +1756,13 @@ int read_with_timeout(int fd,char *buf,int mincnt,int maxcnt,long time_out)
     while (nread < mincnt) {
       readret = read(fd, buf + nread, maxcnt - nread);
       if (readret == 0) {
-	smb_read_error = READ_EOF;
-	return -1;
+    smb_read_error = READ_EOF;
+    return -1;
       }
 
       if (readret == -1) {
-	smb_read_error = READ_ERROR;
-	return -1;
+    smb_read_error = READ_ERROR;
+    return -1;
       }
       nread += readret;
     }
@@ -1771,9 +1771,9 @@ int read_with_timeout(int fd,char *buf,int mincnt,int maxcnt,long time_out)
   
   /* Most difficult - timeout read */
   /* If this is ever called on a disk file and 
-	 mincnt is greater then the filesize then
-	 system performance will suffer severely as 
-	 select always return true on disk files */
+     mincnt is greater then the filesize then
+     system performance will suffer severely as 
+     select always return true on disk files */
 
   /* Set initial timeout */
   timeout.tv_sec = time_out / 1000;
@@ -1788,28 +1788,28 @@ int read_with_timeout(int fd,char *buf,int mincnt,int maxcnt,long time_out)
 
       /* Check if error */
       if(selrtn == -1) {
-	/* something is wrong. Maybe the socket is dead? */
-	smb_read_error = READ_ERROR;
-	return -1;
+    /* something is wrong. Maybe the socket is dead? */
+    smb_read_error = READ_ERROR;
+    return -1;
       }
       
       /* Did we timeout ? */
       if (selrtn == 0) {
-	smb_read_error = READ_TIMEOUT;
-	return -1;
+    smb_read_error = READ_TIMEOUT;
+    return -1;
       }
       
       readret = read(fd, buf+nread, maxcnt-nread);
       if (readret == 0) {
-	/* we got EOF on the file descriptor */
-	smb_read_error = READ_EOF;
-	return -1;
+    /* we got EOF on the file descriptor */
+    smb_read_error = READ_EOF;
+    return -1;
       }
 
       if (readret == -1) {
-	/* the descriptor is probably dead */
-	smb_read_error = READ_ERROR;
-	return -1;
+    /* the descriptor is probably dead */
+    smb_read_error = READ_ERROR;
+    return -1;
       }
       
       nread += readret;
@@ -1853,7 +1853,7 @@ values
 int TvalDiff(struct timeval *tvalold,struct timeval *tvalnew)
 {
   return((tvalnew->tv_sec - tvalold->tv_sec)*1000 + 
-	 ((int)tvalnew->tv_usec - (int)tvalold->tv_usec)/1000);	 
+     ((int)tvalnew->tv_usec - (int)tvalold->tv_usec)/1000);  
 }
 
 /****************************************************************************
@@ -1885,12 +1885,12 @@ int read_data(int fd,char *buffer,int N)
     {
       ret = read(fd,buffer + total,N - total);
       if (ret == 0) {
-	smb_read_error = READ_EOF;
-	return 0;
+    smb_read_error = READ_EOF;
+    return 0;
       }
       if (ret == -1) {
-	smb_read_error = READ_ERROR;
-	return -1;
+    smb_read_error = READ_ERROR;
+    return -1;
       }
       total += ret;
     }
@@ -1959,37 +1959,37 @@ int transfer_file(int infd,int outfd,int n,char *header,int headlen,int align)
       ret = 0;
 
       if (header && (headlen >= MIN(s,1024))) {
-	buf1 = header;
-	s = headlen;
-	ret = headlen;
-	headlen = 0;
-	header = NULL;
+    buf1 = header;
+    s = headlen;
+    ret = headlen;
+    headlen = 0;
+    header = NULL;
       } else {
-	buf1 = abuf;
+    buf1 = abuf;
       }
 
       if (header && headlen > 0)
-	{
-	  ret = MIN(headlen,size);
-	  memcpy(buf1,header,ret);
-	  headlen -= ret;
-	  header += ret;
-	  if (headlen <= 0) header = NULL;
-	}
+    {
+      ret = MIN(headlen,size);
+      memcpy(buf1,header,ret);
+      headlen -= ret;
+      header += ret;
+      if (headlen <= 0) header = NULL;
+    }
 
       if (s > ret)
-	ret += read(infd,buf1+ret,s-ret);
+    ret += read(infd,buf1+ret,s-ret);
 
       if (ret > 0)
-	{
-	  ret2 = (outfd>=0?write_data(outfd,buf1,ret):ret);
-	  if (ret2 > 0) total += ret2;
-	  /* if we can't write then dump excess data */
-	  if (ret2 != ret)
-	    transfer_file(infd,-1,n-(ret+headlen),NULL,0,0);
-	}
+    {
+      ret2 = (outfd>=0?write_data(outfd,buf1,ret):ret);
+      if (ret2 > 0) total += ret2;
+      /* if we can't write then dump excess data */
+      if (ret2 != ret)
+        transfer_file(infd,-1,n-(ret+headlen),NULL,0,0);
+    }
       if (ret <= 0 || ret2 != ret)
-	return(total);
+    return(total);
       n -= ret;
     }
   return(total);
@@ -2015,21 +2015,21 @@ int read_smb_length(int fd,char *inbuf,int timeout)
   while (!ok)
     {
       if (timeout > 0)
-	ok = (read_with_timeout(fd,buffer,4,4,timeout) == 4);
+    ok = (read_with_timeout(fd,buffer,4,4,timeout) == 4);
       else 
-	ok = (read_data(fd,buffer,4) == 4);
+    ok = (read_data(fd,buffer,4) == 4);
 
       if (!ok)
-	return(-1);
+    return(-1);
 
       len = smb_len(buffer);
       msg_type = CVAL(buffer,0);
 
       if (msg_type == 0x85) 
-	{
-	  DEBUG(5,("Got keepalive packet\n"));
-	  ok = False;
-	}
+    {
+      DEBUG(5,("Got keepalive packet\n"));
+      ok = False;
+    }
     }
 
   DEBUG(10,("got smb length of %d\n",len));
@@ -2084,11 +2084,11 @@ BOOL send_smb(int fd,char *buffer)
     {
       ret = write_socket(fd,buffer+nwritten,len - nwritten);
       if (ret <= 0)
-	{
-	  DEBUG(0,("Error writing %d bytes to client. %d. Exiting\n",len,ret));
+    {
+      DEBUG(0,("Error writing %d bytes to client. %d. Exiting\n",len,ret));
           close_sockets();
-	  exit(1);
-	}
+      exit(1);
+    }
       nwritten += ret;
     }
 
@@ -2172,14 +2172,14 @@ BOOL send_one_packet(char *buf,int len,struct in_addr ip,int port,int type)
   
   if (DEBUGLEVEL > 0)
     DEBUG(3,("sending a packet of len %d to (%s) on port %d of type %s\n",
-	     len,inet_ntoa(ip),port,type==SOCK_DGRAM?"DGRAM":"STREAM"));
-	
+         len,inet_ntoa(ip),port,type==SOCK_DGRAM?"DGRAM":"STREAM"));
+    
   /* send it */
   ret = (sendto(out_fd,buf,len,0,(struct sockaddr *)&sock_out,sizeof(sock_out)) >= 0);
 
   if (!ret)
     DEBUG(0,("Packet send to %s(%d) failed ERRNO=%d\n",
-	     inet_ntoa(ip),port,errno));
+         inet_ntoa(ip),port,errno));
 
   close(out_fd);
   return(ret);
@@ -2223,11 +2223,11 @@ BOOL in_list(char *s,char *list,BOOL casesensitive)
   while (next_token(&p,tok,LIST_SEP))
     {
       if (casesensitive) {
-	if (strcmp(tok,s) == 0)
-	  return(True);
+    if (strcmp(tok,s) == 0)
+      return(True);
       } else {
-	if (StrCaseCmp(tok,s) == 0)
-	  return(True);
+    if (StrCaseCmp(tok,s) == 0)
+      return(True);
       }
     }
   return(False);
@@ -2250,7 +2250,7 @@ BOOL string_init(char **dest,char *src)
   if (l == 0)
     {
       if (!null_string)
-	null_string = (char *)malloc(1);
+    null_string = (char *)malloc(1);
 
       *null_string = 0;
       *dest = null_string;
@@ -2338,29 +2338,29 @@ BOOL do_match(char *str, char *regexp, int case_sig)
 
     case '*':
       /* Look for a character matching 
-	 the one after the '*' */
+     the one after the '*' */
       p++;
       if(!*p)
-	return True; /* Automatic match */
+    return True; /* Automatic match */
       while(*str) {
-	while(*str && (case_sig ? (*p != *str) : (toupper(*p)!=toupper(*str))))
-	  str++;
-	if(do_match(str,p,case_sig))
-	  return True;
-	if(!*str)
-	  return False;
-	else
-	  str++;
+    while(*str && (case_sig ? (*p != *str) : (toupper(*p)!=toupper(*str))))
+      str++;
+    if(do_match(str,p,case_sig))
+      return True;
+    if(!*str)
+      return False;
+    else
+      str++;
       }
       return False;
 
     default:
       if(case_sig) {
-	if(*str != *p)
-	  return False;
+    if(*str != *p)
+      return False;
       } else {
-	if(toupper(*str) != toupper(*p))
-	  return False;
+    if(toupper(*str) != toupper(*p))
+      return False;
       }
       str++, p++;
       break;
@@ -2479,8 +2479,8 @@ void become_daemon(void)
     int i = open("/dev/tty", O_RDWR);
     if (i >= 0) 
       {
-	ioctl(i, (int) TIOCNOTTY, (char *)0);      
-	close(i);
+    ioctl(i, (int) TIOCNOTTY, (char *)0);      
+    close(i);
       }
   }
 #endif
@@ -2535,39 +2535,39 @@ char *fgets_slash(char *s2,int maxlen,FILE *f)
     {
       c = getc(f);
       switch (c)
-	{
-	case '\r':
-	  break;
-	case '\n':
-	  while (len > 0 && s[len-1] == ' ')
-	    {
-	      s[--len] = 0;
-	    }
-	  if (len > 0 && s[len-1] == '\\')
-	    {
-	      s[--len] = 0;
-	      start_of_line = True;
-	      break;
-	    }
-	  return(s);
-	case EOF:
-	  if (len <= 0 && !s2) 
-	    free(s);
-	  return(len>0?s:NULL);
-	case ' ':
-	  if (start_of_line)
-	    break;
-	default:
-	  start_of_line = False;
-	  s[len++] = c;
-	  s[len] = 0;
-	}
+    {
+    case '\r':
+      break;
+    case '\n':
+      while (len > 0 && s[len-1] == ' ')
+        {
+          s[--len] = 0;
+        }
+      if (len > 0 && s[len-1] == '\\')
+        {
+          s[--len] = 0;
+          start_of_line = True;
+          break;
+        }
+      return(s);
+    case EOF:
+      if (len <= 0 && !s2) 
+        free(s);
+      return(len>0?s:NULL);
+    case ' ':
+      if (start_of_line)
+        break;
+    default:
+      start_of_line = False;
+      s[len++] = c;
+      s[len] = 0;
+    }
       if (!s2 && len > maxlen-3)
-	{
-	  maxlen *= 2;
-	  s = (char *)Realloc(s,maxlen);
-	  if (!s) return(NULL);
-	}
+    {
+      maxlen *= 2;
+      s = (char *)Realloc(s,maxlen);
+      if (!s) return(NULL);
+    }
     }
   return(s);
 }
@@ -2825,16 +2825,16 @@ int open_socket_in(int type, int port, int dlevel,uint32 socket_addr)
   if (bind(res, (struct sockaddr * ) &sock,sizeof(sock)) < 0) 
     { 
       if (port) {
-	if (port == SMB_PORT || port == NMB_PORT)
-	  DEBUG(dlevel,("bind failed on port %d socket_addr=%x (%s)\n",
-			port,socket_addr,strerror(errno))); 
-	close(res); 
+    if (port == SMB_PORT || port == NMB_PORT)
+      DEBUG(dlevel,("bind failed on port %d socket_addr=%x (%s)\n",
+            port,socket_addr,strerror(errno))); 
+    close(res); 
 
-	if (dlevel > 0 && port < 1000)
-	  port = 7999;
+    if (dlevel > 0 && port < 1000)
+      port = 7999;
 
-	if (port >= 1000 && port < 9000)
-	  return(open_socket_in(type,port+1,dlevel,socket_addr));
+    if (port >= 1000 && port < 9000)
+      return(open_socket_in(type,port+1,dlevel,socket_addr));
       }
 
       return(-1); 
@@ -3258,8 +3258,8 @@ char *readdirname(void *p)
     static BOOL broken_readdir = False;
     if (!broken_readdir && !(*(dname)) && strequal("..",dname-2))
       {
-	DEBUG(0,("Your readdir() is broken. You have somehow mixed SYSV and BSD headers and libraries\n"));
-	broken_readdir = True;
+    DEBUG(0,("Your readdir() is broken. You have somehow mixed SYSV and BSD headers and libraries\n"));
+    broken_readdir = True;
       }
     if (broken_readdir)
       return(dname-2);

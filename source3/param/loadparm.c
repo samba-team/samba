@@ -106,33 +106,34 @@ extern int coding_system;
  */
 typedef struct
 {
-  char *szPrintcapname;
-  char *szLockDir;
-  char *szRootdir;
+  char *szAutoServices;
+  char *szCharacterSet;
+  char *szConfigFile;
   char *szDefaultService;
   char *szDfree;
-  char *szMsgCommand;
-  char *szHostsEquiv;
-  char *szServerString;
-  char *szAutoServices;
-  char *szPasswdProgram;
-  char *szPasswdChat;
-  char *szLogFile;
-  char *szConfigFile;
-  char *szSMBPasswdFile;
-  char *szPasswordServer;
-  char *szSocketOptions;
-  char *szValidChars;
-  char *szWorkGroup;
   char *szDomainController;
-  char *szUsernameMap;
-  char *szCharacterSet;
-  char *szLogonScript;
-  char *szSmbrun;
-  char *szWINSserver;
+  char *szHostsEquiv;
   char *szInterfaces;
+  char *szLockDir;
+  char *szLogFile;
+  char *szLogonScript;
+  char *szMsgCommand;
+  char *szPasswdChat;
+  char *szPasswdProgram;
+  char *szPasswordServer;
+  char *szPrintcapname;
   char *szRemoteAnnounce;
+  char *szRootdir;
+  char *szServerComment;
+  char *szServerString;
+  char *szSmbrun;
+  char *szSMBPasswdFile;
   char *szSocketAddress;
+  char *szSocketOptions;
+  char *szUsernameMap;
+  char *szValidChars;
+  char *szWINSserver;
+  char *szWorkGroup;
   int max_log_size;
   int mangled_stack;
   int max_xmit;
@@ -152,6 +153,7 @@ typedef struct
   BOOL bWINSsupport;
   BOOL bWINSproxy;
   BOOL bPreferredMaster;
+  BOOL bLocalMaster;
   BOOL bDomainMaster;
   BOOL bDomainLogons;
   BOOL bEncryptPasswords;
@@ -382,6 +384,7 @@ struct parm_struct
   {"hosts equiv",      P_STRING,  P_GLOBAL, &Globals.szHostsEquiv,      NULL},
   {"preload",          P_STRING,  P_GLOBAL, &Globals.szAutoServices,    NULL},
   {"auto services",    P_STRING,  P_GLOBAL, &Globals.szAutoServices,    NULL},
+  {"server comment",   P_STRING,  P_GLOBAL, &Globals.szServerComment,   NULL},
   {"server string",    P_STRING,  P_GLOBAL, &Globals.szServerString,    NULL},
   {"printcap name",    P_STRING,  P_GLOBAL, &Globals.szPrintcapname,    NULL},
   {"printcap",         P_STRING,  P_GLOBAL, &Globals.szPrintcapname,    NULL},
@@ -425,6 +428,7 @@ struct parm_struct
   {"wins server",      P_STRING,  P_GLOBAL, &Globals.szWINSserver,      NULL},
   {"preferred master", P_BOOL,    P_GLOBAL, &Globals.bPreferredMaster,  NULL},
   {"prefered master",  P_BOOL,    P_GLOBAL, &Globals.bPreferredMaster,  NULL},
+  {"local master",     P_BOOL,    P_GLOBAL, &Globals.bLocalMaster,      NULL},
   {"domain master",    P_BOOL,    P_GLOBAL, &Globals.bDomainMaster,     NULL},
   {"domain logons",    P_BOOL,    P_GLOBAL, &Globals.bDomainLogons,     NULL},
   {"browse list",      P_BOOL,    P_GLOBAL, &Globals.bBrowseList,       NULL},
@@ -560,6 +564,9 @@ static void init_globals(void)
   string_set(&Globals.szSocketAddress, "0.0.0.0");
   sprintf(s,"Samba %s",VERSION);
   string_set(&Globals.szServerString,s);
+  strcpy(s,"Samba %v"); /* samba comment */
+  string_sub(s,"%v",VERSION);
+  string_set(&Globals.szServerComment,s);
   Globals.bLoadPrinters = True;
   Globals.bUseRhosts = False;
   Globals.max_packet = 65535;
@@ -584,8 +591,9 @@ static void init_globals(void)
   Globals.bSyslogOnly = False;
   Globals.os_level = 0;
   Globals.max_ttl = 60*60*4; /* 2 hours default */
-  Globals.bPreferredMaster = True;
-  Globals.bDomainMaster = False;
+  Globals.bPreferredMaster = True; /* force election on startup */
+  Globals.bLocalMaster  = True; /* master browser on local subnet */
+  Globals.bDomainMaster = False; /* maintain wide area network browse list */
   Globals.bDomainLogons = False;
   Globals.bBrowseList = True;
   Globals.bWINSsupport = True;
@@ -724,6 +732,7 @@ FN_GLOBAL_STRING(lp_smbrun,&Globals.szSmbrun)
 FN_GLOBAL_STRING(lp_configfile,&Globals.szConfigFile)
 FN_GLOBAL_STRING(lp_smb_passwd_file,&Globals.szSMBPasswdFile)
 FN_GLOBAL_STRING(lp_serverstring,&Globals.szServerString)
+FN_GLOBAL_STRING(lp_server_comment,&Globals.szServerComment)
 FN_GLOBAL_STRING(lp_printcapname,&Globals.szPrintcapname)
 FN_GLOBAL_STRING(lp_lockdir,&Globals.szLockDir)
 FN_GLOBAL_STRING(lp_rootdir,&Globals.szRootdir)
@@ -747,6 +756,7 @@ FN_GLOBAL_STRING(lp_socket_address,&Globals.szSocketAddress)
 
 FN_GLOBAL_BOOL(lp_wins_support,&Globals.bWINSsupport)
 FN_GLOBAL_BOOL(lp_wins_proxy,&Globals.bWINSproxy)
+FN_GLOBAL_BOOL(lp_local_master,&Globals.bLocalMaster)
 FN_GLOBAL_BOOL(lp_domain_master,&Globals.bDomainMaster)
 FN_GLOBAL_BOOL(lp_domain_logons,&Globals.bDomainLogons)
 FN_GLOBAL_BOOL(lp_preferred_master,&Globals.bPreferredMaster)

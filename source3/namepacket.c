@@ -38,7 +38,92 @@ BOOL CanRecurse = True;
 extern pstring scope;
 extern struct in_addr ipgrp;
 
-static uint16 name_trn_id=0;
+extern uint16 name_trn_id;
+
+
+/****************************************************************************
+  process a nmb packet
+  ****************************************************************************/
+static void process_nmb(struct packet_struct *p)
+{
+  struct nmb_packet *nmb = &p->packet.nmb;
+
+  debug_nmb_packet(p);
+
+  switch (nmb->header.opcode) 
+  {
+    case 8: /* what is this?? */
+    case NMB_REG:
+    case NMB_REG_REFRESH:
+    {
+      if (nmb->header.response)
+      {
+        if (nmb->header.ancount==0) break;
+        response_netbios_packet(p);
+      }
+      else
+      {
+        if (nmb->header.qdcount==0 || nmb->header.arcount==0) break;
+        reply_name_reg(p);
+      }
+    break;
+    }
+      
+    case 0:
+    {
+      if (nmb->header.response)
+      {
+        switch (nmb->question.question_type)
+          {
+          case 0x0:
+        {
+          response_netbios_packet(p);
+          break;
+        }
+          }
+        return;
+      }
+      else if (nmb->header.qdcount>0) 
+      {
+        switch (nmb->question.question_type)
+          {
+          case NMB_QUERY:
+        {
+          reply_name_query(p);
+          break;
+        }
+          case NMB_STATUS:
+        {
+          reply_name_status(p);
+          break;
+        }
+          }
+        return;
+      }
+    break;
+      }
+      
+    case NMB_REL:
+    {
+      if (nmb->header.qdcount==0 || nmb->header.arcount==0)
+      {
+        DEBUG(2,("netbios release packet rejected\n"));
+        break;
+      }
+    
+      if (nmb->header.response)
+      {
+        if (nmb->header.ancount==0) break;
+        response_netbios_packet(p); 
+      }
+      else
+      {
+        reply_name_release(p);
+      }
+      break;
+    }
+  }
+}
 
 
 /***************************************************************************
@@ -49,59 +134,47 @@ void debug_browse_data(char *outbuf, int len)
     int i,j;
     for (i = 0; i < len; i+= 16)
       {
-	DEBUG(4, ("%3x char ", i));
-	
-	for (j = 0; j < 16; j++)
-	  {
-	    unsigned char x = outbuf[i+j];
-	    if (x < 32 || x > 127) x = '.';
-	    
-	    if (i+j >= len) break;
-	    DEBUG(4, ("%c", x));
-	  }
-	
-	DEBUG(4, (" hex ", i));
-	
-	for (j = 0; j < 16; j++)
-	  {
-	    if (i+j >= len) break;
-	    DEBUG(4, (" %02x", outbuf[i+j]));
-	  }
-	
-	DEBUG(4, ("\n"));
+    DEBUG(4, ("%3x char ", i));
+    
+    for (j = 0; j < 16; j++)
+      {
+        unsigned char x = outbuf[i+j];
+        if (x < 32 || x > 127) x = '.';
+        
+        if (i+j >= len) break;
+        DEBUG(4, ("%c", x));
+      }
+    
+    DEBUG(4, (" hex ", i));
+    
+    for (j = 0; j < 16; j++)
+      {
+        if (i+j >= len) break;
+        DEBUG(4, (" %02x", outbuf[i+j]));
+      }
+    
+    DEBUG(4, ("\n"));
       }
     
 }
 
 
-/***************************************************************************
-  updates the unique transaction identifier
-  **************************************************************************/
-static void update_name_trn_id(void)
-{
-  if (!name_trn_id)
-  {
-    name_trn_id = (time(NULL)%(unsigned)0x7FFF) + (getpid()%(unsigned)100);
-  }
-  name_trn_id = (name_trn_id+1) % (unsigned)0x7FFF;
-}
-
-
 /****************************************************************************
   initiate a netbios packet
+  
+  if we are making queries to samba, then the ip must be zero. in this
+  instance, the packet is constructed and then dealt with immediately.
   ****************************************************************************/
-void initiate_netbios_packet(uint16 *id,
-				int fd,int quest_type,char *name,int name_type,
-			    int nb_flags,BOOL bcast,BOOL recurse,
-			    struct in_addr to_ip)
+BOOL initiate_netbios_packet(uint16 id,
+                int fd,int quest_type,char *name,int name_type,
+                int nb_flags,BOOL bcast,BOOL recurse,
+                struct in_addr to_ip)
 {
   struct packet_struct p;
   struct nmb_packet *nmb = &p.packet.nmb;
   struct res_rec additional_rec;
   char *packet_type = "unknown";
   int opcode = -1;
-
-  if (!id) return;
 
   if (quest_type == NMB_STATUS) { packet_type = "nmb_status"; opcode = 0; }
   if (quest_type == NMB_QUERY ) { packet_type = "nmb_query"; opcode = 0; }
@@ -110,18 +183,13 @@ void initiate_netbios_packet(uint16 *id,
   if (quest_type == NMB_REL   ) { packet_type = "nmb_rel"; opcode = 6; }
   
   DEBUG(4,("initiating netbios packet: %s %s(%x) (bcast=%s) %s\n",
-	   packet_type, name, name_type, BOOLSTR(bcast), inet_ntoa(to_ip)));
+       packet_type, name, name_type, BOOLSTR(bcast), inet_ntoa(to_ip)));
 
-  if (opcode == -1) return;
+  if (opcode == -1) return False;
 
   bzero((char *)&p,sizeof(p));
 
-  if (*id == 0xffff) {
-    update_name_trn_id();
-    *id = name_trn_id; /* allow resending with same id */
-  }
-
-  nmb->header.name_trn_id = *id;
+  nmb->header.name_trn_id = id;
   nmb->header.opcode = opcode;
   nmb->header.response = False;
 
@@ -162,7 +230,7 @@ void initiate_netbios_packet(uint16 *id,
       nmb->additional->rdlength = 6;
       nmb->additional->rdata[0] = nb_flags;
       putip(&nmb->additional->rdata[2],(char *)iface_ip(to_ip));
-    }
+  }
   
   p.ip = to_ip;
   p.port = NMB_PORT;
@@ -170,12 +238,21 @@ void initiate_netbios_packet(uint16 *id,
   p.timestamp = time(NULL);
   p.packet_type = NMB_PACKET;
   
-  if (!send_packet(&p)) {
-    DEBUG(3,("send_packet to %s %d failed\n",inet_ntoa(p.ip),p.port));
-    *id = 0xffff;
+  if (zero_ip(to_ip)) /* samba's own ip */
+  {
+    DEBUG(4,("process packet ourselves\n"));
+    /* respond internally to the packet. */
+    process_nmb(&p);
   }
-  
-  return;
+  else
+  {
+    if (!send_packet(&p)) {
+      DEBUG(3,("send_packet to %s %d failed\n",inet_ntoa(p.ip),p.port));
+      return False;
+    }
+  }
+
+  return True;
 }
 
 
@@ -183,9 +260,9 @@ void initiate_netbios_packet(uint16 *id,
   reply to a netbios name packet 
   ****************************************************************************/
 void reply_netbios_packet(struct packet_struct *p1,int trn_id,
-				int rcode, int rcv_code, int opcode, BOOL recurse,
-				struct nmb_name *rr_name,int rr_type,int rr_class,int ttl,
-				char *data,int len)
+                int rcode, int rcv_code, int opcode, BOOL recurse,
+                struct nmb_name *rr_name,int rr_type,int rr_class,int ttl,
+                char *data,int len)
 {
   struct packet_struct p;
   struct nmb_packet *nmb = &p.packet.nmb;
@@ -198,31 +275,31 @@ void reply_netbios_packet(struct packet_struct *p1,int trn_id,
   switch (rcv_code)
   {
     case NMB_STATUS:
-	{
+    {
       packet_type = "nmb_status";
       recursion_desired = True;
       break;
     }
     case NMB_QUERY:
-	{
+    {
       packet_type = "nmb_query";
       recursion_desired = True;
       break;
     }
     case NMB_REG:
-	{
+    {
       packet_type = "nmb_reg";
       recursion_desired = True;
       break;
     }
     case NMB_REL:
-	{
+    {
       packet_type = "nmb_rel";
       recursion_desired = False;
       break;
     }
     case NMB_WAIT_ACK:
-	{
+    {
       packet_type = "nmb_wack";
       recursion_desired = False;
       break;
@@ -230,14 +307,14 @@ void reply_netbios_packet(struct packet_struct *p1,int trn_id,
     default:
     {
       DEBUG(1,("replying netbios packet: %s %s\n",
-	            packet_type, namestr(rr_name), inet_ntoa(p.ip)));
+                packet_type, namestr(rr_name), inet_ntoa(p.ip)));
 
       return;
     }
   }
 
   DEBUG(4,("replying netbios packet: %s %s\n",
-	   packet_type, namestr(rr_name), inet_ntoa(p.ip)));
+       packet_type, namestr(rr_name), inet_ntoa(p.ip)));
 
   nmb->header.name_trn_id = trn_id;
   nmb->header.opcode = opcode;
@@ -265,16 +342,25 @@ void reply_netbios_packet(struct packet_struct *p1,int trn_id,
   nmb->answers->ttl      = ttl;
   
   if (data && len)
-    {
-      nmb->answers->rdlength = len;
-      memcpy(nmb->answers->rdata, data, len);
-    }
+  {
+    nmb->answers->rdlength = len;
+    memcpy(nmb->answers->rdata, data, len);
+  }
   
   p.packet_type = NMB_PACKET;
   
   debug_nmb_packet(&p);
   
-  send_packet(&p);
+  if (zero_ip(p.ip)) /* samba's own ip */
+  {
+    DEBUG(4,("process response packet ourselves\n"));
+    /* respond internally to the packet. */
+    process_nmb(&p);
+  }
+  else
+  {
+    send_packet(&p);
+  }
 }
 
 
@@ -352,7 +438,7 @@ static void process_dgram(struct packet_struct *p)
 
   buf = &dgram->data[0];
   buf -= 4; /* XXXX for the pseudo tcp length - 
-	       someday I need to get rid of this */
+           someday I need to get rid of this */
 
   if (CVAL(buf,smb_com) != SMBtrans) return;
 
@@ -360,8 +446,8 @@ static void process_dgram(struct packet_struct *p)
   buf2 = smb_base(buf) + SVAL(buf,smb_vwv12);
 
   DEBUG(4,("datagram from %s to %s for %s of type %d len=%d\n",
-	   namestr(&dgram->source_name),namestr(&dgram->dest_name),
-	   smb_buf(buf),CVAL(buf2,0),len));
+       namestr(&dgram->source_name),namestr(&dgram->dest_name),
+       smb_buf(buf),CVAL(buf2,0),len));
 
  
   if (len <= 0) return;
@@ -379,83 +465,6 @@ static void process_dgram(struct packet_struct *p)
    }
 }
 
-/****************************************************************************
-  process a nmb packet
-  ****************************************************************************/
-static void process_nmb(struct packet_struct *p)
-{
-  struct nmb_packet *nmb = &p->packet.nmb;
-
-  debug_nmb_packet(p);
-
-  switch (nmb->header.opcode) 
-  {
-    case 8: /* what is this?? */
-    case NMB_REG:
-    case NMB_REG_REFRESH:
-    {
-	if (nmb->header.qdcount==0 || nmb->header.arcount==0) break;
-	if (nmb->header.response)
-	  response_netbios_packet(p); /* response to registration dealt 
-					 with here */
-	else
-	  reply_name_reg(p);
-	break;
-    }
-      
-    case 0:
-    {
-	  if (nmb->header.response)
-	  {
-	    switch (nmb->question.question_type)
-	      {
-	      case 0x0:
-		{
-		  response_netbios_packet(p);
-		  break;
-		}
-	      }
-	    return;
-	  }
-      else if (nmb->header.qdcount>0) 
-	  {
-	    switch (nmb->question.question_type)
-	      {
-	      case NMB_QUERY:
-		{
-		  reply_name_query(p);
-		  break;
-		}
-	      case NMB_STATUS:
-		{
-		  reply_name_status(p);
-		  break;
-		}
-	      }
-	    return;
-	  }
-	break;
-      }
-      
-    case NMB_REL:
-    {
-      if (nmb->header.qdcount==0 || nmb->header.arcount==0)
-	  {
-	    DEBUG(2,("netbios release packet rejected\n"));
-	    break;
-	  }
-	
-	if (nmb->header.response)
-	  response_netbios_packet(p); /* response to reply dealt with 
-					 in here */
-	else
-	  reply_name_release(p);
-      break;
-    }
-  }
-}
-
-
 /*******************************************************************
   run elements off the packet queue till its empty
   ******************************************************************/
@@ -466,15 +475,15 @@ void run_packet_queue()
   while ((p=packet_queue))
     {
       switch (p->packet_type)
-	{
-	case NMB_PACKET:
-	  process_nmb(p);
-	  break;
-	  
-	case DGRAM_PACKET:
-	  process_dgram(p);
-	  break;
-	}
+    {
+    case NMB_PACKET:
+      process_nmb(p);
+      break;
+      
+    case DGRAM_PACKET:
+      process_dgram(p);
+      break;
+    }
       
       packet_queue = packet_queue->next;
       if (packet_queue) packet_queue->prev = NULL;
@@ -550,8 +559,8 @@ try_again:
   wrong things to do! I should send to the requestors port. XXX
   **************************************************************************/
 BOOL send_mailslot_reply(char *mailslot,int fd,char *buf,int len,char *srcname,
-			 char *dstname,int src_type,int dest_type,
-			 struct in_addr dest_ip,struct in_addr src_ip)
+             char *dstname,int src_type,int dest_type,
+             struct in_addr dest_ip,struct in_addr src_ip)
 {
   struct packet_struct p;
   struct dgram_packet *dgram = &p.packet.dgram;
