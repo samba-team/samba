@@ -1075,12 +1075,11 @@ if len==0 then no length check is performed
 ****************************************************************************/
 void string_sub(char *s,const char *pattern,const char *insert, size_t len)
 {
-	char *p, *s1;
+	char *p;
 	ssize_t ls,lp,li, i;
 
 	if (!insert || !pattern || !s) return;
 
-	s1 = s;
 	ls = (ssize_t)strlen(s);
 	lp = (ssize_t)strlen(pattern);
 	li = (ssize_t)strlen(insert);
@@ -1135,12 +1134,11 @@ if len==0 then no length check is performed
 ****************************************************************************/
 void all_string_sub(char *s,const char *pattern,const char *insert, size_t len)
 {
-	char *p, *s1;
+	char *p;
 	ssize_t ls,lp,li;
 
 	if (!insert || !pattern || !s) return;
 
-	s1 = s;
 	ls = (ssize_t)strlen(s);
 	lp = (ssize_t)strlen(pattern);
 	li = (ssize_t)strlen(insert);

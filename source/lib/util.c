@@ -1337,7 +1337,7 @@ BOOL mask_match(char *str, char *regexp, int case_sig,BOOL trans2)
   pstring t_pattern, t_filename, te_pattern, te_filename;
   fstring ebase,eext,sbase,sext;
   BOOL matched = False;
-  BOOL win9x_semantics = (get_remote_arch() == RA_WIN95);
+  BOOL win9x_semantics = (get_remote_arch() == RA_WIN95) && trans2;
 
   /* special case - if it is exactly the same then it always matches! */
   if ((case_sig?strcmp(str,regexp):strcasecmp(str,regexp)) == 0) return True;
