@@ -350,7 +350,7 @@ static int traverse_fn1(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *st
 		int ret;
 
 		if (!locking_init(1)) {
-			printf("Can't initialise shared memory - exiting\n");
+			printf("Can't initialise locking module - exiting\n");
 			exit(1);
 		}
 		
