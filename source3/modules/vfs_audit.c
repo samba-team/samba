@@ -233,7 +233,12 @@ static int audit_chmod(struct connection_struct *conn, const char *path, mode_t 
 
 static int audit_chmod_acl(struct connection_struct *conn, const char *path, mode_t mode)
 {
-	int result = default_vfs_ops.chmod_acl(conn, path, mode);
+	int result;
+
+	if ( !default_vfs_ops.chmod_acl )
+		return 0;
+
+	result = default_vfs_ops.chmod_acl(conn, path, mode);
 
 	syslog(SYSLOG_PRIORITY, "chmod_acl %s mode 0x%x %s%s\n",
 	       path, mode,
@@ -257,7 +262,12 @@ static int audit_fchmod(struct files_struct *fsp, int fd, mode_t mode)
 
 static int audit_fchmod_acl(struct files_struct *fsp, int fd, mode_t mode)
 {
-	int result = default_vfs_ops.fchmod_acl(fsp, fd, mode);
+	int result;
+
+	if ( !default_vfs_ops.fchmod_acl )
+		return 0;
+
+	result = default_vfs_ops.fchmod_acl(fsp, fd, mode);
 
 	syslog(SYSLOG_PRIORITY, "fchmod_acl %s mode 0x%x %s%s\n",
 	       fsp->fsp_name, mode,
