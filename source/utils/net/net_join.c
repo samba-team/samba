@@ -2,7 +2,8 @@
    Samba Unix/Linux SMB client library 
    Distributed SMB/CIFS Server Management Utility 
 
-   Copyright (C) 2004 Stefan Metzmacher (metze@samba.org)
+   Copyright (C) 2004 Stefan Metzmacher <metze@samba.org>
+   Copyright (C) 2005 Andrew Bartlett <abartlet@samba.org>
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -24,13 +25,15 @@
 #include "libnet/libnet.h"
 #include "librpc/gen_ndr/ndr_samr.h"
 
-static int net_join_domain(struct net_context *ctx, int argc, const char **argv)
+int net_join(struct net_context *ctx, int argc, const char **argv) 
 {
+	
 	NTSTATUS status;
 	struct libnet_context *libnetctx;
-	union libnet_JoinDomain r;
+	union libnet_Join r;
 	char *tmp;
 	const char *domain_name;
+	enum netr_SchannelType secure_channel_type = SEC_CHAN_WKSTA;
 
 	switch (argc) {
 		case 0: /* no args -> fail */
@@ -39,8 +42,19 @@ static int net_join_domain(struct net_context *ctx, int argc, const char **argv)
 		case 1: /* only DOMAIN */
 			tmp = talloc_strdup(ctx->mem_ctx, argv[0]);
 			break;
-		default: /* too mayn args -> fail */
-			DEBUG(0,("net_join_domain: too many args [%d]\n",argc));
+		case 2: /* DOMAIN and role */
+			tmp = talloc_strdup(ctx->mem_ctx, argv[0]);
+			if (strcasecmp(argv[1], "BDC") == 0) {
+				secure_channel_type = SEC_CHAN_BDC;
+			} else if (strcasecmp(argv[1], "MEMBER") == 0) {
+				secure_channel_type = SEC_CHAN_WKSTA;
+			} else {
+				DEBUG(0, ("net_join: 2nd argument must be MEMBER or BDC\n"));
+				return -1;
+			}
+			break;
+		default: /* too many args -> fail */
+			DEBUG(0,("net_join: too many args [%d]\n",argc));
 			return -1;
 	}
 
@@ -55,44 +69,23 @@ static int net_join_domain(struct net_context *ctx, int argc, const char **argv)
 	libnetctx->user.password	= ctx->user.password;
 
 	/* prepare password change */
-	r.generic.level			= LIBNET_JOIN_DOMAIN_GENERIC;
-	r.generic.in.domain_name	= domain_name;
-	r.generic.in.account_name       = talloc_asprintf(ctx->mem_ctx, "%s$", lp_netbios_name());
-	r.generic.in.acct_type          = ACB_SVRTRUST;
+	r.generic.level			 = LIBNET_JOIN_GENERIC;
+	r.generic.in.domain_name	 = domain_name;
+	r.generic.in.secure_channel_type = secure_channel_type;
+	r.generic.out.error_string       = NULL;
 
 	/* do the domain join */
-	status = libnet_JoinDomain(libnetctx, ctx->mem_ctx, &r);
+	status = libnet_Join(libnetctx, ctx->mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("net_join_domain: %s\n",r.generic.out.error_string));
+		DEBUG(0,("libnet_Join returned %s: %s\n",
+			 nt_errstr(status),
+			 r.generic.out.error_string));
 		return -1;
 	}
 
 	libnet_context_destroy(&libnetctx);
 
 	return 0;
-}
-
-static int net_join_domain_usage(struct net_context *ctx, int argc, const char **argv)
-{
-	d_printf("net_join_domain_usage: TODO\n");
-	return 0;	
-}
-
-static int net_join_domain_help(struct net_context *ctx, int argc, const char **argv)
-{
-	d_printf("net_join_domain_help: TODO\n");
-	return 0;	
-}
-
-static const struct net_functable net_password_functable[] = {
-	{"domain", net_join_domain, net_join_domain_usage,  net_join_domain_help},
-	{NULL, NULL}
-};
-
-int net_join(struct net_context *ctx, int argc, const char **argv) 
-{
-	
-	return net_run_function(ctx, argc, argv, net_password_functable, net_password_usage);
 }
 
 int net_join_usage(struct net_context *ctx, int argc, const char **argv)

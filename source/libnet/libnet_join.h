@@ -19,6 +19,8 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#include "librpc/gen_ndr/ndr_netlogon.h"
+
 /* struct and enum for doing a remote domain join */
 enum libnet_JoinDomain_level {
 	LIBNET_JOIN_DOMAIN_GENERIC,
@@ -47,5 +49,32 @@ union libnet_JoinDomain {
 		struct _libnet_JoinDomain_out out;
 	} samr;
 
+};
+
+/* struct and enum for doing a remote domain join */
+enum libnet_Join_level {
+	LIBNET_JOIN_GENERIC,
+	LIBNET_JOIN_PRIMARY,
+};
+
+union libnet_Join {
+	struct {
+		enum libnet_Join_level level;
+
+		struct _libnet_Join_in {
+			const char *domain_name;
+			enum netr_SchannelType secure_channel_type;
+		} in;
+
+		struct _libnet_Join_out {
+			const char *error_string;
+		} out;
+	} generic;
+
+	struct {
+		enum libnet_Join_level level;
+		struct _libnet_Join_in in;
+		struct _libnet_Join_out out;
+	} ldb;
 };
 
