@@ -14,7 +14,7 @@
 
 	<xsl:import href="../settings.xsl"/>
 
-	<xsl:output method="xml"/>
+	<xsl:output method="xml" encoding="UTF-8" doctype-public="-//OASIS//DTD DocBook XML V4.2//EN" indent="yes" doctype-system="http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd"/>
 
 	<xsl:param name="xmlSambaNsUri" select="'http://samba.org/common'"/>
 
@@ -68,20 +68,6 @@
 			</xsl:attribute>
 			<xsl:apply-templates/>
 		</xsl:element>
-	</xsl:template>
-
-	<xsl:template match="/node()">
-		<xsl:text disable-output-escaping="yes">
-			&lt;!DOCTYPE </xsl:text><xsl:value-of select="name(.)"/><xsl:text disable-output-escaping="yes"> PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN"
-			"http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd" [
-
-			&lt;!ENTITY % globalentities SYSTEM 'entities/global.entities'> %globalentities;
-			]>
-		</xsl:text>
-		<xsl:copy>
-			<xsl:attribute name="id"><xsl:value-of select="@id"/></xsl:attribute>
-			<xsl:apply-templates/>
-		</xsl:copy>
 	</xsl:template>
 
 
