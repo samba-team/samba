@@ -407,10 +407,12 @@ BOOL cli_qpathinfo(struct cli_state *cli, const char *fname,
 		   size_t *size, uint32 *mode);
 BOOL cli_qpathinfo2(struct cli_state *cli, const char *fname, 
 		    time_t *c_time, time_t *a_time, time_t *m_time, 
-		    time_t *w_time, size_t *size, uint32 *mode);
+		    time_t *w_time, size_t *size, uint32 *mode,
+		    SMB_INO_T *ino);
 BOOL cli_qfileinfo(struct cli_state *cli, int fnum, 
 		   uint32 *mode, size_t *size,
-		   time_t *c_time, time_t *a_time, time_t *m_time);
+		   time_t *c_time, time_t *a_time, time_t *m_time, 
+		   time_t *w_time, SMB_INO_T *ino);
 int cli_list(struct cli_state *cli,char *Mask,int attribute,void (*fn)(file_info *));
 BOOL cli_oem_change_password(struct cli_state *cli, char *user, char *new_password,
                              char *old_password);
@@ -2466,7 +2468,8 @@ off_t smbw_telldir(DIR *dirp);
 void smbw_setup_stat(struct stat *st, char *fname, size_t size, int mode);
 BOOL smbw_getatr(struct smbw_server *srv, char *path, 
 		 uint32 *mode, size_t *size, 
-		 time_t *c_time, time_t *a_time, time_t *m_time);
+		 time_t *c_time, time_t *a_time, time_t *m_time,
+		 SMB_INO_T *ino);
 int smbw_stat_printjob(struct smbw_server *srv,char *path,
 		       size_t *size, time_t *m_time);
 int smbw_fstat(int fd, struct stat *st);

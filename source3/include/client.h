@@ -35,15 +35,15 @@
 
 typedef struct file_info
 {
-  SMB_OFF_T size;
-  int mode;
-  uid_t uid;
-  gid_t gid;
-  /* these times are normally kept in GMT */
-  time_t mtime;
-  time_t atime;
-  time_t ctime;
-  pstring name;
+	SMB_OFF_T size;
+	int mode;
+	uid_t uid;
+	gid_t gid;
+	/* these times are normally kept in GMT */
+	time_t mtime;
+	time_t atime;
+	time_t ctime;
+	pstring name;
 } file_info;
 
 struct print_job_info

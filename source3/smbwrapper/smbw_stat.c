@@ -31,8 +31,6 @@ setup basic info in a stat structure
 *******************************************************/
 void smbw_setup_stat(struct stat *st, char *fname, size_t size, int mode)
 {
-	ZERO_STRUCTP(st);
-	
 	st->st_mode = 0;
 
 	if (IS_DOS_DIR(mode)) {
@@ -51,7 +49,14 @@ void smbw_setup_stat(struct stat *st, char *fname, size_t size, int mode)
 	st->st_blocks = (size+511)/512;
 	st->st_uid = getuid();
 	st->st_gid = getgid();
-	st->st_ino = smbw_inode(fname);
+	if (IS_DOS_DIR(mode)) {
+		st->st_nlink = 2;
+	} else {
+		st->st_nlink = 1;
+	}
+	if (st->st_ino == 0) {
+		st->st_ino = smbw_inode(fname);
+	}
 }
 
 
@@ -61,13 +66,14 @@ this is needed because win95 sometimes refuses the qpathinfo
 *******************************************************/
 BOOL smbw_getatr(struct smbw_server *srv, char *path, 
 		 uint32 *mode, size_t *size, 
-		 time_t *c_time, time_t *a_time, time_t *m_time)
+		 time_t *c_time, time_t *a_time, time_t *m_time,
+		 SMB_INO_T *ino)
 {
 	DEBUG(4,("sending qpathinfo\n"));
 
 	if (!srv->no_pathinfo2 &&
 	    cli_qpathinfo2(&srv->cli, path, c_time, a_time, m_time, NULL,
-			   size, mode)) return True;
+			   size, mode, ino)) return True;
 
 	/* if this is NT then don't bother with the getatr */
 	if (srv->cli.capabilities & CAP_NT_SMBS) return False;
@@ -125,8 +131,11 @@ int smbw_fstat(int fd, struct stat *st)
 	time_t c_time, a_time, m_time;
 	size_t size;
 	uint32 mode;
+	SMB_INO_T ino = 0;
 
 	smbw_busy++;
+
+	ZERO_STRUCTP(st);
 
 	file = smbw_file(fd);
 	if (!file) {
@@ -135,16 +144,17 @@ int smbw_fstat(int fd, struct stat *st)
 		return ret;
 	}
 
-	DEBUG(4,("sending qfileinfo\n"));
-
 	if (!cli_qfileinfo(&file->srv->cli, file->f->cli_fd, 
-			  &mode, &size, &c_time, &a_time, &m_time) &&
+			   &mode, &size, &c_time, &a_time, &m_time, NULL,
+			   &ino) &&
 	    !cli_getattrE(&file->srv->cli, file->f->cli_fd, 
 			  &mode, &size, &c_time, &a_time, &m_time)) {
 		errno = EINVAL;
 		smbw_busy--;
 		return -1;
 	}
+
+	st->st_ino = ino;
 
 	smbw_setup_stat(st, file->f->fname, size, mode);
 
@@ -169,6 +179,9 @@ int smbw_stat(const char *fname, struct stat *st)
 	time_t m_time=0, a_time=0, c_time=0;
 	size_t size=0;
 	uint32 mode=0;
+	SMB_INO_T ino = 0;
+
+	ZERO_STRUCTP(st);
 
 	if (!fname) {
 		errno = EINVAL;
@@ -205,11 +218,14 @@ int smbw_stat(const char *fname, struct stat *st)
 		}
 	} else {
 		if (!smbw_getatr(srv, path, 
-				 &mode, &size, &c_time, &a_time, &m_time)) {
+				 &mode, &size, &c_time, &a_time, &m_time,
+				 &ino)) {
 			errno = smbw_errno(&srv->cli);
 			goto failed;
 		}
 	}
+
+	st->st_ino = ino;
 
 	smbw_setup_stat(st, path, size, mode);
 

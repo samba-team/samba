@@ -355,6 +355,12 @@
 #  endif
 #endif
 
+#ifdef LARGE_SMB_INO_T
+#define SINO_T(p, ofs, v) (SIVAL(p,ofs,(v)&0xFFFFFFFF), SIVAL(p,(ofs)+4,(v)>>32))
+#else 
+#define SINO_T(p, ofs, v) (SIVAL(p,ofs,v),SIVAL(p,(ofs)+4,0))
+#endif
+
 #ifndef SMB_OFF_T
 #  ifdef HAVE_OFF64_T
 #    define SMB_OFF_T off64_t
