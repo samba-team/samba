@@ -128,6 +128,14 @@ if test x"$samba_cv_have_setresuid_decl" = x"yes"; then
 fi
 
 # stupid glibc has the functions but no declaration. grrrr.
+AC_CACHE_CHECK([for setresgid declaration],samba_cv_have_setresgid_decl,[
+    AC_TRY_COMPILE([#include <unistd.h>],[int i = (int)setresgid],
+        samba_cv_have_setresgid_decl=yes,samba_cv_have_setresgid_decl=no)])
+if test x"$samba_cv_have_setresgid_decl" = x"yes"; then
+    AC_DEFINE(HAVE_SETRESGID_DECL)
+fi
+
+# stupid glibc has the functions but no declaration. grrrr.
 AC_CACHE_CHECK([for crypt declaration],samba_cv_have_crypt_decl,[
     AC_TRY_COMPILE([#include <unistd.h>],[int i = (int)crypt],
         samba_cv_have_crypt_decl=yes,samba_cv_have_crypt_decl=no)])
@@ -143,6 +151,16 @@ main() { setresuid(1,1,1); setresuid(2,2,2); exit(errno==EPERM?0:1);}],
 	samba_cv_have_setresuid=yes,samba_cv_have_setresuid=no,samba_cv_have_setresuid=cross)])
 if test x"$samba_cv_have_setresuid" = x"yes"; then
     AC_DEFINE(HAVE_SETRESUID)
+fi
+
+# Do the same check for setresguid...
+#
+AC_CACHE_CHECK([for real setresgid],samba_cv_have_setresgid,[
+    AC_TRY_RUN([#include <errno.h>
+main() { setresgid(1,1,1); setresgid(2,2,2); exit(errno==EPERM?0:1);}],
+	samba_cv_have_setresgid=yes,samba_cv_have_setresgid=no,samba_cv_have_setresgid=cross)])
+if test x"$samba_cv_have_setresgid" = x"yes"; then
+    AC_DEFINE(HAVE_SETRESGID)
 fi
 
 AC_FUNC_MEMCMP

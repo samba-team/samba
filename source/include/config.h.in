@@ -146,6 +146,8 @@
 #undef HAVE_FSTAT64
 #undef HAVE_LSTAT64
 #undef HAVE_STAT64
+#undef HAVE_SETRESGID
+#undef HAVE_SETRESGID_DECL
 
 /* The number of bytes in a int.  */
 #undef SIZEOF_INT

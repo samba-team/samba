@@ -40,7 +40,7 @@ void init_uid(void)
 	initial_gid = current_user.gid = getegid();
 
 	if (initial_gid != 0 && initial_uid == 0) {
-#ifdef HAVE_SETRESUID
+#ifdef HAVE_SETRESGID
 		setresgid(0,0,0);
 #else
 		setgid(0);
@@ -125,7 +125,7 @@ static BOOL become_gid(gid_t gid)
     DEBUG(1,("WARNING: using gid %d is a security risk\n",(int)gid));    
   }
   
-#ifdef HAVE_SETRESUID
+#ifdef HAVE_SETRESGID
   if (setresgid(-1,gid,-1) != 0)
 #else
   if (setgid(gid) != 0)
@@ -307,7 +307,7 @@ BOOL unbecome_user(void )
 
   if (initial_uid == 0)
     {
-#ifdef HAVE_SETRESUID
+#if defined(HAVE_SETRESUID) && defined(HAVE_SETRESGID)
       setresuid(-1,getuid(),-1);
       setresgid(-1,getgid(),-1);
 #else

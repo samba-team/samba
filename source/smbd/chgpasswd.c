@@ -184,7 +184,7 @@ static int dochild(int master,char *slavedev, char *name, char *passwordprogram,
 
   /* make us completely into the right uid */
   if (!as_root) {
-#ifdef HAVE_SETRESUID
+#if defined(HAVE_SETRESUID) && defined(HAVE_SETRESGID)
 	  setresgid(0,0,0);
 	  setresuid(0,0,0);
 	  setresgid(gid,gid,gid);

@@ -2961,7 +2961,7 @@ BOOL become_user_permanently(uid_t uid, gid_t gid)
 	/* now completely lose our privilages. This is a fairly paranoid
 	   way of doing it, but it does work on all systems that I know of */
 
-#ifdef HAVE_SETRESUID
+#if defined(HAVE_SETRESUID) && defined(HAVE_SETRESGID)
 	/*
 	 * Firstly ensure all our uids are set to root.
 	 */

@@ -41,7 +41,7 @@ static BOOL setup_stdout_file(char *outfile,BOOL shared)
 
   if (shared) {
 	  /* become root - unprivilaged users can't delete these files */
-#ifdef HAVE_SETRESUID
+#if defined(HAVE_SETRESUID) && defined(HAVE_SETRESGID)
 	  setresgid(0,0,0);
 	  setresuid(0,0,0);
 #else      
@@ -143,7 +143,7 @@ int smbrun(char *cmd,char *outfile,BOOL shared)
 	
 	/* now completely lose our privilages. This is a fairly paranoid
 	   way of doing it, but it does work on all systems that I know of */
-#ifdef HAVE_SETRESUID
+#if defined(HAVE_SETRESUID) && defined(HAVE_SETRESGID)
 	setresgid(0,0,0);
 	setresuid(0,0,0);
 	setresgid(gid,gid,gid);

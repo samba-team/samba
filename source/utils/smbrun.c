@@ -59,7 +59,7 @@ becoming a non-root user */
 
   /* first become root - we may need to do this in order to lose
      our privilages! */
-#ifdef HAVE_SETRESUID
+#if defined(HAVE_SETRESUID) && defined(HAVE_SETRESGID)
   setresgid(0,0,0);
   setresuid(0,0,0);
 #else      
@@ -67,7 +67,7 @@ becoming a non-root user */
   seteuid(0);
 #endif
 
-#ifdef HAVE_SETRESUID
+#if defined(HAVE_SETRESUID) && defined(HAVE_SETRESGID)
   setresgid(gid,gid,gid);
   setresuid(uid,uid,uid);      
 #else
