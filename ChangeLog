@@ -1,3 +1,25 @@
+Fri Jul 18 00:55:39 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
+
+	* kuser/krenew.c: Crude ticket renewing program.
+
+	* kdc/kerberos5.c: Rewritten flags parsing, it now might work to
+ 	get forwarded and renewed tickets.
+
+	* kuser/kinit.c: Add `-r' flag.
+
+	* lib/krb5/get_cred.c: Move most of contents of get_creds to new
+ 	function get_kdc_cred, that always contacts the kdc and doesn't
+ 	save in the cache. This is a hack.
+
+	* lib/krb5/get_in_tkt.c: Pass starttime and renew_till in request
+ 	(a bit kludgy).
+
+	* lib/krb5/mk_req_ext.c: Make an auth_context if none passed in.
+
+	* lib/krb5/send_to_kdc.c: Get timeout from context.
+
+	* lib/krb5/context.c: Add kdc_timeout to context struct.
+
 Thu Jul 17 20:35:45 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
 
 	* kuser/klist.c: Print start time of ticket if available.
