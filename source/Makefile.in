@@ -29,6 +29,8 @@ AUTHLIBS=@AUTHLIBS@
 LINK=$(CC) $(FLAGS) $(LDFLAGS)
 
 INSTALLCMD=@INSTALL@
+INSTALLCLIENTCMD_SH=@INSTALLCLIENTCMD_SH@
+INSTALLCLIENTCMD_A=@INSTALLCLIENTCMD_A@
 
 VPATH=@srcdir@
 srcdir=@srcdir@
@@ -815,7 +817,7 @@ bin/libbigballofmud.@SHLIBEXT@: $(LIBBIGBALLOFMUD_PICOBJS)
 	$(SHLD) $(LDSHFLAGS) -o $@ $(LIBBIGBALLOFMUD_PICOBJS) $(LIBS) \
 		@SONAMEFLAG@`basename $@`.$(LIBBIGBALLOFMUD_MAJOR)
 
-libsmbclient: bin/libsmbclient.a bin/libsmbclient.@SHLIBEXT@
+libsmbclient: bin/libsmbclient.a @LIBSMBCLIENT_SHARED@
 
 nsswitch/libnss_wins.@SHLIBEXT@: $(NSS_OBJ)
 	@echo "Linking $@"
@@ -925,7 +927,8 @@ installswat: installdirs
 	@$(SHELL) $(srcdir)/script/installswat.sh $(DESTDIR)$(SWATDIR) $(srcdir)
 
 installclientlib:
-	-$(INSTALLCMD) bin/libsmbclient.@SHLIBEXT@ $(DESTDIR)${prefix}/lib
+	-$(INSTALLCLIENTCMD_SH) bin/libsmbclient.@SHLIBEXT@ $(DESTDIR)${prefix}/lib
+	-$(INSTALLCLIENTCMD_A) bin/libsmbclient.a $(DESTDIR)${prefix}/lib
 	-$(INSTALLCMD) -d $(DESTDIR)${prefix}/include
 	-$(INSTALLCMD) include/libsmbclient.h $(DESTDIR)${prefix}/include
 

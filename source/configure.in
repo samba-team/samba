@@ -140,6 +140,8 @@ AC_SUBST(PICFLAG)
 AC_SUBST(PICSUFFIX)
 AC_SUBST(POBAD_CC)
 AC_SUBST(SHLIBEXT)
+AC_SUBST(INSTALLCLIENTCMD_SH)
+AC_SUBST(INSTALLCLIENTCMD_A)
 AC_SUBST(LIBSMBCLIENT_SHARED)
 AC_SUBST(LIBSMBCLIENT)
 AC_SUBST(PRINTLIBS)
@@ -1024,14 +1026,6 @@ AC_CACHE_CHECK([whether building shared libraries actually works],
 if test $ac_cv_shlib_works = no; then
    BLDSHARED=false
 fi
-fi
-
-
-# this updates our target list if we can build shared libs
-if test $BLDSHARED = true; then
-   LIBSMBCLIENT_SHARED=bin/libsmbclient.$SHLIBEXT
-else
-   LIBSMBCLIENT_SHARED=
 fi
 
 ################
@@ -2472,26 +2466,42 @@ AC_ARG_WITH(manpages-langs,
 #################################################
 # should we build libsmbclient?
 
+INSTALLCLIENTCMD_SH=:
+INSTALLCLIENTCMD_A=:
 LIBSMBCLIENT_SHARED=
 LIBSMBCLIENT=
 AC_MSG_CHECKING(whether to build the libsmbclient shared library)
 AC_ARG_WITH(libsmbclient,
-[  --with-libsmbclient     Build the libsmbclient shared library (default=yes)],
+[  --with-libsmbclient     Build the libsmbclient shared library (default=yes if shared libs supported)],
 [ case "$withval" in
   no) 
      AC_MSG_RESULT(no)
      ;;
   *)
      if test $BLDSHARED = true; then
+        INSTALLCLIENTCMD_SH="\$(INSTALLCMD)"
         LIBSMBCLIENT_SHARED=bin/libsmbclient.$SHLIBEXT
         LIBSMBCLIENT=libsmbclient
         AC_MSG_RESULT(yes)
      else
-        AC_MSG_RESULT(no shared library support)
+        INSTALLCLIENTCMD_A="\$(INSTALLCMD)"
+        LIBSMBCLIENT=libsmbclient
+        AC_MSG_RESULT(no shared library support -- will supply static library)
      fi
      ;;
   esac ],
-  AC_MSG_RESULT(yes)
+[
+# if unspecified, default is to built it iff possible.
+  if test $BLDSHARED = true; then
+     INSTALLCLIENTCMD_SH="\$(INSTALLCMD)"
+     LIBSMBCLIENT_SHARED=bin/libsmbclient.$SHLIBEXT
+     LIBSMBCLIENT=libsmbclient
+     AC_MSG_RESULT(yes)
+  else
+     INSTALLCLIENTCMD_A="\$(INSTALLCMD)"
+     LIBSMBCLIENT=libsmbclient
+     AC_MSG_RESULT(no shared library support -- will supply static library)
+  fi]
 )
 
 
