@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -56,6 +56,19 @@ RCSID("$Id$");
         return;                                                 \
     }								\
 }
+
+#ifndef HAVE___ATTRIBUTE__
+#define __attribute__(x)
+#endif
+
+static void
+try_signed(FILE *f, int len)  __attribute__ ((unused));
+
+static void
+try_unsigned(FILE *f, int len) __attribute__ ((unused));
+
+static int
+print_bt(FILE *f, int flag) __attribute__ ((unused));
 
 static void
 try_signed(FILE *f, int len)
