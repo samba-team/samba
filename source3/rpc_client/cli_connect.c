@@ -26,19 +26,6 @@
 #include "rpc_parse.h"
 #include "rpc_client.h"
 
-struct cli_connection
-{
-	uint32 			num_connections;
-	char 			*srv_name;
-	char 			*pipe_name;
-	struct user_creds 	usr_creds;
-
-	struct cli_state 	*pCli_state;
-
-	cli_auth_fns 		*auth;
-	void 			*auth_info;
-	void 			*auth_creds;
-};
 
 static struct cli_connection **con_list = NULL;
 static uint32 num_cons = 0;
@@ -48,6 +35,31 @@ vuser_key *user_key = NULL;
 
 extern int DEBUGLEVEL;
 extern pstring global_myname;
+/*
+ * needed for the struct cli_connection
+ * none of these functions are implemented in HEAD currently
+ * rpc_client/cli_connect.c for details
+ *
+ * the 'typedef struct _cli_auth_fns cli_auth_fns;' is in 
+ * rpc_misc.h
+ */
+struct _cli_auth_fns {
+
+        /* these three will do for now.  they *should* match with server-side */
+        BOOL (*create_bind_req) (struct cli_connection *, prs_struct *,
+                                 uint32, RPC_IFACE *, RPC_IFACE *);
+        BOOL (*decode_bind_resp) (struct cli_connection *, prs_struct *);
+        BOOL (*create_bind_cont) (struct cli_connection *, prs_struct *, uint32);
+
+        /* creates an authenticated PDU */
+        BOOL (*cli_create_pdu) (struct cli_connection *, uint8, prs_struct *,
+                                int, int *, prs_struct *, uint8 *);
+
+        /* decodes an authenticated PDU */
+        BOOL (*cli_decode_pdu) (struct cli_connection *, prs_struct *, int, int);
+
+};
+
 cli_auth_fns cli_noauth_fns = 
 {
 	NULL,
@@ -139,6 +151,9 @@ static struct cli_connection *cli_con_get(const char *srv_name,
         pNcacn = ncacn_np_use_add(pipe_name, user_key, srv_name,
                                           ntc, reuse,
                                           &is_new_connection);
+	if (pNcacn == NULL)
+		return NULL;
+
 	con->pCli_state = pNcacn->smb;
 
         if (con->pCli_state == NULL)
@@ -310,7 +325,7 @@ BOOL cli_connection_init_auth(const char *srv_name, const char *pipe_name,
 /****************************************************************************
  get auth functions associated with an msrpc session.
 ****************************************************************************/
-struct cli_auth_fns *cli_conn_get_authfns(struct cli_connection *con)
+struct _cli_auth_fns *cli_conn_get_authfns(struct cli_connection *con)
 {
         return con != NULL ? con->auth : NULL;
 }
@@ -333,17 +348,11 @@ BOOL rpc_hnd_pipe_req(const POLICY_HND * hnd, uint8 op_num,
 {
         struct cli_connection *con = NULL;
 
-#if 0	/* temporary disable by JERRY */
 	/* we need this to locate the cli_connection associated
 	   with the POLICY_HND */
-        if (!cli_connection_get(hnd, &con))
-        {
+        if ((con=RpcHndList_get_connection(hnd)) == NULL)
                 return False;
-        }
-#endif	/* temporary disable by JERRY */
 
-	/* always will return False until I fix cli_connection_get()
-	   --jerry */
         if (!rpc_con_ok(con)) return False;
 
         return rpc_con_pipe_req(con, op_num, data, rdata);

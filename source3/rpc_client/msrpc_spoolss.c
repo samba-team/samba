@@ -209,21 +209,26 @@ BOOL msrpc_spoolss_enum_printers(char* srv_name, uint32 flags,
 	if (status!=NT_STATUS_NO_PROBLEMO)
 		return False;
 		
-	switch (level) {
-	case 1:
-		decode_printer_info_1(&buffer, returned, &(ctr.printers_1));
-		break;
-	case 2:
-		decode_printer_info_2(&buffer, returned, &(ctr.printers_2));
-		break;
-	case 3:
-		decode_printer_info_3(&buffer, returned, &(ctr.printers_3));
-		break;
-	}		
+	/* is there anything to process? */
+	if (returned != 0)
+	{
+		switch (level) {
+		case 1:
+			decode_printer_info_1(&buffer, returned, &(ctr.printers_1));
+			break;
+		case 2:
+			decode_printer_info_2(&buffer, returned, &(ctr.printers_2));
+			break;
+		case 3:
+			decode_printer_info_3(&buffer, returned, &(ctr.printers_3));
+			break;
+		}		
 
-	display_printer_info_ctr(out_hnd, ACTION_HEADER   , level, returned, ctr);
-	display_printer_info_ctr(out_hnd, ACTION_ENUMERATE, level, returned, ctr);
-	display_printer_info_ctr(out_hnd, ACTION_FOOTER   , level, returned, ctr);
+		display_printer_info_ctr(out_hnd, ACTION_HEADER   , level, returned, ctr);
+		display_printer_info_ctr(out_hnd, ACTION_ENUMERATE, level, returned, ctr);
+		display_printer_info_ctr(out_hnd, ACTION_FOOTER   , level, returned, ctr);
+	}
+
 	return True;
 }
 
