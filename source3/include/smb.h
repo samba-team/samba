@@ -1349,7 +1349,8 @@ enum ldap_ssl_types {LDAP_SSL_ON, LDAP_SSL_OFF, LDAP_SSL_START_TLS};
 enum ldap_passwd_sync_types {LDAP_PASSWD_SYNC_ON, LDAP_PASSWD_SYNC_OFF, LDAP_PASSWD_SYNC_ONLY};
 
 /* Remote architectures we know about. */
-enum remote_arch_types {RA_UNKNOWN, RA_WFWG, RA_OS2, RA_WIN95, RA_WINNT, RA_WIN2K, RA_WINXP, RA_WIN2K3, RA_SAMBA};
+enum remote_arch_types {RA_UNKNOWN, RA_WFWG, RA_OS2, RA_WIN95, RA_WINNT,
+			RA_WIN2K, RA_WINXP, RA_WIN2K3, RA_SAMBA, RA_CIFSFS};
 
 /* case handling */
 enum case_handling {CASE_LOWER,CASE_UPPER};

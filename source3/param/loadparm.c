@@ -364,7 +364,7 @@ typedef struct
 	int iBlock_size;
 	BOOL bPreexecClose;
 	BOOL bRootpreexecClose;
-	BOOL bCaseSensitive;
+	int  iCaseSensitive;
 	BOOL bCasePreserve;
 	BOOL bShortCasePreserve;
 	BOOL bHideDotFiles;
@@ -487,7 +487,7 @@ static service sDefault = {
 	1024,           /* iBlock_size */
 	False,			/* bPreexecClose */
 	False,			/* bRootpreexecClose */
-	False,			/* case sensitive */
+	Auto,			/* case sensitive */
 	True,			/* case preserve */
 	True,			/* short case preserve */
 	True,			/* bHideDotFiles */
@@ -980,8 +980,8 @@ static struct parm_struct parm_table[] = {
 	{"mangle prefix", P_INTEGER, P_GLOBAL, &Globals.mangle_prefix, NULL, NULL, FLAG_ADVANCED}, 
 
 	{"default case", P_ENUM, P_LOCAL, &sDefault.iDefaultCase, NULL, enum_case, FLAG_ADVANCED | FLAG_SHARE}, 
-	{"case sensitive", P_BOOL, P_LOCAL, &sDefault.bCaseSensitive, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
-	{"casesignames", P_BOOL, P_LOCAL, &sDefault.bCaseSensitive, NULL, NULL, FLAG_HIDE}, 
+	{"case sensitive", P_ENUM, P_LOCAL, &sDefault.iCaseSensitive, NULL, enum_bool_auto, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
+	{"casesignames", P_ENUM, P_LOCAL, &sDefault.iCaseSensitive, NULL, enum_bool_auto, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL | FLAG_HIDE}, 
 	{"preserve case", P_BOOL, P_LOCAL, &sDefault.bCasePreserve, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
 	{"short preserve case", P_BOOL, P_LOCAL, &sDefault.bShortCasePreserve, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
 	{"mangling char", P_CHAR, P_LOCAL, &sDefault.magic_char, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
@@ -1836,7 +1836,7 @@ FN_LOCAL_BOOL(lp_msdfs_root, bMSDfsRoot)
 FN_LOCAL_BOOL(lp_autoloaded, autoloaded)
 FN_LOCAL_BOOL(lp_preexec_close, bPreexecClose)
 FN_LOCAL_BOOL(lp_rootpreexec_close, bRootpreexecClose)
-FN_LOCAL_BOOL(lp_casesensitive, bCaseSensitive)
+FN_LOCAL_INTEGER(lp_casesensitive, iCaseSensitive)
 FN_LOCAL_BOOL(lp_preservecase, bCasePreserve)
 FN_LOCAL_BOOL(lp_shortpreservecase, bShortCasePreserve)
 FN_LOCAL_BOOL(lp_hide_dot_files, bHideDotFiles)
@@ -2997,10 +2997,8 @@ static void lp_set_enum_parm( struct parm_struct *parm, const char *pszParmValue
 {
 	int i;
 
-	for (i = 0; parm->enum_list[i].name; i++) 
-	{
-		if ( strequal(pszParmValue, parm->enum_list[i].name)) 
-		{
+	for (i = 0; parm->enum_list[i].name; i++) {
+		if ( strequal(pszParmValue, parm->enum_list[i].name)) {
 			*ptr = parm->enum_list[i].value;
 			break;
 		}
@@ -3870,11 +3868,12 @@ BOOL lp_load(const char *pszFname, BOOL global_only, BOOL save_defaults,
 	
 	/* get the username for substituion -- preference to the current_user_info */
 	
-	if ( strlen( current_user_info.smb_name ) != 0 )
+	if ( strlen( current_user_info.smb_name ) != 0 ) {
 		username = current_user_info.smb_name;
-	else
+	} else {
 		username = sub_get_smb_name();
-		
+	}
+
 	standard_sub_basic( username, n2,sizeof(n2) );
 
 	add_to_file_list(pszFname, n2);
@@ -3889,8 +3888,7 @@ BOOL lp_load(const char *pszFname, BOOL global_only, BOOL save_defaults,
 	init_globals();
 	debug_init();
 
-	if (save_defaults)
-	{
+	if (save_defaults) {
 		init_locals();
 		lp_save_defaults();
 	}

@@ -153,6 +153,7 @@ struct cli_state {
 	BOOL (*oplock_handler)(struct cli_state *cli, int fnum, unsigned char level);
 
 	BOOL force_dos_errors;
+	BOOL case_sensitive; /* False by default. */
 
 	/* was this structure allocated by cli_initialise? If so, then
            free in cli_shutdown() */
