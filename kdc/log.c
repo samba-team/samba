@@ -39,8 +39,8 @@
 #include "kdc_locl.h"
 RCSID("$Id$");
 
-static char *logfile = "kdc.log";
-static int loglevel = 17;
+extern char *logfile;
+extern int loglevel;
 
 void
 kdc_log(int level, const char *fmt, ...)
