@@ -1248,7 +1248,7 @@ bad:
 static int
 accept_with_timeout(int socket, 
 		    struct sockaddr *address,
-		    size_t *address_len,
+		    socklen_t *address_len,
 		    struct timeval *timeout)
 {
     int ret;
