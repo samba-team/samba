@@ -328,7 +328,8 @@ typedef struct date_time_s {
  */
 
 #define REG_ROOT_KEY 1
-#define REG_SUB_KEY 2
+#define REG_SUB_KEY  2
+#define REG_SYM_LINK 3
 
 typedef struct reg_key_s {
   char *name;         /* Name of the key                    */
@@ -413,16 +414,35 @@ typedef struct key_sec_desc_s {
  * There should eventually be one to deal with security keys as well
  */
 
-typedef int (*key_print_f)(char *key_name, char *class_name, int root,
-			   int terminal, int values);
+typedef int (*key_print_f)(char *path, char *key_name, char *class_name, 
+			   int root, int terminal, int values);
 
-typedef int (*val_print_f)(char *val_name, int val_type, int data_len, 
-			   void *data_blk, int last);
+typedef int (*val_print_f)(char *path, char *val_name, int val_type, 
+			   int data_len, void *data_blk, int last);
 typedef struct regf_struct_s REGF;
 
-int nt_key_iterator(REGF *regf, REG_KEY *key_tree, int bf, 
-		    key_print_f *key_print, val_print_f *val_print)
+int nt_key_iterator(REGF *regf, REG_KEY *key_tree, int bf, char *path, 
+		    key_print_f key_print, val_print_f val_print);
+
+int nt_key_list_iterator(REGF *regf, KEY_LIST *key_list, int bf, char *path,
+			 key_print_f key_print, val_print_f val_print)
 {
+  int i;
+
+  if (!key_list) return 1;
+
+  for (i=0; i< key_list->key_count; i++) {
+    if (!nt_key_iterator(regf, key_list->keys[i], bf, path, key_print, 
+			 val_print)) {
+      return 0;
+    }
+  }
+}
+
+int nt_key_iterator(REGF *regf, REG_KEY *key_tree, int bf, char *path,
+		    key_print_f key_print, val_print_f val_print)
+{
+  int pathlen = strlen(path);
 
   if (!regf || !key_tree)
     return -1;
@@ -431,13 +451,23 @@ int nt_key_iterator(REGF *regf, REG_KEY *key_tree, int bf,
 
   if (key_print) {
 
-    (*key_print)(key_tree->name, 
-		 key_tree->class_name, 
-		 (key_tree->type == REG_ROOT_KEY),
-		 (key_tree->sub_keys == NULL),
-		 (key_tree->values?(key_tree->values->val_count):0)); 
-
+    if (!(*key_print)(path, key_tree->name, 
+		      key_tree->class_name, 
+		      (key_tree->type == REG_ROOT_KEY),
+		      (key_tree->sub_keys == NULL),
+		      (key_tree->values?(key_tree->values->val_count):0)))
+      return 0;
   }
+
+  /* 
+   * Now, iterate through the keys in the key list
+   */
+
+  if (key_tree->sub_keys && 
+      !nt_key_list_iterator(regf, key_tree->sub_keys, bf, path, key_print, 
+			    val_print)) {
+    return 0;
+  } 
 
   return 1;
 }
@@ -1035,8 +1065,8 @@ REG_KEY *nt_get_key_tree(REGF *regf, NK_HDR *nk_hdr, int size)
   if (!tmp) return tmp;
   bzero(tmp, sizeof(REG_KEY));
 
-  tmp->type = (IVAL(&nk_hdr->type)==0x2C?REG_ROOT_KEY:REG_SUB_KEY);
-
+  tmp->type = (SVAL(&nk_hdr->type)==0x2C?REG_ROOT_KEY:REG_SUB_KEY);
+  
   strncpy(key_name, nk_hdr->key_nam, name_len);
   key_name[name_len] = '\0';
 
@@ -1202,19 +1232,56 @@ int nt_load_registry(REGF *regf)
  * Main code from here on ...
  */
 
+/*
+ * key print function here ...
+ */
+
+int print_key(char *path, char *name, char *class_name, int root, 
+	      int terminal, int vals)
+{
+
+  if (terminal) fprintf(stdout, "%s\\%s\n", path, name);
+
+  return 1;
+}
+
 void usage(void)
 {
-  fprintf(stderr, "Usage: editreg <registryfile>\n");
-  fprintf(stderr, "Version: 0.1\n\n"); 
+  fprintf(stderr, "Usage: editreg [-v] [-k] <registryfile>\n");
+  fprintf(stderr, "Version: 0.1\n\n");
+  fprintf(stderr, "\n\t-v\t sets verbose mode");
 }
 
 int main(int argc, char *argv[])
 {
   REGF *regf;
+  extern char *optarg;
+  extern int optind;
+  int opt;
 
   if (argc < 2) {
     usage();
     exit(1);
+  }
+  
+  /* 
+   * Now, process the arguments
+   */
+
+  while ((opt = getopt(argc, argv, "vk")) != EOF) {
+    switch (opt) {
+    case 'v':
+      verbose++;
+      break;
+
+    case 'k':
+      break;
+
+    default:
+      usage();
+      exit(1);
+      break;
+    }
   }
 
   if ((regf = nt_create_regf()) == NULL) {
@@ -1222,7 +1289,7 @@ int main(int argc, char *argv[])
     exit(2);
   }
 
-  if (!nt_set_regf_input_file(regf, argv[1])) {
+  if (!nt_set_regf_input_file(regf, argv[optind])) {
     fprintf(stderr, "Could not set name of registry file: %s, %s\n", 
 	    argv[1], strerror(errno));
     exit(3);
@@ -1240,4 +1307,6 @@ int main(int argc, char *argv[])
    * to iterate over it.
    */
 
+  nt_key_iterator(regf, regf->root, 0, "\\", print_key, NULL);
 }
+
