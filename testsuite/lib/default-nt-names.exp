@@ -1,6 +1,9 @@
 #
-# A list of default domain/local users/groups
+# A list of default domain/local users/groups.  Unfortunately this is tied
+# to the English language version of Windows NT.
 #
+
+global domain
 
 # Domain users and groups
 
