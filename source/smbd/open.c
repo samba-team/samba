@@ -74,7 +74,7 @@ static void check_for_pipe(char *fname)
 	/* special case of pipe opens */
 	char s[10];
 	StrnCpy(s,fname,sizeof(s)-1);
-	strlower(s);
+	strlower_m(s);
 	if (strstr(s,"pipe/")) {
 		DEBUG(3,("Rejecting named pipe open for %s\n",fname));
 		unix_ERR_class = ERRSRV;
@@ -1023,6 +1023,16 @@ flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 	 */
 
 	if (!file_existed) { 
+
+		/*
+		 * Now the file exists and fsp is successfully opened,
+		 * fsp->dev and fsp->inode are valid and should replace the
+		 * dev=0,inode=0 from a non existent file. Spotted by
+		 * Nadav Danieli <nadavd@exanet.com>. JRA.
+		 */
+
+		dev = fsp->dev;
+		inode = fsp->inode;
 
 		lock_share_entry_fsp(fsp);
 

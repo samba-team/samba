@@ -314,9 +314,9 @@ figures this out from the &smb.conf; file settings.
 
 <para>
 Use of this mode of authentication does require there to be a standard Unix account
-for each user in order to assign a uid once the account has been authenticated by
+for each user in order to assign a UID once the account has been authenticated by
 the remote Windows DC.  This account can be blocked to prevent logons by clients other than
-MS Windows through things such as setting an invalid shell in the
+MS Windows through means such as setting an invalid shell in the
 <filename>/etc/passwd</filename> entry.
 </para>
 
@@ -451,8 +451,8 @@ This method involves the additions of the following parameters in the &smb.conf;
 
 
 <para>
-There are two ways of identifying whether or not a username and password pair was valid
-or not. One uses the reply information provided as part of the authentication messaging
+There are two ways of identifying whether or not a username and password pair was valid.
+One uses the reply information provided as part of the authentication messaging
 process, the other uses just an error code.
 </para>
 
@@ -540,16 +540,16 @@ when using clear text authentication.
 <para>
 By default Samba will lower case the username before attempting to lookup the user
 in the database of local system accounts.  Because UNIX usernames conventionally
-only contain lower case character, the <parameter>username level</parameter> parameter
+only contain lower-case characters, the <parameter>username level</parameter> parameter
 is rarely needed.
 </para>
 
 <para>
-However, passwords on UNIX systems often make use of mixed case characters.
+However, passwords on UNIX systems often make use of mixed-case characters.
 This means that in order for a user on a Windows 9x client to connect to a Samba
 server using clear text authentication, the <parameter>password level</parameter>
-must be set to the maximum number of upper case letter which <emphasis>could</emphasis>
-appear is a password.  Note that the server OS uses the traditional DES version
+must be set to the maximum number of upper case letters which <emphasis>could</emphasis>
+appear in a password.  Note that the server OS uses the traditional DES version
 of crypt(), a <parameter>password level</parameter> of 8 will result in case
 insensitive passwords as seen from Windows users.  This will also result in longer
 login times as Samba has to compute the permutations of the password string and
@@ -557,7 +557,7 @@ try them one by one until a match is located (or all combinations fail).
 </para>
 
 <para>
-The best option to adopt is to enable support for encrypted passwords where ever
+The best option to adopt is to enable support for encrypted passwords wherever
 Samba is used. Most attempts to apply the registry change to re-enable plain text
 passwords will eventually lead to user complaints and unhappiness.
 </para>

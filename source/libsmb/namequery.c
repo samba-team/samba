@@ -516,7 +516,9 @@ struct in_addr *name_query(int fd,const char *name,int name_type,
 		}
 	}
 
-	if (timed_out) {
+	/* only set timed_out if we didn't fund what we where looking for*/
+	
+	if ( !found && timed_out ) {
 		*timed_out = True;
 	}
 
@@ -792,7 +794,10 @@ BOOL resolve_wins(const char *name, int name_type,
 			ip_list = name_query(sock,name,name_type, False, 
 						    True, wins_ip, return_count, &flags, 
 						    &timed_out);
-			if ( !ip_list ) 
+						    
+			/* exit loop if we got a list of addresses */
+			
+			if ( ip_list ) 
 				goto success;
 				
 			close(sock);
@@ -1278,6 +1283,13 @@ BOOL get_dc_list(const char *domain, struct ip_service **ip_list,
 		if ( (num_addresses == 0) && !done_auto_lookup )
 			return internal_resolve_name(domain, 0x1C, ip_list, count, resolve_oder);
 
+		/* maybe we just failed? */
+		
+		if ( num_addresses == 0 ) {
+			DEBUG(4,("get_dc_list: no servers found\n"));
+			return False;
+		}
+		
 		if ( (return_iplist = (struct ip_service *)
 			malloc(num_addresses * sizeof(struct ip_service))) == NULL ) 
 		{

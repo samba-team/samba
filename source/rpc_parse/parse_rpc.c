@@ -603,15 +603,6 @@ BOOL smb_io_rpc_hdr_autha(const char *desc, RPC_HDR_AUTHA *rai, prs_struct *ps, 
 }
 
 /*******************************************************************
- Checks an RPC_HDR_AUTH structure.
-********************************************************************/
-
-BOOL rpc_hdr_auth_chk(RPC_HDR_AUTH *rai)
-{
-	return (rai->auth_type == NTLMSSP_AUTH_TYPE && rai->auth_level == NTLMSSP_AUTH_LEVEL);
-}
-
-/*******************************************************************
  Inits an RPC_HDR_AUTH structure.
 ********************************************************************/
 
@@ -1088,9 +1079,10 @@ BOOL rpc_auth_ntlmssp_chk(RPC_AUTH_NTLMSSP_CHK *chk, uint32 crc32, uint32 seq_nu
 	    chk->seq_num != seq_num)
 	{
 		DEBUG(5,("verify failed - crc %x ver %x seq %d\n",
-			crc32, NTLMSSP_SIGN_VERSION, seq_num));
+			 chk->crc32, chk->ver, chk->seq_num));
+			
 		DEBUG(5,("verify expect - crc %x ver %x seq %d\n",
-			chk->crc32, chk->ver, chk->seq_num));
+			crc32, NTLMSSP_SIGN_VERSION, seq_num));
 		return False;
 	}
 	return True;
@@ -1182,15 +1174,15 @@ creates an RPC_AUTH_NETSEC_CHK structure.
 ********************************************************************/
 BOOL init_rpc_auth_netsec_chk(RPC_AUTH_NETSEC_CHK * chk,
 			      const uchar sig[8],
-			      const uchar data1[8],
-			      const uchar data3[8], const uchar data8[8])
+			      const uchar packet_digest[8],
+			      const uchar seq_num[8], const uchar data8[8])
 {
 	if (chk == NULL)
 		return False;
 
 	memcpy(chk->sig, sig, sizeof(chk->sig));
-	memcpy(chk->data1, data1, sizeof(chk->data1));
-	memcpy(chk->data3, data3, sizeof(chk->data3));
+	memcpy(chk->packet_digest, packet_digest, sizeof(chk->packet_digest));
+	memcpy(chk->seq_num, seq_num, sizeof(chk->seq_num));
 	memcpy(chk->data8, data8, sizeof(chk->data8));
 
 	return True;
@@ -1209,8 +1201,8 @@ BOOL smb_io_rpc_auth_netsec_chk(const char *desc, RPC_AUTH_NETSEC_CHK * chk,
 	depth++;
 
 	prs_uint8s(False, "sig  ", ps, depth, chk->sig, sizeof(chk->sig));
-	prs_uint8s(False, "data3", ps, depth, chk->data3, sizeof(chk->data3));
-	prs_uint8s(False, "data1", ps, depth, chk->data1, sizeof(chk->data1));
+	prs_uint8s(False, "seq_num", ps, depth, chk->seq_num, sizeof(chk->seq_num));
+	prs_uint8s(False, "packet_digest", ps, depth, chk->packet_digest, sizeof(chk->packet_digest));
 	prs_uint8s(False, "data8", ps, depth, chk->data8, sizeof(chk->data8));
 
 	return True;

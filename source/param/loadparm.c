@@ -163,15 +163,17 @@ typedef struct
 	char *szSourceEnv;
 	char *szIdmapUID;
 	char *szIdmapGID;
-	BOOL *bIdmapOnly;
-	char *szNonUnixAccountRange;
+	BOOL bEnableRidAlgorithm;
 	int AlgorithmicRidBase;
+	char *szTemplatePrimaryGroup;
 	char *szTemplateHomedir;
 	char *szTemplateShell;
 	char *szWinbindSeparator;
+	BOOL bWinbindEnableLocalAccounts;
 	BOOL bWinbindEnumUsers;
 	BOOL bWinbindEnumGroups;
 	BOOL bWinbindUseDefaultDomain;
+	BOOL bWinbindTrustedDomainsOnly;
 	char *szWinbindBackend;
 	char *szIdmapBackend;
 	char *szAddShareCommand;
@@ -211,7 +213,6 @@ typedef struct
 	int announce_as;	/* This is initialised in init_globals */
 	int machine_password_timeout;
 	int change_notify_timeout;
-	int stat_cache_size;
 	int map_to_guest;
 	int min_passwd_length;
 	int oplock_break_wait_time;
@@ -290,7 +291,7 @@ typedef struct
 	BOOL bKernelChangeNotify;
 	int restrict_anonymous;
 	int name_cache_timeout;
-	BOOL client_signing;
+	int client_signing;
 	param_opt_struct *param_opt;
 }
 global;
@@ -686,6 +687,25 @@ static const struct enum_list enum_csc_policy[] = {
 	{-1, NULL}
 };
 
+/* SMB signing types. */
+static const struct enum_list enum_smb_signing_vals[] = {
+	{False, "No"},
+	{False, "False"},
+	{False, "0"},
+	{False, "Off"},
+	{True, "Yes"},
+	{True, "True"},
+	{True, "1"},
+	{True, "On"},
+	{Required, "Required"},
+	{Required, "Mandatory"},
+	{Required, "Force"},
+	{Required, "Forced"},
+	{Required, "Enforced"},
+	{-1, NULL}
+};
+
+
 /* 
    Do you want session setups at user level security with a invalid
    password to be rejected or allowed in as guest? WinNT rejects them
@@ -873,7 +893,7 @@ static struct parm_struct parm_table[] = {
 	{"time server", P_BOOL, P_GLOBAL, &Globals.bTimeServer, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"unix extensions", P_BOOL, P_GLOBAL, &Globals.bUnixExtensions, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"use spnego", P_BOOL, P_GLOBAL, &Globals.bUseSpnego, NULL, NULL, FLAG_DEVELOPER},
-	{"client signing", P_BOOL, P_GLOBAL, &Globals.client_signing, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"client signing", P_ENUM, P_GLOBAL, &Globals.client_signing, NULL, enum_smb_signing_vals, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"client use spnego", P_BOOL, P_GLOBAL, &Globals.bClientUseSpnego, NULL, NULL, FLAG_DEVELOPER},
 
 	{"Tuning Options", P_SEP, P_SEPARATOR},
@@ -895,7 +915,6 @@ static struct parm_struct parm_table[] = {
 	{"read size", P_INTEGER, P_GLOBAL, &Globals.ReadSize, NULL, NULL, FLAG_DEVELOPER},
 	
 	{"socket options", P_GSTRING, P_GLOBAL, user_socket_options, NULL, NULL, FLAG_DEVELOPER},
-	{"stat cache size", P_INTEGER, P_GLOBAL, &Globals.stat_cache_size, NULL, NULL, FLAG_DEVELOPER},
 	{"strict allocate", P_BOOL, P_LOCAL, &sDefault.bStrictAllocate, NULL, NULL, FLAG_SHARE},
 	{"strict sync", P_BOOL, P_LOCAL, &sDefault.bStrictSync, NULL, NULL, FLAG_SHARE},
 	{"sync always", P_BOOL, P_LOCAL, &sDefault.bSyncAlways, NULL, NULL, FLAG_SHARE},
@@ -1119,19 +1138,22 @@ static struct parm_struct parm_table[] = {
 
 	{"Winbind options", P_SEP, P_SEPARATOR},
 
-	{"idmap only", P_BOOL, P_GLOBAL, &Globals.bIdmapOnly, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"enable rid algorithm", P_BOOL, P_GLOBAL, &Globals.bEnableRidAlgorithm, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER | FLAG_DEPRECATED},
 	{"idmap backend", P_STRING, P_GLOBAL, &Globals.szIdmapBackend, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"idmap uid", P_STRING, P_GLOBAL, &Globals.szIdmapUID, handle_idmap_uid, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"winbind uid", P_STRING, P_GLOBAL, &Globals.szIdmapUID, handle_idmap_uid, NULL, FLAG_ADVANCED | FLAG_DEVELOPER | FLAG_DEPRECATED },
+	{"winbind uid", P_STRING, P_GLOBAL, &Globals.szIdmapUID, handle_idmap_uid, NULL, FLAG_ADVANCED | FLAG_DEVELOPER },
 	{"idmap gid", P_STRING, P_GLOBAL, &Globals.szIdmapGID, handle_idmap_gid, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"winbind gid", P_STRING, P_GLOBAL, &Globals.szIdmapGID, handle_idmap_gid, NULL, FLAG_ADVANCED | FLAG_DEVELOPER | FLAG_DEPRECATED },
+	{"winbind gid", P_STRING, P_GLOBAL, &Globals.szIdmapGID, handle_idmap_gid, NULL, FLAG_ADVANCED | FLAG_DEVELOPER },
+	{"template primary group", P_STRING, P_GLOBAL, &Globals.szTemplatePrimaryGroup, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"template homedir", P_STRING, P_GLOBAL, &Globals.szTemplateHomedir, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"template shell", P_STRING, P_GLOBAL, &Globals.szTemplateShell, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"winbind separator", P_STRING, P_GLOBAL, &Globals.szWinbindSeparator, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"winbind cache time", P_INTEGER, P_GLOBAL, &Globals.winbind_cache_time, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"winbind enable local accounts", P_BOOL, P_GLOBAL, &Globals.bWinbindEnableLocalAccounts, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"winbind enum users", P_BOOL, P_GLOBAL, &Globals.bWinbindEnumUsers, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"winbind enum groups", P_BOOL, P_GLOBAL, &Globals.bWinbindEnumGroups, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"winbind use default domain", P_BOOL, P_GLOBAL, &Globals.bWinbindUseDefaultDomain, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"winbind trusted domains only", P_BOOL, P_GLOBAL, &Globals.bWinbindTrustedDomainsOnly, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 
 	{NULL, P_BOOL, P_NONE, NULL, NULL, NULL, 0}
 };
@@ -1374,7 +1396,6 @@ static void init_globals(void)
 	Globals.ReadSize = 16 * 1024;
 	Globals.lm_announce = 2;	/* = Auto: send only if LM clients found */
 	Globals.lm_interval = 60;
-	Globals.stat_cache_size = 50;	/* Number of stat translations we'll keep */
 	Globals.announce_as = ANNOUNCE_AS_NT_SERVER;
 #if (defined(HAVE_NETGROUP) && defined(WITH_AUTOMOUNT))
 	Globals.bNISHomeMap = False;
@@ -1467,15 +1488,18 @@ static void init_globals(void)
 
 	string_set(&Globals.szTemplateShell, "/bin/false");
 	string_set(&Globals.szTemplateHomedir, "/home/%D/%U");
+	string_set(&Globals.szTemplatePrimaryGroup, "nobody");
 	string_set(&Globals.szWinbindSeparator, "\\");
 	string_set(&Globals.szAclCompat, "");
 
-	Globals.winbind_cache_time = 600;	/* 5 minutes */
+	Globals.winbind_cache_time = 300;	/* 5 minutes */
+	Globals.bWinbindEnableLocalAccounts = True;
 	Globals.bWinbindEnumUsers = True;
 	Globals.bWinbindEnumGroups = True;
 	Globals.bWinbindUseDefaultDomain = False;
+	Globals.bWinbindTrustedDomainsOnly = False;
 
-	Globals.bIdmapOnly = False;
+	Globals.bEnableRidAlgorithm = True;
 
 	Globals.name_cache_timeout = 660; /* In seconds */
 
@@ -1633,16 +1657,19 @@ FN_GLOBAL_STRING(lp_abort_shutdown_script, &Globals.szAbortShutdownScript)
 
 FN_GLOBAL_STRING(lp_wins_hook, &Globals.szWINSHook)
 FN_GLOBAL_STRING(lp_wins_partners, &Globals.szWINSPartners)
+FN_GLOBAL_STRING(lp_template_primary_group, &Globals.szTemplatePrimaryGroup)
 FN_GLOBAL_STRING(lp_template_homedir, &Globals.szTemplateHomedir)
 FN_GLOBAL_STRING(lp_template_shell, &Globals.szTemplateShell)
 FN_GLOBAL_CONST_STRING(lp_winbind_separator, &Globals.szWinbindSeparator)
 FN_GLOBAL_STRING(lp_acl_compatibility, &Globals.szAclCompat)
+FN_GLOBAL_BOOL(lp_winbind_enable_local_accounts, &Globals.bWinbindEnableLocalAccounts)
 FN_GLOBAL_BOOL(lp_winbind_enum_users, &Globals.bWinbindEnumUsers)
 FN_GLOBAL_BOOL(lp_winbind_enum_groups, &Globals.bWinbindEnumGroups)
 FN_GLOBAL_BOOL(lp_winbind_use_default_domain, &Globals.bWinbindUseDefaultDomain)
+FN_GLOBAL_BOOL(lp_winbind_trusted_domains_only, &Globals.bWinbindTrustedDomainsOnly)
 
 FN_GLOBAL_STRING(lp_idmap_backend, &Globals.szIdmapBackend)
-FN_GLOBAL_BOOL(lp_idmap_only, &Globals.bIdmapOnly)
+FN_GLOBAL_BOOL(lp_enable_rid_algorithm, &Globals.bEnableRidAlgorithm)
 
 #ifdef WITH_LDAP_SAMCONFIG
 FN_GLOBAL_STRING(lp_ldap_server, &Globals.szLdapServer)
@@ -1743,7 +1770,6 @@ FN_GLOBAL_INTEGER(lp_lm_announce, &Globals.lm_announce)
 FN_GLOBAL_INTEGER(lp_lm_interval, &Globals.lm_interval)
 FN_GLOBAL_INTEGER(lp_machine_password_timeout, &Globals.machine_password_timeout)
 FN_GLOBAL_INTEGER(lp_change_notify_timeout, &Globals.change_notify_timeout)
-FN_GLOBAL_INTEGER(lp_stat_cache_size, &Globals.stat_cache_size)
 FN_GLOBAL_INTEGER(lp_map_to_guest, &Globals.map_to_guest)
 FN_GLOBAL_INTEGER(lp_min_passwd_length, &Globals.min_passwd_length)
 FN_GLOBAL_INTEGER(lp_oplock_break_wait_time, &Globals.oplock_break_wait_time)
@@ -2478,7 +2504,7 @@ static void copy_service(service * pserviceDest, service * pserviceSource, BOOL 
 				case P_USTRING:
 					string_set(dest_ptr,
 						   *(char **)src_ptr);
-					strupper(*(char **)dest_ptr);
+					strupper_m(*(char **)dest_ptr);
 					break;
 				case P_LIST:
 					str_list_copy((char ***)dest_ptr, *(const char ***)src_ptr);
@@ -3175,7 +3201,7 @@ BOOL lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 
 		case P_USTRING:
 			string_set(parm_ptr, pszParmValue);
-			strupper(*(char **)parm_ptr);
+			strupper_m(*(char **)parm_ptr);
 			break;
 
 		case P_GSTRING:
@@ -3184,7 +3210,7 @@ BOOL lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 
 		case P_UGSTRING:
 			pstrcpy((char *)parm_ptr, pszParmValue);
-			strupper((char *)parm_ptr);
+			strupper_m((char *)parm_ptr);
 			break;
 
 		case P_ENUM:

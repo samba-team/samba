@@ -562,7 +562,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 {  
 	int result;
 	pstring fname;
-	enum FAKE_FILE_TYPE fake_file_type = 0;
+	enum FAKE_FILE_TYPE fake_file_type = FAKE_FILE_TYPE_NONE;
 	uint32 flags = IVAL(inbuf,smb_ntcreate_Flags);
 	uint32 desired_access = IVAL(inbuf,smb_ntcreate_DesiredAccess);
 	uint32 file_attributes = IVAL(inbuf,smb_ntcreate_FileAttributes);
@@ -692,7 +692,7 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 		if( strchr_m(fname, ':')) {
 			
 #ifdef HAVE_SYS_QUOTAS
-			if ((fake_file_type=is_fake_file(fname))!=0) {
+			if ((fake_file_type=is_fake_file(fname))!=FAKE_FILE_TYPE_NONE) {
 				/*
 				 * here we go! support for changing the disk quotas --metze
 				 *
@@ -784,7 +784,7 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 		 * before issuing an oplock break request to
 		 * our client. JRA.  */
 
-		if (fake_file_type==0) {
+		if (fake_file_type==FAKE_FILE_TYPE_NONE) {
 			fsp = open_file_shared1(conn,fname,&sbuf,
 					desired_access,
 					smb_open_mode,

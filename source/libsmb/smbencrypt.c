@@ -271,6 +271,8 @@ void SMBOWFencrypt_ntv2(const uchar kr[16],
 void SMBsesskeygen_ntv2(const uchar kr[16],
 			const uchar * nt_resp, uint8 sess_key[16])
 {
+	/* a very nice, 128 bit, variable session key */
+	
 	HMACMD5Context ctx;
 
 	hmac_md5_init_limK_to_64(kr, 16, &ctx);
@@ -286,10 +288,39 @@ void SMBsesskeygen_ntv2(const uchar kr[16],
 void SMBsesskeygen_ntv1(const uchar kr[16],
 			const uchar * nt_resp, uint8 sess_key[16])
 {
+	/* yes, this session key does not change - yes, this 
+	   is a problem - but it is 128 bits */
+	
 	mdfour((unsigned char *)sess_key, kr, 16);
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100, ("SMBsesskeygen_ntv1:\n"));
+	dump_data(100, sess_key, 16);
+#endif
+}
+
+void SMBsesskeygen_lmv1(const uchar lm_hash[16],
+			const uchar lm_resp[24], /* only uses 8 */ 
+			uint8 sess_key[16])
+{
+	/* Calculate the LM session key (effective length 40 bits,
+	   but changes with each session) */
+
+	uchar p24[24];
+	uchar partial_lm_hash[16];
+	
+	memcpy(partial_lm_hash, lm_hash, 8);
+	memset(partial_lm_hash + 8, 0xbd, 8);    
+
+	SMBOWFencrypt(lm_hash, lm_resp, p24);
+	
+	memcpy(sess_key, p24, 16);
+	sess_key[5] = 0xe5;
+	sess_key[6] = 0x38;
+	sess_key[7] = 0xb0;
+
+#ifdef DEBUG_PASSWORD
+	DEBUG(100, ("SMBsesskeygen_lmv1:\n"));
 	dump_data(100, sess_key, 16);
 #endif
 }

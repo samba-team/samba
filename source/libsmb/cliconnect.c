@@ -540,11 +540,18 @@ static BOOL cli_session_setup_ntlmssp(struct cli_state *cli, const char *user,
 
 	ntlmssp_state->use_ntlmv2 = lp_client_ntlmv2_auth();
 
+	if (cli->sign_info.negotiated_smb_signing 
+	    || cli->sign_info.mandatory_signing) {
+		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SIGN;
+		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_ALWAYS_SIGN;
+	}
+
 	do {
 		nt_status = ntlmssp_client_update(ntlmssp_state, 
 						  blob_in, &blob_out);
 		data_blob_free(&blob_in);
 		if (NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+			DATA_BLOB null = data_blob(NULL, 0);
 			if (turn == 1) {
 				/* and wrap it in a SPNEGO wrapper */
 				msg1 = gen_negTokenInit(OID_NTLMSSP, blob_out);
@@ -553,13 +560,15 @@ static BOOL cli_session_setup_ntlmssp(struct cli_state *cli, const char *user,
 				msg1 = spnego_gen_auth(blob_out);
 			}
 		
+			cli_simple_set_signing(cli, 
+					       ntlmssp_state->session_key.data, 
+					       null); 
+			
 			/* now send that blob on its way */
 			if (!cli_session_setup_blob_send(cli, msg1)) {
 				return False;
 			}
 			data_blob_free(&msg1);
-			
-			cli_ntlmssp_set_signing(cli, ntlmssp_state);
 			
 			blob = cli_session_setup_blob_receive(cli);
 
@@ -1004,11 +1013,23 @@ BOOL cli_negprot(struct cli_state *cli)
 				    smb_buflen(cli->inbuf)-8, STR_UNICODE|STR_NOALIGN);
 		}
 
-		if ((cli->sec_mode & NEGOTIATE_SECURITY_SIGNATURES_REQUIRED))
+		if ((cli->sec_mode & NEGOTIATE_SECURITY_SIGNATURES_REQUIRED)) {
+			/* Fail if signing is mandatory and we don't want to support it. */
+			if (!lp_client_signing()) {
+				DEBUG(1,("cli_negprot: SMB signing is mandatory and we have disabled it.\n"));
+				return False;
+			}
 			cli->sign_info.negotiated_smb_signing = True;
+		}
 
 		if ((cli->sec_mode & NEGOTIATE_SECURITY_SIGNATURES_ENABLED) && cli->sign_info.allow_smb_signing)
 			cli->sign_info.negotiated_smb_signing = True;
+
+		/* Fail if signing is mandatory and the server doesn't support it. */
+		if (cli->sign_info.mandatory_signing && !(cli->sign_info.negotiated_smb_signing)) {
+			DEBUG(1,("cli_negprot: SMB signing is mandatory and the server doesn't support it.\n"));
+			return False;
+		}
 
 	} else if (cli->protocol >= PROTOCOL_LANMAN1) {
 		cli->use_spnego = False;

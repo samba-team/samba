@@ -102,9 +102,12 @@ ATTRIB_MAP_ENTRY attrib_map_v30[] = {
 
 ATTRIB_MAP_ENTRY dominfo_attr_list[] = {
 	{ LDAP_ATTR_DOMAIN,		"sambaDomainName"	},
+	{ LDAP_ATTR_NEXT_RID,	        "sambaNextRid"	        },
 	{ LDAP_ATTR_NEXT_USERRID,	"sambaNextUserRid"	},
 	{ LDAP_ATTR_NEXT_GROUPRID,	"sambaNextGroupRid"	},
 	{ LDAP_ATTR_DOM_SID,		LDAP_ATTRIBUTE_SID	},
+	{ LDAP_ATTR_ALGORITHMIC_RID_BASE,"sambaAlgorithmicRidBase"},
+	{ LDAP_ATTR_OBJCLASS,		"objectClass"		},
 	{ LDAP_ATTR_LIST_END,		NULL			},
 };
 
@@ -117,6 +120,7 @@ ATTRIB_MAP_ENTRY groupmap_attr_list[] = {
 	{ LDAP_ATTR_DESC,		"description"		},
 	{ LDAP_ATTR_DISPLAY_NAME,	"displayName"		},
 	{ LDAP_ATTR_CN,			"cn"			},
+	{ LDAP_ATTR_OBJCLASS,		"objectClass"		},
 	{ LDAP_ATTR_LIST_END,		NULL			}	
 };
 
@@ -133,6 +137,7 @@ ATTRIB_MAP_ENTRY groupmap_attr_list_to_delete[] = {
 ATTRIB_MAP_ENTRY idpool_attr_list[] = {
 	{ LDAP_ATTR_UIDNUMBER,		LDAP_ATTRIBUTE_UIDNUMBER},
 	{ LDAP_ATTR_GIDNUMBER,		LDAP_ATTRIBUTE_GIDNUMBER},
+	{ LDAP_ATTR_OBJCLASS,		"objectClass"		},
 	{ LDAP_ATTR_LIST_END,		NULL			}	
 };
 
@@ -140,6 +145,7 @@ ATTRIB_MAP_ENTRY sidmap_attr_list[] = {
 	{ LDAP_ATTR_SID,		LDAP_ATTRIBUTE_SID	},
 	{ LDAP_ATTR_UIDNUMBER,		LDAP_ATTRIBUTE_UIDNUMBER},
 	{ LDAP_ATTR_GIDNUMBER,		LDAP_ATTRIBUTE_GIDNUMBER},
+	{ LDAP_ATTR_OBJCLASS,		"objectClass"		},
 	{ LDAP_ATTR_LIST_END,		NULL			}	
 };
 
@@ -201,8 +207,10 @@ ATTRIB_MAP_ENTRY sidmap_attr_list[] = {
 	if ( !list )
 		return; 
 
-	while ( list[i] )
+	while ( list[i] ) {
 		SAFE_FREE( list[i] );
+		i+=1;
+	}
 
 	SAFE_FREE( list );
 }
@@ -268,6 +276,40 @@ BOOL fetch_ldap_pw(char **dn, char** pw)
 		*pw = smb_xstrdup(old_style_pw);		
 	}
 	
+	return True;
+}
+
+/*******************************************************************
+search an attribute and return the first value found.
+******************************************************************/
+ BOOL smbldap_get_single_attribute (LDAP * ldap_struct, LDAPMessage * entry,
+				   const char *attribute, pstring value)
+{
+	char **values;
+	
+	if ( !attribute )
+		return False;
+		
+	value[0] = '\0';
+
+	if ((values = ldap_get_values (ldap_struct, entry, attribute)) == NULL) {
+		DEBUG (10, ("smbldap_get_single_attribute: [%s] = [<does not exist>]\n", attribute));
+		
+		return False;
+	}
+	
+	if (convert_string(CH_UTF8, CH_UNIX,values[0], -1, value, sizeof(pstring)) == (size_t)-1)
+	{
+		DEBUG(1, ("smbldap_get_single_attribute: string conversion of [%s] = [%s] failed!\n", 
+			  attribute, values[0]));
+		ldap_value_free(values);
+		return False;
+	}
+	
+	ldap_value_free(values);
+#ifdef DEBUG_PASSWORDS
+	DEBUG (100, ("smbldap_get_single_attribute: [%s] = [%s]\n", attribute, value));
+#endif	
 	return True;
 }
 
@@ -775,7 +817,7 @@ static int smbldap_open(struct smbldap_state *ldap_state)
     	}
 
 	if (ldap_state->ldap_struct != NULL) {
-		DEBUG(5,("smbldap_open: already connected to the LDAP server\n"));
+		DEBUG(11,("smbldap_open: already connected to the LDAP server\n"));
 		return LDAP_SUCCESS;
 	}
 
@@ -819,7 +861,7 @@ static NTSTATUS smbldap_close(struct smbldap_state *ldap_state)
 	return NT_STATUS_OK;
 }
 
-static int smbldap_retry_open(struct smbldap_state *ldap_state, int *attempts)
+int smbldap_retry_open(struct smbldap_state *ldap_state, int *attempts)
 {
 	int rc;
 
@@ -1068,5 +1110,153 @@ NTSTATUS smbldap_init(TALLOC_CTX *mem_ctx, const char *location, struct smbldap_
 		(*smbldap_state)->uri = "ldap://localhost";
 	}
 	return NT_STATUS_OK;
+}
+
+/**********************************************************************
+ Add the sambaDomain to LDAP, so we don't have to search for this stuff
+ again.  This is a once-add operation for now.
+
+ TODO:  Add other attributes, and allow modification.
+*********************************************************************/
+static NTSTATUS add_new_domain_info(struct smbldap_state *ldap_state, 
+                                    const char *domain_name) 
+{
+	fstring sid_string;
+	fstring algorithmic_rid_base_string;
+	pstring filter, dn;
+	LDAPMod **mods = NULL;
+	int rc;
+	int ldap_op;
+	LDAPMessage *result = NULL;
+	int num_result;
+	char **attr_list;
+
+	slprintf (filter, sizeof (filter) - 1, "(&(%s=%s)(objectclass=%s))", 
+		  get_attr_key2string(dominfo_attr_list, LDAP_ATTR_DOMAIN), 
+		  domain_name, LDAP_OBJ_DOMINFO);
+
+	attr_list = get_attr_list( dominfo_attr_list );
+	rc = smbldap_search_suffix(ldap_state, filter, attr_list, &result);
+	free_attr_list( attr_list );
+
+	if (rc != LDAP_SUCCESS) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	num_result = ldap_count_entries(ldap_state->ldap_struct, result);
+	
+	if (num_result > 1) {
+		DEBUG (0, ("More than domain with that name exists: bailing out!\n"));
+		ldap_msgfree(result);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	
+	/* Check if we need to add an entry */
+	DEBUG(3,("Adding new domain\n"));
+	ldap_op = LDAP_MOD_ADD;
+
+	snprintf(dn, sizeof(dn), "%s=%s,%s", get_attr_key2string(dominfo_attr_list, LDAP_ATTR_DOMAIN),
+		domain_name, lp_ldap_suffix());
+
+	/* Free original search */
+	ldap_msgfree(result);
+
+	/* make the changes - the entry *must* not already have samba attributes */
+	smbldap_set_mod(&mods, LDAP_MOD_ADD, get_attr_key2string(dominfo_attr_list, LDAP_ATTR_DOMAIN), 
+		domain_name);
+
+	/* If we don't have an entry, then ask secrets.tdb for what it thinks.  
+	   It may choose to make it up */
+
+	sid_to_string(sid_string, get_global_sam_sid());
+	smbldap_set_mod(&mods, LDAP_MOD_ADD, get_attr_key2string(dominfo_attr_list, LDAP_ATTR_DOM_SID), sid_string);
+
+	slprintf(algorithmic_rid_base_string, sizeof(algorithmic_rid_base_string) - 1, "%i", algorithmic_rid_base());
+	smbldap_set_mod(&mods, LDAP_MOD_ADD, get_attr_key2string(dominfo_attr_list, LDAP_ATTR_ALGORITHMIC_RID_BASE), 
+			algorithmic_rid_base_string);
+	smbldap_set_mod(&mods, LDAP_MOD_ADD, "objectclass", LDAP_OBJ_DOMINFO);
+
+	switch(ldap_op)
+	{
+	case LDAP_MOD_ADD: 
+		rc = smbldap_add(ldap_state, dn, mods);
+		break;
+	case LDAP_MOD_REPLACE: 
+		rc = smbldap_modify(ldap_state, dn, mods);
+		break;
+	default: 	
+		DEBUG(0,("Wrong LDAP operation type: %d!\n", ldap_op));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	
+	if (rc!=LDAP_SUCCESS) {
+		char *ld_error = NULL;
+		ldap_get_option(ldap_state->ldap_struct, LDAP_OPT_ERROR_STRING, &ld_error);
+		DEBUG(1,("failed to %s domain dn= %s with: %s\n\t%s\n",
+		       ldap_op == LDAP_MOD_ADD ? "add" : "modify",
+		       dn, ldap_err2string(rc),
+		       ld_error?ld_error:"unknown"));
+		SAFE_FREE(ld_error);
+
+		ldap_mods_free(mods, True);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	DEBUG(2,("added: domain = %s in the LDAP database\n", domain_name));
+	ldap_mods_free(mods, True);
+	return NT_STATUS_OK;
+}
+
+/**********************************************************************
+Search for the domain info entry
+*********************************************************************/
+NTSTATUS smbldap_search_domain_info(struct smbldap_state *ldap_state,
+                                    LDAPMessage ** result, const char *domain_name,
+                                    BOOL try_add)
+{
+	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+	pstring filter;
+	int rc;
+	char **attr_list;
+	int count;
+
+	snprintf(filter, sizeof(filter)-1, "(&(objectClass=%s)(%s=%s))",
+		LDAP_OBJ_DOMINFO,
+		get_attr_key2string(dominfo_attr_list, LDAP_ATTR_DOMAIN), 
+		domain_name);
+
+	DEBUG(2, ("Searching for:[%s]\n", filter));
+
+
+	attr_list = get_attr_list( dominfo_attr_list );
+	rc = smbldap_search_suffix(ldap_state, filter, attr_list , result);
+	free_attr_list( attr_list );
+
+	if (rc != LDAP_SUCCESS) {
+		DEBUG(2,("Problem during LDAPsearch: %s\n", ldap_err2string (rc)));
+		DEBUG(2,("Query was: %s, %s\n", lp_ldap_suffix(), filter));
+	} else if (ldap_count_entries(ldap_state->ldap_struct, *result) < 1) {
+		DEBUG(3, ("Got no domain info entries for domain\n"));
+		ldap_msgfree(*result);
+		*result = NULL;
+		if (try_add && NT_STATUS_IS_OK(ret = add_new_domain_info(ldap_state, domain_name))) {
+			return smbldap_search_domain_info(ldap_state, result, domain_name, False);
+		} 
+		else {
+			DEBUG(0, ("Adding domain info for %s failed with %s\n", 
+				domain_name, nt_errstr(ret)));
+			return ret;
+		}
+	} else if ((count = ldap_count_entries(ldap_state->ldap_struct, *result)) > 1) {
+		DEBUG(0, ("Got too many (%d) domain info entries for domain %s\n",
+			  count, domain_name));
+		ldap_msgfree(*result);
+		*result = NULL;
+		return ret;
+	} else {
+		return NT_STATUS_OK;
+	}
+	
+	return ret;
 }
 

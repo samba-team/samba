@@ -56,20 +56,31 @@ static int smb_create_user(const char *domain, const char *unix_username, const 
 
 /****************************************************************************
  Add and Delete UNIX users on demand, based on NTSTATUS codes.
+ We don't care about RID's here so ignore.
 ****************************************************************************/
 
 void auth_add_user_script(const char *domain, const char *username)
 {
-	struct passwd *pwd=NULL;
-
+	uint32 rid;
 	/*
 	 * User validated ok against Domain controller.
 	 * If the admin wants us to try and create a UNIX
 	 * user on the fly, do so.
 	 */
 	
-	if(lp_adduser_script() && !(pwd = Get_Pwnam(username))) {
+	if ( lp_adduser_script() ) 
 		smb_create_user(domain, username, NULL);
+	else {
+		DEBUG(10,("auth_add_user_script: no 'add user script'.  Asking winbindd\n"));
+		
+		/* should never get here is we a re a domain member running winbindd
+		   However, a host set for 'security = server' might run winbindd for 
+		   account allocation */
+		   
+		if ( !winbind_create_user(username, NULL) ) {
+			DEBUG(5,("auth_add_user_script: winbindd_create_user() failed\n"));
+			rid = 0;
+		}
 	}
 }
 
@@ -703,6 +714,14 @@ static NTSTATUS make_server_info(auth_serversupplied_info **server_info)
 		return NT_STATUS_NO_MEMORY;
 	}
 	ZERO_STRUCTP(*server_info);
+
+	/* Initialise the uid and gid values to something non-zero
+	   which may save us from giving away root access if there
+	   is a bug in allocating these fields. */
+
+	(*server_info)->uid = -1;
+	(*server_info)->gid = -1;
+
 	return NT_STATUS_OK;
 }
 
@@ -764,25 +783,36 @@ NTSTATUS make_server_info_sam(auth_serversupplied_info **server_info,
 			      SAM_ACCOUNT *sampass)
 {
 	NTSTATUS nt_status;
+	struct passwd *pwd;
 
 	if (!NT_STATUS_IS_OK(nt_status = make_server_info(server_info)))
 		return nt_status;
 
 	(*server_info)->sam_account    = sampass;
 
-	if (!NT_STATUS_IS_OK(nt_status = sid_to_uid(pdb_get_user_sid(sampass), &((*server_info)->uid))))
-		return nt_status;
-
-	if (!NT_STATUS_IS_OK(nt_status = sid_to_gid(pdb_get_group_sid(sampass), &((*server_info)->gid))))
-		return nt_status;
+	if ( !(pwd = getpwnam_alloc(pdb_get_username(sampass))) )  {
+		DEBUG(1, ("User %s in passdb, but getpwnam() fails!\n",
+			  pdb_get_username(sampass)));
+		free_server_info(server_info);
+		return NT_STATUS_NO_SUCH_USER;
+	}
+	(*server_info)->unix_name = smb_xstrdup(pwd->pw_name);
+	(*server_info)->gid = pwd->pw_gid;
+	(*server_info)->uid = pwd->pw_uid;
+	
+	passwd_free(&pwd);
 
 	if (!NT_STATUS_IS_OK(nt_status = add_user_groups(server_info, sampass, 
-							 (*server_info)->uid, (*server_info)->gid)))
+							 (*server_info)->uid, 
+							 (*server_info)->gid))) {
+		free_server_info(server_info);
 		return nt_status;
+	}
 
 	(*server_info)->sam_fill_level = SAM_FILL_ALL;
-	DEBUG(5,("make_server_info_sam: made server info for user %s\n",
-		 pdb_get_username((*server_info)->sam_account)));
+	DEBUG(5,("make_server_info_sam: made server info for user %s -> %s\n",
+		 pdb_get_username(sampass),
+		 (*server_info)->unix_name));
 
 	return nt_status;
 }
@@ -808,6 +838,8 @@ NTSTATUS make_server_info_pw(auth_serversupplied_info **server_info, const struc
 	if (!NT_STATUS_IS_OK(nt_status = add_user_groups(server_info, sampass, pwd->pw_uid, pwd->pw_gid))) {
 		return nt_status;
 	}
+
+	(*server_info)->unix_name = smb_xstrdup(pwd->pw_name);
 
 	(*server_info)->sam_fill_level = SAM_FILL_ALL;
 	(*server_info)->uid = pwd->pw_uid;
@@ -852,8 +884,10 @@ NTSTATUS make_server_info_guest(auth_serversupplied_info **server_info)
  Purely internal function for make_server_info_info3
  Fill the sam account from getpwnam
 ***************************************************************************/
-static NTSTATUS fill_sam_account(const char *domain,
+static NTSTATUS fill_sam_account(TALLOC_CTX *mem_ctx, 
+				 const char *domain,
 				 const char *username,
+				 char **found_username,
 				 uid_t *uid, gid_t *gid,
 				 SAM_ACCOUNT **sam_account)
 {
@@ -878,6 +912,8 @@ static NTSTATUS fill_sam_account(const char *domain,
 	*uid = passwd->pw_uid;
 	*gid = passwd->pw_gid;
 
+	*found_username = talloc_strdup(mem_ctx, passwd->pw_name);
+
 	return pdb_init_sam_pw(sam_account, passwd);
 }
 
@@ -893,7 +929,7 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 				NET_USER_INFO_3 *info3) 
 {
 	NTSTATUS nt_status = NT_STATUS_OK;
-
+	char *found_username;
 	const char *nt_domain;
 	const char *nt_username;
 
@@ -901,12 +937,8 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 	DOM_SID user_sid;
 	DOM_SID group_sid;
 
-	struct passwd *passwd;
-
-	unid_t u_id, g_id;
 	uid_t uid;
 	gid_t gid;
-	int u_type, g_type;
 
 	int n_lgroupSIDs;
 	DOM_SID *lgroupSIDs   = NULL;
@@ -942,41 +974,20 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 		/* If the server didn't give us one, just use the one we sent them */
 		domain = domain;
 	}
+	
+	/* try to fill the SAM account..  If getpwnam() fails, then try the 
+	   add user script (2.2.x behavior) */
+	   
+	nt_status = fill_sam_account(mem_ctx, nt_domain, internal_username,
+		&found_username, &uid, &gid, &sam_account);
 
-	u_type = ID_USERID;
-	g_type = ID_GROUPID;
- 
- 	/* we are trying to check that idmap isn't stuffing us over - does this
- 	   user actually exist? */
-	if (NT_STATUS_IS_OK(idmap_get_id_from_sid(&u_id, &u_type, &user_sid))
-	    && NT_STATUS_IS_OK(idmap_get_id_from_sid(&g_id, &g_type, &group_sid))
-	    && ((passwd = getpwuid_alloc(u_id.uid)))) {
-
-		nt_status = pdb_init_sam_pw(&sam_account, passwd);
-
- 		uid = passwd->pw_uid;
- 		gid = passwd->pw_gid;
- 
- 		/* we should check this is the same name */
-
-		passwd_free(&passwd);
-	} else {
-
- 		/* User not from winbind - try and find them by getpwnam() */
-		nt_status = fill_sam_account(nt_domain,
-					     internal_username,
-					     &uid, &gid,
-					     &sam_account);
-
-		if (NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_SUCH_USER)) {
-			DEBUG(3,("User %s does not exist, trying to add it\n",
-				 internal_username));
-			auth_add_user_script(nt_domain, internal_username);
-			nt_status = fill_sam_account(nt_domain,
-						     internal_username,
-						     &uid, &gid,
-						     &sam_account);
-		}
+	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_SUCH_USER)) {
+		DEBUG(3,("User %s does not exist, trying to add it\n", 
+			internal_username));
+		auth_add_user_script(nt_domain, internal_username);
+		nt_status = fill_sam_account(mem_ctx, nt_domain, 
+			internal_username, &found_username,
+			&uid, &gid, &sam_account);
 	}
 	
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -984,6 +995,21 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 		return nt_status;
 	}
 		
+	if (!pdb_set_nt_username(sam_account, nt_username, PDB_CHANGED)) {
+		pdb_free_sam(&sam_account);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (!pdb_set_username(sam_account, nt_username, PDB_CHANGED)) {
+		pdb_free_sam(&sam_account);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (!pdb_set_domain(sam_account, nt_domain, PDB_CHANGED)) {
+		pdb_free_sam(&sam_account);
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	if (!pdb_set_user_sid(sam_account, &user_sid, PDB_CHANGED)) {
 		pdb_free_sam(&sam_account);
 		return NT_STATUS_UNSUCCESSFUL;
@@ -994,17 +1020,8 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 		
-	if (!pdb_set_nt_username(sam_account, nt_username, PDB_CHANGED)) {
-		pdb_free_sam(&sam_account);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	if (!pdb_set_domain(sam_account, nt_domain, PDB_CHANGED)) {
-		pdb_free_sam(&sam_account);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	if (!pdb_set_fullname(sam_account, unistr2_static(&(info3->uni_full_name)), PDB_CHANGED)) {
+	if (!pdb_set_fullname(sam_account, unistr2_static(&(info3->uni_full_name)), 
+			      PDB_CHANGED)) {
 		pdb_free_sam(&sam_account);
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1040,6 +1057,8 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 		   
 	(*server_info)->sam_account = sam_account;
 
+	(*server_info)->unix_name = smb_xstrdup(found_username);
+
 	/* Fill in the unix info we found on the way */
 
 	(*server_info)->sam_fill_level = SAM_FILL_ALL;
@@ -1049,12 +1068,9 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 	/* Store the user group information in the server_info 
 	   returned to the caller. */
 	
-	if (!NT_STATUS_IS_OK(nt_status 
-			     = get_user_groups_from_local_sam(pdb_get_username(sam_account), 
-							      uid, gid, 
-							      &n_lgroupSIDs, 
-							      &lgroupSIDs, 
-							      &unix_groups)))
+	nt_status = get_user_groups_from_local_sam((*server_info)->unix_name,
+		uid, gid, &n_lgroupSIDs, &lgroupSIDs, &unix_groups);
+	if ( !NT_STATUS_IS_OK(nt_status) )
 	{
 		DEBUG(4,("get_user_groups_from_local_sam failed\n"));
 		return nt_status;
@@ -1070,6 +1086,7 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 	if (!all_group_SIDs) {
 		DEBUG(0, ("malloc() failed for DOM_SID list!\n"));
 		SAFE_FREE(lgroupSIDs);
+		free_server_info(server_info);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -1085,6 +1102,7 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 			DEBUG(3,("could not append additional group rid 0x%x\n",
 				info3->gids[i].g_rid));			
 			SAFE_FREE(lgroupSIDs);
+			free_server_info(server_info);
 			return nt_status;
 		}
 	}
@@ -1110,6 +1128,7 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 			    all_group_SIDs, False, &token))) {
 		DEBUG(4,("create_nt_user_token failed\n"));
 		SAFE_FREE(all_group_SIDs);
+		free_server_info(server_info);
 		return nt_status;
 	}
 
@@ -1161,6 +1180,7 @@ void free_server_info(auth_serversupplied_info **server_info)
 		/* call pam_end here, unless we know we are keeping it */
 		delete_nt_token( &(*server_info)->ptok );
 		SAFE_FREE((*server_info)->groups);
+		SAFE_FREE((*server_info)->unix_name);
 		ZERO_STRUCT(**server_info);
 	}
 	SAFE_FREE(*server_info);
@@ -1272,6 +1292,11 @@ BOOL is_trusted_domain(const char* dom_name)
 	char *pass = NULL;
 	time_t lct;
 	BOOL ret;
+
+	/* no trusted domains for a standalone server */
+
+	if ( lp_server_role() == ROLE_STANDALONE )
+		return False;
 
 	/* if we are a DC, then check for a direct trust relationships */
 

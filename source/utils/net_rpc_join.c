@@ -204,7 +204,7 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 
 	/* Create domain user */
 	acct_name = talloc_asprintf(mem_ctx, "%s$", global_myname()); 
-	strlower(acct_name);
+	strlower_m(acct_name);
 	const_acct_name = acct_name;
 
 	result = cli_samr_create_dom_user(cli, mem_ctx, &domain_pol,
@@ -337,7 +337,7 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 
 	/* Now store the secret in the secrets database */
 
-	strupper(domain);
+	strupper_m(domain);
 
 	if (!secrets_store_domain_sid(domain, &domain_sid)) {
 		DEBUG(0, ("error storing domain sid for %s\n", domain));

@@ -875,8 +875,8 @@ static NTSTATUS alternate_name(struct winbindd_domain *domain)
 	if (ADS_ERR_OK(rc)) {
 		fstrcpy(domain->name, workgroup);
 		fstrcpy(domain->alt_name, ads->config.realm);
-		strupper(domain->alt_name);
-		strupper(domain->name);
+		strupper_m(domain->alt_name);
+		strupper_m(domain->name);
 	}
 
 	talloc_destroy(ctx);

@@ -50,7 +50,7 @@ static struct cli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 
         while(next_token( &p, desthost, LIST_SEP, sizeof(desthost))) {
 		standard_sub_basic(current_user_info.smb_name, desthost, sizeof(desthost));
-		strupper(desthost);
+		strupper_m(desthost);
 
 		if(!resolve_name( desthost, &dest_ip, 0x20)) {
 			DEBUG(1,("server_cryptkey: Can't resolve address for %s\n",desthost));
@@ -222,7 +222,7 @@ static NTSTATUS check_smbserver_security(const struct auth_context *auth_context
 	static fstring baduser; 
 	static BOOL tested_password_server = False;
 	static BOOL bad_password_server = False;
-	NTSTATUS nt_status = NT_STATUS_LOGON_FAILURE;
+	NTSTATUS nt_status = NT_STATUS_NOT_IMPLEMENTED;
 	BOOL locally_made_cli = False;
 
 	/* 
@@ -233,7 +233,7 @@ static NTSTATUS check_smbserver_security(const struct auth_context *auth_context
 
 	if(is_myname(user_info->domain.str)) {
 		DEBUG(3,("check_smbserver_security: Requested domain was for this machine.\n"));
-		return NT_STATUS_LOGON_FAILURE;
+		return nt_status;
 	}
 
 	cli = my_private_data;

@@ -57,7 +57,7 @@ static BOOL ads_dc_name(const char *domain, struct in_addr *dc_ip, fstring srv_n
 		return False;
 
 	fstrcpy(srv_name, ads->config.ldap_server_name);
-	strupper(srv_name);
+	strupper_m(srv_name);
 	*dc_ip = ads->ldap_ip;
 	ads_destroy(&ads);
 	

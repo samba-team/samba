@@ -72,6 +72,7 @@ all:
 	@echo "html - Build HTML version of HOWTO Collection and Developers Guide"
 	@echo "htmlman - Build html version of manpages"
 	@echo "htmlfaq - Build html version of the FAQ"
+	@echo "undocumented - Output list of undocumented smb.conf options"
 	@echo "everything - Build all of the above"
 
 everything: manpages pdf html-single html htmlman htmlfaq txt ps
@@ -221,6 +222,9 @@ $(MANDIR):
 
 $(MANDIR)/%: $(MANPROJDOC)/%.xml
 	@$(XSLTPROC) xslt/man.xsl $<
+
+undocumented: $(SMBDOTCONFDOC)/parameters.all.xml
+	$(PERL) scripts/find_missing_doc.pl ../..
 
 clean: 
 	@rm -f $(MANPAGES) $(MANPAGES_HTML) $(HTMLDIR)/*.html $(HTMLDIR)/*.css $(TXTDIR)/*.txt $(PSDIR)/*.ps $(PDFDIR)/*.pdf 

@@ -258,7 +258,7 @@ static NTSTATUS fetch_cache_seqnum( struct winbindd_domain *domain, time_t now )
 		
 	snprintf( key, sizeof(key), "SEQNUM/%s", domain->name );
 	
-	data = tdb_fetch_by_string( wcache->tdb, key );
+	data = tdb_fetch_bystring( wcache->tdb, key );
 	if ( !data.dptr || data.dsize!=8 ) {
 		DEBUG(10,("fetch_cache_seqnum: invalid data size key [%s]\n", key ));
 		return NT_STATUS_UNSUCCESSFUL;
@@ -595,7 +595,7 @@ static void wcache_save_name_to_sid(struct winbindd_domain *domain,
 		return;
 	centry_put_sid(centry, sid);
 	fstrcpy(uname, name);
-	strupper(uname);
+	strupper_m(uname);
 	centry_end(centry, "NS/%s", sid_to_string(sid_string, sid));
 	DEBUG(10,("wcache_save_name_to_sid: %s -> %s\n", uname, sid_string));
 	centry_free(centry);
@@ -918,7 +918,7 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 		goto do_query;
 
 	fstrcpy(uname, name);
-	strupper(uname);
+	strupper_m(uname);
 	centry = wcache_fetch(cache, domain, "NS/%s/%s", domain->name, uname);
 	if (!centry)
 		goto do_query;

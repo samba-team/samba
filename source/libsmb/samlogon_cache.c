@@ -143,7 +143,7 @@ BOOL netsamlogon_cache_store(TALLOC_CTX *mem_ctx, NET_USER_INFO_3 *user)
 		data.dsize = prs_offset( &ps );
 		data.dptr = prs_data_p( &ps );
 
-		if (tdb_store_by_string(netsamlogon_tdb, keystr, data, TDB_REPLACE) != -1)
+		if (tdb_store_bystring(netsamlogon_tdb, keystr, data, TDB_REPLACE) != -1)
 			result = True;
 		
 		prs_mem_free( &ps );

@@ -147,16 +147,6 @@ SamrTestPrivateFunctionsUser
 #define SAMR_SET_USERINFO      0x3A
 #define SAMR_CONNECT4          0x3E
 
-
-typedef struct _DISP_USER_INFO {
-	SAM_ACCOUNT *sam;
-} DISP_USER_INFO;
-
-typedef struct _DISP_GROUP_INFO {
-	DOMAIN_GRP *grp;
-} DISP_GROUP_INFO;
-
-
 typedef struct logon_hours_info
 {
 	uint32 len; /* normally 21 bytes */

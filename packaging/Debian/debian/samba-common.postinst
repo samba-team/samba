@@ -79,15 +79,14 @@ if [ "${RET}" = "true" ]; then
 	if ! grep -q "^[[:space:]]*unix charset[[:space:]]*=" /etc/samba/smb.conf
 	then
 		db_get samba-common/character_set || true
-		DISPLAYCHARSET="${RET}"
-		if [ -n "$DISPLAYCHARSET" ]
+		UNIXCHARSET="${RET}"
+		if [ -n "$UNIXCHARSET" ]
 		then
 			sed -e "s/^\([[:space:]]*\)\[global\]/\1\[global\]/i
 				s/^\([[:space:]]*\)character set/\1character set/i
 				/^[[:space:]]*\[global\]/,/^[[:space:]]*\[/ {
 					/^[[:space:]]*character set[[:space:]]*=/c \\
-   display charset = $DISPLAYCHARSET\\
-   unix charset = $DISPLAYCHARSET
+   unix charset = $UNIXCHARSET
 				}" < /etc/samba/smb.conf > ${TMPFILE}
 			mv -f ${TMPFILE} /etc/samba/smb.conf
 		fi

@@ -33,20 +33,31 @@ NTSTATUS ads_verify_ticket(ADS_STRUCT *ads, const DATA_BLOB *ticket,
 			   DATA_BLOB *ap_rep,
 			   uint8 session_key[16])
 {
-	krb5_context context;
+	NTSTATUS sret = NT_STATUS_LOGON_FAILURE;
+	krb5_context context = NULL;
 	krb5_auth_context auth_context = NULL;
 	krb5_keytab keytab = NULL;
 	krb5_data packet;
 	krb5_ticket *tkt = NULL;
+	krb5_rcache rcache = NULL;
 	int ret, i;
-	krb5_keyblock * key;
+	krb5_keyblock *key = NULL;
 	krb5_principal host_princ;
-	char *host_princ_s;
+	char *host_princ_s = NULL;
 	fstring myname;
-	char *password_s;
+	char *password_s = NULL;
 	krb5_data password;
 	krb5_enctype *enctypes = NULL;
+#if 0
+	krb5_address local_addr;
+	krb5_address remote_addr;
+#endif
 	BOOL auth_ok = False;
+
+	ZERO_STRUCT(packet);
+	ZERO_STRUCT(password);
+	ZERO_STRUCTP(auth_data);
+	ZERO_STRUCTP(ap_rep);
 
 	if (!secrets_init()) {
 		DEBUG(1,("secrets_init failed\n"));
@@ -71,35 +82,63 @@ NTSTATUS ads_verify_ticket(ADS_STRUCT *ads, const DATA_BLOB *ticket,
 	ret = krb5_set_default_realm(context, ads->auth.realm);
 	if (ret) {
 		DEBUG(1,("krb5_set_default_realm failed (%s)\n", error_message(ret)));
-		return NT_STATUS_LOGON_FAILURE;
+		sret = NT_STATUS_LOGON_FAILURE;
+		goto out;
 	}
 
-	/* this whole process is far more complex than I would
+	/* This whole process is far more complex than I would
            like. We have to go through all this to allow us to store
            the secret internally, instead of using /etc/krb5.keytab */
+
 	ret = krb5_auth_con_init(context, &auth_context);
 	if (ret) {
 		DEBUG(1,("krb5_auth_con_init failed (%s)\n", error_message(ret)));
-		return NT_STATUS_LOGON_FAILURE;
+		sret = NT_STATUS_LOGON_FAILURE;
+		goto out;
 	}
 
 	fstrcpy(myname, global_myname());
-	strlower(myname);
+	strlower_m(myname);
 	asprintf(&host_princ_s, "HOST/%s@%s", myname, lp_realm());
 	ret = krb5_parse_name(context, host_princ_s, &host_princ);
 	if (ret) {
 		DEBUG(1,("krb5_parse_name(%s) failed (%s)\n", host_princ_s, error_message(ret)));
-		return NT_STATUS_LOGON_FAILURE;
+		sret = NT_STATUS_LOGON_FAILURE;
+		goto out;
 	}
 
+	/*
+	 * JRA. We must set the rcache and the allowed addresses in the auth_context
+	 * here. This will prevent replay attacks and ensure the client has got a key from
+	 * the correct IP address.
+	 */
+
+	ret = krb5_get_server_rcache(context, krb5_princ_component(context, host_princ, 0), &rcache);
+	if (ret) {
+		DEBUG(1,("krb5_get_server_rcache failed (%s)\n", error_message(ret)));
+		sret = NT_STATUS_LOGON_FAILURE;
+		goto out;
+	}
+
+	ret = krb5_auth_con_setrcache(context, auth_context, rcache);
+	if (ret) {
+		DEBUG(1,("krb5_auth_con_setrcache failed (%s)\n", error_message(ret)));
+		sret = NT_STATUS_LOGON_FAILURE;
+		goto out;
+	}
+
+	/* Now we need to add the addresses.... JRA. */
+
 	if (!(key = (krb5_keyblock *)malloc(sizeof(*key)))) {
-		return NT_STATUS_NO_MEMORY;
+		sret = NT_STATUS_NO_MEMORY;
+		goto out;
 	}
 	
 	if ((ret = get_kerberos_allowed_etypes(context, &enctypes))) {
 		DEBUG(1,("krb5_get_permitted_enctypes failed (%s)\n", 
 			 error_message(ret)));
-		return NT_STATUS_LOGON_FAILURE;
+		sret = NT_STATUS_LOGON_FAILURE;
+		goto out;
 	}
 
 	/* we need to setup a auth context with each possible encoding type in turn */
@@ -124,15 +163,16 @@ NTSTATUS ads_verify_ticket(ADS_STRUCT *ads, const DATA_BLOB *ticket,
 	if (!auth_ok) {
 		DEBUG(3,("krb5_rd_req with auth failed (%s)\n", 
 			 error_message(ret)));
-		return NT_STATUS_LOGON_FAILURE;
+		sret = NT_STATUS_LOGON_FAILURE;
+		goto out;
 	}
 
 	ret = krb5_mk_rep(context, auth_context, &packet);
 	if (ret) {
 		DEBUG(3,("Failed to generate mutual authentication reply (%s)\n",
 			error_message(ret)));
-		krb5_auth_con_free(context, auth_context);
-		return NT_STATUS_LOGON_FAILURE;
+		sret = NT_STATUS_LOGON_FAILURE;
+		goto out;
 	}
 
 	*ap_rep = data_blob(packet.data, packet.length);
@@ -167,15 +207,30 @@ NTSTATUS ads_verify_ticket(ADS_STRUCT *ads, const DATA_BLOB *ticket,
 				     principal))) {
 		DEBUG(3,("krb5_unparse_name failed (%s)\n", 
 			 error_message(ret)));
-		data_blob_free(auth_data);
-		data_blob_free(ap_rep);
-		krb5_auth_con_free(context, auth_context);
-		return NT_STATUS_LOGON_FAILURE;
+		sret = NT_STATUS_LOGON_FAILURE;
+		goto out;
 	}
 
-	krb5_auth_con_free(context, auth_context);
+	sret = NT_STATUS_OK;
 
-	return NT_STATUS_OK;
+ out:
+
+	if (!NT_STATUS_IS_OK(sret))
+		data_blob_free(auth_data);
+
+	if (!NT_STATUS_IS_OK(sret))
+		data_blob_free(ap_rep);
+
+	SAFE_FREE(host_princ_s);
+	SAFE_FREE(password_s);
+
+	if (auth_context)
+		krb5_auth_con_free(context, auth_context);
+
+	if (context)
+		krb5_free_context(context);
+
+	return sret;
 }
 
 #endif /* HAVE_KRB5 */

@@ -128,7 +128,7 @@ void add_failed_connection_entry(const char *domain, const char *server, NTSTATU
 	fcc->lookup_time = time(NULL);
 	fcc->nt_status = result;
 	
-	DEBUG(10,("add_failed_connection_entry_byname: added domain %s (%s) to failed conn cache\n",
+	DEBUG(10,("add_failed_connection_entry: added domain %s (%s) to failed conn cache\n",
 		domain, server ));
 	
 	DLIST_ADD(failed_connection_cache, fcc);

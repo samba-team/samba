@@ -468,3 +468,19 @@ NSS_STATUS winbindd_request(int req_type,
 		return(status);
 	return winbindd_get_response(response);
 }
+
+/*************************************************************************
+ A couple of simple jfunctions to disable winbindd lookups and re-
+ enable them
+ ************************************************************************/
+ 
+BOOL winbind_off( void )
+{
+	return (setenv( WINBINDD_DONT_ENV, "1", 1 ) != -1); 
+}
+
+BOOL winbind_on( void )
+{
+	return (setenv( WINBINDD_DONT_ENV, "0", 1 ) != -1); 
+}
+

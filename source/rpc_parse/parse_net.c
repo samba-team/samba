@@ -446,7 +446,7 @@ void init_r_trust_dom(NET_R_TRUST_DOM_LIST *r_t,
 	for (i = 0; i < num_doms; i++) {
 		fstring domain_name;
 		fstrcpy(domain_name, dom_name);
-		strupper(domain_name);
+		strupper_m(domain_name);
 		init_unistr2(&r_t->uni_trust_dom_name[i], domain_name, strlen(domain_name)+1);
 		/* the use of UNISTR2 here is non-standard. */
 		r_t->uni_trust_dom_name[i].undoc = 0x1;
@@ -1294,7 +1294,7 @@ void init_net_user_info3(TALLOC_CTX *ctx, NET_USER_INFO_3 *usr,
 	int len_logon_srv    = strlen(logon_srv);
 	int len_logon_dom    = strlen(logon_dom);
 
-	len_user_name    = strlen(user_name   );
+	len_user_name    = strlen(user_name    );
 	len_full_name    = strlen(full_name   );
 	len_home_dir     = strlen(home_dir    );
 	len_dir_drive    = strlen(dir_drive   );
@@ -1306,6 +1306,7 @@ void init_net_user_info3(TALLOC_CTX *ctx, NET_USER_INFO_3 *usr,
 
 	usr->ptr_user_info = 1; /* yes, we're bothering to put USER_INFO data here */
 
+	
 
 	/* Create NTTIME structs */
 	unix_to_nt_time (&logon_time, 		 unix_logon_time);

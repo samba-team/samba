@@ -297,14 +297,10 @@ BOOL winbindd_lookup_sid_by_name(struct winbindd_domain *domain,
  * @brief Lookup a name in a domain from a sid.
  *
  * @param sid Security ID you want to look up.
- *
  * @param name On success, set to the name corresponding to @p sid.
- * 
  * @param dom_name On success, set to the 'domain name' corresponding to @p sid.
- * 
  * @param type On success, contains the type of name: alias, group or
  * user.
- *
  * @retval True if the name exists, in which case @p name and @p type
  * are set, otherwise False.
  **/
@@ -415,18 +411,22 @@ BOOL parse_domain_user(const char *domuser, fstring domain, fstring user)
 {
 	char *p = strchr(domuser,*lp_winbind_separator());
 
-	if (!(p || lp_winbind_use_default_domain()))
-		return False;
-	
-	if(!p && lp_winbind_use_default_domain()) {
+	if ( !p ) {
 		fstrcpy(user, domuser);
-		fstrcpy(domain, lp_workgroup());
-	} else {
+		
+		if ( lp_winbind_use_default_domain() )
+			fstrcpy(domain, lp_workgroup());
+		else
+			fstrcpy( domain, "" );
+	} 
+	else {
 		fstrcpy(user, p+1);
 		fstrcpy(domain, domuser);
 		domain[PTR_DIFF(p, domuser)] = 0;
 	}
-	strupper(domain);
+	
+	strupper_m(domain);
+	
 	return True;
 }
 

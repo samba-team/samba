@@ -88,7 +88,7 @@ The key configuration files covered in this section are:
 <title><filename>/etc/hosts</filename></title>
 
 <para>
-Contains a static list of IP Addresses and names.
+Contains a static list of IP addresses and names.
 eg:
 </para>
 <para><screen>
@@ -106,7 +106,7 @@ IP addresses.
 <para>
 Network packets that are sent over the physical network transport 
 layer communicate not via IP addresses but rather using the Media 
-Access Control address, or MAC address. IP Addresses are currently 
+Access Control address, or MAC address. IP addresses are currently 
 32 bits in length and are typically presented as four (4) decimal 
 numbers that are separated by a dot (or period). eg: 168.192.1.1.
 </para>
@@ -265,12 +265,12 @@ Starting with version 2.2.0 samba has Linux support for extensions to
 the name service switch infrastructure so that linux clients will 
 be able to obtain resolution of MS Windows NetBIOS names to IP 
 Addresses. To gain this functionality Samba needs to be compiled 
-with appropriate arguments to the make command (ie: <userinput>make 
+with appropriate arguments to the make command (i.e.: <userinput>make 
 nsswitch/libnss_wins.so</userinput>). The resulting library should 
 then be installed in the <filename>/lib</filename> directory and 
 the "wins" parameter needs to be added to the "hosts:" line in 
 the <filename>/etc/nsswitch.conf</filename> file. At this point it 
-will be possible to ping any MS Windows machine by it's NetBIOS 
+will be possible to ping any MS Windows machine by its NetBIOS 
 machine name, so long as that machine is within the workgroup to 
 which both the samba machine and the MS Windows machine belong.
 </para>
@@ -286,10 +286,10 @@ which both the samba machine and the MS Windows machine belong.
 MS Windows networking is predicated about the name each machine 
 is given. This name is known variously (and inconsistently) as 
 the "computer name", "machine name", "networking name", "netbios name", 
-"SMB name". All terms mean the same thing with the exception of 
+or "SMB name". All terms mean the same thing with the exception of 
 "netbios name" which can apply also to the name of the workgroup or the 
 domain name. The terms "workgroup" and "domain" are really just a 
-simply name with which the machine is associated. All NetBIOS names 
+simple name with which the machine is associated. All NetBIOS names 
 are exactly 16 characters in length. The 16th character is reserved. 
 It is used to store a one byte value that indicates service level 
 information for the NetBIOS name that is registered. A NetBIOS machine 
@@ -332,8 +332,8 @@ wants to locate a domain logon server. It finds this service and the IP
 address of a server that provides it by performing a lookup (via a 
 NetBIOS broadcast) for enumeration of all machines that have 
 registered the name type *&lt;1c&gt;. A logon request is then sent to each 
-IP address that is returned in the enumerated list of IP addresses. Which 
-ever machine first replies then ends up providing the logon services.
+IP address that is returned in the enumerated list of IP addresses.
+Whichever machine first replies then ends up providing the logon services.
 </para>
 
 <para>
@@ -513,10 +513,10 @@ every way the equivalent of the Unix/Linux <filename>/etc/hosts</filename> file.
 
 <para>
 This capability is configured in the TCP/IP setup area in the network 
-configuration facility. If enabled an elaborate name resolution sequence 
-is followed the precise nature of which is dependant on what the NetBIOS 
-Node Type parameter is configured to. A Node Type of 0 means use 
-NetBIOS broadcast (over UDP broadcast) is first used if the name 
+configuration facility. If enabled, an elaborate name resolution sequence 
+is followed the precise nature of which is dependant on how the NetBIOS 
+Node Type parameter is configured. A Node Type of 0 means that
+NetBIOS broadcast (over UDP broadcast) is used if the name 
 that is the subject of a name lookup is not found in the NetBIOS name 
 cache. If that fails then DNS, HOSTS and LMHOSTS are checked. If set to 
 Node Type 8, then a NetBIOS Unicast (over UDP Unicast) is sent to the 
@@ -664,7 +664,7 @@ carelessness. Of course, no one is every deliberately careless!
 
 	<para>
 	In the above example, FRODO is the Samba server and SLACK is the MS Windows NT4 Workstation.
-	The first listing shows the contents of the Local Name Table (ie: Identity information on
+	The first listing shows the contents of the Local Name Table (i.e.: Identity information on
 	the MS Windows workstation), the second shows the NetBIOS name in the NetBIOS name cache.
 	The name cache contains the remote machines known to this workstation.
 	</para>

@@ -39,461 +39,301 @@
 
 
 struct ldap_idmap_state {
-	LDAP *ldap_struct;
-	time_t last_ping;
-	char *uri;
-	char *bind_dn;
-	char *bind_secret;
-	unsigned int num_failures;
-	struct ldap_idmap_state *prev, *next;
+	struct smbldap_state *smbldap_state;
+	TALLOC_CTX *mem_ctx;
+
+	uint32 low_allocated_user_rid;
+	uint32 high_allocated_user_rid;
+	uint32 low_allocated_group_rid;
+	uint32 high_allocated_group_rid;
+
 };
 
-#define LDAP_IDMAP_DONT_PING_TIME 10       /* ping only all 10 seconds */
 #define LDAP_MAX_ALLOC_ID 128              /* number tries while allocating
 					      new id */
 
 static struct ldap_idmap_state ldap_state;
 
-static int ldap_idmap_connect_system(struct ldap_idmap_state *state);
 static NTSTATUS ldap_set_mapping(const DOM_SID *sid, unid_t id, int id_type);
+static NTSTATUS ldap_set_mapping_internals(const DOM_SID *sid, unid_t id, int id_type, 
+					   const char *ldap_dn, LDAPMessage *entry);
 static NTSTATUS ldap_idmap_close(void);
 
 
-/*******************************************************************
- open a connection to the ldap server.
-******************************************************************/
-static int ldap_idmap_open_connection(struct ldap_idmap_state *state)
+/**********************************************************************
+ Even if the sambaDomain attribute in LDAP tells us that this RID is 
+ safe to use, always check before use.  
+*********************************************************************/
+
+static BOOL sid_in_use(struct ldap_idmap_state *state, 
+		       const DOM_SID *sid, int *error) 
 {
-	int rc = LDAP_SUCCESS;
-	int version;
-	BOOL ldap_v3 = False;
+	fstring filter;
+	fstring sid_string;
+	LDAPMessage *result = NULL;
+	int count;
+	int rc;
+	char *sid_attr[] = {LDAP_ATTRIBUTE_SID, NULL};
 
-#ifdef HAVE_LDAP_INITIALIZE
-	DEBUG(10, ("ldap_idmap_open_connection: %s\n", state->uri));
+	slprintf(filter, sizeof(filter)-1, "(%s=%s)", LDAP_ATTRIBUTE_SID, sid_to_string(sid_string, sid));
+
+	rc = smbldap_search_suffix(state->smbldap_state, 
+				   filter, sid_attr, &result);
+
+	if (rc != LDAP_SUCCESS)	{
+		char *ld_error = NULL;
+		ldap_get_option(state->smbldap_state->ldap_struct, LDAP_OPT_ERROR_STRING, &ld_error);
+		DEBUG(2, ("Failed to check if sid %s is alredy in use: %s\n", 
+			  sid_string, ld_error));
+		SAFE_FREE(ld_error);
+
+		*error = rc;
+		return True;
+	}
 	
-	if ((rc = ldap_initialize(&state->ldap_struct, state->uri)) 
-	    != LDAP_SUCCESS) {
-		DEBUG(0, ("ldap_initialize: %s\n", ldap_err2string(rc)));
-		return rc;
-	}
-#else 
-	/* Parse the string manually */
-	{
-		int port = 0;
-		fstring protocol;
-		fstring host;
-		const char *p = state->uri; 
-		SMB_ASSERT(sizeof(protocol)>10 && sizeof(host)>254);
-		
-		/* skip leading "URL:" (if any) */
-		if ( strncasecmp( p, "URL:", 4 ) == 0 ) {
-			p += 4;
-		}
-		
-		sscanf(p, "%10[^:]://%254s[^:]:%d", protocol, host, &port);
-		
-		if (port == 0) {
-			if (strequal(protocol, "ldap")) {
-				port = LDAP_PORT;
-			} else if (strequal(protocol, "ldaps")) {
-				port = LDAPS_PORT;
-			} else {
-				DEBUG(0, ("unrecognised protocol (%s)!\n",
-					  protocol));
-			}
-		}
-		
-		if ((state->ldap_struct = ldap_init(host, port)) == NULL) {
-			DEBUG(0, ("ldap_init failed !\n"));
-			return LDAP_OPERATIONS_ERROR;
-		}
-		
-	        if (strequal(protocol, "ldaps")) {
-#ifdef LDAP_OPT_X_TLS
-			int tls = LDAP_OPT_X_TLS_HARD;
-			if (ldap_set_option (state->ldap_struct, 
-					     LDAP_OPT_X_TLS, &tls) != 
-			    LDAP_SUCCESS)
-			{
-				DEBUG(0, ("Failed to setup a TLS session\n"));
-			}
-			
-			DEBUG(3,("LDAPS option set...!\n"));
-#else
-			DEBUG(0,("ldap_idmap_open_connection: Secure "
-				 "connection not supported by LDAP client "
-				 "libraries!\n"));
-			return LDAP_OPERATIONS_ERROR;
-#endif
-		}
-	}
-#endif
-
-	if (ldap_get_option(state->ldap_struct, LDAP_OPT_PROTOCOL_VERSION,
-			    &version) == LDAP_OPT_SUCCESS) {
-		if (version != LDAP_VERSION3) {
-			version = LDAP_VERSION3;
-			if (ldap_set_option(state->ldap_struct,
-					    LDAP_OPT_PROTOCOL_VERSION,
-					    &version) == LDAP_OPT_SUCCESS) {
-				ldap_v3 = True;
-			}
-		} else {
-			ldap_v3 = True;
-		}
+	if ((count = ldap_count_entries(state->smbldap_state->ldap_struct, result)) > 0) {
+		DEBUG(3, ("Sid %s already in use - trying next RID\n",
+			  sid_string));
+		ldap_msgfree(result);
+		return True;
 	}
 
-	if (lp_ldap_ssl() == LDAP_SSL_START_TLS) {
-#ifdef LDAP_OPT_X_TLS
-		if (ldap_v3) {
-			if ((rc = ldap_start_tls_s(state->ldap_struct, NULL,
-						   NULL)) != LDAP_SUCCESS) {
-				DEBUG(0,("Failed to issue the StartTLS "
-					 "instruction: %s\n",
-					 ldap_err2string(rc)));
-				return rc;
-			}
-			DEBUG (3, ("StartTLS issued: using a TLS "
-				   "connection\n"));
-		} else {
-			
-			DEBUG(0, ("Need LDAPv3 for Start TLS\n"));
-			return LDAP_OPERATIONS_ERROR;
-		}
-#else
-		DEBUG(0,("ldap_idmap_open_connection: StartTLS not supported by "
-			 "LDAP client libraries!\n"));
-		return LDAP_OPERATIONS_ERROR;
-#endif
-	}
+	ldap_msgfree(result);
 
-	DEBUG(2, ("ldap_idmap_open_connection: connection opened\n"));
-	return rc;
+	/* good, sid is not in use */
+	return False;
 }
 
 /**********************************************************************
-Connect to LDAP server 
+ Set the new nextRid attribute, and return one we can use.
+
+ This also checks that this RID is actually free - in case the admin
+ manually stole it :-).
 *********************************************************************/
-static int ldap_idmap_open(struct ldap_idmap_state *state)
+static NTSTATUS ldap_next_rid(struct ldap_idmap_state *state, uint32 *rid, 
+                              int rid_type)
 {
+	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
 	int rc;
-	SMB_ASSERT(state);
-		
-#ifndef NO_LDAP_SECURITY
-	if (geteuid() != 0) {
-		DEBUG(0, 
-		      ("ldap_idmap_open: cannot access LDAP when not root\n"));
-		return  LDAP_INSUFFICIENT_ACCESS;
-	}
-#endif
+	LDAPMessage *domain_result = NULL;
+	LDAPMessage *entry  = NULL;
+	char *dn;
+	LDAPMod **mods = NULL;
+	fstring old_rid_string;
+	fstring next_rid_string;
+	fstring algorithmic_rid_base_string;
+	uint32 next_rid;
+	uint32 alg_rid_base;
+	int attempts = 0;
+	char *ld_error = NULL;
 
-	if ((state->ldap_struct != NULL) && 
-	    ((state->last_ping + LDAP_IDMAP_DONT_PING_TIME)<time(NULL))) {
-		struct sockaddr_un addr;
-		socklen_t len = sizeof(addr);
-		int sd;
-
-		if (!ldap_get_option(state->ldap_struct,  LDAP_OPT_DESC, &sd)&&
-		    getpeername(sd, (struct sockaddr *) &addr, &len) < 0) {
-		    	/* the other end has died. reopen. */
-		    	ldap_unbind_ext(state->ldap_struct, NULL, NULL);
-		    	state->ldap_struct = NULL;
-		    	state->last_ping = (time_t)0;
-		} else {
-			state->last_ping = time(NULL);
-		} 
-    	}
-
-	if (state->ldap_struct != NULL) {
-		DEBUG(5,("ldap_idmap_open: already connected to the LDAP "
-			 "server\n"));
-		return LDAP_SUCCESS;
-	}
-
-	if ((rc = ldap_idmap_open_connection(state))) {
-		return rc;
-	}
-
-	if ((rc = ldap_idmap_connect_system(state))) {
-		ldap_unbind_ext(state->ldap_struct, NULL, NULL);
-		state->ldap_struct = NULL;
-		return rc;
-	}
-
-
-	state->last_ping = time(NULL);
-	DEBUG(4,("The LDAP server is succesful connected\n"));
-
-	return LDAP_SUCCESS;
-}
-
-/*******************************************************************
-******************************************************************/
-
-static int ldap_idmap_retry_open(struct ldap_idmap_state *state, int *attempts)
-{
-	int rc;
-
-	SMB_ASSERT(state && attempts);
-
-	if (*attempts != 0) {
-		unsigned int sleep_time;
-		uint8 rand_byte = 128; /* a reasonable place to start */
-
-		generate_random_buffer(&rand_byte, 1, False);
-
-		sleep_time = (((*attempts)*(*attempts))/2)*rand_byte*2; 
-		/* we retry after (0.5, 1, 2, 3, 4.5, 6) seconds
-		   on average.  
-		 */
-		DEBUG(3, ("Sleeping for %u milliseconds before reconnecting\n",
-			  sleep_time));
-		msleep(sleep_time);
-	}
-	(*attempts)++;
-
-	if ((rc = ldap_idmap_open(state))) {
-		DEBUG(1,("Connection to LDAP Server failed for the %d try!\n",
-			 *attempts));
-		return rc;
-	} 
-	
-	return LDAP_SUCCESS;		
-}
-
-/*******************************************************************
- a rebind function for authenticated referrals
- This version takes a void* that we can shove useful stuff in :-)
-******************************************************************/
-
-#if defined(LDAP_API_FEATURE_X_OPENLDAP) && (LDAP_API_VERSION > 2000)
-#else
-static int rebindproc_with_state  (LDAP * ld, char **whop, char **credp, 
-				   int *methodp, int freeit, void *arg)
-{
-	struct ldap_idmap_state *state = arg;
-	
-	/** @TODO Should we be doing something to check what servers we rebind
-	    to?  Could we get a referral to a machine that we don't want to
-	    give our username and password to? */
-	
-	if (freeit) {
-		SAFE_FREE(*whop);
-		memset(*credp, '\0', strlen(*credp));
-		SAFE_FREE(*credp);
-	} else {
-		DEBUG(5,("rebind_proc_with_state: Rebinding as \"%s\"\n", 
-			  state->bind_dn));
-
-		*whop = strdup(state->bind_dn);
-		if (!*whop) {
-			return LDAP_NO_MEMORY;
-		}
-		*credp = strdup(state->bind_secret);
-		if (!*credp) {
-			SAFE_FREE(*whop);
-			return LDAP_NO_MEMORY;
-		}
-		*methodp = LDAP_AUTH_SIMPLE;
-	}
-	return 0;
-}
-#endif /*defined(LDAP_API_FEATURE_X_OPENLDAP) && (LDAP_API_VERSION > 2000)*/
-
-/*******************************************************************
- a rebind function for authenticated referrals
- This version takes a void* that we can shove useful stuff in :-)
- and actually does the connection.
-******************************************************************/
-#if defined(LDAP_API_FEATURE_X_OPENLDAP) && (LDAP_API_VERSION > 2000)
-static int rebindproc_connect_with_state (LDAP *ldap_struct, 
-					  LDAP_CONST char *url, 
-					  ber_tag_t request,
-					  ber_int_t msgid, void *arg)
-{
-	struct ldap_idmap_state *state = arg;
-	int rc;
-	DEBUG(5,("rebindproc_connect_with_state: Rebinding as \"%s\"\n", 
-		 state->bind_dn));
-	
-	/** @TODO Should we be doing something to check what servers we rebind
-	    to?  Could we get a referral to a machine that we don't want to
-	    give our username and password to? */
-
-	rc = ldap_simple_bind_s(ldap_struct, state->bind_dn, 
-				state->bind_secret);
-	
-	return rc;
-}
-#endif /*defined(LDAP_API_FEATURE_X_OPENLDAP) && (LDAP_API_VERSION > 2000)*/
-
-/*******************************************************************
- Add a rebind function for authenticated referrals
-******************************************************************/
-#if defined(LDAP_API_FEATURE_X_OPENLDAP) && (LDAP_API_VERSION > 2000)
-#else
-# if LDAP_SET_REBIND_PROC_ARGS == 2
-static int rebindproc (LDAP *ldap_struct, char **whop, char **credp,
-		       int *method, int freeit )
-{
-	return rebindproc_with_state(ldap_struct, whop, credp,
-				   method, freeit, &ldap_state);
-	
-}
-# endif /*LDAP_SET_REBIND_PROC_ARGS == 2*/
-#endif /*defined(LDAP_API_FEATURE_X_OPENLDAP) && (LDAP_API_VERSION > 2000)*/
-
-/*******************************************************************
- a rebind function for authenticated referrals
- this also does the connection, but no void*.
-******************************************************************/
-#if defined(LDAP_API_FEATURE_X_OPENLDAP) && (LDAP_API_VERSION > 2000)
-# if LDAP_SET_REBIND_PROC_ARGS == 2
-static int rebindproc_connect (LDAP * ld, LDAP_CONST char *url, int request,
-			       ber_int_t msgid)
-{
-	return rebindproc_connect_with_state(ld, url, (ber_tag_t)request,
-					     msgid, &ldap_state);
-}
-# endif /*LDAP_SET_REBIND_PROC_ARGS == 2*/
-#endif /*defined(LDAP_API_FEATURE_X_OPENLDAP) && (LDAP_API_VERSION > 2000)*/
-
-/*******************************************************************
- connect to the ldap server under system privilege.
-******************************************************************/
-static int ldap_idmap_connect_system(struct ldap_idmap_state *state)
-{
-	int rc;
-	char *ldap_dn;
-	char *ldap_secret;
-
-	/* get the password */
-	if (!fetch_ldap_pw(&ldap_dn, &ldap_secret))
+	while (attempts < 10) 
 	{
-		DEBUG(0, ("ldap_idmap_connect_system: Failed to retrieve "
-			  "password from secrets.tdb\n"));
-		return LDAP_INVALID_CREDENTIALS;
-	}
+		if (!NT_STATUS_IS_OK(ret = smbldap_search_domain_info(state->smbldap_state, 
+			&domain_result, get_global_sam_name(), True))) 
+		{
+			return ret;
+		}
+	
+		entry = ldap_first_entry(state->smbldap_state->ldap_struct, domain_result);
+		if (!entry) {
+			DEBUG(0, ("Could not get domain info entry\n"));
+			ldap_msgfree(domain_result);
+			return ret;
+		}
 
-	state->bind_dn = ldap_dn;
-	state->bind_secret = ldap_secret;
+		if ((dn = ldap_get_dn(state->smbldap_state->ldap_struct, entry)) == NULL) {
+			DEBUG(0, ("Could not get domain info DN\n"));
+			ldap_msgfree(domain_result);
+			return ret;
+		}
 
-	/* removed the sasl_bind_s "EXTERNAL" stuff, as my testsuite 
-	   (OpenLDAP) doesnt' seem to support it */
-	   
-	DEBUG(10,("ldap_idmap_connect_system: Binding to ldap server %s as "
-		  "\"%s\"\n", state->uri, ldap_dn));
+		/* yes, we keep 3 seperate counters, one for rids between 1000 (BASE_RID) and 
+		   algorithmic_rid_base.  The other two are to avoid stomping on the 
+		   different sets of algorithmic RIDs */
+		
+		if (smbldap_get_single_attribute(state->smbldap_state->ldap_struct, entry,
+					 get_attr_key2string(dominfo_attr_list, LDAP_ATTR_ALGORITHMIC_RID_BASE),
+					 algorithmic_rid_base_string)) 
+		{
+			
+			alg_rid_base = (uint32)atol(algorithmic_rid_base_string);
+		} else {
+			alg_rid_base = algorithmic_rid_base();
+			/* Try to make the modification atomically by enforcing the
+			   old value in the delete mod. */
+			slprintf(algorithmic_rid_base_string, sizeof(algorithmic_rid_base_string)-1, "%d", alg_rid_base);
+			smbldap_make_mod(state->smbldap_state->ldap_struct, entry, &mods, 
+					 get_attr_key2string(dominfo_attr_list, LDAP_ATTR_ALGORITHMIC_RID_BASE), 
+					 algorithmic_rid_base_string);
+		}
 
-#if defined(LDAP_API_FEATURE_X_OPENLDAP) && (LDAP_API_VERSION > 2000)
-# if LDAP_SET_REBIND_PROC_ARGS == 2	
-	ldap_set_rebind_proc(state->ldap_struct, &rebindproc_connect);	
-# endif
-# if LDAP_SET_REBIND_PROC_ARGS == 3	
-	ldap_set_rebind_proc(state->ldap_struct, 
-			     &rebindproc_connect_with_state, (void *)state);
-# endif
-#else /*defined(LDAP_API_FEATURE_X_OPENLDAP) && (LDAP_API_VERSION > 2000)*/
-# if LDAP_SET_REBIND_PROC_ARGS == 2	
-	ldap_set_rebind_proc(state->ldap_struct, &rebindproc);	
-# endif
-# if LDAP_SET_REBIND_PROC_ARGS == 3	
-	ldap_set_rebind_proc(state->ldap_struct, &rebindproc_with_state,
-			     (void *)state);	
-# endif
-#endif /*defined(LDAP_API_FEATURE_X_OPENLDAP) && (LDAP_API_VERSION > 2000)*/
+		next_rid = 0;
 
-	rc = ldap_simple_bind_s(state->ldap_struct, ldap_dn, ldap_secret);
+		if (alg_rid_base > BASE_RID) {
+			/* we have a non-default 'algorithmic rid base', so we have 'low' rids that we 
+			   can allocate to new users */
+			if (smbldap_get_single_attribute(state->smbldap_state->ldap_struct, entry,
+						 get_attr_key2string(dominfo_attr_list, LDAP_ATTR_NEXT_RID),
+						 old_rid_string)) 
+			{
+				*rid = (uint32)atol(old_rid_string);
+			} else {
+				*rid = BASE_RID;
+			}
 
-	if (rc != LDAP_SUCCESS) {
-		char *ld_error = NULL;
-		ldap_get_option(state->ldap_struct, LDAP_OPT_ERROR_STRING,
-				&ld_error);
-		DEBUG(state->num_failures ? 2 : 0,
-		      ("failed to bind to server with dn= %s Error: "
-		       "%s\n\t%s\n",
-		       ldap_dn ? ld_error : "(unknown)",
-		       ldap_err2string(rc), ld_error));
+			next_rid = *rid+1;
+			if (next_rid >= alg_rid_base) {
+				return NT_STATUS_UNSUCCESSFUL;
+			}
+			
+			slprintf(next_rid_string, sizeof(next_rid_string)-1, "%d", next_rid);
+				
+			/* Try to make the modification atomically by enforcing the
+			   old value in the delete mod. */
+			smbldap_make_mod(state->smbldap_state->ldap_struct, entry, &mods, 
+					 get_attr_key2string(dominfo_attr_list, LDAP_ATTR_NEXT_RID), 
+					 next_rid_string);
+		}
+
+		if (!next_rid) { /* not got one already */
+			switch (rid_type) {
+			case USER_RID_TYPE:
+				if (smbldap_get_single_attribute(state->smbldap_state->ldap_struct, entry,
+							 get_attr_key2string(dominfo_attr_list, LDAP_ATTR_NEXT_USERRID),
+							 old_rid_string)) 
+				{
+					
+					*rid = (uint32)atol(old_rid_string);
+					
+				} else {
+					*rid = state->low_allocated_user_rid;
+				}
+				break;
+			case GROUP_RID_TYPE:
+				if (smbldap_get_single_attribute(state->smbldap_state->ldap_struct, entry, 
+							 get_attr_key2string(dominfo_attr_list, LDAP_ATTR_NEXT_GROUPRID),
+							 old_rid_string)) 
+				{
+					*rid = (uint32)atol(old_rid_string);
+				} else {
+					*rid = state->low_allocated_group_rid;
+				}
+				break;
+			}
+			
+			/* This is the core of the whole routine. If we had
+			   scheme-style closures, there would be a *lot* less code
+			   duplication... */
+
+			next_rid = *rid+RID_MULTIPLIER;
+			slprintf(next_rid_string, sizeof(next_rid_string)-1, "%d", next_rid);
+			
+			switch (rid_type) {
+			case USER_RID_TYPE:
+				if (next_rid > state->high_allocated_user_rid) {
+					return NT_STATUS_UNSUCCESSFUL;
+				}
+				
+				/* Try to make the modification atomically by enforcing the
+				   old value in the delete mod. */
+				smbldap_make_mod(state->smbldap_state->ldap_struct, entry, &mods, 
+						 get_attr_key2string(dominfo_attr_list, LDAP_ATTR_NEXT_USERRID), 
+						 next_rid_string);
+				break;
+				
+			case GROUP_RID_TYPE:
+				if (next_rid > state->high_allocated_group_rid) {
+					return NT_STATUS_UNSUCCESSFUL;
+				}
+				
+				/* Try to make the modification atomically by enforcing the
+				   old value in the delete mod. */
+				smbldap_make_mod(state->smbldap_state->ldap_struct, entry, &mods,
+						 get_attr_key2string(dominfo_attr_list, LDAP_ATTR_NEXT_GROUPRID),
+						 next_rid_string);
+				break;
+			}
+		}
+
+		if ((rc = ldap_modify_s(state->smbldap_state->ldap_struct, dn, mods)) == LDAP_SUCCESS) {
+			DOM_SID dom_sid;
+			DOM_SID sid;
+			pstring domain_sid_string;
+			int error = 0;
+
+			if (!smbldap_get_single_attribute(state->smbldap_state->ldap_struct, domain_result,
+				get_attr_key2string(dominfo_attr_list, LDAP_ATTR_DOM_SID),
+				domain_sid_string)) 
+			{
+				ldap_mods_free(mods, True);
+				ldap_memfree(dn);
+				ldap_msgfree(domain_result);
+				return ret;
+			}
+
+			if (!string_to_sid(&dom_sid, domain_sid_string)) { 
+				ldap_mods_free(mods, True);
+				ldap_memfree(dn);
+				ldap_msgfree(domain_result);
+				return ret;
+			}
+
+			ldap_mods_free(mods, True);
+			mods = NULL;
+			ldap_memfree(dn);
+			ldap_msgfree(domain_result);
+
+			sid_copy(&sid, &dom_sid);
+			sid_append_rid(&sid, *rid);
+
+			/* check RID is not in use */
+			if (sid_in_use(state, &sid, &error)) {
+				if (error) {
+					return ret;
+				}
+				continue;
+			}
+
+			return NT_STATUS_OK;
+		}
+
+		ld_error = NULL;
+		ldap_get_option(state->smbldap_state->ldap_struct, LDAP_OPT_ERROR_STRING, &ld_error);
+		DEBUG(2, ("Failed to modify rid: %s\n", ld_error ? ld_error : "(NULL"));
 		SAFE_FREE(ld_error);
-		state->num_failures++;
-		return rc;
+
+		ldap_mods_free(mods, True);
+		mods = NULL;
+
+		ldap_memfree(dn);
+		dn = NULL;
+
+		ldap_msgfree(domain_result);
+		domain_result = NULL;
+
+		{
+			/* Sleep for a random timeout */
+			unsigned sleeptime = (sys_random()*sys_getpid()*attempts);
+			attempts += 1;
+			
+			sleeptime %= 100;
+			msleep(sleeptime);
+		}
 	}
 
-	state->num_failures = 0;
-
-	DEBUG(3, ("ldap_idmap_connect_system: succesful connection to the "
-		  "LDAP server\n"));
-	return rc;
+	DEBUG(0, ("Failed to set new RID\n"));
+	return ret;
 }
+
 
 /*****************************************************************************
- wrapper around ldap_search()
+ Allocate a new RID
 *****************************************************************************/
 
-static int ldap_idmap_search(struct ldap_idmap_state *state, 
-			     const char *base, int scope, const char *filter, 
-			     char *attrs[], int attrsonly, 
-			     LDAPMessage **res)
+static NTSTATUS ldap_allocate_rid(uint32 *rid, int rid_type)
 {
-	int rc = LDAP_SERVER_DOWN;
-	int attempts = 0;
-	char *utf8_filter;
-
-	SMB_ASSERT(state);
-
-	if (push_utf8_allocate(&utf8_filter, filter) == (size_t)-1) {
-		return LDAP_NO_MEMORY;
-	}
-
-	while ((rc == LDAP_SERVER_DOWN) && (attempts < 8)) {
-		if ((rc = ldap_idmap_retry_open(state, &attempts)) !=
-		    LDAP_SUCCESS) continue;
-		
-		rc = ldap_search_s(state->ldap_struct, base, scope, 
-				   utf8_filter, (char**)attrs, attrsonly, res);
-	}
-	
-	if (rc == LDAP_SERVER_DOWN) {
-		DEBUG(0,("ldap_idmap_search: LDAP server is down!\n"));
-		ldap_idmap_close();
-	}
-
-	SAFE_FREE(utf8_filter);
-	return rc;
-}
-
-/***********************************************************************
- search an attribute and return the first value found.
-***********************************************************************/
-
-static BOOL ldap_idmap_attribute (struct ldap_idmap_state *state,
-				  LDAPMessage * entry,
-				  const char *attribute, pstring value)
-{
-	char **values;
-	value[0] = '\0';
-
-	if ( !entry )
-		return False;
-		 
-	if ((values = ldap_get_values (state->ldap_struct, entry, attribute)) == NULL) 
-	{
-		DEBUG(10,("get_single_attribute: [%s] = [<does not exist>]\n",
-			  attribute));
-		return False;
-	}
-	
-	if (convert_string(CH_UTF8, CH_UNIX,
-		values[0], -1,
-		value, sizeof(pstring)) == (size_t)-1)
-	{
-		DEBUG(1, ("ldap_idmap_attribute: string conversion of [%s] = "
-			  "[%s] failed!\n",  attribute, values[0]));
-		ldap_value_free(values);
-		return False;
-	}
-	ldap_value_free(values);
-
-	return True;
+	return ldap_next_rid( &ldap_state, rid, rid_type );
 }
 
 /*****************************************************************************
@@ -505,8 +345,8 @@ static NTSTATUS ldap_allocate_id(unid_t *id, int id_type)
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
 	int rc = LDAP_SERVER_DOWN;
 	int count = 0;
-	LDAPMessage *result = 0;
-	LDAPMessage *entry = 0;
+	LDAPMessage *result = NULL;
+	LDAPMessage *entry = NULL;
 	pstring id_str, new_id_str;
 	LDAPMod **mods = NULL;
 	const char *type;
@@ -525,7 +365,7 @@ static NTSTATUS ldap_allocate_id(unid_t *id, int id_type)
 
 	attr_list = get_attr_list( idpool_attr_list );
 	
-	rc = ldap_idmap_search(&ldap_state, lp_ldap_idmap_suffix(),
+	rc = smbldap_search(ldap_state.smbldap_state, lp_ldap_idmap_suffix(),
 			       LDAP_SCOPE_SUBTREE, filter,
 			       attr_list, 0, &result);
 	free_attr_list( attr_list );
@@ -535,16 +375,16 @@ static NTSTATUS ldap_allocate_id(unid_t *id, int id_type)
 		goto out;
 	}
 	
-	count = ldap_count_entries(ldap_state.ldap_struct, result);
+	count = ldap_count_entries(ldap_state.smbldap_state->ldap_struct, result);
 	if (count != 1) {
 		DEBUG(0,("ldap_allocate_id: single %s object not found\n", LDAP_OBJ_IDPOOL));
 		goto out;
 	}
 
-	dn = ldap_get_dn(ldap_state.ldap_struct, result);
-	entry = ldap_first_entry(ldap_state.ldap_struct, result);
+	dn = ldap_get_dn(ldap_state.smbldap_state->ldap_struct, result);
+	entry = ldap_first_entry(ldap_state.smbldap_state->ldap_struct, result);
 
-	if (!ldap_idmap_attribute(&ldap_state, entry, type, id_str)) {
+	if (!smbldap_get_single_attribute(ldap_state.smbldap_state->ldap_struct, entry, type, id_str)) {
 		DEBUG(0,("ldap_allocate_id: %s attribute not found\n",
 			 type));
 		goto out;
@@ -578,7 +418,7 @@ static NTSTATUS ldap_allocate_id(unid_t *id, int id_type)
 	smbldap_set_mod( &mods, LDAP_MOD_DELETE, type, id_str );		 
 	smbldap_set_mod( &mods, LDAP_MOD_ADD, type, new_id_str );
 	
-	rc = ldap_modify_s(ldap_state.ldap_struct, dn, mods);
+	rc = ldap_modify_s(ldap_state.smbldap_state->ldap_struct, dn, mods);
 
 	ldap_memfree(dn);
 	ldap_mods_free( mods, True );
@@ -600,12 +440,14 @@ out:
 
 static NTSTATUS ldap_get_sid_from_id(DOM_SID *sid, unid_t id, int id_type)
 {
-	LDAPMessage *result = 0;
-	LDAPMessage *entry = 0;
+	LDAPMessage *result = NULL;
+	LDAPMessage *entry = NULL;
+	fstring id_str;
 	pstring sid_str;
 	pstring filter;
 	pstring suffix;
 	const char *type;
+	const char *obj_class;
 	int rc;
 	int count;
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
@@ -615,49 +457,48 @@ static NTSTATUS ldap_get_sid_from_id(DOM_SID *sid, unid_t id, int id_type)
 	
 	if ( id_type & ID_USERID ) {
 		type = get_attr_key2string( idpool_attr_list, LDAP_ATTR_UIDNUMBER );
-		snprintf(filter, sizeof(filter), "(&(objectClass=%s)(%s=%u))",
-			LDAP_OBJ_SAMBASAMACCOUNT, type, id.uid );
+		obj_class = LDAP_OBJ_SAMBASAMACCOUNT;
+		snprintf(id_str, sizeof(id_str), "%u", id.uid );	
 		pstrcpy( suffix, lp_ldap_suffix());
 	}
 	else {
 		type = get_attr_key2string( idpool_attr_list, LDAP_ATTR_GIDNUMBER );
-		snprintf(filter, sizeof(filter), "(&(objectClass=%s)(%s=%u))",
-			LDAP_OBJ_GROUPMAP, type, id.gid );	
+		obj_class = LDAP_OBJ_GROUPMAP;
+		snprintf(id_str, sizeof(id_str), "%u", id.gid );	
 		pstrcpy( suffix, lp_ldap_group_suffix() );
 	}
 		 
 	attr_list = get_attr_list( sidmap_attr_list );
-	rc = ldap_idmap_search(&ldap_state, suffix, LDAP_SCOPE_SUBTREE, 
-		filter, attr_list, 0, &result);
+	snprintf(filter, sizeof(filter), "(&(|(objectClass=%s)(objectClass=%s))(%s=%s))", 
+		 LDAP_OBJ_IDMAP_ENTRY, obj_class, type, id_str);
+
+	rc = smbldap_search(ldap_state.smbldap_state, suffix, LDAP_SCOPE_SUBTREE, 
+			    filter, attr_list, 0, &result);
 	
 	if (rc != LDAP_SUCCESS) 
 		goto out;
 	   
-	count = ldap_count_entries(ldap_state.ldap_struct, result);
+	count = ldap_count_entries(ldap_state.smbldap_state->ldap_struct, result);
 
 	/* fall back to looking up an idmap entry if we didn't find and 
 	   actual user or group */
 	
 	if (count == 0) {
+		ldap_msgfree(result);
+		result = NULL;
+		
 		snprintf(filter, sizeof(filter), "(&(objectClass=%s)(%s=%u))",
 			LDAP_OBJ_IDMAP_ENTRY, type,  ((id_type & ID_USERID) ? id.uid : id.gid));
 
-#if 0	/* commented out for now -- jerry */
-		if ( id_type & ID_USERID )
-			snprintf( suffix, sizeof(suffix), "%s,%s", IDMAP_USER_SUFFIX, lp_ldap_idmap_suffix() );
-		else
-			snprintf( suffix, sizeof(suffix), "%s,%s", IDMAP_GROUP_SUFFIX, lp_ldap_idmap_suffix() );
-#else
 		pstrcpy( suffix, lp_ldap_idmap_suffix() );
-#endif
 
-		rc = ldap_idmap_search(&ldap_state, suffix, LDAP_SCOPE_SUBTREE, 
+		rc = smbldap_search(ldap_state.smbldap_state, suffix, LDAP_SCOPE_SUBTREE, 
 			filter, attr_list, 0, &result);
 
 		if (rc != LDAP_SUCCESS)
 			   goto out;
 			   
-		count = ldap_count_entries(ldap_state.ldap_struct, result);
+		count = ldap_count_entries(ldap_state.smbldap_state->ldap_struct, result);
 	}
 	
 	if (count != 1) {
@@ -666,9 +507,9 @@ static NTSTATUS ldap_get_sid_from_id(DOM_SID *sid, unid_t id, int id_type)
 		goto out;
 	}
 	
-	entry = ldap_first_entry(ldap_state.ldap_struct, result);
+	entry = ldap_first_entry(ldap_state.smbldap_state->ldap_struct, result);
 	
-	if ( !ldap_idmap_attribute(&ldap_state, entry, LDAP_ATTRIBUTE_SID, sid_str) )
+	if ( !smbldap_get_single_attribute(ldap_state.smbldap_state->ldap_struct, entry, LDAP_ATTRIBUTE_SID, sid_str) )
 		goto out;
 	   
 	if (!string_to_sid(sid, sid_str)) 
@@ -677,6 +518,9 @@ static NTSTATUS ldap_get_sid_from_id(DOM_SID *sid, unid_t id, int id_type)
 	ret = NT_STATUS_OK;
 out:
 	free_attr_list( attr_list );	 
+
+	if (result)
+		ldap_msgfree(result);
 
 	return ret;
 }
@@ -687,68 +531,74 @@ out:
 
 static NTSTATUS ldap_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID *sid)
 {
-	LDAPMessage *result = 0;
-	LDAPMessage *entry = 0;
+	LDAPMessage *result = NULL;
+	LDAPMessage *entry = NULL;
 	pstring sid_str;
 	pstring filter;
 	pstring id_str;
-	pstring suffix;	
+	const char *suffix;	
 	const char *type;
 	const char *obj_class;
+	const char *posix_obj_class;
 	int rc;
 	int count;
 	char **attr_list;
+	char *dn = NULL;
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
 
 	/* first try getting the mapping from a samba user or group */
 	
+	sid_to_string(sid_str, sid);
 	if ( *id_type & ID_USERID ) {
-		type = get_attr_key2string( idpool_attr_list, LDAP_ATTR_UIDNUMBER );
+		type = get_attr_key2string( sidmap_attr_list, LDAP_ATTR_UIDNUMBER );
 		obj_class = LDAP_OBJ_SAMBASAMACCOUNT;
-		pstrcpy( suffix, lp_ldap_suffix() );
+		posix_obj_class = LDAP_OBJ_POSIXACCOUNT;
+		suffix = lp_ldap_suffix();
+		snprintf(filter, sizeof(filter), 
+			 "(&(|(&(objectClass=%s)(objectClass=%s))(objectClass=%s))(%s=%s))", 
+			 obj_class, posix_obj_class, LDAP_OBJ_IDMAP_ENTRY, 
+			 get_attr_key2string( sidmap_attr_list, LDAP_ATTR_SID ), 
+			 sid_str);
 	}
 	else {
-		type = get_attr_key2string( idpool_attr_list, LDAP_ATTR_GIDNUMBER );
+		type = get_attr_key2string( sidmap_attr_list, LDAP_ATTR_GIDNUMBER );
 		obj_class = LDAP_OBJ_GROUPMAP;
-		pstrcpy( suffix, lp_ldap_group_suffix() );
-	}	
+		posix_obj_class = LDAP_OBJ_POSIXGROUP;
+		suffix = lp_ldap_group_suffix();
+		snprintf(filter, sizeof(filter), 
+			 "(&(|(objectClass=%s)(objectClass=%s))(%s=%s))", 
+			 obj_class, LDAP_OBJ_IDMAP_ENTRY, 
+			 get_attr_key2string( sidmap_attr_list, LDAP_ATTR_SID ), 
+			 sid_str);
+	}
 	   
-	sid_to_string(sid_str, sid);
-	snprintf(filter, sizeof(filter), "(&(objectClass=%s)(%s=%s))", obj_class, 
-		LDAP_ATTRIBUTE_SID, sid_str);
-
 	attr_list = get_attr_list( sidmap_attr_list );
-	rc = ldap_idmap_search(&ldap_state, suffix, LDAP_SCOPE_SUBTREE, 
+	rc = smbldap_search(ldap_state.smbldap_state, suffix, LDAP_SCOPE_SUBTREE, 
 		filter, attr_list, 0, &result);
 		
 	if (rc != LDAP_SUCCESS)
 		goto out;
 
-	count = ldap_count_entries(ldap_state.ldap_struct, result);
+	count = ldap_count_entries(ldap_state.smbldap_state->ldap_struct, result);
 	
-	/* fall back to looking up an idmap entry if we didn't find and 
-	   actual user or group */
+	/* fall back to looking up an idmap entry if we didn't find anything under the idmap
+	   user or group suffix */
 
 	if (count == 0) {
+		ldap_msgfree(result);
+		
 		snprintf(filter, sizeof(filter), "(&(objectClass=%s)(%s=%s))", 
 			LDAP_OBJ_IDMAP_ENTRY, LDAP_ATTRIBUTE_SID, sid_str);
 
-#if 0	/* commented out for now -- jerry */
-		if ( *id_type & ID_USERID )
-			snprintf( suffix, sizeof(suffix), "%s,%s", IDMAP_USER_SUFFIX, lp_ldap_idmap_suffix() );
-		else
-			snprintf( suffix, sizeof(suffix), "%s,%s", IDMAP_GROUP_SUFFIX, lp_ldap_idmap_suffix() );
-#else
-		pstrcpy( suffix, lp_ldap_idmap_suffix() );
-#endif	
+		suffix = lp_ldap_idmap_suffix();
 
-		rc = ldap_idmap_search(&ldap_state, suffix, LDAP_SCOPE_SUBTREE, 
+		rc = smbldap_search(ldap_state.smbldap_state, suffix, LDAP_SCOPE_SUBTREE, 
 			filter, attr_list, 0, &result);
 			
 		if (rc != LDAP_SUCCESS)
 			goto out;
 			
-		count = ldap_count_entries(ldap_state.ldap_struct, result);
+		count = ldap_count_entries(ldap_state.smbldap_state->ldap_struct, result);
 	}
 	   
 	if ( count > 1 ) {
@@ -759,15 +609,28 @@ static NTSTATUS ldap_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID *si
 
 	/* we might have an existing entry to work with so pull out the requested information */
 	
-	if ( count )
-		entry = ldap_first_entry(ldap_state.ldap_struct, result);
+	if ( count ) {
+		entry = ldap_first_entry(ldap_state.smbldap_state->ldap_struct, result);
 	
-	/* if entry == NULL, then we will default to allocating a new id */
+		dn = ldap_get_dn(ldap_state.smbldap_state->ldap_struct, result);
+		DEBUG(10, ("Found mapping entry at dn=%s, looking for %s\n", dn, type));
+		
+		if ( smbldap_get_single_attribute(ldap_state.smbldap_state->ldap_struct, entry, type, id_str) ) 
+		{
+			if ( (*id_type & ID_USERID) )
+				id->uid = strtoul(id_str, NULL, 10);
+			else
+				id->gid = strtoul(id_str, NULL, 10);
+			
+			ret = NT_STATUS_OK;
+			goto out;
+		}
+	}
 	
-	if ( !ldap_idmap_attribute(&ldap_state, entry, type, id_str) ) 
-	{
+	if (!(*id_type & ID_QUERY_ONLY)) {
+		/* if entry == NULL, and we are asked to - allocate a new id */
 		int i;
-
+		
 		for (i = 0; i < LDAP_MAX_ALLOC_ID; i++) 
 		{
 			ret = ldap_allocate_id(id, *id_type);
@@ -781,115 +644,260 @@ static NTSTATUS ldap_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID *si
 		}
 		
 		ret = ldap_set_mapping(sid, *id, *id_type);
-		
-	} 
-	else 
-	{
-		if ( (*id_type & ID_USERID) )
-			id->uid = strtoul(id_str, NULL, 10);
-		else
-			id->gid = strtoul(id_str, NULL, 10);
-			
-		ret = NT_STATUS_OK;
+	} else {
+		/* no match, and not adding one */
+		ret = NT_STATUS_UNSUCCESSFUL;
 	}
+
 out:
 	free_attr_list( attr_list );
+	if (result)
+		ldap_msgfree(result);
+	if (dn)
+		ldap_memfree(dn);
 	
 	return ret;
 }
 
 /***********************************************************************
  This function cannot be called to modify a mapping, only set a new one 
+
+ This takes a possible pointer to the existing entry for the UID or SID
+ involved.
 ***********************************************************************/
 
-static NTSTATUS ldap_set_mapping(const DOM_SID *sid, unid_t id, int id_type)
+static NTSTATUS ldap_set_mapping_internals(const DOM_SID *sid, unid_t id, 
+					   int id_type, const char *ldap_dn, 
+					   LDAPMessage *entry)
 {
-	pstring dn, sid_str, id_str;
+	char *dn = NULL;
+	pstring id_str;
 	fstring type;
 	LDAPMod **mods = NULL;
-	int rc;
-	int attempts = 0;
+	int rc = -1;
+	int ldap_op;
+	fstring sid_string;
+	char **values = NULL;
+	int i;
+
+	sid_to_string( sid_string, sid );
+
+	if (ldap_dn) {
+		DEBUG(10, ("Adding new IDMAP mapping on DN: %s", ldap_dn));
+		ldap_op = LDAP_MOD_REPLACE;
+		dn = strdup(ldap_dn);
+	} else {
+		ldap_op = LDAP_MOD_ADD;
+		asprintf(&dn, "%s=%s,%s", get_attr_key2string( sidmap_attr_list, LDAP_ATTR_SID), 
+			 sid_string, lp_ldap_idmap_suffix());
+	}
+	
+	if (!dn) {
+		DEBUG(0, ("ldap_set_mapping_internals: out of memory allocating DN!\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	if ( id_type & ID_USERID ) 
-		fstrcpy( type, get_attr_key2string( idpool_attr_list, LDAP_ATTR_UIDNUMBER ) );
+		fstrcpy( type, get_attr_key2string( sidmap_attr_list, LDAP_ATTR_UIDNUMBER ) );
 	else
-		fstrcpy( type, get_attr_key2string( idpool_attr_list, LDAP_ATTR_GIDNUMBER ) );
-
-#if 0
-	snprintf(dn, sizeof(dn), "%s=%u,%s,%s", type, 
-		((id_type & ID_USERID) ? id.uid : id.gid), 
-		((id_type & ID_USERID) ? IDMAP_USER_SUFFIX : IDMAP_GROUP_SUFFIX ), 
-		lp_ldap_idmap_suffix());
-#else
-	snprintf(dn, sizeof(dn), "%s=%u,%s", type, 
-		((id_type & ID_USERID) ? id.uid : id.gid), 
-		lp_ldap_idmap_suffix());
-#endif
+		fstrcpy( type, get_attr_key2string( sidmap_attr_list, LDAP_ATTR_GIDNUMBER ) );
 
 	snprintf(id_str, sizeof(id_str), "%u", ((id_type & ID_USERID) ? id.uid : id.gid));	
-	sid_to_string( sid_str, sid );
 	
-	smbldap_set_mod( &mods, LDAP_MOD_ADD, "objectClass", LDAP_OBJ_IDMAP_ENTRY );
-	smbldap_set_mod( &mods, LDAP_MOD_ADD, type, id_str );
-	smbldap_set_mod( &mods, LDAP_MOD_ADD, 
-		get_attr_key2string(sidmap_attr_list, LDAP_ATTR_SID), sid_str );
+	if (entry) 
+		values = ldap_get_values(ldap_state.smbldap_state->ldap_struct, entry, "objectClass");
 
-	do {
-		if ((rc = ldap_idmap_retry_open(&ldap_state, &attempts)) != LDAP_SUCCESS) 
-			continue;
+	if (values) {
+		BOOL found_idmap = False;
+		for (i=0; values[i]; i++) {
+			if (StrCaseCmp(values[i], LDAP_OBJ_IDMAP_ENTRY) == 0) {
+				found_idmap = True;
+				break;
+			}
+		}
+		if (!found_idmap)
+			smbldap_set_mod( &mods, LDAP_MOD_ADD, 
+					 "objectClass", LDAP_OBJ_IDMAP_ENTRY );
+	} else {
+		smbldap_set_mod( &mods, LDAP_MOD_ADD, 
+				 "objectClass", LDAP_OBJ_IDMAP_ENTRY );
+	}
+
+	smbldap_make_mod( ldap_state.smbldap_state->ldap_struct, 
+			  entry, &mods, type, id_str );
+
+	smbldap_make_mod( ldap_state.smbldap_state->ldap_struct, 
+			  entry, &mods,  
+			  get_attr_key2string(sidmap_attr_list, LDAP_ATTR_SID), 
+			  sid_string );
+
+	/* There may well be nothing at all to do */
+	if (mods) {
+		switch(ldap_op)
+		{
+		case LDAP_MOD_ADD: 
+			smbldap_set_mod( &mods, LDAP_MOD_ADD, 
+					 "objectClass", LDAP_OBJ_SID_ENTRY );
+			rc = smbldap_add(ldap_state.smbldap_state, dn, mods);
+			break;
+		case LDAP_MOD_REPLACE: 
+			rc = smbldap_modify(ldap_state.smbldap_state, dn, mods);
+			break;
+		}
 		
-		rc = ldap_add_s(ldap_state.ldap_struct, dn, mods);
-	} while ((rc == LDAP_SERVER_DOWN) && (attempts <= 8));
-
-	ldap_mods_free( mods, True );	
+		ldap_mods_free( mods, True );	
+	} else {
+		rc = LDAP_SUCCESS;
+	}
 
 	if (rc != LDAP_SUCCESS) {
-		DEBUG(0,("ldap_set_mapping: Failed to create mapping from %s to %d [%s]\n",
-			sid_str, ((id_type & ID_USERID) ? id.uid : id.gid), type));
+		char *ld_error = NULL;
+		ldap_get_option(ldap_state.smbldap_state->ldap_struct, LDAP_OPT_ERROR_STRING,
+				&ld_error);
+		DEBUG(0,("ldap_set_mapping_internals: Failed to %s mapping from %s to %u [%s]\n",
+			 (ldap_op == LDAP_MOD_ADD) ? "add" : "replace",
+			 sid_string, (unsigned int)((id_type & ID_USERID) ? id.uid : id.gid), type));
+		DEBUG(0, ("ldap_set_mapping_internals: Error was: %s (%s)\n", ld_error ? ld_error : "(NULL)", ldap_err2string (rc)));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 		
 	DEBUG(10,("ldap_set_mapping: Successfully created mapping from %s to %d [%s]\n",
-		sid_str, ((id_type & ID_USERID) ? id.uid : id.gid), type));
+		sid_string, ((id_type & ID_USERID) ? id.uid : id.gid), type));
 
 	return NT_STATUS_OK;
 }
 
+/***********************************************************************
+ This function cannot be called to modify a mapping, only set a new one 
+***********************************************************************/
+
+static NTSTATUS ldap_set_mapping(const DOM_SID *sid, unid_t id, int id_type) 
+{
+	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+	char *dn = NULL;
+	LDAPMessage *result = NULL;
+	LDAPMessage *entry = NULL;
+	const char *type;
+	const char *obj_class;
+	const char *posix_obj_class;
+	const char *suffix;
+	fstring sid_str;
+	fstring id_str;
+	pstring filter;
+	char **attr_list;
+	int rc;
+	int count;
+
+	/* try for a samba user or group mapping (looking for an entry with a SID) */
+	if ( id_type & ID_USERID ) {
+		obj_class = LDAP_OBJ_SAMBASAMACCOUNT;
+		suffix = lp_ldap_suffix();
+		type = get_attr_key2string( idpool_attr_list, LDAP_ATTR_UIDNUMBER );
+		posix_obj_class = LDAP_OBJ_POSIXACCOUNT;
+		snprintf(id_str, sizeof(id_str), "%u", id.uid );	
+	}
+	else {
+		obj_class = LDAP_OBJ_GROUPMAP;
+		suffix = lp_ldap_group_suffix();
+		type = get_attr_key2string( idpool_attr_list, LDAP_ATTR_GIDNUMBER );
+		posix_obj_class = LDAP_OBJ_POSIXGROUP;
+		snprintf(id_str, sizeof(id_str), "%u", id.gid );	
+	}
+	
+	sid_to_string(sid_str, sid);
+	snprintf(filter, sizeof(filter), 
+		 "(|"
+		 "(&(|(objectClass=%s)(|(objectClass=%s)(objectClass=%s)))(%s=%s))"
+		 "(&(objectClass=%s)(%s=%s))"
+		 ")", 
+		 /* objectClasses that might contain a SID */
+		 LDAP_OBJ_SID_ENTRY, LDAP_OBJ_IDMAP_ENTRY, obj_class, 
+		 get_attr_key2string( sidmap_attr_list, LDAP_ATTR_SID ), 
+		 sid_str, 
+
+		 /* objectClasses that might contain a Unix UID/GID */
+		 posix_obj_class, 
+		 /* Unix UID/GID specifier*/
+		 type, 
+		 /* actual ID */
+		 id_str);
+
+	attr_list = get_attr_list( sidmap_attr_list );
+	rc = smbldap_search(ldap_state.smbldap_state, suffix, LDAP_SCOPE_SUBTREE, 
+			    filter, attr_list, 0, &result);
+	free_attr_list( attr_list );
+	
+	if (rc != LDAP_SUCCESS)
+		goto out;
+
+	count = ldap_count_entries(ldap_state.smbldap_state->ldap_struct, result);
+	
+	/* fall back to looking up an idmap entry if we didn't find anything under the idmap
+	   user or group suffix */
+
+	if (count == 1) {
+		entry = ldap_first_entry(ldap_state.smbldap_state->ldap_struct, result);
+	
+		dn = ldap_get_dn(ldap_state.smbldap_state->ldap_struct, result);
+		DEBUG(10, ("Found partial mapping entry at dn=%s, looking for %s\n", dn, type));
+
+		ret = ldap_set_mapping_internals(sid, id, id_type, dn, entry);
+
+		goto out;
+	} else if (count > 1) {
+		DEBUG(0, ("Too many entries trying to find DN to attach ldap \n"));
+		goto out;
+	}
+
+	ret = ldap_set_mapping_internals(sid, id, id_type, NULL, NULL);
+
+out:
+	if (result)
+		ldap_msgfree(result);
+	if (dn)
+		ldap_memfree(dn);
+	
+	return ret;
+}
 /*****************************************************************************
  Initialise idmap database. 
 *****************************************************************************/
 static NTSTATUS ldap_idmap_init( char *params )
 {
 	fstring filter;
-#if 0
-	pstring dn;
-#endif
 	int rc;
 	char **attr_list;
 	LDAPMessage *result = NULL;
 	LDAPMod **mods = NULL;
 	int count;
+	NTSTATUS nt_status;
 
-	/* parse out the server (assuming only parameter is a URI) */
+	ldap_state.mem_ctx = talloc_init("idmap_ldap");
+	if (!ldap_state.mem_ctx) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
-	if ( params )
-		ldap_state.uri = smb_xstrdup( params );
-	else
-		ldap_state.uri = smb_xstrdup( "ldap://localhost/" );
-	
+	/* assume location is the only parameter */
+	if (!NT_STATUS_IS_OK(nt_status = 
+			     smbldap_init(ldap_state.mem_ctx, params, 
+					  &ldap_state.smbldap_state))) {
+		talloc_destroy(ldap_state.mem_ctx);
+		return nt_status;
+	}
+
 	/* see if the idmap suffix and sub entries exists */
 	
 	snprintf( filter, sizeof(filter), "(objectclass=%s)", LDAP_OBJ_IDPOOL );
 	
 	attr_list = get_attr_list( idpool_attr_list );
-	rc = ldap_idmap_search(&ldap_state, lp_ldap_idmap_suffix(), 
+	rc = smbldap_search(ldap_state.smbldap_state, lp_ldap_idmap_suffix(), 
 		LDAP_SCOPE_SUBTREE, filter, attr_list, 0, &result);
 	free_attr_list ( attr_list );
 
 	if (rc != LDAP_SUCCESS)
 		return NT_STATUS_UNSUCCESSFUL;
 
-	count = ldap_count_entries(ldap_state.ldap_struct, result);
+	count = ldap_count_entries(ldap_state.smbldap_state->ldap_struct, result);
 
 	if ( count > 1 ) {
 		DEBUG(0,("ldap_idmap_init: multiple entries returned from %s (base == %s)\n",
@@ -900,7 +908,6 @@ static NTSTATUS ldap_idmap_init( char *params )
 		uid_t	luid, huid;
 		gid_t	lgid, hgid;
 		fstring uid_str, gid_str;
-		int attempts = 0;
 		
 		if ( !lp_idmap_uid(&luid, &huid) || !lp_idmap_gid( &lgid, &hgid ) ) {
 			DEBUG(0,("ldap_idmap_init: idmap uid/gid parameters not specified\n"));
@@ -916,34 +923,9 @@ static NTSTATUS ldap_idmap_init( char *params )
 		smbldap_set_mod( &mods, LDAP_MOD_ADD,
 			get_attr_key2string(idpool_attr_list, LDAP_ATTR_GIDNUMBER), gid_str );
 		
-		do {
-			if ((rc = ldap_idmap_retry_open(&ldap_state, &attempts)) != LDAP_SUCCESS) 
-				continue;
-		
-			rc = ldap_modify_s(ldap_state.ldap_struct, lp_ldap_idmap_suffix(), mods);
-		} while ((rc == LDAP_SERVER_DOWN) && (attempts <= 8));
+		rc = smbldap_modify(ldap_state.smbldap_state, lp_ldap_idmap_suffix(), mods);
 	}
 	
-	/* we have the initial entry now; let's create the sub entries */ 
-	/* if they already exist then this will fail, but we don't care */
-	
-#if 0	/* commenting out for now, but I will come back to this --jerry */
-
-	mods = NULL;
-	snprintf( dn, sizeof(dn), "%s,%s", IDMAP_USER_SUFFIX, lp_ldap_idmap_suffix() );
-	smbldap_set_mod( &mods, LDAP_MOD_ADD, "objectClass", LDAP_OBJ_OU );
-	smbldap_set_mod( &mods, LDAP_MOD_ADD, "ou", "idmap people" );
-	ldap_add_s(ldap_state.ldap_struct, dn, mods);
-	ldap_mods_free( mods, True );
-	
-	mods = NULL;
-	snprintf( dn, sizeof(dn), "%s,%s", IDMAP_GROUP_SUFFIX, lp_ldap_idmap_suffix() );
-	smbldap_set_mod( &mods, LDAP_MOD_ADD, "objectClass", LDAP_OBJ_OU );
-	smbldap_set_mod( &mods, LDAP_MOD_ADD, "ou", "idmap group" );
-	ldap_add_s(ldap_state.ldap_struct, dn, mods);
-	ldap_mods_free( mods, True );
-#endif 	
-
 	return NT_STATUS_OK;
 }
 
@@ -953,14 +935,9 @@ static NTSTATUS ldap_idmap_init( char *params )
 
 static NTSTATUS ldap_idmap_close(void)
 {
-	if (ldap_state.ldap_struct != NULL) {
-		ldap_unbind_ext(ldap_state.ldap_struct, NULL, NULL);
-		ldap_state.ldap_struct = NULL;
-	}
 
-	SAFE_FREE( ldap_state.uri     );
-	SAFE_FREE( ldap_state.bind_dn );
-	SAFE_FREE( ldap_state.bind_secret );
+	smbldap_free_struct(&(ldap_state).smbldap_state);
+	talloc_destroy(ldap_state.mem_ctx);
 	
 	DEBUG(5,("The connection to the LDAP server was closed\n"));
 	/* maybe free the results here --metze */
@@ -978,6 +955,8 @@ static void ldap_idmap_status(void)
 
 static struct idmap_methods ldap_methods = {
 	ldap_idmap_init,
+	ldap_allocate_rid,
+	ldap_allocate_id,
 	ldap_get_sid_from_id,
 	ldap_get_id_from_sid,
 	ldap_set_mapping,

@@ -49,8 +49,8 @@ static void upcase_name( struct nmb_name *target, struct nmb_name *source )
   if( NULL != source )
     (void)memcpy( target, source, sizeof( struct nmb_name ) );
 
-  strupper( target->name );
-  strupper( target->scope );
+  strupper_m( target->name );
+  strupper_m( target->scope );
 
   /* fudge... We're using a byte-by-byte compare, so we must be sure that
    * unused space doesn't have garbage in it.

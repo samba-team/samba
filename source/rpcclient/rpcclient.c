@@ -37,6 +37,21 @@ static struct cmd_list {
 	struct cmd_set *cmd_set;
 } *cmd_list;
 
+/*****************************************************************************
+ stubb functions
+****************************************************************************/
+
+void become_root( void )
+{
+        return;
+}
+
+void unbecome_root( void )
+{
+        return;
+}
+
+
 /****************************************************************************
 handle completion of commands for readline
 ****************************************************************************/
@@ -304,6 +319,119 @@ static NTSTATUS cmd_quit(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK; /* NOTREACHED */
 }
 
+static NTSTATUS cmd_sign(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+                         int argc, const char **argv)
+{
+	if (cli->pipe_auth_flags == (AUTH_PIPE_NTLMSSP|AUTH_PIPE_SIGN)) {
+		return NT_STATUS_OK;
+	} else {
+		/* still have session, just need to use it again */
+		cli->pipe_auth_flags = AUTH_PIPE_NTLMSSP;
+		cli->pipe_auth_flags |= AUTH_PIPE_SIGN;
+		if (cli->nt_pipe_fnum != 0)
+			cli_nt_session_close(cli);
+	}
+
+	return NT_STATUS_OK; 
+}
+
+static NTSTATUS cmd_seal(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+                         int argc, const char **argv)
+{
+	if (cli->pipe_auth_flags == (AUTH_PIPE_NTLMSSP|AUTH_PIPE_SIGN|AUTH_PIPE_SEAL)) {
+		return NT_STATUS_OK;
+	} else {
+		/* still have session, just need to use it again */
+		cli->pipe_auth_flags = AUTH_PIPE_NTLMSSP;
+		cli->pipe_auth_flags |= AUTH_PIPE_SIGN;
+		cli->pipe_auth_flags |= AUTH_PIPE_SEAL;
+		if (cli->nt_pipe_fnum != 0)
+			cli_nt_session_close(cli);
+	}
+	return NT_STATUS_OK; 
+}
+
+static NTSTATUS cmd_none(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+                         int argc, const char **argv)
+{
+	if (cli->pipe_auth_flags == 0) {
+		return NT_STATUS_OK;
+	} else {
+		/* still have session, just need to use it again */
+		cli->pipe_auth_flags = 0;
+		if (cli->nt_pipe_fnum != 0)
+			cli_nt_session_close(cli);
+	}
+	cli->pipe_auth_flags = 0;
+
+	return NT_STATUS_OK; 
+}
+
+static NTSTATUS cmd_schannel(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+			     int argc, const char **argv)
+{
+	uchar trust_password[16];
+	uint32 sec_channel_type;
+	uint32 neg_flags = 0x000001ff;
+	NTSTATUS result;
+	static uchar zeros[16];
+
+	/* Cleanup */
+
+	if ((memcmp(cli->auth_info.sess_key, zeros, sizeof(cli->auth_info.sess_key)) != 0) 
+	    && (cli->saved_netlogon_pipe_fnum != 0)) {
+		if (cli->pipe_auth_flags == (AUTH_PIPE_NETSEC|AUTH_PIPE_SIGN|AUTH_PIPE_SEAL)) {
+			return NT_STATUS_OK;
+		} else {
+			/* still have session, just need to use it again */
+			cli->pipe_auth_flags = AUTH_PIPE_NETSEC;
+			cli->pipe_auth_flags |= AUTH_PIPE_SIGN;
+			cli->pipe_auth_flags |= AUTH_PIPE_SEAL;
+			if (cli->nt_pipe_fnum != 0)
+				cli_nt_session_close(cli);
+		}
+	}
+	
+	if (cli->nt_pipe_fnum != 0)
+		cli_nt_session_close(cli);
+
+	cli->pipe_auth_flags = 0;
+	
+	if (!secrets_fetch_trust_account_password(lp_workgroup(),
+						  trust_password,
+						  NULL, &sec_channel_type)) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	
+	if (!cli_nt_session_open(cli, PI_NETLOGON)) {
+		DEBUG(0, ("Could not initialise %s\n",
+			  get_pipe_name_from_index(PI_NETLOGON)));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	neg_flags |= NETLOGON_NEG_SCHANNEL;
+
+	result = cli_nt_setup_creds(cli, sec_channel_type, trust_password,
+				    &neg_flags, 2);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		ZERO_STRUCT(cli->auth_info.sess_key);
+		cli->pipe_auth_flags = 0;
+		return result;
+	}
+
+	memcpy(cli->auth_info.sess_key, cli->sess_key,
+	       sizeof(cli->auth_info.sess_key));
+
+	cli->saved_netlogon_pipe_fnum = cli->nt_pipe_fnum;
+
+	cli->pipe_auth_flags = AUTH_PIPE_NETSEC;
+	cli->pipe_auth_flags |= AUTH_PIPE_SIGN;
+	cli->pipe_auth_flags |= AUTH_PIPE_SEAL;
+
+	return NT_STATUS_OK; 
+}
+
 /* Built in rpcclient commands */
 
 static struct cmd_set rpcclient_commands[] = {
@@ -316,6 +444,10 @@ static struct cmd_set rpcclient_commands[] = {
 	{ "list",	RPC_RTYPE_NTSTATUS, cmd_listcommands, NULL, -1,	"List available commands on <pipe>", "pipe" },
 	{ "exit", RPC_RTYPE_NTSTATUS, cmd_quit, NULL,   -1,	"Exit program", "" },
 	{ "quit", RPC_RTYPE_NTSTATUS, cmd_quit, NULL,	  -1,	"Exit program", "" },
+	{ "sign", RPC_RTYPE_NTSTATUS, cmd_sign, NULL,	  -1,	"Force RPC pipe connections to be signed", "" },
+	{ "seal", RPC_RTYPE_NTSTATUS, cmd_seal, NULL,	  -1,	"Force RPC pipe connections to be sealed", "" },
+	{ "schannel", RPC_RTYPE_NTSTATUS, cmd_schannel, NULL,	  -1,	"Force RPC pipe connections to be sealed with 'schannel' (NETSEC).  Assumes valid machine account to this domain controller.", "" },
+	{ "none", RPC_RTYPE_NTSTATUS, cmd_none, NULL,	  -1,	"Force RPC pipe connections to have no special properties", "" },
 
 	{ NULL }
 };
@@ -377,8 +509,9 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 		       struct cmd_set *cmd_entry,
 		       int argc, char **argv)
 {
-     NTSTATUS ntresult;
-     WERROR wresult;
+	NTSTATUS ntresult;
+	WERROR wresult;
+	uchar trust_password[16];
 	
 	TALLOC_CTX *mem_ctx;
 
@@ -386,12 +519,16 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 
 	if (!(mem_ctx = talloc_init("do_cmd"))) {
 		DEBUG(0, ("talloc_init() failed\n"));
-		return NT_STATUS_UNSUCCESSFUL;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	/* Open pipe */
 
-	if (cmd_entry->pipe_idx != -1) {
+	if (cmd_entry->pipe_idx != -1
+	    && cmd_entry->pipe_idx != cli->pipe_idx) {
+		if (cli->nt_pipe_fnum != 0)
+			cli_nt_session_close(cli);
+		
 		if (!cli_nt_session_open(cli, cmd_entry->pipe_idx)) {
 			DEBUG(0, ("Could not initialise %s\n",
 				  get_pipe_name_from_index(cmd_entry->pipe_idx)));
@@ -399,21 +536,25 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 		}
 	}
 
-	if (cmd_entry->pipe_idx == PI_NETLOGON) {
-		uchar trust_password[16];
+	if ((cmd_entry->pipe_idx == PI_NETLOGON) && !(cli->pipe_auth_flags & AUTH_PIPE_NETSEC)) {
+		uint32 neg_flags = 0x000001ff;
 		uint32 sec_channel_type;
-
+	
 		if (!secrets_fetch_trust_account_password(lp_workgroup(),
 							  trust_password,
 							  NULL, &sec_channel_type)) {
 			return NT_STATUS_UNSUCCESSFUL;
 		}
-
-		if (!NT_STATUS_IS_OK(cli_nt_establish_netlogon(cli, sec_channel_type,
-							       trust_password))) {
-			DEBUG(0, ("Could not initialise NETLOGON pipe\n"));
-			return NT_STATUS_UNSUCCESSFUL;
+		
+		ntresult = cli_nt_setup_creds(cli, sec_channel_type, 
+					      trust_password,
+					      &neg_flags, 2);
+		if (!NT_STATUS_IS_OK(ntresult)) {
+			ZERO_STRUCT(cli->auth_info.sess_key);
+			printf("nt_setup_creds failed with %s\n", nt_errstr(ntresult));
+			return ntresult;
 		}
+		
 	}
 
      /* Run command */
@@ -434,9 +575,6 @@ static NTSTATUS do_cmd(struct cli_state *cli,
             
 
 	/* Cleanup */
-
-	if (cmd_entry->pipe_idx != -1)
-		cli_nt_session_close(cli);
 
 	talloc_destroy(mem_ctx);
 

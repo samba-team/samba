@@ -6,9 +6,6 @@
     <para> This variable controls controls whether samba clients will try 
     to use Simple and Protected NEGOciation (as specified by rfc2478) with 
     WindowsXP and Windows2000 servers to agree upon an authentication mechanism. 
-	SPNEGO client support with Sign and Seal is currently broken, so 
-	you might want to turn this option off when doing joins to 
-	Windows 2003 domains.
 	</para>
 
     <para>Default:  <emphasis>client use spnego = yes</emphasis></para>

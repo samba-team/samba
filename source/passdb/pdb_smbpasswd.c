@@ -1,10 +1,10 @@
 /*
  * Unix SMB/CIFS implementation. 
  * SMB parameters and setup
- * Copyright (C) Andrew Tridgell 1992-1998 
- * Modified by Jeremy Allison 1995.
- * Modified by Gerald (Jerry) Carter 2000-2001
- * Modified by Andrew Bartlett 2002.
+ * Copyright (C) Andrew Tridgell       1992-1998 
+ * Modified by Jeremy Allison          1995.
+ * Modified by Gerald (Jerry) Carter   2000-2001,2003
+ * Modified by Andrew Bartlett         2002.
  * 
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free
@@ -34,14 +34,13 @@
  
 struct smb_passwd
 {
-        BOOL smb_userid_set;     /* this is actually the unix uid_t */
-        uint32 smb_userid;     /* this is actually the unix uid_t */
+        uint32 smb_userid;        /* this is actually the unix uid_t */
         const char *smb_name;     /* username string */
 
-        const unsigned char *smb_passwd; /* Null if no password */
+        const unsigned char *smb_passwd;    /* Null if no password */
         const unsigned char *smb_nt_passwd; /* Null if no password */
 
-        uint16 acct_ctrl; /* account info (ACB_xxxx bit-mask) */
+        uint16 acct_ctrl;             /* account info (ACB_xxxx bit-mask) */
         time_t pass_last_set_time;    /* password last set time */
 };
 
@@ -61,12 +60,6 @@ struct smbpasswd_privates
 
 	/* retrive-once info */
 	const char *smbpasswd_file;
-
-	BOOL permit_non_unix_accounts;
-
-	uid_t low_nua_userid; 
-	uid_t high_nua_userid; 
-
 };
 
 enum pwf_access_type { PWF_READ, PWF_UPDATE, PWF_CREATE };
@@ -590,28 +583,6 @@ static BOOL add_smbfilepwd_entry(struct smbpasswd_privates *smbpasswd_state, str
    }
 
   /* Ok - entry doesn't exist. We can add it */
-
-  /* Account not in /etc/passwd hack!!! */
-  if (!newpwd->smb_userid_set) {
-	  if (!smbpasswd_state->permit_non_unix_accounts) {
-		  DEBUG(0, ("add_smbfilepwd_entry: cannot add account %s without unix identity\n", newpwd->smb_name));
-		  endsmbfilepwent(fp, &(smbpasswd_state->pw_file_lock_depth));
-		  return False;
-	  }
-
-	  if (max_found_uid < smbpasswd_state->low_nua_userid) {
-		  newpwd->smb_userid = smbpasswd_state->low_nua_userid;
-		  newpwd->smb_userid_set = True;
-	  } else if (max_found_uid >= smbpasswd_state->high_nua_userid) {
-		  DEBUG(0, ("add_smbfilepwd_entry: cannot add machine %s, no uids are free! \n", newpwd->smb_name));
-		  endsmbfilepwent(fp, &(smbpasswd_state->pw_file_lock_depth));
-		  return False;           
-	  } else {
-		  newpwd->smb_userid = max_found_uid + 1;
-		  newpwd->smb_userid_set = True;
-         }
-  }
-
 
   /* Create a new smb passwd entry and set it to the given password. */
   /* 
@@ -1149,12 +1120,10 @@ static BOOL build_smb_pass (struct smb_passwd *smb_pw, const SAM_ACCOUNT *sampas
 				DEBUG(0, ("Could not find gest account via getpwnam()! (%s)\n", lp_guestaccount()));
 				return False;
 			}
-			smb_pw->smb_userid_set = True;
 			smb_pw->smb_userid=passwd->pw_uid;
 			passwd_free(&passwd);
 
 		} else if (fallback_pdb_rid_is_user(rid)) {
-			smb_pw->smb_userid_set = True;
 			smb_pw->smb_userid=fallback_pdb_user_rid_to_uid(rid);
 		} else {
 			DEBUG(0,("build_sam_pass: Failing attempt to store user with non-uid based user RID. \n"));
@@ -1169,25 +1138,6 @@ static BOOL build_smb_pass (struct smb_passwd *smb_pw, const SAM_ACCOUNT *sampas
 
 	smb_pw->acct_ctrl=pdb_get_acct_ctrl(sampass);
 	smb_pw->pass_last_set_time=pdb_get_pass_last_set_time(sampass);
-
-#if 0
-	/*
-	 * ifdef'out by JFM on 11/29/2001.
-	 * this assertion is no longer valid
-	 * and I don't understand the goal 
-	 * and doing the same thing with the group mapping code
-	 * is hairy !
-	 *
-	 * We just have the RID, in which SID is it valid ?
-	 * our domain SID ? well known SID ? local SID ?
-	 */
-
-	if (gid != pdb_group_rid_to_gid(pdb_get_group_rid(sampass))) {
-		DEBUG(0,("build_sam_pass: Failing attempt to store user with non-gid based primary group RID. \n"));
-		DEBUG(0,("build_sam_pass: %d %d %d. \n", *gid, pdb_group_rid_to_gid(pdb_get_group_rid(sampass)), pdb_get_group_rid(sampass)));
-		return False;
-	}
-#endif
 
 	return True;
 }	
@@ -1204,49 +1154,28 @@ static BOOL build_sam_account(struct smbpasswd_privates *smbpasswd_state,
 		DEBUG(5,("build_sam_account: SAM_ACCOUNT is NULL\n"));
 		return False;
 	}
-		
-	pwfile = getpwnam_alloc(pw_buf->smb_name);
-	if (pwfile == NULL) {
-		if ((smbpasswd_state->permit_non_unix_accounts) 
-		    && (pw_buf->smb_userid >= smbpasswd_state->low_nua_userid) 
-		    && (pw_buf->smb_userid <= smbpasswd_state->high_nua_userid)) {
 
-			pdb_set_user_sid_from_rid(sam_pass, fallback_pdb_uid_to_user_rid (pw_buf->smb_userid), PDB_SET);
+	/* verify the user account exists */
 			
-			/* lkclXXXX this is OBSERVED behaviour by NT PDCs, enforced here. 
-			   
-			This was down the bottom for machines, but it looks pretty good as
-			a general default for non-unix users. --abartlet 2002-01-08
-			*/
-			pdb_set_group_sid_from_rid (sam_pass, DOMAIN_GROUP_RID_USERS, PDB_SET); 
-			pdb_set_username (sam_pass, pw_buf->smb_name, PDB_SET);
-			pdb_set_domain (sam_pass, get_global_sam_name(), PDB_DEFAULT);
-			
-		} else {
-			DEBUG(0,("build_sam_account: smbpasswd database is corrupt!  username %s with uid %u is not in unix passwd database!\n", pw_buf->smb_name, pw_buf->smb_userid));
+	if ( !(pwfile = getpwnam_alloc(pw_buf->smb_name)) ) {
+		DEBUG(0,("build_sam_account: smbpasswd database is corrupt!  username %s with uid "
+		"%u is not in unix passwd database!\n", pw_buf->smb_name, pw_buf->smb_userid));
 			return False;
-		}
-	} else {
-		if (!NT_STATUS_IS_OK(pdb_fill_sam_pw(sam_pass, pwfile))) {
-			return False;
-		}
-		
-		passwd_free(&pwfile);
 	}
 	
+	if (!NT_STATUS_IS_OK(pdb_fill_sam_pw(sam_pass, pwfile)))
+		return False;
+		
+	passwd_free(&pwfile);
+
+	/* set remaining fields */
+		
 	pdb_set_nt_passwd (sam_pass, pw_buf->smb_nt_passwd, PDB_SET);
 	pdb_set_lanman_passwd (sam_pass, pw_buf->smb_passwd, PDB_SET);			
 	pdb_set_acct_ctrl (sam_pass, pw_buf->acct_ctrl, PDB_SET);
 	pdb_set_pass_last_set_time (sam_pass, pw_buf->pass_last_set_time, PDB_SET);
 	pdb_set_pass_can_change_time (sam_pass, pw_buf->pass_last_set_time, PDB_SET);
 	
-#if 0	/* JERRY */
-	/* the smbpasswd format doesn't have a must change time field, so
-	   we can't get this right. The best we can do is to set this to 
-	   some time in the future. 21 days seems as reasonable as any other value :) 
-	*/
-	pdb_set_pass_must_change_time (sam_pass, pw_buf->pass_last_set_time + MAX_PASSWORD_AGE, PDB_DEFAULT);
-#endif
 	return True;
 }
 
@@ -1557,11 +1486,6 @@ static NTSTATUS pdb_init_smbpasswd(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_m
 	(*pdb_method)->private_data = privates;
 
 	(*pdb_method)->free_private_data = free_private_data;
-
-	if (lp_idmap_uid(&privates->low_nua_userid, &privates->high_nua_userid)) {
-		DEBUG(3, ("idmap uid range defined, non unix accounts enabled\n"));
-		privates->permit_non_unix_accounts = True;
-	}
 
 	return NT_STATUS_OK;
 }

@@ -286,7 +286,7 @@ DYNEXP=
 
 dnl Add modules that have to be built by default here
 dnl These have to be built static:
-default_static_modules="pdb_smbpasswd pdb_tdbsam rpc_lsa rpc_samr rpc_reg rpc_wks rpc_net rpc_dfs rpc_srv rpc_spoolss auth_rhosts auth_sam auth_unix auth_winbind auth_server auth_domain auth_builtin idmap_winbind"
+default_static_modules="pdb_smbpasswd pdb_tdbsam rpc_lsa rpc_samr rpc_reg rpc_wks rpc_net rpc_dfs rpc_srv rpc_spoolss auth_rhosts auth_sam auth_unix auth_winbind auth_server auth_domain auth_builtin"
 
 dnl These are preferably build shared, and static if dlopen() is not available
 default_shared_modules="vfs_recycle vfs_audit vfs_extd_audit vfs_netatalk vfs_fake_perms"
@@ -954,7 +954,7 @@ BLDSHARED="false"
 HOST_OS="$host_os"
 LDSHFLAGS="-shared"
 SONAMEFLAG="#"
-SHLD="\${CC}"
+SHLD="\${CC} \${CFLAGS}"
 PICFLAG=""
 PICSUFFIX="po"
 POBAD_CC="#"
@@ -1519,7 +1519,7 @@ dnl Try to find iconv(3)
     jm_ICONV($i)
 
     CPPFLAGS=$save_CPPFLAGS
-    if test -n "$ICONV_FOUND" ; then
+    if test "$ICONV_FOUND" = yes; then
         LDFLAGS=$save_LDFLAGS
         LIB_ADD_DIR(LDFLAGS, "$i/lib")
         CFLAGS_ADD_DIR(CPPFLAGS, "$i/include")
@@ -1536,9 +1536,11 @@ done
 
 ############
 # check for iconv in libc
+ic_save_LIBS="$LIBS"
+LIBS="$LIBS -L$ICONV_LOCATION/lib"
 AC_CACHE_CHECK([for working iconv],samba_cv_HAVE_NATIVE_ICONV,[
 AC_TRY_RUN([
-#include <iconv.h>
+#include <$jm_cv_include>
 main() {
        iconv_t cd = iconv_open("ASCII", "UCS-2LE");
        if (cd == 0 || cd == (iconv_t)-1) return -1;
@@ -1549,6 +1551,7 @@ samba_cv_HAVE_NATIVE_ICONV=yes,samba_cv_HAVE_NATIVE_ICONV=no,samba_cv_HAVE_NATIV
 if test x"$samba_cv_HAVE_NATIVE_ICONV" = x"yes"; then
     AC_DEFINE(HAVE_NATIVE_ICONV,1,[Whether to use native iconv])
 fi
+LIBS="$ic_save_LIBS"
 
 if test x"$ICONV_FOUND" = x"no" -o x"$samba_cv_HAVE_NATIVE_ICONV" != x"yes" ; then
     AC_MSG_WARN([Sufficient support for iconv function was not found. 
@@ -2460,6 +2463,8 @@ AC_ARG_WITH(expsam,
       ## pdb_mysql
       AM_PATH_MYSQL([0.11.0],[default_shared_modules="$default_shared_modules pdb_mysql"],[])
       CFLAGS="$CFLAGS $MYSQL_CFLAGS"
+      ;;
+    no)
       ;;
     *)
       echo "Unknown module name \"$i\"!  Exiting..."
@@ -3861,7 +3866,6 @@ SMB_MODULE(rpc_samr, \$(RPC_SAMR_OBJ), "bin/librpc_samr.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_echo, \$(RPC_ECHO_OBJ), "bin/librpc_echo.$SHLIBEXT", RPC)
 SMB_SUBSYSTEM(RPC)
 
-SMB_MODULE(idmap_winbind, sam/idmap_winbind.o, "bin/idmap_winbind.$SHLIBEXT", IDMAP)
 SMB_MODULE(idmap_ldap, sam/idmap_ldap.o, "bin/idmap_ldap.$SHLIBEXT", IDMAP)
 SMB_MODULE(idmap_tdb, sam/idmap_tdb.o, "bin/idmap_tdb.$SHLIBEXT", IDMAP)
 SMB_SUBSYSTEM(IDMAP)
@@ -3892,6 +3896,18 @@ AC_DEFINE_UNQUOTED(STRING_STATIC_MODULES, "$string_static_modules", [String list
 
 if test "${ac_cv_prog_CC}" = "insure"; then
 	CPPFLAGS="$CPPFLAGS -D__INSURE__"
+fi
+
+#################################################
+# Display summary of libraries detected
+
+AC_MSG_RESULT([Using libraries:])
+AC_MSG_RESULT([    LIBS = $LIBS])
+if test x"$with_ads_support" = x"yes"; then
+   AC_MSG_RESULT([    KRB5_LIBS = $KRB5_LIBS])
+fi
+if test x"$with_ldap_support" = x"yes"; then
+   AC_MSG_RESULT([    LDAP_LIBS = $LDAP_LIBS])
 fi
 
 #################################################

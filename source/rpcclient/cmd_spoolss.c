@@ -112,10 +112,10 @@ static WERROR cmd_spoolss_open_printer_ex(struct cli_state *cli,
 	if (!cli)
             return WERR_GENERAL_FAILURE;
 
-	slprintf (servername, sizeof(servername)-1, "\\\\%s", cli->desthost);
-	strupper (servername);
-	fstrcpy  (user, cli->user_name);
-	fstrcpy  (printername, argv[1]);
+	slprintf(servername, sizeof(servername)-1, "\\\\%s", cli->desthost);
+	strupper_m(servername);
+	fstrcpy(user, cli->user_name);
+	fstrcpy(printername, argv[1]);
 
 	/* Open the printer handle */
 
@@ -320,7 +320,7 @@ static WERROR cmd_spoolss_enum_printers(struct cli_state *cli,
 		fstrcpy(name, argv[2]);
 	else {
 		slprintf(name, sizeof(name)-1, "\\\\%s", cli->desthost);
-		strupper(name);
+		strupper_m(name);
 	}
 
 	/* Enumerate printers  -- Should we enumerate types other 
@@ -480,10 +480,10 @@ static WERROR cmd_spoolss_setprinter(struct cli_state *cli,
 		fstrcpy(comment, argv[2]);
 	}
 
-	slprintf (servername, sizeof(servername)-1, "\\\\%s", cli->desthost);
-	strupper (servername);
-	fstrcpy (printername, argv[1]);
-	fstrcpy  (user, cli->user_name);
+	slprintf(servername, sizeof(servername)-1, "\\\\%s", cli->desthost);
+	strupper_m(servername);
+	fstrcpy(printername, argv[1]);
+	fstrcpy(user, cli->user_name);
 
 	/* get a printer handle */
 	result = cli_spoolss_open_printer_ex(cli, mem_ctx, printername, "", 
@@ -548,10 +548,10 @@ static WERROR cmd_spoolss_getprinter(struct cli_state *cli,
 		info_level = atoi(argv[2]);
 	}
 
-	slprintf (servername, sizeof(servername)-1, "\\\\%s", cli->desthost);
-	strupper (servername);
-	slprintf (printername, sizeof(printername)-1, "%s\\%s", servername, argv[1]);
-	fstrcpy  (user, cli->user_name);
+	slprintf(servername, sizeof(servername)-1, "\\\\%s", cli->desthost);
+	strupper_m(servername);
+	slprintf(printername, sizeof(printername)-1, "%s\\%s", servername, argv[1]);
+	fstrcpy(user, cli->user_name);
 	
 	/* get a printer handle */
 
@@ -666,14 +666,14 @@ static WERROR cmd_spoolss_getprinterdata(struct cli_state *cli,
 
 	/* Open a printer handle */
 
-	slprintf (servername, sizeof(servername)-1, "\\\\%s", cli->desthost);
-	strupper (servername);
+	slprintf(servername, sizeof(servername)-1, "\\\\%s", cli->desthost);
+	strupper_m(servername);
 	if (strncmp(argv[1], ".", sizeof(".")) == 0)
 		fstrcpy(printername, servername);
 	else
-		slprintf (printername, sizeof(servername)-1, "%s\\%s", 
+		slprintf(printername, sizeof(servername)-1, "%s\\%s", 
 			  servername, argv[1]);
-	fstrcpy  (user, cli->user_name);
+	fstrcpy(user, cli->user_name);
 	
 	/* get a printer handle */
 
@@ -739,14 +739,14 @@ static WERROR cmd_spoolss_getprinterdataex(struct cli_state *cli,
 
 	/* Open a printer handle */
 
-	slprintf (servername, sizeof(servername)-1, "\\\\%s", cli->desthost);
-	strupper (servername);
+	slprintf(servername, sizeof(servername)-1, "\\\\%s", cli->desthost);
+	strupper_m(servername);
 	if (strncmp(argv[1], ".", sizeof(".")) == 0)
 		fstrcpy(printername, servername);
 	else
-		slprintf (printername, sizeof(printername)-1, "%s\\%s", 
+		slprintf(printername, sizeof(printername)-1, "%s\\%s", 
 			  servername, argv[1]);
-	fstrcpy  (user, cli->user_name);
+	fstrcpy(user, cli->user_name);
 	
 	/* get a printer handle */
 
@@ -920,10 +920,10 @@ static WERROR cmd_spoolss_getdriver(struct cli_state *cli,
 	}
 
 	/* get the arguments need to open the printer handle */
-	slprintf (servername, sizeof(servername)-1, "\\\\%s", cli->desthost);
-	strupper (servername);
-	fstrcpy  (user, cli->user_name);
-	fstrcpy  (printername, argv[1]);
+	slprintf(servername, sizeof(servername)-1, "\\\\%s", cli->desthost);
+	strupper_m(servername);
+	fstrcpy(user, cli->user_name);
+	fstrcpy(printername, argv[1]);
 	if (argc == 3)
 		info_level = atoi(argv[2]);
 
@@ -1288,8 +1288,8 @@ static WERROR cmd_spoolss_addprinterex(struct cli_state *cli,
 		return WERR_OK;
         }
 	
-        slprintf (servername, sizeof(servername)-1, "\\\\%s", cli->desthost);
-        strupper (servername);
+        slprintf(servername, sizeof(servername)-1, "\\\\%s", cli->desthost);
+        strupper_m(servername);
 
 	/* Fill in the DRIVER_INFO_3 struct */
 	ZERO_STRUCT(info2);
@@ -1350,10 +1350,10 @@ static WERROR cmd_spoolss_setdriver(struct cli_state *cli,
 		return WERR_OK;
         }
 
-	slprintf (servername, sizeof(servername)-1, "\\\\%s", cli->desthost);
-	strupper (servername);
-	slprintf (printername, sizeof(printername)-1, "%s\\%s", servername, argv[1]);
-	fstrcpy  (user, cli->user_name);
+	slprintf(servername, sizeof(servername)-1, "\\\\%s", cli->desthost);
+	strupper_m(servername);
+	slprintf(printername, sizeof(printername)-1, "%s\\%s", servername, argv[1]);
+	fstrcpy(user, cli->user_name);
 
 	/* Get a printer handle */
 
@@ -1421,8 +1421,8 @@ static WERROR cmd_spoolss_deletedriver(struct cli_state *cli,
 		return WERR_OK;
         }
 
-	slprintf (servername, sizeof(servername)-1, "\\\\%s", cli->desthost);
-	strupper (servername);
+	slprintf(servername, sizeof(servername)-1, "\\\\%s", cli->desthost);
+	strupper_m(servername);
 
 	/* delete the driver for all architectures */
 	for (i=0; archi_table[i].long_archi; i++)
@@ -1465,7 +1465,7 @@ static WERROR cmd_spoolss_getprintprocdir(struct cli_state *cli,
 
 	if (asprintf(&servername, "\\\\%s", cli->desthost) < 0)
 		return WERR_NOMEM;
-	strupper(servername);
+	strupper_m(servername);
 
 	if (asprintf(&environment, "%s", (argc == 2) ? argv[1] : 
 		     PRINTER_DRIVER_ARCHITECTURE) < 0) {
@@ -1511,7 +1511,7 @@ static WERROR cmd_spoolss_addform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	/* Get a printer handle */
 
 	asprintf(&servername, "\\\\%s", cli->desthost);
-	strupper(servername);
+	strupper_m(servername);
 	asprintf(&printername, "%s\\%s", servername, argv[1]);
 
 	werror = cli_spoolss_open_printer_ex(cli, mem_ctx, printername, "", 
@@ -1570,7 +1570,7 @@ static WERROR cmd_spoolss_setform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	/* Get a printer handle */
 
 	asprintf(&servername, "\\\\%s", cli->desthost);
-	strupper(servername);
+	strupper_m(servername);
 	asprintf(&printername, "%s\\%s", servername, argv[1]);
 
 	werror = cli_spoolss_open_printer_ex(
@@ -1629,7 +1629,7 @@ static WERROR cmd_spoolss_getform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	/* Get a printer handle */
 
 	asprintf(&servername, "\\\\%s", cli->desthost);
-	strupper(servername);
+	strupper_m(servername);
 	asprintf(&printername, "%s\\%s", servername, argv[1]);
 
 	werror = cli_spoolss_open_printer_ex(
@@ -1691,7 +1691,7 @@ static WERROR cmd_spoolss_deleteform(struct cli_state *cli,
 	/* Get a printer handle */
 
 	asprintf(&servername, "\\\\%s", cli->desthost);
-	strupper(servername);
+	strupper_m(servername);
 	asprintf(&printername, "%s\\%s", servername, argv[1]);
 
 	werror = cli_spoolss_open_printer_ex(
@@ -1740,7 +1740,7 @@ static WERROR cmd_spoolss_enum_forms(struct cli_state *cli,
 	/* Get a printer handle */
 
 	asprintf(&servername, "\\\\%s", cli->desthost);
-	strupper(servername);
+	strupper_m(servername);
 	asprintf(&printername, "%s\\%s", servername, argv[1]);
 
 	werror = cli_spoolss_open_printer_ex(
@@ -1806,10 +1806,10 @@ static WERROR cmd_spoolss_setprinterdata(struct cli_state *cli,
 		return WERR_OK;
         }
 
-	slprintf (servername, sizeof(servername)-1, "\\\\%s", cli->desthost);
-	strupper (servername);
-	slprintf (printername, sizeof(servername)-1, "%s\\%s", servername, argv[1]);
-	fstrcpy  (user, cli->user_name);
+	slprintf(servername, sizeof(servername)-1, "\\\\%s", cli->desthost);
+	strupper_m(servername);
+	slprintf(printername, sizeof(servername)-1, "%s\\%s", servername, argv[1]);
+	fstrcpy(user, cli->user_name);
 
 	/* get a printer handle */
 	result = cli_spoolss_open_printer_ex(cli, mem_ctx, printername, "",
@@ -1929,10 +1929,10 @@ static WERROR cmd_spoolss_enum_jobs(struct cli_state *cli,
 	/* Open printer handle */
 
 	slprintf(servername, sizeof(servername)-1, "\\\\%s", cli->desthost);
-	strupper(servername);
+	strupper_m(servername);
 	fstrcpy(user, cli->user_name);
 	slprintf(printername, sizeof(servername)-1, "\\\\%s\\", cli->desthost);
-	strupper(printername);
+	strupper_m(printername);
 	pstrcat(printername, argv[1]);
 
 	result = cli_spoolss_open_printer_ex(cli, mem_ctx, printername, 
@@ -2000,10 +2000,10 @@ static WERROR cmd_spoolss_enum_data( struct cli_state *cli,
 	/* Open printer handle */
 
 	slprintf(servername, sizeof(servername)-1, "\\\\%s", cli->desthost);
-	strupper(servername);
+	strupper_m(servername);
 	fstrcpy(user, cli->user_name);
 	slprintf(printername, sizeof(printername)-1, "\\\\%s\\", cli->desthost);
-	strupper(printername);
+	strupper_m(printername);
 	pstrcat(printername, argv[1]);
 
 	result = cli_spoolss_open_printer_ex(cli, mem_ctx, printername, 
@@ -2063,10 +2063,10 @@ static WERROR cmd_spoolss_enum_data_ex( struct cli_state *cli,
 	/* Open printer handle */
 
 	slprintf(servername, sizeof(servername)-1, "\\\\%s", cli->desthost);
-	strupper(servername);
+	strupper_m(servername);
 	fstrcpy(user, cli->user_name);
 	slprintf(printername, sizeof(printername)-1, "\\\\%s\\", cli->desthost);
-	strupper(printername);
+	strupper_m(printername);
 	pstrcat(printername, argv[1]);
 
 	result = cli_spoolss_open_printer_ex(cli, mem_ctx, printername, 
@@ -2131,10 +2131,10 @@ static WERROR cmd_spoolss_enum_printerkey( struct cli_state *cli,
 	/* Open printer handle */
 
 	slprintf(servername, sizeof(servername)-1, "\\\\%s", cli->desthost);
-	strupper(servername);
+	strupper_m(servername);
 	fstrcpy(user, cli->user_name);
 	slprintf(printername, sizeof(printername)-1, "\\\\%s\\", cli->desthost);
-	strupper(printername);
+	strupper_m(printername);
 	pstrcat(printername, argv[1]);
 
 	result = cli_spoolss_open_printer_ex(cli, mem_ctx, printername, 
@@ -2196,11 +2196,11 @@ static WERROR cmd_spoolss_rffpcnex(struct cli_state *cli,
 	/* Open printer */
 
 	slprintf(servername, sizeof(servername) - 1, "\\\\%s", cli->desthost);
-	strupper(servername);
+	strupper_m(servername);
 
 	slprintf(printername, sizeof(printername) - 1, "\\\\%s\\%s", cli->desthost,
 		 argv[1]);
-	strupper(printername);
+	strupper_m(printername);
 
 	result = cli_spoolss_open_printer_ex(
 		cli, mem_ctx, printername, "", MAXIMUM_ALLOWED_ACCESS, 
@@ -2239,7 +2239,7 @@ static WERROR cmd_spoolss_rffpcnex(struct cli_state *cli,
 	/* Send rffpcnex */
 
 	slprintf(servername, sizeof(servername) - 1, "\\\\%s", myhostname());
-	strupper(servername);
+	strupper_m(servername);
 
 	result = cli_spoolss_rffpcnex(
 		cli, mem_ctx, &hnd, 0, 0, servername, 123, &option);

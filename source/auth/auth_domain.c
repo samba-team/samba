@@ -266,7 +266,7 @@ static NTSTATUS check_ntdomain_security(const struct auth_context *auth_context,
 	 * password file.
 	 */
 
-	if(is_myname(user_info->domain.str)) {
+	if(strequal(get_global_sam_name(), user_info->domain.str)) {
 		DEBUG(3,("check_ntdomain_security: Requested domain was for this machine.\n"));
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
@@ -346,7 +346,7 @@ static NTSTATUS check_trustdomain_security(const struct auth_context *auth_conte
 	 * Check that the requested domain is not our own machine name or domain name.
 	 */
 
-	if( is_myname(user_info->domain.str) || strequal(lp_workgroup(), user_info->domain.str) ) {
+	if( strequal(get_global_sam_name(), user_info->domain.str)) {
 		DEBUG(3,("check_trustdomain_security: Requested domain [%s] was for this machine.\n",
 			user_info->domain.str));
 		return NT_STATUS_NOT_IMPLEMENTED;
@@ -358,7 +358,7 @@ static NTSTATUS check_trustdomain_security(const struct auth_context *auth_conte
 	   user is known to us and does not exist */
 	
 	if ( !is_trusted_domain( user_info->domain.str ) )
-		return NT_STATUS_NO_SUCH_USER;
+		return NT_STATUS_NOT_IMPLEMENTED;
 
 	/*
 	 * Get the trusted account password for the trusted domain

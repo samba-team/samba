@@ -237,7 +237,7 @@ static NTSTATUS share_sanity_checks(int snum, fstring dev)
 		}
 	}
 
-	strupper(dev);
+	strupper_m(dev);
 
 	if (lp_print_ok(snum)) {
 		if (!strequal(dev, "LPT1:")) {
@@ -359,7 +359,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 		guest = True;
 		pass = getpwnam_alloc(guestname);
 		if (!pass) {
-			DEBUG(0,("authorise_login: Invalid guest account %s??\n",guestname));
+			DEBUG(0,("make_connection_snum: Invalid guest account %s??\n",guestname));
 			conn_free(conn);
 			*status = NT_STATUS_NO_SUCH_USER;
 			return NULL;
@@ -828,7 +828,7 @@ connection_struct *make_connection(const char *service_in, DATA_BLOB password,
 	
 	fstrcpy(service, service_in);
 
-	strlower(service);
+	strlower_m(service);
 
 	snum = find_service(service);
 

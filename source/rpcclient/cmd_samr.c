@@ -288,8 +288,8 @@ static NTSTATUS cmd_samr_query_user(struct cli_state *cli,
 		sscanf(argv[3], "%x", &access_mask);
 	
 
-	slprintf (server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
-	strupper (server);
+	slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
+	strupper_m(server);
 	
 	result = try_samr_connects(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS,
 				   &connect_pol);
@@ -396,8 +396,8 @@ static NTSTATUS cmd_samr_query_group(struct cli_state *cli,
 	if (argc > 3)
 		sscanf(argv[3], "%x", &access_mask);
 
-	slprintf (server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
-	strupper (server);
+	slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
+	strupper_m(server);
 
 	result = try_samr_connects(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS,
 				   &connect_pol);
@@ -458,8 +458,8 @@ static NTSTATUS cmd_samr_query_usergroups(struct cli_state *cli,
 	if (argc > 2)
 		sscanf(argv[2], "%x", &access_mask);
 
-	slprintf (server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
-	strupper (server);
+	slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
+	strupper_m(server);
 		
 	result = try_samr_connects(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS,
 				   &connect_pol);
@@ -524,8 +524,8 @@ static NTSTATUS cmd_samr_query_useraliases(struct cli_state *cli,
 	if (argc > 3)
 		sscanf(argv[3], "%x", &access_mask);
 
-	slprintf (server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
-	strupper (server);
+	slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
+	strupper_m(server);
 		
 	result = try_samr_connects(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS,
 				   &connect_pol);
@@ -587,8 +587,8 @@ static NTSTATUS cmd_samr_query_groupmem(struct cli_state *cli,
 	if (argc > 2)
 		sscanf(argv[2], "%x", &access_mask);
 
-	slprintf (server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
-	strupper (server);
+	slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
+	strupper_m(server);
 
 	result = try_samr_connects(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS,
 				   &connect_pol);
@@ -1415,8 +1415,8 @@ static NTSTATUS cmd_samr_query_sec_obj(struct cli_state *cli,
 			sscanf(argv[1], "%i", &user_rid);
 	}
 	
-	slprintf (server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
-	strupper (server);
+	slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
+	strupper_m(server);
 	result = try_samr_connects(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS,
 				   &connect_pol);
 

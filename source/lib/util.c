@@ -99,7 +99,7 @@ BOOL set_global_myname(const char *myname)
 	smb_myname = strdup(myname);
 	if (!smb_myname)
 		return False;
-	strupper(smb_myname);
+	strupper_m(smb_myname);
 	return True;
 }
 
@@ -118,7 +118,7 @@ BOOL set_global_myworkgroup(const char *myworkgroup)
 	smb_myworkgroup = strdup(myworkgroup);
 	if (!smb_myworkgroup)
 		return False;
-	strupper(smb_myworkgroup);
+	strupper_m(smb_myworkgroup);
 	return True;
 }
 
@@ -137,7 +137,7 @@ BOOL set_global_scope(const char *scope)
 	smb_scope = strdup(scope);
 	if (!smb_scope)
 		return False;
-	strupper(smb_scope);
+	strupper_m(smb_scope);
 	return True;
 }
 
@@ -184,7 +184,7 @@ static BOOL set_my_netbios_names(const char *name, int i)
 	smb_my_netbios_names[i] = strdup(name);
 	if (!smb_my_netbios_names[i])
 		return False;
-	strupper(smb_my_netbios_names[i]);
+	strupper_m(smb_my_netbios_names[i]);
 	return True;
 }
 
@@ -265,7 +265,7 @@ BOOL init_names(void)
 	p = strchr( local_machine, ' ' );
 	if (p)
 		*p = 0;
-	strlower( local_machine );
+	strlower_m( local_machine );
 
 	DEBUG( 5, ("Netbios name list:-\n") );
 	for( n=0; my_netbios_names(n); n++ )
@@ -1380,7 +1380,7 @@ char *gidtoname(gid_t gid)
  Convert a user name into a uid. 
 ********************************************************************/
 
-uid_t nametouid(char *name)
+uid_t nametouid(const char *name)
 {
 	struct passwd *pass;
 	char *p;
@@ -1911,6 +1911,17 @@ void dump_data(int level, const char *buf1,int len)
 	}	
 }
 
+void dump_data_pw(const char *msg, const uchar * data, size_t len)
+{
+#ifdef DEBUG_PASSWORD
+	DEBUG(11, ("%s", msg));
+	if (data != NULL && len > 0)
+	{
+		dump_data(11, data, len);
+	}
+#endif
+}
+
 char *tab_depth(int depth)
 {
 	static pstring spaces;
@@ -2336,8 +2347,8 @@ BOOL mask_match(const char *string, char *pattern, BOOL is_case_sensitive)
 
 	fstrcpy(p2, pattern);
 	fstrcpy(s2, string);
-	strlower(p2); 
-	strlower(s2);
+	strlower_m(p2); 
+	strlower_m(s2);
 	return ms_fnmatch(p2, s2, Protocol) == 0;
 }
 
@@ -2453,8 +2464,8 @@ BOOL unix_wild_match(const char *pattern, const char *string)
 
 	pstrcpy(p2, pattern);
 	pstrcpy(s2, string);
-	strlower(p2);
-	strlower(s2);
+	strlower_m(p2);
+	strlower_m(s2);
 
 	/* Remove any *? and ** from the pattern as they are meaningless */
 	for(p = p2; *p; p++)

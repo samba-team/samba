@@ -227,7 +227,7 @@ BOOL create_next_pdu(pipes_struct *p)
 		if (auth_seal || auth_verify) {
 			RPC_HDR_AUTH auth_info;
 
-			init_rpc_hdr_auth(&auth_info, NTLMSSP_AUTH_TYPE, NTLMSSP_AUTH_LEVEL, 
+			init_rpc_hdr_auth(&auth_info, NTLMSSP_AUTH_TYPE, RPC_PIPE_AUTH_SEAL_LEVEL, 
 					(auth_verify ? RPC_HDR_AUTH_LEN : 0), (auth_verify ? 1 : 0));
 			if(!smb_io_rpc_hdr_auth("hdr_auth", &auth_info, &outgoing_pdu, 0)) {
 				DEBUG(0,("create_next_pdu: failed to marshall RPC_HDR_AUTH.\n"));
@@ -263,11 +263,9 @@ BOOL create_next_pdu(pipes_struct *p)
 		prs_struct rverf;
 		prs_struct rauth;
 
-		uchar sign[8];
-
 		data = prs_data_p(&outgoing_pdu) + data_pos;
 
-		init_rpc_hdr_auth(&auth_info, NETSEC_AUTH_TYPE, NETSEC_AUTH_LEVEL, 
+		init_rpc_hdr_auth(&auth_info, NETSEC_AUTH_TYPE, RPC_PIPE_AUTH_SEAL_LEVEL, 
 				  RPC_HDR_AUTH_LEN, 1);
 
 		if(!smb_io_rpc_hdr_auth("hdr_auth", &auth_info, &outgoing_pdu, 0)) {
@@ -284,12 +282,12 @@ BOOL create_next_pdu(pipes_struct *p)
 					p->netsec_auth.seq_num));
 		}
 
-		RSIVAL(sign, 0, p->netsec_auth.seq_num);
-		SIVAL(sign, 4, 0);
+		init_rpc_auth_netsec_chk(&verf, netsec_sig, nullbytes, nullbytes, nullbytes);
 
-		init_rpc_auth_netsec_chk(&verf, netsec_sig, nullbytes, sign, nullbytes);
-
-		netsec_encode(&p->netsec_auth, &verf, data, data_len);
+		netsec_encode(&p->netsec_auth, 
+			      AUTH_PIPE_NETSEC|AUTH_PIPE_SIGN|AUTH_PIPE_SEAL, 
+			      SENDER_IS_ACCEPTOR,
+			      &verf, data, data_len);
 
 		smb_io_rpc_auth_netsec_chk("", &verf, &outgoing_pdu, 0);
 
@@ -458,13 +456,17 @@ failed authentication on named pipe %s.\n", domain, user_name, wks, p->name ));
 			p->ntlmssp_hash[256] = 0;
 			p->ntlmssp_hash[257] = 0;
 		}
+
+		dump_data_pw("NTLMSSP hash (v1)\n", p->ntlmssp_hash, 
+			     sizeof(p->ntlmssp_hash));
+
 /*		NTLMSSPhash(p->ntlmssp_hash, p24); */
 		p->ntlmssp_seq_num = 0;
 
 	}
 
 	fstrcpy(p->user_name, user_name);
-	fstrcpy(p->pipe_user_name, pdb_get_username(server_info->sam_account));
+	fstrcpy(p->pipe_user_name, server_info->unix_name);
 	fstrcpy(p->domain, domain);
 	fstrcpy(p->wks, wks);
 
@@ -546,7 +548,7 @@ BOOL api_pipe_bind_auth_resp(pipes_struct *p, prs_struct *rpc_in_p)
 		return False;
 	}
 
-	if (autha_info.auth_type != NTLMSSP_AUTH_TYPE || autha_info.auth_level != NTLMSSP_AUTH_LEVEL) {
+	if (autha_info.auth_type != NTLMSSP_AUTH_TYPE || autha_info.auth_level != RPC_PIPE_AUTH_SEAL_LEVEL) {
 		DEBUG(0,("api_pipe_bind_auth_resp: incorrect auth type (%d) or level (%d).\n",
 			(int)autha_info.auth_type, (int)autha_info.auth_level ));
 		return False;
@@ -1070,7 +1072,7 @@ BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 
 		/*** Authentication info ***/
 
-		init_rpc_hdr_auth(&auth_info, NTLMSSP_AUTH_TYPE, NTLMSSP_AUTH_LEVEL, RPC_HDR_AUTH_LEN, 1);
+		init_rpc_hdr_auth(&auth_info, NTLMSSP_AUTH_TYPE, RPC_PIPE_AUTH_SEAL_LEVEL, RPC_HDR_AUTH_LEN, 1);
 		if(!smb_io_rpc_hdr_auth("", &auth_info, &out_auth, 0)) {
 			DEBUG(0,("api_pipe_bind_req: marshalling of RPC_HDR_AUTH failed.\n"));
 			goto err_exit;
@@ -1105,7 +1107,7 @@ BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
                    re-used from the auth2 the client did before. */
 		p->dc = last_dcinfo;
 
-		init_rpc_hdr_auth(&auth_info, NETSEC_AUTH_TYPE, NETSEC_AUTH_LEVEL, RPC_HDR_AUTH_LEN, 1);
+		init_rpc_hdr_auth(&auth_info, NETSEC_AUTH_TYPE, RPC_PIPE_AUTH_SEAL_LEVEL, RPC_HDR_AUTH_LEN, 1);
 		if(!smb_io_rpc_hdr_auth("", &auth_info, &out_auth, 0)) {
 			DEBUG(0,("api_pipe_bind_req: marshalling of RPC_HDR_AUTH failed.\n"));
 			goto err_exit;
@@ -1226,7 +1228,14 @@ BOOL api_pipe_auth_process(pipes_struct *p, prs_struct *rpc_in)
 		 * has already been consumed.
 		 */
 		char *data = prs_data_p(rpc_in) + RPC_HDR_REQ_LEN;
+		dump_data_pw("NTLMSSP hash (v1)\n", p->ntlmssp_hash, 
+			     sizeof(p->ntlmssp_hash));
+
+		dump_data_pw("Incoming RPC PDU (NTLMSSP sealed)\n", 
+			     data, data_len);
 		NTLMSSPcalc_p(p, (uchar*)data, data_len);
+		dump_data_pw("Incoming RPC PDU (NTLMSSP unsealed)\n", 
+			     data, data_len);
 		crc32 = crc32_calc_buffer(data, data_len);
 	}
 
@@ -1335,7 +1344,7 @@ BOOL api_pipe_netsec_process(pipes_struct *p, prs_struct *rpc_in)
 	}
 
 	if ((auth_info.auth_type != NETSEC_AUTH_TYPE) ||
-	    (auth_info.auth_level != NETSEC_AUTH_LEVEL)) {
+	    (auth_info.auth_level != RPC_PIPE_AUTH_SEAL_LEVEL)) {
 		DEBUG(0,("Invalid auth info %d or level %d on schannel\n",
 			 auth_info.auth_type, auth_info.auth_level));
 		return False;
@@ -1346,7 +1355,10 @@ BOOL api_pipe_netsec_process(pipes_struct *p, prs_struct *rpc_in)
 		return False;
 	}
 
-	if (!netsec_decode(&p->netsec_auth, &netsec_chk,
+	if (!netsec_decode(&p->netsec_auth,
+			   AUTH_PIPE_NETSEC|AUTH_PIPE_SIGN|AUTH_PIPE_SEAL, 
+			   SENDER_IS_INITIATOR,
+			   &netsec_chk,
 			   prs_data_p(rpc_in)+old_offset, data_len)) {
 		DEBUG(0,("failed to decode PDU\n"));
 		return False;

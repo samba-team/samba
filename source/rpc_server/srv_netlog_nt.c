@@ -650,10 +650,8 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 	} /* end switch */
 	
 	if ( NT_STATUS_IS_OK(status) ) {
-		become_root();
 		status = auth_context->check_ntlm_password(auth_context, 
 			user_info, &server_info);
-		unbecome_root();
 	}
 
 	(auth_context->free)(&auth_context);	
@@ -732,8 +730,7 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 
 		init_net_user_info3(p->mem_ctx, usr_info, 
 				    user_rid,
-				    group_rid,
-				    
+				    group_rid,   
 				    pdb_get_username(sampw),
 				    pdb_get_fullname(sampw),
 				    pdb_get_homedir(sampw),

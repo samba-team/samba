@@ -25,7 +25,21 @@
 #include "winbindd.h"
 
 BOOL opt_nocache = False;
-BOOL opt_dual_daemon = False;
+BOOL opt_dual_daemon = True;
+
+/*****************************************************************************
+ stubb functions 
+****************************************************************************/
+
+void become_root( void )
+{
+	return;
+}
+
+void unbecome_root( void )
+{
+	return;
+}
 
 /* Reload configuration */
 
@@ -51,6 +65,7 @@ static BOOL reload_services_file(BOOL test)
 
 	return(ret);
 }
+
 
 #if DUMP_CORE
 
@@ -187,6 +202,20 @@ static void sighup_handler(int signum)
 	sys_select_signal();
 }
 
+/* React on 'smbcontrol winbindd reload-config' in the same way as on SIGHUP*/
+static void msg_reload_services(int msg_type, pid_t src, void *buf, size_t len)
+{
+        /* Flush various caches */
+	flush_caches();
+	reload_services_file(True);
+}
+
+/* React on 'smbcontrol winbindd shutdown' in the same way as on SIGTERM*/
+static void msg_shutdown(int msg_type, pid_t src, void *buf, size_t len)
+{
+	terminate();
+}
+
 struct dispatch_table {
 	enum winbindd_cmd cmd;
 	enum winbindd_result (*fn)(struct winbindd_cli_state *state);
@@ -254,7 +283,16 @@ static struct dispatch_table dispatch_table[] = {
 
 	{ WINBINDD_WINS_BYNAME, winbindd_wins_byname, "WINS_BYNAME" },
 	{ WINBINDD_WINS_BYIP, winbindd_wins_byip, "WINS_BYIP" },
-
+	
+	/* UNIX account management functions */
+	{ WINBINDD_CREATE_USER, 		winbindd_create_user, 		"CREATE_USER" 		},
+	{ WINBINDD_CREATE_GROUP,		winbindd_create_group, 		"CREATE_GROUP" 		},
+	{ WINBINDD_ADD_USER_TO_GROUP, 		winbindd_add_user_to_group, 	"ADD_USER_TO_GROUP" 	},
+	{ WINBINDD_REMOVE_USER_FROM_GROUP, 	winbindd_remove_user_from_group,"REMOVE_USER_FROM_GROUP"},
+	{ WINBINDD_SET_USER_PRIMARY_GROUP, 	winbindd_set_user_primary_group,"SET_USER_PRIMARY_GROUP"},
+	{ WINBINDD_DELETE_USER,	 		winbindd_delete_user,		"DELETE_USER"		},
+	{ WINBINDD_DELETE_GROUP, 		winbindd_delete_group,		"DELETE_GROUP"		},
+	
 	/* End of list */
 
 	{ WINBINDD_NUM_CMDS, NULL, "NONE" }
@@ -723,11 +761,8 @@ static void process_loop(void)
 		if (do_sighup) {
 
 			DEBUG(3, ("got SIGHUP\n"));
- 
-                        /* Flush various caches */
 
-			flush_caches();
-			reload_services_file(True);
+			msg_reload_services(MSG_SMB_CONF_UPDATED, (pid_t) 0, NULL, 0);
 			do_sighup = False;
 		}
 
@@ -753,7 +788,7 @@ int main(int argc, char **argv)
 		{ "stdout", 'S', POPT_ARG_VAL, &log_stdout, True, "Log to stdout" },
 		{ "foreground", 'F', POPT_ARG_VAL, &Fork, False, "Daemon in foreground mode" },
 		{ "interactive", 'i', POPT_ARG_NONE, NULL, 'i', "Interactive mode" },
-		{ "dual-daemon", 'B', POPT_ARG_VAL, &opt_dual_daemon, True, "Dual daemon mode" },
+		{ "single-daemon", 'Y', POPT_ARG_VAL, &opt_dual_daemon, False, "Single daemon mode" },
 		{ "no-caching", 'n', POPT_ARG_VAL, &opt_nocache, False, "Disable caching" },
 		POPT_COMMON_SAMBA
 		POPT_TABLEEND
@@ -848,9 +883,6 @@ int main(int argc, char **argv)
 	if (!idmap_init(lp_idmap_backend()))
 		return 1;
 
-	if (!idmap_init_wellknown_sids())
-		exit(1);
-
 	/* Unblock all signals we are interested in as they may have been
 	   blocked by the parent process. */
 
@@ -896,6 +928,12 @@ int main(int argc, char **argv)
 		DEBUG(0, ("unable to initialise messaging system\n"));
 		exit(1);
 	}
+	
+	/* React on 'smbcontrol winbindd reload-config' in the same way
+	   as to SIGHUP signal */
+	message_register(MSG_SMB_CONF_UPDATED, msg_reload_services);
+	message_register(MSG_SHUTDOWN, msg_shutdown);
+	
 	poptFreeContext(pc);
 
 	netsamlogon_cache_init(); /* Non-critical */

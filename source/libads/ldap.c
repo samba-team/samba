@@ -216,7 +216,7 @@ got_connection:
 		/* by default use the machine account */
 		fstring myname;
 		fstrcpy(myname, global_myname());
-		strlower(myname);
+		strlower_m(myname);
 		asprintf(&ads->auth.user_name, "HOST/%s", myname);
 	}
 
@@ -338,7 +338,7 @@ static char **ads_pull_strvals(TALLOC_CTX *ctx, const char **in_vals)
  *  again when the entire search is complete 
  * @param ads connection to ads server 
  * @param bind_path Base dn for the search
- * @param scope Scope of search (LDAP_BASE | LDAP_ONE | LDAP_SUBTREE)
+ * @param scope Scope of search (LDAP_SCOPE_BASE | LDAP_SCOPE_ONE | LDAP_SCOPE_SUBTREE)
  * @param expr Search expression - specified in local charset
  * @param attrs Attributes to retrieve - specified in utf8 or ascii
  * @param res ** which will contain results - free res* with ads_msgfree()
@@ -478,7 +478,7 @@ done:
  * all entries in a large search.
  * @param ads connection to ads server 
  * @param bind_path Base dn for the search
- * @param scope Scope of search (LDAP_BASE | LDAP_ONE | LDAP_SUBTREE)
+ * @param scope Scope of search (LDAP_SCOPE_BASE | LDAP_SCOPE_ONE | LDAP_SCOPE_SUBTREE)
  * @param expr Search expression
  * @param attrs Attributes to retrieve
  * @param res ** which will contain results - free res* with ads_msgfree()
@@ -525,7 +525,7 @@ ADS_STATUS ads_do_search_all(ADS_STRUCT *ads, const char *bind_path,
  *  runs the function as each page is returned, using ads_process_results()
  * @param ads connection to ads server
  * @param bind_path Base dn for the search
- * @param scope Scope of search (LDAP_BASE | LDAP_ONE | LDAP_SUBTREE)
+ * @param scope Scope of search (LDAP_SCOPE_BASE | LDAP_SCOPE_ONE | LDAP_SCOPE_SUBTREE)
  * @param expr Search expression - specified in local charset
  * @param attrs Attributes to retrieve - specified in UTF-8 or ascii
  * @param fn Function which takes attr name, values list, and data_area
@@ -567,7 +567,7 @@ ADS_STATUS ads_do_search_all_fn(ADS_STRUCT *ads, const char *bind_path,
  * Do a search with a timeout.
  * @param ads connection to ads server
  * @param bind_path Base dn for the search
- * @param scope Scope of search (LDAP_BASE | LDAP_ONE | LDAP_SUBTREE)
+ * @param scope Scope of search (LDAP_SCOPE_BASE | LDAP_SCOPE_ONE | LDAP_SCOPE_SUBTREE)
  * @param expr Search expression
  * @param attrs Attributes to retrieve
  * @param res ** which will contain results - free res* with ads_msgfree()
@@ -937,7 +937,7 @@ ADS_STATUS ads_del_dn(ADS_STRUCT *ads, char *del_dn)
 		return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
 	}
 	
-	ret = ldap_delete(ads->ld, utf8_dn);
+	ret = ldap_delete_s(ads->ld, utf8_dn);
 	return ADS_ERROR(ret);
 }
 
@@ -997,13 +997,13 @@ static ADS_STATUS ads_add_machine_acct(ADS_STRUCT *ads, const char *hostname,
 	psp = talloc_asprintf(ctx, "HOST/%s.%s", 
 			      hostname, 
 			      ads->config.realm);
-	strlower(&psp[5]);
+	strlower_m(&psp[5]);
 	servicePrincipalName[1] = psp;
 	servicePrincipalName[2] = talloc_asprintf(ctx, "CIFS/%s", hostname);
 	psp2 = talloc_asprintf(ctx, "CIFS/%s.%s", 
 			       hostname, 
 			       ads->config.realm);
-	strlower(&psp2[5]);
+	strlower_m(&psp2[5]);
 	servicePrincipalName[3] = psp2;
 
 	free(ou_str);
@@ -1285,7 +1285,7 @@ ADS_STATUS ads_join_realm(ADS_STRUCT *ads, const char *hostname,
 
 	/* hostname must be lowercase */
 	host = strdup(hostname);
-	strlower(host);
+	strlower_m(host);
 
 	status = ads_find_machine_acct(ads, (void **)&res, host);
 	if (ADS_ERR_OK(status) && ads_count_replies(ads, res) == 1) {
@@ -1330,7 +1330,7 @@ ADS_STATUS ads_leave_realm(ADS_STRUCT *ads, const char *hostname)
 
 	/* hostname must be lowercase */
 	host = strdup(hostname);
-	strlower(host);
+	strlower_m(host);
 
 	status = ads_find_machine_acct(ads, &res, host);
 	if (!ADS_ERR_OK(status)) {

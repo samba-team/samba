@@ -2,11 +2,9 @@ Template: samba-common/character_set
 Type: string
 _Description: Character Set for Unix filesystem
  You currently have a "character set" configured in your smb.conf.  In
- Samba 3.0, this option is replaced by two new options, "unix charset" and
- "display charset".  Please specify the character set you wish to use for
- these new options, which control how Samba interprets filenames on the
- file system and how smbclient will interpret these names when you connect
- to a file server.
+ Samba 3.0, this option is replaced by a new option, "unix charset".
+ Please specify the character set you wish to use for theis new option,
+ which controls how Samba interprets filenames on the file system.
  .
  If you leave this option blank, your smb.conf will not be changed.
 

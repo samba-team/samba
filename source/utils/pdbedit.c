@@ -51,6 +51,21 @@
 #define MASK_ALWAYS_GOOD	0x0000001F
 #define MASK_USER_GOOD		0x00401F00
 
+/*****************************************************************************
+ stubb functions
+****************************************************************************/
+
+void become_root( void )
+{
+        return;
+}
+
+void unbecome_root( void )
+{
+        return;
+}
+
+
 /*********************************************************
  Add all currently available users to another db
  ********************************************************/
@@ -157,8 +172,7 @@ static int print_sam_info (SAM_ACCOUNT *sam_pwent, BOOL verbosity, BOOL smbpwdst
 		char lm_passwd[33];
 		char nt_passwd[33];
 
-		uid = -1;
-		sid_to_uid(pdb_get_user_sid(sam_pwent), &uid);
+		uid = nametouid(pdb_get_username(sam_pwent));
 		pdb_sethexpwd(lm_passwd, pdb_get_lanman_passwd(sam_pwent), pdb_get_acct_ctrl(sam_pwent));
 		pdb_sethexpwd(nt_passwd, pdb_get_nt_passwd(sam_pwent), pdb_get_acct_ctrl(sam_pwent));
 			
@@ -170,8 +184,7 @@ static int print_sam_info (SAM_ACCOUNT *sam_pwent, BOOL verbosity, BOOL smbpwdst
 		       pdb_encode_acct_ctrl(pdb_get_acct_ctrl(sam_pwent),NEW_PW_FORMAT_SPACE_PADDED_LEN),
 		       (uint32)pdb_get_pass_last_set_time(sam_pwent));
 	} else {
-		uid = -1;
-		sid_to_uid(pdb_get_user_sid(sam_pwent), &uid);
+		uid = nametouid(pdb_get_username(sam_pwent));
 		printf ("%s:%d:%s\n", pdb_get_username(sam_pwent), uid,	pdb_get_fullname(sam_pwent));
 	}
 
@@ -337,7 +350,7 @@ static int new_user (struct pdb_context *in, const char *username,
 	NTSTATUS nt_status;
 	char *password1, *password2, *staticpass;
 	
-	if (!NT_STATUS_IS_OK(nt_status = pdb_init_sam_new(&sam_pwent, username))) {
+	if (!NT_STATUS_IS_OK(nt_status = pdb_init_sam_new(&sam_pwent, username, 0))) {
 		DEBUG(0, ("could not create account to add new user %s\n", username));
 		return -1;
 	}
@@ -606,13 +619,10 @@ int main (int argc, char **argv)
 		exit(1);
 	}
 
+	if(!initialize_password_db(False))
+		exit(1);
+
 	if (!init_names())
-		exit(1);
-
-	if (!idmap_init(lp_idmap_backend()))
-		exit(1);
-
-	if (!idmap_init_wellknown_sids())
 		exit(1);
 
 	setparms =	(backend ? BIT_BACKEND : 0) +

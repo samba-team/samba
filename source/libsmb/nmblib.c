@@ -823,7 +823,7 @@ void make_nmb_name( struct nmb_name *n, const char *name, int type)
 	push_ascii(n->name, name, 16, STR_TERMINATE|STR_UPPER);
 	n->name_type = (unsigned int)type & 0xFF;
 	StrnCpy( n->scope, global_scope(), 63 );
-	strupper( n->scope );
+	strupper_m( n->scope );
 }
 
 /*******************************************************************

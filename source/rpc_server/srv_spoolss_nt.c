@@ -273,7 +273,34 @@ static Printer_entry *find_printer_index_by_hnd(pipes_struct *p, POLICY_HND *hnd
 }
 
 /****************************************************************************
-  find printer index by handle
+ look for a printer object cached on an open printer handle
+****************************************************************************/
+
+WERROR find_printer_in_print_hnd_cache( TALLOC_CTX *ctx, NT_PRINTER_INFO_LEVEL_2 **info2, 
+                                        const char *printername )
+{
+	Printer_entry *p;
+	
+	DEBUG(10,("find_printer_in_print_hnd_cache: printer [%s]\n", printername));
+
+	for ( p=printers_list; p; p=p->next )
+	{
+		if ( p->printer_type==PRINTER_HANDLE_IS_PRINTER 
+			&& p->printer_info
+			&& StrCaseCmp(p->dev.handlename, printername) == 0 )
+		{
+			DEBUG(10,("Found printer\n"));
+			*info2 = dup_printer_2( ctx, p->printer_info->info_2 );
+			if ( *info2 )
+				return WERR_OK;
+		}
+	}
+
+	return WERR_INVALID_PRINTER_NAME;
+}
+
+/****************************************************************************
+  destroy any cached printer_info_2 structures on open handles
 ****************************************************************************/
 
 void invalidate_printer_hnd_cache( char *printername )
@@ -2339,7 +2366,6 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint
 		return WERR_OK;
 	}
 
-#if 0	/* JERRY */	
 	/* REG_BINARY
 	 *  uint32 size	 	 = 0x114
 	 *  uint32 major	 = 5
@@ -2348,14 +2374,23 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint
 	 *  extra unicode string = e.g. "Service Pack 3"
 	 */
 	if (!StrCaseCmp(value, "OSVersion")) {
-		*type = 0x4;
-		if((*data = (uint8 *)talloc(ctx, 4*sizeof(uint8) )) == NULL)
+		*type = 0x3;
+		*needed = 0x114;
+
+		if((*data = (uint8 *)talloc(ctx, (*needed)*sizeof(uint8) )) == NULL)
 			return WERR_NOMEM;
-		SIVAL(*data, 0, 2);
-		*needed = 0x4;
+		ZERO_STRUCTP( *data );
+		
+		SIVAL(*data, 0, *needed);	/* size */
+		SIVAL(*data, 4, 5);		/* Windows 2000 == 5.0 */
+		SIVAL(*data, 8, 0);
+		SIVAL(*data, 12, 2195);		/* build */
+		
+		/* leave extra string empty */
+		
 		return WERR_OK;
 	}
-#endif
+
 
    	if (!StrCaseCmp(value, "DefaultSpoolDirectory")) {
 		fstring string;
@@ -4331,7 +4366,7 @@ static BOOL construct_printer_info_7(Printer_entry *print_hnd, PRINTER_INFO_7 *p
 	
 	if (is_printer_published(print_hnd, snum, &guid)) {
 		asprintf(&guid_str, "{%s}", smb_uuid_string_static(guid));
-		strupper(guid_str);
+		strupper_m(guid_str);
 		init_unistr(&printer->guid, guid_str);
 		printer->action = SPOOL_DS_PUBLISH;
 	} else {
@@ -4681,7 +4716,7 @@ WERROR _spoolss_enumprinters( pipes_struct *p, SPOOL_Q_ENUMPRINTERS *q_u, SPOOL_
 	 */
 
 	unistr2_to_ascii(name, servername, sizeof(name)-1);
-	strupper(name);
+	strupper_m(name);
 
 	switch (level) {
 	case 1:

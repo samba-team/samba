@@ -671,7 +671,7 @@ ADS_STATUS ads_set_machine_password(ADS_STRUCT *ads,
 	char *host = strdup(hostname);
 	char *principal; 
 
-	strlower(host);
+	strlower_m(host);
 
 	/*
 	  we need to use the '$' form of the name here, as otherwise the
