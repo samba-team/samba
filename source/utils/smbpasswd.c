@@ -925,8 +925,6 @@ int main(int argc, char **argv)
 	}           
 	strupper(global_myname);
 
-	secrets_init();
-
 	/* Check the effective uid - make sure we are not setuid */
 	if ((geteuid() == (uid_t)0) && (getuid() != (uid_t)0)) {
 		fprintf(stderr, "smbpasswd must *NOT* be setuid root.\n");
@@ -941,6 +939,7 @@ int main(int argc, char **argv)
 	}
 
 	if (local_mode || getuid() == 0) {
+		secrets_init();
 		return process_root(argc, argv);
 	} 
 
