@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -517,4 +517,67 @@ get_response(const char *prompt, const char *def, char *buf, size_t len)
     if(strcmp(buf, "") == 0)
 	strncpy(buf, def, len);
     buf[len-1] = 0;
+}
+
+/*
+ * return [0, 16) or -1
+ */
+
+static int
+hex2n (char c)
+{
+    static char hexdigits[] = "0123456789abcdef";
+    const char *p;
+
+    p = strchr (hexdigits, tolower(c));
+    if (p == NULL)
+	return -1;
+    else
+	return p - hexdigits;
+}
+
+/*
+ * convert a key in a readable format into a keyblock.
+ * return 0 iff succesful.
+ */
+
+int
+parse_des_key (const char *key_string, krb5_key_data *key_data,
+	       const char **err)
+{
+    const char *p = key_string;
+    unsigned char bits[8];
+    int i;
+
+    if (strlen (key_string) != 16) {
+	*err = "bad length, should be 16 for DES key";
+	return 1;
+    }
+    for (i = 0; i < 8; ++i) {
+	int d1, d2;
+
+	d1 = hex2n(p[2 * i]);
+	d2 = hex2n(p[2 * i + 1]);
+	if (d1 < 0 || d2 < 0) {
+	    *err = "non-hex character";
+	    return 1;
+	}
+	bits[i] = (d1 << 4) | d2;
+    }
+    for (i = 0; i < 3; ++i) {
+	key_data[i].key_data_ver  = 2;
+	key_data[i].key_data_kvno = 0;
+	/* key */
+	key_data[i].key_data_type[0]     = ETYPE_DES_CBC_CRC;
+	key_data[i].key_data_length[0]   = 8;
+	key_data[i].key_data_contents[0] = malloc(8);
+	memcpy (key_data[i].key_data_contents[0], bits, 8);
+	/* salt */
+	key_data[i].key_data_type[1]     = KRB5_PW_SALT;
+	key_data[i].key_data_length[1]   = 0;
+	key_data[i].key_data_contents[1] = NULL;
+    }
+    key_data[0].key_data_type[0] = ETYPE_DES_CBC_MD5;
+    key_data[1].key_data_type[0] = ETYPE_DES_CBC_MD4;
+    return 0;
 }
