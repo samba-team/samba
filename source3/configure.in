@@ -2699,8 +2699,8 @@ if test x"$with_ads_support" != x"no"; then
     
     krb5_init_context(&context);
     if (krb5_kt_resolve(context, "MEMORY:", &keytab))
-      exit(0);
-    exit(1);
+      exit(1);
+    exit(0);
   }], 
   samba_cv_HAVE_MEMORY_KEYTAB=yes,
   samba_cv_HAVE_MEMORY_KEYTAB=no)])
