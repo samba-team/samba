@@ -39,6 +39,8 @@
 
 #ifndef HAVE___PROGNAME
 char *__progname = "ftp";
+#else
+extern char *__progname;
 #endif
 
 int
