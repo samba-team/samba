@@ -680,7 +680,15 @@ static BOOL user_can_read_file(connection_struct *conn, char *name)
 
 	ZERO_STRUCT(ste);
 
-	/* if we can't stat it does not show it */
+	/*
+	 * If user is a member of the Admin group
+	 * we never hide files from them.
+	 */
+
+	if (conn->admin_user)
+		return True;
+
+	/* If we can't stat it does not show it */
 	if (vfs_stat(conn, name, &ste) != 0)
 		return False;
 

@@ -397,11 +397,8 @@ static void client_read(struct winbindd_cli_state *state)
 
 	} while (n == -1 && errno == EINTR);
 	
-	DEBUG(10,("client_read: read %d bytes. Need %d more for a full request.\n", n, sizeof(state->request) - n - state->read_buf_len ));
-
-	/* Read failed, kill client */
-	
 	if (n == -1 || n == 0) {
+		/* Read failed, kill client */
 		DEBUG(5,("read failed on sock %d, pid %d: %s\n",
 			 state->sock, state->pid, 
 			 (n == -1) ? strerror(errno) : "EOF"));
@@ -410,6 +407,8 @@ static void client_read(struct winbindd_cli_state *state)
 		return;
 	}
 	
+	DEBUG(10,("client_read: read %d bytes. Need %d more for a full request.\n", n, sizeof(state->request) - n - state->read_buf_len ));
+
 	/* Update client state */
 	
 	state->read_buf_len += n;
