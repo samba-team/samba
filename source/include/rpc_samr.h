@@ -290,6 +290,14 @@ typedef struct sam_user_info_21
 } SAM_USER_INFO_21;
 
 
+/* SAM_USER_INFO_12 */
+typedef struct sam_user_info_12
+{
+	uint8 lm_pwd[16];    /* lm user passwords */
+	uint8 nt_pwd[16];    /* nt user passwords */
+
+} SAM_USER_INFO_12;
+
 /* SAM_USER_INFO_11 */
 typedef struct sam_user_info_11
 {
@@ -1156,6 +1164,7 @@ typedef struct sam_userinfo_ctr_info
 	{
 		SAM_USER_INFO_10 *id10; /* auth-level 0x10 */
 		SAM_USER_INFO_11 *id11; /* auth-level 0x11 */
+		SAM_USER_INFO_12 *id12; /* auth-level 0x12 */
 		SAM_USER_INFO_21 *id21; /* auth-level 21 */
 		SAM_USER_INFO_23 *id23; /* auth-level 0x17 */
 		SAM_USER_INFO_24 *id24; /* auth-level 0x18 */

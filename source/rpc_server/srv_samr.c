@@ -642,7 +642,17 @@ static void api_samr_query_userinfo( rpcsrv_struct *p, prs_struct *data, prs_str
 	ZERO_STRUCT(ctr);
 
 	samr_io_q_query_userinfo("", &q_u, data, 0);
-	status = _samr_query_userinfo(&q_u.pol, q_u.switch_value, &ctr);
+
+	if (q_u.switch_value == 0x12)
+	{
+		DEBUG(0,("api_samr_query_userinfo: possible password attack (info level 0x12)\n"));
+
+		status = NT_STATUS_INVALID_INFO_CLASS;
+	}
+	else
+	{
+		status = _samr_query_userinfo(&q_u.pol, q_u.switch_value, &ctr);
+	}
 	make_samr_r_query_userinfo(&r_u, &ctr, status);
 	samr_io_r_query_userinfo("", &r_u, rdata, 0);
 }

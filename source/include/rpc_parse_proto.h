@@ -633,6 +633,10 @@ BOOL samr_io_r_create_user(char *desc,  SAMR_R_CREATE_USER *r_u, prs_struct *ps,
 BOOL make_samr_q_query_userinfo(SAMR_Q_QUERY_USERINFO *q_u,
 				POLICY_HND *hnd, uint16 switch_value);
 BOOL samr_io_q_query_userinfo(char *desc,  SAMR_Q_QUERY_USERINFO *q_u, prs_struct *ps, int depth);
+BOOL make_sam_user_info12(SAM_USER_INFO_12 *usr,
+				const uint8 lm_pwd[16],
+				const uint8 nt_pwd[16]);
+BOOL sam_io_user_info12(char *desc,  SAM_USER_INFO_12 *u, prs_struct *ps, int depth);
 BOOL make_sam_user_info10(SAM_USER_INFO_10 *usr,
 				uint32 acb_info);
 BOOL sam_io_user_info10(char *desc,  SAM_USER_INFO_10 *usr, prs_struct *ps, int depth);

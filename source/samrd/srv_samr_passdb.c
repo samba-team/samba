@@ -1632,6 +1632,32 @@ static BOOL get_user_info_10(SAM_USER_INFO_10 *id10, uint32 user_rid)
 /*************************************************************************
  get_user_info_21
  *************************************************************************/
+static BOOL get_user_info_12(SAM_USER_INFO_12 *id12, uint32 user_rid)
+{
+	struct sam_passwd *sam_pass;
+
+	become_root(True);
+	sam_pass = getsam21pwrid(user_rid);
+	unbecome_root(True);
+
+	if (sam_pass == NULL)
+	{
+		DEBUG(4,("User 0x%x not found\n", user_rid));
+		return False;
+	}
+
+	DEBUG(3,("User:[%s]\n", sam_pass->nt_name));
+
+	make_sam_user_info12(id12,
+	                     sam_pass->smb_passwd,
+	                     sam_pass->smb_nt_passwd);
+
+	return True;
+}
+
+/*************************************************************************
+ get_user_info_21
+ *************************************************************************/
 static BOOL get_user_info_21(SAM_USER_INFO_21 *id21, uint32 user_rid)
 {
 	struct sam_passwd *sam_pass;
@@ -1748,6 +1774,20 @@ uint32 _samr_query_userinfo(const POLICY_HND *pol, uint16 switch_value,
 			break;
 		}
 #endif
+		case 0x12:
+		{
+			ctr->info.id = (SAM_USER_INFO_12*)Realloc(NULL,
+					 sizeof(*ctr->info.id12));
+			if (ctr->info.id == NULL)
+			{
+				return NT_STATUS_NO_MEMORY;
+			}
+			if (!get_user_info_12(ctr->info.id12, rid))
+			{
+				return NT_STATUS_NO_SUCH_USER;
+			}
+			break;
+		}
 		case 21:
 		{
 			ctr->info.id = (SAM_USER_INFO_21*)Realloc(NULL,

@@ -443,6 +443,18 @@ uint32 _samr_query_userinfo(const POLICY_HND *pol, uint16 switch_value,
 			break;
 		}
 #endif
+		case 0x12:
+		{
+			ctr->info.id = (SAM_USER_INFO_12*)Realloc(NULL,
+					 sizeof(*ctr->info.id12));
+			if (ctr->info.id == NULL)
+			{
+				return NT_STATUS_NO_MEMORY;
+			}
+			make_sam_user_info12(ctr->info.id12,
+			                     usr.lm_pwd, usr.nt_pwd); 
+			break;
+		}
 		case 21:
 		{
 			ctr->info.id = (SAM_USER_INFO_21*)Realloc(NULL,

@@ -4511,6 +4511,57 @@ static BOOL sam_io_logon_hrs(char *desc,  LOGON_HRS *hrs, prs_struct *ps, int de
 }
 
 /*******************************************************************
+makes a SAM_USER_INFO_12 structure.
+********************************************************************/
+BOOL make_sam_user_info12(SAM_USER_INFO_12 *usr,
+				const uint8 lm_pwd[16],
+				const uint8 nt_pwd[16])
+
+{
+	if (usr == NULL) return False;
+
+	DEBUG(5,("make_sam_user_info12\n"));
+
+	if (lm_pwd == NULL)
+	{
+		bzero(usr->lm_pwd, sizeof(usr->lm_pwd));
+	}
+	else
+	{
+		memcpy(usr->lm_pwd, lm_pwd, sizeof(usr->lm_pwd));
+	}
+
+	if (nt_pwd == NULL)
+	{
+		bzero(usr->nt_pwd, sizeof(usr->nt_pwd));
+	}
+	else
+	{
+		memcpy(usr->nt_pwd, nt_pwd, sizeof(usr->nt_pwd));
+	}
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+BOOL sam_io_user_info12(char *desc,  SAM_USER_INFO_12 *u, prs_struct *ps, int depth)
+{
+	if (u == NULL) return False;
+
+	prs_debug(ps, depth, desc, "samr_io_r_user_info12");
+	depth++;
+
+	prs_align(ps);
+
+	prs_uint8s(False, "lm_pwd", ps, depth, u->lm_pwd, sizeof(u->lm_pwd));
+	prs_uint8s(False, "nt_pwd", ps, depth, u->nt_pwd, sizeof(u->nt_pwd));
+
+	return True;
+}
+
+/*******************************************************************
 makes a SAM_USER_INFO_10 structure.
 ********************************************************************/
 BOOL make_sam_user_info10(SAM_USER_INFO_10 *usr,
@@ -5411,6 +5462,25 @@ BOOL samr_io_userinfo_ctr(char *desc,  SAM_USERINFO_CTR *ctr, prs_struct *ps, in
 			if (ctr->info.id11 != NULL)
 			{
 				sam_io_user_info11("", ctr->info.id11, ps, depth);
+			}
+			else
+			{
+				DEBUG(2,("samr_io_userinfo_ctr: info pointer not initialised\n"));
+				return False;
+			}
+			break;
+		}
+		case 0x12:
+		{
+			if (ps->io)
+			{
+				/* reading */
+				ctr->info.id = (SAM_USER_INFO_12*)Realloc(NULL,
+						 sizeof(*ctr->info.id12));
+			}
+			if (ctr->info.id12 != NULL)
+			{
+				sam_io_user_info12("", ctr->info.id12, ps, depth);
 			}
 			else
 			{
