@@ -89,8 +89,11 @@ LIB_OBJ = lib/charcnv.o lib/charset.o lib/debug.o lib/fault.o \
           lib/getsmbpass.o lib/interface.o lib/kanji.o lib/md4.o \
           lib/membuffer.o lib/netmask.o lib/pidfile.o lib/replace.o \
           lib/signal.o lib/slprintf.o lib/system.o lib/time.o lib/ufc.o \
-          lib/util.o lib/genrand.o lib/username.o lib/access.o lib/smbrun.o \
-	  lib/bitmap.o lib/crc32.o lib/snprintf.o
+          lib/genrand.o lib/username.o lib/access.o lib/smbrun.o \
+	  lib/bitmap.o lib/crc32.o lib/snprintf.o \
+		lib/util_str.o lib/util_sid.o \
+		lib/util_unistr.o lib/util_file.o \
+		lib/util.o lib/util_sock.o
 
 UBIQX_OBJ = ubiqx/ubi_BinTree.o ubiqx/ubi_Cache.o ubiqx/ubi_SplayTree.o \
             ubiqx/ubi_dLinkList.o ubiqx/ubi_sLinkList.o ubiqx/debugparse.o

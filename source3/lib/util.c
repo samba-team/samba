@@ -40,21 +40,13 @@ pstring scope = "";
 
 extern int DEBUGLEVEL;
 
-BOOL passive = False;
-
 int Protocol = PROTOCOL_COREPLUS;
 
 /* a default finfo structure to ensure all fields are sensible */
 file_info def_finfo = {-1,0,0,0,0,0,0,""};
 
 /* the client file descriptor */
-int Client = -1;
-
-/* the last IP received from */
-struct in_addr lastip;
-
-/* the last port received from */
-int lastport=0;
+extern int Client;
 
 /* this is used by the chaining code */
 int chain_size = 0;
@@ -91,8 +83,6 @@ pstring global_myname = "";
 fstring global_myworkgroup = "";
 char **my_netbios_names;
 
-int smb_read_error = 0;
-
 static char *filename_dos(char *path,char *buf);
 
 
@@ -111,105 +101,6 @@ char *tmpdir(void)
 }
 
 
-
-/****************************************************************************
-determine if a file descriptor is in fact a socket
-****************************************************************************/
-BOOL is_a_socket(int fd)
-{
-  int v,l;
-  l = sizeof(int);
-  return(getsockopt(fd, SOL_SOCKET, SO_TYPE, (char *)&v, &l) == 0);
-}
-
-
-static char *last_ptr=NULL;
-
-void set_first_token(char *ptr)
-{
-	last_ptr = ptr;
-}
-
-/****************************************************************************
-  Get the next token from a string, return False if none found
-  handles double-quotes. 
-Based on a routine by GJC@VILLAGE.COM. 
-Extensively modified by Andrew.Tridgell@anu.edu.au
-****************************************************************************/
-BOOL next_token(char **ptr,char *buff,char *sep, int bufsize)
-{
-  char *s;
-  BOOL quoted;
-  int len=1;
-
-  if (!ptr) ptr = &last_ptr;
-  if (!ptr) return(False);
-
-  s = *ptr;
-
-  /* default to simple separators */
-  if (!sep) sep = " \t\n\r";
-
-  /* find the first non sep char */
-  while(*s && strchr(sep,*s)) s++;
-
-  /* nothing left? */
-  if (! *s) return(False);
-
-  /* copy over the token */
-  for (quoted = False; len < bufsize && *s && (quoted || !strchr(sep,*s)); s++)
-    {
-	    if (*s == '\"') {
-		    quoted = !quoted;
-	    } else {
-		    len++;
-		    *buff++ = *s;
-	    }
-    }
-
-  *ptr = (*s) ? s+1 : s;  
-  *buff = 0;
-  last_ptr = *ptr;
-
-  return(True);
-}
-
-/****************************************************************************
-Convert list of tokens to array; dependent on above routine.
-Uses last_ptr from above - bit of a hack.
-****************************************************************************/
-char **toktocliplist(int *ctok, char *sep)
-{
-  char *s=last_ptr;
-  int ictok=0;
-  char **ret, **iret;
-
-  if (!sep) sep = " \t\n\r";
-
-  while(*s && strchr(sep,*s)) s++;
-
-  /* nothing left? */
-  if (!*s) return(NULL);
-
-  do {
-    ictok++;
-    while(*s && (!strchr(sep,*s))) s++;
-    while(*s && strchr(sep,*s)) *s++=0;
-  } while(*s);
-
-  *ctok=ictok;
-  s=last_ptr;
-
-  if (!(ret=iret=malloc(ictok*sizeof(char *)))) return NULL;
-  
-  while(ictok--) {    
-    *iret++=s;
-    while(*s++);
-    while(!*s) s++;
-  }
-
-  return ret;
-}
 
 /****************************************************************************
 prompte a dptr (to make it recently used)
@@ -233,121 +124,6 @@ static void array_promote(char *array,int elsize,int element)
   free(p);
 }
 
-enum SOCK_OPT_TYPES {OPT_BOOL,OPT_INT,OPT_ON};
-
-struct
-{
-  char *name;
-  int level;
-  int option;
-  int value;
-  int opttype;
-} socket_options[] = {
-  {"SO_KEEPALIVE",      SOL_SOCKET,    SO_KEEPALIVE,    0,                 OPT_BOOL},
-  {"SO_REUSEADDR",      SOL_SOCKET,    SO_REUSEADDR,    0,                 OPT_BOOL},
-  {"SO_BROADCAST",      SOL_SOCKET,    SO_BROADCAST,    0,                 OPT_BOOL},
-#ifdef TCP_NODELAY
-  {"TCP_NODELAY",       IPPROTO_TCP,   TCP_NODELAY,     0,                 OPT_BOOL},
-#endif
-#ifdef IPTOS_LOWDELAY
-  {"IPTOS_LOWDELAY",    IPPROTO_IP,    IP_TOS,          IPTOS_LOWDELAY,    OPT_ON},
-#endif
-#ifdef IPTOS_THROUGHPUT
-  {"IPTOS_THROUGHPUT",  IPPROTO_IP,    IP_TOS,          IPTOS_THROUGHPUT,  OPT_ON},
-#endif
-#ifdef SO_SNDBUF
-  {"SO_SNDBUF",         SOL_SOCKET,    SO_SNDBUF,       0,                 OPT_INT},
-#endif
-#ifdef SO_RCVBUF
-  {"SO_RCVBUF",         SOL_SOCKET,    SO_RCVBUF,       0,                 OPT_INT},
-#endif
-#ifdef SO_SNDLOWAT
-  {"SO_SNDLOWAT",       SOL_SOCKET,    SO_SNDLOWAT,     0,                 OPT_INT},
-#endif
-#ifdef SO_RCVLOWAT
-  {"SO_RCVLOWAT",       SOL_SOCKET,    SO_RCVLOWAT,     0,                 OPT_INT},
-#endif
-#ifdef SO_SNDTIMEO
-  {"SO_SNDTIMEO",       SOL_SOCKET,    SO_SNDTIMEO,     0,                 OPT_INT},
-#endif
-#ifdef SO_RCVTIMEO
-  {"SO_RCVTIMEO",       SOL_SOCKET,    SO_RCVTIMEO,     0,                 OPT_INT},
-#endif
-  {NULL,0,0,0,0}};
-
-	
-
-/****************************************************************************
-set user socket options
-****************************************************************************/
-void set_socket_options(int fd, char *options)
-{
-  fstring tok;
-
-  while (next_token(&options,tok," \t,", sizeof(tok)))
-    {
-      int ret=0,i;
-      int value = 1;
-      char *p;
-      BOOL got_value = False;
-
-      if ((p = strchr(tok,'=')))
-	{
-	  *p = 0;
-	  value = atoi(p+1);
-	  got_value = True;
-	}
-
-      for (i=0;socket_options[i].name;i++)
-	if (strequal(socket_options[i].name,tok))
-	  break;
-
-      if (!socket_options[i].name)
-	{
-	  DEBUG(0,("Unknown socket option %s\n",tok));
-	  continue;
-	}
-
-      switch (socket_options[i].opttype)
-	{
-	case OPT_BOOL:
-	case OPT_INT:
-	  ret = setsockopt(fd,socket_options[i].level,
-			   socket_options[i].option,(char *)&value,sizeof(int));
-	  break;
-
-	case OPT_ON:
-	  if (got_value)
-	    DEBUG(0,("syntax error - %s does not take a value\n",tok));
-
-	  {
-	    int on = socket_options[i].value;
-	    ret = setsockopt(fd,socket_options[i].level,
-			     socket_options[i].option,(char *)&on,sizeof(int));
-	  }
-	  break;	  
-	}
-      
-      if (ret != 0)
-	DEBUG(0,("Failed to set socket option %s\n",tok));
-    }
-}
-
-
-
-/****************************************************************************
-  close the socket communication
-****************************************************************************/
-void close_sockets(void )
-{
-#ifdef WITH_SSL
-  sslutil_disconnect(Client);
-#endif /* WITH_SSL */
-
-  close(Client);
-  Client = 0;
-}
-
 /****************************************************************************
 determine whether we are in the specified group
 ****************************************************************************/
@@ -365,41 +141,63 @@ BOOL in_group(gid_t group, gid_t current_gid, int ngroups, gid_t *groups)
 	return(False);
 }
 
-/****************************************************************************
-this is a safer strcpy(), meant to prevent core dumps when nasty things happen
-****************************************************************************/
-char *StrCpy(char *dest,char *src)
-{
-  char *d = dest;
-
-  /* I don't want to get lazy with these ... */
-  SMB_ASSERT(dest && src);
-
-  if (!dest) return(NULL);
-  if (!src) {
-    *dest = 0;
-    return(dest);
-  }
-  while ((*d++ = *src++)) ;
-  return(dest);
-}
 
 /****************************************************************************
-line strncpy but always null terminates. Make sure there is room!
+like atoi but gets the value up to the separater character
 ****************************************************************************/
-char *StrnCpy(char *dest,char *src,int n)
+char *Atoic(char *p, int *n, char *c)
 {
-  char *d = dest;
-  if (!dest) return(NULL);
-  if (!src) {
-    *dest = 0;
-    return(dest);
-  }
-  while (n-- && (*d++ = *src++)) ;
-  *d = 0;
-  return(dest);
+	if (!isdigit(*p))
+	{
+		DEBUG(5, ("Atoic: malformed number\n"));
+		return NULL;
+	}
+
+	(*n) = atoi(p);
+
+	while ((*p) && isdigit(*p))
+	{
+		p++;
+	}
+
+	if (strchr(c, *p) == NULL)
+	{
+		DEBUG(5, ("Atoic: no separator characters (%s) not found\n", c));
+		return NULL;
+	}
+
+	return p;
 }
 
+/*************************************************************************
+ reads a list of numbers
+ *************************************************************************/
+char *get_numlist(char *p, uint32 **num, int *count)
+{
+	int val;
+
+	if (num == NULL || count == NULL)
+	{
+		return NULL;
+	}
+
+	(*count) = 0;
+	(*num  ) = NULL;
+
+	while ((p = Atoic(p, &val, ":,")) != NULL && (*p) != ':')
+	{
+		(*num) = Realloc((*num), ((*count)+1) * sizeof(uint32));
+		if ((*num) == NULL)
+		{
+			return NULL;
+		}
+		(*num)[(*count)] = val;
+		(*count)++;
+		p++;
+	}
+
+	return p;
+}
 
 /*******************************************************************
 copy an IP address from one buffer to another
@@ -625,345 +423,6 @@ char *attrib_string(uint16 mode)
 }
 
 
-/*******************************************************************
-  case insensitive string compararison
-********************************************************************/
-int StrCaseCmp(char *s, char *t)
-{
-  /* compare until we run out of string, either t or s, or find a difference */
-  /* We *must* use toupper rather than tolower here due to the
-     asynchronous upper to lower mapping.
-   */
-#if !defined(KANJI_WIN95_COMPATIBILITY)
-  /*
-   * For completeness we should put in equivalent code for code pages
-   * 949 (Korean hangul) and 950 (Big5 Traditional Chinese) here - but
-   * doubt anyone wants Samba to behave differently from Win95 and WinNT
-   * here. They both treat full width ascii characters as case senstive
-   * filenames (ie. they don't do the work we do here).
-   * JRA.
-   */
-
-  if(lp_client_code_page() == KANJI_CODEPAGE)
-  {
-    /* Win95 treats full width ascii characters as case sensitive. */
-    int diff;
-    for (;;)
-    {
-      if (!*s || !*t)
-	    return toupper (*s) - toupper (*t);
-      else if (is_sj_alph (*s) && is_sj_alph (*t))
-      {
-        diff = sj_toupper2 (*(s+1)) - sj_toupper2 (*(t+1));
-        if (diff)
-          return diff;
-        s += 2;
-        t += 2;
-      }
-      else if (is_shift_jis (*s) && is_shift_jis (*t))
-      {
-        diff = ((int) (unsigned char) *s) - ((int) (unsigned char) *t);
-        if (diff)
-          return diff;
-        diff = ((int) (unsigned char) *(s+1)) - ((int) (unsigned char) *(t+1));
-        if (diff)
-          return diff;
-        s += 2;
-        t += 2;
-      }
-      else if (is_shift_jis (*s))
-        return 1;
-      else if (is_shift_jis (*t))
-        return -1;
-      else 
-      {
-        diff = toupper (*s) - toupper (*t);
-        if (diff)
-          return diff;
-        s++;
-        t++;
-      }
-    }
-  }
-  else
-#endif /* KANJI_WIN95_COMPATIBILITY */
-  {
-    while (*s && *t && toupper(*s) == toupper(*t))
-    {
-      s++;
-      t++;
-    }
-
-    return(toupper(*s) - toupper(*t));
-  }
-}
-
-/*******************************************************************
-  case insensitive string compararison, length limited
-********************************************************************/
-int StrnCaseCmp(char *s, char *t, int n)
-{
-  /* compare until we run out of string, either t or s, or chars */
-  /* We *must* use toupper rather than tolower here due to the
-     asynchronous upper to lower mapping.
-   */
-#if !defined(KANJI_WIN95_COMPATIBILITY)
-  /*
-   * For completeness we should put in equivalent code for code pages
-   * 949 (Korean hangul) and 950 (Big5 Traditional Chinese) here - but
-   * doubt anyone wants Samba to behave differently from Win95 and WinNT
-   * here. They both treat full width ascii characters as case senstive
-   * filenames (ie. they don't do the work we do here).
-   * JRA. 
-   */
-
-  if(lp_client_code_page() == KANJI_CODEPAGE)
-  {
-    /* Win95 treats full width ascii characters as case sensitive. */
-    int diff;
-    for (;n > 0;)
-    {
-      if (!*s || !*t)
-        return toupper (*s) - toupper (*t);
-      else if (is_sj_alph (*s) && is_sj_alph (*t))
-      {
-        diff = sj_toupper2 (*(s+1)) - sj_toupper2 (*(t+1));
-        if (diff)
-          return diff;
-        s += 2;
-        t += 2;
-        n -= 2;
-      }
-      else if (is_shift_jis (*s) && is_shift_jis (*t))
-      {
-        diff = ((int) (unsigned char) *s) - ((int) (unsigned char) *t);
-        if (diff)
-          return diff;
-        diff = ((int) (unsigned char) *(s+1)) - ((int) (unsigned char) *(t+1));
-        if (diff)
-          return diff;
-        s += 2;
-        t += 2;
-        n -= 2;
-      }
-      else if (is_shift_jis (*s))
-        return 1;
-      else if (is_shift_jis (*t))
-        return -1;
-      else 
-      {
-        diff = toupper (*s) - toupper (*t);
-        if (diff)
-          return diff;
-        s++;
-        t++;
-        n--;
-      }
-    }
-    return 0;
-  }
-  else
-#endif /* KANJI_WIN95_COMPATIBILITY */
-  {
-    while (n && *s && *t && toupper(*s) == toupper(*t))
-    {
-      s++;
-      t++;
-      n--;
-    }
-
-    /* not run out of chars - strings are different lengths */
-    if (n) 
-      return(toupper(*s) - toupper(*t));
-
-    /* identical up to where we run out of chars, 
-       and strings are same length */
-    return(0);
-  }
-}
-
-/*******************************************************************
-  compare 2 strings 
-********************************************************************/
-BOOL strequal(char *s1, char *s2)
-{
-  if (s1 == s2) return(True);
-  if (!s1 || !s2) return(False);
-  
-  return(StrCaseCmp(s1,s2)==0);
-}
-
-/*******************************************************************
-  compare 2 strings up to and including the nth char.
-  ******************************************************************/
-BOOL strnequal(char *s1,char *s2,int n)
-{
-  if (s1 == s2) return(True);
-  if (!s1 || !s2 || !n) return(False);
-  
-  return(StrnCaseCmp(s1,s2,n)==0);
-}
-
-/*******************************************************************
-  compare 2 strings (case sensitive)
-********************************************************************/
-BOOL strcsequal(char *s1,char *s2)
-{
-  if (s1 == s2) return(True);
-  if (!s1 || !s2) return(False);
-  
-  return(strcmp(s1,s2)==0);
-}
-
-
-/*******************************************************************
-  convert a string to lower case
-********************************************************************/
-void strlower(char *s)
-{
-  while (*s)
-  {
-#if !defined(KANJI_WIN95_COMPATIBILITY)
-  /*
-   * For completeness we should put in equivalent code for code pages
-   * 949 (Korean hangul) and 950 (Big5 Traditional Chinese) here - but
-   * doubt anyone wants Samba to behave differently from Win95 and WinNT
-   * here. They both treat full width ascii characters as case senstive
-   * filenames (ie. they don't do the work we do here).
-   * JRA. 
-   */
-
-    if(lp_client_code_page() == KANJI_CODEPAGE)
-    {
-      /* Win95 treats full width ascii characters as case sensitive. */
-      if (is_shift_jis (*s))
-      {
-        if (is_sj_upper (s[0], s[1]))
-          s[1] = sj_tolower2 (s[1]);
-        s += 2;
-      }
-      else if (is_kana (*s))
-      {
-        s++;
-      }
-      else
-      {
-        if (isupper(*s))
-          *s = tolower(*s);
-        s++;
-      }
-    }
-    else
-#endif /* KANJI_WIN95_COMPATIBILITY */
-    {
-      int skip = skip_multibyte_char( *s );
-      if( skip != 0 )
-        s += skip;
-      else
-      {
-        if (isupper(*s))
-          *s = tolower(*s);
-        s++;
-      }
-    }
-  }
-}
-
-/*******************************************************************
-  convert a string to upper case
-********************************************************************/
-void strupper(char *s)
-{
-  while (*s)
-  {
-#if !defined(KANJI_WIN95_COMPATIBILITY)
-  /*
-   * For completeness we should put in equivalent code for code pages
-   * 949 (Korean hangul) and 950 (Big5 Traditional Chinese) here - but
-   * doubt anyone wants Samba to behave differently from Win95 and WinNT
-   * here. They both treat full width ascii characters as case senstive
-   * filenames (ie. they don't do the work we do here).
-   * JRA. 
-   */
-
-    if(lp_client_code_page() == KANJI_CODEPAGE)
-    {
-      /* Win95 treats full width ascii characters as case sensitive. */
-      if (is_shift_jis (*s))
-      {
-        if (is_sj_lower (s[0], s[1]))
-          s[1] = sj_toupper2 (s[1]);
-        s += 2;
-      }
-      else if (is_kana (*s))
-      {
-        s++;
-      }
-      else
-      {
-        if (islower(*s))
-          *s = toupper(*s);
-        s++;
-      }
-    }
-    else
-#endif /* KANJI_WIN95_COMPATIBILITY */
-    {
-      int skip = skip_multibyte_char( *s );
-      if( skip != 0 )
-        s += skip;
-      else
-      {
-        if (islower(*s))
-          *s = toupper(*s);
-        s++;
-      }
-    }
-  }
-}
-
-/*******************************************************************
-  convert a string to "normal" form
-********************************************************************/
-void strnorm(char *s)
-{
-  if (case_default == CASE_UPPER)
-    strupper(s);
-  else
-    strlower(s);
-}
-
-/*******************************************************************
-check if a string is in "normal" case
-********************************************************************/
-BOOL strisnormal(char *s)
-{
-  if (case_default == CASE_UPPER)
-    return(!strhaslower(s));
-
-  return(!strhasupper(s));
-}
-
-
-/****************************************************************************
-  string replace
-****************************************************************************/
-void string_replace(char *s,char oldc,char newc)
-{
-  int skip;
-  while (*s)
-  {
-    skip = skip_multibyte_char( *s );
-    if( skip != 0 )
-      s += skip;
-    else
-    {
-      if (oldc == *s)
-        *s = newc;
-      s++;
-    }
-  }
-}
 
 /****************************************************************************
   make a file into unix format
@@ -1110,131 +569,6 @@ int smb_offset(char *p,char *buf)
   return(PTR_DIFF(p,buf+4) + chain_size);
 }
 
-
-/*******************************************************************
-skip past some strings in a buffer
-********************************************************************/
-char *skip_string(char *buf,int n)
-{
-  while (n--)
-    buf += strlen(buf) + 1;
-  return(buf);
-}
-
-/*******************************************************************
- Count the number of characters in a string. Normally this will
- be the same as the number of bytes in a string for single byte strings,
- but will be different for multibyte.
- 16.oct.98, jdblair@cobaltnet.com.
-********************************************************************/
-
-size_t str_charnum(char *s)
-{
-  size_t len = 0;
-  
-  while (*s != '\0') {
-    int skip = skip_multibyte_char(*s);
-    s += (skip ? skip : 1);
-    len++;
-  }
-  return len;
-}
-
-/*******************************************************************
-trim the specified elements off the front and back of a string
-********************************************************************/
-
-BOOL trim_string(char *s,char *front,char *back)
-{
-  BOOL ret = False;
-  size_t front_len = (front && *front) ? strlen(front) : 0;
-  size_t back_len = (back && *back) ? strlen(back) : 0;
-  size_t s_len;
-
-  while (front_len && strncmp(s, front, front_len) == 0)
-  {
-    char *p = s;
-    ret = True;
-    while (1)
-    {
-      if (!(*p = p[front_len]))
-        break;
-      p++;
-    }
-  }
-
-  /*
-   * We split out the multibyte code page
-   * case here for speed purposes. Under a
-   * multibyte code page we need to walk the
-   * string forwards only and multiple times.
-   * Thanks to John Blair for finding this
-   * one. JRA.
-   */
-
-  if(back_len)
-  {
-    if(!is_multibyte_codepage())
-    {
-      s_len = strlen(s);
-      while ((s_len >= back_len) && 
-             (strncmp(s + s_len - back_len, back, back_len)==0))  
-      {
-        ret = True;
-        s[s_len - back_len] = '\0';
-        s_len = strlen(s);
-      }
-    }
-    else
-    {
-
-      /*
-       * Multibyte code page case.
-       * Keep going through the string, trying
-       * to match the 'back' string with the end
-       * of the string. If we get a match, truncate
-       * 'back' off the end of the string and
-       * go through the string again from the
-       * start. Keep doing this until we have
-       * gone through the string with no match
-       * at the string end.
-       */
-
-      size_t mb_back_len = str_charnum(back);
-      size_t mb_s_len = str_charnum(s);
-
-      while(mb_s_len >= mb_back_len)
-      {
-        size_t charcount = 0;
-        char *mbp = s;
-
-        while(charcount < (mb_s_len - mb_back_len))
-        {
-          size_t skip = skip_multibyte_char(*mbp);
-          mbp += (skip ? skip : 1);
-          charcount++;
-        }
-
-        /*
-         * mbp now points at mb_back_len multibyte
-         * characters from the end of s.
-         */
-
-        if(strcmp(mbp, back) == 0)
-        {
-          ret = True;
-          *mbp = '\0';
-          mb_s_len = str_charnum(s);
-          mbp = s;
-        }
-        else
-          break;
-      } /* end while mb_s_len... */
-    } /* end else .. */
-  } /* end if back_len .. */
-
-  return(ret);
-}
 
 
 /*******************************************************************
@@ -1668,158 +1002,6 @@ void expand_mask(char *Mask,BOOL doext)
 }  
 
 
-/****************************************************************************
-does a string have any uppercase chars in it?
-****************************************************************************/
-BOOL strhasupper(char *s)
-{
-  while (*s) 
-  {
-#if !defined(KANJI_WIN95_COMPATIBILITY)
-  /*
-   * For completeness we should put in equivalent code for code pages
-   * 949 (Korean hangul) and 950 (Big5 Traditional Chinese) here - but
-   * doubt anyone wants Samba to behave differently from Win95 and WinNT
-   * here. They both treat full width ascii characters as case senstive
-   * filenames (ie. they don't do the work we do here).
-   * JRA. 
-   */
-
-    if(lp_client_code_page() == KANJI_CODEPAGE)
-    {
-      /* Win95 treats full width ascii characters as case sensitive. */
-      if (is_shift_jis (*s))
-        s += 2;
-      else if (is_kana (*s))
-        s++;
-      else
-      {
-        if (isupper(*s))
-          return(True);
-        s++;
-      }
-    }
-    else
-#endif /* KANJI_WIN95_COMPATIBILITY */
-    {
-      int skip = skip_multibyte_char( *s );
-      if( skip != 0 )
-        s += skip;
-      else {
-        if (isupper(*s))
-          return(True);
-        s++;
-      }
-    }
-  }
-  return(False);
-}
-
-/****************************************************************************
-does a string have any lowercase chars in it?
-****************************************************************************/
-BOOL strhaslower(char *s)
-{
-  while (*s) 
-  {
-#if !defined(KANJI_WIN95_COMPATIBILITY)
-  /*
-   * For completeness we should put in equivalent code for code pages
-   * 949 (Korean hangul) and 950 (Big5 Traditional Chinese) here - but
-   * doubt anyone wants Samba to behave differently from Win95 and WinNT
-   * here. They both treat full width ascii characters as case senstive
-   * filenames (ie. they don't do the work we do here).
-   * JRA. 
-   */
-
-    if(lp_client_code_page() == KANJI_CODEPAGE)
-    {
-      /* Win95 treats full width ascii characters as case sensitive. */
-      if (is_shift_jis (*s))
-      {
-        if (is_sj_upper (s[0], s[1]))
-          return(True);
-        if (is_sj_lower (s[0], s[1]))
-          return (True);
-        s += 2;
-      }
-      else if (is_kana (*s))
-      {
-        s++;
-      }
-      else
-      {
-        if (islower(*s))
-          return(True);
-        s++;
-      }
-    }
-    else
-#endif /* KANJI_WIN95_COMPATIBILITY */
-    {
-      int skip = skip_multibyte_char( *s );
-      if( skip != 0 )
-        s += skip;
-      else {
-        if (islower(*s))
-          return(True);
-        s++;
-      }
-    }
-  }
-  return(False);
-}
-
-/****************************************************************************
-find the number of chars in a string
-****************************************************************************/
-int count_chars(char *s,char c)
-{
-  int count=0;
-
-#if !defined(KANJI_WIN95_COMPATIBILITY)
-  /*
-   * For completeness we should put in equivalent code for code pages
-   * 949 (Korean hangul) and 950 (Big5 Traditional Chinese) here - but
-   * doubt anyone wants Samba to behave differently from Win95 and WinNT
-   * here. They both treat full width ascii characters as case senstive
-   * filenames (ie. they don't do the work we do here).
-   * JRA. 
-   */
-
-  if(lp_client_code_page() == KANJI_CODEPAGE)
-  {
-    /* Win95 treats full width ascii characters as case sensitive. */
-    while (*s) 
-    {
-      if (is_shift_jis (*s))
-        s += 2;
-      else 
-      {
-        if (*s == c)
-          count++;
-        s++;
-      }
-    }
-  }
-  else
-#endif /* KANJI_WIN95_COMPATIBILITY */
-  {
-    while (*s) 
-    {
-      int skip = skip_multibyte_char( *s );
-      if( skip != 0 )
-        s += skip;
-      else {
-        if (*s == c)
-          count++;
-        s++;
-      }
-    }
-  }
-  return(count);
-}
-
 
 /****************************************************************************
   make a dir struct
@@ -1887,7 +1069,7 @@ else
 if SYSV use O_NDELAY
 if BSD use FNDELAY
 ****************************************************************************/
-static int set_blocking(int fd, BOOL set)
+int set_blocking(int fd, BOOL set)
 {
   int val;
 #ifdef O_NONBLOCK
@@ -1911,161 +1093,6 @@ static int set_blocking(int fd, BOOL set)
 }
 
 
-/****************************************************************************
-write to a socket
-****************************************************************************/
-ssize_t write_socket(int fd,char *buf,size_t len)
-{
-  ssize_t ret=0;
-
-  if (passive)
-    return(len);
-  DEBUG(6,("write_socket(%d,%d)\n",fd,len));
-  ret = write_data(fd,buf,len);
-      
-  DEBUG(6,("write_socket(%d,%d) wrote %d\n",fd,len,ret));
-  if(ret <= 0)
-    DEBUG(0,("write_socket: Error writing %d bytes to socket %d: ERRNO = %s\n", 
-       len, fd, strerror(errno) ));
-
-  return(ret);
-}
-
-/****************************************************************************
-read from a socket
-****************************************************************************/
-ssize_t read_udp_socket(int fd,char *buf,size_t len)
-{
-  ssize_t ret;
-  struct sockaddr_in sock;
-  int socklen;
-  
-  socklen = sizeof(sock);
-  bzero((char *)&sock,socklen);
-  bzero((char *)&lastip,sizeof(lastip));
-  ret = (ssize_t)recvfrom(fd,buf,len,0,(struct sockaddr *)&sock,&socklen);
-  if (ret <= 0) {
-    DEBUG(2,("read socket failed. ERRNO=%s\n",strerror(errno)));
-    return(0);
-  }
-
-  lastip = sock.sin_addr;
-  lastport = ntohs(sock.sin_port);
-
-  DEBUG(10,("read_udp_socket: lastip %s lastport %d read: %d\n",
-             inet_ntoa(lastip), lastport, ret));
-
-  return(ret);
-}
-
-/****************************************************************************
-read data from a device with a timout in msec.
-mincount = if timeout, minimum to read before returning
-maxcount = number to be read.
-time_out = timeout in milliseconds
-****************************************************************************/
-
-ssize_t read_with_timeout(int fd,char *buf,size_t mincnt,size_t maxcnt,unsigned int time_out)
-{
-  fd_set fds;
-  int selrtn;
-  ssize_t readret;
-  size_t nread = 0;
-  struct timeval timeout;
-
-  /* just checking .... */
-  if (maxcnt <= 0) return(0);
-
-  smb_read_error = 0;
-
-  /* Blocking read */
-  if (time_out <= 0) {
-    if (mincnt == 0) mincnt = maxcnt;
-
-    while (nread < mincnt) {
-#ifdef WITH_SSL
-      if(fd == sslFd){
-        readret = SSL_read(ssl, buf + nread, maxcnt - nread);
-      }else{
-        readret = read(fd, buf + nread, maxcnt - nread);
-      }
-#else /* WITH_SSL */
-      readret = read(fd, buf + nread, maxcnt - nread);
-#endif /* WITH_SSL */
-
-      if (readret == 0) {
-        smb_read_error = READ_EOF;
-        return -1;
-      }
-
-      if (readret == -1) {
-        smb_read_error = READ_ERROR;
-        return -1;
-      }
-      nread += readret;
-    }
-    return((ssize_t)nread);
-  }
-  
-  /* Most difficult - timeout read */
-  /* If this is ever called on a disk file and 
-     mincnt is greater then the filesize then
-     system performance will suffer severely as 
-     select always returns true on disk files */
-
-  /* Set initial timeout */
-  timeout.tv_sec = (time_t)(time_out / 1000);
-  timeout.tv_usec = (long)(1000 * (time_out % 1000));
-
-  for (nread=0; nread < mincnt; ) 
-  {      
-    FD_ZERO(&fds);
-    FD_SET(fd,&fds);
-      
-    selrtn = sys_select(fd+1,&fds,&timeout);
-
-    /* Check if error */
-    if(selrtn == -1) {
-      /* something is wrong. Maybe the socket is dead? */
-      smb_read_error = READ_ERROR;
-      return -1;
-    }
-      
-    /* Did we timeout ? */
-    if (selrtn == 0) {
-      smb_read_error = READ_TIMEOUT;
-      return -1;
-    }
-      
-#ifdef WITH_SSL
-    if(fd == sslFd){
-      readret = SSL_read(ssl, buf + nread, maxcnt - nread);
-    }else{
-      readret = read(fd, buf + nread, maxcnt - nread);
-    }
-#else /* WITH_SSL */
-    readret = read(fd, buf+nread, maxcnt-nread);
-#endif /* WITH_SSL */
-
-    if (readret == 0) {
-      /* we got EOF on the file descriptor */
-      smb_read_error = READ_EOF;
-      return -1;
-    }
-
-    if (readret == -1) {
-      /* the descriptor is probably dead */
-      smb_read_error = READ_ERROR;
-      return -1;
-    }
-      
-    nread += readret;
-  }
-
-  /* Return the number we got */
-  return((ssize_t)nread);
-}
-
 /*******************************************************************
 find the difference in milliseconds between two struct timeval
 values
@@ -2076,86 +1103,6 @@ int TvalDiff(struct timeval *tvalold,struct timeval *tvalnew)
 	 ((int)tvalnew->tv_usec - (int)tvalold->tv_usec)/1000);	 
 }
 
-/****************************************************************************
-send a keepalive packet (rfc1002)
-****************************************************************************/
-BOOL send_keepalive(int client)
-{
-  unsigned char buf[4];
-
-  buf[0] = 0x85;
-  buf[1] = buf[2] = buf[3] = 0;
-
-  return(write_data(client,(char *)buf,4) == 4);
-}
-
-
-
-/****************************************************************************
-  read data from the client, reading exactly N bytes. 
-****************************************************************************/
-ssize_t read_data(int fd,char *buffer,size_t N)
-{
-  ssize_t  ret;
-  size_t total=0;  
- 
-  smb_read_error = 0;
-
-  while (total < N)
-  {
-#ifdef WITH_SSL
-    if(fd == sslFd){
-      ret = SSL_read(ssl, buffer + total, N - total);
-    }else{
-      ret = read(fd,buffer + total,N - total);
-    }
-#else /* WITH_SSL */
-    ret = read(fd,buffer + total,N - total);
-#endif /* WITH_SSL */
-
-    if (ret == 0)
-    {
-      smb_read_error = READ_EOF;
-      return 0;
-    }
-    if (ret == -1)
-    {
-      smb_read_error = READ_ERROR;
-      return -1;
-    }
-    total += ret;
-  }
-  return (ssize_t)total;
-}
-
-
-/****************************************************************************
-  write data to a fd 
-****************************************************************************/
-ssize_t write_data(int fd,char *buffer,size_t N)
-{
-  size_t total=0;
-  ssize_t ret;
-
-  while (total < N)
-  {
-#ifdef WITH_SSL
-    if(fd == sslFd){
-      ret = SSL_write(ssl,buffer + total,N - total);
-    }else{
-      ret = write(fd,buffer + total,N - total);
-    }
-#else /* WITH_SSL */
-    ret = write(fd,buffer + total,N - total);
-#endif /* WITH_SSL */
-
-    if (ret == -1) return -1;
-    if (ret == 0) return total;
-
-    total += ret;
-  }
-  return (ssize_t)total;
-}
 
 
 /****************************************************************************
@@ -2235,157 +1182,6 @@ SMB_OFF_T transfer_file(int infd,int outfd,SMB_OFF_T n,char *header,int headlen,
 }
 
 
-/****************************************************************************
-read 4 bytes of a smb packet and return the smb length of the packet
-store the result in the buffer
-This version of the function will return a length of zero on receiving
-a keepalive packet.
-timeout is in milliseconds.
-****************************************************************************/
-static ssize_t read_smb_length_return_keepalive(int fd,char *inbuf,unsigned int timeout)
-{
-  ssize_t len=0;
-  int msg_type;
-  BOOL ok = False;
-
-  while (!ok)
-  {
-    if (timeout > 0)
-      ok = (read_with_timeout(fd,inbuf,4,4,timeout) == 4);
-    else 
-      ok = (read_data(fd,inbuf,4) == 4);
-
-    if (!ok)
-      return(-1);
-
-    len = smb_len(inbuf);
-    msg_type = CVAL(inbuf,0);
-
-    if (msg_type == 0x85) 
-      DEBUG(5,("Got keepalive packet\n"));
-  }
-
-  DEBUG(10,("got smb length of %d\n",len));
-
-  return(len);
-}
-
-/****************************************************************************
-read 4 bytes of a smb packet and return the smb length of the packet
-store the result in the buffer. This version of the function will
-never return a session keepalive (length of zero).
-timeout is in milliseconds.
-****************************************************************************/
-ssize_t read_smb_length(int fd,char *inbuf,unsigned int timeout)
-{
-  ssize_t len;
-
-  for(;;)
-  {
-    len = read_smb_length_return_keepalive(fd, inbuf, timeout);
-
-    if(len < 0)
-      return len;
-
-    /* Ignore session keepalives. */
-    if(CVAL(inbuf,0) != 0x85)
-      break;
-  }
-
-  return len;
-}
-
-/****************************************************************************
-  read an smb from a fd. Note that the buffer *MUST* be of size
-  BUFFER_SIZE+SAFETY_MARGIN.
-  The timeout is in milliseconds. 
-  This function will return on a
-  receipt of a session keepalive packet.
-****************************************************************************/
-BOOL receive_smb(int fd,char *buffer, unsigned int timeout)
-{
-  ssize_t len,ret;
-
-  smb_read_error = 0;
-
-  bzero(buffer,smb_size + 100);
-
-  len = read_smb_length_return_keepalive(fd,buffer,timeout);
-  if (len < 0)
-    return(False);
-
-  if (len > BUFFER_SIZE) {
-    DEBUG(0,("Invalid packet length! (%d bytes).\n",len));
-    if (len > BUFFER_SIZE + (SAFETY_MARGIN/2))
-      exit(1);
-  }
-
-  if(len > 0) {
-    ret = read_data(fd,buffer+4,len);
-    if (ret != len) {
-      smb_read_error = READ_ERROR;
-      return False;
-    }
-  }
-  return(True);
-}
-
-/****************************************************************************
-  read an smb from a fd ignoring all keepalive packets. Note that the buffer 
-  *MUST* be of size BUFFER_SIZE+SAFETY_MARGIN.
-  The timeout is in milliseconds
-
-  This is exactly the same as receive_smb except that it never returns
-  a session keepalive packet (just as receive_smb used to do).
-  receive_smb was changed to return keepalives as the oplock processing means this call
-  should never go into a blocking read.
-****************************************************************************/
-
-BOOL client_receive_smb(int fd,char *buffer, unsigned int timeout)
-{
-  BOOL ret;
-
-  for(;;)
-  {
-    ret = receive_smb(fd, buffer, timeout);
-
-    if (!ret)
-    {
-      return ret;
-    }
-
-    /* Ignore session keepalive packets. */
-    if(CVAL(buffer,0) != 0x85)
-      break;
-  }
-  return ret;
-}
-
-/****************************************************************************
-  send an smb to a fd 
-****************************************************************************/
-BOOL send_smb(int fd,char *buffer)
-{
-  size_t len;
-  size_t nwritten=0;
-  ssize_t ret;
-  len = smb_len(buffer) + 4;
-
-  while (nwritten < len)
-  {
-    ret = write_socket(fd,buffer+nwritten,len - nwritten);
-    if (ret <= 0)
-    {
-      DEBUG(0,("Error writing %d bytes to client. %d. Exiting\n",len,ret));
-      close_sockets();
-      exit(1);
-    }
-    nwritten += ret;
-  }
-
-  return True;
-}
-
 
 /****************************************************************************
 find a pointer to a netbios name
@@ -2442,46 +1238,6 @@ int name_len(char *s1)
 	return(len);
 } /* name_len */
 
-/****************************************************************************
-send a single packet to a port on another machine
-****************************************************************************/
-BOOL send_one_packet(char *buf,int len,struct in_addr ip,int port,int type)
-{
-  BOOL ret;
-  int out_fd;
-  struct sockaddr_in sock_out;
-
-  if (passive)
-    return(True);
-
-  /* create a socket to write to */
-  out_fd = socket(AF_INET, type, 0);
-  if (out_fd == -1) 
-    {
-      DEBUG(0,("socket failed"));
-      return False;
-    }
-
-  /* set the address and port */
-  bzero((char *)&sock_out,sizeof(sock_out));
-  putip((char *)&sock_out.sin_addr,(char *)&ip);
-  sock_out.sin_port = htons( port );
-  sock_out.sin_family = AF_INET;
-  
-  if (DEBUGLEVEL > 0)
-    DEBUG(3,("sending a packet of len %d to (%s) on port %d of type %s\n",
-	     len,inet_ntoa(ip),port,type==SOCK_DGRAM?"DGRAM":"STREAM"));
-	
-  /* send it */
-  ret = (sendto(out_fd,buf,len,0,(struct sockaddr *)&sock_out,sizeof(sock_out)) >= 0);
-
-  if (!ret)
-    DEBUG(0,("Packet send to %s(%d) failed ERRNO=%s\n",
-	     inet_ntoa(ip),port,strerror(errno)));
-
-  close(out_fd);
-  return(ret);
-}
 
 /*******************************************************************
 sleep for a specified number of milliseconds
@@ -2508,122 +1264,6 @@ void msleep(int t)
   }
 }
 
-/****************************************************************************
-check if a string is part of a list
-****************************************************************************/
-BOOL in_list(char *s,char *list,BOOL casesensitive)
-{
-  pstring tok;
-  char *p=list;
-
-  if (!list) return(False);
-
-  while (next_token(&p,tok,LIST_SEP,sizeof(tok))) {
-    if (casesensitive) {
-      if (strcmp(tok,s) == 0)
-        return(True);
-    } else {
-      if (StrCaseCmp(tok,s) == 0)
-        return(True);
-    }
-  }
-  return(False);
-}
-
-/* this is used to prevent lots of mallocs of size 1 */
-static char *null_string = NULL;
-
-/****************************************************************************
-set a string value, allocing the space for the string
-****************************************************************************/
-BOOL string_init(char **dest,char *src)
-{
-  int l;
-  if (!src)     
-    src = "";
-
-  l = strlen(src);
-
-  if (l == 0)
-    {
-      if (!null_string) {
-        if((null_string = (char *)malloc(1)) == NULL) {
-          DEBUG(0,("string_init: malloc fail for null_string.\n"));
-          return False;
-        }
-        *null_string = 0;
-      }
-      *dest = null_string;
-    }
-  else
-    {
-      (*dest) = (char *)malloc(l+1);
-      if ((*dest) == NULL) {
-	      DEBUG(0,("Out of memory in string_init\n"));
-	      return False;
-      }
-
-      pstrcpy(*dest,src);
-    }
-  return(True);
-}
-
-/****************************************************************************
-free a string value
-****************************************************************************/
-void string_free(char **s)
-{
-  if (!s || !(*s)) return;
-  if (*s == null_string)
-    *s = NULL;
-  if (*s) free(*s);
-  *s = NULL;
-}
-
-/****************************************************************************
-set a string value, allocing the space for the string, and deallocating any 
-existing space
-****************************************************************************/
-BOOL string_set(char **dest,char *src)
-{
-  string_free(dest);
-
-  return(string_init(dest,src));
-}
-
-/****************************************************************************
-substitute a string for a pattern in another string. Make sure there is 
-enough room!
-
-This routine looks for pattern in s and replaces it with 
-insert. It may do multiple replacements.
-
-return True if a substitution was done.
-****************************************************************************/
-BOOL string_sub(char *s,char *pattern,char *insert)
-{
-  BOOL ret = False;
-  char *p;
-  int ls,lp,li;
-
-  if (!insert || !pattern || !s) return(False);
-
-  ls = strlen(s);
-  lp = strlen(pattern);
-  li = strlen(insert);
-
-  if (!*pattern) return(False);
-
-  while (lp <= ls && (p = strstr(s,pattern)))
-    {
-      ret = True;
-      memmove(p+li,p+lp,ls + 1 - (PTR_DIFF(p,s) + lp));
-      memcpy(p,insert,li);
-      s = p + li;
-      ls = strlen(s);
-    }
-  return(ret);
-}
 
 /*********************************************************
 * Recursive routine that is called by unix_mask_match.
@@ -3086,72 +1726,6 @@ BOOL yesno(char *p)
   return(False);
 }
 
-/****************************************************************************
-read a line from a file with possible \ continuation chars. 
-Blanks at the start or end of a line are stripped.
-The string will be allocated if s2 is NULL
-****************************************************************************/
-char *fgets_slash(char *s2,int maxlen,FILE *f)
-{
-  char *s=s2;
-  int len = 0;
-  int c;
-  BOOL start_of_line = True;
-
-  if (feof(f))
-    return(NULL);
-
-  if (!s2)
-    {
-      maxlen = MIN(maxlen,8);
-      s = (char *)Realloc(s,maxlen);
-    }
-
-  if (!s || maxlen < 2) return(NULL);
-
-  *s = 0;
-
-  while (len < maxlen-1)
-    {
-      c = getc(f);
-      switch (c)
-	{
-	case '\r':
-	  break;
-	case '\n':
-	  while (len > 0 && s[len-1] == ' ')
-	    {
-	      s[--len] = 0;
-	    }
-	  if (len > 0 && s[len-1] == '\\')
-	    {
-	      s[--len] = 0;
-	      start_of_line = True;
-	      break;
-	    }
-	  return(s);
-	case EOF:
-	  if (len <= 0 && !s2) 
-	    free(s);
-	  return(len>0?s:NULL);
-	case ' ':
-	  if (start_of_line)
-	    break;
-	default:
-	  start_of_line = False;
-	  s[len++] = c;
-	  s[len] = 0;
-	}
-      if (!s2 && len > maxlen-3)
-	{
-	  maxlen *= 2;
-	  s = (char *)Realloc(s,maxlen);
-	  if (!s) return(NULL);
-	}
-    }
-  return(s);
-}
-
 
 
 /****************************************************************************
@@ -3247,6 +1821,13 @@ void *Realloc(void *p,size_t size)
   else
     ret = (void *)realloc(p,size);
 
+#ifdef MEM_MAN
+  {
+	extern FILE *dbf;
+	smb_mem_write_info(ret, dbf);
+  }
+#endif
+
   if (!ret)
     DEBUG(0,("Memory allocation error: failed to expand to %d bytes\n",size));
 
@@ -3303,136 +1884,6 @@ BOOL ip_equal(struct in_addr ip1,struct in_addr ip2)
   a1 = ntohl(ip1.s_addr);
   a2 = ntohl(ip2.s_addr);
   return(a1 == a2);
-}
-
-
-/****************************************************************************
-open a socket of the specified type, port and address for incoming data
-****************************************************************************/
-int open_socket_in(int type, int port, int dlevel,uint32 socket_addr)
-{
-  struct hostent *hp;
-  struct sockaddr_in sock;
-  pstring host_name;
-  int res;
-
-  /* get my host name */
-  if (gethostname(host_name, MAXHOSTNAMELEN) == -1) 
-    { DEBUG(0,("gethostname failed\n")); return -1; } 
-
-  /* get host info */
-  if ((hp = Get_Hostbyname(host_name)) == 0) 
-    {
-      DEBUG(0,( "Get_Hostbyname: Unknown host %s\n",host_name));
-      return -1;
-    }
-  
-  bzero((char *)&sock,sizeof(sock));
-  memcpy((char *)&sock.sin_addr,(char *)hp->h_addr, hp->h_length);
-
-#ifdef HAVE_SOCK_SIN_LEN
-  sock.sin_len = sizeof(sock);
-#endif
-  sock.sin_port = htons( port );
-  sock.sin_family = hp->h_addrtype;
-  sock.sin_addr.s_addr = socket_addr;
-  res = socket(hp->h_addrtype, type, 0);
-  if (res == -1) 
-    { DEBUG(0,("socket failed\n")); return -1; }
-
-  {
-    int one=1;
-    setsockopt(res,SOL_SOCKET,SO_REUSEADDR,(char *)&one,sizeof(one));
-  }
-
-  /* now we've got a socket - we need to bind it */
-  if (bind(res, (struct sockaddr * ) &sock,sizeof(sock)) < 0) 
-    { 
-      if (port) {
-	if (port == SMB_PORT || port == NMB_PORT)
-	  DEBUG(dlevel,("bind failed on port %d socket_addr=%s (%s)\n",
-			port,inet_ntoa(sock.sin_addr),strerror(errno))); 
-	close(res); 
-
-	if (dlevel > 0 && port < 1000)
-	  port = 7999;
-
-	if (port >= 1000 && port < 9000)
-	  return(open_socket_in(type,port+1,dlevel,socket_addr));
-      }
-
-      return(-1); 
-    }
-  DEBUG(3,("bind succeeded on port %d\n",port));
-
-  return res;
-}
-
-
-/****************************************************************************
-  create an outgoing socket
-  **************************************************************************/
-int open_socket_out(int type, struct in_addr *addr, int port ,int timeout)
-{
-  struct sockaddr_in sock_out;
-  int res,ret;
-  int connect_loop = 250; /* 250 milliseconds */
-  int loops = (timeout * 1000) / connect_loop;
-
-  /* create a socket to write to */
-  res = socket(PF_INET, type, 0);
-  if (res == -1) 
-    { DEBUG(0,("socket error\n")); return -1; }
-
-  if (type != SOCK_STREAM) return(res);
-  
-  bzero((char *)&sock_out,sizeof(sock_out));
-  putip((char *)&sock_out.sin_addr,(char *)addr);
-  
-  sock_out.sin_port = htons( port );
-  sock_out.sin_family = PF_INET;
-
-  /* set it non-blocking */
-  set_blocking(res,False);
-
-  DEBUG(3,("Connecting to %s at port %d\n",inet_ntoa(*addr),port));
-  
-  /* and connect it to the destination */
-connect_again:
-  ret = connect(res,(struct sockaddr *)&sock_out,sizeof(sock_out));
-
-  /* Some systems return EAGAIN when they mean EINPROGRESS */
-  if (ret < 0 && (errno == EINPROGRESS || errno == EALREADY ||
-        errno == EAGAIN) && loops--) {
-    msleep(connect_loop);
-    goto connect_again;
-  }
-
-  if (ret < 0 && (errno == EINPROGRESS || errno == EALREADY ||
-         errno == EAGAIN)) {
-      DEBUG(1,("timeout connecting to %s:%d\n",inet_ntoa(*addr),port));
-      close(res);
-      return -1;
-  }
-
-#ifdef EISCONN
-  if (ret < 0 && errno == EISCONN) {
-    errno = 0;
-    ret = 0;
-  }
-#endif
-
-  if (ret < 0) {
-    DEBUG(1,("error connecting to %s:%d (%s)\n",
-	     inet_ntoa(*addr),port,strerror(errno)));
-    close(res);
-    return -1;
-  }
-
-  /* set it blocking again */
-  set_blocking(res,True);
-
-  return res;
 }
 
 
@@ -3524,7 +1975,7 @@ BOOL zero_ip(struct in_addr ip)
 /*******************************************************************
  matchname - determine if host name matches IP address 
  ******************************************************************/
-static BOOL matchname(char *remotehost,struct in_addr  addr)
+BOOL matchname(char *remotehost,struct in_addr  addr)
 {
   struct hostent *hp;
   int     i;
@@ -3566,110 +2017,6 @@ static BOOL matchname(char *remotehost,struct in_addr  addr)
   return False;
 }
 
-/*******************************************************************
- Reset the 'done' variables so after a client process is created
- from a fork call these calls will be re-done. This should be
- expanded if more variables need reseting.
- ******************************************************************/
-
-static BOOL global_client_name_done = False;
-static BOOL global_client_addr_done = False;
-
-void reset_globals_after_fork(void)
-{
-  global_client_name_done = False;
-  global_client_addr_done = False;
-
-  /*
-   * Re-seed the random crypto generator, so all smbd's
-   * started from the same parent won't generate the same
-   * sequence.
-   */
-  {
-    unsigned char dummy;
-    generate_random_buffer( &dummy, 1, True);
-  } 
-}
- 
-/*******************************************************************
- return the DNS name of the client 
- ******************************************************************/
-char *client_name(int fd)
-{
-	struct sockaddr sa;
-	struct sockaddr_in *sockin = (struct sockaddr_in *) (&sa);
-	int     length = sizeof(sa);
-	static pstring name_buf;
-	struct hostent *hp;
-	static int last_fd=-1;
-	
-	if (global_client_name_done && last_fd == fd) 
-		return name_buf;
-	
-	last_fd = fd;
-	global_client_name_done = False;
-	
-	pstrcpy(name_buf,"UNKNOWN");
-	
-	if (fd == -1) {
-		return name_buf;
-	}
-	
-	if (getpeername(fd, &sa, &length) < 0) {
-		DEBUG(0,("getpeername failed\n"));
-		return name_buf;
-	}
-	
-	/* Look up the remote host name. */
-	if ((hp = gethostbyaddr((char *) &sockin->sin_addr,
-				sizeof(sockin->sin_addr),
-				AF_INET)) == 0) {
-		DEBUG(1,("Gethostbyaddr failed for %s\n",client_addr(fd)));
-		StrnCpy(name_buf,client_addr(fd),sizeof(name_buf) - 1);
-	} else {
-		StrnCpy(name_buf,(char *)hp->h_name,sizeof(name_buf) - 1);
-		if (!matchname(name_buf, sockin->sin_addr)) {
-			DEBUG(0,("Matchname failed on %s %s\n",name_buf,client_addr(fd)));
-			pstrcpy(name_buf,"UNKNOWN");
-		}
-	}
-	global_client_name_done = True;
-	return name_buf;
-}
-
-/*******************************************************************
- return the IP addr of the client as a string 
- ******************************************************************/
-char *client_addr(int fd)
-{
-	struct sockaddr sa;
-	struct sockaddr_in *sockin = (struct sockaddr_in *) (&sa);
-	int     length = sizeof(sa);
-	static fstring addr_buf;
-	static int last_fd = -1;
-
-	if (global_client_addr_done && fd == last_fd) 
-		return addr_buf;
-
-	last_fd = fd;
-	global_client_addr_done = False;
-
-	fstrcpy(addr_buf,"0.0.0.0");
-
-	if (fd == -1) {
-		return addr_buf;
-	}
-	
-	if (getpeername(fd, &sa, &length) < 0) {
-		DEBUG(0,("getpeername failed\n"));
-		return addr_buf;
-	}
-	
-	fstrcpy(addr_buf,(char *)inet_ntoa(sockin->sin_addr));
-	
-	global_client_addr_done = True;
-	return addr_buf;
-}
 
 #if (defined(HAVE_NETGROUP) && defined(WITH_AUTOMOUNT))
 /******************************************************************
@@ -4046,22 +2393,6 @@ BOOL same_net(struct in_addr ip1,struct in_addr ip2,struct in_addr mask)
 }
 
 
-/*******************************************************************
-write a string in unicoode format
-********************************************************************/
-int PutUniCode(char *dst,char *src)
-{
-  int ret = 0;
-  while (*src) {
-    dst[ret++] = src[0];
-    dst[ret++] = 0;    
-    src++;
-  }
-  dst[ret++]=0;
-  dst[ret++]=0;
-  return(ret);
-}
-
 /****************************************************************************
 a wrapper for gethostbyname() that tries with all lower and all upper case 
 if the initial name fails
@@ -4179,6 +2510,7 @@ void smb_panic(char *why)
 		system(cmd);
 	}
 	DEBUG(0,("PANIC: %s\n", why));
+	dbgflush();
 	abort();
 }
 
@@ -4552,196 +2884,6 @@ enum remote_arch_types get_remote_arch(void)
 
 
 /*******************************************************************
-skip past some unicode strings in a buffer
-********************************************************************/
-char *skip_unicode_string(char *buf,int n)
-{
-  while (n--)
-  {
-    while (*buf)
-      buf += 2;
-    buf += 2;
-  }
-  return(buf);
-}
-
-/*******************************************************************
-Return a ascii version of a unicode string
-Hack alert: uses fixed buffer(s) and only handles ascii strings
-********************************************************************/
-#define MAXUNI 1024
-char *unistrn2(uint16 *buf, int len)
-{
-	static char lbufs[8][MAXUNI];
-	static int nexti;
-	char *lbuf = lbufs[nexti];
-	char *p;
-
-	nexti = (nexti+1)%8;
-
-	for (p = lbuf; *buf && p-lbuf < MAXUNI-2 && len > 0; len--, p++, buf++)
-	{
-		*p = *buf;
-	}
-
-	*p = 0;
-	return lbuf;
-}
-
-/*******************************************************************
-Return a ascii version of a unicode string
-Hack alert: uses fixed buffer(s) and only handles ascii strings
-********************************************************************/
-#define MAXUNI 1024
-char *unistr2(uint16 *buf)
-{
-	static char lbufs[8][MAXUNI];
-	static int nexti;
-	char *lbuf = lbufs[nexti];
-	char *p;
-
-	nexti = (nexti+1)%8;
-
-	for (p = lbuf; *buf && p-lbuf < MAXUNI-2; p++, buf++)
-	{
-		*p = *buf;
-	}
-
-	*p = 0;
-	return lbuf;
-}
-
-/*******************************************************************
-create a null-terminated unicode string from a null-terminated ascii string.
-return number of unicode chars copied, excluding the null character.
-
-only handles ascii strings
-********************************************************************/
-#define MAXUNI 1024
-int struni2(uint16 *p, char *buf)
-{
-	int len = 0;
-
-	if (p == NULL) return 0;
-
-	if (buf != NULL)
-	{
-		for (; *buf && len < MAXUNI-2; len++, p++, buf++)
-		{
-			*p = *buf;
-		}
-	}
-
-	*p = 0;
-
-	return len;
-}
-
-/*******************************************************************
-Return a ascii version of a unicode string
-Hack alert: uses fixed buffer(s) and only handles ascii strings
-********************************************************************/
-#define MAXUNI 1024
-char *unistr(char *buf)
-{
-	static char lbufs[8][MAXUNI];
-	static int nexti;
-	char *lbuf = lbufs[nexti];
-	char *p;
-
-	nexti = (nexti+1)%8;
-
-	for (p = lbuf; *buf && p-lbuf < MAXUNI-2; p++, buf += 2)
-	{
-		*p = *buf;
-	}
-	*p = 0;
-	return lbuf;
-}
-
-
-/*******************************************************************
-strcpy for unicode strings.  returns length (in num of wide chars)
-********************************************************************/
-int unistrcpy(char *dst, char *src)
-{
-	int num_wchars = 0;
-
-	while (*src)
-	{
-		*dst++ = *src++;
-		*dst++ = *src++;
-		num_wchars++;
-	}
-	*dst++ = 0;
-	*dst++ = 0;
-
-	return num_wchars;
-}
-
-/*******************************************************************
-safe string copy into a known length string. maxlength does not
-include the terminating zero.
-********************************************************************/
-char *safe_strcpy(char *dest,const char *src, int maxlength)
-{
-    int len;
-
-    if (!dest) {
-        DEBUG(0,("ERROR: NULL dest in safe_strcpy\n"));
-        return NULL;
-    }
-
-    if (!src) {
-        *dest = 0;
-        return dest;
-    }  
-
-    len = strlen(src);
-
-    if (len > maxlength) {
-	    DEBUG(0,("ERROR: string overflow by %d in safe_strcpy [%.50s]\n",
-		     len-maxlength, src));
-	    len = maxlength;
-    }
-      
-    memcpy(dest, src, len);
-    dest[len] = 0;
-    return dest;
-}  
-
-/*******************************************************************
-safe string cat into a string. maxlength does not
-include the terminating zero.
-********************************************************************/
-char *safe_strcat(char *dest, char *src, int maxlength)
-{
-    int src_len, dest_len;
-
-    if (!dest) {
-        DEBUG(0,("ERROR: NULL dest in safe_strcat\n"));
-        return NULL;
-    }
-
-    if (!src) {
-        return dest;
-    }  
-
-    src_len = strlen(src);
-    dest_len = strlen(dest);
-
-    if (src_len + dest_len > maxlength) {
-	    DEBUG(0,("ERROR: string overflow by %d in safe_strcat [%.50s]\n",
-		     src_len + dest_len - maxlength, src));
-	    src_len = maxlength - dest_len;
-    }
-      
-    memcpy(&dest[dest_len], src, src_len);
-    dest[dest_len + src_len] = 0;
-    return dest;
-}
-
-/*******************************************************************
 align a pointer to a multiple of 2 bytes
 ********************************************************************/
 char *align2(char *q, char *base)
@@ -4751,6 +2893,56 @@ char *align2(char *q, char *base)
 		q++;
 	}
 	return q;
+}
+
+void out_ascii(FILE *f, unsigned char *buf,int len)
+{
+	int i;
+	for (i=0;i<len;i++)
+	{
+		fprintf(f, "%c", isprint(buf[i])?buf[i]:'.');
+	}
+}
+
+void out_data(FILE *f,char *buf1,int len, int per_line)
+{
+	unsigned char *buf = (unsigned char *)buf1;
+	int i=0;
+	if (len<=0)
+	{
+		return;
+	}
+
+	fprintf(f, "[%03X] ",i);
+	for (i=0;i<len;)
+	{
+		fprintf(f, "%02X ",(int)buf[i]);
+		i++;
+		if (i%(per_line/2) == 0) fprintf(f, " ");
+		if (i%per_line == 0)
+		{      
+			out_ascii(f,&buf[i-per_line  ],per_line/2); fprintf(f, " ");
+			out_ascii(f,&buf[i-per_line/2],per_line/2); fprintf(f, "\n");
+			if (i<len) fprintf(f, "[%03X] ",i);
+		}
+	}
+	if ((i%per_line) != 0)
+	{
+		int n;
+
+		n = per_line - (i%per_line);
+		fprintf(f, " ");
+		if (n>(per_line/2)) fprintf(f, " ");
+		while (n--)
+		{
+			fprintf(f, "   ");
+		}
+		n = MIN(per_line/2,i%per_line);
+		out_ascii(f,&buf[i-(i%per_line)],n); fprintf(f, " ");
+		n = (i%per_line) - n;
+		if (n>0) out_ascii(f,&buf[i-n],n); 
+		fprintf(f, "\n");    
+	}
 }
 
 void print_asc(int level, unsigned char *buf,int len)
@@ -4801,95 +2993,10 @@ char *tab_depth(int depth)
 	return spaces;
 }
 
-/*****************************************************************
- Convert a SID to an ascii string.
-*****************************************************************/
-
-char *sid_to_string(pstring sidstr_out, DOM_SID *sid)
-{
-  char subauth[16];
-  int i;
-  /* BIG NOTE: this function only does SIDS where the identauth is not >= 2^32 */
-  uint32 ia = (sid->id_auth[5]) +
-              (sid->id_auth[4] << 8 ) +
-              (sid->id_auth[3] << 16) +
-              (sid->id_auth[2] << 24);
-
-  slprintf(sidstr_out, sizeof(pstring) - 1, "S-%d-%d", sid->sid_rev_num, ia);
-
-  for (i = 0; i < sid->num_auths; i++)
-  {
-    slprintf(subauth, sizeof(subauth)-1, "-%d", sid->sub_auths[i]);
-    pstrcat(sidstr_out, subauth);
-  }
-
-  DEBUG(7,("sid_to_string returning %s\n", sidstr_out));
-  return sidstr_out;
-}
-
-/*****************************************************************
- Convert a string to a SID. Returns True on success, False on fail.
-*****************************************************************/  
-   
-BOOL string_to_sid(DOM_SID *sidout, char *sidstr)
-{
-  pstring tok;
-  char *p = sidstr;
-  /* BIG NOTE: this function only does SIDS where the identauth is not >= 2^32 */
-  uint32 ia;
-
-  memset((char *)sidout, '\0', sizeof(DOM_SID));
-
-  if(StrnCaseCmp( sidstr, "S-", 2)) {
-    DEBUG(0,("string_to_sid: Sid %s does not start with 'S-'.\n", sidstr));
-    return False;
-  }
-
-  p += 2;
-  if(!next_token(&p, tok, "-", sizeof(tok))) {
-    DEBUG(0,("string_to_sid: Sid %s is not in a valid format.\n", sidstr));
-    return False;
-  }
-
-  /* Get the revision number. */
-  sidout->sid_rev_num = atoi(tok);
-
-  if(!next_token(&p, tok, "-", sizeof(tok))) {
-    DEBUG(0,("string_to_sid: Sid %s is not in a valid format.\n", sidstr));
-    return False;
-  }
-
-  /* identauth in decimal should be <  2^32 */
-  ia = atoi(tok);
-
-  /* NOTE - the ia value is in big-endian format. */
-  sidout->id_auth[0] = 0;
-  sidout->id_auth[1] = 0;
-  sidout->id_auth[2] = (ia & 0xff000000) >> 24;
-  sidout->id_auth[3] = (ia & 0x00ff0000) >> 16;
-  sidout->id_auth[4] = (ia & 0x0000ff00) >> 8;
-  sidout->id_auth[5] = (ia & 0x000000ff);
-
-  sidout->num_auths = 0;
-
-  while(next_token(&p, tok, "-", sizeof(tok)) && 
-	sidout->num_auths < MAXSUBAUTHS) {
-    /* 
-     * NOTE - the subauths are in native machine-endian format. They
-     * are converted to little-endian when linearized onto the wire.
-     */
-    sidout->sub_auths[sidout->num_auths++] = atoi(tok);
-  }
-
-  DEBUG(7,("string_to_sid: converted SID %s ok\n", sidstr));
-
-  return True;
-}
-
 /*****************************************************************************
  * Provide a checksum on a string
  *
- *  Input:  s - the nul-terminated character string for which the checksum
+ *  Input:  s - the null-terminated character string for which the checksum
  *              will be calculated.
  *
  *  Output: The checksum value calculated for s.

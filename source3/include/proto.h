@@ -206,15 +206,9 @@ BOOL user_in_list(char *user,char *list);
 /*The following definitions come from  lib/util.c  */
 
 char *tmpdir(void);
-BOOL is_a_socket(int fd);
-void set_first_token(char *ptr);
-BOOL next_token(char **ptr,char *buff,char *sep, int bufsize);
-char **toktocliplist(int *ctok, char *sep);
-void set_socket_options(int fd, char *options);
-void close_sockets(void );
 BOOL in_group(gid_t group, gid_t current_gid, int ngroups, gid_t *groups);
-char *StrCpy(char *dest,char *src);
-char *StrnCpy(char *dest,char *src,int n);
+char *Atoic(char *p, int *n, char *c);
+char *get_numlist(char *p, uint32 **num, int *count);
 void putip(void *dest,void *src);
 char *dns_to_netbios_name(char *dns_name);
 int name_mangle( char *In, char *Out, char name_type );
@@ -223,16 +217,6 @@ time_t file_modtime(char *fname);
 BOOL directory_exist(char *dname,SMB_STRUCT_STAT *st);
 SMB_OFF_T file_size(char *file_name);
 char *attrib_string(uint16 mode);
-int StrCaseCmp(char *s, char *t);
-int StrnCaseCmp(char *s, char *t, int n);
-BOOL strequal(char *s1, char *s2);
-BOOL strnequal(char *s1,char *s2,int n);
-BOOL strcsequal(char *s1,char *s2);
-void strlower(char *s);
-void strupper(char *s);
-void strnorm(char *s);
-BOOL strisnormal(char *s);
-void string_replace(char *s,char oldc,char newc);
 void unix_format(char *fname);
 void dos_format(char *fname);
 void show_msg(char *buf);
@@ -243,63 +227,36 @@ int set_message(char *buf,int num_words,int num_bytes,BOOL zero);
 int smb_buflen(char *buf);
 char *smb_buf(char *buf);
 int smb_offset(char *p,char *buf);
-char *skip_string(char *buf,int n);
-size_t str_charnum(char *s);
-BOOL trim_string(char *s,char *front,char *back);
 void dos_clean_name(char *s);
 void unix_clean_name(char *s);
 int ChDir(char *path);
 char *GetWd(char *str);
 BOOL reduce_name(char *s,char *dir,BOOL widelinks);
 void expand_mask(char *Mask,BOOL doext);
-BOOL strhasupper(char *s);
-BOOL strhaslower(char *s);
-int count_chars(char *s,char c);
 void make_dir_struct(char *buf,char *mask,char *fname,SMB_OFF_T size,int mode,time_t date);
 void close_low_fds(void);
-ssize_t write_socket(int fd,char *buf,size_t len);
-ssize_t read_udp_socket(int fd,char *buf,size_t len);
-ssize_t read_with_timeout(int fd,char *buf,size_t mincnt,size_t maxcnt,unsigned int time_out);
+int set_blocking(int fd, BOOL set);
 int TvalDiff(struct timeval *tvalold,struct timeval *tvalnew);
-BOOL send_keepalive(int client);
-ssize_t read_data(int fd,char *buffer,size_t N);
-ssize_t write_data(int fd,char *buffer,size_t N);
 SMB_OFF_T transfer_file(int infd,int outfd,SMB_OFF_T n,char *header,int headlen,int align);
-ssize_t read_smb_length(int fd,char *inbuf,unsigned int timeout);
-BOOL receive_smb(int fd,char *buffer, unsigned int timeout);
-BOOL client_receive_smb(int fd,char *buffer, unsigned int timeout);
-BOOL send_smb(int fd,char *buffer);
 int name_extract(char *buf,int ofs,char *name);
 int name_len(char *s1);
-BOOL send_one_packet(char *buf,int len,struct in_addr ip,int port,int type);
 void msleep(int t);
-BOOL in_list(char *s,char *list,BOOL casesensitive);
-BOOL string_init(char **dest,char *src);
-void string_free(char **s);
-BOOL string_set(char **dest,char *src);
-BOOL string_sub(char *s,char *pattern,char *insert);
 BOOL do_match(char *str, char *regexp, int case_sig);
 BOOL mask_match(char *str, char *regexp, int case_sig,BOOL trans2);
 void become_daemon(void);
 BOOL yesno(char *p);
-char *fgets_slash(char *s2,int maxlen,FILE *f);
 int set_filelen(int fd, SMB_OFF_T len);
 void *Realloc(void *p,size_t size);
 BOOL get_myname(char *my_name,struct in_addr *ip);
 BOOL ip_equal(struct in_addr ip1,struct in_addr ip2);
-int open_socket_in(int type, int port, int dlevel,uint32 socket_addr);
-int open_socket_out(int type, struct in_addr *addr, int port ,int timeout);
 int interpret_protocol(char *str,int def);
 uint32 interpret_addr(char *str);
 struct in_addr *interpret_addr2(char *str);
 BOOL zero_ip(struct in_addr ip);
-void reset_globals_after_fork(void);
-char *client_name(int fd);
-char *client_addr(int fd);
+BOOL matchname(char *remotehost,struct in_addr  addr);
 void standard_sub_basic(char *str);
 void standard_sub(connection_struct *conn,char *str);
 BOOL same_net(struct in_addr ip1,struct in_addr ip2,struct in_addr mask);
-int PutUniCode(char *dst,char *src);
 struct hostent *Get_Hostbyname(char *name);
 BOOL process_exists(int pid);
 char *uidtoname(uid_t uid);
@@ -314,23 +271,102 @@ BOOL fcntl_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type);
 BOOL is_myname(char *s);
 void set_remote_arch(enum remote_arch_types type);
 enum remote_arch_types get_remote_arch(void);
-char *skip_unicode_string(char *buf,int n);
-char *unistrn2(uint16 *buf, int len);
-char *unistr2(uint16 *buf);
-int struni2(uint16 *p, char *buf);
-char *unistr(char *buf);
-int unistrcpy(char *dst, char *src);
-char *safe_strcpy(char *dest,const char *src, int maxlength);
-char *safe_strcat(char *dest, char *src, int maxlength);
 char *align2(char *q, char *base);
+void out_ascii(FILE *f, unsigned char *buf,int len);
+void out_data(FILE *f,char *buf1,int len, int per_line);
 void print_asc(int level, unsigned char *buf,int len);
 void dump_data(int level,char *buf1,int len);
 char *tab_depth(int depth);
-char *sid_to_string(pstring sidstr_out, DOM_SID *sid);
-BOOL string_to_sid(DOM_SID *sidout, char *sidstr);
 int str_checksum(const char *s);
 void zero_free(void *p, size_t size);
 int set_maxfiles(int requested_max);
+
+/*The following definitions come from  lib/util_file.c  */
+
+BOOL do_file_lock(int fd, int waitsecs, int type);
+BOOL file_lock(int fd, int type, int secs, int *plock_depth);
+BOOL file_unlock(int fd, int *plock_depth);
+void *startfilepwent(char *pfile, char *s_readbuf, int bufsize,
+				int *file_lock_depth, BOOL update);
+void endfilepwent(void *vp, int *file_lock_depth);
+SMB_BIG_UINT getfilepwpos(void *vp);
+BOOL setfilepwpos(void *vp, SMB_BIG_UINT tok);
+int getfileline(void *vp, char *linebuf, int linebuf_size);
+char *fgets_slash(char *s2,int maxlen,FILE *f);
+
+/*The following definitions come from  lib/util_sid.c  */
+
+char *sid_to_string(pstring sidstr_out, DOM_SID *sid);
+BOOL string_to_sid(DOM_SID *sidout, char *sidstr);
+BOOL sid_append_rid(DOM_SID *sid, uint32 rid);
+BOOL sid_split_rid(DOM_SID *sid, uint32 *rid);
+void sid_copy(DOM_SID *sid1, DOM_SID *sid2);
+BOOL sid_equal(DOM_SID *sid1, DOM_SID *sid2);
+
+/*The following definitions come from  lib/util_sock.c  */
+
+BOOL is_a_socket(int fd);
+void set_socket_options(int fd, char *options);
+void close_sockets(void );
+ssize_t write_socket(int fd,char *buf,size_t len);
+ssize_t read_udp_socket(int fd,char *buf,size_t len);
+ssize_t read_with_timeout(int fd,char *buf,size_t mincnt,size_t maxcnt,unsigned int time_out);
+BOOL send_keepalive(int client);
+ssize_t read_data(int fd,char *buffer,size_t N);
+ssize_t write_data(int fd,char *buffer,size_t N);
+ssize_t read_smb_length(int fd,char *inbuf,unsigned int timeout);
+BOOL receive_smb(int fd,char *buffer, unsigned int timeout);
+BOOL client_receive_smb(int fd,char *buffer, unsigned int timeout);
+BOOL send_smb(int fd,char *buffer);
+BOOL send_one_packet(char *buf,int len,struct in_addr ip,int port,int type);
+int open_socket_in(int type, int port, int dlevel,uint32 socket_addr);
+int open_socket_out(int type, struct in_addr *addr, int port ,int timeout);
+void reset_globals_after_fork(void);
+char *client_name(int fd);
+char *client_addr(int fd);
+
+/*The following definitions come from  lib/util_str.c  */
+
+void set_first_token(char *ptr);
+BOOL next_token(char **ptr,char *buff,char *sep, int bufsize);
+char **toktocliplist(int *ctok, char *sep);
+int StrCaseCmp(char *s, char *t);
+int StrnCaseCmp(char *s, char *t, int n);
+BOOL strequal(char *s1, char *s2);
+BOOL strnequal(char *s1,char *s2,int n);
+BOOL strcsequal(char *s1,char *s2);
+void strlower(char *s);
+void strupper(char *s);
+void strnorm(char *s);
+BOOL strisnormal(char *s);
+void string_replace(char *s,char oldc,char newc);
+char *skip_string(char *buf,int n);
+size_t str_charnum(char *s);
+BOOL trim_string(char *s,char *front,char *back);
+BOOL strhasupper(char *s);
+BOOL strhaslower(char *s);
+int count_chars(char *s,char c);
+char *safe_strcpy(char *dest,const char *src, int maxlength);
+char *safe_strcat(char *dest, char *src, int maxlength);
+char *StrCpy(char *dest,char *src);
+char *StrnCpy(char *dest,char *src,int n);
+char *strncpyn(char *dest, char *src,int n, char c);
+BOOL in_list(char *s,char *list,BOOL casesensitive);
+BOOL string_init(char **dest,char *src);
+void string_free(char **s);
+BOOL string_set(char **dest,char *src);
+BOOL string_sub(char *s,char *pattern,char *insert);
+
+/*The following definitions come from  lib/util_unistr.c  */
+
+int PutUniCode(char *dst,char *src);
+char *skip_unicode_string(char *buf,int n);
+char *unistrn2(uint16 *buf, int len);
+char *unistr2(uint16 *buf);
+char *unistr2_to_str(UNISTR2 *str);
+int struni2(uint16 *p, char *buf);
+char *unistr(char *buf);
+int unistrcpy(char *dst, char *src);
 
 /*The following definitions come from  libsmb/clientgen.c  */
 
