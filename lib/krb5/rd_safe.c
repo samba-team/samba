@@ -58,7 +58,7 @@ krb5_rd_safe(krb5_context context,
       gettimeofday (&tv, NULL);
       if (safe.safe_body.timestamp == NULL ||
 	  safe.safe_body.usec      == NULL ||
-	  *(safe.safe_body.timestamp) - tv.tv_sec > 600) {
+	  abs(*safe.safe_body.timestamp - tv.tv_sec) > context->max_skew) {
 	  r = KRB5KRB_AP_ERR_SKEW;
 	  goto failure;
       }
