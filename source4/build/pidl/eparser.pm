@@ -225,11 +225,13 @@ sub union_alignment
 
 #####################################################################
 # parse an array - push side
-sub ParseArrayPush($$$)
+sub ParseArray($$$)
 {
 	my $e = shift;
 	my $var_prefix = shift;
 	my $ndr_flags = shift;
+
+	pidl "\t// ParseArray $e->{NAME}\n\n";
 
 	my $size = find_size_var($e, util::array_size($e), $var_prefix);
 
@@ -254,83 +256,6 @@ sub ParseArrayPush($$$)
 	}
 }
 
-#####################################################################
-# parse an array - pull side
-sub ParseArrayPull($$$)
-{
-	my $e = shift;
-	my $var_prefix = shift;
-	my $ndr_flags = shift;
-
-	my $size = find_size_var($e, util::array_size($e), $var_prefix);
-	my $alloc_size = $size;
-
-	# if this is a conformant array then we use that size to allocate, and make sure
-	# we allocate enough to pull the elements
-	if (defined $e->{CONFORMANT_SIZE}) {
-		$alloc_size = $e->{CONFORMANT_SIZE};
-
-		pidl "\tif ($size > $alloc_size) {\n";
-		pidl "\t\treturn ndr_pull_error(ndr, NDR_ERR_CONFORMANT_SIZE, \"Bad conformant size %u should be %u\", $alloc_size, $size);\n";
-		pidl "\t}\n";
-	} elsif (!util::is_inline_array($e)) {
-		if ($var_prefix =~ /^r->out/ && $size =~ /^\*r->in/) {
-			my $size2 = substr($size, 1);
-			pidl "if (flags & LIBNDR_FLAG_REF_ALLOC) {	NDR_ALLOC(ndr, $size2); }\n";
-		}
-
-		# non fixed arrays encode the size just before the array
-		pidl "\t{\n";
-		pidl "\t\tuint32_t _array_size;\n";
-		pidl "\t\t(ndr_pull_uint32(ndr, &_array_size);\n";
-		if ($size =~ /r->in/) {
-			pidl "\t\tif (!(flags & LIBNDR_FLAG_REF_ALLOC) && _array_size != $size) {\n";
-		} else {
-			pidl "\t\tif ($size != _array_size) {\n";
-		}
-		pidl "\t\t\treturn ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, \"Bad array size %u should be %u\", _array_size, $size);\n";
-		pidl "\t\t}\n";
-		if ($size =~ /r->in/) {
-			pidl "else { $size = _array_size; }\n";
-		}
-		pidl "\t}\n";
-	}
-
-	if ((util::need_alloc($e) && !util::is_fixed_array($e)) ||
-	    ($var_prefix eq "r->in." && util::has_property($e, "ref"))) {
-		if (!util::is_inline_array($e) || $ndr_flags eq "NDR_SCALARS") {
-			pidl "\t\tNDR_ALLOC_N(ndr, $var_prefix$e->{NAME}, MAX(1, $alloc_size));\n";
-		}
-	}
-
-	if (($var_prefix eq "r->out." && util::has_property($e, "ref"))) {
-		if (!util::is_inline_array($e) || $ndr_flags eq "NDR_SCALARS") {
-			pidl "\tif (flags & LIBNDR_FLAG_REF_ALLOC) {";
-			pidl "\t\tNDR_ALLOC_N(ndr, $var_prefix$e->{NAME}, MAX(1, $alloc_size));\n";
-			pidl "\t}\n";
-		}
-	}
-
-	pidl "\t{\n";
-
-	if (my $length = util::has_property($e, "length_is")) {
-		$length = find_size_var($e, $length, $var_prefix);
-		pidl "\t\tuint32_t _offset, _length;\n";
-		pidl "\t\tndr_pull_uint32(ndr, &_offset);\n";
-		pidl "\t\tndr_pull_uint32(ndr, &_length);\n";
-		pidl "\t\tif (_offset != 0) return ndr_pull_error(ndr, NDR_ERR_OFFSET, \"Bad array offset 0x%08x\", _offset);\n";
-		pidl "\t\tif (_length > $size || _length != $length) return ndr_pull_error(ndr, NDR_ERR_LENGTH, \"Bad array length 0x%08x > size 0x%08x\", _offset, $size);\n\n";
-		$size = "_length";
-	}
-
-	if (util::is_scalar_type($e->{TYPE})) {
-		pidl "\t\tndr_pull_array_$e->{TYPE}(ndr, $ndr_flags, $var_prefix$e->{NAME}, $size);\n";
-	} else {
-		pidl "\t\tndr_pull_array(ndr, $ndr_flags, (void **)$var_prefix$e->{NAME}, sizeof($var_prefix$e->{NAME}\[0]), $size, (ndr_pull_flags_fn_t)ndr_pull_$e->{TYPE});\n";
-	}
-
-	pidl "\t}\n";
-}
 sub ParamPolicyHandle($)
 {
     my($p) = shift;
@@ -370,13 +295,15 @@ my %param_handlers = (
 
 ####################################################################
 # parse scalars in a structure element
-sub ParseElementPushScalar($$$)
+sub ParseElementScalar($$$)
 {
 	my($e) = shift;
 	my($var_prefix) = shift;
 	my($ndr_flags) = shift;
 	my $cprefix = util::c_push_prefix($e);
 	my $sub_size = util::has_property($e, "subcontext");
+
+	pidl "\t// ParseElementScalar $e->{NAME}\n\n";
 
 	start_flags($e);
 
@@ -387,13 +314,13 @@ sub ParseElementPushScalar($$$)
 	if (util::has_property($e, "relative")) {
 		pidl "\tndr_push_relative(ndr, NDR_SCALARS, $var_prefix$e->{NAME}, (ndr_push_const_fn_t) ndr_push_$e->{TYPE});\n";
 	} elsif (util::is_inline_array($e)) {
-		ParseArrayPush($e, "r->", "NDR_SCALARS");
+		ParseArray($e, "r->", "NDR_SCALARS");
 	} elsif (util::need_wire_pointer($e)) {
 	    pidl "\toffset = dissect_ndr_uint32(tvb, offset, pinfo, tree, drep, hf_ptr, &ptr);\n";
 	} elsif (util::need_alloc($e)) {
 		# no scalar component
 	} elsif (my $switch = util::has_property($e, "switch_is")) {
-		ParseElementPushSwitch($e, $var_prefix, $ndr_flags, $switch);
+		ParseElementSwitch($e, $var_prefix, $ndr_flags, $switch);
 	} elsif (defined $sub_size) {
 		if (util::is_builtin_type($e->{TYPE})) {
 			pidl "\tndr_push_subcontext_fn(ndr, $sub_size, $cprefix$var_prefix$e->{NAME}, (ndr_push_fn_t) ndr_push_$e->{TYPE});\n";
@@ -414,81 +341,8 @@ sub ParseElementPushScalar($$$)
 }
 
 #####################################################################
-# print scalars in a structure element
-sub ParseElementPrintScalar($$)
-{
-	my($e) = shift;
-	my($var_prefix) = shift;
-	my $cprefix = util::c_push_prefix($e);
-
-	if (util::has_property($e, "noprint")) {
-		return;
-	}
-
-	if (my $value = util::has_property($e, "value")) {
-		pidl "\tif (flags & LIBNDR_PRINT_SET_VALUES) {\n";
-		pidl "\t\t$cprefix$var_prefix$e->{NAME} = $value;\n";
-		pidl "\t}\n";
-	}
-
-	if (util::is_fixed_array($e)) {
-		ParseElementPrintBuffer($e, $var_prefix);
-	} elsif (util::has_direct_buffers($e)) {
-		pidl "\tndr_print_ptr(ndr, \"$e->{NAME}\", $var_prefix$e->{NAME});\n";
-		pidl "\tndr->depth++;\n";
-		ParseElementPrintBuffer($e, $var_prefix);
-		pidl "\tndr->depth--;\n";
-	} elsif (my $switch = util::has_property($e, "switch_is")) {
-		ParseElementPrintSwitch($e, $var_prefix, $switch);
-	} else {
-		pidl "\tndr_print_$e->{TYPE}(ndr, \"$e->{NAME}\", $cprefix$var_prefix$e->{NAME});\n";
-	}
-}
-
-#####################################################################
-# parse scalars in a structure element - pull size
-sub ParseElementPullSwitch($$$$)
-{
-	my($e) = shift;
-	my($var_prefix) = shift;
-	my($ndr_flags) = shift;
-	my $switch = shift;
-	my $switch_var = find_size_var($e, $switch, $var_prefix);
-
-	my $cprefix = util::c_pull_prefix($e);
-
-	my $utype = $structs{$e->{TYPE}};
-	if (!defined $utype ||
-	    !util::has_property($utype->{DATA}, "nodiscriminant")) {
-		my $e2 = find_sibling($e, $switch);
-		pidl "\tif (($ndr_flags) & NDR_SCALARS) {\n";
-		pidl "\t\t $e2->{TYPE} _level;\n";
-		pidl "\t\tndr_pull_$e2->{TYPE}(ndr, &_level);\n";
-		if ($switch_var =~ /r->in/) {
-			pidl "\t\tif (!(flags & LIBNDR_FLAG_REF_ALLOC) && _level != $switch_var) {\n";
-		} else {
-			pidl "\t\tif (_level != $switch_var) {\n";
-		}
-		pidl "\t\t\treturn ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, \"Bad switch value %u in $e->{NAME}\");\t\t}\n";
-		if ($switch_var =~ /r->/) {
-			pidl "else { $switch_var = _level; }\n";
-		}
-		pidl "\t}\n";
-	}
-
-	my $sub_size = util::has_property($e, "subcontext");
-	if (defined $sub_size) {
-		pidl "\tndr_pull_subcontext_union_fn(ndr, $sub_size, $switch_var, $cprefix$var_prefix$e->{NAME}, (ndr_pull_union_fn_t) ndr_pull_$e->{TYPE});\n";
-	} else {
-		pidl "\tndr_pull_$e->{TYPE}(ndr, $ndr_flags, $switch_var, $cprefix$var_prefix$e->{NAME});\n";
-	}
-
-
-}
-
-#####################################################################
 # push switch element
-sub ParseElementPushSwitch($$$$)
+sub ParseElementSwitch($$$$)
 {
 	my($e) = shift;
 	my($var_prefix) = shift;
@@ -496,6 +350,8 @@ sub ParseElementPushSwitch($$$$)
 	my $switch = shift;
 	my $switch_var = find_size_var($e, $switch, $var_prefix);
 	my $cprefix = util::c_push_prefix($e);
+
+	pidl "\t// ParseElementSwitch $e->{NAME}\n\n";
 
 	my $utype = $structs{$e->{TYPE}};
 	if (!defined $utype ||
@@ -520,70 +376,16 @@ sub ParseElementPushSwitch($$$$)
 }
 
 #####################################################################
-# print scalars in a structure element 
-sub ParseElementPrintSwitch($$$)
-{
-	my($e) = shift;
-	my($var_prefix) = shift;
-	my $switch = shift;
-	my $switch_var = find_size_var($e, $switch, $var_prefix);
-	my $cprefix = util::c_push_prefix($e);
-
-	pidl "\tndr_print_$e->{TYPE}(ndr, \"$e->{NAME}\", $switch_var, $cprefix$var_prefix$e->{NAME});\n";
-}
-
-
-#####################################################################
-# parse scalars in a structure element - pull size
-sub ParseElementPullScalar($$$)
-{
-	my($e) = shift;
-	my($var_prefix) = shift;
-	my($ndr_flags) = shift;
-	my $cprefix = util::c_pull_prefix($e);
-	my $sub_size = util::has_property($e, "subcontext");
-
-	start_flags($e);
-
-	if (util::has_property($e, "relative")) {
-		pidl "\tndr_pull_relative(ndr, (const void **)&$var_prefix$e->{NAME}, sizeof(*$var_prefix$e->{NAME}), (ndr_pull_flags_fn_t)ndr_pull_$e->{TYPE});\n";
-	} elsif (util::is_inline_array($e)) {
-		ParseArrayPull($e, "r->", "NDR_SCALARS");
-	} elsif (util::need_wire_pointer($e)) {
-		pidl "\tndr_pull_uint32(ndr, &_ptr_$e->{NAME});\n";
-		pidl "\tif (_ptr_$e->{NAME}) {\n";
-		pidl "\t\tNDR_ALLOC(ndr, $var_prefix$e->{NAME});\n";
-		pidl "\t} else {\n";
-		pidl "\t\t$var_prefix$e->{NAME} = NULL;\n";
-		pidl "\t}\n";
-	} elsif (util::need_alloc($e)) {
-		# no scalar component
-	} elsif (my $switch = util::has_property($e, "switch_is")) {
-		ParseElementPullSwitch($e, $var_prefix, $ndr_flags, $switch);
-	} elsif (defined $sub_size) {
-		if (util::is_builtin_type($e->{TYPE})) {
-			pidl "\tndr_pull_subcontext_fn(ndr, $sub_size, $cprefix$var_prefix$e->{NAME}, (ndr_pull_fn_t) ndr_pull_$e->{TYPE});\n";
-		} else {
-			pidl "\tndr_pull_subcontext_flags_fn(ndr, $sub_size, $cprefix$var_prefix$e->{NAME}, (ndr_pull_flags_fn_t) ndr_pull_$e->{TYPE});\n";
-		}
-	} elsif (util::is_builtin_type($e->{TYPE})) {
-		pidl "\tndr_pull_$e->{TYPE}(ndr, $cprefix$var_prefix$e->{NAME});\n";
-	} else {
-		pidl "\tndr_pull_$e->{TYPE}(ndr, $ndr_flags, $cprefix$var_prefix$e->{NAME});\n";
-	}
-
-	end_flags($e);
-}
-
-#####################################################################
 # parse buffers in a structure element
-sub ParseElementPushBuffer($$$)
+sub ParseElementBuffer($$$)
 {
 	my($e) = shift;
 	my($var_prefix) = shift;
 	my($ndr_flags) = shift;
 	my $cprefix = util::c_push_prefix($e);
 	my $sub_size = util::has_property($e, "subcontext");
+
+	pidl "\t// ParseElementBuffer $e->{NAME}\n\n";
 
 	if (util::is_pure_scalar($e)) {
 		return;
@@ -598,14 +400,14 @@ sub ParseElementPushBuffer($$$)
 	if (util::has_property($e, "relative")) {
 		pidl "\tndr_push_relative(ndr, NDR_BUFFERS, $cprefix$var_prefix$e->{NAME}, (ndr_push_const_fn_t) ndr_push_$e->{TYPE});\n";
 	} elsif (util::is_inline_array($e)) {
-		ParseArrayPush($e, "r->", "NDR_BUFFERS");
+		ParseArray($e, "r->", "NDR_BUFFERS");
 	} elsif (util::array_size($e)) {
-		ParseArrayPush($e, "r->", "NDR_SCALARS|NDR_BUFFERS");
+		ParseArray($e, "r->", "NDR_SCALARS|NDR_BUFFERS");
 	} elsif (my $switch = util::has_property($e, "switch_is")) {
 		if ($e->{POINTERS}) {
-			ParseElementPushSwitch($e, $var_prefix, "NDR_BUFFERS|NDR_SCALARS", $switch);
+			ParseElementSwitch($e, $var_prefix, "NDR_BUFFERS|NDR_SCALARS", $switch);
 		} else {
-			ParseElementPushSwitch($e, $var_prefix, "NDR_BUFFERS", $switch);
+			ParseElementSwitch($e, $var_prefix, "NDR_BUFFERS", $switch);
 		}
 	} elsif (defined $sub_size) {
 		if ($e->{POINTERS}) {
@@ -639,95 +441,14 @@ sub ParseElementPushBuffer($$$)
 }
 
 #####################################################################
-# print buffers in a structure element
-sub ParseElementPrintBuffer($$)
-{
-	my($e) = shift;
-	my($var_prefix) = shift;
-	my $cprefix = util::c_push_prefix($e);
-
-	if (util::need_wire_pointer($e)) {
-		pidl "\tif ($var_prefix$e->{NAME}) {\n";
-	}
-	    
-	if (util::array_size($e)) {
-		ParseArrayPrint($e, $var_prefix);
-	} elsif (my $switch = util::has_property($e, "switch_is")) {
-		ParseElementPrintSwitch($e, $var_prefix, $switch);
-	} else {
-		pidl "\t\tndr_print_$e->{TYPE}(ndr, \"$e->{NAME}\", $cprefix$var_prefix$e->{NAME});\n";
-	}
-
-	if (util::need_wire_pointer($e)) {
-		pidl "\t}\n";
-	}	
-}
-
-
-#####################################################################
-# parse buffers in a structure element - pull side
-sub ParseElementPullBuffer($$$)
-{
-	my($e) = shift;
-	my($var_prefix) = shift;
-	my($ndr_flags) = shift;
-	my $cprefix = util::c_pull_prefix($e);
-	my $sub_size = util::has_property($e, "subcontext");
-
-	if (util::is_pure_scalar($e)) {
-		return;
-	}
-
-	if (util::has_property($e, "relative")) {
-		return;
-	}
-
-	start_flags($e);
-
-	if (util::need_wire_pointer($e)) {
-		pidl "\tif ($var_prefix$e->{NAME}) {\n";
-	}
-	    
-	if (util::is_inline_array($e)) {
-		ParseArrayPull($e, "r->", "NDR_BUFFERS");
-	} elsif (util::array_size($e)) {
-		ParseArrayPull($e, "r->", "NDR_SCALARS|NDR_BUFFERS");
-	} elsif (my $switch = util::has_property($e, "switch_is")) {
-		if ($e->{POINTERS}) {
-			ParseElementPullSwitch($e, $var_prefix, "NDR_SCALARS|NDR_BUFFERS", $switch);
-		} else {
-			ParseElementPullSwitch($e, $var_prefix, "NDR_BUFFERS", $switch);
-		}
-	} elsif (defined $sub_size) {
-		if ($e->{POINTERS}) {
-			if (util::is_builtin_type($e->{TYPE})) {
-				pidl "\tndr_pull_subcontext_fn(ndr, $sub_size, $cprefix$var_prefix$e->{NAME}, (ndr_pull_fn_t) ndr_pull_$e->{TYPE});\n";
-			} else {
-				pidl "\tndr_pull_subcontext_flags_fn(ndr, $sub_size, $cprefix$var_prefix$e->{NAME}, (ndr_pull_flags_fn_t) ndr_pull_$e->{TYPE});\n";
-			}
-		}
-	} elsif (util::is_builtin_type($e->{TYPE})) {
-		pidl "\t\tndr_pull_$e->{TYPE}(ndr, $cprefix$var_prefix$e->{NAME});\n";
-	} elsif ($e->{POINTERS}) {
-		pidl "\t\tndr_pull_$e->{TYPE}(ndr, NDR_SCALARS|NDR_BUFFERS, $cprefix$var_prefix$e->{NAME});\n";
-	} else {
-		pidl "\t\tndr_pull_$e->{TYPE}(ndr, $ndr_flags, $cprefix$var_prefix$e->{NAME});\n";
-	}
-
-	if (util::need_wire_pointer($e)) {
-		pidl "\t}\n";
-	}	
-
-	end_flags($e);
-}
-
-#####################################################################
 # parse a struct
-sub ParseStructPush($)
+sub ParseStruct($)
 {
 	my($struct) = shift;
 	my $conform_e;
 	
+	pidl "\t// ParseStruct $struct->{NAME}\n\n";
+
 	if (! defined $struct->{ELEMENTS}) {
 		return;
 	}
@@ -755,13 +476,13 @@ sub ParseStructPush($)
 	pidl "\tndr_push_align(ndr, $align);\n";
 
 	foreach my $e (@{$struct->{ELEMENTS}}) {
-		ParseElementPushScalar($e, "r->", "NDR_SCALARS");
+		ParseElementScalar($e, "r->", "NDR_SCALARS");
 	}	
 
 	pidl "buffers:\n";
 	pidl "\tif (!(ndr_flags & NDR_BUFFERS)) goto done;\n";
 	foreach my $e (@{$struct->{ELEMENTS}}) {
-		ParseElementPushBuffer($e, "r->", "NDR_BUFFERS");
+		ParseElementBuffer($e, "r->", "NDR_BUFFERS");
 	}
 
 	pidl "\tndr_push_struct_end(ndr);\n";
@@ -772,73 +493,13 @@ sub ParseStructPush($)
 }
 
 #####################################################################
-# parse a struct - pull side
-sub ParseStructPull($)
-{
-	my($struct) = shift;
-	my $conform_e;
-
-	if (! defined $struct->{ELEMENTS}) {
-		return;
-	}
-
-	# see if the structure contains a conformant array. If it
-	# does, then it must be the last element of the structure, and
-	# we need to pull the conformant length early, as it fits on
-	# the wire before the structure (and even before the structure
-	# alignment)
-	my $e = $struct->{ELEMENTS}[-1];
-	if (defined $e->{ARRAY_LEN} && $e->{ARRAY_LEN} eq "*") {
-		$conform_e = $e;
-		pidl "\tuint32_t _conformant_size;\n";
-		$conform_e->{CONFORMANT_SIZE} = "_conformant_size";
-	}
-
-	# declare any internal pointers we need
-	foreach my $e (@{$struct->{ELEMENTS}}) {
-		if (util::need_wire_pointer($e) &&
-		    !util::has_property($e, "relative")) {
-			pidl "\tuint32_t _ptr_$e->{NAME};\n";
-		}
-	}
-
-	start_flags($struct);
-
-	pidl "\tif (!(ndr_flags & NDR_SCALARS)) goto buffers;\n";
-
-	pidl "\tndr_pull_struct_start(ndr);\n";
-
-	if (defined $conform_e) {
-		pidl "\tndr_pull_uint32(ndr, &$conform_e->{CONFORMANT_SIZE});\n";
-	}
-
-	my $align = struct_alignment($struct);
-	pidl "\tndr_pull_align(ndr, $align);\n";
-
-	foreach my $e (@{$struct->{ELEMENTS}}) {
-		ParseElementPullScalar($e, "r->", "NDR_SCALARS");
-	}	
-
-	pidl "buffers:\n";
-	pidl "\tif (!(ndr_flags & NDR_BUFFERS)) goto done;\n";
-	foreach my $e (@{$struct->{ELEMENTS}}) {
-		ParseElementPullBuffer($e, "r->", "NDR_BUFFERS");
-	}
-
-	pidl "\tndr_pull_struct_end(ndr);\n";
-
-	pidl "done:\n";
-
-	end_flags($struct);
-}
-
-
-#####################################################################
 # parse a union - push side
-sub ParseUnionPush($)
+sub ParseUnion($)
 {
 	my $e = shift;
 	my $have_default = 0;
+
+	pidl "\t// ParseUnion $e->{NAME}\n\n";
 
 	start_flags($e);
 
@@ -858,7 +519,7 @@ sub ParseUnionPush($)
 			pidl "\tcase $el->{CASE}:\n";
 		}
 		if ($el->{TYPE} eq "UNION_ELEMENT") {
-			ParseElementPushScalar($el->{DATA}, "r->", "NDR_SCALARS");
+			ParseElementScalar($el->{DATA}, "r->", "NDR_SCALARS");
 		}
 		pidl "\tbreak;\n\n";
 	}
@@ -877,7 +538,7 @@ sub ParseUnionPush($)
 			pidl "\tcase $el->{CASE}:\n";
 		}
 		if ($el->{TYPE} eq "UNION_ELEMENT") {
-			ParseElementPushBuffer($el->{DATA}, "r->", "NDR_BUFFERS");
+			ParseElementBuffer($el->{DATA}, "r->", "NDR_BUFFERS");
 		}
 		pidl "\tbreak;\n\n";
 	}
@@ -892,92 +553,16 @@ sub ParseUnionPush($)
 }
 
 #####################################################################
-# parse a union - pull side
-sub ParseUnionPull($)
-{
-	my $e = shift;
-	my $have_default = 0;
-
-	start_flags($e);
-
-	pidl "\tif (!(ndr_flags & NDR_SCALARS)) goto buffers;\n";
-
-	pidl "\tndr_pull_struct_start(ndr);\n";
-
-#	my $align = union_alignment($e);
-#	pidl "\tndr_pull_align(ndr, $align);\n";
-
-	pidl "\tswitch (level) {\n";
-	foreach my $el (@{$e->{DATA}}) {
-		if ($el->{CASE} eq "default") {
-			pidl "\tdefault: {\n";
-			$have_default = 1;
-		} else {
-			pidl "\tcase $el->{CASE}: {\n";
-		}
-		if ($el->{TYPE} eq "UNION_ELEMENT") {
-			my $e2 = $el->{DATA};
-			if ($e2->{POINTERS}) {
-				pidl "\t\tuint32_t _ptr_$e2->{NAME};\n";
-			}
-			ParseElementPullScalar($el->{DATA}, "r->", "NDR_SCALARS");
-		}
-		pidl "\tbreak; }\n\n";
-	}
-	if (! $have_default) {
-		pidl "\tdefault:\n";
-		pidl "\t\treturn ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, \"Bad switch value \%u\", level);\n";
-	}
-	pidl "\t}\n";
-	pidl "buffers:\n";
-	pidl "\tif (!(ndr_flags & NDR_BUFFERS)) goto done;\n";
-	pidl "\tswitch (level) {\n";
-	foreach my $el (@{$e->{DATA}}) {
-		if ($el->{CASE} eq "default") {
-			pidl "\tdefault:\n";
-		} else {
-			pidl "\tcase $el->{CASE}:\n";
-		}
-		if ($el->{TYPE} eq "UNION_ELEMENT") {
-			ParseElementPullBuffer($el->{DATA}, "r->", "NDR_BUFFERS");
-		}
-		pidl "\tbreak;\n\n";
-	}
-	if (! $have_default) {
-		pidl "\tdefault:\n";
-		pidl "\t\treturn ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, \"Bad switch value \%u\", level);\n";
-	}
-	pidl "\t}\n";
-	pidl "\tndr_pull_struct_end(ndr);\n";
-	pidl "done:\n";
-	end_flags($e);
-}
-
-#####################################################################
 # parse a type
-sub ParseTypePush($)
+sub ParseType($)
 {
 	my($data) = shift;
 
 	if (ref($data) eq "HASH") {
 		($data->{TYPE} eq "STRUCT") &&
-		    ParseStructPush($data);
+		    ParseStruct($data);
 		($data->{TYPE} eq "UNION") &&
-		    ParseUnionPush($data);
-	}
-}
-
-#####################################################################
-# parse a type
-sub ParseTypePull($)
-{
-	my($data) = shift;
-
-	if (ref($data) eq "HASH") {
-		($data->{TYPE} eq "STRUCT") &&
-		    ParseStructPull($data);
-		($data->{TYPE} eq "UNION") &&
-		    ParseUnionPull($data);
+		    ParseUnion($data);
 	}
 }
 
@@ -991,7 +576,7 @@ sub ParseTypedefEthereal($)
 	if ($e->{DATA}->{TYPE} eq "STRUCT") {
 	    pidl $static . "int dissect_$e->{NAME}(tvbuff_t *tvb, int offset, packet_info *pinfo, proto_tree *tree, guint8 *drep, int flags)\n";
 	    pidl "\n{\n";
-#		ParseTypePush($e->{DATA});
+#		ParseType($e->{DATA});
 	    pidl "\treturn offset;\n";
 	    pidl "}\n\n";
 	}
@@ -999,7 +584,7 @@ sub ParseTypedefEthereal($)
 	if ($e->{DATA}->{TYPE} eq "UNION") {
 	    pidl $static . "int dissect_$e->{NAME}(tvbuff_t *tvb, int offset, packet_info *pinfo, proto_tree *tree, guint8 *drep, int flags)\n";
 		pidl "\n{\n";
-#		ParseTypePush($e->{DATA});
+#		ParseType($e->{DATA});
 	    pidl "\treturn offset;\n";
 		pidl "}\n\n";
 	}
@@ -1008,24 +593,26 @@ sub ParseTypedefEthereal($)
 
 #####################################################################
 # parse a function element
-sub ParseFunctionElementPush($$)
+sub ParseFunctionElement($$)
 { 
 	my $e = shift;
 	my $inout = shift;
+
+	pidl "\t// ParseFunctionElement $e->{NAME}\n\n";
 
 	if (util::array_size($e)) {
 		if (util::need_wire_pointer($e)) {
 		    pidl "\toffset = dissect_ndr_uint32(tvb, offset, pinfo, tree, drep, hf_ptr, &ptr);\n";
 		    pidl "\tif (ptr) {\n";
-			ParseArrayPush($e, "r->$inout.", "NDR_SCALARS|NDR_BUFFERS");
+			ParseArray($e, "r->$inout.", "NDR_SCALARS|NDR_BUFFERS");
 			pidl "\t}\n";
 		} else {
-			ParseArrayPush($e, "r->$inout.", "NDR_SCALARS|NDR_BUFFERS");
+			ParseArray($e, "r->$inout.", "NDR_SCALARS|NDR_BUFFERS");
 		}
 	} else {
-		ParseElementPushScalar($e, "r->$inout.", "NDR_SCALARS|NDR_BUFFERS");
+		ParseElementScalar($e, "r->$inout.", "NDR_SCALARS|NDR_BUFFERS");
 		if ($e->{POINTERS}) {
-			ParseElementPushBuffer($e, "r->$inout.", "NDR_SCALARS|NDR_BUFFERS");
+			ParseElementBuffer($e, "r->$inout.", "NDR_SCALARS|NDR_BUFFERS");
 		}
 	}
 }	
@@ -1052,11 +639,11 @@ sub ParseFunctionEthereal($)
 
 	foreach my $e (@{$fn->{DATA}}) {
 		if (util::has_property($e, "in")) {
-			ParseFunctionElementPush($e, "in");
+			ParseFunctionElement($e, "in");
 		}		
 	}
 
-	pidl "\n\treturn offset;\n";
+	pidl "\treturn offset;\n";
 	pidl "}\n\n";
 
 	# Response
@@ -1068,19 +655,19 @@ sub ParseFunctionEthereal($)
 
 	foreach my $e (@{$fn->{DATA}}) {
 		if (util::has_property($e, "out")) {
-			ParseFunctionElementPush($e, "out");
+			ParseFunctionElement($e, "out");
 		}		
 	}
 
 	if ($fn->{RETURN_TYPE} && $fn->{RETURN_TYPE} ne "void") {
 	    if ($fn->{RETURN_TYPE} eq "NTSTATUS") {
-		pidl "\n\toffset = dissect_ntstatus(tvb, offset, pinfo, tree, drep, hf_rc, NULL);\n";
+		pidl "\n\toffset = dissect_ntstatus(tvb, offset, pinfo, tree, drep, hf_rc, NULL);\n\n";
 	    } else {
-		pidl "\tproto_tree_add_text(tree, tvb, offset, -1, \"Unhandled return type '$fn->{RETURN_TYPE}'\");\n";
+		pidl "\tproto_tree_add_text(tree, tvb, offset, -1, \"Unhandled return type '$fn->{RETURN_TYPE}'\");\n\n";
 	    }
 	}
 
-	pidl "\n\treturn offset;\n";
+	pidl "\treturn offset;\n";
 	pidl "}\n\n";
 }
 
