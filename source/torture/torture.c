@@ -4247,7 +4247,6 @@ static void usage(void)
 	printf("\t-p port\n");
 	printf("\t-s seed\n");
 	printf("\t-f max failures\n");
-	printf("\t-b bypass I/O (NBENCH)\n");
 	printf("\t-X enable dangerous tests\n");
 	printf("\n\n");
 
