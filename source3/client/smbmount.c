@@ -231,7 +231,7 @@ static BOOL mount_send_login(char *inbuf, char *outbuf)
   conn_options.protocol = opt.protocol;
   conn_options.case_handling = CASE_LOWER;
   conn_options.max_xmit = opt.max_xmit;
-  conn_options.server_uid = opt.server_uid;
+  conn_options.server_uid = opt.server_vuid;
   conn_options.tid = opt.tid;
   conn_options.secmode = opt.sec_mode;
   conn_options.maxmux = opt.max_mux;
@@ -641,7 +641,7 @@ static void usage(char *pname)
   charset_initialise();
 
   pid = (uint16)getpid();
-  uid = (uint16)getuid();
+  vuid = (uint16)getuid();
   mid = pid + 100;
   myumask = umask(0);
   umask(myumask);
