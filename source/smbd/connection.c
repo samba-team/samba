@@ -91,7 +91,7 @@ static int count_fn( TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *u
 		return 0;
 	}
 
-	if (strequal(crec.name, cs->name))
+	if (cs && strequal(crec.name, cs->name))
 		cs->curr_connections++;
 
 	return 0;
@@ -137,7 +137,8 @@ BOOL claim_connection(connection_struct *conn,char *name,int max_connections,BOO
 
 		db_locked = True;
 
-		if (tdb_traverse(tdb, count_fn, &cs)) {
+		if (tdb_traverse(tdb, count_fn, &cs) == -1) {
+			DEBUG(0,("claim_connection: traverse of connections.tdb failed.\n"));
 			ret = False;
 			goto out;
 		}
@@ -191,3 +192,14 @@ BOOL claim_connection(connection_struct *conn,char *name,int max_connections,BOO
 	return ret;
 }
 
+#if 0
+/****************************************************************************
+ Use the count function to clean any dead records. Shouldn't be needed...
+****************************************************************************/
+
+void clean_connection_db(void)
+{
+	if (tdb_traverse(tdb, count_fn, NULL) == -1)
+		DEBUG(0,("clean_connection_db: traverse of connections.tdb failed.\n"));
+}
+#endif
