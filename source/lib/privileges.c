@@ -26,9 +26,7 @@
 #define ALLOC_CHECK(ptr, err, label, str) do { if ((ptr) == NULL) { DEBUG(0, ("%s: out of memory!\n", str)); err = NT_STATUS_NO_MEMORY; goto label; } } while(0)
 #define NTSTATUS_CHECK(err, label, str1, str2) do { if (!NT_STATUS_IS_OK(err)) { DEBUG(0, ("%s: %s failed!\n", str1, str2)); } } while(0)
 
-
 PRIVS privs[] = {
-	{SE_NONE,			"no_privs",				"No privilege"}, /* this one MUST be first */
 	{SE_CREATE_TOKEN,		"SeCreateTokenPrivilege",		"Create Token"},
 	{SE_ASSIGN_PRIMARY_TOKEN,	"SeAssignPrimaryTokenPrivilege",	"Assign Primary Token"},
 	{SE_LOCK_MEMORY,		"SeLockMemoryPrivilege",		"Lock Memory"},
@@ -61,43 +59,6 @@ PRIVS privs[] = {
 	{SE_ALL_PRIVS,			"SeAllPrivileges",			"All Privileges"}
 };
 
-
-
-/****************************************************************************
- Check if a user is a mapped group.
-
-   This function will check if the group SID is mapped onto a
-   system managed gid or onto a winbind manged sid.
-   In the first case it will be threated like a mapped group
-   and the backend should take the member list with a getgrgid
-   and ignore any user that have been possibly set into the group
-   object.
-
-   In the second case, the group is a fully SAM managed group
-   served back to the system through winbind. In this case the
-   members of a Local group are "unrolled" to cope with the fact
-   that unix cannot contain groups inside groups.
-   The backend MUST never call any getgr* / getpw* function or
-   loops with winbind may happen. 
- ****************************************************************************/
-
-#if 0
-NTSTATUS is_mapped_group(BOOL *mapped, const DOM_SID *sid)
-{
-	NTSTATUS result;
-	gid_t id;
-
-	/* look if mapping exist, do not make idmap alloc an uid if SID is not found */
-	result = idmap_get_gid_from_sid(&id, sid, False);
-	if (NT_STATUS_IS_OK(result)) {
-		*mapped = gid_is_in_winbind_range(id);
-	} else {
-		*mapped = False;
-	}
-
-	return result;
-}
-#endif
 
 /****************************************************************************
  duplicate alloc luid_attr

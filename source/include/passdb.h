@@ -407,9 +407,9 @@ typedef struct pdb_context
 
 	/* privileges functions */
 
-	NTSTATUS (*pdb_add_sid_to_privilege)(struct pdb_context *context, const char *priv_name, const DOM_SID *sid);
+	NTSTATUS (*pdb_add_privilege_to_sid)(struct pdb_context *context, const char *priv_name, const DOM_SID *sid);
 
-	NTSTATUS (*pdb_remove_sid_from_privilege)(struct pdb_context *context, const char *priv_name, const DOM_SID *sid);
+	NTSTATUS (*pdb_remove_privilege_from_sid)(struct pdb_context *context, const char *priv_name, const DOM_SID *sid);
 
 	NTSTATUS (*pdb_get_privilege_set)(struct pdb_context *context, DOM_SID *user_sids, int num_sids, PRIVILEGE_SET *privs);
 	
@@ -547,9 +547,9 @@ typedef struct pdb_methods
 
 	/* privileges functions */
 
-	NTSTATUS (*add_sid_to_privilege)(struct pdb_methods *methods, const char *priv_name, const DOM_SID *sid);
+	NTSTATUS (*add_privilege_to_sid)(struct pdb_methods *methods, const char *priv_name, const DOM_SID *sid);
 
-	NTSTATUS (*remove_sid_from_privilege)(struct pdb_methods *methods, const char *priv_name, const DOM_SID *sid);
+	NTSTATUS (*remove_privilege_from_sid)(struct pdb_methods *methods, const char *priv_name, const DOM_SID *sid);
 
 	NTSTATUS (*get_privilege_set)(struct pdb_methods *methods, DOM_SID *user_sids, int num_sids, PRIVILEGE_SET *privs);
 

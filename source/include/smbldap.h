@@ -51,6 +51,7 @@
 #define LDAP_ATTRIBUTE_UIDNUMBER	"uidNumber"
 #define LDAP_ATTRIBUTE_GIDNUMBER	"gidNumber"
 #define LDAP_ATTRIBUTE_SID_LIST		"sambaSIDList"
+#define LDAP_ATTRIBUTE_PRIVILEGE_LIST	"sambaPrivilegeList"
 
 /* attribute map table indexes */
 
@@ -96,6 +97,7 @@
 #define LDAP_ATTR_BAD_PASSWORD_TIME	38
 
 #define LDAP_ATTR_SID_LIST		40
+#define LDAP_ATTR_PRIV_LIST		41
 
 typedef struct _attrib_map_entry {
 	int		attrib;

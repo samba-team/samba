@@ -145,8 +145,6 @@ static int net_priv_list(int argc, const char **argv)
 			if (!pdb_get_privilege_entry(privs[i].priv, &sid_list)) {
 				if (!verbose)
 					continue;
-
-				sid_list = NULL;
 			}
 
 			print_priv_entry(privs[i].priv, privs[i].description, sid_list);
@@ -231,7 +229,7 @@ static int net_priv_add(int argc, const char **argv)
 		string_to_sid(&sid, sid_string);
 	}
 
-	if (!pdb_add_sid_to_privilege(privname, &sid)) {
+	if (!pdb_add_privilege_to_sid(privname, &sid)) {
 		d_printf("adding sid %s to privilege %s failed!\n", sid_string, privname);
 		return -1;
 	}
@@ -313,7 +311,7 @@ static int net_priv_remove(int argc, const char **argv)
 		string_to_sid(&sid, sid_string);
 	}
 
-	if (!pdb_remove_sid_from_privilege(privname, &sid)) {
+	if (!pdb_remove_privilege_from_sid(privname, &sid)) {
 		d_printf("removing sid %s from privilege %s failed!\n", sid_string, privname);
 		return -1;
 	}

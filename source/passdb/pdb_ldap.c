@@ -2589,7 +2589,7 @@ static NTSTATUS ldapsam_alias_memberships(struct pdb_methods *methods,
  Privileges related functions
  *********************************************************************/
 
-static NTSTATUS ldapsam_modify_sid_list_for_privilege(struct pdb_methods *my_methods, const char *privname, const DOM_SID *sid, int ldap_op)
+static NTSTATUS ldapsam_modify_privilege_list_for_sid(struct pdb_methods *my_methods, const char *privname, const DOM_SID *sid, int ldap_op)
 {
 	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)my_methods->private_data;
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
@@ -2601,88 +2601,140 @@ static NTSTATUS ldapsam_modify_sid_list_for_privilege(struct pdb_methods *my_met
 	int rc;
 
 	if ((sid == NULL) || (!sid_to_string(sid_str, sid))) {
-		DEBUG(3, ("ldapsam_modify_sid_list_for_privilege: Invalid SID\n"));
+		DEBUG(3, ("ldapsam_modify_privilege_list_for_sid: Invalid SID\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	
-	pstr_sprintf(filter, "(&(objectclass=%s)(sambaPrivName=%s))", LDAP_OBJ_PRIVILEGE, privname);
+	pstr_sprintf(filter, "(&(objectClass=%s)(%s=%s))", LDAP_OBJ_PRIVILEGE, LDAP_ATTRIBUTE_SID, sid_str);
 	attr_list = get_attr_list(privilege_attr_list);
-	rc = smbldap_search(ldap_state->smbldap_state, lp_ldap_privilege_suffix(),
+	rc = smbldap_search(ldap_state->smbldap_state, lp_ldap_suffix(),
 			    LDAP_SCOPE_SUBTREE, filter,
 			    attr_list, 0, &ldap_state->result);
 	free_attr_list(attr_list);
 
-	
 	if (rc != LDAP_SUCCESS) {
-		DEBUG(0, ("ldapsam_modify_sid_list_for_privilege: LDAP search failed: %s\n", ldap_err2string(rc)));
-		DEBUG(3, ("ldapsam_modify_sid_list_for_privilege: Query was: %s, %s\n", lp_ldap_privilege_suffix(), filter));
+		DEBUG(0, ("ldapsam_modify_privilege_list_for_sid: LDAP search failed: %s\n", ldap_err2string(rc)));
+		DEBUG(3, ("ldapsam_modify_privilege_list_for_sid: Query was: %s, %s\n", lp_ldap_suffix(), filter));
 		ldap_msgfree(ldap_state->result);
 		ldap_state->result = NULL;
 		goto done;
 	}
 
 	if (ldap_count_entries(ldap_state->smbldap_state->ldap_struct, ldap_state->result) == 0) {
-		/* if the privilege does not exist and we are adding then
+		/* if the sid does not exist and we are adding 
+		 * and it is not in our local domain then
 		 * create it */
-		if (ldap_op == LDAP_MOD_ADD) {
 
-			DEBUG(3, ("Privilege not found on ldap tree, creating a new entry\n"));
-			if (asprintf(&dn, "sambaPrivName=%s,%s", privname, lp_ldap_privilege_suffix()) < 0) {
-				DEBUG(0, ("ldapsam_modify_sid_list_for_privilege: Out of memory\n"));
+		if (ldap_op != LDAP_MOD_ADD) {
+			/* nothing to do */
+			goto done;
+		}
+
+		if (sid_check_is_in_our_domain(sid)) {
+
+			pstr_sprintf(filter, "%s=%s", LDAP_ATTRIBUTE_SID, sid_str);
+			attr_list = get_attr_list(privilege_attr_list);
+			rc = smbldap_search(ldap_state->smbldap_state, lp_ldap_suffix(),
+					    LDAP_SCOPE_SUBTREE, filter,
+					    attr_list, 0, &ldap_state->result);
+			free_attr_list(attr_list);
+
+			if (rc != LDAP_SUCCESS) {
+				DEBUG(0, ("ldapsam_modify_privilege_list_for_sid: LDAP search failed: %s\n", ldap_err2string(rc)));
+				DEBUG(3, ("ldapsam_modify_privilege_list_for_sid: Query was: %s, %s\n", lp_ldap_suffix(), filter));
+				ldap_msgfree(ldap_state->result);
+				ldap_state->result = NULL;
 				goto done;
 			}
 
-			smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, entry, &mods, "sambaPrivName", privname);
+			/* entry found */
+			entry = ldap_first_entry(ldap_state->smbldap_state->ldap_struct, ldap_state->result);
 
-			smbldap_set_mod(&mods, LDAP_MOD_ADD, "objectclass", LDAP_OBJ_PRIVILEGE);
+			/* retrieve the dn */
+			dn = smbldap_get_dn(ldap_state->smbldap_state->ldap_struct, entry);
+			if (!dn) {
+				DEBUG(3, ("ldapsam_modify_privilege_list_for_sid: Unable to get the dn ?!\n"));
+				goto done;
+			}
 
-			rc = smbldap_add(ldap_state->smbldap_state, dn, mods);
+			/* prepare the modification */
+			smbldap_set_mod(&mods, LDAP_MOD_ADD, "objectClass", LDAP_OBJ_PRIVILEGE);
+			smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, entry, &mods, "sambaPrivilegeList", privname);
+
+			/* modify the privilege */
+			rc = smbldap_modify(ldap_state->smbldap_state, dn, mods);
+
+			/* free used structures */
+			ldap_mods_free(mods, True);
 
 			if (rc != LDAP_SUCCESS) {
 				char *ld_error = NULL;
 
 				ldap_get_option(ldap_state->smbldap_state->ldap_struct, LDAP_OPT_ERROR_STRING, &ld_error);
 				DEBUG(1,
-					("ldapsam_modify_sid_list_for_privilege:"
-					"Failed to add privilege (%s) dn= %s with: %s\n\t%s\n",
-					privname,
+					("ldapsam_modify_privilege_list_for_sid:"
+					"Failed to %s privilege (%s) for dn= %s with: %s\n\t%s\n",
+					"add", privname,
 					dn, ldap_err2string(rc),
 					ld_error ? ld_error : "unknown")
 				);
-
 				SAFE_FREE(ld_error);
 				goto done;
 			}
-	
-			pstr_sprintf(filter, "(&(objectclass=%s)(sambaPrivName=%s))", LDAP_OBJ_PRIVILEGE, privname);
-			attr_list = get_attr_list(privilege_attr_list);
-			rc = smbldap_search(ldap_state->smbldap_state, lp_ldap_privilege_suffix(),
-						LDAP_SCOPE_SUBTREE, filter,
-						attr_list, 0, &ldap_state->result);
-			free_attr_list(attr_list);
 
-			if (rc != LDAP_SUCCESS) {
-				DEBUG(0, ("ldapsam_modify_sid_list_for_privilege: LDAP search failed: %s\n", ldap_err2string(rc)));
-				DEBUG(3, ("ldapsam_modify_sid_list_for_privilege: Query was: %s, %s\n", lp_ldap_privilege_suffix(), filter));
-				ldap_msgfree(ldap_state->result);
-				ldap_state->result = NULL;
-				goto done;
-			}
-		} else {
+			return NT_STATUS_OK;
+		}
+
+		/* if not store a new sid entry there */
+
+		DEBUG(3, ("SID not found on ldap tree, creating a new entry\n"));
+		if (asprintf(&dn, "%s=%s,%s", get_attr_key2string( privilege_attr_list, LDAP_ATTR_SID), sid_str, lp_ldap_idmap_suffix()) < 0) {
+			DEBUG(0, ("ldapsam_modify_privilege_list_for_sid: Out of memory\n"));
 			goto done;
 		}
+
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "objectclass", LDAP_OBJ_PRIVILEGE);
+
+		smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, entry, &mods, "sambaPrivilegeList", privname);
+
+		smbldap_set_mod(&mods, LDAP_MOD_ADD, "objectclass", LDAP_OBJ_SID_ENTRY);
+
+		rc = smbldap_add(ldap_state->smbldap_state, dn, mods);
+
+		if (rc != LDAP_SUCCESS) {
+			char *ld_error = NULL;
+
+			ldap_get_option(ldap_state->smbldap_state->ldap_struct, LDAP_OPT_ERROR_STRING, &ld_error);
+			DEBUG(1,
+				("ldapsam_modify_privilege_list_for_sid:"
+				"Failed to add privilege (%s) dn= %s with: %s\n\t%s\n",
+				privname,
+				dn, ldap_err2string(rc),
+				ld_error ? ld_error : "unknown")
+			);
+
+			SAFE_FREE(ld_error);
+			goto done;
+		} else {
+			ret = NT_STATUS_OK;
+			goto done;
+		}
+
+		return NT_STATUS_OK;
 	}
+
 	/* entry found */
 	entry = ldap_first_entry(ldap_state->smbldap_state->ldap_struct, ldap_state->result);
 
 	/* retrieve the dn */
 	dn = smbldap_get_dn(ldap_state->smbldap_state->ldap_struct, entry);
 	if (!dn) {
+		DEBUG(3, ("ldapsam_modify_privilege_list_for_sid: Unable to get the dn ?!\n"));
 		goto done;
 	}
 
 	/* prepare the modification */
-	smbldap_set_mod(&mods, ldap_op, "sambaSIDList", sid_str);
+	smbldap_set_mod(&mods, ldap_op, "sambaPrivilegeList", privname);
 
 	/* modify the privilege */
 	rc = smbldap_modify(ldap_state->smbldap_state, dn, mods);
@@ -2695,8 +2747,8 @@ static NTSTATUS ldapsam_modify_sid_list_for_privilege(struct pdb_methods *my_met
 
 		ldap_get_option(ldap_state->smbldap_state->ldap_struct, LDAP_OPT_ERROR_STRING, &ld_error);
 		DEBUG(1,
-			("ldapsam_modify_sid_list_for_privilege:"
-			"Failed to %s sid for privilege (%s) dn= %s with: %s\n\t%s\n",
+			("ldapsam_modify_privilege_list_for_sid:"
+			"Failed to %s privilege (%s) for dn= %s with: %s\n\t%s\n",
 			(ldap_op == LDAP_MOD_ADD) ? "add" : "remove",
 			privname,
 			dn, ldap_err2string(rc),
@@ -2712,14 +2764,15 @@ done:
 	return ret;
 }
 
-static NTSTATUS ldapsam_add_sid_to_privilege(struct pdb_methods *my_methods, const char *privname, const DOM_SID *sid)
+static NTSTATUS ldapsam_add_privilege_to_sid(struct pdb_methods *my_methods, const char *privname, const DOM_SID *sid)
 {
-	return ldapsam_modify_sid_list_for_privilege(my_methods, privname, sid, LDAP_MOD_ADD);
+	return ldapsam_modify_privilege_list_for_sid(my_methods, privname, sid, LDAP_MOD_ADD);
 }
 
-static NTSTATUS ldapsam_remove_sid_from_privilege(struct pdb_methods *my_methods, const char *privname, const DOM_SID *sid)
+static NTSTATUS ldapsam_remove_privilege_from_sid(struct pdb_methods *my_methods, const char *privname, const DOM_SID *sid)
+
 {
-	return ldapsam_modify_sid_list_for_privilege(my_methods, privname, sid, LDAP_MOD_DELETE);
+	return ldapsam_modify_privilege_list_for_sid(my_methods, privname, sid, LDAP_MOD_DELETE);
 }
 
 static NTSTATUS ldapsam_get_privilege_set(struct pdb_methods *my_methods, DOM_SID *user_sids, int num_sids, PRIVILEGE_SET *privset)
@@ -2729,121 +2782,88 @@ static NTSTATUS ldapsam_get_privilege_set(struct pdb_methods *my_methods, DOM_SI
 	LDAPMessage *entry = NULL;
 	fstring sid_str;
 	fstring filter;
-	char **sid_list;
 	char **attr_list;
-	int rc, i;
+	int rc, i, j;
 
-	sid_list = (char **)malloc(sizeof(char *) * (num_sids + 1));
 	for (i = 0; i < num_sids; i++) {
-		sid_to_string(sid_str, &user_sids[i]);
-		sid_list[i] = strdup(sid_str);
-		if ( ! sid_list[i]) {
-			ret = NT_STATUS_NO_MEMORY;
-			goto done;
-		}
-	}
-	sid_list[i] = NULL;
-	
-	pstr_sprintf(filter, "(objectclass=%s)", LDAP_OBJ_PRIVILEGE);
-	attr_list = get_attr_list(privilege_attr_list);
-	rc = smbldap_search(ldap_state->smbldap_state, lp_ldap_privilege_suffix(),
-			    LDAP_SCOPE_SUBTREE, filter,
-			    attr_list, 0, &ldap_state->result);
-	free_attr_list(attr_list);
-
-	if (rc != LDAP_SUCCESS) {
-		DEBUG(0, ("ldapsam_get_privilege_set: LDAP search failed: %s\n", ldap_err2string(rc)));
-		DEBUG(3, ("ldapsam_get_privilege_set: Query was: %s, %s\n", lp_ldap_privilege_suffix(), filter));
-		ldap_msgfree(ldap_state->result);
-		ldap_state->result = NULL;
-		goto done;
-	}
-
-	if (ldap_count_entries(ldap_state->smbldap_state->ldap_struct, ldap_state->result) == 0) {
-		DEBUG(3, ("ldapsam_get_privilege_set: No privileges in ldap tree\n"));
-		ret = NT_STATUS_OK;
-		goto done;
-	}
-
-	DEBUG(2, ("ldapsam_get_privilege_set: %d entries in the base!\n",
-		  ldap_count_entries(ldap_state->smbldap_state->ldap_struct, ldap_state->result)));
-
-	entry = ldap_first_entry(ldap_state->smbldap_state->ldap_struct, ldap_state->result);
-
-	while (entry != NULL) {
 		char **values = NULL;
 
-		for(i=0; sid_list[i] != NULL; i++) {
-			pstring privname;
-			int j;
+		sid_to_string(sid_str, &user_sids[i]);
+	
+		pstr_sprintf(filter, "(&(objectclass=%s)(%s=%s))", LDAP_OBJ_PRIVILEGE, LDAP_ATTRIBUTE_SID, sid_str);
+		attr_list = get_attr_list(privilege_attr_list);
+		rc = smbldap_search(ldap_state->smbldap_state, lp_ldap_suffix(),
+				    LDAP_SCOPE_SUBTREE, filter,
+				    attr_list, 0, &ldap_state->result);
+		free_attr_list(attr_list);
 
-			if (!smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry, "sambaPrivName", privname, sizeof(pstring))) {
-				goto loop;
-			}
+		if (rc != LDAP_SUCCESS) {
+			DEBUG(0, ("ldapsam_get_privilege_set: LDAP search failed: %s\n", ldap_err2string(rc)));
+			DEBUG(3, ("ldapsam_get_privilege_set: Query was: %s, %s\n", lp_ldap_suffix(), filter));
+			ldap_msgfree(ldap_state->result);
+			ldap_state->result = NULL;
+			continue;
+		}
 
-			if ((values = ldap_get_values(ldap_state->smbldap_state->ldap_struct, entry, LDAP_ATTRIBUTE_SID_LIST)) == NULL) {
-				DEBUG(10, ("ldapsam_get_privilege_set: SID List not found skipping privilege\n"));
-				goto loop;
-			}
+		if (ldap_count_entries(ldap_state->smbldap_state->ldap_struct, ldap_state->result) == 0) {
+			DEBUG(3, ("ldapsam_get_privilege_set: No privileges in ldap tree\n"));
+			ret = NT_STATUS_OK;
+			ldap_msgfree(ldap_state->result);
+			ldap_state->result = NULL;
+			continue;
+		}
 
-			j = 0;
-			while (values[j] != 0) {
-				if (strcmp(values[j], sid_list[i]) == 0) {
-					DEBUG(10, ("sid [%s] found in users sid list\n", sid_list[i]));
-					DEBUG(10, ("adding privilege [%s] to the users privilege list\n", privname));
-					add_privilege_by_name(privset, privname);
-					goto loop;
-				}
-				j++;
-			}
+		DEBUG(2, ("ldapsam_get_privilege_set: %d entries in the base!\n",
+			  ldap_count_entries(ldap_state->smbldap_state->ldap_struct, ldap_state->result)));
+
+		entry = ldap_first_entry(ldap_state->smbldap_state->ldap_struct, ldap_state->result);
+
+
+		if ((values = ldap_get_values(ldap_state->smbldap_state->ldap_struct, entry, LDAP_ATTRIBUTE_PRIVILEGE_LIST)) == NULL) {
+			DEBUG(10, ("ldapsam_get_privilege_set: Privilege List not found skipping SID\n"));
+			ldap_msgfree(ldap_state->result);
+			ldap_state->result = NULL;
+			continue;
+		}
+
+		j = 0;
+		while (values[j] != 0) {
+			add_privilege_by_name(privset, values[j]);
+			j++;
+		}
 		
-			if (values) {
-				ldap_value_free(values);
-				values = NULL;
-			}
-		}
-	loop:
-		if (values) {
-			ldap_value_free(values);
-		}
+		ldap_value_free(values);
+		values = NULL;
 
-		entry = ldap_next_entry(ldap_state->smbldap_state->ldap_struct, entry);	
+		ldap_msgfree(ldap_state->result);
+		ldap_state->result = NULL;
 	}
 
 	ret = NT_STATUS_OK;
 
-done:
-	i = 0;
-	while (sid_list[i]) {
-		free(sid_list[i]);
-		i++;
-	}
-	free(sid_list);
-
 	return ret;
 }
 
-static NTSTATUS ldapsam_get_privilege_entry(struct pdb_methods *my_methods, const char *privname,
-		char **sid_list)
+static NTSTATUS ldapsam_get_privilege_entry(struct pdb_methods *my_methods, const char *privname, char **sid_list)
 {
 	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)my_methods->private_data;
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
 	LDAPMessage *entry = NULL;
 	fstring filter;
-	char **attr_list, **values;
+	char **attr_list;
 	int rc, i, len;
 
 	*sid_list = NULL;
-	pstr_sprintf(filter, "(&(objectclass=%s)(sambaPrivName=%s))", LDAP_OBJ_PRIVILEGE, privname);
+	pstr_sprintf(filter, "(&(objectclass=%s)(sambaPrivilegeList=%s))", LDAP_OBJ_PRIVILEGE, privname);
 	attr_list = get_attr_list(privilege_attr_list);
-	rc = smbldap_search(ldap_state->smbldap_state, lp_ldap_privilege_suffix(),
+	rc = smbldap_search(ldap_state->smbldap_state, lp_ldap_suffix(),
 			    LDAP_SCOPE_SUBTREE, filter,
 			    attr_list, 0, &ldap_state->result);
 	free_attr_list(attr_list);
 
 	if (rc != LDAP_SUCCESS) {
 		DEBUG(0, ("ldapsam_get_privilege_entry: LDAP search failed: %s\n", ldap_err2string(rc)));
-		DEBUG(3, ("ldapsam_get_privilege_entry: Query was: %s, %s\n", lp_ldap_privilege_suffix(), filter));
+		DEBUG(3, ("ldapsam_get_privilege_entry: Query was: %s, %s\n", lp_ldap_suffix(), filter));
 		ldap_msgfree(ldap_state->result);
 		ldap_state->result = NULL;
 		ret = NT_STATUS_UNSUCCESSFUL;
@@ -2856,35 +2876,36 @@ static NTSTATUS ldapsam_get_privilege_entry(struct pdb_methods *my_methods, cons
 	}
 
 	entry = ldap_first_entry(ldap_state->smbldap_state->ldap_struct, ldap_state->result);
-	
-	if ((values = ldap_get_values(ldap_state->smbldap_state->ldap_struct, entry, LDAP_ATTRIBUTE_SID_LIST)) == NULL) {
-		DEBUG(10, ("ldapsam_get_privilege_entry: SID List not found skipping privilege\n"));
-		ret = NT_STATUS_OK;
-		goto done;
-	}
 
-	for (i = 0, len = 0; values[i] != 0; i++ ) {
-		len = len + strlen(values[i]) + 1;
-	}
+	i = 0;
+	len = 0;
+	do {
+		pstring sid_string;
 
-	*sid_list = (char *)malloc(len);
-	if ((*sid_list) == NULL) {
-		DEBUG(0, ("ldapsam_get_privilege_entry: Out of memory!\n"));
-		ldap_value_free(values);
-		ret = NT_STATUS_NO_MEMORY;
-		goto done;
-	}
-
-	(*sid_list)[0] = '\0';
-
-	for (i = 0; values[i] != 0; i++ ) {
-		if (i != 0) {
-			strlcat(*sid_list, ",", len);
+		if (!smbldap_get_single_pstring(ldap_state->smbldap_state->ldap_struct, entry, get_attr_key2string(privilege_attr_list, LDAP_ATTR_SID), sid_string)) {
+			DEBUG(3, ("ldapsam_get_privilege_entry: No sid for (%s) in ldap tree !?\n", privname));
+			goto done;
 		}
-		strlcat(*sid_list, values[i], len);
-	}
 
-	ldap_value_free(values);
+		len = len + strlen(sid_string) + 1;
+		if (i == 0) {
+			*sid_list = (char *)malloc(len);
+			(*sid_list)[0] = '\0';
+		} else {
+			char *t;
+
+			t = (char *)realloc(*sid_list, len);
+			if (!t) {
+				DEBUG(0, ("ldapsam_get_privilege_entry: Out of memory!\n"));
+				ret = NT_STATUS_NO_MEMORY;
+				goto done;
+			}
+			*sid_list = t;
+		}
+		strlcat(*sid_list, sid_string, len);
+
+	} while ((entry = ldap_next_entry(ldap_state->smbldap_state->ldap_struct, ldap_state->result)) != NULL);
+
 	ret = NT_STATUS_OK;
 done:
 	return ret;
@@ -2944,8 +2965,8 @@ static NTSTATUS pdb_init_ldapsam_common(PDB_CONTEXT *pdb_context, PDB_METHODS **
 	(*pdb_method)->delete_group_mapping_entry = ldapsam_delete_group_mapping_entry;
 	(*pdb_method)->enum_group_mapping = ldapsam_enum_group_mapping;
 
-	(*pdb_method)->add_sid_to_privilege = ldapsam_add_sid_to_privilege;
-	(*pdb_method)->remove_sid_from_privilege = ldapsam_remove_sid_from_privilege;
+	(*pdb_method)->add_privilege_to_sid = ldapsam_add_privilege_to_sid;
+	(*pdb_method)->remove_privilege_from_sid = ldapsam_remove_privilege_from_sid;
 	(*pdb_method)->get_privilege_set = ldapsam_get_privilege_set;
 	(*pdb_method)->get_privilege_entry = ldapsam_get_privilege_entry;
 
