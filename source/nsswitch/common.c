@@ -23,8 +23,8 @@
    Boston, MA  02111-1307, USA.   
 */
 
-#include "ntdom_config.h"
-#include "winbindd_ntdom.h"
+#include "winbind_nss_config.h"
+#include "winbindd_nss.h"
 
 /* Global variables.  These are effectively the client state information */
 
