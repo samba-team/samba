@@ -438,6 +438,8 @@ struct cli_connection* RpcHndList_get_connection(const POLICY_HND *hnd);
 void se_map_generic(uint32 *access_mask, struct generic_mapping *mapping);
 BOOL se_access_check(SEC_DESC *sd, struct current_user *user,
 		     uint32 acc_desired, uint32 *acc_granted, uint32 *status);
+SEC_DESC_BUF *se_create_child_secdesc(SEC_DESC *parent_ctr, 
+				      BOOL child_container);
 
 /*The following definitions come from  lib/util_sec.c  */
 
