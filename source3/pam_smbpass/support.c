@@ -125,8 +125,7 @@ int make_remark( pam_handle_t * pamh, unsigned int ctrl
 int set_ctrl( int flags, int argc, const char **argv )
 {
     int i = 0;
-    static pstring servicesf = dyn_CONFIGFILE;
-    const char *service_file = servicesf;
+    const char *service_file = dyn_CONFIGFILE;
     unsigned int ctrl;
 
     ctrl = SMB_DEFAULTS;	/* the default selection of options */
@@ -214,32 +213,6 @@ char * _pam_delete( register char *xx )
 void _cleanup( pam_handle_t * pamh, void *x, int error_status )
 {
     x = _pam_delete( (char *) x );
-}
-
-/*
- * Safe duplication of character strings. "Paranoid"; don't leave
- * evidence of old token around for later stack analysis.
- */
-
-char * smb_xstrdup( const char *x )
-{
-    register char *new = NULL;
-
-    if (x != NULL) {
-        register int i;
-
-        for (i = 0; x[i]; ++i); /* length of string */
-        if ((new = malloc(++i)) == NULL) {
-            i = 0;
-            _log_err( LOG_CRIT, "out of memory in smb_xstrdup" );
-        } else {
-            while (i-- > 0) {
-                new[i] = x[i];
-            }
-        }
-        x = NULL;
-    }
-    return new;			/* return the duplicate or NULL on error */
 }
 
 /* ************************************************************** *

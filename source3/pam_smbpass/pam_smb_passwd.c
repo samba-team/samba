@@ -119,7 +119,7 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
         _log_err( LOG_DEBUG, "username [%s] obtained", user );
     }
 
-    if (!initialize_password_db()) {
+    if (!initialize_password_db(True)) {
         _log_err( LOG_ALERT, "Cannot access samba password database" );
         return PAM_AUTHINFO_UNAVAIL;
     }
