@@ -810,7 +810,9 @@ static int construct_reply(char *inbuf,char *outbuf,int size,int bufsize)
 /****************************************************************************
   Keep track of the number of running smbd's. This functionality is used to
   'hard' limit Samba overhead on resource constrained systems. 
+  This function is only called once per smbd.
 ****************************************************************************/
+
 static BOOL smbd_process_limit(void)
 {
 	int32  total_smbds;
@@ -821,17 +823,13 @@ static BOOL smbd_process_limit(void)
 		 * subtracts one.
 		 */
 
-		total_smbds = 1; /* In case we need to create the entry. */
-
 		if (!conn_tdb_ctx()) {
 			DEBUG(0,("smbd_process_limit: max smbd processes parameter set with status parameter not \
 set. Ignoring max smbd restriction.\n"));
 			return False;
 		}
 
-		if (tdb_change_int32_atomic(conn_tdb_ctx(), "INFO/total_smbds", &total_smbds, 1) == -1)
-			return True;
-
+		total_smbds = increment_smbd_process_count();
 		return total_smbds > lp_max_smbd_processes();
 	}
 	else
