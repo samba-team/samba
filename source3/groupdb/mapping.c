@@ -701,10 +701,12 @@ BOOL get_group_from_gid(gid_t gid, GROUP_MAP *map)
 BOOL get_sid_list_of_group(gid_t gid, DOM_SID **sids, int *num_sids)
 {
 	struct group *grp;
-	struct passwd *pwd;
 	int i=0;
 	char *gr;
 	DOM_SID *s;
+
+	struct sys_pwent *userlist;
+	struct sys_pwent *user;
  
 	if(!init_group_mapping()) {
 		DEBUG(0,("failed to initialize group mapping"));
@@ -751,41 +753,52 @@ BOOL get_sid_list_of_group(gid_t gid, DOM_SID **sids, int *num_sids)
 
 	winbind_off();
 
-	setpwent();
-	while ((pwd=getpwent()) != NULL) {
-		if (pwd->pw_gid==gid) {
-			SAM_ACCOUNT *group_member_acct = NULL;
-			BOOL found_user;
-			s = Realloc((*sids), sizeof(**sids)*(*num_sids+1));
-			if (!s) {
-				DEBUG(0,("get_sid_list_of_group: unable to enlarge SID list!\n"));
-				winbind_on();
-				return False;
-			}
-			else (*sids) = s;
-			
-			if (!NT_STATUS_IS_OK(pdb_init_sam(&group_member_acct))) {
-				continue;
-			}
-			
-			become_root();
-			found_user = pdb_getsampwnam(group_member_acct, pwd->pw_name);
-			unbecome_root();
-			
-			if (found_user) {
-				sid_copy(&(*sids)[*num_sids], pdb_get_user_sid(group_member_acct));
-				(*num_sids)++;
-			} else {
-				DEBUG(4,("get_sid_list_of_group: User %s [uid == %lu] has no samba account\n",
-					 pwd->pw_name, (unsigned long)pwd->pw_uid));
-				if (algorithmic_uid_to_sid(&(*sids)[*num_sids], pwd->pw_uid))
-					(*num_sids)++;
-			}
-	
-			pdb_free_sam(&group_member_acct);
+	user = userlist = getpwent_list();
+
+	while (user != NULL) {
+
+		SAM_ACCOUNT *group_member_acct = NULL;
+		BOOL found_user;
+
+		if (user->pw_gid != gid) {
+			user = user->next;
+			continue;
 		}
+
+		s = Realloc((*sids), sizeof(**sids)*(*num_sids+1));
+		if (!s) {
+			DEBUG(0,("get_sid_list_of_group: unable to enlarge "
+				 "SID list!\n"));
+			winbind_on();
+			return False;
+		}
+		else (*sids) = s;
+			
+		if (!NT_STATUS_IS_OK(pdb_init_sam(&group_member_acct))) {
+			continue;
+		}
+			
+		become_root();
+		found_user = pdb_getsampwnam(group_member_acct, user->pw_name);
+		unbecome_root();
+			
+		if (found_user) {
+			sid_copy(&(*sids)[*num_sids],
+				 pdb_get_user_sid(group_member_acct));
+			(*num_sids)++;
+		} else {
+			DEBUG(4,("get_sid_list_of_group: User %s [uid == %lu] "
+				 "has no samba account\n",
+				 user->pw_name, (unsigned long)user->pw_uid));
+			if (algorithmic_uid_to_sid(&(*sids)[*num_sids],
+						   user->pw_uid))
+				(*num_sids)++;
+		}
+		pdb_free_sam(&group_member_acct);
+
+		user = user->next;
 	}
-	endpwent();
+	pwent_free(userlist);
 	DEBUG(10, ("got primary groups, members: [%d]\n", *num_sids));
 
 	winbind_on();
