@@ -33,6 +33,15 @@ static void utmp_claim(const struct connections_data *crec, const connection_str
 #endif
 
 /****************************************************************************
+ Return the connection tdb context (used for message send all).
+****************************************************************************/
+
+TDB_CONTEXT *conn_tdb_ctx(void)
+{
+	return tdb;
+}
+
+/****************************************************************************
 delete a connection record
 ****************************************************************************/
 BOOL yield_connection(connection_struct *conn,char *name,int max_connections)
@@ -115,54 +124,6 @@ BOOL claim_connection(connection_struct *conn,char *name,int max_connections,BOO
 #endif
 
 	return True;
-}
-
-
-static struct {
-	int msg_type;
-	void *buf;
-	size_t len;
-	BOOL duplicates;
-} msg_all;
-
-/****************************************************************************
-send one of the messages for the broadcast
-****************************************************************************/
-static int traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *state)
-{
-	struct connections_data crec;
-
-	memcpy(&crec, dbuf.dptr, sizeof(crec));
-
-	if (crec.cnum != -1) return 0;
-	message_send_pid(crec.pid, msg_all.msg_type, msg_all.buf, msg_all.len, msg_all.duplicates);
-	return 0;
-}
-
-/****************************************************************************
-this is a useful function for sending messages to all smbd processes.
-It isn't very efficient, but should be OK for the sorts of applications that
-use it. When we need efficient broadcast we can add it.
-
-*HACK* JRR 001213: This 'message' function is here, because this module keeps
-the connection tdb open, and the current tdb_open code prevents multiple opens.
-****************************************************************************/
-BOOL message_send_all(int msg_type, void *buf, size_t len, BOOL duplicates_allowed)
-{
-	msg_all.msg_type = msg_type;
-	msg_all.buf = buf;
-	msg_all.len = len;
-	msg_all.duplicates = duplicates_allowed;
-
-	if (tdb) {
-		tdb_traverse(tdb, traverse_fn, NULL);
-		return True;
-	}
-	else
-	{
-		DEBUG(2,("message_send_all: connections.tdb is not open. errno = %d\n", errno));
-		return False;
-	}
 }
 
 #ifdef WITH_UTMP

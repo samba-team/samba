@@ -314,8 +314,8 @@ typedef struct lsa_q_lookup_names
 	POLICY_HND pol; /* policy handle */
 	uint32 num_entries;
 	uint32 num_entries2;
-	UNIHDR  hdr_name[MAX_LOOKUP_SIDS]; /* name buffer pointers */
-	UNISTR2 uni_name[MAX_LOOKUP_SIDS]; /* names to be looked up */
+	UNIHDR  *hdr_name; /* name buffer pointers */
+	UNISTR2 *uni_name; /* names to be looked up */
 
 	uint32 num_trans_entries;
 	uint32 ptr_trans_sids; /* undocumented domain SID buffer pointer */

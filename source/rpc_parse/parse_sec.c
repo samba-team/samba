@@ -348,14 +348,11 @@ BOOL sec_desc_equal(SEC_DESC *s1, SEC_DESC *s2)
 {
 	/* Trivial case */
 
-	if (!s1 && !s2) {
-		goto done;
-	}
+	if (!s1 && !s2) return True;
 
 	/* Check top level stuff */
 
 	if (s1->revision != s2->revision || s1->type != s2->type) {
-		DEBUG(10, ("sec_desc_equal(): revision/type not equal\n"));
 		return False;
 	}
 
@@ -363,7 +360,6 @@ BOOL sec_desc_equal(SEC_DESC *s1, SEC_DESC *s2)
 
 	if (!sid_equal(s1->owner_sid, s2->owner_sid) ||
 	    !sid_equal(s1->grp_sid, s2->grp_sid)) {
-		DEBUG(10, ("sec_desc_equal(): owner/group not equal\n"));
 		return False;
 	}
 
@@ -371,7 +367,6 @@ BOOL sec_desc_equal(SEC_DESC *s1, SEC_DESC *s2)
 
 	if ((s1->dacl && !s2->dacl) || (!s1->dacl && s2->dacl) ||
 	    (s1->sacl && !s2->sacl) || (!s1->sacl && s2->sacl)) {
-		DEBUG(10, ("sec_desc_equal(): dacl/sacl not equal\n"));
 		return False;
 	}
 
@@ -380,12 +375,9 @@ BOOL sec_desc_equal(SEC_DESC *s1, SEC_DESC *s2)
 
 	if (!sec_acl_equal(s1->dacl, s2->dacl) ||
 	    !sec_acl_equal(s1->sacl, s2->sacl)) {
-		DEBUG(10, ("sec_desc_equal(): dacl/dacl list not equal\n"));
 		return False;
 	}
 
- done:
-	DEBUG(10, ("sec_equal(): secdescs are identical\n"));
 	return True;
 }
 
