@@ -843,7 +843,7 @@ BOOL make_id_info1(NET_ID_INFO_1 * id, const char *domain_name,
 		   uint32 log_id_high,
 		   const char *user_name,
 		   const char *wksta_name,
-		   const char sess_key[16],
+		   const char *sess_key,
 		   const uchar lm_cypher[16], const uchar nt_cypher[16])
 {
 	int len_domain_name = strlen(domain_name);
@@ -1399,7 +1399,7 @@ BOOL make_net_user_info2(NET_USER_INFO_2 * usr,
 			 uint32 num_groups,
 			 const DOM_GID * gids,
 			 uint32 user_flgs,
-			 const char sess_key,
+			 const char *sess_key,
 			 const char *logon_srv,
 			 const char *logon_dom, const char *padding,
 			 const DOM_SID *dom_sid)

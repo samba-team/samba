@@ -180,14 +180,6 @@ static void ncalrpc_l_close_socket(struct msrpc_local *msrpc)
 }
 
 
-/****************************************************************************
-set socket options on a open connection
-****************************************************************************/
-static void ncalrpc_l_sockopt(struct msrpc_local *msrpc, char *options)
-{
-	set_socket_options(msrpc->fd, options);
-}
-
 
 static BOOL ncalrpc_l_authenticate(struct msrpc_local *msrpc)
 {
@@ -227,25 +219,6 @@ static BOOL ncalrpc_l_authenticate(struct msrpc_local *msrpc)
 	len = read_data(sock, (char*)&status, sizeof(status));
 
 	return len == sizeof(status) && status == 0x0;
-}
-
-static BOOL ncalrpc_l_connect_auth(struct msrpc_local *msrpc,
-				   const vuser_key * key, const char *pipename)
-{
-	ZERO_STRUCTP(msrpc);
-	if (!ncalrpc_l_initialise(msrpc, key))
-	{
-		DEBUG(0, ("unable to initialise ncalrpc_l connection.\n"));
-		return False;
-	}
-
-	if (!ncalrpc_l_establish_connection(msrpc, pipename))
-	{
-		ncalrpc_l_shutdown(msrpc);
-		return False;
-	}
-
-	return True;
 }
 
 /****************************************************************************
