@@ -28,7 +28,7 @@
  * does a decent job of converting Samba logs into HTML.
  * -------------------------------------------------------------------------- **
  *
- * $Revision: 1.8 $
+ * $Revision: 1.9 $
  *
  * ========================================================================== **
  */
@@ -39,8 +39,8 @@
  * Global values.
  */
 
-FILE *infile  = stdin;
-FILE *outfile = stdout;
+FILE *infile;
+FILE *outfile;
 
 /* -------------------------------------------------------------------------- **
  * The size of the read buffer.
@@ -297,6 +297,9 @@ int main( int argc, char *argv[] )
   {
   if( argc > 3 )
     usage();
+
+  infile = stdin;
+  outfile = stdout;
 
   if( argc > 1 && 0 != strcmp( argv[1], "-" ) )
     infile = carefull_fopen( argv[1], "r" );
