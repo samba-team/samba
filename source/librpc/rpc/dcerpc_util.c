@@ -59,7 +59,7 @@ NTSTATUS dcerpc_epm_map_tcp_port(const char *server,
 	NTSTATUS status;
 	struct epm_Map r;
 	struct policy_handle handle;
-	GUID guid;
+	struct GUID guid;
 	struct epm_twr_t twr, *twr_r;
 
 	if (strcasecmp(uuid, DCERPC_EPMAPPER_UUID) == 0 ||
@@ -223,7 +223,8 @@ const struct dcerpc_interface_table *idl_iface_by_uuid(const char *uuid)
 */
 NTSTATUS dcerpc_push_auth(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, 
 			  struct dcerpc_packet *pkt,
-			  struct dcerpc_auth *auth_info)
+			  struct dcerpc_auth *auth_info,
+			  unsigned flags)
 {
 	NTSTATUS status;
 	struct ndr_push *ndr;
@@ -231,6 +232,10 @@ NTSTATUS dcerpc_push_auth(DATA_BLOB *blob, TALLOC_CTX *mem_ctx,
 	ndr = ndr_push_init_ctx(mem_ctx);
 	if (!ndr) {
 		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (flags & DCERPC_PUSH_BIGENDIAN) {
+		ndr->flags |= LIBNDR_FLAG_BIGENDIAN;
 	}
 
 	if (auth_info) {
@@ -251,7 +256,7 @@ NTSTATUS dcerpc_push_auth(DATA_BLOB *blob, TALLOC_CTX *mem_ctx,
 	*blob = ndr_push_blob(ndr);
 
 	/* fill in the frag length */
-	SSVAL(blob->data, DCERPC_FRAG_LEN_OFFSET, blob->length);
+	dcerpc_set_frag_length(blob, blob->length);
 
 	return NT_STATUS_OK;
 }
@@ -278,7 +283,8 @@ NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struct dcerpc_
 	} options[] = {
 		{"sign", DCERPC_SIGN},
 		{"seal", DCERPC_SEAL},
-		{"validate", DCERPC_DEBUG_VALIDATE_BOTH}
+		{"validate", DCERPC_DEBUG_VALIDATE_BOTH},
+		{"bigendian", DCERPC_PUSH_BIGENDIAN}
 	};
 
 	p = strchr(s, ':');

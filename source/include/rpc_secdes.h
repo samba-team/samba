@@ -116,8 +116,8 @@ typedef struct security_ace_info
 
 	/* this stuff may be present when type is XXXX_TYPE_XXXX_OBJECT */
 	uint32  obj_flags; /* xxxx_ACE_OBJECT_xxxx e.g present/inherited present etc */
-	GUID    obj_guid;  /* object GUID */
-	GUID    inh_guid;  /* inherited object GUID */		
+	struct GUID    obj_guid;  /* object GUID */
+	struct GUID    inh_guid;  /* inherited object GUID */		
         /* eof object stuff */
 
 	DOM_SID trustee;

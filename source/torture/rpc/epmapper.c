@@ -104,7 +104,7 @@ static BOOL test_Map(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct epm_Map r;
-	GUID uuid;
+	struct GUID uuid;
 	const char *uuid_str;
 	struct policy_handle handle;
 	int i;

@@ -39,7 +39,7 @@ static BOOL test_num_calls(const struct dcerpc_interface_table *iface,
 	uuid = GUID_string(mem_ctx, &id->uuid);
 
 	status = torture_rpc_connection(&p, iface->name,
-					uuid, id->major_version);
+					uuid, id->if_version);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to connect to '%s' on '%s' - %s\n", 
 		       uuid, iface->name, nt_errstr(status));
@@ -69,7 +69,7 @@ static BOOL test_num_calls(const struct dcerpc_interface_table *iface,
 	}
 
 	printf("\t%d calls available\n", i);
-	idl_calls = idl_num_calls(uuid, id->major_version);
+	idl_calls = idl_num_calls(uuid, id->if_version);
 	if (idl_calls == -1) {
 		printf("\tinterface not known in local IDL\n");
 	} else if (i != idl_calls) {
@@ -117,10 +117,9 @@ static BOOL test_inq_if_ids(struct dcerpc_pipe *p,
 
 		uuid = GUID_string(mem_ctx, &id->uuid),
 
-		printf("\n\tuuid %s  version 0x%04x:0x%04x  '%s'\n",
+		printf("\n\tuuid %s  version 0x%08x '%s'\n",
 		       uuid,
-		       id->major_version, id->minor_version,
-		       idl_pipe_name(uuid, id->major_version));
+		       id->if_version, idl_pipe_name(uuid, id->if_version));
 		test_num_calls(iface, mem_ctx, id);
 	}
 

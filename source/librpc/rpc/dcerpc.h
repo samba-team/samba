@@ -65,6 +65,9 @@ struct dcerpc_pipe {
 #define DCERPC_SIGN            16
 #define DCERPC_SEAL            32
 
+#define DCERPC_PUSH_BIGENDIAN   64
+#define DCERPC_PULL_BIGENDIAN  128
+
 /*
   this is used to find pointers to calls
 */

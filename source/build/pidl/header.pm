@@ -269,6 +269,9 @@ sub HeaderInterface($)
 
     my $count = 0;
 
+    $res .= "#ifndef _HEADER_NDR_$interface->{NAME}\n";
+    $res .= "#define _HEADER_NDR_$interface->{NAME}\n\n";
+
     if (defined $if_uuid) {
 	    my $name = uc $interface->{NAME};
 	    $res .= "#define DCERPC_$name\_UUID \"$if_uuid\"\n";
@@ -297,6 +300,7 @@ sub HeaderInterface($)
 	    HeaderFunction($d);
     }
 
+    $res .= "#endif /* _HEADER_NDR_$interface->{NAME} */\n";
 }
 
 #####################################################################

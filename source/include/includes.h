@@ -768,7 +768,6 @@ extern int errno;
 
 #include "mutex.h"
 
-#include "librpc/ndr/libndr.h"
 #include "librpc/rpc/dcerpc.h"
 
 #include "rpc_server/dcerpc_server.h"

@@ -259,7 +259,8 @@ NTSTATUS smb_raw_fsinfo_recv(struct cli_request *req,
 
 	case RAW_QFS_OBJECTID_INFORMATION:
 		QFS_CHECK_SIZE(64);
-		memcpy(fsinfo->objectid_information.out.guid.info, blob.data, GUID_SIZE);
+		status = ndr_pull_struct_blob(&blob, mem_ctx, &fsinfo->objectid_information.out.guid,
+					      (ndr_pull_flags_fn_t)ndr_pull_GUID);
 		for (i=0;i<6;i++) {
 			fsinfo->objectid_information.out.unknown[i] = BVAL(blob.data, 16 + i*8);
 		}
