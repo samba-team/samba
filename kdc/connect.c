@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -221,7 +221,7 @@ init_sockets(struct descr **desc)
 	}
     }
     d = realloc(d, num * sizeof(*d));
-    if (d == NULL)
+    if (d == NULL && num != 0)
 	krb5_errx(context, 1, "realloc(%u) failed", num * sizeof(*d));
     *desc = d;
     return num;
