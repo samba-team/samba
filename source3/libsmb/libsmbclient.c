@@ -55,8 +55,8 @@ struct smbc_file {
 	int dir_type, dir_error;
 };
 
-int smbc_fstatdir(int fd, struct stat *st); /* Forward decl */
-BOOL smbc_getatr(struct smbc_server *srv, char *path, 
+static int smbc_fstatdir(int fd, struct stat *st); /* Forward decl */
+static BOOL smbc_getatr(struct smbc_server *srv, char *path, 
 		 uint16 *mode, size_t *size, 
 		 time_t *c_time, time_t *a_time, time_t *m_time,
 		 SMB_INO_T *ino);
@@ -1164,7 +1164,7 @@ int smbc_setup_stat(struct stat *st, char *fname, size_t size, int mode)
  * and if that fails, use getatr, as Win95 sometimes refuses qpathinfo
  */
 
-BOOL smbc_getatr(struct smbc_server *srv, char *path, 
+static BOOL smbc_getatr(struct smbc_server *srv, char *path, 
 		 uint16 *mode, size_t *size, 
 		 time_t *c_time, time_t *a_time, time_t *m_time,
 		 SMB_INO_T *ino)
@@ -2344,7 +2344,7 @@ int smbc_lseekdir(int fd, off_t offset)
  * Routine to fstat a dir
  */
 
-int smbc_fstatdir(int fd, struct stat *st)
+static int smbc_fstatdir(int fd, struct stat *st)
 {
 
 	if (!smbc_initialized) {
