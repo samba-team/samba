@@ -160,7 +160,7 @@ BOOL message_send_pid(pid_t pid, int msg_type, void *buf, size_t len)
 		if (!p) goto failed;
 
 		memcpy(p, &rec, sizeof(rec));
-		if (len > 0) memcpy(p+sizeof(rec), buf, len);
+		if (len > 0) memcpy((void *)((unsigned)p+sizeof(rec)), buf, len);
 
 		dbuf.dptr = p;
 		dbuf.dsize = len + sizeof(rec);
@@ -174,8 +174,8 @@ BOOL message_send_pid(pid_t pid, int msg_type, void *buf, size_t len)
 	if (!p) goto failed;
 
 	memcpy(p, dbuf.dptr, dbuf.dsize);
-	memcpy(p+dbuf.dsize, &rec, sizeof(rec));
-	if (len > 0) memcpy(p+dbuf.dsize+sizeof(rec), buf, len);
+	memcpy((void *)((unsigned)p+dbuf.dsize), &rec, sizeof(rec));
+	if (len > 0) memcpy((void *)((unsigned)p+dbuf.dsize+sizeof(rec)), buf, len);
 
 	free(dbuf.dptr);
 	dbuf.dptr = p;
