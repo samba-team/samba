@@ -230,6 +230,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %post
 /sbin/chkconfig --add smb
+/sbin/chkconfig smb off
 
 # Build codepage load files
 for i in 437 737 850 852 861 866 932 936 949 950
