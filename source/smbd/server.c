@@ -599,6 +599,16 @@ static void usage(char *pname)
 			exit(1);
 	  }
 
+	/*
+	 * gain_root_privilege uses an assert than will cause a core
+	 * dump if euid != 0. Ensure this is the case.
+	 */
+
+	if(geteuid() != (uid_t)0) {
+		DEBUG(0,("%s: Must have effective user id of zero to run.\n", argv[0]));
+		exit(1);
+	}
+
 	/* make absolutely sure we run as root - to handle cases where people
 	   are crazy enough to have it setuid */
 
