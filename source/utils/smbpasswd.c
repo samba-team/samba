@@ -191,7 +191,8 @@ int main(int argc, char **argv)
   extern char *optarg;
   extern int optind;
   extern int DEBUGLEVEL;
-  int             real_uid;
+  uid_t             real_uid;
+  uid_t             eff_uid;
   struct passwd  *pwd = NULL;
   fstring         old_passwd;
   fstring         new_passwd;
@@ -217,7 +218,7 @@ int main(int argc, char **argv)
   char *new_domain = NULL;
   pstring servicesf = CONFIGFILE;
   void           *vp;
-	struct nmb_name calling, called;
+  struct nmb_name calling, called;
   
 
   new_passwd[0] = '\0';
@@ -265,16 +266,17 @@ int main(int argc, char **argv)
 
   codepage_initialise(lp_client_code_page());
 
-  /* Get the real uid */
+  /* Get the real and effective uids */
   real_uid = getuid();
-  
+  eff_uid = geteuid();
+ 
   /* Check the effective uid */
-  if ((geteuid() == 0) && (real_uid != 0)) {
+  if ((eff_uid == (uid_t)0) && (real_uid != (uid_t)0)) {
     fprintf(stderr, "%s: Must *NOT* be setuid root.\n", prog_name);
     exit(1);
   }
 
-  is_root = (real_uid == 0);
+  is_root = (eff_uid == (uid_t)0);
 
   while ((ch = getopt(argc, argv, "adehmnj:r:sR:D:U:")) != EOF) {
     switch(ch) {
@@ -434,7 +436,7 @@ int main(int argc, char **argv)
         exit(1);
       }
     } else {
-      if((pwd = getpwuid(real_uid)) != NULL)
+      if((pwd = getpwuid(eff_uid)) != NULL)
         pstrcpy( user_name, pwd->pw_name);
     }
 
@@ -463,7 +465,7 @@ int main(int argc, char **argv)
       got_new_pass = True;
     }
 
-    if(!remote_user_name && ((pwd = getpwuid(real_uid)) != NULL))
+    if(!remote_user_name && ((pwd = getpwuid(eff_uid)) != NULL))
       pstrcpy( user_name, pwd->pw_name);
 
     /*

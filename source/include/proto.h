@@ -2196,7 +2196,7 @@ int reply_negprot(connection_struct *conn,
 
 /*The following definitions come from  smbd/noquotas.c  */
 
-BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize);
+BOOL disk_quotas(char *path,SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree,SMB_BIG_UINT *dsize);
 
 /*The following definitions come from  smbd/nttrans.c  */
 

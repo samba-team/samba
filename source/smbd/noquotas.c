@@ -25,7 +25,15 @@
  * Needed for auto generation of proto.h.
  */
 
-BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
+BOOL disk_quotas(char *path,SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree,SMB_BIG_UINT *dsize)
 {
+  (*bsize) = 512; /* This value should be ignored */
+
+  /* And just to be sure we set some values that hopefully */
+  /* will be larger that any possible real-world value     */
+  (*dfree) = (SMB_BIG_UINT)-1;
+  (*dsize) = (SMB_BIG_UINT)-1;
+
+  /* As we have select not to use quotas, allways fail */
   return False;
 }
