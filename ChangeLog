@@ -1,3 +1,7 @@
+2001-09-25  Assar Westerlund  <assar@sics.se>
+
+	* lib/asn1: implement OBJECT IDENTIFIER and ENUMERATED
+
 2001-09-20  Johan Danielsson  <joda@pdc.kth.se>
 
 	* lib/krb5/principal.c (krb5_425_conv_principal_ext): try using
