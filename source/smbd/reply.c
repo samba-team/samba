@@ -2614,7 +2614,7 @@ int reply_printqueue(char *inbuf,char *outbuf)
       DEBUG(5,("connection not open or not a printer, using cnum %d\n",cnum));
     }
 
-  if (!become_user(cnum,vuid))
+  if (!become_user(&Connections[cnum], cnum, vuid))
     return(ERROR(ERRSRV,ERRinvnid));
 
   {

@@ -94,7 +94,7 @@ BOOL global_oplock_break = False;
 
 extern fstring remote_machine;
 
-pstring OriginalDir;
+extern pstring OriginalDir;
 
 /* these can be set by some functions to override the error codes */
 int unix_ERR_class=SUCCESS;
@@ -3462,7 +3462,7 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
       smbrun(cmd,NULL,False);
     }
 
-  if (!become_user(cnum,pcon->vuid))
+  if (!become_user(&Connections[cnum], cnum,pcon->vuid))
     {
       DEBUG(0,("Can't become connected user!\n"));
       pcon->open = False;
@@ -4019,7 +4019,7 @@ void close_cnum(int cnum, uint16 vuid)
   dptr_closecnum(cnum);
 
   /* execute any "postexec = " line */
-  if (*lp_postexec(SNUM(cnum)) && become_user(cnum,vuid))
+  if (*lp_postexec(SNUM(cnum)) && become_user(&Connections[cnum], cnum,vuid))
     {
       pstring cmd;
       strcpy(cmd,lp_postexec(SNUM(cnum)));
@@ -4542,7 +4542,7 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
 	    unbecome_user();
 
 	  /* does this protocol need to be run as the connected user? */
-	  if ((flags & AS_USER) && !become_user(cnum,session_tag)) {
+	  if ((flags & AS_USER) && !become_user(&Connections[cnum], cnum,session_tag)) {
 	    if (flags & AS_GUEST) 
 	      flags &= ~AS_USER;
 	    else

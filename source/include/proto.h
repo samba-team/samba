@@ -100,6 +100,8 @@ void cred_create(uint32 session_key[2], DOM_CHAL *stor_cred, UTIME timestamp,
 		 DOM_CHAL *cred);
 int cred_assert(DOM_CHAL *cred, uint32 session_key[2], DOM_CHAL *stored_cred,
 		UTIME timestamp);
+BOOL srv_deal_with_creds(struct dcinfo *dc, DOM_CRED *clnt_cred, DOM_CRED *srv_cred);
+BOOL clnt_deal_with_creds(struct dcinfo *dc, DOM_CRED *srv_cred, DOM_CRED *clnt_cred);
 
 /*The following definitions come from  dir.c  */
 
@@ -378,6 +380,9 @@ void make_q_req_chal(LSA_Q_REQ_CHAL *q_c,
 				DOM_CHAL *clnt_chal);
 char* lsa_io_q_req_chal(BOOL io, LSA_Q_REQ_CHAL *q_c, char *q, char *base, int align, int depth);
 char* lsa_io_r_req_chal(BOOL io, LSA_R_REQ_CHAL *r_c, char *q, char *base, int align, int depth);
+void make_q_auth_2(LSA_Q_AUTH_2 *q_a,
+		char *logon_srv, char *acct_name, uint16 sec_chan, char *comp_name,
+		DOM_CHAL *clnt_chal, uint32 clnt_flgs);
 char* lsa_io_q_auth_2(BOOL io, LSA_Q_AUTH_2 *q_a, char *q, char *base, int align, int depth);
 char* lsa_io_r_auth_2(BOOL io, LSA_R_AUTH_2 *r_a, char *q, char *base, int align, int depth);
 char* lsa_io_q_srv_pwset(BOOL io, LSA_Q_SRV_PWSET *q_s, char *q, char *base, int align, int depth);
@@ -633,7 +638,7 @@ void sync_browse_lists(struct subnet_record *d, struct work_record *work,
 
 /*The following definitions come from  ntclient.c  */
 
-BOOL cli_lsa_req_chal(DOM_CHAL *srv_chal, char *desthost, char *myhostname,
+BOOL do_nt_login(char *desthost, char *myhostname,
 				int Client, int cnum);
 
 /*The following definitions come from  params.c  */
@@ -673,6 +678,7 @@ void pcap_printer_fn(void (*fn)());
 
 /*The following definitions come from  pipenetlog.c  */
 
+BOOL get_md4pw(char *md4pw, char *mach_acct);
 BOOL api_netlogrpcTNP(int cnum,int uid, char *param,char *data,
 		     int mdrcnt,int mprcnt,
 		     char **rdata,char **rparam,
@@ -884,6 +890,7 @@ void cred_hash2(unsigned char *out,unsigned char *in,unsigned char *key);
 void SMBencrypt(uchar *passwd, uchar *c8, uchar *p24);
 void E_md4hash(uchar *passwd, uchar *p16);
 void SMBNTencrypt(uchar *passwd, uchar *c8, uchar *p24);
+void nt_lm_owf_gen(char *pwd, char nt_p16[16], char p16[16]);
 
 /*The following definitions come from  smbparse.c  */
 
@@ -904,6 +911,8 @@ char* smb_io_dom_sid2(BOOL io, DOM_SID2 *sid2, char *q, char *base, int align, i
 void make_dom_rid2(DOM_RID2 *rid2, uint32 rid);
 char* smb_io_dom_rid2(BOOL io, DOM_RID2 *rid2, char *q, char *base, int align, int depth);
 char* smb_io_clnt_srv(BOOL io, DOM_CLNT_SRV *log, char *q, char *base, int align, int depth);
+void make_log_info(DOM_LOG_INFO *log, char *logon_srv, char *acct_name,
+		uint16 sec_chan, char *comp_name);
 char* smb_io_log_info(BOOL io, DOM_LOG_INFO *log, char *q, char *base, int align, int depth);
 char* smb_io_chal(BOOL io, DOM_CHAL *chal, char *q, char *base, int align, int depth);
 char* smb_io_cred(BOOL io, DOM_CRED *cred, char *q, char *base, int align, int depth);
@@ -1015,7 +1024,7 @@ char *ufc_crypt(char *key,char *salt);
 
 void init_uid(void);
 BOOL become_guest(void);
-BOOL become_user(int cnum, uint16 vuid);
+BOOL become_user(connection_struct *conn, int cnum, uint16 vuid);
 BOOL unbecome_user(void );
 int smbrun(char *cmd,char *outfile,BOOL shared);
 void become_root(BOOL save_dir) ;

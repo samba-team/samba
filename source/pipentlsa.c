@@ -317,9 +317,9 @@ BOOL api_ntLsarpcTNP(int cnum,int uid, char *param,char *data,
 		return True;
 	}
 
-	DEBUG(4,("lsarpc TransactNamedPipe op %x\n",hdr.reserved));
+	DEBUG(4,("lsarpc TransactNamedPipe op %x\n",hdr.opnum));
 
-	switch (hdr.reserved)
+	switch (hdr.opnum)
 	{
 		case LSA_OPENPOLICY:
 		{
@@ -416,7 +416,7 @@ BOOL api_ntLsarpcTNP(int cnum,int uid, char *param,char *data,
 
 		default:
 		{
-			DEBUG(4, ("NTLSARPC, unknown code: %lx\n", hdr.reserved));
+			DEBUG(4, ("NTLSARPC, unknown code: %lx\n", hdr.opnum));
 			break;
 		}
 	}

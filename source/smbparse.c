@@ -382,6 +382,26 @@ char* smb_io_clnt_srv(BOOL io, DOM_CLNT_SRV *log, char *q, char *base, int align
 }
 
 /*******************************************************************
+makes a DOM_LOG_INFO structure.
+********************************************************************/
+void make_log_info(DOM_LOG_INFO *log, char *logon_srv, char *acct_name,
+		uint16 sec_chan, char *comp_name)
+{
+	if (log == NULL) return;
+
+	DEBUG(5,("make_log_info %d\n", __LINE__));
+
+	log->undoc_buffer = 1;
+
+	make_unistr2(&(log->uni_logon_srv), logon_srv, strlen(logon_srv));
+	make_unistr2(&(log->uni_acct_name), acct_name, strlen(acct_name));
+
+	log->sec_chan = sec_chan;
+
+	make_unistr2(&(log->uni_comp_name), comp_name, strlen(comp_name));
+}
+
+/*******************************************************************
 reads or writes a DOM_LOG_INFO structure.
 ********************************************************************/
 char* smb_io_log_info(BOOL io, DOM_LOG_INFO *log, char *q, char *base, int align, int depth)
@@ -626,8 +646,8 @@ void make_rpc_header(RPC_HDR *hdr, enum RPC_PKT_TYPE pkt_type,
 	hdr->call_id      = call_id;         /* call identifier - match incoming RPC */
 	hdr->alloc_hint   = data_len - 0x18; /* allocation hint (no idea) */
 	hdr->context_id   = 0;               /* presentation context identifier */
-	hdr->cancel_count = opnum;           /* reply: cancel count. request: opnum */
-	hdr->reserved     = 0;               /* reserved */
+	hdr->cancel_count = 0;               /* cancel count */
+	hdr->opnum        = opnum;           /* opnum */
 }
 
 /*******************************************************************
@@ -651,7 +671,7 @@ char* smb_io_rpc_hdr(BOOL io, RPC_HDR *rpc, char *q, char *base, int align, int 
 	DBG_RW_IVAL("alloc_hint", depth, base, io, q, rpc->alloc_hint); q += 4;
 	DBG_RW_CVAL("context_id", depth, base, io, q, rpc->context_id); q++;
 	DBG_RW_CVAL("cancel_ct ", depth, base, io, q, rpc->cancel_count); q++;
-	DBG_RW_CVAL("reserved  ", depth, base, io, q, rpc->reserved); q++;
+	DBG_RW_CVAL("opnum     ", depth, base, io, q, rpc->opnum); q++;
 
 	return q;
 }
