@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "WINBINDD" "8" "03 May 2001" "" ""
+.TH "WINBINDD" "8" "08 June 2001" "" ""
 .SH NAME
 winbindd \- Name Service Switch daemon for resolving names  from NT servers
 .SH SYNOPSIS
@@ -250,9 +250,13 @@ within \fBsamedit\fR, run the command:
 This assumes your domain is called "DOMAIN" and your Samba 
 workstation is called "MACHINE". 
 .PP
-Next copy \fIlibnss_winbind.so.2\fR to 
+Next copy \fIlibnss_winbind.so\fR to 
 \fI/lib\fR and \fIpam_winbind.so\fR
-to \fI/lib/security\fR.
+to \fI/lib/security\fR. A symbolic link needs to be
+made from \fI/lib/libnss_winbind.so\fR to
+\fI/lib/libnss_winbind.so.2\fR. If you are using an
+older version of glibc then the target of the link should be
+\fI/lib/libnss_winbind.so.1\fR.
 .PP
 Finally, setup a smb.conf containing directives like the 
 following: 
