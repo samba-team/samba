@@ -102,10 +102,39 @@ static tdb_off tdb_hash_top(TDB_CONTEXT *tdb, unsigned hash)
 	return ret;
 }
 
+
+/* check for an out of bounds access - if it is out of bounds then
+   see if the database has been expanded by someone else and expand
+   if necessary */
+static int tdb_oob(TDB_CONTEXT *tdb, tdb_off offset)
+{
+	struct stat st;
+	if (offset < tdb->map_size) return 0;
+
+	fstat(tdb->fd, &st);
+	if (st.st_size <= tdb->map_size) return -1;
+
+#if HAVE_MMAP
+	if (tdb->map_ptr) {
+		munmap(tdb->map_ptr, tdb->map_size);
+		tdb->map_ptr = NULL;
+	}
+#endif
+
+	tdb->map_size = st.st_size;
+#if HAVE_MMAP
+	tdb->map_ptr = (void *)mmap(NULL, tdb->map_size, 
+				    tdb->read_only?PROT_READ:PROT_READ|PROT_WRITE,
+				    MAP_SHARED | MAP_FILE, tdb->fd, 0);
+#endif	
+	return 0;
+}
+
+
 /* write a lump of data at a specified offset */
 static int tdb_write(TDB_CONTEXT *tdb, tdb_off offset, char *buf, tdb_len len)
 {
-	if (offset + len > tdb->map_size) {
+	if (tdb_oob(tdb, offset + len) != 0) {
 		/* oops - trying to write beyond the end of the database! */
 #if TDB_DEBUG
 		printf("write error of length %u at offset %u (max %u)\n",
@@ -128,7 +157,7 @@ static int tdb_write(TDB_CONTEXT *tdb, tdb_off offset, char *buf, tdb_len len)
 /* read a lump of data at a specified offset */
 static int tdb_read(TDB_CONTEXT *tdb, tdb_off offset, char *buf, tdb_len len)
 {
-	if (offset + len > tdb->map_size) {
+	if (tdb_oob(tdb, offset + len) != 0) {
 		/* oops - trying to read beyond the end of the database! */
 #if TDB_DEBUG
 		printf("read error of length %u at offset %u (max %u)\n",
@@ -514,6 +543,7 @@ int tdb_exists(TDB_CONTEXT *tdb, TDB_DATA key)
 
 /* traverse the entire database - calling fn(tdb, key, data) on each element.
    return -1 on error or the record count traversed
+   if fn is NULL then it is not called
    a non-zero return value from fn() indicates that the traversal should stop
   */
 int tdb_traverse(TDB_CONTEXT *tdb, int (*fn)(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf))
@@ -552,7 +582,7 @@ int tdb_traverse(TDB_CONTEXT *tdb, int (*fn)(TDB_CONTEXT *tdb, TDB_DATA key, TDB
 			dbuf.dsize = rec.data_len;
 			count++;
 
-			if (fn(tdb, key, dbuf) != 0) {
+			if (fn && fn(tdb, key, dbuf) != 0) {
 				/* they want us to stop traversing */
 				free(data);
 				return count;
@@ -915,9 +945,10 @@ TDB_CONTEXT *tdb_open(char *name, int hash_size, int flags, mode_t mode)
 	/* map the database and fill in the return structure */
 	tdb.name = (char *)strdup(name);
 	tdb.map_size = st.st_size;
+	tdb.read_only = ((flags & O_ACCMODE) == O_RDONLY);
 #if HAVE_MMAP
 	tdb.map_ptr = (void *)mmap(NULL, st.st_size, 
-				  (flags & O_ACCMODE) == O_RDONLY? PROT_READ : PROT_READ|PROT_WRITE,
+				  tdb.read_only? PROT_READ : PROT_READ|PROT_WRITE,
 				  MAP_SHARED | MAP_FILE, tdb.fd, 0);
 #endif
 	tdb.header = header;

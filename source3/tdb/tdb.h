@@ -39,6 +39,7 @@ typedef struct {
 	void *map_ptr; /* where it is currently mapped */
 	int fd; /* open file descriptor for the database */
 	tdb_len map_size; /* how much space has been mapped */
+	int read_only; /* opened read-only */
 	int write_locked; /* set if we have the db locked */
 	struct tdb_header header; /* a cached copy of the header */
 } TDB_CONTEXT;

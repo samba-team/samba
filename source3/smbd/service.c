@@ -458,7 +458,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 		}  
 		
 		if (lp_status(SNUM(conn)))
-			claim_connection(conn,"STATUS.",
+			claim_connection(conn,"",
 					 MAXSTATUS,False);
 	} /* IS_IPC */
 	
@@ -484,7 +484,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 					 lp_servicename(SNUM(conn)),
 					 lp_max_connections(SNUM(conn)));
 			if (lp_status(SNUM(conn))) {
-				yield_connection(conn,"STATUS.",MAXSTATUS);
+				yield_connection(conn,"",MAXSTATUS);
 			}
 		}
 		conn_free(conn);
@@ -501,7 +501,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 					 lp_servicename(SNUM(conn)),
 					 lp_max_connections(SNUM(conn)));
 			if (lp_status(SNUM(conn))) 
-				yield_connection(conn,"STATUS.",MAXSTATUS);
+				yield_connection(conn,"",MAXSTATUS);
 		}
 		conn_free(conn);
 		*ecode = ERRinvnetname;
@@ -582,7 +582,7 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 			 lp_max_connections(SNUM(conn)));
 
 	if (lp_status(SNUM(conn)))
-		yield_connection(conn,"STATUS.",MAXSTATUS);
+		yield_connection(conn,"",MAXSTATUS);
 
 	file_close_conn(conn);
 	dptr_closecnum(conn);
