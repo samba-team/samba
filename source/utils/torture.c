@@ -26,6 +26,7 @@
 static fstring host, workgroup, share, password, username, myname;
 static int max_protocol = PROTOCOL_NT1;
 static char *sockops="";
+static int nprocs=1, numops=100;
 
 
 static struct timeval tp1,tp2;
@@ -129,7 +130,7 @@ static BOOL wait_lock(struct cli_state *c, int fnum, uint32 offset, uint32 len)
 }
 
 
-static BOOL rw_torture(struct cli_state *c, int numops)
+static BOOL rw_torture(struct cli_state *c)
 {
 	char *lockfname = "\\torture.lck";
 	fstring fname;
@@ -227,7 +228,7 @@ static void usage(void)
 
 
 
-static void run_torture(int numops)
+static void run_torture(void)
 {
 	static struct cli_state cli;
 
@@ -236,7 +237,7 @@ static void run_torture(int numops)
 
 		printf("pid %d OK\n", getpid());
 
-		rw_torture(&cli, numops);
+		rw_torture(&cli);
 
 		close_connection(&cli);
 	}
@@ -447,7 +448,7 @@ static void run_locktest2(void)
 
   1) the server supports the full offset range in lock requests
 */
-static void run_locktest3(int numops)
+static void run_locktest3(void)
 {
 	static struct cli_state cli1, cli2;
 	char *fname = "\\lockt3.lck";
@@ -654,13 +655,14 @@ static void run_unlinktest(void)
 /*
 test how many open files this server supports on the one socket
 */
-static void run_maxfidtest(int n)
+static void run_maxfidtest(void)
 {
 	static struct cli_state cli;
 	char *template = "\\maxfid.%d.%d";
 	fstring fname;
 	int fnum;
 	int retries=4;
+	int n = numops;
 
 	srandom(getpid());
 
@@ -945,7 +947,7 @@ static void run_trans2test(void)
 }
 
 
-static void create_procs(int nprocs, int numops, void (*fn)(int ))
+static void create_procs(void (*fn)(void))
 {
 	int i, status;
 
@@ -953,7 +955,7 @@ static void create_procs(int nprocs, int numops, void (*fn)(int ))
 		if (fork() == 0) {
 			int mypid = getpid();
 			sys_srandom(mypid ^ time(NULL));
-			fn(numops);
+			fn();
 			_exit(0);
 		}
 	}
@@ -963,14 +965,61 @@ static void create_procs(int nprocs, int numops, void (*fn)(int ))
 }
 
 
+#define FLAG_MULTIPROC 1
+
+static struct {
+	char *name;
+	void (*fn)(void);
+	unsigned flags;
+} torture_ops[] = {
+	{"FDPASS", run_fdpasstest, 0},
+	{"LOCK1",  run_locktest1,  0},
+	{"LOCK2",  run_locktest2,  0},
+	{"LOCK3",  run_locktest3,  0},
+	{"UNLINK", run_unlinktest, 0},
+	{"BROWSE", run_browsetest, 0},
+	{"ATTR",   run_attrtest,   0},
+	{"TRANS2", run_trans2test, 0},
+	{"MAXFID", run_maxfidtest, FLAG_MULTIPROC},
+	{"TORTURE",run_torture,    FLAG_MULTIPROC},
+	{"RANDOMIPC", run_randomipc, 0},
+	{NULL, NULL, 0}};
+
+
+/****************************************************************************
+run a specified test or "ALL"
+****************************************************************************/
+static void run_test(char *name)
+{
+	int i;
+	if (strequal(name,"ALL")) {
+		for (i=0;torture_ops[i].name;i++) {
+			run_test(torture_ops[i].name);
+		}
+	}
+	
+	for (i=0;torture_ops[i].name;i++) {
+		if (strequal(name, torture_ops[i].name)) {
+			start_timer();
+			printf("Running %s\n", name);
+			if (torture_ops[i].flags & FLAG_MULTIPROC) {
+				create_procs(torture_ops[i].fn);
+			} else {
+				torture_ops[i].fn();
+			}
+			printf("%s took %g secs\n\n", name, end_timer());
+		}
+	}
+}
+
+
 
 /****************************************************************************
   main program
 ****************************************************************************/
  int main(int argc,char *argv[])
 {
-	int nprocs=1, numops=100;
-	int opt;
+	int opt, i;
 	char *p;
 	int gotpass = 0;
 	extern char *optarg;
@@ -1058,22 +1107,13 @@ static void create_procs(int nprocs, int numops, void (*fn)(int ))
 	printf("host=%s share=%s user=%s myname=%s\n", 
 	       host, share, username, myname);
 
-	run_fdpasstest();
-	run_locktest1();
-	run_locktest2();
-	run_locktest3(numops);
-	run_unlinktest();
-	run_browsetest();
-	run_attrtest();
-	run_trans2test();
-
-	create_procs(nprocs, numops, run_maxfidtest);
-
-	start_timer();
-	create_procs(nprocs, numops, run_torture);
-	printf("rw_torture: %g secs\n", end_timer());
-
-	run_randomipc();        
+	if (argc == 1) {
+		run_test("ALL");
+	} else {
+		for (i=1;i<argc;i++) {
+			run_test(argv[i]);
+		}
+	}
 
 	return(0);
 }
