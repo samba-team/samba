@@ -33,6 +33,8 @@ int last_message = -1;
 #define LAST_MESSAGE() smb_fn_name(last_message)
 
 extern pstring user_socket_options;
+extern SIG_ATOMIC_T got_sig_term;
+extern SIG_ATOMIC_T reload_after_sighup;
 
 #ifdef WITH_DFS
 extern int dcelogin_atmost_once;
@@ -61,8 +63,6 @@ static void smbd_set_server_fd(int fd)
  Terminate signal.
 ****************************************************************************/
 
-SIG_ATOMIC_T got_sig_term = 0;
-
 static void sig_term(void)
 {
 	got_sig_term = 1;
@@ -72,8 +72,6 @@ static void sig_term(void)
 /****************************************************************************
  Catch a sighup.
 ****************************************************************************/
-
-SIG_ATOMIC_T reload_after_sighup = 0;
 
 static void sig_hup(int sig)
 {
