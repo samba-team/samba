@@ -1990,7 +1990,7 @@ due to being in oplock break state.\n", (unsigned int)function_code ));
 
 			data_count = IVAL(inbuf, smb_nts_DataCount);
 			data_displacement = IVAL(inbuf, smb_nts_DataDisplacement);
-			data_offset = IVAL(inbuf, smb_nts_DataDisplacement);
+			data_offset = IVAL(inbuf, smb_nts_DataOffset);
 			num_data_sofar += data_count;
 
 			if (num_params_sofar > total_parameter_count || num_data_sofar > total_data_count) {
