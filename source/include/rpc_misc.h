@@ -412,12 +412,11 @@ typedef struct gid_info
 
 } DOM_GID;
 
-#define POL_HND_SIZE 20
-
 /* POLICY_HND */
 typedef struct lsa_policy_info
 {
-  uint8 data[POL_HND_SIZE]; /* policy handle */
+	uint32 ptr;
+	RPC_UUID uuid;
 
 } POLICY_HND;
 

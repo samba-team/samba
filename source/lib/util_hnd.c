@@ -75,19 +75,22 @@ struct policy_cache *get_global_hnd_cache(void)
 static void create_pol_hnd(POLICY_HND *hnd)
 {
 	static uint32 pol_hnd_low  = 0;
-	static uint32 pol_hnd_high = 0;
+	NTTIME ntt;
 
 	if (hnd == NULL) return;
 
-	/* i severely doubt that pol_hnd_high will ever be non-zero... */
-	pol_hnd_low++;
-	if (pol_hnd_low == 0) pol_hnd_high++;
+	ZERO_STRUCTP(hnd);
 
-	SIVAL(hnd->data, 0 , 0x0);  /* first bit must be null */
-	SIVAL(hnd->data, 4 , pol_hnd_low ); /* second bit is incrementing */
-	SIVAL(hnd->data, 8 , pol_hnd_high); /* second bit is incrementing */
-	SIVAL(hnd->data, 12, time(NULL)); /* something random */
-	SIVAL(hnd->data, 16, getpid()); /* something more random */
+	pol_hnd_low++;
+
+	unix_to_nt_time(&ntt, time(NULL));
+
+	hnd->ptr = 0;
+	hnd->uuid.time_low = ntt.low;
+	hnd->uuid.time_mid = (ntt.high & 0xffff);
+	hnd->uuid.time_hi_and_version = ((ntt.high >> 16) & 0xffff);
+	SIVAL(hnd->uuid.remaining, 0, getpid()); 
+	SIVAL(hnd->uuid.remaining, 4, pol_hnd_low); 
 }
 
 /****************************************************************************
@@ -123,14 +126,14 @@ static struct policy *find_policy(struct policy_cache *cache,
 	for (p=cache->Policy;p;p=p->next) {
 		if (memcmp(&p->pol_hnd, hnd, sizeof(*hnd)) == 0) {
 			DEBUG(4,("Found policy hnd[%x] ", p->pnum));
-			dump_data(4, (const char *)hnd->data,
-			sizeof(hnd->data));
+			dump_data(4, (const char *)hnd,
+			sizeof(*hnd));
 			return p;
 		}
 	}
 
 	DEBUG(4,("cache->Policy not found: "));
-	dump_data(4, (const char *)hnd->data, sizeof(hnd->data));
+	dump_data(4, (const char *)hnd, sizeof(*hnd));
 
 	return NULL;
 }
@@ -259,7 +262,7 @@ BOOL register_policy_hnd(struct policy_cache *cache,
 	           p->key.pid, p->key.vuid));
 
 	memcpy(&p->pol_hnd, hnd, sizeof(*hnd));
-	dump_data(4, (char *)hnd->data, sizeof(hnd->data));
+	dump_data(4, (char *)hnd, sizeof(*hnd));
 
 	return True;
 }

@@ -1084,22 +1084,7 @@ BOOL reg_close( POLICY_HND *hnd)
 
 		if (p)
 		{
-			/* check that the returned policy handle is all zeros */
-			uint32 i;
 			valid_close = True;
-
-			for (i = 0; i < sizeof(r_c.pol.data); i++)
-			{
-				if (r_c.pol.data[i] != 0)
-				{
-					valid_close = False;
-					break;
-				}
-			}	
-			if (!valid_close)
-			{
-				DEBUG(0,("REG_CLOSE: non-zero handle returned\n"));
-			}
 		}
 	}
 

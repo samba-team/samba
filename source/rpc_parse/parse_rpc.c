@@ -291,6 +291,30 @@ BOOL smb_io_rpc_hdr_fault(char *desc, RPC_HDR_FAULT * rpc, prs_struct * ps,
 }
 
 /*******************************************************************
+ Reads or writes an RPC_UUID structure.
+********************************************************************/
+BOOL smb_io_rpc_uuid(char *desc, RPC_UUID * uuid, prs_struct * ps,
+			     int depth)
+{
+	if (uuid == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "smb_io_rpc_iface");
+	depth++;
+
+	prs_align(ps);
+
+	prs_uint32("time_low", ps, depth, &uuid->time_low);
+	prs_uint16("time_mid", ps, depth, &uuid->time_mid);
+	prs_uint16("time_hiv", ps, depth, &uuid->time_hi_and_version);
+
+	prs_uint8s(False, "rem", ps, depth, uuid->remaining,
+		   sizeof(uuid->remaining));
+
+	return True;
+}
+
+/*******************************************************************
  Reads or writes an RPC_IFACE structure.
 ********************************************************************/
 static BOOL smb_io_rpc_iface(char *desc, RPC_IFACE * ifc, prs_struct * ps,
@@ -304,12 +328,7 @@ static BOOL smb_io_rpc_iface(char *desc, RPC_IFACE * ifc, prs_struct * ps,
 
 	prs_align(ps);
 
-	prs_uint32("time_low", ps, depth, &ifc->uuid.time_low);
-	prs_uint16("time_mid", ps, depth, &ifc->uuid.time_mid);
-	prs_uint16("time_hiv", ps, depth, &ifc->uuid.time_hi_and_version);
-
-	prs_uint8s(False, "uuid   ", ps, depth, ifc->uuid.remaining,
-		   sizeof(ifc->uuid.remaining));
+	smb_io_rpc_uuid("uuid", &ifc->uuid, ps, depth);
 	prs_uint32("version", ps, depth, &ifc->version);
 
 	return True;
@@ -397,7 +416,7 @@ creates an RPC_HDR_RB structure.
 ********************************************************************/
 BOOL make_rpc_hdr_rb(RPC_HDR_RB * rpc,
 		     uint16 max_tsize, uint16 max_rsize, uint32 assoc_gid,
-		     uint32 num_elements, uint16 context_id,
+		     uint8 num_elements, uint16 context_id,
 		     uint8 num_syntaxes, RPC_IFACE * abstract,
 		     RPC_IFACE * transfer)
 {
@@ -433,9 +452,10 @@ BOOL smb_io_rpc_hdr_rb(char *desc, RPC_HDR_RB * rpc, prs_struct * ps,
 
 	smb_io_rpc_hdr_bba("", &(rpc->bba), ps, depth);
 
-	prs_uint32("num_elements", ps, depth, &(rpc->num_elements));
-	prs_uint16("context_id  ", ps, depth, &(rpc->context_id));
-	prs_uint8("num_syntaxes", ps, depth, &(rpc->num_syntaxes));
+	prs_uint8("num_elements", ps, depth, &rpc->num_elements);
+	prs_align(ps);
+	prs_uint16("context_id  ", ps, depth, &rpc->context_id);
+	prs_uint8("num_syntaxes", ps, depth, &rpc->num_syntaxes);
 
 	smb_io_rpc_iface("", &(rpc->abstract), ps, depth);
 	smb_io_rpc_iface("", &(rpc->transfer), ps, depth);

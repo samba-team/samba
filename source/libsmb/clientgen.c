@@ -3230,6 +3230,7 @@ BOOL cli_establish_connection(struct cli_state *cli,
 		dump_data(100, cli->cryptkey, 8);
 #endif
 		prs_init(&auth_resp, 0x0, 4, False);
+		auth_resp.bigendian = False;
 
 		if (cli->use_ntlmv2 != False)
 		{

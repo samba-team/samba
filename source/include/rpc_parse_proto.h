@@ -95,7 +95,7 @@ BOOL make_q_query_sec_obj(LSA_Q_QUERY_SEC_OBJ * q_q, const POLICY_HND *hnd,
 BOOL lsa_io_q_query_sec_obj(char *desc, LSA_Q_QUERY_SEC_OBJ * q_q, prs_struct * ps,
 		    int depth);
 BOOL lsa_io_r_query_sec_obj(char *desc,  LSA_R_QUERY_SEC_OBJ *r_u, prs_struct *ps, int depth);
-BOOL make_q_query(LSA_Q_QUERY_INFO * q_q, POLICY_HND *hnd, uint16 info_class);
+BOOL make_q_query(LSA_Q_QUERY_INFO * q_q, POLICY_HND *hnd, uint8 info_class);
 BOOL lsa_io_q_query(char *desc, LSA_Q_QUERY_INFO * q_q, prs_struct * ps,
 		    int depth);
 BOOL make_q_create_secret(LSA_Q_CREATE_SECRET * q_o,
@@ -274,9 +274,11 @@ BOOL smb_io_rpc_hdr_nack(char *desc, RPC_HDR_NACK * rpc, prs_struct * ps,
 			 int depth);
 BOOL smb_io_rpc_hdr_fault(char *desc, RPC_HDR_FAULT * rpc, prs_struct * ps,
 			  int depth);
+BOOL smb_io_rpc_uuid(char *desc, RPC_UUID * uuid, prs_struct * ps,
+			     int depth);
 BOOL make_rpc_hdr_rb(RPC_HDR_RB * rpc,
 		     uint16 max_tsize, uint16 max_rsize, uint32 assoc_gid,
-		     uint32 num_elements, uint16 context_id,
+		     uint8 num_elements, uint16 context_id,
 		     uint8 num_syntaxes, RPC_IFACE * abstract,
 		     RPC_IFACE * transfer);
 BOOL smb_io_rpc_hdr_rb(char *desc, RPC_HDR_RB * rpc, prs_struct * ps,

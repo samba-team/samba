@@ -297,22 +297,7 @@ BOOL spoolss_closeprinter(POLICY_HND *hnd)
 
 		if (p)
 		{
-			/* check that the returned policy handle is all zeros */
-			uint32 i;
 			valid_close = True;
-
-			for (i = 0; i < sizeof(r_c.handle.data); i++)
-			{
-				if (r_c.handle.data[i] != 0)
-				{
-					valid_close = False;
-					break;
-				}
-			}	
-			if (!valid_close)
-			{
-				DEBUG(0,("SPOOL_CLOSEPRINTER: non-zero handle returned\n"));
-			}
 		}
 	}
 

@@ -189,7 +189,8 @@ typedef struct rpc_bind_req_info
 {
   RPC_HDR_BBA bba;
 
-  uint32 num_elements;    /* the number of elements (0x1) */
+  uint8 num_elements;    /* the number of elements (0x1) */
+  /* 3-byte pad */
   uint16 context_id;      /* presentation context identifier (0x0) */
   uint8 num_syntaxes;     /* the number of syntaxes (has always been 1?)(0x1) */
 
