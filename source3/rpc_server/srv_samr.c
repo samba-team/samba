@@ -1,5 +1,4 @@
 #define OLD_NTDOMAIN 1
-
 /* 
  *  Unix SMB/Netbios implementation.
  *  Version 1.9.
@@ -332,7 +331,7 @@ static BOOL get_passwd_entries(SAM_USER_INFO_21 *pw_buf,
 /*******************************************************************
  samr_reply_unknown_1
  ********************************************************************/
-static void samr_reply_close_hnd(SAMR_Q_CLOSE_HND *q_u,
+static BOOL samr_reply_close_hnd(SAMR_Q_CLOSE_HND *q_u,
 				prs_struct *rdata)
 {
 	SAMR_R_CLOSE_HND r_u;
@@ -353,10 +352,12 @@ static void samr_reply_close_hnd(SAMR_Q_CLOSE_HND *q_u,
 	DEBUG(5,("samr_reply_close_hnd: %d\n", __LINE__));
 
 	/* store the response in the SMB stream */
-	samr_io_r_close_hnd("", &r_u, rdata, 0);
+	if(!samr_io_r_close_hnd("", &r_u, rdata, 0))
+		return False;
 
 	DEBUG(5,("samr_reply_close_hnd: %d\n", __LINE__));
 
+	return True;
 }
 
 /*******************************************************************
@@ -367,10 +368,12 @@ static BOOL api_samr_close_hnd(prs_struct *data, prs_struct *rdata)
 	SAMR_Q_CLOSE_HND q_u;
 
 	/* grab the samr unknown 1 */
-	samr_io_q_close_hnd("", &q_u, data, 0);
+	if(!samr_io_q_close_hnd("", &q_u, data, 0))
+		return False;
 
 	/* construct reply.  always indicate success */
-	samr_reply_close_hnd(&q_u, rdata);
+	if(!samr_reply_close_hnd(&q_u, rdata))
+		return False;
 
 	return True;
 }
@@ -379,7 +382,7 @@ static BOOL api_samr_close_hnd(prs_struct *data, prs_struct *rdata)
 /*******************************************************************
  samr_reply_open_domain
  ********************************************************************/
-static void samr_reply_open_domain(SAMR_Q_OPEN_DOMAIN *q_u,
+static BOOL samr_reply_open_domain(SAMR_Q_OPEN_DOMAIN *q_u,
 				prs_struct *rdata)
 {
 	SAMR_R_OPEN_DOMAIN r_u;
@@ -414,10 +417,12 @@ static void samr_reply_open_domain(SAMR_Q_OPEN_DOMAIN *q_u,
 	DEBUG(5,("samr_open_domain: %d\n", __LINE__));
 
 	/* store the response in the SMB stream */
-	samr_io_r_open_domain("", &r_u, rdata, 0);
+	if(!samr_io_r_open_domain("", &r_u, rdata, 0))
+		return False;
 
 	DEBUG(5,("samr_open_domain: %d\n", __LINE__));
 
+	return True;
 }
 
 /*******************************************************************
@@ -428,10 +433,12 @@ static BOOL api_samr_open_domain(prs_struct *data, prs_struct *rdata)
 	SAMR_Q_OPEN_DOMAIN q_u;
 
 	/* grab the samr open */
-	samr_io_q_open_domain("", &q_u, data, 0);
+	if(!samr_io_q_open_domain("", &q_u, data, 0))
+		return False;
 
 	/* construct reply.  always indicate success */
-	samr_reply_open_domain(&q_u, rdata);
+	if(!samr_reply_open_domain(&q_u, rdata))
+		return False;
 
 	return True;
 }
@@ -440,7 +447,7 @@ static BOOL api_samr_open_domain(prs_struct *data, prs_struct *rdata)
 /*******************************************************************
  samr_reply_unknown_2c
  ********************************************************************/
-static void samr_reply_unknown_2c(SAMR_Q_UNKNOWN_2C *q_u,
+static BOOL samr_reply_unknown_2c(SAMR_Q_UNKNOWN_2C *q_u,
 				prs_struct *rdata)
 {
 	SAMR_R_UNKNOWN_2C r_u;
@@ -463,10 +470,12 @@ static void samr_reply_unknown_2c(SAMR_Q_UNKNOWN_2C *q_u,
 	DEBUG(5,("samr_unknown_2c: %d\n", __LINE__));
 
 	/* store the response in the SMB stream */
-	samr_io_r_unknown_2c("", &r_u, rdata, 0);
+	if(!samr_io_r_unknown_2c("", &r_u, rdata, 0))
+		return False;
 
 	DEBUG(5,("samr_unknown_2c: %d\n", __LINE__));
 
+	return True;
 }
 
 /*******************************************************************
@@ -477,10 +486,12 @@ static BOOL api_samr_unknown_2c(prs_struct *data, prs_struct *rdata)
 	SAMR_Q_UNKNOWN_2C q_u;
 
 	/* grab the samr open */
-	samr_io_q_unknown_2c("", &q_u, data, 0);
+	if(!samr_io_q_unknown_2c("", &q_u, data, 0))
+		return False;
 
 	/* construct reply.  always indicate success */
-	samr_reply_unknown_2c(&q_u, rdata);
+	if(!samr_reply_unknown_2c(&q_u, rdata))
+		return False;
 
 	return True;
 }
@@ -489,7 +500,7 @@ static BOOL api_samr_unknown_2c(prs_struct *data, prs_struct *rdata)
 /*******************************************************************
  samr_reply_unknown_3
  ********************************************************************/
-static void samr_reply_unknown_3(SAMR_Q_UNKNOWN_3 *q_u,
+static BOOL samr_reply_unknown_3(SAMR_Q_UNKNOWN_3 *q_u,
 				prs_struct *rdata)
 {
 	SAMR_R_UNKNOWN_3 r_u;
@@ -541,10 +552,12 @@ static void samr_reply_unknown_3(SAMR_Q_UNKNOWN_3 *q_u,
 	DEBUG(5,("samr_unknown_3: %d\n", __LINE__));
 
 	/* store the response in the SMB stream */
-	samr_io_r_unknown_3("", &r_u, rdata, 0);
+	if(!samr_io_r_unknown_3("", &r_u, rdata, 0))
+		return False;
 
 	DEBUG(5,("samr_unknown_3: %d\n", __LINE__));
 
+	return True;
 }
 
 /*******************************************************************
@@ -555,10 +568,12 @@ static BOOL api_samr_unknown_3(prs_struct *data, prs_struct *rdata)
 	SAMR_Q_UNKNOWN_3 q_u;
 
 	/* grab the samr open */
-	samr_io_q_unknown_3("", &q_u, data, 0);
+	if(!samr_io_q_unknown_3("", &q_u, data, 0))
+		return False;
 
 	/* construct reply.  always indicate success */
-	samr_reply_unknown_3(&q_u, rdata);
+	if(!samr_reply_unknown_3(&q_u, rdata))
+		return False;
 
 	return True;
 }
@@ -567,7 +582,7 @@ static BOOL api_samr_unknown_3(prs_struct *data, prs_struct *rdata)
 /*******************************************************************
  samr_reply_enum_dom_users
  ********************************************************************/
-static void samr_reply_enum_dom_users(SAMR_Q_ENUM_DOM_USERS *q_u,
+static BOOL samr_reply_enum_dom_users(SAMR_Q_ENUM_DOM_USERS *q_u,
 				prs_struct *rdata)
 {
 	SAMR_R_ENUM_DOM_USERS r_e;
@@ -595,10 +610,12 @@ static void samr_reply_enum_dom_users(SAMR_Q_ENUM_DOM_USERS *q_u,
 	                           pass, r_e.status);
 
 	/* store the response in the SMB stream */
-	samr_io_r_enum_dom_users("", &r_e, rdata, 0);
+	if(!samr_io_r_enum_dom_users("", &r_e, rdata, 0))
+		return False;
 
 	DEBUG(5,("samr_enum_dom_users: %d\n", __LINE__));
 
+	return True;
 }
 
 /*******************************************************************
@@ -609,19 +626,20 @@ static BOOL api_samr_enum_dom_users(prs_struct *data, prs_struct *rdata)
 	SAMR_Q_ENUM_DOM_USERS q_e;
 
 	/* grab the samr open */
-	samr_io_q_enum_dom_users("", &q_e, data, 0);
+	if(!samr_io_q_enum_dom_users("", &q_e, data, 0))
+		return False;
 
 	/* construct reply. */
-	samr_reply_enum_dom_users(&q_e, rdata);
+	if(!samr_reply_enum_dom_users(&q_e, rdata))
+		return False;
 
 	return True;
 }
 
-
 /*******************************************************************
  samr_reply_enum_dom_groups
  ********************************************************************/
-static void samr_reply_enum_dom_groups(SAMR_Q_ENUM_DOM_GROUPS *q_u,
+static BOOL samr_reply_enum_dom_groups(SAMR_Q_ENUM_DOM_GROUPS *q_u,
 				prs_struct *rdata)
 {
 	SAMR_R_ENUM_DOM_GROUPS r_e;
@@ -652,10 +670,12 @@ static void samr_reply_enum_dom_groups(SAMR_Q_ENUM_DOM_GROUPS *q_u,
 	}
 
 	/* store the response in the SMB stream */
-	samr_io_r_enum_dom_groups("", &r_e, rdata, 0);
+	if(!samr_io_r_enum_dom_groups("", &r_e, rdata, 0))
+		return False;
 
 	DEBUG(5,("samr_enum_dom_groups: %d\n", __LINE__));
 
+	return True;
 }
 
 /*******************************************************************
@@ -666,10 +686,12 @@ static BOOL api_samr_enum_dom_groups(prs_struct *data, prs_struct *rdata)
 	SAMR_Q_ENUM_DOM_GROUPS q_e;
 
 	/* grab the samr open */
-	samr_io_q_enum_dom_groups("", &q_e, data, 0);
+	if(!samr_io_q_enum_dom_groups("", &q_e, data, 0))
+		return False;
 
 	/* construct reply. */
-	samr_reply_enum_dom_groups(&q_e, rdata);
+	if(!samr_reply_enum_dom_groups(&q_e, rdata))
+		return False;
 
 	return True;
 }
@@ -677,7 +699,7 @@ static BOOL api_samr_enum_dom_groups(prs_struct *data, prs_struct *rdata)
 /*******************************************************************
  samr_reply_enum_dom_aliases
  ********************************************************************/
-static void samr_reply_enum_dom_aliases(SAMR_Q_ENUM_DOM_ALIASES *q_u,
+static BOOL samr_reply_enum_dom_aliases(SAMR_Q_ENUM_DOM_ALIASES *q_u,
 				prs_struct *rdata)
 {
 	SAMR_R_ENUM_DOM_ALIASES r_e;
@@ -736,10 +758,12 @@ static void samr_reply_enum_dom_aliases(SAMR_Q_ENUM_DOM_ALIASES *q_u,
 	init_samr_r_enum_dom_aliases(&r_e, num_entries, pass, r_e.status);
 
 	/* store the response in the SMB stream */
-	samr_io_r_enum_dom_aliases("", &r_e, rdata, 0);
+	if(!samr_io_r_enum_dom_aliases("", &r_e, rdata, 0))
+		return False;
 
 	DEBUG(5,("samr_enum_dom_aliases: %d\n", __LINE__));
 
+	return True;
 }
 
 /*******************************************************************
@@ -750,10 +774,12 @@ static BOOL api_samr_enum_dom_aliases(prs_struct *data, prs_struct *rdata)
 	SAMR_Q_ENUM_DOM_ALIASES q_e;
 
 	/* grab the samr open */
-	samr_io_q_enum_dom_aliases("", &q_e, data, 0);
+	if(!samr_io_q_enum_dom_aliases("", &q_e, data, 0))
+		return False;
 
 	/* construct reply. */
-	samr_reply_enum_dom_aliases(&q_e, rdata);
+	if(!samr_reply_enum_dom_aliases(&q_e, rdata))
+		return False;
 
 	return True;
 }
@@ -762,7 +788,7 @@ static BOOL api_samr_enum_dom_aliases(prs_struct *data, prs_struct *rdata)
 /*******************************************************************
  samr_reply_query_dispinfo
  ********************************************************************/
-static void samr_reply_query_dispinfo(SAMR_Q_QUERY_DISPINFO *q_u,
+static BOOL samr_reply_query_dispinfo(SAMR_Q_QUERY_DISPINFO *q_u,
 				prs_struct *rdata)
 {
 	SAMR_R_QUERY_DISPINFO r_e;
@@ -790,9 +816,35 @@ static void samr_reply_query_dispinfo(SAMR_Q_QUERY_DISPINFO *q_u,
 
 	if (r_e.status == 0x0)
 	{
+	  /* decide how many entries to get depending on the max_entries 
+	     and max_size passed by client */
+	  uint32 retsize;
+
+	  if(q_u->max_entries > MAX_SAM_ENTRIES)
+	    q_u->max_entries = MAX_SAM_ENTRIES;
+	  
+	  retsize = (q_u->max_entries * (sizeof(SAM_ENTRY1)+sizeof(SAM_STR1)))
+	    + 3*sizeof(uint32);
+
+	  if(retsize > q_u->max_size)
+	    {
+	      /* determine max_entries based on max_size */
+	      q_u->max_entries = (q_u->max_size - 3*sizeof(uint32)) /
+		(sizeof(SAM_ENTRY1)+sizeof(SAM_STR1));
+	      q_u->max_entries = (q_u->max_entries>0?q_u->max_entries:1);
+	    }
+
+	  DEBUG(10,("samr_reply_query_dispinfo: Setting q_u->max_entries to %u\n",q_u->max_entries));
+
 		become_root(True);
-		got_pwds = get_passwd_entries(pass, q_u->start_idx, &total_entries, &num_entries, MAX_SAM_ENTRIES, 0);
+		got_pwds = get_passwd_entries(pass, q_u->start_idx, &total_entries, &num_entries, q_u->max_entries, 0);
 		unbecome_root(True);
+
+		/* more left - set resume handle */
+		if(total_entries > num_entries)
+		  {
+		    r_e.status = 0x105;
+		  }
 
 		switch (q_u->switch_level)
 		{
@@ -822,16 +874,24 @@ static void samr_reply_query_dispinfo(SAMR_Q_QUERY_DISPINFO *q_u,
 		}
 	}
 
-	if (r_e.status == 0)
+	/* more left - set resume handle */
+	if(total_entries > num_entries)
+	  {
+	    r_e.status = 0x105;
+	  }
+
+	if (r_e.status == 0 || r_e.status == 0x105)
 	{
-		init_samr_r_query_dispinfo(&r_e, switch_level, &ctr, r_e.status);
+	  init_samr_r_query_dispinfo(&r_e, switch_level, &ctr, r_e.status);
 	}
 
 	/* store the response in the SMB stream */
-	samr_io_r_query_dispinfo("", &r_e, rdata, 0);
+	if(!samr_io_r_query_dispinfo("", &r_e, rdata, 0))
+		return False;
 
 	DEBUG(5,("samr_query_dispinfo: %d\n", __LINE__));
 
+	return True;
 }
 
 /*******************************************************************
@@ -842,10 +902,12 @@ static BOOL api_samr_query_dispinfo(prs_struct *data, prs_struct *rdata)
 	SAMR_Q_QUERY_DISPINFO q_e;
 
 	/* grab the samr open */
-	samr_io_q_query_dispinfo("", &q_e, data, 0);
+	if(!samr_io_q_query_dispinfo("", &q_e, data, 0))
+		return False;
 
 	/* construct reply. */
-	samr_reply_query_dispinfo(&q_e, rdata);
+	if(!samr_reply_query_dispinfo(&q_e, rdata))
+		return False;
 
 	return True;
 }
@@ -854,39 +916,43 @@ static BOOL api_samr_query_dispinfo(prs_struct *data, prs_struct *rdata)
 /*******************************************************************
  samr_reply_query_aliasinfo
  ********************************************************************/
-static void samr_reply_query_aliasinfo(SAMR_Q_QUERY_ALIASINFO *q_u,
+static BOOL samr_reply_query_aliasinfo(SAMR_Q_QUERY_ALIASINFO *q_u,
 				prs_struct *rdata)
 {
-	SAMR_R_QUERY_ALIASINFO r_e;
+  SAMR_R_QUERY_ALIASINFO r_e;
+  fstring alias_desc = "Local Unix group";
+  fstring alias="";
+  uint8 type;
+  uint32 alias_rid;
 
-	r_e.status = 0x0;
-	r_e.ptr = 0;
+  ZERO_STRUCT(r_e);
 
-	/* find the policy handle.  open a policy on it. */
-	if (r_e.status == 0x0 && (find_lsa_policy_by_hnd(&(q_u->pol)) == -1))
-	{
-		r_e.status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
-	}
+  DEBUG(5,("samr_reply_query_aliasinfo: %d\n", __LINE__));
 
-	DEBUG(5,("samr_reply_query_aliasinfo: %d\n", __LINE__));
+  /* find the policy handle.  open a policy on it. */
+  if (r_e.status == 0x0 && (find_lsa_policy_by_hnd(&(q_u->pol)) == -1))
+    {
+      r_e.status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
+    }
 
-	if (r_e.status == 0x0)
-	{
-		if (q_u->switch_level != 3)
-		{
-			r_e.status = NT_STATUS_INVALID_INFO_CLASS;
-		}
-	}
+  alias_rid = get_lsa_policy_samr_rid(&q_u->pol);
+  if(alias_rid == 0xffffffff)
+      r_e.status = 0xC0000000 | NT_STATUS_NO_SUCH_ALIAS;
 
-	init_samr_r_query_aliasinfo(&r_e, q_u->switch_level,
-	                    "local UNIX group",
-		                r_e.status);
+  if(!lookup_local_rid(alias_rid, alias, &type))
+    {
+      r_e.status = 0xC0000000 | NT_STATUS_NO_SUCH_ALIAS;
+    }
+  
+  init_samr_r_query_aliasinfo(&r_e, q_u->switch_level, alias, alias_desc);
+  
+  /* store the response in the SMB stream */
+  if(!samr_io_r_query_aliasinfo("", &r_e, rdata, 0))
+		return False;
+  
+  DEBUG(5,("samr_query_aliasinfo: %d\n", __LINE__));
 
-	/* store the response in the SMB stream */
-	samr_io_r_query_aliasinfo("", &r_e, rdata, 0);
-
-	DEBUG(5,("samr_query_aliasinfo: %d\n", __LINE__));
-
+	return True;
 }
 
 /*******************************************************************
@@ -897,10 +963,12 @@ static BOOL api_samr_query_aliasinfo(prs_struct *data, prs_struct *rdata)
 	SAMR_Q_QUERY_ALIASINFO q_e;
 
 	/* grab the samr open */
-	samr_io_q_query_aliasinfo("", &q_e, data, 0);
+	if(!samr_io_q_query_aliasinfo("", &q_e, data, 0))
+		return False;
 
 	/* construct reply. */
-	samr_reply_query_aliasinfo(&q_e, rdata);
+	if(!samr_reply_query_aliasinfo(&q_e, rdata))
+		return False;
 
 	return True;
 }
@@ -909,7 +977,7 @@ static BOOL api_samr_query_aliasinfo(prs_struct *data, prs_struct *rdata)
 /*******************************************************************
  samr_reply_lookup_ids
  ********************************************************************/
-static void samr_reply_lookup_ids(SAMR_Q_LOOKUP_IDS *q_u,
+static BOOL samr_reply_lookup_ids(SAMR_Q_LOOKUP_IDS *q_u,
 				prs_struct *rdata)
 {
 	uint32 rid[MAX_SAM_ENTRIES];
@@ -962,10 +1030,12 @@ static void samr_reply_lookup_ids(SAMR_Q_LOOKUP_IDS *q_u,
 	init_samr_r_lookup_ids(&r_u, num_rids, rid, status);
 
 	/* store the response in the SMB stream */
-	samr_io_r_lookup_ids("", &r_u, rdata, 0);
+	if(!samr_io_r_lookup_ids("", &r_u, rdata, 0))
+		return False;
 
 	DEBUG(5,("samr_lookup_ids: %d\n", __LINE__));
 
+	return True;
 }
 
 /*******************************************************************
@@ -976,10 +1046,12 @@ static BOOL api_samr_lookup_ids(prs_struct *data, prs_struct *rdata)
 	SAMR_Q_LOOKUP_IDS q_u;
 
 	/* grab the samr 0x10 */
-	samr_io_q_lookup_ids("", &q_u, data, 0);
+	if(!samr_io_q_lookup_ids("", &q_u, data, 0))
+		return False;
 
 	/* construct reply.  always indicate success */
-	samr_reply_lookup_ids(&q_u, rdata);
+	if(!samr_reply_lookup_ids(&q_u, rdata))
+		return False;
 
 	return True;
 }
@@ -989,71 +1061,73 @@ static BOOL api_samr_lookup_ids(prs_struct *data, prs_struct *rdata)
  ********************************************************************/
 
 static BOOL samr_reply_lookup_names(SAMR_Q_LOOKUP_NAMES *q_u,
-				prs_struct *rdata)
+				    prs_struct *rdata)
 {
-	uint32 rid[MAX_SAM_ENTRIES];
-	uint8  type[MAX_SAM_ENTRIES];
-	uint32 status = 0;
-	int i;
-	int num_rids = q_u->num_names1;
-	DOM_SID pol_sid;
+  uint32 rid[MAX_SAM_ENTRIES];
+  uint8  type[MAX_SAM_ENTRIES];
+  uint32 status = 0;
+  int i;
+  int num_rids = q_u->num_names1;
+  DOM_SID pol_sid;
 
-	SAMR_R_LOOKUP_NAMES r_u;
+  SAMR_R_LOOKUP_NAMES r_u;
 
-	DEBUG(5,("samr_lookup_names: %d\n", __LINE__));
+  DEBUG(5,("samr_lookup_names: %d\n", __LINE__));
 
-	ZERO_ARRAY(rid);
-	ZERO_ARRAY(type);
+  ZERO_ARRAY(rid);
+  ZERO_ARRAY(type);
 
-	if (!get_lsa_policy_samr_sid(&q_u->pol, &pol_sid)) {
-        status = 0xC0000000 | NT_STATUS_OBJECT_TYPE_MISMATCH;
-		init_samr_r_lookup_names(&r_u, 0, rid, type, status);
-		if(!samr_io_r_lookup_names("", &r_u, rdata, 0)) {
-			DEBUG(0,("samr_reply_lookup_names: failed to marshall SAMR_R_LOOKUP_NAMES.\n"));
-        	return False;
-		}
-		return True;
+  if (!get_lsa_policy_samr_sid(&q_u->pol, &pol_sid)) {
+    status = 0xC0000000 | NT_STATUS_OBJECT_TYPE_MISMATCH;
+    init_samr_r_lookup_names(&r_u, 0, rid, type, status);
+    if(!samr_io_r_lookup_names("", &r_u, rdata, 0)) {
+      DEBUG(0,("samr_reply_lookup_names: failed to marshall SAMR_R_LOOKUP_NAMES.\n"));
+      return False;
     }
+    return True;
+  }
 
-	if (num_rids > MAX_SAM_ENTRIES) {
-		num_rids = MAX_SAM_ENTRIES;
-		DEBUG(5,("samr_lookup_names: truncating entries to %d\n", num_rids));
+  if (num_rids > MAX_SAM_ENTRIES) {
+    num_rids = MAX_SAM_ENTRIES;
+    DEBUG(5,("samr_lookup_names: truncating entries to %d\n", num_rids));
+  }
+
+  SMB_ASSERT_ARRAY(q_u->uni_name, num_rids);
+
+  for (i = 0; i < num_rids; i++) {
+    fstring name;
+
+    status = 0xC0000000 | NT_STATUS_NONE_MAPPED;
+
+    rid [i] = 0xffffffff;
+    type[i] = SID_NAME_UNKNOWN;
+
+    fstrcpy(name, dos_unistrn2(q_u->uni_name[i].buffer,
+			       q_u->uni_name[i].uni_str_len));
+
+    if(sid_equal(&pol_sid, &global_sam_sid)) 
+    {
+      DOM_SID sid;
+      if(lookup_local_name(global_myname, name, 
+			   &sid, &type[i]))
+	{
+	  sid_split_rid( &sid, &rid[i]);
+	  status = 0;
 	}
+    }
+  }
 
-	SMB_ASSERT_ARRAY(q_u->uni_name, num_rids);
+  init_samr_r_lookup_names(&r_u, num_rids, rid, type, status);
 
-	for (i = 0; i < num_rids; i++) {
-		fstring name;
+  /* store the response in the SMB stream */
+  if(!samr_io_r_lookup_names("", &r_u, rdata, 0)) {
+    DEBUG(0,("samr_reply_lookup_names: failed to marshall SAMR_R_LOOKUP_NAMES.\n"));
+    return False;
+  }
 
-		status = 0xC0000000 | NT_STATUS_NONE_MAPPED;
+  DEBUG(5,("samr_lookup_names: %d\n", __LINE__));
 
-		rid [i] = 0xffffffff;
-		type[i] = SID_NAME_UNKNOWN;
-
-		fstrcpy(name, dos_unistrn2(q_u->uni_name[i].buffer,
-				q_u->uni_name[i].uni_str_len));
-
-		if(sid_equal(&pol_sid, &global_sam_sid)) {
-			DOM_SID sid;
-
-			if(lookup_local_name(global_myname, name, &sid, &type[i])) {
-				sid_split_rid( &sid, &rid[i]);
-				status = 0;
-			}
-		}
-	}
-
-	init_samr_r_lookup_names(&r_u, num_rids, rid, type, status);
-
-	/* store the response in the SMB stream */
-	if(!samr_io_r_lookup_names("", &r_u, rdata, 0)) {
-		DEBUG(0,("samr_reply_lookup_names: failed to marshall SAMR_R_LOOKUP_NAMES.\n"));
-		return False;
-	}
-
-	DEBUG(5,("samr_lookup_names: %d\n", __LINE__));
-
-	return True;
+  return True;
 }
 
 /*******************************************************************
@@ -1142,8 +1216,7 @@ static BOOL api_samr_chgpasswd_user(prs_struct *data, prs_struct *rdata)
 /*******************************************************************
  samr_reply_unknown_38
  ********************************************************************/
-static void samr_reply_unknown_38(SAMR_Q_UNKNOWN_38 *q_u,
-				prs_struct *rdata)
+static BOOL samr_reply_unknown_38(SAMR_Q_UNKNOWN_38 *q_u, prs_struct *rdata)
 {
 	SAMR_R_UNKNOWN_38 r_u;
 
@@ -1152,9 +1225,11 @@ static void samr_reply_unknown_38(SAMR_Q_UNKNOWN_38 *q_u,
 	init_samr_r_unknown_38(&r_u);
 
 	/* store the response in the SMB stream */
-	samr_io_r_unknown_38("", &r_u, rdata, 0);
+	if(!samr_io_r_unknown_38("", &r_u, rdata, 0))
+		return False;
 
 	DEBUG(5,("samr_unknown_38: %d\n", __LINE__));
+	return True;
 }
 
 /*******************************************************************
@@ -1165,10 +1240,12 @@ static BOOL api_samr_unknown_38(prs_struct *data, prs_struct *rdata)
 	SAMR_Q_UNKNOWN_38 q_u;
 
 	/* unknown 38 command */
-	samr_io_q_unknown_38("", &q_u, data, 0);
+	if(!samr_io_q_unknown_38("", &q_u, data, 0))
+		return False;
 
 	/* construct reply.  always indicate success */
-	samr_reply_unknown_38(&q_u, rdata);
+	if(!samr_reply_unknown_38(&q_u, rdata))
+		return False;
 
 	return True;
 }
@@ -1177,7 +1254,7 @@ static BOOL api_samr_unknown_38(prs_struct *data, prs_struct *rdata)
 /*******************************************************************
  samr_reply_unknown_12
  ********************************************************************/
-static void samr_reply_unknown_12(SAMR_Q_UNKNOWN_12 *q_u,
+static BOOL samr_reply_unknown_12(SAMR_Q_UNKNOWN_12 *q_u,
 				prs_struct *rdata)
 {
 	fstring group_names[MAX_SAM_ENTRIES];
@@ -1214,10 +1291,12 @@ static void samr_reply_unknown_12(SAMR_Q_UNKNOWN_12 *q_u,
 	init_samr_r_unknown_12(&r_u, num_gids, group_names, group_attrs, status);
 
 	/* store the response in the SMB stream */
-	samr_io_r_unknown_12("", &r_u, rdata, 0);
+	if(!samr_io_r_unknown_12("", &r_u, rdata, 0))
+		return False;
 
 	DEBUG(5,("samr_unknown_12: %d\n", __LINE__));
 
+	return True;
 }
 
 /*******************************************************************
@@ -1228,10 +1307,12 @@ static BOOL api_samr_unknown_12(prs_struct *data, prs_struct *rdata)
 	SAMR_Q_UNKNOWN_12 q_u;
 
 	/* grab the samr lookup names */
-	samr_io_q_unknown_12("", &q_u, data, 0);
+	if(!samr_io_q_unknown_12("", &q_u, data, 0))
+		return False;
 
 	/* construct reply.  always indicate success */
-	samr_reply_unknown_12(&q_u, rdata);
+	if(!samr_reply_unknown_12(&q_u, rdata))
+		return False;
 
 	return True;
 }
@@ -1240,9 +1321,7 @@ static BOOL api_samr_unknown_12(prs_struct *data, prs_struct *rdata)
 /*******************************************************************
  samr_reply_open_user
  ********************************************************************/
-static void samr_reply_open_user(SAMR_Q_OPEN_USER *q_u,
-				prs_struct *rdata,
-				int status)
+static BOOL samr_reply_open_user(SAMR_Q_OPEN_USER *q_u, prs_struct *rdata, int status)
 {
 	SAMR_R_OPEN_USER r_u;
 	struct sam_passwd *sam_pass;
@@ -1290,10 +1369,12 @@ static void samr_reply_open_user(SAMR_Q_OPEN_USER *q_u,
 	DEBUG(5,("samr_open_user: %d\n", __LINE__));
 
 	/* store the response in the SMB stream */
-	samr_io_r_open_user("", &r_u, rdata, 0);
+	if(!samr_io_r_open_user("", &r_u, rdata, 0))
+		return False;
 
 	DEBUG(5,("samr_open_user: %d\n", __LINE__));
 
+	return True;
 }
 
 /*******************************************************************
@@ -1304,10 +1385,12 @@ static BOOL api_samr_open_user(prs_struct *data, prs_struct *rdata)
 	SAMR_Q_OPEN_USER q_u;
 
 	/* grab the samr unknown 22 */
-	samr_io_q_open_user("", &q_u, data, 0);
+	if(!samr_io_q_open_user("", &q_u, data, 0))
+		return False;
 
 	/* construct reply.  always indicate success */
-	samr_reply_open_user(&q_u, rdata, 0x0);
+	if(!samr_reply_open_user(&q_u, rdata, 0x0))
+		return False;
 
 	return True;
 }
@@ -1420,7 +1503,7 @@ static BOOL get_user_info_21(SAM_USER_INFO_21 *id21, uint32 user_rid)
 /*******************************************************************
  samr_reply_query_userinfo
  ********************************************************************/
-static void samr_reply_query_userinfo(SAMR_Q_QUERY_USERINFO *q_u,
+static BOOL samr_reply_query_userinfo(SAMR_Q_QUERY_USERINFO *q_u,
 				prs_struct *rdata)
 {
 	SAMR_R_QUERY_USERINFO r_u;
@@ -1495,10 +1578,12 @@ static void samr_reply_query_userinfo(SAMR_Q_QUERY_USERINFO *q_u,
 	init_samr_r_query_userinfo(&r_u, q_u->switch_value, info, status);
 
 	/* store the response in the SMB stream */
-	samr_io_r_query_userinfo("", &r_u, rdata, 0);
+	if(!samr_io_r_query_userinfo("", &r_u, rdata, 0))
+		return False;
 
 	DEBUG(5,("samr_reply_query_userinfo: %d\n", __LINE__));
 
+	return True;
 }
 
 /*******************************************************************
@@ -1509,10 +1594,12 @@ static BOOL api_samr_query_userinfo(prs_struct *data, prs_struct *rdata)
 	SAMR_Q_QUERY_USERINFO q_u;
 
 	/* grab the samr unknown 24 */
-	samr_io_q_query_userinfo("", &q_u, data, 0);
+	if(!samr_io_q_query_userinfo("", &q_u, data, 0))
+		return False;
 
 	/* construct reply.  always indicate success */
-	samr_reply_query_userinfo(&q_u, rdata);
+	if(!samr_reply_query_userinfo(&q_u, rdata))
+		return False;
 
 	return True;
 }
@@ -1521,7 +1608,7 @@ static BOOL api_samr_query_userinfo(prs_struct *data, prs_struct *rdata)
 /*******************************************************************
  samr_reply_query_usergroups
  ********************************************************************/
-static void samr_reply_query_usergroups(SAMR_Q_QUERY_USERGROUPS *q_u,
+static BOOL samr_reply_query_usergroups(SAMR_Q_QUERY_USERGROUPS *q_u,
 				prs_struct *rdata)
 {
 	SAMR_R_QUERY_USERGROUPS r_u;
@@ -1570,15 +1657,18 @@ static void samr_reply_query_usergroups(SAMR_Q_QUERY_USERGROUPS *q_u,
 	init_samr_r_query_usergroups(&r_u, num_groups, gids, status);
 
 	/* store the response in the SMB stream */
-	samr_io_r_query_usergroups("", &r_u, rdata, 0);
-
-	if (gids)
-	{
-		free((char *)gids);
+	if(!samr_io_r_query_usergroups("", &r_u, rdata, 0)) {
+		if (gids)
+			free((char *)gids);
+		return False;
 	}
 
-	DEBUG(5,("samr_query_usergroups: %d\n", __LINE__));
+	if (gids)
+		free((char *)gids);
 
+	DEBUG(5,("samr_query_usergroups: %d\n", __LINE__));
+	
+	return True;
 }
 
 /*******************************************************************
@@ -1588,10 +1678,12 @@ static BOOL api_samr_query_usergroups(prs_struct *data, prs_struct *rdata)
 {
 	SAMR_Q_QUERY_USERGROUPS q_u;
 	/* grab the samr unknown 32 */
-	samr_io_q_query_usergroups("", &q_u, data, 0);
+	if(!samr_io_q_query_usergroups("", &q_u, data, 0))
+		return False;
 
 	/* construct reply. */
-	samr_reply_query_usergroups(&q_u, rdata);
+	if(!samr_reply_query_usergroups(&q_u, rdata))
+		return False;
 
 	return True;
 }
@@ -1600,8 +1692,7 @@ static BOOL api_samr_query_usergroups(prs_struct *data, prs_struct *rdata)
 /*******************************************************************
  samr_reply_query_dom_info
  ********************************************************************/
-static void samr_reply_query_dom_info(SAMR_Q_QUERY_DOMAIN_INFO *q_u,
-				prs_struct *rdata)
+static BOOL samr_reply_query_dom_info(SAMR_Q_QUERY_DOMAIN_INFO *q_u, prs_struct *rdata)
 {
 	SAMR_R_QUERY_DOMAIN_INFO r_u;
 	SAM_UNK_CTR ctr;
@@ -1644,10 +1735,12 @@ static void samr_reply_query_dom_info(SAMR_Q_QUERY_DOMAIN_INFO *q_u,
 	init_samr_r_query_dom_info(&r_u, switch_value, &ctr, status);
 
 	/* store the response in the SMB stream */
-	samr_io_r_query_dom_info("", &r_u, rdata, 0);
+	if(!samr_io_r_query_dom_info("", &r_u, rdata, 0))
+		return False;
 
 	DEBUG(5,("samr_query_dom_info: %d\n", __LINE__));
 
+	return True;
 }
 
 /*******************************************************************
@@ -1658,20 +1751,20 @@ static BOOL api_samr_query_dom_info(prs_struct *data, prs_struct *rdata)
 	SAMR_Q_QUERY_DOMAIN_INFO q_e;
 
 	/* grab the samr unknown 8 command */
-	samr_io_q_query_dom_info("", &q_e, data, 0);
+	if(!samr_io_q_query_dom_info("", &q_e, data, 0))
+		return False;
 
 	/* construct reply. */
-	samr_reply_query_dom_info(&q_e, rdata);
+	if(!samr_reply_query_dom_info(&q_e, rdata))
+		return False;
 
 	return True;
 }
 
-
-
 /*******************************************************************
  samr_reply_unknown_32
  ********************************************************************/
-static void samr_reply_unknown_32(SAMR_Q_UNKNOWN_32 *q_u,
+static BOOL samr_reply_unknown_32(SAMR_Q_UNKNOWN_32 *q_u,
 				prs_struct *rdata,
 				int status)
 {
@@ -1694,10 +1787,12 @@ static void samr_reply_unknown_32(SAMR_Q_UNKNOWN_32 *q_u,
 	DEBUG(5,("samr_unknown_32: %d\n", __LINE__));
 
 	/* store the response in the SMB stream */
-	samr_io_r_unknown_32("", &r_u, rdata, 0);
+	if(!samr_io_r_unknown_32("", &r_u, rdata, 0))
+		return False;
 
 	DEBUG(5,("samr_unknown_32: %d\n", __LINE__));
 
+	return True;
 }
 
 /*******************************************************************
@@ -1740,7 +1835,8 @@ static BOOL api_samr_unknown_32(prs_struct *data, prs_struct *rdata)
 	}
 
 	/* construct reply. */
-	samr_reply_unknown_32(&q_u, rdata, status);
+	if(!samr_reply_unknown_32(&q_u, rdata, status))
+		return False;
 
 	return True;
 }
@@ -1749,8 +1845,7 @@ static BOOL api_samr_unknown_32(prs_struct *data, prs_struct *rdata)
 /*******************************************************************
  samr_reply_connect_anon
  ********************************************************************/
-static void samr_reply_connect_anon(SAMR_Q_CONNECT_ANON *q_u,
-				prs_struct *rdata)
+static BOOL samr_reply_connect_anon(SAMR_Q_CONNECT_ANON *q_u, prs_struct *rdata)
 {
 	SAMR_R_CONNECT_ANON r_u;
 	BOOL pol_open = False;
@@ -1779,10 +1874,12 @@ static void samr_reply_connect_anon(SAMR_Q_CONNECT_ANON *q_u,
 	DEBUG(5,("samr_connect_anon: %d\n", __LINE__));
 
 	/* store the response in the SMB stream */
-	samr_io_r_connect_anon("", &r_u, rdata, 0);
+	if(!samr_io_r_connect_anon("", &r_u, rdata, 0))
+		return False;
 
 	DEBUG(5,("samr_connect_anon: %d\n", __LINE__));
 
+	return True;
 }
 
 /*******************************************************************
@@ -1793,10 +1890,12 @@ static BOOL api_samr_connect_anon(prs_struct *data, prs_struct *rdata)
 	SAMR_Q_CONNECT_ANON q_u;
 
 	/* grab the samr open policy */
-	samr_io_q_connect_anon("", &q_u, data, 0);
+	if(!samr_io_q_connect_anon("", &q_u, data, 0))
+		return False;
 
 	/* construct reply.  always indicate success */
-	samr_reply_connect_anon(&q_u, rdata);
+	if(!samr_reply_connect_anon(&q_u, rdata))
+		return False;
 
 	return True;
 }
@@ -1804,8 +1903,7 @@ static BOOL api_samr_connect_anon(prs_struct *data, prs_struct *rdata)
 /*******************************************************************
  samr_reply_connect
  ********************************************************************/
-static void samr_reply_connect(SAMR_Q_CONNECT *q_u,
-				prs_struct *rdata)
+static BOOL samr_reply_connect(SAMR_Q_CONNECT *q_u, prs_struct *rdata)
 {
 	SAMR_R_CONNECT r_u;
 	BOOL pol_open = False;
@@ -1834,10 +1932,12 @@ static void samr_reply_connect(SAMR_Q_CONNECT *q_u,
 	DEBUG(5,("samr_connect: %d\n", __LINE__));
 
 	/* store the response in the SMB stream */
-	samr_io_r_connect("", &r_u, rdata, 0);
+	if(!samr_io_r_connect("", &r_u, rdata, 0))
+		return False;
 
 	DEBUG(5,("samr_connect: %d\n", __LINE__));
 
+	return True;
 }
 
 /*******************************************************************
@@ -1848,19 +1948,103 @@ static BOOL api_samr_connect(prs_struct *data, prs_struct *rdata)
 	SAMR_Q_CONNECT q_u;
 
 	/* grab the samr open policy */
-	samr_io_q_connect("", &q_u, data, 0);
+	if(!samr_io_q_connect("", &q_u, data, 0))
+		return False;
 
 	/* construct reply.  always indicate success */
-	samr_reply_connect(&q_u, rdata);
+	if(!samr_reply_connect(&q_u, rdata))
+		return False;
 
 	return True;
+}
+
+/**********************************************************************
+ api_reply_lookup_domain
+ **********************************************************************/
+static BOOL samr_reply_lookup_domain(SAMR_Q_LOOKUP_DOMAIN* q_u, prs_struct* rdata)
+{
+  SAMR_R_LOOKUP_DOMAIN r_u;
+  
+  r_u.status = 0x0;
+  if (r_u.status == 0x0 && (find_lsa_policy_by_hnd(&(q_u->connect_pol)) == -1))
+	{
+		r_u.status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
+		DEBUG(5,("samr_reply_lookup_domain: invalid handle\n"));
+	}
+  
+  /* assume the domain name sent is our global_myname and 
+     send global_sam_sid */
+  init_samr_r_lookup_domain(&r_u, &global_sam_sid, r_u.status);
+  
+	if(!samr_io_r_lookup_domain("", &r_u, rdata, 0))
+		return False;
+
+  DEBUG(5,("samr_reply_lookup_domain: %d\n", __LINE__));
+ 
+	return True; 
+}
+  
+/**********************************************************************
+ api_samr_lookup_domain
+ **********************************************************************/
+static BOOL api_samr_lookup_domain(prs_struct* data, prs_struct* rdata)
+{
+  SAMR_Q_LOOKUP_DOMAIN q_u;
+  
+  if(!samr_io_q_lookup_domain("", &q_u, data, 0))
+		return False;
+
+  if(!samr_reply_lookup_domain(&q_u, rdata))
+		return False;
+  
+  return True;
+}
+
+/**********************************************************************
+ samr_reply_enum_domains
+ **********************************************************************/
+static BOOL samr_reply_enum_domains(SAMR_Q_ENUM_DOMAINS* q_u, prs_struct* rdata)
+{
+  SAMR_R_ENUM_DOMAINS r_u;
+  fstring dom[2];
+
+  fstrcpy(dom[0],global_myname);
+  fstrcpy(dom[1],"Builtin");
+  r_u.status = 0;
+   
+  init_samr_r_enum_domains(&r_u, q_u->start_idx, dom, 2); 
+  if(!samr_io_r_enum_domains("", &r_u, rdata, 0)) {
+		free(r_u.sam);
+		free(r_u.uni_dom_name);
+		return False;
+	}
+
+  free(r_u.sam);
+  free(r_u.uni_dom_name);
+
+	return True;
+}
+
+/**********************************************************************
+ api_samr_enum_domains
+ **********************************************************************/
+static BOOL api_samr_enum_domains(prs_struct* data, prs_struct* rdata)
+{
+  SAMR_Q_ENUM_DOMAINS q_u;
+
+  if(!samr_io_q_enum_domains("", &q_u, data, 0))
+		return False;
+  
+  if(!samr_reply_enum_domains(&q_u, rdata))
+		return False;
+
+  return True;
 }
 
 /*******************************************************************
  samr_reply_open_alias
  ********************************************************************/
-static void samr_reply_open_alias(SAMR_Q_OPEN_ALIAS *q_u,
-				prs_struct *rdata)
+static BOOL samr_reply_open_alias(SAMR_Q_OPEN_ALIAS *q_u, prs_struct *rdata)
 {
 	SAMR_R_OPEN_ALIAS r_u;
 	BOOL pol_open = False;
@@ -1889,10 +2073,12 @@ static void samr_reply_open_alias(SAMR_Q_OPEN_ALIAS *q_u,
 	DEBUG(5,("samr_open_alias: %d\n", __LINE__));
 
 	/* store the response in the SMB stream */
-	samr_io_r_open_alias("", &r_u, rdata, 0);
+	if(!samr_io_r_open_alias("", &r_u, rdata, 0))
+		return False;
 
 	DEBUG(5,("samr_open_alias: %d\n", __LINE__));
-
+	
+	return True;
 }
 
 /*******************************************************************
@@ -1904,10 +2090,12 @@ static BOOL api_samr_open_alias(prs_struct *data, prs_struct *rdata)
 	SAMR_Q_OPEN_ALIAS q_u;
 
 	/* grab the samr open policy */
-	samr_io_q_open_alias("", &q_u, data, 0);
+	if(!samr_io_q_open_alias("", &q_u, data, 0))
+		return False;
 
 	/* construct reply.  always indicate success */
-	samr_reply_open_alias(&q_u, rdata);
+	if(!samr_reply_open_alias(&q_u, rdata))
+		return False;
 
 	return True;
 }
@@ -1939,6 +2127,8 @@ static struct api_struct api_samr_cmds [] =
 	{ "SAMR_OPEN_DOMAIN"      , SAMR_OPEN_DOMAIN      , api_samr_open_domain      },
 	{ "SAMR_UNKNOWN_3"        , SAMR_UNKNOWN_3        , api_samr_unknown_3        },
 	{ "SAMR_UNKNOWN_2C"       , SAMR_UNKNOWN_2C       , api_samr_unknown_2c       },
+	{ "SAMR_LOOKUP_DOMAIN"    , SAMR_LOOKUP_DOMAIN    , api_samr_lookup_domain    },
+	{ "SAMR_ENUM_DOMAINS"     , SAMR_ENUM_DOMAINS     , api_samr_enum_domains     },
 	{ NULL                    , 0                     , NULL                      }
 };
 
@@ -1949,6 +2139,4 @@ BOOL api_samr_rpc(pipes_struct *p, prs_struct *data)
 {
     return api_rpcTNP(p, "api_samr_rpc", api_samr_cmds, data);
 }
-
 #undef OLD_NTDOMAIN
-
