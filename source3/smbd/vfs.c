@@ -863,8 +863,8 @@ BOOL reduce_name(connection_struct *conn, pstring s, const char *dir)
 
 	DEBUG(3,("reduce_name [%s] [%s]\n",s,dir));
 
-	/* remove any double slashes */
-	all_string_sub(s,"//","/",0);
+	/* We know there are no double slashes as this comes from srvstr_get_path().
+	   and has gone through check_path_syntax(). JRA */
 
 	pstrcpy(base_name,s);
 	p = strrchr_m(base_name,'/');
@@ -915,17 +915,19 @@ BOOL reduce_name(connection_struct *conn, pstring s, const char *dir)
 
 	{
 		size_t l = strlen(dir2);
-		if (dir2[l-1] == '/')
+		char *last_slash = strrchr_m(dir2, '/');
+
+		if (last_slash && (last_slash[1] == '\0'))
 			l--;
 
 		if (strncmp(newname,dir2,l) != 0) {
 			vfs_ChDir(conn,wd);
-			DEBUG(2,("Bad access attempt? s=%s dir=%s newname=%s l=%d\n",s,dir2,newname,(int)l));
+			DEBUG(2,("Bad access attempt: s=%s dir=%s newname=%s l=%d\n",s,dir2,newname,(int)l));
 			return(False);
 		}
 
 		if (!readlink_check(conn, dir, newname)) {
-			DEBUG(2, ("Bad access attemt? %s is a symlink outside the share path", s));
+			DEBUG(2, ("Bad access attemt: %s is a symlink outside the share path", s));
 			return(False);
 		}
 
@@ -947,4 +949,3 @@ BOOL reduce_name(connection_struct *conn, pstring s, const char *dir)
 	return(True);
 #endif
 }
-
