@@ -69,24 +69,6 @@ struct smbpasswd_privates
 
 enum pwf_access_type { PWF_READ, PWF_UPDATE, PWF_CREATE };
 
-/*******************************************************************
- Converts NT user RID to a UNIX uid.
- ********************************************************************/
-
-static uid_t pdb_user_rid_to_uid(uint32 user_rid)
-{
-	return (uid_t)(((user_rid & (~USER_RID_TYPE))- 1000)/RID_MULTIPLIER);
-}
-
-/*******************************************************************
- converts UNIX uid to an NT User RID.
- ********************************************************************/
-
-static uint32 pdb_uid_to_user_rid(uid_t uid)
-{
-	return (((((uint32)uid)*RID_MULTIPLIER) + 1000) | USER_RID_TYPE);
-}
-
 /***************************************************************
  Lock an fd. Abandon after waitsecs seconds.
 ****************************************************************/
@@ -1195,7 +1177,7 @@ static BOOL build_smb_pass (struct smb_passwd *smb_pw, const SAM_ACCOUNT *sampas
 		uid = pdb_get_uid(sampass);
 
 		/* If the user specified a RID, make sure its able to be both stored and retreived */
-		if (rid && uid != pdb_user_rid_to_uid(rid)) {
+		if (rid && uid != fallback_pdb_user_rid_to_uid(rid)) {
 			DEBUG(0,("build_sam_pass: Failing attempt to store user with non-uid based user RID. \n"));
 			return False;
 		}
@@ -1249,7 +1231,7 @@ static BOOL build_sam_account(struct smbpasswd_privates *smbpasswd_state, SAM_AC
 	    && (pw_buf->smb_userid >= smbpasswd_state->low_nua_userid) 
 	    && (pw_buf->smb_userid <= smbpasswd_state->high_nua_userid)) {
 
-		pdb_set_user_rid(sam_pass, pdb_uid_to_user_rid (pw_buf->smb_userid));
+		pdb_set_user_rid(sam_pass, fallback_pdb_uid_to_user_rid (pw_buf->smb_userid));
 
 		/* lkclXXXX this is OBSERVED behaviour by NT PDCs, enforced here. 
 		   
@@ -1269,7 +1251,7 @@ static BOOL build_sam_account(struct smbpasswd_privates *smbpasswd_state, SAM_AC
 		   --jerry */ 
 		pwfile = getpwnam_alloc(pw_buf->smb_name);
 		if (pwfile == NULL) {
-			DEBUG(0,("build_sam_account: smbpasswd database is corrupt!  username %s not in unix passwd database!\n", pw_buf->smb_name));
+			DEBUG(0,("build_sam_account: smbpasswd database is corrupt!  username %s with uid %u is not in unix passwd database!\n", pw_buf->smb_name, pw_buf->smb_userid));
 			return False;
 		}
 
@@ -1278,7 +1260,7 @@ static BOOL build_sam_account(struct smbpasswd_privates *smbpasswd_state, SAM_AC
 		
 		pdb_set_fullname(sam_pass, pwfile->pw_gecos);		
 	
-		pdb_set_user_rid(sam_pass, pdb_uid_to_user_rid (pwfile->pw_uid));
+		pdb_set_user_rid(sam_pass, fallback_pdb_uid_to_user_rid (pwfile->pw_uid));
 
 		if (get_group_map_from_gid(pwfile->pw_gid, &map, MAPPING_WITHOUT_PRIV)) {
 			sid_peek_rid(&map.sid, &grid);
@@ -1505,7 +1487,7 @@ static BOOL smbpasswd_getsampwrid(struct pdb_methods *my_methods, SAM_ACCOUNT *s
 		return False;
 	}
 
-	while ( ((smb_pw=getsmbfilepwent(smbpasswd_state, fp)) != NULL) && (pdb_uid_to_user_rid(smb_pw->smb_userid) != rid) )
+	while ( ((smb_pw=getsmbfilepwent(smbpasswd_state, fp)) != NULL) && (fallback_pdb_uid_to_user_rid(smb_pw->smb_userid) != rid) )
       		/* do nothing */ ;
 
 	endsmbfilepwent(fp, &(smbpasswd_state->pw_file_lock_depth));

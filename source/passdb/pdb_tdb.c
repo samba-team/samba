@@ -41,8 +41,10 @@ struct tdbsam_privates {
 
 	BOOL permit_non_unix_accounts;
 
-/*	uint32 low_nua_rid; 
-	uint32 high_nua_rid; */
+	BOOL algorithmic_rids;
+
+	uint32 low_nua_rid; 
+	uint32 high_nua_rid;
 };
 
 /**********************************************************************
@@ -717,7 +719,7 @@ static BOOL tdb_update_sam(struct pdb_methods *my_methods, const SAM_ACCOUNT* ne
 	fstring		name;
 	BOOL		ret = True;
 	uint32		user_rid;
-	int32		tdb_ret;
+	BOOL		tdb_ret;
 
 	/* invalidate the existing TDB iterator if it is open */
 	if (tdb_state->passwd_tdb) {
@@ -736,13 +738,32 @@ static BOOL tdb_update_sam(struct pdb_methods *my_methods, const SAM_ACCOUNT* ne
 	/* if flag == TDB_INSERT then make up a new RID else throw an error. */
 	if (!(user_rid = pdb_get_user_rid(newpwd))) {
 		if (flag & TDB_INSERT) {
-			user_rid = BASE_RID;
-		        tdb_ret = tdb_change_int32_atomic(pwd_tdb, "RID_COUNTER", &user_rid, RID_MULTIPLIER);
-			if (tdb_ret == -1) {
-				ret = False;
-				goto done;
+			if (IS_SAM_UNIX_USER(newpwd)) {
+				if (tdb_state->algorithmic_rids) {
+					user_rid = fallback_pdb_uid_to_user_rid(pdb_get_uid(newpwd));
+				} else {
+					user_rid = BASE_RID;
+					tdb_ret = tdb_change_uint32_atomic(pwd_tdb, "RID_COUNTER", &user_rid, RID_MULTIPLIER);
+					if (!tdb_ret) {
+						ret = False;
+						goto done;
+					}
+				}
+				pdb_set_user_rid(newpwd, user_rid);
+			} else {
+				user_rid = tdb_state->low_nua_rid;
+				tdb_ret = tdb_change_uint32_atomic(pwd_tdb, "NUA_RID_COUNTER", &user_rid, RID_MULTIPLIER);
+				if (!tdb_ret) {
+					ret = False;
+					goto done;
+				}
+				if (user_rid > tdb_state->high_nua_rid) {
+					DEBUG(0, ("tdbsam: no NUA rids available, cannot add user %s!\n", pdb_get_username(newpwd)));
+					ret = False;
+					goto done;
+				}
+				pdb_set_user_rid(newpwd, user_rid);
 			}
-			pdb_set_user_rid(newpwd, user_rid);
 		} else {
 			DEBUG (0,("tdb_update_sam: Failing to store a SAM_ACCOUNT for [%s] without a RID\n",pdb_get_username(newpwd)));
 			ret = False;
@@ -884,6 +905,8 @@ NTSTATUS pdb_init_tdbsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, con
 		tdb_state->tdbsam_location = talloc_strdup(pdb_context->mem_ctx, tdbfile);
 	}
 
+	tdb_state->algorithmic_rids = True;
+
 	(*pdb_method)->private_data = tdb_state;
 
 	(*pdb_method)->free_private_data = free_private_data;
@@ -912,10 +935,10 @@ NTSTATUS pdb_init_tdbsam_nua(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-/*	tdb_state->low_nua_rid=fallback_pdb_uid_to_user_rid(low_nua_uid);
+	tdb_state->low_nua_rid=fallback_pdb_uid_to_user_rid(low_nua_uid);
 
 	tdb_state->high_nua_rid=fallback_pdb_uid_to_user_rid(high_nua_uid);
-*/
+
 	return NT_STATUS_OK;
 }
 

@@ -436,9 +436,10 @@ BOOL pdb_name_to_rid(const char *user_name, uint32 *u_rid, uint32 *g_rid)
  Converts NT user RID to a UNIX uid.
  ********************************************************************/
 
-static uid_t fallback_pdb_user_rid_to_uid(uint32 user_rid)
+uid_t fallback_pdb_user_rid_to_uid(uint32 user_rid)
 {
-	return (uid_t)(((user_rid & (~USER_RID_TYPE))- 1000)/RID_MULTIPLIER);
+	int rid_offset = lp_algorithmic_rid_base();
+	return (uid_t)(((user_rid & (~USER_RID_TYPE))- rid_offset)/RID_MULTIPLIER);
 }
 
 
@@ -446,9 +447,10 @@ static uid_t fallback_pdb_user_rid_to_uid(uint32 user_rid)
  converts UNIX uid to an NT User RID.
  ********************************************************************/
 
-static uint32 fallback_pdb_uid_to_user_rid(uid_t uid)
+uint32 fallback_pdb_uid_to_user_rid(uid_t uid)
 {
-	return (((((uint32)uid)*RID_MULTIPLIER) + 1000) | USER_RID_TYPE);
+	int rid_offset = lp_algorithmic_rid_base();
+	return (((((uint32)uid)*RID_MULTIPLIER) + rid_offset) | USER_RID_TYPE);
 }
 
 /*******************************************************************
@@ -457,7 +459,8 @@ static uint32 fallback_pdb_uid_to_user_rid(uid_t uid)
 
 gid_t pdb_group_rid_to_gid(uint32 group_rid)
 {
-	return (gid_t)(((group_rid & (~GROUP_RID_TYPE))- 1000)/RID_MULTIPLIER);
+	int rid_offset = lp_algorithmic_rid_base();
+	return (gid_t)(((group_rid & (~GROUP_RID_TYPE))- rid_offset)/RID_MULTIPLIER);
 }
 
 /*******************************************************************
@@ -470,7 +473,8 @@ gid_t pdb_group_rid_to_gid(uint32 group_rid)
 
 uint32 pdb_gid_to_group_rid(gid_t gid)
 {
-  return (((((uint32)gid)*RID_MULTIPLIER) + 1000) | GROUP_RID_TYPE);
+	int rid_offset = lp_algorithmic_rid_base();
+	return (((((uint32)gid)*RID_MULTIPLIER) + rid_offset) | GROUP_RID_TYPE);
 }
 
 /*******************************************************************
@@ -479,7 +483,10 @@ uint32 pdb_gid_to_group_rid(gid_t gid)
 
 static BOOL pdb_rid_is_well_known(uint32 rid)
 {
-  return (rid < 1000);
+	/* Not using rid_offset here, becouse this is the actual
+	   NT fixed value (1000) */
+
+	return (rid < BASE_RID);
 }
 
 /*******************************************************************
@@ -817,13 +824,14 @@ BOOL local_sid_to_uid(uid_t *puid, DOM_SID *psid, enum SID_NAME_USE *name_type)
 		DEBUG(10,("local_sid_to_uid: SID %s -> uid (%u) (%s).\n", sid_to_string( str, psid),
 			  (unsigned int)*puid, pdb_get_username(sam_user)));
 	} else {
-		if (pdb_rid_is_user(rid)) {
+		if ((pdb_rid_is_user(rid))) {
 			*puid = fallback_pdb_user_rid_to_uid(rid);
 			DEBUG(10,("local_sid_to_uid: SID %s -> uid (%u) (non-passdb user).\n", sid_to_string( str, psid),
 				  (unsigned int)*puid));
 		} else {
+			DEBUG(5,("local_sid_to_uid: SID %s not mapped becouse RID isn't a user.\n", sid_to_string( str, psid)));
 			pdb_free_sam(&sam_user);
-			return False;			
+			return False;
 		}
 	}
 	pdb_free_sam(&sam_user);
@@ -846,7 +854,7 @@ DOM_SID *local_gid_to_sid(DOM_SID *psid, gid_t gid)
 	
 	if (get_group_map_from_gid(gid, &map, MAPPING_WITHOUT_PRIV)) {
 		sid_copy(psid, &map.sid);
-	}
+	} 
 	else {
 		sid_append_rid(psid, pdb_gid_to_group_rid(gid));
 	}
@@ -864,7 +872,6 @@ BOOL local_sid_to_gid(gid_t *pgid, DOM_SID *psid, enum SID_NAME_USE *name_type)
 	DOM_SID dom_sid;
 	uint32 rid;
 	fstring str;
-	struct group *grp;
 	GROUP_MAP map;
 
 	*name_type = SID_NAME_UNKNOWN;
@@ -891,23 +898,18 @@ BOOL local_sid_to_gid(gid_t *pgid, DOM_SID *psid, enum SID_NAME_USE *name_type)
 		sid_peek_rid(&map.sid, &rid);
 		*pgid = map.gid;
 		*name_type = map.sid_name_use;
+		DEBUG(10,("local_sid_to_gid: mapped SID %s (%s) -> gid (%u).\n", sid_to_string( str, psid),
+			  map.nt_name, (unsigned int)*pgid));
+
 	} else {
 		if (pdb_rid_is_user(rid))
 			return False;
 
 		*pgid = pdb_group_rid_to_gid(rid);
 		*name_type = SID_NAME_ALIAS;
+		DEBUG(10,("local_sid_to_gid: SID %s -> gid (%u).\n", sid_to_string( str, psid),
+			  (unsigned int)*pgid));
 	}
-
-	/*
-	 * Ensure this gid really does exist.
-	 */
-
-	if(!(grp = getgrgid(*pgid)))
-		return False;
-
-	DEBUG(10,("local_sid_to_gid: SID %s -> gid (%u) (%s).\n", sid_to_string( str, psid),
-		(unsigned int)*pgid, grp->gr_name ));
 
 	return True;
 }

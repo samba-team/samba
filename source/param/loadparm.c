@@ -151,6 +151,7 @@ typedef struct
 	char *szWinbindUID;
 	char *szWinbindGID;
 	char *szNonUnixAccountRange;
+	BOOL bAlgorithmicRidBase;
 	char *szTemplateHomedir;
 	char *szTemplateShell;
 	char *szWinbindSeparator;
@@ -725,6 +726,7 @@ static struct parm_struct parm_table[] = {
 	{"private dir", P_STRING, P_GLOBAL, &Globals.szPrivateDir, NULL, NULL, 0},
 	{"passdb backend", P_STRING, P_GLOBAL, &Globals.szPassdbBackend, NULL, NULL, 0},
 	{"non unix account range", P_STRING, P_GLOBAL, &Globals.szNonUnixAccountRange, handle_non_unix_account_range, NULL, 0},
+	{"algorithmic rid base", P_INTEGER, P_GLOBAL, &Globals.bAlgorithmicRidBase, NULL, NULL, 0},
 	{"root directory", P_STRING, P_GLOBAL, &Globals.szRootdir, NULL, NULL, 0},
 	{"root dir", P_STRING, P_GLOBAL, &Globals.szRootdir, NULL, NULL, 0},
 	{"root", P_STRING, P_GLOBAL, &Globals.szRootdir, NULL, NULL, 0},
@@ -1277,6 +1279,8 @@ static void init_globals(void)
 	string_set(&Globals.szNameResolveOrder, "lmhosts wins host bcast");
 	string_set(&Globals.szPasswordServer, "*");
 
+	Globals.bAlgorithmicRidBase = BASE_RID;
+
 	Globals.bLoadPrinters = True;
 	Globals.max_packet = 65535;
 	Globals.mangled_stack = 50;
@@ -1796,6 +1800,7 @@ FN_LOCAL_INTEGER(lp_write_cache_size, iWriteCacheSize)
 FN_LOCAL_CHAR(lp_magicchar, magic_char)
 FN_GLOBAL_INTEGER(lp_winbind_cache_time, &Globals.winbind_cache_time)
 FN_GLOBAL_BOOL(lp_hide_local_users, &Globals.bHideLocalUsers)
+FN_GLOBAL_BOOL(lp_algorithmic_rid_base, &Globals.bAlgorithmicRidBase)
 
 /* local prototypes */
 
