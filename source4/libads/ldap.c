@@ -1653,7 +1653,7 @@ char **ads_pull_strings_range(ADS_STRUCT *ads,
 	     attr; 
 	     attr = ldap_next_attribute(ads->ld, (LDAPMessage *)msg, ptr)) {
 		/* we ignore the fact that this is utf8, as all attributes are ascii... */
-		if (strnequal(attr, expected_range_attrib, strlen(expected_range_attrib))) {
+		if (strncasecmp(attr, expected_range_attrib, strlen(expected_range_attrib)) == 0) {
 			range_attr = attr;
 			break;
 		}
