@@ -1,5 +1,7 @@
 Tue Jun 10 00:35:54 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
 
+	* lib/asn1/*.c (copy_*): Constness.
+
 	* lib/krb5/krb5.h: Include asn1.h; krb5_data is now an
  	octet_string.
 
