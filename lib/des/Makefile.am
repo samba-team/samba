@@ -8,7 +8,7 @@ lib_LIBRARIES = libdes.a
 include_HEADERS = des.h
 
 libdes_a_SOURCES = \
-	cbc3_enc.c cbc_cksm.c cbc_cksm.c cbc_enc.c \
+	cbc3_enc.c cbc_cksm.c cbc_enc.c \
 	cfb64ede.c cfb64enc.c cfb_enc.c des_enc.c \
 	ecb3_enc.c ecb_enc.c ede_enc.c enc_read.c \
 	enc_writ.c fcrypt.c key_par.c md4.c md5.c \
