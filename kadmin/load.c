@@ -340,7 +340,9 @@ doit(const char *filename, int merge)
 	return 1;
     }
     line = 0;
-    while(fgets(s, sizeof(s), f)){
+    ret = 0;
+    while(fgets(s, sizeof(s), f) != NULL) {
+	ret = 0;
 	line++;
 	e.principal = s;
 	for(p = s; *p; p++){
@@ -461,12 +463,16 @@ doit(const char *filename, int merge)
 	}
 #endif
 
-	db->store(context, db, HDB_F_REPLACE, &ent);
+	ret = db->store(context, db, HDB_F_REPLACE, &ent);
 	hdb_free_entry (context, &ent);
+	if (ret) {
+	    krb5_warn(context, ret, "db_store");
+	    break;
+	}
     }
     db->close(context, db);
     fclose(f);
-    return 0;
+    return ret != 0;
 }
 
 
