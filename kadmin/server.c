@@ -242,6 +242,14 @@ kadmind_dispatch(void *kadm_handle, krb5_storage *sp)
 	}
 	break;
     }
+    case kadm_get_privs:{
+	ret = kadm5_get_privs(kadm_handle, &mask);
+	sp->seek(sp, 0, SEEK_SET);
+	krb5_store_int32(sp, ret);
+	if(ret == 0)
+	    krb5_store_int32(sp, mask);
+	break;
+    }
     default:
 	krb5_warnx(context->context, "%s: UNKNOWN OP %d", client, cmd);
 	sp->seek(sp, 0, SEEK_SET);

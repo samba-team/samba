@@ -88,7 +88,8 @@ enum kadm_ops {
     kadm_rename,
     kadm_chpass,
     kadm_modify,
-    kadm_randkey
+    kadm_randkey,
+    kadm_get_privs
 };
 
 #define KADMIN_APPL_VERSION "KADM0.0"
@@ -143,5 +144,16 @@ _kadm5_setup_entry __P((
 	kadm5_principal_ent_t princ,
 	kadm5_principal_ent_t def,
 	u_int32_t mask));
+
+kadm5_ret_t
+_kadm5_string_to_privs __P((
+	const char *s, 
+	u_int32_t* privs));
+
+kadm5_ret_t
+_kadm5_privs_to_string __P((
+	u_int32_t privs,
+	char *string,
+	size_t len));
 
 #endif /* __KADM5_LOCL_H__ */
