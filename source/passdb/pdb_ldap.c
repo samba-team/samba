@@ -141,9 +141,7 @@ static BOOL ldap_open_connection (LDAP ** ldap_struct)
 	port = lp_ldap_port();
 	
 	/* remap default port is no SSL */
-	if ( ((lp_ldap_ssl() == LDAP_SSL_OFF)  || (lp_ldap_ssl() == LDAP_SSL_START_TLS)) 	
-		&& (lp_ldap_port() == 636) ) 
-	{
+	if ( (lp_ldap_ssl() != LDAP_SSL_ON) && (lp_ldap_port() == 636) ) {
 		port = 389;
 	}
 
