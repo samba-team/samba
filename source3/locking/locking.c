@@ -470,7 +470,8 @@ BOOL modify_share_mode(files_struct *fsp, int new_mode, uint16 new_oplock)
 traverse the whole database with this function, calling traverse_callback
 on each share mode
 ****************************************************************************/
-static int traverse_fn(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void* state)
+static int traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, 
+                       void* state)
 {
 	struct locking_data *data;
 	share_mode_entry *shares;
