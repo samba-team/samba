@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -42,7 +42,7 @@ RCSID("$Id$");
 
 krb5_error_code
 krb5_get_default_realm(krb5_context context,
-		       char **realm)
+		       krb5_realm *realm)
 {
     char *res;
 
