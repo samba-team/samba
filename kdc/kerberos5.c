@@ -892,7 +892,7 @@ tgs_rep2(KDC_REQ_BODY *b,
     krb5_error_code ret;
     krb5_principal princ;
     krb5_auth_context ac = NULL;
-    krb5_ticket *ticket;
+    krb5_ticket *ticket = NULL;
     krb5_flags ap_req_options;
     const char *e_text = NULL;
 
@@ -1036,8 +1036,10 @@ tgs_rep2(KDC_REQ_BODY *b,
 			  0,
 			  reply);
 		      
-	krb5_free_ticket(context, ticket);
-	free(ticket);
+	if (ticket) {
+	    krb5_free_ticket(context, ticket);
+	    free(ticket);
+	}
 	
 	free_AP_REQ(&ap_req);
 	free(spn);
