@@ -909,7 +909,7 @@ static BOOL internal_resolve_name(const char *name, int name_type,
      controllers including the PDC in iplist[1..n].  Iterating over
      the iplist when the PDC is down will cause two sets of timeouts. */
 
-  if ((nodupes_iplist = (struct in_addr *)
+  if (*return_count && (nodupes_iplist = (struct in_addr *)
        malloc(sizeof(struct in_addr) * (*return_count)))) {
 	  int nodupes_count = 0;
 
