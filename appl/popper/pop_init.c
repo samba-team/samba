@@ -67,9 +67,10 @@ pop_init(POP *p,int argcount,char **argmessage)
     int                     sp = 0;             /*  Socket pointer */
     char                *   trace_file_name = "/tmp/popper-trace";
     int			    inetd = 0;
+    int			    portnum = 0;
 
     /*  Initialize the POP parameter block */
-    memset (p,0, sizeof(POP));
+    memset (p, 0, sizeof(POP));
 
     /*  Save my name in a global variable */
     p->myname = argmessage[0];
@@ -80,24 +81,34 @@ pop_init(POP *p,int argcount,char **argmessage)
     /*  Open the log file */
     openlog(p->myname,POP_LOGOPTS,POP_FACILITY);
 
+    p->auth_level = AUTH_NONE;
+
     /*  Process command line arguments */
     while ((c = getopt(argcount,argmessage,
 #ifdef KERBEROS
 		       "k"
 #endif
-		       "adit:")) != EOF)
+		       "a:dip:t:")) != EOF)
         switch (c) {
 	    /*  Auth level */
 	    case 'a':
-		p->no_passwd++;
+		if (strcmp (optarg, "none") == 0)
+		    p->auth_level = AUTH_NONE;
+		else if(strcmp(optarg, "otp") == 0)
+		    p->auth_level = AUTH_OTP;
+		else
+		    warnx ("bac value for -a: %s", optarg);
 		break;
-
             /*  Debugging requested */
             case 'd':
                 p->debug++;
                 options |= SO_DEBUG;
                 break;
 
+	    /*  Port number */
+	    case 'p':
+		portnum = htons(atoi(optarg));
+		break;
             /*  Debugging trace file specified */
             case 't':
                 p->debug++;
@@ -140,10 +151,13 @@ pop_init(POP *p,int argcount,char **argmessage)
     }
 
     /* Fake inetd */
-    if (inetd)
-	mini_inetd (p->kerberosp ?
-		    k_getportbyname("kpop", "tcp", htons(1109)) :
-		    k_getportbyname("pop", "tcp", htons(110)));
+    if (inetd) {
+	if (portnum == 0)
+	    portnum = p->kerberosp ?
+		k_getportbyname("kpop", "tcp", htons(1109)) :
+	    k_getportbyname("pop", "tcp", htons(110));
+	mini_inetd (portnum);
+    }
 
     /*  Get the address and socket of the client to whom I am speaking */
     len = sizeof(cs);
