@@ -490,14 +490,11 @@ static void usage(void)
 	argv += 2;
 
 	while ((opt = 
-		getopt(argc, argv,"O:B:i:U:W:EI:n:Nd:h")) != EOF)
+		getopt(argc, argv,"O:i:U:W:EI:n:Nd:h")) != EOF)
 		switch (opt) {
 		case 'O':
 			pstrcpy(user_socket_options,optarg);
 			break;	
-		case 'B':
-			iface_set_default(NULL,optarg,NULL);
-			break;
 		case 'i':
 			pstrcpy(scope,optarg);
 			break;

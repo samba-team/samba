@@ -1713,6 +1713,7 @@ static void cmd_help(void)
 	}
 }
 
+#ifndef HAVE_LIBREADLINE
 /****************************************************************************
 wait for keyboard activity, swallowing network packets
 ****************************************************************************/
@@ -1743,6 +1744,7 @@ static void wait_keyboard(void)
 		cli_chkpath(cli, "\\");
 	}  
 }
+#endif
 
 /****************************************************************************
 process a -c command string
@@ -1796,7 +1798,7 @@ static void process_stdin(void)
 #ifdef HAVE_LIBREADLINE
 /* Minimal readline support, 29Jun1999, s.xenitellis@rhbnc.ac.uk */
 	const int PromptSize = 2048;
-	char prompt[PromptSize];	/* This holds the buffer "smb: \dir1\> " */
+	char prompt_str[PromptSize];	/* This holds the buffer "smb: \dir1\> " */
 	
         char *temp;			/* Gets the buffer from readline() */
 	temp = (char *)NULL;
@@ -1811,9 +1813,9 @@ static void process_stdin(void)
 			temp = (char *)NULL;
 		}
 
-		snprintf( prompt, PromptSize - 1, "smb: %s> ", CNV_LANG(cur_dir) );
+		snprintf( prompt_str, PromptSize - 1, "smb: %s> ", CNV_LANG(cur_dir) );
 
-		temp = readline( prompt );		/* We read the line here */
+		temp = readline( prompt_str );		/* We read the line here */
 
 		if ( !temp )
 			break;		/* EOF occured */
@@ -1986,7 +1988,6 @@ static void usage(char *pname)
 
   DEBUG(0,("\nVersion %s\n",VERSION));
   DEBUG(0,("\t-s smb.conf           pathname to smb.conf file\n"));
-  DEBUG(0,("\t-B IP addr            broadcast IP address to use\n"));
   DEBUG(0,("\t-O socket_options     socket options to use\n"));
   DEBUG(0,("\t-R name resolve order use these name resolution services only\n"));
   DEBUG(0,("\t-M host               send a winpopup message to the host\n"));
@@ -2298,13 +2299,10 @@ static int do_message_op(void)
 	}
 
 	while ((opt = 
-		getopt(argc, argv,"s:B:O:R:M:i:Nn:d:Pp:l:hI:EU:L:t:m:W:T:D:c:b:")) != EOF) {
+		getopt(argc, argv,"s:O:R:M:i:Nn:d:Pp:l:hI:EU:L:t:m:W:T:D:c:b:")) != EOF) {
 		switch (opt) {
 		case 's':
 			pstrcpy(servicesf, optarg);
-			break;
-		case 'B':
-			iface_set_default(NULL,optarg,NULL);
 			break;
 		case 'O':
 			pstrcpy(user_socket_options,optarg);
