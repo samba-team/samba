@@ -40,7 +40,7 @@ RCSID("$Id$");
  * Return 0 or an error.
  */
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_kt_register(krb5_context context,
 		 const krb5_kt_ops *ops)
 {
@@ -70,7 +70,7 @@ krb5_kt_register(krb5_context context,
  * Return 0 or an error
  */
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_kt_resolve(krb5_context context,
 		const char *name,
 		krb5_keytab *id)
@@ -123,7 +123,7 @@ krb5_kt_resolve(krb5_context context,
  * Return 0 or KRB5_CONFIG_NOTENUFSPACE if `namesize' is too short.
  */
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_kt_default_name(krb5_context context, char *name, size_t namesize)
 {
     if (strlcpy (name, context->default_keytab, namesize) >= namesize) {
@@ -138,7 +138,7 @@ krb5_kt_default_name(krb5_context context, char *name, size_t namesize)
  * Return 0 or KRB5_CONFIG_NOTENUFSPACE if `namesize' is too short.
  */
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_kt_default_modify_name(krb5_context context, char *name, size_t namesize)
 {
     const char *kt = NULL;
@@ -169,7 +169,7 @@ krb5_kt_default_modify_name(krb5_context context, char *name, size_t namesize)
  * Return 0 or an error.
  */
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_kt_default(krb5_context context, krb5_keytab *id)
 {
     return krb5_kt_resolve (context, context->default_keytab, id);
@@ -181,7 +181,7 @@ krb5_kt_default(krb5_context context, krb5_keytab *id)
  * Return 0 or an error.
  */
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_kt_read_service_key(krb5_context context,
 			 krb5_pointer keyprocarg,
 			 krb5_principal principal,
@@ -215,7 +215,7 @@ krb5_kt_read_service_key(krb5_context context,
  * `prefixsize'.
  */
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_kt_get_type(krb5_context context,
 		 krb5_keytab keytab,
 		 char *prefix,
@@ -230,7 +230,7 @@ krb5_kt_get_type(krb5_context context,
  * Return 0 or an error.
  */
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_kt_get_name(krb5_context context, 
 		 krb5_keytab keytab,
 		 char *name,
@@ -244,7 +244,7 @@ krb5_kt_get_name(krb5_context context,
  * Return 0 or an error.
  */
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_kt_close(krb5_context context, 
 	      krb5_keytab id)
 {
@@ -262,7 +262,7 @@ krb5_kt_close(krb5_context context,
  * Return TRUE if they compare the same, FALSE otherwise.
  */
 
-krb5_boolean
+krb5_boolean KRB5_LIB_FUNCTION
 krb5_kt_compare(krb5_context context,
 		krb5_keytab_entry *entry, 
 		krb5_const_principal principal,
@@ -286,7 +286,7 @@ krb5_kt_compare(krb5_context context,
  * Return 0 or an error.
  */
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_kt_get_entry(krb5_context context,
 		  krb5_keytab id,
 		  krb5_const_principal principal,
@@ -351,7 +351,7 @@ krb5_kt_get_entry(krb5_context context,
  * Copy the contents of `in' into `out'.
  * Return 0 or an error.  */
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_kt_copy_entry_contents(krb5_context context,
 			    const krb5_keytab_entry *in,
 			    krb5_keytab_entry *out)
@@ -380,7 +380,7 @@ fail:
  * Free the contents of `entry'.
  */
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_kt_free_entry(krb5_context context,
 		   krb5_keytab_entry *entry)
 {
@@ -394,7 +394,7 @@ krb5_kt_free_entry(krb5_context context,
  * Return 0 or an error.
  */
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_kt_start_seq_get(krb5_context context,
 		      krb5_keytab id,
 		      krb5_kt_cursor *cursor)
@@ -414,7 +414,7 @@ krb5_kt_start_seq_get(krb5_context context,
  * Return 0 or an error.
  */
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_kt_next_entry(krb5_context context,
 		   krb5_keytab id,
 		   krb5_keytab_entry *entry,
@@ -433,7 +433,7 @@ krb5_kt_next_entry(krb5_context context,
  * Release all resources associated with `cursor'.
  */
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_kt_end_seq_get(krb5_context context,
 		    krb5_keytab id,
 		    krb5_kt_cursor *cursor)
@@ -452,7 +452,7 @@ krb5_kt_end_seq_get(krb5_context context,
  * Return 0 or an error.
  */
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_kt_add_entry(krb5_context context,
 		  krb5_keytab id,
 		  krb5_keytab_entry *entry)
@@ -471,7 +471,7 @@ krb5_kt_add_entry(krb5_context context,
  * Return 0 or an error.
  */
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_kt_remove_entry(krb5_context context,
 		     krb5_keytab id,
 		     krb5_keytab_entry *entry)

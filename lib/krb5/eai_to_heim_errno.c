@@ -41,7 +41,7 @@ RCSID("$Id$");
  * after the failed call.
  */
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_eai_to_heim_errno(int eai_errno, int system_error)
 {
     switch(eai_errno) {
@@ -78,7 +78,7 @@ krb5_eai_to_heim_errno(int eai_errno, int system_error)
     }
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_h_errno_to_heim_errno(int eai_errno)
 {
     switch(eai_errno) {

@@ -55,7 +55,7 @@ static const int _tkt_lifetimes[TKTLIFENUMFIXED] = {
  1623226, 1735464, 1855462, 1983758, 2120925, 2267576, 2424367, 2592000
 };
 
-int
+int KRB5_LIB_FUNCTION
 _krb5_krb_time_to_life(time_t start, time_t end)
 {
     int i;
@@ -79,7 +79,7 @@ _krb5_krb_time_to_life(time_t start, time_t end)
     
 }
 
-time_t
+time_t KRB5_LIB_FUNCTION
 _krb5_krb_life_to_time(int start, int life_)
 {
     unsigned char life = (unsigned char) life_;
@@ -221,7 +221,7 @@ write_v4_cc(krb5_context context, const char *tkfile,
 }
 
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 _krb5_krb_tf_setup(krb5_context context, 
 		   struct credentials *v4creds, 
 		   const char *tkfile,
@@ -291,7 +291,7 @@ _krb5_krb_tf_setup(krb5_context context,
     return ret;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 _krb5_krb_dest_tkt(krb5_context context, const char *tkfile)
 {
     krb5_error_code ret;
@@ -323,7 +323,7 @@ _krb5_krb_dest_tkt(krb5_context context, const char *tkfile)
  * gotten from the KDC and stored in the cred cache `ccache'.
  */
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb524_convert_creds_kdc(krb5_context context, 
 			 krb5_creds *in_cred,
 			 struct credentials *v4creds)
@@ -409,7 +409,7 @@ out2:
     return ret;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb524_convert_creds_kdc_ccache(krb5_context context, 
 				krb5_ccache ccache,
 				krb5_creds *in_cred,

@@ -90,7 +90,7 @@ fail:
  * If hostname == NULL, pick it from `server'
  */
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_fwd_tgt_creds (krb5_context	context,
 		    krb5_auth_context	auth_context,
 		    const char		*hostname,
@@ -151,7 +151,7 @@ krb5_fwd_tgt_creds (krb5_context	context,
  *
  */
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_get_forwarded_creds (krb5_context	    context,
 			  krb5_auth_context auth_context,
 			  krb5_ccache       ccache,

@@ -36,7 +36,7 @@
 RCSID("$Id$");
 
       
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_mk_priv(krb5_context context,
 	     krb5_auth_context auth_context,
 	     const krb5_data *userdata,

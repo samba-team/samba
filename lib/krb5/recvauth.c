@@ -45,7 +45,7 @@ match_exact(const void *data, const char *appl_version)
     return strcmp(data, appl_version) == 0;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_recvauth(krb5_context context,
 	      krb5_auth_context *auth_context,
 	      krb5_pointer p_fd,
@@ -61,7 +61,7 @@ krb5_recvauth(krb5_context context,
 				       keytab, ticket);
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_recvauth_match_version(krb5_context context,
 			    krb5_auth_context *auth_context,
 			    krb5_pointer p_fd,

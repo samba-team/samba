@@ -76,7 +76,7 @@ static struct testcase {
     {0}
 };
 
-int
+int KRB5_LIB_FUNCTION
 main(int argc, char **argv)
 {
     struct testcase *t;

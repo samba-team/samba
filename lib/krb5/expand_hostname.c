@@ -54,7 +54,7 @@ copy_hostname(krb5_context context,
  * allocated space returned in `new_hostname'.
  */
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_expand_hostname (krb5_context context,
 		      const char *orig_hostname,
 		      char **new_hostname)
@@ -114,7 +114,7 @@ vanilla_hostname (krb5_context context,
  * allocated space in `host' and return realms in `realms'.
  */
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_expand_hostname_realms (krb5_context context,
 			     const char *orig_hostname,
 			     char **new_hostname,

@@ -304,7 +304,7 @@ send_via_proxy (krb5_context context,
  * in `receive'.
  */
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_sendto (krb5_context context,
 	     const krb5_data *send_data,
 	     krb5_krbhst_handle handle,	     
@@ -367,7 +367,7 @@ out:
      return ret;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_sendto_kdc(krb5_context context,
 		const krb5_data *send_data,
 		const krb5_realm *realm,
@@ -376,7 +376,7 @@ krb5_sendto_kdc(krb5_context context,
     return krb5_sendto_kdc_flags(context, send_data, realm, receive, 0);
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_sendto_kdc_flags(krb5_context context,
 		      const krb5_data *send_data,
 		      const krb5_realm *realm,

@@ -36,13 +36,13 @@
 RCSID("$Id$");
 
 /* keep this for compatibility with older code */
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_free_creds_contents (krb5_context context, krb5_creds *c)
 {
     return krb5_free_cred_contents (context, c);
 }    
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_free_cred_contents (krb5_context context, krb5_creds *c)
 {
     krb5_free_principal (context, c->client);
@@ -57,7 +57,7 @@ krb5_free_cred_contents (krb5_context context, krb5_creds *c)
     return 0;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_copy_creds_contents (krb5_context context,
 			  const krb5_creds *incred,
 			  krb5_creds *c)
@@ -101,7 +101,7 @@ fail:
     return ret;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_copy_creds (krb5_context context,
 		 const krb5_creds *incred,
 		 krb5_creds **outcred)
@@ -118,7 +118,7 @@ krb5_copy_creds (krb5_context context,
     return krb5_copy_creds_contents (context, incred, c);
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_free_creds (krb5_context context, krb5_creds *c)
 {
     krb5_free_cred_contents (context, c);
@@ -149,7 +149,7 @@ krb5_times_equal(const krb5_times *a, const krb5_times *b)
  * determines what equal means).
  */
 
-krb5_boolean
+krb5_boolean KRB5_LIB_FUNCTION
 krb5_compare_creds(krb5_context context, krb5_flags whichfields,
 		   const krb5_creds * mcreds, const krb5_creds * creds)
 {

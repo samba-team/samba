@@ -50,7 +50,7 @@ get_env_user(void)
     return user;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_get_default_principal (krb5_context context,
 			    krb5_principal *princ)
 {

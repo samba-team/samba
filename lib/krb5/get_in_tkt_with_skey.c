@@ -45,7 +45,7 @@ krb5_skey_key_proc (krb5_context context,
     return krb5_copy_keyblock (context, keyseed, key);
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_get_in_tkt_with_skey (krb5_context context,
 			   krb5_flags options,
 			   krb5_addresses *addrs,

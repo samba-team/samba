@@ -39,14 +39,14 @@
 
 RCSID("$Id$");
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_principal2principalname (PrincipalName *p,
 			      const krb5_principal from)
 {
     return copy_PrincipalName(&from->name, p);
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 principalname2krb5_principal (krb5_principal *principal,
 			      const PrincipalName from,
 			      const Realm realm)

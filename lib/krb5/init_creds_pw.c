@@ -459,7 +459,7 @@ out:
     return ret;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_keyblock_key_proc (krb5_context context,
 			krb5_keytype type,
 			krb5_data *salt,
@@ -469,7 +469,7 @@ krb5_keyblock_key_proc (krb5_context context,
     return krb5_copy_keyblock (context, keyseed, key);
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_get_init_creds_keytab(krb5_context context,
 			   krb5_creds *creds,
 			   krb5_principal client,
@@ -1350,7 +1350,7 @@ out:
     return ret;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_get_init_creds(krb5_context context,
 		    krb5_creds *creds,
 		    krb5_principal client,
@@ -1442,7 +1442,7 @@ krb5_get_init_creds(krb5_context context,
     return ret;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_get_init_creds_password(krb5_context context,
 			     krb5_creds *creds,
 			     krb5_principal client,

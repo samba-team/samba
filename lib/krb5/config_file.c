@@ -283,7 +283,7 @@ krb5_config_parse_debug (struct fileptr *f,
     return 0;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_config_parse_string_multi(krb5_context context,
 			       const char *string,
 			       krb5_config_section **res)
@@ -303,7 +303,7 @@ krb5_config_parse_string_multi(krb5_context context,
     return 0;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_config_parse_file_multi (krb5_context context,
 			      const char *fname,
 			      krb5_config_section **res)
@@ -329,7 +329,7 @@ krb5_config_parse_file_multi (krb5_context context,
     return 0;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_config_parse_file (krb5_context context,
 			const char *fname,
 			krb5_config_section **res)
@@ -360,7 +360,7 @@ free_binding (krb5_context context, krb5_config_binding *b)
     }
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_config_file_free (krb5_context context, krb5_config_section *s)
 {
     free_binding (context, s);
@@ -490,7 +490,7 @@ krb5_config_vget_list (krb5_context context,
     return krb5_config_vget (context, c, krb5_config_list, args);
 }
 
-const char *
+const char* KRB5_LIB_FUNCTION
 krb5_config_get_string (krb5_context context,
 			const krb5_config_section *c,
 			...)
@@ -504,7 +504,7 @@ krb5_config_get_string (krb5_context context,
     return ret;
 }
 
-const char *
+const char* KRB5_LIB_FUNCTION
 krb5_config_vget_string (krb5_context context,
 			 const krb5_config_section *c,
 			 va_list args)
@@ -512,7 +512,7 @@ krb5_config_vget_string (krb5_context context,
     return krb5_config_vget (context, c, krb5_config_string, args);
 }
 
-const char *
+const char* KRB5_LIB_FUNCTION
 krb5_config_vget_string_default (krb5_context context,
 				 const krb5_config_section *c,
 				 const char *def_value,
@@ -526,7 +526,7 @@ krb5_config_vget_string_default (krb5_context context,
     return ret;
 }
 
-const char *
+const char* KRB5_LIB_FUNCTION
 krb5_config_get_string_default (krb5_context context,
 				const krb5_config_section *c,
 				const char *def_value,
@@ -541,7 +541,7 @@ krb5_config_get_string_default (krb5_context context,
     return ret;
 }
 
-char **
+char ** KRB5_LIB_FUNCTION
 krb5_config_vget_strings(krb5_context context,
 			 const krb5_config_section *c,
 			 va_list args)
@@ -601,7 +601,7 @@ krb5_config_get_strings(krb5_context context,
     return ret;
 }
 
-void
+void KRB5_LIB_FUNCTION
 krb5_config_free_strings(char **strings)
 {
     char **s = strings;
@@ -612,7 +612,7 @@ krb5_config_free_strings(char **strings)
     free(strings);
 }
 
-krb5_boolean
+krb5_boolean KRB5_LIB_FUNCTION
 krb5_config_vget_bool_default (krb5_context context,
 			       const krb5_config_section *c,
 			       krb5_boolean def_value,
@@ -628,7 +628,7 @@ krb5_config_vget_bool_default (krb5_context context,
     return FALSE;
 }
 
-krb5_boolean
+krb5_boolean KRB5_LIB_FUNCTION
 krb5_config_vget_bool  (krb5_context context,
 			const krb5_config_section *c,
 			va_list args)
@@ -636,7 +636,7 @@ krb5_config_vget_bool  (krb5_context context,
     return krb5_config_vget_bool_default (context, c, FALSE, args);
 }
 
-krb5_boolean
+krb5_boolean KRB5_LIB_FUNCTION
 krb5_config_get_bool_default (krb5_context context,
 			      const krb5_config_section *c,
 			      krb5_boolean def_value,
@@ -650,7 +650,7 @@ krb5_config_get_bool_default (krb5_context context,
     return ret;
 }
 
-krb5_boolean
+krb5_boolean KRB5_LIB_FUNCTION
 krb5_config_get_bool (krb5_context context,
 		      const krb5_config_section *c,
 		      ...)
@@ -663,7 +663,7 @@ krb5_config_get_bool (krb5_context context,
     return ret;
 }
 
-int
+int KRB5_LIB_FUNCTION
 krb5_config_vget_time_default (krb5_context context,
 			       const krb5_config_section *c,
 			       int def_value,
@@ -676,7 +676,7 @@ krb5_config_vget_time_default (krb5_context context,
     return parse_time (str, NULL);
 }
 
-int
+int KRB5_LIB_FUNCTION
 krb5_config_vget_time  (krb5_context context,
 			const krb5_config_section *c,
 			va_list args)
@@ -684,7 +684,7 @@ krb5_config_vget_time  (krb5_context context,
     return krb5_config_vget_time_default (context, c, -1, args);
 }
 
-int
+int KRB5_LIB_FUNCTION
 krb5_config_get_time_default (krb5_context context,
 			      const krb5_config_section *c,
 			      int def_value,
@@ -698,7 +698,7 @@ krb5_config_get_time_default (krb5_context context,
     return ret;
 }
 
-int
+int KRB5_LIB_FUNCTION
 krb5_config_get_time (krb5_context context,
 		      const krb5_config_section *c,
 		      ...)
@@ -712,7 +712,7 @@ krb5_config_get_time (krb5_context context,
 }
 
 
-int
+int KRB5_LIB_FUNCTION
 krb5_config_vget_int_default (krb5_context context,
 			      const krb5_config_section *c,
 			      int def_value,
@@ -733,7 +733,7 @@ krb5_config_vget_int_default (krb5_context context,
     }
 }
 
-int
+int KRB5_LIB_FUNCTION
 krb5_config_vget_int  (krb5_context context,
 		       const krb5_config_section *c,
 		       va_list args)
@@ -741,7 +741,7 @@ krb5_config_vget_int  (krb5_context context,
     return krb5_config_vget_int_default (context, c, -1, args);
 }
 
-int
+int KRB5_LIB_FUNCTION
 krb5_config_get_int_default (krb5_context context,
 			     const krb5_config_section *c,
 			     int def_value,
@@ -755,7 +755,7 @@ krb5_config_get_int_default (krb5_context context,
     return ret;
 }
 
-int
+int KRB5_LIB_FUNCTION
 krb5_config_get_int (krb5_context context,
 		     const krb5_config_section *c,
 		     ...)

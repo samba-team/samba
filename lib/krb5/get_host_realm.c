@@ -149,7 +149,7 @@ config_find_realm(krb5_context context,
  * fall back to guessing
  */
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 _krb5_get_host_realm_int (krb5_context context,
 			  const char *host,
 			  krb5_boolean use_dns,
@@ -203,7 +203,7 @@ _krb5_get_host_realm_int (krb5_context context,
  * Return the realm(s) of `host' as a NULL-terminated list in `realms'.
  */
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_get_host_realm(krb5_context context,
 		    const char *host,
 		    krb5_realm **realms)

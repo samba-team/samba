@@ -39,7 +39,7 @@ RCSID("$Id$");
  * Return TRUE iff `principal' is allowed to login as `luser'.
  */
 
-krb5_boolean
+krb5_boolean KRB5_LIB_FUNCTION
 krb5_kuserok (krb5_context context,
 	      krb5_principal principal,
 	      const char *luser)

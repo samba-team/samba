@@ -658,7 +658,7 @@ change_password_loop (krb5_context	context,
  * the operation in `result_*' and an error code or 0.
  */
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_change_password (krb5_context	context,
 		      krb5_creds	*creds,
 		      char		*newpw,
@@ -684,7 +684,7 @@ krb5_change_password (krb5_context	context,
  *
  */
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_set_password (krb5_context	 context,
 		   krb5_ccache	 ccache,
 		   char		*newpw,
@@ -751,7 +751,7 @@ krb5_set_password (krb5_context	 context,
  *
  */
 
-const char *
+const char* KRB5_LIB_FUNCTION
 krb5_passwd_result_to_string (krb5_context context,
 			      int result)
 {

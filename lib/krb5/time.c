@@ -41,7 +41,7 @@ RCSID("$Id$");
  * KDC time and local system time.
  */
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_set_real_time (krb5_context context,
 		    krb5_timestamp sec,
 		    int32_t usec)
@@ -64,7 +64,7 @@ krb5_set_real_time (krb5_context context,
  * return ``corrected'' time in `timeret'.
  */
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_timeofday (krb5_context context,
 		krb5_timestamp *timeret)
 {
@@ -76,7 +76,7 @@ krb5_timeofday (krb5_context context,
  * like gettimeofday but with time correction to the KDC
  */
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_us_timeofday (krb5_context context,
 		   krb5_timestamp *sec,
 		   int32_t *usec)
@@ -90,7 +90,7 @@ krb5_us_timeofday (krb5_context context,
     return 0;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_format_time(krb5_context context, time_t t, 
 		 char *s, size_t len, krb5_boolean include_time)
 {
@@ -103,7 +103,7 @@ krb5_format_time(krb5_context context, time_t t,
     return 0;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_string_to_deltat(const char *string, krb5_deltat *deltat)
 {
     if((*deltat = parse_time(string, "s")) == -1)

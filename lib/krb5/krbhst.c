@@ -269,7 +269,7 @@ append_host_string(krb5_context context, struct krb5_krbhst_data *kd,
  * return a readable representation of `host' in `hostname, hostlen'
  */
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_krbhst_format_string(krb5_context context, const krb5_krbhst_info *host, 
 			  char *hostname, size_t hostlen)
 {
@@ -310,7 +310,7 @@ make_hints(struct addrinfo *hints, int proto)
  * in `host'.  free:ing is handled by krb5_krbhst_free.
  */
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_krbhst_get_addrinfo(krb5_context context, krb5_krbhst_info *host,
 			 struct addrinfo **ai)
 {
@@ -641,7 +641,7 @@ common_init(krb5_context context,
  * initialize `handle' to look for hosts of type `type' in realm `realm'
  */
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_krbhst_init(krb5_context context,
 		 const char *realm,
 		 unsigned int type,
@@ -650,7 +650,7 @@ krb5_krbhst_init(krb5_context context,
     return krb5_krbhst_init_flags(context, realm, type, 0, handle);
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_krbhst_init_flags(krb5_context context,
 		       const char *realm,
 		       unsigned int type,
@@ -697,7 +697,7 @@ krb5_krbhst_init_flags(krb5_context context,
  * return the next host information from `handle' in `host'
  */
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_krbhst_next(krb5_context context,
 		 krb5_krbhst_handle handle,
 		 krb5_krbhst_info **host)
@@ -713,7 +713,7 @@ krb5_krbhst_next(krb5_context context,
  * in `hostname' (or length `hostlen)
  */
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_krbhst_next_as_string(krb5_context context,
 			   krb5_krbhst_handle handle,
 			   char *hostname,
@@ -728,13 +728,13 @@ krb5_krbhst_next_as_string(krb5_context context,
 }
 
 
-void
+void KRB5_LIB_FUNCTION
 krb5_krbhst_reset(krb5_context context, krb5_krbhst_handle handle)
 {
     handle->index = &handle->hosts;
 }
 
-void
+void KRB5_LIB_FUNCTION
 krb5_krbhst_free(krb5_context context, krb5_krbhst_handle handle)
 {
     krb5_krbhst_info *h, *next;
@@ -796,7 +796,7 @@ gethostlist(krb5_context context, const char *realm,
  * return an malloced list of kadmin-hosts for `realm' in `hostlist'
  */
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_get_krb_admin_hst (krb5_context context,
 			const krb5_realm *realm,
 			char ***hostlist)
@@ -808,7 +808,7 @@ krb5_get_krb_admin_hst (krb5_context context,
  * return an malloced list of changepw-hosts for `realm' in `hostlist'
  */
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_get_krb_changepw_hst (krb5_context context,
 			   const krb5_realm *realm,
 			   char ***hostlist)
@@ -820,7 +820,7 @@ krb5_get_krb_changepw_hst (krb5_context context,
  * return an malloced list of 524-hosts for `realm' in `hostlist'
  */
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_get_krb524hst (krb5_context context,
 		    const krb5_realm *realm,
 		    char ***hostlist)
@@ -833,7 +833,7 @@ krb5_get_krb524hst (krb5_context context,
  * return an malloced list of KDC's for `realm' in `hostlist'
  */
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_get_krbhst (krb5_context context,
 		 const krb5_realm *realm,
 		 char ***hostlist)
@@ -845,7 +845,7 @@ krb5_get_krbhst (krb5_context context,
  * free all the memory allocated in `hostlist'
  */
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_free_krbhst (krb5_context context,
 		  char **hostlist)
 {

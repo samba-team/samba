@@ -38,7 +38,7 @@ RCSID("$Id$");
 #undef __attribute__
 #define __attribute__(X)
 
-void
+void KRB5_LIB_FUNCTION
 krb5_free_error_string(krb5_context context, char *str)
 {
     HEIMDAL_MUTEX_lock(context->mutex);
@@ -47,7 +47,7 @@ krb5_free_error_string(krb5_context context, char *str)
     HEIMDAL_MUTEX_unlock(context->mutex);
 }
 
-void
+void KRB5_LIB_FUNCTION
 krb5_clear_error_string(krb5_context context)
 {
     HEIMDAL_MUTEX_lock(context->mutex);
@@ -58,7 +58,7 @@ krb5_clear_error_string(krb5_context context)
     HEIMDAL_MUTEX_unlock(context->mutex);
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_set_error_string(krb5_context context, const char *fmt, ...)
     __attribute__((format (printf, 2, 3)))
 {
@@ -71,7 +71,7 @@ krb5_set_error_string(krb5_context context, const char *fmt, ...)
     return ret;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_vset_error_string(krb5_context context, const char *fmt, va_list args)
     __attribute__ ((format (printf, 2, 0)))
 {
@@ -86,7 +86,7 @@ krb5_vset_error_string(krb5_context context, const char *fmt, va_list args)
     return 0;
 }
 
-char*
+char * KRB5_LIB_FUNCTION
 krb5_get_error_string(krb5_context context)
 {
     char *ret;
@@ -98,7 +98,7 @@ krb5_get_error_string(krb5_context context)
     return ret;
 }
 
-krb5_boolean
+krb5_boolean KRB5_LIB_FUNCTION
 krb5_have_error_string(krb5_context context)
 {
     char *str;

@@ -41,7 +41,7 @@ RCSID("$Id$");
  * Return an error code or 0.
  */
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_cc_register(krb5_context context, 
 		 const krb5_cc_ops *ops, 
 		 krb5_boolean override)
@@ -110,7 +110,7 @@ allocate_ccache (krb5_context context,
  * Return 0 or an error code.
  */
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_cc_resolve(krb5_context context,
 		const char *name,
 		krb5_ccache *id)
@@ -140,7 +140,7 @@ krb5_cc_resolve(krb5_context context,
  * Return 0 or an error code.
  */
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_cc_gen_new(krb5_context context,
 		const krb5_cc_ops *ops,
 		krb5_ccache *id)
@@ -161,7 +161,7 @@ krb5_cc_gen_new(krb5_context context,
  * Return the name of the ccache `id'
  */
 
-const char*
+const char* KRB5_LIB_FUNCTION
 krb5_cc_get_name(krb5_context context,
 		 krb5_ccache id)
 {
@@ -172,7 +172,7 @@ krb5_cc_get_name(krb5_context context,
  * Return the type of the ccache `id'.
  */
 
-const char*
+const char* KRB5_LIB_FUNCTION
 krb5_cc_get_type(krb5_context context,
 		 krb5_ccache id)
 {
@@ -193,7 +193,7 @@ krb5_cc_get_ops(krb5_context context, krb5_ccache id)
  * Set the default cc name for `context' to `name'.
  */
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_cc_set_default_name(krb5_context context, const char *name)
 {
     krb5_error_code ret = 0;
@@ -226,7 +226,7 @@ krb5_cc_set_default_name(krb5_context context, const char *name)
  * ccache name.
  */
 
-const char*
+const char* KRB5_LIB_FUNCTION
 krb5_cc_default_name(krb5_context context)
 {
     if (context->default_cc_name == NULL)
@@ -240,7 +240,7 @@ krb5_cc_default_name(krb5_context context)
  * Return 0 or an error code.
  */
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_cc_default(krb5_context context,
 		krb5_ccache *id)
 {
@@ -256,7 +256,7 @@ krb5_cc_default(krb5_context context,
  * Return 0 or an error code.
  */
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_cc_initialize(krb5_context context,
 		   krb5_ccache id,
 		   krb5_principal primary_principal)
@@ -270,7 +270,7 @@ krb5_cc_initialize(krb5_context context,
  * Return 0 or an error code.
  */
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_cc_destroy(krb5_context context,
 		krb5_ccache id)
 {
@@ -286,7 +286,7 @@ krb5_cc_destroy(krb5_context context,
  * Return 0 or an error code.
  */
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_cc_close(krb5_context context,
 	      krb5_ccache id)
 {
@@ -301,7 +301,7 @@ krb5_cc_close(krb5_context context,
  * Return 0 or an error code.
  */
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_cc_store_cred(krb5_context context,
 		   krb5_ccache id,
 		   krb5_creds *creds)
@@ -315,7 +315,7 @@ krb5_cc_store_cred(krb5_context context,
  * Return 0 or an error code.
  */
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_cc_retrieve_cred(krb5_context context,
 		      krb5_ccache id,
 		      krb5_flags whichfields,
@@ -341,7 +341,7 @@ krb5_cc_retrieve_cred(krb5_context context,
  * Return 0 or an error code.
  */
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_cc_get_principal(krb5_context context,
 		      krb5_ccache id,
 		      krb5_principal *principal)
@@ -355,7 +355,7 @@ krb5_cc_get_principal(krb5_context context,
  * Return 0 or an error code.
  */
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_cc_start_seq_get (krb5_context context,
 		       const krb5_ccache id,
 		       krb5_cc_cursor *cursor)
@@ -369,7 +369,7 @@ krb5_cc_start_seq_get (krb5_context context,
  * Return 0 or an error code.
  */
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_cc_next_cred (krb5_context context,
 		   const krb5_ccache id,
 		   krb5_cc_cursor *cursor,
@@ -380,7 +380,7 @@ krb5_cc_next_cred (krb5_context context,
 
 /* like krb5_cc_next_cred, but allow for selective retrieval */
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_cc_next_cred_match(krb5_context context,
 			const krb5_ccache id,
 			krb5_cc_cursor * cursor,
@@ -403,7 +403,7 @@ krb5_cc_next_cred_match(krb5_context context,
  * Destroy the cursor `cursor'.
  */
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_cc_end_seq_get (krb5_context context,
 		     const krb5_ccache id,
 		     krb5_cc_cursor *cursor)
@@ -415,7 +415,7 @@ krb5_cc_end_seq_get (krb5_context context,
  * Remove the credential identified by `cred', `which' from `id'.
  */
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_cc_remove_cred(krb5_context context,
 		    krb5_ccache id,
 		    krb5_flags which,
@@ -434,7 +434,7 @@ krb5_cc_remove_cred(krb5_context context,
  * Set the flags of `id' to `flags'.
  */
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_cc_set_flags(krb5_context context,
 		  krb5_ccache id,
 		  krb5_flags flags)
@@ -446,7 +446,7 @@ krb5_cc_set_flags(krb5_context context,
  * Copy the contents of `from' to `to'.
  */
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_cc_copy_cache_match(krb5_context context,
 			 const krb5_ccache from,
 			 krb5_ccache to,
@@ -487,7 +487,7 @@ krb5_cc_copy_cache_match(krb5_context context,
     return ret;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_cc_copy_cache(krb5_context context,
 		   const krb5_ccache from,
 		   krb5_ccache to)
@@ -499,7 +499,7 @@ krb5_cc_copy_cache(krb5_context context,
  * Return the version of `id'.
  */
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_cc_get_version(krb5_context context,
 		    const krb5_ccache id)
 {
@@ -513,7 +513,7 @@ krb5_cc_get_version(krb5_context context,
  * Clear `mcreds' so it can be used with krb5_cc_retrieve_cred
  */
 
-void
+void KRB5_LIB_FUNCTION
 krb5_cc_clear_mcred(krb5_creds *mcred)
 {
     memset(mcred, 0, sizeof(*mcred));

@@ -39,7 +39,7 @@ RCSID("$Id$");
  * Free all memory allocated by `realmlist'
  */
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_free_host_realm(krb5_context context,
 		     krb5_realm *realmlist)
 {

@@ -130,7 +130,7 @@ ni_idlist2binding(void *ni, ni_idlist *idlist, krb5_config_section **ret)
     return NI_OK;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_config_parse_file (krb5_context context,
 			const char *fname,
 			krb5_config_section **res)

@@ -35,14 +35,14 @@
 
 RCSID("$Id$");
 
-void
+void KRB5_LIB_FUNCTION
 krb5_keyblock_zero(krb5_keyblock *keyblock)
 {
     keyblock->keytype = 0;
     krb5_data_zero(&keyblock->keyvalue);
 }
 
-void
+void KRB5_LIB_FUNCTION
 krb5_free_keyblock_contents(krb5_context context,
 			    krb5_keyblock *keyblock)
 {
@@ -53,7 +53,7 @@ krb5_free_keyblock_contents(krb5_context context,
     }
 }
 
-void
+void KRB5_LIB_FUNCTION
 krb5_free_keyblock(krb5_context context,
 		   krb5_keyblock *keyblock)
 {
@@ -63,7 +63,7 @@ krb5_free_keyblock(krb5_context context,
     }
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_copy_keyblock_contents (krb5_context context,
 			     const krb5_keyblock *inblock,
 			     krb5_keyblock *to)
@@ -71,7 +71,7 @@ krb5_copy_keyblock_contents (krb5_context context,
     return copy_EncryptionKey(inblock, to);
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_copy_keyblock (krb5_context context,
 		    const krb5_keyblock *inblock,
 		    krb5_keyblock **to)

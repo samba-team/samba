@@ -152,7 +152,7 @@ acl_match_acl(krb5_context context,
 }
 
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_acl_match_string(krb5_context context,
 		      const char *string,
 		      const char *format,
@@ -179,7 +179,7 @@ krb5_acl_match_string(krb5_context context,
     }
 }
 	       
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_acl_match_file(krb5_context context,
 		    const char *file,
 		    const char *format,

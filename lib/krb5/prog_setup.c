@@ -37,14 +37,14 @@
 
 RCSID("$Id$");
 
-void
+void KRB5_LIB_FUNCTION
 krb5_std_usage(int code, struct getargs *args, int num_args)
 {
     arg_printusage(args, num_args, NULL, "");
     exit(code);
 }
 
-int
+int KRB5_LIB_FUNCTION
 krb5_program_setup(krb5_context *context, int argc, char **argv,
 		   struct getargs *args, int num_args, 
 		   void (*usage)(int, struct getargs*, int))

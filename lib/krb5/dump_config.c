@@ -58,7 +58,7 @@ print_tree(struct krb5_config_binding *b, int level)
 	print_tree(b->next, level);
 }
 
-int
+int KRB5_LIB_FUNCTION
 main(int argc, char **argv)
 {
     krb5_context context;

@@ -602,7 +602,7 @@ find_atype(int atype)
     return NULL;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_sockaddr2address (krb5_context context,
 		       const struct sockaddr *sa, krb5_address *addr)
 {
@@ -615,7 +615,7 @@ krb5_sockaddr2address (krb5_context context,
     return (*a->sockaddr2addr)(sa, addr);
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_sockaddr2port (krb5_context context,
 		    const struct sockaddr *sa, int16_t *port)
 {
@@ -628,7 +628,7 @@ krb5_sockaddr2port (krb5_context context,
     return (*a->sockaddr2port)(sa, port);
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_addr2sockaddr (krb5_context context,
 		    const krb5_address *addr,
 		    struct sockaddr *sa,
@@ -651,7 +651,7 @@ krb5_addr2sockaddr (krb5_context context,
     return 0;
 }
 
-size_t
+size_t KRB5_LIB_FUNCTION
 krb5_max_sockaddr_size (void)
 {
     if (max_sockaddr_size == 0) {
@@ -663,7 +663,7 @@ krb5_max_sockaddr_size (void)
     return max_sockaddr_size;
 }
 
-krb5_boolean
+krb5_boolean KRB5_LIB_FUNCTION
 krb5_sockaddr_uninteresting(const struct sockaddr *sa)
 {
     struct addr_operations *a = find_af(sa->sa_family);
@@ -672,7 +672,7 @@ krb5_sockaddr_uninteresting(const struct sockaddr *sa)
     return (*a->uninteresting)(sa);
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_h_addr2sockaddr (krb5_context context,
 		      int af,
 		      const char *addr, struct sockaddr *sa,
@@ -688,7 +688,7 @@ krb5_h_addr2sockaddr (krb5_context context,
     return 0;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_h_addr2addr (krb5_context context,
 		  int af,
 		  const char *haddr, krb5_address *addr)
@@ -701,7 +701,7 @@ krb5_h_addr2addr (krb5_context context,
     return (*a->h_addr2addr)(haddr, addr);
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_anyaddr (krb5_context context,
 	      int af,
 	      struct sockaddr *sa,
@@ -719,7 +719,7 @@ krb5_anyaddr (krb5_context context,
     return 0;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_print_address (const krb5_address *addr, 
 		    char *str, size_t len, size_t *ret_len)
 {
@@ -754,7 +754,7 @@ krb5_print_address (const krb5_address *addr,
     return 0;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_parse_address(krb5_context context,
 		   const char *string,
 		   krb5_addresses *addresses)
@@ -797,7 +797,7 @@ krb5_parse_address(krb5_context context,
     return 0;
 }
 
-int
+int KRB5_LIB_FUNCTION
 krb5_address_order(krb5_context context,
 		   const krb5_address *addr1,
 		   const krb5_address *addr2)
@@ -831,7 +831,7 @@ krb5_address_order(krb5_context context,
 		   addr1->address.length);
 }
 
-krb5_boolean
+krb5_boolean KRB5_LIB_FUNCTION
 krb5_address_compare(krb5_context context,
 		     const krb5_address *addr1,
 		     const krb5_address *addr2)
@@ -839,7 +839,7 @@ krb5_address_compare(krb5_context context,
     return krb5_address_order (context, addr1, addr2) == 0;
 }
 
-krb5_boolean
+krb5_boolean KRB5_LIB_FUNCTION
 krb5_address_search(krb5_context context,
 		    const krb5_address *addr,
 		    const krb5_addresses *addrlist)
@@ -852,7 +852,7 @@ krb5_address_search(krb5_context context,
     return FALSE;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_free_address(krb5_context context,
 		  krb5_address *address)
 {
@@ -863,7 +863,7 @@ krb5_free_address(krb5_context context,
     return 0;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_free_addresses(krb5_context context,
 		    krb5_addresses *addresses)
 {
@@ -874,7 +874,7 @@ krb5_free_addresses(krb5_context context,
     return 0;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_copy_address(krb5_context context,
 		  const krb5_address *inaddr,
 		  krb5_address *outaddr)
@@ -885,7 +885,7 @@ krb5_copy_address(krb5_context context,
     return copy_HostAddress(inaddr, outaddr);
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_copy_addresses(krb5_context context,
 		    const krb5_addresses *inaddr,
 		    krb5_addresses *outaddr)
@@ -899,7 +899,7 @@ krb5_copy_addresses(krb5_context context,
     return 0;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_append_addresses(krb5_context context,
 		      krb5_addresses *dest,
 		      const krb5_addresses *source)
@@ -933,7 +933,7 @@ krb5_append_addresses(krb5_context context,
  * Create an address of type KRB5_ADDRESS_ADDRPORT from (addr, port)
  */
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_make_addrport (krb5_context context,
 		    krb5_address **res, const krb5_address *addr, int16_t port)
 {

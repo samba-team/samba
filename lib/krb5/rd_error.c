@@ -35,7 +35,7 @@
 
 RCSID("$Id$");
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_rd_error(krb5_context context,
 	      krb5_data *msg,
 	      KRB_ERROR *result)
@@ -51,14 +51,14 @@ krb5_rd_error(krb5_context context,
     return 0;
 }
 
-void
+void KRB5_LIB_FUNCTION
 krb5_free_error_contents (krb5_context context,
 			  krb5_error *error)
 {
     free_KRB_ERROR(error);
 }
 
-void
+void KRB5_LIB_FUNCTION
 krb5_free_error (krb5_context context,
 		 krb5_error *error)
 {
@@ -66,7 +66,7 @@ krb5_free_error (krb5_context context,
     free (error);
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_error_from_rd_error(krb5_context context,
 			 const krb5_error *error,
 			 const krb5_creds *creds)

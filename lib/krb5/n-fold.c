@@ -95,7 +95,7 @@ add1(unsigned char *a, unsigned char *b, size_t len)
     }
 }
 
-void
+void KRB5_LIB_FUNCTION
 _krb5_n_fold(const void *str, size_t len, void *key, size_t size)
 {
     /* if len < size we need at most N * len bytes, ie < 2 * size;

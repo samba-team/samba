@@ -35,7 +35,7 @@
 
 RCSID("$Id$");
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_free_ticket(krb5_context context,
 		 krb5_ticket *ticket)
 {
@@ -46,7 +46,7 @@ krb5_free_ticket(krb5_context context,
     return 0;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_copy_ticket(krb5_context context,
 		 const krb5_ticket *from,
 		 krb5_ticket **to)
@@ -81,7 +81,7 @@ krb5_copy_ticket(krb5_context context,
     return 0;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_ticket_get_client(krb5_context context,
 		       const krb5_ticket *ticket,
 		       krb5_principal *client)
@@ -89,7 +89,7 @@ krb5_ticket_get_client(krb5_context context,
     return krb5_copy_principal(context, ticket->client, client);
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_ticket_get_server(krb5_context context,
 		       const krb5_ticket *ticket,
 		       krb5_principal *server)
@@ -97,7 +97,7 @@ krb5_ticket_get_server(krb5_context context,
     return krb5_copy_principal(context, ticket->server, server);
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_ticket_get_authorization_data_type(krb5_context context,
 					krb5_ticket *ticket,
 					int type,

@@ -578,7 +578,7 @@ ARCFOUR_string_to_key(krb5_context context,
 
 /* iter is really 1 based, so iter == 0 will be 1 iteration */
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 _krb5_PKCS5_PBKDF2(krb5_context context, krb5_cksumtype cktype,
 		   krb5_data password, krb5_salt salt, u_int32_t iter,
 		   krb5_keytype type, krb5_keyblock *key)
@@ -1064,7 +1064,7 @@ struct salt_type arcfour_salt[] = {
     { 0 }
 };
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_salttype_to_string (krb5_context context,
 			 krb5_enctype etype,
 			 krb5_salttype stype,
@@ -1093,7 +1093,7 @@ krb5_salttype_to_string (krb5_context context,
     return HEIM_ERR_SALTTYPE_NOSUPP;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_string_to_salttype (krb5_context context,
 			 krb5_enctype etype,
 			 const char *string,
@@ -1118,7 +1118,7 @@ krb5_string_to_salttype (krb5_context context,
     return HEIM_ERR_SALTTYPE_NOSUPP;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_get_pw_salt(krb5_context context,
 		 krb5_const_principal principal,
 		 krb5_salt *salt)
@@ -1147,7 +1147,7 @@ krb5_get_pw_salt(krb5_context context,
     return 0;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_free_salt(krb5_context context, 
 	       krb5_salt salt)
 {
@@ -1155,7 +1155,7 @@ krb5_free_salt(krb5_context context,
     return 0;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_string_to_key_data (krb5_context context,
 			 krb5_enctype enctype,
 			 krb5_data password,
@@ -1173,7 +1173,7 @@ krb5_string_to_key_data (krb5_context context,
     return ret;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_string_to_key (krb5_context context,
 		    krb5_enctype enctype,
 		    const char *password,
@@ -1186,7 +1186,7 @@ krb5_string_to_key (krb5_context context,
     return krb5_string_to_key_data(context, enctype, pw, principal, key);
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_string_to_key_data_salt (krb5_context context,
 			      krb5_enctype enctype,
 			      krb5_data password,
@@ -1205,7 +1205,7 @@ krb5_string_to_key_data_salt (krb5_context context,
  * `opaque'), returning the resulting key in `key'
  */
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_string_to_key_data_salt_opaque (krb5_context context,
 				     krb5_enctype enctype,
 				     krb5_data password,
@@ -1235,7 +1235,7 @@ krb5_string_to_key_data_salt_opaque (krb5_context context,
  * in `key'
  */
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_string_to_key_salt (krb5_context context,
 			 krb5_enctype enctype,
 			 const char *password,
@@ -1248,7 +1248,7 @@ krb5_string_to_key_salt (krb5_context context,
     return krb5_string_to_key_data_salt(context, enctype, pw, salt, key);
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_string_to_key_salt_opaque (krb5_context context,
 				krb5_enctype enctype,
 				const char *password,
@@ -1263,7 +1263,7 @@ krb5_string_to_key_salt_opaque (krb5_context context,
 					       pw, salt, opaque, key);
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_keytype_to_string(krb5_context context,
 		       krb5_keytype keytype,
 		       char **string)
@@ -1281,7 +1281,7 @@ krb5_keytype_to_string(krb5_context context,
     return 0;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_string_to_keytype(krb5_context context,
 		       const char *string,
 		       krb5_keytype *keytype)
@@ -1296,7 +1296,7 @@ krb5_string_to_keytype(krb5_context context,
     return KRB5_PROG_KEYTYPE_NOSUPP;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_enctype_keysize(krb5_context context,
 		     krb5_enctype type,
 		     size_t *keysize)
@@ -1311,7 +1311,7 @@ krb5_enctype_keysize(krb5_context context,
     return 0;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_generate_random_keyblock(krb5_context context,
 			      krb5_enctype type,
 			      krb5_keyblock *key)
@@ -1681,7 +1681,7 @@ hmac(krb5_context context,
     return 0;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_hmac(krb5_context context,
 	  krb5_cksumtype cktype,
 	  const void *data,
@@ -2072,7 +2072,7 @@ arcfour_checksum_p(struct checksum_type *ct, krb5_crypto crypto)
 	(crypto->key.key->keytype == KEYTYPE_ARCFOUR);
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_create_checksum(krb5_context context,
 		     krb5_crypto crypto,
 		     krb5_key_usage usage,
@@ -2162,7 +2162,7 @@ verify_checksum(krb5_context context,
     return ret;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_verify_checksum(krb5_context context,
 		     krb5_crypto crypto,
 		     krb5_key_usage usage, 
@@ -2190,7 +2190,7 @@ krb5_verify_checksum(krb5_context context,
 			   data, len, cksum);
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_crypto_get_checksum_type(krb5_context context,
                               krb5_crypto crypto,
 			      krb5_cksumtype *type)
@@ -2214,7 +2214,7 @@ krb5_crypto_get_checksum_type(krb5_context context,
 }
 
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_checksumsize(krb5_context context,
 		  krb5_cksumtype type,
 		  size_t *size)
@@ -2229,7 +2229,7 @@ krb5_checksumsize(krb5_context context,
     return 0;
 }
 
-krb5_boolean
+krb5_boolean KRB5_LIB_FUNCTION
 krb5_checksum_is_keyed(krb5_context context,
 		       krb5_cksumtype type)
 {
@@ -2243,7 +2243,7 @@ krb5_checksum_is_keyed(krb5_context context,
     return ct->flags & F_KEYED;
 }
 
-krb5_boolean
+krb5_boolean KRB5_LIB_FUNCTION
 krb5_checksum_is_collision_proof(krb5_context context,
 				 krb5_cksumtype type)
 {
@@ -2257,7 +2257,7 @@ krb5_checksum_is_collision_proof(krb5_context context,
     return ct->flags & F_CPROOF;
 }
 
-krb5_boolean
+krb5_boolean KRB5_LIB_FUNCTION
 krb5_checksum_is_disabled(krb5_context context,
 			  krb5_cksumtype type)
 {
@@ -2271,7 +2271,7 @@ krb5_checksum_is_disabled(krb5_context context,
     return (ct->flags & F_DISABLED) ? TRUE : FALSE;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_checksum_disable(krb5_context context,
 		      krb5_cksumtype type)
 {
@@ -2394,7 +2394,7 @@ DES_PCBC_encrypt_key_ivec(krb5_context context,
  * AES draft-raeburn-krb-rijndael-krb-02
  */
 
-void
+void KRB5_LIB_FUNCTION
 _krb5_aes_cts_encrypt(const unsigned char *in, unsigned char *out,
 		      size_t len, const void *aes_key,
 		      unsigned char *ivec, const int encrypt)
@@ -3026,7 +3026,7 @@ _find_enctype(krb5_enctype type)
 }
 
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_enctype_to_string(krb5_context context,
 		       krb5_enctype etype,
 		       char **string)
@@ -3046,7 +3046,7 @@ krb5_enctype_to_string(krb5_context context,
     return 0;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_string_to_enctype(krb5_context context,
 		       const char *string,
 		       krb5_enctype *etype)
@@ -3062,7 +3062,7 @@ krb5_string_to_enctype(krb5_context context,
     return KRB5_PROG_ETYPE_NOSUPP;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_enctype_to_oid(krb5_context context,
 		    krb5_enctype etype,
 		    heim_oid *oid)
@@ -3081,7 +3081,7 @@ krb5_enctype_to_oid(krb5_context context,
     return copy_oid(et->oid, oid);
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_oid_to_enctype(krb5_context context,
 		    const heim_oid *oid,
 		    krb5_enctype *etype)
@@ -3097,7 +3097,7 @@ krb5_oid_to_enctype(krb5_context context,
     return KRB5_PROG_ETYPE_NOSUPP;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_enctype_to_keytype(krb5_context context,
 			krb5_enctype etype,
 			krb5_keytype *keytype)
@@ -3113,7 +3113,7 @@ krb5_enctype_to_keytype(krb5_context context,
 }
 
 #if 0
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_keytype_to_enctype(krb5_context context,
 			krb5_keytype keytype,
 			krb5_enctype *etype)
@@ -3127,7 +3127,7 @@ krb5_keytype_to_enctype(krb5_context context,
 }
 #endif
     
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_keytype_to_enctypes (krb5_context context,
 			  krb5_keytype keytype,
 			  unsigned *len,
@@ -3163,7 +3163,7 @@ krb5_keytype_to_enctypes (krb5_context context,
  * else, do `krb5_keytype_to_enctypes'.
  */
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_keytype_to_enctypes_default (krb5_context context,
 				  krb5_keytype keytype,
 				  unsigned *len,
@@ -3189,7 +3189,7 @@ krb5_keytype_to_enctypes_default (krb5_context context,
     return 0;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_enctype_valid(krb5_context context, 
 		 krb5_enctype etype)
 {
@@ -3207,7 +3207,7 @@ krb5_enctype_valid(krb5_context context,
     return 0;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_cksumtype_valid(krb5_context context, 
 		     krb5_cksumtype ctype)
 {
@@ -3227,7 +3227,7 @@ krb5_cksumtype_valid(krb5_context context,
 
 
 /* if two enctypes have compatible keys */
-krb5_boolean
+krb5_boolean KRB5_LIB_FUNCTION
 krb5_enctypes_compatible_keys(krb5_context context,
 			      krb5_enctype etype1,
 			      krb5_enctype etype2)
@@ -3621,7 +3621,7 @@ decrypt_internal_special(krb5_context context,
 }
 
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_encrypt_ivec(krb5_context context,
 		  krb5_crypto crypto,
 		  unsigned usage,
@@ -3640,7 +3640,7 @@ krb5_encrypt_ivec(krb5_context context,
 	return encrypt_internal(context, crypto, data, len, result, ivec);
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_encrypt(krb5_context context,
 	     krb5_crypto crypto,
 	     unsigned usage,
@@ -3651,7 +3651,7 @@ krb5_encrypt(krb5_context context,
     return krb5_encrypt_ivec(context, crypto, usage, data, len, result, NULL);
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_encrypt_EncryptedData(krb5_context context,
 			   krb5_crypto crypto,
 			   unsigned usage,
@@ -3669,7 +3669,7 @@ krb5_encrypt_EncryptedData(krb5_context context,
     return krb5_encrypt(context, crypto, usage, data, len, &result->cipher);
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_decrypt_ivec(krb5_context context,
 		  krb5_crypto crypto,
 		  unsigned usage,
@@ -3688,7 +3688,7 @@ krb5_decrypt_ivec(krb5_context context,
 	return decrypt_internal(context, crypto, data, len, result, ivec);
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_decrypt(krb5_context context,
 	     krb5_crypto crypto,
 	     unsigned usage,
@@ -3700,7 +3700,7 @@ krb5_decrypt(krb5_context context,
 			      NULL);
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_decrypt_EncryptedData(krb5_context context,
 			   krb5_crypto crypto,
 			   unsigned usage,
@@ -3765,7 +3765,7 @@ seed_something(void)
 	return -1;
 }
 
-void
+void KRB5_LIB_FUNCTION
 krb5_generate_random_block(void *buf, size_t len)
 {
     static int rng_initialized = 0;
@@ -3783,7 +3783,7 @@ krb5_generate_random_block(void *buf, size_t len)
 
 #else
 
-void
+void KRB5_LIB_FUNCTION
 krb5_generate_random_block(void *buf, size_t len)
 {
     DES_cblock key, out;
@@ -3921,7 +3921,7 @@ _new_derived_key(krb5_crypto crypto, unsigned usage)
     return &d->key;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_derive_key(krb5_context context,
 		const krb5_keyblock *key,
 		krb5_enctype etype,
@@ -3981,7 +3981,7 @@ _get_derived_key(krb5_context context,
 }
 
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_crypto_init(krb5_context context,
 		 const krb5_keyblock *key,
 		 krb5_enctype etype,
@@ -4038,7 +4038,7 @@ free_key_usage(krb5_context context, struct key_usage *ku)
     free_key_data(context, &ku->key);
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_crypto_destroy(krb5_context context,
 		    krb5_crypto crypto)
 {
@@ -4053,7 +4053,7 @@ krb5_crypto_destroy(krb5_context context,
     return 0;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_crypto_get_params(krb5_context context,
 		       const krb5_crypto crypto,
 		       const krb5_data *params,
@@ -4088,7 +4088,7 @@ krb5_crypto_get_params(krb5_context context,
     return 0;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_crypto_set_params(krb5_context context,
 		       const krb5_crypto crypto,
 		       const krb5_data *ivec,
@@ -4121,7 +4121,7 @@ krb5_crypto_set_params(krb5_context context,
 }
 
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_crypto_getblocksize(krb5_context context,
 			 krb5_crypto crypto,
 			 size_t *blocksize)
@@ -4130,7 +4130,7 @@ krb5_crypto_getblocksize(krb5_context context,
     return 0;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_crypto_getenctype(krb5_context context,
 		       krb5_crypto crypto,
 		       krb5_enctype *enctype)
@@ -4139,7 +4139,7 @@ krb5_crypto_getenctype(krb5_context context,
      return 0;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_crypto_getpadsize(krb5_context context,
                        krb5_crypto crypto,
                        size_t *padsize)      
@@ -4148,7 +4148,7 @@ krb5_crypto_getpadsize(krb5_context context,
     return 0;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_crypto_getconfoundersize(krb5_context context,
                               krb5_crypto crypto,
                               size_t *confoundersize)
@@ -4157,7 +4157,7 @@ krb5_crypto_getconfoundersize(krb5_context context,
     return 0;
 }
 
-krb5_boolean
+krb5_boolean KRB5_LIB_FUNCTION
 krb5_enctype_is_disabled(krb5_context context,
 			 krb5_enctype enctype)
 {
@@ -4171,7 +4171,7 @@ krb5_enctype_is_disabled(krb5_context context,
     return (et->flags & F_DISABLED) ? TRUE : FALSE;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_enctype_disable(krb5_context context,
 		     krb5_enctype enctype)
 {
@@ -4186,7 +4186,7 @@ krb5_enctype_disable(krb5_context context,
     return 0;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_string_to_key_derived(krb5_context context,
 			   const void *str,
 			   size_t len,
@@ -4289,7 +4289,7 @@ krb5_get_wrapped_length (krb5_context context,
 	return wrapped_length (context, crypto, data_len);
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_random_to_key(krb5_context context,
 		   krb5_enctype type,
 		   const void *data,

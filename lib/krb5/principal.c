@@ -49,7 +49,7 @@ RCSID("$Id$");
 #define princ_ncomp(P, N) ((P)->name.name_string.val[(N)])
 #define princ_realm(P) ((P)->realm)
 
-void
+void KRB5_LIB_FUNCTION
 krb5_free_principal(krb5_context context,
 		    krb5_principal p)
 {
@@ -59,7 +59,7 @@ krb5_free_principal(krb5_context context,
     }
 }
 
-void
+void KRB5_LIB_FUNCTION
 krb5_principal_set_type(krb5_context context,
 			krb5_principal principal,
 			int type)
@@ -67,21 +67,21 @@ krb5_principal_set_type(krb5_context context,
     princ_type(principal) = type;
 }
 
-int
+int KRB5_LIB_FUNCTION
 krb5_principal_get_type(krb5_context context,
 			krb5_principal principal)
 {
     return princ_type(principal);
 }
 
-const char *
+const char* KRB5_LIB_FUNCTION
 krb5_principal_get_realm(krb5_context context,
 			 krb5_principal principal)
 {
     return princ_realm(principal);
 }			 
 
-const char *
+const char* KRB5_LIB_FUNCTION
 krb5_principal_get_comp_string(krb5_context context,
 			       krb5_principal principal,
 			       unsigned int component)
@@ -91,7 +91,7 @@ krb5_principal_get_comp_string(krb5_context context,
     return princ_ncomp(principal, component);
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_parse_name(krb5_context context,
 		const char *name,
 		krb5_principal *principal)
@@ -287,7 +287,7 @@ unparse_name_fixed(krb5_context context,
     return 0;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_unparse_name_fixed(krb5_context context,
 			krb5_const_principal principal,
 			char *name,
@@ -296,7 +296,7 @@ krb5_unparse_name_fixed(krb5_context context,
     return unparse_name_fixed(context, principal, name, len, FALSE);
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_unparse_name_fixed_short(krb5_context context,
 			      krb5_const_principal principal,
 			      char *name,
@@ -343,7 +343,7 @@ unparse_name(krb5_context context,
     return ret;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_unparse_name(krb5_context context,
 		  krb5_const_principal principal,
 		  char **name)
@@ -351,7 +351,7 @@ krb5_unparse_name(krb5_context context,
     return unparse_name(context, principal, name, FALSE);
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_unparse_name_short(krb5_context context,
 			krb5_const_principal principal,
 			char **name)
@@ -361,7 +361,7 @@ krb5_unparse_name_short(krb5_context context,
 
 #if 0 /* not implemented */
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_unparse_name_ext(krb5_context context,
 		      krb5_const_principal principal,
 		      char **name,
@@ -380,7 +380,7 @@ krb5_princ_realm(krb5_context context,
 }
 
 
-void
+void KRB5_LIB_FUNCTION
 krb5_princ_set_realm(krb5_context context,
 		     krb5_principal principal,
 		     krb5_realm *realm)
@@ -389,7 +389,7 @@ krb5_princ_set_realm(krb5_context context,
 }
 
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_build_principal(krb5_context context,
 		     krb5_principal *principal,
 		     int rlen,
@@ -485,7 +485,7 @@ build_principal(krb5_context context,
     return 0;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_make_principal(krb5_context context,
 		    krb5_principal *principal,
 		    krb5_const_realm realm,
@@ -508,7 +508,7 @@ krb5_make_principal(krb5_context context,
     return ret;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_build_principal_va(krb5_context context, 
 			krb5_principal *principal, 
 			int rlen,
@@ -518,7 +518,7 @@ krb5_build_principal_va(krb5_context context,
     return build_principal(context, principal, rlen, realm, va_princ, ap);
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_build_principal_va_ext(krb5_context context, 
 			    krb5_principal *principal, 
 			    int rlen,
@@ -529,7 +529,7 @@ krb5_build_principal_va_ext(krb5_context context,
 }
 
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_build_principal_ext(krb5_context context,
 			 krb5_principal *principal,
 			 int rlen,
@@ -545,7 +545,7 @@ krb5_build_principal_ext(krb5_context context,
 }
 
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_copy_principal(krb5_context context,
 		    krb5_const_principal inprinc,
 		    krb5_principal *outprinc)
@@ -568,7 +568,7 @@ krb5_copy_principal(krb5_context context,
  * return TRUE iff princ1 == princ2 (without considering the realm)
  */
 
-krb5_boolean
+krb5_boolean KRB5_LIB_FUNCTION
 krb5_principal_compare_any_realm(krb5_context context,
 				 krb5_const_principal princ1,
 				 krb5_const_principal princ2)
@@ -587,7 +587,7 @@ krb5_principal_compare_any_realm(krb5_context context,
  * return TRUE iff princ1 == princ2
  */
 
-krb5_boolean
+krb5_boolean KRB5_LIB_FUNCTION
 krb5_principal_compare(krb5_context context,
 		       krb5_const_principal princ1,
 		       krb5_const_principal princ2)
@@ -601,7 +601,7 @@ krb5_principal_compare(krb5_context context,
  * return TRUE iff realm(princ1) == realm(princ2)
  */
 
-krb5_boolean
+krb5_boolean KRB5_LIB_FUNCTION
 krb5_realm_compare(krb5_context context,
 		   krb5_const_principal princ1,
 		   krb5_const_principal princ2)
@@ -613,7 +613,7 @@ krb5_realm_compare(krb5_context context,
  * return TRUE iff princ matches pattern
  */
 
-krb5_boolean
+krb5_boolean KRB5_LIB_FUNCTION
 krb5_principal_match(krb5_context context,
 		     krb5_const_principal princ,
 		     krb5_const_principal pattern)
@@ -694,7 +694,7 @@ get_name_conversion(krb5_context context, const char *realm, const char *name)
  * if `func', use that function for validating the conversion
  */
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_425_conv_principal_ext(krb5_context context,
 			    const char *name,
 			    const char *instance,
@@ -887,7 +887,7 @@ no_host:
     return HEIM_ERR_V4_PRINC_NO_CONV;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_425_conv_principal(krb5_context context,
 			const char *name,
 			const char *instance,
@@ -980,7 +980,7 @@ name_convert(krb5_context context, const char *name, const char *realm,
  * three parameters.  They have to be 40 bytes each (ANAME_SZ).
  */
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_524_conv_principal(krb5_context context,
 			const krb5_principal principal,
 			char *name, 
@@ -1051,7 +1051,7 @@ krb5_524_conv_principal(krb5_context context,
  * Create a principal in `ret_princ' for the service `sname' running
  * on host `hostname'.  */
 			
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_sname_to_principal (krb5_context context,
 			 const char *hostname,
 			 const char *sname,

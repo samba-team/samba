@@ -66,7 +66,7 @@ fd_free(krb5_storage * sp)
     close(FD(sp));
 }
 
-krb5_storage *
+krb5_storage * KRB5_LIB_FUNCTION
 krb5_storage_from_fd(int fd)
 {
     krb5_storage *sp;

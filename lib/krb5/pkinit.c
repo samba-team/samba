@@ -140,7 +140,7 @@ static unsigned dhpublicnumber_num[] =
 heim_oid heim_dhpublicnumber_oid =
 	oid_enc(dhpublicnumber_num);
 
-void
+void KRB5_LIB_FUNCTION
 _krb5_pk_cert_free(struct krb5_pk_cert *cert)
 {
     if (cert->cert)
@@ -194,7 +194,7 @@ set_digest_alg(DigestAlgorithmIdentifier *id,
     return 0;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 _krb5_pk_create_sign(krb5_context context,
 		     const heim_oid *eContentType,
 		     krb5_data *eContent,
@@ -536,7 +536,7 @@ build_auth_pack_win2k(krb5_context context,
     return 0;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 _krb5_pk_mk_ContentInfo(krb5_context context,
 			const krb5_data *buf, 
 			const heim_oid *oid,
@@ -682,7 +682,7 @@ pk_mk_padata(krb5_context context,
 }
 
 
-krb5_error_code 
+krb5_error_code KRB5_LIB_FUNCTION 
 _krb5_pk_mk_padata(krb5_context context,
 		   void *c,
 		   const KDC_REQ_BODY *req_body,
@@ -991,7 +991,7 @@ any_to_CertificateSet(krb5_context context, heim_any *cert,
     return ret;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 _krb5_pk_verify_sign(krb5_context context,
 		     const char *data,
 		     size_t length,
@@ -1599,7 +1599,7 @@ _krb5_pk_convert_rep(krb5_context context,
     return ret;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 _krb5_pk_rd_pa_reply(krb5_context context,
 		     void *c,
 		     krb5_enctype etype,
@@ -1686,7 +1686,7 @@ ssl_pass_cb(char *buf, int size, int rwflag, void *u)
 }
 
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 _krb5_pk_load_openssl_id(krb5_context context,
 			 struct krb5_pk_identity **ret_id,
 			 const char *user_id,
@@ -1906,7 +1906,7 @@ _krb5_pk_load_openssl_id(krb5_context context,
 
 #endif /* PKINIT */
 
-void
+void KRB5_LIB_FUNCTION
 krb5_get_init_creds_opt_free_pkinit(krb5_get_init_creds_opt *opt)
 {
 #ifdef PKINIT
@@ -1930,7 +1930,7 @@ krb5_get_init_creds_opt_free_pkinit(krb5_get_init_creds_opt *opt)
 #endif
 }
     
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_get_init_creds_opt_set_pkinit(krb5_context context,
 				   krb5_get_init_creds_opt *opt,
 				   const char *user_id,

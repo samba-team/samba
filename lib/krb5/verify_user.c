@@ -90,7 +90,7 @@ verify_common (krb5_context context,
  * As a side effect, fresh tickets are obtained and stored in `ccache'.
  */
 
-void
+void KRB5_LIB_FUNCTION
 krb5_verify_opt_init(krb5_verify_opt *opt)
 {
     memset(opt, 0, sizeof(*opt));
@@ -98,31 +98,31 @@ krb5_verify_opt_init(krb5_verify_opt *opt)
     opt->service = "host";
 }
 
-void
+void KRB5_LIB_FUNCTION
 krb5_verify_opt_set_ccache(krb5_verify_opt *opt, krb5_ccache ccache)
 {
     opt->ccache = ccache;
 }
 
-void
+void KRB5_LIB_FUNCTION
 krb5_verify_opt_set_keytab(krb5_verify_opt *opt, krb5_keytab keytab)
 {
     opt->keytab = keytab;
 }
 
-void
+void KRB5_LIB_FUNCTION
 krb5_verify_opt_set_secure(krb5_verify_opt *opt, krb5_boolean secure)
 {
     opt->secure = secure;
 }
 
-void
+void KRB5_LIB_FUNCTION
 krb5_verify_opt_set_service(krb5_verify_opt *opt, const char *service)
 {
     opt->service = service;
 }
 
-void
+void KRB5_LIB_FUNCTION
 krb5_verify_opt_set_flags(krb5_verify_opt *opt, unsigned int flags)
 {
     opt->flags |= flags;
@@ -164,7 +164,7 @@ verify_user_opt_int(krb5_context context,
 #undef OPT
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_verify_user_opt(krb5_context context,
 		     krb5_principal principal,
 		     const char *password,
@@ -202,7 +202,7 @@ krb5_verify_user_opt(krb5_context context,
 
 /* compat function that calls above */
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_verify_user(krb5_context context, 
 		 krb5_principal principal,
 		 krb5_ccache ccache,
@@ -226,7 +226,7 @@ krb5_verify_user(krb5_context context,
  * ignored and all the local realms are tried.
  */
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_verify_user_lrealm(krb5_context context, 
 			krb5_principal principal,
 			krb5_ccache ccache,

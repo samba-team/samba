@@ -35,7 +35,7 @@
 
 RCSID("$Id$");
 
-int
+int KRB5_LIB_FUNCTION
 krb5_prompter_posix (krb5_context context,
 		     void *data,
 		     const char *name,

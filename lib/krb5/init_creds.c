@@ -35,7 +35,7 @@
 
 RCSID("$Id$");
 
-void
+void KRB5_LIB_FUNCTION
 krb5_get_init_creds_opt_init(krb5_get_init_creds_opt *opt)
 {
     memset (opt, 0, sizeof(*opt));
@@ -43,7 +43,7 @@ krb5_get_init_creds_opt_init(krb5_get_init_creds_opt *opt)
     opt->private = NULL;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_get_init_creds_opt_alloc(krb5_context context, 
 			      krb5_get_init_creds_opt **opt)
 {
@@ -86,7 +86,7 @@ _krb5_get_init_creds_opt_copy(krb5_context context,
     return 0;
 }
 
-void
+void KRB5_LIB_FUNCTION
 krb5_get_init_creds_opt_free(krb5_get_init_creds_opt *opt)
 {
     if (opt->private == NULL)
@@ -152,7 +152,7 @@ get_config_bool (krb5_context context,
 
 static krb5_addresses no_addrs = {0, NULL};
 
-void
+void KRB5_LIB_FUNCTION
 krb5_get_init_creds_opt_set_default_flags(krb5_context context,
 					  const char *appname,
 					  krb5_const_realm realm,
@@ -202,7 +202,7 @@ krb5_get_init_creds_opt_set_default_flags(krb5_context context,
 }
 
 
-void
+void KRB5_LIB_FUNCTION
 krb5_get_init_creds_opt_set_tkt_life(krb5_get_init_creds_opt *opt,
 				     krb5_deltat tkt_life)
 {
@@ -210,7 +210,7 @@ krb5_get_init_creds_opt_set_tkt_life(krb5_get_init_creds_opt *opt,
     opt->tkt_life = tkt_life;
 }
 
-void
+void KRB5_LIB_FUNCTION
 krb5_get_init_creds_opt_set_renew_life(krb5_get_init_creds_opt *opt,
 				       krb5_deltat renew_life)
 {
@@ -218,7 +218,7 @@ krb5_get_init_creds_opt_set_renew_life(krb5_get_init_creds_opt *opt,
     opt->renew_life = renew_life;
 }
 
-void
+void KRB5_LIB_FUNCTION
 krb5_get_init_creds_opt_set_forwardable(krb5_get_init_creds_opt *opt,
 					int forwardable)
 {
@@ -226,7 +226,7 @@ krb5_get_init_creds_opt_set_forwardable(krb5_get_init_creds_opt *opt,
     opt->forwardable = forwardable;
 }
 
-void
+void KRB5_LIB_FUNCTION
 krb5_get_init_creds_opt_set_proxiable(krb5_get_init_creds_opt *opt,
 				      int proxiable)
 {
@@ -234,7 +234,7 @@ krb5_get_init_creds_opt_set_proxiable(krb5_get_init_creds_opt *opt,
     opt->proxiable = proxiable;
 }
 
-void
+void KRB5_LIB_FUNCTION
 krb5_get_init_creds_opt_set_etype_list(krb5_get_init_creds_opt *opt,
 				       krb5_enctype *etype_list,
 				       int etype_list_length)
@@ -244,7 +244,7 @@ krb5_get_init_creds_opt_set_etype_list(krb5_get_init_creds_opt *opt,
     opt->etype_list_length = etype_list_length;
 }
 
-void
+void KRB5_LIB_FUNCTION
 krb5_get_init_creds_opt_set_address_list(krb5_get_init_creds_opt *opt,
 					 krb5_addresses *addresses)
 {
@@ -252,7 +252,7 @@ krb5_get_init_creds_opt_set_address_list(krb5_get_init_creds_opt *opt,
     opt->address_list = addresses;
 }
 
-void
+void KRB5_LIB_FUNCTION
 krb5_get_init_creds_opt_set_preauth_list(krb5_get_init_creds_opt *opt,
 					 krb5_preauthtype *preauth_list,
 					 int preauth_list_length)
@@ -262,7 +262,7 @@ krb5_get_init_creds_opt_set_preauth_list(krb5_get_init_creds_opt *opt,
     opt->preauth_list = preauth_list;
 }
 
-void
+void KRB5_LIB_FUNCTION
 krb5_get_init_creds_opt_set_salt(krb5_get_init_creds_opt *opt,
 				 krb5_data *salt)
 {
@@ -270,7 +270,7 @@ krb5_get_init_creds_opt_set_salt(krb5_get_init_creds_opt *opt,
     opt->salt = salt;
 }
 
-void
+void KRB5_LIB_FUNCTION
 krb5_get_init_creds_opt_set_anonymous(krb5_get_init_creds_opt *opt,
 				      int anonymous)
 {
@@ -290,7 +290,7 @@ require_ext_opt(krb5_context context,
     return 0;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_get_init_creds_opt_set_pa_password(krb5_context context,
 					krb5_get_init_creds_opt *opt,
 					const char *password,
@@ -305,7 +305,7 @@ krb5_get_init_creds_opt_set_pa_password(krb5_context context,
     return 0;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_get_init_creds_opt_set_pac_request(krb5_context context,
 					krb5_get_init_creds_opt *opt,
 					krb5_boolean req_pac)

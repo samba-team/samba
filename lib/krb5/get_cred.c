@@ -542,7 +542,7 @@ get_cred_kdc_la(krb5_context context, krb5_ccache id, krb5_kdc_flags flags,
     return ret;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_get_kdc_cred(krb5_context context,
 		  krb5_ccache id,
 		  krb5_kdc_flags flags,
@@ -782,7 +782,7 @@ get_cred_from_kdc_flags(krb5_context context,
     return ret;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_get_cred_from_kdc_opt(krb5_context context,
 			   krb5_ccache ccache,
 			   krb5_creds *in_creds,
@@ -796,7 +796,7 @@ krb5_get_cred_from_kdc_opt(krb5_context context,
 				   in_creds, out_creds, ret_tgts);
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_get_cred_from_kdc(krb5_context context,
 		       krb5_ccache ccache,
 		       krb5_creds *in_creds,
@@ -808,7 +808,7 @@ krb5_get_cred_from_kdc(krb5_context context,
 }
      
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_get_credentials_with_flags(krb5_context context,
 				krb5_flags options,
 				krb5_kdc_flags flags,
@@ -859,7 +859,7 @@ krb5_get_credentials_with_flags(krb5_context context,
     return ret;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_get_credentials(krb5_context context,
 		     krb5_flags options,
 		     krb5_ccache ccache,

@@ -62,7 +62,7 @@ static struct testcase {
     {"a/b/c", "a/b/c@", "", 3, {"a", "b", "c"}, FALSE},
     {NULL, NULL, "", 0, { NULL }, FALSE}};
 
-int
+int KRB5_LIB_FUNCTION
 main(int argc, char **argv)
 {
     struct testcase *t;

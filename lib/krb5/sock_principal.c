@@ -35,7 +35,7 @@
 
 RCSID("$Id$");
 			
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_sock_to_principal (krb5_context context,
 			int sock,
 			const char *sname,

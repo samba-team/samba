@@ -101,7 +101,7 @@ decrypt_authenticator (krb5_context context,
     return ret;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_decode_ap_req(krb5_context context,
 		   const krb5_data *inbuf,
 		   krb5_ap_req *ap_req)
@@ -155,7 +155,7 @@ check_transited(krb5_context context, Ticket *ticket, EncTicketPart *enc)
     return ret;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_decrypt_ticket(krb5_context context,
 		    Ticket *ticket,
 		    krb5_keyblock *key,
@@ -204,7 +204,7 @@ krb5_decrypt_ticket(krb5_context context,
     return 0;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_verify_authenticator_checksum(krb5_context context,
 				   krb5_auth_context ac,
 				   void *data,
@@ -244,7 +244,7 @@ out:
 }
 
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_verify_ap_req(krb5_context context,
 		   krb5_auth_context *auth_context,
 		   krb5_ap_req *ap_req,
@@ -265,7 +265,7 @@ krb5_verify_ap_req(krb5_context context,
 				KRB5_KU_AP_REQ_AUTH);
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_verify_ap_req2(krb5_context context,
 		    krb5_auth_context *auth_context,
 		    krb5_ap_req *ap_req,
@@ -401,7 +401,7 @@ krb5_verify_ap_req2(krb5_context context,
 }
 		   
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_rd_req_with_keyblock(krb5_context context,
 			  krb5_auth_context *auth_context,
 			  const krb5_data *inbuf,
@@ -476,7 +476,7 @@ out:
     return ret;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_rd_req(krb5_context context,
 	    krb5_auth_context *auth_context,
 	    const krb5_data *inbuf,

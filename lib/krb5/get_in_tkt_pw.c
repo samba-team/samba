@@ -35,7 +35,7 @@
 
 RCSID("$Id$");
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_password_key_proc (krb5_context context,
 			krb5_enctype type,
 			krb5_salt salt,
@@ -64,7 +64,7 @@ krb5_password_key_proc (krb5_context context,
     return ret;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_get_in_tkt_with_password (krb5_context context,
 			       krb5_flags options,
 			       krb5_addresses *addrs,

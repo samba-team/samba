@@ -35,7 +35,7 @@
 
 RCSID("$Id$");
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_write_message (krb5_context context,
 		    krb5_pointer p_fd,
 		    krb5_data *data)
@@ -55,7 +55,7 @@ krb5_write_message (krb5_context context,
     return 0;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_write_priv_message(krb5_context context,
 			krb5_auth_context ac,
 			krb5_pointer p_fd,
@@ -72,7 +72,7 @@ krb5_write_priv_message(krb5_context context,
     return ret;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_write_safe_message(krb5_context context,
 			krb5_auth_context ac,
 			krb5_pointer p_fd,

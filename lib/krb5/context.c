@@ -184,7 +184,7 @@ init_context_from_config_file(krb5_context context)
     return 0;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_init_context(krb5_context *context)
 {
     krb5_context p;
@@ -237,7 +237,7 @@ out:
     return ret;
 }
 
-void
+void KRB5_LIB_FUNCTION
 krb5_free_context(krb5_context context)
 {
     if (context->mutex) {
@@ -261,7 +261,7 @@ krb5_free_context(krb5_context context)
     free(context);
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_set_config_files(krb5_context context, char **filenames)
 {
     krb5_error_code ret;
@@ -316,7 +316,7 @@ add_file(char ***pfilenames, int *len, char *file)
  *  `pq' isn't free, its up the the caller
  */
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_prepend_config_files(const char *filelist, char **pq, char ***ret_pp)
 {
     krb5_error_code ret;
@@ -369,7 +369,7 @@ krb5_prepend_config_files(const char *filelist, char **pq, char ***ret_pp)
     return 0;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_prepend_config_files_default(const char *filelist, char ***pfilenames)
 {
     krb5_error_code ret;
@@ -388,7 +388,7 @@ krb5_prepend_config_files_default(const char *filelist, char ***pfilenames)
     return 0;
 }
 
-krb5_error_code 
+krb5_error_code KRB5_LIB_FUNCTION 
 krb5_get_default_config_files(char ***pfilenames)
 {
     const char *files = NULL;
@@ -403,7 +403,7 @@ krb5_get_default_config_files(char ***pfilenames)
     return krb5_prepend_config_files(files, NULL, pfilenames);
 }
 
-void
+void KRB5_LIB_FUNCTION
 krb5_free_config_files(char **filenames)
 {
     char **p;
@@ -450,7 +450,7 @@ default_etypes(krb5_context context, krb5_enctype **etype)
     return 0;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_set_default_in_tkt_etypes(krb5_context context, 
 			       const krb5_enctype *etypes)
 {
@@ -479,7 +479,7 @@ krb5_set_default_in_tkt_etypes(krb5_context context,
 }
 
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_get_default_in_tkt_etypes(krb5_context context,
 			       krb5_enctype **etypes)
 {
@@ -505,7 +505,7 @@ krb5_get_default_in_tkt_etypes(krb5_context context,
   return 0;
 }
 
-const char *
+const char* KRB5_LIB_FUNCTION
 krb5_get_err_text(krb5_context context, krb5_error_code code)
 {
     const char *p = NULL;
@@ -516,7 +516,7 @@ krb5_get_err_text(krb5_context context, krb5_error_code code)
     return p;
 }
 
-void
+void KRB5_LIB_FUNCTION
 krb5_init_ets(krb5_context context)
 {
     if(context->et_list == NULL){
@@ -527,19 +527,19 @@ krb5_init_ets(krb5_context context)
     }
 }
 
-void
+void KRB5_LIB_FUNCTION
 krb5_set_use_admin_kdc (krb5_context context, krb5_boolean flag)
 {
     context->use_admin_kdc = flag;
 }
 
-krb5_boolean
+krb5_boolean KRB5_LIB_FUNCTION
 krb5_get_use_admin_kdc (krb5_context context)
 {
     return context->use_admin_kdc;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_add_extra_addresses(krb5_context context, krb5_addresses *addresses)
 {
 
@@ -550,7 +550,7 @@ krb5_add_extra_addresses(krb5_context context, krb5_addresses *addresses)
 	return krb5_set_extra_addresses(context, addresses);
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_set_extra_addresses(krb5_context context, const krb5_addresses *addresses)
 {
     if(context->extra_addresses)
@@ -573,7 +573,7 @@ krb5_set_extra_addresses(krb5_context context, const krb5_addresses *addresses)
     return krb5_copy_addresses(context, addresses, context->extra_addresses);
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_get_extra_addresses(krb5_context context, krb5_addresses *addresses)
 {
     if(context->extra_addresses == NULL) {
@@ -583,7 +583,7 @@ krb5_get_extra_addresses(krb5_context context, krb5_addresses *addresses)
     return krb5_copy_addresses(context,context->extra_addresses, addresses);
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_add_ignore_addresses(krb5_context context, krb5_addresses *addresses)
 {
 
@@ -594,7 +594,7 @@ krb5_add_ignore_addresses(krb5_context context, krb5_addresses *addresses)
 	return krb5_set_ignore_addresses(context, addresses);
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_set_ignore_addresses(krb5_context context, const krb5_addresses *addresses)
 {
     if(context->ignore_addresses)
@@ -616,7 +616,7 @@ krb5_set_ignore_addresses(krb5_context context, const krb5_addresses *addresses)
     return krb5_copy_addresses(context, addresses, context->ignore_addresses);
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_get_ignore_addresses(krb5_context context, krb5_addresses *addresses)
 {
     if(context->ignore_addresses == NULL) {
@@ -626,14 +626,14 @@ krb5_get_ignore_addresses(krb5_context context, krb5_addresses *addresses)
     return krb5_copy_addresses(context, context->ignore_addresses, addresses);
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_set_fcache_version(krb5_context context, int version)
 {
     context->fcache_vno = version;
     return 0;
 }
 
-krb5_error_code
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_get_fcache_version(krb5_context context, int *version)
 {
     *version = context->fcache_vno;

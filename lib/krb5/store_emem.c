@@ -112,7 +112,7 @@ emem_free(krb5_storage *sp)
     free(s->base);
 }
 
-krb5_storage *
+krb5_storage * KRB5_LIB_FUNCTION
 krb5_storage_emem(void)
 {
     krb5_storage *sp = malloc(sizeof(krb5_storage));
