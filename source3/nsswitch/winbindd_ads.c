@@ -439,7 +439,7 @@ static BOOL dn_lookup(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
 	SAFE_FREE(ldap_exp);
 	SAFE_FREE(escaped_dn);
 
-	if (!ADS_ERR_OK(rc)) {
+	if (!ADS_ERR_OK(rc) || !res) {
 		goto failed;
 	}
 
