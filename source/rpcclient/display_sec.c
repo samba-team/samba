@@ -122,22 +122,22 @@ void display_sec_desc(SEC_DESC *sec)
 {
 	fstring sid_str;
 
-	if (sec->off_sacl != 0) {
-		printf("S-ACL\n");
+	if (sec->sacl) {
+		printf("SACL\n");
 		display_sec_acl(sec->sacl);
 	}
 
-	if (sec->off_dacl != 0) {
-		printf("D-ACL\n");
+	if (sec->dacl) {
+		printf("DACL\n");
 		display_sec_acl(sec->dacl);
 	}
 
-	if (sec->off_owner_sid != 0) {
+	if (sec->owner_sid) {
 		sid_to_string(sid_str, sec->owner_sid);
 		printf("\tOwner SID:\t%s\n", sid_str);
 	}
 
-	if (sec->off_grp_sid != 0) {
+	if (sec->grp_sid) {
 		sid_to_string(sid_str, sec->grp_sid);
 		printf("\tParent SID:\t%s\n", sid_str);
 	}

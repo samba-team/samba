@@ -131,8 +131,11 @@ printer info level 0 display function
 ****************************************************************************/
 static void display_print_info_0(PRINTER_INFO_0 *i0)
 {
-	fstring 	name = "";
-	fstring 	servername = "";
+	fstring name = "";
+	fstring servername = "";
+
+	if (!i0)
+		return;
 
 	if (i0->printername.buffer)
 		rpcstr_pull(name, i0->printername.buffer, sizeof(name), 0, STR_TERMINATE);
@@ -179,6 +182,8 @@ static void display_print_info_0(PRINTER_INFO_0 *i0)
 	printf("\tunknown27:[0x%x]\n", i0->unknown27);
 	printf("\tunknown28:[0x%x]\n", i0->unknown28);
 	printf("\tunknown29:[0x%x]\n", i0->unknown29);
+
+	printf("\n");
 }
 
 /****************************************************************************
@@ -205,7 +210,9 @@ static void display_print_info_1(PRINTER_INFO_1 *i1)
 	printf("\tflags:[0x%x]\n", i1->flags);
 	printf("\tname:[%s]\n", name);
 	printf("\tdescription:[%s]\n", desc);
-	printf("\tcomment:[%s]\n\n", comm);
+	printf("\tcomment:[%s]\n", comm);
+
+	printf("\n");
 }
 
 /****************************************************************************
@@ -278,7 +285,10 @@ static void display_print_info_2(PRINTER_INFO_2 *i2)
 	printf("\tcjobs:[0x%x]\n", i2->cjobs);
 	printf("\taverageppm:[0x%x]\n", i2->averageppm);
 
-	if (i2->secdesc) display_sec_desc(i2->secdesc);
+	if (i2->secdesc) 
+		display_sec_desc(i2->secdesc);
+
+	printf("\n");
 }
 
 /****************************************************************************
@@ -289,6 +299,8 @@ static void display_print_info_3(PRINTER_INFO_3 *i3)
 	printf("\tflags:[0x%x]\n", i3->flags);
 
 	display_sec_desc(i3->secdesc);
+
+	printf("\n");
 }
 
 /* Enumerate printers */
@@ -330,27 +342,26 @@ static NTSTATUS cmd_spoolss_enum_printers(struct cli_state *cli,
 		if (!num_printers)
 			printf ("No Printers printers returned.\n");
 	
-		switch(info_level) {
-		case 0:
-			for (i=0; i < num_printers; i++)
+		for (i = 0; i < num_printers; i++) {
+			switch(info_level) {
+			case 0:
 				display_print_info_0(&ctr.printers_0[i]);
-			break;
-		case 1:
-			for (i=0; i < num_printers; i++)
+				break;
+			case 1:
 				display_print_info_1(&ctr.printers_1[i]);
-			break;
-		case 2:
-			for (i=0; i < num_printers; i++)
+				break;
+			case 2:
 				display_print_info_2(&ctr.printers_2[i]);
-			break;
-		case 3:
-			for (i=0; i < num_printers; i++)
+				break;
+			case 3:
 				display_print_info_3(&ctr.printers_3[i]);
-			break;
-		default:
-			printf("unknown info level %d\n", info_level);
-			break;
+				break;
+			default:
+				printf("unknown info level %d\n", info_level);
+				goto done;
+			}
 		}
+	done:
 	}
 
 	return W_ERROR_IS_OK(result) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
@@ -1451,9 +1462,9 @@ static NTSTATUS cmd_spoolss_deleteform(struct cli_state *cli,
 
 /* Enumerate forms */
 
-static NTSTATUS cmd_spoolss_enumforms(struct cli_state *cli, 
-				      TALLOC_CTX *mem_ctx, int argc, 
-				      char **argv)
+static NTSTATUS cmd_spoolss_enum_forms(struct cli_state *cli, 
+				       TALLOC_CTX *mem_ctx, int argc, 
+				       char **argv)
 {
 	POLICY_HND handle;
 	WERROR werror;
@@ -1543,7 +1554,7 @@ struct cmd_set spoolss_commands[] = {
 	{ "setform",            cmd_spoolss_setform,            PIPE_SPOOLSS, "Set form", "" },
 	{ "getform",            cmd_spoolss_getform,            PIPE_SPOOLSS, "Get form", "" },
 	{ "deleteform",         cmd_spoolss_deleteform,         PIPE_SPOOLSS, "Delete form", "" },
-	{ "enumforms",          cmd_spoolss_enumforms,         PIPE_SPOOLSS, "Enumerate forms", "" },
+	{ "enumforms",          cmd_spoolss_enum_forms,         PIPE_SPOOLSS, "Enumerate forms", "" },
 
 	{ NULL }
 };
