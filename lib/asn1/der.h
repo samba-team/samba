@@ -50,18 +50,19 @@ typedef enum {PRIM = 0, CONS = 1} Der_type;
 /* Universal tags */
 
 enum {
-     UT_Integer = 2,	
-     UT_BitString = 3,
-     UT_OctetString = 4,
-     UT_Null = 5,
-     UT_ObjID = 6,
-     UT_Sequence = 16,
-     UT_Set = 17,
-     UT_PrintableString = 19,
-     UT_IA5String = 22,
-     UT_UTCTime = 23,
-     UT_GeneralizedTime = 24,
-     UT_GeneralString = 27
+     UT_Integer		= 2,	
+     UT_BitString	= 3,
+     UT_OctetString	= 4,
+     UT_Null		= 5,
+     UT_ObjID		= 6,
+     UT_Sequence	= 16,
+     UT_Set		= 17,
+     UT_PrintableString	= 19,
+     UT_IA5String	= 22,
+     UT_UTCTime		= 23,
+     UT_GeneralizedTime	= 24,
+     UT_VisibleString	= 26,
+     UT_GeneralString	= 27
 };
 
 #define ASN1_INDEFINITE 0xdce0deed
