@@ -132,6 +132,7 @@ proto (int sock, const char *hostname, const char *service)
 	err (1, "krb5_net_write");
     if (krb5_net_write (context, sock, packet.data, len) != len)
 	err (1, "krb5_net_write");
+    return 0;
 }
 
 static int
