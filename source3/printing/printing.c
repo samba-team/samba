@@ -218,7 +218,7 @@ static void print_unix_job(int snum, print_queue_struct *q)
 
 struct traverse_struct {
 	print_queue_struct *queue;
-	int qcount, snum;
+	int qcount, snum, maxcount;
 };
 
 /* utility fn to delete any jobs that are no longer active */
@@ -313,18 +313,18 @@ static void print_queue_update(int snum)
 	/* turn the lpq output into a series of job structures */
 	qcount = 0;
 	ZERO_STRUCT(status);
-	for (i=0; i<numlines; i++) {
-		queue = Realloc(queue,sizeof(print_queue_struct)*(qcount+1));
-		if (!queue) {
-			qcount = 0;
-			break;
-		}
-		/* parse the line */
-		if (parse_lpq_entry(snum,qlines[i],
-				    &queue[qcount],&status,qcount==0)) {
-			qcount++;
-		}
-	}		
+	if (numlines)
+		queue = (print_queue_struct *)malloc(sizeof(print_queue_struct)*(numlines+1));
+
+	if (queue) {
+		for (i=0; i<numlines; i++) {
+			/* parse the line */
+			if (parse_lpq_entry(snum,qlines[i],
+					    &queue[qcount],&status,qcount==0)) {
+				qcount++;
+			}
+		}		
+	}
 	file_lines_free(qlines);
 
 	/*
@@ -840,8 +840,8 @@ static int traverse_fn_queue(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void *
 	/* maybe it isn't for this queue */
 	if (ts->snum != print_queue_snum(pjob.qname)) return 0;
 
-	ts->queue = Realloc(ts->queue,sizeof(print_queue_struct)*(ts->qcount+1));
-	if (!ts->queue) return -1;
+	if (ts->qcount >= ts->maxcount) return 0;
+
 	i = ts->qcount;
 
 	ts->queue[i].job = jobid;
@@ -857,6 +857,29 @@ static int traverse_fn_queue(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void *
 	return 0;
 }
 
+struct traverse_count_struct {
+	int snum, count;
+};
+
+/* utility fn to count the number of entries in the print queue */
+static int traverse_count_fn_queue(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void *state)
+{
+	struct traverse_count_struct *ts = (struct traverse_count_struct *)state;
+	struct printjob pjob;
+	int jobid;
+
+	if (data.dsize != sizeof(pjob) || key.dsize != sizeof(int)) return 0;
+	memcpy(&jobid, key.dptr, sizeof(jobid));
+	memcpy(&pjob,  data.dptr, sizeof(pjob));
+
+	/* maybe it isn't for this queue */
+	if (ts->snum != print_queue_snum(pjob.qname)) return 0;
+
+	ts->count++;
+
+	return 0;
+}
+
 /****************************************************************************
 get a printer queue listing
 ****************************************************************************/
@@ -865,15 +888,32 @@ int print_queue_status(int snum,
 		       print_status_struct *status)
 {
 	struct traverse_struct tstruct;
+	struct traverse_count_struct tsc;
 	fstring keystr;
 	TDB_DATA data, key;
 
 	/* make sure the database is up to date */
 	if (print_cache_expired(snum)) print_queue_update(snum);
 	
-	/* fill in the queue */
-	tstruct.queue = NULL;
+	/*
+	 * Count the number of entries.
+	 */
+	tsc.count = 0;
+	tsc.snum = snum;
+	tdb_traverse(tdb, traverse_count_fn_queue, (void *)&tsc);
+
+	/* Allocate the queue size. */
+	if (( tstruct.queue = (print_queue_struct *)malloc(sizeof(print_queue_struct)*tsc.count))
+				== NULL)
+		return 0;
+
+	/*
+	 * Fill in the queue.
+	 * We need maxcount as the queue size may have changed between
+	 * the two calls to tdb_traverse.
+	 */
 	tstruct.qcount = 0;
+	tstruct.maxcount = tsc.count;
 	tstruct.snum = snum;
 
 	tdb_traverse(tdb, traverse_fn_queue, (void *)&tstruct);
