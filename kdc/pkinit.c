@@ -313,7 +313,7 @@ generate_dh_keyblock(krb5_context context, pk_client_params *client_params,
 }
 
 static BIGNUM *
-big_integer_to_BN(krb5_context context, const char *field, heim_big_integer *f)
+integer_to_BN(krb5_context context, const char *field, heim_integer *f)
 {
     unsigned char *p = f->data;
     ASN1_INTEGER *i;
@@ -378,24 +378,24 @@ get_dh_param(krb5_context context, SubjectPublicKeyInfo *dh_key_info,
 	goto out;
     }
     ret = KRB5_BADMSGTYPE;
-    dh->p = big_integer_to_BN(context, "DH prime", &dhparam.p);
+    dh->p = integer_to_BN(context, "DH prime", &dhparam.p);
     if (dh->p == NULL)
 	goto out;
-    dh->g = big_integer_to_BN(context, "DH base", &dhparam.g);
+    dh->g = integer_to_BN(context, "DH base", &dhparam.g);
     if (dh->g == NULL)
 	goto out;
-    dh->q = big_integer_to_BN(context, "DH p-1 factor", &dhparam.q);
+    dh->q = integer_to_BN(context, "DH p-1 factor", &dhparam.q);
     if (dh->g == NULL)
 	goto out;
 
     {
-	heim_big_integer glue;
+	heim_integer glue;
 	glue.data = dh_key_info->subjectPublicKey.data;
 	glue.length = dh_key_info->subjectPublicKey.length;
 
-	client_params->dh_public_key = big_integer_to_BN(context,
-							 "subjectPublicKey",
-							 &glue);
+	client_params->dh_public_key = integer_to_BN(context,
+						     "subjectPublicKey",
+						     &glue);
 	if (client_params->dh_public_key == NULL) {
 	    krb5_clear_error_string(context);
 	    goto out;
@@ -607,7 +607,7 @@ pk_mk_pa_reply_enckey(krb5_context context,
     krb5_enctype enctype = ETYPE_DES3_CBC_NONE;
     heim_oid *enc_type_oid = NULL;
     X509_NAME *issuer_name;
-    heim_big_integer *serial;
+    heim_integer *serial;
 
     size_t size;
 

@@ -162,7 +162,7 @@ _krb5_pk_create_sign(krb5_context context,
     const heim_oid *digest_oid;
     SignerInfo *signer_info;
     X509 *user_cert;
-    heim_big_integer *serial;
+    heim_integer *serial;
     krb5_error_code ret;
     krb5_data buf;
     SignedData sd;
@@ -375,7 +375,7 @@ _krb5_pk_create_sign(krb5_context context,
 }
 
 static int
-BN_to_integer(krb5_context context, BIGNUM *bn, heim_big_integer *integer)
+BN_to_integer(krb5_context context, BIGNUM *bn, heim_integer *integer)
 {
     ASN1_INTEGER *i;
     int ret;
@@ -704,7 +704,7 @@ pk_peer_compare(krb5_context context,
     switch (peer1->element) {
     case choice_SignerIdentifier_issuerAndSerialNumber: {
 	ASN1_INTEGER *i;
-	const heim_big_integer *serial;
+	const heim_integer *serial;
 	X509_NAME *name;
 	unsigned char *p;
 	size_t len;
