@@ -130,7 +130,7 @@ static /**/const char *const rcsid[] = { (char *)rcsid, "\100(#)" msg }
 #define MaxHostNameLen (64+4)
 #define MaxPathLen (1024+4)
 
-#ifdef HAVE_SGTTY_H
+#if defined(HAVE_SGTTY_H) && defined(__NeXT__)
 #define SGTTY
 #endif
 
