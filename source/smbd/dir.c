@@ -965,8 +965,8 @@ char *DirCacheCheck( char *path, char *name, int snum )
        entry = (dir_cache_entry *)ubi_dlNext( entry ) )
     {
     if( entry->snum == snum
-        && 0 == strcmp( name, entry->name )
-        && 0 == strcmp( path, entry->path ) )
+        && entry->name && 0 == strcmp( name, entry->name )
+        && entry->path && 0 == strcmp( path, entry->path ) )
       {
       DEBUG(4, ("Got dir cache hit on %s %s -> %s\n",path,name,entry->dname));
       return( entry->dname );
