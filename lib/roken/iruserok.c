@@ -1,5 +1,7 @@
 #include "bsd_locl.h"
 
+RCSID("$Header$");
+
 #ifndef HAVE_IRUSEROK
 
 int     __check_rhosts_file = 1;

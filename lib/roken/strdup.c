@@ -1,5 +1,7 @@
 #include "bsd_locl.h"
 
+RCSID("$Header$");
+
 #ifndef HAVE_STRDUP
 char *
 strdup(const char *old)

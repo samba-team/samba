@@ -2,6 +2,8 @@
 
 #include "bsd_locl.h"
 
+RCSID("$Header$");
+
 /* utmpx_login - update utmp and wtmp after login */
 
 int

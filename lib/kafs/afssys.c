@@ -1,6 +1,8 @@
 #include "config.h"
 #include "protos.h"
 
+RCSID("$Header$");
+
 #include <stdio.h>
 #include <sys/types.h>
 #include <unistd.h>
