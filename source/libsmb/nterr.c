@@ -1,12 +1,16 @@
+/* NT error codes.  please read nterr.h */
 
+#include "includes.h"
 #include "nterr.h"
 
-static struct
+typedef struct
 {
 	char *nt_errstr;
 	uint16 nt_errcode;
 
-} nt_errs[] =
+} nt_err_code_struct;
+
+nt_err_code_struct nt_errs[] =
 {
 	{ "NT_STATUS_UNSUCCESSFUL", NT_STATUS_UNSUCCESSFUL },
 	{ "NT_STATUS_NOT_IMPLEMENTED", NT_STATUS_NOT_IMPLEMENTED },
@@ -511,4 +515,26 @@ static struct
 	{ "NT_STATUS_FILE_IS_OFFLINE", NT_STATUS_FILE_IS_OFFLINE },
 	{ NULL, 0 }
 };
+
+/*****************************************************************************
+ returns an NT error message.  not amazingly helpful, but better than a number.
+ *****************************************************************************/
+char *get_nt_error_msg(uint16 nt_code)
+{
+	static pstring msg;
+	int idx = 0;
+
+	strcpy(msg, "Unknown NT error");
+
+	while (nt_errs[idx].nt_errstr != NULL)
+	{
+		if (nt_errs[idx].nt_errcode == nt_code)
+		{
+			strcpy(msg, nt_errs[idx].nt_errstr);
+			return msg;
+		}
+		idx++;
+	}
+	return NULL;
+}
 

@@ -391,10 +391,10 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   BOOL valid_nt_password = False;
   pstring user;
   BOOL guest=False;
-  BOOL computer_id=False;
   static BOOL done_sesssetup = False;
   BOOL doencrypt = SMBENCRYPT();
   char *domain = "";
+  struct cli_state *pwd_srv = NULL;
 
   *smb_apasswd = 0;
   *smb_ntpasswd = 0;
@@ -518,27 +518,24 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
    if (!smb_pass)
    {
      /* lkclXXXX: if workstation entry doesn't exist, indicate logon failure */
-     DEBUG(4,("Workstation trust account %s doesn't exist.",user));
-     SSVAL(outbuf, smb_flg2, 0xc003); /* PAXX: Someone please unhack this */
-     CVAL(outbuf, smb_reh) = 1; /* PAXX: Someone please unhack this */
-     return(ERROR(NT_STATUS_LOGON_FAILURE, 0xc000)); /* decimal 109 NT error, 0xc000 */
+     DEBUG(4,("Workstation trust account %s doesn't exist\n",user));
+     SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES); /* PAXX: Someone please unhack this */
+     return(ERROR(0, 0xc0000000|NT_STATUS_LOGON_FAILURE));
    }
    else
    {
      /* PAXX: This is the NO LOGON workstation trust account stuff */
      /* lkclXXXX: if the workstation *does* exist, indicate failure differently! */
-     DEBUG(4,("No Workstation trust account %s",user));
-     SSVAL(outbuf, smb_flg2, 0xc003); /* PAXX: Someone please unhack this */
-     CVAL(outbuf, smb_reh) = 1; /* PAXX: Someone please unhack this */
-     return(ERROR(NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT, 0xc000)); /* decimal 409 NT error, 0xc000 */
+     DEBUG(4,("No Workstation trust account %s\n",user));
+     SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES); /* PAXX: Someone please unhack this */
+     return(ERROR(0, 0xc0000000|NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT)); /* decimal 409; critical NT error */
    }
 
-   computer_id = True;
-#else /* not NTDOMAIN, leave this in. PAXX: Someone get rid of this */
-    user[strlen(user) - 1] = '\0';
+#else
+    /* not NTDOMAIN.  BUG!  *must* deny access from accounts ending in $ */
+    return(ERROR(0, 0xc0000000|NT_STATUS_LOGON_FAILURE));
 #endif
   }
-
 
   /* If no username is sent use the guest account */
   if (!*user)
@@ -563,43 +560,59 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
    */
 
   if(!guest && strequal(user,lp_guestaccount(-1)) && (*smb_apasswd == 0))
+  {
     guest = True;
+  }
 
-  if (!guest && !(lp_security() == SEC_SERVER && 
-		  server_validate(user, domain, 
-				  smb_apasswd, smb_apasslen, 
-				  smb_ntpasswd, smb_ntpasslen)) &&
-      !check_hosts_equiv(user))
-    {
+	if (!guest && !(lp_security() == SEC_SERVER && 
+	               ((pwd_srv = pwd_server_connection()) != NULL) &&
+	               server_validate(pwd_srv, user, domain, 
+	                               smb_apasswd, smb_apasslen, 
+	                               smb_ntpasswd, smb_ntpasslen)) &&
+	               !check_hosts_equiv(user))
+	{
 
-      /* now check if it's a valid username/password */
-      /* If an NT password was supplied try and validate with that
-	 first. This is superior as the passwords are mixed case 
-         128 length unicode */
-      if(smb_ntpasslen)
-	{
-	  if(!password_ok(user,smb_ntpasswd,smb_ntpasslen,NULL))
-	    DEBUG(0,("NT Password did not match ! Defaulting to Lanman\n"));
-	  else
-	    valid_nt_password = True;
-	} 
-      if (!valid_nt_password && !password_ok(user,smb_apasswd,smb_apasslen,NULL))
-	{
-	  if (!computer_id && lp_security() >= SEC_USER) {
+		/* now check if it's a valid username/password */
+		/* If an NT password was supplied try and validate with that
+		   first. This is superior as the passwords are mixed case 
+		   128 length unicode */
+
+		if (smb_ntpasslen)
+		{
+			/* check the NT password, if there is one. */
+			if(!password_ok(user,smb_ntpasswd,smb_ntpasslen,NULL))
+			{
+				DEBUG(0,("NT Password did not match ! Defaulting to Lanman\n"));
+			}
+			else
+			{
+				valid_nt_password = True;
+			}
+		} 
+
+		/* check the LM password instead */
+		if (!valid_nt_password && !password_ok(user,smb_apasswd,smb_apasslen,NULL))
+		{
+			if (lp_security() >= SEC_USER)
+			{
 #if (GUEST_SESSSETUP == 0)
-	    return(ERROR(ERRSRV,ERRbadpw));
+				return(ERROR(ERRSRV,ERRbadpw));
 #endif
 #if (GUEST_SESSSETUP == 1)
-	    if (Get_Pwnam(user,True))
-	      return(ERROR(ERRSRV,ERRbadpw));
+				if (Get_Pwnam(user,True))
+					return(ERROR(ERRSRV,ERRbadpw));
 #endif
-	  }
- 	  if (*smb_apasswd || !Get_Pwnam(user,True))
-	    strcpy(user,lp_guestaccount(-1));
-	  DEBUG(3,("Registered username %s for guest access\n",user));
-	  guest = True;
+			}
+
+			/* no lm or nt password specified: username doesn't exist.  allow guest access */
+			if (*smb_apasswd || !Get_Pwnam(user,True))
+			{
+				strcpy(user, lp_guestaccount(-1));
+				DEBUG(3,("Registered username %s for guest access\n",user));
+				guest = True;
+			}
+		}
 	}
-    }
 
   if (!Get_Pwnam(user,True)) {
     DEBUG(3,("No such user %s - using guest account\n",user));
@@ -645,8 +658,11 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
     uid = pw->pw_uid;
   }
 
-  if (guest && !computer_id)
-    SSVAL(outbuf,smb_vwv2,1);
+  if (guest)
+  {
+    /* indicate whether logged on as a user or not */
+    SSVAL(outbuf,smb_vwv2, SESSION_LOGGED_ON_AS_USER);
+  }
 
   /* register the name and uid as being validated, so further connections
      to a uid can get through without a password, on the same VC */

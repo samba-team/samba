@@ -46,12 +46,14 @@ static double end_timer()
 
 static BOOL open_connection(struct cli_state *c)
 {
-	if (!cli_initialise(c) || !cli_connect(c, host, NULL)) {
+	if (!cli_initialise(c) || !cli_connect(c, host, NULL))
+	{
 		printf("Failed to connect with %s\n", host);
 		return False;
 	}
 
-	if (!cli_session_request(c, host, 0x20, myname)) {
+	if (!cli_session_request(c, host, 0x20, myname, 0x0))
+	{
 		printf("%s rejected the session\n",host);
 		cli_shutdown(c);
 		return False;

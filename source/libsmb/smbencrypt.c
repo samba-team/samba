@@ -29,8 +29,9 @@ extern int DEBUGLEVEL;
 /*
    This implements the X/Open SMB password encryption
    It takes a password, a 8 byte "crypt key" and puts 24 bytes of 
-   encrypted password into p24 */
-void SMBencrypt(uchar *passwd, uchar *c8, uchar *p24)
+   encrypted password into p24
+ */
+void SMBencrypt(uchar *passwd, uchar *c8, uchar p24[24])
 {
   uchar p14[15], p21[21];
 
@@ -97,9 +98,19 @@ void E_md4hash(uchar *passwd, uchar *p16)
 	mdfour(p16, (unsigned char *)wpwd, len);
 }
 
-/* Does the NT MD4 hash then des encryption. */
+/* Does the des encryption from the NT or LM MD4 hash. */
+void SMBOWFencrypt(char passwd[16], uchar *c8, uchar p24[24])
+{
+	uchar p21[21];
  
-void SMBNTencrypt(uchar *passwd, uchar *c8, uchar *p24)
+	memset(p21,'\0',21);
+ 
+	memcpy(p21, passwd, sizeof(passwd));    
+	E_P24(p21, c8, p24);
+}
+
+/* Does the NT MD4 hash then des encryption. */
+void SMBNTencrypt(uchar *passwd, uchar *c8, uchar p24[24])
 {
 	uchar p21[21];
  
@@ -110,8 +121,7 @@ void SMBNTencrypt(uchar *passwd, uchar *c8, uchar *p24)
 }
 
 /* Does both the NT and LM owfs of a user's password */
-
-void nt_lm_owf_gen(char *pwd, char *nt_p16, char *p16)
+void nt_lm_owf_gen(char *pwd, char nt_p16[16], char p16[16])
 {
 	char passwd[130];
 	StrnCpy(passwd, pwd, sizeof(passwd)-1);

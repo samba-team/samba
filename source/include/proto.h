@@ -61,13 +61,14 @@ BOOL cli_unlock(struct cli_state *cli, int fnum, uint32 offset, uint32 len, int 
 int cli_read(struct cli_state *cli, int fnum, char *buf, uint32 offset, uint16 size);
 int cli_write(struct cli_state *cli, int fnum, char *buf, uint32 offset, uint16 size);
 BOOL cli_negprot(struct cli_state *cli);
-BOOL cli_session_request(struct cli_state *cli, char *host, int name_type,
-			 char *myname);
+BOOL cli_session_request(struct cli_state *cli,
+			char *called_host_name        , int called_name_type,
+			char  calling_netbios_name[16], int calling_name_type);
 BOOL cli_connect(struct cli_state *cli, char *host, struct in_addr *ip);
 BOOL cli_initialise(struct cli_state *cli);
 void cli_shutdown(struct cli_state *cli);
 char *cli_errstr(struct cli_state *cli);
-void cli_error(struct cli_state *cli, int *eclass, int *num);
+BOOL cli_error(struct cli_state *cli, uint8 *eclass, uint32 *num);
 void cli_sockopt(struct cli_state *cli, char *options);
 int cli_setpid(struct cli_state *cli, int pid);
 
@@ -627,8 +628,16 @@ void sync_browse_lists(struct subnet_record *d, struct work_record *work,
 
 /*The following definitions come from  ntclient.c  */
 
-BOOL do_nt_login(char *desthost, char *myhostname,
+BOOL wksta_trust_account_check(struct in_addr dest_ip, char *dest_host,
+				char *myhostname, char *domain,
+				fstring mach_pwd, fstring new_mach_pwd);
+BOOL do_nt_login(struct in_addr dest_ip, char *dest_host,
+				char *myhostname,
 				int Client, int cnum);
+
+/*The following definitions come from  nterr.c  */
+
+char *get_nt_error_msg(uint16 nt_code);
 
 /*The following definitions come from  params.c  */
 
@@ -654,11 +663,6 @@ BOOL user_ok(char *user,int snum);
 BOOL authorise_login(int snum,char *user,char *password, int pwlen, 
 		     BOOL *guest,BOOL *force,uint16 vuid);
 BOOL check_hosts_equiv(char *user);
-struct cli_state *server_client(void);
-struct cli_state *server_cryptkey(void);
-BOOL server_validate(char *user, char *domain, 
-		     char *pass, int passlen,
-		     char *ntpass, int ntpasslen);
 
 /*The following definitions come from  pcap.c  */
 
@@ -691,6 +695,18 @@ void del_printqueue(int cnum,int snum,int jobid);
 void status_printjob(int cnum,int snum,int jobid,int status);
 int printjob_encode(int snum, int job);
 void printjob_decode(int jobid, int *snum, int *job);
+
+/*The following definitions come from  pwd_validate.c  */
+
+BOOL server_connect_init(struct cli_state *clnt, char my_netbios_name[16],
+				struct in_addr dest_ip, char *desthost);
+BOOL server_cryptkey(struct cli_state *clnt, char my_netbios_name[16]);
+BOOL server_validate2(struct cli_state *clnt, char *user, char *domain, 
+		     char *pass, int passlen,
+		     char *ntpass, int ntpasslen);
+BOOL server_validate(struct cli_state *clnt, char *user, char *domain, 
+		     char *pass, int passlen,
+		     char *ntpass, int ntpasslen);
 
 /*The following definitions come from  quotas.c  */
 
@@ -776,9 +792,12 @@ BOOL close_lsa_policy_hnd(LSA_POL_HND *hnd);
 
 /*The following definitions come from  rpc_pipes/lsaparse.c  */
 
+void make_q_logon_ctrl2(LSA_Q_LOGON_CTRL2 *q_l, char *server_name,
+			uint32 function_code);
+char* lsa_io_q_logon_ctrl2(BOOL io, LSA_Q_LOGON_CTRL2 *q_l, char *q, char *base, int align, int depth);
 void make_q_open_pol(LSA_Q_OPEN_POL *r_q, char *server_name,
 			uint32 attributes, uint32 sec_qos,
-			uint16 desired_access);
+			uint32 desired_access);
 char* lsa_io_q_open_pol(BOOL io, LSA_Q_OPEN_POL *r_q, char *q, char *base, int align, int depth);
 char* lsa_io_r_open_pol(BOOL io, LSA_R_OPEN_POL *r_p, char *q, char *base, int align, int depth);
 void make_q_query(LSA_Q_QUERY_INFO *q_q, LSA_POL_HND *hnd, uint16 info_class);
@@ -828,12 +847,14 @@ BOOL do_lsa_close(uint16 fnum, uint32 call_id,
 
 /*The following definitions come from  rpc_pipes/ntclientnet.c  */
 
-BOOL do_lsa_req_chal(uint16 fnum, uint32 call_id,
-		char *desthost, char *myhostname,
-        DOM_CHAL *clnt_chal, DOM_CHAL *srv_chal);
+BOOL do_lsa_logon_ctrl2(uint16 fnum, uint32 call_id,
+		char *host_name, uint32 status_level);
 BOOL do_lsa_auth2(uint16 fnum, uint32 call_id,
 		char *logon_srv, char *acct_name, uint16 sec_chan, char *comp_name,
         DOM_CHAL *clnt_chal, uint32 neg_flags, DOM_CHAL *srv_chal);
+BOOL do_lsa_req_chal(uint16 fnum, uint32 call_id,
+		char *desthost, char *myhostname,
+        DOM_CHAL *clnt_chal, DOM_CHAL *srv_chal);
 BOOL do_lsa_srv_pwset(uint16 fnum, uint32 call_id,
 		uchar sess_key[8], 
 		char *logon_srv, char *mach_acct, uint16 sec_chan_type, char *comp_name,
@@ -969,7 +990,7 @@ void make_clnt_info2(DOM_CLNT_INFO2 *clnt,
 				char *logon_srv, char *comp_name,
 				DOM_CRED *clnt_cred);
 char* smb_io_clnt_info2(BOOL io, DOM_CLNT_INFO2 *clnt, char *q, char *base, int align, int depth);
-char* make_clnt_info(DOM_CLNT_INFO *clnt,
+void make_clnt_info(DOM_CLNT_INFO *clnt,
 		char *logon_srv, char *acct_name,
 		uint16 sec_chan, char *comp_name,
 				DOM_CRED *cred);
@@ -1041,6 +1062,7 @@ char* wks_io_r_unknown_0(BOOL io, WKS_R_UNKNOWN_0 *r_u, char *q, char *base, int
 
 /*The following definitions come from  server.c  */
 
+struct cli_state *pwd_server_connection(void);
 void  *dflt_sig(void);
 void  killkids(void);
 mode_t unix_mode(int cnum,int dosmode);
@@ -1108,10 +1130,11 @@ void cred_hash2(unsigned char *out,unsigned char *in,unsigned char *key);
 
 /*The following definitions come from  smbencrypt.c  */
 
-void SMBencrypt(uchar *passwd, uchar *c8, uchar *p24);
+void SMBencrypt(uchar *passwd, uchar *c8, uchar p24[24]);
 void E_md4hash(uchar *passwd, uchar *p16);
-void SMBNTencrypt(uchar *passwd, uchar *c8, uchar *p24);
-void nt_lm_owf_gen(char *pwd, char *nt_p16, char *p16);
+void SMBOWFencrypt(char passwd[16], uchar *c8, uchar p24[24]);
+void SMBNTencrypt(uchar *passwd, uchar *c8, uchar p24[24]);
+void nt_lm_owf_gen(char *pwd, char nt_p16[16], char p16[16]);
 
 /*The following definitions come from  smberr.c  */
 

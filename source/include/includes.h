@@ -1124,6 +1124,9 @@ extern char *sys_errlist[];
 
 #include "version.h"
 #include "smb.h"
+#ifdef NTDOMAIN
+#include "ntdomain.h"
+#endif
 #include "nameserv.h"
 #include "ubiqx/ubi_dLinkList.h"
 

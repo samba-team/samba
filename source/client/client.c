@@ -3774,10 +3774,10 @@ static void usage(char *pname)
       }
 
   if (!tar_type && !*query_host && !*service && !message)
-    {
+  {
       usage(pname);
       exit(1);
-    }
+  }
 
 
   DEBUG(3,("%s client started (version %s)\n",timestring(),VERSION));
@@ -3900,7 +3900,7 @@ static void usage(char *pname)
 		{
 			if (!cli_send_login(NULL,NULL,True,True)) return(1);
 
-			do_nt_login(desthost, myhostname, Client, cnum);
+			do_nt_login(dest_ip, desthost, myhostname, Client, cnum);
 
 			cli_send_logout();
 			close_sockets();
