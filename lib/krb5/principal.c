@@ -219,6 +219,8 @@ krb5_unparse_name(krb5_context context,
 }
 
 
+#if 0 /* not implemented */
+
 krb5_error_code
 krb5_unparse_name_ext(krb5_context context,
 		      krb5_const_principal principal,
@@ -229,6 +231,7 @@ krb5_unparse_name_ext(krb5_context context,
     abort();
 }
 
+#endif
 
 krb5_realm*
 krb5_princ_realm(krb5_context context,

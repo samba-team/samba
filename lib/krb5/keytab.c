@@ -112,6 +112,7 @@ krb5_kt_read_service_key(krb5_context context,
   return r;
 }
 
+#if 0 /* not implemented */
 krb5_error_code
 krb5_kt_remove_entry(krb5_context context,
 		     krb5_keytab id,
@@ -119,6 +120,7 @@ krb5_kt_remove_entry(krb5_context context,
 {
     abort();
 }
+#endif
 
 krb5_error_code
 krb5_kt_get_name(krb5_context context,
