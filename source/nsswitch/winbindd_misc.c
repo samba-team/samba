@@ -60,6 +60,7 @@ enum winbindd_result winbindd_check_machine_acct(struct winbindd_cli_state *stat
         /* This call does a cli_nt_setup_creds() which implicitly checks
            the trust account password. */
 
+	/* Don't shut this down - it belongs to the connection cache code */
         result = cm_get_netlogon_cli(lp_workgroup(), trust_passwd, &cli);
 
         if (!NT_STATUS_IS_OK(result)) {
@@ -67,12 +68,10 @@ enum winbindd_result winbindd_check_machine_acct(struct winbindd_cli_state *stat
                 goto done;
         }
 
-        cli_shutdown(cli);
-
         /* There is a race condition between fetching the trust account
-           password and joining the domain so it's possible that the trust
-           account password has been changed on us.  We are returned
-           NT_STATUS_ACCESS_DENIED if this happens. */
+           password and the periodic machine password change.  So it's 
+	   possible that the trust account password has been changed on us.  
+	   We are returned NT_STATUS_ACCESS_DENIED if this happens. */
 
 #define MAX_RETRIES 8
 
