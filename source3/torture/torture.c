@@ -1956,9 +1956,12 @@ static BOOL run_fdsesstest(int dummy)
 	struct cli_state *cli;
 	uint16 new_vuid;
 	uint16 saved_vuid;
+	uint16 new_cnum;
+	uint16 saved_cnum;
 	const char *fname = "\\fdsess.tst";
 	int fnum1;
 	pstring buf;
+	BOOL ret = True;
 
 	if (!torture_open_connection(&cli))
 		return False;
@@ -1966,6 +1969,12 @@ static BOOL run_fdsesstest(int dummy)
 
 	if (!torture_cli_session_setup2(cli, &new_vuid))
 		return False;
+
+	saved_cnum = cli->cnum;
+	if (!cli_send_tconX(cli, share, "?????", "", 1))
+		return False;
+	new_cnum = cli->cnum;
+	cli->cnum = saved_cnum;
 
 	printf("starting fdsesstest\n");
 
@@ -1986,18 +1995,29 @@ static BOOL run_fdsesstest(int dummy)
 	cli->vuid = new_vuid;
 
 	if (cli_read(cli, fnum1, buf, 0, 13) == 13) {
-		printf("read succeeded! nasty security hole [%s]\n",
+		printf("read succeeded with different vuid! nasty security hole [%s]\n",
 		       buf);
-		return False;
+		ret = False;
+	}
+	cli->vuid = saved_vuid;
+
+	/* Try with same vuid, different cnum. */
+	cli->cnum = new_cnum;
+
+	if (cli_read(cli, fnum1, buf, 0, 13) == 13) {
+		printf("read succeeded with different cnum![%s]\n",
+		       buf);
+		ret = False;
 	}
 
+	cli->cnum = saved_cnum;
 	cli_close(cli, fnum1);
 	cli_unlink(cli, fname);
 
 	torture_close_connection(cli);
 
 	printf("finished fdsesstest\n");
-	return True;
+	return ret;
 }
 
 /*
