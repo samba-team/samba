@@ -26,7 +26,7 @@ struct cmd_set {
 	char *name;
 	NTSTATUS (*fn)(struct cli_state*, TALLOC_CTX *mem_ctx, int argc, 
                        char **argv);
-        char *pipe;
+        int pipe_idx;
 	char *description;
 	char *usage;
 };

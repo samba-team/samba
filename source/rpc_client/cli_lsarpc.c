@@ -1224,7 +1224,7 @@ Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
 
 	/* Fetch domain sid */
  
-	if (!cli_nt_session_open(&cli, PIPE_LSARPC)) {
+	if (!cli_nt_session_open(&cli, PI_LSARPC)) {
 		DEBUG(0, ("fetch_domain_sid: Error connecting to SAM pipe\n"));
 		goto done;
 	}
