@@ -226,20 +226,20 @@ static NTSTATUS row_to_sam_account(MYSQL_RES * r, SAM_ACCOUNT * u)
 	if (!row)
 		return NT_STATUS_INVALID_PARAMETER;
 
-	pdb_set_logon_time(u, xatol(row[0]), FALSE);
-	pdb_set_logoff_time(u, xatol(row[1]), FALSE);
-	pdb_set_kickoff_time(u, xatol(row[2]), FALSE);
+	pdb_set_logon_time(u, xatol(row[0]), PDB_SET);
+	pdb_set_logoff_time(u, xatol(row[1]), PDB_SET);
+	pdb_set_kickoff_time(u, xatol(row[2]), PDB_SET);
 	pdb_set_pass_last_set_time(u, xatol(row[3]), PDB_SET);
-	pdb_set_pass_can_change_time(u, xatol(row[4]), FALSE);
-	pdb_set_pass_must_change_time(u, xatol(row[5]), FALSE);
+	pdb_set_pass_can_change_time(u, xatol(row[4]), PDB_SET);
+	pdb_set_pass_must_change_time(u, xatol(row[5]), PDB_SET);
 	pdb_set_username(u, row[6], PDB_SET);
 	pdb_set_domain(u, row[7], PDB_SET);
 	pdb_set_nt_username(u, row[8], PDB_SET);
 	pdb_set_fullname(u, row[9], PDB_SET);
-	pdb_set_homedir(u, row[10], True);
-	pdb_set_dir_drive(u, row[11], True);
-	pdb_set_logon_script(u, row[12], True);
-	pdb_set_profile_path(u, row[13], True);
+	pdb_set_homedir(u, row[10], PDB_SET);
+	pdb_set_dir_drive(u, row[11], PDB_SET);
+	pdb_set_logon_script(u, row[12], PDB_SET);
+	pdb_set_profile_path(u, row[13], PDB_SET);
 	pdb_set_acct_desc(u, row[14], PDB_SET);
 	pdb_set_workstations(u, row[15], PDB_SET);
 	pdb_set_unknown_str(u, row[16], PDB_SET);
