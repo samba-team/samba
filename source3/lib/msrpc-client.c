@@ -261,9 +261,11 @@ struct msrpc_local *ncalrpc_l_initialise(struct msrpc_local *msrpc,
         else
         {
                 NET_USER_INFO_3 usr;
+#if 0
                 uid_t uid = getuid();
                 gid_t gid = getgid();
                 char *name = uidtoname(uid);
+#endif
 
                 ZERO_STRUCT(usr);
 
