@@ -686,6 +686,12 @@ static void usage(char *pname)
 
   fault_setup((void (*)(void *))fault_continue );
 
+  /* POSIX demands that signals are inherited. If the invoking process has
+   * these signals masked, we will have problems, as we won't recieve them. */
+  BlockSignals(False, SIGHUP);
+  BlockSignals(False, SIGUSR1);
+  BlockSignals(False, SIGTERM);
+
   CatchSignal( SIGHUP,  SIGNAL_CAST sig_hup );
   CatchSignal( SIGTERM, SIGNAL_CAST sig_term );
 
