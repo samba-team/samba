@@ -32,6 +32,7 @@ static struct {
 	{"profilelevel", MSG_REQ_PROFILELEVEL},
 	{"debuglevel", MSG_REQ_DEBUGLEVEL},
 	{"printer-notify", MSG_PRINTER_NOTIFY},
+	{"close-share", MSG_SMB_FORCE_TDIS},
 	{NULL, -1}
 };
 
@@ -200,7 +201,7 @@ static BOOL do_command(char *dest, char *msg_name, char **params)
 		break;
 
 	case MSG_PROFILE:
-		if (!params[0]) {
+		if (!params || !params[0]) {
 			fprintf(stderr,"MSG_PROFILE needs a parameter\n");
 			return(False);
 		}
@@ -271,11 +272,24 @@ static BOOL do_command(char *dest, char *msg_name, char **params)
 			fprintf(stderr,"printer-notify can only be sent to smbd\n");
 			return(False);
 		}
-		if (!params[0]) {
+		if (!params || !params[0]) {
 			fprintf(stderr, "printer-notify needs a printer name\n");
 			return (False);
 		}
 		retval = send_message(dest, MSG_PRINTER_NOTIFY, params[0],
+				      strlen(params[0]) + 1, False);
+		break;
+
+	case MSG_SMB_FORCE_TDIS:
+		if (!strequal(dest, "smbd")) {
+			fprintf(stderr,"close-share can only be sent to smbd\n");
+			return(False);
+		}
+		if (!params || !params[0]) {
+			fprintf(stderr, "close-share needs a share name or '*'\n");
+			return (False);
+		}
+		retval = send_message(dest, MSG_SMB_FORCE_TDIS, params[0],
 				      strlen(params[0]) + 1, False);
 		break;
 
@@ -284,7 +298,7 @@ static BOOL do_command(char *dest, char *msg_name, char **params)
 		    message_register(MSG_PONG, pong_function);
 		    pong_registered = True;
 		}
-		if (!params[0]) {
+		if (!params || !params[0]) {
 			fprintf(stderr,"MSG_PING needs a parameter\n");
 			return(False);
 		}
