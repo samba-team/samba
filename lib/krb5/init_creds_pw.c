@@ -178,9 +178,9 @@ print_expire (krb5_context context,
 	if (lr->val[i].lr_type == 6
 	    && lr->val[i].lr_value <= t) {
 	    char *p;
-	    time_t = lr->val[i].lr_value;
+	    time_t tmp = lr->val[i].lr_value;
 	    
-	    asprintf (&p, "Your password will expire at %s", ctime(&t));
+	    asprintf (&p, "Your password will expire at %s", ctime(&tmp));
 	    (*prompter) (context, data, p, 0, NULL);
 	    free (p);
 	    return;

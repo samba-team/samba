@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -42,7 +42,7 @@ RCSID("$Id$");
  * This program tries to act as a server for the sample in `Sample
  * SSPI Code' in Windows 2000 RC1 SDK.
  *
- * use --dump-add to get a binary dump of the authorization data in the ticket
+ * use --dump-auth to get a binary dump of the authorization data in the ticket
  */
 
 static int help_flag;
