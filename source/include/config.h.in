@@ -797,6 +797,12 @@
 /* Define if you have the strlcpy function.  */
 #undef HAVE_STRLCPY
 
+/* Define if you have the strndup function.  */
+#undef HAVE_STRNDUP
+
+/* Define if you have the strnlen function.  */
+#undef HAVE_STRNLEN
+
 /* Define if you have the strpbrk function.  */
 #undef HAVE_STRPBRK
 
@@ -853,12 +859,6 @@
 
 /* Define if you have the <ctype.h> header file.  */
 #undef HAVE_CTYPE_H
-
-/* Define if you have the <cups/cups.h> header file.  */
-#undef HAVE_CUPS_CUPS_H
-
-/* Define if you have the <cups/language.h> header file.  */
-#undef HAVE_CUPS_LANGUAGE_H
 
 /* Define if you have the <dirent.h> header file.  */
 #undef HAVE_DIRENT_H
@@ -1105,9 +1105,6 @@
 
 /* Define if you have the acl library (-lacl).  */
 #undef HAVE_LIBACL
-
-/* Define if you have the cups library (-lcups).  */
-#undef HAVE_LIBCUPS
 
 /* Define if you have the gen library (-lgen).  */
 #undef HAVE_LIBGEN
