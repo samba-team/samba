@@ -239,7 +239,6 @@ sub type_align($)
     return 4, if ($type eq "DATA_BLOB");
     return 4, if ($type eq "int32");
 
-	print STDERR "Had to guess align width for type $type\n";
     # it must be an external type - all we can do is guess 
     return 4;
 }
