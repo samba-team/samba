@@ -112,6 +112,12 @@ static void nbtd_winsserver_register(struct nbt_name_socket *nbtsock,
 	uint16_t nb_flags = packet->additional[0].rdata.netbios.addresses[0].nb_flags;
 	const char *address = packet->additional[0].rdata.netbios.addresses[0].ipaddr;
 
+	/* as a special case, the local master browser name is always accepted
+	   for registration, but never stored */
+	if (name->type == NBT_NAME_MASTER) {
+		goto done;
+	}
+
 	rec = winsdb_load(winssrv, name, packet);
 	if (rec == NULL) {
 		rcode = wins_register_new(nbtsock, packet, src_address, src_port);
