@@ -4,7 +4,7 @@
 Contributor:	Luke Kenneth Casson Leighton (samba-bugs@samba.anu.edu.au)
 		Copyright (C) 1997 Luke Kenneth Casson Leighton
 Created:	October 20, 1997
-Updated:	October 20, 1997
+Updated:	October 29, 1997
 
 Subject:	NT Domain Logons
 ===========================================================================
@@ -28,44 +28,37 @@ Domain Logons using 1.9.18alpha1
 
 1) compile samba with -DNTDOMAIN
 
-2) carry out the following unix commands:
-
-	touch /tmp/netlogon
-	touch /tmp/srvsvc
-	touch /tmp/lsarpc
-	chmod 666 /tmp/netlogon
-	chmod 666 /tmp/srvsvc
-	chmod 666 /tmp/lsarpc
-
-3) set up samba with encrypted passwords: see ENCRYPTION.txt (probably out
+2) set up samba with encrypted passwords: see ENCRYPTION.txt (probably out
    of date: you no longer need the DES libraries, but other than that,
    ENCRYPTION.txt is current).
 
-4) for each workstation, add a line to smbpasswd with a username of MACHINE$
+3) for each workstation, add a line to smbpasswd with a username of MACHINE$
    and a password of "machine".  this process will be automated in further
    releases.
 
-5) if using NT server to log in, run the User Manager for Domains, and
+4) if using NT server to log in, run the User Manager for Domains, and
    add the capability to "Log in Locally" to the policies.
 
-6) set up the following parameters in smb.conf
+5) set up the following parameters in smb.conf
 
 ;	substitute your workgroup here
 	workgroup = SAMBA
 
 ;	a description of domain sids can be found elsewhere.
+;	you **MUST** begin the domain SID with S-1-5-21.
+;	the rest is up to you.
 	domain sid = S-1-5-21-123-456-789-123
 
 ;	tells workstations to use SAMBA as its Primary Domain Controller.
 	domain logons = yes
 
-7) make sure samba is running before the next step is carried out.  if
+6) make sure samba is running before the next step is carried out.  if
    this is your first time, just for fun you might like to switch the
    debug log level to about 10.  the NT pipes produces some very pretty
    output when decoding requests and generating responses, which would
    be particularly useful to see in tcpdump at some point.
 
-8) In the NT Network Settings, change the domain to SAMBA.  Do
+7) In the NT Network Settings, change the domain to SAMBA.  Do
    not attempt to create an account using the other part of the dialog:
    it will fail at present.
 
@@ -79,9 +72,7 @@ Domain Logons using 1.9.18alpha1
 
    On port 139, you should see a LSA_OPEN_POLICY, two LSA_QUERY_INFOs (one
    for a domain SID of S-1-3... and another for S-1-5) and then an LSA_CLOSE
-   or two.  If when you get a connection to the SMB pipe NETLOGON, if /netlogon
-   access is refused, then you probably haven't granted the correct access
-   permissions on the /tmp/netlogon file.  Likewise for the srvsvc file.
+   or two.  
 
    You may see a pipe connection to a wksta service being refused: this
    is acceptable, we have found.  You may also see a "Net Server Get Info"
@@ -89,7 +80,7 @@ Domain Logons using 1.9.18alpha1
 
    Assuming you got the Welcome message, go through the obligatory reboot...
 
-9) When pressing Ctrl-Alt-Delete, the NT login box should have three entries.
+8) When pressing Ctrl-Alt-Delete, the NT login box should have three entries.
    If there is a delay of about twenty seconds between pressing Ctrl-Alt-Delete
    and the appearance of this login dialog, then there might be a problem:
    at this stage the workstation is issuing an LSA_ENUMTRUSTEDDOMAIN request
@@ -121,7 +112,7 @@ Domain Logons using 1.9.18alpha1
    System | Profiles control panel to make a copy of the _local_ profile onto
    the samba server.
 
-10) Play around.  Look at the Samba Server: see if it can be found in the
+9) Play around.  Look at the Samba Server: see if it can be found in the
    browse lists.  Check that it is accessible; run some applications.
    Generally stress things.  Laugh a lot.  Logout of the NT machine
    (generating an LSA_SAM_LOGOFF) and log back in again.  Try logging in
