@@ -31,7 +31,7 @@ static void lazy_initialize_passdb(void)
 	static BOOL initialized = FALSE;
 	if(initialized)return;
 	static_init_pdb;
-	initialized = TRUE;
+	initialized = True;
 }
 
 BOOL smb_register_passdb(const char *name, pdb_init_function init, int version) 

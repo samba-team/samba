@@ -28,7 +28,7 @@ static pstring username;
 static pstring owner_username;
 static fstring server;
 static int got_pass;
-static int test_args = FALSE;
+static int test_args = False;
 static TALLOC_CTX *ctx;
 
 #define CREATE_ACCESS_READ READ_CONTROL_ACCESS
@@ -36,7 +36,7 @@ static TALLOC_CTX *ctx;
 
 /* numeric is set when the user wants numeric SIDs and ACEs rather
    than going via LSA calls to resolve them */
-static BOOL numeric = FALSE;
+static BOOL numeric = False;
 
 enum acl_mode {SMB_ACL_SET, SMB_ACL_DELETE, SMB_ACL_MODIFY, SMB_ACL_ADD };
 enum chown_mode {REQUEST_NONE, REQUEST_CHOWN, REQUEST_CHGRP};
@@ -758,8 +758,8 @@ static struct cli_state *connect_one(const char *share)
 		{ "set", 'S', POPT_ARG_STRING, NULL, 'S', "Set acls", "ACLS" },
 		{ "chown", 'C', POPT_ARG_STRING, NULL, 'C', "Change ownership of a file", "USERNAME" },
 		{ "chgrp", 'G', POPT_ARG_STRING, NULL, 'G', "Change group ownership of a file", "GROUPNAME" },
-		{ "numeric", 'n', POPT_ARG_VAL, &numeric, TRUE, "Don't resolve sids or masks to names" },
-		{ "test-args", 't', POPT_ARG_VAL, &test_args, TRUE, "Test arguments"},
+		{ "numeric", 'n', POPT_ARG_VAL, &numeric, True, "Don't resolve sids or masks to names" },
+		{ "test-args", 't', POPT_ARG_VAL, &test_args, True, "Test arguments"},
 		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_debug },
 		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_version },
 		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_configfile },
