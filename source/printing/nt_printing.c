@@ -2310,7 +2310,7 @@ static void free_nt_printer_info_level_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr)
 
 	/* finally the top level structure */
 
-	SAFE_FREE(*info_ptr);
+	SAFE_FREE( *info_ptr );
 }
 
 
@@ -3199,7 +3199,7 @@ WERROR mod_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level)
  Initialize printer devmode & data with previously saved driver init values.
 ****************************************************************************/
 
-static BOOL set_driver_init_2(NT_PRINTER_INFO_LEVEL_2 *info_ptr)
+static BOOL set_driver_init_2( NT_PRINTER_INFO_LEVEL_2 *info_ptr )
 {
 	int                     len = 0;
 	pstring                 key;
@@ -3293,7 +3293,7 @@ BOOL set_driver_init(NT_PRINTER_INFO_LEVEL *printer, uint32 level)
 	switch (level)
 	{
 		case 2:
-			result=set_driver_init_2(printer->info_2);
+			result = set_driver_init_2(printer->info_2);
 			break;
 			
 		default:

@@ -1875,12 +1875,12 @@ WERROR _spoolss_getprinterdata(pipes_struct *p, SPOOL_Q_GETPRINTERDATA *q_u, SPO
 
 	/* in case of problem, return some default values */
 	
-	*needed=0;
-	*type=0;
+	*needed = 0;
+	*type   = 0;
 	
 	DEBUG(4,("_spoolss_getprinterdata\n"));
 	
-	if (!Printer) {
+	if ( !Printer ) {
 		DEBUG(2,("_spoolss_getprinterdata: Invalid handle (%s:%u:%u).\n", OUR_HANDLE(handle)));
 		status = WERR_BADFID;
 		goto done;
@@ -1914,7 +1914,7 @@ done:
 		
 		/* reply this param doesn't exist */
 		
-		if (*out_size) {
+		if ( *out_size ) {
 			if((*data=(uint8 *)talloc_zero(p->mem_ctx, *out_size*sizeof(uint8))) == NULL) {
 				if ( printer ) 
 					free_a_printer( &printer, 2 );
@@ -4615,8 +4615,8 @@ static void fill_printer_driver_info_6(DRIVER_INFO_6 *info, NT_PRINTER_DRIVER_IN
 	init_unistr( &info->monitorname, driver.info_3->monitorname );
 	init_unistr( &info->defaultdatatype, driver.info_3->defaultdatatype );
 
-	info->dependentfiles=NULL;
-	init_unistr_array(&info->dependentfiles, driver.info_3->dependentfiles, servername);
+	info->dependentfiles = NULL;
+	init_unistr_array( &info->dependentfiles, driver.info_3->dependentfiles, servername );
 
 	info->previousdrivernames=NULL;
 	init_unistr_array(&info->previousdrivernames, &nullstr, servername);
@@ -4655,7 +4655,7 @@ static WERROR construct_printer_driver_info_6(DRIVER_INFO_6 *info, int snum,
 	if (!W_ERROR_IS_OK(status))
 		return WERR_INVALID_PRINTER_NAME;
 
-	status=get_a_printer_driver(&driver, 3, printer->info_2->drivername, architecture, version);	
+	status = get_a_printer_driver(&driver, 3, printer->info_2->drivername, architecture, version);
 		
 	DEBUG(8,("construct_printer_driver_info_6: status: %s\n", dos_errstr(status)));
 	
@@ -4871,9 +4871,9 @@ WERROR _spoolss_getprinterdriver2(pipes_struct *p, SPOOL_Q_GETPRINTERDRIVER2 *q_
 
 	DEBUG(4,("_spoolss_getprinterdriver2\n"));
 
-	*needed=0;
-	*servermajorversion=0;
-	*serverminorversion=0;
+	*needed = 0;
+	*servermajorversion = 0;
+	*serverminorversion = 0;
 
 	pstrcpy(servername, get_called_name());
 	unistr2_to_dos(architecture, uni_arch, sizeof(architecture)-1);
@@ -6923,13 +6923,13 @@ WERROR _spoolss_enumprinterdata(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATA *q_u, S
 	int		i, key_index, num_values;
 	int		name_length;
 
-	ZERO_STRUCT(printer);
+	ZERO_STRUCT( printer );
 	
-	*out_type=0;
+	*out_type = 0;
 
-	*out_max_data_len=0;
-	*data_out=NULL;
-	*out_data_len=0;
+	*out_max_data_len = 0;
+	*data_out         = NULL;
+	*out_data_len     = 0;
 
 	DEBUG(5,("spoolss_enumprinterdata\n"));
 
@@ -6960,9 +6960,9 @@ WERROR _spoolss_enumprinterdata(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATA *q_u, S
 	{
 		DEBUGADD(6,("Activating NT mega-hack to find sizes\n"));
 
-		param_index=0;
-		biggest_valuesize=0;
-		biggest_datasize=0;
+		param_index       = 0;
+		biggest_valuesize = 0;
+		biggest_datasize  = 0;
 		
 		num_values = regval_ctr_numvals( &p_data->keys[key_index].values );
 
@@ -6984,8 +6984,8 @@ WERROR _spoolss_enumprinterdata(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATA *q_u, S
 		/* the value is an UNICODE string but real_value_size is the length 
 		   in bytes including the trailing 0 */
 		   
-		*out_value_len=2*(1+biggest_valuesize);
-		*out_data_len=biggest_datasize;
+		*out_value_len = 2 * (1+biggest_valuesize);
+		*out_data_len  = biggest_datasize;
 
 		DEBUG(6,("final values: [%d], [%d]\n", *out_value_len, *out_data_len));
 
@@ -7058,7 +7058,7 @@ WERROR _spoolss_enumprinterdata(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATA *q_u, S
 
 		/* data - counted in bytes */
 
-		*out_max_data_len=in_data_len;
+		*out_max_data_len = in_data_len;
 		if ( (*data_out = (uint8 *)talloc_zero(p->mem_ctx, in_data_len*sizeof(uint8))) == NULL) 
 		{
 			result = WERR_NOMEM;
@@ -7066,7 +7066,7 @@ WERROR _spoolss_enumprinterdata(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATA *q_u, S
 		}
 		data_len = (size_t)regval_size(val);
 		memcpy( *data_out, regval_data_p(val), data_len );
-		*out_data_len=data_len;
+		*out_data_len = data_len;
 	}
 
 done:
@@ -7142,7 +7142,7 @@ WERROR _spoolss_setprinterdata( pipes_struct *p, SPOOL_Q_SETPRINTERDATA *q_u, SP
 			status = mod_a_printer(*printer, 2);
 	}
 
- done:
+done:
 	free_a_printer(&printer, 2);
 
 	return status;
@@ -7853,8 +7853,8 @@ WERROR _spoolss_getprinterdataex(pipes_struct *p, SPOOL_Q_GETPRINTERDATAEX *q_u,
 
 	/* in case of problem, return some default values */
 	
-	*needed=0;
-	*type=0;
+	*needed   = 0;
+	*type     = 0;
 	*out_size = in_size;
 		
 	if (!Printer) {
@@ -8120,7 +8120,7 @@ WERROR _spoolss_enumprinterkey(pipes_struct *p, SPOOL_Q_ENUMPRINTERKEY *q_u, SPO
 	
 	status = WERR_OK;
 
-		if (q_u->size < r_u->needed)
+	if ( q_u->size < r_u->needed ) 
 		status = WERR_MORE_DATA;
 			
 done:
@@ -8161,7 +8161,7 @@ WERROR _spoolss_deleteprinterkey(pipes_struct *p, SPOOL_Q_DELETEPRINTERKEY *q_u,
 	if (Printer->access_granted != PRINTER_ACCESS_ADMINISTER) {
 		DEBUG(3, ("_spoolss_deleteprinterkey: printer properties change denied by handle\n"));
 	return WERR_ACCESS_DENIED;	
-}
+	}
 
 	status = get_a_printer(&printer, 2, lp_servicename(snum));
 	if (!W_ERROR_IS_OK(status))
@@ -8172,6 +8172,7 @@ WERROR _spoolss_deleteprinterkey(pipes_struct *p, SPOOL_Q_DELETEPRINTERKEY *q_u,
         unistr2_to_dos(key, &q_u->keyname, sizeof(key) - 1);
  
 	status = delete_all_printer_data( printer->info_2, key );	
+
 	if ( W_ERROR_IS_OK(status) )
 		status = mod_a_printer(*printer, 2);
 	
