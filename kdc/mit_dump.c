@@ -263,7 +263,7 @@ mit_prop_dump(void *arg, const char *file)
 	    ent.kvno = getint(&p); /* XXX kvno */
 	    
 	    ALLOC(ent.keys.val[i].mkvno);
-	    *ent.keys.val[i].mkvno = 1;
+	    *ent.keys.val[i].mkvno = 0;
 	    
 	    /* key version 0 -- actual key */
 	    ent.keys.val[i].key.keytype = getint(&p); /* key type */
