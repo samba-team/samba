@@ -708,7 +708,7 @@ NTSTATUS ndr_push_relative(struct ndr_push *ndr, int ndr_flags, const void *p,
 		if (ndr->relative_list == NULL) {
 			ndr->relative_list_end = NULL;
 		}
-		NDR_CHECK(ndr_push_align(ndr, 8));
+		NDR_CHECK(ndr_push_align(ndr, 4));
 		ndr_push_save(ndr, &save);
 		ndr->offset = ofs->offset;
 		NDR_CHECK(ndr_push_uint32(ndr, save.offset - ndr->ofs_list->offset));
