@@ -687,7 +687,7 @@ PROTO_OBJ =  $(LIB_OBJ) $(LIBNMB_OBJ) $(PARAM_OBJ) \
 		$(GROUPDB_OBJ) $(PASSDB_OBJ) $(SAMPASSDB_OBJ) \
 		$(SMBPASSWD_OBJ) $(SIDDB_OBJ) \
 		$(RPC_SRVUTIL_OBJ) \
-		$(RPC_PARSE_OBJ2) $(WINBINDD_OBJ1)
+		$(RPC_PARSE_OBJ2)
 
 SMBWRAPPERPICOBJS = $(SMBWRAPPER_OBJ:.o=.po)
 SMBWRAPPERPICOBJS32 = $(SMBWRAPPER_OBJ:.o=.po32)
@@ -1178,7 +1178,8 @@ uninstallcp:
 clean: 
 	-rm -f core */*~ *~ */*.o */*.po */*.po32 */*.lo */*.so
 
-proto: lib_smb_proto rpc_client_proto rpc_parse_proto all_other_proto_for_now
+proto: winbindd_proto lib_smb_proto rpc_client_proto rpc_parse_proto \
+	all_other_proto_for_now
 
 all_other_proto_for_now: 
 	@cd $(srcdir) && $(SHELL) script/mkproto.sh $(AWK) \
@@ -1204,6 +1205,11 @@ rpc_client_proto:
 	@cd $(srcdir) && $(SHELL) script/mkproto.sh $(AWK) \
 	  -h _RPC_CLIENT_PROTO_H_ include/rpc_client_proto.h \
 	  $(RPC_CLIENT_OBJ)
+
+winbindd_proto:
+	@cd $(srcdir) && $(SHELL) script/mkproto.sh $(AWK) \
+	  -h _WINBINDD_PROTO_H_ nsswitch/winbindd_proto.h \
+	  $(WINBINDD_OBJ1)
 
 etags:
 	etags `find . -name "*.[ch]" | grep -v /CVS/`
