@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -184,8 +184,15 @@ krb5_get_krb_changepw_hst (krb5_context context,
 			   const krb5_realm *realm,
 			   char ***hostlist)
 {
-    return get_krbhst (context, realm, "admin_server", "kpasswd",
-		       hostlist);
+    krb5_error_code ret;
+
+    ret = get_krbhst (context, realm, "kpasswd_server", "kpasswd",
+		      hostlist);
+    if (ret)
+	return ret;
+    ret = get_krbhst (context, realm, "admin_server", "kpasswd",
+		      hostlist);
+    return ret;
 }
 
 /*
