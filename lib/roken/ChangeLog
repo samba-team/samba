@@ -1,3 +1,7 @@
+2000-07-25  Johan Danielsson  <joda@pdc.kth.se>
+
+	* warnerr.c: add get_progname
+
 2000-07-24  Assar Westerlund  <assar@sics.se>
 
 	* getaddrinfo.c (add_hostent): if there's no fqdn in `he' try
