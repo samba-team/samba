@@ -134,6 +134,7 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	/* Create domain user */
 	acct_name = talloc_asprintf(mem_ctx, "%s$", global_myname); 
 	strlower(acct_name);
+	const_acct_name = acct_name;
 
         acb_info = ((lp_server_role() == ROLE_DOMAIN_BDC) || lp_server_role() == ROLE_DOMAIN_PDC) ? ACB_SVRTRUST : ACB_WSTRUST;
 
