@@ -138,6 +138,9 @@ static BOOL tdbsam_convert(TDB_CONTEXT *pdb_tdb, tdbsamver_t from)
 				return False;
 			}
 	
+			/* We're finished with the old data. */
+			SAFE_FREE(data.dptr);
+
 			/* pack from the buffer into the new format */
 			DEBUG(10,("tdbsam_convert: Try packing a record (key:%s) (version:%d)\n", key.dptr, from));
 			if ((data.dsize=init_buffer_from_sam (&buf, user, False)) == -1) {

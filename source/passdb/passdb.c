@@ -932,7 +932,7 @@ BOOL local_password_change(const char *user_name, int local_flags,
 		if ((local_flags & LOCAL_ADD_USER) || (local_flags & LOCAL_DELETE_USER)) {
 			/* Might not exist in /etc/passwd.  Use rid algorithm here */
 			if (!NT_STATUS_IS_OK(pdb_init_sam_new(&sam_pass, user_name, 0))) {
-				slprintf(err_str, err_str_len-1, "Failed to initialise SAM_ACCOUNT for user %s.\n", user_name);
+				slprintf(err_str, err_str_len-1, "Failed to initialise SAM_ACCOUNT for user %s. Does this user exist in the UNIX password database ?\n", user_name);
 				return False;
 			}
 		} else {
@@ -1840,12 +1840,27 @@ BOOL init_sam_from_buffer_v2(SAM_ACCOUNT *sampass, uint8 *buf, uint32 buflen)
 
 	/* Change from V1 is addition of password history field. */
 	account_policy_get(AP_PASSWORD_HISTORY, &pwHistLen);
-
-	if (pwHistLen && nt_pw_hist_ptr && ((nt_pw_hist_len % NT_HASH_LEN) == 0)) {
-		if (!pdb_set_pw_history(sampass, nt_pw_hist_ptr, nt_pw_hist_len/NT_HASH_LEN, PDB_SET)) {
+	if (pwHistLen) {
+		char *pw_hist = malloc(pwHistLen * NT_HASH_LEN);
+		if (!pw_hist) {
 			ret = False;
 			goto done;
 		}
+		memset(pw_hist, '\0', pwHistLen * NT_HASH_LEN);
+		if (nt_pw_hist_ptr && nt_pw_hist_len) {
+			int i;
+			SMB_ASSERT((nt_pw_hist_len % NT_HASH_LEN) == 0);
+			nt_pw_hist_len /= NT_HASH_LEN;
+			for (i = 0; (i < pwHistLen) && (i < nt_pw_hist_len); i++) {
+				memcpy(&pw_hist[i*NT_HASH_LEN], &nt_pw_hist_ptr[i*NT_HASH_LEN], NT_HASH_LEN);
+			}
+		}
+		if (!pdb_set_pw_history(sampass, pw_hist, pwHistLen, PDB_SET)) {
+			SAFE_FREE(pw_hist);
+			ret = False;
+			goto done;
+		}
+		SAFE_FREE(pw_hist);
 	} else {
 		pdb_set_pw_history(sampass, NULL, 0, PDB_SET);
 	}
