@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995, 1996, 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -111,11 +111,11 @@ parse_words(unsigned wn[],
 	    int (*convert)(char *, void *),
 	    void *arg)
 {
-  char *w, *wend, c;
+  unsigned char *w, *wend, c;
   int i;
   int tmp;
 
-  w = str;
+  w = (unsigned char *)str;
   for (i = 0; i < 6; ++i) {
     while (isspace(*w))
       ++w;
@@ -124,7 +124,7 @@ parse_words(unsigned wn[],
       ++wend;
     c = *wend;
     *wend = '\0';
-    tmp = (*convert)(w, arg);
+    tmp = (*convert)((char *)w, arg);
     *wend = c;
     w = wend;
     if (tmp < 0)
