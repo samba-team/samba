@@ -621,7 +621,7 @@ prots[] =
 
 
 /****************************************************************************
-send a session setup
+send a session setup 
 ****************************************************************************/
 BOOL cli_session_setup(struct cli_state *cli, 
 		       char *user, 

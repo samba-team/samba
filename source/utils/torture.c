@@ -45,12 +45,17 @@ static double end_timer(void)
 
 static BOOL open_connection(struct cli_state *c)
 {
+	struct nmb_name called, calling;
+
 	if (!cli_initialise(c) || !cli_connect(c, host, NULL)) {
 		printf("Failed to connect with %s\n", host);
 		return False;
 	}
 
-	if (!cli_session_request(c, host, 0x20, myname)) {
+	make_nmb_name(&calling, myname, 0x0, "");
+	make_nmb_name(&called , host, 0x20, "");
+
+	if (!cli_session_request(c, &calling, &called)) {
 		printf("%s rejected the session\n",host);
 		cli_shutdown(c);
 		return False;
@@ -94,16 +99,30 @@ static void close_connection(struct cli_state *c)
 }
 
 
+/* check if the server produced the expected error code */
+static BOOL check_error(struct cli_state *c, 
+			uint8 eclass, uint32 ecode, uint32 nterr)
+{
+	uint8 class;
+	uint32 num;
+	int eno;
+	eno = cli_error(c, &eclass, &num);
+	if ((eclass != class || ecode != num) &&
+	    num != (nterr&0xFFFFFF)) {
+		printf("unexpected error code class=%d code=%d\n", 
+			 (int)class, (int)num);
+		printf(" expected %d/%d %d\n", 
+		       (int)eclass, (int)ecode, (int)nterr);
+		return False;
+	}
+	return True;
+}
+
+
 static BOOL wait_lock(struct cli_state *c, int fnum, uint32 offset, uint32 len)
 {
 	while (!cli_lock(c, fnum, offset, len, -1)) {
-		int eclass, num;
-		cli_error(c, &eclass, &num);
-		if (eclass != ERRDOS || num != ERRlock) {
-			printf("lock failed (%s)\n", 
-			       cli_errstr(c));
-			return False;
-		}
+		if (!check_error(c, ERRDOS, ERRlock, 0)) return False;
 	}
 	return True;
 }
@@ -272,13 +291,7 @@ static void run_locktest1(void)
 		printf("lock2 succeeded! This is a locking bug\n");
 		return;
 	} else {
-		int eclass, num;
-		cli_error(&cli2, &eclass, &num);
-		if (eclass != ERRDOS || num != ERRlock) {
-			printf("error should have been ERRDOS/ERRlock (%s)\n", 
-			       cli_errstr(&cli2));
-			return;
-		}
+		if (!check_error(&cli2, ERRDOS, ERRlock, 0)) return;
 	}
 
 
@@ -288,13 +301,7 @@ static void run_locktest1(void)
 		printf("lock3 succeeded! This is a locking bug\n");
 		return;
 	} else {
-		int eclass, num;
-		cli_error(&cli2, &eclass, &num);
-		if (eclass != ERRDOS || num != ERRlock) {
-			printf("error should have been ERRDOS/ERRlock (%s)\n", 
-			       cli_errstr(&cli2));
-			return;
-		}
+		if (!check_error(&cli2, ERRDOS, ERRlock, 0)) return;
 	}
 	t2 = time(NULL);
 
@@ -311,13 +318,7 @@ static void run_locktest1(void)
 		printf("lock4 succeeded! This is a locking bug\n");
 		return;
 	} else {
-		int eclass, num;
-		cli_error(&cli2, &eclass, &num);
-		if (eclass != ERRDOS || num != ERRlock) {
-			printf("error should have been ERRDOS/ERRlock (%s)\n", 
-			       cli_errstr(&cli2));
-			return;
-		}
+		if (!check_error(&cli2, ERRDOS, ERRlock, 0)) return;
 	}
 
 	if (!cli_close(&cli1, fnum1)) {
@@ -402,13 +403,7 @@ static void run_locktest2(void)
 	if (cli_lock(&cli, fnum2, 0, 4, 0)) {
 		printf("lock2 succeeded! This is a locking bug\n");
 	} else {
-		int eclass, num;
-		cli_error(&cli, &eclass, &num);
-		if (eclass != ERRDOS || num != ERRlock) {
-			printf("error should have been ERRDOS/ERRlock (%s)\n", 
-			       cli_errstr(&cli));
-			return;
-		}
+		if (!check_error(&cli, ERRDOS, ERRlock, 0)) return;
 	}
 
 	cli_setpid(&cli, 2);
@@ -420,13 +415,7 @@ static void run_locktest2(void)
 	if (cli_lock(&cli, fnum3, 0, 4, 0)) {
 		printf("lock3 succeeded! This is a locking bug\n");
 	} else {
-		int eclass, num;
-		cli_error(&cli, &eclass, &num);
-		if (eclass != ERRDOS || num != ERRlock) {
-			printf("error should have been ERRDOS/ERRlock (%s)\n", 
-			       cli_errstr(&cli));
-			return;
-		}
+		if (!check_error(&cli, ERRDOS, ERRlock, 0)) return;
 	}
 
 	cli_setpid(&cli, 1);
@@ -625,12 +614,6 @@ static void run_randomipc(void)
 	pstring param;
 	int api, param_len, i;
 	static struct cli_state cli;
-	struct {
-		int api, level;
-		char *format;
-		char *subformat;
-		int len;
-	} foo;
 
 	printf("starting random ipc test\n");
 
@@ -660,7 +643,8 @@ static void run_randomipc(void)
 
 
 
-static void browse_callback(char *sname, uint32 stype, char *comment)
+static void browse_callback(const char *sname, uint32 stype, 
+			    const char *comment)
 {
 	printf("\t%20.20s %08x %s\n", sname, stype, comment);
 }
@@ -809,7 +793,7 @@ static void run_trans2test(void)
 			O_RDWR | O_CREAT | O_TRUNC, DENY_NONE);
 	cli_close(&cli, fnum);
 	if (!cli_qpathinfo2(&cli, fname, &c_time, &a_time, &m_time, 
-			    &w_time, &size, NULL, NULL)) {
+			    &w_time, &size, NULL)) {
 		printf("ERROR: qpathinfo2 failed (%s)\n", cli_errstr(&cli));
 	} else {
 		if (w_time < 60*60*24*2) {
@@ -828,7 +812,7 @@ static void run_trans2test(void)
 	}
 	sleep(3);
 	if (!cli_qpathinfo2(&cli, "\\trans2\\", &c_time, &a_time, &m_time, 
-			    &w_time, &size, NULL, NULL)) {
+			    &w_time, &size, NULL)) {
 		printf("ERROR: qpathinfo2 failed (%s)\n", cli_errstr(&cli));
 	}
 
@@ -837,7 +821,7 @@ static void run_trans2test(void)
 	cli_write(&cli, fnum,  (char *)&fnum, 0, sizeof(fnum));
 	cli_close(&cli, fnum);
 	if (!cli_qpathinfo2(&cli, "\\trans2\\", &c_time, &a_time, &m_time2, 
-			    &w_time, &size, NULL, NULL)) {
+			    &w_time, &size, NULL)) {
 		printf("ERROR: qpathinfo2 failed (%s)\n", cli_errstr(&cli));
 	} else {
 		if (m_time2 == m_time)

@@ -61,8 +61,8 @@ void cmd_srv_query_info(struct client_info *info)
 		info_level = strtoul(tmp, (char**)NULL, 10);
 	}
 
-	DEBUG(4,("cmd_srv_query_info: server:%s info level: %D\n",
-				dest_srv, info_level));
+	DEBUG(4,("cmd_srv_query_info: server:%s info level: %d\n",
+				dest_srv, (int)info_level));
 
 	DEBUG(5, ("cmd_srv_query_info: smb_cli->fd:%d\n", smb_cli->fd));
 
@@ -119,8 +119,8 @@ void cmd_srv_enum_conn(struct client_info *info)
 		info_level = strtoul(tmp, (char**)NULL, 10);
 	}
 
-	DEBUG(4,("cmd_srv_enum_conn: server:%s info level: %D\n",
-				dest_srv, info_level));
+	DEBUG(4,("cmd_srv_enum_conn: server:%s info level: %d\n",
+				dest_srv, (int)info_level));
 
 	DEBUG(5, ("cmd_srv_enum_conn: smb_cli->fd:%d\n", smb_cli->fd));
 
@@ -179,8 +179,8 @@ void cmd_srv_enum_shares(struct client_info *info)
 		info_level = strtoul(tmp, (char**)NULL, 10);
 	}
 
-	DEBUG(4,("cmd_srv_enum_shares: server:%s info level: %D\n",
-				dest_srv, info_level));
+	DEBUG(4,("cmd_srv_enum_shares: server:%s info level: %d\n",
+				dest_srv, (int)info_level));
 
 	DEBUG(5, ("cmd_srv_enum_shares: smb_cli->fd:%d\n", smb_cli->fd));
 
@@ -239,8 +239,8 @@ void cmd_srv_enum_sess(struct client_info *info)
 		info_level = strtoul(tmp, (char**)NULL, 10);
 	}
 
-	DEBUG(4,("cmd_srv_enum_sess: server:%s info level: %D\n",
-				dest_srv, info_level));
+	DEBUG(4,("cmd_srv_enum_sess: server:%s info level: %d\n",
+				dest_srv, (int)info_level));
 
 	DEBUG(5, ("cmd_srv_enum_sess: smb_cli->fd:%d\n", smb_cli->fd));
 
@@ -291,8 +291,8 @@ void cmd_srv_enum_files(struct client_info *info)
 		info_level = strtoul(tmp, (char**)NULL, 10);
 	}
 
-	DEBUG(4,("cmd_srv_enum_files: server:%s info level: %D\n",
-				dest_srv, info_level));
+	DEBUG(4,("cmd_srv_enum_files: server:%s info level: %d\n",
+				dest_srv, (int)info_level));
 
 	DEBUG(5, ("cmd_srv_enum_files: smb_cli->fd:%d\n", smb_cli->fd));
 
