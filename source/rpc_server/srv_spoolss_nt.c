@@ -6022,10 +6022,6 @@ WERROR _spoolss_enumprinterdata(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATA *q_u, S
 
 	ZERO_STRUCT(printer);
 	
-	*out_max_value_len=0;
-	*out_value=NULL;
-	*out_value_len=0;
-
 	*out_type=0;
 
 	*out_max_data_len=0;
@@ -6087,18 +6083,6 @@ WERROR _spoolss_enumprinterdata(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATA *q_u, S
 			param_index++;
 		}
 
-		/*
-		 * I think this is correct, it doesn't break APW and
-		 * allows Gerald's Win32 test programs to work correctly,
-		 * but may need altering.... JRA.
-		 */
-
-		if (param_index == 0) {
-			/* No parameters found. */
-			free_a_printer(&printer, 2);
-			return WERR_NO_MORE_ITEMS;
-		}
-
 		/* the value is an UNICODE string but realvaluesize is the length in bytes including the leading 0 */
 		*out_value_len=2*(1+biggest_valuesize);
 		*out_data_len=biggest_datasize;
@@ -6115,8 +6099,28 @@ WERROR _spoolss_enumprinterdata(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATA *q_u, S
 	 */
 
 	if (!get_specific_param_by_index(*printer, 2, idx, value, &data, &type, &data_len)) {
+
 		SAFE_FREE(data);
 		free_a_printer(&printer, 2);
+
+		/* out_value should default to "" or else NT4 has
+		   problems unmarshalling the response */
+
+		*out_max_value_len=(in_value_len/sizeof(uint16));
+		if((*out_value=(uint16 *)malloc(in_value_len*sizeof(uint8))) == NULL)
+			return WERR_NOMEM;
+
+		ZERO_STRUCTP(*out_value);
+		*out_value_len = (uint32)dos_PutUniCode((char *)*out_value, "", in_value_len, True);
+
+		/* the data is counted in bytes */
+		*out_max_data_len = in_data_len;
+		*out_data_len = in_data_len;
+		if((*data_out=(uint8 *)malloc(in_data_len*sizeof(uint8))) == NULL)
+			return WERR_NOMEM;
+
+		memset(*data_out,'\0',in_data_len);
+
 		return WERR_NO_MORE_ITEMS;
 	}
 
