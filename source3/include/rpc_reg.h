@@ -42,6 +42,7 @@
 #define REG_OPEN_ENTRY      0x0f
 #define REG_INFO            0x11
 #define REG_CLOSE           0x05
+#define REG_SHUTDOWN        0x18
 
 #define HKEY_LOCAL_MACHINE 0x80000000
 #define HKEY_USERS         0x80000003
@@ -460,6 +461,26 @@ typedef struct r_reg_open_entry_info
 
 } REG_R_OPEN_ENTRY;
 
+
+/* REG_Q_SHUTDOWN */
+typedef struct q_reg_shutdown_info
+{
+	uint32 ptr_0;
+	uint32 ptr_1;
+	uint32 ptr_2;
+	UNIHDR hdr_msg;   /* shutdown message */
+	UNISTR2 uni_msg;
+	uint32 timeout; /* seconds */
+	uint16 flags;       
+
+} REG_Q_SHUTDOWN;
+
+/* REG_R_SHUTDOWN */
+typedef struct r_reg_shutdown_info
+{ 
+	uint32 status; /* return status */
+
+} REG_R_SHUTDOWN;
 
 
 #endif /* _RPC_REG_H */

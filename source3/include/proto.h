@@ -561,6 +561,8 @@ BOOL string_set(char **dest,const char *src);
 void string_sub(char *s,const char *pattern,const char *insert);
 void all_string_sub(char *s,const char *pattern,const char *insert);
 void split_at_last_component(char *path, char *front, char sep, char *back);
+char *bit_field_to_str(uint32 type, struct field_info *bs);
+char *enum_field_to_str(uint32 type, struct field_info *bs, BOOL first_default);
 
 /*The following definitions come from  lib/util_unistr.c  */
 
@@ -568,11 +570,11 @@ char *ascii_to_unibuf(char *dest, const char *src, int maxlen);
 void unibuf_to_ascii(char *dest, const char *src, int maxlen);
 void ascii_to_unistr(uint16 *dest, const char *src, int maxlen);
 void unistr_to_ascii(char *dest, const uint16 *src, int len);
-void unistr2_to_ascii(char *dest, const UNISTR2 *str, int destlen);
+void unistr2_to_ascii(char *dest, const UNISTR2 *str, int maxlen);
 char *skip_unibuf(char *srcbuf, int len);
 char *uni_strncpy(char *destbuf, const char *srcbuf, int len);
 uint32 buffer2_to_uint32(const BUFFER2 *str);
-void buffer2_to_multistr(char *dest, const BUFFER2 *str, int destlen);
+void buffer2_to_multistr(char *dest, const BUFFER2 *str, int maxlen);
 
 /*The following definitions come from  libsmb/clientgen.c  */
 
@@ -1632,6 +1634,8 @@ BOOL do_reg_open_entry(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
 				char *key_name, uint32 unk_0,
 				POLICY_HND *key_hnd);
 BOOL do_reg_close(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd);
+BOOL do_reg_shutdown(struct cli_state *cli, uint16 fnum, 
+				char *msg, uint32 timeout, uint16 flags);
 
 /*The following definitions come from  rpc_client/cli_samr.c  */
 
@@ -2092,6 +2096,10 @@ void reg_io_q_open_entry(char *desc,  REG_Q_OPEN_ENTRY *r_q, prs_struct *ps, int
 void make_reg_r_open_entry(REG_R_OPEN_ENTRY *r_r,
 				POLICY_HND *pol, uint32 status);
 void reg_io_r_open_entry(char *desc,  REG_R_OPEN_ENTRY *r_r, prs_struct *ps, int depth);
+void make_reg_q_shutdown(REG_Q_SHUTDOWN *q_i,
+				char *msg, uint32 timeout, uint16 flags);
+void reg_io_q_shutdown(char *desc,  REG_Q_SHUTDOWN *q_q, prs_struct *ps, int depth);
+void reg_io_r_shutdown(char *desc,  REG_R_SHUTDOWN *r_q, prs_struct *ps, int depth);
 
 /*The following definitions come from  rpc_parse/parse_rpc.c  */
 
@@ -2677,6 +2685,7 @@ void cmd_reg_delete_key(struct client_info *info);
 void cmd_reg_create_key(struct client_info *info);
 void cmd_reg_test_key_sec(struct client_info *info);
 void cmd_reg_get_key_sec(struct client_info *info);
+void cmd_reg_shutdown(struct client_info *info);
 
 /*The following definitions come from  rpcclient/cmd_samr.c  */
 
