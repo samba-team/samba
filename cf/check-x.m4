@@ -31,7 +31,7 @@ if test "$no_x" != yes; then
 			esac
 			done
 		fi
-		LIBS="$ac_save_libs $foo -lX11"
+		LIBS="$ac_save_libs $foo $X_PRE_LIBS -lX11 $X_EXTRA_LIBS"
 		AC_TRY_RUN([
 		#include <X11/Xlib.h>
 		foo()
