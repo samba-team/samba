@@ -149,7 +149,7 @@ void profilelevel_function(int msg_type, pid_t src, void *buf, size_t len)
  **/
 static void pool_usage_cb(int msg_type, pid_t src_pid, void *buf, size_t len)
 {
-	printf("Got POOL_USAGE reply from pid%u:\n%.*s\n",
+	printf("Got POOL_USAGE reply from pid%u:\n%.*s",
 	       (unsigned int) src_pid, (int) len, (const char *) buf);
 }
 
