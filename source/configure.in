@@ -712,10 +712,12 @@ if test x$enable_cups != xno; then
 	AC_PATH_PROG(CUPS_CONFIG, cups-config)
 
         if test "x$CUPS_CONFIG" != x; then
-                        AC_DEFINE(HAVE_CUPS,1,[Whether we have CUPS])
+                AC_DEFINE(HAVE_CUPS,1,[Whether we have CUPS])
 		CFLAGS="$CFLAGS `$CUPS_CONFIG --cflags`"
 		LDFLAGS="$LDFLAGS `$CUPS_CONFIG --ldflags`"
 		PRINT_LIBS="$PRINT_LIBS `$CUPS_CONFIG --libs`"
+	elif test x$enable_cups == xyes; then
+		AC_MSG_ERROR(Cups support required but cups-config not located.  Make sure cups-devel related files are installed.)
         fi
 fi
 
