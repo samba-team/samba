@@ -237,9 +237,12 @@ sub ParseArrayPull($$$)
 	if (defined $e->{CONFORMANT_SIZE}) {
 		$alloc_size = $e->{CONFORMANT_SIZE};
 
-		pidl "//\tif ($size > $alloc_size) {\n";
-		pidl "//\t\treturn ndr_pull_error(ndr, \"Bad conformant size %u should be %u\", $alloc_size, $size);\n";
-		pidl "//\t}\n";
+		pidl "\tif ($size > $alloc_size) {\n";
+		pidl "\t\tproto_tree_add_text(subtree, ndr->tvb, ndr->offset, 0, \"Bad conformant size %u should be %u\", $alloc_size, $size);\n";
+		pidl "\t\tif (check_col(ndr->pinfo->cinfo, COL_INFO))\n";
+		pidl "\t\t\tcol_append_fstr(ndr->pinfo->cinfo, COL_INFO, \", 1Bad conformant size %u should be %u\", $alloc_size, $size);\n";
+		pidl "\t\treturn;\n";
+		pidl "\t}\n";
 	} elsif (!util::is_inline_array($e)) {
 		if ($var_prefix =~ /^r->out/ && $size =~ /^\*r->in/) {
 			my $size2 = substr($size, 1);
@@ -251,12 +254,15 @@ sub ParseArrayPull($$$)
 		pidl "\t\tguint32 _array_size;\n\n";
 		pidl "\t\tndr_pull_uint32(ndr, subtree, hf_array_size, &_array_size);\n";
 		if ($size =~ /r->in/) {
-			pidl "\t\t// if (!(ndr->flags & LIBNDR_FLAG_REF_ALLOC) && _array_size != $size) {\n";
+			pidl "\t\tif (!(ndr->flags & LIBNDR_FLAG_REF_ALLOC) && _array_size != $size) {\n";
 		} else {
-			pidl "\t\t// if ($size != _array_size) {\n";
+			pidl "\t\tif ($size != _array_size) {\n";
 		}
-		pidl "\t\t\t// return ndr_pull_error(ndr, \"Bad array size %u should be %u\", _array_size, $size);\n";
-		pidl "\t\t// }\n";
+		pidl "\t\t\tproto_tree_add_text(subtree, ndr->tvb, ndr->offset, 0, \"Bad array size %u should be %u\", _array_size, $size);\n";
+		pidl "\t\t\tif (check_col(ndr->pinfo->cinfo, COL_INFO))\n";
+		pidl "\t\t\t\tcol_append_fstr(ndr->pinfo->cinfo, COL_INFO, \", 2Bad array size %u should be %u\", _array_size, $size);\n";
+		pidl "\t\t\treturn;\n";
+		pidl "\t\t}\n";
 		if ($size =~ /r->in/) {
 			pidl "else { $size = _array_size; }\n";
 		}
@@ -285,8 +291,18 @@ sub ParseArrayPull($$$)
 		pidl "\t\tguint32 _offset, _length;\n";
 		pidl "\t\tndr_pull_uint32(ndr, subtree, hf_array_offset, &_offset);\n";
 		pidl "\t\tndr_pull_uint32(ndr, subtree, hf_array_length, &_length);\n";
-		pidl "//\t\tif (_offset != 0) return ndr_pull_error(ndr, \"Bad array offset 0x%08x\", _offset);\n";
-		pidl "\t\t//if (_length > $size || _length != $length) return ndr_pull_error(ndr, \"Bad array length 0x%08x > size 0x%08x\", _offset, $size);\n\n";
+		pidl "\t\tif (_offset != 0) {\n";
+		pidl "\t\t\tproto_tree_add_text(subtree, ndr->tvb, ndr->offset, 0, \"Bad array offset 0x%08x\", _offset);\n";
+		pidl "\t\t\tif (check_col(ndr->pinfo->cinfo, COL_INFO))\n";
+		pidl "\t\t\t\tcol_append_fstr(ndr->pinfo->cinfo, COL_INFO, \"3Bad array offset 0x%08x\", _offset);\n";
+		pidl "\t\t\treturn;\n";
+		pidl "\t\t}\n";
+		pidl "\t\tif (_length > $size || _length != $length) {\n";
+		pidl "\t\t\tproto_tree_add_text(subtree, ndr->tvb, ndr->offset, 0, \"Bad array length %d > size %d\", _offset, $size);\n";
+		pidl "\t\t\tif (check_col(ndr->pinfo->cinfo, COL_INFO))\n";
+		pidl "\t\t\t\tcol_append_fstr(ndr->pinfo->cinfo, COL_INFO, \", 4Bad array length %d > size %d\", _offset, $size);\n";
+		pidl "\t\t\treturn;\n";
+		pidl "\t\t}\n";
 		$size = "_length";
 	}
 
@@ -319,15 +335,6 @@ sub ParseElementPullSwitch($$$$)
 		pidl "\tguint16 _level;\n";
 		pidl "\tif (($ndr_flags) & NDR_SCALARS) {\n";
 		pidl "\t\tndr_pull_level(ndr, subtree, hf_level, &_level);\n";
-		if ($switch_var =~ /r->in/) {
-			pidl "\t\tif (!(ndr->flags & LIBNDR_FLAG_REF_ALLOC) && _level != $switch_var) {\n";
-		} else {
-			pidl "\t\t//if (_level != $switch_var) {\n";
-		}
-		pidl "\t\t\t//return ndr_pull_error(ndr, \"Bad switch value %u in $e->{NAME}\");\t\t}\n";
-		if ($switch_var =~ /r->/) {
-			pidl "//else { $switch_var = _level;\n }\n";
-		}
 		pidl "\t}\n";
 	}
 
@@ -547,7 +554,10 @@ sub ParseUnionPull($)
 	}
 	if (! $have_default) {
 		pidl "\tdefault:\n";
-		pidl "\t\t// return ndr_pull_error(ndr, \"Bad switch value \%u\", level);\n";
+		pidl "\t\tproto_tree_add_text(subtree, ndr->tvb, ndr->offset, 0, \"Bad switch value %u\", level);\n";
+		pidl "\t\tif (check_col(ndr->pinfo->cinfo, COL_INFO))\n";
+		pidl "\t\t\tcol_append_fstr(ndr->pinfo->cinfo, COL_INFO, \", 6Bad switch value %u\", level);\n";
+		pidl "\t\treturn;\n";
 	}
 	pidl "\t}\n";
 	pidl "buffers:\n";
@@ -566,7 +576,10 @@ sub ParseUnionPull($)
 	}
 	if (! $have_default) {
 		pidl "\tdefault:\n";
-		pidl "\t\t// return ndr_pull_error(ndr, \"Bad switch value \%u\", level);\n";
+		pidl "\t\tproto_tree_add_text(subtree, ndr->tvb, ndr->offset, 0, \"Bad switch value %u\", level);\n";
+		pidl "\t\tif (check_col(ndr->pinfo->cinfo, COL_INFO))\n";
+		pidl "\t\t\tcol_append_fstr(ndr->pinfo->cinfo, COL_INFO, \", 7Bad switch value %u\", level);\n";
+		pidl "\t\treturn;\n";
 	}
 	pidl "\t}\n";
 	pidl "\tndr_pull_struct_end(ndr);\n";
