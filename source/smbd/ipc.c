@@ -428,6 +428,8 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 	}
 
 
+	srv_signing_trans_start(SVAL(inbuf,smb_mid));
+
 	if (pscnt < tpscnt || dscnt < tdscnt) {
 		/* We need to send an interim response then receive the rest
 		   of the parameter/data bytes */
@@ -455,6 +457,7 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 			SAFE_FREE(data);
 			SAFE_FREE(setup);
 			END_PROFILE(SMBtrans);
+			srv_signing_trans_stop();
 			return(ERROR_DOS(ERRSRV,ERRerror));
 		}
 
@@ -542,6 +545,8 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 	SAFE_FREE(params);
 	SAFE_FREE(setup);
 	
+	srv_signing_trans_stop();
+
 	if (close_on_completion)
 		close_cnum(conn,vuid);
 
@@ -561,6 +566,7 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 
   bad_param:
 
+	srv_signing_trans_stop();
 	DEBUG(0,("reply_trans: invalid trans parameters\n"));
 	SAFE_FREE(data);
 	SAFE_FREE(params);
