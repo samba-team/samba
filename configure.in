@@ -46,7 +46,7 @@ dnl Checks for header files.
 AC_HEADER_STDC
 
 AC_CHECK_HEADERS(arpa/inet.h crypt.h db.h dbm.h fcntl.h grp.h)
-AC_CHECK_HEADERS(limits.h ndbm.h netdb.h netinet/in.h paths.h pwd.h)
+AC_CHECK_HEADERS(limits.h ndbm.h netdb.h netinet/in.h netinet/in6_machtypes.h paths.h pwd.h)
 AC_CHECK_HEADERS(rpcsvc/dbm.h shadow.h sys/bitypes.h sys/filio.h)
 AC_CHECK_HEADERS(sys/ioctl.h sys/param.h sys/proc.h sys/resource.h)
 AC_CHECK_HEADERS(sys/socket.h sys/stat.h sys/sysctl.h sys/time.h)

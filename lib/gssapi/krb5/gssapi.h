@@ -14,6 +14,10 @@
 
 #include <sys/types.h>
 
+#ifdef HAVE_NETINET_IN6_MACHTYPES_H
+#include <netinet/in6_machtypes.h>
+#endif
+
 #ifdef HAVE_SYS_BITYPES_H
 #include <sys/bitypes.h>
 #endif
