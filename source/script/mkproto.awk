@@ -60,6 +60,11 @@ END {
   printf "BOOL %s(int );\n", a[2]
 }
 
+/^FN_LOCAL_LIST/ {
+  split($0,a,"[,()]")
+  printf "char **%s(int );\n", a[2]
+}
+
 /^FN_LOCAL_STRING/ {
   split($0,a,"[,()]")
   printf "char *%s(int );\n", a[2]
@@ -78,6 +83,11 @@ END {
 /^FN_GLOBAL_BOOL/ {
   split($0,a,"[,()]")
   printf "BOOL %s(void);\n", a[2]
+}
+
+/^FN_GLOBAL_LIST/ {
+  split($0,a,"[,()]")
+  printf "char **%s(void);\n", a[2]
 }
 
 /^FN_GLOBAL_STRING/ {

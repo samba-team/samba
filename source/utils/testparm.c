@@ -237,23 +237,28 @@ int main(int argc, char *argv[])
 
   for (s=0;s<1000;s++) {
     if (VALID_SNUM(s)) {
-      char *deny_list = lp_hostsdeny(s);
-      char *allow_list = lp_hostsallow(s);
+      char **deny_list = lp_hostsdeny(s);
+      char **allow_list = lp_hostsallow(s);
+      int i;
       if(deny_list) {
-        char *hasstar = strchr(deny_list, '*');
-        char *hasquery = strchr(deny_list, '?');
-        if(hasstar || hasquery) {
-          printf("Invalid character %c in hosts deny list %s for service %s.\n",
-                 hasstar ? *hasstar : *hasquery, deny_list, lp_servicename(s) );
+        for (i=0; deny_list[i]; i++) {
+          char *hasstar = strchr(deny_list[i], '*');
+          char *hasquery = strchr(deny_list[i], '?');
+          if(hasstar || hasquery) {
+            printf("Invalid character %c in hosts deny list (%s) for service %s.\n",
+                 hasstar ? *hasstar : *hasquery, deny_list[i], lp_servicename(s) );
+	  }
         }
       }
 
       if(allow_list) {
-        char *hasstar = strchr(allow_list, '*');
-        char *hasquery = strchr(allow_list, '?');
-        if(hasstar || hasquery) {
-          printf("Invalid character %c in hosts allow list %s for service %s.\n",
-                 hasstar ? *hasstar : *hasquery, allow_list, lp_servicename(s) );
+        for (i=0; allow_list[i]; i++) {
+          char *hasstar = strchr(allow_list[i], '*');
+          char *hasquery = strchr(allow_list[i], '?');
+          if(hasstar || hasquery) {
+            printf("Invalid character %c in hosts allow list (%s) for service %s.\n",
+                 hasstar ? *hasstar : *hasquery, allow_list[i], lp_servicename(s) );
+	  }
         }
       }
 
