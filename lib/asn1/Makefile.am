@@ -41,8 +41,7 @@ foo = asn1_APOptions.x asn1_AP_REP.x asn1_AP_REQ.x \
 noinst_PROGRAMS = asn1_compile
 
 asn1_compile_SOURCES = parse.y lex.l main.c hash.c symbol.c gen.c \
-	gen_encode.c gen_decode.c gen_free.c gen_length.c gen_copy.c \
-	gen_maybe.c
+	gen_encode.c gen_decode.c gen_free.c gen_length.c gen_copy.c
 
 libasn1_a_SOURCES = der_get.c der_put.c der_free.c der_length.c der_copy.c \
 		timegm.c \
