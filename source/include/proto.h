@@ -310,6 +310,11 @@ void del_share_mode(share_lock_token token, int fnum);
 BOOL set_share_mode(share_lock_token token,int fnum, uint16 port, uint16 op_type);
 BOOL remove_share_oplock(int fnum, share_lock_token token);
 
+/*The following definitions come from  lsaparse.c  */
+
+char* lsa_io_q_query(BOOL io, LSA_Q_QUERY_INFO *q_q, char *q, char *base, int align);
+char* lsa_io_r_query(BOOL io, LSA_R_QUERY_INFO *r_q, char *q, char *base, int align);
+
 /*The following definitions come from  mangle.c  */
 
 int str_checksum(char *s);
@@ -771,6 +776,33 @@ void E_P24(unsigned char *p21, unsigned char *c8, unsigned char *p24);
 void SMBencrypt(uchar *passwd, uchar *c8, uchar *p24);
 void E_md4hash(uchar *passwd, uchar *p16);
 void SMBNTencrypt(uchar *passwd, uchar *c8, uchar *p24);
+
+/*The following definitions come from  smbparse.c  */
+
+char* smb_io_utime(BOOL io, UTIME *t, char *q, char *base, int align);
+char* smb_io_time(BOOL io, NTTIME *nttime, char *q, char *base, int align);
+char* smb_io_dom_sid(BOOL io, DOM_SID *sid, char *q, char *base, int align);
+char* smb_io_unihdr(BOOL io, UNIHDR *hdr, char *q, char *base, int align);
+char* smb_io_unihdr2(BOOL io, UNIHDR2 *hdr2, char *q, char *base, int align);
+char* smb_io_unistr(BOOL io, UNISTR *uni, char *q, char *base, int align);
+char* smb_io_unistr2(BOOL io, UNISTR2 *uni2, char *q, char *base, int align);
+char* smb_io_dom_sid2(BOOL io, DOM_SID2 *sid2, char *q, char *base, int align);
+char* smb_io_dom_rid2(BOOL io, DOM_RID2 *rid2, char *q, char *base, int align);
+char* smb_io_log_info(BOOL io, DOM_LOG_INFO *log, char *q, char *base, int align);
+char* smb_io_chal(BOOL io, DOM_CHAL *chal, char *q, char *base, int align);
+char* smb_io_cred(BOOL io, DOM_CRED *cred, char *q, char *base, int align);
+char* smb_io_clnt_info(BOOL io, DOM_CLNT_INFO *clnt, char *q, char *base, int align);
+char* smb_io_logon_id(BOOL io, DOM_LOGON_ID *log, char *q, char *base, int align);
+char* smb_io_rc4_owf(BOOL io, RC4_OWF *hash, char *q, char *base, int align);
+char* smb_io_id_info1(BOOL io, DOM_ID_INFO_1 *id, char *q, char *base, int align);
+char* smb_io_sam_info(BOOL io, DOM_SAM_INFO *sam, char *q, char *base, int align);
+char* smb_io_gid(BOOL io, DOM_GID *gid, char *q, char *base, int align);
+char* smb_io_rpc_hdr(BOOL io, RPC_HDR *rpc, char *q, char *base, int align);
+char* smb_io_pol_hnd(BOOL io, LSA_POL_HND *pol, char *q, char *base, int align);
+char* smb_io_dom_query_3(BOOL io, DOM_QUERY_3 *d_q, char *q, char *base, int align);
+char* smb_io_dom_query_5(BOOL io, DOM_QUERY_3 *d_q, char *q, char *base, int align);
+char* smb_io_dom_query(BOOL io, DOM_QUERY *d_q, char *q, char *base, int align);
+char* smb_io_dom_r_ref(BOOL io, DOM_R_REF *r_r, char *q, char *base, int align);
 
 /*The following definitions come from  smbpass.c  */
 
