@@ -291,6 +291,7 @@ static int ads_user_add(int argc, const char **argv)
 		goto done;
 	}
 
+	opt_container = ads_default_ou_string(ads, WELL_KNOWN_GUID_USERS);
 	status = ads_add_user_acct(ads, argv[0], opt_container, opt_comment);
 
 	if (!ADS_ERR_OK(status)) {
@@ -474,6 +475,7 @@ static int ads_group_add(int argc, const char **argv)
 		goto done;
 	}
 
+	opt_container = ads_default_ou_string(ads, WELL_KNOWN_GUID_USERS);
 	status = ads_add_group_acct(ads, argv[0], opt_container, opt_comment);
 
 	if (ADS_ERR_OK(status)) {
@@ -652,7 +654,7 @@ int net_ads_join(int argc, const char **argv)
 	char *password;
 	char *machine_account = NULL;
 	char *tmp_password;
-	const char *org_unit = "Computers";
+	const char *org_unit = NULL;
 	char *dn;
 	void *res;
 	DOM_SID dom_sid;
@@ -684,8 +686,12 @@ int net_ads_join(int argc, const char **argv)
 		return -1;
 	}
 
-	ou_str = ads_ou_string(org_unit);
+	ou_str = ads_ou_string(ads, org_unit);
 	asprintf(&dn, "%s,%s", ou_str, ads->config.bind_path);
+	if (ou_str == NULL) {
+		d_printf("could not find any reasonable container for the machine account\n");
+		return -1;
+	}
 	free(ou_str);
 
 	rc = ads_search_dn(ads, &res, dn, NULL);

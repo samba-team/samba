@@ -993,21 +993,81 @@ ADS_STATUS ads_del_dn(ADS_STRUCT *ads, char *del_dn)
 
 /**
  * Build an org unit string
- *  if org unit is Computers or blank then assume a container, otherwise
+ *  if org unit is empty we get the default container from ads, 
+ *  if org unit is Computers we return cn=Computers, otherwise 
  *  assume a \ separated list of organisational units
+ * @param ads connection to ads server
  * @param org_unit Organizational unit
  * @return org unit string - caller must free
  **/
-char *ads_ou_string(const char *org_unit)
-{	
-	if (!org_unit || !*org_unit || strequal(org_unit, "Computers")) {
+char *ads_ou_string(ADS_STRUCT *ads, const char *org_unit)
+{
+	if (!org_unit || !*org_unit)
+		return ads_default_ou_string(ads, WELL_KNOWN_GUID_COMPUTERS);
+
+	if (strequal(org_unit, "Computers"))
 		return strdup("cn=Computers");
-	}
 
 	return ads_build_path(org_unit, "\\/", "ou=", 1);
 }
 
+/**
+ * Get an org unit string for a well-known GUID
+ * @param ads connection to ads server
+ * @param wknguid Well known GUID
+ * @return org unit string - caller must free
+ **/
+char *ads_default_ou_string(ADS_STRUCT *ads, const char *wknguid)
+{
+	ADS_STATUS status;
+	void *res;
+	char *base, *wkn_dn, *ret, **wkn_dn_exp, **bind_dn_exp;
+	const char *attrs[] = {"distinguishedName", NULL};
+	int wkn_ln, bind_ln, i;
 
+	if (asprintf(&base, "<WKGUID=%s,%s>", wknguid, ads->config.bind_path ) == -1) {
+		DEBUG(1, ("asprintf failed!\n"));
+		return NULL;
+	}
+
+	status = ads_search_dn(ads, &res, base, attrs);
+	if (!ADS_ERR_OK(status)) {
+		DEBUG(1,("Failed while searching for: %s\n", base));
+		return NULL;
+	}
+	free(base);
+
+	if (ads_count_replies(ads, res) != 1)
+		return NULL;
+
+	/* compare ads->config.bind-path and the result from the 
+	   well-known-guid-search to return the correct default 
+	   container (which might consist of several ou's)
+	*/
+
+	wkn_dn = ads_get_dn(ads, res);
+	wkn_dn_exp = ldap_explode_dn(wkn_dn, 0);
+	bind_dn_exp = ldap_explode_dn(ads->config.bind_path, 0);
+
+	for (wkn_ln=0; wkn_dn_exp[wkn_ln]; wkn_ln++)
+		;
+	for (bind_ln=0; bind_dn_exp[bind_ln]; bind_ln++)
+		;
+
+	if (wkn_ln - bind_ln < 1)
+		return NULL;
+
+	ret = wkn_dn_exp[0];
+
+	for (i=1; i < wkn_ln - bind_ln; i++) {
+		char *s;
+		asprintf(&s, "%s,%s", ret, wkn_dn_exp[i]);
+		ret = strdup(s);
+		free(s);
+	}
+
+	return ret;
+}
 
 /*
   add a machine account to the ADS server
@@ -1017,7 +1077,7 @@ static ADS_STATUS ads_add_machine_acct(ADS_STRUCT *ads, const char *hostname,
 				       const char *org_unit)
 {
 	ADS_STATUS ret, status;
-	char *host_spn, *host_upn, *new_dn, *samAccountName, *controlstr;
+	char *host_spn, *host_upn, *new_dn, *old_dn, *samAccountName, *controlstr;
 	char *ou_str;
 	TALLOC_CTX *ctx;
 	ADS_MODLIST mods;
@@ -1032,6 +1092,7 @@ static ADS_STATUS ads_add_machine_acct(ADS_STRUCT *ads, const char *hostname,
 	status = ads_find_machine_acct(ads, (void **)&res, hostname);
 	if (ADS_ERR_OK(status) && ads_count_replies(ads, res) == 1) {
 		DEBUG(0, ("Host account for %s already exists - modifying old account\n", hostname));
+		old_dn = ads_get_dn(ads, res);
 		exists=1;
 	}
 
@@ -1044,7 +1105,7 @@ static ADS_STATUS ads_add_machine_acct(ADS_STRUCT *ads, const char *hostname,
 		goto done;
 	if (!(host_upn = talloc_asprintf(ctx, "%s@%s", host_spn, ads->config.realm)))
 		goto done;
-	ou_str = ads_ou_string(org_unit);
+	ou_str = ads_ou_string(ads,org_unit);
 	if (!ou_str) {
 		DEBUG(1, ("ads_ou_string returned NULL (malloc failure?)\n"));
 		goto done;
@@ -1097,7 +1158,7 @@ static ADS_STATUS ads_add_machine_acct(ADS_STRUCT *ads, const char *hostname,
 	if (!exists) 
 		ret = ads_gen_add(ads, new_dn, mods);
 	else
-		ret = ads_gen_mod(ads, new_dn, mods);
+		ret = ads_gen_mod(ads, old_dn, mods);
 
 	if (!ADS_ERR_OK(ret))
 		goto done;
