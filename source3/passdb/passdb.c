@@ -919,13 +919,6 @@ account without a valid local system user.\n", user_name);
 			return False;
 		}
 	} else if (local_flags & LOCAL_ENABLE_USER) {
-		if (pdb_get_lanman_passwd(sam_pass) == NULL) {
-			if (!pdb_set_plaintext_passwd (sam_pass, new_passwd)) {
-				slprintf(err_str, err_str_len-1, "Failed to set password for user %s.\n", user_name);
-				pdb_free_sam(&sam_pass);
-				return False;
-			}
-		}
 		if (!pdb_set_acct_ctrl (sam_pass, pdb_get_acct_ctrl(sam_pass)&(~ACB_DISABLED))) {
 			slprintf(err_str, err_str_len-1, "Failed to unset 'disabled' flag for user %s.\n", user_name);
 			pdb_free_sam(&sam_pass);
@@ -939,19 +932,7 @@ account without a valid local system user.\n", user_name);
 			pdb_free_sam(&sam_pass);
 			return False;
 		}
-		
-		/* This is needed to preserve ACB_PWNOTREQ in mod_smbfilepwd_entry */
-		if (!pdb_set_lanman_passwd (sam_pass, NULL)) {
-			slprintf(err_str, err_str_len-1, "Failed to set NULL lanman password for user %s.\n", user_name);
-			pdb_free_sam(&sam_pass);
-			return False;
-		}
-		if (!pdb_set_nt_passwd (sam_pass, NULL)) {
-			slprintf(err_str, err_str_len-1, "Failed to set NULL NT password for user %s.\n", user_name);
-			pdb_free_sam(&sam_pass);
-			return False;
-		}
-	} else {
+	} else if (local_flags & LOCAL_SET_PASSWORD) {
 		/*
 		 * If we're dealing with setting a completely empty user account
 		 * ie. One with a password of 'XXXX', but not set disabled (like

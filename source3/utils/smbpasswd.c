@@ -536,7 +536,7 @@ static int process_root(int argc, char *argv[])
 	struct passwd  *pwd;
 	int result = 0, ch;
 	BOOL joining_domain = False, got_pass = False, got_username = False;
-	int local_flags = 0;
+	int local_flags = LOCAL_SET_PASSWORD;
 	BOOL stdin_passwd_get = False;
 	fstring user_name, user_password;
 	char *new_domain = NULL;
@@ -559,21 +559,22 @@ static int process_root(int argc, char *argv[])
 			break;
 		case 'x':
 			local_flags |= LOCAL_DELETE_USER;
-			new_passwd = xstrdup("XXXXXX");
+			local_flags &= ~LOCAL_SET_PASSWORD;
 			break;
 		case 'd':
 			local_flags |= LOCAL_DISABLE_USER;
-			new_passwd = xstrdup("XXXXXX");
+			local_flags &= ~LOCAL_SET_PASSWORD;
 			break;
 		case 'e':
 			local_flags |= LOCAL_ENABLE_USER;
+			local_flags &= ~LOCAL_SET_PASSWORD;
 			break;
 		case 'm':
 			local_flags |= LOCAL_TRUST_ACCOUNT;
 			break;
 		case 'n':
 			local_flags |= LOCAL_SET_NO_PASSWORD;
-			new_passwd = xstrdup("NO PASSWORD");
+			local_flags &= ~LOCAL_SET_PASSWORD;
 			break;
 		case 'j':
 			new_domain = optarg;
@@ -733,7 +734,7 @@ static int process_root(int argc, char *argv[])
 		old_passwd = get_pass("Old SMB password:",stdin_passwd_get);
 	}
 	
-	if (!new_passwd) {
+	if (!(local_flags & LOCAL_SET_PASSWORD)) {
 
 		/*
 		 * If we are trying to enable a user, first we need to find out
@@ -750,15 +751,16 @@ static int process_root(int argc, char *argv[])
 			
 			pdb_init_sam(&sampass);
 			ret = pdb_getsampwnam(sampass, user_name);
-			if((sampass != False) && (pdb_get_lanman_passwd(sampass) != NULL)) {
-				new_passwd = xstrdup("XXXX"); /* Don't care. */
+			if((sampass != False) && (pdb_get_lanman_passwd(sampass) == NULL)) {
+				local_flags |= LOCAL_SET_PASSWORD;
 			}
 			pdb_free_sam(&sampass);
 		}
+	}
 
-		if(!new_passwd)
-			new_passwd = prompt_for_new_password(stdin_passwd_get);
-
+	if(local_flags & LOCAL_SET_PASSWORD) {
+		new_passwd = prompt_for_new_password(stdin_passwd_get);
+		
 		if(!new_passwd) {
 			fprintf(stderr, "Unable to get new password.\n");
 			exit(1);
@@ -771,7 +773,7 @@ static int process_root(int argc, char *argv[])
 		goto done;
 	} 
 
-	if(!(local_flags & (LOCAL_ADD_USER|LOCAL_DISABLE_USER|LOCAL_ENABLE_USER|LOCAL_DELETE_USER|LOCAL_SET_NO_PASSWORD))) {
+	if(!(local_flags & (LOCAL_ADD_USER|LOCAL_DISABLE_USER|LOCAL_ENABLE_USER|LOCAL_DELETE_USER|LOCAL_SET_NO_PASSWORD|LOCAL_SET_PASSWORD))) {
 		SAM_ACCOUNT *sampass = NULL;
 		BOOL ret;
 		
