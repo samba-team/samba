@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995, 1996, 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -111,7 +111,7 @@ sec_prot_internal(int level)
 {
     int ret;
     char *p;
-    int s = 1048576;
+    unsigned int s = 1048576;
 
     int old_verbose = verbose;
     verbose = 0;
@@ -122,7 +122,7 @@ sec_prot_internal(int level)
     }
 
     if(level){
-	ret = command("PBSZ %d", s);
+	ret = command("PBSZ %u", s);
 	if(ret != COMPLETE){
 	    printf("Failed to set protection buffer size.\n");
 	    return -1;
@@ -130,12 +130,10 @@ sec_prot_internal(int level)
 	auth_pbsz = s;
 	p = strstr(reply_string, "PBSZ=");
 	if(p)
-	    sscanf(p, "PBSZ=%d", &s);
+	    sscanf(p, "PBSZ=%u", &s);
 	if(s < auth_pbsz)
 	    auth_pbsz = s;
-	if(data_buffer)
-	    free(data_buffer);
-	data_buffer = malloc(auth_pbsz);
+	data_buffer = realloc(data_buffer, auth_pbsz);
     }
     verbose = old_verbose;
     ret = command("PROT %c", level["CSEP"]); /* XXX :-) */
