@@ -715,6 +715,7 @@ static BOOL api_spoolss_enumprinterdrivers(pipes_struct *p)
 
 /****************************************************************************
 ****************************************************************************/
+
 static BOOL api_spoolss_getform(pipes_struct *p)
 {
 	SPOOL_Q_GETFORM q_u;
@@ -730,11 +731,7 @@ static BOOL api_spoolss_getform(pipes_struct *p)
 		return False;
 	}
 
-	/* that's an [in out] buffer */
-	new_spoolss_move_buffer(q_u.buffer, &r_u.buffer);
-
-	r_u.status = _spoolss_getform(&q_u.handle, q_u.level, 
-				&q_u.formname, r_u.buffer, q_u.offered, &r_u.needed);
+	r_u.status = _spoolss_getform(p, &q_u, &r_u);
 
 	if (!new_spoolss_io_r_getform("",&r_u,rdata,0)) {
 		DEBUG(0,("new_spoolss_io_r_getform: unable to marshall SPOOL_R_GETFORM.\n"));
@@ -746,6 +743,7 @@ static BOOL api_spoolss_getform(pipes_struct *p)
 
 /****************************************************************************
 ****************************************************************************/
+
 static BOOL api_spoolss_enumforms(pipes_struct *p)
 {
 	SPOOL_Q_ENUMFORMS q_u;
@@ -761,12 +759,7 @@ static BOOL api_spoolss_enumforms(pipes_struct *p)
 		return False;
 	}
 
-	/* that's an [in out] buffer */
-	new_spoolss_move_buffer(q_u.buffer, &r_u.buffer);
-
-	r_u.status = _new_spoolss_enumforms(&q_u.handle, q_u.level, 
-				r_u.buffer, q_u.offered,
-				&r_u.needed, &r_u.numofforms);
+	r_u.status = _new_spoolss_enumforms(p, &q_u, &r_u);
 
 	if (!new_spoolss_io_r_enumforms("",&r_u,rdata,0)) {
 		DEBUG(0,("new_spoolss_io_r_enumforms: unable to marshall SPOOL_R_ENUMFORMS.\n"));
@@ -776,9 +769,9 @@ static BOOL api_spoolss_enumforms(pipes_struct *p)
 	return True;
 }
 
-
 /****************************************************************************
 ****************************************************************************/
+
 static BOOL api_spoolss_enumports(pipes_struct *p)
 {
 	SPOOL_Q_ENUMPORTS q_u;
@@ -794,12 +787,7 @@ static BOOL api_spoolss_enumports(pipes_struct *p)
 		return False;
 	}
 
-	/* that's an [in out] buffer */
-	new_spoolss_move_buffer(q_u.buffer, &r_u.buffer);
-
-	r_u.status = _spoolss_enumports(&q_u.name, q_u.level,
-					r_u.buffer, q_u.offered,
-					&r_u.needed, &r_u.returned);
+	r_u.status = _spoolss_enumports(p, &q_u, &r_u);
 
 	if (!new_spoolss_io_r_enumports("",&r_u,rdata,0)) {
 		DEBUG(0,("new_spoolss_io_r_enumports: unable to marshall SPOOL_R_ENUMPORTS.\n"));
@@ -809,9 +797,9 @@ static BOOL api_spoolss_enumports(pipes_struct *p)
 	return True;
 }
 
-
 /****************************************************************************
 ****************************************************************************/
+
 static BOOL api_spoolss_addprinterex(pipes_struct *p)
 {
 	SPOOL_Q_ADDPRINTEREX q_u;
@@ -827,11 +815,7 @@ static BOOL api_spoolss_addprinterex(pipes_struct *p)
 		return False;
 	}
 	
-	r_u.status = _spoolss_addprinterex(&q_u.server_name,
-	                        q_u.level, &q_u.info,
-				q_u.unk0, q_u.unk1, q_u.unk2, q_u.unk3,
-				q_u.user_switch, &q_u.user_ctr,
-				&r_u.handle);
+	r_u.status = _spoolss_addprinterex(p, &q_u, &r_u);
 				
 	if(!spoolss_io_r_addprinterex("", &r_u, rdata, 0)) {
 		DEBUG(0,("spoolss_io_r_addprinterex: unable to marshall SPOOL_R_ADDPRINTEREX.\n"));
@@ -843,6 +827,7 @@ static BOOL api_spoolss_addprinterex(pipes_struct *p)
 
 /****************************************************************************
 ****************************************************************************/
+
 static BOOL api_spoolss_addprinterdriver(pipes_struct *p)
 {
 	SPOOL_Q_ADDPRINTERDRIVER q_u;
@@ -858,7 +843,7 @@ static BOOL api_spoolss_addprinterdriver(pipes_struct *p)
 		return False;
 	}
 	
-	r_u.status = _spoolss_addprinterdriver(p, &q_u.server_name, q_u.level, &q_u.info);
+	r_u.status = _spoolss_addprinterdriver(p, &q_u, &r_u);
 				
 	if(!spoolss_io_r_addprinterdriver("", &r_u, rdata, 0)) {
 		DEBUG(0,("spoolss_io_r_addprinterdriver: unable to marshall SPOOL_R_ADDPRINTERDRIVER.\n"));
@@ -870,6 +855,7 @@ static BOOL api_spoolss_addprinterdriver(pipes_struct *p)
 
 /****************************************************************************
 ****************************************************************************/
+
 static BOOL api_spoolss_getprinterdriverdirectory(pipes_struct *p)
 {
 	SPOOL_Q_GETPRINTERDRIVERDIR q_u;
@@ -885,12 +871,7 @@ static BOOL api_spoolss_getprinterdriverdirectory(pipes_struct *p)
 		return False;
 	}
 
-	/* that's an [in out] buffer */
-	new_spoolss_move_buffer(q_u.buffer, &r_u.buffer);
-
-	r_u.status = _spoolss_getprinterdriverdirectory(&q_u.name, &q_u.environment, q_u.level,
-							r_u.buffer, q_u.offered,
-							&r_u.needed);
+	r_u.status = _spoolss_getprinterdriverdirectory(p, &q_u, &r_u);
 
 	if(!spoolss_io_r_getprinterdriverdir("", &r_u, rdata, 0)) {
 		DEBUG(0,("spoolss_io_r_getprinterdriverdir: unable to marshall SPOOL_R_GETPRINTERDRIVERDIR.\n"));
@@ -902,6 +883,7 @@ static BOOL api_spoolss_getprinterdriverdirectory(pipes_struct *p)
 
 /****************************************************************************
 ****************************************************************************/
+
 static BOOL api_spoolss_enumprinterdata(pipes_struct *p)
 {
 	SPOOL_Q_ENUMPRINTERDATA q_u;
@@ -917,10 +899,7 @@ static BOOL api_spoolss_enumprinterdata(pipes_struct *p)
 		return False;
 	}
 	
-	r_u.status = _spoolss_enumprinterdata(p, &q_u.handle, q_u.index, q_u.valuesize, q_u.datasize,
-						&r_u.valuesize, &r_u.value, &r_u.realvaluesize,
-						&r_u.type,
-						&r_u.datasize, &r_u.data, &r_u.realdatasize);
+	r_u.status = _spoolss_enumprinterdata(p, &q_u, &r_u);
 				
 	if(!spoolss_io_r_enumprinterdata("", &r_u, rdata, 0)) {
 		DEBUG(0,("spoolss_io_r_enumprinterdata: unable to marshall SPOOL_R_ENUMPRINTERDATA.\n"));
@@ -932,6 +911,7 @@ static BOOL api_spoolss_enumprinterdata(pipes_struct *p)
 
 /****************************************************************************
 ****************************************************************************/
+
 static BOOL api_spoolss_setprinterdata(pipes_struct *p)
 {
 	SPOOL_Q_SETPRINTERDATA q_u;
@@ -947,9 +927,7 @@ static BOOL api_spoolss_setprinterdata(pipes_struct *p)
 		return False;
 	}
 	
-	r_u.status = _spoolss_setprinterdata(&q_u.handle,
-				&q_u.value, q_u.type, q_u.max_len,
-				q_u.data, q_u.real_len, q_u.numeric_data);
+	r_u.status = _spoolss_setprinterdata(p, &q_u, &r_u);
 				
 	if(!spoolss_io_r_setprinterdata("", &r_u, rdata, 0)) {
 		DEBUG(0,("spoolss_io_r_setprinterdata: unable to marshall SPOOL_R_SETPRINTERDATA.\n"));
@@ -961,6 +939,7 @@ static BOOL api_spoolss_setprinterdata(pipes_struct *p)
 
 /****************************************************************************
 ****************************************************************************/
+
 static BOOL api_spoolss_addform(pipes_struct *p)
 {
 	SPOOL_Q_ADDFORM q_u;
@@ -976,7 +955,7 @@ static BOOL api_spoolss_addform(pipes_struct *p)
 		return False;
 	}
 	
-	r_u.status = _spoolss_addform(&q_u.handle, q_u.level, &q_u.form);
+	r_u.status = _spoolss_addform(p, &q_u, &r_u);
 	
 	if(!spoolss_io_r_addform("", &r_u, rdata, 0)) {
 		DEBUG(0,("spoolss_io_r_addform: unable to marshall SPOOL_R_ADDFORM.\n"));
@@ -988,6 +967,7 @@ static BOOL api_spoolss_addform(pipes_struct *p)
 
 /****************************************************************************
 ****************************************************************************/
+
 static BOOL api_spoolss_deleteform(pipes_struct *p)
 {
 	SPOOL_Q_DELETEFORM q_u;
@@ -1003,7 +983,7 @@ static BOOL api_spoolss_deleteform(pipes_struct *p)
 		return False;
 	}
 	
-	r_u.status = _spoolss_deleteform(&q_u.handle, &q_u.name);
+	r_u.status = _spoolss_deleteform(p, &q_u, &r_u);
 	
 	if(!spoolss_io_r_deleteform("", &r_u, rdata, 0)) {
 		DEBUG(0,("spoolss_io_r_deleteform: unable to marshall SPOOL_R_DELETEFORM.\n"));
@@ -1015,6 +995,7 @@ static BOOL api_spoolss_deleteform(pipes_struct *p)
 
 /****************************************************************************
 ****************************************************************************/
+
 static BOOL api_spoolss_setform(pipes_struct *p)
 {
 	SPOOL_Q_SETFORM q_u;
@@ -1030,7 +1011,7 @@ static BOOL api_spoolss_setform(pipes_struct *p)
 		return False;
 	}
 	
-	r_u.status = _spoolss_setform(&q_u.handle, &q_u.name, q_u.level, &q_u.form);
+	r_u.status = _spoolss_setform(p, &q_u, &r_u);
 				      
 	if(!spoolss_io_r_setform("", &r_u, rdata, 0)) {
 		DEBUG(0,("spoolss_io_r_setform: unable to marshall SPOOL_R_SETFORM.\n"));
@@ -1042,6 +1023,7 @@ static BOOL api_spoolss_setform(pipes_struct *p)
 
 /****************************************************************************
 ****************************************************************************/
+
 static BOOL api_spoolss_enumprintprocessors(pipes_struct *p)
 {
 	SPOOL_Q_ENUMPRINTPROCESSORS q_u;
@@ -1057,12 +1039,7 @@ static BOOL api_spoolss_enumprintprocessors(pipes_struct *p)
 		return False;
 	}
 	
-	/* that's an [in out] buffer */
-	new_spoolss_move_buffer(q_u.buffer, &r_u.buffer);
-	
-	r_u.status = _spoolss_enumprintprocessors(&q_u.name, &q_u.environment, q_u.level,
-						  r_u.buffer, q_u.offered,
-						  &r_u.needed, &r_u.returned);
+	r_u.status = _spoolss_enumprintprocessors(p, &q_u, &r_u);
 
 	if(!spoolss_io_r_enumprintprocessors("", &r_u, rdata, 0)) {
 		DEBUG(0,("spoolss_io_r_enumprintprocessors: unable to marshall SPOOL_R_ENUMPRINTPROCESSORS.\n"));
@@ -1074,6 +1051,7 @@ static BOOL api_spoolss_enumprintprocessors(pipes_struct *p)
 
 /****************************************************************************
 ****************************************************************************/
+
 static BOOL api_spoolss_enumprintprocdatatypes(pipes_struct *p)
 {
 	SPOOL_Q_ENUMPRINTPROCDATATYPES q_u;
@@ -1089,12 +1067,7 @@ static BOOL api_spoolss_enumprintprocdatatypes(pipes_struct *p)
 		return False;
 	}
 	
-	/* that's an [in out] buffer */
-	new_spoolss_move_buffer(q_u.buffer, &r_u.buffer);
-	
-	r_u.status = _spoolss_enumprintprocdatatypes(&q_u.name, &q_u.processor, q_u.level,
-						     r_u.buffer, q_u.offered,
-						     &r_u.needed, &r_u.returned);
+	r_u.status = _spoolss_enumprintprocdatatypes(p, &q_u, &r_u);
 
 	if(!spoolss_io_r_enumprintprocdatatypes("", &r_u, rdata, 0)) {
 		DEBUG(0,("spoolss_io_r_enumprintprocdatatypes: unable to marshall SPOOL_R_ENUMPRINTPROCDATATYPES.\n"));
@@ -1106,6 +1079,7 @@ static BOOL api_spoolss_enumprintprocdatatypes(pipes_struct *p)
 
 /****************************************************************************
 ****************************************************************************/
+
 static BOOL api_spoolss_enumprintmonitors(pipes_struct *p)
 {
 	SPOOL_Q_ENUMPRINTMONITORS q_u;
@@ -1121,12 +1095,7 @@ static BOOL api_spoolss_enumprintmonitors(pipes_struct *p)
 		return False;
 	}
 		
-	/* that's an [in out] buffer */
-	new_spoolss_move_buffer(q_u.buffer, &r_u.buffer);
-
-	r_u.status = _spoolss_enumprintmonitors(&q_u.name, q_u.level,
-						r_u.buffer, q_u.offered,
-						&r_u.needed, &r_u.returned);
+	r_u.status = _spoolss_enumprintmonitors(p, &q_u, &r_u);
 
 	if (!spoolss_io_r_enumprintmonitors("", &r_u, rdata, 0)) {
 		DEBUG(0,("spoolss_io_r_enumprintmonitors: unable to marshall SPOOL_R_ENUMPRINTMONITORS.\n"));
@@ -1138,6 +1107,7 @@ static BOOL api_spoolss_enumprintmonitors(pipes_struct *p)
 
 /****************************************************************************
 ****************************************************************************/
+
 static BOOL api_spoolss_getjob(pipes_struct *p)
 {
 	SPOOL_Q_GETJOB q_u;
@@ -1150,12 +1120,7 @@ static BOOL api_spoolss_getjob(pipes_struct *p)
 		return False;
 	}
 
-	/* that's an [in out] buffer */
-	new_spoolss_move_buffer(q_u.buffer, &r_u.buffer);
-
-	r_u.status = _spoolss_getjob(&q_u.handle, q_u.jobid, q_u.level,
-					r_u.buffer, q_u.offered,
-					&r_u.needed);
+	r_u.status = _spoolss_getjob(p, &q_u, &r_u);
 	
 	if(!spoolss_io_r_getjob("",&r_u,rdata,0)) {
 		DEBUG(0,("spoolss_io_r_getjob: unable to marshall SPOOL_R_GETJOB.\n"));
@@ -1168,6 +1133,7 @@ static BOOL api_spoolss_getjob(pipes_struct *p)
 /*******************************************************************
 \pipe\spoolss commands
 ********************************************************************/
+
 struct api_struct api_spoolss_cmds[] = 
 {
  {"SPOOLSS_OPENPRINTEREX",             SPOOLSS_OPENPRINTEREX,             api_spoolss_open_printer_ex           },

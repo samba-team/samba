@@ -3668,56 +3668,22 @@ uint32 _spoolss_enumjobs( pipes_struct *p, SPOOL_Q_ENUMJOBS *q_u, SPOOL_R_ENUMJO
 uint32 _spoolss_schedulejob( pipes_struct *p, SPOOL_Q_SCHEDULEJOB *q_u, SPOOL_R_SCHEDULEJOB *r_u);
 uint32 _spoolss_setjob(pipes_struct *p, SPOOL_Q_SETJOB *q_u, SPOOL_R_SETJOB *r_u);
 uint32 _spoolss_enumprinterdrivers( pipes_struct *p, SPOOL_Q_ENUMPRINTERDRIVERS *q_u, SPOOL_R_ENUMPRINTERDRIVERS *r_u);
-uint32 _new_spoolss_enumforms( POLICY_HND *handle, uint32 level,
-			       NEW_BUFFER *buffer, uint32 offered,
-			       uint32 *needed, uint32 *numofforms);
-uint32 _spoolss_getform( POLICY_HND *handle, uint32 level, UNISTR2 *uni_formname, NEW_BUFFER *buffer, uint32 offered, uint32 *needed);
-uint32 _spoolss_enumports( UNISTR2 *name, uint32 level,
-			   NEW_BUFFER *buffer, uint32 offered,
-			   uint32 *needed, uint32 *returned);
-uint32 _spoolss_addprinterex( const UNISTR2 *uni_srv_name, uint32 level,
-				const SPOOL_PRINTER_INFO_LEVEL *info,
-				uint32 unk0, uint32 unk1, uint32 unk2, uint32 unk3,
-				uint32 user_switch, const SPOOL_USER_CTR *user,
-				POLICY_HND *handle);
-uint32 _spoolss_addprinterdriver(pipes_struct *p, const UNISTR2 *server_name,
-				 uint32 level, const SPOOL_PRINTER_DRIVER_INFO_LEVEL *info);
-uint32 _spoolss_getprinterdriverdirectory(UNISTR2 *name, UNISTR2 *uni_environment, uint32 level,
-					NEW_BUFFER *buffer, uint32 offered,
-					uint32 *needed);
-uint32 _spoolss_enumprinterdata(pipes_struct *p, POLICY_HND *handle, uint32 idx,
-				uint32 in_value_len, uint32 in_data_len,
-				uint32 *out_max_value_len, uint16 **out_value, uint32 *out_value_len,
-				uint32 *out_type,
-				uint32 *out_max_data_len, uint8  **data_out, uint32 *out_data_len);
-uint32 _spoolss_setprinterdata( POLICY_HND *handle,
-				const UNISTR2 *value,
-				uint32 type,
-				uint32 max_len,
-				const uint8 *data,
-				uint32 real_len,
-				uint32 numeric_data);
+uint32 _new_spoolss_enumforms(pipes_struct *p, SPOOL_Q_ENUMFORMS *q_u, SPOOL_R_ENUMFORMS *r_u);
+uint32 _spoolss_getform(pipes_struct *p, SPOOL_Q_GETFORM *q_u, SPOOL_R_GETFORM *r_u);
+uint32 _spoolss_enumports( pipes_struct *p, SPOOL_Q_ENUMPORTS *q_u, SPOOL_R_ENUMPORTS *r_u);
+uint32 _spoolss_addprinterex( pipes_struct *p, SPOOL_Q_ADDPRINTEREX *q_u, SPOOL_R_ADDPRINTEREX *r_u);
+uint32 _spoolss_addprinterdriver(pipes_struct *p, SPOOL_Q_ADDPRINTERDRIVER *q_u, SPOOL_R_ADDPRINTERDRIVER *r_u);
+uint32 _spoolss_getprinterdriverdirectory(pipes_struct *p, SPOOL_Q_GETPRINTERDRIVERDIR *q_u, SPOOL_R_GETPRINTERDRIVERDIR *r_u);
+uint32 _spoolss_enumprinterdata(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATA *q_u, SPOOL_R_ENUMPRINTERDATA *r_u);
+uint32 _spoolss_setprinterdata( pipes_struct *p, SPOOL_Q_SETPRINTERDATA *q_u, SPOOL_R_SETPRINTERDATA *r_u);
 uint32 _spoolss_deleteprinterdata(pipes_struct *p, SPOOL_Q_DELETEPRINTERDATA *q_u, SPOOL_R_DELETEPRINTERDATA *r_u);
-uint32 _spoolss_addform( POLICY_HND *handle,
-				uint32 level,
-				const FORM *form);
-uint32 _spoolss_deleteform( POLICY_HND *handle, UNISTR2 *form_name);
-uint32 _spoolss_setform( POLICY_HND *handle,
-				const UNISTR2 *uni_name,
-				uint32 level,
-				const FORM *form);
-uint32 _spoolss_enumprintprocessors(UNISTR2 *name, UNISTR2 *environment, uint32 level,
-				    NEW_BUFFER *buffer, uint32 offered,
-				    uint32 *needed, uint32 *returned);
-uint32 _spoolss_enumprintprocdatatypes(UNISTR2 *name, UNISTR2 *processor, uint32 level,
-					NEW_BUFFER *buffer, uint32 offered,
-					uint32 *needed, uint32 *returned);
-uint32 _spoolss_enumprintmonitors(UNISTR2 *name,uint32 level,
-				    NEW_BUFFER *buffer, uint32 offered,
-				    uint32 *needed, uint32 *returned);
-uint32 _spoolss_getjob( POLICY_HND *handle, uint32 jobid, uint32 level,
-			NEW_BUFFER *buffer, uint32 offered,
-			uint32 *needed);
+uint32 _spoolss_addform( pipes_struct *p, SPOOL_Q_ADDFORM *q_u, SPOOL_R_ADDFORM *r_u);
+uint32 _spoolss_deleteform( pipes_struct *p, SPOOL_Q_DELETEFORM *q_u, SPOOL_R_DELETEFORM *r_u);
+uint32 _spoolss_setform(pipes_struct *p, SPOOL_Q_SETFORM *q_u, SPOOL_R_SETFORM *r_u);
+uint32 _spoolss_enumprintprocessors(pipes_struct *p, SPOOL_Q_ENUMPRINTPROCESSORS *q_u, SPOOL_R_ENUMPRINTPROCESSORS *r_u);
+uint32 _spoolss_enumprintprocdatatypes(pipes_struct *p, SPOOL_Q_ENUMPRINTPROCDATATYPES *q_u, SPOOL_R_ENUMPRINTPROCDATATYPES *r_u);
+uint32 _spoolss_enumprintmonitors(pipes_struct *p, SPOOL_Q_ENUMPRINTMONITORS *q_u, SPOOL_R_ENUMPRINTMONITORS *r_u);
+uint32 _spoolss_getjob( pipes_struct *p, SPOOL_Q_GETJOB *q_u, SPOOL_R_GETJOB *r_u);
 
 /*The following definitions come from  rpc_server/srv_srvsvc.c  */
 

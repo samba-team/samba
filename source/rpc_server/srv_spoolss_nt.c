@@ -5190,6 +5190,7 @@ uint32 _spoolss_enumprinterdrivers( pipes_struct *p, SPOOL_Q_ENUMPRINTERDRIVERS 
 
 /****************************************************************************
 ****************************************************************************/
+
 static void fill_form_1(FORM_1 *form, nt_forms_struct *list)
 {
 	form->flag=list->flag;
@@ -5204,14 +5205,24 @@ static void fill_form_1(FORM_1 *form, nt_forms_struct *list)
 	
 /****************************************************************************
 ****************************************************************************/
-uint32 _new_spoolss_enumforms( POLICY_HND *handle, uint32 level,
-			       NEW_BUFFER *buffer, uint32 offered,
-			       uint32 *needed, uint32 *numofforms)
+
+uint32 _new_spoolss_enumforms(pipes_struct *p, SPOOL_Q_ENUMFORMS *q_u, SPOOL_R_ENUMFORMS *r_u)
 {
+/*	POLICY_HND *handle = &q_u->handle; - notused. */
+	uint32 level = q_u->level;
+	NEW_BUFFER *buffer = NULL;
+	uint32 offered = q_u->offered;
+	uint32 *needed = &r_u->needed;
+	uint32 *numofforms = &r_u->numofforms;
+
 	nt_forms_struct *list=NULL;
 	FORM_1 *forms_1;
 	int buffer_size=0;
 	int i;
+
+	/* that's an [in out] buffer */
+	new_spoolss_move_buffer(q_u->buffer, &r_u->buffer);
+	buffer = r_u->buffer;
 
 	DEBUG(4,("_new_spoolss_enumforms\n"));
 	DEBUGADD(5,("Offered buffer size [%d]\n", offered));
@@ -5274,13 +5285,25 @@ uint32 _new_spoolss_enumforms( POLICY_HND *handle, uint32 level,
 
 /****************************************************************************
 ****************************************************************************/
-uint32 _spoolss_getform( POLICY_HND *handle, uint32 level, UNISTR2 *uni_formname, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
+
+uint32 _spoolss_getform(pipes_struct *p, SPOOL_Q_GETFORM *q_u, SPOOL_R_GETFORM *r_u)
 {
+/*	POLICY_HND *handle = &q_u->handle; - notused. */
+	uint32 level = q_u->level;
+	UNISTR2 *uni_formname = &q_u->formname;
+	NEW_BUFFER *buffer = NULL;
+	uint32 offered = q_u->offered;
+	uint32 *needed = &r_u->needed;
+
 	nt_forms_struct *list=NULL;
 	FORM_1 form_1;
 	fstring form_name;
 	int buffer_size=0;
 	int numofforms, i;
+
+	/* that's an [in out] buffer */
+	new_spoolss_move_buffer(q_u->buffer, &r_u->buffer);
+	buffer = r_u->buffer;
 
 	unistr2_to_ascii(form_name, uni_formname, sizeof(form_name)-1);
 
@@ -5553,10 +5576,20 @@ static uint32 enumports_level_2(NEW_BUFFER *buffer, uint32 offered, uint32 *need
 /****************************************************************************
  enumports.
 ****************************************************************************/
-uint32 _spoolss_enumports( UNISTR2 *name, uint32 level,
-			   NEW_BUFFER *buffer, uint32 offered,
-			   uint32 *needed, uint32 *returned)
+
+uint32 _spoolss_enumports( pipes_struct *p, SPOOL_Q_ENUMPORTS *q_u, SPOOL_R_ENUMPORTS *r_u)
 {
+/*	UNISTR2 *name = &q_u->name; - notused. */
+	uint32 level = q_u->level;
+	NEW_BUFFER *buffer = NULL;
+	uint32 offered = q_u->offered;
+	uint32 *needed = &r_u->needed;
+	uint32 *returned = &r_u->returned;
+
+	/* that's an [in out] buffer */
+	new_spoolss_move_buffer(q_u->buffer, &r_u->buffer);
+	buffer = r_u->buffer;
+
 	DEBUG(4,("_spoolss_enumports\n"));
 	
 	*returned=0;
@@ -5645,12 +5678,20 @@ static uint32 spoolss_addprinterex_level_2( const UNISTR2 *uni_srv_name,
 
 /****************************************************************************
 ****************************************************************************/
-uint32 _spoolss_addprinterex( const UNISTR2 *uni_srv_name, uint32 level,
-				const SPOOL_PRINTER_INFO_LEVEL *info,
-				uint32 unk0, uint32 unk1, uint32 unk2, uint32 unk3,
-				uint32 user_switch, const SPOOL_USER_CTR *user,
-				POLICY_HND *handle)
+
+uint32 _spoolss_addprinterex( pipes_struct *p, SPOOL_Q_ADDPRINTEREX *q_u, SPOOL_R_ADDPRINTEREX *r_u)
 {
+	UNISTR2 *uni_srv_name = &q_u->server_name;
+	uint32 level = q_u->level;
+	SPOOL_PRINTER_INFO_LEVEL *info = &q_u->info;
+	uint32 unk0 = q_u->unk0;
+	uint32 unk1 = q_u->unk1;
+	uint32 unk2 = q_u->unk2;
+	uint32 unk3 = q_u->unk3;
+	uint32 user_switch = q_u->user_switch;
+	SPOOL_USER_CTR *user = &q_u->user_ctr;
+	POLICY_HND *handle = &r_u->handle;
+
 	switch (level) {
 		case 1:
 			/* we don't handle yet */
@@ -5667,9 +5708,13 @@ uint32 _spoolss_addprinterex( const UNISTR2 *uni_srv_name, uint32 level,
 
 /****************************************************************************
 ****************************************************************************/
-uint32 _spoolss_addprinterdriver(pipes_struct *p, const UNISTR2 *server_name,
-				 uint32 level, const SPOOL_PRINTER_DRIVER_INFO_LEVEL *info)
+
+uint32 _spoolss_addprinterdriver(pipes_struct *p, SPOOL_Q_ADDPRINTERDRIVER *q_u, SPOOL_R_ADDPRINTERDRIVER *r_u)
 {
+/*	UNISTR2 *server_name = &q_u->server_name; - notused. */
+	uint32 level = q_u->level;
+	SPOOL_PRINTER_DRIVER_INFO_LEVEL *info = &q_u->info;
+
 	uint32 err = NT_STATUS_NO_PROBLEMO;
 	NT_PRINTER_DRIVER_INFO_LEVEL driver;
 	struct current_user user;
@@ -5750,10 +5795,20 @@ static uint32 getprinterdriverdir_level_1(UNISTR2 *name, UNISTR2 *uni_environmen
 
 /****************************************************************************
 ****************************************************************************/
-uint32 _spoolss_getprinterdriverdirectory(UNISTR2 *name, UNISTR2 *uni_environment, uint32 level,
-					NEW_BUFFER *buffer, uint32 offered,
-					uint32 *needed)
+
+uint32 _spoolss_getprinterdriverdirectory(pipes_struct *p, SPOOL_Q_GETPRINTERDRIVERDIR *q_u, SPOOL_R_GETPRINTERDRIVERDIR *r_u)
 {
+	UNISTR2 *name = &q_u->name;
+	UNISTR2 *uni_environment = &q_u->environment;
+	uint32 level = q_u->level;
+	NEW_BUFFER *buffer = NULL;
+	uint32 offered = q_u->offered;
+	uint32 *needed = &r_u->needed;
+
+	/* that's an [in out] buffer */
+	new_spoolss_move_buffer(q_u->buffer, &r_u->buffer);
+	buffer = r_u->buffer;
+
 	DEBUG(4,("_spoolss_getprinterdriverdirectory\n"));
 
 	*needed=0;
@@ -5768,12 +5823,21 @@ uint32 _spoolss_getprinterdriverdirectory(UNISTR2 *name, UNISTR2 *uni_environmen
 	
 /****************************************************************************
 ****************************************************************************/
-uint32 _spoolss_enumprinterdata(pipes_struct *p, POLICY_HND *handle, uint32 idx,
-				uint32 in_value_len, uint32 in_data_len,
-				uint32 *out_max_value_len, uint16 **out_value, uint32 *out_value_len,
-				uint32 *out_type,
-				uint32 *out_max_data_len, uint8  **data_out, uint32 *out_data_len)
+
+uint32 _spoolss_enumprinterdata(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATA *q_u, SPOOL_R_ENUMPRINTERDATA *r_u)
 {
+	POLICY_HND *handle = &q_u->handle;
+	uint32 idx = q_u->index;
+	uint32 in_value_len = q_u->valuesize;
+	uint32 in_data_len = q_u->datasize;
+	uint32 *out_max_value_len = &r_u->valuesize;
+	uint16 **out_value = &r_u->value;
+	uint32 *out_value_len = &r_u->realvaluesize;
+	uint32 *out_type = &r_u->type;
+	uint32 *out_max_data_len = &r_u->datasize;
+	uint8  **data_out = &r_u->data;
+	uint32 *out_data_len = &r_u->realdatasize;
+
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
 	
 	fstring value;
@@ -5926,14 +5990,17 @@ uint32 _spoolss_enumprinterdata(pipes_struct *p, POLICY_HND *handle, uint32 idx,
 
 /****************************************************************************
 ****************************************************************************/
-uint32 _spoolss_setprinterdata( POLICY_HND *handle,
-				const UNISTR2 *value,
-				uint32 type,
-				uint32 max_len,
-				const uint8 *data,
-				uint32 real_len,
-				uint32 numeric_data)
+
+uint32 _spoolss_setprinterdata( pipes_struct *p, SPOOL_Q_SETPRINTERDATA *q_u, SPOOL_R_SETPRINTERDATA *r_u)
 {
+	POLICY_HND *handle = &q_u->handle;
+	UNISTR2 *value = &q_u->value;
+	uint32 type = q_u->type;
+/*	uint32 max_len = q_u->max_len; - notused. */
+	uint8 *data = q_u->data;
+	uint32 real_len = q_u->real_len;
+/*	uint32 numeric_data = q_u->numeric_data; - notused. */
+
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
 	NT_PRINTER_PARAM *param = NULL, old_param;
 	int snum=0;
@@ -6046,10 +6113,13 @@ uint32 _spoolss_deleteprinterdata(pipes_struct *p, SPOOL_Q_DELETEPRINTERDATA *q_
 
 /****************************************************************************
 ****************************************************************************/
-uint32 _spoolss_addform( POLICY_HND *handle,
-				uint32 level,
-				const FORM *form)
+
+uint32 _spoolss_addform( pipes_struct *p, SPOOL_Q_ADDFORM *q_u, SPOOL_R_ADDFORM *r_u)
 {
+	POLICY_HND *handle = &q_u->handle;
+/*	uint32 level = q_u->level; - notused. */
+	FORM *form = &q_u->form;
+
 	int count=0;
 	nt_forms_struct *list=NULL;
 	Printer_entry *Printer = find_printer_index_by_hnd(handle);
@@ -6073,8 +6143,12 @@ uint32 _spoolss_addform( POLICY_HND *handle,
 
 /****************************************************************************
 ****************************************************************************/
-uint32 _spoolss_deleteform( POLICY_HND *handle, UNISTR2 *form_name)
+
+uint32 _spoolss_deleteform( pipes_struct *p, SPOOL_Q_DELETEFORM *q_u, SPOOL_R_DELETEFORM *r_u)
 {
+	POLICY_HND *handle = &q_u->handle;
+	UNISTR2 *form_name = &q_u->name;
+
 	int count=0;
 	uint32 ret = 0;
 	nt_forms_struct *list=NULL;
@@ -6098,11 +6172,14 @@ uint32 _spoolss_deleteform( POLICY_HND *handle, UNISTR2 *form_name)
 
 /****************************************************************************
 ****************************************************************************/
-uint32 _spoolss_setform( POLICY_HND *handle,
-				const UNISTR2 *uni_name,
-				uint32 level,
-				const FORM *form)
+
+uint32 _spoolss_setform(pipes_struct *p, SPOOL_Q_SETFORM *q_u, SPOOL_R_SETFORM *r_u)
 {
+	POLICY_HND *handle = &q_u->handle;
+/*	UNISTR2 *uni_name = &q_u->name; - notused. */
+/*	uint32 level = q_u->level; - notused. */
+	FORM *form = &q_u->form;
+
 	int count=0;
 	nt_forms_struct *list=NULL;
 	Printer_entry *Printer = find_printer_index_by_hnd(handle);
@@ -6155,10 +6232,21 @@ static uint32 enumprintprocessors_level_1(NEW_BUFFER *buffer, uint32 offered, ui
 
 /****************************************************************************
 ****************************************************************************/
-uint32 _spoolss_enumprintprocessors(UNISTR2 *name, UNISTR2 *environment, uint32 level,
-				    NEW_BUFFER *buffer, uint32 offered,
-				    uint32 *needed, uint32 *returned)
+
+uint32 _spoolss_enumprintprocessors(pipes_struct *p, SPOOL_Q_ENUMPRINTPROCESSORS *q_u, SPOOL_R_ENUMPRINTPROCESSORS *r_u)
 {
+/*	UNISTR2 *name = &q_u->name; - notused. */
+/*	UNISTR2 *environment = &q_u->environment; - notused. */
+	uint32 level = q_u->level;
+    NEW_BUFFER *buffer = NULL;
+	uint32 offered = q_u->offered;
+    uint32 *needed = &r_u->needed;
+	uint32 *returned = &r_u->returned;
+
+	/* that's an [in out] buffer */
+	new_spoolss_move_buffer(q_u->buffer, &r_u->buffer);
+	buffer = r_u->buffer;
+
  	DEBUG(5,("spoolss_enumprintprocessors\n"));
 
 	/*
@@ -6212,10 +6300,21 @@ static uint32 enumprintprocdatatypes_level_1(NEW_BUFFER *buffer, uint32 offered,
 
 /****************************************************************************
 ****************************************************************************/
-uint32 _spoolss_enumprintprocdatatypes(UNISTR2 *name, UNISTR2 *processor, uint32 level,
-					NEW_BUFFER *buffer, uint32 offered,
-					uint32 *needed, uint32 *returned)
+
+uint32 _spoolss_enumprintprocdatatypes(pipes_struct *p, SPOOL_Q_ENUMPRINTPROCDATATYPES *q_u, SPOOL_R_ENUMPRINTPROCDATATYPES *r_u)
 {
+/*	UNISTR2 *name = &q_u->name; - notused. */
+/*	UNISTR2 *processor = &q_u->processor; - notused. */
+	uint32 level = q_u->level;
+	NEW_BUFFER *buffer = NULL;
+	uint32 offered = q_u->offered;
+	uint32 *needed = &r_u->needed;
+	uint32 *returned = &r_u->returned;
+
+	/* that's an [in out] buffer */
+	new_spoolss_move_buffer(q_u->buffer, &r_u->buffer);
+	buffer = r_u->buffer;
+
  	DEBUG(5,("_spoolss_enumprintprocdatatypes\n"));
 	
 	*returned=0;
@@ -6232,6 +6331,7 @@ uint32 _spoolss_enumprintprocdatatypes(UNISTR2 *name, UNISTR2 *processor, uint32
 /****************************************************************************
  enumprintmonitors level 1.
 ****************************************************************************/
+
 static uint32 enumprintmonitors_level_1(NEW_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
 {
 	PRINTMONITOR_1 *info_1=NULL;
@@ -6295,10 +6395,20 @@ static uint32 enumprintmonitors_level_2(NEW_BUFFER *buffer, uint32 offered, uint
 
 /****************************************************************************
 ****************************************************************************/
-uint32 _spoolss_enumprintmonitors(UNISTR2 *name,uint32 level,
-				    NEW_BUFFER *buffer, uint32 offered,
-				    uint32 *needed, uint32 *returned)
+
+uint32 _spoolss_enumprintmonitors(pipes_struct *p, SPOOL_Q_ENUMPRINTMONITORS *q_u, SPOOL_R_ENUMPRINTMONITORS *r_u)
 {
+/*	UNISTR2 *name = &q_u->name; - notused. */
+	uint32 level = q_u->level;
+    NEW_BUFFER *buffer = NULL;
+	uint32 offered = q_u->offered;
+    uint32 *needed = &r_u->needed;
+	uint32 *returned = &r_u->returned;
+
+	/* that's an [in out] buffer */
+	new_spoolss_move_buffer(q_u->buffer, &r_u->buffer);
+	buffer = r_u->buffer;
+
  	DEBUG(5,("spoolss_enumprintmonitors\n"));
 
 	/*
@@ -6430,14 +6540,24 @@ static uint32 getjob_level_2(print_queue_struct *queue, int count, int snum, uin
 
 /****************************************************************************
 ****************************************************************************/
-uint32 _spoolss_getjob( POLICY_HND *handle, uint32 jobid, uint32 level,
-			NEW_BUFFER *buffer, uint32 offered,
-			uint32 *needed)
+
+uint32 _spoolss_getjob( pipes_struct *p, SPOOL_Q_GETJOB *q_u, SPOOL_R_GETJOB *r_u)
 {
+	POLICY_HND *handle = &q_u->handle;
+	uint32 jobid = q_u->jobid;
+	uint32 level = q_u->level;
+	NEW_BUFFER *buffer = NULL;
+	uint32 offered = q_u->offered;
+	uint32 *needed = &r_u->needed;
+
 	int snum;
 	int count;
 	print_queue_struct *queue=NULL;
 	print_status_struct prt_status;
+
+	/* that's an [in out] buffer */
+	new_spoolss_move_buffer(q_u->buffer, &r_u->buffer);
+	buffer = r_u->buffer;
 
 	DEBUG(5,("spoolss_getjob\n"));
 	
