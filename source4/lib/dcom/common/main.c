@@ -62,11 +62,13 @@ static NTSTATUS dcom_connect(struct dcerpc_pipe **p, const char *server, const c
 	return status;
 }
 
+#if 0
 static WERROR dcom_connect_oxid(TALLOC_CTX *mem_ctx, struct dcerpc_pipe **p, HYPER_T oxid)
 {
 	/* FIXME */
 	return WERR_NOT_SUPPORTED;
 }
+#endif
 
 NTSTATUS dcerpc_IUnknown_AddRef(struct dcerpc_pipe *p, struct GUID *o, TALLOC_CTX *mem_ctx, struct IUnknown_AddRef *r) 
 {
