@@ -193,17 +193,21 @@ vasnprintf (char **ret, size_t max_sz, const char *format, va_list args)
 
   st = xyzprintf (&state, format, args);
   if (st) {
+    free (state.str);
     *ret = NULL;
     return -1;
   } else {
+    char *tmp;
+
     *state.s = '\0';
     len = state.s - state.str;
-    state.str = realloc (state.str, len+1);
+    tmp = realloc (state.str, len+1);
     if (state.str == NULL) {
+      free (state.str);
       *ret = NULL;
       return -1;
     }
-    *ret = state.str;
+    *ret = tmp;
     return len;
   }
 }
@@ -256,14 +260,16 @@ as_reserve (struct state *state, size_t n)
 {
   while (state->s + n > state->theend) {
     int off = state->s - state->str;
+    char *tmp;
 
     if (state->max_sz && state->sz >= state->max_sz)
       return 1;
 
     state->sz = min(state->max_sz, state->sz*2);
-    state->str = realloc (state->str, state->sz);
-    if (state->str == NULL)
+    tmp = realloc (state->str, state->sz);
+    if (tmp == NULL)
       return 1;
+    state->str = tmp;
     state->s = state->str + off;
     state->theend = state->str + state->sz - 1;
   }
