@@ -76,19 +76,13 @@ static int open_root_pipe_sock(void)
         return established_socket;
     }
 
-    /* Check permissions on unix socket file and directory */
+    /* Check permissions on unix socket directory */
 
     if (lstat(WINBINDD_SOCKET_DIR, &st) == -1) {
         return -1;
     }
 
     if (!S_ISDIR(st.st_mode) || (st.st_uid != 0)) {
-        return -1;
-    }
-
-    /* Create socket */
-
-    if ((established_socket = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
         return -1;
     }
 
@@ -106,6 +100,26 @@ static int open_root_pipe_sock(void)
     ZERO_STRUCT(sunaddr);
     sunaddr.sun_family = AF_UNIX;
     strncpy(sunaddr.sun_path, path, sizeof(sunaddr.sun_path) - 1);
+
+    /* If socket file doesn't exist, don't bother trying to connect with
+       retry.  This is an attempt to make the system usable when the
+       winbindd daemon is not running. */
+
+    if (lstat(path, &st) == -1) {
+        return -1;
+    }
+
+    /* Check permissions on unix socket file */
+    
+    if (!S_ISSOCK(st.st_mode) || (st.st_uid != 0)) {
+        return -1;
+    }
+
+    /* Connect to socket */
+
+    if ((established_socket = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
+        return -1;
+    }
 
 #define WINBINDD_MAX_RETRIES    10
 #define WINBINDD_RETRY_TIMEOUT  2
