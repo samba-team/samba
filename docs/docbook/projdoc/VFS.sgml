@@ -82,7 +82,7 @@ following information will be recorded:
 </para>
 
 <table frame="all"><title>Extended Auditing Log Information</title>
-<tgroup cols="2" align="center")
+<tgroup cols="2" align="center">
 	<thead>
 	<row><entry align="center">Log Level</entry><entry>Log Details - File and Directory Operations</entry></row>
 	</thead>
