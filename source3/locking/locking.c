@@ -283,10 +283,8 @@ bucket %d (number of entries now = %d)\n",
        */
        share_array[num_entries_copied].pid = entry_scanner_p->pid;
        share_array[num_entries_copied].share_mode = entry_scanner_p->share_mode;
-#ifdef USE_OPLOCKS
        share_array[num_entries_copied].op_port = entry_scanner_p->op_port;
        share_array[num_entries_copied].op_type = entry_scanner_p->op_type;
-#endif /* USE_OPLOCKS */
        memcpy(&share_array[num_entries_copied].time, &entry_scanner_p->time,
               sizeof(struct timeval));
        num_entries_copied++;
@@ -555,10 +553,8 @@ inode %d in hash bucket %d\n", fs_p->name, dev, inode, hash_entry));
 
   new_entry_p->pid = getpid();
   new_entry_p->share_mode = fs_p->share_mode;
-#ifdef USE_OPLOCKS
   new_entry_p->op_port = port;
   new_entry_p->op_type = op_type;
-#endif /* USE_OPLOCKS */
   memcpy( (char *)&new_entry_p->time, (char *)&fs_p->open_time, sizeof(struct timeval));
 
   /* Chain onto the share_mode_record */
@@ -589,7 +585,6 @@ Remove an oplock port and mode entry from a share mode.
 ********************************************************************/
 BOOL remove_share_oplock(int fnum, share_lock_token token)
 {
-#ifdef USE_OPLOCKS
   uint32 dev, inode;
   smb_shm_offset_t *mode_array;
   unsigned int hash_entry;
@@ -694,9 +689,6 @@ mode record found dev = %d, inode = %d in hash bucket %d\n", dev, inode, hash_en
   }
 
   return True;
-#else /* USE_OPLOCKS */
-  return False;
-#endif /* USE_OPLOCKS */
 }
 
 #else /* FAST_SHARE_MODES */
@@ -1006,10 +998,8 @@ it left a share mode entry with mode 0x%X in share file %s\n",
     share_array[num_entries_copied].time.tv_usec = IVAL(p,SME_USEC_OFFSET);
     share_array[num_entries_copied].share_mode = IVAL(p,SME_SHAREMODE_OFFSET);
     share_array[num_entries_copied].pid = pid;
-#ifdef USE_OPLOCKS
     share_array[num_entries_copied].op_port = SVAL(p,SME_PORT_OFFSET);
     share_array[num_entries_copied].op_type = SVAL(p,SME_OPLOCK_TYPE_OFFSET);
-#endif /* USE_OPLOCKS */
 
     num_entries_copied++;
   }
@@ -1054,10 +1044,8 @@ position 0 for share mode file %s (%s)\n", fname, strerror(errno)));
       SIVAL(p,SME_SHAREMODE_OFFSET,share_array[i].share_mode);
       SIVAL(p,SME_SEC_OFFSET,share_array[i].time.tv_sec);
       SIVAL(p,SME_USEC_OFFSET,share_array[i].time.tv_usec);
-#ifdef USE_OPLOCKS
       SSVAL(p,SME_PORT_OFFSET,share_array[i].op_port);
       SSVAL(p,SME_OPLOCK_TYPE_OFFSET,share_array[i].op_type);
-#endif /* USE_OPLOCKS */
     }
 
     newsize = (base - buf) + (SMF_ENTRY_LENGTH*num_entries_copied);
@@ -1338,10 +1326,8 @@ deleting it.\n", fname));
   SIVAL(p,SME_USEC_OFFSET,fs_p->open_time.tv_usec);
   SIVAL(p,SME_SHAREMODE_OFFSET,fs_p->share_mode);
   SIVAL(p,SME_PID_OFFSET,pid);
-#ifdef USE_OPLOCKS
   SSVAL(p,SME_PORT_OFFSET,port);
   SSVAL(p,SME_OPLOCK_TYPE_OFFSET,op_type);
-#endif /* USE_OPLOCKS */
 
   num_entries++;
 
@@ -1392,7 +1378,6 @@ Remove an oplock port and mode entry from a share mode.
 ********************************************************************/
 BOOL remove_share_oplock(int fnum, share_lock_token token)
 {
-#ifdef USE_OPLOCKS
   pstring fname;
   int fd = (int)token;
   char *buf = 0;
@@ -1504,8 +1489,5 @@ mode file %s (%s)\n", fname, strerror(errno)));
 
   return True;
 
-#else /* USE_OPLOCKS */
-  return False;
-#endif /* USE_OPLOCKS */
 }
 #endif /* FAST_SHARE_MODES */

@@ -148,9 +148,7 @@ locking version (was %d, should be %d).\n",fname,
   void *dir;
   char *s;
 #endif /* FAST_SHARE_MODES */
-#ifdef USE_OPLOCKS
   int oplock_type;
-#endif /* USE_OPLOCKS */
   int i;
   struct session_record *ptr;
 
@@ -347,9 +345,7 @@ locking version (was %d, should be %d).\n",fname,
         t.tv_sec = entry_scanner_p->time.tv_sec;
         t.tv_usec = entry_scanner_p->time.tv_usec;
         strcpy(fname, file_scanner_p->file_name);
-#ifdef USE_OPLOCKS  
         oplock_type = entry_scanner_p->op_type;
-#endif /* USE_OPLOCKS */
 
 #else /* FAST_SHARE_MODES */
 
@@ -411,9 +407,7 @@ locking version (was %d, should be %d).\n",fname,
      
          t.tv_sec = IVAL(p,SME_SEC_OFFSET);
          t.tv_usec = IVAL(p,SME_USEC_OFFSET);
-#ifdef USE_OPLOCKS
          oplock_type = SVAL(p,SME_OPLOCK_TYPE_OFFSET);
-#endif /* USE_OPLOCKS */
 #endif /* FAST_SHARE_MODES */
 
     fname[sizeof(fname)-1] = 0;
@@ -421,13 +415,8 @@ locking version (was %d, should be %d).\n",fname,
     if (firstopen) {
       firstopen=False;
       printf("Locked files:\n");
-#ifdef USE_OPLOCKS
       printf("Pid    DenyMode   R/W        Oplock           Name\n");
       printf("--------------------------------------------------\n");
-#else /* USE_OPLOCKS */
-      printf("Pid    DenyMode   R/W         Name\n");
-      printf("----------------------------------\n");
-#endif /* USE_OPLOCKS */
     }
 
 
@@ -446,7 +435,7 @@ locking version (was %d, should be %d).\n",fname,
       case 1: printf("WRONLY     "); break;
       case 2: printf("RDWR       "); break;
       }
-#ifdef USE_OPLOCKS
+
     if((oplock_type & (EXCLUSIVE_OPLOCK|BATCH_OPLOCK)) == (EXCLUSIVE_OPLOCK|BATCH_OPLOCK))
       printf("EXCLUSIVE+BATCH ");
     else if (oplock_type & EXCLUSIVE_OPLOCK)
@@ -455,7 +444,7 @@ locking version (was %d, should be %d).\n",fname,
       printf("BATCH           ");
     else
       printf("NONE            ");
-#endif /* USE_OPLOCKS */
+
     printf(" %s   %s",fname,asctime(LocalTime((time_t *)&t.tv_sec)));
 
 #ifdef FAST_SHARE_MODES

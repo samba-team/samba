@@ -296,9 +296,9 @@ char* smb_io_logon_id(BOOL io, DOM_LOGON_ID *log, char *q, char *base, int align
 }
 
 /*******************************************************************
-reads or writes an RC4_OWF structure.
+reads or writes an ARC4_OWF structure.
 ********************************************************************/
-char* smb_io_rc4_owf(BOOL io, RC4_OWF *hash, char *q, char *base, int align)
+char* smb_io_arc4_owf(BOOL io, ARC4_OWF *hash, char *q, char *base, int align)
 {
 	if (hash == NULL) return NULL;
 
@@ -326,8 +326,8 @@ char* smb_io_id_info1(BOOL io, DOM_ID_INFO_1 *id, char *q, char *base, int align
 	q = smb_io_unihdr(io, &(id->hdr_user_name     ), q, base, align);
 	q = smb_io_unihdr(io, &(id->hdr_workgroup_name), q, base, align);
 
-	q = smb_io_rc4_owf(io, &(id->rc4_lm_owf), q, base, align);
-	q = smb_io_rc4_owf(io, &(id->rc4_nt_owf), q, base, align);
+	q = smb_io_arc4_owf(io, &(id->arc4_lm_owf), q, base, align);
+	q = smb_io_arc4_owf(io, &(id->arc4_nt_owf), q, base, align);
 
 	q = smb_io_unistr2(io, &(id->uni_domain_name   ), q, base, align);
 	q = smb_io_unistr2(io, &(id->uni_user_name     ), q, base, align);

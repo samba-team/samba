@@ -2301,7 +2301,6 @@ BOOL receive_smb(int fd,char *buffer, int timeout)
   return(True);
 }
 
-#ifdef USE_OPLOCKS
 /****************************************************************************
   read a message from a udp fd.
 The timeout is in milli seconds
@@ -2498,7 +2497,6 @@ BOOL receive_message_or_smb(int smbfd, int oplock_fd,
     return receive_local_message(oplock_fd, buffer, buffer_len, 0);
   }
 }
-#endif /* USE_OPLOCKS */
 
 /****************************************************************************
   send an smb to a fd 
@@ -4335,11 +4333,11 @@ char *align2(char *q, char *base)
 align a pointer to a multiple of align_offset bytes.  looks like it
 will work for offsets of 0, 2 and 4...
 ********************************************************************/
-char *align_offset(char *q, char *base, int align_offset)
+char *align_offset(char *q, char *base, int align_offset_len)
 {
-	if (align_offset != 0 && ((q - base) & (align_offset-1)))
+	if (align_offset_len != 0 && ((q - base) & (align_offset_len-1)))
 	{
-		q += align_offset - ((q - base) & (align_offset));
+		q += align_offset_len - ((q - base) & (align_offset_len));
 	}
 	return q;
 }

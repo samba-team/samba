@@ -4562,12 +4562,12 @@ static void usage(char *pname)
 	break;
       case 'U':
 	{
-	  char *p;
+	  char *lp;
 	strcpy(username,optarg);
-	if ((p=strchr(username,'%')))
+	if ((lp=strchr(username,'%')))
 	  {
-	    *p = 0;
-	    strcpy(password,p+1);
+	    *lp = 0;
+	    strcpy(password,lp+1);
 	    got_pass = True;
 	    memset(strchr(optarg,'%')+1,'X',strlen(password));
 	  }
