@@ -25,47 +25,26 @@ sub print_footer {
 sub handle_loadparm {
 	my $line = shift;
 
-	if ($line =~ /^FN_GLOBAL_STRING/o) {
-		my $fnName = (split(/[\(,]/, $line))[1];
-		print "char *$fnName(void);\n";
-	} elsif ($line =~ /^FN_LOCAL_STRING/o) {
-		my $fnName = (split(/[\(,]/, $line))[1];
-		print "char *$fnName(int );\n";
-	} elsif ($line =~ /^FN_GLOBAL_BOOL/o) {
-		my $fnName = (split(/[\(,]/, $line))[1];
-		print "BOOL $fnName(void);\n";
-	}
-	elsif ($line =~ /^FN_LOCAL_BOOL/o) {
-		my $fnName = (split(/[\(,]/, $line))[1];
-		print "BOOL $fnName(int );\n";
-	}
-	elsif ($line =~ /^FN_GLOBAL_INTEGER/o) {
-		my $fnName = (split(/[\(,]/, $line))[1];
-		print "int $fnName(void);\n";
-	}
-	elsif ($line =~ /^FN_LOCAL_INTEGER/o) {
-		my $fnName = (split(/[\(,]/, $line))[1];
-		print "int $fnName(int );\n";
-	}
-	elsif ($line =~ /^FN_GLOBAL_LIST/o) {
-		my $fnName = (split(/[\(,]/, $line))[1];
-		print "const char **$fnName(void);\n";
-	}
-	elsif ($line =~ /^FN_LOCAL_LIST/o) {
-		my $fnName = (split(/[\(,]/, $line))[1];
-		print "const char **$fnName(int );\n";
-	}
-	elsif ($line =~ /^FN_GLOBAL_CONST_STRING/o) {
-		my $fnName = (split(/[\(,]/, $line))[1];
-		print "const char *$fnName(void);\n";
-	}
-	elsif ($line =~ /^FN_LOCAL_CONST_STRING/o) {
-		my $fnName = (split(/[\(,]/, $line))[1];
-		print "const char *$fnName(int );\n";
-	}
-	elsif ($line =~ /^FN_LOCAL_CHAR/o) {
-		my $fnName = (split(/[\(,]/, $line))[1];
-		print "char $fnName(int );\n";
+	if ($line =~ /^FN_(GLOBAL|LOCAL)_(CONST_STRING|STRING|BOOL|CHAR|INTEGER|LIST)\((\w+),.*\)/) {
+		my $scope = $1;
+		my $type = $2;
+		my $name = $3;
+
+		my %tmap = (
+			    "BOOL" => "BOOL ",
+			    "CONST_STRING" => "const char *",
+			    "STRING" => "char *",
+			    "INTEGER" => "int ",
+			    "CHAR" => "char ",
+			    "LIST" => "const char **",
+			    );
+
+		my %smap = (
+			    "GLOBAL" => "void",
+			    "LOCAL" => "int "
+			    );
+
+		print "$tmap{$type}$name($smap{$scope});\n";
 	}
 }
 
