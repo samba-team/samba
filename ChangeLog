@@ -1,3 +1,16 @@
+2001-07-01  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/krbhst.c: remember the real port number when falling
+	back from kpasswd -> kadmin, and krb524 -> kdc
+
+2001-06-29  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/get_for_creds.c (krb5_get_forwarded_creds): if
+	no_addresses is set, do not add any local addresses to KRB_CRED
+
+	* kuser/kinit.c: remove extra clearing of password and some
+	redundant code
+
 2001-06-29  Johan Danielsson  <joda@pdc.kth.se>
 
 	* kuser/kinit.c: move ticket conversion code to separate function,
