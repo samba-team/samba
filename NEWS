@@ -1,6 +1,7 @@
 Changes in release 0.1f;
 
  * experimental support for v4 kadmin protokoll in kadmind
+ * bug fixes
 
 Changes in release 0.1e:
 
