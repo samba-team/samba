@@ -46,12 +46,12 @@ verify_checksum(krb5_context context,
     size_t len;
     Checksum c;
     krb5_crypto crypto;
+    krb5_keyblock *key;
 
     c = safe->cksum;
     safe->cksum.cksumtype       = 0;
     safe->cksum.checksum.data   = NULL;
     safe->cksum.checksum.length = 0;
-
 
     buf_size = length_KRB_SAFE(safe);
     buf = malloc(buf_size);
@@ -66,6 +66,14 @@ verify_checksum(krb5_context context,
 			   buf_size,
 			   safe,
 			   &len);
+
+    if (auth_context->remote_subkey)
+	key = auth_context->remote_subkey;
+    else if (auth_context->local_subkey)
+	key = auth_context->local_subkey;
+    else
+	key = auth_context->keyblock;
+
     ret = krb5_crypto_init(context, auth_context->keyblock, 0, &crypto);
     if (ret)
 	goto out;
