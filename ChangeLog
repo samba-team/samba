@@ -1,3 +1,13 @@
+2003-08-25  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/hdb/hdb-ldap.c: code rewrite from Luke Howard
+	<lukeh@PADL.COM>
+
+	* lib/krb5/crypto.c (arcfour_checksum_p): return true when is
+	arcfour, not when its not pointed out by Luke Howard
+	
+	* doc/ack.texi: update Luke Howard email address
+	
 2003-08-24  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/krb5_encrypt.3: document:
