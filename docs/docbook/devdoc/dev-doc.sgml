@@ -6,11 +6,13 @@
 <!ENTITY parsing SYSTEM "parsing.sgml">
 <!ENTITY unix-smb SYSTEM "unix-smb.sgml">
 <!ENTITY CodingSuggestions SYSTEM "CodingSuggestions.sgml">
+<!ENTITY Tracing SYSTEM "Tracing.sgml">
+<!ENTITY cifsntdomain SYSTEM "cifsntdomain.sgml">
 ]>
 
 <book id="Samba-Developer-Documentation">
 
-<title>SAMBA Deverlopers Guide</title>
+<title>SAMBA Developers Guide</title>
 
 <bookinfo>
 	<author>
@@ -32,7 +34,7 @@ people developing samba or those interested in doing so.
 than one person can maintain.  The most recent version of this document
 can be found at <ulink url="http://www.samba.org/">http://www.samba.org/</ulink>
 on the "Documentation" page.  Please send updates to <ulink 
-url="mailto:jerry@samba.org">jerry@samba.org</ulink>.
+url="mailto:jelmer@samba.org">jelmer@samba.org</ulink>.
 </para>
 
 <para>
@@ -52,5 +54,7 @@ url="http://www.fsf.org/licenses/gpl.txt">http://www.fsf.org/licenses/gpl.txt</u
 &internals;
 &parsing;
 &unix-smb;
+&Tracing;
+&cifsntdomain;
 
 </book>
