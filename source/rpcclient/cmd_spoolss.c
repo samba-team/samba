@@ -35,6 +35,7 @@ static const struct table_node archi_table[]= {
 
 	{"Windows 4.0",          "WIN40",	0 },
 	{"Windows NT x86",       "W32X86",	2 },
+	{"Windows NT x86",       "W32X86",	3 },
 	{"Windows NT R4000",     "W32MIPS",	2 },
 	{"Windows NT Alpha_AXP", "W32ALPHA",	2 },
 	{"Windows NT PowerPC",   "W32PPC",	2 },
@@ -936,6 +937,7 @@ static WERROR cmd_spoolss_getdriver(struct cli_state *cli,
 			servername, 
 			user;
 	uint32		i;
+	BOOL		success = False;
 
 	if ((argc == 1) || (argc > 3)) 
 	{
@@ -971,15 +973,22 @@ static WERROR cmd_spoolss_getdriver(struct cli_state *cli,
 
 		werror = cli_spoolss_getprinterdriver(
 			cli, mem_ctx, 0, &needed, &pol, info_level, 
-			archi_table[i].long_archi, &ctr);
+			archi_table[i].long_archi, archi_table[i].version,
+			&ctr);
 
-		if (W_ERROR_V(werror) == ERRinsufficientbuffer)
+		if (W_ERROR_V(werror) == ERRinsufficientbuffer) {
 			werror = cli_spoolss_getprinterdriver(
 				cli, mem_ctx, needed, NULL, &pol, info_level, 
-				archi_table[i].long_archi, &ctr);
+				archi_table[i].long_archi, archi_table[i].version, 
+				&ctr);
+		}
 
 		if (!W_ERROR_IS_OK(werror))
 			continue;
+		
+		/* need at least one success */
+		
+		success = True;
 			
 		printf ("\n[%s]\n", archi_table[i].long_archi);
 
@@ -1004,6 +1013,9 @@ static WERROR cmd_spoolss_getdriver(struct cli_state *cli,
 	if (opened_hnd)
 		cli_spoolss_close_printer (cli, mem_ctx, &pol);
 	
+	if ( success )
+		werror = WERR_OK;
+		
 	return werror;
 }
 
