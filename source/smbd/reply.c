@@ -671,7 +671,6 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
      * Incoming user is in DOS codepage format. Convert
      * to UNIX.
      */
-    strlower(user);
     dos_to_unix(user,True);
   
     if (!doencrypt && (lp_security() != SEC_SERVER)) {
@@ -787,7 +786,6 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
      * Incoming user is in DOS codepage format. Convert
      * to UNIX.
      */
-    strlower(user);
     dos_to_unix(user,True);
     domain = p;
 
