@@ -1675,7 +1675,7 @@ int reply_unlink(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
   }
 
   if (is_mangled(mask))
-    check_mangled_stack(mask);
+    check_mangled_cache( mask );
 
   has_wild = strchr(mask,'*') || strchr(mask,'?');
 
@@ -3142,7 +3142,7 @@ int reply_mv(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
   }
 
   if (is_mangled(mask))
-    check_mangled_stack(mask);
+    check_mangled_cache( mask );
 
   has_wild = strchr(mask,'*') || strchr(mask,'?');
 
@@ -3412,7 +3412,7 @@ int reply_copy(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
   }
 
   if (is_mangled(mask))
-    check_mangled_stack(mask);
+    check_mangled_cache( mask );
 
   has_wild = strchr(mask,'*') || strchr(mask,'?');
 

@@ -464,7 +464,7 @@ static BOOL scan_directory(char *path, char *name,int cnum,BOOL docache)
    * (JRA).
    */
   if (mangled)
-    mangled = !check_mangled_stack(name);
+    mangled = !check_mangled_cache( name );
 
   /* open the directory */
   if (!(cur_dir = OpenDir(cnum, path, True))) 
@@ -659,7 +659,7 @@ BOOL unix_convert(char *name,int cnum,pstring saved_last_component, BOOL *bad_pa
 	      /* check on the mangled stack to see if we can recover the 
 		 base of the filename */
 	      if (is_mangled(start))
-		check_mangled_stack(start);
+		check_mangled_cache( start );
 
 	      DEBUG(5,("New file %s\n",start));
 	      return(True); 
@@ -3305,7 +3305,7 @@ BOOL reload_services(BOOL test)
     }
   }
 
-  reset_mangled_stack( lp_mangledstack() );
+  reset_mangled_cache();
 
   /* this forces service parameters to be flushed */
   become_service(-1,True);
