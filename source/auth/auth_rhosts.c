@@ -155,10 +155,10 @@ static BOOL check_hosts_equiv(struct passwd *pass)
  Check for a valid .rhosts/hosts.equiv entry for this user
 ****************************************************************************/
 
-static NTSTATUS check_hostsequiv_security(void *my_private_data, 
+static NTSTATUS check_hostsequiv_security(const struct auth_context *auth_context,
+					  void *my_private_data, 
 					  TALLOC_CTX *mem_ctx,
 					  const auth_usersupplied_info *user_info, 
-					  const auth_authsupplied_info *auth_info,
 					  auth_serversupplied_info **server_info)
 {
 	NTSTATUS nt_status = NT_STATUS_LOGON_FAILURE;
@@ -176,15 +176,26 @@ static NTSTATUS check_hostsequiv_security(void *my_private_data,
 	return nt_status;
 }
 
+/* module initialisation */
+BOOL auth_init_hostsequiv(struct auth_context *auth_context, auth_methods **auth_method) 
+{
+	if (!make_auth_methods(auth_context, auth_method)) {
+		return False;
+	}
+
+	(*auth_method)->auth = check_hostsequiv_security;
+	return True;
+}
+
 
 /****************************************************************************
  Check for a valid .rhosts/hosts.equiv entry for this user
 ****************************************************************************/
 
-static NTSTATUS check_rhosts_security(void *my_private_data, 
+static NTSTATUS check_rhosts_security(const struct auth_context *auth_context,
+				      void *my_private_data, 
 				      TALLOC_CTX *mem_ctx,
 				      const auth_usersupplied_info *user_info, 
-				      const auth_authsupplied_info *auth_info,
 				      auth_serversupplied_info **server_info)
 {
 	NTSTATUS nt_status = NT_STATUS_LOGON_FAILURE;
@@ -209,22 +220,13 @@ static NTSTATUS check_rhosts_security(void *my_private_data,
 	return nt_status;
 }
 
-BOOL auth_init_hostsequiv(auth_methods **auth_method) 
+/* module initialisation */
+BOOL auth_init_rhosts(struct auth_context *auth_context, auth_methods **auth_method) 
 {
-
-	if (!make_auth_methods(auth_method)) {
+	if (!make_auth_methods(auth_context, auth_method)) {
 		return False;
 	}
-	(*auth_method)->auth = check_hostsequiv_security;
-	return True;
-}
 
-BOOL auth_init_rhosts(auth_methods **auth_method) 
-{
-
-	if (!make_auth_methods(auth_method)) {
-		return False;
-	}
 	(*auth_method)->auth = check_rhosts_security;
 	return True;
 }

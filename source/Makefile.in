@@ -201,7 +201,7 @@ PLAINTEXT_AUTH_OBJ = auth/pampass.o auth/pass_check.o
 
 AUTH_OBJ = auth/auth.o auth/auth_sam.o auth/auth_server.o auth/auth_domain.o \
 	   auth/auth_rhosts.o auth/auth_unix.o auth/auth_util.o	auth/auth_winbind.o \
-	   auth/auth_info.o auth/auth_builtin.o $(PLAINTEXT_AUTH_OBJ)
+	   auth/auth_builtin.o auth/auth_compat.o $(PLAINTEXT_AUTH_OBJ)
 
 
 SMBD_OBJ1 = smbd/server.o smbd/files.o smbd/chgpasswd.o smbd/connection.o \

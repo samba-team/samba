@@ -83,10 +83,10 @@ static BOOL update_smbpassword_file(char *user, char *password)
  * unless the account has a null password.
  **/
 
-NTSTATUS check_unix_security(void *my_private_data, 
+static NTSTATUS check_unix_security(const struct auth_context *auth_context,
+			     void *my_private_data, 
 			     TALLOC_CTX *mem_ctx,
 			     const auth_usersupplied_info *user_info, 
-			     const auth_authsupplied_info *auth_info,
 			     auth_serversupplied_info **server_info)
 {
 	NTSTATUS nt_status;
@@ -120,11 +120,13 @@ NTSTATUS check_unix_security(void *my_private_data,
 	return nt_status;
 }
 
-BOOL auth_init_unix(auth_methods **auth_method) 
+/* module initialisation */
+BOOL auth_init_unix(struct auth_context *auth_context, auth_methods **auth_method) 
 {
-	if (!make_auth_methods(auth_method)) {
+	if (!make_auth_methods(auth_context, auth_method)) {
 		return False;
 	}
+
 	(*auth_method)->auth = check_unix_security;
 	return True;
 }

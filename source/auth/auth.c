@@ -1,10 +1,8 @@
 /* 
    Unix SMB/Netbios implementation.
-   Version 1.9.
+   Version 3.0.
    Password and authentication handling
-   Copyright (C) Andrew Tridgell              1992-2000
-   Copyright (C) Luke Kenneth Casson Leighton 1996-2000
-   Copyright (C) Andrew Bartlett              2001
+   Copyright (C) Andrew Bartlett         2001-2002
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -22,6 +20,95 @@
 */
 
 #include "includes.h"
+
+/** List of various built-in authenticaion modules */
+
+const struct auth_init_function builtin_auth_init_functions[] = {
+	{ "guest", auth_init_guest },
+	{ "rhosts", auth_init_rhosts },
+	{ "hostsequiv", auth_init_hostsequiv },
+	{ "sam", auth_init_sam },	
+	{ "samstrict", auth_init_samstrict },
+	{ "unix", auth_init_unix },
+	{ "smbserver", auth_init_smbserver },
+	{ "ntdomain", auth_init_ntdomain },
+	{ "winbind", auth_init_winbind },
+#ifdef DEVELOPER
+	{ "name_to_ntstatus", auth_init_name_to_ntstatus },
+#endif
+	{ NULL, NULL}
+};
+
+/****************************************************************************
+ Try to get a challenge out of the various authenticaion modules.
+ Returns a const char of length 8 bytes.
+****************************************************************************/
+
+static const uint8 *get_ntlm_challenge(struct auth_context *auth_context) 
+{
+	DATA_BLOB challenge = data_blob(NULL, 0);
+	char *challenge_set_by = NULL;
+	auth_methods *auth_method;
+	TALLOC_CTX *mem_ctx;
+
+	if (auth_context->challenge.length) {
+		DEBUG(5, ("get_ntlm_challange (auth subsystem): returning previous challenge (normal)\n"));
+		return auth_context->challenge.data;
+	}
+
+	for (auth_method = auth_context->auth_method_list; auth_method; auth_method = auth_method->next)
+	{
+		if (auth_method->get_chal == NULL) {
+			DEBUG(5, ("auth_get_challenge: module %s did not want to specify a challenge\n", auth_method->name));
+			continue;
+		}
+
+		DEBUG(5, ("auth_get_challenge: getting challenge from module %s\n", auth_method->name));
+		if (challenge_set_by != NULL) {
+			DEBUG(1, ("auth_get_challenge: CONFIGURATION ERROR: authenticaion method %s has already specified a challenge.  Challenge by %s ignored.\n", 
+				  challenge_set_by, auth_method->name));
+			continue;
+		}
+
+		mem_ctx = talloc_init_named("auth_get_challange for module %s", auth_method->name);
+		if (!mem_ctx) {
+			smb_panic("talloc_init_named() failed!");
+		}
+		
+		challenge = auth_method->get_chal(auth_context, &auth_method->private_data, mem_ctx);
+		if (!challenge.length) {
+			DEBUG(3, ("auth_get_challenge: getting challenge from authenticaion method %s FAILED.\n", 
+				  auth_method->name));
+		} else {
+			DEBUG(5, ("auth_get_challenge: sucessfully got challenge from module %s\n", auth_method->name));
+			auth_context->challenge = challenge;
+			challenge_set_by = auth_method->name;
+			auth_context->challenge_set_method = auth_method;
+		}
+		talloc_destroy(mem_ctx);
+	}
+	
+	if (!challenge_set_by) {
+		uchar chal[8];
+		
+		generate_random_buffer(chal, sizeof(chal), False);
+		auth_context->challenge = data_blob_talloc(auth_context->mem_ctx, 
+							   chal, sizeof(chal));
+		
+		challenge_set_by = "random";
+	} 
+	
+	DEBUG(5, ("auth_context challenge created by %s\n", challenge_set_by));
+	DEBUG(5, ("challenge is: \n"));
+	dump_data(5, auth_context->challenge.data, auth_context->challenge.length);
+	
+	SMB_ASSERT(auth_context->challenge.length == 8);
+
+	auth_context->challenge_set_by=challenge_set_by;
+
+	return auth_context->challenge.data;
+}
+
 
 /**
  * Check user is in correct domain (if required)
@@ -81,9 +168,9 @@ static BOOL check_domain_match(const char *user, const char *domain)
  *
  **/
 
-NTSTATUS check_password(const auth_usersupplied_info *user_info, 
-			const auth_authsupplied_info *auth_info,
-			auth_serversupplied_info **server_info)
+static NTSTATUS check_ntlm_password(const struct auth_context *auth_context,
+				    const struct auth_usersupplied_info *user_info, 
+				    struct auth_serversupplied_info **server_info)
 {
 	
 	NTSTATUS nt_status = NT_STATUS_LOGON_FAILURE;
@@ -91,7 +178,7 @@ NTSTATUS check_password(const auth_usersupplied_info *user_info,
 	auth_methods *auth_method;
 	TALLOC_CTX *mem_ctx;
 
-	if (!user_info || !auth_info || !server_info) {
+	if (!user_info || !auth_context || !server_info) {
 		return NT_STATUS_LOGON_FAILURE;
 	}
 
@@ -100,11 +187,11 @@ NTSTATUS check_password(const auth_usersupplied_info *user_info,
 
 	DEBUG(3, ("check_password:  mapped user is: [%s]\\[%s]@[%s]\n", 
 		  user_info->domain.str, user_info->internal_username.str, user_info->wksta_name.str));
-	if (auth_info->challenge_set_by) {
-		DEBUG(10, ("auth_info challenge created by %s\n", auth_info->challenge_set_by));
+	if (auth_context->challenge_set_by) {
+		DEBUG(10, ("auth_context challenge created by %s\n", auth_context->challenge_set_by));
 	}
 	DEBUG(10, ("challenge is: \n"));
-	dump_data(5, (auth_info)->challenge.data, (auth_info)->challenge.length);
+	dump_data(5, auth_context->challenge.data, auth_context->challenge.length);
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100, ("user_info has passwords of length %d and %d\n", 
@@ -120,12 +207,12 @@ NTSTATUS check_password(const auth_usersupplied_info *user_info,
 		return NT_STATUS_LOGON_FAILURE;
 	}
 
-	for (auth_method = auth_info->auth_method_list;auth_method; auth_method = auth_method->next)
+	for (auth_method = auth_context->auth_method_list;auth_method; auth_method = auth_method->next)
 	{
 		mem_ctx = talloc_init_named("%s authentication for user %s\\%s", auth_method->name, 
 					    user_info->domain.str, user_info->smb_name.str);
 
-		nt_status = auth_method->auth(auth_method->private_data, mem_ctx, user_info, auth_info, server_info);
+		nt_status = auth_method->auth(auth_context, auth_method->private_data, mem_ctx, user_info, server_info);
 		if (NT_STATUS_IS_OK(nt_status)) {
 			DEBUG(3, ("check_password: %s authentication for user [%s] suceeded\n", 
 				  auth_method->name, user_info->smb_name.str));
@@ -182,124 +269,188 @@ NTSTATUS check_password(const auth_usersupplied_info *user_info,
 		ZERO_STRUCTP(server_info);
 	}
 	return nt_status;
-
 }
 
-/**
- * Squash an NT_STATUS in line with security requirements.
- * In an attempt to avoid giving the whole game away when users
- * are authenticating, NT replaces both NT_STATUS_NO_SUCH_USER and 
- * NT_STATUS_WRONG_PASSWORD with NT_STATUS_LOGON_FAILURE in certain situations 
- * (session setups in particular).
- *
- * @param nt_status NTSTATUS input for squashing.
- * @return the 'squashed' nt_status
- **/
+/***************************************************************************
+ Clear out a auth_context, and destroy the attached TALLOC_CTX
+***************************************************************************/
 
-NTSTATUS nt_status_squash(NTSTATUS nt_status) 
+static void free_auth_context(struct auth_context **auth_context)
 {
-	if NT_STATUS_IS_OK(nt_status) {
-		return nt_status;		
-	} else if NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_SUCH_USER) {
-		/* Match WinXP and don't give the game away */
-		return NT_STATUS_LOGON_FAILURE;
-		
-	} else if NT_STATUS_EQUAL(nt_status, NT_STATUS_WRONG_PASSWORD) {
-		/* Match WinXP and don't give the game away */
-		return NT_STATUS_LOGON_FAILURE;
-	} else {
-		return nt_status;
-	}  
+	if (*auth_context != NULL) {
+		talloc_destroy((*auth_context)->mem_ctx);
+	}
+	*auth_context = NULL;
 }
 
+/***************************************************************************
+ Make a auth_info struct
+***************************************************************************/
 
-
-/****************************************************************************
- COMPATABILITY INTERFACES:
- ***************************************************************************/
-
-/****************************************************************************
-check if a username/password is OK assuming the password is a 24 byte
-SMB hash
-return True if the password is correct, False otherwise
-****************************************************************************/
-
-static NTSTATUS pass_check_smb(char *smb_name,
-			       char *domain, 
-			       DATA_BLOB lm_pwd,
-			       DATA_BLOB nt_pwd,
-			       DATA_BLOB plaintext_password,
-			       BOOL encrypted)
-
+static NTSTATUS make_auth_context(struct auth_context **auth_context) 
 {
+	TALLOC_CTX *mem_ctx;
+
+	mem_ctx = talloc_init_named("authentication context");
+	
+	*auth_context = talloc(mem_ctx, sizeof(**auth_context));
+	if (!*auth_context) {
+		DEBUG(0,("make_auth_context: talloc failed!\n"));
+		talloc_destroy(mem_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+	ZERO_STRUCTP(*auth_context);
+
+	(*auth_context)->mem_ctx = mem_ctx;
+	(*auth_context)->check_ntlm_password = check_ntlm_password;
+	(*auth_context)->get_ntlm_challenge = get_ntlm_challenge;
+	(*auth_context)->free = free_auth_context;
+	
+	return NT_STATUS_OK;
+}
+
+/***************************************************************************
+ Make a auth_info struct for the auth subsystem
+***************************************************************************/
+
+static NTSTATUS make_auth_context_text_list(struct auth_context **auth_context, char **text_list) 
+{
+	auth_methods *list = NULL;
+	auth_methods *t = NULL;
+	auth_methods *tmp;
+	int i;
 	NTSTATUS nt_status;
-	auth_usersupplied_info *user_info = NULL;
-	extern auth_authsupplied_info *negprot_global_auth_info;
-	auth_serversupplied_info *server_info = NULL;
-	if (encrypted) {		
-		make_user_info_for_reply_enc(&user_info, smb_name, 
-					     domain,
-					     lm_pwd, 
-					     nt_pwd, 
-					     plaintext_password);
-		nt_status = check_password(user_info, negprot_global_auth_info, &server_info);
-	} else {
-		auth_authsupplied_info *plaintext_auth_info = NULL;
-		DATA_BLOB chal;
-		if (!make_auth_info_subsystem(&plaintext_auth_info)) {
-			return NT_STATUS_NO_MEMORY;
-		}
 
-		chal = auth_get_challenge(plaintext_auth_info);
-
-		if (!make_user_info_for_reply(&user_info, 
-					      smb_name, domain, chal.data,
-					      plaintext_password)) {
-			return NT_STATUS_NO_MEMORY;
+	if (!text_list) {
+		DEBUG(2,("No auth method list!?\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	
+	if (!NT_STATUS_IS_OK(nt_status = make_auth_context(auth_context))) {
+		return nt_status;
+	}
+	
+	for (;*text_list; text_list++)
+	{ 
+		DEBUG(5,("Attempting to find an auth method to match %s\n", *text_list));
+		for (i = 0; builtin_auth_init_functions[i].name; i++)
+		{
+			if (strequal(builtin_auth_init_functions[i].name, *text_list))
+			{
+				DEBUG(5,("Found auth method %s (at pos %d)\n", *text_list, i));
+				if (builtin_auth_init_functions[i].init(*auth_context, &t)) {
+					DEBUG(5,("auth method %s has a valid init\n", *text_list));
+					t->name = builtin_auth_init_functions[i].name;
+					DLIST_ADD_END(list, t, tmp);
+				} else {
+					DEBUG(0,("auth method %s did not correctly init\n", *text_list));
+				}
+				break;
+			}
 		}
-		
-		nt_status = check_password(user_info, plaintext_auth_info, &server_info); 
-		
-		data_blob_free(&chal);
-		free_auth_info(&plaintext_auth_info);
-	}		
-	free_user_info(&user_info);
-	free_server_info(&server_info);
+	}
+	
+	(*auth_context)->auth_method_list = list;
+	
 	return nt_status;
 }
 
-/****************************************************************************
-check if a username/password pair is OK either via the system password
-database or the encrypted SMB password database
-return True if the password is correct, False otherwise
-****************************************************************************/
-BOOL password_ok(char *smb_name, DATA_BLOB password_blob)
-{
+/***************************************************************************
+ Make a auth_context struct for the auth subsystem
+***************************************************************************/
 
-	DATA_BLOB null_password = data_blob(NULL, 0);
-	extern BOOL global_encrypted_passwords_negotiated;
-	BOOL encrypted = (global_encrypted_passwords_negotiated && password_blob.length == 24);
-	
-	if (encrypted) {
-		/* 
-		 * The password could be either NTLM or plain LM.  Try NTLM first, 
-		 * but fall-through as required.
-		 * NTLMv2 makes no sense here.
-		 */
-		if (NT_STATUS_IS_OK(pass_check_smb(smb_name, lp_workgroup(), null_password, password_blob, null_password, encrypted))) {
-			return True;
-		}
-		
-		if (NT_STATUS_IS_OK(pass_check_smb(smb_name, lp_workgroup(), password_blob, null_password, null_password, encrypted))) {
-			return True;
-		}
-	} else {
-		if (NT_STATUS_IS_OK(pass_check_smb(smb_name, lp_workgroup(), null_password, null_password, password_blob, encrypted))) {
-			return True;
-		}
+NTSTATUS make_auth_context_subsystem(struct auth_context **auth_context) 
+{
+	char **auth_method_list = NULL; 
+	NTSTATUS nt_status;
+
+	if (lp_auth_methods() && !lp_list_copy(&auth_method_list, lp_auth_methods())) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
-	return False;
+	if (auth_method_list == NULL) {
+		switch (lp_security()) 
+		{
+		case SEC_DOMAIN:
+			DEBUG(5,("Making default auth method list for security=domain\n"));
+			auth_method_list = lp_list_make("guest samstrict ntdomain");
+			break;
+		case SEC_SERVER:
+			DEBUG(5,("Making default auth method list for security=server\n"));
+			auth_method_list = lp_list_make("guest samstrict smbserver");
+			break;
+		case SEC_USER:
+			if (lp_encrypted_passwords()) {	
+				DEBUG(5,("Making default auth method list for security=user, encrypt passwords = yes\n"));
+				auth_method_list = lp_list_make("guest sam");
+			} else {
+				DEBUG(5,("Making default auth method list for security=user, encrypt passwords = no\n"));
+				auth_method_list = lp_list_make("guest unix");
+			}
+			break;
+		case SEC_SHARE:
+			if (lp_encrypted_passwords()) {
+				DEBUG(5,("Making default auth method list for security=share, encrypt passwords = yes\n"));
+				auth_method_list = lp_list_make("guest sam");
+			} else {
+				DEBUG(5,("Making default auth method list for security=share, encrypt passwords = no\n"));
+				auth_method_list = lp_list_make("guest unix");
+			}
+			break;
+		case SEC_ADS:
+			DEBUG(5,("Making default auth method list for security=ADS\n"));
+			auth_method_list = lp_list_make("guest samstrict ads ntdomain");
+			break;
+		default:
+			DEBUG(5,("Unknown auth method!\n"));
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+	} else {
+		DEBUG(5,("Using specified auth order\n"));
+	}
+	
+	if (!NT_STATUS_IS_OK(nt_status = make_auth_context_text_list(auth_context, auth_method_list))) {
+		lp_list_free(&auth_method_list);
+		return nt_status;
+	}
+	
+	lp_list_free(&auth_method_list);
+	return nt_status;
+}
+
+/***************************************************************************
+ Make a auth_info struct with a random challenge
+***************************************************************************/
+
+NTSTATUS make_auth_context_random(struct auth_context **auth_context) 
+{
+	uchar chal[8];
+	NTSTATUS nt_status;
+	if (!NT_STATUS_IS_OK(nt_status = make_auth_context_subsystem(auth_context))) {
+		return nt_status;
+	}
+	
+	generate_random_buffer(chal, sizeof(chal), False);
+	(*auth_context)->challenge = data_blob(chal, sizeof(chal));
+
+	(*auth_context)->challenge_set_by = "random";
+
+	return nt_status;
+}
+
+/***************************************************************************
+ Make a auth_info struct with a fixed challenge
+***************************************************************************/
+
+NTSTATUS make_auth_context_fixed(struct auth_context **auth_context, uchar chal[8]) 
+{
+	NTSTATUS nt_status;
+	if (!NT_STATUS_IS_OK(nt_status = make_auth_context_subsystem(auth_context))) {
+		return nt_status;
+	}
+	
+	(*auth_context)->challenge = data_blob(chal, 8);
+	return nt_status;
 }
 
 

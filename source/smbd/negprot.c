@@ -27,7 +27,28 @@ extern fstring global_myworkgroup;
 extern fstring remote_machine;
 BOOL global_encrypted_passwords_negotiated = False;
 BOOL global_spnego_negotiated = False;
-auth_authsupplied_info *negprot_global_auth_info = NULL;
+struct auth_context *negprot_global_auth_context = NULL;
+
+static void get_challange(char buff[8]) 
+{
+	NTSTATUS nt_status;
+	const uint8 *cryptkey;
+
+	/* We might be called more than once, muliple negprots are premitted */
+	if (negprot_global_auth_context) {
+		DEBUG(3, ("get challange: is this a secondary negprot?  negprot_global_auth_context is non-NULL!\n"));
+		negprot_global_auth_context->free(&negprot_global_auth_context);
+	}
+
+	DEBUG(10, ("get challange: creating negprot_global_auth_context\n"));
+	if (!NT_STATUS_IS_OK(nt_status = make_auth_context_subsystem(&negprot_global_auth_context))) {
+		DEBUG(0, ("make_auth_context_subsystem returned %s", get_nt_error_msg(nt_status)));
+		smb_panic("cannot make_negprot_global_auth_context!\n");
+	}
+	DEBUG(10, ("get challange: getting challange\n"));
+	cryptkey = negprot_global_auth_context->get_ntlm_challenge(negprot_global_auth_context);
+	memcpy(buff, cryptkey, 8);
+}
 
 /****************************************************************************
 reply for the core protocol
@@ -69,7 +90,6 @@ static int reply_lanman1(char *inbuf, char *outbuf)
   int raw = (lp_readraw()?1:0) | (lp_writeraw()?2:0);
   int secword=0;
   time_t t = time(NULL);
-  DATA_BLOB cryptkey;
 
   global_encrypted_passwords_negotiated = lp_encrypted_passwords();
 
@@ -80,12 +100,7 @@ static int reply_lanman1(char *inbuf, char *outbuf)
   SSVAL(outbuf,smb_vwv1,secword); 
   /* Create a token value and add it to the outgoing packet. */
   if (global_encrypted_passwords_negotiated) {
-	  if (!make_auth_info_subsystem(&negprot_global_auth_info)) {
-		  smb_panic("cannot make_negprot_global_auth_info!\n");
-	  }
-	  cryptkey = auth_get_challenge(negprot_global_auth_info);
-	  memcpy(smb_buf(outbuf), cryptkey.data, 8);
-	  data_blob_free(&cryptkey);
+	  get_challange(smb_buf(outbuf));
   }
 
   Protocol = PROTOCOL_LANMAN1;
@@ -114,7 +129,6 @@ static int reply_lanman2(char *inbuf, char *outbuf)
   int raw = (lp_readraw()?1:0) | (lp_writeraw()?2:0);
   int secword=0;
   time_t t = time(NULL);
-  DATA_BLOB cryptkey;
 
   global_encrypted_passwords_negotiated = lp_encrypted_passwords();
   
@@ -125,13 +139,9 @@ static int reply_lanman2(char *inbuf, char *outbuf)
   SSVAL(outbuf,smb_vwv1,secword); 
   SIVAL(outbuf,smb_vwv6,sys_getpid());
 
+  /* Create a token value and add it to the outgoing packet. */
   if (global_encrypted_passwords_negotiated) {
-	  if (!make_auth_info_subsystem(&negprot_global_auth_info)) {
-		  smb_panic("cannot make_negprot_global_auth_info!\n");
-	  }
-	  cryptkey = auth_get_challenge(negprot_global_auth_info);
-	  memcpy(smb_buf(outbuf), cryptkey.data, 8);
-	  data_blob_free(&cryptkey);
+	  get_challange(smb_buf(outbuf));
   }
 
   Protocol = PROTOCOL_LANMAN2;
@@ -216,7 +226,6 @@ static int reply_nt1(char *inbuf, char *outbuf)
 
 	int secword=0;
 	time_t t = time(NULL);
-	DATA_BLOB cryptkey;
 	char *p, *q;
 	BOOL negotiate_spnego = False;
 
@@ -275,13 +284,9 @@ static int reply_nt1(char *inbuf, char *outbuf)
 	
 	p = q = smb_buf(outbuf);
 	if (!negotiate_spnego) {
-		if (global_encrypted_passwords_negotiated) { 
-			if (!make_auth_info_subsystem(&negprot_global_auth_info)) {
-				smb_panic("cannot make_negprot_global_auth_info!\n");
-			}
-			cryptkey = auth_get_challenge(negprot_global_auth_info);
-			memcpy(p, cryptkey.data, 8);
-			data_blob_free(&cryptkey);
+		/* Create a token value and add it to the outgoing packet. */
+		if (global_encrypted_passwords_negotiated) {
+			get_challange(p);
 		}
 		SSVALS(outbuf,smb_vwv16+1,8);
 		p += 8;
