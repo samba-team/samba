@@ -1,19 +1,27 @@
 <chapter id="pam">
 <chapterinfo>
+	&author.jht;
 	<author>
 		<firstname>Stephen</firstname><surname>Langasek</surname>
 		<affiliation>
 			<address><email>vorlon@netexpress.net</email></address>
 		</affiliation>
 	</author>
-	&author.jht;
     <pubdate> (Jun 21 2001) </pubdate>
 </chapterinfo>
  
-<title>PAM Configuration for Centrally Managed Authentication</title>
+<title>PAM based Distributed Authentication</title>
+
+<para>
+This chapter you should help you to deploy winbind based authentication on any PAM enabled
+Unix/Linux system. Winbind can be used to enable user level application access authentication
+from any MS Windows NT Domain, MS Windows 200x Active Directory based domain, or any Samba
+based domain environment. It will also help you to configure PAM based local host access
+controls that are appropriate to your Samba configuration.
+</para>
 
 <sect1>
-<title>Samba and PAM</title>
+<title>Features and Benefits</title>
 
 <para>
 A number of Unix systems (eg: Sun Solaris), as well as the xxxxBSD family and Linux,
@@ -32,18 +40,136 @@ authentication/authorization infrastructure.  PAM is configured either through o
 located in <filename>/etc/pam.d</filename>.
 </para>
 
-<note>
-	<para>
-	If the PAM authentication module (loadable link library file) is located in the
-	default location then it is not necessary to specify the path. In the case of
-	Linux, the default location is <filename>/lib/security</filename>. If the module
-	is located outside the default then the path must be specified as:
-	
-	<screen>
-	auth       required      /other_path/pam_strange_module.so
-	</screen>
-	</para>
-</note>
+<para>
+On PAM enabled Unix/Linux systems it is an easy matter to configure the system to use any
+authentication backend, so long as the appropriate dynamically loadable library modules
+are available for it. The backend may be local to the system, or may be centralised on a
+remote server.
+</para>
+
+<para>
+PAM support modules are available for:
+</para>
+
+<variablelist>
+	<varlistentry><term><filename>/etc/passwd</filename></term><listitem><para>-</para>
+		<para>
+		There are several PAM modules that interact with this standard Unix user
+		database. The most common are called: pam_unix.so, pam_unix2.so, pam_pwdb.so
+		and pam_userdb.so.
+		</para>
+	</listitem></varlistentry>
+
+	<varlistentry><term>Kerberos</term><listitem><para>-</para>
+		<para>
+		The pam_krb5.so module allows the use of any Kerberos compliant server.
+		This tool is used to access MIT Kerberos, Heimdal Kerberos, and potentially
+		Microsoft Active Directory (if enabled).
+		</para>
+	</listitem></varlistentry>
+
+	<varlistentry><term>LDAP</term><listitem><para>-</para>
+		<para>
+		The pam_ldap.so module allows the use of any LDAP v2 or v3 compatible backend
+		server. Commonly used LDAP backend servers include: OpenLDAP v2.0 and v2.1,
+		Sun ONE iDentity server, Novell eDirectory server, Microsoft Active Directory.
+		</para>
+	</listitem></varlistentry>
+
+	<varlistentry><term>NetWare Bindery</term><listitem><para>-</para>
+		<para>
+		The pam_ncp_auth.so module allows authentication off any bindery enabled
+		NetWare Core Protocol based server.
+		</para>
+	</listitem></varlistentry>
+
+	<varlistentry><term>SMB Password</term><listitem><para>-</para>
+		<para>
+		This module, called pam_smbpass.so, will allow user authentication off
+		the passdb backend that is configured in the Samba &smb.conf; file.
+		</para>
+	</listitem></varlistentry>
+
+	<varlistentry><term>SMB Server</term><listitem><para>-</para>
+		<para>
+		The pam_smb_auth.so module is the original MS Windows networking authentication
+		tool. This module has been somewhat outdated by the Winbind module.
+		</para>
+	</listitem></varlistentry>
+
+	<varlistentry><term>Winbind</term><listitem><para>-</para>
+		<para>
+		The pam_winbind.so module allows Samba to obtain authentication from any
+		MS Windows Domain Controller. It can just as easily be used to authenticate
+		users for access to any PAM enabled application.
+		</para>
+	</listitem></varlistentry>
+
+	<varlistentry><term>RADIUS</term><listitem><para>-</para>
+		<para>
+		There is a PAM RADIUS (Remote Access Dial-In User Service) authentication
+		module. In most cases the administrator will need to locate the source code
+		for this tool and compile and install it themselves. RADIUS protocols are
+		used by many routers and terminal servers.
+		</para>
+	</listitem></varlistentry>
+</variablelist>
+
+<para>
+Of the above, Samba provides the pam_smbpasswd.so and the pam_winbind.so modules alone.
+</para>
+
+<para>
+Once configured, these permit a remarkable level of flexibility in the location and use
+of distributed samba domain controllers that can provide wide are network bandwidth
+efficient authentication services for PAM capable systems. In effect, this allows the
+deployment of centrally managed and maintained distributed authentication from a single
+user account database.
+</para>
+
+</sect1>
+
+<sect1>
+<title>Technical Discussion</title>
+
+<para>
+All operating systems depend on the authentication sub-systems to provide for authenticated users
+credentials accecptable to the platform. Unix requires the provision of a user identifier (UID)
+as well as a group identifier (GID). These are both simple integer type numbers that are obtained
+from a password backend such as <filename>/etc/passwd</filename>.
+</para>
+
+<para>
+Users and groups on a Windows NT server are assigned a relative id (rid) which is unique for
+the domain when the user or group is created. To convert the Windows NT user or group into
+a  unix user or group, a mapping between rids and unix user and group ids is required. This
+is one of the jobs that winbind performs.
+</para>
+
+<para>
+As winbind users and groups are resolved from a server, user and group ids are allocated
+from a specified range. This is done on a first come, first served basis, although all
+existing users and groups will be mapped as soon as a client performs a user or  group 
+enumeration command.  The allocated unix ids are stored in a database file under the Samba
+lock directory and will be remembered.
+</para>
+
+<warning><para>
+The rid to unix id database is the only location where the user and group  mappings are 
+stored by winbindd.  If this file is deleted or corrupted, there is no way for winbindd
+to determine which user and group ids correspond to Windows NT user and group rids.
+</para></warning>
+
+<para>
+If the PAM authentication module (loadable link library file) is located in the
+default location then it is not necessary to specify the path. In the case of
+Linux, the default location is <filename>/lib/security</filename>. If the module
+is located outside the default then the path must be specified as:
+
+<screen>
+auth  required  /other_path/pam_strange_module.so
+</screen>
+</para>
 
 <para>
 The following is an example <filename>/etc/pam.d/login</filename> configuration file. 
@@ -54,20 +180,20 @@ by commenting them out except the calls to <filename>pam_pwdb.so</filename>.
 </para>
 
 <para><screen>
-	#%PAM-1.0
-	# The PAM configuration file for the `login' service
-	#
-	auth 		required	pam_securetty.so
-	auth 		required	pam_nologin.so
-	# auth 		required	pam_dialup.so
-	# auth 		optional	pam_mail.so
-	auth		required	pam_pwdb.so shadow md5
-	# account    	requisite  	pam_time.so
-	account		required	pam_pwdb.so
-	session		required	pam_pwdb.so
-	# session 	optional	pam_lastlog.so
-	# password   	required   	pam_cracklib.so retry=3
-	password	required	pam_pwdb.so shadow md5
+#%PAM-1.0
+# The PAM configuration file for the `login' service
+#
+auth         required    pam_securetty.so
+auth         required    pam_nologin.so
+# auth       required    pam_dialup.so
+# auth       optional    pam_mail.so
+auth         required    pam_pwdb.so shadow md5
+# account    requisite   pam_time.so
+account      required    pam_pwdb.so
+session      required    pam_pwdb.so
+# session    optional    pam_lastlog.so
+# password   required    pam_cracklib.so retry=3
+password     required    pam_pwdb.so shadow md5
 </screen></para>
 
 <para>
@@ -76,18 +202,18 @@ PAM allows use of replacable modules. Those available on a sample system include
 
 <para><prompt>$</prompt><userinput>/bin/ls /lib/security</userinput>
 <screen>
-	pam_access.so    pam_ftp.so          pam_limits.so     
-	pam_ncp_auth.so  pam_rhosts_auth.so  pam_stress.so     
-	pam_cracklib.so  pam_group.so        pam_listfile.so   
-	pam_nologin.so   pam_rootok.so       pam_tally.so      
-	pam_deny.so      pam_issue.so        pam_mail.so       
-	pam_permit.so    pam_securetty.so    pam_time.so       
-	pam_dialup.so    pam_lastlog.so      pam_mkhomedir.so  
-	pam_pwdb.so      pam_shells.so       pam_unix.so       
-	pam_env.so       pam_ldap.so         pam_motd.so       
-	pam_radius.so    pam_smbpass.so      pam_unix_acct.so  
-	pam_wheel.so     pam_unix_auth.so    pam_unix_passwd.so
-	pam_userdb.so    pam_warn.so         pam_unix_session.so
+pam_access.so    pam_ftp.so          pam_limits.so     
+pam_ncp_auth.so  pam_rhosts_auth.so  pam_stress.so     
+pam_cracklib.so  pam_group.so        pam_listfile.so   
+pam_nologin.so   pam_rootok.so       pam_tally.so      
+pam_deny.so      pam_issue.so        pam_mail.so       
+pam_permit.so    pam_securetty.so    pam_time.so       
+pam_dialup.so    pam_lastlog.so      pam_mkhomedir.so  
+pam_pwdb.so      pam_shells.so       pam_unix.so       
+pam_env.so       pam_ldap.so         pam_motd.so       
+pam_radius.so    pam_smbpass.so      pam_unix_acct.so  
+pam_wheel.so     pam_unix_auth.so    pam_unix_passwd.so
+pam_userdb.so    pam_warn.so         pam_unix_session.so
 </screen></para>
 
 <para>
@@ -112,13 +238,13 @@ source distribution.
 </para>
 
 <para><screen>
-	#%PAM-1.0
-	# The PAM configuration file for the `login' service
-	#
-	auth		required	pam_smbpass.so nodelay
-	account		required	pam_smbpass.so nodelay
-	session		required	pam_smbpass.so nodelay
-	password	required	pam_smbpass.so nodelay
+#%PAM-1.0
+# The PAM configuration file for the `login' service
+#
+auth        required    pam_smbpass.so nodelay
+account     required    pam_smbpass.so nodelay
+session     required    pam_smbpass.so nodelay
+password    required    pam_smbpass.so nodelay
 </screen></para>
 
 <para>
@@ -127,13 +253,13 @@ Linux system. The default condition uses <filename>pam_pwdb.so</filename>.
 </para>
 
 <para><screen>
-	#%PAM-1.0
-	# The PAM configuration file for the `samba' service
-	#
-	auth       required     pam_pwdb.so nullok nodelay shadow audit
-	account    required     pam_pwdb.so audit nodelay
-	session    required     pam_pwdb.so nodelay
-	password   required     pam_pwdb.so shadow md5
+#%PAM-1.0
+# The PAM configuration file for the `samba' service
+#
+auth       required     pam_pwdb.so nullok nodelay shadow audit
+account    required     pam_pwdb.so audit nodelay
+session    required     pam_pwdb.so nodelay
+password   required     pam_pwdb.so shadow md5
 </screen></para>
 
 <para>
@@ -145,13 +271,13 @@ program.
 </para>
 
 <para><screen>
-	#%PAM-1.0
-	# The PAM configuration file for the `samba' service
-	#
-	auth       required     pam_smbpass.so nodelay
-	account    required     pam_pwdb.so audit nodelay
-	session    required     pam_pwdb.so nodelay
-	password   required     pam_smbpass.so nodelay smbconf=/etc/samba.d/smb.conf
+#%PAM-1.0
+# The PAM configuration file for the `samba' service
+#
+auth       required     pam_smbpass.so nodelay
+account    required     pam_pwdb.so audit nodelay
+session    required     pam_pwdb.so nodelay
+password   required     pam_smbpass.so nodelay smbconf=/etc/samba.d/smb.conf
 </screen></para>
 
 <note><para>PAM allows stacking of authentication mechanisms. It is 
@@ -270,16 +396,16 @@ application (such as ssh).
 </para>
 
 <para><screen>
-	#%PAM-1.0
-	# password-sync
-	#
-	auth       requisite        pam_nologin.so
-	auth       required         pam_unix.so
-	account    required         pam_unix.so
-	password   requisite        pam_cracklib.so retry=3
-	password   requisite        pam_unix.so shadow md5 use_authtok try_first_pass
-	password   required         pam_smbpass.so nullok use_authtok try_first_pass
-	session    required         pam_unix.so
+#%PAM-1.0
+# password-sync
+#
+auth       requisite    pam_nologin.so
+auth       required     pam_unix.so
+account    required     pam_unix.so
+password   requisite    pam_cracklib.so retry=3
+password   requisite    pam_unix.so shadow md5 use_authtok try_first_pass
+password   required     pam_smbpass.so nullok use_authtok try_first_pass
+session    required     pam_unix.so
 </screen></para>
 </sect3>
 
@@ -295,18 +421,18 @@ their mail, etc.
 </para>
 
 <para><screen>
-	#%PAM-1.0
-	# password-migration
-	#
-	auth       requisite        pam_nologin.so
-	# pam_smbpass is called IFF pam_unix succeeds.
-	auth       requisite        pam_unix.so
-	auth       optional         pam_smbpass.so migrate
-	account    required         pam_unix.so
-	password   requisite        pam_cracklib.so retry=3
-	password   requisite        pam_unix.so shadow md5 use_authtok try_first_pass
-	password   optional         pam_smbpass.so nullok use_authtok try_first_pass
-	session    required         pam_unix.so
+#%PAM-1.0
+# password-migration
+#
+auth       requisite   pam_nologin.so
+# pam_smbpass is called IF pam_unix succeeds.
+auth       requisite   pam_unix.so
+auth       optional    pam_smbpass.so migrate
+account    required    pam_unix.so
+password   requisite   pam_cracklib.so retry=3
+password   requisite   pam_unix.so shadow md5 use_authtok try_first_pass
+password   optional    pam_smbpass.so nullok use_authtok try_first_pass
+session    required    pam_unix.so
 </screen></para>
 </sect3>
 
@@ -320,16 +446,16 @@ the smbpasswd doesn't exist or doesn't match the Unix password.
 </para>
 
 <para><screen>
-	#%PAM-1.0
-	# password-mature
-	#
-	auth       requisite        pam_nologin.so
-	auth       required         pam_unix.so
-	account    required         pam_unix.so
-	password   requisite        pam_cracklib.so retry=3
-	password   requisite        pam_unix.so shadow md5 use_authtok try_first_pass
-	password   required         pam_smbpass.so use_authtok use_first_pass
-	session    required         pam_unix.so
+#%PAM-1.0
+# password-mature
+#
+auth       requisite    pam_nologin.so
+auth       required     pam_unix.so
+account    required     pam_unix.so
+password   requisite    pam_cracklib.so retry=3
+password   requisite    pam_unix.so shadow md5 use_authtok try_first_pass
+password   required     pam_smbpass.so use_authtok use_first_pass
+session    required     pam_unix.so
 </screen></para>
 </sect3>
 
@@ -343,17 +469,17 @@ a Kerberos realm.
 </para>
 
 <para><screen>
-	#%PAM-1.0
-	# kdc-pdc
-	#
-	auth       requisite        pam_nologin.so
-	auth       requisite        pam_krb5.so
-	auth       optional         pam_smbpass.so migrate
-	account    required         pam_krb5.so
-	password   requisite        pam_cracklib.so retry=3
-	password   optional         pam_smbpass.so nullok use_authtok try_first_pass
-	password   required         pam_krb5.so use_authtok try_first_pass
-	session    required         pam_krb5.so
+#%PAM-1.0
+# kdc-pdc
+#
+auth       requisite   pam_nologin.so
+auth       requisite   pam_krb5.so
+auth       optional    pam_smbpass.so migrate
+account    required    pam_krb5.so
+password   requisite   pam_cracklib.so retry=3
+password   optional    pam_smbpass.so nullok use_authtok try_first_pass
+password   required    pam_krb5.so use_authtok try_first_pass
+session    required    pam_krb5.so
 </screen></para>
 </sect3>
 
