@@ -184,9 +184,13 @@ typedef enum krb5_key_usage {
     KRB5_KU_USAGE_ACCEPTOR_SIGN = 23,
     /* acceptor seal in GSSAPI CFX krb5 mechanism */
     KRB5_KU_USAGE_INITIATOR_SEAL = 24,       
-    /* initiator sign in GSSAPI CFX krb5 mechanism */  
-    KRB5_KU_USAGE_INITIATOR_SIGN = 25
-    /* initiator seal in GSSAPI CFX krb5 mechanism */     
+    /* initiator sign in GSSAPI CFX krb5 mechanism */
+    KRB5_KU_USAGE_INITIATOR_SIGN = 25,
+    /* initiator seal in GSSAPI CFX krb5 mechanism */
+    KRB5_KU_SAM_CHECKSUM = 25,
+    /* Checksum for the SAM-CHECKSUM field */
+    KRB5_KU_SAM_ENC_TRACK_ID = 26
+    /* Encryption of the SAM-TRACK-ID field */
 } krb5_key_usage;
 
 typedef krb5_key_usage krb5_keyusage;
@@ -582,7 +586,6 @@ typedef int (*krb5_prompter_fct)(krb5_context context,
 				 const char *banner,
 				 int num_prompts,
 				 krb5_prompt prompts[]);
-
 typedef krb5_error_code (*krb5_key_proc)(krb5_context context,
 					 krb5_enctype type,
 					 krb5_salt salt,
@@ -593,7 +596,14 @@ typedef krb5_error_code (*krb5_decrypt_proc)(krb5_context context,
 					     krb5_key_usage usage,
 					     krb5_const_pointer decrypt_arg,
 					     krb5_kdc_rep *dec_rep);
+typedef krb5_error_code (*krb5_s2k_proc)(krb5_context context,
+					 krb5_enctype type,
+					 krb5_const_pointer keyseed,
+					 krb5_salt salt,
+					 krb5_data *s2kparms,
+					 krb5_keyblock **key);
 
+struct _krb5_get_init_creds_opt_private;
 
 typedef struct _krb5_get_init_creds_opt {
     krb5_flags flags;
@@ -605,14 +615,12 @@ typedef struct _krb5_get_init_creds_opt {
     krb5_enctype *etype_list;
     int etype_list_length;
     krb5_addresses *address_list;
-#if 0 /* this is the MIT-way */
-    krb5_address **address_list;
-#endif
     /* XXX the next three should not be used, as they may be
        removed later */
     krb5_preauthtype *preauth_list;
     int preauth_list_length;
     krb5_data *salt;
+    struct _krb5_get_init_creds_opt_private *private;
 } krb5_get_init_creds_opt;
 
 #define KRB5_GET_INIT_CREDS_OPT_TKT_LIFE	0x0001
