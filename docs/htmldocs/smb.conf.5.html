@@ -1591,6 +1591,30 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
+HREF="#LDAPDELETEDN"
+><TT
+CLASS="PARAMETER"
+><I
+>ldap delete dn</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
+HREF="#LDAPDELONLYSAMATTR"
+><TT
+CLASS="PARAMETER"
+><I
+>ldap del only sam attr</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
 HREF="#LDAPFILTER"
 ><TT
 CLASS="PARAMETER"
@@ -3177,7 +3201,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN1021"
+NAME="AEN1029"
 ></A
 ><H2
 >COMPLETE LIST OF SERVICE PARAMETERS</H2
@@ -4692,7 +4716,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN1525"
+NAME="AEN1533"
 ></A
 ><H2
 >EXPLANATION OF EACH PARAMETER</H2
@@ -9770,7 +9794,7 @@ NAME="LDAPADMINDN"
 >ldap admin dn (G)</DT
 ><DD
 ><P
-> The <TT
+>The <TT
 CLASS="PARAMETER"
 ><I
 >ldap admin dn</I
@@ -9796,13 +9820,43 @@ CLASS="COMMAND"
 >smbpasswd(8)</B
 ></A
 > man
-		page for more information on how to accmplish this.
+		page for more information on how to accomplish this.
+		</P
+></DD
+><DT
+><A
+NAME="LDAPDELETEDN"
+></A
+>&#62;ldap del only sam attr (G)</DT
+><DD
+><P
+> This parameter specifies whether a delete
+		operation in the ldapsam deletes the complete entry or only the attributes
+		specific to Samba.
 		</P
 ><P
 >Default : <I
 CLASS="EMPHASIS"
->none</I
+>ldap delete dn = no</I
 ></P
+></DD
+><DT
+><A
+NAME="LDAPDELONLYSAMATTR"
+></A
+>&#62;ldap del only sam attr (G)</DT
+><DD
+><P
+> Inverted synonym for <A
+HREF="#LDAPDELETEDN"
+><TT
+CLASS="PARAMETER"
+><I
+>		ldap delete dn</I
+></TT
+></A
+>.
+		</P
 ></DD
 ><DT
 ><A
@@ -13724,7 +13778,7 @@ CLASS="COMMAND"
 ><B
 CLASS="COMMAND"
 >unixsam</B
-> - Allows samba to map all (other) available unix users</P
+> - (EXPERIMENTAL) Allows samba to map all (other) available unix users</P
 ><P
 >This backend uses the standard unix database for retrieving users. Users included 
                         in this pdb are NOT listed in samba user listings and users included in this pdb won't be 
@@ -13743,17 +13797,17 @@ CLASS="COMMAND"
 ><P
 >Default: <B
 CLASS="COMMAND"
->passdb backend = smbpasswd unixsam</B
+>passdb backend = smbpasswd guest</B
 ></P
 ><P
 >Example: <B
 CLASS="COMMAND"
->passdb backend = tdbsam:/etc/samba/private/passdb.tdb smbpasswd:/etc/samba/smbpasswd unixsam</B
+>passdb backend = tdbsam:/etc/samba/private/passdb.tdb smbpasswd:/etc/samba/smbpasswd </B
 ></P
 ><P
 >Example: <B
 CLASS="COMMAND"
->passdb backend = ldapsam_nua:ldaps://ldap.example.com unixsam</B
+>passdb backend = ldapsam_nua:ldaps://ldap.example.com </B
 ></P
 ><P
 >Example: <B
@@ -14212,7 +14266,7 @@ CLASS="PARAMETER"
 > and so may resolved
 		by any method and order described in that parameter.</P
 ><P
->The password server much be a machine capable of using 
+>The password server must be a machine capable of using 
 		the "LM1.2X002" or the "NT LM 0.12" protocol, and it must be in 
 		user level security mode.</P
 ><P
@@ -19576,7 +19630,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6195"
+NAME="AEN6215"
 ></A
 ><H2
 >WARNINGS</H2
@@ -19606,7 +19660,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6201"
+NAME="AEN6221"
 ></A
 ><H2
 >VERSION</H2
@@ -19617,7 +19671,7 @@ NAME="AEN6201"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6204"
+NAME="AEN6224"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -19696,7 +19750,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6224"
+NAME="AEN6244"
 ></A
 ><H2
 >AUTHOR</H2

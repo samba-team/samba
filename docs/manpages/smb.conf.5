@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMB.CONF" "5" "04 March 2003" "" ""
+.TH "SMB.CONF" "5" "30 March 2003" "" ""
 .SH NAME
 smb.conf \- The configuration file for the Samba suite
 .SH "SYNOPSIS"
@@ -668,6 +668,12 @@ each parameter for details.  Note that some are synonyms.
 .TP 0.2i
 \(bu
 \fIldap admin dn\fR
+.TP 0.2i
+\(bu
+\fIldap delete dn\fR
+.TP 0.2i
+\(bu
+\fIldap del only sam attr\fR
 .TP 0.2i
 \(bu
 \fIldap filter\fR
@@ -3382,9 +3388,17 @@ user account information. The \fIldap
 admin dn\fR is used in conjunction with the admin dn password
 stored in the \fIprivate/secrets.tdb\fR file.  See the
 \fBsmbpasswd(8)\fR man
-page for more information on how to accmplish this.
+page for more information on how to accomplish this.
+.TP
+\fB>ldap del only sam attr (G)\fR
+This parameter specifies whether a delete
+operation in the ldapsam deletes the complete entry or only the attributes
+specific to Samba.
 
-Default : \fBnone\fR
+Default : \fBldap delete dn = no\fR
+.TP
+\fB>ldap del only sam attr (G)\fR
+Inverted synonym for \fI  ldap delete dn\fR.
 .TP
 \fBldap filter (G)\fR
 This parameter specifies the RFC 2254 compliant LDAP search filter.
@@ -4978,7 +4992,7 @@ Any characters after the (optional) second : are passed to the plugin
 for its own processing
 .TP 0.2i
 \(bu
-\fBunixsam\fR - Allows samba to map all (other) available unix users
+\fBunixsam\fR - (EXPERIMENTAL) Allows samba to map all (other) available unix users
 
 This backend uses the standard unix database for retrieving users. Users included 
 in this pdb are NOT listed in samba user listings and users included in this pdb won't be 
@@ -4991,11 +5005,11 @@ the unix passdb and might 'override' mappings if specified earlier. It's meant t
 accounts for users that aren't covered by the previous backends.
 .RE
 
-Default: \fBpassdb backend = smbpasswd unixsam\fR
+Default: \fBpassdb backend = smbpasswd guest\fR
 
-Example: \fBpassdb backend = tdbsam:/etc/samba/private/passdb.tdb smbpasswd:/etc/samba/smbpasswd unixsam\fR
+Example: \fBpassdb backend = tdbsam:/etc/samba/private/passdb.tdb smbpasswd:/etc/samba/smbpasswd \fR
 
-Example: \fBpassdb backend = ldapsam_nua:ldaps://ldap.example.com unixsam\fR
+Example: \fBpassdb backend = ldapsam_nua:ldaps://ldap.example.com \fR
 
 Example: \fBpassdb backend = plugin:/usr/local/samba/lib/my_passdb.so:my_plugin_args tdbsam:/etc/samba/private/passdb.tdb\fR
 .TP
@@ -5157,7 +5171,7 @@ parameter \fIname
 resolve order\fR and so may resolved
 by any method and order described in that parameter.
 
-The password server much be a machine capable of using 
+The password server must be a machine capable of using 
 the "LM1.2X002" or the "NT LM 0.12" protocol, and it must be in 
 user level security mode.
 
