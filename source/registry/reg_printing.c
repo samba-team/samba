@@ -121,7 +121,8 @@ static int print_subpath_forms( char *key, REGSUBKEY_CTR *subkeys )
 static int print_subpath_values_forms( char *key, REGVAL_CTR *val )
 {
 	int 		num_values = 0;
-	uint32 		data[7];
+	uint32 		data[8];
+	int		form_index = 1;
 	
 	DEBUG(10,("print_values_forms: key=>[%s]\n", key ? key : "NULL" ));
 	
@@ -145,13 +146,14 @@ static int print_subpath_values_forms( char *key, REGVAL_CTR *val )
 		{
 			form = &forms_list[i];
 			
-			data[0] = form->flag;
-			data[1] = form->width;
-			data[2] = form->length;
-			data[3] = form->left;
-			data[4] = form->top;
-			data[5] = form->right;
-			data[6] = form->bottom;
+			data[0] = form->width;
+			data[1] = form->length;
+			data[2] = form->left;
+			data[3] = form->top;
+			data[4] = form->right;
+			data[5] = form->bottom;
+			data[6] = form_index++;
+			data[7] = form->flag;
 			
 			regval_ctr_addvalue( val, form->name, REG_BINARY, (char*)data, sizeof(data) );
 		
@@ -172,16 +174,16 @@ static int print_subpath_values_forms( char *key, REGVAL_CTR *val )
 		{
 			form = &forms_list[i];
 			
-			data[0] = form->flag;
-			data[1] = form->width;
-			data[2] = form->length;
-			data[3] = form->left;
-			data[4] = form->top;
-			data[5] = form->right;
-			data[6] = form->bottom;
-
+			data[0] = form->width;
+			data[1] = form->length;
+			data[2] = form->left;
+			data[3] = form->top;
+			data[4] = form->right;
+			data[5] = form->bottom;
+			data[6] = form_index++;
+			data[7] = form->flag;
+					
 			regval_ctr_addvalue( val, form->name, REG_BINARY, (char*)data, sizeof(data) );
-		
 		}
 		
 		SAFE_FREE( forms_list );
