@@ -174,6 +174,14 @@ BOOL secret_init_db(void)
 	strupper(domname);
 	strupper(srvname);
 
+	tdb = open_secret_db(O_RDWR);
+
+	if (tdb == NULL)
+	{
+		DEBUG(10,("secret_init_db: opened\n"));
+		return True;
+	}
+	
 	tdb = open_secret_db(O_RDWR | O_CREAT);
 
 	if (tdb == NULL)
@@ -182,7 +190,7 @@ BOOL secret_init_db(void)
 		return False;
 	}
 	
-	DEBUG(10,("secret_init_db: opened\n"));
+	DEBUG(10,("secret_init_db: opened first time: initialising.\n"));
 
 	if (trust_get_passwd_time(trust_passwd, domname, srvname, &crt))
 	{
