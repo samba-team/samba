@@ -1,4 +1,4 @@
 # $Id$
 
-AUTOMAKE_OPTIONS = foreign no-dependencies ansi2knr
+AUTOMAKE_OPTIONS = foreign no-dependencies
 SUBDIRS	= test rsh telnet
