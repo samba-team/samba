@@ -94,5 +94,4 @@ rm -rf $RPM_BUILD_ROOT
 %dir /var/log/samba
 
 #
-# End of "$Id: lsb-samba.spec,v 1.1.2.2 2001/07/06 01:27:42 jra Exp $".
 #
