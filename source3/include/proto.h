@@ -73,7 +73,7 @@ void add_char_string(char *s);
 /*The following definitions come from  lib/crc32.c  */
 
 void crc32_build_table(void);
-uint32 crc32_calc_buffer( uint32 count, uchar *buffer);
+uint32 crc32_calc_buffer( uint32 count, char *buffer);
 
 /*The following definitions come from  lib/debug.c  */
 

@@ -51,9 +51,9 @@ void crc32_build_table(void)
  table lookup method. 
  *****************************************************************/
 
-uint32 crc32_calc_buffer( uint32 count, uchar *buffer)
+uint32 crc32_calc_buffer( uint32 count, char *buffer)
 {
-	uchar *p;
+	char *p;
 	uint32 crc;
 
 	p = buffer;
