@@ -292,7 +292,7 @@ doit(int s,
 		if (state == TOP) {
 		    char *copy = beg;
 
-		    if (strncmp(copy,
+		    if (strncasecmp(copy,
 				header_str,
 				min(p - copy + 1, strlen(header_str))) == 0) {
 			fprintf (stdout, "%.*s\n", (int)(p - copy), copy);
