@@ -488,7 +488,6 @@ convert:
 	}
 }
 
-
 /**
  * Convert between character sets, allocating a new buffer using talloc for the result.
  *
@@ -581,19 +580,19 @@ char *strdup_upper(const char *s)
 size_t unix_strlower(const char *src, size_t srclen, char *dest, size_t destlen)
 {
 	size_t size;
-	smb_ucs2_t *buffer;
+	smb_ucs2_t *buffer = NULL;
 	
 	size = convert_string_allocate(NULL, CH_UNIX, CH_UCS2, src, srclen,
 				       (void **) &buffer);
-	if (size == -1) {
+	if (size == -1 || !buffer) {
 		smb_panic("failed to create UCS2 buffer");
 	}
 	if (!strlower_w(buffer) && (dest == src)) {
-		free(buffer);
+		SAFE_FREE(buffer);
 		return srclen;
 	}
 	size = convert_string(CH_UCS2, CH_UNIX, buffer, size, dest, destlen);
-	free(buffer);
+	SAFE_FREE(buffer);
 	return size;
 }
 
@@ -604,11 +603,11 @@ size_t unix_strlower(const char *src, size_t srclen, char *dest, size_t destlen)
 char *strdup_lower(const char *s)
 {
 	size_t size;
-	smb_ucs2_t *buffer;
+	smb_ucs2_t *buffer = NULL;
 	char *out_buffer;
 	
 	size = push_ucs2_allocate(&buffer, s);
-	if (size == -1) {
+	if (size == -1 || !buffer) {
 		return NULL;
 	}
 
