@@ -87,6 +87,7 @@ BOOL torture_open_connection_share(struct smbcli_state **c,
 	int flags = 0;
 	NTSTATUS status;
 	const char *username = lp_parm_string(-1, "torture", "username");
+	const char *userdomain = lp_parm_string(-1, "torture", "userdomain");
 	const char *password = lp_parm_string(-1, "torture", "password");
 
 	if (use_kerberos)
@@ -95,7 +96,7 @@ BOOL torture_open_connection_share(struct smbcli_state **c,
 	status = smbcli_full_connection(c, lp_netbios_name(),
 				     hostname, NULL, 
 				     sharename, "?????", 
-				     username, username[0]?lp_workgroup():"",
+				     username, username[0]?userdomain:"",
 				     password, flags, &retry);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to open connection - %s\n", nt_errstr(status));
@@ -150,7 +151,7 @@ NTSTATUS torture_rpc_connection(struct dcerpc_pipe **p,
 	}
 
 	status = dcerpc_pipe_connect(p, binding, pipe_uuid, pipe_version,
-				     lp_workgroup(), 
+				     lp_parm_string(-1, "torture", "userdomain"), 
 				     lp_parm_string(-1, "torture", "username"),
 				     lp_parm_string(-1, "torture", "password"));
  
@@ -822,12 +823,13 @@ static BOOL run_tcon_devtype_test(int dummy)
 	const char *host = lp_parm_string(-1, "torture", "host");
 	const char *share = lp_parm_string(-1, "torture", "share");
 	const char *username = lp_parm_string(-1, "torture", "username");
+	const char *userdomain = lp_parm_string(-1, "torture", "userdomain");
 	const char *password = lp_parm_string(-1, "torture", "password");
 	
 	status = smbcli_full_connection(&cli1, lp_netbios_name(),
 				     host, NULL, 
 				     share, "?????",
-				     username, lp_workgroup(),
+				     username, userdomain,
 				     password, flags, &retry);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -4271,33 +4273,6 @@ static BOOL run_test(const char *name)
 }
 
 
-/*
-  parse a username%password
-*/
-static void parse_user(const char *user)
-{
-	char *username, *password = NULL, *p;
-
-	username = strdup(user);
-	p = strchr_m(username,'%');
-	if (p) {
-		*p = 0;
-		password = strdup(p+1);
-	}
-
-	lp_set_cmdline("torture:username", username);
-
-	if (password) {
-		lp_set_cmdline("torture:password", password);
-	}
-
-	if (!lp_parm_string(-1,"torture","password")) {
-		password = getpass("password:");
-
-		lp_set_cmdline("torture:password", password);
-	}
-}
-
 static void parse_dns(const char *dns)
 {
 	char *userdn, *basedn, *secret;
@@ -4338,38 +4313,22 @@ static void parse_dns(const char *dns)
 
 }
 
-static void usage(void)
+static void usage(poptContext pc)
 {
 	int i;
+	int perline = 5;
 
-	printf("Usage: smbtorture //server/share <options> TEST1 TEST2 ...\n");
-
-	printf("\t-d debuglevel\n");
-	printf("\t-U user%%pass\n");
-	printf("\t-k use kerberos\n");
-	printf("\t-N numprocs\n");
-	printf("\t-n my_netbios_name\n");
-	printf("\t-W workgroup\n");
-	printf("\t-o num_operations\n");
-	printf("\t-e num files(entries)\n");
-	printf("\t-O socket_options\n");
-	printf("\t-m maximum protocol\n");
-	printf("\t-L use oplocks\n");
-	printf("\t-c CLIENT.TXT   specify client load file for NBENCH\n");
-	printf("\t-t timelimit    specify NBENCH time limit (seconds)\n");
-	printf("\t-C filename     specifies file with list of UNCs for connections\n");
-	printf("\t-A showall\n");
-	printf("\t-p port\n");
-	printf("\t-s seed\n");
-	printf("\t-f max failures\n");
-	printf("\t-X enable dangerous tests\n");
-	printf("\n\n");
+	poptPrintUsage(pc, stdout, 0);
+	printf("\n");
 
 	printf("tests are:");
 	for (i=0;torture_ops[i].name;i++) {
-		printf(" %s", torture_ops[i].name);
+		if ((i%perline)==0) {
+			printf("\n");
+		}
+		printf("%s ", torture_ops[i].name);
 	}
-	printf("\n");
+	printf("\n\n");
 
 	printf("default test is ALL\n");
 	
@@ -4384,7 +4343,30 @@ static void usage(void)
 	int opt, i;
 	char *p;
 	BOOL correct = True;
-	char *host, *share, *username;
+	int argc_new;
+	char **argv_new;
+	poptContext pc;
+	struct poptOption long_options[] = {
+		POPT_AUTOHELP
+		{"smb-ports",	'p', POPT_ARG_STRING, NULL, 		0,	"SMB ports", 	NULL},
+		{"seed",	's', POPT_ARG_STRING, NULL, 		0,	"seed", 	NULL},
+		{"num-progs",	'N', POPT_ARG_INT, &torture_nprocs, 	4,	"num progs",	NULL},
+		{"num-ops",	'o', POPT_ARG_INT, &torture_numops, 	100, 	"num ops",	NULL},
+		{"entries",	'e', POPT_ARG_INT, &torture_entries, 	1000,	"entries",	NULL},
+		{"use-oplocks",	'L', POPT_ARG_NONE, &use_oplocks, 	True,	"use oplocks", 	NULL},
+		{"show-all",	'A', POPT_ARG_NONE, &torture_showall, 	True,	"show all", 	NULL},
+		{"loadfile",	'c', POPT_ARG_STRING,	NULL, 		0,	"loadfile", 	NULL},
+		{"unclist",	'C', POPT_ARG_STRING,	NULL, 		0,	"unclist", 	NULL},
+		{"timelimit",	't', POPT_ARG_STRING,	NULL, 		0,	"timelimit", 	NULL},
+		{"failures",	'f', POPT_ARG_INT, &torture_failures, 	1,	"failures", 	NULL},
+		{"parse-dns",	'D', POPT_ARG_STRING,	NULL, 		0,	"parse-dns", 	NULL},
+		{"dangerous",	'X', POPT_ARG_NONE,	NULL, 		0,	"dangerous", 	NULL},
+		POPT_COMMON_SAMBA
+		POPT_COMMON_CONNECTION
+		POPT_COMMON_CREDENTIALS
+		POPT_COMMON_VERSION
+		POPT_TABLEEND
+	};
 
 	setup_logging("smbtorture", DEBUG_STDOUT);
 
@@ -4392,26 +4374,71 @@ static void usage(void)
 	setbuffer(stdout, NULL, 0);
 #endif
 
-	lp_load(dyn_CONFIGFILE,True,False,False);
-	load_interfaces();
+	pc = poptGetContext("smbtorture", argc, (const char **) argv, long_options, 
+				POPT_CONTEXT_KEEP_FIRST);
 
-	if (argc < 2) {
-		usage();
+	poptSetOtherOptionHelp(pc, "<binding>|<unc> TEST1 TEST2 ...");
+
+	while((opt = poptGetNextOpt(pc)) != -1) {
+		switch (opt) {
+		case 'c':
+			lp_set_cmdline("torture:loadfile", poptGetOptArg(pc));
+			break;
+		case 'C':
+			lp_set_cmdline("torture:unclist", poptGetOptArg(pc));
+			break;
+		case 't':
+			lp_set_cmdline("torture:timelimit", poptGetOptArg(pc));
+			break;
+		case 'D':
+			parse_dns(poptGetOptArg(pc));
+			break;
+
+		case 'X':
+			lp_set_cmdline("torture:dangerous", "1");
+			break;
+
+		default:
+			d_printf("Invalid option %s: %s\n", 
+				 poptBadOption(pc, 0), poptStrerror(opt));
+			usage(pc);
+			exit(1);
+		}
 	}
 
-        for(p = argv[1]; *p; p++)
-          if(*p == '\\')
-            *p = '/';
+	lp_load(dyn_CONFIGFILE,True,False,False);
+	load_interfaces();
+	srandom(time(NULL));
 
+	argv_new = (const char **)poptGetArgs(pc);
+
+	argc_new = argc;
+	for (i=0; i<argc; i++) {
+		if (argv_new[i] == NULL) {
+			argc_new = i;
+			break;
+		}
+	}
+
+	if (argc_new < 3) {
+		usage(pc);
+		exit(1);
+	}
+
+        for(p = argv_new[1]; *p; p++) {
+		if(*p == '\\')
+			*p = '/';
+	}
 
 	/* see if its a RPC transport specifier */
-	if (strncmp(argv[1], "ncacn_", 6) == 0) {
-		lp_set_cmdline("torture:binding", argv[1]);
+	if (strncmp(argv_new[1], "ncacn_", 6) == 0) {
+		lp_set_cmdline("torture:binding", argv_new[1]);
 	} else {
 		char *binding = NULL;
+		char *host = NULL, *share = NULL;
 
-		if (!parse_unc(argv[1], &host, &share)) {
-			usage();
+		if (!parse_unc(argv_new[1], &host, &share)) {
+			usage(pc);
 		}
 
 		lp_set_cmdline("torture:host", host);
@@ -4420,102 +4447,30 @@ static void usage(void)
 		lp_set_cmdline("torture:binding", binding);
 	}
 
-	if (getenv("LOGNAME")) {
-		username = strdup(getenv("LOGNAME"));
+	if (!lp_parm_string(-1,"torture","username")) {
+		lp_set_cmdline("torture:username", cmdline_get_username());
 	}
-	lp_set_cmdline("torture:username", username);
-
-
-	argc--;
-	argv++;
-
-	srandom(time(NULL));
-
-	while ((opt = getopt(argc, argv, "p:hW:D:U:n:N:O:o:e:m:Ld:Ac:ks:f:s:t:C:X")) != EOF) {
-		switch (opt) {
-		case 'p':
-			lp_set_cmdline("smb ports", optarg);
-			break;
-		case 'W':
-			lp_set_cmdline("workgroup", optarg);
-			break;
-		case 'm':
-			lp_set_cmdline("protocol", optarg);
-			break;
-		case 'n':
-			lp_set_cmdline("netbios name", optarg);
-			break;
-		case 'd':
-			lp_set_cmdline("debug level", optarg);
-			setup_logging(NULL, DEBUG_STDOUT);
-			break;
-		case 'O':
-			lp_set_cmdline("socket options", optarg);
-			break;
-		case 's':
-			srandom(atoi(optarg));
-			break;
-		case 'N':
-			torture_nprocs = atoi(optarg);
-			break;
-		case 'o':
-			torture_numops = atoi(optarg);
-			break;
-		case 'e':
-			torture_entries = atoi(optarg);
-			break;
-		case 'L':
-			use_oplocks = True;
-			break;
-		case 'A':
-			torture_showall = True;
-			break;
-		case 'c':
-			lp_set_cmdline("torture:loadfile", optarg);
-			break;
-		case 'C':
-			lp_set_cmdline("torture:unclist", optarg);
-			break;
-		case 't':
-			lp_set_cmdline("torture:timelimit", optarg);
-			break;
-		case 'k':
-#ifdef HAVE_KRB5
-			use_kerberos = True;
-#else
-			d_printf("No kerberos support compiled in\n");
-			exit(1);
-#endif
-			break;
-		case 'U':
-			parse_user(optarg);
-			break;
-		case 'D':
-			parse_dns(optarg);
-			break;
-		case 'f':
-			torture_failures = atoi(optarg);
-			break;
-
-		case 'X':
-			lp_set_cmdline("torture:dangerous", "1");
-			break;
-
-		default:
-			printf("Unknown option %c (%d)\n", (char)opt, opt);
-			usage();
+	if (!lp_parm_string(-1,"torture","userdomain")) {
+		/* 
+		 * backward compatibility
+		 * maybe we should remove this to make this consistent
+		 * for all cmdline tools
+		 * --metze
+		 */
+		if (strequal(lp_netbios_name(),cmdline_get_userdomain())) {
+			cmdline_set_userdomain(lp_workgroup());
 		}
+		lp_set_cmdline("torture:userdomain", cmdline_get_userdomain());
 	}
-
 	if (!lp_parm_string(-1,"torture","password")) {
-		lp_set_cmdline("torture:password", "");
+		lp_set_cmdline("torture:password", cmdline_get_userpassword());
 	}
 
-	if (argc == optind) {
+	if (argc_new == 0) {
 		printf("You must specify a test to run, or 'ALL'\n");
 	} else {
-		for (i=optind;i<argc;i++) {
-			if (!run_test(argv[i])) {
+		for (i=2;i<argc_new;i++) {
+			if (!run_test(argv_new[i])) {
 				correct = False;
 			}
 		}

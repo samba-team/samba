@@ -36,7 +36,7 @@
 BOOL torture_multi_bind(int dummy) 
 {
 	struct dcerpc_pipe *p;
-	const char *domain = lp_workgroup();
+	const char *domain = lp_parm_string(-1, "torture", "userdomain");
 	const char *username = lp_parm_string(-1, "torture", "username");
 	const char *password = lp_parm_string(-1, "torture", "password");
 	const char *pipe_uuid = DCERPC_LSARPC_UUID;
