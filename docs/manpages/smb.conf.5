@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMB.CONF" "5" "26 April 2002" "" ""
+.TH "SMB.CONF" "5" "02 May 2002" "" ""
 .SH NAME
 smb.conf \- The configuration file for the Samba suite
 .SH "SYNOPSIS"
@@ -460,8 +460,9 @@ if it will allow a connection to a specified service. If all the
 steps fail, then the connection request is rejected. However, if one of the 
 steps succeeds, then the following steps are not checked.
 .PP
-If the service is marked "guest only = yes" then
-steps 1 to 5 are skipped.
+If the service is marked "guest only = yes" and the
+server is running with share-level security ("security = share")
+then steps 1 to 5 are skipped.
 .IP 1. 
 If the client has passed a username/password 
 pair and that username/password pair is validated by the UNIX 
