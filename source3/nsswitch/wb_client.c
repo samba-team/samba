@@ -328,9 +328,10 @@ BOOL sid_to_uid(DOM_SID *psid, uid_t *puid, enum SID_NAME_USE *sidtype)
 	 */
 
 	if (!winbind_lookup_sid(psid, dom_name, name, &name_type)) {
-		fstring sid_str;
+		fstring sid_str2;
+
 		DEBUG(10,("sid_to_uid: winbind lookup for sid %s failed - trying local.\n",
-				sid_to_string(sid_str, psid) ));
+				sid_to_string(sid_str2, psid) ));
 
 		return local_sid_to_uid(puid, psid, sidtype);
 	}
@@ -379,9 +380,10 @@ BOOL sid_to_gid(DOM_SID *psid, gid_t *pgid, enum SID_NAME_USE *sidtype)
 	 */
 
 	if (!winbind_lookup_sid(psid, dom_name, name, &name_type)) {
-		fstring sid_str;
+		fstring sid_str2;
+
 		DEBUG(10,("sid_to_gid: winbind lookup for sid %s failed - trying local.\n",
-				sid_to_string(sid_str, psid) ));
+				sid_to_string(sid_str2, psid) ));
 
 		return local_sid_to_gid(pgid, psid, sidtype);
 	}
