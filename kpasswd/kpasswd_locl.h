@@ -86,6 +86,12 @@
 #ifdef HAVE_ERRNO_H
 #include <errno.h>
 #endif
+#ifdef HAVE_DLFCN_H
+#include <dlfcn.h>
+#endif
+#ifdef HAVE_UTIL_H
+#include <util.h>
+#endif
 #include <err.h>
 #include <roken.h>
 #include <getarg.h>

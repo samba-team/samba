@@ -72,6 +72,9 @@
 #include <netinet6/in6.h>
 #endif
 
+#ifdef HAVE_UTIL_H
+#include <util.h>
+#endif
 #ifdef HAVE_NETDB_H
 #include <netdb.h>
 #endif
