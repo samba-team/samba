@@ -658,13 +658,16 @@ static NTSTATUS cmd_samr_enum_dom_users(struct cli_state *cli,
 	uint16 acb_mask = ACB_NORMAL;
 	BOOL got_connect_pol = False, got_domain_pol = False;
 
-	if ((argc < 1) || (argc > 2)) {
-		printf("Usage: %s [access_mask]\n", argv[0]);
+	if ((argc < 1) || (argc > 3)) {
+		printf("Usage: %s [access_mask] [acb_mask]\n", argv[0]);
 		return NT_STATUS_OK;
 	}
 	
 	if (argc > 1)
 		sscanf(argv[1], "%x", &access_mask);
+
+	if (argc > 2)
+		sscanf(argv[2], "%x", &acb_mask);
 
 	/* Get sam policy handle */
 
