@@ -556,7 +556,6 @@ static NTSTATUS pvfs_open_setup_retry(struct smbsrv_request *req,
 	}
 
 	talloc_free(lck);
-	talloc_steal(pvfs, req);
 
 	talloc_set_destructor(r, pvfs_retry_destructor);
 
