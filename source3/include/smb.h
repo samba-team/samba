@@ -251,7 +251,7 @@ enum SID_NAME_USE
 	SID_NAME_DELETED,     /* deleted account: needed for c2 rating */
 	SID_NAME_INVALID,     /* invalid account */
 	SID_NAME_UNKNOWN,     /* unknown sid type */
-	SID_NAME_COMPUTER     /* sid for a computer */
+	SID_NAME_COMPUTER,    /* sid for a computer */
 };
 
 /**
@@ -625,7 +625,7 @@ enum pdb_elements {
 	PDB_NTPASSWD,
 
 	/* this must be the last element */
-	PDB_COUNT
+	PDB_COUNT,
 };
 
 enum pdb_value_state {
@@ -992,8 +992,8 @@ struct bitmap {
 #define TRANSACT2_FINDNOTIFYNEXT		0x0C
 #define TRANSACT2_MKDIR				0x0D
 #define TRANSACT2_SESSION_SETUP			0x0E
-#define TRANSACT2_GET_DFS_REFERRAL         0x10
-#define TRANSACT2_REPORT_DFS_INCONSISTANCY 0x11
+#define TRANSACT2_GET_DFS_REFERRAL		0x10
+#define TRANSACT2_REPORT_DFS_INCONSISTANCY	0x11
 
 /* These are the NT transact sub commands. */
 #define NT_TRANSACT_CREATE                1
