@@ -1461,7 +1461,7 @@ int net_rpc_file(int argc, const char **argv)
 
 
 /** 
- * ABORT the shutdown of a remote RPC Server
+ * ABORT the shutdown of a remote RPC Server over, initshutdown pipe
  *
  * All parameters are provided by the run_rpc_command function, except for
  * argc, argv which are passed through. 
@@ -1476,8 +1476,44 @@ int net_rpc_file(int argc, const char **argv)
  * @return Normal NTSTATUS return.
  **/
 
-static NTSTATUS rpc_shutdown_abort_internals(const DOM_SID *domain_sid, struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+static NTSTATUS rpc_shutdown_abort_internals(const DOM_SID *domain_sid, 
+					     struct cli_state *cli, 
+					     TALLOC_CTX *mem_ctx, 
 					     int argc, const char **argv) 
+{
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	
+	result = cli_shutdown_abort(cli, mem_ctx);
+	
+	if (NT_STATUS_IS_OK(result))
+		DEBUG(5,("cmd_shutdown_abort: query succeeded\n"));
+	else
+		DEBUG(5,("cmd_shutdown_abort: query failed\n"));
+	
+	return result;
+}
+
+
+/** 
+ * ABORT the shutdown of a remote RPC Server,  over winreg pipe
+ *
+ * All parameters are provided by the run_rpc_command function, except for
+ * argc, argv which are passed through. 
+ *
+ * @param domain_sid The domain sid aquired from the remote server
+ * @param cli A cli_state connected to the server.
+ * @param mem_ctx Talloc context, destoyed on compleation of the function.
+ * @param argc  Standard main() style argc
+ * @param argv  Standard main() style argv.  Initial components are already
+ *              stripped
+ *
+ * @return Normal NTSTATUS return.
+ **/
+
+static NTSTATUS rpc_reg_shutdown_abort_internals(const DOM_SID *domain_sid, 
+						 struct cli_state *cli, 
+						 TALLOC_CTX *mem_ctx, 
+						 int argc, const char **argv) 
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	
@@ -1491,7 +1527,6 @@ static NTSTATUS rpc_shutdown_abort_internals(const DOM_SID *domain_sid, struct c
 	return result;
 }
 
-
 /** 
  * ABORT the Shut down of a remote RPC server
  *
@@ -1504,7 +1539,17 @@ static NTSTATUS rpc_shutdown_abort_internals(const DOM_SID *domain_sid, struct c
 
 static int rpc_shutdown_abort(int argc, const char **argv) 
 {
-	return run_rpc_command(NULL, PI_WINREG, 0, rpc_shutdown_abort_internals,
+	int rc = run_rpc_command(NULL, PI_SHUTDOWN, 0, 
+				 rpc_shutdown_abort_internals,
+				 argc, argv);
+
+	if (rc == 0)
+		return rc;
+
+	DEBUG(1, ("initshutdown pipe didn't work, trying winreg pipe\n"));
+
+	return run_rpc_command(NULL, PI_WINREG, 0, 
+			       rpc_reg_shutdown_abort_internals,
 			       argc, argv);
 }
 
