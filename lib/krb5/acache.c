@@ -201,12 +201,12 @@ make_cred_from_ccred(krb5_context context,
 	memset(cred->addresses.val, 0, sizeof(cred->addresses.val[0]) * i);
 	
 	for (i = 0; i < cred->addresses.len; i++) {
-	    ret = krb5_h_addr2addr(context,
-				   incred->addresses[i]->type,
-				   incred->addresses[i]->data,
-				   &cred->addresses.val[i]);
+	    cred->addresses.val[i].addr_type = incred->addresses[i]->type;
+	    ret = krb5_data_copy(&cred->addresses.val[i].address,
+				 incred->addresses[i]->data,
+				 incred->addresses[i]->length);
 	    if (ret)
-		goto fail;
+		goto nomem;
 	}
     }
     
