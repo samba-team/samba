@@ -37,6 +37,10 @@
 #include "ldb/include/ldb_private.h"
 #include <time.h>
 
+struct private_data {
+	const char *error_string;
+};
+
 static int timestamps_close(struct ldb_module *module)
 {
 	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "timestamps_close\n");
@@ -57,9 +61,10 @@ static int timestamps_search_free(struct ldb_module *module, struct ldb_message 
 	return ldb_next_search_free(module, res);
 }
 
-static int add_time_element(struct ldb_context *ldb, struct ldb_message *msg, 
+static int add_time_element(struct ldb_module *module, struct ldb_message *msg, 
 			    const char *attr_name, const char *time_string, unsigned int flags)
 {
+	struct private_data *data = (struct private_data *)module->private_data;
 	struct ldb_val *values;
 	char *name, *timestr;
 	int i;
@@ -94,6 +99,7 @@ static int add_time_element(struct ldb_context *ldb, struct ldb_message *msg,
 /* add_record: add crateTimestamp/modifyTimestamp attributes */
 static int timestamps_add_record(struct ldb_module *module, const struct ldb_message *msg)
 {
+	struct private_data *data = (struct private_data *)module->private_data;
 	struct ldb_message *msg2 = NULL;
 	struct tm *tm;
 	char *timestr;
@@ -131,10 +137,10 @@ static int timestamps_add_record(struct ldb_module *module, const struct ldb_mes
 			msg2->elements[i] = msg->elements[i];
 		}
 
-		add_time_element(module->ldb, msg2, "createTimestamp", timestr, LDB_FLAG_MOD_ADD);
-		add_time_element(module->ldb, msg2, "modifyTimestamp", timestr, LDB_FLAG_MOD_ADD);
-		add_time_element(module->ldb, msg2, "whenCreated", timestr, LDB_FLAG_MOD_ADD);
-		add_time_element(module->ldb, msg2, "whenChanged", timestr, LDB_FLAG_MOD_ADD);
+		add_time_element(module, msg2, "createTimestamp", timestr, LDB_FLAG_MOD_ADD);
+		add_time_element(module, msg2, "modifyTimestamp", timestr, LDB_FLAG_MOD_ADD);
+		add_time_element(module, msg2, "whenCreated", timestr, LDB_FLAG_MOD_ADD);
+		add_time_element(module, msg2, "whenChanged", timestr, LDB_FLAG_MOD_ADD);
 	}
 
 	if (msg2) {
@@ -150,6 +156,7 @@ static int timestamps_add_record(struct ldb_module *module, const struct ldb_mes
 /* modify_record: change modifyTimestamp as well */
 static int timestamps_modify_record(struct ldb_module *module, const struct ldb_message *msg)
 {
+	struct private_data *data = (struct private_data *)module->private_data;
 	struct ldb_message *msg2 = NULL;
 	struct tm *tm;
 	char *timestr;
@@ -188,8 +195,8 @@ static int timestamps_modify_record(struct ldb_module *module, const struct ldb_
 			msg2->elements[i] = msg->elements[i];
 		}
 
-		add_time_element(module->ldb, msg2, "modifyTimestamp", timestr, LDB_FLAG_MOD_REPLACE);
-		add_time_element(module->ldb, msg2, "whenChanged", timestr, LDB_FLAG_MOD_REPLACE);
+		add_time_element(module, msg2, "modifyTimestamp", timestr, LDB_FLAG_MOD_REPLACE);
+		add_time_element(module, msg2, "whenChanged", timestr, LDB_FLAG_MOD_REPLACE);
 	}
 
 	if (msg2) {
@@ -229,9 +236,11 @@ static int timestamps_unlock(struct ldb_module *module, const char *lockname)
 /* return extended error information */
 static const char *timestamps_errstring(struct ldb_module *module)
 {
+	struct private_data *data = (struct private_data *)module->private_data;
+
 	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "timestamps_errstring\n");
 	if (data->error_string) {
-		char *error;
+		const char *error;
 
 		error = data->error_string;
 		data->error_string = NULL;
