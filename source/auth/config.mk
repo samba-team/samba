@@ -4,6 +4,7 @@
 # Start MODULE auth_sam
 [MODULE::auth_sam]
 INIT_FUNCTION = auth_sam_init
+SUBSYSTEM = AUTH
 INIT_OBJ_FILES = \
 		auth/auth_sam.o
 REQUIRED_SUBSYSTEMS = \
@@ -15,6 +16,7 @@ REQUIRED_SUBSYSTEMS = \
 # Start MODULE auth_builtin
 [MODULE::auth_builtin]
 INIT_FUNCTION = auth_builtin_init
+SUBSYSTEM = AUTH
 INIT_OBJ_FILES = \
 		auth/auth_builtin.o
 # End MODULE auth_builtin
@@ -24,6 +26,7 @@ INIT_OBJ_FILES = \
 # Start MODULE auth_winbind
 [MODULE::auth_winbind]
 INIT_FUNCTION = auth_winbind_init
+SUBSYSTEM = AUTH
 INIT_OBJ_FILES = \
 		auth/auth_winbind.o
 REQUIRED_SUBSYSTEMS = \

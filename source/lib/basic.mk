@@ -22,6 +22,7 @@ ADD_OBJ_FILES = \
 ##############################
 # Start SUBSYSTEM LIBCRYPTO
 [SUBSYSTEM::LIBCRYPTO]
+NOPROTO = YES
 INIT_OBJ_FILES = \
 		lib/crypto/crc32.o
 ADD_OBJ_FILES = \
@@ -30,7 +31,6 @@ ADD_OBJ_FILES = \
 		lib/crypto/md4.o
 # End SUBSYSTEM LIBCRYPTO
 ##############################
-
 
 ##############################
 # Start SUBSYSTEM LIBBASIC
@@ -66,15 +66,15 @@ ADD_OBJ_FILES = \
 		lib/select.o \
 		lib/pam_errors.o \
 		intl/lang_tdb.o \
-		lib/gencache.o \
 		lib/module.o \
 		lib/mutex.o \
 		lib/events.o \
-		lib/db_wrap.o \
 		lib/server_mutex.o \
 		lib/idtree.o \
-		lib/unix_privs.o
+		lib/unix_privs.o \
+		lib/db_wrap.o \
+		lib/gencache.o
 REQUIRED_SUBSYSTEMS = \
-		LIBTDB CHARSET LIBREPLACE LIBNETIF LIBCRYPTO
+		LIBLDB CHARSET LIBREPLACE LIBNETIF LIBCRYPTO EXT_LIB_DL
 # End SUBSYSTEM LIBBASIC
 ##############################

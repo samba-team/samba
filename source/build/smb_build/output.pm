@@ -25,10 +25,12 @@ sub generate_shared_library($)
 	@{$lib->{DEPEND_LIST}} = ("\$($lib->{TYPE}_$lib->{NAME}\_OBJS)");
 	@{$lib->{LINK_LIST}} = ("\$($lib->{TYPE}_$lib->{NAME}\_OBJS)");
 	$lib->{LIBRARY_NAME} = $lib->{NAME}.".so";
-	$lib->{LIBRARY_SONAME} = $lib->{LIBRARY_NAME}.".$lib->{MAJOR_VERSION}";
-	$lib->{LIBRARY_REALNAME} = $lib->{LIBRARY_SONAME}.".$lib->{MINOR_VERSION}.$lib->{RELEASE_VERSION}";
-	
-	$lib->{OUTPUT} = "bin/$lib->{LIBRARY_SONAME}";
+	$lib->{OUTPUT} = "bin/$lib->{LIBRARY_NAME}";
+	if ($lib->{MAJOR_VERSION}) {
+		$lib->{LIBRARY_SONAME} = $lib->{LIBRARY_NAME}.".$lib->{MAJOR_VERSION}";
+		$lib->{LIBRARY_REALNAME} = $lib->{LIBRARY_SONAME}.".$lib->{MINOR_VERSION}.$lib->{RELEASE_VERSION}";
+		$lib->{OUTPUT} = "bin/$lib->{LIBRARY_REALNAME}";
+	}
 }
 
 sub generate_static_library($)
@@ -71,8 +73,8 @@ sub create_output($)
 
 		generate_binary($part) if $part->{OUTPUT_TYPE} eq "BINARY";
 		generate_objlist($part) if $part->{OUTPUT_TYPE} eq "OBJLIST";
-		generate_shared_library($part) if $part->{TYPE} eq "SHARED_LIBRARY";
-		generate_static_library($part) if $part->{TYPE} eq "STATIC_LIBRARY";
+		generate_shared_library($part) if $part->{OUTPUT_TYPE} eq "SHARED_LIBRARY";
+		generate_static_library($part) if $part->{OUTPUT_TYPE} eq "STATIC_LIBRARY";
 
 		# Combine object lists
 		push(@{$part->{OBJ_LIST}}, @{$part->{INIT_OBJ_FILES}}) if defined($part->{INIT_OBJ_FILES});
@@ -96,21 +98,19 @@ sub create_output($)
 			push(@{$part->{LINK_LIST}}, @{$elem->{LIBS}}) if defined($elem->{LIBS});
 			push(@{$part->{LINK_FLAGS}},@{$elem->{LDFLAGS}}) if defined($elem->{LDFLAGS});
 
-			push(@{$part->{MODULE_INIT_FUNCTIONS}}, $elem->{INIT_FUNCTION}) if 
+			push(@{$part->{MODULE_INIT_FUNCTIONS}}, @{$elem->{INIT_FUNCTION}}) if 
 				$elem->{TYPE} eq "MODULE" and 
 				defined($elem->{INIT_FUNCTION}) and
 				$elem->{INIT_FUNCTION} ne "" and 
 				$elem->{SUBSYSTEM} eq $part->{NAME};
 
-			push(@{$part->{SUBSYSTEM_INIT_FUNCTIONS}}, $elem->{INIT_FUNCTION}) if 
+			push(@{$part->{SUBSYSTEM_INIT_FUNCTIONS}}, @{$elem->{INIT_FUNCTION}}) if 
 				$part->{OUTPUT_TYPE} eq "BINARY" and 
 				$elem->{TYPE} eq "SUBSYSTEM" and
 				defined($elem->{INIT_FUNCTION}) and 
 				$elem->{INIT_FUNCTION} ne "";
 		}
 	}
-
-	print Data::Dumper::Dumper($depend);
 
 	return %{$depend};
 }

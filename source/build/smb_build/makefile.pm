@@ -357,16 +357,20 @@ LIBRARY_$ctx->{NAME}_SHARED_LINK_FLAGS =$tmpshflag
 #
 
 # Shared $ctx->{LIBRARY_REALNAME}
-bin/$ctx->{LIBRARY_REALNAME}: \$(LIBRARY_$ctx->{NAME}_DEPEND_LIST) bin/.dummy
+$ctx->{OUTPUT}: \$(LIBRARY_$ctx->{NAME}_DEPEND_LIST) bin/.dummy
 	\@echo Linking \$\@
 	\@\$(SHLD) \$(SHLD_FLAGS) -o \$\@ \\
 		\$(LIBRARY_$ctx->{NAME}_SHARED_LINK_FLAGS) \\
 		\$(LIBRARY_$ctx->{NAME}_SHARED_LINK_LIST)
+";
+
+	if (defined($ctx->{LIBRARY_SONAME})) {
+		$output .= "
 # Symlink $ctx->{LIBRARY_SONAME}
 bin/$ctx->{LIBRARY_SONAME}: bin/$ctx->{LIBRARY_REALNAME} bin/.dummy
 	\@echo Symlink \$\@
 	\@ln -sf $ctx->{LIBRARY_REALNAME} \$\@
-# Symlink $ctx->{_LIBRARY_NAME}
+# Symlink $ctx->{LIBRARY_NAME}
 bin/$ctx->{LIBRARY_NAME}: bin/$ctx->{LIBRARY_SONAME} bin/.dummy
 	\@echo Symlink \$\@
 	\@ln -sf $ctx->{LIBRARY_SONAME} \$\@
@@ -374,6 +378,7 @@ library_$ctx->{NAME}: basics $ctx->{LIBRARY_SONAME}
 # End Library $ctx->{NAME}
 ###################################
 ";
+	}
 
 	return $output;
 }

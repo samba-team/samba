@@ -11,6 +11,7 @@ REQUIRED_SUBSYSTEMS = \
 ################################################
 # Start MODULE gensec_krb5
 [MODULE::gensec_krb5]
+SUBSYSTEM = GENSEC
 INIT_FUNCTION = gensec_krb5_init
 INIT_OBJ_FILES = libcli/auth/gensec_krb5.o 
 ADD_OBJ_FILES = \
@@ -25,6 +26,7 @@ REQUIRED_SUBSYSTEMS = GENSEC EXT_LIB_KRB5
 ################################################
 # Start MODULE gensec_spnego
 [MODULE::gensec_spnego]
+SUBSYSTEM = GENSEC
 INIT_FUNCTION = gensec_spnego_init
 INIT_OBJ_FILES = libcli/auth/spnego.o
 ADD_OBJ_FILES = \
@@ -36,6 +38,7 @@ REQUIRED_SUBSYSTEMS = GENSEC
 ################################################
 # Start MODULE gensec_ntlmssp
 [MODULE::gensec_ntlmssp]
+SUBSYSTEM = GENSEC
 INIT_FUNCTION = gensec_ntlmssp_init
 INIT_OBJ_FILES = libcli/auth/gensec_ntlmssp.o
 ADD_OBJ_FILES = \

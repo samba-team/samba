@@ -1,4 +1,3 @@
-SMB_MODULE_MK(ntvfs_unixuid, NTVFS, STATIC, ntvfs/config.mk)
 
 
 ################################################

@@ -4,6 +4,7 @@
 # Start MODULE registry_nt4
 [MODULE::registry_nt4]
 INIT_FUNCTION = registry_nt4_init
+SUBSYSTEM = REGISTRY
 INIT_OBJ_FILES = \
 		lib/registry/reg_backend_nt4/reg_backend_nt4.o
 # End MODULE registry_nt4
@@ -13,6 +14,7 @@ INIT_OBJ_FILES = \
 # Start MODULE registry_w95
 [MODULE::registry_w95]
 INIT_FUNCTION = registry_w95_init
+SUBSYSTEM = REGISTRY
 INIT_OBJ_FILES = \
 		lib/registry/reg_backend_w95/reg_backend_w95.o
 # End MODULE registry_w95
@@ -22,6 +24,7 @@ INIT_OBJ_FILES = \
 # Start MODULE registry_dir
 [MODULE::registry_dir]
 INIT_FUNCTION = registry_dir_init
+SUBSYSTEM = REGISTRY
 INIT_OBJ_FILES = \
 		lib/registry/reg_backend_dir/reg_backend_dir.o
 # End MODULE registry_dir
@@ -31,6 +34,7 @@ INIT_OBJ_FILES = \
 # Start MODULE registry_rpc
 [MODULE::registry_rpc]
 INIT_FUNCTION = registry_rpc_init
+SUBSYSTEM = REGISTRY
 INIT_OBJ_FILES = \
 		lib/registry/reg_backend_rpc/reg_backend_rpc.o
 REQUIRED_SUBSYSTEMS = \
@@ -42,6 +46,7 @@ REQUIRED_SUBSYSTEMS = \
 # Start MODULE registry_gconf
 [MODULE::registry_gconf]
 INIT_FUNCTION = registry_gconf_init
+SUBSYSTEM = REGISTRY
 INIT_OBJ_FILES = \
 		lib/registry/reg_backend_gconf/reg_backend_gconf.o
 REQUIRED_SUBSYSTEMS = EXT_LIB_gconf
@@ -52,6 +57,7 @@ REQUIRED_SUBSYSTEMS = EXT_LIB_gconf
 # Start MODULE registry_ldb
 [MODULE::registry_ldb]
 INIT_FUNCTION = registry_ldb_init
+SUBSYSTEM = REGISTRY
 INIT_OBJ_FILES = \
 		lib/registry/reg_backend_ldb/reg_backend_ldb.o
 REQUIRED_SUBSYSTEMS = \
