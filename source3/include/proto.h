@@ -1857,10 +1857,9 @@ BOOL api_netlog_rpc(pipes_struct *p, prs_struct *data);
 /*The following definitions come from  rpc_server/srv_pipe_hnd.c  */
 
 void reset_chain_p(void);
-void set_chain_p(pipes_struct *new_p);
 void init_rpc_pipe_hnd(void);
 pipes_struct *open_rpc_pipe_p(char *pipe_name, 
-				connection_struct *conn, uint16 vuid);
+			      connection_struct *conn, uint16 vuid);
 int read_pipe(pipes_struct *p, char *data, uint32 pos, int n);
 char *get_rpc_pipe_hnd_name(pipes_struct *p);
 BOOL set_rpc_pipe_hnd_state(pipes_struct *p, uint16 device_state);
@@ -1957,12 +1956,13 @@ file_fd_struct *fd_get_already_open(struct stat *sbuf);
 file_fd_struct *fd_get_new(void);
 void file_close_conn(connection_struct *conn);
 void file_init(void);
-files_struct *file_fsp(int fnum);
 void file_close_user(int vuid);
 files_struct *file_find_dit(int dev, int inode, struct timeval *tval);
 files_struct *file_find_print(void);
 void file_sync_all(connection_struct *conn);
 void file_free(files_struct *fsp);
+files_struct *file_fsp(char *buf, int where);
+void file_chain_reset(void);
 
 /*The following definitions come from  smbd/groupname.c  */
 

@@ -602,11 +602,6 @@ typedef struct files_struct
 	char *fsp_name;
 } files_struct;
 
-/* this macro should always be used to extract an fnum (smb_fid) from
-   a packet to ensure chaining works correctly */
-#define GETFSP(buf,where) (chain_fsp?chain_fsp:file_fsp(SVAL(buf,where)))
-
-
 /* Domain controller authentication protocol info */
 struct dcinfo
 {

@@ -33,7 +33,6 @@ extern int Protocol;
 extern int DEBUGLEVEL;
 extern int max_send;
 extern int max_recv;
-extern files_struct *chain_fsp;
 extern char magic_char;
 extern BOOL case_sensitive;
 extern BOOL case_preserve;
@@ -1425,8 +1424,6 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
   SSVAL(outbuf,smb_vwv8,rmode);
   SSVAL(outbuf,smb_vwv11,smb_action);
 
-  chain_fsp = fsp;
-
   return chain_reply(inbuf,outbuf,length,bufsize);
 }
 
@@ -1773,7 +1770,7 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
     return -1;
   }
 
-  fsp = GETFSP(inbuf,smb_vwv0);
+  fsp = file_fsp(inbuf,smb_vwv0);
 
   startpos = IVAL(inbuf,smb_vwv1);
   maxcount = SVAL(inbuf,smb_vwv3);
@@ -1862,7 +1859,7 @@ int reply_lockread(connection_struct *conn, char *inbuf,char *outbuf, int dum_si
   uint32 startpos, numtoread;
   int eclass;
   uint32 ecode;
-  files_struct *fsp = GETFSP(inbuf,smb_vwv0);
+  files_struct *fsp = file_fsp(inbuf,smb_vwv0);
 
   CHECK_FSP(fsp,conn);
   CHECK_READ(fsp);
@@ -1905,7 +1902,7 @@ int reply_read(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
   char *data;
   uint32 startpos;
   int outsize = 0;
-  files_struct *fsp = GETFSP(inbuf,smb_vwv0);
+  files_struct *fsp = file_fsp(inbuf,smb_vwv0);
 
   CHECK_FSP(fsp,conn);
   CHECK_READ(fsp);
@@ -1945,7 +1942,7 @@ int reply_read(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 ****************************************************************************/
 int reply_read_and_X(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize)
 {
-  files_struct *fsp = GETFSP(inbuf,smb_vwv2);
+  files_struct *fsp = file_fsp(inbuf,smb_vwv2);
   uint32 smb_offs = IVAL(inbuf,smb_vwv3);
   int smb_maxcnt = SVAL(inbuf,smb_vwv5);
   int smb_mincnt = SVAL(inbuf,smb_vwv6);
@@ -1979,8 +1976,6 @@ int reply_read_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
   DEBUG( 3, ( "readX fnum=%d min=%d max=%d nread=%d\n",
 	      fsp->fnum, smb_mincnt, smb_maxcnt, nread ) );
 
-  chain_fsp = fsp;
-
   return chain_reply(inbuf,outbuf,length,bufsize);
 }
 
@@ -1998,7 +1993,7 @@ int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int dum_s
   char *data=NULL;
   BOOL write_through;
   int tcount;
-  files_struct *fsp = GETFSP(inbuf,smb_vwv0);
+  files_struct *fsp = file_fsp(inbuf,smb_vwv0);
 
   CHECK_FSP(fsp,conn);
   CHECK_WRITE(fsp);
@@ -2100,7 +2095,7 @@ int reply_writeunlock(connection_struct *conn, char *inbuf,char *outbuf, int dum
   uint32 numtowrite,startpos;
   int eclass;
   uint32 ecode;
-  files_struct *fsp = GETFSP(inbuf,smb_vwv0);
+  files_struct *fsp = file_fsp(inbuf,smb_vwv0);
 
   CHECK_FSP(fsp,conn);
   CHECK_WRITE(fsp);
@@ -2153,7 +2148,7 @@ int reply_write(connection_struct *conn, char *inbuf,char *outbuf,int dum_size,i
   int outsize = 0;
   int startpos;
   char *data;
-  files_struct *fsp = GETFSP(inbuf,smb_vwv0);
+  files_struct *fsp = file_fsp(inbuf,smb_vwv0);
 
   CHECK_FSP(fsp,conn);
   CHECK_WRITE(fsp);
@@ -2203,7 +2198,7 @@ int reply_write(connection_struct *conn, char *inbuf,char *outbuf,int dum_size,i
 ****************************************************************************/
 int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize)
 {
-  files_struct *fsp = GETFSP(inbuf,smb_vwv2);
+  files_struct *fsp = file_fsp(inbuf,smb_vwv2);
   uint32 smb_offs = IVAL(inbuf,smb_vwv3);
   int smb_dsize = SVAL(inbuf,smb_vwv10);
   int smb_doff = SVAL(inbuf,smb_vwv11);
@@ -2246,8 +2241,6 @@ int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int leng
   DEBUG(3,("writeX fnum=%d num=%d wrote=%d\n",
 	   fsp->fnum, smb_dsize, nwritten));
 
-  chain_fsp = fsp;
-
   if (lp_syncalways(SNUM(conn)) || write_through)
     sync_file(conn,fsp);
 
@@ -2264,7 +2257,7 @@ int reply_lseek(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   int32 res= -1;
   int mode,umode;
   int outsize = 0;
-  files_struct *fsp = GETFSP(inbuf,smb_vwv0);
+  files_struct *fsp = file_fsp(inbuf,smb_vwv0);
 
   CHECK_FSP(fsp,conn);
   CHECK_ERROR(fsp);
@@ -2300,7 +2293,7 @@ int reply_lseek(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 int reply_flush(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
   int outsize = set_message(outbuf,0,0,True);
-  files_struct *fsp = GETFSP(inbuf,smb_vwv0);
+  files_struct *fsp = file_fsp(inbuf,smb_vwv0);
 
   if (fsp) {
 	  CHECK_FSP(fsp,conn);
@@ -2349,7 +2342,7 @@ int reply_close(connection_struct *conn,
 		return reply_pipe_close(conn, inbuf,outbuf);
 	}
 
-	fsp = GETFSP(inbuf,smb_vwv0);
+	fsp = file_fsp(inbuf,smb_vwv0);
 
 	/*
 	 * We can only use CHECK_FSP if we know it's not a directory.
@@ -2406,7 +2399,7 @@ int reply_writeclose(connection_struct *conn,
 	int startpos;
 	char *data;
 	time_t mtime;
-	files_struct *fsp = GETFSP(inbuf,smb_vwv0);
+	files_struct *fsp = file_fsp(inbuf,smb_vwv0);
 
 	CHECK_FSP(fsp,conn);
 	CHECK_WRITE(fsp);
@@ -2452,7 +2445,7 @@ int reply_lock(connection_struct *conn,
 	uint32 count,offset;
 	int eclass;
 	uint32 ecode;
-	files_struct *fsp = GETFSP(inbuf,smb_vwv0);
+	files_struct *fsp = file_fsp(inbuf,smb_vwv0);
 
 	CHECK_FSP(fsp,conn);
 	CHECK_ERROR(fsp);
@@ -2479,7 +2472,7 @@ int reply_unlock(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   uint32 count,offset;
   int eclass;
   uint32 ecode;
-  files_struct *fsp = GETFSP(inbuf,smb_vwv0);
+  files_struct *fsp = file_fsp(inbuf,smb_vwv0);
 
   CHECK_FSP(fsp,conn);
   CHECK_ERROR(fsp);
@@ -2629,7 +2622,7 @@ int reply_printclose(connection_struct *conn,
 		     char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
 	int outsize = set_message(outbuf,0,0,True);
-	files_struct *fsp = GETFSP(inbuf,smb_vwv0);
+	files_struct *fsp = file_fsp(inbuf,smb_vwv0);
 
 	CHECK_FSP(fsp,conn);
 	CHECK_ERROR(fsp);
@@ -2724,7 +2717,7 @@ int reply_printwrite(connection_struct *conn, char *inbuf,char *outbuf, int dum_
   int numtowrite;
   int outsize = set_message(outbuf,0,0,True);
   char *data;
-  files_struct *fsp = GETFSP(inbuf,smb_vwv0);
+  files_struct *fsp = file_fsp(inbuf,smb_vwv0);
   
   if (!CAN_PRINT(conn))
     return(ERROR(ERRDOS,ERRnoaccess));
@@ -3490,7 +3483,7 @@ int reply_setdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 ****************************************************************************/
 int reply_lockingX(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize)
 {
-  files_struct *fsp = GETFSP(inbuf,smb_vwv2);
+  files_struct *fsp = file_fsp(inbuf,smb_vwv2);
   unsigned char locktype = CVAL(inbuf,smb_vwv3);
 #if 0
   unsigned char oplocklevel = CVAL(inbuf,smb_vwv3+1);
@@ -3606,8 +3599,6 @@ dev = %x, inode = %x\n",
   DEBUG( 3, ( "lockingX fnum=%d type=%d num_locks=%d num_ulocks=%d\n",
 	fsp->fnum, (unsigned int)locktype, num_locks, num_ulocks ) );
 
-  chain_fsp = fsp;
-
   return chain_reply(inbuf,outbuf,length,bufsize);
 }
 
@@ -3625,7 +3616,7 @@ int reply_readbmpx(connection_struct *conn, char *inbuf,char *outbuf,int length,
   int max_per_packet;
   int tcount;
   int pad;
-  files_struct *fsp = GETFSP(inbuf,smb_vwv0);
+  files_struct *fsp = file_fsp(inbuf,smb_vwv0);
 
   /* this function doesn't seem to work - disable by default */
   if (!lp_readbmpx())
@@ -3692,7 +3683,7 @@ int reply_writebmpx(connection_struct *conn, char *inbuf,char *outbuf, int dum_s
   uint32 startpos;
   int tcount, write_through, smb_doff;
   char *data;
-  files_struct *fsp = GETFSP(inbuf,smb_vwv0);
+  files_struct *fsp = file_fsp(inbuf,smb_vwv0);
 
   CHECK_FSP(fsp,conn);
   CHECK_WRITE(fsp);
@@ -3785,7 +3776,7 @@ int reply_writebs(connection_struct *conn, char *inbuf,char *outbuf, int dum_siz
   char *data;
   write_bmpx_struct *wbms;
   BOOL send_response = False; 
-  files_struct *fsp = GETFSP(inbuf,smb_vwv0);
+  files_struct *fsp = file_fsp(inbuf,smb_vwv0);
 
   CHECK_FSP(fsp,conn);
   CHECK_WRITE(fsp);
@@ -3859,7 +3850,7 @@ int reply_setattrE(connection_struct *conn, char *inbuf,char *outbuf, int dum_si
 {
   struct utimbuf unix_times;
   int outsize = 0;
-  files_struct *fsp = GETFSP(inbuf,smb_vwv0);
+  files_struct *fsp = file_fsp(inbuf,smb_vwv0);
 
   outsize = set_message(outbuf,0,0,True);
 
@@ -3912,7 +3903,7 @@ int reply_getattrE(connection_struct *conn, char *inbuf,char *outbuf, int dum_si
   struct stat sbuf;
   int outsize = 0;
   int mode;
-  files_struct *fsp = GETFSP(inbuf,smb_vwv0);
+  files_struct *fsp = file_fsp(inbuf,smb_vwv0);
 
   outsize = set_message(outbuf,11,0,True);
 

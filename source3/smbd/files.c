@@ -35,6 +35,10 @@ static struct bitmap *fd_bmap;
 
 static files_struct *Files;
 
+/* a fsp to use when chaining */
+static files_struct *chain_fsp = NULL;
+
+
 /*
  * Indirection for file fd's. Needed as POSIX locking
  * is based on file/process, not fd/process.
@@ -106,6 +110,8 @@ files_struct *file_new(void )
 
 	DEBUG(5,("allocated file structure %d (%d used)\n",
 		 i, files_used));
+
+	chain_fsp = fsp;
 	
 	return fsp;
 }
@@ -238,21 +244,6 @@ void file_init(void)
 
 
 /****************************************************************************
-find a fsp given a fnum
-****************************************************************************/
-files_struct *file_fsp(int fnum)
-{
-	files_struct *fsp;
-
-	for (fsp=Files;fsp;fsp=fsp->next) {
-		if (fsp->fnum == fnum) return fsp;
-	}
-
-	return NULL;
-}
-
-
-/****************************************************************************
 close files open by a specified vuid
 ****************************************************************************/
 void file_close_user(int vuid)
@@ -375,5 +366,39 @@ void file_free(files_struct *fsp)
 	   information */
 	memset(fsp, 0, sizeof(*fsp));
 
+	if (fsp == chain_fsp) chain_fsp = NULL;
+
 	free(fsp);
+}
+
+
+/****************************************************************************
+get a fsp from a packet given the offset of a 16 bit fnum
+****************************************************************************/
+files_struct *file_fsp(char *buf, int where)
+{
+	int fnum;
+	files_struct *fsp;
+
+	if (chain_fsp) return chain_fsp;
+
+	fnum = SVAL(buf, where);
+
+	for (fsp=Files;fsp;fsp=fsp->next) {
+		if (fsp->fnum == fnum) {
+			chain_fsp = fsp;
+			return fsp;
+		}
+	}
+
+	return NULL;
+}
+
+
+/****************************************************************************
+reset the chained fsp - done at the start of a packet reply
+****************************************************************************/
+void file_chain_reset(void)
+{
+	chain_fsp = NULL;
 }

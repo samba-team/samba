@@ -61,7 +61,7 @@ static ubi_slList blocking_lock_queue = { NULL, (ubi_slNodePtr)&blocking_lock_qu
 BOOL push_blocking_lock_request( char *inbuf, int length, int lock_timeout, int lock_num)
 {
   blocking_lock_record *blr;
-  files_struct *fsp = GETFSP(inbuf,smb_vwv2);
+  files_struct *fsp = file_fsp(inbuf,smb_vwv2);
 
   /*
    * Now queue an entry on the blocking lock queue. We setup
@@ -98,12 +98,11 @@ for fnum = %d, name = %s\n", blr->expire_time, fsp->fnum, fsp->name ));
 static void blocking_lock_reply_success(blocking_lock_record *blr)
 {
   extern int chain_size;
-  extern files_struct *chain_fsp;
   extern char *OutBuffer;
   char *outbuf = OutBuffer;
   int bufsize = BUFFER_SIZE;
   char *inbuf = blr->inbuf;
-  files_struct *fsp = GETFSP(inbuf,smb_vwv2);
+  files_struct *fsp = file_fsp(inbuf,smb_vwv2);
   int outsize = 0;
 
   construct_reply_common(inbuf, outbuf);
@@ -117,7 +116,7 @@ static void blocking_lock_reply_success(blocking_lock_record *blr)
    * that here and must set up the chain info manually.
    */
 
-  chain_fsp = fsp;
+  file_set_chain(fsp);
   chain_size = 0;
 
   outsize = chain_reply(inbuf,outbuf,blr->length,bufsize);
@@ -140,7 +139,7 @@ static void blocking_lock_reply_error(blocking_lock_record *blr, int eclass, int
   char *outbuf = OutBuffer;
   int bufsize = BUFFER_SIZE;
   char *inbuf = blr->inbuf;
-  files_struct *fsp = GETFSP(inbuf,smb_vwv2);
+  files_struct *fsp = file_fsp(inbuf,smb_vwv2);
   uint16 num_ulocks = SVAL(inbuf,smb_vwv6);
   uint16 num_locks = SVAL(inbuf,smb_vwv7);
   uint32 count, offset;
@@ -175,7 +174,7 @@ static BOOL blocking_lock_record_process(blocking_lock_record *blr)
 {
   char *inbuf = blr->inbuf;
   unsigned char locktype = CVAL(inbuf,smb_vwv3);
-  files_struct *fsp = GETFSP(inbuf,smb_vwv2);
+  files_struct *fsp = file_fsp(inbuf,smb_vwv2);
   uint16 num_ulocks = SVAL(inbuf,smb_vwv6);
   uint16 num_locks = SVAL(inbuf,smb_vwv7);
   uint32 count, offset;
@@ -250,7 +249,7 @@ void process_blocking_lock_queue(time_t t)
    */
 
   while(blr != NULL) {
-    files_struct *fsp = GETFSP(blr->inbuf,smb_vwv2);
+    files_struct *fsp = file_fsp(blr->inbuf,smb_vwv2);
     uint16 vuid = (lp_security() == SEC_SHARE) ? UID_FIELD_INVALID :
                   SVAL(blr->inbuf,smb_uid);
 

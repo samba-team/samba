@@ -81,9 +81,6 @@ int max_send = BUFFER_SIZE;
  */
 int max_recv = BUFFER_SIZE;
 
-/* a fsp to use when chaining */
-files_struct *chain_fsp = NULL;
-
 /* number of open connections */
 static int num_connections_open = 0;
 
@@ -4699,7 +4696,7 @@ int construct_reply(char *inbuf,char *outbuf,int size,int bufsize)
   smb_last_time = time(NULL);
 
   chain_size = 0;
-  chain_fsp = NULL;
+  file_chain_reset();
   reset_chain_p();
 
   if (msg_type != 0)

@@ -24,7 +24,6 @@
 
 extern int DEBUGLEVEL;
 extern int Protocol;
-extern files_struct *chain_fsp;
 extern int Client;  
 extern int oplock_sock;
 extern int smb_read_error;
@@ -665,8 +664,6 @@ int reply_ntcreate_and_X(connection_struct *conn,
 		SCVAL(p,0,fsp->is_directory ? 1 : 0);
 	}
 	
-	chain_fsp = fsp;
-
 	DEBUG(5,("reply_ntcreate_and_X: open name = %s\n",
 		 fsp?fsp->fsp_name:"NULL"));
 
@@ -941,7 +938,7 @@ static int call_nt_transact_rename(connection_struct *conn,
 {
   char *params = *ppparams;
   pstring new_name;
-  files_struct *fsp = GETFSP(params, 0);
+  files_struct *fsp = file_fsp(params, 0);
   BOOL replace_if_exists = (SVAL(params,2) & RENAME_REPLACE_IF_EXISTS) ? True : False;
   uint32 fname_len = MIN((((uint32)IVAL(inbuf,smb_nt_TotalParameterCount)-4)),
                          ((uint32)sizeof(new_name)-1));
@@ -1166,7 +1163,7 @@ static int call_nt_transact_notify_change(connection_struct *conn,
   change_notify_buf *cnbp;
   struct stat st;
 
-  fsp = GETFSP(setup,4);
+  fsp = file_fsp(setup,4);
 
   DEBUG(3,("call_nt_transact_notify_change\n"));
 

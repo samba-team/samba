@@ -26,8 +26,6 @@ extern int DEBUGLEVEL;
 
 int num_good_sends = 0;
 int num_good_receives = 0;
-extern pstring scope;
-extern struct in_addr ipzero;
 
 static struct opcode_names {
 	char *nmb_opcode_name;
