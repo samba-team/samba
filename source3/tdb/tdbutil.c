@@ -139,9 +139,11 @@ int32 tdb_fetch_int32_byblob(TDB_CONTEXT *tdb, char *keyval, size_t len)
 	key.dptr = keyval;
 	key.dsize = len;
 	data = tdb_fetch(tdb, key);
-	if (!data.dptr || data.dsize != sizeof(int32))
+	if (!data.dptr || data.dsize != sizeof(int32)) {
+		SAFE_FREE(data.dptr);
 		return -1;
-	
+	}
+
 	ret = IVAL(data.dptr,0);
 	SAFE_FREE(data.dptr);
 	return ret;
@@ -198,9 +200,11 @@ BOOL tdb_fetch_uint32_byblob(TDB_CONTEXT *tdb, char *keyval, size_t len, uint32 
 	key.dptr = keyval;
 	key.dsize = len;
 	data = tdb_fetch(tdb, key);
-	if (!data.dptr || data.dsize != sizeof(uint32))
+	if (!data.dptr || data.dsize != sizeof(uint32)) {
+		SAFE_FREE(data.dptr);
 		return False;
-	
+	}
+
 	*value = IVAL(data.dptr,0);
 	SAFE_FREE(data.dptr);
 	return True;
