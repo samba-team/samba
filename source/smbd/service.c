@@ -389,6 +389,11 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 		}
 	}
 
+	/* admin users always run as uid=0 */
+	if (conn->admin_user) {
+		conn->uid = 0;
+	}
+
 #ifdef HAVE_GETGRNAM 
 	/*
 	 * If force group is true, then override

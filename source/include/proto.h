@@ -1686,7 +1686,7 @@ void update_a_form(nt_forms_struct **list, const FORM *form, int count);
 int get_ntdrivers(fstring **list, char *architecture, uint32 version);
 BOOL get_short_archi(char *short_archi, char *long_archi);
 void clean_up_driver_struct(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, uint32 level);
-BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, uint32 level, struct current_user *user);
+BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, uint32 level, struct current_user *user, uint32 *perr);
 uint32 get_a_printer_driver_9x_compatible(pstring line, fstring model);
 uint32 del_a_printer(char *sharename);
 BOOL add_a_specific_param(NT_PRINTER_INFO_LEVEL_2 *info_2, NT_PRINTER_PARAM *param);
@@ -3811,6 +3811,7 @@ int vfs_init_default(connection_struct *conn);
 BOOL vfs_init_custom(connection_struct *conn);
 BOOL vfs_directory_exist(connection_struct *conn, char *dname,
                          SMB_STRUCT_STAT *st);
+int vfs_unlink(connection_struct *conn, char *fname);
 BOOL vfs_file_exist(connection_struct *conn,char *fname,SMB_STRUCT_STAT *sbuf);
 ssize_t vfs_write_data(files_struct *fsp,char *buffer,size_t N);
 SMB_OFF_T vfs_transfer_file(int in_fd, files_struct *in_fsp, 

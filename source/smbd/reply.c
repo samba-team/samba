@@ -1888,7 +1888,7 @@ int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   if (!has_wild) {
     pstrcat(directory,"/");
     pstrcat(directory,mask);
-    if (can_delete(directory,conn,dirtype) && !dos_unlink(directory))
+    if (can_delete(directory,conn,dirtype) && !vfs_unlink(conn,directory))
       count++;
     if (!count)
       exists = vfs_file_exist(conn,directory,NULL);    
