@@ -38,7 +38,7 @@ name: ${DOMAIN}
 realm: ${REALM}
 dnsDomain: ${DNSDOMAIN}
 dc: ${DOMAIN}
-objectGUID: ${NEWGUID}
+objectGUID: ${DOMAINGUID}
 creationTime: ${NTTIME}
 forceLogoff: 0x8000000000000000
 lockoutDuration: -18000000000
@@ -438,20 +438,20 @@ groupType: 0x80000005
 objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
 
-dn: CN=${HOSTNAME},OU=Domain Controllers,${BASEDN}
+dn: CN=${NETBIOSNAME},OU=Domain Controllers,${BASEDN}
 objectClass: top
 objectClass: person
 objectClass: organizationalPerson
 objectClass: user
 objectClass: computer
-cn: ${HOSTNAME}
+cn: ${NETBIOSNAME}
 instanceType: 4
 whenCreated: ${LDAPTIME}
 whenChanged: ${LDAPTIME}
 uSNCreated: 1
 uSNChanged: 1
-name: ${HOSTNAME}
-objectGUID: ${NEWGUID}
+name: ${NETBIOSNAME}
+objectGUID: ${HOSTGUID}
 userAccountControl: 532480
 badPwdCount: 0
 codePage: 0
@@ -465,7 +465,7 @@ primaryGroupID: 516
 objectSid: ${DOMAINSID}-1000
 accountExpires: 9223372036854775807
 logonCount: 30
-sAMAccountName: ${HOSTNAME}$
+sAMAccountName: ${NETBIOSNAME}$
 sAMAccountType: 805306369
 operatingSystem: Samba
 operatingSystemVersion: 4.0

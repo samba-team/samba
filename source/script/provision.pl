@@ -1,10 +1,12 @@
 #!/usr/bin/perl -w
 
 use strict;
+use Socket;
 use Getopt::Long;
 
 my $opt_hostname = `hostname`;
 chomp $opt_hostname;
+my $opt_hostip;
 my $opt_realm;
 my $opt_domain;
 my $opt_adminpass;
@@ -13,8 +15,10 @@ my $opt_nogroup;
 my $opt_wheel;
 my $opt_users;
 my $dnsdomain;
+my $netbiosname;
 my $dnsname;
 my $basedn;
+my $defaultsite = "Default-First-Site-Name";
 
 # return the current NTTIME as an integer
 sub nttime()
@@ -38,6 +42,7 @@ sub randguid()
 }
 
 my $domainguid = randguid();
+my $hostguid = randguid();
 
 sub randsid()
 {
@@ -96,8 +101,16 @@ sub substitute($)
 		return $opt_hostname;
 	}
 
+	if ($var eq "NETBIOSNAME") {
+		return $netbiosname;
+	}
+
 	if ($var eq "DNSNAME") {
 		return $dnsname;
+	}
+
+	if ($var eq "HOSTIP") {
+		return $opt_hostip;
 	}
 
 	if ($var eq "LDAPTIME") {
@@ -106,6 +119,18 @@ sub substitute($)
 
 	if ($var eq "NEWGUID") {
 		return randguid();
+	}
+
+	if ($var eq "DOMAINGUID") {
+		return $domainguid;
+	}
+
+	if ($var eq "HOSTGUID") {
+		return $hostguid;
+	}
+
+	if ($var eq "DEFAULTSITE") {
+		return $defaultsite;
 	}
 
 	if ($var eq "ADMINPASS") {
@@ -202,6 +227,7 @@ provision.pl [options]
   --realm     REALM        set realm
   --domain    DOMAIN       set domain
   --hostname  HOSTNAME     set hostname
+  --hostip    IPADDRESS    set ipaddress
   --adminpass PASSWORD     choose admin password (otherwise random)
   --nobody    USERNAME     choose 'nobody' user
   --nogroup   GROUPNAME    choose 'nogroup' group
@@ -221,6 +247,7 @@ GetOptions(
 	    'realm=s' => \$opt_realm,
 	    'domain=s' => \$opt_domain,
 	    'hostname=s' => \$opt_hostname,
+	    'hostip=s' => \$opt_hostip,
 	    'adminpass=s' => \$opt_adminpass,
 	    'nobody=s' => \$opt_nobody,
 	    'nogroup=s' => \$opt_nogroup,
@@ -237,9 +264,19 @@ if ($opt_help ||
 
 $opt_realm=uc($opt_realm);
 $opt_domain=uc($opt_domain);
-$opt_hostname=uc($opt_hostname);
+$opt_hostname=lc($opt_hostname);
+$netbiosname=uc($opt_hostname);
 
-print "Provisioning host '$opt_hostname' for domain '$opt_domain' in realm '$opt_realm'\n";
+if (!$opt_hostip) {
+	my $hip = gethostbyname($opt_hostname);
+	if (defined $hip) {
+		$opt_hostip = inet_ntoa($hip);
+	} else {
+		$opt_hostip = "<0.0.0.0>";
+	}
+}
+
+print "Provisioning host '$opt_hostname'[$opt_hostip] for domain '$opt_domain' in realm '$opt_realm'\n";
 
 if (!$opt_nobody) {
 	if (defined getpwnam("nobody")) {
@@ -317,9 +354,31 @@ $ENV{"PATH"} .= ":bin";
 
 system("ldbadd -H newsam.ldb newsam.ldif");
 
+print "done\n";
+
+print "generating dns zone file ...\n";
+
+$data = FileLoad("provision.zone") || die "Unable to load provision.zone\n";
+
+$res = "";
+
+print "applying substitutions ...\n";
+
+while ($data =~ /(.*?)\$\{(\w*)\}(.*)/s) {
+	my $sub = substitute($2);
+	$res .= "$1$sub";
+	$data = $3;
+}
+$res .= $data;
+
+print "saving dns zone to newdns.zone ...\n";
+
+FileSave("$dnsdomain.zone", $res);
+
 print "done
 
-Please move newsam.ldb to sam.ldb in the lib/private/ directory of your
-Samba4 installation
+Installation:
+- Please move newsam.ldb to sam.ldb in the lib/private/ directory of your
+  Samba4 installation
+- Please use $dnsdomain.zone to in BIND dns server
 ";
-
