@@ -65,7 +65,9 @@ verify_checksum(krb5_context context,
 			   buf_size,
 			   safe,
 			   &len);
-    krb5_crypto_init(context, auth_context->keyblock, 0, &crypto);
+    ret = krb5_crypto_init(context, auth_context->keyblock, 0, &crypto);
+    if (ret)
+	goto out;
     ret = krb5_verify_checksum (context,
 				crypto,
 				KRB5_KU_KRB_SAFE_CKSUM,

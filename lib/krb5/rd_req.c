@@ -46,7 +46,9 @@ decrypt_tkt_enc_part (krb5_context context,
     size_t len;
     krb5_crypto crypto;
 
-    krb5_crypto_init(context, key, 0, &crypto);
+    ret = krb5_crypto_init(context, key, 0, &crypto);
+    if (ret)
+	return ret;
     ret = krb5_decrypt_EncryptedData (context,
 				      crypto,
 				      KRB5_KU_TICKET,
@@ -73,7 +75,9 @@ decrypt_authenticator (krb5_context context,
     size_t len;
     krb5_crypto crypto;
 
-    krb5_crypto_init(context, key, 0, &crypto);
+    ret = krb5_crypto_init(context, key, 0, &crypto);
+    if (ret)
+	return ret;
     ret = krb5_decrypt_EncryptedData (context,
 				      crypto,
 				      KRB5_KU_AP_REQ_AUTH,

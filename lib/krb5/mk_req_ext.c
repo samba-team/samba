@@ -104,7 +104,10 @@ krb5_mk_req_internal(krb5_context context,
 				     &c);
       } else {
 	  krb5_crypto crypto;
-	  krb5_crypto_init(context, ac->keyblock, 0, &crypto);
+
+	  ret = krb5_crypto_init(context, ac->keyblock, 0, &crypto);
+	  if (ret)
+	      return ret;
 	  ret = krb5_create_checksum(context, 
 				     crypto,
 				     usage,

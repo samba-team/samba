@@ -76,13 +76,20 @@ krb5_mk_safe(krb5_context context,
   s.cksum.checksum.data   = NULL;
   s.cksum.checksum.length = 0;
 
-
   buf_size = length_KRB_SAFE(&s);
   buf = malloc(buf_size + 128); /* add some for checksum */
   if(buf == NULL)
       return ENOMEM;
   ret = encode_KRB_SAFE (buf + buf_size - 1, buf_size, &s, &len);
+  if (ret) {
+      free (buf);
+      return ret;
+  }
   ret = krb5_crypto_init(context, auth_context->keyblock, 0, &crypto);
+  if (ret) {
+      free (buf);
+      return ret;
+  }
   ret = krb5_create_checksum(context, 
 			     crypto,
 			     KRB5_KU_KRB_SAFE_CKSUM,

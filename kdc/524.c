@@ -74,7 +74,12 @@ do_524(Ticket *t, krb5_data *reply, const char *from, struct sockaddr *addr)
 		"when converting ticket from ", spn, from);
 	goto out;
     }
-    krb5_crypto_init(context, &skey->key, 0, &crypto);
+    ret = krb5_crypto_init(context, &skey->key, 0, &crypto);
+    if (ret) {
+	kdc_log(0, "krb5_crypto_init failed: %s",
+		krb5_get_err_text(context, ret));
+	goto out;
+    }
     ret = krb5_decrypt_EncryptedData (context,
 				      crypto,
 				      KRB5_KU_TICKET,

@@ -325,7 +325,9 @@ decrypt_tkt_with_subkey (krb5_context context,
     size_t size;
     krb5_crypto crypto;
     
-    krb5_crypto_init(context, key, 0, &crypto);
+    ret = krb5_crypto_init(context, key, 0, &crypto);
+    if (ret)
+	return ret;
     ret = krb5_decrypt_EncryptedData (context,
 				      crypto,
 				      usage,
@@ -334,7 +336,9 @@ decrypt_tkt_with_subkey (krb5_context context,
     krb5_crypto_destroy(context, crypto);
     if(ret && subkey){
 	/* DCE compat -- try to decrypt with subkey */
-	krb5_crypto_init(context, (krb5_keyblock*)subkey, 0, &crypto);
+	ret = krb5_crypto_init(context, (krb5_keyblock*)subkey, 0, &crypto);
+	if (ret)
+	    return ret;
 	ret = krb5_decrypt_EncryptedData (context,
 					  crypto,
 					  KRB5_KU_TGS_REP_ENC_PART_SUB_KEY,

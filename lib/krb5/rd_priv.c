@@ -72,7 +72,9 @@ krb5_rd_priv(krb5_context context,
   else
       key = auth_context->keyblock;
 
-  krb5_crypto_init(context, key, 0, &crypto);
+  ret = krb5_crypto_init(context, key, 0, &crypto);
+  if (ret)
+      goto failure;
   ret = krb5_decrypt_EncryptedData(context,
 				   crypto,
 				   KRB5_KU_KRB_PRIV,

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -126,6 +126,8 @@ krb5_build_authenticator (krb5_context context,
   } while(ret == ASN1_OVERFLOW);
 
   ret = krb5_crypto_init(context, &cred->session, enctype, &crypto);
+  if (ret)
+      goto fail;
   ret = krb5_encrypt (context,
 		      crypto,
 		      KRB5_KU_AP_REQ_AUTH,

@@ -85,7 +85,9 @@ decrypt_tkt (krb5_context context,
     size_t size;
     krb5_crypto crypto;
 
-    krb5_crypto_init(context, key, 0, &crypto);
+    ret = krb5_crypto_init(context, key, 0, &crypto);
+    if (ret)
+	return ret;
 
     ret = krb5_decrypt_EncryptedData (context,
 				      crypto,
@@ -321,7 +323,9 @@ make_pa_enc_timestamp(krb5_context context, PA_DATA *pa,
     if (ret)
 	return ret;
 
-    krb5_crypto_init(context, key, 0, &crypto);
+    ret = krb5_crypto_init(context, key, 0, &crypto);
+    if (ret)
+	return ret;
     ret = krb5_encrypt_EncryptedData(context, 
 				     crypto,
 				     KRB5_KU_PA_ENC_TIMESTAMP,

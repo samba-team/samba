@@ -70,10 +70,15 @@ krb5_rd_cred (krb5_context      context,
        enc_krb_cred_part_data.data   = cred.enc_part.cipher.data;
     } else {
 	if (auth_context->remote_subkey)
-	    krb5_crypto_init(context, auth_context->remote_subkey, 0, &crypto);
+	    ret = krb5_crypto_init(context, auth_context->remote_subkey,
+				   0, &crypto);
 	else
-	    krb5_crypto_init(context, auth_context->keyblock, 0, &crypto);
+	    ret = krb5_crypto_init(context, auth_context->keyblock,
+				   0, &crypto);
           /* DK: MIT rsh */
+
+	if (ret)
+	    goto out;
        
 	ret = krb5_decrypt_EncryptedData(context,
 					 crypto,

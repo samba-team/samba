@@ -117,7 +117,11 @@ krb5_mk_priv(krb5_context context,
   s.enc_part.etype = key->keytype;
   s.enc_part.kvno = NULL;
 
-  krb5_crypto_init(context, key, 0, &crypto);
+  ret = krb5_crypto_init(context, key, 0, &crypto);
+  if (ret) {
+      free (buf);
+      return ret;
+  }
   ret = krb5_encrypt (context, 
 		      crypto,
 		      KRB5_KU_KRB_PRIV,

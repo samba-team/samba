@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -84,8 +84,12 @@ krb5_mk_rep(krb5_context context,
 				  &len);
 
   free_EncAPRepPart (&body);
-  krb5_crypto_init(context, (*auth_context)->keyblock, 
-		   0 /* ap.enc_part.etype */, &crypto);
+  ret = krb5_crypto_init(context, (*auth_context)->keyblock, 
+			 0 /* ap.enc_part.etype */, &crypto);
+  if (ret) {
+      free (buf);
+      return ret;
+  }
   ret = krb5_encrypt (context,
 		      crypto,
 		      KRB5_KU_AP_REQ_ENC_PART,

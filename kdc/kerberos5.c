@@ -173,7 +173,12 @@ encode_reply(KDC_REP *rep, EncTicketPart *et, EncKDCRepPart *ek,
     }
     
 
-    krb5_crypto_init(context, skey, etype, &crypto);
+    ret = krb5_crypto_init(context, skey, etype, &crypto);
+    if (ret) {
+	kdc_log(0, "krb5_crypto_init failed: %s",
+		krb5_get_err_text(context, ret));
+	return ret;
+    }
 
     krb5_encrypt_EncryptedData(context, 
 			       crypto,
@@ -196,7 +201,12 @@ encode_reply(KDC_REP *rep, EncTicketPart *et, EncKDCRepPart *ek,
 		krb5_get_err_text(context, ret));
 	return ret;
     }
-    krb5_crypto_init(context, ckey, 0, &crypto);
+    ret = krb5_crypto_init(context, ckey, 0, &crypto);
+    if (ret) {
+	kdc_log(0, "krb5_crypto_init failed: %s",
+		krb5_get_err_text(context, ret));
+	return ret;
+    }
     if(rep->msg_type == krb_as_rep) {
 	krb5_encrypt_EncryptedData(context,
 				   crypto,
@@ -528,7 +538,14 @@ as_rep(KDC_REQ *req,
 		continue;
 	    }
 	    
-	    krb5_crypto_init(context, &pa_key->key, 0, &crypto);
+	    ret = krb5_crypto_init(context, &pa_key->key, 0, &crypto);
+	    if (ret) {
+		kdc_log(0, "krb5_crypto_init failed: %s",
+			krb5_get_err_text(context, ret));
+		free_EncryptedData(&enc_data);
+		continue;
+	    }
+
 	    ret = krb5_decrypt_EncryptedData (context,
 					      crypto,
 					      KRB5_KU_PA_ENC_TIMESTAMP,
@@ -1245,7 +1262,12 @@ tgs_check_authenticator(krb5_auth_context ac,
 		krb5_get_err_text(context, ret));
 	goto out;
     }
-    krb5_crypto_init(context, key, 0, &crypto);
+    ret = krb5_crypto_init(context, key, 0, &crypto);
+    if (ret) {
+	kdc_log(0, "krb5_crypto_init failed: %s",
+		krb5_get_err_text(context, ret));
+	goto out;
+    }
     ret = krb5_verify_checksum(context,
 			       crypto,
 			       KRB5_KU_TGS_REQ_AUTH_CKSUM,
@@ -1415,7 +1437,12 @@ tgs_rep2(KDC_REQ_BODY *b,
 	    ret = KRB5KRB_AP_ERR_BAD_INTEGRITY; /* ? */
 	    goto out2;
 	}
-	krb5_crypto_init(context, subkey, 0, &crypto);
+	ret = krb5_crypto_init(context, subkey, 0, &crypto);
+	if (ret) {
+	    kdc_log(0, "krb5_crypto_init failed: %s",
+		    krb5_get_err_text(context, ret));
+	    goto out2;
+	}
 	ret = krb5_decrypt_EncryptedData (context,
 					  crypto,
 					  KRB5_KU_TGS_REQ_AUTH_DAT_SUBKEY,

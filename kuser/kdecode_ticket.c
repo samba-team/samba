@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -61,7 +61,9 @@ print_and_decode_tkt (krb5_context context,
     if (ret)
 	krb5_err (context, 1, ret, "krb5_string_to_key");
 
-    krb5_crypto_init(context, &key, 0, &crypto);
+    ret = krb5_crypto_init(context, &key, 0, &crypto);
+    if (ret)
+	krb5_err (context, 1, ret, "krb5_crypto_init");
 
     ret = krb5_decrypt_EncryptedData (context, crypto, KRB5_KU_TICKET,
 				      &tkt.enc_part, &dec_data);
