@@ -163,8 +163,9 @@ BOOL lsa_enum_trust_dom(POLICY_HND *hnd, uint32 * enum_ctx,
 BOOL lsa_close(POLICY_HND *hnd);
 BOOL lsa_enum_privs(POLICY_HND *hnd, uint32 unk0, uint32 unk1,
 		    uint32 *count, LSA_PRIV_ENTRY **entries);
-uint32 lsa_priv_info(const POLICY_HND *hnd, const char *name, uint16 unk,
-		     UNISTR2 **desc, uint16 *unk0);
+uint32 lsa_priv_get_dispname(const POLICY_HND *hnd, const UNISTR2 *name,
+			     uint16 req_lang_id,
+			     UNISTR2 **desc, uint16 *got_lang_id);
 
 /*The following definitions come from  rpc_client/cli_netlogon.c  */
 
@@ -515,7 +516,8 @@ uint32 domain_client_validate_backend(const char *srv_name,
 				      const char *smb_apasswd,
 				      int smb_apasslen,
 				      const char *smb_ntpasswd,
-				      int smb_ntpasslen, NET_USER_INFO_3 * info3);
+				      int smb_ntpasslen,
+				      NET_USER_INFO_3 * info3);
 uint32 domain_client_validate(const char *server,
 			      const char *user, const char *domain,
 			      const char *acct_name, uint16 acct_type,

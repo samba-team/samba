@@ -101,7 +101,7 @@ enum SID_NAME_USE
 #define LSA_OPENSECRET         0x1c
 #define LSA_SETSECRET          0x1d
 #define LSA_QUERYSECRET        0x1e
-#define LSA_PRIV_INFO          0x21
+#define LSA_PRIV_GET_DISPNAME  0x21
 #define LSA_OPENPOLICY2        0x2c
 #define LSA_UNK_2D             0x2d /* LsaGetConnectedCredentials ? */
 
@@ -255,8 +255,8 @@ typedef struct lsa_enum_priv_entry
 {
 	UNIHDR hdr_name;
 	UNISTR2 name;
-	uint32 num;
-	uint32 unk2; /* always 0, ptr? */
+	uint32 luid_low;
+	uint32 luid_high;
 } LSA_PRIV_ENTRY;
 
 /* LSA_Q_ENUM_PRIVS - LSA enum privileges */
@@ -280,26 +280,26 @@ typedef struct lsa_r_enum_privs
 } LSA_R_ENUM_PRIVS;
 
 
-/* LSA_Q_PRIV_INFO - LSA get privilege info */
-typedef struct lsa_q_priv_info
+/* LSA_Q_PRIV_GET_DISPNAME - LSA get privilege display name */
+typedef struct lsa_q_priv_get_dispname
 {
 	POLICY_HND pol; /* policy handle */
 	UNIHDR hdr_name;
 	UNISTR2 name;
-	uint16 unk0; /* 0x407 */
-	uint16 unk1; /* 0x407, alignment? */
-} LSA_Q_PRIV_INFO;
+	uint16 lang_id;
+	uint16 lang_id_sys;
+} LSA_Q_PRIV_GET_DISPNAME;
 
-typedef struct lsa_r_priv_info
+typedef struct lsa_r_priv_get_dispname
 {
 	uint32 ptr_info;
 	UNIHDR hdr_desc;
 	UNISTR2 desc;
 	/* Don't align ! */
-	uint16 unk; /* 0x0 or 0x407 */
+	uint16 lang_id;
 	/* align */
 	uint32 status;
-} LSA_R_PRIV_INFO;
+} LSA_R_PRIV_GET_DISPNAME;
 
 
 /* LSA_Q_CREATE_SECRET - LSA Create Secret */

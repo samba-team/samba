@@ -182,10 +182,10 @@ BOOL lsa_io_q_enum_privs(char *desc, LSA_Q_ENUM_PRIVS * q_q,
 			 prs_struct *ps, int depth);
 BOOL lsa_io_r_enum_privs(char *desc, LSA_R_ENUM_PRIVS * r_q,
 			 prs_struct *ps, int depth);
-BOOL lsa_io_q_priv_info(char *desc, LSA_Q_PRIV_INFO * q_q,
-			prs_struct *ps, int depth);
-BOOL lsa_io_r_priv_info(char *desc, LSA_R_PRIV_INFO * r_q,
-			prs_struct *ps, int depth);
+BOOL lsa_io_q_priv_get_dispname(char *desc, LSA_Q_PRIV_GET_DISPNAME * q_q,
+				prs_struct *ps, int depth);
+BOOL lsa_io_r_priv_get_dispname(char *desc, LSA_R_PRIV_GET_DISPNAME * r_q,
+				prs_struct *ps, int depth);
 
 /*The following definitions come from  rpc_parse/parse_netsec.c  */
 

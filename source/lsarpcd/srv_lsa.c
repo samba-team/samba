@@ -468,12 +468,12 @@ static BOOL api_lsa_enum_privs(prs_struct *data, prs_struct *rdata)
 /***************************************************************************
 api_lsa_priv_info
  ***************************************************************************/
-static BOOL api_lsa_priv_info(prs_struct *data, prs_struct *rdata)
+static BOOL api_lsa_priv_get_dispname(prs_struct *data, prs_struct *rdata)
 {
-	LSA_Q_PRIV_INFO q_i;
+	LSA_Q_PRIV_GET_DISPNAME q_i;
 	ZERO_STRUCT(q_i);
 
-	if (!lsa_io_q_priv_info("", &q_i, data, 0))
+	if (!lsa_io_q_priv_get_dispname("", &q_i, data, 0))
 	{
 		return False;
 	}
@@ -499,7 +499,7 @@ static const struct api_struct api_lsa_cmds[] = {
 	{"LSA_SET_INFO", LSA_SET_INFO, api_lsa_set_info},
 /*	{"LSA_UNK_2D",  LSA_UNK_2D, api_lsa_unk_2d}, */
 	{"LSA_ENUM_PRIVS", LSA_ENUM_PRIVS, api_lsa_enum_privs},
-	{"LSA_PRIV_INFO", LSA_PRIV_INFO, api_lsa_priv_info},
+	{"LSA_PRIV_GET_DISPNAME", LSA_PRIV_GET_DISPNAME, api_lsa_priv_get_dispname},
 	{NULL, 0, NULL}
 };
 

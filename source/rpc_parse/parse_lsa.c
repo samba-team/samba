@@ -1709,8 +1709,8 @@ static BOOL lsa_io_priv_entries(char *desc, LSA_PRIV_ENTRY *entries,
 		slprintf(tmp, sizeof(tmp), "hdr_name[%d]", i);
 		if (!smb_io_unihdr(tmp, &entries[i].hdr_name, ps, depth))
 			return False;
-		prs_uint32("num ", ps, depth, &entries[i].num);
-		prs_uint32("unk2", ps, depth, &entries[i].unk2);
+		prs_uint32("luid_low ", ps, depth, &entries[i].luid_low);
+		prs_uint32("luid_high", ps, depth, &entries[i].luid_high);
 	}
 	for (i = 0; i < count; i++)
 	{
@@ -1765,13 +1765,13 @@ BOOL lsa_io_r_enum_privs(char *desc, LSA_R_ENUM_PRIVS * r_q,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL lsa_io_q_priv_info(char *desc, LSA_Q_PRIV_INFO * q_q,
-			prs_struct *ps, int depth)
+BOOL lsa_io_q_priv_get_dispname(char *desc, LSA_Q_PRIV_GET_DISPNAME * q_q,
+				prs_struct *ps, int depth)
 {
 	if (q_q == NULL)
 		return False;
 
-	prs_debug(ps, depth, desc, "lsa_io_q_priv_info");
+	prs_debug(ps, depth, desc, "lsa_io_q_priv_get_dispname");
 	depth++;
 
 	prs_align(ps);
@@ -1790,8 +1790,8 @@ BOOL lsa_io_q_priv_info(char *desc, LSA_Q_PRIV_INFO * q_q,
 		return False;
 	prs_align(ps);
 
-	prs_uint16("lang_id    ", ps, depth, &q_q->unk0);
-	prs_uint16("lang_id_sys", ps, depth, &q_q->unk1);
+	prs_uint16("lang_id    ", ps, depth, &q_q->lang_id);
+	prs_uint16("lang_id_sys", ps, depth, &q_q->lang_id_sys);
 
 	return True;
 }
@@ -1799,13 +1799,13 @@ BOOL lsa_io_q_priv_info(char *desc, LSA_Q_PRIV_INFO * q_q,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL lsa_io_r_priv_info(char *desc, LSA_R_PRIV_INFO * r_q,
-			prs_struct *ps, int depth)
+BOOL lsa_io_r_priv_get_dispname(char *desc, LSA_R_PRIV_GET_DISPNAME * r_q,
+				prs_struct *ps, int depth)
 {
 	if (r_q == NULL)
 		return False;
 
-	prs_debug(ps, depth, desc, "lsa_io_r_priv_info");
+	prs_debug(ps, depth, desc, "lsa_io_r_priv_get_dispname");
 	depth++;
 
 	prs_align(ps);
@@ -1831,7 +1831,7 @@ BOOL lsa_io_r_priv_info(char *desc, LSA_R_PRIV_INFO * r_q,
 		ps->align = old_align;
 	}
 
-	prs_uint16("lang_id", ps, depth, &r_q->unk);
+	prs_uint16("lang_id", ps, depth, &r_q->lang_id);
 	prs_align(ps);
 	prs_uint32("status", ps, depth, &r_q->status);
 

@@ -548,17 +548,19 @@ uint32 cmd_lsa_enum_privs(struct client_info *info, int argc, char *argv[])
 		{
 			char *name;
 			name = unistr2_to_ascii(NULL, &privs[i].name, 0);
-			report(out_hnd, "\t%3d  %s\n", privs[i].num, name);
+			report(out_hnd, "\t0x%x/0x%02x  %s\n",
+			       privs[i].luid_high, privs[i].luid_low, name);
 			if (do_info)
 			{
 				UNISTR2 *uni_desc = NULL;
-				uint16 unknown = 0;
+				uint16 lang_id = 0;
 				char *desc;
-				lsa_priv_info(&lsa_pol, name, 0x407,
-					      &uni_desc, &unknown);
+				lsa_priv_get_dispname(&lsa_pol, &privs[i].name,
+						      0x407,
+						      &uni_desc, &lang_id);
 				desc = unistr2_to_ascii(NULL, uni_desc, 0);
 				report(out_hnd, "\t\t%s (0x%x)\n",
-				       desc, unknown);
+				       desc, lang_id);
 				safe_free(desc);
 				unistr2_free(uni_desc);
 			}
@@ -576,24 +578,26 @@ uint32 cmd_lsa_enum_privs(struct client_info *info, int argc, char *argv[])
 uint32 cmd_lsa_priv_info(struct client_info *info, int argc, char *argv[])
 {
 	fstring srv_name;
-	uint16 unk = 0x407;
+	uint16 lang_in = 0x407;
 	POLICY_HND lsa_pol;
-	const char *name;
+	UNISTR2 name;
+	UNISTR2 *uni_desc = NULL;
+	uint16 lang_out = 0;
 
 	BOOL res = True;
 	BOOL res1 = True;
 
 	if (argc < 2)
 	{
-		report(out_hnd, "privinfo <priv-name>\n");
+		report(out_hnd, "privinfo <priv-name> [lang_id]\n");
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	name = argv[1];
+	unistr2_assign_ascii_str(&name, argv[1]);
 
 	if (argc >= 3)
 	{
-		unk = atoi(argv[2]);
+		lang_in = atoi(argv[2]);
 	}
 
 	fstrcpy(srv_name, "\\\\");
@@ -608,12 +612,18 @@ uint32 cmd_lsa_priv_info(struct client_info *info, int argc, char *argv[])
 				    SEC_RIGHTS_MAXIMUM_ALLOWED) : False;
 
 
-	res1 = res ? lsa_priv_info(&lsa_pol, name, unk, NULL, NULL) == 0x0 : False;
+	res1 = res ? lsa_priv_get_dispname(&lsa_pol, &name, lang_in, &uni_desc, &lang_out) == 0x0 : False;
 
 	res = res ? lsa_close(&lsa_pol) : False;
 
 	if (res1)
 	{
+		char *desc;
+		desc = unistr2_to_ascii(NULL, uni_desc, 0);
+		report(out_hnd, "\t%s (0x%x)\n",
+		       desc, lang_out);
+		safe_free(desc);
+		unistr2_free(uni_desc);
 	}
 
 	return 0;

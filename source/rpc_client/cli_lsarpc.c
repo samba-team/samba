@@ -1303,13 +1303,14 @@ BOOL lsa_enum_privs(POLICY_HND *hnd, uint32 unk0, uint32 unk1,
 /****************************************************************************
 do a LSA Privileges Info
 ****************************************************************************/
-uint32 lsa_priv_info(const POLICY_HND *hnd, const char *name, uint16 unk,
-		     UNISTR2 **desc, uint16 *unk0)
+uint32 lsa_priv_get_dispname(const POLICY_HND *hnd, const UNISTR2 *name,
+			     uint16 req_lang_id,
+			     UNISTR2 **desc, uint16 *got_lang_id)
 {
 	BOOL status = NT_STATUS_UNSUCCESSFUL;
 	prs_struct rbuf;
 	prs_struct buf;
-	LSA_Q_PRIV_INFO q_q;
+	LSA_Q_PRIV_GET_DISPNAME q_q;
 
 	if (hnd == NULL)
 		return False;
@@ -1321,28 +1322,28 @@ uint32 lsa_priv_info(const POLICY_HND *hnd, const char *name, uint16 unk,
 
 	/* store the parameters */
 	q_q.pol = *hnd;
-	unistr2_assign_ascii_str(&q_q.name, name);
-	q_q.unk0 = unk;
-	q_q.unk1 = unk;
+	copy_unistr2(&q_q.name, name);
+	q_q.lang_id = req_lang_id;
+	q_q.lang_id_sys = req_lang_id;
 
 	/* turn parameters into data stream */
-	if (lsa_io_q_priv_info("", &q_q, &buf, 0) &&
-	    rpc_hnd_pipe_req(hnd, LSA_PRIV_INFO, &buf, &rbuf))
+	if (lsa_io_q_priv_get_dispname("", &q_q, &buf, 0) &&
+	    rpc_hnd_pipe_req(hnd, LSA_PRIV_GET_DISPNAME, &buf, &rbuf))
 	{
-		LSA_R_PRIV_INFO r_q;
+		LSA_R_PRIV_GET_DISPNAME r_q;
 		BOOL p;
 
 		ZERO_STRUCT(r_q);
 
-		p = lsa_io_r_priv_info("", &r_q, &rbuf, 0)
+		p = lsa_io_r_priv_get_dispname("", &r_q, &rbuf, 0)
 			&& rbuf.offset != 0;
 
 		if (p && r_q.ptr_info)
 		{
 			if (desc)
 				(*desc) = unistr2_dup(&r_q.desc);
-			if (unk0)
-				(*unk0) = r_q.unk;
+			if (got_lang_id)
+				(*got_lang_id) = r_q.lang_id;
 		}
 		if (p)
 			status = r_q.status;

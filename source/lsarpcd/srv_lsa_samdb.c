@@ -839,7 +839,8 @@ uint32 _lsa_enum_privs(POLICY_HND *hnd, uint32 unk0, uint32 unk1,
 	for (i = 0; privs[i].name && i < LSA_NUM_PRIVS; i++, entry++)
 	{
 		unistr2_assign_ascii_str(&entry->name, privs[i].name);
-		entry->num = privs[i].num;
+		entry->luid_low = privs[i].num;
+		entry->luid_high = 0;
 	}
 
 	return NT_STATUS_NOPROBLEMO;
