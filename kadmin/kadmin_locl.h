@@ -122,7 +122,8 @@ void attr2str(krb5_flags attributes, char *str, size_t len);
 int str2attr(const char *str, krb5_flags *flags);
 void get_response(const char*, const char*, char*, size_t);
 int get_deltat(const char*, const char*, unsigned *);
-int edit_entry(kadm5_principal_ent_t ent, int *mask);
+int edit_entry(kadm5_principal_ent_t ent, int *mask,
+	       kadm5_principal_ent_t default_ent, int default_mask);
 int set_entry(krb5_context context,
 	      kadm5_principal_ent_t ent, int *mask,
 	      const char *max_ticket_life,
