@@ -5,7 +5,6 @@
 #endif
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
 #include <string.h>
 #include "der.h"
 
@@ -102,6 +101,28 @@ der_put_tag (unsigned char *p, int len, Der_class class, Der_type type,
     return -1;
   *p = (class << 6) | (type << 5) | tag; /* XXX */
   return 1;
+}
+
+int
+der_put_length_and_tag (unsigned char *p, int len, int len_val,
+			Der_class class, Der_type type, int tag)
+{
+  int ret = 0;
+  int l;
+
+  l = der_put_length (p, len, len_val);
+  if (l < 0)
+    return l;
+  p -= l;
+  len -= l;
+  ret += l;
+  l = der_put_tag (p, len, class, type, tag);
+  if (l < 0)
+    return l;
+  p -= l;
+  len -= l;
+  ret += l;
+  return ret;
 }
 
 int
