@@ -266,19 +266,19 @@ if test x"$samba_cv_volatile" = x"yes"; then
    AC_DEFINE(HAVE_VOLATILE, 1, [Whether the C compiler understands volatile])
 fi
 
-UNAME_S=`uname -s`
+UNAME_S=`(uname -s) 2>/dev/null` || UNAME_S="unknown"
 AC_MSG_CHECKING(uname -s)
 AC_MSG_RESULT(${UNAME_S})
 
-UNAME_R=`uname -r`
+UNAME_R=`(uname -r) 2>/dev/null` || UNAME_R="unknown"
 AC_MSG_CHECKING(uname -r)
 AC_MSG_RESULT(${UNAME_R})
 
-UNAME_M=`uname -m`
+UNAME_M=`(uname -m) 2>/dev/null` || UNAME_M="unknown"
 AC_MSG_CHECKING(uname -m)
 AC_MSG_RESULT(${UNAME_M})
 
-UNAME_P=`uname -p`
+UNAME_P=`(uname -p) 2>/dev/null` || UNAME_P="unknown"
 AC_MSG_CHECKING(uname -p)
 AC_MSG_RESULT(${UNAME_P})
 
