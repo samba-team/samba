@@ -997,7 +997,7 @@ static struct parm_struct parm_table[] = {
 	{"root preexec close", P_BOOL, P_LOCAL, &sDefault.bRootpreexecClose, NULL, NULL, FLAG_SHARE},
 	{"root postexec", P_STRING, P_LOCAL, &sDefault.szRootPostExec, NULL, NULL, FLAG_SHARE | FLAG_PRINT},
 	{"available", P_BOOL, P_LOCAL, &sDefault.bAvailable, NULL, NULL, FLAG_BASIC | FLAG_SHARE | FLAG_PRINT},
-	{"volume", P_STRING, P_LOCAL, &sDefault.volume, NULL, NULL, FLAG_SHARE},
+	{"volume", P_STRING, P_LOCAL, &sDefault.volume, NULL, NULL, FLAG_SHARE | FLAG_DOS_STRING},
 	{"fstype", P_STRING, P_LOCAL, &sDefault.fstype, NULL, NULL, FLAG_SHARE},
 	{"set directory", P_BOOLREV, P_LOCAL, &sDefault.bNo_set_dir, NULL, NULL, FLAG_SHARE},
 	{"source environment", P_STRING, P_GLOBAL, &Globals.szSourceEnv, handle_source_env, NULL, 0},
@@ -3439,20 +3439,14 @@ int lp_servicenumber(char *pszServiceName)
 }
 
 /*******************************************************************
-  a useful volume label function
-  ******************************************************************/
+ A useful volume label function. Returns a string in DOS codepage.
+********************************************************************/
+
 char *volume_label(int snum)
 {
 	char *ret = lp_volume(snum);
-	if (!*ret) {
-		/* lp_volume returns a unix charset - lp_servicename returns a
-		   dos codepage - convert so volume_label() always returns UNIX.
-		*/
-		char *p = dos_to_unix(lp_servicename(snum), False);
-		int len = strlen(p)+1;
-		ret = (char *)talloc(lp_talloc, len);
-		memcpy(ret, p, len);
-	}
+	if (!*ret)
+		return lp_servicename(snum);
 	return (ret);
 }
 
