@@ -27,8 +27,9 @@ extern char *OutBuffer;
  notify. It consists of the requesting SMB and the expiry time.
 *****************************************************************************/
 
-typedef struct {
-	ubi_slNode msg_next;
+typedef struct _blocking_lock_record {
+	struct _blocking_lock_record *next;
+	struct _blocking_lock_record *prev;
 	int com_type;
 	files_struct *fsp;
 	time_t expire_time;
@@ -40,7 +41,7 @@ typedef struct {
 	int length;
 } blocking_lock_record;
 
-static ubi_slList blocking_lock_queue = { NULL, (ubi_slNodePtr)&blocking_lock_queue, 0};
+static blocking_lock_record *blocking_lock_queue;
 
 /****************************************************************************
  Destructor for the above structure.
@@ -48,6 +49,7 @@ static ubi_slList blocking_lock_queue = { NULL, (ubi_slNodePtr)&blocking_lock_qu
 
 static void free_blocking_lock_record(blocking_lock_record *blr)
 {
+	DLIST_REMOVE(blocking_lock_queue, blr);
 	SAFE_FREE(blr->inbuf);
 	SAFE_FREE(blr);
 }
@@ -90,7 +92,7 @@ BOOL push_blocking_lock_request( char *inbuf, int length, int lock_timeout,
 		int lock_num, uint16 lock_pid, SMB_BIG_UINT offset, SMB_BIG_UINT count)
 {
 	static BOOL set_lock_msg;
-	blocking_lock_record *blr;
+	blocking_lock_record *blr, *tmp;
 	BOOL my_lock_ctx = False;
 	NTSTATUS status;
 
@@ -136,7 +138,7 @@ BOOL push_blocking_lock_request( char *inbuf, int length, int lock_timeout,
 		return False;
 	}
 
-	ubi_slAddTail(&blocking_lock_queue, blr);
+	DLIST_ADD_END(blocking_lock_queue, blr, tmp);
 
 	/* Ensure we'll receive messages when this is unlocked. */
 	if (!set_lock_msg) {
@@ -516,10 +518,10 @@ static BOOL blocking_lock_record_process(blocking_lock_record *blr)
 
 void remove_pending_lock_requests_by_fid(files_struct *fsp)
 {
-	blocking_lock_record *blr = (blocking_lock_record *)ubi_slFirst( &blocking_lock_queue );
-	blocking_lock_record *prev = NULL;
+	blocking_lock_record *blr, *next = NULL;
 
-	while(blr != NULL) {
+	for(blr = blocking_lock_queue; blr; blr = next) {
+		next = blr->next;
 		if(blr->fsp->fnum == fsp->fnum) {
 
 			DEBUG(10,("remove_pending_lock_requests_by_fid - removing request type %d for \
@@ -529,13 +531,8 @@ file %s fnum = %d\n", blr->com_type, fsp->fsp_name, fsp->fnum ));
 				blr->lock_pid, sys_getpid(), blr->fsp->conn->cnum,
 				blr->offset, blr->count, True, NULL, NULL);
 
-			free_blocking_lock_record((blocking_lock_record *)ubi_slRemNext( &blocking_lock_queue, prev));
-			blr = (blocking_lock_record *)(prev ? ubi_slNext(prev) : ubi_slFirst(&blocking_lock_queue));
-			continue;
+			free_blocking_lock_record(blr);
 		}
-
-		prev = blr;
-		blr = (blocking_lock_record *)ubi_slNext(blr);
 	}
 }
 
@@ -545,10 +542,10 @@ file %s fnum = %d\n", blr->com_type, fsp->fsp_name, fsp->fnum ));
 
 void remove_pending_lock_requests_by_mid(int mid)
 {
-	blocking_lock_record *blr = (blocking_lock_record *)ubi_slFirst( &blocking_lock_queue );
-	blocking_lock_record *prev = NULL;
+	blocking_lock_record *blr, *next = NULL;
 
-	while(blr != NULL) {
+	for(blr = blocking_lock_queue; blr; blr = next) {
+		next = blr->next;
 		if(SVAL(blr->inbuf,smb_mid) == mid) {
 			files_struct *fsp = blr->fsp;
 
@@ -559,13 +556,8 @@ file %s fnum = %d\n", blr->com_type, fsp->fsp_name, fsp->fnum ));
 			brl_unlock(blr->fsp->dev, blr->fsp->inode, blr->fsp->fnum,
 				blr->lock_pid, sys_getpid(), blr->fsp->conn->cnum,
 				blr->offset, blr->count, True, NULL, NULL);
-			free_blocking_lock_record((blocking_lock_record *)ubi_slRemNext( &blocking_lock_queue, prev));
-			blr = (blocking_lock_record *)(prev ? ubi_slNext(prev) : ubi_slFirst(&blocking_lock_queue));
-			continue;
+			free_blocking_lock_record(blr);
 		}
-
-		prev = blr;
-		blr = (blocking_lock_record *)ubi_slNext(blr);
 	}
 }
 
@@ -587,7 +579,7 @@ unsigned blocking_locks_timeout(unsigned default_timeout)
 {
 	unsigned timeout = default_timeout;
 	time_t t;
-	blocking_lock_record *blr = (blocking_lock_record *)ubi_slFirst(&blocking_lock_queue);
+	blocking_lock_record *blr = blocking_lock_queue;
 
 	/* note that we avoid the time() syscall if there are no blocking locks */
 	if (!blr)
@@ -595,12 +587,11 @@ unsigned blocking_locks_timeout(unsigned default_timeout)
 
 	t = time(NULL);
 
-	while (blr) {
+	for (; blr; blr = blr->next) {
 		if ((blr->expire_time != (time_t)-1) &&
 					(timeout > (blr->expire_time - t))) {
 			timeout = blr->expire_time - t;
 		}
-		blr = (blocking_lock_record *)ubi_slNext(blr);
 	}
 
 	if (timeout < 1)
@@ -615,20 +606,18 @@ unsigned blocking_locks_timeout(unsigned default_timeout)
 
 void process_blocking_lock_queue(time_t t)
 {
-	blocking_lock_record *blr = (blocking_lock_record *)ubi_slFirst( &blocking_lock_queue );
-	blocking_lock_record *prev = NULL;
-
-	if(blr == NULL)
-		return;
+	blocking_lock_record *blr, *next = NULL;
 
 	/*
 	 * Go through the queue and see if we can get any of the locks.
 	 */
 
-	while(blr != NULL) {
+	for (blr = blocking_lock_queue; blr; blr = next) {
 		connection_struct *conn = NULL;
 		uint16 vuid;
 		files_struct *fsp = NULL;
+
+		next = blr->next;
 
 		/*
 		 * Ensure we don't have any old chain_fsp values
@@ -658,8 +647,7 @@ void process_blocking_lock_queue(time_t t)
 				blr->offset, blr->count, True, NULL, NULL);
 
 			blocking_lock_reply_error(blr,NT_STATUS_FILE_LOCK_CONFLICT);
-			free_blocking_lock_record((blocking_lock_record *)ubi_slRemNext( &blocking_lock_queue, prev));
-			blr = (blocking_lock_record *)(prev ? ubi_slNext(prev) : ubi_slFirst(&blocking_lock_queue));
+			free_blocking_lock_record(blr);
 			continue;
 		}
 
@@ -675,8 +663,7 @@ void process_blocking_lock_queue(time_t t)
 					blr->lock_pid, sys_getpid(), conn->cnum,
 					blr->offset, blr->count, True, NULL, NULL);
 
-			free_blocking_lock_record((blocking_lock_record *)ubi_slRemNext( &blocking_lock_queue, prev));
-			blr = (blocking_lock_record *)(prev ? ubi_slNext(prev) : ubi_slFirst(&blocking_lock_queue));
+			free_blocking_lock_record(blr);
 			continue;
 		}
 
@@ -691,8 +678,7 @@ void process_blocking_lock_queue(time_t t)
 					blr->lock_pid, sys_getpid(), conn->cnum,
 					blr->offset, blr->count, True, NULL, NULL);
 
-			free_blocking_lock_record((blocking_lock_record *)ubi_slRemNext( &blocking_lock_queue, prev));
-			blr = (blocking_lock_record *)(prev ? ubi_slNext(prev) : ubi_slFirst(&blocking_lock_queue));
+			free_blocking_lock_record(blr);
 			change_to_root_user();
 			continue;
 		}
@@ -709,18 +695,8 @@ void process_blocking_lock_queue(time_t t)
 					blr->lock_pid, sys_getpid(), conn->cnum,
 					blr->offset, blr->count, True, NULL, NULL);
 
-			free_blocking_lock_record((blocking_lock_record *)ubi_slRemNext( &blocking_lock_queue, prev));
-			blr = (blocking_lock_record *)(prev ? ubi_slNext(prev) : ubi_slFirst(&blocking_lock_queue));
-			change_to_root_user();
-			continue;
+			free_blocking_lock_record(blr);
 		}
-
 		change_to_root_user();
-
-		/*
-		 * Move to the next in the list.
-		 */
-		prev = blr;
-		blr = (blocking_lock_record *)ubi_slNext(blr);
 	}
 }
