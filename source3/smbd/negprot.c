@@ -220,7 +220,7 @@ static int reply_nt1(char *inbuf, char *outbuf)
 {
 	/* dual names + lock_and_read + nt SMBs + remote API calls */
 	int capabilities = CAP_NT_FIND|CAP_LOCK_AND_READ|
-		CAP_LEVEL_II_OPLOCKS|CAP_STATUS32;
+		CAP_LEVEL_II_OPLOCKS;
 
 	int secword=0;
 	time_t t = time(NULL);
@@ -242,28 +242,29 @@ static int reply_nt1(char *inbuf, char *outbuf)
 	
 	capabilities |= CAP_NT_SMBS|CAP_RPC_REMOTE_APIS|CAP_UNIX;
 	
-	if (lp_large_readwrite() && (SMB_OFF_T_BITS == 64)) {
+	if (lp_large_readwrite() && (SMB_OFF_T_BITS == 64))
 		capabilities |= CAP_LARGE_READX|CAP_LARGE_WRITEX|CAP_W2K_SMBS;
-	}
 	
-	if (SMB_OFF_T_BITS == 64) {
+	if (SMB_OFF_T_BITS == 64)
 		capabilities |= CAP_LARGE_FILES;
-	}
-	
-	if (lp_readraw() && lp_writeraw()) {
+
+	if (lp_readraw() && lp_writeraw())
 		capabilities |= CAP_RAW_MODE;
-	}
 	
 	/* allow for disabling unicode */
-	if (lp_unicode()) {
+	if (lp_unicode())
 		capabilities |= CAP_UNICODE;
-	}
+
+	if (lp_nt_status_support())
+		capabilities |= CAP_STATUS32;
 	
 	if (lp_host_msdfs())
 		capabilities |= CAP_DFS;
 	
-	if (lp_security() >= SEC_USER) secword |= 1;
-	if (global_encrypted_passwords_negotiated) secword |= 2;
+	if (lp_security() >= SEC_USER)
+		secword |= 1;
+	if (global_encrypted_passwords_negotiated)
+		secword |= 2;
 	
 	set_message(outbuf,17,0,True);
 	
