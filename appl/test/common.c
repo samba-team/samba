@@ -131,7 +131,7 @@ client_doit (const char *hostname, int port, const char *service,
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_protocol = IPPROTO_TCP;
 
-    snprintf (portstr, sizeof(portstr), "%u", port);
+    snprintf (portstr, sizeof(portstr), "%u", ntohs(port));
 
     error = getaddrinfo (hostname, portstr, &hints, &ai);
     if (error) {
