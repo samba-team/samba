@@ -181,7 +181,7 @@ int reply_tcon(char *inbuf,char *outbuf)
   int outsize = 0;
   int uid = SVAL(inbuf,smb_uid);
   int vuid;
-  int pwlen;
+  int pwlen=0;
 
   *service = *user = *password = *dev = 0;
 
@@ -218,6 +218,7 @@ int reply_tcon_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   int uid = SVAL(inbuf,smb_uid);
   int vuid;
   int passlen = SVAL(inbuf,smb_vwv3);
+  BOOL doencrypt = SMBENCRYPT();
 
   *service = *user = *password = *devicename = 0;
 
@@ -231,8 +232,15 @@ int reply_tcon_and_X(char *inbuf,char *outbuf,int length,int bufsize)
     char *path;
     char *p;
     memcpy(password,smb_buf(inbuf),passlen);
-    password[passlen]=0;
+    password[passlen]=0;    
     path = smb_buf(inbuf) + passlen;
+
+    if (!doencrypt || passlen != 24) {
+      if (strequal(password," "))
+	*password = 0;
+      passlen = strlen(password);
+    }
+    
     DEBUG(4,("parsing net-path %s, passlen=%d\n",path,passlen));
     strcpy(service,path+2);
     p = strchr(service,'\\');
@@ -315,7 +323,7 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   int   smb_mpxmax;     
   int   smb_vc_num;     
   uint32   smb_sesskey;    
-  int   smb_apasslen;   
+  int   smb_apasslen = 0;   
   pstring smb_apasswd;
   int   smb_ntpasslen = 0;   
   pstring smb_ntpasswd;
@@ -343,6 +351,9 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
     BOOL doencrypt = SMBENCRYPT();
     char *p = smb_buf(inbuf);    
 
+    if (passlen1 != 24 && passlen2 != 24)
+      doencrypt = False;
+
     if(doencrypt) {
       /* Save the lanman2 password and the NT md4 password. */
       smb_apasslen = passlen1;
@@ -366,17 +377,22 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
       }
       /* we use the first password that they gave */
       smb_apasslen = passlen1;
-      StrnCpy(smb_apasswd,p,smb_apasslen);
+      StrnCpy(smb_apasswd,p,smb_apasslen);      
+      
+      /* trim the password */
+      smb_apasslen = strlen(smb_apasswd);
+
+      /* wfwg sometimes uses a space instead of a null */
+      if (strequal(smb_apasswd," ")) {
+	smb_apasslen = 0;
+	*smb_apasswd = 0;
+      }
     }
     
     p += passlen1 + passlen2;
     strcpy(user,p); p = skip_string(p,1);
     DEBUG(3,("Domain=[%s]  NativeOS=[%s] NativeLanMan=[%s]\n",
 	     p,skip_string(p,1),skip_string(p,2)));
-
-    /* now work around the Win95 bug */
-    if(!doencrypt && smb_apasslen==24)
-      smb_apasslen = strlen(smb_apasswd);
   }
 
 

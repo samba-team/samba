@@ -383,13 +383,10 @@ BOOL is_mangled(char *s)
 /****************************************************************************
 return a base 36 character. v must be from 0 to 35.
 ****************************************************************************/
-static char base36(int v)
+static char base36(unsigned int v)
 {
-  v = v % 36;
-  if (v < 10)
-    return('0'+v);
-  else /* needed to work around a DEC C compiler bug */
-    return('A' + (v-10));
+  static char basechars[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  return basechars[v % 36];
 }
 
 
