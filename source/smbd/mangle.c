@@ -538,16 +538,18 @@ done:
 
 BOOL is_8_3(const char *fname, BOOL check_case)
 {
+	char *f;
 	smb_ucs2_t *ucs2name;
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
 
 	if (!fname || !*fname) return False;
+	if ((f = strrchr(fname, '/')) == NULL) f = fname;
 
-	DEBUG(10,("is_8_3: testing [%s]\n", fname));
+	DEBUG(10,("is_8_3: testing [%s]\n", f));
 
-	if (strlen(fname) > 12) return False;
+	if (strlen(f) > 12) return False;
 	
-	ucs2name = acnv_uxu2(fname);
+	ucs2name = acnv_uxu2(f);
 	if (!ucs2name)
 	{
 		DEBUG(0,("is_8_3: out of memory!\n"));
