@@ -363,10 +363,10 @@ static WERROR delete_printer_handle(pipes_struct *p, POLICY_HND *hnd)
 		/* Send SIGHUP to process group... is there a better way? */
 		kill(0, SIGHUP);
 
-		if ( ( i = lp_servicenumber( Printer->dev.handlename ) ) >= 0 ) {
-			lp_killservice( i );
-			return WERR_OK;
-		} else
+		/* go ahead and re-read the services immediately */
+		reload_services( False );
+
+		if ( ( i = lp_servicenumber( Printer->dev.handlename ) ) < 0 )
 			return WERR_ACCESS_DENIED;
 	}
 
@@ -5638,7 +5638,9 @@ static BOOL add_printer_hook(NT_PRINTER_INFO_LEVEL *printer)
 
 		/* Send SIGHUP to process group... is there a better way? */
 		kill(0, SIGHUP);
-		add_all_printers();
+		
+		/* reload our services immediately */
+		reload_services( False );
 	}
 
 	file_lines_free(qlines);
@@ -5709,6 +5711,13 @@ static WERROR update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 			result =  WERR_NOMEM;
 			goto done;
 		}
+
+		/* 
+		 * make sure we actually reload the services after 
+		 * this as smb.conf could have a new section in it 
+		 * .... shouldn't .... but could
+		 */
+		reload_services(False);	
 	}
 
 	/* Do sanity check on the requested changes for Samba */
@@ -6918,15 +6927,17 @@ static WERROR spoolss_addprinterex_level_2( pipes_struct *p, const UNISTR2 *uni_
 		return WERR_PRINTER_ALREADY_EXISTS;
 	}
 
-	if (*lp_addprinter_cmd() )
+	if (*lp_addprinter_cmd() ) {
 		if ( !add_printer_hook(printer) ) {
 			free_a_printer(&printer,2);
 			return WERR_ACCESS_DENIED;
+	}
 	}
 
 	slprintf(name, sizeof(name)-1, "\\\\%s\\%s", get_called_name(),
              printer->info_2->sharename);
 
+	
 	if ((snum = print_queue_snum(printer->info_2->sharename)) == -1) {
 		free_a_printer(&printer,2);
 		return WERR_ACCESS_DENIED;
