@@ -32,12 +32,8 @@ load the case handling tables
 ********************************************************************/
 static void load_case_tables(void)
 {
-	static int initialised;
 	int i;
 	TALLOC_CTX *mem_ctx;
-
-	if (initialised) return;
-	initialised = 1;
 
 	mem_ctx = talloc_init("load_case_tables");
 	if (!mem_ctx) {
@@ -49,9 +45,9 @@ static void load_case_tables(void)
 	
 	/* we would like Samba to limp along even if these tables are
 	   not available */
-	if (!upcase_table) {
+	if (upcase_table == NULL) {
 		DEBUG(1,("creating lame upcase table\n"));
-		upcase_table = malloc(0x20000);
+		upcase_table = talloc_named_const(NULL, 0x20000, "upcase_table");
 		if (!upcase_table) {
 			smb_panic("No memory for upcase tables");
 		}
@@ -63,9 +59,9 @@ static void load_case_tables(void)
 		}
 	}
 
-	if (!lowcase_table) {
+	if (lowcase_table == NULL) {
 		DEBUG(1,("creating lame lowcase table\n"));
-		lowcase_table = malloc(0x20000);
+		lowcase_table = talloc_named_const(NULL, 0x20000, "lowcase_table");
 		if (!lowcase_table) {
 			smb_panic("No memory for lowcase tables");
 		}
