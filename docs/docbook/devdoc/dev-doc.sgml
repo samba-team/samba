@@ -31,9 +31,11 @@
 <para>
 This book is a collection of documents that might be useful for 
 people developing samba or those interested in doing so.
-than one person can maintain.  The most recent version of this document
-can be found at <ulink url="http://www.samba.org/">http://www.samba.org/</ulink>
-on the "Documentation" page.  Please send updates to <ulink 
+It's nothing more than a collection of documents written by samba developers about 
+the internals of various parts of samba and the SMB protocol. It's still incomplete.
+The most recent version of this document
+can be found at <ulink url="http://devel.samba.org/">http://devel.samba.org/</ulink>.
+Please send updates to <ulink 
 url="mailto:jelmer@samba.org">jelmer@samba.org</ulink>.
 </para>
 
