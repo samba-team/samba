@@ -446,7 +446,7 @@ static BOOL do_command(char *dest, char *msg_name, int iparams, char **params)
 			break;
 		}
 
-		/* Delete a print job */
+		/* printer change notify */
 
 		if (strequal(cmd, "printer")) {
 			int attribute = -1;
@@ -497,7 +497,7 @@ static BOOL do_command(char *dest, char *msg_name, int iparams, char **params)
 	if ( check_notify_msgs )
 		print_notify_send_messages();
 
-		return (True);
+	return (True);
 }
 
  int main(int argc, char *argv[])
