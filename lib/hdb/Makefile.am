@@ -76,7 +76,7 @@ libhdb_la_LIBADD = \
 $(libhdb_la_OBJECTS): $(srcdir)/hdb-protos.h $(srcdir)/hdb-private.h
 
 CHECK_SYMBOLS = -lib hdb -asn1compile \
-	hdb_ _hdb initialize_hdb_error_table
+	hdb_ _hdb HDBFlags2int initialize_hdb_error_table
 
 $(srcdir)/hdb-protos.h:
 	cd $(srcdir); perl ../../cf/make-proto.pl -q -P comment -o hdb-protos.h $(hdb_source) || rm -f hdb-protos.h
