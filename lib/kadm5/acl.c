@@ -41,13 +41,13 @@
 RCSID("$Id$");
 
 static struct units acl_units[] = {
-    { "all",	KADM5_ACL_ALL },
-    { "list",	KADM5_ACL_LIST },
-    { "delete",	KADM5_ACL_DELETE },
-    { "chpass",	KADM5_ACL_CHPASS },
-    { "modify",	KADM5_ACL_MODIFY },
-    { "add",	KADM5_ACL_CREATE },
-    { "get", 	KADM5_ACL_GET },
+    { "all",	KADM5_PRIV_ALL },
+    { "cpw",	KADM5_PRIV_CPW },
+    { "list",	KADM5_PRIV_LIST },
+    { "delete",	KADM5_PRIV_DELETE },
+    { "modify",	KADM5_PRIV_MODIFY },
+    { "add",	KADM5_PRIV_ADD },
+    { "get", 	KADM5_PRIV_GET },
     { NULL }
 };
 
@@ -103,17 +103,17 @@ kadm5_ret_t
 _kadm5_acl_check_permission(kadm5_server_context *context, unsigned op)
 {
     unsigned res = ~context->acl_flags & op;
-    if(res & KADM5_ACL_GET)
+    if(res & KADM5_PRIV_GET)
 	return KADM5_AUTH_GET;
-    if(res & KADM5_ACL_CREATE)
+    if(res & KADM5_PRIV_ADD)
 	return KADM5_AUTH_ADD;
-    if(res & KADM5_ACL_MODIFY)
+    if(res & KADM5_PRIV_MODIFY)
 	return KADM5_AUTH_MODIFY;
-    if(res & KADM5_ACL_DELETE)
+    if(res & KADM5_PRIV_DELETE)
 	return KADM5_AUTH_DELETE;
-    if(res & KADM5_ACL_CHPASS)
+    if(res & KADM5_PRIV_CPW)
 	return KADM5_AUTH_CHANGEPW;
-    if(res & KADM5_ACL_LIST)
+    if(res & KADM5_PRIV_LIST)
 	return KADM5_AUTH_LIST;
     if(res)
 	return KADM5_AUTH_INSUFFICIENT;

@@ -175,13 +175,13 @@ typedef struct _kadm5_policy_ent_t {
 #define KADM5_CONFIG_FLAGS			(1 << 17)
 #define KADM5_CONFIG_ENCTYPES			(1 << 18)
 
-#define KADM5_ACL_GET		(1 << 0)
-#define KADM5_ACL_CREATE	(1 << 1)
-#define KADM5_ACL_MODIFY	(1 << 2)
-#define KADM5_ACL_CHPASS	(1 << 3)
-#define KADM5_ACL_DELETE	(1 << 4)
-#define KADM5_ACL_LIST		(1 << 5)
-#define KADM5_ACL_ALL		(0x7fffffff) /* XXX ~0 breaks in parse_flags */
+#define KADM5_PRIV_GET		(1 << 0)
+#define KADM5_PRIV_ADD 		(1 << 1)
+#define KADM5_PRIV_MODIFY	(1 << 2)
+#define KADM5_PRIV_DELETE	(1 << 3)
+#define KADM5_PRIV_LIST		(1 << 4)
+#define KADM5_PRIV_CPW		(1 << 5)
+#define KADM5_PRIV_ALL		(0x7fffffff) /* XXX ~0 breaks in parse_flags */
 
 typedef struct {
     int XXX;

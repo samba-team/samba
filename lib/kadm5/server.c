@@ -72,7 +72,7 @@ kadmind_dispatch(void *kadm_handle, krb5_storage *sp)
 	}
 	krb5_unparse_name_fixed(context->context, princ, name, sizeof(name));
 	krb5_warnx(context->context, "%s: %s %s", client, op, name);
-	ret = _kadm5_acl_check_permission(context, KADM5_ACL_GET);
+	ret = _kadm5_acl_check_permission(context, KADM5_PRIV_GET);
 	if(ret){
 	    krb5_free_principal(context->context, princ);
 	    goto fail;
@@ -94,7 +94,7 @@ kadmind_dispatch(void *kadm_handle, krb5_storage *sp)
 	    goto fail;
 	krb5_unparse_name_fixed(context->context, princ, name, sizeof(name));
 	krb5_warnx(context->context, "%s: %s %s", client, op, name);
-	ret = _kadm5_acl_check_permission(context, KADM5_ACL_DELETE);
+	ret = _kadm5_acl_check_permission(context, KADM5_PRIV_DELETE);
 	if(ret){
 	    krb5_free_principal(context->context, princ);
 	    goto fail;
@@ -123,7 +123,7 @@ kadmind_dispatch(void *kadm_handle, krb5_storage *sp)
 	krb5_unparse_name_fixed(context->context, ent.principal, 
 				name, sizeof(name));
 	krb5_warnx(context->context, "%s: %s %s", client, op, name);
-	ret = _kadm5_acl_check_permission(context, KADM5_ACL_CREATE);
+	ret = _kadm5_acl_check_permission(context, KADM5_PRIV_ADD);
 	if(ret){
 	    kadm5_free_principal_ent(context->context, &ent);
 	    memset(password, 0, strlen(password));
@@ -152,7 +152,7 @@ kadmind_dispatch(void *kadm_handle, krb5_storage *sp)
 	krb5_unparse_name_fixed(context->context, ent.principal, 
 				name, sizeof(name));
 	krb5_warnx(context->context, "%s: %s %s", client, op, name);
-	ret = _kadm5_acl_check_permission(context, KADM5_ACL_MODIFY);
+	ret = _kadm5_acl_check_permission(context, KADM5_PRIV_MODIFY);
 	if(ret){
 	    kadm5_free_principal_ent(context, &ent);
 	    goto fail;
@@ -178,7 +178,7 @@ kadmind_dispatch(void *kadm_handle, krb5_storage *sp)
 	krb5_warnx(context->context, "%s: %s %s -> %s", 
 		   client, op, name, name2);
 	ret = _kadm5_acl_check_permission(context, 
-					 KADM5_ACL_CREATE|KADM5_ACL_DELETE);
+					 KADM5_PRIV_ADD|KADM5_PRIV_DELETE);
 	if(ret){
 	    krb5_free_principal(context->context, princ);
 	    goto fail;
@@ -202,7 +202,7 @@ kadmind_dispatch(void *kadm_handle, krb5_storage *sp)
 	}
 	krb5_unparse_name_fixed(context->context, princ, name, sizeof(name));
 	krb5_warnx(context->context, "%s: %s %s", client, op, name);
-	ret = _kadm5_acl_check_permission(context, KADM5_ACL_CHPASS);
+	ret = _kadm5_acl_check_permission(context, KADM5_PRIV_CPW);
 	if(ret){
 	    krb5_free_principal(context->context, princ);
 	    goto fail;
@@ -222,7 +222,7 @@ kadmind_dispatch(void *kadm_handle, krb5_storage *sp)
 	    goto fail;
 	krb5_unparse_name_fixed(context->context, princ, name, sizeof(name));
 	krb5_warnx(context->context, "%s: %s %s", client, op, name);
-	ret = _kadm5_acl_check_permission(context, KADM5_ACL_CHPASS);
+	ret = _kadm5_acl_check_permission(context, KADM5_PRIV_CPW);
 	if(ret){
 	    krb5_free_principal(context->context, princ);
 	    goto fail;
