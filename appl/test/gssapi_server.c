@@ -156,8 +156,7 @@ proto (int sock, const char *service)
     input_chan_bindings.application_data.value = NULL;
 #endif
     
-    delegated_cred_handle = emalloc(sizeof(*delegated_cred_handle));
-    memset((char*)delegated_cred_handle, 0, sizeof(*delegated_cred_handle));
+    delegated_cred_handle = GSS_C_NO_CREDENTIAL;
     
     do {
 	read_token (sock, input_token);
@@ -186,15 +185,16 @@ proto (int sock, const char *service)
 	}
     } while(maj_stat & GSS_S_CONTINUE_NEEDED);
     
-    if (delegated_cred_handle->ccache) {
+    if (delegated_cred_handle != GSS_C_NO_CREDENTIAL) {
        krb5_context context;
 
        maj_stat = krb5_init_context(&context);
        maj_stat = krb5_cc_resolve(context, "FILE:/tmp/krb5cc_test", &ccache);
-       maj_stat = krb5_cc_copy_cache(context,
-                                      delegated_cred_handle->ccache, ccache);
+       maj_stat = gss_krb5_copy_ccache(&min_stat,
+				       delegated_cred_handle,
+				       ccache);
        krb5_cc_close(context, ccache);
-       krb5_cc_destroy(context, delegated_cred_handle->ccache);
+       gss_release_cred(&min_stat, &delegated_cred_handle);
     }
 
     if (fork_flag) {
