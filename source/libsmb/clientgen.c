@@ -150,6 +150,23 @@ static void cli_process_oplock(struct cli_state *cli)
 	cli->outbuf = oldbuf;
 }
 
+/****************************************************************************
+initialise a client structure
+****************************************************************************/
+void cli_init_creds(struct cli_state *cli, const struct ntuser_creds *usr)
+{
+        /* copy_nt_creds(&cli->usr, usr); */
+	safe_strcpy(cli->domain   , usr->domain   , sizeof(usr->domain   )-1);
+	safe_strcpy(cli->user_name, usr->user_name, sizeof(usr->user_name)-1);
+	memcpy(&cli->pwd, &usr->pwd, sizeof(usr->pwd));
+        cli->ntlmssp_flags = usr->ntlmssp_flags;
+        cli->ntlmssp_cli_flgs = usr != NULL ? usr->ntlmssp_flags : 0;
+
+        DEBUG(10,("cli_init_creds: user %s domain %s flgs: %x\nntlmssp_cli_flgs:%x\n",
+               cli->user_name, cli->domain,
+               cli->ntlmssp_flags,cli->ntlmssp_cli_flgs));
+}
+
 
 /****************************************************************************
 initialise a client structure
