@@ -12,8 +12,10 @@ noinst_LIBRARIES =
 endif
 
 noinst_PROGRAMS = testit
-testit_LDADD = libeditline.a $(LIB_tgetent) \
-	$(top_builddir)/lib/roken/libroken.la
+testit_LDADD = \
+	libeditline.a \
+	$(LIB_tgetent) \
+	$(LIB_roken)
 
 include_HEADERS = editline.h
 

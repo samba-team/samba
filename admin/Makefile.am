@@ -17,4 +17,4 @@ LDADD = \
 	$(top_builddir)/lib/asn1/libasn1.la \
 	$(top_builddir)/lib/sl/libsl.la \
 	$(LIB_readline) \
-	$(top_builddir)/lib/roken/libroken.la
+	$(LIB_roken)

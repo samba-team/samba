@@ -17,4 +17,4 @@ LDADD = ../libtelnet/libtelnet.a \
 	$(LIB_krb4) \
 	$(top_builddir)/lib/des/libdes.la \
 	$(LIB_tgetent) \
-	$(top_builddir)/lib/roken/libroken.la
+	$(LIB_roken)

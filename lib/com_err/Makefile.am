@@ -19,4 +19,6 @@ CLEANFILES = lex.c parse.c parse.h
 
 $(compile_et_OBJECTS): parse.h
 
-compile_et_LDADD = ../roken/libroken.la $(LEXLIB)
+compile_et_LDADD = \
+	$(LIB_roken) \
+	$(LEXLIB)

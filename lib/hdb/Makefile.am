@@ -16,7 +16,7 @@ LDADD = libhdb.la \
 	../krb5/libkrb5.la \
 	../asn1/libasn1.la \
 	../des/libdes.la \
-	../roken/libroken.la \
+	$(LIB_roken) \
 	$(DBLIB)
 
 lib_LTLIBRARIES = libhdb.la

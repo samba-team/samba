@@ -75,9 +75,13 @@ libasn1_la_SOURCES = \
 	timegm.c \
 	$(BUILT_SOURCES)
 
-asn1_compile_LDADD = ../roken/libroken.la $(LEXLIB)
+asn1_compile_LDADD = \
+	$(LIB_roken) $(LEXLIB)
 
-check_der_LDADD = libasn1.la ../com_err/libcom_err.la ../roken/libroken.la
+check_der_LDADD = \
+	libasn1.la \
+	../com_err/libcom_err.la \
+	$(LIB_roken)
 
 TESTS = check-der
 

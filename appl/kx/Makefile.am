@@ -58,5 +58,5 @@ LDADD = \
 	$(LIB_kafs)				\
 	$(LIB_krb4)				\
 	$(top_builddir)/lib/des/libdes.la	\
-	$(top_builddir)/lib/roken/libroken.la	\
+	$(LIB_roken)				\
 	$(LIB_XauReadAuth) $(X_PRE_LIBS) $(X_EXTRA_LIBS)

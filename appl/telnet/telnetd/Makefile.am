@@ -18,4 +18,4 @@ LDADD = \
 	$(top_builddir)/lib/des/libdes.la \
 	$(LIB_tgetent) \
 	$(LIB_logwtmp) \
-	$(top_builddir)/lib/roken/libroken.la
+	$(LIB_roken)

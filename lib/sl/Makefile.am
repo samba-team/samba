@@ -34,7 +34,9 @@ CLEANFILES = lex.c parse.c parse.h snprintf.c strtok_r.c
 
 $(mk_cmds_OBJECTS): parse.h
 
-LDADD = ../roken/libroken.la $(LEXLIB)
+LDADD = \
+	$(LIB_roken) \
+	$(LEXLIB)
 
 strtok_r.c:
 	$(LN_S) $(srcdir)/../roken/strtok_r.c .

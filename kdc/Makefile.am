@@ -40,7 +40,7 @@ hprop_LDADD = \
 	$(LIB_kdb) $(LIB_krb4) \
 	$(top_builddir)/lib/des/libdes.la \
 	$(top_builddir)/lib/asn1/libasn1.la \
-	$(top_builddir)/lib/roken/libroken.la \
+	$(LIB_roken) \
 	$(DBLIB) 
 
 LDADD = $(top_builddir)/lib/hdb/libhdb.la \
@@ -48,6 +48,6 @@ LDADD = $(top_builddir)/lib/hdb/libhdb.la \
 	$(LIB_krb4) \
 	$(top_builddir)/lib/des/libdes.la \
 	$(top_builddir)/lib/asn1/libasn1.la \
-	$(top_builddir)/lib/roken/libroken.la \
+	$(LIB_roken) \
 	$(DBLIB)
 
