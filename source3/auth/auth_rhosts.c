@@ -29,7 +29,7 @@ extern int DEBUGLEVEL;
  allows this user from this machine.
 ****************************************************************************/
 
-static BOOL check_user_equiv(char *user, char *remote, char *equiv_file)
+static BOOL check_user_equiv(const char *user, const char *remote, const char *equiv_file)
 {
   int plus_allowed = 1;
   char *file_host;
@@ -134,11 +134,11 @@ static BOOL check_user_equiv(char *user, char *remote, char *equiv_file)
 /****************************************************************************
 check for a possible hosts equiv or rhosts entry for the user
 ****************************************************************************/
-static BOOL check_hosts_equiv(char *user)
+static BOOL check_hosts_equiv(char *user) /* should be const... */
 {
   char *fname = NULL;
   pstring rhostsfile;
-  struct passwd *pass = Get_Pwnam(user,True);
+  struct passwd *pass = Get_Pwnam(user,False);
 
   if (!pass) 
     return(False);
@@ -147,16 +147,16 @@ static BOOL check_hosts_equiv(char *user)
 
   /* note: don't allow hosts.equiv on root */
   if (fname && *fname && (pass->pw_uid != 0)) {
-	  if (check_user_equiv(user,client_name(),fname))
+	  if (check_user_equiv(pass->pw_name,client_name(),fname))
 		  return(True);
   }
   
   if (lp_use_rhosts())
     {
-      char *home = get_user_home_dir(user);
+      char *home = pass->pw_dir;
       if (home) {
 	      slprintf(rhostsfile, sizeof(rhostsfile)-1, "%s/.rhosts", home);
-	      if (check_user_equiv(user,client_name(),rhostsfile))
+	      if (check_user_equiv(pass->pw_name,client_name(),rhostsfile))
 		      return(True);
       }
     }
