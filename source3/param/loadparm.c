@@ -207,6 +207,10 @@ typedef struct
 	int iLockSpinTime;
 	char *szLdapMachineSuffix;
 	char *szLdapUserSuffix;
+#ifdef WITH_LDAP_SAMCONFIG
+	int ldap_port;
+	char *szLdapServer;
+#endif
 	int ldap_ssl;
 	char *szLdapSuffix;
 	char *szLdapFilter;
@@ -1003,6 +1007,10 @@ static struct parm_struct parm_table[] = {
 
 	{"Ldap Options", P_SEP, P_SEPARATOR},
 	
+#ifdef WITH_LDAP_SAMCONFIG
+	{"ldap server", P_STRING, P_GLOBAL, &Globals.szLdapServer, NULL, NULL, 0},
+	{"ldap port", P_INTEGER, P_GLOBAL, &Globals.ldap_port, NULL, NULL, 0}, 
+#endif
 	{"ldap suffix", P_STRING, P_GLOBAL, &Globals.szLdapSuffix, handle_ldap_suffix, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"ldap machine suffix", P_STRING, P_GLOBAL, &Globals.szLdapMachineSuffix, handle_ldap_machine_suffix, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"ldap user suffix", P_STRING, P_GLOBAL, &Globals.szLdapUserSuffix, handle_ldap_user_suffix, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
@@ -1367,6 +1375,11 @@ static void init_globals(void)
 	   a large number of sites (tridge) */
 	Globals.bHostnameLookups = False;
 
+#ifdef WITH_LDAP_SAMCONFIG
+	string_set(&Globals.szLdapServer, "localhost");
+	Globals.ldap_port = 636;
+#endif /* WITH_LDAP_SAMCONFIG */
+
 	string_set(&Globals.szLdapSuffix, "");
 	string_set(&Globals.szLdapMachineSuffix, "");
 	string_set(&Globals.szLdapUserSuffix, "");
@@ -1582,6 +1595,11 @@ FN_GLOBAL_STRING(lp_winbind_separator, &Globals.szWinbindSeparator)
 FN_GLOBAL_BOOL(lp_winbind_enum_users, &Globals.bWinbindEnumUsers)
 FN_GLOBAL_BOOL(lp_winbind_enum_groups, &Globals.bWinbindEnumGroups)
 FN_GLOBAL_BOOL(lp_winbind_use_default_domain, &Globals.bWinbindUseDefaultDomain)
+
+#ifdef WITH_LDAP_SAMCONFIG
+FN_GLOBAL_STRING(lp_ldap_server, &Globals.szLdapServer)
+FN_GLOBAL_INTEGER(lp_ldap_port, &Globals.ldap_port)
+#endif
 FN_GLOBAL_STRING(lp_ldap_suffix, &Globals.szLdapSuffix)
 FN_GLOBAL_STRING(lp_ldap_machine_suffix, &Globals.szLdapMachineSuffix)
 FN_GLOBAL_STRING(lp_ldap_user_suffix, &Globals.szLdapUserSuffix)
