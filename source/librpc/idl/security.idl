@@ -186,7 +186,7 @@ interface security
 	   so you can't copy them using assignment */
 	typedef [public,noprint] struct {
 		uint8  sid_rev_num;             /**< SID revision number */
-		[range(0,5)] int8  num_auths;  /**< Number of sub-authorities */
+		[range(0,15)] int8  num_auths;  /**< Number of sub-authorities */
 		uint8  id_auth[6];              /**< Identifier Authority */
 		uint32 sub_auths[num_auths];
 	} dom_sid;
