@@ -304,11 +304,8 @@ static BOOL test_QueryValue(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct p
 	r.in.handle = handle;
 	r.in.value_name.name = valuename;
 	r.in.type = &zero;
-	r.in.unknown1 = 0;
-	r.in.unknown2 = 0;
-	r.in.offered = &offered;
-	r.in.value_len1 = &offered;
-	r.in.value_len2 = &zero;
+	r.in.size = &offered;
+	r.in.length = &zero;
 
 	status = dcerpc_winreg_QueryValue(p, mem_ctx, &r);
 	if(NT_STATUS_IS_ERR(status)) {
