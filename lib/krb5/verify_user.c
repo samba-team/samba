@@ -45,7 +45,7 @@ krb5_verify_user(krb5_context context,
 		 krb5_principal principal,
 		 krb5_ccache ccache,
 		 const char *password,
-		 int secure,
+		 krb5_boolean secure,
 		 const char *service)
 {
 
