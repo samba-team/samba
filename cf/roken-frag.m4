@@ -262,6 +262,26 @@ AC_FIND_FUNC_NO_LIBS(pidfile,util,
 #include <util.h>
 #endif],0)
 
+AC_FIND_FUNC_NO_LIBS(getaddrinfo,,
+[#ifdef HAVE_NETDB_H
+#include <netdb.h>
+#endif],[0,0,0,0])
+
+AC_FIND_FUNC_NO_LIBS(getnameinfo,,
+[#ifdef HAVE_NETDB_H
+#include <netdb.h>
+#endif],[0,0,0,0,0,0,0])
+
+AC_FIND_FUNC_NO_LIBS(freeaddrinfo,,
+[#ifdef HAVE_NETDB_H
+#include <netdb.h>
+#endif],[0])
+
+AC_FIND_FUNC_NO_LIBS(gai_strerror,,
+[#ifdef HAVE_NETDB_H
+#include <netdb.h>
+#endif],[0])
+
 AC_BROKEN([					\
 	chown					\
 	copyhostent				\
@@ -275,10 +295,7 @@ AC_BROKEN([					\
 	fchown					\
 	flock					\
 	fnmatch					\
-	freeaddrinfo				\
 	freehostent				\
-	gai_strerror				\
-	getaddrinfo				\
 	getcwd					\
 	getdtablesize				\
 	getegid					\
@@ -288,7 +305,6 @@ AC_BROKEN([					\
 	getifaddrs				\
 	getipnodebyaddr				\
 	getipnodebyname				\
-	getnameinfo				\
 	getopt					\
 	gettimeofday				\
 	getuid					\
