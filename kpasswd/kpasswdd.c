@@ -45,7 +45,6 @@ RCSID("$Id$");
 #endif
 
 static krb5_context context;
-static void *kadm5_handle;
 static krb5_log_facility *log_facility;
 
 static sig_atomic_t exit_flag = 0;
@@ -281,23 +280,42 @@ change (krb5_auth_context auth_context,
 	krb5_data *pwd_data)
 {
     krb5_error_code ret;
-    char *c;
+    char *client;
     kadm5_principal_ent_rec ent;
     krb5_key_data *kd;
     krb5_salt salt;
     krb5_keyblock new_keyblock;
     const char *pwd_reason;
     int unchanged;
+    kadm5_config_params conf;
+    void *kadm5_handle;
 
-    krb5_unparse_name (context, principal, &c);
+    memset (&conf, 0, sizeof(conf));
+    
+    krb5_unparse_name (context, principal, &client);
 
-    krb5_warnx (context, "Changing password for %s", c);
-    free (c);
+    ret = kadm5_init_with_password_ctx(context, 
+				       client,
+				       NULL,
+				       KADM5_ADMIN_SERVICE,
+				       &conf, 0, 0, 
+				       &kadm5_handle);
+    if (ret) {
+	free (client);
+	krb5_warn (context, ret, "kadm5_init_with_password_ctx");
+	reply_priv (auth_context, s, sa, sa_size, 2,
+		    "kadm5_init_with_password_ctx failed");
+	return;
+    }
+
+    krb5_warnx (context, "Changing password for %s", client);
+    free (client);
 
     pwd_reason = (*passwd_quality_check) (context, principal, pwd_data);
     if (pwd_reason != NULL ) {
 	krb5_warnx (context, "%s", pwd_reason);
 	reply_priv (auth_context, s, sa, sa_size, 4, pwd_reason);
+	kadm5_destroy (kadm5_handle);
 	return;
     }
 
@@ -309,6 +327,7 @@ change (krb5_auth_context auth_context,
 	krb5_warn (context, ret, "kadm5_get_principal");
 	reply_priv (auth_context, s, sa, sa_size, 2,
 		    "kadm5_get_principal failed");
+	kadm5_destroy (kadm5_handle);
 	return;
     }
 
@@ -369,6 +388,7 @@ change (krb5_auth_context auth_context,
     reply_priv (auth_context, s, sa, sa_size, 0, "password changed");
 out:
     kadm5_free_principal_ent (kadm5_handle, &ent);
+    kadm5_destroy (kadm5_handle);
 }
 
 static int
@@ -630,9 +650,6 @@ int num_args = sizeof(args) / sizeof(args[0]);
 int
 main (int argc, char **argv)
 {
-    krb5_error_code ret;
-    kadm5_config_params conf;
-
     int optind;
     
     optind = krb5_program_setup(&context, argc, argv, args, num_args, NULL);
@@ -672,16 +689,6 @@ main (int argc, char **argv)
 #endif
 
     setup_passwd_quality_check(context);
-    memset (&conf, 0, sizeof(conf));
-    
-    ret = kadm5_init_with_password_ctx(context, 
-				       KADM5_ADMIN_SERVICE,
-				       NULL,
-				       KADM5_ADMIN_SERVICE,
-				       &conf, 0, 0, 
-				       &kadm5_handle);
-    if (ret)
-	krb5_err (context, 1, ret, "kadm5_init_with_password_ctx");
 
 #ifdef HAVE_SIGACTION
     {
