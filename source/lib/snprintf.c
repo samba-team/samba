@@ -707,7 +707,7 @@ static void dopr_outch (char *buffer, size_t *currlen, size_t maxlen, char c)
 #endif /* !defined(HAVE_SNPRINTF) || !defined(HAVE_VSNPRINTF) */
 
 #ifndef HAVE_VSNPRINTF
-int vsnprintf (char *str, size_t count, const char *fmt, va_list args)
+ int vsnprintf (char *str, size_t count, const char *fmt, va_list args)
 {
   str[0] = 0;
   dopr(str, count, fmt, args);
@@ -718,9 +718,9 @@ int vsnprintf (char *str, size_t count, const char *fmt, va_list args)
 #ifndef HAVE_SNPRINTF
 /* VARARGS3 */
 #ifdef HAVE_STDARGS
-int snprintf (char *str,size_t count,const char *fmt,...)
+ int snprintf (char *str,size_t count,const char *fmt,...)
 #else
-int snprintf (va_alist) va_dcl
+ int snprintf (va_alist) va_dcl
 #endif
 {
 #ifndef HAVE_STDARGS
@@ -749,7 +749,7 @@ int snprintf (va_alist) va_dcl
 #ifndef LONG_STRING
 #define LONG_STRING 1024
 #endif
-int main (void)
+ int main (void)
 {
   char buf1[LONG_STRING];
   char buf2[LONG_STRING];
