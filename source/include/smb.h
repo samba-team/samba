@@ -611,4 +611,22 @@ enum brl_type {READ_LOCK, WRITE_LOCK, PENDING_READ_LOCK, PENDING_WRITE_LOCK};
 #define STR_LEN_NOTERM 256 /* the length field is the unterminated length */
 
 
+/*
+  filesystem attribute bits
+*/
+#define FS_ATTR_CASE_SENSITIVE_SEARCH             0x00000001
+#define FS_ATTR_CASE_PRESERVED_NAMES              0x00000002
+#define FS_ATTR_UNICODE_ON_DISK                   0x00000004
+#define FS_ATTR_PERSISTANT_ACLS                   0x00000008
+#define FS_ATTR_COMPRESSION                       0x00000010
+#define FS_ATTR_QUOTAS                            0x00000020
+#define FS_ATTR_SPARSE_FILES                      0x00000040
+#define FS_ATTR_REPARSE_POINTS                    0x00000080
+#define FS_ATTR_REMOTE_STORAGE                    0x00000100
+#define FS_ATTR_IS_COMPRESSED                     0x00008000
+#define FS_ATTR_OBJECT_IDS                        0x00010000
+#define FS_ATTR_ENCRYPTION                        0x00020000
+#define FS_ATTR_NAMED_STREAMS                     0x00040000
+
+
 #endif /* _SMB_H */

@@ -115,9 +115,9 @@ NTSTATUS pvfs_fsinfo(struct ntvfs_module_context *ntvfs,
 
 	case RAW_QFS_ATTRIBUTE_INFO:
 	case RAW_QFS_ATTRIBUTE_INFORMATION:
-		fs->attribute_info.out.fs_attr = 0;
+		fs->attribute_info.out.fs_attr                   = pvfs->fs_attribs;
 		fs->attribute_info.out.max_file_component_length = 255;
-		fs->attribute_info.out.fs_type.s = req->tcon->fs_type;
+		fs->attribute_info.out.fs_type.s                 = req->tcon->fs_type;
 		return NT_STATUS_OK;
 
 	case RAW_QFS_QUOTA_INFORMATION:
