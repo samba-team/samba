@@ -5662,9 +5662,12 @@ See also the \fB"strict sync"\fP parameter\&.
 This parameter maps how Samba debug messages are logged onto the
 system syslog logging levels\&. Samba debug level zero maps onto syslog
 LOG_ERR, debug level one maps onto LOG_WARNING, debug level two maps
-to LOG_NOTICE, debug level three maps onto LOG_INFO\&.  The parameter
-sets the threshold for doing the mapping, all Samba debug messages
-above this threshold are mapped to syslog LOG_DEBUG messages\&.
+onto LOG_NOTICE, debug level three maps onto LOG_INFO\&. All higher 
+levels are mapped to LOG_DEBUG\&.
+.IP 
+This paramter sets the threshold for sending messages to syslog\&. 
+Only messages with debug level less than this value will be sent 
+to syslog\&.
 .IP 
 \fBDefault:\fP
 \f(CW	syslog = 1\fP
