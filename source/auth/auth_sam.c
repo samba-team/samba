@@ -379,7 +379,7 @@ NTSTATUS sam_make_server_info(TALLOC_CTX *mem_ctx, void *sam_ctx,
 	}
 	
 	if (group_ret > 0 && 
-	    !(groupSIDs = talloc_array_p(*server_info, struct dom_sid *, group_ret))) {
+	    !(groupSIDs = talloc_array(*server_info, struct dom_sid *, group_ret))) {
 		talloc_free(*server_info);
 		return NT_STATUS_NO_MEMORY;
 	}

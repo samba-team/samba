@@ -94,7 +94,7 @@ static void smb_read_callback(struct smbcli_request *req)
 	}
 
 	/* initiate another read request, as we only got part of a fragment */
-	state->data.data = talloc_realloc(state, state->data.data, frag_length);
+	state->data.data = talloc_realloc(state, state->data.data, uint8_t, frag_length);
 
 	io->readx.in.mincnt = MIN(state->p->srv_max_xmit_frag, 
 				  frag_length - state->received);

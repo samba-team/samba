@@ -229,7 +229,7 @@ ssize_t convert_string_talloc(TALLOC_CTX *ctx, charset_t from, charset_t to,
 	outbuf = NULL;
 convert:
 	destlen = 2 + (destlen*3);
-	ob = (char *)talloc_realloc(ctx, outbuf, destlen);
+	ob = talloc_realloc(ctx, outbuf, char, destlen);
 	if (!ob) {
 		DEBUG(0, ("convert_string_talloc: realloc failed!\n"));
 		talloc_free(outbuf);

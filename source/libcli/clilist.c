@@ -81,13 +81,13 @@ static BOOL smbcli_list_new_callback(void *private, union smb_search_data *file)
 	/* add file info to the dirlist pool */
 	tdl = talloc_realloc(state, 
 			     state->dirlist,
-			     state->dirlist_len + sizeof(struct clilist_file_info));
-
+			     struct clilist_file_info,
+			     state->dirlist_len + 1);
 	if (!tdl) {
 		return False;
 	}
 	state->dirlist = tdl;
-	state->dirlist_len += sizeof(struct clilist_file_info);
+	state->dirlist_len++;
 
 	interpret_long_filename(state->info_level, file, &state->dirlist[state->total_received]);
 
@@ -227,13 +227,14 @@ static BOOL smbcli_list_old_callback(void *private, union smb_search_data *file)
 	/* add file info to the dirlist pool */
 	tdl = talloc_realloc(state,
 			     state->dirlist,
-			     state->dirlist_len + sizeof(struct clilist_file_info));
+			     struct clilist_file_info,
+			     state->dirlist_len + 1);
 
 	if (!tdl) {
 		return False;
 	}
 	state->dirlist = tdl;
-	state->dirlist_len += sizeof(struct clilist_file_info);
+	state->dirlist_len++;
 
 	interpret_short_filename(state->info_level, file, &state->dirlist[state->total_received]);
 

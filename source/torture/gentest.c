@@ -1358,7 +1358,7 @@ static BOOL handler_writex(int instance)
 	parm[0].writex.in.wmode = gen_bits_mask(0xFFFF);
 	parm[0].writex.in.remaining = gen_io_count();
 	parm[0].writex.in.count = gen_io_count();
-	parm[0].writex.in.data = talloc_zero(current_op.mem_ctx, parm[0].writex.in.count);
+	parm[0].writex.in.data = talloc_zero_size(current_op.mem_ctx, parm[0].writex.in.count);
 
 	GEN_COPY_PARM;
 	GEN_SET_FNUM(writex.in.fnum);

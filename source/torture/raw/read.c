@@ -90,7 +90,7 @@ static BOOL test_read(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	const char *test_data = "TEST DATA";
 	uint_t seed = time(NULL);
 
-	buf = talloc_zero(mem_ctx, maxsize);
+	buf = talloc_zero_size(mem_ctx, maxsize);
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return False;
@@ -214,7 +214,7 @@ static BOOL test_lockread(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	const char *test_data = "TEST DATA";
 	uint_t seed = time(NULL);
 
-	buf = talloc_zero(mem_ctx, maxsize);
+	buf = talloc_zero_size(mem_ctx, maxsize);
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return False;
@@ -357,7 +357,7 @@ static BOOL test_readx(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	const char *test_data = "TEST DATA";
 	uint_t seed = time(NULL);
 
-	buf = talloc_zero(mem_ctx, maxsize);
+	buf = talloc_zero_size(mem_ctx, maxsize);
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return False;
@@ -551,7 +551,7 @@ static BOOL test_readbraw(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	const char *test_data = "TEST DATA";
 	uint_t seed = time(NULL);
 
-	buf = talloc_zero(mem_ctx, maxsize);
+	buf = talloc_zero_size(mem_ctx, maxsize);
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return False;

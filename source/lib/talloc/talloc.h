@@ -32,17 +32,26 @@ typedef void TALLOC_CTX;
 #define __LINESTR__       _STRING_LINE2_(__LINE__)
 #define __location__ __FILE__ ":" __LINESTR__
 
+#ifndef TALLOC_DEPRECATED
+#define TALLOC_DEPRECATED 0
+#endif
+
 /* useful macros for creating type checked pointers */
 #define talloc(ctx, type) (type *)talloc_named_const(ctx, sizeof(type), #type)
-#define talloc_p(ctx, type) talloc(ctx, type)
 #define talloc_size(ctx, size) talloc_named_const(ctx, size, __location__)
-#define talloc_zero(ctx, size) _talloc_zero(ctx, size, __location__)
-#define talloc_realloc(ctx, ptr, size) _talloc_realloc(ctx, ptr, size, __location__)
+
 #define talloc_new(ctx) talloc_named_const(ctx, 0, "talloc_new: " __location__)
-#define talloc_zero_p(ctx, type) (type *)_talloc_zero(ctx, sizeof(type), #type)
-#define talloc_zero_array_p(ctx, type, count) (type *)talloc_zero_array(ctx, sizeof(type), count, __location__)
-#define talloc_array_p(ctx, type, count) (type *)talloc_array(ctx, sizeof(type), count, __location__)
-#define talloc_realloc_p(ctx, p, type, count) (type *)talloc_realloc_array(ctx, p, sizeof(type), count, __location__)
+
+#define talloc_zero(ctx, type) (type *)_talloc_zero(ctx, sizeof(type), #type)
+#define talloc_zero_size(ctx, size) _talloc_zero(ctx, size, __location__)
+
+#define talloc_zero_array(ctx, type, count) (type *)_talloc_zero_array(ctx, sizeof(type), count, __location__)
+#define talloc_array(ctx, type, count) (type *)_talloc_array(ctx, sizeof(type), count, __location__)
+#define talloc_array_size(ctx, size, count) _talloc_array(ctx, size, count, __location__)
+
+#define talloc_realloc(ctx, p, type, count) (type *)_talloc_realloc_array(ctx, p, sizeof(type), count, __location__)
+#define talloc_realloc_size(ctx, ptr, size) _talloc_realloc(ctx, ptr, size, __location__)
+
 #define talloc_memdup(t, p, size) _talloc_memdup(t, p, size, __location__)
 
 #define talloc_destroy(ctx) talloc_free(ctx)
@@ -53,6 +62,14 @@ typedef void TALLOC_CTX;
 
 #define data_blob(ptr, size) data_blob_named(ptr, size, "DATA_BLOB: "__location__)
 #define data_blob_talloc(ctx, ptr, size) data_blob_talloc_named(ctx, ptr, size, "DATA_BLOB: "__location__)
+
+
+#if TALLOC_DEPRECATED
+#define talloc_zero_p(ctx, type) talloc_zero(ctx, type)
+#define talloc_p(ctx, type) talloc(ctx, type)
+#define talloc_array_p(ctx, type, count) talloc_array(ctx, type, count)
+#define talloc_realloc_p(ctx, p, type, count) talloc_realloc(ctx, p, type, count)
+#endif
 
 #ifndef PRINTF_ATTRIBUTE
 #define PRINTF_ATTRIBUTE(a1, a2)
@@ -89,9 +106,9 @@ char *talloc_vasprintf(const void *t, const char *fmt, va_list ap) PRINTF_ATTRIB
 char *talloc_asprintf(const void *t, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
 char *talloc_asprintf_append(char *s,
 			     const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
-void *talloc_array(const void *ctx, size_t el_size, unsigned count, const char *name);
-void *talloc_zero_array(const void *ctx, size_t el_size, unsigned count, const char *name);
-void *talloc_realloc_array(const void *ctx, void *ptr, size_t el_size, unsigned count, const char *name);
+void *_talloc_array(const void *ctx, size_t el_size, unsigned count, const char *name);
+void *_talloc_zero_array(const void *ctx, size_t el_size, unsigned count, const char *name);
+void *_talloc_realloc_array(const void *ctx, void *ptr, size_t el_size, unsigned count, const char *name);
 void *talloc_realloc_fn(const void *context, void *ptr, size_t size);
 void *talloc_autofree_context(void);
 

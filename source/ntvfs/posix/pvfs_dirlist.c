@@ -137,9 +137,9 @@ NTSTATUS pvfs_list_start(struct pvfs_state *pvfs, struct pvfs_filename *name,
 	dir->no_wildcard = False;
 	dir->end_of_search = False;
 	dir->offset = 0;
-	dir->name_cache = talloc_zero_array_p(dir, 
-					      struct name_cache_entry, 
-					      NAME_CACHE_SIZE);
+	dir->name_cache = talloc_zero_array(dir, 
+					    struct name_cache_entry, 
+					    NAME_CACHE_SIZE);
 	if (dir->name_cache == NULL) {
 		talloc_free(dir);
 		return NT_STATUS_NO_MEMORY;

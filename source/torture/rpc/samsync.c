@@ -878,7 +878,7 @@ static BOOL samsync_handle_account(TALLOC_CTX *mem_ctx, struct samsync_state *sa
 
 	TEST_SEC_DESC_EQUAL(account->sdbuf, lsa, &acct_handle);
 
-	found_priv_in_lsa = talloc_zero_array_p(mem_ctx, BOOL, account->privilege_entries);
+	found_priv_in_lsa = talloc_zero_array(mem_ctx, BOOL, account->privilege_entries);
 
 	e.in.handle = &acct_handle;
 

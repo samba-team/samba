@@ -35,8 +35,8 @@ BOOL torture_local_idtree(void)
 
 	idr = idr_init(ctx);
 
-	ids = talloc_zero_array_p(ctx, int, n);
-	present = talloc_zero_array_p(ctx, int, n);
+	ids = talloc_zero_array(ctx, int, n);
+	present = talloc_zero_array(ctx, int, n);
 
 	for (i=0;i<n;i++) {
 		ids[i] = -1;

@@ -398,7 +398,7 @@ static BOOL test_misc(void)
 	talloc_report(root, stdout);
 
 
-	p2 = talloc_zero(p1, 20);
+	p2 = talloc_zero_size(p1, 20);
 	if (p2[19] != 0) {
 		printf("Failed to give zero memory\n");
 		return False;
@@ -520,41 +520,41 @@ static BOOL test_realloc(void)
 	p1 = talloc_size(root, 10);
 	CHECK_SIZE(p1, 10);
 
-	p1 = talloc_realloc(NULL, p1, 20);
+	p1 = talloc_realloc_size(NULL, p1, 20);
 	CHECK_SIZE(p1, 20);
 
 	talloc_new(p1);
 
-	p2 = talloc_realloc(p1, NULL, 30);
+	p2 = talloc_realloc_size(p1, NULL, 30);
 
 	talloc_new(p1);
 
-	p2 = talloc_realloc(p1, p2, 40);
+	p2 = talloc_realloc_size(p1, p2, 40);
 
 	CHECK_SIZE(p2, 40);
 	CHECK_SIZE(root, 60);
 	CHECK_BLOCKS(p1, 4);
 
-	p1 = talloc_realloc(NULL, p1, 20);
+	p1 = talloc_realloc_size(NULL, p1, 20);
 	CHECK_SIZE(p1, 60);
 
 	talloc_increase_ref_count(p2);
-	if (talloc_realloc(NULL, p2, 5) != NULL) {
+	if (talloc_realloc_size(NULL, p2, 5) != NULL) {
 		printf("failed: talloc_realloc() on a referenced pointer should fail\n");
 		return False;
 	}
 	CHECK_BLOCKS(p1, 4);
 
-	talloc_realloc(NULL, p2, 0);
-	talloc_realloc(NULL, p2, 0);
+	talloc_realloc_size(NULL, p2, 0);
+	talloc_realloc_size(NULL, p2, 0);
 	CHECK_BLOCKS(p1, 3);
 
-	if (talloc_realloc(NULL, p1, 0x7fffffff) != NULL) {
+	if (talloc_realloc_size(NULL, p1, 0x7fffffff) != NULL) {
 		printf("failed: oversize talloc should fail\n");
 		return False;
 	}
 
-	talloc_realloc(NULL, p1, 0);
+	talloc_realloc_size(NULL, p1, 0);
 
 	CHECK_BLOCKS(root, 1);
 	CHECK_SIZE(root, 0);

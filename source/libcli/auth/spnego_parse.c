@@ -52,9 +52,9 @@ static BOOL read_negTokenInit(struct asn1_data *asn1, struct spnego_negTokenInit
 			token->mechTypes = talloc_p(NULL, const char *);
 			for (i = 0; !asn1->has_error &&
 				     0 < asn1_tag_remaining(asn1); i++) {
-				token->mechTypes = 
-					talloc_realloc(NULL, token->mechTypes, (i + 2) *
-						       sizeof(*token->mechTypes));
+				token->mechTypes = talloc_realloc(NULL, 
+								  token->mechTypes, 
+								  const char *, i+2);
 				asn1_read_OID(asn1, token->mechTypes + i);
 				if (token->mechTypes[i]) {
 					talloc_steal(token->mechTypes, 

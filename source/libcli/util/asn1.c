@@ -33,7 +33,7 @@ BOOL asn1_write(struct asn1_data *data, const void *p, int len)
 	if (data->has_error) return False;
 	if (data->length < data->ofs+len) {
 		uint8_t *newp;
-		newp = talloc_realloc(NULL, data->data, data->ofs+len);
+		newp = talloc_realloc(NULL, data->data, uint8_t, data->ofs+len);
 		if (!newp) {
 			asn1_free(data);
 			data->has_error = True;

@@ -5,7 +5,7 @@ Andrew Tridgell
 September 2004
 
 The most current version of this document is available at
-   http://samba.org/ftp/unpacked/samba4/talloc_guide.txt
+   http://samba.org/ftp/unpacked/samba4/source/lib/talloc/talloc_guide.txt
 
 If you are used to talloc from Samba3 then please read this carefully,
 as talloc has changed a lot.
@@ -19,7 +19,7 @@ between a "talloc context" and a "talloc pointer". Any pointer
 returned from talloc() is itself a valid talloc context. This means
 you can do this:
 
-  struct foo *X = talloc_p(mem_ctx, struct foo);
+  struct foo *X = talloc(mem_ctx, struct foo);
   X->name = talloc_strdup(X, "foo");
 
 and the pointer X->name would be a "child" of the talloc context "X"
@@ -34,7 +34,7 @@ talloc_free().
 
 If you find this confusing, then I suggest you run the LOCAL-TALLOC
 smbtorture test to watch talloc in action. You may also like to add
-your own tests to source/torture/local/talloc.c to clarify how some
+your own tests to source/lib/talloc/testsuite.c to clarify how some
 particular situation is handled.
 
 
@@ -270,13 +270,13 @@ particularly useful for creating a new temporary working context.
 
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-void *talloc_realloc(const void *context, void *ptr, size_t size);
+(type *)talloc_realloc(const void *context, void *ptr, type, count);
 
-The talloc_realloc() function changes the size of a talloc
+The talloc_realloc() macro changes the size of a talloc
 pointer. It has the following equivalences:
 
-  talloc_realloc(context, NULL, size) ==> talloc_size(context, size);
-  talloc_realloc(context, ptr, 0)     ==> talloc_free(ptr);
+  talloc_realloc(context, NULL, type, 1) ==> talloc(context, type);
+  talloc_realloc(context, ptr, type, 0)  ==> talloc_free(ptr);
 
 The "context" argument is only used if "ptr" is not NULL, otherwise it
 is ignored.
@@ -284,6 +284,13 @@ is ignored.
 talloc_realloc() returns the new pointer, or NULL on failure. The call
 will fail either due to a lack of memory, or because the pointer has
 more than one parent (see talloc_reference()).
+
+
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+void *talloc_realloc_size(const void *context, void *ptr, size_t size);
+
+the talloc_realloc_size() function is useful when the type is not 
+known so the typesafe talloc_realloc() cannot be used.
 
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -403,12 +410,18 @@ full talloc report on 'root' (total 18 bytes in 8 blocks)
 
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-void *talloc_zero(const void *ctx, size_t size);
+(type *)talloc_zero(const void *ctx, type);
 
-The talloc_zero() function is equivalent to:
+The talloc_zero() macro is equivalent to:
 
-  ptr = talloc_size(ctx, size);
-  if (ptr) memset(ptr, 0, size);
+  ptr = talloc(ctx, type);
+  if (ptr) memset(ptr, 0, sizeof(type));
+
+
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+void *talloc_zero_size(const void *ctx, size_t size)
+
+The talloc_zero_size() function is useful when you don't have a known type
 
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -469,25 +482,19 @@ string to the given string.
 
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-void *talloc_array_p(const void *ctx, type, uint_t count);
+(type *)talloc_array(const void *ctx, type, uint_t count);
 
-The talloc_array_p() macro is equivalent to:
+The talloc_array() macro is equivalent to:
 
   (type *)talloc_size(ctx, sizeof(type) * count);
 
 except that it provides integer overflow protection for the multiply,
 returning NULL if the multiply overflows.
 
-
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-void *talloc_realloc_p(const void *ctx, void *ptr, type, uint_t count);
+void *talloc_array_size(const void *ctx, size_t size, uint_t count);
 
-The talloc_realloc_p() macro is equivalent to:
-
-  (type *)talloc_realloc(ctx, ptr, sizeof(type) * count);
-
-except that it provides integer overflow protection for the multiply,
-returning NULL if the multiply overflows.
+The talloc_array_size() function is useful when the type is not known
 
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

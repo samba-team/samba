@@ -111,7 +111,7 @@ NTSTATUS smb_raw_trans2_recv(struct smbcli_request *req,
 
 	if (parms->out.setup_count > 0) {
 		int i;
-		parms->out.setup = talloc_array(mem_ctx, 2, parms->out.setup_count, "setup");
+		parms->out.setup = talloc_array(mem_ctx, uint16_t, parms->out.setup_count);
 		if (!parms->out.setup) {
 			req->status = NT_STATUS_NO_MEMORY;
 			return smbcli_request_destroy(req);
@@ -439,7 +439,7 @@ NTSTATUS smb_raw_nttrans_recv(struct smbcli_request *req,
 
 	if (parms->out.setup_count > 0) {
 		int i;
-		parms->out.setup = talloc_array(mem_ctx, 2, parms->out.setup_count, "setup");
+		parms->out.setup = talloc_array(mem_ctx, uint16_t, parms->out.setup_count);
 		if (!parms->out.setup) {
 			req->status = NT_STATUS_NO_MEMORY;
 			return smbcli_request_destroy(req);

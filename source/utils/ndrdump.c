@@ -146,7 +146,7 @@ static void show_functions(const struct dcerpc_interface_table *p)
 
 	mem_ctx = talloc_init("ndrdump");
 
-	st = talloc_zero(mem_ctx, f->struct_size);
+	st = talloc_zero_size(mem_ctx, f->struct_size);
 	if (!st) {
 		printf("Unable to allocate %d bytes\n", f->struct_size);
 		exit(1);
