@@ -1397,7 +1397,7 @@ BOOL api_pipe_netsec_process(pipes_struct *p, prs_struct *rpc_in)
 			   SENDER_IS_INITIATOR,
 			   &netsec_chk,
 			   prs_data_p(rpc_in)+old_offset, data_len)) {
-		DEBUG(0,("failed to decode PDU\n"));
+		DEBUG(3,("failed to decode PDU\n"));
 		return False;
 	}
 
