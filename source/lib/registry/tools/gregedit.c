@@ -63,23 +63,6 @@ static void gtk_show_werror(WERROR err)
  	gtk_widget_destroy (dialog);
 }
 
-static void treeview_add_val(REG_VAL *val)
-{
-	GtkTreeIter iter;
-	gtk_list_store_append(store_vals, &iter);
-	gtk_list_store_set (store_vals,
-					    &iter, 
-						0,
-						reg_val_name(val),
-						1,
-						str_regtype(reg_val_type(val)),
-						2,
-						reg_val_data_string(val),
-						3, 
-						val,
-						-1);
-}
-
 static void expand_key(GtkTreeView *treeview, GtkTreeIter *parent, GtkTreePath *arg2)
 {
 	GtkTreeIter iter, tmpiter;
@@ -394,18 +377,32 @@ void on_key_activate (GtkTreeView *treeview,
 	REG_KEY *k;
 	REG_VAL *val;
 	WERROR error;
+	GtkTreeIter parent;
 
-//FIXME	gtk_tree_model_get(GTK_TREE_MODEL(store_keys), iter, 1, &k, -1);
+	gtk_tree_model_get_iter(GTK_TREE_MODEL(store_keys), &parent, path);
+	gtk_tree_model_get(GTK_TREE_MODEL(store_keys), &parent, 1, &k, -1);
+
+	g_assert(k);
 
 	gtk_list_store_clear(store_vals);
 
 	for(i = 0; W_ERROR_IS_OK(error = reg_key_get_value_by_index(k, i, &val)); i++) {
-		treeview_add_val(val);
+		GtkTreeIter iter;
+		gtk_list_store_append(store_vals, &iter);
+		gtk_list_store_set (store_vals,
+					    &iter, 
+						0,
+						reg_val_name(val),
+						1,
+						str_regtype(reg_val_type(val)),
+						2,
+						reg_val_data_string(val),
+						3, 
+						val,
+						-1);
 	}
 
 	if(!W_ERROR_EQUAL(error, WERR_NO_MORE_ITEMS)) gtk_show_werror(error);
-
-	return;
 }
 
 GtkWidget* create_mainwin (void)
@@ -567,15 +564,29 @@ GtkWidget* create_mainwin (void)
 
   tree_vals = gtk_tree_view_new ();
     /* Column names */
-  curcol = gtk_tree_view_column_new_with_attributes ("Name", gtk_cell_renderer_text_new(), NULL);
+
+  curcol = gtk_tree_view_column_new ();
+  gtk_tree_view_column_set_title(curcol, "Name");
+  renderer = gtk_cell_renderer_text_new();
+  gtk_tree_view_column_pack_start(curcol, renderer, True);
   gtk_tree_view_append_column(GTK_TREE_VIEW(tree_vals), curcol);
+  gtk_tree_view_column_add_attribute(curcol, renderer, "text", 0);
+
+  curcol = gtk_tree_view_column_new ();
+  gtk_tree_view_column_set_title(curcol, "Type");
+  renderer = gtk_cell_renderer_text_new();
+  gtk_tree_view_column_pack_start(curcol, renderer, True);
+  gtk_tree_view_append_column(GTK_TREE_VIEW(tree_vals), curcol);
+  gtk_tree_view_column_add_attribute(curcol, renderer, "text", 1);
+
+  curcol = gtk_tree_view_column_new ();
+  gtk_tree_view_column_set_title(curcol, "Value");
+  renderer = gtk_cell_renderer_text_new();
+  gtk_tree_view_column_pack_start(curcol, renderer, True);
+  gtk_tree_view_append_column(GTK_TREE_VIEW(tree_vals), curcol);
+  gtk_tree_view_column_add_attribute(curcol, renderer, "text", 2);
 
   
-  curcol = gtk_tree_view_column_new_with_attributes ("Type", gtk_cell_renderer_text_new(), NULL);
-  gtk_tree_view_append_column(GTK_TREE_VIEW(tree_vals), curcol);
-                                                                                
-  curcol = gtk_tree_view_column_new_with_attributes ("Value", gtk_cell_renderer_text_new(), NULL);
-  gtk_tree_view_append_column(GTK_TREE_VIEW(tree_vals), curcol);
   gtk_widget_show (tree_vals);
   gtk_container_add (GTK_CONTAINER (scrolledwindow2), tree_vals);
 

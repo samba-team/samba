@@ -407,8 +407,9 @@ static BOOL test_AbortSystemShutdown(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
 	struct winreg_AbortSystemShutdown r;
 	NTSTATUS status;
+	uint16 server = 0x0;
 
-	r.in.server = 0x0;
+	r.in.server = &server;
 	
 	status = dcerpc_winreg_AbortSystemShutdown(p, mem_ctx, &r);
 
@@ -555,6 +556,9 @@ BOOL torture_rpc_winreg(int dummy)
 	}
 
 	if(!test_InitiateSystemShutdown(p, mem_ctx, "spottyfood", 30))
+		ret = False;
+
+	if(!test_AbortSystemShutdown(p, mem_ctx))
 		ret = False;
 
 	for (i = 0; i < ARRAY_SIZE(open_fns); i++) {

@@ -247,9 +247,11 @@
 	/******************/
 	/* Function: 0x18 */
 	WERROR winreg_InitiateSystemShutdown(
+		[in]	winreg_String hostname,
 		[in]	winreg_String message,
 		[in]	uint32 timeout,
-		[in]	uint16 flags
+		[in]	uint16 flags,
+		[out]	uint16 status
 	);
 
 	/******************/

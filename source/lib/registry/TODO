@@ -19,6 +19,9 @@ reg_backend_ldb:
 reg_backend_wine.c:
  - finish 
 
+regshell:
+ - support for security descriptors
+ 
 gregedit.c:
  - support for editing values / adding values / deleting values
  - support for adding/deleting keys
