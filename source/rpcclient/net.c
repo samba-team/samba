@@ -30,6 +30,7 @@
  int main(int argc, char *argv[])
 {
 	add_net_commands();
+	add_dfs_commands();
 
 	return command_main(argc, argv);
 }

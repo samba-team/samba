@@ -148,12 +148,15 @@ void cmd_sam_ntchange_pwd(struct client_info *info, int argc, char *argv[])
 	uchar nt_oldhash[16];
 	uchar lm_oldhash[16];
 	fstring acct_name;
+	fstring domain;
 
 	fstrcpy(srv_name, "\\\\");
 	fstrcat(srv_name, info->dest_host);
 	strupper(srv_name);
 
 	report(out_hnd, "SAM NT Password Change\n");
+
+	safe_strcpy(domain, usr_creds->ntc.domain, sizeof(domain));
 
 	if (argc >= 2)
 	{
@@ -182,7 +185,7 @@ void cmd_sam_ntchange_pwd(struct client_info *info, int argc, char *argv[])
 	}
 
 	/* establish a connection. */
-	if (msrpc_sam_ntchange_pwd(srv_name, NULL, acct_name,
+	if (msrpc_sam_ntchange_pwd(srv_name, domain, acct_name,
 				   lm_oldhash, nt_oldhash, new_passwd))
 	{
 		report(out_hnd, "NT Password changed OK\n");

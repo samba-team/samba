@@ -111,7 +111,7 @@ SPROGS = bin/smbd bin/lsarpcd bin/svcctld bin/spoolssd bin/samrd \
          bin/nmbd bin/swat
 PROGS1 = bin/smbclient bin/testparm bin/testprns bin/smbrun bin/smbstatus 
 PROGS2 = bin/rpcclient bin/smbpasswd bin/make_smbcodepage bin/debug2html 
-PROGS3 = bin/regedit bin/samedit bin/svccontrol bin/cmdat bin/spoolss
+PROGS3 = bin/regedit bin/samedit bin/net bin/svccontrol bin/cmdat bin/spoolss
 PROGS4 = @WRAP@ @WRAP32@
 #MPROGS = @MPROGS@
 PROGS = $(PROGS1) $(PROGS2) $(PROGS3) $(PROGS4) $(MPROGS) bin/nmblookup bin/make_printerdef 
@@ -519,9 +519,11 @@ CMDCLIENT_LIBS = $(SAMBA_LIBS) $(UBIQXLIB)
 NETCLIENT_OBJ = lib/cmd_interp.o \
 		rpcclient/net.o \
 		rpcclient/net_cmds.o \
+		rpcclient/dfs_cmds.o \
 		rpcclient/display_srv.o \
 		rpcclient/cmd_wkssvc.o \
 		rpcclient/cmd_brs.o \
+		rpcclient/cmd_dfs.o \
 		rpcclient/cmd_srvsvc.o \
            $(SIDDB_OBJ) \
 		$(STUB_UID_OBJ)
