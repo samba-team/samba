@@ -17,6 +17,10 @@ Tue Jun 10 00:35:54 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
 
 Sun Jun  8 03:51:55 1997  Assar Westerlund  <assar@sics.se>
 
+	* kdc/kerberos5.c: Fix PA-ENC-TS-ENC
+
+ 	* kdc/connect.c(process_request): Set `new'
+	
 	* lib/krb5/get_in_tkt.c: Do PA-ENC-TS-ENC the correct way.
 
 	* lib: Added editline,sl,roken.
