@@ -50,6 +50,14 @@ krb5_address_order(krb5_context context,
 }
 
 krb5_error_code
+krb5_copy_address(krb5_context context,
+		  const krb5_address *inaddr,
+		  krb5_address *outaddr)
+{
+    copy_HostAddress(inaddr, outaddr);
+}
+
+krb5_error_code
 krb5_copy_addresses(krb5_context context,
 		    const krb5_addresses *inaddr,
 		    krb5_addresses *outaddr)
