@@ -10,6 +10,12 @@
 .ds LH Internet Draft
 .ds RH November, 1997
 .ds CH Kerberos vs firewalls
+.de Ip
+.in 6
+.ta 3
+.ti -3
+\\$1\t\c
+..
 .hy 0
 .ad l
 .in 0
@@ -20,14 +26,14 @@ Network Working Group	Assar Westerlund
 Internet-Draft	Johan Danielsson
 November, 1997	PDC, KTH
 Expire in six months	
+.fi
 
 .ce
 Kerberos vs firewalls
 
-.SH
+.ti 0
 Status of this Memo
 
-.LP
 .in 3
 This document is an Internet-Draft.  Internet-Drafts are working
 documents of the Internet Engineering Task Force (IETF), its
@@ -38,10 +44,10 @@ Internet-Drafts are draft documents valid for a maximum of six
 months and may be updated, replaced, or obsoleted by other
 documents at any time.  It is inappropriate to use Internet-
 Drafts as reference material or to cite them other than as
-"work in progress."
+\*Qwork in progress.\*U
 
 To view the entire list of current Internet-Drafts, please check
-the "1id-abstracts.txt" listing contained in the Internet-Drafts
+the \*Q1id-abstracts.txt\*U listing contained in the Internet-Drafts
 Shadow Directories on ftp.is.co.za (Africa), ftp.nordu.net
 (Europe), munnari.oz.au (Pacific Rim), ds.internic.net (US East
 Coast), or ftp.isi.edu (US West Coast).
@@ -52,8 +58,6 @@ Distribution of this memo is unlimited.  Please send comments to the
 .ti 0
 Abstract
 
-.in 3
-
 .ti 0
 Introduction
 
@@ -62,8 +66,8 @@ insecure networks.
 
 Firewalling is a technique for achieving an illusion of security by
 putting restrictions on what kinds of packets and how these are sent
-between the internal (so called ``secure'') network and the global (or
-``insecure'') Internet.
+between the internal (so called \*Qsecure\*U) network and the global (or
+\*Qinsecure\*U) Internet.
 
 .ti 0
 Definitions
@@ -81,38 +85,37 @@ client, for example telnetd.
 .ti 0
 Firewalls
 
-A firewall is usually placed between the ``inside'' and the
-``outside'' and is supposed to protect the inside from the evils on
+A firewall is usually placed between the \*Qinside\*U and the
+\*Qoutside\*U and is supposed to protect the inside from the evils on
 the outside.  There are different kinds of firewalls.  The main
 differences are in the way they forward packets.
 
-.IP 1
+.Ip 1
 The most straight forward type is the one that just imposes
 restrictions on incoming packets. Such a firewall could be described
-as a router that just throws away packets that match some
-criteria.
+as a router that just throws away packets that match some criteria.
 
-.IP 2
-They may also ``hide'' some or all addresses on the inside of the
+.Ip 2
+They may also \*Qhide\*U some or all addresses on the inside of the
 firewall, replacing the addresses in the outgoing packets with the
 address of the firewall (aka network address translation, or NAT). NAT
 can also be used without any packet filtering, for instance when you
 have more than one host sharing a single address (for example, with a
 dialed-in PPP connection).
 
-.LP
+.in 3
 There are also firewalls that does NAT both on the inside and the
 outside (a server on the inside will see this as a connection from the
 firewall).
 
-.IP 3
+.Ip 3
 A third type is the proxy type firewall, that parses the contents of
 the packets, basically acting as a server to the client, and as a
 client to the server (man-in-the-middle). If Kerberos is to be used
 with this kind of firewall, a protocol module that handles KDC
 requests has to be written.
 
-.LP
+.in 3
 This type of firewall might also add extra trouble when used with
 kerberised versions of protocols that the proxy understands, in
 addition to the ones mentioned below.
@@ -187,11 +190,13 @@ addition to those mentioned in [RFC1510].
 .ti 0
 References
 
-.in 3
-[RFC1510] Kohl, J. and Neuman, C., "The Kerberos Network
-Authentication Service (V5)", RFC 1510, September 1993.
+[RFC959] Postel, J. and Reynolds, J., \*QFILE TRANSFER PROTOCOL
+(FTP)\*U, RFC 969, October 1985
 
-[RFC2228] Horowitz, M. and Lunt, S., "FTP Security Extensions",
+[RFC1510] Kohl, J. and Neuman, C., \*QThe Kerberos Network
+Authentication Service (V5)\*U, RFC 1510, September 1993.
+
+[RFC2228] Horowitz, M. and Lunt, S., \*QFTP Security Extensions\*U,
 RFC2228, October 1997.
 
 .ti 0
