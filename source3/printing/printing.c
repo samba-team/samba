@@ -163,7 +163,7 @@ static void print_unix_job(int snum, print_queue_struct *q)
 	fstrcpy(pj.filename, "");
 	fstrcpy(pj.jobname, q->file);
 	fstrcpy(pj.user, q->user);
-	fstrcpy(pj.qname, lp_servicename(snum));
+	pj.snum = snum;
 
 	print_job_store(jobid, &pj);
 }
@@ -185,7 +185,7 @@ static int traverse_fn_delete(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void 
 	memcpy(&jobid, key.dptr, sizeof(jobid));
 	memcpy(&pjob,  data.dptr, sizeof(pjob));
 
-	if (strcmp(lp_servicename(ts->snum), pjob.qname)) {
+	if (ts->snum != pjob.snum) {
 		/* this isn't for the queue we are looking at */
 		ts->total_jobs++;
 		return 0;
@@ -552,7 +552,7 @@ int print_job_snum(int jobid)
 	struct printjob *pjob = print_job_find(jobid);
 	if (!pjob) return -1;
 
-	return lp_servicenumber(pjob->qname);
+	return pjob->snum;
 }
 
 /****************************************************************************
@@ -959,7 +959,7 @@ int print_job_start(struct current_user *user, int snum, char *jobname)
 		fstrcpy(pjob.user, uidtoname(user->uid));
 	}
 
-	fstrcpy(pjob.qname, lp_servicename(snum));
+	pjob.snum = snum;
 
 	/* lock the database */
 	tdb_lock_bystring(tdb, "INFO/nextjob");
@@ -1113,7 +1113,7 @@ static int traverse_fn_queue(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void *
 	memcpy(&pjob,  data.dptr, sizeof(pjob));
 
 	/* maybe it isn't for this queue */
-	if (ts->snum != print_queue_snum(pjob.qname)) return 0;
+	if (ts->snum != pjob.snum) return 0;
 
 	if (ts->qcount >= ts->maxcount) return 0;
 
@@ -1148,7 +1148,7 @@ static int traverse_count_fn_queue(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, 
 	memcpy(&pjob,  data.dptr, sizeof(pjob));
 
 	/* maybe it isn't for this queue */
-	if (ts->snum != print_queue_snum(pjob.qname)) return 0;
+	if (ts->snum != pjob.snum) return 0;
 
 	ts->count++;
 
