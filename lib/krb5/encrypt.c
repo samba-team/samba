@@ -369,41 +369,6 @@ krb5_generate_random_keyblock(krb5_context context,
 }
 
 
-/* is this something that anyone wants to use? */
-static krb5_error_code
-krb5_key_to_string(krb5_context context,
-		   krb5_keyblock key,
-		   krb5_boolean include_keydata,
-		   char **string)
-{
-    char *s;
-    char tmp[32]; /* enough to hold name of key type */
-    int i;
-    if(include_keydata)
-	snprintf(tmp, sizeof(tmp), "<keytype %u>", key.keytype);
-    else
-	snprintf(tmp, sizeof(tmp), "<keytype %u, length %u>", 
-		 key.keytype, key.keyvalue.length);
-    for(i = 0; i < sizeof(km) / sizeof(km[0]); i++)
-	if(km[i].ktype == key.keytype){
-	    snprintf(tmp, sizeof(tmp), "%s", km[i].name);
-	    break;
-	}
-    if(include_keydata){
-	char *k = malloc(2 * key.keyvalue.length + 1);
-	*k = 0;
-	for(i = 0; i < key.keyvalue.length; i++){
-	    unsigned char c = ((unsigned char*)key.keyvalue.data)[i];
-	    sprintf(k + strlen(k), "%02x", c);
-	}
-	asprintf(string, "%s (key = %s)", tmp, k);
-	free(k);
-    }else
-	*string = strdup(tmp);
-    return 0;
-}
-
-
 krb5_error_code
 krb5_keytype_to_etype(krb5_context context, krb5_keytype ktype, 
 		      krb5_enctype *etype)
