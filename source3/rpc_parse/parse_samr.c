@@ -5610,7 +5610,7 @@ static BOOL sam_io_user_info25(char *desc, SAM_USER_INFO_25 * usr, prs_struct *p
 	if (usr == NULL)
 		return False;
 
-	prs_debug(ps, depth, desc, "sam_io_user_info23");
+	prs_debug(ps, depth, desc, "sam_io_user_info25");
 	depth++;
 
 	if(!prs_align(ps))
