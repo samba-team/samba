@@ -1,5 +1,13 @@
 2003-04-23  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/Makefile.am: add krb5_c_ checksum related functions
+
+	* lib/krb5/krb5_c_make_checksum.3: document krb5_c_ checksum
+	related functions
+
+	* lib/krb5/mit_glue.c: add compat mit krb5_c checksum related
+	functions
+
 	* lib/asn1/k5.asn1: add ETYPE-INFO2 and ETYPE-INFO2-ENTRY
 	
 2003-04-22  Love Hörnquist Åstrand  <lha@it.su.se>
