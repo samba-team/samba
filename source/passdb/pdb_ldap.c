@@ -555,7 +555,7 @@ static int ldapsam_search(struct ldapsam_privates *ldap_state,
 			continue;
 		
 		rc = ldap_search_s(ldap_state->ldap_struct, base, scope, 
-				   filter, (char **)attrs, attrsonly, res);
+				   utf8_filter, (char **)attrs, attrsonly, res);
 	}
 	
 	if (rc == LDAP_SERVER_DOWN) {
@@ -584,7 +584,7 @@ static int ldapsam_modify(struct ldapsam_privates *ldap_state, const char *dn, L
 		if ((rc = ldapsam_retry_open(ldap_state,&attempts)) != LDAP_SUCCESS)
 			continue;
 		
-		rc = ldap_modify_s(ldap_state->ldap_struct, dn, attrs);
+		rc = ldap_modify_s(ldap_state->ldap_struct, utf8_dn, attrs);
 	}
 	
 	if (rc == LDAP_SERVER_DOWN) {
@@ -613,7 +613,7 @@ static int ldapsam_add(struct ldapsam_privates *ldap_state, const char *dn, LDAP
 		if ((rc = ldapsam_retry_open(ldap_state,&attempts)) != LDAP_SUCCESS)
 			continue;
 		
-		rc = ldap_add_s(ldap_state->ldap_struct, dn, attrs);
+		rc = ldap_add_s(ldap_state->ldap_struct, utf8_dn, attrs);
 	}
 	
 	if (rc == LDAP_SERVER_DOWN) {
@@ -642,7 +642,7 @@ static int ldapsam_delete(struct ldapsam_privates *ldap_state, char *dn)
 		if ((rc = ldapsam_retry_open(ldap_state,&attempts)) != LDAP_SUCCESS)
 			continue;
 		
-		rc = ldap_delete_s(ldap_state->ldap_struct, dn);
+		rc = ldap_delete_s(ldap_state->ldap_struct, utf8_dn);
 	}
 	
 	if (rc == LDAP_SERVER_DOWN) {
@@ -1919,8 +1919,13 @@ static NTSTATUS ldapsam_modify_entry(struct pdb_methods *my_methods,
 		char *retoid;
 		struct berval *retdata;
 		char *utf8_password;
+		char *utf8_dn;
 
 		if (push_utf8_allocate(&utf8_password, pdb_get_plaintext_passwd(newpwd)) == (size_t)-1) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		if (push_utf8_allocate(&utf8_dn, dn) == (size_t)-1) {
 			return NT_STATUS_NO_MEMORY;
 		}
 
@@ -1931,17 +1936,19 @@ static NTSTATUS ldapsam_modify_entry(struct pdb_methods *my_methods,
 		}
 
 		ber_printf (ber, "{");
-		ber_printf (ber, "ts", LDAP_TAG_EXOP_X_MODIFY_PASSWD_ID,dn);
+		ber_printf (ber, "ts", LDAP_TAG_EXOP_X_MODIFY_PASSWD_ID, utf8_dn);
 	        ber_printf (ber, "ts", LDAP_TAG_EXOP_X_MODIFY_PASSWD_NEW, utf8_password);
 	        ber_printf (ber, "N}");
 
 	        if ((rc = ber_flatten (ber, &bv))<0) {
 			DEBUG(0,("ber_flatten returns a value <0\n"));
 			ber_free(ber,1);
+			SAFE_FREE(utf8_dn);
 			SAFE_FREE(utf8_password);
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 		
+		SAFE_FREE(utf8_dn);
 		SAFE_FREE(utf8_password);
 		ber_free(ber, 1);
 
