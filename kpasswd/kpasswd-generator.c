@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 2000 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -63,6 +63,7 @@ read_words (const char *filename, char ***ret_w)
 static int
 nop_prompter (krb5_context context,
 	      void *data,
+	      const char *name,
 	      const char *banner,
 	      int num_prompts,
 	      krb5_prompt prompts[])
