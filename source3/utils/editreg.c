@@ -1114,7 +1114,7 @@ SK_MAP *alloc_sk_map_entry(REGF *regf, KEY_SEC_DESC *tmp, int sk_off)
     (regf->sk_map)[ndx].sk_off = sk_off;
     (regf->sk_map)[ndx].key_sec_desc = tmp;
     regf->sk_count++;
-    if (regf->sk_map[2].key_sec_desc == 0x19) { /* Take us over */
+    if (regf->sk_map[2].key_sec_desc == (KEY_SEC_DESC *)0x19) { /* Take us over */
       fprintf(stderr, "%0x\n", regf->sk_map[7].key_sec_desc->sec_desc);
     }
   }
