@@ -306,8 +306,14 @@ OM_uint32 gss_acquire_cred
 	return (ret);
     } 
     *minor_status = 0;
-    if (time_rec)
-	*time_rec = handle->lifetime;
+    if (time_rec) {
+	ret = gssapi_lifetime_left(minor_status,
+				   handle->lifetime,
+				   time_rec);
+
+	if (ret)
+	    return ret;
+    }
     handle->usage = cred_usage;
     *output_cred_handle = handle;
     return (GSS_S_COMPLETE);
