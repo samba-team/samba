@@ -37,6 +37,7 @@ static BOOL test_chkpath(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	NTSTATUS status;
 	BOOL ret = True;
 	int fnum = -1;
+	int fnum1 = -1;
 
 	io.in.path = BASEDIR;
 
@@ -80,6 +81,61 @@ static BOOL test_chkpath(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	status = smb_raw_chkpath(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_INVALID);
 
+	io.in.path = BASEDIR"\\.\\";
+	printf("testing %s\n", io.in.path);
+	status = smb_raw_chkpath(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_INVALID);
+
+	io.in.path = BASEDIR"\\.\\nt";
+	printf("testing %s\n", io.in.path);
+	status = smb_raw_chkpath(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_PATH_NOT_FOUND);
+
+	io.in.path = BASEDIR"\\.\\.\\nt";
+	printf("testing %s\n", io.in.path);
+	status = smb_raw_chkpath(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_PATH_NOT_FOUND);
+
+	io.in.path = BASEDIR"\\nt";
+	printf("testing %s\n", io.in.path);
+	status = smb_raw_chkpath(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	io.in.path = BASEDIR".\\foo";
+	printf("testing %s\n", io.in.path);
+	status = smb_raw_chkpath(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_PATH_NOT_FOUND);
+
+	io.in.path = ".\\";
+	printf("testing %s\n", io.in.path);
+	status = smb_raw_chkpath(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_INVALID);
+
+	io.in.path = ".\\.";
+	printf("testing %s\n", io.in.path);
+	status = smb_raw_chkpath(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_PATH_NOT_FOUND);
+
+	io.in.path = ".\\.\\.\\.\\foo\\.\\.\\";
+	printf("testing %s\n", io.in.path);
+	status = smb_raw_chkpath(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_PATH_NOT_FOUND);
+
+	io.in.path = BASEDIR".\\.\\.\\.\\foo\\.\\.\\";
+	printf("testing %s\n", io.in.path);
+	status = smb_raw_chkpath(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_PATH_NOT_FOUND);
+
+	io.in.path = BASEDIR".\\.\\.\\.\\foo\\..\\.\\";
+	printf("testing %s\n", io.in.path);
+	status = smb_raw_chkpath(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_PATH_NOT_FOUND);
+
+	io.in.path = BASEDIR".";
+	printf("testing %s\n", io.in.path);
+	status = smb_raw_chkpath(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+
 	io.in.path = "\\";
 	printf("testing %s\n", io.in.path);
 	status = smb_raw_chkpath(cli->tree, &io);
@@ -115,7 +171,29 @@ static BOOL test_chkpath(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	status = smb_raw_chkpath(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_NOT_A_DIRECTORY);
 
+	/* We expect this open to fail with the same error code as the chkpath below. */
+	fnum1 = smbcli_nt_create_full(cli->tree, BASEDIR "\\nt\\Visual Studio\\VB98\\vb6.exe\\3",
+				0, GENERIC_RIGHTS_FILE_ALL_ACCESS,
+				FILE_ATTRIBUTE_NORMAL,
+				NTCREATEX_SHARE_ACCESS_DELETE|
+				NTCREATEX_SHARE_ACCESS_READ|
+				NTCREATEX_SHARE_ACCESS_WRITE,
+				NTCREATEX_DISP_OVERWRITE_IF,
+				0, 0);
+	status = smbcli_nt_error(cli->tree);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_PATH_NOT_FOUND);
+
 	io.in.path = BASEDIR "\\nt\\Visual Studio\\VB98\\vb6.exe\\3";
+	printf("testing %s\n", io.in.path);
+	status = smb_raw_chkpath(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_PATH_NOT_FOUND);
+
+	io.in.path = BASEDIR "\\nt\\Visual Studio\\VB98\\vb6.exe\\3\\foo";
+	printf("testing %s\n", io.in.path);
+	status = smb_raw_chkpath(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_PATH_NOT_FOUND);
+
+	io.in.path = BASEDIR "\\nt\\3\\foo";
 	printf("testing %s\n", io.in.path);
 	status = smb_raw_chkpath(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OBJECT_PATH_NOT_FOUND);
