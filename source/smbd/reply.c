@@ -2458,7 +2458,7 @@ int allocate_space_error(char *inbuf,char *outbuf, int errno_val)
 	if (errno_val == ENOSPC) {
 #endif
 		SSVAL(outbuf,smb_flg2,SVAL(outbuf, smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);
-		return(ERROR(0,errno == ENOSPC ? NT_STATUS_DISK_FULL : NT_STATUS_QUOTA_EXCEEDED));
+		return(ERROR(0,NT_STATUS_DISK_FULL));
 	}
 
 	return (UNIXERROR(ERRHRD,ERRdiskfull));
