@@ -62,6 +62,7 @@ copy_oid (const heim_oid *from, heim_oid *to)
     to->components = malloc(to->length * sizeof(*to->components));
     if (to->length != 0 && to->components == NULL)
 	return ENOMEM;
-    memcpy(to->components, from->components, to->length);
+    memcpy(to->components, from->components,
+	   to->length * sizeof(*to->components));
     return 0;
 }
