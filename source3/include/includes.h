@@ -823,11 +823,6 @@ struct printjob;
 #define QSORT_CAST (int (*)(const void *, const void *))
 #endif
 
-/* this guess needs to be improved (tridge) */
-#if (defined(STAT_STATVFS) || defined(STAT_STATVFS64)) && !defined(SYSV)
-#define SYSV 1
-#endif
-
 #ifndef DEFAULT_PRINTING
 #ifdef HAVE_CUPS
 #define DEFAULT_PRINTING PRINT_CUPS
