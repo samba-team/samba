@@ -1221,7 +1221,7 @@ int print_queue_length(int snum, print_status_struct *pstatus)
 
 static int get_total_jobs(void)
 {
-	int total_jobs;
+	int total_jobs = 0;
 	int snum;
 	int services = lp_numservices();
 
