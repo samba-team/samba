@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -42,10 +42,12 @@ RCSID("$Id$");
 
 krb5_error_code
 krb5_free_host_realm(krb5_context context,
-		     char ** realmlist)
+		     krb5_realm *realmlist)
 {
-    char **p;
+    krb5_realm *p;
 
+    if(realmlist == NULL)
+	return 0;
     for (p = realmlist; *p; ++p)
 	free (*p);
     free (realmlist);
