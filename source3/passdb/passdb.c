@@ -823,11 +823,14 @@ BOOL local_sid_to_uid(uid_t *puid, const DOM_SID *psid, enum SID_NAME_USE *name_
 		return False;
 	
 	if (pdb_getsampwsid(sam_user, psid)) {
-		*puid = pdb_get_uid(sam_user);
-		if (*puid == -1) {
+		
+		if (!(pdb_get_init_flag(sam_user) & FLAG_SAM_UID)) { 
 			pdb_free_sam(&sam_user);
 			return False;
 		}
+
+		*puid = pdb_get_uid(sam_user);
+			
 		DEBUG(10,("local_sid_to_uid: SID %s -> uid (%u) (%s).\n", sid_to_string( str, psid),
 			  (unsigned int)*puid, pdb_get_username(sam_user)));
 		pdb_free_sam(&sam_user);
