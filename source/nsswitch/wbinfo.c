@@ -157,6 +157,31 @@ static BOOL wbinfo_list_domains(void)
 	return True;
 }
 
+
+/* show sequence numbers */
+static BOOL wbinfo_show_sequence(void)
+{
+	struct winbindd_response response;
+	fstring name;
+
+	ZERO_STRUCT(response);
+
+	/* Send request */
+	if (winbindd_request(WINBINDD_SHOW_SEQUENCE, NULL, &response) !=
+	    NSS_STATUS_SUCCESS) {
+		return False;
+	}
+
+	/* Display response */
+	if (response.extra_data) {
+		char *extra_data = (char *)response.extra_data;
+		printf("%s", extra_data);
+		SAFE_FREE(response.extra_data);
+	}
+
+	return True;
+}
+
 /* Check trust account password */
 
 static BOOL wbinfo_check_secret(void)
@@ -539,6 +564,7 @@ static void usage(void)
 	printf("\t-r user\t\t\tget user groups\n");
 	printf("\t-a user%%password\tauthenticate user\n");
 	printf("\t-p 'ping' winbindd to see if it is alive\n");
+	printf("\t--sequence\t\tshow sequence numbers of all domains\n");
 }
 
 /* Main program */
@@ -556,6 +582,7 @@ int main(int argc, char **argv)
 	static char *string_arg;
 	static int int_arg;
 	BOOL got_command = False;
+	enum {OPT_SEQUENCE=1};
 
 	struct poptOption long_options[] = {
 
@@ -571,6 +598,7 @@ int main(int argc, char **argv)
 		{ "sid-to-gid", 'Y', POPT_ARG_STRING, &string_arg, 'Y' },
 		{ "check-secret", 't', POPT_ARG_NONE, 0, 't' },
 		{ "trusted-domains", 'm', POPT_ARG_NONE, 0, 'm' },
+		{ "sequence", OPT_SEQUENCE, POPT_ARG_NONE, 0, OPT_SEQUENCE },
 		{ "user-groups", 'r', POPT_ARG_STRING, &string_arg, 'r' },
  		{ "authenticate", 'a', POPT_ARG_STRING, &string_arg, 'a' },
 		{ "set-auth-user", 0, POPT_ARG_STRING, &string_arg, OPT_SET_AUTH_USER },
@@ -686,6 +714,12 @@ int main(int argc, char **argv)
 		case 'm':
 			if (!wbinfo_list_domains()) {
 				printf("Could not list trusted domains\n");
+				return 1;
+			}
+			break;
+		case OPT_SEQUENCE:
+			if (!wbinfo_show_sequence()) {
+				printf("Could not show sequence numbers\n");
 				return 1;
 			}
 			break;
