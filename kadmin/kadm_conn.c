@@ -32,7 +32,6 @@
  */
 
 #include "kadmin_locl.h"
-#include <sys/select.h>
 
 RCSID("$Id$");
 
@@ -91,16 +90,18 @@ parse_ports(krb5_context context, const char *str)
 static pid_t pgrp;
 int term_flag;
 
-void
+static RETSIGTYPE
 wait_term(int sig)
 {
     term_flag = 1;
+    SIGRETURN(0);
 }
 
-void
+static RETSIGTYPE
 terminate(int sig)
 {
     killpg(pgrp, sig);
+    SIGRETURN(0);
 }
 
 static int
