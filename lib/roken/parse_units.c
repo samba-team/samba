@@ -89,9 +89,7 @@ parse_something (const char *s, const struct units *units,
 
 	val = strtod (p, &next); /* strtol(p, &next, 0); */
 	if (val == 0 && p == next) {
-	    if(accept_no_val_p)
-		val = 1;
-	    else
+	    if(!accept_no_val_p)
 		return -1;
 	}
 	p = next;
@@ -104,6 +102,7 @@ parse_something (const char *s, const struct units *units,
 	    break;
 	} else if (*p == '+') {
 	    ++p;
+	    val = 1;
 	} else if (*p == '-') {
 	    ++p;
 	    val = -1;
@@ -150,6 +149,9 @@ parse_something (const char *s, const struct units *units,
 static int
 acc_units(int res, int val, unsigned mult)
 {
+    if (val == 0)
+	val = 1;
+
     return res + val * mult;
 }
 
@@ -173,6 +175,8 @@ acc_flags(int res, int val, unsigned mult)
 	return res | mult;
     else if(val == -1)
 	return res & ~mult;
+    else if (val == 0)
+	return mult;
     else
 	return -1;
 }
