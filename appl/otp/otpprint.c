@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995-1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -37,16 +37,34 @@
  */
 
 #include "otp_locl.h"
+#include <getarg.h>
 
 RCSID("$Id$");
 
+static int extendedp;
+static int count = 10;
+static int hexp;
+static char* alg_string;
+static int version_flag;
+static int help_flag;
+
+struct getargs args[] = {
+    { "extended", 'e', arg_flag, &extendedp, "print keys in extended format" },
+    { "count", 'n', arg_integer, &count, "number of keys to print" },
+    { "hexadecimal", 'h', arg_flag, &hexp, "output in hexadecimal" },
+    { "hash", 'f', arg_string, &alg_string, 
+      "hash algorithm (md4, md5, or sha)", "algorithm"},
+    { "version", 0, arg_flag, &version_flag },
+    { "help", 0, arg_flag, &help_flag }
+};
+
+int num_args = sizeof(args) / sizeof(args[0]);
+
 static void
-usage (void)
+usage(int code)
 {
-  fprintf(stderr,
-	  "Usage: %s [-e] [-h] [-n count] [-f alg] num seed\n",
-	  __progname);
-  exit (1);
+    arg_printusage(args, num_args, NULL, "num seed");
+    exit(code);
 }
 
 static int
@@ -63,7 +81,7 @@ print (int argc,
   char *seed;
 
   if (argc != 2)
-    usage ();
+      usage (1);
   n = atoi(argv[0]);
   seed = argv[1];
   if (des_read_pw_string (pw, sizeof(pw), "Pass-phrase: ", 0))
@@ -84,50 +102,39 @@ print (int argc,
 int
 main (int argc, char **argv)
 {
-  int c;
-  int count = 10;
-  int hexp = 0;
-  int extendedp = 0;
-  void (*fn)(OtpKey, char *, size_t);
-  OtpAlgorithm *alg = otp_find_alg (OTP_ALG_DEFAULT);
+    int optind = 0;
+    void (*fn)(OtpKey, char *, size_t);
+    OtpAlgorithm *alg = otp_find_alg (OTP_ALG_DEFAULT);
 
-  set_progname (argv[0]);
-
-  while ((c = getopt (argc, argv, "ehn:f:")) != EOF)
-    switch (c) {
-    case 'e' :
-      extendedp = 1;
-      break;
-    case 'n' :
-      count = atoi (optarg);
-      break;
-    case 'h' :
-      hexp = 1;
-      break;
-    case 'f' :
-      alg = otp_find_alg (optarg);
-      if (alg == NULL)
-	errx(1, "Unknown algorithm: %s", optarg);
-      break;
-    default :
-      usage ();
-      break;
+    set_progname (argv[0]);
+    if(getarg(args, num_args, argc, argv, &optind))
+	usage(1);
+    if(help_flag)
+	usage(0);
+    if(version_flag) {
+	print_version(NULL);
+	exit(0);
     }
-  
-  argc -= optind;
-  argv += optind;
 
-  if (hexp) {
-    if (extendedp)
-      fn = otp_print_hex_extended;
-    else
-      fn = otp_print_hex;
-  } else {
-    if (extendedp)
-      fn = otp_print_stddict_extended;
-    else
-      fn = otp_print_stddict;
-  }
+    if(alg_string) {
+	alg = otp_find_alg (alg_string);
+	if (alg == NULL)
+	    errx(1, "Unknown algorithm: %s", alg_string);
+    }
+    argc -= optind;
+    argv += optind;
 
-  return print (argc, argv, count, alg, fn);
+    if (hexp) {
+	if (extendedp)
+	    fn = otp_print_hex_extended;
+	else
+	    fn = otp_print_hex;
+    } else {
+	if (extendedp)
+	    fn = otp_print_stddict_extended;
+	else
+	    fn = otp_print_stddict;
+    }
+
+    return print (argc, argv, count, alg, fn);
 }
