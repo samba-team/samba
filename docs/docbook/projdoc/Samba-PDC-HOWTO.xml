@@ -16,48 +16,96 @@
 
 <title>Domain Control</title>
 
+<formalpara><title><emphasis>The Essence of Learning:</emphasis></title>
 <para>
-Before you continue reading in this chapter, please make sure 
-that you are comfortable with configuring basic files services
-in smb.conf and how to enable and administer password 
-encryption in Samba.  Theses two topics are covered in the
-&smb.conf; manpage.
+There are many who approach MS Windows networking with incredible misconceptions.
+That's OK, because it give the rest of us plenty of opportunity to help someone.
+Those who really want help would be well advised to not make too big a fool
+of themselves by not being informed when are where the information needed is in
+fact available.
+</para>
+</formalpara>
+
+<para>
+The reader is well advised NOT to tackle this section until having first understood
+and mastered some basics. MS Windows networking is not particularly forgiving of
+misconfiguration. Users of MS Windows networking are likely to complain bitterly
+of persistent niggles that may be caused by broken network or system configuration.
+To a great many people however, MS Windows networking starts with a domain controller
+that in some magical way is expected to solve all ills.
+</para>
+
+<para>
+From the Samba mailing list one can readilly identify many common networking issues.
+If you are not clear on the following subjects, then it will do much good to read the 
+sections of this HOWTO that deal with it. These are the most common causes of MS Windows
+networking problems:
+</para>
+
+<itemizedlist>
+	<listitem><para>Basic TCP/IP configuration</para></listitem>
+	<listitem><para>NetBIOS name resolution</para></listitem>
+	<listitem><para>Authentication configuration</para></listitem>
+	<listitem><para>User and Group configuration</para></listitem>
+	<listitem><para>Basic File and Directory Permission Control in Unix/Linux</para></listitem>
+	<listitem><para>Understanding of how MS Windows clients interoperate in a network
+	environment</para></listitem>
+</itemizedlist>
+
+<para>
+Now, do not be put off too much, on the surface of it MS Windows networking seems so simple
+that any fool can do it. In fact, only a fool would set up an MS Windows network with
+inadequate training and preparation. So let's get our first indelible principle out of the
+way: <emphasis>It is perfectly OK to make mistakes!</emphasis> In the right place and at
+the right time, mistakes are the essence of learning. It is <emphasis>very much</emphasis>
+not Ok to make mistakes that cause loss of productivity and impose an avoidable financial
+burden on an organisation.
+</para>
+
+<para>
+So where is the right place to make mistakes? Only out of harms' way! If you are going to
+make mistakes, then please do this on a test network, away from users and in such a way as
+to not inflict pain on others. Do your learning on a test network.
 </para>
 
 <sect1>
-<title>
-Background
-</title>
+<title>Background</title>
 
 <sect2>
 <title>Domain Controller</title>
 
 <para>
 Over the years public perceptions of what Domain Control really is has taken on an
-almost mystical nature. Before we branch into a brief overview of what Domain Control
-is the following types of controller are known:
+almost mystical nature. Before we branch into a brief overview of Domain Control
+there are three basic types of domain controllers:
 </para>
 
 <sect3>
 <title>Domain Controller Types</title>
 
-<simplelist>
-	<member>Primary Domain Controller</member>
-	<member>Backup Domain Controller</member>
-	<member>ADS Domain Controller</member>
-</simplelist>
+<itemizedlist>
+	<listitem><para>Primary Domain Controller</para></listitem>
+	<listitem><para>Backup Domain Controller</para></listitem>
+	<listitem><para>ADS Domain Controller</para></listitem>
+</itemizedlist>
 
 <para>
 The <emphasis>Primary Domain Controller</emphasis> or PDC plays an important role in the MS 
-Windows NT3 and NT4 Domain Control architecture, but not in the manner that so many
-expect. The PDC seeds the Domain Control database (a part of the Windows registry) and
-it plays a key part in synchronisation of the domain authentication database. 
+Windows NT4 and Windows 200x Domain Control architecture, but not in the manner that so many
+expect.
 </para>
 
 <para>
-New to Samba-3.0.0 is the ability to use a back-end file that holds the same type of data as
+In the case of MS Windows NT4 style domaines it is the PDC seeds the Domain Control database,
+a part of the Windows registry called the SAM (Security Accounts Management). It plays a key
+part in NT4 type domain user authentication and in synchronisation of the domain authentication
+database with Backup Domain Controllers. 
+</para>
+
+<para>
+New to Samba-3 is the ability to use a back-end file that holds the same type of data as
 the NT4 style SAM (Security Account Manager) database (one of the registry files).
-The samba-3.0.0 SAM can be specified via the smb.conf file parameter "passwd backend" and
+The samba-3 SAM can be specified via the smb.conf file parameter "passwd backend" and
 valid options include <emphasis> smbpasswd tdbsam ldapsam nisplussam plugin unixsam</emphasis>.
 The smbpasswd, tdbsam and ldapsam options can have a "_nua" suffix to indicate that No Unix
 Accounts need to be created. In other words, the Samba SAM will be independant of Unix/Linux
@@ -74,15 +122,36 @@ automatically demoted to a BDC.
 </para>
 
 <para>
-At this time Samba is NOT capable of acting as an <emphasis>ADS Domain Controller</emphasis>.
+With MS Windows NT4 it is an install time decision what type of machine the server will be.
+It is possible to change the promote a BDC to a PDC and vica versa only, but the only way
+to convert a domain controller to a domain member server or a stand-alone server is to
+reinstall it. The install time choices offered are:
+</para>
+
+<itemizedlist>
+	<listitem><para>Primary Domain Controller - The one that seeds the domain SAM</para></listitem>
+	<listitem><para>Backup Domain Controller - One that obtains a copy of the domain SAM</para></listitem>
+	<listitem><para>Stand-Alone Server - One that plays NO part is SAM synchronisation</para></listitem>
+</itemizedlist>
+
+<para>
+With MS Windows 2000 the configuration of domain control is done after the server has been
+installed. Samba-3 is capable of acting fully as a native member of a Windows 200x server
+Active Directory domain.
+</para>
+
+<para>
+At this time Samba-3 is capable of acting as an <emphasis>ADS Domain Controller</emphasis> but
+in only a limited and experimental manner. This functionality should not be depended upon
+until the samba-team offers formal support for it. At such a time, the documentation will
+be revised to duely reflect all configuration and management requirements.
 </para>
 </sect3>
 </sect2>
 
 <para>
-This article outlines the steps necessary for configuring Samba as a PDC.
-It is necessary to have a working Samba server prior to implementing the
-PDC functionality.
+This article outlines the steps necessary for configuring Samba-3 as an MS Windows NT4 style PDC.
+It is necessary to have a working Samba server prior to implementing the PDC functionality.
 </para>
 
 <itemizedlist>
@@ -116,12 +185,12 @@ that are covered separately in this document.
 </note>
 
 <para>
-The following functionalities are new to the Samba 3.0 release:
+The following functionalities are new to the Samba-3 release:
 </para>
 
 <itemizedlist>
 	<listitem><para>
-	Windows NT 4 domain trusts
+	Windows NT4 domain trusts
 	</para></listitem>
 	
 	<listitem><para>
@@ -135,7 +204,7 @@ The following functionalities are NOT provided by Samba 3.0:
 
 <itemizedlist>
 	<listitem><para>
-	SAM replication with Windows NT 4.0 Domain Controllers
+	SAM replication with Windows NT4 Domain Controllers
 	(i.e. a Samba PDC and a Windows NT BDC or vice versa) 
 	</para></listitem>
 	
@@ -274,7 +343,7 @@ There are a couple of points to emphasize in the above configuration.
 	</para></listitem>
 	
 	<listitem><para>
-	The server must support domain logons and a
+	The server must support domain logons and have a
 	<filename>[netlogon]</filename> share
 	</para></listitem>
 	
