@@ -105,14 +105,17 @@ exec_shell(const char *shell, int fallback)
     err(1, "%s", shell);
 }
 
+static enum { AUTH_KRB4, AUTH_KRB5 } auth;
+
 #ifdef KRB5
+static krb5_context context;
+static krb5_ccache  id, id2;
+
 static int
 krb5_verify(struct passwd *pwd, const char *password)
 {
     krb5_error_code ret;
-    krb5_context context;
     krb5_principal princ;
-    krb5_ccache id;
 
     ret = krb5_init_context(&context);
     if(ret)
@@ -135,27 +138,36 @@ krb5_verify(struct passwd *pwd, const char *password)
 			   password, 
 			   1,
 			   NULL);
-    if(ret == 0) {
-	krb5_ccache id2;
-	char residual[32];
-	/* copy credentials to file cache */
-	snprintf(residual, sizeof(residual), "FILE:/tmp/krb5cc_%u", 
-		 (unsigned)pwd->pw_uid);
-	krb5_cc_resolve(context, residual, &id2);
-	if(seteuid(pwd->pw_uid))
-	    krb5_err (context, 1, errno, "seteuid");
-	ret = krb5_cc_copy_cache(context, id, id2);
-	if(seteuid(0))
-	    krb5_err (context, 1, errno, "seteuid");
-	ret = krb5_cc_close(context, id2);
-	add_env("KRB5CCNAME", residual);
-	ret = 0;
-    }
-	
-    krb5_cc_destroy(context, id);
     krb5_free_principal(context, princ);
-    krb5_free_context(context);
+    if (ret)
+	krb5_free_context (context);
     return ret;
+}
+
+static int
+krb5_start_session (struct passwd *pwd)
+{
+    krb5_error_code ret;
+    char residual[32];
+
+    /* copy credentials to file cache */
+    snprintf(residual, sizeof(residual), "FILE:/tmp/krb5cc_%u", 
+	     (unsigned)pwd->pw_uid);
+    krb5_cc_resolve(context, residual, &id2);
+    ret = krb5_cc_copy_cache(context, id, id2);
+    krb5_cc_close(context, id2);
+    if (ret == 0)
+	add_env("KRB5CCNAME", residual);
+    else
+	krb5_cc_destroy (context, id2);
+    krb5_cc_destroy(context, id);
+    return ret;
+}
+
+static void
+krb5_finish (void)
+{
+    krb5_free_context(context);
 }
 
 #ifdef KRB4
@@ -163,9 +175,6 @@ krb5_verify(struct passwd *pwd, const char *password)
 static void
 krb5_get_afs_tokens (struct passwd *pwd)
 {
-    krb5_context context;
-    krb5_ccache ccache;
-    krb5_error_code ret;
     char cell[64];
     char *pw_dir;
 
@@ -181,25 +190,13 @@ krb5_get_afs_tokens (struct passwd *pwd)
     pw_dir = pwd->pw_dir;
 #endif
 
-    ret = krb5_init_context (&context);
-    if (ret)
-	return;
-
-    ret = krb5_cc_default (context, &ccache);
-    if (ret) {
-	krb5_free_context (context);
-	return;
-    }
-
     k_setpag();
 
     if(k_afs_cell_of_file(pw_dir, cell, sizeof(cell)) == 0)
-	krb5_afslog_uid_home (context, ccache,
+	krb5_afslog_uid_home (context, id2,
 			      cell, NULL, pwd->pw_uid, pwd->pw_dir);
-    krb5_afslog_uid_home (context, ccache, NULL, NULL,
-				  pwd->pw_uid, pwd->pw_dir);
-    krb5_cc_close (context, ccache);
-    krb5_free_context (context);
+    krb5_afslog_uid_home (context, id2, NULL, NULL,
+			  pwd->pw_uid, pwd->pw_dir);
 }
 
 #endif /* KRB4 */
@@ -404,11 +401,20 @@ do_login(struct passwd *pwd)
 	pwd->pw_dir = "/";
 	fprintf(stderr, "Logging in with home = \"/\".\n");
     }
-#ifdef KRB4
 #ifdef KRB5
-    krb5_get_afs_tokens (pwd);
-#endif
-    krb4_get_afs_tokens (pwd);
+    if (auth == AUTH_KRB5) {
+	krb5_start_session (pwd);
+#ifdef KRB4
+	krb5_get_afs_tokens (pwd);
+#endif /* KRB4 */
+	krb5_finish ();
+    }
+#endif /* KRB5 */
+
+#ifdef KRB4
+    if (auth == AUTH_KRB4) {
+	krb4_get_afs_tokens (pwd);
+    }
 #endif /* KRB4 */
 
     add_env("HOME", pwd->pw_dir);
@@ -432,12 +438,16 @@ check_password(struct passwd *pwd, const char *password)
     if(strcmp(pwd->pw_passwd, crypt(password, pwd->pw_passwd)) == 0)
 	return 0;
 #ifdef KRB5
-    if(krb5_verify(pwd, password) == 0)
+    if(krb5_verify(pwd, password) == 0) {
+	auth = AUTH_KRB5;
 	return 0;
+    }
 #endif
 #ifdef KRB4
-    if (krb4_verify (pwd, password) == 0)
+    if (krb4_verify (pwd, password) == 0) {
+	auth = AUTH_KRB4;
 	return 0;
+    }
 #endif
     return 1;
 }
@@ -488,8 +498,7 @@ main(int argc, char **argv)
 
     if(*argv){
 	if(strchr(*argv, '=') == NULL && strcmp(*argv, "-") != 0){
-	    strncpy(username, *argv, sizeof(username));
-	    username[sizeof(username) - 1] = 0;
+	    strcpy_truncate (username, *argv, sizeof(username));
 	    ask = 0;
 	}
     }
