@@ -4,8 +4,9 @@ The Samba package you have just unpacked contains the following:
 
 Directory	Notes:
 =========	======
+
 docs		(Samba Documentation):
---------------------------------------
+----		----------------------
 
 	The Samba documentation for the 2.0 release has had all the man pages
 	converted to YODL source format. Because of this the man pages
@@ -19,15 +20,15 @@ docs		(Samba Documentation):
 	to be easily converted to HTML/SGML.
     
 	Note in particular two files - docs/textdocs/<your OS>_INSTALL.txt 
-    and docs/textdocs/DIAGNOSIS.txt.
+	and docs/textdocs/DIAGNOSIS.txt.
 
 	There is the potential for there to be many *INSTALL.txt files, one
 	for each OS that Samba supports. However we are moving all this into
 	the new structure. For now, most people will be using UNIX_INSTALL.txt.
 
 	Please pay close attention to all the files with a .txt extension
-	in the docs/textdocs directory. Most problems can be solved by reference to the 
-	two files mentioned.
+	in the docs/textdocs directory. Most problems can be solved by reference
+	to the two files mentioned.
 
 	The FAQ documentation can be accessed starting from Samba-meta-FAQ.html,
 	in the docs/faq directory. This is incomplete, but to quote from the 
@@ -40,7 +41,8 @@ docs		(Samba Documentation):
 
 
 examples	(Example configuration files):
-----------------------------------------------
+--------	------------------------------
+
 	Please pay close attention to the reference smb.conf file
 	smb.conf.default that has now been included as the master guide.
 
@@ -49,18 +51,23 @@ examples	(Example configuration files):
 
 
 packaging	(Only for those wishing to build binary distributions):
------------------------------------------------------------------------
+---------	-------------------------------------------------------
+
 	Currently support is included for the following Linux Distributions :
-	Pacfic HiTech, RedHat and SuSE. In addition, packaging support is
-	available for SGI and Solaris systems. We hope that
-	other Unix OS vendors will contribute their binary distribution
-	packaging control files - and we hope to make their binary packages
-	available on the master ftp site under:
-		samba.anu.edu.au/pub/samba/Binary_Packages/"OS_Vendor"
+	
+		Pacfic HiTech, RedHat and SuSE.
+
+	In addition, packaging support is available for SGI and Solaris systems.
+	We hope that other Unix OS vendors will contribute their binary
+	distribution packaging control files - and we hope to make their binary
+	packages available on the master ftp site under:
+
+		ftp://samba.anu.edu.au/pub/samba/Binary_Packages/"OS_Vendor"
 
 
 source		(The official Samba source files - expect more of these!):
---------------------------------------------------------------------------
+------		----------------------------------------------------------
+
 	To build your own binary files you will need a suitable ansi C
 	compiler.
 
@@ -68,15 +75,15 @@ source		(The official Samba source files - expect more of these!):
 	order to build a default Samba for your platform cd into
 	the source/ directory and then type :
 
-	./configure
+		./configure
 
 	followed by :
 
-	make
+		make
 
 	To install the binaries built by the above type :
 
-	make install
+		make install
  
 	then set up your configuration files.
 
@@ -85,3 +92,4 @@ source		(The official Samba source files - expect more of these!):
 	These may differ from the default location ALWAYS used by the Samba
 	sources. Please be careful when upgrading a vendor provided binary
 	distribution from files you have built yourself.
+
