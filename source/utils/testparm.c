@@ -171,7 +171,7 @@ via the %%o substitution. With encrypted passwords this is not possible.\n", lp_
 	return ret;
 }   
 
-int main(int argc, char *argv[])
+int main(int argc, const char *argv[])
 {
 	extern char *optarg;
 	extern int optind;
@@ -185,17 +185,19 @@ int main(int argc, char *argv[])
 	static char *new_local_machine = NULL;
 	const char *cname;
 	const char *caddr;
+	static int show_defaults;
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
 		{"suppress-prompt", 's', POPT_ARG_VAL, &silent_mode, 1, "Suppress prompt for enter"},
+		{"verbose", 'v', POPT_ARG_NONE, &show_defaults, 1, "Show default options too"},
 		{"server", 'L',POPT_ARG_STRING, &new_local_machine, 0, "Set %%L macro to servername\n"},
 		{"encoding", 't', POPT_ARG_STRING, &term_code, 0, "Print parameters with encoding"},
 		{0,0,0,0}
 	};
 
-	pc = poptGetContext(NULL, argc, (const char **) argv, long_options, 
-						POPT_CONTEXT_KEEP_FIRST);
+	pc = poptGetContext(NULL, argc, argv, long_options, 
+			    POPT_CONTEXT_KEEP_FIRST);
 
 	while((opt = poptGetNextOpt(pc)) != -1);
 
@@ -276,7 +278,7 @@ int main(int argc, char *argv[])
 			fflush(stdout);
 			getc(stdin);
 		}
-		lp_dump(stdout,True, lp_numservices());
+		lp_dump(stdout, show_defaults, lp_numservices());
 	}
 
 	if(cname && caddr){
