@@ -163,7 +163,10 @@ def test_AddForm(pipe, handle):
               (r['info']['info1'], f)
         sys.exit(1)
 
-    # TODO: test spoolss_SetForm()
+    r['formname'] = formname
+    r['info']['info1']['unknown'] = 1
+
+    dcerpc.spoolss_SetForm(pipe, r)
 
     test_DeleteForm(pipe, handle, formname)
 
