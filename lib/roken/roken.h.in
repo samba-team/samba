@@ -1,6 +1,6 @@
 /* -*- C -*- */
 /*
- * Copyright (c) 1995, 1996, 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -122,8 +122,6 @@ extern "C" {
 #define ROKEN_LIB_FUNCTION
 #endif
 #endif
-
-#include <roken-common.h>
 
 #if !defined(HAVE_SETSID) && defined(HAVE__SETSID)
 #define setsid _setsid
@@ -567,6 +565,8 @@ struct hostent* roken_gethostbyaddr(const void*, size_t, int);
 #endif
 
 void set_progname(char *argv0);
+
+#include <roken-common.h>
 
 #ifdef __cplusplus
 }
