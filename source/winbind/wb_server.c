@@ -127,7 +127,7 @@ static void winbind_send(struct stream_connection *conn, struct timeval t, uint1
 }
 
 static const struct stream_server_ops winbind_stream_ops = {
-	.name			= "smb",
+	.name			= "winbind_echo",
 	.accept_connection	= winbind_accept,
 	.recv_handler		= winbind_recv,
 	.send_handler		= winbind_send,
