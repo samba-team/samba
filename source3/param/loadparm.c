@@ -53,6 +53,7 @@ BOOL bLoaded = False;
 
 extern int DEBUGLEVEL;
 extern pstring user_socket_options;
+extern pstring myname;
 
 #ifndef GLOBAL_NAME
 #define GLOBAL_NAME "global"
@@ -83,7 +84,8 @@ extern pstring user_socket_options;
 /* these are the types of parameter we have */
 typedef enum
 {
-  P_BOOL,P_BOOLREV,P_CHAR,P_INTEGER,P_OCTAL,P_STRING,P_GSTRING
+  P_BOOL,P_BOOLREV,P_CHAR,P_INTEGER,P_OCTAL,
+  P_STRING,P_USTRING,P_GSTRING,P_UGSTRING
 } parm_type;
 
 typedef enum
@@ -130,6 +132,7 @@ typedef struct
   char *szWINSserver;
   char *szInterfaces;
   char *szRemoteAnnounce;
+  char *szSocketAddress;
   int max_log_size;
   int mangled_stack;
   int max_xmit;
@@ -371,6 +374,7 @@ struct parm_struct
   {"interfaces",       P_STRING,  P_GLOBAL, &Globals.szInterfaces,      NULL},
   {"password server",  P_STRING,  P_GLOBAL, &Globals.szPasswordServer,  NULL},
   {"socket options",   P_GSTRING, P_GLOBAL, user_socket_options,        NULL},
+  {"netbios name",     P_UGSTRING,P_GLOBAL, myname,                     NULL},
   {"smbrun",           P_STRING,  P_GLOBAL, &Globals.szSmbrun,          NULL},
   {"log file",         P_STRING,  P_GLOBAL, &Globals.szLogFile,         NULL},
   {"config file",      P_STRING,  P_GLOBAL, &Globals.szConfigFile,      NULL},
@@ -393,12 +397,13 @@ struct parm_struct
   {"passwd program",   P_STRING,  P_GLOBAL, &Globals.szPasswdProgram,   NULL},
   {"passwd chat",      P_STRING,  P_GLOBAL, &Globals.szPasswdChat,      NULL},
   {"valid chars",      P_STRING,  P_GLOBAL, &Globals.szValidChars,      handle_valid_chars},
-  {"workgroup",        P_STRING,  P_GLOBAL, &Globals.szWorkGroup,       NULL},
+  {"workgroup",        P_USTRING, P_GLOBAL, &Globals.szWorkGroup,       NULL},
   {"domain controller",P_STRING,  P_GLOBAL, &Globals.szDomainController,NULL},
   {"username map",     P_STRING,  P_GLOBAL, &Globals.szUsernameMap,     NULL},
   {"character set",    P_STRING,  P_GLOBAL, &Globals.szCharacterSet,    handle_character_set},
   {"logon script",     P_STRING,  P_GLOBAL, &Globals.szLogonScript,     NULL},
   {"remote announce",  P_STRING,  P_GLOBAL, &Globals.szRemoteAnnounce,  NULL},
+  {"socket address",   P_STRING,  P_GLOBAL, &Globals.szSocketAddress,   NULL},
   {"max log size",     P_INTEGER, P_GLOBAL, &Globals.max_log_size,      NULL},
   {"mangled stack",    P_INTEGER, P_GLOBAL, &Globals.mangled_stack,     NULL},
   {"max mux",          P_INTEGER, P_GLOBAL, &Globals.max_mux,           NULL},
@@ -525,7 +530,8 @@ static void init_globals(void)
       bzero((void *)&Globals,sizeof(Globals));
 
       for (i = 0; parm_table[i].label; i++) 
-	if (parm_table[i].type == P_STRING && 
+	if ((parm_table[i].type == P_STRING ||
+	     parm_table[i].type == P_USTRING) && 
 	    parm_table[i].ptr)
 	  string_init(parm_table[i].ptr,"");
 
@@ -551,6 +557,7 @@ static void init_globals(void)
   string_set(&Globals.szLockDir, LOCKDIR);
   string_set(&Globals.szRootdir, "/");
   string_set(&Globals.szSmbrun, SMBRUN);
+  string_set(&Globals.szSocketAddress, "0.0.0.0");
   sprintf(s,"Samba %s",VERSION);
   string_set(&Globals.szServerString,s);
   Globals.bLoadPrinters = True;
@@ -611,6 +618,7 @@ static void init_locals(void)
     {
     case PRINT_BSD:
     case PRINT_AIX:
+    case PRINT_LPRNG:
     case PRINT_PLP:
       string_initial(&sDefault.szLpqcommand,"lpq -P%p");
       string_initial(&sDefault.szLprmcommand,"lprm -P%p %j");
@@ -735,6 +743,7 @@ FN_GLOBAL_STRING(lp_logon_script,&Globals.szLogonScript)
 FN_GLOBAL_STRING(lp_remote_announce,&Globals.szRemoteAnnounce) 
 FN_GLOBAL_STRING(lp_wins_server,&Globals.szWINSserver)
 FN_GLOBAL_STRING(lp_interfaces,&Globals.szInterfaces)
+FN_GLOBAL_STRING(lp_socket_address,&Globals.szSocketAddress)
 
 FN_GLOBAL_BOOL(lp_wins_support,&Globals.bWINSsupport)
 FN_GLOBAL_BOOL(lp_wins_proxy,&Globals.bWINSproxy)
@@ -875,7 +884,9 @@ static void free_service(service *pservice)
      return;
 
   for (i=0;parm_table[i].label;i++)
-    if (parm_table[i].type == P_STRING && parm_table[i].class == P_LOCAL)
+    if ((parm_table[i].type == P_STRING ||
+	 parm_table[i].type == P_STRING) &&
+	parm_table[i].class == P_LOCAL)
       string_free((char **)(((char *)pservice) + PTR_DIFF(parm_table[i].ptr,&sDefault)));
 }
 
@@ -1164,6 +1175,11 @@ static void copy_service(service *pserviceDest,
 	  case P_STRING:
 	    string_set(dest_ptr,*(char **)src_ptr);
 	    break;
+
+	  case P_USTRING:
+	    string_set(dest_ptr,*(char **)src_ptr);
+	    strupper(*(char **)dest_ptr);
+	    break;
 	  default:
 	    break;
 	  }
@@ -1344,6 +1360,8 @@ static BOOL handle_printing(char *pszParmValue,int *val)
     *val = PRINT_QNX;
   else if (strequal(pszParmValue,"plp"))
     *val = PRINT_PLP;
+  else if (strequal(pszParmValue,"lprng"))
+    *val = PRINT_LPRNG;
   return(True);
 }
 
@@ -1526,8 +1544,18 @@ static BOOL do_parameter(char *pszParmName, char *pszParmValue)
        string_set(parm_ptr,pszParmValue);
        break;
 
+     case P_USTRING:
+       string_set(parm_ptr,pszParmValue);
+       strupper(*(char **)parm_ptr);
+       break;
+
      case P_GSTRING:
        strcpy((char *)parm_ptr,pszParmValue);
+       break;
+
+     case P_UGSTRING:
+       strcpy((char *)parm_ptr,pszParmValue);
+       strupper((char *)parm_ptr);
        break;
      }
 
@@ -1562,11 +1590,13 @@ static void print_parameter(parm_type type,void *ptr)
       break;
       
     case P_GSTRING:
+    case P_UGSTRING:
       if ((char *)ptr)
 	printf("%s",(char *)ptr);
       break;
 
     case P_STRING:
+    case P_USTRING:
       if (*(char **)ptr)
 	printf("%s",*(char **)ptr);
       break;
@@ -1593,6 +1623,7 @@ static BOOL equal_parameter(parm_type type,void *ptr1,void *ptr2)
       return(*((char *)ptr1) == *((char *)ptr2));
 
     case P_GSTRING:
+    case P_UGSTRING:
       {
 	char *p1 = (char *)ptr1, *p2 = (char *)ptr2;
 	if (p1 && !*p1) p1 = NULL;
@@ -1600,6 +1631,7 @@ static BOOL equal_parameter(parm_type type,void *ptr1,void *ptr2)
 	return(p1==p2 || strequal(p1,p2));
       }
     case P_STRING:
+    case P_USTRING:
       {
 	char *p1 = *(char **)ptr1, *p2 = *(char **)ptr2;
 	if (p1 && !*p1) p1 = NULL;

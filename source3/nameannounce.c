@@ -137,102 +137,6 @@ void sync_server(enum state_type state, char *serv_name, char *work_name,
 
 
 /****************************************************************************
-  construct a host announcement unicast
-
-  this function should not be used heavily, and only when we are _not_
-  a master browser and _not_ a primary domain controller.
-
-  **************************************************************************/
-void announce_backup(void)
-{
-  static time_t lastrun = 0;
-  time_t t = time(NULL);
-  pstring outbuf;
-  char *p;
-  struct subnet_record *d1;
-  int tok;
-  static uint32 id_count = 0;
-  
-  if (!lastrun) lastrun = t;
-#if 1
-  if (t < lastrun + 1 * 60)
-#else
-  if (t < lastrun + CHECK_TIME_ANNOUNCE_BACKUP * 60)
-#endif
-	return;
-  lastrun = t;
-  
-  DEBUG(4,("checking backups...\n"));
-
-  for (tok = 0; tok <= workgroup_count; tok++)
-    {
-      for (d1 = subnetlist; d1; d1 = d1->next)
-	{
-	  struct work_record *work;
-	  struct subnet_record *d;
-	  
-	  /* search for unique workgroup: only the name matters */
-	  for (work = d1->workgrouplist;
-	       work && (tok != work->token);
-	       work = work->next);
-	  
-	  if (!work) continue;
-
-      if (AM_MASTER(work) && AM_DOMCTL(work)) continue;
-
-	  /* found one: announce it across all domains */
-	  for (d = subnetlist; d; d = d->next)
-	    {
-	      
-	      DEBUG(2,("sending announce backup %s workgroup %s(%d)\n",
-		       inet_ntoa(d->bcast_ip),work->work_group,
-		       work->token));
-	      
-	      bzero(outbuf,sizeof(outbuf));
-	      p = outbuf;
-
-	      CVAL(p,0) = ANN_GetBackupListReq;
-	      CVAL(p,1) = work->token; /* workgroup unique key index */
-	      SIVAL(p,2,++id_count); /* unique count. not that we use it! */
-
-	      p += 6;
-	      
-          debug_browse_data(outbuf, PTR_DIFF(p,outbuf));
-
-	      if (!AM_DOMCTL(work))
-          {
-            /* only ask for a list of backup domain controllers
-               if we are not a domain controller ourselves */
-			
-	      	send_mailslot_reply(BROWSE_MAILSLOT,
-				  ClientDGRAM,outbuf,
-				  PTR_DIFF(p,outbuf),
-				  myname, work->work_group,
-				  0x0,0x1b,d->bcast_ip,
-				  *iface_ip(d->bcast_ip));
-          }
-
-          debug_browse_data(outbuf, PTR_DIFF(p,outbuf));
-
-	      if (!AM_MASTER(work))
-          {
-            /* only ask for a list of master browsers if we
-               are not a master browser ourselves */
-
-	      	send_mailslot_reply(BROWSE_MAILSLOT,
-				  ClientDGRAM,outbuf,
-				  PTR_DIFF(p,outbuf),
-				  myname, work->work_group,
-				  0x0,0x1d,d->bcast_ip,
-				  *iface_ip(d->bcast_ip));
-          }
-	    }
-	}
-    }
-}
-
-
-/****************************************************************************
   send a host announcement packet
   **************************************************************************/
 void do_announce_host(int command,
@@ -305,7 +209,7 @@ void remove_my_servers(void)
   announce a server entry
   ****************************************************************************/
 void announce_server(struct subnet_record *d, struct work_record *work,
-					char *name, char *comment, time_t ttl, int server_type)
+		     char *name, char *comment, time_t ttl, int server_type)
 {
 	uint32 domain_type = SV_TYPE_DOMAIN_ENUM|SV_TYPE_SERVER_UNIX;
 	BOOL wins_iface = ip_equal(d->bcast_ip, ipgrp);
@@ -315,7 +219,8 @@ void announce_server(struct subnet_record *d, struct work_record *work,
 		/* wins pseudo-ip interface */
 		if (!AM_MASTER(work))
 		{
-			/* non-master announce by unicast to the domain master */
+			/* non-master announce by unicast to the domain 
+			   master */
 			if (!lp_wins_support() && *lp_wins_server())
 			{
 				/* look up the domain master with the WINS server */
@@ -441,14 +346,6 @@ void announce_host(void)
 	  
 	  work->lastannounce_time = t;
 
-	  /*
-	  if (!d->my_interface) {
-	    stype &= ~(SV_TYPE_POTENTIAL_BROWSER | SV_TYPE_MASTER_BROWSER |
-		       SV_TYPE_DOMAIN_MASTER | SV_TYPE_BACKUP_BROWSER |
-		       SV_TYPE_DOMAIN_CTRL | SV_TYPE_DOMAIN_MEMBER);
-	  }
-	  */
-
 	  for (s = work->serverlist; s; s = s->next) {
 	    if (strequal(myname, s->serv.name)) { 
 	      announce = True; 
@@ -456,9 +353,9 @@ void announce_host(void)
 	    }
 	  }
 	  
-	  if (announce)
-	  {
-		announce_server(d,work,my_name,comment,work->announce_interval,stype);
+	  if (announce) {
+	    announce_server(d,work,my_name,comment,
+			    work->announce_interval,stype);
 	  }
 	  
 	  if (work->needannounce)

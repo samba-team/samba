@@ -277,6 +277,157 @@ static BOOL parse_lpq_bsd(char *line,print_queue_struct *buf,BOOL first)
   return(True);
 }
 
+/*
+<magnus@hum.auc.dk>
+LPRng_time modifies the current date by inserting the hour and minute from
+the lpq output.  The lpq time looks like "23:15:07"
+*/
+static time_t LPRng_time(string tok[],int pos)
+{
+  time_t jobtime;
+  struct tm *t;
+  char tmp_time[9];
+
+  jobtime = time(NULL);         /* default case: take current time */
+  t = localtime(&jobtime);
+  t->tm_hour = atoi(tok[pos]);
+  StrnCpy(tmp_time,tok[pos],sizeof(tmp_time));
+  t->tm_min = atoi(tmp_time+3);
+  t->tm_sec = atoi(tmp_time+6);
+  jobtime = mktime(t);
+
+  return jobtime;
+}
+
+
+/****************************************************************************
+  parse a lpq line
+  <magnus@hum.auc.dk>
+  Most of the code is directly reused from parse_lpq_bsd()
+
+here are two examples of lpq output under lprng (LPRng-2.3.0)
+
+Printer: humprn@hum-fak
+  Queue: 1 printable job
+  Server: pid 4840 active, Unspooler: pid 4841 active
+  Status: job 'cfA659hum-fak', closing device at Fri Jun 21 10:10:21 1996
+ Rank  Owner           Class Job Files                           Size Time
+active magnus@hum-fak      A 659 /var/spool/smb/Notesblok-ikke-na4024 10:03:31
+ 
+Printer: humprn@hum-fak (printing disabled)
+  Queue: 1 printable job
+  Warning: no server present
+  Status: finished operations at Fri Jun 21 10:10:32 1996
+ Rank  Owner           Class Job Files                           Size Time
+1      magnus@hum-fak      A 387 /var/spool/smb/netbudget.xls    21230 10:50:53
+ 
+****************************************************************************/
+static BOOL parse_lpq_lprng(char *line,print_queue_struct *buf,BOOL first)
+{
+#define        LPRNG_RANKTOK   0
+#define        LPRNG_USERTOK 1
+#define        LPRNG_PRIOTOK 2
+#define        LPRNG_JOBTOK    3
+#define        LPRNG_FILETOK   4
+#define        LPRNG_TOTALTOK 5
+#define LPRNG_TIMETOK 6
+#define        LPRNG_NTOK      7
+
+/****************************************************************************
+From lpd_status.c in LPRng source.
+0        1         2         3         4         5         6         7
+12345678901234567890123456789012345678901234567890123456789012345678901234 
+" Rank  Owner           Class Job Files                           Size Time"
+                        plp_snprintf( msg, sizeof(msg), "%-6s %-19s %c %03d %-32s",
+                                number, line, priority, cfp->number, error );
+                                plp_snprintf( msg + len, sizeof(msg)-len, "%4d",
+                                        cfp->jobsize );
+                                plp_snprintf( msg+len, sizeof(msg)-len, " %s",
+                                        Time_str( 1, cfp->statb.st_ctime ) );
+****************************************************************************/
+  /* The following define's are to be able to adjust the values if the
+LPRng source changes.  This is from version 2.3.0.  Magnus  */
+#define SPACE_W 1
+#define RANK_W 6
+#define OWNER_W 19
+#define CLASS_W 1
+#define JOB_W 3
+#define FILE_W 32
+/* The JOBSIZE_W is too small for big jobs, so time is pushed to the right */
+#define JOBSIZE_W 4
+ 
+#define RANK_POS 0
+#define OWNER_POS RANK_POS+RANK_W+SPACE_W
+#define CLASS_POS OWNER_POS+OWNER_W+SPACE_W
+#define JOB_POS CLASS_POS+CLASS_W+SPACE_W
+#define FILE_POS JOB_POS+JOB_W+SPACE_W
+#define JOBSIZE_POS FILE_POS+FILE_W
+
+  
+  string tok[LPRNG_NTOK];
+  int count=0;
+
+/* 
+Need to insert one space in front of the size, to be able to use
+next_token() unchanged.  I would have liked to be able to insert a
+space instead, to prevent losing that one char, but perl has spoiled
+me :-\  So I did it the easiest way.
+
+HINT: Use as short a path as possible for the samba spool directory.
+A long spool-path will just waste significant chars of the file name.
+*/
+
+  (char)line[JOBSIZE_POS-1]=' ';
+
+  /* handle the case of "(stdin)" as a filename */
+  string_sub(line,"stdin","STDIN");
+  string_sub(line,"(","\"");
+  string_sub(line,")","\"");
+  
+  for (count=0; count<LPRNG_NTOK && next_token(&line,tok[count],NULL); count++) ;
+
+  /* we must get LPRNG_NTOK tokens */
+  if (count < LPRNG_NTOK)
+    return(False);
+
+  /* the Job and Total columns must be integer */
+  if (!isdigit(*tok[LPRNG_JOBTOK]) || !isdigit(*tok[LPRNG_TOTALTOK])) return(False);
+
+  /* if the fname contains a space then use STDIN */
+  /* I do not understand how this would be possible. Magnus. */
+  if (strchr(tok[LPRNG_FILETOK],' '))
+    strcpy(tok[LPRNG_FILETOK],"STDIN");
+
+  /* only take the last part of the filename */
+  {
+    string tmp;
+    char *p = strrchr(tok[LPRNG_FILETOK],'/');
+    if (p)
+      {
+       strcpy(tmp,p+1);
+       strcpy(tok[LPRNG_FILETOK],tmp);
+      }
+  }
+       
+
+  buf->job = atoi(tok[LPRNG_JOBTOK]);
+  buf->size = atoi(tok[LPRNG_TOTALTOK]);
+  buf->status = strequal(tok[LPRNG_RANKTOK],"active")?LPQ_PRINTING:LPQ_QUEUED;
+  /*  buf->time = time(NULL); */
+  buf->time = LPRng_time(tok,LPRNG_TIMETOK);
+DEBUG(3,("Time reported for job %d is %s", buf->job, ctime(&buf->time)));
+  StrnCpy(buf->user,tok[LPRNG_USERTOK],sizeof(buf->user)-1);
+  StrnCpy(buf->file,tok[LPRNG_FILETOK],sizeof(buf->file)-1);
+#ifdef LPRNG_PRIOTOK
+  /* Here I try to map the CLASS char to a number, but the number
+     is never shown in Print Manager under NT anyway... Magnus. */
+  buf->priority = atoi(tok[LPRNG_PRIOTOK-('A'-1)]);
+#else
+  buf->priority = 1;
+#endif
+  return(True);
+}
+
 
 
 /*******************************************************************
@@ -694,6 +845,9 @@ static BOOL parse_lpq_entry(int snum,char *line,
       break;
     case PRINT_QNX:
       ret = parse_lpq_qnx(line,buf,first);
+      break;
+    case PRINT_LPRNG:
+      ret = parse_lpq_lprng(line,buf,first);
       break;
     case PRINT_PLP:
       ret = parse_lpq_plp(line,buf,first);

@@ -59,8 +59,6 @@ extern int Protocol;
 
 int maxxmit = BUFFER_SIZE;
 
-int chain_size = 0;
-
 /* a fnum to use when chaining */
 int chain_fnum = -1;
 
@@ -1645,7 +1643,7 @@ static BOOL open_sockets(BOOL is_daemon,int port)
 #endif
 
       /* open an incoming socket */
-      s = open_socket_in(SOCK_STREAM, port, 0);
+      s = open_socket_in(SOCK_STREAM, port, 0,interpret_addr(lp_socket_address()));
       if (s == -1)
 	return(False);
 
@@ -3221,103 +3219,97 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
 
 
 /****************************************************************************
-construct a chained reply and add it to the already made reply
-
-inbuf points to the original message start.
-inbuf2 points to the smb_wct part of the secondary message
-type is the type of the secondary message
-outbuf points to the original outbuffer
-outbuf2 points to the smb_wct field of the new outbuffer
-size is the total length of the incoming message (from inbuf1)
-bufsize is the total buffer size
-
-return how many bytes were added to the response
-****************************************************************************/
-int chain_reply(int type,char *inbuf,char *inbuf2,char *outbuf,char *outbuf2,int size,int bufsize)
+  construct a chained reply and add it to the already made reply
+  **************************************************************************/
+int chain_reply(char *inbuf,char *outbuf,int size,int bufsize)
 {
-  int outsize = 0;
-  char *ibuf,*obuf;
-  static BOOL in_chain = False;
-  static char *last_outbuf=NULL;
-  BOOL was_inchain = in_chain;
-  int insize_remaining;
-  static int insize_deleted;
- 
+  static char *orig_inbuf;
+  static char *orig_outbuf;
+  int smb_com2 = CVAL(inbuf,smb_vwv0);
+  unsigned smb_off2 = SVAL(inbuf,smb_vwv1);
+  char *inbuf2, *outbuf2;
+  int outsize2;
+  char inbuf_saved[smb_wct];
+  char outbuf_saved[smb_wct];
+  extern int chain_size;
+  int wct = CVAL(outbuf,smb_wct);
+  int outsize = smb_size + 2*wct + SVAL(outbuf,smb_vwv0+2*wct);
 
-  chain_size += PTR_DIFF(outbuf2,outbuf) - smb_wct;
-  if (was_inchain)
-    outbuf = last_outbuf;
-  else
-    insize_deleted = 0;
+  /* maybe its not chained */
+  if (smb_com2 == 0xFF) {
+    CVAL(outbuf,smb_vwv0) = 0xFF;
+    return outsize;
+  }
 
+  if (chain_size == 0) {
+    /* this is the first part of the chain */
+    orig_inbuf = inbuf;
+    orig_outbuf = outbuf;
+  }
 
-  insize_deleted = 0;
-  inbuf2 -= insize_deleted;
-  insize_remaining = size - PTR_DIFF(inbuf2,inbuf);
-  insize_deleted += size - (insize_remaining + smb_wct);
+  /* we need to tell the client where the next part of the reply will be */
+  SSVAL(outbuf,smb_vwv1,smb_offset(outbuf+outsize,outbuf));
+  CVAL(outbuf,smb_vwv0) = smb_com2;
 
-  in_chain = True;
-  last_outbuf = outbuf;
+  /* remember how much the caller added to the chain, only counting stuff
+     after the parameter words */
+  chain_size += outsize - smb_wct;
 
+  /* work out pointers into the original packets. The
+     headers on these need to be filled in */
+  inbuf2 = orig_inbuf + smb_off2 + 4 - smb_wct;
+  outbuf2 = orig_outbuf + SVAL(outbuf,smb_vwv1) + 4 - smb_wct;
 
-  /* allocate some space for the in and out buffers of the chained message */
-  ibuf = (char *)malloc(size + SAFETY_MARGIN);
-  obuf = (char *)malloc(bufsize + SAFETY_MARGIN);
+  /* save the data which will be overwritten by the new headers */
+  memcpy(inbuf_saved,inbuf2,smb_wct);
+  memcpy(outbuf_saved,outbuf2,smb_wct);
 
-  if (!ibuf || !obuf)
-    {
-      DEBUG(0,("Out of memory in chain reply\n"));
-      return(ERROR(ERRSRV,ERRnoresource));
-    }
-
-  ibuf += SMB_ALIGNMENT;
-  obuf += SMB_ALIGNMENT;
+  /* give the new packet the same header as the first part of the SMB */
+  memcpy(inbuf2,orig_inbuf,smb_wct);
 
   /* create the in buffer */
-  memcpy(ibuf,inbuf,smb_wct);
-  memcpy(ibuf+smb_wct,inbuf2,insize_remaining);
-  CVAL(ibuf,smb_com) = type;
+  CVAL(outbuf2,smb_com) = smb_com2;
 
   /* create the out buffer */
-  bzero(obuf,smb_size);
-
-  set_message(obuf,0,0,True);
-  CVAL(obuf,smb_com) = CVAL(ibuf,smb_com);
+  bzero(outbuf2,smb_size);
+  set_message(outbuf2,0,0,True);
+  CVAL(outbuf2,smb_com) = CVAL(inbuf2,smb_com);
   
-  memcpy(obuf+4,ibuf+4,4);
-  CVAL(obuf,smb_rcls) = SUCCESS;
-  CVAL(obuf,smb_reh) = 0;
-  CVAL(obuf,smb_flg) = 0x80 | (CVAL(ibuf,smb_flg) & 0x8); /* bit 7 set 
-							     means a reply */
-  SSVAL(obuf,smb_flg2,1); /* say we support long filenames */
-  SSVAL(obuf,smb_err,SUCCESS);
-  SSVAL(obuf,smb_tid,SVAL(inbuf,smb_tid));
-  SSVAL(obuf,smb_pid,SVAL(inbuf,smb_pid));
-  SSVAL(obuf,smb_uid,SVAL(inbuf,smb_uid));
-  SSVAL(obuf,smb_mid,SVAL(inbuf,smb_mid));
+  memcpy(outbuf2+4,inbuf2+4,4);
+  CVAL(outbuf2,smb_rcls) = SUCCESS;
+  CVAL(outbuf2,smb_reh) = 0;
+  CVAL(outbuf2,smb_flg) = 0x80 | (CVAL(inbuf2,smb_flg) & 0x8); /* bit 7 set 
+								  means a reply */
+  SSVAL(outbuf2,smb_flg2,1); /* say we support long filenames */
+  SSVAL(outbuf2,smb_err,SUCCESS);
+  SSVAL(outbuf2,smb_tid,SVAL(inbuf2,smb_tid));
+  SSVAL(outbuf2,smb_pid,SVAL(inbuf2,smb_pid));
+  SSVAL(outbuf2,smb_uid,SVAL(inbuf2,smb_uid));
+  SSVAL(outbuf2,smb_mid,SVAL(inbuf2,smb_mid));
 
   DEBUG(3,("Chained message\n"));
-  show_msg(ibuf);
+  show_msg(inbuf2);
 
   /* process the request */
-  outsize = switch_message(type,ibuf,obuf,smb_wct+insize_remaining,
-			   bufsize-chain_size);
+  outsize2 = switch_message(smb_com2,inbuf2,outbuf2,size-chain_size,
+			    bufsize-chain_size);
 
   /* copy the new reply header over the old one, but preserve 
      the smb_com field */
-  memcpy(outbuf+smb_com+1,obuf+smb_com+1,smb_wct-(smb_com+1));
+  smb_com2 = CVAL(orig_outbuf,smb_com);
+  memmove(orig_outbuf,outbuf2,smb_wct);
+  CVAL(orig_outbuf,smb_com) = smb_com2;
 
-  /* and copy the data from the reply to the right spot */
-  memcpy(outbuf2,obuf+smb_wct,outsize - smb_wct);
+  /* restore the saved data, being careful not to overwrite any
+   data from the reply header */
+  memcpy(inbuf2,inbuf_saved,smb_wct);
+  {
+    int ofs = smb_wct - PTR_DIFF(outbuf2,orig_outbuf);
+    if (ofs < 0) ofs = 0;
+    memmove(outbuf2+ofs,outbuf_saved+ofs,smb_wct-ofs);
+  }
 
-  /* free the allocated buffers */
-  if (ibuf) free(ibuf-SMB_ALIGNMENT);
-  if (obuf) free(obuf-SMB_ALIGNMENT);
-
-  in_chain = was_inchain;
-
-  /* return how much extra has been added to the packet */
-  return(outsize - smb_wct);
+  return(outsize2 + chain_size);
 }
 
 
@@ -3330,10 +3322,12 @@ int construct_reply(char *inbuf,char *outbuf,int size,int bufsize)
   int type = CVAL(inbuf,smb_com);
   int outsize = 0;
   int msg_type = CVAL(inbuf,0);
+  extern int chain_size;
 
   smb_last_time = time(NULL);
 
   chain_size = 0;
+  chain_fnum = -1;
 
   bzero(outbuf,smb_size);
 

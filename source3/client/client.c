@@ -33,7 +33,7 @@ pstring cur_dir = "\\";
 pstring cd_path = "";
 pstring service="";
 pstring desthost="";
-pstring myname = "";
+extern pstring myname;
 pstring password = "";
 pstring username="";
 pstring workgroup=WORKGROUP;
@@ -3988,11 +3988,10 @@ static BOOL open_sockets(int port )
       strcpy(desthost,host);
     }
 
-  if (*myname == 0)
-    {
+  if (*myname == 0) {
       get_myname(myname,NULL);
-      strupper(myname);
-    }
+  }
+  strupper(myname);
 
   DEBUG(3,("Opening sockets\n"));
 
@@ -4008,7 +4007,8 @@ static BOOL open_sockets(int port )
 	/* Try and resolve the name with the netbios server */
 	int           	bcast;
 
-	if ((bcast = open_socket_in(SOCK_DGRAM, 0, 3)) != -1) {
+	if ((bcast = open_socket_in(SOCK_DGRAM, 0, 3,
+				    interpret_addr(lp_socket_address()))) != -1) {
 	  set_socket_options(bcast, "SO_BROADCAST");
 
 	  if (name_query(bcast, host, 0x20, True, True, *iface_bcast(dest_ip),

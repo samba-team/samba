@@ -98,7 +98,7 @@ int sys_select(fd_set *fds,struct timeval *tval)
   do {
     if (tval) memcpy((void *)&t2,(void *)tval,sizeof(t2));
     errno = 0;
-    selrtn = select(16,SELECT_CAST fds,NULL,NULL,tval?&t2:NULL);
+    selrtn = select(255,SELECT_CAST fds,NULL,NULL,tval?&t2:NULL);
   } while (selrtn<0 && errno == EINTR);
 
   return(selrtn);

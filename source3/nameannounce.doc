@@ -81,7 +81,7 @@ via name queries will just lead to lag and propogation delays, because
 if two parts of the net choose different DMBs then the data will be
 very slow to propoogate.
 
-If a DMB is configured then just sent the master announcemnt to that
+If a DMB is configured then just send the master announcemnt to that
 box! Thats all that needs to be done. Just send a udp 138 packet and
 forget it. If the recipient is indeed a DMB (as it should be if the
 config file is correct) then it should initiate a browse list sync

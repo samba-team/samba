@@ -31,7 +31,7 @@
 
 pstring service="";
 pstring desthost="";
-pstring myname = "";
+extern pstring myname;
 pstring password = "";
 pstring username="";
 pstring workgroup=WORKGROUP;
@@ -819,10 +819,8 @@ BOOL cli_open_sockets(int port)
   DEBUG(5,("Opening sockets\n"));
 
   if (*myname == 0)
-    {
-      get_myname(myname,NULL);
-      strupper(myname);
-    }
+    get_myname(myname,NULL);
+  strupper(myname);
 
   if (!have_ip)
     {
