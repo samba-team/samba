@@ -751,7 +751,8 @@ typedef struct samr_group_info4
 /* GROUP_INFO_CTR */
 typedef struct group_info_ctr
 {
-	uint16 switch_value;
+	uint16 switch_value1;
+	uint16 switch_value2;
 
 	union
  	{

@@ -1336,7 +1336,7 @@ void samr_io_group_info1(char *desc,  GROUP_INFO1 *gr1, prs_struct *ps, int dept
 /*******************************************************************
 makes a GROUP_INFO4 structure.
 ********************************************************************/
-void make_samr_group_info4(GROUP_INFO4 *gr4, char *acct_desc)
+void make_samr_group_info4(GROUP_INFO4 *gr4, const char *acct_desc)
 {
 	int acct_len = acct_desc != NULL ? strlen(acct_desc) : 0;
 	if (gr4 == NULL) return;
@@ -1374,10 +1374,10 @@ void samr_group_info_ctr(char *desc,  GROUP_INFO_CTR *ctr, prs_struct *ps, int d
 	prs_debug(ps, depth, desc, "samr_group_info_ctr");
 	depth++;
 
-	prs_uint16("switch_value", ps, depth, &(ctr->switch_value));
-	prs_align(ps);
+	prs_uint16("switch_value1", ps, depth, &(ctr->switch_value1));
+	prs_uint16("switch_value2", ps, depth, &(ctr->switch_value2));
 
-	switch (ctr->switch_value)
+	switch (ctr->switch_value1)
 	{
 		case 1:
 		{
@@ -1405,7 +1405,7 @@ makes a SAMR_Q_CREATE_DOM_GROUP structure.
 ********************************************************************/
 void make_samr_q_create_dom_group(SAMR_Q_CREATE_DOM_GROUP *q_e,
 				POLICY_HND *pol,
-				char *acct_desc)
+				const char *acct_desc)
 {
 	int acct_len = acct_desc != NULL ? strlen(acct_desc) : 0;
 	if (q_e == NULL || pol == NULL) return;

@@ -124,6 +124,7 @@ struct
   {"lookupsids", cmd_lsa_lookup_sids,  "Resolve names from SIDs"},
   {"lookupnames",cmd_lsa_lookup_names,  "Resolve SIDs from names"},
   {"enumusers",  cmd_sam_enum_users,   "SAM User Database Query (experimental!)"},
+  {"creategroup",cmd_sam_create_dom_group,"SAM Create Domain Group"},
   {"ntpass",     cmd_sam_ntchange_pwd, "NT SAM Password Change"},
   {"samuser",    cmd_sam_query_user,   "<username> SAM User Query (experimental!)"},
   {"samtest",    cmd_sam_test      ,   "SAM User Encrypted RPC test (experimental!)"},
