@@ -17,7 +17,7 @@ foo_DATA = \
 	@EXTRA_HDRS@
 
 
-EXTRA_DATA = err.h
+EXTRA_DATA = err.h fnmatch.h
 
 CLEANFILES = $(foo_DATA) asn1.h asn1_err.h hdb_asn1.h hdb_err.h heim_err.h \
 	     krb5_err.h
@@ -37,6 +37,8 @@ err.h:
 	$(LN_S) $(top_srcdir)/lib/roken/err.h .
 error.h:
 	$(LN_S) $(top_srcdir)/lib/error/error.h .
+fnmatch.h:
+	$(LN_S) $(top_srcdir)/lib/roken/fnmatch.h .
 getarg.h:
 	$(LN_S) $(top_srcdir)/lib/roken/getarg.h .
 gssapi.h:
