@@ -1,4 +1,4 @@
-2003-03-16  Love  <lha@stacken.kth.se>
+2003-03-16  Love Hörnquist Åstrand <lha@it.su.se>
 
 	* Makefile.am (libgssapi_la_LDFLAGS): bump to 3:6:2
 	(libgssapi_la_SOURCES): add all new functions
