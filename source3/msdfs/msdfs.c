@@ -352,7 +352,7 @@ BOOL dfs_redirect(pstring pathname, connection_struct* conn,
  junction_map structure
  **********************************************************************/
 
-BOOL get_referred_path(char *pathname, struct junction_map* jn,
+BOOL get_referred_path(char *pathname, struct junction_map* jucn,
 		       int* consumedcntp, BOOL* self_referralp)
 {
 	struct dfs_path dp;
@@ -365,7 +365,7 @@ BOOL get_referred_path(char *pathname, struct junction_map* jn,
 
 	BOOL self_referral = False;
 
-	if (!pathname || !jn)
+	if (!pathname || !jucn)
 		return False;
 
 	if (self_referralp)
@@ -385,13 +385,13 @@ BOOL get_referred_path(char *pathname, struct junction_map* jn,
 		}
 	}
 
-	pstrcpy(jn->service_name, dp.servicename);
-	pstrcpy(jn->volume_name, dp.reqpath);
+	pstrcpy(jucn->service_name, dp.servicename);
+	pstrcpy(jucn->volume_name, dp.reqpath);
 
 	/* Verify the share is a dfs root */
-	snum = lp_servicenumber(jn->service_name);
+	snum = lp_servicenumber(jucn->service_name);
 	if(snum < 0) {
-		if ((snum = find_service(jn->service_name)) < 0)
+		if ((snum = find_service(jucn->service_name)) < 0)
 			return False;
 	}
 	
@@ -407,7 +407,7 @@ BOOL get_referred_path(char *pathname, struct junction_map* jn,
 
 	if (*lp_msdfs_proxy(snum) != '\0') {
 		struct referral* ref;
-		jn->referral_count = 1;
+		jucn->referral_count = 1;
 		if ((ref = (struct referral*) malloc(sizeof(struct referral))) == NULL) {
 			DEBUG(0, ("malloc failed for referral\n"));
 			goto out;
@@ -418,7 +418,7 @@ BOOL get_referred_path(char *pathname, struct junction_map* jn,
 			pstrcat(ref->alternate_path, dp.reqpath);
 		ref->proximity = 0;
 		ref->ttl = REFERRAL_TTL;
-		jn->referral_list = ref;
+		jucn->referral_list = ref;
 		if (consumedcntp)
 			*consumedcntp = strlen(pathname);
 		ret = True;
@@ -427,7 +427,7 @@ BOOL get_referred_path(char *pathname, struct junction_map* jn,
 
 	/* If not remote & not a self referral, return False */
 	if (!resolve_dfs_path(pathname, &dp, conn, False, 
-			      &jn->referral_list, &jn->referral_count,
+			      &jucn->referral_list, &jucn->referral_count,
 			      self_referralp, consumedcntp)) {
 		if (!*self_referralp) {
 			DEBUG(3,("get_referred_path: No valid referrals for path %s\n", pathname));
@@ -438,7 +438,7 @@ BOOL get_referred_path(char *pathname, struct junction_map* jn,
 	/* if self_referral, fill up the junction map */
 	if (*self_referralp) {
 		struct referral* ref;
-		jn->referral_count = 1;
+		jucn->referral_count = 1;
 		if((ref = (struct referral*) malloc(sizeof(struct referral))) == NULL) {
 			DEBUG(0,("malloc failed for referral\n"));
 			goto out;
@@ -447,7 +447,7 @@ BOOL get_referred_path(char *pathname, struct junction_map* jn,
 		pstrcpy(ref->alternate_path,pathname);
 		ref->proximity = 0;
 		ref->ttl = REFERRAL_TTL;
-		jn->referral_list = ref;
+		jucn->referral_list = ref;
 		if (consumedcntp)
 			*consumedcntp = strlen(pathname);
 	}
@@ -712,7 +712,7 @@ int setup_dfs_referral(connection_struct *orig_conn, char *pathname, int max_ref
 /**********************************************************************
  Creates a junction structure from a Dfs pathname
  **********************************************************************/
-BOOL create_junction(char* pathname, struct junction_map* jn)
+BOOL create_junction(char* pathname, struct junction_map* jucn)
 {
         struct dfs_path dp;
  
@@ -736,8 +736,8 @@ BOOL create_junction(char* pathname, struct junction_map* jn)
                 return False;
         }
 
-        pstrcpy(jn->service_name,dp.servicename);
-        pstrcpy(jn->volume_name,dp.reqpath);
+        pstrcpy(jucn->service_name,dp.servicename);
+        pstrcpy(jucn->volume_name,dp.reqpath);
         return True;
 }
 
@@ -745,22 +745,22 @@ BOOL create_junction(char* pathname, struct junction_map* jn)
  Forms a valid Unix pathname from the junction 
  **********************************************************************/
 
-static BOOL junction_to_local_path(struct junction_map* jn, char* path,
+static BOOL junction_to_local_path(struct junction_map* jucn, char* path,
 				   int max_pathlen, connection_struct *conn)
 {
 	int snum;
 	pstring conn_path;
 
-	if(!path || !jn)
+	if(!path || !jucn)
 		return False;
 
-	snum = lp_servicenumber(jn->service_name);
+	snum = lp_servicenumber(jucn->service_name);
 	if(snum < 0)
 		return False;
 
 	safe_strcpy(path, lp_pathname(snum), max_pathlen-1);
 	safe_strcat(path, "/", max_pathlen-1);
-	safe_strcat(path, jn->volume_name, max_pathlen-1);
+	safe_strcat(path, jucn->volume_name, max_pathlen-1);
 
 	pstrcpy(conn_path, lp_pathname(snum));
 	if (!create_conn_struct(conn, snum, conn_path))
@@ -769,7 +769,7 @@ static BOOL junction_to_local_path(struct junction_map* jn, char* path,
 	return True;
 }
 
-BOOL create_msdfs_link(struct junction_map* jn, BOOL exists)
+BOOL create_msdfs_link(struct junction_map* jucn, BOOL exists)
 {
 	pstring path;
 	pstring msdfs_link;
@@ -779,13 +779,13 @@ BOOL create_msdfs_link(struct junction_map* jn, BOOL exists)
 	BOOL insert_comma = False;
 	BOOL ret = False;
 
-	if(!junction_to_local_path(jn, path, sizeof(path), conn))
+	if(!junction_to_local_path(jucn, path, sizeof(path), conn))
 		return False;
   
 	/* form the msdfs_link contents */
 	pstrcpy(msdfs_link, "msdfs:");
-	for(i=0; i<jn->referral_count; i++) {
-		char* refpath = jn->referral_list[i].alternate_path;
+	for(i=0; i<jucn->referral_count; i++) {
+		char* refpath = jucn->referral_list[i].alternate_path;
       
 		trim_char(refpath, '\\', '\\');
 		if(*refpath == '\0') {
@@ -822,14 +822,14 @@ out:
 	return ret;
 }
 
-BOOL remove_msdfs_link(struct junction_map* jn)
+BOOL remove_msdfs_link(struct junction_map* jucn)
 {
 	pstring path;
 	connection_struct conns;
  	connection_struct *conn = &conns;
 	BOOL ret = False;
 
-	if( junction_to_local_path(jn, path, sizeof(path), conn) ) {
+	if( junction_to_local_path(jucn, path, sizeof(path), conn) ) {
 		if( SMB_VFS_UNLINK(conn, path) == 0 )
 			ret = True;
 
@@ -839,7 +839,7 @@ BOOL remove_msdfs_link(struct junction_map* jn)
 	return ret;
 }
 
-static BOOL form_junctions(int snum, struct junction_map* jn, int* jn_count)
+static BOOL form_junctions(int snum, struct junction_map* jucn, int* jn_count)
 {
 	int cnt = *jn_count;
 	DIR *dirp;
@@ -867,13 +867,13 @@ static BOOL form_junctions(int snum, struct junction_map* jn, int* jn_count)
 	   DO NOT REMOVE THIS: NT clients will not work with us
 	   if this is not present
 	*/ 
-	pstrcpy(jn[cnt].service_name, service_name);
-	jn[cnt].volume_name[0] = '\0';
-	jn[cnt].referral_count = 1;
+	pstrcpy(jucn[cnt].service_name, service_name);
+	jucn[cnt].volume_name[0] = '\0';
+	jucn[cnt].referral_count = 1;
 
-	ref = jn[cnt].referral_list
+	ref = jucn[cnt].referral_list
 		= (struct referral*) malloc(sizeof(struct referral));
-	if (jn[cnt].referral_list == NULL) {
+	if (jucn[cnt].referral_list == NULL) {
 		DEBUG(0, ("Malloc failed!\n"));
 		goto out;
 	}
@@ -897,10 +897,10 @@ static BOOL form_junctions(int snum, struct junction_map* jn, int* jn_count)
 		goto out;
 
 	while((dname = vfs_readdirname(conn, dirp)) != NULL) {
-		if (is_msdfs_link(conn, dname, &(jn[cnt].referral_list),
-				  &(jn[cnt].referral_count), NULL)) {
-			pstrcpy(jn[cnt].service_name, service_name);
-			pstrcpy(jn[cnt].volume_name, dname);
+		if (is_msdfs_link(conn, dname, &(jucn[cnt].referral_list),
+				  &(jucn[cnt].referral_count), NULL)) {
+			pstrcpy(jucn[cnt].service_name, service_name);
+			pstrcpy(jucn[cnt].volume_name, dname);
 			cnt++;
 		}
 	}
@@ -912,7 +912,7 @@ out:
 	return ret;
 }
 
-int enum_msdfs_links(struct junction_map* jn)
+int enum_msdfs_links(struct junction_map* jucn)
 {
 	int i=0;
 	int jn_count = 0;
@@ -922,7 +922,7 @@ int enum_msdfs_links(struct junction_map* jn)
 
 	for(i=0;i < lp_numservices();i++) {
 		if(lp_msdfs_root(i)) 
-			form_junctions(i,jn,&jn_count);
+			form_junctions(i,jucn,&jn_count);
 	}
 	return jn_count;
 }
