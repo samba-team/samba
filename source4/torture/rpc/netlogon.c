@@ -23,6 +23,7 @@
 */
 
 #include "includes.h"
+#include "events.h"
 #include "librpc/gen_ndr/ndr_netlogon.h"
 #include "auth/auth.h"
 

@@ -662,7 +662,7 @@ static void smbsrv_recv(struct stream_connection *conn, struct timeval t, uint16
 
 	status = receive_smb_request(smb_conn, t);
 	if (NT_STATUS_IS_ERR(status)) {
-		conn->event.fde->flags = 0;
+		talloc_free(conn->event.fde);
 		smbsrv_terminate_connection(smb_conn, nt_errstr(status));
 		return;
 	}
@@ -710,7 +710,7 @@ static void smbsrv_send(struct stream_connection *conn, struct timeval t, uint16
 	/* if no more requests are pending to be sent then
 	   we should stop select for write */
 	if (smb_conn->pending_send == NULL) {
-		conn->event.fde->flags &= ~EVENT_FD_WRITE;
+		EVENT_FD_NOT_WRITEABLE(conn->event.fde);
 	}
 }
 

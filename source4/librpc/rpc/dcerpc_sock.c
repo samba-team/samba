@@ -74,7 +74,7 @@ static void sock_dead(struct dcerpc_connection *p, NTSTATUS status)
 		p->transport.recv_data(p, NULL, status);
 	}
 
-	sock->fde->flags &= ~(EVENT_FD_WRITE | EVENT_FD_READ);
+	talloc_free(sock->fde);
 }
 
 /*
@@ -109,7 +109,7 @@ static void sock_process_send(struct dcerpc_connection *p)
 	}
 
 	if (sock->pending_send == NULL) {
-		sock->fde->flags &= ~EVENT_FD_WRITE;
+		EVENT_FD_NOT_WRITEABLE(sock->fde);
 	}
 }
 
@@ -184,7 +184,7 @@ static void sock_process_recv(struct dcerpc_connection *p)
 	sock->recv.received = 0;
 	sock->recv.pending_count--;
 	if (sock->recv.pending_count == 0) {
-		sock->fde->flags &= ~EVENT_FD_READ;
+		EVENT_FD_NOT_READABLE(sock->fde);
 	}
 }
 
@@ -192,9 +192,9 @@ static void sock_process_recv(struct dcerpc_connection *p)
   called when a IO is triggered by the events system
 */
 static void sock_io_handler(struct event_context *ev, struct fd_event *fde, 
-			    struct timeval t, uint16_t flags)
+			    struct timeval t, uint16_t flags, void *private)
 {
-	struct dcerpc_connection *p = fde->private;
+	struct dcerpc_connection *p = talloc_get_type(private, struct dcerpc_connection);
 	struct sock_private *sock = p->transport.private;
 
 	if (flags & EVENT_FD_WRITE) {
@@ -220,7 +220,7 @@ static NTSTATUS sock_send_read(struct dcerpc_connection *p)
 
 	sock->recv.pending_count++;
 	if (sock->recv.pending_count == 1) {
-		sock->fde->flags |= EVENT_FD_READ;
+		EVENT_FD_READABLE(sock->fde);
 	}
 	return NT_STATUS_OK;
 }
@@ -250,7 +250,7 @@ static NTSTATUS sock_send_request(struct dcerpc_connection *p, DATA_BLOB *data, 
 
 	DLIST_ADD_END(sock->pending_send, blob, struct sock_blob *);
 
-	sock->fde->flags |= EVENT_FD_WRITE;
+	EVENT_FD_WRITEABLE(sock->fde);
 
 	if (trigger_read) {
 		sock_send_read(p);
@@ -299,7 +299,6 @@ static NTSTATUS dcerpc_pipe_open_socket(struct dcerpc_connection *c,
 {
 	struct sock_private *sock;
 	struct socket_context *socket_ctx;
-	struct fd_event fde;
 	NTSTATUS status;
 
 	sock = talloc(c, struct sock_private);
@@ -342,12 +341,8 @@ static NTSTATUS dcerpc_pipe_open_socket(struct dcerpc_connection *c,
 	sock->recv.data = data_blob(NULL, 0);
 	sock->recv.pending_count = 0;
 
-	fde.fd = socket_get_fd(sock->sock);
-	fde.flags = 0;
-	fde.handler = sock_io_handler;
-	fde.private = c;
-
-	sock->fde = event_add_fd(sock->event_ctx, &fde, sock);
+	sock->fde = event_add_fd(sock->event_ctx, sock, socket_get_fd(sock->sock), 
+				 0, sock_io_handler, c);
 
 	c->transport.private = sock;
 

@@ -26,7 +26,7 @@
   register one of the possible event types and implement that event
   somewhere else.
 
-  There are 4 types of event handling that are handled in this module:
+  There are 2 types of event handling that are handled in this module:
 
   1) a file descriptor becoming readable or writeable. This is mostly
      used for network sockets, but can be used for any type of file
@@ -41,15 +41,6 @@
      like. When they are called the handler can choose to set the time
      for the next event. If next_event is not set then the event is removed.
 
-  3) an event that happens every time through the select loop. These
-     sorts of events should be very fast, as they will occur a
-     lot. Mostly used for things like destroying a talloc context or
-     checking a signal flag.
-
-  4) an event triggered by a signal. These can be one shot or
-     repeated. You can have more than one handler registered for a
-     single signal if you want to.
-
   To setup a set of events you first need to create a event_context
   structure using the function event_context_init(); This returns a
   'struct event_context' that you use in all subsequent calls.
@@ -59,8 +50,7 @@
 
   Finally, you call event_loop_wait() to block waiting for one of the
   events to occor. In normal operation event_loop_wait() will loop
-  forever, unless you call event_loop_exit() from inside one of your
-  handler functions.
+  forever.
 
 */
 
@@ -69,6 +59,46 @@
 #include "system/select.h"
 #include "dlinklist.h"
 #include "events.h"
+
+
+/*
+  please read the comments in events.c before modifying
+*/
+
+
+struct event_context {	
+	/* list of filedescriptor events */
+	struct fd_event {
+		struct event_context *event_ctx;
+		struct fd_event *next, *prev;
+		int fd;
+		uint16_t flags; /* see EVENT_FD_* flags */
+		event_fd_handler_t handler;
+		void *private;
+	} *fd_events;
+
+	/* list of timed events */
+	struct timed_event {
+		struct event_context *event_ctx;
+		struct timed_event *next, *prev;
+		struct timeval next_event;
+		event_timed_handler_t handler;
+		void *private;
+	} *timed_events;
+
+	/* the maximum file descriptor number in fd_events */
+	int maxfd;
+
+	/* information for exiting from the event loop */
+	int exit_code;
+
+	/* this is changed by the destructors for any event type. It
+	   is used to detect event destruction by event handlers,
+	   which means the code that is calling all event handles
+	   needs to assume that the linked list is no longer valid 
+	*/
+	uint32_t destruction_count;
+};
 
 /*
   create a event_context structure. This must be the first events
@@ -82,19 +112,8 @@ struct event_context *event_context_init(TALLOC_CTX *mem_ctx)
 	ev = talloc_zero(mem_ctx, struct event_context);
 	if (!ev) return NULL;
 
-	ev->events = talloc_new(ev);
-
 	return ev;
 }
-
-/*
-  destroy an events context, also destroying any remaining events
-*/
-void event_context_destroy(struct event_context *ev)
-{
-	talloc_free(ev);
-}
-
 
 /*
   recalculate the maxfd
@@ -131,17 +150,25 @@ static int event_fd_destructor(void *ptr)
   add a fd based event
   return NULL on failure (memory allocation error)
 */
-struct fd_event *event_add_fd(struct event_context *ev, struct fd_event *e0, 
-			      TALLOC_CTX *mem_ctx) 
+struct fd_event *event_add_fd(struct event_context *ev, TALLOC_CTX *mem_ctx,
+			      int fd, uint16_t flags, event_fd_handler_t handler,
+			      void *private)
 {
-	struct fd_event *e = talloc(ev->events, struct fd_event);
+	struct fd_event *e = talloc(ev, struct fd_event);
 	if (!e) return NULL;
-	*e = *e0;
-	DLIST_ADD(ev->fd_events, e);
+
 	e->event_ctx = ev;
+	e->fd        = fd;
+	e->flags     = flags;
+	e->handler   = handler;
+	e->private   = private;
+
+	DLIST_ADD(ev->fd_events, e);
+
 	if (e->fd > ev->maxfd) {
 		ev->maxfd = e->fd;
 	}
+
 	talloc_set_destructor(e, event_fd_destructor);
 	if (mem_ctx) {
 		talloc_steal(mem_ctx, e);
@@ -150,6 +177,25 @@ struct fd_event *event_add_fd(struct event_context *ev, struct fd_event *e0,
 }
 
 
+/*
+  return the fd event flags
+*/
+uint16_t event_fd_flags(struct fd_event *fde)
+{
+	return fde->flags;
+}
+
+/*
+  set the fd event flags
+*/
+void event_fd_setflags(struct fd_event *fde, uint16_t flags)
+{
+	fde->flags = flags;
+}
+
+/*
+  destroy a timed event
+*/
 static int event_timed_destructor(void *ptr)
 {
 	struct timed_event *te = talloc_get_type(ptr, struct timed_event);
@@ -162,55 +208,25 @@ static int event_timed_destructor(void *ptr)
   add a timed event
   return NULL on failure (memory allocation error)
 */
-struct timed_event *event_add_timed(struct event_context *ev, struct timed_event *e0,
-				    TALLOC_CTX *mem_ctx) 
+struct timed_event *event_add_timed(struct event_context *ev, TALLOC_CTX *mem_ctx,
+				    struct timeval next_event, 
+				    event_timed_handler_t handler, 
+				    void *private) 
 {
-	struct timed_event *e = talloc(ev->events, struct timed_event);
+	struct timed_event *e = talloc(ev, struct timed_event);
 	if (!e) return NULL;
-	*e = *e0;
-	e->event_ctx = ev;
+
+	e->event_ctx  = ev;
+	e->next_event = next_event;
+	e->handler    = handler;
+	e->private    = private;
+
 	DLIST_ADD(ev->timed_events, e);
 	talloc_set_destructor(e, event_timed_destructor);
 	if (mem_ctx) {
 		talloc_steal(mem_ctx, e);
 	}
 	return e;
-}
-
-static int event_loop_destructor(void *ptr)
-{
-	struct loop_event *le = talloc_get_type(ptr, struct loop_event);
-	DLIST_REMOVE(le->event_ctx->loop_events, le);
-	le->event_ctx->destruction_count++;
-	return 0;
-}
-
-/*
-  add a loop event
-  return NULL on failure (memory allocation error)
-*/
-struct loop_event *event_add_loop(struct event_context *ev, struct loop_event *e0,
-				  TALLOC_CTX *mem_ctx)
-{
-	struct loop_event *e = talloc(ev->events, struct loop_event);
-	if (!e) return NULL;
-	*e = *e0;
-	e->event_ctx = ev;
-	DLIST_ADD(ev->loop_events, e);
-	talloc_set_destructor(e, event_loop_destructor);
-	if (mem_ctx) {
-		talloc_steal(mem_ctx, e);
-	}
-	return e;
-}
-
-/*
-  tell the event loop to exit with the specified code
-*/
-void event_loop_exit(struct event_context *ev, int code)
-{
-	ev->exit.exit_now = True;
-	ev->exit.code = code;
 }
 
 /*
@@ -220,22 +236,10 @@ int event_loop_once(struct event_context *ev)
 {
 	fd_set r_fds, w_fds;
 	struct fd_event *fe;
-	struct loop_event *le;
 	struct timed_event *te, *te_next;
 	int selrtn;
-	struct timeval tval, t, *tvalp=NULL;
+	struct timeval tval, t, *tvalp;
 	uint32_t destruction_count = ev->destruction_count;
-
-	t = timeval_current();
-
-	/* the loop events are called on each loop. Be careful to allow the 
-	   event to remove itself */
-	for (le=ev->loop_events;le;) {
-		struct loop_event *next = le->next;
-		le->handler(ev, le, t);
-		if (destruction_count != ev->destruction_count) break;
-		le = next;
-	}
 
 	FD_ZERO(&r_fds);
 	FD_ZERO(&w_fds);
@@ -252,9 +256,8 @@ int event_loop_once(struct event_context *ev)
 		fe = next;
 	}
 
-	/* start with a reasonable max timeout */
-	tval.tv_sec = 0;
-	tval.tv_usec = 0;
+	tvalp = NULL;
+	t = timeval_current();
 		
 	/* work out the right timeout for all timed events */
 	for (te=ev->timed_events;te;te=te_next) {
@@ -301,7 +304,7 @@ int event_loop_once(struct event_context *ev)
 			   the event, so this must be a bug. This is a
 			   fatal error. */
 			DEBUG(0,("EBADF on event_loop_once - exiting\n"));
-			ev->exit.code = EBADF;
+			ev->exit_code = EBADF;
 			return -1;
 		}
 		
@@ -314,7 +317,7 @@ int event_loop_once(struct event_context *ev)
 				if (FD_ISSET(fe->fd, &r_fds)) flags |= EVENT_FD_READ;
 				if (FD_ISSET(fe->fd, &w_fds)) flags |= EVENT_FD_WRITE;
 				if (flags) {
-					fe->handler(ev, fe, t, flags);
+					fe->handler(ev, fe, t, flags, fe->private);
 					if (destruction_count != ev->destruction_count) {
 						break;
 					}
@@ -328,7 +331,7 @@ int event_loop_once(struct event_context *ev)
 		struct timed_event *next = te->next;
 		if (timeval_compare(&te->next_event, &t) >= 0) {
 			te->next_event = timeval_zero();
-			te->handler(ev, te, t);
+			te->handler(ev, te, t, te->private);
 			if (destruction_count != ev->destruction_count) {
 				break;
 			}
@@ -348,16 +351,14 @@ int event_loop_once(struct event_context *ev)
 */
 int event_loop_wait(struct event_context *ev)
 {
-	ZERO_STRUCT(ev->exit);
+	ev->exit_code = 0;
 	ev->maxfd = EVENT_INVALID_MAXFD;
 
-	ev->exit.exit_now = False;
-
-	while (ev->fd_events && !ev->exit.exit_now) {
+	while (ev->fd_events && ev->exit_code == 0) {
 		if (event_loop_once(ev) != 0) {
 			break;
 		}
 	}
 
-	return ev->exit.code;
+	return ev->exit_code;
 }

@@ -122,9 +122,9 @@ static void messaging_dispatch(struct messaging_context *msg, struct messaging_r
   handle IO for a single message
 */
 static void messaging_recv_handler(struct event_context *ev, struct fd_event *fde, 
-				   struct timeval t, uint16_t flags)
+				   struct timeval t, uint16_t flags, void *private)
 {
-	struct messaging_rec *rec = fde->private;
+	struct messaging_rec *rec = talloc_get_type(private, struct messaging_rec);
 	struct messaging_context *msg = rec->msg;
 	NTSTATUS status;
 
@@ -192,12 +192,12 @@ static void messaging_recv_handler(struct event_context *ev, struct fd_event *fd
   handle a new incoming connection
 */
 static void messaging_listen_handler(struct event_context *ev, struct fd_event *fde, 
-				     struct timeval t, uint16_t flags)
+				     struct timeval t, uint16_t flags, void *private)
 {
-	struct messaging_context *msg = fde->private;
+	struct messaging_context *msg = talloc_get_type(private, 
+							struct messaging_context);
 	struct messaging_rec *rec;
 	NTSTATUS status;
-	struct fd_event fde2;
 
 	rec = talloc(msg, struct messaging_rec);
 	if (rec == NULL) {
@@ -210,17 +210,12 @@ static void messaging_listen_handler(struct event_context *ev, struct fd_event *
 	}
 	talloc_steal(rec, rec->sock);
 
-	rec->msg = msg;
-	rec->ndone = 0;
+	rec->msg           = msg;
+	rec->ndone         = 0;
 	rec->header.length = 0;
-	rec->path = msg->path;
-
-	fde2.private 	= rec;
-	fde2.fd		= socket_get_fd(rec->sock);
-	fde2.flags	= EVENT_FD_READ;
-	fde2.handler	= messaging_recv_handler;
-
-	rec->fde	= event_add_fd(msg->event.ev, &fde2, rec);
+	rec->path          = msg->path;
+	rec->fde           = event_add_fd(msg->event.ev, rec, socket_get_fd(rec->sock), 
+					  EVENT_FD_READ, messaging_recv_handler, rec);
 }
 
 /*
@@ -262,9 +257,9 @@ void messaging_deregister(struct messaging_context *msg, uint32_t msg_type, void
   handle IO for sending a message
 */
 static void messaging_send_handler(struct event_context *ev, struct fd_event *fde, 
-				   struct timeval t, uint16_t flags)
+				   struct timeval t, uint16_t flags, void *private)
 {
-	struct messaging_rec *rec = fde->private;
+	struct messaging_rec *rec = talloc_get_type(private, struct messaging_rec);
 	NTSTATUS status;
 
 	if (rec->ndone < sizeof(rec->header)) {
@@ -330,17 +325,18 @@ static NTSTATUS try_connect(struct messaging_rec *rec)
   when the servers listen queue is full we use this to backoff the message
 */
 static void messaging_backoff_handler(struct event_context *ev, struct timed_event *te, 
-				      struct timeval t)
+				      struct timeval t, void *private)
 {
-	struct messaging_rec *rec = te->private;
+	struct messaging_rec *rec = talloc_get_type(private, struct messaging_rec);
 	struct messaging_context *msg = rec->msg;
 	NTSTATUS status;
-	struct fd_event fde;
 
 	status = try_connect(rec);
 	if (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
 		/* backoff again */
-		te->next_event = timeval_add(&t, 0, MESSAGING_BACKOFF);
+		event_add_timed(msg->event.ev, rec, 
+				timeval_add(&t, 0, MESSAGING_BACKOFF),
+				messaging_backoff_handler, rec);
 		return;
 	}
 
@@ -351,14 +347,8 @@ static void messaging_backoff_handler(struct event_context *ev, struct timed_eve
 		return;
 	}
 
-	fde.private 	= rec;
-	fde.fd		= socket_get_fd(rec->sock);
-	fde.flags	= EVENT_FD_WRITE;
-	fde.handler	= messaging_send_handler;
-
-	rec->fde	= event_add_fd(msg->event.ev, &fde, rec);
-
-	messaging_send_handler(msg->event.ev, rec->fde, timeval_zero(), EVENT_FD_WRITE);
+	rec->fde = event_add_fd(msg->event.ev, rec, socket_get_fd(rec->sock),
+				EVENT_FD_WRITE, messaging_send_handler, rec);
 }
 
 
@@ -369,7 +359,6 @@ NTSTATUS messaging_send(struct messaging_context *msg, uint32_t server, uint32_t
 {
 	struct messaging_rec *rec;
 	NTSTATUS status;
-	struct fd_event fde;
 
 	rec = talloc(msg, struct messaging_rec);
 	if (rec == NULL) {
@@ -401,11 +390,9 @@ NTSTATUS messaging_send(struct messaging_context *msg, uint32_t server, uint32_t
 	status = try_connect(rec);
 	if (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
 		/* backoff on this message - the servers listen queue is full */
-		struct timed_event te;
-		te.next_event = timeval_current_ofs(0, MESSAGING_BACKOFF);
-		te.handler = messaging_backoff_handler;
-		te.private = rec;
-		event_add_timed(msg->event.ev, &te, rec);
+		event_add_timed(msg->event.ev, rec, 
+				timeval_current_ofs(0, MESSAGING_BACKOFF),
+				messaging_backoff_handler, rec);
 		return NT_STATUS_OK;
 	}
 
@@ -414,14 +401,8 @@ NTSTATUS messaging_send(struct messaging_context *msg, uint32_t server, uint32_t
 		return status;
 	}
 
-	fde.private 	= rec;
-	fde.fd		= socket_get_fd(rec->sock);
-	fde.flags	= EVENT_FD_WRITE;
-	fde.handler	= messaging_send_handler;
-
-	rec->fde	= event_add_fd(msg->event.ev, &fde, rec);
-
-	messaging_send_handler(msg->event.ev, rec->fde, timeval_zero(), EVENT_FD_WRITE);
+	rec->fde = event_add_fd(msg->event.ev, rec, socket_get_fd(rec->sock),
+				EVENT_FD_WRITE, messaging_send_handler, rec);
 
 	return NT_STATUS_OK;
 }
@@ -458,7 +439,6 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx, uint32_t server_id
 {
 	struct messaging_context *msg;
 	NTSTATUS status;
-	struct fd_event fde;
 
 	msg = talloc(mem_ctx, struct messaging_context);
 	if (msg == NULL) {
@@ -491,13 +471,9 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx, uint32_t server_id
 		return NULL;
 	}
 
-	fde.private 	= msg;
-	fde.fd		= socket_get_fd(msg->sock);
-	fde.flags	= EVENT_FD_READ;
-	fde.handler	= messaging_listen_handler;
-
 	msg->event.ev   = talloc_reference(msg, ev);
-	msg->event.fde	= event_add_fd(ev, &fde, msg);
+	msg->event.fde	= event_add_fd(ev, msg, socket_get_fd(msg->sock), 
+				       EVENT_FD_READ, messaging_listen_handler, msg);
 
 	talloc_set_destructor(msg, messaging_destructor);
 	

@@ -300,7 +300,7 @@ void req_send_reply_nosign(struct smbsrv_request *req)
 	   ready for write events */
 	DLIST_ADD_END(req->smb_conn->pending_send, req, struct smbsrv_request *);
 
-	req->smb_conn->connection->event.fde->flags |= EVENT_FD_WRITE;
+	EVENT_FD_WRITEABLE(req->smb_conn->connection->event.fde);
 }
 
 /*
