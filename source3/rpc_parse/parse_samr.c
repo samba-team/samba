@@ -2271,10 +2271,11 @@ BOOL samr_io_group_info3(const char *desc, GROUP_INFO3 *gr3, prs_struct *ps, int
 inits a GROUP_INFO4 structure.
 ********************************************************************/
 
-void init_samr_group_info4(GROUP_INFO4 * gr4, char *acct_desc)
+void init_samr_group_info4(GROUP_INFO4 * gr4, const char *acct_desc)
 {
 	DEBUG(5, ("init_samr_group_info4\n"));
 
+	gr4->level = 4;
 	init_unistr2(&gr4->uni_acct_desc, acct_desc, UNI_FLAGS_NONE);
 	init_uni_hdr(&gr4->hdr_acct_desc, &gr4->uni_acct_desc);
 }
@@ -2292,9 +2293,8 @@ BOOL samr_io_group_info4(const char *desc, GROUP_INFO4 * gr4,
 	prs_debug(ps, depth, desc, "samr_io_group_info4");
 	depth++;
 
-	if(!prs_align(ps))
+	if(!prs_uint16("hdr_level", ps, depth, &gr4->level))
 		return False;
-
 	if(!smb_io_unihdr("hdr_acct_desc", &gr4->hdr_acct_desc, ps, depth))
 		return False;
 	if(!smb_io_unistr2("uni_acct_desc", &gr4->uni_acct_desc,
@@ -2349,7 +2349,7 @@ inits a SAMR_Q_CREATE_DOM_GROUP structure.
 ********************************************************************/
 
 void init_samr_q_create_dom_group(SAMR_Q_CREATE_DOM_GROUP * q_e,
-				  POLICY_HND *pol, char *acct_desc,
+				  POLICY_HND *pol, const char *acct_desc,
 				  uint32 access_mask)
 {
 	DEBUG(5, ("init_samr_q_create_dom_group\n"));
