@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -146,10 +146,16 @@ krb5_rd_safe(krb5_context context,
   }
   /* XXX - check replay cache */
 
-  /* check sequence number */
+  /* check sequence number. since MIT krb5 cannot generate a sequence
+     number of zero but instead generates no sequence number, we accept that
+  */
+
   if (auth_context->flags & KRB5_AUTH_CONTEXT_DO_SEQUENCE) {
-      if (safe.safe_body.seq_number == NULL ||
-	  *safe.safe_body.seq_number != auth_context->remote_seqnumber) {
+      if ((safe.safe_body.seq_number == NULL
+	   && auth_context->remote_seqnumber != 0)
+	  || (safe.safe_body.seq_number != NULL
+	      && *safe.safe_body.seq_number !=
+	      auth_context->remote_seqnumber)) {
 	  ret = KRB5KRB_AP_ERR_BADORDER;
 	  goto failure;
       }
