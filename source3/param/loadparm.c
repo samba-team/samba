@@ -1090,8 +1090,6 @@ static void init_locals(void)
     }
 }
 
-#define NUMBER_OF_STATIC_STRING_BUFS 20
-
 static TALLOC_CTX *lp_talloc;
 
 /******************************************************************* a
