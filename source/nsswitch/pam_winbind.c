@@ -2,8 +2,11 @@
 
    Copyright Andrew Tridgell <tridge@samba.org> 2000
    Copyright Tim Potter <tpot@samba.org> 2000
+   Copyright Andrew Bartlettt <abartlet@samba.org> 2002
 
    largely based on pam_userdb by Christian Gafton <gafton@redhat.com> 
+   also contains large slabs of code from pam_unix by Elliot Lee <sopwith@redhat.com>
+   (see copyright below for full details)
 */
 
 #include "pam_winbind.h"
@@ -12,6 +15,10 @@
 void init_request(struct winbindd_request *req,int rq_type);
 int write_sock(void *buffer, int count);
 int read_reply(struct winbindd_response *response);
+
+/* data tokens */
+
+#define MAX_PASSWD_TRIES	3
 
 /* some syslogging */
 static void _pam_log(int err, const char *format, ...)
@@ -25,27 +32,71 @@ static void _pam_log(int err, const char *format, ...)
 	closelog();
 }
 
-static int ctrl	 = 0;
-
 static int _pam_parse(int argc, const char **argv)
 {
-     /* step through arguments */
-     for (ctrl = 0; argc-- > 0; ++argv) {
+	int ctrl;
+	/* step through arguments */
+	for (ctrl = 0; argc-- > 0; ++argv) {
 
-          /* generic options */
+		/* generic options */
+		
+		if (!strcmp(*argv,"debug"))
+			ctrl |= WINBIND_DEBUG_ARG;
+		else if (!strcasecmp(*argv, "use_authtok"))
+			ctrl |= WINBIND_USE_AUTHTOK_ARG;
+		else if (!strcasecmp(*argv, "use_first_pass"))
+			ctrl |= WINBIND_TRY_FIRST_PASS_ARG;
+		else if (!strcasecmp(*argv, "try_first_pass"))
+			ctrl |= WINBIND_USE_FIRST_PASS_ARG;
+		else if (!strcasecmp(*argv, "unknown_ok"))
+			ctrl |= WINBIND_UNKNOWN_OK_ARG;
+		else {
+			_pam_log(LOG_ERR, "pam_parse: unknown option; %s", *argv);
+		}
+	}
+	
+	return ctrl;
+}
 
-          if (!strcmp(*argv,"debug"))
-               ctrl |= PAM_DEBUG_ARG;
-	  else if (!strcasecmp(*argv, "use_authtok"))
-	      ctrl |= PAM_USE_AUTHTOK_ARG;
-	  else if (!strcasecmp(*argv, "unknown_ok"))
-	      ctrl |= PAM_UNKNOWN_OK_ARG;
-	  else {
-               _pam_log(LOG_ERR, "pam_parse: unknown option; %s", *argv);
-          }
-     }
+/* --- authentication management functions --- */
 
-     return ctrl;
+/* Attempt a conversation */
+
+static int converse(pam_handle_t *pamh, int nargs,
+		    struct pam_message **message,
+		    struct pam_response **response)
+{
+    int retval;
+    struct pam_conv *conv;
+
+    retval = pam_get_item(pamh, PAM_CONV, (const void **) &conv ) ;
+    if (retval == PAM_SUCCESS) {
+	retval = conv->conv(nargs, (const struct pam_message **)message,
+			    response, conv->appdata_ptr);
+    }
+	
+    return retval; /* propagate error status */
+}
+
+
+int _make_remark(pam_handle_t * pamh, int type, const char *text)
+{
+	int retval = PAM_SUCCESS;
+
+	struct pam_message *pmsg[1], msg[1];
+	struct pam_response *resp;
+	
+	pmsg[0] = &msg[0];
+	msg[0].msg = text;
+	msg[0].msg_style = type;
+	
+	resp = NULL;
+	retval = converse(pamh, 1, pmsg, &resp);
+	
+	if (resp) {
+		_pam_drop_reply(resp, 1);
+	}
+	return retval;
 }
 
 static int winbind_request(enum winbindd_cmd req_type,
@@ -56,27 +107,38 @@ static int winbind_request(enum winbindd_cmd req_type,
 	init_request(request, req_type);
 	
 	if (write_sock(request, sizeof(*request)) == -1) {
-		return -2;
+		_pam_log(LOG_ERR, "write to socket failed!");
+		return PAM_SERVICE_ERR;
 	}
 	
 	/* Wait for reply */
 	if (read_reply(response) == -1) {
-		return -2;
+		_pam_log(LOG_ERR, "read from socket failed!");
+		return PAM_SERVICE_ERR;
 	}
 
 	/* Copy reply data from socket */
 	if (response->result != WINBINDD_OK) {
-		return 1;
+		if (response->data.auth.pam_error != PAM_SUCCESS) {
+			_pam_log(LOG_ERR, "request failed, PAM error was %d, NT error was %s", 
+				 response->data.auth.pam_error,
+				 response->data.auth.nt_status_string);
+			return response->data.auth.pam_error;
+		} else {
+			_pam_log(LOG_ERR, "request failed, but PAM error 0!");
+			return PAM_SERVICE_ERR;
+		}
 	}
 	
-	return 0;
+	return PAM_SUCCESS;
 }
 
 /* talk to winbindd */
-static int winbind_auth_request(const char *user, const char *pass)
+static int winbind_auth_request(const char *user, const char *pass, int ctrl)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
+	int retval;
 
 	ZERO_STRUCT(request);
 
@@ -86,7 +148,33 @@ static int winbind_auth_request(const char *user, const char *pass)
 	strncpy(request.data.auth.pass, pass, 
                 sizeof(request.data.auth.pass)-1);
 	
-        return winbind_request(WINBINDD_PAM_AUTH, &request, &response);
+        retval = winbind_request(WINBINDD_PAM_AUTH, &request, &response);
+
+	switch (retval) {
+	case PAM_AUTH_ERR:
+		/* incorrect password */
+		_pam_log(LOG_WARNING, "user `%s' denied access (incorrect password)", user);
+		return retval;
+	case PAM_USER_UNKNOWN:
+		/* the user does not exist */
+		if (ctrl & WINBIND_DEBUG_ARG)
+			_pam_log(LOG_NOTICE, "user `%s' not found",
+				 user);
+		if (ctrl & WINBIND_UNKNOWN_OK_ARG) {
+			return PAM_IGNORE;
+		}	 
+		return retval;
+	case PAM_SUCCESS:
+		/* Otherwise, the authentication looked good */
+		_pam_log(LOG_NOTICE, "user '%s' granted acces", user);
+		return retval;
+	default:
+		/* we don't know anything about this return value */
+		_pam_log(LOG_ERR, "internal module error (retval = %d, user = `%s'",
+			 retval, user);
+		return retval;
+	}
+     /* should not be reached */
 }
 
 /* talk to winbindd */
@@ -121,20 +209,6 @@ static int winbind_chauthtok_request(const char *user, const char *oldpass,
 }
 
 /*
- * Looks up an user name and checks the password
- *
- * return values:
- *	 1  = User not found
- *	 0  = OK
- * 	-1  = Password incorrect
- *	-2  = System error
- */
-static int user_lookup(const char *user, const char *pass)
-{
-	return winbind_auth_request(user, pass);
-}
-
-/*
  * Checks if a user has an account
  *
  * return values:
@@ -148,27 +222,6 @@ static int valid_user(const char *user)
 	return 1;
 }
 
-/* --- authentication management functions --- */
-
-/* Attempt a conversation */
-
-static int converse(pam_handle_t *pamh, int nargs,
-		    struct pam_message **message,
-		    struct pam_response **response)
-{
-    int retval;
-    struct pam_conv *conv;
-
-    retval = pam_get_item(pamh, PAM_CONV, (const void **) &conv ) ;
-    if (retval == PAM_SUCCESS) {
-	retval = conv->conv(nargs, (const struct pam_message **)message,
-			    response, conv->appdata_ptr);
-    }
-	
-    return retval; /* propagate error status */
-}
-
-
 static char *_pam_delete(register char *xx)
 {
     _pam_overwrite(xx);
@@ -177,48 +230,157 @@ static char *_pam_delete(register char *xx)
 }
 
 /*
- * This is a conversation function to obtain the user's password
+ * obtain a password from the user
  */
-static int auth_conversation(pam_handle_t *pamh)
+
+int _winbind_read_password(pam_handle_t * pamh
+			,unsigned int ctrl
+			,const char *comment
+			,const char *prompt1
+			,const char *prompt2
+			,const char **pass)
 {
-    struct pam_message msg, *pmsg;
-    struct pam_response *resp;
-    int retval;
-    char * token = NULL;
-    
-    pmsg = &msg;
-    msg.msg_style = PAM_PROMPT_ECHO_OFF;
-    msg.msg = "Password: ";
+	int authtok_flag;
+	int retval;
+	const char *item;
+	char *token;
 
-    /* so call the conversation expecting i responses */
-    resp = NULL;
-    retval = converse(pamh, 1, &pmsg, &resp);
+	D(("called"));
 
-    if (resp != NULL) {
-	char * const item;
-	/* interpret the response */
-	if (retval == PAM_SUCCESS) {     /* a good conversation */
-	    token = x_strdup(resp[0].resp);
-	    if (token == NULL) {
-		return PAM_AUTHTOK_RECOVER_ERR;
-	    }
+	/*
+	 * make sure nothing inappropriate gets returned
+	 */
+
+	*pass = token = NULL;
+
+	/*
+	 * which authentication token are we getting?
+	 */
+
+	authtok_flag = on(WINBIND__OLD_PASSWORD, ctrl) ? PAM_OLDAUTHTOK : PAM_AUTHTOK;
+
+	/*
+	 * should we obtain the password from a PAM item ?
+	 */
+
+	if (on(WINBIND_TRY_FIRST_PASS_ARG, ctrl) || on(WINBIND_USE_FIRST_PASS_ARG, ctrl)) {
+		retval = pam_get_item(pamh, authtok_flag, (const void **) &item);
+		if (retval != PAM_SUCCESS) {
+			/* very strange. */
+			_pam_log(LOG_ALERT, 
+				 "pam_get_item returned error to unix-read-password"
+			    );
+			return retval;
+		} else if (item != NULL) {	/* we have a password! */
+			*pass = item;
+			item = NULL;
+			return PAM_SUCCESS;
+		} else if (on(WINBIND_USE_FIRST_PASS_ARG, ctrl)) {
+			return PAM_AUTHTOK_RECOVER_ERR;		/* didn't work */
+		} else if (on(WINBIND_USE_AUTHTOK_ARG, ctrl)
+			   && off(WINBIND__OLD_PASSWORD, ctrl)) {
+			return PAM_AUTHTOK_RECOVER_ERR;
+		}
+	}
+	/*
+	 * getting here implies we will have to get the password from the
+	 * user directly.
+	 */
+
+	{
+		struct pam_message msg[3], *pmsg[3];
+		struct pam_response *resp;
+		int i, replies;
+
+		/* prepare to converse */
+
+		if (comment != NULL) {
+			pmsg[0] = &msg[0];
+			msg[0].msg_style = PAM_TEXT_INFO;
+			msg[0].msg = comment;
+			i = 1;
+		} else {
+			i = 0;
+		}
+
+		pmsg[i] = &msg[i];
+		msg[i].msg_style = PAM_PROMPT_ECHO_OFF;
+		msg[i++].msg = prompt1;
+		replies = 1;
+
+		if (prompt2 != NULL) {
+			pmsg[i] = &msg[i];
+			msg[i].msg_style = PAM_PROMPT_ECHO_OFF;
+			msg[i++].msg = prompt2;
+			++replies;
+		}
+		/* so call the conversation expecting i responses */
+		resp = NULL;
+		retval = converse(pamh, i, pmsg, &resp);
+
+		if (resp != NULL) {
+
+			/* interpret the response */
+
+			if (retval == PAM_SUCCESS) {	/* a good conversation */
+
+				token = x_strdup(resp[i - replies].resp);
+				if (token != NULL) {
+					if (replies == 2) {
+
+						/* verify that password entered correctly */
+						if (!resp[i - 1].resp
+						    || strcmp(token, resp[i - 1].resp)) {
+							_pam_delete(token);	/* mistyped */
+							retval = PAM_AUTHTOK_RECOVER_ERR;
+							_make_remark(pamh								    ,PAM_ERROR_MSG, MISTYPED_PASS);
+						}
+					}
+				} else {
+					_pam_log(LOG_NOTICE
+						 ,"could not recover authentication token");
+				}
+
+			}
+			/*
+			 * tidy up the conversation (resp_retcode) is ignored
+			 * -- what is it for anyway? AGM
+			 */
+
+			_pam_drop_reply(resp, i);
+
+		} else {
+			retval = (retval == PAM_SUCCESS)
+			    ? PAM_AUTHTOK_RECOVER_ERR : retval;
+		}
 	}
 
-	/* set the auth token */
-	retval = pam_set_item(pamh, PAM_AUTHTOK, token);
-	token = _pam_delete(token);   /* clean it up */
-	if ( (retval != PAM_SUCCESS) ||
-	     (retval = pam_get_item(pamh, PAM_AUTHTOK, (const void **) &item)) != PAM_SUCCESS ) {
-	    return retval;
+	if (retval != PAM_SUCCESS) {
+		if (on(WINBIND_DEBUG_ARG, ctrl))
+			_pam_log(LOG_DEBUG,
+			         "unable to obtain a password");
+		return retval;
 	}
+	/* 'token' is the entered password */
+
+	/* we store this password as an item */
 	
-	_pam_drop_reply(resp, 1);
-    } else {
-	retval = (retval == PAM_SUCCESS)
-	    ? PAM_AUTHTOK_RECOVER_ERR:retval ;
-    }
+	retval = pam_set_item(pamh, authtok_flag, token);
+	_pam_delete(token);	/* clean it up */
+	if (retval != PAM_SUCCESS
+	    || (retval = pam_get_item(pamh, authtok_flag
+				      ,(const void **) &item))
+	    != PAM_SUCCESS) {
+		
+		_pam_log(LOG_CRIT, "error manipulating password");
+		return retval;
+		
+	}
 
-    return retval;
+	*pass = item;
+	item = NULL;		/* break link to password */
+
+	return PAM_SUCCESS;
 }
 
 PAM_EXTERN
@@ -230,34 +392,26 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
      int retval = PAM_AUTH_ERR;
     
      /* parse arguments */
-     ctrl = _pam_parse(argc, argv);
+     int ctrl = _pam_parse(argc, argv);
 
      /* Get the username */
      retval = pam_get_user(pamh, &username, NULL);
      if ((retval != PAM_SUCCESS) || (!username)) {
-        if (ctrl & PAM_DEBUG_ARG)
+        if (ctrl & WINBIND_DEBUG_ARG)
             _pam_log(LOG_DEBUG,"can not get the username");
         return PAM_SERVICE_ERR;
      }
      
-     if ((ctrl & PAM_USE_AUTHTOK_ARG) == 0) {
-	 /* Converse just to be sure we have the password */
-	 retval = auth_conversation(pamh);
-	 if (retval != PAM_SUCCESS) {
-	     _pam_log(LOG_ERR, "could not obtain password for `%s'",
-		      username);
-	     return PAM_CONV_ERR;
-	 }
-     }
+     retval = _winbind_read_password(pamh, ctrl, NULL, 
+				     "Password: ", NULL,
+				     &password);
      
-     /* Get the password */
-     retval = pam_get_item(pamh, PAM_AUTHTOK, (const void **) &password);
      if (retval != PAM_SUCCESS) {
 	 _pam_log(LOG_ERR, "Could not retrive user's password");
 	 return PAM_AUTHTOK_ERR;
      }
      
-     if (ctrl & PAM_DEBUG_ARG) {
+     if (ctrl & WINBIND_DEBUG_ARG) {
 
 	     /* Let's not give too much away in the log file */
 
@@ -270,36 +424,7 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
      }
 
      /* Now use the username to look up password */
-     retval = user_lookup(username, password);
-     switch (retval) {
-	 case -2:
-	     /* some sort of system error. The log was already printed */
-	     return PAM_SERVICE_ERR;    
-	 case -1:
-	     /* incorrect password */
-	     _pam_log(LOG_WARNING, "user `%s' denied access (incorrect password)", username);
-	     return PAM_AUTH_ERR;
-	 case 1:
-		 /* the user does not exist */
-	     if (ctrl & PAM_DEBUG_ARG)
-		 _pam_log(LOG_NOTICE, "user `%s' not found",
-			  username);
-	     if (ctrl & PAM_UNKNOWN_OK_ARG) {
-		 return PAM_IGNORE;
-	     }	 
-	     return PAM_USER_UNKNOWN;
-	 case 0:
-	     /* Otherwise, the authentication looked good */
-	     _pam_log(LOG_NOTICE, "user '%s' granted acces", username);
-	     return PAM_SUCCESS;
-	 default:
-	     /* we don't know anything about this return value */
-	     _pam_log(LOG_ERR, "internal module error (retval = %d, user = `%s'",
-		      retval, username);
-	     return PAM_SERVICE_ERR;
-     }
-     /* should not be reached */
-     return PAM_IGNORE;
+     return winbind_auth_request(username, password, ctrl);
 }
 
 PAM_EXTERN
@@ -321,12 +446,12 @@ int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags,
     int retval = PAM_USER_UNKNOWN;
 
     /* parse arguments */
-    ctrl = _pam_parse(argc, argv);
+    int ctrl = _pam_parse(argc, argv);
 
     /* Get the username */
     retval = pam_get_user(pamh, &username, NULL);
     if ((retval != PAM_SUCCESS) || (!username)) {
-	if (ctrl & PAM_DEBUG_ARG)
+	if (ctrl & WINBIND_DEBUG_ARG)
 	    _pam_log(LOG_DEBUG,"can not get the username");
 	return PAM_SERVICE_ERR;
     }
@@ -339,10 +464,10 @@ int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags,
 	    return PAM_SERVICE_ERR;
 	case 1:
 	    /* the user does not exist */
-	    if (ctrl & PAM_DEBUG_ARG)
+	    if (ctrl & WINBIND_DEBUG_ARG)
 		_pam_log(LOG_NOTICE, "user `%s' not found",
 			 username);
-	    if (ctrl & PAM_UNKNOWN_OK_ARG)
+	    if (ctrl & WINBIND_UNKNOWN_OK_ARG)
 		return PAM_IGNORE;
 	    return PAM_USER_UNKNOWN;
 	case 0:
@@ -361,111 +486,174 @@ int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags,
 }
 
 
-PAM_EXTERN
-int pam_sm_chauthtok(pam_handle_t *pamh, int flags, int argc, 
-                     const char **argv)
+PAM_EXTERN int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
+				int argc, const char **argv)
 {
-    int retval;
-    char *newpw, *oldpw;
-    const char *user;
+	unsigned int lctrl;
+	int retval;
+	unsigned int ctrl = _pam_parse(argc, argv);
 
-    /* Get name of a user */
+	/* <DO NOT free() THESE> */
+	const char *user;
+	char *pass_old, *pass_new;
+	/* </DO NOT free() THESE> */
 
-    retval = pam_get_user(pamh, &user, "Username: ");
+	char *Announce;
+	
+	int retry = 0;
 
-    if (retval != PAM_SUCCESS) {
-        return retval;
-    }
+	D(("called."));
 
-    /* XXX check in domain format */
+	/*
+	 * First get the name of a user
+	 */
+	retval = pam_get_user(pamh, &user, "Username: ");
+	if (retval == PAM_SUCCESS) {
+		if (user == NULL) {
+			_pam_log(LOG_ERR, "username was NULL!");
+			return PAM_USER_UNKNOWN;
+		}
+		if (retval == PAM_SUCCESS && on(WINBIND_DEBUG_ARG, ctrl))
+			_pam_log(LOG_DEBUG, "username [%s] obtained",
+				 user);
+	} else {
+		if (on(WINBIND_DEBUG_ARG, ctrl))
+			_pam_log(LOG_DEBUG,
+				 "password - could not identify user");
+		return retval;
+	}
 
-    /* Perform preliminary check and store requested password for updating
-       later on */
+	D(("Got username of %s", user));
 
-    if (flags & PAM_PRELIM_CHECK) {
-        struct pam_message msg[3], *pmsg[3];
-        struct pam_response *resp;
+	/*
+	 * obtain and verify the current password (OLDAUTHTOK) for
+	 * the user.
+	 */
 
-        /* Converse to ensure we have the current password */
+	if (flags & PAM_PRELIM_CHECK) {
+		D(("prelim check"));
+		
+		/* instruct user what is happening */
+#define greeting "Changing password for "
+		Announce = (char *) malloc(sizeof(greeting) + strlen(user));
+		if (Announce == NULL) {
+		_pam_log(LOG_CRIT, 
+			 "password - out of memory");
+		return PAM_BUF_ERR;
+		}
+		(void) strcpy(Announce, greeting);
+		(void) strcpy(Announce + sizeof(greeting) - 1, user);
+#undef greeting
+		
+		lctrl = ctrl | WINBIND__OLD_PASSWORD;
+		retval = _winbind_read_password(pamh, lctrl
+						,Announce
+						,"(current) NT password: "
+						,NULL
+						,(const char **) &pass_old);
+		free(Announce);
+		
+		if (retval != PAM_SUCCESS) {
+			_pam_log(LOG_NOTICE
+				 ,"password - (old) token not obtained");
+			return retval;
+		}
+		/* verify that this is the password for this user */
+		
+		retval = winbind_auth_request(user, pass_old, ctrl);
+		
+		if (retval != PAM_ACCT_EXPIRED 
+		    && retval != PAM_NEW_AUTHTOK_REQD 
+		    && retval != PAM_SUCCESS) {
+			D(("Authentication failed"));
+			pass_old = NULL;
+			return retval;
+		}
+		
+		retval = pam_set_item(pamh, PAM_OLDAUTHTOK, (const void *) pass_old);
+		pass_old = NULL;
+		if (retval != PAM_SUCCESS) {
+			_pam_log(LOG_CRIT, 
+				 "failed to set PAM_OLDAUTHTOK");
+		}
+	} else if (flags & PAM_UPDATE_AUTHTOK) {
+	
+		/*
+		 * obtain the proposed password
+		 */
+		
+		D(("do update"));
+		
+		/*
+		 * get the old token back. 
+		 */
+		
+		retval = pam_get_item(pamh, PAM_OLDAUTHTOK
+				      ,(const void **) &pass_old);
+		D(("pass_old [%s]", pass_old));
+		
+		if (retval != PAM_SUCCESS) {
+			_pam_log(LOG_NOTICE, "user not authenticated");
+			return retval;
+		}
+		
+		D(("get new password now"));
+		
+		lctrl = ctrl;
+		
+		if (on(WINBIND_USE_AUTHTOK_ARG, lctrl)) {
+			ctrl = WINBIND_USE_FIRST_PASS_ARG | lctrl;
+		}
+		retry = 0;
+		retval = PAM_AUTHTOK_ERR;
+		while ((retval != PAM_SUCCESS) && (retry++ < MAX_PASSWD_TRIES)) {
+			/*
+			 * use_authtok is to force the use of a previously entered
+			 * password -- needed for pluggable password strength checking
+			 */
+			
+			retval = _winbind_read_password(pamh, lctrl
+							,NULL
+							,"Enter new NT password: "
+							,"Retype new NT password: "
+							,(const char **) &pass_new);
+			
+			if (retval != PAM_SUCCESS) {
+				if (on(WINBIND_DEBUG_ARG, ctrl)) {
+					_pam_log(LOG_ALERT
+						 ,"password - new password not obtained");
+				}
+				pass_old = NULL;/* tidy up */
+				return retval;
+			}
+			D(("returned to main routine"));
+			
+			/*
+			 * At this point we know who the user is and what they
+			 * propose as their new password. Verify that the new
+			 * password is acceptable.
+			 */
+			
+			if (pass_new[0] == '\0') {/* "\0" password = NULL */
+				pass_new = NULL;
+			}
+		}
+		
+		/*
+		 * By reaching here we have approved the passwords and must now
+		 * rebuild the password database file.
+		 */
 
-        retval = auth_conversation(pamh);
-
-        if (retval != PAM_SUCCESS) {
-            return retval;
-        }
-
-        /* Obtain and verify current password */
-
-        pmsg[0] = &msg[0];
-        msg[0].msg_style = PAM_TEXT_INFO;
-        msg[0].msg = "Changing password for user %s";
-
-        pmsg[1] = &msg[1];
-        msg[1].msg_style = PAM_PROMPT_ECHO_OFF;
-        msg[1].msg = "New NT password: ";
-
-        pmsg[2] = &msg[2];
-        msg[2].msg_style = PAM_PROMPT_ECHO_OFF;
-        msg[2].msg = "Retype new NT password: ";
-
-        resp = NULL;
-
-        retval = converse(pamh, 3, pmsg, &resp);
-
-        if (resp != NULL) {
-
-            if (retval == PAM_SUCCESS) {
-
-                /* Check password entered correctly */
-
-                if (strcmp(resp[1].resp, resp[2].resp) != 0) { 
-                    struct pam_response *resp2;
-
-                    msg[0].msg_style = PAM_ERROR_MSG;
-                    msg[0].msg = "Sorry, passwords do not match";
-
-                    converse(pamh, 1, pmsg, &resp2);
-
-                    _pam_drop_reply(resp, 3);
-                    _pam_drop_reply(resp2, 1);
-
-                    return PAM_AUTHTOK_RECOVER_ERR;
-                }
-
-                /* Store passwords */
-
-                retval = pam_set_item(pamh, PAM_OLDAUTHTOK, resp[1].resp);
-                _pam_drop_reply(resp, 3);
-            }
-        }
-
-        /* XXX What happens if root? */
-        /* XXX try first pass and use first pass args */
-
-        return retval;
-    }
-
-    if (flags & PAM_UPDATE_AUTHTOK) {
-
-        retval = pam_get_item(pamh, PAM_OLDAUTHTOK, (const void **)&newpw);
-        if (retval != PAM_SUCCESS) {
-            return PAM_AUTHTOK_ERR;
-        }
-
-        retval = pam_get_item(pamh, PAM_AUTHTOK, (const void **)&oldpw);
-        if (retval != PAM_SUCCESS) {
-            return PAM_AUTHTOK_ERR;
-        }
-
-        if (retval == PAM_SUCCESS && 
-            winbind_chauthtok_request(user, oldpw, newpw) == 0) {
-            return PAM_SUCCESS;
-        }
-
-        return PAM_AUTHTOK_ERR;
-    }
-
-    return PAM_SERVICE_ERR;
+		retval = winbind_chauthtok_request(user, pass_old, pass_new);
+		_pam_overwrite(pass_new);
+		_pam_overwrite(pass_old);
+		pass_old = pass_new = NULL;
+	} else {
+		retval = PAM_SERVICE_ERR;
+	}
+	
+	D(("retval was %d", retval));
+	return retval;
 }
 
 #ifdef PAM_STATIC
@@ -485,8 +673,14 @@ struct pam_module _pam_winbind_modstruct = {
 #endif
 
 /*
- * Copyright (c) Andrew Tridgell <tridge@samba.org> 2000
- * Copyright (c) Tim Potter      <tpot@samba.org>   2000
+ * Copyright (c) Andrew Tridgell  <tridge@samba.org>   2000
+ * Copyright (c) Tim Potter       <tpot@samba.org>     2000
+ * Copyright (c) Andrew Bartlettt <abartlet@samba.org> 2002
+ * Copyright (c) Jan Rêkorajski 1999.
+ * Copyright (c) Andrew G. Morgan 1996-8.
+ * Copyright (c) Alex O. Yuriev, 1996.
+ * Copyright (c) Cristian Gafton 1996.
+ * Copyright (C) Elliot Lee <sopwith@redhat.com> 1996, Red Hat Software. 
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions

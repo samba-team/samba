@@ -5,7 +5,7 @@
 
    Copyright (C) Andrew Tridgell 2000
    Copyright (C) Tim Potter 2001
-   Copyright (C) Andrew Bartlett 2001
+   Copyright (C) Andrew Bartlett 2001-2002
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -37,7 +37,7 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
         NET_USER_INFO_3 info3;
         struct cli_state *cli = NULL;
 	uchar chal[8];
-	TALLOC_CTX *mem_ctx;
+	TALLOC_CTX *mem_ctx = NULL;
 	DATA_BLOB lm_resp;
 	DATA_BLOB nt_resp;
 
@@ -48,7 +48,8 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 
 	if (!(mem_ctx = talloc_init_named("winbind pam auth for %s", state->request.data.auth.user))) {
 		DEBUG(0, ("winbindd_pam_auth: could not talloc_init()!\n"));
-		return WINBINDD_ERROR;
+		result = NT_STATUS_NO_MEMORY;
+		goto done;
 	}
 
 	/* Parse domain and username */
@@ -56,16 +57,13 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 	if (!parse_domain_user(state->request.data.auth.user, name_domain, 
 			       name_user)) {
 		DEBUG(5,("no domain seperator (%s) in username (%s) - failing auth\n", lp_winbind_separator(), state->request.data.auth.user));
-		talloc_destroy(mem_ctx);
-		return WINBINDD_ERROR;
+		result = NT_STATUS_INVALID_PARAMETER;
+		goto done;
 	}
 
 	passlen = strlen(state->request.data.auth.pass);
 		
-	if (!*state->request.data.auth.pass) {
-		return WINBINDD_ERROR;
-		talloc_destroy(mem_ctx);
-	} else {
+	{
 		unsigned char local_lm_response[24];
 		unsigned char local_nt_response[24];
 		
@@ -86,8 +84,8 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
                 lp_workgroup(), trust_passwd, &last_change_time)) {
 		DEBUG(0, ("winbindd_pam_auth: could not fetch trust account "
                           "password for domain %s\n", lp_workgroup()));
-		talloc_destroy(mem_ctx);
-		return WINBINDD_ERROR;
+		result = NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+		goto done;
 	}
 
 	/* We really don't care what LUID we give the user. */
@@ -100,6 +98,7 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 
         if (!NT_STATUS_IS_OK(result)) {
                 DEBUG(3, ("could not open handle to NETLOGON pipe\n"));
+		result = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
                 goto done;
         }
 
@@ -115,8 +114,19 @@ done:
 	if (cli) 
 		cli_shutdown(cli);
 
-	talloc_destroy(mem_ctx);
+	if (mem_ctx) 
+		talloc_destroy(mem_ctx);
 	
+	state->response.data.auth.nt_status = NT_STATUS_V(result);
+	fstrcpy(state->response.data.auth.nt_status_string, get_nt_error_msg(result));
+	fstrcpy(state->response.data.auth.error_string, get_nt_error_msg(result));
+	state->response.data.auth.pam_error = nt_status_to_pam(result);
+
+	DEBUG(2, ("Plain-text authenticaion for user %s returned %s (PAM: %d)\n", 
+	      state->request.data.auth.user, 
+	      state->response.data.auth.nt_status_string,
+	      state->response.data.auth.pam_error));	      
+
 	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
 }
 	
@@ -129,7 +139,7 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 	time_t last_change_time;
         NET_USER_INFO_3 info3;
         struct cli_state *cli = NULL;
-	TALLOC_CTX *mem_ctx;
+	TALLOC_CTX *mem_ctx = NULL;
 	const char *domain = NULL;
 
 	DATA_BLOB lm_resp, nt_resp;
@@ -141,7 +151,8 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 
 	if (!(mem_ctx = talloc_init_named("winbind pam auth crap for %s", state->request.data.auth.user))) {
 		DEBUG(0, ("winbindd_pam_auth_crap: could not talloc_init()!\n"));
-		return WINBINDD_ERROR;
+		result = NT_STATUS_NO_MEMORY;
+		goto done;
 	}
 
 	if (*state->request.data.auth_crap.domain) {
@@ -150,14 +161,14 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 		domain = talloc_strdup(mem_ctx, lp_workgroup());
 	} else {
 		DEBUG(5,("no domain specified with username (%s) - failing auth\n", state->request.data.auth.user));
-		talloc_destroy(mem_ctx);
-		return WINBINDD_ERROR;
+		result = NT_STATUS_INVALID_PARAMETER;
+		goto done;
 	}
 
 	if (!domain) {
 		DEBUG(0,("winbindd_pam_auth_crap: talloc_strdup failed!\n"));
-		talloc_destroy(mem_ctx);
-		return WINBINDD_ERROR;
+		result = NT_STATUS_NO_MEMORY;
+		goto done;
 	}
 
 	lm_resp = data_blob_talloc(mem_ctx, state->request.data.auth_crap.lm_resp, state->request.data.auth_crap.lm_resp_len);
@@ -171,8 +182,8 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
                 lp_workgroup(), trust_passwd, &last_change_time)) {
 		DEBUG(0, ("winbindd_pam_auth: could not fetch trust account "
                           "password for domain %s\n", lp_workgroup()));
-		talloc_destroy(mem_ctx);
-		return WINBINDD_ERROR;
+		result = NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+		goto done;
 	}
 
 	ZERO_STRUCT(info3);
@@ -190,12 +201,26 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 						lm_resp, nt_resp, 
 						&info3);
         
-	uni_group_cache_store_netlogon(mem_ctx, &info3);
+	if (NT_STATUS_IS_OK(result)) {
+		uni_group_cache_store_netlogon(mem_ctx, &info3);
+	}
+
 done:
-	talloc_destroy(mem_ctx);
+	if (mem_ctx)
+		talloc_destroy(mem_ctx);
 
 	if (cli)
 		cli_shutdown(cli);
+
+	state->response.data.auth.nt_status = NT_STATUS_V(result);
+	fstrcpy(state->response.data.auth.nt_status_string, get_nt_error_msg(result));
+	fstrcpy(state->response.data.auth.error_string, get_nt_error_msg(result));
+	state->response.data.auth.pam_error = nt_status_to_pam(result);
+
+	DEBUG(2, ("NTLM CRAP authenticaion for user %s returned %s (PAM: %d)\n", 
+	      state->request.data.auth.user, 
+	      state->response.data.auth.nt_status_string,
+	      state->response.data.auth.pam_error));	      
 
 	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
 }
@@ -204,6 +229,7 @@ done:
 
 enum winbindd_result winbindd_pam_chauthtok(struct winbindd_cli_state *state)
 {
+	NTSTATUS result;
 	char *oldpass, *newpass;
 	fstring domain, user;
 	CLI_POLICY_HND *hnd;
@@ -217,8 +243,10 @@ enum winbindd_result winbindd_pam_chauthtok(struct winbindd_cli_state *state)
 		return WINBINDD_ERROR;
 
 	if (!parse_domain_user(state->request.data.chauthtok.user, domain, 
-			       user))
-		return WINBINDD_ERROR;
+			       user)) {
+		result = NT_STATUS_INVALID_PARAMETER;
+		goto done;
+	}
 
 	/* Change password */
 
@@ -227,14 +255,25 @@ enum winbindd_result winbindd_pam_chauthtok(struct winbindd_cli_state *state)
 
 	/* Get sam handle */
 
-	if (!(hnd = cm_get_sam_handle(domain)))
-		return WINBINDD_ERROR;
+	if (!(hnd = cm_get_sam_handle(domain))) {
+		DEBUG(1, ("could not get SAM handle on DC for %s\n", domain));
+		result = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
+		goto done;
+	}
 
 	if (!cli_oem_change_password(hnd->cli, user, newpass, oldpass)) {
-		DEBUG(0, ("password change failed for user %s/%s\n", domain, 
+		DEBUG(1, ("password change failed for user %s/%s\n", domain, 
 			  user));
-		return WINBINDD_ERROR;
+		result = NT_STATUS_WRONG_PASSWORD;
+	} else {
+		result = NT_STATUS_OK;
 	}
-    
-	return WINBINDD_OK;
+
+done:    
+	state->response.data.auth.nt_status = NT_STATUS_V(result);
+	fstrcpy(state->response.data.auth.nt_status_string, get_nt_error_msg(result));
+	fstrcpy(state->response.data.auth.error_string, get_nt_error_msg(result));
+	state->response.data.auth.pam_error = nt_status_to_pam(result);
+
+	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
 }
