@@ -222,7 +222,7 @@ BOOL dup_policy_hnd(struct policy_cache *cache,
 	{
 		return False;
 	}
-	DEBUG(3, ("policy(pnum=%x %s): Duplicating policy\n",
+	DEBUG(5, ("policy(pnum=%x %s): Duplicating policy\n",
 		  p->pnum, pol_get_name(p)));
 	return register_policy_hnd(cache, &p->key, hnd, p->access_mask);
 }
@@ -320,7 +320,7 @@ BOOL set_policy_state(struct policy_cache *cache, POLICY_HND *hnd,
 
 	if (p && p->open)
 	{
-		DEBUG(3, ("policy(pnum=%x %s): Setting policy state\n",
+		DEBUG(5, ("policy(pnum=%x %s): Setting policy state\n",
 			  p->pnum, pol_get_name(p)));
 
 		p->dev = dev;
@@ -433,7 +433,7 @@ BOOL close_policy_hnd(struct policy_cache *cache, POLICY_HND *hnd)
 		return False;
 	}
 
-	DEBUG(3, ("policy(pnum=%x %s): Closing\n", p->pnum, pol_get_name(p)));
+	DEBUG(5, ("policy(pnum=%x %s): Closing\n", p->pnum, pol_get_name(p)));
 
 	DLIST_REMOVE(cache->Policy, p);
 

@@ -890,7 +890,7 @@ BOOL set_policy_con(struct policy_cache *cache, POLICY_HND * hnd,
 		if (set_policy_state(cache, hnd,
 				     free_policy_con, (void *)dev))
 		{
-			DEBUG(3, ("setting policy con\n"));
+			DEBUG(5, ("setting policy con\n"));
 			return True;
 		}
 		free(dev);
