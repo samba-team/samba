@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -676,6 +676,7 @@ fkt_remove_entry(krb5_context context,
     krb5_keytab_entry e;
     krb5_kt_cursor cursor;
     off_t pos_start, pos_end;
+    int found = 0;
     
     fkt_start_seq_get_int(context, id, O_RDWR | O_BINARY, &cursor);
     pos_start = cursor.offset;
@@ -684,6 +685,7 @@ fkt_remove_entry(krb5_context context,
 		      entry->vno, entry->keyblock.keytype)) {
 	    int32_t len;
 	    unsigned char buf[128];
+	    found = 1;
 	    pos_end = cursor.offset;
 	    cursor.sp->seek(cursor.sp, pos_start, SEEK_SET);
 	    krb5_ret_int32(cursor.sp, &len);
@@ -701,6 +703,8 @@ fkt_remove_entry(krb5_context context,
 	pos_start = cursor.offset;
     }
     krb5_kt_end_seq_get(context, id, &cursor);
+    if (!found)
+	return KRB5_KT_NOTFOUND;
     return 0;
 }
 
