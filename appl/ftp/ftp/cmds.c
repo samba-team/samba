@@ -1526,7 +1526,7 @@ globulize(char **cpp)
 void
 account(int argc, char **argv)
 {
-	char acct[50], *ap;
+	char acct[50];
 
 	if (argc > 1) {
 		++argv;
@@ -1538,12 +1538,11 @@ account(int argc, char **argv)
 			++argv;
 			(void) strncat(acct,*argv, 49-strlen(acct));
 		}
-		ap = acct;
 	}
 	else {
-		ap = getpass("Account:");
+	    des_read_pw_string(acct, sizeof(acct), "Account:", 0);
 	}
-	(void) command("ACCT %s", ap);
+	(void) command("ACCT %s", acct);
 }
 
 jmp_buf abortprox;

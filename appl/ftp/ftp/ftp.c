@@ -224,7 +224,8 @@ login(char *host)
 	}
 	if (n == CONTINUE) {
 		aflag++;
-		acct = getpass("Account:");
+		acct = malloc(128); /* XXX */
+		des_read_pw_string(acct, 128, "Account:", 0);
 		n = command("ACCT %s", acct);
 	}
 	if (n != COMPLETE) {
