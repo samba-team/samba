@@ -288,7 +288,7 @@ static void find_domain_master_name_query_success(struct subnet_record *subrec,
   struct work_record *work;
   struct nmb_name nmbname;
   struct userdata_struct *userdata;
-  int size = sizeof(struct userdata_struct) + sizeof(fstring)+1;
+  size_t size = sizeof(struct userdata_struct) + sizeof(fstring)+1;
 
   if( !(work = find_workgroup_on_subnet(subrec, q_name->name)) )
   {
@@ -333,7 +333,7 @@ static void find_domain_master_name_query_success(struct subnet_record *subrec,
   userdata->copy_fn = NULL;
   userdata->free_fn = NULL;
   userdata->userdata_len = strlen(work->work_group)+1;
-  fstrcpy(userdata->data, work->work_group);
+  overmalloc_safe_strcpy(userdata->data, work->work_group, size - sizeof(*userdata) - 1);
 
   node_status( subrec, &nmbname, answer_ip, 
                domain_master_node_status_success,
