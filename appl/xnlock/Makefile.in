@@ -1,3 +1,5 @@
+# $Id$
+
 SHELL = /bin/sh
 
 srcdir = @srcdir@
@@ -70,8 +72,9 @@ dist: $(DISTFILES)
 	    || cp -p $$file ../`cat ../.fname`/lib; \
 	done
 
+KLIB=-L../../lib/krb -lkrb -L../../lib/des -ldes -L../../lib/roken -lroken
 
 xnlock: xnlock.o
-	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ xnlock.o @KRB_KAFS_LIB@ -L../../lib/krb -lkrb -L../../lib/des -ldes -L../../lib/roken -lroken $(LIBS)
+	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ xnlock.o @KRB_KAFS_LIB@ $(KLIB) $(LIBS)
 
 $(OBJECTS): ../../config.h
