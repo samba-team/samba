@@ -755,7 +755,7 @@ void become_user_permanently(uid_t uid, gid_t gid);
 
 /*The following definitions come from  lib/util_sid.c  */
 
-char *sid_to_string(pstring sidstr_out, const DOM_SID *sid);
+char *sid_to_string(fstring sidstr_out, const DOM_SID *sid);
 BOOL string_to_sid(DOM_SID *sidout, const char *sidstr);
 BOOL sid_append_rid(DOM_SID *sid, uint32 rid);
 BOOL sid_split_rid(DOM_SID *sid, uint32 *rid);
@@ -2617,33 +2617,34 @@ BOOL make_net_user_info2W(NET_USER_INFO_2 * usr,
 			  uint32 num_groups,
 			  const DOM_GID * gids,
 			  uint32 user_flgs,
-			  const char sess_key[16],
+			  const char *sess_key,
 			  const UNISTR2 *logon_srv,
 			  const UNISTR2 *logon_dom,
 			  const char *padding, const DOM_SID *dom_sid);
 BOOL make_net_user_info2(NET_USER_INFO_2 * usr,
-			 NTTIME * logon_time,
-			 NTTIME * logoff_time,
-			 NTTIME * kickoff_time,
-			 NTTIME * pass_last_set_time,
-			 NTTIME * pass_can_change_time,
-			 NTTIME * pass_must_change_time,
-			 char *user_name,
-			 char *full_name,
-			 char *logon_script,
-			 char *profile_path,
-			 char *home_dir,
-			 char *dir_drive,
+			 const NTTIME * logon_time,
+			 const NTTIME * logoff_time,
+			 const NTTIME * kickoff_time,
+			 const NTTIME * pass_last_set_time,
+			 const NTTIME * pass_can_change_time,
+			 const NTTIME * pass_must_change_time,
+			 const char *user_name,
+			 const char *full_name,
+			 const char *logon_script,
+			 const char *profile_path,
+			 const char *home_dir,
+			 const char *dir_drive,
 			 uint16 logon_count,
 			 uint16 bad_pw_count,
 			 uint32 user_id,
 			 uint32 group_id,
 			 uint32 num_groups,
-			 DOM_GID * gids,
+			 const DOM_GID * gids,
 			 uint32 user_flgs,
-			 char sess_key[16],
-			 char *logon_srv,
-			 char *logon_dom, char *padding, DOM_SID *dom_sid);
+			 const char sess_key,
+			 const char *logon_srv,
+			 const char *logon_dom, const char *padding,
+			 const DOM_SID *dom_sid);
 BOOL net_io_user_info2(char *desc, NET_USER_INFO_2 * usr, prs_struct *ps,
 		       int depth);
 BOOL net_user_info_3_copy_from_ctr(NET_USER_INFO_3 * usr,
@@ -2668,35 +2669,36 @@ BOOL make_net_user_info3W(NET_USER_INFO_3 * usr,
 			  uint32 num_groups,
 			  const DOM_GID * gids,
 			  uint32 user_flgs,
-			  const char sess_key[16],
+			  const char *sess_key,
 			  const UNISTR2 *logon_srv,
 			  const UNISTR2 *logon_dom,
 			  const char *padding,
 			  const DOM_SID *dom_sid, const char *other_sids);
 BOOL make_net_user_info3(NET_USER_INFO_3 * usr,
-			 NTTIME * logon_time,
-			 NTTIME * logoff_time,
-			 NTTIME * kickoff_time,
-			 NTTIME * pass_last_set_time,
-			 NTTIME * pass_can_change_time,
-			 NTTIME * pass_must_change_time,
-			 char *user_name,
-			 char *full_name,
-			 char *logon_script,
-			 char *profile_path,
-			 char *home_dir,
-			 char *dir_drive,
+			 const NTTIME * logon_time,
+			 const NTTIME * logoff_time,
+			 const NTTIME * kickoff_time,
+			 const NTTIME * pass_last_set_time,
+			 const NTTIME * pass_can_change_time,
+			 const NTTIME * pass_must_change_time,
+			 const char *user_name,
+			 const char *full_name,
+			 const char *logon_script,
+			 const char *profile_path,
+			 const char *home_dir,
+			 const char *dir_drive,
 			 uint16 logon_count,
 			 uint16 bad_pw_count,
 			 uint32 user_id,
 			 uint32 group_id,
 			 uint32 num_groups,
-			 DOM_GID * gids,
+			 const DOM_GID * gids,
 			 uint32 user_flgs,
-			 char sess_key[16],
-			 char *logon_srv,
-			 char *logon_dom,
-			 char *padding, DOM_SID *dom_sid, char *other_sids);
+			 const char *sess_key,
+			 const char *logon_srv,
+			 const char *logon_dom,
+			 const char *padding, const DOM_SID *dom_sid,
+			 const char *other_sids);
 BOOL net_io_user_info3(char *desc, NET_USER_INFO_3 * usr, prs_struct *ps,
 		       int depth);
 BOOL net_io_q_sam_logon(char *desc, NET_Q_SAM_LOGON * q_l, prs_struct *ps,
@@ -4143,6 +4145,7 @@ int smbd_server_fd(void);
 void smbd_set_server_fd(int fd);
 BOOL reload_services(BOOL test);
 void exit_server(char *reason);
+int _Insure_trap_error(int a1, int a2, int a3, int a4, int a5, int a6);
 
 /*The following definitions come from  smbd/service.c  */
 

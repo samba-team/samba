@@ -37,7 +37,7 @@ int last_message = -1;
 extern int DEBUGLEVEL;
 
 extern fstring remote_machine;
-extern pstring pipe_name;
+extern fstring pipe_name;
 
 extern pstring OriginalDir;
 
