@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "der.h"
 #include "gen.h"
 
@@ -14,7 +15,7 @@ init_generate (char *filename)
 {
     headerfile = fopen (STEM ".h", "w");
     fprintf (headerfile,
-	     "/* Genereated from %s */\n"
+	     "/* Generated from %s */\n"
 	     "/* Do not edit */\n\n",
 	     filename);
     codefile = fopen (STEM ".c", "w");
@@ -179,7 +180,18 @@ encode_type (char *name, Type *t)
     fprintf (codefile, "{\n"
 	     "unsigned char c = 0;\n");
     pos = t->members->prev->val;
-    rest = 7 - (t->members->prev->val % 8);
+    /* fix for buggy MIT (and OSF?) code */
+    if (pos > 31)
+	abort ();
+    /*
+     * It seems that if we do not always set pos to 31 here, the MIT
+     * code will do the wrong thing.
+     *
+     * I hate ASN.1 (and DER), but I hate it even more when everybody
+     * has to screw it up differently.
+     */
+    pos = 31;
+    rest = 7 - (pos % 8);
 
     for (m = t->members->prev; m && tag != m->val; m = m->prev) {
       while (m->val / 8 < pos / 8) {
@@ -426,8 +438,13 @@ decode_type (char *name, Type *t)
 	     "p += l;\n"
 	     "len -= l;\n"
 	     "ret += l;\n"
-	     "if(len < reallen)\n"
+	     "{\n"
+	     "int dce_fix = 0;\n"
+	     "if(reallen == 0)\n"
+	     "dce_fix = 1;\n"
+	     "if(!dce_fix && len < reallen)\n"
 	     "return -1;\n"
+	     "if(!dce_fix)\n"
 	     "len = reallen;\n");
 
     for (m = t->members; m && tag != m->val; m = m->next) {
@@ -449,17 +466,36 @@ decode_type (char *name, Type *t)
 	       "p += l;\n"
 	       "len -= l;\n"
 	       "ret += l;\n"
-	       "if(len < newlen)\n"
-	       "return -1;\n"
+	     "{\n"
+	     "int dce_fix = 0;\n"
+	     "if(newlen == 0)\n"
+	     "dce_fix = 1;\n"
+	     "if(!dce_fix && len < newlen)\n"
+	     "return -1;\n"
 	       "oldlen = len;\n"
-	       "len = newlen;\n");
+	     "if(!dce_fix)\n"
+	     "len = newlen;\n");
       if (m->optional)
 	fprintf (codefile,
 		 "%s = malloc(sizeof(*%s));\n",
 		 s, s);
       decode_type (s, m->type);
       fprintf (codefile,
+	    "if(dce_fix){\n"
+	    "l = der_match_tag (p, len, 0, 0, 0);\n"
+	    "if(l < 0) return l;\n"
+	    "p += l;\n"
+	    "len -= l;\n"
+	    "ret += l;\n"
+	    "l = der_get_length(p, len, &reallen);\n"
+	    "if(l < 0)\n"
+	    "return l;\n"
+	    "p += l;\n"
+	    "len -= l;\n"
+	    "ret += l;\n"
+	    "}else \n"
 	       "len = oldlen - newlen;\n"
+	       "}\n"
 	       "}\n"
 	       "else {\n");
       if(m->optional)
@@ -476,6 +512,21 @@ decode_type (char *name, Type *t)
 	tag = m->val;
       free (s);
     }
+    fprintf(codefile,
+	    "if(dce_fix){\n"
+	    "l = der_match_tag (p, len, 0, 0, 0);\n"
+	    "if(l < 0) return l;\n"
+	    "p += l;\n"
+	    "len -= l;\n"
+	    "ret += l;\n"
+	    "l = der_get_length(p, len, &reallen);\n"
+	    "if(l < 0)\n"
+	    "return l;\n"
+	    "p += l;\n"
+	    "len -= l;\n"
+	    "ret += l;\n"
+	    "}\n"
+	    "}\n");
 
     break;
   }
@@ -533,11 +584,32 @@ decode_type (char *name, Type *t)
 	     "p += l;\n"
 	     "len -= l;\n"
 	     "ret += l;\n"
-	     "if(len < reallen)\n"
+	     "{\n"
+	     "int dce_fix = 0;\n"
+	     "if(reallen == 0)\n"
+	     "dce_fix = 1;\n"
+	     "if(!dce_fix && len < reallen)\n"
 	     "return -1;\n"
+	     "if(!dce_fix)\n"
 	     "len = reallen;\n",
 	     t->application);
     decode_type (name, t->subtype);
+    fprintf(codefile,
+	    "if(dce_fix){\n"
+	    "l = der_match_tag (p, len, 0, 0, 0);\n"
+	    "if(l < 0) return l;\n"
+	    "p += l;\n"
+	    "len -= l;\n"
+	    "ret += l;\n"
+	    "l = der_get_length(p, len, &reallen);\n"
+	    "if(l < 0)\n"
+	    "return l;\n"
+	    "p += l;\n"
+	    "len -= l;\n"
+	    "ret += l;\n"
+	    "}\n"
+	    "}\n");
+
     break;
   default :
     abort ();
