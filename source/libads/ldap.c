@@ -343,7 +343,7 @@ ADS_STATUS ads_mod_repl_len(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 			return ADS_ERROR(LDAP_NO_MEMORY);
 		bval->bv_val = val;
 		bval->bv_len = size;
-		return ads_mod_add_ber(ctx, mods, LDAP_MOD_ADD, name, 
+		return ads_mod_add_ber(ctx, mods, LDAP_MOD_REPLACE, name, 
 				       bval, NULL);
 	}
 }
