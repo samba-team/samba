@@ -1104,7 +1104,10 @@ static BOOL timeout_processing(int deadtime, int *select_timeout, time_t *last_t
     /* also send a keepalive to the password server if its still
        connected */
     if (cli && cli->initialised)
-      send_keepalive(cli->fd);
+      if (!send_keepalive(cli->fd)) {
+        DEBUG( 2, ( "password server keepalive failed.\n"));
+        cli_shutdown(cli);
+      }
     last_keepalive_sent_time = t;
   }
 
