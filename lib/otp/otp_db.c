@@ -81,11 +81,28 @@ otp_db_close (void *dbm)
 }
 
 /*
- * Read this entry from the database and lock it.
+ * Remove this entry from the database.
+ * return 0 if ok.
  */
 
-int
-otp_get (void *v, OtpContext *ctx)
+int 
+otp_delete (void *v, OtpContext *ctx)
+{
+  DBM *dbm = (DBM *)v;
+  datum key;
+
+  key.dsize = strlen(ctx->user);
+  key.dptr  = ctx->user;
+ 
+  return dbm_delete(dbm, key);
+}
+
+/*
+ * Read this entry from the database and lock it if lockp.
+ */
+
+static int
+otp_get_internal (void *v, OtpContext *ctx, int lockp)
 {
   DBM *dbm = (DBM *)v;
   datum dat, key;
@@ -101,13 +118,16 @@ otp_get (void *v, OtpContext *ctx)
     return -1;
   }
   p = dat.dptr;
-  time(&now);
-  memcpy (&then, p, sizeof(then));
-  if (then && now - then < OTP_USER_TIMEOUT) {
-    ctx->err = "Entry locked";
-    return -1;
+
+  if (lockp) {
+    time(&now);
+    memcpy (&then, p, sizeof(then));
+    if (then && now - then < OTP_USER_TIMEOUT) {
+      ctx->err = "Entry locked";
+      return -1;
+    }
+    memcpy (p, &now, sizeof(now));
   }
-  memcpy (p, &now, sizeof(now));
   p += sizeof(now);
   ctx->alg = otp_find_alg (p);
   if (ctx->alg == NULL) {
@@ -121,7 +141,30 @@ otp_get (void *v, OtpContext *ctx)
   p += OTPKEYSIZE;
   strncpy (ctx->seed, p, sizeof(ctx->seed));
   ctx->seed[sizeof(ctx->seed) - 1] = '\0';
-  return dbm_store (dbm, key, dat, DBM_REPLACE);
+  if (lockp)
+    return dbm_store (dbm, key, dat, DBM_REPLACE);
+  else
+    return 0;
+}
+
+/*
+ * Get and lock.
+ */
+
+int
+otp_get (void *v, OtpContext *ctx)
+{
+  return otp_get_internal (v, ctx, 1);
+}
+
+/*
+ * Get and don't lock.
+ */
+
+int
+otp_simple_get (void *v, OtpContext *ctx)
+{
+  return otp_get_internal (v, ctx, 0);
 }
 
 /*
