@@ -3315,6 +3315,22 @@ BOOL samr_io_q_chgpasswd_user(char *desc, SAMR_Q_CHGPASSWD_USER * q_u,
 void init_samr_r_chgpasswd_user(SAMR_R_CHGPASSWD_USER * r_u, NTSTATUS status);
 BOOL samr_io_r_chgpasswd_user(char *desc, SAMR_R_CHGPASSWD_USER * r_u,
 			      prs_struct *ps, int depth);
+void init_samr_q_unknown_2e(SAMR_Q_UNKNOWN_2E *q_u,
+				POLICY_HND *domain_pol, uint16 switch_value);
+BOOL samr_io_q_unknown_2e(char *desc, SAMR_Q_UNKNOWN_2E *q_u,
+			      prs_struct *ps, int depth);
+void init_samr_r_samr_unknown_2e(SAMR_R_UNKNOWN_2E * r_u,
+				uint16 switch_value, SAM_UNK_CTR * ctr,
+				NTSTATUS status);
+BOOL samr_io_r_samr_unknown_2e(char *desc, SAMR_R_UNKNOWN_2E * r_u,
+			      prs_struct *ps, int depth);
+void init_samr_q_set_domain_info(SAMR_Q_SET_DOMAIN_INFO *q_u,
+				POLICY_HND *domain_pol, uint16 switch_value, SAM_UNK_CTR *ctr);
+BOOL samr_io_q_set_domain_info(char *desc, SAMR_Q_SET_DOMAIN_INFO *q_u,
+			      prs_struct *ps, int depth);
+void init_samr_r_set_domain_info(SAMR_R_SET_DOMAIN_INFO * r_u, NTSTATUS status);
+BOOL samr_io_r_set_domain_info(char *desc, SAMR_R_SET_DOMAIN_INFO * r_u,
+			      prs_struct *ps, int depth);
 
 /*The following definitions come from  rpc_parse/parse_sec.c  */
 
