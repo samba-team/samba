@@ -22,9 +22,9 @@
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_lsa.h"
 
-static void init_lsa_Name(struct lsa_Name *name, const char *s)
+static void init_lsa_String(struct lsa_String *name, const char *s)
 {
-	name->name = s;
+	name->string = s;
 }
 
 static BOOL test_OpenPolicy(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
@@ -108,7 +108,7 @@ static BOOL test_LookupNames(struct dcerpc_pipe *p,
 {
 	struct lsa_LookupNames r;
 	struct lsa_TransSidArray sids;
-	struct lsa_Name *names;
+	struct lsa_String *names;
 	uint32_t count = 0;
 	NTSTATUS status;
 	int i;
@@ -120,7 +120,7 @@ static BOOL test_LookupNames(struct dcerpc_pipe *p,
 
 	names = talloc(mem_ctx, tnames->count * sizeof(names[0]));
 	for (i=0;i<tnames->count;i++) {
-		init_lsa_Name(&names[i], tnames->names[i].name.name);
+		init_lsa_String(&names[i], tnames->names[i].name.string);
 	}
 
 	r.in.handle = handle;
@@ -350,7 +350,7 @@ static BOOL test_CreateTrustedDomain(struct dcerpc_pipe *p,
 	domsid = dom_sid_parse_talloc(mem_ctx, "S-1-5-21-97398-379795-12345");
 
 	trustinfo.sid = domsid;
-	init_lsa_Name(&trustinfo.name, "torturedomain");
+	init_lsa_String(&trustinfo.name, "torturedomain");
 
 	r.in.handle = handle;
 	r.in.info = &trustinfo;
@@ -396,7 +396,7 @@ static BOOL test_CreateSecret(struct dcerpc_pipe *p,
 
 	asprintf(&secname, "torturesecret-%u", (uint_t)random());
 
-	init_lsa_Name(&r.in.name, secname);
+	init_lsa_String(&r.in.name, secname);
 
 	r.in.handle = handle;
 	r.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
@@ -640,7 +640,7 @@ static BOOL test_EnumAccounts(struct dcerpc_pipe *p,
 static BOOL test_LookupPrivDisplayName(struct dcerpc_pipe *p,
 				TALLOC_CTX *mem_ctx,
 				struct policy_handle *handle,
-				struct lsa_Name *priv_name)
+				struct lsa_String *priv_name)
 {
 	struct lsa_LookupPrivDisplayName r;
 	NTSTATUS status;
@@ -648,7 +648,7 @@ static BOOL test_LookupPrivDisplayName(struct dcerpc_pipe *p,
 	   terminals */
 	uint16 language_id = (random() % 4) + 0x409;
 
-	printf("testing LookupPrivDisplayName(%s)\n", priv_name->name);
+	printf("testing LookupPrivDisplayName(%s)\n", priv_name->string);
 	
 	r.in.handle = handle;
 	r.in.name = priv_name;
@@ -662,7 +662,7 @@ static BOOL test_LookupPrivDisplayName(struct dcerpc_pipe *p,
 		return False;
 	}
 	printf("%s -> \"%s\"  (language 0x%x/0x%x)\n", 
-	       priv_name->name, r.out.disp_name->name, 
+	       priv_name->string, r.out.disp_name->string, 
 	       *r.in.language_id, *r.out.language_id);
 
 	return True;
@@ -671,7 +671,7 @@ static BOOL test_LookupPrivDisplayName(struct dcerpc_pipe *p,
 static BOOL test_EnumAccountsWithUserRight(struct dcerpc_pipe *p, 
 				TALLOC_CTX *mem_ctx,
 				struct policy_handle *handle,
-				struct lsa_Name *priv_name)
+				struct lsa_String *priv_name)
 {
 	struct lsa_EnumAccountsWithUserRight r;
 	struct lsa_SidArray sids;
@@ -679,7 +679,7 @@ static BOOL test_EnumAccountsWithUserRight(struct dcerpc_pipe *p,
 
 	ZERO_STRUCT(sids);
 	
-	printf("testing EnumAccountsWithUserRight(%s)\n", priv_name->name);
+	printf("testing EnumAccountsWithUserRight(%s)\n", priv_name->string);
 	
 	r.in.handle = handle;
 	r.in.name = priv_name;
@@ -746,7 +746,7 @@ static BOOL test_EnumTrustDom(struct dcerpc_pipe *p,
 	NTSTATUS status;
 	uint32_t resume_handle = 0;
 	struct lsa_DomainList domains;
-	int i;
+	int i,j;
 	BOOL ret = True;
 
 	printf("\nTesting EnumTrustDom\n");
@@ -777,6 +777,7 @@ static BOOL test_EnumTrustDom(struct dcerpc_pipe *p,
 		struct policy_handle trust_handle;
 		struct policy_handle handle2;
 		struct lsa_Close c;
+		int levels [] = {1, 3, 6};
 		
 		trust.in.handle = handle;
 		trust.in.sid = domains.domains[i].sid;
@@ -792,6 +793,20 @@ static BOOL test_EnumTrustDom(struct dcerpc_pipe *p,
 
 		c.in.handle = &trust_handle;
 		c.out.handle = &handle2;
+		
+		for (j=1; j < ARRAY_SIZE(levels); j++) {
+			struct lsa_QueryInfoTrustedDomain q;
+			union lsa_TrustedDomainInfo info;
+			q.in.trustdom_handle = &trust_handle;
+			q.in.level = levels[j];
+			q.out.info = &info;
+			status = dcerpc_lsa_QueryInfoTrustedDomain(p, mem_ctx, &q);
+			if (!NT_STATUS_IS_OK(status)) {
+				printf("QueryInfoTrustedDomain level %d failed - %s\n", 
+				       j, nt_errstr(status));
+				ret = False;
+			}
+		}
 		
 		status = dcerpc_lsa_Close(p, mem_ctx, &c);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -813,7 +828,7 @@ static BOOL test_EnumTrustDom(struct dcerpc_pipe *p,
 
 		c.in.handle = &trust_handle;
 		c.out.handle = &handle2;
-		
+
 		status = dcerpc_lsa_Close(p, mem_ctx, &c);
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("Close of trusted doman failed - %s\n", nt_errstr(status));

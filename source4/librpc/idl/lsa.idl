@@ -30,13 +30,13 @@
 	/* Function: 0x02 */
 
 	typedef struct {
-		[value(2*strlen_m(r->name))] uint16 name_len;
-		[value(r->name_len)] uint16 name_size;
-		unistr_noterm *name;
-	} lsa_Name;
+		[value(2*strlen_m(r->string))] uint16 length;
+		[value(r->length)] uint16 size;
+		unistr_noterm *string;
+	} lsa_String;
 
 	typedef struct {
-		lsa_Name name;
+		lsa_String name;
 		uint32 luid_low;
 		uint32 luid_high;
 	} lsa_PrivEntry;
@@ -122,12 +122,12 @@
 	} lsa_AuditEventsInfo;
 
 	typedef struct {
-		lsa_Name name;
+		lsa_String name;
 		dom_sid2 *sid;
 	} lsa_DomainInfo;
 
 	typedef struct {
-		lsa_Name name;
+		lsa_String name;
 	} lsa_PDAccountInfo;
 
 	typedef struct {
@@ -136,8 +136,8 @@
 	} lsa_ServerRole;
 
 	typedef struct {
-		lsa_Name source;
-		lsa_Name account;
+		lsa_String source;
+		lsa_String account;
 	} lsa_ReplicaSourceInfo;
 
 	typedef struct {
@@ -165,9 +165,9 @@
 	} lsa_AuditFullQueryInfo;
 
 	typedef struct {
-		lsa_Name name;
-		lsa_Name dns_domain;
-		lsa_Name dns_forest;
+		lsa_String name;
+		lsa_String dns_domain;
+		lsa_String dns_forest;
 		GUID domain_guid;
 		dom_sid2 *sid;
 	} lsa_DnsDomainInfo;
@@ -248,8 +248,8 @@
 	/* Function: 0x0c                                */
 
 	typedef struct {
-		lsa_Name name;
-		dom_sid2 *sid;
+		lsa_String name;
+		dom_sid2  *sid;
 	} lsa_TrustInformation;
 
 	NTSTATUS lsa_CreateTrustedDomain(
@@ -264,7 +264,7 @@
 	/* Function: 0x0d */
 
 	typedef struct {
-		lsa_Name name;
+		lsa_String name;
 		dom_sid2 *sid;
 	} lsa_DomainInformation;
 
@@ -304,7 +304,7 @@
 	NTSTATUS lsa_LookupNames (
 		[in,ref]     policy_handle *handle,
 		[in,range(0,1000)] uint32 num_names,
-		[in,ref,size_is(num_names)]  lsa_Name *names,
+		[in,ref,size_is(num_names)]  lsa_String *names,
 		[out]        lsa_RefDomainList *domains,
 		[in,out,ref] lsa_TransSidArray *sids,
 		[in]         uint16 level,
@@ -317,7 +317,7 @@
 
 	typedef struct {
 		uint16 sid_type;
-		lsa_Name name;
+		lsa_String name;
 		uint32 sid_index;
 	} lsa_TranslatedName;
 
@@ -339,7 +339,7 @@
 	/* Function:        0x10 */
 	NTSTATUS lsa_CreateSecret(
 		[in,ref]     policy_handle *handle,
-		[in]         lsa_Name       name,
+		[in]         lsa_String       name,
 		[in]         uint32         access_mask,
 		[out,ref]    policy_handle *sec_handle
 		);
@@ -405,25 +405,54 @@
 		[out,ref]    policy_handle *trustdom_handle
 		);
 
+	typedef [flag(NDR_PAHEX)] struct {
+		uint32 length;
+		uint32 size;
+		[size_is(size),length_is(length)] uint8 *data;
+	} lsa_DATA_BUF;
+
+	typedef struct {
+		lsa_String     domain_name;
+	} lsa_TrustDomainInfo1;
+
+	typedef struct {
+		uint32        flags;
+	} lsa_TrustDomainInfo3;
+
+	typedef struct {
+		lsa_String     name;
+		lsa_String     name2;
+		dom_sid2    *sid;
+		uint32       unknown1;
+		uint32       unknown2;
+		uint32       unknown3;
+	} lsa_TrustDomainInfo6;
+
+	typedef union {
+		[case(1)]    lsa_TrustDomainInfo1 info1;
+		[case(3)]    lsa_TrustDomainInfo3 info3;
+		[case(6)]    lsa_TrustDomainInfo6 info6;
+	} lsa_TrustedDomainInfo;
+
 	/* Function:       0x1a */
-	NTSTATUS lsa_QueryInfoTrustedDomain();
+	NTSTATUS lsa_QueryInfoTrustedDomain(
+		[in,ref]     policy_handle *trustdom_handle,
+		[in]         uint16         level, 
+		[out,switch_is(level)] lsa_TrustedDomainInfo *info
+		);
+
 	/* Function:     0x1b */
 	NTSTATUS lsa_SetInformationTrustedDomain();
 
 	/* Function:          0x1c */
 	NTSTATUS lsa_OpenSecret(
 		[in,ref]     policy_handle *handle,
-		[in]         lsa_Name       name,
+		[in]         lsa_String       name,
 		[in]         uint32         access_mask,
 		[out,ref]    policy_handle *sec_handle
 		);
 
 	/* Function:           0x1d */
-	typedef [flag(NDR_PAHEX)] struct {
-		uint32 length;
-		uint32 size;
-		[size_is(size),length_is(length)] uint8 *data;
-	} lsa_DATA_BUF;
 
 	NTSTATUS lsa_SetSecret(
 		[in,ref]     policy_handle *handle,
@@ -452,7 +481,7 @@
 	NTSTATUS lsa_LookupPrivName (
 		[in,ref]     policy_handle *handle,
 		[in,ref]     lsa_LUID *luid,
-		[out]        lsa_Name *name
+		[out]        lsa_String *name
 		);
 
 
@@ -460,8 +489,8 @@
 	/* Function:  0x21 */
 	NTSTATUS lsa_LookupPrivDisplayName (
 		[in,ref]     policy_handle *handle,
-		[in,ref]     lsa_Name *name,
-		[out]        lsa_Name *disp_name,
+		[in,ref]     lsa_String *name,
+		[out]        lsa_String *disp_name,
 		/* see http://www.microsoft.com/globaldev/nlsweb/ for
 		   language definitions */
 		[in,out,ref] uint16 *language_id,
@@ -476,7 +505,7 @@
 	/* Function:      0x23 */
 	NTSTATUS lsa_EnumAccountsWithUserRight (
 		[in,ref]     policy_handle *handle,
-		[in]         lsa_Name *name,
+		[in]         lsa_String *name,
 		[out,ref]    lsa_SidArray *sids
 		);
 
@@ -487,7 +516,7 @@
 	
 	typedef struct {
 		uint32 count;
-		[size_is(count)] lsa_Name *names;
+		[size_is(count)] lsa_String *names;
 	} lsa_RightSet;
 	
 	NTSTATUS lsa_EnumAccountRights (
@@ -575,7 +604,7 @@
 	/* Function 0x37 */
 	NTSTATUS lsa_OpenTrustedDomainByName(
 		[in,ref]     policy_handle *handle,
-		[in]         lsa_Name       name,
+		[in]         lsa_String     name,
 		[in]         uint32         access_mask,
 		[out,ref]    policy_handle *trustdom_handle
 		);

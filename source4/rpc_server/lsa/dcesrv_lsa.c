@@ -228,8 +228,8 @@ static NTSTATUS lsa_info_AccountDomain(struct lsa_policy_state *state, TALLOC_CT
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	info->name.name = samdb_result_string(res[0], "name", NULL);
-	info->sid       = samdb_result_dom_sid(mem_ctx, res[0], "objectSid");
+	info->name.string = samdb_result_string(res[0], "name", NULL);
+	info->sid         = samdb_result_dom_sid(mem_ctx, res[0], "objectSid");
 
 	return NT_STATUS_OK;
 }
@@ -250,11 +250,11 @@ static NTSTATUS lsa_info_DNS(struct lsa_policy_state *state, TALLOC_CTX *mem_ctx
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	info->name.name       = samdb_result_string(res[0],           "name", NULL);
-	info->dns_domain.name = samdb_result_string(res[0],           "dnsDomain", NULL);
-	info->dns_forest.name = samdb_result_string(res[0],           "dnsDomain", NULL);
-	info->domain_guid     = samdb_result_guid(res[0],             "objectGUID");
-	info->sid             = samdb_result_dom_sid(mem_ctx, res[0], "objectSid");
+	info->name.string       = samdb_result_string(res[0],           "name", NULL);
+	info->dns_domain.string = samdb_result_string(res[0],           "dnsDomain", NULL);
+	info->dns_forest.string = samdb_result_string(res[0],           "dnsDomain", NULL);
+	info->domain_guid       = samdb_result_guid(res[0],             "objectGUID");
+	info->sid               = samdb_result_dom_sid(mem_ctx, res[0], "objectSid");
 
 	return NT_STATUS_OK;
 }
@@ -436,12 +436,12 @@ static NTSTATUS lsa_LookupSids(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 		r->out.names->count++;
 		(*r->out.count)++;
 
-		r->out.names->names[i].sid_type = SID_NAME_UNKNOWN;
-		r->out.names->names[i].name.name = sid_str;
-		r->out.names->names[i].sid_index = 0xFFFFFFFF;
+		r->out.names->names[i].sid_type    = SID_NAME_UNKNOWN;
+		r->out.names->names[i].name.string = sid_str;
+		r->out.names->names[i].sid_index   = 0xFFFFFFFF;
 
 		if (sid_str == NULL) {
-			r->out.names->names[i].name.name = "(SIDERROR)";
+			r->out.names->names[i].name.string = "(SIDERROR)";
 			status = STATUS_SOME_UNMAPPED;
 			continue;
 		}
@@ -462,7 +462,7 @@ static NTSTATUS lsa_LookupSids(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 
 		/* see if we've already done this authority name */
 		for (j=0;j<r->out.domains->count;j++) {
-			if (strcmp(authority_name, r->out.domains->domains[j].name.name) == 0) {
+			if (strcmp(authority_name, r->out.domains->domains[j].name.string) == 0) {
 				break;
 			}
 		}
@@ -474,8 +474,8 @@ static NTSTATUS lsa_LookupSids(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 			if (r->out.domains == NULL) {
 				return NT_STATUS_NO_MEMORY;
 			}
-			r->out.domains->domains[j].name.name = authority_name;
-			r->out.domains->domains[j].sid = authority_sid;
+			r->out.domains->domains[j].name.string = authority_name;
+			r->out.domains->domains[j].sid         = authority_sid;
 			r->out.domains->count++;
 		}
 
@@ -503,9 +503,9 @@ static NTSTATUS lsa_LookupSids(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 			continue;
 		}
 
-		r->out.names->names[i].sid_type = rtype;
-		r->out.names->names[i].name.name = name;
-		r->out.names->names[i].sid_index = 0;
+		r->out.names->names[i].sid_type    = rtype;
+		r->out.names->names[i].name.string = name;
+		r->out.names->names[i].sid_index   = 0;
 	}
 	
 	return status;
