@@ -43,6 +43,22 @@ BOOL name_is_local(const char *name)
 char *get_user_home_dir(const char *user)
 {
 	static struct passwd *pass;
+	int snum;
+
+	/* If a path is specified in [homes] then use it instead of the
+	   user's home directory from struct passwd. */
+
+	if ((snum = lp_servicenumber(HOMES_NAME)) != -1) {
+		static pstring home_dir;
+		
+		pstrcpy(home_dir, lp_pathname(snum));
+		standard_sub_snum(snum, home_dir);
+
+		if (home_dir[0])
+			return home_dir;
+	}
+
+	/* Get home directory from struct passwd. */
 
 	pass = Get_Pwnam(user);
 
