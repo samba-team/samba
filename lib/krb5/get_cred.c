@@ -85,30 +85,9 @@ make_pa_tgs_req(krb5_context context,
 
     in_data.length = len;
     in_data.data   = buf + buf_size - len;
-    {
-	Ticket ticket;
-	ret = decode_Ticket(creds->ticket.data, creds->ticket.length, 
-			    &ticket, &len);
-	if(ret)
-	    return ret;
-	/*
-	 * If we get a ticket encrypted with DES-CBC-CRC, it's
-	 * probably an old DCE secd and then the usual heuristics of
-	 * using the best algorithm (in this case RSA-MD5 and
-	 * DES-CBC-MD5) will not work.
-	 */
-	if(ticket.enc_part.etype == ETYPE_DES_CBC_CRC) {
-	    krb5_auth_setcksumtype(context, ac, CKSUMTYPE_RSA_MD4);
-	    krb5_auth_setenctype(context, ac, ETYPE_DES_CBC_CRC);
-	}
-	free_Ticket(&ticket);
-	    
-	
-	ret = krb5_mk_req_internal(context, &ac, 0, &in_data, creds, 
-				   &padata->padata_value,
-				   KRB5_KU_TGS_REQ_AUTH_CKSUM);
-
-    }
+    ret = krb5_mk_req_internal(context, &ac, 0, &in_data, creds,
+			       &padata->padata_value,
+			       KRB5_KU_TGS_REQ_AUTH_CKSUM);
 out:
     free (buf);
     if(ret)
@@ -195,14 +174,10 @@ init_tgs_req (krb5_context context,
     t->pvno = 5;
     t->msg_type = krb_tgs_req;
     if (in_creds->session.keytype) {
-	krb5_enctype foo[2];
-
-	foo[0] = in_creds->session.keytype;
-	foo[1] = 0;
-	ret = krb5_init_etype(context,
-			      &t->req_body.etype.len,
-			      &t->req_body.etype.val,
-			      foo);
+	ret = krb5_keytype_to_enctypes (context,
+					in_creds->session.keytype,
+					&t->req_body.etype.len,
+					&t->req_body.etype.val);
     } else {
 	ret = krb5_init_etype(context, 
 			      &t->req_body.etype.len, 
