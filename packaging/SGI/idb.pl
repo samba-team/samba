@@ -1,13 +1,23 @@
 #!/usr/bin/perl
 require "pwd.pl" || die "Required pwd.pl not found";
 
-# This perl script automatically generates the samba.idb file
+# This perl script automatically generates the idb file
+
+$PKG = 'samba';
+$SRCDIR = '../..';
+$SRCPFX = '.';
 
 &initpwd;
 $curdir = $ENV{"PWD"};
 
+if ($PKG eq "samba_irix") {
+  open(BOOKS,"IDB.books") || die "Unable to open IDB.books file\n";
+  @books = sort idbsort <BOOKS>;
+  close BOOKS;
+}
+
 # We don't want the files listed in .cvsignore in the source tree
-open(IGNORES,"../../source/.cvsignore") || die "Unable to open .cvsignore file\n";
+open(IGNORES,"$SRCDIR/source/.cvsignore") || die "Unable to open .cvsignore file\n";
 while (<IGNORES>) {
   chop;
   next if /cvs\.log/;
@@ -16,7 +26,7 @@ while (<IGNORES>) {
 close IGNORES;
 
 # We don't want the files listed in .cvsignore in the source/include tree
-open(IGNORES,"../../source/include/.cvsignore") || die "Unable to open include/.cvsignore file\n";
+open(IGNORES,"$SRCDIR/source/include/.cvsignore") || die "Unable to open include/.cvsignore file\n";
 while (<IGNORES>) {
   chop;
   $ignores{$_}++;
@@ -24,7 +34,7 @@ while (<IGNORES>) {
 close IGNORES;
 
 # get the names of all the binary files to be installed
-open(MAKEFILE,"../../source/Makefile") || die "Unable to open Makefile\n";
+open(MAKEFILE,"$SRCDIR/source/Makefile") || die "Unable to open Makefile\n";
 @makefile = <MAKEFILE>;
 @sprogs = grep(/^SPROGS /,@makefile);
 @progs1 = grep(/^PROGS1 /,@makefile);
@@ -32,7 +42,7 @@ open(MAKEFILE,"../../source/Makefile") || die "Unable to open Makefile\n";
 @mprogs = grep(/^MPROGS /,@makefile);
 @progs = grep(/^PROGS /,@makefile);
 @scripts = grep(/^SCRIPTS /,@makefile);
-@codepage = grep(/^CODEPAGELIST/,@makefile);
+@codepagelist = grep(/^CODEPAGELIST/,@makefile);
 close MAKEFILE;
 
 if (@sprogs) {
@@ -61,27 +71,29 @@ if (@scripts) {
   @scripts[0] =~ s/\$\(srcdir\)\///g;
   @scripts = split(' ',@scripts[0]);
 }
-if (@codepage) {
-  @codepage[0] =~ s/^.*\=//;
-  chdir '../../source';
-  # if we have codepages we need to create them for the package
-  system("chmod +x ./script/installcp.sh");
-  system("./script/installcp.sh . . ../packaging/SGI/codepages ./bin @codepage[0]");
-  chdir $curdir;
-  @codepage = sort split(' ',@codepage[0]);
-}
+
+# we need to create codepages for the package
+@codepagelist[0] =~ s/^.*\=//;
+chdir "$SRCDIR/source";
+system("chmod +x ./script/installcp.sh");
+system("./script/installcp.sh . . ../packaging/SGI/codepages ./bin @codepagelist[0]");
+chdir $curdir;
+opendir(DIR,"$SRCDIR/packaging/SGI/codepages") || die "Can't open codepages directory";
+@codepage = sort readdir(DIR);
+closedir(DIR);
+
 # install the swat files
-chdir '../../source';
+chdir "$SRCDIR/source";
 system("chmod +x ./script/installswat.sh");
 system("./script/installswat.sh  ../packaging/SGI/swat ./");
-system("cp ../swat/README ../packaging/SGI/swat");
+system("cp -f ../swat/README ../packaging/SGI/swat");
 chdir $curdir;
 
 # add my local files to the list of binaries to install
 @bins = sort byfilename (@sprogs,@progs,@progs1,@progs2,@mprogs,@scripts,("/findsmb","/sambalp","/smbprint"));
 
 # get a complete list of all files in the tree
-chdir '../../';
+chdir "$SRCDIR/";
 &dodir('.');
 chdir $curdir;
 
@@ -97,50 +109,58 @@ chdir $curdir;
 # release
 @allfiles = grep(!/^.*\.o$/ & !/^.*\.po$/ & !/^.*\.po32$/ & !/^source\/bin/ & !/^packaging\/SGI\/bins/ & !/^packaging\/SGI\/catman/ & !/^packaging\/SGI\/html/ & !/^packaging\/SGI\/codepages/ & !/^packaging\/SGI\/swat/, @allfiles);
 
-open(IDB,">samba.idb") || die "Unable to open samba.idb for output\n";
+open(IDB,"> $curdir/$PKG.idb") || die "Unable to open $PKG.idb for output\n";
 
-print IDB "f 0644 root sys etc/config/samba packaging/SGI/samba.config samba.sw.base config(update)\n";
-print IDB "f 0755 root sys etc/init.d/samba packaging/SGI/samba.rc samba.sw.base\n";
-print IDB "l 0000 root sys etc/rc0.d/K39samba packaging/SGI samba.sw.base symval(../init.d/samba)\n";
-print IDB "l 0000 root sys etc/rc2.d/S81samba packaging/SGI samba.sw.base symval(../init.d/samba)\n";
+print IDB "f 0644 root sys etc/config/samba $SRCPFX/packaging/SGI/samba.config $PKG.sw.base config(update)\n";
+print IDB "f 0755 root sys etc/init.d/samba $SRCPFX/packaging/SGI/samba.rc $PKG.sw.base\n";
+print IDB "l 0000 root sys etc/rc0.d/K39samba $SRCPFX/packaging/SGI $PKG.sw.base symval(../init.d/samba)\n";
+print IDB "l 0000 root sys etc/rc2.d/S81samba $SRCPFX/packaging/SGI $PKG.sw.base symval(../init.d/samba)\n";
 
-@copyfile = grep (/^COPY/,@allfiles);
-print IDB "d 0755 root sys usr/relnotes/samba packaging/SGI samba.man.relnotes\n";
-print IDB "f 0644 root sys usr/relnotes/samba/@copyfile[0] @copyfile[0] samba.man.relnotes\n";
-print IDB "f 0644 root sys usr/relnotes/samba/legal_notice.html packaging/SGI/legal_notice.html samba.man.relnotes\n";
-print IDB "f 0644 root sys usr/relnotes/samba/samba-relnotes.html packaging/SGI/relnotes.html samba.man.relnotes\n";
+if ($PKG eq "samba_irix") {
+  print IDB "d 0755 root sys usr/relnotes/samba_irix $SRCPFX/packaging/SGI $PKG.man.relnotes\n";
+  print IDB "f 0644 root sys usr/relnotes/samba_irix/TC build/TC $PKG.man.relnotes\n";
+  print IDB "f 0644 root sys usr/relnotes/samba_irix/ch1.z build/ch1.z $PKG.man.relnotes\n";
+  print IDB "f 0644 root sys usr/relnotes/samba_irix/ch2.z build/ch2.z $PKG.man.relnotes\n";
+}
+else {
+  @copyfile = grep (/^COPY/,@allfiles);
+  print IDB "d 0755 root sys usr/relnotes/samba $SRCPFX/packaging/SGI $PKG.man.relnotes\n";
+  print IDB "f 0644 root sys usr/relnotes/samba/@copyfile[0] $SRCPFX/@copyfile[0] $PKG.man.relnotes\n";
+  print IDB "f 0644 root sys usr/relnotes/samba/legal_notice.html $SRCPFX/packaging/SGI/legal_notice.html $PKG.man.relnotes\n";
+  print IDB "f 0644 root sys usr/relnotes/samba/samba-relnotes.html $SRCPFX/packaging/SGI/relnotes.html $PKG.man.relnotes\n";
+}
 
-print IDB "d 0755 root sys usr/samba packaging/SGI samba.sw.base\n";
-print IDB "f 0444 root sys usr/samba/README packaging/SGI/README samba.sw.base\n";
+print IDB "d 0755 root sys usr/samba $SRCPFX/packaging/SGI $PKG.sw.base\n";
+print IDB "f 0444 root sys usr/samba/README $SRCPFX/packaging/SGI/README $PKG.sw.base\n";
 
-print IDB "d 0755 root sys usr/samba/bin packaging/SGI samba.sw.base\n";
+print IDB "d 0755 root sys usr/samba/bin $SRCPFX/packaging/SGI $PKG.sw.base\n";
 while(@bins) {
   $nextfile = shift @bins;
   ($filename = $nextfile) =~ s/^.*\///;;
 
   if (index($nextfile,'$')) {
     if ($filename eq "smbpasswd") {
-      print IDB "f 0755 root sys usr/samba/bin/$filename source/$nextfile samba.sw.base nostrip\n";
+      print IDB "f 0755 root sys usr/samba/bin/$filename $SRCPFX/source/$nextfile $PKG.sw.base nostrip\n";
     }
     elsif ($filename eq "findsmb") {
-      print IDB "f 0755 root sys usr/samba/bin/$filename packaging/SGI/$filename samba.sw.base\n";
+      print IDB "f 0755 root sys usr/samba/bin/$filename $SRCPFX/packaging/SGI/$filename $PKG.sw.base\n";
     }
     elsif ($filename eq "swat") {
-      print IDB "f 4755 root sys usr/samba/bin/$filename source/$nextfile samba.sw.base nostrip preop(\"chroot \$rbase /etc/init.d/samba stop\") exitop(\"chroot \$rbase /usr/samba/scripts/startswat.sh\") removeop(\"chroot \$rbase /sbin/cp /etc/inetd.conf /etc/inetd.conf.O ; chroot \$rbase /sbin/sed -e '/^swat/D' -e '/^#SWAT/D' /etc/inetd.conf.O >/etc/inetd.conf; /etc/killall -HUP inetd || true\")\n";
+      print IDB "f 4755 root sys usr/samba/bin/$filename $SRCPFX/source/$nextfile $PKG.sw.base nostrip preop(\"chroot \$rbase /etc/init.d/samba stop\") exitop(\"chroot \$rbase /usr/samba/scripts/startswat.sh\") removeop(\"chroot \$rbase /sbin/cp /etc/inetd.conf /etc/inetd.conf.O ; chroot \$rbase /sbin/sed -e '/^swat/D' -e '/^#SWAT/D' /etc/inetd.conf.O >/etc/inetd.conf; /etc/killall -HUP inetd || true\")\n";
     }
     elsif ($filename eq "sambalp") {
-      print IDB "f 0755 root sys usr/samba/bin/$filename packaging/SGI/$filename samba.sw.base nostrip\n";
+      print IDB "f 0755 root sys usr/samba/bin/$filename $SRCPFX/packaging/SGI/$filename $PKG.sw.base nostrip\n";
     }
     elsif ($filename eq "smbprint") {
-      print IDB "f 0755 root sys usr/samba/bin/$filename packaging/SGI/$filename samba.sw.base\n";
+      print IDB "f 0755 root sys usr/samba/bin/$filename $SRCPFX/packaging/SGI/$filename $PKG.sw.base\n";
     }
     else {
-      print IDB "f 0755 root sys usr/samba/bin/$filename source/$nextfile samba.sw.base nostrip\n";
+      print IDB "f 0755 root sys usr/samba/bin/$filename $SRCPFX/source/$nextfile $PKG.sw.base nostrip\n";
     }
   }
 }
 
-print IDB "d 0755 root sys usr/samba/docs docs samba.man.doc\n";
+print IDB "d 0755 root sys usr/samba/docs $SRCPFX/docs $PKG.man.doc\n";
 while (@docs) {
   $nextfile = shift @docs;
   next if ($nextfile eq "CVS");
@@ -148,34 +168,32 @@ while (@docs) {
   if (grep(/\/$/,$nextfile)) {
     $file =~ s/\/$//;
     $nextfile =~ s/\/$//;
-    print IDB "d 0755 root sys usr/samba/docs/$file $nextfile samba.man.doc\n";
+    print IDB "d 0755 root sys usr/samba/docs/$file $SRCPFX/$nextfile $PKG.man.doc\n";
   }
   else {
-    print IDB "f 0644 root sys usr/samba/docs/$file $nextfile samba.man.doc\n";
+    print IDB "f 0644 root sys usr/samba/docs/$file $SRCPFX/$nextfile $PKG.man.doc\n";
   }
 }
 
-print IDB "d 0755 root sys usr/samba/lib packaging/SGI samba.sw.base\n";
-if (@codepage) {
-  print IDB "d 0755 root sys usr/samba/lib/codepages packaging/SGI samba.sw.base\n";
-  while (@codepage) {
-    $nextpage = shift @codepage;
-    print IDB "f 0644 root sys usr/samba/lib/codepages/codepage.$nextpage packaging/SGI/codepages/codepage.$nextpage samba.sw.base\n";
-  }
+print IDB "d 0755 root sys usr/samba/lib $SRCPFX/packaging/SGI $PKG.sw.base\n";
+print IDB "d 0755 root sys usr/samba/lib/codepages $SRCPFX/packaging/SGI $PKG.sw.base\n";
+while (@codepage) {
+  $nextpage = shift @codepage;
+  print IDB "f 0644 root sys usr/samba/lib/codepages/$nextpage $SRCPFX/packaging/SGI/codepages/$nextpage $PKG.sw.base\n";
 }
-print IDB "f 0644 root sys usr/samba/lib/smb.conf packaging/SGI/smb.conf samba.sw.base config(suggest)\n";
+print IDB "f 0644 root sys usr/samba/lib/smb.conf $SRCPFX/packaging/SGI/smb.conf $PKG.sw.base config(suggest)\n";
 
-print IDB "d 0644 root sys usr/samba/private packaging/SGI samba.sw.base\n";
-print IDB "f 0600 root sys usr/samba/private/smbpasswd packaging/SGI/smbpasswd samba.sw.base config(suggest)\n";
+print IDB "d 0644 root sys usr/samba/private $SRCPFX/packaging/SGI $PKG.sw.base\n";
+print IDB "f 0600 root sys usr/samba/private/smbpasswd $SRCPFX/packaging/SGI/smbpasswd $PKG.sw.base config(suggest)\n";
 
-print IDB "d 0755 root sys usr/samba/scripts packaging/SGI samba.src.samba\n";
-print IDB "f 0755 root sys usr/samba/scripts/inetd.sh packaging/SGI/inetd.sh samba.sw.base\n";
-print IDB "f 0755 root sys usr/samba/scripts/inst.msg packaging/SGI/inst.msg samba.sw.base exitop(\"chroot \$rbase /usr/samba/scripts/inst.msg\")\n";
-print IDB "f 0755 root sys usr/samba/scripts/mkprintcap.sh packaging/SGI/mkprintcap.sh samba.sw.base\n";
-print IDB "f 0755 root sys usr/samba/scripts/removeswat.sh packaging/SGI/removeswat.sh samba.sw.base\n";
-print IDB "f 0755 root sys usr/samba/scripts/startswat.sh packaging/SGI/startswat.sh samba.sw.base\n";
+print IDB "d 0755 root sys usr/samba/scripts $SRCPFX/packaging/SGI $PKG.src.samba\n";
+print IDB "f 0755 root sys usr/samba/scripts/inetd.sh $SRCPFX/packaging/SGI/inetd.sh $PKG.sw.base\n";
+print IDB "f 0755 root sys usr/samba/scripts/inst.msg $SRCPFX/packaging/SGI/inst.msg $PKG.sw.base exitop(\"chroot \$rbase /usr/samba/scripts/inst.msg\")\n";
+print IDB "f 0755 root sys usr/samba/scripts/mkprintcap.sh $SRCPFX/packaging/SGI/mkprintcap.sh $PKG.sw.base\n";
+print IDB "f 0755 root sys usr/samba/scripts/removeswat.sh $SRCPFX/packaging/SGI/removeswat.sh $PKG.sw.base\n";
+print IDB "f 0755 root sys usr/samba/scripts/startswat.sh $SRCPFX/packaging/SGI/startswat.sh $PKG.sw.base\n";
 
-print IDB "d 0755 root sys usr/samba/src packaging/SGI samba.src.samba\n";
+print IDB "d 0755 root sys usr/samba/src $SRCPFX/packaging/SGI $PKG.src.samba\n";
 @sorted = sort(@allfiles);
 while (@sorted) {
   $nextfile = shift @sorted;
@@ -185,37 +203,44 @@ while (@sorted) {
   next if ($nextfile eq "CVS");
   if (grep(/\/$/,$nextfile)) {
     $nextfile =~ s/\/$//;
-    print IDB "d 0755 root sys usr/samba/src/$nextfile $nextfile samba.src.samba\n";
+    print IDB "d 0755 root sys usr/samba/src/$nextfile $SRCPFX/$nextfile $PKG.src.samba\n";
   }
   else {
     if (grep((/\.sh$/ | /configure$/ | /configure\.developer/ | /config\.guess/ | /config\.sub/ | /\.pl$/ | /mkman$/),$nextfile)) {
-	print IDB "f 0755 root sys usr/samba/src/$nextfile $nextfile samba.src.samba\n";
+	print IDB "f 0755 root sys usr/samba/src/$nextfile $SRCPFX/$nextfile $PKG.src.samba\n";
     }
     else {
-        print IDB "f 0644 root sys usr/samba/src/$nextfile $nextfile samba.src.samba\n";
+        print IDB "f 0644 root sys usr/samba/src/$nextfile $SRCPFX/$nextfile $PKG.src.samba\n";
     }
   }
 }
 
-print IDB "d 0755 root sys usr/samba/swat packaging/SGI/swat samba.sw.base\n";
+print IDB "d 0755 root sys usr/samba/swat $SRCPFX/packaging/SGI/swat $PKG.sw.base\n";
 while (@swatfiles) {
   $nextfile = shift @swatfiles;
   ($file = $nextfile) =~ s/^packaging\/SGI\/swat\///;
   next if !$file;
   if (grep(/\/$/,$file)) {
     $file =~ s/\/$//;
-    print IDB "d 0755 root sys usr/samba/swat/$file packaging/SGI/swat/$file samba.sw.base\n";
+    print IDB "d 0755 root sys usr/samba/swat/$file $SRCPFX/packaging/SGI/swat/$file $PKG.sw.base\n";
   }
   else {
-    print IDB "f 0444 root sys usr/samba/swat/$file packaging/SGI/swat/$file samba.sw.base\n";
+    print IDB "f 0444 root sys usr/samba/swat/$file $SRCPFX/packaging/SGI/swat/$file $PKG.sw.base\n";
   }
 }
 
-print IDB "d 0755 root sys usr/samba/var packaging/SGI samba.sw.base\n";
-print IDB "d 0755 root sys usr/samba/var/locks packaging/SGI samba.sw.base\n";
-print IDB "f 0644 root sys usr/samba/var/locks/STATUS..LCK packaging/SGI/STATUS..LCK samba.sw.base\n";
+print IDB "d 0755 root sys usr/samba/var $SRCPFX/packaging/SGI $PKG.sw.base\n";
+print IDB "d 0755 root sys usr/samba/var/locks $SRCPFX/packaging/SGI $PKG.sw.base\n";
+print IDB "f 0644 root sys usr/samba/var/locks/STATUS..LCK $SRCPFX/packaging/SGI/STATUS..LCK $PKG.sw.base\n";
 
-print IDB "d 0755 root sys usr/share/catman/u_man packaging/SGI samba.man.manpages\n";
+if ($PKG eq "samba_irix") {
+  while(@books) {
+    $nextfile = shift @books;
+    print IDB $nextfile;
+  }
+}
+
+print IDB "d 0755 root sys usr/share/catman/u_man $SRCPFX/packaging/SGI $PKG.man.manpages\n";
 $olddirnum = "0";
 while (@catman) {
   $nextfile = shift @catman;
@@ -223,14 +248,15 @@ while (@catman) {
   ($dirnum = $file) =~ s/^[\D]*//;
   $dirnum =~ s/\.z//;
   if ($dirnum ne $olddirnum) {
-    print IDB "d 0755 root sys usr/share/catman/u_man/cat$dirnum packaging/SGI samba.man.manpages\n";
+    print IDB "d 0755 root sys usr/share/catman/u_man/cat$dirnum $SRCPFX/packaging/SGI $PKG.man.manpages\n";
     $olddirnum = $dirnum;
   }
-  print IDB "f 0664 root sys usr/share/catman/u_man/cat$dirnum/$file $nextfile samba.man.manpages\n";
+  print IDB "f 0664 root sys usr/share/catman/u_man/cat$dirnum/$file $SRCPFX/$nextfile $PKG.man.manpages\n";
 }
+print IDB "d 01777 nobody nobody var/spool/samba $SRCPFX/packaging/SGI $PKG.sw.base\n";
 
 close IDB;
-print "\n\nsamba.idb file has been created\n";
+print "\n\n$PKG.idb file has been created\n";
 
 sub dodir {
     local($dir, $nlink) = @_;
@@ -238,7 +264,7 @@ sub dodir {
 
     ($dev,$ino,$mode,$nlink) = stat('.') unless $nlink;
 
-    opendir(DIR,'.') || die "Can't open $dir";
+    opendir(DIR,'.') || die "Can't open current directory";
     local(@filenames) = sort readdir(DIR);
     closedir(DIR);
 
@@ -291,3 +317,10 @@ sub bydirnum {
     $dir1 <=> $dir2;
   }
 }
+
+sub idbsort {
+  ($f0,$f1,$f2,$f3) = split(/ /,$a,4);
+  ($f0,$f1,$f2,$f4) = split(/ /,$b,4);
+  $f3 cmp $f4;
+}
+
