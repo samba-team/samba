@@ -656,6 +656,9 @@ static BOOL cli_send_trans_data(struct cli_state *cli, uint16 fnum,
 	 */
 	char *rdata_t = NULL;
 	uint32 rdata_len = 0;
+	char *pipe_name = "\\PIPE\\\0\0\0";
+	int pipe_len = 8;
+	int setup_len = 2;
 
 	/*
 	 * Setup the pointers from the incoming.
@@ -671,9 +674,16 @@ static BOOL cli_send_trans_data(struct cli_state *cli, uint16 fnum,
 	DEBUG(5,("cli_send_trans_data: data_len: %d cmd:%x fnum:%x\n",
 				data_len, cmd, fnum));
 
+	if (data_offset != 0)
+	{
+		pipe_name = "";
+		pipe_len = 0;
+		setup_len = 0;
+	}
+
 	/* send the data: receive a response. */
-	if (!cli_api_pipe(cli, "\\PIPE\\\0\0\0", 8,
-		  setup, 2, 0,                     /* Setup, length, max */
+	if (!cli_api_pipe(cli, pipe_name, pipe_len,
+		  setup, setup_len, 0,   /* Setup, length, max */
 		  NULL, 0, 0,          /* Params, length, max */
 		  pdata, data_len, max_data_len,           /* data, length, max */                  
 	            &rparam, &rparam_len,        /* return param, length */
@@ -695,7 +705,6 @@ static BOOL cli_send_trans_data(struct cli_state *cli, uint16 fnum,
 	return True;
 }
 
-#if 0
 /****************************************************************************
  send data on an rpc pipe, which *must* be in one fragment.
  receive response data from an rpc pipe, which may be large...
@@ -711,9 +720,9 @@ static BOOL cli_send_trans_data(struct cli_state *cli, uint16 fnum,
 	BOOL first = True;
 	BOOL last  = True;
 	RPC_HDR    rhdr;
-	int max_data_len = 2048;
 	size_t data_left = data->data->data_used;
 	size_t data_len  = data->data->data_used;
+	int max_data_len = data_len;
 	DEBUG(5,("cli_send_and_rcv_pdu: cmd:%x fnum:%x\n", cmd, fnum));
 
 	while (data_offset < data_len)
@@ -783,8 +792,8 @@ static BOOL cli_send_trans_data(struct cli_state *cli, uint16 fnum,
 	return True;
 }
 
-#endif
 
+#if 0
 /****************************************************************************
  send data on an rpc pipe, which *must* be in one fragment.
  receive response data from an rpc pipe, which may be large...
@@ -895,6 +904,7 @@ BOOL cli_send_and_rcv_pdu(struct cli_state *cli, uint16 fnum,
 	
 	return True;
 }
+#endif
 
 BOOL cli_rcv_pdu(struct cli_state *cli, uint16 fnum, prs_struct *rdata)
 {

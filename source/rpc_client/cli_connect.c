@@ -116,6 +116,7 @@ static struct cli_connection *cli_con_get(const char* srv_name,
 		con->pipe_name = strdup(pipe_name);
 	}
 
+#if 0
 	if (strequal(srv_name, "\\\\.") ||
 	    strequal(&srv_name[2], global_myname))
 	{
@@ -124,6 +125,7 @@ static struct cli_connection *cli_con_get(const char* srv_name,
 		con->msrpc.local = msrpc_use_add(&pipe_name[6], &con->usr_creds, False);
 	}
 	else
+#endif
 	{
 		con->type = MSRPC_SMB;
 		con->msrpc.smb = malloc(sizeof(*con->msrpc.smb));

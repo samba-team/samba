@@ -3549,7 +3549,11 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
       
 		ret = receive_next_smb(inbuf,bufsize,SMB_SECONDARY_WAIT);
 
-		if ((ret && (CVAL(inbuf, smb_com) != SMBtrans)) || !ret) {
+		show_msg(inbuf);
+      
+		if ((ret && (CVAL(inbuf, smb_com) != SMBtrans &&
+                             CVAL(inbuf, smb_com) != SMBtranss)) || !ret)
+		{
 			if(ret) {
 				DEBUG(0,("reply_trans: Invalid secondary trans packet\n"));
 			} else {
@@ -3562,8 +3566,6 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 			return(ERROR(ERRSRV,ERRerror));
 		}
 
-		show_msg(inbuf);
-      
 		tpscnt = SVAL(inbuf,smb_vwv0);
 		tdscnt = SVAL(inbuf,smb_vwv1);
 
