@@ -104,13 +104,20 @@ def test_EnumPorts(pipe, handle):
 
     print 'spoolss_EnumPorts()'
 
-    r = {}
-    r['handle'] = handle
-    r['level'] = 1
-    r['buffer'] = None
-    r['buf_size'] = 0
+    for level in [1, 2]:
 
-    result = ResizeBufferCall(dcerpc.spoolss_EnumPorts, pipe, r)
+        r = {}
+        r['handle'] = handle
+        r['servername'] = None
+        r['level'] = level
+
+        result = ResizeBufferCall(dcerpc.spoolss_EnumPorts, pipe, r)
+
+        ports = dcerpc.unmarshall_spoolss_PortInfo_array(
+            result['buffer'], r['level'], result['count'])
+
+        if level == 1:
+            port_names = map(lambda x: x['info1']['port_name'], ports)
 
 
 def test_DeleteForm(pipe, handle, formname):
@@ -377,6 +384,7 @@ def test_EnumPrinters(pipe):
         handle = test_OpenPrinterEx(pipe, printername)
 
         test_GetPrinter(pipe, handle)
+        test_EnumPorts(pipe, handle)
         test_EnumForms(pipe, handle)
         test_AddForm(pipe, handle)
         test_EnumJobs(pipe, handle)
