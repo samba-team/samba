@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -318,7 +318,7 @@ krb5_add_extra_addresses(krb5_context context, krb5_addresses *addresses)
 }
 
 krb5_error_code
-krb5_set_extra_addresses(krb5_context context, krb5_addresses *addresses)
+krb5_set_extra_addresses(krb5_context context, const krb5_addresses *addresses)
 {
     if(context->extra_addresses) {
 	krb5_free_addresses(context, context->extra_addresses);
@@ -329,7 +329,7 @@ krb5_set_extra_addresses(krb5_context context, krb5_addresses *addresses)
 	if(context->extra_addresses == NULL)
 	    return ENOMEM;
     }
-    return copy_HostAddresses(addresses, context->extra_addresses);
+    return krb5_copy_addresses(context, addresses, context->extra_addresses);
 }
 
 krb5_error_code
