@@ -477,13 +477,21 @@ BOOL timeval_expired(struct timeval *tv)
 }
 
 /*
+  return the number of seconds elapsed between two times
+*/
+double timeval_elapsed2(struct timeval *tv1, struct timeval *tv2)
+{
+	return (tv2->tv_sec - tv1->tv_sec) + 
+	       (tv2->tv_usec - tv1->tv_usec)*1.0e-6;
+}
+
+/*
   return the number of seconds elapsed since a given time
 */
 double timeval_elapsed(struct timeval *tv)
 {
 	struct timeval tv2 = timeval_current();
-	return (tv2.tv_sec - tv->tv_sec) + 
-	       (tv2.tv_usec - tv->tv_usec)*1.0e-6;
+	return timeval_elapsed2(tv, &tv2);
 }
 
 /*
@@ -494,6 +502,17 @@ struct timeval timeval_min(struct timeval *tv1, struct timeval *tv2)
 	if (tv1->tv_sec < tv2->tv_sec) return *tv1;
 	if (tv1->tv_sec > tv2->tv_sec) return *tv2;
 	if (tv1->tv_usec < tv2->tv_usec) return *tv1;
+	return *tv2;
+}
+
+/*
+  return the greater of two timevals
+*/
+struct timeval timeval_max(struct timeval *tv1, struct timeval *tv2)
+{
+	if (tv1->tv_sec > tv2->tv_sec) return *tv1;
+	if (tv1->tv_sec < tv2->tv_sec) return *tv2;
+	if (tv1->tv_usec > tv2->tv_usec) return *tv1;
 	return *tv2;
 }
 
