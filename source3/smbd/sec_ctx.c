@@ -152,8 +152,10 @@ int get_current_groups(int *p_ngroups, gid_t **p_groups)
 		return -1;
 	}
 
-	if ((ngroups = sys_getgroups(ngroups,groups)) == -1)
+	if ((ngroups = sys_getgroups(ngroups,groups)) == -1) {
+		safe_free(groups);
 		return -1;
+	}
 
 	(*p_ngroups) = ngroups;
 	(*p_groups) = groups;
