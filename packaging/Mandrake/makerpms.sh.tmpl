@@ -4,27 +4,19 @@
 # Changed for a generic tar file rebuild by abartlet@pcug.org.au
 # Taken from Red Hat build area by JHT
 # Changed by John H Terpstra to build on RH8.1 - should also work for earlier versions jht@samba.org
+# Changes from Buchan Milne <bgmilne@cae.co.za>
 
 # The following allows environment variables to override the target directories
 #   the alternative is to have a file in your home directory calles .rpmmacros
 #   containing the following:
 #   %_topdir  /home/mylogin/RPM
 #
-# Note: Under this directory rpm expects to find the same directories that are under the
-#   /usr/src/redhat directory
-#
-if [ -x ~/.rpmmacros ]; then
-	TOPDIR=`awk '/topdir/ {print $2}' < ~/.rpmmacros`
-	if [ z$TOPDIR <> "z" ]; then
-		SPECDIR=${TOPDIR}/SPECS
-		SRCDIR=${TOPDIR}/SOURCES
-	fi
-fi
 
-SPECDIR=${SPECDIR:-/usr/src/RPM/SPECS}
-SRCDIR=${SRCDIR:-/usr/src/RPM/SOURCES}
+# rpm --eval should always give a correct answer for this
+SPECDIR=`rpm --eval "%{_specdir}"`
+SRCDIR=`rpm --eval "%{_sourcedir}"`
 
-# At this point the SPECDIR and SRCDIR vaiables must have a value!
+# At this point the (SPECDIR and) SRCDIR vaiables must have a value!
 
 USERID=`id -u`
 GRPID=`id -g`
@@ -54,11 +46,34 @@ esac
 
 ( cd ../../source; if [ -f Makefile ]; then make distclean; fi )
 ( cd ../../.. ; chown -R ${USERID}.${GRPID} samba-${VERSION} )
-( cd ../../.. ; tar --exclude=CVS -cvf ${SRCDIR}/samba-${VERSION}.tar samba-${VERSION} )
-( cd ${SRCDIR}; bzip2 samba-$VERSION.tar )
+echo "Compressing the source as bzip2, may take a while ..."
+( cd ../../.. ; tar --exclude=CVS -cjf ${SRCDIR}/samba-${VERSION}.tar.bz2 samba-${VERSION} )
 
 cp -av samba.spec ${SPECDIR}
 cp -a *.patch.bz2 *.xpm.bz2 smb.* samba.xinetd samba.log $SRCDIR
+# Prepare to allow straight patches synced from Mandrake cvs:
+# This section is taken from my own build_from_cvs script, which
+# did all the same things. Buchan Milne <bgmilne@cae.co.za>, 20020422.
+#create new snapshots of the patches from distributions tree:
+PATCHES=$(find . -name '*.patch')
+ICONS=$(find '.' -name '*.xpm')
+CONFIGS=$(find `pwd` -name '*'|grep -v ".patch"|grep -v ".xpm"|grep -v "CVS")
+#for PATCH in $PATCHES;do
+bzip2 -kf $PATCHES
+bzip2 -kf $ICONS
+
+#Copy bzip2'ed new snapshots to SOURCES:
+for PATCH in $PATCHES $ICONS;do
+	echo "Updating patch or icon: `basename $PATCH`"
+	cp -f $PATCH.bz2 $SRCDIR
+	rm -f $PATCH.bz2;
+done
+
+#copy configs to SOURCES
+for CONFIG in $CONFIGS;do
+	echo "Updating config file: `basename $CONFIG`"
+	cp -f $CONFIG $SRCDIR;
+done
 
 echo Getting Ready to build release package
 cd ${SPECDIR}

@@ -1,11 +1,95 @@
+%define ver 2.2.3a
+%define rel 11
+
+# PVERSION and PRELEASE replace by samba-team at release
+%define pversion PVERSION
+%define prelease PRELEASE
+# For testing this setup:
+#%define pversion 2.2.4
+#%define prelease %(date +%Y%m%d)
+
+#Check to see if p(version|release) has been replaced (1 if replaced)
+%define have_pversion %(if [ "%pversion" = "PVERSION" ];then echo 0; else echo 1; fi)
+%define have_prelease %(if [ "%prelease" = "PRELEASE" ];then echo 0; else echo 1; fi)
+
+# We now do detection of the Mandrake release we are building on:
+%define build_cooker %(if [ `awk '{print $3}' /etc/mandrake-release` = "Cooker" ];then echo 1; else echo 0; fi)
+%define build_mdk82 %(if [ `awk '{print $4}' /etc/mandrake-release` = 8.2 ];then echo 1; else echo 0; fi)
+%define build_mdk81 %(if [ `awk '{print $4}' /etc/mandrake-release` = 8.1 ];then echo 1; else echo 0; fi)
+%define build_mdk80 %(if [ `awk '{print $4}' /etc/mandrake-release` = 8.0 ];then echo 1; else echo 0; fi)
+%define build_mdk72 %(if [ `awk '{print $4}' /etc/mandrake-release` = 7.2 ];then echo 1; else echo 0; fi)
+%define build_non_default 0
+
+# Set defaults for each version
+%if %build_cooker
+%define build_acl 1
+%define build_winbind 1
+%define build_wins 1
+%define build_ldap 1
+%endif
+
+%if %build_mdk82
+%define build_acl 1
+%define build_winbind 1
+%define build_wins 1
+%define build_ldap 0
+%endif
+
+%if %build_mdk81
+%define build_acl 1
+%define build_winbind 0
+%define build_wins 0
+%define build_ldap 0
+%endif
+
+%if %build_mdk80
+%define build_acl 0
+%define build_winbind 0
+%define build_wins 0
+%define build_ldap 0
+%endif
+
+%if %build_mdk72
+%define build_acl 0
+%define build_winbind 0
+%define build_wins 0
+%define build_ldap 0
+%endif
+
+# Allow commandline option overrides (borrowed from Vince's qmail srpm):
+# To use it, do rpm [-ba|--rebuild] --with 'xxx'
+# Check if the rpm was built with the defaults, otherwise we inform the user
+%{?_with_acl: %{expand: %%define build_acl 1}}
+%{?_with_acl: %{expand: %%define build_non_default 1}}
+%{?_without_acl: %{expand: %%define build_acl 0}}
+%{?_without_acl: %{expand: %%define build_non_default 1}}
+%{?_with_winbind: %{expand: %%define build_winbind 1}}
+%{?_with_winbind: %{expand: %%define build_non_default 1}}
+%{?_without_winbind: %{expand: %%define build_winbind 0}}
+%{?_without_winbind: %{expand: %%define build_non_default 1}}
+%{?_with_wins: %{expand: %%define build_wins 1}}
+%{?_with_wins: %{expand: %%define build_non_default 1}}
+%{?_without_wins: %{expand: %%define build_wins 0}}
+%{?_without_wins: %{expand: %%define build_non_default 1}}
+%{?_with_ldap: %{expand: %%define build_ldap 1}}
+%{?_with_ldap: %{expand: %%define build_non_default 1}}
+%{?_without_ldap: %{expand: %%define build_ldap 0}}
+%{?_without_ldap: %{expand: %%define build_non_default 1}}
+
 Summary: Samba SMB server.
 Name: samba
-Version: PVERSION
-Release: PRELEASE
-License: GNU GPL version 2
+%if %have_pversion
+Version: %{pversion}
+%else
+Version: %{ver}
+%endif
+%if %have_prelease
+Release: 0.%{prelease}.1mdk
+%else
+Release: %{rel}
+%endif
+License: GPL
 Group: System/Servers
-Packager: John H Terpstra [samba-team] <jht@samba.org>
-
 Source: ftp://samba.org/pub/samba/samba-%{version}.tar.bz2
 Source1: samba.log
 Source2: mount.smb
@@ -13,18 +97,51 @@ Source3: samba.xinetd
 Source4: swat_48.xpm.bz2
 Source5: swat_32.xpm.bz2
 Source6: swat_16.xpm.bz2
-
-Patch: smbw.patch.bz2
-Patch1: samba-2.2.0-gawk.patch.bz2
-Patch2: samba-2.2.0-buildroot.patch.bz2
-Patch3: smbmount-sbin.patch.bz2
-
-Requires: samba-common = %{version} pam >= 0.72 kernel >= 2.2.1 glibc >= 2.1.2
-Prereq: xinetd chkconfig fileutils sed /bin/grep 
-Prereq: /sbin/chkconfig /bin/mktemp /usr/bin/killall
-BuildRequires: libcups-devel pam-devel
+Source7: README.samba-%{ver}-%{rel}
+#The japanese language patches are large, ignoring them now
+#Patch100: samba-j.patch.bz2
+# For some reason this won't apply as part of the -j patch
+# Seems to have been applied in samba-2.2.3
+#Patch111: samba-2.2.0-ook.patch.bz2
+#Patch200: samba-j-2.patch.bz2
+Patch: samba-2.2.0-makefilepath.patch.bz2
+Patch1: smbw.patch.bz2
+Patch2: samba-glibc21.patch.bz2
+#Patch3: network-recycle_bin.patch.bz2
+Patch4: samba-nsl.patch.bz2
+Patch5: samba-2.2.0-gawk.patch.bz2
+Patch6: system-auth-winbind.pamd.patch.bz2
+Patch7: samba-2.2.3a-init.patch.bz2
+Patch11: samba-2.0.7-smbspool-guest.patch.bz2
+Patch12: samba-2.2.0-buildroot.patch.bz2
+#Patch16: samba-mkdir.patch.bz2
+Patch17: smbmount-sbin.patch.bz2
+%if !%have_pversion
+# Version specific patches: current version
+Patch20: samba-2.2.3a-LDAP-schema.patch.bz2
+Patch21: samba-2.2.3a-cli_spoolss_notify.patch.bz2
+Patch22: samba-2.2.3a-pam_smbpass.patch.bz2
+Patch23: samba-2.2.3a-srv_spoolss_nt.patch.bz2
+%else
+# Version specific patches: upcoming version
+%endif
+Requires: pam >= 0.64, samba-common = %{version}
+BuildRequires: pam-devel autoconf
+%if %build_acl
+BuildRequires: libacl-devel
+%endif
+%if %build_mdk72
+BuildRequires: cups-devel
+%else
+BuildRequires: libcups-devel
+%endif
+%if %build_ldap
+BuildRequires: libldap-devel
+%endif
 BuildRoot: %{_tmppath}/%{name}-root
 Prefix: /usr
+Prereq: /sbin/chkconfig /bin/mktemp /usr/bin/killall
+Prereq: fileutils sed /bin/grep
 
 %description
 Samba provides an SMB server which can be used to provide
@@ -40,7 +157,8 @@ Samba-2.2 features working NT Domain Control capability and
 includes the SWAT (Samba Web Administration Tool) that
 allows samba's smb.conf file to be remotely managed using your
 favourite web browser. For the time being this is being
-enabled on TCP port 901 via xinetd.
+enabled on TCP port 901 via xinetd. SWAT is now included in
+it's own subpackage, samba-swat.
 
 Users are advised to use Samba-2.2 as a Windows NT4
 Domain Controller only on networks that do NOT have a Windows
@@ -52,6 +170,12 @@ This binary release includes encrypted password support.
 
 Please read the smb.conf file and ENCRYPTION.txt in the
 docs directory for implementation details.
+
+%if %build_non_default
+WARNING: This RPM was built with command-line options. Please
+see README.samba-%{ver}-%{rel} in the documentation for
+more information.
+%endif
 
 %package client
 Summary: Samba (SMB) client programs.
@@ -81,44 +205,135 @@ Requires: samba-common = %{version}
 Samba-doc provides documentation files for both the server and client
 packages of Samba.
 
+%package swat
+Summary: The Samba Web Administration Tool.
+Group: System/Servers
+Requires: samba = %{version} xinetd
+
+%description swat
+SWAT (the Samba Web Administration Tool) allows samba's smb.conf file
+to be remotely managed using your favourite web browser. For the time
+being this is being enabled on TCP port 901 via xinetd. Note that
+SWAT does not use SSL encryption, nor does it preserve comments in
+your smb.conf file. Webmin uses SSL encryption by default, and
+preserves comments in configuration files, even if it does not display
+them, and is therefore the preferred method for remotely managing
+Samba.
+
+
+%if %build_winbind
+%package winbind
+Summary: Samba-winbind daemon, utilities and documentation
+Group: System/Servers
+Requires: samba-common = %{version}
+%description winbind
+Provides the winbind daemon and testing tools to allow authentication
+and group/user enumeration from a Windows or Samba domain controller.
+%endif
+
+%if %build_wins
+%package -n nss_wins
+Summary: Name Service Switch service for WINS
+Group: System/Servers
+Requires: samba-common = %{version}
+PreReq: glibc
+%description -n nss_wins
+Provides the libnss_wins shared library which resolves NetBIOS names to
+IP addresses.
+%endif
+
 %prep
+# Build a summary of how this RPM was built:
+%if %build_acl
+RPM_EXTRA_OPTIONS="$RPM_EXTRA_OPTIONS --with acl"
+%else
+RPM_EXTRA_OPTIONS="$RPM_EXTRA_OPTIONS --without acl"
+%endif
+%if %build_winbind
+RPM_EXTRA_OPTIONS="$RPM_EXTRA_OPTIONS --with winbind"
+%else
+RPM_EXTRA_OPTIONS="$RPM_EXTRA_OPTIONS --without winbind"
+%endif
+%if %build_wins
+RPM_EXTRA_OPTIONS="$RPM_EXTRA_OPTIONS --with wins"
+%else
+RPM_EXTRA_OPTIONS="$RPM_EXTRA_OPTIONS --without wins"
+%endif
+%if %build_ldap
+RPM_EXTRA_OPTIONS="$RPM_EXTRA_OPTIONS --with ldap"
+%else
+RPM_EXTRA_OPTIONS="$RPM_EXTRA_OPTIONS --without ldap"
+%endif
+
+%if %build_non_default
+echo "Building a non-default rpm with the following command-line arguments:"
+echo "$RPM_EXTRA_OPTIONS"
+echo "This rpm was built with non-default options, thus, to build ">%{SOURCE7}
+echo "an identical rpm, you need to supply the following options">>%{SOURCE7}
+echo "at build time: $RPM_EXTRA_OPTIONS">>%{SOURCE7}
+%else
+echo "This rpm was built with default options">%{SOURCE7}
+%endif
+
 %setup -q
-%patch -p1 -b .smbw
-%patch1 -p1 -b .gawk
-%patch2 -p1 -b .buildroot
-%patch3 -p1
+#%patch111 -p1
+%patch1 -p1 -b .smbw
+#%patch3 -p1 -b .net-r_bin
+%patch4 -p1 -b .nsl
+%patch5 -p1 -b .gawk
+#%patch6 -p1
+%patch7 -p1
+%patch11 -p0 -b .smbspool
+%patch12 -p1 -b .buildroot
+%patch17 -p1
+# Version specific patches: current version
+%if !%have_pversion
+echo "Applying patches for current version: %{ver}"
+%patch20 -p1
+%patch21 -p1
+%patch22 -p1
+%patch23 -p1
+%else
+# Version specific patches: upcoming version
+echo "Applying patches for new verions: %{pversion}"
+%endif
+
+cp %{SOURCE7} .
 
 %build
+#%serverbuild
 cd source
 autoconf
-
-NUMCPU=`grep processor /proc/cpuinfo | wc -l`
-
+CPPFLAGS="-I/usr/include/openssl"; export CPPFLAGS
 CFLAGS="$RPM_OPT_FLAGS"
 %configure      --prefix=%{prefix} \
+                --with-fhs \
                 --libdir=/etc/samba \
-	        --localstatedir=/var \
                 --sysconfdir=/etc/samba \
-		--with-acl-support	\
-                --with-automount \
-                --with-codepagedir=/var/lib/samba/codepages \
+                --localstatedir=/var \
                 --with-configdir=/etc/samba \
-	        --with-fhs \
-                --with-mmap \
-                --with-netatalk \
-	        --with-pam \
-                --with-pam_smbpass \
-	        --with-privatedir=/etc/samba \
-	        --with-quotas \
-	        --with-sambabook=%{prefix}/share/swat/using_samba \
-                --with-smbmount \
-                --with-smbwrapper \
+                --with-codepagedir=/var/lib/samba/codepages \
+                --with-privatedir=/etc/samba \
                 --with-swatdir=%{prefix}/share/swat \
+                --with-smbmount \
                 --with-syslog \
-                --with-utmp 
+                --with-automount \
+                --with-pam \
+                --with-pam_smbpass \
+                --with-vfs \
+                --with-utmp \
+                --with-msdfs \
+                --with-smbwrapper \
+%if %build_acl
+		--with-acl-support	\
+%endif
+%if %build_ldap
+		--with-ldapsam		\
+%endif
+                --with-quotas
 
-make -j${NUMCPU} proto
-make -j${NUMCPU} CFLAGS="$RPM_OPT_FLAGS -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE" all smbfilter smbwrapper smbcacls pam_smbpass nsswitch nsswitch/libnss_wins.so debug2html
+#make CFLAGS="$RPM_OPT_FLAGS -D_GNU_SOURCE" all
+make CFLAGS="$RPM_OPT_FLAGS -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE" all smbfilter smbwrapper smbcacls pam_smbpass nsswitch nsswitch/libnss_wins.so debug2html
 
 %install
 rm -rf $RPM_BUILD_ROOT
@@ -135,6 +350,7 @@ mkdir -p $RPM_BUILD_ROOT/var/cache/samba
 mkdir -p $RPM_BUILD_ROOT/var/log/samba
 mkdir -p $RPM_BUILD_ROOT/var/spool/samba
 mkdir -p $RPM_BUILD_ROOT/var/lib/samba/{netlogon,profiles,printers}
+mkdir -p $RPM_BUILD_ROOT/var/lib/samba/printers/{W32X86,WIN40,W32ALPHA,W32MIPS,W32PPC}
 mkdir -p $RPM_BUILD_ROOT/var/lib/samba/codepages/src
 mkdir -p $RPM_BUILD_ROOT/lib/security
 mkdir -p $RPM_BUILD_ROOT%prefix/lib
@@ -143,13 +359,14 @@ mkdir -p $RPM_BUILD_ROOT%prefix/lib
 
 for i in nmblookup smbclient smbpasswd smbstatus testparm testprns \
     make_smbcodepage make_unicodemap make_printerdef rpcclient smbspool \
-    smbcacls smbclient smbmount smbumount smbsh
+    smbcacls smbclient smbmount smbumount smbsh wbinfo
 do
   install -m755 source/bin/$i $RPM_BUILD_ROOT/%{prefix}/bin
 done
 
 install -m 755 source/bin/smbwrapper.so $RPM_BUILD_ROOT%prefix/lib/smbwrapper.so
 install -m 755 source/bin/pam_smbpass.so $RPM_BUILD_ROOT/lib/security/pam_smbpass.so
+install -m 755 source/nsswitch/pam_winbind.so $RPM_BUILD_ROOT/lib/security/pam_winbind.so
 
 #for i in addtosmbpass mksmbpasswd.sh smbtar convert_smbpasswd
 
@@ -160,7 +377,7 @@ done
 
 # Install secure binary files
 
-for i in smbd nmbd swat smbfilter debug2html smbmnt smbcontrol
+for i in smbd nmbd swat smbfilter debug2html smbmnt smbcontrol winbindd
 do
   install -m755 source/bin/$i $RPM_BUILD_ROOT/%{prefix}/sbin
 done
@@ -176,31 +393,33 @@ done
 
 # Install codepage source files
 
-for i in 437 737 775 850 852 861 866 932 936 949 950 1251
+for i in 437 737 775 850 852 857 861 866 932 936 949 950 1251
 do
   install -m644 source/codepages/codepage_def.$i $RPM_BUILD_ROOT/var/lib/samba/codepages/src
 done
 
-for i in 437 737 850 852 861 866 932 936 949 950 ISO8859-1 ISO8859-2 ISO8859-5 ISO8859-7 KOI8-R
+for i in 437 737 775 850 852 857 861 866 932 936 949 950 ISO8859-1 ISO8859-2 ISO8859-5 ISO8859-7 ISO8859-9 ISO8859-13 ISO8859-15 KOI8-R
 do
   install -m644 source/codepages/CP$i.TXT $RPM_BUILD_ROOT/var/lib/samba/codepages/src
 done
 
 # Build codepage load files
-for i in 437 737 775 850 852 861 866 932 936 949 950 1251; do
+for i in 437 737 775 850 852 857 861 866 932 936 949 950 1251; do
         $RPM_BUILD_ROOT/%{prefix}/bin/make_smbcodepage c $i $RPM_BUILD_ROOT/var/lib/samba/codepages/src/codepage_def.$i $RPM_BUILD_ROOT/var/lib/samba/codepages/codepage.$i
 done
 
 # Build unicode load files
-for i in 437 737 850 852 861 866 932 936 949 950 ISO8859-1 ISO8859-2 ISO8859-5 ISO8859-7 KOI8-R; do
+for i in 437 737 775 850 852 857 861 866 932 936 949 950 ISO8859-1 ISO8859-2 ISO8859-5 ISO8859-7 ISO8859-9 ISO8859-13 ISO8859-15 KOI8-R; do
          $RPM_BUILD_ROOT/%{prefix}/bin/make_unicodemap $i $RPM_BUILD_ROOT/var/lib/samba/codepages/src/CP$i.TXT $RPM_BUILD_ROOT/var/lib/samba/codepages/unicode_map.$i
 done
 rm -rf $RPM_BUILD_ROOT/var/lib/samba/codepages/src
 
 # Install the nsswitch library extension file
-install -m755 source/nsswitch/libnss_wins.so $RPM_BUILD_ROOT/lib
-# Make link for wins resolver
-( cd $RPM_BUILD_ROOT/lib; ln -s libnss_wins.so libnss_wins.so.2; )
+for i in wins winbind; do
+  install -m755 source/nsswitch/libnss_$i.so $RPM_BUILD_ROOT/lib
+done
+# Make link for wins and winbind resolvers
+( cd $RPM_BUILD_ROOT/lib; ln -s libnss_wins.so libnss_wins.so.2; ln -s libnss_winbind.so libnss_winbind.so.2)
 
 # Install SWAT helper files
         for i in swat/help/*.html docs/htmldocs/*.html; do
@@ -238,7 +457,11 @@ install -m755 source/nsswitch/libnss_wins.so $RPM_BUILD_ROOT/lib
         install -m755 packaging/Mandrake/findsmb $RPM_BUILD_ROOT/usr/bin
         install -m755 packaging/Mandrake/smb.init $RPM_BUILD_ROOT/etc/rc.d/init.d/smb
         install -m755 packaging/Mandrake/smb.init $RPM_BUILD_ROOT/usr/sbin/samba
+	install -m755 packaging/Mandrake/winbind.init $RPM_BUILD_ROOT/etc/rc.d/init.d/winbind
+	install -m755 packaging/Mandrake/winbind.init $RPM_BUILD_ROOT/usr/sbin/winbind
         install -m644 packaging/Mandrake/samba.pamd $RPM_BUILD_ROOT/etc/pam.d/samba
+	install -m644 packaging/Mandrake/system-auth-winbind.pamd $RPM_BUILD_ROOT/etc/pam.d/system-auth-winbind
+#
         install -m644 $RPM_SOURCE_DIR/samba.log $RPM_BUILD_ROOT/etc/logrotate.d/samba
 
 # Link smbmount to /sbin/mount.smb and /sbin/mount.smbfs
@@ -278,16 +501,24 @@ bzcat %{SOURCE6} > $RPM_BUILD_ROOT%{_miconsdir}/swat.xpm
 %clean
 rm -rf $RPM_BUILD_ROOT
 
-%post
-
-/sbin/chkconfig --level 35 smb on
-
-if [ -f /var/lock/subsys/xinetd ]; then
-        service xinetd reload >/dev/null 2>&1 || :
-fi
+%post -n samba
+%_post_service smb
+#/sbin/chkconfig --level 35 smb on
 
 # Add a unix group for samba machine accounts
 groupadd -frg 421 machines
+
+%post -n samba-common
+# Basic migration script for pre-2.2.1 users,
+# since smb config moved from /etc to /etc/samba
+
+mkdir -p /etc/samba
+for s in smb.conf smbusers smbpasswd printers.def secrets.tdb lmhosts; do
+[ -f /etc/$s ] && {
+        cp -f /etc/$s /etc/$s.OLD
+        mv -f /etc/$s /etc/samba/
+}
+done
 
 # Migrate tdb's from /var/lock/samba (taken from official samba spec file):
 for i in /var/lock/samba/*.tdb
@@ -309,22 +540,16 @@ done
 if [ -d /var/lock/samba ]; then
         rm -rf /var/lock/samba
 fi
+# Make a symlink on /usr/lib/smbwrapper.so in /usr/bin
+# to fix smbsh problem (another way to do that, anyone???)
 
-%post common
-# Basic migration script for pre-2.2.1 users,
-# since smb config moved from /etc to /etc/samba
-
-mkdir -p /etc/samba
-for s in smb.conf smbusers smbpasswd printers.def secrets.tdb lmhosts; do
-[ -f /etc/$s ] && {
-        cp -f /etc/$s /etc/$s.OLD
-        mv -f /etc/$s /etc/samba/
-}
-done
+ln -sf /usr/lib/smbwrapper.so /usr/bin/smbwrapper.so
 
 # Let's create a proper /etc/samba/smbpasswd file
-touch /etc/samba/smbpasswd
-
+[ -f /etc/samba/smbpasswd ] || {
+	echo "Creating password file for samba..."
+	touch /etc/samba/smbpasswd
+}
 # Let's define the proper paths for config files
 perl -pi -e 's/(\/etc\/)(smb)/\1samba\/\2/' /etc/samba/smb.conf
 
@@ -334,32 +559,85 @@ if [ -f /etc/logrotate.d/samba ]; then
         perl -pi -e 's/nmb /nmbd /' /etc/logrotate.d/samba
 fi
 
-# And not loose our machine account SIDs
-[ -f /etc/*.SID ] && cp -f /etc/*.SID /etc/samba/
+# And not loose our machine account SID
+[ -f /etc/MACHINE.SID ] && mv -f /etc/MACHINE.SID /etc/samba/ ||:
 
-%update_menus
+%if %build_winbind
+%post -n samba-winbind
+%_post_service winbind
+if [ $1 = 1 ]; then
+#    /sbin/chkconfig winbind on
+    cp -af /etc/nsswitch.conf /etc/nsswitch.conf.rpmsave
+    cp -af /etc/nsswitch.conf /etc/nsswitch.conf.rpmtemp
+    for i in passwd group;do
+        grep ^$i /etc/nsswitch.conf |grep -v 'winbind' 1>/dev/null 2>/dev/null
+        if [ $? = 0 ];then
+            echo "Adding a winbind entry to the $i section of /etc/nsswitch.conf"
+            awk '/^'$i'/ {print $0 " winbind"};!/^'$i'/ {print}' /etc/nsswitch.conf.rpmtemp >/etc/nsswitch.conf;
+	    cp -af /etc/nsswitch.conf /etc/nsswitch.conf.rpmtemp
+        else
+            echo "$i entry found in /etc/nsswitch.conf"
+        fi
+    done
+    if [ -f /etc/nsswitch.conf.rpmtemp ];then 
+        rm -f /etc/nsswitch.conf.rpmtemp;fi
+fi
+%preun -n samba-winbind
+%_preun_service winbind
+if [ $1 = 0 ]; then
+	echo "Removing winbind entries from /etc/nsswitch.conf"
+	perl -pi -e 's/ winbind//' /etc/nsswitch.conf
+
+#	/sbin/chkconfig winbind reset
+fi
+%endif %build_winbind
+
+%if %build_wins
+%post -n nss_wins
+if [ $1 = 1 ]; then
+    cp -af /etc/nsswitch.conf /etc/nsswitch.conf.rpmsave
+    grep '^hosts' /etc/nsswitch.conf |grep -v 'wins' >/dev/null
+    if [ $? = 0 ];then
+        echo "Adding a wins entry to the hosts section of /etc/nsswitch.conf"
+        awk '/^hosts/ {print $0 " wins"};!/^hosts/ {print}' /etc/nsswitch.conf.rpmsave >/etc/nsswitch.conf;
+    else
+        echo "wins entry found in /etc/nsswitch.conf"
+    fi
+#    else
+#        echo "Upgrade, leaving nsswitch.conf intact"
+fi
+
+%preun -n nss_wins
+if [ $1 = 0 ]; then
+	echo "Removing wins entry from /etc/nsswitch.conf"
+	perl -pi -e 's/ wins//' /etc/nsswitch.conf
+#else
+#	echo "Leaving /etc/nsswitch.conf intact"
+fi
+%endif %build_wins
 
 %preun
 
-/sbin/chkconfig --level 35 smb reset
-
 if [ $1 = 0 ] ; then
+%_preun_service smb
+#    /sbin/chkconfig --level 35 smb reset
+# Let's not loose /var/cache/samba
 
-    for i in browse.dat wins.dat brlock.tdb unexpected.tdb connections.tdb \
-locking.tdb messages.tdb;do
-        if [ -e /var/cache/samba/$i ]; then
-                rm -f /var/cache/samba/$i
-        fi;
-    done
+#    for i in browse.dat wins.dat brlock.tdb unexpected.tdb connections.tdb \
+#locking.tdb messages.tdb;do
+#        if [ -e /var/cache/samba/$i ]; then
+#                mv -f /var/cache/samba/$i /var/cache/samba/$i.BAK
+#        fi;
+#    done
     if [ -d /var/log/samba ]; then
       rm -rf /var/log/samba/*
     fi
     if [ -d /var/cache/samba ]; then
-      rm -rf /var/cache/samba/*
+      mv -f /var/cache/samba /var/cache/samba.BAK
     fi
 fi
 
-%preun common
+%preun -n samba-common
 
 if [ $1 = 0 ] ; then
     for n in /etc/samba/codepages/*; do
@@ -369,12 +647,19 @@ if [ $1 = 0 ] ; then
     done
 fi
 
-%postun
+
+%post -n samba-swat
+if [ -f /var/lock/subsys/xinetd ]; then
+        service xinetd reload >/dev/null 2>&1 || :
+fi
+%update_menus
+
+%postun -n samba-swat
 
 # Remove swat entry from xinetd
 if [ $1 = 0 -a -f /etc/xinetd.conf ] ; then
 rm -f /etc/xinetd.d/swat
-service xinetd reload &>/dev/null || :
+	service xinetd reload &>/dev/null || :
 fi
 
 if [ "$1" = "0" -a -x /usr/bin/update-menus ]; then /usr/bin/update-menus || true ; fi
@@ -397,11 +682,6 @@ fi
 
 %files
 %defattr(-,root,root)
-%config(noreplace) /etc/xinetd.d/swat
-%{_menudir}/%{name}
-%{_miconsdir}/*.xpm
-%{_liconsdir}/*.xpm
-%{_iconsdir}/*.xpm
 #%attr(-,root,root) %{prefix}/sbin/*
 %attr(-,root,root) /sbin/*
 #%attr(-,root,root) %{prefix}/bin/*
@@ -409,17 +689,13 @@ fi
 %{prefix}/sbin/samba
 %{prefix}/sbin/smbd
 %{prefix}/sbin/nmbd
-%{prefix}/sbin/swat
 %{prefix}/sbin/smbcontrol
 #%{prefix}/bin/addtosmbpass
 %{prefix}/bin/mksmbpasswd.sh
 %{prefix}/bin/smbstatus
-%{prefix}/bin/smbpasswd
 %{prefix}/bin/convert_smbpasswd
+%attr(755,root,root) /lib/security/pam_smbpass*
 #/usr/share/swat
-%attr(-,root,root) %{prefix}/share/swat/help/*
-%attr(-,root,root) %{prefix}/share/swat/images/*
-%attr(-,root,root) %{prefix}/share/swat/include/*
 %attr(-,root,root) %config(noreplace) /etc/samba/smbusers
 %attr(-,root,root) %config /etc/rc.d/init.d/smb
 %attr(-,root,root) %config(noreplace) /etc/logrotate.d/samba
@@ -430,32 +706,46 @@ fi
 %{_mandir}/man8/smbd.8*
 %{_mandir}/man8/nmbd.8*
 %{_mandir}/man1/smbcontrol.1*
-%{_mandir}/man8/smbpasswd.8*
-%{_mandir}/man8/swat.8*
 #%{_mandir}/man1/lmhosts.1*
 %{_mandir}/man5/smb.conf.5*
 %attr(775,root,root) %dir /var/lib/samba/netlogon
 %attr(775,root,root) %dir /var/lib/samba/profiles
-%attr(775,root,root) %dir /var/lib/samba/printers
-%dir /var/cache/samba
+%attr(775,root,root) %dir /var/lib/samba/printers/*
 %dir /var/log/samba
 %attr(1777,root,root) %dir /var/spool/samba
+
 %files doc
 %defattr(-,root,root)
 %doc README COPYING Manifest Read-Manifest-Now
 %doc WHATSNEW.txt Roadmap
+%doc README.samba-%{ver}-%{rel}
 %doc docs
 %doc examples
 %doc swat/README
 %attr(-,root,root) %{prefix}/share/swat/using_samba/*
+
+%files swat
+%defattr(-,root,root)
+%config(noreplace) /etc/xinetd.d/swat
+%attr(-,root,root) /sbin/*
+%{_sbindir}/swat
+%{_menudir}/%{name}
+%{_miconsdir}/*.xpm
+%{_liconsdir}/*.xpm
+%{_iconsdir}/*.xpm
+%attr(-,root,root) %{prefix}/share/swat/help/*
+%attr(-,root,root) %{prefix}/share/swat/images/*
+%attr(-,root,root) %{prefix}/share/swat/include/*
+%{_mandir}/man8/swat.8*
+
 %files client
 %defattr(-,root,root)
 %ifnarch alpha
 /sbin/mount.smb
 /sbin/mount.smbfs
-%attr(4775,root,root) %{prefix}/bin/smbmount
+%attr(775,root,root) %{prefix}/bin/smbmount
 %attr(4775,root,root) %{prefix}/bin/smbumount
-%{prefix}/sbin/smbmnt
+%attr(4775,root,root) %{prefix}/sbin/smbmnt
 %{_mandir}/man8/smbmnt.8*
 %{_mandir}/man8/smbmount.8*
 %{_mandir}/man8/smbumount.8*
@@ -477,6 +767,7 @@ fi
 
 %files common
 %defattr(-,root,root)
+%dir /var/cache/samba
 /%{prefix}/bin/make_smbcodepage
 /%{prefix}/bin/make_unicodemap
 /%{prefix}/bin/testparm
@@ -484,8 +775,8 @@ fi
 /%{prefix}/bin/make_printerdef
 /%{prefix}/bin/rpcclient
 /%{prefix}/bin/smbsh
-%prefix/lib/smbwrapper.so
-/lib/security/*
+%{prefix}/bin/smbpasswd
+%{prefix}/lib/smbwrapper.so
 %attr(-,root,root) %config(noreplace) /etc/samba/smb.conf
 %attr(-,root,root) %config(noreplace) /etc/samba/lmhosts
 %attr(-,root,root) /var/lib/samba/codepages
@@ -496,15 +787,191 @@ fi
 %{_mandir}/man1/testprns.1*
 %{_mandir}/man5/smb.conf.5*
 %{_mandir}/man5/lmhosts.5*
-%attr(755,root,root) /lib/*.so
-%attr(755,root,root) /lib/*.so.*
+%{_mandir}/man8/smbpasswd.8*
+
+%if %build_winbind
+%files winbind
+%defattr(-,root,root)
+%{prefix}/sbin/winbindd
+%{prefix}/bin/wbinfo
+%attr(755,root,root) /lib/security/pam_winbind*
+%attr(755,root,root) /lib/libnss_winbind*
+%attr(-,root,root) %config /etc/rc.d/init.d/winbind
+%attr(-,root,root) %config(noreplace) /etc/pam.d/system-auth-winbind
+%{_mandir}/man8/winbindd.8*
+%{_mandir}/man1/wbinfo.1*
+%endif
+
+%if %build_wins
+%files -n nss_wins
+%defattr(-,root,root)
+%attr(755,root,root) /lib/libnss_wins.so*
+%endif
 
 %changelog
-* Sat Jan 05 2002 John H Terpstra <jht@samba.org>
-- Updated from Mandrake 8.1 SRPM to bring building up to date
-- Note: I disposed of all patches that would not apply to the CVS sources
-  no time to check if really needed - hope someone else will validate this.
+* Sun Apr 21 2002 Buchan Milne <bgmilne@cae.co.za> 2.2.3a-11mdk
+- Tested with CVS snapshot (upcoming relaese, sync packaging)
+- Added detection of samba-official release (so we can keep one spec
+  file in sync in both cvs trees)
+- Add Distro-detection(tm) (allows us to remove some arbitrary repitition)
+- Made patches 20,21,23 (merged upstream), and 22 (breaks pam_smbpass
+  compilation, pam_smbpass.so seems to be built correctly without it)
+  version-specific
+- Removed patches 18,19 (only applicable to 2.2.2)
 
+* Sat Mar 16 2002 Pixel <pixel@mandrakesoft.com> 2.2.3a-10mdk
+- fix Patch 7 to fix samba not starting at boot time
+
+* Tue Mar 12 2002 Sylvestre Taburet <staburet@mandrakesoft.com> 2.2.3a-9mdk
+- Patch 7 to fix samba not starting at boot time (-- Pixel)
+
+* Sat Mar 9 2002 Sylvestre Taburet <staburet@mandrakesoft.com> 2.2.3a-8mdk
+- Patch 23 from CVS to fix saving changes in printer properties (-- Gerald Carter)
+
+* Fri Mar 8 2002 Sylvestre Taburet <staburet@mandrakesoft.com> 2.2.3a-7mdk
+- Added a few new codepage/character sets.
+- replace deletion of /var/cache/samba by simple backup when removing samba
+  to avoid loosing winbind rid->uid map and print driver tdbs.
+- Moved /var/cache/samba migration process from %post samba to %post samba-common.
+- Moved require xinetd from samba to samba-swat.
+
+* Mon Feb 27 2002 Sylvestre Taburet <staburet@mandrakesoft.com> 2.2.3a-6mdk
+- Fixed pam_smbpass compiling problem. (-- Ilia Chipitsine)
+- moved /var/cache/samba from server to common as it's used by client too.
+- symlinked smbwrapper.so back to /usr/bin to fix smbsh pb. (-- Alexander Skwar)
+- added %_post/preun_service macro for smb & winbind.
+
+* Fri Feb 22 2002 Sylvestre Taburet <staburet@mandrakesoft.com> 2.2.3a-5mdk
+- added cli_spoolss_notify patch to prevent smbd dying when a printer
+  is opened from Win2k. (-- Gerald Carter)
+
+* Mon Feb 18 2002 Sylvestre Taburet <staburet@mandrakesoft.com> 2.2.3a-4mdk
+- fixed the chkconfig --reset when upgrading form previos version.
+- added correct LDAP schema in example section.
+
+* Fri Feb 08 2002 Sylvestre Taburet <staburet@mandrakesoft.com> 2.2.3a-3mdk
+- _Really_ suid back smbumount; OK, you can laugh now...
+
+* Fri Feb 08 2002 Sylvestre Taburet <staburet@mandrakesoft.com> 2.2.3a-2mdk
+- suid back smbumount.
+
+* Thu Feb 07 2002 Sylvestre Taburet <staburet@mandrakesoft.com> 2.2.3a-1mdk
+- upped to 2.2.3a bugfix version.
+- removed suid on smb(u)mount, suid smbmnt instead.
+
+* Mon Feb 04 2002 Buchan Milne <bgmilne@cae.co.za> 2.2.3-2mdk
+- Added --without xxx support for all the --with xxx command-
+  line options. Now also detects (and warns) when built
+  for non-default distro.
+- Fix %post -n samba-winbind
+
+* Mon Feb 04 2002 Buchan Milne <bgmilne@cae.co.za> 2.2.3-1mdk
+- Samba-2.2.3. Disabled patches 6,18,19, which should have been
+  applied in samba CVS.
+
+* Sun Feb 03 2002 Buchan Milne <bgmilne@cae.co.za> 2.2.2-10mdk
+- Reenable patches 6 and 19 (applied in CVS, but this is 2.2.2!)
+- Added option to use --with xxx when building, options so far
+  for mdk72, mdk80, mdk81, mdk82, cooker, ldap, winbind, wins, acl
+- Put warning text in %description if the RPM was built with
+  non-defaults.
+
+* Mon Jan 21 2002 Sylvestre Taburet <staburet@mandrakesoft.com> 2.2.2-9mdk
+- Fixed %post scripts here and there.
+- samba-common %post scriptlet is now clean (-- thanks Zytho).
+
+* Mon Jan 21 2002 Sylvestre Taburet <staburet@mandrakesoft.com> 2.2.2-8mdk
+- rebuilt on cooker.
+- please test extensively this package,
+  but consider our target _is_ 2.2.3.
+
+* Thu Jan 17 2002 Buchan Milne <bgmilne@cae.co.za> 2.2.2-7mdk
+- Make a 2.2.2 package for the changes in 2.2.3:
+- reenable XFS quota patch, turned off ldap
+
+* Thu Jan 17 2002 Buchan Milne <bgmilne@cae.co.za> 2.2.3-0.20020117mdk
+- New scripts for winbind from 3.0alpha spec file
+
+* Wed Jan 16 2002 Buchan Milne <bgmilne@cae.co.za> 2.2.3-0.20020116mdk
+- Updated CVS snapshot
+
+* Sun Dec 23 2001 Buchan Milne <bgmilne@cae.co.za> 2.2.3-0.20011222mdk
+- New CVS snapshot
+- Sync up with changes made in 2.2.2 to support Mandrake 8.0, 7.2
+- Added new subpackage for swat
+- More %if's for ldap.
+
+* Thu Dec 06 2001 Buchan Milne <bgmilne@cae.co.za> 2.2.3-0.20011205mdk
+- Build from CVS snapshot of SAMBA_2_2 to test XFS quotas
+- Removed XFS quota patch (applied upstream)
+
+* Wed Dec 05 2001 Sylvestre Taburet <staburet@mandrakesoft.com> 2.2.2-6mdk
+- fixed typo in system-auth-winbind.pamd (--Thanks J. Gluck).
+- fixed %post xxx problem (smb not started in chkconfig --Thanks Viet & B. Kenworthy).
+
+* Fri Nov 23 2001 Sylvestre Taburet <staburet@mandrakesoft.com> 2.2.2-5mdk
+- Had to remove the network recycle bin patch: it seems to mess up
+  file deletion from windows (files appear to be "already in use")
+
+* Tue Nov 13 2001 Sylvestre Taburet <staburet@mandrakesoft.com> 2.2.2-4mdk
+- added network recycle bin patch:
+  <http://www.amherst.edu/~bbstone/howto/samba.html>
+- added "recycle bin = .recycled" parameter in smb.conf [homes].
+- fixed winbind/nss_wins perms (oh no I don't own that stuff ;o)
+
+* Mon Nov 12 2001 Sylvestre Taburet <staburet@mandrakesoft.com> 2.2.2-3mdk
+- added %build 8.0 and 7.2, for tweakers to play around.
+- changed configure options:
+  . removed --with-mmap, --with-netatalk (obsolete).
+  . added --with-msdfs, --with-vfs (seems stable, but still need testing).
+
+* Mon Nov 12 2001 Sylvestre Taburet <staburet@mandrakesoft.com> 2.2.2-2mdk
+- rebuilt with winbind and nss_wins enabled.
+
+* Wed Oct 31 2001 Sylvestre Taburet <staburet@mandrakesoft.com> 2.2.2-1mdk
+- Rebuilt on cooker.
+
+* Wed Oct 31 2001 Buchan Milne <bgmilne@cae.co.za> 2.2.2-0.992mdk
+- Patch for smb.conf to fix incorrect lpq command, typo in winbind,
+  and add sample linpopup command. Added print driver directories.
+- New XFS quota patch (untested!, samba runs, but do quotas work? We
+  can't check yet since the kernel doesn't seem to support XFS quotas!)
+
+* Fri Oct 19 2001 Sylvestre Taburet <staburet@mandrakesoft.com> 2.2.2-0.99mdk
+- New samba.spec, almost ready for winbind operations. OLA for Buchan Milne
+  Who did a tremendous integration work on 2.2.2.
+  Rebuild on cooker, please test XFS (ACLs and quotas) again...
+  
+* Mon Oct 15 2001 Buchan Milne <bgmilne@cae.co.za> 2.2.2-0.9mdk
+- Samba-2.2.2. released! Use %defines to determine which subpackages
+  are built and which Mandrake release we are buiding on/for (hint: define 
+  build_mdk81 1 for Mandrake 8.1 updates)
+
+* Sun Oct 14 2001 Buchan Milne <bgmilne@cae.co.za> 2.2.2-0.20011014mdk
+- %post and %postun for nss_wins
+
+* Wed Oct 10 2001 Buchan Milne <bgmilne@cae.co.za> 2.2.2-0.20011010mdk
+- New CVS snapshot, /etc/pam.d/system-auth-winbind added
+  with configuration to allow easy winbind setup.
+  
+* Sun Oct 7 2001 Buchan Milne <bgmilne@cae.co.za> 2.2.2-0.20011007mdk
+- Added new package nss_wins and moved smbpasswd to common (required by
+  winbind).
+
+* Sat Oct 6 2001 Buchan Milne <bgmilne@cae.co.za> 2.2.2-0.20011006mdk
+- Added new package winbind.
+
+* Mon Oct 1 2001 Buchan Milne <bgmilne@cae.co.za> 2.2.2-0.20011001mdk
+- Removed patch to smb init.d file (applied in cvs)
+
+* Sun Sep 30 2001 Buchan Milne <bgmilne@cae.co.za> 2.2.2-0.20010930mdk
+- Added winbind init script, which still needs to check for running nmbd.
+
+* Thu Sep 27 2001 Buchan Milne <bgmilne@cae.co.za> 2.2.2-0.20010927mdk
+- Built from samba-2.2.2-pre cvs, added winbindd, wbinfo, nss_winbind and 
+  pam_winbind, moved pam_smbpass from samba-common to samba. We still
+  need a start-up script for winbind, or need to modify existing one.
+  
 * Mon Sep 10 2001 Sylvestre Taburet <staburet@mandrakesoft.com> 2.2.1a-15mdk
 - Enabled acl support (XFS acls now supported by kernel-2.4.8-21mdk thx Chmou)
   Added smbd patch to support XFS quota (Nathan Scott)
