@@ -6,13 +6,22 @@ EncryptionKey EXTERNAL
 KerberosTime EXTERNAL
 Principal EXTERNAL
 
-HDB_DB_FORMAT INTEGER ::= 0	-- format of database, 
+HDB_DB_FORMAT INTEGER ::= 1	-- format of database, 
 				-- update when making changes
+
+-- these should have the same value as the pa-* counterparts
+hdb-pw-salt	INTEGER	::= 3
+hdb-afs3-salt	INTEGER	::= 10
+
+Salt ::= SEQUENCE {
+	type[0]		INTEGER,
+	salt[1]		OCTET STRING
+}
 
 Key ::= SEQUENCE {
 	mkvno[0]	INTEGER,	-- master key version number
 	key[1]		EncryptionKey,
-	salt[2]		OCTET STRING OPTIONAL
+	salt[2]		Salt OPTIONAL
 }
 
 Event ::= SEQUENCE {
