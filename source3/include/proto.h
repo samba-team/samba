@@ -847,6 +847,7 @@ BOOL get_ldap_entries(SAM_USER_INFO_21 *pw_buf,
                       int max_num_entries,
                       uint16 acb_mask, int switch_level);
 BOOL ldap_get_user_info_21(SAM_USER_INFO_21 *id21, uint32 rid);
+void ldap_helper_dummy(void);
 
 /*The following definitions come from  lib/rpc/server/srv_lsa.c  */
 
@@ -1787,12 +1788,11 @@ struct smb_passwd *getsmbpwuid(unsigned int uid);
 char *encode_acct_ctrl(uint16 acct_ctrl);
 BOOL add_smbpwd_entry(struct smb_passwd *newpwd);
 BOOL mod_smbpwd_entry(struct smb_passwd* pwd, BOOL override);
-void *machine_password_lock( char *domain, char *name, BOOL update);
-BOOL machine_password_unlock( void *token );
+BOOL machine_password_lock( char *domain, char *name, BOOL update);
+BOOL machine_password_unlock(void);
 BOOL machine_password_delete( char *domain, char *name );
-BOOL get_machine_account_password( void *mach_tok, unsigned char *ret_pwd,
-                                   time_t *last_change_time);
-BOOL set_machine_account_password( void *mach_tok, unsigned char *md4_new_pwd);
+BOOL get_machine_account_password( unsigned char *ret_pwd, time_t *last_change_time);
+BOOL set_machine_account_password( unsigned char *md4_new_pwd);
 
 /*The following definitions come from  status.c  */
 

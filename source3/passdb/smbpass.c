@@ -1085,6 +1085,7 @@ BOOL mod_smbpwd_entry(struct smb_passwd* pwd, BOOL override)
 }
 
 static int mach_passwd_lock_depth;
+static FILE *mach_passwd_fp;
 
 /************************************************************************
  Routine to get the name for a machine account file.
@@ -1119,52 +1120,50 @@ static void get_machine_account_file_name( char *domain, char *name, char *mac_f
  Routine to lock the machine account password file for a domain.
 ************************************************************************/
 
-void *machine_password_lock( char *domain, char *name, BOOL update)
+BOOL machine_password_lock( char *domain, char *name, BOOL update)
 {
-  FILE *fp;
   pstring mac_file;
 
   if(mach_passwd_lock_depth == 0) {
 
     get_machine_account_file_name( domain, name, mac_file);
 
-    if((fp = fopen(mac_file, "r+b")) == NULL) {
+    if((mach_passwd_fp = fopen(mac_file, "r+b")) == NULL) {
       if(errno == ENOENT && update) {
-        fp = fopen(mac_file, "w+b");
+        mach_passwd_fp = fopen(mac_file, "w+b");
       }
 
-      if(fp == NULL) {
+      if(mach_passwd_fp == NULL) {
         DEBUG(0,("machine_password_lock: cannot open file %s - Error was %s.\n",
               mac_file, strerror(errno) ));
-        return NULL;
+        return False;
       }
     }
 
     chmod(mac_file, 0600);
 
-    if(!pw_file_lock(fileno(fp), (update ? F_WRLCK : F_RDLCK), 
+    if(!pw_file_lock(fileno(mach_passwd_fp), (update ? F_WRLCK : F_RDLCK), 
                                       60, &mach_passwd_lock_depth))
     {
       DEBUG(0,("machine_password_lock: cannot lock file %s\n", mac_file));
-      fclose(fp);
-      return NULL;
+      fclose(mach_passwd_fp);
+      return False;
     }
 
   }
 
-  return (void *)fp;
+  return True;
 }
 
 /************************************************************************
  Routine to unlock the machine account password file for a domain.
 ************************************************************************/
 
-BOOL machine_password_unlock( void *token )
+BOOL machine_password_unlock(void)
 {
-  FILE *fp = (FILE *)token;
-  BOOL ret = pw_file_unlock(fileno(fp), &mach_passwd_lock_depth);
+  BOOL ret = pw_file_unlock(fileno(mach_passwd_fp), &mach_passwd_lock_depth);
   if(mach_passwd_lock_depth == 0)
-    fclose(fp);
+    fclose(mach_passwd_fp);
   return ret;
 }
 
@@ -1185,10 +1184,8 @@ BOOL machine_password_delete( char *domain, char *name )
  The user of this function must have locked the machine password file.
 ************************************************************************/
 
-BOOL get_machine_account_password( void *mach_tok, unsigned char *ret_pwd,
-                                   time_t *last_change_time)
+BOOL get_machine_account_password( unsigned char *ret_pwd, time_t *last_change_time)
 {
-  FILE *fp = (FILE *)mach_tok;
   char linebuf[256];
   char *p;
   int i;
@@ -1198,14 +1195,14 @@ BOOL get_machine_account_password( void *mach_tok, unsigned char *ret_pwd,
   *last_change_time = (time_t)0;
   memset(ret_pwd, '\0', 16);
 
-  if(fseek( fp, 0L, SEEK_SET) == -1) {
+  if(fseek( mach_passwd_fp, 0L, SEEK_SET) == -1) {
     DEBUG(0,("get_machine_account_password: Failed to seek to start of file. Error was %s.\n",
               strerror(errno) ));
     return False;
   } 
 
-  fgets(linebuf, sizeof(linebuf), fp);
-  if(ferror(fp)) {
+  fgets(linebuf, sizeof(linebuf), mach_passwd_fp);
+  if(ferror(mach_passwd_fp)) {
     DEBUG(0,("get_machine_account_password: Failed to read password. Error was %s.\n",
               strerror(errno) ));
     return False;
@@ -1268,13 +1265,12 @@ BOOL get_machine_account_password( void *mach_tok, unsigned char *ret_pwd,
  The user of this function must have locked the machine password file.
 ************************************************************************/
 
-BOOL set_machine_account_password( void *mach_tok, unsigned char *md4_new_pwd)
+BOOL set_machine_account_password( unsigned char *md4_new_pwd)
 {
   char linebuf[64];
   int i;
-  FILE *fp = (FILE *)mach_tok;
 
-  if(fseek( fp, 0L, SEEK_SET) == -1) {
+  if(fseek( mach_passwd_fp, 0L, SEEK_SET) == -1) {
     DEBUG(0,("set_machine_account_password: Failed to seek to start of file. Error was %s.\n",
               strerror(errno) ));
     return False;
@@ -1285,12 +1281,12 @@ BOOL set_machine_account_password( void *mach_tok, unsigned char *md4_new_pwd)
 
   sprintf(&linebuf[32], ":TLC-%08X\n", (unsigned)time(NULL));
 
-  if(fwrite( linebuf, 1, 45, fp)!= 45) {
+  if(fwrite( linebuf, 1, 45, mach_passwd_fp)!= 45) {
     DEBUG(0,("set_machine_account_password: Failed to write file. Warning - the machine \
 machine account is now invalid. Please recreate. Error was %s.\n", strerror(errno) ));
     return False;
   }
 
-  fflush(fp);
+  fflush(mach_passwd_fp);
   return True;
 }
