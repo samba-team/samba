@@ -379,24 +379,24 @@
 	} srvsvc_NetDisk0;
 
 	typedef struct {
+		uint32 unknown;
 		uint32 count;
-		uint32 unknown1;
-		uint32 unknown2;
-		srvsvc_NetDisk0 array[count];
+		[size_is(count)] srvsvc_NetDisk0 array[];
 	} srvsvc_NetDiskCtr0;
 
-	typedef struct {
-		uint32 num1;
-		srvsvc_NetDiskCtr0 *ctr0;
+	typedef union {
+		[case(0)]  srvsvc_NetDiskCtr0 *ctr0;
 	} srvsvc_NetDiskCtr;
 
 	WERROR srvsvc_NetDiskEnum(
-		[in]   unistr *server_unc,
-		[in]   uint32 level,
-		[in,out]   srvsvc_NetDiskCtr ctr,
-		[in]   uint32 preferred_len,
-		[out]   uint32 total,
-		[in,out]   uint32 *resume_handle
+		[in]      unistr *server_unc,
+		[in]      uint32 level,
+		[out]     uint32 num_entries,
+		[in,switch_is(level)] srvsvc_NetDiskCtr ctr,
+		[out]     srvsvc_NetDiskCtr0 *disks,
+		[in]      uint32 unknown,
+		[out]     uint32 max_entries,
+		[in,out]  uint32 *resume_handle
 		);
 
 	/******************/
