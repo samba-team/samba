@@ -44,11 +44,22 @@ RCSID("$Id$");
 
 #include "roken.h"
 
+/*
+ * the theory behind this is that we might be trying to call vsyslog
+ * when there's no memory left, and we should try to be as useful as
+ * possible.  And the format string should say something about what's
+ * failing.
+ */
+
 static void
 simple_vsyslog(int pri, const char *fmt, va_list ap)
 {
     syslog (pri, "%s", fmt);
 }
+
+/*
+ * do like syslog but with a `va_list'
+ */
 
 void
 vsyslog(int pri, const char *fmt, va_list ap)
@@ -57,10 +68,11 @@ vsyslog(int pri, const char *fmt, va_list ap)
     const char *p;
     char *p2;
     int saved_errno = errno;
-    int fmtlen = strlen (fmt);
+    int fmt_len  = strlen (fmt);
+    int fmt2_len = fmt_len;
     char *buf;
 
-    fmt2 = malloc (fmtlen + 1);
+    fmt2 = malloc (fmt_len + 1);
     if (fmt2 == NULL) {
 	simple_vsyslog (pri, fmt, ap);
 	return;
@@ -74,7 +86,8 @@ vsyslog(int pri, const char *fmt, va_list ap)
 	    int pos;
 
 	    pos = p2 - fmt2;
-	    tmp = realloc (fmt2, fmtlen + 1 + e_len - 2);
+	    fmt2_len += e_len - 2;
+	    tmp = realloc (fmt2, fmt2_len + 1);
 	    if (tmp == NULL) {
 		free (fmt2);
 		simple_vsyslog (pri, fmt, ap);
