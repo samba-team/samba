@@ -137,14 +137,14 @@ spawn_child(krb5_context context, int *socks, int num_socks, int this_sock)
 	krb5_warn(context, errno, "accept");
 	return 1;
     }
-    e = krb5_sockaddr2address(sa, &addr);
+    e = krb5_sockaddr2address(context, sa, &addr);
     if(e)
 	krb5_warn(context, e, "krb5_sockaddr2address");
     else {
 	e = krb5_print_address (&addr, buf, sizeof(buf), 
 				&buf_len);
 	if(e) 
-	    krb5_warn(context, e, "krb5_sockaddr2address");
+	    krb5_warn(context, e, "krb5_print_address");
 	else
 	    krb5_warnx(context, "connection from %s", buf);
 	krb5_free_address(context, &addr);
