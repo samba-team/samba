@@ -849,7 +849,6 @@ static void cmd_use(struct client_info *info, int argc, char *argv[])
 	BOOL net_use = False;
 	BOOL net_use_add = True;
 	BOOL force_close = False;
-	struct ntuser_creds u;
 	fstring dest_host;
 	fstring srv_name;
 	BOOL null_pwd = False;
@@ -859,15 +858,15 @@ static void cmd_use(struct client_info *info, int argc, char *argv[])
 
 	if (usr_creds != NULL)
 	{
-		copy_nt_creds(&u, &usr_creds->ntc);
+		copy_nt_creds(&usr.ntc, &usr_creds->ntc);
 	}
 	else
 	{
-		copy_nt_creds(&u, NULL);
+		copy_nt_creds(&usr.ntc, NULL);
 	}
 
 	pstrcpy(dest_host, cli_info.dest_host);
-	pstrcpy(u.user_name, optarg);
+	pstrcpy(usr.ntc.user_name, optarg);
 	info->reuse = False;
 
 	if (argc <= 1)
@@ -903,8 +902,8 @@ static void cmd_use(struct client_info *info, int argc, char *argv[])
 			case 'U':
 			{
 				char *lp;
-				pstrcpy(u.user_name, optarg);
-				if ((lp = strchr(u.user_name, '%')))
+				pstrcpy(usr.ntc.user_name, optarg);
+				if ((lp = strchr(usr.ntc.user_name, '%')))
 				{
 					*lp = 0;
 					pstrcpy(password, lp + 1);
@@ -912,7 +911,7 @@ static void cmd_use(struct client_info *info, int argc, char *argv[])
 					       strlen(password));
 					got_pwd = True;
 				}
-				if (u.user_name[0] == 0 && password[0] == 0)
+				if (usr.ntc.user_name[0] == 0 && password[0] == 0)
 				{
 					null_pwd = True;
 				}
@@ -925,7 +924,7 @@ static void cmd_use(struct client_info *info, int argc, char *argv[])
 			}
 			case 'W':
 			{
-				pstrcpy(u.domain, optarg);
+				pstrcpy(usr.ntc.domain, optarg);
 				break;
 			}
 
@@ -999,22 +998,22 @@ static void cmd_use(struct client_info *info, int argc, char *argv[])
 		BOOL isnew;
 		if (null_pwd)
 		{
-			set_user_password(&u, True, NULL);
+			set_user_password(&usr.ntc, True, NULL);
 		}
 		else
 		{
-			set_user_password(&u, got_pwd, password);
+			set_user_password(&usr.ntc, got_pwd, password);
 		}
 
 		/* paranoia: destroy the local copy of the password */
 		bzero(password, sizeof(password));
 
 		report(out_hnd, "Server:\t%s:\tUser:\t%s\tDomain:\t%s\n",
-		       srv_name, u.user_name, u.domain);
+		       srv_name, usr.ntc.user_name, usr.ntc.domain);
 		report(out_hnd, "Connection:\t");
 
 		if (cli_net_use_add
-		    (srv_name, &u, True, info->reuse, &isnew) != NULL)
+		    (srv_name, &usr.ntc, True, info->reuse, &isnew) != NULL)
 		{
 			report(out_hnd, "OK\n");
 		}
@@ -1027,10 +1026,10 @@ static void cmd_use(struct client_info *info, int argc, char *argv[])
 	{
 		BOOL closed;
 		report(out_hnd, "Server:\t%s:\tUser:\t%s\tDomain:\t%s\n",
-		       srv_name, u.user_name, u.domain);
+		       srv_name, usr.ntc.user_name, usr.ntc.domain);
 		report(out_hnd, "Connection:\t");
 
-		if (!cli_net_use_del(srv_name, &u, force_close, &closed))
+		if (!cli_net_use_del(srv_name, &usr.ntc, force_close, &closed))
 		{
 			report(out_hnd, ": Does not exist\n");
 		}
@@ -1048,10 +1047,19 @@ static void cmd_use(struct client_info *info, int argc, char *argv[])
 		}
 	}
 
-	usr_creds = NULL;
-
 	/* paranoia: destroy the local copy of the password */
 	bzero(password, sizeof(password));
+}
+
+/******************************************************************
+   allow or disallow automatic connections.  rpctorture, because it
+   does not reestablish connections after fork(), fails unless the
+   connection is established AFTER the fork()
+ ******************************************************************/
+static BOOL auto_connect = True;
+void cmd_set_no_autoconnect(void)
+{
+	auto_connect = False;
 }
 
 #define CMD_STR 0x1
@@ -1337,16 +1345,16 @@ static void cmd_set(struct client_info *info, int argc, char *argv[])
 	fstrcat(srv_name, cli_info.dest_host);
 	strupper(srv_name);
 
-	if (!strequal(srv_name, "\\\\."))
+	if (auto_connect && !strequal(srv_name, "\\\\."))
 	{
 		BOOL isnew;
 		cli_net_use_add(srv_name, &usr.ntc, True, False, &isnew);
+		usr_creds = NULL;
 	}
 	if (cmd_str != NULL)
 	{
 		process(&cli_info, cmd_str);
 	}
-	usr_creds = NULL;
 }
 
 static void read_user_env(struct ntuser_creds *u)

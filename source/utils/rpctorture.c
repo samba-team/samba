@@ -548,5 +548,6 @@ struct command_set tor_commands[] =
  int main(int argc, char *argv[])
 {
 	add_command_set(tor_commands);
+	cmd_set_no_autoconnect();
 	return command_main(argc, argv);
 }

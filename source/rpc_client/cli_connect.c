@@ -111,7 +111,7 @@ static struct cli_connection *cli_con_get(const char *srv_name,
 	memset(con, 0, sizeof(*con));
 	con->type = MSRPC_NONE;
 
-	copy_user_creds(&con->usr_creds, usr_creds);
+	copy_user_creds(&con->usr_creds, NULL);
 	con->usr_creds.reuse = reuse;
 
 	if (srv_name != NULL)
@@ -147,10 +147,15 @@ static struct cli_connection *cli_con_get(const char *srv_name,
 	}
 	else
 	{
+		struct ntuser_creds *ntc = NULL;
+		if (usr_creds != NULL)
+		{
+			ntc = &usr_creds->ntc;
+		}
 		con->type = MSRPC_SMB;
 		con->msrpc.smb =
 			ncacn_np_use_add(pipe_name, user_key, srv_name,
-					 &con->usr_creds.ntc, True, reuse,
+					 ntc, True, reuse,
 					 &is_new_connection);
 		if (con->msrpc.smb != NULL)
 		{
@@ -158,6 +163,8 @@ static struct cli_connection *cli_con_get(const char *srv_name,
 			con->msrpc.smb->smb->nt.key.pid = 0;
 			con->msrpc.smb->smb->nt.key.vuid = UID_FIELD_INVALID;
 		}
+		copy_nt_creds(&con->usr_creds.ntc,
+		              &con->msrpc.smb->smb->usr);
 	}
 
 	if (is_new_connection && con->msrpc.cli != NULL)
@@ -319,7 +326,6 @@ BOOL cli_connection_init_auth(const char *srv_name, const char *pipe_name,
 			      struct cli_connection **con,
 			      cli_auth_fns * auth, void *auth_creds)
 {
-	BOOL res = True;
 	BOOL reuse = False;
 
 	/*
@@ -331,12 +337,7 @@ BOOL cli_connection_init_auth(const char *srv_name, const char *pipe_name,
 
 	*con = cli_con_get(srv_name, pipe_name, auth, auth_creds, reuse);
 
-	if ((*con) == NULL)
-	{
-		return False;
-	}
-
-	return res;
+	return (*con) != NULL;
 }
 
 /****************************************************************************

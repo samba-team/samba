@@ -84,6 +84,12 @@ BOOL pwd_compare(const struct pwd_info *_pwd1, const struct pwd_info *_pwd2)
 	pwd_deobfuscate(&pwd1);
 	pwd_deobfuscate(&pwd2);
 
+	if (pwd1.crypted || pwd2.crypted)
+	{
+		DEBUG(0,("pwd_compare: cannot compare crypted passwords\n"));
+		return True;
+	}
+
 	if (pwd1.cleartext && pwd2.cleartext)
 	{
 		if (strequal(pwd1.password, pwd2.password))
@@ -105,24 +111,14 @@ BOOL pwd_compare(const struct pwd_info *_pwd1, const struct pwd_info *_pwd2)
 	if (!pwd1.null_pwd  && !pwd2.null_pwd &&
 	    !pwd1.cleartext && !pwd2.cleartext)
 	{
-#ifdef DEBUG_PASSWORD
-		DEBUG(100,("pwd compare: nt#\n"));
-		dump_data(100, pwd1.smb_nt_pwd, 16);
-		dump_data(100, pwd2.smb_nt_pwd, 16);
-#endif
-		if (memcmp(pwd1.smb_nt_pwd, pwd2.smb_nt_pwd, 16) == 0)
-		{
-			ZERO_STRUCT(pwd1);
-			ZERO_STRUCT(pwd2);
+		dump_data_pw("pwd compare: nt#1\n", pwd1.smb_nt_pwd, 16);
+		dump_data_pw("pwd compare: nt#2\n", pwd2.smb_nt_pwd, 16);
 
-			return True;
-		}
-#ifdef DEBUG_PASSWORD
-		DEBUG(100,("pwd compare: lm#\n"));
-		dump_data(100, pwd1.smb_lm_pwd, 16);
-		dump_data(100, pwd2.smb_lm_pwd, 16);
-#endif
-		if (memcmp(pwd1.smb_lm_pwd, pwd2.smb_lm_pwd, 16) == 0)
+		dump_data_pw("pwd compare: lm#1\n", pwd1.smb_lm_pwd, 16);
+		dump_data_pw("pwd compare: lm#2\n", pwd2.smb_lm_pwd, 16);
+
+		if (memcmp(pwd1.smb_nt_pwd, pwd2.smb_nt_pwd, 16) == 0 &&
+		    memcmp(pwd1.smb_lm_pwd, pwd2.smb_lm_pwd, 16) == 0)
 		{
 			ZERO_STRUCT(pwd1);
 			ZERO_STRUCT(pwd2);

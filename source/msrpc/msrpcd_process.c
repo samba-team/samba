@@ -2,7 +2,8 @@
    Unix SMB/Netbios implementation.
    Version 1.9.
    process incoming packets - main loop
-   Copyright (C) Andrew Tridgell 1992-1998
+   Copyright (C) Andrew Tridgell              1992-2000
+   Copyright (C) Luke Kenneth Casson Leighton 1996-2000
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -383,7 +384,7 @@ BOOL msrpcd_init(int c, rpcsrv_struct ** l)
 		return False;
 	}
 
-	ZERO_STRUCTP((*l));
+	ZERO_STRUCTP(*l);
 
 	(*l)->key = uk;
 	(*l)->c = c;
@@ -453,7 +454,7 @@ void msrpcd_process(msrpc_service_fns * fn, rpcsrv_struct * l,
 		{
 			time_t t;
 
-			if (counter > 365 * 3600)	/* big number of seconds. */
+			if (counter > 365 * 3600) /* big number of seconds. */
 			{
 				counter = 0;
 				service_load_counter = 0;
@@ -507,18 +508,6 @@ void msrpcd_process(msrpc_service_fns * fn, rpcsrv_struct * l,
 				 * Use this as an excuse to print some stats.
 				 */
 			}
-
-			/* automatic timeout if all connections are closed */
-			if (counter >= IDLE_CLOSED_TIMEOUT)
-			{
-				DEBUG(2, ("Closing idle connection\n"));
-				if (fn->idle != NULL)
-				{
-					fn->idle();
-				}
-				return;
-			}
-
 		}
 
 		if (got_msrpc)

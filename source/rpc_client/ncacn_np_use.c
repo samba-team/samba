@@ -2,8 +2,8 @@
    Unix SMB/Netbios implementation.
    Version 1.9.
    SMB client generic functions
-   Copyright (C) Andrew Tridgell 1994-1999
-   Copyright (C) Luke Kenneth Casson Leighton 1996-1999
+   Copyright (C) Andrew Tridgell              1994-2000
+   Copyright (C) Luke Kenneth Casson Leighton 1996-2000
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -162,10 +162,6 @@ static struct ncacn_np_use *ncacn_np_find(const char *srv_name,
 {
 	int i;
 	const char *sv_name = srv_name;
-	struct ntuser_creds null_usr;
-
-	copy_nt_creds(&null_usr, usr_creds);
-	usr_creds = &null_usr;
 
 	if (strnequal("\\PIPE\\", pipe_name, 6))
 	{
@@ -177,8 +173,15 @@ static struct ncacn_np_use *ncacn_np_find(const char *srv_name,
 		sv_name = &sv_name[2];
 	}
 
-	DEBUG(10, ("cli_find: %s %s %s",
-		   srv_name, usr_creds->user_name, usr_creds->domain));
+	if (usr_creds != NULL)
+	{
+		DEBUG(10, ("ncacn_np_find: %s %s %s",
+			   srv_name, usr_creds->user_name, usr_creds->domain));
+	}
+	else
+	{
+		DEBUG(10,("ncacn_np_find: %s (no creds)\n", srv_name));
+	}
 
 	if (key != NULL)
 	{
@@ -228,12 +231,23 @@ static struct ncacn_np_use *ncacn_np_find(const char *srv_name,
 		{
 			continue;
 		}
-		if (!strequal
-		    (usr_creds->user_name, c->cli->smb->usr.user_name))
+		if (key != NULL && (k.pid != key->pid || k.vuid != key->vuid))
 		{
 			continue;
 		}
-		if (key != NULL && (k.pid != key->pid || k.vuid != key->vuid))
+		if (usr_creds == NULL)
+		{
+			if (reuse)
+			{
+				return c;
+			}
+			else
+			{
+				continue;
+			}
+		}
+		if (!strequal
+		    (usr_creds->user_name, c->cli->smb->usr.user_name))
 		{
 			continue;
 		}

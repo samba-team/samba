@@ -362,8 +362,8 @@ void unbecome_root(BOOL restore_dir)
 
 	if (become_root_depth > 0)
 	{
-		DEBUG(10,("not yet non-root: unbecome root depth is %d\n",
-			become_root_depth));
+		DEBUG(10,("not yet root: unbecome root depth is %d\n",
+			 become_root_depth));
 		return;
 	}
 	/* we might have done a become_user() while running as root,
@@ -397,5 +397,4 @@ void unbecome_root(BOOL restore_dir)
 		dos_ChDir(become_root_dir);
 
 	current_user = current_user_saved;
-
 }

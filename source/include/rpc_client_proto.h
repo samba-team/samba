@@ -366,20 +366,19 @@ BOOL samr_query_dispinfo(  POLICY_HND *pol_domain, uint16 level,
 
 /*The following definitions come from  rpc_client/cli_spoolss.c  */
 
-BOOL spoolss_enum_printers(uint32 flags, const char *srv_name,
-			uint32 level,
-			uint32 *count,
-			void ***printers);
-uint32 spoolss_enum_jobs( const POLICY_HND *hnd,
-			uint32 firstjob,
-			uint32 numofjobs,
-			uint32 level,
-			uint32 *buf_size,
-			uint32 *count,
-			void ***jobs);
-BOOL spoolss_open_printer_ex( const char *printername,
-			uint32 cbbuf, uint32 devmod, uint32 des_access,
-			const char *station, const char *username,
+uint32 spoolss_enum_printers(uint32 flags, fstring srv_name, uint32 level,
+			     NEW_BUFFER *buffer, uint32 offered,
+			     uint32 *needed, uint32 *returned);
+uint32 spoolss_enum_jobs(const POLICY_HND *hnd, uint32 firstjob, uint32 numofjobs,
+			 uint32 level, NEW_BUFFER *buffer, uint32 offered, 
+			 uint32 *needed, uint32 *returned);
+uint32 spoolss_enum_printerdata(const POLICY_HND *hnd, uint32 index, 
+			uint32 *valuelen, uint16 *value, uint32 *rvaluelen, 
+			uint32 *type, 
+			uint32 *datalen, uint8 *data, uint32 *rdatalen);
+BOOL spoolss_open_printer_ex(  char *printername,
+			 char *datatype, uint32 access_required,
+			 char *station,  char *username,
 			POLICY_HND *hnd);
 BOOL spoolss_closeprinter(POLICY_HND *hnd);
 
