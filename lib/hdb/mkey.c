@@ -148,7 +148,7 @@ read_master_mit(krb5_context context, const char *filename,
     int fd;
     krb5_error_code ret;
     krb5_storage *sp;
-    u_int16_t enctype;
+    int16_t enctype;
     krb5_keyblock key;
 	       
     fd = open(filename, O_RDONLY | O_BINARY);
