@@ -1,3 +1,11 @@
+1999-08-16  Assar Westerlund  <assar@sics.se>
+
+	* version4.c (handle_v4): more error checking and more correct
+ 	error messages
+
+	* server.c (v5_loop, kadmind_loop): more error checking and more
+ 	correct error messages
+
 1999-07-24  Assar Westerlund  <assar@sics.se>
 
 	* util.c (str2timeval, edit_time): functions for parsing and

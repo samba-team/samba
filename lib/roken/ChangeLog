@@ -1,3 +1,7 @@
+1999-08-16  Assar Westerlund  <assar@sics.se>
+
+	* getcap.c: try to make this work on systems with DB
+
 1999-08-16  Johan Danielsson  <joda@pdc.kth.se>
 
 	* getcap.c: protect from db-less systems
