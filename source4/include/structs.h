@@ -91,6 +91,7 @@ struct pvfs_dir;
 struct pvfs_filename;
 struct pvfs_state;
 struct pvfs_file;
+struct pvfs_file_handle;
 
 struct dcesrv_context;
 struct dcesrv_interface;

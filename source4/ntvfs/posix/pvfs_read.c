@@ -71,10 +71,15 @@ NTSTATUS pvfs_read(struct ntvfs_module_context *ntvfs,
 		return status;
 	}
 
-	ret = pread(f->handle->fd, 
-		    rd->readx.out.data, 
-		    maxcnt,
-		    rd->readx.in.offset);
+	if (f->handle->name->stream_name) {
+		ret = pvfs_stream_read(pvfs, f->handle, 
+				       rd->readx.out.data, maxcnt, rd->readx.in.offset);
+	} else {
+		ret = pread(f->handle->fd, 
+			    rd->readx.out.data, 
+			    maxcnt,
+			    rd->readx.in.offset);
+	}
 	if (ret == -1) {
 		return pvfs_map_errno(pvfs, errno);
 	}

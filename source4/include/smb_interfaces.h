@@ -532,7 +532,7 @@ union smb_fileinfo {
 		enum smb_fileinfo_level level;
 		union smb_fileinfo_in in;
 
-		struct {
+		struct stream_information {
 			uint_t num_streams;
 			struct stream_struct *streams;
 		} out;
