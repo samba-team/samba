@@ -124,6 +124,41 @@ void talloc_increase_ref_count(const void *ptr)
 	tc->ref_count++;
 }
 
+/*
+  helper for talloc_reference()
+*/
+static int talloc_reference_destructor(void *ptr)
+{
+	void **handle = ptr;
+	talloc_free(*handle);
+	return 0;
+}
+
+/*
+  make a secondary reference to a pointer, hanging off the given context.
+  the pointer remains valid until both the original caller and this given
+  context are freed.
+  
+  the major use for this is when two different structures need to reference the 
+  same underlying data, and you want to be able to free the two instances separately,
+  and in either order
+*/
+void *talloc_reference(const void *context, const void *ptr)
+{
+	void **handle;
+	handle = _talloc(context, sizeof(void *));
+	if (handle == NULL) {
+		return NULL;
+	}
+	/* note that we hang the destructor off the handle, not the
+	   main context as that allows the caller to still setup their
+	   own destructor on the context if they want to */
+	talloc_set_destructor(handle, talloc_reference_destructor);
+	talloc_increase_ref_count(ptr);
+	*handle = discard_const(ptr);
+	return *handle;
+}
+
 
 /*
   add a name to an existing pointer - va_list version

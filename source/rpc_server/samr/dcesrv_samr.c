@@ -27,7 +27,7 @@
 
 
 /*
-  destroy a general handle. This relies on the talloc destructor being set up correctly
+  destroy a general handle. 
 */
 static void samr_handle_destroy(struct dcesrv_connection *conn, struct dcesrv_handle *h)
 {
@@ -256,18 +256,6 @@ static NTSTATUS samr_EnumDomains(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 }
 
 
-/*
-  close an open domain context
-*/
-static int samr_Domain_destructor(void *ptr)
-{
-	struct samr_domain_state *d_state = ptr;
-	/* we need to explicitly free the connect state to lower the
-	   reference count */
-	talloc_free(d_state->connect_state);
-	return 0;
-}
-
 /* 
   samr_OpenDomain 
 */
@@ -315,7 +303,7 @@ static NTSTATUS samr_OpenDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	d_state->connect_state = c_state;
+	d_state->connect_state = talloc_reference(d_state, c_state);
 	d_state->sam_ctx = c_state->sam_ctx;
 	d_state->domain_sid = talloc_strdup(d_state, sidstr);
 	d_state->domain_name = talloc_strdup(d_state, domain_name);
@@ -331,9 +319,7 @@ static NTSTATUS samr_OpenDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 		talloc_free(d_state);
 		return NT_STATUS_NO_MEMORY;
 	}
-	talloc_set_destructor(d_state, samr_Domain_destructor);
-	talloc_increase_ref_count(c_state);
-
+	
 	h_domain->data = d_state;
 	h_domain->destroy = samr_handle_destroy;
 	*r->out.domain_handle = h_domain->wire_handle;
@@ -415,18 +401,6 @@ static NTSTATUS samr_SetDomainInfo(struct dcesrv_call_state *dce_call, TALLOC_CT
 		       struct samr_SetDomainInfo *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
-}
-
-/*
-  close an open domain context
-*/
-static int samr_Account_destructor(void *ptr)
-{
-	struct samr_account_state *a_state = ptr;
-	/* we need to explicitly free the domain state to lower the
-	   reference count */
-	talloc_free(a_state->domain_state);
-	return 0;
 }
 
 /* 
@@ -526,11 +500,12 @@ static NTSTATUS samr_CreateDomainGroup(struct dcesrv_call_state *dce_call, TALLO
 	}
 	a_state->sam_ctx = d_state->sam_ctx;
 	a_state->access_mask = r->in.access_mask;
-	a_state->domain_state = d_state;
+	a_state->domain_state = talloc_reference(a_state, d_state);
 	a_state->account_dn = talloc_steal(d_state, msg.dn);
 	a_state->account_sid = talloc_strdup(d_state, sidstr);
 	a_state->account_name = talloc_strdup(d_state, groupname);
 	if (!a_state->account_name || !a_state->account_sid) {
+		talloc_free(a_state);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -542,10 +517,6 @@ static NTSTATUS samr_CreateDomainGroup(struct dcesrv_call_state *dce_call, TALLO
 
 	g_handle->data = a_state;
 	g_handle->destroy = samr_handle_destroy;
-
-	/* the domain state is in use one more time */
-	talloc_increase_ref_count(d_state);
-	talloc_set_destructor(a_state, samr_Account_destructor);
 
 	*r->out.group_handle = g_handle->wire_handle;
 	*r->out.rid = rid;	
@@ -703,17 +674,19 @@ static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	}
 	a_state->sam_ctx = d_state->sam_ctx;
 	a_state->access_mask = r->in.access_mask;
-	a_state->domain_state = d_state;
+	a_state->domain_state = talloc_reference(a_state, d_state);
 	a_state->account_dn = talloc_steal(d_state, msg.dn);
 	a_state->account_sid = talloc_strdup(d_state, sidstr);
 	a_state->account_name = talloc_strdup(d_state, account_name);
 	if (!a_state->account_name || !a_state->account_sid) {
+		talloc_free(a_state);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	/* create the policy handle */
 	u_handle = dcesrv_handle_new(dce_call->conn, SAMR_HANDLE_USER);
 	if (!u_handle) {
+		talloc_free(a_state);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -721,8 +694,7 @@ static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	u_handle->destroy = samr_handle_destroy;
 
 	/* the domain state is in use one more time */
-	talloc_increase_ref_count(d_state);
-	talloc_set_destructor(a_state, samr_Account_destructor);
+	
 
 	*r->out.user_handle = u_handle->wire_handle;
 	*r->out.access_granted = 0xf07ff; /* TODO: fix access mask calculations */
@@ -1014,7 +986,7 @@ static NTSTATUS samr_OpenGroup(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 	}
 	a_state->sam_ctx = d_state->sam_ctx;
 	a_state->access_mask = r->in.access_mask;
-	a_state->domain_state = d_state;
+	a_state->domain_state = talloc_reference(a_state, d_state);
 	a_state->account_dn = talloc_steal(a_state, msgs[0]->dn);
 	a_state->account_sid = talloc_strdup(a_state, sidstr);
 	a_state->account_name = talloc_strdup(a_state, groupname);
@@ -1030,10 +1002,6 @@ static NTSTATUS samr_OpenGroup(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 
 	g_handle->data = a_state;
 	g_handle->destroy = samr_handle_destroy;
-
-	/* the domain state is in use one more time */
-	talloc_increase_ref_count(d_state);
-	talloc_set_destructor(a_state, samr_Account_destructor);
 
 	*r->out.group_handle = g_handle->wire_handle;
 
@@ -1386,7 +1354,7 @@ static NTSTATUS samr_OpenUser(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 	}
 	a_state->sam_ctx = d_state->sam_ctx;
 	a_state->access_mask = r->in.access_mask;
-	a_state->domain_state = d_state;
+	a_state->domain_state = talloc_reference(a_state, d_state);
 	a_state->account_dn = talloc_steal(d_state, msgs[0]->dn);
 	a_state->account_sid = talloc_strdup(d_state, sidstr);
 	a_state->account_name = talloc_strdup(d_state, account_name);
@@ -1402,10 +1370,6 @@ static NTSTATUS samr_OpenUser(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 
 	u_handle->data = a_state;
 	u_handle->destroy = samr_handle_destroy;
-
-	/* the domain state is in use one more time */
-	talloc_increase_ref_count(d_state);
-	talloc_set_destructor(a_state, samr_Account_destructor);
 
 	*r->out.user_handle = u_handle->wire_handle;
 
