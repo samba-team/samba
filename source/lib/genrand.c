@@ -158,7 +158,7 @@ static int do_reseed(BOOL use_fd, int fd)
 	/* Add in some secret file contents */
 
 	do_filehash("/etc/shadow", &seed_inbuf[0]);
-#ifdef WITH_TDBSAM
+#ifdef WITH_TDB_SAM
 	do_filehash(lp_tdb_passwd_file(), &seed_inbuf[16]);
 #else
 	do_filehash(lp_smb_passwd_file(), &seed_inbuf[16]);
