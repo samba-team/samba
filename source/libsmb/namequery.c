@@ -680,8 +680,6 @@ BOOL name_resolve_bcast(const char *name, int name_type,
 		return False;
 	}
 
-	SMB_ASSERT(strchr_m(name, '.') == NULL);
-
 	*return_iplist = NULL;
 	*return_count = 0;
 	
@@ -743,8 +741,6 @@ BOOL resolve_wins(const char *name, int name_type,
 		DEBUG(5,("resolve_wins(%s#%02x): netbios is disabled\n", name, name_type));
 		return False;
 	}
-
-	SMB_ASSERT(strchr_m(name, '.') == NULL);
 
 	*return_iplist = NULL;
 	*return_count = 0;
@@ -933,8 +929,6 @@ static BOOL resolve_ads(const char *name, int name_type,
 		if ( lp_security() != SEC_ADS )
 			return False;
 			
-		SMB_ASSERT(strchr_m(name, '.') != NULL);
-
 		DEBUG(5,("resolve_hosts: Attempting to resolve DC's for %s using DNS\n",
 			name));
 			
