@@ -33,7 +33,12 @@ static time_t cli_servertime(const char *host, struct in_addr *ip)
 	struct cli_state *cli = NULL;
 
 	cli = cli_initialise(NULL);
-	if (!cli || !cli_connect(cli, host, ip)) goto done;
+	if (!cli) goto done;
+
+	if (!cli_connect(cli, host, ip)) {
+		fprintf(stderr,"Can't contact server\n");
+		goto done;
+	}
 
 	make_nmb_name(&calling, global_myname, 0x0);
 	if (host) {
@@ -42,8 +47,14 @@ static time_t cli_servertime(const char *host, struct in_addr *ip)
 		make_nmb_name(&called, "*SMBSERVER", 0x20);
 	}
 
-	if (!cli_session_request(cli, &calling, &called)) goto done;
-	if (!cli_negprot(cli)) goto done;
+	if (!cli_session_request(cli, &calling, &called)) {
+		fprintf(stderr,"Session request failed\n");
+		goto done;
+	}
+	if (!cli_negprot(cli)) {
+		fprintf(stderr,"Protocol negotiation failed\n");
+		goto done;
+	}
 
 	ret = cli->servertime;
 
@@ -94,10 +105,7 @@ static int net_time_set(int argc, const char **argv)
 	time_t t = nettime();
 	char *cmd;
 
-	if (t == 0) {
-		d_printf("Can't contact server\n");
-		return -1;
-	}
+	if (t == 0) return -1;
 	
 	/* yes, I know this is cheesy. Use "net time system" if you want to 
 	   roll your own. I'm putting this in as it works on a large number
@@ -114,10 +122,7 @@ static int net_time_system(int argc, const char **argv)
 {
 	time_t t = nettime();
 
-	if (t == 0) {
-		d_printf("Can't contact server\n");
-		return -1;
-	}
+	if (t == 0) return -1;
 
 	printf("%s\n", systime(t));
 
@@ -148,6 +153,7 @@ int net_time(int argc, const char **argv)
 
 	/* default - print the time */
 	t = cli_servertime(opt_host, opt_have_ip? &opt_dest_ip : NULL);
+	if (t == 0) return -1;
 
 	d_printf("%s", ctime(&t));
 	return 0;
