@@ -5277,14 +5277,14 @@ uint32 _new_spoolss_enumforms(pipes_struct *p, SPOOL_Q_ENUMFORMS *q_u, SPOOL_R_E
 	DEBUGADD(5,("Offered buffer size [%d]\n", offered));
 	DEBUGADD(5,("Info level [%d]\n",          level));
 
-	*numofforms = get_ntforms(&list);
+	*numofforms = get_ntforms(p->mem_ctx, &list);
 	DEBUGADD(5,("Number of forms [%d]\n",     *numofforms));
 
 	if (*numofforms == 0) return ERROR_NO_MORE_ITEMS;
 
 	switch (level) {
 	case 1:
-		if ((forms_1=(FORM_1 *)malloc(*numofforms * sizeof(FORM_1))) == NULL) {
+		if ((forms_1=(FORM_1 *)talloc(p->mem_ctx, *numofforms * sizeof(FORM_1))) == NULL) {
 			*numofforms=0;
 			return ERROR_NOT_ENOUGH_MEMORY;
 		}
@@ -5295,8 +5295,6 @@ uint32 _new_spoolss_enumforms(pipes_struct *p, SPOOL_Q_ENUMFORMS *q_u, SPOOL_R_E
 			fill_form_1(&forms_1[i], &list[i]);
 		}
 		
-		safe_free(list);
-
 		/* check the required size. */
 		for (i=0; i<*numofforms; i++) {
 			DEBUGADD(6,("adding form [%d]'s size\n",i));
@@ -5305,18 +5303,14 @@ uint32 _new_spoolss_enumforms(pipes_struct *p, SPOOL_Q_ENUMFORMS *q_u, SPOOL_R_E
 
 		*needed=buffer_size;		
 		
-		if (!alloc_buffer_size(buffer, buffer_size)){
-			safe_free(forms_1);
+		if (!alloc_buffer_size(buffer, buffer_size))
 			return ERROR_INSUFFICIENT_BUFFER;
-		}
 
 		/* fill the buffer with the form structures */
 		for (i=0; i<*numofforms; i++) {
 			DEBUGADD(6,("adding form [%d] to buffer\n",i));
 			new_smb_io_form_1("", buffer, &forms_1[i], 0);
 		}
-
-		safe_free(forms_1);
 
 		if (*needed > offered) {
 			*numofforms=0;
@@ -5326,10 +5320,8 @@ uint32 _new_spoolss_enumforms(pipes_struct *p, SPOOL_Q_ENUMFORMS *q_u, SPOOL_R_E
 			return NT_STATUS_NO_PROBLEMO;
 			
 	default:
-		safe_free(list);
 		return ERROR_INVALID_LEVEL;
 	}
-
 }
 
 /****************************************************************************
@@ -5360,7 +5352,7 @@ uint32 _spoolss_getform(pipes_struct *p, SPOOL_Q_GETFORM *q_u, SPOOL_R_GETFORM *
 	DEBUGADD(5,("Offered buffer size [%d]\n", offered));
 	DEBUGADD(5,("Info level [%d]\n",          level));
 
-	numofforms = get_ntforms(&list);
+	numofforms = get_ntforms(p->mem_ctx, &list);
 	DEBUGADD(5,("Number of forms [%d]\n",     numofforms));
 
 	if (numofforms == 0)
@@ -5381,8 +5373,6 @@ uint32 _spoolss_getform(pipes_struct *p, SPOOL_Q_GETFORM *q_u, SPOOL_R_GETFORM *
 			}
 		}
 		
-		safe_free(list);
-
 		/* check the required size. */
 
 		*needed=spoolss_size_form_1(&form_1);
@@ -5402,7 +5392,6 @@ uint32 _spoolss_getform(pipes_struct *p, SPOOL_Q_GETFORM *q_u, SPOOL_R_GETFORM *
 		return NT_STATUS_NO_PROBLEMO;
 			
 	default:
-		safe_free(list);
 		return ERROR_INVALID_LEVEL;
 	}
 }
@@ -6180,14 +6169,12 @@ uint32 _spoolss_addform( pipes_struct *p, SPOOL_Q_ADDFORM *q_u, SPOOL_R_ADDFORM 
 		return ERROR_INVALID_HANDLE;
 	}
 
-	count=get_ntforms(&list);
-	if(!add_a_form(&list, form, &count))
+	count=get_ntforms(p->mem_ctx, &list);
+	if(!add_a_form(p->mem_ctx, &list, form, &count))
 		return ERROR_NOT_ENOUGH_MEMORY;
 	write_ntforms(&list, count);
 
-	safe_free(list);
-
-	return 0x0;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /****************************************************************************
@@ -6210,11 +6197,9 @@ uint32 _spoolss_deleteform( pipes_struct *p, SPOOL_Q_DELETEFORM *q_u, SPOOL_R_DE
 		return ERROR_INVALID_HANDLE;
 	}
 
-	count = get_ntforms(&list);
+	count = get_ntforms(p->mem_ctx, &list);
 	if(!delete_a_form(&list, form_name, &count, &ret))
 		return ERROR_INVALID_PARAMETER;
-
-	safe_free(list);
 
 	return ret;
 }
@@ -6239,11 +6224,9 @@ uint32 _spoolss_setform(pipes_struct *p, SPOOL_Q_SETFORM *q_u, SPOOL_R_SETFORM *
 		DEBUG(0,("_spoolss_setform: Invalid handle (%s).\n", OUR_HANDLE(handle)));
 		return ERROR_INVALID_HANDLE;
 	}
-	count=get_ntforms(&list);
+	count=get_ntforms(p->mem_ctx, &list);
 	update_a_form(&list, form, count);
 	write_ntforms(&list, count);
-
-	safe_free(list);
 
 	return 0x0;
 }
