@@ -75,7 +75,7 @@ static int find_service(const char *service)
 		int iPrinterService;
 
 		if ((iPrinterService = lp_servicenumber(PRINTERS_NAME)) >= 0) {
-			char *pszTemp;
+			const char *pszTemp;
 
 			DEBUG(3,("checking whether %s is a valid printer name...\n", service));
 			pszTemp = lp_printcapname();

@@ -92,7 +92,7 @@ static NTSTATUS cvfs_connect(struct request_context *req, const char *sharename)
 	struct tcon_context *conn = req->conn;
 	NTSTATUS status;
 	struct cvfs_private *private;
-	char *map_calls;
+	const char *map_calls;
 	struct fd_event fde;
 	const char *host, *user, *pass, *domain, *remote_share;
 

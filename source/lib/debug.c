@@ -68,7 +68,7 @@ void do_debug(const char *format, ...)
 */
 void reopen_logs(void)
 {
-	char *logfile = lp_logfile();
+	const char *logfile = lp_logfile();
 	char *fname = NULL;
 	int old_fd = state.fd;
 

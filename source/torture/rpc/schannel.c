@@ -61,7 +61,7 @@ static BOOL test_schannel(TALLOC_CTX *mem_ctx,
 	void *join_ctx;
 	const char *machine_password;
 	NTSTATUS status;
-	char *binding = lp_parm_string(-1, "torture", "binding");
+	const char *binding = lp_parm_string(-1, "torture", "binding");
 	struct dcerpc_binding b;
 	struct dcerpc_pipe *p;
 

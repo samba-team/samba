@@ -55,7 +55,8 @@ static BOOL test_GetVersion(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 }
 
 static BOOL test_CreateKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
-			  struct policy_handle *handle, char *name, const char *class)
+			  struct policy_handle *handle, const char *name, 
+			   const char *class)
 {
 	struct winreg_CreateKey r;
 	struct policy_handle newhandle;

@@ -63,7 +63,7 @@ BOOL yield_connection(struct tcon_context *conn, const char *name)
 struct count_stat {
 	pid_t mypid;
 	int curr_connections;
-	char *name;
+	const char *name;
 	BOOL Clear;
 };
 

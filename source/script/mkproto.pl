@@ -34,7 +34,7 @@ sub handle_loadparm {
 		my %tmap = (
 			    "BOOL" => "BOOL ",
 			    "CONST_STRING" => "const char *",
-			    "STRING" => "char *",
+			    "STRING" => "const char *",
 			    "INTEGER" => "int ",
 			    "CHAR" => "char ",
 			    "LIST" => "const char **",

@@ -568,7 +568,7 @@ gid_t nametogid(const char *name)
 
 void smb_panic(const char *why)
 {
-	char *cmd = lp_panic_action();
+	const char *cmd = lp_panic_action();
 	int result;
 
 	if (cmd && *cmd) {

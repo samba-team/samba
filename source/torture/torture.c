@@ -39,7 +39,7 @@ static struct cli_state *open_nbt_connection(void)
 	struct nmb_name called, calling;
 	struct in_addr ip;
 	struct cli_state *cli;
-	char *host = lp_parm_string(-1, "torture", "host");
+	const char *host = lp_parm_string(-1, "torture", "host");
 
 	make_nmb_name(&calling, lp_netbios_name(), 0x0);
 	make_nmb_name(&called , host, 0x20);
@@ -89,8 +89,8 @@ BOOL torture_open_connection_share(struct cli_state **c,
 	BOOL retry;
 	int flags = 0;
 	NTSTATUS status;
-	char *username = lp_parm_string(-1, "torture", "username");
-	char *password = lp_parm_string(-1, "torture", "password");
+	const char *username = lp_parm_string(-1, "torture", "username");
+	const char *password = lp_parm_string(-1, "torture", "password");
 
 	if (use_kerberos)
 		flags |= CLI_FULL_CONNECTION_USE_KERBEROS;
@@ -114,8 +114,8 @@ BOOL torture_open_connection_share(struct cli_state **c,
 
 BOOL torture_open_connection(struct cli_state **c)
 {
-	char *host = lp_parm_string(-1, "torture", "host");
-	char *share = lp_parm_string(-1, "torture", "share");
+	const char *host = lp_parm_string(-1, "torture", "host");
+	const char *share = lp_parm_string(-1, "torture", "share");
 
 	return torture_open_connection_share(c, host, share);
 }
@@ -145,7 +145,7 @@ NTSTATUS torture_rpc_connection(struct dcerpc_pipe **p,
 				uint32_t pipe_version)
 {
         NTSTATUS status;
-	char *binding = lp_parm_string(-1, "torture", "binding");
+	const char *binding = lp_parm_string(-1, "torture", "binding");
 
 	if (!binding) {
 		printf("You must specify a ncacn binding string\n");
@@ -670,9 +670,9 @@ static BOOL run_tcon_test(int dummy)
 	char buf[4];
 	BOOL ret = True;
 	struct cli_tree *tree1;
-	char *host = lp_parm_string(-1, "torture", "host");
-	char *share = lp_parm_string(-1, "torture", "share");
-	char *password = lp_parm_string(-1, "torture", "password");
+	const char *host = lp_parm_string(-1, "torture", "host");
+	const char *share = lp_parm_string(-1, "torture", "share");
+	const char *password = lp_parm_string(-1, "torture", "password");
 
 	if (!torture_open_connection(&cli)) {
 		return False;
@@ -776,7 +776,7 @@ static BOOL tcon_devtest(struct cli_state *cli,
 {
 	BOOL status;
 	BOOL ret;
-	char *password = lp_parm_string(-1, "torture", "password");
+	const char *password = lp_parm_string(-1, "torture", "password");
 
 	status = NT_STATUS_IS_OK(cli_send_tconX(cli, myshare, devtype, 
 						password));
@@ -822,10 +822,10 @@ static BOOL run_tcon_devtype_test(int dummy)
 	int flags = 0;
 	NTSTATUS status;
 	BOOL ret = True;
-	char *host = lp_parm_string(-1, "torture", "host");
-	char *share = lp_parm_string(-1, "torture", "share");
-	char *username = lp_parm_string(-1, "torture", "username");
-	char *password = lp_parm_string(-1, "torture", "password");
+	const char *host = lp_parm_string(-1, "torture", "host");
+	const char *share = lp_parm_string(-1, "torture", "share");
+	const char *username = lp_parm_string(-1, "torture", "username");
+	const char *password = lp_parm_string(-1, "torture", "password");
 	
 	status = cli_full_connection(&cli1, lp_netbios_name(),
 				     host, NULL, 
@@ -1763,7 +1763,7 @@ test how many open files this server supports on the one socket
 
 static BOOL run_deferopen(struct cli_state *cli, int dummy)
 {
-	char *fname = "\\defer_open_test.dat";
+	const char *fname = "\\defer_open_test.dat";
 	int retries=4;
 	int i = 0;
 	BOOL correct = True;
@@ -3987,7 +3987,7 @@ double torture_create_procs(BOOL (*fn)(struct cli_state *, int), BOOL *result)
 	int tries = 8;
 	double start_time_limit = 10 + (torture_nprocs * 1.5);
 	char **unc_list = NULL;
-	char *p;
+	const char *p;
 	int num_unc_names = 0;
 
 	synccount = 0;
