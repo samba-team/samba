@@ -1269,7 +1269,7 @@ int sys_pclose(int fd)
 
 void *sys_dlopen(const char *name, int flags)
 {
-#if defined(HAVE_LIBDL) || defined(HAVE_DLOPEN)
+#if defined(HAVE_DLOPEN)
 	return dlopen(name, flags);
 #else
 	return NULL;
@@ -1278,7 +1278,7 @@ void *sys_dlopen(const char *name, int flags)
 
 void *sys_dlsym(void *handle, char *symbol)
 {
-#if defined(HAVE_LIBDL) || defined(HAVE_DLSYM)
+#if defined(HAVE_DLSYM)
     return dlsym(handle, symbol);
 #else
     return NULL;
@@ -1287,7 +1287,7 @@ void *sys_dlsym(void *handle, char *symbol)
 
 int sys_dlclose (void *handle)
 {
-#if defined(HAVE_LIBDL) || defined(HAVE_DLCLOSE)
+#if defined(HAVE_DLCLOSE)
 	return dlclose(handle);
 #else
 	return 0;
@@ -1296,7 +1296,7 @@ int sys_dlclose (void *handle)
 
 const char *sys_dlerror(void)
 {
-#if defined(HAVE_LIBDL) || defined(HAVE_DLERROR)
+#if defined(HAVE_DLERROR)
 	return dlerror();
 #else
 	return NULL;
