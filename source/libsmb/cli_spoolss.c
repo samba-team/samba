@@ -1070,4 +1070,65 @@ done:
 	return result;	
 }
 
+/* Get print processor directory */
 
+NTSTATUS cli_spoolss_getprintprocessordirectory(struct cli_state *cli,
+						TALLOC_CTX *mem_ctx,
+						char *name,
+						char *environment,
+						fstring procdir)
+{
+	prs_struct qbuf, rbuf;
+	SPOOL_Q_GETPRINTPROCESSORDIRECTORY q;
+	SPOOL_R_GETPRINTPROCESSORDIRECTORY r;
+	NTSTATUS result;
+	int level = 1;
+	NEW_BUFFER buffer;
+	uint32 needed = 100;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+
+	/* Initialise input parameters */
+
+	do {
+		init_buffer(&buffer, needed, mem_ctx);
+
+		prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+		prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+		
+		make_spoolss_q_getprintprocessordirectory(&q, name, 
+							  environment, level,
+							  &buffer, needed);
+
+		/* Marshall data and send request */
+
+		if (!spoolss_io_q_getprintprocessordirectory("", &q, &qbuf, 0) ||
+		    !rpc_api_pipe_req(cli, SPOOLSS_GETPRINTPROCESSORDIRECTORY, &qbuf, &rbuf)) {
+			result = NT_STATUS_UNSUCCESSFUL;
+			goto done;
+		}
+		
+		/* Unmarshall response */
+		
+		if (!spoolss_io_r_getprintprocessordirectory("", &r, &rbuf, 0)) {
+			result = NT_STATUS_UNSUCCESSFUL;
+			goto done;
+		}
+
+		/* Return output parameters */
+		
+		result = werror_to_ntstatus(r.status);
+
+	} while (NT_STATUS_V(result) == 
+		 NT_STATUS_V(ERROR_INSUFFICIENT_BUFFER));
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
