@@ -72,44 +72,77 @@ interface drsuapi
 
 	/*****************/
 	/* Function 0x0c */
+	typedef enum {
+		DRSUAPI_DS_NAME_STATUS_OK			= 0,
+		DRSUAPI_DS_NAME_STATUS_RESOLVE_ERROR		= 1,
+		DRSUAPI_DS_NAME_STATUS_NOT_FOUND		= 2,
+		DRSUAPI_DS_NAME_STATUS_NOT_UNIQUE		= 3,
+		DRSUAPI_DS_NAME_STATUS_NO_MAPPING		= 4,
+		DRSUAPI_DS_NAME_STATUS_DOMAIN_ONLY		= 5,
+		DRSUAPI_DS_NAME_STATUS_NO_SYNTACTICAL_MAPPING	= 6,
+		DRSUAPI_DS_NAME_STATUS_TRUST_REFERRAL		= 7
+	} drsuapi_DsNameStatus;
+
+	typedef enum {
+		DRSUAPI_DS_NAME_FLAG_NO_FLAGS			= 0x0,
+		DRSUAPI_DS_NAME_FLAG_SYNTACTICAL_ONLY		= 0x1,
+		DRSUAPI_DS_NAME_FLAG_EVAL_AT_DC			= 0x2,
+		DRSUAPI_DS_NAME_FLAG_GCVERIFY			= 0x4,
+		DRSUAPI_DS_NAME_FLAG_TRUST_REFERRAL		= 0x8
+	} drsuapi_DsNameFlags;
+
+	typedef enum {
+		DRSUAPI_DS_NAME_FORMAT_UKNOWN			= 0,
+		DRSUAPI_DS_NAME_FORMAT_FQDN_1779		= 1,
+		DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT		= 2,
+		DRSUAPI_DS_NAME_FORMAT_DISPLAY			= 3,
+		DRSUAPI_DS_NAME_FORMAT_GUID 			= 6,
+		DRSUAPI_DS_NAME_FORMAT_CANONICAL		= 7,
+		DRSUAPI_DS_NAME_FORMAT_USER_PRINCIPAL		= 8,
+		DRSUAPI_DS_NAME_FORMAT_CANONICAL_EX		= 9,
+		DRSUAPI_DS_NAME_FORMAT_SERVICE_PRINCIPAL	= 10,
+		DRSUAPI_DS_NAME_FORMAT_SID_OR_SID_HISTORY	= 11,
+		DRSUAPI_DS_NAME_FORMAT_DNS_DOMAIN		= 12
+	} drsuapi_DsNameFormat;
+
 	typedef struct {
 		unistr *str;
-	} drsuapi_DsCrackNamesInInfo1Names;
+	} drsuapi_DsNameString;
 
 	typedef struct {
-		uint32 unknown1;
-		uint32 unknown2;
-		uint32 unknown3;
-		uint32 unknown4;
-		uint32 unknown5;
+		uint32 unknown1; /* 0x000004e4 */
+		uint32 unknown2; /* 0x00000407 */
+		uint32 format_flags;
+		uint32 format_offered;
+		uint32 format_desired;
 		[range(1,10000)] uint32 count;
-		[size_is(count)] drsuapi_DsCrackNamesInInfo1Names *names;
-	} drsuapi_DsCrackNamesInInfo1;
+		[size_is(count)] drsuapi_DsNameString *names;
+	} drsuapi_DsNameRequest1;
 
 	typedef union {
-		[case(1)] drsuapi_DsCrackNamesInInfo1 info1;
-	} drsuapi_DsCrackNamesInInfo;
+		[case(1)] drsuapi_DsNameRequest1 req1;
+	} drsuapi_DsNameRequest;
 
 	typedef struct {
-		uint32 unknown1;
-		unistr *name1;
-		unistr *name2;
-	} drsuapi_DsCrackNamesOutInfo1Names;
+		uint32 status;
+		unistr *dns_domain_name;
+		unistr *result_name;
+	} drsuapi_DsNameInfo1;
 
 	typedef struct {
 		uint32 count;
-		[size_is(count)] drsuapi_DsCrackNamesOutInfo1Names *names;
-	} drsuapi_DsCrackNamesOutInfo1;
+		[size_is(count)] drsuapi_DsNameInfo1 *array;
+	} drsuapi_DsNameCtr1;
 
 	typedef union {
-		[case(1)] drsuapi_DsCrackNamesOutInfo1 *info1;
-	} drsuapi_DsCrackNamesOutInfo;
+		[case(1)] drsuapi_DsNameCtr1 *ctr1;
+	} drsuapi_DsNameCtr;
 
 	NTSTATUS drsuapi_DsCrackNames(
 		[in,ref] policy_handle *bind_handle,
 		[in, out] uint32 level,
-		[in,switch_is(level)] drsuapi_DsCrackNamesInInfo in,
-		[out,switch_is(level)] drsuapi_DsCrackNamesOutInfo out
+		[in,switch_is(level)] drsuapi_DsNameRequest req,
+		[out,switch_is(level)] drsuapi_DsNameCtr ctr
 		);
 
 	/*****************/

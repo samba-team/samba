@@ -190,54 +190,10 @@ static NTSTATUS DRSUAPI_GET_NT4_CHANGELOG(struct dcesrv_call_state *dce_call, TA
 
 
 /* 
-  drsuapi_DsCrackNames 
+  drsuapi_DsCrackNames => drsuapip_cracknames.c
 */
-static NTSTATUS drsuapi_DsCrackNames(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct drsuapi_DsCrackNames *r)
-{
-	struct dcesrv_handle *h;
-
-	r->out.level = r->in.level;
-	ZERO_STRUCT(r->out.out);
-
-	DCESRV_PULL_HANDLE(h, r->in.bind_handle, DRSUAPI_BIND_HANDLE);
-
-	switch (r->in.level) {
-		case 1: {
-			int i;
-
-			r->out.out.info1 = talloc_p(mem_ctx, struct drsuapi_DsCrackNamesOutInfo1);
-			NTSTATUS_TALLOC_CHECK(r->out.out.info1);
-
-			r->out.out.info1->names = talloc_array_p(mem_ctx,
-							struct drsuapi_DsCrackNamesOutInfo1Names,
-							r->in.in.info1.count);
-			NTSTATUS_TALLOC_CHECK(r->out.out.info1->names);
-
-			r->out.out.info1->count = r->in.in.info1.count;
-
-			for (i=0; i < r->out.out.info1->count; i++) {
-				const char *name;
-				r->out.out.info1->names[i].unknown1 = 2;
-				r->out.out.info1->names[i].name1 = NULL;
-				r->out.out.info1->names[i].name2 = NULL;
-
-				/* TODO: fill crack the right names! */
-				name = talloc_asprintf(mem_ctx, "%s/", lp_realm());
-				if (strcmp(name, r->in.in.info1.names[i].str) != 0) {
-					continue;
-				}
-				r->out.out.info1->names[i].unknown1 = 0;
-				r->out.out.info1->names[i].name1 = talloc_asprintf(mem_ctx, "%s", lp_realm());
-				r->out.out.info1->names[i].name2 = talloc_asprintf(mem_ctx, "%s\\", lp_workgroup());
-			}
-			return NT_STATUS_OK;
-		}
-	}
-	
-	return NT_STATUS_INVALID_LEVEL;
-}
-
+static NTSTATUS (*drsuapi_DsCrackNames)(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct drsuapi_DsCrackNames *r) = dcesrv_drsuapi_DsCrackNames;
 
 /* 
   DRSUAPI_WRITE_SPN 
