@@ -682,8 +682,12 @@ static BOOL spoolss_io_printer_default(char *desc, PRINTER_DEFAULT *pd, prs_stru
 /*******************************************************************
  * init a structure.
  ********************************************************************/
-BOOL make_spoolss_q_open_printer_ex(SPOOL_Q_OPEN_PRINTER_EX *q_u, fstring printername, fstring datatype, 
-					uint32 access_required, fstring clientname, fstring user_name)
+BOOL make_spoolss_q_open_printer_ex(SPOOL_Q_OPEN_PRINTER_EX *q_u,
+		const fstring printername, 
+		const fstring datatype, 
+		uint32 access_required,
+		const fstring clientname,
+		const fstring user_name)
 {
 	DEBUG(5,("make_spoolss_q_open_printer_ex\n"));
 	q_u->printername_ptr = (printername!=NULL)?1:0;
@@ -775,8 +779,8 @@ BOOL spoolss_io_r_open_printer_ex(char *desc, SPOOL_R_OPEN_PRINTER_EX *r_u, prs_
  * make a structure.
  ********************************************************************/
 BOOL make_spoolss_q_getprinterdata(SPOOL_Q_GETPRINTERDATA *q_u,
-				POLICY_HND *handle,
-				char *valuename,
+				const POLICY_HND *handle,
+				const UNISTR2 *valuename,
 				uint32 size)
 {
 	int len_name = valuename != NULL ? strlen(valuename) : 0;
@@ -785,7 +789,7 @@ BOOL make_spoolss_q_getprinterdata(SPOOL_Q_GETPRINTERDATA *q_u,
 
 	DEBUG(5,("make_spoolss_q_getprinterdata\n"));
 
-	memcpy(&(q_u->handle), handle, sizeof(q_u->handle));
+	q_u->handle = *handle;
 	init_unistr2(&(q_u->valuename), valuename, len_name);
 	q_u->size = size;
 
@@ -2635,7 +2639,8 @@ uint32 spoolss_size_printmonitor_info_2(PRINTMONITOR_2 *info)
  * init a structure.
  ********************************************************************/
 BOOL make_spoolss_q_getprinterdriver2(SPOOL_Q_GETPRINTERDRIVER2 *q_u, 
-			       const POLICY_HND *hnd, fstring architecture,
+			       const POLICY_HND *hnd,
+			       const fstring architecture,
 			       uint32 level, uint32 clientmajor, uint32 clientminor,
 			       NEW_BUFFER *buffer, uint32 offered)
 {      
@@ -4451,7 +4456,9 @@ BOOL spoolss_io_q_enumprinterdata(char *desc, SPOOL_Q_ENUMPRINTERDATA *q_u, prs_
 
 /*******************************************************************
 ********************************************************************/  
-BOOL make_spoolss_q_enumprinterdata(SPOOL_Q_ENUMPRINTERDATA *q_u, POLICY_HND *hnd, uint32 idx, uint32 valuelen, uint32 datalen)
+BOOL make_spoolss_q_enumprinterdata(SPOOL_Q_ENUMPRINTERDATA *q_u,
+		const POLICY_HND *hnd,
+		uint32 idx, uint32 valuelen, uint32 datalen)
 {
 	memcpy(&(q_u->handle), hnd, sizeof(q_u->handle));
 	q_u->index=idx;
