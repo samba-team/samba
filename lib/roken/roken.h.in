@@ -1,6 +1,6 @@
 /* -*- C -*- */
 /*
- * Copyright (c) 1995 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -128,10 +128,6 @@ struct sockaddr_dl;
 #include <roken-common.h>
 
 ROKEN_CPP_START
-
-#ifndef HAVE___ATTRIBUTE__
-#define __attribute__(x)
-#endif
 
 #if !defined(HAVE_SETSID) && defined(HAVE__SETSID)
 #define setsid _setsid
