@@ -78,27 +78,6 @@ struct in_addr opt_dest_ip;
 
 extern pstring global_myname;
 
-int net_common_flags_usage(int argc, const char **argv)
-{
-
-	d_printf("Valid targets: choose one (none defaults to localhost)\n");
-	d_printf("\t-S or --server=<server>\t\tserver name\n");
-	d_printf("\t-I or --ipaddress=<ipaddr>\taddress of target server\n");
-	d_printf("\t-w or --workgroup=<wg>\t\ttarget workgroup or domain\n");
-
-	d_printf("\n");
-	d_printf("Valid miscellaneous options are:\n"); /* misc options */
-	d_printf("\t-p or --port=<port>\tconnection port on target server\n");
-	d_printf("\t-W or --myworkgroup=<wg>\tclient workgroup\n");
-	d_printf("\t-d or --debug=<level>\t\tdebug level (0-10)\n");
-	d_printf("\t-n or --myname=<name>\t\tclient name\n");
-	d_printf("\t-U or --user=<name>\t\tuser name\n");
-	d_printf("\t-s or --conf=<path>\t\tpathname of smb.conf file\n");
-	d_printf("\t-l or --long\t\t\tDisplay full information\n");
-	return -1;
-}
-
-
 /*
   run a function from a function table. If not found then
   call the specified usage function 
@@ -180,7 +159,7 @@ NTSTATUS connect_to_ipc_anonymous(struct cli_state **c,
 	}
 }
 
-static BOOL net_find_server(unsigned flags, struct in_addr *server_ip, char **server_name)
+BOOL net_find_server(unsigned flags, struct in_addr *server_ip, char **server_name)
 {
 
 	if (opt_host) {
@@ -300,10 +279,16 @@ struct cli_state *net_make_ipc_connection(unsigned flags)
 	return cli;
 }
 
+
+
 static int net_user(int argc, const char **argv)
 {
 	if (net_ads_check() == 0)
 		return net_ads_user(argc, argv);
+
+	/* if server is not specified, default to PDC? */
+	if (net_rpc_check(NET_FLAGS_PDC))
+		return net_rpc_user(argc, argv);
 
 	return net_rap_user(argc, argv);
 }
@@ -318,63 +303,6 @@ static int net_join(int argc, const char **argv)
 			d_printf("ADS join did not work, trying RPC...\n");
 	}
 	return net_rpc_join(argc, argv);
-}
-
-static int net_usage(int argc, const char **argv)
-{
-	d_printf("  net time\t\t to view or set time information\n"\
-		 "  net lookup\t\t to lookup host name or ip address\n"\
-		 "\n"\
-		 "  net ads [command]\tto run ADS commands\n"\
-		 "  net rap [command]\tto run RAP (pre-RPC) commands\n"\
-		 "  net rpc [command]\tto run RPC commands\n"\
-		 "\n"\
-		 "Type \"net help <option>\" to get more information on that option\n");
-	return -1;
-}
-
-static int help_usage(int argc, const char **argv)
-{
-	d_printf(
-"\n"\
-"Usage: net help <function>\n"\
-"\n"\
-"Valid functions are:\n"\
-"  RPC RAP ADS FILE SHARE SESSION SERVER DOMAIN PRINTQ USER GROUP VALIDATE\n"\
-"  GROUPMEMBER ADMIN SERVICE PASSWORD TIME LOOKUP\n");
-	return -1;
-}
-
-/*
-  handle "net help *" subcommands
-*/
-static int net_help(int argc, const char **argv)
-{
-	struct functable func[] = {
-		{"ADS", net_ads_help},	
-		{"RAP", net_rap_help},
-		{"RPC", net_rpc_help},
-
-		{"FILE", net_rap_file_usage},
-		{"SHARE", net_rap_share_usage},
-		{"SESSION", net_rap_session_usage},
-		{"SERVER", net_rap_server_usage},
-		{"DOMAIN", net_rap_domain_usage},
-		{"PRINTQ", net_rap_printq_usage},
-		{"USER", net_rap_user_usage},
-		{"GROUP", net_rap_group_usage},
-		{"VALIDATE", net_rap_validate_usage},
-		{"GROUPMEMBER", net_rap_groupmember_usage},
-		{"ADMIN", net_rap_admin_usage},
-		{"SERVICE", net_rap_service_usage},
-		{"PASSWORD", net_rap_password_usage},
-		{"TIME", net_time_usage},
-		{"LOOKUP", net_lookup_usage},
-
-		{"HELP", help_usage},
-		{NULL, NULL}};
-
-	return net_run_function(argc, argv, func, net_usage);
 }
 
 /* main function table */
@@ -453,7 +381,7 @@ static struct functable net_func[] = {
 	while((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
 		case 'h':
-			net_usage(argc, argv);
+			net_help(argc, argv);
 			exit(0);
 			break;
 		case 'I':
@@ -474,7 +402,7 @@ static struct functable net_func[] = {
 			break;
 		default:
 			d_printf("\nInvalid option %c (%d)\n", (char)opt, opt);
-			net_usage(argc, argv);
+			net_help(argc, argv);
 		}
 	}
 
@@ -523,7 +451,7 @@ static struct functable net_func[] = {
 
 	load_interfaces();
 
-	rc = net_run_function(argc_new-1, argv_new+1, net_func, net_usage);
+	rc = net_run_function(argc_new-1, argv_new+1, net_func, net_help);
 	
 	DEBUG(2,("return code = %d\n", rc));
 	return rc;

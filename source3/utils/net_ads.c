@@ -162,16 +162,7 @@ static void usergrp_display(char *field, void **values, void *data_area)
 
 static int net_ads_user_usage(int argc, const char **argv)
 {
-	d_printf("\nnet ads user \n\tList users\n");
-	d_printf("\nnet ads user DELETE <name>"\
-		 "\n\tDelete specified user\n");
-	d_printf("\nnet ads user INFO <name>"\
-		 "\n\tList the domain groups of the specified user\n");
-	d_printf("\nnet ads user ADD <name> [-F user flags]"\
-		 "\n\tAdd specified user\n");
-	net_common_flags_usage(argc, argv);
-
-	return -1;
+	return net_help_user(argc, argv);
 } 
 
 static int ads_user_add(int argc, const char **argv)
