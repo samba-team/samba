@@ -2141,6 +2141,12 @@ int sys_acl_set_fd( int fd, SMB_ACL_T theacl)
 	return(rc);
 }
 
+int sys_acl_delete_def_file(const char *name)
+{
+	/* AIX has no default ACL */
+	return 0;
+}
+
 int sys_acl_get_perm( SMB_ACL_PERMSET_T permset, SMB_ACL_PERM_T perm)
 {
 	return(*permset & perm);
