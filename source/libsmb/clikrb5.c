@@ -123,7 +123,7 @@
 #error UNKNOWN_CREATE_KEY_FUNCTIONS
 #endif
 
-int create_kerberos_key_from_string(krb5_context context,
+ int create_kerberos_key_from_string(krb5_context context,
 					krb5_principal host_princ,
 					krb5_data *password,
 					krb5_keyblock *key,
@@ -272,7 +272,7 @@ int create_kerberos_key_from_string(krb5_context context,
 }
 #endif
 
-void kerberos_free_data_contents(krb5_context context, krb5_data *pdata)
+ void kerberos_free_data_contents(krb5_context context, krb5_data *pdata)
 {
 #if defined(HAVE_KRB5_FREE_DATA_CONTENTS)
 	if (pdata->data) {
@@ -283,7 +283,7 @@ void kerberos_free_data_contents(krb5_context context, krb5_data *pdata)
 #endif
 }
 
-void kerberos_set_creds_enctype(krb5_creds *pcreds, int enctype)
+ void kerberos_set_creds_enctype(krb5_creds *pcreds, int enctype)
 {
 #if defined(HAVE_KRB5_KEYBLOCK_IN_CREDS)
 	KRB5_KEY_TYPE((&pcreds->keyblock)) = enctype;
@@ -294,7 +294,7 @@ void kerberos_set_creds_enctype(krb5_creds *pcreds, int enctype)
 #endif
 }
 
-BOOL kerberos_compatible_enctypes(krb5_context context,
+ BOOL kerberos_compatible_enctypes(krb5_context context,
 				  krb5_enctype enctype1,
 				  krb5_enctype enctype2)
 {
