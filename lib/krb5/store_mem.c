@@ -57,7 +57,7 @@ mem_fetch(krb5_storage *sp, void *data, size_t size)
     return size;
 }
 
-size_t
+static size_t
 mem_store(krb5_storage *sp, void *data, size_t size)
 {
     mem_storage *s = (mem_storage*)sp->data;
@@ -68,7 +68,7 @@ mem_store(krb5_storage *sp, void *data, size_t size)
     return size;
 }
 
-off_t
+static off_t
 mem_seek(krb5_storage *sp, off_t offset, int whence)
 {
     mem_storage *s = (mem_storage*)sp->data;
