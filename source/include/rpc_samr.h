@@ -1693,9 +1693,16 @@ typedef struct q_samr_get_dom_pwinfo
 /* SAMR_R_GET_DOM_PWINFO */
 typedef struct r_samr_get_dom_pwinfo
 {
-	uint16 unk_0;
-	uint16 unk_1;
-	uint16 unk_2;
+	/*
+	 * Previously this was 3 uint16's.  However, after some tests
+	 * it appears that the data len for the signing needs to be 16.
+	 * Not sure how 3 unit16's ever worked since the length always
+	 * turned out to 12.  3 uint32's + NT_STATUS == 16 bytes.  Tested
+	 * using NT and 2k.  --jerry
+	 */
+	uint32 unk_0;
+	uint32 unk_1;
+	uint32 unk_2;
 	NTSTATUS status;
 
 } SAMR_R_GET_DOM_PWINFO;
