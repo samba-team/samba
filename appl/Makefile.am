@@ -1,4 +1,4 @@
 # $Id$
 
-AUTOMAKE_OPTIONS = foreign no-dependencies
-SUBDIRS	= test rsh popper push telnet
+AUTOMAKE_OPTIONS = foreign no-dependencies 
+SUBDIRS = afsutil popper push rsh telnet test
