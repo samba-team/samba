@@ -5,6 +5,7 @@
    Copyright (C) Andrew Tridgell              1992-2000
    Copyright (C) Luke Kenneth Casson Leighton 1996-2000
    Copyright (C) Paul Ashton                  1997-2000
+   Copyright (C) Jean François Micouleau      1998-2001.
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -145,6 +146,14 @@ SamrTestPrivateFunctionsUser
 #define SAMR_CONNECT           0x39
 #define SAMR_SET_USERINFO      0x3A
 
+
+typedef struct _DISP_USER_INFO {
+	SAM_ACCOUNT *sam;
+} DISP_USER_INFO;
+
+typedef struct _DISP_GROUP_INFO {
+	DOMAIN_GRP *grp;
+} DISP_GROUP_INFO;
 
 
 typedef struct logon_hours_info
@@ -481,13 +490,10 @@ typedef struct q_samr_query_domain_info
 
 typedef struct sam_unknown_info_3_info
 {
-	uint32 unknown_0; /* 0x0000 0000 */
-	uint32 unknown_1; 
-	
+	NTTIME logout;	
 	/* 0x8000 0000 */ /* DON'T forcibly disconnect remote users from server when logon hours expire*/
 
 	/* 0x0000 0000 */ /* forcibly disconnect remote users from server when logon hours expire*/
-
 
 } SAM_UNK_INFO_3;
 
@@ -791,7 +797,6 @@ typedef struct samr_entry_info1
 
 	uint32 rid_user;
 	uint16 acb_info;
-	uint16 pad;
 
 	UNIHDR hdr_acct_name;
 	UNIHDR hdr_user_name;
@@ -823,7 +828,6 @@ typedef struct samr_entry_info2
 
 	uint32 rid_user;
 	uint16 acb_info;
-	uint16 pad;
 
 	UNIHDR hdr_srv_name;
 	UNIHDR hdr_srv_desc;
@@ -1036,6 +1040,12 @@ typedef struct samr_group_info1
 
 } GROUP_INFO1;
 
+typedef struct samr_group_info3
+{
+	uint32 unknown_1; /* 0x0000 0003 - number of group members? */
+
+} GROUP_INFO3;
+
 typedef struct samr_group_info4
 {
 	UNIHDR hdr_acct_desc;
@@ -1047,12 +1057,12 @@ typedef struct samr_group_info4
 typedef struct group_info_ctr
 {
 	uint16 switch_value1;
-	uint16 switch_value2;
 
 	union
  	{
-		GROUP_INFO4 info4;
 		GROUP_INFO1 info1;
+		GROUP_INFO3 info3;
+		GROUP_INFO4 info4;
 
 	} group;
 
@@ -1133,6 +1143,16 @@ typedef struct q_samr_query_alias_info
 
 } SAMR_Q_QUERY_ALIASINFO;
 
+typedef struct samr_alias_info1
+{
+	UNIHDR hdr_acct_name;
+	UNIHDR hdr_acct_desc;
+	uint32 num_member;
+	UNISTR2 uni_acct_name;
+	UNISTR2 uni_acct_desc;
+
+} ALIAS_INFO1;
+
 typedef struct samr_alias_info3
 {
 	UNIHDR hdr_acct_desc;
@@ -1148,6 +1168,7 @@ typedef struct alias_info_ctr
 
 	union
  	{
+		ALIAS_INFO1 info1;
 		ALIAS_INFO3 info3;
 
 	} alias;
@@ -1491,7 +1512,6 @@ typedef struct r_samr_query_groupmem_info
 typedef struct q_samr_del_group_mem_info
 {
 	POLICY_HND pol;       /* policy handle */
-
 	uint32 rid;         /* rid */
 
 } SAMR_Q_DEL_GROUPMEM;

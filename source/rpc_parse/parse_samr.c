@@ -7,6 +7,7 @@
  *  Copyright (C) Paul Ashton                  1997-2000,
  *  Copyright (C) Elrond                            2000,
  *  Copyright (C) Jeremy Allison                    2001
+ *  Copyright (C) Jean François Micouleau      1998-2001.
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -243,7 +244,7 @@ reads or writes a structure.
 
 void init_samr_q_open_domain(SAMR_Q_OPEN_DOMAIN * q_u,
 			     POLICY_HND *pol, uint32 flags,
-			     DOM_SID *sid)
+			     const DOM_SID *sid)
 {
 	DEBUG(5, ("samr_init_samr_q_open_domain\n"));
 
@@ -345,8 +346,16 @@ void init_samr_r_get_usrdom_pwinfo(SAMR_R_GET_USRDOM_PWINFO *r_u, NTSTATUS statu
 	DEBUG(5, ("init_samr_r_get_usrdom_pwinfo\n"));
 	
 	r_u->unknown_0 = 0x0000;
-    r_u->unknown_1 = 0x0015;
-    r_u->unknown_2 = 0x00000000;
+
+	/*
+	 * used to be 	
+	 * r_u->unknown_1 = 0x0015;
+	 * but for trusts.
+	 */
+	r_u->unknown_1 = 0x01D1;
+	r_u->unknown_1 = 0x0015;
+
+	r_u->unknown_2 = 0x00000000;
 
 	r_u->status = status;
 }
@@ -461,10 +470,10 @@ BOOL samr_io_q_query_dom_info(char *desc, SAMR_Q_QUERY_DOMAIN_INFO * q_u,
 inits a structure.
 ********************************************************************/
 
-void init_unk_info3(SAM_UNK_INFO_3 * u_3)
+void init_unk_info3(SAM_UNK_INFO_3 *u_3, NTTIME nt_logout)
 {
-	u_3->unknown_0 = 0x00000000;
-	u_3->unknown_1 = 0x80000000;
+	u_3->logout.low = nt_logout.low;
+	u_3->logout.high = nt_logout.high;
 }
 
 /*******************************************************************
@@ -480,9 +489,7 @@ static BOOL sam_io_unk_info3(char *desc, SAM_UNK_INFO_3 * u_3,
 	prs_debug(ps, depth, desc, "sam_io_unk_info3");
 	depth++;
 
-	if(!prs_uint32("unknown_0", ps, depth, &u_3->unknown_0))	/* 0x0000 0000 */
-		return False;
-	if(!prs_uint32("unknown_1", ps, depth, &u_3->unknown_1))	/* 0x8000 0000 */
+	if(!smb_io_time("logout", &u_3->logout, ps, depth))
 		return False;
 
 	return True;
@@ -554,14 +561,14 @@ static BOOL sam_io_unk_info7(char *desc, SAM_UNK_INFO_7 * u_7,
 inits a structure.
 ********************************************************************/
 
-void init_unk_info12(SAM_UNK_INFO_12 * u_12)
+void init_unk_info12(SAM_UNK_INFO_12 * u_12, NTTIME nt_lock_duration, NTTIME nt_reset_time, uint16 lockout)
 {
-	u_12->duration.low = 0xcf1dcc00;
-	u_12->duration.high = 0xfffffffb;
-	u_12->reset_count.low = 0xcf1dcc00;
-	u_12->reset_count.high = 0xfffffffb;
+	u_12->duration.low = nt_lock_duration.low;
+	u_12->duration.high = nt_lock_duration.high;
+	u_12->reset_count.low = nt_reset_time.low;
+	u_12->reset_count.high = nt_reset_time.high;
 
-	u_12->bad_attempt_lockout = 0x0000;
+	u_12->bad_attempt_lockout = lockout;
 }
 
 /*******************************************************************
@@ -626,7 +633,7 @@ inits a structure.
 ********************************************************************/
 void init_unk_info2(SAM_UNK_INFO_2 * u_2,
 			char *domain, char *server,
-			uint32 seq_num)
+			uint32 seq_num, uint32 num_users, uint32 num_groups, uint32 num_alias)
 {
 	int len_domain = strlen(domain);
 	int len_server = strlen(server);
@@ -645,9 +652,9 @@ void init_unk_info2(SAM_UNK_INFO_2 * u_2,
 	u_2->unknown_4 = 0x00000001;
 	u_2->unknown_5 = 0x00000003;
 	u_2->unknown_6 = 0x00000001;
-	u_2->num_domain_usrs = MAX_SAM_ENTRIES;
-	u_2->num_domain_grps = MAX_SAM_ENTRIES;
-	u_2->num_local_grps = MAX_SAM_ENTRIES;
+	u_2->num_domain_usrs = num_users;
+	u_2->num_domain_grps = num_groups;
+	u_2->num_local_grps = num_alias;
 
 	memset(u_2->padding, 0, sizeof(u_2->padding));	/* 12 bytes zeros */
 
@@ -719,19 +726,20 @@ static BOOL sam_io_unk_info2(char *desc, SAM_UNK_INFO_2 * u_2,
 inits a structure.
 ********************************************************************/
 
-void init_unk_info1(SAM_UNK_INFO_1 * u_1)
+void init_unk_info1(SAM_UNK_INFO_1 *u_1, uint16 min_pass_len, uint16 pass_hist, 
+		    uint32 flag, NTTIME nt_expire, NTTIME nt_min_age)
 {
-	u_1->min_length_password = 0;
-	u_1->password_history = 0;
-	u_1->flag = 0;
+	u_1->min_length_password = min_pass_len;
+	u_1->password_history = pass_hist;
+	u_1->flag = flag;
 	
 	/* password never expire */
-	u_1->expire.high = 0x80000000;
-	u_1->expire.low = 0;
+	u_1->expire.high = nt_expire.high;
+	u_1->expire.low = nt_expire.low;
 	
 	/* can change the password now */
-	u_1->min_passwordage.high = 0;
-	u_1->min_passwordage.low = 0;
+	u_1->min_passwordage.high = nt_min_age.high;
+	u_1->min_passwordage.low = nt_min_age.low;
 	
 }
 
@@ -927,7 +935,6 @@ static void init_sam_entry1(SAM_ENTRY1 * sam, uint32 user_idx,
 	sam->user_idx = user_idx;
 	sam->rid_user = rid_user;
 	sam->acb_info = acb_info;
-	sam->pad = 0;
 
 	init_uni_hdr(&sam->hdr_acct_name, len_sam_name);
 	init_uni_hdr(&sam->hdr_user_name, len_sam_full);
@@ -957,7 +964,8 @@ static BOOL sam_io_sam_entry1(char *desc, SAM_ENTRY1 * sam,
 		return False;
 	if(!prs_uint16("acb_info ", ps, depth, &sam->acb_info))
 		return False;
-	if(!prs_uint16("pad      ", ps, depth, &sam->pad))
+
+	if(!prs_align(ps))
 		return False;
 
 	if (!smb_io_unihdr("hdr_acct_name", &sam->hdr_acct_name, ps, depth))
@@ -1006,7 +1014,6 @@ static void init_sam_entry2(SAM_ENTRY2 * sam, uint32 user_idx,
 	sam->user_idx = user_idx;
 	sam->rid_user = rid_user;
 	sam->acb_info = acb_info;
-	sam->pad = 0;
 
 	init_uni_hdr(&sam->hdr_srv_name, len_sam_name);
 	init_uni_hdr(&sam->hdr_srv_desc, len_sam_desc);
@@ -1035,7 +1042,8 @@ static BOOL sam_io_sam_entry2(char *desc, SAM_ENTRY2 * sam,
 		return False;
 	if(!prs_uint16("acb_info ", ps, depth, &sam->acb_info))
 		return False;
-	if(!prs_uint16("pad      ", ps, depth, &sam->pad))
+
+	if(!prs_align(ps))
 		return False;
 
 	if(!smb_io_unihdr("unihdr", &sam->hdr_srv_name, ps, depth))	/* account name unicode string header */
@@ -1429,61 +1437,52 @@ BOOL samr_io_q_query_dispinfo(char *desc, SAMR_Q_QUERY_DISPINFO * q_e,
 inits a SAM_DISPINFO_1 structure.
 ********************************************************************/
 
-NTSTATUS init_sam_dispinfo_1(TALLOC_CTX *ctx, SAM_DISPINFO_1 *sam, uint32 *num_entries,
-			 uint32 *data_size, uint32 start_idx,
-			 SAM_USER_INFO_21 pass[MAX_SAM_ENTRIES])
+NTSTATUS init_sam_dispinfo_1(TALLOC_CTX *ctx, SAM_DISPINFO_1 *sam, uint32 num_entries,
+			 uint32 start_idx, DISP_USER_INFO *disp_user_info)
 {
 	uint32 len_sam_name, len_sam_full, len_sam_desc;
-	uint32 max_entries, max_data_size;
-	uint32 dsize = 0;
 	uint32 i;
 
+	SAM_ACCOUNT *pwd = NULL;
 	ZERO_STRUCTP(sam);
 
-	max_entries = *num_entries;
-	max_data_size = *data_size;
+	DEBUG(10, ("init_sam_dispinfo_1: num_entries: %d\n", num_entries));
 
-	DEBUG(5, ("init_sam_dispinfo_1: max_entries: %d max_dsize: 0x%x\n",
-		  max_entries, max_data_size));
-
-	if (max_entries==0)
+	if (num_entries==0)
 		return NT_STATUS_OK;
 
-	sam->sam=(SAM_ENTRY1 *)talloc(ctx, max_entries*sizeof(SAM_ENTRY1));
+	sam->sam=(SAM_ENTRY1 *)talloc(ctx, num_entries*sizeof(SAM_ENTRY1));
 	if (!sam->sam)
 		return NT_STATUS_NO_MEMORY;
 
-	sam->str=(SAM_STR1 *)talloc(ctx, max_entries*sizeof(SAM_STR1));
+	sam->str=(SAM_STR1 *)talloc(ctx, num_entries*sizeof(SAM_STR1));
 	if (!sam->str)
 		return NT_STATUS_NO_MEMORY;
 
 	ZERO_STRUCTP(sam->sam);
 	ZERO_STRUCTP(sam->str);
 
-	for (i = 0; (i < max_entries) && (dsize < max_data_size); i++) {
-		DEBUG(5, ("init_sam_dispinfo_1: entry: %d\n",i));
-		len_sam_name = pass[i].uni_user_name.uni_str_len;
-		len_sam_full = pass[i].uni_full_name.uni_str_len;
-		len_sam_desc = pass[i].uni_acct_desc.uni_str_len;
+	for (i = 0; i < num_entries ; i++) {
+		DEBUG(11, ("init_sam_dispinfo_1: entry: %d\n",i));
+		
+		pwd=disp_user_info[i+start_idx].sam;
+		
+		len_sam_name = strlen(pdb_get_username(pwd));
+		len_sam_full = strlen(pdb_get_fullname(pwd));
+		len_sam_desc = strlen(pdb_get_acct_desc(pwd));
 
 		init_sam_entry1(&sam->sam[i], start_idx + i + 1,
 				len_sam_name, len_sam_full, len_sam_desc,
-				pass[i].user_rid, pass[i].acb_info);
+				pdb_get_user_rid(pwd), pdb_get_acct_ctrl(pwd));
 
 		ZERO_STRUCTP(&sam->str[i].uni_acct_name);
 		ZERO_STRUCTP(&sam->str[i].uni_full_name);
 		ZERO_STRUCTP(&sam->str[i].uni_acct_desc);
 
-		copy_unistr2(&sam->str[i].uni_acct_name, &pass[i].uni_user_name);
-		copy_unistr2(&sam->str[i].uni_full_name, &pass[i].uni_full_name);
-		copy_unistr2(&sam->str[i].uni_acct_desc, &pass[i].uni_acct_desc);
-
-		dsize += sizeof(SAM_ENTRY1);
-		dsize += len_sam_name + len_sam_full + len_sam_desc;
+		init_unistr2(&sam->str[i].uni_acct_name, pdb_get_username(pwd),  len_sam_name);
+		init_unistr2(&sam->str[i].uni_full_name, pdb_get_fullname(pwd),  len_sam_full);
+		init_unistr2(&sam->str[i].uni_acct_desc, pdb_get_acct_desc(pwd), len_sam_desc);
 	}
-
-	*num_entries = i;
-	*data_size = dsize;
 
 	return NT_STATUS_OK;
 }
@@ -1541,54 +1540,46 @@ static BOOL sam_io_sam_dispinfo_1(char *desc, SAM_DISPINFO_1 * sam,
 inits a SAM_DISPINFO_2 structure.
 ********************************************************************/
 
-NTSTATUS init_sam_dispinfo_2(TALLOC_CTX *ctx, SAM_DISPINFO_2 *sam, uint32 *num_entries,
-			 uint32 *data_size, uint32 start_idx,
-			 SAM_USER_INFO_21 pass[MAX_SAM_ENTRIES])
+NTSTATUS init_sam_dispinfo_2(TALLOC_CTX *ctx, SAM_DISPINFO_2 *sam, uint32 num_entries,
+			 uint32 start_idx, DISP_USER_INFO *disp_user_info)
 {
 	uint32 len_sam_name, len_sam_desc;
-	uint32 max_entries, max_data_size;
-	uint32 dsize = 0;
 	uint32 i;
 
-	DEBUG(5, ("init_sam_dispinfo_2\n"));
-
+	SAM_ACCOUNT *pwd = NULL;
 	ZERO_STRUCTP(sam);
 
-	max_entries = *num_entries;
-	max_data_size = *data_size;
+	DEBUG(10, ("init_sam_dispinfo_2: num_entries: %d\n", num_entries));
 
-	if (max_entries==0)
+	if (num_entries==0)
 		return NT_STATUS_OK;
 
-	if (!(sam->sam=(SAM_ENTRY2 *)talloc(ctx, max_entries*sizeof(SAM_ENTRY2))))
+	if (!(sam->sam=(SAM_ENTRY2 *)talloc(ctx, num_entries*sizeof(SAM_ENTRY2))))
 		return NT_STATUS_NO_MEMORY;
 
-	if (!(sam->str=(SAM_STR2 *)talloc(ctx, max_entries*sizeof(SAM_STR2))))
+	if (!(sam->str=(SAM_STR2 *)talloc(ctx, num_entries*sizeof(SAM_STR2))))
 		return NT_STATUS_NO_MEMORY;
 
 	ZERO_STRUCTP(sam->sam);
 	ZERO_STRUCTP(sam->str);
 
-	for (i = 0; (i < max_entries) && (dsize < max_data_size); i++) {
-		len_sam_name = pass[i].uni_user_name.uni_str_len;
-		len_sam_desc = pass[i].uni_acct_desc.uni_str_len;
+	for (i = 0; i < num_entries; i++) {
+		DEBUG(11, ("init_sam_dispinfo_2: entry: %d\n",i));
+		pwd=disp_user_info[i+start_idx].sam;
+
+		len_sam_name = strlen(pdb_get_username(pwd));
+		len_sam_desc = strlen(pdb_get_acct_desc(pwd));
 	  
 		init_sam_entry2(&sam->sam[i], start_idx + i + 1,
 			  len_sam_name, len_sam_desc,
-			  pass[i].user_rid, pass[i].acb_info);
+			  pdb_get_user_rid(pwd), pdb_get_acct_ctrl(pwd));
 	  
 		ZERO_STRUCTP(&sam->str[i].uni_srv_name);
 		ZERO_STRUCTP(&sam->str[i].uni_srv_desc);
 
-		copy_unistr2(&sam->str[i].uni_srv_name, &pass[i].uni_user_name);
-		copy_unistr2(&sam->str[i].uni_srv_desc, &pass[i].uni_acct_desc);
-	  
-		dsize += sizeof(SAM_ENTRY2);
-		dsize += len_sam_name + len_sam_desc;
+		init_unistr2(&sam->str[i].uni_srv_name, pdb_get_username(pwd),  len_sam_name);
+		init_unistr2(&sam->str[i].uni_srv_desc, pdb_get_acct_desc(pwd), len_sam_desc);
 	}
-
-	*num_entries = i;
-	*data_size = dsize;
 
 	return NT_STATUS_OK;
 }
@@ -1648,35 +1639,33 @@ static BOOL sam_io_sam_dispinfo_2(char *desc, SAM_DISPINFO_2 * sam,
 inits a SAM_DISPINFO_3 structure.
 ********************************************************************/
 
-NTSTATUS init_sam_dispinfo_3(TALLOC_CTX *ctx, SAM_DISPINFO_3 *sam, uint32 *num_entries,
-			 uint32 *data_size, uint32 start_idx,
-			 DOMAIN_GRP * grp)
+NTSTATUS init_sam_dispinfo_3(TALLOC_CTX *ctx, SAM_DISPINFO_3 *sam, uint32 num_entries,
+			 uint32 start_idx, DISP_GROUP_INFO *disp_group_info)
 {
 	uint32 len_sam_name, len_sam_desc;
-	uint32 max_entries, max_data_size;
-	uint32 dsize = 0;
 	uint32 i;
 
-	DEBUG(5, ("init_sam_dispinfo_3\n"));
-
+	DOMAIN_GRP *grp;
 	ZERO_STRUCTP(sam);
 
-	max_entries = *num_entries;
-	max_data_size = *data_size;
+	DEBUG(5, ("init_sam_dispinfo_3: num_entries: %d\n", num_entries));
 
-	if (max_entries==0)
+	if (num_entries==0)
 		return NT_STATUS_OK;
 
-	if (!(sam->sam=(SAM_ENTRY3 *)talloc(ctx, max_entries*sizeof(SAM_ENTRY3))))
+	if (!(sam->sam=(SAM_ENTRY3 *)talloc(ctx, num_entries*sizeof(SAM_ENTRY3))))
 		return NT_STATUS_NO_MEMORY;
 
-	if (!(sam->str=(SAM_STR3 *)talloc(ctx, max_entries*sizeof(SAM_STR3))))
+	if (!(sam->str=(SAM_STR3 *)talloc(ctx, num_entries*sizeof(SAM_STR3))))
 		return NT_STATUS_NO_MEMORY;
 
 	ZERO_STRUCTP(sam->sam);
 	ZERO_STRUCTP(sam->str);
 
-	for (i = 0; (i < max_entries) && (dsize < max_data_size); i++) {
+	for (i = 0; i < num_entries; i++) {
+		DEBUG(11, ("init_sam_dispinfo_3: entry: %d\n",i));
+		grp=disp_group_info[i+start_idx].grp;
+
 		len_sam_name = strlen(grp[i].name);
 		len_sam_desc = strlen(grp[i].comment);
 
@@ -1684,14 +1673,7 @@ NTSTATUS init_sam_dispinfo_3(TALLOC_CTX *ctx, SAM_DISPINFO_3 *sam, uint32 *num_e
 	  
 		init_unistr2(&sam->str[i].uni_grp_name, grp[i].name, len_sam_name);
 		init_unistr2(&sam->str[i].uni_grp_desc, grp[i].comment, len_sam_desc);
-	  
-		dsize += sizeof(SAM_ENTRY3);
-		dsize += (len_sam_name + len_sam_desc) * 2;
-		dsize += 14;
 	}
-
-	*num_entries = i;
-	*data_size = dsize;
 
 	return NT_STATUS_OK;
 }
@@ -1751,50 +1733,40 @@ static BOOL sam_io_sam_dispinfo_3(char *desc, SAM_DISPINFO_3 * sam,
 inits a SAM_DISPINFO_4 structure.
 ********************************************************************/
 
-NTSTATUS init_sam_dispinfo_4(TALLOC_CTX *ctx, SAM_DISPINFO_4 *sam, uint32 *num_entries,
-			 uint32 *data_size, uint32 start_idx,
-			 SAM_USER_INFO_21 pass[MAX_SAM_ENTRIES])
+NTSTATUS init_sam_dispinfo_4(TALLOC_CTX *ctx, SAM_DISPINFO_4 *sam, uint32 num_entries,
+			 uint32 start_idx, DISP_USER_INFO *disp_user_info)
 {
-	fstring sam_name;
 	uint32 len_sam_name;
-	uint32 max_entries, max_data_size;
-	uint32 dsize = 0;
 	uint32 i;
 
-	DEBUG(5, ("init_sam_dispinfo_4\n"));
-
+	SAM_ACCOUNT *pwd = NULL;
 	ZERO_STRUCTP(sam);
 
-	max_entries = *num_entries;
-	max_data_size = *data_size;
+	DEBUG(5, ("init_sam_dispinfo_4: num_entries: %d\n", num_entries));
 
-	if (max_entries==0)
+	if (num_entries==0)
 		return NT_STATUS_OK;
 
-	if (!(sam->sam=(SAM_ENTRY4 *)talloc(ctx, max_entries*sizeof(SAM_ENTRY4))))
+	if (!(sam->sam=(SAM_ENTRY4 *)talloc(ctx, num_entries*sizeof(SAM_ENTRY4))))
 		return NT_STATUS_NO_MEMORY;
 
-	if (!(sam->str=(SAM_STR4 *)talloc(ctx, max_entries*sizeof(SAM_STR4))))
+	if (!(sam->str=(SAM_STR4 *)talloc(ctx, num_entries*sizeof(SAM_STR4))))
 		return NT_STATUS_NO_MEMORY;
 
 	ZERO_STRUCTP(sam->sam);
 	ZERO_STRUCTP(sam->str);
 
-	for (i = 0; (i < max_entries) && (dsize < max_data_size); i++) {
-		len_sam_name = pass[i].uni_user_name.uni_str_len;
+	for (i = 0; i < num_entries; i++) {
+		DEBUG(11, ("init_sam_dispinfo_2: entry: %d\n",i));
+		pwd=disp_user_info[i+start_idx].sam;
+
+		len_sam_name = strlen(pdb_get_username(pwd));
 	  
 		init_sam_entry4(&sam->sam[i], start_idx + i + 1, len_sam_name);
 
-		unistr2_to_ascii(sam_name, &pass[i].uni_user_name, sizeof(sam_name));
-		init_string2(&sam->str[i].acct_name, sam_name, len_sam_name+1, len_sam_name);
-	  
-		dsize += sizeof(SAM_ENTRY4);
-		dsize += len_sam_name;
+		init_string2(&sam->str[i].acct_name, pdb_get_username(pwd), len_sam_name+1, len_sam_name);
 	}
 	
-	*num_entries = i;
-	*data_size = dsize;
-
 	return NT_STATUS_OK;
 }
 
@@ -1852,46 +1824,38 @@ static BOOL sam_io_sam_dispinfo_4(char *desc, SAM_DISPINFO_4 * sam,
 inits a SAM_DISPINFO_5 structure.
 ********************************************************************/
 
-NTSTATUS init_sam_dispinfo_5(TALLOC_CTX *ctx, SAM_DISPINFO_5 *sam, uint32 *num_entries,
-			 uint32 *data_size, uint32 start_idx,
-			 DOMAIN_GRP * grp)
+NTSTATUS init_sam_dispinfo_5(TALLOC_CTX *ctx, SAM_DISPINFO_5 *sam, uint32 num_entries,
+			 uint32 start_idx, DISP_GROUP_INFO *disp_group_info)
 {
 	uint32 len_sam_name;
-	uint32 max_entries, max_data_size;
-	uint32 dsize = 0;
 	uint32 i;
 
-	DEBUG(5, ("init_sam_dispinfo_5\n"));
-
+	DOMAIN_GRP *grp;
 	ZERO_STRUCTP(sam);
 
-	max_entries = *num_entries;
-	max_data_size = *data_size;
+	DEBUG(5, ("init_sam_dispinfo_5: num_entries: %d\n", num_entries));
 
-	if (max_entries==0)
+	if (num_entries==0)
 		return NT_STATUS_OK;
 
-	if (!(sam->sam=(SAM_ENTRY5 *)talloc(ctx, max_entries*sizeof(SAM_ENTRY5))))
+	if (!(sam->sam=(SAM_ENTRY5 *)talloc(ctx, num_entries*sizeof(SAM_ENTRY5))))
 		return NT_STATUS_NO_MEMORY;
 
-	if (!(sam->str=(SAM_STR5 *)talloc(ctx, max_entries*sizeof(SAM_STR5))))
+	if (!(sam->str=(SAM_STR5 *)talloc(ctx, num_entries*sizeof(SAM_STR5))))
 		return NT_STATUS_NO_MEMORY;
 
 	ZERO_STRUCTP(sam->sam);
 	ZERO_STRUCTP(sam->str);
 
-	for (i = 0; (i < max_entries) && (dsize < max_data_size); i++) {
+	for (i = 0; i < num_entries; i++) {
+		DEBUG(11, ("init_sam_dispinfo_5: entry: %d\n",i));
+		grp=disp_group_info[i+start_idx].grp;
+
 		len_sam_name = strlen(grp[i].name);
 	  
 		init_sam_entry5(&sam->sam[i], start_idx + i + 1, len_sam_name);
 		init_string2(&sam->str[i].grp_name, grp[i].name, len_sam_name+1, len_sam_name);
-	  
-		dsize += sizeof(SAM_ENTRY5);
-		dsize += len_sam_name;
 	}
-	
-	*num_entries = i;
-	*data_size = dsize;
 
 	return NT_STATUS_OK;
 }
@@ -1941,8 +1905,6 @@ static BOOL sam_io_sam_dispinfo_5(char *desc, SAM_DISPINFO_5 * sam,
 		if(!smb_io_string2("grp_name", &sam->str[i].grp_name,
 			     sam->sam[i].hdr_grp_name.buffer, ps, depth))
 			return False;
-		if(!prs_align(ps))
-			return False;
 	}
 
 	return True;
@@ -1953,16 +1915,13 @@ inits a SAMR_R_QUERY_DISPINFO structure.
 ********************************************************************/
 
 void init_samr_r_query_dispinfo(SAMR_R_QUERY_DISPINFO * r_u,
-				uint32 num_entries, uint32 data_size,
+				uint32 num_entries, uint32 total_size, uint32 data_size,
 				uint16 switch_level, SAM_DISPINFO_CTR * ctr,
 				NTSTATUS status)
 {
 	DEBUG(5, ("init_samr_r_query_dispinfo: level %d\n", switch_level));
 
-	if (switch_level==4)
-		r_u->total_size = 0;	/* not calculated */
-	else
-		r_u->total_size = data_size;	/* not calculated */
+	r_u->total_size = total_size;
 
 	r_u->data_size = data_size;
 
@@ -2193,6 +2152,38 @@ BOOL samr_io_group_info1(char *desc, GROUP_INFO1 * gr1,
 }
 
 /*******************************************************************
+inits a GROUP_INFO3 structure.
+********************************************************************/
+
+void init_samr_group_info3(GROUP_INFO3 *gr3)
+{
+	DEBUG(5, ("init_samr_group_info3\n"));
+
+	gr3->unknown_1 = 0x3;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+
+BOOL samr_io_group_info3(char *desc, GROUP_INFO3 *gr3, prs_struct *ps, int depth)
+{
+	if (gr3 == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "samr_io_group_info3");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("unknown_1", ps, depth, &gr3->unknown_1))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
 inits a GROUP_INFO4 structure.
 ********************************************************************/
 
@@ -2249,18 +2240,18 @@ static BOOL samr_group_info_ctr(char *desc, GROUP_INFO_CTR **ctr,
 
 	if(!prs_uint16("switch_value1", ps, depth, &(*ctr)->switch_value1))
 		return False;
-	if(!prs_uint16("switch_value2", ps, depth, &(*ctr)->switch_value2))
-		return False;
 
 	switch ((*ctr)->switch_value1) {
 	case 1:
-		if(!samr_io_group_info1("group_info1",
-				  &(*ctr)->group.info1, ps, depth))
+		if(!samr_io_group_info1("group_info1", &(*ctr)->group.info1, ps, depth))
+			return False;
+		break;
+	case 3:
+		if(!samr_io_group_info3("group_info3", &(*ctr)->group.info3, ps, depth))
 			return False;
 		break;
 	case 4:
-		if(!samr_io_group_info4("group_info4",
-				  &(*ctr)->group.info4, ps, depth))
+		if(!samr_io_group_info4("group_info4", &(*ctr)->group.info4, ps, depth))
 			return False;
 		break;
 	default:
@@ -2399,6 +2390,9 @@ BOOL samr_io_r_delete_dom_group(char *desc, SAMR_R_DELETE_DOM_GROUP * r_u,
 	depth++;
 
 	if(!prs_align(ps))
+		return False;
+
+	if(!smb_io_pol_hnd("pol", &r_u->pol, ps, depth))
 		return False;
 
 	if(!prs_ntstatus("status", ps, depth, &r_u->status))
@@ -3390,6 +3384,63 @@ BOOL samr_io_r_enum_dom_aliases(char *desc, SAMR_R_ENUM_DOM_ALIASES * r_u,
 }
 
 /*******************************************************************
+inits a ALIAS_INFO1 structure.
+********************************************************************/
+
+void init_samr_alias_info1(ALIAS_INFO1 * al1, char *acct_name, uint32 num_member, char *acct_desc)
+{
+	int acct_len_name = acct_name != NULL ? strlen(acct_name) : 0;
+	int acct_len_desc = acct_desc != NULL ? strlen(acct_desc) : 0;
+
+	DEBUG(5, ("init_samr_alias_info1\n"));
+
+	init_uni_hdr(&al1->hdr_acct_name, acct_len_name);
+	init_unistr2(&al1->uni_acct_name, acct_name, acct_len_name);
+
+	al1->num_member=num_member;
+
+	init_uni_hdr(&al1->hdr_acct_desc, acct_len_desc);
+	init_unistr2(&al1->uni_acct_desc, acct_desc, acct_len_desc);
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+
+BOOL samr_io_alias_info1(char *desc, ALIAS_INFO1 * al1,
+			 prs_struct *ps, int depth)
+{
+	if (al1 == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "samr_io_alias_info1");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!smb_io_unihdr("hdr_acct_name", &al1->hdr_acct_name, ps, depth))
+		return False;
+	if(!prs_uint32("num_member", ps, depth, &al1->num_member))
+		return False;
+	if(!smb_io_unihdr("hdr_acct_desc", &al1->hdr_acct_desc, ps, depth))
+		return False;
+
+	if(!smb_io_unistr2("uni_acct_name", &al1->uni_acct_name,
+		       al1->hdr_acct_name.buffer, ps, depth))
+		return False;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!smb_io_unistr2("uni_acct_desc", &al1->uni_acct_desc,
+		       al1->hdr_acct_desc.buffer, ps, depth))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
 inits a ALIAS_INFO3 structure.
 ********************************************************************/
 
@@ -3447,6 +3498,10 @@ BOOL samr_alias_info_ctr(char *desc, ALIAS_INFO_CTR * ctr,
 		return False;
 
 	switch (ctr->switch_value1) {
+	case 1: 
+		if(!samr_io_alias_info1("alias_info1", &ctr->alias.info1, ps, depth))
+			return False;
+		break;
 	case 3: 
 		if(!samr_io_alias_info3("alias_info3", &ctr->alias.info3, ps, depth))
 			return False;
@@ -4754,6 +4809,8 @@ BOOL samr_io_r_delete_dom_user(char *desc, SAMR_R_DELETE_DOM_USER * r_u,
 	if(!prs_align(ps))
 		return False;
 
+	if(!smb_io_pol_hnd("pol", &r_u->pol, ps, depth))
+		return False;
 	if(!prs_ntstatus("status", ps, depth, &r_u->status))
 		return False;
 
@@ -4834,7 +4891,7 @@ reads or writes a structure.
 
 void init_samr_q_create_user(SAMR_Q_CREATE_USER * q_u,
 			     POLICY_HND *pol,
-			     char *name,
+			     const char *name,
 			     uint32 acb_info, uint32 access_mask)
 {
 	int len_name;

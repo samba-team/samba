@@ -294,7 +294,7 @@ void init_dom_sid(DOM_SID *sid, char *str_sid)
  Inits a DOM_SID2 structure.
 ********************************************************************/
 
-void init_dom_sid2(DOM_SID2 *sid2, DOM_SID *sid)
+void init_dom_sid2(DOM_SID2 *sid2, const DOM_SID *sid)
 {
 	sid2->sid = *sid;
 	sid2->num_auths = sid2->sid.num_auths;

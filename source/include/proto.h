@@ -1015,8 +1015,10 @@ void TimeInit(void);
 int TimeDiff(time_t t);
 struct tm *LocalTime(time_t *t);
 time_t nt_time_to_unix(NTTIME *nt);
+time_t nt_time_to_unix_abs(NTTIME *nt);
 time_t interpret_long_date(char *p);
 void unix_to_nt_time(NTTIME *nt, time_t t);
+void unix_to_nt_time_abs(NTTIME *nt, time_t t);
 void put_long_date(char *p,time_t t);
 BOOL null_mtime(time_t mtime);
 void put_dos_date(char *buf,int offset,time_t unixdate);
@@ -1787,13 +1789,14 @@ BOOL winbind_nametogid(gid_t *pgid, const char *gname);
 
 /*The following definitions come from  nsswitch/wb_common.c  */
 
+void free_response(struct winbindd_response *response);
 void winbind_exclude_domain(const char *domain);
 void init_request(struct winbindd_request *request, int request_type);
 void init_response(struct winbindd_response *response);
 void close_sock(void);
+int winbind_open_pipe_sock(void);
 int write_sock(void *buffer, int count);
 int read_reply(struct winbindd_response *response);
-void free_response(struct winbindd_response *response);
 
 /*The following definitions come from  param/loadparm.c  */
 
@@ -2587,7 +2590,7 @@ void init_enum_hnd(ENUM_HND *enh, uint32 hnd);
 BOOL smb_io_enum_hnd(char *desc, ENUM_HND *hnd, prs_struct *ps, int depth);
 BOOL smb_io_dom_sid(char *desc, DOM_SID *sid, prs_struct *ps, int depth);
 void init_dom_sid(DOM_SID *sid, char *str_sid);
-void init_dom_sid2(DOM_SID2 *sid2, DOM_SID *sid);
+void init_dom_sid2(DOM_SID2 *sid2, const DOM_SID *sid);
 BOOL smb_io_dom_sid2(char *desc, DOM_SID2 *sid, prs_struct *ps, int depth);
 void init_str_hdr(STRHDR *hdr, int max_len, int len, uint32 buffer);
 BOOL smb_io_strhdr(char *desc,  STRHDR *hdr, prs_struct *ps, int depth);
@@ -2955,7 +2958,7 @@ BOOL samr_io_r_unknown_2d(char *desc, SAMR_R_UNKNOWN_2D * r_u,
 			  prs_struct *ps, int depth);
 void init_samr_q_open_domain(SAMR_Q_OPEN_DOMAIN * q_u,
 			     POLICY_HND *pol, uint32 flags,
-			     DOM_SID *sid);
+			     const DOM_SID *sid);
 BOOL samr_io_q_open_domain(char *desc, SAMR_Q_OPEN_DOMAIN * q_u,
 			   prs_struct *ps, int depth);
 BOOL samr_io_r_open_domain(char *desc, SAMR_R_OPEN_DOMAIN * r_u,
@@ -2975,15 +2978,16 @@ void init_samr_q_query_dom_info(SAMR_Q_QUERY_DOMAIN_INFO * q_u,
 				POLICY_HND *domain_pol, uint16 switch_value);
 BOOL samr_io_q_query_dom_info(char *desc, SAMR_Q_QUERY_DOMAIN_INFO * q_u,
 			      prs_struct *ps, int depth);
-void init_unk_info3(SAM_UNK_INFO_3 * u_3);
+void init_unk_info3(SAM_UNK_INFO_3 *u_3, NTTIME nt_logout);
 void init_unk_info6(SAM_UNK_INFO_6 * u_6);
 void init_unk_info7(SAM_UNK_INFO_7 * u_7);
-void init_unk_info12(SAM_UNK_INFO_12 * u_12);
+void init_unk_info12(SAM_UNK_INFO_12 * u_12, NTTIME nt_lock_duration, NTTIME nt_reset_time, uint16 lockout);
 void init_unk_info5(SAM_UNK_INFO_5 * u_5,char *server);
 void init_unk_info2(SAM_UNK_INFO_2 * u_2,
 			char *domain, char *server,
-			uint32 seq_num);
-void init_unk_info1(SAM_UNK_INFO_1 * u_1);
+			uint32 seq_num, uint32 num_users, uint32 num_groups, uint32 num_alias);
+void init_unk_info1(SAM_UNK_INFO_1 *u_1, uint16 min_pass_len, uint16 pass_hist, 
+		    uint32 flag, NTTIME nt_expire, NTTIME nt_min_age);
 void init_samr_r_query_dom_info(SAMR_R_QUERY_DOMAIN_INFO * r_u,
 				uint16 switch_value, SAM_UNK_CTR * ctr,
 				NTSTATUS status);
@@ -3006,23 +3010,18 @@ void init_samr_q_query_dispinfo(SAMR_Q_QUERY_DISPINFO * q_e, POLICY_HND *pol,
 				uint32 max_entries);
 BOOL samr_io_q_query_dispinfo(char *desc, SAMR_Q_QUERY_DISPINFO * q_e,
 			      prs_struct *ps, int depth);
-NTSTATUS init_sam_dispinfo_1(TALLOC_CTX *ctx, SAM_DISPINFO_1 *sam, uint32 *num_entries,
-			 uint32 *data_size, uint32 start_idx,
-			 SAM_USER_INFO_21 pass[MAX_SAM_ENTRIES]);
-NTSTATUS init_sam_dispinfo_2(TALLOC_CTX *ctx, SAM_DISPINFO_2 *sam, uint32 *num_entries,
-			 uint32 *data_size, uint32 start_idx,
-			 SAM_USER_INFO_21 pass[MAX_SAM_ENTRIES]);
-NTSTATUS init_sam_dispinfo_3(TALLOC_CTX *ctx, SAM_DISPINFO_3 *sam, uint32 *num_entries,
-			 uint32 *data_size, uint32 start_idx,
-			 DOMAIN_GRP * grp);
-NTSTATUS init_sam_dispinfo_4(TALLOC_CTX *ctx, SAM_DISPINFO_4 *sam, uint32 *num_entries,
-			 uint32 *data_size, uint32 start_idx,
-			 SAM_USER_INFO_21 pass[MAX_SAM_ENTRIES]);
-NTSTATUS init_sam_dispinfo_5(TALLOC_CTX *ctx, SAM_DISPINFO_5 *sam, uint32 *num_entries,
-			 uint32 *data_size, uint32 start_idx,
-			 DOMAIN_GRP * grp);
+NTSTATUS init_sam_dispinfo_1(TALLOC_CTX *ctx, SAM_DISPINFO_1 *sam, uint32 num_entries,
+			 uint32 start_idx, DISP_USER_INFO *disp_user_info);
+NTSTATUS init_sam_dispinfo_2(TALLOC_CTX *ctx, SAM_DISPINFO_2 *sam, uint32 num_entries,
+			 uint32 start_idx, DISP_USER_INFO *disp_user_info);
+NTSTATUS init_sam_dispinfo_3(TALLOC_CTX *ctx, SAM_DISPINFO_3 *sam, uint32 num_entries,
+			 uint32 start_idx, DISP_GROUP_INFO *disp_group_info);
+NTSTATUS init_sam_dispinfo_4(TALLOC_CTX *ctx, SAM_DISPINFO_4 *sam, uint32 num_entries,
+			 uint32 start_idx, DISP_USER_INFO *disp_user_info);
+NTSTATUS init_sam_dispinfo_5(TALLOC_CTX *ctx, SAM_DISPINFO_5 *sam, uint32 num_entries,
+			 uint32 start_idx, DISP_GROUP_INFO *disp_group_info);
 void init_samr_r_query_dispinfo(SAMR_R_QUERY_DISPINFO * r_u,
-				uint32 num_entries, uint32 data_size,
+				uint32 num_entries, uint32 total_size, uint32 data_size,
 				uint16 switch_level, SAM_DISPINFO_CTR * ctr,
 				NTSTATUS status);
 BOOL samr_io_r_query_dispinfo(char *desc, SAMR_R_QUERY_DISPINFO * r_u,
@@ -3039,6 +3038,8 @@ void init_samr_group_info1(GROUP_INFO1 * gr1,
 			   uint32 num_members);
 BOOL samr_io_group_info1(char *desc, GROUP_INFO1 * gr1,
 			 prs_struct *ps, int depth);
+void init_samr_group_info3(GROUP_INFO3 *gr3);
+BOOL samr_io_group_info3(char *desc, GROUP_INFO3 *gr3, prs_struct *ps, int depth);
 void init_samr_group_info4(GROUP_INFO4 * gr4, char *acct_desc);
 BOOL samr_io_group_info4(char *desc, GROUP_INFO4 * gr4,
 			 prs_struct *ps, int depth);
@@ -3131,6 +3132,9 @@ BOOL samr_io_q_enum_dom_aliases(char *desc, SAMR_Q_ENUM_DOM_ALIASES * q_e,
 void init_samr_r_enum_dom_aliases(SAMR_R_ENUM_DOM_ALIASES *r_u, uint32 next_idx, uint32 num_sam_entries);
 BOOL samr_io_r_enum_dom_aliases(char *desc, SAMR_R_ENUM_DOM_ALIASES * r_u,
 				prs_struct *ps, int depth);
+void init_samr_alias_info1(ALIAS_INFO1 * al1, char *acct_name, uint32 num_member, char *acct_desc);
+BOOL samr_io_alias_info1(char *desc, ALIAS_INFO1 * al1,
+			 prs_struct *ps, int depth);
 void init_samr_alias_info3(ALIAS_INFO3 * al3, char *acct_desc);
 BOOL samr_io_alias_info3(char *desc, ALIAS_INFO3 * al3,
 			 prs_struct *ps, int depth);
@@ -3245,7 +3249,7 @@ BOOL samr_io_r_open_user(char *desc, SAMR_R_OPEN_USER * r_u,
 			 prs_struct *ps, int depth);
 void init_samr_q_create_user(SAMR_Q_CREATE_USER * q_u,
 			     POLICY_HND *pol,
-			     char *name,
+			     const char *name,
 			     uint32 acb_info, uint32 access_mask);
 BOOL samr_io_q_create_user(char *desc, SAMR_Q_CREATE_USER * q_u,
 			   prs_struct *ps, int depth);
