@@ -1,3 +1,15 @@
+2004-09-11  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* resolve-test.c: test program for libroken resolve from resolve.c
+	
+	* Makefile.am: add resolve-test
+	
+	* resolve.h: add constant for max DNS protocol packet size
+	
+	* resolve.c (dns_lookup_int): grow the answer buffer to the size
+	the server send to us if the answer buffer was too small (limited
+	to the dns protocol max packet size)
+	
 2004-08-26  Johan Danielsson  <joda@pdc.kth.se>
 
 	* err.hin: no need to declare __progname here
