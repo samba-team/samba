@@ -32,7 +32,6 @@ exec_prefix=\@exec_prefix\@
 VPATH=\@srcdir\@
 srcdir=\@srcdir\@
 builddir=\@builddir\@
-eparserdir=\@eparserdir\@
 
 BASEDIR= \@prefix\@
 BINDIR = \@bindir\@
@@ -131,9 +130,6 @@ idl_full: build/pidl/idl.pm
 
 idl: build/pidl/idl.pm
 	\@CPP=\"\@CPP\@\" PERL=\"\$(PERL)\" script/build_idl.sh PARTIAL
-
-eparser_idl: build/pidl/idl.pm
-	CPP=\"\@CPP\@\" PERL=\"\$(PERL)\" EPARSERPREFIX=\"\$(eparserdir)\" script/build_idl.sh EPARSER 
 
 build/pidl/idl.pm: build/pidl/idl.yp
 	-yapp -s build/pidl/idl.yp
