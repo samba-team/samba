@@ -91,7 +91,7 @@ static struct cli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 	}
 
 	if (cli->protocol < PROTOCOL_LANMAN2 ||
-	    !(cli->sec_mode & 1)) {
+	    !(cli->sec_mode & NEGOTIATE_SECURITY_USER_LEVEL)) {
 		DEBUG(1,("%s isn't in user level security mode\n",desthost));
 		cli_shutdown(cli);
 		return NULL;
@@ -145,7 +145,7 @@ static DATA_BLOB auth_get_challenge_server(const struct auth_context *auth_conte
 	if (cli) {
 		DEBUG(3,("using password server validation\n"));
 
-		if ((cli->sec_mode & 2) == 0) {
+		if ((cli->sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) == 0) {
 			/* We can't work with unencrypted password servers
 			   unless 'encrypt passwords = no' */
 			DEBUG(5,("make_auth_info_server: Server is unencrypted, no challenge available..\n"));
@@ -216,7 +216,7 @@ static NTSTATUS check_smbserver_security(const struct auth_context *auth_context
 		return NT_STATUS_LOGON_FAILURE;
 	}  
 	
-	if ((cli->sec_mode & 2) == 0) {
+	if ((cli->sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) == 0) {
 		if (user_info->encrypted) {
 			DEBUG(1,("password server %s is plaintext, but we are encrypted. This just can't work :-(\n", cli->desthost));
 			return NT_STATUS_LOGON_FAILURE;		
