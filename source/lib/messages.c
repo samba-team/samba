@@ -160,7 +160,7 @@ BOOL message_send_pid(pid_t pid, int msg_type, void *buf, size_t len, BOOL dupli
 	 * and deleting again if the target is not present. JRA.
 	 */
 
-	if (kill(pid, 0) == -1) {
+	if (!process_exists(pid)) {
 		DEBUG(2,("message_send_pid: pid %d doesn't exist\n", (int)pid));
 		return False;
 	}
@@ -195,11 +195,9 @@ BOOL message_send_pid(pid_t pid, int msg_type, void *buf, size_t len, BOOL dupli
 
 	if (!duplicates_allowed) {
 		char *ptr;
-		struct message_rec *prec;
+		struct message_rec prec;
 		
-		for(ptr = (char *)dbuf.dptr, prec = (struct message_rec *)ptr; ptr < dbuf.dptr + dbuf.dsize;
-					ptr += (sizeof(rec) + prec->len), prec = (struct message_rec *)ptr) {
-
+		for(ptr = (char *)dbuf.dptr; ptr < dbuf.dptr + dbuf.dsize; ) {
 			/*
 			 * First check if the message header matches, then, if it's a non-zero
 			 * sized message, check if the data matches. If so it's a duplicate and
@@ -214,6 +212,8 @@ BOOL message_send_pid(pid_t pid, int msg_type, void *buf, size_t len, BOOL dupli
 					return True;
 				}
 			}
+			memcpy(&prec, ptr, sizeof(prec));
+			ptr += sizeof(rec) + prec.len;
 		}
 	}
 
@@ -278,9 +278,14 @@ static BOOL message_recv(int *msg_type, pid_t *src, void **buf, size_t *len)
 	*msg_type = rec.msg_type;
 	*src = rec.src;
 
-	memmove(dbuf.dptr, dbuf.dptr+sizeof(rec)+rec.len, dbuf.dsize - (sizeof(rec)+rec.len));
+	if (dbuf.dsize - (sizeof(rec)+rec.len) > 0)
+		memmove(dbuf.dptr, dbuf.dptr+sizeof(rec)+rec.len, dbuf.dsize - (sizeof(rec)+rec.len));
 	dbuf.dsize -= sizeof(rec)+rec.len;
-	tdb_store(tdb, kbuf, dbuf, TDB_REPLACE);
+
+	if (dbuf.dsize == 0)
+		tdb_delete(tdb, kbuf);
+	else
+		tdb_store(tdb, kbuf, dbuf, TDB_REPLACE);
 
 	free(dbuf.dptr);
 	tdb_unlockchain(tdb, kbuf);
