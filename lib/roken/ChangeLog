@@ -1,3 +1,10 @@
+Sat May 30 00:13:01 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* getarg.c (arg_printusage): try to keep options shorter than
+ 	column width
+
+	* get_window_size.c (get_window_size): check COLUMNS and LINES
+
 Fri May 29 00:05:04 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 	* getarg.c (mandoc_template): Put short and long options in
