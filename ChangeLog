@@ -1,3 +1,8 @@
+Thu Sep 11 07:25:28 1997  Assar Westerlund  <assar@sics.se>
+
+	* lib/asn1/k5.asn1: Use `METHOD-DATA' instead of `SEQUENCE OF
+ 	PA-DATA'
+
 Wed Sep 10 21:20:17 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 	* kdc/kerberos5.c: Fixes for cross-realm, including (but not
