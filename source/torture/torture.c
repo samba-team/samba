@@ -106,6 +106,7 @@ BOOL torture_open_connection(struct cli_state **c)
 				     username, lp_workgroup(), 
 				     password, flags, &retry);
 	if (!NT_STATUS_IS_OK(status)) {
+		printf("Failed to open connection - %s\n", nt_errstr(status));
 		return False;
 	}
 
@@ -3986,6 +3987,25 @@ static BOOL run_test(const char *name)
 }
 
 
+/*
+  parse a username%password
+*/
+static void parse_user(const char *user)
+{
+	char *username, *password, *p;
+
+	username = strdup(user);
+	p = strchr_m(username,'%');
+	if (p) {
+		*p = 0;
+		password = strdup(p+1);
+	}
+
+	lp_set_cmdline("torture:username", username);
+	lp_set_cmdline("torture:password", password);
+}
+
+
 static void usage(void)
 {
 	int i;
@@ -4030,9 +4050,8 @@ static void usage(void)
 	int opt, i;
 	char *p;
 	int gotuser = 0;
-	int gotpass = 0;
 	BOOL correct = True;
-	char *host, *share, *username, *password;
+	char *host, *share, *username;
 
 	setup_logging("smbtorture", DEBUG_STDOUT);
 
@@ -4129,15 +4148,7 @@ static void usage(void)
 			break;
 		case 'U':
 			gotuser = 1;
-			username = strdup(optarg);
-			p = strchr_m(username,'%');
-			if (p) {
-				*p = 0;
-				password = strdup(p+1);
-				gotpass = 1;
-			}
-			lp_set_cmdline("torture:username", username);
-			lp_set_cmdline("torture:password", password);
+			parse_user(optarg);
 			break;
 		case 'f':
 			torture_failures = atoi(optarg);
@@ -4152,18 +4163,9 @@ static void usage(void)
 		}
 	}
 
-	if(use_kerberos && !gotuser) gotpass = True;
-
-	while (!gotpass) {
-		p = getpass("Password:");
-		if (p) {
-			lp_set_cmdline("torture:password", p);
-			gotpass = 1;
-		}
-	}
-
 	printf("host=%s share=%s user=%s myname=%s\n", 
-	       host, share, username, lp_netbios_name());
+	       host, share, lp_parm_string(-1, "torture", "username"), 
+	       lp_netbios_name());
 
 	if (argc == optind) {
 		printf("You must specify a test to run, or 'ALL'\n");

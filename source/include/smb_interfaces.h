@@ -125,12 +125,37 @@ struct smb_rmdir {
 };
 
 /* struct used in rename() call */
-struct smb_rename {
+enum rename_level {RAW_RENAME_RENAME, RAW_RENAME_NTRENAME};
+
+union smb_rename {
 	struct {
-		const char *pattern1;
-		const char *pattern2;
-		uint16 attrib;
-	} in;
+		enum rename_level level;
+	} generic;
+
+	/* SMBrename interface */
+	struct {
+		enum rename_level level;
+
+		struct {
+			const char *pattern1;
+			const char *pattern2;
+			uint16 attrib;
+		} in;
+	} rename;
+
+
+	/* SMBntrename interface */
+	struct {
+		enum rename_level level;
+
+		struct {
+			uint16 attrib;
+			uint16 flags; /* see RENAME_FLAG_* */
+			uint32 root_fid; /* is it? */
+			const char *old_name;
+			const char *new_name;
+		} in;
+	} ntrename;
 };
 
 enum tcon_level {RAW_TCON_TCON, RAW_TCON_TCONX};

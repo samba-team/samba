@@ -92,6 +92,7 @@ trans2_setfileinfo
 trans2_fsctl
 trans2_mkdir
 trans2_findnext
+NTrename
 SMB_QFS_ALLOCATION
 SMB_QFS_VOLUME
 SMB_QFS_VOLUME_INFO

@@ -801,7 +801,7 @@ static BOOL internal_resolve_name(TALLOC_CTX *mem_ctx, const char *name, int nam
 		  }
 	  } else if(strequal( tok, "lmhosts")) {
 			/* REWRITE: add back in? */
-			DEBUG(0,("resolve_name: REWRITE: add lmhosts back?? %s\n", tok));
+			DEBUG(2,("resolve_name: REWRITE: add lmhosts back?? %s\n", tok));
 	  } else if(strequal( tok, "wins")) {
 		  /* don't resolve 1D via WINS */
 		  if (name_type != 0x1D &&

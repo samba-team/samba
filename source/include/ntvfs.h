@@ -44,7 +44,7 @@ struct ntvfs_ops {
 	NTSTATUS (*open)(struct request_context *req, union smb_open *oi);
 	NTSTATUS (*mkdir)(struct request_context *req, union smb_mkdir *md);
 	NTSTATUS (*rmdir)(struct request_context *req, struct smb_rmdir *rd);
-	NTSTATUS (*rename)(struct request_context *req, struct smb_rename *ren);
+	NTSTATUS (*rename)(struct request_context *req, union smb_rename *ren);
 	NTSTATUS (*copy)(struct request_context *req, struct smb_copy *cp);
 
 	/* directory search */

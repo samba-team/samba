@@ -340,12 +340,16 @@ static NTSTATUS svfs_rmdir(struct request_context *req, struct smb_rmdir *rd)
 /*
   rename a set of files
 */
-static NTSTATUS svfs_rename(struct request_context *req, struct smb_rename *ren)
+static NTSTATUS svfs_rename(struct request_context *req, union smb_rename *ren)
 {
 	char *unix_path1, *unix_path2;
 
-	unix_path1 = svfs_unix_path(req, ren->in.pattern1);
-	unix_path2 = svfs_unix_path(req, ren->in.pattern2);
+	if (ren->generic.level != RAW_RENAME_RENAME) {
+		return NT_STATUS_INVALID_LEVEL;
+	}
+
+	unix_path1 = svfs_unix_path(req, ren->rename.in.pattern1);
+	unix_path2 = svfs_unix_path(req, ren->rename.in.pattern2);
 
 	if (rename(unix_path1, unix_path2) != 0) {
 		return map_nt_error_from_unix(errno);

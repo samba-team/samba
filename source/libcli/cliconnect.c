@@ -146,13 +146,24 @@ NTSTATUS cli_full_connection(struct cli_state **ret_cli,
 {
 	struct cli_tree *tree;
 	NTSTATUS status;
+	char *p;
+	TALLOC_CTX *mem_ctx;
+
+	mem_ctx = talloc_init("cli_full_connection");
 
 	*ret_cli = NULL;
+
+	/* if the username is of the form DOMAIN\username then split out the domain */
+	p = strpbrk(username, "\\/");
+	if (p) {
+		domain = talloc_strndup(mem_ctx, username, PTR_DIFF(p, username));
+		username = talloc_strdup(mem_ctx, p+1);
+	}
 
 	status = cli_tree_full_connection(&tree, myname, host, 0, sharename, devtype,
 					  username, domain, password);
 	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+		goto done;
 	}
 
 	(*ret_cli) = cli_state_init();
@@ -162,6 +173,8 @@ NTSTATUS cli_full_connection(struct cli_state **ret_cli,
 	(*ret_cli)->transport = tree->session->transport;
 	tree->reference_count++;
 
+done:
+	talloc_destroy(mem_ctx);
 	return status;
 }
 

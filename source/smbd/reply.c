@@ -1600,20 +1600,21 @@ void reply_rmdir(struct request_context *req)
 ****************************************************************************/
 void reply_mv(struct request_context *req)
 {
-	struct smb_rename *io;
+	union smb_rename *io;
 	char *p;
  
 	/* parse the request */
 	REQ_CHECK_WCT(req, 1);
 	REQ_TALLOC(io, sizeof(*io));
 
-	io->in.attrib = SVAL(req->in.vwv, VWV(0));
+	io->generic.level = RAW_RENAME_RENAME;
+	io->rename.in.attrib = SVAL(req->in.vwv, VWV(0));
 
 	p = req->in.data;
-	p += req_pull_ascii4(req, &io->in.pattern1, p, STR_TERMINATE);
-	p += req_pull_ascii4(req, &io->in.pattern2, p, STR_TERMINATE);
+	p += req_pull_ascii4(req, &io->rename.in.pattern1, p, STR_TERMINATE);
+	p += req_pull_ascii4(req, &io->rename.in.pattern2, p, STR_TERMINATE);
 
-	if (!io->in.pattern1 || !io->in.pattern2) {
+	if (!io->rename.in.pattern1 || !io->rename.in.pattern2) {
 		req_reply_error(req, NT_STATUS_FOOBAR);
 		return;
 	}

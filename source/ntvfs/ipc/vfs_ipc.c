@@ -114,7 +114,7 @@ static NTSTATUS ipc_rmdir(struct request_context *req, struct smb_rmdir *rd)
 /*
   rename a set of files
 */
-static NTSTATUS ipc_rename(struct request_context *req, struct smb_rename *ren)
+static NTSTATUS ipc_rename(struct request_context *req, union smb_rename *ren)
 {
 	return NT_STATUS_ACCESS_DENIED;
 }

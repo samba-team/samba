@@ -470,6 +470,18 @@ static BOOL gen_bool(void)
 }
 
 /*
+  generate ntrename flags
+*/
+static uint16 gen_rename_flags(void)
+{
+	if (gen_chance(30)) return RENAME_FLAG_RENAME;
+	if (gen_chance(30)) return RENAME_FLAG_HARD_LINK;
+	if (gen_chance(30)) return RENAME_FLAG_COPY;
+	return gen_bits_mask(0xFFFF);
+}
+
+
+/*
   return a lockingx lock mode
 */
 static uint16 gen_lock_mode(void)
@@ -1218,12 +1230,34 @@ static BOOL handler_rmdir(int instance)
 */
 static BOOL handler_rename(int instance)
 {
-	struct smb_rename parm[NSERVERS];
+	union smb_rename parm[NSERVERS];
 	NTSTATUS status[NSERVERS];
 
-	parm[0].in.pattern1 = gen_pattern();
-	parm[0].in.pattern2 = gen_pattern();
-	parm[0].in.attrib = gen_attrib();
+	parm[0].generic.level = RAW_RENAME_RENAME;
+	parm[0].rename.in.pattern1 = gen_pattern();
+	parm[0].rename.in.pattern2 = gen_pattern();
+	parm[0].rename.in.attrib = gen_attrib();
+
+	GEN_COPY_PARM;
+	GEN_CALL(smb_raw_rename(tree, &parm[i]));
+
+	return True;
+}
+
+/*
+  generate ntrename operations
+*/
+static BOOL handler_ntrename(int instance)
+{
+	union smb_rename parm[NSERVERS];
+	NTSTATUS status[NSERVERS];
+
+	parm[0].generic.level = RAW_RENAME_NTRENAME;
+	parm[0].ntrename.in.old_name = gen_fname();
+	parm[0].ntrename.in.new_name = gen_fname();
+	parm[0].ntrename.in.attrib = gen_attrib();
+	parm[0].ntrename.in.root_fid = gen_root_fid(instance);
+	parm[0].ntrename.in.flags = gen_rename_flags();
 
 	GEN_COPY_PARM;
 	GEN_CALL(smb_raw_rename(tree, &parm[i]));
@@ -1771,6 +1805,7 @@ static struct {
 	{"MKDIR",      handler_mkdir},
 	{"RMDIR",      handler_rmdir},
 	{"RENAME",     handler_rename},
+	{"NTRENAME",   handler_ntrename},
 	{"READX",      handler_readx},
 	{"WRITEX",     handler_writex},
 	{"CHKPATH",    handler_chkpath},

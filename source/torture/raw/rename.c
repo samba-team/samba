@@ -28,6 +28,13 @@
 		goto done; \
 	}} while (0)
 
+#define CHECK_VALUE(v, correct) do { \
+	if ((v) != (correct)) { \
+		printf("(%d) Incorrect %s %d - should be %d\n", \
+		       __LINE__, #v, (int)v, (int)correct); \
+		ret = False; \
+	}} while (0)
+
 #define BASEDIR "\\testrename"
 
 /*
@@ -35,12 +42,14 @@
 */
 static BOOL test_mv(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 {
-	struct smb_rename io;
+	union smb_rename io;
 	NTSTATUS status;
 	BOOL ret = True;
 	int fnum;
 	const char *fname1 = BASEDIR "\\test1.txt";
 	const char *fname2 = BASEDIR "\\test2.txt";
+
+	printf("Testing SMBmv\n");
 
 	if (cli_deltree(cli, BASEDIR) == -1 ||
 	    !cli_mkdir(cli, BASEDIR)) {
@@ -52,9 +61,10 @@ static BOOL test_mv(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 
 	fnum = create_complex_file(cli, mem_ctx, fname1);
 	
-	io.in.pattern1 = fname1;
-	io.in.pattern2 = fname2;
-	io.in.attrib = 0;
+	io.generic.level = RAW_RENAME_RENAME;
+	io.rename.in.pattern1 = fname1;
+	io.rename.in.pattern2 = fname2;
+	io.rename.in.attrib = 0;
 	
 	status = smb_raw_rename(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_SHARING_VIOLATION);
@@ -62,11 +72,22 @@ static BOOL test_mv(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	smb_raw_exit(cli->session);
 	status = smb_raw_rename(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
+	
+	printf("Trying self rename\n");
+	io.rename.in.pattern1 = fname2;
+	io.rename.in.pattern2 = fname2;
+	status = smb_raw_rename(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	io.rename.in.pattern1 = fname1;
+	io.rename.in.pattern2 = fname1;
+	status = smb_raw_rename(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 
 
 	printf("trying wildcard rename\n");
-	io.in.pattern1 = BASEDIR "\\*.txt";
-	io.in.pattern2 = fname1;
+	io.rename.in.pattern1 = BASEDIR "\\*.txt";
+	io.rename.in.pattern2 = fname1;
 	
 	status = smb_raw_rename(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -76,8 +97,8 @@ static BOOL test_mv(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	printf("Trying extension change\n");
-	io.in.pattern1 = BASEDIR "\\*.txt";
-	io.in.pattern2 = BASEDIR "\\*.bak";
+	io.rename.in.pattern1 = BASEDIR "\\*.txt";
+	io.rename.in.pattern2 = BASEDIR "\\*.bak";
 	status = smb_raw_rename(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
@@ -86,16 +107,175 @@ static BOOL test_mv(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 
 	printf("Checking attrib handling\n");
 	torture_set_file_attribute(cli->tree, BASEDIR "\\test1.bak", FILE_ATTRIBUTE_HIDDEN);
-	io.in.pattern1 = BASEDIR "\\test1.bak";
-	io.in.pattern2 = BASEDIR "\\*.txt";
-	io.in.attrib = 0;
+	io.rename.in.pattern1 = BASEDIR "\\test1.bak";
+	io.rename.in.pattern2 = BASEDIR "\\*.txt";
+	io.rename.in.attrib = 0;
 	status = smb_raw_rename(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_NO_SUCH_FILE);
 
-	io.in.attrib = FILE_ATTRIBUTE_HIDDEN;
+	io.rename.in.attrib = FILE_ATTRIBUTE_HIDDEN;
 	status = smb_raw_rename(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
+done:
+	smb_raw_exit(cli->session);
+	cli_deltree(cli, BASEDIR);
+	return ret;
+}
+
+
+
+/*
+  test SMBntrename ops
+*/
+static BOOL test_ntrename(struct cli_state *cli, TALLOC_CTX *mem_ctx)
+{
+	union smb_rename io;
+	NTSTATUS status;
+	BOOL ret = True;
+	int fnum;
+	const char *fname1 = BASEDIR "\\test1.txt";
+	const char *fname2 = BASEDIR "\\test2.txt";
+	union smb_fileinfo finfo;
+
+	printf("Testing SMBntrename\n");
+
+	if (cli_deltree(cli, BASEDIR) == -1 ||
+	    !cli_mkdir(cli, BASEDIR)) {
+		printf("Unable to setup %s - %s\n", BASEDIR, cli_errstr(cli));
+		return False;
+	}
+
+	printf("Trying simple rename\n");
+
+	fnum = create_complex_file(cli, mem_ctx, fname1);
+	
+	io.generic.level = RAW_RENAME_NTRENAME;
+	io.ntrename.in.old_name = fname1;
+	io.ntrename.in.new_name = fname2;
+	io.ntrename.in.attrib = 0;
+	io.ntrename.in.root_fid = 0;
+	io.ntrename.in.flags = RENAME_FLAG_RENAME;
+	
+	status = smb_raw_rename(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_SHARING_VIOLATION);
+	
+	smb_raw_exit(cli->session);
+	status = smb_raw_rename(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	printf("Trying self rename\n");
+	io.ntrename.in.old_name = fname2;
+	io.ntrename.in.new_name = fname2;
+	status = smb_raw_rename(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	io.ntrename.in.old_name = fname1;
+	io.ntrename.in.new_name = fname1;
+	status = smb_raw_rename(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+
+	printf("trying wildcard rename\n");
+	io.ntrename.in.old_name = BASEDIR "\\*.txt";
+	io.ntrename.in.new_name = fname1;
+	
+	status = smb_raw_rename(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_PATH_SYNTAX_BAD);
+
+	printf("Checking attrib handling\n");
+	torture_set_file_attribute(cli->tree, fname2, FILE_ATTRIBUTE_HIDDEN);
+	io.ntrename.in.old_name = fname2;
+	io.ntrename.in.new_name = fname1;
+	io.ntrename.in.attrib = 0;
+	status = smb_raw_rename(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_NO_SUCH_FILE);
+
+	io.ntrename.in.attrib = FILE_ATTRIBUTE_HIDDEN;
+	status = smb_raw_rename(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	torture_set_file_attribute(cli->tree, fname1, FILE_ATTRIBUTE_NORMAL);
+
+	printf("Checking hard link\n");
+	io.ntrename.in.old_name = fname1;
+	io.ntrename.in.new_name = fname2;
+	io.ntrename.in.attrib = 0;
+	io.ntrename.in.flags = RENAME_FLAG_HARD_LINK;
+	status = smb_raw_rename(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	torture_set_file_attribute(cli->tree, fname1, FILE_ATTRIBUTE_SYSTEM);
+
+	finfo.generic.level = RAW_FILEINFO_ALL_INFO;
+	finfo.generic.in.fname = fname2;
+	status = smb_raw_pathinfo(cli->tree, mem_ctx, &finfo);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VALUE(finfo.all_info.out.nlink, 2);
+	CHECK_VALUE(finfo.all_info.out.attrib, FILE_ATTRIBUTE_SYSTEM);
+
+	finfo.generic.in.fname = fname1;
+	status = smb_raw_pathinfo(cli->tree, mem_ctx, &finfo);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VALUE(finfo.all_info.out.nlink, 2);
+	CHECK_VALUE(finfo.all_info.out.attrib, FILE_ATTRIBUTE_SYSTEM);
+
+	torture_set_file_attribute(cli->tree, fname1, FILE_ATTRIBUTE_NORMAL);
+
+	cli_unlink(cli, fname2);
+
+	finfo.generic.in.fname = fname1;
+	status = smb_raw_pathinfo(cli->tree, mem_ctx, &finfo);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VALUE(finfo.all_info.out.nlink, 1);
+
+	printf("Checking copy\n");
+	io.ntrename.in.old_name = fname1;
+	io.ntrename.in.new_name = fname2;
+	io.ntrename.in.attrib = 0;
+	io.ntrename.in.flags = RENAME_FLAG_COPY;
+	status = smb_raw_rename(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	torture_set_file_attribute(cli->tree, fname1, FILE_ATTRIBUTE_SYSTEM);
+
+	finfo.generic.level = RAW_FILEINFO_ALL_INFO;
+	finfo.generic.in.fname = fname2;
+	status = smb_raw_pathinfo(cli->tree, mem_ctx, &finfo);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VALUE(finfo.all_info.out.nlink, 1);
+	CHECK_VALUE(finfo.all_info.out.attrib, FILE_ATTRIBUTE_NORMAL);
+
+	finfo.generic.in.fname = fname1;
+	status = smb_raw_pathinfo(cli->tree, mem_ctx, &finfo);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VALUE(finfo.all_info.out.nlink, 1);
+	CHECK_VALUE(finfo.all_info.out.attrib, FILE_ATTRIBUTE_SYSTEM);
+
+	torture_set_file_attribute(cli->tree, fname1, FILE_ATTRIBUTE_NORMAL);
+
+	cli_unlink(cli, fname2);
+
+	finfo.generic.in.fname = fname1;
+	status = smb_raw_pathinfo(cli->tree, mem_ctx, &finfo);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VALUE(finfo.all_info.out.nlink, 1);
+
+	printf("Checking invalid flags\n");
+	io.ntrename.in.old_name = fname1;
+	io.ntrename.in.new_name = fname2;
+	io.ntrename.in.attrib = 0;
+	io.ntrename.in.flags = 0;
+	status = smb_raw_rename(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
+
+	io.ntrename.in.flags = 300;
+	status = smb_raw_rename(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
+
+	io.ntrename.in.flags = 0x106;
+	status = smb_raw_rename(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
+	
 done:
 	smb_raw_exit(cli->session);
 	cli_deltree(cli, BASEDIR);
@@ -119,6 +299,10 @@ BOOL torture_raw_rename(int dummy)
 	mem_ctx = talloc_init("torture_raw_rename");
 
 	if (!test_mv(cli, mem_ctx)) {
+		ret = False;
+	}
+
+	if (!test_ntrename(cli, mem_ctx)) {
 		ret = False;
 	}
 
