@@ -19,7 +19,10 @@ REQUIRED_SUBSYSTEMS = RPC_NDR_LSA
 ADD_OBJ_FILES = libcli/util/clilsa.o
 
 [SUBSYSTEM::LIBCLI_COMPOSITE]
-ADD_OBJ_FILES = libcli/composite/loadfile.o
+ADD_OBJ_FILES = \
+	libcli/composite/composite.o \
+	libcli/composite/loadfile.o \
+	libcli/composite/savefile.o
 
 [SUBSYSTEM::LIBCLI]
 REQUIRED_SUBSYSTEMS = LIBCLI_RAW LIBCLI_UTILS LIBCLI_AUTH LIBCLI_NMB LIBCLI_COMPOSITE
