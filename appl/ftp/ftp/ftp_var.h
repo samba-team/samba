@@ -111,7 +111,7 @@ struct cmd {
 	char	c_bell;		/* give bell when command completes */
 	char	c_conn;		/* must be connected to use command */
 	char	c_proxy;	/* proxy server may execute */
-	void	(*c_handler) __P((int, char **)); /* function to call */
+	void	(*c_handler) (int, char **); /* function to call */
 };
 
 struct macel {
