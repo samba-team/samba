@@ -1,7 +1,8 @@
 /* 
    Unix SMB/CIFS implementation.
    ACL get/set operations
-   Copyright (C) Andrew Tridgell 2003
+
+   Copyright (C) Andrew Tridgell 2003-2004
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -107,7 +108,7 @@ NTSTATUS smb_raw_query_secdesc(struct smbcli_tree *tree,
 set file ACL (async send)
 ****************************************************************************/
 struct smbcli_request *smb_raw_set_secdesc_send(struct smbcli_tree *tree, 
-					     struct smb_set_secdesc *set)
+						struct smb_set_secdesc *set)
 {
 	struct smb_nttrans nt;
 	uint8_t params[8];
@@ -144,4 +145,14 @@ struct smbcli_request *smb_raw_set_secdesc_send(struct smbcli_tree *tree,
 
 	ndr_push_free(ndr);
 	return req;
+}
+
+/****************************************************************************
+set file ACL (sync interface)
+****************************************************************************/
+NTSTATUS smb_raw_set_secdesc(struct smbcli_tree *tree, 
+			     struct smb_set_secdesc *set)
+{
+	struct smbcli_request *req = smb_raw_set_secdesc_send(tree, set);
+	return smbcli_request_simple_recv(req);
 }

@@ -48,6 +48,7 @@ ADD_OBJ_FILES = \
 		torture/raw/rename.o \
 		torture/raw/eas.o \
 		torture/raw/streams.o \
+		torture/raw/acls.o \
 		torture/raw/seek.o
 REQUIRED_SUBSYSTEMS = \
 		LIBSMB
