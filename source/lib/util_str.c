@@ -703,7 +703,7 @@ char *strchr_m(const char *s, char c)
 		return NULL;
 	*p = 0;
 	pull_ucs2_pstring(s2, ws);
-	return (char *)(s+strlen(s2));
+	return discard_const_p(char, s+strlen(s2));
 }
 
 char *strrchr_m(const char *s, char c)
@@ -724,7 +724,7 @@ char *strrchr_m(const char *s, char c)
 		return NULL;
 	*p = 0;
 	pull_ucs2_pstring(s2, ws);
-	return (char *)(s+strlen(s2));
+	return discard_const_p(char, s+strlen(s2));
 }
 
 /**
