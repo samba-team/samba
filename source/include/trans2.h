@@ -316,11 +316,21 @@ Byte offset   Type     name                description
 #define MIN_UNIX_INFO_LEVEL 0x200
 #define MAX_UNIX_INFO_LEVEL 0x2FF
 
+#define INFO_LEVEL_IS_UNIX(level) (((level) >= MIN_UNIX_INFO_LEVEL) && ((level) <= MAX_UNIX_INFO_LEVEL))
+
 #define SMB_QUERY_FILE_UNIX_BASIC      0x200   /* UNIX File Info*/
 #define SMB_SET_FILE_UNIX_BASIC        0x200
 
 #define MODE_NO_CHANGE                 -1     /* file mode value which */
                                               /* means "don't change it" */
+#define UNIX_TYPE_FILE 0
+#define UNIX_TYPE_DIR 1
+#define UNIX_TYPE_SYMLINK 2
+#define UNIX_TYPE_CHARDEV 3
+#define UNIX_TYPE_BLKDEV 4
+#define UNIX_TYPE_FIFO 5
+#define UNIX_TYPE_SOCKET 6
+#define UNIx_TYPE_UNKNOWN 0xFFFFFFFF
 
 /*
  LARGE_INTEGER EndOfFile                File size
@@ -337,6 +347,7 @@ Byte offset   Type     name                description
                                          3 -- Character device
                                          4 -- Block device
                                          5 -- FIFO (named pipe)
+                                         6 -- Unix domain socket
 
  LARGE_INTEGER devmajor                 Major device number if type is device
  LARGE_INTEGER devminor                 Minor device number if type is device
