@@ -25,6 +25,7 @@ MKINSTALLDIRS = @top_srcdir@/mkinstalldirs
 prefix = @prefix@
 exec_prefix = @exec_prefix@
 libdir = @libdir@
+bindir = @bindir@
 
 PICFLAGS = @PICFLAGS@
  
