@@ -1,0 +1,12 @@
+PKG=samba
+NAME=SMB based file/printer sharing
+ARCH=__ARCH__
+VERSION=__VERSION__
+CATEGORY=system
+VENDOR=Samba Team
+DESC=File and printer sharing for Windows workstations
+HOTLINE=Please contact your local UNIX support group
+EMAIL=samba@samba.org
+CLASSES=none
+BASEDIR=__BASEDIR__
+INTONLY=1
