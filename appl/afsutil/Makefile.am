@@ -10,7 +10,7 @@ afslog_SOURCES = afslog.c
 
 pagsh_SOURCES  = pagsh.c
 
-man_MANS = afslog.1
+man_MANS = afslog.1 pagsh.1
 
 LDADD = $(LIB_kafs) \
 	$(LIB_krb4) \
