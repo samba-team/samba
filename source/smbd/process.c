@@ -911,25 +911,24 @@ char *smb_fn_name(int type)
 
 void construct_reply_common(char *inbuf,char *outbuf)
 {
-  memset(outbuf,'\0',smb_size);
+	memset(outbuf,'\0',smb_size);
 
-  set_message(outbuf,0,0,True);
-  CVAL(outbuf,smb_com) = CVAL(inbuf,smb_com);
+	set_message(outbuf,0,0,True);
+	CVAL(outbuf,smb_com) = CVAL(inbuf,smb_com);
+	
+	memcpy(outbuf+4,inbuf+4,4);
+	CVAL(outbuf,smb_rcls) = SMB_SUCCESS;
+	CVAL(outbuf,smb_reh) = 0;
+	SCVAL(outbuf,smb_flg, FLAG_REPLY | (CVAL(inbuf,smb_flg) & FLAG_CASELESS_PATHNAMES)); 
+	SSVAL(outbuf,smb_flg2,
+	      FLAGS2_UNICODE_STRINGS | FLAGS2_LONG_PATH_COMPONENTS |
+	      FLAGS2_32_BIT_ERROR_CODES | FLAGS2_EXTENDED_SECURITY);
 
-  memcpy(outbuf+4,inbuf+4,4);
-  CVAL(outbuf,smb_rcls) = SMB_SUCCESS;
-  CVAL(outbuf,smb_reh) = 0;
-  SCVAL(outbuf,smb_flg, FLAG_REPLY | (CVAL(inbuf,smb_flg) & FLAG_CASELESS_PATHNAMES)); /* bit 7 set
-                                 means a reply */
-  SSVAL(outbuf,smb_flg2,
-	(SVAL(inbuf,smb_flg2)&FLAGS2_UNICODE_STRINGS) | FLAGS2_LONG_PATH_COMPONENTS);
-	/* say we support long filenames */
-
-  SSVAL(outbuf,smb_err,SMB_SUCCESS);
-  SSVAL(outbuf,smb_tid,SVAL(inbuf,smb_tid));
-  SSVAL(outbuf,smb_pid,SVAL(inbuf,smb_pid));
-  SSVAL(outbuf,smb_uid,SVAL(inbuf,smb_uid));
-  SSVAL(outbuf,smb_mid,SVAL(inbuf,smb_mid));
+	SSVAL(outbuf,smb_err,SMB_SUCCESS);
+	SSVAL(outbuf,smb_tid,SVAL(inbuf,smb_tid));
+	SSVAL(outbuf,smb_pid,SVAL(inbuf,smb_pid));
+	SSVAL(outbuf,smb_uid,SVAL(inbuf,smb_uid));
+	SSVAL(outbuf,smb_mid,SVAL(inbuf,smb_mid));
 }
 
 /****************************************************************************

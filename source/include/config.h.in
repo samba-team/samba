@@ -1019,6 +1019,9 @@
 /* Define if you have the acl library (-lacl).  */
 #undef HAVE_LIBACL
 
+/* Define if you have the com_err library (-lcom_err).  */
+#undef HAVE_LIBCOM_ERR
+
 /* Define if you have the cups library (-lcups).  */
 #undef HAVE_LIBCUPS
 
@@ -1030,6 +1033,9 @@
 
 /* Define if you have the inet library (-linet).  */
 #undef HAVE_LIBINET
+
+/* Define if you have the k5crypto library (-lk5crypto).  */
+#undef HAVE_LIBK5CRYPTO
 
 /* Define if you have the nsl library (-lnsl).  */
 #undef HAVE_LIBNSL

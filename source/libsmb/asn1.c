@@ -87,13 +87,18 @@ BOOL asn1_pop_tag(ASN1_DATA *data)
 	/* yes, this is ugly. We don't know in advance how many bytes the length
 	   of a tag will take, so we assumed 1 byte. If we were wrong then we 
 	   need to correct our mistake */
-	if (len > 127) {
+	if (len > 255) {
 		data->data[nesting->start] = 0x82;
 		if (!asn1_write_uint8(data, 0)) return False;
 		if (!asn1_write_uint8(data, 0)) return False;
 		memmove(data->data+nesting->start+3, data->data+nesting->start+1, len);
 		data->data[nesting->start+1] = len>>8;
 		data->data[nesting->start+2] = len&0xff;
+	} else if (len > 127) {
+		data->data[nesting->start] = 0x81;
+		if (!asn1_write_uint8(data, 0)) return False;
+		memmove(data->data+nesting->start+2, data->data+nesting->start+1, len);
+		data->data[nesting->start+1] = len;
 	} else {
 		data->data[nesting->start] = len;
 	}
@@ -203,14 +208,16 @@ BOOL asn1_start_tag(ASN1_DATA *data, uint8 tag)
 	asn1_read_uint8(data, &b);
 	if (b & 0x80) {
 		int n = b & 0x7f;
-		if (n != 2) {
+		if (n > 2) {
 			data->has_error = True;
 			return False;
 		}
 		asn1_read_uint8(data, &b);
-		nesting->taglen = b<<8;
-		asn1_read_uint8(data, &b);
-		nesting->taglen |= b;
+		nesting->taglen = b;
+		if (n == 2) {
+			asn1_read_uint8(data, &b);
+			nesting->taglen = (nesting->taglen << 8) | b;
+		}
 	} else {
 		nesting->taglen = b;
 	}
@@ -320,7 +327,7 @@ BOOL asn1_read_GeneralString(ASN1_DATA *data, char **s)
 }
 
 /* read a octet string blob */
-BOOL asn1_read_octet_string(ASN1_DATA *data, DATA_BLOB *blob)
+BOOL asn1_read_OctetString(ASN1_DATA *data, DATA_BLOB *blob)
 {
 	int len;
 	if (!asn1_start_tag(data, ASN1_OCTET_STRING)) return False;
@@ -344,4 +351,13 @@ BOOL asn1_check_enumerated(ASN1_DATA *data, int v)
 	asn1_read_uint8(data, &b);
 	asn1_end_tag(data);
 	return !data->has_error && (v == b);
+}
+
+/* check a enumarted value is correct */
+BOOL asn1_write_enumerated(ASN1_DATA *data, uint8 v)
+{
+	if (!asn1_push_tag(data, ASN1_ENUMERATED)) return False;
+	asn1_write_uint8(data, v);
+	asn1_pop_tag(data);
+	return !data->has_error;
 }

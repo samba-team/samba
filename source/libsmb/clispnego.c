@@ -25,12 +25,13 @@
   generate a negTokenInit packet given a GUID, a list of supported
   OIDs (the mechanisms) and a principle name string 
 */
-ASN1_DATA spnego_gen_negTokenInit(uint8 guid[16], 
+DATA_BLOB spnego_gen_negTokenInit(uint8 guid[16], 
 				  const char *OIDs[], 
 				  const char *principle)
 {
 	int i;
 	ASN1_DATA data;
+	DATA_BLOB ret;
 
 	memset(&data, 0, sizeof(data));
 
@@ -66,7 +67,10 @@ ASN1_DATA spnego_gen_negTokenInit(uint8 guid[16],
 		asn1_free(&data);
 	}
 
-	return data;
+	ret = data_blob(data.data, data.length);
+	asn1_free(&data);
+
+	return ret;
 }
 
 
@@ -167,6 +171,50 @@ DATA_BLOB gen_negTokenTarg(const char *OIDs[], DATA_BLOB blob)
 
 
 /*
+  parse a negTokenTarg packet giving a list of OIDs and a security blob
+*/
+BOOL parse_negTokenTarg(DATA_BLOB blob, char *OIDs[ASN1_MAX_OIDS], DATA_BLOB *secblob)
+{
+	int i;
+	ASN1_DATA data;
+
+	asn1_load(&data, blob);
+	asn1_start_tag(&data, ASN1_APPLICATION(0));
+	asn1_check_OID(&data,OID_SPNEGO);
+	asn1_start_tag(&data, ASN1_CONTEXT(0));
+	asn1_start_tag(&data, ASN1_SEQUENCE(0));
+
+	asn1_start_tag(&data, ASN1_CONTEXT(0));
+	asn1_start_tag(&data, ASN1_SEQUENCE(0));
+	for (i=0; asn1_tag_remaining(&data) > 0 && i < ASN1_MAX_OIDS; i++) {
+		char *oid = NULL;
+		asn1_read_OID(&data,&oid);
+		OIDs[i] = oid;
+	}
+	OIDs[i] = NULL;
+	asn1_end_tag(&data);
+	asn1_end_tag(&data);
+
+	asn1_start_tag(&data, ASN1_CONTEXT(2));
+	asn1_read_OctetString(&data,secblob);
+	asn1_end_tag(&data);
+
+	asn1_end_tag(&data);
+	asn1_end_tag(&data);
+
+	asn1_end_tag(&data);
+
+	if (data.has_error) {
+		DEBUG(1,("Failed to parse negTokenTarg at offset %d\n", (int)data.ofs));
+		asn1_free(&data);
+		return False;
+	}
+
+	asn1_free(&data);
+	return True;
+}
+
+/*
   generate a krb5 GSS-API wrapper packet given a ticket
 */
 static DATA_BLOB spnego_gen_krb5_wrap(DATA_BLOB ticket)
@@ -225,8 +273,8 @@ DATA_BLOB spnego_gen_negTokenTarg(struct cli_state *cli, char *principle)
 	/* and wrap that in a shiny SPNEGO wrapper */
 	targ = gen_negTokenTarg(krb_mechs, tkt_wrapped);
 
-	data_blob_free(tkt_wrapped);
-	data_blob_free(tkt);
+	data_blob_free(&tkt_wrapped);
+	data_blob_free(&tkt);
 
 	return targ;
 }
@@ -257,13 +305,13 @@ BOOL spnego_parse_challenge(DATA_BLOB blob,
 	asn1_end_tag(&data);
 
 	asn1_start_tag(&data,ASN1_CONTEXT(2));
-	asn1_read_octet_string(&data, chal1);
+	asn1_read_OctetString(&data, chal1);
 	asn1_end_tag(&data);
 
 	/* the second challenge is optional (XP doesn't send it) */
 	if (asn1_tag_remaining(&data)) {
 		asn1_start_tag(&data,ASN1_CONTEXT(3));
-		asn1_read_octet_string(&data, chal2);
+		asn1_read_OctetString(&data, chal2);
 		asn1_end_tag(&data);
 	}
 
@@ -273,6 +321,52 @@ BOOL spnego_parse_challenge(DATA_BLOB blob,
 	ret = !data.has_error;
 	asn1_free(&data);
 	return ret;
+}
+
+
+/*
+  generate a spnego NTLMSSP challenge packet given two security blobs
+  The second challenge is optional
+*/
+BOOL spnego_gen_challenge(DATA_BLOB *blob,
+			  DATA_BLOB *chal1, DATA_BLOB *chal2)
+{
+	ASN1_DATA data;
+
+	ZERO_STRUCT(data);
+
+	asn1_push_tag(&data,ASN1_CONTEXT(1));
+	asn1_push_tag(&data,ASN1_SEQUENCE(0));
+
+	asn1_push_tag(&data,ASN1_CONTEXT(0));
+	asn1_write_enumerated(&data,1);
+	asn1_pop_tag(&data);
+
+	asn1_push_tag(&data,ASN1_CONTEXT(1));
+	asn1_write_OID(&data, OID_NTLMSSP);
+	asn1_pop_tag(&data);
+
+	asn1_push_tag(&data,ASN1_CONTEXT(2));
+	asn1_write_OctetString(&data, chal1->data, chal1->length);
+	asn1_pop_tag(&data);
+
+	/* the second challenge is optional (XP doesn't send it) */
+	if (chal2) {
+		asn1_push_tag(&data,ASN1_CONTEXT(3));
+		asn1_write_OctetString(&data, chal2->data, chal2->length);
+		asn1_pop_tag(&data);
+	}
+
+	asn1_pop_tag(&data);
+	asn1_pop_tag(&data);
+
+	if (data.has_error) {
+		return False;
+	}
+
+	*blob = data_blob(data.data, data.length);
+	asn1_free(&data);
+	return True;
 }
 
 /*
@@ -298,7 +392,32 @@ DATA_BLOB spnego_gen_auth(DATA_BLOB blob)
 	asn1_free(&data);
 
 	return ret;
-	
+}
+
+/*
+ parse a SPNEGO NTLMSSP auth packet. This contains the encrypted passwords
+*/
+BOOL spnego_parse_auth(DATA_BLOB blob, DATA_BLOB *auth)
+{
+	ASN1_DATA data;
+
+	asn1_load(&data, blob);
+	asn1_start_tag(&data, ASN1_CONTEXT(1));
+	asn1_start_tag(&data, ASN1_SEQUENCE(0));
+	asn1_start_tag(&data, ASN1_CONTEXT(2));
+	asn1_read_OctetString(&data,auth);
+	asn1_end_tag(&data);
+	asn1_end_tag(&data);
+	asn1_end_tag(&data);
+
+	if (data.has_error) {
+		DEBUG(3,("spnego_parse_auth failed at %d\n", (int)data.ofs));
+		asn1_free(&data);
+		return False;
+	}
+
+	asn1_free(&data);
+	return True;
 }
 
 
@@ -312,6 +431,7 @@ DATA_BLOB spnego_gen_auth(DATA_BLOB blob)
 
   U = unicode string (input is unix string)
   B = data blob (pointer + length)
+  b = data blob in header (pointer + length)
   d = word (4 bytes)
   C = constant ascii string
  */
@@ -338,6 +458,10 @@ BOOL msrpc_gen(DATA_BLOB *blob,
 			b = va_arg(ap, uint8 *);
 			head_size += 8;
 			data_size += va_arg(ap, int);
+			break;
+		case 'b':
+			b = va_arg(ap, uint8 *);
+			head_size += va_arg(ap, int);
 			break;
 		case 'd':
 			n = va_arg(ap, int);
@@ -384,10 +508,94 @@ BOOL msrpc_gen(DATA_BLOB *blob,
 			n = va_arg(ap, int);
 			SIVAL(blob->data, head_ofs, n); head_ofs += 4;
 			break;
+		case 'b':
+			b = va_arg(ap, uint8 *);
+			n = va_arg(ap, int);
+			memcpy(blob->data + head_ofs, b, n);
+			head_ofs += n;
+			break;
 		case 'C':
 			s = va_arg(ap, char *);
 			head_ofs += push_string(NULL, blob->data+head_ofs, s, -1, 
 						STR_ASCII|STR_TERMINATE);
+			break;
+		}
+	}
+	va_end(ap);
+
+	return True;
+}
+
+
+/*
+  this is a tiny msrpc packet parser. This the the partner of msrpc_gen
+
+  format specifiers are:
+
+  U = unicode string (input is unix string)
+  B = data blob
+  b = data blob in header
+  d = word (4 bytes)
+  C = constant ascii string
+ */
+BOOL msrpc_parse(DATA_BLOB *blob,
+		 const char *format, ...)
+{
+	int i;
+	va_list ap;
+	char **ps, *s;
+	DATA_BLOB *b;
+	int head_ofs = 0;
+	uint16 len1, len2;
+	uint32 ptr;
+	uint32 *v;
+	pstring p;
+
+	va_start(ap, format);
+	for (i=0; format[i]; i++) {
+		switch (format[i]) {
+		case 'U':
+			len1 = SVAL(blob->data, head_ofs); head_ofs += 2;
+			len2 = SVAL(blob->data, head_ofs); head_ofs += 2;
+			ptr =  IVAL(blob->data, head_ofs); head_ofs += 4;
+			/* make sure its in the right format - be strict */
+			if (len1 != len2 || (len1&1) || ptr + len1 > blob->length) {
+				return False;
+			}
+			ps = va_arg(ap, char **);
+			pull_string(NULL, p, blob->data + ptr, -1, len1, 
+				    STR_UNICODE|STR_NOALIGN);
+			(*ps) = strdup(p);
+			break;
+		case 'B':
+			len1 = SVAL(blob->data, head_ofs); head_ofs += 2;
+			len2 = SVAL(blob->data, head_ofs); head_ofs += 2;
+			ptr =  IVAL(blob->data, head_ofs); head_ofs += 4;
+			/* make sure its in the right format - be strict */
+			if (len1 != len2 || ptr + len1 > blob->length) {
+				return False;
+			}
+			b = (DATA_BLOB *)va_arg(ap, void *);
+			*b = data_blob(blob->data + ptr, len1);
+			break;
+		case 'b':
+			b = (DATA_BLOB *)va_arg(ap, void *);
+			len1 = va_arg(ap, unsigned);
+			*b = data_blob(blob->data + head_ofs, len1);
+			head_ofs += len1;
+			break;
+		case 'd':
+			v = va_arg(ap, uint32 *);
+			*v = IVAL(blob->data, head_ofs); head_ofs += 4;
+			break;
+		case 'C':
+			s = va_arg(ap, char *);
+			head_ofs += pull_string(NULL, p, blob->data+head_ofs, -1, 
+						blob->length - head_ofs, 
+						STR_ASCII|STR_TERMINATE);
+			if (strcmp(s, p) != 0) {
+				return False;
+			}
 			break;
 		}
 	}
