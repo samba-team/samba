@@ -130,7 +130,7 @@ static NTSTATUS ipv4_tcp_listen(struct socket_context *sock,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS ipv4_tcp_accept(struct socket_context *sock, struct socket_context **new_sock, uint32_t flags)
+static NTSTATUS ipv4_tcp_accept(struct socket_context *sock, struct socket_context **new_sock)
 {
 	struct sockaddr_in cli_addr;
 	socklen_t cli_addr_len = sizeof(cli_addr);
@@ -141,7 +141,7 @@ static NTSTATUS ipv4_tcp_accept(struct socket_context *sock, struct socket_conte
 		return map_nt_error_from_unix(errno);
 	}
 
-	if (!(flags & SOCKET_FLAG_BLOCK)) {
+	if (!(sock->flags & SOCKET_FLAG_BLOCK)) {
 		int ret = set_blocking(new_fd, False);
 		if (ret == -1) {
 			close(new_fd);
@@ -164,7 +164,7 @@ static NTSTATUS ipv4_tcp_accept(struct socket_context *sock, struct socket_conte
 	/* copy the socket_context */
 	(*new_sock)->type		= sock->type;
 	(*new_sock)->state		= SOCKET_STATE_SERVER_CONNECTED;
-	(*new_sock)->flags		= flags;
+	(*new_sock)->flags		= sock->flags;
 
 	(*new_sock)->fd			= new_fd;
 

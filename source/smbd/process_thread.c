@@ -58,7 +58,7 @@ static void thread_accept_connection(struct event_context *ev, struct fd_event *
 	struct server_connection *conn;
 
 	/* accept an incoming connection. */
-	status = socket_accept(server_socket->socket, &sock, 0);
+	status = socket_accept(server_socket->socket, &sock);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("accept_connection_single: accept: %s\n",
 			 nt_errstr(status)));

@@ -42,8 +42,7 @@ struct socket_ops {
 	/* server ops */
 	NTSTATUS (*listen)(struct socket_context *sock,
 				const char *my_address, int port, int queue_size, uint32_t flags);
-	NTSTATUS (*accept)(struct socket_context *sock,
-				struct socket_context **new_sock, uint32_t flags);
+	NTSTATUS (*accept)(struct socket_context *sock,	struct socket_context **new_sock);
 
 	/* general ops */
 	NTSTATUS (*recv)(struct socket_context *sock, void *buf,
@@ -78,8 +77,9 @@ enum socket_state {
 	SOCKET_STATE_SERVER_ERROR
 };
 
-#define SOCKET_FLAG_BLOCK 0x00000001
-#define SOCKET_FLAG_PEEK  0x00000002
+#define SOCKET_FLAG_BLOCK        0x00000001
+#define SOCKET_FLAG_PEEK         0x00000002
+#define SOCKET_FLAG_TESTNONBLOCK 0x00000004
 
 struct socket_context {
 	enum socket_type type;
