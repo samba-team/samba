@@ -857,6 +857,7 @@ static uint32 get_a_printer_2_default(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstrin
 	int snum;
 	NT_PRINTER_INFO_LEVEL_2 info;
 	NT_DEVICEMODE devmode;
+	SMB_STRUCT_STAT sbuf;
 
 	ZERO_STRUCT(info);
 	ZERO_STRUCT(devmode);
@@ -877,9 +878,12 @@ static uint32 get_a_printer_2_default(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstrin
 	/*
 	 * put a better system here, please.
 	 */
-	info.secdesc.len = 0; /* convertperms_unix_to_sd(&sbuf, False,
-						    sbuf.st_mode, 
-						    &info.secdesc.sec); */
+	sbuf.st_mode = 0777;
+	sbuf.st_uid = -1;
+	sbuf.st_gid = -1;
+	info.secdesc.len = convertperms_unix_to_sd(&sbuf, False,
+						    0777,
+						    &info.secdesc.sec);
 	info.secdesc.max_len = info.secdesc.len;
 
 	*info_ptr = (NT_PRINTER_INFO_LEVEL_2 *)memdup(&info, sizeof(info));
