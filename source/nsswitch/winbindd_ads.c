@@ -321,13 +321,13 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 
 	rc = ads_search_retry(ads, &res, "(objectCategory=group)", attrs);
 	if (!ADS_ERR_OK(rc)) {
-		DEBUG(1,("query_user_list ads_search: %s\n", ads_errstr(rc)));
+		DEBUG(1,("enum_dom_groups ads_search: %s\n", ads_errstr(rc)));
 		goto done;
 	}
 
 	count = ads_count_replies(ads, res);
 	if (count == 0) {
-		DEBUG(1,("query_user_list: No users found\n"));
+		DEBUG(1,("enum_dom_groups: No groups found\n"));
 		goto done;
 	}
 
