@@ -1586,7 +1586,7 @@ static int next_block(char *ltarbuf, char **bufferp, int bufsiz)
 {
   int bufread, total = 0;
 
-  DEBUG(5, ("Advancing to next block: %0X\n", *bufferp));
+  DEBUG(5, ("Advancing to next block: %0x\n", (unsigned int)*bufferp));
   *bufferp += TBLOCK;
   total = TBLOCK;
 
@@ -1643,7 +1643,7 @@ static int skip_file(int skipsize)
 static int get_file(file_info2 finfo, char * inbuf, char * outbuf)
 {
   int fsize = finfo.size;
-  int fnum, pos = 0, dsize = 0, wsize = 0, rsize = 0;
+  int fnum, pos = 0, dsize = 0, rsize = 0;
 
   DEBUG(5, ("get_file: file: %s, size %i\n", finfo.name, fsize));
 
@@ -1745,7 +1745,6 @@ static char * get_longfilename(file_info2 finfo)
 {
   int namesize = finfo.size + strlen(cur_dir) + 2;
   char *longname = malloc(namesize);
-  char *xxx;
   int offset = 0, left = finfo.size;
   BOOL first = True;
 
@@ -1792,7 +1791,7 @@ static char * get_longfilename(file_info2 finfo)
 
 static void do_tarput(void)
 {
-  file_info2 finfo, *finfo2;
+  file_info2 finfo;
   struct timeval tp_start;
   char *inbuf, *outbuf, *longfilename = NULL;
   int skip = False;
@@ -1805,6 +1804,7 @@ static void do_tarput(void)
 
 #if 0   /* Fix later ... */
   if (push_dir(&dir_stack, &finfo)) {
+    file_info2 *finfo2;
 
     finfo2 = pop_dir(&dir_stack);
     inbuf = top_dir_name(&dir_stack); /* FIXME */
