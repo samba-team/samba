@@ -145,6 +145,7 @@ struct smbldap_state {
 	const char *uri;
 	char *bind_dn;
 	char *bind_secret;
+	BOOL paged_results;
 
 	unsigned int num_failures;
 

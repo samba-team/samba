@@ -782,8 +782,6 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 	pdb_set_hours_len(sampass, hours_len, PDB_SET);
 	pdb_set_logon_divs(sampass, logon_divs, PDB_SET);
 
-/*	pdb_set_munged_dial(sampass, munged_dial, PDB_SET); */
-	
 	if (!smbldap_get_single_pstring(ldap_state->smbldap_state->ldap_struct, entry,
 			get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_BAD_PASSWORD_COUNT), temp)) {
 			/* leave as default */
@@ -1409,62 +1407,7 @@ static NTSTATUS ldapsam_getsampwsid(struct pdb_methods *my_methods, SAM_ACCOUNT 
 
 static BOOL ldapsam_can_pwchange_exop(struct smbldap_state *ldap_state)
 {
-	LDAPMessage *msg = NULL;
-	LDAPMessage *entry = NULL;
-	char **values = NULL;
-	char *attrs[] = { "supportedExtension", NULL };
-	int rc, num_result, num_values, i;
-	BOOL result = False;
-
-	rc = smbldap_search(ldap_state, "", LDAP_SCOPE_BASE, "(objectclass=*)",
-			    attrs, 0, &msg);
-
-	if (rc != LDAP_SUCCESS) {
-		DEBUG(3, ("Could not search rootDSE\n"));
-		return False;
-	}
-
-	num_result = ldap_count_entries(ldap_state->ldap_struct, msg);
-
-	if (num_result != 1) {
-		DEBUG(3, ("Expected one rootDSE, got %d\n", num_result));
-		goto done;
-	}
-
-	entry = ldap_first_entry(ldap_state->ldap_struct, msg);
-
-	if (entry == NULL) {
-		DEBUG(3, ("Could not retrieve rootDSE\n"));
-		goto done;
-	}
-
-	values = ldap_get_values(ldap_state->ldap_struct, entry,
-				 "supportedExtension");
-
-	if (values == NULL) {
-		DEBUG(9, ("LDAP Server does not support any extensions\n"));
-		goto done;
-	}
-
-	num_values = ldap_count_values(values);
-
-	if (num_values == 0) {
-		DEBUG(9, ("LDAP Server does not support any extensions\n"));
-		goto done;
-	}
-
-	for (i=0; i<num_values; i++) {
-		if (strcmp(values[i], LDAP_EXOP_MODIFY_PASSWD) == 0)
-			result = True;
-	}
-
- done:
-	if (values != NULL)
-		ldap_value_free(values);
-	if (msg != NULL)
-		ldap_msgfree(msg);
-
-	return result;
+	return smbldap_has_extension(ldap_state, LDAP_EXOP_MODIFY_PASSWD);
 }
 
 /********************************************************************
