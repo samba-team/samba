@@ -28,9 +28,7 @@ AC_CHECK_HEADERS(sys/attributes.h attr/xattr.h sys/xattr.h)
 AC_SEARCH_LIBS(flistxattr, [attr])
 
 if test x"$ac_cv_func_flistxattr" = x"yes"; then
-	SMB_MODULE_DEFAULT(posix_xattr, STATIC)
 	AC_DEFINE(HAVE_XATTR_SUPPORT,1,[Whether we have xattr support])
 fi
 
-SMB_MODULE_MK(posix_xattr, NTVFS, NOT, ntvfs/posix/config.mk)
 SMB_MODULE_MK(ntvfs_posix, NTVFS, STATIC, ntvfs/config.mk)

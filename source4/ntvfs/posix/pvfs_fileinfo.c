@@ -45,16 +45,14 @@ static uint32_t dos_mode_from_stat(struct pvfs_state *pvfs, struct stat *st)
 	if ((st->st_mode & S_IWUSR) == 0)
 		result |= FILE_ATTRIBUTE_READONLY;
 	
-	if (!(pvfs->flags & PVFS_FLAG_XATTR_ENABLE)) {
-		if ((pvfs->flags & PVFS_FLAG_MAP_ARCHIVE) && ((st->st_mode & S_IXUSR) != 0))
-			result |= FILE_ATTRIBUTE_ARCHIVE;
-
-		if ((pvfs->flags & PVFS_FLAG_MAP_SYSTEM) && ((st->st_mode & S_IXGRP) != 0))
-			result |= FILE_ATTRIBUTE_SYSTEM;
-		
-		if ((pvfs->flags & PVFS_FLAG_MAP_HIDDEN) && ((st->st_mode & S_IXOTH) != 0))
-			result |= FILE_ATTRIBUTE_HIDDEN;
-	}
+	if ((pvfs->flags & PVFS_FLAG_MAP_ARCHIVE) && ((st->st_mode & S_IXUSR) != 0))
+		result |= FILE_ATTRIBUTE_ARCHIVE;
+	
+	if ((pvfs->flags & PVFS_FLAG_MAP_SYSTEM) && ((st->st_mode & S_IXGRP) != 0))
+		result |= FILE_ATTRIBUTE_SYSTEM;
+	
+	if ((pvfs->flags & PVFS_FLAG_MAP_HIDDEN) && ((st->st_mode & S_IXOTH) != 0))
+		result |= FILE_ATTRIBUTE_HIDDEN;
   
 	if (S_ISDIR(st->st_mode))
 		result = FILE_ATTRIBUTE_DIRECTORY | (result & FILE_ATTRIBUTE_READONLY);
@@ -100,13 +98,7 @@ NTSTATUS pvfs_fill_dos_info(struct pvfs_state *pvfs, struct pvfs_filename *name,
 	name->dos.ea_size = 0;
 	name->dos.file_id = (((uint64_t)name->st.st_dev)<<32) | name->st.st_ino;
 
-#if HAVE_XATTR_SUPPORT
-	if (pvfs->flags & PVFS_FLAG_XATTR_ENABLE) {
-		return pvfs_xattr_load(pvfs, name, fd);
-	}
-#endif
-
-	return NT_STATUS_OK;
+	return pvfs_dosattrib_load(pvfs, name, fd);
 }
 
 

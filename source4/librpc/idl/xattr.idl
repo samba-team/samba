@@ -13,8 +13,9 @@ interface xattr
 	const string XATTR_DOSATTRIB_NAME = "user.DosAttrib";
 	const string XATTR_DOSATTRIB_ESTIMATED_SIZE = 64;
 
-	/* by using a union we can cope with new version of 
-	   this structure more easily */
+	/* we store basic dos attributes in a DosAttrib xattr. By
+	   using a union we can cope with new version of this
+	   structure more easily */
 	typedef struct {
 		uint32 attrib;
 		uint32 ea_size;
@@ -32,4 +33,19 @@ interface xattr
 		uint16 version;
 		[switch_is(version)] xattr_DosInfo info;
 	} xattr_DosAttrib;
+
+
+	/* we store DOS style extended attributes in a DosEAs xattr */
+	const string XATTR_DOSEAS_NAME = "user.DosEAs";
+	const string XATTR_DOSEAS_ESTIMATED_SIZE = 100;
+
+	typedef struct {
+		utf8string name;
+		DATA_BLOB value;
+	} xattr_EA;
+
+	typedef [public] struct {
+		uint16 num_eas;
+		[size_is(num_eas)] xattr_EA *eas;
+	} xattr_DosEAs;
 }
