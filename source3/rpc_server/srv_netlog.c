@@ -251,6 +251,8 @@ static void net_reply_sam_sync(NET_Q_SAM_SYNC *q_s, prs_struct *rdata,
 				 pwd->group_rid, pwd->home_dir, pwd->dir_drive,
 				 pwd->logon_script, pwd->acct_desc,
 				 pwd->acct_ctrl, pwd->profile_path);
+
+			i++;
 		}
 
 		endsmbpwent(vp);

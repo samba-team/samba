@@ -1708,9 +1708,10 @@ BOOL cli_net_srv_pwset(struct cli_state *cli, uint16 nt_pipe_fnum,
 BOOL cli_net_sam_logon(struct cli_state *cli, uint16 nt_pipe_fnum, NET_ID_INFO_CTR *ctr, 
                        NET_USER_INFO_3 *user_info3);
 BOOL cli_net_sam_logoff(struct cli_state *cli, uint16 nt_pipe_fnum, NET_ID_INFO_CTR *ctr);
-BOOL cli_net_sam_sync(struct cli_state *cli, uint16 nt_pipe_fnum, uint32 database_id);
+BOOL cli_net_sam_sync(struct cli_state *cli, uint16 nt_pipe_fnum, uint32 database_id, uint32 *num_deltas, SAM_DELTA_HDR *hdr_deltas, SAM_DELTA_CTR *deltas);
 BOOL change_trust_account_password(char *domain, char *remote_machine_list,
 					uint16 sec_chan);
+BOOL do_sam_sync(struct cli_state *cli);
 
 /*The following definitions come from  rpc_client/cli_pipe.c  */
 
