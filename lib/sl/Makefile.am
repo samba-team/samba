@@ -3,11 +3,10 @@
 include $(top_srcdir)/Makefile.am.common
 
 if do_roken_rename
-IS = -DROKEN_RENAME
 ES = strtok_r.c snprintf.c strdup.c strupr.c getprogname.c
 endif
 
-INCLUDES += $(IS)
+INCLUDES += $(ROKEN_RENAME)
 
 YFLAGS = -d
 

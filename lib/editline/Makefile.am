@@ -3,11 +3,10 @@
 include $(top_srcdir)/Makefile.am.common
 
 if do_roken_rename
-IS = -DROKEN_RENAME
 ES = snprintf.c strdup.c
 endif
 
-INCLUDES += $(IS)
+INCLUDES += $(ROKEN_RENAME)
 
 man_MANS = editline.3
 
