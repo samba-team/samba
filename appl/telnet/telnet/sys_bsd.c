@@ -440,10 +440,13 @@ TerminalNewMode(int f)
 		tmp_tc.c_iflag &= ~ISTRIP;
 	else
 		tmp_tc.c_iflag |= ISTRIP;
-	if (f & MODE_OUTBIN) {
+	if ((f & MODE_OUTBIN) || (f & MODE_OUT8)) {
 		tmp_tc.c_cflag &= ~(CSIZE|PARENB);
 		tmp_tc.c_cflag |= CS8;
-		tmp_tc.c_oflag &= ~OPOST;
+		if(f & MODE_OUTBIN)
+		    tmp_tc.c_oflag &= ~OPOST;
+		else
+		    tmp_tc.c_oflag |= OPOST;
 	} else {
 		tmp_tc.c_cflag &= ~(CSIZE|PARENB);
 		tmp_tc.c_cflag |= old_tc.c_cflag & (CSIZE|PARENB);
