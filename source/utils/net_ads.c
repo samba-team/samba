@@ -1278,7 +1278,7 @@ static int net_ads_test(int argc, const char **argv)
 		return -1;
 	}
 
-	if (!ldap_setup_connection(conn, argv[0])) {
+	if (!ldap_setup_connection(conn, argv[0], NULL, NULL)) {
 		d_printf("Could not setup connection\n");
 		return -1;
 	}
