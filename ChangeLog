@@ -1,5 +1,8 @@
 Sat Jul 12 17:14:12 1997  Assar Westerlund  <assar@sics.se>
 
+	* kdc/kerberos5.c: check if the pre-auth was decrypted properly.
+  	set the `pre_authent' flag
+
 	* lib/krb5/get_cred.c, lib/krb5/get_in_tkt.c: generate a random nonce.
 
 	* lib/krb5/encrypt.c: Made `generate_random_block' global.
