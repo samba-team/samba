@@ -77,7 +77,8 @@ static void print_ldap_srvlist(char *srvlist)
 static int net_lookup_ldap(int argc, const char **argv)
 {
 #ifdef HAVE_LDAP
-	char *srvlist, *domain;
+	char *srvlist;
+	const char *domain;
 	int rc, count;
 	struct in_addr *addr;
 	struct hostent *hostent;
@@ -125,7 +126,7 @@ static int net_lookup_dc(int argc, const char **argv)
 {
 	struct in_addr *ip_list;
 	char *pdc_str = NULL;
-	char *domain=opt_target_workgroup;
+	const char *domain=opt_target_workgroup;
 	int count, i;
 
 	if (argc > 0)
@@ -154,7 +155,7 @@ static int net_lookup_dc(int argc, const char **argv)
 static int net_lookup_master(int argc, const char **argv)
 {
 	struct in_addr master_ip;
-	char *domain=opt_target_workgroup;
+	const char *domain=opt_target_workgroup;
 
 	if (argc > 0)
 		domain=argv[0];

@@ -280,7 +280,7 @@ NTSTATUS _net_auth(pipes_struct *p, NET_Q_AUTH *q_u, NET_R_AUTH *r_u)
 
 		/* from client / server challenges and md4 password, generate sess key */
 		cred_session_key(&p->dc.clnt_chal, &p->dc.srv_chal,
-				 (char *)p->dc.md4pw, p->dc.sess_key);
+				 p->dc.md4pw, p->dc.sess_key);
 		
 		/* check that the client credentials are valid */
 		if (cred_assert(&q_u->clnt_chal, p->dc.sess_key, &p->dc.clnt_cred.challenge, srv_time)) {
@@ -342,7 +342,7 @@ NTSTATUS _net_auth_2(pipes_struct *p, NET_Q_AUTH_2 *q_u, NET_R_AUTH_2 *r_u)
 		
 		/* from client / server challenges and md4 password, generate sess key */
 		cred_session_key(&p->dc.clnt_chal, &p->dc.srv_chal,
-				 (char *)p->dc.md4pw, p->dc.sess_key);
+				 p->dc.md4pw, p->dc.sess_key);
 		
 		/* check that the client credentials are valid */
 		if (cred_assert(&q_u->clnt_chal, p->dc.sess_key, &p->dc.clnt_cred.challenge, srv_time)) {

@@ -254,11 +254,12 @@ static BOOL cli_session_setup_nt1(struct cli_state *cli, char *user,
 				  char *workgroup)
 {
 	uint32 capabilities = cli_session_setup_capabilities(cli);
-	fstring pword, ntpword;
+	uchar pword[24];
+	uchar ntpword[24];
 	char *p;
 	BOOL tried_signing = False;
 
-	if (passlen > sizeof(pword)-1 || ntpasslen > sizeof(ntpword)-1) {
+	if (passlen > sizeof(pword) || ntpasslen > sizeof(ntpword)) {
 		return False;
 	}
 
@@ -266,15 +267,21 @@ static BOOL cli_session_setup_nt1(struct cli_state *cli, char *user,
 		/* non encrypted password supplied. Ignore ntpass. */
 		passlen = 24;
 		ntpasslen = 24;
-		SMBencrypt(pass,cli->secblob.data,(uchar *)pword);
-		SMBNTencrypt(pass,cli->secblob.data,(uchar *)ntpword);
+		SMBencrypt(pass,cli->secblob.data,pword);
+		SMBNTencrypt(pass,cli->secblob.data,ntpword);
 		if (!cli->sign_info.use_smb_signing && cli->sign_info.negotiated_smb_signing) {
-			cli_calculate_mac_key(cli, pass, (uchar *)ntpword);
+			cli_calculate_mac_key(cli, pass, ntpword);
 			tried_signing = True;
 		}
 	} else {
-		memcpy(pword, pass, passlen);
-		memcpy(ntpword, ntpass, ntpasslen);
+		/* pre-encrypted password supplied.  Only used for security=server, can't do
+		   signing becouse we don't have oringial key */
+		memcpy(pword, pass, 24);
+		if (ntpasslen == 24) {
+			memcpy(ntpword, ntpass, 24);
+		} else {
+			ZERO_STRUCT(ntpword);
+		}
 	}
 
 	/* send a session setup command */
@@ -302,8 +309,13 @@ static BOOL cli_session_setup_nt1(struct cli_state *cli, char *user,
 	cli_setup_bcc(cli, p);
 
 	cli_send_smb(cli);
-	if (!cli_receive_smb(cli))
+	if (!cli_receive_smb(cli)) {
+		if (tried_signing) {
+			/* We only use it if we have a successful non-guest connect */
+			cli->sign_info.use_smb_signing = False;
+		}
 		return False;
+	}
 
 	show_msg(cli->inbuf);
 

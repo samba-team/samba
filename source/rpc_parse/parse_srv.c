@@ -2004,7 +2004,8 @@ static BOOL srv_io_srv_file_ctr(char *desc, SRV_FILE_INFO_CTR *ctr, prs_struct *
 ********************************************************************/
 
 void init_srv_q_net_file_enum(SRV_Q_NET_FILE_ENUM *q_n, 
-			      char *srv_name, char *qual_name, char *user_name,
+			      const char *srv_name, const char *qual_name, 
+			      const char *user_name,
 			      uint32 file_level, SRV_FILE_INFO_CTR *ctr,
 			      uint32 preferred_len,
 			      ENUM_HND *hnd)

@@ -490,9 +490,9 @@ static BOOL wbinfo_auth_crap(char *username)
 
 	generate_random_buffer(request.data.auth_crap.chal, 8, False);
         
-        SMBencrypt((uchar *)pass, request.data.auth_crap.chal, 
+        SMBencrypt(pass, request.data.auth_crap.chal, 
                    (uchar *)request.data.auth_crap.lm_resp);
-        SMBNTencrypt((uchar *)pass, request.data.auth_crap.chal,
+        SMBNTencrypt(pass, request.data.auth_crap.chal,
                      (uchar *)request.data.auth_crap.nt_resp);
 
         request.data.auth_crap.lm_resp_len = 24;

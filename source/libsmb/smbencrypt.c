@@ -28,7 +28,7 @@
    This implements the X/Open SMB password encryption
    It takes a password ('unix' string), a 8 byte "crypt key" 
    and puts 24 bytes of encrypted password into p24 */
-void SMBencrypt(const char *passwd, const uchar *c8, uchar *p24)
+void SMBencrypt(const char *passwd, const uchar *c8, uchar p24[24])
 {
 	uchar p21[21];
 
@@ -337,7 +337,7 @@ BOOL decode_pw_buffer(char in_buffer[516], char *new_pwrd,
  SMB signing - setup the MAC key.
 ************************************************************/
 
-void cli_calculate_mac_key(struct cli_state *cli, const unsigned char *ntpasswd, const uchar resp[24])
+void cli_calculate_mac_key(struct cli_state *cli, const char *ntpasswd, const uchar resp[24])
 {
 	/* Get first 16 bytes. */
 	E_md4hash(ntpasswd,&cli->sign_info.mac_key[0]);

@@ -930,7 +930,7 @@ BOOL resolve_name(const char *name, struct in_addr *return_ip, int name_type)
  Find the IP address of the master browser or DMB for a workgroup.
 *********************************************************/
 
-BOOL find_master_ip(char *group, struct in_addr *master_ip)
+BOOL find_master_ip(const char *group, struct in_addr *master_ip)
 {
 	struct in_addr *ip_list = NULL;
 	int count = 0;
