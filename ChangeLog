@@ -1,3 +1,8 @@
+Wed Nov 12 02:35:57 1997  Assar Westerlund  <assar@sics.se>
+
+	* appl/rsh/rsh.c: implemented BSD-style reserved port
+ 	`authentication'
+
 Wed Nov 12 01:36:01 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 	* lib/krb5/get_addrs.c: Fall back to hostname's addresses if other
