@@ -1,3 +1,7 @@
+Thu Sep  4 23:39:43 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
+
+	* lib/krb5/get_addrs.c: Fix loopback test.
+
 Thu Sep  4 04:45:49 1997  Assar Westerlund  <assar@sics.se>
 
 	* lib/roken/roken.h: fallback definition of `O_ACCMODE'
