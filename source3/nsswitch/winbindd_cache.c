@@ -328,6 +328,8 @@ static void refresh_sequence_number(struct winbindd_domain *domain, BOOL force)
 	time_t t = time(NULL);
 	unsigned cache_time = lp_winbind_cache_time();
 
+	get_cache( domain );
+
 	/* trying to reconnect is expensive, don't do it too often */
 	if (domain->sequence_number == DOM_SEQUENCE_NONE) {
 		cache_time *= 8;
