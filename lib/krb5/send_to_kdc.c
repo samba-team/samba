@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -316,7 +316,7 @@ krb5_sendto (krb5_context context,
      int fd;
      int i;
 
-     for (i = 0; i < context->max_retries; ++i)
+     for (i = 0; i < context->max_retries; ++i) {
 	 for (hp = hostlist; (p = *hp); ++hp) {
 	     char *colon;
 	     int http_flag = 0;
@@ -368,27 +368,24 @@ krb5_sendto (krb5_context context,
 		     close (fd);
 		     continue;
 		 }
-		 break;
+		 if(http_flag)
+		     ret = send_and_recv_http(fd, context->kdc_timeout,
+					      "", send, receive);
+		 else if(tcp_flag)
+		     ret = send_and_recv_tcp (fd, context->kdc_timeout,
+					      send, receive);
+		 else
+		     ret = send_and_recv_udp (fd, context->kdc_timeout,
+					      send, receive);
+		 close (fd);
+		 if(ret == 0 && receive->length != 0) {
+		     freeaddrinfo(ai);
+		     goto out;
+		 }
 	     }
-	     if (a == NULL) {
-		 freeaddrinfo (ai);
-		 continue;
-	     }
-	     freeaddrinfo (ai);
-
-	     if(http_flag)
-		 ret = send_and_recv_http(fd, context->kdc_timeout,
-					  "", send, receive);
-	     else if(tcp_flag)
-		 ret = send_and_recv_tcp (fd, context->kdc_timeout,
-					  send, receive);
-	     else
-		 ret = send_and_recv_udp (fd, context->kdc_timeout,
-					  send, receive);
-	     close (fd);
-	     if(ret == 0 && receive->length != 0)
-		 goto out;
+	     freeaddrinfo(ai);
 	 }
+     }
      ret = KRB5_KDC_UNREACH;
 out:
      return ret;
