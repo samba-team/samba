@@ -113,22 +113,22 @@ BOOL file_unlock(int fd, int *plock_depth)
  update to be set = True if modification is required.
 ****************************************************************/
 
-void *startfilepwent(char *pfile, char *s_readbuf, int bufsize,
+void *startfileent(char *pfile, char *s_readbuf, int bufsize,
 				int *file_lock_depth, BOOL update)
 {
   FILE *fp = NULL;
 
   if (!*pfile)
  {
-    DEBUG(0, ("startfilepwent: No file set\n"));
+    DEBUG(0, ("startfileent: No file set\n"));
     return (NULL);
   }
-  DEBUG(10, ("startfilepwent: opening file %s\n", pfile));
+  DEBUG(10, ("startfileent: opening file %s\n", pfile));
 
   fp = sys_fopen(pfile, update ? "r+b" : "rb");
 
   if (fp == NULL) {
-    DEBUG(0, ("startfilepwent: unable to open file %s\n", pfile));
+    DEBUG(0, ("startfileent: unable to open file %s\n", pfile));
     return NULL;
   }
 
@@ -137,7 +137,7 @@ void *startfilepwent(char *pfile, char *s_readbuf, int bufsize,
 
   if (!file_lock(fileno(fp), (update ? F_WRLCK : F_RDLCK), 5, file_lock_depth))
   {
-    DEBUG(0, ("startfilepwent: unable to lock file %s\n", pfile));
+    DEBUG(0, ("startfileent: unable to lock file %s\n", pfile));
     fclose(fp);
     return NULL;
   }
@@ -152,13 +152,13 @@ void *startfilepwent(char *pfile, char *s_readbuf, int bufsize,
 /***************************************************************
  End enumeration of the file.
 ****************************************************************/
-void endfilepwent(void *vp, int *file_lock_depth)
+void endfileent(void *vp, int *file_lock_depth)
 {
   FILE *fp = (FILE *)vp;
 
   file_unlock(fileno(fp), file_lock_depth);
   fclose(fp);
-  DEBUG(7, ("endfilepwent: closed file.\n"));
+  DEBUG(7, ("endfileent: closed file.\n"));
 }
 
 /*************************************************************************
@@ -181,7 +181,6 @@ BOOL setfilepwpos(void *vp, SMB_BIG_UINT tok)
 
 /*************************************************************************
  gets a line out of a file.
- line is of format "xxxx:xxxxxx:xxxxx:".
  lines with "#" at the front are ignored.
 *************************************************************************/
 int getfileline(void *vp, char *linebuf, int linebuf_size)

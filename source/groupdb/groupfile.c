@@ -36,7 +36,7 @@ extern fstring global_sam_name;
 
 static void *startgrpfilepwent(BOOL update)
 {
-	return startfilepwent(lp_smb_group_file(),
+	return startfileent(lp_smb_group_file(),
 	                      s_readbuf, sizeof(s_readbuf),
 	                      &gp_file_lock_depth, update);
 }
@@ -47,7 +47,7 @@ static void *startgrpfilepwent(BOOL update)
 
 static void endgrpfilepwent(void *vp)
 {
-	endfilepwent(vp, &gp_file_lock_depth);
+	endfileent(vp, &gp_file_lock_depth);
 }
 
 /*************************************************************************

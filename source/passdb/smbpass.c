@@ -33,7 +33,7 @@ static char s_readbuf[1024];
 
 static void *startsmbfilepwent(BOOL update)
 {
-	return startfilepwent(lp_smb_passwd_file(), s_readbuf, sizeof(s_readbuf),
+	return startfileent(lp_smb_passwd_file(), s_readbuf, sizeof(s_readbuf),
 	                      &pw_file_lock_depth, update);
 }
 
@@ -43,7 +43,7 @@ static void *startsmbfilepwent(BOOL update)
 
 static void endsmbfilepwent(void *vp)
 {
-	endfilepwent(vp, &pw_file_lock_depth);
+	endfileent(vp, &pw_file_lock_depth);
 }
 
 /*************************************************************************

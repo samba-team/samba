@@ -490,9 +490,9 @@ BOOL become_user_permanently(uid_t uid, gid_t gid);
 BOOL do_file_lock(int fd, int waitsecs, int type);
 BOOL file_lock(int fd, int type, int secs, int *plock_depth);
 BOOL file_unlock(int fd, int *plock_depth);
-void *startfilepwent(char *pfile, char *s_readbuf, int bufsize,
+void *startfileent(char *pfile, char *s_readbuf, int bufsize,
 				int *file_lock_depth, BOOL update);
-void endfilepwent(void *vp, int *file_lock_depth);
+void endfileent(void *vp, int *file_lock_depth);
 SMB_BIG_UINT getfilepwpos(void *vp);
 BOOL setfilepwpos(void *vp, SMB_BIG_UINT tok);
 int getfileline(void *vp, char *linebuf, int linebuf_size);
