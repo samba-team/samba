@@ -29,6 +29,8 @@ struct spoolss_EnumJobs;
 struct spoolss_EnumPrinterDrivers;
 struct spoolss_EnumPorts;
 
+struct drsuapi_DsGetNCChangesInfo1;
+
 struct MULTI_QI;
 struct COSERVERINFO;
 
