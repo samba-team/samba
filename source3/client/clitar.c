@@ -1973,7 +1973,7 @@ static void do_tarput()
 		    if (tar_real_noisy) {
 		      DEBUG(0, ("Could not set time on file: %s\n", finfo.name));
 		    }
-                    /*return; /* Win 95 does not like setting time on dirs */
+                    /*return;  - Win 95 does not like setting time on dirs */
 
                   }
 
