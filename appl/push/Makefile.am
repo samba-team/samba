@@ -2,7 +2,7 @@
 
 include $(top_srcdir)/Makefile.am.common
 
-INCLUDES += $(INCLUDE_krb4) $(HESIODINCLUDE)
+INCLUDES += $(INCLUDE_krb4) $(INCLUDE_hesoid)
 
 bin_SCRIPTS		= pfrom
 
@@ -24,4 +24,4 @@ LDADD = $(LIB_krb5) \
 	$(LIB_krb4) \
 	$(top_builddir)/lib/des/libdes.la \
 	$(top_builddir)/lib/roken/libroken.la \
-	$(HESIODLIB)
+	$(LIB_hesoid)
