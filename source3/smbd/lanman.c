@@ -1512,7 +1512,7 @@ static int fill_share_info(connection_struct *conn, int snum, int uLevel,
       CVAL(p,13) = 0;
       type = STYPE_DISKTREE;
       if (lp_print_ok(snum)) type = STYPE_PRINTQ;
-      if (strequal("IPC$",lp_servicename(snum))) type = STYPE_IPC;
+      if (strequal("IPC",lp_fstype(snum))) type = STYPE_IPC;
       SSVAL(p,14,type);		/* device type */
       SIVAL(p,16,PTR_DIFF(p2,baseaddr));
       len += CopyExpanded(conn,snum,&p2,lp_comment(snum),&l2);
