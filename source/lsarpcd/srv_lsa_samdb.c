@@ -25,35 +25,27 @@
 
 #include "includes.h"
 #include "nterr.h"
+#include "sid.h"
 
 extern int DEBUGLEVEL;
-extern DOM_SID global_sam_sid;
-extern fstring global_sam_name;
-extern DOM_SID global_member_sid;
-extern fstring global_myworkgroup;
-extern DOM_SID global_sid_S_1_5_20;
 
 /***************************************************************************
 lsa_reply_open_policy2
  ***************************************************************************/
-static void lsa_reply_open_policy2(prs_struct *rdata)
+uint32 _lsa_open_policy2(const UNISTR2 *server_name, POLICY_HND *hnd,
+				 BOOL sec_qos, uint32 des_access)
 {
-	LSA_R_OPEN_POL2 r_o;
-
-	ZERO_STRUCT(r_o);
-
-	/* set up the LSA QUERY INFO response */
-
-	r_o.status = 0x0;
-
-	/* get a (unique) handle.  open a policy on it. */
-	if (!open_policy_hnd(get_global_hnd_cache(), &r_o.pol))
+	if (hnd == NULL)
 	{
-		r_o.status = 0xC0000000 | NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		return 0xC0000000 | NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+	/* get a (unique) handle.  open a policy on it. */
+	if (!open_policy_hnd(get_global_hnd_cache(), hnd, des_access))
+	{
+		return 0xC0000000 | NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
-	/* store the response in the SMB stream */
-	lsa_io_r_open_pol2("", &r_o, rdata, 0);
+	return 0x0;
 }
 
 /***************************************************************************
@@ -502,24 +494,6 @@ static void lsa_reply_lookup_names(prs_struct *rdata,
 	lsa_io_r_lookup_names("", &r_l, rdata, 0);
 }
 
-/***************************************************************************
-_lsa_open_policy
- ***************************************************************************/
-static void _lsa_open_policy2( rpcsrv_struct *p, prs_struct *data,
-                             prs_struct *rdata )
-{
-	LSA_Q_OPEN_POL2 q_o;
-
-	ZERO_STRUCT(q_o);
-
-	/* grab the server, object attributes and desired access flag...*/
-	lsa_io_q_open_pol2("", &q_o, data, 0);
-
-	/* lkclXXXX having decoded it, ignore all fields in the open policy! */
-
-	/* return a 20 byte policy handle */
-	lsa_reply_open_policy2(rdata);
-}
 
 /***************************************************************************
 _lsa_open_policy
