@@ -10,6 +10,8 @@ sbin_PROGRAMS = kstash
 
 libexec_PROGRAMS = hprop hpropd kdc
 
+man_MANS = kdc.8 kstash.8 hprop.8 hpropd.8
+
 hprop_SOURCES = hprop.c hprop-common.c
 hpropd_SOURCES = hpropd.c hprop-common.c
 
@@ -23,4 +25,3 @@ endif
 
 LDADD = -L$(top_builddir)/lib/hdb -lhdb -L$(top_builddir)/lib/krb5 -lkrb5 -L$(top_builddir)/lib/des -ldes $(LIB_krb4) -L$(top_builddir)/lib/asn1 -lasn1 -L$(top_builddir)/lib/roken -lroken
 
-man_MANS = kdc.8

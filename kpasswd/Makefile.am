@@ -4,6 +4,8 @@ AUTOMAKE_OPTIONS = no-dependencies foreign
 
 INCLUDES = -I$(top_builddir)/include 
 
+man_MANS = kpasswd.1 kpasswdd.8
+
 bin_PROGRAMS = kpasswd
 
 libexec_PROGRAMS = kpasswdd
