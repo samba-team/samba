@@ -33,6 +33,8 @@ static struct {
 	{"debuglevel", MSG_REQ_DEBUGLEVEL},
 	{"printer-notify", MSG_PRINTER_NOTIFY},
 	{"close-share", MSG_SMB_FORCE_TDIS},
+        {"samsync", MSG_SMB_SAM_SYNC},
+        {"samrepl", MSG_SMB_SAM_REPL},
 	{NULL, -1}
 };
 
@@ -298,6 +300,42 @@ static BOOL do_command(char *dest, char *msg_name, char **params)
 		retval = send_message(dest, MSG_SMB_FORCE_TDIS, params[0],
 				      strlen(params[0]) + 1, False);
 		break;
+
+        case MSG_SMB_SAM_SYNC:
+                if (!strequal(dest, "smbd")) {
+                        fprintf(stderr, "samsync can only be sent to smbd\n");
+                        return False;
+                }
+
+                if (params) {
+                        fprintf(stderr, "samsync does not take any parameters\n");
+                        return False;
+                }
+
+                retval = send_message(dest, MSG_SMB_SAM_SYNC, NULL, 0, False);
+
+                break;
+
+        case MSG_SMB_SAM_REPL: {
+                uint32 seqnum;
+
+                if (!strequal(dest, "smbd")) {
+                        fprintf(stderr, "sam repl can only be sent to smbd\n");
+                        return False;
+                }
+
+                if (!params || !params[0]) {
+                        fprintf(stderr, "SAM_REPL needs a parameter\n");
+                        return False;
+                }
+
+                seqnum = atoi(params[0]);
+
+                retval = send_message(dest, MSG_SMB_SAM_SYNC, 
+                                      (char *)&seqnum, sizeof(uint32), False); 
+
+                break;
+        }
 
 	case MSG_PING:
 		if (!pong_registered) {
