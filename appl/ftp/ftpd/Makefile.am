@@ -38,7 +38,7 @@ krb4.c:
 gssapi.c:
 	@test -f gssapi.c || $(LN_S) $(srcdir)/../ftp/gssapi.c .
 
-CLEANFILES = security.c security.h krb4.c gssapi.c
+CLEANFILES = security.c security.h krb4.c gssapi.c ftpcmd.c
 
 LDADD = ../common/libcommon.a \
 	$(LIB_kafs) \
