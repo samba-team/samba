@@ -954,7 +954,14 @@ NTSTATUS _lsa_create_account(pipes_struct *p, LSA_Q_CREATEACCOUNT *q_u, LSA_R_CR
 	if (!(handle->access & POLICY_GET_PRIVATE_INFORMATION))
 		return NT_STATUS_ACCESS_DENIED;
 
+	/* check to see if the pipe_user is a Domain Admin since 
+	   account_pol.tdb was already opened as root, this is all we have */
+	   
+	if ( !nt_token_check_domain_rid( p->pipe_user.nt_user_token, DOMAIN_GROUP_RID_ADMINS ) )
+		return NT_STATUS_ACCESS_DENIED;
+
 	/* associate the user/group SID with the (unique) handle. */
+	
 	if ((info = SMB_MALLOC_P(struct lsa_info)) == NULL)
 		return NT_STATUS_NO_MEMORY;
 
@@ -1085,6 +1092,12 @@ NTSTATUS _lsa_setsystemaccount(pipes_struct *p, LSA_Q_SETSYSTEMACCOUNT *q_u, LSA
 	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
+	/* check to see if the pipe_user is a Domain Admin since 
+	   account_pol.tdb was already opened as root, this is all we have */
+	   
+	if ( !nt_token_check_domain_rid( p->pipe_user.nt_user_token, DOMAIN_GROUP_RID_ADMINS ) )
+		return NT_STATUS_ACCESS_DENIED;
+
 	if (!pdb_getgrsid(&map, info->sid))
 		return NT_STATUS_NO_SUCH_GROUP;
 
@@ -1108,6 +1121,12 @@ NTSTATUS _lsa_addprivs(pipes_struct *p, LSA_Q_ADDPRIVS *q_u, LSA_R_ADDPRIVS *r_u
 	/* find the connection policy handle. */
 	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&info))
 		return NT_STATUS_INVALID_HANDLE;
+		
+	/* check to see if the pipe_user is a Domain Admin since 
+	   account_pol.tdb was already opened as root, this is all we have */
+	   
+	if ( !nt_token_check_domain_rid( p->pipe_user.nt_user_token, DOMAIN_GROUP_RID_ADMINS ) )
+		return NT_STATUS_ACCESS_DENIED;
 
 	set = &q_u->set;
 
@@ -1141,6 +1160,12 @@ NTSTATUS _lsa_removeprivs(pipes_struct *p, LSA_Q_REMOVEPRIVS *q_u, LSA_R_REMOVEP
 	/* find the connection policy handle. */
 	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&info))
 		return NT_STATUS_INVALID_HANDLE;
+
+	/* check to see if the pipe_user is a Domain Admin since 
+	   account_pol.tdb was already opened as root, this is all we have */
+	   
+	if ( !nt_token_check_domain_rid( p->pipe_user.nt_user_token, DOMAIN_GROUP_RID_ADMINS ) )
+		return NT_STATUS_ACCESS_DENIED;
 
 	set = &q_u->set;
 
