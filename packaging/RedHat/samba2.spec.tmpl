@@ -133,9 +133,9 @@ install -m755 source/nsswitch/pam_winbind.so $RPM_BUILD_ROOT/lib/security
 install -m755 source/bin/pam_smbpass.so $RPM_BUILD_ROOT/lib/security
 
 # Install the VFS modules
-install -m755 bin/vfs_recycle.so $RPM_BUILD_ROOT%{prefix}/lib/samba/vfs
-install -m755 bin/vfs_audit.so $RPM_BUILD_ROOT%{prefix}/lib/samba/vfs
-install -m755 bin/vfs_netatalk.so $RPM_BUILD_ROOT%{prefix}/lib/samba/vfs
+install -m755 source/bin/vfs_recycle.so $RPM_BUILD_ROOT%{prefix}/lib/samba/vfs
+install -m755 source/bin/vfs_audit.so $RPM_BUILD_ROOT%{prefix}/lib/samba/vfs
+install -m755 source/bin/vfs_netatalk.so $RPM_BUILD_ROOT%{prefix}/lib/samba/vfs
 
 # libsmbclient
 install -m 755 source/bin/libsmbclient.so $RPM_BUILD_ROOT%{prefix}/lib/
