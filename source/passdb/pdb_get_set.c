@@ -1085,7 +1085,7 @@ BOOL pdb_set_pass_changed_now (SAM_ACCOUNT *sampass)
 		return False;
 
 	if (!account_policy_get(AP_MAX_PASSWORD_AGE, &expire) 
-	    || (expire==(uint32)-1)) {
+	    || (expire==(uint32)-1) || (expire == 0)) {
 		if (!pdb_set_pass_must_change_time (sampass, get_time_t_max(), PDB_CHANGED))
 			return False;
 	} else {
