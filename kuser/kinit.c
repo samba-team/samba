@@ -45,16 +45,31 @@ main (int argc, char **argv)
 
   err = krb5_build_principal_ext (context,
 				  &cred.server,
+#ifdef USE_ASN1_PRINCIPAL
+				  strlen(principal->realm),
+				  principal->realm,
+#else
 				  principal->realm.length,
 				  principal->realm.data,
+#endif
 				  strlen("krbtgt"),
 				  "krbtgt",
-				  principal->realm.length, 
+#ifdef USE_ASN1_PRINCIPAL
+				  strlen(principal->realm),
+				  principal->realm,
+#else
+				  principal->realm.length,
 				  principal->realm.data,
+#endif
 				  NULL);
   if (err)
       errx (1, "%s", krb5_get_err_text(context, err));
+
+#ifdef USE_ASN1_PRINCIPAL
+  cred.server->name.name_type = KRB5_NT_SRV_INST;
+#else
   cred.server->type = KRB5_NT_SRV_INST;
+#endif
 
   err = krb5_get_in_tkt_with_password (context,
 				       0,
