@@ -3374,14 +3374,15 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 					return(ERROR_DOS(ERRDOS,ERRnoaccess));
 
 				if (file_type != UNIX_TYPE_CHARDEV && file_type != UNIX_TYPE_BLKDEV &&
-						file_type != UNIX_TYPE_FIFO)
+						file_type != UNIX_TYPE_FIFO &&
+						file_type != UNIX_TYPE_SOCKET)
 					return(ERROR_DOS(ERRDOS,ERRnoaccess));
 
 				DEBUG(10,("call_trans2setfilepathinfo: SMB_SET_FILE_UNIX_BASIC doing mknod dev %.0f mode \
 0%o for file %s\n", (double)dev, unixmode, fname ));
 
 				/* Ok - do the mknod. */
-				if (SMB_VFS_MKNOD(conn,dos_to_unix_static(fname), unixmode, dev) != 0)
+				if (SMB_VFS_MKNOD(conn,fname, unixmode, dev) != 0)
 					return(UNIXERROR(ERRDOS,ERRnoaccess));
 
 				inherit_access_acl(conn, fname, unixmode);
