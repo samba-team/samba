@@ -53,6 +53,16 @@ struct samr_domain_state {
 	const char *domain_name;
 };
 
+/*
+  state associated with a open user handle
+*/
+struct samr_user_state {
+	TALLOC_CTX *mem_ctx;
+	uint32 access_mask;
+	const char *user_sid;
+	const char *user_name;
+};
+
 
 /*
   destroy an open connection. This closes the database connection
@@ -286,7 +296,7 @@ static NTSTATUS samr_OpenDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 				struct samr_OpenDomain *r)
 {
 	struct dcesrv_handle *h_conn, *h_domain;
-	const char *sidstr, *domain_name;
+	char *sidstr, *domain_name;
 	struct samr_domain_state *state;
 	TALLOC_CTX *mem_ctx2;
 
@@ -369,8 +379,32 @@ static NTSTATUS samr_CreateDomainGroup(struct dcesrv_call_state *dce_call, TALLO
   samr_EnumDomainGroups 
 */
 static NTSTATUS samr_EnumDomainGroups(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct samr_EnumDomainGroups *r)
+				      struct samr_EnumDomainGroups *r)
 {
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/* 
+  samr_CreateUser2 
+*/
+static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+				 struct samr_CreateUser2 *r)
+{
+	struct samr_user_state *state;
+	struct dcesrv_handle *h = dcesrv_handle_fetch(dce_call->conn, 
+						      r->in.handle, 
+						      SAMR_HANDLE_DOMAIN);
+	DCESRV_CHECK_HANDLE(h);
+
+	/* check if the user already exists */
+	/* read the default user template */
+	/* allocate a rid */
+	/* create a ldb_message for the user */
+	/* create the user */
+	/* create user state and new policy handle */
+	
+
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
@@ -379,9 +413,22 @@ static NTSTATUS samr_EnumDomainGroups(struct dcesrv_call_state *dce_call, TALLOC
   samr_CreateUser 
 */
 static NTSTATUS samr_CreateUser(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct samr_CreateUser *r)
+				struct samr_CreateUser *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct samr_CreateUser2 r2;
+	uint32 access_granted, rid;
+
+
+	/* a simple wrapper around samr_CreateUser2 works nicely */
+	r2.in.handle = r->in.handle;
+	r2.in.username = r->in.username;
+	r2.in.acct_flags = 1234;
+	r2.in.access_mask = r->in.access_mask;
+	r2.out.acct_handle = r->out.acct_handle;
+	r2.out.access_granted = &access_granted;
+	r2.out.rid = &rid;
+
+	return samr_CreateUser2(dce_call, mem_ctx, &r2);
 }
 
 
@@ -756,16 +803,6 @@ static NTSTATUS samr_GetDisplayEnumerationIndex2(struct dcesrv_call_state *dce_c
 
 
 /* 
-  samr_CreateUser2 
-*/
-static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct samr_CreateUser2 *r)
-{
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
-}
-
-
-/* 
   samr_QueryDisplayInfo3 
 */
 static NTSTATUS samr_QueryDisplayInfo3(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
@@ -825,27 +862,27 @@ static NTSTATUS samr_GetDomPwInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX
 {
 	struct ldb_message **msgs;
 	int ret;
-	const char * const attrs[] = {"minPwdLength", "pwdProperties", NULL };
+	char * const attrs[] = {"minPwdLength", "pwdProperties", NULL };
 
 	if (r->in.name == NULL || r->in.name->name == NULL) {
 		return NT_STATUS_NO_SUCH_DOMAIN;
 	}
 
-	ret = samdb_search(&msgs, attrs, 
+	ret = samdb_search(mem_ctx, &msgs, attrs, 
 			   "(&(name=%s)(objectclass=domain))",
 			   r->in.name->name);
 	if (ret <= 0) {
 		return NT_STATUS_NO_SUCH_DOMAIN;
 	}
 	if (ret > 1) {
-		samdb_search_free(msgs);
+		samdb_search_free(mem_ctx, msgs);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
 	r->out.info.min_pwd_len         = samdb_result_uint(msgs[0], "minPwdLength", 0);
 	r->out.info.password_properties = samdb_result_uint(msgs[0], "pwdProperties", 1);
 
-	samdb_search_free(msgs);
+	samdb_search_free(mem_ctx, msgs);
 
 	return NT_STATUS_OK;
 }
