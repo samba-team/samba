@@ -40,7 +40,7 @@ RCSID("$Id$");
  * (which implies that the token was bad - GSS_S_DEFECTIVE_TOKEN
  */
 
-static ssize_t
+ssize_t
 gssapi_krb5_get_mech (const u_char *ptr,
 		      size_t total_len,
 		      const u_char **mech_ret)
@@ -74,7 +74,7 @@ _gssapi_verify_mech_header(u_char **str,
 			   gss_OID mech)
 {
     const u_char *p;
-    size_t mech_len;
+    ssize_t mech_len;
 
     mech_len = gssapi_krb5_get_mech (*str, total_len, &p);
     if (mech_len < 0)
