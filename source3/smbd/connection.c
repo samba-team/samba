@@ -35,12 +35,15 @@ TDB_CONTEXT *conn_tdb_ctx(void)
 	return tdb;
 }
 
-static void make_conn_key(connection_struct *conn, const char *name, TDB_DATA *pkbuf, fstring tdb_key)
+static void make_conn_key(connection_struct *conn, const char *name, TDB_DATA *pkbuf, struct connections_key *pkey)
 {
-	snprintf(tdb_key, sizeof(fstring), "CONN/%lu/%ld", sys_getpid(), conn?conn->cnum:-1);
+	ZERO_STRUCTP(pkey);
+	pkey->pid = sys_getpid();
+	pkey->cnum = conn?conn->cnum:-1;
+	fstrcpy(pkey->name, name);
 
-	pkbuf->dptr = tdb_key;
-	pkbuf->dsize = strlen(tdb_key)+1;
+	pkbuf->dptr = (char *)pkey;
+	pkbuf->dsize = sizeof(*pkey);
 }
 
 /****************************************************************************
@@ -49,7 +52,7 @@ static void make_conn_key(connection_struct *conn, const char *name, TDB_DATA *p
 
 BOOL yield_connection(connection_struct *conn, const char *name)
 {
-	fstring tdb_key;
+	struct connections_key key;
 	TDB_DATA kbuf;
 
 	if (!tdb)
@@ -57,7 +60,7 @@ BOOL yield_connection(connection_struct *conn, const char *name)
 
 	DEBUG(3,("Yielding connection to %s\n",name));
 
-	make_conn_key(conn, name, &kbuf, tdb_key);
+	make_conn_key(conn, name, &kbuf, &key);
 
 	if (tdb_delete(tdb, kbuf) != 0) {
 		int dbg_lvl = (!conn && (tdb_error(tdb) == TDB_ERR_NOEXIST)) ? 3 : 0;
