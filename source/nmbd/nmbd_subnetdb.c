@@ -289,3 +289,27 @@ struct subnet_record *get_next_subnet_maybe_unicast(struct subnet_record *subrec
   else
     return subrec->next;
 }
+
+/*******************************************************************
+ Access function used by retransmit_or_expire_response_records() in
+ nmbd_packets.c. Patch from Andrey Alekseyev <fetch@muffin.arcadia.spb.ru>
+ Needed when we need to enumerate all the broadcast, unicast and
+ WINS subnets.
+******************************************************************/
+
+struct subnet_record *get_next_subnet_maybe_unicast_or_wins_server(struct subnet_record *subrec)
+{
+  if(subrec == unicast_subnet)
+    if(wins_server_subnet)
+      return wins_server_subnet;
+    else
+      return NULL;
+
+  if(wins_server_subnet && subrec == wins_server_subnet)
+    return NULL;
+
+  if((subrec->next == NULL) && we_are_a_wins_client())
+    return unicast_subnet;
+  else
+    return subrec->next;
+}

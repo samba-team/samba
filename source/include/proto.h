@@ -743,6 +743,7 @@ void write_browse_list(time_t t, BOOL force_write);
 BOOL create_subnets();
 BOOL we_are_a_wins_client();
 struct subnet_record *get_next_subnet_maybe_unicast(struct subnet_record *subrec);
+struct subnet_record *get_next_subnet_maybe_unicast_or_wins_server(struct subnet_record *subrec);
 
 /*The following definitions come from  nmbd_winsproxy.c  */
 

@@ -1486,14 +1486,18 @@ void run_packet_queue()
 
 /*******************************************************************
  Retransmit or timeout elements from all the outgoing subnet response
- record queues.
+ record queues. NOTE that this code must also check the WINS server
+ subnet for response records to timeout as the WINS server code
+ can send requests to check if a client still owns a name.
+ (Patch from Andrey Alekseyev <fetch@muffin.arcadia.spb.ru>).
 ******************************************************************/
 
 void retransmit_or_expire_response_records(time_t t)
 {
   struct subnet_record *subrec;
 
-  for (subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_INCLUDING_UNICAST(subrec))
+  for (subrec = FIRST_SUBNET; subrec; 
+               subrec = get_next_subnet_maybe_unicast_or_wins_server(subrec))
   {
     struct response_record *rrec, *nextrrec;
 
