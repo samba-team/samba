@@ -501,7 +501,7 @@ int nt_key_iterator(REGF *regf, REG_KEY *key_tree, int bf, char *path,
 
   if (key_tree->values &&
       !nt_val_list_iterator(regf, key_tree->values, bf, new_path, 
-			    (key_tree->values?(key_tree->values->val_count):0),
+			    (key_tree->values!=NULL),
 			    val_print)) {
 
     free(new_path);
@@ -1298,7 +1298,7 @@ int print_key(char *path, char *name, char *class_name, int root,
 int print_val(char *path, char *val_name, int val_type, int data_len, 
 	      void *data_blk, int terminal, int first, int last)
 {
-  if (terminal && first)
+  if (!terminal && first)
     fprintf(stdout, "%s\n", path);
   fprintf(stdout, "  %s : %s : \n", (val_name?val_name:"<No Name>"), 
 		   val_to_str(val_type, reg_type_names));
