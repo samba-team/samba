@@ -126,6 +126,7 @@ static BOOL parse_lpq_bsd(char *line,print_queue_struct *buf,BOOL first)
   }
 #endif	/* OSF1 */
 
+  /* FIXME: Use next_token rather than strtok! */
   tok[0] = strtok(line2," \t");
   count++;
 
