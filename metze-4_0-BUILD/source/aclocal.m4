@@ -680,5 +680,5 @@ AC_DEFUN(PKG_CHECK_MODULES, [
   fi
 ])
 
-sinclude(build/m4/smb_build.m4)
-sinclude(build/m4/smb_build_core.m4)
+sinclude(build/smb_build/public.m4)
+sinclude(build/smb_build/core.m4)

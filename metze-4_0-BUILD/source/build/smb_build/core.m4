@@ -4,7 +4,7 @@ dnl  Copyright (C) Stefan (metze) Metzmacher 2004
 dnl  Released under the GNU GPL
 dnl -------------------------------------------------------
 dnl
-dnl SMB_BUILD_CORE(
+dnl _SMB_BUILD_CORE(
 dnl		1: outputfile
 dnl		)
 
@@ -12,10 +12,10 @@ dnl #######################################################
 dnl ### And now the implementation			###
 dnl #######################################################
 
-dnl SMB_BUILD_CORE(
+dnl _SMB_BUILD_CORE(
 dnl		1: outputfile
 dnl		)
-AC_DEFUN([SMB_BUILD_CORE],
+AC_DEFUN([_SMB_BUILD_CORE],
 [
 
 cat > config.smb_build.pl <<\_SMB_ACEOF
@@ -30,6 +30,8 @@ my %libraries;
 my %binaries;
 
 _SMB_ACEOF
+
+cat >> config.smb_build.pl < build/smb_build/config_mk.pl
 
 cat >> config.smb_build.pl <<\_SMB_ACEOF
 ###########################################################
@@ -56,7 +58,9 @@ $SMB_INFO_BINARIES
 
 _SMB_ACEOF
 
-$PERL config.smb_build.pl
+cat >> config.smb_build.pl < build/smb_build/main.pl
+
+$PERL config.smb_build.pl || exit $?
 
 rm -f config.smb_build.pl
 ])
