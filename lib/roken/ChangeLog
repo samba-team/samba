@@ -1,3 +1,7 @@
+2000-08-07  Johan Danielsson  <joda@pdc.kth.se>
+
+	* roken.h.in: add proto compat for getsockname
+
 2000-08-04  Johan Danielsson  <joda@pdc.kth.se>
 
 	* write_pid.c: conditionalise pidfile
@@ -5,6 +9,8 @@
 	* write_pid.c: add pidfile function
 
 2000-07-25  Johan Danielsson  <joda@pdc.kth.se>
+
+	* Makefile.am: bump version to 9:0:0
 
 	* warnerr.c: add get_progname
 

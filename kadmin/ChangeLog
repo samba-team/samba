@@ -1,3 +1,7 @@
+2000-08-07  Johan Danielsson  <joda@pdc.kth.se>
+
+	* kadmind.c: use roken_getsockname
+
 2000-08-07  Assar Westerlund  <assar@sics.se>
 
 	* kadmind.c, kadm_conn.c: use socklen_t instead of int where
