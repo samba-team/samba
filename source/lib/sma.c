@@ -76,7 +76,7 @@ sma_alloc_region(size_t page_size, int num_pages)
   }  
 
   address = (void*)region;
-  address += info_size;
+  (char *)address += info_size;
 
   memset(region, 0, info_size);
   region->region_size = region_size;
@@ -107,7 +107,7 @@ sma_alloc_region(size_t page_size, int num_pages)
     page->next_page->previous_page = page;
 
     page->next_entry_block = NULL; /* compatibility */
-    page = (SMA_BLOCK *)(((void*)page) + page_size);
+    page = (SMA_BLOCK *)(((char *)page) + page_size);
   }
 
   /* initialize the free lists */
@@ -260,7 +260,7 @@ sma_alloc(SMA_REGION *region, size_t size)
     entry_block->next_page->previous_page = entry_block->previous_page;
     entry_block->previous_page->next_page = entry_block->next_page;
 
-    page = ((void *)entry_block - region->start_address) >> region->page_shift;
+    page = ((char *)entry_block - ((char *)region->start_address)) >> region->page_shift;
 
     /* If the page was devided in other block sizes, remove the entry block from the
      * free blocks list _and_ calculate the actual page offset 
@@ -273,7 +273,7 @@ sma_alloc(SMA_REGION *region, size_t size)
     }
 
     offset = (unsigned long)page << region->page_shift;
-    block = entry_block = (SMA_BLOCK *)(region->start_address + offset);
+    block = entry_block = (SMA_BLOCK *)((char *)(region->start_address) + offset);
 
     /* return a full page */
     if (index == region->page_index)
@@ -285,11 +285,11 @@ sma_alloc(SMA_REGION *region, size_t size)
     num_blocks = (1 << (region->page_index - index)) - 1;
     while (--num_blocks > 0)
     {
-      block->next_block = (SMA_BLOCK *)(((void *)block) + real_size);
+      block->next_block = (SMA_BLOCK *)(((char *)block) + real_size);
       block = block->next_block;
     }
     block->next_block = NULL;
-    block = (SMA_BLOCK *)(((void *)block) + real_size);
+    block = (SMA_BLOCK *)(((char *)block) + real_size);
 
     entry_block->used_blocks = 1;
 
@@ -311,7 +311,7 @@ sma_alloc(SMA_REGION *region, size_t size)
   block = entry_block->next_block;
   if (block == NULL)
   {
-    page = ((void *)entry_block - region->start_address) >> region->page_shift;
+    page = ((char *)entry_block - ((char *)region->start_address)) >> region->page_shift;
     region->offset_table[page] = region->offset_mask | index;
 
     /* remove the entry block from its list */
@@ -361,7 +361,7 @@ sma_free(SMA_REGION *region, void *address)
     return;
   }
 
-  offset = address - region->start_address;
+  offset = (char *)address - ((char *)region->start_address);
   if (offset > region->region_size)
   {
     /* address is out of region */
@@ -413,7 +413,7 @@ sma_free(SMA_REGION *region, void *address)
 
     entry_block->next_block = NULL;
     entry_block->used_blocks = (1 << (region->page_index - index)) - 1;
-    region->offset_table[page] = (address - region->start_address) | index;
+    region->offset_table[page] = ((char *)address - ((char *)region->start_address)) | index;
 
     return;
   }
@@ -422,7 +422,7 @@ sma_free(SMA_REGION *region, void *address)
    *         last block on the page to be returned
    * - Add our block to the free blocks list of the entry block
    */
-  entry_block = (SMA_BLOCK *)(region->start_address + offset);
+  entry_block = (SMA_BLOCK *)((char *)(region->start_address) + offset);
   ((SMA_BLOCK *)address)->next_block = entry_block->next_block;
   entry_block->next_block = (SMA_BLOCK *)address;
   entry_block->used_blocks--;
@@ -512,7 +512,7 @@ sma_realloc(SMA_REGION *region, void *address, size_t size)
     return (void *)header;
   }
 
-  offset = address - region->start_address;
+  offset = (char *)address - ((char *)region->start_address);
   if (offset > region->region_size)
   {
     /* address is out of region, fall back to conventional reallocation */
@@ -647,7 +647,7 @@ sma_realloc(SMA_REGION *region, void *address, size_t size)
         entry_block->next_page->previous_page = entry_block->previous_page;
         entry_block->previous_page->next_page = entry_block->next_page;
 
-        new_page = ((void *)entry_block - region->start_address) >> region->page_shift;
+        new_page = ((char *)entry_block - ((char *)region->start_address)) >> region->page_shift;
 
         /* If the page was devided in other block sizes, remove the entry block from the
          * free blocks list _and_ calculate the actual page offset 
@@ -660,7 +660,7 @@ sma_realloc(SMA_REGION *region, void *address, size_t size)
         }
 
         offset = (unsigned long)new_page << region->page_shift;
-        block = entry_block = (SMA_BLOCK *)(region->start_address + offset);
+        block = entry_block = (SMA_BLOCK *)(((char *)region->start_address) + offset);
 
         /* return a full page */
         if (new_index == region->page_index)
@@ -673,11 +673,11 @@ sma_realloc(SMA_REGION *region, void *address, size_t size)
           num_blocks = (1 << (region->page_index - new_index)) - 1;
           while (--num_blocks > 0)
           {
-            block->next_block = (SMA_BLOCK *)(((void *)block) + real_size);
+            block->next_block = (SMA_BLOCK *)(((char *)block) + real_size);
             block = block->next_block;
           }
           block->next_block = NULL;
-          block = (SMA_BLOCK *)(((void *)block) + real_size);
+          block = (SMA_BLOCK *)(((char *)block) + real_size);
 
           entry_block->used_blocks = 1;
 
@@ -702,7 +702,7 @@ sma_realloc(SMA_REGION *region, void *address, size_t size)
       block = entry_block->next_block;
       if (block == NULL)
       {
-        new_page = ((void *)entry_block - region->start_address) >> region->page_shift;
+        new_page = ((char *)entry_block - ((char *)region->start_address)) >> region->page_shift;
         region->offset_table[new_page] = region->offset_mask | new_index;
 
         /* remove the entry block from its list */
@@ -775,7 +775,7 @@ sma_realloc(SMA_REGION *region, void *address, size_t size)
 
     entry_block->next_block = NULL;
     entry_block->used_blocks = (1 << (region->page_index - index)) - 1;
-    region->offset_table[page] = (address - region->start_address) | index;
+    region->offset_table[page] = ((char *)address - ((char *)region->start_address)) | index;
 
     return new_address;
   }
@@ -784,7 +784,7 @@ sma_realloc(SMA_REGION *region, void *address, size_t size)
    *         last block on the page to be returned
    * - Add our block to the free blocks list of the entry block
    */
-  entry_block = (SMA_BLOCK *)(region->start_address + offset);
+  entry_block = (SMA_BLOCK *)(((char *)region->start_address) + offset);
   ((SMA_BLOCK *)address)->next_block = entry_block->next_block;
   entry_block->next_block = (SMA_BLOCK *)address;
   entry_block->used_blocks--;
@@ -858,7 +858,7 @@ sma_init_page(SMA_REGION *region, size_t size)
   entry_block->next_page->previous_page = entry_block->previous_page;
   entry_block->previous_page->next_page = entry_block->next_page;
 
-  page = ((void *)entry_block - region->start_address) >> region->page_shift;
+  page = ((char *)entry_block - ((char *)region->start_address)) >> region->page_shift;
 
   /* If the page was devided in other block sizes, remove the entry block from the
    * free blocks list _and_ calculate the actual page offset 
@@ -871,12 +871,12 @@ sma_init_page(SMA_REGION *region, size_t size)
   }
 
   offset = (unsigned long)page << region->page_shift;
-  block = entry_block = (SMA_BLOCK *)(region->start_address + offset);
+  block = entry_block = (SMA_BLOCK *)(((char *)region->start_address) + offset);
 
   num_blocks = 1 << (region->page_index - index);
   while (--num_blocks > 0)
   {
-    block->next_block = (SMA_BLOCK *)(((void *)block) + real_size);
+    block->next_block = (SMA_BLOCK *)(((char *)block) + real_size);
     block = block->next_block;
   }
   block->next_block = NULL;
