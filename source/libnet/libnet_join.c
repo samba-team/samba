@@ -23,6 +23,7 @@
 #include "libnet/libnet.h"
 #include "librpc/gen_ndr/ndr_samr.h"
 #include "lib/crypto/crypto.h"
+#include "lib/ldb/include/ldb.h"
 
 /*
  * do a domain join using DCERPC/SAMR calls
@@ -41,7 +42,8 @@
  *
  * 7. do a samrSetUserInfo to set the account flags
  */
-static NTSTATUS libnet_JoinDomain_samr(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, union libnet_JoinDomain *r)
+static NTSTATUS libnet_JoinDomain_samr(struct libnet_context *ctx, 
+				       TALLOC_CTX *mem_ctx, union libnet_JoinDomain *r)
 {
 	NTSTATUS status;
 	union libnet_rpc_connect c;
@@ -55,12 +57,14 @@ static NTSTATUS libnet_JoinDomain_samr(struct libnet_context *ctx, TALLOC_CTX *m
 	struct samr_OpenUser ou;
 	struct samr_CreateUser2 cu;
 	struct policy_handle u_handle;
+	struct samr_QueryUserInfo qui;
 	struct samr_SetUserInfo sui;
 	union samr_UserInfo u_info;
 	union libnet_SetPassword r2;
 	struct samr_GetUserPwInfo pwp;
 	struct samr_String samr_account_name;
 
+	uint32 acct_flags;
 	uint32 rid, access_granted;
 	int policy_min_pw_len = 0;
 
@@ -233,14 +237,53 @@ static NTSTATUS libnet_JoinDomain_samr(struct libnet_context *ctx, TALLOC_CTX *m
 	}
 
 	/* prepare samr_SetUserInfo level 23 */
-	ZERO_STRUCT(u_info);
-	u_info.info16.acct_flags = r->samr.in.acct_type;
-
-	sui.in.user_handle = &u_handle;
-	sui.in.info = &u_info;
-	sui.in.level = 16;
+	qui.in.user_handle = &u_handle;
+	qui.in.level = 16;
 	
-	dcerpc_samr_SetUserInfo(c.pdc.out.dcerpc_pipe, mem_ctx, &sui);
+	status = dcerpc_samr_QueryUserInfo(c.pdc.out.dcerpc_pipe, mem_ctx, &qui);
+	if (!NT_STATUS_IS_OK(status)) {
+		r->samr.out.error_string
+			= talloc_asprintf(mem_ctx,
+					  "samr_QueryUserInfo for [%s] failed: %s\n",
+					  r->samr.in.account_name, nt_errstr(status));
+		goto disconnect;
+	}
+	if (!qui.out.info) {
+		status = NT_STATUS_INVALID_PARAMETER;
+		r->samr.out.error_string
+			= talloc_asprintf(mem_ctx,
+					  "samr_QueryUserInfo failed to return qui.out.info for [%s]: %s\n",
+					  r->samr.in.account_name, nt_errstr(status));
+		goto disconnect;
+	}
+	
+	if ((qui.out.info->info16.acct_flags & (ACB_WSTRUST | ACB_SVRTRUST | ACB_DOMTRUST)) 
+	    != r->samr.in.acct_type) {
+		acct_flags = (qui.out.info->info16.acct_flags & ~(ACB_WSTRUST | ACB_SVRTRUST | ACB_DOMTRUST))
+			      | r->samr.in.acct_type;
+	} else {
+		acct_flags = qui.out.info->info16.acct_flags;
+	}
+	
+	acct_flags = (acct_flags & ~ACB_DISABLED);
+
+	if (acct_flags != qui.out.info->info16.acct_flags) {
+		ZERO_STRUCT(u_info);
+		u_info.info16.acct_flags = acct_flags;
+
+		sui.in.user_handle = &u_handle;
+		sui.in.info = &u_info;
+		sui.in.level = 16;
+		
+		dcerpc_samr_SetUserInfo(c.pdc.out.dcerpc_pipe, mem_ctx, &sui);
+		if (!NT_STATUS_IS_OK(status)) {
+			r->samr.out.error_string
+				= talloc_asprintf(mem_ctx,
+						  "samr_SetUserInfo for [%s] failed to remove ACB_DISABLED flag: %s\n",
+						  r->samr.in.account_name, nt_errstr(status));
+			goto disconnect;
+		}
+	}
 
 disconnect:
 	/* close connection */
@@ -262,6 +305,7 @@ static NTSTATUS libnet_JoinDomain_generic(struct libnet_context *ctx, TALLOC_CTX
 	status = libnet_JoinDomain(ctx, mem_ctx, &r2);
 
 	r->generic.out.error_string = r2.samr.out.error_string;
+	r->generic.out.join_password = r2.samr.out.join_password;
 
 	return status;
 }
@@ -277,3 +321,150 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, unio
 
 	return NT_STATUS_INVALID_LEVEL;
 }
+
+
+static NTSTATUS libnet_Join_primary_domain(struct libnet_context *ctx, 
+					   TALLOC_CTX *mem_ctx, 
+					   union libnet_Join *r)
+{
+	NTSTATUS status;
+	int ret;
+
+	struct ldb_wrap *ldb;
+	union libnet_JoinDomain r2;
+	const char *base_dn = "cn=Primary Domains";
+	const struct ldb_val *prior_secret;
+	const char *prior_modified_time;
+	struct ldb_message **msgs, *msg;
+	char *sct;
+	const char *attrs[] = {
+		"whenChanged",
+		"secret",
+		"priorSecret"
+		"priorChanged",
+		NULL
+	};
+
+	r2.generic.level = LIBNET_JOIN_DOMAIN_GENERIC;
+
+	if (r->generic.in.secure_channel_type == SEC_CHAN_BDC) {
+		r2.generic.in.acct_type = ACB_SVRTRUST;
+	} else if (r->generic.in.secure_channel_type == SEC_CHAN_WKSTA) {
+		r2.generic.in.acct_type = ACB_WSTRUST;
+	}
+	r2.generic.in.domain_name  = r->generic.in.domain_name;
+
+	r2.generic.in.account_name = talloc_asprintf(mem_ctx, "%s$", lp_netbios_name());
+
+	/* Local secrets are stored in secrets.ldb */
+	ldb = secrets_db_connect(mem_ctx);
+
+	/* join domain */
+	status = libnet_JoinDomain(ctx, mem_ctx, &r2);
+
+	r->generic.out.error_string = r2.generic.out.error_string;
+
+	/* store in secrets.ldb or samdb.ldb, depending on secret type */
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	sct = talloc_asprintf(mem_ctx, "%d", r->generic.in.secure_channel_type);
+	msg = ldb_msg_new(mem_ctx);
+
+	/* search for the secret record */
+	ret = samdb_search(ldb,
+			   mem_ctx, base_dn, &msgs, attrs,
+			   "(&(cn=%s)(objectclass=primaryDomain))", 
+			   r->generic.in.domain_name);
+	if (ret == 0) {
+		msg->dn = talloc_asprintf(mem_ctx, "cn=%s,%s", 
+					  r->generic.in.domain_name,
+					  base_dn);
+		
+		samdb_msg_add_string(ldb, mem_ctx, msg, "cn", r->generic.in.domain_name);
+		samdb_msg_add_string(ldb, mem_ctx, msg, "objectClass", "primaryDomain");
+		samdb_msg_add_string(ldb, mem_ctx, msg, "secret", r2.generic.out.join_password);
+
+		samdb_msg_add_string(ldb, mem_ctx, msg, "accountName", r2.generic.in.account_name);
+
+		samdb_msg_add_string(ldb, mem_ctx, msg, "secureChannelType", sct);
+
+		/* create the secret */
+		ret = samdb_add(ldb, mem_ctx, msg);
+		if (ret != 0) {
+			r->generic.out.error_string
+				= talloc_asprintf(mem_ctx, 
+						  "Failed to create secret record %s\n", 
+						  msg->dn);
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+		return NT_STATUS_OK;
+	} else if (ret != 1) {
+		r->generic.out.error_string
+			= talloc_asprintf(mem_ctx, 
+					  "Found %d records matching cn=%s under DN %s\n", ret, 
+					  r->generic.in.domain_name, base_dn);
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	msg->dn = msgs[0]->dn;
+
+	prior_secret = ldb_msg_find_ldb_val(msgs[0], "secret");
+	if (prior_secret) {
+		samdb_msg_set_value(ldb, mem_ctx, msg, "priorSecret", prior_secret);
+	}
+	samdb_msg_set_string(ldb, mem_ctx, msg, "secret", r2.generic.out.join_password);
+	
+	prior_modified_time = ldb_msg_find_string(msgs[0], 
+						 "whenChanged", NULL);
+	if (prior_modified_time) {
+		samdb_msg_set_string(ldb, mem_ctx, msg, "priorWhenChanged", 
+				     prior_modified_time);
+	}
+	
+	samdb_msg_set_string(ldb, mem_ctx, msg, "accountName", r2.generic.in.account_name);
+	samdb_msg_set_string(ldb, mem_ctx, msg, "secureChannelType", sct);
+
+	/* update the secret */
+	ret = samdb_replace(ldb, mem_ctx, msg);
+	if (ret != 0) {
+		DEBUG(0,("Failed to create secret record %s\n", msg->dn));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+	return NT_STATUS_OK;
+}
+
+NTSTATUS libnet_Join_generic(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, union libnet_Join *r)
+{
+	NTSTATUS nt_status;
+	union libnet_Join r2;
+	r2.generic.in.secure_channel_type = r->generic.in.secure_channel_type;
+	r2.generic.in.domain_name = r->generic.in.domain_name;
+	
+	if ((r->generic.in.secure_channel_type == SEC_CHAN_WKSTA)
+	    || (r->generic.in.secure_channel_type == SEC_CHAN_BDC)) {
+		r2.generic.level = LIBNET_JOIN_PRIMARY;
+		nt_status = libnet_Join(ctx, mem_ctx, &r2);
+	} else {
+		r->generic.out.error_string
+			= talloc_asprintf(mem_ctx, "Invalid secure channel type specified (%08X) attempting to join domain %s",
+					 r->generic.in.secure_channel_type, r->generic.in.domain_name);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	r->generic.out.error_string = r2.generic.out.error_string;
+	return nt_status;
+}
+
+NTSTATUS libnet_Join(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, union libnet_Join *r)
+{
+	switch (r->generic.level) {
+	case LIBNET_JOIN_GENERIC:
+		return libnet_Join_generic(ctx, mem_ctx, r);
+	case LIBNET_JOIN_PRIMARY:
+		return libnet_Join_primary_domain(ctx, mem_ctx, r);
+	}
+
+	return NT_STATUS_INVALID_LEVEL;
+}
+
