@@ -1,3 +1,16 @@
+2000-07-08  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/string-to-key-test.c: add a arcfour-hmac-md5 test case
+	* kdc/Makefile.am (INCLUDES): add ../lib/krb5
+	* configure.in: update for standalone roken
+	* lib/Makefile.am (SUBDIRS): make roken conditional
+	* kdc/hprop.c: update to new hdb_seal_keys_mkey
+	* lib/hdb/mkey.c (_hdb_unseal_keys_int, _hdb_seal_keys_int):
+	rename and export them
+
+	* kdc/headers.h: add krb5_locl.h (since we just use some stuff
+	from there)
+
 2000-07-08  Johan Danielsson  <joda@pdc.kth.se>
 
 	* lib/hdb/mkey.c (read_master_encryptionkey): handle old keytype
@@ -16,6 +29,27 @@
 
 	* lib/krb5/eai_to_heim_errno.c: convert getaddrinfo error codes to
 	something that can be passed to get_err_text
+
+2000-07-07  Assar Westerlund  <assar@sics.se>
+
+	* lib/hdb/hdb.c (hdb_next_enctype2key): make sure of skipping
+	`*key'
+
+	* kdc/kerberos4.c (get_des_key): rewrite some, be more careful
+
+2000-07-06  Assar Westerlund  <assar@sics.se>
+
+	* kdc/kerberos5.c (as_rep): be careful as to now overflowing when
+	calculating the end of lifetime of a ticket.
+
+	* lib/krb5/context.c (default_etypes): add ETYPE_ARCFOUR_HMAC_MD5
+
+	* lib/hdb/db3.c: only use a cursor when needed, from Derrick J
+	Brashear <shadow@dementia.org>
+
+	* lib/krb5/crypto.c: introduce the `special' encryption methods
+	that are not like all other encryption methods and implement
+	arcfour-hmac-md5
 
 2000-07-05  Johan Danielsson  <joda@pdc.kth.se>
 
@@ -42,6 +76,11 @@
 	
 	* lib/krb5/krb5.h: change some funny etypes to use negative
 	numbers, and add some more
+
+2000-07-04  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/krbhst.c (get_krbhst): only try SRV lookup if there are
+	none in the configuration file
 
 2000-07-02  Assar Westerlund  <assar@sics.se>
 
