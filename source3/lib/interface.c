@@ -37,30 +37,32 @@ static struct interface *local_interfaces  = NULL;
 
 struct interface *last_iface;
 
+#define ALLONES  ((uint32)0xFFFFFFFF)
+#define MKBCADDR(_IP, _NM) ((_IP & _NM) | (_NM ^ ALLONES))
 /****************************************************************************
 calculate the default netmask for an address
 ****************************************************************************/
 static void default_netmask(struct in_addr *inm, struct in_addr *iad)
 {
-  uint32 ad = ntohl(iad->s_addr);
-  uint32 nm;
-  /*
-  ** Guess a netmask based on the class of the IP address given.
-  */
-  if ( (ad & 0x80000000) == 0 ) {
-    /* class A address */
-    nm = 0xFF000000;
-  } else if ( (ad & 0xC0000000) == 0x80000000 ) {
-    /* class B address */
-    nm = 0xFFFF0000;
-  } else if ( (ad & 0xE0000000) == 0xC0000000 ) {
-    /* class C address */
-    nm = 0xFFFFFF00;
-  }  else {
-    /* class D or E; netmask doesn't make much sense - guess 4 bits */
-    nm =  0xFFFFFFF0;
-  }
-  inm->s_addr = htonl(nm);
+	/*
+	** Guess a netmask based on the class of the IP address given.
+	*/
+	switch((ntohl(iad->s_addr) & 0xE0000000)) {
+	case 0:		/* Class A addr */
+		inm->s_addr = htonl(0xFF000000);
+		break;
+		
+	case 0x80000000:	/* Class B addr */
+		inm->s_addr = htonl(0xFFFF0000);
+		break;
+		
+	case 0xC0000000:	/* Class C addr */
+		inm->s_addr = htonl(0xFFFFFF00);
+		break;
+		
+	default:		/* ??? */
+		inm->s_addr = htonl(0xFFFFFFF0);
+        }
 }
 
 
@@ -228,8 +230,30 @@ static void get_broadcast(struct in_addr *if_ipaddr,
 
   /* sanity check on the netmask */
   {
-    uint32 nm = ntohl(if_nmask->s_addr);
-    if ((nm >> 24) != 0xFF) {
+    uint32 nm;
+    short onbc;
+    short offbc;
+
+    nm = ntohl(if_nmask->s_addr);
+    onbc = 0;
+    offbc = 0;
+    while( (onbc + offbc) < 32 )
+         {
+           if( nm & 0x80000000 )
+             {
+               onbc++;
+               if( offbc ) /* already found an off bit, so mask is wrong */
+                 {
+                   onbc = 34;
+                 }
+             }
+           else
+             {
+               offbc++;
+             }
+           nm <<= 1;
+         }
+    if ((onbc < 8)||(onbc == 34)) {
       DEBUG(0,("Impossible netmask %s - using defaults\n",inet_ntoa(*if_nmask)));
       default_netmask(if_nmask, if_ipaddr);      
     }
@@ -239,10 +263,7 @@ static void get_broadcast(struct in_addr *if_ipaddr,
      all MS operating systems do, we have to comply even if the unix
      box is setup differently */
   {
-    uint32 ad = ntohl(if_ipaddr->s_addr);
-    uint32 nm = ntohl(if_nmask->s_addr);
-    uint32 bc = (ad & nm) | (0xffffffff & ~nm);
-    if_bcast->s_addr = htonl(bc);
+    if_bcast->s_addr = MKBCADDR(if_ipaddr->s_addr, if_nmask->s_addr);
   }
   
   DEBUG(4,("Derived broadcast address %s\n", inet_ntoa(*if_bcast)));
@@ -256,11 +277,12 @@ load a list of network interfaces
 static void interpret_interfaces(char *s, struct interface **interfaces,
 		char *description)
 {
-  char *ptr = s;
+  char *ptr;
   fstring token;
   struct interface *iface;
   struct in_addr ip;
 
+  ptr = s;
   ipzero = *interpret_addr2("0.0.0.0");
   allones_ip = *interpret_addr2("255.255.255.255");
   loopback_ip = *interpret_addr2("127.0.0.1");
@@ -268,7 +290,7 @@ static void interpret_interfaces(char *s, struct interface **interfaces,
   while (next_token(&ptr,token,NULL)) {
     /* parse it into an IP address/netmasklength pair */
     char *p = strchr(token,'/');
-    if (p) *p = 0;
+    if (p) *p++ = 0;
 
     ip = *interpret_addr2(token);
 
@@ -286,14 +308,14 @@ static void interpret_interfaces(char *s, struct interface **interfaces,
     iface->ip = ip;
 
     if (p) {
-      if (strlen(p+1)>2)
-	iface->nmask = *interpret_addr2(p+1);
+      if (strlen(p) > 2)
+       iface->nmask = *interpret_addr2(p);
       else
-	iface->nmask.s_addr = htonl(~((1<<(32-atoi(p+1)))-1));
+       iface->nmask.s_addr = htonl(((ALLONES >> atoi(p)) ^ ALLONES));
     } else {
       default_netmask(&iface->nmask,&iface->ip);
     }
-    iface->bcast.s_addr = iface->ip.s_addr | ~iface->nmask.s_addr;
+    iface->bcast.s_addr = MKBCADDR(iface->ip.s_addr, iface->nmask.s_addr);
     iface->next = NULL;
 
     if (!(*interfaces)) {
@@ -329,10 +351,10 @@ static void interpret_interfaces(char *s, struct interface **interfaces,
 
   if (got_nmask) {
     iface->nmask = default_nmask;
-    iface->bcast.s_addr = iface->ip.s_addr | ~iface->nmask.s_addr;
+    iface->bcast.s_addr = MKBCADDR(iface->ip.s_addr, iface->nmask.s_addr);
   }
 
-  if (iface->bcast.s_addr != (iface->ip.s_addr | ~iface->nmask.s_addr)) {
+  if (iface->bcast.s_addr != MKBCADDR(iface->ip.s_addr, iface->nmask.s_addr)) {
     DEBUG(2,("Warning: inconsistant interface %s\n",inet_ntoa(iface->ip)));
   }
 
