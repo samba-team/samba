@@ -61,16 +61,19 @@ static int transport_destructor(void *ptr)
 /*
   create a transport structure based on an established socket
 */
-struct smbcli_transport *smbcli_transport_init(struct smbcli_socket *sock)
+struct smbcli_transport *smbcli_transport_init(struct smbcli_socket *sock,
+					       TALLOC_CTX *parent_ctx, BOOL primary)
 {
 	struct smbcli_transport *transport;
 
-	transport = talloc_p(sock, struct smbcli_transport);
+	transport = talloc_zero(parent_ctx, struct smbcli_transport);
 	if (!transport) return NULL;
 
-	ZERO_STRUCTP(transport);
-
-	transport->socket = talloc_reference(transport, sock);
+	if (primary) {
+		transport->socket = talloc_steal(transport, sock);
+	} else {
+		transport->socket = talloc_reference(transport, sock);
+	}
 	transport->negotiate.protocol = PROTOCOL_NT1;
 	transport->options.use_spnego = lp_use_spnego();
 	transport->options.max_xmit = lp_max_xmit();

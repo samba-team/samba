@@ -40,8 +40,7 @@ BOOL smbcli_socket_connect(struct smbcli_state *cli, const char *server)
 		return False;
 	}
 	
-	cli->transport = smbcli_transport_init(sock);
-	talloc_free(sock);
+	cli->transport = smbcli_transport_init(sock, cli, True);
 	if (!cli->transport) {
 		return False;
 	}
@@ -73,9 +72,8 @@ NTSTATUS smbcli_session_setup(struct smbcli_state *cli,
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx;
 
-	cli->session = smbcli_session_init(cli->transport);
+	cli->session = smbcli_session_init(cli->transport, cli, True);
 	if (!cli->session) return NT_STATUS_UNSUCCESSFUL;
-	talloc_free(cli->transport);
 
 	mem_ctx = talloc_init("smbcli_session_setup");
 	if (!mem_ctx) return NT_STATUS_NO_MEMORY;
@@ -114,8 +112,7 @@ NTSTATUS smbcli_send_tconX(struct smbcli_state *cli, const char *sharename,
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS status;
 
-	cli->tree = smbcli_tree_init(cli->session);
-	talloc_free(cli->session);
+	cli->tree = smbcli_tree_init(cli->session, cli, True);
 	if (!cli->tree) return NT_STATUS_UNSUCCESSFUL;
 
 	mem_ctx = talloc_init("tcon");

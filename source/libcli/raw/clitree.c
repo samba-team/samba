@@ -33,16 +33,22 @@
 /****************************************************************************
  Initialize the tree context
 ****************************************************************************/
-struct smbcli_tree *smbcli_tree_init(struct smbcli_session *session)
+struct smbcli_tree *smbcli_tree_init(struct smbcli_session *session,
+				     TALLOC_CTX *parent_ctx, BOOL primary)
 {
 	struct smbcli_tree *tree;
 
-	tree = talloc_zero(session, struct smbcli_tree);
+	tree = talloc_zero(parent_ctx, struct smbcli_tree);
 	if (!tree) {
 		return NULL;
 	}
 
-	tree->session = talloc_reference(tree, session);
+	if (primary) {
+		tree->session = talloc_steal(tree, session);
+	} else {
+		tree->session = talloc_reference(tree, session);
+	}
+
 
 	return tree;
 }

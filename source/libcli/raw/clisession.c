@@ -33,18 +33,23 @@
 /****************************************************************************
  Initialize the session context
 ****************************************************************************/
-struct smbcli_session *smbcli_session_init(struct smbcli_transport *transport)
+struct smbcli_session *smbcli_session_init(struct smbcli_transport *transport, 
+					   TALLOC_CTX *parent_ctx, BOOL primary)
 {
 	struct smbcli_session *session;
 	uint16_t flags2;
 	uint32_t capabilities;
 
-	session = talloc_zero(transport, struct smbcli_session);
+	session = talloc_zero(parent_ctx, struct smbcli_session);
 	if (!session) {
 		return NULL;
 	}
 
-	session->transport = talloc_reference(session, transport);
+	if (primary) {
+		session->transport = talloc_steal(session, transport);
+	} else {
+		session->transport = talloc_reference(session, transport);
+	}
 	session->pid = (uint16_t)getpid();
 	session->vuid = UID_FIELD_INVALID;
 	
