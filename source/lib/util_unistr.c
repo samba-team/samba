@@ -223,6 +223,7 @@ char *dos_unistr2_to_str(UNISTR2 *str)
 
 /*******************************************************************
  Put an ASCII string into a UNICODE array (uint16's).
+ use little-endian ucs2
  ********************************************************************/
 void ascii_to_unistr(uint16 *dest, const char *src, int maxlen)
 {
@@ -237,7 +238,8 @@ void ascii_to_unistr(uint16 *dest, const char *src, int maxlen)
                         break;
                 }
 
-                *(dest++) = (uint16)c;
+		SSVAL(dest, 0, c);
+                dest++;
         }
 
         *dest = 0;
@@ -262,7 +264,8 @@ void unistr_to_ascii(char *dest, const uint16 *src, int len)
 	/* normal code path for a valid 'src' */
 	while (dest < destend)
 	{
-		c = *(src++);
+		c = SVAL(src, 0);
+		src++;
 		if (c == 0)
 		{
 			break;
