@@ -163,8 +163,7 @@ Error was %s.\n", cnum, strerror(errno) ));
     if(blocking_lock_record_process(blr)) {
       /*
        * Success -
-    unbecome_user();
-    /*
+     unbecome_user();
      * Move to the next in the list.
      */
     prev = blr;
