@@ -35,6 +35,46 @@ static void gotalarm_sig(void)
 	gotalarm = 1;
 }
 
+
+/*******************************************************************
+ THIS is a copy of the function CatchSignal found in lib/signal.c
+ I need to copy it there to avoid sucking all of the samba source
+ into tdb.
+
+ Catch a signal. This should implement the following semantics:
+
+ 1) The handler remains installed after being called.
+ 2) The signal should be blocked during handler execution.
+********************************************************************/
+
+static void (*TdbCatchSignal(int signum,void (*handler)(int )))(int)
+{
+#ifdef HAVE_SIGACTION
+	struct sigaction act;
+	struct sigaction oldact;
+
+	ZERO_STRUCT(act);
+
+	act.sa_handler = handler;
+#ifdef SA_RESTART
+	/*
+	 * We *want* SIGALRM to interrupt a system call.
+	 */
+	if(signum != SIGALRM)
+		act.sa_flags = SA_RESTART;
+#endif
+	sigemptyset(&act.sa_mask);
+	sigaddset(&act.sa_mask,signum);
+	sigaction(signum,&act,&oldact);
+	return oldact.sa_handler;
+#else /* !HAVE_SIGACTION */
+	/* FIXME: need to handle sigvec and systems with broken signal() */
+	return signal(signum, handler);
+#endif
+}
+
+
+
 /***************************************************************
  Make a TDB_DATA and keep the const warning in one place
 ****************************************************************/
@@ -59,7 +99,7 @@ static int tdb_chainlock_with_timeout_internal(TDB_CONTEXT *tdb, TDB_DATA key, u
 	tdb_set_lock_alarm(&gotalarm);
 
 	if (timeout) {
-		CatchSignal(SIGALRM, SIGNAL_CAST gotalarm_sig);
+		TdbCatchSignal(SIGALRM, SIGNAL_CAST gotalarm_sig);
 		alarm(timeout);
 	}
 
@@ -70,7 +110,7 @@ static int tdb_chainlock_with_timeout_internal(TDB_CONTEXT *tdb, TDB_DATA key, u
 
 	if (timeout) {
 		alarm(0);
-		CatchSignal(SIGALRM, SIGNAL_CAST SIG_IGN);
+		TdbCatchSignal(SIGALRM, SIGNAL_CAST SIG_IGN);
 		if (gotalarm) {
 			tdb_debug(tdb, 0, "tdb_chainlock_with_timeout_internal: alarm (%u) timed out for key %s in tdb %s\n",
 				timeout, key.dptr, tdb->name );
@@ -689,11 +729,12 @@ TDB_LIST_NODE *tdb_search_keys(TDB_CONTEXT *tdb, const char* pattern)
 	for (key = tdb_firstkey(tdb); key.dptr; key = next) {
 		/* duplicate key string to ensure null-termination */
 		char *key_str = (char*) strndup(key.dptr, key.dsize);
+#if 0
 		if (!key_str) {
 			tdb_debug(tdb, 0, "tdb_search_keys: strndup() failed!\n");
 			smb_panic("strndup failed!\n");
 		}
-
+#endif
 		tdb_debug(tdb, 18, "checking %s for match to pattern %s\n", key_str, pattern);
 		
 		next = tdb_nextkey(tdb, key);
