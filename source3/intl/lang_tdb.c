@@ -44,7 +44,7 @@ static BOOL load_msg(const char *msg_file)
 	if (tdb_lockall(tdb) != 0) return False;
 
 	/* wipe the db */
-	tdb_traverse(tdb, (tdb_traverse_func) tdb_delete, NULL);
+	tdb_traverse(tdb, tdb_traverse_delete_fn, NULL);
 
 	msgid = NULL;
 	

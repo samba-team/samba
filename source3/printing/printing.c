@@ -64,7 +64,7 @@ BOOL print_backend_init(void)
 	/* handle a Samba upgrade */
 	tdb_lock_bystring(tdb, sversion);
 	if (tdb_fetch_int(tdb, sversion) != PRINT_DATABASE_VERSION) {
-		tdb_traverse(tdb, (tdb_traverse_func)tdb_delete, NULL);
+		tdb_traverse(tdb, tdb_traverse_delete_fn, NULL);
 		tdb_store_int(tdb, sversion, PRINT_DATABASE_VERSION);
 	}
 	tdb_unlock_bystring(tdb, sversion);
