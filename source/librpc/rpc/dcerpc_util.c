@@ -664,7 +664,7 @@ NTSTATUS dcerpc_epm_map_binding(TALLOC_CTX *mem_ctx, struct dcerpc_binding *bind
 
 	if (!strcmp(uuid, DCERPC_EPMAPPER_UUID)) {
 		switch(binding->transport) {
-			case NCACN_IP_TCP: binding->endpoint = "135"/*FIXME*/; return NT_STATUS_OK;
+			case NCACN_IP_TCP: binding->endpoint = talloc_asprintf(mem_ctx, "%d", EPMAPPER_PORT); return NT_STATUS_OK;
 			case NCALRPC: binding->endpoint = EPMAPPER_IDENTIFIER; return NT_STATUS_OK;
 			default: return NT_STATUS_NOT_SUPPORTED;
 		}
