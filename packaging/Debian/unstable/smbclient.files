@@ -1,9 +1,0 @@
-usr/bin/smbclient
-usr/bin/smbtar
-usr/bin/rpcclient
-usr/bin/smbtorture
-usr/bin/smbspool
-usr/share/man/man1/smbclient.1
-usr/share/man/man1/smbtar.1
-usr/share/man/man8/smbspool.8
-usr/lib/cups/backend/smb

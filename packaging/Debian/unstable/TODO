@@ -1,4 +1,0 @@
-* Check in the smbmount wrapper script that the kernel has support
-for smbfs, as suggested by Jeroen Schaap
-<J.Schaap@physiology.medfac.leidenuniv.nl>.
-
