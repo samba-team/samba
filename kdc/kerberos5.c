@@ -490,14 +490,14 @@ tgs_make_reply(krb5_context context, KDC_REQ_BODY *b, EncTicketPart *tgt,
 	
     etype = b->etype.val[i];
 
-    ret = check_tgs_flags(b, tgt, &et);
-    if(ret)
-	return ret;
-
     memset(&rep, 0, sizeof(rep));
     memset(&et, 0, sizeof(et));
     memset(&ek, 0, sizeof(ek));
     
+    ret = check_tgs_flags(b, tgt, &et);
+    if(ret)
+	return ret;
+
     rep.pvno = 5;
     rep.msg_type = krb_tgs_rep;
     copy_Realm(&tgt->crealm, &rep.crealm);
@@ -506,8 +506,11 @@ tgs_make_reply(krb5_context context, KDC_REQ_BODY *b, EncTicketPart *tgt,
     copy_Realm(krb5_princ_realm(context, server->principal), 
 	       &rep.ticket.realm);
     krb5_principal2principalname(&rep.ticket.sname, server->principal);
-    
-    et.caddr = tgt->caddr;
+
+    if(et.caddr == NULL)
+	et.caddr = tgt->caddr;
+    else
+	ek.caddr = et.caddr;
     et.authtime = tgt->authtime;
 	    
     if(f.renew){
