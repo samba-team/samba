@@ -57,6 +57,7 @@ static NTSTATUS pvfs_connect(struct ntvfs_module_context *ntvfs,
 	struct pvfs_state *pvfs;
 	struct stat st;
 	char *base_directory;
+	NTSTATUS status;
 
 	pvfs = talloc_p(tcon, struct pvfs_state);
 	if (pvfs == NULL) {
@@ -83,6 +84,11 @@ static NTSTATUS pvfs_connect(struct ntvfs_module_context *ntvfs,
 	tcon->dev_type = talloc_strdup(tcon, "A:");
 
 	ntvfs->private_data = pvfs;
+
+	status = pvfs_mangle_init(pvfs);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	pvfs_setup_options(pvfs);
 
