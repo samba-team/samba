@@ -469,7 +469,7 @@ NTSTATUS dcerpc_bind_auth_schannel(struct dcerpc_pipe *p,
 		return status;
 	}
 	
-	status = gensec_start_mech_by_authtype(p->security_state.generic_state, DCERPC_AUTH_TYPE_SCHANNEL);
+	status = gensec_start_mech_by_authtype(p->security_state.generic_state, DCERPC_AUTH_TYPE_SCHANNEL, dcerpc_auth_level(p));
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to start SCHANNEL GENSEC backend: %s\n", nt_errstr(status)));
@@ -477,7 +477,7 @@ NTSTATUS dcerpc_bind_auth_schannel(struct dcerpc_pipe *p,
 		return status;
 	}
 
-	status = dcerpc_bind_auth3(p, DCERPC_AUTH_TYPE_SCHANNEL,
+	status = dcerpc_bind_auth3(p, DCERPC_AUTH_TYPE_SCHANNEL, dcerpc_auth_level(p),
 				  uuid, version);
 
 	if (!NT_STATUS_IS_OK(status)) {

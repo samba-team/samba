@@ -179,6 +179,13 @@ static NTSTATUS gensec_ntlmssp_server_start(struct gensec_security *gensec_secur
 		return nt_status;
 	}
 
+	if (gensec_security->want_features & GENSEC_WANT_SIGN) {
+		gensec_ntlmssp_state->ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SIGN;
+	}
+	if (gensec_security->want_features & GENSEC_WANT_SEAL) {
+		gensec_ntlmssp_state->ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SEAL;
+	}
+
 	ntlmssp_state = gensec_ntlmssp_state->ntlmssp_state;
 	if (!NT_STATUS_IS_OK(nt_status = make_auth_context_subsystem(&gensec_ntlmssp_state->auth_context))) {
 		return nt_status;
@@ -209,6 +216,25 @@ static NTSTATUS gensec_ntlmssp_client_start(struct gensec_security *gensec_secur
 	status = ntlmssp_client_start(&gensec_ntlmssp_state->ntlmssp_state);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
+	}
+
+	if (gensec_security->want_features & GENSEC_WANT_SESSION_KEY) {
+		/*
+		 * We need to set this to allow a later SetPassword
+		 * via the SAMR pipe to succeed. Strange.... We could
+		 * also add  NTLMSSP_NEGOTIATE_SEAL here. JRA.
+		 * 
+		 * Without this, Windows will not create the master key
+		 * that it thinks is only used for NTLMSSP signing and 
+		 * sealing.  (It is actually pulled out and used directly) 
+		 */
+		gensec_ntlmssp_state->ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SIGN;
+	}
+	if (gensec_security->want_features & GENSEC_WANT_SIGN) {
+		gensec_ntlmssp_state->ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SIGN;
+	}
+	if (gensec_security->want_features & GENSEC_WANT_SEAL) {
+		gensec_ntlmssp_state->ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SEAL;
 	}
 
 	status = ntlmssp_set_domain(gensec_ntlmssp_state->ntlmssp_state, 

@@ -213,6 +213,8 @@ static NTSTATUS sesssetup_spnego(struct smbsrv_request *req, union smb_sesssetup
 			return status;
 		}
 
+		gensec_want_feature(gensec_ctx, GENSEC_WANT_SESSION_KEY);
+
 		status = gensec_start_mech_by_oid(gensec_ctx, OID_SPNEGO);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("Failed to start GENSEC SPNEGO server code: %s\n", nt_errstr(status)));

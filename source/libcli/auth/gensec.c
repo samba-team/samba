@@ -145,6 +145,7 @@ static NTSTATUS gensec_start(struct gensec_security **gensec_security)
 	(*gensec_security)->default_user.realm = talloc_strdup(mem_ctx, lp_realm());
 
 	(*gensec_security)->subcontext = False;
+	(*gensec_security)->want_features = 0;
 	return NT_STATUS_OK;
 }
 
@@ -232,12 +233,19 @@ static NTSTATUS gensec_start_mech(struct gensec_security *gensec_security)
  */
 
 NTSTATUS gensec_start_mech_by_authtype(struct gensec_security *gensec_security, 
-				       uint8_t authtype) 
+				       uint8_t auth_type, uint8_t auth_level) 
 {
-	gensec_security->ops = gensec_security_by_authtype(authtype);
+	gensec_security->ops = gensec_security_by_authtype(auth_type);
 	if (!gensec_security->ops) {
-		DEBUG(3, ("Could not find GENSEC backend for authtype=%d\n", (int)authtype));
+		DEBUG(3, ("Could not find GENSEC backend for auth_type=%d\n", (int)auth_type));
 		return NT_STATUS_INVALID_PARAMETER;
+	}
+	if (auth_level == DCERPC_AUTH_LEVEL_INTEGRITY) {
+		gensec_want_feature(gensec_security, GENSEC_WANT_SIGN);
+	}
+	if (auth_level == DCERPC_AUTH_LEVEL_PRIVACY) {
+		gensec_want_feature(gensec_security, GENSEC_WANT_SIGN);
+		gensec_want_feature(gensec_security, GENSEC_WANT_SEAL);
 	}
 	return gensec_start_mech(gensec_security);
 }
@@ -308,6 +316,10 @@ NTSTATUS gensec_check_packet(struct gensec_security *gensec_security,
 	if (!gensec_security->ops->check_packet) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
+	if (!(gensec_security->want_features & GENSEC_WANT_SIGN)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	
 	return gensec_security->ops->check_packet(gensec_security, mem_ctx, data, length, sig);
 }
 
@@ -319,6 +331,10 @@ NTSTATUS gensec_seal_packet(struct gensec_security *gensec_security,
 	if (!gensec_security->ops->seal_packet) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
+	if (!(gensec_security->want_features & GENSEC_WANT_SEAL)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
 	return gensec_security->ops->seal_packet(gensec_security, mem_ctx, data, length, sig);
 }
 
@@ -330,6 +346,10 @@ NTSTATUS gensec_sign_packet(struct gensec_security *gensec_security,
 	if (!gensec_security->ops->sign_packet) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
+	if (!(gensec_security->want_features & GENSEC_WANT_SIGN)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	
 	return gensec_security->ops->sign_packet(gensec_security, mem_ctx, data, length, sig);
 }
 
@@ -339,6 +359,10 @@ NTSTATUS gensec_session_key(struct gensec_security *gensec_security,
 	if (!gensec_security->ops->session_key) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
+	if (!(gensec_security->want_features & GENSEC_WANT_SESSION_KEY)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	
 	return gensec_security->ops->session_key(gensec_security, session_key);
 }
 
@@ -390,6 +414,17 @@ void gensec_end(struct gensec_security **gensec_security)
 		talloc_destroy((*gensec_security)->mem_ctx);
 	}
 	gensec_security = NULL;
+}
+
+/** 
+ * Set the requirement for a certain feature on the connection
+ *
+ */
+
+void gensec_want_feature(struct gensec_security *gensec_security,
+			 uint32 feature) 
+{
+	gensec_security->want_features |= feature;
 }
 
 /** 

@@ -375,6 +375,14 @@ static void ntlmssp_handle_neg_flags(struct ntlmssp_state *ntlmssp_state,
 		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_ALWAYS_SIGN;
 	}
 
+	if (!(neg_flags & NTLMSSP_NEGOTIATE_SIGN)) {
+		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_SIGN;
+	}
+
+	if (!(neg_flags & NTLMSSP_NEGOTIATE_SEAL)) {
+		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_SEAL;
+	}
+
 	if (!(neg_flags & NTLMSSP_NEGOTIATE_NTLM2)) {
 		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_NTLM2;
 	}
@@ -933,9 +941,7 @@ NTSTATUS ntlmssp_server_start(struct ntlmssp_state **ntlmssp_state)
 		NTLMSSP_NEGOTIATE_128 |
 		NTLMSSP_NEGOTIATE_NTLM |
 /*		NTLMSSP_NEGOTIATE_NTLM2 | */
-		NTLMSSP_NEGOTIATE_KEY_EXCH |
-		NTLMSSP_NEGOTIATE_SIGN |
-		NTLMSSP_NEGOTIATE_SEAL;
+		NTLMSSP_NEGOTIATE_KEY_EXCH;
 
 	return NT_STATUS_OK;
 }
@@ -1289,16 +1295,6 @@ NTSTATUS ntlmssp_client_start(struct ntlmssp_state **ntlmssp_state)
 		NTLMSSP_NEGOTIATE_NTLM |
 /*		NTLMSSP_NEGOTIATE_NTLM2 |*/
 		NTLMSSP_NEGOTIATE_KEY_EXCH |
-		/*
-		 * We need to set this to allow a later SetPassword
-		 * via the SAMR pipe to succeed. Strange.... We could
-		 * also add  NTLMSSP_NEGOTIATE_SEAL here. JRA.
-		 * 
-		 * Without this, Windows will not create the master key
-		 * that it thinks is only used for NTLMSSP signing and 
-		 * sealing.  (It is actually pulled out and used directly) 
-		 */
-		NTLMSSP_NEGOTIATE_SIGN |
 		NTLMSSP_REQUEST_TARGET;
 
 	return NT_STATUS_OK;
