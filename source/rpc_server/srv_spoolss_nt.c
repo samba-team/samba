@@ -100,7 +100,7 @@ static int nt_printq_status(int v)
 {
 	switch (v) {
 	case LPQ_PAUSED:
-		return PRINTER_STATUS_ERROR;
+		return PRINTER_STATUS_PAUSED;
 	case LPQ_QUEUED:
 	case LPQ_SPOOLING:
 	case LPQ_PRINTING:
