@@ -581,7 +581,8 @@ match_local_auth (Xauth* auth, struct hostent *disp_he, int disp_nr)
     free (tmp_disp);
     if (auth_disp != disp_nr)
 	return 1;
-    if (auth->family == FamilyLocal) {
+    if (auth->family == FamilyLocal
+	|| auth->family == FamilyWild) {
 	int i;
 
 	if (strncmp (auth->address,
@@ -593,16 +594,6 @@ match_local_auth (Xauth* auth, struct hostent *disp_he, int disp_nr)
 	    if (strncmp (auth->address,
 			 disp_he->h_aliases[i],
 			 auth->address_length) == 0)
-		return 0;
-    } else if (auth->family == FamilyInternet
-	     && disp_he->h_addrtype == AF_INET
-	     && auth->address_length == disp_he->h_length) {
-	int i;
-
-	for (i = 0; disp_he->h_addr_list[i] != NULL; ++i)
-	    if (memcmp (disp_he->h_addr_list[i],
-			auth->address,
-			auth->address_length) == 0)
 		return 0;
     }
     return 1;
