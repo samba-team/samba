@@ -1,5 +1,8 @@
 1999-10-03  Assar Westerlund  <assar@sics.se>
 
+	* lib/krb5/convert_creds.c (krb524_convert_creds_kdc): look at the
+ 	type of the session key
+
 	* lib/krb5/crypto.c (krb5_enctypes_compatible_keys): spell
  	correctly
 
