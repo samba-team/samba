@@ -1311,3 +1311,86 @@ no_groups:
 	return result;
 }
 
+enum winbindd_result winbindd_getuserdomgroups_async(struct winbindd_cli_state *state)
+{
+	DOM_SID user_sid;
+	struct winbindd_domain *domain;
+
+	/* Ensure null termination */
+	state->request.data.sid[sizeof(state->request.data.sid)-1]='\0';
+
+	if (!string_to_sid(&user_sid, state->request.data.sid)) {
+		DEBUG(1, ("Could not get convert sid %s from string\n",
+			  state->request.data.sid));
+		return WINBINDD_ERROR;
+	}
+
+	/* Get info for the domain */	
+	if ((domain = find_domain_from_sid(&user_sid)) == NULL) {
+		DEBUG(0,("could not find domain entry for sid %s\n", 
+			 sid_string_static(&user_sid)));
+		return WINBINDD_ERROR;
+	}
+
+	return async_request(state->mem_ctx, &domain->child,
+			     &state->request, &state->response,
+			     request_finished_cont, state);
+}
+
+enum winbindd_result winbindd_getuserdomgroups(struct winbindd_cli_state *state)
+{
+	DOM_SID user_sid;
+	struct winbindd_domain *domain;
+	NTSTATUS status;
+
+	int i, num_groups, len, bufsize;
+	DOM_SID **groups;
+
+	/* Ensure null termination */
+	state->request.data.sid[sizeof(state->request.data.sid)-1]='\0';
+
+	if (!string_to_sid(&user_sid, state->request.data.sid)) {
+		DEBUG(1, ("Could not get convert sid %s from string\n",
+			  state->request.data.sid));
+		return WINBINDD_ERROR;
+	}
+
+	/* Get info for the domain */	
+	if ((domain = find_domain_from_sid(&user_sid)) == NULL) {
+		DEBUG(0,("could not find domain entry for sid %s\n", 
+			 sid_string_static(&user_sid)));
+
+		return WINBINDD_ERROR;
+	}
+
+	status = domain->methods->lookup_usergroups(domain, state->mem_ctx,
+						    &user_sid, &num_groups,
+						    &groups);
+	if (!NT_STATUS_IS_OK(status))
+		return WINBINDD_ERROR;
+
+	if (num_groups == 0) {
+		state->response.data.num_entries = 0;
+		state->response.extra_data = NULL;
+		return WINBINDD_OK;
+	}
+
+	len=bufsize=0;
+	state->response.extra_data = NULL;
+
+	for (i=0; i<num_groups; i++) {
+		sprintf_append(NULL, (char **)&state->response.extra_data,
+			       &len, &bufsize,
+			       "%s\n", sid_string_static(groups[i]));
+	}
+
+	if (state->response.extra_data == NULL) {
+		/* Hmmm. Allocation failed somewhere */
+		return WINBINDD_ERROR;
+	}
+
+	state->response.data.num_entries = num_groups;
+	state->response.length += len+1;
+
+	return WINBINDD_OK;
+}

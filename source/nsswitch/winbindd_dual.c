@@ -436,6 +436,8 @@ static struct winbindd_dispatch_table child_dispatch_table[] = {
 	{ WINBINDD_ALLOCATE_RID, winbindd_allocate_rid, "ALLOCATE_RID" },
 	{ WINBINDD_ALLOCATE_RID_AND_GID, winbindd_allocate_rid_and_gid,
 	  "ALLOCATE_RID_AND_GID" },
+	{ WINBINDD_GETUSERDOMGROUPS, winbindd_getuserdomgroups,
+	  "GETUSERDOMGROUPS" },
 	/* End of list */
 
 	{ WINBINDD_NUM_CMDS, NULL, "NONE" }

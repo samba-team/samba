@@ -1306,6 +1306,9 @@ bin/t_strcmp@EXEEXT@: bin/libbigballofmud.@SHLIBEXT@ torture/t_strcmp.o
 bin/t_strstr@EXEEXT@: bin/libbigballofmud.@SHLIBEXT@ torture/t_strstr.o
 	$(CC) $(FLAGS) -o $@ $(DYNEXP) $(LIBS) torture/t_strstr.o -L ./bin -lbigballofmud
 
+bin/t_strappend@EXEEXT@: bin/libbigballofmud.@SHLIBEXT@ torture/t_strappend.o
+	$(CC) $(FLAGS) -o $@ $(DYNEXP) $(LIBS) torture/t_strappend.o -L ./bin -lbigballofmud
+
 bin/t_stringoverflow@EXEEXT@: bin/libbigballofmud.@SHLIBEXT@ torture/t_stringoverflow.o
 	$(CC) $(FLAGS) -o $@ $(DYNEXP) torture/t_stringoverflow.o -L./bin -lbigballofmud
 

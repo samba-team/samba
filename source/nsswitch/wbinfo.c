@@ -167,6 +167,32 @@ static BOOL wbinfo_get_usersids(char *user_sid)
 	return True;
 }
 
+static BOOL wbinfo_get_userdomgroups(const char *user_sid)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+	NSS_STATUS result;
+
+	ZERO_STRUCT(response);
+
+	/* Send request */
+	fstrcpy(request.data.sid, user_sid);
+
+	result = winbindd_request(WINBINDD_GETUSERDOMGROUPS, &request,
+				  &response);
+
+	if (result != NSS_STATUS_SUCCESS)
+		return False;
+
+	if (response.data.num_entries != 0)
+		printf("%s", (char *)response.extra_data);
+	
+	SAFE_FREE(response.extra_data);
+
+	return True;
+}
+
+
 /* Convert NetBIOS name to IP */
 
 static BOOL wbinfo_wins_byname(char *name)
@@ -1094,6 +1120,7 @@ enum {
 	OPT_DOMAIN_NAME,
 	OPT_SEQUENCE,
 	OPT_GETDCNAME,
+	OPT_USERDOMGROUPS,
 	OPT_USERSIDS
 };
 
@@ -1135,6 +1162,8 @@ int main(int argc, char **argv)
 		{ "sequence", 0, POPT_ARG_NONE, 0, OPT_SEQUENCE, "Show sequence numbers of all domains" },
 		{ "domain-info", 'D', POPT_ARG_STRING, &string_arg, 'D', "Show most of the info we have about the domain" },
 		{ "user-groups", 'r', POPT_ARG_STRING, &string_arg, 'r', "Get user groups", "USER" },
+		{ "user-domgroups", 0, POPT_ARG_STRING, &string_arg,
+		  OPT_USERDOMGROUPS, "Get user domain groups", "SID" },
 		{ "user-sids", 0, POPT_ARG_STRING, &string_arg, OPT_USERSIDS, "Get user group sids for user SID", "SID" },
  		{ "authenticate", 'a', POPT_ARG_STRING, &string_arg, 'a', "authenticate user", "user%password" },
 		{ "set-auth-user", 0, POPT_ARG_STRING, &string_arg, OPT_SET_AUTH_USER, "Store user and password used by winbindd (root only)", "user%password" },
@@ -1289,6 +1318,13 @@ int main(int argc, char **argv)
 			if (!wbinfo_get_usersids(string_arg)) {
 				d_printf("Could not get group SIDs for user SID %s\n", 
 				       string_arg);
+				goto done;
+			}
+			break;
+		case OPT_USERDOMGROUPS:
+			if (!wbinfo_get_userdomgroups(string_arg)) {
+				d_printf("Could not get user's domain groups "
+					 "for user SID %s\n", string_arg);
 				goto done;
 			}
 			break;
