@@ -20,13 +20,18 @@ error_code CODE2, "CODE2"
 end
 EOF
 if ${COMPILE_ET} conftest_et.et >/dev/null 2>&1; then
+  dnl XXX Some systems have <et/com_err.h>.
+  save_CPPFLAGS="${save_CPPFLAGS}"
+  if test -d "/usr/include/et"; then
+    CPPFLAGS="-I/usr/include/et ${CPPFLAGS}"
+  fi
   dnl Check that the `prefix' and `index' directives were honored.
   AC_TRY_RUN([
 #include <com_err.h>
 #include <string.h>
 #include "conftest_et.h"
 int main(){return (CONFTEST_CODE2 - CONFTEST_CODE1) != 127;}
-  ], [krb_cv_compile_et="yes"],[])
+  ], [krb_cv_compile_et="yes"],[CPPFLAGS="${save_CPPFLAGS}"])
 fi
 AC_MSG_RESULT(${krb_cv_compile_et})
 rm -fr conftest*
@@ -36,15 +41,11 @@ if test "${krb_cv_compile_et}" = "yes"; then
   dnl Since compile_et seems to work, let's check libcom_err
   krb_cv_save_LIBS="${LIBS}"
   LIBS="${LIBS} -lcom_err"
-  dnl XXX Some systems have <et/com_err.h>.
-  if test -d "/usr/include/et"; then
-    CPPFLAGS="-I/usr/include/et ${CPPFLAGS}"
-  fi
   AC_MSG_CHECKING(for com_err)
   AC_TRY_LINK([#include <com_err.h>],[
     const char *p;
     p = error_message(0);
-  ],[krb_cv_com_err="yes"],[krb_cv_com_err="no"])
+  ],[krb_cv_com_err="yes"],[krb_cv_com_err="no"; CPPFLAGS="${save_CPPFLAGS}"])
   AC_MSG_RESULT(${krb_cv_com_err})
   LIBS="${krb_cv_save_LIBS}"
 else
