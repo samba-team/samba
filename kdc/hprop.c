@@ -45,6 +45,16 @@
 
 RCSID("$Id$");
 
+static getarg_strings slaves;
+static int version_flag;
+static int help_flag;
+static char *ktname = HPROP_KEYTAB;
+static char *database;
+static int verbose_flag;
+#ifdef KRB4
+static int v4_db;
+#endif
+
 int open_socket(krb5_context context, const char *hostname)
 {
     int s;
@@ -117,6 +127,13 @@ conv_db(void *arg, Principal *p)
 	return 0;
     }
 
+    if(verbose_flag){
+	char *s;
+	krb5_unparse_name(pd->context, ent.principal, &s);
+	krb5_warnx(pd->context, "%s.%s -> %s", p->name, p->instance, s);
+	free(s);
+    }
+
     ent.keys.len = 1;
     ALLOC(ent.keys.val);
     ent.keys.val[0].mkvno = p->kdc_key_ver;
@@ -174,26 +191,19 @@ conv_db(void *arg, Principal *p)
 
 #endif
 
-static getarg_strings slaves;
-static int version_flag;
-static int help_flag;
-static char *ktname = HPROP_KEYTAB;
-static char *database;
-#ifdef KRB4
-static int v4_db;
-#endif
 
 struct getargs args[] = {
 #if 0
-    { "slave",   's',  arg_strings, &slaves, "slave server", "host" },
+    { "slave",    's',	arg_strings, &slaves, "slave server", "host" },
 #endif
-    { "database", 'd', arg_string, &database, "database", "file" },
+    { "database", 'd',	arg_string, &database, "database", "file" },
 #ifdef KRB4
-    { "v4-db",    '4', arg_flag, &v4_db, "use version 4 database" },
+    { "v4-db",    '4',	arg_flag, &v4_db, "use version 4 database" },
 #endif
-    { "keytab",  'k',  arg_string, &ktname, "keytab to use for authentication", "keytab" },
-    { "version",   0,  arg_flag, &version_flag, NULL, NULL },
-    { "help",    'h',  arg_flag, &help_flag, NULL, NULL}
+    { "keytab",   'k',	arg_string, &ktname, "keytab to use for authentication", "keytab" },
+    { "verbose",  'v',	arg_flag, &verbose_flag },
+    { "version",   0,	arg_flag, &version_flag },
+    { "help",     'h',	arg_flag, &help_flag }
 };
 
 static int num_args = sizeof(args) / sizeof(args[0]);
