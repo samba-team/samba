@@ -271,10 +271,11 @@ krb5_closelog(krb5_context context,
 }
 
 krb5_error_code
-krb5_vlog(krb5_context context,
-	  krb5_log_facility *fac,
-	  const char *fmt,
-	  va_list ap)
+krb5_vlog_msg(krb5_context context,
+	      krb5_log_facility *fac,
+	      char **reply,
+	      const char *fmt,
+	      va_list ap)
 {
     char *msg;
     char buf[64];
@@ -286,9 +287,40 @@ krb5_vlog(krb5_context context,
     strftime(buf, sizeof(buf), "%d-%b-%Y %H:%M:%S", localtime(&t));
     for(i = 0; i < fac->len; i++)
 	(*fac->val[i].log)(&fac->val[i], buf, msg);
-    free(msg);
+    *reply = msg;
     return 0;
 }
+
+krb5_error_code
+krb5_vlog(krb5_context context,
+	  krb5_log_facility *fac,
+	  const char *fmt,
+	  va_list ap)
+{
+    char *msg;
+    krb5_error_code ret;
+
+    ret = krb5_vlog_msg(context, fac, &msg, fmt, ap);
+    free(msg);
+    return ret;
+}
+
+krb5_error_code
+krb5_log_msg(krb5_context context,
+	     krb5_log_facility *fac,
+	     char **reply,
+	     const char *fmt,
+	     ...)
+{
+    va_list ap;
+    krb5_error_code ret;
+
+    va_start(ap, fmt);
+    ret = krb5_vlog_msg(context, fac, reply, fmt, ap);
+    va_end(ap);
+    return ret;
+}
+
 
 krb5_error_code
 krb5_log(krb5_context context,
