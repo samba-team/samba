@@ -1016,7 +1016,7 @@ rpc_group_list_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 			else
 				printf("%s\n", groups[i].acct_name);
 		}
-	} while (!NT_STATUS_IS_OK(result));
+	} while (NT_STATUS_V(result) == NT_STATUS_V(STATUS_MORE_ENTRIES));
 
  done:
 	return result;
