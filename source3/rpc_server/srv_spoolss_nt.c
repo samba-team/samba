@@ -7572,7 +7572,7 @@ WERROR _spoolss_enumprinterdata(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATA *q_u, S
 	Printer_entry 	*Printer = find_printer_index_by_hnd(p, handle);
 	int 		snum;
 	WERROR 		result;
-	REGISTRY_VALUE	*val;
+	REGISTRY_VALUE	*val = NULL;
 	NT_PRINTER_DATA *p_data;
 	int		i, key_index, num_values;
 	int		name_length;
@@ -7610,7 +7610,7 @@ WERROR _spoolss_enumprinterdata(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATA *q_u, S
 	 * cf: MSDN EnumPrinterData remark section
 	 */
 	 
-	if ( !in_value_len && !in_data_len ) 
+	if ( !in_value_len && !in_data_len && (key_index != -1) ) 
 	{
 		DEBUGADD(6,("Activating NT mega-hack to find sizes\n"));
 
@@ -7650,8 +7650,9 @@ WERROR _spoolss_enumprinterdata(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATA *q_u, S
 	 * the value len is wrong in NT sp3
 	 * that's the number of bytes not the number of unicode chars
 	 */
-	 
-	val = regval_ctr_specific_value( &p_data->keys[key_index].values, idx );
+	
+	if ( key_index != -1 )
+		val = regval_ctr_specific_value( &p_data->keys[key_index].values, idx );
 
 	if ( !val ) 
 	{
