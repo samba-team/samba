@@ -271,6 +271,8 @@ AC_CHECK_FUNCS(sysconf sysctl timegm ttyname ttyslot umask uname)
 AC_CHECK_FUNCS(unlockpt vasnprintf vasprintf vhangup)
 AC_CHECK_FUNCS(yp_get_default_domain)
 
+AC_BROKEN(geteuid getgid getegid)
+
 AC_TYPE_SIGNAL
 if test "$ac_cv_type_signal" = "void" ; then
 	AC_DEFINE(VOID_RETSIGTYPE, 1)
