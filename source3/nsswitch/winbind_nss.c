@@ -785,9 +785,9 @@ _nss_winbind_getgrgid_r(gid_t gid,
 /* Initialise supplementary groups */
 
 NSS_STATUS
-_nss_winbind_initgroups(char *user, gid_t group, long int *start,
-			long int *size, gid_t *groups, long int limit,
-			int *errnop)
+_nss_winbind_initgroups_dyn(char *user, gid_t group, long int *start,
+			    long int *size, gid_t **groups, long int limit,
+			    int *errnop)
 {
 	NSS_STATUS ret;
 	struct winbindd_request request;
@@ -822,13 +822,15 @@ _nss_winbind_initgroups(char *user, gid_t group, long int *start,
 			/* Add to buffer */
 
 			if (*start == *size && limit <= 0) {
-				groups = realloc(
-					groups, 2 * (*size) * sizeof(*groups));
-				if (!groups) goto done;
-				*size *= 2;
+				(*groups) = realloc(
+					(*groups), (2 * (*size) + 1) * sizeof(**groups));
+				if (! *groups) goto done;
+				*size = 2 * (*size) + 1;
 			}
 
-			groups[*start] = gid_list[i];
+			if (*start == *size) goto done;
+
+			(*groups)[*start] = gid_list[i];
 			*start += 1;
 
 			/* Filled buffer? */
