@@ -1398,7 +1398,6 @@ char *lp_lppausecommand(int );
 char *lp_lpresumecommand(int );
 char *lp_queuepausecommand(int );
 char *lp_queueresumecommand(int );
-char *lp_printername(int );
 char *lp_driverfile(int );
 char *lp_printerdriver(int );
 char *lp_hostsallow(int );
@@ -1507,6 +1506,7 @@ int lp_security_mask(int snum);
 int lp_force_security_mode(int snum);
 int lp_dir_security_mask(int snum);
 int lp_force_dir_security_mode(int snum);
+char *lp_printername(int snum);
 
 /*The following definitions come from  param/params.c  */
 

@@ -3653,16 +3653,16 @@ uint32 _new_spoolss_enumforms( const POLICY_HND *handle, uint32 level,
 ****************************************************************************/
 static void fill_port_1(PORT_INFO_1 *port, char *name)
 {
-	init_unistr(&(port->port_name), name);
+	init_unistr(&port->port_name, name);
 }
 
 /****************************************************************************
 ****************************************************************************/
 static void fill_port_2(PORT_INFO_2 *port, char *name)
 {
-	init_unistr(&(port->port_name), name);
-	init_unistr(&(port->monitor_name), "Moniteur Local");
-	init_unistr(&(port->description), "Local Port");
+	init_unistr(&port->port_name, name);
+	init_unistr(&port->monitor_name, "Local Monitor");
+	init_unistr(&port->description, "Local Port");
 #define PORT_TYPE_WRITE 1
 	port->port_type=PORT_TYPE_WRITE;
 	port->reserved=0x0;	
@@ -3688,16 +3688,36 @@ static uint32 enumports_level_1(NEW_BUFFER *buffer, uint32 offered, uint32 *need
 	
 	for (snum=0; snum<n_services; snum++) {
 		if ( lp_browseable(snum) && lp_snum_ok(snum) && lp_print_ok(snum) ) {
+			/*
+			 * Ensure this port name is unique.
+			 */
+			int j;
+
+			DEBUG(10,("enumports_level_1: port name %s\n", PRINTERNAME(snum)));
+
+			for(j = 0; j < i; j++) {
+				fstring port_name;
+				unistr_to_dos(port_name, (const char *)&ports[j].port_name.buffer[0], sizeof(port_name));
+
+				if (strequal(port_name, PRINTERNAME(snum)))
+					break;
+			}
+
+			if (j < i)
+				continue;
+
 			DEBUGADD(6,("Filling port number [%d]\n", i));
-			fill_port_1(&(ports[i]), lp_servicename(snum));
+			fill_port_1(&ports[i], PRINTERNAME(snum));
 			i++;
 		}
 	}
 
+	*returned = i;
+
 	/* check the required size. */
 	for (i=0; i<*returned; i++) {
 		DEBUGADD(6,("adding port [%d]'s size\n", i));
-		*needed += spoolss_size_port_info_1(&(ports[i]));
+		*needed += spoolss_size_port_info_1(&ports[i]);
 	}
 		
 	if (!alloc_buffer_size(buffer, *needed)) {
@@ -3708,7 +3728,7 @@ static uint32 enumports_level_1(NEW_BUFFER *buffer, uint32 offered, uint32 *need
 	/* fill the buffer with the ports structures */
 	for (i=0; i<*returned; i++) {
 		DEBUGADD(6,("adding port [%d] to buffer\n", i));
-		new_smb_io_port_1("", buffer, &(ports[i]), 0);
+		new_smb_io_port_1("", buffer, &ports[i], 0);
 	}
 
 	safe_free(ports);
@@ -3721,10 +3741,10 @@ static uint32 enumports_level_1(NEW_BUFFER *buffer, uint32 offered, uint32 *need
 		return NT_STATUS_NO_PROBLEMO;
 }
 
-
 /****************************************************************************
  enumports level 2.
 ****************************************************************************/
+
 static uint32 enumports_level_2(NEW_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
 {
 	int n_services=lp_numservices();
@@ -3742,16 +3762,36 @@ static uint32 enumports_level_2(NEW_BUFFER *buffer, uint32 offered, uint32 *need
 	
 	for (snum=0; snum<n_services; snum++) {
 		if ( lp_browseable(snum) && lp_snum_ok(snum) && lp_print_ok(snum) ) {
+			/*
+			 * Ensure this port name is unique.
+			 */
+			int j;
+
+			DEBUG(10,("enumports_level_2: port name %s\n", PRINTERNAME(snum)));
+
+			for(j = 0; j < i; j++) {
+				fstring port_name;
+				unistr_to_dos(port_name, (const char *)&ports[j].port_name.buffer[0], sizeof(port_name));
+
+				if (strequal(port_name, PRINTERNAME(snum)))
+					break;
+			}
+
+			if (j < i)
+				continue;
+
 			DEBUGADD(6,("Filling port number [%d]\n", i));
-			fill_port_2(&(ports[i]), lp_servicename(snum));
+			fill_port_2(&ports[i], PRINTERNAME(snum));
 			i++;
 		}
 	}
 
+	*returned = i;
+
 	/* check the required size. */
 	for (i=0; i<*returned; i++) {
 		DEBUGADD(6,("adding port [%d]'s size\n", i));
-		*needed += spoolss_size_port_info_2(&(ports[i]));
+		*needed += spoolss_size_port_info_2(&ports[i]);
 	}
 		
 	if (!alloc_buffer_size(buffer, *needed)) {
@@ -3762,7 +3802,7 @@ static uint32 enumports_level_2(NEW_BUFFER *buffer, uint32 offered, uint32 *need
 	/* fill the buffer with the ports structures */
 	for (i=0; i<*returned; i++) {
 		DEBUGADD(6,("adding port [%d] to buffer\n", i));
-		new_smb_io_port_2("", buffer, &(ports[i]), 0);
+		new_smb_io_port_2("", buffer, &ports[i], 0);
 	}
 
 	safe_free(ports);

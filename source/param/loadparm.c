@@ -1476,7 +1476,7 @@ FN_LOCAL_STRING(lp_lppausecommand, szLppausecommand)
 FN_LOCAL_STRING(lp_lpresumecommand, szLpresumecommand)
 FN_LOCAL_STRING(lp_queuepausecommand, szQueuepausecommand)
 FN_LOCAL_STRING(lp_queueresumecommand, szQueueresumecommand)
-FN_LOCAL_STRING(lp_printername, szPrintername)
+static FN_LOCAL_STRING(_lp_printername, szPrintername)
 FN_LOCAL_STRING(lp_driverfile, szDriverFile)
 FN_LOCAL_STRING(lp_printerdriver, szPrinterDriver)
 FN_LOCAL_STRING(lp_hostsallow, szHostsallow)
@@ -1958,14 +1958,17 @@ static BOOL service_ok(int iService)
 
 	/* The [printers] entry MUST be printable. I'm all for flexibility, but */
 	/* I can't see why you'd want a non-printable printer service...        */
-	if (strwicmp(iSERVICE(iService).szService, PRINTERS_NAME) == 0)
-		if (!iSERVICE(iService).bPrint_ok)
-		{
+	if (strwicmp(iSERVICE(iService).szService, PRINTERS_NAME) == 0) {
+		if (!iSERVICE(iService).bPrint_ok) {
 			DEBUG(0,
 			      ("WARNING: [%s] service MUST be printable!\n",
 			       iSERVICE(iService).szService));
 			iSERVICE(iService).bPrint_ok = True;
 		}
+		/* [printers] service must also be non-browsable. */
+		if (iSERVICE(iService).bBrowseable)
+			iSERVICE(iService).bBrowseable = False;
+	}
 
 	if (iSERVICE(iService).szPath[0] == '\0' &&
 	    strwicmp(iSERVICE(iService).szService, HOMES_NAME) != 0)
@@ -3472,3 +3475,11 @@ int lp_force_dir_security_mode(int snum)
 	return val;
 }
 
+char *lp_printername(int snum)
+{
+	char *ret = _lp_printername(snum);
+	if (ret == NULL || (ret != NULL && *ret == '\0'))
+		ret = lp_servicename(snum);
+
+	return ret;
+}
