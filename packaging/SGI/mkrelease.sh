@@ -50,7 +50,7 @@ fi
 cd ../../source
 if [ "$doclean" = "clean" ]; then
   echo Create SGI specific Makefile
-  ./configure --prefix=/usr/samba --sbindir='${exec_prefix}/bin' --mandir=/usr/share/catman --with-acl-support --with-smbwrapper
+  ./configure --prefix=/usr/samba --sbindir='${exec_prefix}/bin' --mandir=/usr/share/catman --with-acl-support
   errstat=$?
   if [ $errstat -ne 0 ]; then
     echo "Error $errstat creating Makefile\n";
@@ -64,7 +64,8 @@ fi
 echo Making binaries
 
 make clean
-make "CFLAGS=-O -g3 -D WITH_PROFILE" CHECK bin/smbd bin/nmbd
+make headers
+make -P "CFLAGS=-O -g3 -D WITH_PROFILE" bin/smbd bin/nmbd
 errstat=$?
 if [ $errstat -ne 0 ]; then
   echo "Error $errstat building profile sources\n";
@@ -72,8 +73,17 @@ if [ $errstat -ne 0 ]; then
 fi
 mv  bin/smbd bin/smbd.profile
 mv  bin/nmbd bin/nmbd.profile
+
 make clean
-make "CFLAGS=-O -g3" all
+make -P "CFLAGS=-O -g3 -D QUOTAOBJS=smbd/noquotas.o" bin/smbd
+errstat=$?
+if [ $errstat -ne 0 ]; then
+  echo "Error $errstat building noquota sources\n";
+  exit $errstat;
+fi
+mv  bin/smbd bin/smbd.noquota
+
+make -P "CFLAGS=-O -g3" all
 errstat=$?
 if [ $errstat -ne 0 ]; then
   echo "Error $errstat building sources\n";
