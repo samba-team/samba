@@ -576,19 +576,22 @@ static int smb_delete_user(char *unix_user)
 
 static BOOL check_domain_match(char *user, char *domain) 
 {
-  /*
-   * If we aren't serving to trusted domains, we must make sure that
-   * the validation request comes from an account in the same domain
-   * as the Samba server
-   */
+	fstring dos_domain;
 
-  if (!lp_allow_trusted_domains() &&
-      !strequal(lp_workgroup(), domain) ) {
-      DEBUG(1, ("check_domain_match: Attempt to connect as user %s from domain %s denied.\n", user, domain));
-      return False;
-  } else {
-      return True;
-  }
+	fstrcpy(dos_domain, unix_to_dos_static(domain));
+
+	/*
+	 * If we aren't serving to trusted domains, we must make sure that
+	 * the validation request comes from an account in the same domain
+	 * as the Samba server
+	 */
+
+	if (!lp_allow_trusted_domains() &&
+			!strequal(lp_workgroup(), dos_domain) ) {
+		DEBUG(1, ("check_domain_match: Attempt to connect as user %s from domain %s denied.\n", user, domain));
+		return False;
+	}
+	return True;
 }
 
 /****************************************************************************

@@ -1083,6 +1083,7 @@ struct cli_state *server_cryptkey(void)
 
 /****************************************************************************
  Validate a password with the password server.
+ user and domain are in UNIX character set.
 ****************************************************************************/
 
 BOOL server_validate(char *user, char *domain, 
@@ -1217,6 +1218,7 @@ static void release_server_mutex(void)
 /***********************************************************************
  Connect to a remote machine for domain security authentication
  given a name or IP address.
+ server is in UNIX character set.
 ************************************************************************/
 
 static BOOL connect_to_domain_password_server(struct cli_state **ppcli, 
@@ -1255,8 +1257,10 @@ static BOOL connect_to_domain_password_server(struct cli_state **ppcli,
 		fstrcpy(remote_machine, server);
 	}
 
+	unix_to_dos(remote_machine);
 	standard_sub_basic(remote_machine,sizeof(remote_machine));
 	strupper(remote_machine);
+	dos_to_unix(remote_machine);
 
 	if(!resolve_name( remote_machine, &dest_ip, 0x20)) {
 		DEBUG(1,("connect_to_domain_password_server: Can't resolve address for %s\n", remote_machine));
@@ -1395,6 +1399,8 @@ machine %s. Error was : %s.\n", remote_machine, cli_errstr(pcli)));
 static BOOL attempt_connect_to_dc(struct cli_state **ppcli, struct in_addr *ip, unsigned char *trust_passwd)
 {
 	fstring dc_name;
+	fstring unix_myname;
+	fstring unix_workgroup;
 	int i;
 	BOOL retry = True;
 	BOOL ret = False;
@@ -1406,7 +1412,10 @@ static BOOL attempt_connect_to_dc(struct cli_state **ppcli, struct in_addr *ip, 
 	if (is_zero_ip(*ip))
 		return False;
 
-	if (!lookup_dc_name(global_myname, lp_workgroup(), ip, dc_name))
+	fstrcpy(unix_myname, dos_to_unix_static(global_myname));
+	fstrcpy(unix_workgroup, dos_to_unix_static(lp_workgroup()));
+
+	if (!lookup_dc_name(unix_myname, unix_workgroup, ip, dc_name))
 		return False;
 
 	for (i = 0; (ret == False) && retry && (i < 3); i++)
@@ -1426,6 +1435,7 @@ static BOOL find_connect_pdc(struct cli_state **ppcli, unsigned char *trust_pass
 	int i;
 	BOOL connected_ok = False;
 	time_t time_now = time(NULL);
+	fstring unix_workgroup;
 	BOOL use_pdc_only = False;
 
 	/*
@@ -1439,7 +1449,8 @@ static BOOL find_connect_pdc(struct cli_state **ppcli, unsigned char *trust_pass
 	if (time_now - last_change_time < 3600)
 		use_pdc_only = True;
 
-	if (!get_dc_list(use_pdc_only, lp_workgroup(), &ip_list, &count))
+	fstrcpy(unix_workgroup,  dos_to_unix_static(lp_workgroup()));
+	if (!get_dc_list(use_pdc_only, unix_workgroup, &ip_list, &count))
 		return False;
 
 	/*
@@ -1493,6 +1504,7 @@ static BOOL find_connect_pdc(struct cli_state **ppcli, unsigned char *trust_pass
 /***********************************************************************
  Do the same as security=server, but using NT Domain calls and a session
  key from the machine password.
+ user and domain are in UNIX character set.
 ************************************************************************/
 
 BOOL domain_client_validate( char *user, char *domain, 
@@ -1505,6 +1517,7 @@ BOOL domain_client_validate( char *user, char *domain,
 	unsigned char local_nt_response[24];
 	unsigned char trust_passwd[16];
 	fstring remote_machine;
+	fstring dos_domain;
 	char *p, *pserver;
 	NET_ID_INFO_CTR ctr;
 	NET_USER_INFO_3 info3;
@@ -1526,7 +1539,8 @@ BOOL domain_client_validate( char *user, char *domain,
 	 * password file.
 	 */
 
-	if(strequal( domain, global_myname)) {
+	fstrcpy(dos_domain, unix_to_dos_static(domain));
+	if(strequal( dos_domain, global_myname)) {
 		DEBUG(3,("domain_client_validate: Requested domain was for this machine.\n"));
 		return False;
 	}

@@ -74,6 +74,7 @@ static struct node_status *parse_node_status(char *p, int *num_names)
 /****************************************************************************
 do a NBT node status query on an open socket and return an array of
 structures holding the returned names or NULL if the query failed
+The name part of nmb_name is in DOS codepage.
 **************************************************************************/
 struct node_status *node_status_query(int fd,struct nmb_name *name,
 				      struct in_addr to_ip, int *num_names)
@@ -158,9 +159,10 @@ struct node_status *node_status_query(int fd,struct nmb_name *name,
 
 
 /****************************************************************************
-find the first type XX name in a node status reply - used for finding
-a servers name given its IP
-return the matched name in *name
+ find the first type XX name in a node status reply - used for finding
+ a servers name given its IP
+ return the matched name in *name
+ q_name is in UNIX codepage.
 **************************************************************************/
 
 BOOL name_status_find(const char *q_name, int q_type, int type, struct in_addr to_ip, char *name)
@@ -180,7 +182,7 @@ BOOL name_status_find(const char *q_name, int q_type, int type, struct in_addr t
 		goto done;
 
 	/* W2K PDC's seem not to respond to '*'#0. JRA */
-	make_nmb_name(&nname, q_name, q_type);
+	make_nmb_name(&nname, unix_to_dos_static(q_name), q_type);
 	status = node_status_query(sock, &nname, to_ip, &count);
 	close(sock);
 	if (!status)
@@ -260,8 +262,11 @@ static void sort_ip_list(struct in_addr *iplist, int count)
  Returns an array of IP addresses or NULL if none.
  *count will be set to the number of addresses returned.
  *timed_out is set if we failed by timing out
+ name is in UNIX character set. Must be converted to DOS codepage before
+ going onto the wire.
 ****************************************************************************/
-struct in_addr *name_query(int fd,const char *name,int name_type, 
+
+struct in_addr *name_query(int fd,const char *unix_name,int name_type, 
 			   BOOL bcast,BOOL recurse,
 			   struct in_addr to_ip, int *count, int *flags,
 			   BOOL *timed_out)
@@ -274,7 +279,10 @@ struct in_addr *name_query(int fd,const char *name,int name_type,
 	struct packet_struct *p2;
 	struct nmb_packet *nmb = &p.packet.nmb;
 	struct in_addr *ip_list = NULL;
+	fstring dos_name;
 
+	fstrcpy(dos_name, unix_name);
+	unix_to_dos(dos_name);
 
 	if (timed_out) {
 		*timed_out = False;
@@ -298,7 +306,7 @@ struct in_addr *name_query(int fd,const char *name,int name_type,
 	nmb->header.nscount = 0;
 	nmb->header.arcount = 0;
 
-	make_nmb_name(&nmb->question.question_name,name,name_type);
+	make_nmb_name(&nmb->question.question_name,dos_name,name_type);
 
 	nmb->question.question_type = 0x20;
 	nmb->question.question_class = 0x1;
@@ -385,7 +393,7 @@ struct in_addr *name_query(int fd,const char *name,int name_type,
 			}
 
 			tmp_ip_list = (struct in_addr *)Realloc( ip_list, sizeof( ip_list[0] )
-												* ( (*count) + nmb2->answers->rdlength/6 ) );
+							* ( (*count) + nmb2->answers->rdlength/6 ) );
 
 			if (!tmp_ip_list) {
 				DEBUG(0,("name_query: Realloc failed.\n"));
@@ -925,6 +933,8 @@ static BOOL internal_resolve_name(const char *name, int name_type,
  Use this function if the string is either an IP address, DNS
  or host name or NetBIOS name. This uses the name switch in the
  smb.conf to determine the order of name resolution.
+ The name here is in UNIX character set. It must be converted
+ to DOS codepage before NetBIOS name resolution.
 *********************************************************/
 
 BOOL resolve_name(const char *name, struct in_addr *return_ip, int name_type)
@@ -1191,20 +1201,24 @@ NT GETDC call, UNICODE, NT domain SID and uncle tom cobbley and all...
 
 /********************************************************
  Get the IP address list of the PDC/BDC's of a Domain.
+ group is in UNIX codepage.
 *********************************************************/
 
 BOOL get_dc_list(BOOL pdc_only, const char *group, struct in_addr **ip_list, int *count)
 {
 	int name_type = pdc_only ? 0x1B : 0x1C;
+	fstring dos_group;
+
+	fstrcpy(dos_group, unix_to_dos_static(group));
 
 	/*
 	 * If it's our domain then
 	 * use the 'password server' parameter.
 	 */
 
-	if (strequal(group, lp_workgroup())) {
+	if (strequal(dos_group, lp_workgroup())) {
 		char *p;
-		char *pserver = lp_passwordserver();
+		char *pserver = lp_passwordserver(); /* UNIX charset. */
 		fstring name;
 		int num_adresses = 0;
 		struct in_addr *return_iplist = NULL;
@@ -1247,15 +1261,14 @@ BOOL get_dc_list(BOOL pdc_only, const char *group, struct in_addr **ip_list, int
 
 BOOL resolve_srv_name(const char *srv_name, fstring dest_host, struct in_addr *ip)
 {
+	extern pstring global_myname;
 	BOOL ret;
 	const char *sv_name = srv_name;
 
 	DEBUG(10,("resolve_srv_name: %s\n", srv_name));
 
 	if (srv_name == NULL || strequal("\\\\.", srv_name)) {
-		extern pstring global_myname;
-
-		fstrcpy(dest_host, global_myname);
+		fstrcpy(dest_host, dos_to_unix_static(global_myname));
 		ip = interpret_addr2("127.0.0.1");
 		return True;
 	}
@@ -1267,9 +1280,14 @@ BOOL resolve_srv_name(const char *srv_name, fstring dest_host, struct in_addr *i
 	fstrcpy(dest_host, sv_name);
 	/* treat the '*' name specially - it is a magic name for the PDC */
 	if (strcmp(dest_host,"*") == 0) {
-		extern pstring global_myname;
-		ret = resolve_name(lp_workgroup(), ip, 0x1B);
-		lookup_dc_name(global_myname, lp_workgroup(), ip, dest_host);
+		fstring unix_workgroup;
+		fstring unix_myname;
+
+		fstrcpy(unix_workgroup, dos_to_unix_static(lp_workgroup()));
+		fstrcpy(unix_myname, dos_to_unix_static(global_myname));
+
+		ret = resolve_name(unix_workgroup, ip, 0x1B);
+		lookup_dc_name(unix_myname, unix_workgroup, ip, dest_host);
 	} else {
 		ret = resolve_name(dest_host, ip, 0x20);
 	}

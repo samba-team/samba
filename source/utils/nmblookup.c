@@ -37,8 +37,9 @@ static int RootPort = False;
 static BOOL find_status=False;
 
 /****************************************************************************
-  open the socket communication
-  **************************************************************************/
+ Open the socket communication.
+**************************************************************************/
+
 static BOOL open_sockets(void)
 {
   ServerFD = open_socket_in( SOCK_DGRAM,
@@ -55,10 +56,10 @@ static BOOL open_sockets(void)
   return True;
 }
 
-
 /****************************************************************************
-usage on the program
+ Usage on the program.
 ****************************************************************************/
+
 static void usage(void)
 {
   printf("Usage: nmblookup [-M] [-B bcast address] [-d debuglevel] name\n");
@@ -81,8 +82,9 @@ static void usage(void)
 }
 
 /****************************************************************************
-turn a node status flags field into a string
+ Turn a node status flags field into a string.
 ****************************************************************************/
+
 static char *node_status_flags(unsigned char flags)
 {
 	static fstring ret;
@@ -102,8 +104,9 @@ static char *node_status_flags(unsigned char flags)
 }
 
 /****************************************************************************
-turn the NMB Query flags into a string
+ Turn the NMB Query flags into a string.
 ****************************************************************************/
+
 static char *query_flags(int flags)
 {
 	static fstring ret1;
@@ -120,8 +123,9 @@ static char *query_flags(int flags)
 }
 
 /****************************************************************************
-do a node status query
+ Do a node status query.
 ****************************************************************************/
+
 static void do_node_status(int fd, char *name, int type, struct in_addr ip)
 {
 	struct nmb_name nname;
@@ -147,18 +151,18 @@ static void do_node_status(int fd, char *name, int type, struct in_addr ip)
 	printf("\n");
 }
 
-
 /****************************************************************************
-send out one query
+ Send out one query.
 ****************************************************************************/
-static BOOL query_one(char *lookup, unsigned int lookup_type)
+
+static BOOL query_one(char *lookup, char *lookup_dos, unsigned int lookup_type)
 {
 	int j, count, flags;
 	struct in_addr *ip_list=NULL;
 
 	if (got_bcast) {
 		printf("querying %s on %s\n", lookup, inet_ntoa(bcast_addr));
-		ip_list = name_query(ServerFD,lookup,lookup_type,use_bcast,
+		ip_list = name_query(ServerFD,lookup_dos,lookup_type,use_bcast,
 				     use_bcast?True:recursion_desired,
 				     bcast_addr,&count, &flags, NULL);
 	} else {
@@ -169,7 +173,7 @@ static BOOL query_one(char *lookup, unsigned int lookup_type)
 			bcast = iface_n_bcast(j);
 			printf("querying %s on %s\n", 
 			       lookup, inet_ntoa(*bcast));
-			ip_list = name_query(ServerFD,lookup,lookup_type,
+			ip_list = name_query(ServerFD,lookup_dos,lookup_type,
 					     use_bcast,
 					     use_bcast?True:recursion_desired,
 					     *bcast,&count, &flags, NULL);
@@ -195,7 +199,7 @@ static BOOL query_one(char *lookup, unsigned int lookup_type)
 	   was valid - ie. name_query returned true.
 	*/
 	if (find_status) {
-		do_node_status(ServerFD, lookup, lookup_type, ip_list[0]);
+		do_node_status(ServerFD, lookup_dos, lookup_type, ip_list[0]);
 	}
 
 	safe_free(ip_list);
@@ -205,13 +209,15 @@ static BOOL query_one(char *lookup, unsigned int lookup_type)
 
 
 /****************************************************************************
-  main program
+ Main program.
 ****************************************************************************/
+
 int main(int argc,char *argv[])
 {
   int opt;
   unsigned int lookup_type = 0x0;
-  pstring lookup;
+  fstring lookup;
+  fstring lookup_dos;
   extern int optind;
   extern char *optarg;
   BOOL find_master=False;
@@ -224,6 +230,7 @@ int main(int argc,char *argv[])
   AllowDebugChange = False;
 
   *lookup = 0;
+  *lookup_dos = 0;
 
   TimeInit();
 
@@ -305,18 +312,21 @@ int main(int argc,char *argv[])
       struct in_addr ip;
 
       fstrcpy(lookup,argv[i]);
+      fstrcpy(lookup_dos,unix_to_dos_static(argv[i]));
 
       if(lookup_by_ip)
       {
         fstrcpy(lookup,"*");
+        fstrcpy(lookup_dos,"*");
         ip = *interpret_addr2(argv[i]);
-	do_node_status(ServerFD, lookup, lookup_type, ip);
+	do_node_status(ServerFD, lookup_dos, lookup_type, ip);
         continue;
       }
 
       if (find_master) {
 	if (*lookup == '-') {
 	  fstrcpy(lookup,"\01\02__MSBROWSE__\02");
+	  fstrcpy(lookup_dos,"\01\02__MSBROWSE__\02");
 	  lookup_type = 1;
 	} else {
 	  lookup_type = 0x1d;
@@ -324,12 +334,16 @@ int main(int argc,char *argv[])
       }
 
       p = strchr(lookup,'#');
+      if (p)
+        *p = '\0';
+
+      p = strchr(lookup_dos,'#');
       if (p) {
         *p = '\0';
         sscanf(++p,"%x",&lookup_type);
       }
 
-      if (!query_one(lookup, lookup_type)) {
+      if (!query_one(lookup, lookup_dos, lookup_type)) {
 	printf( "name_query failed to find name %s", lookup );
         if( 0 != lookup_type )
           printf( "#%02x", lookup_type );
