@@ -200,10 +200,24 @@ static NTSTATUS contact_winbind_auth_crap(const char *username,
 
 	request.flags = flags;
 
-	fstrcpy(request.data.auth_crap.user, username);
+	if (push_utf8_fstring(request.data.auth_crap.user, username) == -1) {
+		*error_string = smb_xstrdup(
+			"unable to create utf8 string for username");
+		return NT_STATUS_UNSUCCESSFUL;
+	}
 
-	fstrcpy(request.data.auth_crap.domain, domain);
-	fstrcpy(request.data.auth_crap.workstation, workstation);
+	if (push_utf8_fstring(request.data.auth_crap.domain, domain) == -1) {
+		*error_string = smb_xstrdup(
+			"unable to create utf8 string for domain");
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	if (push_utf8_fstring(request.data.auth_crap.workstation, 
+			      workstation) == -1) {
+		*error_string = smb_xstrdup(
+			"unable to create utf8 string for workstation");
+		return NT_STATUS_UNSUCCESSFUL;
+	}
 
 	memcpy(request.data.auth_crap.chal, challenge->data, MIN(challenge->length, 8));
 
