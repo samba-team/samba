@@ -250,8 +250,11 @@ doit_passive (char *host, char *user, int debugp, int keepalivep,
 	 err (1, "write to %s", host);
      len = read_encrypted (otherside, msg, sizeof(msg), &ret,
 			   schedule, &key, &him, &me);
-     if (len < 0)
-	 err (1, "read from %s", host);
+     if (len <= 0)
+	 errx (1,
+	       "error reading initial message from %s: "
+	       "this probably means it's using an old version.",
+	       host);
      p = (u_char *)ret;
      if (*p == ERROR) {
 	 p++;
