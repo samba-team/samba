@@ -39,7 +39,6 @@
 enum typetype { 
     TApplication,
     TBitString,
-    TBoolean,
     TChoice,
     TEnumerated,
     TGeneralString,
