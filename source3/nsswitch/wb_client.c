@@ -27,7 +27,7 @@
 
 /* Call winbindd to convert a name to a sid */
 
-BOOL winbind_lookup_name(char *name, DOM_SID *sid, enum SID_NAME_USE *name_type)
+BOOL winbind_lookup_name(const char *name, DOM_SID *sid, enum SID_NAME_USE *name_type)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
