@@ -42,8 +42,8 @@ static BOOL test_sd(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	const char *fname = BASEDIR "\\sd.txt";
 	BOOL ret = True;
 	int fnum;
-	struct smb_query_secdesc q;
-	struct smb_set_secdesc set;
+	union smb_fileinfo q;
+	union smb_setfileinfo set;
 	struct security_ace ace;
 	struct security_descriptor *sd;
 	struct dom_sid *test_sid;
@@ -67,15 +67,16 @@ static BOOL test_sd(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum = io.ntcreatex.out.fnum;
-
-	q.in.fnum = fnum;
-	q.in.secinfo_flags = 
+	
+	q.query_secdesc.level = RAW_FILEINFO_SEC_DESC;
+	q.query_secdesc.in.fnum = fnum;
+	q.query_secdesc.in.secinfo_flags = 
 		OWNER_SECURITY_INFORMATION | 
 		GROUP_SECURITY_INFORMATION | 
 		DACL_SECURITY_INFORMATION;
-	status = smb_raw_query_secdesc(cli->tree, mem_ctx, &q);
+	status = smb_raw_fileinfo(cli->tree, mem_ctx, &q);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	sd = q.out.sd;
+	sd = q.query_secdesc.out.sd;
 
 	printf("add a new ACE to the DACL\n");
 
@@ -89,20 +90,21 @@ static BOOL test_sd(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	status = security_descriptor_dacl_add(sd, &ace);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	set.in.fnum = fnum;
-	set.in.secinfo_flags = q.in.secinfo_flags;
-	set.in.sd = sd;
+	set.set_secdesc.level = RAW_SFILEINFO_SEC_DESC;
+	set.set_secdesc.file.fnum = fnum;
+	set.set_secdesc.in.secinfo_flags = q.query_secdesc.in.secinfo_flags;
+	set.set_secdesc.in.sd = sd;
 
-	status = smb_raw_set_secdesc(cli->tree, &set);
+	status = smb_raw_setfileinfo(cli->tree, &set);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	status = smb_raw_query_secdesc(cli->tree, mem_ctx, &q);
+	status = smb_raw_fileinfo(cli->tree, mem_ctx, &q);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	if (!security_descriptor_equal(q.out.sd, sd)) {
+	if (!security_descriptor_equal(q.query_secdesc.out.sd, sd)) {
 		printf("security descriptors don't match!\n");
 		printf("got:\n");
-		NDR_PRINT_DEBUG(security_descriptor, q.out.sd);
+		NDR_PRINT_DEBUG(security_descriptor, q.query_secdesc.out.sd);
 		printf("expected:\n");
 		NDR_PRINT_DEBUG(security_descriptor, sd);
 	}
@@ -112,16 +114,16 @@ static BOOL test_sd(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	status = security_descriptor_dacl_del(sd, test_sid);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	status = smb_raw_set_secdesc(cli->tree, &set);
+	status = smb_raw_setfileinfo(cli->tree, &set);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	status = smb_raw_query_secdesc(cli->tree, mem_ctx, &q);
+	status = smb_raw_fileinfo(cli->tree, mem_ctx, &q);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	if (!security_descriptor_equal(q.out.sd, sd)) {
+	if (!security_descriptor_equal(q.query_secdesc.out.sd, sd)) {
 		printf("security descriptors don't match!\n");
 		printf("got:\n");
-		NDR_PRINT_DEBUG(security_descriptor, q.out.sd);
+		NDR_PRINT_DEBUG(security_descriptor, q.query_secdesc.out.sd);
 		printf("expected:\n");
 		NDR_PRINT_DEBUG(security_descriptor, sd);
 	}

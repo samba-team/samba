@@ -476,6 +476,7 @@ static NTSTATUS trans2_fileinfo_fill(struct smbsrv_request *req, struct smb_tran
 	case RAW_FILEINFO_GENERIC:
 	case RAW_FILEINFO_GETATTR:
 	case RAW_FILEINFO_GETATTRE:
+	case RAW_FILEINFO_SEC_DESC:
 		/* handled elsewhere */
 		return NT_STATUS_INVALID_LEVEL;
 
@@ -777,6 +778,7 @@ static NTSTATUS trans2_parse_sfileinfo(struct smbsrv_request *req,
 	case RAW_SFILEINFO_GENERIC:
 	case RAW_SFILEINFO_SETATTR:
 	case RAW_SFILEINFO_SETATTRE:
+	case RAW_SFILEINFO_SEC_DESC:
 		/* handled elsewhere */
 		return NT_STATUS_INVALID_LEVEL;
 

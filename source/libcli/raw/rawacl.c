@@ -27,7 +27,7 @@
 fetch file ACL (async send)
 ****************************************************************************/
 struct smbcli_request *smb_raw_query_secdesc_send(struct smbcli_tree *tree, 
-					       struct smb_query_secdesc *query)
+						  union smb_fileinfo *io)
 {
 	struct smb_nttrans nt;
 	uint8_t params[8];
@@ -39,9 +39,9 @@ struct smbcli_request *smb_raw_query_secdesc_send(struct smbcli_tree *tree,
 	nt.in.function = NT_TRANSACT_QUERY_SECURITY_DESC;
 	nt.in.setup = NULL;
 
-	SSVAL(params, 0, query->in.fnum);
+	SSVAL(params, 0, io->query_secdesc.in.fnum);
 	SSVAL(params, 2, 0); /* padding */
-	SIVAL(params, 4, query->in.secinfo_flags);
+	SIVAL(params, 4, io->query_secdesc.in.secinfo_flags);
 
 	nt.in.params.data = params;
 	nt.in.params.length = 8;
@@ -57,7 +57,7 @@ fetch file ACL (async recv)
 ****************************************************************************/
 NTSTATUS smb_raw_query_secdesc_recv(struct smbcli_request *req, 
 				    TALLOC_CTX *mem_ctx, 
-				    struct smb_query_secdesc *query)
+				    union smb_fileinfo *io)
 {
 	NTSTATUS status;
 	struct smb_nttrans nt;
@@ -81,11 +81,12 @@ NTSTATUS smb_raw_query_secdesc_recv(struct smbcli_request *req,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	query->out.sd = talloc_p(mem_ctx, struct security_descriptor);
-	if (!query->out.sd) {
+	io->query_secdesc.out.sd = talloc_p(mem_ctx, struct security_descriptor);
+	if (!io->query_secdesc.out.sd) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	status = ndr_pull_security_descriptor(ndr, NDR_SCALARS|NDR_BUFFERS, query->out.sd);
+	status = ndr_pull_security_descriptor(ndr, NDR_SCALARS|NDR_BUFFERS, 
+					      io->query_secdesc.out.sd);
 
 	return status;
 }
@@ -96,10 +97,10 @@ fetch file ACL (sync interface)
 ****************************************************************************/
 NTSTATUS smb_raw_query_secdesc(struct smbcli_tree *tree, 
 			       TALLOC_CTX *mem_ctx, 
-			       struct smb_query_secdesc *query)
+			       union smb_fileinfo *io)
 {
-	struct smbcli_request *req = smb_raw_query_secdesc_send(tree, query);
-	return smb_raw_query_secdesc_recv(req, mem_ctx, query);
+	struct smbcli_request *req = smb_raw_query_secdesc_send(tree, io);
+	return smb_raw_query_secdesc_recv(req, mem_ctx, io);
 }
 
 
@@ -108,7 +109,7 @@ NTSTATUS smb_raw_query_secdesc(struct smbcli_tree *tree,
 set file ACL (async send)
 ****************************************************************************/
 struct smbcli_request *smb_raw_set_secdesc_send(struct smbcli_tree *tree, 
-						struct smb_set_secdesc *set)
+						union smb_setfileinfo *io)
 {
 	struct smb_nttrans nt;
 	uint8_t params[8];
@@ -123,9 +124,9 @@ struct smbcli_request *smb_raw_set_secdesc_send(struct smbcli_tree *tree,
 	nt.in.function = NT_TRANSACT_SET_SECURITY_DESC;
 	nt.in.setup = NULL;
 
-	SSVAL(params, 0, set->in.fnum);
+	SSVAL(params, 0, io->set_secdesc.file.fnum);
 	SSVAL(params, 2, 0); /* padding */
-	SIVAL(params, 4, set->in.secinfo_flags);
+	SIVAL(params, 4, io->set_secdesc.in.secinfo_flags);
 
 	nt.in.params.data = params;
 	nt.in.params.length = 8;
@@ -133,7 +134,7 @@ struct smbcli_request *smb_raw_set_secdesc_send(struct smbcli_tree *tree,
 	ndr = ndr_push_init();
 	if (!ndr) return NULL;
 
-	status = ndr_push_security_descriptor(ndr, NDR_SCALARS|NDR_BUFFERS, set->in.sd);
+	status = ndr_push_security_descriptor(ndr, NDR_SCALARS|NDR_BUFFERS, io->set_secdesc.in.sd);
 	if (!NT_STATUS_IS_OK(status)) {
 		ndr_push_free(ndr);
 		return NULL;
@@ -151,8 +152,8 @@ struct smbcli_request *smb_raw_set_secdesc_send(struct smbcli_tree *tree,
 set file ACL (sync interface)
 ****************************************************************************/
 NTSTATUS smb_raw_set_secdesc(struct smbcli_tree *tree, 
-			     struct smb_set_secdesc *set)
+			     union smb_setfileinfo *io)
 {
-	struct smbcli_request *req = smb_raw_set_secdesc_send(tree, set);
+	struct smbcli_request *req = smb_raw_set_secdesc_send(tree, io);
 	return smbcli_request_simple_recv(req);
 }

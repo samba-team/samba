@@ -48,6 +48,7 @@ static NTSTATUS smb_raw_info_backend(struct smbcli_session *session,
 	case RAW_FILEINFO_GENERIC:
 	case RAW_FILEINFO_GETATTR:
 	case RAW_FILEINFO_GETATTRE:
+	case RAW_FILEINFO_SEC_DESC:
 		/* not handled here */
 		return NT_STATUS_INVALID_LEVEL;
 
@@ -460,11 +461,14 @@ failed:
  Query file info (async send)
 ****************************************************************************/
 struct smbcli_request *smb_raw_fileinfo_send(struct smbcli_tree *tree,
-					  union smb_fileinfo *parms)
+					     union smb_fileinfo *parms)
 {
 	/* pass off the non-trans2 level to specialised functions */
 	if (parms->generic.level == RAW_FILEINFO_GETATTRE) {
 		return smb_raw_getattrE_send(tree, parms);
+	}
+	if (parms->generic.level == RAW_FILEINFO_SEC_DESC) {
+		return smb_raw_query_secdesc_send(tree, parms);
 	}
 	if (parms->generic.level >= RAW_FILEINFO_GENERIC) {
 		return NULL;
@@ -488,6 +492,9 @@ NTSTATUS smb_raw_fileinfo_recv(struct smbcli_request *req,
 
 	if (parms->generic.level == RAW_FILEINFO_GETATTRE) {
 		return smb_raw_getattrE_recv(req, parms);
+	}
+	if (parms->generic.level == RAW_FILEINFO_SEC_DESC) {
+		return smb_raw_query_secdesc_recv(req, mem_ctx, parms);
 	}
 	if (parms->generic.level == RAW_FILEINFO_GETATTR) {
 		return smb_raw_getattr_recv(req, parms);

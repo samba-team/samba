@@ -1793,7 +1793,7 @@ static int cmd_acl(const char **cmd_ptr)
 	fstring buf;
 	int ret = 0;
 	TALLOC_CTX *mem_ctx;
-	struct smb_query_secdesc query;
+	union smb_fileinfo query;
 	NTSTATUS status;
 	int fnum;
 
@@ -1813,17 +1813,18 @@ static int cmd_acl(const char **cmd_ptr)
 
 	mem_ctx = talloc_init("%s", fname);
 
-	query.in.fnum = fnum;
-	query.in.secinfo_flags = 0x7;
+	query.query_secdesc.level = RAW_FILEINFO_SEC_DESC;
+	query.query_secdesc.in.fnum = fnum;
+	query.query_secdesc.in.secinfo_flags = 0x7;
 
-	status = smb_raw_query_secdesc(cli->tree, mem_ctx, &query);
+	status = smb_raw_fileinfo(cli->tree, mem_ctx, &query);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("%s - %s\n", fname, nt_errstr(status));
 		ret = 1;
 		goto done;
 	}
 
-	NDR_PRINT_DEBUG(security_descriptor, query.out.sd);
+	NDR_PRINT_DEBUG(security_descriptor, query.query_secdesc.out.sd);
 
 	talloc_destroy(mem_ctx);
 

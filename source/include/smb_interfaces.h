@@ -42,6 +42,20 @@ typedef struct {
 } WIRE_STRING;
 
 
+/* 
+   use the same structure for dom_sid2 as dom_sid. A dom_sid2 is really
+   just a dom sid, but with the sub_auths represented as a conformant
+   array. As with all in-structure conformant arrays, the array length
+   is placed before the start of the structure. That's what gives rise
+   to the extra num_auths elemenent. We don't want the Samba code to
+   have to bother with such esoteric NDR details, so its easier to just
+   define it as a dom_sid and use pidl magic to make it all work. It
+   just means you need to mark a sid as a "dom_sid2" in the IDL when you
+   know it is of the conformant array variety
+*/
+#define dom_sid2 dom_sid
+
+
 /*
   this header defines the structures and unions used between the SMB
   parser and the backends.
@@ -296,6 +310,7 @@ enum smb_fileinfo_level {
 		     RAW_FILEINFO_GENERIC                    = 0xF000, 
 		     RAW_FILEINFO_GETATTR,                   /* SMBgetatr */
 		     RAW_FILEINFO_GETATTRE,                  /* SMBgetattrE */
+		     RAW_FILEINFO_SEC_DESC,                  /* NT_TRANSACT_QUERY_SECURITY_DESC */
 		     RAW_FILEINFO_STANDARD                   = SMB_QFILEINFO_STANDARD,
 		     RAW_FILEINFO_EA_SIZE                    = SMB_QFILEINFO_EA_SIZE,
 		     RAW_FILEINFO_ALL_EAS                    = SMB_QFILEINFO_ALL_EAS,
@@ -661,6 +676,18 @@ union smb_fileinfo {
 			uint32_t reparse_tag;
 		} out;
 	} attribute_tag_information;
+
+	/* RAW_FILEINFO_QUERY_SEC_DESC */
+	struct {
+		enum smb_fileinfo_level level;
+		struct {
+			uint16_t fnum;
+			uint32_t secinfo_flags;
+		} in;
+		struct {
+			struct security_descriptor *sd;
+		} out;
+	} query_secdesc;
 };
 
 
@@ -668,6 +695,7 @@ enum smb_setfileinfo_level {
 	RAW_SFILEINFO_GENERIC		      = 0xF000, 
 	RAW_SFILEINFO_SETATTR,		      /* SMBsetatr */
 	RAW_SFILEINFO_SETATTRE,		      /* SMBsetattrE */
+	RAW_SFILEINFO_SEC_DESC,               /* NT_TRANSACT_SET_SECURITY_DESC */
 	RAW_SFILEINFO_STANDARD                = SMB_SFILEINFO_STANDARD,
 	RAW_SFILEINFO_EA_SET                  = SMB_SFILEINFO_EA_SET,
 	RAW_SFILEINFO_BASIC_INFO              = SMB_SFILEINFO_BASIC_INFO,
@@ -854,6 +882,16 @@ union smb_setfileinfo {
 			const char *link_dest;
 		} in;
 	} unix_link, unix_hlink;
+
+	/* RAW_FILEINFO_SET_SEC_DESC */
+	struct {
+		enum smb_setfileinfo_level level;
+		union setfileinfo_file file;
+		struct {
+			uint32_t secinfo_flags;
+			struct security_descriptor *sd;
+		} in;
+	} set_secdesc;
 };
 
 

@@ -179,7 +179,6 @@ extern int errno;
 #include "module.h"
 #include "mutex.h"
 #include "librpc/ndr/libndr.h"
-#include "librpc/ndr/ndr_sec.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "librpc/gen_ndr/ndr_dcerpc.h"
 #include "librpc/rpc/dcerpc.h"

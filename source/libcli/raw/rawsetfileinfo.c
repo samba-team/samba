@@ -41,6 +41,7 @@ static BOOL smb_raw_setinfo_backend(struct smbcli_tree *tree,
 	case RAW_SFILEINFO_GENERIC:
 	case RAW_SFILEINFO_SETATTR:
 	case RAW_SFILEINFO_SETATTRE:
+	case RAW_SFILEINFO_SEC_DESC:
 		/* not handled here */
 		return False;
 
@@ -261,6 +262,9 @@ struct smbcli_request *smb_raw_setfileinfo_send(struct smbcli_tree *tree,
 
 	if (parms->generic.level == RAW_SFILEINFO_SETATTRE) {
 		return smb_raw_setattrE_send(tree, parms);
+	}
+	if (parms->generic.level == RAW_SFILEINFO_SEC_DESC) {
+		return smb_raw_set_secdesc_send(tree, parms);
 	}
 	if (parms->generic.level >= RAW_SFILEINFO_GENERIC) {
 		return NULL;
