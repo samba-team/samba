@@ -277,6 +277,16 @@ max can be %d\n",
 			/* The parent doesn't need this socket */
 			close(smbd_server_fd()); 
 
+			/* Sun May 6 18:56:14 2001 ackley@cs.unm.edu:
+				Clear the closed fd info out of server_fd --
+				and more importantly, out of client_fd in
+				util_sock.c, to avoid a possible
+				getpeername failure if we reopen the logs
+				and use %I in the filename.
+			*/
+
+			smbd_set_server_fd(-1);
+
 			/* Force parent to check log size after
 			 * spawning child.  Fix from
 			 * klausr@ITAP.Physik.Uni-Stuttgart.De.  The
