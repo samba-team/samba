@@ -74,6 +74,63 @@ ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T of
 	return count + hdr_len;
 }
 
+#elif defined(LINUX_BROKEN_SENDFILE_API)
+
+#include <sys/sendfile.h>
+
+#ifndef MSG_MORE
+#define MSG_MORE 0x8000
+#endif
+
+ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count)
+{
+	size_t total=0;
+	ssize_t ret;
+	ssize_t hdr_len = 0;
+
+	/* 
+	 * Fix for broken Linux 2.4 systems with no working sendfile64().
+	 * If the offset+count > 2 GB then pretend we don't have the
+	 * system call sendfile at all. The upper later catches this
+	 * and uses a normal read. JRA.
+	 */
+
+	if ((sizeof(SMB_OFF_T) >= 8) && (offset + count > (SMB_OFF_T)0x7FFFFFFF)) {
+		errno = ENOSYS;
+		return -1;
+	}
+
+	/*
+	 * Send the header first.
+	 * Use MSG_MORE to cork the TCP output until sendfile is called.
+	 */
+
+	if (header) {
+		hdr_len = header->length;
+		while (total < hd_len) {
+			ret = sys_send(tofd, header->data + total,hdr_len - total, MSG_MORE);
+			if (ret == -1)
+				return -1;
+			total += ret;
+		}
+	}
+
+	total = count;
+	while (total) {
+		ssize_t nwritten;
+		do {
+			nwritten = sendfile(tofd, fromfd, &offset, total);
+		} while (nwritten == -1 && errno == EINTR);
+		if (nwritten == -1)
+			return -1;
+		if (nwritten == 0)
+			return -1; /* I think we're at EOF here... */
+		total -= nwritten;
+	}
+	return count + hdr_len;
+}
+
+
 #elif defined(SOLARIS_SENDFILE_API)
 
 ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count)
