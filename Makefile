@@ -4,7 +4,8 @@ CFLAGS=-g
 
 YFLAGS = -d
 
-SOURCES = principal.c principal_p.c data.c context.c misc.c string2key.c
+SOURCES = principal.c principal_p.c data.c context.c misc.c string2key.c \
+	  krbhst.c getport.c send_to_kdc.c
 
 OBJECTS = $(SOURCES:%.c=%.o) config_file.o
 
