@@ -137,6 +137,7 @@ automatically demoted to a BDC.
 
 <para>
 At this time Samba is NOT capable of acting as an <emphasis>ADS Domain Controller</emphasis>.
-
+</para>
 </sect2>
 </sect1>
+</chapter>
