@@ -489,6 +489,11 @@ static size_t req_pull_ucs2(struct smbsrv_request *req, const char **dest, const
 	}
 
 	src_len2 = utf16_len_n(src, src_len);
+	if (src_len2 == 0) {
+		*dest = talloc_strdup(req, "");
+		return src_len2 + alignment;
+	}
+
 	ret = convert_string_talloc(req, CH_UTF16, CH_UNIX, src, src_len2, (void **)&dest2);
 
 	if (ret == -1) {
