@@ -77,9 +77,6 @@ static BOOL reply_sesssetup_blob(connection_struct *conn, char *outbuf,
 
 	set_message(outbuf,4,0,True);
 
-	/* we set NT_STATUS_MORE_PROCESSING_REQUIRED to tell the other end
-	   that we aren't finished yet */
-
 	nt_status = nt_status_squash(nt_status);
 	SIVAL(outbuf, smb_rcls, NT_STATUS_V(nt_status));
 	SSVAL(outbuf, smb_vwv0, 0xFF); /* no chaining possible */
@@ -308,6 +305,9 @@ static BOOL reply_spnego_ntlmssp(connection_struct *conn, char *outbuf,
         response = spnego_gen_auth_response(ntlmssp_blob, nt_status, OID_NTLMSSP);
 	ret = reply_sesssetup_blob(conn, outbuf, response, nt_status);
 	data_blob_free(&response);
+
+	/* NT_STATUS_MORE_PROCESSING_REQUIRED from our NTLMSSP code tells us,
+	   and the other end, that we are not finished yet. */
 
 	if (!ret || !NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		auth_ntlmssp_end(auth_ntlmssp_state);
