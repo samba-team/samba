@@ -1906,6 +1906,98 @@ NTSTATUS cli_samr_set_userinfo2(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
+/* Delete domain group */
+
+NTSTATUS cli_samr_delete_dom_group(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+                                  POLICY_HND *group_pol)
+{
+	prs_struct qbuf, rbuf;
+	SAMR_Q_DELETE_DOM_GROUP q;
+	SAMR_R_DELETE_DOM_GROUP r;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	DEBUG(10,("cli_samr_delete_dom_group\n"));
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Marshall data and send request */
+
+	init_samr_q_delete_dom_group(&q, group_pol);
+
+	if (!samr_io_q_delete_dom_group("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SAMR_DELETE_DOM_GROUP, &qbuf, &rbuf)) {
+		goto done;
+	}
+
+	/* Unmarshall response */
+
+	if (!samr_io_r_delete_dom_group("", &r, &rbuf, 0)) {
+		goto done;
+	}
+
+	/* Return output parameters */
+
+	result = r.status;
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/* Delete domain alias */
+
+NTSTATUS cli_samr_delete_dom_alias(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+                                  POLICY_HND *alias_pol)
+{
+	prs_struct qbuf, rbuf;
+	SAMR_Q_DELETE_DOM_ALIAS q;
+	SAMR_R_DELETE_DOM_ALIAS r;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	DEBUG(10,("cli_samr_delete_dom_alias\n"));
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Marshall data and send request */
+
+	init_samr_q_delete_dom_alias(&q, alias_pol);
+
+	if (!samr_io_q_delete_dom_alias("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SAMR_DELETE_DOM_ALIAS, &qbuf, &rbuf)) {
+		goto done;
+	}
+
+	/* Unmarshall response */
+
+	if (!samr_io_r_delete_dom_alias("", &r, &rbuf, 0)) {
+		goto done;
+	}
+
+	/* Return output parameters */
+
+	result = r.status;
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
 /* Delete domain user */
 
 NTSTATUS cli_samr_delete_dom_user(struct cli_state *cli, TALLOC_CTX *mem_ctx, 

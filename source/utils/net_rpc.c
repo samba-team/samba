@@ -1044,6 +1044,201 @@ static int rpc_group_usage(int argc, const char **argv)
 	return net_help_group(argc, argv);
 }
 
+/**
+ * Delete group on a remote RPC server
+ *
+ * All parameters are provided by the run_rpc_command function, except for
+ * argc, argv which are passes through.
+ *
+ * @param domain_sid The domain sid acquired from the remote server
+ * @param cli A cli_state connected to the server.
+ * @param mem_ctx Talloc context, destoyed on completion of the function.
+ * @param argc  Standard main() style argc
+ * @param argv  Standard main() style argv.  Initial components are already
+ *              stripped
+ *
+ * @return Normal NTSTATUS return.
+ **/
+                                                                                                             
+static NTSTATUS rpc_group_delete_internals(const DOM_SID *domain_sid,
+                                           const char *domain_name,
+                                           struct cli_state *cli,
+                                           TALLOC_CTX *mem_ctx,
+                                           int argc, const char **argv)
+{
+	POLICY_HND connect_pol, domain_pol, group_pol, user_pol;
+	BOOL group_is_primary = False;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	uint32 *group_rids, num_rids, *name_types, num_members, 
+               *group_attrs, group_rid;
+	uint32 flags = 0x000003e8; /* Unknown */
+	/* char **names; */
+	int i;
+	/* DOM_GID *user_gids; */
+	SAM_USERINFO_CTR *user_ctr;
+	fstring temp;
+
+	if (argc < 1) {
+        	d_printf("specify group\n");
+		rpc_group_usage(argc,argv);
+		return NT_STATUS_OK; /* ok? */
+	}
+
+        result = cli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS,
+                                  &connect_pol);
+
+        if (!NT_STATUS_IS_OK(result)) {
+		d_printf("Request samr_connect failed\n");
+        	goto done;
+        }
+        
+        result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
+                                      MAXIMUM_ALLOWED_ACCESS,
+                                      domain_sid, &domain_pol);
+        
+        if (!NT_STATUS_IS_OK(result)) {
+		d_printf("Request open_domain failed\n");
+        	goto done;
+        }
+	
+	result = cli_samr_lookup_names(cli, mem_ctx, &domain_pol,
+				       flags, 1, &argv[0],
+				       &num_rids, &group_rids,
+				       &name_types);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		d_printf("Lookup of '%s' failed\n",argv[0]);
+   		goto done;
+	}
+
+	switch (name_types[0])
+	{
+	case SID_NAME_DOM_GRP:
+		result = cli_samr_open_group(cli, mem_ctx, &domain_pol,
+					     MAXIMUM_ALLOWED_ACCESS,
+					     group_rids[0], &group_pol);
+		if (!NT_STATUS_IS_OK(result)) {
+			d_printf("Request open_group failed");
+   			goto done;
+		}
+                
+		group_rid = group_rids[0];
+                
+		result = cli_samr_query_groupmem(cli, mem_ctx, &group_pol,
+                                 &num_members, &group_rids,
+                                 &group_attrs);
+		
+		if (!NT_STATUS_IS_OK(result)) {
+			d_printf("Unable to query group members of %s",argv[0]);
+   			goto done;
+		}
+		
+		if (opt_verbose) {
+			d_printf("Domain Group %s (rid: %d) has %d members\n",
+				argv[0],group_rid,num_members);
+		}
+
+		/* Check if group is anyone's primary group */
+                for (i = 0; i < num_members; i++)
+		{
+	                result = cli_samr_open_user(cli, mem_ctx, &domain_pol,
+					            MAXIMUM_ALLOWED_ACCESS,
+					            group_rids[i], &user_pol);
+	
+	        	if (!NT_STATUS_IS_OK(result)) {
+				d_printf("Unable to open group member %d\n",group_rids[i]);
+	           		goto done;
+	        	}
+	
+	                ZERO_STRUCT(user_ctr);
+
+	                result = cli_samr_query_userinfo(cli, mem_ctx, &user_pol,
+	                                                 21, &user_ctr);
+	
+	        	if (!NT_STATUS_IS_OK(result)) {
+				d_printf("Unable to lookup userinfo for group member %d\n",group_rids[i]);
+	           		goto done;
+	        	}
+	
+			if (user_ctr->info.id21->group_rid == group_rid) {
+				unistr2_to_ascii(temp, &(user_ctr->info.id21)->uni_user_name, 
+						sizeof(temp)-1);
+				if (opt_verbose) 
+					d_printf("Group is primary group of %s\n",temp);
+				group_is_primary = True;
+                        }
+
+			cli_samr_close(cli, mem_ctx, &user_pol);
+		}
+                
+		if (group_is_primary) {
+			d_printf("Unable to delete group because some of it's "
+				 "members have it as primary group\n");
+			result = NT_STATUS_MEMBERS_PRIMARY_GROUP;
+			goto done;
+		}
+     
+		/* remove all group members */
+		for (i = 0; i < num_members; i++)
+		{
+			if (opt_verbose) 
+				d_printf("Remove group member %d...",group_rids[i]);
+			result = cli_samr_del_groupmem(cli, mem_ctx, &group_pol, group_rids[i]);
+
+			if (NT_STATUS_IS_OK(result)) {
+				if (opt_verbose)
+					d_printf("ok\n");
+			} else {
+				if (opt_verbose)
+					d_printf("failed\n");
+				goto done;
+			}	
+		}
+
+		result = cli_samr_delete_dom_group(cli, mem_ctx, &group_pol);
+
+		break;
+	/* removing a local group is easier... */
+	case SID_NAME_ALIAS:
+		result = cli_samr_open_alias(cli, mem_ctx, &domain_pol,
+					     MAXIMUM_ALLOWED_ACCESS,
+					     group_rids[0], &group_pol);
+
+		if (!NT_STATUS_IS_OK(result)) {
+			d_printf("Request open_alias failed\n");
+   			goto done;
+		}
+		
+		result = cli_samr_delete_dom_alias(cli, mem_ctx, &group_pol);
+		break;
+	default:
+		d_printf("%s is of type %s. This command is only for deleting local or global groups\n",
+			argv[0],sid_type_lookup(name_types[0]));
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+         
+	
+	if (NT_STATUS_IS_OK(result)) {
+		if (opt_verbose)
+			d_printf("Deleted %s '%s'\n",sid_type_lookup(name_types[0]),argv[0]);
+	} else {
+		d_printf("Deleting of %s failed: %s\n",argv[0],
+			get_friendly_nt_error_msg(result));
+	}
+	
+ done:
+	return result;	
+        
+}
+
+static int rpc_group_delete(int argc, const char **argv)
+{
+	return run_rpc_command(NULL, PI_SAMR, 0, rpc_group_delete_internals,
+                               argc,argv);
+}
+
 static NTSTATUS 
 rpc_group_add_internals(const DOM_SID *domain_sid, const char *domain_name, 
 			struct cli_state *cli,
@@ -2019,11 +2214,9 @@ int net_rpc_group(int argc, const char **argv)
 {
 	struct functable func[] = {
 		{"add", rpc_group_add},
+		{"delete", rpc_group_delete},
 		{"addmem", rpc_group_addmem},
 		{"delmem", rpc_group_delmem},
-#if 0
-		{"delete", rpc_group_delete},
-#endif
 		{"list", rpc_group_list},
 		{"members", rpc_group_members},
 		{NULL, NULL}
