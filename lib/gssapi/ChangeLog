@@ -1,3 +1,7 @@
+2003-03-18  Love Hörnquist Åstrand <lha@it.su.se>
+
+	* gss_acquire_cred.3: list supported mechanism and nametypes
+	
 2003-03-16  Love Hörnquist Åstrand <lha@it.su.se>
 	
 	* gss_acquire_cred.3: text about gss_display_name
