@@ -583,7 +583,7 @@ verify_krb5(const char *password)
 				NULL);
 	    ret = krb5_cc_retrieve_cred(context, id, 0, &mcred, &cred);
 	    if(ret == 0) {
-		ret = krb524_convert_creds_kdc(context, id, &cred, &c);
+		ret = krb524_convert_creds_kdc_ccache(context, id, &cred, &c);
 		if(ret == 0) 
 		    tf_setup(&c, c.pname, c.pinst);
 		memset(&c, 0, sizeof(c));

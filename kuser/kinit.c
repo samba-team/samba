@@ -579,7 +579,7 @@ main (int argc, char **argv)
 #ifdef KRB4
     if(get_v4_tgt) {
 	CREDENTIALS c;
-	ret = krb524_convert_creds_kdc(context, ccache, &cred, &c);
+	ret = krb524_convert_creds_kdc_ccache(context, ccache, &cred, &c);
 	if(ret)
 	    krb5_warn(context, ret, "converting creds");
 	else

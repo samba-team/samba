@@ -100,7 +100,7 @@ get_ad_tkt(char *service, char *sinstance, char *realm, int lifetime)
 	krb5_free_context(context);
 	return KFAILURE;
     }
-    ret = krb524_convert_creds_kdc(context, id, out_creds, &cred);
+    ret = krb524_convert_creds_kdc_ccache(context, id, out_creds, &cred);
     krb5_cc_close(context, id);
     krb5_free_context(context);
     krb5_free_creds(context, out_creds);

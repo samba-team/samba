@@ -218,7 +218,7 @@ krb5_to4 (krb5_ccache id)
 
 	ret = krb5_cc_retrieve_cred(context, id, 0, &mcred, &cred);
 	if(ret == 0) {
-	    ret = krb524_convert_creds_kdc(context, id, &cred, &c);
+	    ret = krb524_convert_creds_kdc_ccache(context, id, &cred, &c);
 	    if(ret == 0) {
 		snprintf(krb4tkfile,sizeof(krb4tkfile),"%s%d",TKT_ROOT,
 			 getuid());
