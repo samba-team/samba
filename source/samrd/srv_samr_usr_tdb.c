@@ -969,7 +969,7 @@ uint32 _samr_create_user(const POLICY_HND *domain_pol,
 	uint32 *als_rids = NULL;
 #endif
 
-	POSIX_ID id;
+	SURS_POSIX_ID id;
 
 	(*unknown_0) = 0x30;
 	(*user_rid) = 0x0;
