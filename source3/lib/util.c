@@ -1440,6 +1440,9 @@ void smb_panic2(const char *why, BOOL decrement_pid_count )
 #endif
 
 	dbgflush();
+#ifdef SIGABRT
+	CatchSignal(SIGABRT,SIGNAL_CAST SIG_DFL);
+#endif
 	abort();
 }
 

@@ -545,6 +545,10 @@ static BOOL dump_core(void)
 
 
 	DEBUG(0,("Dumping core in %s\n", dname));
+	/* Ensure we don't have a signal handler for abort. */
+#ifdef SIGABRT
+	CatchSignal(SIGABRT,SIGNAL_CAST SIG_DFL);
+#endif
 	abort();
 	return(True);
 }
