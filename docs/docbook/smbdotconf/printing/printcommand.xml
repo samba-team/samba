@@ -15,7 +15,7 @@
     <para>The print command is simply a text string. It will be used 
     verbatim after macro substitutions have been made:</para>
 
-    <para>%s, %p - the path to the spool
+	<para>%s, %f - the path to the spool
     file name</para>
 
     <para>%p - the appropriate printer 
