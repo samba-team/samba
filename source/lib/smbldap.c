@@ -282,8 +282,9 @@ BOOL fetch_ldap_pw(char **dn, char** pw)
 }
 
 /*******************************************************************
-search an attribute and return the first value found.
+ Search an attribute and return the first value found.
 ******************************************************************/
+
  BOOL smbldap_get_single_attribute (LDAP * ldap_struct, LDAPMessage * entry,
 				   const char *attribute, pstring value)
 {
@@ -300,8 +301,7 @@ search an attribute and return the first value found.
 		return False;
 	}
 	
-	if (convert_string(CH_UTF8, CH_UNIX,values[0], -1, value, sizeof(pstring)) == (size_t)-1)
-	{
+	if (convert_string(CH_UTF8, CH_UNIX,values[0], -1, value, sizeof(pstring)) == (size_t)-1) {
 		DEBUG(1, ("smbldap_get_single_attribute: string conversion of [%s] = [%s] failed!\n", 
 			  attribute, values[0]));
 		ldap_value_free(values);
@@ -402,32 +402,32 @@ search an attribute and return the first value found.
 	*modlist = mods;
 }
 
-
 /**********************************************************************
   Set attribute to newval in LDAP, regardless of what value the
   attribute had in LDAP before.
 *********************************************************************/
+
  void smbldap_make_mod(LDAP *ldap_struct, LDAPMessage *existing,
 		      LDAPMod ***mods,
 		      const char *attribute, const char *newval)
 {
-	char **values = NULL;
+	pstring oldval;
+	BOOL existed;
 
 	if (existing != NULL) {
-		values = ldap_get_values(ldap_struct, existing, attribute);
+		existed = smbldap_get_single_attribute(ldap_struct, existing, attribute, oldval);
+	} else {
+		existed = False;
+		*oldval = '\0';
 	}
 
 	/* all of our string attributes are case insensitive */
 	
-	if ((values != NULL) && (values[0] != NULL) &&
-	    StrCaseCmp(values[0], newval) == 0) 
-	{
+	if (existed && (StrCaseCmp(oldval, newval) == 0)) {
 		
 		/* Believe it or not, but LDAP will deny a delete and
 		   an add at the same time if the values are the
 		   same... */
-
-		ldap_value_free(values);
 		return;
 	}
 
@@ -439,7 +439,7 @@ search an attribute and return the first value found.
 		smbldap_set_mod(mods, LDAP_MOD_ADD, attribute, newval);
 	}
 
-	if (values == NULL) {
+	if (!existed) {
 		/* There has been no value before, so don't delete it.
 		   Here's a possible race: We might end up with
 		   duplicate attributes */
@@ -451,10 +451,8 @@ search an attribute and return the first value found.
 	   deny the complete operation if somebody changed the
 	   attribute behind our back. */
 
-	smbldap_set_mod(mods, LDAP_MOD_DELETE, attribute, values[0]);
-	ldap_value_free(values);
+	smbldap_set_mod(mods, LDAP_MOD_DELETE, attribute, oldval);
 }
-
 
 /**********************************************************************
  Some varients of the LDAP rebind code do not pass in the third 'arg' 
@@ -1329,3 +1327,23 @@ NTSTATUS smbldap_search_domain_info(struct smbldap_state *ldap_state,
 	return ret;
 }
 
+/*******************************************************************
+ Return a copy of the DN for a LDAPMessage. Convert from utf8 to CH_UNIX.
+********************************************************************/
+
+char *smbldap_get_dn(LDAP *ld, LDAPMessage *entry)
+{
+	char *utf8_dn, *unix_dn;
+
+	utf8_dn = ldap_get_dn(ld, entry);
+	if (!utf8_dn) {
+		DEBUG (5, ("smbldap_get_dn: ldap_get_dn failed\n"));
+		return NULL;
+	}
+	if (pull_utf8_allocate((void **) &unix_dn, utf8_dn) == (size_t)-1) {
+		DEBUG (0, ("smbldap_get_dn: String conversion failure utf8 [%s]\n", utf8_dn));
+		return NULL;
+	}
+	ldap_memfree(utf8_dn);
+	return unix_dn;
+}
