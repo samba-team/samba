@@ -253,8 +253,6 @@ int
 main(int argc, char **argv)
 {
     int his_addr_len, ctrl_addr_len, on = 1, tos;
-    char *cp, line[LINE_MAX];
-    FILE *fd;
     int port;
     struct servent *sp;
 
@@ -708,7 +706,6 @@ checkaccess(char *name)
 
 int do_login(int code, char *passwd)
 {
-    FILE *fd;
     login_attempts = 0;		/* this time successful */
     if (setegid((gid_t)pw->pw_gid) < 0) {
 	reply(550, "Can't set gid.");
