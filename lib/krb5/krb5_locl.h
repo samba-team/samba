@@ -106,7 +106,6 @@
 #include <krb5.h>
 #include <krb5_err.h>
 #include <asn1_err.h>
-#include <hdb_err.h>
 #include <error.h>
 
 /* data.c */
