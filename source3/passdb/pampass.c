@@ -61,8 +61,6 @@ static char *PAM_password;
 static BOOL pam_error_handler(pam_handle_t *pamh, int pam_error, char *msg, int dbglvl)
 {
 
-	int retval;
-
        	if( pam_error != PAM_SUCCESS)
 	{
 		DEBUG(dbglvl, ("PAM: %s : %s\n", msg, pam_strerror(pamh, pam_error)));
@@ -241,7 +239,7 @@ static BOOL pam_auth(pam_handle_t *pamh, char *user, char *password)
 /* 
  * PAM Account Handler
  */
-static BOOL pam_account(pam_handle_t *pamh, char * user, char * password)
+static BOOL pam_account(pam_handle_t *pamh, char * user, char * password, BOOL pam_auth)
 {
 	int pam_error;
 
@@ -272,6 +270,14 @@ static BOOL pam_account(pam_handle_t *pamh, char * user, char * password)
 	if(!pam_error_handler(pamh, pam_error, "Account Check Failed", 2)) {
 		proc_pam_end(pamh);
 		return False;
+	}
+
+	/* Skip the pam_setcred() call if we didn't use pam_authenticate()
+	   for authentication -- it's an error to call pam_setcred without
+	   calling pam_authenticate first */
+	if (!pam_auth) {
+		DEBUG(4, ("PAM: Skipping setcred for user: %s (using encrypted passwords)\n", user));
+		return True;
 	}
 
 	/*
@@ -375,7 +381,7 @@ BOOL pam_accountcheck(char * user)
 
 	if( proc_pam_start(&pamh, user))
 	{
-			if ( pam_account(pamh, user, NULL))
+			if ( pam_account(pamh, user, NULL, False))
 			{
 				return( proc_pam_end(pamh));
 			}
@@ -398,7 +404,7 @@ BOOL pam_passcheck(char * user, char * password)
 	{
 		if ( pam_auth(pamh, user, password))
 		{
-			if ( pam_account(pamh, user, password))
+			if ( pam_account(pamh, user, password, True))
 			{
 				return( proc_pam_end(pamh));
 			}
