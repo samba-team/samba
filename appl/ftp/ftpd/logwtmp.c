@@ -66,7 +66,11 @@ RCSID("$Id$");
 #include "extern.h"
 
 #ifndef WTMP_FILE
+#ifdef _PATH_WTMP
+#define WTMP_FILE _PATH_WTMP
+#else
 #define WTMP_FILE "/var/adm/wtmp"
+#endif
 #endif
 
 void
