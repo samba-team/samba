@@ -62,9 +62,14 @@ static PyObject *lsa_open_policy(PyObject *self, PyObject *args,
 	POLICY_HND hnd;
 
 	if (!PyArg_ParseTupleAndKeywords(
-		    args, kw, "s|O!i", kwlist, &server, &PyDict_Type,
-		    &creds, &desired_access))
+		    args, kw, "s|Oi", kwlist, &server, &creds, &desired_access))
 		return NULL;
+
+	if (creds && creds != Py_None && !PyDict_Check(creds)) {
+		PyErr_SetString(PyExc_TypeError, 
+				"credentials must be dictionary or None");
+		return NULL;
+	}
 
 	if (!(cli = open_pipe_creds(server, creds, PIPE_LSARPC, &errstr))) {
 		PyErr_SetString(lsa_error, errstr);
@@ -359,6 +364,38 @@ static PyMethodDef lsa_methods[] = {
 	{ "close", (PyCFunction)lsa_close, 
 	  METH_VARARGS, 
 	  "Close a policy handle" },
+
+	/* Other stuff - this should really go into a samba config module
+  	   but for the moment let's leave it here. */
+
+	{ "setup_logging", (PyCFunction)py_setup_logging, 
+	  METH_VARARGS | METH_KEYWORDS, 
+	  "Set up debug logging.
+
+Initialises Samba's debug logging system.  One argument is expected which
+is a boolean specifying whether debugging is interactive and sent to stdout
+or logged to a file.
+
+Example:
+
+>>> spoolss.setup_logging(interactive = 1)" },
+
+	{ "get_debuglevel", (PyCFunction)get_debuglevel, 
+	  METH_VARARGS, 
+	  "Set the current debug level.
+
+Example:
+
+>>> spoolss.get_debuglevel()
+0" },
+
+	{ "set_debuglevel", (PyCFunction)set_debuglevel, 
+	  METH_VARARGS, 
+	  "Get the current debug level.
+
+Example:
+
+>>> spoolss.set_debuglevel(10)" },
 
 	{ NULL }
 };
