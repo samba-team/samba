@@ -146,7 +146,7 @@ find_keys(hdb_entry *client,
 	/* find server key */
 	ret = find_etype(server, etypes, num_etypes, skey, setype);
 	if (ret) {
-	    if (krb5_unparse_name(context, client->principal, &name) != 0)
+	    if (krb5_unparse_name(context, server->principal, &name) != 0)
 		name = unparse_name;
 	    kdc_log(0, "Server (%s) has no support for etypes", name);
 	    if (name != unparse_name)
