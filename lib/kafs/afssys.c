@@ -137,7 +137,7 @@ dns_find_cell(char *cell, char *dbserver)
 		status = dn_expand(data, data + len, p, host, sizeof(host));
 		if(status < 0)
 		    return -1;
-		strncpy(dbserver, host, MaxHostNameLen);
+		strncpy(dbserver, (char*)host, MaxHostNameLen);
 		dbserver[MaxHostNameLen] = 0;
 		return 0;
 	    }
