@@ -339,10 +339,12 @@ static void refresh_sequence_number(struct winbindd_domain *domain, BOOL force)
 
 	get_cache( domain );
 
+#if 0	/* JERRY -- disable as the default cache time is now 5 minutes */
 	/* trying to reconnect is expensive, don't do it too often */
 	if (domain->sequence_number == DOM_SEQUENCE_NONE) {
 		cache_time *= 8;
 	}
+#endif
 
 	time_diff = t - domain->last_seq_check;
 
