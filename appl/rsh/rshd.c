@@ -49,6 +49,14 @@ des_cblock iv;
 
 int do_encrypt = 0;
 
+static int do_unique_tkfile           = 0;
+static char unique_tkfile[MAXPATHLEN] = "";
+static krb5_data saved_remote_cred;
+static krb5_auth_context saved_auth_context;
+static krb5_principal saved_client;
+static char saved_ccname[MAXPATHLEN];
+static int save_status                = 1;
+
 static int do_inetd = 1;
 static char *port_str;
 static int do_rhosts;
@@ -183,45 +191,50 @@ recv_krb4_auth (int s, u_char *buf,
 
 #endif /* KRB4 */
 
+static int 
+save_krb5_creds (int s,
+                 krb5_auth_context auth_context,
+                 krb5_principal client)
+
+{
+    saved_auth_context = auth_context;
+    saved_client = client;
+    krb5_data_zero (&saved_remote_cred);
+    return krb5_read_message (context,
+			      (void *)&s,
+			      &saved_remote_cred);
+}
+
 static void
-recv_krb5_creds (int s,
-		 krb5_auth_context auth_context,
-		 char *username,
-		 krb5_principal client)
+recv_krb5_creds (krb5_auth_context auth_context,
+		 krb5_principal *client,
+                 krb5_data *remote_cred,
+                 char *ccname)
 {
     krb5_error_code ret;
     krb5_ccache ccache;
-    krb5_data data;
-    char ccname[MAXPATHLEN];
-    struct passwd *pwd;
 
-    krb5_data_zero (&data);
-    ret = krb5_read_message (context,
-			     (void *)&s,
-			     &data);
-    if (ret || data.length == 0)
+    if (remote_cred->length == 0)
 	return;
 
-    pwd = getpwnam (username);
-    if (pwd == NULL)
-	goto out;
-
-    snprintf (ccname, sizeof(ccname),
-	      "FILE:/tmp/krb5cc_%u", pwd->pw_uid);
     ret = krb5_cc_resolve (context, ccname, &ccache);
-    if (ret)
+    if (ret) {
+	krb5_warn (context, ret, "krb5_cc_resolve");
 	goto out;
-    ret = krb5_cc_initialize (context, ccache, client);
-    if (ret)
+    }
+    ret = krb5_cc_initialize (context, ccache, *client);
+    if (ret) {
+	krb5_warn (context, ret, "krb5_cc_initialize");
 	goto out;
-    ret = krb5_rd_cred (context, auth_context, ccache, &data);
+    }
+    ret = krb5_rd_cred(context, auth_context, ccache, remote_cred);
+    if (ret) {
+	krb5_warn (context, ret, "krb5_rd_cred");
+    }
     krb5_cc_close (context, ccache);
-    if (ret)
-	goto out;
-    chown (ccname + 5, pwd->pw_uid, -1);
 
 out:
-    krb5_data_free (&data);
+    krb5_data_free (remote_cred);
 }
 
 static int
@@ -275,7 +288,7 @@ recv_krb5_auth (int s, u_char *buf,
 
     read_str (s, server_username, USERNAME_SZ, "remote username");
     read_str (s, cmd, COMMAND_SZ, "command");
-    read_str (s, client_username, USERNAME_SZ, "local username");
+    read_str (s, client_username, COMMAND_SZ, "local username");
 
     status = krb5_auth_con_getkey (context, auth_context, &keyblock);
     if (status)
@@ -305,7 +318,51 @@ recv_krb5_auth (int s, u_char *buf,
 
     free (cksum_data.data);
 
-    recv_krb5_creds (s, auth_context, server_username, ticket->client);
+    if (strncmp (client_username, "-u ", 3) == 0) {
+	do_unique_tkfile = 1;
+	memmove (client_username, client_username + 3,
+		 strlen(client_username) - 2);
+    }
+
+    if (strncmp (server_username, "-U ", 3) == 0) {
+	char *end;
+
+	do_unique_tkfile = 1;
+	end = strchr(server_username + 3,' ');
+	strncpy(unique_tkfile, server_username + 3, end - server_username - 3);
+	unique_tkfile[end - server_username - 3] = '\0';
+	memmove (server_username, end +1, strlen(end+1)+1);
+    }
+
+    {
+	struct passwd *test_pwd; 
+	test_pwd = getpwnam (server_username);
+	if (test_pwd == NULL)
+	    fatal (s, "Login incorrect.");
+
+	if (do_unique_tkfile) {
+	    if (strcmp(unique_tkfile,"") == 0) {
+		int f;
+		char tf[MAXPATHLEN];
+          
+		do { 
+		    snprintf(tf, sizeof(tf), "%s%u_%u", KRB5_DEFAULT_CCROOT,
+			     test_pwd->pw_uid,
+			     (unsigned int)(getpid()*time(0)));
+		    f = open(tf + strlen("FILE:"), O_CREAT|O_EXCL|O_RDWR);
+		} while(f < 0); 
+		close(f);
+		unlink(tf + strlen("FILE:"));
+		strcpy(saved_ccname,tf);
+           } else
+	       snprintf (saved_ccname, sizeof(saved_ccname),
+			 "FILE:%s",unique_tkfile);
+	} else
+	    snprintf (saved_ccname, sizeof(saved_ccname),
+		      "FILE:/tmp/krb5cc_%u", test_pwd->pw_uid);
+    } 
+
+    save_status = save_krb5_creds (s, auth_context, ticket->client);
 
     if(!krb5_kuserok (context,
 		     ticket->client,
@@ -470,14 +527,17 @@ is_reserved(u_short port)
  */
 
 static void
-setup_environment (char *env[6], struct passwd *pwd)
+setup_environment (char *env[7], struct passwd *pwd)
 {
     asprintf (&env[0], "USER=%s",  pwd->pw_name);
     asprintf (&env[1], "HOME=%s",  pwd->pw_dir);
     asprintf (&env[2], "SHELL=%s", pwd->pw_shell);
     asprintf (&env[3], "PATH=%s",  _PATH_DEFPATH);
     asprintf (&env[4], "SSH_CLIENT=only_to_make_bash_happy");
-    env[5] = NULL;
+    if (do_unique_tkfile)
+       asprintf (&env[5], "KRB5CCNAME=%s",saved_ccname);
+       else env[5] = NULL;
+    env[6] = NULL;
 }
 
 static void
@@ -489,11 +549,11 @@ doit (int do_kerberos, int check_rhosts)
     int addrlen;
     int port;
     int errsock = -1;
-    char client_user[16], server_user[16];
+    char client_user[COMMAND_SZ], server_user[USERNAME_SZ];
     char cmd[COMMAND_SZ];
     struct passwd *pwd;
     int s = STDIN_FILENO;
-    char *env[6];
+    char *env[7];
 
     addrlen = sizeof(thisaddr);
     if (getsockname (s, (struct sockaddr *)&thisaddr, &addrlen) < 0
@@ -588,6 +648,19 @@ doit (int do_kerberos, int check_rhosts)
 
     if (pwd->pw_uid != 0 && access (_PATH_NOLOGIN, F_OK) == 0)
 	fatal (s, "Login disabled.");
+
+#ifdef HAVE_GETSPNAM
+    {
+	struct spwd *sp;
+	long    today;
+    
+	sp = getspnam(server_user);
+	today = time(0)/(24L * 60 * 60);
+	if (sp->sp_expire > 0) 
+	    if (today > sp->sp_expire) 
+		fatal(s, "Account has expired.");
+    }
+#endif
     
 #ifdef HAVE_SETLOGIN
     if (setlogin(pwd->pw_name) < 0)
@@ -601,8 +674,17 @@ doit (int do_kerberos, int check_rhosts)
     if (initgroups (pwd->pw_name, pwd->pw_gid) < 0)
 	fatal (s, "Login incorrect.");
 
+    if (setgid(pwd->pw_gid) < 0)
+	fatal (s, "Login incorrect.");
+
     if (setuid (pwd->pw_uid) < 0)
 	fatal (s, "Login incorrect.");
+
+#ifdef KRB5
+    if (!save_status)
+        recv_krb5_creds(saved_auth_context, &saved_client,
+                        &saved_remote_cred,saved_ccname);
+#endif
 
     if (chdir (pwd->pw_dir) < 0)
 	fatal (s, "Remote directory.");
@@ -645,6 +727,19 @@ doit (int do_kerberos, int check_rhosts)
 
 #ifdef KRB5
 	/* XXX */
+       {
+	   krb5_ccache ccache;
+	   krb5_error_code status;
+
+	   if (do_unique_tkfile)
+	       setenv("KRB5CCNAME", saved_ccname, 1);
+	   status = krb5_cc_default (context, &ccache);
+	   if (!status) {
+	       krb5_afslog_uid_home(context,ccache,NULL,NULL,
+				    pwd->pw_uid, pwd->pw_dir);
+	       krb5_cc_close (context, ccache);
+	   }
+       }
 #endif /* KRB5 */
     }
 #endif /* KRB4 */
