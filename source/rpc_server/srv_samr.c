@@ -97,8 +97,11 @@ static BOOL api_samr_get_usrdom_pwinfo(prs_struct *data,
 
 
 	r_u.status = _samr_get_usrdom_pwinfo(&q_u.user_pol,
-					     &r_u.unknown_0, &r_u.unknown_1,
-					     &r_u.unknown_2);
+					     &r_u.unknown_0, &r_u.unknown_1
+#if 0
+					     , &r_u.unknown_2
+#endif
+					     );
 
 	return samr_io_r_get_usrdom_pwinfo("", &r_u, rdata, 0);
 }

@@ -585,6 +585,7 @@ SPOOLCLIENT_OBJ = lib/cmd_interp.o \
 		rpcclient/spoolss.o \
 		rpcclient/spoolss_cmds.o \
 		rpcclient/display_spool.o \
+		rpcclient/display_sec.o \
 		rpcclient/cmd_spoolss.o \
 		rpc_client/msrpc_spoolss.o   \
 		$(SIDDB_OBJ) \

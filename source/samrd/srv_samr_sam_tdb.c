@@ -289,13 +289,19 @@ uint32 _samr_chgpasswd_user( const UNISTR2 *uni_dest_host,
 /*******************************************************************
  samr_reply_get_dom_pwinfo
  ********************************************************************/
-uint32 _samr_get_dom_pwinfo(const UNISTR2 *uni_srv_name,
-				uint16 *unk_0, uint16 *unk_1, uint16 *unk_2)
+uint32 _samr_get_dom_pwinfo(const UNISTR2 * uni_srv_name,
+			    uint16 * unk_0, uint16 * unk_1
+#if 0
+			    , uint16 * unk_2
+#endif
+			    )
 {
 	/* absolutely no idea what to do, here */
 	*unk_0 = 0;
 	*unk_1 = 0;
+#if 0
 	*unk_2 = 0;
+#endif
 
 	return NT_STATUS_NOPROBLEMO;
 }

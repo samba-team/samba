@@ -2039,6 +2039,7 @@ char *lp_mysql_user(void);
 char *lp_mysql_passfile(void);
 char *lp_mysql_db(void);
 char *lp_mysql_table(void);
+int lp_winbind_cache_time(void);
 BOOL lp_add_home(char *pszHomename, int iDefaultService, char *pszHomedir);
 int lp_add_service(char *pszService, int iDefaultService);
 BOOL lp_add_printer(char *pszPrintername, int iDefaultService);
@@ -3546,7 +3547,11 @@ uint32 _samr_chgpasswd_user(const UNISTR2 * uni_dest_host,
 			    const char lm_newpass[516],
 			    const uchar lm_oldhash[16]);
 uint32 _samr_get_dom_pwinfo(const UNISTR2 * uni_srv_name,
-			    uint16 * unk_0, uint16 * unk_1, uint16 * unk_2);
+			    uint16 * unk_0, uint16 * unk_1
+#if 0
+			    , uint16 * unk_2
+#endif
+			    );
 uint32 _samr_lookup_rids(const POLICY_HND * pol,
 			 uint32 num_rids, uint32 flags,
 			 const uint32 * rids,
@@ -3613,8 +3618,12 @@ uint32 _samr_chgpasswd_user( const UNISTR2 *uni_dest_host,
 				const uchar nt_oldhash[16],
 				const char lm_newpass[516],
 				const uchar lm_oldhash[16]);
-uint32 _samr_get_dom_pwinfo(const UNISTR2 *uni_srv_name,
-				uint16 *unk_0, uint16 *unk_1, uint16 *unk_2);
+uint32 _samr_get_dom_pwinfo(const UNISTR2 * uni_srv_name,
+			    uint16 * unk_0, uint16 * unk_1
+#if 0
+			    , uint16 * unk_2
+#endif
+			    );
 uint32 _samr_query_sec_obj(const POLICY_HND *pol, SEC_DESC_BUF *buf);
 
 /*The following definitions come from  samrd/srv_samr_tdb.c  */

@@ -1598,7 +1598,6 @@ typedef struct r_samr_get_dom_pwinfo
 {
 	uint16 unk_0;
 	uint16 unk_1;
-	uint16 unk_2;
 	uint32 status;
 
 } SAMR_R_GET_DOM_PWINFO;

@@ -124,19 +124,6 @@ static struct cli_connection *cli_con_get(const char *srv_name,
 		con->pipe_name = strdup(pipe_name);
 	}
 
-	con->auth_info = NULL;
-	con->auth_creds = auth_creds;
-
-	if (auth != NULL)
-	{
-		con->auth = auth;
-	}
-	else
-	{
-		extern cli_auth_fns cli_noauth_fns;
-		con->auth = &cli_noauth_fns;
-	}
-
 	if (strequal(srv_name, "\\\\."))
 	{
 		con->type = MSRPC_LOCAL;
@@ -169,16 +156,49 @@ static struct cli_connection *cli_con_get(const char *srv_name,
 		              &con->msrpc.smb->smb->usr);
 	}
 
-	if (is_new_connection && con->msrpc.cli != NULL)
+	if (con->msrpc.cli != NULL)
 	{
-		RPC_IFACE abstract;
-		RPC_IFACE transfer;
-
-		if (!rpc_pipe_bind(con, pipe_name, &abstract, &transfer))
+		if (is_new_connection)
 		{
-			DEBUG(0, ("rpc_pipe_bind failed\n"));
-			cli_connection_free(con);
-			return NULL;
+			RPC_IFACE abstract;
+			RPC_IFACE transfer;
+
+			con->auth_info = NULL;
+			con->auth_creds = auth_creds;
+
+			if (auth != NULL)
+			{
+				con->auth = auth;
+			}
+			else
+			{
+				extern cli_auth_fns cli_noauth_fns;
+				con->auth = &cli_noauth_fns;
+			}
+
+			if (!rpc_pipe_bind(con, pipe_name, &abstract,
+							&transfer))
+			{
+				DEBUG(0, ("rpc_pipe_bind failed\n"));
+				cli_connection_free(con);
+				return NULL;
+			}
+		}
+		else
+		{
+			con->auth_info = cli_conn_get_auth_creds(con);
+			con->auth = cli_conn_get_authfns(con);
+			if (con->auth_info != NULL)
+			{
+				DEBUG(1,("cli_con_get: TODO: auth reuse\n"));
+				cli_connection_free(con);
+				return NULL;
+			}
+			else
+			{
+				extern cli_auth_fns cli_noauth_fns;
+				con->auth = &cli_noauth_fns;
+			}
 		}
 	}
 

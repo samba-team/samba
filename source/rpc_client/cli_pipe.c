@@ -284,6 +284,9 @@ BOOL rpc_api_pipe_req(struct cli_connection *con, uint8 opnum,
 		if (!auth->cli_create_pdu(con, opnum, data, data_start,
 					  &data_end, &data_t, &flags))
 		{
+			DEBUG(2,("rpc_api_pipe_req: cli_create_pdu failed "
+				 "%d %d %d %d\n",
+				 opnum, data_start, data_end, flags));
 			return False;
 		}
 
@@ -336,6 +339,8 @@ BOOL rpc_api_pipe_req(struct cli_connection *con, uint8 opnum,
 
 	if (!rpc_check_hdr(&rpdu, &rhdr, &first, &last, &len))
 	{
+		DEBUG(2,("rpc_check_hdr: failed. %d %d %d\n",
+					first, last, len));
 		return False;
 	}
 

@@ -1927,11 +1927,9 @@ BOOL msrpc_sam_ntchange_pwd(const char* srv_name,
 	E_old_pw_hash(nt_newhash, lm_oldhash, lm_hshhash);
 	E_old_pw_hash(nt_newhash, nt_oldhash, nt_hshhash);
 
-#ifdef DEBUG_PASSWORD
-	dump_data(100, nt_newhash, 16);
-	dump_data(100, lm_oldhash, 16);
-	dump_data(100, lm_hshhash, 16);
-#endif
+	dump_data_pw("ntnewhash\n", nt_newhash, 16);
+	dump_data_pw("lmoldhash\n", lm_oldhash, 16);
+	dump_data_pw("lmhshhash\n", lm_hshhash, 16);
 
 	ret = msrpc_sam_ntpasswd_set(srv_name, ntuser, &samr_creds,
 	                        lm_newpass, lm_hshhash,

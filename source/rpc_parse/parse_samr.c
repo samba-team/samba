@@ -6518,8 +6518,10 @@ BOOL samr_io_r_get_dom_pwinfo(char *desc, SAMR_R_GET_DOM_PWINFO * r_u,
 	prs_align(ps);
 	prs_uint16("unk_1", ps, depth, &(r_u->unk_1));
 	prs_align(ps);
+#if 0
 	prs_uint16("unk_2", ps, depth, &(r_u->unk_2));
 	prs_align(ps);
+#endif
 	prs_uint32("status", ps, depth, &(r_u->status));
 
 	return True;
