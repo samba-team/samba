@@ -1931,7 +1931,7 @@ ou: idmap
 		<primary>ldapadd</primary>
 	      </indexterm>
 	        If the execution of this command does not return IDMAP entries, you need to create an LDIF
-		template file (see <link linkend="ch9-ldifadd"/>). You can add the required entries using 
+		template file (see <link linkend="ch6-ldifadd"/>). You can add the required entries using 
 		the following command:
 <screen>
 &rootprompt; ldapadd -x -D "cn=Manager,dc=abmas,dc=biz" \
