@@ -55,17 +55,41 @@ static void cleanup_tmp_files(void)
 	}
 
 	for (de=readdir(dir);de;de=readdir(dir)) {
-		char *fname = talloc_asprintf(mem_ctx, "%s/%s", path, de->d_name);
-		int ret = unlink(fname);
-		if (ret == -1 &&
-		    errno != ENOENT &&
-		    errno != EISDIR &&
-		    errno != EISDIR) {
-			DEBUG(0,("Unabled to delete '%s' - %s\n", 
-				 fname, strerror(errno)));
-			smb_panic("unable to cleanup tmp files");
+		/*
+		 * Don't try to delete . and ..
+		 */
+		if (strcmp(de->d_name, ".") != 0 &&
+		    strcmp(de->d_name, "..")) {
+		    char *fname = talloc_asprintf(mem_ctx, "%s/%s", path, de->d_name);
+		    int ret = unlink(fname);
+		    if (ret == -1 &&
+		        errno != ENOENT &&
+			errno != EPERM &&
+		        errno != EISDIR) {
+			    DEBUG(0,("Unabled to delete '%s' - %s\n", 
+				      fname, strerror(errno)));
+			    smb_panic("unable to cleanup tmp files");
+		    }
+		    if (ret == -1 &&
+			errno == EPERM) {
+			/*
+			 * If it is a dir, don't complain
+			 * NOTE! The test will only happen if we have
+			 * sys/stat.h, otherwise we will always error out
+			 */
+#ifdef HAVE_SYS_STAT_H
+			struct stat sb;
+			if (stat(fname, &sb) != -1 &&
+			    !S_ISDIR(sb.st_mode))
+#endif
+			{
+			     DEBUG(0,("Unable to delete '%s' - %s\n",
+				      fname, strerror(errno)));
+			     smb_panic("unable to cleanup tmp files");
+			}
+		    }
+		    talloc_free(fname);
 		}
-		talloc_free(fname);
 	}
 	closedir(dir);
 
