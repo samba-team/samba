@@ -1,10 +1,10 @@
 Summary: SMB client and server
 Name: samba
-Version: 1.9.16p9
-Release: 2
+Version: 1.9.16p10
+Release: 1
 Copyright: GPL
 Group: Networking
-Source: ftp://samba.anu.edu.au/pub/samba/samba-1.9.16p9.tar.gz
+Source: ftp://samba.anu.edu.au/pub/samba/samba-1.9.16p10.tar.gz
 Patch: samba-make.patch
 Packager: John H Terpstra [Samba-Team] <jht@aquasoft.com.au>
 Requires: pamconfig
