@@ -939,6 +939,9 @@ handle_v4(krb5_context context,
 	krb5_errx (context, 1, "getpeername");
 
     while(1) {
+	doing_useful_work = 0;
+	if(term_flag)
+	    exit(0);
 	if(first) {
 	    /* first time around, we have already read len, and two
                bytes of the version string */
@@ -969,6 +972,7 @@ handle_v4(krb5_context context,
 	    if (n < 0)
 		krb5_err (context, 1, errno, "krb5_net_read");
 	}
+	doing_useful_work = 1;
 	decode_packet(context, &admin_addr, &client_addr, 
 		      message, &reply);
 	krb5_data_free(&message);
