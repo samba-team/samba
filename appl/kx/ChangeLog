@@ -1,3 +1,9 @@
+2001-09-17  Assar Westerlund  <assar@sics.se>
+
+	* kx.h: add a kludge to make it build on aix (that defines NOERROR
+	in both sys/stream.h and arpa/nameser.h and considers that a fatal
+	error)
+
 2001-07-12  Assar Westerlund  <assar@sics.se>
 
 	* common.c (connect_local_xsocket): handle a tcp socket as last
