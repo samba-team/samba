@@ -1420,7 +1420,9 @@ BOOL mask_match(char *str, char *regexp, int case_sig,BOOL trans2)
          * Ugly ! Special case for non-NT. If filename is XXXX and pattern extension
          * is '*' or all '?' then disallow match.
          */
-        if (*cp2 == '\0' && (ra_type != RA_WINNT) && (strequal(eext, "*") || str_is_all(eext, '?')))
+
+        if (*cp2 == '\0' && (ra_type != RA_WINNT) && (ra_type != RA_WIN2K) &&
+            (strequal(eext, "*") || str_is_all(eext, '?')))
           break;
 
         cp1 = rp ? rp + 1 : NULL;

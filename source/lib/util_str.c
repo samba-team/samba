@@ -739,6 +739,11 @@ Return True if a string consists only of one particular character.
 
 BOOL str_is_all(const char *s,char c)
 {
+  if(s == NULL)
+    return False;
+  if(!*s)
+    return False;
+
 #if !defined(KANJI_WIN95_COMPATIBILITY)
   /*
    * For completeness we should put in equivalent code for code pages
@@ -786,6 +791,7 @@ BOOL str_is_all(const char *s,char c)
 safe string copy into a known length string. maxlength does not
 include the terminating zero.
 ********************************************************************/
+
 char *safe_strcpy(char *dest,const char *src, size_t maxlength)
 {
     size_t len;
@@ -817,6 +823,7 @@ char *safe_strcpy(char *dest,const char *src, size_t maxlength)
 safe string cat into a string. maxlength does not
 include the terminating zero.
 ********************************************************************/
+
 char *safe_strcat(char *dest, const char *src, size_t maxlength)
 {
     size_t src_len, dest_len;
