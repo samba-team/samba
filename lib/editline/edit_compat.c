@@ -65,6 +65,7 @@ readline(const char* prompt)
 {
     static EditLine *e;
     int count;
+    char *ret;
     if(e == NULL){
 	e = el_init("", stdin, stdout);
 	el_set(e, EL_PROMPT, ret_prompt);
@@ -74,7 +75,13 @@ readline(const char* prompt)
 	el_set(e, EL_EDITOR, "emacs"); /* XXX? */
     }
     pr = prompt ? prompt : "";
-    return (char*)el_gets(e, &count);
+    ret = (char*)el_gets(e, &count);
+    if (ret) {
+	if (ret[strlen(ret) - 1] == '\n')
+	    ret[strlen(ret) - 1] = '\0';
+	return strdup(ret);
+    } else
+	return ret;
 }
 
 void
