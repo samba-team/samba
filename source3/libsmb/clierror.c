@@ -219,7 +219,7 @@ int cli_errno(struct cli_state *cli)
 {
         NTSTATUS status;
 
-        if (cli_is_dos_error) {
+        if (cli_is_dos_error(cli)) {
                 uint8 eclass;
                 uint32 ecode;
 
