@@ -421,13 +421,7 @@ build_auth_pack(krb5_context context,
     krb5_timestamp sec;
     int32_t usec;
 
-#if 0 /* 0.6 of heimdal doesn't support always support sha1 */
-    if (context->pkinit_flags & KRB5_PKINIT_PACKET_CABLE)
-	cksum = CKSUMTYPE_RSA_MD5;
-    else
-	cksum = CKSUMTYPE_SHA1;
-#endif
-    cksum = CKSUMTYPE_RSA_MD5;
+    cksum = CKSUMTYPE_SHA1; /* XXX PACKETCABLE can have problems with this */
 
     krb5_us_timeofday(context, &sec, &usec);
     a->pkAuthenticator.ctime = sec;
@@ -582,17 +576,15 @@ _krb5_pk_mk_padata(krb5_context context,
     size_t size;
     krb5_data buf, sd_buf;
     int pa_type;
-    const char *provisioning_server = NULL;
+    const char *provisioning_server;
     int win2k_compat;
 
-    if (context->pkinit_flags & KRB5_PKINIT_PACKET_CABLE) {
-	provisioning_server =
-	    krb5_config_get_string(context, NULL,
-				   "realms",
-				   req_body->realm,
-				   "packet-cable-provisioning-server",
-				   NULL);
-    }
+    provisioning_server =
+	krb5_config_get_string(context, NULL,
+			       "realms",
+			       req_body->realm,
+			       "packet-cable-provisioning-server",
+			       NULL);
 
     krb5_data_zero(&buf);
     krb5_data_zero(&sd_buf);
@@ -604,10 +596,10 @@ _krb5_pk_mk_padata(krb5_context context,
 						req_body->realm,
 						"win2k_pkinit",
 						NULL);
-    if (win2k_compat)
-	context->pkinit_flags |= KRB5_PKINIT_WIN2K;
+    if (context->pkinit_flags & KRB5_PKINIT_WIN2K)
+	win2k_compat = 1;
 
-    if (context->pkinit_flags & KRB5_PKINIT_WIN2K) {
+    if (win2k_compat) {
 	AuthPack_Win2k ap;
 
 	memset(&ap, 0, sizeof(ap));
@@ -672,7 +664,7 @@ _krb5_pk_mk_padata(krb5_context context,
     req.kdcCert = NULL;
     req.encryptionCert = NULL;
   
-    if (context->pkinit_flags & KRB5_PKINIT_WIN2K) {
+    if (win2k_compat) {
 	PA_PK_AS_REQ_Win2k winreq;
 
 	pa_type = KRB5_PADATA_PK_AS_REQ_WIN;
@@ -1187,6 +1179,7 @@ pk_verify_host(krb5_context context, struct krb5_pk_cert *host)
 
 static krb5_error_code
 pk_rd_pa_reply_enckey(krb5_context context,
+		      int win2k_compat,
                       ContentInfo *rep,
 		      krb5_pk_init_ctx ctx,
 		      krb5_enctype etype,
@@ -1265,7 +1258,7 @@ pk_rd_pa_reply_enckey(krb5_context context,
 
   
     /* verify content type */
-    if (context->pkinit_flags & KRB5_PKINIT_WIN2K) {
+    if (win2k_compat) {
 	if (heim_oid_cmp(&ed.encryptedContentInfo.contentType, &pkcs7_data_oid)) {
 	    ret = KRB5KRB_AP_ERR_MSG_TYPE;
 	    goto out;
@@ -1329,7 +1322,7 @@ pk_rd_pa_reply_enckey(krb5_context context,
     length = plain.length;
 
     /* win2k uses ContentInfo */
-    if (context->pkinit_flags & KRB5_PKINIT_WIN2K) {
+    if (win2k_compat) {
 	ContentInfo ci;
 	size_t size;
 
@@ -1603,6 +1596,7 @@ _krb5_pk_rd_pa_reply(krb5_context context,
     krb5_error_code ret;
     PA_PK_AS_REP rep;
     size_t size;
+    int win2k_compat = 0;
 
     memset(&rep, 0, sizeof(rep));
 
@@ -1629,6 +1623,8 @@ _krb5_pk_rd_pa_reply(krb5_context context,
 	free_PA_PK_AS_REP_Win2k(&w2krep);
 	if (ret)
 	    return ret;
+
+	win2k_compat = 1;
     }
 
     switch(rep.element) {
@@ -1637,7 +1633,8 @@ _krb5_pk_rd_pa_reply(krb5_context context,
 				etype, nonce, pa, key);
 	break;
     case choice_PA_PK_AS_REP_encKeyPack:
-	ret = pk_rd_pa_reply_enckey(context, &rep.u.encKeyPack, ctx,
+	ret = pk_rd_pa_reply_enckey(context, win2k_compat,
+				    &rep.u.encKeyPack, ctx,
 				    etype, nonce, pa, key);
 	break;
     default:
