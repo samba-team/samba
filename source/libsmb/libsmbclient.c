@@ -70,7 +70,7 @@ smbc_parse_path(SMBCCTX *context, const char *fname, char *server, char *share, 
 {
 	static pstring s;
 	pstring userinfo;
-	char *p;
+	const char *p;
 	char *q, *r;
 	int len;
 
@@ -119,7 +119,7 @@ smbc_parse_path(SMBCCTX *context, const char *fname, char *server, char *share, 
 	r = strchr_m(p, '/');
 	if (q && (!r || q < r)) {
 		pstring username, passwd, domain;
-		char *u = userinfo;
+		const char *u = userinfo;
 
 		next_token(&p, userinfo, "@", sizeof(fstring));
 
