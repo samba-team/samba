@@ -188,6 +188,30 @@ out:
     return ret;
 }
 
+#if 0
+static krb5_error_code
+check_transited(krb5_context context,
+		krb5_ticket *ticket)
+{
+    char **realms;
+    int num_realms;
+    krb5_error_code ret;
+
+    if(ticket->ticket.transited.tr_type != DOMAIN_X500_COMPRESS)
+	return KRB5KDC_ERR_TRTYPE_NOSUPP;
+
+    ret = krb5_domain_x500_decode(ticket->ticket.transited.contents, 
+				  &realms, &num_realms, 
+				  ticket->client->realm,
+				  ticket->server->realm);
+    if(ret)
+	return ret;
+    ret = krb5_check_transited_realms(context, realms, num_realms, NULL);
+    free(realms);
+    return ret;
+}
+#endif
+
 krb5_error_code
 krb5_verify_ap_req(krb5_context context,
 		   krb5_auth_context *auth_context,
