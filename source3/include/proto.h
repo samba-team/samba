@@ -840,6 +840,14 @@ void make_wks_r_query_info(WKS_R_QUERY_INFO *r_u,
 				int status)  ;
 void wks_io_r_query_info(char *desc,  WKS_R_QUERY_INFO *r_u, prs_struct *ps, int depth);
 
+/*The following definitions come from  lib/rpc/server/srv_ldap_helpers.c  */
+
+BOOL get_ldap_entries(SAM_USER_INFO_21 *pw_buf,
+                      int *total_entries, int *num_entries,
+                      int max_num_entries,
+                      uint16 acb_mask, int switch_level);
+BOOL ldap_get_user_info_21(SAM_USER_INFO_21 *id21, uint32 rid);
+
 /*The following definitions come from  lib/rpc/server/srv_lsa.c  */
 
 BOOL api_ntlsa_rpc(pipes_struct *p, prs_struct *data);
@@ -952,6 +960,11 @@ char *lp_domain_admin_users(void);
 char *lp_domain_guest_users(void);
 char *lp_domain_hostsallow(void);
 char *lp_domain_hostsdeny(void);
+char *lp_ldap_server(void);
+char *lp_ldap_suffix(void);
+char *lp_ldap_filter(void);
+char *lp_ldap_root(void);
+char *lp_ldap_rootpasswd(void);
 BOOL lp_dns_proxy(void);
 BOOL lp_wins_support(void);
 BOOL lp_we_are_a_wins_server(void);
@@ -1005,6 +1018,7 @@ int lp_client_code_page(void);
 int lp_announce_as(void);
 int lp_lm_announce(void);
 int lp_lm_interval(void);
+int lp_ldap_port(void);
 char *lp_preexec(int );
 char *lp_postexec(int );
 char *lp_rootpreexec(int );
@@ -1547,14 +1561,14 @@ BOOL pm_process( char *FileName,
 
 void generate_next_challenge(char *challenge);
 BOOL set_challenge(char *challenge);
-BOOL last_challenge(char *challenge);
+BOOL last_challenge(unsigned char *challenge);
 user_struct *get_valid_user_struct(uint16 vuid);
 void invalidate_vuid(uint16 vuid);
 char *validated_username(uint16 vuid);
 int setup_groups(char *user, int uid, int gid, int *p_ngroups, 
 		 int **p_igroups, gid_t **p_groups,
          int **p_attrs);
-uint16 register_vuid(int uid,int gid, char *name,BOOL guest);
+uint16 register_vuid(int uid,int gid, char *unix_name, char *requested_name, BOOL guest);
 void add_session_user(char *user);
 BOOL update_smbpassword_file( char *user, fstring password);
 void dfs_unlogin(void);
@@ -1726,7 +1740,7 @@ int reply_lanman2(char *outbuf);
 int reply_nt1(char *outbuf);
 void close_cnum(int cnum, uint16 vuid);
 void exit_server(char *reason);
-void standard_sub(int cnum,char *str);
+void standard_sub(int cnum,char *str,uint16 vuid);
 char *smb_fn_name(int type);
 int chain_reply(char *inbuf,char *outbuf,int size,int bufsize);
 int construct_reply(char *inbuf,char *outbuf,int size,int bufsize);

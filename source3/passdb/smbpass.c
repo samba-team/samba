@@ -554,7 +554,11 @@ static struct smb_passwd *get_smbpwd_entry(char *name, int smb_userid)
 
 struct smb_passwd *getsmbpwnam(char *name)
 {
+#ifdef USE_LDAP
+  return ldap_get_smbpwd_entry(name, 0);
+#else
   return get_smbpwd_entry(name, 0);
+#endif /* USE_LDAP */
 }
 
 /************************************************************************
@@ -563,7 +567,11 @@ struct smb_passwd *getsmbpwnam(char *name)
 
 struct smb_passwd *getsmbpwuid(unsigned int uid)
 {
+#ifdef USE_LDAP
+  return ldap_get_smbpwd_entry(NULL, uid);
+#else
   return get_smbpwd_entry(NULL, uid);
+#endif /* USE_LDAP */
 }
 
 /**********************************************************
@@ -673,6 +681,7 @@ Error was %s\n", newpwd->smb_name, pfile, strerror(errno)));
       sprintf((char *)&p[i*2], "%02X", newpwd->smb_passwd[i]);
     }
   } else {
+    i=0;
     if(newpwd->acct_ctrl & ACB_PWNOTREQ)
       sprintf(p, "NO PASSWORDXXXXXXXXXXXXXXXXXXXXX");
     else

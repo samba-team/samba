@@ -144,6 +144,11 @@ typedef struct
   char *szDomainGroups;
   char *szDriverFile;
   char *szNameResolveOrder;
+  char *szLdapServer;
+  char *szLdapSuffix;
+  char *szLdapFilter;
+  char *szLdapRoot;
+  char *szLdapRootPassword; 
   int max_log_size;
   int mangled_stack;
   int max_xmit;
@@ -167,6 +172,7 @@ typedef struct
   int shmem_size;
   int client_code_page;
   int announce_as;   /* This is initialised in init_globals */
+  int ldap_port;
   BOOL bDNSproxy;
   BOOL bWINSsupport;
   BOOL bWINSproxy;
@@ -616,6 +622,16 @@ static struct parm_struct parm_table[] =
   {"oplocks",          P_BOOL,    P_LOCAL,  &sDefault.bOpLocks,         NULL,   NULL,  FLAG_GLOBAL},
   {"fake oplocks",     P_BOOL,    P_LOCAL,  &sDefault.bFakeOplocks,     NULL,   NULL,  0},
 
+  {"Ldap Options", P_SEP, P_SEPARATOR},
+  {"ldap server",      P_STRING,  P_GLOBAL, &Globals.szLdapServer,      NULL,   NULL,  0},
+  {"ldap port",        P_INTEGER, P_GLOBAL, &Globals.ldap_port,         NULL,   NULL,  0},
+  {"ldap suffix",      P_STRING,  P_GLOBAL, &Globals.szLdapSuffix,      NULL,   NULL,  0},
+  {"ldap filter",      P_STRING,  P_GLOBAL, &Globals.szLdapFilter,      NULL,   NULL,  0},
+  {"ldap root",        P_STRING,  P_GLOBAL, &Globals.szLdapRoot,        NULL,   NULL,  0},
+  {"ldap root passwd", P_STRING,  P_GLOBAL, &Globals.szLdapRootPassword,NULL,   NULL,  0},
+
+
+
   {"Miscellaneous Options", P_SEP, P_SEPARATOR},
   {"smbrun",           P_STRING,  P_GLOBAL, &Globals.szSmbrun,          NULL,   NULL,  0},
   {"config file",      P_STRING,  P_GLOBAL, &Globals.szConfigFile,      NULL,   NULL,  FLAG_HIDE},
@@ -759,6 +775,11 @@ static void init_globals(void)
                                          the code in password.c protects us from this bug. */
   Globals.bUnixPasswdSync = False;
   Globals.bPasswdChatDebug = False;
+
+  /* default values for ldap */
+  string_set(&Globals.szLdapServer, "localhost");
+  Globals.ldap_port=389;
+
 
 /* these parameters are set to defaults that are more appropriate
    for the increasing samba install base:
@@ -962,6 +983,12 @@ FN_GLOBAL_STRING(lp_domain_guest_users,&Globals.szDomainGuestUsers)
 FN_GLOBAL_STRING(lp_domain_hostsallow,&Globals.szDomainHostsallow)
 FN_GLOBAL_STRING(lp_domain_hostsdeny,&Globals.szDomainHostsdeny)
 
+FN_GLOBAL_STRING(lp_ldap_server,&Globals.szLdapServer);
+FN_GLOBAL_STRING(lp_ldap_suffix,&Globals.szLdapSuffix);
+FN_GLOBAL_STRING(lp_ldap_filter,&Globals.szLdapFilter);
+FN_GLOBAL_STRING(lp_ldap_root,&Globals.szLdapRoot);
+FN_GLOBAL_STRING(lp_ldap_rootpasswd,&Globals.szLdapRootPassword);
+
 FN_GLOBAL_BOOL(lp_dns_proxy,&Globals.bDNSproxy)
 FN_GLOBAL_BOOL(lp_wins_support,&Globals.bWINSsupport)
 FN_GLOBAL_BOOL(lp_we_are_a_wins_server,&Globals.bWINSsupport)
@@ -1016,6 +1043,8 @@ FN_GLOBAL_INTEGER(lp_client_code_page,&Globals.client_code_page)
 FN_GLOBAL_INTEGER(lp_announce_as,&Globals.announce_as)
 FN_GLOBAL_INTEGER(lp_lm_announce,&Globals.lm_announce)
 FN_GLOBAL_INTEGER(lp_lm_interval,&Globals.lm_interval)
+
+FN_GLOBAL_INTEGER(lp_ldap_port,&Globals.ldap_port)
 
 FN_LOCAL_STRING(lp_preexec,szPreExec)
 FN_LOCAL_STRING(lp_postexec,szPostExec)
