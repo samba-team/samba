@@ -52,10 +52,20 @@ RCSID("$Id$");
 #endif
 #include <roken.h>
 
-#if 0
 static char krb5ccname[128];
-#endif
 static char krbtkfile[128];
+
+/* 
+   In some cases is afs_gettktstring called twice (once before
+   afs_verify and once after afs_verify).
+   In some cases (rlogin with access allowed via .rhosts) 
+   afs_verify is not called!
+   So we cann't rely on correct value in krbtkfile in some
+   cases!
+*/
+
+static int correct_tkfilename=0;
+static int pag_set=0;
 
 #ifdef KRB4
 static void
@@ -63,9 +73,42 @@ set_krbtkfile(uid_t uid)
 {
     snprintf (krbtkfile, sizeof(krbtkfile), "%s%d", TKT_ROOT, (unsigned)uid);
     krb_set_tkt_string (krbtkfile);
+    correct_tkfilename = 1;
 }
 #endif
 
+/* XXX this has to be the default cache name, since the KRB5CCNAME
+ * environment variable isn't exported by login/xdm
+ */
+
+#ifdef KRB5
+static void
+set_krb5ccname(uid_t uid)
+{
+    snprintf (krb5ccname, sizeof(krb5ccname), "FILE:/tmp/krb5cc_%d", uid);
+    snprintf (krbtkfile, sizeof(krbtkfile), "%s%d", TKT_ROOT, (unsigned)uid);
+    correct_tkfilename = 1;
+}
+#endif
+
+static void
+set_spec_krbtkfile(void)
+{
+    int fd;
+#ifdef KRB4
+    snprintf (krbtkfile, sizeof(krbtkfile), "%s_XXXXXX", TKT_ROOT);
+    fd = mkstem(krbtkfile);
+    close(fd);
+    unlink(krbtkfile); 
+    krb_set_tkt_string (krbtkfile);
+#endif
+#ifdef KRB5
+    snprintf(krb5ccname, sizeof(krb5ccname),"FILE:/tmp/krb5cc_XXXXXX");
+    fd=mkstem(krb5ccname+5);
+    close(fd);
+    unlink(krb5ccname+5);
+#endif
+}
 
 #ifdef KRB5
 static int
@@ -76,7 +119,6 @@ verify_krb5(struct passwd *pwd,
 {
     krb5_context context;
     krb5_error_code ret;
-    char ticket[128];
     krb5_ccache ccache;
     krb5_principal principal;
     krb5_realm realm;
@@ -90,11 +132,8 @@ verify_krb5(struct passwd *pwd,
 	syslog(LOG_AUTH|LOG_DEBUG, "krb5_kuserok failed");
 	goto out;
     }
-    /* XXX this has to be the default cache name, since the KRB5CCNAME
-       environment variable isn't exported by login/xdm
-       */
-    snprintf(ticket, sizeof(ticket), "FILE:/tmp/krb5cc_%d", pwd->pw_uid);
-    ret = krb5_cc_resolve(context, ticket, &ccache);
+    set_krb5ccname(pwd->pw_uid);
+    ret = krb5_cc_resolve(context, krb5ccname, &ccache);
     if(ret) {
 	syslog(LOG_AUTH|LOG_DEBUG, "krb5_cc_resolve: %s", 
 	       krb5_get_err_text(context, ret));
@@ -119,7 +158,10 @@ verify_krb5(struct passwd *pwd,
     }
 
 #ifdef KRB4
-    {
+   if (krb5_config_get_bool(context, NULL,
+			    "libdefaults",
+			    "krb4_get_tickets",
+			    NULL)) {
 	CREDENTIALS c;
 	krb5_creds mcred, cred;
 
@@ -144,8 +186,9 @@ verify_krb5(struct passwd *pwd,
 	    
 	krb5_free_principal(context, mcred.server);
     }
-    if (k_hasafs()) {
+    if (!pag_set && k_hasafs()) {
 	k_setpag();
+	pag_set = 1;
 	krb5_afslog_uid_home(context, ccache, NULL, NULL, 
 			     pwd->pw_uid, pwd->pw_dir);
     }
@@ -173,8 +216,9 @@ verify_krb4(struct passwd *pwd,
 	ret = krb_verify_user (pwd->pw_name, "", lrealm, password,
 			       KRB_VERIFY_SECURE, NULL);
 	if (ret == KSUCCESS) {
-	    if (k_hasafs()) {
+	    if (!pag_set && k_hasafs()) {
 		k_setpag ();
+		pag_set = 1;
 		krb_afslog_uid_home (0, 0, pwd->pw_uid, pwd->pw_dir);
 	    }
 	} else if (!quiet)
@@ -192,22 +236,44 @@ afs_verify(char *name,
 {
     int ret = 1;
     struct passwd *pwd = k_getpwnam (name);
+
     if(pwd == NULL)
 	return 1;
+    if (ret)
+	ret = unix_verify_user (name, password);
 #ifdef KRB5
-    ret = verify_krb5(pwd, password, exp, quiet);
+    if (ret)
+	ret = verify_krb5(pwd, password, exp, quiet);
 #endif
 #ifdef KRB4
     if(ret)
 	ret = verify_krb4(pwd, password, exp, quiet);
 #endif
-    if (ret)
-	ret = unix_verify_user (name, password);
     return ret;
 }
 
 char *
 afs_gettktstring (void)
 {
+    char *ptr;
+    struct passwd *pwd;
+
+    if (!correct_tkfilename) {
+	ptr = getenv("LOGNAME"); 
+	if (ptr != NULL && ((pwd = getpwnam(ptr)) != NULL)) {
+	    set_krb5ccname(pwd->pw_uid);
+	    set_krbtkfile(pwd->pw_uid);
+	    if (!pag_set && k_hasafs()) {
+                k_setpag();
+                pag_set=1;
+	    }
+	} else {
+	    set_spec_krbtkfile();
+	}
+    }
+    setenv("KRBTKFILE",krbtkfile,1);
+#ifdef KRB5
+    setenv("KRB5CCNAME",krb5ccname,1);
+#endif
     return krbtkfile;
 }
