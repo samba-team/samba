@@ -158,11 +158,9 @@ typedef struct
 	char *szAbortShutdownScript;
 	char *szWINSHook;
 	char *szWINSPartners;
-#ifdef WITH_UTMP
 	char *szUtmpDir;
 	char *szWtmpDir;
 	BOOL bUtmp;
-#endif
 	char *szSourceEnv;
 	char *szIdmapUID;
 	char *szIdmapGID;
@@ -626,18 +624,16 @@ static const struct enum_list enum_ldap_ssl[] = {
 };
 
 static const struct enum_list enum_ldap_passwd_sync[] = {
-	{LDAP_PASSWD_SYNC_ON, "Yes"},
-	{LDAP_PASSWD_SYNC_ON, "yes"},
-	{LDAP_PASSWD_SYNC_ON, "on"},
-	{LDAP_PASSWD_SYNC_ON, "On"},
 	{LDAP_PASSWD_SYNC_OFF, "no"},
 	{LDAP_PASSWD_SYNC_OFF, "No"},
 	{LDAP_PASSWD_SYNC_OFF, "off"},
 	{LDAP_PASSWD_SYNC_OFF, "Off"},
-#ifdef LDAP_EXOP_X_MODIFY_PASSWD	
+	{LDAP_PASSWD_SYNC_ON, "Yes"},
+	{LDAP_PASSWD_SYNC_ON, "yes"},
+	{LDAP_PASSWD_SYNC_ON, "on"},
+	{LDAP_PASSWD_SYNC_ON, "On"},
 	{LDAP_PASSWD_SYNC_ONLY, "Only"},
 	{LDAP_PASSWD_SYNC_ONLY, "only"},
-#endif /* LDAP_EXOP_X_MODIFY_PASSWD */	
 	{-1, NULL}
 };
 
@@ -1575,11 +1571,9 @@ FN_GLOBAL_STRING(lp_lockdir, &Globals.szLockDir)
 FN_GLOBAL_STRING(lp_piddir, &Globals.szPidDir)
 FN_GLOBAL_STRING(lp_mangling_method, &Globals.szManglingMethod)
 FN_GLOBAL_INTEGER(lp_mangle_prefix, &Globals.mangle_prefix)
-#ifdef WITH_UTMP
 FN_GLOBAL_STRING(lp_utmpdir, &Globals.szUtmpDir)
 FN_GLOBAL_STRING(lp_wtmpdir, &Globals.szWtmpDir)
 FN_GLOBAL_BOOL(lp_utmp, &Globals.bUtmp)
-#endif
 FN_GLOBAL_STRING(lp_rootdir, &Globals.szRootdir)
 FN_GLOBAL_STRING(lp_source_environment, &Globals.szSourceEnv)
 FN_GLOBAL_STRING(lp_defaultservice, &Globals.szDefaultService)

@@ -55,6 +55,24 @@
 #define LDAP_OPT_SUCCESS 0
 #endif
 
+#if defined(LDAP_EXOP_X_MODIFY_PASSWD) && !defined(LDAP_EXOP_MODIFY_PASSWD)
+#define LDAP_EXOP_MODIFY_PASSWD LDAP_EXOP_X_MODIFY_PASSWD
+#elif !defined(LDAP_EXOP_MODIFY_PASSWD)
+#define "1.3.6.1.4.1.4203.1.11.1"
+#endif
+
+#if defined(LDAP_EXOP_X_MODIFY_PASSWD_ID) && !defined(LDAP_EXOP_MODIFY_PASSWD_ID)
+#define LDAP_TAG_EXOP_MODIFY_PASSWD_ID LDAP_EXOP_X_MODIFY_PASSWD_ID
+#elif !defined(LDAP_EXOP_MODIFY_PASSWD_ID)
+#define LDAP_TAG_EXOP_MODIFY_PASSWD_ID        ((ber_tag_t) 0x80U)
+#endif
+
+#if defined(LDAP_EXOP_X_MODIFY_PASSWD_NEW) && !defined(LDAP_EXOP_MODIFY_PASSWD_NEW)
+#define LDAP_TAG_EXOP_MODIFY_PASSWD_NEW LDAP_EXOP_X_MODIFY_PASSWD_NEW
+#elif !defined(LDAP_EXOP_MODIFY_PASSWD_NEW)
+#define LDAP_TAG_EXOP_MODIFY_PASSWD_NEW       ((ber_tag_t) 0x82U)
+#endif
+
 #ifndef SAM_ACCOUNT
 #define SAM_ACCOUNT struct sam_passwd
 #endif
@@ -631,7 +649,6 @@ static int ldapsam_delete(struct ldapsam_privates *ldap_state, char *dn)
 	return rc;
 }
 
-#ifdef LDAP_EXOP_X_MODIFY_PASSWD
 static int ldapsam_extended_operation(struct ldapsam_privates *ldap_state, LDAP_CONST char *reqoid, struct berval *reqdata, LDAPControl **serverctrls, LDAPControl **clientctrls, char **retoidp, struct berval **retdatap)
 {
 	int 		rc = LDAP_SERVER_DOWN;
@@ -655,7 +672,6 @@ static int ldapsam_extended_operation(struct ldapsam_privates *ldap_state, LDAP_
 		
 	return rc;
 }
-#endif
 
 /*******************************************************************
  run the search by name.
@@ -2348,7 +2364,6 @@ static NTSTATUS ldapsam_modify_entry(struct pdb_methods *my_methods,
 		}  
 	}
 	
-#ifdef LDAP_EXOP_X_MODIFY_PASSWD
 	if (!(pdb_get_acct_ctrl(newpwd)&(ACB_WSTRUST|ACB_SVRTRUST|ACB_DOMTRUST)) &&
 		(lp_ldap_passwd_sync() != LDAP_PASSWD_SYNC_OFF) &&
 		need_update(newpwd, PDB_PLAINTEXT_PW) &&
@@ -2375,8 +2390,8 @@ static NTSTATUS ldapsam_modify_entry(struct pdb_methods *my_methods,
 		}
 
 		ber_printf (ber, "{");
-		ber_printf (ber, "ts", LDAP_TAG_EXOP_X_MODIFY_PASSWD_ID, utf8_dn);
-	        ber_printf (ber, "ts", LDAP_TAG_EXOP_X_MODIFY_PASSWD_NEW, utf8_password);
+		ber_printf (ber, "ts", LDAP_TAG_EXOP_MODIFY_PASSWD_ID, utf8_dn);
+	        ber_printf (ber, "ts", LDAP_TAG_EXOP_MODIFY_PASSWD_NEW, utf8_password);
 	        ber_printf (ber, "N}");
 
 	        if ((rc = ber_flatten (ber, &bv))<0) {
@@ -2391,7 +2406,7 @@ static NTSTATUS ldapsam_modify_entry(struct pdb_methods *my_methods,
 		SAFE_FREE(utf8_password);
 		ber_free(ber, 1);
 
-		if ((rc = ldapsam_extended_operation(ldap_state, LDAP_EXOP_X_MODIFY_PASSWD,
+		if ((rc = ldapsam_extended_operation(ldap_state, LDAP_EXOP_MODIFY_PASSWD,
 						    bv, NULL, NULL, &retoid, &retdata))!=LDAP_SUCCESS) {
 			DEBUG(0,("LDAP Password could not be changed for user %s: %s\n",
 				pdb_get_username(newpwd),ldap_err2string(rc)));
@@ -2405,9 +2420,6 @@ static NTSTATUS ldapsam_modify_entry(struct pdb_methods *my_methods,
 		}
 		ber_bvfree(bv);
 	}
-#else
-	DEBUG(10,("LDAP PASSWORD SYNC is not supported!\n"));
-#endif /* LDAP_EXOP_X_MODIFY_PASSWD */
 	return NT_STATUS_OK;
 }
 

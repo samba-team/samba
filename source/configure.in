@@ -1367,6 +1367,9 @@ if test x"$samba_cv_HAVE_UTIMBUF" = x"yes"; then
     AC_DEFINE(HAVE_UTIMBUF,1,[Whether struct utimbuf is available])
 fi
 
+##############
+# Check utmp details, but only if our OS offers utmp.h
+if test x"$ac_cv_header_utmp_h" = x"yes"; then
 dnl  utmp and utmpx come in many flavours
 dnl  We need to check for many of them
 dnl  But we don't need to do each and every one, because our code uses
@@ -1483,6 +1486,9 @@ samba_cv_HAVE_UX_UT_SYSLEN=yes,samba_cv_HAVE_UX_UT_SYSLEN=no,samba_cv_HAVE_UX_UT
 if test x"$samba_cv_HAVE_UX_UT_SYSLEN" = x"yes"; then
     AC_DEFINE(HAVE_UX_UT_SYSLEN,1,[Whether the utmpx struct has a property ut_syslen])
 fi 
+
+fi
+# end utmp details
 
 
 ICONV_LOCATION=standard
@@ -2308,6 +2314,7 @@ AC_ARG_WITH(ldap,
 
 AC_MSG_RESULT($with_ldap_support)
 
+SMBLDAP=""
 if test x"$with_ldap_support" = x"yes"; then
   ac_save_LIBS="$LIBS"
   LIBS=""
@@ -2325,12 +2332,10 @@ if test x"$with_ldap_support" = x"yes"; then
            AC_CHECK_LIB(ldap, ldap_domain2hostlist, [
 	      AC_DEFINE(HAVE_LDAP,1,[Whether ldap is available])
 	      AC_CHECK_HEADERS([ldap.h lber.h], 
-                 [default_static_modules="$default_static_modules pdb_ldap idmap_ldap"])
+                 [default_static_modules="$default_static_modules pdb_ldap idmap_ldap";
+                  SMBLDAP="lib/smbldap.o"])
            ])
         ])
-
-	## we have ldap so build the list of files for the generic samba ldap library
-	SMBLDAP="lib/smbldap.o"
 
 	########################################################
 	# If we have LDAP, does it's rebind procedure take 2 or 3 arguments?
@@ -2879,19 +2884,35 @@ fi
 # check for experimental utmp accounting
 
 AC_MSG_CHECKING(whether to support utmp accounting)
+WITH_UTMP=yes
 AC_ARG_WITH(utmp,
-[  --with-utmp             Include experimental utmp accounting (default=no)],
+[  --with-utmp             Include utmp accounting (default, if supported by OS)],
 [ case "$withval" in
-  yes)
-    AC_MSG_RESULT(yes)
-    AC_DEFINE(WITH_UTMP,1,[Whether to include experimental utmp accounting])
-    ;;
+  no)
+		WITH_UTMP=no
+		;;
   *)
-    AC_MSG_RESULT(no)
-    ;;
+		WITH_UTMP=yes
+                ;;
   esac ],
-  AC_MSG_RESULT(no)
 )
+
+# utmp requires utmp.h
+# Note similar check earlier, when checking utmp details.
+
+if test x"$WITH_UTMP" = x"yes" -a x"$ac_cv_header_utmp_h" = x"no"; then
+	utmp_no_reason=", no utmp.h on $host_os"
+	WITH_UTMP=no
+fi
+
+# Display test results
+
+if test x"$WITH_UTMP" = x"yes"; then
+        AC_MSG_RESULT(yes)
+	AC_DEFINE(WITH_UTMP,1,[Whether to include experimental utmp accounting])
+else
+        AC_MSG_RESULT(no$utmp_no_reason)
+fi
 
 #################################################
 # choose native language(s) of man pages
