@@ -1,0 +1,10 @@
+#!/bin/sh
+
+file=@srcdir@/compile_et.awk
+
+if [ ! -f $file ]; then
+	echo "compile_et: File not found: $file"
+	exit 1
+fi
+
+@AWK@ -f $file $1
