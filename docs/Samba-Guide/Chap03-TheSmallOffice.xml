@@ -644,8 +644,7 @@ hosts:	files wins
 <smbconfcomment>Global parameters</smbconfcomment>
 <smbconfsection name="[global]"/>
 <smbconfoption name="workgroup">BILLMORE</smbconfoption>
-<smbconfoption name="passwd chat">*New*Password* \</smbconfoption>
-<member><parameter>%n\n*Re-enter*new*password* %n\n *Password*changed*</parameter></member>
+<smbconfoption name="passwd chat">*New*Password* %n\n*Re-enter*new*password* %n\n *Password*changed*</smbconfoption>
 <smbconfoption name="username map">/etc/samba/smbusers</smbconfoption>
 <smbconfoption name="syslog">0</smbconfoption>
 <smbconfoption name="name resolve order">wins bcast hosts</smbconfoption>
@@ -656,8 +655,7 @@ hosts:	files wins
 <smbconfoption name="add group script">/usr/sbin/groupadd '%g'</smbconfoption>
 <smbconfoption name="delete group script">/usr/sbin/groupdel '%g'</smbconfoption>
 <smbconfoption name="add user to group script">/usr/sbin/usermod -G '%g' '%u'</smbconfoption>
-<smbconfoption name="add machine script">/usr/sbin/useradd \</smbconfoption>
-<member><parameter>-s /bin/false -d /var/lib/nobody '%u'</parameter></member>
+<smbconfoption name="add machine script">/usr/sbin/useradd -s /bin/false -d /var/lib/nobody '%u'</smbconfoption>
 <smbconfoption name="logon script">scripts\login.bat</smbconfoption>
 <smbconfoption name="logon path"> </smbconfoption>
 <smbconfoption name="logon drive">X:</smbconfoption>
@@ -902,6 +900,7 @@ smb: \> q
 
 		<step><para>
 		Install a printer on each using the following steps:
+		</para>
 
 			<procedure>
 				<step><para>
@@ -935,8 +934,8 @@ smb: \> q
 				dialog panel. Right-click <menuchoice>
 					<guiicon>HP LaserJet 4</guiicon>
 					<guimenuitem>Properties</guimenuitem>
-					<guimenusub>Details (Tab)</guimenusub>
-					<guimenubutton>Add Port</guimenubutton>
+					<guisubmenu>Details (Tab)</guisubmenu>
+					<guimenuitem>Add Port</guimenuitem>
 					</menuchoice>.
 				</para></step>
 
@@ -954,7 +953,7 @@ smb: \> q
 				as well as for the QMS Magicolor XXXX laser printer.
 				</para></step>
 			</procedure>
-		</para></step>
+		</step>
 	</procedure>
 
 	<sect2>
@@ -1028,7 +1027,7 @@ smb: \> q
 	may help.
 	</para>
 
-	<qandaset defaultlabel="chap03qa" type="number">
+	<qandaset>
 	<qandaentry>
 	<question>
 
