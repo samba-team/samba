@@ -276,8 +276,6 @@ NTVFS_CSM_OBJ = ntvfs/tank/csm_init.o ntvfs/tank/csm_unlink.o \
 		ntvfs/tank/csm_attr.o ntvfs/tank/csm_truncate.o \
 		ntvfs/tank/csm_fd.o
 
-STFS_LIBS = -L/usr/lib -L/usr/src/newport/csm/lib -Wl,"-(,-lcsm,-lcsmlinuxusp,-)"
-
 NTVFS_CIFS_OBJ = ntvfs/cifs/vfs_cifs.o
 NTVFS_SIMPLE_OBJ = ntvfs/simple/vfs_simple.o ntvfs/simple/svfs_util.o
 NTVFS_IPC_OBJ = ntvfs/ipc/vfs_ipc.o
@@ -1090,8 +1088,7 @@ clean: delheaders python_clean
 # exist, not necessarily that they are up to date.  Since they're
 # removed by "make clean" this will always be run when you do anything
 # afterwards.
-proto_exists: include/proto.h include/build_env.h \
-		include/tdbsam2_parse_info.h
+proto_exists: include/proto.h include/build_env.h
 
 delheaders:
 	@/bin/rm -f $(srcdir)/include/proto.h $(srcdir)/include/build_env.h 
@@ -1105,15 +1102,10 @@ include/build_env.h:
 	@echo Building include/build_env.h
 	@cd $(srcdir) && $(SHELL) script/build_env.sh $(srcdir) $(builddir) $(CC) > $(builddir)/include/build_env.h
 
-include/tdbsam2_parse_info.h:
-	@cd $(srcdir) && $(PERL) -w script/genstruct.pl \
-	-o include/tdbsam2_parse_info.h $(CC) -E -g \
-	include/tdbsam2.h
-
 # "make headers" or "make proto" calls a subshell because we need to
 # make sure these commands are executed in sequence even for a
 # parallel make.
-headers: delheaders include/proto.h include/build_env.h include/tdbsam2_parse_info.h
+headers: delheaders include/proto.h include/build_env.h 
 
 proto: idl_test headers 
 
