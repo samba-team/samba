@@ -419,7 +419,7 @@ BOOL check_name(char *name,connection_struct *conn)
 	  return(0);
   }
 
-  ret = reduce_name(name,conn->connectpath,lp_widelinks(SNUM(conn)));
+  ret = reduce_name(conn,name,conn->connectpath,lp_widelinks(SNUM(conn)));
 
   /* Check if we are allowing users to follow symlinks */
   /* Patch from David Clerc <David.Clerc@cui.unige.ch>

@@ -51,7 +51,7 @@ static BOOL notify_hash(connection_struct *conn, char *path, uint32 flags,
 
 	ZERO_STRUCTP(data);
 
-	if(dos_stat(path, &st) == -1) return False;
+	if(vfs_stat(conn,path, &st) == -1) return False;
 
 	data->modify_time = st.st_mtime;
 	data->status_time = st.st_ctime;
@@ -102,7 +102,7 @@ static BOOL notify_hash(connection_struct *conn, char *path, uint32 flags,
 		/*
 		 * Do the stat - but ignore errors.
 		 */		
-		dos_stat(full_name, &st);
+		vfs_stat(conn,full_name, &st);
 		data->total_time += (st.st_mtime + st.st_ctime);
 	}
 	

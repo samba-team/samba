@@ -284,6 +284,42 @@ int vfswrap_chmod(char *path, mode_t mode)
     return result;
 }
 
+int vfswrap_chown(char *path, uid_t uid, gid_t gid)
+{
+    int result;
+
+#ifdef VFS_CHECK_NULL
+    if (path == NULL) {
+	smb_panic("NULL pointer passed to vfswrap_chown()\n");
+    }
+#endif
+
+    result = sys_chown(path, uid, gid);
+    return result;
+}
+
+int vfswrap_chdir(char *path)
+{
+#ifdef VFS_CHECK_NULL
+    if (path == NULL) {
+	smb_panic("NULL pointer passed to vfswrap_chdir()\n");
+    }
+#endif
+
+	return chdir(path);
+}
+
+char *vfswrap_getwd(char *path)
+{
+#ifdef VFS_CHECK_NULL
+    if (path == NULL) {
+	smb_panic("NULL pointer passed to vfswrap_getwd()\n");
+    }
+#endif
+
+	return sys_getwd(path);
+}
+
 int vfswrap_utime(char *path, struct utimbuf *times)
 {
     int result;
@@ -310,3 +346,13 @@ BOOL vfswrap_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
 {
 	return fcntl_lock(fd, op, offset, count,type);
 }
+
+#if 0
+size_t vfswrap_get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
+{
+}
+
+BOOL vfswrap_set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
+{
+}
+#endif

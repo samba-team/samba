@@ -146,8 +146,6 @@ static BOOL unpack_nt_permissions(SMB_STRUCT_STAT *psbuf, uid_t *puser, gid_t *p
   DOM_SID grp_sid;
   DOM_SID file_owner_sid;
   DOM_SID file_grp_sid;
-  uint32 owner_rid;
-  uint32 grp_rid;
   SEC_ACL *dacl = psd->dacl;
   BOOL all_aces_are_inherit_only = (is_directory ? True : False);
   int i;
@@ -353,7 +351,7 @@ size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
   } else {
 
     if(fsp->is_directory || fsp->fd == -1) {
-      if(dos_stat(fsp->fsp_name, &sbuf) != 0) {
+      if(vfs_stat(fsp->conn,fsp->fsp_name, &sbuf) != 0) {
         return 0;
       }
     } else {
@@ -458,14 +456,14 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
    */
 
   if(fsp->is_directory) {
-    if(dos_stat(fsp->fsp_name, &sbuf) != 0)
+    if(vfs_stat(fsp->conn,fsp->fsp_name, &sbuf) != 0)
       return False;
   } else {
 
     int ret;
 
     if(fsp->fd == -1)
-      ret = conn->vfs_ops.stat(dos_to_unix(fsp->fsp_name,False), &sbuf);
+      ret = vfs_stat(fsp->conn,fsp->fsp_name,&sbuf);
     else
       ret = conn->vfs_ops.fstat(fsp->fd,&sbuf);
 
@@ -492,7 +490,7 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
     DEBUG(3,("call_nt_transact_set_security_desc: chown %s. uid = %u, gid = %u.\n",
           fsp->fsp_name, (unsigned int)user, (unsigned int)grp ));
 
-    if(dos_chown( fsp->fsp_name, user, grp) == -1) {
+    if(vfs_chown( fsp->conn, fsp->fsp_name, user, grp) == -1) {
       DEBUG(3,("call_nt_transact_set_security_desc: chown %s, %u, %u failed. Error = %s.\n",
             fsp->fsp_name, (unsigned int)user, (unsigned int)grp, strerror(errno) ));
       return False;
@@ -504,7 +502,7 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
      */
 
     if(fsp->is_directory) {
-      if(dos_stat(fsp->fsp_name, &sbuf) != 0) {
+      if(vfs_stat(fsp->conn, fsp->fsp_name, &sbuf) != 0) {
         return False;
       }
     } else {
@@ -512,7 +510,7 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
       int ret;
     
       if(fsp->fd == -1)
-        ret = conn->vfs_ops.stat(dos_to_unix(fsp->fsp_name,False), &sbuf);
+        ret = vfs_stat(fsp->conn, fsp->fsp_name, &sbuf);
       else
         ret = conn->vfs_ops.fstat(fsp->fd,&sbuf);
   
