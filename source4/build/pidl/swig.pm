@@ -72,9 +72,9 @@ sub ArrayFromPython($$)
     $result .= "\t\tint i;\n\n";
     $result .= "\t\tfor (i = 0; i < $array_len; i++) {\n";
     if (util::is_scalar_type($e->{TYPE})) {
-	$result .= "\t\t\ts->$prefix$e->{NAME}\[i\] = $e->{TYPE}_from_python(PyList_GetItem(PyDict_GetItem(obj, PyString_FromString(\"$e->{NAME}\")), i), \"$e->{NAME}\");\n";
+	$result .= "\t\t\ts->$prefix$e->{NAME}\[i\] = $e->{TYPE}_from_python(PyList_GetItem(PyDict_GetItemString(obj, \"$e->{NAME}\"), i), \"$e->{NAME}\");\n";
     } else {
-	$result .= "\t\t\t$e->{TYPE}_from_python(mem_ctx, &s->$prefix$e->{NAME}\[i\], PyList_GetItem(PyDict_GetItem(obj, PyString_FromString(\"$e->{NAME}\")), i), \"$e->{NAME}\");\n";
+	$result .= "\t\t\t$e->{TYPE}_from_python(mem_ctx, &s->$prefix$e->{NAME}\[i\], PyList_GetItem(PyDict_GetItemString(obj, \"$e->{NAME}\"), i), \"$e->{NAME}\");\n";
     }
     $result .= "\t\t}\n";
 
@@ -90,7 +90,7 @@ sub FieldFromPython($$)
     my($e) = shift;
     my($prefix) = shift;
     my($result) = "";
-    my($obj) = "PyDict_GetItem(obj, PyString_FromString(\"$e->{NAME}\"))";
+    my($obj) = "PyDict_GetItemString(obj, \"$e->{NAME}\")";
 
     # Special cases
 
@@ -165,7 +165,7 @@ sub ArrayToPython($$)
     }
     $result .= "\t\t}\n";
 
-    $result .= "\t\tPyDict_SetItem(obj, PyString_FromString(\"$e->{NAME}\"), temp);\n";
+    $result .= "\t\tPyDict_SetItemString(obj, \"$e->{NAME}\", temp);\n";
 
     $result .= "\t}\n";
 
@@ -183,7 +183,7 @@ sub FieldToPython($$)
     # Special cases
 
     if ($e->{TYPE} eq "string" && $e->{POINTERS} == 1) {
-	$result .= "\tPyDict_SetItem(obj, PyString_FromString(\"$e->{NAME}\"), string_ptr_to_python(mem_ctx, s->$prefix$e->{NAME}));\n";
+	$result .= "\tPyDict_SetItemString(obj, \"$e->{NAME}\", string_ptr_to_python(mem_ctx, s->$prefix$e->{NAME}));\n";
 	return $result;
     }
 
@@ -194,7 +194,7 @@ sub FieldToPython($$)
 	    if ($e->{ARRAY_LEN}) {
 		$result .= ArrayToPython($e, $prefix);
 	    } else {
-		$result .= "\tPyDict_SetItem(obj, PyString_FromString(\"$e->{NAME}\"), $e->{TYPE}_to_python(s->$prefix$e->{NAME}));\n";
+		$result .= "\tPyDict_SetItemString(obj, \"$e->{NAME}\", $e->{TYPE}_to_python(s->$prefix$e->{NAME}));\n";
 	    }
 	} else {
 	    $result .= "\t// Pointer to scalar\n";
@@ -205,13 +205,13 @@ sub FieldToPython($$)
 	    if ($e->{ARRAY_LEN}) {
 		$result .= ArrayToPython($e, $prefix);
 	    } else {
-		$result .= "\tPyDict_SetItem(obj, PyString_FromString(\"$e->{NAME}\"), $e->{TYPE}_ptr_to_python(mem_ctx, &s->$prefix$e->{NAME}));\n";
+		$result .= "\tPyDict_SetItemString(obj, \"$e->{NAME}\", $e->{TYPE}_ptr_to_python(mem_ctx, &s->$prefix$e->{NAME}));\n";
 	    }
 	} else {
 	    if ($e->{ARRAY_LEN} or util::has_property($e, "size_is")) {
 		$result .= ArrayToPython($e, $prefix);
 	    } else {
-		$result .= "\tPyDict_SetItem(obj, PyString_FromString(\"$e->{NAME}\"), $e->{TYPE}_ptr_to_python(mem_ctx, s->$prefix$e->{NAME}));\n";
+		$result .= "\tPyDict_SetItemString(obj, \"$e->{NAME}\", $e->{TYPE}_ptr_to_python(mem_ctx, s->$prefix$e->{NAME}));\n";
 	    }
 	}
     }
@@ -439,7 +439,7 @@ sub ParseUnion($)
     $result .= "\tu = talloc(mem_ctx, sizeof(union $u->{NAME}));\n\n";
 
     for my $e (@{$u->{DATA}{DATA}}) {
-	$result .= "\tif ((dict = PyDict_GetItem(obj, PyString_FromString(\"$e->{DATA}{NAME}\")))) {\n";
+	$result .= "\tif ((dict = PyDict_GetItemString(obj, \"$e->{DATA}{NAME}\"))) {\n";
 	if ($e->{DATA}{POINTERS} == 0) {
 	    $result .= "\t\t$e->{DATA}{TYPE}_from_python(mem_ctx, &u->$e->{DATA}{NAME}, dict, \"$e->{DATA}{NAME}\");\n";
 	} elsif ($e->{DATA}{POINTERS} == 1) {
@@ -474,7 +474,7 @@ sub ParseUnion($)
     $result .= "\t}\n\n";
 
     for my $e (@{$u->{DATA}{DATA}}) {
-	$result .= "\tif ((dict = PyDict_GetItem(obj, PyString_FromString(\"$e->{DATA}{NAME}\")))) {\n";
+	$result .= "\tif ((dict = PyDict_GetItemString(obj, \"$e->{DATA}{NAME}\"))) {\n";
 	if ($e->{DATA}{POINTERS} == 0) {
 	    $result .= "\t\t$e->{DATA}{TYPE}_from_python(mem_ctx, &u->$e->{DATA}{NAME}, dict, \"$e->{DATA}{NAME}\");\n";
 	} elsif ($e->{DATA}{POINTERS} == 1) {
