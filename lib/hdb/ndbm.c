@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -35,7 +35,7 @@
 
 RCSID("$Id$");
 
-#ifdef HAVE_NDBM_H
+#if defined(HAVE_NDBM_H) || defined(GDBM_NDBM_H)
 
 struct ndbm_db {
     DBM *db;
@@ -311,6 +311,5 @@ hdb_ndbm_create(krb5_context context, HDB **db,
     (*db)->destroy = NDBM_destroy;
     return 0;
 }
-
 
 #endif

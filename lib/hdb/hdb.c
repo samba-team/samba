@@ -44,7 +44,7 @@ static struct hdb_method methods[] = {
 #ifdef HAVE_DB_H
     {"db:",	hdb_db_create},
 #endif
-#ifdef HAVE_NDBM_H
+#if defined(HAVE_NDBM_H) || defined(HAVE_GDBM_NDBM_H)
     {"ndbm:",	hdb_ndbm_create},
 #endif
 #ifdef OPENLDAP
