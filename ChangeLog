@@ -1,3 +1,25 @@
+2004-04-25  Johan Danielsson  <joda@pdc.kth.se>
+
+	* kuser/copy_cred_cache.c: krb5_cc_copy_cache_match now lives in
+	libkrb5
+
+	* lib/krb5/krb5_{,compare_}creds.3: move krb5_compare_creds to its
+	own manpage
+	
+	* replace krb5_free_creds_contents by krb5_free_cred_contents
+	
+	* lib/krb5/cache.c: add krb5_cc_next_cred_match() and
+	krb5_cc_copy_cred_match()
+	
+	* lib/krb5/creds.c (krb5_compare_creds): add more matching options
+	
+	* lib/krb5/krb5.h: add more creds match flags
+	
+	* kuser/copy_cred_cache: add --valid-for option
+	
+	* lib/krb5/store.c (krb5_store_creds): set is_skey flag if length
+	of second ticket is > 0
+
 2004-04-25  Love Hörnquist Åstrand  <lha@it.su.se>
 	
 	* lib/krb5/pkinit.c: always send both win2k compat version and the
