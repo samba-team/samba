@@ -2765,7 +2765,7 @@ BOOL sec_ace_equal(SEC_ACE *s1, SEC_ACE *s2);
 BOOL sec_acl_equal(SEC_ACL *s1, SEC_ACL *s2);
 BOOL sec_desc_equal(SEC_DESC *s1, SEC_DESC *s2);
 SEC_DESC_BUF *sec_desc_merge(SEC_DESC_BUF *new_sdb, SEC_DESC_BUF *old_sdb);
-SEC_DESC *make_sec_desc(uint16 revision, uint16 type,
+SEC_DESC *make_sec_desc(uint16 revision, 
 			DOM_SID *owner_sid, DOM_SID *grp_sid,
 			SEC_ACL *sacl, SEC_ACL *dacl, size_t *sd_size);
 SEC_DESC *dup_sec_desc( SEC_DESC *src);

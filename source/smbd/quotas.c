@@ -427,7 +427,7 @@ BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_U
 
   if (r)
   {
-      if (save_errno == EDQUOT)   // disk quota exceeded
+      if (save_errno == EDQUOT)   /* disk quota exceeded */
       {
          *dfree = 0;
          *dsize = D.dqb_curblocks;
