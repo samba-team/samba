@@ -509,7 +509,7 @@ static int do_list_queue_empty(void)
  A helper for do_list.
 ****************************************************************************/
 
-static void do_list_helper(file_info *f, const char *mask, void *state)
+static void do_list_helper(const char *mntpoint, file_info *f, const char *mask, void *state)
 {
 	if (f->mode & aDIR) {
 		if (do_list_dirs && do_this_one(f)) {
@@ -526,7 +526,8 @@ static void do_list_helper(file_info *f, const char *mask, void *state)
 				return;
 			}
 
-			pstrcpy(mask2, mask);
+			pstrcpy(mask2, mntpoint);
+			pstrcat(mask2, mask);
 			p = strrchr_m(mask2,'\\');
 			if (!p)
 				return;
@@ -583,6 +584,7 @@ void do_list(const char *mask,uint16 attribute,void (*fn)(file_info *),BOOL rec,
 			
 			if ( !cli_resolve_path( cli, head, &targetcli, targetpath ) ) {
 				d_printf("do_list: [%s] %s\n", head, cli_errstr(cli));
+				remove_do_list_queue_head();
 				continue;
 			}
 			
@@ -2871,7 +2873,7 @@ typedef struct {
 	int len;
 } completion_remote_t;
 
-static void completion_remote_filter(file_info *f, const char *mask, void *state)
+static void completion_remote_filter(const char *mnt, file_info *f, const char *mask, void *state)
 {
 	completion_remote_t *info = (completion_remote_t *)state;
 
