@@ -296,9 +296,8 @@ void _cleanup_failures( pam_handle_t * pamh, void *fl, int err )
     }
 }
 
-int _smb_verify_password( pam_handle_t * pamh
-                          , const struct smb_passwd *smb_pwent
-                          , const char *p, unsigned int ctrl )
+int _smb_verify_password( pam_handle_t * pamh, SAM_ACCOUNT *sampass,
+			  const char *p, unsigned int ctrl )
 {
     uchar hash_pass[16];
     uchar lm_pw[16];
@@ -307,10 +306,10 @@ int _smb_verify_password( pam_handle_t * pamh
     char *data_name;
     const char *name;
 
-    if (!smb_pwent)
+    if (!sampass)
         return PAM_ABORT;
 
-    name = smb_pwent->smb_name;
+    name = pdb_get_username(sampass);
 
 #ifdef HAVE_PAM_FAIL_DELAY
     if (off( SMB_NODELAY, ctrl )) {
@@ -318,13 +317,13 @@ int _smb_verify_password( pam_handle_t * pamh
     }
 #endif
 
-    if (!smb_pwent->smb_passwd)
+    if (!pdb_get_lm_pw(sampass))
     {
         _log_err( LOG_DEBUG, "user %s has null SMB password"
                   , name );
 
         if (off( SMB__NONULL, ctrl )
-            && (smb_pwent->acct_ctrl & ACB_PWNOTREQ))
+            && (pdb_get_acct_ctrl(sampass) & ACB_PWNOTREQ))
         { /* this means we've succeeded */
             return PAM_SUCCESS;
         } else {
@@ -335,13 +334,12 @@ int _smb_verify_password( pam_handle_t * pamh
                       , "failed auth request by %s for service %s as %s(%d)"
                       , uidtoname( getuid() )
                       , service ? service : "**unknown**", name
-                      , smb_pwent->smb_userid );
+                      , pdb_get_uid(sampass) );
             return PAM_AUTH_ERR;
         }
     }
 
-    data_name = (char *) malloc( sizeof(FAIL_PREFIX) 
-                                 + strlen( name ));
+    data_name = (char *) malloc( sizeof(FAIL_PREFIX) + strlen( name ));
     if (data_name == NULL) {
         _log_err( LOG_CRIT, "no memory for data-name" );
     }
@@ -353,9 +351,8 @@ int _smb_verify_password( pam_handle_t * pamh
     if (strlen( p ) == 16 || (strlen( p ) == 32
          && pdb_gethexpwd( p, (char *) hash_pass ))) {
 
-        if (!memcmp( hash_pass, smb_pwent->smb_passwd, 16 )
-            || (smb_pwent->smb_nt_passwd
-                && !memcmp( hash_pass, smb_pwent->smb_nt_passwd, 16 )))
+        if (!memcmp( hash_pass, pdb_get_lanman_passwd(sampass), 16 )
+            || (!memcmp( hash_pass, pdb_get_nt_passwd(sampass), 16 )))
         {
             retval = PAM_SUCCESS;
             if (data_name) {	/* reset failures */
@@ -363,7 +360,6 @@ int _smb_verify_password( pam_handle_t * pamh
             }
             _pam_delete( data_name );
             memset( hash_pass, '\0', 16 );
-            smb_pwent = NULL;
             return retval;
         }
     }
@@ -378,7 +374,7 @@ int _smb_verify_password( pam_handle_t * pamh
 
     /* the moment of truth -- do we agree with the password? */
 
-    if (!memcmp( nt_pw, smb_pwent->smb_nt_passwd, 16 )) {
+    if (!memcmp( nt_pw, pdb_get_nt_passwd(sampass), 16 )) {
 
         retval = PAM_SUCCESS;
         if (data_name) {		/* reset failures */
@@ -414,11 +410,11 @@ int _smb_verify_password( pam_handle_t * pamh
                       , "failed auth request by %s for service %s as %s(%d)"
                       , uidtoname( getuid() )
                       , service ? service : "**unknown**", name
-                      , smb_pwent->smb_userid );
+                      , pdb_get_uid(sampass) );
                     new->count = 1;
                 }
                 new->user = xstrdup( name );
-                new->id = smb_pwent->smb_userid;
+                new->id = pdb_get_uid(sampass);
                 new->agent = xstrdup( uidtoname( getuid() ) );
                 pam_set_data( pamh, data_name, new, _cleanup_failures );
 
@@ -428,20 +424,24 @@ int _smb_verify_password( pam_handle_t * pamh
                       , "failed auth request by %s for service %s as %s(%d)"
                       , uidtoname( getuid() )
                       , service ? service : "**unknown**", name
-                      , smb_pwent->smb_userid );
+                      , pdb_get_uid(sampass) );
             }
         } else {
             _log_err( LOG_NOTICE
                       , "failed auth request by %s for service %s as %s(%d)"
                       , uidtoname( getuid() )
                       , service ? service : "**unknown**", name
-                      , smb_pwent->smb_userid );
+                      , pdb_get_uid(sampass) );
             retval = PAM_AUTH_ERR;
         }
     }
 
     _pam_delete( data_name );
-    smb_pwent = NULL;
+    if (sampass) {
+    	pdb_free_sam(sampass);
+	sampass = NULL;
+    }
+    
     return retval;
 }
 
@@ -453,7 +453,7 @@ int _smb_verify_password( pam_handle_t * pamh
  * - to avoid prompting for one in such cases (CG)
  */
 
-int _smb_blankpasswd( unsigned int ctrl, const struct smb_passwd *smb_pwent )
+int _smb_blankpasswd( unsigned int ctrl, SAM_ACCOUNT *sampass )
 {
 	int retval;
 
@@ -466,7 +466,7 @@ int _smb_blankpasswd( unsigned int ctrl, const struct smb_passwd *smb_pwent )
 	if (on( SMB__NONULL, ctrl ))
 		return 0;		/* will fail but don't let on yet */
 
-	if (smb_pwent->smb_passwd == NULL)
+	if (pdb_get_lanman_passwd(sampass) == NULL)
 		retval = 1;
 	else
 		retval = 0;
@@ -478,14 +478,13 @@ int _smb_blankpasswd( unsigned int ctrl, const struct smb_passwd *smb_pwent )
  * obtain a password from the user
  */
 
-int _smb_read_password( pam_handle_t * pamh, unsigned int ctrl
-                        , const char *comment, const char *prompt1
-                        , const char *prompt2, const char *data_name
-                        , const char **pass )
+int _smb_read_password( pam_handle_t * pamh, unsigned int ctrl,
+                        char *comment, char *prompt1,
+                        char *prompt2, char *data_name, char **pass )
 {
     int authtok_flag;
     int retval;
-    const char *item = NULL;
+    char *item = NULL;
     char *token;
 
     struct pam_message msg[3], *pmsg[3];

@@ -45,7 +45,7 @@ do {								\
 } while (0)
 
 static int _smb_add_user(pam_handle_t *pamh, unsigned int ctrl,
-                         const char *name, struct smb_passwd *smb_pwent);
+                         const char *name, SAM_ACCOUNT *sampass);
 
 /*
  * pam_sm_authenticate() authenticates users against the samba password file.
@@ -65,9 +65,9 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
     const char *name;
 
     /* Points to memory managed by the PAM library. Do not free. */
-    const char *p = NULL;
+    char *p = NULL;
 
-    struct smb_passwd *smb_pwent = NULL;
+    SAM_ACCOUNT *sampass = NULL;
 
     extern BOOL in_client;
 
@@ -94,20 +94,22 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
         _log_err( LOG_DEBUG, "username [%s] obtained", name );
     }
 
-    if (!initialize_password_db()) {
+    if (!initialize_password_db(True)) {
         _log_err( LOG_ALERT, "Cannot access samba password database" );
         retval = PAM_AUTHINFO_UNAVAIL;
         AUTH_RETURN;
     }
 
-    smb_pwent = getsmbpwnam( name );
+    pdb_init_sam(&sampass);
+    
+    pdb_getsampwnam( sampass, name );
 
     if (on( SMB_MIGRATE, ctrl )) {
-	retval = _smb_add_user(pamh, ctrl, name, smb_pwent);
+	retval = _smb_add_user(pamh, ctrl, name, sampass);
 	AUTH_RETURN;
     }
 
-    if (smb_pwent == NULL) {
+    if (sampass == NULL) {
         _log_err(LOG_ALERT, "Failed to find entry for user %s.", name);
         retval = PAM_USER_UNKNOWN;
         AUTH_RETURN;
@@ -115,27 +117,29 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
    
     /* if this user does not have a password... */
 
-    if (_smb_blankpasswd( ctrl, smb_pwent )) {
-        smb_pwent = NULL;
+    if (_smb_blankpasswd( ctrl, sampass )) {
+        pdb_free_sam(sampass);
+	sampass = NULL;
         retval = PAM_SUCCESS;
         AUTH_RETURN;
     }
 
     /* get this user's authentication token */
 
-    retval = _smb_read_password(pamh, ctrl, NULL, "Password: ", NULL
-				 , _SMB_AUTHTOK, &p);
+    retval = _smb_read_password(pamh, ctrl, NULL, "Password: ", NULL, _SMB_AUTHTOK, &p);
     if (retval != PAM_SUCCESS ) {
 	_log_err(LOG_CRIT, "auth: no password provided for [%s]"
 		 , name);
-        smb_pwent = NULL;
+        pdb_free_sam(sampass);
+	sampass = NULL;
         AUTH_RETURN;
     }
 
     /* verify the password of this user */
 
-    retval = _smb_verify_password( pamh, smb_pwent, p, ctrl );
-    smb_pwent = NULL;
+    retval = _smb_verify_password( pamh, sampass, p, ctrl );
+    pdb_free_sam(sampass);
+    sampass = NULL;
     p = NULL;
     AUTH_RETURN;
 }
@@ -165,11 +169,11 @@ int pam_sm_setcred(pam_handle_t *pamh, int flags,
 
 /* Helper function for adding a user to the db. */
 static int _smb_add_user(pam_handle_t *pamh, unsigned int ctrl,
-                         const char *name, struct smb_passwd *smb_pwent)
+                         const char *name, SAM_ACCOUNT *sampass)
 {
     pstring err_str;
     pstring msg_str;
-    const char *pass = NULL;
+    char *pass = NULL;
     int retval;
 
     err_str[0] = '\0';
@@ -187,7 +191,7 @@ static int _smb_add_user(pam_handle_t *pamh, unsigned int ctrl,
     }
 
     /* Add the user to the db if they aren't already there. */
-    if (smb_pwent == NULL) {
+    if (sampass == NULL) {
 	retval = local_password_change( name, LOCAL_ADD_USER,
 	                                 pass, err_str,
 	                                 sizeof(err_str),
@@ -208,11 +212,9 @@ static int _smb_add_user(pam_handle_t *pamh, unsigned int ctrl,
     }
 
     /* Change the user's password IFF it's null. */
-    if (smb_pwent->smb_passwd == NULL && (smb_pwent->acct_ctrl & ACB_PWNOTREQ))
+    if ((pdb_get_lanman_passwd(sampass) == NULL) && (pdb_get_acct_ctrl(sampass) & ACB_PWNOTREQ))
     {
-	retval = local_password_change( name, 0,
-	                                 pass, err_str,
-	                                 sizeof(err_str),
+	retval = local_password_change( name, 0, pass, err_str, sizeof(err_str),
 	                                 msg_str, sizeof(msg_str) );
 	if (!retval && *err_str)
 	{

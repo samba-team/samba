@@ -33,8 +33,7 @@
 
 #include "support.h"
 
-int smb_update_db( pam_handle_t *pamh, int ctrl, const char *user
-                   , const char *pass_new )
+int smb_update_db( pam_handle_t *pamh, int ctrl, const char *user,  char *pass_new )
 {
  char		c;
  int		retval, i;
@@ -93,9 +92,9 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
 
     extern BOOL in_client;
 
-    struct smb_passwd *smb_pwent=NULL;
+    SAM_ACCOUNT *sampass = NULL;
     const char *user;
-    const char *pass_old, *pass_new;
+    char *pass_old, *pass_new;
 
     /* Samba initialization. */
     setup_logging( "pam_smbpass", False );
@@ -120,15 +119,16 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
         _log_err( LOG_DEBUG, "username [%s] obtained", user );
     }
 
-    if (!initialize_password_db()) {
+    if (!initialize_password_db(True)) {
         _log_err( LOG_ALERT, "Cannot access samba password database" );
         return PAM_AUTHINFO_UNAVAIL;
     }
 
     /* obtain user record */
-    smb_pwent = getsmbpwnam(user);
+    pdb_init_sam(&sampass);
+    pdb_samgetpwnam(sampass,user);
 
-    if (smb_pwent == NULL) {
+    if (sampass == NULL) {
         _log_err( LOG_ALERT, "Failed to find entry for user %s.", user );
         return PAM_USER_UNKNOWN;
     }
@@ -141,7 +141,7 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
 
         char *Announce;
 
-        if (_smb_blankpasswd( ctrl, smb_pwent )) {
+        if (_smb_blankpasswd( ctrl, sampass )) {
 
             return PAM_SUCCESS;
 
@@ -163,12 +163,8 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
 #undef greeting
 
             set( SMB__OLD_PASSWD, ctrl );
-            retval = _smb_read_password( pamh, ctrl
-                                         , Announce
-                                         , "Current SMB password: "
-                                         , NULL
-                                         , _SMB_OLD_AUTHTOK
-                                         , &pass_old );
+            retval = _smb_read_password( pamh, ctrl, Announce, "Current SMB password: ",
+                                         NULL, _SMB_OLD_AUTHTOK, &pass_old );
             free( Announce );
 
             if (retval != PAM_SUCCESS) {
@@ -179,7 +175,7 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
 
             /* verify that this is the password for this user */
 
-            retval = _smb_verify_password( pamh, smb_pwent, pass_old, ctrl );
+            retval = _smb_verify_password( pamh, sampass, pass_old, ctrl );
 
         } else {
 	    pass_old = NULL;
@@ -279,7 +275,7 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
         if (retval == PAM_SUCCESS) {
             /* password updated */
             _log_err( LOG_NOTICE, "password for (%s/%d) changed by (%s/%d)"
-                      , user, smb_pwent->smb_userid, uidtoname( getuid() )
+                      , user, pdb_get_uid(sampass), uidtoname( getuid() )
                       , getuid() );
         } else {
             _log_err( LOG_ERR, "password change failed for user %s"
@@ -287,13 +283,21 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
         }
 
         pass_old = pass_new = NULL;
-        smb_pwent = NULL;
+	if (sampass) {
+		pdb_free_sam(sampass);
+		sampass = NULL;
+	}
 
     } else {            /* something has broken with the library */
 
         _log_err( LOG_ALERT, "password received unknown request" );
         retval = PAM_ABORT;
 
+    }
+    
+    if (sampass) {
+    	pdb_free_sam(sampass);
+	sampass = NULL;
     }
 
     return retval;
