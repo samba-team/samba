@@ -267,8 +267,7 @@ print_tickets (krb5_context context,
 	if(do_flags)
 	    rtbl_add_column(ct, COL_FLAGS, 0);
 	rtbl_add_column(ct, COL_PRINCIPAL, 0);
-	rtbl_set_prefix(ct, "  ");
-	rtbl_set_column_prefix(ct, COL_ISSUED, "");
+	rtbl_set_separator(ct, "  ");
     }
     while ((ret = krb5_cc_next_cred (context,
 				     ccache,
