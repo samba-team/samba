@@ -86,11 +86,15 @@ static int lsa_reply_auth_2(LSA_Q_AUTH_2 *q_a, char *q, char *base,
 	return PTR_DIFF(q, base);
 }
 
-static void make_lsa_r_srv_pwset(LSA_R_SRV_PWSET *r_a,
+static void make_lsa_r_srv_pwset(LSA_R_SRV_PWSET *r_s,
                              DOM_CRED *srv_cred, int status)  
 {
-	memcpy(&(r_a->srv_cred), srv_cred, sizeof(r_a->srv_cred));
-	r_a->status = status;
+	DEBUG(5,("make_lsa_r_srv_pwset: %d\n", __LINE__));
+
+	memcpy(&(r_s->srv_cred), srv_cred, sizeof(r_s->srv_cred));
+	r_s->status = status;
+
+	DEBUG(5,("make_lsa_r_srv_pwset: %d\n", __LINE__));
 }
 
 static int lsa_reply_srv_pwset(LSA_Q_SRV_PWSET *q_s, char *q, char *base,
@@ -98,11 +102,15 @@ static int lsa_reply_srv_pwset(LSA_Q_SRV_PWSET *q_s, char *q, char *base,
 {
 	LSA_R_SRV_PWSET r_s;
 
+	DEBUG(5,("lsa_srv_pwset: %d\n", __LINE__));
+
 	/* set up the LSA Server Password Set response */
 	make_lsa_r_srv_pwset(&r_s, srv_cred, status);
 
 	/* store the response in the SMB stream */
 	q = lsa_io_r_srv_pwset(False, &r_s, q, base, 4, 0);
+
+	DEBUG(5,("lsa_srv_pwset: %d\n", __LINE__));
 
 	/* return length of SMB data stored */
 	return PTR_DIFF(q, base);
@@ -395,14 +403,24 @@ static BOOL deal_with_credentials(user_struct *vuser,
 	/* increment client time by one second */
 	new_clnt_time.time = clnt_cred->timestamp.time + 1;
 
+	DEBUG(5,("deal_with_credentials: new_clnt_time=%lx\n", new_clnt_time.time));
+
 	/* create server credentials for inclusion in the reply */
 	cred_create(vuser->dc.sess_key, &(vuser->dc.clnt_cred), new_clnt_time,
 	            &(srv_cred->challenge));
+	
+	DEBUG(5,("deal_with_credentials: %d\n", __LINE__));
 
-	/* update the client and server credentials, for use next time... */
-	new_cred = IVAL(vuser->dc.clnt_cred.data, 0) + new_clnt_time.time;
-	SIVAL(vuser->dc.clnt_cred.data, new_cred, 0);
-	SIVAL(vuser->dc.srv_cred.data , new_cred, 0);
+	DEBUG(5,("deal_with_credentials: clnt_cred[0]=%lx\n",
+	          vuser->dc.clnt_cred.data[0]));
+
+	new_cred = IVAL(vuser->dc.clnt_cred.data, 0);
+	new_cred += new_clnt_time.time;
+
+	DEBUG(5,("deal_with_credentials: new_cred[0]=%lx\n", new_cred));
+
+	SIVAL(vuser->dc.clnt_cred.data, 0, new_cred);
+	SIVAL(vuser->dc.srv_cred .data, 0, new_cred);
 
 	return True;
 }
@@ -420,6 +438,8 @@ static void api_lsa_srv_pwset( user_struct *vuser,
 
 	/* checks and updates credentials.  creates reply credentials */
 	deal_with_credentials(vuser, &(q_a.clnt_id.cred), &srv_cred);
+
+	DEBUG(5,("api_lsa_srv_pwset: %d\n", __LINE__));
 
 	/* construct reply.  always indicate failure.  nt keeps going... */
 	*rdata_len = lsa_reply_srv_pwset(&q_a, *rdata + 0x18, *rdata,
@@ -487,7 +507,7 @@ static void api_lsa_sam_logon( user_struct *vuser,
 		pstrcpy(dom_sid     , lp_domainsid   ());
 		pstrcpy(my_workgroup, lp_workgroup   ());
 
-		pstrcpy(username, unistr2(q_l.sam_id.client.login.uni_acct_name.buffer));
+		pstrcpy(username, unistr2(q_l.sam_id.auth.id1.uni_user_name.buffer));
 		pstrcpy(my_name     , myname           );
 		strupper(my_name);
 

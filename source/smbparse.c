@@ -245,6 +245,27 @@ char* smb_io_dom_rid2(BOOL io, DOM_RID2 *rid2, char *q, char *base, int align, i
 }
 
 /*******************************************************************
+reads or writes a DOM_CLNT_SRV structure.
+********************************************************************/
+char* smb_io_clnt_srv(BOOL io, DOM_CLNT_SRV *log, char *q, char *base, int align, int depth)
+{
+	if (log == NULL) return NULL;
+
+	DEBUG(5,("%s%04x smb_io_clnt_srv\n",  tab_depth(depth), PTR_DIFF(q, base)));
+	depth++;
+
+	q = align_offset(q, base, align);
+	
+	DBG_RW_IVAL("undoc_buffer ", depth, base, io, q, log->undoc_buffer); q += 4;
+	q = smb_io_unistr2(io, &(log->uni_logon_srv), q, base, align, depth);
+
+	DBG_RW_IVAL("undoc_buffer2", depth, base, io, q, log->undoc_buffer); q += 4;
+	q = smb_io_unistr2(io, &(log->uni_comp_name), q, base, align, depth);
+
+	return q;
+}
+
+/*******************************************************************
 reads or writes a DOM_LOG_INFO structure.
 ********************************************************************/
 char* smb_io_log_info(BOOL io, DOM_LOG_INFO *log, char *q, char *base, int align, int depth)
@@ -302,6 +323,24 @@ char* smb_io_cred(BOOL io, DOM_CRED *cred, char *q, char *base, int align, int d
 	
 	q = smb_io_chal (io, &(cred->challenge), q, base, align, depth);
 	q = smb_io_utime(io, &(cred->timestamp), q, base, align, depth);
+
+	return q;
+}
+
+/*******************************************************************
+reads or writes a DOM_CLNT_INFO2 structure.
+********************************************************************/
+char* smb_io_clnt_info2(BOOL io, DOM_CLNT_INFO2 *clnt, char *q, char *base, int align, int depth)
+{
+	if (clnt == NULL) return NULL;
+
+	DEBUG(5,("%s%04x smb_io_clnt_info2\n",  tab_depth(depth), PTR_DIFF(q, base)));
+	depth++;
+
+	q = align_offset(q, base, align);
+	
+	q = smb_io_clnt_srv(io, &(clnt->login), q, base, align, depth);
+	q = smb_io_cred    (io, &(clnt->cred ), q, base, align, depth);
 
 	return q;
 }
@@ -401,8 +440,8 @@ char* smb_io_sam_info(BOOL io, DOM_SAM_INFO *sam, char *q, char *base, int align
 
 	q = align_offset(q, base, align);
 	
-	q = smb_io_clnt_info(io, &(sam->client  ), q, base, align, depth);
-	q = smb_io_cred     (io, &(sam->rtn_cred), q, base, align, depth);
+	q = smb_io_clnt_info2(io, &(sam->client  ), q, base, align, depth);
+	q = smb_io_cred      (io, &(sam->rtn_cred), q, base, align, depth);
 
 	DBG_RW_IVAL("logon_level", depth, base, io, q, sam->logon_level); q += 4;
 	DBG_RW_SVAL("auth_level ", depth, base, io, q, sam->auth_level ); q += 4;

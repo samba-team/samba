@@ -99,7 +99,7 @@ void cred_create(uint32 session_key[2], DOM_CHAL *stor_cred, UTIME timestamp,
 
 	DEBUG(5,("	sess_key : %lx %lx\n", session_key    [0], session_key    [1]));
 	DEBUG(5,("	stor_cred: %lx %lx\n", stor_cred->data[0], stor_cred->data[1]));
-	DEBUG(5,("	timecred : %lx %lx\n", IVAL(timecred, 0),  IVAL(timecred, 4)));
+	DEBUG(5,("	timecred : %lx %lx\n", IVAL(timecred, 0) , IVAL(timecred, 4) ));
 	DEBUG(5,("	calc_cred: %lx %lx\n", cred     ->data[0], cred     ->data[1]));
 }
 
@@ -129,7 +129,6 @@ int cred_assert(DOM_CHAL *cred, uint32 session_key[2], DOM_CHAL *stored_cred,
 
 	DEBUG(5,("	challenge : %lx %lx\n", cred->data[0], cred->data[1]));
 	DEBUG(5,("	calculated: %lx %lx\n", cred2.data[0], cred2.data[1]));
-	DEBUG(5,("	challenge: "));
 
 	return memcmp(cred->data, cred2.data, 8) == 0;
 }

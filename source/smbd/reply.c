@@ -479,8 +479,31 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   /* computer with that name (minus the $) has access. For now */
   /* say yes to everything ending in $. */
   if (user[strlen(user) - 1] == '$') {
-    computer_id = True;
+    struct smb_passwd *smb_pass; /* To check if machine account exists */
+#ifdef NTDOMAIN
+/* 
+   PAXX: Ack. We don't want to do this. The workstation trust account
+   with a $ on the end should exist in the local password database
+   or be mapped to something generic, but not modified. For NT
+   domain support we must reject this used in certain circumstances
+   with a code to indicate to the client that it is an invalid use
+   of a workstation trust account. NTWKS needs this error to join
+   a domain. This may be the source of future bugs if we cannot
+   be sure whether to reject this or not.
+*/
+   smb_pass = get_smbpwnam(user);
+   if(smb_pass)
+   {
+     /* PAXX: This is the NO LOGON workstation trust account stuff */
+     DEBUG(4,("Rejecting workstation trust account %s",user));
+     SSVAL(outbuf, smb_flg2, 0xc003); /* PAXX: Someone please unhack this */
+     CVAL(outbuf, smb_reh) = 1; /* PAXX: Someone please unhack this */
+     return(ERROR(0x99,0xc000)); /* 0x99 NT error, 0xc00 */
+   }
+   computer_id = True;
+#else /* not NTDOMAIN, leave this in. PAXX: Someone get rid of this */
     user[strlen(user) - 1] = '\0';
+#endif
   }
 
 
