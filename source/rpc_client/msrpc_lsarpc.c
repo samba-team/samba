@@ -206,8 +206,8 @@ BOOL msrpc_lsa_set_secret(const char* srv_name,
 	secret.undoc       = 0;
 	secret.str_str_len = len+8;
 
-	SIVAL(secret.buffer, 0, len+8);
-	SIVAL(secret.buffer, 4, len+8);
+	SIVAL(secret.buffer, 0, len);
+	SIVAL(secret.buffer, 4, 0x01);
 	memcpy(secret.buffer+8, data, len);
 
 	/* lookup domain controller; receive a policy handle */

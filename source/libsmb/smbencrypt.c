@@ -472,17 +472,19 @@ BOOL nt_encrypt_string2(STRING2 *out, const STRING2 *in, const uchar *key)
 
 	while (inbuf < inbufend)
 	{
+		smbhash(outbuf, inbuf, keyptr, 1);
+
 		keyptr += 7;
 		if (keyptr + 7 > keyend)
 		{
 			keyptr = (keyend - keyptr) + key;
 		}
 
-		smbhash(outbuf, inbuf, keyptr, 1);
-
 		inbuf += 8;
 		outbuf += 8;
 	}
+
+	dump_data_pw("nt_encrypt_string2\n", out->buffer, datalen);
 
 	return True;
 }
