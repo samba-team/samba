@@ -1,5 +1,7 @@
 Thu Aug 28 00:37:39 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
 
+	* lib/roken/base64.c: Add base64 functions.
+
 	* kdc/connect.c lib/krb5/send_to_kdc.c: Add http support.
 
 Wed Aug 27 00:29:20 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
