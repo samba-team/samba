@@ -42,6 +42,7 @@ RCSID("$Id$");
 enum auth_method auth_method;
 int do_encrypt;
 int do_forward;
+int do_forwardable;
 krb5_context context;
 krb5_keyblock *keyblock;
 krb5_crypto crypto;
@@ -152,10 +153,16 @@ send_krb4_auth(int s,
 }
 #endif /* KRB4 */
 
+/*
+ * Send forward information on `s' for host `hostname', them being
+ * forwardable themselves if `forwardable'
+ */
+
 static int
 krb5_forward_cred (krb5_auth_context auth_context,
 		   int s,
-		   char *hostname)
+		   const char *hostname,
+		   int forwardable)
 {
     krb5_error_code ret;
     krb5_ccache     ccache;
@@ -199,7 +206,8 @@ krb5_forward_cred (krb5_auth_context auth_context,
     creds.times.endtime = 0;
 
     flags.i = 0;
-    flags.b.forwarded = 1;
+    flags.b.forwarded   = 1;
+    flags.b.forwardable = forwardable;
 
     ret = krb5_get_forwarded_creds (context,
 				    auth_context,
@@ -298,7 +306,8 @@ send_krb5_auth(int s,
     if (net_write (s, local_user, len) != len)
 	err (1, "write");
 
-    if (!do_forward || krb5_forward_cred (auth_context, s, hostname)) {
+    if (!do_forward
+	|| krb5_forward_cred (auth_context, s, hostname, do_forwardable)) {
 	/* Empty forwarding info */
 
 	u_char zero[4] = {0, 0, 0, 0};
@@ -593,6 +602,8 @@ struct getargs args[] = {
       NULL },
     { "forward", 'f', arg_flag,		&do_forward,	"Forward credentials",
       NULL },
+    { "forwardable", 'F', arg_flag,	&do_forwardable,
+      "Forward forwardable credentials", NULL },
     { "port",	'p', arg_string,	&port_str,	"Use this port",
       "number-or-service" },
     { "user",	'l', arg_string,	&user,		"Run as this user",
@@ -648,6 +659,9 @@ main(int argc, char **argv)
 		&optind))
 	usage (1);
 
+    if (do_forwardable)
+	do_forward = 1;
+
     /* default to v5 */
 #ifdef KRB4
     if(use_v4 == 0 && use_v5 == 0)
@@ -665,7 +679,7 @@ main(int argc, char **argv)
 	usage (0);
 
     if (do_version) {
-	printf ("%s (%s-%s)\n", __progname, PACKAGE, VERSION);
+	print_version (NULL);
 	return 0;
     }
 	
