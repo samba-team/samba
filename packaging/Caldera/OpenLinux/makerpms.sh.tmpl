@@ -9,7 +9,4 @@ GRPID=`id -g`
 
 ( cd ../../.. ; chown -R ${USERID}.${GRPID} ${SRCDIR}/samba-PVERSION )
 ( cd ../../.. ; tar czvf ${SRCDIR}/samba-PVERSION.tar.gz samba-PVERSION )
-cp -a *.spec $SPECDIR
-cp -a *.patch smb.* samba.log $SRCDIR
-cd $SPECDIR
-rpm -ba -v samba2.spec
+rpm -ba -v samba.spec

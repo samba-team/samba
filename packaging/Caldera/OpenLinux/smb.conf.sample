@@ -15,10 +15,10 @@
 [global]
 
 # workgroup = NT-Domain-Name or Workgroup-Name
-   workgroup = MYGROUP
+   workgroup = WORKGROUP
 
 # server string is the equivalent of the NT Description field
-   server string = Samba Server
+   server string = Samba Server on Caldera OpenLinux
 
 # This option is important for security. It allows you to restrict
 # connections to machines which are on your local network. The
@@ -27,15 +27,17 @@
 # the smb.conf man page
 ;   hosts allow = 192.168.1. 192.168.2. 127.
 
-# if you want to automatically load your printer list rather
+# If you want to automatically load your printer list rather
 # than setting them up individually then you'll need this
-   printcap name = /etc/printcap
    load printers = yes
 
-# It should not be necessary to spell out the print system type unless
-# yours is non-standard. Currently supported print systems include:
+# you may wish to override the location of the printcap file
+;   printcap name = /etc/printcap
+
+# It should not be necessary to specify the print system type unless
+# it is non-standard. Currently supported print systems include:
 # bsd, sysv, plp, lprng, aix, hpux, qnx
-;   printing = bsd
+   printing = lprng
 
 # Uncomment this if you want a guest account, you must add this to /etc/passwd
 # otherwise the user "nobody" is used
@@ -43,7 +45,7 @@
 
 # this tells Samba to use a separate log file for each machine
 # that connects
-   log file = /var/log/samba/log.%m
+;  log file = /var/log/samba.d/smb.%m
 
 # Put a capping on the size of the log files (in Kb).
    max log size = 50
@@ -63,7 +65,7 @@
 # ENCRYPTION.txt, Win95.txt and WinNT.txt in the Samba documentation.
 # Do not enable this option unless you have read those documents
 ;  encrypt passwords = yes
-;  smb passwd file = /etc/smbpasswd
+;  smb passwd file = /etc/samba.d/smbpasswd
 
 # The following are needed to allow password changing from Windows to
 # update the Linux sytsem password also.
@@ -76,12 +78,12 @@
 ;  passwd chat = *New*UNIX*password* %n\n *ReType*new*UNIX*password* %n\n *passwd:*all*authentication*tokens*updated*successfully*
 
 # Unix users can map to different SMB User names
-;  username map = /etc/smbusers
+;  username map = /etc/samba.d/smbusers
 
 # Using the following line enables you to customise your configuration
 # on a per machine basis. The %m gets replaced with the netbios name
 # of the machine that is connecting
-;   include = /etc/smb.conf.%m
+;   include = /etc/samba.d/smb.conf.%m
 
 # Most people will find that this option gives better performance.
 # See speed.txt and the manual pages for details
@@ -180,13 +182,21 @@
 #============================ Share Definitions ==============================
 [homes]
    comment = Home Directories
+; this gives access to a 'Public' sub-directory in each user's home...
+; (it is named 'public' as it is intended to be used by other sharing
+; technologies (like NetWare, appletalk) too and may get disclosed due
+; to weak protocols! -- hmm, are there less secure protocols than NFS? :)
+   path = %H/Public
+   valid users = %S
+   only user = yes
    browseable = no
    writable = yes
+   create mask = 0750
 
 # Un-comment the following and create the netlogon directory for Domain Logons
 ; [netlogon]
-;   comment = Network Logon Service
-;   path = /home/netlogon
+;   comment = Samba Network Logon Service
+;   path = /home/samba/netlogon
 ;   guest ok = yes
 ;   writable = no
 ;   share modes = no
@@ -195,7 +205,7 @@
 # Un-comment the following to provide a specific roving profile share
 # the default is to use the user's home directory
 ;[Profiles]
-;    path = /home/profiles
+;    path = /home/samba/profiles
 ;    browseable = no
 ;    guest ok = yes
 
@@ -210,26 +220,35 @@
    guest ok = no
    writable = no
    printable = yes
+   create mask = 0700
 
-# This one is useful for people to share files
+# A publicly accessible directory, but read only, except for people in
+# the "users" group
+[public]
+   comment = Public Stuff
+   path = /home/public
+   browseable = yes
+   public = yes
+   writable = yes
+   printable = no
+# access may be controlled by these options
+;  read list = user1, user2, @group
+;  valid users = user1, user3
+   write list = @users
+
+# Other examples. 
+#
+# This one is useful for people to share files, BUT
+# access to '/tmp' or '/var/tmp' should *not* be given lightly,
+# as this can (still) pose a security threat!
+# Better use a dedicate sub-directory to /(var/)tmp or something
+# like a [public] share!
 ;[tmp]
 ;   comment = Temporary file space
 ;   path = /tmp
 ;   read only = no
 ;   public = yes
 
-# A publicly accessible directory, but read only, except for people in
-# the "staff" group
-;[public]
-;   comment = Public Stuff
-;   path = /home/samba
-;   public = yes
-;   writable = yes
-;   printable = no
-;   write list = @staff
-
-# Other examples. 
-#
 # A private printer, usable only by fred. Spool data will be placed in fred's
 # home directory. Note that fred must have write access to the spool directory,
 # wherever it is.
