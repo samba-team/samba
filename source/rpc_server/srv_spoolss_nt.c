@@ -305,8 +305,7 @@ static BOOL set_printer_hnd_printername(POLICY_HND *hnd, char *printername)
 	char *aprinter;
 	BOOL found=False;
 	
-	if (!OPEN_HANDLE(Printer))
-	{
+	if (!OPEN_HANDLE(Printer)) {
 		DEBUG(0,("Error setting printer name=%s\n", printername));
 		return False;
 	}
@@ -437,7 +436,7 @@ uint32 _spoolss_open_printer_ex( const UNISTR2 *printername,
 	clear_handle(handle);
 	
 	if (printername == NULL)
-		return NT_STATUS_ACCESS_DENIED;
+		return ERROR_INVALID_PRINTER_NAME;
 
 	/* some sanity check because you can open a printer or a print server */
 	/* aka: \\server\printer or \\server */
@@ -451,12 +450,12 @@ uint32 _spoolss_open_printer_ex( const UNISTR2 *printername,
 	
 	if (!set_printer_hnd_printertype(handle, name)) {
 		close_printer_handle(handle);
-		return NT_STATUS_ACCESS_DENIED;
+		return ERROR_INVALID_PRINTER_NAME;
 	}
 	
 	if (!set_printer_hnd_printername(handle, name)) {
 		close_printer_handle(handle);
-		return NT_STATUS_ACCESS_DENIED;
+		return ERROR_INVALID_PRINTER_NAME;
 	}
 
 /*
@@ -471,7 +470,7 @@ uint32 _spoolss_open_printer_ex( const UNISTR2 *printername,
 	
 	if (!set_printer_hnd_accesstype(handle, printer_default->access_required)) {
 		close_printer_handle(handle);
-		return NT_STATUS_ACCESS_DENIED;
+		return ERROR_ACCESS_DENIED;
 	}
 		
 	return NT_STATUS_NO_PROBLEMO;
@@ -665,25 +664,32 @@ static BOOL getprinterdata_printer(const POLICY_HND *handle,
 	
 	DEBUG(5,("getprinterdata_printer\n"));
 
-	if (OPEN_HANDLE(Printer))
-	{
-		get_printer_snum(handle, &snum);		
-		get_a_printer(&printer, 2, lp_servicename(snum));
-		
-		if (get_specific_param(printer, 2, value, &idata, type, &len)) 
-		{
-			*data  = (uint8 *)malloc( (len>in_size)?len:in_size *sizeof(uint8) );
-			memset(*data, 0, sizeof(uint8)*len);
-			memcpy(*data, idata, (len>in_size)?len:in_size);
-			*needed = len;
-			
-			if (idata) free(idata);
-			return (True);
-		}
+	if (!OPEN_HANDLE(Printer))
+		return False;
+
+	get_printer_snum(handle, &snum);		
+	get_a_printer(&printer, 2, lp_servicename(snum));
+
+	if (!get_specific_param(printer, 2, value, &idata, type, &len)) {
 		free_a_printer(printer, 2);
+		return False;
 	}
 
-	return (False);
+	DEBUG(5,("getprinterdata_printer:allocating %d\n", in_size));
+
+	*data  = (uint8 *)malloc( in_size *sizeof(uint8) );
+	memset(*data, 0, in_size *sizeof(uint8));
+	/* copy the min(in_size, len) */
+	memcpy(*data, idata, (len>in_size)?in_size:len *sizeof(uint8));
+
+	*needed = len;
+	
+	DEBUG(5,("getprinterdata_printer:copy done\n"));
+			
+	free_a_printer(printer, 2);
+	safe_free(idata);
+	
+	return True;
 }	
 
 /********************************************************************
@@ -728,9 +734,10 @@ uint32 _spoolss_getprinterdata(const POLICY_HND *handle, UNISTR2 *valuename,
 		found=getprinterdata_printer(handle, value, type, data, needed, *out_size);
 
 	if (found==False) {
+		DEBUG(5, ("value not found, allocating %d\n", *out_size));
 		/* reply this param doesn't exist */
-		*data=(uint8 *)malloc(4*sizeof(uint8));
-		memset(*data, 0x0, 4);
+		*data=(uint8 *)malloc(*out_size*sizeof(uint8));
+		memset(*data, 0x0, *out_size*sizeof(uint8));
 		return ERROR_INVALID_PARAMETER;
 	}
 	
@@ -984,7 +991,7 @@ static void spoolss_notify_status(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_
 	memset(&status, 0, sizeof(status));
 	count=get_printqueue(snum, NULL, &q, &status);
 	data->notify_data.value[0]=(uint32) status.status;
-	if (q) free(q);
+	safe_free(q);
 }
 
 /*******************************************************************
@@ -997,7 +1004,7 @@ static void spoolss_notify_cjobs(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_q
 
 	memset(&status, 0, sizeof(status));
 	data->notify_data.value[0]=get_printqueue(snum, NULL, &q, &status);
-	if (q) free(q);
+	safe_free(q);
 }
 
 /*******************************************************************
@@ -1936,14 +1943,24 @@ static BOOL enum_all_printers_info_2(fstring servername, NEW_BUFFER *buffer, uin
 	for (i=0; i<*returned; i++)
 		(*needed) += spoolss_size_printer_info_2(&(printers[i]));
 
-	if (!alloc_buffer_size(buffer, *needed))
+	if (!alloc_buffer_size(buffer, *needed)) {
+		for (i=0; i<*returned; i++) {
+			safe_free(printers[i].devmode->private);
+			safe_free(printers[i].devmode);
+		}
+		safe_free(printers);
 		return ERROR_INSUFFICIENT_BUFFER;
+	}
 
 	/* fill the buffer with the structures */
 	for (i=0; i<*returned; i++)
 		new_smb_io_printer_info_2("", buffer, &(printers[i]), 0);	
 	
 	/* clear memory */
+	for (i=0; i<*returned; i++) {
+		safe_free(printers[i].devmode->private);
+		safe_free(printers[i].devmode);
+	}
 	safe_free(printers);
 
 	if (*needed > offered) {
@@ -2157,6 +2174,8 @@ static uint32 getprinter_level_2(pstring servername, int snum, NEW_BUFFER *buffe
 	new_smb_io_printer_info_2("", buffer, printer, 0);	
 	
 	/* clear memory */
+	safe_free(printer->devmode->private);
+	safe_free(printer->devmode);
 	safe_free(printer);
 
 	if (*needed > offered) {
@@ -2263,8 +2282,7 @@ static void fill_printer_driver_info_2(DRIVER_INFO_2 *info,
  * construct_printer_driver_info_2
  * fill a printer_info_2 struct
  ********************************************************************/
-static void construct_printer_driver_info_2(DRIVER_INFO_2 *info, int snum, 
-                                            pstring servername, fstring architecture)
+static void construct_printer_driver_info_2(DRIVER_INFO_2 *info, int snum, pstring servername, fstring architecture)
 {
 	NT_PRINTER_INFO_LEVEL printer;
 	NT_PRINTER_DRIVER_INFO_LEVEL driver;
@@ -2280,36 +2298,30 @@ static void construct_printer_driver_info_2(DRIVER_INFO_2 *info, int snum,
 
 /********************************************************************
  * copy a strings array and convert to UNICODE
+ *
+ * convert an array of ascii string to a UNICODE string
  ********************************************************************/
-static void init_unistr_array(UNISTR ***uni_array, char **char_array, char *where)
+static void init_unistr_array(uint16 **uni_array, char **char_array, char *where)
 {
 	int i=0;
+	int j=0;
 	char *v;
 	pstring line;
 
 	DEBUG(6,("init_unistr_array\n"));
+	*uni_array=NULL;
 
-	for (v=char_array[i]; *v!='\0'; v=char_array[i])
-	{
-		DEBUGADD(6,("i:%d:", i));
-		DEBUGADD(6,("%s:%d:", v, strlen(v)));
-	
-		*uni_array=(UNISTR **)Realloc(*uni_array, sizeof(UNISTR *)*(i+1));
-		DEBUGADD(7,("realloc:[%p],", *uni_array));
-			
-		(*uni_array)[i]=(UNISTR *)malloc( sizeof(UNISTR) );
-		DEBUGADD(7,("alloc:[%p],", (*uni_array)[i]));
-
+	for (v=char_array[i]; *v!='\0'; v=char_array[i]) {
 		snprintf(line, sizeof(line)-1, "%s%s", where, v);
-		init_unistr( (*uni_array)[i], line );
-		DEBUGADD(7,("copy\n"));
-			
+		DEBUGADD(6,("%d:%s:%d\n", i, line, strlen(line)));
+		*uni_array=Realloc(*uni_array, (j+strlen(line)+2)*sizeof(uint16));
+		ascii_to_unistr( *uni_array+j, line , strlen(line));
+		j+=strlen(line)+1;			
 		i++;
 	}
-	DEBUGADD(7,("last one\n"));
 	
-	*uni_array=(UNISTR **)Realloc(*uni_array, sizeof(UNISTR *)*(i+1));
-	(*uni_array)[i]=0x0000;
+	(*uni_array)[j]=0x0000;
+	
 	DEBUGADD(6,("last one:done\n"));
 }
 
@@ -2457,6 +2469,7 @@ static uint32 getprinterdriver2_level3(pstring servername, pstring architecture,
 	new_smb_io_printer_driver_info_3("", buffer, info, 0);	
 
 	/* clear memory */
+	safe_free(info->dependentfiles);
 	safe_free(info);
 
 	if (*needed > offered)
@@ -3182,9 +3195,10 @@ static uint32 enumprinterdrivers_level1(fstring *list, fstring servername, fstri
 		free_a_printer_driver(driver, 3);
 	}
 	
+	safe_free(list);
+	
 	/* check the required size. */
-	for (i=0; i<*returned; i++)
-	{
+	for (i=0; i<*returned; i++) {
 		DEBUGADD(6,("adding driver [%d]'s size\n",i));
 		*needed += spoolss_size_printer_driver_info_1(&(driver_info_1[i]));
 	}
@@ -3195,8 +3209,7 @@ static uint32 enumprinterdrivers_level1(fstring *list, fstring servername, fstri
 	}
 
 	/* fill the buffer with the form structures */
-	for (i=0; i<*returned; i++)
-	{
+	for (i=0; i<*returned; i++) {
 		DEBUGADD(6,("adding driver [%d] to buffer\n",i));
 		new_smb_io_printer_driver_info_1("", buffer, &(driver_info_1[i]), 0);
 	}
@@ -3227,9 +3240,10 @@ static uint32 enumprinterdrivers_level2(fstring *list, fstring servername, fstri
 		free_a_printer_driver(driver, 3);
 	}
 	
+	safe_free(list);
+	
 	/* check the required size. */
-	for (i=0; i<*returned; i++)
-	{
+	for (i=0; i<*returned; i++) {
 		DEBUGADD(6,("adding driver [%d]'s size\n",i));
 		*needed += spoolss_size_printer_driver_info_2(&(driver_info_2[i]));
 	}
@@ -3240,8 +3254,7 @@ static uint32 enumprinterdrivers_level2(fstring *list, fstring servername, fstri
 	}
 
 	/* fill the buffer with the form structures */
-	for (i=0; i<*returned; i++)
-	{
+	for (i=0; i<*returned; i++) {
 		DEBUGADD(6,("adding driver [%d] to buffer\n",i));
 		new_smb_io_printer_driver_info_2("", buffer, &(driver_info_2[i]), 0);
 	}
@@ -3272,27 +3285,34 @@ static uint32 enumprinterdrivers_level3(fstring *list, fstring servername, fstri
 		free_a_printer_driver(driver, 3);
 	}
 	
+	safe_free(list);
+	
 	/* check the required size. */
-	for (i=0; i<*returned; i++)
-	{
+	for (i=0; i<*returned; i++) {
 		DEBUGADD(6,("adding driver [%d]'s size\n",i));
 		*needed += spoolss_size_printer_driver_info_3(&(driver_info_3[i]));
 	}
 
-	if (!alloc_buffer_size(buffer, *needed))
+	if (!alloc_buffer_size(buffer, *needed)) {
+		safe_free(driver_info_3);
 		return ERROR_INSUFFICIENT_BUFFER;
-
+	}
+	
 	/* fill the buffer with the form structures */
-	for (i=0; i<*returned; i++)
-	{
+	for (i=0; i<*returned; i++) {
 		DEBUGADD(6,("adding form [%d] to buffer\n",i));
 		new_smb_io_printer_driver_info_3("", buffer, &(driver_info_3[i]), 0);
 	}
 
-	safe_free(list);
-
-	if (*needed > offered)
+	for (i=0; i<*returned; i++)
+		safe_free(driver_info_3[i].dependentfiles);
+	
+	safe_free(driver_info_3);
+	
+	if (*needed > offered) {
+		*returned=0;
 		return ERROR_INSUFFICIENT_BUFFER;
+	}
 	else
 		return NT_STATUS_NO_PROBLEMO;
 }
@@ -3332,7 +3352,7 @@ uint32 _spoolss_enumprinterdrivers( UNISTR2 *name, UNISTR2 *environment, uint32 
 		return enumprinterdrivers_level3(list, servername, architecture, buffer, offered, needed, returned);
 		break;
 	default:
-		return NT_STATUS_INVALID_INFO_CLASS;
+		return ERROR_INVALID_LEVEL;
 		break;
 	}
 }
@@ -3374,15 +3394,15 @@ uint32 _new_spoolss_enumforms( const POLICY_HND *handle, uint32 level,
 		forms_1=(FORM_1 *)malloc(*numofforms * sizeof(FORM_1));
 
 		/* construct the list of form structures */
-		for (i=0; i<*numofforms; i++)
-		{
+		for (i=0; i<*numofforms; i++) {
 			DEBUGADD(6,("Filling form number [%d]\n",i));
 			fill_form_1(&(forms_1[i]), &(list[i]), i);
 		}
+		
+		safe_free(list);
 
 		/* check the required size. */
-		for (i=0; i<*numofforms; i++)
-		{
+		for (i=0; i<*numofforms; i++) {
 			DEBUGADD(6,("adding form [%d]'s size\n",i));
 			buffer_size += spoolss_size_form_1(&(forms_1[i]));
 		}
@@ -3390,21 +3410,22 @@ uint32 _new_spoolss_enumforms( const POLICY_HND *handle, uint32 level,
 		*needed=buffer_size;		
 		
 		if (!alloc_buffer_size(buffer, buffer_size)){
-			safe_free(list);
+			safe_free(forms_1);
 			return ERROR_INSUFFICIENT_BUFFER;
 		}
 
 		/* fill the buffer with the form structures */
-		for (i=0; i<*numofforms; i++)
-		{
+		for (i=0; i<*numofforms; i++) {
 			DEBUGADD(6,("adding form [%d] to buffer\n",i));
 			new_smb_io_form_1("", buffer, &(forms_1[i]), 0);
 		}
 
-		safe_free(list);
+		safe_free(forms_1);
 
-		if (*needed > offered)
+		if (*needed > offered) {
+			*numofforms=0;
 			return ERROR_INSUFFICIENT_BUFFER;
+		}
 		else
 			return NT_STATUS_NO_PROBLEMO;
 			

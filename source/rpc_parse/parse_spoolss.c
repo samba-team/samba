@@ -32,6 +32,7 @@
 	#define prs_uint16s _prs_uint16s
 	#define prs_unistr _prs_unistr
 	#define init_unistr2 make_unistr2
+	#define init_buf_unistr2 make_buf_unistr2
 #endif
 
 
@@ -1255,7 +1256,7 @@ static uint32 size_of_device_mode(DEVICEMODE *devmode)
 	if (devmode==NULL)
 		return (4);
 	else 
-		return (0xDC+4);
+		return (4+devmode->size+devmode->driverextra);
 }
 
 /*******************************************************************
@@ -1349,39 +1350,49 @@ static BOOL new_smb_io_relstr(char *desc, NEW_BUFFER *buffer, int depth, UNISTR 
 
 
 /*******************************************************************
- * write a array UNICODE strings and its relative pointer.
+ * write a array of UNICODE strings and its relative pointer.
  * used by 2 RPC structs
  ********************************************************************/
-static BOOL new_smb_io_relarraystr(char *desc, NEW_BUFFER *buffer, int depth, UNISTR ***string)
+static BOOL new_smb_io_relarraystr(char *desc, NEW_BUFFER *buffer, int depth, uint16 **string)
 {
+	UNISTR chaine;
+	
 	prs_struct *ps=&(buffer->prs);
 	
 	if (MARSHALLING(ps)) {
 		uint32 struct_offset = prs_offset(ps);
 		uint32 relative_offset;
-		int i=0;
-	
-		while ( (*string)[i]!=0x0000 )
-			i++;
-		i--;
-
-		/* count the ending NULL of the array */
-		buffer->string_at_end -= 2;
-
-		/* jfm: FIXME: write a (uint16) 0 for the ending NULL */
+		uint16 *p;
+		uint16 *q;
+		uint16 zero=0;
+		p=*string;
+		q=*string;
 		
+		/* first write the last 0 */
+		buffer->string_at_end -= 2;
+		prs_set_offset(ps, buffer->string_at_end);
+
+		if(!prs_uint16("leading zero", ps, depth, &zero))
+			return False;
+
 		do
-		{
-			buffer->string_at_end -= 2*(str_len_uni((*string)[i])+1);
+		{	
+			while (*q!=0)
+				q++;
+
+			memcpy(chaine.buffer, p, (q-p+1)*sizeof(uint16));
+
+			buffer->string_at_end -= (q-p+1)*sizeof(uint16);
+
 			prs_set_offset(ps, buffer->string_at_end);
 
 			/* write the string */
-			if (!spoolss_smb_io_unistr(desc, (*string)[i], ps, depth))
+			if (!spoolss_smb_io_unistr(desc, &chaine, ps, depth))
 				return False;
-		
-			i--;
-		}
-		while (i>=0);
+			q++;
+			p=q;
+
+		} while (*p!=0); /* end on the last leading 0 */
 		
 		prs_set_offset(ps, struct_offset);
 		
@@ -1392,22 +1403,32 @@ static BOOL new_smb_io_relarraystr(char *desc, NEW_BUFFER *buffer, int depth, UN
 	}
 	else {
 		uint32 old_offset;
+		uint16 *chaine2=NULL;
+		int l_chaine=0;
+		int l_chaine2=0;
 		
+		*string=NULL;
+				
 		/* read the offset */
 		if (!prs_uint32("offset", ps, depth, &(buffer->string_at_end)))
 			return False;
 
 		old_offset = prs_offset(ps);
-		prs_set_offset(ps, buffer->string_at_end);
+		prs_set_offset(ps, buffer->string_at_end + buffer->struct_start);
+	
+		do {
+			if (!spoolss_smb_io_unistr(desc, &chaine, ps, depth))
+				return False;
+			
+			l_chaine=str_len_uni(&chaine);
+			chaine2=(uint16 *)Realloc(chaine2, (l_chaine2+l_chaine+1)*sizeof(uint16));
+			memcpy(chaine2+l_chaine2, chaine.buffer, (l_chaine+1)*sizeof(uint16));
+			l_chaine2+=l_chaine+1;
+		
+		} while(l_chaine!=0);
+		
+		*string=chaine2;
 
-		/* read the string */
-
-		/* jfm: FIXME: alloc memory and read all the strings until the string is NULL */
-
-/*
-		if (!spoolss_smb_io_unistr(desc, string, ps, depth))
-			return False;
-*/
 		prs_set_offset(ps, old_offset);
 	}
 	return True;
@@ -2207,30 +2228,30 @@ uint32 spoolss_size_printer_info_2(PRINTER_INFO_2 *info)
 	int size=0;
 		
 	size+=4;      /* the security descriptor */
-	size+=info->devmode->size+4; /* size of the devmode and the ptr */
-	size+=info->devmode->driverextra; /* if a devmode->private section exists, add its size */
 	
-	size+=size_of_relative_string( &(info->servername) );
-	size+=size_of_relative_string( &(info->printername) );
-	size+=size_of_relative_string( &(info->sharename) );
-	size+=size_of_relative_string( &(info->portname) );
-	size+=size_of_relative_string( &(info->drivername) );
-	size+=size_of_relative_string( &(info->comment) );
-	size+=size_of_relative_string( &(info->location) );
+	size+=size_of_device_mode( info->devmode );
 	
-	size+=size_of_relative_string( &(info->sepfile) );
-	size+=size_of_relative_string( &(info->printprocessor) );
-	size+=size_of_relative_string( &(info->datatype) );
-	size+=size_of_relative_string( &(info->parameters) );
+	size+=size_of_relative_string( &info->servername );
+	size+=size_of_relative_string( &info->printername );
+	size+=size_of_relative_string( &info->sharename );
+	size+=size_of_relative_string( &info->portname );
+	size+=size_of_relative_string( &info->drivername );
+	size+=size_of_relative_string( &info->comment );
+	size+=size_of_relative_string( &info->location );
+	
+	size+=size_of_relative_string( &info->sepfile );
+	size+=size_of_relative_string( &info->printprocessor );
+	size+=size_of_relative_string( &info->datatype );
+	size+=size_of_relative_string( &info->parameters );
 
-	size+=size_of_uint32( &(info->attributes) );
-	size+=size_of_uint32( &(info->priority) );
-	size+=size_of_uint32( &(info->defaultpriority) );
-	size+=size_of_uint32( &(info->starttime) );
-	size+=size_of_uint32( &(info->untiltime) );
-	size+=size_of_uint32( &(info->status) );
-	size+=size_of_uint32( &(info->cjobs) );
-	size+=size_of_uint32( &(info->averageppm) );	
+	size+=size_of_uint32( &info->attributes );
+	size+=size_of_uint32( &info->priority );
+	size+=size_of_uint32( &info->defaultpriority );
+	size+=size_of_uint32( &info->starttime );
+	size+=size_of_uint32( &info->untiltime );
+	size+=size_of_uint32( &info->status );
+	size+=size_of_uint32( &info->cjobs );
+	size+=size_of_uint32( &info->averageppm );	
 	return size;
 }
 
@@ -2240,7 +2261,7 @@ return the size required by a struct in the stream
 uint32 spoolss_size_printer_driver_info_1(DRIVER_INFO_1 *info)
 {
 	int size=0;
-	size+=size_of_relative_string( &(info->name) );
+	size+=size_of_relative_string( &info->name );
 
 	return size;
 }
@@ -2251,12 +2272,12 @@ return the size required by a struct in the stream
 uint32 spoolss_size_printer_driver_info_2(DRIVER_INFO_2 *info)
 {
 	int size=0;
-	size+=size_of_uint32( &(info->version) );	
-	size+=size_of_relative_string( &(info->name) );
-	size+=size_of_relative_string( &(info->architecture) );
-	size+=size_of_relative_string( &(info->driverpath) );
-	size+=size_of_relative_string( &(info->datafile) );
-	size+=size_of_relative_string( &(info->configfile) );
+	size+=size_of_uint32( &info->version );	
+	size+=size_of_relative_string( &info->name );
+	size+=size_of_relative_string( &info->architecture );
+	size+=size_of_relative_string( &info->driverpath );
+	size+=size_of_relative_string( &info->datafile );
+	size+=size_of_relative_string( &info->configfile );
 
 	return size;
 }
@@ -2267,26 +2288,24 @@ return the size required by a struct in the stream
 uint32 spoolss_size_printer_driver_info_3(DRIVER_INFO_3 *info)
 {
 	int size=0;
-	UNISTR **string;
+	uint16 *string;
 	int i=0;
 
-	size+=size_of_uint32( &(info->version) );	
-	size+=size_of_relative_string( &(info->name) );
-	size+=size_of_relative_string( &(info->architecture) );
-	size+=size_of_relative_string( &(info->driverpath) );
-	size+=size_of_relative_string( &(info->datafile) );
-	size+=size_of_relative_string( &(info->configfile) );
-	size+=size_of_relative_string( &(info->helpfile) );
-	size+=size_of_relative_string( &(info->monitorname) );
-	size+=size_of_relative_string( &(info->defaultdatatype) );
+	size+=size_of_uint32( &info->version );	
+	size+=size_of_relative_string( &info->name );
+	size+=size_of_relative_string( &info->architecture );
+	size+=size_of_relative_string( &info->driverpath );
+	size+=size_of_relative_string( &info->datafile );
+	size+=size_of_relative_string( &info->configfile );
+	size+=size_of_relative_string( &info->helpfile );
+	size+=size_of_relative_string( &info->monitorname );
+	size+=size_of_relative_string( &info->defaultdatatype );
 	
 	string=info->dependentfiles;
 	
-	while ( (string)[i]!=0x0000 )
-	{
-		size+=2*(1+ str_len_uni( string[i] ) );
-		i++;
-	}
+	for (i=0; (string[i]!=0x0000) || (string[i+1]!=0x0000); i++);
+
+	size+=2*i;
 	size+=6;
 
 	return size;
@@ -2298,19 +2317,19 @@ return the size required by a struct in the stream
 uint32 spoolss_size_job_info_1(JOB_INFO_1 *info)
 {
 	int size=0;
-	size+=size_of_uint32( &(info->jobid) );
-	size+=size_of_relative_string( &(info->printername) );
-	size+=size_of_relative_string( &(info->machinename) );
-	size+=size_of_relative_string( &(info->username) );
-	size+=size_of_relative_string( &(info->document) );
-	size+=size_of_relative_string( &(info->datatype) );
-	size+=size_of_relative_string( &(info->text_status) );
-	size+=size_of_uint32( &(info->status) );
-	size+=size_of_uint32( &(info->priority) );
-	size+=size_of_uint32( &(info->position) );
-	size+=size_of_uint32( &(info->totalpages) );
-	size+=size_of_uint32( &(info->pagesprinted) );
-	size+=size_of_systemtime( &(info->submitted) );
+	size+=size_of_uint32( &info->jobid );
+	size+=size_of_relative_string( &info->printername );
+	size+=size_of_relative_string( &info->machinename );
+	size+=size_of_relative_string( &info->username );
+	size+=size_of_relative_string( &info->document );
+	size+=size_of_relative_string( &info->datatype );
+	size+=size_of_relative_string( &info->text_status );
+	size+=size_of_uint32( &info->status );
+	size+=size_of_uint32( &info->priority );
+	size+=size_of_uint32( &info->position );
+	size+=size_of_uint32( &info->totalpages );
+	size+=size_of_uint32( &info->pagesprinted );
+	size+=size_of_systemtime( &info->submitted );
 
 	return size;
 }
@@ -2324,29 +2343,29 @@ uint32 spoolss_size_job_info_2(JOB_INFO_2 *info)
 
 	size+=4; /* size of sec desc ptr */
 
-	size+=size_of_uint32( &(info->jobid) );
-	size+=size_of_relative_string( &(info->printername) );
-	size+=size_of_relative_string( &(info->machinename) );
-	size+=size_of_relative_string( &(info->username) );
-	size+=size_of_relative_string( &(info->document) );
-	size+=size_of_relative_string( &(info->notifyname) );
-	size+=size_of_relative_string( &(info->datatype) );
-	size+=size_of_relative_string( &(info->printprocessor) );
-	size+=size_of_relative_string( &(info->parameters) );
-	size+=size_of_relative_string( &(info->drivername) );
+	size+=size_of_uint32( &info->jobid );
+	size+=size_of_relative_string( &info->printername );
+	size+=size_of_relative_string( &info->machinename );
+	size+=size_of_relative_string( &info->username );
+	size+=size_of_relative_string( &info->document );
+	size+=size_of_relative_string( &info->notifyname );
+	size+=size_of_relative_string( &info->datatype );
+	size+=size_of_relative_string( &info->printprocessor );
+	size+=size_of_relative_string( &info->parameters );
+	size+=size_of_relative_string( &info->drivername );
 	size+=size_of_device_mode( info->devmode );
-	size+=size_of_relative_string( &(info->text_status) );
+	size+=size_of_relative_string( &info->text_status );
 /*	SEC_DESC sec_desc;*/
-	size+=size_of_uint32( &(info->status) );
-	size+=size_of_uint32( &(info->priority) );
-	size+=size_of_uint32( &(info->position) );
-	size+=size_of_uint32( &(info->starttime) );
-	size+=size_of_uint32( &(info->untiltime) );
-	size+=size_of_uint32( &(info->totalpages) );
-	size+=size_of_uint32( &(info->size) );
-	size+=size_of_systemtime( &(info->submitted) );
-	size+=size_of_uint32( &(info->timeelapsed) );
-	size+=size_of_uint32( &(info->pagesprinted) );
+	size+=size_of_uint32( &info->status );
+	size+=size_of_uint32( &info->priority );
+	size+=size_of_uint32( &info->position );
+	size+=size_of_uint32( &info->starttime );
+	size+=size_of_uint32( &info->untiltime );
+	size+=size_of_uint32( &info->totalpages );
+	size+=size_of_uint32( &info->size );
+	size+=size_of_systemtime( &info->submitted );
+	size+=size_of_uint32( &info->timeelapsed );
+	size+=size_of_uint32( &info->pagesprinted );
 
 	return size;
 }
@@ -2457,6 +2476,33 @@ uint32 spoolss_size_printmonitor_info_2(PRINTMONITOR_2 *info)
 	size+=size_of_relative_string( &info->dll_name);
 
 	return size;
+}
+
+/*******************************************************************
+ * init a structure.
+ ********************************************************************/
+BOOL make_spoolss_q_getprinterdriver2(SPOOL_Q_GETPRINTERDRIVER2 *q_u, 
+			       const POLICY_HND *hnd, fstring architecture,
+			       uint32 level, uint32 clientmajor, uint32 clientminor,
+			       NEW_BUFFER *buffer, uint32 offered)
+{      
+	if (q_u == NULL)
+	{
+		return False;
+	}
+
+	memcpy(&q_u->handle, hnd, sizeof(q_u->handle));
+
+	init_buf_unistr2(&q_u->architecture, &q_u->architecture_ptr, architecture);
+
+	q_u->level=level;
+	q_u->clientmajorversion=clientmajor;
+	q_u->clientminorversion=clientminor;
+
+	q_u->buffer=buffer;
+	q_u->offered=offered;
+
+	return True;
 }
 
 /*******************************************************************
@@ -2665,6 +2711,25 @@ BOOL spoolss_io_q_getprinter(char *desc, SPOOL_Q_GETPRINTER *q_u, prs_struct *ps
 		return False;
 	if (!prs_uint32("offered", ps, depth, &q_u->offered))
 		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ * init a structure.
+ ********************************************************************/
+BOOL make_spoolss_q_getprinter(SPOOL_Q_GETPRINTER *q_u, const POLICY_HND *hnd, uint32 level, 
+				NEW_BUFFER *buffer, uint32 offered)
+{
+	if (q_u == NULL)
+	{
+		return False;
+	}
+	memcpy(&q_u->handle, hnd, sizeof(q_u->handle));
+
+	q_u->level=level;
+	q_u->buffer=buffer;
+	q_u->offered=offered;
 
 	return True;
 }
