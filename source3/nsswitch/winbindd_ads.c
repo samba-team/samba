@@ -28,8 +28,6 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
-#define ADS_MAX_RETRY_COUNT	2
-
 /*
   return our ads connections structure for a domain. We keep the connection
   open to make things faster
@@ -101,40 +99,24 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 	void *res = NULL;
 	void *msg = NULL;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
-	int attempts = 0;
-	
+
 	*num_entries = 0;
 
 	DEBUG(3,("ads: query_user_list\n"));
 
-	/* retry loop */
+	ads = ads_cached_connection(domain);
 	
-	do {
-		ads = ads_cached_connection(domain);
-	
-		if (!ads) {
-			domain->last_status = NT_STATUS_SERVER_DISABLED;
-			goto done;
-		}
-
-		rc = ads_search_retry(ads, &res, "(objectCategory=user)", attrs);
-		if (!ADS_ERR_OK(rc)) {
-			DEBUG(1,("query_user_list ads_search: %s\n", ads_errstr(rc)));
-			
-			/* its a dead connection */
-			ads_destroy(&ads);
-			domain->private = NULL;
-		}
-		
-		attempts++;
-		
-	} while ( !ADS_ERR_OK(rc) && (attempts < ADS_MAX_RETRY_COUNT) );
-
-	/* if we still failed, then bail out */
-	
-	if ( !ADS_ERR_OK(rc) ) 
+	if (!ads) {
+		domain->last_status = NT_STATUS_SERVER_DISABLED;
 		goto done;
-		
+	}
+
+	rc = ads_search_retry(ads, &res, "(objectCategory=user)", attrs);
+	if (!ADS_ERR_OK(rc)) {
+		DEBUG(1,("query_user_list ads_search: %s\n", ads_errstr(rc)));
+		goto done;
+	}
+
 	count = ads_count_replies(ads, res);
 	if (count == 0) {
 		DEBUG(1,("query_user_list: No users found\n"));
@@ -219,39 +201,24 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 	void *msg = NULL;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	uint32 group_flags;
-	int attempts = 0;
 
 	*num_entries = 0;
 
 	DEBUG(3,("ads: enum_dom_groups\n"));
 
-	/* retry loop */
-	
-	do {
-		ads = ads_cached_connection(domain);
-	
-		if (!ads) {
-			domain->last_status = NT_STATUS_SERVER_DISABLED;
-			goto done;
-		}
+	ads = ads_cached_connection(domain);
 
-		rc = ads_search_retry(ads, &res, "(objectCategory=group)", attrs);
-		if (!ADS_ERR_OK(rc)) {
-			DEBUG(1,("enum_dom_groups ads_search: %s\n", ads_errstr(rc)));
-			/* its a dead connection */
-			ads_destroy(&ads);
-			domain->private = NULL;
-		}
-		
-		attempts++;
-		
-	} while ( !ADS_ERR_OK(rc) && (attempts < ADS_MAX_RETRY_COUNT) );
-
-	/* if we still failed, then bail out */
-	
-	if ( !ADS_ERR_OK(rc) ) 
+	if (!ads) {
+		domain->last_status = NT_STATUS_SERVER_DISABLED;
 		goto done;
-		
+	}
+
+	rc = ads_search_retry(ads, &res, "(objectCategory=group)", attrs);
+	if (!ADS_ERR_OK(rc)) {
+		DEBUG(1,("enum_dom_groups ads_search: %s\n", ads_errstr(rc)));
+		goto done;
+	}
+
 	count = ads_count_replies(ads, res);
 	if (count == 0) {
 		DEBUG(1,("enum_dom_groups: No groups found\n"));
@@ -341,35 +308,17 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 			    enum SID_NAME_USE *type)
 {
 	ADS_STRUCT *ads;
-	NTSTATUS rc;
-	int attempts = 0;
 
 	DEBUG(3,("ads: name_to_sid\n"));
 
-	/* retry loop */
+	ads = ads_cached_connection(domain);
 	
-	do {
-		ads = ads_cached_connection(domain);
-	
-		if (!ads) {
-			domain->last_status = NT_STATUS_SERVER_DISABLED;
-			return NT_STATUS_UNSUCCESSFUL;
-		}
-	
-		rc = ads_name_to_sid(ads, name, sid, type);
-		if (!NT_STATUS_IS_OK(rc)) {
-			DEBUG(1,("ads_name_to_sid: ERROR %s\n", nt_errstr(rc)));
-			
-			/* its a dead connection */
-			ads_destroy(&ads);
-			domain->private = NULL;
-		}
-		
-		attempts++;
-		
-	} while ( !NT_STATUS_IS_OK(rc) && (attempts < ADS_MAX_RETRY_COUNT) );
-	
-	return rc;
+	if (!ads) {
+		domain->last_status = NT_STATUS_SERVER_DISABLED;
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	return ads_name_to_sid(ads, name, sid, type);
 }
 
 /* convert a sid to a user or group name */
@@ -380,35 +329,16 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 			    enum SID_NAME_USE *type)
 {
 	ADS_STRUCT *ads = NULL;
-	NTSTATUS rc;
-	int attempts = 0;
-	
 	DEBUG(3,("ads: sid_to_name\n"));
 
-	/* retry loop */
+	ads = ads_cached_connection(domain);
 	
-	do {
-		ads = ads_cached_connection(domain);
-	
-		if (!ads) {
-			domain->last_status = NT_STATUS_SERVER_DISABLED;
-			return NT_STATUS_UNSUCCESSFUL;
-		}
+	if (!ads) {
+		domain->last_status = NT_STATUS_SERVER_DISABLED;
+		return NT_STATUS_UNSUCCESSFUL;
+	}
 
-		rc = ads_sid_to_name(ads, mem_ctx, sid, name, type);
-		if (!NT_STATUS_IS_OK(rc)) {
-			DEBUG(1,("ads_sid_to_name: ERROR %s\n", nt_errstr(rc)));
-			
-			/* its a dead connection */
-			ads_destroy(&ads);
-			domain->private = NULL;
-		}
-		
-		attempts++;
-		
-	} while ( !NT_STATUS_IS_OK(rc) && (attempts < ADS_MAX_RETRY_COUNT) );
-	
-	return rc;
+	return ads_sid_to_name(ads, mem_ctx, sid, name, type);
 }
 
 
@@ -454,11 +384,15 @@ static BOOL dn_lookup(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
 		goto failed;
 	}
 
-	if (res) ads_msgfree(ads, res);
+	if (res) 
+		ads_msgfree(ads, res);
+
 	return True;
 
 failed:
-	if (res) ads_msgfree(ads, res);
+	if (res) 
+		ads_msgfree(ads, res);
+
 	return False;
 }
 
@@ -482,42 +416,25 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	DOM_SID *sid2;
 	fstring sid_string;
-	int attempts = 0;
 
 	DEBUG(3,("ads: query_user\n"));
 
-	/* retry loop */
+	ads = ads_cached_connection(domain);
 	
-	do {
-		ads = ads_cached_connection(domain);
-	
-		if (!ads) {
-			domain->last_status = NT_STATUS_SERVER_DISABLED;
-			goto done;
-		}
-
-		sidstr = sid_binstring(sid);
-		asprintf(&ldap_exp, "(objectSid=%s)", sidstr);
-		rc = ads_search_retry(ads, &msg, ldap_exp, attrs);
-		free(ldap_exp);
-		free(sidstr);
-		
-		if (!ADS_ERR_OK(rc)) {
-			DEBUG(1,("query_user(sid=%s) ads_search: %s\n", sid_to_string(sid_string, sid), ads_errstr(rc)));
-			
-			/* its a dead connection */
-			ads_destroy(&ads);
-			domain->private = NULL;
-		}
-		
-		attempts++;
-		
-	} while ( !ADS_ERR_OK(rc) && (attempts < ADS_MAX_RETRY_COUNT) );
-
-	/* if we still failed, then bail out */
-	
-	if ( !ADS_ERR_OK(rc) ) 
+	if (!ads) {
+		domain->last_status = NT_STATUS_SERVER_DISABLED;
 		goto done;
+	}
+
+	sidstr = sid_binstring(sid);
+	asprintf(&ldap_exp, "(objectSid=%s)", sidstr);
+	rc = ads_search_retry(ads, &msg, ldap_exp, attrs);
+	free(ldap_exp);
+	free(sidstr);
+	if (!ADS_ERR_OK(rc)) {
+		DEBUG(1,("query_user(sid=%s) ads_search: %s\n", sid_to_string(sid_string, sid), ads_errstr(rc)));
+		goto done;
+	}
 
 	count = ads_count_replies(ads, msg);
 	if (count != 1) {
@@ -570,48 +487,31 @@ static NTSTATUS lookup_usergroups_alt(struct winbindd_domain *domain,
 	char *ldap_exp;
 	ADS_STRUCT *ads;
 	const char *group_attrs[] = {"objectSid", NULL};
-	int attempts = 0;
 
 	DEBUG(3,("ads: lookup_usergroups_alt\n"));
 
-	/* retry loop */
-	
-	do {
-		ads = ads_cached_connection(domain);
+	ads = ads_cached_connection(domain);
 
-		if (!ads) {
-			domain->last_status = NT_STATUS_SERVER_DISABLED;
-			goto done;
-		}
-
-		/* buggy server, no tokenGroups.  Instead lookup what groups this user
-		   is a member of by DN search on member*/
-		if (asprintf(&ldap_exp, "(&(member=%s)(objectClass=group))", user_dn) == -1) {
-			DEBUG(1,("lookup_usergroups(dn=%s) asprintf failed!\n", user_dn));
-			return NT_STATUS_NO_MEMORY;
-		}
-	
-		rc = ads_search_retry(ads, &res, ldap_exp, group_attrs);
-		free(ldap_exp);
-	
-		if (!ADS_ERR_OK(rc)) {
-			DEBUG(1,("lookup_usergroups ads_search member=%s: %s\n", user_dn, ads_errstr(rc)));
-			
-			/* its a dead connection */
-			ads_destroy(&ads);
-			domain->private = NULL;
-		}
-		
-		attempts++;
-		
-	} while ( !ADS_ERR_OK(rc) && (attempts < ADS_MAX_RETRY_COUNT) );
-	
-	
-	/* if we still failed, then bail out */
-	
-	if ( !ADS_ERR_OK(rc) ) 
+	if (!ads) {
+		domain->last_status = NT_STATUS_SERVER_DISABLED;
 		goto done;
-		
+	}
+
+	/* buggy server, no tokenGroups.  Instead lookup what groups this user
+	   is a member of by DN search on member*/
+	if (asprintf(&ldap_exp, "(&(member=%s)(objectClass=group))", user_dn) == -1) {
+		DEBUG(1,("lookup_usergroups(dn=%s) asprintf failed!\n", user_dn));
+		return NT_STATUS_NO_MEMORY;
+	}
+	
+	rc = ads_search_retry(ads, &res, ldap_exp, group_attrs);
+	free(ldap_exp);
+	
+	if (!ADS_ERR_OK(rc)) {
+		DEBUG(1,("lookup_usergroups ads_search member=%s: %s\n", user_dn, ads_errstr(rc)));
+		return ads_ntstatus(rc);
+	}
+	
 	count = ads_count_replies(ads, res);
 	if (count == 0) {
 		DEBUG(5,("lookup_usergroups: No supp groups found\n"));
@@ -680,62 +580,48 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	char *sidstr;
 	fstring sid_string;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
-	int attempts = 0;
 
 	DEBUG(3,("ads: lookup_usergroups\n"));
 	*num_groups = 0;
 
-	/* retry loop */
+	ads = ads_cached_connection(domain);
 	
-	do {
-		ads = ads_cached_connection(domain);
-	
-		if (!ads) {
-			domain->last_status = NT_STATUS_SERVER_DISABLED;
-			goto done;
-		}
+	if (!ads) {
+		domain->last_status = NT_STATUS_SERVER_DISABLED;
+		goto done;
+	}
 
-		if (!(sidstr = sid_binstring(sid))) {
-			DEBUG(1,("lookup_usergroups(sid=%s) sid_binstring returned NULL\n", sid_to_string(sid_string, sid)));
-			status = NT_STATUS_NO_MEMORY;
-			goto done;
-		}
-		if (asprintf(&ldap_exp, "(objectSid=%s)", sidstr) == -1) {
-			free(sidstr);
-			DEBUG(1,("lookup_usergroups(sid=%s) asprintf failed!\n", sid_to_string(sid_string, sid)));
-			status = NT_STATUS_NO_MEMORY;
-			goto done;
-		}
-
-		rc = ads_search_retry(ads, &msg, ldap_exp, attrs);
-		free(ldap_exp);
+	if (!(sidstr = sid_binstring(sid))) {
+		DEBUG(1,("lookup_usergroups(sid=%s) sid_binstring returned NULL\n", sid_to_string(sid_string, sid)));
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+	if (asprintf(&ldap_exp, "(objectSid=%s)", sidstr) == -1) {
 		free(sidstr);
+		DEBUG(1,("lookup_usergroups(sid=%s) asprintf failed!\n", sid_to_string(sid_string, sid)));
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
 
-		if (!ADS_ERR_OK(rc)) {
-			DEBUG(1,("lookup_usergroups(sid=%s) ads_search: %s\n", sid_to_string(sid_string, sid), ads_errstr(rc)));
-			
-			/* its a dead connection */
-			ads_destroy(&ads);
-			domain->private = NULL;
-		}
-		
-		attempts++;
-		
-	} while ( !ADS_ERR_OK(rc) && (attempts < ADS_MAX_RETRY_COUNT) );
+	rc = ads_search_retry(ads, &msg, ldap_exp, attrs);
+	free(ldap_exp);
+	free(sidstr);
 
-	/* if we still failed, then bail out */
-	
-	if ( !ADS_ERR_OK(rc) ) 
-		goto done;	
+	if (!ADS_ERR_OK(rc)) {
+		DEBUG(1,("lookup_usergroups(sid=%s) ads_search: %s\n", sid_to_string(sid_string, sid), ads_errstr(rc)));
+		goto done;
+	}
 
 	user_dn = ads_pull_string(ads, mem_ctx, msg, "distinguishedName");
 	if (!user_dn) {
 		DEBUG(1,("lookup_usergroups(sid=%s) ads_search did not return a a distinguishedName!\n", sid_to_string(sid_string, sid)));
-		if (msg) ads_msgfree(ads, msg);
+		if (msg) 
+			ads_msgfree(ads, msg);
 		goto done;
 	}
 
-	if (msg) ads_msgfree(ads, msg);
+	if (msg) 
+		ads_msgfree(ads, msg);
 
 	rc = ads_search_retry_dn(ads, &msg, user_dn, attrs2);
 	if (!ADS_ERR_OK(rc)) {
@@ -752,7 +638,8 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 
 	count = ads_pull_sids(ads, mem_ctx, msg, "tokenGroups", &sids);
 
-	if (msg) ads_msgfree(ads, msg);
+	if (msg) 
+		ads_msgfree(ads, msg);
 
 	/* there must always be at least one group in the token, 
 	   unless we are talking to a buggy Win2k server */
@@ -806,46 +693,30 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	char **members;
 	int i, num_members;
 	fstring sid_string;
-	int attempts = 0;
 
 	DEBUG(10,("ads: lookup_groupmem %s sid=%s\n", domain->name, sid_string_static(group_sid)));
 
 	*num_names = 0;
 
-	/* retry loop */
+	ads = ads_cached_connection(domain);
 	
-	do {
-		ads = ads_cached_connection(domain);
-	
-		if (!ads) {
-			domain->last_status = NT_STATUS_SERVER_DISABLED;
-			goto done;
-		}
-
-		sidstr = sid_binstring(group_sid);
-
-		/* search for all members of the group */
-		asprintf(&ldap_exp, "(objectSid=%s)",sidstr);
-		rc = ads_search_retry(ads, &res, ldap_exp, attrs);
-		free(ldap_exp);
-		free(sidstr);
-
-		if (!ADS_ERR_OK(rc)) {
-			DEBUG(1,("lookup_groupmem ads_search: %s\n", ads_errstr(rc)));
-
-			/* its a dead connection */
-			ads_destroy(&ads);
-			domain->private = NULL;
-		}
-		
-		attempts++;
-		
-	} while ( !ADS_ERR_OK(rc) && (attempts < ADS_MAX_RETRY_COUNT) );
-
-	/* if we still failed, then bail out */
-	
-	if ( !ADS_ERR_OK(rc) ) 
+	if (!ads) {
+		domain->last_status = NT_STATUS_SERVER_DISABLED;
 		goto done;
+	}
+
+	sidstr = sid_binstring(group_sid);
+
+	/* search for all members of the group */
+	asprintf(&ldap_exp, "(objectSid=%s)",sidstr);
+	rc = ads_search_retry(ads, &res, ldap_exp, attrs);
+	free(ldap_exp);
+	free(sidstr);
+
+	if (!ADS_ERR_OK(rc)) {
+		DEBUG(1,("query_user_list ads_search: %s\n", ads_errstr(rc)));
+		goto done;
+	}
 
 	count = ads_count_replies(ads, res);
 	if (count == 0) {
@@ -891,7 +762,8 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	status = NT_STATUS_OK;
 	DEBUG(3,("ads lookup_groupmem for sid=%s\n", sid_to_string(sid_string, group_sid)));
 done:
-	if (res) ads_msgfree(ads, res);
+	if (res) 
+		ads_msgfree(ads, res);
 
 	return status;
 }
@@ -902,31 +774,24 @@ static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 {
 	ADS_STRUCT *ads = NULL;
 	ADS_STATUS rc;
-	int attempts = 0;
 
 	DEBUG(3,("ads: fetch sequence_number for %s\n", domain->name));
 
 	*seq = DOM_SEQUENCE_NONE;
 
-	do {
-		ads = ads_cached_connection(domain);
+	ads = ads_cached_connection(domain);
 	
-		if (!ads) {
-			domain->last_status = NT_STATUS_SERVER_DISABLED;
-			return NT_STATUS_UNSUCCESSFUL;
-		}
+	if (!ads) {
+		domain->last_status = NT_STATUS_SERVER_DISABLED;
+		return NT_STATUS_UNSUCCESSFUL;
+	}
 
-		rc = ads_USN(ads, seq);
-		if (!ADS_ERR_OK(rc)) {
-			/* its a dead connection */
-			ads_destroy(&ads);
-			domain->private = NULL;
-		}
-		
-		attempts++;
-		
-	} while ( !ADS_ERR_OK(rc) && (attempts < ADS_MAX_RETRY_COUNT) );
-	
+	rc = ads_USN(ads, seq);
+	if (!ADS_ERR_OK(rc)) {
+		/* its a dead connection */
+		ads_destroy(&ads);
+		domain->private = NULL;
+	}
 	return ads_ntstatus(rc);
 }
 
@@ -1032,31 +897,23 @@ static NTSTATUS domain_sid(struct winbindd_domain *domain, DOM_SID *sid)
 {
 	ADS_STRUCT *ads;
 	ADS_STATUS rc;
-	int attempts = 0;
 
 	DEBUG(3,("ads: domain_sid\n"));
 
-	/* retry loop */
-	
-	do {
-		ads = ads_cached_connection(domain);
+	ads = ads_cached_connection(domain);
 
-		if (!ads) {
-			domain->last_status = NT_STATUS_SERVER_DISABLED;
-			return NT_STATUS_UNSUCCESSFUL;
-		}
+	if (!ads) {
+		domain->last_status = NT_STATUS_SERVER_DISABLED;
+		return NT_STATUS_UNSUCCESSFUL;
+	}
 
-		rc = ads_domain_sid(ads, sid);
+	rc = ads_domain_sid(ads, sid);
 
-		if (!ADS_ERR_OK(rc)) {
-			/* its a dead connection */
-			ads_destroy(&ads);
-			domain->private = NULL;
-		}
-		
-		attempts++;
-		
-	} while ( !ADS_ERR_OK(rc) && (attempts < ADS_MAX_RETRY_COUNT) );
+	if (!ADS_ERR_OK(rc)) {
+		/* its a dead connection */
+		ads_destroy(&ads);
+		domain->private = NULL;
+	}
 
 	return ads_ntstatus(rc);
 }
@@ -1070,47 +927,29 @@ static NTSTATUS alternate_name(struct winbindd_domain *domain)
 	ADS_STATUS rc;
 	TALLOC_CTX *ctx;
 	char *workgroup;
-	int attempts = 0;
 
 	DEBUG(3,("ads: alternate_name\n"));
 
-	/* retry loop */
+	ads = ads_cached_connection(domain);
 	
-	do {
-		ads = ads_cached_connection(domain);
-	
-		if (!ads) {
-			domain->last_status = NT_STATUS_SERVER_DISABLED;
-			return NT_STATUS_UNSUCCESSFUL;
-		}
+	if (!ads) {
+		domain->last_status = NT_STATUS_SERVER_DISABLED;
+		return NT_STATUS_UNSUCCESSFUL;
+	}
 
-		if (!(ctx = talloc_init("alternate_name"))) {
-			return NT_STATUS_NO_MEMORY;
-		}
+	if (!(ctx = talloc_init("alternate_name"))) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
-		rc = ads_workgroup_name(ads, ctx, &workgroup);
-		if ( !ADS_ERR_OK(rc) ) {
-	
-			DEBUG(1,("alternate_name ads_search: %s\n", ads_errstr(rc)));
-			
-			/* its a dead connection */
-			ads_destroy(&ads);
-			domain->private = NULL;
-		}
-		
-		attempts++;
-		
-	} while ( !ADS_ERR_OK(rc) && (attempts < ADS_MAX_RETRY_COUNT) );
-	
-	if ( !ADS_ERR_OK(rc) )
-		goto done;
+	rc = ads_workgroup_name(ads, ctx, &workgroup);
 
-	fstrcpy(domain->name, workgroup);
-	fstrcpy(domain->alt_name, ads->config.realm);
-	strupper_m(domain->alt_name);
-	strupper_m(domain->name);
+	if (ADS_ERR_OK(rc)) {
+		fstrcpy(domain->name, workgroup);
+		fstrcpy(domain->alt_name, ads->config.realm);
+		strupper_m(domain->alt_name);
+		strupper_m(domain->name);
+	}
 
-done:
 	talloc_destroy(ctx);
 
 	return ads_ntstatus(rc);	
