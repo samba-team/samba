@@ -1787,7 +1787,8 @@ ADS_STATUS ads_USN(ADS_STRUCT *ads, uint32 *usn)
 	void *res;
 
 	status = ads_do_search_retry(ads, "", LDAP_SCOPE_BASE, "(objectclass=*)", attrs, &res);
-	if (!ADS_ERR_OK(status)) return status;
+	if (!ADS_ERR_OK(status)) 
+		return status;
 
 	if (ads_count_replies(ads, res) != 1) {
 		return ADS_ERROR(LDAP_NO_RESULTS_RETURNED);
