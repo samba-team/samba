@@ -53,7 +53,13 @@ static BOOL read_target_host(const char *mapfile, pstring targethost)
 
 	DEBUG(10, ("Scanning mapfile [%s]\n", mapfile));
 
-	while ((s=fgets_slash(buf, sizeof(buf), f)) != NULL) {
+	while ((s=x_fgets(buf, sizeof(buf), f)) != NULL) {
+
+		if (buf[strlen(buf)-1] == '\n')
+			buf[strlen(buf)-1] = '\0';
+
+		DEBUG(10, ("Scanning line [%s]\n", buf));
+
 		space = strchr_m(buf, ' ');
 
 		if (space == NULL) {
@@ -158,7 +164,8 @@ static int expand_msdfs_readlink(struct vfs_handle_struct *handle,
 
 	target[result] = '\0';
 
-	if (strchr_m(target, '@') != NULL) {
+	if ((strncmp(target, "msdfs:", strlen("msdfs:")) == 0) &&
+	    (strchr_m(target, '@') != NULL)) {
 		if (!expand_msdfs_target(conn, target)) {
 			errno = ENOENT;
 			return -1;
