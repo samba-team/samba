@@ -133,14 +133,17 @@ void sync_browse_lists(struct work_record *work,
 	struct sync_record *s;
 	static int counter;
 
+	START_PROFILE(sync_browse_lists);
 	/* Check we're not trying to sync with ourselves. This can
 	   happen if we are a domain *and* a local master browser. */
 	if (ismyip(ip)) {
+done:
+		END_PROFILE(sync_browse_lists);
 		return;
 	}
 
 	s = (struct sync_record *)malloc(sizeof(*s));
-	if (!s) return;
+	if (!s) goto done;
 
 	ZERO_STRUCTP(s);
 	
@@ -155,7 +158,7 @@ void sync_browse_lists(struct work_record *work,
 	DLIST_ADD(syncs, s);
 
 	/* the parent forks and returns, leaving the child to do the
-	   actual sync */
+	   actual sync and call END_PROFILE*/
 	CatchChild();
 	if ((s->pid = sys_fork())) return;
 
@@ -165,12 +168,16 @@ void sync_browse_lists(struct work_record *work,
 		 work->work_group, name, inet_ntoa(ip)));
 
 	fp = sys_fopen(s->fname,"w");
-	if (!fp) _exit(1);	
+	if (!fp) {
+		END_PROFILE(sync_browse_lists);
+		_exit(1);	
+	}
 
 	sync_child(name, nm_type, work->work_group, ip, local, servers,
 		   s->fname);
 
 	fclose(fp);
+	END_PROFILE(sync_browse_lists);
 	_exit(0);
 }
 
