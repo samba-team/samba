@@ -35,6 +35,7 @@ DECL(dump);
 DECL(init);
 DECL(get_entry);
 DECL(del_entry);
+DECL(ext_keytab);
 DECL(help);
 
 #endif /* __ADMIN_LOCL_H__ */

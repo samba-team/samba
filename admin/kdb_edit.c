@@ -13,6 +13,7 @@ static SL_cmd commands[] = {
     { "init",		init, "init realm...",		"" },
     { "get_entry",	get_entry, "get_entry principal","" },
     { "delete",		del_entry, "delete principal", 	"" },
+    { "ext_keytab",	ext_keytab, "ext_keytab principal", "" },
     { NULL,		NULL, NULL,			NULL }
 };
 
