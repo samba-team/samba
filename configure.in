@@ -220,10 +220,6 @@ dnl AM_C_PROTOTYPES
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
 AC_TYPE_OFF_T
-AC_TYPE_SIZE_T
-AC_CHECK_TYPE_EXTRA(ssize_t, int, [#include <unistd.h>])
-AC_TYPE_PID_T
-AC_TYPE_UID_T
 AC_CHECK_TYPE_EXTRA(mode_t, unsigned short, [])
 AC_CHECK_TYPE_EXTRA(sig_atomic_t, int, [#include <signal.h>])
 AC_HAVE_TYPE([long long])
