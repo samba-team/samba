@@ -13,9 +13,10 @@ psec_default: psec
 
 include ../../source/Makefile
 
-PSEC_OBJ1 = $(LIB_OBJ) $(PARAM_OBJ) $(UBIQX_OBJ) $(RPC_PARSE_OBJ) $(LIBSMB_OBJ)
+PSEC_OBJ1 = $(LIB_OBJ) $(PARAM_OBJ) $(UBIQX_OBJ) $(RPC_PARSE_OBJ) \
+	$(LIBSMB_OBJ) $(PASSDB_OBJ) $(RPC_CLIENT_OBJ)
 
 PSEC_OBJS = $(PSEC_OBJ1:%=$(srcdir)/%)
 
 psec: $(PSEC_OBJS) psec.o
-	$(CC) -o $@ psec.o $(PSEC_OBJS)
+	$(CC) -o $@ psec.o $(PSEC_OBJS) $(LIBS)
