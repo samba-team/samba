@@ -954,13 +954,27 @@ account without a valid local system user.\n", user_name);
 			return False;
 		}
 
-		/* set account flags. Note that the default is non-expiring accounts */
-		/*if (!pdb_set_acct_ctrl(sam_pass,((local_flags & LOCAL_TRUST_ACCOUNT) ? ACB_WSTRUST : ACB_NORMAL|ACB_PWNOEXP) )) {*/
-		if (!pdb_set_acct_ctrl(sam_pass,((local_flags & LOCAL_TRUST_ACCOUNT) ? ACB_WSTRUST : ACB_NORMAL) )) {
-			slprintf(err_str, err_str_len-1, "Failed to set 'trust account' flags for user %s.\n", user_name);
-			pdb_free_sam(&sam_pass);
-			return False;
+	
+		if (local_flags & LOCAL_TRUST_ACCOUNT) {
+	        	if (!pdb_set_acct_ctrl(sam_pass, ACB_WSTRUST)) {
+	                	slprintf(err_str, err_str_len - 1, "Failed to set 'trusted workstation account' flags for user %s.\n", user_name);
+	                	pdb_free_sam(&sam_pass);
+	                	return False;
+	        	}
+		} else if (local_flags & LOCAL_INTERDOM_ACCOUNT) {
+	        	if (!pdb_set_acct_ctrl(sam_pass, ACB_DOMTRUST)) {
+	                	slprintf(err_str, err_str_len - 1, "Failed to set 'domain trust account' flags for user %s.\n", user_name);
+	                	pdb_free_sam(&sam_pass);
+	                	return False;
+	        	}
+		} else {
+	        	if (!pdb_set_acct_ctrl(sam_pass, ACB_NORMAL)) {
+	                	slprintf(err_str, err_str_len - 1, "Failed to set 'normal account' flags for user %s.\n", user_name);
+	               	 	pdb_free_sam(&sam_pass);
+	               	 	return False;
+	        	}
 		}
+
 	} else {
 		/* the entry already existed */
 		local_flags &= ~LOCAL_ADD_USER;
