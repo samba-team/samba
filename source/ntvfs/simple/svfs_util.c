@@ -41,7 +41,7 @@ char *svfs_unix_path(struct smbsrv_request *req, const char *name)
 	}
 	all_string_sub(ret, "\\", "/", 0);
 
-	strlower(ret);
+	strlower(ret + strlen(private->connectpath));
 
 	return ret;
 }
