@@ -2837,40 +2837,6 @@ WERROR mod_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level)
 }
 
 /****************************************************************************
- Add a printer. This is called from ADDPRINTER(EX) and also SETPRINTER.
- We split this out from mod_a_printer as it updates the id's and timestamps.
-****************************************************************************/
-
-WERROR add_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level)
-{
-	WERROR result;
-	
-	dump_a_printer(printer, level);	
-	
-	switch (level)
-	{
-		case 2:
-		{
-			/*
-			 * Update the changestamp.  See comments in mod_a_printer()
-			 * --jerry
-			 */
-
-			printer.info_2->changeid = rev_changeid();
-			printer.info_2->c_setprinter++;
-
-			result=update_a_printer_2(printer.info_2);
-			break;
-		}
-		default:
-			result=WERR_UNKNOWN_LEVEL;
-			break;
-	}
-	
-	return result;
-}
-
-/****************************************************************************
  Initialize printer devmode & data with previously saved driver init values.
 ****************************************************************************/
 
@@ -4061,7 +4027,7 @@ WERROR printer_write_default_dev(int snum, const PRINTER_DEFAULT *printer_defaul
 	 * Finally write back to the tdb.
 	 */
 
-	result = add_a_printer(*printer, 2);
+	result = mod_a_printer(*printer, 2);
 
   done:
 

@@ -4625,7 +4625,7 @@ static BOOL nt_printer_info_level_equal(NT_PRINTER_INFO_LEVEL *p1,
 	PI_CHECK_INT(averageppm);
 
 	/* Yuck - don't check the printername or servername as the
-	   add_a_printer() code plays games with them.  You can't
+	   mod_a_printer() code plays games with them.  You can't
 	   change the printername or the sharename through this interface
 	   in Samba. */
 
@@ -4788,7 +4788,7 @@ static WERROR update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 	}
 
 	/* Update printer info */
-	result = add_a_printer(*printer, 2);
+	result = mod_a_printer(*printer, 2);
 
  done:
 	free_a_printer(&printer, 2);
@@ -5964,7 +5964,7 @@ static WERROR spoolss_addprinterex_level_2( pipes_struct *p, const UNISTR2 *uni_
 	set_driver_init(printer, 2);
 	
 	/* write the ASCII on disk */
-	err = add_a_printer(*printer, 2);
+	err = mod_a_printer(*printer, 2);
 	if (!W_ERROR_IS_OK(err)) {
 		free_a_printer(&printer,2);
 		return err;
