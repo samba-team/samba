@@ -254,9 +254,9 @@ static void my_wcstombs(char *dst, uint16 *src, size_t len)
 
 static void get_filename( char *fname, char *inbuf, int data_offset, int data_len, int fname_len)
 {
-  if(data_len - fname_len > 1) {
+  if((data_len - fname_len > 1) || (inbuf[data_offset] == '\0')) {
     /*
-     * NT 5.0 Beta 2 has kindly sent us a UNICODE string
+     * NT 5.0 Beta 2 or Windows 2000 final release (!) has kindly sent us a UNICODE string
      * without bothering to set the unicode bit. How kind.
      *
      * Firstly - ensure that the data offset is aligned
@@ -638,6 +638,11 @@ int reply_ntcreate_and_X(connection_struct *conn,
         dir_name_len++;
       }
 
+      /*
+       * This next calculation can refuse a correct filename if we're dealing
+       * with the Win2k unicode bug, but that would be rare. JRA.
+       */
+
       if(fname_len + dir_name_len >= sizeof(pstring))
         return(ERROR(ERRSRV,ERRfilespecs));
 
@@ -928,13 +933,13 @@ int reply_ntcreate_and_X(connection_struct *conn,
 ****************************************************************************/
 
 static int call_nt_transact_create(connection_struct *conn,
-				   char *inbuf, char *outbuf, int length, 
-                                   int bufsize, 
-                                   char **ppsetup, char **ppparams, 
-				   char **ppdata)
+					char *inbuf, char *outbuf, int length, 
+					int bufsize, char **ppsetup, char **ppparams, 
+					char **ppdata)
 {
   pstring fname;
   char *params = *ppparams;
+  int total_parameter_count = (int)IVAL(inbuf, smb_nt_TotalParameterCount);
   uint32 flags = IVAL(params,0);
   uint32 desired_access = IVAL(params,8);
   uint32 file_attributes = IVAL(params,20);
@@ -989,8 +994,7 @@ static int call_nt_transact_create(connection_struct *conn,
        * Check to see if this is a mac fork of some kind.
        */
 
-      StrnCpy(fname,params+53,fname_len);
-      fname[fname_len] = '\0';
+      get_filename(&fname[0], params, 53, total_parameter_count - 53 - fname_len, fname_len);
 
       if( fname[0] == ':') {
           SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
@@ -1016,15 +1020,18 @@ static int call_nt_transact_create(connection_struct *conn,
       dir_name_len++;
     }
 
+    /*
+     * This next calculation can refuse a correct filename if we're dealing
+     * with the Win2k unicode bug, but that would be rare. JRA.
+     */
+
     if(fname_len + dir_name_len >= sizeof(pstring))
       return(ERROR(ERRSRV,ERRfilespecs));
 
-    StrnCpy(&fname[dir_name_len], params+53, fname_len);
-    fname[dir_name_len+fname_len] = '\0';
+    get_filename(&fname[dir_name_len], params, 53, total_parameter_count - 53 - fname_len, fname_len);
 
   } else {
-    StrnCpy(fname,params+53,fname_len);
-    fname[fname_len] = '\0';
+    get_filename(&fname[0], params, 53, total_parameter_count - 53 - fname_len, fname_len);
   }
 
   /* If it's an IPC, use the pipe handler. */
@@ -1266,6 +1273,8 @@ static int call_nt_transact_create(connection_struct *conn,
     p += 8;
     SOFF_T(p,0,file_len);
   }
+
+  DEBUG(5,("call_nt_transact_create: open name = %s\n", fname));
 
   /* Send the required number of replies */
   send_nt_replies(inbuf, outbuf, bufsize, 0, params, 69, *ppdata, 0);
