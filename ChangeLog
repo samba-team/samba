@@ -1,3 +1,11 @@
+2004-10-13  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/asn1/k5.asn1: sync enctypes with pkinit branch
+	
+	* lib/asn1/parse.y (readd) support negative numbers
+	
+	* lib/asn1/lex.l: support hex numbers
+	
 2004-10-12  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/hdb/{keys.c,Makefile.am},lib/kadm5/{keys,set_keys}.c:
