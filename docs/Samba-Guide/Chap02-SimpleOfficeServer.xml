@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!DOCTYPE book PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
+<!DOCTYPE chapter PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
 <chapter id="simple">
   <title>No Frills Samba Servers</title>
 
@@ -192,11 +192,11 @@
 <smbconfexample id="draft-smbconf">
 <title>Drafting Office &smb.conf; File</title>
 <smbconfcomment>Global Parameters</smbconfcomment>
-<smbconfsection>[global]</smbconfsection>
+<smbconfsection name="[global]"/>
 <smbconfoption name="workgroup">MIDEARTH</smbconfoption>
 <smbconfoption name="security">SHARE</smbconfoption>
 
-<smbconfsection>[Plans]</smbconfsection>
+<smbconfsection name="[Plans]"/>
 <smbconfoption name="path">/plans</smbconfoption>
 <smbconfoption name="read only">Yes</smbconfoption>
 <smbconfoption name="guest ok">Yes</smbconfoption>
@@ -669,7 +669,7 @@ application/octet-stream
 <smbconfexample id="charity-smbconf">
 <title>Charity Administration Office &smb.conf; File</title>
 <smbconfcomment>Global Parameters</smbconfcomment>
-<smbconfsection>[global]</smbconfsection>
+<smbconfsection name="[global]"/>
 <smbconfoption name="workgroup">MIDEARTH</smbconfoption>
 <smbconfoption name="security">SHARE</smbconfoption>
 <smbconfoption name="printing">CUPS</smbconfoption>
@@ -678,7 +678,7 @@ application/octet-stream
 <smbconfoption name="show add printer wizard">No</smbconfoption>
 <smbconfoption name="wins support">yes</smbconfoption>
 
-<smbconfsection>[FTMFILES]</smbconfsection>
+<smbconfsection name="[FTMFILES]"/>
 <smbconfoption name="comment">Funds Tracking &amp; Management Files</smbconfoption>
 <smbconfoption name="path">/data/ftmfiles</smbconfoption>
 <smbconfoption name="read only">No</smbconfoption>
@@ -687,7 +687,7 @@ application/octet-stream
 <smbconfoption name="guest ok">Yes</smbconfoption>
 <smbconfoption name="nt acl support">No</smbconfoption>
 
-<smbconfsection>[office]</smbconfsection>
+<smbconfsection name="[office]"/>
 <smbconfoption name="comment">General Office Files</smbconfoption>
 <smbconfoption name="path">/data/officefiles</smbconfoption>
 <smbconfoption name="read only">No</smbconfoption>
@@ -696,7 +696,7 @@ application/octet-stream
 <smbconfoption name="guest ok">Yes</smbconfoption>
 <smbconfoption name="nt acl support">No</smbconfoption>
 
-<smbconfsection>[printers]</smbconfsection>
+<smbconfsection name="[printers]"/>
 <smbconfoption name="comment">Print Temporary Spool Configuration</smbconfoption>
 <smbconfoption name="path">/var/spool/samba</smbconfoption>
 <smbconfoption name="printable">Yes</smbconfoption>
@@ -1282,26 +1282,26 @@ application/octet-stream
 <smbconfexample id="acctconf">
 <title>Accounting Office Network &smb.conf; File</title>
 <smbconfcomment>Global parameters</smbconfcomment>
-<smbconfsection>[global]</smbconfsection>
+<smbconfsection name="[global]"/>
 <smbconfoption name="workgroup">BILLMORE</smbconfoption>
 <smbconfoption name="printing">CUPS</smbconfoption>
 <smbconfoption name="printcap name">CUPS</smbconfoption>
 <smbconfoption name="disable spoolss">Yes</smbconfoption>
 <smbconfoption name="show add printer wizard">No</smbconfoption>
 
-<smbconfsection>[files]</smbconfsection>
+<smbconfsection name="[files]"/>
 <smbconfoption name="comment">Work area files</smbconfoption>
 <smbconfoption name="path">/data/%U</smbconfoption>
 <smbconfoption name="valid users">%S</smbconfoption>
 <smbconfoption name="read only">No</smbconfoption>
 
-<smbconfsection>[master]</smbconfsection>
+<smbconfsection name="[master]"/>
 <smbconfoption name="comment">Master work area files</smbconfoption>
 <smbconfoption name="path">/data</smbconfoption>
 <smbconfoption name="valid users">alan</smbconfoption>
 <smbconfoption name="read only">No</smbconfoption>
 
-<smbconfsection>[printers]</smbconfsection>
+<smbconfsection name="[printers]"/>
 <smbconfoption name="comment">Print Temporary Spool Configuration</smbconfoption>
 <smbconfoption name="path">/var/spool/samba</smbconfoption>
 <smbconfoption name="printable">Yes</smbconfoption>

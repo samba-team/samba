@@ -429,7 +429,7 @@ in &smb.conf;. An example &smb.conf; for acting as a PDC can be found in <link l
 <para>
 <smbconfexample id="pdc-example">
 <title>smb.conf for being a PDC</title>
-<smbconfsection>[global]</smbconfsection>
+<smbconfsection name="[global]"/>
 <smbconfoption name="netbios name"><replaceable>BELERIAND</replaceable></smbconfoption>
 <smbconfoption name="workgroup"><replaceable>&example.workgroup;</replaceable></smbconfoption>
 <smbconfoption name="passdb backend">tdbsam</smbconfoption>
@@ -444,12 +444,12 @@ in &smb.conf;. An example &smb.conf; for acting as a PDC can be found in <link l
 <smbconfoption name="logon home">\\homeserver\%U\winprofile</smbconfoption>
 <smbconfoption name="logon script">logon.cmd</smbconfoption>
 
-<smbconfsection>[netlogon]</smbconfsection>
+<smbconfsection name="[netlogon]"/>
 <smbconfoption name="path">/var/lib/samba/netlogon</smbconfoption>
 <smbconfoption name="read only">yes</smbconfoption>
 <smbconfoption name="write list"><replaceable>ntadmin</replaceable></smbconfoption>
 
-<smbconfsection>[profiles]</smbconfsection>
+<smbconfsection name="[profiles]"/>
 <smbconfoption name="path">/var/lib/samba/profiles</smbconfoption>
 <smbconfoption name="read only">no</smbconfoption>
 <smbconfoption name="create mask">0600</smbconfoption>
@@ -584,11 +584,11 @@ must be set.
 
 <smbconfexample id="PDC-config">
 <title>smb.conf for being a PDC</title>
-<smbconfsection>[global]</smbconfsection>
+<smbconfsection name="[global]"/>
 <smbconfoption name="domain logons">Yes</smbconfoption>
 <smbconfoption name="domain master">(Yes on PDC, No on BDCs)</smbconfoption>
 
-<smbconfsection>[netlogon]</smbconfsection>
+<smbconfsection name="[netlogon]"/>
 <smbconfoption name="comment">Network Logon Service</smbconfoption>
 <smbconfoption name="path">/var/lib/samba/netlogon</smbconfoption>
 <smbconfoption name="guest ok">Yes</smbconfoption>

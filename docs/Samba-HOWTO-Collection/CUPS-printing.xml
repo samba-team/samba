@@ -158,12 +158,12 @@ libcups.so.2 =&gt; /usr/lib/libcups.so.2 (0x40123000)
 
 		<para><smbconfexample id="cups-exam-simple">
 		<title>Simplest printing-related smb.conf</title>
-		<smbconfsection>[global]</smbconfsection>
+		<smbconfsection name="[global]"/>
 		<smbconfoption name="load printers">yes</smbconfoption>
 		<smbconfoption name="printing">cups</smbconfoption>
 		<smbconfoption name="printcap name">cups</smbconfoption>
 
-		<smbconfsection>[printers]</smbconfsection>
+		<smbconfsection name="[printers]"/>
 		<smbconfoption name="comment">All Printers</smbconfoption>
 		<smbconfoption name="path">/var/spool/samba</smbconfoption>
 		<smbconfoption name="browseable">no</smbconfoption>
@@ -205,12 +205,12 @@ libcups.so.2 =&gt; /usr/lib/libcups.so.2 (0x40123000)
 
 	<para><smbconfexample id="overridesettings">
 	<title>Overriding global CUPS settings for one printer</title>
-	<smbconfsection>[global]</smbconfsection>
+	<smbconfsection name="[global]"/>
 	<smbconfoption name="printing">cups</smbconfoption>
 	<smbconfoption name="printcap name">cups</smbconfoption>
 	<smbconfoption name="load printers">yes</smbconfoption>
 
-	<smbconfsection>[printers]</smbconfsection>
+	<smbconfsection name="[printers]"/>
 	<smbconfoption name="comment">All Printers</smbconfoption>
 	<smbconfoption name="path">/var/spool/samba</smbconfoption>
 	<smbconfoption name="public">yes</smbconfoption>
@@ -219,7 +219,7 @@ libcups.so.2 =&gt; /usr/lib/libcups.so.2 (0x40123000)
 	<smbconfoption name="printable">yes</smbconfoption>
 	<smbconfoption name="printer admin">root, @ntadmins</smbconfoption>
 
-	<smbconfsection>[special_printer]</smbconfsection>
+	<smbconfsection name="[special_printer]"/>
 	<smbconfoption name="comment">A special printer with his own settings</smbconfoption>
 	<smbconfoption name="path">/var/spool/samba-special</smbconfoption>
 	<smbconfoption name="printing">sysv</smbconfoption>
@@ -479,7 +479,7 @@ libcups.so.2 =&gt; /usr/lib/libcups.so.2 (0x40123000)
 	<para>
 	<indexterm><primary>point 'n' print</primary></indexterm>
 	If you want to use the MS-RPC type printing, you must upload the
-	drivers onto the Samba server first (<smbconfsection>[print$]</smbconfsection>
+	drivers onto the Samba server first (<smbconfsection name="[print$]"/>
 	share). For a discussion on how to deposit printer drivers on the
 	Samba host (so the Windows clients can download and use them via
 	<quote>Point'n'Print</quote>), please refer to the previous chapter of this
@@ -2193,8 +2193,8 @@ simply use <smbconfoption name="printing">sysv</smbconfoption>).
 <para>
 Samba <emphasis>must</emphasis> use its own spool directory (it is set
 by a line similar to <smbconfoption name="path">/var/spool/samba</smbconfoption>,
-in the <smbconfsection>[printers]</smbconfsection> or
-<smbconfsection>[printername]</smbconfsection> section of
+in the <smbconfsection name="[printers]"/> or
+<smbconfsection name="[printername]"/> section of
 &smb.conf;). Samba receives the job in its own
 spool space and passes it into the spool directory of CUPS (the CUPS
 spooling directory is set by the <parameter>RequestRoot</parameter>
@@ -2428,7 +2428,7 @@ relationship.
 <indexterm><primary>cupsaddsmb</primary></indexterm>
 The <command>cupsaddsmb</command> utility (shipped with all current CUPS versions) is an
 alternate method to transfer printer drivers into the Samba
-<smbconfsection>[print$]</smbconfsection> share. Remember, this share is where
+<smbconfsection name="[print$]"/> share. Remember, this share is where
 clients expect drivers deposited and setup for download and
 installation. It makes the sharing of any (or all) installed CUPS
 printers quite easy. <command>cupsaddsmb</command> can use the Adobe PostScript driver as
@@ -2475,12 +2475,12 @@ Prior to running <command>cupsaddsmb</command>, you need the settings in
 
 <para><smbconfexample id="cupsadd-ex">
 <title>smb.conf for cupsaddsmb usage</title>
-<smbconfsection>[global]</smbconfsection>
+<smbconfsection name="[global]"/>
 <smbconfoption name="load printers">yes</smbconfoption>
 <smbconfoption name="printing">cups</smbconfoption>
 <smbconfoption name="printcap name">cups</smbconfoption>
 
-<smbconfsection>[printers]</smbconfsection>
+<smbconfsection name="[printers]"/>
 <smbconfoption name="comment">All Printers</smbconfoption>
 <smbconfoption name="path">/var/spool/samba</smbconfoption>
 <smbconfoption name="browseable">no</smbconfoption>
@@ -2490,7 +2490,7 @@ Prior to running <command>cupsaddsmb</command>, you need the settings in
 <smbconfoption name="writable">no</smbconfoption>
 <smbconfoption name="printable">yes</smbconfoption>
 <smbconfoption name="printer admin">root</smbconfoption>
- <smbconfsection>[print$]</smbconfsection>
+ <smbconfsection name="[print$]"/>
 <smbconfoption name="comment">Printer Drivers</smbconfoption>
 <smbconfoption name="path">/etc/samba/drivers</smbconfoption>
 <smbconfoption name="browseable">yes</smbconfoption>
@@ -2659,7 +2659,7 @@ native installer and run the installation process on one client
 once. This will install the drivers (and one Generic PostScript
 printer) locally on the client. When they are installed, share the
 Generic PostScript printer. After this, the client's
-<smbconfsection>[print$]</smbconfsection> share holds the Adobe files, from
+<smbconfsection name="[print$]"/> share holds the Adobe files, from
 where you can get them with smbclient from the CUPS host. 
 </para>
 </sect2>
@@ -2682,7 +2682,7 @@ area and download the package. Once installed, you can prepare any
 driver by simply highlighting the printer in the Printer Manager GUI
 and select <guilabel>Export Driver...</guilabel> from the menu. Of
 course you need to have prepared Samba beforehand to handle the
-driver files; i.e., setup the <smbconfsection>[print$]</smbconfsection>
+driver files; i.e., setup the <smbconfsection name="[print$]"/>
 share, and so on. The ESP Print Pro package includes the CUPS driver files
 as well as a (licensed) set of Adobe drivers for the Windows 95/98/Me
 client family.
@@ -2698,7 +2698,7 @@ client family.
 Once you have run the install script (and possibly manually
 moved the <filename>cups.hlp</filename> file to
 <filename>/usr/share/cups/drivers/</filename>), the driver is
-ready to be put into Samba's <smbconfsection>[print$]</smbconfsection> share (which often maps to
+ready to be put into Samba's <smbconfsection name="[print$]"/> share (which often maps to
 <filename>/etc/samba/drivers/</filename> and contains a subdirectory
 tree with <emphasis>WIN40</emphasis> and
 <emphasis>W32X86</emphasis> branches). You do this by running
@@ -2716,7 +2716,7 @@ working in an environment where everything is configured for
 </para></tip>
 
 <para>
-Once the driver files are in the <smbconfsection>[print$]</smbconfsection> share
+Once the driver files are in the <smbconfsection name="[print$]"/> share
 and are initialized, they are ready to be downloaded and installed by
 the Windows NT/200x/XP clients.
 </para>
@@ -2849,10 +2849,10 @@ fully fledged CUPS IPP client for Windows NT/200x/XP to be released soon
 <indexterm><primary>cupsaddsmb</primary></indexterm>
 <indexterm><primary>point 'n' print</primary></indexterm>
 The <command>cupsaddsmb</command> command copies the needed files into your
-<smbconfsection>[print$]</smbconfsection> share. Additionally, the PPD
+<smbconfsection name="[print$]"/> share. Additionally, the PPD
 associated with this printer is copied from
 <filename>/etc/cups/ppd/</filename> to
-<smbconfsection>[print$]</smbconfsection>. There the files wait for convenient
+<smbconfsection name="[print$]"/>. There the files wait for convenient
 Windows client installations via Point'n'Print. Before we can run the
 command successfully, we need to be sure that we can authenticate
 toward Samba. If you have a small network, you are probably using user-level
@@ -2965,7 +2965,7 @@ Running command: smbclient //localhost/print\$ -N -U'root%secret' \
 <para>
 If you look closely, you'll discover your root password was transferred
 unencrypted over the wire, so beware! Also, if you look further,
-you'll discover error messages like <?latex \linebreak ?>NT_STATUS_OBJECT_NAME_COLLISION in between. They occur, because the directories WIN40 and W32X86 already existed in the <smbconfsection>[print$]</smbconfsection> driver download share (from a previous driver installation). They are harmless here.
+you'll discover error messages like <?latex \linebreak ?>NT_STATUS_OBJECT_NAME_COLLISION in between. They occur, because the directories WIN40 and W32X86 already existed in the <smbconfsection name="[print$]"/> driver download share (from a previous driver installation). They are harmless here.
 </para>
 </sect2>
 
@@ -2990,7 +2990,7 @@ TEMPDIR (as defined in
 <filename>cupsd.conf</filename>).</para></listitem>
 
 <listitem><para>Connect via smbclient to the Samba server's
- <smbconfsection>[print$]</smbconfsection> share and put the files into the
+ <smbconfsection name="[print$]"/> share and put the files into the
  share's WIN40 (for Windows 9x/Me) and W32X86/ (for Windows NT/200x/XP) subdirectories.</para></listitem>
 
 <listitem><para>
@@ -3236,7 +3236,7 @@ printer should be there. We are providing the driver
 now).</para></listitem>
 
 <listitem><para>Copy all files to
-		<smbconfsection>[print$]</smbconfsection>.</para></listitem>
+		<smbconfsection name="[print$]"/>.</para></listitem>
 
 <listitem><para>
 <indexterm><primary>rpcclient</primary><secondary>adddriver</secondary></indexterm>
@@ -3443,7 +3443,7 @@ preconditions to complete successfully:
 
 <listitem><para>You are connected as <smbconfoption name="printer admin"/> or root (this is <emphasis>not</emphasis> the <quote>Printer Operators</quote> group in
 NT, but the <emphasis>printer admin</emphasis> group as defined in
-the <smbconfsection>[global]</smbconfsection> section of
+the <smbconfsection name="[global]"/> section of
 &smb.conf;).</para></listitem>
 
 <listitem><para>Copy all required driver files to
@@ -3457,7 +3457,7 @@ to escape the <quote>$</quote>: <command>smbclient //sambaserver/print\$ -U
 root.</command>)</para></listitem>
 
 <listitem><para>The user you're connecting as must be able to write to
-the <smbconfsection>[print$]</smbconfsection> share and create
+the <smbconfsection name="[print$]"/> share and create
 subdirectories.</para></listitem>
 
 <listitem><para>The printer you are going to setup for the Windows
@@ -3532,7 +3532,7 @@ successful. Note the <quote>empty</quote> field between the two commas in the
 <command>smbpasswd</command> command) for this step and most of the
 following steps. Alternately, you can authenticate as one of the
 users from the <quote>write list</quote> as defined in &smb.conf; for
-<smbconfsection>[print$]</smbconfsection>.
+<smbconfsection name="[print$]"/>.
 </para>
 </step>
 
@@ -3591,7 +3591,7 @@ driver installed.</quote>
 line. Line-breaks and the line-end indicated by <quote>\</quote> have been inserted
 for readability reasons.) This step is <emphasis>required</emphasis>
 for the next one to succeed. It makes the driver files physically
-present in the <smbconfsection>[print$]</smbconfsection> share. However, clients
+present in the <smbconfsection name="[print$]"/> share. However, clients
 would still not be able to install them, because Samba does not yet
 treat them as driver files. A client asking for the driver would still
 be presented with a <quote>not installed here</quote> message.
@@ -3614,7 +3614,7 @@ drwxr-sr-x    2 root     ntadmin       670 May 16 03:15 3
 
 <para>
 The driver files now are in the W32X86 architecture <quote>root</quote> of
-<smbconfsection>[print$]</smbconfsection>.
+<smbconfsection name="[print$]"/>.
 </para>
 </step>
 
@@ -3819,7 +3819,7 @@ back.
 
 <para>
 If it does not work it could be a permission problem with the
-<smbconfsection>[print$]</smbconfsection> share.
+<smbconfsection name="[print$]"/> share.
 </para>
 </step>
 
@@ -4927,7 +4927,7 @@ requested by marketing for the mailing, and so on).
 Samba print files pass through two spool directories. One is the
 incoming directory managed by Samba, (set in the
 <smbconfoption name="path">/var/spool/samba</smbconfoption>
-directive in the <smbconfsection>[printers]</smbconfsection> section of
+directive in the <smbconfsection name="[printers]"/> section of
 &smb.conf;). The other is the spool directory of
 your UNIX print subsystem. For CUPS it is normally
 <filename>/var/spool/cups/</filename>, as set by the <filename>cupsd.conf</filename>
@@ -5208,7 +5208,7 @@ Samba.</para>
 
 	<para>Use <command>smbstatus</command> to check which user
 	you are from Samba's point of view. Do you have the privileges to
-	write into the <smbconfsection>[print$]</smbconfsection>
+	write into the <smbconfsection name="[print$]"/>
 	share?</para>
 
 	</sect2>
@@ -5436,12 +5436,12 @@ again.</para></sect2>
 <para>Have you ever by accident set the CUPS spool directory to
 the same location? (<parameter>RequestRoot /var/spool/samba/</parameter> in <filename>cupsd.conf</filename> or
 the other way round: <filename>/var/spool/cups/</filename> is set as
-<smbconfoption name="path"/>> in the <smbconfsection>[printers]</smbconfsection>
+<smbconfoption name="path"/>> in the <smbconfsection name="[printers]"/>
 section). These <parameter>must</parameter> be different. Set
 <!--FIXME-->
 <parameter>RequestRoot /var/spool/cups/</parameter> in
-<filename>cupsd.conf</filename> and <smbconfoption name="path"/>
-/var/spool/samba</smbconfoption> in the <smbconfsection>[printers]</smbconfsection>
+<filename>cupsd.conf</filename> and <smbconfoption name="path">
+/var/spool/samba</smbconfoption> in the <smbconfsection name="[printers]"/>
 section of &smb.conf;. Otherwise cupsd will
 sanitize permissions to its spool directory with each restart and
 printing will not work reliably.</para></sect2>

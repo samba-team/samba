@@ -53,8 +53,8 @@ Samba may be secured from connections that originate from outside the local netw
 done using <emphasis>host-based protection</emphasis> (using Samba's implementation of a technology
 known as <quote>tcpwrappers,</quote> or it may be done be using <emphasis>interface-based exclusion</emphasis>
 so &smbd; will bind only to specifically permitted interfaces. It is also
-possible to set specific share or resource-based exclusions, for example on the <smbconfsection>[IPC$]</smbconfsection>
-auto-share. The <smbconfsection>[IPC$]</smbconfsection> share is used for browsing purposes as well as to establish
+possible to set specific share or resource-based exclusions, for example on the <smbconfsection name="[IPC$]"/>
+auto-share. The <smbconfsection name="[IPC$]"/> share is used for browsing purposes as well as to establish
 TCP/IP connections.
 </para>
 
@@ -112,7 +112,7 @@ before someone will find yet another vulnerability.
 
 	<para>
 	If you want to restrict access to your server to valid users only, then the following
-	method may be of use. In the &smb.conf; <smbconfsection>[global]</smbconfsection> section put:
+	method may be of use. In the &smb.conf; <smbconfsection name="[global]"/> section put:
 	</para>
 
 	<para><smbconfblock>
@@ -211,7 +211,7 @@ before someone will find yet another vulnerability.
 	</para>
 
 	<para><smbconfblock>
-<smbconfsection>[IPC$]</smbconfsection>
+<smbconfsection name="[IPC$]"/>
 <smbconfoption name="hosts allow">192.168.115.0/24 127.0.0.1</smbconfoption>
 <smbconfoption name="hosts deny">0.0.0.0/0</smbconfoption>
 	</smbconfblock></para>
@@ -344,7 +344,7 @@ out to be a security problem request are totally convinced that the problem is w
 
 	<para>
 	Samba allows the behavior you require. Simply put the <smbconfoption name="only user">%S</smbconfoption>
-	option in the <smbconfsection>[homes]</smbconfsection> share definition.
+	option in the <smbconfsection name="[homes]"/> share definition.
 	</para>
 
 	<para>
@@ -357,7 +357,7 @@ out to be a security problem request are totally convinced that the problem is w
 	<smbconfblock>
 <smbconfoption name="valid users">%S</smbconfoption>
 	</smbconfblock>
-	to the definition of the <smbconfsection>[homes]</smbconfsection> share, as recommended in
+	to the definition of the <smbconfsection name="[homes]"/> share, as recommended in
 	the &smb.conf; man page.
 	</para>
 	</sect2>

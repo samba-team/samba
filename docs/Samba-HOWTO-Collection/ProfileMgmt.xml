@@ -75,8 +75,7 @@ For example, to support Windows NT4/200x clients, set the following in the [glob
 
 <para>
 <smbconfblock>
-<smbconfoption name="logon path"> </smbconfoption>
-<member><parameter>\\profileserver\profileshare\profilepath\%U\moreprofilepath</parameter></member>
+	<smbconfoption name="logon path"> \\profileserver\profileshare\profilepath\%U\moreprofilepath</smbconfoption>
 </smbconfblock>
 
 This is typically implemented like:
@@ -98,7 +97,7 @@ semantics of <quote>%L</quote> and <quote>%N</quote>, as well as <quote>%U</quot
 <note>
 <para>
 MS Windows NT/200x clients at times do not disconnect a connection to a server between logons. It is recommended
-to not use the <smbconfsection>homes</smbconfsection> meta-service name as part of the profile share path.
+to not use the <smbconfsection name="homes"/> meta-service name as part of the profile share path.
 </para>
 </note>
 </sect3>
@@ -115,7 +114,7 @@ on the <command>logon home</command> parameter.
 <para>
 By using the logon home parameter, you are restricted to putting Windows 9x/Me profiles in the user's home
 directory.  But wait! There is a trick you can use. If you set the following in the
-<smbconfsection>[global]</smbconfsection> section of your &smb.conf; file:
+<smbconfsection name="[global]"/> section of your &smb.conf; file:
 </para>
 <para><smbconfblock>
 <smbconfoption name="logon home">\\%L\%U\.profiles</smbconfoption>
@@ -229,7 +228,7 @@ When a user first logs in on Windows 9X, the file user.DAT is created, as are fo
 <filename>Start Menu</filename>, <filename>Desktop</filename>, <filename>Programs</filename>, and
 <filename>Nethood</filename>. These directories and their contents will be merged with the local
 versions stored in <filename>c:\windows\profiles\username</filename> on subsequent logins, taking the
-most recent from each.	You will need to use the <smbconfsection>[global]</smbconfsection> options
+most recent from each.	You will need to use the <smbconfsection name="[global]"/> options
 <smbconfoption name="preserve case">yes</smbconfoption>,
 <smbconfoption name="short preserve case">yes</smbconfoption> and
 <smbconfoption name="case sensitive">no</smbconfoption>
@@ -861,7 +860,7 @@ exists there it will copy this to the workstation to the <filename>C:\Documents 
 under the Windows login name of the user. </para>
 
 <note> <para> This path translates, in Samba parlance, to the &smb.conf;
-<smbconfsection>[NETLOGON]</smbconfsection> share. The directory should be created at the root
+<smbconfsection name="[NETLOGON]"/> share. The directory should be created at the root
 of this share and must be called <filename>Default User</filename>.
 </para> </note>
 
@@ -1099,14 +1098,14 @@ setting in &smb.conf;: </para>
 <smbconfoption name="domain logons">Yes</smbconfoption>
 </smbconfblock>
 
-<para> There must be a <smbconfsection>[netlogon]</smbconfsection> share that is world readable. It is
+<para> There must be a <smbconfsection name="[netlogon]"/> share that is world readable. It is
 a good idea to add a logon script to pre-set printer and drive connections. There is also a facility
 for automatically synchronizing the workstation time clock with that of the logon server (another good
 thing to do). </para>
 
 <note><para> To invoke auto-deletion of roaming profile from the local workstation cache (disk storage), use
 the <application>Group Policy Editor</application> to create a file called <filename>NTConfig.POL</filename>
-with the appropriate entries. This file needs to be located in the <smbconfsection>netlogon</smbconfsection>
+with the appropriate entries. This file needs to be located in the <smbconfsection name="netlogon"/>
 share root directory.</para></note>
 
 <para> Windows clients need to be members of the domain. Workgroup machines do not use network logons

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!DOCTYPE book PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
+<!DOCTYPE chapter PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
 <chapter id="Big500users">
   <title>The 500-User Office</title>
 
@@ -938,7 +938,7 @@ hosts:      files dns wins
 <smbconfexample id="ch5-massivesmb">
 <title>Server: MASSIVE (PDC), File: <filename>/etc/samba/smb.conf</filename></title>
 <smbconfcomment>Global parameters</smbconfcomment>
-<smbconfsection>[global]</smbconfsection>
+<smbconfsection name="[global]"/>
 <smbconfoption name="workgroup">MEGANET</smbconfoption>
 <smbconfoption name="netbios name">MASSIVE</smbconfoption>
 <smbconfoption name="interfaces">eth1, lo</smbconfoption>
@@ -955,22 +955,22 @@ hosts:      files dns wins
 <smbconfoption name="wins support">Yes</smbconfoption>
 <smbconfoption name="include">/etc/samba/dc-common.conf</smbconfoption>
 
-<smbconfsection>[IPC$]</smbconfsection>
+<smbconfsection name="[IPC$]"/>
 <smbconfoption name="path">/tmp</smbconfoption>
 <smbconfoption name="hosts allow">172.16.0.0/16, 127.0.0.1</smbconfoption>
 <smbconfoption name="hosts deny">0.0.0.0/0</smbconfoption>
 
-<smbconfsection>[accounts]</smbconfsection>
+<smbconfsection name="[accounts]"/>
 <smbconfoption name="comment">Accounting Files</smbconfoption>
 <smbconfoption name="path">/data/accounts</smbconfoption>
 <smbconfoption name="read only">No</smbconfoption>
 
-<smbconfsection>[service]</smbconfsection>
+<smbconfsection name="[service]"/>
 <smbconfoption name="comment">Financial Services Files</smbconfoption>
 <smbconfoption name="path">/data/service</smbconfoption>
 <smbconfoption name="read only">No</smbconfoption>
 
-<smbconfsection>[pidata]</smbconfsection>
+<smbconfsection name="[pidata]"/>
 <smbconfoption name="comment">Property Insurance Files</smbconfoption>
 <smbconfoption name="path">/data/pidata</smbconfoption>
 <smbconfoption name="read only">No</smbconfoption>
@@ -980,7 +980,7 @@ hosts:      files dns wins
 <smbconfexample id="ch5-dc-common">
 <title>Server: MASSIVE (PDC), File: <filename>/etc/samba/dc-common.conf</filename></title>
 <smbconfcomment>Global parameters</smbconfcomment>
-<smbconfsection>[global]</smbconfsection>
+<smbconfsection name="[global]"/>
 <smbconfoption name="shutdown script">/var/lib/samba/scripts/shutdown.sh</smbconfoption>
 <smbconfoption name="abort shutdown script">/sbin/shutdown -c</smbconfoption>
 <smbconfoption name="logon script">scripts\logon.bat</smbconfoption>
@@ -991,19 +991,19 @@ hosts:      files dns wins
 <smbconfoption name="preferred master">Yes</smbconfoption>
 <smbconfoption name="include">/etc/samba/common.conf</smbconfoption>
 
-<smbconfsection>[homes]</smbconfsection>
+<smbconfsection name="[homes]"/>
 <smbconfoption name="comment">Home Directories</smbconfoption>
 <smbconfoption name="valid users">%S</smbconfoption>
 <smbconfoption name="read only">No</smbconfoption>
 <smbconfoption name="browseable">No</smbconfoption>
 
-<smbconfsection>[netlogon]</smbconfsection>
+<smbconfsection name="[netlogon]"/>
 <smbconfoption name="comment">Network Logon Service</smbconfoption>
 <smbconfoption name="path">/var/lib/samba/netlogon</smbconfoption>
 <smbconfoption name="guest ok">Yes</smbconfoption>
 <smbconfoption name="locking">No</smbconfoption>
 
-<smbconfsection>[profiles]</smbconfsection>
+<smbconfsection name="[profiles]"/>
 <smbconfoption name="comment">Profile Share</smbconfoption>
 <smbconfoption name="path">/var/lib/samba/profiles</smbconfoption>
 <smbconfoption name="read only">No</smbconfoption>
@@ -1013,7 +1013,7 @@ hosts:      files dns wins
 <!-- Three -->
 <smbconfexample id="ch5-commonsmb">
 <title>Common Samba Configuration File: <filename>/etc/samba/common.conf</filename></title>
-<smbconfsection>[global]</smbconfsection>
+<smbconfsection name="[global]"/>
 <smbconfoption name="username map">/etc/samba/smbusers</smbconfoption>
 <smbconfoption name="log level">1</smbconfoption>
 <smbconfoption name="syslog">0</smbconfoption>
@@ -1034,7 +1034,7 @@ hosts:      files dns wins
 <smbconfoption name="include"> </smbconfoption>
 
 <smbconfcomment>Share and Service Definitions are common to all servers</smbconfcomment>
-<smbconfsection>[printers]</smbconfsection>
+<smbconfsection name="[printers]"/>
 <smbconfoption name="comment">SMB Print Spool</smbconfoption>
 <smbconfoption name="path">/var/spool/samba</smbconfoption>
 <smbconfoption name="guest ok">Yes</smbconfoption>
@@ -1043,7 +1043,7 @@ hosts:      files dns wins
 <smbconfoption name="default devmode">Yes</smbconfoption>
 <smbconfoption name="browseable">No</smbconfoption>
 
-<smbconfsection>[apps]</smbconfsection>
+<smbconfsection name="[apps]"/>
 <smbconfoption name="comment">Application Files</smbconfoption>
 <smbconfoption name="path">/apps</smbconfoption>
 <smbconfoption name="admin users">bjordan</smbconfoption>
@@ -1054,7 +1054,7 @@ hosts:      files dns wins
 <smbconfexample id="ch5-bldg1-smb">
 <title>Server: BLDG1 (Member), File: smb.conf</title>
 <smbconfcomment>Global parameters</smbconfcomment>
-<smbconfsection>[global]</smbconfsection>
+<smbconfsection name="[global]"/>
 <smbconfoption name="workgroup">MEGANET</smbconfoption>
 <smbconfoption name="netbios name">BLDG1</smbconfoption>
 <smbconfoption name="include">/etc/samba/dom-mem.conf</smbconfoption>
@@ -1064,7 +1064,7 @@ hosts:      files dns wins
 <smbconfexample id="ch5-bldg2-smb">
 <title>Server: BLDG2 (Member), File: smb.conf</title>
 <smbconfcomment>Global parameters</smbconfcomment>
-<smbconfsection>[global]</smbconfsection>
+<smbconfsection name="[global]"/>
 <smbconfoption name="workgroup">MEGANET</smbconfoption>
 <smbconfoption name="netbios name">BLDG2</smbconfoption>
 <smbconfoption name="include">/etc/samba/dom-mem.conf</smbconfoption>
@@ -1074,7 +1074,7 @@ hosts:      files dns wins
 <smbconfexample id="ch5-dommem-smb">
 <title>Common Domain Member Include File: dom-mem.conf</title>
 <smbconfcomment>Global parameters</smbconfcomment>
-<smbconfsection>[global]</smbconfsection>
+<smbconfsection name="[global]"/>
 <smbconfoption name="shutdown script">/var/lib/samba/scripts/shutdown.sh</smbconfoption>
 <smbconfoption name="abort shutdown script">/sbin/shutdown -c</smbconfoption>
 <smbconfoption name="preferred master">Yes</smbconfoption>

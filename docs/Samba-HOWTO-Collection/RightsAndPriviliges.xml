@@ -62,7 +62,7 @@ access to the UNIX host system.
 Samba 3.0.11 introduces support for the Windows privilege model.  This model
 allows certain rights to be assigned to a user or group SID.  In order to enable
 this feature, <smbconfoption name="enable privileges">yes</smbconfoption>
-must be defined in the <smbconfsection>global</smbconfsection> section of the &smb.conf; file.
+must be defined in the <smbconfsection name="global"/> section of the &smb.conf; file.
 </para>
 
 <para>

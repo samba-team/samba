@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!DOCTYPE book PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
+<!DOCTYPE chapter PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
 <chapter id="2000users">
   <title>A Distributed 2000 User Network</title>
 
@@ -1151,7 +1151,7 @@ index default               sub
 <smbconfexample id="ch7-massmbconfA">
 <title>Primary Domain Controller &smb.conf; File &smbmdash; Part A</title>
 <smbconfcomment>Global parameters</smbconfcomment>
-<smbconfsection>[global]</smbconfsection>
+<smbconfsection name="[global]"/>
 <smbconfoption name="unix charset">LOCALE</smbconfoption>
 <smbconfoption name="workgroup">MEGANET2</smbconfoption>
 <smbconfoption name="passdb backend">ldapsam:ldap://massive.abmas.biz</smbconfoption>
@@ -1199,31 +1199,31 @@ index default               sub
 
 <smbconfexample id="ch7-massmbconfB">
 <title>Primary Domain Controller &smb.conf; File &smbmdash; Part B</title>
-<smbconfsection>[IPC$]</smbconfsection>
+<smbconfsection name="[IPC$]"/>
 <smbconfoption name="path">/tmp</smbconfoption>
 
-<smbconfsection>[accounts]</smbconfsection>
+<smbconfsection name="[accounts]"/>
 <smbconfoption name="comment">Accounting Files</smbconfoption>
 <smbconfoption name="path">/data/accounts</smbconfoption>
 <smbconfoption name="read only">No</smbconfoption>
 
-<smbconfsection>[service]</smbconfsection>
+<smbconfsection name="[service]"/>
 <smbconfoption name="comment">Financial Services Files</smbconfoption>
 <smbconfoption name="path">/data/service</smbconfoption>
 <smbconfoption name="read only">No</smbconfoption>
 
-<smbconfsection>[pidata]</smbconfsection>
+<smbconfsection name="[pidata]"/>
 <smbconfoption name="comment">Property Insurance Files</smbconfoption>
 <smbconfoption name="path">/data/pidata</smbconfoption>
 <smbconfoption name="read only">No</smbconfoption>
 
-<smbconfsection>[homes]</smbconfsection>
+<smbconfsection name="[homes]"/>
 <smbconfoption name="comment">Home Directories</smbconfoption>
 <smbconfoption name="valid users">%S</smbconfoption>
 <smbconfoption name="read only">No</smbconfoption>
 <smbconfoption name="browseable">No</smbconfoption>
 
-<smbconfsection>[printers]</smbconfsection>
+<smbconfsection name="[printers]"/>
 <smbconfoption name="comment">SMB Print Spool</smbconfoption>
 <smbconfoption name="path">/var/spool/samba</smbconfoption>
 <smbconfoption name="guest ok">Yes</smbconfoption>
@@ -1233,32 +1233,32 @@ index default               sub
 
 <smbconfexample id="ch7-massmbconfC">
 <title>Primary Domain Controller &smb.conf; File &smbmdash; Part C</title>
-<smbconfsection>[apps]</smbconfsection>
+<smbconfsection name="[apps]"/>
 <smbconfoption name="comment">Application Files</smbconfoption>
 <smbconfoption name="path">/apps</smbconfoption>
 <smbconfoption name="admin users">bjones</smbconfoption>
 <smbconfoption name="read only">No</smbconfoption>
 
-<smbconfsection>[netlogon]</smbconfsection>
+<smbconfsection name="[netlogon]"/>
 <smbconfoption name="comment">Network Logon Service</smbconfoption>
 <smbconfoption name="path">/var/lib/samba/netlogon</smbconfoption>
 <smbconfoption name="admin users">root, Administrator</smbconfoption>
 <smbconfoption name="guest ok">Yes</smbconfoption>
 <smbconfoption name="locking">No</smbconfoption>
 
-<smbconfsection>[profiles]</smbconfsection>
+<smbconfsection name="[profiles]"/>
 <smbconfoption name="comment">Profile Share</smbconfoption>
 <smbconfoption name="path">/var/lib/samba/profiles</smbconfoption>
 <smbconfoption name="read only">No</smbconfoption>
 <smbconfoption name="profile acls">Yes</smbconfoption>
 
-<smbconfsection>[profdata]</smbconfsection>
+<smbconfsection name="[profdata]"/>
 <smbconfoption name="comment">Profile Data Share</smbconfoption>
 <smbconfoption name="path">/var/lib/samba/profdata</smbconfoption>
 <smbconfoption name="read only">No</smbconfoption>
 <smbconfoption name="profile acls">Yes</smbconfoption>
 
-<smbconfsection>[print$]</smbconfsection>
+<smbconfsection name="[print$]"/>
 <smbconfoption name="comment">Printer Drivers</smbconfoption>
 <smbconfoption name="path">/var/lib/samba/drivers</smbconfoption>
 <smbconfoption name="write list">root</smbconfoption>
@@ -1268,7 +1268,7 @@ index default               sub
 <smbconfexample id="ch7-slvsmbocnfA">
 <title>Backup Domain Controller &smb.conf; File &smbmdash; Part A</title>
 <smbconfcomment># Global parameters</smbconfcomment>
-<smbconfsection>[global]</smbconfsection>
+<smbconfsection name="[global]"/>
 <smbconfoption name="unix charset">LOCALE</smbconfoption>
 <smbconfoption name="workgroup">MEGANET2</smbconfoption>
 <smbconfoption name="netbios name">BLDG1</smbconfoption>
@@ -1301,12 +1301,12 @@ index default               sub
 <smbconfoption name="idmap gid">10000-20000</smbconfoption>
 <smbconfoption name="printing">cups</smbconfoption>
 
-<smbconfsection>[accounts]</smbconfsection>
+<smbconfsection name="[accounts]"/>
 <smbconfoption name="comment">Accounting Files</smbconfoption>
 <smbconfoption name="path">/data/accounts</smbconfoption>
 <smbconfoption name="read only">No</smbconfoption>
 
-<smbconfsection>[service]</smbconfsection>
+<smbconfsection name="[service]"/>
 <smbconfoption name="comment">Financial Services Files</smbconfoption>
 <smbconfoption name="path">/data/service</smbconfoption>
 <smbconfoption name="read only">No</smbconfoption>
@@ -1314,43 +1314,43 @@ index default               sub
 
 <smbconfexample id="ch7-slvsmbocnfB">
 <title>Backup Domain Controller &smb.conf; File &smbmdash; Part B</title>
-<smbconfsection>[pidata]</smbconfsection>
+<smbconfsection name="[pidata]"/>
 <smbconfoption name="comment">Property Insurance Files</smbconfoption>
 <smbconfoption name="path">/data/pidata</smbconfoption>
 <smbconfoption name="read only">No</smbconfoption>
 
-<smbconfsection>[homes]</smbconfsection>
+<smbconfsection name="[homes]"/>
 <smbconfoption name="comment">Home Directories</smbconfoption>
 <smbconfoption name="valid users">%S</smbconfoption>
 <smbconfoption name="read only">No</smbconfoption>
 <smbconfoption name="browseable">No</smbconfoption>
 
-<smbconfsection>[printers]</smbconfsection>
+<smbconfsection name="[printers]"/>
 <smbconfoption name="comment">SMB Print Spool</smbconfoption>
 <smbconfoption name="path">/var/spool/samba</smbconfoption>
 <smbconfoption name="guest ok">Yes</smbconfoption>
 <smbconfoption name="printable">Yes</smbconfoption>
 <smbconfoption name="browseable">No</smbconfoption>
 
-<smbconfsection>[apps]</smbconfsection>
+<smbconfsection name="[apps]"/>
 <smbconfoption name="comment">Application Files</smbconfoption>
 <smbconfoption name="path">/apps</smbconfoption>
 <smbconfoption name="admin users">bjones</smbconfoption>
 <smbconfoption name="read only">No</smbconfoption>
 
-<smbconfsection>[netlogon]</smbconfsection>
+<smbconfsection name="[netlogon]"/>
 <smbconfoption name="comment">Network Logon Service</smbconfoption>
 <smbconfoption name="path">/var/lib/samba/netlogon</smbconfoption>
 <smbconfoption name="guest ok">Yes</smbconfoption>
 <smbconfoption name="locking">No</smbconfoption>
 
-<smbconfsection>[profiles]</smbconfsection>
+<smbconfsection name="[profiles]"/>
 <smbconfoption name="comment">Profile Share</smbconfoption>
 <smbconfoption name="path">/var/lib/samba/profiles</smbconfoption>
 <smbconfoption name="read only">No</smbconfoption>
 <smbconfoption name="profile acls">Yes</smbconfoption>
 
-<smbconfsection>[profdata]</smbconfsection>
+<smbconfsection name="[profdata]"/>
 <smbconfoption name="comment">Profile Data Share</smbconfoption>
 <smbconfoption name="path">/var/lib/samba/profdata</smbconfoption>
 <smbconfoption name="read only">No</smbconfoption>
