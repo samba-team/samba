@@ -2734,6 +2734,33 @@ AC_SUBST(WINBIND_PAM_TARGETS)
 AC_SUBST(WINBIND_NSS_EXTRA_OBJS)
 AC_SUBST(WINBIND_NSS_EXTRA_LIBS)
 
+# Solaris has some extra fields in struct passwd that need to be
+# initialised otherwise nscd crashes.  Unfortunately autoconf < 2.50
+# doesn't have the AC_CHECK_MEMBER macro which would be handy for checking
+# this.
+
+#AC_CHECK_MEMBER(struct passwd.pw_comment,
+#		AC_DEFINE(HAVE_PASSWD_PW_COMMENT, 1, [Defined if struct passwd has pw_comment field]),
+#		[#include <pwd.h>])
+
+AC_CACHE_CHECK([whether struct passwd has pw_comment],samba_cv_passwd_pw_comment, [
+	AC_TRY_COMPILE([#include <pwd.h>],[struct passwd p; p.pw_comment;],
+	samba_cv_passwd_pw_comment=yes,samba_cv_passwd_pw_comment=no)])
+if test x"$samba_cv_passwd_pw_comment" = x"yes"; then
+	AC_DEFINE(HAVE_PASSWD_PW_COMMENT)
+fi
+
+#AC_CHECK_MEMBER(struct passwd.pw_age,
+#		AC_DEFINE(HAVE_PASSWD_PW_AGE, 1, [Defined if struct passwd has pw_age field]),
+#		[#include <pwd.h>])
+
+AC_CACHE_CHECK([whether struct passwd has pw_age],samba_cv_passwd_pw_age, [
+	AC_TRY_COMPILE([#include <pwd.h>],[struct passwd p; p.pw_age;],
+	samba_cv_passwd_pw_age=yes,samba_cv_passwd_pw_age=no)])
+if test x"$samba_cv_passwd_pw_age" = x"yes"; then
+	AC_DEFINE(HAVE_PASSWD_PW_AGE)
+fi
+
 #################################################
 # Check to see if we should use the included popt
 
