@@ -136,7 +136,7 @@ set_address (EncTicketPart *et,
     if (v4_addr == NULL)
 	return ENOMEM;
 
-    ret = krb5_sockaddr2address(addr, v4_addr);
+    ret = krb5_sockaddr2address(context, addr, v4_addr);
     if(ret) {
 	free (v4_addr);
 	kdc_log(0, "Failed to convert address (%s)", from);
