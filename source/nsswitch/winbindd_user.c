@@ -62,13 +62,13 @@ static void winbindd_fill_pwent(struct winbindd_pw *pw, char *username,
        Authentication can be done using the pam_ntdom module. */
 
     safe_strcpy(pw->pw_passwd, "x", sizeof(pw->pw_passwd) - 1);
-
 }
 
-/* Return a password structure from a username */
+/* Return a password structure from a username.  Specify whether cached data 
+   can be returned. */
 
 enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state 
-                                                 *state) 
+                                                 *state, BOOL allow_cached) 
 {
     uint32 name_type, user_rid, group_rid;
     SAM_USERINFO_CTR user_info;
@@ -93,6 +93,15 @@ enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state
     if ((domain = find_domain_from_name(name_domain)) == NULL) {
         DEBUG(0, ("could not find domain entry for domain %s\n", name_domain));
         return WINBINDD_ERROR;
+    }
+
+    /* Check for cached user entry */
+
+    if (allow_cached) {
+        if (winbindd_fetch_user_cache_entry(name_domain, name_user,
+                                            &state->response.data.pw)) {
+            return WINBINDD_OK;
+        }
     }
 
     fstrcpy(name, name_domain);
@@ -149,6 +158,9 @@ enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state
                         state->request.data.username, uid, gid, 
                         gecos_name);
             
+    winbindd_fill_user_cache_entry(name_domain, name_user, 
+                                   &state->response.data.pw);
+
     return WINBINDD_OK;
 }       
 
@@ -347,7 +359,7 @@ enum winbindd_result winbindd_getpwent(struct winbindd_cli_state *state)
             /* Get passwd entry from user name */
                 
             fstrcpy(state->request.data.username, domain_user_name);
-            result = winbindd_getpwnam_from_user(state);
+            result = winbindd_getpwnam_from_user(state, True);
 
             ent->sam_entry_index++;
                 

@@ -201,7 +201,7 @@ static void process_request(struct winbindd_cli_state *state)
         /* User functions */
         
     case WINBINDD_GETPWNAM_FROM_USER: 
-        state->response.result = winbindd_getpwnam_from_user(state);
+        state->response.result = winbindd_getpwnam_from_user(state, False);
         break;
         
     case WINBINDD_GETPWNAM_FROM_UID:
@@ -223,7 +223,7 @@ static void process_request(struct winbindd_cli_state *state)
         /* Group functions */
         
     case WINBINDD_GETGRNAM_FROM_GROUP:
-        state->response.result = winbindd_getgrnam_from_group(state);
+        state->response.result = winbindd_getgrnam_from_group(state, False);
         break;
         
     case WINBINDD_GETGRNAM_FROM_GID:

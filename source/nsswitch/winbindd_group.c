@@ -437,7 +437,7 @@ static BOOL winbindd_fill_grent_mem(struct winbindd_domain *domain,
 /* Return a group structure from a group name */
 
 enum winbindd_result winbindd_getgrnam_from_group(struct winbindd_cli_state 
-                                                  *state)
+                                                  *state, BOOL allow_cached)
 {
     DOM_SID group_sid;
     struct winbindd_domain *domain;
@@ -446,6 +446,7 @@ enum winbindd_result winbindd_getgrnam_from_group(struct winbindd_cli_state
     fstring name_domain, name_group, name;
     char *tmp;
     gid_t gid;
+    int extra_data_len;
 
     /* Parse domain and groupname */
 
@@ -467,6 +468,18 @@ enum winbindd_result winbindd_getgrnam_from_group(struct winbindd_cli_state
         DEBUG(0, ("getgrname_from_group(): could not get domain sid for "
                   "domain %s\n", name_domain));
         return WINBINDD_ERROR;
+    }
+
+    /* Check for cached user entry */
+
+    if (allow_cached) {
+        if (winbindd_fetch_group_cache_entry(name_domain, name_group,
+                                             &state->response.data.gr,
+                                             &state->response.extra_data,
+                                             &extra_data_len)) {
+            state->response.length += extra_data_len;
+            return WINBINDD_OK;
+        }
     }
 
     fstrcpy(name, name_domain);
@@ -504,6 +517,14 @@ enum winbindd_result winbindd_getgrnam_from_group(struct winbindd_cli_state
                                  &state->response)) {
         return WINBINDD_ERROR;
     }
+
+    /* Update cached group info */
+
+    winbindd_fill_group_cache_entry(name_domain, name_group, 
+                                    &state->response.data.gr,
+                                    state->response.extra_data,
+                                    state->response.length - 
+                                    sizeof(struct winbindd_response));
 
     return WINBINDD_OK;
 }
@@ -692,7 +713,7 @@ enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state)
             /* Get group entry from group name */
 
             fstrcpy(state->request.data.groupname, domain_group_name);
-            result = winbindd_getgrnam_from_group(state);
+            result = winbindd_getgrnam_from_group(state, True);
 
             ent->sam_entry_index++;
                                                       
