@@ -82,7 +82,7 @@ else
 fi
 test "$ac_ndbm" = yes && AC_DEFINE(NDBM, 1, [Define if you have NDBM (and not DBM)])dnl
 AC_SUBST(LIB_DBM)
-DBLIB="$(LIB_DBM)"
+DBLIB="$LIB_DBM"
 AC_SUBST(DBLIB)
 AC_MSG_RESULT($ac_res)
 
