@@ -218,7 +218,7 @@ int find_service(fstring service)
  do some basic sainity checks on the share.  
  This function modifies dev, ecode.
 ****************************************************************************/
-static NTSTATUS share_sanity_checks(int snum, char* service, pstring dev) 
+static NTSTATUS share_sanity_checks(int snum, const char* service, pstring dev) 
 {
 	
 	if (!lp_snum_ok(snum) || 
@@ -325,7 +325,7 @@ static void set_admin_user(connection_struct *conn)
 ****************************************************************************/
 
 connection_struct *make_connection(char *service, DATA_BLOB password, 
-				   const char *dev, uint16 vuid, NTSTATUS *status)
+				   char *dev, uint16 vuid, NTSTATUS *status)
 {
 	int snum;
 	struct passwd *pass = NULL;
