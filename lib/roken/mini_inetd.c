@@ -60,7 +60,7 @@ RCSID("$Id$");
 #include <netinet6/in6.h>
 #endif
 
-
+#include <err.h>
 #include <roken.h>
 
 /*
