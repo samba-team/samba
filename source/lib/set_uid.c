@@ -231,13 +231,15 @@ BOOL become_unix_sec_ctx(const vuser_key *k, connection_struct *conn,
 	gid_t gid;
 	uid_t uid;
 
-	unbecome_to_initial_uid();
-
-	if (current_user.uid == new_uid)
+	if (current_user.uid == new_uid &&
+		current_user.key.pid == k->pid &&
+		current_user.key.vuid == k->vuid)
 	{
 		DEBUG(4,("Skipping become_unix_sec_ctx - already user\n"));
 		return(True);
 	}
+
+	unbecome_to_initial_uid();
 
 	uid = new_uid;
 	gid = new_gid;
@@ -275,8 +277,9 @@ BOOL become_unix_sec_ctx(const vuser_key *k, connection_struct *conn,
 	current_user.conn = conn;
 	current_user.key = *k;
 
-	DEBUG(5,("become_unix_sec_ctx uid=(%d,%d) gid=(%d,%d)\n",
-		 (int)getuid(),(int)geteuid(),(int)getgid(),(int)getegid()));
+	DEBUG(5,("become_unix_sec_ctx uid=(%d,%d) gid=(%d,%d) vuser=(%d,%x)\n",
+		 (int)getuid(),(int)geteuid(),(int)getgid(),(int)getegid(),
+	         current_user.key.pid, current_user.key.vuid));
   
 	return(True);
 }

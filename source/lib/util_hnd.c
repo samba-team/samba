@@ -189,13 +189,15 @@ BOOL register_policy_hnd(struct policy_cache *cache,
 		p->key.pid = getpid();
 	}
 
-	memcpy(&p->pol_hnd, hnd, sizeof(*hnd));
 
 	bitmap_set(cache->bmap, i);
-
 	DLIST_ADD(cache->Policy, p);
 	
 	DEBUG(4,("Opened policy hnd[%x] ", i));
+	DEBUG(10,("register_policy_hnd: vuser [%d, %x]\n",
+	           p->key.pid, p->key.vuid));
+
+	memcpy(&p->pol_hnd, hnd, sizeof(*hnd));
 	dump_data(4, (char *)hnd->data, sizeof(hnd->data));
 
 	return True;
