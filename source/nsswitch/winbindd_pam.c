@@ -95,7 +95,7 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 	/* Parse domain and username */
 	
 	parse_domain_user(state->request.data.auth.user, name_domain, name_user);
-	if ( !name_domain ) {
+	if ( !*name_domain ) {
 		DEBUG(5,("no domain separator (%s) in username (%s) - failing auth\n", lp_winbind_separator(), state->request.data.auth.user));
 		result = NT_STATUS_INVALID_PARAMETER;
 		goto done;
