@@ -1501,6 +1501,14 @@ BOOL lsa_io_r_priv_get_dispname(char *desc, LSA_R_PRIV_GET_DISPNAME *r_q, prs_st
 	return True;
 }
 
+void init_lsa_q_enum_accounts(LSA_Q_ENUM_ACCOUNTS *trn, POLICY_HND *hnd, uint32 enum_context, uint32 pref_max_length)
+{
+	memcpy(&trn->pol, hnd, sizeof(trn->pol));
+
+	trn->enum_context = enum_context;
+	trn->pref_max_length = pref_max_length;
+}
+
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/

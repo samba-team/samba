@@ -537,7 +537,7 @@ NTSTATUS _lsa_enum_privs(pipes_struct *p, LSA_Q_ENUM_PRIVS *q_u, LSA_R_ENUM_PRIV
 
 	uint32 enum_context=q_u->enum_context;
 	LSA_PRIV_ENTRY *entry;
-	LSA_PRIV_ENTRY *entries;
+	LSA_PRIV_ENTRY *entries=NULL;
 
 	if (!find_policy_by_hnd(p, &q_u->pol, NULL))
 		return NT_STATUS_INVALID_HANDLE;
@@ -545,19 +545,30 @@ NTSTATUS _lsa_enum_privs(pipes_struct *p, LSA_Q_ENUM_PRIVS *q_u, LSA_R_ENUM_PRIV
 	if (enum_context >= PRIV_ALL_INDEX)
 		return NT_STATUS_UNABLE_TO_FREE_VM;
 
-	entries = (LSA_PRIV_ENTRY *)talloc_zero(p->mem_ctx, sizeof(LSA_PRIV_ENTRY) * (PRIV_ALL_INDEX-enum_context-1));
+	entries = (LSA_PRIV_ENTRY *)talloc_zero(p->mem_ctx, sizeof(LSA_PRIV_ENTRY) * (PRIV_ALL_INDEX));
 	if (entries==NULL)
 		return NT_STATUS_NO_MEMORY;
 
 	entry = entries;
-	for (i = 0; i < PRIV_ALL_INDEX-enum_context-1; i++, entry++) {
-		init_uni_hdr(&entry->hdr_name, strlen(privs[i+1-enum_context].priv));
-		init_unistr2(&entry->name, privs[i+1-enum_context].priv, strlen(privs[i+1-enum_context].priv) );
-		entry->luid_low = privs[i+1-enum_context].se_priv;
-		entry->luid_high = 1;
+	
+	DEBUG(10,("_lsa_enum_privs: enum_context:%d total entries:%d\n", enum_context, PRIV_ALL_INDEX));
+
+	for (i = 0; i < PRIV_ALL_INDEX; i++, entry++) {
+		if( i<enum_context) {
+			init_uni_hdr(&entry->hdr_name, 0);
+			init_unistr2(&entry->name, NULL, 0 );
+			entry->luid_low = 0;
+			entry->luid_high = 0;
+		} else {
+			init_uni_hdr(&entry->hdr_name, strlen(privs[i+1].priv));
+			init_unistr2(&entry->name, privs[i+1].priv, strlen(privs[i+1].priv) );
+			entry->luid_low = privs[i+1].se_priv;
+			entry->luid_high = 1;
+		}
 	}
 
-	init_lsa_r_enum_privs(r_u, i+enum_context, PRIV_ALL_INDEX-enum_context-1, entries);
+	enum_context = PRIV_ALL_INDEX;
+	init_lsa_r_enum_privs(r_u, enum_context, PRIV_ALL_INDEX, entries);
 
 	return NT_STATUS_OK;
 }
@@ -569,7 +580,6 @@ _lsa_priv_get_dispname.
 NTSTATUS _lsa_priv_get_dispname(pipes_struct *p, LSA_Q_PRIV_GET_DISPNAME *q_u, LSA_R_PRIV_GET_DISPNAME *r_u)
 {
 	fstring name_asc;
-	fstring desc_asc;
 	int i=1;
 
 	if (!find_policy_by_hnd(p, &q_u->pol, NULL))
@@ -583,7 +593,7 @@ NTSTATUS _lsa_priv_get_dispname(pipes_struct *p, LSA_Q_PRIV_GET_DISPNAME *q_u, L
 		i++;
 	
 	if (privs[i].se_priv!=SE_PRIV_ALL) {
-		DEBUG(10,(": %s\n", desc_asc));
+		DEBUG(10,(": %s\n", privs[i].description));
 		init_uni_hdr(&r_u->hdr_desc, strlen(privs[i].description));
 		init_unistr2(&r_u->desc, privs[i].description, strlen(privs[i].description) );
 
