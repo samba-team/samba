@@ -748,7 +748,7 @@ NTSTATUS pass_oem_change(char *user,
 		= check_oem_password(user, lmdata, lmhash, ntdata, nthash,
 				     &sampass, new_passwd, sizeof(new_passwd));
 
-	if (NT_STATUS_IS_OK(nt_status))
+	if (!NT_STATUS_IS_OK(nt_status))
 		return nt_status;
 
 	/* 
