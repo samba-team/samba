@@ -397,3 +397,89 @@ uint32 cli_lsa_lookup_names(struct cli_state *cli, POLICY_HND *hnd,
 
 	return result;
 }
+
+/* Query info policy */
+
+uint32 cli_lsa_query_info_policy(struct cli_state *cli, POLICY_HND *hnd, 
+				 uint16 info_class, fstring domain_name, 
+				 DOM_SID * domain_sid)
+{
+	prs_struct qbuf, rbuf;
+	LSA_Q_QUERY_INFO q;
+	LSA_R_QUERY_INFO r;
+	uint32 result;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, 4, cli->mem_ctx, False);
+	prs_init(&rbuf, 0, 4, cli->mem_ctx, True);
+
+	/* Marshall data and send request */
+
+	init_q_query(&q, hnd, info_class);
+
+	if (!lsa_io_q_query("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, LSA_QUERYINFOPOLICY, &qbuf, &rbuf)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	/* Unmarshall response */
+
+	if (!lsa_io_r_query("", &r, &rbuf, 0)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	result = r.status;
+
+	if (result != NT_STATUS_NOPROBLEMO) {
+		goto done;
+	}
+
+	/* Return output parameters */
+
+	switch (info_class) {
+
+	case 3:
+		if (r.dom.id3.buffer_dom_name != 0) {
+			unistr2_to_ascii(domain_name,
+					 &r.dom.id3.
+					 uni_domain_name,
+					 sizeof (fstring) - 1);
+		}
+
+		if (r.dom.id3.buffer_dom_sid != 0) {
+			*domain_sid = r.dom.id3.dom_sid.sid;
+		}
+
+		break;
+
+	case 5:
+		
+		if (r.dom.id5.buffer_dom_name != 0) {
+			unistr2_to_ascii(domain_name, &r.dom.id5.
+					 uni_domain_name,
+					 sizeof (fstring) - 1);
+		}
+			
+		if (r.dom.id5.buffer_dom_sid != 0) {
+			*domain_sid = r.dom.id5.dom_sid.sid;
+		}
+
+		break;
+		
+	default:
+		DEBUG(3, ("unknown info class %d\n", info_class));
+		break;		      
+	}
+	
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
