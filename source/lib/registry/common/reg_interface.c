@@ -482,10 +482,10 @@ WERROR reg_key_add_name_recursive(struct registry_key *parent, const char *path)
 {
 	struct registry_key *cur, *prevcur = parent;
 	WERROR error = WERR_OK;
-	char *dup, *begin, *end;
+	char *dups, *begin, *end;
 	TALLOC_CTX *mem_ctx = talloc_init("add_recursive");
 
-	begin = dup = strdup(path);
+	begin = dups = strdup(path);
 
 	while(1) { 
 		end = strchr(begin, '\\');
@@ -513,7 +513,7 @@ WERROR reg_key_add_name_recursive(struct registry_key *parent, const char *path)
 		begin = end+1;
 		prevcur = cur;
 	}
-	SAFE_FREE(dup);
+	SAFE_FREE(dups);
 	talloc_destroy(mem_ctx);
 	return error;
 }
