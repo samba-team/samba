@@ -227,6 +227,9 @@ Here come some platform specific sections
 #include <netinet/tcp.h>
 #include <netinet/ip.h>
 #endif
+#ifndef QSORT_CAST
+#define QSORT_CAST (int (*)(const void *, const void *))
+#endif /* QSORT_CAST */
 #define SIGNAL_CAST (__sighandler_t)
 #define USE_GETCWD
 #define USE_SETSID
