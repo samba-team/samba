@@ -726,14 +726,14 @@ BOOL prs_uint8s(BOOL charmode, const char *name, prs_struct *ps, int depth, uint
 			SCVAL(q, i, data8s[i]);
 	}
 
-    DEBUG(5,("%s%04x %s: ", tab_depth(depth), ps->data_offset ,name));
-    if (charmode)
+	DEBUG(5,("%s%04x %s: ", tab_depth(depth), ps->data_offset ,name));
+	if (charmode)
 		print_asc(5, (unsigned char*)data8s, len);
 	else {
-    	for (i = 0; i < len; i++)
+		for (i = 0; i < len; i++)
 			DEBUG(5,("%02x ", data8s[i]));
 	}
-    DEBUG(5,("\n"));
+	DEBUG(5,("\n"));
 
 	ps->data_offset += len;
 
@@ -776,7 +776,7 @@ BOOL prs_uint16s(BOOL charmode, const char *name, prs_struct *ps, int depth, uin
 		for (i = 0; i < len; i++)
 			DEBUG(5,("%04x ", data16s[i]));
 	}
-    DEBUG(5,("\n"));
+	DEBUG(5,("\n"));
 
 	ps->data_offset += (len * sizeof(uint16));
 
@@ -818,7 +818,7 @@ static void dbg_rw_punival(BOOL charmode, const char *name, int depth, prs_struc
 		for (i = 0; i < len; i++)
 			DEBUG(5,("%04x ", out_buf[i]));
 	}
-    DEBUG(5,("\n"));
+	DEBUG(5,("\n"));
 }
 
 /******************************************************************
@@ -873,7 +873,7 @@ BOOL prs_uint32s(BOOL charmode, const char *name, prs_struct *ps, int depth, uin
 		for (i = 0; i < len; i++)
 			DEBUG(5,("%08x ", data32s[i]));
 	}
-    DEBUG(5,("\n"));
+	DEBUG(5,("\n"));
 
 	ps->data_offset += (len * sizeof(uint32));
 
@@ -924,8 +924,11 @@ BOOL prs_buffer2(BOOL charmode, const char *name, prs_struct *ps, int depth, BUF
 		return False;
 
 	if (UNMARSHALLING(ps)) {
-		if ( str->buf_len ) {
-			str->buffer = PRS_ALLOC_MEM(ps, uint16, str->buf_len);
+		if (str->buf_len > str->buf_max_len) {
+			return False;
+		}
+		if ( str->buf_max_len ) {
+			str->buffer = PRS_ALLOC_MEM(ps, uint16, str->buf_max_len);
 			if ( str->buffer == NULL )
 				return False;
 		}
@@ -947,11 +950,14 @@ BOOL prs_buffer2(BOOL charmode, const char *name, prs_struct *ps, int depth, BUF
 BOOL prs_string2(BOOL charmode, const char *name, prs_struct *ps, int depth, STRING2 *str)
 {
 	unsigned int i;
-	char *q = prs_mem_get(ps, str->str_max_len);
+	char *q = prs_mem_get(ps, str->str_str_len);
 	if (q == NULL)
 		return False;
 
 	if (UNMARSHALLING(ps)) {
+		if (str->str_str_len > str->str_max_len) {
+			return False;
+		}
 		str->buffer = PRS_ALLOC_MEM(ps,unsigned char, str->str_max_len);
 		if (str->buffer == NULL)
 			return False;
@@ -965,14 +971,14 @@ BOOL prs_string2(BOOL charmode, const char *name, prs_struct *ps, int depth, STR
 			SCVAL(q, i, str->buffer[i]);
 	}
 
-    DEBUG(5,("%s%04x %s: ", tab_depth(depth), ps->data_offset, name));
-    if (charmode)
+	DEBUG(5,("%s%04x %s: ", tab_depth(depth), ps->data_offset, name));
+	if (charmode)
 		print_asc(5, (unsigned char*)str->buffer, str->str_str_len);
 	else {
-    	for (i = 0; i < str->str_str_len; i++)
+		for (i = 0; i < str->str_str_len; i++)
 			DEBUG(5,("%02x ", str->buffer[i]));
 	}
-    DEBUG(5,("\n"));
+	DEBUG(5,("\n"));
 
 	ps->data_offset += str->str_str_len;
 
@@ -996,6 +1002,9 @@ BOOL prs_unistr2(BOOL charmode, const char *name, prs_struct *ps, int depth, UNI
 		return True;
 
 	if (UNMARSHALLING(ps)) {
+		if (str->uni_str_len > str->uni_max_len) {
+			return False;
+		}
 		str->buffer = PRS_ALLOC_MEM(ps,uint16,str->uni_max_len);
 		if (str->buffer == NULL)
 			return False;
@@ -1061,10 +1070,8 @@ BOOL prs_unistr(const char *name, prs_struct *ps, int depth, UNISTR *str)
 
 		start = (uint8*)q;
 
-		for(len = 0; str->buffer[len] != 0; len++) 
-		{
-			if(ps->bigendian_data) 
-			{
+		for(len = 0; str->buffer[len] != 0; len++) {
+			if(ps->bigendian_data) {
 				/* swap bytes - p is little endian, q is big endian. */
 				q[0] = (char)p[1];
 				q[1] = (char)p[0];
@@ -1126,8 +1133,7 @@ BOOL prs_unistr(const char *name, prs_struct *ps, int depth, UNISTR *str)
 		/* the (len < alloc_len) test is to prevent us from overwriting
 		   memory that is not ours...if we get that far, we have a non-null
 		   terminated string in the buffer and have messed up somewhere */
-		while ((len < alloc_len) && (*(uint16 *)q != 0))
-		{
+		while ((len < alloc_len) && (*(uint16 *)q != 0)) {
 			if(ps->bigendian_data) 
 			{
 				/* swap bytes - q is big endian, p is little endian. */
@@ -1145,8 +1151,7 @@ BOOL prs_unistr(const char *name, prs_struct *ps, int depth, UNISTR *str)
 
 			len++;
 		} 
-		if (len < alloc_len)
-		{
+		if (len < alloc_len) {
 			/* NULL terminate the UNISTR */
 			str->buffer[len++] = '\0';
 		}
@@ -1326,6 +1331,7 @@ int tdb_prs_fetch(TDB_CONTEXT *tdb, char *keystr, prs_struct *ps, TALLOC_CTX *me
 /*******************************************************************
  hash a stream.
  ********************************************************************/
+
 BOOL prs_hash1(prs_struct *ps, uint32 offset, uint8 sess_key[16], int len)
 {
 	char *q;
@@ -1347,11 +1353,11 @@ BOOL prs_hash1(prs_struct *ps, uint32 offset, uint8 sess_key[16], int len)
 	return True;
 }
 
-
 /*******************************************************************
  Create a digest over the entire packet (including the data), and 
  MD5 it with the session key.
  ********************************************************************/
+
 static void netsec_digest(struct netsec_auth_struct *a,
 			  int auth_flags,
 			  RPC_AUTH_NETSEC_CHK * verf,
@@ -1383,6 +1389,7 @@ static void netsec_digest(struct netsec_auth_struct *a,
 /*******************************************************************
  Calculate the key with which to encode the data payload 
  ********************************************************************/
+
 static void netsec_get_sealing_key(struct netsec_auth_struct *a,
 				   RPC_AUTH_NETSEC_CHK *verf,
 				   uchar sealing_key[16]) 
@@ -1410,6 +1417,7 @@ static void netsec_get_sealing_key(struct netsec_auth_struct *a,
 /*******************************************************************
  Encode or Decode the sequence number (which is symmetric)
  ********************************************************************/
+
 static void netsec_deal_with_seq_num(struct netsec_auth_struct *a,
 				     RPC_AUTH_NETSEC_CHK *verf)
 {
@@ -1432,6 +1440,7 @@ static void netsec_deal_with_seq_num(struct netsec_auth_struct *a,
 /*******************************************************************
 creates an RPC_AUTH_NETSEC_CHK structure.
 ********************************************************************/
+
 static BOOL init_rpc_auth_netsec_chk(RPC_AUTH_NETSEC_CHK * chk,
 			      const uchar sig[8],
 			      const uchar packet_digest[8],
@@ -1448,13 +1457,13 @@ static BOOL init_rpc_auth_netsec_chk(RPC_AUTH_NETSEC_CHK * chk,
 	return True;
 }
 
-
 /*******************************************************************
  Encode a blob of data using the netsec (schannel) alogrithm, also produceing
  a checksum over the original data.  We currently only support
  signing and sealing togeather - the signing-only code is close, but not
  quite compatible with what MS does.
  ********************************************************************/
+
 void netsec_encode(struct netsec_auth_struct *a, int auth_flags, 
 		   enum netsec_direction direction,
 		   RPC_AUTH_NETSEC_CHK * verf,
