@@ -597,6 +597,13 @@ int tdb_update(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf)
 	tdb_off rec_ptr;
 	int ret = -1;
 
+        if (tdb == NULL) {
+#ifdef TDB_DEBUG
+            printf("tdb_update() called with null context\n");
+#endif
+            return -1;
+        }
+
 	/* find which hash bucket it is in */
 	hash = tdb_hash(&key);
 
@@ -633,6 +640,13 @@ TDB_DATA tdb_fetch(TDB_CONTEXT *tdb, TDB_DATA key)
 	tdb_off rec_ptr;
 	struct list_struct rec;
 	TDB_DATA ret = null_data;
+
+        if (tdb == NULL) {
+#ifdef TDB_DEBUG
+            printf("tdb_fetch() called with null context\n");
+#endif
+            return null_data;
+        }
 
 	/* find which hash bucket it is in */
 	hash = tdb_hash(&key);
@@ -686,6 +700,13 @@ int tdb_traverse(TDB_CONTEXT *tdb, int (*fn)(TDB_CONTEXT *tdb, TDB_DATA key, TDB
 	struct list_struct rec;
 	char *data;
 	TDB_DATA key, dbuf;
+
+        if (tdb == NULL) {
+#ifdef TDB_DEBUG
+            printf("tdb_traverse() called with null context\n");
+#endif
+            return -1;
+        }
 
 	/* loop over all hash chains */
 	for (h = 0; h < tdb->header.hash_size; h++) {
@@ -749,6 +770,13 @@ TDB_DATA tdb_firstkey(TDB_CONTEXT *tdb)
 	unsigned hash;
 	TDB_DATA ret;
 
+        if (tdb == NULL) {
+#ifdef TDB_DEBUG
+            printf("tdb_firstkey() called with null context\n");
+#endif
+            return null_data;
+        }
+
 	/* look for a non-empty hash chain */
 	for (hash = 0, rec_ptr = 0; 
 	     hash < tdb->header.hash_size;
@@ -793,6 +821,13 @@ TDB_DATA tdb_nextkey(TDB_CONTEXT *tdb, TDB_DATA key)
 	tdb_off rec_ptr, offset;
 	struct list_struct rec;
 	TDB_DATA ret;
+
+        if (tdb == NULL) {
+#ifdef TDB_DEBUG
+            printf("tdb_nextkey() called with null context\n");
+#endif
+            return null_data;
+        }
 
 	/* find which hash bucket it is in */
 	hash = tdb_hash(&key);
@@ -841,6 +876,13 @@ int tdb_delete(TDB_CONTEXT *tdb, TDB_DATA key)
 	tdb_off offset, rec_ptr, last_ptr;
 	struct list_struct rec, lastrec;
 	char *data = NULL;
+
+        if (tdb == NULL) {
+#ifdef TDB_DEBUG
+            printf("tdb_delete() called with null context\n");
+#endif
+            return -1;
+        }
 
 	/* find which hash bucket it is in */
 	hash = tdb_hash(&key);
@@ -939,6 +981,13 @@ int tdb_store(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, int flag)
 	unsigned hash;
 	tdb_off rec_ptr, offset;
 	char *p = NULL;
+
+        if (tdb == NULL) {
+#ifdef TDB_DEBUG
+            printf("tdb_store() called with null context\n");
+#endif
+            return -1;
+        }
 
 	/* find which hash bucket it is in */
 	hash = tdb_hash(&key);
@@ -1136,12 +1185,26 @@ int tdb_close(TDB_CONTEXT *tdb)
 /* lock the database. If we already have it locked then don't do anything */
 int tdb_writelock(TDB_CONTEXT *tdb)
 {
+        if (tdb == NULL) {
+#ifdef TDB_DEBUG
+            printf("tdb_writelock() called with null context\n");
+#endif
+            return -1;
+        }
+
 	return tdb_lock(tdb, -1);
 }
 
 /* unlock the database. */
 int tdb_writeunlock(TDB_CONTEXT *tdb)
 {
+        if (tdb == NULL) {
+#ifdef TDB_DEBUG
+            printf("tdb_writeunlock() called with null context\n");
+#endif
+            return -1;
+        }
+
 	return tdb_unlock(tdb, -1);
 }
 
@@ -1149,6 +1212,13 @@ int tdb_writeunlock(TDB_CONTEXT *tdb)
    contention - it cannot guarantee how many records will be locked */
 int tdb_lockchain(TDB_CONTEXT *tdb, TDB_DATA key)
 {
+        if (tdb == NULL) {
+#ifdef TDB_DEBUG
+            printf("tdb_lockchain() called with null context\n");
+#endif
+            return -1;
+        }
+
 	return tdb_lock(tdb, BUCKET(tdb_hash(&key)));
 }
 
@@ -1156,5 +1226,12 @@ int tdb_lockchain(TDB_CONTEXT *tdb, TDB_DATA key)
 /* unlock one hash chain */
 int tdb_unlockchain(TDB_CONTEXT *tdb, TDB_DATA key)
 {
+        if (tdb == NULL) {
+#ifdef TDB_DEBUG
+            printf("tdb_unlockchain() called with null context\n");
+#endif
+            return -1;
+        }
+
 	return tdb_unlock(tdb, BUCKET(tdb_hash(&key)));
 }
