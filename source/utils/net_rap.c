@@ -153,14 +153,14 @@ int net_rap_share_usage(int argc, const char **argv)
 static void long_share_fn(const char *share_name, uint32 type, 
 			  const char *comment, void *state)
 {
-	d_printf("%-12.12s %-8.8s %-50.50s\n",
+	d_printf("%-12s %-8.8s %-50s\n",
 		 share_name, share_type[type], comment);
 }
 
 static void share_fn(const char *share_name, uint32 type, 
 		     const char *comment, void *state)
 {
-	d_printf("%-12.12s\n", share_name);
+	d_printf("%s\n", share_name);
 }
 
 static int rap_share_delete(int argc, const char **argv)
@@ -240,8 +240,9 @@ int net_rap_share(int argc, const char **argv)
 	"\nShare name   Type     Description\n"\
 	"----------   ----     -----------\n");
 			ret = cli_RNetShareEnum(cli, long_share_fn, NULL);
+		} else {
+			ret = cli_RNetShareEnum(cli, share_fn, NULL);
 		}
-		ret = cli_RNetShareEnum(cli, share_fn, NULL);
 		cli_shutdown(cli);
 		return ret;
 	}
