@@ -138,13 +138,16 @@ int net_rpc_join(int argc, const char **argv)
 					  0xe005000b, &user_pol, 
 					  &user_rid);
 
-	/* We *must* do this.... don't ask... */
 	if (!NT_STATUS_IS_OK(result) && 
 	    !NT_STATUS_EQUAL(result, NT_STATUS_USER_EXISTS)) {
 		d_printf("Create of workstation account failed\n");
 		goto done;
 	}
-	cli_samr_close(cli, mem_ctx, &user_pol);
+
+	/* We *must* do this.... don't ask... */
+
+	if (NT_STATUS_IS_OK(result))
+		cli_samr_close(cli, mem_ctx, &user_pol);
 
 	names = (char *)&acct_name[0];
 
