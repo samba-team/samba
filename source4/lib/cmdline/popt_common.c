@@ -195,11 +195,10 @@ static void popt_common_credentials_callback(poptContext con,
 		{
 			char *lp;
 
-			cli_credentials_parse_string(cmdline_credentials,arg, CRED_SPECIFIED);
+			cli_credentials_parse_string(cmdline_credentials, arg, CRED_SPECIFIED);
 
 			if ((lp=strchr_m(arg,'%'))) {
-				*lp = 0;
-				memset(strchr_m(arg,'%')+1,'X',strlen(cmdline_credentials->password));
+				memset(lp,0,strlen(cmdline_credentials->password));
 			}
 		}
 		break;
