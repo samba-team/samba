@@ -36,6 +36,29 @@ sub gen_dispatch_switch($)
 		} else {
 			pidl "\t\t$d->{NAME}(dce_call, mem_ctx, r2);\n";
 		}
+		pidl "\t\tif (dce_call->state_flags & DCESRV_CALL_STATE_FLAG_ASYNC) {\n";
+		pidl "\t\t\tDEBUG(5,(\"function $d->{NAME} will reply async\\n\"));\n";
+		pidl "\t\t}\n";
+		pidl "\t\tbreak;\n\t}\n";
+		$count++; 
+	}
+}
+
+#####################################################
+# generate the switch statement for function reply
+sub gen_reply_switch($)
+{
+	my $data = shift;
+
+	my $count = 0;
+	foreach my $d (@{$data}) {
+		next if ($d->{TYPE} ne "FUNCTION");
+
+		pidl "\tcase $count: {\n";
+		pidl "\t\tstruct $d->{NAME} *r2 = r;\n";
+		pidl "\t\tif (dce_call->state_flags & DCESRV_CALL_STATE_FLAG_ASYNC) {\n";
+		pidl "\t\t\tDEBUG(5,(\"function $d->{NAME} replied async\\n\"));\n";
+		pidl "\t\t}\n";
 		pidl "\t\tif (DEBUGLEVEL > 10 && dce_call->fault_code == 0) {\n";
 		pidl "\t\t\tNDR_PRINT_FUNCTION_DEBUG($d->{NAME}, NDR_OUT | NDR_SET_VALUES, r2);\n";
 		pidl "\t\t}\n";
@@ -46,7 +69,6 @@ sub gen_dispatch_switch($)
 		$count++; 
 	}
 }
-
 
 #####################################################################
 # produce boilerplate code for a interface
@@ -91,9 +113,7 @@ static NTSTATUS $name\__op_ndr_pull(struct dcesrv_call_state *dce_call, TALLOC_C
 	}
 
 	*r = talloc_size(mem_ctx, dcerpc_table_$name.calls[opnum].struct_size);
-	if (!*r) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	NT_STATUS_HAVE_NO_MEMORY(*r);
 
         /* unravel the NDR for the packet */
 	status = dcerpc_table_$name.calls[opnum].ndr_pull(pull, NDR_IN, *r);
@@ -111,11 +131,32 @@ static NTSTATUS $name\__op_dispatch(struct dcesrv_call_state *dce_call, TALLOC_C
 {
 	uint16 opnum = dce_call->pkt.u.request.opnum;
 
-	dce_call->fault_code = 0;
-
 	switch (opnum) {
 ";
 	gen_dispatch_switch($data);
+
+pidl "
+	default:
+		dce_call->fault_code = DCERPC_FAULT_OP_RNG_ERROR;
+		break;
+	}
+
+	if (dce_call->fault_code != 0) {
+		dcerpc_log_packet(&dcerpc_table_$name, opnum, NDR_IN,
+				  &dce_call->pkt.u.request.stub_and_verifier);
+		return NT_STATUS_NET_WRITE_FAULT;
+	}
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS $name\__op_reply(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, void *r)
+{
+	uint16 opnum = dce_call->pkt.u.request.opnum;
+
+	switch (opnum) {
+";
+	gen_reply_switch($data);
 
 pidl "
 	default:
@@ -147,14 +188,15 @@ static NTSTATUS $name\__op_ndr_push(struct dcesrv_call_state *dce_call, TALLOC_C
 }
 
 static const struct dcesrv_interface $name\_interface = {
-	\"$name\",
-	$uuid,
-	$if_version,
-	$name\__op_bind,
-	$name\__op_unbind,
-	$name\__op_ndr_pull,
-	$name\__op_dispatch,
-	$name\__op_ndr_push
+	.name		= \"$name\",
+	.uuid		= $uuid,
+	.if_version	= $if_version,
+	.bind		= $name\__op_bind,
+	.unbind		= $name\__op_unbind,
+	.ndr_pull	= $name\__op_ndr_pull,
+	.dispatch	= $name\__op_dispatch,
+	.reply		= $name\__op_reply,
+	.ndr_push	= $name\__op_ndr_push
 };
 
 ";
@@ -237,7 +279,7 @@ NTSTATUS dcerpc_server_$name\_init(void)
 }
 
 #####################################################################
-# parse a parsed IDL structure back into an IDL file
+# dcerpc server boilerplate from a parsed IDL structure 
 sub ParseInterface($)
 {
 	my($interface) = shift;
@@ -270,4 +312,3 @@ sub ParseInterface($)
 }
 
 1;
-

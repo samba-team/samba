@@ -3,6 +3,7 @@
    test suite for echo rpc operations
 
    Copyright (C) Andrew Tridgell 2003
+   Copyright (C) Stefan (metze) Metzmacher 2005
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -208,7 +209,6 @@ static BOOL test_testcall2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	return ret;
 }
 
-#if 0
 /*
   test the TestSleep interface
 */
@@ -216,10 +216,13 @@ static BOOL test_sleep(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
 	int i;
 	NTSTATUS status;
-#define ASYNC_COUNT 5
+#define ASYNC_COUNT 3
 	struct rpc_request *req[ASYNC_COUNT];
 	struct echo_TestSleep r[ASYNC_COUNT];
-	int done[ASYNC_COUNT];
+	BOOL done[ASYNC_COUNT];
+	struct timeval snd[ASYNC_COUNT];
+	struct timeval rcv[ASYNC_COUNT];
+	struct timeval diff[ASYNC_COUNT];
 	struct event_context *ctx;
 	int total_done = 0;
 	BOOL ret = True;
@@ -227,7 +230,9 @@ static BOOL test_sleep(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	printf("\nTesting TestSleep\n");
 
 	for (i=0;i<ASYNC_COUNT;i++) {
-		done[i] = 0;
+		done[i]		= False;
+		snd[i]		= timeval_current();
+		rcv[i]		= timeval_zero();
 		r[i].in.seconds = ASYNC_COUNT-i;
 		req[i] = dcerpc_echo_TestSleep_send(p, mem_ctx, &r[i]);
 		if (!req[i]) {
@@ -242,17 +247,37 @@ static BOOL test_sleep(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 			return False;
 		}
 		for (i=0;i<ASYNC_COUNT;i++) {
-			if (done[i] == 0 && req[i]->state == RPC_REQUEST_DONE) {
+			if (done[i] == False && req[i]->state == RPC_REQUEST_DONE) {
 				total_done++;
-				done[i] = 1;
-				status = dcerpc_ndr_request_recv(req[i]);
+				done[i] = True;
+				rcv[i]	= timeval_current();
+				diff[i]	= timeval_diff(&rcv[i], &snd[i]);
+				status	= dcerpc_ndr_request_recv(req[i]);
 				if (!NT_STATUS_IS_OK(status)) {
 					printf("TestSleep(%d) failed - %s\n",
 					       i, nt_errstr(status));
 					ret = False;
+				} else if (r[i].out.result != r[i].in.seconds) {
+					printf("Failed - Sleeped for %u seconds (but we said %u seconds and the reply takes only %u seconds)\n", 
+					       	r[i].out.result, r[i].in.seconds, (uint_t)diff[i].tv_sec);
+					ret = False;
 				} else {
-					printf("Sleep for %d seconds\n", 
-					       r[i].out.result);
+					if (r[i].out.result > diff[i].tv_sec) {
+						printf("Failed - Sleeped for %u seconds (but reply takes only %u seconds)\n", 
+					       		r[i].out.result, (uint_t)diff[i].tv_sec);
+						ret = False;
+					} else if (r[i].out.result+1 == diff[i].tv_sec) {
+						printf("Sleeped for %u seconds (but reply takes %u seconds - busy server?)\n", 
+					       		r[i].out.result, (uint_t)diff[i].tv_sec);
+					} else if (r[i].out.result == diff[i].tv_sec) {
+						printf("Sleeped for %u seconds (reply takes %u seconds - ok)\n", 
+					       		r[i].out.result, (uint_t)diff[i].tv_sec);
+					} else {
+					       	printf("(Failed) - Not async - Sleeped for %u seconds (but reply takes %u seconds)\n", 
+					       		r[i].out.result, (uint_t)diff[i].tv_sec);
+						/* TODO: let the test fail here, when we support async rpc on ncacn_np
+						ret = False;*/
+					}
 				}
 			}
 		}
@@ -260,8 +285,6 @@ static BOOL test_sleep(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 
 	return ret;
 }
-#endif
-
 
 /*
   test enum handling
@@ -295,7 +318,6 @@ static BOOL test_enum(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 
 	return ret;
 }
-
 
 BOOL torture_rpc_echo(void)
 {
@@ -342,11 +364,10 @@ BOOL torture_rpc_echo(void)
 		ret = False;
 	}
 
-/*
 	if (!test_sleep(p, mem_ctx)) {
 		ret = False;
 	}
-*/
+
 	printf("\n");
 	
 	talloc_free(mem_ctx);

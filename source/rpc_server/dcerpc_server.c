@@ -3,8 +3,8 @@
 
    server side dcerpc core code
 
-   Copyright (C) Andrew Tridgell 2003
-   Copyright (C) Stefan (metze) Metzmacher 2004
+   Copyright (C) Andrew Tridgell 2003-2005
+   Copyright (C) Stefan (metze) Metzmacher 2004-2005
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -27,6 +27,7 @@
 #include "auth/auth.h"
 #include "dlinklist.h"
 #include "rpc_server/dcerpc_server.h"
+#include "events.h"
 
 /*
   see if two endpoints match
@@ -286,9 +287,7 @@ static int dcesrv_endpoint_destructor(void *ptr)
 		if (c->iface) {
 			c->iface->unbind(c, c->iface);
 		}
-		talloc_free(c);
 	}
-
 
 	return 0;
 }
@@ -298,28 +297,32 @@ static int dcesrv_endpoint_destructor(void *ptr)
   connect to a dcerpc endpoint
 */
 NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce_ctx,
+				 TALLOC_CTX *mem_ctx,
 				 const struct dcesrv_endpoint *ep,
-				 struct dcesrv_connection **p)
+				 struct server_connection *srv_conn,
+				 struct dcesrv_connection **_p)
 {
-	*p = talloc_p(dce_ctx, struct dcesrv_connection);
-	if (! *p) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	struct dcesrv_connection *p;
 
-	(*p)->dce_ctx = dce_ctx;
-	(*p)->endpoint = ep;
-	(*p)->contexts = NULL;
-	(*p)->call_list = NULL;
-	(*p)->cli_max_recv_frag = 0;
-	(*p)->partial_input = data_blob(NULL, 0);
-	(*p)->auth_state.auth_info = NULL;
-	(*p)->auth_state.gensec_security = NULL;
-	(*p)->auth_state.session_info = NULL;
-	(*p)->auth_state.session_key = dcesrv_generic_session_key;
-	(*p)->srv_conn = NULL;
+	p = talloc(mem_ctx, struct dcesrv_connection);
+	NT_STATUS_HAVE_NO_MEMORY(p);
 
-	talloc_set_destructor(*p, dcesrv_endpoint_destructor);
+	p->dce_ctx = dce_ctx;
+	p->endpoint = ep;
+	p->contexts = NULL;
+	p->call_list = NULL;
+	p->pending_call_list = NULL;
+	p->cli_max_recv_frag = 0;
+	p->partial_input = data_blob(NULL, 0);
+	p->auth_state.auth_info = NULL;
+	p->auth_state.gensec_security = NULL;
+	p->auth_state.session_info = NULL;
+	p->auth_state.session_key = dcesrv_generic_session_key;
+	p->srv_conn = srv_conn;
 
+	talloc_set_destructor(p, dcesrv_endpoint_destructor);
+
+	*_p = p;
 	return NT_STATUS_OK;
 }
 
@@ -327,8 +330,10 @@ NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce_ctx,
   search and connect to a dcerpc endpoint
 */
 NTSTATUS dcesrv_endpoint_search_connect(struct dcesrv_context *dce_ctx,
+					TALLOC_CTX *mem_ctx,
 					const struct dcerpc_binding *ep_description,
 					struct auth_session_info *session_info,
+					struct server_connection *srv_conn,
 					struct dcesrv_connection **dce_conn_p)
 {
 	NTSTATUS status;
@@ -340,7 +345,7 @@ NTSTATUS dcesrv_endpoint_search_connect(struct dcesrv_context *dce_ctx,
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
-	status = dcesrv_endpoint_connect(dce_ctx, ep, dce_conn_p);
+	status = dcesrv_endpoint_connect(dce_ctx, mem_ctx, ep, srv_conn, dce_conn_p);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -730,26 +735,24 @@ static NTSTATUS dcesrv_alter(struct dcesrv_call_state *call)
 static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 {
 	struct ndr_pull *pull;
-	struct ndr_push *push;
-	void *r;
 	NTSTATUS status;
-	DATA_BLOB stub;
-	uint32_t total_length;
 	struct dcesrv_connection_context *context;
 
-	call->fault_code = 0;
+	call->fault_code	= 0;
+	call->state_flags	= call->conn->dce_ctx->state_flags;
+	call->time		= timeval_current();
 
 	context = dcesrv_find_context(call->conn, call->pkt.u.request.context_id);
 	if (context == NULL) {
 		return dcesrv_fault(call, DCERPC_FAULT_UNK_IF);
 	}
 
-	call->context = context;
-
 	pull = ndr_pull_init_blob(&call->pkt.u.request.stub_and_verifier, call);
-	if (!pull) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	NT_STATUS_HAVE_NO_MEMORY(pull);
+
+	call->context	= context;
+	call->event_ctx	= context->conn->srv_conn->event.ctx;
+	call->ndr_pull	= pull;
 
 	if (call->pkt.pfc_flags & DCERPC_PFC_FLAG_ORPC) {
 		pull->flags |= LIBNDR_FLAG_OBJECT_PRESENT;
@@ -760,7 +763,7 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 	}
 
 	/* unravel the NDR for the packet */
-	status = context->iface->ndr_pull(call, call, pull, &r);
+	status = context->iface->ndr_pull(call, call, pull, &call->r);
 	if (!NT_STATUS_IS_OK(status)) {
 		return dcesrv_fault(call, call->fault_code);
 	}
@@ -772,27 +775,49 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 	}
 
 	/* call the dispatch function */
-	status = context->iface->dispatch(call, call, r);
+	status = context->iface->dispatch(call, call, call->r);
+	if (!NT_STATUS_IS_OK(status)) {
+		return dcesrv_fault(call, call->fault_code);
+	}
+
+	/* add the call to the pending list */
+	DLIST_ADD_END(call->conn->pending_call_list, call, struct dcesrv_call_state *);
+
+	if (call->state_flags & DCESRV_CALL_STATE_FLAG_ASYNC) {
+		return NT_STATUS_OK;
+	}
+
+	return dcesrv_reply(call);
+}
+
+NTSTATUS dcesrv_reply(struct dcesrv_call_state *call)
+{
+	struct ndr_push *push;
+	NTSTATUS status;
+	DATA_BLOB stub;
+	uint32_t total_length;
+	struct dcesrv_connection_context *context = call->context;
+
+	/* call the reply function */
+	status = context->iface->reply(call, call, call->r);
 	if (!NT_STATUS_IS_OK(status)) {
 		return dcesrv_fault(call, call->fault_code);
 	}
 
 	/* form the reply NDR */
 	push = ndr_push_init_ctx(call);
-	if (!push) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	NT_STATUS_HAVE_NO_MEMORY(push);
 
 	/* carry over the pointer count to the reply in case we are
 	   using full pointer. See NDR specification for full
 	   pointers */
-	push->ptr_count = pull->ptr_count;
+	push->ptr_count = call->ndr_pull->ptr_count;
 
 	if (lp_rpc_big_endian()) {
 		push->flags |= LIBNDR_FLAG_BIGENDIAN;
 	}
 
-	status = context->iface->ndr_push(call, call, push, r);
+	status = context->iface->ndr_push(call, call, push, call->r);
 	if (!NT_STATUS_IS_OK(status)) {
 		return dcesrv_fault(call, call->fault_code);
 	}
@@ -807,9 +832,7 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 		struct dcerpc_packet pkt;
 
 		rep = talloc(call, struct dcesrv_call_reply);
-		if (!rep) {
-			return NT_STATUS_NO_MEMORY;
-		}
+		NT_STATUS_HAVE_NO_MEMORY(rep);
 
 		length = stub.length;
 		if (length + DCERPC_RESPONSE_LENGTH > call->conn->cli_max_recv_frag) {
@@ -848,7 +871,16 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 		stub.length -= length;
 	} while (stub.length != 0);
 
+	/* move the call from the pending to the finished calls list */
+	DLIST_REMOVE(call->conn->pending_call_list, call);
 	DLIST_ADD_END(call->conn->call_list, call, struct dcesrv_call_state *);
+
+	if (call->conn->call_list && call->conn->call_list->replies) {
+		if (call->conn->srv_conn &&
+		    call->conn->srv_conn->event.fde) {
+			call->conn->srv_conn->event.fde->flags |= EVENT_FD_WRITE;
+		}
+	}
 
 	return NT_STATUS_OK;
 }
@@ -1074,6 +1106,13 @@ NTSTATUS dcesrv_output(struct dcesrv_connection *dce_conn,
 
 	call = dce_conn->call_list;
 	if (!call || !call->replies) {
+		if (dce_conn->pending_call_list) {
+			/* TODO: we need to say act async here
+			 *       as we know we have pending requests
+			 *	 which will be finished at a time
+			 */
+			return NT_STATUS_FOOBAR;
+		}
 		return NT_STATUS_FOOBAR;
 	}
 	rep = call->replies;
@@ -1128,83 +1167,73 @@ NTSTATUS dcesrv_output_blob(struct dcesrv_connection *dce_conn,
 	return dcesrv_output(dce_conn, blob, dcesrv_output_blob_write_fn);
 }
 
-/*
-  initialise the dcerpc server context
-*/
-NTSTATUS dcesrv_init_context(TALLOC_CTX *mem_ctx, struct dcesrv_context **dce_ctx)
+static NTSTATUS dcesrv_init_context(TALLOC_CTX *mem_ctx, const char **endpoint_servers, uint32_t state_flags, struct dcesrv_context **_dce_ctx)
 {
-	int i;
-	const char **endpoint_servers = lp_dcerpc_endpoint_servers();
-
-	(*dce_ctx) = talloc_p(mem_ctx, struct dcesrv_context);
-	if (! *dce_ctx) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	(*dce_ctx)->endpoint_list = NULL;
-
-	if (!endpoint_servers) {
-		DEBUG(3,("dcesrv_init_context: no endpoint servers configured\n"));
-		return NT_STATUS_OK;
-	}
-
-	for (i=0;endpoint_servers[i];i++) {
-		NTSTATUS ret;
-		const struct dcesrv_endpoint_server *ep_server;
-		
-		ep_server = dcesrv_ep_server_byname(endpoint_servers[i]);
-		if (!ep_server) {
-			DEBUG(0,("dcesrv_init_context: failed to find endpoint server = '%s'\n", endpoint_servers[i]));
-			return NT_STATUS_UNSUCCESSFUL;
-		}
-
-		ret = ep_server->init_server(*dce_ctx, ep_server);
-		if (!NT_STATUS_IS_OK(ret)) {
-			DEBUG(0,("dcesrv_init_context: failed to init endpoint server = '%s'\n", endpoint_servers[i]));
-			return ret;
-		}
-	}
-
-	return NT_STATUS_OK;
-}
-
-static void dcesrv_init(struct server_service *service, const struct model_ops *model_ops)
-{
+	NTSTATUS status;
 	struct dcesrv_context *dce_ctx;
 	int i;
-	const char **endpoint_servers = lp_dcerpc_endpoint_servers();
 
 	DEBUG(1,("dcesrv_init\n"));
 
 	if (!endpoint_servers) {
 		DEBUG(0,("dcesrv_init_context: no endpoint servers configured\n"));
-		return;
+		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	dce_ctx = talloc_p(service, struct dcesrv_context);
-	if (!dce_ctx) {
-		DEBUG(0,("talloc_p(mem_ctx, struct dcesrv_context) failed\n"));
-		return;
-	}
-
-	ZERO_STRUCTP(dce_ctx);
+	dce_ctx = talloc(mem_ctx, struct dcesrv_context);
+	NT_STATUS_HAVE_NO_MEMORY(dce_ctx);
 	dce_ctx->endpoint_list	= NULL;
+	dce_ctx->state_flags	= state_flags;
 
 	for (i=0;endpoint_servers[i];i++) {
-		NTSTATUS ret;
 		const struct dcesrv_endpoint_server *ep_server;
-		
+
 		ep_server = dcesrv_ep_server_byname(endpoint_servers[i]);
 		if (!ep_server) {
 			DEBUG(0,("dcesrv_init_context: failed to find endpoint server = '%s'\n", endpoint_servers[i]));
-			return;
+			return NT_STATUS_INTERNAL_ERROR;
 		}
 
-		ret = ep_server->init_server(dce_ctx, ep_server);
-		if (!NT_STATUS_IS_OK(ret)) {
-			DEBUG(0,("dcesrv_init_context: failed to init endpoint server = '%s'\n", endpoint_servers[i]));
-			return;
+		status = ep_server->init_server(dce_ctx, ep_server);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0,("dcesrv_init_context: failed to init endpoint server = '%s': %s\n", endpoint_servers[i],
+				nt_errstr(status)));
+			return status;
 		}
+	}
+
+	*_dce_ctx = dce_ctx;
+	return NT_STATUS_OK;
+}
+
+/*
+  initialise the dcerpc server context
+*/
+NTSTATUS dcesrv_init_ipc_context(TALLOC_CTX *mem_ctx, struct dcesrv_context **_dce_ctx)
+{
+	NTSTATUS status;
+	struct dcesrv_context *dce_ctx;
+
+	status = dcesrv_init_context(mem_ctx, lp_dcerpc_endpoint_servers(), 0, &dce_ctx);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	*_dce_ctx = dce_ctx;
+	return NT_STATUS_OK;
+}
+
+static void dcesrv_init(struct server_service *service, const struct model_ops *model_ops)
+{
+	NTSTATUS status;
+	struct dcesrv_context *dce_ctx;
+
+	DEBUG(1,("dcesrv_init\n"));
+
+	status = dcesrv_init_context(service,
+				     lp_dcerpc_endpoint_servers(),
+				     DCESRV_CALL_STATE_FLAG_MAY_ASYNC,
+				     &dce_ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		return;
 	}
 
 	dcesrv_sock_init(service, model_ops, dce_ctx);
@@ -1330,7 +1359,7 @@ static const struct server_service_ops dcesrv_ops = {
 	.send_handler		= dcesrv_send,
 	.idle_handler		= NULL,
 	.close_connection	= dcesrv_close,
-	.service_exit		= dcesrv_exit,	
+	.service_exit		= dcesrv_exit,
 };
 
 const struct server_service_ops *dcesrv_get_ops(void)
