@@ -225,6 +225,7 @@ sub ParseTypedef($)
     $res .= "static int prs_$typedef->{NAME}(tvbuff_t *tvb, int offset,\
 \tpacket_info *pinfo, proto_tree *tree, int flags, char *name)\n{\n";
     ParseType($typedef->{DATA});
+    $res .= "\treturn offset;\n";
     $res .= "}\n\n";
 }
 
