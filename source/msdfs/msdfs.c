@@ -18,7 +18,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
-   $Id: msdfs.c,v 1.10.4.13 2001/08/28 01:47:51 kalele Exp $
+   $Id: msdfs.c,v 1.10.4.14 2001/08/30 18:47:14 kalele Exp $
 */
 
 #include "includes.h"
@@ -335,8 +335,15 @@ BOOL get_referred_path(char *pathname, struct junction_map* jn,
 	struct connection_struct* conn = &conns;
 	int snum;
 
-	if (!pathname || !jn || !consumedcntp || !self_referralp)
+	BOOL self_referral = False;
+
+	if (!pathname || !jn)
 		return False;
+
+	if (self_referralp)
+		*self_referralp = False;
+	else
+		self_referralp = &self_referral;
 
 	parse_dfs_path(pathname, &dp);
 
@@ -381,7 +388,7 @@ BOOL get_referred_path(char *pathname, struct junction_map* jn,
 		if((ref = (struct referral*) malloc(sizeof(struct referral)))
 		   == NULL) {
 			DEBUG(0,("malloc failed for referral\n"));
-			return -1;
+			return False;
 		}
       
 		pstrcpy(ref->alternate_path,pathname);
@@ -702,6 +709,7 @@ BOOL create_msdfs_link(struct junction_map* jn, BOOL exists)
 	connection_struct conns;
  	connection_struct *conn = &conns;
 	int i=0;
+	BOOL insert_comma;
 
 	if(!junction_to_local_path(jn, path, sizeof(path), conn))
 		return False;
@@ -712,13 +720,18 @@ BOOL create_msdfs_link(struct junction_map* jn, BOOL exists)
 		char* refpath = jn->referral_list[i].alternate_path;
       
 		trim_string(refpath, "\\", "\\");
-		if(*refpath == '\0')
+		if(*refpath == '\0') {
+			if (i == 0)
+				insert_comma = False;
 			continue;
-      
-		if(i>0)
+		}
+		if (i > 0 && insert_comma)
 			pstrcat(msdfs_link, ",");
-      
+
 		pstrcat(msdfs_link, refpath);
+		if (!insert_comma)
+			insert_comma = True;
+		
 	}
 
 	DEBUG(5,("create_msdfs_link: Creating new msdfs link: %s -> %s\n", path, msdfs_link));

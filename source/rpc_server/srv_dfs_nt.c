@@ -74,9 +74,6 @@ uint32 _dfs_add(pipes_struct *p, DFS_Q_DFS_ADD* q_u, DFS_R_DFS_ADD *r_u)
   pstrcat(altpath, "\\");
   pstrcat(altpath, sharename);
 
-  if(!create_junction(dfspath, &jn))
-    return NERR_DfsNoSuchServer;
-
   if(get_referred_path(dfspath, &jn, NULL, NULL))
     {
       exists = True;
@@ -121,8 +118,6 @@ uint32 _dfs_remove(pipes_struct *p, DFS_Q_DFS_REMOVE *q_u, DFS_R_DFS_REMOVE *r_u
 
   pstring dfspath, servername, sharename;
   pstring altpath;
-  int consumedcnt;
-  BOOL self_referral;
 
   get_current_user(&user,p);
 
@@ -146,16 +141,14 @@ uint32 _dfs_remove(pipes_struct *p, DFS_Q_DFS_REMOVE *q_u, DFS_R_DFS_REMOVE *r_u
       pstrcpy(altpath, servername);
       pstrcat(altpath, "\\");
       pstrcat(altpath, sharename);
+      strlower(altpath);
     }
 
   DEBUG(5,("init_reply_dfs_remove: Request to remove %s -> %s\\%s.\n",
 	   dfspath, servername, sharename));
 
-  if(!create_junction(dfspath, &jn))
-    return NERR_DfsNoSuchServer;
-
-  if(!get_referred_path(dfspath, &jn, &consumedcnt, &self_referral))
-    return NERR_DfsNoSuchVolume;
+  if(!get_referred_path(dfspath, &jn, NULL, NULL))
+	  return NERR_DfsNoSuchVolume;
 
   /* if no server-share pair given, remove the msdfs link completely */
   if(!q_u->ptr_ServerName && !q_u->ptr_ShareName)
@@ -167,14 +160,18 @@ uint32 _dfs_remove(pipes_struct *p, DFS_Q_DFS_REMOVE *q_u, DFS_R_DFS_REMOVE *r_u
     {
       int i=0;
       /* compare each referral in the list with the one to remove */
+      DEBUG(10,("altpath: .%s. refcnt: %d\n", altpath, jn.referral_count));
       for(i=0;i<jn.referral_count;i++)
 	{
 	  pstring refpath;
 	  pstrcpy(refpath,jn.referral_list[i].alternate_path);
 	  trim_string(refpath, "\\", "\\");
+	  DEBUG(10,("_dfs_remove:  refpath: .%s.\n", refpath));
 	  if(strequal(refpath, altpath))
 	    {
 	      *(jn.referral_list[i].alternate_path)='\0';
+	      DEBUG(10,("_dfs_remove: Removal request matches referral %s\n",
+			refpath));
 	      found = True;
 	    }
 	}
