@@ -555,7 +555,7 @@ static void cache_mangled_name( char *mangled_name, char *raw_name )
   if( s1 && (s2 = strrchr( raw_name, '.' )) )
     {
     i = 1;
-    while( s1[i] && (tolower( s1[1] ) == s2[i]) )
+    while( s1[i] && (tolower( s1[i] ) == s2[i]) )
       i++;
     if( !s1[i] && !s2[i] )
       {
