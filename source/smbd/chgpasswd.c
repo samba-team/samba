@@ -481,3 +481,111 @@ BOOL change_lanman_password(struct smb_passwd *smbpw, unsigned char *pass1, unsi
     
   return ret;
 }
+
+/***********************************************************
+ Code to check the OEM hashed password.
+************************************************************/
+
+BOOL check_oem_password(char *user, unsigned char *data,
+                        struct smb_passwd **psmbpw, char *new_passwd,
+                        int new_passwd_size)
+{
+  struct smb_passwd *smbpw = NULL;
+  int new_pw_len;
+  fstring upper_case_new_passwd;
+  unsigned char new_p16[16];
+  unsigned char unenc_old_pw[16];
+
+  become_root(0);
+  *psmbpw = smbpw = get_smbpwd_entry(user, 0);
+  unbecome_root(0);
+
+  if(smbpw == NULL)
+  {
+    DEBUG(0,("check_oem_password: get_smbpwd_entry returned NULL\n"));
+    return False;
+  }
+
+  if(smbpw->smb_passwd == NULL)
+  {
+    DEBUG(0,("check_oem_password: no lanman password !\n"));
+    return False;
+  }
+
+  /* 
+   * Call the hash function to get the new password.
+   */
+  SamOEMhash( (unsigned char *)data, (unsigned char *)smbpw->smb_passwd);
+
+  /* 
+   * The length of the new password is in the last 4 bytes of
+   * the data buffer.
+   */
+  new_pw_len = IVAL(data,512);
+  if(new_pw_len < 0 || new_pw_len > new_passwd_size - 1) {
+    DEBUG(0,("check_oem_password: incorrect password length.\n"));
+    return False;
+  }
+
+  memcpy(new_passwd, &data[512-new_pw_len], new_pw_len);
+  new_passwd[new_pw_len] = '\0';
+
+  /*
+   * To ensure we got the correct new password, hash it and
+   * use it as a key to test the passed old password.
+   */
+
+  memset(upper_case_new_passwd, '\0', sizeof(upper_case_new_passwd));
+  fstrcpy(upper_case_new_passwd, new_passwd);
+  strupper(upper_case_new_passwd);
+
+  E_P16((uchar *)upper_case_new_passwd, new_p16);
+
+  /*
+   * Now use new_p16 as the key to see if the old
+   * password matches.
+   */
+  D_P16(new_p16, &data[516], unenc_old_pw);
+
+  if(memcmp(smbpw->smb_passwd, unenc_old_pw, 16)) {
+    DEBUG(0,("check_oem_password: old password doesn't match.\n"));
+    return False;
+  }
+
+  memset(upper_case_new_passwd, '\0', strlen(upper_case_new_passwd));
+
+  return True;
+}
+
+/***********************************************************
+ Code to change the oem password. Changes both the lanman
+ and NT hashes.
+************************************************************/
+
+BOOL change_oem_password(struct smb_passwd *smbpw, char *new_passwd)
+{
+  int ret;
+  fstring upper_case_new_passwd;
+  unsigned char new_nt_p16[16];
+  unsigned char new_p16[16];
+
+  fstrcpy(upper_case_new_passwd, new_passwd);
+  strupper(upper_case_new_passwd);
+
+  E_P16((uchar *)upper_case_new_passwd, new_p16);
+
+  smbpw->smb_passwd = new_p16;
+  
+  E_md4hash((uchar *) new_passwd, new_nt_p16);
+  smbpw->smb_nt_passwd = new_nt_p16;
+  
+  /* Now write it into the file. */
+  become_root(0);
+  ret = mod_smbpwd_entry(smbpw);
+  unbecome_root(0);
+
+  memset(upper_case_new_passwd, '\0', strlen(upper_case_new_passwd));
+  memset(new_passwd, '\0', strlen(new_passwd));
+
+  return ret;
+}

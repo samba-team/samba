@@ -50,6 +50,10 @@ BOOL chgpasswd(char *name,char *oldpass,char *newpass);
 BOOL check_lanman_password(char *user, unsigned char *pass1, 
                            unsigned char *pass2, struct smb_passwd **psmbpw);
 BOOL change_lanman_password(struct smb_passwd *smbpw, unsigned char *pass1, unsigned char *pass2);
+BOOL check_oem_password(char *user, unsigned char *data,
+                        struct smb_passwd **psmbpw, char *new_passwd,
+                        int new_passwd_size);
+BOOL change_oem_password(struct smb_passwd *smbpw, char *new_passwd);
 
 /*The following definitions come from  client.c  */
 
@@ -1286,6 +1290,7 @@ void E_P24(unsigned char *p21, unsigned char *c8, unsigned char *p24);
 void D_P16(unsigned char *p14, unsigned char *in, unsigned char *out);
 void cred_hash1(unsigned char *out,unsigned char *in,unsigned char *key);
 void cred_hash2(unsigned char *out,unsigned char *in,unsigned char *key);
+void SamOEMhash( unsigned char *data, unsigned char *key);
 
 /*The following definitions come from  smbencrypt.c  */
 
