@@ -56,6 +56,10 @@
 #define TDB_DEAD(r) ((r)->magic == TDB_DEAD_MAGIC)
 #define TDB_BAD_MAGIC(r) ((r)->magic != TDB_MAGIC && !TDB_DEAD(r))
 #define TDB_HASH_TOP(hash) (FREELIST_TOP + (BUCKET(hash)+1)*sizeof(tdb_off))
+
+/* NB assumes there is a local variable called "tdb" that is the
+ * current context, also takes doubly-parenthesized print-style
+ * argument. */
 #define TDB_LOG(x) (tdb->log_fn?((tdb->log_fn x),0) : 0)
 
 /* lock offsets */
