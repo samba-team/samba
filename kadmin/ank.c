@@ -74,7 +74,11 @@ add_new_key(int argc, char **argv)
     if(optind == argc)
 	goto usage;
     memset(&princ, 0, sizeof(princ));
-    krb5_parse_name(context, argv[optind], &princ_ent);
+    ret = krb5_parse_name(context, argv[optind], &princ_ent);
+    if (ret) {
+	krb5_warn(context, ret, "krb5_parse_name");
+	goto out;
+    }
     princ.principal = princ_ent;
     mask |= KADM5_PRINCIPAL;
     edit_entry(&princ, &mask);
