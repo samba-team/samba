@@ -455,9 +455,9 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 			conn->force_user = True;
 			DEBUG(3,("Forced user %s\n",user));	  
 		} else {
-			conn_free(conn);
 			DEBUG(1,("Couldn't find user %s\n",fuser));
 			*status = NT_STATUS_NO_SUCH_USER;
+			conn_free(conn);
 			return NULL;
 		}
 	}
@@ -508,9 +508,9 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 				DEBUG(3,("Forced group %s\n",gname));
 			}
 		} else {
-			conn_free(conn);
-			*status = NT_STATUS_NO_SUCH_GROUP;
 			DEBUG(1,("Couldn't find group %s\n",gname));
+			*status = NT_STATUS_NO_SUCH_GROUP;
+			conn_free(conn);
 		}
 	}
 #endif /* HAVE_GETGRNAM */
