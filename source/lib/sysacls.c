@@ -51,9 +51,9 @@ extern int DEBUGLEVEL;
 
 /* Identity mapping - easy. */
 
-int sys_acl_get_entry( SMB_ACL_T acl, int entry_id, SMB_ACL_ENTRY_T *entry_p)
+int sys_acl_get_entry( SMB_ACL_T the_acl, int entry_id, SMB_ACL_ENTRY_T *entry_p)
 {
-	return acl_get_entry( acl, entry_id, entry_p);
+	return acl_get_entry( the_acl, entry_id, entry_p);
 }
 
 int sys_acl_get_tag_type( SMB_ACL_ENTRY_T entry_d, SMB_ACL_TAG_T *tag_type_p)
@@ -101,9 +101,9 @@ int sys_acl_get_perm( SMB_ACL_PERMSET_T permset, SMB_ACL_PERM_T perm)
 	return acl_get_perm(permset, perm);
 }
 
-char *sys_acl_to_text( SMB_ACL_T acl, ssize_t *plen)
+char *sys_acl_to_text( SMB_ACL_T the_acl, ssize_t *plen)
 {
-	return acl_to_text( acl, plen);
+	return acl_to_text( the_acl, plen);
 }
 
 #elif defined(HAVE_SOLARIS_ACLS)
@@ -112,7 +112,7 @@ char *sys_acl_to_text( SMB_ACL_T acl, ssize_t *plen)
 
 #else /* No ACLs. */
 
-int sys_acl_get_entry( SMB_ACL_T acl, int entry_id, SMB_ACL_ENTRY_T *entry_p)
+int sys_acl_get_entry( SMB_ACL_T the_acl, int entry_id, SMB_ACL_ENTRY_T *entry_p)
 {
 	return -1;
 }
@@ -162,7 +162,7 @@ int sys_acl_get_perm( SMB_ACL_PERMSET_T permset, SMB_ACL_PERM_T perm)
 	return (permset & perm) ? 1 : 0;
 }
 
-char *sys_acl_to_text( SMB_ACL_T acl, ssize_t *plen)
+char *sys_acl_to_text( SMB_ACL_T the_acl, ssize_t *plen)
 {
 	return NULL;
 }

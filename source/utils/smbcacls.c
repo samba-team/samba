@@ -313,22 +313,22 @@ static BOOL parse_ace(SEC_ACE *ace, char *str)
 }
 
 /* add an ACE to a list of ACEs in a SEC_ACL */
-static BOOL add_ace(SEC_ACL **acl, SEC_ACE *ace)
+static BOOL add_ace(SEC_ACL **the_acl, SEC_ACE *ace)
 {
 	SEC_ACL *new;
 	SEC_ACE *aces;
-	if (! *acl) {
-		(*acl) = make_sec_acl(3, 1, ace);
+	if (! *the_acl) {
+		(*the_acl) = make_sec_acl(3, 1, ace);
 		return True;
 	}
 
-	aces = calloc(1+(*acl)->num_aces,sizeof(SEC_ACE));
-	memcpy(aces, (*acl)->ace, (*acl)->num_aces * sizeof(SEC_ACE));
-	memcpy(aces+(*acl)->num_aces, ace, sizeof(SEC_ACE));
-	new = make_sec_acl((*acl)->revision,1+(*acl)->num_aces, aces);
-	free_sec_acl(acl);
+	aces = calloc(1+(*the_acl)->num_aces,sizeof(SEC_ACE));
+	memcpy(aces, (*the_acl)->ace, (*the_acl)->num_aces * sizeof(SEC_ACE));
+	memcpy(aces+(*the_acl)->num_aces, ace, sizeof(SEC_ACE));
+	new = make_sec_acl((*the_acl)->revision,1+(*the_acl)->num_aces, aces);
+	free_sec_acl(the_acl);
 	free(aces);
-	(*acl) = new;
+	(*the_acl) = new;
 	return True;
 }
 
@@ -466,14 +466,14 @@ static void cacl_dump(struct cli_state *cli, char *filename)
 set the ACLs on a file given an ascii description
 *******************************************************/
 static void cacl_set(struct cli_state *cli, char *filename, 
-		     char *acl, enum acl_mode mode)
+		     char *the_acl, enum acl_mode mode)
 {
 	int fnum;
 	SEC_DESC *sd, *old;
 	int i, j;
 	unsigned sd_size;
 
-	sd = sec_desc_parse(acl);
+	sd = sec_desc_parse(the_acl);
 
 	if (!sd) return;
 	if (test_args) return;
@@ -693,7 +693,7 @@ You can string acls together with spaces, commas or newlines\n\
 	static pstring servicesf = CONFIGFILE;
 	struct cli_state *cli;
 	enum acl_mode mode;
-	char *acl = NULL;
+	char *the_acl = NULL;
 
 	setlinebuf(stdout);
 
@@ -739,22 +739,22 @@ You can string acls together with spaces, commas or newlines\n\
 			break;
 
 		case 'S':
-			acl = optarg;
+			the_acl = optarg;
 			mode = ACL_SET;
 			break;
 
 		case 'D':
-			acl = optarg;
+			the_acl = optarg;
 			mode = ACL_DELETE;
 			break;
 
 		case 'M':
-			acl = optarg;
+			the_acl = optarg;
 			mode = ACL_MODIFY;
 			break;
 
 		case 'A':
-			acl = optarg;
+			the_acl = optarg;
 			mode = ACL_ADD;
 			break;
 
@@ -789,8 +789,8 @@ You can string acls together with spaces, commas or newlines\n\
 		if (!cli) exit(1);
 	}
 
-	if (acl) {
-		cacl_set(cli, filename, acl, mode);
+	if (the_acl) {
+		cacl_set(cli, filename, the_acl, mode);
 	} else {
 		cacl_dump(cli, filename);
 	}
