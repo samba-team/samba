@@ -2233,11 +2233,11 @@ static BOOL handle_source_env(char *pszParmValue, char **ptr)
 
 	if (*p == '|')
 	{
-		lines = file_lines_pload(p + 1, NULL);
+		lines = file_lines_pload(p + 1, NULL, True);
 	}
 	else
 	{
-		lines = file_lines_load(fname, NULL);
+		lines = file_lines_load(fname, NULL, True);
 	}
 
 	if (!lines)

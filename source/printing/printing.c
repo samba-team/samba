@@ -339,7 +339,7 @@ static void print_queue_update(int snum)
 	print_run_command(snum, cmd, tmp_file, NULL);
 
 	numlines = 0;
-	qlines = file_lines_load(tmp_file, &numlines);
+	qlines = file_lines_load(tmp_file, &numlines, True);
 	unlink(tmp_file);
 
 	/* turn the lpq output into a series of job structures */

@@ -419,8 +419,8 @@ int getfileline(void *vp, char *linebuf, int linebuf_size);
 char *fgets_slash(char *s2,int maxlen,FILE *f);
 char *file_pload(char *syscmd, size_t *size);
 char *file_load(char *fname, size_t *size);
-char **file_lines_load(char *fname, int *numlines);
-char **file_lines_pload(char *syscmd, int *numlines);
+char **file_lines_load(char *fname, int *numlines, BOOL convert);
+char **file_lines_pload(char *syscmd, int *numlines, BOOL convert);
 void file_lines_free(char **lines);
 void file_lines_slashcont(char **lines);
 

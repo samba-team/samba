@@ -121,7 +121,7 @@ void cups_printer_fn(void (*fn)(char *, char *))
 		if (name == NULL)
 			break;
 
-		(*fn)(name, make_model);
+		(*fn)(unix_to_dos(name,False), make_model);
 	}
 
 	ippDelete(response);
@@ -171,7 +171,7 @@ int cups_printername_ok(char *name)
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_LANGUAGE,
                      "attributes-natural-language", NULL, language->language);
 
-	snprintf(uri, sizeof(uri), "ipp://localhost/printers/%s", name);
+	snprintf(uri, sizeof(uri), "ipp://localhost/printers/%s", dos_to_unix(name,False));
 
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_URI,
                      "printer-uri", NULL, uri);

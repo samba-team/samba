@@ -3480,7 +3480,7 @@ static BOOL add_printer_hook(NT_PRINTER_INFO_LEVEL *printer)
 	}
 
 	numlines = 0;
-	qlines = file_lines_load(tmp_file, &numlines);
+	qlines = file_lines_load(tmp_file, &numlines, True);
 	DEBUGADD(10,("Lines returned = [%d]\n", numlines));
 	DEBUGADD(10,("Unlinking port file [%s]\n", tmp_file));
 	unlink(tmp_file);
@@ -4604,7 +4604,7 @@ static uint32 enumports_level_1(NEW_BUFFER *buffer, uint32 offered, uint32 *need
 		}
 
 		numlines = 0;
-		qlines = file_lines_load(tmp_file, &numlines);
+		qlines = file_lines_load(tmp_file, &numlines,True);
 		DEBUGADD(10,("Lines returned = [%d]\n", numlines));
 		DEBUGADD(10,("Unlinking port file [%s]\n", tmp_file));
 		unlink(tmp_file);
@@ -4702,7 +4702,7 @@ static uint32 enumports_level_2(NEW_BUFFER *buffer, uint32 offered, uint32 *need
 		}
 
 		numlines = 0;
-		qlines = file_lines_load(tmp_file, &numlines);
+		qlines = file_lines_load(tmp_file, &numlines,True);
 		DEBUGADD(10,("Lines returned = [%d]\n", numlines));
 		DEBUGADD(10,("Unlinking port file [%s]\n", tmp_file));
 		unlink(tmp_file);
