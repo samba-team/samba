@@ -129,7 +129,8 @@ uint32* uni_group_cache_fetch(DOM_SID *domain, uint32 user_rid,
 	
 	/* There is no cached universal groups in netlogon_unigrp.tdb */
 	/* for this user. */
-	if (!data.dptr) return NULL;
+	if (!data.dptr)
+		return NULL;
 	
 	/* Transfer data to receiver's memory context */
 	group_count = IVAL(&((uint32*)data.dptr)[0],0);

@@ -176,7 +176,8 @@ const char *lang_msg(const char *msgid)
 
 	/* if the message isn't found then we still need to return a pointer
 	   that can be freed. Pity. */
-	if (!data.dptr) return strdup(msgid);
+	if (!data.dptr)
+		return strdup(msgid);
 
 	return (const char *)data.dptr;
 }

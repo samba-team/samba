@@ -540,6 +540,7 @@ static void send_entry_request(GENERIC_PACKET *q, GENERIC_PACKET *r)
 
  		/* Allocate the space for the ip_list. */
 		if((ip_list = (struct in_addr *)talloc(mem_ctx,  num_ips * sizeof(struct in_addr))) == NULL) {
+			SAFE_FREE(dbuf.dptr);
 			DEBUG(0,("initialise_wins: talloc fail !\n"));
 			return;
 		}
@@ -548,6 +549,8 @@ static void send_entry_request(GENERIC_PACKET *q, GENERIC_PACKET *r)
 			len += tdb_unpack(dbuf.dptr+len, dbuf.dsize-len, "f", ip_str);
 			ip_list[i] = *interpret_addr2(ip_str);
 		}
+
+		SAFE_FREE(dbuf.dptr);
 
 		/* add all entries that have 60 seconds or more to live */
 		if ((ttl - 60) > time_now || ttl == PERMANENT_TTL) {

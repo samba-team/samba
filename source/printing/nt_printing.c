@@ -212,10 +212,12 @@ static BOOL upgrade_to_version_3(void)
 		if (strncmp(kbuf.dptr, FORMS_PREFIX, strlen(FORMS_PREFIX)) == 0) {
 			DEBUG(0,("upgrade_to_version_3:moving form\n"));
 			if (tdb_store(tdb_forms, kbuf, dbuf, TDB_REPLACE) != 0) {
+				SAFE_FREE(dbuf.dptr);
 				DEBUG(0,("upgrade_to_version_3: failed to move form. Error (%s).\n", tdb_errorstr(tdb_forms)));
 				return False;
 			}
 			if (tdb_delete(tdb_drivers, kbuf) != 0) {
+				SAFE_FREE(dbuf.dptr);
 				DEBUG(0,("upgrade_to_version_3: failed to delete form. Error (%s)\n", tdb_errorstr(tdb_drivers)));
 				return False;
 			}
@@ -224,10 +226,12 @@ static BOOL upgrade_to_version_3(void)
 		if (strncmp(kbuf.dptr, PRINTERS_PREFIX, strlen(PRINTERS_PREFIX)) == 0) {
 			DEBUG(0,("upgrade_to_version_3:moving printer\n"));
 			if (tdb_store(tdb_printers, kbuf, dbuf, TDB_REPLACE) != 0) {
+				SAFE_FREE(dbuf.dptr);
 				DEBUG(0,("upgrade_to_version_3: failed to move printer. Error (%s)\n", tdb_errorstr(tdb_printers)));
 				return False;
 			}
 			if (tdb_delete(tdb_drivers, kbuf) != 0) {
+				SAFE_FREE(dbuf.dptr);
 				DEBUG(0,("upgrade_to_version_3: failed to delete printer. Error (%s)\n", tdb_errorstr(tdb_drivers)));
 				return False;
 			}
@@ -236,10 +240,12 @@ static BOOL upgrade_to_version_3(void)
 		if (strncmp(kbuf.dptr, SECDESC_PREFIX, strlen(SECDESC_PREFIX)) == 0) {
 			DEBUG(0,("upgrade_to_version_3:moving secdesc\n"));
 			if (tdb_store(tdb_printers, kbuf, dbuf, TDB_REPLACE) != 0) {
+				SAFE_FREE(dbuf.dptr);
 				DEBUG(0,("upgrade_to_version_3: failed to move secdesc. Error (%s)\n", tdb_errorstr(tdb_printers)));
 				return False;
 			}
 			if (tdb_delete(tdb_drivers, kbuf) != 0) {
+				SAFE_FREE(dbuf.dptr);
 				DEBUG(0,("upgrade_to_version_3: failed to delete secdesc. Error (%s)\n", tdb_errorstr(tdb_drivers)));
 				return False;
 			}
@@ -1771,8 +1777,7 @@ static WERROR get_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, 
 			  driver.defaultdatatype);
 
 	i=0;
-	while (len < dbuf.dsize) 
-	{
+	while (len < dbuf.dsize) {
 		fstring *tddfs;
 
 		tddfs = (fstring *)Realloc(driver.dependentfiles,
@@ -1793,8 +1798,7 @@ static WERROR get_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, 
 
 	SAFE_FREE(dbuf.dptr);
 
-	if (len != dbuf.dsize) 
-	{
+	if (len != dbuf.dsize) {
 		SAFE_FREE(driver.dependentfiles);
 
 		return get_a_printer_driver_3_default(info_ptr, drivername, arch);
@@ -2918,8 +2922,7 @@ static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharen
 	 * See comments in get_a_printer_2_default()
 	 */
 
-	if (lp_default_devmode(lp_servicenumber(sharename)) && !info.devmode)
-	{
+	if (lp_default_devmode(lp_servicenumber(sharename)) && !info.devmode) {
 		DEBUG(8,("get_a_printer_2: Constructing a default device mode for [%s]\n",
 			printername));
 		info.devmode = construct_nt_devicemode(printername);
@@ -3160,8 +3163,8 @@ static BOOL set_driver_init_2( NT_PRINTER_INFO_LEVEL_2 *info_ptr )
 	 */
 	 
 	if ( info.devmode ) {
-	ZERO_STRUCT(info.devmode->devicename);
-	fstrcpy(info.devmode->devicename, info_ptr->printername);
+		ZERO_STRUCT(info.devmode->devicename);
+		fstrcpy(info.devmode->devicename, info_ptr->printername);
 	}
 
 	/*
