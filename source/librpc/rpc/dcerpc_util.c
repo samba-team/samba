@@ -131,7 +131,7 @@ NTSTATUS dcerpc_epm_map_tcp_port(const char *server,
 		dcerpc_pipe_close(p);
 		return status;
 	}
-	if (r.out.status != 0 || r.out.num_towers != 1) {
+	if (r.out.result != 0 || r.out.num_towers != 1) {
 		dcerpc_pipe_close(p);
 		return NT_STATUS_PORT_UNREACHABLE;
 	}
