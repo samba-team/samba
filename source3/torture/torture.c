@@ -1641,6 +1641,7 @@ static BOOL run_maxfidtest(int dummy)
 		printf("%6d\r", i);
 	}
 	printf("%6d\n", i);
+	i--;
 
 	printf("cleaning up\n");
 	for (;i>=0;i--) {
