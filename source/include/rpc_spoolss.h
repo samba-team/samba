@@ -1578,28 +1578,6 @@ typedef struct spool_printer_driver_info_level
 SPOOL_PRINTER_DRIVER_INFO_LEVEL;
 
 
-/* this struct is undocumented */
-/* thanks to the ddk ... */
-typedef struct spool_user_level_1
-{
-	uint32 size;
-	uint32 client_name_ptr;
-	uint32 user_name_ptr;
-	uint32 build;
-	uint32 major;
-	uint32 minor;
-	uint32 processor;
-	UNISTR2 client_name;
-	UNISTR2 user_name;
-}
-SPOOL_USER_LEVEL_1;
-
-typedef struct spool_user_level
-{
-	SPOOL_USER_LEVEL_1 *user_level_1;
-}
-SPOOL_USER_LEVEL;
-
 typedef struct spool_q_setprinter
 {
 	POLICY_HND handle;
@@ -1619,52 +1597,31 @@ typedef struct spool_r_setprinter
 }
 SPOOL_R_SETPRINTER;
 
-typedef struct spool_q_addprinter
-{
-	UNISTR2 server_name;
-	uint32 level;
-	SPOOL_PRINTER_INFO_LEVEL info;
-	DEVMODE_CTR devmode_ctr;
-	SEC_DESC_BUF *secdesc_ctr;
-	uint32 user_level;
-	SPOOL_USER_LEVEL user;
-}
-SPOOL_Q_ADDPRINTER;
+/********************************************/
 
-typedef struct spool_r_addprinter
-{
-	WERROR status;
-}
-SPOOL_R_ADDPRINTER;
-
-typedef struct spool_q_deleteprinter
-{
+typedef struct {
 	POLICY_HND handle;
-}
-SPOOL_Q_DELETEPRINTER;
+} SPOOL_Q_DELETEPRINTER;
 
-typedef struct spool_r_deleteprinter
-{
+typedef struct {
 	POLICY_HND handle;
 	WERROR status;
-}
-SPOOL_R_DELETEPRINTER;
+} SPOOL_R_DELETEPRINTER;
 
-typedef struct spool_q_abortprinter
-{
+/********************************************/
+
+typedef struct {
 	POLICY_HND handle;
-}
-SPOOL_Q_ABORTPRINTER;
+} SPOOL_Q_ABORTPRINTER;
 
-typedef struct spool_r_abortprinter
-{
+typedef struct {
 	WERROR status;
-}
-SPOOL_R_ABORTPRINTER;
+} SPOOL_R_ABORTPRINTER;
 
 
-typedef struct spool_q_addprinterex
-{
+/********************************************/
+
+typedef struct {
 	UNISTR2 *server_name;
 	uint32 level;
 	SPOOL_PRINTER_INFO_LEVEL info;
@@ -1672,16 +1629,14 @@ typedef struct spool_q_addprinterex
 	SEC_DESC_BUF *secdesc_ctr;
 	uint32 user_switch;
 	SPOOL_USER_CTR user_ctr;
-}
-SPOOL_Q_ADDPRINTEREX;
+} SPOOL_Q_ADDPRINTEREX;
 
-typedef struct spool_r_addprinterex
-{
+typedef struct {
 	POLICY_HND handle;
 	WERROR status;
-}
-SPOOL_R_ADDPRINTEREX;
+} SPOOL_R_ADDPRINTEREX;
 
+/********************************************/
 
 typedef struct spool_q_addprinterdriver
 {
