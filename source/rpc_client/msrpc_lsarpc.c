@@ -254,12 +254,12 @@ BOOL msrpc_lsa_set_secret(const char *srv_name,
 	secret_store_data(&secret, data, len);
 
 	/* lookup domain controller; receive a policy handle */
-	res = res ? lsa_open_policy2(srv_name,
+	res = res ? lsa_open_policy(srv_name,
 				     &lsa_pol, True, 0x02000000) : False;
 
 	/* lookup domain controller; receive a policy handle */
 	res1 = res ? lsa_open_secret(&lsa_pol,
-				     secret_name, 0x020003, &pol_sec) : False;
+				     secret_name, 0x02000000, &pol_sec) : False;
 
 	res2 =
 		res1 ? (lsa_set_secret(&pol_sec, &secret) ==

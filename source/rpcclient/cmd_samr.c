@@ -1080,6 +1080,9 @@ void cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 			return;
 		}
 
+		upw.uni_str_len = 0xc;
+		upw.uni_max_len = 0xc;
+#if 0
 		upw.uni_str_len = 0x78;
 		upw.uni_max_len = 0x78;
 		generate_random_buffer(rnd_data, sizeof(rnd_data), True);
@@ -1091,8 +1094,10 @@ void cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 			
 			upw.buffer[i] = rnd_data[j];
 		}
+#endif
 		password = (char*)upw.buffer;
 		plen = upw.uni_str_len * 2;
+		generate_random_buffer(password, plen, True);
 	}
 
 	if (join_domain)
@@ -1155,16 +1160,7 @@ void cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 			if (res1)
 			{
 				STRING2 secret;
-
-				ZERO_STRUCT(secret);
-
-				secret.str_max_len = 16+8;
-				secret.undoc       = 0;
-				secret.str_str_len = 16+8;
-
-				SIVAL(secret.buffer, 0, 16);
-				SIVAL(secret.buffer, 4, 0x01);
-				memcpy(secret.buffer+8, ntpw, 16);
+				secret_store_data(&secret, ntpw, 16);
 
 				res2 = lsa_set_secret(&pol_sec, &secret) ==
 				                   NT_STATUS_NOPROBLEMO;

@@ -421,7 +421,8 @@ void cmd_lsa_query_secret(struct client_info *info, int argc, char *argv[])
 
 	secret_name = argv[1];
 
-	if (msrpc_lsa_query_secret(srv_name, secret_name, NULL, &last_update))
+	if (msrpc_lsa_query_secret(srv_name, secret_name, &secret,
+	                           &last_update))
 	{
 		int i;
 		report(out_hnd, "\tValue       : ");

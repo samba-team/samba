@@ -484,6 +484,13 @@ uint32 lsa_set_secret(POLICY_HND *hnd, const STRING2 * secret)
 	LSA_Q_SET_SECRET q_q;
 
 	uchar sess_key[16];
+#if 0
+	char data[12] =
+	{
+		0x1a, 0x32, 0xb6, 0x63, 0xd7, 0x08, 0x79, 0x64,
+		0x9c, 0x36, 0x94, 0x8b
+	};
+#endif
 	uint32 status = NT_STATUS_NOPROBLEMO;
 
 	if (hnd == NULL)
@@ -507,6 +514,17 @@ uint32 lsa_set_secret(POLICY_HND *hnd, const STRING2 * secret)
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	dump_data_pw("sess_key:", sess_key, 16);
+
+#if 0
+	memcpy(&q_q.value.enc_secret.buffer, data, sizeof(data));
+	q_q.value.enc_secret.str_str_len = sizeof(data);
+	q_q.value.enc_secret.str_max_len = sizeof(data);
+	if (!nt_decrypt_string2(&q_q.value.enc_secret, secret, sess_key))
+	{
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+#endif
+
 	if (!nt_encrypt_string2(&q_q.value.enc_secret, secret, sess_key))
 	{
 		return NT_STATUS_INVALID_PARAMETER;
