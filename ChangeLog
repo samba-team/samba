@@ -1,5 +1,7 @@
 2003-04-16  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/krb5_warn.3: add krb5_get_err_text
+	
 	* lib/krb5/transited.c: use strlcat/strlcpy, from openbsd
 	* lib/krb5/krbhst.c (srv_find_realm): use strlcpy, from openbsd
 	* lib/krb5/aname_to_localname.c (krb5_aname_to_localname): use
