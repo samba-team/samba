@@ -1205,7 +1205,10 @@ installscripts: installdirs
 installdat: installdirs
 	@$(SHELL) $(srcdir)/script/installdat.sh $(DESTDIR)$(LIBDIR) $(srcdir)
 
-installswat: installdirs
+installmsg: installdirs
+	@$(SHELL) $(srcdir)/script/installmsg.sh $(DESTDIR)$(LIBDIR) $(srcdir)
+
+installswat: installdirs installmsg
 	@$(SHELL) $(srcdir)/script/installswat.sh $(DESTDIR)$(SWATDIR) $(srcdir)
 
 installclientlib: installdirs libsmbclient
