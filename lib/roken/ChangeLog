@@ -1,3 +1,11 @@
+2001-05-17  Assar Westerlund  <assar@sics.se>
+
+	* Makefile.am: bump version to 12:0:3
+	* roken.h.in: re-add set_progname and get_progname for backwards
+	compatability
+	* warnerr.c: re-add set_progname and get_progname for backwards
+	compatability
+
 2001-05-12  Assar Westerlund  <assar@sics.se>
 
 	* glob.c: add limits.h, from <shadow@dementia.org>

@@ -1,3 +1,7 @@
+2001-05-17  Assar Westerlund  <assar@sics.se>
+
+	* Makefile.am: bump version to 3:1:2
+
 2001-05-14  Assar Westerlund  <assar@sics.se>
 
 	* address_to_krb5addr.c: adapt to new address functions

@@ -1,3 +1,7 @@
+2001-05-17  Assar Westerlund  <assar@sics.se>
+
+	* Makefile.am: bump version to 3:1:0
+
 2001-05-11  Assar Westerlund  <assar@sics.se>
 
 	* str2key.c (des_string_to_key, des_string_to_2keys): avoid weak

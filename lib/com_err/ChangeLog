@@ -1,3 +1,7 @@
+2001-05-17  Assar Westerlund  <assar@sics.se>
+
+	* Makefile.am: bump version to 2:0:1
+
 2001-05-11  Assar Westerlund  <assar@sics.se>
 
 	* com_err.h (add_to_error_table): add prototype
