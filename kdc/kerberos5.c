@@ -680,7 +680,7 @@ tgs_make_reply(KDC_REQ_BODY *b, EncTicketPart *tgt,
     rep.msg_type = krb_tgs_rep;
 
     et.authtime = tgt->authtime;
-    et.endtime = tgt->endtime;
+    et.endtime = min(tgt->endtime, b->till);
     ALLOC(et.starttime);
     *et.starttime = kdc_time;
     
@@ -785,7 +785,7 @@ tgs_make_reply(KDC_REQ_BODY *b, EncTicketPart *tgt,
 				   &ekey->key,
 				   &rep.ticket.enc_part);
 	hdb_free_key(ekey);
-		
+	
 	ret = encode_EncTGSRepPart(buf + sizeof(buf) - 1, 
 				   sizeof(buf), &ek, &len);
 	if(ret){
