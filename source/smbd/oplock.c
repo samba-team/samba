@@ -743,6 +743,10 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, unsigned long file_id, 
 	/* Remember if we just sent a break to level II on this file. */
 	fsp->sent_oplock_break = using_levelII? LEVEL_II_BREAK_SENT:EXCLUSIVE_BREAK_SENT;
 
+	/* Ensure the reply for the open uses the correct sequence number. */
+	/* This isn't a real deferred packet as it's response will also increment
+	 * the sequence. */
+	srv_defer_sign_response(get_current_mid(), False);
 	/* Save the server smb signing state. */
 	sign_state = srv_oplock_set_signing(False);
 

@@ -148,7 +148,7 @@ for fnum = %d, name = %s\n", length, (int)blr->expire_time, lock_timeout,
 		blr->fsp->fnum, blr->fsp->fsp_name ));
 
 	/* Push the MID of this packet on the signing queue. */
-	srv_defer_sign_response(SVAL(inbuf,smb_mid));
+	srv_defer_sign_response(SVAL(inbuf,smb_mid), True);
 
 	return True;
 }
