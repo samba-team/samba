@@ -44,6 +44,7 @@ RCSID("$Id$");
 
 #include "kerberos4.h"
 
+#ifndef swap32
 static u_int32_t
 swap32(u_int32_t x)
 {
@@ -52,6 +53,7 @@ swap32(u_int32_t x)
 	((x >> 8) & 0xff00) |
 	((x >> 24) & 0xff);
 }
+#endif /* swap32 */
 
 int
 maybe_version4(unsigned char *buf, int len)
