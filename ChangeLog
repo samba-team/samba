@@ -1,5 +1,7 @@
 Thu Apr  1 11:00:40 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
+	* Release 0.1d
+
 	* kpasswd/kpasswdd.c (doit): pass context to
  	krb5_get_all_client_addrs
 
