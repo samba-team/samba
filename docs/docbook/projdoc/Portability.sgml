@@ -36,6 +36,12 @@ allowed range.
 <para>This is documented in the HP manual pages under setgroups(2) and passwd(4).
 </para>
 
+<para>
+On HPUX you must use gcc or the HP Ansi compiler. The free compiler
+that comes with HP-UX is not Ansi compliant and cannot compile
+Samba.
+</para>
+
 </sect1>
 
 <sect1>
