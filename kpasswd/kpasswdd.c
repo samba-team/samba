@@ -527,7 +527,6 @@ process (krb5_principal server,
 		&out_data);
 	memset (out_data.data, 0, out_data.length);
 	krb5_free_ticket (context, ticket);
-	free (ticket);
     }
 
 out:
