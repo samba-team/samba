@@ -52,29 +52,29 @@ static vfs_op_tuple audit_op_tuples[] = {
     
 	/* Disk operations */
 
-	{VFS_OP(audit_connect), 	SMB_VFS_OP_CONNECT, 	SMB_VFS_LAYER_LOGGER},
-	{VFS_OP(audit_disconnect), 	SMB_VFS_OP_DISCONNECT, 	SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(audit_connect), 	SMB_VFS_OP_CONNECT, 	SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(audit_disconnect), 	SMB_VFS_OP_DISCONNECT, 	SMB_VFS_LAYER_LOGGER},
 
 	/* Directory operations */
 
-	{VFS_OP(audit_opendir), 	SMB_VFS_OP_OPENDIR, 	SMB_VFS_LAYER_LOGGER},
-	{VFS_OP(audit_mkdir), 		SMB_VFS_OP_MKDIR, 	SMB_VFS_LAYER_LOGGER},
-	{VFS_OP(audit_rmdir), 		SMB_VFS_OP_RMDIR, 	SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(audit_opendir), 	SMB_VFS_OP_OPENDIR, 	SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(audit_mkdir), 		SMB_VFS_OP_MKDIR, 	SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(audit_rmdir), 		SMB_VFS_OP_RMDIR, 	SMB_VFS_LAYER_LOGGER},
 
 	/* File operations */
 
-	{VFS_OP(audit_open), 		SMB_VFS_OP_OPEN, 	SMB_VFS_LAYER_LOGGER},
-	{VFS_OP(audit_close), 		SMB_VFS_OP_CLOSE, 	SMB_VFS_LAYER_LOGGER},
-	{VFS_OP(audit_rename), 		SMB_VFS_OP_RENAME, 	SMB_VFS_LAYER_LOGGER},
-	{VFS_OP(audit_unlink), 		SMB_VFS_OP_UNLINK, 	SMB_VFS_LAYER_LOGGER},
-	{VFS_OP(audit_chmod), 		SMB_VFS_OP_CHMOD, 	SMB_VFS_LAYER_LOGGER},
-	{VFS_OP(audit_fchmod), 		SMB_VFS_OP_FCHMOD, 	SMB_VFS_LAYER_LOGGER},
-	{VFS_OP(audit_chmod_acl), 	SMB_VFS_OP_CHMOD_ACL, 	SMB_VFS_LAYER_LOGGER},
-	{VFS_OP(audit_fchmod_acl), 	SMB_VFS_OP_FCHMOD_ACL, 	SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(audit_open), 		SMB_VFS_OP_OPEN, 	SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(audit_close), 		SMB_VFS_OP_CLOSE, 	SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(audit_rename), 		SMB_VFS_OP_RENAME, 	SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(audit_unlink), 		SMB_VFS_OP_UNLINK, 	SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(audit_chmod), 		SMB_VFS_OP_CHMOD, 	SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(audit_fchmod), 		SMB_VFS_OP_FCHMOD, 	SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(audit_chmod_acl), 	SMB_VFS_OP_CHMOD_ACL, 	SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(audit_fchmod_acl), 	SMB_VFS_OP_FCHMOD_ACL, 	SMB_VFS_LAYER_LOGGER},
 	
 	/* Finish VFS operations definition */
 	
-	{VFS_OP(NULL), 			SMB_VFS_OP_NOOP, 	SMB_VFS_LAYER_NOOP}
+	{SMB_VFS_OP(NULL), 			SMB_VFS_OP_NOOP, 	SMB_VFS_LAYER_NOOP}
 };
 
 
@@ -111,7 +111,7 @@ static int audit_connect(vfs_handle_struct *handle, connection_struct *conn, con
 	DEBUG(10, ("Connected to service %s as user %s\n",
 	       svc, user));
 
-	result = VFS_NEXT_CONNECT(handle, conn, svc, user);
+	result = SMB_VFS_NEXT_CONNECT(handle, conn, svc, user);
 
 	return result;
 }
@@ -120,7 +120,7 @@ static void audit_disconnect(vfs_handle_struct *handle, connection_struct *conn)
 {
 	syslog(audit_syslog_priority(handle), "disconnected\n");
 	DEBUG(10, ("Disconnected from VFS module extd_audit\n"));
-	VFS_NEXT_DISCONNECT(handle, conn);
+	SMB_VFS_NEXT_DISCONNECT(handle, conn);
 
 	return;
 }
@@ -129,7 +129,7 @@ static DIR *audit_opendir(vfs_handle_struct *handle, connection_struct *conn, co
 {
 	DIR *result;
 
-	result = VFS_NEXT_OPENDIR(handle, conn, fname);
+	result = SMB_VFS_NEXT_OPENDIR(handle, conn, fname);
 
 	syslog(audit_syslog_priority(handle), "opendir %s %s%s\n",
 	       fname,
@@ -147,7 +147,7 @@ static int audit_mkdir(vfs_handle_struct *handle, connection_struct *conn, const
 {
 	int result;
 	
-	result = VFS_NEXT_MKDIR(handle, conn, path, mode);
+	result = SMB_VFS_NEXT_MKDIR(handle, conn, path, mode);
 	
 	syslog(audit_syslog_priority(handle), "mkdir %s %s%s\n", 
 	       path,
@@ -165,7 +165,7 @@ static int audit_rmdir(vfs_handle_struct *handle, connection_struct *conn, const
 {
 	int result;
 	
-	result = VFS_NEXT_RMDIR(handle, conn, path);
+	result = SMB_VFS_NEXT_RMDIR(handle, conn, path);
 
 	syslog(audit_syslog_priority(handle), "rmdir %s %s%s\n", 
 	       path, 
@@ -183,7 +183,7 @@ static int audit_open(vfs_handle_struct *handle, connection_struct *conn, const 
 {
 	int result;
 	
-	result = VFS_NEXT_OPEN(handle, conn, fname, flags, mode);
+	result = SMB_VFS_NEXT_OPEN(handle, conn, fname, flags, mode);
 
 	syslog(audit_syslog_priority(handle), "open %s (fd %d) %s%s%s\n", 
 	       fname, result,
@@ -202,7 +202,7 @@ static int audit_close(vfs_handle_struct *handle, files_struct *fsp, int fd)
 {
 	int result;
 	
-	result = VFS_NEXT_CLOSE(handle, fsp, fd);
+	result = SMB_VFS_NEXT_CLOSE(handle, fsp, fd);
 
 	syslog(audit_syslog_priority(handle), "close fd %d %s%s\n",
 	       fd,
@@ -220,7 +220,7 @@ static int audit_rename(vfs_handle_struct *handle, connection_struct *conn, cons
 {
 	int result;
 	
-	result = VFS_NEXT_RENAME(handle, conn, old, new);
+	result = SMB_VFS_NEXT_RENAME(handle, conn, old, new);
 
 	syslog(audit_syslog_priority(handle), "rename %s -> %s %s%s\n",
 	       old, new,
@@ -238,7 +238,7 @@ static int audit_unlink(vfs_handle_struct *handle, connection_struct *conn, cons
 {
 	int result;
 	
-	result = VFS_NEXT_UNLINK(handle, conn, path);
+	result = SMB_VFS_NEXT_UNLINK(handle, conn, path);
 
 	syslog(audit_syslog_priority(handle), "unlink %s %s%s\n",
 	       path,
@@ -256,7 +256,7 @@ static int audit_chmod(vfs_handle_struct *handle, connection_struct *conn, const
 {
 	int result;
 
-	result = VFS_NEXT_CHMOD(handle, conn, path, mode);
+	result = SMB_VFS_NEXT_CHMOD(handle, conn, path, mode);
 
 	syslog(audit_syslog_priority(handle), "chmod %s mode 0x%x %s%s\n",
 	       path, mode,
@@ -274,7 +274,7 @@ static int audit_chmod_acl(vfs_handle_struct *handle, connection_struct *conn, c
 {
 	int result;
 	
-	result = VFS_NEXT_CHMOD_ACL(handle, conn, path, mode);
+	result = SMB_VFS_NEXT_CHMOD_ACL(handle, conn, path, mode);
 
 	syslog(audit_syslog_priority(handle), "chmod_acl %s mode 0x%x %s%s\n",
 	       path, mode,
@@ -292,7 +292,7 @@ static int audit_fchmod(vfs_handle_struct *handle, files_struct *fsp, int fd, mo
 {
 	int result;
 	
-	result = VFS_NEXT_FCHMOD(handle, fsp, fd, mode);
+	result = SMB_VFS_NEXT_FCHMOD(handle, fsp, fd, mode);
 
 	syslog(audit_syslog_priority(handle), "fchmod %s mode 0x%x %s%s\n",
 	       fsp->fsp_name, mode,
@@ -310,7 +310,7 @@ static int audit_fchmod_acl(vfs_handle_struct *handle, files_struct *fsp, int fd
 {
 	int result;
 	
-	result = VFS_NEXT_FCHMOD_ACL(handle, fsp, fd, mode);
+	result = SMB_VFS_NEXT_FCHMOD_ACL(handle, fsp, fd, mode);
 
 	syslog(audit_syslog_priority(handle), "fchmod_acl %s mode 0x%x %s%s\n",
 	       fsp->fsp_name, mode,

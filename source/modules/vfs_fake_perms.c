@@ -31,7 +31,7 @@ static int fake_perms_stat(vfs_handle_struct *handle, connection_struct *conn, c
 {
 	int ret = -1;
 
-	ret = VFS_NEXT_STAT(handle, conn, fname, sbuf);
+	ret = SMB_VFS_NEXT_STAT(handle, conn, fname, sbuf);
 	if (ret == 0) {
 		extern struct current_user current_user;
 		
@@ -51,7 +51,7 @@ static int fake_perms_fstat(vfs_handle_struct *handle, files_struct *fsp, int fd
 {
 	int ret = -1;
 
-	ret = VFS_NEXT_FSTAT(handle, fsp, fd, sbuf);
+	ret = SMB_VFS_NEXT_FSTAT(handle, fsp, fd, sbuf);
 	if (ret == 0) {
 		extern struct current_user current_user;
 		
@@ -69,10 +69,10 @@ static int fake_perms_fstat(vfs_handle_struct *handle, files_struct *fsp, int fd
 /* VFS operations structure */
 
 static vfs_op_tuple fake_perms_ops[] = {	
-	{VFS_OP(fake_perms_stat),	SMB_VFS_OP_STAT,	SMB_VFS_LAYER_TRANSPARENT},
-	{VFS_OP(fake_perms_fstat),	SMB_VFS_OP_FSTAT,	SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(fake_perms_stat),	SMB_VFS_OP_STAT,	SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(fake_perms_fstat),	SMB_VFS_OP_FSTAT,	SMB_VFS_LAYER_TRANSPARENT},
 
-	{NULL,				SMB_VFS_OP_NOOP,	SMB_VFS_LAYER_NOOP}
+	{SMB_VFS_OP(NULL),		SMB_VFS_OP_NOOP,	SMB_VFS_LAYER_NOOP}
 };
 
 NTSTATUS vfs_fake_perms_init(void)

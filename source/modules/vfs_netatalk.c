@@ -177,7 +177,7 @@ DIR *atalk_opendir(struct vfs_handle_struct *handle, struct connection_struct *c
 {
 	DIR *ret = 0;
 
-	ret = VFS_NEXT_OPENDIR(handle, conn, fname);
+	ret = SMB_VFS_NEXT_OPENDIR(handle, conn, fname);
 
 	/*
 	 * when we try to perform delete operation upon file which has fork
@@ -219,7 +219,7 @@ static int atalk_rmdir(struct vfs_handle_struct *handle, struct connection_struc
 
 exit_rmdir:
 	talloc_destroy(ctx);
-	return VFS_NEXT_RMDIR(handle, conn, path);
+	return SMB_VFS_NEXT_RMDIR(handle, conn, path);
 }
 
 /* File operations */
@@ -233,7 +233,7 @@ static int atalk_rename(struct vfs_handle_struct *handle, struct connection_stru
 	SMB_STRUCT_STAT orig_info;
 	TALLOC_CTX *ctx;
 
-	ret = VFS_NEXT_RENAME(handle, conn, old, new);
+	ret = SMB_VFS_NEXT_RENAME(handle, conn, old, new);
 
 	if (!conn || !old) return ret;
 
@@ -265,7 +265,7 @@ static int atalk_unlink(struct vfs_handle_struct *handle, struct connection_stru
 	SMB_STRUCT_STAT orig_info;
 	TALLOC_CTX *ctx;
 
-	ret = VFS_NEXT_UNLINK(handle, conn, path);
+	ret = SMB_VFS_NEXT_UNLINK(handle, conn, path);
 
 	if (!conn || !path) return ret;
 
@@ -321,7 +321,7 @@ static int atalk_chmod(struct vfs_handle_struct *handle, struct connection_struc
 	SMB_STRUCT_STAT orig_info;
 	TALLOC_CTX *ctx;
 
-	ret = VFS_NEXT_CHMOD(handle, conn, path, mode);
+	ret = SMB_VFS_NEXT_CHMOD(handle, conn, path, mode);
 
 	if (!conn || !path) return ret;
 
@@ -353,7 +353,7 @@ static int atalk_chown(struct vfs_handle_struct *handle, struct connection_struc
 	SMB_STRUCT_STAT orig_info;
 	TALLOC_CTX *ctx;
 
-	ret = VFS_NEXT_CHOWN(handle, conn, path, uid, gid);
+	ret = SMB_VFS_NEXT_CHOWN(handle, conn, path, uid, gid);
 
 	if (!conn || !path) return ret;
 
@@ -380,19 +380,19 @@ static vfs_op_tuple atalk_ops[] = {
     
 	/* Directory operations */
 
-	{VFS_OP(atalk_opendir), 	SMB_VFS_OP_OPENDIR, 	SMB_VFS_LAYER_TRANSPARENT},
-	{VFS_OP(atalk_rmdir), 		SMB_VFS_OP_RMDIR, 	SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(atalk_opendir), 	SMB_VFS_OP_OPENDIR, 	SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(atalk_rmdir), 		SMB_VFS_OP_RMDIR, 	SMB_VFS_LAYER_TRANSPARENT},
 
 	/* File operations */
 
-	{VFS_OP(atalk_rename), 		SMB_VFS_OP_RENAME, 	SMB_VFS_LAYER_TRANSPARENT},
-	{VFS_OP(atalk_unlink), 		SMB_VFS_OP_UNLINK, 	SMB_VFS_LAYER_TRANSPARENT},
-	{VFS_OP(atalk_chmod), 		SMB_VFS_OP_CHMOD, 	SMB_VFS_LAYER_TRANSPARENT},
-	{VFS_OP(atalk_chown),		SMB_VFS_OP_CHOWN,	SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(atalk_rename), 		SMB_VFS_OP_RENAME, 	SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(atalk_unlink), 		SMB_VFS_OP_UNLINK, 	SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(atalk_chmod), 		SMB_VFS_OP_CHMOD, 	SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(atalk_chown),		SMB_VFS_OP_CHOWN,	SMB_VFS_LAYER_TRANSPARENT},
 	
 	/* Finish VFS operations definition */
 	
-	{VFS_OP(NULL), 			SMB_VFS_OP_NOOP, 	SMB_VFS_LAYER_NOOP}
+	{SMB_VFS_OP(NULL), 			SMB_VFS_OP_NOOP, 	SMB_VFS_LAYER_NOOP}
 };
 
 NTSTATUS vfs_netatalk_init(void)

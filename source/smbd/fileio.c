@@ -32,7 +32,7 @@ static SMB_OFF_T seek_file(files_struct *fsp,SMB_OFF_T pos)
 {
 	SMB_OFF_T seek_ret;
 
-	seek_ret = VFS_LSEEK(fsp,fsp->fd,pos,SEEK_SET);
+	seek_ret = SMB_VFS_LSEEK(fsp,fsp->fd,pos,SEEK_SET);
 
 	if(seek_ret == -1) {
 		DEBUG(0,("seek_file: (%s) sys_lseek failed. Error was %s\n",
@@ -101,7 +101,7 @@ ssize_t read_file(files_struct *fsp,char *data,SMB_OFF_T pos,size_t n)
 #ifdef DMF_FIX
 		int numretries = 3;
 tryagain:
-		readret = VFS_READ(fsp,fsp->fd,data,n);
+		readret = SMB_VFS_READ(fsp,fsp->fd,data,n);
 		if (readret == -1) {
 			if ((errno == EAGAIN) && numretries) {
 				DEBUG(3,("read_file EAGAIN retry in 10 seconds\n"));
@@ -112,7 +112,7 @@ tryagain:
 			return -1;
 		}
 #else /* NO DMF fix. */
-		readret = VFS_READ(fsp,fsp->fd,data,n);
+		readret = SMB_VFS_READ(fsp,fsp->fd,data,n);
 		if (readret == -1)
 			return -1;
 #endif
@@ -181,7 +181,7 @@ ssize_t write_file(files_struct *fsp, char *data, SMB_OFF_T pos, size_t n)
 		SMB_STRUCT_STAT st;
 		fsp->modified = True;
 
-		if (VFS_FSTAT(fsp,fsp->fd,&st) == 0) {
+		if (SMB_VFS_FSTAT(fsp,fsp->fd,&st) == 0) {
 			int dosmode = dos_mode(fsp->conn,fsp->fsp_name,&st);
 			fsp->size = (SMB_BIG_UINT)st.st_size;
 			if (MAP_ARCHIVE(fsp->conn) && !IS_DOS_ARCHIVE(dosmode))
@@ -760,7 +760,7 @@ void sync_file(connection_struct *conn, files_struct *fsp)
 {
 	if(lp_strict_sync(SNUM(conn)) && fsp->fd != -1) {
 		flush_write_cache(fsp, SYNC_FLUSH);
-		VFS_FSYNC(fsp,fsp->fd);
+		SMB_VFS_FSYNC(fsp,fsp->fd);
 	}
 }
 
@@ -772,7 +772,7 @@ void sync_file(connection_struct *conn, files_struct *fsp)
 int fsp_stat(files_struct *fsp, SMB_STRUCT_STAT *pst)
 {
 	if (fsp->fd == -1)
-		return VFS_STAT(fsp->conn, fsp->fsp_name, pst);
+		return SMB_VFS_STAT(fsp->conn, fsp->fsp_name, pst);
 	else
-		return VFS_FSTAT(fsp,fsp->fd, pst);
+		return SMB_VFS_FSTAT(fsp,fsp->fd, pst);
 }

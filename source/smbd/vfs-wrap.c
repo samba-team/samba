@@ -93,7 +93,7 @@ int vfswrap_mkdir(vfs_handle_struct *handle, connection_struct *conn, const char
 		 * mess up any inherited ACL bits that were set. JRA.
 		 */
 		int saved_errno = errno; /* We may get ENOSYS */
-		if ((VFS_CHMOD_ACL(conn, path, mode) == -1) && (errno == ENOSYS))
+		if ((SMB_VFS_CHMOD_ACL(conn, path, mode) == -1) && (errno == ENOSYS))
 			errno = saved_errno;
 	}
 
@@ -281,7 +281,7 @@ int vfswrap_chmod(vfs_handle_struct *handle, connection_struct *conn, const char
 	
 	{
 		int saved_errno = errno; /* We might get ENOSYS */
-		if ((result = VFS_CHMOD_ACL(conn, path, mode)) == 0) {
+		if ((result = SMB_VFS_CHMOD_ACL(conn, path, mode)) == 0) {
 			END_PROFILE(syscall_chmod);
 			return result;
 		}
@@ -308,7 +308,7 @@ int vfswrap_fchmod(vfs_handle_struct *handle, files_struct *fsp, int fd, mode_t 
 	
 	{
 		int saved_errno = errno; /* We might get ENOSYS */
-		if ((result = VFS_FCHMOD_ACL(fsp, fd, mode)) == 0) {
+		if ((result = SMB_VFS_FCHMOD_ACL(fsp, fd, mode)) == 0) {
 			END_PROFILE(syscall_chmod);
 			return result;
 		}
@@ -391,14 +391,14 @@ int vfswrap_utime(vfs_handle_struct *handle, connection_struct *conn, const char
 static int strict_allocate_ftruncate(vfs_handle_struct *handle, files_struct *fsp, int fd, SMB_OFF_T len)
 {
 	SMB_STRUCT_STAT st;
-	SMB_OFF_T currpos = VFS_LSEEK(fsp, fd, 0, SEEK_CUR);
+	SMB_OFF_T currpos = SMB_VFS_LSEEK(fsp, fd, 0, SEEK_CUR);
 	unsigned char zero_space[4096];
 	SMB_OFF_T space_to_write;
 
 	if (currpos == -1)
 		return -1;
 
-	if (VFS_FSTAT(fsp, fd, &st) == -1)
+	if (SMB_VFS_FSTAT(fsp, fd, &st) == -1)
 		return -1;
 
 	space_to_write = len - st.st_size;
@@ -416,7 +416,7 @@ static int strict_allocate_ftruncate(vfs_handle_struct *handle, files_struct *fs
 		return sys_ftruncate(fd, len);
 
 	/* Write out the real space on disk. */
-	if (VFS_LSEEK(fsp, fd, st.st_size, SEEK_SET) != st.st_size)
+	if (SMB_VFS_LSEEK(fsp, fd, st.st_size, SEEK_SET) != st.st_size)
 		return -1;
 
 	space_to_write = len - st.st_size;
@@ -426,7 +426,7 @@ static int strict_allocate_ftruncate(vfs_handle_struct *handle, files_struct *fs
 		SMB_OFF_T retlen;
 		SMB_OFF_T current_len_to_write = MIN(sizeof(zero_space),space_to_write);
 
-		retlen = VFS_WRITE(fsp,fsp->fd,(char *)zero_space,current_len_to_write);
+		retlen = SMB_VFS_WRITE(fsp,fsp->fd,(char *)zero_space,current_len_to_write);
 		if (retlen <= 0)
 			return -1;
 
@@ -434,7 +434,7 @@ static int strict_allocate_ftruncate(vfs_handle_struct *handle, files_struct *fs
 	}
 
 	/* Seek to where we were */
-	if (VFS_LSEEK(fsp, fd, currpos, SEEK_SET) != currpos)
+	if (SMB_VFS_LSEEK(fsp, fd, currpos, SEEK_SET) != currpos)
 		return -1;
 
 	return 0;
@@ -468,7 +468,7 @@ int vfswrap_ftruncate(vfs_handle_struct *handle, files_struct *fsp, int fd, SMB_
 	/* According to W. R. Stevens advanced UNIX prog. Pure 4.3 BSD cannot
 	   extend a file with ftruncate. Provide alternate implementation
 	   for this */
-	currpos = VFS_LSEEK(fsp, fd, 0, SEEK_CUR);
+	currpos = SMB_VFS_LSEEK(fsp, fd, 0, SEEK_CUR);
 	if (currpos == -1) {
 		goto done;
 	}
@@ -477,7 +477,7 @@ int vfswrap_ftruncate(vfs_handle_struct *handle, files_struct *fsp, int fd, SMB_
 	   size in which case the ftruncate above should have
 	   succeeded or shorter, in which case seek to len - 1 and
 	   write 1 byte of zero */
-	if (VFS_FSTAT(fsp, fd, &st) == -1) {
+	if (SMB_VFS_FSTAT(fsp, fd, &st) == -1) {
 		goto done;
 	}
 
@@ -498,14 +498,14 @@ int vfswrap_ftruncate(vfs_handle_struct *handle, files_struct *fsp, int fd, SMB_
 		goto done;
 	}
 
-	if (VFS_LSEEK(fsp, fd, len-1, SEEK_SET) != len -1)
+	if (SMB_VFS_LSEEK(fsp, fd, len-1, SEEK_SET) != len -1)
 		goto done;
 
-	if (VFS_WRITE(fsp, fd, &c, 1)!=1)
+	if (SMB_VFS_WRITE(fsp, fd, &c, 1)!=1)
 		goto done;
 
 	/* Seek to where we were */
-	if (VFS_LSEEK(fsp, fd, currpos, SEEK_SET) != currpos)
+	if (SMB_VFS_LSEEK(fsp, fd, currpos, SEEK_SET) != currpos)
 		goto done;
 	result = 0;
 

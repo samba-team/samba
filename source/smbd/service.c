@@ -704,7 +704,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	
 	/* Invoke VFS make connection hook */
 
-	if (VFS_CONNECT(conn, lp_servicename(snum), user) < 0) {
+	if (SMB_VFS_CONNECT(conn, lp_servicename(snum), user) < 0) {
 		DEBUG(0,("make_connection: VFS make connection failed!\n"));
 		change_to_root_user();
 		conn_free(conn);
@@ -871,7 +871,7 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 				 lp_servicename(SNUM(conn))));
 
 	/* Call VFS disconnect hook */    
-	VFS_DISCONNECT(conn);
+	SMB_VFS_DISCONNECT(conn);
 
 	yield_connection(conn, lp_servicename(SNUM(conn)));
 

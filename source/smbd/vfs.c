@@ -320,7 +320,7 @@ BOOL vfs_directory_exist(connection_struct *conn, const char *dname, SMB_STRUCT_
 	if (!st)
 		st = &st2;
 
-	if (VFS_STAT(conn,dname,st) != 0)
+	if (SMB_VFS_STAT(conn,dname,st) != 0)
 		return(False);
 
 	ret = S_ISDIR(st->st_mode);
@@ -339,7 +339,7 @@ int vfs_MkDir(connection_struct *conn, const char *name, mode_t mode)
 	int ret;
 	SMB_STRUCT_STAT sbuf;
 
-	if(!(ret=VFS_MKDIR(conn, name, mode))) {
+	if(!(ret=SMB_VFS_MKDIR(conn, name, mode))) {
 
 		inherit_access_acl(conn, name, mode);
 
@@ -349,8 +349,8 @@ int vfs_MkDir(connection_struct *conn, const char *name, mode_t mode)
 		 * Consider bits automagically set by UNIX, i.e. SGID bit from parent dir.
 		 */
 		if(mode & ~(S_IRWXU|S_IRWXG|S_IRWXO) &&
-				!VFS_STAT(conn,name,&sbuf) && (mode & ~sbuf.st_mode))
-			VFS_CHMOD(conn,name,sbuf.st_mode | (mode & ~sbuf.st_mode));
+				!SMB_VFS_STAT(conn,name,&sbuf) && (mode & ~sbuf.st_mode))
+			SMB_VFS_CHMOD(conn,name,sbuf.st_mode | (mode & ~sbuf.st_mode));
 	}
 	return ret;
 }
@@ -368,7 +368,7 @@ BOOL vfs_object_exist(connection_struct *conn,const char *fname,SMB_STRUCT_STAT 
 
 	ZERO_STRUCTP(sbuf);
 
-	if (VFS_STAT(conn,fname,sbuf) == -1)
+	if (SMB_VFS_STAT(conn,fname,sbuf) == -1)
 		return(False);
 	return True;
 }
@@ -386,7 +386,7 @@ BOOL vfs_file_exist(connection_struct *conn, const char *fname,SMB_STRUCT_STAT *
 
 	ZERO_STRUCTP(sbuf);
 
-	if (VFS_STAT(conn,fname,sbuf) == -1)
+	if (SMB_VFS_STAT(conn,fname,sbuf) == -1)
 		return False;
 	return(S_ISREG(sbuf->st_mode));
 }
@@ -401,7 +401,7 @@ ssize_t vfs_read_data(files_struct *fsp, char *buf, size_t byte_count)
 
 	while (total < byte_count)
 	{
-		ssize_t ret = VFS_READ(fsp, fsp->fd, buf + total,
+		ssize_t ret = SMB_VFS_READ(fsp, fsp->fd, buf + total,
 					byte_count - total);
 
 		if (ret == 0) return total;
@@ -426,7 +426,7 @@ ssize_t vfs_write_data(files_struct *fsp,const char *buffer,size_t N)
 	ssize_t ret;
 
 	while (total < N) {
-		ret = VFS_WRITE(fsp,fsp->fd,buffer + total,N - total);
+		ret = SMB_VFS_WRITE(fsp,fsp->fd,buffer + total,N - total);
 
 		if (ret == -1)
 			return -1;
@@ -465,7 +465,7 @@ int vfs_allocate_file_space(files_struct *fsp, SMB_BIG_UINT len)
 		return -1;
 	}
 
-	ret = VFS_FSTAT(fsp,fsp->fd,&st);
+	ret = SMB_VFS_FSTAT(fsp,fsp->fd,&st);
 	if (ret == -1)
 		return ret;
 
@@ -479,7 +479,7 @@ int vfs_allocate_file_space(files_struct *fsp, SMB_BIG_UINT len)
 				fsp->fsp_name, (double)st.st_size ));
 
 		flush_write_cache(fsp, SIZECHANGE_FLUSH);
-		if ((ret = VFS_FTRUNCATE(fsp, fsp->fd, (SMB_OFF_T)len)) != -1) {
+		if ((ret = SMB_VFS_FTRUNCATE(fsp, fsp->fd, (SMB_OFF_T)len)) != -1) {
 			set_filelen_write_cache(fsp, len);
 		}
 		return ret;
@@ -492,7 +492,7 @@ int vfs_allocate_file_space(files_struct *fsp, SMB_BIG_UINT len)
 
 	len -= st.st_size;
 	len /= 1024; /* Len is now number of 1k blocks needed. */
-	space_avail = VFS_DISK_FREE(conn,fsp->fsp_name,False,&bsize,&dfree,&dsize);
+	space_avail = SMB_VFS_DISK_FREE(conn,fsp->fsp_name,False,&bsize,&dfree,&dsize);
 
 	DEBUG(10,("vfs_allocate_file_space: file %s, grow. Current size %.0f, needed blocks = %.0f, space avail = %.0f\n",
 			fsp->fsp_name, (double)st.st_size, (double)len, (double)space_avail ));
@@ -518,7 +518,7 @@ int vfs_set_filelen(files_struct *fsp, SMB_OFF_T len)
 	release_level_2_oplocks_on_change(fsp);
 	DEBUG(10,("vfs_set_filelen: ftruncate %s to len %.0f\n", fsp->fsp_name, (double)len));
 	flush_write_cache(fsp, SIZECHANGE_FLUSH);
-	if ((ret = VFS_FTRUNCATE(fsp, fsp->fd, len)) != -1)
+	if ((ret = SMB_VFS_FTRUNCATE(fsp, fsp->fd, len)) != -1)
 		set_filelen_write_cache(fsp, len);
 
 	return ret;
@@ -533,12 +533,12 @@ static files_struct *out_fsp;
 
 static ssize_t read_fn(int fd, void *buf, size_t len)
 {
-	return VFS_READ(in_fsp, fd, buf, len);
+	return SMB_VFS_READ(in_fsp, fd, buf, len);
 }
 
 static ssize_t write_fn(int fd, const void *buf, size_t len)
 {
-	return VFS_WRITE(out_fsp, fd, buf, len);
+	return SMB_VFS_WRITE(out_fsp, fd, buf, len);
 }
 
 SMB_OFF_T vfs_transfer_file(files_struct *in, files_struct *out, SMB_OFF_T n)
@@ -561,7 +561,7 @@ char *vfs_readdirname(connection_struct *conn, void *p)
 	if (!p)
 		return(NULL);
 
-	ptr = (struct dirent *)VFS_READDIR(conn,p);
+	ptr = (struct dirent *)SMB_VFS_READDIR(conn,p);
 	if (!ptr)
 		return(NULL);
 
@@ -597,7 +597,7 @@ int vfs_ChDir(connection_struct *conn, const char *path)
 
 	DEBUG(4,("vfs_ChDir to %s\n",path));
 
-	res = VFS_CHDIR(conn,path);
+	res = SMB_VFS_CHDIR(conn,path);
 	if (!res)
 		pstrcpy(LastDir,path);
 	return(res);
@@ -654,7 +654,7 @@ char *vfs_GetWd(connection_struct *conn, char *path)
 	*s = 0;
 
 	if (!use_getwd_cache)
-		return(VFS_GETWD(conn,path));
+		return(SMB_VFS_GETWD(conn,path));
 
 	/* init the cache */
 	if (!getwd_cache_init) {
@@ -668,9 +668,9 @@ char *vfs_GetWd(connection_struct *conn, char *path)
 	/*  Get the inode of the current directory, if this doesn't work we're
 		in trouble :-) */
 
-	if (VFS_STAT(conn, ".",&st) == -1) {
+	if (SMB_VFS_STAT(conn, ".",&st) == -1) {
 		DEBUG(0,("Very strange, couldn't stat \".\" path=%s\n", path));
-		return(VFS_GETWD(conn,path));
+		return(SMB_VFS_GETWD(conn,path));
 	}
 
 
@@ -684,7 +684,7 @@ char *vfs_GetWd(connection_struct *conn, char *path)
 				the same...) */
 
 			if (st.st_ino == ino_list[i].inode && st.st_dev == ino_list[i].dev) {
-				if (VFS_STAT(conn,ino_list[i].dos_path,&st2) == 0) {
+				if (SMB_VFS_STAT(conn,ino_list[i].dos_path,&st2) == 0) {
 					if (st.st_ino == st2.st_ino && st.st_dev == st2.st_dev &&
 							(st2.st_mode & S_IFMT) == S_IFDIR) {
 						pstrcpy (path, ino_list[i].dos_path);
@@ -706,8 +706,8 @@ char *vfs_GetWd(connection_struct *conn, char *path)
 		The very slow getcwd, which spawns a process on some systems, or the
 		not quite so bad getwd. */
 
-	if (!VFS_GETWD(conn,s)) {
-		DEBUG(0,("vfs_GetWd: VFS_GETWD call failed, errno %s\n",strerror(errno)));
+	if (!SMB_VFS_GETWD(conn,s)) {
+		DEBUG(0,("vfs_GetWd: SMB_VFS_GETWD call failed, errno %s\n",strerror(errno)));
 		return (NULL);
 	}
 
@@ -763,7 +763,7 @@ static BOOL readlink_check(connection_struct *conn, const char *dir, char *name)
 		realdir[reallen] = 0;
 	}
 
-	if (VFS_READLINK(conn, name, flink, sizeof(pstring) -1) != -1) {
+	if (SMB_VFS_READLINK(conn, name, flink, sizeof(pstring) -1) != -1) {
 		DEBUG(3,("reduce_name: file path name %s is a symlink\nChecking it's path\n", name));
 		if (*flink == '/') {
 			pstrcpy(cleanlink, flink);

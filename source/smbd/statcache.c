@@ -242,7 +242,7 @@ BOOL stat_cache_lookup(connection_struct *conn, pstring name, pstring dirpath,
     } else {
       scp = (stat_cache_entry *)(hash_elem->value);
       DO_PROFILE_INC(statcache_hits);
-      if(VFS_STAT(conn,scp->translated_path, pst) != 0) {
+      if(SMB_VFS_STAT(conn,scp->translated_path, pst) != 0) {
         /* Discard this entry - it doesn't exist in the filesystem.  */
         hash_remove(&stat_cache, hash_elem);
         return False;
