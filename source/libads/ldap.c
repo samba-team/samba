@@ -2261,7 +2261,7 @@ char *ads_pull_username(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, void *msg)
 	   breaks winbindd_getpwnam() */
 
 	ret = ads_pull_string(ads, mem_ctx, msg, "userPrincipalName");
-	if (ret && (p = strchr(ret, '@'))) {
+	if (ret && (p = strchr_m(ret, '@'))) {
 		*p = 0;
 		return ret;
 	}

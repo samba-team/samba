@@ -920,7 +920,7 @@ static void manage_gss_spnego_request(enum stdio_helper_mode stdio_helper_mode,
 
 			if (NT_STATUS_IS_OK(status)) {
 
-				domain = strchr(principal, '@');
+				domain = strchr_m(principal, '@');
 
 				if (domain == NULL) {
 					DEBUG(1, ("Did not get a valid principal "
