@@ -817,7 +817,7 @@ it() link(bf(directory mask))(directorymask)
 
 it() link(bf(directory mode))(directorymode)
 
-it() linf(bf(directory security mask))(directorysecuritymask)
+it() link(bf(directory security mask))(directorysecuritymask)
 
 it() link(bf(dont descend))(dontdescend)
 
@@ -1337,7 +1337,13 @@ correctly.
 
 it() bf(ISO8859-5) Russian Cyrillic UNIX character set. The parameter
 link(bf(client code page))(clientcodepage) em(MUST) be set to code
-page 866 if the bf(character set) parameter is set to ISO8859-2
+page 866 if the bf(character set) parameter is set to ISO8859-5
+in order for the conversion to the UNIX character set to be done
+correctly. 
+
+it() bf(ISO8859-7) Greek UNIX character set. The parameter
+link(bf(client code page))(clientcodepage) em(MUST) be set to code
+page 737 if the bf(character set) parameter is set to ISO8859-7
 in order for the conversion to the UNIX character set to be done
 correctly. 
 
@@ -2843,7 +2849,9 @@ For more discussions on level2 oplocks see the CIFS spec.
 
 Currently, if link(bf("kernel oplocks"))(kerneloplocks) are supported
 then level2 oplocks are not granted (even if this parameter is set
-to tt("true")).
+to tt("true")). Note also, the link(bf("oplocks"))(oplocks) parameter must
+be set to "true" on this share in order for this parameter to have any
+effect.
 
 See also the link(bf("oplocks"))(oplocks) and link(bf("kernel oplocks"))(kerneloplocks) parameters.
 
