@@ -560,6 +560,53 @@ BN_to_integer(krb5_context context, BIGNUM *bn, heim_integer *integer)
 }
 
 static krb5_error_code
+_pk_mk_crypto_params(krb5_context context,
+		     krb5_enctype enctype,
+		     krb5_data *ivec,
+		     AlgorithmIdentifier *enc_alg)
+{
+    krb5_error_code ret;
+    heim_oid *enc_type_oid = NULL;
+    size_t size;
+
+    switch (enctype) {
+    case ETYPE_DES3_CBC_NONE: {
+	enc_type_oid = &heim_des_ede3_cbc_oid;
+
+	ALLOC(enc_alg->parameters);
+	if (enc_alg->parameters == NULL) {
+	    krb5_set_error_string(context, "malloc out of memory");
+	    return ENOMEM;
+	}
+	ASN1_MALLOC_ENCODE(CBCParameter,
+			   enc_alg->parameters->data,
+			   enc_alg->parameters->length,
+			   ivec,
+			   &size,
+			   ret);
+	if (ret)
+	    return ret;
+	if (enc_alg->parameters->length != size)
+	    krb5_abortx(context, "internal ASN1 encoded error");
+	break;
+    }
+    default:
+	krb5_set_error_string(context, "PKINIT no support for enctype %d",
+			      enctype);
+	return KRB5_PROG_KEYTYPE_NOSUPP;
+    }
+
+    ret = copy_oid(enc_type_oid, &enc_alg->algorithm);
+    if (ret) {
+	krb5_set_error_string(context, "copy oid - out of memory");
+	return ret;
+    }
+
+    return 0;
+}
+
+
+static krb5_error_code
 pk_mk_pa_reply_enckey(krb5_context context,
       	              pk_client_params *client_params,
 		      const KDC_REQ *req,
@@ -570,10 +617,9 @@ pk_mk_pa_reply_enckey(krb5_context context,
     EnvelopedData ed;
     krb5_error_code ret;
     krb5_crypto crypto;
-    krb5_data buf, sd_data, enc_sd_data;
+    krb5_data buf, sd_data, enc_sd_data, iv;
     krb5_keyblock tmp_key;
     krb5_enctype enveloped_enctype;
-    heim_oid *enc_type_oid = NULL;
     X509_NAME *issuer_name;
     heim_integer *serial;
     size_t size;
@@ -581,6 +627,7 @@ pk_mk_pa_reply_enckey(krb5_context context,
 
     krb5_data_zero(&enc_sd_data);
     krb5_data_zero(&sd_data);
+    krb5_data_zero(&iv);
 
     memset(&tmp_key, 0, sizeof(tmp_key));
     memset(&ed, 0, sizeof(ed));
@@ -600,13 +647,26 @@ pk_mk_pa_reply_enckey(krb5_context context,
 
     switch (enveloped_enctype) {
     case ETYPE_DES3_CBC_NONE:
-	enc_type_oid = &heim_des_ede3_cbc_oid;
+	ret = krb5_data_alloc(&iv, 8);
+	if (ret) {
+	    krb5_set_error_string(context, "malloc out of memory");
+	    goto out;
+	}
 	break;
     default:
 	krb5_set_error_string(context, "not support for enctype %d",
 			      enveloped_enctype);
-	return KRB5_PROG_KEYTYPE_NOSUPP;
+	ret = KRB5_PROG_KEYTYPE_NOSUPP;
+	goto out;
     }
+
+    krb5_generate_random_block(iv.data, iv.length);
+
+    ret = _pk_mk_crypto_params(context,
+			       enveloped_enctype,
+			       &iv,
+			       &ed.encryptedContentInfo.contentEncryptionAlgorithm);
+
 
     {
 	ReplyKeyPack kp;
@@ -615,7 +675,7 @@ pk_mk_pa_reply_enckey(krb5_context context,
 	ret = copy_EncryptionKey(reply_key, &kp.replyKey);
 	if (ret) {
 	    krb5_clear_error_string(context);
-	    return ret;
+	    goto out;
 	}
 	kp.nonce = client_params->nonce;
 	
@@ -625,7 +685,7 @@ pk_mk_pa_reply_enckey(krb5_context context,
     if (ret) {
 	krb5_set_error_string(context, "ASN.1 encoding of ReplyKeyPack "
 			      "failed (%d)", ret);
-	return ret;
+	goto out;
     }
     if (buf.length != size)
 	krb5_abortx(context, "Internal ASN.1 encoder error");
@@ -651,9 +711,10 @@ pk_mk_pa_reply_enckey(krb5_context context,
     if (ret)
 	goto out;
 
-    ret = krb5_encrypt(context, crypto, 0, 
-		       sd_data.data, sd_data.length,
-		       &enc_sd_data);
+    ret = krb5_encrypt_ivec(context, crypto, 0, 
+			    sd_data.data, sd_data.length,
+			    &enc_sd_data,
+			    iv.data);
     krb5_crypto_destroy(context, crypto);
     if (ret)
 	goto out;
@@ -731,13 +792,6 @@ pk_mk_pa_reply_enckey(krb5_context context,
 	krb5_clear_error_string(context);
 	goto out;
     }
-    ret = copy_oid(enc_type_oid,
-	&ed.encryptedContentInfo.contentEncryptionAlgorithm.algorithm);
-    if (ret) {
-	krb5_clear_error_string(context);
-	goto out;
-    }
-    ed.encryptedContentInfo.contentEncryptionAlgorithm.parameters = NULL;
 
     ALLOC(ed.encryptedContentInfo.encryptedContent);
     if (ed.encryptedContentInfo.encryptedContent == NULL) {
@@ -769,7 +823,7 @@ pk_mk_pa_reply_enckey(krb5_context context,
  out:
     krb5_free_keyblock_contents(context, &tmp_key);
     krb5_data_free(&enc_sd_data);
-    krb5_data_zero(&sd_data);
+    krb5_data_free(&iv);
     free_EnvelopedData(&ed);
 
     return ret;
