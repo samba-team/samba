@@ -163,33 +163,46 @@ return the matched name in *name
 
 BOOL name_status_find(const char *q_name, int q_type, int type, struct in_addr to_ip, char *name)
 {
-	struct node_status *status;
+	struct node_status *status = NULL;
 	struct nmb_name nname;
 	int count, i;
 	int sock;
+	BOOL result = False;
+
+	DEBUG(10, ("name_status_find: looking up %s#%x\n", q_name, q_type));
 
 	sock = open_socket_in(SOCK_DGRAM, 0, 3, interpret_addr(lp_socket_address()), True);
 	if (sock == -1)
-		return False;
+		goto done;
 
 	/* W2K PDC's seem not to respond to '*'#0. JRA */
 	make_nmb_name(&nname, q_name, q_type);
 	status = node_status_query(sock, &nname, to_ip, &count);
 	close(sock);
 	if (!status)
-		return False;
+		goto done;
 
 	for (i=0;i<count;i++) {
 		if (status[i].type == type)
 			break;
 	}
 	if (i == count)
-		return False;
+		goto done;
 
 	pull_ascii(name, status[i].name, 15, 0, STR_TERMINATE);
+	result = True;
 
+ done:
 	SAFE_FREE(status);
-	return True;
+
+	DEBUG(10, ("name_status_find: name %sfound", result ? "" : "not "));
+
+	if (result)
+		DEBUGADD(10, (", ip address is %s", inet_ntoa(to_ip)));
+
+	DEBUG(10, ("\n"));	
+
+	return result;
 }
 
 /****************************************************************************
