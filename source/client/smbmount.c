@@ -402,19 +402,6 @@ static void send_fs_socket(char *service, char *mount_point, struct cli_state *c
 	exit(1);
 }
 
-/*********************************************************
-a strdup with exit
-**********************************************************/
-static char *xstrdup(char *s)
-{
-	s = strdup(s);
-	if (!s) {
-		fprintf(stderr,"out of memory\n");
-		exit(1);
-	}
-	return s;
-}
-
 
 /****************************************************************************
 mount smbfs
