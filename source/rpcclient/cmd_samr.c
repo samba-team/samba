@@ -1160,8 +1160,13 @@ uint32 cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 
 	if (join_domain)
 	{
+		extern pstring global_myname;
+		struct in_addr srv_ip;
+
 		fstrcpy(domain, join_dom_name);
-		if (!get_any_dc_name(domain, srv_name))
+		if (!resolve_name(domain, &srv_ip, 0x1b) ||
+		    !lookup_pdc_name(global_myname, domain, &srv_ip, 
+				     srv_name))
 		{
 			report(out_hnd,
 			       "could not locate server for domain %s\n",
