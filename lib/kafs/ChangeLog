@@ -1,3 +1,7 @@
+Thu Feb 12 11:20:15 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* Makefile.in: Install/uninstall one library at a time.
+
 Tue Jan  6 04:25:58 1998  Assar Westerlund  <assar@sics.se>
 
 	* afssysdefs.h (AFS_SYSCALL): add FreeBSD
