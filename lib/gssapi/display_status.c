@@ -35,8 +35,6 @@
 
 RCSID("$Id$");
 
-static char *krb5_error_string;
-
 static char *
 calling_error(OM_uint32 v)
 {
@@ -116,14 +114,29 @@ supplementary_error(OM_uint32 v)
 void
 gssapi_krb5_set_error_string (void)
 {
-    krb5_error_string = krb5_get_error_string(gssapi_krb5_context);
+    struct gssapi_thr_context *ctx = gssapi_get_thread_context(1);
+
+    if (ctx == NULL)
+	return;
+    HEIMDAL_MUTEX_lock(&ctx->mutex);
+    if (ctx->error_string)
+	free(ctx->error_string);
+    ctx->error_string = krb5_get_error_string(gssapi_krb5_context);
+    HEIMDAL_MUTEX_unlock(&ctx->mutex);
 }
 
 char *
 gssapi_krb5_get_error_string (void)
 {
-    char *ret = krb5_error_string;
-    krb5_error_string = NULL;
+    struct gssapi_thr_context *ctx = gssapi_get_thread_context(0);
+    char *ret;
+
+    if (ctx == NULL)
+	return NULL;
+    HEIMDAL_MUTEX_lock(&ctx->mutex);
+    ret = ctx->error_string;
+    ctx->error_string = NULL;
+    HEIMDAL_MUTEX_unlock(&ctx->mutex);
     return ret;
 }
 
