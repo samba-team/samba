@@ -1747,7 +1747,12 @@ BOOL is_myname_or_ipaddr(const char *s)
 
 	if (is_myname(servername))
 		return True;
-		
+
+	/* check for loopback */
+
+	if (strequal(servername, "localhost")) 
+		return True;
+
 	/* maybe it's my dns name */
 
 	if ( get_mydnsfullname( dnsname ) )
