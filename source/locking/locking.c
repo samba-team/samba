@@ -77,9 +77,17 @@ BOOL is_locked(files_struct *fsp,connection_struct *conn,
 	if (!lp_locking(snum) || !lp_strict_locking(snum))
 		return(False);
 
-	ret = !brl_locktest(fsp->dev, fsp->inode, fsp->fnum,
+	if (EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type) && (lock_type == READ_LOCK || lock_type == WRITE_LOCK)) {
+		DEBUG(10,("is_locked: optimisation - exclusive oplock on file %s\n", fsp->fsp_name ));
+		ret = 0;
+	} else if (LEVEL_II_OPLOCK_TYPE(fsp->oplock_type) && (lock_type == READ_LOCK)) {
+		DEBUG(10,("is_locked: optimisation - level II oplock on file %s\n", fsp->fsp_name ));
+		ret = 0;
+	} else {
+		ret = !brl_locktest(fsp->dev, fsp->inode, fsp->fnum,
 			     global_smbpid, sys_getpid(), conn->cnum, 
 			     offset, count, lock_type);
+	}
 
 	DEBUG(10,("is_locked: brl start=%.0f len=%.0f %s for file %s\n",
 			(double)offset, (double)count, ret ? "locked" : "unlocked",
