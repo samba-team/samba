@@ -226,7 +226,7 @@ void ndr_print_spoolss_EnumPrinters(struct ndr_print *ndr, const char *name, int
 	if (flags & NDR_IN) {
 		ndr_print_struct(ndr, "in", "spoolss_EnumPrinters");
 		ndr->depth++;
-		ndr_print_uint32(ndr, "flags", r->in.flags);
+		ndr_print_spoolss_EnumPrinterFlags(ndr, "flags", r->in.flags);
 		ndr_print_ptr(ndr, "server", r->in.server);
 		ndr->depth++;
 		if (r->in.server) {
