@@ -38,7 +38,7 @@ make asn1_compile use enum types where applicable
 
 ** lib/auth
 
-PAM and afskauthlib
+PAM
 
 ** lib/des
 
@@ -61,10 +61,6 @@ delegation not implemented
 anonymous credentials not implemented
 
 ** lib/hdb
-
-fix locking
-
-fix atomic rename of database
 
 ** lib/kadm5
 
