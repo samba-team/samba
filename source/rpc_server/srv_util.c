@@ -194,7 +194,7 @@ NTSTATUS get_alias_user_groups(TALLOC_CTX *ctx, DOM_SID *sid, int *numgroups, ui
 		break;
 	}
 
-	free(groups);
+	if(num_groups) free(groups);
 
 	/* now check for the user's gid (the primary group rid) */
 	for (i=0; i<cur_rid && grid!=rids[i]; i++)
