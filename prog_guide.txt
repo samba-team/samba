@@ -554,10 +554,30 @@ DCERPC binding strings
 ----------------------
 
 When connecting to a dcerpc service you need to specify a binding
-string. Because I'm too lazy to write proper docs, here are some
-examples that should give you the idea:
+string. 
 
-These all connect to the samr pipe:
+The format is:
+
+  TRANSPORT:host:[flags]
+
+where TRANSPORT is either ncacn_np for SMB or ncacn_ip_tcp for RPC/TCP
+
+"host" is an IP or hostname or netbios name
+
+"flags" must start with the pipe name if using the ncacn_np transport
+
+The ncacn_ip_tcp can take an integer flag giving the TCP port
+number. It must be the first flag if given.
+
+other recognised flags are:
+
+  sign : enable ntlmssp signing
+  seal : enable ntlmssp sealing
+  validate: enable the NDR validator
+  bigendian: use bigendian RPC
+
+
+For example, these all connect to the samr pipe:
 
    ncacn_np:myserver
    ncacn_np:myserver:samr
@@ -568,7 +588,7 @@ These all connect to the samr pipe:
    ncacn_np:myserver[\pipe\samr]
    ncacn_np:myserver[/pipe/samr]
    ncacn_np:myserver:[samr,sign]
-   ncacn_np:myserver:[\pipe\samr,sign,seal]
+   ncacn_np:myserver:[\pipe\samr,sign,seal,bigendian]
    ncacn_np:myserver:[/pipe/samr,seal]
 
    ncacn_ip_tcp:myserver
