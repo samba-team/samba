@@ -403,6 +403,41 @@ BOOL test_EnumJobs(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return True;
 }
 
+BOOL test_GetPrinterData(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+			 struct policy_handle *handle, char *value_name)
+{
+	NTSTATUS status;
+	struct spoolss_GetPrinterData r;
+	uint32 buf_size;
+
+	r.in.handle = handle;
+	r.in.value_name = value_name;
+	buf_size = 0;
+	r.in.buf_size = r.out.buf_size = &buf_size;
+
+	printf("Testing GetPrinterData\n");
+
+	status = dcerpc_spoolss_GetPrinterData(p, mem_ctx, &r);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("GetPrinterData failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	if (W_ERROR_EQUAL(r.out.result, WERR_MORE_DATA)) {
+
+		status = dcerpc_spoolss_GetPrinterData(p, mem_ctx, &r);
+
+		if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(r.out.result)) {
+			printf("GetPrinterData failed - %s/%s\n", 
+			       nt_errstr(status), win_errstr(r.out.result));
+			return False;
+		}
+	}
+
+	return True;
+}
+
 BOOL test_EnumPrinterData(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			  struct policy_handle *handle)
 {
@@ -438,8 +473,11 @@ BOOL test_EnumPrinterData(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			return False;
 		}
 		
+		test_GetPrinterData(p, mem_ctx, handle, r.out.value_name);
+
 		r.in.enum_index++;
-	} while (!W_ERROR_IS_OK(r.out.result));
+
+	} while (W_ERROR_IS_OK(r.out.result));
 
 	return True;
 }

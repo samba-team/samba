@@ -326,12 +326,17 @@
 
 	/******************/
 	/* Function: 0x1a */
-	WERROR spoolss_1a(
+	WERROR spoolss_GetPrinterData(
+		[in,ref] policy_handle *handle,
+		[in] unistr value_name,
+		[out] uint32 type,
+		[out] DATA_BLOB buffer,
+		[in,out,ref] uint32 *buf_size
 	);
 
 	/******************/
 	/* Function: 0x1b */
-	WERROR spoolss_1b(
+	WERROR spoolss_SetPrinterData(
 	);
 
 	/******************/
@@ -630,7 +635,7 @@
 		[in,ref] policy_handle *handle,
 		[in]	 uint32 enum_index,
 		[in]     uint32 value_offered,
-		[out]	 lstring value,
+		[out]	 lstring value_name,
 		[out]	 uint32 value_needed,
 		[out]    uint32 printerdata_type,
 		[out]    DATA_BLOB data,
