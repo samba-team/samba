@@ -54,6 +54,10 @@
 
 #define BUCKET(hash) ((hash) % tdb->header.hash_size)
 
+#ifndef MAP_FILE
+#define MAP_FILE 0
+#endif
+
 /* the body of the database is made of one list_struct for the free space
    plus a separate data list for each hash value */
 struct list_struct {
