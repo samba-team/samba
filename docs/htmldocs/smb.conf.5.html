@@ -3910,6 +3910,18 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
+HREF="#RESTRICTACLWITHMASK"
+><TT
+CLASS="PARAMETER"
+><I
+>restrict acl with mask</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
 HREF="#ROOTPOSTEXEC"
 ><TT
 CLASS="PARAMETER"
@@ -4236,7 +4248,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN1381"
+NAME="AEN1385"
 ></A
 ><H2
 >EXPLANATION OF EACH PARAMETER</H2
@@ -5931,6 +5943,19 @@ CLASS="PARAMETER"
 ></A
 > parameter.</P
 ><P
+>Note that by default this parameter does not apply to permissions
+		set by Windows NT/2000 ACL editors. If the administrator wishes to enforce
+		this mask on access control lists also, they need to set the <A
+HREF="#RESTRICTACLWITHMASK"
+><TT
+CLASS="PARAMETER"
+><I
+>restrict acl with 
+		mask</I
+></TT
+></A
+> to true.</P
+><P
 >Default: <B
 CLASS="COMMAND"
 >create mask = 0744</B
@@ -6859,6 +6884,19 @@ CLASS="PARAMETER"
 > parameter. This parameter is set to 000 by 
 		default (i.e. no extra mode bits are added).</P
 ><P
+>Note that by default this parameter does not apply to permissions
+		set by Windows NT/2000 ACL editors. If the administrator wishes to enforce
+		this mask on access control lists also, they need to set the <A
+HREF="#RESTRICTACLWITHMASK"
+><TT
+CLASS="PARAMETER"
+><I
+>restrict acl with 
+		mask</I
+></TT
+></A
+> to true.</P
+><P
 >See the <A
 HREF="#FORCEDIRECTORYMODE"
 ><TT
@@ -7744,6 +7782,19 @@ CLASS="PARAMETER"
 > 
 		parameter is applied.</P
 ><P
+>Note that by default this parameter does not apply to permissions
+		set by Windows NT/2000 ACL editors. If the administrator wishes to enforce
+		this mask on access control lists also, they need to set the <A
+HREF="#RESTRICTACLWITHMASK"
+><TT
+CLASS="PARAMETER"
+><I
+>restrict acl with 
+		mask</I
+></TT
+></A
+> to true.</P
+><P
 >See also the parameter <A
 HREF="#CREATEMASK"
 ><TT
@@ -7802,6 +7853,19 @@ CLASS="PARAMETER"
 ></TT
 > is 
 		applied.</P
+><P
+>Note that by default this parameter does not apply to permissions
+		set by Windows NT/2000 ACL editors. If the administrator wishes to enforce
+		this mask on access control lists also, they need to set the <A
+HREF="#RESTRICTACLWITHMASK"
+><TT
+CLASS="PARAMETER"
+><I
+>restrict acl with 
+		mask</I
+></TT
+></A
+> to true.</P
 ><P
 >See also the parameter <A
 HREF="#DIRECTORYMASK"
@@ -14331,6 +14395,102 @@ CLASS="COMMAND"
 ></DD
 ><DT
 ><A
+NAME="RESTRICTACLWITHMASK"
+></A
+>restrict acl with mask (S)</DT
+><DD
+><P
+>This is a boolean parameter.  If set to false (default), then 
+		Creation of files with access control lists (ACLS) and modification of ACLs
+		using the Windows NT/2000 ACL editor will be applied directly to the file
+		or directory.</P
+><P
+>If set to True, then all requests to set an ACL on a file will have the
+		parameters <A
+HREF="#CREATEMASK"
+><TT
+CLASS="PARAMETER"
+><I
+>create mask</I
+></TT
+></A
+>,
+		<A
+HREF="#FORCECREATEMODE"
+><TT
+CLASS="PARAMETER"
+><I
+>force create mode</I
+></TT
+></A
+>
+		applied before setting the ACL, and all requests to set an ACL on a directory will
+		have the parameters <A
+HREF="#DIRECTORYMASK"
+><TT
+CLASS="PARAMETER"
+><I
+>directory 
+		mask</I
+></TT
+></A
+>, <A
+HREF="#FORCEDIRECTORYMODE"
+><TT
+CLASS="PARAMETER"
+><I
+>force 
+		directory mode</I
+></TT
+></A
+> applied before setting the ACL.
+		</P
+><P
+>See also <A
+HREF="#CREATEMASK"
+><TT
+CLASS="PARAMETER"
+><I
+>create mask</I
+></TT
+></A
+>,
+		<A
+HREF="#FORCECREATEMODE"
+><TT
+CLASS="PARAMETER"
+><I
+>force create mode</I
+></TT
+></A
+>,
+		<A
+HREF="#DIRECTORYMASK"
+><TT
+CLASS="PARAMETER"
+><I
+>directory mask</I
+></TT
+></A
+>,
+		<A
+HREF="#FORCEDIRECTORYMODE"
+><TT
+CLASS="PARAMETER"
+><I
+>force directory mode</I
+></TT
+></A
+>
+		</P
+><P
+>Default: <B
+CLASS="COMMAND"
+>restrict acl with mask = no</B
+></P
+></DD
+><DT
+><A
 NAME="RESTRICTANONYMOUS"
 ></A
 >restrict anonymous (G)</DT
@@ -18122,7 +18282,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5744"
+NAME="AEN5785"
 ></A
 ><H2
 >WARNINGS</H2
@@ -18152,7 +18312,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5750"
+NAME="AEN5791"
 ></A
 ><H2
 >VERSION</H2
@@ -18163,7 +18323,7 @@ NAME="AEN5750"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5753"
+NAME="AEN5794"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -18242,7 +18402,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5773"
+NAME="AEN5814"
 ></A
 ><H2
 >AUTHOR</H2

@@ -1618,8 +1618,9 @@
 
 		<para>Note that by default this parameter does not apply to permissions
 		set by Windows NT/2000 ACL editors. If the administrator wishes to enforce
-		this mask on access control lists also, they need to set the <link linkend="RESTRICTACLWITHMASK"><parameter>
-		restrict acl with mask</parameter></link> to true.</para>
+		this mask on access control lists also, they need to set the <link 
+		linkend="RESTRICTACLWITHMASK"><parameter>restrict acl with 
+		mask</parameter></link> to true.</para>
 
 		<para>Default: <command>create mask = 0744</command></para>
 		<para>Example: <command>create mask = 0775</command></para></listitem>
@@ -2088,8 +2089,9 @@
 
 		<para>Note that by default this parameter does not apply to permissions
 		set by Windows NT/2000 ACL editors. If the administrator wishes to enforce
-		this mask on access control lists also, they need to set the <link linkend="RESTRICTACLWITHMASK"><parameter>
-		restrict acl with mask</parameter></link> to true.</para>
+		this mask on access control lists also, they need to set the <link 
+		linkend="RESTRICTACLWITHMASK"><parameter>restrict acl with 
+		mask</parameter></link> to true.</para>
 
 		<para>See the <link linkend="FORCEDIRECTORYMODE"><parameter>force 
 		directory mode</parameter></link> parameter to cause particular mode 
@@ -2562,8 +2564,9 @@
 		
 		<para>Note that by default this parameter does not apply to permissions
 		set by Windows NT/2000 ACL editors. If the administrator wishes to enforce
-		this mask on access control lists also, they need to set the <link linkend="RESTRICTACLWITHMASK"><parameter>
-		restrict acl with mask</parameter></link> to true.</para>
+		this mask on access control lists also, they need to set the <link 
+		linkend="RESTRICTACLWITHMASK"><parameter>restrict acl with 
+		mask</parameter></link> to true.</para>
 
 		<para>See also the parameter <link linkend="CREATEMASK"><parameter>create 
 		mask</parameter></link> for details on masking mode bits on files.</para>
@@ -2595,8 +2598,9 @@
 
 		<para>Note that by default this parameter does not apply to permissions
 		set by Windows NT/2000 ACL editors. If the administrator wishes to enforce
-		this mask on access control lists also, they need to set the <link linkend="RESTRICTACLWITHMASK"><parameter>
-		restrict acl with mask</parameter></link> to true.</para>
+		this mask on access control lists also, they need to set the <link 
+		linkend="RESTRICTACLWITHMASK"><parameter>restrict acl with 
+		mask</parameter></link> to true.</para>
 
 		<para>See also the parameter <link linkend="DIRECTORYMASK"><parameter>
 		directory mask</parameter></link> for details on masking mode bits 
@@ -5967,9 +5971,9 @@
 		parameters <link linkend="CREATEMASK"><parameter>create mask</parameter></link>,
 		<link linkend="FORCECREATEMODE"><parameter>force create mode</parameter></link>
 		applied before setting the ACL, and all requests to set an ACL on a directory will
-		have the parameters <link linkend="DIRECTORYMASK"><parameter>
-        directory mask</parameter></link>, <link linkend="FORCEDIRECTORYMODE"><parameter>
-        force directory mode</parameter></link> applied before setting the ACL.
+		have the parameters <link linkend="DIRECTORYMASK"><parameter>directory 
+		mask</parameter></link>, <link linkend="FORCEDIRECTORYMODE"><parameter>force 
+		directory mode</parameter></link> applied before setting the ACL.
 		</para>
 
 		<para>See also <link linkend="CREATEMASK"><parameter>create mask</parameter></link>,
@@ -5978,13 +5982,13 @@
 		<link linkend="FORCEDIRECTORYMODE"><parameter>force directory mode</parameter></link>
 		</para>
 
-		<para>Default: <command>restrict acl with mask = False</command></para>
+		<para>Default: <command>restrict acl with mask = no</command></para>
+		</listitem>
 		</varlistentry>
 
 
 
 
-		</listitem>
 		<varlistentry>
 		<term><anchor id="RESTRICTANONYMOUS">restrict anonymous (G)</term>
 		<listitem><para>This is a boolean parameter.  If it is true, then 
