@@ -1234,8 +1234,8 @@ static BOOL check_bind_response(RPC_HDR_BA *hdr_ba, const int pipe_idx, RPC_IFAC
 	if ( hdr_ba->addr.len <= 0)
 		return False;
 		
-	if ( (strequal(hdr_ba->addr.str, pipe_names[pipe_idx].client_pipe) != 0) &&
-	     (strequal(hdr_ba->addr.str, pipe_names[pipe_idx].server_pipe) != 0) )
+	if ( !strequal(hdr_ba->addr.str, pipe_names[pipe_idx].client_pipe) &&
+	     !strequal(hdr_ba->addr.str, pipe_names[pipe_idx].server_pipe) )
 	{
 		DEBUG(4,("bind_rpc_pipe: pipe_name %s != expected pipe %s.  oh well!\n",
 		         pipe_names[i].server_pipe ,hdr_ba->addr.str));
