@@ -40,18 +40,6 @@
 
 RCSID("$Id$");
 
-
-static krb5_error_code
-key_proc (krb5_context context,
-	  krb5_keytype type,
-	  krb5_data *salt,
-	  krb5_const_pointer keyseed,
-	  krb5_keyblock **key)
-{
-    *key = (krb5_keyblock *)keyseed;
-    return 0;
-}
-
 static krb5_error_code
 make_pa_tgs_req(krb5_context context, 
 		krb5_ccache id, 
@@ -93,10 +81,9 @@ krb5_get_kdc_cred(krb5_context context,
     KRB_ERROR error;
     krb5_error_code ret;
     krb5_creds *krbtgt;
-
+    unsigned nonce;
     unsigned char buf[1024];
     size_t len;
-
     
     memset(&req, 0, sizeof(req));
     req.pvno = 5;
@@ -111,8 +98,10 @@ krb5_get_kdc_cred(krb5_context context,
     req.req_body.sname = malloc(sizeof(*req.req_body.sname));
     copy_PrincipalName(&in_creds->server->name, req.req_body.sname);
     req.req_body.till = in_creds->times.endtime;
-    krb5_generate_random_block(&req.req_body.nonce, 
-			       sizeof(req.req_body.nonce));
+
+    
+    krb5_generate_random_block(&nonce, sizeof(nonce));
+    req.req_body.nonce = nonce;
     if(second_ticket){
 	ALLOC(req.req_body.additional_tickets, 1);
 	req.req_body.additional_tickets->len = 1;
@@ -165,10 +154,6 @@ krb5_get_kdc_cred(krb5_context context,
 
     memset(&rep, 0, sizeof(rep));
     if(decode_TGS_REP(resp.data, resp.length, &rep.part1, &len) == 0){
-	/*
-	 * Not sure what should be done with out_creds->client and server
-	 */
-
 	krb5_copy_principal (context,
 			     in_creds->client,
 			     &(*out_creds)->client);
@@ -178,10 +163,13 @@ krb5_get_kdc_cred(krb5_context context,
 			     &(*out_creds)->server);
 
 
-	ret = extract_ticket(context, &rep, *out_creds,
+	ret = extract_ticket(context,
+			     &rep,
+			     *out_creds,
 			     &krbtgt->session,
 			     NULL,
 			     &krbtgt->addresses,
+			     nonce,
 			     NULL,
 			     NULL);
 	krb5_free_creds(context, krbtgt);
