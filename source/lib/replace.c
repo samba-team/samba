@@ -168,6 +168,7 @@ Corrections by richard.kettlewell@kewill.com
 	struct group *g;
 	char   *gr;
 	
+	setgrent();
 	grouplst[0] = id;
 	i = 1;
 	while (i < NGROUPS_MAX && 

@@ -31,10 +31,32 @@ extern DOM_SID global_sam_sid;
  to ensure no modification outside this module.
 ****************************************************************/
 
+struct unix_entries
+{
+	struct group *grps;
+	int num_grps;
+	int grp_idx;
+};
+
 static void *startgrpunixpwent(BOOL update)
 {
-	setgrent();
-	return (void*)(-1);
+	struct unix_entries *grps;
+	grps = (struct unix_entries*)malloc(sizeof(struct unix_entries));
+
+	if (grps == NULL)
+	{
+		return NULL;
+	}
+
+	if (!get_unix_grps(&grps->num_grps, &grps->grps))
+	{
+		free(grps);
+		return NULL;
+	}
+
+	grps->grp_idx = 0;
+
+	return (void*)grps;
 }
 
 /***************************************************************
@@ -43,7 +65,13 @@ static void *startgrpunixpwent(BOOL update)
 
 static void endgrpunixpwent(void *vp)
 {
-	endgrent();
+	struct unix_entries *grps = (struct unix_entries *)vp;
+
+	if (grps != NULL)
+	{
+		free_unix_grps(grps->num_grps, grps->grps);
+		free(vp);
+	}
 }
 
 /*************************************************************************
@@ -142,7 +170,13 @@ static DOMAIN_GRP *getgrpunixpwent(void *vp, DOMAIN_GRP_MEMBER **mem, int *num_m
 {
 	/* Static buffers we will return. */
 	static DOMAIN_GRP gp_buf;
-	struct group *unix_grp;
+	struct group *unix_grp = NULL;
+	struct unix_entries *grps = (struct unix_entries *)vp;
+
+	if (grps == NULL)
+	{
+		return NULL;
+	}
 
 	if (lp_server_role() == ROLE_DOMAIN_NONE || 
 	    lp_server_role() == ROLE_DOMAIN_MEMBER)
@@ -161,10 +195,17 @@ static DOMAIN_GRP *getgrpunixpwent(void *vp, DOMAIN_GRP_MEMBER **mem, int *num_m
 	fstrcpy(gp_buf.comment, "");
 	gp_buf.attr    = 0x07;
 
+	/* get array of unix names + gids.  this function does NOT
+	   get a copy of the unix group members
+	 */
+
 	/* cycle through unix groups */
-	while ((unix_grp = getgrent()) != NULL)
+	for (; grps->grp_idx < grps->num_grps; grps->grp_idx++)
 	{
 		DOM_NAME_MAP gmep;
+
+		unix_grp = &grps->grps[grps->grp_idx];
+
 		DEBUG(10,("getgrpunixpwent: enum unix group entry %s\n",
 		           unix_grp->gr_name));
 			
@@ -186,10 +227,11 @@ static DOMAIN_GRP *getgrpunixpwent(void *vp, DOMAIN_GRP_MEMBER **mem, int *num_m
 		}
 
 		fstrcpy(gp_buf.name, gmep.nt_name);
+		grps->grp_idx++;
 		break;
 	}
 
-	if (unix_grp == NULL)
+	if (unix_grp == NULL || grps->grp_idx >= grps->num_grps)
 	{
 		return NULL;
 	}
@@ -201,6 +243,7 @@ static DOMAIN_GRP *getgrpunixpwent(void *vp, DOMAIN_GRP_MEMBER **mem, int *num_m
 		(*mem) = NULL;
 		(*num_mem) = 0;
 
+		unix_grp = getgrgid(unix_grp->gr_gid);
 		get_unixgroup_members(unix_grp, num_mem, mem);
 	}
 

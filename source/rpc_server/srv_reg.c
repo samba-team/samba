@@ -194,7 +194,7 @@ static void reg_reply_info(REG_Q_INFO *q_u,
 	{
 	}
 
-	make_reg_r_info(&r_u, 1, "LanmanNT", 0x12, 0x12, status);
+	make_reg_r_info(&r_u, 1, "LanmanNT", status);
 
 	/* store the response in the SMB stream */
 	reg_io_r_info("", &r_u, rdata, 0);

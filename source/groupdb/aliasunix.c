@@ -27,6 +27,13 @@ extern int DEBUGLEVEL;
 extern DOM_SID global_sam_sid;
 extern fstring global_sam_name;
 
+struct unix_entries
+{
+	struct group *grps;
+	int num_grps;
+	int grp_idx;
+};
+
 /***************************************************************
  Start to enumerate the alspasswd list. Returns a void pointer
  to ensure no modification outside this module.
@@ -34,8 +41,23 @@ extern fstring global_sam_name;
 
 static void *startalsunixpwent(BOOL update)
 {
-	setgrent();
-	return (void*)(-1);
+	struct unix_entries *grps;
+	grps = (struct unix_entries*)malloc(sizeof(struct unix_entries));
+
+	if (grps == NULL)
+	{
+		return NULL;
+	}
+
+	if (!get_unix_grps(&grps->num_grps, &grps->grps))
+	{
+		free(grps);
+		return NULL;
+	}
+
+	grps->grp_idx = 0;
+
+	return (void*)grps;
 }
 
 /***************************************************************
@@ -44,7 +66,13 @@ static void *startalsunixpwent(BOOL update)
 
 static void endalsunixpwent(void *vp)
 {
-	endgrent();
+	struct unix_entries *grps = (struct unix_entries *)vp;
+
+	if (grps != NULL)
+	{
+		free_unix_grps(grps->num_grps, grps->grps);
+		free(vp);
+	}
 }
 
 /*************************************************************************
@@ -142,7 +170,8 @@ static LOCAL_GRP *getalsunixpwent(void *vp, LOCAL_GRP_MEMBER **mem, int *num_mem
 {
 	/* Static buffers we will return. */
 	static LOCAL_GRP gp_buf;
-	struct group *unix_grp;
+	struct group *unix_grp = NULL;
+	struct unix_entries *grps = (struct unix_entries *)vp;
 
 	if (lp_server_role() == ROLE_DOMAIN_NONE)
 	{
@@ -156,11 +185,18 @@ static LOCAL_GRP *getalsunixpwent(void *vp, LOCAL_GRP_MEMBER **mem, int *num_mem
 
 	aldb_init_als(&gp_buf);
 
+	/* get array of unix names + gids.  this function does NOT
+	   get a copy of the unix group members
+	 */
+
 	/* cycle through unix groups */
-	while ((unix_grp = getgrent()) != NULL)
+	for (; grps->grp_idx < grps->num_grps; grps->grp_idx++)
 	{
 		DOM_NAME_MAP gmep;
 		fstring sid_str;
+
+		unix_grp = &grps->grps[grps->grp_idx];
+
 		DEBUG(10,("getgrpunixpwent: enum unix group entry %s\n",
 		           unix_grp->gr_name));
 			
@@ -185,10 +221,11 @@ static LOCAL_GRP *getalsunixpwent(void *vp, LOCAL_GRP_MEMBER **mem, int *num_mem
 		}
 
 		fstrcpy(gp_buf.name, gmep.nt_name);
+		grps->grp_idx++;
 		break;
 	}
 
-	if (unix_grp == NULL)
+	if (unix_grp == NULL || grps->grp_idx >= grps->num_grps)
 	{
 		return NULL;
 	}
@@ -200,6 +237,7 @@ static LOCAL_GRP *getalsunixpwent(void *vp, LOCAL_GRP_MEMBER **mem, int *num_mem
 		(*mem) = NULL;
 		(*num_mem) = 0;
 
+		unix_grp = getgrgid(unix_grp->gr_gid);
 		get_unixalias_members(unix_grp, num_mem, mem);
 	}
 

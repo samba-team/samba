@@ -23,6 +23,12 @@
 
 extern int DEBUGLEVEL;
 
+struct unix_entries
+{
+	struct group *grps;
+	int num_grps;
+	int grp_idx;
+};
 
 extern DOM_SID global_sid_S_1_5_20;
 extern DOM_SID global_sam_sid;
@@ -35,8 +41,23 @@ extern fstring global_sam_name;
 
 static void *startbltunixpwent(BOOL update)
 {
-	setgrent();
-	return (void*)(-1);
+	struct unix_entries *grps;
+	grps = (struct unix_entries*)malloc(sizeof(struct unix_entries));
+
+	if (grps == NULL)
+	{
+		return NULL;
+	}
+
+	if (!get_unix_grps(&grps->num_grps, &grps->grps))
+	{
+		free(grps);
+		return NULL;
+	}
+
+	grps->grp_idx = 0;
+
+	return (void*)grps;
 }
 
 /***************************************************************
@@ -45,7 +66,13 @@ static void *startbltunixpwent(BOOL update)
 
 static void endbltunixpwent(void *vp)
 {
-	endgrent();
+	struct unix_entries *grps = (struct unix_entries *)vp;
+
+	if (grps != NULL)
+	{
+		free_unix_grps(grps->num_grps, grps->grps);
+		free(vp);
+	}
 }
 
 /*************************************************************************
@@ -143,12 +170,18 @@ static LOCAL_GRP *getbltunixpwent(void *vp, LOCAL_GRP_MEMBER **mem, int *num_mem
 {
 	/* Static buffers we will return. */
 	static LOCAL_GRP gp_buf;
-	struct group *unix_grp;
+	struct group *unix_grp = NULL;
+	struct unix_entries *grps = (struct unix_entries *)vp;
+
+	if (grps == NULL)
+	{
+		return NULL;
+	}
 
 	if (lp_server_role() == ROLE_DOMAIN_NONE)
 	{
 		/*
-		 * no domain role, no domain builtin aliases (or domain groups,
+		 * no domain role, no domain aliases (or domain groups,
 		 * but that's dealt with by groupdb...).
 		 */
 
@@ -157,12 +190,19 @@ static LOCAL_GRP *getbltunixpwent(void *vp, LOCAL_GRP_MEMBER **mem, int *num_mem
 
 	bidb_init_blt(&gp_buf);
 
+	/* get array of unix names + gids.  this function does NOT
+	   get a copy of the unix group members
+	 */
+
 	/* cycle through unix groups */
-	while ((unix_grp = getgrent()) != NULL)
+	for (; grps->grp_idx < grps->num_grps; grps->grp_idx++)
 	{
 		DOM_NAME_MAP gmep;
 		fstring sid_str;
-		DEBUG(10,("getbltunixpwent: enum unix group entry %s\n",
+
+		unix_grp = &grps->grps[grps->grp_idx];
+
+		DEBUG(10,("getgrpunixpwent: enum unix group entry %s\n",
 		           unix_grp->gr_name));
 			
 		if (!lookupsmbgrpgid(unix_grp->gr_gid, &gmep))
@@ -180,33 +220,35 @@ static LOCAL_GRP *getbltunixpwent(void *vp, LOCAL_GRP_MEMBER **mem, int *num_mem
 		}
 
 		sid_split_rid(&gmep.sid, &gp_buf.rid);
-		if (!sid_equal(&global_sid_S_1_5_20, &gmep.sid))
+		if (!sid_equal(&global_sam_sid, &gmep.sid))
 		{
 			continue;
 		}
 
 		fstrcpy(gp_buf.name, gmep.nt_name);
+		grps->grp_idx++;
 		break;
 	}
 
-	if (unix_grp == NULL)
+	if (unix_grp == NULL || grps->grp_idx >= grps->num_grps)
 	{
 		return NULL;
 	}
 
-	/* get the user's domain builtin aliases.  there are a maximum of 32 */
+	/* get the user's domain aliases.  there are a maximum of 32 */
 
 	if (mem != NULL && num_mem != NULL)
 	{
 		(*mem) = NULL;
 		(*num_mem) = 0;
 
+		unix_grp = getgrgid(unix_grp->gr_gid);
 		get_unixbuiltin_members(unix_grp, num_mem, mem);
 	}
 
 	{
 		pstring linebuf;
-		make_builtin_line(linebuf, sizeof(linebuf), &gp_buf, mem, num_mem);
+		make_alias_line(linebuf, sizeof(linebuf), &gp_buf, mem, num_mem);
 		DEBUG(10,("line: '%s'\n", linebuf));
 	}
 

@@ -1232,7 +1232,7 @@ void make_samr_r_query_dispinfo(SAMR_R_QUERY_DISPINFO *r_u,
 {
 	if (r_u == NULL) return;
 
-	DEBUG(5,("make_samr_r_query_dispinfo\n"));
+	DEBUG(5,("make_samr_r_query_dispinfo: level %d\n", switch_level));
 
 	if (status == 0x0)
 	{
@@ -1910,7 +1910,7 @@ void make_samr_r_query_groupmem(SAMR_R_QUERY_GROUPMEM *r_u,
 
 	if (status == 0x0)
 	{
-		r_u->ptr         = (num_entries != 0) ? 1 : 0;
+		r_u->ptr         = 1;
 		r_u->num_entries = num_entries;
 
 		r_u->ptr_attrs = attr != NULL ? 1 : 0;

@@ -2384,6 +2384,77 @@ int get_unixgroups(char *user, uid_t uid, gid_t gid, int *p_ngroups, gid_t **p_g
 	return 0;
 }
 
+/****************************************************************************
+get all unix groups.  copying group members is hideous on memory, so it's
+NOT done here.  however, names of unix groups _are_ string-allocated so
+free_unix_grps() must be called.
+****************************************************************************/
+BOOL get_unix_grps(int *p_ngroups, struct group **p_groups)
+{
+	struct group *grp;
+
+	DEBUG(10,("get_unix_grps\n"));
+
+	if (p_ngroups == NULL || *p_groups == NULL)
+	{
+		return False;
+	}
+
+	(*p_ngroups) = 0;
+	(*p_groups) = NULL;
+
+	setgrent();
+
+	while ((grp = getgrent()) != NULL)
+	{
+		struct group *copy_grp;
+		
+		(*p_groups) = (struct group*)Realloc((*p_groups), (size_t)((*p_ngroups)+1) * sizeof(struct group));
+		if ((*p_groups) == NULL)
+		{
+			(*p_ngroups) = 0;
+			endgrent();
+			
+			return False;
+		}
+
+		copy_grp = &(*p_groups)[*p_ngroups];
+		memcpy(copy_grp, grp, sizeof(*grp));
+		copy_grp->gr_name = strdup(copy_grp->gr_name);
+		copy_grp->gr_mem  = NULL;
+
+		(*p_ngroups)++;
+	}
+
+	endgrent();
+
+	DEBUG(10,("get_unix_grps: %d groups\n", (*p_ngroups)));
+	return True;
+}
+
+/****************************************************************************
+free memory associated with unix groups.
+****************************************************************************/
+void free_unix_grps(int ngroups, struct group *p_groups)
+{
+	int i;
+
+	if (p_groups == NULL)
+	{
+		return;
+	}
+
+	for (i = 0; i < ngroups; i++)
+	{
+		if (p_groups[i].gr_name != NULL)
+		{
+			free(p_groups[i].gr_name);
+		}
+	}
+
+	free(p_groups);
+}
+
 /*******************************************************************
 turn a uid into a user name
 ********************************************************************/

@@ -766,7 +766,6 @@ creates a structure.
 ********************************************************************/
 void make_reg_r_info(REG_R_INFO *r_r,
 				uint32 level, char *os_type,
-				uint32 unknown_0, uint32 unknown_1,
 				uint32 status)
 {
 	uint8 buf[512];
@@ -779,10 +778,10 @@ void make_reg_r_info(REG_R_INFO *r_r,
 	make_buffer2(&(r_r->uni_type), buf, len*2);
 
 	r_r->ptr2 = 1;
-	r_r->unknown_0 = unknown_0;
+	r_r->unknown_0 = len*2;
 
 	r_r->ptr3 = 1;
-	r_r->unknown_1 = unknown_1;
+	r_r->unknown_1 = len*2;
 
 	r_r->status = status;
 }
