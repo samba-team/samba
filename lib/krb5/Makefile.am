@@ -6,7 +6,7 @@ INCLUDES += $(INCLUDE_krb4)
 
 bin_PROGRAMS = verify_krb5_conf
 
-noinst_PROGRAMS = dump_config
+noinst_PROGRAMS = dump_config test_get_addrs
 
 check_PROGRAMS = n-fold-test string-to-key-test
 TESTS = n-fold-test string-to-key-test
