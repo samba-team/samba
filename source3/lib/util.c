@@ -418,6 +418,58 @@ void unix_clean_name(char *s)
   trim_string(s,NULL,"/..");
 }
 
+/*******************************************************************
+convert '\' to '/'
+reduce a file name, removing or reducing /../ , /./ , // elements.
+remove also any trailing . and /
+return a new allocated string.
+********************************************************************/
+smb_ucs2_t *unix_clean_path(const smb_ucs2_t *s)
+{
+	smb_ucs2_t *ns;
+	smb_ucs2_t *p, *r, *t;
+
+	DEBUG(3, ("unix_clean_name_w\n")); /*  [%unicode]\n")); */
+
+	/* convert '\' to '/' */
+	ns = strdup_w(s);
+	if (!ns) return NULL;
+	unix_format_w(ns);
+
+	/* remove all double slashes */
+	p = ns;
+	ns = all_string_sub_wa(p, "//", "/");
+	SAFE_FREE(p);
+	if (!ns) return NULL;
+
+	/* remove any /./ */
+	p = ns;
+	ns = all_string_sub_wa(p, "/./", "/");
+	SAFE_FREE(p);
+	if (!ns) return NULL;
+
+	/* reduce any /../ */
+	t = ns;
+	while ((r = strstr_wa(t, "/..")) != NULL) {
+		t = &(r[3]);
+		if (*t == UCS2_CHAR('/') || *t == 0) {
+			*r = 0;
+			p = strrchr_w(ns, UCS2_CHAR('/'));
+			if (!p) p = ns;
+			memmove(p, t, (strlen_w(t) + 1) * sizeof(smb_ucs2_t));
+			t = p;
+		}
+	}
+
+	/* remove any trailing /. */
+	trim_string_wa(ns, NULL, "/.");
+
+	/* remove any leading and trailing / */
+	trim_string_wa(ns, "/", "/");
+
+	return ns;
+}
+
 /****************************************************************************
   make a dir struct
 ****************************************************************************/
@@ -1777,6 +1829,22 @@ BOOL ms_has_wild(char *s)
 		case '<':
 		case '>':
 		case '"':
+			return True;
+		}
+	}
+	return False;
+}
+
+BOOL ms_has_wild_w(const smb_ucs2_t *s)
+{
+	smb_ucs2_t c;
+	while ((c = *s++)) {
+		switch (c) {
+		case UCS2_CHAR('*'):
+		case UCS2_CHAR('?'):
+		case UCS2_CHAR('<'):
+		case UCS2_CHAR('>'):
+		case UCS2_CHAR('"'):
 			return True;
 		}
 	}

@@ -123,7 +123,13 @@ size_t convert_string(charset_t from, charset_t to,
 		{ case EINVAL: reason="Incomplete multibyte sequence"; break;
 		  case E2BIG:  reason="No more room"; 
 		   	       DEBUG(0, ("Required %d, available %d\n",
-			       srclen, destlen));	
+			       srclen, destlen));
+			       /* we are not sure we need srclen bytes,
+			          may be more, may be less.
+				  We only know we need more than destlen
+				  bytes ---simo */
+				
+						
 		               break;
 		  case EILSEQ: reason="Illegal myltibyte sequence"; break;
 		}

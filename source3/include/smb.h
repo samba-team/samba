@@ -383,6 +383,16 @@ typedef struct write_cache
     char *data;
 } write_cache;
 
+typedef struct
+{
+	smb_ucs2_t *path;
+	smb_ucs2_t *name;
+	smb_ucs2_t *unixname;
+	smb_ucs2_t *dosname;
+	SMB_STRUCT_STAT *statinfo;
+} smb_filename;
+
+
 typedef struct files_struct
 {
 	struct files_struct *next, *prev;
