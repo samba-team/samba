@@ -3,7 +3,7 @@
  * Version 1.9. SMB parameters and setup
  * Copyright (C) Andrew Tridgell 1992-1998 
  * Modified by Jeremy Allison 1995.
- * Modified by Gerald (Jerry) Carter 2000
+ * Modified by Gerald (Jerry) Carter 2000-2001
  * 
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free
@@ -57,6 +57,7 @@ static void 	*global_vp;
 /* static memory area used by all passdb search functions
    in this module */
 static SAM_ACCOUNT 	global_sam_pass;
+
 
 enum pwf_access_type { PWF_READ, PWF_UPDATE, PWF_CREATE };
 
@@ -1153,7 +1154,9 @@ Error was %s\n", pwd->smb_name, pfile2, strerror(errno)));
 }
 
 /*********************************************************************
- Create a SAM_ACCOUNT from a smb_passwd struct
+ Create a smb_passwd struct from a SAM_ACCOUNT.
+ We will not allocate any new memory.  The smb_passwd struct
+ should only stay around as long as the SAM_ACCOUNT does.
  ********************************************************************/
 static BOOL build_smb_pass (struct smb_passwd *smb_pw, SAM_ACCOUNT *sampass)
 {
@@ -1165,58 +1168,17 @@ static BOOL build_smb_pass (struct smb_passwd *smb_pw, SAM_ACCOUNT *sampass)
         ZERO_STRUCTP (smb_pw);
 
         smb_pw->smb_userid = pdb_get_uid(sampass);
-        smb_pw->smb_name = strdup(pdb_get_username(sampass));
+        smb_pw->smb_name = pdb_get_username(sampass);
 
-        if ((ptr=pdb_get_lanman_passwd(sampass)) != NULL)
-	{
-		if ((smb_pw->smb_passwd=(uint8*)malloc(sizeof(uint8)*16)) == NULL)
-		{
-			DEBUG (0,("build_smb_pass: ERROR - Unable to malloc memory!\n"));
-			return False;
-		}
-		memcpy (smb_pw->smb_passwd, ptr, sizeof(uint8)*16);
-	}
+	smb_pw->smb_passwd = pdb_get_lanman_passwd(sampass);
+	smb_pw->smb_nt_passwd = pdb_get_nt_passwd(sampass);
 
-        if ((ptr=pdb_get_nt_passwd(sampass)) != NULL)
-	{
-		if ((smb_pw->smb_nt_passwd=(uint8*)malloc(sizeof(uint8)*16)) == NULL)
-		{
-			DEBUG (0,("build_smb_pass: ERROR - Unable to malloc memory!\n"));
-			return False;
-		}
-		memcpy (smb_pw->smb_nt_passwd, ptr, sizeof(uint8)*16);
-	}
-		
         smb_pw->acct_ctrl          = pdb_get_acct_ctrl(sampass);
         smb_pw->pass_last_set_time = pdb_get_pass_last_set_time(sampass);
 
         return True;
 
-}
-
-/********************************************************************
- clear out memory allocated for pointer members 
- *******************************************************************/
-static void clear_smb_pass (struct smb_passwd *smb_pw)
-{
-
-	/* valid poiner to begin with? */
-	if (smb_pw == NULL)
-		return;
-		
-	/* clear out members */
-	if (smb_pw->smb_name)
-		free (smb_pw->smb_name);
-		
-	if (smb_pw->smb_passwd)
-		free(smb_pw->smb_passwd);
-
-	if (smb_pw->smb_nt_passwd)
-		free(smb_pw->smb_nt_passwd);
-		
-	return;
-}
-	
+}	
 
 /*********************************************************************
  Create a SAM_ACCOUNT from a smb_passwd struct
@@ -1224,29 +1186,26 @@ static void clear_smb_pass (struct smb_passwd *smb_pw)
 static BOOL build_sam_account (SAM_ACCOUNT *sam_pass, 
 			       struct smb_passwd *pw_buf)
 {
-
 	struct passwd 		*pwfile;
 	
 	if (!sam_pass)
 		return (False);
 	
-	/* make sure that we own the memory here--also clears
-	   any existing members as a side effect */
-	pdb_set_mem_ownership(sam_pass, True);
-	
-	/* is the user valid?  Verify in system password file...
-	
+	pdb_clear_sam (sam_pass);
+		
+	/* Verify in system password file...
 	   FIXME!!!  This is where we should look up an internal
 	   mapping of allocated uid for machine accounts as well 
 	   --jerry */ 
 	pwfile = sys_getpwnam(pw_buf->smb_name);
 	if (pwfile == NULL)
 	{
-		DEBUG(0,("build_sam_account: smbpasswd database is corrupt!\n"));
-		DEBUG(0,("build_sam_account: username %s not in unix passwd database!\n", pw_buf->smb_name));
+		DEBUG(0,("build_sam_account: smbpasswd database is corrupt!  username %s not in unix passwd database!\n", pw_buf->smb_name));
 		return False;
 	}
-		
+
+	/* FIXME!!  This doesn't belong here.  Should be set in net_sam_logon() 
+	   --jerry */
 	pstrcpy(samlogon_user, pw_buf->smb_name);
 	
 	pdb_set_uid           (sam_pass, pwfile->pw_uid);
@@ -1272,15 +1231,15 @@ static BOOL build_sam_account (SAM_ACCOUNT *sam_pass,
 		gid_t 		gid = getegid();
 		
 	        sam_logon_in_ssb = True;
-	
+
 	        pstrcpy(str, lp_logon_script());
        		standard_sub_advanced(-1, pw_buf->smb_name, "", gid, str);
 		pdb_set_logon_script(sam_pass, str);
-	
+
 	        pstrcpy(str, lp_logon_path());
        		standard_sub_advanced(-1, pw_buf->smb_name, "", gid, str);
 		pdb_set_profile_path(sam_pass, str);
-	        
+
 	        pstrcpy(str, lp_logon_home());
         	standard_sub_advanced(-1, pw_buf->smb_name, "", gid, str);
 		pdb_set_homedir(sam_pass, str);
@@ -1379,8 +1338,12 @@ SAM_ACCOUNT* pdb_getsampwnam (char *username)
 	char			*user = NULL;
 	fstring			name;
 
-	DEBUG(10, ("search by name: %s\n", username));
+	DEBUG(10, ("pdb_getsampwnam: search by name: %s\n", username));
 
+#if 0	/* JERRY - DEBUG */
+	sleep (90000);
+#endif
+	
 	/* break the username from the domain if we have 
 	   been given a string in the form 'DOMAIN\user' */
 	fstrcpy (name, username);
@@ -1424,7 +1387,7 @@ SAM_ACCOUNT* pdb_getsampwnam (char *username)
 		return (NULL);
 	}
 	
-	DEBUG(10, ("found by name: %s\n", smb_pw->smb_name));
+	DEBUG(10, ("pdb_getsampwnam: found by name: %s\n", smb_pw->smb_name));
 		
 	/* now build the SAM_ACCOUNT */
 	if (!build_sam_account (&global_sam_pass, smb_pw))
@@ -1440,7 +1403,7 @@ SAM_ACCOUNT* pdb_getsampwuid (uid_t uid)
 	struct smb_passwd	*smb_pw;
 	void 			*fp = NULL;
 
-	DEBUG(10, ("search by uid: %d\n", uid));
+	DEBUG(10, ("pdb_getsampwuid: search by uid: %d\n", uid));
 
 	/* Open the sam password file - not for update. */
 	fp = startsmbfilepwent(lp_smb_passwd_file(), PWF_READ, &pw_file_lock_depth);
@@ -1463,7 +1426,7 @@ SAM_ACCOUNT* pdb_getsampwuid (uid_t uid)
 		return (NULL);
 	}
 	
-	DEBUG(10, ("found by name: %s\n", smb_pw->smb_name));
+	DEBUG(10, ("pdb_getsampwuid: found by name: %s\n", smb_pw->smb_name));
 		
 	/* now build the SAM_ACCOUNT */
 	if (!build_sam_account (&global_sam_pass, smb_pw))
@@ -1478,7 +1441,7 @@ SAM_ACCOUNT* pdb_getsampwrid (uint32 rid)
 	struct smb_passwd	*smb_pw;
 	void 			*fp = NULL;
 
-	DEBUG(10, ("search by rid: %d\n", rid));
+	DEBUG(10, ("pdb_getsampwrid: search by rid: %d\n", rid));
 
 	/* Open the sam password file - not for update. */
 	fp = startsmbfilepwent(lp_smb_passwd_file(), PWF_READ, &pw_file_lock_depth);
@@ -1501,7 +1464,7 @@ SAM_ACCOUNT* pdb_getsampwrid (uint32 rid)
 		return (NULL);
 	}
 	
-	DEBUG(10, ("found by name: %s\n", smb_pw->smb_name));
+	DEBUG(10, ("pdb_getsampwrid: found by name: %s\n", smb_pw->smb_name));
 		
 	/* now build the SAM_ACCOUNT */
 	if (!build_sam_account (&global_sam_pass, smb_pw))
@@ -1522,9 +1485,6 @@ BOOL pdb_add_sam_account (SAM_ACCOUNT *sampass)
 	/* add the entry */
 	ret = add_smbfilepwd_entry(&smb_pw);
 	
-	/* clear memory from smb_passwd */
-	clear_smb_pass (&smb_pw);
-	
 	return (ret);
 }
 
@@ -1538,10 +1498,7 @@ BOOL pdb_update_sam_account (SAM_ACCOUNT *sampass, BOOL override)
 	
 	/* update the entry */
 	ret = mod_smbfilepwd_entry(&smb_pw, override);
-	
-	/* clear memory from smb_passwd */
-	clear_smb_pass (&smb_pw);
-	
+		
 	return (ret);
 }
 

@@ -4,7 +4,7 @@
    Password and authentication handling
    Copyright (C) Jeremy Allison 		1996-1998
    Copyright (C) Luke Kenneth Casson Leighton 	1996-1998
-   Copyright (C) Gerald (Jerry) Carter		2000
+   Copyright (C) Gerald (Jerry) Carter		2000-2001
       
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -21,7 +21,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include <dlfcn.h>
 #include "includes.h"
 
 extern int DEBUGLEVEL;
@@ -46,6 +45,9 @@ BOOL initialize_password_db(BOOL reload)
 
 	char*	modulename = lp_passdb_module_path();
 	
+	/* This function is unfinished right now, so just 
+	   ignore the details and always return True.  It is here 
+	   only as a placeholder --jerry */
 	return True;
 	
 	/* load another module? */
@@ -104,7 +106,10 @@ void pdb_init_sam(SAM_ACCOUNT *user)
 		return;
 	
 	ZERO_STRUCTP(user);
-	
+
+	user->mem_ctx = talloc_init();
+	DEBUG(10, ("pdb_init_sam: obtained a talloc context of 0x%x\n", user->mem_ctx));
+
 	user->logon_time            = (time_t)0;
 	user->logoff_time           = (time_t)-1;
 	user->kickoff_time          = (time_t)-1;
@@ -125,31 +130,13 @@ void pdb_init_sam(SAM_ACCOUNT *user)
  ***********************************************************/
 void pdb_clear_sam(SAM_ACCOUNT *user)
 {
-	/* do we have a SAM_CCOUTN struct to work with? */
 	if (user == NULL)
 		return;
+
+	/* free upany memory used */
+	DEBUG(10, ("pdb_clear_sam: releasing memory.  talloc context is 0x%x\n",user->mem_ctx));
+	talloc_destroy (user->mem_ctx);
 		
-	/* do we own the memory? */
-	if  (user->own_memory) 
-	{
-		/* clear all pointer members */
-		if (user->username) 	free(user->username);
-		if (user->full_name) 	free(user->full_name);
-		if (user->domain) 	free(user->domain);
-		if (user->nt_username)	free(user->nt_username);
-		if (user->home_dir)	free(user->home_dir);
-		if (user->dir_drive)	free(user->dir_drive);
-		if (user->logon_script)	free(user->logon_script);
-		if (user->profile_path)	free(user->profile_path);
-		if (user->acct_desc)	free(user->acct_desc);
-		if (user->workstations)	free(user->workstations);
-		if (user->unknown_str)	free(user->unknown_str);
-		if (user->munged_dial)	free(user->munged_dial);
-			
-		if (user->lm_pw)	free(user->lm_pw);
-		if (user->nt_pw)	free(user->nt_pw);
-	}
-	
 	/* now initialize */
 	pdb_init_sam(user);
 	
@@ -541,7 +528,7 @@ BOOL local_lookup_name(const char *c_domain, const char *c_user, DOM_SID *psid, 
 
 	(void)map_username(user);
 
-	if(!(pass = sys_getpwnam(user))) {
+	if(!(pass = Get_Pwnam(user, True))) {
 		/*
 		 * Maybe it was a group ?
 		 */
@@ -793,97 +780,90 @@ void copy_id21_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_21 *from)
  **************************************************************/
 void copy_sam_passwd(SAM_ACCOUNT *to, const SAM_ACCOUNT *from)
 {
-	static fstring smb_name="";
-	static fstring full_name="";
-	static fstring home_dir="";
-	static fstring dir_drive="";
-	static fstring logon_script="";
-	static fstring profile_path="";
-	static fstring acct_desc="";
-	static fstring workstations="";
-	static fstring unknown_str="";
-	static fstring munged_dial="";
-	static uint8 lm_pw[16], nt_pw[16];
-
-	if (from == NULL || to == NULL) 
-		return;
-
-	/* we won't own this memory so set the flag.
-	   This will also clear the strings from 'to' */
-	pdb_set_mem_ownership (to, False);
+	int len;
 	
+	if (!from || !to) return;
+
+	pdb_clear_sam (to);
+
+	/* copy all non-pointers */
 	memcpy(to, from, sizeof(*from));
 
-	if (from->username != NULL) 
-	{
-		fstrcpy(smb_name , from->username);
-		to->username = smb_name;
+	if (from->username) {
+		len=strlen(from->username)+1;
+		to->username = talloc(to->mem_ctx, len);
+		StrnCpy (to->username, from->username, len-1);
+	}
+
+	if (from->full_name) {
+		len=strlen(from->full_name)+1;
+		to->full_name = talloc(to->mem_ctx, len);
+		StrnCpy (to->full_name, from->full_name, len-1);
+	}
+
+	if (from->nt_username) {
+		len=strlen(from->nt_username)+1;
+		to->nt_username = talloc(to->mem_ctx, len);
+		StrnCpy (to->nt_username, from->nt_username, len-1);
+	}
+
+	if (from->profile_path) {
+		len=strlen(from->profile_path)+1;
+		to->profile_path = talloc(to->mem_ctx, len);
+		StrnCpy (to->profile_path, from->profile_path, len-1);
+	}
+
+	if (from->logon_script) {
+		len=strlen(from->logon_script)+1;
+		to->logon_script = talloc(to->mem_ctx, len);
+		StrnCpy (to->logon_script, from->logon_script, len-1);
+	}
+
+	if (from->home_dir) {
+		len=strlen(from->home_dir)+1;
+ 		to->home_dir = talloc(to->mem_ctx, len);
+		StrnCpy (to->home_dir, from->home_dir, len-1);
 	}
 	
-	if (from->full_name != NULL) 
-	{
-		fstrcpy(full_name, from->full_name);
-		to->full_name = full_name;
-	}
-
-	if (from->home_dir != NULL) 
-	{
-		fstrcpy(home_dir, from->home_dir);
-		to->home_dir = home_dir;
-	}
-
-	if (from->dir_drive != NULL) 
-	{
-		fstrcpy(dir_drive  , from->dir_drive);
-		to->dir_drive = dir_drive;
-	}
-
-	if (from->logon_script != NULL) 
-	{
-		fstrcpy(logon_script  , from->logon_script);
-		to->logon_script = logon_script;
-	}
-
-	if (from->profile_path != NULL) 
-	{
-		fstrcpy(profile_path  , from->profile_path);
-		to->profile_path = profile_path;
-	}
-
-	if (from->acct_desc != NULL) 
-	{
-		fstrcpy(acct_desc  , from->acct_desc);
-		to->acct_desc = acct_desc;
-	}
-
-	if (from->workstations != NULL) 
-	{
-		fstrcpy(workstations  , from->workstations);
-		to->workstations = workstations;
-	}
-
-	if (from->unknown_str != NULL) 
-	{
-		fstrcpy(unknown_str  , from->unknown_str);
-		to->unknown_str = unknown_str;
-	}
-
-	if (from->munged_dial != NULL) 
-	{
-		fstrcpy(munged_dial  , from->munged_dial);
-		to->munged_dial = munged_dial;
+	if (from->dir_drive) {
+		len=strlen(from->dir_drive)+1;
+		to->dir_drive = talloc(to->mem_ctx, len);
+		StrnCpy (to->dir_drive, from->dir_drive, len-1);
 	}
 	
-	if (from->nt_pw != NULL)
-	{
-		memcpy (nt_pw, from->nt_pw, 16);
-		to->nt_pw = nt_pw;
+	if (from->workstations) {
+		len=strlen(from->workstations)+1;
+		to->workstations = talloc(to->mem_ctx, len);
+		StrnCpy (to->workstations, from->workstations, len-1);
+	}
+	
+	if (from->acct_desc) {
+		len=strlen(from->acct_desc)+1;
+		to->acct_desc = talloc(to->mem_ctx, len);
+		StrnCpy (to->acct_desc, from->acct_desc, len-1);
+	}
+	
+	if (from->munged_dial) {
+		len=strlen(from->munged_dial)+1;
+		to->munged_dial = talloc(to->mem_ctx, len);
+		StrnCpy (to->munged_dial, from->munged_dial, len);
+	}
+	
+	if (from->unknown_str) {
+		len=strlen(from->unknown_str)+1;
+		to->unknown_str = talloc(to->mem_ctx, len);
+		StrnCpy (to->unknown_str, from->unknown_str, len-1);
 	}
 
-	if (from->lm_pw != NULL)
-	{
-		memcpy (lm_pw, from->lm_pw, 16);
-		to->lm_pw = lm_pw;
+
+	if (from->nt_pw) {
+		to->nt_pw = talloc(to->mem_ctx, 16);
+		memcpy (to->nt_pw, from->nt_pw, 16);
+	}
+	
+	if (from->lm_pw) {
+		to->lm_pw = talloc(to->mem_ctx, 16);
+		memcpy (to->lm_pw, from->lm_pw, 16);
 	}
 
 	return;
@@ -944,7 +924,6 @@ account without a valid local system user.\n", user_name);
 		   Because the new_sam_pwd only exists in the scope of this function
 		   we will not allocate memory for members */
 		pdb_init_sam 	      (&new_sam_acct);
-		pdb_set_mem_ownership (&new_sam_acct, False);
 		pdb_set_username      (&new_sam_acct, user_name);
 		pdb_set_fullname      (&new_sam_acct, pwd->pw_gecos);
 		pdb_set_uid	      (&new_sam_acct, pwd->pw_uid);
@@ -1310,30 +1289,6 @@ uint32 pdb_get_unknown6 (SAM_ACCOUNT *sampass)
 /*********************************************************************
  collection of set...() functions for SAM_ACCOUNT_INFO
  ********************************************************************/
-
-/********************************************************************
- The purpose of this flag is to determine whether or not we 
- should free the memory when we are done.  This allows us to
- use local static variables for string (reduce the number of
- malloc() calls) while still allowing for flexibility of 
- dynamic objects.
- 
- We always clear the structure even if setting the flag to the
- same value.
- *******************************************************************/
-void pdb_set_mem_ownership (SAM_ACCOUNT *sampass, BOOL flag)
-{
-	/* if we have no SAM_ACCOUNT struct or no change, then done */
-	if (sampass == NULL)
-		return;
-
-	/* clear the struct and set the ownership flag */
-	pdb_clear_sam (sampass);
-	sampass->own_memory = flag;
-
-	return;
-}
-
 BOOL pdb_set_acct_ctrl (SAM_ACCOUNT *sampass, uint16 flags)
 {
 	if (!sampass)
@@ -1458,250 +1413,332 @@ BOOL pdb_set_group_rid (SAM_ACCOUNT *sampass, uint32 grid)
 
 BOOL pdb_set_username (SAM_ACCOUNT *sampass, char *username)
 {
-	if (!sampass)
-		return False;
+	int len;
+	
+	if (!sampass || !sampass->mem_ctx) return False;
 
-	if (!sampass->own_memory)
-		sampass->username = username;
-	else
+	if (!username) 
 	{
-		if ( (sampass->username=strdup(username)) == NULL )
-		{
-			DEBUG (0,("pdb_set_username: ERROR - Unable to malloc memory for [%s]\n", username));
-			return False;
-		}
+		sampass->username = NULL;
+		return True;
 	}
+
+	len = strlen(username)+1;
+	sampass->username = (char*)talloc(sampass->mem_ctx, len);
+
+	if (sampass->username == NULL )
+	{
+		DEBUG (0,("pdb_set_username: ERROR - Unable to talloc memory for [%s]\n", username));
+		return False;
+	}
+	
+	StrnCpy (sampass->username, username, len-1);
 
 	return True;
 }
 
 BOOL pdb_set_domain (SAM_ACCOUNT *sampass, char *domain)
 {
-	if (!sampass)
-		return False;
+	int len;
+	
+	if (!sampass || !sampass->mem_ctx) return False;
 
-	if (!sampass->own_memory)
-		sampass->domain = domain;
-	else
+	if (!domain) 
 	{
-		if ( (sampass->domain=strdup(domain)) == NULL )
-		{
-			DEBUG (0,("pdb_set_domain: ERROR - Unable to malloc memory for [%s]\n", domain));
-			return False;
-		}
+		sampass->domain = NULL;
+		return True;
 	}
+
+	len = strlen(domain)+1;
+	sampass->domain = talloc (sampass->mem_ctx, len);
+
+	if (sampass->domain == NULL )
+	{
+		DEBUG (0,("pdb_set_domain: ERROR - Unable to talloc memory for [%s]\n", domain));
+		return False;
+	}
+	
+	StrnCpy (sampass->domain, domain, len-1);
 
 	return True;
 }
 
 BOOL pdb_set_nt_username (SAM_ACCOUNT *sampass, char *nt_username)
 {
-	if (!sampass)
-		return False;
+	int len;
+	
+	if (!sampass || !sampass->mem_ctx) return False;
 
-	if (!sampass->own_memory)
-		sampass->nt_username = nt_username;
-	else
+	if (!nt_username) 
 	{
-		if ( (sampass->nt_username=strdup(nt_username)) == NULL )
-		{
-			DEBUG (0,("pdb_set_nt_username: ERROR - Unable to malloc memory for [%s]\n", nt_username));
-			return False;
-		}
+		sampass->nt_username = NULL;
+		return True;
 	}
+
+	len = strlen(nt_username)+1;
+	sampass->nt_username = talloc (sampass->mem_ctx, len);
+
+	if (sampass->nt_username == NULL )
+	{
+		DEBUG (0,("pdb_set_nt_username: ERROR - Unable to talloc memory for [%s]\n", nt_username));
+		return False;
+	}
+	
+	StrnCpy (sampass->nt_username, nt_username, len-1);
 
 	return True;
 }
 
 BOOL pdb_set_fullname (SAM_ACCOUNT *sampass, char *fullname)
 {
-	if (!sampass)
-		return False;
+	int len;
+	
+	if (!sampass || !sampass->mem_ctx) return False;
 
-	if (!sampass->own_memory)
-		sampass->full_name = fullname;
-	else
+	if (!fullname) 
 	{
-		if ( (sampass->full_name=strdup(fullname)) == NULL )
-		{
-			DEBUG (0,("pdb_set_fullname: ERROR - Unable to malloc memory for [%s]\n", fullname));
-			return False;
-		}
+		sampass->full_name = NULL;
+		return True;
 	}
+
+	len = strlen(fullname)+1;
+	sampass->full_name = talloc (sampass->mem_ctx, len);
+
+	if (sampass->full_name == NULL )
+	{
+		DEBUG (0,("pdb_set_fullname: ERROR - Unable to talloc memory for [%s]\n", fullname));
+		return False;
+	}
+	
+	StrnCpy (sampass->full_name, fullname, len-1);
 
 	return True;
 }
 
 BOOL pdb_set_logon_script (SAM_ACCOUNT *sampass, char *logon_script)
 {
-	if (!sampass)
-		return False;
+	int len;
+	
+	if (!sampass || !sampass->mem_ctx) return False;
 
-	if (!sampass->own_memory)
-		sampass->logon_script = logon_script;
-	else
+	if (!logon_script) 
 	{
-		if ( (sampass->logon_script=strdup(logon_script)) == NULL )
-		{
-			DEBUG (0,("pdb_set_logon_script: ERROR - Unable to malloc memory for [%s]\n", logon_script));
-			return False;
-		}
+		sampass->logon_script = NULL;
+		return True;
 	}
+
+	len = strlen(logon_script)+1;
+	sampass->logon_script = talloc (sampass->mem_ctx, len);
+
+	if (sampass->logon_script == NULL )
+	{
+		DEBUG (0,("pdb_set_logon_script: ERROR - Unable to talloc memory for [%s]\n", logon_script));
+		return False;
+	}
+	
+	StrnCpy (sampass->logon_script, logon_script, len-1);
 
 	return True;
 }
 
 BOOL pdb_set_profile_path (SAM_ACCOUNT *sampass, char *profile_path)
 {
-	if (!sampass)
-		return False;
+	int len;
+	
+	if (!sampass || !sampass->mem_ctx) return False;
 
-	if (!sampass->own_memory)
-		sampass->profile_path = profile_path;
-	else
+	if (!profile_path) 
 	{
-		if ( (sampass->profile_path=strdup(profile_path)) == NULL )
-		{
-			DEBUG (0,("pdb_set_profile_path: ERROR - Unable to malloc memory for [%s]\n", profile_path));
-			return False;
-		}
+		sampass->profile_path = NULL;
+		return True;
 	}
 
+	len = strlen(profile_path)+1;
+	sampass->profile_path = talloc (sampass->mem_ctx, len);
+
+	if (!sampass->profile_path)
+	{
+		DEBUG (0,("pdb_set_profile_path: ERROR - Unable to talloc memory for [%s]\n", profile_path));
+		return False;
+	}
+	
+	StrnCpy (sampass->profile_path, profile_path, len-1);
+	
 	return True;
 }
 
 BOOL pdb_set_dir_drive (SAM_ACCOUNT *sampass, char *dir_drive)
 {
-	if (!sampass)
-		return False;
+	int len;
+	
+	if (!sampass || !sampass->mem_ctx) return False;
 
-	if (!sampass->own_memory)
-		sampass->dir_drive = dir_drive;
-	else
+	if (!dir_drive) 
 	{
-		if ( (sampass->dir_drive=strdup(dir_drive)) == NULL )
-		{
-			DEBUG (0,("pdb_set_dir_drive: ERROR - Unable to malloc memory for [%s]\n", dir_drive));
-			return False;
-		}
+		sampass->dir_drive = NULL;
+		return True;
 	}
+
+	len = strlen(dir_drive)+1;
+	sampass->dir_drive = talloc (sampass->mem_ctx, len);
+
+	if (sampass->dir_drive == NULL )
+	{
+		DEBUG (0,("pdb_set_dir_drive: ERROR - Unable to talloc memory for [%s]\n", dir_drive));
+		return False;
+	}
+	
+	StrnCpy (sampass->dir_drive, dir_drive, len-1);
 
 	return True;
 }
 
 BOOL pdb_set_homedir (SAM_ACCOUNT *sampass, char *homedir)
 {
-	if (!sampass)
-		return False;
+	int len;
+	
+	if (!sampass || !sampass->mem_ctx) return False;
 
-	if (!sampass->own_memory)
-		sampass->home_dir = homedir;
-	else
+	if (!homedir) 
 	{
-		if ( (sampass->home_dir=strdup(homedir)) == NULL )
-		{
-			DEBUG (0,("pdb_set_home_dir: ERROR - Unable to malloc memory for [%s]\n", homedir));
-			return False;
-		}
+		sampass->home_dir = NULL;
+		return True;
 	}
+
+	len = strlen(homedir)+1;
+	sampass->home_dir = talloc (sampass->mem_ctx, len);
+
+	if (sampass->home_dir == NULL )
+	{
+		DEBUG (0,("pdb_set_homedir: ERROR - Unable to talloc memory for [%s]\n", homedir));
+		return False;
+	}
+	
+	StrnCpy (sampass->home_dir, homedir, len-1);
 
 	return True;
 }
 
 BOOL pdb_set_acct_desc (SAM_ACCOUNT *sampass, char *acct_desc)
 {
-	if (!sampass)
-		return False;
+	int len;
+	
+	if (!sampass || !sampass->mem_ctx) return False;
 
-	if (!sampass->own_memory)
-		sampass->acct_desc = acct_desc;
-	else
+	if (!acct_desc) 
 	{
-		if ( (sampass->acct_desc=strdup(acct_desc)) == NULL )
-		{
-			DEBUG (0,("pdb_set_acct_desc: ERROR - Unable to malloc memory for [%s]\n", acct_desc));
-			return False;
-		}
+		sampass->acct_desc = NULL;
+		return True;
 	}
+
+	len = strlen(acct_desc)+1;
+	sampass->acct_desc = talloc (sampass->mem_ctx, len);
+
+	if (sampass->acct_desc == NULL )
+	{
+		DEBUG (0,("pdb_set_acct_desc: ERROR - Unable to talloc memory for [%s]\n", acct_desc));
+		return False;
+	}
+	
+	StrnCpy (sampass->acct_desc, acct_desc, len-1);
 
 	return True;
 }
+
 BOOL pdb_set_workstations (SAM_ACCOUNT *sampass, char *workstations)
 {
-	if (!sampass)
-		return False;
+	int len;
+	
+	if (!sampass || !sampass->mem_ctx) return False;
 
-	if (!sampass->own_memory)
-		sampass->workstations = workstations;
-	else
+	if (!workstations) 
 	{
-		if ( (sampass->workstations=strdup(workstations)) == NULL )
-		{
-			DEBUG (0,("pdb_set_workstations: ERROR - Unable to malloc memory for [%s]\n", workstations));
-			return False;
-		}
+		sampass->workstations = NULL;
+		return True;
 	}
+
+	len = strlen(workstations)+1;
+	sampass->workstations = talloc (sampass->mem_ctx, len);
+
+	if (sampass->workstations == NULL )
+	{
+		DEBUG (0,("pdb_set_workstations: ERROR - Unable to talloc memory for [%s]\n", workstations));
+		return False;
+	}
+	
+	StrnCpy (sampass->workstations, workstations, len-1);
 
 	return True;
 }
 
 BOOL pdb_set_munged_dial (SAM_ACCOUNT *sampass, char *munged_dial)
 {
-	if (!sampass)
-		return False;
+	int len;
+	
+	if (!sampass || !sampass->mem_ctx) return False;
 
-	if (!sampass->own_memory)
-		sampass->munged_dial = munged_dial;
-	else
+	if (!munged_dial) 
 	{
-		if ( (sampass->munged_dial=strdup(munged_dial)) == NULL )
-		{
-			DEBUG (0,("pdb_set_munged_dial: ERROR - Unable to malloc memory for [%s]\n", munged_dial));
-			return False;
-		}
+		sampass->munged_dial = NULL;
+		return True;
 	}
+
+	len = strlen(munged_dial)+1;
+	sampass->munged_dial = talloc (sampass->mem_ctx, len);
+
+	if (sampass->munged_dial == NULL )
+	{
+		DEBUG (0,("pdb_set_munged_dial: ERROR - Unable to talloc memory for [%s]\n", munged_dial));
+		return False;
+	}
+	
+	StrnCpy (sampass->munged_dial, munged_dial, len-1);
 
 	return True;
 }
 
 BOOL pdb_set_nt_passwd (SAM_ACCOUNT *sampass, uint8 *pwd)
 {
-	if ( (!sampass) ||(pwd == NULL) )
-		return False;
+	if (!sampass || !sampass->mem_ctx) return False;
 
-	if (!sampass->own_memory)
-		sampass->nt_pw = pwd;
-	else
+	if (!pwd) 
 	{
-		if ((sampass->nt_pw=(uint8*)malloc(sizeof(uint8)*16)) == NULL)
-		{
-			DEBUG(0,("pdb_set_nt_passwd: ERROR - out of memory for nt_pw!\n"));
-			return False;
-		}
-		if (!memcpy(sampass->nt_pw, pwd, 16))
-			return False;
-	}	
+		sampass->nt_pw = NULL;
+		return True;
+	}
+	
+	sampass->nt_pw = talloc (sampass->mem_ctx, 16);
+
+	if (sampass->nt_pw == NULL )
+	{
+		DEBUG (0,("pdb_set_nt_passwd: ERROR - Unable to talloc memory for [%s]\n", pwd));
+		return False;
+	}
+	
+	memcpy (sampass->nt_pw, pwd, 16);
 
 	return True;
 }
 
 BOOL pdb_set_lanman_passwd (SAM_ACCOUNT *sampass, uint8 *pwd)
 {
-	if ( (!sampass) ||(pwd == NULL) )
-		return False;
-
-	if (!sampass->own_memory)
-		sampass->lm_pw = pwd;
-	else
+	if (!sampass || !sampass->mem_ctx) return False;
+	
+	if (!pwd)
 	{
-		if ((sampass->lm_pw=(uint8*)malloc(sizeof(uint8)*16)) == NULL)
-		{
-			DEBUG(0,("pdb_set_lanman_passwd: ERROR - out of memory for lm_pw!\n"));
-			return False;
-		}
-		if (!memcpy(sampass->lm_pw, pwd, 16))
-			return False;
-	}	
+		sampass->lm_pw = NULL;
+		return True;
+	}
+
+	sampass->lm_pw = talloc (sampass->mem_ctx, 16);
+
+	if (sampass->lm_pw == NULL )
+	{
+		DEBUG (0,("pdb_set_lanman_passwd: ERROR - Unable to talloc memory for [%s]\n", pwd));
+		return False;
+	}
+	
+	memcpy (sampass->lm_pw, pwd, 16);
 
 	return True;
 }

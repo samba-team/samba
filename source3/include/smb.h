@@ -644,8 +644,8 @@ typedef struct
 
 typedef struct sam_passwd
 {
-	BOOL own_memory;    /* do we own the memory allocated for the
-			       pointers in this struct? */
+	TALLOC_CTX *mem_ctx; 	/* used for all dynamically allocated
+				   memory in this struct*/
 	
         time_t logon_time;            /* logon time */
         time_t logoff_time;           /* logoff time */

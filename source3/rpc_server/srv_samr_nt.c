@@ -2060,6 +2060,7 @@ static BOOL set_user_info_21(SAM_USER_INFO_21 *id21, uint32 rid)
 		return False;
  
 	/* we make a copy so that we can modify stuff */
+	ZERO_STRUCT(new_pwd);
 	copy_sam_passwd(&new_pwd, pwd);
 	copy_id21_to_sam_passwd(&new_pwd, id21);
  
@@ -2099,8 +2100,9 @@ static BOOL set_user_info_23(SAM_USER_INFO_23 *id23, uint32 rid)
     if (pwd == NULL)
         return False;
  
-	acct_ctrl = pdb_get_acct_ctrl(pwd);
+    acct_ctrl = pdb_get_acct_ctrl(pwd);
 
+    ZERO_STRUCT (new_pwd);
     copy_sam_passwd(&new_pwd, pwd);
     copy_id23_to_sam_passwd(&new_pwd, id23);
  
