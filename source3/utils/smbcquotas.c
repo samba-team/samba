@@ -236,8 +236,9 @@ static int do_quota(struct cli_state *cli, enum SMB_QUOTA_TYPE qtype, uint16 cmd
 	}
 
 	if (!cli_get_quota_handle(cli, &quota_fnum)) {
-		d_printf("Failed to open \\%s  %s.\n",
-			FAKE_FILE_NAME_QUOTA,cli_errstr(cli));
+		d_printf("Quotas are not enabled on this share.\n");
+		d_printf("Failed to open %s  %s.\n",
+			FAKE_FILE_NAME_QUOTA_WIN32,cli_errstr(cli));
 		return -1;
 	}
 
