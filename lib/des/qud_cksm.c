@@ -63,76 +63,56 @@
 #define NOISE	((DES_LONG)83653421L)
 
 DES_LONG des_quad_cksum(input, output, length, out_count, seed)
-des_cblock (*input);
-des_cblock (*output);
-long length;
-int out_count;
-des_cblock (*seed);
+     des_cblock (*input);
+     des_cblock (*output);
+     long length;
+     int out_count;
+     des_cblock (*seed);
+{
+    DES_LONG z0,z1,t0,t1;
+    int i;
+    long l=0;
+    unsigned char *cp;
+    DES_LONG *lp;
+
+    if (out_count < 1) out_count=1;
+    lp=(DES_LONG*)output;
+
+    z0=B0((*seed)[0])|B1((*seed)[1])|B2((*seed)[2])|B3((*seed)[3]);
+    z1=B0((*seed)[4])|B1((*seed)[5])|B2((*seed)[6])|B3((*seed)[7]);
+
+    for (i=0; ((i<4)&&(i<out_count)); i++)
 	{
-	DES_LONG z0,z1,t0,t1;
-	int i;
-	long l=0;
-	unsigned char *cp;
-	unsigned char *lp;
-
-	if (out_count < 1) out_count=1;
-	lp=(unsigned char *)output;
-
-	z0=B0((*seed)[0])|B1((*seed)[1])|B2((*seed)[2])|B3((*seed)[3]);
-	z1=B0((*seed)[4])|B1((*seed)[5])|B2((*seed)[6])|B3((*seed)[7]);
-
-	for (i=0; ((i<4)&&(i<out_count)); i++)
+	    cp=(unsigned char *)input;
+	    l=length;
+	    while (l > 0)
 		{
-		cp=(unsigned char *)input;
-		l=length;
-		while (l > 0)
+		    if (l > 1)
 			{
-			if (l > 1)
-				{
-				t0= (DES_LONG)(*(cp++));
-				t0|=(DES_LONG)B1(*(cp++));
-				l--;
-				}
-			else
-				t0= (DES_LONG)(*(cp++));
-			l--;
-			/* add */
-			t0+=z0;
-			t0&=0xffffffffL;
-			t1=z1;
-			/* square, well sort of square */
-			z0=((((t0*t0)&0xffffffffL)+((t1*t1)&0xffffffffL))
-				&0xffffffffL)%0x7fffffffL; 
-			z1=((t0*((t1+NOISE)&0xffffffffL))&0xffffffffL)%0x7fffffffL;
+			    t0= (DES_LONG)(*(cp++));
+			    t0|=(DES_LONG)B1(*(cp++));
+			    l--;
 			}
-		if (lp != NULL)
-			{
-			/* I believe I finally have things worked out.
-			 * The MIT library assumes that the checksum
-			 * is one huge number and it is returned in a
-			 * host dependant byte order.
-			 */
-			static DES_LONG ltmp=1;
-			static unsigned char *c=(unsigned char *)&ltmp;
-
-			if (c[0])
-				{
-				l2c(z0,lp);
-				l2c(z1,lp);
-				}
-			else
-				{
-#if 0
-				lp=output[out_count-i-1];
-				l2n(z1,lp);
-				l2n(z0,lp);
-#else
-				l2n(z0,lp);
-				l2n(z1,lp);
-#endif
-				}
-			}
+		    else
+			t0= (DES_LONG)(*(cp++));
+		    l--;
+		    /* add */
+		    t0+=z0;
+		    t0&=0xffffffffL;
+		    t1=z1;
+		    /* square, well sort of square */
+		    z0=((((t0*t0)&0xffffffffL)+((t1*t1)&0xffffffffL))
+			&0xffffffffL)%0x7fffffffL; 
+		    z1=((t0*((t1+NOISE)&0xffffffffL))&0xffffffffL)%0x7fffffffL;
 		}
-	return(z0);
+	    if (lp != NULL) 
+		{
+		    /* The MIT library assumes that the checksum is
+		     * composed of 2*out_count 32 bit ints */
+		    *lp++ = z0;
+		    *lp++ = z1;
+		}
 	}
+    return(z0);
+}
 
