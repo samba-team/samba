@@ -1547,3 +1547,117 @@ samba_cv_HAVE_COMPARISON_FN_T=yes,samba_cv_HAVE_COMPARISON_FN_T=no)
 if test x"$samba_cv_HAVE_COMPARISON_FN_T" = x"yes"; then
 	AC_DEFINE(HAVE_COMPARISON_FN_T,1,[Whether or not we have comparison_fn_t])
 fi
+
+############################################
+# Check if we have extended attributes
+AC_CHECK_HEADERS(sys/attributes.h attr/xattr.h sys/xattr.h)
+AC_SEARCH_LIBS(getxattr, [attr])
+AC_CHECK_FUNCS(getxattr lgetxattr fgetxattr listxattr llistxattr)
+AC_CHECK_FUNCS(flistxattr removexattr lremovexattr fremovexattr)
+AC_CHECK_FUNCS(setxattr lsetxattr fsetxattr)
+AC_CHECK_FUNCS(attr_get attr_list attr_set attr_remove)
+AC_CHECK_FUNCS(attr_getf attr_listf attr_setf attr_removef)
+
+#################################################
+# check for ACL support
+
+AC_MSG_CHECKING(whether to support ACLs)
+AC_ARG_WITH(acl-support,
+[  --with-acl-support      Include ACL support (default=no)],
+[ case "$withval" in
+  yes)
+
+	case "$host_os" in
+	*sysv5*)
+		AC_MSG_RESULT(Using UnixWare ACLs)
+		AC_DEFINE(HAVE_UNIXWARE_ACLS,1,[Whether UnixWare ACLs are available])
+		;;
+	*solaris*)
+		AC_MSG_RESULT(Using solaris ACLs)
+		AC_DEFINE(HAVE_SOLARIS_ACLS,1,[Whether solaris ACLs are available])
+		;;
+	*hpux*)
+		AC_MSG_RESULT(Using HPUX ACLs)
+		AC_DEFINE(HAVE_HPUX_ACLS,1,[Whether HPUX ACLs are available])
+		;;
+	*irix*)
+		AC_MSG_RESULT(Using IRIX ACLs)
+		AC_DEFINE(HAVE_IRIX_ACLS,1,[Whether IRIX ACLs are available])
+		;;
+	*aix*)
+		AC_MSG_RESULT(Using AIX ACLs)
+		AC_DEFINE(HAVE_AIX_ACLS,1,[Whether AIX ACLs are available])
+		;;
+	*osf*)
+		AC_MSG_RESULT(Using Tru64 ACLs)
+		AC_DEFINE(HAVE_TRU64_ACLS,1,[Whether Tru64 ACLs are available])
+		ACL_LIBS="$ACL_LIBS -lpacl"
+		;;
+	*freebsd5*)
+		AC_MSG_RESULT(Using FreeBSD posix ACLs)
+		AC_DEFINE(HAVE_POSIX_ACLS,1,[Whether FreeBSD POSIX ACLs are available])
+		AC_DEFINE(HAVE_ACL_GET_PERM_NP,1,[Whether acl_get_perm_np() is available])
+		;;
+	*linux*)
+		AC_CHECK_LIB(attr,getxattr,[ACL_LIBS="$ACL_LIBS -lattr"])
+       		AC_CHECK_LIB(acl,acl_get_file,[ACL_LIBS="$ACL_LIBS -lacl"])
+		AC_CACHE_CHECK([for ACL support],samba_cv_HAVE_POSIX_ACLS,[
+		acl_LIBS=$LIBS
+		LIBS="$LIBS -lacl"
+		AC_TRY_LINK([#include <sys/types.h>
+#include <sys/acl.h>],
+[ acl_t acl; int entry_id; acl_entry_t *entry_p; return acl_get_entry( acl, entry_id, entry_p);],
+samba_cv_HAVE_POSIX_ACLS=yes,samba_cv_HAVE_POSIX_ACLS=no)
+		LIBS=$acl_LIBS])
+			if test x"$samba_cv_HAVE_POSIX_ACLS" = x"yes"; then
+				AC_MSG_RESULT(Using posix ACLs)
+				AC_DEFINE(HAVE_POSIX_ACLS,1,[Whether POSIX ACLs are available])
+				AC_CACHE_CHECK([for acl_get_perm_np],samba_cv_HAVE_ACL_GET_PERM_NP,[
+				acl_LIBS=$LIBS
+				LIBS="$LIBS -lacl"
+				AC_TRY_LINK([#include <sys/types.h>
+#include <sys/acl.h>],
+[ acl_permset_t permset_d; acl_perm_t perm; return acl_get_perm_np( permset_d, perm);],
+samba_cv_HAVE_ACL_GET_PERM_NP=yes,samba_cv_HAVE_ACL_GET_PERM_NP=no)
+				LIBS=$acl_LIBS])
+				if test x"$samba_cv_HAVE_ACL_GET_PERM_NP" = x"yes"; then
+					AC_DEFINE(HAVE_ACL_GET_PERM_NP,1,[Whether acl_get_perm_np() is available])
+				fi
+			fi
+            ;;
+         *)
+		AC_CHECK_LIB(acl,acl_get_file,[ACL_LIBS="$ACL_LIBS -lacl"])
+		AC_CACHE_CHECK([for ACL support],samba_cv_HAVE_POSIX_ACLS,[
+		acl_LIBS=$LIBS
+		LIBS="$LIBS -lacl"
+		AC_TRY_LINK([#include <sys/types.h>
+#include <sys/acl.h>],
+[ acl_t acl; int entry_id; acl_entry_t *entry_p; return acl_get_entry( acl, entry_id, entry_p);],
+samba_cv_HAVE_POSIX_ACLS=yes,samba_cv_HAVE_POSIX_ACLS=no)
+		LIBS=$acl_LIBS])
+			if test x"$samba_cv_HAVE_POSIX_ACLS" = x"yes"; then
+				AC_MSG_RESULT(Using posix ACLs)
+				AC_DEFINE(HAVE_POSIX_ACLS,1,[Whether POSIX ACLs are available])
+				AC_CACHE_CHECK([for acl_get_perm_np],samba_cv_HAVE_ACL_GET_PERM_NP,[
+				acl_LIBS=$LIBS
+				LIBS="$LIBS -lacl"
+				AC_TRY_LINK([#include <sys/types.h>
+#include <sys/acl.h>],
+[ acl_permset_t permset_d; acl_perm_t perm; return acl_get_perm_np( permset_d, perm);],
+samba_cv_HAVE_ACL_GET_PERM_NP=yes,samba_cv_HAVE_ACL_GET_PERM_NP=no)
+				LIBS=$acl_LIBS])
+				if test x"$samba_cv_HAVE_ACL_GET_PERM_NP" = x"yes"; then
+					AC_DEFINE(HAVE_ACL_GET_PERM_NP,1,[Whether acl_get_perm_np() is available])
+				fi
+			fi
+            ;;
+        esac
+        ;;
+  *)
+    AC_MSG_RESULT(no)
+    AC_DEFINE(HAVE_NO_ACLS,1,[Whether no ACLs support is available])
+    ;;
+  esac ],
+  AC_DEFINE(HAVE_NO_ACLS,1,[Whether no ACLs support should be built in])
+  AC_MSG_RESULT(no)
+)
