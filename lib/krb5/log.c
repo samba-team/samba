@@ -220,7 +220,6 @@ krb5_openlog(krb5_context context,
 				   "logging",
 				   logname,
 				   NULL)){
-	fprintf(stderr, "%s\n", p);
 	if(strcmp(p, "STDERR") == 0){
 	    struct facility *fp = log_realloc(f);
 	    open_file(fp, NULL, NULL, stderr, 1);
