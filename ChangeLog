@@ -1,3 +1,10 @@
+2005-02-02  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/send_to_kdc.c (send_and_recv_udp): make private again
+
+	* lib/krb5/kcm.c: use AF_UNIX like the rest of the codebase, add
+	some more error strings
+
 2005-02-02  Luke Howard  <lukeh@padl.com>
 
 	* configure.in: add --enable-kcm option for Kerberos
