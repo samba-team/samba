@@ -199,7 +199,7 @@ static void async_simple(struct cli_request *c_req)
 #define ASYNC_RECV_TAIL(io, async_fn) do { \
 	if (!c_req) return NT_STATUS_UNSUCCESSFUL; \
 	{ \
-		struct async_info *async = c_req->async.private; \
+		struct async_info *async; \
 		async = talloc(req->mem_ctx, sizeof(*async)); \
 		if (!async) return NT_STATUS_NO_MEMORY; \
 		async->parms = io; \
