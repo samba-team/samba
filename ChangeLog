@@ -1,5 +1,8 @@
 Wed Mar  4 01:47:29 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
 
+	* admin/ktutil.c: Implement `add' and `remove' functions. Make
+ 	`--keytab' a global option.
+
 	* lib/krb5/keytab.c: Implement remove with files. Add memory
  	operations.
 
