@@ -54,8 +54,7 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 	POLICY_HND dom_pol;
 	BOOL got_dom_pol = False;
 	uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
-	int i, loop_count = 0;
-	int retry;
+	int i, start_idx, retry;
 
 	*num_entries = 0;
 	*info = NULL;
@@ -79,51 +78,39 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 
 	got_dom_pol = True;
 
-	i = 0;
+	i = start_idx  = 0;
 	do {
-		SAM_DISPINFO_CTR ctr;
-		SAM_DISPINFO_1 info1;
-		uint32 count = 0, start=i, max_entries, max_size;
-		int j;
 		TALLOC_CTX *ctx2;
+		char **dom_users;
+		uint32 num_dom_users, *dom_rids, j, size = 0xffff;
+		uint16 acb_mask = ACB_NORMAL;
 
-		ctr.sam.info1 = &info1;
-
-		ctx2 = talloc_init_named("winbindd dispinfo");
-		if (!ctx2) {
+		if (!(ctx2 = talloc_init_named("winbindd enum_users"))) {
 			result = NT_STATUS_NO_MEMORY;
 			goto done;
 		}
-		
-		get_query_dispinfo_params(
-			loop_count, &max_entries, &max_size);
 
-		/* Query display info level 1 */
-		result = cli_samr_query_dispinfo(
-			hnd->cli, ctx2, &dom_pol, &start, 1, &count, 
-			max_entries, max_size, &ctr);
+		result = cli_samr_enum_dom_users(
+			hnd->cli, ctx2, &dom_pol, &start_idx, acb_mask,
+			size, &dom_users, &dom_rids, &num_dom_users);
 
-		loop_count++;
+		*num_entries += num_dom_users;
 
-		if (!NT_STATUS_IS_OK(result) && 
-		    !NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES)) break;
+		*info = talloc_realloc(
+			mem_ctx, *info, 
+			(*num_entries) * sizeof(WINBIND_USERINFO));
 
-		(*num_entries) += count;
-
-		/* now map the result into the WINBIND_USERINFO structure */
-		(*info) = talloc_realloc(mem_ctx, *info,
-					 (*num_entries)*sizeof(WINBIND_USERINFO));
 		if (!(*info)) {
 			result = NT_STATUS_NO_MEMORY;
 			talloc_destroy(ctx2);
 			goto done;
 		}
 
-		for (j=0;j<count;i++, j++) {
-			/* unistr2_tdup converts to UNIX charset. */
-			(*info)[i].acct_name = unistr2_tdup(mem_ctx, &info1.str[j].uni_acct_name);
-			(*info)[i].full_name = unistr2_tdup(mem_ctx, &info1.str[j].uni_full_name);
-			(*info)[i].user_rid = info1.sam[j].rid_user;
+		for (j = 0; j < num_dom_users; i++, j++) {
+			(*info)[i].acct_name = 
+				talloc_strdup(mem_ctx, dom_users[j]);
+			(*info)[i].full_name = talloc_strdup(mem_ctx, "");
+			(*info)[i].user_rid = dom_rids[j];
 			/* For the moment we set the primary group for
 			   every user to be the Domain Users group.
 			   There are serious problems with determining
@@ -135,6 +122,7 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 		}
 
 		talloc_destroy(ctx2);
+
 	} while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
 
  done:
