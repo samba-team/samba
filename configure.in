@@ -26,6 +26,14 @@ AC_ARG_PROGRAM
 
 CFLAGS="-g"
 
+berkeley_db=db
+AC_ARG_WITH(berkeley-db,
+[  --without-berkeley-db   if you don't want berkeley db],[
+if test "$withval" = no; then
+	berkeley_db=""
+fi
+])
+
 dnl test
 
 AC_C_BIGENDIAN
@@ -36,6 +44,9 @@ dnl Checks for libraries.
 
 AC_FIND_FUNC(socket, socket)
 AC_FIND_FUNC(gethostbyname, nsl)
+AC_FIND_FUNC(dbopen, $berkeley_db)
+AC_FIND_FUNC(dbm_firstkey, $berkeley_db gdbm ndbm)
+AC_FIND_FUNC(syslog, syslog)
 
 dnl Checks for header files.
 AC_HEADER_STDC
