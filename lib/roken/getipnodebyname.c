@@ -57,11 +57,15 @@ getipnodebyname (const char *name, int af, int flags, int *error_num)
 {
     struct hostent *tmp;
 
+#ifdef HAVE_GETHOSTBYNAME2
+    tmp = gethostbyname2 (name, af);
+#else
     if (af != AF_INET) {
 	*error_num = NO_ADDRESS;
 	return NULL;
     }
     tmp = gethostbyname (name);
+#endif
     if (tmp == NULL) {
 	switch (h_errno) {
 	case HOST_NOT_FOUND :
