@@ -648,7 +648,7 @@ static CMD_FILE *cmd_file_create(const char *file)
  * We pass a table of command callbacks for that 
  */
 
-//FIXME
+/* FIXME */
 
 /*
  * Main code from here on ...
