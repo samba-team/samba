@@ -12,6 +12,7 @@ ADD_OBJ_FILES = \
 		ntvfs/posix/pvfs_mkdir.o \
 		ntvfs/posix/pvfs_open.o \
 		ntvfs/posix/pvfs_read.o \
+		ntvfs/posix/pvfs_flush.o \
 		ntvfs/posix/pvfs_write.o \
 		ntvfs/posix/pvfs_fsinfo.o \
 		ntvfs/posix/pvfs_qfileinfo.o \
