@@ -1,3 +1,8 @@
+2000-07-07  Assar Westerlund  <assar@sics.se>
+
+	* set_keys.c (make_keys): also support `[kadmin]use_v4_salt' for
+	backwards compatability
+
 2000-06-26  Johan Danielsson  <joda@pdc.kth.se>
 
 	* set_keys.c (_kadm5_set_keys): rewrite this to be more easily
