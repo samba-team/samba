@@ -396,7 +396,7 @@ typedef struct files_struct
 	int fnum;
 	struct connection_struct *conn;
 	int fd;
-	int print_jobid;
+	uint32 print_jobid;
 	SMB_DEV_T dev;
 	SMB_INO_T inode;
 	BOOL delete_on_close;

@@ -1442,14 +1442,18 @@ BOOL convert_devicemode(char *printername, const DEVICEMODE *devmode,
 static WERROR _spoolss_enddocprinter_internal(pipes_struct *p, POLICY_HND *handle)
 {
 	Printer_entry *Printer=find_printer_index_by_hnd(p, handle);
-	
+	int snum;
+
 	if (!Printer) {
 		DEBUG(2,("_spoolss_enddocprinter_internal: Invalid handle (%s:%u:%u)\n", OUR_HANDLE(handle)));
 		return WERR_BADFID;
 	}
 	
+	if (!get_printer_snum(p, handle, &snum))
+		return WERR_BADFID;
+
 	Printer->document_started=False;
-	print_job_end(Printer->jobid,True);
+	print_job_end(snum, Printer->jobid,True);
 	/* error codes unhandled so far ... */
 
 	return WERR_OK;
@@ -4805,6 +4809,7 @@ WERROR _spoolss_startpageprinter(pipes_struct *p, SPOOL_Q_STARTPAGEPRINTER *q_u,
 WERROR _spoolss_endpageprinter(pipes_struct *p, SPOOL_Q_ENDPAGEPRINTER *q_u, SPOOL_R_ENDPAGEPRINTER *r_u)
 {
 	POLICY_HND *handle = &q_u->handle;
+	int snum;
 
 	Printer_entry *Printer = find_printer_index_by_hnd(p, handle);
 
@@ -4812,9 +4817,12 @@ WERROR _spoolss_endpageprinter(pipes_struct *p, SPOOL_Q_ENDPAGEPRINTER *q_u, SPO
 		DEBUG(2,("_spoolss_endpageprinter: Invalid handle (%s:%u:%u).\n",OUR_HANDLE(handle)));
 		return WERR_BADFID;
 	}
-	
+
+	if (!get_printer_snum(p, handle, &snum))
+		return WERR_BADFID;
+
 	Printer->page_started=False;
-	print_job_endpage(Printer->jobid);
+	print_job_endpage(snum, Printer->jobid);
 
 	return WERR_OK;
 }
@@ -4910,7 +4918,7 @@ WERROR _spoolss_writeprinter(pipes_struct *p, SPOOL_Q_WRITEPRINTER *q_u, SPOOL_R
 	uint32 buffer_size = q_u->buffer_size;
 	uint8 *buffer = q_u->buffer;
 	uint32 *buffer_written = &q_u->buffer_size2;
-
+	int snum;
 	Printer_entry *Printer = find_printer_index_by_hnd(p, handle);
 	
 	if (!Printer) {
@@ -4919,7 +4927,10 @@ WERROR _spoolss_writeprinter(pipes_struct *p, SPOOL_Q_WRITEPRINTER *q_u, SPOOL_R
 		return WERR_BADFID;
 	}
 
-	(*buffer_written) = print_job_write(Printer->jobid, (char *)buffer, buffer_size);
+	if (!get_printer_snum(p, handle, &snum))
+		return WERR_BADFID;
+
+	(*buffer_written) = print_job_write(snum, Printer->jobid, (char *)buffer, buffer_size);
 
 
 	r_u->buffer_written = q_u->buffer_size2;
@@ -5920,7 +5931,7 @@ WERROR _spoolss_setjob(pipes_struct *p, SPOOL_Q_SETJOB *q_u, SPOOL_R_SETJOB *r_u
 		return WERR_BADFID;
 	}
 
-	if (!print_job_exists(jobid)) {
+	if (!print_job_exists(snum, jobid)) {
 		return WERR_INVALID_PRINTER_NAME;
 	}
 
@@ -5929,18 +5940,18 @@ WERROR _spoolss_setjob(pipes_struct *p, SPOOL_Q_SETJOB *q_u, SPOOL_R_SETJOB *r_u
 	switch (command) {
 	case JOB_CONTROL_CANCEL:
 	case JOB_CONTROL_DELETE:
-		if (print_job_delete(&user, jobid, &errcode)) {
+		if (print_job_delete(&user, snum, jobid, &errcode)) {
 			errcode = WERR_OK;
 		}
 		break;
 	case JOB_CONTROL_PAUSE:
-		if (print_job_pause(&user, jobid, &errcode)) {
+		if (print_job_pause(&user, snum, jobid, &errcode)) {
 			errcode = WERR_OK;
 		}		
 		break;
 	case JOB_CONTROL_RESTART:
 	case JOB_CONTROL_RESUME:
-		if (print_job_resume(&user, jobid, &errcode)) {
+		if (print_job_resume(&user, snum, jobid, &errcode)) {
 			errcode = WERR_OK;
 		}
 		break;

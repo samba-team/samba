@@ -3579,7 +3579,8 @@ exist. Note that this is a DIFFERENT ANIMAL from the internal function
 getservicebyname()! This works ONLY if all services have been loaded, and
 does not copy the found service.
 ***************************************************************************/
-int lp_servicenumber(char *pszServiceName)
+
+int lp_servicenumber(const char *pszServiceName)
 {
 	int iService;
 	fstring serviceName;
