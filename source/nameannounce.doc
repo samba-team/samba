@@ -1,0 +1,265 @@
+/* 
+   Unix SMB/Netbios documentation.
+   Version 0.2
+   Copyright (C) Luke Leighton  Andrew Tridgell  1996
+   
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+   
+   Document name: nameannounce.doc
+
+   Revision History:
+
+   0.0 - 02jul96 : lkcl@pires.co.uk
+   created 
+
+   0.1 - 22jul96 : Andrew.Tridgell@anu.edu.au
+   tridge's comments on first revision
+
+   0.2 - 05aug96 : lkcl@pires.co.uk
+   actioned tridge comments about pdc -> domain master
+   documented NAME_QUERY_ANNOUNCE_HOST
+
+*/
+
+
+this module deals with announcements: the sending of announcement requests
+and the sending of announcements either to refresh other servers' records
+or as a response to announcement requests.
+
+
+/*************************************************************************
+  announce_master()
+  *************************************************************************/
+
+this function is responsible for announcing samba as a master browser
+to all known domain masters.
+
+this announcement is sent out at CHECK_TIME_MST_ANNOUNCE minute
+intervals, only if samba is a master browser on one or more of
+its local interfaces.
+
+if no domain controller has been specified (lp_domain_controller())
+samba goes through its list of servers looking for domain master
+browsers. when it finds one (other than itself) it will either
+initiate a NAME_QUERY_PDC_SRV_CHK by broadcast or with a WINS
+server. this will result in a NAME_STATUS_PDC_SRV_CHK, which
+will result in a sync browse list and an announcement
+ANN_MasterAnnounce being sent (see sync_server()).
+
+if a domain controller has been specified, samba will search for
+a domain master browser for its workgroup (either by directed
+packet or by broadcast if it cannot resolve the domain controller
+name using DNS), which results in the same action as listed above.
+
+------------
+NOTE FROM TRIDGE: 
+
+PDC in the above should really be DMB (domain master browser). They
+might be separate entities.
+
+I also propose a simpler scheme :-)
+
+If a DMB is not configured with lp_domain_controller() (perhaps
+renamed to lp_domain_master()?) then just don't do master
+announcements. Remember that most peoples networks are very simple and
+don't need DMB capabilities. Those that do need them will have more
+complex network topologies and they really need to choose themselves
+which box will act as the "hub" for netbios name resolution. Doing it
+via name queries will just lead to lag and propogation delays, because
+if two parts of the net choose different DMBs then the data will be
+very slow to propoogate.
+
+If a DMB is configured then just send the master announcemnt to that
+box! Thats all that needs to be done. Just send a udp 138 packet and
+forget it. If the recipient is indeed a DMB (as it should be if the
+config file is correct) then it should initiate a browse list sync
+with us at some later time, but that is take care of by smbd and nmbd
+doesn't even need to know it happened.
+
+Additionally, if a DMB is configured we need to sync our workgroup
+list and server list with them occasionally. Note that this is only
+time a non-DMB should do a browse sync, and it should only do it with
+a DMB. Essentially WAN based netbios is just a simple star. There is a
+DMB in the centre, and the individual master browsers for each subnet
+talk to it, but never talk to each other. If they start talking to
+each other then the network load will go as the square of the number
+of machines, which will result in meltdown :-)
+-------------
+
+
+/*************************************************************************
+  announce_host()
+  *************************************************************************/
+
+this complex-looking function is responsible for announcing samba's
+existence to other servers by broadcast. the actual announcement
+is carried out by announce_server().
+
+the time period between samba's announcement will stretch from one
+minute to twelve minutes by one minute. if samba has received an
+announce request from a master browser, then it should answer at
+any random interval between zero and thirty seconds after the
+request is received. this is to ensure that the master browser
+does not get overloaded with responses!
+
+
+/*************************************************************************
+  announce_server()
+  *************************************************************************/
+
+this function is responsible for sending announcement packets.
+these packets are received by other servers, which will then
+update their records accordingly: what services we have, our
+name, our comment field and our time to live (to name a few).
+
+if samba is a non-master then we need to see if there is a
+domain master (on a remote subnet) that we need to announce to
+it.
+
+if samba is not the WINS server (and it is using another
+WINS server) then we need to do a name query to the WINS
+server to ask it what the domain controller is. this is done
+using a samba 'state' NAME_QUERY_ANNOUNCE_HOST, which passes
+sufficient information on to be able to carry out the
+host announcement using a unicasted do_announce_host() if and
+when a reply comes back. if there is no reply to the name query,
+this is not necessarily an error - there may genuinely be no
+domain master currently up and running for samba's workgroup.
+
+if samba is a WINS server, then samba will need to look up the
+domain controller for its workgroup in its WINS records. an
+over-cautious samba could carry out a name query on that
+domain controller to make sure that it is alive and that samba's
+WINS records are up-to-date. in any event, it will send a unicast
+do_announce_host() to inform the domain master browser, if one
+exists, of samba's server status.
+
+if we are a master browser, then using do_announce_host() we
+must send a broadcast announcement on the local interface
+notifying members of that workgroup that we are their master
+browser, and another announcement indicating to all backup
+browsers and master browsers that we are a master browser.
+
+(note: if another master browser receives this broadcasted
+announcement and thinks that it is also the master browser
+for this workgroup, it stops being a master browser and forces
+an election).
+
+if we are not a master browser, then we send a broacast 
+announcement notifying the master browser that we are a member
+of its workgroup, on the local interface.
+
+
+/*************************************************************************
+  remove_my_servers()
+  *************************************************************************/
+
+this function is responsible for informing other servers that
+samba is about to go down. it announces, on all subnets, that
+samba's time to live is zero and that it has no services.
+
+
+/*************************************************************************
+  do_announce_host()
+  *************************************************************************/
+
+this function is responsible for sending out an announcement
+MAILSLOT browse packet. it contains information such as the
+time to live, name of the server, services that the server
+offers etc.
+
+the format of this MAILSLOT browse packet is described in
+draft-heizer-cifs-v1-spec-00.txt 3.9.50.4.1 page 165-6.
+
+
+/*************************************************************************
+  announce_backup()
+  *************************************************************************/
+
+this function is responsible for getting master browsers and domain
+controllers to send us lists of backup servers. this is done by
+sending an ANN_GetBackupListReq browse mailslot.
+
+the local master browser, or domain master browser, should respond 
+with an ANN_GetBackupListResp browse mailslot containing the list
+of backup servers.
+
+--------------
+NOTE FROM TRIDGE: I don't see why nmbd should ever send one of
+these. The only reason I can see for any part of Samba sending one of
+these is if we implement it in smbclient. 
+
+This packet is used to request a list of backup master browsers from
+the master browser. It is used by clients (not servers!) to spread the
+browse load over more than one server. The only server that needs to
+know what the list of backups is is the master browser, and as it is
+also responsible for generating this list it will never ask anyone
+else for it.
+--------------
+
+
+/*************************************************************************
+  sync_server()
+  *************************************************************************/
+
+this function is responsible for initiating a sync browse list
+sequence and, if necessary, carrying out an ANN_MasterAnnouncement
+to the domain master browser (that we are also sync'ing browse lists
+with).
+
+see nameservresp.c:response_name_status_check().
+
+
+/*************************************************************************
+  announce_request()
+  *************************************************************************/
+
+this function is responsible for sending an announcement request to
+another server. this server should respond with an announcement.
+
+if the announce request is sent to WORKGROUP(0x1e) then members of
+the workgroup will respond (with ANN_HostAnnounce packets)
+
+if the announce request is sent to WORKGROUP(0x1d) then the master
+browser of the workgroup should respond (ANN_LocalMasterAnnounce).
+this is untested.
+
+if the announce request is sent to ^1^2__MSBROWSE__^2(0x1) then
+(and this is pure speculation), all backup browsers and master
+browsers should respond with ANN_DomainAnnounce packets.
+this is untested.
+
+-----------
+NOTE FROM TRIDGE:
+
+I had great trouble getting machines to actually respond to this
+packet. Either we have the format wrong or MS chose not to implement
+it.
+
+Not implementing it doesn't break anything, it just means a new master
+browser won't get a complete server list as quickly.
+
+Also note that this packet should be used as little as possible as it
+could easily cause meltdown if too many servers used it. Imagine a
+dozen samba servers on a net all sending this packet! You will get 244
+responses all within 30 seconds. now imagine 50 samba servers ....
+
+So I think we should restrict ourselves to sending this packet only if
+we are already the master browser for a workgroup. We could send a
+single "announce request" when we become the master, just to prime our
+server lists. From then on the normal announce cycles should take care
+of keeping it uptodate.
+-----------
+

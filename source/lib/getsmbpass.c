@@ -45,7 +45,7 @@ static struct termio t;
 	return ioctl(fd, TCGETA, t);
 }
 
- int tcsetattr(int fd, int flags, struct termio *t)
+ int tcsetattr(int fd, int flags, const struct termio *t)
 {
 	if(flags & TCSAFLUSH)
 		ioctl(fd, TCFLSH, TCIOFLUSH);
@@ -76,7 +76,7 @@ static struct sgttyb t;
 	return ioctl(fd, TIOCGETP, (char *)t);
 }
 
- int tcsetattr(int fd, int flags, struct sgttyb *t)
+ int tcsetattr(int fd, int flags, const struct sgttyb *t)
 {
 	return ioctl(fd, TIOCSETP, (char *)t);
 }

@@ -52,6 +52,8 @@ extern fstring myworkgroup;
 #define ERROR_INVALID_LEVEL 124
 #define ERROR_MORE_DATA 234
 
+#define REALLOC(ptr,size) Realloc(ptr,MAX((size),4*1024))
+
 #define ACCESS_READ 0x01
 #define ACCESS_WRITE 0x02
 #define ACCESS_CREATE 0x04
@@ -62,8 +64,6 @@ extern fstring myworkgroup;
 #define QNLEN 12		/* queue name maximum length */
 
 extern int Client;
-extern int oplock_sock;
-extern int smb_read_error;
 
 static BOOL api_Unsupported(int cnum,uint16 vuid, char *param,char *data,
 			    int mdrcnt,int mprcnt,
@@ -146,12 +146,7 @@ static void send_trans_reply(char *outbuf,char *data,char *param,uint16 *setup,
   this_lparam = MIN(lparam,max_send - (500+lsetup*SIZEOFWORD)); /* hack */
   this_ldata = MIN(ldata,max_send - (500+lsetup*SIZEOFWORD+this_lparam));
 
-#ifdef CONFUSE_NETMONITOR_MSRPC_DECODING
-  /* if you don't want Net Monitor to decode your packets, do this!!! */
-  align = ((this_lparam+1)%4);
-#else
   align = (this_lparam%4);
-#endif
 
   set_message(outbuf,10+lsetup,align+this_ldata+this_lparam,True);
   if (this_lparam)
@@ -445,7 +440,7 @@ static void PackDriverData(struct pack_desc* desc)
 }
 
 static int check_printq_info(struct pack_desc* desc,
- 			     int uLevel, char *id1, char *id2)
+ 			     int uLevel, char *id1, const char* id2)
 {
   desc->subformat = NULL;
   switch( uLevel ) {
@@ -468,10 +463,6 @@ static int check_printq_info(struct pack_desc* desc,
     break;
   case 5:
     desc->format = "z";
-    break;
-  case 52:
-    desc->format = "WzzzzzzzzN";
-    desc->subformat = "z";
     break;
   default: return False;
   }
@@ -532,18 +523,11 @@ static void fill_printq_info(int cnum, int snum, int uLevel,
  			     int count, print_queue_struct* queue,
  			     print_status_struct* status)
 {
-  switch (uLevel) {
-    case 1:
-    case 2:
-      PACKS(desc,"B13",SERVICE(snum));
-      break;
-    case 3:
-    case 4:
-    case 5:
-      PACKS(desc,"z",Expand(cnum,snum,SERVICE(snum)));
-      break;
+  if (uLevel < 3) {
+    PACKS(desc,"B13",SERVICE(snum));
+  } else {
+    PACKS(desc,"z",Expand(cnum,snum,SERVICE(snum)));
   }
-
   if (uLevel == 1 || uLevel == 2) {
     PACKS(desc,"B","");		/* alignment */
     PACKI(desc,"W",5);		/* priority */
@@ -591,117 +575,8 @@ static void fill_printq_info(int cnum, int snum, int uLevel,
     for (i=0;i<count;i++)
       fill_printjob_info(cnum,snum,uLevel == 2 ? 1 : 2,desc,&queue[i],i);
   }
-
-  if (uLevel==52) {
-    int i,ok=0;
-    pstring tok,driver,short_name;
-    char *p,*q;
-    FILE *f;
-    pstring fname;
-
-    strcpy(fname,lp_driverfile());
-
-    f=fopen(fname,"r");
-    if (!f) {
-      DEBUG(0,("fill_printq_info: Can't open %s - %s\n",fname,strerror(errno)));
-    }
-
-    p=(char *)malloc(8192*sizeof(char));
-    bzero(p, 8192*sizeof(char));
-    q=p;
-
-    /* lookup the long printer driver name in the file description */
-    while (f && !feof(f) && !ok)
-    {
-      fgets(p,8191,f);
-      p[strlen(p)-1]='\0';
-      next_token(&p,tok,":");
-      if(!strncmp(tok,lp_printerdriver(snum),strlen(lp_printerdriver(snum)))) ok=1;
-    }
-
-    fclose(f);
-
-    next_token(&p,short_name,":");
-    next_token(&p,driver,":");
-
-    PACKI(desc,"W",0x0400);                      /* don't know */
-    PACKS(desc,"z",lp_printerdriver(snum));        /* long printer name */
-
-    if (ok)
-    {
-      PACKS(desc,"z",driver);                    /* Driver Name */
-      PACKS(desc,"z",short_name);                /* short printer name */
-      DEBUG(3,("Driver:%s:\n",driver));
-      DEBUG(3,("short name:%s:\n",short_name));
-    }
-    else 
-    {
-      PACKS(desc,"z","");
-      PACKS(desc,"z","");
-    }
-
-    PACKS(desc,"z","");
-    PACKS(desc,"z",lp_driverlocation(snum));       /* share to retrieve files */
-    PACKS(desc,"z","EMF");
-    PACKS(desc,"z","");
-    if (ok)
-      PACKS(desc,"z",driver);                      /* driver name */
-    else
-      PACKS(desc,"z","");
-    PACKI(desc,"N",count);                         /* number of files to copy */
-    for (i=0;i<count;i++)
-    {
-      next_token(&p,tok,",");
-      PACKS(desc,"z",tok);                        /* driver files to copy */
-      DEBUG(3,("file:%s:\n",tok));
-    }
-    free(q);
-  }
-
+ 
   DEBUG(3,("fill_printq_info on <%s> gave %d entries\n",SERVICE(snum),count));
-}
-
-/* This function returns the number of file for a given driver */
-int get_printerdrivernumber(int snum)
-{
-  int i=0,ok=0;
-  pstring tok;
-  char *p,*q;
-  FILE *f;
-  pstring fname;
-
-  strcpy(fname,lp_driverfile());
-
-  DEBUG(4,("In get_printerdrivernumber: %s\n",fname));
-  f=fopen(fname,"r");
-  if (!f) {
-    DEBUG(0,("get_printerdrivernumber: Can't open %s - %s\n",fname,strerror(errno)));
-    return(0);
-  }
-
-  p=(char *)malloc(8192*sizeof(char));
-  q=p; /* need it to free memory because p change ! */
-
-  /* lookup the long printer driver name in the file description */
-  while (!feof(f) && !ok)
-  {
-    fgets(p,8191,f);
-    next_token(&p,tok,":");
-    if(!strncmp(tok,lp_printerdriver(snum),strlen(lp_printerdriver(snum)))) ok=1;
-  }
-
-  if (ok) {
-    /* skip 2 fields */
-    next_token(&p,tok,":");  /* short name */
-    next_token(&p,tok,":");  /* driver name */
-    /* count the number of files */
-    while (next_token(&p,tok,","))
-       i++;
-  }
-  fclose(f);
-  free(q);
-
-  return(i);
 }
 
 static BOOL api_DosPrintQGetInfo(int cnum,uint16 vuid, char *param,char *data,
@@ -749,14 +624,7 @@ static BOOL api_DosPrintQGetInfo(int cnum,uint16 vuid, char *param,char *data,
   
   if (snum < 0 || !VALID_SNUM(snum)) return(False);
 
-  if (uLevel==52)
-  {
-    count = get_printerdrivernumber(snum);
-    DEBUG(3,("api_DosPrintQGetInfo: Driver files count: %d\n",count));
-  }
-  else
-    count = get_printqueue(snum,cnum,&queue,&status);
-
+  count = get_printqueue(snum,cnum,&queue,&status);
   if (mdrcnt > 0) *rdata = REALLOC(*rdata,mdrcnt);
   desc.base = *rdata;
   desc.buflen = mdrcnt;
@@ -1733,19 +1601,17 @@ static BOOL api_PrintJobInfo(int cnum,uint16 vuid,char *param,char *data,
 	name[l] = 0;
 	
 	DEBUG(3,("Setting print name to %s\n",name));
-	
-        become_root(True);
 
+	become_root(1);
+	
 	for (i=0;i<MAX_OPEN_FILES;i++)
 	  if (Files[i].open && Files[i].print_file)
 	    {
 	      pstring wd;
-          int fcnum = Files[i].cnum;
 	      GetWd(wd);
-	      unbecome_user();
 	      
-	      if (!become_user(&Connections[fcnum], fcnum,vuid) || 
-		  !become_service(fcnum,True))
+	      if (!become_user(Files[i].cnum,vuid) || 
+		  !become_service(Files[i].cnum,True))
 		break;
 	      
 	      if (sys_rename(Files[i].name,name) == 0)
@@ -1753,7 +1619,7 @@ static BOOL api_PrintJobInfo(int cnum,uint16 vuid,char *param,char *data,
 	      break;
 	    }
 
-         unbecome_root(True);
+	unbecome_root(1);
       }
     desc.errcode=NERR_Success;
   
@@ -2132,6 +1998,9 @@ static BOOL api_RNetUserGetInfo(int cnum,uint16 vuid, char *param,char *data,
     /* get NIS home of a previously validated user - simeon */
     user_struct *vuser = get_valid_user_struct(vuid);
     DEBUG(3,("  Username of UID %d is %s\n", vuser->uid, vuser->name));
+#if (defined(NETGROUP) && defined(AUTOMOUNT))
+    DEBUG(3,("  HOMESHR for %s is %s\n", vuser->name, vuser->home_share));
+#endif
 
     *rparam_len = 6;
     *rparam = REALLOC(*rparam,*rparam_len);
@@ -2189,17 +2058,29 @@ static BOOL api_RNetUserGetInfo(int cnum,uint16 vuid, char *param,char *data,
 	{         
 		SSVAL(p,usri11_priv,Connections[cnum].admin_user?USER_PRIV_ADMIN:USER_PRIV_USER); 
 		SIVAL(p,usri11_auth_flags,AF_OP_PRINT);		/* auth flags */
-		SIVALS(p,usri11_password_age,-1);		/* password age */
+		SIVALS(p,usri11_password_age,0xffffffff);		/* password age */
 		SIVAL(p,usri11_homedir,PTR_DIFF(p2,p)); /* home dir */
-		strcpy(p2, lp_logon_path());
+		if (*lp_logon_path())
+		{
+			strcpy(p2,lp_logon_path());
+		}
+		else
+		{
+#if (defined(NETGROUP) && defined(AUTOMOUNT))
+			strcpy(p2, vuser->home_share);
+#else
+			strcpy(p2,"\\\\%L\\%U");
+#endif
+		}
+		standard_sub_basic(p2);
 		p2 = skip_string(p2,1);
 		SIVAL(p,usri11_parms,PTR_DIFF(p2,p)); /* parms */
 		strcpy(p2,"");
 		p2 = skip_string(p2,1);
 		SIVAL(p,usri11_last_logon,0);		/* last logon */
 		SIVAL(p,usri11_last_logoff,0);		/* last logoff */
-		SSVALS(p,usri11_bad_pw_count,-1);	/* bad pw counts */
-		SSVALS(p,usri11_num_logons,-1);		/* num logons */
+		SSVALS(p,usri11_bad_pw_count,0xffffffff);		/* bad pw counts */
+		SSVALS(p,usri11_num_logons,0xffffffff);		/* num logons */
 		SIVAL(p,usri11_logon_server,PTR_DIFF(p2,p)); /* logon server */
 		strcpy(p2,"\\\\*");
 		p2 = skip_string(p2,1);
@@ -2209,7 +2090,7 @@ static BOOL api_RNetUserGetInfo(int cnum,uint16 vuid, char *param,char *data,
 		strcpy(p2,"");
 		p2 = skip_string(p2,1);
 
-		SIVALS(p,usri11_max_storage,-1);		/* max storage */
+		SIVALS(p,usri11_max_storage,0xffffffff);		/* max storage */
 		SSVAL(p,usri11_units_per_week,168);		/* units per week */
 		SIVAL(p,usri11_logon_hours,PTR_DIFF(p2,p)); /* logon hours */
 
@@ -2227,7 +2108,19 @@ static BOOL api_RNetUserGetInfo(int cnum,uint16 vuid, char *param,char *data,
 		SSVAL(p,42,
 		Connections[cnum].admin_user?USER_PRIV_ADMIN:USER_PRIV_USER);
 		SIVAL(p,44,PTR_DIFF(p2,*rdata)); /* home dir */
-		strcpy(p2,lp_logon_path());
+		if (*lp_logon_path())
+		{
+			strcpy(p2,lp_logon_path());
+		}
+		else
+		{
+#if (defined(NETGROUP) && defined(AUTOMOUNT))
+            strcpy(p2, vuser->home_share);
+#else
+			strcpy(p2,"\\\\%L\\%U");
+#endif
+		}
+		standard_sub_basic(p2);
 		p2 = skip_string(p2,1);
 		SIVAL(p,48,PTR_DIFF(p2,*rdata)); /* comment */
 		*p2++ = 0;
@@ -2331,7 +2224,6 @@ static BOOL api_WWkstaUserLogon(int cnum,uint16 vuid, char *param,char *data,
   int uLevel;
   struct pack_desc desc;
   char* name;
-  char* logon_script;
 
   uLevel = SVAL(p,0);
   name = p + 2;
@@ -2374,14 +2266,7 @@ static BOOL api_WWkstaUserLogon(int cnum,uint16 vuid, char *param,char *data,
       PACKS(&desc,"z",mypath); /* computer */
     }
     PACKS(&desc,"z",myworkgroup);/* domain */
-
-/* JHT - By calling lp_logon_script() and standard_sub() we have */
-/* made sure all macros are fully substituted and available */
-    logon_script = lp_logon_script();
-    standard_sub( cnum, logon_script );
-    PACKS(&desc,"z", logon_script);		/* script path */
-/* End of JHT mods */
-
+    PACKS(&desc,"z",lp_logon_script());		/* script path */
     PACKI(&desc,"D",0x00000000);		/* reserved */
   }
 
@@ -2869,25 +2754,14 @@ static BOOL api_WPrintPortEnum(int cnum,uint16 vuid, char *param,char *data,
 struct
 {
   char * name;
-  char * pipe_clnt_name;
-#ifdef NTDOMAIN
-  char * pipe_srv_name;
-#endif
+  char * pipename;
   int subcommand;
   BOOL (*fn) ();
 } api_fd_commands [] =
   {
-#ifdef NTDOMAIN
-    { "TransactNmPipe",     "lsarpc",	"lsass",	0x26,	api_ntLsarpcTNP },
-    { "TransactNmPipe",     "samr",	"lsass",	0x26,	api_samrTNP },
-    { "TransactNmPipe",     "srvsvc",	"lsass",	0x26,	api_srvsvcTNP },
-    { "TransactNmPipe",     "wkssvc",	"ntsvcs",	0x26,	api_wkssvcTNP },
-    { "TransactNmPipe",     "NETLOGON",	"NETLOGON",	0x26,	api_netlogrpcTNP },
-    { NULL,		            NULL,       NULL,	-1,	(BOOL (*)())api_Unsupported }
-#else
-    { "TransactNmPipe"  ,	"lsarpc",	0x26,	api_LsarpcTNP },
+    { "SetNmdPpHndState",	"lsarpc",	1,	api_LsarpcSNPHS },
+    { "TransactNmPipe",	"lsarpc",	0x26,	api_LsarpcTNP },
     { NULL,		NULL,		-1,	(BOOL (*)())api_Unsupported }
-#endif
   };
 
 /****************************************************************************
@@ -2901,17 +2775,11 @@ static int api_fd_reply(int cnum,uint16 vuid,char *outbuf,
   char *rparam = NULL;
   int rdata_len = 0;
   int rparam_len = 0;
-
-  BOOL reply    = False;
-  BOOL bind_req = False;
-  BOOL set_nphs = False;
-
+  BOOL reply=False;
   int i;
   int fd;
   int subcommand;
-  char *pipe_name;
   
-  DEBUG(5,("api_fd_reply\n"));
   /* First find out the name of this file. */
   if (suwcnt != 2)
     {
@@ -2922,113 +2790,46 @@ static int api_fd_reply(int cnum,uint16 vuid,char *outbuf,
   /* Get the file handle and hence the file name. */
   fd = setup[1];
   subcommand = setup[0];
-  pipe_name = get_rpc_pipe_hnd_name(fd);
-
-  if (pipe_name == NULL)
-  {
-    DEBUG(1,("api_fd_reply: INVALID PIPE HANDLE: %x\n", fd));
-  }
-
-  DEBUG(3,("Got API command %d on pipe %s (fd %x)",
-            subcommand, pipe_name, fd));
-  DEBUG(3,("(tdscnt=%d,tpscnt=%d,mdrcnt=%d,mprcnt=%d,cnum=%d,vuid=%d)\n",
-	   tdscnt,tpscnt,mdrcnt,mprcnt,cnum,vuid));
   
-  for (i = 0; api_fd_commands[i].name; i++)
-  {
-    if (strequal(api_fd_commands[i].pipe_clnt_name, pipe_name) &&
-	    api_fd_commands[i].subcommand == subcommand &&
-	    api_fd_commands[i].fn)
-    {
-	  DEBUG(3,("Doing %s\n", api_fd_commands[i].name));
-	  break;
-    }
-  }
+  DEBUG(3,("Got API command %d on pipe %s ",subcommand,Files[fd].name));
+  DEBUG(3,("(tdscnt=%d,tpscnt=%d,mdrcnt=%d,mprcnt=%d)\n",
+	   tdscnt,tpscnt,mdrcnt,mprcnt));
   
-  rdata  = (char *)malloc(1024); if (rdata ) bzero(rdata ,1024);
+  for (i=0;api_fd_commands[i].name;i++)
+    if (strequal(api_fd_commands[i].pipename, Files[fd].name) &&
+	api_fd_commands[i].subcommand == subcommand &&
+	api_fd_commands[i].fn)
+      {
+	DEBUG(3,("Doing %s\n",api_fd_commands[i].name));
+	break;
+      }
+  
+  rdata = (char *)malloc(1024); if (rdata) bzero(rdata,1024);
   rparam = (char *)malloc(1024); if (rparam) bzero(rparam,1024);
   
-#ifdef NTDOMAIN
-  /* RPC Pipe command 0x26. */
-  if (data != NULL && api_fd_commands[i].subcommand == 0x26)
-  {
-    RPC_HDR hdr;
-
-    /* process the rpc header */
-    char *q = smb_io_rpc_hdr(True, &hdr, data, data, 4, 0);
-    
-	/* bind request received */
-    if ((bind_req = ((q != NULL) && (hdr.pkt_type == RPC_BIND))))
-    {
-      RPC_HDR_RB hdr_rb;
-
-      /* decode the bind request */
-      char *p = smb_io_rpc_hdr_rb(True, &hdr_rb, q, data, 4, 0);
-
-      if ((bind_req = (p != NULL)))
-      {
-        RPC_HDR_BA hdr_ba;
-        fstring ack_pipe_name;
-
-        /* name has to be \PIPE\xxxxx */
-        strcpy(ack_pipe_name, "\\PIPE\\");
-        strcat(ack_pipe_name, api_fd_commands[i].pipe_srv_name);
-
-        /* make a bind acknowledgement */
-        make_rpc_hdr_ba(&hdr_ba,
-               hdr_rb.bba.max_tsize, hdr_rb.bba.max_rsize, hdr_rb.bba.assoc_gid,
-               ack_pipe_name,
-               0x1, 0x0, 0x0,
-               &(hdr_rb.transfer));
-
-        p = smb_io_rpc_hdr_ba(False, &hdr_ba, rdata + 0x10, rdata, 4, 0);
-
-		rdata_len = PTR_DIFF(p, rdata);
-
-        make_rpc_hdr(&hdr, RPC_BINDACK, 0x0, hdr.call_id, rdata_len);
-
-        p = smb_io_rpc_hdr(False, &hdr, rdata, rdata, 4, 0);
-        
-        reply = (p != NULL);
-      }
-    }
-  }
-#endif
-
-  /* Set Named Pipe Handle state */
-  if (subcommand == 0x1)
-  {
-    set_nphs = True;
-    reply = api_LsarpcSNPHS(fd, cnum, params);
-  }
-
-  if (!bind_req && !set_nphs)
-  {
-    DEBUG(10,("calling api_fd_command\n"));
-
-    reply = api_fd_commands[i].fn(cnum,vuid,params,data,mdrcnt,mprcnt,
+  reply = api_fd_commands[i].fn(cnum,vuid,params,data,mdrcnt,mprcnt,
 			        &rdata,&rparam,&rdata_len,&rparam_len);
-    DEBUG(10,("called api_fd_command\n"));
-  }
-
-  if (rdata_len > mdrcnt || rparam_len > mprcnt)
-  {
-    reply = api_TooSmall(cnum,vuid,params,data,mdrcnt,mprcnt,
+  
+  if (rdata_len > mdrcnt ||
+      rparam_len > mprcnt)
+    {
+      reply = api_TooSmall(cnum,vuid,params,data,mdrcnt,mprcnt,
 			   &rdata,&rparam,&rdata_len,&rparam_len);
-  }
+    }
+  
   
   /* if we get False back then it's actually unsupported */
   if (!reply)
-  {
     api_Unsupported(cnum,vuid,params,data,mdrcnt,mprcnt,
 		    &rdata,&rparam,&rdata_len,&rparam_len);
-  }
   
   /* now send the reply */
   send_trans_reply(outbuf,rdata,rparam,NULL,rdata_len,rparam_len,0);
   
-  if (rdata ) free(rdata );
-  if (rparam) free(rparam);
+  if (rdata)
+    free(rdata);
+  if (rparam)
+    free(rparam);
   
   return(-1);
 }
@@ -3181,31 +2982,25 @@ static int named_pipe(int cnum,uint16 vuid, char *outbuf,char *name,
 		      int suwcnt,int tdscnt,int tpscnt,
 		      int msrcnt,int mdrcnt,int mprcnt)
 {
-	DEBUG(3,("named pipe command on <%s> name\n", name));
 
-	if (strequal(name,"LANMAN"))
-	{
-		return api_reply(cnum,vuid,outbuf,data,params,tdscnt,tpscnt,mdrcnt,mprcnt);
-	}
+  if (strequal(name,"LANMAN"))
+    return(api_reply(cnum,vuid,outbuf,data,params,tdscnt,tpscnt,mdrcnt,mprcnt));
 
-	if (strlen(name) < 1)
-	{
-		return api_fd_reply(cnum,vuid,outbuf,setup,data,params,suwcnt,tdscnt,tpscnt,mdrcnt,mprcnt);
-	}
+if (strlen(name) < 1)
+  return(api_fd_reply(cnum,vuid,outbuf,setup,data,params,suwcnt,tdscnt,tpscnt,mdrcnt,mprcnt));
 
-	if (setup)
-	{
-		DEBUG(3,("unknown named pipe: setup 0x%X setup1=%d\n", (int)setup[0],(int)setup[1]));
-	}
 
-	return 0;
+  DEBUG(3,("named pipe command on <%s> 0x%X setup1=%d\n",
+	   name,(int)setup[0],(int)setup[1]));
+  
+  return(0);
 }
 
 
 /****************************************************************************
   reply to a SMBtrans
   ****************************************************************************/
-int reply_trans(char *inbuf,char *outbuf, int size, int bufsize)
+int reply_trans(char *inbuf,char *outbuf)
 {
   fstring name;
 
@@ -3229,7 +3024,6 @@ int reply_trans(char *inbuf,char *outbuf, int size, int bufsize)
   int dsoff = SVAL(inbuf,smb_vwv12);
   int suwcnt = CVAL(inbuf,smb_vwv13);
 
-  bzero(name, sizeof(name));
   fstrcpy(name,smb_buf(inbuf));
 
   if (dscnt > tdscnt || pscnt > tpscnt) {
@@ -3268,18 +3062,12 @@ int reply_trans(char *inbuf,char *outbuf, int size, int bufsize)
   /* receive the rest of the trans packet */
   while (pscnt < tpscnt || dscnt < tdscnt)
     {
-      BOOL ret;
       int pcnt,poff,dcnt,doff,pdisp,ddisp;
       
-      ret = receive_next_smb(Client,oplock_sock,inbuf,bufsize,SMB_SECONDARY_WAIT);
-
-      if ((ret && (CVAL(inbuf, smb_com) != SMBtrans)) || !ret)
+      if (!receive_smb(Client,inbuf, SMB_SECONDARY_WAIT) ||
+	  CVAL(inbuf, smb_com) != SMBtrans)
 	{
-          if(ret)
-            DEBUG(0,("reply_trans: Invalid secondary trans packet\n"));
-          else
-            DEBUG(0,("reply_trans: %s in getting secondary trans response.\n",
-              (smb_read_error == READ_ERROR) ? "error" : "timeout" ));
+	  DEBUG(2,("Invalid secondary trans2 packet\n"));
 	  if (params) free(params);
 	  if (data) free(data);
 	  if (setup) free(setup);
@@ -3314,18 +3102,11 @@ int reply_trans(char *inbuf,char *outbuf, int size, int bufsize)
 
 
   DEBUG(3,("trans <%s> data=%d params=%d setup=%d\n",name,tdscnt,tpscnt,suwcnt));
+  
 
   if (strncmp(name,"\\PIPE\\",strlen("\\PIPE\\")) == 0)
-  {
-    DEBUG(5,("calling named_pipe\n"));
     outsize = named_pipe(cnum,vuid,outbuf,name+strlen("\\PIPE\\"),setup,data,params,
 			 suwcnt,tdscnt,tpscnt,msrcnt,mdrcnt,mprcnt);
-  }
-  else
-  {
-    DEBUG(3,("invalid pipe name\n"));
-    outsize = 0;
-  }
 
 
   if (data) free(data);

@@ -1,5 +1,5 @@
 !==
-!== WinNT.txt for Samba release 1.9.18alpha13 16 Dec 1997
+!== WinNT.txt for Samba release 1.9.17p5 20 Dec 1997
 !==
 Contributors:	Various
 		Password Section - Copyright (C) 1997 - John H Terpstra
@@ -32,7 +32,7 @@ The following registry entry change will re-enable clear text password
 handling:
 
 Run regedt32.exe and locate the hive key entry:
-HKEY_LOCAL_MACHINE\system\CurrentControlSet\Services\Rdr\Parameters\
+HKEY_LOCAL_MACHINE\system\CurrentControlSet\Services\rdr\parameters\
 
 Add the following value:
 	EnablePlainTextPassword:REG_DWORD=1

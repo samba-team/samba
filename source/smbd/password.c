@@ -36,6 +36,7 @@ static char this_user[100]="";
 static char this_salt[100]="";
 static char this_crypted[100]="";
 
+#ifdef SMB_PASSWD
 /* Data to do lanman1/2 password challenge. */
 static unsigned char saved_challenge[8];
 static BOOL challenge_sent=False;
@@ -45,24 +46,17 @@ Get the next challenge value - no repeats.
 ********************************************************************/
 void generate_next_challenge(char *challenge)
 {
-	unsigned char buf[16];
-	static int counter = 0;
-	struct timeval tval;
-	int v1,v2;
-
-	/* get a sort-of random number */
-	GetTimeOfDay(&tval);
-	v1 = (counter++) + getpid() + tval.tv_sec;
-	v2 = (counter++) * getpid() + tval.tv_usec;
-	SIVAL(challenge,0,v1);
-	SIVAL(challenge,4,v2);
-
-	/* mash it up with md4 */
-	mdfour(buf, (unsigned char *)challenge, 8);
-
-	memcpy(saved_challenge, buf, 8);
-	memcpy(challenge,buf,8);
-	challenge_sent = True;
+  static int counter = 0;
+  struct timeval tval;
+  int v1,v2;
+  GetTimeOfDay(&tval);
+  v1 = (counter++) + getpid() + tval.tv_sec;
+  v2 = (counter++) * getpid() + tval.tv_usec;
+  SIVAL(challenge,0,v1);
+  SIVAL(challenge,4,v2);
+  E1((uchar *)challenge,(uchar *)"SAMBA",(uchar *)saved_challenge);
+  memcpy(challenge,saved_challenge,8);
+  challenge_sent = True;
 }
 
 /*******************************************************************
@@ -84,6 +78,7 @@ BOOL last_challenge(char *challenge)
   memcpy(challenge,saved_challenge,8);
   return(True);
 }
+#endif
 
 /* this holds info on user ids that are already validated for this VC */
 static user_struct *validated_users = NULL;
@@ -96,10 +91,10 @@ tell random client vuid's (normally zero) from valid vuids.
 ****************************************************************************/
 user_struct *get_valid_user_struct(uint16 vuid)
 {
-  if (vuid == UID_FIELD_INVALID)
+  if(vuid == UID_FIELD_INVALID)
     return NULL;
   vuid -= VUID_OFFSET;
-  if ((vuid >= (uint16)num_validated_users) || 
+  if((vuid >= (uint16)num_validated_users) || 
      (validated_users[vuid].uid == -1) || (validated_users[vuid].gid == -1))
     return NULL;
   return &validated_users[vuid];
@@ -111,28 +106,19 @@ invalidate a uid
 void invalidate_vuid(uint16 vuid)
 {
   user_struct *vuser = get_valid_user_struct(vuid);
-
-  if (vuser == NULL) return;
+  if(vuser == 0)
+    return;
 
   vuser->uid = -1;
   vuser->gid = -1;
-
-  vuser->n_sids = 0;
-
-  /* same number of igroups as groups as attrs */
-  vuser->n_groups = 0;
-
-  if (vuser->groups && (vuser->groups != (gid_t *)vuser->igroups))
-       free(vuser->groups);
-
-  if (vuser->igroups) free(vuser->igroups);
-  if (vuser->attrs  ) free(vuser->attrs);
-  if (vuser->sids   ) free(vuser->sids);
-
-  vuser->attrs   = NULL;
-  vuser->sids    = NULL;
-  vuser->igroups = NULL;
-  vuser->groups  = NULL;
+  vuser->user_ngroups = 0;
+  if(vuser->user_groups && 
+     (vuser->user_groups != (gid_t *)vuser->user_igroups))
+       free(vuser->user_groups);
+  vuser->user_groups = NULL;
+  if(vuser->user_igroups)
+    free(vuser->user_igroups);
+  vuser->user_igroups = NULL;
 }
 
 
@@ -142,7 +128,7 @@ return a validated username
 char *validated_username(uint16 vuid)
 {
   user_struct *vuser = get_valid_user_struct(vuid);
-  if (vuser == NULL)
+  if(vuser == 0)
     return 0;
   return(vuser->name);
 }
@@ -155,12 +141,22 @@ tell random client vuid's (normally zero) from valid vuids.
 uint16 register_vuid(int uid,int gid, char *name,BOOL guest)
 {
   user_struct *vuser;
+
+#if (defined(NETGROUP) && defined (AUTOMOUNT))
+  int nis_error;        /* returned by yp all functions */
+  char *nis_result;     /* yp_match inits this */
+  int nis_result_len;  /* and set this */
+  char *nis_domain;     /* yp_get_default_domain inits this */
+  char *nis_map = (char *)lp_nis_home_map_name();
+  int home_server_len;
+#endif
   struct passwd *pwfile; /* for getting real name from passwd file */
+  int real_name_len;
 
 #if 0
   /*
    * After observing MS-Exchange services writing to a Samba share
-   * I belive this code is incorrect. Each service does its own
+   * I belive this code is incorrect. Each service does it's own
    * sessionsetup_and_X for the same user, and as each service shuts
    * down, it does a user_logoff_and_X. As we are consolidating multiple
    * sessionsetup_and_X's onto the same vuid here, when the first service
@@ -173,7 +169,7 @@ uint16 register_vuid(int uid,int gid, char *name,BOOL guest)
   int i;
   for(i = 0; i < num_validated_users; i++) {
     vuser = &validated_users[i];
-    if ( vuser->uid == uid )
+    if( vuser->uid == uid )
       return (uint16)(i + VUID_OFFSET); /* User already validated */
   }
 #endif
@@ -197,31 +193,58 @@ uint16 register_vuid(int uid,int gid, char *name,BOOL guest)
   vuser->guest = guest;
   strcpy(vuser->name,name);
 
-  vuser->n_sids = 0;
-  vuser->sids   = NULL;
-
-  vuser->n_groups = 0;
-  vuser->groups  = NULL;
-  vuser->igroups = NULL;
-  vuser->attrs    = NULL;
+  vuser->user_ngroups = 0;
+  vuser->user_groups = NULL;
+  vuser->user_igroups = NULL;
 
   /* Find all the groups this uid is in and store them. 
      Used by become_user() */
   setup_groups(name,uid,gid,
-	       &vuser->n_groups,
-	       &vuser->igroups,
-	       &vuser->groups,
-	       &vuser->attrs);
+	       &vuser->user_ngroups,
+	       &vuser->user_igroups,
+	       &vuser->user_groups);
 
   DEBUG(3,("uid %d registered to name %s\n",uid,name));
 
+#if (defined(NETGROUP) && defined (AUTOMOUNT))
+  vuser->home_share = NULL;
+  DEBUG(3, ("Setting default HOMESHR to: \\\\logon server\\HOMES\n"));
+  vuser->home_share = Realloc(vuser->home_share, 32);
+  strcpy(vuser->home_share,"\\\\%L\\HOMES");
+
+  if (nis_error = yp_get_default_domain(&nis_domain))
+    DEBUG(3, ("YP Error: %s\n", yperr_string(nis_error)));
+  DEBUG(3, ("NIS Domain: %s\n", nis_domain));
+
+  if (nis_error = yp_match(nis_domain, nis_map, vuser->name, strlen(vuser->name),
+                        &nis_result, &nis_result_len))
+    DEBUG(3, ("YP Error: %s\n", yperr_string(nis_error)));
+  if (!nis_error && lp_nis_home_map()) {
+    home_server_len = strcspn(nis_result,":");
+    DEBUG(3, ("NIS lookup succeeded\n\tHome server length: %d\n",home_server_len));
+    vuser->home_share = (char *)Realloc(vuser->home_share, home_server_len+12);
+    DEBUG(3, ("\tAllocated %d bytes for HOMESHR\n",home_server_len+12 ));
+    strcpy(vuser->home_share,"\\\\");
+    strncat(vuser->home_share, nis_result, home_server_len);
+    strcat(vuser->home_share,"\\homes");
+    DEBUG(2,("\tUser = %s\n\tUID = %d\n\tNIS result = %s\n\tHOMESHR = %s\n",
+           vuser->name, vuser->uid, nis_result, vuser->home_share));
+  }
+#endif
+
+  vuser->real_name = NULL;
   DEBUG(3, ("Clearing default real name\n"));
-  fstrcpy(vuser->real_name, "<Full Name>\0");
+  vuser->real_name = Realloc(vuser->real_name, 15);
+  strcpy(vuser->real_name, "<Full Name>\0");
   if (lp_unix_realname()) {
-    if ((pwfile=getpwnam(vuser->name))!= NULL)
+    if((pwfile=getpwnam(vuser->name))!= NULL)
       {
       DEBUG(3, ("User name: %s\tReal name: %s\n",vuser->name,pwfile->pw_gecos));
-      fstrcpy(vuser->real_name, pwfile->pw_gecos);
+      real_name_len = strcspn(pwfile->pw_gecos, ",");
+      DEBUG(3, ("Real name length: %d\n", real_name_len));
+      vuser->real_name = (char *)Realloc(vuser->real_name, real_name_len+1);
+      strncpy(vuser->real_name, pwfile->pw_gecos, real_name_len);
+      vuser->real_name[real_name_len]='\0';
       }
   }
 
@@ -378,7 +401,7 @@ static char *PAM_password;
  * echo off means password.
  */
 static int PAM_conv (int num_msg,
-                     struct pam_message **msg,
+                     const struct pam_message **msg,
                      struct pam_response **resp,
                      void *appdata_ptr) {
   int replies = 0;
@@ -674,7 +697,7 @@ static int linux_bigcrypt(char *password,char *salt1, char *crypted)
   
   for ( i=strlen(password); i > 0; i -= LINUX_PASSWORD_SEG_CHARS) {
     char * p = crypt(password,salt) + 2;
-    if (strncmp(p, crypted, LINUX_PASSWORD_SEG_CHARS) != 0)
+    if(strncmp(p, crypted, LINUX_PASSWORD_SEG_CHARS) != 0)
       return(0);
     password += LINUX_PASSWORD_SEG_CHARS;
     crypted  += strlen(p);
@@ -781,10 +804,6 @@ Hence we make a direct return to avoid a second chance!!!
   return(linux_bigcrypt(password,this_salt,this_crypted));
 #endif
 
-#ifdef HPUX_10_TRUSTED
-  return(bigcrypt(password,this_salt,this_crypted));
-#endif
-
 #ifdef NO_CRYPT
   DEBUG(1,("Warning - no crypt available\n"));
   return(False);
@@ -793,6 +812,7 @@ Hence we make a direct return to avoid a second chance!!!
 #endif
 }
 
+#ifdef SMB_PASSWD
 /****************************************************************************
 core of smb password checking routine.
 ****************************************************************************/
@@ -802,10 +822,10 @@ BOOL smb_password_check(char *password, unsigned char *part_passwd, unsigned cha
   unsigned char p21[21];
   unsigned char p24[24];
 
-  if (part_passwd == NULL)
+  if(part_passwd == NULL)
     DEBUG(10,("No password set - allowing access\n"));
   /* No password set - always true ! */
-  if (part_passwd == NULL)
+  if(part_passwd == NULL)
     return 1;
 
   memset(p21,'\0',21);
@@ -834,6 +854,7 @@ BOOL smb_password_check(char *password, unsigned char *part_passwd, unsigned cha
 #endif
   return (memcmp(p24, password, 24) == 0);
 }
+#endif
 
 /****************************************************************************
 check if a username/password is OK
@@ -843,16 +864,21 @@ BOOL password_ok(char *user,char *password, int pwlen, struct passwd *pwd)
   pstring pass2;
   int level = lp_passwordlevel();
   struct passwd *pass;
+#ifdef SMB_PASSWD
   char challenge[8];
   struct smb_passwd *smb_pass;
   BOOL challenge_done = False;
+#endif
 
   if (password) password[pwlen] = 0;
 
+#ifdef SMB_PASSWD
   if (pwlen == 24)
     challenge_done = last_challenge(challenge);
+#endif
 
 #if DEBUG_PASSWORD
+#ifdef SMB_PASSWD
   if (challenge_done)
     {
       int i;      
@@ -860,9 +886,10 @@ BOOL password_ok(char *user,char *password, int pwlen, struct passwd *pwd)
       for( i = 0; i < 24; i++)
 	DEBUG(100,("%0x ", (unsigned char)password[i]));
       DEBUG(100,("]\n"));
-    } else {
-	    DEBUG(100,("checking user=[%s] pass=[%s]\n",user,password));
     }
+  else
+#endif
+    DEBUG(100,("checking user=[%s] pass=[%s]\n",user,password));
 #endif
 
   if (!password)
@@ -879,9 +906,11 @@ BOOL password_ok(char *user,char *password, int pwlen, struct passwd *pwd)
   else 
     pass = Get_Pwnam(user,True);
 
+#ifdef SMB_PASSWD
+
   DEBUG(4,("SMB Password - pwlen = %d, challenge_done = %d\n", pwlen, challenge_done));
 
-  if ((pwlen == 24) && challenge_done)
+  if((pwlen == 24) && challenge_done)
     {
       DEBUG(4,("Checking SMB password for user %s (l=24)\n",user));
 
@@ -891,30 +920,29 @@ BOOL password_ok(char *user,char *password, int pwlen, struct passwd *pwd)
 	  return(False);
 	}
 
-      /* non-null username indicates search by username not smb userid */
-      smb_pass = get_smbpwd_entry(user, 0);
-      if (!smb_pass)
+      smb_pass = get_smbpwnam(user);
+      if(!smb_pass)
 	{
 	  DEBUG(3,("Couldn't find user %s in smb_passwd file.\n", user));
 	  return(False);
 	}
 
       /* Ensure the uid's match */
-      if (smb_pass->smb_userid != pass->pw_uid)
+      if(smb_pass->smb_userid != pass->pw_uid)
 	{
 	  DEBUG(3,("Error : UNIX and SMB uids in password files do not match !\n"));
 	  return(False);
 	}
 
-	if (Protocol >= PROTOCOL_NT1)
+	if(Protocol >= PROTOCOL_NT1)
 	{
 		/* We have the NT MD4 hash challenge available - see if we can
 		   use it (ie. does it exist in the smbpasswd file).
 		*/
-		if (smb_pass->smb_nt_passwd != NULL)
+		if(smb_pass->smb_nt_passwd != NULL)
 		{
 		  DEBUG(4,("Checking NT MD4 password\n"));
-		  if (smb_password_check(password, 
+		  if(smb_password_check(password, 
 					smb_pass->smb_nt_passwd, 
 					(unsigned char *)challenge))
    		  {
@@ -936,6 +964,7 @@ BOOL password_ok(char *user,char *password, int pwlen, struct passwd *pwd)
 
 	DEBUG(3,("Error smb_password_check failed\n"));
     }
+#endif 
 
   DEBUG(4,("Checking password for user %s (l=%d)\n",user,pwlen));
 
@@ -1017,7 +1046,6 @@ BOOL password_ok(char *user,char *password, int pwlen, struct passwd *pwd)
   /* extract relevant info */
   strcpy(this_user,pass->pw_name);  
   strcpy(this_salt,pass->pw_passwd);
-  this_salt[2] = 0;
   strcpy(this_crypted,pass->pw_passwd);
  
   if (!*this_crypted) {
@@ -1058,7 +1086,7 @@ BOOL password_ok(char *user,char *password, int pwlen, struct passwd *pwd)
     }
 
   /* give up? */
-  if (level < 1)
+  if(level < 1)
     {
       update_protected_database(user,False);
 
@@ -1479,7 +1507,6 @@ BOOL check_hosts_equiv(char *user)
   return(False);
 }
 
-
 static struct cli_state cli;
 
 /****************************************************************************
@@ -1565,6 +1592,7 @@ BOOL server_validate(char *user, char *domain,
 		     char *ntpass, int ntpasslen)
 {
 	extern fstring local_machine;
+	fstring share;
 
 	if (!cli.initialised) {
 		DEBUG(1,("password server %s is not connected\n", cli.desthost));
@@ -1583,13 +1611,14 @@ BOOL server_validate(char *user, char *domain,
 	}
 
 
-	if (!cli_send_tconX(&cli, "IPC$", "IPC", "", 1)) {
+	sprintf(share,"\\\\%s\\IPC$", cli.desthost);
+
+	if (!cli_send_tconX(&cli, share, "IPC", "", 1)) {
 		DEBUG(1,("password server %s refused IPC$ connect\n", cli.desthost));
 		return False;
 	}
 
 
-#if USE_NETWKSTAUSERLOGON
 	if (!cli_NetWkstaUserLogon(&cli,user,local_machine)) {
 		DEBUG(1,("password server %s failed NetWkstaUserLogon\n", cli.desthost));
 		cli_tdis(&cli);
@@ -1609,7 +1638,6 @@ BOOL server_validate(char *user, char *domain,
 		cli_tdis(&cli);
 		return False;
 	}
-#endif
 
 	DEBUG(3,("password server %s accepted the password\n", cli.desthost));
 
@@ -1617,5 +1645,8 @@ BOOL server_validate(char *user, char *domain,
 
 	return(True);
 }
+
+
+
 
 

@@ -1,569 +1,326 @@
-/* -------------------------------------------------------------------------- **
- * Microsoft Network Services for Unix, AKA., Andrew Tridgell's SAMBA.
- *
- * This module Copyright (C) 1990, 1991, 1992, 1993, 1994 Karl Auer
- *
- * Rewritten almost completely by Christopher R. Hertel
- * at the University of Minnesota, September, 1997.
- * This module Copyright (C) 1997 by the University of Minnesota
- * -------------------------------------------------------------------------- **
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *
- * -------------------------------------------------------------------------- **
- *
- * Module name: params
- *
- * -------------------------------------------------------------------------- **
- *
- *  This module performs lexical analysis and initial parsing of a
- *  Windows-like parameter file.  It recognizes and handles four token
- *  types:  section-name, parameter-name, parameter-value, and
- *  end-of-file.  Comments and line continuation are handled
- *  internally.
- *
- *  The entry point to the module is function pm_process().  This
- *  function opens the source file, calls the Parse() function to parse
- *  the input, and then closes the file when either the EOF is reached
- *  or a fatal error is encountered.
- *
- *  A sample parameter file might look like this:
- *
- *  [section one]
- *  parameter one = value string
- *  parameter two = another value
- *  [section two]
- *  new parameter = some value or t'other
- *
- *  The parameter file is divided into sections by section headers:
- *  section names enclosed in square brackets (eg. [section one]).
- *  Each section contains parameter lines, each of which consist of a
- *  parameter name and value delimited by an equal sign.  Roughly, the
- *  syntax is:
- *
- *    <file>            :==  { <section> } EOF
- *
- *    <section>         :==  <section header> { <parameter line> }
- *
- *    <section header>  :==  '[' NAME ']'
- *
- *    <parameter line>  :==  NAME '=' VALUE '\n'
- *
- *  Blank lines and comment lines are ignored.  Comment lines are lines
- *  beginning with either a semicolon (';') or a pound sign ('#').
- *
- *  All whitespace in section names and parameter names is compressed
- *  to single spaces.  Leading and trailing whitespace is stipped from
- *  both names and values.
- *
- *  Only the first equals sign in a parameter line is significant.
- *  Parameter values may contain equals signs, square brackets and
- *  semicolons.  Internal whitespace is retained in parameter values,
- *  with the exception of the '\r' character, which is stripped for
- *  historic reasons.  Parameter names may not start with a left square
- *  bracket, an equal sign, a pound sign, or a semicolon, because these
- *  are used to identify other tokens.
- *
- * -------------------------------------------------------------------------- **
- */
+/* 
+   Unix SMB/Netbios implementation.
+   Version 1.9.
+   Parameter loading utlities
+   Copyright (C) Karl Auer 1993,1994,1997
+   
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+*/
+
+/**************************************************************************
+PARAMS.C
+
+Copyright (C) 1990, 1991, 1992, 1993, 1994 Karl Auer
+
+This module provides for streamlines retrieval of information from a
+Windows-like parameter files. There is a function which will search for
+all sections in the file and call a specified function with each. There is
+a similar function which will call a specified function for all parameters 
+in a section. The idea is that you pass the addresses of suitable functions
+to a single function in this module which will then enumerate all sections, 
+and within each section all parameters, to your program. 
+
+Parameter files contain text lines (newline delimited) which consist of
+either a section name in square brackets or a parameter name, delimited
+from the parameter value by an equals sign. Blank lines or lines where the
+first non-whitespace character is a colon are ignored. All whitespace in
+section names and parameter names is compressed to single spaces. Leading 
+and trailing whitespace on parameter names and parameter values is stripped.
+
+Only the first equals sign in a parameter line is significant - parameter
+values may contain equals signs, square brackets and semicolons. Internal
+whitespace is retained in parameter values. Parameter names may not start 
+with a square bracket, an equals sign or a semicolon, for obvious reasons. 
+
+A sample parameter file might look like this:
+
+[things]
+this=1
+that=2
+[other things]
+the other = 3
+
+**************************************************************************/
 
 #include "includes.h"
 
-/* -------------------------------------------------------------------------- **
- * Constants...
- */
+#include "smb.h"
 
-#define BUFR_INC 1024
-
-
-/* -------------------------------------------------------------------------- **
- * Variables...
- *
- *  DEBUGLEVEL  - The ubiquitous DEBUGLEVEL.  This determines which DEBUG()
- *                messages will be produced.
- *  bufr        - pointer to a global buffer.  This is probably a kludge,
- *                but it was the nicest kludge I could think of (for now).
- *  bSize       - The size of the global buffer <bufr>.
- */
-
+/* local variable pointing to passed filename */
+static char *pszParmFile = NULL;
 extern int DEBUGLEVEL;
 
-static char *bufr  = NULL;
-static int   bSize = 0;
 
-/* -------------------------------------------------------------------------- **
- * Functions...
- */
+/**************************************************************************
+Strip all leading whitespace from a string.
+**************************************************************************/
+static void trimleft(char *psz)
+{
+   char *pszDest;
 
-static int EatWhitespace( FILE *InFile )
-  /* ------------------------------------------------------------------------ **
-   * Scan past whitespace (see ctype(3C)) and return the first non-whitespace
-   * character, or newline, or EOF.
-   *
-   *  Input:  InFile  - Input source.
-   *
-   *  Output: The next non-whitespace character in the input stream.
-   *
-   *  Notes:  Because the config files use a line-oriented grammar, we
-   *          explicitly exclude the newline character from the list of
-   *          whitespace characters.
-   *        - Note that both EOF (-1) and the nul character ('\0') are
-   *          considered end-of-file markers.
-   *
-   * ------------------------------------------------------------------------ **
-   */
-  {
-  int c;
+   pszDest = psz;
+   if (psz != NULL)
+   {
+      while (*psz != '\0' && isspace(*psz))
+	 psz++;
+      while (*psz != '\0')
+	 *pszDest++ = *psz++;
+      *pszDest = '\0';
+   }
+}
 
-  for( c = getc( InFile ); isspace( c ) && ('\n' != c); c = getc( InFile ) )
-    ;
-  return( c );
-  } /* EatWhitespace */
+/**************************************************************************
+Strip all trailing whitespace from a string.
+**************************************************************************/
+static void trimright(char *psz)
+{
+   char *pszTemp;
 
-static int EatComment( FILE *InFile )
-  /* ------------------------------------------------------------------------ **
-   * Scan to the end of a comment.
-   *
-   *  Input:  InFile  - Input source.
-   *
-   *  Output: The character that marks the end of the comment.  Normally,
-   *          this will be a newline, but it *might* be an EOF.
-   *
-   *  Notes:  Because the config files use a line-oriented grammar, we
-   *          explicitly exclude the newline character from the list of
-   *          whitespace characters.
-   *        - Note that both EOF (-1) and the nul character ('\0') are
-   *          considered end-of-file markers.
-   *
-   * ------------------------------------------------------------------------ **
-   */
-  {
-  int c;
+   if (psz != NULL && psz[0] != '\0')
+   {
+      pszTemp = psz + strlen(psz) - 1;
+      while (isspace(*pszTemp))
+	 *pszTemp-- = '\0';
+   }
+}
 
-  for( c = getc( InFile ); ('\n'!=c) && (EOF!=c) && (c>0); c = getc( InFile ) )
-    ;
-  return( c );
-  } /* EatComment */
-
-static int Continuation( char *line, int pos )
-  /* ------------------------------------------------------------------------ **
-   * Scan backards within a string to discover if the last non-whitespace
-   * character is a line-continuation character ('\\').
-   *
-   *  Input:  line  - A pointer to a buffer containing the string to be
-   *                  scanned.
-   *          pos   - This is taken to be the offset of the end of the
-   *                  string.  This position is *not* scanned.
-   *
-   *  Output: The offset of the '\\' character if it was found, or -1 to
-   *          indicate that it was not.
-   *
-   * ------------------------------------------------------------------------ **
-   */
-  {
-  pos--;
-  while( (pos >= 0) && isspace(line[pos]) )
-     pos--;
-
-  return( ((pos >= 0) && ('\\' == line[pos])) ? pos : -1 );
-  } /* Continuation */
-
-
-static BOOL Section( FILE *InFile, BOOL (*sfunc)(char *) )
-  /* ------------------------------------------------------------------------ **
-   * Scan a section name, and pass the name to function sfunc().
-   *
-   *  Input:  InFile  - Input source.
-   *          sfunc   - Pointer to the function to be called if the section
-   *                    name is successfully read.
-   *
-   *  Output: True if the section name was read and True was returned from
-   *          <sfunc>.  False if <sfunc> failed or if a lexical error was
-   *          encountered.
-   *
-   * ------------------------------------------------------------------------ **
-   */
-  {
-  int   c;
-  int   i;
-  int   end;
-  char *func  = "params.c:Section() -";
-
-  i = 0;      /* <i> is the offset of the next free byte in bufr[] and  */
-  end = 0;    /* <end> is the current "end of string" offset.  In most  */
-              /* cases these will be the same, but if the last          */
-              /* character written to bufr[] is a space, then <end>     */
-              /* will be one less than <i>.                             */
-
-  c = EatWhitespace( InFile );    /* We've already got the '['.  Scan */
-                                  /* past initial white space.        */
-
-  while( (EOF != c) && (c > 0) )
-    {
-
-    /* Check that the buffer is big enough for the next character. */
-    if( i > (bSize - 2) )
+/***********************************************************************
+Collapse each whitespace area in a string to a single space.
+***********************************************************************/
+static void collapse_spaces(char *psz)
+{
+   while (*psz)
+      if (isspace(*psz))
       {
-      bSize += BUFR_INC;
-      bufr   = Realloc( bufr, bSize );
-      if( NULL == bufr )
-        {
-        DEBUG(0, ("%s Memory re-allocation failure.", func) );
-        return( False );
-        }
+	 *psz++ = ' ';
+	 trimleft(psz);
+      }
+      else
+	 psz++;
+}
+
+/**************************************************************************
+Return the value of the first non-white character in the specified string.
+The terminating NUL counts as non-white for the purposes of this function.
+Note - no check for a NULL string! What would we return?
+**************************************************************************/
+static int firstnonwhite(char *psz)
+{
+   while (isspace(*psz) && (*psz != '\0'))
+      psz++;
+   return (*psz);
+}
+
+
+/**************************************************************************
+Identifies all parameters in the current section, calls the parameter
+function for each. Ignores comment lines, stops and backs up in file when
+a section is encountered. Returns True on success, False on error.
+**************************************************************************/
+static BOOL enumerate_parameters(FILE *fileIn, BOOL (*pfunc)(char *,char *))
+{
+   pstring szBuf;
+   char *pszTemp;
+   BOOL bRetval;
+   long lFileOffset;
+   int  cTemp;
+   BOOL bParmFound;
+
+   bRetval = False;
+   bParmFound = False;
+   while (True)
+   {
+      /* first remember where we are */
+      if ((lFileOffset = ftell(fileIn)) >= 0L)
+      {
+	 /* then get and check a line */
+	 if (fgets_slash(szBuf, sizeof(szBuf)-1, fileIn) == NULL)
+	 {
+	    /* stop - return OK unless file error */
+	    bRetval = !ferror(fileIn);
+            if (!bRetval)
+	      DEBUG(0,( "Read error on configuration file (enumerating parameters)!\n"));
+	    break;   
+	 }
+	 else
+	    /* if first non-white is a '[', stop (new section) */
+	    if ((cTemp = firstnonwhite(szBuf)) == '[')
+	    {
+	       /* restore position to start of new section */
+	       if (fseek(fileIn, lFileOffset, SEEK_SET) < 0L)
+	       {
+                  DEBUG(0,( "Seek error on configuration file!\n"));
+                  break;
+	       }
+
+	       /* return success */
+	       bRetval = True;
+	       break;
+	    }
+	    else
+	       /* if it's a semicolon or line is blank, ignore the line */
+	       if (!cTemp || strchr(";#",cTemp))
+	       {
+		  continue;
+	       }
+	       else
+		  /* if no equals sign and line contains non-whitespace */
+		  /* then line is badly formed */
+		  if ((pszTemp = strchr(szBuf, '=')) == NULL)
+		  {
+		     DEBUG(0,( "Ignoring badly formed line: %s", szBuf));
+		  }
+		  else
+		  {
+                     /* Note that we have found a parameter */
+                     bParmFound = True;
+		     /* cut line at the equals sign */
+		     *pszTemp++ = '\0';
+		     /* trim leading and trailing space from both halves */
+		     trimright(szBuf);
+		     trimleft(szBuf);
+		     trimright(pszTemp);
+		     trimleft(pszTemp);
+		     /* process the parameter iff passed pointer not NULL */
+		     if (pfunc != NULL)
+                        if (!pfunc(szBuf, pszTemp))
+			   break;
+		  }
+      }
+   }
+   return (bRetval);
+}
+
+
+/***********************************************************************
+Close up s by n chars, at offset start.
+***********************************************************************/
+static void closestr(char *s, int start, int n)
+{
+   char *src;
+   char *dest;
+   int  len;
+
+   if (n > 0)
+      if ((src = dest = s) != NULL)
+      {
+         len = strlen(s);
+         if (start >= 0 && start < len - n)
+         {
+            src += start + n;
+            dest += start;
+  
+            while (*src)
+               *dest++ = *src++;
+            *dest = '\0';
+         }
+      }
+}
+
+/**************************************************************************
+Identifies all sections in the parameter file, calls passed section_func()
+for each, passing the section name, then calls enumerate_parameters(). 
+Returns True on success, False on failure. Note that the section and 
+parameter names will have all internal whitespace areas collapsed to a 
+single space for processing.
+**************************************************************************/
+static BOOL enumerate_sections(FILE *fileIn,
+			       BOOL (*sfunc)(char *),BOOL (*pfunc)(char *,char *))
+{
+   pstring szBuf;
+   BOOL bRetval;
+   BOOL bSectionFound;
+
+   /* this makes sure we get include lines right */
+   enumerate_parameters(fileIn, pfunc);
+
+   bRetval = False;
+   bSectionFound = False;
+   while (True)
+   {
+      if (fgets_slash(szBuf, sizeof(szBuf)-1, fileIn) == NULL)
+      {
+	 /* stop - return OK unless file error */
+	 bRetval = !ferror(fileIn);
+         if (!bRetval)
+	   DEBUG(0,( "Read error on configuration file (enumerating sections)!\n"));
+	 break;   
+      }
+      else
+      {
+	 trimleft(szBuf);
+	 trimright(szBuf);
+	 if (szBuf[0] == '[')
+	 {
+	    closestr(szBuf, 0, 1);
+	    if (strlen(szBuf) > 1)
+	       if (szBuf[strlen(szBuf) - 1] == ']')
+	       {  
+		  /* found a section - note the fact */
+                  bSectionFound = True;
+		  /* remove trailing metabracket */
+		  szBuf[strlen(szBuf) - 1] = '\0';
+		  /* remove leading and trailing whitespace from name */
+		  trimleft(szBuf);
+		  trimright(szBuf);
+		  /* reduce all internal whitespace to one space */
+		  collapse_spaces(szBuf);
+		  /* process it - stop if the processing fails */
+		  if (sfunc != NULL)
+                     if (!sfunc(szBuf))
+		        break;
+		  if (!enumerate_parameters(fileIn, pfunc))
+                     break;
+	       }
+	 }
+      }
+   }
+
+   return (bRetval);
+}
+
+/**************************************************************************
+Process the passed parameter file.
+
+Returns True if successful, else False.
+**************************************************************************/
+BOOL pm_process(char *pszFileName,BOOL (*sfunc)(char *),BOOL (*pfunc)(char *,char *))
+{
+   FILE *fileIn;
+   BOOL bRetval;
+
+   bRetval = False;
+
+   /* record the filename for use in error messages one day... */
+   pszParmFile = pszFileName;
+
+   if (pszParmFile == NULL || strlen(pszParmFile) < 1)
+      DEBUG(0,( "No configuration filename specified!\n"));
+   else
+      if ((fileIn = fopen(pszParmFile, "r")) == NULL)
+         DEBUG(0,( "Unable to open configuration file \"%s\"!\n", pszParmFile));
+      else
+      {
+         DEBUG(3,("Processing configuration file \"%s\"\n", pszParmFile));
+	 bRetval = enumerate_sections(fileIn, sfunc, pfunc);
+	 fclose(fileIn);
       }
 
-    /* Handle a single character. */
-    switch( c )
-      {
-      case ']':                       /* Found the closing bracket.         */
-        bufr[end] = '\0';
-        if( 0 == end )                  /* Don't allow an empty name.       */
-          {
-          DEBUG(0, ("%s Empty section name in configuration file.\n", func ));
-          return( False );
-          }
-        if( !sfunc( bufr ) )            /* Got a valid name.  Deal with it. */
-          return( False );
-        (void)EatComment( InFile );     /* Finish off the line.             */
-        return( True );
+   if (!bRetval)
+     DEBUG(0,("pm_process retuned false\n"));
+   return (bRetval);
+}
 
-      case '\n':                      /* Got newline before closing ']'.    */
-        i = Continuation( bufr, i );    /* Check for line continuation.     */
-        if( i < 0 )
-          {
-          bufr[end] = '\0';
-          DEBUG(0, ("%s Badly formed line in configuration file: %s\n",
-                   func, bufr ));
-          return( False );
-          }
-        end = ( (i > 0) && (' ' == bufr[i - 1]) ) ? (i - 1) : (i);
-        c = getc( InFile );             /* Continue with next line.         */
-        break;
 
-      default:                        /* All else are a valid name chars.   */
-        if( isspace( c ) )              /* One space per whitespace region. */
-          {
-          bufr[end] = ' ';
-          i = end + 1;
-          c = EatWhitespace( InFile );
-          }
-        else                            /* All others copy verbatim.        */
-          {
-          bufr[i++] = c;
-          end = i;
-          c = getc( InFile );
-          }
-      }
-    }
-
-  /* We arrive here if we've met the EOF before the closing bracket. */
-  DEBUG(0, ("%s Unexpected EOF in the configuration file: %s\n", func, bufr ));
-  return( False );
-  } /* Section */
-
-static BOOL Parameter( FILE *InFile, BOOL (*pfunc)(char *, char *), int c )
-  /* ------------------------------------------------------------------------ **
-   * Scan a parameter name and value, and pass these two fields to pfunc().
-   *
-   *  Input:  InFile  - The input source.
-   *          pfunc   - A pointer to the function that will be called to
-   *                    process the parameter, once it has been scanned.
-   *          c       - The first character of the parameter name, which
-   *                    would have been read by Parse().  Unlike a comment
-   *                    line or a section header, there is no lead-in
-   *                    character that can be discarded.
-   *
-   *  Output: True if the parameter name and value were scanned and processed
-   *          successfully, else False.
-   *
-   *  Notes:  This function is in two parts.  The first loop scans the
-   *          parameter name.  Internal whitespace is compressed, and an
-   *          equal sign (=) terminates the token.  Leading and trailing
-   *          whitespace is discarded.  The second loop scans the parameter
-   *          value.  When both have been successfully identified, they are
-   *          passed to pfunc() for processing.
-   *
-   * ------------------------------------------------------------------------ **
-   */
-  {
-  int   i       = 0;    /* Position within bufr. */
-  int   end     = 0;    /* bufr[end] is current end-of-string. */
-  int   vstart  = 0;    /* Starting position of the parameter value. */
-  char *func    = "params.c:Parameter() -";
-
-  /* Read the parameter name. */
-  while( 0 == vstart )  /* Loop until we've found the start of the value. */
-    {
-
-    if( i > (bSize - 2) )       /* Ensure there's space for next char.    */
-      {
-      bSize += BUFR_INC;
-      bufr   = Realloc( bufr, bSize );
-      if( NULL == bufr )
-        {
-        DEBUG(0, ("%s Memory re-allocation failure.", func) );
-        return( False );
-        }
-      }
-
-    switch( c )
-      {
-      case '=':                 /* Equal sign marks end of param name. */
-        if( 0 == end )              /* Don't allow an empty name.      */
-          {
-          DEBUG(0, ("%s Invalid parameter name in config. file.\n", func ));
-          return( False );
-          }
-        bufr[end++] = '\0';         /* Mark end of string & advance.   */
-        i       = end;              /* New string starts here.         */
-        vstart  = end;              /* New string is parameter value.  */
-        bufr[i] = '\0';             /* New string is nul, for now.     */
-        break;
-
-      case '\n':                /* Find continuation char, else error. */
-        i = Continuation( bufr, i );
-        if( i < 0 )
-          {
-          bufr[end] = '\0';
-          DEBUG(1,("%s Ignoring badly formed line in configuration file: %s\n",
-                   func, bufr ));
-          return( True );
-          }
-        end = ( (i > 0) && (' ' == bufr[i - 1]) ) ? (i - 1) : (i);
-        c = getc( InFile );       /* Read past eoln.                   */
-        break;
-
-      case '\0':                /* Shouldn't have EOF within param name. */
-      case EOF:
-        bufr[i] = '\0';
-        DEBUG(1,("%s Unexpected end-of-file at: %s\n", func, bufr ));
-        return( True );
-
-      default:
-        if( isspace( c ) )     /* One ' ' per whitespace region.       */
-          {
-          bufr[end] = ' ';
-          i = end + 1;
-          c = EatWhitespace( InFile );
-          }
-        else                   /* All others verbatim.                 */
-          {
-          bufr[i++] = c;
-          end = i;
-          c = getc( InFile );
-          }
-      }
-    }
-
-  /* Now parse the value. */
-  c = EatWhitespace( InFile );  /* Again, trim leading whitespace. */
-  while( (EOF !=c) && (c > 0) )
-    {
-
-    if( i > (bSize - 2) )       /* Make sure there's enough room. */
-      {
-      bSize += BUFR_INC;
-      bufr   = Realloc( bufr, bSize );
-      if( NULL == bufr )
-        {
-        DEBUG(0, ("%s Memory re-allocation failure.", func) );
-        return( False );
-        }
-      }
-
-    switch( c )
-      {
-      case '\r':              /* Explicitly remove '\r' because the older */
-        c = getc( InFile );   /* version called fgets_slash() which also  */
-        break;                /* removes them.                            */
-
-      case '\n':              /* Marks end of value unless there's a '\'. */
-        i = Continuation( bufr, i );
-        if( i < 0 )
-          c = 0;
-        else
-          {
-          for( end = i; (end >= 0) && isspace(bufr[end]); end-- )
-            ;
-          c = getc( InFile );
-          }
-        break;
-
-      default:               /* All others verbatim.  Note that spaces do */
-        bufr[i++] = c;       /* not advance <end>.  This allows trimming  */
-        if( !isspace( c ) )  /* of whitespace at the end of the line.     */
-          end = i;
-        c = getc( InFile );
-        break;
-      }
-    }
-  bufr[end] = '\0';          /* End of value. */
-
-  return( pfunc( bufr, &bufr[vstart] ) );   /* Pass name & value to pfunc().  */
-  } /* Parameter */
-
-static BOOL Parse( FILE *InFile,
-                   BOOL (*sfunc)(char *),
-                   BOOL (*pfunc)(char *, char *) )
-  /* ------------------------------------------------------------------------ **
-   * Scan & parse the input.
-   *
-   *  Input:  InFile  - Input source.
-   *          sfunc   - Function to be called when a section name is scanned.
-   *                    See Section().
-   *          pfunc   - Function to be called when a parameter is scanned.
-   *                    See Parameter().
-   *
-   *  Output: True if the file was successfully scanned, else False.
-   *
-   *  Notes:  The input can be viewed in terms of 'lines'.  There are four
-   *          types of lines:
-   *            Blank      - May contain whitespace, otherwise empty.
-   *            Comment    - First non-whitespace character is a ';' or '#'.
-   *                         The remainder of the line is ignored.
-   *            Section    - First non-whitespace character is a '['.
-   *            Parameter  - The default case.
-   * 
-   * ------------------------------------------------------------------------ **
-   */
-  {
-  int    c;
-
-  c = EatWhitespace( InFile );
-  while( (EOF != c) && (c > 0) )
-    {
-    switch( c )
-      {
-      case '\n':                        /* Blank line. */
-        c = EatWhitespace( InFile );
-        break;
-
-      case ';':                         /* Comment line. */
-      case '#':
-        c = EatComment( InFile );
-        break;
-
-      case '[':                         /* Section Header. */
-        if( !Section( InFile, sfunc ) )
-          return( False );
-        c = EatWhitespace( InFile );
-        break;
-
-      case '\\':                        /* Bogus backslash. */
-        c = EatWhitespace( InFile );
-        break;
-
-      default:                          /* Parameter line. */
-        if( !Parameter( InFile, pfunc, c ) )
-          return( False );
-        c = EatWhitespace( InFile );
-        break;
-      }
-    }
-  return( True );
-  } /* Parse */
-
-static FILE *OpenConfFile( char *FileName )
-  /* ------------------------------------------------------------------------ **
-   * Open a configuration file.
-   *
-   *  Input:  FileName  - The pathname of the config file to be opened.
-   *
-   *  Output: A pointer of type (FILE *) to the opened file, or NULL if the
-   *          file could not be opened.
-   *
-   * ------------------------------------------------------------------------ **
-   */
-  {
-  FILE *OpenedFile;
-  char *func = "params.c:OpenConfFile() -";
-
-  if( NULL == FileName || 0 == *FileName )
-    {
-    DEBUG( 0, ("%s No configuration filename specified.\n", func) );
-    return( NULL );
-    }
-
-  OpenedFile = fopen( FileName, "r" );
-  if( NULL == OpenedFile )
-    {
-    DEBUG( 0,
-      ("%s Unable to open configuration file \"%s\":\n\t%s\n",
-      func, FileName, strerror(errno)) );
-    }
-
-  return( OpenedFile );
-  } /* OpenConfFile */
-
-BOOL pm_process( char *FileName,
-                 BOOL (*sfunc)(char *),
-                 BOOL (*pfunc)(char *, char *) )
-  /* ------------------------------------------------------------------------ **
-   * Process the named parameter file.
-   *
-   *  Input:  FileName  - The pathname of the parameter file to be opened.
-   *          sfunc     - A pointer to a function that will be called when
-   *                      a section name is discovered.
-   *          pfunc     - A pointer to a function that will be called when
-   *                      a parameter name and value are discovered.
-   *
-   *  Output: TRUE if the file was successfully parsed, else FALSE.
-   *
-   * ------------------------------------------------------------------------ **
-   */
-  {
-  int   result;
-  FILE *InFile;
-  char *func = "params.c:pm_process() -";
-
-  InFile = OpenConfFile( FileName );          /* Open the config file. */
-  if( NULL == InFile )
-    return( False );
-
-  DEBUG( 3, ("%s Processing configuration file \"%s\"\n", func, FileName) );
-
-  if( NULL != bufr )                          /* If we already have a buffer */
-    result = Parse( InFile, sfunc, pfunc );   /* (recursive call), then just */
-                                              /* use it.                     */
-
-  else                                        /* If we don't have a buffer   */
-    {                                         /* allocate one, then parse,   */
-    bSize = BUFR_INC;                         /* then free.                  */
-    bufr = (char *)malloc( bSize );
-    if( NULL == bufr )
-      {
-      DEBUG(0,("%s memory allocation failure.\n", func));
-      fclose(InFile);
-      return( False );
-      }
-    result = Parse( InFile, sfunc, pfunc );
-    free( bufr );
-    bufr  = NULL;
-    bSize = 0;
-    }
-
-  fclose(InFile);
-
-  if( !result )                               /* Generic failure. */
-    {
-    DEBUG(0,("%s Failed.  Error returned from params.c:parse().\n", func));
-    return( False );
-    }
-
-  return( True );                             /* Generic success. */
-  } /* pm_process */
-
-/* -------------------------------------------------------------------------- */

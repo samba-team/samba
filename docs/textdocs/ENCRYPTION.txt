@@ -1,5 +1,5 @@
 !==
-!== ENCRYPTION.txt for Samba release 1.9.18alpha13 16 Dec 1997
+!== ENCRYPTION.txt for Samba release 1.9.17p5 20 Dec 1997
 !==
 Contributor:	Jeremy Allison <samba-bugs@samba.anu.edu.au>
 Updated:	June 27, 1997
@@ -272,15 +272,27 @@ This is a very brief description on how to setup samba to support
 password encryption. More complete instructions will probably be added
 later.
 
-1) compile and install samba as usual
+1) get and compile the libdes libraries. the source is available from
+ftp://samba.anu.edu.au/pub/libdes/
 
-2) if your system can't compile the module getsmbpass.c then remove the
+2) enable the encryption stuff in the Samba makefile, making sure you
+point it to the libdes library and include file (it needs des.h)
+The entries you need to uncomment are the four lines after the comment :-
+
+# This is for SMB encrypted (lanman) passwords.
+
+Note that you may have to change the variable DES_BASE to
+point at the place where you installed the DES library.
+
+3) compile and install samba as usual
+
+4) f your system can't compile the module getsmbpass.c then remove the
 -DSMBGETPASS define from the Makefile.
 
-3) enable encrypted passwords in smb.conf by adding the line 
+5) enable encrypted passwords in smb.conf by adding the line 
 "encrypt passwords = yes" in the [global] section
 
-4) create the initial smbpasswd password file in the place you
+6) create the initial smbpasswd password file in the place you
 specified in the Makefile. A simple way to do this based on your
 existing Makefile (assuming it is in a reasonably standard format) is
 like this:
@@ -315,13 +327,27 @@ If you wish, install the smbpasswd program as suid root.
 chown root /usr/local/samba/bin/smbpasswd
 chmod 4555 /usr/local/samba/bin/smbpasswd
 
-5) set the passwords for users using the smbpasswd command. For
+7) set the passwords for users using the smbpasswd command. For
 example, as root you could do "smbpasswd tridge"
 
-6) try it out!
+8) try it out!
 
 Note that you can test things using smbclient, as it also now supports
 encryption.
+
+NOTE TO USA Sites that Mirror Samba
+-----------------------------------
+
+The DES library is considered a munition in the USA. Under US Law it is
+illegal to export this software, or to put it in a freely available ftp
+site.
+
+Please do not mirror the libdes directory from the site on
+samba.anu.edu.au
+
+Thank you,
+
+Jeremy Allison.
 
 ==============================================================================
 Footnote:	Please refer to WinNT.txt also

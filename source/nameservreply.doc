@@ -1,0 +1,213 @@
+/* 
+   Unix SMB/Netbios documentation.
+   Version 0.0
+   Copyright (C) Luke Leighton  Andrew Tridgell  1996
+   
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+   
+   Document name: nameservreply.doc
+
+   Revision History:
+
+   0.0 - 02jul96 : lkcl@pires.co.uk
+   created
+*/
+
+/*************************************************************************
+  reply_name_query()
+  *************************************************************************/
+
+this function is responsible for replying to a NetBIOS name query.
+
+there are two kinds of name queries: directed, and broadcast. directed
+queries are usually sent to samba in its WINS capacity. such hosts are
+termed 'point-to-point' hosts. broadcast queries are usually sent from
+'broadcast' or 'mixed' hosts.
+
+broadcasting is used by either older NetBIOS hosts, new NetBIOS hosts that
+have not had WINS capabilities added and new NetBIOS hosts that think the
+WINS server has died.
+
+the samba NetBIOS name database is divided into sections, on a
+per-subnet basis. there is also a WINS NetBIOS name database, and for
+convenience this is added as a pseudo-subnet with the ip address of
+255.255.255.255.
+
+the local subnet NetBIOS name databases only contain samba's names.
+the reason for this is that if a broadcast query is received, a NetBIOS
+hosts is only expected to respond if that query is for one of its own
+names (the exception to this is if a host is configured as a 'proxy'
+server, in which case, samba should redirect the query to another WINS
+server).
+
+the WINS pseudo-subnet NetBIOS database contains all NetBIOS names
+that are not 'special browser' type names (regarding this i am a
+_bit_ confused :-). names of type 0x01, 0x1d and 0x1e i consider to
+be 'special browser' names. at the moment. maybe.
+
+the type of search to be initiated is determined. if the NetBIOS name
+type is a non-special-browser name, then the WINS database is included
+in the search.
+
+if the name is not a special browser name, then we need to find the
+right subnet that the query came from. this is done using
+find_req_subnet(). this also has the benefit of stopping any queries
+from subnets that samba does not know about.
+
+if the query is a broadcast query, then the database of the local subnet
+is included in the search.
+
+the name is then searched for in the appropriate NetBIOS data structures.
+if it is found, then we need to check whether it is appropriate for us
+to reply to such a query.
+
+we will only reply if the query is a directed query, the name belongs to
+samba on that subnet, or the name is a domain master browser type,
+or we're doing replies on behalf of hosts on subnets not known to the
+host issuing the query. in the latter instance, it would be appropriate
+if samba is using a WINS server for it to forward the name query on to
+this WINS server.
+
+reply_name_query() then takes note of all the information that is
+needed to construct a reply to the caller. a negative reply (if the
+name is unknown to samba) or a positive reply (the name is known to
+samba) is then issued.
+
+
+/*************************************************************************
+  reply_name_status()
+  *************************************************************************/
+
+this function is responsible for constructing a reply to a NetBIOS
+name status query. this response contains all samba's NetBIOS names
+on the subnet that the query came in from.
+
+a reply will only be made if the NetBIOS name being queried exists.
+
+see rfc1001.txt and rfc1002.txt for details of the name status reply.
+
+
+/*************************************************************************
+  reply_name_reg()
+  *************************************************************************/
+
+this function is responsible for updating the NetBIOS name database
+from registration packets sent out by hosts wishing to register a
+name, and for informing them, if necessary, if this is acceptable
+or not.
+
+name registration can be done by broadcast or by point-to-point,
+i.e the registration is sent directly to samba in its capacity as
+a WINS server.
+
+if the name registration is done by broadcast (see rfc1001.txt 15.2.1),
+then samba's involvement in replying is limited to whether that name
+is owned by samba or not, on the relevant subnet.
+
+if the name registration is done point-to-point (see rfc1001.txt 15.2.2)
+then samba will first need to check its WINS name database records and
+proceed accordingly.
+
+samba looks for the appropriate subnet record that the registration
+should be added to / checked against, using find_req_subnet().
+
+next, the name is searched for in the local database or the WINS
+database as appropriate.
+
+if the name is not found, then it is added to the NetBIOS name database,
+using add_netbios_entry(), which may choose not to add the name (not
+that this affects the registration of the name on the network in any way).
+it will only add names to the WINS database, and even then it will only
+add non-special-browser type names.
+
+if the name is found, then samba must decide whether to accept the name
+or not. a group name is always added. for unique names, further checks
+need to be carried out.
+
+firstly, if the name in the database is one of samba's names, or if the
+name in the database is a group name, then it cannot be added as a unique
+name belonging to someone else. it is therefore rejected.
+
+secondly, if the ip address of the name being registered does not match
+against the ip in the database, then the unique name may belong to
+someone else. a check needs to be carried out with the owner in case
+they still wish to keep this name. a detailed discussion of what action
+to take is in rfc1001.txt 15.2.2.2 and 15.2.2.3.
+
+samba currently implements non-secured WINS, whereupon the responsibility
+for checking the name is passed on to the host doing the registration.
+rfc1001.txt refers to this as an END-NODE CHALLENGE REGISTRATION RESPONSE.
+(samba itself cannot yet cope with receiving such responses if it
+registers its names with another WINS server). 
+
+having decided what kind of response to send (if any - acceptance of
+name registrations by broadcast is implicit), samba will send either a
+positive or negative NAME REGISTRATION RESPONSE, or an END-NODE CHALLENGE
+REGISTRATION RESPONSE to the host that initially sent the registration.
+
+whew.
+
+
+/*************************************************************************
+  reply_name_release()
+  *************************************************************************/
+
+this function is responsible for removing a NetBIOS name from the
+database when a server sends a release packet.
+
+samba looks for the appropriate subnet record that the release should
+be removed from, using find_req_subnet(). next, the name is searched
+for in the local database or the WINS database as appropriate.
+
+if the name is found, it is removed from the database and a
+positive reply is sent confirming this. if the name is not
+found, a negative reply is sent.
+
+a reply is _not_ sent if the release was done by broadcast: the
+release is implicit, and we should be grateful that they bothered
+to tell us. if the release was done by directed packet, then
+we deal with it as a WINS server and must reply (pos / neg).
+
+at present, the criteria for removing a name have yet to be
+developed / experimented with. at present, the only flags that
+are checked are the NetBIOS flags.
+
+
+/*************************************************************************
+  send_name_response()
+  *************************************************************************/
+
+this function is a wrap around reply_netbios_packet(). it sends
+a response to a name registration or release packet, minimising
+the function parameters needed to do this.
+
+if the function is called with the parameter 'success' set to
+True, then a positive response (to the registration or release)
+is made (see rfc1002.txt 4.2.5 and 4.2.10). if this parameter
+is False, then a negative response is issued (see rfc1002.txt
+4.2.6 and 4.2.11)
+
+if the function is called with a registration code, and the
+parameter 'recurse' is False, then an End-Node Challenge
+Registration response is issued (see rfc1002.txt 4.2.7)
+
+note: this function could also easily be used for name conflict
+demand (see rfc1002.txt 4.2.8).
+
+note: End-Node Challenge Registration response is only sent in
+non-secured NetBIOS Name Server implementations. samba now
+implements secured NetBIOS Name Server functionality (see
+rfc1001.txt 15.1.6).
+

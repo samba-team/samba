@@ -194,24 +194,25 @@ now for utime()
 ********************************************************************/
 int sys_utime(char *fname,struct utimbuf *times)
 {
-  /* if the modtime is 0 or -1 then ignore the call and
-     return success */
-  if (times->modtime == (time_t)0 || times->modtime == (time_t)-1)
-    return 0;
-  
-  /* if the access time is 0 or -1 then set it to the modtime */
-  if (times->actime == (time_t)0 || times->actime == (time_t)-1)
-    times->actime = times->modtime;
-   
-  return(utime(dos_to_unix(fname,False),times));
+	/* if the modtime is 0 or -1 then ignore the call and
+	   return success */
+	if (times->modtime == (time_t)0 || times->modtime == (time_t)-1)
+		return 0;
+
+	/* if the access time is 0 or -1 then set it to the modtime */
+	if (times->actime == (time_t)0 || times->actime == (time_t)-1)
+		times->actime = times->modtime;
+	
+	return(utime(dos_to_unix(fname,False),times));
 }
+
 
 /*********************************************************
 for rename across filesystems Patch from Warren Birnbaum 
 <warrenb@hpcvscdp.cv.hp.com>
 **********************************************************/
-
-static int copy_reg(char *source, const char *dest)
+static int
+copy_reg (const char *source, const char *dest)
 {
   struct stat source_stats;
   int ifd;

@@ -17,20 +17,13 @@
    refer to the special "printers" service */
 #define PRINTERS_NAME "printers"
 
-/* this affects server level security. With this set (recommended)
-   samba will do a full NetWkstaUserLogon to confirm that the client
-   really should have login rights. This can cause problems with
-   machines in trust relationships in which case you can disable it
-   here, but be warned, we have heard that some NT machines will then
-   allow anyone in with any password! Make sure you test it. */
-#ifndef USE_NETWKSTAUSERLOGON
-#define USE_NETWKSTAUSERLOGON 1
-#endif
-
-/* define what facility to use for syslog */
-#ifndef SYSLOG_FACILITY
-#define SYSLOG_FACILITY LOG_DAEMON
-#endif
+/* This defines the name of the printcap file. It is MOST UNLIKELY that
+   this will change BUT! Specifying a file with the format of a printcap
+   file but containing only a subset of the printers actually in your real 
+   printcap file is a quick-n-dirty way to allow dynamic access to a subset
+   of available printers.
+*/
+#define PRINTCAP_NAME "/etc/printcap"
 
 /* set these to define the limits of the server. NOTE These are on a
    per-client basis. Thus any one machine can't connect to more than
@@ -81,12 +74,6 @@
 /* what type of filesystem do we want this to show up as in a NT file
    manager window? */
 #define FSTYPE_STRING "Samba"
-
-
-/* the default guest account - normally set in the Makefile or smb.conf */
-#ifndef GUEST_ACCOUNT
-#define GUEST_ACCOUNT "nobody"
-#endif
 
 /* do you want smbd to send a 1 byte packet to nmbd to trigger it to start 
    when smbd starts? */
@@ -167,19 +154,5 @@
 
 /* the directory to sit in when idle */
 /* #define IDLE_DIR "/" */
-
-/* Timout (in seconds) to wait for an oplock break
-   message to return from the client. */
-
-#define OPLOCK_BREAK_TIMEOUT 30
-
-/* Timout (in seconds) to add to the oplock break timeout
-   to wait for the smbd to smbd message to return. */
-
-#define OPLOCK_BREAK_TIMEOUT_FUDGEFACTOR 2
-
-/* the read preciction code has been disabled until some problems with
-   it are worked out */
-#define USE_READ_PREDICTION 0
 
 #endif

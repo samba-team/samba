@@ -1,4 +1,4 @@
-.TH SMB.CONF 5 "16 Dec 1997" "smb.conf 1.9.18alpha13"
+.TH SMB.CONF 5 "20 Dec 1997" "smb.conf 1.9.17p5"
 .SH NAME
 smb.conf \- configuration file for smbd
 .SH SYNOPSIS
@@ -210,12 +210,6 @@ could be used simply to limit access to a subset of your local printers.
 An alias, by the way, is defined as any component of the first entry of a 
 printcap record. Records are separated by newlines, components (if there are 
 more than one) are separated by vertical bar symbols ("|").
-
-NOTE: On SYSV systems which use lpstat to determine what printers are
-defined on the system you may be able to use "printcap name = lpstat" 
-to automatically obtain a list of printers. See the "printcap name"
-option for more detils.
-
 .RE
 .SH PARAMETERS
 Parameters define the specific attributes of services.
@@ -272,13 +266,6 @@ personality".
 
 %M = the internet name of the client machine
 
-%N = the name of your NIS home directory server.  This is obtained from
-your NIS auto.map entry.  If you have not compiled Samba with -DAUTOMOUNT
-then this value will be the same as %L.
-
-%R = the selected protocol level after protocol negotiation. As of 
-Samba 1.9.18 it can be one of CORE, COREPLUS, LANMAN1, LANMAN2 or NT1.
-
 %d = The process id of the current server process
 
 %a = the architecture of the remote machine. Only some are recognised,
@@ -295,9 +282,9 @@ substitutions and other smb.conf options.
 
 .SS NAME MANGLING
 
-Samba supports "name mangling" so that DOS and Windows clients can use
-files that don't conform to the 8.3 format. It can also be set to adjust
-the case of 8.3 format filenames.
+Samba supports "name mangling" so that older DOS and Windows 3 clients
+can use files that don't conform to the 8.3 format. It can also be set
+to adjust the case of 8.3 format filenames.
 
 There are several options that control the way mangling is performed,
 and they are grouped here rather than listed separately. For the
@@ -340,8 +327,6 @@ announce version
 
 auto services
 
-bind interfaces only
-
 browse list
 
 character set
@@ -382,13 +367,7 @@ hosts equiv
 
 include
 
-interfaces
-
 keepalive
-
-lm announce
-
-lm interval
 
 lock dir
 
@@ -401,10 +380,6 @@ lock directory
 log file
 
 log level
-
-logon drive
-
-logon home
 
 logon path
 
@@ -424,11 +399,7 @@ max ttl
 
 max xmit
 
-max wins ttl
-
 message command
-
-min wins ttl
 
 netbios aliases
 
@@ -454,9 +425,9 @@ preferred master
 
 preload
 
-printcap name
+printing
 
-printer driver file
+printcap name
 
 protocol
 
@@ -508,8 +479,6 @@ time server
 
 unix realname
 
-username level
-
 username map
 
 use rhosts
@@ -552,8 +521,6 @@ comment
 default case
 
 delete readonly
-
-delete veto files
 
 deny hosts
 
@@ -629,8 +596,6 @@ only guest
 
 only user
 
-oplocks
-
 path
 
 postexec
@@ -642,10 +607,6 @@ preserve case
 print command
 
 printer driver
-
-printer driver location
-
-printing
 
 print ok
 
@@ -684,8 +645,6 @@ username
 users
 
 valid users
-
-veto oplock files
 
 volume
 
@@ -841,40 +800,6 @@ ALL attempts to connect to the service will fail. Such failures are logged.
 
 .B Example:
  	available = no
-
-.SS bind interfaces only (G)
-This global parameter (new for 1.9.18) allows the Samba admin to limit
-what interfaces on a machine will serve smb requests. If affects file service
-(smbd) and name service (nmbd) in slightly different ways.
-
-For name service it causes nmbd to bind to ports 137 and 138 on
-the interfaces listed in the 'interfaces' parameter. nmbd also binds
-to the 'all addresses' interface (0.0.0.0) on ports 137 and 138
-for the purposes of reading broadcast messages. If this option is
-not set then nmbd will service name requests on all of these
-sockets. If "bind interfaces only" is set then nmbd will check
-the source address of any packets coming in on the broadcast
-sockets and discard any that don't match the broadcast addresses
-of the interfaces in the 'interfaces' parameter list. As unicast
-packets are received on the other sockets it allows nmbd to
-refuse to serve names to machines that send packets that arrive
-through any interfaces not listed in the 'interfaces' list.
-IP Source address spoofing does defeat this simple check, however
-so it must not be used seriously as a security feature for nmbd.
-
-For file service it causes smbd to bind only to the interface
-list given in the 'interfaces' parameter. This restricts the
-networks that smbd will serve to packets coming in those interfaces.
-Note that you should not use this parameter for machines that
-are serving ppp or other intermittant or non-broadcast network
-interfaces as it will not cope with non-permanent interfaces.
-
-.B Default:
-       bind interfaces only = False
-
-.B Example:
-       bind interfaces only = True
-
 .SS browseable (S)
 This controls whether this share is seen in the list of available
 shares in a net view and in the browse list.
@@ -1117,34 +1042,6 @@ override this one. Where the lists conflict, the 'allow' list takes precedence.
 
 .B Example:
   	deny hosts = 150.203.4. badhost.mynet.edu.au
-
-.SS delete veto files (S)
-
-This option is used when Samba is attempting to delete a directory
-that contains one or more vetoed directories (see the 'veto files' option).
-If this option is set to False (the default) then if a vetoed directory
-contains any non-vetoed files or directories then the directory delete 
-will fail. This is usually what you want. 
-
-If this option is set to True, then Samba will attempt
-to recursively delete any files and directories within the vetoed
-directory. This can be useful for integration with file serving
-systems such as Netatalk, which create meta-files within directories
-you might normally veto DOS/Windows users from seeing (eg. .AppleDouble)
-
-Setting 'delete veto files = True' allows these directories to be 
-transparently deleted when the parent directory is deleted (so long
-as the user has permissions to do so).
-
-.B Default:
-    delete veto files = False
-
-.B Example:
-    delete veto files = True
-
-See
-.B veto files
-
 .SS dfree command (G)
 The dfree command setting should only be used on systems where a
 problem occurs with the internal disk space calculations. This has
@@ -1226,7 +1123,6 @@ files.
 
 .B Example:
  	directory mask = 0775
-
 .SS directory mode (S)
 See
 .B directory mask.
@@ -1330,8 +1226,11 @@ only one accessing the file and it will aggressively cache file
 data. With some oplock types the client may even cache file open/close
 operations. This can give enormous performance benefits.
 
-When you set "fake oplocks = yes" Samba will always grant oplock
-requests no matter how many clients are using the file. 
+Samba does not support opportunistic locks in this release. Samba can
+fake them, however, by granting a oplock whenever a client asks for
+one. This is controlled using the smb.conf option "fake oplocks". If
+you set "fake oplocks = yes" then you are telling the client that it
+may aggressively cache the file data.
 
 By enabling this option on all read-only shares or shares that you know
 will only be accessed from one client at a time you will see a big
@@ -1339,9 +1238,6 @@ performance improvement on many operations. If you enable this option
 on shares where multiple clients may be accessing the files read-write
 at the same time you can get data corruption. Use this option
 carefully! 
-
-It is generally much better to use the real oplock support except for
-physically read-only media such as CDROMs.
 
 This option is disabled by default.
 
@@ -1643,54 +1539,15 @@ difficulties.
 
 .B Example:
  	keep alive = 60
-
-.SS lm announce (G)
-
-This parameter determines if Samba will produce Lanman announce
-broadcasts that are needed by OS/2 clients in order for them to
-see the Samba server in their browse list. This parameter can
-have three values, true, false, or auto. The default is auto.
-If set to False Samba will never produce these broadcasts. If
-set to true Samba will produce Lanman announce broadcasts at
-a frequency set by the parameter 'lm interval'. If set to auto
-Samba will not send Lanman announce broadcasts by default but
-will listen for them. If it hears such a broadcast on the wire
-it will then start sending them at a frequency set by the parameter 
-'lm interval'.
-
-See also "lm interval".
-
-.B Default:
-       lm announce = auto
-
-.B Example:
-       lm announce = true
-
-.SS lm interval (G)
-
-If Samba is set to produce Lanman announce broadcasts needed
-by OS/2 clients (see the "lm announce" parameter) this parameter
-defines the frequency in seconds with which they will be made.
-If this is set to zero then no Lanman announcements will be
-made despite the setting of the "lm announce" parameter.
-
-See also "lm announce".
-
-.B Default:
-        lm interval = 60
-
-.B Example:
-        lm interval = 120
-
 .SS load printers (G)
 A boolean variable that controls whether all printers in the printcap
 will be loaded for browsing by default. 
 
 .B Default:
-	load printers = yes
+	load printers = no
 
 .B Example:
-	load printers = no
+	load printers = yes
 
 .SS local master (G)
 This option allows the nmbd to become a local master browser on a
@@ -1712,7 +1569,6 @@ The lock files are used to implement the "max connections" option.
 
 .B Example: 
 	lock directory = /usr/local/samba/var/locks
-
 .SS locking (S)
 This controls whether or not locking will be performed by the server in 
 response to lock requests from the client.
@@ -1748,30 +1604,6 @@ separate log files for each user or machine.
 .SS log level (G)
 see "debug level"
 
-.SS logon drive (G)
-
-This parameter specifies the local path to which the home directory
-will be connected (see "logon home") and is only used by NT Workstations.
-
-.B Example:
-	logon drive = h:
-
-.SS logon home (G)
-
-This parameter specifies the home directory location when a Win95 or
-NT Workstation logs into a Samba PDC.  It allows you to do "NET USE
-H: /HOME" from a command prompt, for example.
-
-.B
-This option takes the standard substitutions, allowing you to have
-separate logon scripts for each user or machine.
-
-.B Example:
-	logon home = "\\\\remote_smb_server\\%U"
-
-.B Default:
-	logon home = "\\\\%N\\%U"
-
 .SS logon path (G)
 
 This parameter specifies the home directory where roaming profiles 
@@ -1796,14 +1628,10 @@ read-only - rename it to USER.MAN to achieve the desired effect
 Windows clients can sometimes maintain a connection to the [homes]
 share, even though there is no user logged in.  Therefore, it is
 vital that the logon path does not include a reference to the
-homes share (i.e \\\\%N\\HOMES\profile_path will cause problems).
-
-.B
-This option takes the standard substitutions, allowing you to have
-separate logon scripts for each user or machine.
+homes share (i.e \\\\%L\\HOMES\profile_path will cause problems).
 
 .B Default:
- 	logon path = \\\\%N\\%U\\profile
+ 	logon path = \\\\%L\\%U\\profile
 
 .B Example:
 	logon path = \\\\PROFILESERVER\\HOME_DIR\\%U\\PROFILE
@@ -2228,23 +2056,10 @@ A synonym for this parameter is 'packet size'.
 .SS max ttl (G)
 
 This option tells nmbd what the default 'time to live' of NetBIOS
-names should be (in seconds) when nmbd is requesting a name using
-either a broadcast or from a WINS server. You should never need to 
-change this parameter.
+names should be (in seconds). You should never need to change this parameter.
 
 .B Default:
 	max ttl = 14400
-
-.SS max wins ttl (G)
-
-This option tells nmbd when acting as a WINS server (wins support = true)
-what the maximum 'time to live' of NetBIOS names that nmbd will grant will
-be (in seconds). You should never need to change this parameter.     
-The default is 3 days (259200 seconds).
-
-.B Default:
-        max wins ttl = 259200
-
 .SS max xmit (G)
 
 This option controls the maximum packet size that will be negotiated
@@ -2332,17 +2147,6 @@ kilobytes. The default is 0, which means no limit.
 .B Example:
 	min print space = 2000
 
-.SS min wins ttl (G)
-
-This option tells nmbd when acting as a WINS server (wins support = true)
-what the minimum 'time to live' of NetBIOS names that nmbd will grant will
-be (in seconds). You should never need to change this parameter.
-The default is 6 hours (21600 seconds).
-
-.B Default:
-        min wins ttl = 21600
-
-
 .SS netbios aliases (G)
 
 This is a list of names that nmbd will advertise as additional
@@ -2420,25 +2224,6 @@ of the user.
 
 .B Example: 
 	only user = True
-
-.SS oplocks (S)
-This boolean option tells smbd whether to issue oplocks (opportunistic
-locks) to file open requests on this share. The oplock code was introduced in
-Samba 1.9.18 and can dramatically (approx 30% or more) improve the speed
-of access to files on Samba servers. It allows the clients to agressively
-cache files locally and you may want to disable this option for unreliable
-network environments (it is turned on by default in Windows NT Servers).
-For more information see the file Speed.txt in the Samba docs/ directory.
-
-Oplocks may be selectively turned off on certain files on a per share basis.
-See the 'veto oplock files' parameter.
-
-.B Default:
-    oplocks = True
-
-.B Example:
-    oplocks = False
-
 
 .SS os level (G)
 This integer value controls what level Samba advertises itself as for
@@ -2765,13 +2550,9 @@ This parameter may be used to override the compiled-in default printcap
 name used by the server (usually /etc/printcap). See the discussion of the
 [printers] section above for reasons why you might want to do this.
 
-On SystemV systems that use lpstat to list available printers you
-can use "printcap name = lpstat" to automatically obtain lists of
-available printers. This is the default for systems that define 
-SYSV at compile time in Samba (this includes most SystemV based
-systems). If "printcap name" is set to lpstat on these systems then
-Samba will launch "lpstat -v" and attempt to parse the output to
-obtain a printer list.
+For those of you without a printcap (say on SysV) you can just create a
+minimal file that looks like a printcap and set "printcap name =" in
+[global] to point at it.
 
 A minimal printcap file would look something like this:
 
@@ -2797,7 +2578,6 @@ will assume the file is in AIX "qconfig" format if the string
 
 .B Example:
  	printcap name = /etc/myprintcap
-
 .SS printer (S)
 A synonym for this parameter is 'printer name'.
 
@@ -2833,51 +2613,7 @@ scrollbox after you have chosen the printer manufacturer.
 See
 .B printer.
 
-.SS printer driver file (G)
-This parameter tells Samba where the printer driver definition file,
-used when serving drivers to Windows 95 clients, is to be found. If
-this is not set, the default is :
-
-SAMBA_INSTALL_DIRECTORY/lib/printers.def
-
-This file is created from Windows 95 'msprint.def' files found on the
-Windows 95 client system. For more details on setting up serving of
-printer drivers to Windows 95 clients, see the documentation file
-docs/PRINTER_DRIVER.txt.
-
-.B Default:
-    None (set in compile).
-
-.B Example:
-    printer driver file = /usr/local/samba/printers/drivers.def
-
-Related parameters.
-.B printer driver location
-
-.SS printer driver location (S)
-This parameter tells clients of a particular printer share where
-to find the printer driver files for the automatic installation
-of drivers for Windows 95 machines. If Samba is set up to serve
-printer drivers to Windows 95 machines, this should be set to
-
-\e\eMACHINE\ePRINTER$
-
-Where MACHINE is the NetBIOS name of your Samba server, and PRINTER$ 
-is a share you set up for serving printer driver files. For more 
-details on setting this up see the documentation file 
-docs/PRINTER_DRIVER.txt.
-
-.B Default:
-    None
-
-.B Example:
-    printer driver location = \e\eMACHINE\ePRINTER$
-
-Related paramerers.
-.B printer driver file
-
-
-.SS printing (S)
+.SS printing (G)
 This parameters controls how printer status information is interpreted
 on your system, and also affects the default values for the "print
 command", "lpq command" and "lprm command".
@@ -2889,7 +2625,6 @@ bsd", "printing = sysv", "printing = hpux", "printing = aix",
 To see what the defaults are for the other print commands when using
 these three options use the "testparm" program.
 
-As of version 1.9.18 of Samba this option can be set on a per printer basis
 
 .SS protocol (G)
 The value of the parameter (a string) is the highest protocol level that will
@@ -3490,26 +3225,6 @@ on how this parameter determines access to the services.
  	username = fred
  	username = fred, mary, jack, jane, @users, @pcgroup
 
-.SS username level (G)
-
-This option helps Samba to try and 'guess' at the real UNIX username,
-as many DOS clients send an all-uppercase username. By default Samba
-tries all lowercase, followed by the username with the first letter
-capitalized, and fails if the username is not found on the UNIX machine.
-
-If this parameter is set to non-zero the behaviour changes. This 
-parameter is a number that specifies the number of uppercase combinations 
-to try whilst trying to determine the UNIX user name. The higher the number
-the more combinations will be tried, but the slower the discovery
-of usernames will be. Use this parameter when you have strange
-usernames on your UNIX machine, such as 'AstrangeUser'.
-
-.B Default:
-    username level = 0
-
-.B Example:
-    username level = 5
-
 .SS username map (G)
 
 This option allows you to to specify a file containing a mapping of
@@ -3534,11 +3249,6 @@ then continues with the next line.
 
 If any line begins with a '#' or a ';' then it is ignored
 
-If any line begins with an ! then the processing will stop after that
-line if a mapping was done by the line. Otherwise mapping continues
-with every line being processed. Using ! is most useful when you have
-a wildcard mapping line later in the file.
-
 For example to map from the name "admin" or "administrator" to the UNIX
 name "root" you would use
 
@@ -3558,14 +3268,6 @@ quotes around the name. For example:
 
 would map the windows username "Andrew Tridgell" to the unix username
 tridge.
-
-The following example would map mary and fred to the unix user sys,
-and map the rest to guest. Note the use of the ! to tell Samba to stop
-processing if it gets a match on that line.
-
-	!sys = mary fred
-	guest = *
-
 
 Note that the remapping is applied to all occurrences of
 usernames. Thus if you connect to "\e\eserver\efred" and "fred" is
@@ -3698,25 +3400,6 @@ See also "hide files" and "case sensitive"
 
     veto files = /.AppleDouble/.bin/.AppleDesktop/Network Trash Folder/
 
-.SS veto oplock files (S)
-This parameter is only valid when the 'oplocks' parameter is turned on
-for a share. It allows the Samba administrator to selectively turn off
-the granting of oplocks on selected files that match a wildcarded list,
-similar to the wildcarded list used in the 'veto files' parameter.
-
-.B Default
-    No files are vetoed for oplock grants.
-
-.B Examples
-You might want to do this on files that you know will be heavily
-contended for by clients. A good example of this is in the NetBench
-SMB benchmark program, which causes heavy client contention for files
-ending in .SEM. To cause Samba not to grant oplocks on these files
-you would use the line (either in the [global] section or in the section
-for the particular NetBench share :
-
-     veto oplock files = /*.SEM/
-
 .SS volume (S)
 This allows you to override the volume label returned for a
 share. Useful for CDROMs with installation programs that insist on a
@@ -3765,7 +3448,6 @@ network.
 
 .B Default:
 	wins support = no
-
 .SS workgroup (G)
 
 This controls what workgroup your server will appear to be in when
@@ -3879,7 +3561,7 @@ administrator easy, but the various combinations of default attributes can be
 tricky. Take extreme care when designing these sections. In particular,
 ensure that the permissions on spool directories are correct.
 .SH VERSION
-This man page is (mostly) correct for version 1.9.18 of the Samba suite, plus some
+This man page is (mostly) correct for version 1.9.16 of the Samba suite, plus some
 of the recent patches to it. These notes will necessarily lag behind 
 development of the software, so it is possible that your version of 
 the server has extensions or parameter semantics that differ from or are not 

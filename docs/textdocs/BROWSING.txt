@@ -1,8 +1,8 @@
 !==
-!== BROWSING.txt for Samba release 1.9.18alpha13 16 Dec 1997
+!== BROWSING.txt for Samba release 1.9.17p5 20 Dec 1997
 !==
 Author/s:	Many (Thanks to Luke, Jeremy, Andrew, etc.)
-Updated:	October 12, 1997
+Updated:	June 29, 1997
 Status:		Current - For VERY Advanced Users ONLY
 
 Summary: This describes how to configure Samba for improved browsing.
@@ -84,11 +84,10 @@ in smb.conf)
 BROWSING ACROSS SUBNETS
 =======================
 
-With the release of Samba 1.9.17(alpha1 and above) Samba has been
-updated to enable it to support the replication of browse lists
-across subnet boundaries.  New code and options have been added to
-achieve this.  This section describes how to set this feature up
-in different settings.
+With the release of Samba 1.9.17, Samba has been updated to enable 
+it to support the replication of browse lists across subnet 
+boundaries.  New code and options have been added to achieve this. 
+This section describes how to set this feature up in different settings.
 
 To see browse lists that span TCP/IP subnets (ie.  networks separated
 by routers that don't pass broadcast traffic) you must set up at least

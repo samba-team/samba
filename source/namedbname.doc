@@ -1,0 +1,182 @@
+/* 
+   Unix SMB/Netbios documentation.
+   Version 0.0
+   Copyright (C) Luke Leighton  Andrew Tridgell  1996
+   
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+   
+   Document name: namedbname.doc
+
+   Revision History:
+
+   0.0 - 02jul96 : lkcl@pires.co.uk
+   created
+*/
+
+this module deals with the NetBIOS name database for samba. it deals
+directly with adding, removing, finding, loading and saving of names.
+
+/*************************************************************************
+  search_for_name()
+  *************************************************************************/
+
+this function is responsible for finding a name in the appropriate part
+of samba's NetBIOS name database. if the name cannot be found, then it
+should look the name up using DNS. later modifications will be to
+forward the request on to another WINS server, should samba not be able
+to find out about the requested name (this will be implemented through
+issuing a new type of samba 'state').
+
+the name is first searched for in the NetBIOS cache. if it cannot be
+found, then it if the name looks like it's a server-type name (0x20
+0x0 or 0x1b) then DNS is used to look for the name.
+
+if DNS fails, then a record of this failure is kept. if it succeeds, then
+a new NetBIOS entry is added.
+
+the successfully found name is returned. on failure, NULL is returned.
+
+
+/*************************************************************************
+  expire_names()
+  *************************************************************************/
+
+this function is responsible for removing old NetBIOS names from its
+database. no further action is required.
+
+for over-zealous WINS systems, the use of query_refresh_names() is
+recommended. this function initiates polling of hosts that have
+registered with samba in its capacity as a WINS server. an alternative
+means to achieve the same end as query_refresh_names() is to
+reduce the time to live when the name is registered with samba,
+except that in this instance the responsibility for refreshing the
+name is with the owner of the name, not the server with which the name
+is registered. 
+
+
+/*************************************************************************
+  add_netbios_entry()
+  *************************************************************************/
+
+this function is responsible for adding or updating a NetBIOS name
+in the database. into the local interface records, the only names
+that will be added are those of domain master browsers and
+samba's own names. into the WINS records, all names are added.
+
+the name to be added / updated will be looked up in the records.
+if it is found, then we will not overwrite the entry if the flag
+'newonly' is True, or if the name is being added as a non-SELF
+(non-samba) name and the records indicate that samba owns the
+name.
+
+otherwise, the name is added or updated with the new details.
+
+
+/*************************************************************************
+  remove_netbios_entry()
+  *************************************************************************/
+
+this function is responsible for removing a NetBIOS entry from
+the database. the name is searched for in the records using
+find_name_search(). if the ip is zero, then the ip is ignored.
+
+the name is removed if the expected source (e.g SELF, REGISTER)
+matches that in the database.
+
+
+/*************************************************************************
+  load_netbios_names()
+  *************************************************************************/
+
+this function is responsible for loading any NetBIOS names that samba,
+in its WINS capacity, has written out to disk. all the relevant details
+are recorded in this file, including the time-to-live. should the 
+time left to live be small, the name is not added back in to samba's
+WINS database.
+
+ 
+/*************************************************************************
+  dump_names()
+  *************************************************************************/
+
+this function is responsible for outputting NetBIOS names in two formats.
+firstly, as debugging information, and secondly, all names that have been
+registered with samba in its capacity as a WINS server are written to
+disk.
+
+writing all WINS names allows two things. firstly, if samba's NetBIOS
+daemon dies or is terminated, on restarting the daemon most if not all
+of the registered WINS names will be preserved (which is a good reason
+why query_netbios_names() should be used).
+ 
+
+/*************************************************************************
+  find_name_search()
+  *************************************************************************/
+
+this function is a wrapper around find_name(). find_name_search() can
+be told whether to search for the name in a local subnet structure or
+in the WINS database. on top of this, it can be told to search only
+for samba's SELF names.
+
+if it finds the name in the WINS database, it will set the subnet_record
+and also return the name it finds.
+ 
+
+/*************************************************************************
+  find_name()
+  *************************************************************************/
+
+this function is a low-level search function that searches a single
+interface's NetBIOS records for a name. if the ip to be found is
+zero then the ip address is ignored. this is to enable a name to
+be found without knowing its ip address, and also to find the exact
+name if a large number of group names are added with different ip
+addresses.
+
+
+/*************************************************************************
+  remove_name()
+  *************************************************************************/
+
+this function is responsible for removing a specific NetBIOS entry
+from a subnet list's records. only if the pointer to the entry is
+in the list will the name be removed.
+
+
+/*************************************************************************
+  add_name()
+  *************************************************************************/
+
+this function is responsible for adding a NetBIOS entry into a
+subnet list's records.
+
+
+/*************************************************************************
+  ms_browser_name()
+  *************************************************************************/
+
+this function returns True if the NetBIOS name passed to it is
+^1^2__MSBROWSE__^2^1
+
+
+/*************************************************************************
+  name_equal()
+  *************************************************************************/
+
+this function returns True if the two NetBIOS names passed to it
+match in name, type and scope: the NetBIOS names are equal.
+
+

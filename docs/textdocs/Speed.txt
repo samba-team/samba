@@ -1,5 +1,5 @@
 !==
-!== Speed.txt for Samba release 1.9.18alpha13 16 Dec 1997
+!== Speed.txt for Samba release 1.9.17p5 20 Dec 1997
 !==
 Contributor:	Andrew Tridgell
 Date:		January 1995
@@ -46,36 +46,21 @@ only one accessing the file and it will agressively cache file
 data. With some oplock types the client may even cache file open/close
 operations. This can give enormous performance benefits.
 
-With the release of Samba 1.9.18 we now correctly support opportunistic 
-locks. This is turned on by default, and can be turned off on a share-
-by-share basis by setting the parameter :
+Samba does not support opportunistic locks because they are very
+difficult to do under Unix. Samba can fake them, however, by granting
+a oplock whenever a client asks for one. This is controlled using the
+smb.conf option "fake oplocks". If you set "fake oplocks = yes" then
+you are telling the client that it may agressively cache the file
+data.
 
-oplocks = False
-
-We recommend that you leave oplocks on however, as current benchmark
-tests with NetBench seem to give approximately a 30% improvement in
-speed with them on. This is on average however, and the actual 
-improvement seen can be orders of magnitude greater, depending on
-what the client redirector is doing.
-
-Previous to Samba 1.9.18 there was a 'fake oplocks' option. This
-option has been left in the code for backwards compatibility reasons
-but it's use is now deprecated. A short summary of what the old
-code did follows.
-
-Old 'fake oplocks' option - deprecated.
----------------------------------------
-
-Samba can also fake oplocks, by granting a oplock whenever a client 
-asks for one. This is controlled using the smb.conf option "fake 
-oplocks". If you set "fake oplocks = yes" then you are telling the 
-client that it may agressively cache the file data for all opens.
-
-Enabling 'fake oplocks' on all read-only shares or shares that you know
+By enabling this option on all read-only shares or shares that you know
 will only be accessed from one client at a time you will see a big
 performance improvement on many operations. If you enable this option
 on shares where multiple clients may be accessing the files read-write
-at the same time you can get data corruption.
+at the same time you can get data corruption. Use this option
+carefully! 
+
+This option is disabled by default.
 
 SOCKET OPTIONS
 --------------

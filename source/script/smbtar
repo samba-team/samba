@@ -88,7 +88,7 @@ while getopts rivl:b:d:N:s:p:x:u:Xt: c; do
       server="$OPTARG"
       ;;
    b) # specify [b]locksize
-      blocksize="$OPTARG"
+      blocksize="blocksize $OPTARG"
       case "$OPTARG" in
 	[0-9]*) ;;
 	*)      echo >&2 "$0: Error, block size not numeric: -b $OPTARG"

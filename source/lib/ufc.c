@@ -660,7 +660,7 @@ static char *output_conversion(v1, v2, salt)
  * UNIX crypt function
  */
 
-static ufc_long *_ufc_doit(ufc_long , ufc_long, ufc_long, ufc_long, ufc_long);
+ufc_long *_ufc_doit(ufc_long , ufc_long, ufc_long, ufc_long, ufc_long);
    
 char *ufc_crypt(char *key,char *salt)
   { ufc_long *s;

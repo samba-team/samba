@@ -2,9 +2,7 @@
    Unix SMB/Netbios implementation.
    Version 1.9.
    Pipe SMB reply routines
-   Copyright (C) Andrew Tridgell 1992-1997,
-   Copyright (C) Luke Kenneth Casson Leighton 1996-1997.
-   Copyright (C) Paul Ashton  1997.
+   Copyright (C) Andrew Tridgell 1992-1997
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -37,34 +35,33 @@
 /* look in server.c for some explanation of these variables */
 extern int Protocol;
 extern int DEBUGLEVEL;
+extern int chain_fnum;
 extern char magic_char;
+extern connection_struct Connections[];
+extern files_struct Files[];
 extern BOOL case_sensitive;
 extern pstring sesssetup_user;
 extern int Client;
 extern fstring myworkgroup;
 
-#define VALID_PNUM(pnum)   (((pnum) >= 0) && ((pnum) < MAX_OPEN_PIPES))
-#define OPEN_PNUM(pnum)    (VALID_PNUM(pnum) && Pipes[pnum].open)
-#define PNUM_OK(pnum,c) (OPEN_PNUM(pnum) && (c)==Pipes[pnum].cnum)
-
-/* this macro should always be used to extract an pnum (smb_fid) from
-   a packet to ensure chaining works correctly */
-#define GETPNUM(buf,where) (chain_pnum!= -1?chain_pnum:SVAL(buf,where))
+/* this macro should always be used to extract an fnum (smb_fid) from
+a packet to ensure chaining works correctly */
+#define GETFNUM(buf,where) (chain_fnum!= -1?chain_fnum:SVAL(buf,where))
 
 char * known_pipes [] =
 {
   "lsarpc",
-#if NTDOMAIN
-  "NETLOGON",
-  "srvsvc",
-  "wkssvc",
-  "samr",
-#endif
   NULL
 };
 
 /****************************************************************************
   reply to an open and X on a named pipe
+
+  In fact what we do is to open a regular file with the same name in
+  /tmp. This can then be closed as normal. Reading and writing won't
+  make much sense, but will do *something*. The real reason for this
+  support is to be able to do transactions on them (well, on lsarpc
+  for domain login purposes...).
 
   This code is basically stolen from reply_open_and_X with some
   wrinkles to handle pipes.
@@ -73,10 +70,21 @@ int reply_open_pipe_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 {
   pstring fname;
   int cnum = SVAL(inbuf,smb_tid);
-  int pnum = -1;
+  int fnum = -1;
+  int smb_mode = SVAL(inbuf,smb_vwv3);
+  int smb_attr = SVAL(inbuf,smb_vwv5);
+#if 0
+  int open_flags = SVAL(inbuf,smb_vwv2);
+  int smb_sattr = SVAL(inbuf,smb_vwv4); 
+  uint32 smb_time = make_unix_date3(inbuf+smb_vwv6);
+#endif
   int smb_ofun = SVAL(inbuf,smb_vwv8);
+  int unixmode;
   int size=0,fmode=0,mtime=0,rmode=0;
+  struct stat sbuf;
+  int smb_action = 0;
   int i;
+  BOOL bad_path = False;
 
   /* XXXX we need to handle passed times, sattr and flags */
   pstrcpy(fname,smb_buf(inbuf));
@@ -103,67 +111,97 @@ int reply_open_pipe_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   /* Known pipes arrive with DIR attribs. Remove it so a regular file */
   /* can be opened and add it in after the open. */
   DEBUG(3,("Known pipe %s opening.\n",fname));
+  smb_attr &= ~aDIR;
+  Connections[cnum].read_only = 0;
   smb_ofun |= 0x10;		/* Add Create it not exists flag */
 
-  pnum = open_rpc_pipe_hnd(fname, cnum);
-  if (pnum < 0) return(ERROR(ERRSRV,ERRnofids));
+  unix_convert(fname,cnum,0,&bad_path);
+    
+  fnum = find_free_file();
+  if (fnum < 0)
+    return(ERROR(ERRSRV,ERRnofids));
+
+  if (!check_name(fname,cnum))
+    return(UNIXERROR(ERRDOS,ERRnoaccess));
+
+  unixmode = unix_mode(cnum,smb_attr);
+      
+  open_file_shared(fnum,cnum,fname,smb_mode,smb_ofun,unixmode,
+		   &rmode,&smb_action);
+      
+  if (!Files[fnum].open)
+  {
+    /* Change the error code if bad_path was set. */
+    if((errno == ENOENT) && bad_path)
+    {
+      unix_ERR_class = ERRDOS;
+      unix_ERR_code = ERRbadpath;
+    }
+    return(UNIXERROR(ERRDOS,ERRnoaccess));
+  }
+
+  if (fstat(Files[fnum].fd_ptr->fd,&sbuf) != 0) {
+    close_file(fnum, 0);
+    return(ERROR(ERRDOS,ERRnoaccess));
+  }
+
+  size = sbuf.st_size;
+  fmode = dos_mode(cnum,fname,&sbuf);
+  mtime = sbuf.st_mtime;
+  if (fmode & aDIR) {
+    close_file(fnum, 0);
+    return(ERROR(ERRDOS,ERRnoaccess));
+  }
 
   /* Prepare the reply */
   set_message(outbuf,15,0,True);
 
+  /* Put things back the way they were. */
+  Connections[cnum].read_only = 1;
+
   /* Mark the opened file as an existing named pipe in message mode. */
   SSVAL(outbuf,smb_vwv9,2);
   SSVAL(outbuf,smb_vwv10,0xc700);
-
   if (rmode == 2)
   {
     DEBUG(4,("Resetting open result to open from create.\n"));
     rmode = 1;
   }
 
-  SSVAL(outbuf,smb_vwv2, pnum + 0x800); /* mark file handle up into high range */
+  SSVAL(outbuf,smb_vwv2,fnum);
   SSVAL(outbuf,smb_vwv3,fmode);
   put_dos_date3(outbuf,smb_vwv4,mtime);
   SIVAL(outbuf,smb_vwv6,size);
   SSVAL(outbuf,smb_vwv8,rmode);
-  SSVAL(outbuf,smb_vwv11,0);
+  SSVAL(outbuf,smb_vwv11,smb_action);
 
+  chain_fnum = fnum;
+
+  DEBUG(4,("Opened pipe %s with handle %d, saved name %s.\n",
+	   fname, fnum, Files[fnum].name));
+  
   return chain_reply(inbuf,outbuf,length,bufsize);
-}
-
-
-/****************************************************************************
-  reply to a close
-****************************************************************************/
-int reply_pipe_close(char *inbuf,char *outbuf)
-{
-  int pnum = get_rpc_pipe_num(inbuf,smb_vwv0);
-  int cnum = SVAL(inbuf,smb_tid);
-  int outsize = set_message(outbuf,0,0,True);
-
-  DEBUG(5,("reply_pipe_close: pnum:%x cnum:%x\n", pnum, cnum));
-
-  if (!close_rpc_pipe_hnd(pnum, cnum)) return(ERROR(ERRDOS,ERRbadfid));
-
-  return(outsize);
 }
 
 
 /****************************************************************************
  api_LsarpcSNPHS
 
- SetNamedPipeHandleState on \PIPE\lsarpc. 
+ SetNamedPipeHandleState on \PIPE\lsarpc. We can't really do much here,
+ so just blithely return True. This is really only for NT domain stuff,
+ we we're only handling that - don't assume Samba now does complete
+ named pipe handling.
 ****************************************************************************/
-BOOL api_LsarpcSNPHS(int pnum, int cnum, char *param)
+BOOL api_LsarpcSNPHS(int cnum,int uid, char *param,char *data,
+		     int mdrcnt,int mprcnt,
+		     char **rdata,char **rparam,
+		     int *rdata_len,int *rparam_len)
 {
   uint16 id;
 
-  if (!param) return False;
-
   id = param[0] + (param[1] << 8);
   DEBUG(4,("lsarpc SetNamedPipeHandleState to code %x\n",id));
-
-  return set_rpc_pipe_hnd_state(pnum, cnum, id);
+  return(True);
 }
 
 
@@ -319,4 +357,3 @@ BOOL api_LsarpcTNP(int cnum,int uid, char *param,char *data,
   }
   return(True);
 }
-

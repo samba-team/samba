@@ -24,7 +24,7 @@
 extern int DEBUGLEVEL;
 
 struct in_addr ipzero;
-struct in_addr allones_ip;
+struct in_addr wins_ip;
 struct in_addr loopback_ip;
 static struct in_addr default_ip;
 static struct in_addr default_bcast;
@@ -33,7 +33,7 @@ static BOOL got_ip=False;
 static BOOL got_bcast=False;
 static BOOL got_nmask=False;
 
-static struct interface *local_interfaces  = NULL;
+struct interface *local_interfaces  = NULL;
 
 struct interface *last_iface;
 
@@ -262,7 +262,7 @@ static void interpret_interfaces(char *s, struct interface **interfaces,
   struct in_addr ip;
 
   ipzero = *interpret_addr2("0.0.0.0");
-  allones_ip = *interpret_addr2("255.255.255.255");
+  wins_ip = *interpret_addr2("255.255.255.255");
   loopback_ip = *interpret_addr2("127.0.0.1");
 
   while (next_token(&ptr,token,NULL)) {
@@ -302,9 +302,9 @@ static void interpret_interfaces(char *s, struct interface **interfaces,
       last_iface->next = iface;
     }
     last_iface = iface;
-    DEBUG(2,("Added %s ip=%s ",description,inet_ntoa(iface->ip)));
-    DEBUG(2,("bcast=%s ",inet_ntoa(iface->bcast)));
-    DEBUG(2,("nmask=%s\n",inet_ntoa(iface->nmask)));	     
+    DEBUG(1,("Added %s ip=%s ",description,inet_ntoa(iface->ip)));
+    DEBUG(1,("bcast=%s ",inet_ntoa(iface->bcast)));
+    DEBUG(1,("nmask=%s\n",inet_ntoa(iface->nmask)));	     
   }
 
   if (*interfaces) return;
@@ -400,18 +400,6 @@ BOOL ismybcast(struct in_addr bcast)
 }
 
 /****************************************************************************
-  check if a packet is from a local (known) net
-  **************************************************************************/
-BOOL is_local_net(struct in_addr from)
-{
-  struct interface *i;
-  for (i=local_interfaces;i;i=i->next)
-    if((from.s_addr & i->nmask.s_addr) == (i->ip.s_addr & i->nmask.s_addr))
-      return True;
-  return False;
-}
-
-/****************************************************************************
   how many interfaces do we have
   **************************************************************************/
 int iface_count(void)
@@ -422,33 +410,6 @@ int iface_count(void)
   for (i=local_interfaces;i;i=i->next)
     ret++;
   return ret;
-}
-
-/****************************************************************************
- True if we have two or more interfaces.
-  **************************************************************************/
-BOOL we_are_multihomed()
-{
-  static int multi = -1;
-
-  if(multi == -1)
-    multi = (iface_count() > 1 ? True : False);
-
-  return multi;
-}
-
-/****************************************************************************
-  return the Nth interface
-  **************************************************************************/
-struct interface *get_interface(int n)
-{ 
-  struct interface *i;
-  
-  for (i=local_interfaces;i && n;i=i->next)
-    n--;
-
-  if (i) return i;
-  return NULL;
 }
 
 /****************************************************************************
@@ -465,9 +426,6 @@ struct in_addr *iface_n_ip(int n)
   return NULL;
 }
 
-/****************************************************************************
-Try and find an interface that matches an ip. If we cannot, return NULL
-  **************************************************************************/
 static struct interface *iface_find(struct in_addr ip)
 {
   struct interface *i;
@@ -476,30 +434,25 @@ static struct interface *iface_find(struct in_addr ip)
   for (i=local_interfaces;i;i=i->next)
     if (same_net(i->ip,ip,i->nmask)) return i;
 
-  return NULL;
+  return local_interfaces;
 }
 
 /* these 3 functions return the ip/bcast/nmask for the interface
-   most appropriate for the given ip address. If they can't find
-   an appropriate interface they return the requested field of the
-   first known interface. */
+   most appropriate for the given ip address */
 
 struct in_addr *iface_bcast(struct in_addr ip)
 {
-  struct interface *i = iface_find(ip);
-  return(i ? &i->bcast : &local_interfaces->bcast);
+  return(&iface_find(ip)->bcast);
 }
 
 struct in_addr *iface_nmask(struct in_addr ip)
 {
-  struct interface *i = iface_find(ip);
-  return(i ? &i->nmask : &local_interfaces->nmask);
+  return(&iface_find(ip)->nmask);
 }
 
 struct in_addr *iface_ip(struct in_addr ip)
 {
-  struct interface *i = iface_find(ip);
-  return(i ? &i->ip : &local_interfaces->ip);
+  return(&iface_find(ip)->ip);
 }
 
 

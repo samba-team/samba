@@ -23,13 +23,15 @@
 
 extern int DEBUGLEVEL;
 
+extern connection_struct Connections[];
+
 static int initial_uid;
 static int initial_gid;
 
 /* what user is current? */
 struct current_user current_user;
 
-pstring OriginalDir;
+extern pstring OriginalDir;
 
 /****************************************************************************
 initialise the uid routines
@@ -181,19 +183,19 @@ BOOL become_guest(void)
 /*******************************************************************
 check if a username is OK
 ********************************************************************/
-static BOOL check_user_ok(connection_struct *conn, user_struct *vuser,int snum)
+static BOOL check_user_ok(int cnum,user_struct *vuser,int snum)
 {
   int i;
-  for (i=0;i<conn->uid_cache.entries;i++)
-    if (conn->uid_cache.list[i] == vuser->uid) return(True);
+  for (i=0;i<Connections[cnum].uid_cache.entries;i++)
+    if (Connections[cnum].uid_cache.list[i] == vuser->uid) return(True);
 
   if (!user_ok(vuser->name,snum)) return(False);
 
-  i = conn->uid_cache.entries % UID_CACHE_SIZE;
-  conn->uid_cache.list[i] = vuser->uid;
+  i = Connections[cnum].uid_cache.entries % UID_CACHE_SIZE;
+  Connections[cnum].uid_cache.list[i] = vuser->uid;
 
-  if (conn->uid_cache.entries < UID_CACHE_SIZE)
-    conn->uid_cache.entries++;
+  if (Connections[cnum].uid_cache.entries < UID_CACHE_SIZE)
+    Connections[cnum].uid_cache.entries++;
 
   return(True);
 }
@@ -202,7 +204,7 @@ static BOOL check_user_ok(connection_struct *conn, user_struct *vuser,int snum)
 /****************************************************************************
   become the user of a connection number
 ****************************************************************************/
-BOOL become_user(connection_struct *conn, int cnum, uint16 vuid)
+BOOL become_user(int cnum, uint16 vuid)
 {
   user_struct *vuser = get_valid_user_struct(vuid);
   int snum,gid;
@@ -215,27 +217,23 @@ BOOL become_user(connection_struct *conn, int cnum, uint16 vuid)
 
   unbecome_user();
 
-  if (!(VALID_CNUM(cnum) && conn->open)) {
+  if (!OPEN_CNUM(cnum)) {
     DEBUG(2,("Connection %d not open\n",cnum));
     return(False);
   }
 
-  snum = conn->service;
+  snum = Connections[cnum].service;
 
-  if (conn->force_user || 
+  if (Connections[cnum].force_user || 
       lp_security() == SEC_SHARE ||
       !(vuser) || (vuser->guest) ||
-      !check_user_ok(conn, vuser, snum))
-  {
-    uid = conn->uid;
-    gid = conn->gid;
-    current_user.groups = conn->groups;
-    current_user.igroups = conn->igroups;
-    current_user.ngroups = conn->ngroups;
-    current_user.attrs   = conn->attrs;
-  }
-  else
-  {
+      !check_user_ok(cnum,vuser,snum)) {
+    uid = Connections[cnum].uid;
+    gid = Connections[cnum].gid;
+    current_user.groups = Connections[cnum].groups;
+    current_user.igroups = Connections[cnum].igroups;
+    current_user.ngroups = Connections[cnum].ngroups;
+  } else {
     if (!vuser) {
       DEBUG(2,("Invalid vuid used %d\n",vuid));
       return(False);
@@ -244,11 +242,10 @@ BOOL become_user(connection_struct *conn, int cnum, uint16 vuid)
     if(!*lp_force_group(snum))
       gid = vuser->gid;
     else
-      gid = conn->gid;
-    current_user.ngroups = vuser->n_groups;
-    current_user.groups  = vuser->groups;
-    current_user.igroups = vuser->igroups;
-    current_user.attrs   = vuser->attrs;
+      gid = Connections[cnum].gid;
+    current_user.groups = vuser->user_groups;
+    current_user.igroups = vuser->user_igroups;
+    current_user.ngroups = vuser->user_ngroups;
   }
 
   if (initial_uid == 0)
@@ -256,15 +253,17 @@ BOOL become_user(connection_struct *conn, int cnum, uint16 vuid)
       if (!become_gid(gid)) return(False);
 
 #ifndef NO_SETGROUPS      
-      if (!(VALID_CNUM(cnum) && conn->ipc)) {
+      if (!IS_IPC(cnum)) {
 	/* groups stuff added by ih/wreu */
 	if (current_user.ngroups > 0)
 	  if (setgroups(current_user.ngroups,current_user.groups)<0)
 	    DEBUG(0,("setgroups call failed!\n"));
+      } else {
+	    current_user.ngroups = 0;  
       }
 #endif
 
-      if (!conn->admin_user && !become_uid(uid))
+      if (!Connections[cnum].admin_user && !become_uid(uid))
 	return(False);
     }
 
@@ -321,7 +320,8 @@ BOOL unbecome_user(void )
 
   current_user.uid = initial_uid;
   current_user.gid = initial_gid;
-  
+  current_user.ngroups = 0;
+
   if (ChDir(OriginalDir) != 0)
     DEBUG(0,("%s chdir(%s) failed in unbecome_user\n",
 	     timestring(),OriginalDir));
@@ -480,6 +480,8 @@ int smbrun(char *cmd,char *outfile,BOOL shared)
   return 1;
 }
 
+
+
 static struct current_user current_user_saved;
 static int become_root_depth;
 static pstring become_root_dir;
@@ -492,7 +494,7 @@ after the operation
 
 Set save_dir if you also need to save/restore the CWD 
 ****************************************************************************/
-void become_root(BOOL save_dir) 
+void become_root(int save_dir) 
 {
 	if (become_root_depth) {
 		DEBUG(0,("ERROR: become root depth is non zero\n"));
@@ -512,7 +514,7 @@ When the privilaged operation is over call this
 
 Set save_dir if you also need to save/restore the CWD 
 ****************************************************************************/
-void unbecome_root(BOOL restore_dir)
+void unbecome_root(int restore_dir)
 {
 	if (become_root_depth != 1) {
 		DEBUG(0,("ERROR: unbecome root depth is %d\n",
@@ -553,3 +555,6 @@ void unbecome_root(BOOL restore_dir)
 
 	become_root_depth = 0;
 }
+
+
+

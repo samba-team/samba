@@ -21,10 +21,6 @@
 
 #include "includes.h"
 
-#if (defined(NETGROUP) && defined (AUTOMOUNT))
-#include "rpcsvc/ypclnt.h"
-#endif
-
 pstring scope = "";
 
 int DEBUGLEVEL = 1;
@@ -76,12 +72,7 @@ static enum remote_arch_types ra_type = RA_UNKNOWN;
 fstring remote_proto="UNKNOWN";
 pstring myhostname="";
 pstring user_socket_options="";   
-
 pstring sesssetup_user="";
-pstring samlogon_user="";
-
-BOOL sam_logon_in_ssb = False;
-
 pstring myname = "";
 fstring myworkgroup = "";
 char **my_netbios_names;
@@ -102,10 +93,10 @@ void setup_logging(char *pname,BOOL interactive)
     char *p = strrchr(pname,'/');
     if (p) pname = p+1;
 #ifdef LOG_DAEMON
-    openlog(pname, LOG_PID, SYSLOG_FACILITY);
-#else /* for old systems that have no facility codes. */
+    openlog(pname, LOG_PID, LOG_DAEMON);
+#else /* LOG_DAEMON - for old systems that have no facility codes. */
     openlog(pname, LOG_PID);
-#endif
+#endif /* LOG_DAEMON */
   }
 #endif
   if (interactive) {
@@ -183,7 +174,6 @@ static void check_log_size(void)
   }
   debug_count=0;
 }
-
 
 /*******************************************************************
 write an debug message on the debugfile. This is called by the DEBUG
@@ -698,61 +688,48 @@ static int name_interpret(char *in,char *out)
 
 /****************************************************************************
 mangle a name into netbios format
-
-  Note:  <Out> must be (33 + strlen(scope) + 2) bytes long, at minimum.
 ****************************************************************************/
-int name_mangle( char *In, char *Out, char name_type )
-  {
-  int   i;
-  int   c;
-  int   len;
-  char  buf[20];
-  char *p = Out;
+int name_mangle(char *In,char *Out,char name_type)
+{
+  fstring name;
+  char buf[20];
+  char *in = (char *)&buf[0];
+  char *out = (char *)Out;
+  char *p, *label;
+  int i;
 
-  /* Safely copy the input string, In, into buf[]. */
-  (void)memset( buf, 0, 20 );
-  if( '*' == In[0] )
-    buf[0] = '*';
-  else
-    (void)sprintf( buf, "%-15.15s%c", In, name_type );
+  if (In[0] != '*') {
+    StrnCpy(name,In,sizeof(name)-1);
+    sprintf(buf,"%-15.15s%c",name,name_type);
+  } else {
+    buf[0]='*';
+    memset(&buf[1],0,16);
+  }
 
-  /* Place the length of the first field into the output buffer. */
-  p[0] = 32;
-  p++;
-
-  /* Now convert the name to the rfc1001/1002 format. */
-  for( i = 0; i < 16; i++ )
+  *out++ = 32;
+  for (i=0;i<16;i++) {
+    char c = toupper(in[i]);
+    out[i*2] = (c>>4) + 'A';
+    out[i*2+1] = (c & 0xF) + 'A';
+  }
+  out[32]=0;
+  out += 32;
+  
+  label = scope;
+  while (*label)
     {
-    c = toupper( buf[i] );
-    p[i*2]     = ( (c >> 4) & 0x000F ) + 'A';
-    p[(i*2)+1] = (c & 0x000F) + 'A';
+      p = strchr(label, '.');
+      if (p == 0)
+	p = label + strlen(label);
+      *out++ = p - label;
+      memcpy(out, label, p - label);
+      out += p - label;
+      label += p - label + (*p == '.');
     }
-  p += 32;
-  p[0] = '\0';
+  *out = 0;
+  return(name_len(Out));
+}
 
-  /* Add the scope string. */
-  for( i = 0, len = 0; NULL != scope; i++, len++ )
-    {
-    switch( scope[i] )
-      {
-      case '\0':
-        p[0]     = len;
-        if( len > 0 )
-          p[len+1] = 0;
-        return( name_len(Out) );
-      case '.':
-        p[0] = len;
-        p   += (len + 1);
-        len  = 0;
-        break;
-      default:
-        p[len+1] = scope[i];
-        break;
-      }
-    }
-
-  return( name_len(Out) );
-  } /* name_mangle */
 
 /*******************************************************************
   check if a file exists
@@ -834,145 +811,131 @@ char *attrib_string(int mode)
 /*******************************************************************
   case insensitive string compararison
 ********************************************************************/
-int StrCaseCmp(char *s, char *t)
+int StrCaseCmp(const char *s, const char *t)
 {
   /* compare until we run out of string, either t or s, or find a difference */
   /* We *must* use toupper rather than tolower here due to the
      asynchronous upper to lower mapping.
    */
-#if !defined(KANJI_WIN95_COMPATIBILITY)
-  if(lp_client_code_page() == KANJI_CODEPAGE)
+#if defined(KANJI) && !defined(KANJI_WIN95_COMPATIBILITY)
+  /* Win95 treats full width ascii characters as case sensitive. */
+  int diff;
+  for (;;)
   {
-    /* Win95 treats full width ascii characters as case sensitive. */
-    int diff;
-    for (;;)
-    {
-      if (!*s || !*t)
-	    return toupper (*s) - toupper (*t);
-      else if (is_sj_alph (*s) && is_sj_alph (*t))
-      {
-        diff = sj_toupper2 (*(s+1)) - sj_toupper2 (*(t+1));
-        if (diff)
-          return diff;
-        s += 2;
-        t += 2;
-      }
-      else if (is_shift_jis (*s) && is_shift_jis (*t))
-      {
-        diff = ((int) (unsigned char) *s) - ((int) (unsigned char) *t);
-        if (diff)
-          return diff;
-        diff = ((int) (unsigned char) *(s+1)) - ((int) (unsigned char) *(t+1));
-        if (diff)
-          return diff;
-        s += 2;
-        t += 2;
-      }
-      else if (is_shift_jis (*s))
-        return 1;
-      else if (is_shift_jis (*t))
-        return -1;
-      else 
-      {
-        diff = toupper (*s) - toupper (*t);
-        if (diff)
-          return diff;
-        s++;
-        t++;
-      }
-    }
+    if (!*s || !*t)
+	  return toupper (*s) - toupper (*t);
+    else if (is_sj_alph (*s) && is_sj_alph (*t))
+	{
+	  diff = sj_toupper2 (*(s+1)) - sj_toupper2 (*(t+1));
+	  if (diff)
+	    return diff;
+	  s += 2;
+	  t += 2;
+	}
+    else if (is_shift_jis (*s) && is_shift_jis (*t))
+	{
+	  diff = ((int) (unsigned char) *s) - ((int) (unsigned char) *t);
+	  if (diff)
+	    return diff;
+	  diff = ((int) (unsigned char) *(s+1)) - ((int) (unsigned char) *(t+1));
+	  if (diff)
+	    return diff;
+	  s += 2;
+	  t += 2;
+	}
+    else if (is_shift_jis (*s))
+	  return 1;
+    else if (is_shift_jis (*t))
+	  return -1;
+    else 
+	{
+	  diff = toupper (*s) - toupper (*t);
+	  if (diff)
+	    return diff;
+	  s++;
+	  t++;
+	}
   }
-  else
-#endif /* KANJI_WIN95_COMPATIBILITY */
+#else /* KANJI */
+  while (*s && *t && toupper(*s) == toupper(*t))
   {
-    while (*s && *t && toupper(*s) == toupper(*t))
-    {
-      s++;
-      t++;
-    }
+    s++; t++;
+  }
 
-    return(toupper(*s) - toupper(*t));
-  }
+  return(toupper(*s) - toupper(*t));
+#endif /* KANJI */
 }
 
 /*******************************************************************
   case insensitive string compararison, length limited
 ********************************************************************/
-int StrnCaseCmp(char *s, char *t, int n)
+int StrnCaseCmp(const char *s, const char *t, int n)
 {
   /* compare until we run out of string, either t or s, or chars */
   /* We *must* use toupper rather than tolower here due to the
      asynchronous upper to lower mapping.
    */
-#if !defined(KANJI_WIN95_COMPATIBILITY)
-  if(lp_client_code_page() == KANJI_CODEPAGE)
+#if defined(KANJI) && !defined(KANJI_WIN95_COMPATIBILITY)
+  /* Win95 treats full width ascii characters as case sensitive. */
+  int diff;
+  for (;n > 0;)
   {
-    /* Win95 treats full width ascii characters as case sensitive. */
-    int diff;
-    for (;n > 0;)
-    {
-      if (!*s || !*t)
-        return toupper (*s) - toupper (*t);
-      else if (is_sj_alph (*s) && is_sj_alph (*t))
-      {
-        diff = sj_toupper2 (*(s+1)) - sj_toupper2 (*(t+1));
-        if (diff)
-          return diff;
-        s += 2;
-        t += 2;
-        n -= 2;
-      }
-      else if (is_shift_jis (*s) && is_shift_jis (*t))
-      {
-        diff = ((int) (unsigned char) *s) - ((int) (unsigned char) *t);
-        if (diff)
-          return diff;
-        diff = ((int) (unsigned char) *(s+1)) - ((int) (unsigned char) *(t+1));
-        if (diff)
-          return diff;
-        s += 2;
-        t += 2;
-        n -= 2;
-      }
-      else if (is_shift_jis (*s))
-        return 1;
-      else if (is_shift_jis (*t))
-        return -1;
-      else 
-      {
-        diff = toupper (*s) - toupper (*t);
-        if (diff)
-          return diff;
-        s++;
-        t++;
-        n--;
-      }
-    }
-    return 0;
+    if (!*s || !*t)
+	  return toupper (*s) - toupper (*t);
+    else if (is_sj_alph (*s) && is_sj_alph (*t))
+	{
+	  diff = sj_toupper2 (*(s+1)) - sj_toupper2 (*(t+1));
+	  if (diff)
+	    return diff;
+	  s += 2;
+	  t += 2;
+	  n -= 2;
+	}
+    else if (is_shift_jis (*s) && is_shift_jis (*t))
+	{
+	  diff = ((int) (unsigned char) *s) - ((int) (unsigned char) *t);
+	  if (diff)
+	    return diff;
+	  diff = ((int) (unsigned char) *(s+1)) - ((int) (unsigned char) *(t+1));
+	  if (diff)
+	    return diff;
+	  s += 2;
+	  t += 2;
+	  n -= 2;
+	}
+    else if (is_shift_jis (*s))
+	  return 1;
+    else if (is_shift_jis (*t))
+	  return -1;
+    else 
+	{
+	  diff = toupper (*s) - toupper (*t);
+	  if (diff)
+	    return diff;
+	  s++;
+	  t++;
+	  n--;
+	}
   }
-  else
-#endif /* KANJI_WIN95_COMPATIBILITY */
+  return 0;
+#else /* KANJI */
+  while (n-- && *s && *t && toupper(*s) == toupper(*t))
   {
-    while (n-- && *s && *t && toupper(*s) == toupper(*t))
-    {
-      s++;
-      t++;
-    }
-
-    /* not run out of chars - strings are different lengths */
-    if (n) 
-      return(toupper(*s) - toupper(*t));
-
-    /* identical up to where we run out of chars, 
-       and strings are same length */
-    return(0);
+    s++; t++;
   }
+
+  /* not run out of chars - strings are different lengths */
+  if (n) return(toupper(*s) - toupper(*t));
+
+  /* identical up to where we run out of chars, and strings are same length */
+  return(0);
+#endif /* KANJI */
 }
 
 /*******************************************************************
   compare 2 strings 
 ********************************************************************/
-BOOL strequal(char *s1, char *s2)
+BOOL strequal(const char *s1, const char *s2)
 {
   if (s1 == s2) return(True);
   if (!s1 || !s2) return(False);
@@ -983,7 +946,7 @@ BOOL strequal(char *s1, char *s2)
 /*******************************************************************
   compare 2 strings up to and including the nth char.
   ******************************************************************/
-BOOL strnequal(char *s1,char *s2,int n)
+BOOL strnequal(const char *s1,const char *s2,int n)
 {
   if (s1 == s2) return(True);
   if (!s1 || !s2 || !n) return(False);
@@ -1009,36 +972,27 @@ BOOL strcsequal(char *s1,char *s2)
 void strlower(char *s)
 {
   while (*s)
-  {
-#if !defined(KANJI_WIN95_COMPATIBILITY)
-    if(lp_client_code_page() == KANJI_CODEPAGE)
     {
-      /* Win95 treats full width ascii characters as case sensitive. */
-      if (is_shift_jis (*s))
-      {
-        if (is_sj_upper (s[0], s[1]))
-          s[1] = sj_tolower2 (s[1]);
-        s += 2;
-      }
-      else if (is_kana (*s))
-      {
-        s++;
-      }
-      else
-      {
-        if (isupper(*s))
-          *s = tolower(*s);
-        s++;
-      }
-    }
-    else
-#endif /* KANJI_WIN95_COMPATIBILITY */
-    {
+#if defined(KANJI) && !defined(KANJI_WIN95_COMPATIBILITY)
+  /* Win95 treats full width ascii characters as case sensitive. */
+	if (is_shift_jis (*s)) {
+	    if (is_sj_upper (s[0], s[1])) {
+	  	  s[1] = sj_tolower2 (s[1]);
+	    }
+	    s += 2;
+	} else if (is_kana (*s)) {
+	    s++;
+	} else {
+	    if (isupper(*s))
+		*s = tolower(*s);
+	    s++;
+	}
+#else /* KANJI */
       if (isupper(*s))
-        *s = tolower(*s);
+	  *s = tolower(*s);
       s++;
+#endif /* KANJI */
     }
-  }
 }
 
 /*******************************************************************
@@ -1047,36 +1001,27 @@ void strlower(char *s)
 void strupper(char *s)
 {
   while (*s)
-  {
-#if !defined(KANJI_WIN95_COMPATIBILITY)
-    if(lp_client_code_page() == KANJI_CODEPAGE)
     {
-      /* Win95 treats full width ascii characters as case sensitive. */
-      if (is_shift_jis (*s))
-      {
-        if (is_sj_lower (s[0], s[1]))
-          s[1] = sj_toupper2 (s[1]);
-        s += 2;
-      }
-      else if (is_kana (*s))
-      {
-        s++;
-      }
-      else
-      {
-        if (islower(*s))
-          *s = toupper(*s);
-        s++;
-      }
-    }
-    else
-#endif /* KANJI_WIN95_COMPATIBILITY */
-    {
+#if defined(KANJI) && !defined(KANJI_WIN95_COMPATIBILITY)
+  /* Win95 treats full width ascii characters as case sensitive. */
+	if (is_shift_jis (*s)) {
+	    if (is_sj_lower (s[0], s[1])) {
+		  s[1] = sj_toupper2 (s[1]);
+	    }
+	    s += 2;
+	} else if (is_kana (*s)) {
+	    s++;
+	} else {
+	    if (islower(*s))
+		*s = toupper(*s);
+	    s++;
+	}
+#else /* KANJI */
       if (islower(*s))
-        *s = toupper(*s);
+	*s = toupper(*s);
       s++;
+#endif /* KANJI */
     }
-  }
 }
 
 /*******************************************************************
@@ -1108,30 +1053,24 @@ BOOL strisnormal(char *s)
 void string_replace(char *s,char oldc,char newc)
 {
   while (*s)
-  {
-#if !defined(KANJI_WIN95_COMPATIBILITY)
-    if(lp_client_code_page() == KANJI_CODEPAGE)
     {
-      /* Win95 treats full width ascii characters as case sensitive. */
-      if (is_shift_jis (*s))
-        s += 2;
-      else if (is_kana (*s))
-        s++;
-      else
-      {
-        if (oldc == *s)
-          *s = newc;
-        s++;
-      }
-    }
-    else
-#endif /* KANJI_WIN95_COMPATIBILITY */
-    {
+#if defined(KANJI) && !defined(KANJI_WIN95_COMPATIBILITY)
+  /* Win95 treats full width ascii characters as case sensitive. */
+	if (is_shift_jis (*s)) {
+	    s += 2;
+	} else if (is_kana (*s)) {
+	    s++;
+	} else {
+	    if (oldc == *s)
+		*s = newc;
+	    s++;
+	}
+#else /* KANJI */
       if (oldc == *s)
-        *s = newc;
+	*s = newc;
       s++;
+#endif /* KANJI */
     }
-  }
 }
 
 /****************************************************************************
@@ -1165,9 +1104,10 @@ void dos_format(char *fname)
 void show_msg(char *buf)
 {
   int i;
+  int j;
   int bcc=0;
-
-  if (DEBUGLEVEL < 5) return;
+  if (DEBUGLEVEL < 5)
+    return;
 
   DEBUG(5,("size=%d\nsmb_com=0x%x\nsmb_rcls=%d\nsmb_reh=%d\nsmb_err=%d\nsmb_flg=%d\nsmb_flg2=%d\n",
 	  smb_len(buf),
@@ -1183,17 +1123,35 @@ void show_msg(char *buf)
 	  (int)SVAL(buf,smb_uid),
 	  (int)SVAL(buf,smb_mid),
 	  (int)CVAL(buf,smb_wct)));
-
   for (i=0;i<(int)CVAL(buf,smb_wct);i++)
     DEBUG(5,("smb_vwv[%d]=%d (0x%X)\n",i,
 	  SVAL(buf,smb_vwv+2*i),SVAL(buf,smb_vwv+2*i)));
-
   bcc = (int)SVAL(buf,smb_vwv+2*(CVAL(buf,smb_wct)));
   DEBUG(5,("smb_bcc=%d\n",bcc));
+  if (DEBUGLEVEL < 10)
+    return;
+  for (i = 0; i < MIN(bcc, 256); i += 16)
+  {
+    for (j = 0; j < 16 && i+j < MIN(bcc,256); j++)
+    {
 
-  if (DEBUGLEVEL < 10) return;
+      DEBUG(10,("%2X ",CVAL(smb_buf(buf),i+j)));
+      if (j == 7) DEBUG(10, ("  "));
 
-  dump_data(10, smb_buf(buf), MIN(bcc, 512));
+    }
+    DEBUG(10,("  "));  
+
+    for (j = 0; j < 16 && i+j < MIN(bcc,256); j++)
+    {
+      unsigned char c = CVAL(smb_buf(buf),i+j);
+      if (c < 32 || c > 128) c = '.';
+      DEBUG(10,("%c",c));
+
+      if (j == 7) DEBUG(10, ("  "));
+    }
+
+  DEBUG(10,("\n"));  
+}
 }
 
 /*******************************************************************
@@ -1496,7 +1454,7 @@ char *GetWd(char *str)
 
   if (!sys_getwd(s))
     {
-      DEBUG(0,("Getwd failed, errno %s\n",strerror(errno)));
+      DEBUG(0,("Getwd failed, errno %d\n",errno));
       return (NULL);
     }
 
@@ -1734,30 +1692,22 @@ does a string have any uppercase chars in it?
 BOOL strhasupper(char *s)
 {
   while (*s) 
-  {
-#if !defined(KANJI_WIN95_COMPATIBILITY)
-    if(lp_client_code_page() == KANJI_CODEPAGE)
     {
-      /* Win95 treats full width ascii characters as case sensitive. */
-      if (is_shift_jis (*s))
-        s += 2;
-      else if (is_kana (*s))
-        s++;
-      else
-      {
-        if (isupper(*s))
-          return(True);
-        s++;
-      }
-    }
-    else
-#endif /* KANJI_WIN95_COMPATIBILITY */
-    {
-      if (isupper(*s))
-        return(True);
+#if defined(KANJI) && !defined(KANJI_WIN95_COMPATIBILITY)
+  /* Win95 treats full width ascii characters as case sensitive. */
+	if (is_shift_jis (*s)) {
+	    s += 2;
+	} else if (is_kana (*s)) {
+	    s++;
+	} else {
+	    if (isupper(*s)) return(True);
+	    s++;
+	}
+#else /* KANJI */
+      if (isupper(*s)) return(True);
       s++;
+#endif /* KANJI */
     }
-  }
   return(False);
 }
 
@@ -1767,38 +1717,24 @@ does a string have any lowercase chars in it?
 BOOL strhaslower(char *s)
 {
   while (*s) 
-  {
-#if !defined(KANJI_WIN95_COMPATIBILITY)
-    if(lp_client_code_page() == KANJI_CODEPAGE)
     {
-      /* Win95 treats full width ascii characters as case sensitive. */
-      if (is_shift_jis (*s))
-      {
-        if (is_sj_upper (s[0], s[1]))
-          return(True);
-        if (is_sj_lower (s[0], s[1]))
-          return (True);
-        s += 2;
-      }
-      else if (is_kana (*s))
-      {
-        s++;
-      }
-      else
-      {
-        if (islower(*s))
-          return(True);
-        s++;
-      }
-    }
-    else
-#endif /* KANJI_WIN95_COMPATIBILITY */
-    {
-      if (islower(*s))
-        return(True);
+#if defined(KANJI) && !defined(KANJI_WIN95_COMPATIBILITY)
+  /* Win95 treats full width ascii characters as case sensitive. */
+	if (is_shift_jis (*s)) {
+	    if (is_sj_upper (s[0], s[1])) return(True);
+	    if (is_sj_lower (s[0], s[1])) return (True);
+	    s += 2;
+	} else if (is_kana (*s)) {
+	    s++;
+	} else {
+	    if (islower(*s)) return(True);
+	    s++;
+	}
+#else /* KANJI */
+      if (islower(*s)) return(True);
       s++;
+#endif /* KANJI */
     }
-  }
   return(False);
 }
 
@@ -1808,33 +1744,27 @@ find the number of chars in a string
 int count_chars(char *s,char c)
 {
   int count=0;
-
-#if !defined(KANJI_WIN95_COMPATIBILITY)
-  if(lp_client_code_page() == KANJI_CODEPAGE)
-  {
-    /* Win95 treats full width ascii characters as case sensitive. */
-    while (*s) 
+#if defined(KANJI) && !defined(KANJI_WIN95_COMPATIBILITY)
+  /* Win95 treats full width ascii characters as case sensitive. */
+  while (*s) 
     {
-      if (is_shift_jis (*s))
-        s += 2;
-      else 
-      {
-        if (*s == c)
-          count++;
-        s++;
-      }
-    }
-  }
-  else
-#endif /* KANJI_WIN95_COMPATIBILITY */
-  {
-    while (*s) 
-    {
+    if (is_shift_jis (*s))
+	  s += 2;
+    else 
+	{
       if (*s == c)
-        count++;
+	count++;
       s++;
     }
   }
+#else /* KANJI */
+  while (*s) 
+    {
+      if (*s == c)
+	count++;
+      s++;
+    }
+#endif /* KANJI */
   return(count);
 }
 
@@ -1959,15 +1889,12 @@ int read_udp_socket(int fd,char *buf,int len)
   bzero((char *)&lastip,sizeof(lastip));
   ret = recvfrom(fd,buf,len,0,&sock,&socklen);
   if (ret <= 0) {
-    DEBUG(2,("read socket failed. ERRNO=%s\n",strerror(errno)));
+    DEBUG(2,("read socket failed. ERRNO=%d\n",errno));
     return(0);
   }
 
   lastip = *(struct in_addr *) &sock.sa_data[2];
   lastport = ntohs(((struct sockaddr_in *)&sock)->sin_port);
-
-  DEBUG(10,("read_udp_socket: lastip %s lastport %d read: %d\n",
-             inet_ntoa(lastip), lastport, ret));
 
   return(ret);
 }
@@ -2281,11 +2208,10 @@ int read_smb_length(int fd,char *inbuf,int timeout)
 
 
 /****************************************************************************
-  read an smb from a fd. Note that the buffer *MUST* be of size
-  BUFFER_SIZE+SAFETY_MARGIN.
+  read an smb from a fd and return it's length
 The timeout is in milli seconds
 ****************************************************************************/
-BOOL receive_smb(int fd,char *buffer, int timeout)
+BOOL receive_smb(int fd,char *buffer,int timeout)
 {
   int len,ret;
 
@@ -2312,202 +2238,6 @@ BOOL receive_smb(int fd,char *buffer, int timeout)
   return(True);
 }
 
-/****************************************************************************
-  read a message from a udp fd.
-The timeout is in milli seconds
-****************************************************************************/
-BOOL receive_local_message(int fd, char *buffer, int buffer_len, int timeout)
-{
-  struct sockaddr_in from;
-  int fromlen = sizeof(from);
-  int32 msg_len = 0;
-
-  if(timeout != 0)
-  {
-    struct timeval to;
-    fd_set fds;
-    int selrtn;
-
-    FD_ZERO(&fds);
-    FD_SET(fd,&fds);
-
-    to.tv_sec = timeout / 1000;
-    to.tv_usec = (timeout % 1000) * 1000;
-
-    selrtn = sys_select(&fds,&to);
-
-    /* Check if error */
-    if(selrtn == -1) 
-    {
-      /* something is wrong. Maybe the socket is dead? */
-      smb_read_error = READ_ERROR;
-      return False;
-    } 
-    
-    /* Did we timeout ? */
-    if (selrtn == 0) 
-    {
-      smb_read_error = READ_TIMEOUT;
-      return False;
-    }
-  }
-
-  /*
-   * Read a loopback udp message.
-   */
-  msg_len = recvfrom(fd, &buffer[UDP_CMD_HEADER_LEN], 
-                     buffer_len - UDP_CMD_HEADER_LEN, 0,
-                     (struct sockaddr *)&from, &fromlen);
-
-  if(msg_len < 0)
-  {
-    DEBUG(0,("receive_local_message. Error in recvfrom. (%s).\n",strerror(errno)));
-    return False;
-  }
-
-  /* Validate message length. */
-  if(msg_len > (buffer_len - UDP_CMD_HEADER_LEN))
-  {
-    DEBUG(0,("receive_local_message: invalid msg_len (%d) max can be %d\n",
-              msg_len, 
-              buffer_len  - UDP_CMD_HEADER_LEN));
-    return False;
-  }
-
-  /* Validate message from address (must be localhost). */
-  if(from.sin_addr.s_addr != htonl(INADDR_LOOPBACK))
-  {
-    DEBUG(0,("receive_local_message: invalid 'from' address \
-(was %x should be 127.0.0.1\n", from.sin_addr.s_addr));
-   return False;
-  }
-
-  /* Setup the message header */
-  SIVAL(buffer,UDP_CMD_LEN_OFFSET,msg_len);
-  SSVAL(buffer,UDP_CMD_PORT_OFFSET,ntohs(from.sin_port));
-
-  return True;
-}
-
-/****************************************************************************
- structure to hold a linked list of local udp messages.
- for processing.
-****************************************************************************/
-
-typedef struct _udp_message_list {
-   struct _udp_message_list *msg_next;
-   char *msg_buf;
-   int msg_len;
-} udp_message_list;
-
-static udp_message_list *udp_msg_head = NULL;
-
-/****************************************************************************
- Function to push a linked list of local udp messages ready
- for processing.
-****************************************************************************/
-BOOL push_local_message(char *buf, int msg_len)
-{
-  udp_message_list *msg = (udp_message_list *)malloc(sizeof(udp_message_list));
-
-  if(msg == NULL)
-  {
-    DEBUG(0,("push_local_message: malloc fail (1)\n"));
-    return False;
-  }
-
-  msg->msg_buf = (char *)malloc(msg_len);
-  if(msg->msg_buf == NULL)
-  {
-    DEBUG(0,("push_local_message: malloc fail (2)\n"));
-    free((char *)msg);
-    return False;
-  }
-
-  memcpy(msg->msg_buf, buf, msg_len);
-  msg->msg_len = msg_len;
-
-  msg->msg_next = udp_msg_head;
-  udp_msg_head = msg;
-
-  return True;
-}
-
-/****************************************************************************
-  Do a select on an two fd's - with timeout. 
-
-  If a local udp message has been pushed onto the
-  queue (this can only happen during oplock break
-  processing) return this first.
-
-  If the first smbfd is ready then read an smb from it.
-  if the second (loopback UDP) fd is ready then read a message
-  from it and setup the buffer header to identify the length
-  and from address.
-  Returns False on timeout or error.
-  Else returns True.
-
-The timeout is in milli seconds
-****************************************************************************/
-BOOL receive_message_or_smb(int smbfd, int oplock_fd, 
-                           char *buffer, int buffer_len, 
-                           int timeout, BOOL *got_smb)
-{
-  fd_set fds;
-  int selrtn;
-  struct timeval to;
-
-  *got_smb = False;
-
-  /*
-   * Check to see if we already have a message on the udp queue.
-   * If so - copy and return it.
-   */
-
-  if(udp_msg_head)
-  {
-    udp_message_list *msg = udp_msg_head;
-    memcpy(buffer, msg->msg_buf, MIN(buffer_len, msg->msg_len));
-    udp_msg_head = msg->msg_next;
-
-    /* Free the message we just copied. */
-    free((char *)msg->msg_buf);
-    free((char *)msg);
-    return True;
-  }
-
-  FD_ZERO(&fds);
-  FD_SET(smbfd,&fds);
-  FD_SET(oplock_fd,&fds);
-
-  to.tv_sec = timeout / 1000;
-  to.tv_usec = (timeout % 1000) * 1000;
-
-  selrtn = sys_select(&fds,timeout>0?&to:NULL);
-
-  /* Check if error */
-  if(selrtn == -1) {
-    /* something is wrong. Maybe the socket is dead? */
-    smb_read_error = READ_ERROR;
-    return False;
-  } 
-    
-  /* Did we timeout ? */
-  if (selrtn == 0) {
-    smb_read_error = READ_TIMEOUT;
-    return False;
-  }
-
-  if (FD_ISSET(smbfd,&fds))
-  {
-    *got_smb = True;
-    return receive_smb(smbfd, buffer, 0);
-  }
-  else
-  {
-    return receive_local_message(oplock_fd, buffer, buffer_len, 0);
-  }
-}
 
 /****************************************************************************
   send an smb to a fd 
@@ -2566,27 +2296,21 @@ int name_extract(char *buf,int ofs,char *name)
   strcpy(name,"");
   if (d < -50 || d > 50) return(0);
   return(name_interpret(p,name));
-}
+}  
   
+
 /****************************************************************************
 return the total storage length of a mangled name
 ****************************************************************************/
-int name_len( char *s )
-  {
-  int len;
-
-  /* If the two high bits of the byte are set, return 2. */
-  if( 0xC0 == (*(unsigned char *)s & 0xC0) )
+int name_len(char *s)
+{
+  char *s0=s;
+  unsigned char c = *(unsigned char *)s;
+  if ((c & 0xC0) == 0xC0)
     return(2);
-
-  /* Add up the length bytes. */
-  for( len = 1; (*s); s += (*s) + 1 )
-    {
-    len += *s + 1;
-    }
-
-  return( len );
-  } /* name_len */
+  while (*s) s += (*s)+1;
+  return(PTR_DIFF(s,s0)+1);
+}
 
 /****************************************************************************
 send a single packet to a port on another machine
@@ -2622,8 +2346,8 @@ BOOL send_one_packet(char *buf,int len,struct in_addr ip,int port,int type)
   ret = (sendto(out_fd,buf,len,0,(struct sockaddr *)&sock_out,sizeof(sock_out)) >= 0);
 
   if (!ret)
-    DEBUG(0,("Packet send to %s(%d) failed ERRNO=%s\n",
-	     inet_ntoa(ip),port,strerror(errno)));
+    DEBUG(0,("Packet send to %s(%d) failed ERRNO=%d\n",
+	     inet_ntoa(ip),port,errno));
 
   close(out_fd);
   return(ret);
@@ -2875,7 +2599,7 @@ BOOL mask_match(char *str, char *regexp, int case_sig,BOOL trans2)
 
   if (strequal(p1,"*")) return(True);
 
-  DEBUG(8,("mask_match str=<%s> regexp=<%s>, case_sig = %d\n", p2, p1, case_sig));
+  DEBUG(5,("mask_match str=<%s> regexp=<%s>, case_sig = %d\n", p2, p1, case_sig));
 
   if (trans2) {
     fstrcpy(ebase,p1);
@@ -2903,7 +2627,7 @@ BOOL mask_match(char *str, char *regexp, int case_sig,BOOL trans2)
   matched = do_match(sbase,ebase,case_sig) && 
     (trans2 || do_match(sext,eext,case_sig));
 
-  DEBUG(8,("mask_match returning %d\n", matched));
+  DEBUG(5,("mask_match returning %d\n", matched));
 
   return matched;
 }
@@ -3277,8 +3001,8 @@ int open_socket_in(int type, int port, int dlevel,uint32 socket_addr)
     { 
       if (port) {
 	if (port == SMB_PORT || port == NMB_PORT)
-	  DEBUG(dlevel,("bind failed on port %d socket_addr=%s (%s)\n",
-			port,inet_ntoa(sock.sin_addr),strerror(errno))); 
+	  DEBUG(dlevel,("bind failed on port %d socket_addr=%x (%s)\n",
+			port,socket_addr,strerror(errno))); 
 	close(res); 
 
 	if (dlevel > 0 && port < 1000)
@@ -3311,8 +3035,26 @@ int open_socket_out(int type, struct in_addr *addr, int port ,int timeout)
   if (res == -1) 
     { DEBUG(0,("socket error\n")); return -1; }
 
-  if (type != SOCK_STREAM) return(res);
+#ifdef BIND_LOCAL_OUTPUT_SOCKET
+  {
+  struct sockaddr_in sock_in;
+  /* Bind the local part of this socket to the address
+     given in the socket address parameter. */
+
+  bzero((char *)&sock_in,sizeof(sock_in));
+  putip((char *)&sock_in.sin_addr,(char *)interpret_addr2(lp_socket_address()));
   
+  sock_in.sin_port = 0;
+  sock_in.sin_family = PF_INET;
+
+  if (bind(res, (struct sockaddr * ) &sock_in,sizeof(sock_in)) < 0)
+    DEBUG(0,("Failed to bind local socket address for output socket. Error was %s\n",
+          strerror(errno)));
+  }
+#endif /* BIND_LOCAL_OUTPUT_SOCKET */
+
+  if (type != SOCK_STREAM) return(res);
+ 
   bzero((char *)&sock_out,sizeof(sock_out));
   putip((char *)&sock_out.sin_addr,(char *)addr);
   
@@ -3541,10 +3283,6 @@ char *client_name(void)
 
   strcpy(name_buf,"UNKNOWN");
 
-  if (Client == -1) {
-	  return name_buf;
-  }
-
   if (getpeername(Client, &sa, &length) < 0) {
     DEBUG(0,("getpeername failed\n"));
     return name_buf;
@@ -3583,10 +3321,6 @@ char *client_addr(void)
 
   strcpy(addr_buf,"0.0.0.0");
 
-  if (Client == -1) {
-	  return addr_buf;
-  }
-
   if (getpeername(Client, &sa, &length) < 0) {
     DEBUG(0,("getpeername failed\n"));
     return addr_buf;
@@ -3598,105 +3332,44 @@ char *client_addr(void)
   return addr_buf;
 }
 
-char *automount_server(char *user_name)
-{
-	static pstring server_name;
-
-#if (defined(NETGROUP) && defined (AUTOMOUNT))
-	int nis_error;        /* returned by yp all functions */
-	char *nis_result;     /* yp_match inits this */
-	int nis_result_len;  /* and set this */
-	char *nis_domain;     /* yp_get_default_domain inits this */
-	char *nis_map = (char *)lp_nis_home_map_name();
-	int home_server_len;
-
-	/* set to default of local machine */
-	pstrcpy(server_name, local_machine);
-
-	if ((nis_error = yp_get_default_domain(&nis_domain)) != 0)
-	{
-		DEBUG(3, ("YP Error: %s\n", yperr_string(nis_error)));
-	}
-
-	DEBUG(5, ("NIS Domain: %s\n", nis_domain));
-
-	if ((nis_error = yp_match(nis_domain, nis_map,
-			user_name, strlen(user_name),
-			&nis_result, &nis_result_len)) != 0)
-	{
-		DEBUG(3, ("YP Error: %s\n", yperr_string(nis_error)));
-	}
-
-	if (!nis_error && lp_nis_home_map())
-	{
-		home_server_len = strcspn(nis_result,":");
-		DEBUG(5, ("NIS lookup succeeded.  Home server length: %d\n",home_server_len));
-		if (home_server_len > sizeof(pstring))
-		{
-			home_server_len = sizeof(pstring);
-		}
-		strncpy(server_name, nis_result, home_server_len);
-	}
-#else
-	/* use the local machine name instead of the auto-map server */
-	pstrcpy(server_name, local_machine);
-#endif
-
-	DEBUG(4,("Home server: %s\n", server_name));
-
-	return server_name;
-}
-
 /*******************************************************************
 sub strings with useful parameters
 Rewritten by Stefaan A Eeckels <Stefaan.Eeckels@ecc.lu> and
 Paul Rippin <pr3245@nopc.eurostat.cec.be>
 ********************************************************************/
 void standard_sub_basic(char *str)
-{
-	char *s, *p;
-	char pidstr[10];
-	struct passwd *pass;
-	char *username = sam_logon_in_ssb ? samlogon_user : sesssetup_user;
+  {
+  char *s, *p;
+    char pidstr[10];
+  struct passwd *pass;
 
-	for (s = str ; (p = strchr(s,'%')) != NULL ; s = p )
-	{
-		switch (*(p+1))
-		{
-			case 'G' :
-			{
-				if ((pass = Get_Pwnam(sesssetup_user,False))!=NULL)
-				{
-					string_sub(p,"%G",gidtoname(pass->pw_gid));
-				}
-				else
-				{
-					p += 2;
-				}
-				break;
-			}
-			case 'N' : string_sub(p,"%N", automount_server(username)); break;
-			case 'I' : string_sub(p,"%I", client_addr()); break;
-			case 'L' : string_sub(p,"%L", local_machine); break;
-			case 'M' : string_sub(p,"%M", client_name()); break;
-			case 'R' : string_sub(p,"%R", remote_proto); break;
-			case 'T' : string_sub(p,"%T", timestring()); break;
-			case 'U' : string_sub(p,"%U", username); break;
-			case 'a' : string_sub(p,"%a", remote_arch); break;
-			case 'd' :
-			{
-				sprintf(pidstr,"%d",(int)getpid());
-				string_sub(p,"%d", pidstr);
-				break;
-			}
-			case 'h' : string_sub(p,"%h", myhostname); break;
-			case 'm' : string_sub(p,"%m", remote_machine); break;
-			case 'v' : string_sub(p,"%v", VERSION); break;
-			case '\0': p++; break; /* don't run off end if last character is % */
-			default  : p+=2; break;
-		}
-	}
-	return;
+  for (s = str ; (p = strchr(s,'%')) != NULL ; s = p )
+  {
+    switch (*(p+1))
+  {
+      case 'G' : if ((pass = Get_Pwnam(sesssetup_user,False))!=NULL)
+                   string_sub(p,"%G",gidtoname(pass->pw_gid));
+                 else
+                   p += 2;
+                 break;
+      case 'I' : string_sub(p,"%I",client_addr()); break;
+      case 'L' : string_sub(p,"%L",local_machine); break;
+      case 'M' : string_sub(p,"%M",client_name()); break;
+      case 'R' : string_sub(p,"%R",remote_proto); break;
+      case 'T' : string_sub(p,"%T",timestring()); break;
+      case 'U' : string_sub(p,"%U",sesssetup_user); break;
+      case 'a' : string_sub(p,"%a",remote_arch); break;
+      case 'd' : sprintf(pidstr,"%d",(int)getpid());
+                 string_sub(p,"%d",pidstr);
+                 break;
+      case 'h' : string_sub(p,"%h",myhostname); break;
+      case 'm' : string_sub(p,"%m",remote_machine); break;
+      case 'v' : string_sub(p,"%v",VERSION); break;
+      case '\0' : p++; break; /* don't run off end if last character is % */
+      default  : p+=2; break;
+    }
+  }
+  return;
 }
 
 /*******************************************************************
@@ -3787,7 +3460,29 @@ check if a process exists. Does this work on all unixes?
 ****************************************************************************/
 BOOL process_exists(int pid)
 {
-	return(kill(pid,0) == 0 || errno != ESRCH);
+#ifdef LINUX
+  fstring s;
+  sprintf(s,"/proc/%d",pid);
+  return(directory_exist(s,NULL));
+#else
+  {
+    static BOOL tested=False;
+    static BOOL ok=False;
+    fstring s;
+    if (!tested) {
+      tested = True;
+      sprintf(s,"/proc/%05d",(int)getpid());
+      ok = file_exist(s,NULL);
+    }
+    if (ok) {
+      sprintf(s,"/proc/%05d",pid);
+      return(file_exist(s,NULL));
+    }
+  }
+
+  /* CGH 8/16/96 - added ESRCH test */
+  return(pid == getpid() || kill(pid,0) == 0 || errno != ESRCH);
+#endif
 }
 
 
@@ -3841,7 +3536,7 @@ my own panic function - not suitable for general use
 ********************************************************************/
 void ajt_panic(void)
 {
-  system("/usr/bin/X11/xedit -display solen:0 /tmp/ERROR_FAULT");
+  system("/usr/bin/X11/xedit -display ljus:0 /tmp/ERROR_FAULT");
 }
 #endif
 
@@ -3896,24 +3591,24 @@ char *readdirname(void *p)
   return(dname);
 }
 
-/*******************************************************************
- Utility function used to decide if the last component 
- of a path matches a (possibly wildcarded) entry in a namelist.
-********************************************************************/
+/*
+ * Utility function used to decide if the last component 
+ * of a path matches a (possibly wildcarded) entry in a namelist.
+ */
 
 BOOL is_in_path(char *name, name_compare_entry *namelist)
 {
   pstring last_component;
   char *p;
 
-  DEBUG(8, ("is_in_path: %s\n", name));
+  DEBUG(5, ("is_in_path: %s\n", name));
 
   /* if we have no list it's obviously not in the path */
   if((namelist == NULL ) || ((namelist != NULL) && (namelist[0].name == NULL))) 
-  {
-    DEBUG(8,("is_in_path: no name list.\n"));
+        {
+    DEBUG(5,("is_in_path: no name list.\n"));
     return False;
-  }
+}
 
   /* Get the last component of the unix name. */
   p = strrchr(name, '/');
@@ -3927,7 +3622,7 @@ BOOL is_in_path(char *name, name_compare_entry *namelist)
       /* look for a wildcard match. */
       if (mask_match(last_component, namelist->name, case_sensitive, False))
       {
-         DEBUG(8,("is_in_path: mask match succeeded\n"));
+         DEBUG(5,("is_in_path: mask match succeeded\n"));
          return True;
       }
     }
@@ -3936,29 +3631,29 @@ BOOL is_in_path(char *name, name_compare_entry *namelist)
       if((case_sensitive && (strcmp(last_component, namelist->name) == 0))||
        (!case_sensitive && (StrCaseCmp(last_component, namelist->name) == 0)))
         {
-         DEBUG(8,("is_in_path: match succeeded\n"));
+         DEBUG(5,("is_in_path: match succeeded\n"));
          return True;
         }
     }
   }
-  DEBUG(8,("is_in_path: match not found\n"));
+  DEBUG(5,("is_in_path: match not found\n"));
  
   return False;
 }
 
-/*******************************************************************
- Strip a '/' separated list into an array of 
- name_compare_enties structures suitable for 
- passing to is_in_path(). We do this for
- speed so we can pre-parse all the names in the list 
- and don't do it for each call to is_in_path().
- namelist is modified here and is assumed to be 
- a copy owned by the caller.
- We also check if the entry contains a wildcard to
- remove a potentially expensive call to mask_match
- if possible.
-********************************************************************/
- 
+/*
+ * Strip a '/' separated list into an array of 
+ * name_compare_enties structures suitable for 
+ * passing to is_in_path(). We do this for
+ * speed so we can pre-parse all the names in the list 
+ * and don't do it for each call to is_in_path().
+ * namelist is modified here and is assumed to be 
+ * a copy owned by the caller.
+ * We also check if the entry contains a wildcard to
+ * remove a potentially expensive call to mask_match
+ * if possible.
+   */
+
 void set_namearray(name_compare_entry **ppname_array, char *namelist)
 {
   char *name_end;
@@ -4099,7 +3794,7 @@ BOOL fcntl_lock(int fd,int op,uint32 offset,uint32 count,int type)
 #endif
 
 
-  DEBUG(8,("fcntl_lock %d %d %d %d %d\n",fd,op,(int)offset,(int)count,type));
+  DEBUG(5,("fcntl_lock %d %d %d %d %d\n",fd,op,(int)offset,(int)count,type));
 
   lock.l_type = type;
   lock.l_whence = SEEK_SET;
@@ -4147,7 +3842,7 @@ BOOL fcntl_lock(int fd,int op,uint32 offset,uint32 count,int type)
     }
 
   /* everything went OK */
-  DEBUG(8,("Lock call successful\n"));
+  DEBUG(5,("Lock call successful\n"));
 
   return(True);
 #else
@@ -4193,7 +3888,7 @@ void file_unlock(int fd)
 is the name specified one of my netbios names
 returns true is it is equal, false otherwise
 ********************************************************************/
-BOOL is_myname(char *s)
+BOOL is_myname(const char *s)
 {
   int n;
   BOOL ret = False;
@@ -4246,304 +3941,51 @@ enum remote_arch_types get_remote_arch()
 
 
 /*******************************************************************
-skip past some unicode strings in a buffer
-********************************************************************/
-char *skip_unicode_string(char *buf,int n)
-{
-  while (n--)
-  {
-    while (*buf)
-      buf += 2;
-    buf += 2;
-  }
-  return(buf);
-}
-
-/*******************************************************************
-Return a ascii version of a unicode string
-Hack alert: uses fixed buffer(s) and only handles ascii strings
-********************************************************************/
-#define MAXUNI 1024
-char *unistrn2(uint16 *buf, int len)
-{
-	static char lbufs[8][MAXUNI];
-	static int nexti;
-	char *lbuf = lbufs[nexti];
-	char *p;
-
-	nexti = (nexti+1)%8;
-
-	DEBUG(10, ("unistrn2: "));
-
-	for (p = lbuf; *buf && p-lbuf < MAXUNI-2 && len > 0; len--, p++, buf++)
-	{
-		DEBUG(10, ("%4x ", *buf));
-		*p = *buf;
-	}
-
-	DEBUG(10,("\n"));
-
-	*p = 0;
-	return lbuf;
-}
-
-/*******************************************************************
-Return a ascii version of a unicode string
-Hack alert: uses fixed buffer(s) and only handles ascii strings
-********************************************************************/
-#define MAXUNI 1024
-char *unistr2(uint16 *buf)
-{
-	static char lbufs[8][MAXUNI];
-	static int nexti;
-	char *lbuf = lbufs[nexti];
-	char *p;
-
-	nexti = (nexti+1)%8;
-
-	DEBUG(10, ("unistr2: "));
-
-	for (p = lbuf; *buf && p-lbuf < MAXUNI-2; p++, buf++)
-	{
-		DEBUG(10, ("%4x ", *buf));
-		*p = *buf;
-	}
-
-	DEBUG(10,("\n"));
-
-	*p = 0;
-	return lbuf;
-}
-
-/*******************************************************************
-create a null-terminated unicode string from a null-terminated ascii string.
-return number of unicode chars copied, excluding the null character.
-
-only handles ascii strings
-********************************************************************/
-#define MAXUNI 1024
-int struni2(uint16 *p, char *buf)
-{
-	int len = 0;
-
-	if (p == NULL) return 0;
-
-	DEBUG(10, ("struni2: "));
-
-	if (buf != NULL)
-	{
-		for (; *buf && len < MAXUNI-2; len++, p++, buf++)
-		{
-			DEBUG(10, ("%2x ", *buf));
-			*p = *buf;
-		}
-
-		DEBUG(10,("\n"));
-	}
-
-	*p = 0;
-
-	return len;
-}
-
-/*******************************************************************
-Return a ascii version of a unicode string
-Hack alert: uses fixed buffer(s) and only handles ascii strings
-********************************************************************/
-#define MAXUNI 1024
-char *unistr(char *buf)
-{
-	static char lbufs[8][MAXUNI];
-	static int nexti;
-	char *lbuf = lbufs[nexti];
-	char *p;
-
-	nexti = (nexti+1)%8;
-
-	for (p = lbuf; *buf && p-lbuf < MAXUNI-2; p++, buf += 2)
-	{
-		*p = *buf;
-	}
-	*p = 0;
-	return lbuf;
-}
-
-/*******************************************************************
-strncpy for unicode strings
-********************************************************************/
-int unistrncpy(char *dst, char *src, int len)
-{
-	int num_wchars = 0;
-
-	while (*src && len > 0)
-	{
-		*dst++ = *src++;
-		*dst++ = *src++;
-		len--;
-		num_wchars++;
-	}
-	*dst++ = 0;
-	*dst++ = 0;
-
-	return num_wchars;
-}
-
-
-/*******************************************************************
-strcpy for unicode strings.  returns length (in num of wide chars)
-********************************************************************/
-int unistrcpy(char *dst, char *src)
-{
-	int num_wchars = 0;
-
-	while (*src)
-	{
-		*dst++ = *src++;
-		*dst++ = *src++;
-		num_wchars++;
-	}
-	*dst++ = 0;
-	*dst++ = 0;
-
-	return num_wchars;
-}
-
-
-/*******************************************************************
 safe string copy into a fstring
 ********************************************************************/
 void fstrcpy(char *dest, char *src)
 {
-    int maxlength = sizeof(fstring) - 1;
-    if (!dest) {
-        DEBUG(0,("ERROR: NULL dest in fstrcpy\n"));
-        return;
-    }
+	int maxlength = sizeof(fstring) - 1;
+	if (!dest) {
+		DEBUG(0,("ERROR: NULL dest in fstrcpy\n"));
+		return;
+	}
 
-    if (!src) {
-        *dest = 0;
-        return;
-    }  
-      
-    while (maxlength-- && *src)
-        *dest++ = *src++;
-    *dest = 0;
-    if (*src) {
-        DEBUG(0,("ERROR: string overflow by %d in fstrcpy\n",
-             strlen(src)));
-    }    
-}   
+	if (!src) {
+		*dest = 0;
+		return;
+	}
+
+	while (maxlength-- && *src)
+		*dest++ = *src++;
+	*dest = 0;
+	if (*src) {
+		DEBUG(0,("ERROR: string overflow by %d in fstrcpy\n",
+			 strlen(src)));
+	}
+}
 
 /*******************************************************************
 safe string copy into a pstring
 ********************************************************************/
 void pstrcpy(char *dest, char *src)
 {
-    int maxlength = sizeof(pstring) - 1;
-    if (!dest) {
-        DEBUG(0,("ERROR: NULL dest in pstrcpy\n"));
-        return;
-    }
-   
-    if (!src) {
-        *dest = 0;
-        return;
-    }
-   
-    while (maxlength-- && *src)
-        *dest++ = *src++;
-    *dest = 0;
-    if (*src) {
-        DEBUG(0,("ERROR: string overflow by %d in pstrcpy\n",
-             strlen(src)));
-    }
-}  
-
-
-/*******************************************************************
-align a pointer to a multiple of 4 bytes
-********************************************************************/
-char *align4(char *q, char *base)
-{
-	if ((q - base) & 3)
-	{
-		q += 4 - ((q - base) & 3);
+	int maxlength = sizeof(pstring) - 1; 
+	if (!dest) {
+		DEBUG(0,("ERROR: NULL dest in pstrcpy\n"));
+		return;
 	}
-	return q;
-}
 
-/*******************************************************************
-align a pointer to a multiple of 2 bytes
-********************************************************************/
-char *align2(char *q, char *base)
-{
-	if ((q - base) & 1)
-	{
-		q++;
+	if (!src) {
+		*dest = 0;
+		return;
 	}
-	return q;
-}
 
-/*******************************************************************
-align a pointer to a multiple of align_offset bytes.  looks like it
-will work for offsets of 0, 2 and 4...
-********************************************************************/
-char *align_offset(char *q, char *base, int align_offset_len)
-{
-	int mod = ((q - base) & (align_offset_len-1));
-	if (align_offset_len != 0 && mod != 0)
-	{
-		q += align_offset_len - mod;
+	while (maxlength-- && *src)
+		*dest++ = *src++;
+	*dest = 0;
+	if (*src) {
+		DEBUG(0,("ERROR: string overflow by %d in pstrcpy\n",
+			 strlen(src)));
 	}
-	return q;
 }
-
-void print_asc(int level, unsigned char *buf,int len)
-{
-	int i;
-	for (i=0;i<len;i++)
-		DEBUG(level,("%c", isprint(buf[i])?buf[i]:'.'));
-}
-
-void dump_data(int level,char *buf1,int len)
-{
-  unsigned char *buf = (unsigned char *)buf1;
-  int i=0;
-  if (len<=0) return;
-
-  DEBUG(level,("[%03X] ",i));
-  for (i=0;i<len;) {
-    DEBUG(level,("%02X ",(int)buf[i]));
-    i++;
-    if (i%8 == 0) DEBUG(level,(" "));
-    if (i%16 == 0) {      
-      print_asc(level,&buf[i-16],8); DEBUG(level,(" "));
-      print_asc(level,&buf[i-8],8); DEBUG(level,("\n"));
-      if (i<len) DEBUG(level,("[%03X] ",i));
-    }
-  }
-  if (i%16) {
-    int n;
-
-    n = 16 - (i%16);
-    DEBUG(level,(" "));
-    if (n>8) DEBUG(level,(" "));
-    while (n--) DEBUG(level,("   "));
-
-    n = MIN(8,i%16);
-    print_asc(level,&buf[i-(i%16)],n); DEBUG(level,(" "));
-    n = (i%16) - n;
-    if (n>0) print_asc(level,&buf[i-n],n); 
-    DEBUG(level,("\n"));    
-  }
-}
-
-char *tab_depth(int depth)
-{
-	static pstring spaces;
-	memset(spaces, ' ', depth * 4);
-	spaces[depth * 4] = 0;
-	return spaces;
-}
-
-

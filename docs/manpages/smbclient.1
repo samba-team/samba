@@ -1,4 +1,4 @@
-.TH SMBCLIENT 1 "16 Dec 1997" "smbclient 1.9.18alpha13"
+.TH SMBCLIENT 1 "20 Dec 1997" "smbclient 1.9.17p5"
 .SH NAME
 smbclient \- ftp-like Lan Manager client program
 .SH SYNOPSIS
@@ -256,13 +256,6 @@ If no
 .I username
 is supplied and neither environment variable exists the user name will
 be empty.
-
-If the USER environment variable containts a '%' character, everything
-after that will be treated as a password. This allows you to set the
-environment variable to be
-.B USER=username%password
-so that a password is not passed on the command line (where it may
-be seen by the ps command).
 
 If the service you are connecting to requires a password, it can be supplied
 using the

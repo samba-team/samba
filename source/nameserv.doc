@@ -1,0 +1,159 @@
+/* 
+   Unix SMB/Netbios documentation.
+   Version 0.0
+   Copyright (C) Luke Leighton  Andrew Tridgell  1996
+   
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+   
+   Document name: nameserv.doc
+
+   Revision History:
+
+   0.0 - 02jul96 : lkcl@pires.co.uk
+   created
+*/
+
+this module deals with general maintenance of NetBIOS names.
+
+/*************************************************************************
+  query_refresh_names()
+  *************************************************************************/
+
+this function is responsible for polling all names registered in the
+WINS database. it is planned to enable this function should samba
+detect an inconsistency on the network, which could occur if the
+samba NetBIOS daemon dies and is restarted.
+
+polling is done very infrequently, but all names will be covered
+within a period NAME_POLL_REFRESH_TIME. a group of at most ten names
+will be queried at once, at intervals of NAME_POLL_INTERVAL seconds.
+if the total number of names queried in this way will take too long,
+then the time that an individual name will next be polled is
+increased accordingly.
+
+name query polling is functionality over-and-above the normal
+requirement (see rfc1001.txt 15.1.7 point 7). it is normally the
+responsibility of the owner of a name to re-register the name at
+regular intervals.
+
+
+/*************************************************************************
+  refresh_my_names()
+  *************************************************************************/
+
+this function is responsible for refreshing samba's names that have
+been registered with other servers on a local subnet, or with another
+WINS server if samba is using one.
+
+samba's names' refresh_time will be updated through the use of the function
+add_my_name_entry().
+
+
+/*************************************************************************
+  remove_my_names()
+  *************************************************************************/
+
+this function is responsible for removing all samba's SELF names. it
+is used when samba receives a SIG_TERM. samba at present does not wait
+for the WINS server to reply to the name releases sent out.
+
+
+/*************************************************************************
+  add_my_names()
+  *************************************************************************/
+
+this function is responsible for adding and registering if necessary all
+samba's SELF names, on each of its local subnets and with another WINS
+server if samba is using one.
+
+/*************************************************************************
+  add_my_name_entry()
+  *************************************************************************/
+
+this function is responsible for registering or re-registering one of
+samba's names, either on the local subnet or with another WINS server
+if samba is using one.
+
+if the name is already in samba's database, then it is re-registered,
+otherwise it is simply registered.
+
+if the name is being registered in a WINS capacity (the subnet to which
+the name should be added is the WINS pseudo-subnet) then we add the entry
+immediately if samba is a WINS server. it uses name_register_work()
+because if the name is being added as part of becoming a master browser,
+we want to carry on that process. if the name is registered with another
+WINS server, we must wait for an answer from that WINS server. either
+name_register_work() or name_unregister_work() will be called as a result.
+
+if the name is being registered on a local subnet, then it is
+broadcast. an explicit rejection from another host will result
+in name_unregister_work() being called. no response will, after
+retrying, result in name_register_work() being called.
+
+what ever method is used, the name will either be registered
+or rejected, and what ever process was taking place (becoming
+a master browser for example) will carry on.
+
+expire_netbios_response_entries() is responsible for taking further
+action if no response to the registration is received. 
+
+note that there may be a large number of function calls on the
+stack if become_master() is called and samba is configured as
+a WINS server. the loop will be:
+
+become_master(), add_my_name_entry(), name_register_work() and
+back to become_master() with the new value of the workgroup
+'state'.
+
+
+/*************************************************************************
+  remove_name_entry()
+  *************************************************************************/
+
+this function is responsible for removing a NetBIOS name. if the name
+being removed is registered on a local subnet, a name release should be
+broadcast on the local subnet.
+
+if the name is being released in a WINS capacity (the subnet to
+which the name should be added is the WINS pseudo-subnet) then we
+remove the entry immediately if samba is a WINS server. it uses
+name_unregister_work() because if the name is being added as part of
+becoming a master browser, we want to terminate that process. if the
+name is released from another WINS server, we must wait for an
+answer from that WINS server. name_unregister_work() will 
+definitely be called as a result, because at present we ignore
+negative responses for a name release from a WINS server.
+
+if the name is being releasedd on a local subnet, then it is
+broadcast. name_unregister_work() will definitely be called
+because we ignore negative name releases at present.
+
+what ever method is used, the name will be released. (NOT TRUE!
+see response_name_release())
+
+expire_netbios_response_entries() is responsible for taking further action
+if no response to the name release is received.
+
+
+/*************************************************************************
+  load_netbios_names()
+  *************************************************************************/
+
+this function is responsible for loading any NetBIOS names that samba,
+in its WINS capacity, has written out to disk. all the relevant details
+are recorded in this file, including the time-to-live. should the 
+time left to live be small, the name is not added back in to samba's
+WINS database.
+

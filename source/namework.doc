@@ -1,0 +1,363 @@
+/* 
+   Unix SMB/Netbios documentation.
+   Version 0.1
+   Copyright (C) Luke Leighton  Andrew Tridgell  1996
+   
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+   
+   Document name: namework.doc
+
+   Revision History:
+
+   0.0 - 02jul96 : lkcl@pires.co.uk
+   created
+
+   0.1 - 22jul96 Andrew.Tridgell@anu.edu.au
+   tridge's comments on first revision
+*/
+
+the module namework.c deals with NetBIOS datagram packets, primarily.
+it deals with nmbd's workgroup browser side and the domain log in
+side. none of the functionality here has specification documents available.
+empirical observation of packet traces has been the order of the day,
+along with some guess-work.
+
+beware!
+
+the receipt of datagram packets for workgroup browsing are dealt with here.
+some of the functions listed here will call others outside of this
+module, or will activate functionality dealt with by other modules
+(namedb, nameannounce, nameelect, namelogon, and namebrowse).
+
+
+/*************************************************************************
+  process_browse_packet()
+  *************************************************************************/
+
+this function is responsible for further identifying which type of
+browser datagram packet has been received, and dealing with it
+accordingly. if the packet is not dealt with, then an error is
+logged along with the type of packet that has been received.
+
+if listening_type() was in use, then it would be used here.
+
+the types of packets received and dealt with are:
+
+- ANN_HostAnnouncement         
+- ANN_DomainAnnouncement      
+- ANN_LocalMasterAnnouncement 
+
+these are all identical in format and can all be processed by
+process_announce(). an announcement is received from a host
+(either a master browser telling us about itself, a server
+telling us about itself or a master browser telling us about
+a domain / workgroup)
+
+- ANN_AnnouncementRequest      
+
+these are sent by master browsers or by servers. it is a
+request to announce ourselves as appropriate by sending
+either a ANN_HostAnnouncement datagram or both an
+ANN_DomainAnnouncement and an ANN_LocalMasterAnnouncement
+if we are a master browser (but not both).
+
+- ANN_Election                 
+
+this is an election datagram. if samba has been configured
+as a domain master then it will also send out election
+datagrams. 
+
+- ANN_GetBackupListReq         
+
+this is a request from another server for us to send a
+backup list of all servers that we know about. we respond
+by sending a datagram ANN_GetBackupListResp. the protocol
+here is a little dicey.
+
+- ANN_GetBackupListResp       
+
+this is a response from another server that we have sent an
+ANN_GetBackupListReq to. the protocol is a little dicey.
+
+- ANN_BecomeBackup            
+
+this is a message sent by a master browser to a
+potential master browser, indicating that it should become
+a backup master browser for the workgroup it is a member
+of. samba does not respond at present to such datagrams,
+and it also sends out such datagrams for the wrong reasons
+(this code has now been disabled until this is fixed).
+
+- ANN_ResetBrowserState       
+
+this datagram is sent for trouble-shooting purposes.
+it asks a browser to clear out its server lists, or to
+stop becoming a master browser altogether. NT/AS and
+samba do not implement this latter option.
+
+- ANN_MasterAnnouncement      
+
+this datagram is sent by a master browser to a domain master
+browser. it is a way to ensure that master browsers are kept in sync
+with a domain master browser across a wide area network. on
+receipt of an ANN_MasterAnnouncement we should sync browse lists with
+the sender.
+
+(i never got the hang of this one when i was experimenting.
+i forget exactly what it's for, and i never fully worked
+out how to coax a server to send it. :-)
+
+NOTE FROM TRIDGE: The reason you didn't work out how to coax a server
+into sending it is that you can't (or shouldn't try!). Basically these
+"master announce" datagrams are the way that separate netbios subnets
+are linked together to form a complete browse net. The way it works is
+that the local master decides it is going to inform the domain master
+of its presence, then sends this master announce to the domain
+master. The domain master then syncs with the local master using a
+"local only" sync. The whole transaction is initiated by the local
+master, not the domain master, so the domain master should not do any
+of this if it does not first receive a "master announcement". The
+local domain masters need to be configured to know the IP address of
+the domain master.
+
+
+/*************************************************************************
+  listening_type()
+  *************************************************************************/
+
+
+a datagram packet is sent from one NetBIOS name of a specific type
+to another NetBIOS name of a specific type. certain types of
+datagrams are only expected from certain types of NetBIOS names.
+
+this function is intended to catch errors in the type of datagrams
+received from different NetBIOS names. it is currently incomplete
+due to lack of information on the types of names and the datagrams
+they send.
+
+
+/*************************************************************************
+  process_announce_request()
+  *************************************************************************/
+
+this function is responsible for dealing with announcement requests.
+if the type of name that the request is sent to matches our current
+status, then we should respond. otherwise, the datagram should be
+ignored.
+
+samba only responds on its local subnets.
+
+at present, just the name is checked to see if the packet is for us.
+what should be done is that if we own the name (e.g WORGROUP(0x1d)
+or WORKGROUP(0x1b) then we should respond, otherwise, ignore the
+datagram.
+
+if the name is for us, and we are a member of that workgroup, then
+samba should respond.
+ 
+note that samba does not respond immediately. this is to ensure that
+if the master browser for the workgroup that samba is a member of
+sends out a broadcast request announcement, that that master browser
+is not swamped with replies. it is therefore up to samba to reply
+at some random interval. hence, a flag is set indicating the need
+to announce later.
+
+
+/*************************************************************************
+  process_reset_browser()
+  *************************************************************************/
+
+this function is responsible for dealing with reset state datagrams.
+there are three kinds of diagnostic reset requests:
+
+- stop being a master browser
+- discard browse lists, stop being a master browser, and run for re-election
+- stop being a master browser forever.
+
+samba and windows nt do not implement the latter option.
+
+there appears to be a discrepancy between this description and the
+code actually implemented.
+
+
+/*************************************************************************
+  process_send_backup_list()
+  *************************************************************************/
+
+this function is part of samba's domain master browser functionality.
+
+it is responsible for giving master browsers a list of other browsers
+that maintain backup lists of servers for that master browser's workgroup.
+
+it is also responsible for giving master browsers a list of domain master
+browsers for that local master browser's domain.
+
+a correct way to think of this function is that it is a 'request to
+send out a backup list for the requested workgroup or domain'.
+
+i have some suspicions and intuitions about this function and how it
+is to actually be used. there is no documentation on this, so it is a
+matter of experimenting until it's right.
+
+
+/*************************************************************************
+  send_backup_list()
+  *************************************************************************/
+
+this function is responsible for compiling a list of either master
+browsers and backup master browsers or domain master browsers and
+backup domain master browsers. samba constructs this list from its 
+workgroup / server database.
+
+the list is then sent to the host that requested it by sending an
+ANN_GetBackupListResp datagram to this host.
+
+
+NOTE FROM TRIDGE: The "backup list" stuff is only relevant to 
+local subnets. It has nothing to do with PDCs or domain masters. Its
+function is twofold:
+
+1) spread the browsing load over multiple servers so one server
+doesn't get overloaded with browse requests
+2) make sure the database doesn't get lost completely if the master
+goes down
+
+To accomplish this a few things are supposed to be done:
+
+- the master browser maintains a list of "backup browsers".  
+
+- backup browsers are are machines that are just like ordinary servers
+but also maintain a browse list and respond to "NetServerEnum"
+requests
+
+- when a server initially announces itself to the master it may set
+its "maintain browse list" flag to auto. 
+
+- when a master browser sees a server announcement with "auto" set it
+may send a "become backup" to that server telling it to become a
+backup.
+
+- the master has a simple algorithm to determine how many backups it wants
+given the number of hosts on the net
+
+- when a client wishes to get a browse list it asks the master for a
+backup list. The master sends it the current list of backup browsers,
+including itself. The client caches this list. The client then sends
+the NetServerEnum to a random member of this list easch time it wants
+to browse. This spreads the load.
+
+
+
+/*************************************************************************
+  process_rcv_backup_list()
+  *************************************************************************/
+
+this function is implemented with a slightly over-kill algorithm.
+the correct functionality is to pick any three names at random from
+the list that is received from this datagram, and then at intervals
+contact _one_ of them for a list of browser, in order to update
+samba's browse list.
+
+samba contacts every single one of the backup browsers listed, through
+the use of a NAME_QUERY_SRV_CHK 'state'.
+
+
+/*************************************************************************
+  process_master_announce()
+  *************************************************************************/
+
+this function is responsible for synchronising browse lists with a
+master browser that contacts samba in its capacity as a domain master
+browser.
+
+the function add_browser_entry() is used to add the server that
+contacts us to our list of browser to sync browse lists with at
+some point in the near future.
+
+
+/*************************************************************************
+  process_announce()
+  *************************************************************************/
+
+this function is responsible for dealing with the three types of
+announcement type datagrams that samba recognises. some appropriate
+type-checking is done on the name that the datagram is sent to.
+
+samba does not at present deal with LanManager announcements.
+
+these announcements are for updating the browse entry records.
+each browse entry has a time-to-live associated with it. each server
+must refresh its entry with all other servers by broadcasting
+Announcements. if it does not do so, then other servers will not
+know about that machine, and the records on each server of that
+other machine will die.
+
+if an ANN_DomainAnnouncement is received, then this will be from
+a master browser. only one machine on any given broadcast area (e.g
+a subnet) should be broadcasting such announcements. the information
+it contains tells other servers that there is a master browser for
+this workgroup. if another server thinks that it is also a master
+browser for the same workgroup, then it should stop being a master
+browser and force an election.
+
+if an ANN_LocalMasterAnnouncement is received, then a master browser
+is telling us that it exists. i am uncertain that anything else
+actually needs to be done with this, other than to shout 'hooray' and
+'thank you for informing me of this fact'.
+
+
+/*************************************************************************
+  listening_name()
+  *************************************************************************/
+
+this function is an over-simplified way of identifying whether we
+should be responding to a datagram that has been received.
+
+
+/*************************************************************************
+  same_context()
+  *************************************************************************/
+
+this function helps us to identify whether we should be responding to
+a datagram that has been received.
+
+
+/*************************************************************************
+  tell_become_backup()
+  *************************************************************************/
+
+this function is part of samba's domain master browser capabilities.
+it is responsible for finding appropriate servers to tell to become a
+backup master browser for the domain that samba controls.
+
+other servers that contact samba asking for a list of backup browsers
+will then be given that server's name, and that server can expect to
+receive NetServerEnum requests for lists of servers and workgroups.
+
+this function must be updated before it is in a fit state to be used.
+it must properly check whether a server is prepared to become a backup
+browser before actually asking it to be one.
+
+
+/*************************************************************************
+  reset_server()
+  *************************************************************************/
+
+this function is responsible for issuing an ANN_ResetBrowserState to
+the specified server, asking it to reset its browser information.
+
+see process_reset_browser() for details on this function.
+
+

@@ -7,8 +7,6 @@
    Re-working by Martin Kiff, 1994
    
    Re-written again by Andrew Tridgell
-
-   Modified for SVID support by Norm Jacobs, 1997
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -51,9 +49,6 @@
  *  Opening a pipe for "lpc status" and reading that would probably 
  *  be pretty effective. Code to do this already exists in the freely
  *  distributable PCNFS server code.
- *
- *  Modified to call SVID/XPG4 support if printcap name is set to "lpstat"
- *  in smb.conf under Solaris.
  */
 
 #include "includes.h"
@@ -260,17 +255,10 @@ BOOL pcap_printername_ok(char *pszPrintername, char *pszPrintcapname)
 	DEBUG(0,( "No printcap file name configured!\n"));
 	return(False);
       }
-
-#ifdef SYSV
-    if (strequal(psz, "lpstat"))
-       return (sysv_printername_ok(pszPrintername));
-#endif
-
 #ifdef AIX
   if (strlocate(psz,"/qconfig") != NULL)
      return(ScanQconfig(psz,pszPrintername));
 #endif
-
   if ((pfile = fopen(psz, "r")) == NULL)
     {
       DEBUG(0,( "Unable to open printcap file %s for read!\n", psz));
@@ -304,6 +292,7 @@ BOOL pcap_printername_ok(char *pszPrintername, char *pszPrintcapname)
 	}
     }
 
+
   fclose(pfile);
   return(False);
 }
@@ -328,13 +317,6 @@ void pcap_printer_fn(void (*fn)())
       return;
     }
 
-#ifdef SYSV
-    if (strequal(psz, "lpstat")) {
-      sysv_printer_fn(fn);
-      return;
-    }
-#endif
-
 #ifdef AIX
   if (strlocate(psz,"/qconfig") != NULL)
   {
@@ -342,7 +324,6 @@ void pcap_printer_fn(void (*fn)())
      return;
   }
 #endif
-
   if ((pfile = fopen(psz, "r")) == NULL)
     {
       DEBUG(0,( "Unable to open printcap file %s for read!\n", psz));

@@ -1,0 +1,83 @@
+/* 
+   Unix SMB/Netbios documentation.
+   Version 0.0
+   Copyright (C) Luke Leighton  Andrew Tridgell  1996
+   
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+   
+   Document name: namequery.doc
+
+   Revision History:
+
+   0.0 - 02jul96 : lkcl@pires.co.uk
+   created
+*/
+
+this module contains non-threaded versions of name status and name
+query functions. if a multi-threaded nmbd was to be written, these
+functions would be the starting point.
+
+at the moment, the expected response queueing system is used to
+replace these functions without needing to multi-thread nmbd.
+
+these functions are used in smbclient and nmblookup at present to
+avoid having the vast quantities of complex and unused code needed
+to support even a simple name query (or providing stubs for the
+unused side of these functions).
+
+there is a down-side to these functions, which is all microsoft's
+fault. microsoft machines always always reply to queries on the
+priveleged ports, rather than following the usual tcp/ip mechanism
+of replying on the client's port (the exception to this i am led
+to believe is windows nt 3.50).
+
+as a result of this, in order to receive a response to a name
+query from a microsoft machine, we must be able to listen on
+the priveleged netbios name server ports. this is simply not
+possible with some versions of unix, unless you have root access.
+
+it is also not possible if you run smbclient or nmblookup on an
+interface that already has been claimed by the netbios name server
+daemon nmbd.
+
+all in all, i wish that microsoft would fix this.
+
+a solution does exist: nmbd _does_ actually reply on the client's
+port, so if smbclient and nmblookup were to use nmbd as a proxy
+forwarder of queries (or to use samba's WINS capabilities) then
+a query could be made without needing access to the priveleged
+ports. in order to do this properly, samba must implement secured
+netbios name server functionality (see rfc1001.txt 15.1.6).
+(lkcl 01aug96: samba now supports secured name registration)
+
+/*************************************************************************
+  name_query()
+  *************************************************************************/
+
+
+
+/*************************************************************************
+  name_status()
+  *************************************************************************/
+
+
+
+/*************************************************************************
+  _interpret_node_status()
+  *************************************************************************/
+
+
+this is a older version of interpret_node_status().
+

@@ -189,25 +189,21 @@ BOOL name_status(int fd,char *name,int name_type,BOOL recurse,
 
 /****************************************************************************
   do a netbios name query to find someones IP
-  returns an array of IP addresses or NULL if none
-  *count will be set to the number of addresses returned
   ****************************************************************************/
-struct in_addr *name_query(int fd,char *name,int name_type, 
-			   BOOL bcast,BOOL recurse,
-			   struct in_addr to_ip, int *count, void (*fn)())
+BOOL name_query(int fd,char *name,int name_type, 
+		BOOL bcast,BOOL recurse,
+		struct in_addr to_ip, struct in_addr *ip,void (*fn)())
 {
   BOOL found=False;
-  int i, retries = 3;
+  int retries = 3;
   int retry_time = bcast?250:2000;
   struct timeval tval;
   struct packet_struct p;
   struct packet_struct *p2;
   struct nmb_packet *nmb = &p.packet.nmb;
   static int name_trn_id = 0;
-  struct in_addr *ip_list = NULL;
 
   bzero((char *)&p,sizeof(p));
-  (*count) = 0;
 
   if (!name_trn_id) name_trn_id = (time(NULL)%(unsigned)0x7FFF) + 
     (getpid()%(unsigned)100);
@@ -218,7 +214,7 @@ struct in_addr *name_query(int fd,char *name,int name_type,
   nmb->header.response = False;
   nmb->header.nm_flags.bcast = bcast;
   nmb->header.nm_flags.recursion_available = False;
-  nmb->header.nm_flags.recursion_desired = recurse;
+  nmb->header.nm_flags.recursion_desired = True;
   nmb->header.nm_flags.trunc = False;
   nmb->header.nm_flags.authoritative = False;
   nmb->header.rcode = 0;
@@ -241,7 +237,7 @@ struct in_addr *name_query(int fd,char *name,int name_type,
   GetTimeOfDay(&tval);
 
   if (!send_packet(&p)) 
-    return NULL;
+    return(False);
 
   retries--;
 
@@ -252,7 +248,7 @@ struct in_addr *name_query(int fd,char *name,int name_type,
       if (TvalDiff(&tval,&tval2) > retry_time) {
 	if (!retries) break;
 	if (!found && !send_packet(&p))
-	  return NULL;
+	  return False;
 	GetTimeOfDay(&tval);
 	retries--;
       }
@@ -260,7 +256,7 @@ struct in_addr *name_query(int fd,char *name,int name_type,
       if ((p2=receive_packet(fd,NMB_PACKET,90)))
 	{     
 	  struct nmb_packet *nmb2 = &p2->packet.nmb;
-	  debug_nmb_packet(p2);
+      debug_nmb_packet(p2);
 
 	  if (nmb->header.name_trn_id != nmb2->header.name_trn_id ||
 	      !nmb2->header.response) {
@@ -283,17 +279,11 @@ struct in_addr *name_query(int fd,char *name,int name_type,
 	    continue;
 	  }
 
-	  ip_list = (struct in_addr *)Realloc(ip_list, sizeof(ip_list[0]) * 
-					      ((*count)+nmb2->answers->rdlength/6));
-	  if (ip_list) {
-		  DEBUG(fn?3:2,("Got a positive name query response from %s ( ",
-				inet_ntoa(p2->ip)));
-		  for (i=0;i<nmb2->answers->rdlength/6;i++) {
-			  putip((char *)&ip_list[(*count)],&nmb2->answers->rdata[2+i*6]);
-			  DEBUG(fn?3:2,("%s ",inet_ntoa(ip_list[(*count)])));
-			  (*count)++;
-		  }
-		  DEBUG(fn?3:2,(")\n"));
+	  if (ip) {
+	    putip((char *)ip,&nmb2->answers->rdata[2]);
+	    DEBUG(fn?3:2,("Got a positive name query response from %s",
+			  inet_ntoa(p2->ip)));
+	    DEBUG(fn?3:2,(" (%s)\n",inet_ntoa(*ip)));
 	  }
 	  found=True; retries=0;
 	  free_packet(p2);
@@ -301,5 +291,5 @@ struct in_addr *name_query(int fd,char *name,int name_type,
 	}
     }
 
-  return ip_list;
+  return(found);
 }

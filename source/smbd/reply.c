@@ -26,7 +26,6 @@
 
 #include "includes.h"
 #include "trans2.h"
-#include "nterr.h"
 
 /* look in server.c for some explanation of these variables */
 extern int Protocol;
@@ -43,7 +42,6 @@ extern BOOL short_case_preserve;
 extern pstring sesssetup_user;
 extern fstring myworkgroup;
 extern int Client;
-extern int global_oplock_break;
 
 /* this macro should always be used to extract an fnum (smb_fid) from
 a packet to ensure chaining works correctly */
@@ -67,60 +65,49 @@ static void overflow_attack(int len)
 ****************************************************************************/
 int reply_special(char *inbuf,char *outbuf)
 {
-	int outsize = 4;
-	int msg_type = CVAL(inbuf,0);
-	int msg_flags = CVAL(inbuf,1);
-	pstring name1,name2;
-	extern fstring remote_machine;
-	extern fstring local_machine;
-	int len;
-	char name_type = 0;
-	
-	*name1 = *name2 = 0;
-	
-	smb_setlen(outbuf,0);
-	
+  int outsize = 4;
+  int msg_type = CVAL(inbuf,0);
+  int msg_flags = CVAL(inbuf,1);
+  pstring name1,name2;
+  extern fstring remote_machine;
+  extern fstring local_machine;
+  char *p;
+
+  *name1 = *name2 = 0;
+
+  smb_setlen(outbuf,0);
+
 	switch (msg_type) {
-	case 0x81: /* session request */
-		CVAL(outbuf,0) = 0x82;
-		CVAL(outbuf,3) = 0;
-		if (name_len(inbuf+4) > 50 || 
-		    name_len(inbuf+4 + name_len(inbuf + 4)) > 50) {
-			DEBUG(0,("Invalid name length in session request\n"));
-			return(0);
-		}
-		name_extract(inbuf,4,name1);
-		name_extract(inbuf,4 + name_len(inbuf + 4),name2);
+    case 0x81: /* session request */
+      CVAL(outbuf,0) = 0x82;
+      CVAL(outbuf,3) = 0;
+      if (name_len(inbuf+4) > 50 || name_len(inbuf+4 + name_len(inbuf + 4)) > 50) {
+	      DEBUG(0,("Invalid name length in session request\n"));
+	      return(0);
+      }
+      name_extract(inbuf,4,name1);
+      name_extract(inbuf,4 + name_len(inbuf + 4),name2);
 		DEBUG(2,("netbios connect: name1=%s name2=%s\n",
 			 name1,name2));      
 
-		fstrcpy(remote_machine,name2);
-		remote_machine[15] = 0;
-		trim_string(remote_machine," "," ");
-		strlower(remote_machine);
+      fstrcpy(remote_machine,name2);
+      trim_string(remote_machine," "," ");
+      p = strchr(remote_machine,' ');
+      strlower(remote_machine);
+      if (p) *p = 0;
 
-		fstrcpy(local_machine,name1);
-		len = strlen(local_machine);
-		if (len == 16) {
-			name_type = local_machine[15];
-			local_machine[15] = 0;
-		}
-		trim_string(local_machine," "," ");
-		strlower(local_machine);
+      fstrcpy(local_machine,name1);
+      trim_string(local_machine," "," ");
+      p = strchr(local_machine,' ');
+      strlower(local_machine);
+      if (p) *p = 0;
 
-		if (name_type == 'R') {
-			/* We are being asked for a pathworks session --- 
-			   no thanks! */
-			CVAL(outbuf, 0) = 0x83;
-			break;
-		}
+      add_session_user(remote_machine);
 
-		add_session_user(remote_machine);
+      reload_services(True);
+      reopen_logs();
 
-		reload_services(True);
-		reopen_logs();
-
-		break;
+      break;
 		
 	case 0x89: /* session keepalive request 
 		      (some old clients produce this?) */
@@ -134,15 +121,15 @@ int reply_special(char *inbuf,char *outbuf)
 		DEBUG(0,("Unexpected session response\n"));
 		break;
 		
-	case 0x85: /* session keepalive */
-	default:
-		return(0);
-	}
-	
+    case 0x85: /* session keepalive */
+    default:
+      return(0);
+    }
+  
 	DEBUG(5,("%s init msg_type=0x%x msg_flags=0x%x\n",
 		 timestring(),msg_type,msg_flags));
-	
-	return(outsize);
+  
+  return(outsize);
 }
 
 
@@ -256,6 +243,7 @@ int reply_tcon_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   int connection_num;
   uint16 vuid = SVAL(inbuf,smb_uid);
   int passlen = SVAL(inbuf,smb_vwv3);
+  BOOL doencrypt = SMBENCRYPT();
 
   *service = *user = *password = *devicename = 0;
 
@@ -274,7 +262,7 @@ int reply_tcon_and_X(char *inbuf,char *outbuf,int length,int bufsize)
     password[passlen]=0;    
     path = smb_buf(inbuf) + passlen;
 
-    if (passlen != 24) {
+    if (!doencrypt || passlen != 24) {
       if (strequal(password," "))
 	*password = 0;
       passlen = strlen(password);
@@ -407,10 +395,9 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
     }
 
     memcpy(smb_apasswd,smb_buf(inbuf),smb_apasslen);
-    smb_apasswd[smb_apasslen] = 0;
     pstrcpy(user,smb_buf(inbuf)+smb_apasslen);
 
-    if (!doencrypt && (lp_security() != SEC_SERVER)) {
+    if (lp_security() != SEC_SERVER && !doencrypt) {
 	    smb_apasslen = strlen(smb_apasswd);
     }
   } else {
@@ -448,10 +435,8 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
       /* Save the lanman2 password and the NT md4 password. */
       smb_apasslen = passlen1;
       memcpy(smb_apasswd,p,smb_apasslen);
-      smb_apasswd[smb_apasslen] = 0;
       smb_ntpasslen = passlen2;
       memcpy(smb_ntpasswd,p+passlen1,smb_ntpasslen);
-      smb_ntpasswd[smb_ntpasslen] = 0;
     } else {
       /* both Win95 and WinNT stuff up the password lengths for
 	 non-encrypting systems. Uggh. 
@@ -496,45 +481,9 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   /* If name ends in $ then I think it's asking about whether a */
   /* computer with that name (minus the $) has access. For now */
   /* say yes to everything ending in $. */
-  if (user[strlen(user) - 1] == '$')
-  {
-#ifdef NTDOMAIN
-    struct smb_passwd *smb_pass; /* To check if machine account exists */
-/* 
-   PAXX: Ack. We don't want to do this. The workstation trust account
-   with a $ on the end should exist in the local password database
-   or be mapped to something generic, but not modified. For NT
-   domain support we must reject this used in certain circumstances
-   with a code to indicate to the client that it is an invalid use
-   of a workstation trust account. NTWKS needs this error to join
-   a domain. This may be the source of future bugs if we cannot
-   be sure whether to reject this or not.
-*/
-   /* non-null user name indicates search by username not by smb userid */
-   smb_pass = get_smbpwd_entry(user, 0);
-
-   if (!smb_pass)
-   {
-     /* lkclXXXX: if workstation entry doesn't exist, indicate logon failure */
-     DEBUG(4,("Workstation trust account %s doesn't exist.",user));
-     SSVAL(outbuf, smb_flg2, 0xc003); /* PAXX: Someone please unhack this */
-     CVAL(outbuf, smb_reh) = 1; /* PAXX: Someone please unhack this */
-     return(ERROR(NT_STATUS_LOGON_FAILURE, 0xc000)); /* decimal 109 NT error, 0xc000 */
-   }
-   else
-   {
-     /* PAXX: This is the NO LOGON workstation trust account stuff */
-     /* lkclXXXX: if the workstation *does* exist, indicate failure differently! */
-     DEBUG(4,("No Workstation trust account %s",user));
-     SSVAL(outbuf, smb_flg2, 0xc003); /* PAXX: Someone please unhack this */
-     CVAL(outbuf, smb_reh) = 1; /* PAXX: Someone please unhack this */
-     return(ERROR(NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT, 0xc000)); /* decimal 409 NT error, 0xc000 */
-   }
-
-   computer_id = True;
-#else /* not NTDOMAIN, leave this in. PAXX: Someone get rid of this */
+  if (user[strlen(user) - 1] == '$') {
+    computer_id = True;
     user[strlen(user) - 1] = '\0';
-#endif
   }
 
 
@@ -656,7 +605,7 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   if (!done_sesssetup)
     max_send = MIN(max_send,smb_bufsize);
 
-  DEBUG(6,("Client requested max send size of %d\n", max_send));
+  DEBUG(5,(" Client requested max send size of %d\n", max_send));
 
   done_sesssetup = True;
 
@@ -697,17 +646,6 @@ int reply_chkpth(char *inbuf,char *outbuf)
       unix_ERR_class = ERRDOS;
       unix_ERR_code = ERRbadpath;
     }
-
-#if 0
-    /* Ugly - NT specific hack - maybe not needed ? (JRA) */
-    if((errno == ENOTDIR) && (Protocol >= PROTOCOL_NT1) &&
-       (get_remote_arch() == RA_WINNT))
-    {
-      unix_ERR_class = ERRDOS;
-      unix_ERR_code = ERRbaddirectory;
-    }
-#endif
-
     return(UNIXERROR(ERRDOS,ERRbadpath));
   }
  
@@ -1170,8 +1108,6 @@ int reply_open(char *inbuf,char *outbuf)
   int rmode=0;
   struct stat sbuf;
   BOOL bad_path = False;
-  files_struct *fsp;
-  int oplock_request = CORE_OPLOCK_REQUEST(inbuf);
  
   cnum = SVAL(inbuf,smb_tid);
 
@@ -1196,12 +1132,9 @@ int reply_open(char *inbuf,char *outbuf)
  
   unixmode = unix_mode(cnum,aARCH);
       
-  open_file_shared(fnum,cnum,fname,share_mode,3,unixmode,
-                   oplock_request,&rmode,NULL);
+  open_file_shared(fnum,cnum,fname,share_mode,3,unixmode,&rmode,NULL);
 
-  fsp = &Files[fnum];
-
-  if (!fsp->open)
+  if (!Files[fnum].open)
   {
     if((errno == ENOENT) && bad_path)
     {
@@ -1211,8 +1144,8 @@ int reply_open(char *inbuf,char *outbuf)
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
 
-  if (fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
-    close_file(fnum,False);
+  if (fstat(Files[fnum].fd_ptr->fd,&sbuf) != 0) {
+    close_file(fnum, 0);
     return(ERROR(ERRDOS,ERRnoaccess));
   }
     
@@ -1222,7 +1155,7 @@ int reply_open(char *inbuf,char *outbuf)
 
   if (fmode & aDIR) {
     DEBUG(3,("attempt to open a directory %s\n",fname));
-    close_file(fnum,False);
+    close_file(fnum, 0);
     return(ERROR(ERRDOS,ERRnoaccess));
   }
   
@@ -1233,12 +1166,10 @@ int reply_open(char *inbuf,char *outbuf)
   SIVAL(outbuf,smb_vwv4,size);
   SSVAL(outbuf,smb_vwv6,rmode);
 
-  if (oplock_request && lp_fake_oplocks(SNUM(cnum))) {
-    CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
+  if (lp_fake_oplocks(SNUM(cnum))) {
+    CVAL(outbuf,smb_flg) |= (CVAL(inbuf,smb_flg) & (1<<5));
   }
     
-  if(fsp->granted_oplock)
-    CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
   return(outsize);
 }
 
@@ -1253,11 +1184,7 @@ int reply_open_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   int fnum = -1;
   int smb_mode = SVAL(inbuf,smb_vwv3);
   int smb_attr = SVAL(inbuf,smb_vwv5);
-  /* Breakout the oplock request bits so we can set the
-     reply bits separately. */
-  BOOL ex_oplock_request = EXTENDED_OPLOCK_REQUEST(inbuf);
-  BOOL core_oplock_request = CORE_OPLOCK_REQUEST(inbuf);
-  BOOL oplock_request = ex_oplock_request | core_oplock_request;
+  BOOL oplock_request = BITSETW(inbuf+smb_vwv2,1);
 #if 0
   int open_flags = SVAL(inbuf,smb_vwv2);
   int smb_sattr = SVAL(inbuf,smb_vwv4); 
@@ -1269,7 +1196,6 @@ int reply_open_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   struct stat sbuf;
   int smb_action = 0;
   BOOL bad_path = False;
-  files_struct *fsp;
 
   /* If it's an IPC, pass off the pipe handler. */
   if (IS_IPC(cnum))
@@ -1297,11 +1223,9 @@ int reply_open_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   unixmode = unix_mode(cnum,smb_attr | aARCH);
       
   open_file_shared(fnum,cnum,fname,smb_mode,smb_ofun,unixmode,
-		   oplock_request, &rmode,&smb_action);
+		   &rmode,&smb_action);
       
-  fsp = &Files[fnum];
-
-  if (!fsp->open)
+  if (!Files[fnum].open)
   {
     if((errno == ENOENT) && bad_path)
     {
@@ -1311,8 +1235,8 @@ int reply_open_and_X(char *inbuf,char *outbuf,int length,int bufsize)
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
 
-  if (fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
-    close_file(fnum,False);
+  if (fstat(Files[fnum].fd_ptr->fd,&sbuf) != 0) {
+    close_file(fnum, 0);
     return(ERROR(ERRDOS,ERRnoaccess));
   }
 
@@ -1320,34 +1244,12 @@ int reply_open_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   fmode = dos_mode(cnum,fname,&sbuf);
   mtime = sbuf.st_mtime;
   if (fmode & aDIR) {
-    close_file(fnum,False);
+    close_file(fnum, 0);
     return(ERROR(ERRDOS,ERRnoaccess));
   }
 
-  /* If the caller set the extended oplock request bit
-     and we granted one (by whatever means) - set the
-     correct bit for extended oplock reply.
-   */
-
-  if (ex_oplock_request && lp_fake_oplocks(SNUM(cnum))) {
-    smb_action |= EXTENDED_OPLOCK_GRANTED;
-  }
-
-  if(ex_oplock_request && fsp->granted_oplock) {
-    smb_action |= EXTENDED_OPLOCK_GRANTED;
-  }
-
-  /* If the caller set the core oplock request bit
-     and we granted one (by whatever means) - set the
-     correct bit for core oplock reply.
-   */
-
-  if (core_oplock_request && lp_fake_oplocks(SNUM(cnum))) {
-    CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
-  }
-
-  if(core_oplock_request && fsp->granted_oplock) {
-    CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
+  if (oplock_request && lp_fake_oplocks(SNUM(cnum))) {
+    smb_action |= (1<<15);
   }
 
   set_message(outbuf,15,0,True);
@@ -1382,7 +1284,7 @@ int reply_ulogoffX(char *inbuf,char *outbuf,int length,int bufsize)
     int i;
     for (i=0;i<MAX_OPEN_FILES;i++)
       if (Files[i].uid == vuser->uid && Files[i].open) {
-	close_file(i,False);
+	close_file(i, 0);
       }
   }
 
@@ -1409,8 +1311,6 @@ int reply_mknew(char *inbuf,char *outbuf)
   mode_t unixmode;
   int ofun = 0;
   BOOL bad_path = False;
-  files_struct *fsp;
-  int oplock_request = CORE_OPLOCK_REQUEST(inbuf);
  
   com = SVAL(inbuf,smb_com);
   cnum = SVAL(inbuf,smb_tid);
@@ -1452,12 +1352,9 @@ int reply_mknew(char *inbuf,char *outbuf)
   }
 
   /* Open file in dos compatibility share mode. */
-  open_file_shared(fnum,cnum,fname,(DENY_FCB<<4)|0xF, ofun, unixmode, 
-                   oplock_request, NULL, NULL);
+  open_file_shared(fnum,cnum,fname,(DENY_FCB<<4)|0xF, ofun, unixmode, NULL, NULL);
   
-  fsp = &Files[fnum];
-
-  if (!fsp->open)
+  if (!Files[fnum].open)
   {
     if((errno == ENOENT) && bad_path) 
     {
@@ -1470,13 +1367,10 @@ int reply_mknew(char *inbuf,char *outbuf)
   outsize = set_message(outbuf,1,0,True);
   SSVAL(outbuf,smb_vwv0,fnum);
 
-  if (oplock_request && lp_fake_oplocks(SNUM(cnum))) {
-    CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
+  if (lp_fake_oplocks(SNUM(cnum))) {
+    CVAL(outbuf,smb_flg) |= (CVAL(inbuf,smb_flg) & (1<<5));
   }
- 
-  if(fsp->granted_oplock)
-    CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
- 
+  
   DEBUG(2,("new file %s\n",fname));
   DEBUG(3,("%s mknew %s fd=%d fnum=%d cnum=%d dmode=%d umode=%o\n",timestring(),fname,Files[fnum].fd_ptr->fd,fnum,cnum,createmode,unixmode));
   
@@ -1497,8 +1391,6 @@ int reply_ctemp(char *inbuf,char *outbuf)
   int createmode;
   mode_t unixmode;
   BOOL bad_path = False;
-  files_struct *fsp;
-  int oplock_request = CORE_OPLOCK_REQUEST(inbuf);
  
   cnum = SVAL(inbuf,smb_tid);
   createmode = SVAL(inbuf,smb_vwv0);
@@ -1526,12 +1418,9 @@ int reply_ctemp(char *inbuf,char *outbuf)
 
   /* Open file in dos compatibility share mode. */
   /* We should fail if file exists. */
-  open_file_shared(fnum,cnum,fname2,(DENY_FCB<<4)|0xF, 0x10, unixmode, 
-                   oplock_request, NULL, NULL);
+  open_file_shared(fnum,cnum,fname2,(DENY_FCB<<4)|0xF, 0x10, unixmode, NULL, NULL);
 
-  fsp = &Files[fnum];
-
-  if (!fsp->open)
+  if (!Files[fnum].open)
   {
     if((errno == ENOENT) && bad_path)
     {
@@ -1546,13 +1435,10 @@ int reply_ctemp(char *inbuf,char *outbuf)
   CVAL(smb_buf(outbuf),0) = 4;
   strcpy(smb_buf(outbuf) + 1,fname2);
 
-  if (oplock_request && lp_fake_oplocks(SNUM(cnum))) {
-    CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
+  if (lp_fake_oplocks(SNUM(cnum))) {
+    CVAL(outbuf,smb_flg) |= (CVAL(inbuf,smb_flg) & (1<<5));
   }
   
-  if(fsp->granted_oplock)
-    CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
-
   DEBUG(2,("created temp file %s\n",fname2));
   DEBUG(3,("%s ctemp %s fd=%d fnum=%d cnum=%d dmode=%d umode=%o\n",timestring(),fname2,Files[fnum].fd_ptr->fd,fnum,cnum,createmode,unixmode));
   
@@ -1699,20 +1585,6 @@ int reply_readbraw(char *inbuf, char *outbuf)
   int ret=0;
   int fd;
   char *fname;
-
-  /*
-   * Special check if an oplock break has been issued
-   * and the readraw request croses on the wire, we must
-   * return a zero length response here.
-   */
-
-  if(global_oplock_break)
-  {
-    _smb_setlen(header,0);
-    transfer_file(0,Client,0,header,4,0);
-    DEBUG(5,("readbraw - oplock break finished\n"));
-    return -1;
-  }
 
   cnum = SVAL(inbuf,smb_tid);
   fnum = GETFNUM(inbuf,smb_vwv0);
@@ -2314,12 +2186,7 @@ int reply_close(char *inbuf,char *outbuf)
 
   cnum = SVAL(inbuf,smb_tid);
 
-  /* If it's an IPC, pass off to the pipe handler. */
-  if (IS_IPC(cnum))
-    return reply_pipe_close(inbuf,outbuf);
-
   fnum = GETFNUM(inbuf,smb_vwv0);
-
   CHECK_FNUM(fnum,cnum);
 
   if(HAS_CACHED_ERROR(fnum)) {
@@ -2330,9 +2197,9 @@ int reply_close(char *inbuf,char *outbuf)
   mtime = make_unix_date3(inbuf+smb_vwv1);
 
   /* try and set the date */
-  set_filetime(cnum, Files[fnum].name,mtime);
+  set_filetime(cnum,Files[fnum].name,mtime);
 
-  close_file(fnum,True);
+  close_file(fnum, 1);
 
   /* We have a cached error */
   if(eclass || err)
@@ -2377,9 +2244,9 @@ int reply_writeclose(char *inbuf,char *outbuf)
       
   nwritten = write_file(fnum,data,numtowrite);
 
-  set_filetime(cnum, Files[fnum].name,mtime);
+  set_filetime(cnum,Files[fnum].name,mtime);
   
-  close_file(fnum,True);
+  close_file(fnum, 1);
 
   DEBUG(3,("%s writeclose fnum=%d cnum=%d num=%d wrote=%d (numopen=%d)\n",
 	   timestring(),fnum,cnum,numtowrite,nwritten,
@@ -2576,8 +2443,7 @@ int reply_printopen(char *inbuf,char *outbuf)
     return(ERROR(ERRDOS,ERRnoaccess));
 
   /* Open for exclusive use, write only. */
-  open_file_shared(fnum,cnum,fname2,(DENY_ALL<<4)|1, 0x12, unix_mode(cnum,0), 
-                   0, NULL, NULL);
+  open_file_shared(fnum,cnum,fname2,(DENY_ALL<<4)|1, 0x12, unix_mode(cnum,0), NULL, NULL);
 
   if (!Files[fnum].open)
     return(UNIXERROR(ERRDOS,ERRnoaccess));
@@ -2611,7 +2477,7 @@ int reply_printclose(char *inbuf,char *outbuf)
   if (!CAN_PRINT(cnum))
     return(ERROR(ERRDOS,ERRnoaccess));
   
-  close_file(fnum,True);
+  close_file(fnum, 1);
   
   DEBUG(3,("%s printclose fd=%d fnum=%d cnum=%d\n",timestring(),Files[fnum].fd_ptr->fd,fnum,cnum));
   
@@ -2667,7 +2533,7 @@ int reply_printqueue(char *inbuf,char *outbuf)
       DEBUG(5,("connection not open or not a printer, using cnum %d\n",cnum));
     }
 
-  if (!become_user(&Connections[cnum], cnum, vuid))
+  if (!become_user(cnum,vuid))
     return(ERROR(ERRSRV,ERRinvnid));
 
   {
@@ -2779,66 +2645,6 @@ int reply_mkdir(char *inbuf,char *outbuf)
   return(outsize);
 }
 
-/****************************************************************************
-Static function used by reply_rmdir to delete an entire directory
-tree recursively.
-****************************************************************************/
-static BOOL recursive_rmdir(char *directory)
-{
-  char *dname = NULL;
-  BOOL ret = False;
-  void *dirptr = OpenDir(-1, directory, False);
-
-  if(dirptr == NULL)
-    return True;
-
-  while((dname = ReadDirName(dirptr)))
-  {
-    pstring fullname;
-    struct stat st;
-
-    if((strcmp(dname, ".") == 0) || (strcmp(dname, "..")==0))
-      continue;
-
-    /* Construct the full name. */
-    if(strlen(directory) + strlen(dname) + 1 >= sizeof(fullname))
-    {
-      errno = ENOMEM;
-      ret = True;
-      break;
-    }
-    strcpy(fullname, directory);
-    strcat(fullname, "/");
-    strcat(fullname, dname);
-
-    if(sys_lstat(fullname, &st) != 0)
-    {
-      ret = True;
-      break;
-    }
-
-    if(st.st_mode & S_IFDIR)
-    {
-      if(recursive_rmdir(fullname)!=0)
-      {
-        ret = True;
-        break;
-      }
-      if(sys_rmdir(fullname) != 0)
-      {
-        ret = True;
-        break;
-      }
-    }
-    else if(sys_unlink(fullname) != 0)
-    {
-      ret = True;
-      break;
-    }
-  }
-  CloseDir(dirptr);
-  return ret;
-}
 
 /****************************************************************************
   reply to a rmdir
@@ -2907,15 +2713,10 @@ int reply_rmdir(char *inbuf,char *outbuf)
                       if(sys_lstat(fullname, &st) != 0)
                         break;
                       if(st.st_mode & S_IFDIR)
-                      {
-                        if(lp_recursive_veto_delete(SNUM(cnum)))
                         {
-                          if(recursive_rmdir(fullname) != 0)
+                          if(sys_rmdir(fullname) != 0)
                             break;
                         }
-                        if(sys_rmdir(fullname) != 0)
-                          break;
-                      }
                       else if(sys_unlink(fullname) != 0)
                         break;
                     }
@@ -3176,23 +2977,14 @@ int reply_mv(char *inbuf,char *outbuf)
 
 	    error = ERRnoaccess;
 	    sprintf(fname,"%s/%s",directory,dname);
-	    if (!can_rename(fname,cnum)) {
-		    DEBUG(6,("rename %s refused\n", fname));
-		    continue;
-	    }
+	    if (!can_rename(fname,cnum)) continue;
 	    pstrcpy(destname,newname);
 
-	    if (!resolve_wildcards(fname,destname)) {
-		    DEBUG(6,("resolve_wildcards %s %s failed\n", 
-			     fname, destname));
-		    continue;
-	    }
+	    if (!resolve_wildcards(fname,destname)) continue;
 
 	    if (file_exist(destname,NULL)) {
-		    DEBUG(6,("file_exist %s\n", 
-			     destname));
-		    error = 183;
-		    continue;
+	      error = 183;
+	      continue;
 	    }
 	    if (!sys_rename(fname,destname)) count++;
 	    DEBUG(3,("reply_mv : doing rename on %s -> %s\n",fname,destname));
@@ -3248,7 +3040,7 @@ static BOOL copy_file(char *src,char *dest1,int cnum,int ofun,
   fnum1 = find_free_file();
   if (fnum1<0) return(False);
   open_file_shared(fnum1,cnum,src,(DENY_NONE<<4),
-		   1,0,0,&Access,&action);
+		   1,0,&Access,&action);
 
   if (!Files[fnum1].open) return(False);
 
@@ -3257,14 +3049,14 @@ static BOOL copy_file(char *src,char *dest1,int cnum,int ofun,
 
   fnum2 = find_free_file();
   if (fnum2<0) {
-    close_file(fnum1,False);
+    close_file(fnum1, 0);
     return(False);
   }
   open_file_shared(fnum2,cnum,dest,(DENY_NONE<<4)|1,
-		   ofun,st.st_mode,0,&Access,&action);
+		   ofun,st.st_mode,&Access,&action);
 
   if (!Files[fnum2].open) {
-    close_file(fnum1,False);
+    close_file(fnum1, 0);
     return(False);
   }
 
@@ -3275,8 +3067,8 @@ static BOOL copy_file(char *src,char *dest1,int cnum,int ofun,
   if (st.st_size)
     ret = transfer_file(Files[fnum1].fd_ptr->fd,Files[fnum2].fd_ptr->fd,st.st_size,NULL,0,0);
 
-  close_file(fnum1,False);
-  close_file(fnum2,False);
+  close_file(fnum1, 0);
+  close_file(fnum2, 0);
 
   return(ret == st.st_size);
 }
@@ -3463,10 +3255,7 @@ int reply_setdir(char *inbuf,char *outbuf)
 int reply_lockingX(char *inbuf,char *outbuf,int length,int bufsize)
 {
   int fnum = GETFNUM(inbuf,smb_vwv2);
-  unsigned char locktype = CVAL(inbuf,smb_vwv3);
-#if 0
-  unsigned char oplocklevel = CVAL(inbuf,smb_vwv3+1);
-#endif
+  uint16 locktype = SVAL(inbuf,smb_vwv3);
   uint16 num_ulocks = SVAL(inbuf,smb_vwv6);
   uint16 num_locks = SVAL(inbuf,smb_vwv7);
   uint32 count, offset;
@@ -3483,55 +3272,6 @@ int reply_lockingX(char *inbuf,char *outbuf,int length,int bufsize)
   CHECK_ERROR(fnum);
 
   data = smb_buf(inbuf);
-
-  /* Check if this is an oplock break on a file
-     we have granted an oplock on.
-   */
-  if ((locktype & LOCKING_ANDX_OPLOCK_RELEASE))
-  {
-    int token;
-    files_struct *fsp = &Files[fnum];
-    uint32 dev = fsp->fd_ptr->dev;
-    uint32 inode = fsp->fd_ptr->inode;
-
-    DEBUG(5,("reply_lockingX: oplock break reply from client for fnum = %d\n",
-              fnum));
-    /*
-     * Make sure we have granted an oplock on this file.
-     */
-    if(!fsp->granted_oplock)
-    {
-      DEBUG(0,("reply_lockingX: Error : oplock break from client for fnum = %d and \
-no oplock granted on this file.\n", fnum));
-      return ERROR(ERRDOS,ERRlock);
-    }
-
-    /* Remove the oplock flag from the sharemode. */
-    lock_share_entry(fsp->cnum, dev, inode, &token);
-    if(remove_share_oplock( fnum, token)==False) {
-	    DEBUG(0,("reply_lockingX: failed to remove share oplock for fnum %d, \
-dev = %x, inode = %x\n", 
-		     fnum, dev, inode));
-	    unlock_share_entry(fsp->cnum, dev, inode, token);
-    } else {
-	    unlock_share_entry(fsp->cnum, dev, inode, token);
-
-	    /* Clear the granted flag and return. */
-	    fsp->granted_oplock = False;
-    }
-
-    /* if this is a pure oplock break request then don't send a reply */
-    if (num_locks == 0 && num_ulocks == 0)
-    {
-      /* Sanity check - ensure a pure oplock break is not a
-         chained request. */
-      if(CVAL(inbuf,smb_vwv0) != 0xff)
-        DEBUG(0,("reply_lockingX: Error : pure oplock break is a chained %d request !\n",
-                 (unsigned int)CVAL(inbuf,smb_vwv0) ));
-      return -1;
-    }
-  }
-
   /* Data now points at the beginning of the list
      of smb_unlkrng structs */
   for(i = 0; i < (int)num_ulocks; i++) {
@@ -3566,7 +3306,7 @@ dev = %x, inode = %x\n",
   set_message(outbuf,2,0,True);
   
   DEBUG(3,("%s lockingX fnum=%d cnum=%d type=%d num_locks=%d num_ulocks=%d\n",
-	timestring(),fnum,cnum,(unsigned int)locktype,num_locks,num_ulocks));
+	timestring(),fnum,cnum,locktype,num_locks,num_ulocks));
 
   chain_fnum = fnum;
 
@@ -3863,7 +3603,7 @@ not setting timestamps of 0\n",
   }
 
   /* Set the date on this file */
-  if(file_utime(cnum, Files[fnum].name, &unix_times))
+  if(file_utime(cnum,Files[fnum].name, &unix_times))
     return(ERROR(ERRDOS,ERRnoaccess));
   
   DEBUG(3,("%s reply_setattrE fnum=%d cnum=%d actime=%d modtime=%d\n",
@@ -3919,3 +3659,8 @@ int reply_getattrE(char *inbuf,char *outbuf)
   
   return(outsize);
 }
+
+
+
+
+

@@ -1,5 +1,5 @@
 !==
-!== MIRRORS.txt for Samba release 1.9.18alpha13 16 Dec 1997
+!== MIRRORS.txt for Samba release 1.9.17p5 20 Dec 1997
 !==
 The main Samba ftp site is samba.anu.edu.au in pub/samba/. Contact
 samba-bugs@samba.anu.edu.au for help with this site.
@@ -26,6 +26,7 @@ Mirror sites include:
 	ftp://nic.funet.fi/pub/mirrors/samba.anu.edu.au/
 --- Germany ---  
 	ftp://ftp.uni-trier.de/pub/unix/network/samba/
+        ftp://ftp.gwdg.de/pub/server/samba/
 --- Greece ---
 	ftp://ftp.ntua.gr/pub/net/samba/
 --- Italy ---

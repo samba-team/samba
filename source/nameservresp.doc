@@ -1,0 +1,191 @@
+/* 
+   Unix SMB/Netbios documentation.
+   Version 0.0
+   Copyright (C) Luke Leighton  Andrew Tridgell  1996
+   
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+   
+   Document name: nameservresp.doc
+
+   Revision History:
+
+   0.0 - 02jul96 : lkcl@pires.co.uk
+   created
+*/
+
+this module deals with the receipt of response packets. the
+response packets are expected to be received, and there is a
+record of this kept (see also: modules nameresp and namedbresp)
+
+point of interest to design purists: every function in this
+module is static except response_netbios_packet().
+
+/*************************************************************************
+  response_netbios_packet()
+  *************************************************************************/
+
+this function receives netbios response packets. the samba server
+(or a rogue tcp/ip system, or nmblookup) will have sent out a packet
+requesting a response. a client (or a rogue tcp/ip system) responds
+to that request.
+
+this function checks the validity of the packet it receives.
+the expected response records are searched for the transaction id,
+to see if it's a response expected by the samba server. if it isn't
+it's reported as such, and ignored.
+
+if the response is found, then the subnet it was expected from will
+also have been found. the subnet it actually came in on can be
+checked against the subnet it was expected from and reported,
+otherwise this function just carries on.
+
+the number of responses received is increased, and the number of
+retries left to be sent is set to zero.
+
+after debug information is reported, and validation of the netbios
+packet (e.g only one response from one machine is expected for some
+functions) has occurred, the packet is processed. when the initial
+request was sent out, the expected response record was flagged with,
+for lack of a better word, a samba 'state' type. whenever a
+response is received, the appropriate function is called to carry on
+where the program control flow was interrupted while awaiting exactly
+such a response.
+
+please note that _not_ receiving a response is dealt with in another
+area of code - expire_netbios_response_entries().
+
+
+/*************************************************************************
+  response_name_query_sync()
+  *************************************************************************/
+
+this function receives responses to samba 'states' NAME_QUERY_SYNC and
+NAME_QUERY_CONFIRM.
+
+NAME_QUERY_SYNC: name query a server before synchronising browse lists.
+NAME_QUERY_CONFIRM: name query a server to check that it's alive.
+
+a NAME_QUERY_SYNC will be carried out in order to check that a server
+is alive before syncing browse lists. we don't want to delay the SMB
+NetServerEnum api just because the server has gone down: we have too
+much else to do.
+
+a NAME_QUERY_CONFIRM is just a name query to see whether the server is
+alive.  these queries are sent out by samba's WINS server side, to verify
+its netbios name database of all machines that have registered with it.
+
+we don't normally expect a negative response from such a query, although
+we may do so if the query was sent to another WINS server. the registered
+entry should be removed if we receive a negative response.
+
+
+/*************************************************************************
+  response_name_status_check()
+  *************************************************************************/
+
+this function receives responses to samba 'states' NAME_STATUS_SRV_CHK
+and NAME_STATUS_DOM_SRV_CHK
+
+NAME_STATUS_DOM_SRV_CHK: name status a domain master browser
+                          confirm its domain and then initiate syncing
+                          its browse list.
+
+NAME_STATUS_SRV_CHK: same as NAME_STATUS_DOM_SRV_CHK except the
+                     name status is issued to a master browser.
+
+if we don't know what workgroup a server is responsible for, but we
+know that there is a master browser at a certain ip, we can issue a
+name status check. from the response received, there will be
+a master browser netbios entry. this will allow us to synchronise
+browse lists with that machine and then add the information to the
+correct part of samba's workgroup - server database.
+
+
+/*************************************************************************
+  response_server_check()
+  *************************************************************************/
+
+this function receives responses to samba 'states' NAME_QUERY_DOM_SRV_CHK,
+NAME_QUERY_SRV_CHK and NAME_QUERY_FIND_MST.
+
+NAME_QUERY_FIND_MST: issued as a broadcast when we wish to find out all
+                     master browsers (i.e all servers that have registered
+                     the NetBIOS name ^1^2__MSBROWSE__^2(0x1), and then
+                     issue a NAME_STATUS_MASTER_CHECK on any servers that
+                     respond, which will initiate a sync browse lists.
+
+NAME_QUERY_DOM_SRV_CHK: same as a NAME_QUERY_FIND_MST except this is sent
+                        to a domain master browser.
+
+NAME_QUERY_SRV_CHK: same as a NAME_QUERY_DOM_SRV_CHK except this is sent to
+                    a master browser.
+                        
+the purpose of each of these states is to do a broadcast name query, or
+a name query directed at a WINS server, then to all hosts that respond,
+we issue a name status check, which will confirm for us the workgroup
+or domain name, and then initiate issuing a sync browse list call with
+that server.
+
+a NAME_QUERY_SRV_CHK is sent when samba receives a list of backup
+browsers. it checks to see if that server is alive (by doing a
+name query on a server) and then syncs browse lists with it.
+
+
+/*************************************************************************
+  response_name_reg()
+  *************************************************************************/
+
+this function is responsible for dealing with samba's registration
+attempts, by broadcast to a local subnet, or point-to-point with 
+another WINS server.
+
+please note that it cannot cope with END-NODE CHALLENGE REGISTRATION
+RESPONSEs at present.
+
+when a response is received, samba determines if the response is a
+positive or a negative one. if it is a positive response, the name
+is added to samba's database.
+
+when a negative response is received, samba will remove the name
+from its database. if, however, the name is a browser type (0x1b is
+a domain master browser type name; or 0x1d, which is a local master
+browser type name) then it must also stop being a domain master
+browser or master browser respectively, depending on what kind
+of name was rejected.
+
+(when no response is received, then expire_netbios_response_entries()
+is expected to deal with this. the only case that is dealt with here
+at present is when the registration was done by broadcast. if there
+is no challenge to the broadcast registration, it is implicitly
+assumed that claiming the name is acceptable).
+
+
+/*************************************************************************
+  response_name_release()
+  *************************************************************************/
+
+this function is responsible for removing samba's NetBIOS name when
+samba contacts another WINS server with which it had registered the
+name.
+
+only positive name releases are expected and dealt with. exactly what
+to do if a negative name release (i.e someone says 'oi! you have to
+keep that name!') is received is uncertain.
+
+(when no response is received, then expire_netbios_response_entries()
+is expected to deal with this. if there is no challenge to the release
+of the name, the name is then removed from that subnet's NetBIOS
+name database).
+

@@ -1,5 +1,5 @@
 !==
-!== DOMAIN_CONTROL.txt for Samba release 1.9.18alpha13 16 Dec 1997
+!== DOMAIN_CONTROL.txt for Samba release 1.9.17p5 20 Dec 1997
 !==
 Initial Release:	August 22, 1996
 Contributor:		John H Terpstra <samba-bugs@samba.anu.edu.au>
@@ -22,9 +22,12 @@ SMB domains based on shared authentication database schemes other than the
 Windows NT SAM.
 
 Microsoft Windows NT Domain Control is an extremely complex protocol.
-We have received countless requests to implement Domain Control in Samba.
-The 1.9.18 release of Samba contains experimental code to implement
-this. Please read the file docs/NTDOMAIN.txt for more information on this.
+We have received countless requests to implement Domain Control in Samba
+and have seriously investigated the potential to support this. The Samba
+Team have now concluded that since Domain Control is a completely
+undocumented protocol we ought NOT to implement our best guess of this
+technology. It is a Microsoft business policy NOT to release the information
+necessary to enable this to be implemented in a dependable manner.
 ============================================================================
 
 Windows NT Server can be installed as either a plain file and print server

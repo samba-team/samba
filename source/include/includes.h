@@ -214,6 +214,9 @@ Here come some platform specific sections
 #include <string.h>
 #include <sys/vfs.h>
 #include <netinet/in.h>
+#ifndef NO_ASMSIGNALH
+#include <asm/signal.h>
+#endif
 #ifdef GLIBC2
 #define _LINUX_C_LIB_VERSION_MAJOR     6
 #include <termios.h>
@@ -229,7 +232,6 @@ Here come some platform specific sections
 #define HAVE_MEMMOVE
 #define USE_SIGPROCMASK
 #define USE_WAITPID
-#define USE_SYSV_IPC
 #if 0
 /* SETFS disabled until we can check on some bug reports */
 #if _LINUX_C_LIB_VERSION_MAJOR >= 5
@@ -277,7 +279,6 @@ typedef unsigned short mode_t;
 #ifndef USE_WAITPID
 #define USE_WAITPID
 #endif
-#define USE_SYSV_IPC
 /* SunOS doesn't have POSIX atexit */
 #define atexit on_exit
 #endif
@@ -315,8 +316,6 @@ extern int innetgr (const char *, const char *, const char *, const char *);
 #define USE_STATVFS
 #define USE_GETCWD
 #define USE_SETSID
-#define USE_SYSV_IPC
-#define NO_SEMUN
 #ifndef REPLACE_GETPASS
 #define REPLACE_GETPASS
 #endif /* REPLACE_GETPASS */
@@ -341,7 +340,7 @@ char *getwd(char *);
 #define USE_WAITPID
 #endif
 
-#ifdef SGI4
+#ifdef SGI
 #include <netinet/tcp.h>
 #include <sys/statfs.h>
 #include <string.h>
@@ -354,10 +353,9 @@ char *getwd(char *);
 #define USE_WAITPID
 #define USE_DIRECT
 #define USE_SETSID
-#define USE_SYSV_IPC
 #endif
 
-#if defined(SGI5) || defined(SGI6)
+#ifdef SGI5
 #include <arpa/inet.h>
 #include <netinet/tcp.h>
 #include <netinet/in_systm.h>
@@ -375,7 +373,6 @@ char *getwd(char *);
 #define USE_STATVFS
 #define USE_WAITPID
 #define USE_SETSID
-#define USE_SYSV_IPC
 #endif
 
 
@@ -432,8 +429,6 @@ extern struct passwd *getpwnam();
 #define USE_STATVFS
 #define USE_GETCWD
 #define USE_SETSID
-#define USE_SYSV_IPC
-#define NO_SEMUN
 #endif
 
 
@@ -459,8 +454,6 @@ char *mktemp(char *); /* No standard include */
 #define PASSWORD_LENGTH 16
 #define NEED_AUTH_PARAMETERS
 #endif  /* OSF1_ENH_SEC */
-#define USE_SYSV_IPC
-#define NO_SEMUN
 #endif
 
 
@@ -569,8 +562,6 @@ char *mktemp(char *); /* No standard include */
 #define USE_GETCWD
 #define USE_SETSID
 #define USE_SETRES
-#define USE_SYSV_IPC
-#define NO_SEMUN
 #define DEFAULT_PRINTING PRINT_HPUX
 /* Ken Weiss <krweiss@ucdavis.edu> tells us that SIGCLD_IGNORE is
    not good for HPUX */
@@ -684,7 +675,6 @@ char *mktemp(char *); /* No standard include */
 #include <sys/netinet/ip.h>
 #include <dirent.h>
 #include <string.h>
-#include <termios.h>
 #include <fcntl.h>
 #include <sys/statfs.h>
 #include <sys/stropts.h>
@@ -1073,35 +1063,6 @@ struct spwd { /* fake shadow password structure */
 #endif
 #endif
 
-/* This defines the name of the printcap file. It is MOST UNLIKELY that
-   this will change BUT! Specifying a file with the format of a printcap
-   file but containing only a subset of the printers actually in your real 
-   printcap file is a quick-n-dirty way to allow dynamic access to a subset
-   of available printers.
-*/
-#ifndef PRINTCAP_NAME
-#ifdef AIX
-#define PRINTCAP_NAME "/etc/qconfig"
-#elif defined(SYSV)
-#define PRINTCAP_NAME "lpstat"
-#else
-#define PRINTCAP_NAME "/etc/printcap"
-#endif
-#endif
-
-
-#ifdef USE_SYSV_IPC
-#include <sys/ipc.h>
-#include <sys/sem.h>
-#include <sys/shm.h>
-#ifdef NO_SEMUN
-union semun {
-	int val;
-	struct semid_ds *buf;
-	unsigned short *array;
-};
-#endif
-#endif
 
 #ifdef AFS_AUTH
 #include <afs/stds.h>
@@ -1142,32 +1103,26 @@ extern char *sys_errlist[];
 #include "version.h"
 #include "smb.h"
 #include "nameserv.h"
-#include "ubiqx/ubi_dLinkList.h"
-
+#include "proto.h"
 #include "byteorder.h"
 
 #include "kanji.h"
 #include "charset.h"
-
-/***** automatically generated prototypes *****/
-#include "proto.h"
-
-
 
 #ifndef S_IFREG
 #define S_IFREG 0100000
 #endif
 
 #ifndef S_ISREG
-#define S_ISREG(x) ((S_IFREG & (x))!=0)
+#define S_ISREG(x) ((S_IFREG & x)!=0)
 #endif
 
 #ifndef S_ISDIR
-#define S_ISDIR(x) ((S_IFDIR & (x))!=0)
+#define S_ISDIR(x) ((S_IFDIR & x)!=0)
 #endif
 
 #if !defined(S_ISLNK) && defined(S_IFLNK)
-#define S_ISLNK(x) ((S_IFLNK & (x))!=0)
+#define S_ISLNK(x) ((S_IFLNK & x)!=0)
 #endif
 
 #ifdef UFC_CRYPT
@@ -1241,13 +1196,9 @@ it works and getting lots of bug reports */
 #define QSORT_CAST (int (*)())
 #endif
 
-#ifndef INADDR_LOOPBACK
-#define INADDR_LOOPBACK 0x7f000001
-#endif /* INADDR_LOOPBACK */
-
 /* this is a rough check to see if this machine has a lstat() call.
    it is not guaranteed to work */
-#if !defined(S_ISLNK)
+#if !(defined(S_ISLNK) || defined(S_IFLNK))
 #define lstat stat
 #endif
 
@@ -1285,8 +1236,51 @@ extern int errno;
 #define strcpy(dest,src) StrCpy(dest,src)
 #endif
 
-#if MEM_MAN
-#include "mem_man/mem_man.h"
+
+/* possibly wrap the malloc calls */
+#if WRAP_MALLOC
+
+/* undo the old malloc def if necessary */
+#ifdef malloc
+#define xx_old_malloc malloc
+#undef malloc
+#endif
+
+#define malloc(size) malloc_wrapped(size,__FILE__,__LINE__)
+
+/* undo the old realloc def if necessary */
+#ifdef realloc
+#define xx_old_realloc realloc
+#undef realloc
+#endif
+
+#define realloc(ptr,size) realloc_wrapped(ptr,size,__FILE__,__LINE__)
+
+/* undo the old free def if necessary */
+#ifdef free
+#define xx_old_free free
+#undef free
+#endif
+
+#define free(ptr) free_wrapped(ptr,__FILE__,__LINE__)
+
+/* and the malloc prototypes */
+void *malloc_wrapped(int,char *,int);
+void *realloc_wrapped(void *,int,char *,int);
+void free_wrapped(void *,char *,int);
+
+#endif
+
+
+#if WRAP_MEMCPY
+/* undo the old memcpy def if necessary */
+#ifdef memcpy
+#define xx_old_memcpy memcpy
+#undef memcpy
+#endif
+
+#define memcpy(d,s,l) memcpy_wrapped(d,s,l,__FILE__,__LINE__)
+void *memcpy_wrapped(void *d,void *s,int l,char *fname,int line);
 #endif
 
 #endif

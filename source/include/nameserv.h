@@ -1,5 +1,3 @@
-#ifndef _NAMESERV_H_
-#define _NAMESERV_H_
 /* 
    Unix SMB/Netbios implementation.
    Version 1.9.
@@ -22,7 +20,7 @@
    
 */
 
-#define PERMANENT_TTL 0
+#define GET_TTL(ttl) ((ttl)?MIN(ttl,lp_max_ttl()):lp_max_ttl())
 
 /* NTAS uses 2, NT uses 1, WfWg uses 0 */
 #define MAINTAIN_LIST    2
@@ -31,44 +29,18 @@
 #define MAX_DGRAM_SIZE (576) /* tcp/ip datagram limit is 576 bytes */
 #define MIN_DGRAM_SIZE 12
 
-/*********************************************************
- Types of reply packet.
-**********************************************************/
+#define NMB_QUERY  0x20
+#define NMB_STATUS 0x21
 
-enum netbios_reply_type_code { NMB_QUERY, NMB_STATUS, NMB_REG, NMB_REG_REFRESH,
-                               NMB_REL, NMB_WAIT_ACK, NMB_MULTIHOMED_REG,
-                               WINS_REG, WINS_QUERY };
-
-/* From rfc1002, 4.2.1.2 */
-/* Question types. */
-#define QUESTION_TYPE_NB_QUERY  0x20
-#define QUESTION_TYPE_NB_STATUS 0x21
-
-/* Question class */
-#define QUESTION_CLASS_IN  0x1
-
-/* Opcode definitions */
-#define NMB_NAME_QUERY_OPCODE       0x0
-#define NMB_NAME_REG_OPCODE         0x05 /* see rfc1002.txt 4.2.2,3,5,6,7,8 */
-#define NMB_NAME_RELEASE_OPCODE     0x06 /* see rfc1002.txt 4.2.9,10,11 */
-#define NMB_WACK_OPCODE             0x07 /* see rfc1002.txt 4.2.16 */
-/* Ambiguity in rfc1002 about which of these is correct. */
-/* WinNT uses 8 by default but can be made to use 9. */
-#define NMB_NAME_REFRESH_OPCODE_8   0x08 /* see rfc1002.txt 4.2.4 */
-#define NMB_NAME_REFRESH_OPCODE_9   0x09 /* see rfc1002.txt 4.2.4 */
-#define NMB_NAME_MULTIHOMED_REG_OPCODE 0x0F /* Invented by Microsoft. */
-
+#define NMB_REG         0x05 /* see rfc1002.txt 4.2.2,3,5,6,7,8 */
+#define NMB_REG_REFRESH 0x09 /* see rfc1002.txt 4.2.4 */
+#define NMB_REL         0x06 /* see rfc1002.txt 4.2.9,10,11 */
+#define NMB_WAIT_ACK    0x07 /* see rfc1002.txt 4.2.16 */
 /* XXXX what about all the other types?? 0x1, 0x2, 0x3, 0x4, 0x8? */
 
-/* Resource record types. rfc1002 4.2.1.3 */
-#define RR_TYPE_A                  0x1
-#define RR_TYPE_NS                 0x2
-#define RR_TYPE_NULL               0xA
-#define RR_TYPE_NB                0x20
-#define RR_TYPE_NBSTAT            0x21
-
-/* Resource record class. */
-#define RR_CLASS_IN                0x1
+#define FIND_SELF  0x01
+#define FIND_WINS  0x02
+#define FIND_LOCAL 0x04
 
 /* NetBIOS flags */
 #define NB_GROUP  0x80
@@ -76,300 +48,205 @@ enum netbios_reply_type_code { NMB_QUERY, NMB_STATUS, NMB_REG, NMB_REG_REFRESH,
 #define NB_ACTIVE 0x04
 #define NB_CONFL  0x08
 #define NB_DEREG  0x10
-#define NB_BFLAG  0x00 /* Broadcast node type. */
-#define NB_PFLAG  0x20 /* Point-to-point node type. */
-#define NB_MFLAG  0x40 /* Mixed bcast & p-p node type. */
-#define NB_HFLAG  0x60 /* Microsoft 'hybrid' node type. */
-#define NB_NODETYPEMASK 0x60
-/* Mask applied to outgoing NetBIOS flags. */
-#define NB_FLGMSK 0xE0
-
-/* NetBIOS flag identifier. */
-#define NAME_GROUP(p)     ((p)->nb_flags & NB_GROUP)
-#define NAME_BFLAG(p)     (((p)->nb_flags & NB_NODETYPEMASK) == NB_BFLAG)
-#define NAME_PFLAG(p)     (((p)->nb_flags & NB_NODETYPEMASK) == NB_PFLAG)
-#define NAME_MFLAG(p)     (((p)->nb_flags & NB_NODETYPEMASK) == NB_MFLAG)
-#define NAME_HFLAG(p)     (((p)->nb_flags & NB_NODETYPEMASK) == NB_HFLAG)
-
-/* Samba name state for a name in a namelist. */
-#define NAME_IS_ACTIVE(p) ((p)->nb_flags & NB_ACTIVE)
-#define NAME_IN_CONFLICT(p)  ((p)->nb_flags & NB_CONFL)
-#define NAME_IS_DEREGISTERING(p)     ((p)->nb_flags & NB_DEREG)
-
-/* Error codes for NetBIOS requests. */
-#define FMT_ERR   0x1       /* Packet format error. */
-#define SRV_ERR   0x2       /* Internal server error. */
-#define NAM_ERR   0x3       /* Name does not exist. */
-#define IMP_ERR   0x4       /* Request not implemented. */
-#define RFS_ERR   0x5       /* Request refused. */
-#define ACT_ERR   0x6       /* Active error - name owned by another host. */
-#define CFT_ERR   0x7       /* Name in conflict error. */
+#define NB_BFLAG  0x00 /* broadcast node type */
+#define NB_PFLAG  0x20 /* point-to-point node type */
+#define NB_MFLAG  0x40 /* mixed bcast & p-p node type */
+#define NB_HFLAG  0x60 /* microsoft 'hybrid' node type */
+#define NB_FLGMSK 0x60
 
 #define REFRESH_TIME (15*60)
 #define NAME_POLL_REFRESH_TIME (5*60)
 #define NAME_POLL_INTERVAL 15
 
-/* Workgroup state identifiers. */
-#define AM_POTENTIAL_MASTER_BROWSER(work) ((work)->mst_state == MST_POTENTIAL)
-#define AM_LOCAL_MASTER_BROWSER(work) ((work)->mst_state == MST_BROWSER)
-#define AM_DOMAIN_MASTER_BROWSER(work) ((work)->dom_state == DOMAIN_MST)
-#define AM_DOMAIN_MEMBER(work) ((work)->log_state == LOGON_SRV)
+/* NetBIOS flag identifier */
+#define NAME_PERMANENT(p) ((p) & NB_PERM)
+#define NAME_ACTIVE(p)    ((p) & NB_ACTIVE)
+#define NAME_CONFLICT(p)  ((p) & NB_CONFL)
+#define NAME_DEREG(p)     ((p) & NB_DEREG)
+#define NAME_GROUP(p)     ((p) & NB_GROUP)
 
-/* Microsoft browser NetBIOS name. */
+#define NAME_BFLAG(p)     (((p) & NB_FLGMSK) == NB_BFLAG)
+#define NAME_PFLAG(p)     (((p) & NB_FLGMSK) == NB_PFLAG)
+#define NAME_MFLAG(p)     (((p) & NB_FLGMSK) == NB_MFLAG)
+#define NAME_HFLAG(p)     (((p) & NB_FLGMSK) == NB_HFLAG)
+
+/* server type identifiers */
+#define AM_MASTER(work) (work->ServerType & SV_TYPE_MASTER_BROWSER)
+#define AM_BACKUP(work) (work->ServerType & SV_TYPE_BACKUP_BROWSER)
+#define AM_DOMMST(work) (work->ServerType & SV_TYPE_DOMAIN_MASTER)
+#define AM_DOMMEM(work) (work->ServerType & SV_TYPE_DOMAIN_MEMBER)
+
+/* microsoft browser NetBIOS name */
 #define MSBROWSE "\001\002__MSBROWSE__\002"
 
-/* Mail slots. */
+/* mail slots */
 #define BROWSE_MAILSLOT    "\\MAILSLOT\\BROWSE"
 #define NET_LOGON_MAILSLOT "\\MAILSLOT\\NET\\NETLOGON"
-#define NT_LOGON_MAILSLOT  "\\MAILSLOT\\NET\\NTLOGON"
-#define LANMAN_MAILSLOT    "\\MAILSLOT\\LANMAN"
 
-/* Samba definitions for find_name_on_subnet(). */
-#define FIND_ANY_NAME   0
-#define FIND_SELF_NAME  1
-
-/*
- * The different name types that can be in namelists.
- *
- * SELF_NAME should only be on the broadcast and unicast subnets.
- * LMHOSTS_NAME should only be in the remote_broadcast_subnet.
- * REGISTER_NAME, DNS_NAME, DNSFAIL_NAME should only be in the wins_server_subnet.
- * WINS_PROXY_NAME should only be on the broadcast subnets.
- * PERMANENT_NAME can be on all subnets except remote_broadcast_subnet.
- *
- */
-
-enum name_source {LMHOSTS_NAME, REGISTER_NAME, SELF_NAME, DNS_NAME, 
-                  DNSFAIL_NAME, PERMANENT_NAME, WINS_PROXY_NAME};
+enum name_source {STATUS_QUERY, LMHOSTS, REGISTER, SELF, DNS, DNSFAIL};
 enum node_type {B_NODE=0, P_NODE=1, M_NODE=2, NBDD_NODE=3};
 enum packet_type {NMB_PACKET, DGRAM_PACKET};
 
 enum master_state
 {
-  MST_NONE,
-  MST_POTENTIAL,
-  MST_BACKUP,
-  MST_MSB,
-  MST_BROWSER,
-  MST_UNBECOMING_MASTER
+   MST_POTENTIAL,
+   MST_BACK,
+   MST_MSB,
+   MST_BROWSER
 };
 
 enum domain_state
 {
-  DOMAIN_NONE,
-  DOMAIN_WAIT,
-  DOMAIN_MST
+   DOMAIN_NONE,
+   DOMAIN_WAIT,
+   DOMAIN_MST
 };
 
 enum logon_state
 {
-  LOGON_NONE,
-  LOGON_WAIT,
-  LOGON_SRV
+   LOGON_NONE,
+   LOGON_WAIT,
+   LOGON_SRV
 };
 
-/* A netbios name structure. */
+enum state_type
+{
+	NAME_STATUS_DOM_SRV_CHK,
+	NAME_STATUS_SRV_CHK,
+	NAME_REGISTER_CHALLENGE,
+	NAME_REGISTER,
+	NAME_RELEASE,
+	NAME_QUERY_CONFIRM,
+	NAME_QUERY_SYNC_LOCAL,
+	NAME_QUERY_SYNC_REMOTE,
+	NAME_QUERY_DOM_SRV_CHK,
+	NAME_QUERY_SRV_CHK,
+	NAME_QUERY_FIND_MST,
+	NAME_QUERY_MST_CHK,
+	NAME_QUERY_DOMAIN
+};
+
+/* a netbios name structure */
 struct nmb_name {
   char name[17];
   char scope[64];
-  unsigned int name_type;
+  int name_type;
 };
 
-/* This is the structure used for the local netbios name list. */
+/* a netbios flags + ip address structure */
+/* this is used for multi-homed systems and for internet group names */
+struct nmb_ip
+{
+  struct in_addr ip; /* ip address of host that owns this name */
+  uint16 nb_flags;      /* netbios flags */
+};
+
+/* this is the structure used for the local netbios name list */
 struct name_record
 {
   struct name_record *next;
   struct name_record *prev;
 
-  struct subnet_record *subnet;
+  struct nmb_name name;    /* the netbios name */
+  struct nmb_ip *ip_flgs;  /* the ip + flags */
+  int num_ips;             /* number of ip+flags entries */
 
-  struct nmb_name name;    /* The netbios name. */
-  uint16 nb_flags;         /* Netbios flags. */
-  int num_ips;             /* Number of ip entries. */
-  struct in_addr *ip;      /* The ip list for this name. */
+  enum name_source source; /* where the name came from */
 
-  enum name_source source; /* Where the name came from. */
-
-  time_t death_time; /* The time the record must be removed (do not remove if 0). */
-  time_t refresh_time; /* The time the record should be refreshed. */
+  time_t death_time; /* time record must be removed (do not remove if 0) */
+  time_t refresh_time; /* time record should be refreshed */
 };
 
 struct subnet_record;
 
-/* Browser cache for synchronising browse lists. */
+/* browse and backup server cache for synchronising browse list */
 struct browse_cache_record
 {
-  struct browse_cache_record *next;
-  struct browse_cache_record *prev;
+	struct browse_cache_record *next;
+	struct browse_cache_record *prev;
 
-  pstring lmb_name;
-  pstring work_group;
-  struct in_addr ip;
-  time_t sync_time;
-  time_t death_time; /* The time the record must be removed. */
+	pstring name;
+	int type;
+	pstring group;
+	struct in_addr ip;
+	time_t sync_time;
+	BOOL synced;
+	BOOL local;
+        struct subnet_record *subnet;
 };
 
-/* This is used to hold the list of servers in my domain, and is
-   contained within lists of domains. */
-
+/* this is used to hold the list of servers in my domain, and is */
+/* contained within lists of domains */
 struct server_record
 {
   struct server_record *next;
   struct server_record *prev;
 
-  struct subnet_record *subnet;
-
   struct server_info_struct serv;
   time_t death_time;  
 };
 
-/* A workgroup structure. It contains a list of servers. */
+/* a workgroup structure. it contains a list of servers */
 struct work_record
 {
   struct work_record *next;
   struct work_record *prev;
 
-  struct subnet_record *subnet;
-
   struct server_record *serverlist;
 
-  /* Stage of development from non-local-master up to local-master browser. */
+  /* stage of development from non-local-master up to local-master browser */
   enum master_state mst_state;
 
-  /* Stage of development from non-domain-master to domain-master browser. */
+  /* stage of development from non-domain-master to domain master browser */
   enum domain_state dom_state;
 
-  /* Stage of development from non-logon-server to logon server. */
+  /* stage of development from non-logon-server to logon server */
   enum logon_state log_state;
 
-  /* Work group info. */
+  /* work group info */
   fstring work_group;
-  int     token;        /* Used when communicating with backup browsers. */
-  fstring local_master_browser_name;      /* Current local master browser. */
+  int     token;        /* used when communicating with backup browsers */
+  int     ServerType;
 
-  /* Announce info. */
+  /* announce info */
   time_t lastannounce_time;
   int announce_interval;
   BOOL    needannounce;
 
-  /* Timeout time for this workgroup. 0 means permanent. */
-  time_t death_time;  
 
-  /* Election info */
+  /* election info */
   BOOL    RunningElection;
   BOOL    needelection;
   int     ElectionCount;
   uint32  ElectionCriterion;
-
-  /* Domain master browser info. Used for efficient syncs. */
-  struct nmb_name dmb_name;
-  struct in_addr dmb_addr;
 };
 
-/* typedefs needed to define copy & free functions for userdata. */
-struct userdata_struct;
-
-typedef struct userdata_struct * (*userdata_copy_fn)(struct userdata_struct *);
-typedef void (*userdata_free_fn)(struct userdata_struct *);
-
-/* Structure to define any userdata passed around. */
-
-struct userdata_struct {
-  userdata_copy_fn copy_fn;
-  userdata_free_fn free_fn;
-  unsigned int userdata_len;
-  char data[1];
-};
-
-struct response_record;
-struct packet_struct;
-struct res_rec;
-
-/* typedef to define the function called when this response packet comes in. */
-typedef void (*response_function)(struct subnet_record *, struct response_record *,
-                                  struct packet_struct *);
-
-/* typedef to define the function called when this response record times out. */
-typedef void (*timeout_response_function)(struct subnet_record *,
-                                          struct response_record *);
-
-/* typedef to define the function called when the request that caused this
-   response record to be created is successful. */
-typedef void (*success_function)(struct subnet_record *, struct userdata_struct *, ...);
-
-/* typedef to define the function called when the request that caused this
-   response record to be created is unsuccessful. */
-typedef void (*fail_function)(struct subnet_record *, struct response_record *, ...);
-
-/* List of typedefs for success and fail functions of the different query
-   types. Used to catch any compile time prototype errors. */
-
-typedef void (*register_name_success_function)( struct subnet_record *,
-                                                struct userdata_struct *,
-                                                struct nmb_name *,
-                                                uint16,
-                                                int,
-                                                struct in_addr);
-typedef void (*register_name_fail_function)( struct subnet_record *,
-                                             struct response_record *,
-                                             struct nmb_name *);
-
-typedef void (*release_name_success_function)( struct subnet_record *,
-                                               struct userdata_struct *, 
-                                               struct nmb_name *,
-                                               struct in_addr);
-typedef void (*release_name_fail_function)( struct subnet_record *,
-                                            struct response_record *, 
-                                            struct nmb_name *);
-
-typedef void (*refresh_name_success_function)( struct subnet_record *,
-                                               struct userdata_struct *, 
-                                               struct nmb_name *,
-                                               uint16,
-                                               int,
-                                               struct in_addr);
-typedef void (*refresh_name_fail_function)( struct subnet_record *,
-                                            struct response_record *,
-                                            struct nmb_name *);
-
-typedef void (*query_name_success_function)( struct subnet_record *,
-                                             struct userdata_struct *,
-                                             struct nmb_name *,
-                                             struct in_addr,
-                                             struct res_rec *answers);
-
-typedef void (*query_name_fail_function)( struct subnet_record *,
-                                          struct response_record *,    
-                                          struct nmb_name *,
-                                          int);  
-
-typedef void (*node_status_success_function)( struct subnet_record *,
-                                              struct userdata_struct *,
-                                              struct res_rec *,
-                                              struct in_addr);
-typedef void (*node_status_fail_function)( struct subnet_record *,
-                                           struct response_record *);
-
-/* Initiated name queries are recorded in this list to track any responses. */
-
+/* initiated name queries recorded in this list to track any responses... */
+/* sadly, we need to group everything together. i suppose that if this
+   gets unwieldy, then a union ought to be considered. oh for c++... */
 struct response_record
 {
   struct response_record *next;
   struct response_record *prev;
 
   uint16 response_id;
+  enum state_type state;
 
-  /* Callbacks for packets received or not. */ 
-  response_function resp_fn;
-  timeout_response_function timeout_fn;
+  int fd;
+  int quest_type;
+  struct nmb_name name;
+  int nb_flags;
+  time_t ttl;
 
-  /* Callbacks for the request succeeding or not. */
-  success_function success_fn;
-  fail_function fail_fn;
- 
-  struct packet_struct *packet;
+  int server_type;
+  fstring my_name;
+  fstring my_comment;
 
-  struct userdata_struct *userdata;
+  BOOL bcast;
+  BOOL recurse;
+  struct in_addr send_ip;
+  struct in_addr reply_to_ip;
+  int reply_id;
 
   int num_msgs;
 
@@ -378,44 +255,44 @@ struct response_record
   int    repeat_count;
 };
 
-/* A subnet structure. It contains a list of workgroups and netbios names. */
+/* a subnet structure. it contains a list of workgroups and netbios names*/
 
-/*
+/* note that a subnet of 255.255.255.255 contains all the WINS netbios names.
+   all communication from such nodes are on a non-broadcast basis: they
+   are point-to-point (P nodes) or mixed point-to-point and broadcast
+   (M nodes). M nodes use point-to-point as a preference, and will use
+   broadcasting for certain activities, or will resort to broadcasting as a
+   last resort, if the WINS server fails (users of wfwg will notice that their
+   machine often freezes for 30 seconds at a time intermittently, if the WINS
+   server is down).
+
    B nodes will have their own, totally separate subnet record, with their
-   own netbios name set. These do NOT interact with other subnet records'
-   netbios names.
-*/
+   own netbios name set. these do NOT interact with other subnet records'
+   netbios names, INCLUDING the WINS one (with an ip "address", so called,
+   of 255.255.255.255)
 
-enum subnet_type {
-  NORMAL_SUBNET              = 0,  /* Subnet listed in interfaces list. */
-  UNICAST_SUBNET             = 1,  /* Subnet for unicast packets. */
-  REMOTE_BROADCAST_SUBNET    = 2,  /* Subnet for remote broadcasts. */
-  WINS_SERVER_SUBNET         = 3   /* Only created if we are a WINS server. */
-};
+   there is a separate response list for each subnet record. in the case of
+   the 255.255.255.255 subnet record (WINS), the WINS server will be able to
+   use this to poll (infrequently!) each of its entries, to ensure that the
+   names are still in use.
+   XXXX this polling is a planned feature for a really over-cautious WINS server 
+*/
 
 struct subnet_record
 {
   struct subnet_record *next;
   struct subnet_record *prev;
 
-  char  *subnet_name;      /* For Debug identification. */
-  enum subnet_type type;   /* To catagorize the subnet. */
-
-  struct work_record *workgrouplist; /* List of workgroups. */
-  struct name_record *namelist;      /* List of netbios names. */
-  struct response_record *responselist; /* List of responses expected. */
-
-  BOOL namelist_changed;
-  BOOL work_changed;
+  struct work_record *workgrouplist; /* list of workgroups */
+  struct name_record *namelist;      /* list of netbios names */
+  struct response_record *responselist; /* list of responses expected */
 
   struct in_addr bcast_ip;
   struct in_addr mask_ip;
   struct in_addr myip;
-  int nmb_sock;               /* socket to listen for unicast 137. */
-  int dgram_sock;             /* socket to listen for unicast 138. */
 };
 
-/* A resource record. */
+/* a resource record */
 struct res_rec {
   struct nmb_name rr_name;
   int rr_type;
@@ -425,7 +302,7 @@ struct res_rec {
   char rdata[MAX_DGRAM_SIZE];
 };
 
-/* An nmb packet. */
+/* define a nmb packet. */
 struct nmb_packet
 {
   struct {
@@ -458,8 +335,7 @@ struct nmb_packet
 };
 
 
-/* A datagram - this normally contains SMB data in the data[] array. */
-
+/* a datagram - this normally contains SMB data in the data[] array */
 struct dgram_packet {
   struct {
     int msg_type;
@@ -480,14 +356,12 @@ struct dgram_packet {
   char data[MAX_DGRAM_SIZE];
 };
 
-/* Define a structure used to queue packets. This will be a linked
- list of nmb packets. */
-
+/* define a structure used to queue packets. this will be a linked
+ list of nmb packets */
 struct packet_struct
 {
   struct packet_struct *next;
   struct packet_struct *prev;
-  BOOL locked;
   struct in_addr ip;
   int port;
   int fd;
@@ -499,16 +373,8 @@ struct packet_struct
   } packet;
 };
 
-/* NETLOGON opcodes */
 
-#define QUERYFORPDC	 7 /* Query for PDC. */
-#define QUERYFORPDC_R	12 /* Response to Query for PDC. */
-#define SAMLOGON	18
-#define SAMLOGON_R	19
-
-
-/* Ids for netbios packet types. */
-
+/* ids for netbios packet types */
 #define ANN_HostAnnouncement         1
 #define ANN_AnnouncementRequest      2
 #define ANN_Election                 8
@@ -521,48 +387,42 @@ struct packet_struct
 #define ANN_LocalMasterAnnouncement 15
 
 
-/* Broadcast packet announcement intervals, in minutes. */
+/* broadcast packet announcement intervals, in minutes */
 
-/* Attempt to add domain logon and domain master names. */
+/* attempt to add domain logon and domain master names */
 #define CHECK_TIME_ADD_DOM_NAMES 5 
 
-/* Search for master browsers of workgroups samba knows about, 
-   except default. */
+/* search for master browsers of workgroups samba knows about, 
+   except default */
 #define CHECK_TIME_MST_BROWSE       5 
 
-/* Request backup browser announcements from other servers. */
+/* request backup browser announcements from other servers */
 #define CHECK_TIME_ANNOUNCE_BACKUP 15
 
-/* Request host announcements from other servers: min and max of interval. */
+/* request host announcements from other servers: min and max of interval */
 #define CHECK_TIME_MIN_HOST_ANNCE   3
 #define CHECK_TIME_MAX_HOST_ANNCE  12
 
-/* Announce as master to WINS server and any Primary Domain Controllers. */
+/* announce as master to WINS server and any Primary Domain Controllers */
 #define CHECK_TIME_MST_ANNOUNCE    15
 
-/* Time between syncs from domain master browser to local master browsers. */
-#define CHECK_TIME_DMB_TO_LMB_SYNC    15
-
-/* Do all remote announcements this often. */
+/* do all remote announcements this often */
 #define REMOTE_ANNOUNCE_INTERVAL 180
 
-/* Types of machine we can announce as. */
+/* Types of machine we can announce as */
 #define ANNOUNCE_AS_NT 1
 #define ANNOUNCE_AS_WIN95 2
 #define ANNOUNCE_AS_WFW 3
 
 /* Macro's to enumerate subnets either with or without
-   the UNICAST subnet. */
+   the WINS subnet. */
 
 extern struct subnet_record *subnetlist;
-extern struct subnet_record *unicast_subnet;
-extern struct subnet_record *wins_server_subnet;
-extern struct subnet_record *remote_broadcast_subnet;
+extern struct subnet_record *wins_subnet;
 
 #define FIRST_SUBNET subnetlist
-#define NEXT_SUBNET_EXCLUDING_UNICAST(x) ((x)->next)
-#define NEXT_SUBNET_INCLUDING_UNICAST(x) (get_next_subnet_maybe_unicast((x)))
+#define NEXT_SUBNET_EXCLUDING_WINS(x) ((x)->next)
+#define NEXT_SUBNET_INCLUDING_WINS(x) ( ((x) == wins_subnet) ? NULL : \
+                                        (((x)->next == NULL) ? wins_subnet : \
+                                         (x)->next))
 
-/* To be removed. */
-enum state_type { TEST };
-#endif /* _NAMESERV_H_ */

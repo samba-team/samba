@@ -1,5 +1,5 @@
 !==
-!== Support.txt for Samba release 1.9.18alpha13 16 Dec 1997
+!== Support.txt for Samba release 1.9.17p5 20 Dec 1997
 !==
 The Samba Consultants List
 ==========================
@@ -32,10 +32,10 @@ Region                             Number of entries
 ----------------------------------------------------
     AFRICA                                        2
     AMERICA - CENTRAL & SOUTH                     4
-    AMERICA - USA                                36
+    AMERICA - USA                                35
     ASIA                                          1
     AUSTRALIA & NEW ZEALAND                      18
-    CANADA                                        9
+    CANADA                                        8
     EUROPE                                       36
     MIDDLE EAST                                   1
 
@@ -705,22 +705,6 @@ info@stelias.com.
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
-USA - VIRGINIA
-
-Commonwealth Technical Services, Inc.
-13618 Hull Street Road
-Suite 300
-Midlothian, VA 23112
-bcaudle@ctsi.net
-www.ctsi.net
-804-639-5400
-
-Commonwealth Technical Services supports Samba systems on various UNIX platforms, 
-as well as providing hardware, software, and consulting services for UNIX and Windows
-networks and the Internet.
-------------------------------------------------------------------------------
-
-------------------------------------------------------------------------------
 WASHINGTON DC METRO - USA
 
 Asset Software, Inc. has been running Samba since the 1.6 release on various
@@ -1166,21 +1150,6 @@ further information.
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
-ONTARIO - CANADA
-
-MIS Incorporated, London Ontario CANADA
-Tel:   +1 (519) 673-3777   Fax:   +1 (519) 673-4292
-Email: samba-support@netcontech.com 
-
-MIS Incorporated is a Microsoft Certified Solution Provider,
-and system support group specializing in applying Windows
-front ends to high end relational database servers. Samba
-support available on any unix platform in conjunction with
-WFW, Windows-NT, Win95, OS/2. Dial-in support
-nation-wide, or on-site anywhere in Ontario.
-------------------------------------------------------------------------------
-
-------------------------------------------------------------------------------
 OTTAWA - CANADA
 
 Russell McOrmond
@@ -1292,8 +1261,8 @@ servers.
 CAMBRIDGE - ENGLAND.  Will travel / provide support world-wide.
 
 Luke Kenneth Casson Leighton
-Phone: +44 1223 570 262 or 570 264 or Mobile +44 410 305 745
-lkcl@switchboard.net
+Phone: +44 1223 570 262 or 570 264
+lkcl@cb1.com
 
 Configuration Experience:
 

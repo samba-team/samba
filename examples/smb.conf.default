@@ -29,18 +29,11 @@
 
 # If you want to automatically load your printer list rather
 # than setting them up individually then you'll need this
+   printcap name = /etc/printcap
    load printers = yes
 
-# you may wish to override the location of the printcap file
-;   printcap name = /etc/printcap
-
-# on SystemV system setting printcap name to lpstat should allow
-# you to automatically obtain a printer list from the SystemV spool
-# system
-;   printcap name = lpstat
-
-# It should not be necessary to specify the print system type unless
-# it is non-standard. Currently supported print systems include:
+# It should not be necessary to spell out the print system type unless
+# yours is non-standard. Currently supported print systems include:
 # bsd, sysv, plp, lprng, aix, hpux, qnx
 ;   printing = bsd
 
@@ -111,7 +104,7 @@
 # run a specific logon batch file per workstation (machine)
 ;   logon script = %m.bat
 # run a specific logon batch file per username
-;   logon script = %U.bat
+;   logon script = %u.bat
 
 # Where to store roving profiles (only for Win95 and WinNT)
 #        %L substitutes for this servers netbios name, %U is username
@@ -213,7 +206,7 @@
 
 # a service which has a different directory for each machine that connects
 # this allows you to tailor configurations to incoming machines. You could
-# also use the %U option to tailor it by user name.
+# also use the %u option to tailor it by user name.
 # The %m gets replaced with the machine name that is connecting.
 ;[pchome]
 ;  comment = PC Directories

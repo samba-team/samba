@@ -1,0 +1,256 @@
+/* 
+   Unix SMB/Netbios documentation.
+   Version 0.1
+   Copyright (C) Luke Leighton  Andrew Tridgell  1996
+   
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+   
+   Document name: nameelect.doc
+
+   Revision History:
+
+   0.0 - 02jul96 : lkcl@pires.co.uk
+   created
+
+   0.1 - 22jul96 Andrew.Tridgell@anu.edu.au
+   tridge's comments on first revision
+*/
+
+the module nameelect.c deals with initiating, winning, losing
+browsing elections, and checking if browsers are still around,
+and the consequences of getting involved in all this.
+
+an election packet can be received at any time, which will initiate
+an election.  samba can also detect that there is no longer a
+master browser and will initiate an election.
+
+there is one way to become a master browser, but there are two
+ways to un-become a master browser.  if you lose an election, you
+must stop being a master browser. if you fail to register your
+unique special browser names (either on your local subnet or with
+the WINS server) then you must stop being a master browser.
+
+this is a double fail-safe mechanism to ensure that there is only
+one master browser per workgroup per subnet (and one domain master
+browser - per domain (workgroup) per wide area network).
+
+(a wide area network is created when one or more servers on a
+broadcast-isolated subnet point to the same WINS server).
+
+--------
+NOTE FROM TRIDGE:
+
+I'd say "domain master browser" not "WINS server" here. WINS doesn't
+have much to do with browsing, it is the WAN varient of name
+resolution. The name resolution and browsing functions of a netbios
+network are almost entirely separate. Both grew out of systems that
+could only be used on local networks. 
+
+To adapt them to WANs, WINS was added for name resolution, and "domain
+master browsers" were added for browse lists. It would be perfectly
+possible to have a WINS server that doesn't even listen to UDP port
+138. 
+--------
+
+/*************************************************************************
+  check_elections()
+  *************************************************************************/
+
+this function returns True if samba is in the process of running an
+election on any of its interfaces. a better version of this function
+should return the time-out period in between election packets, in
+milliseconds.
+
+
+/*************************************************************************
+  process_election()
+  *************************************************************************/
+
+this function is responsible for dealing with the receipt of an election
+browse MAILSLOT packet.
+
+if samba is running an election, it checks the criteria in the packet
+received using win_election() to see if it has lost the election or if
+it should join in the election.
+
+if it loses the election, then it becomes a non-master.
+
+
+/*************************************************************************
+  win_election()
+  *************************************************************************/
+
+this function returns True if samba has won an election. the criteria
+in order of precedence are:
+
+the election version; the election criteria; the time since samba was
+started; and as a last resort, a name comparison is used.
+
+
+/*************************************************************************
+  run_elections()
+  *************************************************************************/
+
+this function is responsible for sending out election packets if
+samba is running in an election. once the fourth packet is sent
+out, it is assumed that we have won, and samba initiates becoming
+a master browser.
+
+(it looks like samba sends out an extra packet just to be sure...)
+
+
+/*************************************************************************
+  become_nonmaster()
+  *************************************************************************/
+
+this function is responsible for down-grading samba's status from
+either domain master to master browser or nothing, or master browser
+to nothing, depending on its current status.
+
+samba can become a non-master in three ways: by losing an election -
+see process_election(); by having one of its special browser names
+de-registered - see name_unregister_work(); by receiving and
+processing a browser reset packet - see process_reset_browser().
+
+when samba stops being a domain master, it must release its unique
+0x1b name. when samba stops being a master browser, it must release
+its unique 0x1d name.
+
+becoming non-master is done on a per-subnet basis.
+
+
+/*************************************************************************
+  become_master()
+  *************************************************************************/
+
+this function is responsible for slowly turning samba into a
+local master browser or a domain master browser.
+
+
+this is done in stages. note that this could take a while, 
+particularly on a broadcast subnet, as we have to wait for
+the implicit registration of each name to be accepted.
+
+as each name is successfully registered, become_master() is
+called again via name_register_work(), in order to initiate
+the next stage (see dead_netbios_entry() - deals with implicit
+name registration and response_name_reg() - deals with explicit
+registration with a WINS server).
+
+stage 1: was MST_NONE - go to MST_NONE and register ^1^2__MSBROWSE__^2^1.
+stage 2: was MST_WON  - go to MST_MSB  and register WORKGROUP(0x1d)
+stage 3: was MST_MSB  - go to MST_BROWSER and register WORKGROUP(0x1b)
+stage 4: was MST_BROWSER - go to MST_DOMAIN (do not pass GO, do not...)
+
+note that this code still does not cope with the distinction
+between different types of nodes, particularly between M and P
+nodes (see rfc1001.txt). that will be developed later.
+
+
+/*************************************************************************
+  name_register_work()
+  *************************************************************************/
+
+this function is called when a NetBIOS name is successfully
+registered. it will add the registered name into samba's NetBIOS
+records.
+
+it has the additional responsibility that when samba is becoming
+a master browser, it must initiate the next stage in the progress
+towards becoming a master browser.
+
+implicit name registration is done through dead_netbios_entry()
+by time-out. explicit name registration is done through
+response_name_reg() with a WINS server.
+
+
+/*************************************************************************
+  name_unregister_work()
+  *************************************************************************/
+
+this function is called when there is an objection to a NetBIOS
+name being registered. this will always be done through a negative
+response to a name registration, whether it be by a host that
+already owns the unique name being registered on a subnet, or
+by a WINS server.
+
+the name being objected to must be removed from samba's records.
+
+it has the additional responsibility of checking whether samba is
+currently a master browser or not, and if so it should initiate
+becoming a non-master.
+
+
+
+/*************************************************************************
+  send_election()
+  *************************************************************************/
+
+this function is responsible for sending a browse mailslot 
+datagram election packet (of type ANN_Election). it constructs
+the packet with all the relevant info needed to participate:
+election version; election criteria; time since startup and
+our name.
+
+this function can be used to ensure that initiate but lose an
+election by specifying a criteria and time up of zero. this
+is necessary if we are a master browser and we are about to
+go down (politely!) - see nmbd.c:sig_term().
+
+
+/*************************************************************************
+  browser_gone()
+  *************************************************************************/
+
+this function is responsible for dealing with the instance when
+the master browser we thought was present on a subnet is no longer
+responding.
+
+if it is samba's workgroup, and it's a local interface, samba
+detects that it can participate in an election on that interface
+and potentially become a master browser or domain master.
+
+if it's a local subnet and not one of samba's workgroups, then
+samba will force an election (which it is not obliged to do).
+remove_workgroup() will be expected to remove all references
+to this workgroup and the servers in it from the database.
+
+if it's a remote subnet and not one of samba's workgroups then
+no election is forced, and remove_workgroup() will be expected
+to remove all server entries from this workgroup _except_ those
+added from the lmhosts file. if there are entries added from
+the lmhosts file, then the workgroup entry will remain,
+otherwise it too will be removed.
+
+
+/*************************************************************************
+  check_master_browser()
+  *************************************************************************/
+
+this function is responsible for periodically checking whether
+master browsers that samba expects to be alive are alive. this
+is done every CHECK_TIME_MST_BROWSE minutes.
+
+for every workgroup record for which samba is not a master browser,
+on both local and remote interfaces, samba will initiate a
+broadcast query for a master browser on that subnet.
+
+(browser_gone() will be called to deal with the case where no
+response is received to the NAME_QUERY_MST_CHK initiated here.
+no action is required when a response _is_ received, however:
+see nameservresp.c:response_process() and dead_netbios_entry()
+for details)
+
+

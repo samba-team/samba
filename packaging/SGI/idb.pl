@@ -54,7 +54,7 @@ if (@codepage) {
   @codepage[0] =~ s/^.*\)//;
   chdir '../../source';
   # if we have codepages we need to create them for the package
-  system("./installcp.sh . ../packaging/SGI/codepages . @codepage[0]");
+  system("./installcp.sh . ../packaging/SGI/codepage . @codepage[0]");
   chdir $curdir;
   @codepage = sort split(' ',@codepage[0]);
 }
@@ -71,7 +71,7 @@ if (@codepage) {
 
 # strip out all the generated directories and the "*.o" files from the source
 # release
-@allfiles = grep(!/^.*\.o$/ & !/^packaging\/SGI\/bins/ & !/^packaging\/SGI\/catman/ & !/^packaging\/SGI\/html/ & !/^packaging\/SGI\/codepages/, @allfiles);
+@allfiles = grep(!/^.*\.o$/ & !/^packaging\/SGI\/bins/ & !/^packaging\/SGI\/catman/ & !/^packaging\/SGI\/html/ & !/^packaging\/SGI\/codepage/, @allfiles);
 
 open(IDB,">samba.idb") || die "Unable to open samba.idb for output\n";
 
@@ -127,10 +127,10 @@ while (@docs) {
 print IDB "f 0755 root sys usr/samba/inetd.sh packaging/SGI/inetd.sh samba.sw.base\n";
 print IDB "d 0755 root sys usr/samba/lib packaging/SGI samba.sw.base\n";
 if (@codepage) {
-  print IDB "d 0755 root sys usr/samba/lib/codepages packaging/SGI samba.sw.base\n";
+  print IDB "d 0755 root sys usr/samba/lib/codepage packaging/SGI samba.sw.base\n";
   while (@codepage) {
     $nextpage = shift @codepage;
-    print IDB "f 0644 root sys usr/samba/lib/codepages/codepage.$nextpage packaging/SGI/codepages/codepage.$nextpage samba.sw.base\n";
+    print IDB "f 0644 root sys usr/samba/lib/codepage/codepage.$nextpage packaging/SGI/codepage/codepage.$nextpage samba.sw.base\n";
   }
 }
 print IDB "f 0644 root sys usr/samba/lib/smb.conf packaging/SGI/smb.conf samba.sw.base config(update)\n";

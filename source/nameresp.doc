@@ -1,0 +1,178 @@
+/* 
+   Unix SMB/Netbios documentation.
+   Version 0.0
+   Copyright (C) Luke Leighton  Andrew Tridgell  1996
+   
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+   
+   Document name: nameresp.doc
+
+   Revision History:
+
+   0.0 - 02jul96 : lkcl@pires.co.uk
+   created
+*/
+
+the netbios expected response code is a key part of samba's NetBIOS
+handling capabilities. it allows samba to carry on dealing with
+other things while expecting a response from one or more hosts.
+
+this allows samba to simultaneously deal with registering its names
+with another WINS server, register its names on its local subnets,
+query any hosts that have registered with samba in its capacity as
+a WINS server, and at a later date it will be also be able handle
+END-NODE CHALLENGES (see rfc1001.txt 15.2.2.2 and 15.2.2.3 - secured
+NBNS functionality).
+
+all at once!
+
+when a netbios packet is sent out by samba and it expects a response,
+a record of all the relevant information is kept (most importantly,
+the unique transaction id associated which will come back to us in
+a response packet is recorded, and also recorded is the reason that
+the original packet was sent out by samba in the first place!).
+
+if a response is received, then the unique transaction identifier 
+returned in the response packet is searched for in the expected
+response records. the record indicates why the initial request was
+made (and therefore the type of response can be verified) and
+appropriate action can be taken.
+
+when no responses, after a number of retries, are not received, then
+samba may take appropriate action. this is a crucial part of samba's
+operation: for a key number of NetBIOS operations, no response is an
+implicit positive response.
+
+module nameresp deals with the initial transmission, re-transmission
+and time-out of netbios response records.
+
+module namedbresp deals with the maintenance of the list of expected
+responses - creation, finding and removal.
+
+
+/*************************************************************************
+  queue_netbios_packet()
+  *************************************************************************/
+
+this function is responsible for sending out a netbios packet, and then
+making a record of the information that was sent out. a response will
+be expected later (or not, as the case may be).
+
+if a response is received, response_netbios_packet() will deal with it.
+otherwise, it will be dealt with in expire_netbios_response_entries().
+
+
+/*************************************************************************
+  queue_netbios_pkt_wins()
+  *************************************************************************/
+
+this function is a wrapper around queue_netbios_packet(). there is
+some confusion about B, M and P nodes (see rfc1001.txt section 10) -
+confusion introduced by luke :-) - which needs sorting out.
+
+for example, rfc1001.txt 15.2.3 - an M node must attempt to register a
+name first as a B node, then attempt to register as an M node. negative
+responses on either of these attempts is a failure to register the
+name.
+
+this is NOT the case with a P node.
+
+
+/*************************************************************************
+  expire_netbios_response_entries()
+  *************************************************************************/
+
+this function is responsible for dealing with queued response records
+that have not received a response packet matching their unique
+transaction id.
+
+if the retry count for any record is non-zero, and its time-out period
+has expired, the retry count is reduced, the time-out period is stepped
+forward and the packet is re-transmitted (from the information stored
+in the queued response record) with the same unique transaction id of
+the initial attempt at soliciting a response.
+
+if the retry count is zero, then the packet is assumed to have expired.
+dead_netbios_entry() is called to deal with the possibility of an error
+or a problem (or in certain instances, no answer is an implicit
+positive response!).
+
+the expected response record is then deleted, and the number of expected
+responses reduced. when this count gets to zero, listen_for_packets()
+will no longer time-out for 1 second on account of expecting response
+packets.
+
+
+/*************************************************************************
+  dead_netbios_entry()
+  *************************************************************************/
+
+this function is responsible for dealing with the case when a NetBIOS
+response to a packet sent out by samba was not received. for certain
+transactions, this may be normal. for others, under certain conditions
+it may constitute either an error or a problem with or failure of one
+or more hosts.
+
+- NAME_QUERY_CONFIRM
+
+when a samba 'state' of type NAME_QUERY_CONFIRM is sent, a response
+may or may not be forthcoming. if no response is received to a unique
+name, then the record is removed from samba's WINS database. non-unique
+names are simply expected to die off on a time-to-live basis (see
+rfc1001.txt 15.1.3.4)
+
+query_refresh_names() issues this samba 'state'
+response_name_query_sync() deals with responses to NAME_QUERY_CONFIRM.
+
+- NAME_QUERY_MST_CHK
+
+when a samba 'state' of type NAME_QUERY_MST_CHK is sent, and a response
+is not received, this implies that a master browser will have failed.
+remedial action may need to be taken, for example if samba is a member
+of that workgroup and it is also a potential master browser it could
+force an election.
+
+check_master_browser() issues this samba 'state'.
+response_process() does nothing if a response is received. this is normal.
+
+- NAME_RELEASE
+
+when a samba 'state' of type NAME_RELEASE is sent, and a response is
+not received, it is assumed to be acceptable to release the name. if the
+original response was sent to another WINS server, then that WINS server
+may be inaccessible or may have failed. if so, then at a later date
+samba should take this into account (see rfc1001.txt 10.3).
+
+remove_name_entry() issues this samba 'state'
+response_name_rel() deals with responses to NAME_RELEASE.
+
+- NAME_REGISTER
+
+when a samba 'state' of type NAME_REGISTER is sent, and a response is
+not received, if the registration was done by broadcast, it is assumed
+that there are no objections to the registration of this name, and samba
+adds the name to the appropriate subnet record name database. if the
+registration was point-to-point (i.e with another WINS server) then that
+WINS server may be inaccessible or may have failed. if so, then at a later
+date samba should take this into account (see rfc1001.txt 10.3).
+
+add_my_name_entry() issues this samba 'state'
+response_name_reg() deals with responses to NAME_REGISTER.
+
+no action is taken for any other kinds of samba 'states' if a response
+is not received. this is not to say that action may not be appropriate,
+just that it's not been looked at yet :-)
+
+

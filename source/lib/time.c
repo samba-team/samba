@@ -74,7 +74,6 @@ static int tm_diff(struct tm *a, struct tm *b)
   int hours = 24*days + (a->tm_hour - b->tm_hour);
   int minutes = 60*hours + (a->tm_min - b->tm_min);
   int seconds = 60*minutes + (a->tm_sec - b->tm_sec);
-
   return seconds;
 }
 
@@ -94,11 +93,6 @@ init the time differences
 void TimeInit(void)
 {
   serverzone = TimeZone(time(NULL));
-
-  if ((serverzone % 60) != 0) {
-	  DEBUG(1,("WARNING: Your timezone is not a multiple of 1 minute.\n"));
-  }
-
   DEBUG(4,("Serverzone is %d\n",serverzone));
 }
 
@@ -285,7 +279,7 @@ void put_long_date(char *p,time_t t)
   }
 
   /* this converts GMT to kludge-GMT */
-  t -= LocTimeDiff(t) - serverzone; 
+  t -= TimeDiff(t) - serverzone; 
 
   d = (double) (t);
 
@@ -463,19 +457,19 @@ char *timestring(void )
 #ifdef NO_STRFTIME
   fstrcpy(TimeBuf, asctime(tm));
 #elif defined(CLIX) || defined(CONVEX)
-  strftime(TimeBuf,100,"%m/%d/%Y %I:%M:%S %p",tm);
+  strftime(TimeBuf,100,"%m/%d/%y %I:%M:%S %p",tm);
 #elif defined(AMPM)
-  strftime(TimeBuf,100,"%m/%d/%Y %r",tm);
+  strftime(TimeBuf,100,"%D %r",tm);
 #elif defined(TZ_TIME)
   {
     int zone = TimeDiff(t);
     int absZoneMinutes = (zone<0 ? -zone : zone) / 60;
-    size_t len = strftime(TimeBuf,sizeof(TimeBuf)-6,"%m/%d/%Y %T",tm);
+    size_t len = strftime(TimeBuf,sizeof(TimeBuf)-6,"%D %T",tm);
     sprintf(TimeBuf+len," %c%02d%02d",
 	    zone<0?'+':'-',absZoneMinutes/60,absZoneMinutes%60);
   }
 #else
-  strftime(TimeBuf,100,"%m/%d/%Y %T",tm);
+  strftime(TimeBuf,100,"%D %T",tm);
 #endif
   return(TimeBuf);
 }

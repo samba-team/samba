@@ -19,8 +19,10 @@ PC-related machines share files and printers and other informatiuon
 such as lists of available files and printers. Operating systems that
 support this natively include Windows NT, OS/2, and Linux and add on
 packages that achieve the same thing are available for DOS, Windows,
-VMS, Unix of all kinds, MVS, and more. Apple Macs and some Web Browsers
-can speak this protocol as well.  Alternatives to SMB include
+VMS, Unix of all kinds, MVS, and more. There is no reason why Apple
+Macs and indeed any Web browser should not be able to speak this
+protocol, and current development (in which the Samba team is heavily
+involved) is aimed at exactly that. Alternatives to SMB include
 Netware, NFS, Appletalk, Banyan Vines, Decnet etc; many of these have
 advantages but none are both public specifications and widely
 implemented in desktop machines by default.
@@ -100,22 +102,19 @@ DOCUMENTATION
 
 There is quite a bit of documentation included with the package,
 including man pages, and lots of .txt files with hints and useful
-info. This is also available from the web page. There is a growing
-collection of information under docs/faq; by the next release expect
-this to be the default starting point.
+info. This is also available from the web page.
 
 FTP SITE
 --------
 
-Please use a mirror site! The list of mirrors is in docs/MIRRORS.txt.
-The master ftp site is samba.anu.edu.au in the directory pub/samba.
+The main anonymous ftp distribution site for this software is
+samba.anu.edu.au in the directory pub/samba/.
 
 MAILING LIST
 ------------
 
 There is a mailing list for discussion of Samba. To subscribe send
 mail to listproc@samba.anu.edu.au with a body of "subscribe samba Your Name"
-Please do NOT send this request to the list alias instead.
 
 To send mail to everyone on the list mail to samba@listproc.anu.edu.au
 
@@ -149,4 +148,6 @@ this package. Have you registered with the survey yet? :-)
 
 It is maintained by Paul Blackman (thanks Paul!). You can contact him
 at ictinus@samba.anu.edu.au.
+
+
 

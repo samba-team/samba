@@ -1,0 +1,149 @@
+/* 
+   Unix SMB/Netbios documentation.
+   Version 0.1
+   Copyright (C) Luke Leighton  Andrew Tridgell  1996
+   
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+   
+   Document name: namebrowse.doc
+
+   Revision History:
+
+   0.0 - 02jul96 : lkcl@pires.co.uk
+   created
+
+   0.1 - 22jul96 Andrew.Tridgell@anu.edu.au
+   tridge's comments on first revision
+*/
+
+this module deals with queueing servers that samba must sync browse
+lists with. it will always issue a name query immediately before
+actually carrying out the NetServerEnum call, to ensure that time
+is not wasted by a remote server's failure.
+
+this module was created to minimise the amount of NetServerEnum calls
+that samba may be asked to perform, by maintaining the name of a server
+for up to a minute after the NetServerEnum call was issued, and
+disallowing further NetServerEnum calls to this remote server until
+the entry is removed.
+
+samba can ask for a NetServerEnum call to be issued to grab a remote
+server's list of servers and workgroups either in its capacity as
+a domain master browser, as a local master browser.
+
+samba does not deal with becoming a backup master browser properly
+at present.
+
+-------------
+NOTE FROM TRIDGE:
+
+Yes, samba can send these either in its capacity as a DMB or as a
+MB. There are only two situations:
+
+- If samba is a DMB then it should sync with the "local only" bit set
+with any master browser that has sent it a "master announce".
+
+- if samba is not a DMB then it can only sync with the DMB, and should
+not set the "local only" bit.
+
+Note that samba should never sync with other non-DMB servers when it
+is not a DMB. 
+
+Try to do a sync under any other circumstances is dangerous without a
+multi-threaded nmbd. I have a print server at home that knows some SMB
+and NBT, but if you try to sync browse lists with it then it clogs up,
+and also clogs up nmbd while it times out the connection. If  we
+follow  the above two rules then we can't get into this sort of
+trouble as:
+
+- if we are a DMB and a master browser sends us a "master announce"
+then it is expecting to receive a NetServerEnum SMB connection soon,
+and must be capabable of handling it.
+
+- if we are not a DMB then we will only sync with the DMB, which must
+be capable of doing this stuff or things are really in a mess :-)
+--------------
+
+
+/*************************************************************************
+  do_browser_lists()
+  *************************************************************************/
+
+this function is responsible for finding an appropriate entry in the
+sync browser cache, initiating a name query (which results in a
+NetServerEnum call if there is a positive response), and then
+removing all entries that have been actioned and have been around
+for over a minute.
+
+
+/*************************************************************************
+  start_sync_browse_entry()
+  *************************************************************************/
+
+this function is responsible for initiating a name query. if a
+positive response is received, then this will result in a
+NetServerEnum api call.
+
+samba will only initiate this process if it is a master browser
+for this workgroup.
+
+-----------
+NOTE FROM TRIDGE:
+
+I'd actually prefer to skip the name query completely if we can
+resolve the DMBs name via gethostbyname(). For the name query to work
+we either have to have WINS working, or we need to know the broadcast
+address of the network that the DMB is on. This makes us too dependent
+on too many thing being right.
+
+If the gethostbyname() fails then sure, go for a normal name query,
+but if it works then we have saved ourselves a lot of trouble and
+gained a lot of robustness.
+
+This is best handled by a generic "resolve netbios name" routine that
+tries DNS first then resorts to WINS or bcast if that fails. It also
+needs to cache the results. 
+-------------
+
+
+/*************************************************************************
+  add_browser_entry()
+  *************************************************************************/
+
+this function is responsible for adding a browser into the list of
+servers to sync browse lists with. if the server entry has already
+been added and syncing browse lists has already been initiated, it
+will not be added again.
+
+
+/*************************************************************************
+  expire_browse_cache()
+  *************************************************************************/
+
+this function is responsible for removing entries that have had the
+sync browse list initiated (whether that succeeded or not is beyond
+this function's scope) and have been in the cache for a while.
+
+
+/*************************************************************************
+  add_browse_entry()
+  *************************************************************************/
+
+this function is responsible for adding a new entry into the list
+of servers to sync browse lists with at some point in the near future.
+
+
+
+

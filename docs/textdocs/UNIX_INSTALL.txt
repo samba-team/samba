@@ -1,5 +1,5 @@
 !==
-!== UNIX_INSTALL.txt for Samba release 1.9.18alpha13 16 Dec 1997
+!== UNIX_INSTALL.txt for Samba release 1.9.17p5 20 Dec 1997
 !==
 Contributor:	Andrew Tridgell <samba-bugs@samba.anu.edu.au>
 Date:		Unknown
@@ -18,7 +18,7 @@ try something like:
 
 Unfortunately, having said this, the man pages are sadly out of date and
 really need more effort to maintain them. Other sources of information 
-are pointed to by the Samba web site, http://samba.anu.edu.au/samba.
+are pointed to by the Samba web site, http://samba.anu.edu.au/samba/.
 
 STEP 1. Building the binaries
 
@@ -50,7 +50,7 @@ At this stage you must fetch yourself a coffee or other drink you find
 stimulating. Getting the rest of the install right can sometimes be
 tricky, so you will probably need it.
 
-If you have installed samba before then you can skip this step. 
+If you have installed samba before then you can skip this step.
 
 STEP 3. Create the smb configuration file. 
 
@@ -94,9 +94,7 @@ You must choose to start smbd and nmbd either as daemons or from
 inetd. Don't try to do both!  Either you can put them in inetd.conf
 and have them started on demand by inetd, or you can start them as
 daemons either from the command line or in /etc/rc.local. See the man
-pages for details on the command line options. Take particular care 
-to read the bit about what user you need to be in order to start Samba.
-In many cases you must be root.
+pages for details on the command line options.
 
 The main advantage of starting smbd and nmbd as a daemon is that they
 will respond slightly more quickly to an initial connection

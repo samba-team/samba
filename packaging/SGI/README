@@ -31,12 +31,10 @@ inetd you can run the script /usr/samba/inetd.sh.
 To create a Samba distribution you must have the Documenter's WorkBench
 package installed to format the manual pages. In addition you need
 to have the Software Packager software (inst_dev) installed to
-generate the inst images, and Perl to generate the spec and idb files.
+generate the inst images.
 
-From /usr/samba/packaging/SGI directory run the mkrelease.sh script.
-There is one optional argument which is the major release number of the
-OS version (4, 5, or 6) you desire.  If no number is specified it defaults
-to 6.  This script uses Perl to generate the Makefile with the proper 
-defines and the packaging files samba.spec and samba.idb.  The binary 
-package files will be placed in ./bins
+From /usr/samba/packaging/SGI directory run the mkrelease.sh script. 
+This script uses Perl to generate the Makefile with the proper defines
+and the packaging files samba.spec and samba.idb.
+The binary package files will be placed in ./bins
 

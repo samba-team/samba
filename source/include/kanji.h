@@ -27,6 +27,8 @@
 #ifndef _KANJI_H_
 #define _KANJI_H_
 
+#ifdef KANJI
+
 /* FOR SHIFT JIS CODE */
 #define is_shift_jis(c) \
     ((0x81 <= ((unsigned char) (c)) && ((unsigned char) (c)) <= 0x9f) \
@@ -105,32 +107,16 @@
 
 #else /* not _KANJI_C_ */
 
-extern char *(*_dos_to_unix)(char *str, BOOL overwrite);
-extern char *(*_unix_to_dos)(char *str, BOOL overwrite);
+extern char* (*_dos_to_unix) (const char *str, BOOL overwrite);
+extern char* (*_unix_to_dos) (const char *str, BOOL overwrite);
 
-/*
- * The following is needed for AIX systems that have
- * their own #defines for strchr, strrchr, strstr
- * and strtok.
- */
+#define unix_to_dos (*_unix_to_dos)
+#define dos_to_unix (*_dos_to_unix)
 
-#ifdef strchr
-#undef strchr
-#endif /* strchr */
-
-#ifdef strrchr
-#undef strrchr
-#endif /* strrchr */
-
-#ifdef strstr
-#undef strstr
-#endif /* strstr */
-
-#ifdef strtok
-#undef strtok
-#endif /* strtok */
-
-/* Ensure we use our definitions. */
+extern char *sj_strtok (char *s1, const char *s2);
+extern char *sj_strchr (const char *s, int c);
+extern char *sj_strrchr (const char *s, int c);
+extern char *sj_strstr (const char *s1, const char *s2);
 
 #define strchr sj_strchr
 #define strrchr sj_strrchr
@@ -149,7 +135,13 @@ extern char *(*_unix_to_dos)(char *str, BOOL overwrite);
 #define CAP_CODE (6)
 #define DOSV_CODE SJIS_CODE
 
+int interpret_coding_system (char *str, int def);
+
+#else 
+
 #define unix_to_dos(x,y) unix2dos_format(x,y)
 #define dos_to_unix(x,y) dos2unix_format(x,y)
+
+#endif /* not KANJI */
 
 #endif /* _KANJI_H_ */

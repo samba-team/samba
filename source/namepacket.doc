@@ -1,0 +1,133 @@
+/* 
+   Unix SMB/Netbios documentation.
+   Version 0.0
+   Copyright (C) Luke Leighton  Andrew Tridgell  1996
+   
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+   
+   Document name: namepacket.doc
+
+   Revision History:
+
+   0.0 - 02jul96 : lkcl@pires.co.uk
+   created
+*/
+
+this module deals with packets: sending, receiving, queueing
+and some basic interpretation (e.g it excludes datagram
+error packets at the moment).
+
+the packet queueing mechanism was originally introduced when
+samba dealt with responses by sending a packet, receiving
+packets and queueing all packets that didn't match up with
+the response expected. this is fine in a single-thread
+environment, but samba now deals with response packets by
+queueing the responses. to some extent, therefore, this
+queue_packet mechanism is redundant.
+
+
+/*************************************************************************
+  send_mailslot_reply()
+  *************************************************************************/
+
+this function is responsible for sending a MAILSLOT packet.
+
+it will _not_ send packets to the pseudo WINS subnet's address of 
+255.255.255.255: this would be disastrous.
+
+each packet sent out has a unique transaction identifier. this is done
+so that responses can be matched later with the original purpose for
+the packet being sent out in the first place.
+
+
+/*************************************************************************
+  listen_for_packets()
+  *************************************************************************/
+
+this function is responsible for reading NMB and DGRAM packets, and then
+queueing them. it will normally time-out for NMBD_SELECT_LOOP seconds, but
+if there is an election currently running or we are expecting a response
+then this time is reduced to 1 second.
+
+note: the time-out period needs refining to the millisecond level.
+
+
+/*************************************************************************
+  queue_packet()
+  *************************************************************************/
+
+this function is responsible for queueing any NMB and DGRAM packets passed
+to it. these packets will be removed from the queue in run_packet_queue().
+
+
+/*************************************************************************
+  run_packet_queue()
+  *************************************************************************/
+
+this function is responsible for taking a packet off the queue, 
+identifying whether it is an NMB or a DGRAM packet, processing
+it accordingly and deleting it. this process continues until
+there are no more packets on the queue.
+
+
+/*************************************************************************
+  process_nmb()
+  *************************************************************************/
+
+this function receives a packet identified as a netbios packet.
+it further identifies whether it is a response or a query packet.
+by identifying the type of packet (name registration, query etc)
+process_nmb() will call the appropriate function to deal with the
+type of packet received.
+
+
+/*************************************************************************
+  process_dgram()
+  *************************************************************************/
+
+this function is responsible for identifying whether the datagram
+packet received is a browser packet or a domain logon packet. it
+also does some filtering of certain types of packets (e.g it
+filters out error packets).
+
+
+/*************************************************************************
+  reply_netbios_packet()
+  *************************************************************************/
+
+this function is responsible for sending a reply to another NetBIOS
+packet from another host. it can be used to send a reply to a name
+registration, name release, name query or name status request.
+
+the reply can be either a positive or a negative one.
+
+
+/*************************************************************************
+  initiate_netbios_packet()
+  *************************************************************************/
+
+this function is responsible for construction a netbios packet and sending
+it. if the packet has not had a unique transaction id allocated to it,
+then initiate_netbios_packet() will give it one.
+
+
+/*************************************************************************
+  update_name_trn_id()
+  *************************************************************************/
+
+this function is responsible for allocating unique transaction identifiers
+for each new packet sent on the network.
+
+

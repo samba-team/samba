@@ -1,0 +1,100 @@
+/* 
+   Unix SMB/Netbios documentation.
+   Version 0.1
+   Copyright (C) Luke Leighton  Andrew Tridgell  1996
+   
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+   
+   Document name: namedbresp.doc
+
+   Revision History:
+
+   0.0 - 02jul96 : lkcl@pires.co.uk
+   created
+
+   0.1 - 22jul96 Andrew.Tridgell@anu.edu.au
+   tridge's comments on first revision
+*/
+
+module namedbresp deals with the maintenance of the list of expected
+responses - creating, finding and removal.
+
+module nameresp deals with the initial transmission, re-transmission
+and time-out of netbios response records.
+
+
+/*************************************************************************
+  find_response_record()
+  *************************************************************************/
+
+this function is responsible for matching the unique response transaction
+id with an expected response record. as a side-effect of this search,
+it will find the subnet (or the WINS pseudo-subnet) that samba expected
+the response to come from.
+
+
+/*************************************************************************
+  make_response_queue_record()
+  *************************************************************************/
+
+this function is responsible for creating a response record, which will
+be queued awaiting a response.
+
+the number of retries is set to 3, and the retry period set to 1 second.
+if no response is received, then the packet is re-transmitted, which is
+why so much information is stored in the response record.
+
+the number of expected responses queued is kept, so listen_for_packets()
+knows it must time-out after 1 second if one or more responses are
+expected.
+
+
+/*************************************************************************
+  remove_response_record()
+  *************************************************************************/
+
+this function is responsible for removing a response record from the
+expected response queue. the number of expected responses is decreased.
+
+
+/*************************************************************************
+  add_response_record()
+  *************************************************************************/
+
+this function is responsible for adding the response record created by
+make_response_queue_record() into the appropriate response record queue.
+
+
+-----------------
+NOTE FROM TRIDGE:
+
+namedbresp.c is interesting because it implements a novel way of
+getting most of the advantages of a multi-threaded nmbd daemon without
+the portability problems. 
+
+The NBT specs (rfc1001/1002) talk about the 16 bit IDs in the packets
+as being used to ensure that packets are unique, and to stop packets
+from being confused. It suggests incrementing the ID by 1 each time.
+
+Instead Luke uses these IDs to identify individual threads of control
+in nmbd. So when nmbd sends out a NBT packet as part of some complex
+processing, it adds to a linked list the information required to
+continue the processing when the reply comes in (or it times
+out). When a reply arrives this list can be searched to find the
+matching query and the next step in the processing can be carried out.
+
+This is really good stuff, and allows for much more complex behaviour
+than was possible with the old nmbd.
+----------------
