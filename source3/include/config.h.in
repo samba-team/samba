@@ -983,8 +983,8 @@
 /* Define if you have the acl library (-lacl).  */
 #undef HAVE_LIBACL
 
-/* Define if you have the cups library (-lcups).  */
-#undef HAVE_LIBCUPS
+/* Define if you have cups installed.  */
+#undef HAVE_CUPS
 
 /* Define if you have the gen library (-lgen).  */
 #undef HAVE_LIBGEN

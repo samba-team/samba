@@ -760,7 +760,7 @@ typedef enum
 #endif
 
 #ifndef DEFAULT_PRINTING
-#ifdef HAVE_LIBCUPS
+#ifdef HAVE_CUPS
 #define DEFAULT_PRINTING PRINT_CUPS
 #define PRINTCAP_NAME "cups"
 #elif defined(SYSV)
