@@ -73,6 +73,11 @@ struct ndr_pull {
 	int flags;
 };
 
+struct ndr_pull_save {
+	guint32 offset;
+	struct ndr_pull_save *next;
+};
+
 typedef int NTSTATUS;
 typedef guint64 uint64;
 typedef guint32 uint32;
@@ -116,9 +121,15 @@ void ndr_pull_array(struct ndr_pull *ndr, int ndr_flags, proto_tree *tree,
 		    void (*pull_fn)(struct ndr_pull *, int ndr_flags, 
 				    proto_tree *tree, void *data));
 
-void ndr_pull_relative(struct ndr_pull *ndr, void *data, int size,
-		       void (*fn)(struct ndr_pull *, int ndr_flags, 
-				  char *name));
+void ndr_pull_save(struct ndr_pull *ndr, struct ndr_pull_save *save);
+
+void ndr_pull_restore(struct ndr_pull *ndr, struct ndr_pull_save *save);
+
+void ndr_pull_set_offset(struct ndr_pull *ndr, guint32 ofs);
+
+void ndr_pull_relative(struct ndr_pull *ndr, proto_tree *tree, void *data, 
+		       int size, void (*fn)(struct ndr_pull *, int ndr_flags, 
+					    char *name));
 
 void ndr_pull_ptr(struct ndr_pull *ndr, proto_tree *tree, int hf, guint32 *ptr);
 
