@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "rpc_server/common/common.h"
 
 /**
  * General notes for the current implementation:

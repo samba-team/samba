@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "rpc_server/common/common.h"
 
 /*
   this type allows us to distinguish handle types
