@@ -720,7 +720,7 @@ bin/nsstest: $(NSSTEST_OBJ) bin/.dummy
 
 bin/vfstest: $(VFSTEST_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(VFSTEST_OBJ) $(LDFLAGS) $(TERMLDFLAGS) $(TERMLIBS) $(DYNEXP) $(PRINTLIBS) $(LIBS) @BUILD_POPT@
+	@$(CC) $(FLAGS) -o $@ $(VFSTEST_OBJ) $(LDFLAGS) $(TERMLDFLAGS) $(TERMLIBS) $(DYNEXP) $(PRINTLIBS) $(AUTHLIBS) $(LIBS) @BUILD_POPT@
 
 bin/locktest2: $(LOCKTEST2_OBJ) bin/.dummy
 	@echo Linking $@
