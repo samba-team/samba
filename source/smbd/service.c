@@ -504,7 +504,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	if (!claim_connection(conn,
 			      lp_servicename(SNUM(conn)),
 			      lp_max_connections(SNUM(conn)),
-			      False)) {
+			      False,0)) {
 		DEBUG(1,("too many connections - rejected\n"));
 		*ecode = ERRnoresource;
 		conn_free(conn);

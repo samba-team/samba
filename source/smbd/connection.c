@@ -31,10 +31,9 @@ static TDB_CONTEXT *tdb;
 
 TDB_CONTEXT *conn_tdb_ctx(void)
 {
-	if (!tdb) {
+	if (!tdb)
 		tdb = tdb_open_log(lock_path("connections.tdb"), 0, TDB_CLEAR_IF_FIRST|TDB_DEFAULT, 
 			       O_RDWR | O_CREAT, 0644);
-	}
 
 	return tdb;
 }
@@ -48,7 +47,8 @@ BOOL yield_connection(connection_struct *conn,char *name)
 	struct connections_key key;
 	TDB_DATA kbuf;
 
-	if (!tdb) return False;
+	if (!tdb)
+		return False;
 
 	DEBUG(3,("Yielding connection to %s\n",name));
 
@@ -115,16 +115,16 @@ static int count_fn( TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *u
  Claim an entry in the connections database.
 ****************************************************************************/
 
-BOOL claim_connection(connection_struct *conn,char *name,int max_connections,BOOL Clear)
+BOOL claim_connection(connection_struct *conn,char *name,int max_connections,BOOL Clear, uint32 msg_flags)
 {
 	struct connections_key key;
 	struct connections_data crec;
 	TDB_DATA kbuf, dbuf;
 
-	if (!tdb) {
+	if (!tdb)
 		tdb = tdb_open_log(lock_path("connections.tdb"), 0, TDB_CLEAR_IF_FIRST|TDB_DEFAULT, 
 			       O_RDWR | O_CREAT, 0644);
-	}
+
 	if (!tdb)
 		return False;
 
@@ -181,7 +181,8 @@ BOOL claim_connection(connection_struct *conn,char *name,int max_connections,BOO
 			lp_servicename(SNUM(conn)),sizeof(crec.name)-1);
 	}
 	crec.start = time(NULL);
-	
+	crec.bcast_msg_flags = msg_flags;
+
 	StrnCpy(crec.machine,remote_machine,sizeof(crec.machine)-1);
 	StrnCpy(crec.addr,conn?conn->client_address:client_addr(),sizeof(crec.addr)-1);
 

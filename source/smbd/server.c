@@ -788,7 +788,7 @@ static void usage(char *pname)
 
 	/* Setup the main smbd so that we can get messages. */
 	if (lp_status(-1))
-		claim_connection(NULL,"",0,True);
+		claim_connection(NULL,"",0,True,FLAG_MSG_GENERAL|FLAG_MSG_SMBD);
 
 	/* Attempt to migrate from an old 2.0.x machine account file. */
 	if (!migrate_from_old_password_file(global_myworkgroup))

@@ -127,7 +127,7 @@ int reply_special(char *inbuf,char *outbuf)
 		reopen_logs();
 
 		if (lp_status(-1))
-			claim_connection(NULL,"",0,True);
+			claim_connection(NULL,"",0,True,FLAG_MSG_GENERAL|FLAG_MSG_SMBD|FLAG_MSG_PRINTING);
 
 		break;
 		
