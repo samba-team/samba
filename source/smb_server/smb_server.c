@@ -661,10 +661,10 @@ static void smbsrv_exit(struct server_service *service, const char *reason)
 /*
   add a socket address to the list of events, one event per port
 */
-static void add_socket(struct server_service *service, 
-		       const struct model_ops *model_ops,
-		       struct socket_context *socket_ctx, 
-		       struct ipv4_addr *ifip)
+static void smb_add_socket(struct server_service *service, 
+			   const struct model_ops *model_ops,
+			   struct socket_context *socket_ctx, 
+			   struct ipv4_addr *ifip)
 {
 	const char **ports = lp_smb_ports();
 	int i;
@@ -702,13 +702,13 @@ static void smbsrv_init(struct server_service *service, const struct model_ops *
 				continue;
 			}
 
-			add_socket(service, model_ops, NULL, ifip);
+			smb_add_socket(service, model_ops, NULL, ifip);
 		}
 	} else {
 		struct ipv4_addr ifip;
 		/* Just bind to lp_socket_address() (usually 0.0.0.0) */
 		ifip = interpret_addr2(lp_socket_address());
-		add_socket(service, model_ops, NULL, &ifip);
+		smb_add_socket(service, model_ops, NULL, &ifip);
 	}
 }
 
@@ -823,7 +823,6 @@ void smbd_process_async(struct smbsrv_connection *smb_conn)
 void smbsrv_accept(struct server_connection *conn)
 {
 	struct smbsrv_connection *smb_conn;
-	int fd;
 
 	DEBUG(5,("smbsrv_accept\n"));
 
@@ -852,9 +851,6 @@ void smbsrv_accept(struct server_connection *conn)
 	smb_conn->connection = conn;
 
 	conn->private_data = smb_conn;
-
-	fd = socket_get_fd(conn->socket);
-	set_blocking(fd, True);
 
 	/* setup the DCERPC server subsystem */
 	dcesrv_init_context(smb_conn, &smb_conn->dcesrv);
