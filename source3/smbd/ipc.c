@@ -138,9 +138,9 @@ void send_trans_reply(char *outbuf,
 		set_message(outbuf,10,1+this_ldata+this_lparam+align,False);
 
 		copy_trans_params_and_data(outbuf, align,
-									rparam, tot_param_sent, this_lparam,
-									rdata, tot_data_sent, this_ldata);
-
+					   rparam, tot_param_sent, this_lparam,
+					   rdata, tot_data_sent, this_ldata);
+		
 		SSVAL(outbuf,smb_vwv3,this_lparam);
 		SSVAL(outbuf,smb_vwv4,smb_offset(smb_buf(outbuf)+1,outbuf));
 		SSVAL(outbuf,smb_vwv5,tot_param_sent);
@@ -410,7 +410,7 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 	}
 
 	if (suwcnt) {
-		int i;
+		unsigned int i;
 		if((setup = (uint16 *)malloc(suwcnt*sizeof(uint16))) == NULL) {
 			DEBUG(0,("reply_trans: setup malloc fail for %u bytes !\n", (unsigned int)(suwcnt * sizeof(uint16))));
 			SAFE_FREE(data);
