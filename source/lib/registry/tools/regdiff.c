@@ -91,7 +91,7 @@ static void writediff(REG_KEY *oldkey, REG_KEY *newkey, FILE *out)
 	}
 }
 
-int main(int argc, char **argv)
+ int main(int argc, char **argv)
 {
 	int opt;
 	poptContext pc;
