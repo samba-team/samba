@@ -6,6 +6,7 @@
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
  *  Copyright (C) Paul Ashton                       1997.
  *  Copyright (C) Jeremy Allison               1998-2001.
+ *  Copyirht  (C) Andrew Bartlett                   2001.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -473,7 +474,7 @@ NTSTATUS _net_sam_logoff(pipes_struct *p, NET_Q_SAM_LOGOFF *q_u, NET_R_SAM_LOGOF
  _net_logon_any:  Use the new authentications subsystem to log in.
  *************************************************************************/
 
-static NTSTATUS _net_logon_any(NET_ID_INFO_CTR *ctr, char *user, char *domain, char *sess_key)
+static NTSTATUS _net_logon_any(NET_ID_INFO_CTR *ctr, char *user, char *domain, char *workstation, char *sess_key)
 {
 	NTSTATUS nt_status = NT_STATUS_LOGON_FAILURE;
 
@@ -508,12 +509,10 @@ static NTSTATUS _net_logon_any(NET_ID_INFO_CTR *ctr, char *user, char *domain, c
 	user_info.unix_username = smb_username;  /* For the time-being */
 	user_info.smb_username = smb_username;
 
-#if 0
-	user_info.wksta_name.str = cleint_name();
-	user_info.wksta_name.len = strlen(client_name());
+	user_info.wksta_name.str = workstation;
+	user_info.wksta_name.len = strlen(workstation);
 
 	user_info.wksta_name = wksta_name;
-#endif
 
 	DEBUG(10,("_net_logon_any: Attempting validation level %d.\n", ctr->switch_value));
 	switch (ctr->switch_value) {
@@ -667,7 +666,7 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 
 	DEBUG(10,("Attempting validation level %d for mapped username %s.\n", q_u->sam_id.ctr->switch_value, nt_username));
 
-	status = _net_logon_any(q_u->sam_id.ctr, nt_username, nt_domain, (char *)p->dc.sess_key);
+	status = _net_logon_any(q_u->sam_id.ctr, nt_username, nt_domain, nt_workstation, (char *)p->dc.sess_key);
 
 	/* Check account and password */
     
@@ -686,35 +685,6 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 		return NT_STATUS_NO_SUCH_USER;
 	}
         
-        /* Test account expire time */
-
-        if (time(NULL) > sampass->kickoff_time)
-                return NT_STATUS_ACCOUNT_EXPIRED;
-        
-        /* Test workstation. Workstation list is comma separated. */
-        
-        if (sampass->workstations && *sampass->workstations) {
-                char *s = strdup(sampass->workstations);
-                BOOL invalid_ws = True;
-                fstring tok;
-
-                while(next_token(&s, tok, ",", sizeof(tok))) {
-                        if(strequal(tok, nt_workstation)) {
-                                invalid_ws = False;
-                                break;
-                        }
-                }
-
-                free(s);
-
-                if (invalid_ws) 
-                        return NT_STATUS_INVALID_WORKSTATION;
-        }
-        
-        /* Test logon hours. */
-        
-        /* Test must change password. */
-
 	/* This is the point at which, if the login was successful, that
            the SAM Local Security Authority should record that the user is
            logged in to the domain.  */

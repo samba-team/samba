@@ -167,7 +167,11 @@ NTSTATUS cli_nt_login_network(struct cli_state *cli,
 
   /* Create the structure needed for SAM logon. */
   init_id_info2(&ctr->auth.id2, user_info->domain.str, 0, smb_userid_low, 0,
-                user_info->smb_username.str, cli->clnt_name_slash,
+                user_info->smb_username.str, 
+		/* Send our cleint's workstaion name if we have it, otherwise ours */
+		((user_info->wksta_name.len > 0) ?
+		 user_info->wksta_name.str :
+		 cli->clnt_name_slash),
 		user_info->chal, 
 		user_info->lm_resp.buffer, user_info->lm_resp.len,
 		user_info->nt_resp.buffer, user_info->nt_resp.len);

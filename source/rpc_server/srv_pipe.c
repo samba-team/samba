@@ -302,6 +302,7 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p, RPC_AUTH_NTLMSSP_RESP *ntlm
 		rpcstr_pull(domain, ntlmssp_resp->domain, sizeof(fstring), ntlmssp_resp->hdr_domain.str_str_len*2, 0);
 		rpcstr_pull(wks, ntlmssp_resp->wks, sizeof(fstring), ntlmssp_resp->hdr_wks.str_str_len*2, 0);
 	} else {
+		/* What charset are these meant to be in? */
 		fstrcpy(user_name, ntlmssp_resp->user);
 		fstrcpy(domain, ntlmssp_resp->domain);
 		fstrcpy(wks, ntlmssp_resp->wks);
@@ -328,24 +329,24 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p, RPC_AUTH_NTLMSSP_RESP *ntlm
 
 	if((strlen(user_name) == 0) && 
 	   (ntlmssp_resp->hdr_nt_resp.str_str_len==0))
-	  {
+	{
 		guest_user = True;
-
-        fstrcpy(pipe_user_name, lp_guestaccount(-1));
+		
+		fstrcpy(pipe_user_name, lp_guestaccount(-1));
 		DEBUG(100,("Null user in NTLMSSP verification. Using guest = %s\n", pipe_user_name));
 
 		smb_passwd_ptr = null_smb_passwd;
-
+		
 	} else {
 
 		/*
 		 * Pass the user through the NT -> unix user mapping
 		 * function.
 		 */
-
+		
 		fstrcpy(pipe_user_name, user_name);
 		(void)map_username(pipe_user_name);
-
+		
 	 	/* 
 		 * Do the length checking only if user is not NULL.
 		 */
@@ -368,7 +369,8 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p, RPC_AUTH_NTLMSSP_RESP *ntlm
 		become_root();
 
 		p->ntlmssp_auth_validated = 
-			NT_STATUS_IS_OK(pass_check_smb_with_chal(pipe_user_name, NULL, domain,
+			NT_STATUS_IS_OK(pass_check_smb_with_chal(pipe_user_name, NULL, 
+								 domain, wks, 
 								 (uchar*)p->challenge, 
 								 lm_owf, lm_pw_len, 
 								 nt_owf, nt_pw_len));
@@ -391,13 +393,6 @@ failed authentication on named pipe %s.\n", domain, pipe_user_name, wks, p->name
 
 		unbecome_root();
 
-	        /* Quit if the account was disabled. */
-	        if((pdb_get_acct_ctrl(sampass) & ACB_DISABLED) || !pdb_get_lanman_passwd(sampass)) {
-			DEBUG(1,("Account for user '%s' was disabled.\n", pipe_user_name));
-			pdb_free_sam(sampass);
-			return False;
- 	       }
- 
 		if(!pdb_get_nt_passwd(sampass)) {
 			DEBUG(1,("Account for user '%s' has no NT password hash.\n", pipe_user_name));
 			pdb_free_sam(sampass);

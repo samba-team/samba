@@ -3,7 +3,8 @@
    Version 1.9.
    Main SMB reply routines
    Copyright (C) Andrew Tridgell 1992-1998
-   
+   Copyright (C) Andrew Bartlett      2001
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
@@ -41,6 +42,8 @@ extern int global_oplock_break;
 uint32 global_client_caps = 0;
 unsigned int smb_echo_count = 0;
 
+extern fstring remote_machine;
+
 /****************************************************************************
 report a possible attack via the password buffer overflow bug
 ****************************************************************************/
@@ -66,7 +69,7 @@ int reply_special(char *inbuf,char *outbuf)
 	int msg_type = CVAL(inbuf,0);
 	int msg_flags = CVAL(inbuf,1);
 	pstring name1,name2;
-	extern fstring remote_machine;
+
 	extern fstring local_machine;
 	int len;
 	char name_type = 0;
@@ -637,7 +640,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
   }
 
 
-  DEBUG(3,("sesssetupX:name=[%s]\n",user));
+  DEBUG(3,("sesssetupX:name=[%s]@[%s]\n",user, remote_machine));
 
   /* If name ends in $ then I think it's asking about whether a */
   /* computer with that name (minus the $) has access. For now */
@@ -720,7 +723,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
   if (!guest) {
 	  NTSTATUS nt_status;
 	  nt_status = pass_check_smb(orig_user, user, 
-				     domain, 
+				     domain, remote_machine,
 				     (unsigned char *)smb_apasswd, 
 				     smb_apasslen, 
 				     (unsigned char *)smb_ntpasswd,
