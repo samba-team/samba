@@ -261,8 +261,19 @@ OM_uint32 _gssapi_wrap_cfx(OM_uint32 *minor_status,
 	token->EC[0] = 0;
 	token->EC[1] = 0;
     }
-    token->RRC[0] = (rrc >> 0) & 0xFF;
-    token->RRC[1] = (rrc >> 8) & 0xFF;
+
+    /*
+     * In Wrap tokens that provide for confidentiality, the RRC
+     * field in the header contains the hex value 00 00 before
+     * encryption.
+     *
+     * In Wrap tokens that do not provide for confidentiality,
+     * both the EC and RRC fields in the appended checksum
+     * contain the hex value 00 00 for the purpose of calculating
+     * the checksum.
+     */
+    token->RRC[0] = 0;
+    token->RRC[1] = 0;
 
     HEIMDAL_MUTEX_lock(&context_handle->ctx_id_mutex);
     krb5_auth_con_getlocalseqnumber(gssapi_krb5_context,
@@ -318,6 +329,8 @@ OM_uint32 _gssapi_wrap_cfx(OM_uint32 *minor_status,
 	    return GSS_S_FAILURE;
 	}
 	assert(sizeof(*token) + cipher.length == wrapped_len);
+	token->RRC[0] = (rrc >> 0) & 0xFF;  
+	token->RRC[1] = (rrc >> 8) & 0xFF;
 
 	ret = rrc_rotate(cipher.data, cipher.length, rrc);
 	if (ret != 0) {
@@ -360,8 +373,10 @@ OM_uint32 _gssapi_wrap_cfx(OM_uint32 *minor_status,
 	free(buf);
 
 	assert(cksum.checksum.length == cksumsize);
-	token->EC[0] = (cksum.checksum.length >> 0) & 0xFF;
-	token->EC[1] = (cksum.checksum.length >> 8) & 0xFF;
+	token->EC[0] =  (cksum.checksum.length >> 0) & 0xFF;
+	token->EC[1] =  (cksum.checksum.length >> 8) & 0xFF;
+	token->RRC[0] = (rrc >> 0) & 0xFF;  
+	token->RRC[1] = (rrc >> 8) & 0xFF;
 
 	p += sizeof(*token);
 	memcpy(p, input_message_buffer->value, input_message_buffer->length);
@@ -515,6 +530,10 @@ OM_uint32 _gssapi_unwrap_cfx(OM_uint32 *minor_status,
 	p = data.data;
 	p += data.length - sizeof(*token);
 
+	/* RRC is unprotected; don't modify input buffer */
+	((gss_cfx_wrap_token)p)->RRC[0] = token->RRC[0];
+	((gss_cfx_wrap_token)p)->RRC[1] = token->RRC[1];
+
 	/* Check the integrity of the header */
 	if (memcmp(p, token, sizeof(*token)) != 0) {
 	    krb5_crypto_destroy(gssapi_krb5_context, crypto);
@@ -566,8 +585,10 @@ OM_uint32 _gssapi_unwrap_cfx(OM_uint32 *minor_status,
 	/* EC is not included in checksum calculation */
 	token = (gss_cfx_wrap_token)((u_char *)output_message_buffer->value +
 				     len);
-	token->EC[0] = 0;
-	token->EC[1] = 0;
+	token->EC[0]  = 0;
+	token->EC[1]  = 0;
+	token->RRC[0] = 0;
+	token->RRC[1] = 0;
 
 	ret = krb5_verify_checksum(gssapi_krb5_context, crypto,
 				   usage,
