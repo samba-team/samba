@@ -316,11 +316,16 @@ static void cm_get_ipc_userpass(char **username, char **domain, char **password)
 	*password = secrets_fetch(SECRETS_AUTH_PASSWORD, NULL);
 	
 	if (*username && **username) {
-		if (!*domain || !**domain) {
+
+		if (!*domain || !**domain)
 			*domain = smb_xstrdup(lp_workgroup());
-		}
 		
-		DEBUG(3, ("IPC$ connections done by user %s\\%s\n", *domain, *username));
+		if (!*password || !**password)
+			*password = smb_xstrdup("");
+
+		DEBUG(3, ("IPC$ connections done by user %s\\%s\n", 
+			  *domain, *username));
+
 	} else {
 		DEBUG(3, ("IPC$ connections done anonymously\n"));
 		*username = smb_xstrdup("");
