@@ -38,13 +38,13 @@ static int fd_open(struct connection_struct *conn, char *fname,
 		flags |= O_NOFOLLOW;
 #endif
 
-	fd = conn->vfs_ops.open(conn,fname,flags,mode);
+	fd = SMB_VFS_OPEN(conn,fname,flags,mode);
 
 	/* Fix for files ending in '.' */
 	if((fd == -1) && (errno == ENOENT) &&
 	   (strchr_m(fname,'.')==NULL)) {
 		pstrcat(fname,".");
-		fd = conn->vfs_ops.open(conn,fname,flags,mode);
+		fd = SMB_VFS_OPEN(conn,fname,flags,mode);
 	}
 
 	DEBUG(10,("fd_open: name %s, flags = 0%o mode = 0%o, fd = %d. %s\n", fname,
@@ -74,7 +74,7 @@ static void check_for_pipe(char *fname)
 	/* special case of pipe opens */
 	char s[10];
 	StrnCpy(s,fname,sizeof(s)-1);
-	strlower(s);
+	strlower_m(s);
 	if (strstr(s,"pipe/")) {
 		DEBUG(3,("Rejecting named pipe open for %s\n",fname));
 		unix_ERR_class = ERRSRV;
@@ -186,9 +186,9 @@ static BOOL open_file(files_struct *fsp,connection_struct *conn,
 		int ret;
 
 		if (fsp->fd == -1)
-			ret = vfs_stat(conn, fname, psbuf);
+			ret = SMB_VFS_STAT(conn, fname, psbuf);
 		else {
-			ret = vfs_fstat(fsp,fsp->fd,psbuf);
+			ret = SMB_VFS_FSTAT(fsp,fsp->fd,psbuf);
 			/* If we have an fd, this stat should succeed. */
 			if (ret == -1)
 				DEBUG(0,("Error doing fstat on open file %s (%s)\n", fname,strerror(errno) ));
@@ -259,7 +259,7 @@ static int truncate_unless_locked(struct connection_struct *conn, files_struct *
 		unix_ERR_ntstatus = dos_to_ntstatus(ERRDOS, ERRlock);
 		return -1;
 	} else {
-		return conn->vfs_ops.ftruncate(fsp,fsp->fd,0); 
+		return SMB_VFS_FTRUNCATE(fsp,fsp->fd,0); 
 	}
 }
 
@@ -1024,6 +1024,16 @@ flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 
 	if (!file_existed) { 
 
+		/*
+		 * Now the file exists and fsp is successfully opened,
+		 * fsp->dev and fsp->inode are valid and should replace the
+		 * dev=0,inode=0 from a non existent file. Spotted by
+		 * Nadav Danieli <nadavd@exanet.com>. JRA.
+		 */
+
+		dev = fsp->dev;
+		inode = fsp->inode;
+
 		lock_share_entry_fsp(fsp);
 
 		num_share_modes = open_mode_check(conn, fname, dev, inode, 
@@ -1073,7 +1083,7 @@ flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 		/*
 		 * We are modifing the file after open - update the stat struct..
 		 */
-		if ((truncate_unless_locked(conn,fsp) == -1) || (vfs_fstat(fsp,fsp->fd,psbuf)==-1)) {
+		if ((truncate_unless_locked(conn,fsp) == -1) || (SMB_VFS_FSTAT(fsp,fsp->fd,psbuf)==-1)) {
 			unlock_share_entry_fsp(fsp);
 			fd_close(conn,fsp);
 			file_free(fsp);
@@ -1148,11 +1158,11 @@ flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 	 * selected.
 	 */
 
-	if (!file_existed && !def_acl && (conn->vfs_ops.fchmod_acl != NULL)) {
+	if (!file_existed && !def_acl) {
 
 		int saved_errno = errno; /* We might get ENOSYS in the next call.. */
 
-		if (conn->vfs_ops.fchmod_acl(fsp, fsp->fd, mode) == -1 && errno == ENOSYS)
+		if (SMB_VFS_FCHMOD_ACL(fsp, fsp->fd, mode) == -1 && errno == ENOSYS)
 			errno = saved_errno; /* Ignore ENOSYS */
 
 	} else if (new_mode) {
@@ -1161,9 +1171,9 @@ flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 
 		/* Attributes need changing. File already existed. */
 
-		if (conn->vfs_ops.fchmod_acl != NULL) {
+		{
 			int saved_errno = errno; /* We might get ENOSYS in the next call.. */
-			ret = conn->vfs_ops.fchmod_acl(fsp, fsp->fd, new_mode);
+			ret = SMB_VFS_FCHMOD_ACL(fsp, fsp->fd, new_mode);
 
 			if (ret == -1 && errno == ENOSYS) {
 				errno = saved_errno; /* Ignore ENOSYS */
@@ -1174,7 +1184,7 @@ flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 			}
 		}
 
-		if ((ret == -1) && (conn->vfs_ops.fchmod(fsp, fsp->fd, new_mode) == -1))
+		if ((ret == -1) && (SMB_VFS_FCHMOD(fsp, fsp->fd, new_mode) == -1))
 			DEBUG(5, ("open_file_shared: failed to reset attributes of file %s to 0%o\n",
 				fname, (int)new_mode));
 	}
@@ -1280,14 +1290,14 @@ files_struct *open_directory(connection_struct *conn, char *fname, SMB_STRUCT_ST
 				return NULL;
 			}
 
-			if(vfs_mkdir(conn,fname, unix_mode(conn,aDIR, fname)) < 0) {
+			if(vfs_MkDir(conn,fname, unix_mode(conn,aDIR, fname)) < 0) {
 				DEBUG(2,("open_directory: unable to create %s. Error was %s\n",
 					 fname, strerror(errno) ));
 				file_free(fsp);
 				return NULL;
 			}
 
-			if(vfs_stat(conn,fname, psbuf) != 0) {
+			if(SMB_VFS_STAT(conn,fname, psbuf) != 0) {
 				file_free(fsp);
 				return NULL;
 			}

@@ -1,9 +1,9 @@
-<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>smbpasswd</title><link rel="stylesheet" href="samba.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.59.1"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="refentry" lang="en"><a name="smbpasswd.5"></a><div class="titlepage"></div><div class="refnamediv"><h2>Name</h2><p>smbpasswd &#8212; The Samba encrypted password file</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><p><tt>smbpasswd</tt></p></div><div class="refsect1" lang="en"><h2>DESCRIPTION</h2><p>This tool is part of the <a href="Samba.7.html">Samba(7)</a> suite.</p><p>smbpasswd is the Samba encrypted password file. It contains 
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>smbpasswd</title><link rel="stylesheet" href="samba.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.60.1"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="refentry" lang="en"><a name="smbpasswd.5"></a><div class="titlepage"><div></div><div></div></div><div class="refnamediv"><h2>Name</h2><p>smbpasswd &#8212; The Samba encrypted password file</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><p><tt class="filename">smbpasswd</tt></p></div><div class="refsect1" lang="en"><h2>DESCRIPTION</h2><p>This tool is part of the <a href="Samba.7.html"><span class="citerefentry"><span class="refentrytitle">Samba</span>(7)</span></a> suite.</p><p>smbpasswd is the Samba encrypted password file. It contains 
 	the username, Unix user id and the SMB hashed passwords of the 
 	user, as well as account flag information and the time the 
 	password was last changed. This file format has been evolving with 
 	Samba and has had several different formats in the past. </p></div><div class="refsect1" lang="en"><h2>FILE FORMAT</h2><p>The format of the smbpasswd file used by Samba 2.2 
-	is very similar to the familiar Unix <tt>passwd(5)</tt> 
+	is very similar to the familiar Unix <tt class="filename">passwd(5)</tt> 
 	file. It is an ASCII file containing one line for each user. Each field 
 	ithin each line is separated from the next by a colon. Any entry 
 	beginning with '#' is ignored. The smbpasswd file contains the 
@@ -23,7 +23,7 @@
 		null password this field will contain the characters &quot;NO PASSWORD&quot; 
 		as the start of the hex string. If the hex string is equal to 
 		32 'X' characters then the user's account is marked as 
-		<tt>disabled</tt> and the user will not be able to 
+		<tt class="constant">disabled</tt> and the user will not be able to 
 		log onto the Samba server. </p><p><span class="emphasis"><em>WARNING !!</em></span> Note that, due to 
 		the challenge-response nature of the SMB/CIFS authentication
 		protocol, anyone with a knowledge of this password hash will 
@@ -64,8 +64,8 @@
 			in the smbpasswd file. </p></li><li><p><span class="emphasis"><em>N</em></span> - This means the
 			account has no password (the passwords in the fields LANMAN 
 			Password Hash and NT Password Hash are ignored). Note that this 
-			will only allow users to log on with no password if the <i><tt>
-			null passwords</tt></i> parameter is set in the <a href="smb.conf.5.html#NULLPASSWORDS" target="_top"><a href="smb.conf.5.html">smb.conf(5)</a></a> config file. </p></li><li><p><span class="emphasis"><em>D</em></span> - This means the account 
+			will only allow users to log on with no password if the <i class="parameter"><tt>
+			null passwords</tt></i> parameter is set in the <a href="smb.conf.5.html#NULLPASSWORDS" target="_top"><a href="smb.conf.5.html"><span class="citerefentry"><span class="refentrytitle">smb.conf</span>(5)</span></a></a> config file. </p></li><li><p><span class="emphasis"><em>D</em></span> - This means the account 
 			is disabled and no SMB/CIFS logins  will be allowed for this user. </p></li><li><p><span class="emphasis"><em>W</em></span> - This means this account 
 			is a &quot;Workstation Trust&quot; account. This kind of account is used 
 			in the Samba PDC code stream to allow Windows NT Workstations 
@@ -75,7 +75,7 @@
 		&quot;Last Change Time&quot;) followed by a numeric encoding of the UNIX time 
 		in seconds since the epoch (1970) that the last change was made. 
 		</p></dd></dl></div><p>All other colon separated fields are ignored at this time.</p></div><div class="refsect1" lang="en"><h2>VERSION</h2><p>This man page is correct for version 3.0 of 
-	the Samba suite.</p></div><div class="refsect1" lang="en"><h2>SEE ALSO</h2><p><a href="smbpasswd.8.html">smbpasswd(8)</a>, <a href="Samba.7.html">Samba(7)</a>, and
+	the Samba suite.</p></div><div class="refsect1" lang="en"><h2>SEE ALSO</h2><p><a href="smbpasswd.8.html"><span class="citerefentry"><span class="refentrytitle">smbpasswd</span>(8)</span></a>, <a href="Samba.7.html"><span class="citerefentry"><span class="refentrytitle">Samba</span>(7)</span></a>, and
 	the Internet RFC1321 for details on the MD4 algorithm.
 	</p></div><div class="refsect1" lang="en"><h2>AUTHOR</h2><p>The original Samba software and related utilities 
 	were created by Andrew Tridgell. Samba is now developed

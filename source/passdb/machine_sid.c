@@ -191,8 +191,9 @@ DOM_SID *get_global_sam_sid(void)
 	/* memory for global_sam_sid is allocated in 
 	   pdb_generate_sam_sid() as needed */
 
-	if (!pdb_generate_sam_sid())
-		global_sam_sid=NULL;	
+	if (!pdb_generate_sam_sid()) {
+		smb_panic("Could not generate a machine SID\n");
+	}
 	
 	return global_sam_sid;
 }

@@ -275,6 +275,7 @@ static NTSTATUS cmd_netlogon_sam_logon(struct cli_state *cli,
         const char *username, *password;
 	uint32 neg_flags = 0x000001ff;
 	int auth_level = 2;
+	DOM_CRED ret_creds;
 
         /* Check arguments */
 
@@ -299,7 +300,13 @@ static NTSTATUS cmd_netlogon_sam_logon(struct cli_state *cli,
 
         /* Perform the sam logon */
 
-        result = cli_netlogon_sam_logon(cli, mem_ctx, username, password, logon_type);
+	ZERO_STRUCT(ret_creds);
+
+        result = cli_netlogon_sam_logon(cli, mem_ctx, &ret_creds, username, password, logon_type);
+
+	clnt_deal_with_creds(cli->sess_key, &(cli->clnt_cred), &ret_creds);
+	
+        result = cli_netlogon_sam_logon(cli, mem_ctx, &ret_creds, username, password, logon_type);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;

@@ -29,7 +29,7 @@
 static NTSTATUS get_info3_from_ndr(TALLOC_CTX *mem_ctx, struct winbindd_response *response, NET_USER_INFO_3 *info3)
 {
 	uint8 *info3_ndr;
-	size_t len = response->length - sizeof(response);
+	size_t len = response->length - sizeof(struct winbindd_response);
 	prs_struct ps;
 	if (len > 0) {
 		info3_ndr = response->extra_data;
@@ -72,15 +72,20 @@ static NTSTATUS check_winbind_security(const struct auth_context *auth_context,
 	if (!auth_context) {
 		DEBUG(3,("Password for user %s cannot be checked because we have no auth_info to get the challenge from.\n", 
 			 user_info->internal_username.str));		
-		return NT_STATUS_UNSUCCESSFUL;
+		return NT_STATUS_INVALID_PARAMETER;
 	}		
+
+	if (strequal(user_info->domain.str, get_global_sam_name())) {
+		DEBUG(3,("check_winbind_security: Not using winbind, requested domain was for this SAM.\n"));
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
 
 	/* Send off request */
 
 	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
 
-	request.data.auth_crap.flags = WINBIND_PAM_INFO3_NDR;
+	request.flags = WBFLAG_PAM_INFO3_NDR;
 
 	push_utf8_fstring(request.data.auth_crap.user, 
 			  user_info->smb_name.str);
@@ -100,8 +105,11 @@ static NTSTATUS check_winbind_security(const struct auth_context *auth_context,
 	       request.data.auth_crap.lm_resp_len);
 	memcpy(request.data.auth_crap.nt_resp, user_info->nt_resp.data, 
 	       request.data.auth_crap.nt_resp_len);
-	
+
+	/* we are contacting the privileged pipe */
+	become_root();
 	result = winbindd_request(WINBINDD_PAM_AUTH_CRAP, &request, &response);
+	unbecome_root();
 
 	if ( result == NSS_STATUS_UNAVAIL )  {
 		struct auth_methods *auth_method = my_private_data;
@@ -129,14 +137,14 @@ static NTSTATUS check_winbind_security(const struct auth_context *auth_context,
 			}
 		}
 	} else if (NT_STATUS_IS_OK(nt_status)) {
-		nt_status = NT_STATUS_UNSUCCESSFUL;
+		nt_status = NT_STATUS_NO_LOGON_SERVERS;
 	}
 
         return nt_status;
 }
 
 /* module initialisation */
-NTSTATUS auth_init_winbind(struct auth_context *auth_context, const char *param, auth_methods **auth_method) 
+static NTSTATUS auth_init_winbind(struct auth_context *auth_context, const char *param, auth_methods **auth_method) 
 {
 	if (!make_auth_methods(auth_context, auth_method)) {
 		return NT_STATUS_NO_MEMORY;

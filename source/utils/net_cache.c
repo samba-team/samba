@@ -64,7 +64,7 @@ static void delete_cache_entry(const char* keystr, const char* datastr,
                                const time_t timeout, void* dptr)
 {
 	if (!gencache_del(keystr))
-		d_printf("Couldn't delete entry! key = %s", keystr);
+		d_printf("Couldn't delete entry! key = %s\n", keystr);
 }
 
 

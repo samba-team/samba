@@ -270,28 +270,41 @@ static BOOL cli_session_setup_nt1(struct cli_state *cli, const char *user,
 	if (passlen != 24) {
 		if (lp_client_ntlmv2_auth()) {
 			DATA_BLOB server_chal;
-
+			DATA_BLOB names_blob;
 			server_chal = data_blob(cli->secblob.data, MIN(cli->secblob.length, 8)); 
 
-			if (!SMBNTLMv2encrypt(user, workgroup, pass, server_chal, 
+			/* note that the 'workgroup' here is a best guess - we don't know
+			   the server's domain at this point.  The 'server name' is also
+			   dodgy... 
+			*/
+			names_blob = NTLMv2_generate_names_blob(cli->called.name, workgroup);
+
+			if (!SMBNTLMv2encrypt(user, workgroup, pass, &server_chal, 
+					      &names_blob,
 					      &lm_response, &nt_response, &session_key)) {
+				data_blob_free(&names_blob);
 				data_blob_free(&server_chal);
 				return False;
 			}
+			data_blob_free(&names_blob);
 			data_blob_free(&server_chal);
 
 		} else {
 			uchar nt_hash[16];
 			E_md4hash(pass, nt_hash);
 
+			nt_response = data_blob(NULL, 24);
+			SMBNTencrypt(pass,cli->secblob.data,nt_response.data);
+
 			/* non encrypted password supplied. Ignore ntpass. */
 			if (lp_client_lanman_auth()) {
 				lm_response = data_blob(NULL, 24);
-				SMBencrypt(pass,cli->secblob.data,lm_response.data);
+				SMBencrypt(pass,cli->secblob.data, lm_response.data);
+			} else {
+				/* LM disabled, place NT# in LM feild instead */
+				lm_response = data_blob(nt_response.data, nt_response.length);
 			}
 
-			nt_response = data_blob(NULL, 24);
-			SMBNTencrypt(pass,cli->secblob.data,nt_response.data);
 			session_key = data_blob(NULL, 16);
 			SMBsesskeygen_ntv1(nt_hash, NULL, session_key.data);
 		}
@@ -440,6 +453,8 @@ static DATA_BLOB cli_session_setup_blob_receive(struct cli_state *cli)
 	return blob2;
 }
 
+#ifdef HAVE_KRB5
+
 /****************************************************************************
  Send a extended security session setup blob, returning a reply blob.
 ****************************************************************************/
@@ -454,7 +469,6 @@ static DATA_BLOB cli_session_setup_blob(struct cli_state *cli, DATA_BLOB blob)
 	return cli_session_setup_blob_receive(cli);
 }
 
-#ifdef HAVE_KRB5
 /****************************************************************************
  Use in-memory credentials cache
 ****************************************************************************/
@@ -490,7 +504,8 @@ static BOOL cli_session_setup_kerberos(struct cli_state *cli, const char *princi
 
 	return !cli_is_error(cli);
 }
-#endif
+#endif	/* HAVE_KRB5 */
+
 
 /****************************************************************************
  Do a spnego/NTLMSSP encrypted session setup.
@@ -525,11 +540,18 @@ static BOOL cli_session_setup_ntlmssp(struct cli_state *cli, const char *user,
 
 	ntlmssp_state->use_ntlmv2 = lp_client_ntlmv2_auth();
 
+	if (cli->sign_info.negotiated_smb_signing 
+	    || cli->sign_info.mandatory_signing) {
+		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SIGN;
+		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_ALWAYS_SIGN;
+	}
+
 	do {
 		nt_status = ntlmssp_client_update(ntlmssp_state, 
 						  blob_in, &blob_out);
 		data_blob_free(&blob_in);
 		if (NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+			DATA_BLOB null = data_blob(NULL, 0);
 			if (turn == 1) {
 				/* and wrap it in a SPNEGO wrapper */
 				msg1 = gen_negTokenInit(OID_NTLMSSP, blob_out);
@@ -538,13 +560,15 @@ static BOOL cli_session_setup_ntlmssp(struct cli_state *cli, const char *user,
 				msg1 = spnego_gen_auth(blob_out);
 			}
 		
+			cli_simple_set_signing(cli, 
+					       ntlmssp_state->session_key.data, 
+					       null); 
+			
 			/* now send that blob on its way */
 			if (!cli_session_setup_blob_send(cli, msg1)) {
 				return False;
 			}
 			data_blob_free(&msg1);
-			
-			cli_ntlmssp_set_signing(cli, ntlmssp_state);
 			
 			blob = cli_session_setup_blob_receive(cli);
 
@@ -566,7 +590,6 @@ static BOOL cli_session_setup_ntlmssp(struct cli_state *cli, const char *user,
 			}
 			data_blob_free(&tmp_blob);
 		} else {
-			/* the server might give us back two challenges */
 			if (!spnego_parse_auth_response(blob, nt_status, 
 							&blob_in)) {
 				DEBUG(3,("Failed to parse auth response\n"));
@@ -704,8 +727,22 @@ BOOL cli_session_setup(struct cli_state *cli,
 
 	/* if its an older server then we have to use the older request format */
 
-	if (cli->protocol < PROTOCOL_NT1)
+	if (cli->protocol < PROTOCOL_NT1) {
+		if (!lp_client_lanman_auth() && passlen != 24 && (*pass)) {
+			DEBUG(1, ("Server requested LM password but 'client lanman auth'"
+				  " is disabled\n"));
+			return False;
+		}
+
+		if ((cli->sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) == 0 &&
+		    !lp_client_plaintext_auth() && (*pass)) {
+			DEBUG(1, ("Server requested plaintext password but 'client use plaintext auth'"
+				  " is disabled\n"));
+			return False;
+		}
+
 		return cli_session_setup_lanman2(cli, user, pass, passlen, workgroup);
+	}
 
 	/* if no user is supplied then we have to do an anonymous connection.
 	   passwords are ignored */
@@ -717,17 +754,21 @@ BOOL cli_session_setup(struct cli_state *cli,
            password at this point. The password is sent in the tree
            connect */
 
-	if ((cli->sec_mode & NEGOTIATE_SECURITY_USER_LEVEL) == 0)
+	if ((cli->sec_mode & NEGOTIATE_SECURITY_USER_LEVEL) == 0) 
 		return cli_session_setup_plaintext(cli, user, "", workgroup);
 
 	/* if the server doesn't support encryption then we have to use 
 	   plaintext. The second password is ignored */
 
-	if ((cli->sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) == 0)
+	if ((cli->sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) == 0) {
+		if (!lp_client_plaintext_auth() && (*pass)) {
+			DEBUG(1, ("Server requested plaintext password but 'client use plaintext auth'"
+				  " is disabled\n"));
+			return False;
+		}
 		return cli_session_setup_plaintext(cli, user, pass, workgroup);
+	}
 
-	/* Indidicate signing */
-	
 	/* if the server supports extended security then use SPNEGO */
 
 	if (cli->capabilities & CAP_EXTENDED_SECURITY)
@@ -780,6 +821,12 @@ BOOL cli_send_tconX(struct cli_state *cli,
 	}
 
 	if ((cli->sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) && *pass && passlen != 24) {
+		if (!lp_client_lanman_auth()) {
+			DEBUG(1, ("Server requested LANMAN password but 'client use lanman auth'"
+				  " is disabled\n"));
+			return False;
+		}
+
 		/*
 		 * Non-encrypted passwords - convert to DOS codepage before encryption.
 		 */
@@ -787,10 +834,17 @@ BOOL cli_send_tconX(struct cli_state *cli,
 		SMBencrypt(pass,cli->secblob.data,(uchar *)pword);
 	} else {
 		if((cli->sec_mode & (NEGOTIATE_SECURITY_USER_LEVEL|NEGOTIATE_SECURITY_CHALLENGE_RESPONSE)) == 0) {
+			if (!lp_client_plaintext_auth() && (*pass)) {
+				DEBUG(1, ("Server requested plaintext password but 'client use plaintext auth'"
+					  " is disabled\n"));
+				return False;
+			}
+
 			/*
 			 * Non-encrypted passwords - convert to DOS codepage before using.
 			 */
 			passlen = clistr_push(cli, pword, pass, sizeof(pword), STR_TERMINATE);
+			
 		} else {
 			memcpy(pword, pass, passlen);
 		}
@@ -822,9 +876,6 @@ BOOL cli_send_tconX(struct cli_state *cli,
 		return False;
 
 	clistr_pull(cli, cli->dev, smb_buf(cli->inbuf), sizeof(fstring), -1, STR_TERMINATE|STR_ASCII);
-
-	if (strcasecmp(share,"IPC$")==0)
-		fstrcpy(cli->dev, "IPC");
 
 	if (cli->protocol >= PROTOCOL_NT1 &&
 	    smb_buflen(cli->inbuf) == 3) {
@@ -962,11 +1013,23 @@ BOOL cli_negprot(struct cli_state *cli)
 				    smb_buflen(cli->inbuf)-8, STR_UNICODE|STR_NOALIGN);
 		}
 
-		if ((cli->sec_mode & NEGOTIATE_SECURITY_SIGNATURES_REQUIRED))
+		if ((cli->sec_mode & NEGOTIATE_SECURITY_SIGNATURES_REQUIRED)) {
+			/* Fail if signing is mandatory and we don't want to support it. */
+			if (!lp_client_signing()) {
+				DEBUG(1,("cli_negprot: SMB signing is mandatory and we have disabled it.\n"));
+				return False;
+			}
 			cli->sign_info.negotiated_smb_signing = True;
+		}
 
 		if ((cli->sec_mode & NEGOTIATE_SECURITY_SIGNATURES_ENABLED) && cli->sign_info.allow_smb_signing)
 			cli->sign_info.negotiated_smb_signing = True;
+
+		/* Fail if signing is mandatory and the server doesn't support it. */
+		if (cli->sign_info.mandatory_signing && !(cli->sign_info.negotiated_smb_signing)) {
+			DEBUG(1,("cli_negprot: SMB signing is mandatory and the server doesn't support it.\n"));
+			return False;
+		}
 
 	} else if (cli->protocol >= PROTOCOL_LANMAN1) {
 		cli->use_spnego = False;
@@ -1369,6 +1432,12 @@ NTSTATUS cli_raw_tcon(struct cli_state *cli,
 {
 	char *p;
 
+	if (!lp_client_plaintext_auth() && (*pass)) {
+		DEBUG(1, ("Server requested plaintext password but 'client use plaintext auth'"
+			  " is disabled\n"));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
 	memset(cli->outbuf,'\0',smb_size);
 	memset(cli->inbuf,'\0',smb_size);
 
@@ -1433,7 +1502,7 @@ struct cli_state *get_ipc_connect(char *server, struct in_addr *server_ip,
 
 struct cli_state *get_ipc_connect_master_ip_bcast(pstring workgroup, struct user_auth_info *user_info)
 {
-	struct in_addr *ip_list;
+	struct ip_service *ip_list;
 	struct cli_state *cli;
 	int i, count;
 	struct in_addr server_ip; 
@@ -1447,7 +1516,7 @@ struct cli_state *get_ipc_connect_master_ip_bcast(pstring workgroup, struct user
 	for (i = 0; i < count; i++) {
 		static fstring name;
 
-		if (!name_status_find("*", 0, 0x1d, ip_list[i], name))
+		if (!name_status_find("*", 0, 0x1d, ip_list[i].ip, name))
 			continue;
 
                 if (!find_master_ip(name, &server_ip))
@@ -1456,7 +1525,7 @@ struct cli_state *get_ipc_connect_master_ip_bcast(pstring workgroup, struct user
                 pstrcpy(workgroup, name);
 
                 DEBUG(4, ("found master browser %s, %s\n", 
-                          name, inet_ntoa(ip_list[i])));
+                          name, inet_ntoa(ip_list[i].ip)));
 
 		cli = get_ipc_connect(inet_ntoa(server_ip), &server_ip, user_info);
 

@@ -1649,7 +1649,7 @@ static BOOL api_RNetGroupEnum(connection_struct *conn,uint16 vuid, char *param,c
 		return False;
 
 	/* get list of domain groups SID_DOMAIN_GRP=2 */
-	if(!pdb_enum_group_mapping(SID_NAME_DOM_GRP , &group_list, &num_entries, False, False)) {
+	if(!pdb_enum_group_mapping(SID_NAME_DOM_GRP , &group_list, &num_entries, False)) {
 		DEBUG(3,("api_RNetGroupEnum:failed to get group list"));
 		return False;
 	}
@@ -2367,7 +2367,7 @@ static BOOL api_NetWkstaGetInfo(connection_struct *conn,uint16 vuid, char *param
 
   SIVAL(p,0,PTR_DIFF(p2,*rdata)); /* host name */
   pstrcpy(p2,local_machine);
-  strupper(p2);
+  strupper_m(p2);
   p2 = skip_string(p2,1);
   p += 4;
 
@@ -2378,7 +2378,7 @@ static BOOL api_NetWkstaGetInfo(connection_struct *conn,uint16 vuid, char *param
 
   SIVAL(p,0,PTR_DIFF(p2,*rdata)); /* login domain */
   pstrcpy(p2,lp_workgroup());
-  strupper(p2);
+  strupper_m(p2);
   p2 = skip_string(p2,1);
   p += 4;
 
@@ -2788,7 +2788,7 @@ static BOOL api_WWkstaUserLogon(connection_struct *conn,uint16 vuid, char *param
       fstring mypath;
       fstrcpy(mypath,"\\\\");
       fstrcat(mypath,local_machine);
-      strupper(mypath);
+      strupper_m(mypath);
       PACKS(&desc,"z",mypath); /* computer */
     }
     PACKS(&desc,"z",lp_workgroup());/* domain */
@@ -3007,7 +3007,7 @@ static void fill_printdest_info(connection_struct *conn, int snum, int uLevel,
   char buf[100];
   strncpy(buf,SERVICE(snum),sizeof(buf)-1);
   buf[sizeof(buf)-1] = 0;
-  strupper(buf);
+  strupper_m(buf);
   if (uLevel <= 1) {
     PACKS(desc,"B9",buf);	/* szName */
     if (uLevel == 1) {

@@ -77,6 +77,21 @@ static int opt_machine_pass = 0;
 BOOL opt_have_ip = False;
 struct in_addr opt_dest_ip;
 
+/*****************************************************************************
+ stubb functions
+****************************************************************************/
+
+void become_root( void )
+{
+        return;
+}
+
+void unbecome_root( void )
+{
+        return;
+}
+
+
 uint32 get_sec_channel_type(const char *param) 
 {
 	if (!(param && *param)) {
@@ -206,7 +221,7 @@ BOOL net_find_server(unsigned flags, struct in_addr *server_ip, char **server_na
 			if (is_zero_ip(pdc_ip))
 				return False;
 			
-			if (!lookup_dc_name(global_myname(), opt_target_workgroup, &pdc_ip, dc_name))
+			if ( !name_status_find(opt_target_workgroup, 0x1b, 0x20, pdc_ip, dc_name) )
 				return False;
 				
 			*server_name = strdup(dc_name);
@@ -248,20 +263,18 @@ BOOL net_find_server(unsigned flags, struct in_addr *server_ip, char **server_na
 }
 
 
-BOOL net_find_dc(struct in_addr *server_ip, fstring server_name, const char *domain_name)
+BOOL net_find_pdc(struct in_addr *server_ip, fstring server_name, const char *domain_name)
 {
 	if (get_pdc_ip(domain_name, server_ip)) {
-		fstring dc_name;
-			
 		if (is_zero_ip(*server_ip))
 			return False;
 		
-		if (!lookup_dc_name(global_myname(), domain_name, server_ip, dc_name))
+		if (!name_status_find(domain_name, 0x1b, 0x20, *server_ip, server_name))
 			return False;
 			
-		fstrcpy(server_name, dc_name);
-		return True;
-	} else
+		return True;	
+	} 
+	else
 		return False;
 }
 
@@ -346,26 +359,6 @@ static int net_file(int argc, const char **argv)
 	if (net_rpc_check(0))
 		return net_rpc_file(argc, argv);
 	return net_rap_file(argc, argv);
-}
-
-/***********************************************************
- migrated functionality from smbgroupedit
- **********************************************************/
-static int net_groupmap(int argc, const char **argv)
-{
-	if ( 0 == argc )
-		return net_help_groupmap( argc, argv );
-
-	if ( !StrCaseCmp( argv[0], "add" ) )
-		return net_groupmap_add(argc-1, argv+1);
-	else if ( !StrCaseCmp( argv[0], "modify" ) )
-		return net_groupmap_modify(argc-1, argv+1);
-	else if ( !StrCaseCmp( argv[0], "delete" ) )
-		return net_groupmap_delete(argc-1, argv+1);
-	else if ( !StrCaseCmp( argv[0], "list" ) )
-		return net_groupmap_list(argc-1, argv+1);
-	
-	return net_help_groupmap( argc, argv );
 }
 
 /*
@@ -471,7 +464,7 @@ static uint32 get_maxrid(void)
 	pdb_free_sam(&pwd);
 
 	if (!pdb_enum_group_mapping(SID_NAME_UNKNOWN, &map, &num_entries,
-				    ENUM_ONLY_MAPPED, MAPPING_WITHOUT_PRIV))
+				    ENUM_ONLY_MAPPED))
 		return max_rid;
 
 	for (i = 0; i < num_entries; i++) {
@@ -544,6 +537,7 @@ static struct functable net_func[] = {
 	{"SETLOCALSID", net_setlocalsid},
 	{"GETDOMAINSID", net_getdomainsid},
 	{"MAXRID", net_maxrid},
+	{"IDMAP", net_idmap},
 
 	{"HELP", net_help},
 	{NULL, NULL}
@@ -655,6 +649,10 @@ static struct functable net_func[] = {
 		exit(1);
 
 	load_interfaces();
+	
+	/* this makes sure that when we do things like call scripts, 
+	   that it won't assert becouse we are not root */
+	sec_init();
 
 	if (opt_machine_pass) {
 		char *user = NULL;

@@ -1099,7 +1099,7 @@ VAL_KEY *nt_add_reg_value(REG_KEY *key, char *name, int type, char *value)
   tmp = (VAL_KEY *)malloc(sizeof(VAL_KEY));
   if (!tmp) goto error;
 
-  bzero(tmp, sizeof(VAL_KEY));
+  memset(tmp, 0, sizeof(VAL_KEY));
   tmp->name = strdup(name);
   tmp->has_name = True;
   if (!tmp->name) goto error;
@@ -1181,7 +1181,7 @@ int sid_string_to_sid(sid_t **sid, const char *sid_str)
   *sid = (sid_t *)malloc(sizeof(sid_t));
   if (!*sid) return 0;
 
-  bzero(*sid, sizeof(sid_t));
+  memset(*sid, 0, sizeof(sid_t));
 
   if (strncmp(sid_str, "S-1-5", 5)) {
     fprintf(stderr, "Does not conform to S-1-5...: %s\n", sid_str);
@@ -1402,7 +1402,7 @@ REG_KEY *nt_add_reg_key_list(REGF *regf, REG_KEY *key, char * name, int create)
 
   tmp = (REG_KEY *)malloc(sizeof(REG_KEY)); 
 
-  bzero(tmp, sizeof(REG_KEY));
+  memset(tmp, 0, sizeof(REG_KEY));
 
   tmp->name = strdup(c1);
   if (!tmp->name) goto error;
@@ -1466,7 +1466,7 @@ REG_KEY *nt_add_reg_key(REGF *regf, char *name, int create)
     
     tmp = (REG_KEY *)malloc(sizeof(REG_KEY));
     if (!tmp) goto error;
-    bzero(tmp, sizeof(REG_KEY));
+    memset(tmp, 0, sizeof(REG_KEY));
     tmp->name = strdup(c1);
     if (!tmp->name) goto error;
     tmp->security = nt_create_init_sec(regf);
@@ -1654,7 +1654,7 @@ REGF *nt_create_regf(void)
 {
   REGF *tmp = (REGF *)malloc(sizeof(REGF));
   if (!tmp) return tmp;
-  bzero(tmp, sizeof(REGF));
+  memset(tmp, 0, sizeof(REGF));
   tmp->owner_sid_str = def_owner_sid_str;
   return tmp;
 } 
@@ -1815,7 +1815,7 @@ KEY_SEC_DESC *lookup_create_sec_key(REGF *regf, SK_MAP *sk_map, int sk_off)
     if (!tmp) {
       return NULL;
     }
-    bzero(tmp, sizeof(KEY_SEC_DESC)); /* Neatly sets offset to 0 */
+    memset(tmp, 0, sizeof(KEY_SEC_DESC)); /* Neatly sets offset to 0 */
     tmp->state = SEC_DESC_RES;
     if (!alloc_sk_map_entry(regf, tmp, sk_off)) {
       return NULL;
@@ -1991,7 +1991,7 @@ KEY_SEC_DESC *process_sk(REGF *regf, SK_HDR *sk_hdr, int sk_off, int size)
   if (!tmp) {
     tmp = (KEY_SEC_DESC *)malloc(sizeof(KEY_SEC_DESC));
     if (!tmp) return NULL;
-    bzero(tmp, sizeof(KEY_SEC_DESC));
+    memset(tmp, 0, sizeof(KEY_SEC_DESC));
     
     /*
      * Allocate an entry in the SK_MAP ...
@@ -2059,7 +2059,7 @@ VAL_KEY *process_vk(REGF *regf, VK_HDR *vk_hdr, int size)
   if (!tmp) {
     goto error;
   }
-  bzero(tmp, sizeof(VAL_KEY));
+  memset(tmp, 0, sizeof(VAL_KEY));
   tmp->has_name = flag;
   tmp->data_type = dat_type;
 
@@ -2268,7 +2268,7 @@ REG_KEY *nt_get_key_tree(REGF *regf, NK_HDR *nk_hdr, int size, REG_KEY *parent)
   /* Allocate the key struct now */
   tmp = (REG_KEY *)malloc(sizeof(REG_KEY));
   if (!tmp) return tmp;
-  bzero(tmp, sizeof(REG_KEY));
+  memset(tmp, 0, sizeof(REG_KEY));
 
   tmp->type = (SVAL(&nk_hdr->type)==0x2C?REG_ROOT_KEY:REG_SUB_KEY);
   
@@ -2295,7 +2295,7 @@ REG_KEY *nt_get_key_tree(REGF *regf, NK_HDR *nk_hdr, int size, REG_KEY *parent)
     clsnamep = LOCN(regf->base, clsnam_off);
     if (verbose) fprintf(stdout, "Class Name Offset: %0X\n", clsnam_off);
  
-    bzero(cls_name, clsname_len);
+    memset(cls_name, 0, clsname_len);
     uni_to_ascii(clsnamep, cls_name, sizeof(cls_name), clsname_len);
     
     /*
@@ -2494,12 +2494,12 @@ HBIN_BLK *nt_create_hbin_blk(REGF *regf, int size)
   size = (size + (REGF_HDR_BLKSIZ - 1)) & ~(REGF_HDR_BLKSIZ - 1);
 
   tmp = (HBIN_BLK *)malloc(sizeof(HBIN_BLK));
-  bzero(tmp, sizeof(HBIN_BLK));
+  memset(tmp, 0, sizeof(HBIN_BLK));
 
   tmp->data = malloc(size);
   if (!tmp->data) goto error;
 
-  bzero(tmp->data, size);  /* Make it pristine */
+  memset(tmp->data, 0, size);  /* Make it pristine */
 
   tmp->size = size;
   tmp->file_offset = regf->blk_tail->file_offset + regf->blk_tail->size;
@@ -2986,13 +2986,13 @@ REGF_HDR *nt_get_reg_header(REGF *regf)
   tmp = (HBIN_BLK *)malloc(sizeof(HBIN_BLK));
   if (!tmp) return 0;
 
-  bzero(tmp, sizeof(HBIN_BLK));
+  memset(tmp, 0, sizeof(HBIN_BLK));
   tmp->type = REG_OUTBLK_HDR;
   tmp->size = REGF_HDR_BLKSIZ;
   tmp->data = malloc(REGF_HDR_BLKSIZ);
   if (!tmp->data) goto error;
 
-  bzero(tmp->data, REGF_HDR_BLKSIZ);  /* Make it pristine, unlike Windows */
+  memset(tmp->data, 0, REGF_HDR_BLKSIZ);  /* Make it pristine, unlike Windows */
   regf->blk_head = regf->blk_tail = tmp;
 
   return (REGF_HDR *)tmp->data;
@@ -3921,7 +3921,7 @@ int print_val(const char *path, char *val_name, int val_type, int data_len,
 {
   char data_asc[1024];
 
-  bzero(data_asc, sizeof(data_asc));
+  memset(data_asc, 0, sizeof(data_asc));
   if (!terminal && first)
     fprintf(stdout, "%s\n", path);
   data_to_ascii((unsigned char *)data_blk, data_len, val_type, data_asc, 

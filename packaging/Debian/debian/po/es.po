@@ -13,14 +13,15 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Samba for Debian 2.999+3.0.alpha21-4\n"
-"POT-Creation-Date: 2003-04-30 13:11-0500\n"
-"PO-Revision-Date: 2003-03-09 20:27-0600\n"
+"Project-Id-Version: Samba for Debian 3.0.0beta2-1\n"
+"POT-Creation-Date: 2003-07-02 21:50-0500\n"
+"PO-Revision-Date: 2003-07-02 21:51-0500\n"
 "Last-Translator: Steve Langasek <vorlon@debian.org>\n"
 "Language-Team: Spanish <debian-l10n-spanish@lists.debian.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Report-Msgid-Bugs-To: \n"
 
 #. Description
 #: ../samba-common.templates:3
@@ -32,18 +33,15 @@ msgstr "Juego de caracteres para el sistema de ficheros Unix"
 #: ../samba-common.templates:3
 msgid ""
 "You currently have a \"character set\" configured in your smb.conf.  In "
-"Samba 3.0, this option is replaced by two new options, \"unix charset\" and "
-"\"display charset\".  Please specify the character set you wish to use for "
-"these new options, which control how Samba interprets filenames on the file "
-"system and how smbclient will interpret these names when you connect to a "
-"file server."
+"Samba 3.0, this option is replaced by a new option, \"unix charset\". Please "
+"specify the character set you wish to use for theis new option, which "
+"controls how Samba interprets filenames on the file system."
 msgstr ""
 "Actualmente hay una opción de \"character set\" en smb.conf.  En Samba 3.0 "
-"esta opción ha sido reemplazado por dos opciones nuevas: \"unix charset\" y "
-"\"display charset\".  Por favor, indique el juego de caracteres que desea "
-"usar para estas opciones nuevas, que controlan cómo Samba interpretará los "
-"nombres en el sistema de ficheros y también cómo smbclient los interpretará "
-"al conectarse a un servidor de ficheros."
+"esta opción ha sido reemplazado por una opción nueva: \"unix charset\". Por "
+"favor, indique el juego de caracteres que desea usar para esta opción "
+"nueva, que controla cómo Samba interpretará los nombres en el sistema de "
+"ficheros."
 
 #. Description
 #: ../samba-common.templates:3
@@ -51,12 +49,12 @@ msgid "If you leave this option blank, your smb.conf will not be changed."
 msgstr "Si deja en blanco este campo, no se cambiará smb.conf."
 
 #. Description
-#: ../samba-common.templates:15
+#: ../samba-common.templates:13
 msgid "Character Set for DOS clients"
 msgstr "Juego de caracteres para los clientes DOS"
 
 #. Description
-#: ../samba-common.templates:15
+#: ../samba-common.templates:13
 msgid ""
 "You currently have a \"client code page\" set in your smb.conf.  In Samba "
 "3.0, this option is replaced by the option \"dos charset\".  Please specify "
@@ -73,13 +71,13 @@ msgstr ""
 "cambiará smb.conf."
 
 #. Description
-#: ../samba-common.templates:26
+#: ../samba-common.templates:24
 msgid "Modify smb.conf to use WINS settings from DHCP?"
 msgstr ""
 "¿Modificar smb.conf para usar la configuración WINS que proviene de DHCP?"
 
 #. Description
-#: ../samba-common.templates:26
+#: ../samba-common.templates:24
 msgid ""
 "If your computer gets IP address information from a DHCP server on the "
 "network, the DHCP server may also provide information about WINS servers "
@@ -94,7 +92,7 @@ msgstr ""
 "de /etc/samba/dhcp.conf."
 
 #. Description
-#: ../samba-common.templates:26
+#: ../samba-common.templates:24
 msgid ""
 "You must have the dhcp3-client package installed to take advantage of this "
 "feature."
@@ -102,12 +100,12 @@ msgstr ""
 "Hay que instalar el paquete dhcp3-client para aprovechar esta funcionalidad."
 
 #. Description
-#: ../samba-common.templates:39
+#: ../samba-common.templates:37
 msgid "Configure smb.conf through debconf?"
 msgstr "¿Configurar smb.conf mediante debconf?"
 
 #. Description
-#: ../samba-common.templates:39
+#: ../samba-common.templates:37
 msgid ""
 "The rest of the configuration of Samba deals with questions that affect "
 "parameters in /etc/samba/smb.conf, which is the file used to configure the "
@@ -123,7 +121,7 @@ msgstr ""
 "arregle a mano."
 
 #. Description
-#: ../samba-common.templates:39
+#: ../samba-common.templates:37
 msgid ""
 "If you don't use debconf to configure smb.conf, you will have to handle any "
 "configuration changes yourself, and will not be able to take advantage of "
@@ -136,12 +134,12 @@ msgstr ""
 "sea posible."
 
 #. Description
-#: ../samba-common.templates:54
+#: ../samba-common.templates:52
 msgid "Workgroup/Domain Name?"
 msgstr "Nombre del dominio o del grupo de trabajo"
 
 #. Description
-#: ../samba-common.templates:54
+#: ../samba-common.templates:52
 msgid ""
 "This controls what workgroup your server will appear to be in when queried "
 "by clients. Note that this parameter also controls the Domain name used with "
@@ -152,12 +150,12 @@ msgstr ""
 "de dominio que se usa con la configuración security=domain."
 
 #. Description
-#: ../samba-common.templates:62
+#: ../samba-common.templates:60
 msgid "Use password encryption?"
 msgstr "¿Utilizar contraseñas cifradas?"
 
 #. Description
-#: ../samba-common.templates:62
+#: ../samba-common.templates:60
 msgid ""
 "Recent Windows clients communicate with SMB servers using encrypted "
 "passwords. If you want to use clear text passwords you will need to change a "

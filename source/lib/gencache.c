@@ -319,9 +319,8 @@ void gencache_iterate(void (*fn)(const char* key, const char *value, time_t time
 	
 	while (node) {
 		/* ensure null termination of the key string */
-		node->node_key.dptr[node->node_key.dsize] = '\0';
-		keystr = node->node_key.dptr;
-
+		keystr = strndup(node->node_key.dptr, node->node_key.dsize);
+		
 		/* 
 		 * We don't use gencache_get function, because we need to iterate through
 		 * all of the entries. Validity verification is up to fn routine.
@@ -329,6 +328,8 @@ void gencache_iterate(void (*fn)(const char* key, const char *value, time_t time
 		databuf = tdb_fetch(cache, node->node_key);
 		if (!databuf.dptr || databuf.dsize <= TIMEOUT_LEN) {
 			SAFE_FREE(databuf.dptr);
+			SAFE_FREE(keystr);
+			node = node->next;
 			continue;
 		}
 		entry = strndup(databuf.dptr, databuf.dsize);
@@ -342,8 +343,30 @@ void gencache_iterate(void (*fn)(const char* key, const char *value, time_t time
 		
 		SAFE_FREE(valstr);
 		SAFE_FREE(entry);
+		SAFE_FREE(keystr);
 		node = node->next;
 	}
 	
 	tdb_search_list_free(first_node);
 }
+
+/********************************************************************
+ lock a key
+********************************************************************/
+
+int gencache_lock_entry( const char *key )
+{
+	return tdb_lock_bystring(cache, key, 0);
+}
+
+/********************************************************************
+ unlock a key
+********************************************************************/
+
+void gencache_unlock_entry( const char *key )
+{
+	tdb_unlock_bystring(cache, key);
+	return;
+}
+
+

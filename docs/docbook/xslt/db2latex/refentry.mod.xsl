@@ -1,8 +1,6 @@
 <?xml version='1.0'?>
 <!--############################################################################# 
-|	$Id: refentry.mod.xsl,v 1.1 2003/04/30 21:39:49 ab Exp $
 |- #############################################################################
-|	$Author: ab $
 |														
 |   PURPOSE:
 + ############################################################################## -->
@@ -19,7 +17,6 @@
     <doc:reference id="refentry" xmlns="">
 	<referenceinfo>
 	    <releaseinfo role="meta">
-		$Id: refentry.mod.xsl,v 1.1 2003/04/30 21:39:49 ab Exp $
 	    </releaseinfo>
 	<authogroup>
 	    <author> <firstname>Ramon</firstname> <surname>Casellas</surname> </author>

@@ -1,16 +1,16 @@
-<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>nmblookup</title><link rel="stylesheet" href="samba.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.59.1"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="refentry" lang="en"><a name="nmblookup"></a><div class="titlepage"></div><div class="refnamediv"><h2>Name</h2><p>nmblookup &#8212; NetBIOS over TCP/IP client used to lookup NetBIOS 
-	names</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><div class="cmdsynopsis"><p><tt>nmblookup</tt>  [-M] [-R] [-S] [-r] [-A] [-h] [-B &lt;broadcast address&gt;] [-U &lt;unicast address&gt;] [-d &lt;debug level&gt;] [-s &lt;smb config file&gt;] [-i &lt;NetBIOS scope&gt;] [-T] [-f] {name}</p></div></div><div class="refsect1" lang="en"><h2>DESCRIPTION</h2><p>This tool is part of the <a href="Samba.7.html">Samba(7)</a> suite.</p><p><b>nmblookup</b> is used to query NetBIOS names 
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>nmblookup</title><link rel="stylesheet" href="samba.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.60.1"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="refentry" lang="en"><a name="nmblookup"></a><div class="titlepage"><div></div><div></div></div><div class="refnamediv"><h2>Name</h2><p>nmblookup &#8212; NetBIOS over TCP/IP client used to lookup NetBIOS 
+	names</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><div class="cmdsynopsis"><p><tt class="command">nmblookup</tt>  [-M] [-R] [-S] [-r] [-A] [-h] [-B &lt;broadcast address&gt;] [-U &lt;unicast address&gt;] [-d &lt;debug level&gt;] [-s &lt;smb config file&gt;] [-i &lt;NetBIOS scope&gt;] [-T] [-f] {name}</p></div></div><div class="refsect1" lang="en"><h2>DESCRIPTION</h2><p>This tool is part of the <a href="Samba.7.html"><span class="citerefentry"><span class="refentrytitle">Samba</span>(7)</span></a> suite.</p><p><b class="command">nmblookup</b> is used to query NetBIOS names 
 	and map them to IP addresses in a network using NetBIOS over TCP/IP 
 	queries. The options allow the name queries to be directed at a 
 	particular IP broadcast area or to a particular machine. All queries 
 	are done over UDP.</p></div><div class="refsect1" lang="en"><h2>OPTIONS</h2><div class="variablelist"><dl><dt><span class="term">-M</span></dt><dd><p>Searches for a master browser by looking 
-		up the  NetBIOS name <i><tt>name</tt></i> with a 
-		type of <tt>0x1d</tt>. If <i><tt>
+		up the  NetBIOS name <i class="replaceable"><tt>name</tt></i> with a 
+		type of <tt class="constant">0x1d</tt>. If <i class="replaceable"><tt>
 		name</tt></i> is &quot;-&quot; then it does a lookup on the special name 
-		<tt>__MSBROWSE__</tt>. Please note that in order to 
+		<tt class="constant">__MSBROWSE__</tt>. Please note that in order to 
 		use the name &quot;-&quot;, you need to make sure &quot;-&quot; isn't parsed as an 
 		argument, e.g. use : 
-		<b><tt>nmblookup -M -- -</tt></b>.</p></dd><dt><span class="term">-R</span></dt><dd><p>Set the recursion desired bit in the packet 
+		<b class="userinput"><tt>nmblookup -M -- -</tt></b>.</p></dd><dt><span class="term">-R</span></dt><dd><p>Set the recursion desired bit in the packet 
 		to do a recursive lookup. This is used when sending a name 
 		query to a machine running a WINS server and the user wishes 
 		to query the names in the WINS server.  If this bit is unset 
@@ -24,15 +24,15 @@
 		where it ignores the source port of the requesting packet 
 	 	and only replies to UDP port 137. Unfortunately, on most UNIX 
 		systems root privilege is needed to bind to this port, and 
-		in addition, if the <a href="nmbd.8.html">nmbd(8)</a> daemon is running on this machine it also binds to this port.
-		</p></dd><dt><span class="term">-A</span></dt><dd><p>Interpret <i><tt>name</tt></i> as 
+		in addition, if the <a href="nmbd.8.html"><span class="citerefentry"><span class="refentrytitle">nmbd</span>(8)</span></a> daemon is running on this machine it also binds to this port.
+		</p></dd><dt><span class="term">-A</span></dt><dd><p>Interpret <i class="replaceable"><tt>name</tt></i> as 
 		an IP Address and do a node status query on this address.</p></dd><dt><span class="term">-n &lt;primary NetBIOS name&gt;</span></dt><dd><p>This option allows you to override
 the NetBIOS name that Samba uses for itself. This is identical
-to setting the <a href="smb.conf.5.html#netbiosname" target="_top"><i><tt>NetBIOS
-name</tt></i></a> parameter in the <a href="smb.conf.5.html">smb.conf(5)</a> file.  However, a command
+to setting the <a href="smb.conf.5.html#netbiosname" target="_top"><i class="parameter"><tt>NetBIOS
+name</tt></i></a> parameter in the <a href="smb.conf.5.html"><span class="citerefentry"><span class="refentrytitle">smb.conf</span>(5)</span></a> file.  However, a command
 line setting will take precedence over settings in
-<a href="smb.conf.5.html">smb.conf(5)</a>.</p></dd><dt><span class="term">-i &lt;scope&gt;</span></dt><dd><p>This specifies a NetBIOS scope that
-<b>nmblookup</b> will use to communicate with when
+<a href="smb.conf.5.html"><span class="citerefentry"><span class="refentrytitle">smb.conf</span>(5)</span></a>.</p></dd><dt><span class="term">-i &lt;scope&gt;</span></dt><dd><p>This specifies a NetBIOS scope that
+<b class="command">nmblookup</b> will use to communicate with when
 generating NetBIOS names. For details on the use of NetBIOS
 scopes, see rfc1001.txt and rfc1002.txt. NetBIOS scopes are
 <span class="emphasis"><em>very</em></span> rarely used, only set this parameter
@@ -43,26 +43,26 @@ smb.conf.  If the domain specified is the same as the servers
 NetBIOS name, it causes the client to log on using the servers local 
 SAM (as opposed to the Domain SAM). </p></dd><dt><span class="term">-O socket options</span></dt><dd><p>TCP socket options to set on the client
 socket. See the socket options parameter in
-the <a href="smb.conf.5.html">smb.conf(5)</a> manual page for the list of valid
+the <a href="smb.conf.5.html"><span class="citerefentry"><span class="refentrytitle">smb.conf</span>(5)</span></a> manual page for the list of valid
 options. </p></dd><dt><span class="term">-h|--help</span></dt><dd><p>Print a summary of command line options.
 </p></dd><dt><span class="term">-B &lt;broadcast address&gt;</span></dt><dd><p>Send the query to the given broadcast address. Without 
 		this option the default behavior of nmblookup is to send the 
 		query to the broadcast address of the network interfaces as 
-		either auto-detected or defined in the <a href="smb.conf.5.html#INTERFACES" target="_top"><i><tt>interfaces</tt></i>
-		</a> parameter of the <a href="smb.conf.5.html">smb.conf(5)</a> file.
+		either auto-detected or defined in the <a href="smb.conf.5.html#INTERFACES" target="_top"><i class="parameter"><tt>interfaces</tt></i>
+		</a> parameter of the <a href="smb.conf.5.html"><span class="citerefentry"><span class="refentrytitle">smb.conf</span>(5)</span></a> file.
 		</p></dd><dt><span class="term">-U &lt;unicast address&gt;</span></dt><dd><p>Do a unicast query to the specified address or 
-		host <i><tt>unicast address</tt></i>. This option 
-		(along with the <i><tt>-R</tt></i> option) is needed to 
+		host <i class="replaceable"><tt>unicast address</tt></i>. This option 
+		(along with the <i class="parameter"><tt>-R</tt></i> option) is needed to 
 		query a WINS server.</p></dd><dt><span class="term">-V</span></dt><dd><p>Prints the version number for 
-<b>smbd</b>.</p></dd><dt><span class="term">-s &lt;configuration file&gt;</span></dt><dd><p>The file specified contains the 
+<b class="command">smbd</b>.</p></dd><dt><span class="term">-s &lt;configuration file&gt;</span></dt><dd><p>The file specified contains the 
 configuration details required by the server.  The 
 information in this file includes server-specific
 information such as what printcap file to use, as well 
 as descriptions of all the services that the server is 
-to provide. See <a href="smb.conf.5.html" target="_top"><tt>
+to provide. See <a href="smb.conf.5.html" target="_top"><tt class="filename">
 smb.conf(5)</tt></a> for more information.
 The default configuration file name is determined at 
-compile time.</p></dd><dt><span class="term">-d|--debug=debuglevel</span></dt><dd><p><i><tt>debuglevel</tt></i> is an integer 
+compile time.</p></dd><dt><span class="term">-d|--debug=debuglevel</span></dt><dd><p><i class="replaceable"><tt>debuglevel</tt></i> is an integer 
 from 0 to 10.  The default value if this parameter is 
 not specified is zero.</p><p>The higher this value, the more detail will be 
 logged to the log files about the activities of the 
@@ -76,8 +76,8 @@ use only by developers and generate HUGE amounts of log
 data, most of which is extremely cryptic.</p><p>Note that specifying this parameter here will 
 override the <a href="smb.conf.5.html#loglevel" target="_top">log
 level</a> parameter in the <a href="smb.conf.5.html" target="_top">
-<tt>smb.conf(5)</tt></a> file.</p></dd><dt><span class="term">-l|--logfile=logbasename</span></dt><dd><p>File name for log/debug files. The extension
-<tt>&quot;.client&quot;</tt> will be appended. The log file is
+<tt class="filename">smb.conf(5)</tt></a> file.</p></dd><dt><span class="term">-l|--logfile=logbasename</span></dt><dd><p>File name for log/debug files. The extension
+<tt class="constant">&quot;.client&quot;</tt> will be appended. The log file is
 never removed by the client.
 </p></dd><dt><span class="term">-T</span></dt><dd><p>This causes any IP addresses found in the 
 		lookup to be looked up via a reverse DNS lookup into a 
@@ -90,12 +90,12 @@ never removed by the client.
 		If a NetBIOS name then the different name types may be specified 
 		by appending '#&lt;type&gt;' to the name. This name may also be
 		'*', which will return all registered names within a broadcast 
-		area.</p></dd></dl></div></div><div class="refsect1" lang="en"><h2>EXAMPLES</h2><p><b>nmblookup</b> can be used to query 
-		a WINS server (in the same way <b>nslookup</b> is 
-		used to query DNS servers). To query a WINS server, <b>nmblookup</b> 
-		must be called like this:</p><p><b>nmblookup -U server -R 'name'</b></p><p>For example, running :</p><p><b>nmblookup -U samba.org -R 'IRIX#1B'</b></p><p>would query the WINS server samba.org for the domain 
+		area.</p></dd></dl></div></div><div class="refsect1" lang="en"><h2>EXAMPLES</h2><p><b class="command">nmblookup</b> can be used to query 
+		a WINS server (in the same way <b class="command">nslookup</b> is 
+		used to query DNS servers). To query a WINS server, <b class="command">nmblookup</b> 
+		must be called like this:</p><p><b class="command">nmblookup -U server -R 'name'</b></p><p>For example, running :</p><p><b class="command">nmblookup -U samba.org -R 'IRIX#1B'</b></p><p>would query the WINS server samba.org for the domain 
 		master browser (1B name type) for the IRIX workgroup.</p></div><div class="refsect1" lang="en"><h2>VERSION</h2><p>This man page is correct for version 3.0 of 
-	the Samba suite.</p></div><div class="refsect1" lang="en"><h2>SEE ALSO</h2><p><a href="nmbd.8.html">nmbd(8)</a>, <a href="samba.7.html">samba(7)</a>, and <a href="smb.conf.5.html">smb.conf(5)</a>.</p></div><div class="refsect1" lang="en"><h2>AUTHOR</h2><p>The original Samba software and related utilities 
+	the Samba suite.</p></div><div class="refsect1" lang="en"><h2>SEE ALSO</h2><p><a href="nmbd.8.html"><span class="citerefentry"><span class="refentrytitle">nmbd</span>(8)</span></a>, <a href="samba.7.html"><span class="citerefentry"><span class="refentrytitle">samba</span>(7)</span></a>, and <a href="smb.conf.5.html"><span class="citerefentry"><span class="refentrytitle">smb.conf</span>(5)</span></a>.</p></div><div class="refsect1" lang="en"><h2>AUTHOR</h2><p>The original Samba software and related utilities 
 	were created by Andrew Tridgell. Samba is now developed
 	by the Samba Team as an Open Source project similar 
 	to the way the Linux kernel is developed.</p><p>The original Samba man pages were written by Karl Auer. 

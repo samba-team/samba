@@ -142,7 +142,7 @@ static void send_lm_announcement(struct subnet_record *subrec, int announce_type
 
   p += 10;
   /*StrnCpy(p,server_name,15);
-  strupper(p);
+  strupper_m(p);
   p = skip_string(p,1);
   pstrcpy(p,server_comment);
   p = skip_string(p,1);*/
@@ -555,6 +555,7 @@ void browse_sync_remote(time_t t)
   struct work_record *work;
   pstring outbuf;
   char *p;
+  fstring myname;
  
   if (last_time && (t < (last_time + REMOTE_ANNOUNCE_INTERVAL)))
     return;
@@ -589,8 +590,11 @@ for workgroup %s on subnet %s.\n", lp_workgroup(), FIRST_SUBNET->subnet_name ));
   SCVAL(p,0,ANN_MasterAnnouncement);
   p++;
 
-  StrnCpy(p,global_myname(),15);
-  strupper(p);
+  fstrcpy(myname, global_myname());
+  strupper_m(myname);
+  myname[15]='\0';
+  push_pstring_base(p, myname, outbuf);
+
   p = skip_string(p,1);
 
   for (ptr=s; next_token(&ptr,s2,NULL,sizeof(s2)); ) 

@@ -33,6 +33,8 @@ BOOL session_claim(user_struct *vuser)
 {
 	int i = 0;
 	TDB_DATA data;
+	struct sockaddr sa;
+	struct in_addr *client_ip;
 	struct sessionid sessionid;
 	uint32 pid = (uint32)sys_getpid();
 	TDB_DATA key;		
@@ -64,7 +66,6 @@ BOOL session_claim(user_struct *vuser)
 	data.dptr = NULL;
 	data.dsize = 0;
 
-#if WITH_UTMP
 	if (lp_utmp()) {
 		for (i=1;i<MAX_SESSION_ID;i++) {
 			slprintf(keystr, sizeof(keystr)-1, "ID/%d", i);
@@ -82,7 +83,6 @@ BOOL session_claim(user_struct *vuser)
 		slprintf(sessionid.id_str, sizeof(sessionid.id_str)-1, SESSION_UTMP_TEMPLATE, i);
 		tdb_store_flag = TDB_MODIFY;
 	} else
-#endif
 	{
 		slprintf(keystr, sizeof(keystr)-1, "ID/%lu/%u", 
 			 (long unsigned int)sys_getpid(), 
@@ -117,6 +117,8 @@ BOOL session_claim(user_struct *vuser)
 	fstrcpy(sessionid.remote_machine, get_remote_machine_name());
 	fstrcpy(sessionid.ip_addr, client_addr());
 
+	client_ip = client_inaddr(&sa);
+
 	if (!smb_pam_claim_session(sessionid.username, sessionid.id_str, sessionid.hostname)) {
 		DEBUG(1,("pam_session rejected the session for %s [%s]\n",
 				sessionid.username, sessionid.id_str));
@@ -133,12 +135,11 @@ BOOL session_claim(user_struct *vuser)
 		return False;
 	}
 
-#if WITH_UTMP	
 	if (lp_utmp()) {
 		sys_utmp_claim(sessionid.username, sessionid.hostname, 
+			       client_ip,
 			       sessionid.id_str, sessionid.id_num);
 	}
-#endif
 
 	vuser->session_keystr = strdup(keystr);
 	if (!vuser->session_keystr) {
@@ -153,7 +154,8 @@ void session_yield(user_struct *vuser)
 {
 	TDB_DATA dbuf;
 	struct sessionid sessionid;
-	TDB_DATA key;		
+	struct in_addr *client_ip;
+	TDB_DATA key;
 
 	if (!tdb) return;
 
@@ -171,14 +173,15 @@ void session_yield(user_struct *vuser)
 
 	memcpy(&sessionid, dbuf.dptr, sizeof(sessionid));
 
+	client_ip = interpret_addr2(sessionid.ip_addr);
+
 	SAFE_FREE(dbuf.dptr);
 
-#if WITH_UTMP	
 	if (lp_utmp()) {
 		sys_utmp_yield(sessionid.username, sessionid.hostname, 
+			       client_ip,
 			       sessionid.id_str, sessionid.id_num);
 	}
-#endif
 
 	smb_pam_close_session(sessionid.username, sessionid.id_str, sessionid.hostname);
 

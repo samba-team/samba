@@ -57,7 +57,7 @@ static struct work_record *create_workgroup(const char *name, int ttl)
   }
   memset((char *)work, '\0', sizeof(*work));
  
-  StrnCpy(work->work_group,name,sizeof(work->work_group)-1);
+  fstrcpy(work->work_group,name);
   work->serverlist = NULL;
   
   work->RunningElection = False;

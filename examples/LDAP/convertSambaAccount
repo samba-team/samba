@@ -15,8 +15,8 @@ use Net::LDAP::LDIF;
 my ( $domain, $domsid );
 my ( $ldif, $ldif2 );
 my ( $entry, @objclasses, $obj );
-my ( $is_samba_account );
-my ( %attr_map, $key );
+my ( $is_samba_account, $is_samba_group );
+my ( %attr_map, %group_attr_map, $key );
 
 if ( $#ARGV != 2 ) {
 	print "Usage: convertSambaAccount domain_sid input_ldif output_ldif\n";
@@ -39,6 +39,11 @@ if ( $#ARGV != 2 ) {
 	userWorkstations	=> 'sambaUserWorkstations',
 	domain		=> 'sambaDomainName',
 	acctFlags	=> 'sambaAcctFlags',
+);
+
+%group_attr_map = (
+	ntSid		=> 'sambaSID',
+	ntGroupType	=> 'sambaGroupType',
 );
 
 $domsid = $ARGV[0];
@@ -65,37 +70,44 @@ while ( !$ldif->eof ) {
 	##
 	@objclasses = $entry->get_value( "objectClass" );
 	undef ( $is_samba_account );
+	undef ( $is_samba_group );
 	foreach $obj ( @objclasses ) {
 		if ( "$obj" eq "sambaAccount" ) {
 			$is_samba_account = 1;
+		} elsif ( "$obj" eq "sambaGroupMapping" ) {
+			$is_samba_group = 1;
 		}
 	}
 
-	if ( !defined ( $is_samba_account ) ) {
-		$ldif2->write_entry( $entry );
-		next;
-	}
+	if ( defined ( $is_samba_account ) ) {
+		##
+		## start editing the sambaAccount
+		##
 
-	##
-	## start editing the sambaAccount
-	##
+		$entry->delete( 'objectclass' => [ 'sambaAccount' ] );
+		$entry->add( 'objectclass' => 'sambaSamAccount' );
 
-	$entry->delete( 'objectclass' => [ 'sambaAccount' ] );
-	$entry->add( 'objectclass' => 'sambaSamAccount' );
-
-	$entry->add( 'sambaSID' => $domsid."-".$entry->get_value( "rid" ) );
-	$entry->delete( 'rid' );
+		$entry->add( 'sambaSID' => $domsid."-".$entry->get_value( "rid" ) );
+		$entry->delete( 'rid' );
 	
-	if ( $entry->get_value( "primaryGroupID" ) ) {
-		$entry->add( 'sambaPrimaryGroupSID' => $domsid."-".$entry->get_value( "primaryGroupID" ) );
-		$entry->delete( 'primaryGroupID' );
-	}
+		if ( $entry->get_value( "primaryGroupID" ) ) {
+			$entry->add( 'sambaPrimaryGroupSID' => $domsid."-".$entry->get_value( "primaryGroupID" ) );
+			$entry->delete( 'primaryGroupID' );
+		}
 	
 
-	foreach $key ( keys %attr_map ) {
-		if ( $entry->get_value($key) ) {
-			$entry->add( $attr_map{$key} => $entry->get_value($key) );
-			$entry->delete( $key );
+		foreach $key ( keys %attr_map ) {
+			if ( defined($entry->get_value($key)) ) {
+				$entry->add( $attr_map{$key} => $entry->get_value($key) );
+				$entry->delete( $key );
+			}
+		}
+	} elsif ( defined ( $is_samba_group ) ) {
+		foreach $key ( keys %group_attr_map ) {
+			if ( defined($entry->get_value($key)) ) {
+				$entry->add( $group_attr_map{$key} => $entry->get_value($key) );
+				$entry->delete( $key );
+			}
 		}
 	}
 	

@@ -135,7 +135,7 @@ WERROR _dfs_remove(pipes_struct *p, DFS_Q_DFS_REMOVE *q_u,
       pstrcpy(altpath, servername);
       pstrcat(altpath, "\\");
       pstrcat(altpath, sharename);
-      strlower(altpath);
+      strlower_m(altpath);
     }
 
   DEBUG(5,("init_reply_dfs_remove: Request to remove %s -> %s\\%s.\n",

@@ -132,9 +132,6 @@ while(@bins) {
     if ($filename eq "smbpasswd") {
       print IDB "f 0755 root sys usr/samba/bin/$filename $SRCPFX/source/$nextfile $PKG.sw.base \n";
     }
-    elsif ($filename eq "findsmb") {
-      print IDB "f 0755 root sys usr/samba/bin/$filename $SRCPFX/packaging/SGI/$filename $PKG.sw.base\n";
-    }
     elsif ($filename eq "swat") {
       print IDB "f 4755 root sys usr/samba/bin/$filename $SRCPFX/source/$nextfile $PKG.sw.base preop(\"chroot \$rbase /etc/init.d/samba stop\") exitop(\"chroot \$rbase /usr/samba/scripts/startswat.sh\") removeop(\"chroot \$rbase /sbin/cp /etc/inetd.conf /etc/inetd.conf.O ; chroot \$rbase /sbin/sed -e '/^swat/D' -e '/^#SWAT/D' /etc/inetd.conf.O >/etc/inetd.conf; /etc/killall -HUP inetd || true\")\n";
     }
@@ -368,11 +365,11 @@ sub get_line {
     $_ = <MAKEFILE>;
     chomp;
     s/^\s*/ /;
-    substr($line,$cont,1,$_);
+    substr($line,$cont,1) = $_;
   }
   $line =~ s/\$\(EXEEXT\)/$EXEEXT/g;
-  $line =~ s/\$\(srcdir\)/$srcdir/g;
-  $line =~ s/\$\(builddir\)/$builddir/g;
+  $line =~ s/\$\(srcdir\)//g;
+  $line =~ s/\$\(builddir\)//g;
   $line =~ s/\$\(\S*\)\s*//g;
   $line =~ s/\s\s*/ /g;
   @line = split(' ',$line);

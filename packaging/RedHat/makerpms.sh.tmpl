@@ -28,6 +28,7 @@ SRCDIR=${SRCDIR:-/usr/src/redhat/SOURCES}
 USERID=`id -u`
 GRPID=`id -g`
 VERSION='PVERSION'
+SPECFILE="samba3.spec"
 
 RPMVER=`rpm --version | awk '{print $3}'`
 RPM="rpm"
@@ -36,24 +37,21 @@ echo The RPM Version on this machine is: $RPMVER
 case $RPMVER in
     2*)
        echo Building for RPM v2.x
-       sed -e "s/MANDIR_MACRO/\%\{prefix\}\/man/g" < samba2.spec > samba.spec
-       sed -e "s/MANDIR_MACRO/\%\{prefix\}\/man/g" < samba2-devel.spec > samba-devel.spec
+       sed -e "s/MANDIR_MACRO/\%\{prefix\}\/man/g" < samba.spec > $SPECFILE
        ;;
     3*)
        echo Building for RPM v3.x
-       sed -e "s/MANDIR_MACRO/\%\{prefix\}\/man/g" < samba2.spec > samba.spec
-       sed -e "s/MANDIR_MACRO/\%\{prefix\}\/man/g" < samba2-devel.spec > samba-devel.spec
+       sed -e "s/MANDIR_MACRO/\%\{prefix\}\/man/g" < samba.spec > $SPECFILE
        ;;
-    4.1*)
-       echo Building for RPM v4.1
+    4.0*)
+       ## catch rpm v4.0.x first
+       echo Building for RPM v4.0
+       sed -e "s/MANDIR_MACRO/\%\{_mandir\}/g" < samba.spec > $SPECFILE
+       ;;
+    4.*)
+       echo Building for RPM v4.1 or later
        RPM="rpmbuild"
-       sed -e "s/MANDIR_MACRO/\%\{_mandir\}/g" < samba2.spec > samba.spec
-       sed -e "s/MANDIR_MACRO/\%\{_mandir\}/g" < samba2-devel.spec > samba-devel.spec
-       ;;
-    4*)
-       echo Building for RPM v4.x
-       sed -e "s/MANDIR_MACRO/\%\{_mandir\}/g" < samba2.spec > samba.spec
-       sed -e "s/MANDIR_MACRO/\%\{_mandir\}/g" < samba2-devel.spec > samba-devel.spec
+       sed -e "s/MANDIR_MACRO/\%\{_mandir\}/g" < samba.spec > $SPECFILE
        ;;
     *)
        echo "Unknown RPM version: `rpm --version`"
@@ -64,27 +62,13 @@ esac
 ( cd ../../source; if [ -f Makefile ]; then make distclean; fi )
 ( cd ../../.. ; chown -R ${USERID}.${GRPID} samba-${VERSION} )
 
-# We do this to make sure that the package always has the current version in it''s name
-if [ z$1 = z"devel" ]; then
-	(cd ../../.. ; mv samba samba-${VERSION} )
-fi
-
 ( cd ../../.. ; tar --exclude=CVS -cf - samba-${VERSION}/. | bzip2 > ${SRCDIR}/samba-${VERSION}.tar.bz2 )
 
-cp -av samba.spec ${SPECDIR}
-cp -av samba-devel.spec ${SPECDIR}
+cp -av $SPECFILE ${SPECDIR}
 
-if [ z$1 = "zdevel" ]; then
-	echo Restoring source samba directory name
-	( cd ../../.. ; mv samba-${VERSION} samba )
-	echo Getting Ready to build Developmental Build
-	cd ${SPECDIR}
-	${RPM} -ba -v samba-devel.spec
-else
-	echo Getting Ready to build release package
-	cd ${SPECDIR}
-	${RPM} -ba -v --clean --rmsource samba.spec
-fi
+echo Getting Ready to build release package
+cd ${SPECDIR}
+${RPM} -ba -v --clean --rmsource $SPECFILE
 
 echo Done.
 

@@ -50,12 +50,17 @@ rpc_pipe_register_commands().  This function takes the following arguments:
 </para>
 
 <para><programlisting>
-int rpc_pipe_register_commands(const char *clnt, const char *srv,
+NTSTATUS rpc_pipe_register_commands(int version, const char *clnt, const char *srv,
                                const struct api_struct *cmds, int size);
 </programlisting></para>
 
 <variablelist>
 
+<varlistentry><term>version</term>
+<listitem><para>Version number of the RPC interface. Use the define <emphasis>SMB_RPC_INTERFACE_VERSION</emphasis> for this 
+argument.</para></listitem>
+</varlistentry>
+		
 <varlistentry><term>clnt</term>
 <listitem><para>the Client name of the named pipe</para></listitem>
 </varlistentry>

@@ -37,7 +37,6 @@
 
 ubi_dlNewList( lmb_browserlist );
 
-
 /* -------------------------------------------------------------------------- **
  * Functions...
  */
@@ -52,9 +51,9 @@ ubi_dlNewList( lmb_browserlist );
  * ************************************************************************** **
  */
 static void remove_lmb_browser_entry( struct browse_cache_record *browc )
-  {
-  safe_free( ubi_dlRemThis( lmb_browserlist, browc ) );
-  } /* remove_lmb_browser_entry */
+{
+	safe_free( ubi_dlRemThis( lmb_browserlist, browc ) );
+}
 
 /* ************************************************************************** **
  * Update a browser death time.
@@ -65,10 +64,10 @@ static void remove_lmb_browser_entry( struct browse_cache_record *browc )
  * ************************************************************************** **
  */
 void update_browser_death_time( struct browse_cache_record *browc )
-  {
-  /* Allow the new lmb to miss an announce period before we remove it. */
-  browc->death_time = time(NULL) + ( (CHECK_TIME_MST_ANNOUNCE + 2) * 60 );
-  } /* update_browser_death_time */
+{
+	/* Allow the new lmb to miss an announce period before we remove it. */
+	browc->death_time = time(NULL) + ( (CHECK_TIME_MST_ANNOUNCE + 2) * 60 );
+}
 
 /* ************************************************************************** **
  * Create a browser entry and add it to the local master browser list.
@@ -84,48 +83,47 @@ void update_browser_death_time( struct browse_cache_record *browc )
 struct browse_cache_record *create_browser_in_lmb_cache( char *work_name, 
                                                          char *browser_name, 
                                                          struct in_addr ip )
-  {
-  struct browse_cache_record *browc;
-  time_t now = time( NULL );
+{
+	struct browse_cache_record *browc;
+	time_t now = time( NULL );
 
-  browc = (struct browse_cache_record *)malloc( sizeof( *browc ) );
+	browc = (struct browse_cache_record *)malloc( sizeof( *browc ) );
 
-  if( NULL == browc )
-    {
-    DEBUG( 0, ("create_browser_in_lmb_cache: malloc fail !\n") );
-    return( NULL );
-    }
+	if( NULL == browc ) {
+		DEBUG( 0, ("create_browser_in_lmb_cache: malloc fail !\n") );
+		return( NULL );
+	}
 
-  memset( (char *)browc, '\0', sizeof( *browc ) );
+	memset( (char *)browc, '\0', sizeof( *browc ) );
   
-  /* For a new lmb entry we want to sync with it after one minute. This
-     will allow it time to send out a local announce and build its
-     browse list.
-   */
-  browc->sync_time = now + 60;
+	/* For a new lmb entry we want to sync with it after one minute. This
+	 will allow it time to send out a local announce and build its
+	 browse list.
+	*/
 
-  /* Allow the new lmb to miss an announce period before we remove it. */
-  browc->death_time = now + ( (CHECK_TIME_MST_ANNOUNCE + 2) * 60 );
+	browc->sync_time = now + 60;
 
-  StrnCpy(  browc->lmb_name, browser_name, sizeof(browc->lmb_name)-1 );
-  StrnCpy(  browc->work_group, work_name, sizeof(browc->work_group)-1 );
-  strupper( browc->lmb_name );
-  strupper( browc->work_group );
+	/* Allow the new lmb to miss an announce period before we remove it. */
+	browc->death_time = now + ( (CHECK_TIME_MST_ANNOUNCE + 2) * 60 );
+
+	pstrcpy(  browc->lmb_name, browser_name);
+	pstrcpy(  browc->work_group, work_name);
+	strupper_m( browc->lmb_name );
+	strupper_m( browc->work_group );
   
-  browc->ip = ip;
+	browc->ip = ip;
  
-  (void)ubi_dlAddTail( lmb_browserlist, browc );
+	(void)ubi_dlAddTail( lmb_browserlist, browc );
 
-  if( DEBUGLVL( 3 ) )
-    {
-    Debug1( "nmbd_browserdb:create_browser_in_lmb_cache()\n" );
-    Debug1( "  Added lmb cache entry for workgroup %s ", browc->work_group );
-    Debug1( "name %s IP %s ", browc->lmb_name, inet_ntoa(ip) );
-    Debug1( "ttl %d\n", (int)browc->death_time );
-    }
+	if( DEBUGLVL( 3 ) ) {
+		Debug1( "nmbd_browserdb:create_browser_in_lmb_cache()\n" );
+		Debug1( "  Added lmb cache entry for workgroup %s ", browc->work_group );
+		Debug1( "name %s IP %s ", browc->lmb_name, inet_ntoa(ip) );
+		Debug1( "ttl %d\n", (int)browc->death_time );
+	}
   
-  return( browc );
-  } /* create_browser_in_lmb_cache */
+	return( browc );
+}
 
 /* ************************************************************************** **
  * Find a browser entry in the local master browser list.
@@ -137,17 +135,16 @@ struct browse_cache_record *create_browser_in_lmb_cache( char *work_name,
  * ************************************************************************** **
  */
 struct browse_cache_record *find_browser_in_lmb_cache( char *browser_name )
-  {
-  struct browse_cache_record *browc;
+{
+	struct browse_cache_record *browc;
 
-  for( browc = (struct browse_cache_record *)ubi_dlFirst( lmb_browserlist );
-       browc;
-       browc = (struct browse_cache_record *)ubi_dlNext( browc ) )
-    if( strequal( browser_name, browc->lmb_name ) )
-      break;
+	for( browc = (struct browse_cache_record *)ubi_dlFirst( lmb_browserlist );
+			browc; browc = (struct browse_cache_record *)ubi_dlNext( browc ) )
+		if( strequal( browser_name, browc->lmb_name ) )
+			break;
 
-  return( browc );
-  } /* find_browser_in_lmb_cache */
+	return( browc );
+}
 
 /* ************************************************************************** **
  *  Expire timed out browsers in the browserlist.
@@ -159,24 +156,20 @@ struct browse_cache_record *find_browser_in_lmb_cache( char *browser_name )
  * ************************************************************************** **
  */
 void expire_lmb_browsers( time_t t )
-  {
-  struct browse_cache_record *browc;
-  struct browse_cache_record *nextbrowc;
+{
+	struct browse_cache_record *browc;
+	struct browse_cache_record *nextbrowc;
 
-  for( browc = (struct browse_cache_record *)ubi_dlFirst( lmb_browserlist );
-       browc;
-       browc = nextbrowc )
-    {
-    nextbrowc = (struct browse_cache_record *)ubi_dlNext( browc );
+	for( browc = (struct browse_cache_record *)ubi_dlFirst( lmb_browserlist );
+			browc; browc = nextbrowc ) {
+		nextbrowc = (struct browse_cache_record *)ubi_dlNext( browc );
 
-    if( browc->death_time < t )
-      {
-      if( DEBUGLVL( 3 ) )
-        {
-        Debug1( "nmbd_browserdb:expire_lmb_browsers()\n" );
-        Debug1( "  Removing timed out lmb entry %s\n", browc->lmb_name );
-        }
-      remove_lmb_browser_entry( browc );
-      }
-    }
-  } /* expire_lmb_browsers */
+		if( browc->death_time < t ) {
+			if( DEBUGLVL( 3 ) ) {
+				Debug1( "nmbd_browserdb:expire_lmb_browsers()\n" );
+				Debug1( "  Removing timed out lmb entry %s\n", browc->lmb_name );
+			}
+			remove_lmb_browser_entry( browc );
+		}
+	}
+}

@@ -86,14 +86,26 @@ static struct node_status *lookup_byaddr_backend(char *addr, int *count)
 static struct in_addr *lookup_byname_backend(const char *name, int *count)
 {
 	int fd;
-	struct in_addr *ret = NULL;
-	int j, flags = 0;
+	struct ip_service *ret = NULL;
+	struct in_addr *return_ip;
+	int j, i, flags = 0;
 
 	*count = 0;
 
 	/* always try with wins first */
 	if (resolve_wins(name,0x20,&ret,count)) {
-		return ret;
+		if ( count == 0 )
+			return NULL;
+		if ( (return_ip = (struct in_addr *)malloc((*count)*sizeof(struct in_addr))) == NULL ) {
+			free( ret );
+			return NULL;
+		}
+
+		/* copy the IP addresses */
+		for ( i=0; i<(*count); i++ ) 
+			return_ip[i] = ret[i].ip;
+		
+		return return_ip;
 	}
 
 	fd = wins_lookup_open_socket_in();
@@ -106,12 +118,12 @@ static struct in_addr *lookup_byname_backend(const char *name, int *count)
 	     j >= 0;
 	     j--) {
 		struct in_addr *bcast = iface_n_bcast(j);
-		ret = name_query(fd,name,0x20,True,True,*bcast,count, &flags, NULL);
-		if (ret) break;
+		return_ip = name_query(fd,name,0x20,True,True,*bcast,count, &flags, NULL);
+		if (return_ip) break;
 	}
 
 	close(fd);
-	return ret;
+	return return_ip;
 }
 
 /* Get hostname from IP  */

@@ -395,11 +395,15 @@ int read_reply(struct winbindd_response *response)
 NSS_STATUS winbindd_send_request(int req_type, struct winbindd_request *request)
 {
 	struct winbindd_request lrequest;
-
+	char *env;
+	int  value;
+	
 	/* Check for our tricky environment variable */
 
-	if (getenv(WINBINDD_DONT_ENV)) {
-		return NSS_STATUS_NOTFOUND;
+	if ( (env = getenv(WINBINDD_DONT_ENV)) != NULL ) {
+		value = atoi(env);
+		if ( value == 1 )
+			return NSS_STATUS_NOTFOUND;
 	}
 
 	if (!request) {
@@ -464,3 +468,19 @@ NSS_STATUS winbindd_request(int req_type,
 		return(status);
 	return winbindd_get_response(response);
 }
+
+/*************************************************************************
+ A couple of simple jfunctions to disable winbindd lookups and re-
+ enable them
+ ************************************************************************/
+ 
+BOOL winbind_off( void )
+{
+	return (setenv( WINBINDD_DONT_ENV, "1", 1 ) != -1); 
+}
+
+BOOL winbind_on( void )
+{
+	return (setenv( WINBINDD_DONT_ENV, "0", 1 ) != -1); 
+}
+

@@ -64,8 +64,8 @@ enum NTLM_MESSAGE_TYPE
 
 #define NTLMSSP_NAME_TYPE_SERVER      0x01
 #define NTLMSSP_NAME_TYPE_DOMAIN      0x02
-#define NTLMSSP_NAME_TYPE_DOMAIN_DNS  0x03
-#define NTLMSSP_NAME_TYPE_SERVER_DNS  0x04
+#define NTLMSSP_NAME_TYPE_SERVER_DNS  0x03
+#define NTLMSSP_NAME_TYPE_DOMAIN_DNS  0x04
 
 typedef struct ntlmssp_state 
 {
@@ -129,5 +129,10 @@ typedef struct ntlmssp_client_state
 	/* ntlmv1 */
 	unsigned char ntlmssp_hash[258];
 
+	/* it turns out that we don't always get the
+	   response in at the time we want to process it.
+	   Store it here, until we need it */
+	DATA_BLOB stored_response; 
+	
 } NTLMSSP_CLIENT_STATE;
 

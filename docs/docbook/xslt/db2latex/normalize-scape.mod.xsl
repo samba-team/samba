@@ -1,8 +1,6 @@
 <?xml version='1.0'?>
 <!--############################################################################# 
-|	$Id: normalize-scape.mod.xsl,v 1.1 2003/04/30 21:39:49 ab Exp $
 |- #############################################################################
-|	$Author: ab $
 |														
 |   PURPOSE:
 |	Escape LaTeX and normalize-space templates.
@@ -20,7 +18,6 @@
     <doc:reference id="normalize-scape" xmlns="">
 	<referenceinfo>
 	    <releaseinfo role="meta">
-		$Id: normalize-scape.mod.xsl,v 1.1 2003/04/30 21:39:49 ab Exp $
 	    </releaseinfo>
 	<authorgroup>
 	    <author> <firstname>Ramon</firstname> <surname>Casellas</surname> </author>

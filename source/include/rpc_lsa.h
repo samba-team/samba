@@ -237,7 +237,7 @@ typedef struct r_lsa_query_sec_obj_info
 typedef struct lsa_query_info
 {
 	POLICY_HND pol; /* policy handle */
-	uint16 info_class; /* info class */
+    uint16 info_class; /* info class */
 
 } LSA_Q_QUERY_INFO;
 
@@ -537,6 +537,7 @@ typedef struct
 	POLICY_HND pol; /* policy handle */
 	DOM_SID2 sid;
 	UNISTR2_ARRAY rights;
+	uint32 count;
 } LSA_Q_ADD_ACCT_RIGHTS;
 
 /* LSA_R_ADD_ACCT_RIGHTS - LSA add account rights */
@@ -553,6 +554,7 @@ typedef struct
 	DOM_SID2 sid;
 	uint32 removeall;
 	UNISTR2_ARRAY rights;
+	uint32 count;
 } LSA_Q_REMOVE_ACCT_RIGHTS;
 
 /* LSA_R_REMOVE_ACCT_RIGHTS - LSA remove account rights */
@@ -560,22 +562,6 @@ typedef struct
 {
 	NTSTATUS status;
 } LSA_R_REMOVE_ACCT_RIGHTS;
-
-/* LSA_Q_ENUM_ACCT_WITH_RIGHT - LSA enum accounts with right */
-typedef struct
-{
-	POLICY_HND pol;
-	STRHDR right_hdr;
-	UNISTR2 right; 
-} LSA_Q_ENUM_ACCT_WITH_RIGHT;
-
-/* LSA_R_ENUM_ACCT_WITH_RIGHT - LSA enum accounts with right */
-typedef struct
-{
-	uint32 count;
-	SID_ARRAY sids;
-	NTSTATUS status;
-} LSA_R_ENUM_ACCT_WITH_RIGHT;
 
 
 /* LSA_Q_PRIV_GET_DISPNAME - LSA get privilege display name */

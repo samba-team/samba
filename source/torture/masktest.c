@@ -279,9 +279,9 @@ static void get_real_name(struct cli_state *cli,
 	}
 	if (f_info) {
 		fstrcpy(short_name, f_info->short_name);
-		strlower(short_name);
+		strlower_m(short_name);
 		pstrcpy(long_name, f_info->name);
-		strlower(long_name);
+		strlower_m(long_name);
 	}
 
 	if (*short_name == 0) {

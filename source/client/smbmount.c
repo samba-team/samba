@@ -891,7 +891,7 @@ static void parse_mount_smb(int argc, char **argv)
 			got_pass = True;
 			memset(strchr_m(getenv("USER"),'%')+1,'X',strlen(password));
 		}
-		strupper(username);
+		strupper_m(username);
 	}
 
 	if (getenv("PASSWD")) {
@@ -933,7 +933,7 @@ static void parse_mount_smb(int argc, char **argv)
 	if (!*my_netbios_name) {
 		pstrcpy(my_netbios_name, myhostname());
 	}
-	strupper(my_netbios_name);
+	strupper_m(my_netbios_name);
 
 	init_mount();
 	return 0;

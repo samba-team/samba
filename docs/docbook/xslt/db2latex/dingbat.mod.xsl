@@ -1,8 +1,6 @@
 <?xml version='1.0'?>
 <!--############################################################################# 
-|	$Id: dingbat.mod.xsl,v 1.1 2003/04/30 21:39:49 ab Exp $
 |- #############################################################################
-|	$Author: ab $
 |														
 |   PURPOSE:
 |   
@@ -20,7 +18,6 @@
     <doc:reference id="dingbat" xmlns="">
 	<referenceinfo>
 	    <releaseinfo role="meta">
-		$Id: dingbat.mod.xsl,v 1.1 2003/04/30 21:39:49 ab Exp $
 	    </releaseinfo>
 	    <authorgroup>
 	    <author> <firstname>Ramon</firstname> <surname>Casellas</surname> </author>

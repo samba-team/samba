@@ -77,12 +77,15 @@
 #define OPEN_CONN(conn)    ((conn) && (conn)->open)
 #define IS_IPC(conn)       ((conn) && (conn)->ipc)
 #define IS_PRINT(conn)       ((conn) && (conn)->printer)
-#define FNUM_OK(fsp,c) (OPEN_FSP(fsp) && (c)==(fsp)->conn)
+#define FNUM_OK(fsp,c) (OPEN_FSP(fsp) && (c)==(fsp)->conn && current_user.vuid==(fsp)->vuid)
 
-#define CHECK_FSP(fsp,conn) if (!FNUM_OK(fsp,conn)) \
+#define CHECK_FSP(fsp,conn) do {\
+			extern struct current_user current_user;\
+			if (!FNUM_OK(fsp,conn)) \
 				return(ERROR_DOS(ERRDOS,ERRbadfid)); \
 			else if((fsp)->fd == -1) \
-				return(ERROR_DOS(ERRDOS,ERRbadaccess))
+				return(ERROR_DOS(ERRDOS,ERRbadaccess));\
+			} while(0)
 
 #define CHECK_READ(fsp) if (!(fsp)->can_read) \
 				return(ERROR_DOS(ERRDOS,ERRbadaccess))
@@ -199,6 +202,7 @@ true if two IP addresses are equal
 ****************************************************************************/
 
 #define ip_equal(ip1,ip2) ((ip1).s_addr == (ip2).s_addr)
+#define ip_service_equal(ip1,ip2) ( ((ip1).ip.s_addr == (ip2).ip.s_addr) && ((ip1).port == (ip2).port) )
 
 /*****************************************************************
  splits out the last subkey of a key
@@ -244,52 +248,10 @@ copy an IP address from one buffer to another
 
 #define dos_format(fname) string_replace(fname,'/','\\')
 
-/*******************************************************************
- vfs stat wrapper that calls internal2unix.
-********************************************************************/
+/*****************************************************************************
+ Check to see if we are a DO for this domain
+*****************************************************************************/
 
-#define vfs_stat(conn, fname, st) ((conn)->vfs_ops.stat((conn), fname,(st)))
-
-/*******************************************************************
- vfs lstat wrapper that calls internal2unix.
-********************************************************************/
-
-#define vfs_lstat(conn, fname, st) ((conn)->vfs_ops.lstat((conn), fname,(st)))
-
-/*******************************************************************
- vfs fstat wrapper
-********************************************************************/
-
-#define vfs_fstat(fsp, fd, st) ((fsp)->conn->vfs_ops.fstat((fsp),(fd),(st)))
-
-/*******************************************************************
- vfs rmdir wrapper that calls internal2unix.
-********************************************************************/
-
-#define vfs_rmdir(conn,fname) ((conn)->vfs_ops.rmdir((conn),fname))
-
-/*******************************************************************
- vfs Unlink wrapper that calls internal2unix.
-********************************************************************/
-
-#define vfs_unlink(conn, fname) ((conn)->vfs_ops.unlink((conn),fname))
-
-/*******************************************************************
- vfs chmod wrapper that calls internal2unix.
-********************************************************************/
-
-#define vfs_chmod(conn,fname,mode) ((conn)->vfs_ops.chmod((conn),fname,(mode)))
-
-/*******************************************************************
- vfs chown wrapper that calls internal2unix.
-********************************************************************/
-
-#define vfs_chown(conn,fname,uid,gid) ((conn)->vfs_ops.chown((conn),fname,(uid),(gid)))
-
-/*******************************************************************
- A wrapper for vfs_chdir().
-********************************************************************/
-
-#define vfs_chdir(conn,fname) ((conn)->vfs_ops.chdir((conn),fname))
+#define IS_DC  (lp_server_role()==ROLE_DOMAIN_PDC || lp_server_role()==ROLE_DOMAIN_BDC) 
 
 #endif /* _SMB_MACROS_H */

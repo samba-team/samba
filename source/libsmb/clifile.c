@@ -600,8 +600,8 @@ NTSTATUS cli_locktype(struct cli_state *cli, int fnum,
 
 /****************************************************************************
  Lock a file.
+ note that timeout is in units of 2 milliseconds
 ****************************************************************************/
-
 BOOL cli_lock(struct cli_state *cli, int fnum, 
 	      uint32 offset, uint32 len, int timeout, enum brl_type lock_type)
 {
@@ -636,7 +636,7 @@ BOOL cli_lock(struct cli_state *cli, int fnum,
 	cli_send_smb(cli);
 
 	if (timeout != 0) {
-		cli->timeout = (timeout == -1) ? 0x7FFFFFFF : (timeout + 10*1000);
+		cli->timeout = (timeout == -1) ? 0x7FFFFFFF : (timeout*2 + 5*1000);
 	}
 
 	if (!cli_receive_smb(cli)) {

@@ -35,6 +35,7 @@
 		because someone else was working on the same thing or because your 
 		implementation is not the correct one.
 		</para>
+		</listitem>
 	</varlistentry>
 
 	<varlistentry>
@@ -67,6 +68,8 @@
 		<member>Make sure your patch complies to the samba coding style as 
  		suggested in the coding-suggestions chapter. </member>
 		</simplelist>
+		</para>
+		</listitem>
 	</varlistentry>
 
 	<varlistentry>

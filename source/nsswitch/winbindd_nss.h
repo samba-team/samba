@@ -36,7 +36,7 @@
 
 /* Update this when you change the interface.  */
 
-#define WINBIND_INTERFACE_VERSION 7
+#define WINBIND_INTERFACE_VERSION 8
 
 /* Socket commands */
 
@@ -99,6 +99,16 @@ enum winbindd_cmd {
 	WINBINDD_WINS_BYIP,
 	WINBINDD_WINS_BYNAME,
 
+	/* account management commands */
+
+	WINBINDD_CREATE_USER,
+	WINBINDD_CREATE_GROUP,
+	WINBINDD_ADD_USER_TO_GROUP,
+	WINBINDD_REMOVE_USER_FROM_GROUP,
+	WINBINDD_SET_USER_PRIMARY_GROUP,
+	WINBINDD_DELETE_USER,
+	WINBINDD_DELETE_GROUP,
+	
 	/* this is like GETGRENT but gives an empty group list */
 	WINBINDD_GETGRLST,
 
@@ -111,11 +121,34 @@ enum winbindd_cmd {
 	WINBINDD_NUM_CMDS
 };
 
-#define WINBIND_PAM_INFO3_NDR  0x0001
-#define WINBIND_PAM_INFO3_TEXT 0x0002
-#define WINBIND_PAM_NTKEY      0x0004
-#define WINBIND_PAM_LMKEY      0x0008
-#define WINBIND_PAM_CONTACT_TRUSTDOM 0x0010
+typedef struct winbindd_pw {
+	fstring pw_name;
+	fstring pw_passwd;
+	uid_t pw_uid;
+	gid_t pw_gid;
+	fstring pw_gecos;
+	fstring pw_dir;
+	fstring pw_shell;
+} WINBINDD_PW;
+
+
+typedef struct winbindd_gr {
+	fstring gr_name;
+	fstring gr_passwd;
+	gid_t gr_gid;
+	int num_gr_mem;
+	int gr_mem_ofs;   /* offset to group membership */
+	char **gr_mem;
+} WINBINDD_GR;
+
+
+#define WBFLAG_PAM_INFO3_NDR  		0x0001
+#define WBFLAG_PAM_INFO3_TEXT 		0x0002
+#define WBFLAG_PAM_NTKEY      		0x0004
+#define WBFLAG_PAM_LMKEY      		0x0008
+#define WBFLAG_PAM_CONTACT_TRUSTDOM 	0x0010
+#define WBFLAG_QUERY_ONLY		0x0020
+#define WBFLAG_ALLOCATE_RID		0x0040
 
 /* Winbind request structure */
 
@@ -123,6 +156,7 @@ struct winbindd_request {
 	uint32 length;
 	enum winbindd_cmd cmd;   /* Winbindd command to execute */
 	pid_t pid;               /* pid of calling process */
+	uint32 flags;            /* flags relavant to a given request */
 
 	union {
 		fstring winsreq;     /* WINS request */
@@ -146,7 +180,6 @@ struct winbindd_request {
                         fstring nt_resp;
                         uint16 nt_resp_len;
 			fstring workstation;
-			uint32 flags;
                 } auth_crap;
                 struct {
                     fstring user;
@@ -159,6 +192,10 @@ struct winbindd_request {
 			fstring name;       
 		} name;
 		uint32 num_entries;  /* getpwent, getgrent */
+		struct {
+			fstring username;
+			fstring groupname;
+		} acct_mgt;
 	} data;
 	char null_term;
 };
@@ -188,25 +225,11 @@ struct winbindd_response {
 
 		/* getpwnam, getpwuid */
 		
-		struct winbindd_pw {
-			fstring pw_name;
-			fstring pw_passwd;
-			uid_t pw_uid;
-			gid_t pw_gid;
-			fstring pw_gecos;
-			fstring pw_dir;
-			fstring pw_shell;
-		} pw;
+		struct winbindd_pw pw;
 
 		/* getgrnam, getgrgid */
 
-		struct winbindd_gr {
-			fstring gr_name;
-			fstring gr_passwd;
-			gid_t gr_gid;
-			int num_gr_mem;
-			int gr_mem_ofs;   /* offset to group membership */
-		} gr;
+		struct winbindd_gr gr;
 
 		uint32 num_entries; /* getpwent, getgrent */
 		struct winbindd_sid {
@@ -235,6 +258,7 @@ struct winbindd_response {
 			char nt_session_key[16];
 			char first_8_lm_hash[8];
 		} auth;
+		uint32 rid;	/* create user or group */
 	} data;
 
 	/* Variable length return data */

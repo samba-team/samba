@@ -28,9 +28,9 @@
 #define DBGC_CLASS DBGC_VFS
 
 struct vfs_init_function_entry {
-   char *name;
-   vfs_op_tuple *ops, *(*init)(const struct vfs_ops *, struct smb_vfs_handle_struct *);
-   struct vfs_init_function_entry *prev, *next;
+	char *name;
+ 	vfs_op_tuple *vfs_op_tuples;
+	struct vfs_init_function_entry *prev, *next;
 };
 
 static struct vfs_init_function_entry *backends = NULL;
@@ -42,96 +42,106 @@ struct vfs_syminfo {
 	void *fptr;
 };
 
-/*
-  Opaque (final) vfs operations. This is a combination of first-met opaque vfs operations
-  across all currently processed modules.  */
-
-static vfs_op_tuple vfs_opaque_ops[SMB_VFS_OP_LAST];
-
 /* Default vfs hooks.  WARNING: The order of these initialisers is
    very important.  They must be in the same order as defined in
    vfs.h.  Change at your own peril. */
 
-static struct vfs_ops default_vfs_ops = {
+static struct vfs_ops default_vfs = {
 
-	/* Disk operations */
+	{
+		/* Disk operations */
+	
+		vfswrap_dummy_connect,
+		vfswrap_dummy_disconnect,
+		vfswrap_disk_free,
+		vfswrap_get_quota,
+		vfswrap_set_quota,
+	
+		/* Directory operations */
+	
+		vfswrap_opendir,
+		vfswrap_readdir,
+		vfswrap_mkdir,
+		vfswrap_rmdir,
+		vfswrap_closedir,
+	
+		/* File operations */
+	
+		vfswrap_open,
+		vfswrap_close,
+		vfswrap_read,
+		vfswrap_write,
+		vfswrap_lseek,
+		vfswrap_sendfile,
+		vfswrap_rename,
+		vfswrap_fsync,
+		vfswrap_stat,
+		vfswrap_fstat,
+		vfswrap_lstat,
+		vfswrap_unlink,
+		vfswrap_chmod,
+		vfswrap_fchmod,
+		vfswrap_chown,
+		vfswrap_fchown,
+		vfswrap_chdir,
+		vfswrap_getwd,
+		vfswrap_utime,
+		vfswrap_ftruncate,
+		vfswrap_lock,
+		vfswrap_symlink,
+		vfswrap_readlink,
+		vfswrap_link,
+		vfswrap_mknod,
+		vfswrap_realpath,
+	
+		/* Windows ACL operations. */
+		vfswrap_fget_nt_acl,
+		vfswrap_get_nt_acl,
+		vfswrap_fset_nt_acl,
+		vfswrap_set_nt_acl,
+	
+		/* POSIX ACL operations. */
+		vfswrap_chmod_acl,
+		vfswrap_fchmod_acl,
 
-	vfswrap_dummy_connect,
-	vfswrap_dummy_disconnect,
-	vfswrap_disk_free,
+		vfswrap_sys_acl_get_entry,
+		vfswrap_sys_acl_get_tag_type,
+		vfswrap_sys_acl_get_permset,
+		vfswrap_sys_acl_get_qualifier,
+		vfswrap_sys_acl_get_file,
+		vfswrap_sys_acl_get_fd,
+		vfswrap_sys_acl_clear_perms,
+		vfswrap_sys_acl_add_perm,
+		vfswrap_sys_acl_to_text,
+		vfswrap_sys_acl_init,
+		vfswrap_sys_acl_create_entry,
+		vfswrap_sys_acl_set_tag_type,
+		vfswrap_sys_acl_set_qualifier,
+		vfswrap_sys_acl_set_permset,
+		vfswrap_sys_acl_valid,
+		vfswrap_sys_acl_set_file,
+		vfswrap_sys_acl_set_fd,
+		vfswrap_sys_acl_delete_def_file,
+		vfswrap_sys_acl_get_perm,
+		vfswrap_sys_acl_free_text,
+		vfswrap_sys_acl_free_acl,
+		vfswrap_sys_acl_free_qualifier,
 
-	/* Directory operations */
+		/* EA operations. */
+		vfswrap_getxattr,
+		vfswrap_lgetxattr,
+		vfswrap_fgetxattr,
+		vfswrap_listxattr,
+		vfswrap_llistxattr,
+		vfswrap_flistxattr,
+		vfswrap_removexattr,
+		vfswrap_lremovexattr,
+		vfswrap_fremovexattr,
+		vfswrap_setxattr,
+		vfswrap_lsetxattr,
+		vfswrap_fsetxattr
 
-	vfswrap_opendir,
-	vfswrap_readdir,
-	vfswrap_mkdir,
-	vfswrap_rmdir,
-	vfswrap_closedir,
-
-	/* File operations */
-
-	vfswrap_open,
-	vfswrap_close,
-	vfswrap_read,
-	vfswrap_write,
-	vfswrap_lseek,
-	vfswrap_sendfile,
-	vfswrap_rename,
-	vfswrap_fsync,
-	vfswrap_stat,
-	vfswrap_fstat,
-	vfswrap_lstat,
-	vfswrap_unlink,
-	vfswrap_chmod,
-	vfswrap_fchmod,
-	vfswrap_chown,
-	vfswrap_fchown,
-	vfswrap_chdir,
-	vfswrap_getwd,
-	vfswrap_utime,
-	vfswrap_ftruncate,
-	vfswrap_lock,
-	vfswrap_symlink,
-	vfswrap_readlink,
-	vfswrap_link,
-	vfswrap_mknod,
-	vfswrap_realpath,
-
-	vfswrap_fget_nt_acl,
-	vfswrap_get_nt_acl,
-	vfswrap_fset_nt_acl,
-	vfswrap_set_nt_acl,
-
-	/* POSIX ACL operations. */
-#if defined(HAVE_NO_ACLS)
-	NULL,
-	NULL,
-#else
-	vfswrap_chmod_acl,
-	vfswrap_fchmod_acl,
-#endif
-	vfswrap_sys_acl_get_entry,
-	vfswrap_sys_acl_get_tag_type,
-	vfswrap_sys_acl_get_permset,
-	vfswrap_sys_acl_get_qualifier,
-	vfswrap_sys_acl_get_file,
-	vfswrap_sys_acl_get_fd,
-	vfswrap_sys_acl_clear_perms,
-	vfswrap_sys_acl_add_perm,
-	vfswrap_sys_acl_to_text,
-	vfswrap_sys_acl_init,
-	vfswrap_sys_acl_create_entry,
-	vfswrap_sys_acl_set_tag_type,
-	vfswrap_sys_acl_set_qualifier,
-	vfswrap_sys_acl_set_permset,
-	vfswrap_sys_acl_valid,
-	vfswrap_sys_acl_set_file,
-	vfswrap_sys_acl_set_fd,
-	vfswrap_sys_acl_delete_def_file,
-	vfswrap_sys_acl_get_perm,
-	vfswrap_sys_acl_free_text,
-	vfswrap_sys_acl_free_acl,
-	vfswrap_sys_acl_free_qualifier
+	}
 };
 
 /****************************************************************************
@@ -140,52 +150,46 @@ static struct vfs_ops default_vfs_ops = {
 
 static struct vfs_init_function_entry *vfs_find_backend_entry(const char *name)
 {
-   struct vfs_init_function_entry *entry = backends;
-   pstring stripped;
+	struct vfs_init_function_entry *entry = backends;
+ 
+	while(entry) {
+		if (strcmp(entry->name, name)==0) return entry;
+		entry = entry->next;
+	}
 
-   module_path_get_name(name, stripped);
-
-   while(entry) {
-       if (strequal(entry->name, stripped)) return entry;
-       entry = entry->next;
-   }
-
-   return NULL;
+	return NULL;
 }
 
-NTSTATUS smb_register_vfs(int version, const char *name, vfs_op_tuple *(*init)(const struct vfs_ops *, struct smb_vfs_handle_struct *))
+NTSTATUS smb_register_vfs(int version, const char *name, vfs_op_tuple *vfs_op_tuples)
 {
-   struct vfs_init_function_entry *entry = backends;
+	struct vfs_init_function_entry *entry = backends;
 
-   if ((version < SMB_VFS_INTERFACE_CASCADED)) {
-       DEBUG(0, ("vfs_init() returned wrong interface version info (was %d, should be no less than %d)\n",
-           version, SMB_VFS_INTERFACE_VERSION ));
-       return NT_STATUS_OBJECT_TYPE_MISMATCH;
-   }
-  
-   if ((version < SMB_VFS_INTERFACE_VERSION)) {
-       DEBUG(0, ("Warning: vfs_init() states that module confirms interface version #%d, current interface version is #%d.\n\
-		Proceeding in compatibility mode, new operations (since version #%d) will fallback to default ones.\n",
-		version, SMB_VFS_INTERFACE_VERSION, version ));
-	   return NT_STATUS_OBJECT_TYPE_MISMATCH;
-   }
+ 	if ((version != SMB_VFS_INTERFACE_VERSION)) {
+		DEBUG(0, ("Failed to register vfs module.\n"
+		          "The module was compiled against SMB_VFS_INTERFACE_VERSION %d,\n"
+		          "current SMB_VFS_INTERFACE_VERSION is %d.\n"
+		          "Please recompile against the current Samba Version!\n",  
+			  version, SMB_VFS_INTERFACE_VERSION));
+		return NT_STATUS_OBJECT_TYPE_MISMATCH;
+  	}
 
-   if (!name || !init) {
-       return NT_STATUS_INVALID_PARAMETER;
-   }
-   
-   if (vfs_find_backend_entry(name)) {
-           DEBUG(0,("VFS module %s already loaded!\n", name));
-           return NT_STATUS_OBJECT_NAME_COLLISION;
-   }
+	if (!name || !name[0] || !vfs_op_tuples) {
+		DEBUG(0,("smb_register_vfs() called with NULL pointer or empty name!\n"));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
-   entry = smb_xmalloc(sizeof(struct vfs_init_function_entry));
-   entry->name = smb_xstrdup(name);
-   entry->init = init;
+	if (vfs_find_backend_entry(name)) {
+		DEBUG(0,("VFS module %s already loaded!\n", name));
+		return NT_STATUS_OBJECT_NAME_COLLISION;
+	}
 
-   DLIST_ADD(backends, entry);
-   DEBUG(5, ("Successfully added vfs backend '%s'\n", name));
-   return NT_STATUS_OK;
+	entry = smb_xmalloc(sizeof(struct vfs_init_function_entry));
+	entry->name = smb_xstrdup(name);
+	entry->vfs_op_tuples = vfs_op_tuples;
+
+	DLIST_ADD(backends, entry);
+	DEBUG(5, ("Successfully added vfs backend '%s'\n", name));
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
@@ -196,61 +200,9 @@ static void vfs_init_default(connection_struct *conn)
 {
 	DEBUG(3, ("Initialising default vfs hooks\n"));
 
-	memcpy(&conn->vfs_ops, &default_vfs_ops, sizeof(struct vfs_ops));
-	conn->vfs_private = NULL;
+	memcpy(&conn->vfs.ops, &default_vfs.ops, sizeof(default_vfs.ops));
+	memcpy(&conn->vfs_opaque.ops, &default_vfs.ops, sizeof(default_vfs.ops));
 }
-
-/***************************************************************************
- Function to load old VFS modules. Should go away after a while.
- **************************************************************************/
-
-static vfs_op_tuple *vfs_load_old_plugin(connection_struct *conn, const char *vfs_object)
-{
-	int vfs_version = -1;
-	vfs_op_tuple *ops, *(*init_fptr)(int *, const struct vfs_ops *, struct smb_vfs_handle_struct *);
-	/* Open object file */
-
-	if ((conn->vfs_private->handle = sys_dlopen(vfs_object, RTLD_NOW)) == NULL) {
-		DEBUG(0, ("Error opening %s: %s\n", vfs_object, sys_dlerror()));
-		return NULL;
-	}
-
-	/* Get handle on vfs_init() symbol */
-
-	init_fptr = (vfs_op_tuple *(*)(int *, const struct vfs_ops *, struct smb_vfs_handle_struct *))sys_dlsym(conn->vfs_private->handle, "vfs_init");
-
-	if (init_fptr == NULL) {
-		DEBUG(0, ("No vfs_init() symbol found in %s\n", vfs_object));
-		sys_dlclose(conn->vfs_private->handle);
-		return NULL;
-	}
-
-	/* Initialise vfs_ops structure */
-	if ((ops = init_fptr(&vfs_version, &conn->vfs_ops, conn->vfs_private)) == NULL) {
-		DEBUG(0, ("vfs_init() function from %s failed\n", vfs_object));
-		sys_dlclose(conn->vfs_private->handle);
-		return NULL;
-	}
-
-	if ((vfs_version < SMB_VFS_INTERFACE_CASCADED)) {
-		DEBUG(0, ("vfs_init() returned wrong interface version info (was %d, should be no less than %d)\n",
-				  vfs_version, SMB_VFS_INTERFACE_VERSION ));
-		sys_dlclose(conn->vfs_private->handle);
-		return NULL;
-	}
-
-	if ((vfs_version < SMB_VFS_INTERFACE_VERSION)) {
-		DEBUG(0, ("Warning: vfs_init() states that module confirms interface version #%d, current interface version is #%d.\n\
-				  Proceeding in compatibility mode, new operations (since version #%d) will fallback to default ones.\n",
-				  vfs_version, SMB_VFS_INTERFACE_VERSION, vfs_version ));
-		sys_dlclose(conn->vfs_private->handle);
-		return NULL;
-	}
-	
-	return ops;
-}
-
-
 
 /****************************************************************************
   initialise custom vfs hooks
@@ -259,51 +211,82 @@ static vfs_op_tuple *vfs_load_old_plugin(connection_struct *conn, const char *vf
 BOOL vfs_init_custom(connection_struct *conn, const char *vfs_object)
 {
 	vfs_op_tuple *ops;
+	char *module_name = NULL;
+	char *module_param = NULL, *p;
 	int i;
+	vfs_handle_struct *handle;
 	struct vfs_init_function_entry *entry;
-
-	DEBUG(3, ("Initialising custom vfs hooks from %s\n", vfs_object));
+	
+	if (!conn||!vfs_object||!vfs_object[0]) {
+		DEBUG(0,("vfs_init_custon() called with NULL pointer or emtpy vfs_object!\n"));
+		return False;
+	}
 
 	if(!backends) static_init_vfs;
 
-	/* First, try to load the module with the new module system */
-	if((entry = vfs_find_backend_entry(vfs_object)) || 
-	   (NT_STATUS_IS_OK(smb_probe_module("vfs", vfs_object)) && 
-		(entry = vfs_find_backend_entry(vfs_object)))) {
+	DEBUG(3, ("Initialising custom vfs hooks from [%s]\n", vfs_object));
 
-		DEBUG(3,("Successfully loaded %s with the new modules system\n", vfs_object));
-		
-		if ((ops = entry->init(&conn->vfs_ops, conn->vfs_private)) == NULL) {
-			DEBUG(0, ("vfs init function from %s failed\n", vfs_object));
-			return False;
-		}
-	} else {
-		/* If that doesn't work, fall back to the old system 
-		 * (This part should go away after a while, it's only here 
-		 * for backwards compatibility) */
-		DEBUG(2, ("Can't load module %s with new modules system, falling back to compatibility\n",
-			vfs_object));
-		if ((ops = vfs_load_old_plugin(conn, vfs_object)) == NULL) {
-			DEBUG(0, ("vfs init function from %s failed\n", vfs_object));
-			return False;
-		}
+	module_name = smb_xstrdup(vfs_object);
+
+	p = strchr(module_name, ':');
+
+	if (p) {
+		*p = 0;
+		module_param = p+1;
+		trim_string(module_param, " ", " ");
 	}
 
+	trim_string(module_name, " ", " ");
+
+	/* First, try to load the module with the new module system */
+	if((entry = vfs_find_backend_entry(module_name)) || 
+	   (NT_STATUS_IS_OK(smb_probe_module("vfs", module_name)) && 
+		(entry = vfs_find_backend_entry(module_name)))) {
+
+		DEBUGADD(5,("Successfully loaded vfs module [%s] with the new modules system\n", vfs_object));
+		
+	 	if ((ops = entry->vfs_op_tuples) == NULL) {
+	 		DEBUG(0, ("entry->vfs_op_tuples==NULL for [%s] failed\n", vfs_object));
+	 		SAFE_FREE(module_name);
+	 		return False;
+	 	}
+	} else {
+		DEBUG(0,("Can't find a vfs module [%s]\n",vfs_object));
+		SAFE_FREE(module_name);
+		return False;
+	}
+
+	handle = (vfs_handle_struct *)talloc_zero(conn->mem_ctx,sizeof(vfs_handle_struct));
+	if (!handle) {
+		DEBUG(0,("talloc_zero() failed!\n"));
+		SAFE_FREE(module_name);
+		return False;
+	}
+	memcpy(&handle->vfs_next, &conn->vfs, sizeof(struct vfs_ops));
+	handle->conn = conn;
+	if (module_param) {
+		handle->param = talloc_strdup(conn->mem_ctx, module_param);
+	}
+	DLIST_ADD(conn->vfs_handles, handle);
+
  	for(i=0; ops[i].op != NULL; i++) {
- 	  DEBUG(3, ("Checking operation #%d (type %d, layer %d)\n", i, ops[i].type, ops[i].layer));
+ 	  DEBUG(5, ("Checking operation #%d (type %d, layer %d)\n", i, ops[i].type, ops[i].layer));
  	  if(ops[i].layer == SMB_VFS_LAYER_OPAQUE) {
  	    /* Check whether this operation was already made opaque by different module */
- 	    if(vfs_opaque_ops[ops[i].type].op == ((void**)&default_vfs_ops)[ops[i].type]) {
+ 	    if(((void**)&conn->vfs_opaque.ops)[ops[i].type] == ((void**)&default_vfs.ops)[ops[i].type]) {
  	      /* No, it isn't overloaded yet. Overload. */
- 	      DEBUG(3, ("Making operation type %d opaque [module %s]\n", ops[i].type, vfs_object));
- 	      vfs_opaque_ops[ops[i].type] = ops[i];
+ 	      DEBUGADD(5, ("Making operation type %d opaque [module %s]\n", ops[i].type, vfs_object));
+ 	      ((void**)&conn->vfs_opaque.ops)[ops[i].type] = ops[i].op;
+ 	      ((vfs_handle_struct **)&conn->vfs_opaque.handles)[ops[i].type] = handle;
  	    }
  	  }
  	  /* Change current VFS disposition*/
- 	  DEBUG(3, ("Accepting operation type %d from module %s\n", ops[i].type, vfs_object));
- 	  ((void**)&conn->vfs_ops)[ops[i].type] = ops[i].op;
+ 	  DEBUGADD(5, ("Accepting operation type %d from module %s\n", ops[i].type, vfs_object));
+ 	  ((void**)&conn->vfs.ops)[ops[i].type] = ops[i].op;
+ 	  ((vfs_handle_struct **)&conn->vfs.handles)[ops[i].type] = handle;
 	}
 
+	SAFE_FREE(module_name);
 	return True;
 }
 
@@ -314,68 +297,28 @@ BOOL vfs_init_custom(connection_struct *conn, const char *vfs_object)
 BOOL smbd_vfs_init(connection_struct *conn)
 {
 	const char **vfs_objects;
-	char *vfs_module, *vfs_path;
 	unsigned int i = 0;
 	int j = 0;
-	struct smb_vfs_handle_struct *handle;
 	
 	/* Normal share - initialise with disk access functions */
 	vfs_init_default(conn);
-	vfs_objects = lp_vfsobj(SNUM(conn));
+	vfs_objects = lp_vfs_objects(SNUM(conn));
 
 	/* Override VFS functions if 'vfs object' was not specified*/
 	if (!vfs_objects || !vfs_objects[0])
 		return True;
-
-	for(i=0; i<SMB_VFS_OP_LAST; i++) {
-		vfs_opaque_ops[i].op = ((void**)&default_vfs_ops)[i];
-		vfs_opaque_ops[i].type = i;
-		vfs_opaque_ops[i].layer = SMB_VFS_LAYER_OPAQUE;
+	
+	for (i=0; vfs_objects[i] ;) {
+		i++;
 	}
 
-	vfs_path = lp_vfs_path(SNUM(conn));
-	
-	for (i=0; vfs_objects[i]; i++); /* count passed modules */
-        
 	for (j=i-1; j >= 0; j--) {
-		conn->vfs_private = NULL;
-		handle = (struct smb_vfs_handle_struct *) smb_xmalloc(sizeof(smb_vfs_handle_struct));
-		/* Loadable object file */
-		handle->handle = NULL;
-		DLIST_ADD(conn->vfs_private, handle);
-		vfs_module = NULL;
-		if (vfs_path && *vfs_path) {
-			asprintf(&vfs_module, "%s/%s", vfs_path, vfs_objects[j]);
-		} else {
-			asprintf(&vfs_module, "%s", vfs_objects[j]);
-		}
-		if (!vfs_init_custom(conn, vfs_module)) {
-			DEBUG(0, ("smbd_vfs_init: vfs_init_custom failed for %s\n", vfs_module));
-			SAFE_FREE(vfs_module);
-			DLIST_REMOVE(conn->vfs_private, handle);
-			SAFE_FREE(handle);
+		if (!vfs_init_custom(conn, vfs_objects[j])) {
+			DEBUG(0, ("smbd_vfs_init: vfs_init_custom failed for %s\n", vfs_objects[j]));
 			return False;
 		}
-		SAFE_FREE(vfs_module);
 	}
 	return True;
-}
-
-/*******************************************************************
- Create vfs_ops reflecting current vfs_opaque_ops
-*******************************************************************/
-
-struct vfs_ops *smb_vfs_get_opaque_ops(void)
-{
-  int i;
-  struct vfs_ops *ops;
-
-  ops = smb_xmalloc(sizeof(struct vfs_ops));
-
-  for(i=0; i<SMB_VFS_OP_LAST; i++) {
-    ((void**)ops)[i] = vfs_opaque_ops[i].op;
-  }
-  return ops;
 }
 
 /*******************************************************************
@@ -390,7 +333,7 @@ BOOL vfs_directory_exist(connection_struct *conn, const char *dname, SMB_STRUCT_
 	if (!st)
 		st = &st2;
 
-	if (vfs_stat(conn,dname,st) != 0)
+	if (SMB_VFS_STAT(conn,dname,st) != 0)
 		return(False);
 
 	ret = S_ISDIR(st->st_mode);
@@ -401,24 +344,15 @@ BOOL vfs_directory_exist(connection_struct *conn, const char *dname, SMB_STRUCT_
 }
 
 /*******************************************************************
- vfs getwd wrapper 
-********************************************************************/
-
-static char *vfs_getwd(connection_struct *conn, char *path)
-{
-	return conn->vfs_ops.getwd(conn,path);
-}
-
-/*******************************************************************
  vfs mkdir wrapper 
 ********************************************************************/
 
-int vfs_mkdir(connection_struct *conn, const char *name, mode_t mode)
+int vfs_MkDir(connection_struct *conn, const char *name, mode_t mode)
 {
 	int ret;
 	SMB_STRUCT_STAT sbuf;
 
-	if(!(ret=conn->vfs_ops.mkdir(conn,name,mode))) {
+	if(!(ret=SMB_VFS_MKDIR(conn, name, mode))) {
 
 		inherit_access_acl(conn, name, mode);
 
@@ -428,8 +362,8 @@ int vfs_mkdir(connection_struct *conn, const char *name, mode_t mode)
 		 * Consider bits automagically set by UNIX, i.e. SGID bit from parent dir.
 		 */
 		if(mode & ~(S_IRWXU|S_IRWXG|S_IRWXO) &&
-				!vfs_stat(conn,name,&sbuf) && (mode & ~sbuf.st_mode))
-			vfs_chmod(conn,name,sbuf.st_mode | (mode & ~sbuf.st_mode));
+				!SMB_VFS_STAT(conn,name,&sbuf) && (mode & ~sbuf.st_mode))
+			SMB_VFS_CHMOD(conn,name,sbuf.st_mode | (mode & ~sbuf.st_mode));
 	}
 	return ret;
 }
@@ -447,7 +381,7 @@ BOOL vfs_object_exist(connection_struct *conn,const char *fname,SMB_STRUCT_STAT 
 
 	ZERO_STRUCTP(sbuf);
 
-	if (vfs_stat(conn,fname,sbuf) == -1)
+	if (SMB_VFS_STAT(conn,fname,sbuf) == -1)
 		return(False);
 	return True;
 }
@@ -465,7 +399,7 @@ BOOL vfs_file_exist(connection_struct *conn, const char *fname,SMB_STRUCT_STAT *
 
 	ZERO_STRUCTP(sbuf);
 
-	if (vfs_stat(conn,fname,sbuf) == -1)
+	if (SMB_VFS_STAT(conn,fname,sbuf) == -1)
 		return False;
 	return(S_ISREG(sbuf->st_mode));
 }
@@ -480,7 +414,7 @@ ssize_t vfs_read_data(files_struct *fsp, char *buf, size_t byte_count)
 
 	while (total < byte_count)
 	{
-		ssize_t ret = fsp->conn->vfs_ops.read(fsp, fsp->fd, buf + total,
+		ssize_t ret = SMB_VFS_READ(fsp, fsp->fd, buf + total,
 					byte_count - total);
 
 		if (ret == 0) return total;
@@ -505,7 +439,7 @@ ssize_t vfs_write_data(files_struct *fsp,const char *buffer,size_t N)
 	ssize_t ret;
 
 	while (total < N) {
-		ret = fsp->conn->vfs_ops.write(fsp,fsp->fd,buffer + total,N - total);
+		ret = SMB_VFS_WRITE(fsp,fsp->fd,buffer + total,N - total);
 
 		if (ret == -1)
 			return -1;
@@ -528,7 +462,6 @@ int vfs_allocate_file_space(files_struct *fsp, SMB_BIG_UINT len)
 	int ret;
 	SMB_STRUCT_STAT st;
 	connection_struct *conn = fsp->conn;
-	struct vfs_ops *vfs_ops = &conn->vfs_ops;
 	SMB_BIG_UINT space_avail;
 	SMB_BIG_UINT bsize,dfree,dsize;
 
@@ -545,7 +478,7 @@ int vfs_allocate_file_space(files_struct *fsp, SMB_BIG_UINT len)
 		return -1;
 	}
 
-	ret = vfs_fstat(fsp,fsp->fd,&st);
+	ret = SMB_VFS_FSTAT(fsp,fsp->fd,&st);
 	if (ret == -1)
 		return ret;
 
@@ -559,7 +492,7 @@ int vfs_allocate_file_space(files_struct *fsp, SMB_BIG_UINT len)
 				fsp->fsp_name, (double)st.st_size ));
 
 		flush_write_cache(fsp, SIZECHANGE_FLUSH);
-		if ((ret = vfs_ops->ftruncate(fsp, fsp->fd, (SMB_OFF_T)len)) != -1) {
+		if ((ret = SMB_VFS_FTRUNCATE(fsp, fsp->fd, (SMB_OFF_T)len)) != -1) {
 			set_filelen_write_cache(fsp, len);
 		}
 		return ret;
@@ -572,7 +505,7 @@ int vfs_allocate_file_space(files_struct *fsp, SMB_BIG_UINT len)
 
 	len -= st.st_size;
 	len /= 1024; /* Len is now number of 1k blocks needed. */
-	space_avail = conn->vfs_ops.disk_free(conn,fsp->fsp_name,False,&bsize,&dfree,&dsize);
+	space_avail = SMB_VFS_DISK_FREE(conn,fsp->fsp_name,False,&bsize,&dfree,&dsize);
 
 	DEBUG(10,("vfs_allocate_file_space: file %s, grow. Current size %.0f, needed blocks = %.0f, space avail = %.0f\n",
 			fsp->fsp_name, (double)st.st_size, (double)len, (double)space_avail ));
@@ -598,7 +531,7 @@ int vfs_set_filelen(files_struct *fsp, SMB_OFF_T len)
 	release_level_2_oplocks_on_change(fsp);
 	DEBUG(10,("vfs_set_filelen: ftruncate %s to len %.0f\n", fsp->fsp_name, (double)len));
 	flush_write_cache(fsp, SIZECHANGE_FLUSH);
-	if ((ret = fsp->conn->vfs_ops.ftruncate(fsp, fsp->fd, len)) != -1)
+	if ((ret = SMB_VFS_FTRUNCATE(fsp, fsp->fd, len)) != -1)
 		set_filelen_write_cache(fsp, len);
 
 	return ret;
@@ -613,12 +546,12 @@ static files_struct *out_fsp;
 
 static ssize_t read_fn(int fd, void *buf, size_t len)
 {
-	return in_fsp->conn->vfs_ops.read(in_fsp, fd, buf, len);
+	return SMB_VFS_READ(in_fsp, fd, buf, len);
 }
 
 static ssize_t write_fn(int fd, const void *buf, size_t len)
 {
-	return out_fsp->conn->vfs_ops.write(out_fsp, fd, buf, len);
+	return SMB_VFS_WRITE(out_fsp, fd, buf, len);
 }
 
 SMB_OFF_T vfs_transfer_file(files_struct *in, files_struct *out, SMB_OFF_T n)
@@ -635,13 +568,13 @@ SMB_OFF_T vfs_transfer_file(files_struct *in, files_struct *out, SMB_OFF_T n)
 
 char *vfs_readdirname(connection_struct *conn, void *p)
 {
-	struct dirent *ptr;
+	struct dirent *ptr= NULL;
 	char *dname;
 
 	if (!p)
 		return(NULL);
 
-	ptr = (struct dirent *)conn->vfs_ops.readdir(conn,p);
+	ptr = (struct dirent *)SMB_VFS_READDIR(conn,p);
 	if (!ptr)
 		return(NULL);
 
@@ -660,72 +593,6 @@ char *vfs_readdirname(connection_struct *conn, void *p)
 	return(dname);
 }
 
-/* VFS options not quite working yet */
-
-#if 0
-
-/***************************************************************************
-  handle the interpretation of the vfs option parameter
- *************************************************************************/
-static BOOL handle_vfs_option(char *pszParmValue, char **ptr)
-{
-    struct vfs_options *new_option, **options = (struct vfs_options **)ptr;
-    int i;
-
-    /* Create new vfs option */
-
-    new_option = (struct vfs_options *)malloc(sizeof(*new_option));
-    if (new_option == NULL) {
-	return False;
-    }
-
-    ZERO_STRUCTP(new_option);
-
-    /* Get name and value */
-
-    new_option->name = strtok(pszParmValue, "=");
-
-    if (new_option->name == NULL) {
-	return False;
-    }
-
-    while(isspace(*new_option->name)) {
-	new_option->name++;
-    }
-
-    for (i = strlen(new_option->name); i > 0; i--) {
-	if (!isspace(new_option->name[i - 1])) break;
-    }
-
-    new_option->name[i] = '\0';
-    new_option->name = strdup(new_option->name);
-
-    new_option->value = strtok(NULL, "=");
-
-    if (new_option->value != NULL) {
-
-	while(isspace(*new_option->value)) {
-	    new_option->value++;
-	}
-	
-	for (i = strlen(new_option->value); i > 0; i--) {
-	    if (!isspace(new_option->value[i - 1])) break;
-	}
-	
-	new_option->value[i] = '\0';
-	new_option->value = strdup(new_option->value);
-    }
-
-    /* Add to list */
-
-    DLIST_ADD(*options, new_option);
-
-    return True;
-}
-
-#endif
-
-
 /*******************************************************************
  A wrapper for vfs_chdir().
 ********************************************************************/
@@ -741,9 +608,9 @@ int vfs_ChDir(connection_struct *conn, const char *path)
 	if (*path == '/' && strcsequal(LastDir,path))
 		return(0);
 
-	DEBUG(3,("vfs_ChDir to %s\n",path));
+	DEBUG(4,("vfs_ChDir to %s\n",path));
 
-	res = vfs_chdir(conn,path);
+	res = SMB_VFS_CHDIR(conn,path);
 	if (!res)
 		pstrcpy(LastDir,path);
 	return(res);
@@ -800,7 +667,7 @@ char *vfs_GetWd(connection_struct *conn, char *path)
 	*s = 0;
 
 	if (!use_getwd_cache)
-		return(vfs_getwd(conn,path));
+		return(SMB_VFS_GETWD(conn,path));
 
 	/* init the cache */
 	if (!getwd_cache_init) {
@@ -814,9 +681,9 @@ char *vfs_GetWd(connection_struct *conn, char *path)
 	/*  Get the inode of the current directory, if this doesn't work we're
 		in trouble :-) */
 
-	if (vfs_stat(conn, ".",&st) == -1) {
+	if (SMB_VFS_STAT(conn, ".",&st) == -1) {
 		DEBUG(0,("Very strange, couldn't stat \".\" path=%s\n", path));
-		return(vfs_getwd(conn,path));
+		return(SMB_VFS_GETWD(conn,path));
 	}
 
 
@@ -830,7 +697,7 @@ char *vfs_GetWd(connection_struct *conn, char *path)
 				the same...) */
 
 			if (st.st_ino == ino_list[i].inode && st.st_dev == ino_list[i].dev) {
-				if (vfs_stat(conn,ino_list[i].dos_path,&st2) == 0) {
+				if (SMB_VFS_STAT(conn,ino_list[i].dos_path,&st2) == 0) {
 					if (st.st_ino == st2.st_ino && st.st_dev == st2.st_dev &&
 							(st2.st_mode & S_IFMT) == S_IFDIR) {
 						pstrcpy (path, ino_list[i].dos_path);
@@ -852,8 +719,8 @@ char *vfs_GetWd(connection_struct *conn, char *path)
 		The very slow getcwd, which spawns a process on some systems, or the
 		not quite so bad getwd. */
 
-	if (!vfs_getwd(conn,s)) {
-		DEBUG(0,("vfs_GetWd: vfs_getwd call failed, errno %s\n",strerror(errno)));
+	if (!SMB_VFS_GETWD(conn,s)) {
+		DEBUG(0,("vfs_GetWd: SMB_VFS_GETWD call failed, errno %s\n",strerror(errno)));
 		return (NULL);
 	}
 
@@ -909,7 +776,7 @@ static BOOL readlink_check(connection_struct *conn, const char *dir, char *name)
 		realdir[reallen] = 0;
 	}
 
-	if (conn->vfs_ops.readlink(conn, name, flink, sizeof(pstring) -1) != -1) {
+	if (SMB_VFS_READLINK(conn, name, flink, sizeof(pstring) -1) != -1) {
 		DEBUG(3,("reduce_name: file path name %s is a symlink\nChecking it's path\n", name));
 		if (*flink == '/') {
 			pstrcpy(cleanlink, flink);

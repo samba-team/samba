@@ -157,7 +157,7 @@ int register_vuid(auth_serversupplied_info *server_info, const char *smb_name)
 	}
 
 	vuser->guest = server_info->guest;
-	fstrcpy(vuser->user.unix_name, pdb_get_username(server_info->sam_account)); 
+	fstrcpy(vuser->user.unix_name, server_info->unix_name); 
 
 	/* This is a potentially untrusted username */
 	alpha_strcpy(vuser->user.smb_name, smb_name, ". _-$", sizeof(vuser->user.smb_name));
@@ -168,16 +168,24 @@ int register_vuid(auth_serversupplied_info *server_info, const char *smb_name)
 	{
 		/* Keep the homedir handy */
 		const char *homedir = pdb_get_homedir(server_info->sam_account);
-		const char *unix_homedir = pdb_get_unix_homedir(server_info->sam_account);
 		const char *logon_script = pdb_get_logon_script(server_info->sam_account);
+
+		if (!IS_SAM_DEFAULT(server_info->sam_account, PDB_UNIXHOMEDIR)) {
+			const char *unix_homedir = pdb_get_unix_homedir(server_info->sam_account);
+			if (unix_homedir) {
+				vuser->unix_homedir = smb_xstrdup(unix_homedir);
+			}
+		} else {
+			struct passwd *passwd = getpwnam_alloc(vuser->user.unix_name);
+			if (passwd) {
+				vuser->unix_homedir = smb_xstrdup(passwd->pw_dir);
+				passwd_free(&passwd);
+			}
+		}
+		
 		if (homedir) {
 			vuser->homedir = smb_xstrdup(homedir);
 		}
-
-		if (unix_homedir) {
-			vuser->unix_homedir = smb_xstrdup(unix_homedir);
-		}
-
 		if (logon_script) {
 			vuser->logon_script = smb_xstrdup(logon_script);
 		}

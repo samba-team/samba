@@ -5,10 +5,10 @@
 <title>Stand-Alone Servers</title>
 
 <para>
-Stand-Alone servers are independant of Domain Controllers on the network.
+Stand-Alone servers are independent of Domain Controllers on the network.
 They are NOT domain members and function more like workgroup servers. In many
 cases a stand-alone server is configured with a minimum of security control
-with the intent that all data served will be readilly accessible to all users.
+with the intent that all data served will be readily accessible to all users.
 </para>
 
 <sect1>
@@ -53,26 +53,27 @@ USER mode.
 <para>
 No special action is needed other than to create user accounts. Stand-alone
 servers do NOT provide network logon services. This means that machines that
-use this server do NOT perform a domain log onto it. Whatever logon facility
-the workstations are subject to is independant of this machine. It is however
-necessary to accomodate any network user so that the logon name they use will
+use this server do NOT perform a domain logon to it. Whatever logon facility
+the workstations are subject to is independent of this machine. It is however
+necessary to accommodate any network user so that the logon name they use will
 be translated (mapped) locally on the stand-alone server to a locally known
-user name. There are several ways this cane be done.
+user name. There are several ways this can be done.
 </para>
 
 <para>
 Samba tends to blur the distinction a little in respect of what is
 a stand-alone server. This is because the authentication database may be
-local or on a remote server, even if from the samba protocol perspective
-the samba server is NOT a member of a domain security context.
+local or on a remote server, even if from the Samba protocol perspective
+the Samba server is NOT a member of a domain security context.
 </para>
 
 <para>
 Through the use of PAM (Pluggable Authentication Modules) and nsswitch
 (the name service switcher) the source of authentication may reside on 
 another server. We would be inclined to call this the authentication server.
-This means that the samba server may use the local Unix/Linux system password database
-(/etc/passwd or /etc/shadow), may use a local smbpasswd file, or may use
+This means that the Samba server may use the local Unix/Linux system password database
+(<filename>/etc/passwd</filename> or <filename>/etc/shadow</filename>), may use a
+local smbpasswd file, or may use
 an LDAP back end, or even via PAM and Winbind another CIFS/SMB server
 for authentication.
 </para>
@@ -99,9 +100,7 @@ nobody. No home directories are shared, that are no users in the <filename>/etc/
 Unix system database. This is a very simple system to administer.
 </para>
 
-<para>
 <programlisting>
-	<title>Share Mode Read Only Stand-Alone Server</title>
 	# Global parameters
 	[global]
 		workgroup = MYGROUP
@@ -115,13 +114,12 @@ Unix system database. This is a very simple system to administer.
 		path = /export
 		guest only = Yes
 </programlisting>
-</para>
 
 <para>
 In the above example the machine name is set to REFDOCS, the workgroup is set to the name
 of the local workgroup so that the machine will appear in with systems users are familiar
 with. The only password backend required is the "guest" backend so as to allow default
-unprivilidged account names to be used. Given that there is a WINS server on this network
+unprivileged account names to be used. Given that there is a WINS server on this network
 we do use it.
 </para>
 
@@ -143,11 +141,11 @@ on your system.
 
 	<listitem><para>
 	The print spooling and processing system on our print server will be CUPS.
-	(Please refer to the chapter on printing for more information).
+	(Please refer to the <link linkend="CUPS-printing">CUPS Printing</link> chapter for more information).
 	</para></listitem>
 
 	<listitem><para>
-	All printers will that the print server will service will be network
+	All printers that the print server will service will be network
 	printers. They will be correctly configured, by the administrator, 
 	in the CUPS environment.
 	</para></listitem>
@@ -161,20 +159,20 @@ on your system.
 <para>
 In this example our print server will spool all incoming print jobs to
 <filename>/var/spool/samba</filename> until the job is ready to be submitted by
-samba to the CUPS print processor. Since all incoming connections will be as
-the anonymous (guest) user two things will be required:
+Samba to the CUPS print processor. Since all incoming connections will be as
+the anonymous (guest) user, two things will be required:
 </para>
 
 <itemizedlist>
-<title>Enablement for Anonymous Printing</title>
+<title>Enabling Anonymous Printing</title>
 	<listitem><para>
 	The Unix/Linux system must have a <command>guest</command> account.
 	The default for this is usually the account <command>nobody</command>.
 	To find the correct name to use for your version of Samba do the 
 	following:
-	<programlisting>
-		testparm -s -v | grep "guest account"
-	</programlisting>
+	<screen>
+<prompt>$ </prompt><userinput>testparm -s -v | grep "guest account"</userinput>
+	</screen>
 	Then make sure that this account exists in your system password
 	database (<filename>/etc/passwd</filename>).
 	</para></listitem>
@@ -183,17 +181,16 @@ the anonymous (guest) user two things will be required:
 	The directory into which Samba will spool the file must have write
 	access for the guest account. The following commands will ensure that
 	this directory is available for use:
-	<programlisting>
-		mkdir /var/spool/samba
-		chown nobody.nobody /var/spool/samba
-		chmod a+rwt /var/spool/samba
-	</programlisting>
+	<screen>
+&rootprompt;<userinput>mkdir /var/spool/samba</userinput>
+&rootprompt;<userinput>chown nobody.nobody /var/spool/samba</userinput>
+&rootprompt;<userinput>chmod a+rwt /var/spool/samba</userinput>
+	</screen>
 	</para></listitem>
 </itemizedlist>
 
 <para>
 <programlisting>
-	<title>Simple Central Print Server</title>
 	# Global parameters
 	[global]
 		workgroup = MYGROUP

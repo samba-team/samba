@@ -37,6 +37,21 @@ static const char *remote_machine = NULL;
 
 static fstring ldap_secret;
 
+/*****************************************************************************
+ stubb functions
+****************************************************************************/
+
+void become_root( void )
+{
+        return;
+}
+
+void unbecome_root( void )
+{
+        return;
+}
+
+
 /*********************************************************
  Print command usage on stderr and die.
 **********************************************************/
@@ -392,7 +407,7 @@ static int process_root(int local_flags)
 		if (local_flags & LOCAL_ADD_USER) {
 		        SAFE_FREE(new_passwd);
 			new_passwd = smb_xstrdup(user_name);
-			strlower(new_passwd);
+			strlower_m(new_passwd);
 		}
 
 		/*
@@ -405,7 +420,7 @@ static int process_root(int local_flags)
 	} else if (local_flags & LOCAL_INTERDOM_ACCOUNT) {
 		static fstring buf;
 
-		if (local_flags & LOCAL_ADD_USER) {
+		if ((local_flags & LOCAL_ADD_USER) && (new_passwd == NULL)) {
 			/*
 			 * Prompt for trusting domain's account password
 			 */
@@ -450,7 +465,7 @@ static int process_root(int local_flags)
 			}
 		}
 		
-		if(local_flags & LOCAL_SET_PASSWORD) {
+		if((local_flags & LOCAL_SET_PASSWORD) && (new_passwd == NULL)) {
 			new_passwd = prompt_for_new_password(stdin_passwd_get);
 			
 			if(!new_passwd) {

@@ -198,6 +198,10 @@ int main(int argc, char *argv[])
 	
 	while(poptGetNextOpt(pc) != -1);
 
+	/* the following functions are part of the Samba debugging
+	   facilities.  See lib/debug.c */
+	setup_logging("smbiconv", True);
+
 	if(preload)smb_load_modules(str_list_make(preload, NULL));
 
 	if(output) {
@@ -208,10 +212,6 @@ int main(int argc, char *argv[])
 			return 1;
 		}
 	}
-
-	/* the following functions are part of the Samba debugging
-	   facilities.  See lib/debug.c */
-	setup_logging("smbiconv", True);
 
 	cd = smb_iconv_open(to, from);
 	if((int)cd == -1) {

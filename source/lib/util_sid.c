@@ -391,6 +391,9 @@ BOOL sid_peek_check_rid(const DOM_SID *exp_dom_sid, const DOM_SID *sid, uint32 *
 	if (!exp_dom_sid || !sid || !rid)
 		return False;
 			
+	if (sid->num_auths != (exp_dom_sid->num_auths+1)) {
+		return False;
+	}
 
 	if (sid_compare_domain(exp_dom_sid, sid)!=0){
 		*rid=(-1);
@@ -642,8 +645,9 @@ DOM_SID *sid_dup_talloc(TALLOC_CTX *ctx, DOM_SID *src)
 	if(!src)
 		return NULL;
 	
-	if((dst = talloc_zero(ctx, sizeof(DOM_SID))) != NULL)
+	if((dst = talloc_zero(ctx, sizeof(DOM_SID))) != NULL) {
 		sid_copy( dst, src);
+	}
 	
 	return dst;
 }

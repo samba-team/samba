@@ -7,6 +7,9 @@
 
 <title>Further Resources</title>
 
+<sect1>
+	<title>Websites</title>
+
 <itemizedlist>
 
 	<listitem><para>
@@ -74,6 +77,102 @@
 	</ulink>
 	</para></listitem>
 
+	<listitem><para>
+	<ulink url="http://ru.samba.org/samba/ftp/docs/Samba24Hc13.pdf">
+	<emphasis>PDF version of the Troubleshooting Techniques chapter</emphasis>
+	from the second edition of Sam's Teach Yourself Samba in 24 Hours
+	(publishing date of Dec. 12, 2001)</ulink>
+	</para></listitem>
+
+	<listitem><para>
+	<ulink url="http://ru.samba.org/samba/ftp/slides/">
+	<emphasis>Slide presentations</emphasis> by Samba Team members
+	</ulink>
+	</para></listitem>
+
+	<listitem><para>
+	<ulink url="http://www.atmarkit.co.jp/flinux/special/samba3/samba3a.html">
+	<emphasis>Introduction to Samba 3.0</emphasis> by Motonobu Takahashi 
+	(written in Japanese). </ulink>
+	</para></listitem>
+
+	<listitem><para>
+	<ulink url="http://www.linux-mag.com/2001-05/smb_01.html">
+	<emphasis>Understanding the Network Neighborhood</emphasis>, by team member
+	Chris Hertel. This article appeared in the May 2001 issue of 
+	Linux Magazine. 
+	</ulink>
+	</para></listitem>
+
+	<listitem><para>
+	<ulink url="ftp://ftp.stratus.com/pub/vos/customers/samba/">
+	<emphasis>Samba 2.0.x Troubleshooting guide</emphasis> from Paul Green
+	</ulink>
+	</para></listitem>
+
+	<listitem><para>
+	<ulink url="http://samba.org/samba/docs/10years.html">
+	<emphasis>Ten Years of Samba</emphasis>
+	</ulink>
+	</para></listitem>
+
+	<listitem><para>
+	<ulink url="http://tldp.org/HOWTO/Samba-Authenticated-Gateway-HOWTO.html">
+		<emphasis>Samba Authenticated Gateway HOWTO</emphasis>
+	</ulink>
+	</para></listitem>
+
+	<listitem><para>
+	<ulink url="http://samba.org/samba/docs/SambaIntro.html">
+		<emphasis>An Introduction to Samba</emphasis>
+	</ulink>
+	</para></listitem>
+
+	<listitem><para>
+	<ulink url="http://www.samba.org/cifs/">
+		<emphasis>What is CIFS?</emphasis>
+	</ulink>
+	</para></listitem>
+
+	<listitem><para>
+	<ulink url="http://support.microsoft.com/support/kb/articles/q92/5/88.asp">
+		<emphasis>WFWG: Password Caching and How It Affects LAN Manager
+			Security</emphasis> at Microsoft Knowledge Base
+	</ulink>
+	</para></listitem>
+
 </itemizedlist>
+
+</sect1>
+
+<sect1>
+	<title>Related updates from Microsoft</title>
+
+<itemizedlist>
+	<listitem><para>
+	<ulink url="http://support.microsoft.com/support/kb/articles/q92/5/88.asp">
+		<emphasis>Enhanced Encryption for Windows 95 Password Cache</emphasis> 
+	</ulink>
+	</para></listitem>
+
+	<listitem><para>
+	<ulink url="http://support.microsoft.com/support/kb/articles/q136/4/18.asp">
+		<emphasis>Windows '95 File Sharing Updates</emphasis>
+	</ulink>
+	</para></listitem>
+
+	<listitem><para>
+	<ulink url="http://support.microsoft.com/support/kb/articles/q136/4/18.asp">
+		<emphasis>Windows for Workgroups Sharing Updates</emphasis>
+	</ulink>
+	</para></listitem>
+
+</itemizedlist>
+</sect1>
+
+<sect1>
+	<title>Books</title>
+
+</sect1>
 
 </chapter>

@@ -1,6 +1,8 @@
 <chapter id="Portability">
 <chapterinfo>
 	&author.jelmer;
+	<!-- Some other people as well, but there were no author names in the text files
+	this file is based on-->
 </chapterinfo>
 
 <title>Portability</title>
@@ -14,14 +16,14 @@ platform-specific information about compiling and using samba.</para>
 
 <para>
 HP's implementation of supplementary groups is, er, non-standard (for
-hysterical reasons).  There are two group files, /etc/group and
-/etc/logingroup; the system maps UIDs to numbers using the former, but
+hysterical reasons).  There are two group files, <filename>/etc/group</filename> and
+<filename>/etc/logingroup</filename>; the system maps UIDs to numbers using the former, but
 initgroups() reads the latter.  Most system admins who know the ropes
-symlink /etc/group to /etc/logingroup (hard link doesn't work for reasons
-too stupid to go into here).  initgroups() will complain if one of the
-groups you're in in /etc/logingroup has what it considers to be an invalid
-ID, which means outside the range [0..UID_MAX], where UID_MAX is (I think)
-60000 currently on HP-UX.  This precludes -2 and 65534, the usual 'nobody'
+symlink <filename>/etc/group</filename> to <filename>/etc/logingroup</filename>
+(hard link doesn't work for reasons too stupid to go into here).  initgroups() will complain if one of the
+groups you're in in <filename>/etc/logingroup</filename> has what it considers to be an invalid
+ID, which means outside the range <constant>[0..UID_MAX]</constant>, where <constant>UID_MAX</constant> is (I think)
+60000 currently on HP-UX.  This precludes -2 and 65534, the usual <constant>nobody</constant>
 GIDs.
 </para>
 
@@ -35,8 +37,8 @@ allowed range.
 </para>
 
 <para>
-On HPUX you must use gcc or the HP Ansi compiler. The free compiler
-that comes with HP-UX is not Ansi compliant and cannot compile
+On HPUX you must use gcc or the HP ANSI compiler. The free compiler
+that comes with HP-UX is not ANSI compliant and cannot compile
 Samba.
 </para>
 
@@ -46,14 +48,15 @@ Samba.
 <title>SCO Unix</title>
 
 <para> 
-If you run an old version of  SCO Unix then you may need to get important 
+If you run an old version of SCO Unix then you may need to get important 
 TCP/IP patches for Samba to work correctly. Without the patch, you may 
 encounter corrupt data transfers using samba.
 </para>
 
 <para>
 The patch you need is UOD385 Connection Drivers SLS. It is available from
-SCO (ftp.sco.com, directory SLS, files uod385a.Z and uod385a.ltr.Z).
+SCO (<ulink url="ftp://ftp.sco.com/">ftp.sco.com</ulink>, directory SLS,
+files uod385a.Z and uod385a.ltr.Z).
 </para>
 
 </sect1>
@@ -121,8 +124,10 @@ _seteuid:
 after creating the above files you then assemble them using
 </para>
 
-<para><command>as seteuid.s</command></para>
-<para><command>as setegid.s</command></para>
+<screen>
+	<prompt>$ </prompt><userinput>as seteuid.s</userinput>
+	<prompt>$ </prompt><userinput>as setegid.s</userinput>
+</screen>
 
 <para>
 that should produce the files <filename>seteuid.o</filename> and 
@@ -155,7 +160,7 @@ You should then remove the line:
 
 <para>
 By default RedHat Rembrandt-II during installation adds an
-entry to /etc/hosts as follows:
+entry to <filename>/etc/hosts</filename> as follows:
 <programlisting>
 	127.0.0.1 loopback "hostname"."domainname"
 </programlisting>
@@ -181,7 +186,7 @@ Corrective Action:	Delete the entry after the word loopback
 <!-- From an email by William Jojo <jojowil@hvcc.edu> -->
 <para>
 Disabling Sequential Read Ahead using <userinput>vmtune -r 0</userinput> improves 
-samba performance significally.
+Samba performance significantly.
 </para>
 </sect2>
 </sect1>
@@ -193,9 +198,9 @@ samba performance significally.
 <title>Locking improvements</title>
 
 <para>Some people have been experiencing problems with F_SETLKW64/fcntl 
-when running samba on solaris. The built in file locking mechanism was
+when running Samba on Solaris. The built in file locking mechanism was
 not scalable. Performance would degrade to the point where processes would
-get into loops of trying to lock a file. It woul try a lock, then fail,
+get into loops of trying to lock a file. It would try a lock, then fail,
 then try again. The lock attempt was failing before the grant was
 occurring. So the visible manifestation of this would be a handful of
 processes stealing all of the CPU, and when they were trussed they would
@@ -209,8 +214,7 @@ has not been released yet.
 
 <para>
 The patch revision for 2.6 is 105181-34
-for 8 is 108528-19
-and for 9 is 112233-04
+for 8 is 108528-19 and for 9 is 112233-04
 </para>
 
 <para>

@@ -14,12 +14,21 @@
     Windows 2000/XP and Samba, no anonymous connections are allowed at
     all.  This can break third party and Microsoft
     applications which expect to be allowed to perform
-    operations anonymously.
+	operations anonymously.</para>
 
+	<para>
     The security advantage of using restrict anonymous = 1 is dubious,
     as user and group list information can be obtained using other
-    means.
-    </para>
+	means.
+	</para>
+
+	<note>
+	<para>
+    The security advantage of using restrict anonymous = 2 is removed
+    by setting <link linkend="GUESTOK"><parameter moreinfo="none">guest
+	ok</parameter> = yes</link> on any share.
+	</para>
+	</note>
 
     <para>Default: <command moreinfo="none">restrict anonymous = 0</command></para>
 </listitem>

@@ -24,15 +24,6 @@
 	    </listitem>
 			
 	    <listitem>
-		<para><command moreinfo="none">smbpasswd_nua</command> - The smbpasswd
-                backend, but with support for 'not unix accounts'.  
-                Takes a path to the smbpasswd file as an optional argument.</para>
-		
-                <para>See also <link linkend="NONUNIXACCOUNTRANGE">
-                <parameter moreinfo="none">non unix account range</parameter></link></para>
-	    </listitem>
-
-	    <listitem>
 		<para><command moreinfo="none">tdbsam</command> - The TDB based password storage
                 backend.  Takes a path to the TDB as an optional argument (defaults to passdb.tdb 
                 in the <link linkend="PRIVATEDIR">
@@ -40,32 +31,10 @@
 	    </listitem>
 			
 	    <listitem>
-		<para><command moreinfo="none">tdbsam_nua</command> - The TDB based password storage
-                backend, with non unix account support.  Takes a path to the TDB as an optional argument (defaults to passdb.tdb 
-                in the <link linkend="PRIVATEDIR">
-                <parameter moreinfo="none">private dir</parameter></link> directory.</para>
-		
-                <para>See also <link linkend="NONUNIXACCOUNTRANGE">
-                <parameter moreinfo="none">non unix account range</parameter></link></para>
-	    </listitem>
-			
-	    <listitem>
 		<para><command moreinfo="none">ldapsam</command> - The LDAP based passdb 
                 backend.  Takes an LDAP URL as an optional argument (defaults to 
                 <command moreinfo="none">ldap://localhost</command>)</para>
-	    </listitem>
 			
-	    <listitem>
-		<para><command moreinfo="none">ldapsam_nua</command> - The LDAP based passdb 
-                backend, with non unix account support.  Takes an LDAP URL as an optional argument (defaults to 
-                <command moreinfo="none">ldap://localhost</command>)</para>
-
-		<para>Note:  In this module, any account without a matching POSIX account is regarded
-                as 'non unix'.  </para>
-
-		<para>See also <link linkend="NONUNIXACCOUNTRANGE">
-		<parameter moreinfo="none">non unix account range</parameter></link></para>
-	                
 		<para>LDAP connections should be secured where possible.  This may be done using either
                 Start-TLS (see <link linkend="LDAPSSL"><parameter moreinfo="none">ldap ssl</parameter></link>) or by
                 specifying <parameter moreinfo="none">ldaps://</parameter> in
@@ -79,15 +48,29 @@
 		</para>
 	    </listitem>
 
+		<listitem>
+		<para><command moreinfo="none">mysql</command> - 
+		The MySQL based passdb backend. Takes an identifier as 
+		argument. Read the Samba HOWTO Collection for configuration
+		details.
+		</para></listitem>
+
+		<listitem>
+		<para><command moreinfo="none">guest</command> - 
+		Very simple backend that only provides one user: the guest user.
+		Only maps the NT guest user to the <parameter>guest account</parameter>.
+		Required in pretty much all situations.
+		</para></listitem>
+
 	</itemizedlist>
     </para>
 
-    <para>Default: <command moreinfo="none">passdb backend = smbpasswd unixsam</command></para>
+    <para>Default: <command moreinfo="none">passdb backend = smbpasswd</command></para>
 
     <para>Example: <command moreinfo="none">passdb backend = tdbsam:/etc/samba/private/passdb.tdb smbpasswd:/etc/samba/smbpasswd guest</command></para>
 
-	<para>Example: <command moreinfo="none">passdb backend = ldapsam_nua:ldaps://ldap.example.com guest</command></para>
+	<para>Example: <command moreinfo="none">passdb backend = ldapsam:ldaps://ldap.example.com guest</command></para>
 
-    <para>Example: <command moreinfo="none">passdb backend = mysql:my_plugin_args tdbsam:/etc/samba/private/passdb.tdb</command></para>
+    <para>Example: <command moreinfo="none">passdb backend = mysql:my_plugin_args tdbsam:/etc/samba/private/passdb.tdb guest</command></para>
 </listitem>
 </samba:parameter>

@@ -23,9 +23,9 @@ pdbedit \- manage the SAM database
 .SH "SYNOPSIS"
 
 .nf
-\fBpdbedit\fR [-l] [-v] [-w] [-u username] [-f fullname] [-h homedir] [-D drive] [-S
+\fBpdbedit\fR [-L] [-v] [-w] [-u username] [-f fullname] [-h homedir] [-D drive] [-S
         script] [-p profile] [-a] [-m] [-x] [-i passdb-backend] [-e passdb-backend]
-        [-g] [-b passdb-backend] [-g] [-d debuglevel] [-s configfile] [-P account-policy]
+        [-b passdb-backend] [-g] [-d debuglevel] [-s configfile] [-P account-policy]
         [-C value]
 .fi
 
@@ -46,11 +46,11 @@ There are five main ways to use pdbedit: adding a user account, removing a user 
 .SH "OPTIONS"
 
 .TP
--l
+-L
 This option lists all the user accounts present in the users database\&. This option prints a list of user/uid pairs separated by the ':' character\&.
 
 
-Example: \fBpdbedit -l\fR
+Example: \fBpdbedit -L\fR
 
 
 .nf
@@ -65,7 +65,7 @@ samba:45:Test User
 This option enables the verbose listing format\&. It causes pdbedit to list the users in the database, printing out the account fields in a descriptive format\&.
 
 
-Example: \fBpdbedit -l -v\fR
+Example: \fBpdbedit -L -v\fR
 
 
 .nf
@@ -96,7 +96,7 @@ Profile Path:   \\\\BERSERKER\\profile
 This option sets the "smbpasswd" listing format\&. It will make pdbedit list the users in the database, printing out the account fields in a format compatible with the \fIsmbpasswd\fR file format\&. (see the \fBsmbpasswd\fR(5) for details)
 
 
-Example: \fBpdbedit -l -w\fR
+Example: \fBpdbedit -L -w\fR
 
 
 sorce:500:508818B733CE64BEAAD3B435B51404EE:D2A2418EFC466A8A0F6B1DBB5C3DB80C:[UX         ]:LCT-00000000:
@@ -148,6 +148,30 @@ Example: \fB-p "\\\\BERSERKER\\netlogon"\fR
 
 
 .TP
+-G SID|rid
+This option can be used while adding or modifying a user account\&. It will specify the users' new primary group SID (Security Identifier) or rid\&.
+
+
+Example: \fB-G S-1-5-21-2447931902-1787058256-3961074038-1201\fR
+
+
+.TP
+-U SID|rid
+This option can be used while adding or modifying a user account\&. It will specify the users' new SID (Security Identifier) or rid\&.
+
+
+Example: \fB-U S-1-5-21-2447931902-1787058256-3961074038-5004\fR
+
+
+.TP
+-c account-control
+This option can be used while adding or modifying a user account\&. It will specify the users' account control property\&. Possible flags that can be set are: N, D, H, L, X\&.
+
+
+Example: \fB-c "[X ]"\fR
+
+
+.TP
 -a
 This option is used to add a user into the database\&. This command needs a user name specified with the -u switch\&. When adding a new user, pdbedit will also ask for the password to be used\&.
 
@@ -158,6 +182,11 @@ new password:
 retype new password
 .fi
 
+
+
+.TP
+-r
+This option is used to modify an existing user in the database\&. This command needs a user name specified with the -u switch\&. Other options can be specified to modify the properties of the specified user\&. This flag is kept for backwards compatibility, but it is no longer necessary to specify it\&.
 
 
 .TP
@@ -196,14 +225,6 @@ This option will ease migration from one passdb backend to another and will ease
 
 
 Example: \fBpdbedit -e smbpasswd:/root/samba-users.backup\fR
-
-
-.TP
--g
-If you specify \fI-g\fR, then \fI-i in-backend -e out-backend\fR applies to the group mapping instead of the user database\&.
-
-
-This option will ease migration from one passdb backend to another and will ease backing up\&.
 
 
 .TP
@@ -296,7 +317,7 @@ This command may be used only by root\&.
 .SH "VERSION"
 
 .PP
-This man page is correct for version 2\&.2 of the Samba suite\&.
+This man page is correct for version 3\&.0 of the Samba suite\&.
 
 .SH "SEE ALSO"
 
@@ -307,7 +328,4 @@ This man page is correct for version 2\&.2 of the Samba suite\&.
 
 .PP
 The original Samba software and related utilities were created by Andrew Tridgell\&. Samba is now developed by the Samba Team as an Open Source project similar to the way the Linux kernel is developed\&.
-
-.PP
-The original Samba man pages were written by Karl Auer\&. The man page sources were converted to YODL format (another excellent piece of Open Source software, available at ftp://ftp\&.icce\&.rug\&.nl/pub/unix/) and updated for the Samba 2\&.0 release by Jeremy Allison\&. The conversion to DocBook for Samba 2\&.2 was done by Gerald Carter\&. The conversion to DocBook XML 4\&.2 for Samba 3\&.0 was done by Alexander Bokovoy\&.
 

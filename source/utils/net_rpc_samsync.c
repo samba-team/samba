@@ -209,6 +209,11 @@ int rpc_samdump(int argc, const char **argv)
 
 	fstrcpy(cli->domain, lp_workgroup());
 
+	if (!cli_nt_session_open(cli, PI_NETLOGON)) {
+		DEBUG(0,("Could not open connection to NETLOGON pipe\n"));
+		goto fail;
+	}
+
 	if (!secrets_fetch_trust_account_password(lp_workgroup(),
 						  trust_password,
 						  NULL, &sec_channel)) {
@@ -216,7 +221,8 @@ int rpc_samdump(int argc, const char **argv)
 		goto fail;
 	}
 
-	if (!cli_nt_open_netlogon(cli, trust_password, sec_channel)) {
+	if (!NT_STATUS_IS_OK(cli_nt_establish_netlogon(cli, sec_channel,
+						       trust_password))) {
 		DEBUG(0,("Error connecting to NETLOGON pipe\n"));
 		goto fail;
 	}
@@ -403,8 +409,10 @@ fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
 	SAM_ACCOUNT *sam_account=NULL;
 	GROUP_MAP map;
 	struct group *grp;
-	DOM_SID sid;
-	BOOL try_add = False;
+	DOM_SID user_sid;
+	DOM_SID group_sid;
+	struct passwd *passwd;
+	fstring sid_string;
 
 	fstrcpy(account, unistr2_static(&delta->uni_acct_name));
 	d_printf("Creating account: %s\n", account);
@@ -412,7 +420,7 @@ fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
 	if (!NT_STATUS_IS_OK(nt_ret = pdb_init_sam(&sam_account)))
 		return nt_ret;
 
-	if (!pdb_getsampwnam(sam_account, account)) {
+	if (!(passwd = Get_Pwnam(account))) {
 		/* Create appropriate user */
 		if (delta->acb_info & ACB_NORMAL) {
 			pstrcpy(add_script, lp_adduser_script());
@@ -423,8 +431,6 @@ fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
 		} else {
 			DEBUG(1, ("Unknown user type: %s\n",
 				  smbpasswd_encode_acb_info(delta->acb_info)));
-			pdb_free_sam(&sam_account);
-			return NT_STATUS_NO_SUCH_USER;
 		}
 		if (*add_script) {
 			int add_ret;
@@ -434,44 +440,68 @@ fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
 			DEBUG(1,("fetch_account: Running the command `%s' "
 				 "gave %d\n", add_script, add_ret));
 		}
-
-		try_add = True;
+		else {
+			DEBUG(8,("fetch_account_info: no add user/machine script.  Asking winbindd\n"));
+			
+			/* don't need a RID allocated since the user already has a SID */
+			if ( !winbind_create_user( account, NULL ) )
+				DEBUG(4,("fetch_account_info: winbind_create_user() failed\n"));
+		}
+		
+		/* try and find the possible unix account again */
+		if ( !(passwd = Get_Pwnam(account)) )
+			return NT_STATUS_NO_SUCH_USER;
+			
 	}
+	
+	sid_copy(&user_sid, get_global_sam_sid());
+	sid_append_rid(&user_sid, delta->user_rid);
 
-	sam_account_from_delta(sam_account, delta);
-
-	if (try_add) { 
+	DEBUG(3, ("Attempting to find SID %s for user %s in the passdb\n", sid_to_string(sid_string, &user_sid), account));
+	if (!pdb_getsampwsid(sam_account, &user_sid)) {
+		sam_account_from_delta(sam_account, delta);
+		DEBUG(3, ("Attempting to add user SID %s for user %s in the passdb\n", 
+			  sid_to_string(sid_string, &user_sid), pdb_get_username(sam_account)));
 		if (!pdb_add_sam_account(sam_account)) {
 			DEBUG(1, ("SAM Account for %s failed to be added to the passdb!\n",
 				  account));
+			return NT_STATUS_ACCESS_DENIED; 
 		}
 	} else {
+		sam_account_from_delta(sam_account, delta);
+		DEBUG(3, ("Attempting to update user SID %s for user %s in the passdb\n", 
+			  sid_to_string(sid_string, &user_sid), pdb_get_username(sam_account)));
 		if (!pdb_update_sam_account(sam_account)) {
 			DEBUG(1, ("SAM Account for %s failed to be updated in the passdb!\n",
 				  account));
+			pdb_free_sam(&sam_account);
+			return NT_STATUS_ACCESS_DENIED; 
 		}
 	}
 
-	sid = *pdb_get_group_sid(sam_account);
+	group_sid = *pdb_get_group_sid(sam_account);
 
-	if (!pdb_getgrsid(&map, sid, False)) {
+	if (!pdb_getgrsid(&map, group_sid)) {
 		DEBUG(0, ("Primary group of %s has no mapping!\n",
 			  pdb_get_username(sam_account)));
-		pdb_free_sam(&sam_account);
-		return NT_STATUS_NO_SUCH_GROUP;
-	}
+	} else {
+		if (map.gid != passwd->pw_gid) {
+			if (!(grp = getgrgid(map.gid))) {
+				DEBUG(0, ("Could not find unix group %d for user %s (group SID=%s)\n", 
+					  map.gid, pdb_get_username(sam_account), sid_string_static(&group_sid)));
+			} else {
+				smb_set_primary_group(grp->gr_name, pdb_get_username(sam_account));
+			}
+		}
+	}	
 
-	if (!(grp = getgrgid(map.gid))) {
-		DEBUG(0, ("Could not find unix group %d for user %s (group SID=%s)\n", 
-			  map.gid, pdb_get_username(sam_account), sid_string_static(&sid)));
-		pdb_free_sam(&sam_account);
-		return NT_STATUS_NO_SUCH_GROUP;
+	if ( !passwd ) {
+		DEBUG(1, ("No unix user for this account (%s), cannot adjust mappings\n", 
+			pdb_get_username(sam_account)));
 	}
-
-	smb_set_primary_group(grp->gr_name, pdb_get_username(sam_account));
 
 	pdb_free_sam(&sam_account);
-	return NT_STATUS_OK;
+	return nt_ret;
 }
 
 static NTSTATUS
@@ -493,22 +523,26 @@ fetch_group_info(uint32 rid, SAM_GROUP_INFO *delta)
 	sid_append_rid(&group_sid, rid);
 	sid_to_string(sid_string, &group_sid);
 
-	if (pdb_getgrsid(&map, group_sid, False)) {
-		grp = getgrgid(map.gid);
+	if (pdb_getgrsid(&map, group_sid)) {
+		if ( map.gid != -1 )
+			grp = getgrgid(map.gid);
 		insert = False;
 	}
 
-	if (grp == NULL)
-	{
+	if (grp == NULL) {
 		gid_t gid;
 
 		/* No group found from mapping, find it from its name. */
 		if ((grp = getgrnam(name)) == NULL) {
+		
 			/* No appropriate group found, create one */
+			
 			d_printf("Creating unix group: '%s'\n", name);
+			
 			if (smb_create_group(name, &gid) != 0)
 				return NT_STATUS_ACCESS_DENIED;
-			if ((grp = getgrgid(gid)) == NULL)
+				
+			if ((grp = getgrnam(name)) == NULL)
 				return NT_STATUS_ACCESS_DENIED;
 		}
 	}
@@ -518,9 +552,6 @@ fetch_group_info(uint32 rid, SAM_GROUP_INFO *delta)
 	map.sid_name_use = SID_NAME_DOM_GRP;
 	fstrcpy(map.nt_name, name);
 	fstrcpy(map.comment, comment);
-
-	map.priv_set.count = 0;
-	map.priv_set.set = NULL;
 
 	if (insert)
 		pdb_add_group_mapping_entry(&map);
@@ -548,7 +579,7 @@ fetch_group_mem_info(uint32 rid, SAM_GROUP_MEM_INFO *delta)
 	sid_copy(&group_sid, get_global_sam_sid());
 	sid_append_rid(&group_sid, rid);
 
-	if (!get_domain_group_from_sid(group_sid, &map, False)) {
+	if (!get_domain_group_from_sid(group_sid, &map)) {
 		DEBUG(0, ("Could not find global group %d\n", rid));
 		return NT_STATUS_NO_SUCH_GROUP;
 	}
@@ -673,7 +704,7 @@ static NTSTATUS fetch_alias_info(uint32 rid, SAM_ALIAS_INFO *delta,
 	sid_append_rid(&alias_sid, rid);
 	sid_to_string(sid_string, &alias_sid);
 
-	if (pdb_getgrsid(&map, alias_sid, False)) {
+	if (pdb_getgrsid(&map, alias_sid)) {
 		grp = getgrgid(map.gid);
 		insert = False;
 	}
@@ -702,9 +733,6 @@ static NTSTATUS fetch_alias_info(uint32 rid, SAM_ALIAS_INFO *delta,
 
 	fstrcpy(map.nt_name, name);
 	fstrcpy(map.comment, comment);
-
-	map.priv_set.count = 0;
-	map.priv_set.set = NULL;
 
 	if (insert)
 		pdb_add_group_mapping_entry(&map);
@@ -885,7 +913,7 @@ fetch_sam_entry(SAM_DELTA_HDR *hdr_delta, SAM_DELTA_CTR *delta,
 				&delta->als_mem_info, dom_sid);
 		break;
 	case SAM_DELTA_DOMAIN_INFO:
-		d_printf("SAMBA_DELTA_DOMAIN_INFO not handled\n");
+		d_printf("SAM_DELTA_DOMAIN_INFO not handled\n");
 		break;
 	default:
 		d_printf("Unknown delta record type %d\n", hdr_delta->type);
@@ -893,7 +921,7 @@ fetch_sam_entry(SAM_DELTA_HDR *hdr_delta, SAM_DELTA_CTR *delta,
 	}
 }
 
-static void
+static NTSTATUS
 fetch_database(struct cli_state *cli, unsigned db_type, DOM_CRED *ret_creds,
 	       DOM_SID dom_sid)
 {
@@ -905,9 +933,8 @@ fetch_database(struct cli_state *cli, unsigned db_type, DOM_CRED *ret_creds,
         SAM_DELTA_CTR *deltas;
         uint32 num_deltas;
 
-	if (!(mem_ctx = talloc_init("fetch_database"))) {
-		return;
-	}
+	if (!(mem_ctx = talloc_init("fetch_database")))
+		return NT_STATUS_NO_MEMORY;
 
 	switch( db_type ) {
 	case SAM_DATABASE_DOMAIN:
@@ -929,15 +956,25 @@ fetch_database(struct cli_state *cli, unsigned db_type, DOM_CRED *ret_creds,
 					       db_type, sync_context,
 					       &num_deltas,
 					       &hdr_deltas, &deltas);
-		clnt_deal_with_creds(cli->sess_key, &(cli->clnt_cred),
-				     ret_creds);
-                for (i = 0; i < num_deltas; i++) {
-			fetch_sam_entry(&hdr_deltas[i], &deltas[i], dom_sid);
-                }
+
+		if (NT_STATUS_IS_OK(result) ||
+		    NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES)) {
+
+			clnt_deal_with_creds(cli->sess_key, &(cli->clnt_cred),
+					     ret_creds);
+
+			for (i = 0; i < num_deltas; i++) {
+				fetch_sam_entry(&hdr_deltas[i], &deltas[i], dom_sid);
+			}
+		} else
+			return result;
+
 		sync_context += 1;
 	} while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
 
 	talloc_destroy(mem_ctx);
+
+	return result;
 }
 
 /* dump sam database via samsync rpc calls */
@@ -947,7 +984,6 @@ int rpc_vampire(int argc, const char **argv)
 	struct cli_state *cli = NULL;
 	uchar trust_password[16];
 	DOM_CRED ret_creds;
-	uint32 neg_flags = 0x000001ff;
 	DOM_SID dom_sid;
 	uint32 sec_channel;
 
@@ -971,18 +1007,35 @@ int rpc_vampire(int argc, const char **argv)
 		goto fail;
 	}
 	
-	result = cli_nt_setup_creds(cli, sec_channel,  trust_password,
-				    &neg_flags, 2);
+	result = cli_nt_establish_netlogon(cli, sec_channel,  trust_password);
+
 	if (!NT_STATUS_IS_OK(result)) {
 		d_printf("Failed to setup BDC creds\n");
 		goto fail;
 	}
 
-	dom_sid = *get_global_sam_sid();
-	fetch_database(cli, SAM_DATABASE_DOMAIN, &ret_creds, dom_sid);
+	sid_copy( &dom_sid, get_global_sam_sid() );
+	result = fetch_database(cli, SAM_DATABASE_DOMAIN, &ret_creds, dom_sid);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		d_printf("Failed to fetch domain database: %s\n",
+			 nt_errstr(result));
+		if (NT_STATUS_EQUAL(result, NT_STATUS_NOT_SUPPORTED))
+			d_printf("Perhaps %s is a Windows 2000 native mode "
+				 "domain?\n", lp_workgroup());
+		goto fail;
+	}
 
 	sid_copy(&dom_sid, &global_sid_Builtin);
-	fetch_database(cli, SAM_DATABASE_BUILTIN, &ret_creds, dom_sid);
+
+	result = fetch_database(cli, SAM_DATABASE_BUILTIN, &ret_creds, 
+				dom_sid);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		d_printf("Failed to fetch builtin database: %s\n",
+			 nt_errstr(result));
+		goto fail;
+	}	
 
 	/* Currently we crash on PRIVS somewhere in unmarshalling */
 	/* Dump_database(cli, SAM_DATABASE_PRIVS, &ret_creds); */
@@ -992,8 +1045,8 @@ int rpc_vampire(int argc, const char **argv)
         return 0;
 
 fail:
-	if (cli) {
+	if (cli)
 		cli_nt_session_close(cli);
-	}
+
 	return -1;
 }

@@ -107,13 +107,31 @@ static int getgrouplist_internals(const char *user, gid_t gid, gid_t *groups, in
 
 int sys_getgrouplist(const char *user, gid_t gid, gid_t *groups, int *grpcnt)
 {
-#ifdef HAVE_GETGROUPLIST
-	return getgrouplist(user, gid, groups, grpcnt);
-#else
+	char *p;
 	int retval;
+
+	DEBUG(10,("sys_getgrouplist: user [%s]\n", user));
+	
+	/* see if we should disable winbindd lookups for local users */
+	if ( (p = strchr(user, *lp_winbind_separator())) == NULL ) {
+		if ( !winbind_off() )
+			DEBUG(0,("sys_getgroup_list: Insufficient environment space for %s\n",
+				WINBINDD_DONT_ENV));
+		else
+			DEBUG(10,("sys_getgrouplist(): disabled winbindd for group lookup [user == %s]\n",
+				user));
+	}
+
+#ifdef HAVE_GETGROUPLIST
+	retval = getgrouplist(user, gid, groups, grpcnt);
+#else
 	become_root();
 	retval = getgrouplist_internals(user, gid, groups, grpcnt);
 	unbecome_root();
-	return retval;
 #endif
+
+	/* allow winbindd lookups */
+	winbind_on();
+	
+	return retval;
 }

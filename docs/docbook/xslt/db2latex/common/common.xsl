@@ -5,7 +5,6 @@
                 version='1.0'>
 
 <!-- ********************************************************************
-     $Id: common.xsl,v 1.1 2003/04/30 21:39:49 ab Exp $
      ********************************************************************
 
      Derived from the official DocBook XSL Stylesheets 
@@ -17,7 +16,6 @@
 
 <doc:reference xmlns="">
 <referenceinfo>
-<releaseinfo role="meta"> $Id: common.xsl,v 1.1 2003/04/30 21:39:49 ab Exp $ </releaseinfo>
 <author>
 	<surname>Ramon</surname>
 	<firstname>Casellas</firstname>
