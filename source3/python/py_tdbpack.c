@@ -209,8 +209,8 @@ pytdbpack_unpack(PyObject *self,
 	PyObject *val_list = NULL, *ret_tuple = NULL;
 	PyObject *rest_string = NULL;
 	int format_len, packed_len;
+	char last_format = '#';	/* invalid */
 	int i;
-	char last_format = '#';
 	
 	/* get arguments */
 	if (!PyArg_ParseTuple(args, "ss#", &format_str, &packed_str, &packed_len))
@@ -228,28 +228,26 @@ pytdbpack_unpack(PyObject *self,
 		goto failed;
 	
 	/* For every object, unpack.  */
-	for (ppacked = packed_str, i = 0; i < format_len; i++) {
-		char format;
-
-		format = format_str[i];
-		if (format == '$') {
-			if (i == 0) {
-				PyErr_Format(PyExc_ValueError,
-					     "%s: '$' may not be first character in format",
-					     __FUNCTION__);
-				goto failed;
-			}
-			else {
-				format = last_format; /* repeat */
-			}
-		}
-
-		if (!pytdbpack_unpack_item(format, &ppacked, &packed_len, val_list))
+	for (ppacked = packed_str, i = 0; i < format_len && format_str[i] != '$'; i++) {
+		last_format = format_str[i];
+		/* packed_len is reduced in place */
+		if (!pytdbpack_unpack_item(format_str[i], &ppacked, &packed_len, val_list))
 			goto failed;
-		
-		last_format = format;
 	}
 
+	/* If the last character was '$', keep going until out of space */
+	if (format_str[i] == '$') {
+		if (i == 0) {
+			PyErr_Format(PyExc_ValueError,
+				     "%s: '$' may not be first character in format",
+				     __FUNCTION__);
+			return NULL;
+		} 
+		while (packed_len > 0)
+			if (!pytdbpack_unpack_item(last_format, &ppacked, &packed_len, val_list))
+				goto failed;
+	}
+	
 	/* save leftovers for next time */
 	rest_string = PyString_FromStringAndSize(ppacked, packed_len);
 	if (!rest_string)
