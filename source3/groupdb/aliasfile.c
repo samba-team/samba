@@ -33,7 +33,7 @@ static char s_readbuf[1024];
 
 static void *startalsfilepwent(BOOL update)
 {
-	return startfilepwent(lp_smb_alias_file(),
+	return startfileent(lp_smb_alias_file(),
 	                      s_readbuf, sizeof(s_readbuf),
 	                      &al_file_lock_depth, update);
 }
@@ -44,7 +44,7 @@ static void *startalsfilepwent(BOOL update)
 
 static void endalsfilepwent(void *vp)
 {
-	endfilepwent(vp, &al_file_lock_depth);
+	endfileent(vp, &al_file_lock_depth);
 }
 
 /*************************************************************************

@@ -32,7 +32,7 @@ extern int DEBUGLEVEL;
 static void *startsmbfilegrpent(BOOL update)
 {
 	static char s_readbuf[1024];
-	return startfilepwent(lp_smb_passgrp_file(), s_readbuf, sizeof(s_readbuf),
+	return startfileent(lp_smb_passgrp_file(), s_readbuf, sizeof(s_readbuf),
 	                      &grp_file_lock_depth, update);
 }
 
@@ -42,7 +42,7 @@ static void *startsmbfilegrpent(BOOL update)
 
 static void endsmbfilegrpent(void *vp)
 {
-	endfilepwent(vp, &grp_file_lock_depth);
+	endfileent(vp, &grp_file_lock_depth);
 }
 
 /*************************************************************************
