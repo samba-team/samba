@@ -2157,47 +2157,43 @@ static struct file_lists
 {
 	struct file_lists *next;
 	char *name;
+	char *subfname;
 	time_t modtime;
-}
- *file_lists = NULL;
+} *file_lists = NULL;
 
 /*******************************************************************
 keep a linked list of all config files so we know when one has changed 
 it's date and needs to be reloaded
 ********************************************************************/
-static void add_to_file_list(char *fname)
+static void add_to_file_list(char *fname, char *subfname)
 {
 	struct file_lists *f = file_lists;
-
-	while (f)
-	{
+ 
+	while (f) {
 		if (f->name && !strcmp(f->name, fname))
 			break;
 		f = f->next;
 	}
-
-	if (!f)
-	{
+ 
+	if (!f) {
 		f = (struct file_lists *)malloc(sizeof(file_lists[0]));
 		if (!f)
 			return;
 		f->next = file_lists;
 		f->name = strdup(fname);
-		if (!f->name)
-		{
-			free(f);
+		if (!f->name) {
+			SAFE_FREE(f);
+			return;
+		}
+		f->subfname = strdup(subfname);
+		if (!f->subfname) {
+			SAFE_FREE(f);
 			return;
 		}
 		file_lists = f;
 	}
-
-	{
-		pstring n2;
-		pstrcpy(n2, fname);
-		standard_sub_basic(n2);
-		f->modtime = file_modtime(n2);
-	}
-
+ 
+	f->modtime = file_modtime(subfname);
 }
 
 /*******************************************************************
@@ -2207,26 +2203,24 @@ BOOL lp_file_list_changed(void)
 {
 	struct file_lists *f = file_lists;
 	DEBUG(6, ("lp_file_list_changed()\n"));
-
-	while (f)
-	{
+ 
+	while (f) {
 		pstring n2;
 		time_t mod_time;
-
+ 
 		pstrcpy(n2, f->name);
 		standard_sub_basic(n2);
-
+ 
 		DEBUGADD(6, ("file %s -> %s  last mod_time: %s\n",
-			     f->name, n2, ctime(&f->modtime)));
-
+			f->name, n2, ctime(&f->modtime)));
+ 
 		mod_time = file_modtime(n2);
-
-		if (f->modtime != mod_time)
-		{
-			DEBUGADD(6,
-				 ("file %s modified: %s\n", n2,
-				  ctime(&mod_time)));
+ 
+		if ((f->modtime != mod_time) || (f->subfname == NULL) || (strcmp(n2, f->subfname) != 0)) {
+			DEBUGADD(6, ("file %s modified: %s\n", n2, ctime(&mod_time)));
 			f->modtime = mod_time;
+			SAFE_FREE(f->subfname);
+			f->subfname = strdup(n2);
 			return (True);
 		}
 		f = f->next;
@@ -2452,7 +2446,7 @@ static BOOL handle_include(char *pszParmValue, char **ptr)
 	pstring fname;
 	pstrcpy(fname, pszParmValue);
 
-	add_to_file_list(fname);
+	add_to_file_list(pszParmValue, fname);
 
 	standard_sub_basic(fname);
 
@@ -3322,7 +3316,10 @@ BOOL lp_load(char *pszFname, BOOL global_only, BOOL save_defaults,
 	pstring n2;
 	BOOL bRetval;
 
-	add_to_file_list(pszFname);
+	pstrcpy(n2, pszFname);
+	standard_sub_basic(n2);
+
+	add_to_file_list(pszFname, n2);
 
 	bRetval = False;
 
