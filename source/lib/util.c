@@ -1534,6 +1534,11 @@ void smb_panic2(const char *why, BOOL decrement_pid_count )
 		ZERO_ARRAY(names);
 		ZERO_ARRAY(namebuf);
 
+		/* We need to be root so we can open our /proc entry to walk
+		 * our stack. It also helps when we want to dump core.
+		 */
+		become_root();
+
 		for (i = 0; i < BACKTRACE_STACK_SIZE; i++) {
 			names[i] = namebuf + (i * NAMESIZE);
 		}
