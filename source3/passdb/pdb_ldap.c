@@ -485,8 +485,8 @@ static BOOL init_sam_from_ldap (SAM_ACCOUNT * sampass,
 	pdb_set_hours_len(sampass, hours_len);
 	pdb_set_logons_divs(sampass, logon_divs);
 
-	pdb_set_uid(sampass, sys_user->pw_uid);
-	pdb_set_gid(sampass, sys_user->pw_gid);
+	pdb_set_uid(sampass, &sys_user->pw_uid);
+	pdb_set_gid(sampass, &sys_user->pw_gid);
 	pdb_set_user_rid(sampass, user_rid);
 	pdb_set_group_rid(sampass, group_rid);
 

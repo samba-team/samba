@@ -98,13 +98,15 @@ NTSTATUS check_unix_security(const auth_usersupplied_info *user_info, auth_serve
 				update_smbpassword_file : NULL,
 				True);
 	
+	unbecome_root();
+
 	if NT_STATUS_IS_OK(nt_status) {
 		if (pass) {
 			make_server_info_pw(server_info, pass);
+		} else {
+			nt_status = NT_STATUS_NO_SUCH_USER;
 		}
 	}
-
-	unbecome_root();
 
 	return nt_status;
 }

@@ -463,8 +463,8 @@ BOOL pdb_getsampwent(SAM_ACCOUNT *user)
 
 	uid = pw->pw_uid;
 	gid = pw->pw_gid;
-	pdb_set_uid (user, uid);
-	pdb_set_gid (user, gid);
+	pdb_set_uid (user, &uid);
+	pdb_set_gid (user, &gid);
 
 	/* increment to next in line */
 	global_tdb_ent.key = tdb_nextkey (global_tdb_ent.passwd_tdb, global_tdb_ent.key);
@@ -538,8 +538,8 @@ BOOL pdb_getsampwnam (SAM_ACCOUNT *user, const char *sname)
 	
 	uid = pw->pw_uid;
 	gid = pw->pw_gid;
-	pdb_set_uid (user, uid);
-	pdb_set_gid (user, gid);
+	pdb_set_uid (user, &uid);
+	pdb_set_gid (user, &gid);
 	
 	/* cleanup */
 	tdb_close (pwd_tdb);
@@ -722,10 +722,6 @@ static BOOL tdb_update_sam(const SAM_ACCOUNT* newpwd, BOOL override, int flag)
 	get_private_directory(tdbfile);
 	pstrcat (tdbfile, PASSDB_FILE_NAME);
 	
-	if ( (!pdb_get_uid(newpwd)) || (!pdb_get_gid(newpwd)) )
-		DEBUG (0,("tdb_update_sam: Storing a SAM_ACCOUNT for [%s] with uid %d and gid %d!\n",
-			pdb_get_username(newpwd), pdb_get_uid(newpwd), pdb_get_gid(newpwd)));
-				
 	/* if we don't have a RID, then FAIL */
 	if (!pdb_get_user_rid(newpwd))
 		DEBUG (0,("tdb_update_sam: Failing to store a SAM_ACCOUNT for [%s] without a RID\n",pdb_get_username(newpwd)));

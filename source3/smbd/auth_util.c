@@ -282,9 +282,12 @@ BOOL make_user_info_netlogon_network(auth_usersupplied_info **user_info,
 
 	if (lm_pwd_len)
 		ntlmssp_flags |= NTLMSSP_NEGOTIATE_OEM;
-	if (nt_pwd_len)
+	if (nt_pwd_len == 24) {
 		ntlmssp_flags |= NTLMSSP_NEGOTIATE_NTLM; 
-	
+	} else if (nt_pwd_len != 0) {
+		ntlmssp_flags |= NTLMSSP_NEGOTIATE_NTLM2; 
+	}
+
 	ret = make_user_info_map(user_info, 
 				 smb_name, client_domain, 
 				 wksta_name, sec_blob, 
@@ -303,15 +306,15 @@ BOOL make_user_info_netlogon_network(auth_usersupplied_info **user_info,
 ****************************************************************************/
 
 BOOL make_user_info_netlogon_interactive(auth_usersupplied_info **user_info, 
-				char *smb_name, 
-				char *client_domain, 
-				char *wksta_name, 
-				uchar *lm_interactive_pwd, int lm_pwd_len,
-				uchar *nt_interactive_pwd, int nt_pwd_len,
-				uchar *dc_sess_key)
+					 char *smb_name, 
+					 char *client_domain, 
+					 char *wksta_name, 
+					 uchar lm_interactive_pwd[16], 
+					 uchar nt_interactive_pwd[16], 
+					 uchar *dc_sess_key)
 {
-	char nt_pwd[16];
 	char lm_pwd[16];
+	char nt_pwd[16];
 	unsigned char local_lm_response[24];
 	unsigned char local_nt_response[24];
 	unsigned char key[16];
@@ -320,32 +323,32 @@ BOOL make_user_info_netlogon_interactive(auth_usersupplied_info **user_info,
 	
 	generate_random_buffer(chal, 8, False);
 
-	memset(key, 0, 16);
+	ZERO_STRUCT(key);
 	memcpy(key, dc_sess_key, 8);
 	
-	memcpy(lm_pwd, lm_interactive_pwd, 16);
-	memcpy(nt_pwd, nt_interactive_pwd, 16);
+	if (lm_interactive_pwd) memcpy(lm_pwd, lm_interactive_pwd, sizeof(lm_pwd));
+	if (nt_interactive_pwd) memcpy(nt_pwd, nt_interactive_pwd, sizeof(nt_pwd));
 	
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("key:"));
-	dump_data(100, (char *)key, 16);
+	dump_data(100, (char *)key, sizeof(key));
 	
 	DEBUG(100,("lm owf password:"));
-	dump_data(100, lm_pwd, 16);
+	dump_data(100, lm_pwd, sizeof(lm_pwd));
 	
 	DEBUG(100,("nt owf password:"));
-	dump_data(100, nt_pwd, 16);
+	dump_data(100, nt_pwd, sizeof(nt_pwd));
 #endif
 	
-	SamOEMhash((uchar *)lm_pwd, key, 16);
-	SamOEMhash((uchar *)nt_pwd, key, 16);
+	SamOEMhash((uchar *)lm_pwd, key, sizeof(lm_pwd));
+	SamOEMhash((uchar *)nt_pwd, key, sizeof(nt_pwd));
 	
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("decrypt of lm owf password:"));
-	dump_data(100, lm_pwd, 16);
+	dump_data(100, lm_pwd, sizeof(lm_pwd));
 	
 	DEBUG(100,("decrypt of nt owf password:"));
-	dump_data(100, nt_pwd, 16);
+	dump_data(100, nt_pwd, sizeof(nt_pwd));
 #endif
 	
 	generate_random_buffer(chal, 8, False);
@@ -364,7 +367,11 @@ BOOL make_user_info_netlogon_interactive(auth_usersupplied_info **user_info,
 		DATA_BLOB local_nt_blob = data_blob(local_nt_response, sizeof(local_nt_response));
 		DATA_BLOB plaintext_blob = data_blob(NULL, 0);
 
-		ntlmssp_flags = NTLMSSP_NEGOTIATE_OEM | NTLMSSP_NEGOTIATE_NTLM;		
+		if (lm_interactive_pwd)
+			ntlmssp_flags |= NTLMSSP_NEGOTIATE_OEM;
+		if (nt_interactive_pwd)
+			ntlmssp_flags |= NTLMSSP_NEGOTIATE_NTLM; 
+
 		ret = make_user_info_map(user_info, 
 					 smb_name, client_domain, 
 					 wksta_name, sec_blob, 
