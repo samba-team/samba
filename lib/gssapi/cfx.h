@@ -32,8 +32,8 @@
 
 /* $Id$ */
 
-#ifndef CFX_H_
-#define CFX_H_ 1
+#ifndef GSSAPI_CFX_H_
+#define GSSAPI_CFX_H_ 1
 
 /*
  * Implementation of draft-ietf-krb-wg-gssapi-cfx-00.txt
@@ -101,4 +101,4 @@ OM_uint32 verify_mic_cfx(OM_uint32 *minor_status,
 			 gss_qop_t *qop_state,
 			 krb5_keyblock *key);
 
-#endif /* CFX_H_ */
+#endif /* GSSAPI_CFX_H_ */
