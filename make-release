@@ -13,3 +13,7 @@ fi
 HV="$1" emacs -batch -q -no-site-file -l ./make-release.el || exit
 
 echo cvs ci -m \"Release $1\" configure.in ChangeLog
+cvs ci -m "Release $1" configure.in ChangeLog
+v=`echo $1 | sed 's/\(.\)\.\(.\)\(.\)/\1-\2-\3/'`
+echo cvs rtag heimdal-$v heimdal
+cvs rtag heimdal-$v heimdal
