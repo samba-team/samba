@@ -264,6 +264,7 @@ typedef struct
 	BOOL bPamPasswordChange;
 	BOOL bUnixPasswdSync;
 	BOOL bPasswdChatDebug;
+	int iPasswdChatTimeout;
 	BOOL bTimestampLogs;
 	BOOL bNTSmbSupport;
 	BOOL bNTPipeSupport;
@@ -801,6 +802,7 @@ static struct parm_struct parm_table[] = {
 	{"passwd program", P_STRING, P_GLOBAL, &Globals.szPasswdProgram, NULL, NULL, FLAG_ADVANCED}, 
 	{"passwd chat", P_STRING, P_GLOBAL, &Globals.szPasswdChat, NULL, NULL, FLAG_ADVANCED}, 
 	{"passwd chat debug", P_BOOL, P_GLOBAL, &Globals.bPasswdChatDebug, NULL, NULL, FLAG_ADVANCED}, 
+	{"passwd chat timeout", P_INTEGER, P_GLOBAL, &Globals.iPasswdChatTimeout, NULL, NULL, FLAG_ADVANCED}, 
 	{"username map", P_STRING, P_GLOBAL, &Globals.szUsernameMap, NULL, NULL, FLAG_ADVANCED}, 
 	{"password level", P_INTEGER, P_GLOBAL, &Globals.pwordlevel, NULL, NULL, FLAG_ADVANCED}, 
 	{"username level", P_INTEGER, P_GLOBAL, &Globals.unamelevel, NULL, NULL, FLAG_ADVANCED}, 
@@ -1418,6 +1420,7 @@ static void init_globals(void)
 	Globals.bUnixPasswdSync = False;
 	Globals.bPamPasswordChange = False;
 	Globals.bPasswdChatDebug = False;
+	Globals.iPasswdChatTimeout = 2; /* 2 second default. */
 	Globals.bUnicode = True;	/* Do unicode on the wire by default */
 	Globals.bNTPipeSupport = True;	/* Do NT pipes by default. */
 	Globals.bNTStatusSupport = True; /* Use NT status by default. */
@@ -1734,6 +1737,7 @@ FN_GLOBAL_BOOL(lp_bind_interfaces_only, &Globals.bBindInterfacesOnly)
 FN_GLOBAL_BOOL(lp_pam_password_change, &Globals.bPamPasswordChange)
 FN_GLOBAL_BOOL(lp_unix_password_sync, &Globals.bUnixPasswdSync)
 FN_GLOBAL_BOOL(lp_passwd_chat_debug, &Globals.bPasswdChatDebug)
+FN_GLOBAL_INTEGER(lp_passwd_chat_timeout, &Globals.iPasswdChatTimeout)
 FN_GLOBAL_BOOL(lp_unicode, &Globals.bUnicode)
 FN_GLOBAL_BOOL(lp_nt_pipe_support, &Globals.bNTPipeSupport)
 FN_GLOBAL_BOOL(lp_nt_status_support, &Globals.bNTStatusSupport)
