@@ -42,6 +42,8 @@ static void usage(void)
 	printf("  -s base|sub|one  choose search scope\n");
 	printf("  -b basedn        choose baseDN\n");
 	printf("  -i               read search expressions from stdin\n");
+	printf("  -o options       pass options like modules to activate\n");
+	printf("              e.g: -o modules:timestamps\n");
 	exit(1);
 }
 
