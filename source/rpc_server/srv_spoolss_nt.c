@@ -8250,7 +8250,6 @@ WERROR _spoolss_enumprinterdataex(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATAEX *q_
 	while (get_specific_param_by_index(*printer, 2, param_index, value, &data, &type, &data_len)) 
 	{
 		PRINTER_ENUM_VALUES	*ptr;
-		uint32			add_len = 0;
 
 		DEBUG(10,("retrieved value number [%d] [%s]\n", num_entries, value));
 
@@ -8261,19 +8260,26 @@ WERROR _spoolss_enumprinterdataex(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATAEX *q_
 			goto done;
 		}
 		enum_values = ptr;
+		
+		ZERO_STRUCTP( &enum_values[num_entries] );
 
 		/* copy the data */
+		
 		init_unistr(&enum_values[num_entries].valuename, value);
 		enum_values[num_entries].value_len = (strlen(value)+1) * 2;
 		enum_values[num_entries].type      = type;
 		
-		if (!(enum_values[num_entries].data=talloc_zero(p->mem_ctx, data_len+add_len))) {
-			DEBUG(0,("talloc_realloc failed to allocate more memory for data!\n"));
-			result = WERR_NOMEM;
-			goto done;
+		if ( data_len )
+		{
+			if ( !(enum_values[num_entries].data = talloc_zero(p->mem_ctx, data_len)) ) {
+				DEBUG(0,("talloc_realloc failed to allocate more memory [data_len=%d] for data!\n", data_len ));
+				result = WERR_NOMEM;
+				goto done;
+			}
+			memcpy(enum_values[num_entries].data, data, data_len);
 		}
-		memcpy(enum_values[num_entries].data, data, data_len);
-		enum_values[num_entries].data_len = data_len + add_len;
+
+		enum_values[num_entries].data_len = data_len;
 
 		/* keep track of the size of the array in bytes */
 		
