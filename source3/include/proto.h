@@ -427,7 +427,8 @@ struct response_record *make_response_queue_record(enum state_type state,
 				int quest_type, char *name,int type, int nb_flags, time_t ttl,
 				int server_type, char *my_name, char *my_comment,
 				BOOL bcast,BOOL recurse,
-				struct in_addr send_ip, struct in_addr reply_to_ip);
+				struct in_addr send_ip, struct in_addr reply_to_ip,
+				int reply_id);
 struct response_record *find_response_record(struct subnet_record **d,
 				uint16 id);
 
@@ -529,7 +530,8 @@ struct response_record *queue_netbios_packet(struct subnet_record *d,
 			int name_type,int nb_flags, time_t ttl,
 			int server_type, char *my_name, char *my_comment,
 			BOOL bcast,BOOL recurse,
-			struct in_addr send_ip, struct in_addr reply_to_ip);
+			struct in_addr send_ip, struct in_addr reply_to_ip,
+			int reply_id);
 
 /*The following definitions come from  nameserv.c  */
 
