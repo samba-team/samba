@@ -64,7 +64,7 @@ static NTSTATUS convert_values(TALLOC_CTX *mem_ctx,
 	attrs->values[0].data = talloc_steal(mem_ctx, elem->values[0].data);
 
 	if (strcasecmp(attrs->name, "objectGUID") == 0 ||
-	    strcasecmp(attrs->name, "invacationID") == 0)
+	    strcasecmp(attrs->name, "invocationID") == 0)
 	{
 		struct GUID guid;
 		DATA_BLOB blob;
