@@ -1934,8 +1934,10 @@ static BOOL api_samr_create_user(pipes_struct *p)
 					&r_u.pol, &r_u.unknown_0, &r_u.user_rid);
 
 	/* store the response in the SMB stream */
-	if(!samr_io_r_create_user("", &r_u, rdata, 0))
+	if(!samr_io_r_create_user("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_samr_create_user: Unable to marshall SAMR_R_CREATE_USER.\n"));
 		return False;
+	}
 
 	return True;
 }
@@ -2061,31 +2063,6 @@ static BOOL api_samr_connect(pipes_struct *p)
 	return True;
 }
 
-/**********************************************************************
- api_reply_lookup_domain
- **********************************************************************/
-static BOOL samr_reply_lookup_domain(SAMR_Q_LOOKUP_DOMAIN* q_u, prs_struct* rdata)
-{
-  SAMR_R_LOOKUP_DOMAIN r_u;
-  
-  r_u.status = 0x0;
-  if (r_u.status == 0x0 && (find_lsa_policy_by_hnd(&(q_u->connect_pol)) == -1))
-	{
-		r_u.status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
-		DEBUG(5,("samr_reply_lookup_domain: invalid handle\n"));
-	}
-  
-  /* assume the domain name sent is our global_myname and 
-     send global_sam_sid */
-  init_samr_r_lookup_domain(&r_u, &global_sam_sid, r_u.status);
-  
-	if(!samr_io_r_lookup_domain("", &r_u, rdata, 0))
-		return False;
-
-  DEBUG(5,("samr_reply_lookup_domain: %d\n", __LINE__));
- 
-	return True; 
-}
   
 /**********************************************************************
  api_samr_lookup_domain
@@ -2093,42 +2070,34 @@ static BOOL samr_reply_lookup_domain(SAMR_Q_LOOKUP_DOMAIN* q_u, prs_struct* rdat
 static BOOL api_samr_lookup_domain(pipes_struct *p)
 {
 	SAMR_Q_LOOKUP_DOMAIN q_u;
+	SAMR_R_LOOKUP_DOMAIN r_u;
 	prs_struct *data = &p->in_data.data;
 	prs_struct *rdata = &p->out_data.rdata;
   
-	if(!samr_io_q_lookup_domain("", &q_u, data, 0))
-		return False;
-	
-	if(!samr_reply_lookup_domain(&q_u, rdata))
-		return False;
-	
-	return True;
-}
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
 
-/**********************************************************************
- samr_reply_enum_domains
- **********************************************************************/
-static BOOL samr_reply_enum_domains(SAMR_Q_ENUM_DOMAINS* q_u, prs_struct* rdata)
-{
-  SAMR_R_ENUM_DOMAINS r_u;
-  fstring dom[2];
-  
-  ZERO_STRUCT(r_u);
-
-  fstrcpy(dom[0],global_myname);
-  fstrcpy(dom[1],"Builtin");
-  r_u.status = 0;
-   
-  init_samr_r_enum_domains(&r_u, q_u->start_idx, dom, 2); 
-  if(!samr_io_r_enum_domains("", &r_u, rdata, 0)) {
-		free(r_u.sam);
-		free(r_u.uni_dom_name);
+	if(!samr_io_q_lookup_domain("", &q_u, data, 0)) {
+		DEBUG(0,("api_samr_lookup_domain: Unable to unmarshall SAMR_Q_LOOKUP_DOMAIN.\n"));
 		return False;
 	}
+	
+	r_u.status = 0x0;
 
-  free(r_u.sam);
-  free(r_u.uni_dom_name);
-
+	if (find_lsa_policy_by_hnd(&q_u.connect_pol) == -1){
+		r_u.status = NT_STATUS_INVALID_HANDLE;
+		DEBUG(5,("api_samr_lookup_domain: invalid handle\n"));
+	}
+  
+	/* assume the domain name sent is our global_myname and 
+	   send global_sam_sid */
+	init_samr_r_lookup_domain(&r_u, &global_sam_sid, r_u.status);
+  
+	if(!samr_io_r_lookup_domain("", &r_u, rdata, 0)){
+		DEBUG(0,("api_samr_lookup_domain: Unable to marshall SAMR_R_LOOKUP_DOMAIN.\n"));
+		return False;
+	}
+	
 	return True;
 }
 
@@ -2138,14 +2107,36 @@ static BOOL samr_reply_enum_domains(SAMR_Q_ENUM_DOMAINS* q_u, prs_struct* rdata)
 static BOOL api_samr_enum_domains(pipes_struct *p)
 {
 	SAMR_Q_ENUM_DOMAINS q_u;
+	SAMR_R_ENUM_DOMAINS r_u;
 	prs_struct *data = &p->in_data.data;
 	prs_struct *rdata = &p->out_data.rdata;
+  
+	fstring dom[2];
 
-	if(!samr_io_q_enum_domains("", &q_u, data, 0))
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	fstrcpy(dom[0],global_myname);
+	fstrcpy(dom[1],"Builtin");
+
+	if(!samr_io_q_enum_domains("", &q_u, data, 0)) {
+		DEBUG(0,("api_samr_enum_domains: Unable to unmarshall SAMR_Q_ENUM_DOMAINS.\n"));
 		return False;
-	
-	if(!samr_reply_enum_domains(&q_u, rdata))
+	}
+
+	r_u.status = NT_STATUS_NO_PROBLEMO;
+   
+	init_samr_r_enum_domains(&r_u, q_u.start_idx, dom, 2); 
+
+	if(!samr_io_r_enum_domains("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_samr_enum_domains: Unable to marshall SAMR_R_ENUM_DOMAINS.\n"));
+		free(r_u.sam);
+		free(r_u.uni_dom_name);
 		return False;
+	}
+
+	free(r_u.sam);
+	free(r_u.uni_dom_name);
 	
 	return True;
 }
@@ -2202,14 +2193,18 @@ static BOOL api_samr_open_alias(pipes_struct *p)
 	ZERO_STRUCT(r_u);
 
 	/* grab the samr open policy */
-	if(!samr_io_q_open_alias("", &q_u, data, 0))
+	if(!samr_io_q_open_alias("", &q_u, data, 0)) {
+		DEBUG(0,("api_samr_open_alias: Unable to unmarshall SAMR_Q_OPEN_ALIAS.\n"));
 		return False;
+	}
 
 	r_u.status=_api_samr_open_alias(q_u.dom_pol, q_u.rid_alias, &r_u.pol);
 
 	/* store the response in the SMB stream */
-	if(!samr_io_r_open_alias("", &r_u, rdata, 0))
+	if(!samr_io_r_open_alias("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_samr_open_alias: Unable to marshall SAMR_R_OPEN_ALIAS.\n"));
 		return False;
+	}
 	
 	return True;
 }
@@ -2459,15 +2454,19 @@ static BOOL api_samr_set_userinfo(pipes_struct *p)
 
 	q_u.ctr = &ctr;
 
-	if (!samr_io_q_set_userinfo("", &q_u, data, 0))
+	if (!samr_io_q_set_userinfo("", &q_u, data, 0)) {
+		DEBUG(0,("api_samr_set_userinfo: Unable to unmarshall SAMR_Q_SET_USERINFO.\n"));
 		return False;
+	}
 
 	r_u.status = _samr_set_userinfo(&q_u.pol, q_u.switch_value, &ctr, p->vuid);
 
 	free_samr_q_set_userinfo(&q_u);
 	
-	if(!samr_io_r_set_userinfo("", &r_u, rdata, 0))
+	if(!samr_io_r_set_userinfo("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_samr_set_userinfo: Unable to marshall SAMR_R_SET_USERINFO.\n"));
 		return False;
+	}
 
 	return True;
 }
@@ -2535,15 +2534,19 @@ static BOOL api_samr_set_userinfo2(pipes_struct *p)
 
 	q_u.ctr = &ctr;
 
-	if (!samr_io_q_set_userinfo2("", &q_u, data, 0))
+	if (!samr_io_q_set_userinfo2("", &q_u, data, 0)) {
+		DEBUG(0,("api_samr_set_userinfo2: Unable to unmarshall SAMR_Q_SET_USERINFO2.\n"));
 		return False;
+	}
 
 	r_u.status = _samr_set_userinfo2(&q_u.pol, q_u.switch_value, &ctr);
 
 	free_samr_q_set_userinfo2(&q_u);
 
-	if(!samr_io_r_set_userinfo2("", &r_u, rdata, 0))
+	if(!samr_io_r_set_userinfo2("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_samr_set_userinfo2: Unable to marshall SAMR_R_SET_USERINFO2.\n"));
 		return False;
+	}
 
 	return True;
 }
