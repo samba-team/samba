@@ -167,7 +167,10 @@ NTSTATUS ndr_push_expand(struct ndr_push *ndr, uint32 size)
 		return NT_STATUS_OK;
 	}
 
-	ndr->alloc_size = size;
+	ndr->alloc_size += NDR_BASE_MARSHALL_SIZE;
+	if (size > ndr->alloc_size) {
+		ndr->alloc_size = size;
+	}
 	ndr->data = talloc_realloc(ndr->mem_ctx, ndr->data, ndr->alloc_size);
 	if (!ndr->data) {
 		return NT_STATUS_NO_MEMORY;
@@ -189,13 +192,12 @@ NTSTATUS ndr_push_set_offset(struct ndr_push *ndr, uint32 ofs)
 /*
   push a generic array
 */
-NTSTATUS ndr_push_array(struct ndr_push *ndr, int ndr_flags, void *base, 
-			size_t elsize, uint32 count, 
-			NTSTATUS (*push_fn)(struct ndr_push *, int, void *))
+NTSTATUS ndr_push_const_array(struct ndr_push *ndr, int ndr_flags, void *base, 
+			      size_t elsize, uint32 count, 
+			      NTSTATUS (*push_fn)(struct ndr_push *, int, void *))
 {
 	int i;
 	char *p = base;
-	NDR_CHECK(ndr_push_uint32(ndr, count));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	for (i=0;i<count;i++) {
 		NDR_CHECK(push_fn(ndr, NDR_SCALARS, p));
@@ -213,21 +215,26 @@ done:
 }
 
 /*
-  pull a generic array
+  push a generic array
 */
-NTSTATUS ndr_pull_array(struct ndr_pull *ndr, int ndr_flags, void *base, 
+NTSTATUS ndr_push_array(struct ndr_push *ndr, int ndr_flags, void *base, 
 			size_t elsize, uint32 count, 
-			NTSTATUS (*pull_fn)(struct ndr_pull *, int, void *))
+			NTSTATUS (*push_fn)(struct ndr_push *, int, void *))
+{
+	NDR_CHECK(ndr_push_uint32(ndr, count));
+	return ndr_push_const_array(ndr, ndr_flags, base, elsize, count, push_fn);
+}
+
+/*
+  pull a constant sized array
+*/
+NTSTATUS ndr_pull_const_array(struct ndr_pull *ndr, int ndr_flags, void *base, 
+			      size_t elsize, uint32 count, 
+			      NTSTATUS (*pull_fn)(struct ndr_pull *, int, void *))
 {
 	int i;
-	uint32 max_count;
 	char *p;
 	p = base;
-	NDR_CHECK(ndr_pull_uint32(ndr, &max_count));
-	if (max_count != count) {
-		/* maybe we can cope with this? */
-		return NT_STATUS_INVALID_PARAMETER;
-	}
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	for (i=0;i<count;i++) {
 		NDR_CHECK(pull_fn(ndr, NDR_SCALARS, p));
@@ -243,6 +250,23 @@ buffers:
 done:
 	return NT_STATUS_OK;
 }
+
+/*
+  pull a generic array
+*/
+NTSTATUS ndr_pull_array(struct ndr_pull *ndr, int ndr_flags, void *base, 
+			size_t elsize, uint32 count, 
+			NTSTATUS (*pull_fn)(struct ndr_pull *, int, void *))
+{
+	uint32 max_count;
+	NDR_CHECK(ndr_pull_uint32(ndr, &max_count));
+	if (max_count != count) {
+		/* maybe we can cope with this? */
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	return ndr_pull_const_array(ndr, ndr_flags, base, elsize, count, pull_fn);
+}
+
 
 
 /*

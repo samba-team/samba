@@ -65,6 +65,7 @@ struct ndr_print {
 	TALLOC_CTX *mem_ctx;
 	uint32 depth;
 	void (*print)(struct ndr_print *, const char *, ...);
+	void *private;
 };
 
 #define LIBNDR_FLAG_BIGENDIAN 1
@@ -119,3 +120,4 @@ typedef void (*ndr_print_union_fn_t)(struct ndr_print *, const char *, uint16, v
 #include "librpc/ndr/ndr_misc.h"
 #include "librpc/ndr/ndr_echo.h"
 #include "librpc/ndr/ndr_lsa.h"
+#include "librpc/ndr/ndr_dfs.h"

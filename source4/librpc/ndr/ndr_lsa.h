@@ -406,6 +406,7 @@ struct lsa_LUIDAttribute {
 struct lsa_PrivilegeSet {
 	uint32 count;
 	struct lsa_LUIDAttribute *set;
+	uint32 unknown[1];
 };
 
 struct lsa_EnumPrivsAccount {
@@ -415,7 +416,6 @@ struct lsa_EnumPrivsAccount {
 
 	struct {
 		struct lsa_PrivilegeSet *privs;
-		uint32 unknown;
 		NTSTATUS result;
 	} out;
 
