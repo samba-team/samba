@@ -1480,9 +1480,7 @@ sub FunctionTable($)
 		if ($d->{TYPE} eq "FUNCTION") { $count++; }
 	}
 
-	if ($count == 0) {
-		return;
-	}
+	return if ($count == 0);
 
 	pidl "static const struct dcerpc_interface_call $interface->{NAME}\_calls[] = {\n";
 	foreach my $d (@{$data}) {
@@ -1525,8 +1523,12 @@ sub FunctionTable($)
 	pidl "\t$interface->{NAME}\_calls,\n";
 	pidl "\t&$interface->{NAME}\_endpoints\n";
 	pidl "};\n\n";
-}
 
+	pidl "static NTSTATUS dcerpc_ndr_$interface->{NAME}_init(void)\n";
+	pidl "{\n";
+	pidl "\treturn librpc_register_interface(&dcerpc_table_$interface->{NAME});\n";
+	pidl "}\n\n";
+}
 
 #####################################################################
 # parse the interface definitions
@@ -1570,7 +1572,43 @@ sub ParseInterface($)
 	}
 
 	FunctionTable($interface);
+}
 
+sub RegistrationFunction($$)
+{
+	my $idl = shift;
+	my $filename = shift;
+
+	$filename =~ /.*\/ndr_(.*).c/;
+	my $basename = $1;
+	pidl "NTSTATUS dcerpc_$basename\_init(void)\n";
+	pidl "{\n";
+	pidl "\tNTSTATUS status = NT_STATUS_OK;\n";
+	foreach my $interface (@{$idl}) {
+		next if $interface->{TYPE} ne "INTERFACE";
+
+		my $data = $interface->{INHERITED_DATA};
+		my $count = 0;
+		foreach my $d (@{$data}) {
+			if ($d->{TYPE} eq "FUNCTION") { $count++; }
+		}
+
+		next if ($count == 0);
+
+		pidl "\tstatus = dcerpc_ndr_$interface->{NAME}_init();\n";
+		pidl "\tif (NT_STATUS_IS_ERR(status)) {\n";
+		pidl "\t\treturn status;\n";
+		pidl "\t}\n\n";
+
+		if (util::has_property($interface, "object")) {
+			pidl "\tstatus = dcom_$interface->{NAME}_init();\n";
+			pidl "\tif (NT_STATUS_IS_ERR(status)) {\n";
+			pidl "\t\treturn status;\n";
+			pidl "\t}\n\n";
+		}
+	}
+	pidl "\treturn status;\n";
+	pidl "}\n\n";
 }
 
 #####################################################################
@@ -1603,6 +1641,8 @@ sub Parse($$)
 			}
 		}
 	}
+
+	RegistrationFunction($idl, $filename);
 
 	close(OUT);
 }

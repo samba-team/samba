@@ -24,18 +24,17 @@
 #include "includes.h"
 #include "system/network.h"
 #include "librpc/gen_ndr/ndr_epmapper.h"
-#include "librpc/gen_ndr/tables.h"
 
 /*
   find the pipe name for a local IDL interface
 */
 const char *idl_pipe_name(const char *uuid, uint32_t if_version)
 {
-	int i;
-	for (i=0;dcerpc_pipes[i];i++) {
-		if (strcasecmp(dcerpc_pipes[i]->uuid, uuid) == 0 &&
-		    dcerpc_pipes[i]->if_version == if_version) {
-			return dcerpc_pipes[i]->name;
+	struct dcerpc_interface_list *l;
+	for (l=dcerpc_pipes;l;l=l->next) {
+		if (strcasecmp(l->table->uuid, uuid) == 0 &&
+		    l->table->if_version == if_version) {
+			return l->table->name;
 		}
 	}
 	return "UNKNOWN";
@@ -46,11 +45,11 @@ const char *idl_pipe_name(const char *uuid, uint32_t if_version)
 */
 int idl_num_calls(const char *uuid, uint32_t if_version)
 {
-	int i;
-	for (i=0;dcerpc_pipes[i];i++) {
-		if (strcasecmp(dcerpc_pipes[i]->uuid, uuid) == 0 &&
-		    dcerpc_pipes[i]->if_version == if_version) {
-			return dcerpc_pipes[i]->num_calls;
+	struct dcerpc_interface_list *l;
+	for (l=dcerpc_pipes;l;l=l->next){
+		if (strcasecmp(l->table->uuid, uuid) == 0 &&
+		    l->table->if_version == if_version) {
+			return l->table->num_calls;
 		}
 	}
 	return -1;
@@ -62,10 +61,10 @@ int idl_num_calls(const char *uuid, uint32_t if_version)
 */
 const struct dcerpc_interface_table *idl_iface_by_name(const char *name)
 {
-	int i;
-	for (i=0;dcerpc_pipes[i];i++) {
-		if (strcasecmp(dcerpc_pipes[i]->name, name) == 0) {
-			return dcerpc_pipes[i];
+	struct dcerpc_interface_list *l;
+	for (l=dcerpc_pipes;l;l=l->next) {
+		if (strcasecmp(l->table->name, name) == 0) {
+			return l->table;
 		}
 	}
 	return NULL;
@@ -76,15 +75,14 @@ const struct dcerpc_interface_table *idl_iface_by_name(const char *name)
 */
 const struct dcerpc_interface_table *idl_iface_by_uuid(const char *uuid)
 {
-	int i;
-	for (i=0;dcerpc_pipes[i];i++) {
-		if (strcasecmp(dcerpc_pipes[i]->uuid, uuid) == 0) {
-			return dcerpc_pipes[i];
+	struct dcerpc_interface_list *l;
+	for (l=dcerpc_pipes;l;l=l->next) {
+		if (strcasecmp(l->table->uuid, uuid) == 0) {
+			return l->table;
 		}
 	}
 	return NULL;
 }
-
 
 
 /* 

@@ -141,6 +141,14 @@ struct dcerpc_interface_table {
 	const struct dcerpc_endpoint_list *endpoints;
 };
 
+struct dcerpc_interface_list
+{
+	struct dcerpc_interface_list *prev, *next;
+	const struct dcerpc_interface_table *table;
+};
+
+extern struct dcerpc_interface_list *dcerpc_pipes;
+
 
 /* this describes a binding to a particular transport/pipe */
 struct dcerpc_binding {
