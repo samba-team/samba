@@ -697,6 +697,12 @@ static BOOL create_rpc_bind_req(prs_struct *rpc_out, BOOL do_auth, BOOL do_netse
 
 		init_rpc_hdr_auth(&hdr_auth, NETSEC_AUTH_TYPE, NETSEC_AUTH_LEVEL,
 				  0x00, 1);
+
+		/* Use lp_workgroup() if domain not specified */
+
+		if (!domain || !domain[0])
+			domain = lp_workgroup();
+
 		init_rpc_auth_netsec_neg(&netsec_neg, domain, my_name);
 
 		/*
@@ -1014,8 +1020,10 @@ BOOL rpc_api_pipe_req(struct cli_state *cli, uint8 op_num,
 		 * be stored in the auth header.
 		 */
 
-		if (auth_schannel)
-			auth_padding = 8 - (send_size & 7);
+		if (auth_schannel) {
+			if (send_size % 8)
+				auth_padding = 8 - (send_size % 8);
+		}
 
 		data_len = RPC_HEADER_LEN + RPC_HDR_REQ_LEN + send_size +
 			((auth_verify|auth_schannel) ? RPC_HDR_AUTH_LEN : 0) +
