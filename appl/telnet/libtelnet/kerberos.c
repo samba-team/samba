@@ -293,7 +293,7 @@ kerberos4_is(ap, data, cnt)
 			printd(auth.dat, auth.length);
 			printf("\r\n");
 		}
-		instance[0] = '*'; instance[1] = 0;
+		k_getsockinst(0, instance); /* Telnetd uses socket 0 */
 		if (r = krb_rd_req(&auth, KRB_SERVICE_NAME,
 				   instance, 0, &adat, "")) {
 			if (auth_debug_mode)
