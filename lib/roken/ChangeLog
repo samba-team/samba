@@ -1,3 +1,8 @@
+2003-07-11  Love  <lha@stacken.kth.se>
+
+	* resolve.c: AIX have broken res_nsearch() in 5.1 (5.0 also ?)  so
+	just don't use res_nsearch on AIX
+
 2003-06-29  Johan Danielsson  <joda@pdc.kth.se>
 
 	* snprintf.c: * don't ever print sign for unsigned conversions *
