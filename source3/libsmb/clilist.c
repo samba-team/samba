@@ -95,7 +95,7 @@ static int interpret_long_filename(int level,char *p,file_info *finfo)
 		case 260: /* NT uses this, but also accepts 2 */
 			if (finfo) {
 				int ret = SVAL(p,0);
-				int namelen;
+				int namelen, slen;
 				p += 4; /* next entry offset */
 				p += 4; /* fileindex */
 				
@@ -122,8 +122,15 @@ static int interpret_long_filename(int level,char *p,file_info *finfo)
 				finfo->mode = CVAL(p,0); p += 4;
 				namelen = IVAL(p,0); p += 4;
 				p += 4; /* EA size */
-				p += 2; /* short name len? */
-				unistr_to_ascii(finfo->short_name, p, 12);
+				slen = SVAL(p, 0);
+				p += 2; 
+				if (p[1] == 0 && slen > 1) {
+					/* NT has stuffed up again */
+					unistr_to_ascii(finfo->short_name, p, 24);
+				} else {
+					strncpy(finfo->short_name, p, 12);
+					finfo->short_name[12] = 0;
+				}
 				p += 24; /* short name? */	  
 				StrnCpy(finfo->name,p,MIN(sizeof(finfo->name)-1,namelen));
 				dos_to_unix(finfo->name,True);
@@ -413,25 +420,26 @@ int cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute,
 		memset(cli->outbuf,'\0',smb_size);
 		memset(cli->inbuf,'\0',smb_size);
 
-		set_message(cli->outbuf,0,6,True);
+		set_message(cli->outbuf,2,5 + 21,True);
 		CVAL(cli->outbuf,smb_com) = SMBfclose;
 		SSVAL(cli->outbuf,smb_tid,cli->cnum);
 		cli_setup_packet(cli);
 
+		SSVAL(cli->outbuf, smb_vwv0, 0); /* find count? */
+		SSVAL(cli->outbuf, smb_vwv1, attribute);
+
 		p = smb_buf(cli->outbuf);
 		*p++ = 4;
-      
-		pstrcpy(p,"");
+		fstrcpy(p, "");
 		p += strlen(p) + 1;
-		
 		*p++ = 5;
-		SSVAL(p,0,21);
+		SSVAL(p, 0, 21);
 		p += 2;
 		memcpy(p,status,21);
 		
 		cli_send_smb(cli);
 		if (!cli_receive_smb(cli)) {
-			DEBUG(0,("Error closing search: %s\n",smb_errstr(cli->inbuf)));      
+			DEBUG(0,("Error closing search: %s\n",smb_errstr(cli->inbuf)));
 		}
 	}
 
