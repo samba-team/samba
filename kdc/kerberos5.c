@@ -530,7 +530,7 @@ as_rep(KDC_REQ *req,
 				   &ekey->key,
 				   &rep.enc_part);
 	hdb_free_key(ekey);
-	set_salt_padata ((METHOD_DATA**)&rep.padata, ckey->salt);
+	set_salt_padata (&rep.padata, ckey->salt);
 	
 	ret = encode_AS_REP(buf + sizeof(buf) - 1, sizeof(buf), &rep, &len);
 	free_AS_REP(&rep);
