@@ -150,7 +150,6 @@ hdb_unseal_key(Key *key, krb5_data schedule)
     return new_key;
 }
 
-/* is it useful to have this public? */
 void
 hdb_seal_key(Key *key, krb5_data schedule)
 {
@@ -303,28 +302,53 @@ hdb_init_db(krb5_context context, HDB *db)
 }
 
 krb5_error_code
-hdb_open(krb5_context context, HDB **db, 
-	 const char *filename, int flags, mode_t mode)
+hdb_create(krb5_context context, HDB **db, const char *filename)
 {
     krb5_error_code ret = 0;
     if(filename == NULL)
 	filename = HDB_DEFAULT_DB;
     initialize_hdb_error_table(&context->et_list);
 #ifdef HAVE_DB_H
-    ret = hdb_db_open(context, db, filename, flags, mode);
+    ret = hdb_db_create(context, db, filename);
 #elif HAVE_NDBM_H
-    ret =  hdb_ndbm_open(context, db, filename, flags, mode);
+    ret = hdb_ndbm_create(context, db, filename);
 #else
-    krb5_errx(context, 1, "No database support! (hdb_open)");
+    krb5_errx(context, 1, "No database support! (hdb_create)");
 #endif
-    if(ret == 0){
-	if(((flags & O_ACCMODE) == O_WRONLY || (flags & O_ACCMODE) == O_RDWR) &&
-	   (flags & O_CREAT))
-	    ret = hdb_init_db(context, *db);
-	else
-	    ret = hdb_check_db_format(context, *db);
-	if(ret)
-	    (*db)->close(context, *db);
-    }
     return ret;
+}
+
+krb5_error_code
+hdb_set_master_key (krb5_context context,
+		    HDB *db,
+		    const char *keyfile)
+{
+    EncryptionKey key;
+    krb5_error_code ret;
+
+    ret = hdb_read_master_key(context, keyfile, &key);
+    if (ret) {
+	if (ret != ENOENT)
+	    return ret;
+    } else {
+	ret = hdb_process_master_key(context, key, &db->master_key);
+	if (ret)
+	    return ret;
+	des_set_random_generator_seed(key.keyvalue.data);
+	db->master_key_set = 1;
+	memset(key.keyvalue.data, 0, key.keyvalue.length);
+	free_EncryptionKey(&key);
+    }
+    return 0;
+}
+
+krb5_error_code
+hdb_clear_master_key (krb5_context context,
+		      HDB *db)
+{
+    if (db->master_key_set) {
+	memset(db->master_key.data, 0, db->master_key.length);
+	krb5_data_free(&db->master_key);
+	db->master_key_set = 0;
+    }
 }
