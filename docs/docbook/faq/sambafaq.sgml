@@ -4,6 +4,7 @@
 <!ENTITY errors SYSTEM "errors.sgml">
 <!ENTITY clientapp SYSTEM "clientapp.sgml">
 <!ENTITY features SYSTEM "features.sgml">
+<!ENTITY config SYSTEM "config.sgml">
 ]>
 
 <book id="Samba-FAQ">
@@ -29,6 +30,7 @@ and the old samba text documents which were mostly written by John Terpstra.
 
 &general;
 &install;
+&config;
 &clientapp;
 &errors;
 &features;
