@@ -39,12 +39,12 @@ static const char *base_dn = "ou=Ldb Test,ou=People,o=University of Michigan,c=U
 
 static struct timeval tp1,tp2;
 
-static void start_timer(void)
+static void _start_timer(void)
 {
 	gettimeofday(&tp1,NULL);
 }
 
-static double end_timer(void)
+static double _end_timer(void)
 {
 	gettimeofday(&tp2,NULL);
 	return((tp2.tv_sec - tp1.tv_sec) + 
@@ -259,9 +259,9 @@ static void start_test(struct ldb_context *ldb, int nrecords, int nsearches)
 	add_records(ldb, base_dn, nrecords);
 
 	printf("Starting search on uid\n");
-	start_timer();
+	_start_timer();
 	search_uid(ldb, nrecords, nsearches);
-	printf("uid search took %.2f seconds\n", end_timer());
+	printf("uid search took %.2f seconds\n", _end_timer());
 
 	printf("Modifying records\n");
 	modify_records(ldb, base_dn, nrecords);
