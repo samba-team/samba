@@ -1,0 +1,784 @@
+
+KITTEN WG                                                    N. Williams
+Internet-Draft                                                       Sun
+Expires: December 30, 2004                                     July 2004
+
+
+  Clarifications and Extensions to the GSS-API for the Use of Channel
+                                Bindings
+            draft-ietf-kitten-gssapi-channel-bindings-00.txt
+
+Status of this Memo
+
+   By submitting this Internet-Draft, I certify that any applicable
+   patent or other IPR claims of which I am aware have been disclosed,
+   and any of which I become aware will be disclosed, in accordance with
+   RFC 3668.
+
+   Internet-Drafts are working documents of the Internet Engineering
+   Task Force (IETF), its areas, and its working groups.  Note that
+   other groups may also distribute working documents as
+   Internet-Drafts.
+
+   Internet-Drafts are draft documents valid for a maximum of six months
+   and may be updated, replaced, or obsoleted by other documents at any
+   time.  It is inappropriate to use Internet-Drafts as reference
+   material or to cite them other than as "work in progress."
+
+   The list of current Internet-Drafts can be accessed at
+   http://www.ietf.org/ietf/1id-abstracts.txt.
+
+   The list of Internet-Draft Shadow Directories can be accessed at
+   http://www.ietf.org/shadow.html.
+
+   This Internet-Draft will expire on December 30, 2004.
+
+Copyright Notice
+
+   Copyright (C) The Internet Society (2004).  All Rights Reserved.
+
+Abstract
+
+   This document clarifies and generalizes the GSS-API "channel
+   bindings" facility.  This document also specifies the format of the
+   various types of channel bindings.
+
+
+
+
+
+
+
+
+
+Williams               Expires December 30, 2004                [Page 1]
+
+Internet-Draft          GSS-API Channel Bindings               July 2004
+
+
+Table of Contents
+
+   1.  Conventions used in this document  . . . . . . . . . . . . . .  3
+   2.  Introduction . . . . . . . . . . . . . . . . . . . . . . . . .  4
+   3.  Generic Structure for GSS-API Channel Bindings . . . . . . . .  5
+     3.1   Proper Mechanism Use of Channel Bindings . . . . . . . . .  5
+   4.  Channel Bindings for SSHv2 . . . . . . . . . . . . . . . . . .  6
+     4.1   GSS_Make_sshv2_channel_bindings()  . . . . . . . . . . . .  6
+       4.1.1   C-Bindings . . . . . . . . . . . . . . . . . . . . . .  6
+   5.  Channel Bindings for TLS . . . . . . . . . . . . . . . . . . .  7
+     5.1   GSS_Make_tls_channel_bindings()  . . . . . . . . . . . . .  7
+       5.1.1   C-Bindings . . . . . . . . . . . . . . . . . . . . . .  7
+   6.  Channel Bindings for IPsec . . . . . . . . . . . . . . . . . .  8
+     6.1   GSS_Make_ipsec_channel_bindings()  . . . . . . . . . . . .  8
+       6.1.1   C-Bindings . . . . . . . . . . . . . . . . . . . . . .  9
+   7.  Security Considerations  . . . . . . . . . . . . . . . . . . . 10
+   8.  References . . . . . . . . . . . . . . . . . . . . . . . . . . 11
+   8.1   Normative  . . . . . . . . . . . . . . . . . . . . . . . . . 11
+   8.2   Informative  . . . . . . . . . . . . . . . . . . . . . . . . 11
+       Author's Address . . . . . . . . . . . . . . . . . . . . . . . 12
+   A.  Acknowledgments  . . . . . . . . . . . . . . . . . . . . . . . 13
+       Intellectual Property and Copyright Statements . . . . . . . . 14
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Williams               Expires December 30, 2004                [Page 2]
+
+Internet-Draft          GSS-API Channel Bindings               July 2004
+
+
+1.  Conventions used in this document
+
+   The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+   "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
+   document are to be interpreted as described in [RFC2119].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Williams               Expires December 30, 2004                [Page 3]
+
+Internet-Draft          GSS-API Channel Bindings               July 2004
+
+
+2.  Introduction
+
+   The concept of "channel bindings" and the abstract construction of
+   channel bindings for several types of channels are described in
+   [CHANNEL-BINDINGS]
+
+   To actually use channel bindings in GSS-API aplications additional
+   details are required that are given below.
+
+   First the structure given to channel bindings data in [RFC2744] is
+   generalized to all of the GSS-API, not just its C-Bindings.
+
+   Then the actual construction of channel bindings to SSHv2, TLS and
+   IPsec channels is given.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Williams               Expires December 30, 2004                [Page 4]
+
+Internet-Draft          GSS-API Channel Bindings               July 2004
+
+
+3.  Generic Structure for GSS-API Channel Bindings
+
+   The base GSS-API v2, update 1 specification [RFC2743]describes
+   channel bindings as an OCTET STRING and leaves it to the GSS-API v2,
+   update 1 C-Bindings specification to specify the structure of the
+   contents of the channel bindings OCTET STRINGs.  The C-Bindings
+   specification [RFC2744]then defines, in terms of C, what should be
+   generic structure for channel bindings.  The Kerberos V GSS mechanism
+   [RFC1964]then defines a method for encoding GSS channel bindings in a
+   way that is independent of the C-Bindings!
+
+   In other words, the structure of GSS channel bindings given in
+   [RFC2744] is actually generic, rather than specific to the C
+   programming language.
+
+   Here, then, is a generic re-statement of this structure, in
+   pseudo-ASN.1:
+
+   		GSS-CHANNEL-BINDINGS := SEQUENCE {
+   			initiator-address-type	INTEGER,
+   			initiator-address	OCTET STRING,
+   			acceptor-address-type   INTEGER,
+   			acceptor-address	OCTET STRING,
+   			application-data	OCTET STRING,
+   		}
+
+   The values for the address fields are described in [RFC2744].
+
+   Language-specific bindings of the GSS-API should specify a
+   language-specific formulation of this structure.
+
+3.1  Proper Mechanism Use of Channel Bindings
+
+   As described in [CHANNEL-BINDINGS], GSS mechanisms should exchange
+   integrity protected proofs of channel bindings, where the proof is
+   obtained by running a strong hash of the channel bindings data
+   (encoded as per some mechanism-specific, such as in [RFC1964]) and a
+   binary value to represent the initiator->acceptor, and opposite,
+   direction.
+
+   The encoding of channel bindings used in [RFC1964], with the addition
+   of a binary value as described above, and the substitution of SHA-1
+   for MD5 is a reasonable, generic encoding of GSS-CHANNEL-BINDINGS
+   that any future GSS mechanisms can use.
+
+
+
+
+
+
+
+Williams               Expires December 30, 2004                [Page 5]
+
+Internet-Draft          GSS-API Channel Bindings               July 2004
+
+
+4.  Channel Bindings for SSHv2
+
+   The SSHv2 channel bindings are constructed as an octet string for the
+   'application-data' field of the channel bindings by concatenating the
+   following values and in this order:
+
+   1.  The ASCII string "GSS SSHv2 CB:"
+   2.  The SSHv2 session ID
+   3.  Any additional application-provided data, encoded as the DER
+       encoding of an ASN.1 OCTET STRING
+
+4.1  GSS_Make_sshv2_channel_bindings()
+
+   Inputs:
+
+   o  session_id OCTET STRING,
+   o  additional_app_data OCTET STRING
+
+   Outputs:
+
+   o  major_status INTEGER,
+   o  minor_status INTEGER,
+   o  channel_bindings_app_data OCTET STRING
+
+   Return major_status codes:
+   o  GSS_S_COMPLETE indicates no error.
+   o  GSS_S_FAILURE indicates failure to construct the channel bindings
+      as a result, perhaps, of a memory management, or similar failure.
+
+   This function constructs an OCTET STRING for use as the value of the
+   application-data field of the GSS-CHANNEL-BINDINGS structure
+   described above.
+
+4.1.1  C-Bindings
+
+   OM_uint32 gss_make_sshv2_channel_bindings(
+     OM_uint32			*minor_status,
+     const gss_buffer_t		session_id,
+     const gss_buffer_t		additional_app_data,
+     gss_buffer_t	     channel_bindings_app_data
+   );
+
+
+
+
+
+
+
+
+
+
+Williams               Expires December 30, 2004                [Page 6]
+
+Internet-Draft          GSS-API Channel Bindings               July 2004
+
+
+5.  Channel Bindings for TLS
+
+   The TLS channel bindings are constructed as an octet string for the
+   'application-data' field of the channel bindings by concatenating the
+   following values and in this order:
+
+   1.  The ASCII string "GSS TLSv1.0 CB:"
+   2.  The TLS finished message sent by the client
+   3.  The TLS finished message sent by the server
+   4.  Any additional application-provided data, encoded as the DER
+       encoding of an ASN.1 OCTET STRING
+
+5.1  GSS_Make_tls_channel_bindings()
+
+   Inputs:
+
+   o  client_finished_msg OCTET STRING,
+   o  server_finished_msg OCTET STRING,
+   o  additional_app_data OCTET STRING
+
+   Outputs:
+
+   o  major_status INTEGER,
+   o  minor_status INTEGER,
+   o  channel_bindings_app_data OCTET STRING
+
+   Return major_status codes:
+   o  GSS_S_COMPLETE indicates no error.
+   o  GSS_S_FAILURE indicates failure to construct the channel bindings
+      as a result, perhaps, of a memory management, or similar failure.
+
+   This function constructs an OCTET STRING for use as the value of the
+   application-data field of the GSS-CHANNEL-BINDINGS structure
+   described above.
+
+5.1.1  C-Bindings
+
+   OM_uint32 gss_make_tls_channel_bindings(
+     OM_uint32			*minor_status,
+     const gss_buffer_t		client_finished_msg,
+     const gss_buffer_t		server_finished_msg,
+     const gss_buffer_t		additional_app_data,
+     gss_buffer_t		channel_bindings_app_data
+   );
+
+
+
+
+
+
+
+Williams               Expires December 30, 2004                [Page 7]
+
+Internet-Draft          GSS-API Channel Bindings               July 2004
+
+
+6.  Channel Bindings for IPsec
+
+   The IPsec channel bindings are constructed as an octet string for the
+   'application-data' field of the channel bindings by concatenating the
+   following values and in this order:
+
+   1.  The ASCII string "GSS IPsec CB:"
+   2.  The transform ID for encryption, as a 16-bit big-endian word
+   3.  The transform ID for integrity protection, as 16-bit in
+       big-endian word
+   4.  The initiator ID payload as used in the key exchange protocol
+       used for setting up the channel's SAs
+   5.  The responder ID payload as used in the key exchange protocol
+       used for setting up the channel's SAs
+   6.  Any additional application-provided data, encoded as the DER
+       encoding of an ASN.1 OCTET STRING
+
+   Note that traffic selectors are not included.  Inclusion of
+   confidentiality/integrity algorithms protects against MITMs that can
+   compromise weaker algorithms that policy might permit, for the same
+   peers, for other traffic.
+
+6.1  GSS_Make_ipsec_channel_bindings()
+
+   Inputs:
+
+   o  encr_alg INTEGER,
+   o  integ_alg INTEGER,
+   o  initiator_id OCTET_STRING,
+   o  acceptor_id OCTET_STRING,
+   o  additional_app_data OCTET STRING
+
+   Outputs:
+
+   o  major_status INTEGER,
+   o  minor_status INTEGER,
+   o  channel_bindings_app_data OCTET STRING
+
+   Return major_status codes:
+   o  GSS_S_COMPLETE indicates no error.
+   o  GSS_S_FAILURE indicates failure to construct the channel bindings
+      as a result, perhaps, of a memory management, or similar failure.
+
+   This function constructs an OCTET STRING for use as the value of the
+   application-data field of the GSS-CHANNEL-BINDINGS structure
+   described above.
+
+
+
+
+
+Williams               Expires December 30, 2004                [Page 8]
+
+Internet-Draft          GSS-API Channel Bindings               July 2004
+
+
+6.1.1  C-Bindings
+
+   OM_uint32 gss_make_ipsec_channel_bindings(
+     OM_uint32			*minor_status,
+     OM_uint32			encr_alg,
+     OM_uint32			integ_alg,
+     const gss_buffer_t		initiator_id,
+     const gss_buffer_t		acceptor_id,
+     const gss_buffer_t		additional_app_data,
+     gss_buffer_t		channel_bindings_app_data
+   );
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Williams               Expires December 30, 2004                [Page 9]
+
+Internet-Draft          GSS-API Channel Bindings               July 2004
+
+
+7.  Security Considerations
+
+   For general security considerations relating to channel bindings see
+   [CHANNEL-BINDINGS]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Williams               Expires December 30, 2004               [Page 10]
+
+Internet-Draft          GSS-API Channel Bindings               July 2004
+
+
+8.  References
+
+8.1  Normative
+
+   [RFC1964]  Linn, J., "The Kerberos Version 5 GSS-API Mechanism", RFC
+              1964, June 1996.
+
+   [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
+              Requirement Levels", BCP 14, RFC 2119, March 1997.
+
+   [RFC2743]  Linn, J., "Generic Security Service Application Program
+              Interface Version 2, Update 1", RFC 2743, January 2000.
+
+   [RFC2744]  Wray, J., "Generic Security Service API Version 2 :
+              C-bindings", RFC 2744, January 2000.
+
+8.2  Informative
+
+   [RFC0854]  Postel, J. and J. Reynolds, "Telnet Protocol
+              Specification", STD 8, RFC 854, May 1983.
+
+   [RFC1035]  Mockapetris, P., "Domain names - implementation and
+              specification", STD 13, RFC 1035, November 1987.
+
+   [RFC2025]  Adams, C., "The Simple Public-Key GSS-API Mechanism
+              (SPKM)", RFC 2025, October 1996.
+
+   [RFC2203]  Eisler, M., Chiu, A. and L. Ling, "RPCSEC_GSS Protocol
+              Specification", RFC 2203, September 1997.
+
+   [RFC2478]  Baize, E. and D. Pinkas, "The Simple and Protected GSS-API
+              Negotiation Mechanism", RFC 2478, December 1998.
+
+   [RFC2623]  Eisler, M., "NFS Version 2 and Version 3 Security Issues
+              and the NFS Protocol's Use of RPCSEC_GSS and Kerberos V5",
+              RFC 2623, June 1999.
+
+   [RFC3530]  Shepler, S., Callaghan, B., Robinson, D., Thurlow, R.,
+              Beame, C., Eisler, M. and D. Noveck, "Network File System
+              (NFS) version 4 Protocol", RFC 3530, April 2003.
+
+
+
+
+
+
+
+
+
+
+
+Williams               Expires December 30, 2004               [Page 11]
+
+Internet-Draft          GSS-API Channel Bindings               July 2004
+
+
+Author's Address
+
+   Nicolas Williams
+   Sun Microsystems
+   5300 Riata Trace Ct
+   Austin, TX  78727
+   US
+
+   EMail: Nicolas.Williams@sun.com
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Williams               Expires December 30, 2004               [Page 12]
+
+Internet-Draft          GSS-API Channel Bindings               July 2004
+
+
+Appendix A.  Acknowledgments
+
+   The author would like to thank Mike Eisler for his work on the
+   Channel Conjunction Mechanism I-D and for bringing the problem to a
+   head, Sam Hartman for pointing out that channel bindings provide a
+   general solution to the channel binding problem, Jeff Altman for his
+   suggestion of using the TLS finished messages as the TLS channel
+   bindings, Bill Sommerfeld, for his help in developing channel
+   bindings for IPsec, and Radia Perlman for her most helpful comments.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Williams               Expires December 30, 2004               [Page 13]
+
+Internet-Draft          GSS-API Channel Bindings               July 2004
+
+
+Intellectual Property Statement
+
+   The IETF takes no position regarding the validity or scope of any
+   Intellectual Property Rights or other rights that might be claimed to
+   pertain to the implementation or use of the technology described in
+   this document or the extent to which any license under such rights
+   might or might not be available; nor does it represent that it has
+   made any independent effort to identify any such rights.  Information
+   on the procedures with respect to rights in RFC documents can be
+   found in BCP 78 and BCP 79.
+
+   Copies of IPR disclosures made to the IETF Secretariat and any
+   assurances of licenses to be made available, or the result of an
+   attempt made to obtain a general license or permission for the use of
+   such proprietary rights by implementers or users of this
+   specification can be obtained from the IETF on-line IPR repository at
+   http://www.ietf.org/ipr.
+
+   The IETF invites any interested party to bring to its attention any
+   copyrights, patents or patent applications, or other proprietary
+   rights that may cover technology that may be required to implement
+   this standard.  Please address the information to the IETF at
+   ietf-ipr@ietf.org.
+
+
+Disclaimer of Validity
+
+   This document and the information contained herein are provided on an
+   "AS IS" basis and THE CONTRIBUTOR, THE ORGANIZATION HE/SHE REPRESENTS
+   OR IS SPONSORED BY (IF ANY), THE INTERNET SOCIETY AND THE INTERNET
+   ENGINEERING TASK FORCE DISCLAIM ALL WARRANTIES, EXPRESS OR IMPLIED,
+   INCLUDING BUT NOT LIMITED TO ANY WARRANTY THAT THE USE OF THE
+   INFORMATION HEREIN WILL NOT INFRINGE ANY RIGHTS OR ANY IMPLIED
+   WARRANTIES OF MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.
+
+
+Copyright Statement
+
+   Copyright (C) The Internet Society (2004).  This document is subject
+   to the rights, licenses and restrictions contained in BCP 78, and
+   except as set forth therein, the authors retain all their rights.
+
+
+Acknowledgment
+
+   Funding for the RFC Editor function is currently provided by the
+   Internet Society.
+
+
+
+
+Williams               Expires December 30, 2004               [Page 14]
+
+
