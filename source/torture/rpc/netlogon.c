@@ -377,58 +377,58 @@ static NTSTATUS check_samlogon(struct samlogon_state *samlogon_state,
 		if (r->in.validation_level == 2) {
 			static const char zeros[16];
 			
-			if (memcmp(r->out.validation.sam2->key.key, zeros,  
-				   sizeof(r->out.validation.sam2->key.key)) != 0) {
+			if (memcmp(r->out.validation.sam2->base.key.key, zeros,  
+				   sizeof(r->out.validation.sam2->base.key.key)) != 0) {
 				creds_arcfour_crypt(&samlogon_state->creds, 
-						    r->out.validation.sam2->key.key, 
-						    sizeof(r->out.validation.sam2->key.key));
+						    r->out.validation.sam2->base.key.key, 
+						    sizeof(r->out.validation.sam2->base.key.key));
 			}
 			
 			if (user_session_key) {
-				memcpy(user_session_key, r->out.validation.sam2->key.key, 16);
+				memcpy(user_session_key, r->out.validation.sam2->base.key.key, 16);
 			}
 			
-			if (memcmp(r->out.validation.sam2->LMSessKey.key, zeros,  
-				   sizeof(r->out.validation.sam2->LMSessKey.key)) != 0) {
+			if (memcmp(r->out.validation.sam2->base.LMSessKey.key, zeros,  
+				   sizeof(r->out.validation.sam2->base.LMSessKey.key)) != 0) {
 				creds_arcfour_crypt(&samlogon_state->creds, 
-						    r->out.validation.sam2->LMSessKey.key, 
-						    sizeof(r->out.validation.sam2->LMSessKey.key));
+						    r->out.validation.sam2->base.LMSessKey.key, 
+						    sizeof(r->out.validation.sam2->base.LMSessKey.key));
 			}
 			
 			if (lm_key) {
-				memcpy(lm_key, r->out.validation.sam2->LMSessKey.key, 8);
+				memcpy(lm_key, r->out.validation.sam2->base.LMSessKey.key, 8);
 			}
 			
 		} else if (r->in.validation_level == 3) {
 			static const char zeros[16];
-			if (memcmp(r->out.validation.sam3->key.key, zeros,  
-				   sizeof(r->out.validation.sam3->key.key)) != 0) {
+			if (memcmp(r->out.validation.sam3->base.key.key, zeros,  
+				   sizeof(r->out.validation.sam3->base.key.key)) != 0) {
 				creds_arcfour_crypt(&samlogon_state->creds, 
-						    r->out.validation.sam3->key.key, 
-						    sizeof(r->out.validation.sam3->key.key));
+						    r->out.validation.sam3->base.key.key, 
+						    sizeof(r->out.validation.sam3->base.key.key));
 			}
 			
 			if (user_session_key) {
-				memcpy(user_session_key, r->out.validation.sam3->key.key, 16);
+				memcpy(user_session_key, r->out.validation.sam3->base.key.key, 16);
 			}
 
-			if (memcmp(r->out.validation.sam3->LMSessKey.key, zeros, 
-				   sizeof(r->out.validation.sam3->LMSessKey.key)) != 0) {
+			if (memcmp(r->out.validation.sam3->base.LMSessKey.key, zeros, 
+				   sizeof(r->out.validation.sam3->base.LMSessKey.key)) != 0) {
 				creds_arcfour_crypt(&samlogon_state->creds, 
-						    r->out.validation.sam3->LMSessKey.key, 
-						    sizeof(r->out.validation.sam3->LMSessKey.key));
+						    r->out.validation.sam3->base.LMSessKey.key, 
+						    sizeof(r->out.validation.sam3->base.LMSessKey.key));
 			}
 			
 			if (lm_key) {
-				memcpy(lm_key, r->out.validation.sam3->LMSessKey.key, 8);
+				memcpy(lm_key, r->out.validation.sam3->base.LMSessKey.key, 8);
 			}			
 		} else if (r->in.validation_level == 6) {
 			/* they aren't encrypted! */
 			if (user_session_key) {
-				memcpy(user_session_key, r->out.validation.sam6->key.key, 16);
+				memcpy(user_session_key, r->out.validation.sam6->base.key.key, 16);
 			}
 			if (lm_key) {
-				memcpy(lm_key, r->out.validation.sam6->LMSessKey.key, 8);
+				memcpy(lm_key, r->out.validation.sam6->base.LMSessKey.key, 8);
 			}
 		}
 	}
