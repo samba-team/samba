@@ -77,6 +77,14 @@ static void init_srv_share_info_2(SRV_SHARE_INFO_2 *sh2, int snum)
 	pstring_sub(remark,"%S",lp_servicename(snum));
 	pstrcpy(path, "C:");
 	pstrcat(path, lp_pathname(snum));
+
+	/*
+	 * Change / to \\ so that win2k will see it as a valid path.  This was added to
+	 * enable use of browsing in win2k add share dialog.
+	 */ 
+
+	string_replace(path, '/', '\\');
+
 	pstrcpy(passwd, "");
 	len_net_name = strlen(net_name);
 
@@ -363,6 +371,14 @@ static void init_srv_share_info_502(TALLOC_CTX *ctx, SRV_SHARE_INFO_502 *sh502, 
 	pstring_sub(remark,"%S",lp_servicename(snum));
 	pstrcpy(path, "C:");
 	pstrcat(path, lp_pathname(snum));
+
+	/*
+	 * Change / to \\ so that win2k will see it as a valid path.  This was added to
+	 * enable use of browsing in win2k add share dialog.
+	 */ 
+
+	string_replace(path, '/', '\\');
+
 	pstrcpy(passwd, "");
 	len_net_name = strlen(net_name);
 
@@ -379,7 +395,7 @@ static void init_srv_share_info_502(TALLOC_CTX *ctx, SRV_SHARE_INFO_502 *sh502, 
 	sd = get_share_security(ctx, snum, &sd_size);
 
 	init_srv_share_info502(&sh502->info_502, net_name, type, remark, 0, 0xffffffff, 1, path, passwd, sd, sd_size);
-	init_srv_share_info502_str(&sh502->info_502_str, net_name, remark, path, passwd, sd, sd_size);
+	init_srv_share_info502_str(&sh502->info_502_str, &sh502->info_502, net_name, remark, path, passwd, sd, sd_size);
 }
 
 /***************************************************************************
@@ -1543,6 +1559,119 @@ uint32 _srv_net_remote_tod(pipes_struct *p, SRV_Q_NET_REMOTE_TOD *q_u, SRV_R_NET
 	                      t->tm_wday);
 	
 	DEBUG(5,("_srv_net_remote_tod: %d\n", __LINE__));
+
+	return r_u->status;
+}
+
+/***********************************************************************************
+ It may be that we want to limit users to creating shares on certain areas of the UNIX file area.
+ We could define areas by mapping Windows style disks to points on the UNIX directory hierarchy.
+ These disks would the disks listed by this function.
+ Users could then create shares relative to these disks.  Watch out for moving these disks around.
+ "Nigel Williams" <nigel@veritas.com>.
+/***********************************************************************************/
+
+const char *server_disks[] = {"C:"};
+
+static uint32 get_server_disk_count(void)
+{
+	return sizeof(server_disks)/sizeof(server_disks[0]);
+}
+
+static uint32 init_server_disk_enum(uint32 *resume)
+{
+	uint32 server_disk_count = get_server_disk_count();
+
+	/*resume can be an offset into the list for now*/
+
+	if(*resume < 0)
+		*resume = 0;
+
+	if(*resume > server_disk_count)
+		*resume = server_disk_count;
+
+	return server_disk_count - *resume;
+}
+
+static const char *next_server_disk_enum(uint32 *resume)
+{
+	const char *disk;
+
+	if(init_server_disk_enum(resume) == 0)
+		return NULL;
+
+	disk = server_disks[*resume];
+
+	(*resume)++;
+
+	DEBUG(10, ("next_server_disk_enum: reporting disk %s. resume handle %d.\n", disk, *resume));
+
+	return disk;
+}
+
+uint32 _srv_net_disk_enum(pipes_struct *p, SRV_Q_NET_DISK_ENUM *q_u, SRV_R_NET_DISK_ENUM *r_u)
+{
+	uint32 i;
+	const char *disk_name;
+	uint32 resume=get_enum_hnd(&q_u->enum_hnd);
+
+	r_u->status=NT_STATUS_NOPROBLEMO;
+
+	r_u->total_entries = init_server_disk_enum(&resume);
+
+	r_u->disk_enum_ctr.unknown = 0; 
+
+	r_u->disk_enum_ctr.disk_info_ptr = (uint32) r_u->disk_enum_ctr.disk_info;
+
+	/*allow one DISK_INFO for null terminator*/
+
+	for(i = 0; i < MAX_SERVER_DISK_ENTRIES -1 && (disk_name = next_server_disk_enum(&resume)); i++) {
+
+		r_u->disk_enum_ctr.entries_read++;
+
+		/*copy disk name into a unicode string*/
+
+		init_unistr3(&r_u->disk_enum_ctr.disk_info[i].disk_name, disk_name);    
+	}
+
+	/*add a terminating null string.  Is this there if there is more data to come?*/
+
+	r_u->disk_enum_ctr.entries_read++;
+
+	init_unistr3(&r_u->disk_enum_ctr.disk_info[i].disk_name, "");
+
+	init_enum_hnd(&r_u->enum_hnd, resume);
+
+	return r_u->status;
+}
+
+uint32 _srv_net_name_validate(pipes_struct *p, SRV_Q_NET_NAME_VALIDATE *q_u, SRV_R_NET_NAME_VALIDATE *r_u)
+{
+	int snum;
+	fstring share_name;
+
+	r_u->status=NT_STATUS_NOPROBLEMO;
+
+	switch(q_u->type) {
+
+	case 0x9:
+
+		/*check if share name is ok*/
+		/*also check if we already have a share with this name*/
+
+		unistr2_to_ascii(share_name, &q_u->uni_name, sizeof(share_name));
+		snum = find_service(share_name);
+
+		/* Share already exists. */
+		if (snum >= 0)
+			r_u->status = NT_STATUS_OBJECT_NAME_INVALID;
+		break;
+
+	default:
+		/*unsupported type*/
+		r_u->status = ERROR_INVALID_LEVEL;
+		break;
+	}
 
 	return r_u->status;
 }
