@@ -282,6 +282,9 @@ static int reply_spnego_kerberos(connection_struct *conn,
 	if (sess_vuid == -1) {
 		ret = NT_STATUS_LOGON_FAILURE;
 	} else {
+		/* current_user_info is changed on new vuid */
+		reload_services( True );
+
 		set_message(outbuf,4,0,True);
 		SSVAL(outbuf, smb_vwv3, 0);
 			
@@ -355,6 +358,9 @@ static BOOL reply_spnego_ntlmssp(connection_struct *conn, char *inbuf, char *out
 			nt_status = NT_STATUS_LOGON_FAILURE;
 		} else {
 			
+			/* current_user_info is changed on new vuid */
+			reload_services( True );
+
 			set_message(outbuf,4,0,True);
 			SSVAL(outbuf, smb_vwv3, 0);
 			
@@ -910,6 +916,9 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 	if (sess_vuid == -1) {
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
+
+	/* current_user_info is changed on new vuid */
+	reload_services( True );
 
  	if (!server_info->guest && !srv_check_sign_mac(inbuf)) {
 		exit_server("reply_sesssetup_and_X: bad smb signature");

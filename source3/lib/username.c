@@ -283,6 +283,11 @@ struct passwd *Get_Pwnam(const char *user)
 	fstring user2;
 	struct passwd *ret;
 
+	if ( *user == '\0' ) {
+		DEBUG(10,("Get_Pwnam: empty username!\n"));
+		return NULL;
+	}
+
 	fstrcpy(user2, user);
 
 	DEBUG(5,("Finding user %s\n", user));
