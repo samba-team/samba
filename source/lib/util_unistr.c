@@ -42,6 +42,9 @@ static uint16 *ucs2_to_unixcp;
  Write a string in (little-endian) unicode format. src is in
  the current DOS codepage. len is the length in bytes of the
  string pointed to by dst.
+
+ the return value is the length of the string *without* the trailing 
+ two bytes of zero
 ********************************************************************/
 
 int dos_PutUniCode(char *dst,char *src, ssize_t len)
@@ -69,7 +72,6 @@ int dos_PutUniCode(char *dst,char *src, ssize_t len)
 			src++;
 	}
 	SSVAL(dst,ret,0);
-	ret += 2;
 	return(ret);
 }
 
