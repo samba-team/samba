@@ -776,9 +776,9 @@ void talloc_enable_leak_report_full(void)
 /* 
    talloc and zero memory. 
 */
-void *talloc_zero(const void *ctx, size_t size)
+void *_talloc_zero(const void *ctx, size_t size, const char *name)
 {
-	void *p = talloc(ctx, size);
+	void *p = talloc_named_const(ctx, size, name);
 
 	if (p) {
 		memset(p, '\0', size);
@@ -937,6 +937,17 @@ void *talloc_array(const void *ctx, size_t el_size, unsigned count, const char *
 		return NULL;
 	}
 	return talloc_named_const(ctx, el_size * count, name);
+}
+
+/*
+  alloc an zero array, checking for integer overflow in the array size
+*/
+void *talloc_zero_array(const void *ctx, size_t el_size, unsigned count, const char *name)
+{
+	if (count >= MAX_TALLOC_SIZE/el_size) {
+		return NULL;
+	}
+	return _talloc_zero(ctx, el_size * count, name);
 }
 
 

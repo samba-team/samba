@@ -34,8 +34,11 @@ typedef void TALLOC_CTX;
 
 /* useful macros for creating type checked pointers */
 #define talloc(ctx, size) talloc_named_const(ctx, size, __location__)
+#define talloc_zero(ctx, size) _talloc_zero(ctx, size, __location__)
 #define talloc_realloc(ctx, ptr, size) _talloc_realloc(ctx, ptr, size, __location__)
 #define talloc_p(ctx, type) (type *)talloc_named_const(ctx, sizeof(type), #type)
+#define talloc_zero_p(ctx, type) (type *)_talloc_zero(ctx, sizeof(type), #type)
+#define talloc_zero_array_p(ctx, type, count) (type *)talloc_zero_array(ctx, sizeof(type), count, __location__)
 #define talloc_array_p(ctx, type, count) (type *)talloc_array(ctx, sizeof(type), count, __location__)
 #define talloc_realloc_p(ctx, p, type, count) (type *)talloc_realloc_array(ctx, p, sizeof(type), count, __location__)
 #define talloc_memdup(t, p, size) _talloc_memdup(t, p, size, __location__)
@@ -76,7 +79,7 @@ void talloc_report_full(const void *ptr, FILE *f);
 void talloc_report(const void *ptr, FILE *f);
 void talloc_enable_leak_report(void);
 void talloc_enable_leak_report_full(void);
-void *talloc_zero(const void *ctx, size_t size);
+void *_talloc_zero(const void *ctx, size_t size, const char *name);
 void *_talloc_memdup(const void *t, const void *p, size_t size, const char *name);
 char *talloc_strdup(const void *t, const char *p);
 char *talloc_strndup(const void *t, const char *p, size_t n);
@@ -85,6 +88,7 @@ char *talloc_asprintf(const void *t, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3)
 char *talloc_asprintf_append(char *s,
 			     const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
 void *talloc_array(const void *ctx, size_t el_size, unsigned count, const char *name);
+void *talloc_zero_array(const void *ctx, size_t el_size, unsigned count, const char *name);
 void *talloc_realloc_array(const void *ctx, void *ptr, size_t el_size, unsigned count, const char *name);
 void *talloc_ldb_alloc(void *context, void *ptr, size_t size);
 
