@@ -68,10 +68,11 @@ static const char *lldb_option_find(const struct lldb_private *lldb, const char 
 /*
   close/free the connection
 */
-static int lldb_close(struct ldb_context *ldb)
+static int lldb_close(struct ldb_module *module)
 {
 	int i, ret = 0;
-	struct lldb_private *lldb = ldb->private_data;
+	struct ldb_context *ldb = module->ldb;
+	struct lldb_private *lldb = module->private_data;
 
 	if (ldap_unbind(lldb->ldap) != LDAP_SUCCESS) {
 		ret = -1;
@@ -94,9 +95,10 @@ static int lldb_close(struct ldb_context *ldb)
 /*
   rename a record
 */
-static int lldb_rename(struct ldb_context *ldb, const char *olddn, const char *newdn)
+static int lldb_rename(struct ldb_module *module, const char *olddn, const char *newdn)
 {
-	struct lldb_private *lldb = ldb->private_data;
+	struct ldb_context *ldb = module->ldb;
+	struct lldb_private *lldb = module->private_data;
 	int ret = 0;
 	char *newrdn, *p;
 	const char *parentdn = "";
@@ -129,9 +131,9 @@ static int lldb_rename(struct ldb_context *ldb, const char *olddn, const char *n
 /*
   delete a record
 */
-static int lldb_delete(struct ldb_context *ldb, const char *dn)
+static int lldb_delete(struct ldb_module *module, const char *dn)
 {
-	struct lldb_private *lldb = ldb->private_data;
+	struct lldb_private *lldb = module->private_data;
 	int ret = 0;
 
 	/* ignore ltdb specials */
@@ -171,8 +173,9 @@ static int lldb_msg_free(struct ldb_context *ldb, struct ldb_message *msg)
 /*
   free a search result
 */
-static int lldb_search_free(struct ldb_context *ldb, struct ldb_message **res)
+static int lldb_search_free(struct ldb_module *module, struct ldb_message **res)
 {
+	struct ldb_context *ldb = module->ldb;
 	int i;
 	for (i=0;res[i];i++) {
 		if (lldb_msg_free(ldb, res[i]) != 0) {
@@ -243,11 +246,12 @@ static int lldb_add_msg_attr(struct ldb_context *ldb,
 /*
   search for matching records
 */
-static int lldb_search(struct ldb_context *ldb, const char *base,
+static int lldb_search(struct ldb_module *module, const char *base,
 		       enum ldb_scope scope, const char *expression,
 		       const char * const *attrs, struct ldb_message ***res)
 {
-	struct lldb_private *lldb = ldb->private_data;
+	struct ldb_context *ldb = module->ldb;
+	struct lldb_private *lldb = module->private_data;
 	int count, msg_count;
 	LDAPMessage *ldapres, *msg;
 
@@ -335,7 +339,7 @@ static int lldb_search(struct ldb_context *ldb, const char *base,
 	return msg_count;
 
 failed:
-	if (*res) lldb_search_free(ldb, *res);
+	if (*res) lldb_search_free(module, *res);
 	return -1;
 }
 
@@ -434,9 +438,10 @@ failed:
 /*
   add a record
 */
-static int lldb_add(struct ldb_context *ldb, const struct ldb_message *msg)
+static int lldb_add(struct ldb_module *module, const struct ldb_message *msg)
 {
-	struct lldb_private *lldb = ldb->private_data;
+	struct ldb_context *ldb = module->ldb;
+	struct lldb_private *lldb = module->private_data;
 	LDAPMod **mods;
 	int ret = 0;
 
@@ -461,9 +466,10 @@ static int lldb_add(struct ldb_context *ldb, const struct ldb_message *msg)
 /*
   modify a record
 */
-static int lldb_modify(struct ldb_context *ldb, const struct ldb_message *msg)
+static int lldb_modify(struct ldb_module *module, const struct ldb_message *msg)
 {
-	struct lldb_private *lldb = ldb->private_data;
+	struct ldb_context *ldb = module->ldb;
+	struct lldb_private *lldb = module->private_data;
 	LDAPMod **mods;
 	int ret = 0;
 
@@ -488,14 +494,15 @@ static int lldb_modify(struct ldb_context *ldb, const struct ldb_message *msg)
 /*
   return extended error information
 */
-static const char *lldb_errstring(struct ldb_context *ldb)
+static const char *lldb_errstring(struct ldb_module *module)
 {
-	struct lldb_private *lldb = ldb->private_data;
+	struct lldb_private *lldb = module->private_data;
 	return ldap_err2string(lldb->last_rc);
 }
 
 
-static const struct ldb_backend_ops lldb_ops = {
+static const struct ldb_module_ops lldb_ops = {
+	"ldap",
 	lldb_close, 
 	lldb_search,
 	lldb_search_free,
@@ -544,8 +551,16 @@ struct ldb_context *lldb_connect(const char *url,
 		goto failed;
 	}
 
-	ldb->ops = &lldb_ops;
-	ldb->private_data = lldb;
+	ldb->modules = ldb_malloc_p(ldb, struct ldb_module);
+	if (!ldb->modules) {
+		ldb_free(ldb, ldb);
+		errno = ENOMEM;
+		goto failed;
+	}
+	ldb->modules->ldb = ldb;
+	ldb->modules->prev = ldb->modules->next = NULL;
+	ldb->modules->private_data = lldb;
+	ldb->modules->ops = &lldb_ops;
 
 	if (options) {
 		/* take a copy of the options array, so we don't have to rely

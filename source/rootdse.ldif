@@ -1,8 +1,13 @@
 dn: @INDEXLIST
 
 dn: @ATTRIBUTES
+createTimestamp: HIDDEN
+modifyTimestamp: HIDDEN
 
 dn: @SUBCLASSES
+
+dn: @MODULES
+@MODULE: timestamps
 
 dn: cn=rootDSE
 currentTime: _DYNAMIC_

@@ -45,8 +45,9 @@
   note that the key for a record can depend on whether the 
   dn refers to a case sensitive index record or not
 */
-struct TDB_DATA ltdb_key(struct ldb_context *ldb, const char *dn)
+struct TDB_DATA ltdb_key(struct ldb_module *module, const char *dn)
 {
+	struct ldb_context *ldb = module->ldb;
 	TDB_DATA key;
 	char *key_str = NULL;
 	char *dn_folded = NULL;
@@ -74,7 +75,7 @@ struct TDB_DATA ltdb_key(struct ldb_context *ldb, const char *dn)
 		if (!attr_name) {
 			goto failed;
 		}
-		flags = ltdb_attribute_flags(ldb, attr_name);
+		flags = ltdb_attribute_flags(module, attr_name);
 		
 		if (flags & LTDB_FLAG_CASE_INSENSITIVE) {
 			dn_folded = ldb_casefold(ldb, dn);
@@ -119,13 +120,14 @@ failed:
 /*
   lock the database for write - currently a single lock is used
 */
-static int ltdb_lock(struct ldb_context *ldb)
+static int ltdb_lock(struct ldb_module *module)
 {
-	struct ltdb_private *ltdb = ldb->private_data;
+	struct ldb_context *ldb = module->ldb;
+	struct ltdb_private *ltdb = module->private_data;
 	TDB_DATA key;
 	int ret;
 
-	key = ltdb_key(ldb, "LDBLOCK");
+	key = ltdb_key(module, "LDBLOCK");
 	if (!key.dptr) {
 		return -1;
 	}
@@ -140,12 +142,13 @@ static int ltdb_lock(struct ldb_context *ldb)
 /*
   unlock the database after a ltdb_lock()
 */
-static void ltdb_unlock(struct ldb_context *ldb)
+static void ltdb_unlock(struct ldb_module *module)
 {
-	struct ltdb_private *ltdb = ldb->private_data;
+	struct ldb_context *ldb = module->ldb;
+	struct ltdb_private *ltdb = module->private_data;
 	TDB_DATA key;
 
-	key = ltdb_key(ldb, "LDBLOCK");
+	key = ltdb_key(module, "LDBLOCK");
 	if (!key.dptr) {
 		return;
 	}
@@ -160,18 +163,18 @@ static void ltdb_unlock(struct ldb_context *ldb)
   we've made a modification to a dn - possibly reindex and 
   update sequence number
 */
-static int ltdb_modified(struct ldb_context *ldb, const char *dn)
+static int ltdb_modified(struct ldb_module *module, const char *dn)
 {
 	int ret = 0;
 
 	if (strcmp(dn, LTDB_INDEXLIST) == 0 ||
 	    strcmp(dn, LTDB_ATTRIBUTES) == 0) {
-		ret = ltdb_reindex(ldb);
+		ret = ltdb_reindex(module);
 	}
 
 	if (ret == 0 &&
 	    strcmp(dn, LTDB_BASEINFO) != 0) {
-		ret = ltdb_increase_sequence_number(ldb);
+		ret = ltdb_increase_sequence_number(module);
 	}
 
 	return ret;
@@ -180,13 +183,14 @@ static int ltdb_modified(struct ldb_context *ldb, const char *dn)
 /*
   store a record into the db
 */
-int ltdb_store(struct ldb_context *ldb, const struct ldb_message *msg, int flgs)
+int ltdb_store(struct ldb_module *module, const struct ldb_message *msg, int flgs)
 {
-	struct ltdb_private *ltdb = ldb->private_data;
+	struct ldb_context *ldb = module->ldb;
+	struct ltdb_private *ltdb = module->private_data;
 	TDB_DATA tdb_key, tdb_data;
 	int ret;
 
-	tdb_key = ltdb_key(ldb, msg->dn);
+	tdb_key = ltdb_key(module, msg->dn);
 	if (!tdb_key.dptr) {
 		return -1;
 	}
@@ -202,7 +206,7 @@ int ltdb_store(struct ldb_context *ldb, const struct ldb_message *msg, int flgs)
 		goto done;
 	}
 	
-	ret = ltdb_index_add(ldb, msg);
+	ret = ltdb_index_add(module, msg);
 	if (ret == -1) {
 		tdb_delete(ltdb->tdb, tdb_key);
 	}
@@ -218,29 +222,29 @@ done:
 /*
   add a record to the database
 */
-static int ltdb_add(struct ldb_context *ldb, const struct ldb_message *msg)
+static int ltdb_add(struct ldb_module *module, const struct ldb_message *msg)
 {
-	struct ltdb_private *ltdb = ldb->private_data;
+	struct ltdb_private *ltdb = module->private_data;
 	int ret;
 
 	ltdb->last_err_string = NULL;
 
-	if (ltdb_lock(ldb) != 0) {
+	if (ltdb_lock(module) != 0) {
 		return -1;
 	}
 
-	if (ltdb_cache_load(ldb) != 0) {
-		ltdb_unlock(ldb);
+	if (ltdb_cache_load(module) != 0) {
+		ltdb_unlock(module);
 		return -1;
 	}
 	
-	ret = ltdb_store(ldb, msg, TDB_INSERT);
+	ret = ltdb_store(module, msg, TDB_INSERT);
 
 	if (ret == 0) {
-		ltdb_modified(ldb, msg->dn);
+		ltdb_modified(module, msg->dn);
 	}
 
-	ltdb_unlock(ldb);
+	ltdb_unlock(module);
 	return ret;
 }
 
@@ -249,13 +253,14 @@ static int ltdb_add(struct ldb_context *ldb, const struct ldb_message *msg)
   delete a record from the database, not updating indexes (used for deleting
   index records)
 */
-int ltdb_delete_noindex(struct ldb_context *ldb, const char *dn)
+int ltdb_delete_noindex(struct ldb_module *module, const char *dn)
 {
-	struct ltdb_private *ltdb = ldb->private_data;
+	struct ldb_context *ldb = module->ldb;
+	struct ltdb_private *ltdb = module->private_data;
 	TDB_DATA tdb_key;
 	int ret;
 
-	tdb_key = ltdb_key(ldb, dn);
+	tdb_key = ltdb_key(module, dn);
 	if (!tdb_key.dptr) {
 		return -1;
 	}
@@ -269,51 +274,51 @@ int ltdb_delete_noindex(struct ldb_context *ldb, const char *dn)
 /*
   delete a record from the database
 */
-static int ltdb_delete(struct ldb_context *ldb, const char *dn)
+static int ltdb_delete(struct ldb_module *module, const char *dn)
 {
-	struct ltdb_private *ltdb = ldb->private_data;
+	struct ltdb_private *ltdb = module->private_data;
 	int ret;
 	struct ldb_message msg;
 
 	ltdb->last_err_string = NULL;
 
-	if (ltdb_lock(ldb) != 0) {
+	if (ltdb_lock(module) != 0) {
 		return -1;
 	}
 
-	if (ltdb_cache_load(ldb) != 0) {
-		ltdb_unlock(ldb);
+	if (ltdb_cache_load(module) != 0) {
+		ltdb_unlock(module);
 		return -1;
 	}
 
 	/* in case any attribute of the message was indexed, we need
 	   to fetch the old record */
-	ret = ltdb_search_dn1(ldb, dn, &msg);
+	ret = ltdb_search_dn1(module, dn, &msg);
 	if (ret != 1) {
 		/* not finding the old record is an error */
 		goto failed;
 	}
 
-	ret = ltdb_delete_noindex(ldb, dn);
+	ret = ltdb_delete_noindex(module, dn);
 	if (ret == -1) {
-		ltdb_search_dn1_free(ldb, &msg);
+		ltdb_search_dn1_free(module, &msg);
 		goto failed;
 	}
 
 	/* remove any indexed attributes */
-	ret = ltdb_index_del(ldb, &msg);
+	ret = ltdb_index_del(module, &msg);
 
-	ltdb_search_dn1_free(ldb, &msg);
+	ltdb_search_dn1_free(module, &msg);
 
 	if (ret == 0) {
-		ltdb_modified(ldb, dn);
+		ltdb_modified(module, dn);
 	}
 
-	ltdb_unlock(ldb);
+	ltdb_unlock(module);
 	return ret;
 
 failed:
-	ltdb_unlock(ldb);
+	ltdb_unlock(module);
 	return -1;
 }
 
@@ -416,11 +421,12 @@ static int msg_delete_attribute(struct ldb_context *ldb,
 
   return 0 on success, -1 on failure
 */
-static int msg_delete_element(struct ldb_context *ldb,
+static int msg_delete_element(struct ldb_module *module,
 			      struct ldb_message *msg, 
 			      const char *name,
 			      const struct ldb_val *val)
 {
+	struct ldb_context *ldb = module->ldb;
 	unsigned int i;
 	int found;
 	struct ldb_message_element *el;
@@ -433,7 +439,7 @@ static int msg_delete_element(struct ldb_context *ldb,
 	el = &msg->elements[found];
 
 	for (i=0;i<el->num_values;i++) {
-		if (ldb_val_equal(ldb, msg->elements[i].name, &el->values[i], val)) {
+		if (ldb_val_equal(module, msg->elements[i].name, &el->values[i], val)) {
 			if (i<el->num_values-1) {
 				memmove(&el->values[i], &el->values[i+1],
 					sizeof(el->values[i])*(el->num_values-(i+1)));
@@ -457,15 +463,16 @@ static int msg_delete_element(struct ldb_context *ldb,
   get away with it, but if we ever have really large attribute lists 
   then we'll need to look at this again
 */
-int ltdb_modify_internal(struct ldb_context *ldb, const struct ldb_message *msg)
+int ltdb_modify_internal(struct ldb_module *module, const struct ldb_message *msg)
 {
-	struct ltdb_private *ltdb = ldb->private_data;
+	struct ldb_context *ldb = module->ldb;
+	struct ltdb_private *ltdb = module->private_data;
 	TDB_DATA tdb_key, tdb_data;
 	struct ldb_message msg2;
 	unsigned i, j;
 	int ret;
 
-	tdb_key = ltdb_key(ldb, msg->dn);
+	tdb_key = ltdb_key(module, msg->dn);
 	if (!tdb_key.dptr) {
 		return -1;
 	}
@@ -527,7 +534,7 @@ int ltdb_modify_internal(struct ldb_context *ldb, const struct ldb_message *msg)
 				break;
 			}
 			for (j=0;j<msg->elements[i].num_values;j++) {
-				if (msg_delete_element(ldb,
+				if (msg_delete_element(module,
 						       &msg2, 
 						       msg->elements[i].name,
 						       &msg->elements[i].values[j]) != 0) {
@@ -540,7 +547,7 @@ int ltdb_modify_internal(struct ldb_context *ldb, const struct ldb_message *msg)
 	}
 
 	/* we've made all the mods - save the modified record back into the database */
-	ret = ltdb_store(ldb, &msg2, TDB_MODIFY);
+	ret = ltdb_store(module, &msg2, TDB_MODIFY);
 
 	ldb_free(ldb, tdb_key.dptr);
 	free(tdb_data.dptr);
@@ -557,29 +564,29 @@ failed:
 /*
   modify a record
 */
-static int ltdb_modify(struct ldb_context *ldb, const struct ldb_message *msg)
+static int ltdb_modify(struct ldb_module *module, const struct ldb_message *msg)
 {
-	struct ltdb_private *ltdb = ldb->private_data;
+	struct ltdb_private *ltdb = module->private_data;
 	int ret;
 
 	ltdb->last_err_string = NULL;
 
-	if (ltdb_lock(ldb) != 0) {
+	if (ltdb_lock(module) != 0) {
 		return -1;
 	}
 
-	if (ltdb_cache_load(ldb) != 0) {
-		ltdb_unlock(ldb);
+	if (ltdb_cache_load(module) != 0) {
+		ltdb_unlock(module);
 		return -1;
 	}
 
-	ret = ltdb_modify_internal(ldb, msg);
+	ret = ltdb_modify_internal(module, msg);
 
 	if (ret == 0) {
-		ltdb_modified(ldb, msg->dn);
+		ltdb_modified(module, msg->dn);
 	}
 
-	ltdb_unlock(ldb);
+	ltdb_unlock(module);
 
 	return ret;
 }
@@ -587,22 +594,23 @@ static int ltdb_modify(struct ldb_context *ldb, const struct ldb_message *msg)
 /*
   rename a record
 */
-static int ltdb_rename(struct ldb_context *ldb, const char *olddn, const char *newdn)
+static int ltdb_rename(struct ldb_module *module, const char *olddn, const char *newdn)
 {
-	struct ltdb_private *ltdb = ldb->private_data;
+	struct ldb_context *ldb = module->ldb;
+	struct ltdb_private *ltdb = module->private_data;
 	int ret;
 	struct ldb_message msg;
 	const char *error_str;
 
 	ltdb->last_err_string = NULL;
 
-	if (ltdb_lock(ldb) != 0) {
+	if (ltdb_lock(module) != 0) {
 		return -1;
 	}
 
 	/* in case any attribute of the message was indexed, we need
 	   to fetch the old record */
-	ret = ltdb_search_dn1(ldb, olddn, &msg);
+	ret = ltdb_search_dn1(module, olddn, &msg);
 	if (ret != 1) {
 		/* not finding the old record is an error */
 		goto failed;
@@ -610,46 +618,47 @@ static int ltdb_rename(struct ldb_context *ldb, const char *olddn, const char *n
 
 	msg.dn = ldb_strdup(ldb,newdn);
 	if (!msg.dn) {
-		ltdb_search_dn1_free(ldb, &msg);
+		ltdb_search_dn1_free(module, &msg);
 		goto failed;
 	}
 
-	ret = ltdb_add(ldb, &msg);
+	ret = ltdb_add(module, &msg);
 	if (ret == -1) {
 		ldb_free(ldb, msg.dn);
-		ltdb_search_dn1_free(ldb, &msg);
+		ltdb_search_dn1_free(module, &msg);
 		goto failed;
 	}
 	ldb_free(ldb, msg.dn);
-	ltdb_search_dn1_free(ldb, &msg);
+	ltdb_search_dn1_free(module, &msg);
 
-	ret = ltdb_delete(ldb, olddn);
+	ret = ltdb_delete(module, olddn);
 	error_str = ltdb->last_err_string;
 	if (ret == -1) {
-		ltdb_delete(ldb, newdn);
+		ltdb_delete(module, newdn);
 	}
 
 	ltdb->last_err_string = error_str;
 
-	ltdb_unlock(ldb);
+	ltdb_unlock(module);
 
 	return ret;
 failed:
-	ltdb_unlock(ldb);
+	ltdb_unlock(module);
 	return -1;
 }
 
 /*
   close database
 */
-static int ltdb_close(struct ldb_context *ldb)
+static int ltdb_close(struct ldb_module *module)
 {
-	struct ltdb_private *ltdb = ldb->private_data;
+	struct ldb_context *ldb = module->ldb;
+	struct ltdb_private *ltdb = module->private_data;
 	int ret;
 
 	ltdb->last_err_string = NULL;
 
-	ltdb_cache_free(ldb);
+	ltdb_cache_free(module);
 	ldb_set_alloc(ldb, NULL, NULL);
 
 	ret = tdb_close(ltdb->tdb);
@@ -662,9 +671,9 @@ static int ltdb_close(struct ldb_context *ldb)
 /*
   return extended error information
 */
-static const char *ltdb_errstring(struct ldb_context *ldb)
+static const char *ltdb_errstring(struct ldb_module *module)
 {
-	struct ltdb_private *ltdb = ldb->private_data;
+	struct ltdb_private *ltdb = module->private_data;
 	if (ltdb->last_err_string) {
 		return ltdb->last_err_string;
 	}
@@ -672,7 +681,8 @@ static const char *ltdb_errstring(struct ldb_context *ldb)
 }
 
 
-static const struct ldb_backend_ops ltdb_ops = {
+static const struct ldb_module_ops ltdb_ops = {
+	"tdb",
 	ltdb_close, 
 	ltdb_search,
 	ltdb_search_free,
@@ -743,8 +753,17 @@ struct ldb_context *ltdb_connect(const char *url,
 
 	memset(&ltdb->cache, 0, sizeof(ltdb->cache));
 
-	ldb->private_data = ltdb;
-	ldb->ops = &ltdb_ops;
+	ldb->modules = ldb_malloc_p(ldb, struct ldb_module);
+	if (!ldb->modules) {
+		tdb_close(tdb);
+		free(ldb);
+		errno = ENOMEM;
+		return NULL;
+	}
+	ldb->modules->ldb = ldb;
+	ldb->modules->prev = ldb->modules->next = NULL;
+	ldb->modules->private_data = ltdb;
+	ldb->modules->ops = &ltdb_ops;
 
 	return ldb;
 }

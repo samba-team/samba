@@ -107,11 +107,12 @@ static int list_cmp(const char **s1, const char **s2)
 /*
   return a list of dn's that might match a simple indexed search or
  */
-static int ltdb_index_dn_simple(struct ldb_context *ldb, 
+static int ltdb_index_dn_simple(struct ldb_module *module, 
 				struct ldb_parse_tree *tree,
 				const struct ldb_message *index_list,
 				struct dn_list *list)
 {
+	struct ldb_context *ldb = module->ldb;
 	char *dn = NULL;
 	int ret;
 	unsigned int i, j;
@@ -123,7 +124,7 @@ static int ltdb_index_dn_simple(struct ldb_context *ldb,
 	/*
 	  if the value is a wildcard then we can't do a match via indexing
 	*/
-	if (ltdb_has_wildcard(ldb, tree->u.simple.attr, &tree->u.simple.value)) {
+	if (ltdb_has_wildcard(module, tree->u.simple.attr, &tree->u.simple.value)) {
 		return -1;
 	}
 
@@ -138,7 +139,7 @@ static int ltdb_index_dn_simple(struct ldb_context *ldb,
 	dn = ldb_dn_key(ldb, tree->u.simple.attr, &tree->u.simple.value);
 	if (!dn) return -1;
 
-	ret = ltdb_search_dn1(ldb, dn, &msg);
+	ret = ltdb_search_dn1(module, dn, &msg);
 	ldb_free(ldb, dn);
 	if (ret == 0 || ret == -1) {
 		return ret;
@@ -163,14 +164,14 @@ static int ltdb_index_dn_simple(struct ldb_context *ldb,
 				ldb_strdup(ldb, (char *)el->values[j].data);
 			if (!list->dn[list->count]) {
 				dn_list_free(ldb, list);
-				ltdb_search_dn1_free(ldb, &msg);
+				ltdb_search_dn1_free(module, &msg);
 				return -1;
 			}
 			list->count++;
 		}
 	}
 
-	ltdb_search_dn1_free(ldb, &msg);
+	ltdb_search_dn1_free(module, &msg);
 
 	qsort(list->dn, list->count, sizeof(char *), (comparison_fn_t) list_cmp);
 
@@ -184,12 +185,13 @@ static int list_union(struct ldb_context *, struct dn_list *, const struct dn_li
   return a list of dn's that might match a simple indexed search on
   the special objectclass attribute
  */
-static int ltdb_index_dn_objectclass(struct ldb_context *ldb, 
+static int ltdb_index_dn_objectclass(struct ldb_module *module, 
 				     struct ldb_parse_tree *tree,
 				     const struct ldb_message *index_list,
 				     struct dn_list *list)
 {
-	struct ltdb_private *ltdb = ldb->private_data;
+	struct ldb_context *ldb = module->ldb;
+	struct ltdb_private *ltdb = module->private_data;
 	unsigned int i;
 	int ret;
 	const char *target = tree->u.simple.value.data;
@@ -197,7 +199,7 @@ static int ltdb_index_dn_objectclass(struct ldb_context *ldb,
 	list->count = 0;
 	list->dn = NULL;
 
-	ret = ltdb_index_dn_simple(ldb, tree, index_list, list);
+	ret = ltdb_index_dn_simple(module, tree, index_list, list);
 
 	for (i=0;i<ltdb->cache.subclasses.num_elements;i++) {
 		struct ldb_message_element *el = &ltdb->cache.subclasses.elements[i];
@@ -212,7 +214,7 @@ static int ltdb_index_dn_objectclass(struct ldb_context *ldb,
 					return -1;
 				}
 				tree2.u.simple.value = el->values[j];
-				if (ltdb_index_dn_objectclass(ldb, &tree2, 
+				if (ltdb_index_dn_objectclass(module, &tree2, 
 							      index_list, &list2) == 1) {
 					if (list->count == 0) {
 						*list = list2;
@@ -233,15 +235,15 @@ static int ltdb_index_dn_objectclass(struct ldb_context *ldb,
 /*
   return a list of dn's that might match a leaf indexed search
  */
-static int ltdb_index_dn_leaf(struct ldb_context *ldb, 
+static int ltdb_index_dn_leaf(struct ldb_module *module, 
 			      struct ldb_parse_tree *tree,
 			      const struct ldb_message *index_list,
 			      struct dn_list *list)
 {
 	if (ldb_attr_cmp(tree->u.simple.attr, LTDB_OBJECTCLASS) == 0) {
-		return ltdb_index_dn_objectclass(ldb, tree, index_list, list);
+		return ltdb_index_dn_objectclass(module, tree, index_list, list);
 	}
-	return ltdb_index_dn_simple(ldb, tree, index_list, list);
+	return ltdb_index_dn_simple(module, tree, index_list, list);
 }
 
 
@@ -331,7 +333,7 @@ static int list_union(struct ldb_context *ldb,
 	return 0;
 }
 
-static int ltdb_index_dn(struct ldb_context *ldb, 
+static int ltdb_index_dn(struct ldb_module *module, 
 			 struct ldb_parse_tree *tree,
 			 const struct ldb_message *index_list,
 			 struct dn_list *list);
@@ -340,11 +342,12 @@ static int ltdb_index_dn(struct ldb_context *ldb,
 /*
   OR two index results
  */
-static int ltdb_index_dn_or(struct ldb_context *ldb, 
+static int ltdb_index_dn_or(struct ldb_module *module, 
 			    struct ldb_parse_tree *tree,
 			    const struct ldb_message *index_list,
 			    struct dn_list *list)
 {
+	struct ldb_context *ldb = module->ldb;
 	unsigned int i;
 	int ret;
 	
@@ -355,7 +358,7 @@ static int ltdb_index_dn_or(struct ldb_context *ldb,
 	for (i=0;i<tree->u.list.num_elements;i++) {
 		struct dn_list list2;
 		int v;
-		v = ltdb_index_dn(ldb, tree->u.list.elements[i], index_list, &list2);
+		v = ltdb_index_dn(module, tree->u.list.elements[i], index_list, &list2);
 
 		if (v == 0) {
 			/* 0 || X == X */
@@ -395,7 +398,7 @@ static int ltdb_index_dn_or(struct ldb_context *ldb,
 /*
   NOT an index results
  */
-static int ltdb_index_dn_not(struct ldb_context *ldb, 
+static int ltdb_index_dn_not(struct ldb_module *module, 
 			     struct ldb_parse_tree *tree,
 			     const struct ldb_message *index_list,
 			     struct dn_list *list)
@@ -414,11 +417,12 @@ static int ltdb_index_dn_not(struct ldb_context *ldb,
 /*
   AND two index results
  */
-static int ltdb_index_dn_and(struct ldb_context *ldb, 
+static int ltdb_index_dn_and(struct ldb_module *module, 
 			     struct ldb_parse_tree *tree,
 			     const struct ldb_message *index_list,
 			     struct dn_list *list)
 {
+	struct ldb_context *ldb = module->ldb;
 	unsigned int i;
 	int ret;
 	
@@ -429,7 +433,7 @@ static int ltdb_index_dn_and(struct ldb_context *ldb,
 	for (i=0;i<tree->u.list.num_elements;i++) {
 		struct dn_list list2;
 		int v;
-		v = ltdb_index_dn(ldb, tree->u.list.elements[i], index_list, &list2);
+		v = ltdb_index_dn(module, tree->u.list.elements[i], index_list, &list2);
 
 		if (v == 0) {
 			/* 0 && X == 0 */
@@ -465,7 +469,7 @@ static int ltdb_index_dn_and(struct ldb_context *ldb,
   return a list of dn's that might match a indexed search or
   -1 if an error. return 0 for no matches, or 1 for matches
  */
-static int ltdb_index_dn(struct ldb_context *ldb, 
+static int ltdb_index_dn(struct ldb_module *module, 
 			 struct ldb_parse_tree *tree,
 			 const struct ldb_message *index_list,
 			 struct dn_list *list)
@@ -474,19 +478,19 @@ static int ltdb_index_dn(struct ldb_context *ldb,
 
 	switch (tree->operation) {
 	case LDB_OP_SIMPLE:
-		ret = ltdb_index_dn_leaf(ldb, tree, index_list, list);
+		ret = ltdb_index_dn_leaf(module, tree, index_list, list);
 		break;
 
 	case LDB_OP_AND:
-		ret = ltdb_index_dn_and(ldb, tree, index_list, list);
+		ret = ltdb_index_dn_and(module, tree, index_list, list);
 		break;
 
 	case LDB_OP_OR:
-		ret = ltdb_index_dn_or(ldb, tree, index_list, list);
+		ret = ltdb_index_dn_or(module, tree, index_list, list);
 		break;
 
 	case LDB_OP_NOT:
-		ret = ltdb_index_dn_not(ldb, tree, index_list, list);
+		ret = ltdb_index_dn_not(module, tree, index_list, list);
 		break;
 	}
 
@@ -497,7 +501,7 @@ static int ltdb_index_dn(struct ldb_context *ldb,
   filter a candidate dn_list from an indexed search into a set of results
   extracting just the given attributes
 */
-static int ldb_index_filter(struct ldb_context *ldb, struct ldb_parse_tree *tree,
+static int ldb_index_filter(struct ldb_module *module, struct ldb_parse_tree *tree,
 			    const char *base,
 			    enum ldb_scope scope,
 			    const struct dn_list *dn_list, 
@@ -508,7 +512,7 @@ static int ldb_index_filter(struct ldb_context *ldb, struct ldb_parse_tree *tree
 	for (i=0;i<dn_list->count;i++) {
 		struct ldb_message msg;
 		int ret;
-		ret = ltdb_search_dn1(ldb, dn_list->dn[i], &msg);
+		ret = ltdb_search_dn1(module, dn_list->dn[i], &msg);
 		if (ret == 0) {
 			/* the record has disappeared? yes, this can happen */
 			continue;
@@ -519,10 +523,10 @@ static int ldb_index_filter(struct ldb_context *ldb, struct ldb_parse_tree *tree
 			return -1;
 		}
 
-		if (ldb_message_match(ldb, &msg, tree, base, scope) == 1) {
-			ret = ltdb_add_attr_results(ldb, &msg, attrs, &count, res);
+		if (ldb_message_match(module, &msg, tree, base, scope) == 1) {
+			ret = ltdb_add_attr_results(module, &msg, attrs, &count, res);
 		}
-		ltdb_search_dn1_free(ldb, &msg);
+		ltdb_search_dn1_free(module, &msg);
 		if (ret != 0) {
 			return -1;
 		}
@@ -536,13 +540,14 @@ static int ldb_index_filter(struct ldb_context *ldb, struct ldb_parse_tree *tree
   returns -1 if an indexed search is not possible, in which
   case the caller should call ltdb_search_full() 
 */
-int ltdb_search_indexed(struct ldb_context *ldb, 
+int ltdb_search_indexed(struct ldb_module *module, 
 			const char *base,
 			enum ldb_scope scope,
 			struct ldb_parse_tree *tree,
 			const char * const attrs[], struct ldb_message ***res)
 {
-	struct ltdb_private *ltdb = ldb->private_data;
+	struct ldb_context *ldb = module->ldb;
+	struct ltdb_private *ltdb = module->private_data;
 	struct dn_list dn_list;
 	int ret;
 
@@ -551,12 +556,12 @@ int ltdb_search_indexed(struct ldb_context *ldb,
 		return -1;
 	}
 
-	ret = ltdb_index_dn(ldb, tree, &ltdb->cache.indexlist, &dn_list);
+	ret = ltdb_index_dn(module, tree, &ltdb->cache.indexlist, &dn_list);
 
 	if (ret == 1) {
 		/* we've got a candidate list - now filter by the full tree
 		   and extract the needed attributes */
-		ret = ldb_index_filter(ldb, tree, base, scope, &dn_list, 
+		ret = ldb_index_filter(module, tree, base, scope, &dn_list, 
 				       attrs, res);
 		dn_list_free(ldb, &dn_list);
 	}
@@ -638,9 +643,10 @@ static int ltdb_index_add1_add(struct ldb_context *ldb,
 /*
   add an index entry for one message element
 */
-static int ltdb_index_add1(struct ldb_context *ldb, char *dn, 
+static int ltdb_index_add1(struct ldb_module *module, char *dn, 
 			   struct ldb_message_element *el, int v_idx)
 {
+	struct ldb_context *ldb = module->ldb;
 	struct ldb_message msg;
 	char *dn_key;
 	int ret, added=0, added_dn=0;
@@ -651,7 +657,7 @@ static int ltdb_index_add1(struct ldb_context *ldb, char *dn,
 		return -1;
 	}
 
-	ret = ltdb_search_dn1(ldb, dn_key, &msg);
+	ret = ltdb_search_dn1(module, dn_key, &msg);
 	if (ret == -1) {
 		ldb_free(ldb, dn_key);
 		return -1;
@@ -686,7 +692,7 @@ static int ltdb_index_add1(struct ldb_context *ldb, char *dn,
 	}
 
 	if (ret == 0) {
-		ret = ltdb_store(ldb, &msg, TDB_REPLACE);
+		ret = ltdb_store(module, &msg, TDB_REPLACE);
 	}
 
 	if (added) {
@@ -696,7 +702,7 @@ static int ltdb_index_add1(struct ldb_context *ldb, char *dn,
 		ldb_free(ldb, msg.dn);
 	}
 
-	ltdb_search_dn1_free(ldb, &msg);
+	ltdb_search_dn1_free(module, &msg);
 
 	return ret;
 }
@@ -705,9 +711,9 @@ static int ltdb_index_add1(struct ldb_context *ldb, char *dn,
   add the index entries for a new record
   return -1 on failure
 */
-int ltdb_index_add(struct ldb_context *ldb, const struct ldb_message *msg)
+int ltdb_index_add(struct ldb_module *module, const struct ldb_message *msg)
 {
-	struct ltdb_private *ltdb = ldb->private_data;
+	struct ltdb_private *ltdb = module->private_data;
 	int ret;
 	unsigned int i, j;
 
@@ -723,7 +729,7 @@ int ltdb_index_add(struct ldb_context *ldb, const struct ldb_message *msg)
 			continue;
 		}
 		for (j=0;j<msg->elements[i].num_values;j++) {
-			ret = ltdb_index_add1(ldb, msg->dn, &msg->elements[i], j);
+			ret = ltdb_index_add1(module, msg->dn, &msg->elements[i], j);
 			if (ret == -1) {
 				return -1;
 			}
@@ -737,9 +743,10 @@ int ltdb_index_add(struct ldb_context *ldb, const struct ldb_message *msg)
 /*
   delete an index entry for one message element
 */
-static int ltdb_index_del1(struct ldb_context *ldb, const char *dn, 
+static int ltdb_index_del1(struct ldb_module *module, const char *dn, 
 			   struct ldb_message_element *el, int v_idx)
 {
+	struct ldb_context *ldb = module->ldb;
 	struct ldb_message msg;
 	char *dn_key;
 	int ret, i;
@@ -750,7 +757,7 @@ static int ltdb_index_del1(struct ldb_context *ldb, const char *dn,
 		return -1;
 	}
 
-	ret = ltdb_search_dn1(ldb, dn_key, &msg);
+	ret = ltdb_search_dn1(module, dn_key, &msg);
 	if (ret == -1) {
 		ldb_free(ldb, dn_key);
 		return -1;
@@ -768,7 +775,7 @@ static int ltdb_index_del1(struct ldb_context *ldb, const char *dn,
 	if (i == -1) {
 		ldb_debug(ldb, LDB_DEBUG_ERROR, "ERROR: dn %s not found in %s\n", dn, dn_key);
 		/* it ain't there. hmmm */
-		ltdb_search_dn1_free(ldb, &msg);
+		ltdb_search_dn1_free(module, &msg);
 		ldb_free(ldb, dn_key);
 		return 0;
 	}
@@ -782,12 +789,12 @@ static int ltdb_index_del1(struct ldb_context *ldb, const char *dn,
 	msg.elements[i].num_values--;
 
 	if (msg.elements[i].num_values == 0) {
-		ret = ltdb_delete_noindex(ldb, dn_key);
+		ret = ltdb_delete_noindex(module, dn_key);
 	} else {
-		ret = ltdb_store(ldb, &msg, TDB_REPLACE);
+		ret = ltdb_store(module, &msg, TDB_REPLACE);
 	}
 
-	ltdb_search_dn1_free(ldb, &msg);
+	ltdb_search_dn1_free(module, &msg);
 	ldb_free(ldb, dn_key);
 
 	return ret;
@@ -797,9 +804,9 @@ static int ltdb_index_del1(struct ldb_context *ldb, const char *dn,
   delete the index entries for a record
   return -1 on failure
 */
-int ltdb_index_del(struct ldb_context *ldb, const struct ldb_message *msg)
+int ltdb_index_del(struct ldb_module *module, const struct ldb_message *msg)
 {
-	struct ltdb_private *ltdb = ldb->private_data;
+	struct ltdb_private *ltdb = module->private_data;
 	int ret;
 	unsigned int i, j;
 
@@ -816,7 +823,7 @@ int ltdb_index_del(struct ldb_context *ldb, const struct ldb_message *msg)
 			continue;
 		}
 		for (j=0;j<msg->elements[i].num_values;j++) {
-			ret = ltdb_index_del1(ldb, msg->dn, &msg->elements[i], j);
+			ret = ltdb_index_del1(module, msg->dn, &msg->elements[i], j);
 			if (ret == -1) {
 				return -1;
 			}
@@ -844,7 +851,7 @@ static int delete_index(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, vo
 */
 static int re_index(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *state)
 {
-	struct ldb_context *ldb = state;
+	struct ldb_module *module = state;
 	struct ldb_message msg;
 	int ret;
 
@@ -853,7 +860,7 @@ static int re_index(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *
 		return 0;
 	}
 
-	ret = ltdb_unpack_data(ldb, &data, &msg);
+	ret = ltdb_unpack_data(module->ldb, &data, &msg);
 	if (ret != 0) {
 		return -1;
 	}
@@ -862,9 +869,9 @@ static int re_index(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *
 		msg.dn = key.dptr+3;
 	}
 
-	ret = ltdb_index_add(ldb, &msg);
+	ret = ltdb_index_add(module, &msg);
 
-	ltdb_unpack_data_free(ldb, &msg);
+	ltdb_unpack_data_free(module->ldb, &msg);
 
 	return ret;
 }
@@ -872,14 +879,14 @@ static int re_index(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *
 /*
   force a complete reindex of the database
 */
-int ltdb_reindex(struct ldb_context *ldb)
+int ltdb_reindex(struct ldb_module *module)
 {
-	struct ltdb_private *ltdb = ldb->private_data;
+	struct ltdb_private *ltdb = module->private_data;
 	int ret;
 
-	ltdb_cache_free(ldb);
+	ltdb_cache_free(module);
 
-	if (ltdb_cache_load(ldb) != 0) {
+	if (ltdb_cache_load(module) != 0) {
 		return -1;
 	}
 
@@ -891,7 +898,7 @@ int ltdb_reindex(struct ldb_context *ldb)
 	}
 
 	/* now traverse adding any indexes for normal LDB records */
-	ret = tdb_traverse(ltdb->tdb, re_index, ldb);
+	ret = tdb_traverse(ltdb->tdb, re_index, module);
 	if (ret == -1) {
 		errno = EIO;
 		return -1;

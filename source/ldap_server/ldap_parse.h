@@ -35,3 +35,7 @@ struct ldap_dn {
 	int comp_num;
 	struct dn_component **components;
 };
+
+struct ldap_schema {
+	int dummy;
+};
