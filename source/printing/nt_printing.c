@@ -1541,7 +1541,7 @@ debugging function, dump at level 6 the struct in the logs
 ****************************************************************************/
 static uint32 dump_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 level)
 {
-	uint32 success;
+	uint32 result;
 	NT_PRINTER_DRIVER_INFO_LEVEL_3 *info3;
 	int i;
 	
@@ -1552,7 +1552,7 @@ static uint32 dump_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 
 		case 3:
 		{
 			if (driver.info_3 == NULL)
-				success=5;
+				result=5;
 			else {
 				info3=driver.info_3;
 			
@@ -1571,17 +1571,17 @@ static uint32 dump_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 
 					DEBUGADD(106,("dependentfile:[%s]\n",
 						      info3->dependentfiles[i]));
 				}
-				success=0;
+				result=0;
 			}
 			break;
 		}
 		default:
 			DEBUGADD(1,("Level not implemented\n"));
-			success=1;
+			result=1;
 			break;
 	}
 	
-	return (success);
+	return result;
 }
 
 /****************************************************************************
@@ -2243,7 +2243,7 @@ debugging function, dump at level 6 the struct in the logs
 ****************************************************************************/
 static uint32 dump_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level)
 {
-	uint32 success;
+	uint32 result;
 	NT_PRINTER_INFO_LEVEL_2	*info2;
 	
 	DEBUG(106,("Dumping printer at level [%d]\n", level));
@@ -2253,7 +2253,7 @@ static uint32 dump_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level)
 		case 2:
 		{
 			if (printer.info_2 == NULL)
-				success=5;
+				result=5;
 			else
 			{
 				info2=printer.info_2;
@@ -2281,17 +2281,17 @@ static uint32 dump_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level)
 				DEBUGADD(106,("printprocessor:[%s]\n", info2->printprocessor));
 				DEBUGADD(106,("datatype:[%s]\n", info2->datatype));
 				DEBUGADD(106,("parameters:[%s]\n", info2->parameters));
-				success=0;
+				result=0;
 			}
 			break;
 		}
 		default:
 			DEBUGADD(1,("Level not implemented\n"));
-			success=1;
+			result=1;
 			break;
 	}
 	
-	return (success);
+	return result;
 }
 
 /****************************************************************************
@@ -2326,7 +2326,7 @@ void get_printer_subst_params(int snum, fstring *printername, fstring *sharename
 
 uint32 mod_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level)
 {
-	uint32 success;
+	uint32 result;
 	
 	dump_a_printer(printer, level);	
 	
@@ -2335,15 +2335,15 @@ uint32 mod_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level)
 		case 2:
 		{
 			printer.info_2->c_setprinter++;
-			success=update_a_printer_2(printer.info_2);
+			result=update_a_printer_2(printer.info_2);
 			break;
 		}
 		default:
-			success=1;
+			result=1;
 			break;
 	}
 	
-	return (success);
+	return result;
 }
 
 /****************************************************************************
@@ -2353,7 +2353,7 @@ uint32 mod_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level)
 
 uint32 add_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level)
 {
-	uint32 success;
+	uint32 result;
 	
 	dump_a_printer(printer, level);	
 	
@@ -2371,15 +2371,15 @@ uint32 add_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level)
 			printer.info_2->changeid=time_nt.low;
 
 			printer.info_2->c_setprinter++;
-			success=update_a_printer_2(printer.info_2);
+			result=update_a_printer_2(printer.info_2);
 			break;
 		}
 		default:
-			success=1;
+			result=1;
 			break;
 	}
 	
-	return (success);
+	return result;
 }
 
 /****************************************************************************
@@ -2388,7 +2388,7 @@ uint32 add_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level)
 
 uint32 get_a_printer(NT_PRINTER_INFO_LEVEL **pp_printer, uint32 level, fstring sharename)
 {
-	uint32 success;
+	uint32 result;
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
 	
 	*pp_printer = NULL;
@@ -2404,8 +2404,8 @@ uint32 get_a_printer(NT_PRINTER_INFO_LEVEL **pp_printer, uint32 level, fstring s
 				return 1;
 			}
 			ZERO_STRUCTP(printer);
-			success=get_a_printer_2(&printer->info_2, sharename);
-			if (success == 0) {
+			result=get_a_printer_2(&printer->info_2, sharename);
+			if (result == 0) {
 				dump_a_printer(*printer, level);
 				*pp_printer = printer;
 			} else {
@@ -2414,13 +2414,13 @@ uint32 get_a_printer(NT_PRINTER_INFO_LEVEL **pp_printer, uint32 level, fstring s
 			break;
 		}
 		default:
-			success=1;
+			result=1;
 			break;
 	}
 	
-	DEBUG(10,("get_a_printer: [%s] level %u returning %u\n", sharename, (unsigned int)level, (unsigned int)success));
+	DEBUG(10,("get_a_printer: [%s] level %u returning %u\n", sharename, (unsigned int)level, (unsigned int)result));
 
-	return (success);
+	return result;
 }
 
 /****************************************************************************
@@ -2429,7 +2429,7 @@ uint32 get_a_printer(NT_PRINTER_INFO_LEVEL **pp_printer, uint32 level, fstring s
 
 uint32 free_a_printer(NT_PRINTER_INFO_LEVEL **pp_printer, uint32 level)
 {
-	uint32 success;
+	uint32 result;
 	NT_PRINTER_INFO_LEVEL *printer = *pp_printer;
 
 	DEBUG(104,("freeing a printer at level [%d]\n", level));
@@ -2444,29 +2444,29 @@ uint32 free_a_printer(NT_PRINTER_INFO_LEVEL **pp_printer, uint32 level)
 			if (printer->info_2 != NULL)
 			{
 				free_nt_printer_info_level_2(&printer->info_2);
-				success=0;
+				result=0;
 			}
 			else
 			{
-				success=4;
+				result=4;
 			}
 			break;
 		}
 		default:
-			success=1;
+			result=1;
 			break;
 	}
 
 	safe_free(printer);
 	*pp_printer = NULL;
-	return (success);
+	return result;
 }
 
 /****************************************************************************
 ****************************************************************************/
 uint32 add_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 level)
 {
-	uint32 success;
+	uint32 result;
 	DEBUG(104,("adding a printer at level [%d]\n", level));
 	dump_a_printer_driver(driver, level);
 	
@@ -2474,51 +2474,51 @@ uint32 add_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 level)
 	{
 		case 3:
 		{
-			success=add_a_printer_driver_3(driver.info_3);
+			result=add_a_printer_driver_3(driver.info_3);
 			break;
 		}
 
 		case 6:
 		{
-			success=add_a_printer_driver_6(driver.info_6);
+			result=add_a_printer_driver_6(driver.info_6);
 			break;
 		}
 		default:
-			success=1;
+			result=1;
 			break;
 	}
 	
-	return (success);
+	return result;
 }
 /****************************************************************************
 ****************************************************************************/
 uint32 get_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL *driver, uint32 level,
                             fstring printername, fstring architecture, uint32 version)
 {
-	uint32 success;
+	uint32 result;
 	
 	switch (level)
 	{
 		case 3:
 		{
-			success=get_a_printer_driver_3(&driver->info_3, printername, architecture, version);
+			result=get_a_printer_driver_3(&driver->info_3, printername, architecture, version);
 			break;
 		}
 		default:
-			success=1;
+			result=1;
 			break;
 	}
 	
-	if (success == 0)
+	if (result == 0)
 		dump_a_printer_driver(*driver, level);
-	return (success);
+	return result;
 }
 
 /****************************************************************************
 ****************************************************************************/
 uint32 free_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 level)
 {
-	uint32 success;
+	uint32 result;
 	
 	switch (level)
 	{
@@ -2531,11 +2531,11 @@ uint32 free_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 level)
 				safe_free(info3->dependentfiles);
 				ZERO_STRUCTP(info3);
 				safe_free(info3);
-				success=0;
+				result=0;
 			}
 			else
 			{
-				success=4;
+				result=4;
 			}
 			break;
 		}
@@ -2549,19 +2549,19 @@ uint32 free_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 level)
 				safe_free(info6->previousnames);
 				ZERO_STRUCTP(info6);
 				safe_free(info6);
-				success=0;
+				result=0;
 			}
 			else
 			{
-				success=4;
+				result=4;
 			}
 			break;
 		}
 		default:
-			success=1;
+			result=1;
 			break;
 	}
-	return (success);
+	return result;
 }
 
 /****************************************************************************
