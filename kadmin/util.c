@@ -173,7 +173,7 @@ edit_attributes (const char *prompt, krb5_flags *attr, int *mask, int bit)
 
     attr2str(*attr, buf, sizeof(buf));
     for (;;) {
-	krb5_flags tmp;
+	krb5_flags tmp = *attr;
 
 	get_response("Attributes", buf, resp, sizeof(resp));
 	if (resp[0] == '\0')
