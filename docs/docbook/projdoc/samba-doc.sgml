@@ -95,6 +95,13 @@ for various environments.
 &unicode;
 </part>
 
+<part id="troubleshooting">
+<title>Troubleshooting</title>
+&Diagnosis;
+&problems;
+&BUGS;
+</part>
+
 <part id="Appendixes">
 <title>Appendixes</title>
 &Compiling;
@@ -103,8 +110,5 @@ for various environments.
 &Other-Clients;
 &SWAT;
 &SPEED;
-&Diagnosis;
-&problems;
-&BUGS;
 </part>
 </book>
