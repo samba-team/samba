@@ -13,8 +13,8 @@
 # cvs should be submitted for inclusion in samba cvs.
 
 %define pkg_name	samba
-%define ver 		3.0.0rc4
-%define rel 		2mdk
+%define ver 		3.0.1pre3
+%define rel 		3mdk
 %define vscanver 	0.3.3beta1
 %define libsmbmajor 	0
 
@@ -58,6 +58,7 @@
 # We now do detection of the Mandrake release we are building on:
 #%define build_cooker %(if [ `awk '{print $3}' /etc/mandrake-release` = "Cooker" ];then echo 1; else echo 0; fi)
 #%define build_cooker %(if [[ `cat /etc/mandrake-release|grep Cooker` ]];then echo 1; else echo 0; fi)
+%define build_mdk100 %(if [ `awk '{print $4}' /etc/mandrake-release` = 10.0 ];then echo 1; else echo 0; fi)
 %define build_mdk92 %(if [ `awk '{print $4}' /etc/mandrake-release` = 9.2 ];then echo 1; else echo 0; fi)
 %define build_mdk91 %(if [ `awk '{print $4}' /etc/mandrake-release` = 9.1 ];then echo 1; else echo 0; fi)
 %define build_mdk90 %(if [ `awk '{print $4}' /etc/mandrake-release` = 9.0 ];then echo 1; else echo 0; fi)
@@ -82,6 +83,12 @@
 %define have_rpmhelper	1
 
 # Set defaults for each version
+%if %build_mdk100
+%define build_system	1
+%define build_alternatives	1
+%define build_cupspc	1
+%endif
+
 %if %build_mdk92
 %define build_alternatives	1
 %define build_cupspc	1
@@ -182,7 +189,7 @@
 
 #Standard texts for descriptions:
 %define message_bugzilla() %(echo -e -n "Please file bug reports for this package at Mandrake bugzilla \\n(http://qa.mandrakesoft.com) under the product name %{1}")
-%define message_system %(echo -e -n "NOTE: This is a prerelease of samba-%{samba_major}, not intended for production\\n use. Rather these packages are provided, parallel installable\\nwith samba-2.2.x, for testing purposes")
+%define message_system %(echo -e -n "NOTE: These packages of samba-%{version}, are provided, parallel installable\\nwith samba-2.2.x, to allow easy migration from samba-2.2.x to samba-%{version},\\nbut are not officially supported")
 
 #check gcc version to disable some optimisations on gcc-3.3.1
 %define gcc331 %(gcc -dumpversion|awk '{if ($1>3.3) print 1; else print 0}')
@@ -190,8 +197,8 @@
 #Define sets of binaries that we can use in globs and loops:
 %global commonbin net,ntlm_auth,rpcclient,smbcacls,smbcquotas,smbpasswd,smbtree,testparm,testprns
 
-%global serverbin 	editreg,pdbedit,profiles,smbcontrol,smbstatus,tdbbackup
-%global serversbin nmbd,samba,smbd
+%global serverbin 	editreg,pdbedit,profiles,smbcontrol,smbstatus,tdbbackup,tdbdump
+%global serversbin nmbd,samba,smbd,mkntpwd
 
 %global clientbin 	findsmb,nmblookup,smbclient,smbmnt,smbmount,smbprint,smbspool,smbtar,smbumount
 %global client_bin 	mount.cifs
@@ -257,13 +264,10 @@ Source7: README.%{name}-mandrake-rpm
 Source8: samba-vscan-%{vscanver}.tar.bz2
 %endif
 Source10: samba-print-pdf.sh.bz2
-Source11: mount.cifs.8.bz2
 Patch1: smbw.patch.bz2
-Patch3: samba-2.2.0-buildroot.patch.bz2
 Patch4: samba-3.0-smbmount-sbin.patch.bz2
 %if !%have_pversion
 # Version specific patches: current version
-Patch100: samba-3.0.0rc4-mandrake-packaging.patch.bz2
 %else
 # Version specific patches: upcoming version
 %endif
@@ -485,6 +489,11 @@ URL:	http://www.samba.org
 Summary: Samba-winbind daemon, utilities and documentation
 Group: System/Servers
 Requires: %{name}-common = %{version}
+%endif
+%if %build_winbind && !%build_system
+Conflicts: samba-winbind
+%endif
+%if %build_winbind
 %description winbind
 Provides the winbind daemon and testing tools to allow authentication 
 and group/user enumeration from a Windows or Samba domain controller.
@@ -503,6 +512,11 @@ Summary: Name Service Switch service for WINS
 Group: System/Servers
 Requires: %{name}-common = %{version}
 PreReq: glibc
+%endif
+%if %build_wins && !%build_system
+Conflicts: nss_wins
+%endif
+%if %build_wins
 %description -n nss_wins%{samba_major}
 Provides the libnss_wins shared library which resolves NetBIOS names to 
 IP addresses.
@@ -524,7 +538,8 @@ Requires: %{name}-common = %{version}
 %if %build_system && %{?_with_test:1}%{!?_with_test:0}
 Provides:  samba3-test samba3-debug
 Obsoletes: samba3-test samba3-debug
-%else
+%endif
+%if !%build_system && %{?_with_test:1}%{!?_with_test:0}
 Provides: samba-test samba3-debug
 Obsoletes: samba3-debug
 %endif
@@ -606,23 +621,29 @@ allowing the development of other software to access SMB shares.
 URL:		http://www.samba.org
 Summary:	Samba password database plugin for MySQL
 Group:		System/Libraries
+Requires:	%{name}-server = %{version}-%{release}
+%endif
+%ifnarch alpha && %build_system
+Obsoletes:	samba3-passdb-mysql 
+Provides:	samba3-passdb-mysql 
+%endif
+%ifnarch alpha
 
 %description passdb-mysql
 The passdb-mysql package for samba provides a password database
 backend allowing samba to store account details in a MySQL
 database
 %endif
-%ifnarch alpha && %have_pversion
-%message_bugzilla samba3-passdb-mysql
-%endif
-%ifnarch alpha && !%build_system
-%message_system
-%endif
 
 %package passdb-xml
 URL:		http://www.samba.org
 Summary:	Samba password database plugin for XML files
 Group:		System/Libraries
+Requires:	%{name}-server = %{version}-%{release}
+%if %build_system
+Obsoletes:	samba3-passdb-xml 
+Provides:	samba3-passdb-xml 
+%endif
 
 %description passdb-xml
 The passdb-xml package for samba provides a password database
@@ -791,12 +812,10 @@ echo -e "\n%{name}-%{version}-%{release}\n">>%{SOURCE7}
 %endif
 #%patch111 -p1
 %patch1 -p1 -b .smbw
-%patch3 -p1 -b .buildroot
 %patch4 -p1 -b .sbin
 # Version specific patches: current version
 %if !%have_pversion
 echo "Applying patches for current version: %{ver}"
-%patch100 -p1 -b .mdk
 %else
 # Version specific patches: upcoming version
 echo "Applying patches for new versions: %{pversion}"
@@ -989,7 +1008,7 @@ mkdir -p $RPM_BUILD_ROOT%{_datadir}/%{name}/scripts
 #smbwrapper and pam_winbind not handled by make, pam_smbpass.so doesn't build
 #install -m 755 source/bin/smbwrapper.so $RPM_BUILD_ROOT%{_libdir}/smbwrapper%{samba_major}.so
 install -m 755 source/bin/pam_smbpass.so $RPM_BUILD_ROOT/%{_lib}/security/pam_smbpass%{samba_major}.so
-install -m 755 source/nsswitch/pam_winbind.so $RPM_BUILD_ROOT/%{_lib}/security/pam_winbind%{samba_major}.so
+install -m 755 source/nsswitch/pam_winbind.so $RPM_BUILD_ROOT/%{_lib}/security/pam_winbind.so
 
 install -m755 source/bin/libsmbclient.a $RPM_BUILD_ROOT%{_libdir}/libsmbclient.a
 pushd $RPM_BUILD_ROOT/%{_libdir}
@@ -1021,10 +1040,10 @@ popd
 #libnss_* not handled by make:
 # Install the nsswitch library extension file
 for i in wins winbind; do
-  install -m755 source/nsswitch/libnss_${i}.so $RPM_BUILD_ROOT/%{_lib}/libnss_${i}%{samba_major}.so
+  install -m755 source/nsswitch/libnss_${i}.so $RPM_BUILD_ROOT/%{_lib}/libnss_${i}.so
 done
 # Make link for wins and winbind resolvers
-( cd $RPM_BUILD_ROOT/%{_lib}; ln -s libnss_wins%{samba_major}.so libnss_wins%{samba_major}.so.2; ln -s libnss_winbind%{samba_major}.so libnss_winbind%{samba_major}.so.2)
+( cd $RPM_BUILD_ROOT/%{_lib}; ln -s libnss_wins.so libnss_wins.so.2; ln -s libnss_winbind.so libnss_winbind.so.2)
 
 %if %{?_with_test:1}%{!?_with_test:0}
 for i in {%{testbin}};do
@@ -1041,11 +1060,11 @@ done
         install -m755 packaging/Mandrake/findsmb $RPM_BUILD_ROOT/%{_bindir}
         install -m755 packaging/Mandrake/smb.init $RPM_BUILD_ROOT/%{_initrddir}/smb%{samba_major}
         install -m755 packaging/Mandrake/smb.init $RPM_BUILD_ROOT/%{_sbindir}/%{name}
-	install -m755 packaging/Mandrake/winbind.init $RPM_BUILD_ROOT/%{_initrddir}/winbind%{samba_major}
+	install -m755 packaging/Mandrake/winbind.init $RPM_BUILD_ROOT/%{_initrddir}/winbind
 #	install -m755 packaging/Mandrake/wrepld.init $RPM_BUILD_ROOT/%{_initrddir}/wrepld%{samba_major}
-	install -m755 packaging/Mandrake/winbind.init $RPM_BUILD_ROOT/%{_sbindir}/winbind%{samba_major}
+	install -m755 packaging/Mandrake/winbind.init $RPM_BUILD_ROOT/%{_sbindir}/winbind
         install -m644 packaging/Mandrake/samba.pamd $RPM_BUILD_ROOT/%{_sysconfdir}/pam.d/%{name}
-	install -m644 packaging/Mandrake/system-auth-winbind.pamd $RPM_BUILD_ROOT/%{_sysconfdir}/pam.d/system-auth-winbind%{samba_major}
+	install -m644 packaging/Mandrake/system-auth-winbind.pamd $RPM_BUILD_ROOT/%{_sysconfdir}/pam.d/system-auth-winbind
 #
         install -m644 %{SOURCE1} $RPM_BUILD_ROOT/%{_sysconfdir}/logrotate.d/%{name}
 #	install -m644 packaging/Mandrake/samba-slapd-include.conf $RPM_BUILD_ROOT%{_sysconfdir}/%{name}/samba-slapd.include
@@ -1069,6 +1088,7 @@ perl -pi -e 's/^(use|package)(\s+)smbldap_(\w+);$/${1}${2}smbldap_${3}%{samba_ma
 perl -pi -e 's,/usr/local/sbin/mkntpwd,/usr/sbin/mkntpwd%{samba_major},g;s,553,421,g' %{buildroot}/%{_sysconfdir}/%{name}/smbldap_conf.pm
 perl -pi -e 's,\$smbldap_conf::SID,\$smbldap_conf3::SID,g' %{buildroot}/%{_datadir}/%{name}/scripts/smbldap*.p?
 %endif
+perl -pi -e 's,/usr/local/sbin/smbldap-passwd.pl,%{_datadir}/%{name}/scripts/smbldap-passwd.pl,g' %{buildroot}/%{_datadir}/%{name}/scripts/smbldap-useradd.pl 
 
 # Link both smbldap*.pm into vendor-perl (any better ideas?)
 mkdir -p %{buildroot}/%{perl_vendorlib}
@@ -1101,7 +1121,6 @@ perl -pi -e 's/printcap name = lpstat/printcap name = cups/g' $RPM_BUILD_ROOT/%{
 
 #install mount.cifs
 install -m755 source/client/mount.cifs %{buildroot}/bin/mount.cifs%{samba_major}
-#bzcat %{SOURCE11} > %{buildroot}/%{_mandir}/man8/mount.cifs%{samba_major}.8
 
         echo 127.0.0.1 localhost > $RPM_BUILD_ROOT/%{_sysconfdir}/%{name}/lmhosts
 
@@ -1172,13 +1191,13 @@ done
 )
 # Server/common binaries are versioned only if not system samba:
 %if !%build_system
-for OLD in %{buildroot}/%{_bindir}/{%{commonbin}} %{buildroot}/%{_bindir}/{%{serverbin},wbinfo} %{buildroot}/%{_sbindir}/{%{serversbin},winbindd,swat}
+for OLD in %{buildroot}/%{_bindir}/{%{commonbin}} %{buildroot}/%{_bindir}/{%{serverbin}} %{buildroot}/%{_sbindir}/{%{serversbin},swat}
 do
     NEW=`echo ${OLD}%{alternative_major}`
     mv $OLD $NEW -f ||:
 done
 # And the man pages too:
-for OLD in %{buildroot}/%{_mandir}/man?/{%{commonbin},%{serverbin},wbinfo,%{serversbin},winbindd,swat,{%testbin},smb.conf,lmhosts}*
+for OLD in %{buildroot}/%{_mandir}/man?/{%{commonbin},%{serverbin},%{serversbin},swat,{%testbin},smb.conf,lmhosts}*
 do
     if [ -e $OLD ]
     then
@@ -1190,14 +1209,12 @@ do
     fi
 done		
 # Replace paths in config files and init scripts:
-for i in smb winbind;do
+for i in smb ;do
 	perl -pi -e 's,/subsys/'$i',/subsys/'$i'%{samba_major},g' $RPM_BUILD_ROOT/%{_initrddir}/${i}%{samba_major}
 done
-for i in %{_sysconfdir}/%{name}/smb.conf %{_initrddir}/smb%{samba_major} %{_sbindir}/%{name} %{_initrddir}/winbind%{samba_major} %{_sbindir}/winbind%{samba_major} /%{_sysconfdir}/logrotate.d/%{name} /%{_sysconfdir}/xinetd.d/swat%{samba_major} %{_initrddir}/wrepld%{samba_major}; do
-	perl -pi -e 's,/%{pkg_name},/%{name},g; s,smbd,%{_sbindir}/smbd%{samba_major},g; s,nmbd,%{_sbindir}/nmbd%{samba_major},g; s,winbindd,%{_sbindir}/winbindd%{samba_major},g; s,/usr/sbin/swat,%{_sbindir}/swat%{samba_major},g;s,wrepld,%{_sbindir}/wrepld%{samba_major},g' $RPM_BUILD_ROOT/$i;
+for i in %{_sysconfdir}/%{name}/smb.conf %{_initrddir}/smb%{samba_major} %{_sbindir}/%{name} %{_initrddir}/winbind /%{_sysconfdir}/logrotate.d/%{name} /%{_sysconfdir}/xinetd.d/swat%{samba_major} %{_initrddir}/wrepld%{samba_major}; do
+	perl -pi -e 's,/%{pkg_name},/%{name},g; s,smbd,%{_sbindir}/smbd%{samba_major},g; s,nmbd,%{_sbindir}/nmbd%{samba_major},g; s,/usr/sbin/swat,%{_sbindir}/swat%{samba_major},g;s,wrepld,%{_sbindir}/wrepld%{samba_major},g' $RPM_BUILD_ROOT/$i;
 done
-# Fix pam files
-perl -pi -e 's/winbind/winbind%{samba_major}/g' $RPM_BUILD_ROOT/%{_sysconfdir}/pam.d/system-auth-winbind%{samba_major}
 # Fix xinetd file for swat:
 perl -pi -e 's,/usr/sbin,%{_sbindir},g' $RPM_BUILD_ROOT/%{_sysconfdir}/xinetd.d/swat%{samba_major}
 %endif
@@ -1228,17 +1245,6 @@ if [ -f $i ]; then
 fi
 done
 
-# Remove the transient tdb files (modified from version in off. samba spec:
-for TDB in brlock unexpected locking messages; do
-        if [ -e /var/cache/%{name}/$TDB.tdb ]; then
-                rm -f /var/cache/%{name}/$TDB.tdb;
-        fi;
-done
-
-if [ -d /var/lock/samba ]; then
-        rm -rf /var/lock/samba
-fi
-
 %post common
 # Basic migration script for pre-2.2.1 users,
 # since smb config moved from /etc to %{_sysconfdir}/samba
@@ -1257,12 +1263,6 @@ fi
 # Let's define the proper paths for config files
 perl -pi -e 's/(\/etc\/)(smb)/\1%{name}\/\2/' %{_sysconfdir}/%{name}/smb.conf
 
-# Let's replace lpstat with cups in older smb.conf:
-%if %build_cupspc
-echo "Updating samba printing configuration if necessary..."
-perl -pi -e 's/= lpstat/= cups/' %{_sysconfdir}/%{name}/smb.conf
-%endif
-
 # Fix the logrotate.d file from smb and nmb to smbd and nmbd
 if [ -f %{_sysconfdir}/logrotate.d/samba ]; then
         perl -pi -e 's/smb /smbd /' %{_sysconfdir}/logrotate.d/samba
@@ -1275,14 +1275,14 @@ fi
 %if %build_winbind
 %post winbind
 if [ $1 = 1 ]; then
-    /sbin/chkconfig winbind%{samba_major} on
+    /sbin/chkconfig winbind on
     cp -af %{_sysconfdir}/nsswitch.conf %{_sysconfdir}/nsswitch.conf.rpmsave
     cp -af %{_sysconfdir}/nsswitch.conf %{_sysconfdir}/nsswitch.conf.rpmtemp
     for i in passwd group;do
-        grep ^$i %{_sysconfdir}/nsswitch.conf |grep -v 'winbind%{samba_major}' >/dev/null
+        grep ^$i %{_sysconfdir}/nsswitch.conf |grep -v 'winbind' >/dev/null
         if [ $? = 0 ];then
-            echo "Adding a winbind%{samba_major} entry to the $i section of %{_sysconfdir}/nsswitch.conf"
-            awk '/^'$i'/ {print $0 " winbind%{samba_major}"};!/^'$i'/ {print}' %{_sysconfdir}/nsswitch.conf.rpmtemp >%{_sysconfdir}/nsswitch.conf;
+            echo "Adding a winbind entry to the $i section of %{_sysconfdir}/nsswitch.conf"
+            awk '/^'$i'/ {print $0 " winbind"};!/^'$i'/ {print}' %{_sysconfdir}/nsswitch.conf.rpmtemp >%{_sysconfdir}/nsswitch.conf;
 	    cp -af %{_sysconfdir}/nsswitch.conf %{_sysconfdir}/nsswitch.conf.rpmtemp
         else
             echo "$i entry found in %{_sysconfdir}/nsswitch.conf"
@@ -1293,10 +1293,10 @@ fi
 
 %preun winbind
 if [ $1 = 0 ]; then
-	echo "Removing winbind%{samba_major} entries from %{_sysconfdir}/nsswitch.conf"
-	perl -pi -e 's/ winbind%{samba_major}//' %{_sysconfdir}/nsswitch.conf
+	echo "Removing winbind entries from %{_sysconfdir}/nsswitch.conf"
+	perl -pi -e 's/ winbind//' %{_sysconfdir}/nsswitch.conf
 
-	/sbin/chkconfig winbind%{samba_major} reset
+	/sbin/chkconfig winbind reset
 fi
 %endif %build_winbind
 
@@ -1304,10 +1304,10 @@ fi
 %post -n nss_wins%{samba_major}
 if [ $1 = 1 ]; then
     cp -af %{_sysconfdir}/nsswitch.conf %{_sysconfdir}/nsswitch.conf.rpmsave
-    grep '^hosts' %{_sysconfdir}/nsswitch.conf |grep -v 'wins%{samba_major}' >/dev/null
+    grep '^hosts' %{_sysconfdir}/nsswitch.conf |grep -v 'wins' >/dev/null
     if [ $? = 0 ];then
         echo "Adding a wins entry to the hosts section of %{_sysconfdir}/nsswitch.conf"
-        awk '/^hosts/ {print $0 " wins%{samba_major}"};!/^hosts/ {print}' %{_sysconfdir}/nsswitch.conf.rpmsave >%{_sysconfdir}/nsswitch.conf;
+        awk '/^hosts/ {print $0 " wins"};!/^hosts/ {print}' %{_sysconfdir}/nsswitch.conf.rpmsave >%{_sysconfdir}/nsswitch.conf;
     else
         echo "wins entry found in %{_sysconfdir}/nsswitch.conf"
     fi
@@ -1318,7 +1318,7 @@ fi
 %preun -n nss_wins%{samba_major}
 if [ $1 = 0 ]; then
 	echo "Removing wins entry from %{_sysconfdir}/nsswitch.conf"
-	perl -pi -e 's/ wins%{samba_major}//' %{_sysconfdir}/nsswitch.conf
+	perl -pi -e 's/ wins//' %{_sysconfdir}/nsswitch.conf
 #else
 #	echo "Leaving %{_sysconfdir}/nsswitch.conf intact"
 fi
@@ -1333,15 +1333,6 @@ if [ $1 = 0 ] ; then
 #    /sbin/chkconfig --level 35 smb reset
 # Let's not loose /var/cache/samba
 
-#    for i in browse.dat wins.dat brlock.tdb unexpected.tdb connections.tdb \
-#locking.tdb messages.tdb;do
-#        if [ -e /var/cache/samba/$i ]; then
-#                mv -f /var/cache/samba/$i /var/cache/samba/$i.BAK
-#        fi;
-#    done
-    if [ -d /var/log/%{name} ]; then
-      rm -rf /var/log/%{name}/*
-    fi
     if [ -d /var/cache/%{name} ]; then
       mv -f /var/cache/%{name} /var/cache/%{name}.BAK
     fi
@@ -1383,37 +1374,30 @@ echo -n " --slave ${i} ${j} ${i}%{alternative_major}";done) \
 update-alternatives --auto smbclient
 
 %preun client
-[ $1 = 0 ] && update-alternatives --remove smbclient %{_bindir}/smbclient%{alternative_major}
+[ $1 = 0 ] && update-alternatives --remove smbclient %{_bindir}/smbclient%{alternative_major} ||:
 %endif
 
-%triggerpostun -- samba < 1.9.18p7
-
-if [ $1 != 0 ]; then
-    /sbin/chkconfig --level 35 smb on
-fi
-
-%triggerpostun -- samba < 2.0.5a-3, samba >= 2.0.0
-
-if [ $1 != 0 ]; then
-        [ ! -d /var/lock/samba ] && mkdir -m 0755 /var/lock/samba ||:
-        [ ! -d /var/spool/samba ] && mkdir -m 1777 /var/spool/samba ||:
-        [ -f %{_sysconfdir}/inetd.conf ] && chmod 644 %{_sysconfdir}/services %{_sysconfdir}/inetd.conf ||:
-fi
+%if %build_alternatives
+%triggerpostun client -- samba-client, samba2-client
+[ ! -e %{_bindir}/smbclient ] && update-alternatives --auto smbclient || :
+%endif
 
 %files server
 %defattr(-,root,root)
 #%attr(-,root,root) /sbin/*
-%{_sbindir}/%{name}
-%{_sbindir}/smbd%{samba_major}
-%{_sbindir}/nmbd%{samba_major}
+%(for i in %{_sbindir}/{%{serversbin}}%{samba_major};do echo $i;done)
+#%{_sbindir}/%{name}
+#%{_sbindir}/smbd%{samba_major}
+#%{_sbindir}/nmbd%{samba_major}
+#%{_sbindir}/mkntpwd%{samba_major}
 #%{_sbindir}/wrepld%{samba_major}
-%{_bindir}/smbcontrol%{samba_major}
-%{_sbindir}/mkntpwd%{samba_major}
-%{_bindir}/smbstatus%{samba_major}
-%{_bindir}/pdbedit%{samba_major}
-%{_bindir}/tdbbackup%{samba_major}
-%{_bindir}/profiles%{samba_major}
-%{_bindir}/editreg%{samba_major}
+%(for i in %{_bindir}/{%{serverbin}}%{samba_major};do echo $i;done)
+#%{_bindir}/smbcontrol%{samba_major}
+#%{_bindir}/smbstatus%{samba_major}
+#%{_bindir}/pdbedit%{samba_major}
+#%{_bindir}/tdbbackup%{samba_major}
+#%{_bindir}/profiles%{samba_major}
+#%{_bindir}/editreg%{samba_major}
 %attr(755,root,root) /%{_lib}/security/pam_smbpass*
 %dir %{_libdir}/%{name}/vfs
 %{_libdir}/%{name}/vfs/*.so
@@ -1438,7 +1422,7 @@ fi
 %attr(775,root,adm) %dir %{_localstatedir}/%{name}/netlogon
 %attr(755,root,root) %dir %{_localstatedir}/%{name}/profiles
 %attr(755,root,root) %dir %{_localstatedir}/%{name}/printers
-%attr(775,root,adm) %dir %{_localstatedir}/%{name}/printers/*
+%attr(2775,root,adm) %dir %{_localstatedir}/%{name}/printers/*
 %attr(1777,root,root) %dir /var/spool/%{name}
 %dir %{_datadir}/%{name}
 %dir %{_datadir}/%{name}/scripts
@@ -1476,6 +1460,14 @@ fi
 %lang(ja) %{_datadir}/swat%{samba_major}/lang/ja
 %lang(tr) %{_datadir}/swat%{samba_major}/lang/tr
 %{_mandir}/man8/swat*.8*
+%lang(de) %{_libdir}/%{name}/de.msg
+%lang(en) %{_libdir}/%{name}/en.msg
+%lang(fr) %{_libdir}/%{name}/fr.msg
+%lang(it) %{_libdir}/%{name}/it.msg
+%lang(ja) %{_libdir}/%{name}/ja.msg
+%lang(nl) %{_libdir}/%{name}/nl.msg
+%lang(pl) %{_libdir}/%{name}/pl.msg
+%lang(tr) %{_libdir}/%{name}/tr.msg
 #%doc swat/README
 
 %files client
@@ -1520,18 +1512,18 @@ fi
 %attr(-,root,root) %{_localstatedir}/%{name}/codepages
 %{_mandir}/man5/smb.conf*.5*
 %{_mandir}/man5/lmhosts*.5*
-%{_mandir}/man7/Samba*.7*
+#%{_mandir}/man7/Samba*.7*
 %dir %{_datadir}/swat%{samba_major}
 
 %if %build_winbind
 %files winbind
 %defattr(-,root,root)
-%{_sbindir}/winbindd%{samba_major}
-%{_sbindir}/winbind%{samba_major}
-%{_bindir}/wbinfo%{samba_major}
+%{_sbindir}/winbindd
+%{_sbindir}/winbind
+%{_bindir}/wbinfo
 %attr(755,root,root) /%{_lib}/security/pam_winbind*
-%attr(755,root,root) /%{_lib}/libnss_winbind%{samba_major}*
-%attr(-,root,root) %config(noreplace) %{_initrddir}/winbind%{samba_major}
+%attr(755,root,root) /%{_lib}/libnss_winbind*
+%attr(-,root,root) %config(noreplace) %{_initrddir}/winbind
 %attr(-,root,root) %config(noreplace) %{_sysconfdir}/pam.d/system-auth-winbind*
 %{_mandir}/man8/winbindd*.8*
 %{_mandir}/man1/wbinfo*.1*
@@ -1540,7 +1532,7 @@ fi
 %if %build_wins
 %files -n nss_wins%{samba_major}
 %defattr(-,root,root)
-%attr(755,root,root) /%{_lib}/libnss_wins%{samba_major}.so*
+%attr(755,root,root) /%{_lib}/libnss_wins.so*
 %endif
 
 %if %{?_with_test:1}%{!?_with_test:0}
@@ -1655,6 +1647,29 @@ fi
 %exclude %{_mandir}/man1/smbsh*.1*
 
 %changelog
+* Sun Nov 16 2003 Buchan Milne <bgmilne@linux-mandrake.com> 3.0.1-0.rpe3.3mdk
+- Ensure printer drivers keep permissions by default (setgid and inherit perms)
+
+* Fri Nov 14 2003 Buchan Milne <bgmilne@linux-mandrake.com> 3.0.1-0.pre3.2mdk
+- 3.0.1pre3
+- Add support for Mandrake 10.0 (as system samba)
+- Fix alternatives triggers
+- Fix obsoletes
+
+* Mon Nov 10 2003 Buchan Milne <bgmilne@linux-mandrake.com> 3.0.1-0.pre2.2mdk
+- 3.0.1pre2
+- misc spec files (pointed out by Luca Olivetti)
+- Fix path to smbldap-passwd.pl
+- Only allow one copy of winbind and nss_wins
+- Add trigger for alternatives
+
+* Sun Oct 12 2003 Buchan Milne <bgmilne@linux-mandrake.com> 3.0.1-0.pre1.2mdk
+- 3.0.1pre1
+- remove buildroot patch (p3), fixed upstream
+
+* Thu Sep 25 2003 Buchan Milne <bgmilne@linux-mandrake.com> 3.0.0-2mdk
+- 3.0.0 final
+
 * Sat Sep 13 2003 Buchan Milne <bgmilne@linux-mandrake.com> 3.0.0-0.rc4.2mdk
 - rc4
 - Don't update alternatives in pre/post scripts when not using alternatives
