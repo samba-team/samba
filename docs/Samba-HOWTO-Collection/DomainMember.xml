@@ -207,7 +207,7 @@ a Linux-based Samba server:
 </screen>
 </para>
 
-<para>In the above example above there is an existing system group <quote>machines</quote> which is used
+<para>In the example above there is an existing system group <quote>machines</quote> which is used
 as the primary group for all machine accounts. In the following examples the <quote>machines</quote> group has
 numeric GID equal 100.</para>
 
