@@ -78,18 +78,14 @@ BOOL receive_local_message( char *buffer, int buffer_len, int timeout)
 	socklen_t fromlen = sizeof(from);
 	int32 msg_len = 0;
 	fd_set fds;
+	int selrtn = -1;
 
 	smb_read_error = 0;
 
-	if(timeout != 0) {
+	while (timeout > 0) {
 		struct timeval to;
-		int selrtn;
 		int maxfd = oplock_sock;
-		time_t starttime;
-
-  again:
-
-		starttime = time(NULL);
+		time_t starttime = time(NULL);
 
 		FD_ZERO(&fds);
 		maxfd = setup_oplock_select_set(&fds);
@@ -110,11 +106,10 @@ BOOL receive_local_message( char *buffer, int buffer_len, int timeout)
 			/* We need to decrement the timeout here. */
 			timeout -= ((time(NULL) - starttime)*1000);
 			if (timeout < 0)
-				timeout = 0;
+				timeout = 1;
 
 			DEBUG(5,("receive_local_message: EINTR : new timeout %d ms\n", timeout));
-
-			goto again;
+			continue;
 		}
 
 		/* Check if error */
