@@ -42,7 +42,7 @@
 	it does not close the stdout pipe back to the automount
 	process, which automount depends on.  This will cause automount
 	to hang!  Use with caution! */
-/* #define SMBFS_DEBUG 1	*/
+#define SMBFS_DEBUG 1 
 
 extern struct in_addr ipzero;
 extern int DEBUGLEVEL;
@@ -62,25 +62,7 @@ static BOOL have_ip;
 static int port = 139;
 static BOOL got_pass;
 
-/* This is used by smbclient to send it to a smbfs mount point */
-struct connection_options {
-	int protocol;
-	/* Connection-Options */
-	uint32 max_xmit;
-	uint16 server_vuid;
-	uint16 tid;
-	/* The following are LANMAN 1.0 options */
-	uint16 sec_mode;
-	uint16 max_mux;
-	uint16 max_vcs;
-	uint16 rawmode;
-	uint32 sesskey;
-	/* The following are NT LM 0.12 options */
-	uint32 maxraw;
-	uint32 capabilities;
-	uint16 serverzone;
-};
-
+static void usage(void);
 
 static void exit_parent(int sig)
 {
@@ -136,21 +118,29 @@ static void usr1_handler(int x)
 /***************************************************** 
 return a connection to a server
 *******************************************************/
-struct cli_state *do_connect(char *server, char *share)
+static struct cli_state *do_connection(char *service)
 {
 	struct cli_state *c;
 	struct nmb_name called, calling;
 	char *server_n;
 	struct in_addr ip;
 	extern struct in_addr ipzero;
+	pstring server;
+	char *share;
 
-	if (*share == '\\') {
-		server = share+2;
-		share = strchr(server,'\\');
-		if (!share) return NULL;
-		*share = 0;
-		share++;
+	if (service[0] != '\\' || service[1] != '\\') {
+		usage();
+		exit(1);
 	}
+
+	pstrcpy(server, service+2);
+	share = strchr(server,'\\');
+	if (!share) {
+		usage();
+		exit(1);
+	}
+	*share = 0;
+	share++;
 
 	server_n = server;
 	
@@ -318,7 +308,7 @@ static void send_fs_socket(char *service, char *mount_point)
 			break;
 		}		
 
-		c = do_connect(NULL, service);
+		c = do_connection(service);
 
 		if (!c) {
 			DEBUG(0, ("smbmount: login failed\n"));
@@ -366,8 +356,9 @@ static void send_fs_socket(char *service, char *mount_point)
 		/* Wait for a signal from smbfs ... */
 		CatchSignal(SIGUSR1, &usr1_handler);
 		pause();
-		DEBUG(0, ("smbmount: got signal, getting new socket\n"));
-
+#ifndef SMBFS_DEBUG
+		DEBUG(0,("smbmount: got signal, getting new socket\n"));
+#endif
 	}
 
 	smb_umount(mount_point);
@@ -505,7 +496,7 @@ static void usage(void)
 	argv += 2;
 
 	while ((opt = 
-		getopt(argc, argv,"s:B:O:M:S:i:Nn:d:Pp:l:hI:EB:U:L:t:m:W:T:D:c:")) != EOF)
+		getopt(argc, argv,"O:B:i:U:W:EI:n:Nd:h")) != EOF)
 		switch (opt) {
 		case 'O':
 			pstrcpy(user_socket_options,optarg);
