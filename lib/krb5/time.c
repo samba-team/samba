@@ -36,7 +36,8 @@
 RCSID("$Id$");
 
 /*
- * Set the time the kerberos library will use to `sec',`usec' to
+ * Set the time absolute time that the caller knows the kdc has to the
+ * kerberos library can calculate the relative diffrence.
  */
 
 krb5_error_code
@@ -49,7 +50,12 @@ krb5_set_real_time (krb5_context context,
     gettimeofday(&tv, NULL);
 
     context->kdc_sec_offset = sec - tv.tv_sec;
-    context->kdc_usec_offset = usec - tv.tv_sec;
+    context->kdc_usec_offset = usec - tv.tv_usec;
+
+    if (context->kdc_usec_offset < 0) {
+	context->kdc_sec_offset--;
+	context->kdc_usec_offset += 1000000;
+    }
     return 0;
 }
 
