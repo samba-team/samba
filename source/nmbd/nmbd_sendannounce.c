@@ -372,7 +372,7 @@ static time_t announce_timer_last=0;
  immediately.
  ****************************************************************************/
 
-void reset_announce_timer()
+void reset_announce_timer(void)
 {
   announce_timer_last = time(NULL) - (CHECK_TIME_MST_ANNOUNCE * 60);
 }

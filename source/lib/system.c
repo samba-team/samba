@@ -215,8 +215,6 @@ static int copy_reg(char *source, const char *dest)
 {
   struct stat source_stats;
   int ifd;
-  int full_write();
-  int safe_read();
   int ofd;
   char *buf;
   int len;                      /* Number of bytes read into `buf'. */

@@ -824,7 +824,7 @@ BOOL cli_send_login(char *inbuf,char *outbuf,BOOL start_session,BOOL use_setup, 
 /****************************************************************************
 send a logout command
 ****************************************************************************/
-void cli_send_logout(void )
+void cli_send_logout(char *dum_in, char *dum_out)
 {
   pstring inbuf,outbuf;
 

@@ -49,7 +49,7 @@ static void my_name_register_failed(struct subnet_record *subrec,
   Also add the magic Samba names.
   **************************************************************************/
 
-BOOL register_my_workgroup_and_names()
+BOOL register_my_workgroup_and_names(void)
 {
   struct subnet_record *subrec;
   struct work_record *work;
@@ -143,7 +143,7 @@ Exiting.\n", myworkgroup, subrec->subnet_name));
   Remove all the names we registered.
 **************************************************************************/
 
-void release_my_names()
+void release_my_names(void)
 {
   struct subnet_record *subrec;
 

@@ -94,7 +94,7 @@ char *scan(char *chaine,char **entry)
   return (value);
 }
 
-void build_subdir()
+void build_subdir(void)
 {
   int i=0;
   char *entry;

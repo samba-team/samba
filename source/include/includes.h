@@ -521,12 +521,13 @@ char *mktemp(char *); /* No standard include */
 #include <netinet/in_systm.h>
 #include <netinet/ip.h>
 #include <termios.h>
+#include <fcntl.h>
 #if __FreeBSD__ >= 3
 #include <dirent.h>
 #else
 #define USE_DIRECT
 #endif
-#define SIGNAL_CAST (void (*)())
+#define SIGNAL_CAST (void (*)(int))
 #define USE_SETVBUF
 #define USE_SETSID
 #define USE_GETCWD
@@ -536,7 +537,15 @@ char *mktemp(char *); /* No standard include */
 #define HAVE_GETTIMEOFDAY
 #define HAVE_PATHCONF
 #define HAVE_GETGRNAM 1
-#endif 
+#define QSORT_CAST (int (*)(const void *, const void *))
+#if !defined(O_SYNC)
+#if defined(O_FSYNC)
+#define O_SYNC O_FSYNC
+#else /* defined(O_FSYNC) */
+#define O_SYNC 0
+#endif /* defined(O_FSYNC) */
+#endif /* !defined(O_SYNC) */
+#endif /* FreeBSD */
 
 #ifdef __OpenBSD__
 #include <strings.h>
