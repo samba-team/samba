@@ -9,10 +9,11 @@
 ]>
 
 <chapter id="idmapper">
-<chapterinfo>
-	&author.jht;
-</chapterinfo>
-<title>Identity Mapping &smbmdash; IDMAP</title>
+	<chapterinfo>
+		&author.jht;
+	</chapterinfo>
+
+<title>Identity Mapping (IDMAP)</title>
 
 <note><para>
 THIS IS A WORK IN PROGRESS - it is a preparation for the release of Samba-3.0.8.
@@ -20,7 +21,7 @@ THIS IS A WORK IN PROGRESS - it is a preparation for the release of Samba-3.0.8.
 
 <para>
 The Microsoft Windows operating system has a number of features that impose specific challenges
-for interoperability with operaing system on which Samba is implemented. This chapter deals
+for interoperability with operating system on which Samba is implemented. This chapter deals
 explicitly with the mechanisms Samba-3 (version 3.0.8 and later) has to overcome one of the
 key challenges in the integration of Samba servers into an MS Windows networking
 environment. This chapter deals with IDentity MAPping (IDMAP) of Windows Security IDentifiers (SIDs)
@@ -28,7 +29,7 @@ to UNIX UIDs and GIDs.
 </para>
 
 <para>
-So that this area is covered sufficiently, eash possible Samba deployment type will be discussed.
+So that this area is covered sufficiently, each possible Samba deployment type will be discussed.
 This is followed by an overview of how the IDMAP facility may be implemented.
 </para>
 
@@ -79,9 +80,64 @@ on Server Types and Security Modes</link>.
 	<para>
 	Samba-3 can act as a Windows NT4 PDC or BDC thereby providing domain control protocols that
 	are based on Windows NT4. Thus, where Samba-3 is a Domain Member server or client the matter
-	if SID to UID/GID resolution is equivalent with the same configuration with a Windows NT4 or
-	earlier domain environment.
+	of SID to UID/GID resolution is equivalent to configuration with a Windows NT4 or earlier 	
+	domain environment. When Samba-3 is acting as a Domain Member of an Active Directory (ADS)
+	domain it will also be necessary to resolve domain user and group identities (SIDs) to UNIX
+	UIDs and GIDs.
 	</para>
+
+	<para>
+	A Samba member of a Windows networking domain (NT4-style or ADS)  can be configured to handle 
+	identity mapping in a variety of ways. The mechanism is will use depends on whether or not
+	the <command>winbindd</command> daemon is used, and how the winbind functionality is configured.
+	The configuration options are briefly described here:
+	</para>
+
+	<variablelist>
+		<varlistentry><term>Winbind is not used, users and groups are local: &smbmdash </term>
+			<listitem>
+				<para>
+				
+				</para>
+			</listitem>
+		</varlistentry>
+	
+		<varlistentry><term>Winbind is not used, users and groups resolved via NSS: &smbmdash; </term>
+			<listitem>
+				<para>
+				</para>
+			</listitem>
+		</varlistentry>
+
+		<varlistentry><term>Winbind maintains local IDMAP table: &smbmdash; </term>
+			<listitem>
+				<para>
+				</para>
+			</listitem>
+		</varlistentry>
+
+		<varlistentry><term>Winbind uses LDAP backend based IDMAP: &smbmdash; </term>
+			<listitem>
+				<para>
+				</para>
+			</listitem>
+		</varlistentry>
+
+		<varlistentry><term>Winbind uses NSS to  resolve UNIX/Linux user and group IDs: &smbmdash; </term>
+			<listitem>
+				<para>
+				</para>
+			</listitem>
+		</varlistentry>
+
+		<varlistentry><term>Winbind uses RID based IDMAP: &smbmdash; </term>
+			<listitem>
+				<para>
+				</para>
+			</listitem>
+		</varlistentry>
+
+	</variablelist>
 
 	</sect2>
 
@@ -89,6 +145,13 @@ on Server Types and Security Modes</link>.
 	<title>Primary Domain Controller</title>
 
 	<para>
+	Microsoft Windows domain security systems generate the user and group security identifier (SID) as part
+	of the process of creation of an account. Windows does not have a concept of a UID or a GID.
+	</para>
+
+	<para>
+	MS Active Directory Server (ADS) uses a directory schema that can be extended to accommodate additional
+	account attributes such as UIDs and GIDs.
 	</para>
 
 	</sect2>
@@ -158,6 +221,5 @@ on Server Types and Security Modes</link>.
 	</sect2>
 
 </sect1>
-
 
 </chapter>

@@ -572,7 +572,7 @@
 
 	<image id="ch6-LDAPdiag">
 		<imagedescription>The Interaction of LDAP, UNIX Posix Accounts and Samba Accounts</imagedescription>
-		<imagefile scale="70">UNIX-Samba-and-LDAP</imagefile>
+		<imagefile scale="60">UNIX-Samba-and-LDAP</imagefile>
 	</image>
 
 	<para><indexterm>
@@ -956,7 +956,7 @@
 
 	<image id="chap6net">
 		<imagedescription>Network Topology &smbmdash; 500 User Network Using ldapsam passdb backend.</imagedescription>
-		<imagefile scale="70">chap6-net</imagefile>
+		<imagefile scale="60">chap6-net</imagefile>
 	</image>
 
       <para><indexterm>
