@@ -1,2 +1,2 @@
 . torture_setup.fns
-test_torture "RW22"
+test_torture "RW2"
