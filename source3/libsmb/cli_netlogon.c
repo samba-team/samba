@@ -289,7 +289,6 @@ NTSTATUS cli_netlogon_sam_sync(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	NET_R_SAM_SYNC r;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
         DOM_CRED clnt_creds;
-        uchar sess_key[16];
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
@@ -316,7 +315,7 @@ NTSTATUS cli_netlogon_sam_sync(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Unmarshall response */
 
-	if (!net_io_r_sam_sync("", sess_key, &r, &rbuf, 0)) {
+	if (!net_io_r_sam_sync("", cli->sess_key, &r, &rbuf, 0)) {
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
@@ -348,7 +347,6 @@ NTSTATUS cli_netlogon_sam_deltas(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	NET_R_SAM_DELTAS r;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
         DOM_CRED clnt_creds;
-        uchar sess_key[16];
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
@@ -376,7 +374,7 @@ NTSTATUS cli_netlogon_sam_deltas(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Unmarshall response */
 
-	if (!net_io_r_sam_deltas("", sess_key, &r, &rbuf, 0)) {
+	if (!net_io_r_sam_deltas("", cli->sess_key, &r, &rbuf, 0)) {
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
