@@ -310,7 +310,7 @@ void event_loop_exit(struct event_context *ev, int code)
 /*
   do a single event loop using the events defined in ev this function
 */
-void event_loop_once(struct event_context *ev)
+int event_loop_once(struct event_context *ev)
 {
 	time_t t;
 	fd_set r_fds, w_fds;
@@ -404,7 +404,7 @@ void event_loop_once(struct event_context *ev)
 			   the event, so this must be a bug. This is a
 			   fatal error. */
 			DEBUG(0,("EBADF on event_loop_once - exiting\n"));
-			return;
+			return -1;
 		}
 		
 		if (selrtn > 0) {
@@ -442,6 +442,8 @@ void event_loop_once(struct event_context *ev)
 		}
 		te = next;
 	}		
+	
+	return 0;
 }
 
 /*
@@ -459,7 +461,9 @@ int event_loop_wait(struct event_context *ev)
 	ev->exit.exit_now = False;
 
 	while (ev->fd_events && !ev->exit.exit_now) {
-		event_loop_once(ev);
+		if (event_loop_once(ev) != 0) {
+			break;
+		}
 	}
 
 	return ev->exit.code;
