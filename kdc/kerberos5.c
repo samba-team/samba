@@ -293,6 +293,10 @@ get_pa_etype_info(METHOD_DATA *md, hdb_entry *client)
     }
     len = length_ETYPE_INFO(&pa);
     buf = malloc(len);
+    if (buf) {
+	free_ETYPE_INFO(&pa);
+	return ret;
+    }
     ret = encode_ETYPE_INFO(buf + len - 1, len, &pa, &len);
     free_ETYPE_INFO(&pa);
     if(ret) {
