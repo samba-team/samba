@@ -97,7 +97,7 @@ struct dcesrv_handle {
 struct dcesrv_crypto_ops {
 	const char *name;
 	uint8 auth_type;
-	NTSTATUS (*start)(struct dcesrv_auth *auth);
+	NTSTATUS (*start)(struct dcesrv_auth *auth, DATA_BLOB *auth_blob);
 	NTSTATUS (*update)(struct dcesrv_auth *auth, TALLOC_CTX *out_mem_ctx,
 				const DATA_BLOB in, DATA_BLOB *out);
 	NTSTATUS (*session_info)(struct dcesrv_auth *auth, struct auth_session_info **session_info);

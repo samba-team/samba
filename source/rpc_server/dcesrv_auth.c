@@ -56,7 +56,7 @@ BOOL dcesrv_auth_bind(struct dcesrv_call_state *call)
 		return False;
 	}
 
-	status = dcesrv_crypto_start(&dce_conn->auth_state);
+	status = dcesrv_crypto_start(&dce_conn->auth_state, &dce_conn->auth_state.auth_info->credentials);
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}

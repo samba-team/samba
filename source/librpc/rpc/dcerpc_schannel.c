@@ -173,6 +173,7 @@ NTSTATUS dcerpc_bind_auth_schannel_key(struct dcerpc_pipe *p,
 	uint8_t full_session_key[16];
 	struct schannel_state *schannel_state;
 	const char *workgroup, *workstation;
+	struct dcerpc_bind_schannel bind_schannel;
 
 	memcpy(full_session_key, session_key, 8);
 	memset(full_session_key+8, 0, 8);
@@ -203,21 +204,17 @@ NTSTATUS dcerpc_bind_auth_schannel_key(struct dcerpc_pipe *p,
 	p->auth_info->auth_context_id = random();
 	p->security_state = NULL;
 
-	p->auth_info->credentials = data_blob_talloc(p->mem_ctx, 
-						     NULL,
-						     8 +
-						     strlen(workgroup)+1 +
-						     strlen(workstation)+1);
-	if (!p->auth_info->credentials.data) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	/* TODO: what are these?? */
+	bind_schannel.unknown1 = 0;
+	bind_schannel.unknown2 = 3;
+	bind_schannel.domain = workgroup;
+	bind_schannel.hostname = workstation;
 
-	/* oh, this is ugly! */
-	SIVAL(p->auth_info->credentials.data, 0, 0);
-	SIVAL(p->auth_info->credentials.data, 4, 3);
-	memcpy(p->auth_info->credentials.data+8, workgroup, strlen(workgroup)+1);
-	memcpy(p->auth_info->credentials.data+8+strlen(workgroup)+1, 
-	       workstation, strlen(workstation)+1);
+	status = ndr_push_struct_blob(&p->auth_info->credentials, p->mem_ctx, &bind_schannel,
+				      (ndr_push_flags_fn_t)ndr_push_dcerpc_bind_schannel);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
 
 	/* send the authenticated bind request */
 	status = dcerpc_bind_byuuid(p, p->mem_ctx, uuid, version);
