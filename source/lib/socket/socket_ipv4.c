@@ -1,7 +1,10 @@
 /* 
    Unix SMB/CIFS implementation.
+
    Socket IPv4 functions
+
    Copyright (C) Stefan Metzmacher 2004
+   Copyright (C) Andrew Tridgell 2004-2005
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -35,6 +38,34 @@ static void ipv4_tcp_close(struct socket_context *sock)
 {
 	close(sock->fd);
 }
+
+static NTSTATUS ipv4_tcp_connect_complete(struct socket_context *sock, uint32_t flags)
+{
+	int error=0, ret;
+	socklen_t len = sizeof(error);
+
+	/* check for any errors that may have occurred - this is needed
+	   for non-blocking connect */
+	ret = getsockopt(sock->fd, SOL_SOCKET, SO_ERROR, &error, &len);
+	if (ret == -1) {
+		return map_nt_error_from_unix(errno);
+	}
+	if (error != 0) {
+		return map_nt_error_from_unix(error);
+	}
+
+	if (!(flags & SOCKET_FLAG_BLOCK)) {
+		ret = set_blocking(sock->fd, False);
+		if (ret == -1) {
+			return map_nt_error_from_unix(errno);
+		}
+	}
+
+	sock->state = SOCKET_STATE_CLIENT_CONNECTED;
+
+	return NT_STATUS_OK;
+}
+
 
 static NTSTATUS ipv4_tcp_connect(struct socket_context *sock,
 				 const char *my_address, int my_port,
@@ -79,17 +110,9 @@ static NTSTATUS ipv4_tcp_connect(struct socket_context *sock,
 		return map_nt_error_from_unix(errno);
 	}
 
-	if (!(flags & SOCKET_FLAG_BLOCK)) {
-		ret = set_blocking(sock->fd, False);
-		if (ret == -1) {
-			return map_nt_error_from_unix(errno);
-		}
-	}
-
-	sock->state = SOCKET_STATE_CLIENT_CONNECTED;
-
-	return NT_STATUS_OK;
+	return ipv4_tcp_connect_complete(sock, flags);
 }
+
 
 static NTSTATUS ipv4_tcp_listen(struct socket_context *sock,
 					const char *my_address, int port,
@@ -315,6 +338,7 @@ static const struct socket_ops ipv4_tcp_ops = {
 
 	.fn_init		= ipv4_tcp_init,
 	.fn_connect		= ipv4_tcp_connect,
+	.fn_connect_complete	= ipv4_tcp_connect_complete,
 	.fn_listen		= ipv4_tcp_listen,
 	.fn_accept		= ipv4_tcp_accept,
 	.fn_recv		= ipv4_tcp_recv,

@@ -39,6 +39,10 @@ struct socket_ops {
 				const char *server_address, int server_port,
 				uint32_t flags);
 
+	/* complete a non-blocking connect */
+	NTSTATUS (*fn_connect_complete)(struct socket_context *sock,
+					uint32_t flags);
+
 	/* server ops */
 	NTSTATUS (*fn_listen)(struct socket_context *sock,
 				const char *my_address, int port, int queue_size, uint32_t flags);
