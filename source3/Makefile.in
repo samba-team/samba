@@ -577,7 +577,7 @@ wins : SHOWFLAGS nsswitch/libnss_wins.@SHLIBEXT@
 
 modules: SHOWFLAGS proto_exists $(VFS_MODULES) $(PDB_MODULES)
 
-everything: all libsmbclient debug2html smbfilter talloctort modules
+everything: all libsmbclient debug2html smbfilter talloctort modules torture
 
 .SUFFIXES:
 .SUFFIXES: .c .o .po .po32 .lo
