@@ -29,6 +29,7 @@ static struct {
 } mangle_backends[] = {
 	{ "hash", mangle_hash_init },
 	{ "hash2", mangle_hash2_init },
+	/*{ "tdb", mangle_tdb_init }, */
 	{ NULL, NULL }
 };
 

@@ -2,6 +2,7 @@
    Unix SMB/CIFS implementation.
    new hash based name mangling implementation
    Copyright (C) Andrew Tridgell 2002
+   Copyright (C) Simo Sorce 2002
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -30,6 +31,10 @@
   for simplicity, we only allow ascii characters in 8.3 names
  */
 
+ /* hash alghorithm changed to FNV1 by idra@samba.org (Simo Sorce).
+  * see http://www.isthe.com/chongo/tech/comp/fnv/index.html for a
+  * discussion on Fowler / Noll / Vo (FNV) Hash by one of it's authors
+  */
 
 /*
   ===============================================================================
@@ -72,6 +77,10 @@
 #ifndef MANGLE_CACHE_SIZE
 #define MANGLE_CACHE_SIZE 4096
 #endif
+
+#define FNV1_PRIME 0x01000193
+/*the following number is a fnv1 of the string: idra@samba.org 2002 */
+#define FNV1_INIT  0xa6b93095
 
 /* these tables are used to provide fast tests for characters */
 static unsigned char char_flags[256];
@@ -121,13 +130,14 @@ static u32 mangle_hash(const char *key, unsigned length)
 	length = strlen(str);
 
 	/* Set the initial value from the key size. */
-	for (value = 0x238F13AF * length, i=0; i < length; i++) {
-		value = (value + (((unsigned char)str[i]) << (i*5 % 24)));
-	}
+	for (value = FNV1_INIT, i=0; i < length; i++) {
+                value *= (u32)FNV1_PRIME;
+                value ^= (u32)(str[i]);
+        }
 
 	/* note that we force it to a 31 bit hash, to keep within the limits
 	   of the 36^6 mangle space */
-	return (1103515243 * value + 12345) & ~0x80000000;  
+	return value & ~0x80000000;  
 }
 
 /* 
