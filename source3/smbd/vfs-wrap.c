@@ -93,10 +93,8 @@ int vfswrap_mkdir(vfs_handle_struct *handle, connection_struct *conn, const char
 		 * mess up any inherited ACL bits that were set. JRA.
 		 */
 		int saved_errno = errno; /* We may get ENOSYS */
-		if (conn->vfs.ops.chmod_acl != NULL) {
-			if ((VFS_CHMOD_ACL(conn, path, mode) == -1) && (errno == ENOSYS))
-				errno = saved_errno;
-		}
+		if ((VFS_CHMOD_ACL(conn, path, mode) == -1) && (errno == ENOSYS))
+			errno = saved_errno;
 	}
 
     END_PROFILE(syscall_mkdir);
@@ -281,7 +279,7 @@ int vfswrap_chmod(vfs_handle_struct *handle, connection_struct *conn, const char
 	 */
 
 	
-	if (conn->vfs.ops.chmod_acl != NULL) {
+	{
 		int saved_errno = errno; /* We might get ENOSYS */
 		if ((result = VFS_CHMOD_ACL(conn, path, mode)) == 0) {
 			END_PROFILE(syscall_chmod);
@@ -309,7 +307,7 @@ int vfswrap_fchmod(vfs_handle_struct *handle, files_struct *fsp, int fd, mode_t 
 	 * group owner bits directly. JRA.
 	 */
 	
-	if (vfs_ops->ops.fchmod_acl != NULL) {
+	{
 		int saved_errno = errno; /* We might get ENOSYS */
 		if ((result = VFS_FCHMOD_ACL(fsp, fd, mode)) == 0) {
 			END_PROFILE(syscall_chmod);
@@ -621,22 +619,32 @@ BOOL vfswrap_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp, const char
 
 int vfswrap_chmod_acl(vfs_handle_struct *handle, connection_struct *conn, const char *name, mode_t mode)
 {
+#ifdef HAVE_NO_ACL
+	errno = ENOSYS;
+	return -1;
+#else
 	int result;
 
 	START_PROFILE(chmod_acl);
 	result = chmod_acl(conn, name, mode);
 	END_PROFILE(chmod_acl);
 	return result;
+#endif
 }
 
 int vfswrap_fchmod_acl(vfs_handle_struct *handle, files_struct *fsp, int fd, mode_t mode)
 {
+#ifdef HAVE_NO_ACL
+	errno = ENOSYS;
+	return -1;
+#else
 	int result;
 
 	START_PROFILE(fchmod_acl);
 	result = fchmod_acl(fsp, fd, mode);
 	END_PROFILE(fchmod_acl);
 	return result;
+#endif
 }
 
 int vfswrap_sys_acl_get_entry(vfs_handle_struct *handle, connection_struct *conn, SMB_ACL_T theacl, int entry_id, SMB_ACL_ENTRY_T *entry_p)
