@@ -837,9 +837,7 @@ static int update_trustpw(struct pdb_context *in, const char *dom_name,
 	}
 
 	/* flags */
-	if (flag) {
-		trust.private.flags = trustpw_flag(flag);
-	}
+	trust.private.flags = (flag) ? trustpw_flag(flag) : 0;
 
 	/* password */
 	givenpass = getpass("password (type Enter to leave it untouched):");
