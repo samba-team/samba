@@ -221,6 +221,9 @@ DB_open(krb5_context context, HDB *db, int flags, mode_t mode)
     asprintf(&fn, "%s.db", db->name);
     db->db = dbopen(fn, flags, mode, DB_BTREE, NULL);
     free(fn);
+    /* try to open without .db extension */
+    if(db->db == NULL && errno == ENOENT)
+	db->db = dbopen(db->name, flags, mode, DB_BTREE, NULL);
     if(db->db == NULL)
 	return errno;
     if((flags & O_ACCMODE) == O_RDONLY)
