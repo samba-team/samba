@@ -1024,32 +1024,4 @@ BOOL print_queue_purge(struct current_user *user, int snum, int *errcode)
 
 	return True;
 }
-
-/****************************************************************************
- Periodically run a status on all the queues to ensure the tdb doesn't grow.
- Note that this will have no effect if the client is doing its own status
- queries. This code is here to clean up jobs submitted by non-Windows printer
- clients (eg. smbclient) that never do a status check.
-****************************************************************************/
-
-void process_print_queue(time_t t)
-{
-	static time_t last_check_time;
-	int services = lp_numservices();
-	print_queue_struct *queue;
-	print_status_struct status;
-	int snum;
-
-	if ((t != (time_t)-1) && ((t - last_check_time) < lp_lpqcachetime()))
-		return;
-
-	last_check_time = t;
-
-	for (snum = 0; snum < services; snum++) {
-		if (lp_snum_ok(snum) && lp_print_ok(snum) && lp_browseable(snum)) {
-			(void)print_queue_status(snum, &queue,&status);
-			safe_free(queue);
-		}
-	}
-}
 #undef OLD_NTDOMAIN
