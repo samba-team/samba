@@ -289,49 +289,45 @@ BOOL check_access(int sock, char *allow_list, char *deny_list)
 	char	*deny = NULL;
 	char	*allow = NULL;
 	
-	
-	if (deny) 
+	DEBUG(10,("check_access: allow = %s, deny = %s\n",
+		allow_list ? allow_list : "NULL",
+		deny_list ? deny_list : "NULL"));
+
+	if (deny_list) 
 		deny = strdup(deny_list);
-	if (allow) 
+	if (allow_list) 
 		allow = strdup(allow_list);
 
-	if ((!deny || *deny==0) && (!allow || *allow==0)) 
-	{
+	if ((!deny || *deny==0) && (!allow || *allow==0))
 		ret = True;
-	}
 
-	if (!ret) 
-	{
+	if (!ret) {
 		/* bypass gethostbyaddr() calls if the lists only contain IP addrs */
-		if (only_ipaddrs_in_list(allow) && only_ipaddrs_in_list(deny))
-		{
+		if (only_ipaddrs_in_list(allow) && only_ipaddrs_in_list(deny)) {
 			only_ip = True;
 			DEBUG (3, ("check_access: no hostnames in host allow/deny list.\n"));
 			ret = allow_access(deny,allow, "", get_socket_addr(sock));
-		}
-		else
-		{
+		} else {
 			DEBUG (3, ("check_access: hostnames in host allow/deny list.\n"));
 			ret = allow_access(deny,allow, get_socket_name(sock),
 					   get_socket_addr(sock));
 		}
 		
-		if (ret) 
-		{
+		if (ret) {
 			DEBUG(2,("Allowed connection from %s (%s)\n",
 				 only_ip ? "" : get_socket_name(sock),
 				 get_socket_addr(sock)));
-		} 
-		else 
-		{
+		} else {
 			DEBUG(0,("Denied connection from %s (%s)\n",
 				 only_ip ? "" : get_socket_name(sock),
 				 get_socket_addr(sock)));
 		}
 	}
 
-	if (deny) free(deny);
-	if (allow) free(allow);
+	if (deny)
+		free(deny);
+	if (allow)
+		free(allow);
 	
 	return(ret);
 }
