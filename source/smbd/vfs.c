@@ -940,7 +940,7 @@ BOOL reduce_name(connection_struct *conn, const pstring fname)
         }
 #endif
 
-	DEBUG(3,("reduce_name: %s reduced to %s\n", fname, p));
+	DEBUG(3,("reduce_name: %s reduced to %s\n", fname, resolved_name));
 	if (free_resolved_name)
 		SAFE_FREE(resolved_name);
 	errno = saved_errno;
