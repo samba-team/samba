@@ -478,7 +478,7 @@ dns_free_data(struct dns_reply *r)
 {
 }
 
-int
+void
 dns_srv_order(struct dns_reply *r)
 {
     return 0;
