@@ -1661,7 +1661,6 @@ struct cli_state *get_ipc_connect_master_ip_bcast(pstring workgroup, struct user
 	struct ip_service *ip_list;
 	struct cli_state *cli;
 	int i, count;
-	struct in_addr server_ip; 
 
         DEBUG(99, ("Do broadcast lookup for workgroups on local network\n"));
 
