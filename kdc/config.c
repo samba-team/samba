@@ -54,6 +54,9 @@ char *port_str;
 int enable_http = -1;
 krb5_boolean encode_as_rep_as_tgs_rep; /* bug compatibility */
 
+krb5_boolean check_ticket_addresses;
+krb5_boolean allow_null_ticket_addresses;
+
 #ifdef KRB4
 char *v4_realm;
 #endif
@@ -182,6 +185,12 @@ configure(int argc, char **argv)
     if(enable_http == -1)
 	enable_http = krb5_config_get_bool(context, cf, "kdc", 
 					   "enable-http", NULL);
+    check_ticket_addresses = 
+	krb5_config_get_bool(context, cf, "kdc", 
+			     "check-ticket-addresses", NULL);
+    allow_null_ticket_addresses = 
+	krb5_config_get_bool(context, cf, "kdc", 
+			     "allow-null-ticket-addresses", NULL);
 #ifdef KRB4
     if(v4_realm == NULL){
 	p = krb5_config_get_string (context, cf, 
