@@ -785,7 +785,7 @@ PYTHON_DCERPC_LIBS = -lldap
 
 SWIG_INCLUDES = librpc/gen_ndr/samr.i librpc/gen_ndr/lsa.i librpc/gen_ndr/winreg.i librpc/gen_ndr/spoolss.i
 
-scripting/swig/dcerpc.py: scripting/swig/dcerpc.i scripting/swig/samba.i \$(SWIG_INCLUDES)
+scripting/swig/dcerpc.py: scripting/swig/dcerpc.i scripting/swig/samba.i scripting/swig/status_codes.i \$(SWIG_INCLUDES)
 	swig -python scripting/swig/dcerpc.i
 
 scripting/swig/_dcerpc.so: scripting/swig/dcerpc.py scripting/swig/dcerpc_wrap.o \$(PYTHON_DCERPC_OBJ)
