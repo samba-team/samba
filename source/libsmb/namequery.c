@@ -298,7 +298,7 @@ struct in_addr *name_query(int fd,const char *name,int name_type,
 			  dbgtext( "Unsupported request error.\n" );
 			  break;
 		        case 0x05:
-			  dbgtext( "Refused error.\n" );
+			  dbgtext( "Query refused error.\n" );
 			  break;
 		        default:
 			  dbgtext( "Unrecognized error code.\n" );
@@ -347,6 +347,13 @@ struct in_addr *name_query(int fd,const char *name,int name_type,
 			  break;
 	  }
   }
+
+  /* Reach here if we've timed out waiting for replies.. */
+  if( !bcast && !found )
+    {
+    /* Timed out wating for WINS server to respond.  Mark it dead. */
+    wins_srv_died( to_ip );
+    }
 
   return ip_list;
 }
