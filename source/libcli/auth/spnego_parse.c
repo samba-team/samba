@@ -47,12 +47,12 @@ static BOOL read_negTokenInit(ASN1_DATA *asn1, struct spnego_negTokenInit *token
 			asn1_start_tag(asn1, ASN1_CONTEXT(0));
 			asn1_start_tag(asn1, ASN1_SEQUENCE(0));
 
-			token->mechTypes = malloc(sizeof(*token->mechTypes));
+			token->mechTypes = talloc(NULL, sizeof(*token->mechTypes));
 			for (i = 0; !asn1->has_error &&
 				     0 < asn1_tag_remaining(asn1); i++) {
 				token->mechTypes = 
-					realloc(token->mechTypes, (i + 2) *
-						sizeof(*token->mechTypes));
+					talloc_realloc(token->mechTypes, (i + 2) *
+						       sizeof(*token->mechTypes));
 				asn1_read_OID(asn1, token->mechTypes + i);
 			}
 			token->mechTypes[i] = NULL;
@@ -347,9 +347,9 @@ BOOL spnego_free_data(struct spnego_data *spnego)
 		if (spnego->negTokenInit.mechTypes) {
 			int i;
 			for (i = 0; spnego->negTokenInit.mechTypes[i]; i++) {
-				free(spnego->negTokenInit.mechTypes[i]);
+				talloc_free(spnego->negTokenInit.mechTypes[i]);
 			}
-			free(spnego->negTokenInit.mechTypes);
+			talloc_free(spnego->negTokenInit.mechTypes);
 		}
 		data_blob_free(&spnego->negTokenInit.mechToken);
 		data_blob_free(&spnego->negTokenInit.mechListMIC);
