@@ -107,6 +107,7 @@ static struct ldapsam_privates *static_ldap_state;
 
 #define LDAP_OBJ_ACCOUNT		"account"
 #define LDAP_OBJ_POSIXACCOUNT		"posixAccount"
+#define LDAP_OBJ_POSIXGROUP		"posixGroup"
 
 /* some generic attributes that get reused a lot */
 
@@ -236,6 +237,14 @@ static ATTRIB_MAP_ENTRY groupmap_attr_list[] = {
 	{ LDAP_ATTR_DESC,		"description"		},
 	{ LDAP_ATTR_DISPLAY_NAME,	"displayName"		},
 	{ LDAP_ATTR_CN,			"cn"			},
+	{ LDAP_ATTR_LIST_END,		NULL			}	
+};
+
+static ATTRIB_MAP_ENTRY groupmap_attr_list_to_delete[] = {
+	{ LDAP_ATTR_GROUP_SID,		"sambaSID"		},
+	{ LDAP_ATTR_GROUP_TYPE,		"sambaGroupType"	},
+	{ LDAP_ATTR_DESC,		"description"		},
+	{ LDAP_ATTR_DISPLAY_NAME,	"displayName"		},
 	{ LDAP_ATTR_LIST_END,		NULL			}	
 };
 
@@ -3080,30 +3089,37 @@ static BOOL init_group_from_ldap(struct ldapsam_privates *ldap_state,
 	pstring temp;
 
 	if (ldap_state == NULL || map == NULL || entry == NULL ||
-	    ldap_state->ldap_struct == NULL) {
+	    ldap_state->ldap_struct == NULL) 
+	{
 		DEBUG(0, ("init_group_from_ldap: NULL parameters found!\n"));
 		return False;
 	}
 
-	if (!get_single_attribute(ldap_state->ldap_struct, entry, "gidNumber",
-				  temp)) {
-		DEBUG(0, ("Mandatory attribute gidNumber not found\n"));
+	if (!get_single_attribute(ldap_state->ldap_struct, entry, 
+		get_attr_key2string(groupmap_attr_list, LDAP_ATTR_GIDNUMBER), temp)) 
+	{
+		DEBUG(0, ("Mandatory attribute %s not found\n", 
+			get_attr_key2string( groupmap_attr_list, LDAP_ATTR_GIDNUMBER)));
 		return False;
 	}
 	DEBUG(2, ("Entry found for group: %s\n", temp));
 
 	map->gid = (gid_t)atol(temp);
 
-	if (!get_single_attribute(ldap_state->ldap_struct, entry, "ntSid",
-				  temp)) {
-		DEBUG(0, ("Mandatory attribute ntSid not found\n"));
+	if (!get_single_attribute(ldap_state->ldap_struct, entry, 
+		get_attr_key2string( groupmap_attr_list, LDAP_ATTR_GROUP_SID), temp)) 
+	{
+		DEBUG(0, ("Mandatory attribute %s not found\n",
+			get_attr_key2string( groupmap_attr_list, LDAP_ATTR_GROUP_SID)));
 		return False;
 	}
 	string_to_sid(&map->sid, temp);
 
-	if (!get_single_attribute(ldap_state->ldap_struct, entry, "ntGroupType",
-				  temp)) {
-		DEBUG(0, ("Mandatory attribute ntGroupType not found\n"));
+	if (!get_single_attribute(ldap_state->ldap_struct, entry, 
+		get_attr_key2string( groupmap_attr_list, LDAP_ATTR_GROUP_TYPE), temp)) 
+	{
+		DEBUG(0, ("Mandatory attribute %s not found\n",
+			get_attr_key2string( groupmap_attr_list, LDAP_ATTR_GROUP_TYPE)));
 		return False;
 	}
 	map->sid_name_use = (uint32)atol(temp);
@@ -3114,12 +3130,13 @@ static BOOL init_group_from_ldap(struct ldapsam_privates *ldap_state,
 		return False;
 	}
 
-	if (!get_single_attribute(ldap_state->ldap_struct, entry, "displayName",
-				  temp)) {
-		DEBUG(3, ("Attribute displayName not found\n"));
+	if (!get_single_attribute(ldap_state->ldap_struct, entry, 
+		get_attr_key2string( groupmap_attr_list, LDAP_ATTR_DISPLAY_NAME), temp)) 
+	{
 		temp[0] = '\0';
-		if (!get_single_attribute(ldap_state->ldap_struct, entry, "cn",
-					  temp)) {
+		if (!get_single_attribute(ldap_state->ldap_struct, entry, 
+			get_attr_key2string( groupmap_attr_list, LDAP_ATTR_CN), temp)) 
+		{
 			DEBUG(0, ("Attributes cn not found either "
 				  "for gidNumber(%i)\n",map->gid));
 			return False;
@@ -3127,9 +3144,9 @@ static BOOL init_group_from_ldap(struct ldapsam_privates *ldap_state,
 	}
 	fstrcpy(map->nt_name, temp);
 
-	if (!get_single_attribute(ldap_state->ldap_struct, entry, "description",
-				  temp)) {
-		DEBUG(3, ("Attribute description not found\n"));
+	if (!get_single_attribute(ldap_state->ldap_struct, entry, 
+		get_attr_key2string( groupmap_attr_list, LDAP_ATTR_DESC), temp)) 
+	{
 		temp[0] = '\0';
 	}
 	fstrcpy(map->comment, temp);
@@ -3158,12 +3175,16 @@ static BOOL init_ldap_from_group(LDAP *ldap_struct,
 	*mods = NULL;
 
 	sid_to_string(tmp, &map->sid);
-	make_ldap_mod(ldap_struct, existing, mods, "ntSid", tmp);
+	make_ldap_mod(ldap_struct, existing, mods, 
+		get_attr_key2string(groupmap_attr_list, LDAP_ATTR_GROUP_SID), tmp);
 	snprintf(tmp, sizeof(tmp)-1, "%i", map->sid_name_use);
-	make_ldap_mod(ldap_struct, existing, mods, "ntGroupType", tmp);
+	make_ldap_mod(ldap_struct, existing, mods, 
+		get_attr_key2string(groupmap_attr_list, LDAP_ATTR_GROUP_TYPE), tmp);
 
-	make_ldap_mod(ldap_struct, existing, mods, "displayName", map->nt_name);
-	make_ldap_mod(ldap_struct, existing, mods, "description", map->comment);
+	make_ldap_mod(ldap_struct, existing, mods, 
+		get_attr_key2string( groupmap_attr_list, LDAP_ATTR_DISPLAY_NAME), map->nt_name);
+	make_ldap_mod(ldap_struct, existing, mods, 
+		get_attr_key2string( groupmap_attr_list, LDAP_ATTR_DESC), map->comment);
 
 	return True;
 }
@@ -3225,9 +3246,10 @@ static NTSTATUS ldapsam_getgrsid(struct pdb_methods *methods, GROUP_MAP *map,
 {
 	pstring filter;
 
-	snprintf(filter, sizeof(filter)-1,
-		 "(&(objectClass=sambaGroupMapping)(ntSid=%s))",
-		 sid_string_static(&sid));
+	snprintf(filter, sizeof(filter)-1, "(&(objectClass=%s)(%s=%s))",
+		LDAP_OBJ_GROUPMAP, 
+		get_attr_key2string(groupmap_attr_list, LDAP_ATTR_GROUP_SID),
+		sid_string_static(&sid));
 
 	return ldapsam_getgroup(methods, filter, map);
 }
@@ -3240,9 +3262,10 @@ static NTSTATUS ldapsam_getgrgid(struct pdb_methods *methods, GROUP_MAP *map,
 {
 	pstring filter;
 
-	snprintf(filter, sizeof(filter)-1,
-		 "(&(objectClass=sambaGroupMapping)(gidNumber=%d))",
-		 gid);
+	snprintf(filter, sizeof(filter)-1, "(&(objectClass=%s)(%s=%d))",
+		LDAP_OBJ_GROUPMAP,
+		get_attr_key2string(groupmap_attr_list, LDAP_ATTR_GIDNUMBER),
+		gid);
 
 	return ldapsam_getgroup(methods, filter, map);
 }
@@ -3257,9 +3280,10 @@ static NTSTATUS ldapsam_getgrnam(struct pdb_methods *methods, GROUP_MAP *map,
 
 	/* TODO: Escaping of name? */
 
-	snprintf(filter, sizeof(filter)-1,
-		 "(&(objectClass=sambaGroupMapping)(|(displayName=%s)(cn=%s)))",
-		 name, name);
+	snprintf(filter, sizeof(filter)-1, "(&(objectClass=%s)(|(%s=%s)(%s=%s)))",
+		LDAP_OBJ_GROUPMAP,
+		get_attr_key2string(groupmap_attr_list, LDAP_ATTR_DISPLAY_NAME), name,
+		get_attr_key2string(groupmap_attr_list, LDAP_ATTR_CN), name);
 
 	return ldapsam_getgroup(methods, filter, map);
 }
@@ -3273,8 +3297,10 @@ static int ldapsam_search_one_group_by_gid(struct ldapsam_privates *ldap_state,
 {
 	pstring filter;
 
-	snprintf(filter, sizeof(filter)-1,
-		 "(&(objectClass=posixGroup)(gidNumber=%i))", gid);
+	snprintf(filter, sizeof(filter)-1, "(&(objectClass=%s)(%s=%i))", 
+		LDAP_OBJ_POSIXGROUP,
+		get_attr_key2string(groupmap_attr_list, LDAP_ATTR_GIDNUMBER),
+		gid);
 
 	return ldapsam_search_one_group(ldap_state, filter, result);
 }
@@ -3440,7 +3466,7 @@ static NTSTATUS ldapsam_delete_group_mapping_entry(struct pdb_methods *methods,
 		return NT_STATUS_NO_SUCH_GROUP;
 	}
 
-	attr_list = get_attr_list( groupmap_attr_list );
+	attr_list = get_attr_list( groupmap_attr_list_to_delete );
 	ret = ldapsam_delete_entry(ldap_state, result, LDAP_OBJ_GROUPMAP, attr_list);
 	free_attr_list ( attr_list );
 
@@ -3459,7 +3485,7 @@ static NTSTATUS ldapsam_setsamgrent(struct pdb_methods *my_methods, BOOL update)
 	int rc;
 	char **attr_list;
 
-	snprintf( filter, sizeof(filter)-1, "(%s=*)", LDAP_OBJ_GROUPMAP );
+	snprintf( filter, sizeof(filter)-1, "(objectclass=%s)", LDAP_OBJ_GROUPMAP);
 	attr_list = get_attr_list( groupmap_attr_list );
 	rc = ldapsam_search(ldap_state, lp_ldap_suffix(),
 			    LDAP_SCOPE_SUBTREE, filter,
