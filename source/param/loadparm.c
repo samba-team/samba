@@ -186,7 +186,7 @@ typedef struct
   BOOL bUnixRealname;
   BOOL bNISHomeMap;
   BOOL bTimeServer;
-  BOOL bInterfacesOnly;
+  BOOL bBindInterfacesOnly;
 } global;
 
 static global Globals;
@@ -273,6 +273,7 @@ typedef struct
   BOOL bDeleteReadonly;
   BOOL bFakeOplocks;
   BOOL bDeleteVetoFiles;
+  BOOL bDosFiletimes;
   char dummy[3]; /* for alignment */
 } service;
 
@@ -355,6 +356,7 @@ static service sDefault =
   False, /* bDeleteReadonly */
   False, /* bFakeOplocks */
   False, /* bDeleteVetoFiles */
+  False, /* bDosFiletimes */
   ""     /* dummy */
 };
 
@@ -414,7 +416,7 @@ struct parm_struct
   {"null passwords",   P_BOOL,    P_GLOBAL, &Globals.bNullPasswords,    NULL},
   {"strip dot",        P_BOOL,    P_GLOBAL, &Globals.bStripDot,         NULL},
   {"interfaces",       P_STRING,  P_GLOBAL, &Globals.szInterfaces,      NULL},
-  {"interfaces only",  P_BOOL,    P_GLOBAL, &Globals.bInterfacesOnly,   NULL},
+  {"bind interfaces only", P_BOOL,P_GLOBAL, &Globals.bBindInterfacesOnly,NULL},
   {"password server",  P_STRING,  P_GLOBAL, &Globals.szPasswordServer,  NULL},
   {"socket options",   P_GSTRING, P_GLOBAL, user_socket_options,        NULL},
   {"netbios name",     P_UGSTRING,P_GLOBAL, myname,                     NULL},
@@ -577,6 +579,7 @@ struct parm_struct
   {"magic output",     P_STRING,  P_LOCAL,  &sDefault.szMagicOutput,    NULL},
   {"mangled map",      P_STRING,  P_LOCAL,  &sDefault.szMangledMap,     NULL},
   {"delete readonly",  P_BOOL,    P_LOCAL,  &sDefault.bDeleteReadonly,  NULL},
+  {"dos filetimes",    P_BOOL,    P_LOCAL,  &sDefault.bDosFiletimes,    NULL},
 
   {NULL,               P_BOOL,    P_NONE,   NULL,                       NULL}
 };
@@ -669,7 +672,7 @@ static void init_globals(void)
   coding_system = interpret_coding_system (KANJI, SJIS_CODE);
   Globals.client_code_page = DEFAULT_CLIENT_CODE_PAGE;
   Globals.bTimeServer = False;
-  Globals.bInterfacesOnly = False;
+  Globals.bBindInterfacesOnly = False;
 
 /* these parameters are set to defaults that are more appropriate
    for the increasing samba install base:
@@ -885,7 +888,7 @@ FN_GLOBAL_BOOL(lp_browse_list,&Globals.bBrowseList)
 FN_GLOBAL_BOOL(lp_unix_realname,&Globals.bUnixRealname)
 FN_GLOBAL_BOOL(lp_nis_home_map,&Globals.bNISHomeMap)
 FN_GLOBAL_BOOL(lp_time_server,&Globals.bTimeServer)
-FN_GLOBAL_BOOL(lp_interfaces_only,&Globals.bInterfacesOnly)
+FN_GLOBAL_BOOL(lp_bind_interfaces_only,&Globals.bBindInterfacesOnly)
 
 FN_GLOBAL_INTEGER(lp_os_level,&Globals.os_level)
 FN_GLOBAL_INTEGER(lp_max_ttl,&Globals.max_ttl)
@@ -973,6 +976,7 @@ FN_LOCAL_BOOL(lp_map_system,bMap_system)
 FN_LOCAL_BOOL(lp_delete_readonly,bDeleteReadonly)
 FN_LOCAL_BOOL(lp_fake_oplocks,bFakeOplocks)
 FN_LOCAL_BOOL(lp_recursive_veto_delete,bDeleteVetoFiles)
+FN_LOCAL_BOOL(lp_dos_filetimes,bDosFiletimes)
 
 FN_LOCAL_INTEGER(lp_create_mode,iCreate_mask)
 FN_LOCAL_INTEGER(lp_force_create_mode,iCreate_force_mode)

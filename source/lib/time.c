@@ -298,7 +298,7 @@ void put_long_date(char *p,time_t t)
 /****************************************************************************
 check if it's a null mtime
 ****************************************************************************/
-static BOOL null_mtime(time_t mtime)
+BOOL null_mtime(time_t mtime)
 {
   if (mtime == 0 || mtime == 0xFFFFFFFF || mtime == (time_t)-1)
     return(True);
@@ -444,25 +444,6 @@ time_t make_unix_date3(void *date_ptr)
     t += LocTimeDiff(t);
   return(t);
 }
-
-/****************************************************************************
-set the time on a file
-****************************************************************************/
-BOOL set_filetime(char *fname,time_t mtime)
-{  
-  struct utimbuf times;
-
-  if (null_mtime(mtime)) return(True);
-
-  times.modtime = times.actime = mtime;
-
-  if (sys_utime(fname,&times)) {
-    DEBUG(4,("set_filetime(%s) failed: %s\n",fname,strerror(errno)));
-  }
-    
-  return(True);
-}
-
 
 /****************************************************************************
   return the date and time as a string
