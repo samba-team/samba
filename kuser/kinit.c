@@ -190,9 +190,9 @@ do_v4_fallback (krb5_context context,
 			      KRB_TICKET_GRANTING_TICKET, princ.realm,
 			      lifetime, key_to_key, NULL, key);
     } else {
-	ret = krb_get_pw_in_tkt2(princ.name, princ.instance, princ.realm, 
-				 KRB_TICKET_GRANTING_TICKET, princ.realm, 
-				 lifetime, passwd, &key);
+	ret = krb_get_pw_in_tkt(princ.name, princ.instance, princ.realm, 
+				KRB_TICKET_GRANTING_TICKET, princ.realm, 
+				lifetime, passwd);
     }
     memset (key, 0, sizeof(key));
     if (ret) {
