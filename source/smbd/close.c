@@ -163,7 +163,7 @@ static int close_normal_file(files_struct *fsp, BOOL normal_close)
 
 	share_entry_count = del_share_mode(fsp, &share_entry);
 
-	DEBUG(10,("close_normal_file: share_entry_count = %d for file %s\n",
+	DEBUG(10,("close_normal_file: share_entry_count = %l for file %s\n",
 		share_entry_count, fsp->fsp_name ));
 
 	/*

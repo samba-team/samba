@@ -455,7 +455,7 @@ void *map_file(char *fname, size_t size)
 		p = file_load(fname, &s2);
 		if (!p) return NULL;
 		if (s2 != size) {
-			DEBUG(1,("incorrect size for %s - got %d expected %d\n",
+			DEBUG(1,("incorrect size for %s - got %l expected %l\n",
 				 fname, s2, size));
 			if (p) free(p);
 			return NULL;

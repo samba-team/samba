@@ -279,7 +279,7 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 
 	data_blob_free(&sess_key);
 	
-	DEBUG(3,("Got user=[%s] domain=[%s] workstation=[%s] len1=%d len2=%d\n",
+	DEBUG(3,("Got user=[%s] domain=[%s] workstation=[%s] len1=%l len2=%l\n",
 		 ntlmssp_state->user, ntlmssp_state->domain, ntlmssp_state->workstation, ntlmssp_state->lm_resp.length, ntlmssp_state->nt_resp.length));
 
 #if 0
