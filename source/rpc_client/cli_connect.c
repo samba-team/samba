@@ -471,7 +471,7 @@ BOOL cli_conn_set_auth_info(struct cli_connection *con, void *auth_info)
 ****************************************************************************/
 struct ntuser_creds *cli_conn_get_usercreds(struct cli_connection *con)
 {
-	if (con->msrpc == NULL)
+	if (con->msrpc.cli == NULL)
 	{
 		DEBUG(1,("cli_conn_get_usercreds: NULL msrpc (closed)\n"));
 		return NULL;
@@ -496,7 +496,7 @@ struct ntuser_creds *cli_conn_get_usercreds(struct cli_connection *con)
 ****************************************************************************/
 struct ntdom_info * cli_conn_get_ntinfo(struct cli_connection *con)
 {
-	if (con->msrpc == NULL)
+	if (con->msrpc.cli == NULL)
 	{
 		DEBUG(1,("cli_conn_get_ntinfo: NULL msrpc (closed)\n"));
 		return NULL;
