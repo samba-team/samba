@@ -167,7 +167,7 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	/* Fetch domain sid */
 
 	if (!cli_nt_session_open(cli, PI_LSARPC)) {
-		DEBUG(0, ("Error connecting to SAM pipe\n"));
+		DEBUG(0, ("Error connecting to LSA pipe\n"));
 		goto done;
 	}
 
