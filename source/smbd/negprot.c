@@ -218,12 +218,13 @@ static int reply_nt1(char *outbuf)
   if (doencrypt) secword |= 2;
 
   /* decide where (if) to put the encryption challenge, and
-     follow it with the OEM'd domain name
+     follow it with the OEM'd domain name in Unicode.
    */
-  data_len = crypt_len + strlen(global_myworkgroup) + 1;
+  data_len = crypt_len + (strlen(global_myworkgroup)+1)*2;
 
   set_message(outbuf,17,data_len,True);
-  pstrcpy(smb_buf(outbuf)+crypt_len, global_myworkgroup);
+  ascii_to_unibuf(smb_buf(outbuf)+crypt_len, global_myworkgroup,
+                  (strlen(global_myworkgroup)+1)*2);
 
   CVAL(outbuf,smb_vwv1) = secword;
   SSVALS(outbuf,smb_vwv16+1,crypt_len);
