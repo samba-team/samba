@@ -12,7 +12,7 @@ kinit_SOURCES = kinit.c kinit_options.c
 
 kauth_SOURCES = kinit.c kauth_options.c
 
-noinst_PROGRAMS = kverify kdecode_ticket
+noinst_PROGRAMS = kverify kdecode_ticket generate-requests
 
 CHECK_LOCAL = $(bin_PROGRAMS)
 
@@ -32,6 +32,6 @@ klist_LDADD	= $(kauth_LDADD)
 
 LDADD = \
 	$(top_builddir)/lib/krb5/libkrb5.la \
- 	$(top_builddir)/lib/des/libdes.la \
- 	$(top_builddir)/lib/asn1/libasn1.la \
+	$(top_builddir)/lib/des/libdes.la \
+	$(top_builddir)/lib/asn1/libasn1.la \
 	$(LIB_roken)
