@@ -21,16 +21,97 @@
 */
 
 #include "includes.h"
+#include "events.h"
 #include "dlinklist.h"
 #include "nbt_server/nbt_server.h"
+#include "smbd/service_task.h"
 #include "libcli/raw/libcliraw.h"
 #include "libcli/composite/composite.h"
+
+
+static void nbt_start_refresh_timer(struct nbt_iface_name *iname);
+
+/*
+  a name refresh request has completed
+*/
+static void refresh_completion_handler(struct nbt_name_request *req)
+{
+	struct nbt_iface_name *iname = talloc_get_type(req->async.private, struct nbt_iface_name);
+	NTSTATUS status;
+	struct nbt_name_refresh io;
+	TALLOC_CTX *tmp_ctx = talloc_new(iname);
+
+	status = nbt_name_refresh_recv(req, tmp_ctx, &io);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
+		DEBUG(4,("Refreshed name %s<%02x> on %s\n", 
+			 iname->name.name, iname->name.type, iname->iface->ip_address));
+		iname->registration_time = timeval_current();
+		nbt_start_refresh_timer(iname);
+		talloc_free(tmp_ctx);
+		return;
+	}
+
+	iname->nb_flags |= NBT_NM_CONFLICT;
+	iname->nb_flags &= ~NBT_NM_ACTIVE;
+
+	if (NT_STATUS_IS_OK(status)) {
+		DEBUG(1,("Name conflict from %s refreshing name %s<%02x> on %s - rcode %d\n", 
+			 io.out.reply_addr, iname->name.name, iname->name.type, 
+			 iname->iface->ip_address, io.out.rcode));
+	} else {
+		DEBUG(1,("Error refreshing name %s<%02x> on %s - %s\n", 
+			 iname->name.name, iname->name.type, iname->iface->ip_address,
+			 nt_errstr(status)));
+	}
+
+	talloc_free(tmp_ctx);
+}
+
+
+/*
+  handle name refresh timer events
+*/
+static void name_refresh_handler(struct event_context *ev, struct timed_event *te, 
+				 struct timeval t)
+{
+	struct nbt_iface_name *iname = talloc_get_type(te->private, struct nbt_iface_name);
+	struct nbt_interface *iface = iname->iface;
+	struct nbt_name_refresh io;
+	struct nbt_name_request *req;
+
+	/* setup a name refresh request */
+	io.in.name            = iname->name;
+	io.in.dest_addr       = iface->bcast_address;
+	io.in.address         = iface->ip_address;
+	io.in.nb_flags        = iname->nb_flags;
+	io.in.ttl             = iname->ttl;
+	io.in.broadcast       = True;
+	io.in.timeout         = 3;
+
+	req = nbt_name_refresh_send(iface->nbtsock, &io);
+	if (req == NULL) return;
+
+	req->async.fn = refresh_completion_handler;
+	req->async.private = iname;
+}
+
 
 /*
   start a timer to refresh this name
 */
 static void nbt_start_refresh_timer(struct nbt_iface_name *iname)
 {
+	struct timed_event te;
+	uint32_t refresh_time;
+	uint32_t max_refresh_time = lp_parm_int(-1, "nbtd", "max_refresh_time", 7200);
+
+	refresh_time = MIN(max_refresh_time, iname->ttl/2);
+	
+	te.next_event = timeval_current_ofs(refresh_time, 0);
+	te.handler    = name_refresh_handler;
+	te.private    = iname;
+
+	event_add_timed(iname->iface->nbtsrv->task->event_ctx, &te, iname);
 }
 
 
@@ -48,6 +129,7 @@ static void nbt_register_handler(struct smbcli_composite *req)
 		iname->nb_flags |= NBT_NM_ACTIVE;
 		DEBUG(3,("Registered %s<%02x> on interface %s\n",
 			 iname->name.name, iname->name.type, iname->iface->bcast_address));
+		iname->registration_time = timeval_current();
 		nbt_start_refresh_timer(iname);
 		return;
 	}
