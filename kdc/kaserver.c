@@ -402,6 +402,10 @@ do_authenticate (struct rx_header *hdr,
 
     unparse_auth_args (sp, &name, &instance, &start_time, &end_time,
 		       &request, &max_seq_len);
+    if (request.length < 8) {
+	make_error_reply (hdr, KABADREQUEST, reply);
+	goto out;
+    }
 
     snprintf (client_name, sizeof(client_name), "%s.%s@%s",
 	      name, instance, v4_realm);
