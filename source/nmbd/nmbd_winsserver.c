@@ -1563,8 +1563,9 @@ void wins_write_database(BOOL background)
 	  }
   }
 
-  slprintf(fname,sizeof(fname),"%s/%s.%d", lp_lockdir(), WINS_LIST, (unsigned int)getpid());
+  slprintf(fname,sizeof(fname),"%s/%s", lp_lockdir(), WINS_LIST);
   string_sub(fname,"//", "/");
+  slprintf(fnamenew,sizeof(fnamenew),"%s.%u", fname, (unsigned int)getpid());
 
   if((fp = fopen(fnamenew,"w")) == NULL)
   {
