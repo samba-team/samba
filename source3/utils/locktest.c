@@ -25,13 +25,12 @@
 
 static fstring password;
 static fstring username;
-static fstring workgroup;
 static int got_pass;
 static int numops = 1000;
 static BOOL showall;
 static BOOL analyze;
 
-#define FILENAME "locktest.dat"
+#define FILENAME "\\locktest.dat"
 #define LOCKRANGE 100
 #define LOCKBASE 0
 
@@ -58,10 +57,12 @@ struct record {
 };
 
 static struct record preset[] = {
+#if 0
 {36,  5, 0, 0, 0,  8, 1},
 { 2,  6, 0, 1, 0,  1, 1},
 {53, 92, 0, 0, 0,  0, 1},
 {99, 11, 0, 0, 7,  1, 1},
+#endif
 };
 
 static struct record *recorded;
@@ -158,7 +159,7 @@ struct cli_state *connect_one(char *share)
 	if (!cli_session_setup(c, username, 
 			       password, strlen(password),
 			       password, strlen(password),
-			       workgroup)) {
+			       lp_workgroup())) {
 		DEBUG(0,("session setup failed: %s\n", cli_errstr(c)));
 		return NULL;
 	}
