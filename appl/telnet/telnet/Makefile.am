@@ -12,8 +12,8 @@ telnet_SOURCES  = authenc.c commands.c main.c network.c ring.c \
 
 LDADD = ../libtelnet/libtelnet.a \
 	$(top_builddir)/lib/krb5/libkrb5.la \
-	$(top_builddir)/lib/des/libdes.la \
 	$(LIB_krb4) \
+	$(top_builddir)/lib/des/libdes.la \
 	$(top_builddir)/lib/asn1/libasn1.la \
 	@LIB_tgetent@ \
 	$(top_builddir)/lib/roken/libroken.la
