@@ -75,12 +75,10 @@ void BlockSignals(BOOL block,int signum)
 	sigaddset(&set,signum);
 	sigprocmask(block?SIG_BLOCK:SIG_UNBLOCK,&set,NULL);
 #elif defined(HAVE_SIGBLOCK)
-	int block_mask = sigmask(signum);
-	static int oldmask = 0;
 	if (block) {
-		oldmask = sigblock(block_mask);
+		sigblock(sigmask(signum));
 	} else {
-		sigsetmask(oldmask);
+		sigsetmask(siggetmask() & ~sigmask(signum));
 	}
 #else
 	/* yikes! This platform can't block signals? */
