@@ -267,7 +267,7 @@ static BOOL test_EnumValue(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct winreg_EnumValue r;
     struct winreg_Uint8buf vb;
     struct winreg_EnumValueName vn;
-	uint32 type = 0, requested_len = 0, returned_len = 0;
+	uint32 type = 0, requested_len = max_valbufsize, returned_len = 0;
 	NTSTATUS status;
 
     r.in.handle = handle;
@@ -275,7 +275,7 @@ static BOOL test_EnumValue(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
     r.in.type = &type;
     r.in.requested_len = &requested_len;
     r.in.returned_len = &returned_len;
-    vn.max_len = max_valnamelen;
+    vn.max_len = 0;
     vn.len = 0;
     vn.buf = NULL;
     r.in.name = r.out.name = &vn;
