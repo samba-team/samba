@@ -208,7 +208,7 @@ encode_type (char *name, Type *t)
       }
       fprintf (codefile,
 	       "if(%s->%s) c |= 1<<%d;\n", name, m->gen_name,
-	       m->val % 8);
+	       7 - m->val % 8);
 
       if (tag == -1)
 	tag = m->val;
@@ -421,7 +421,11 @@ decode_type (char *name, Type *t)
 	     "len -= l;\n"
 	     "ret += l;\n"
 	     "if(len < reallen)\n"
-	     "return -1;\n");
+	     "return -1;\n"
+	     "p++;\n"
+	     "len--;\n"
+	     "reallen--;\n"
+	     "ret++;\n");
     pos = 0;
     for (m = t->members; m && tag != m->val; m = m->next) {
       while (m->val / 8 > pos / 8) {
@@ -431,7 +435,7 @@ decode_type (char *name, Type *t)
       }
       fprintf (codefile,
 	       "%s->%s = (*p >> %d) & 1;\n",
-	       name, m->gen_name, m->val % 8);
+	       name, m->gen_name, 7 - m->val % 8);
       if (tag == -1)
 	tag = m->val;
     }
