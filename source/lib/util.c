@@ -333,7 +333,7 @@ int name_mangle( char *In, char *Out, char name_type )
       case '.':
         p[0] = len;
         p   += (len + 1);
-        len  = 0;
+        len  = -1;
         break;
       default:
         p[len+1] = scope[i];
