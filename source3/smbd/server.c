@@ -254,7 +254,6 @@ int dos_mode(int cnum,char *path,struct stat *sbuf)
   return(result);
 }
 
-
 /*******************************************************************
 chmod a file - but preserve some bits
 ********************************************************************/
@@ -308,6 +307,70 @@ int dos_chmod(int cnum,char *fname,int dosmode,struct stat *st)
   return(sys_chmod(fname,unixmode));
 }
 
+/*******************************************************************
+Wrapper around sys_utime that possibly allows DOS semantics rather
+than POSIX.
+*******************************************************************/
+
+int file_utime(int cnum, char *fname, struct utimbuf *times)
+{
+  extern struct current_user current_user;
+  struct stat sb;
+  int ret = -1;
+
+  if(sys_utime(fname, times) == 0)
+    return 0;
+
+  if((errno != EPERM) || !lp_dos_filetimes(SNUM(cnum)))
+    return -1;
+
+  /* We have permission (given by the Samba admin) to
+     break POSIX semantics and allow a user to change
+     the time on a file they don't own but can write to
+     (as DOS does).
+   */
+
+  if(sys_stat(fname,&sb) != 0)
+    return -1;
+
+  /* Check if we have write access. */
+  if (CAN_WRITE(cnum) && !lp_alternate_permissions(SNUM(cnum))) 
+  {
+    if (((sb.st_mode & S_IWOTH) ||
+        Connections[cnum].admin_user ||
+        ((sb.st_mode & S_IWUSR) && current_user.uid==sb.st_uid) ||
+        ((sb.st_mode & S_IWGRP) &&
+        in_group(sb.st_gid,current_user.gid,
+             current_user.ngroups,current_user.igroups))))
+    {
+      /* We are allowed to become root and change the filetime. */
+      become_root(False);
+      ret = sys_utime(fname, times);
+      unbecome_root(False);
+    }
+  }
+
+  return ret;
+}
+  
+/*******************************************************************
+Change a filetime - possibly allowing DOS semantics.
+*******************************************************************/
+
+BOOL set_filetime(int cnum, char *fname, time_t mtime)
+{
+  struct utimbuf times;
+
+  if (null_mtime(mtime)) return(True);
+
+  times.modtime = times.actime = mtime;
+
+  if (file_utime(cnum, fname, &times)) {
+    DEBUG(4,("set_filetime(%s) failed: %s\n",fname,strerror(errno)));
+  }
+  
+  return(True);
+} 
 
 /****************************************************************************
 check if two filenames are equal
@@ -1098,13 +1161,6 @@ static void open_file(int fnum,int cnum,char *fname1,int flags,int mode, struct 
   if (flags == O_WRONLY)
     DEBUG(3,("Bug in client? Set O_WRONLY without O_CREAT\n"));
 */
-
-#if UTIME_WORKAROUND
-  /* XXXX - is this OK?? */
-  /* this works around a utime bug but can cause other problems */
-  if ((flags & (O_WRONLY|O_RDWR)) && (flags & O_CREAT) && !(flags & O_APPEND))
-    sys_unlink(fname);
-#endif
 
   /*
    * Ensure we have a valid struct stat so we can search the

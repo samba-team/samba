@@ -636,7 +636,7 @@ mode record found dev = %d, inode = %d in hash bucket %d\n", dev, inode, hash_en
 
 /*******************************************************************
 call the specified function on each entry under management by the
-share ode system
+share mode system
 ********************************************************************/
 static int shm_share_forall(void (*fn)(share_mode_entry *, char *))
 {

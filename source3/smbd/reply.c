@@ -789,7 +789,7 @@ int reply_setatr(char *inbuf,char *outbuf)
   if (check_name(fname,cnum))
     ok =  (dos_chmod(cnum,fname,mode,NULL) == 0);
   if (ok)
-    ok = set_filetime(fname,mtime);
+    ok = set_filetime(cnum,fname,mtime);
   
   if (!ok)
   {
@@ -2270,7 +2270,7 @@ int reply_close(char *inbuf,char *outbuf)
   mtime = make_unix_date3(inbuf+smb_vwv1);
 
   /* try and set the date */
-  set_filetime(Files[fnum].name,mtime);
+  set_filetime(cnum, Files[fnum].name,mtime);
 
   close_file(fnum,True);
 
@@ -2317,7 +2317,7 @@ int reply_writeclose(char *inbuf,char *outbuf)
       
   nwritten = write_file(fnum,data,numtowrite);
 
-  set_filetime(Files[fnum].name,mtime);
+  set_filetime(cnum, Files[fnum].name,mtime);
   
   close_file(fnum,True);
 
@@ -3787,7 +3787,7 @@ not setting timestamps of 0\n",
   }
 
   /* Set the date on this file */
-  if(sys_utime(Files[fnum].name, &unix_times))
+  if(file_utime(cnum, Files[fnum].name, &unix_times))
     return(ERROR(ERRDOS,ERRnoaccess));
   
   DEBUG(3,("%s reply_setattrE fnum=%d cnum=%d actime=%d modtime=%d\n",

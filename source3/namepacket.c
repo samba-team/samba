@@ -626,7 +626,7 @@ BOOL listen_for_packets(BOOL run_election)
              * If we got a packet on the broadcast socket and interfaces
              * only is set then check it came from one of our local nets. 
              */
-            if(lp_interfaces_only() && (sock_array[i] == ClientNMB) && 
+            if(lp_bind_interfaces_only() && (sock_array[i] == ClientNMB) && 
                (!is_local_net(packet->ip)))
             {
               DEBUG(7,("discarding nmb packet sent to broadcast socket from %s:%d\n",
@@ -660,7 +660,7 @@ BOOL listen_for_packets(BOOL run_election)
              * If we got a packet on the broadcast socket and interfaces
              * only is set then check it came from one of our local nets. 
              */
-            if(lp_interfaces_only() && (sock_array[i] == ClientDGRAM) && 
+            if(lp_bind_interfaces_only() && (sock_array[i] == ClientDGRAM) && 
                  (!is_local_net(packet->ip)))
             {
               DEBUG(7,("discarding dgram packet sent to broadcast socket from %s:%d\n",
