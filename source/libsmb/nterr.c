@@ -1,7 +1,6 @@
 /* NT error codes.  please read nterr.h */
 
 #include "includes.h"
-#include "nterr.h"
 
 typedef struct
 {

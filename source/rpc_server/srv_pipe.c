@@ -39,7 +39,6 @@
  */
 
 #include "includes.h"
-#include "nterr.h"
 
 extern int DEBUGLEVEL;
 

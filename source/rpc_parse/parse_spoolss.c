@@ -23,7 +23,6 @@
 
 
 #include "includes.h"
-#include "nterr.h"
 
 #ifdef TNG
 	#define prs_uint16 _prs_uint16
