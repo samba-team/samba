@@ -202,7 +202,7 @@ initialise file structures
 
 void file_init(void)
 {
-	int real_max_open_files, lim;
+	int lim;
 
 	lim = set_maxfiles();
 	lim = MIN(lim, lp_max_open_files());

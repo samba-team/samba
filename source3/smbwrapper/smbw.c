@@ -398,7 +398,7 @@ struct smbw_server *smbw_server(char *server, char *share)
 		fstrcpy(group, server_n);
 		p = strchr(group,'#');
 		*p = 0;
-		if (!find_master(group, &ip)) {
+		if (!find_master_ip(group, &ip)) {
 			errno = ENOENT;
 			return NULL;
 		}

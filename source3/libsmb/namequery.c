@@ -631,7 +631,7 @@ BOOL resolve_name(char *name, struct in_addr *return_ip, int name_type)
 /********************************************************
 find the IP address of the master browser or DMB for a workgroup
 *********************************************************/
-BOOL find_master(char *group, struct in_addr *master_ip)
+BOOL find_master_ip(char *group, struct in_addr *master_ip)
 {
 	if (resolve_name(group, master_ip, 0x1D)) return True;
 

@@ -454,7 +454,7 @@ FILE *startlmhosts(char *fname);
 BOOL getlmhostsent( FILE *fp, char *name, int *name_type, struct in_addr *ipaddr);
 void endlmhosts(FILE *fp);
 BOOL resolve_name(char *name, struct in_addr *return_ip, int name_type);
-BOOL find_master(char *group, struct in_addr *master_ip);
+BOOL find_master_ip(char *group, struct in_addr *master_ip);
 
 /*The following definitions come from  libsmb/nmblib.c  */
 
