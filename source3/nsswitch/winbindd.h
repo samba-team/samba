@@ -134,6 +134,9 @@ struct winbindd_methods {
 				    uint32 group_rid, uint32 *num_names, 
 				    uint32 **rid_mem, char ***names, 
 				    uint32 **name_types);
+
+	/* return the current global sequence number */
+	uint32 (*sequence_number)(struct winbindd_domain *domain);
 };
 
 /* Structures to hold per domain information */

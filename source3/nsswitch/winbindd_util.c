@@ -55,7 +55,7 @@ struct winbindd_domain *find_domain_from_name(char *domain_name)
 	/* Search through list */
 
 	for (tmp = domain_list; tmp != NULL; tmp = tmp->next) {
-		if (strcmp(domain_name, tmp->name) == 0)
+		if (strcasecmp(domain_name, tmp->name) == 0)
 			return tmp;
 	}
 
@@ -192,26 +192,6 @@ BOOL get_domain_info(void)
 	return rv;
 }
 
-/* Free global domain info */
-
-void free_domain_info(void)
-{
-	struct winbindd_domain *domain;
-
-	/* Free list of domains */
-
-	if (domain_list) {
-		struct winbindd_domain *next_domain;
-
-		domain = domain_list;
-
-		while(domain) {
-			next_domain = domain->next;
-			SAFE_FREE(domain);
-			domain = next_domain;
-		}
-	}
-}
 
 /* Connect to a domain controller using get_any_dc_name() to discover 
    the domain name and sid */

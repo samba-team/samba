@@ -562,6 +562,20 @@ done:
 	return status;
 }
 
+/* find the sequence number for a domain */
+static uint32 sequence_number(struct winbindd_domain *domain)
+{
+	uint32 usn;
+	ADS_STRUCT *ads = NULL;
+
+	ads = ads_cached_connection(domain);
+	if (!ads) return DOM_SEQUENCE_NONE;
+
+	if (!ads_USN(ads, &usn)) return DOM_SEQUENCE_NONE;
+
+	return usn;
+}
+
 /* the ADS backend methods are exposed via this structure */
 struct winbindd_methods ads_methods = {
 	query_user_list,
@@ -570,7 +584,8 @@ struct winbindd_methods ads_methods = {
 	sid_to_name,
 	query_user,
 	lookup_usergroups,
-	lookup_groupmem
+	lookup_groupmem,
+	sequence_number
 };
 
 #endif
