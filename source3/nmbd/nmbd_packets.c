@@ -107,12 +107,14 @@ static void debug_browse_data(char *outbuf, int len)
 
     for (j = 0; j < 16; j++)
     {
-      unsigned char x = outbuf[i+j];
+      unsigned char x;
+      if (i+j >= len)
+        break;
+
+      x = outbuf[i+j];
       if (x < 32 || x > 127) 
         x = '.';
 	    
-      if (i+j >= len)
-        break;
       DEBUGADD( 4, ( "%c", x ) );
     }
 
