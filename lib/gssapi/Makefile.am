@@ -8,7 +8,7 @@ lib_LTLIBRARIES = libgssapi.la
 libgssapi_la_LDFLAGS = -version-info 3:5:2
 libgssapi_la_LIBADD  = ../krb5/libkrb5.la $(LIB_des) ../asn1/libasn1.la ../roken/libroken.la
 
-man_MANS = gssapi.3 gss_aquire_cred.3
+man_MANS = gssapi.3 gss_acquire_cred.3
 
 include_HEADERS = gssapi.h
 
