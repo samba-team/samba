@@ -458,6 +458,14 @@ struct res_rec {
   char rdata[MAX_DGRAM_SIZE];
 };
 
+/* Define these so we can pass info back to caller of name_query */
+#define NM_FLAGS_RS 0x80 /* Response. Cheat     */
+#define NM_FLAGS_AA 0x40 /* Authoritative       */
+#define NM_FLAGS_TC 0x20 /* Truncated           */
+#define NM_FLAGS_RD 0x10 /* Recursion Desired   */
+#define NM_FLAGS_RA 0x08 /* Recursion Available */
+#define NM_FLAGS_B  0x01 /* Broadcast           */
+
 /* An nmb packet. */
 struct nmb_packet
 {
