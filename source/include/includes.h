@@ -2,9 +2,9 @@
 #define _INCLUDES_H
 /* 
    Unix SMB/Netbios implementation.
-   Version 1.9.
    Machine customisation and include handling
    Copyright (C) Andrew Tridgell 1994-1998
+   Copyright (C) 2002 by Martin Pool <mbp@samba.org>
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -61,6 +61,15 @@
 #define PRINTF_ATTRIBUTE(a1, a2) __attribute__ ((format (__printf__, a1, a2)))
 #else
 #define PRINTF_ATTRIBUTE(a1, a2)
+#endif
+
+#ifdef __GNUC__
+/** gcc attribute used on function parameters so that it does not emit
+ * warnings about them being unused. **/
+#  define UNUSED(param) param __attribute__ ((unused))
+#else
+#  define UNUSED(param) param
+/** Feel free to add definitions for other compilers here. */
 #endif
 
 #ifdef RELIANTUNIX
