@@ -295,6 +295,11 @@ make LOGFILEBASE=/var/log/samba.d all nsswitch/libnss_wins.so debug2html bin/smb
 
 # Now build the VFS modules
 cd ../examples/VFS
+CFLAGS="$RPM_OPT_FLAGS" LDFLAGS="-s" ./configure \
+        --with-fhs \
+        --prefix='$(DESTDIR)/usr' \
+        --localstatedir='$(DESTDIR)/var' \
+        --libdir='$(DESTDIR)%{EtcSamba}'
 make
 cd block
 mv block.c block.c.old
@@ -342,6 +347,8 @@ install -m 755 examples/VFS/audit.so $DESTDIR/usr/lib/samba
 install -m 755 examples/VFS/recycle.so $DESTDIR/usr/lib/samba
 install -m 755 examples/VFS/skel.so $DESTDIR/usr/lib/samba
 install -m 755 examples/VFS/block/block.so $DESTDIR/usr/lib/samba
+install -m 644 examples/VFS/block/smb-block.conf $DESTDIR/etc/samba.d/smb-block.conf.example
+install -m 644 examples/VFS/block/smb.conf $DESTDIR/etc/samba.d/smb.conf.example-with-block-use
 
 install -m 755 source/nsswitch/pam_winbind.so $DESTDIR/lib/security
 install -m 755 source/bin/wbinfo $DESTDIR/usr/bin
