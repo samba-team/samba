@@ -138,7 +138,7 @@ static struct vfs_ops default_vfs_ops = {
     maintain the list of available backends
 ****************************************************************************/
 
-struct vfs_init_function_entry *vfs_find_backend_entry(const char *name)
+static struct vfs_init_function_entry *vfs_find_backend_entry(const char *name)
 {
    struct vfs_init_function_entry *entry = backends;
    pstring stripped;

@@ -61,7 +61,7 @@ BOOL smb_register_passdb(const char *name, pdb_init_function init, int version)
 	return True;
 }
 
-struct pdb_init_function_entry *pdb_find_backend_entry(const char *name)
+static struct pdb_init_function_entry *pdb_find_backend_entry(const char *name)
 {
 	struct pdb_init_function_entry *entry = backends;
 	pstring stripped;
