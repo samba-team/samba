@@ -587,7 +587,7 @@ static void process(void)
 	reopen_logs();
 
 	DEBUG(1,( "wrepld version %s started.\n", SAMBA_VERSION_STRING));
-	DEBUGADD(1,( "Copyright Andrew Tridgell and the Samba Team 1992-2002\n"));
+	DEBUGADD(1,( "Copyright Andrew Tridgell and the Samba Team 1992-2004\n"));
 
 	DEBUG(2,("uid=%d gid=%d euid=%d egid=%d\n",
 		 (int)getuid(),(int)getgid(),(int)geteuid(),(int)getegid()));
