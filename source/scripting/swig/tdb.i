@@ -35,13 +35,6 @@
 #undef HAVE_FSTAT
 #endif
 
-/* The tdb_set_lock_alarm() function requires the sig_atomic_t type */
-
-#include "include/config.h"
-#if !defined(HAVE_SIG_ATOMIC_T_TYPE)
-typedef int sig_atomic_t
-#endif
-
 #if (__GNUC__ >= 3)
 /** Use gcc attribute to check printf fns.  a1 is the 1-based index of
  * the parameter containing the format, and a2 the index of the first
@@ -137,7 +130,6 @@ int tdb_lockall(TDB_CONTEXT *tdb);
 void tdb_unlockall(TDB_CONTEXT *tdb);
 
 /* Low level locking functions: use with care */
-void tdb_set_lock_alarm(sig_atomic_t *palarm);
 int tdb_chainlock(TDB_CONTEXT *tdb, TDB_DATA key);
 int tdb_chainunlock(TDB_CONTEXT *tdb, TDB_DATA key);
 
