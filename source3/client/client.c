@@ -3531,6 +3531,7 @@ static void usage(char *pname)
   pstring term_code;
   pstring new_name_resolve_order;
   char *p;
+  int save_debuglevel = -1;
 
 #ifdef KANJI
   strcpy(term_code, KANJI);
@@ -3709,9 +3710,9 @@ static void usage(char *pname)
 	break;
       case 'd':
 	if (*optarg == 'A')
-	  DEBUGLEVEL = 10000;
+	  save_debuglevel = DEBUGLEVEL = 10000;
 	else
-	  DEBUGLEVEL = atoi(optarg);
+	  save_debuglevel = DEBUGLEVEL = atoi(optarg);
 	break;
       case 'l':
 	sprintf(debugf,"%s.client",optarg);
@@ -3755,6 +3756,14 @@ static void usage(char *pname)
   if (!lp_load(servicesf,True,False,False)) {
     fprintf(stderr, "Can't load %s - run testparm to debug it\n", servicesf);
   }
+
+  /*
+   * We need to reset the global debuglevel here, as
+   * lp_load will reset it from smb.conf.
+   */
+
+  if(save_debuglevel != -1)
+    DEBUGLEVEL = save_debuglevel;
 
   codepage_initialise(lp_client_code_page());
 
