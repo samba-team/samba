@@ -836,6 +836,11 @@ uint32 cli_samr_query_dispinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 			       POLICY_HND *domain_pol, uint32 *start_idx,
 			       uint16 switch_value, uint32 *num_entries,
 			       uint32 max_entries, SAM_DISPINFO_CTR *ctr);
+uint32 cli_samr_lookup_rids(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+			    POLICY_HND *domain_pol, uint32 flags,
+			    uint32 num_rids, uint32 *rids, 
+			    uint32 *num_names, char ***names,
+			    uint32 **name_types);
 
 /*The following definitions come from  libsmb/cli_spoolss.c  */
 
@@ -1681,8 +1686,7 @@ BOOL wb_lsa_lookup_sids(CLI_POLICY_HND *hnd, int num_sids, DOM_SID *sids,
 			char ***names, uint32 **types, int *num_names);
 BOOL wb_lsa_close(CLI_POLICY_HND *hnd);
 BOOL wb_samr_close(CLI_POLICY_HND *hnd);
-BOOL wb_samr_connect(char *srv_name, uint32 access_mask, 
-		  CLI_POLICY_HND *connect_pol);
+BOOL wb_samr_connect(char *server, uint32 access_mask, CLI_POLICY_HND *pol);
 BOOL wb_samr_open_domain(CLI_POLICY_HND *connect_pol, uint32 ace_perms,
 			 DOM_SID *sid, CLI_POLICY_HND *domain_pol);
 void wb_free_samr_userinfo_ctr(SAM_USERINFO_CTR * ctr);
@@ -3859,6 +3863,7 @@ uint32 _wks_query_info(pipes_struct *p, WKS_Q_QUERY_INFO *q_u, WKS_R_QUERY_INFO 
 
 /*The following definitions come from  rpcclient/cmd_samr.c  */
 
+void display_sam_info_1(SAM_ENTRY1 *e1, SAM_STR1 *s1);
 
 /*The following definitions come from  rpcclient/cmd_spoolss.c  */
 
