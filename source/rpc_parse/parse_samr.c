@@ -398,9 +398,9 @@ void make_unk_info2(SAM_UNK_INFO_2 *u_2, char *domain, char *server)
 	u_2->unknown_4  = 0x00000001;
 	u_2->unknown_5  = 0x00000003;
 	u_2->unknown_6  = 0x00000001;
-	u_2->num_domain_usrs  = 0x00000008;
-	u_2->num_domain_grps = 0x00000003;
-	u_2->num_local_grps = 0x00000003;
+	u_2->num_domain_usrs  = MAX_SAM_ENTRIES;
+	u_2->num_domain_grps = MAX_SAM_ENTRIES;
+	u_2->num_local_grps = MAX_SAM_ENTRIES;
 
 	memset(u_2->padding, 0, sizeof(u_2->padding)); /* 12 bytes zeros */
 
