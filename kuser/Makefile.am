@@ -12,7 +12,7 @@ kinit_SOURCES = kinit.c kinit_options.c
 
 kauth_SOURCES = kinit.c kauth_options.c
 
-noinst_PROGRAMS = kverify
+noinst_PROGRAMS = kverify kdecode_ticket
 
 CHECK_LOCAL = $(bin_PROGRAMS)
 
