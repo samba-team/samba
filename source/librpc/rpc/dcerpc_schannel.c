@@ -162,7 +162,21 @@ NTSTATUS dcerpc_bind_auth_schannel(TALLOC_CTX *tmp_ctx,
 		DEBUG(1, ("Failed to setup credentials for account %s: %s\n",
 			  cli_credentials_get_username(credentials), 
 			  nt_errstr(status)));
-		return status;
+		/*
+		 * If we get back NT_STATUS_ACCESS_DENIED and we asked for
+		 * DCERPC_SCHANNEL_128, then try again without
+		 */
+		if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED) &&
+		    p->conn->flags & DCERPC_SCHANNEL_128) {
+			DEBUG(1, ("Retrying to setup credentials without DCERPC_SCHANNEL_128\n"));
+			p->conn->flags &= ~DCERPC_SCHANNEL_128;
+			status = dcerpc_schannel_key(tmp_ctx, 
+					             p, credentials,
+					             chan_type);
+		}
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 	}
 
 	return dcerpc_bind_auth_password(p, uuid, version, 

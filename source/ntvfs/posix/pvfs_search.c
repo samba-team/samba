@@ -266,7 +266,7 @@ static NTSTATUS pvfs_search_fill(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 		talloc_free(file);
 	}
 
-	pvfs_list_hibernate(dir);
+	/*pvfs_list_hibernate(dir);*/
 
 	return NT_STATUS_OK;
 }
