@@ -275,6 +275,7 @@ static NTSTATUS find_connect_pdc(struct cli_state **cli,
 	NTSTATUS nt_status = NT_STATUS_NO_LOGON_SERVERS;
 	time_t time_now = time(NULL);
 	BOOL use_pdc_only = False;
+	BOOL list_ordered;
 
 	/*
 	 * If the time the machine password has changed
@@ -301,7 +302,7 @@ static NTSTATUS find_connect_pdc(struct cli_state **cli,
 		count = 1;
 
 	} else {
-		if (!get_dc_list(domain, &ip_list, &count))
+		if (!get_dc_list(domain, &ip_list, &count, &list_ordered))
 			return NT_STATUS_NO_LOGON_SERVERS;
 	}
 
@@ -310,7 +311,7 @@ static NTSTATUS find_connect_pdc(struct cli_state **cli,
 	 * network address as any of our interfaces.
 	 */
 	for(i = 0; i < count; i++) {
-		if(!is_local_net(ip_list[i]))
+		if( !list_ordered && !is_local_net(ip_list[i]) )
 			continue;
 
 		if(NT_STATUS_IS_OK(nt_status = 
