@@ -1685,8 +1685,12 @@ static void gen_setfileinfo(int instance, union smb_setfileinfo *info)
 		info->standard.in.access_time = gen_timet();
 		info->standard.in.write_time = gen_timet();
 		break;
-	case RAW_SFILEINFO_EA_SET:
-		info->ea_set.in.ea = gen_ea_struct();
+	case RAW_SFILEINFO_EA_SET: {
+		static struct ea_struct ea;
+		info->ea_set.in.num_eas = 1;
+		info->ea_set.in.eas = &ea;
+		info->ea_set.in.eas[0] = gen_ea_struct();
+	}
 		break;
 	case RAW_SFILEINFO_BASIC_INFO:
 	case RAW_SFILEINFO_BASIC_INFORMATION:

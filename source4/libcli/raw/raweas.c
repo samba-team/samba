@@ -147,8 +147,8 @@ uint_t ea_pull_struct(const DATA_BLOB *blob,
   pull a ea_list from a buffer
 */
 NTSTATUS ea_pull_list(const DATA_BLOB *blob, 
-			      TALLOC_CTX *mem_ctx,
-			      uint_t *num_eas, struct ea_struct **eas)
+		      TALLOC_CTX *mem_ctx,
+		      uint_t *num_eas, struct ea_struct **eas)
 {
 	int n;
 	uint32_t ea_size, ofs;

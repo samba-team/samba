@@ -115,15 +115,22 @@ static NTSTATUS pvfs_setfileinfo_rename(struct pvfs_state *pvfs,
 */
 NTSTATUS pvfs_setfileinfo_ea_set(struct pvfs_state *pvfs, 
 				 struct pvfs_filename *name,
-				 int fd, struct ea_struct *ea)
+				 int fd, uint16_t num_eas,
+				 struct ea_struct *eas)
 {
-	struct xattr_DosEAs *ealist = talloc_p(pvfs, struct xattr_DosEAs);
-	int i;
+	struct xattr_DosEAs *ealist;
+	int i, j;
 	NTSTATUS status;
+
+	if (num_eas == 0) {
+		return NT_STATUS_OK;
+	}
 
 	if (!(pvfs->flags & PVFS_FLAG_XATTR_ENABLE)) {
 		return NT_STATUS_NOT_SUPPORTED;
 	}
+
+	ealist = talloc_p(name, struct xattr_DosEAs);
 
 	/* load the current list */
 	status = pvfs_doseas_load(pvfs, name, fd, ealist);
@@ -131,24 +138,30 @@ NTSTATUS pvfs_setfileinfo_ea_set(struct pvfs_state *pvfs,
 		return status;
 	}
 
-	/* see if its already there */
-	for (i=0;i<ealist->num_eas;i++) {
-		if (StrCaseCmp(ealist->eas[i].name, ea->name.s) == 0) {
+	for (j=0;j<num_eas;j++) {
+		struct ea_struct *ea = &eas[j];
+		/* see if its already there */
+		for (i=0;i<ealist->num_eas;i++) {
+			if (StrCaseCmp(ealist->eas[i].name, ea->name.s) == 0) {
+				ealist->eas[i].value = ea->value;
+				break;
+			}
+		}
+
+		if (i==ealist->num_eas) {
+			/* add it */
+			ealist->eas = talloc_realloc_p(ealist, ealist->eas, 
+						       struct xattr_EA, 
+						       ealist->num_eas+1);
+			if (ealist->eas == NULL) {
+				return NT_STATUS_NO_MEMORY;
+			}
+			ealist->eas[i].name = ea->name.s;
 			ealist->eas[i].value = ea->value;
-			goto save;
+			ealist->num_eas++;
 		}
 	}
-
-	/* add it */
-	ealist->eas = talloc_realloc_p(ealist, ealist->eas, struct xattr_EA, ealist->num_eas+1);
-	if (ealist->eas == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	ealist->eas[i].name = ea->name.s;
-	ealist->eas[i].value = ea->value;
-	ealist->num_eas++;
 	
-save:
 	/* pull out any null EAs */
 	for (i=0;i<ealist->num_eas;i++) {
 		if (ealist->eas[i].value.length == 0) {
@@ -233,7 +246,8 @@ NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 
 	case RAW_SFILEINFO_EA_SET:
 		return pvfs_setfileinfo_ea_set(pvfs, h->name, h->fd, 
-					       &info->ea_set.in.ea);
+					       info->ea_set.in.num_eas,
+					       info->ea_set.in.eas);
 
 	case RAW_SFILEINFO_BASIC_INFO:
 	case RAW_SFILEINFO_BASIC_INFORMATION:
@@ -419,7 +433,9 @@ NTSTATUS pvfs_setpathinfo(struct ntvfs_module_context *ntvfs,
   		break;
 
 	case RAW_SFILEINFO_EA_SET:
-		return pvfs_setfileinfo_ea_set(pvfs, name, -1, &info->ea_set.in.ea);
+		return pvfs_setfileinfo_ea_set(pvfs, name, -1, 
+					       info->ea_set.in.num_eas,
+					       info->ea_set.in.eas);
 
 	case RAW_SFILEINFO_BASIC_INFO:
 	case RAW_SFILEINFO_BASIC_INFORMATION:

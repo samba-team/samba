@@ -70,6 +70,11 @@ static int pvfs_dir_handle_destructor(void *p)
 	struct pvfs_file_handle *h = p;
 
 	if (h->create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE) {
+		NTSTATUS status = pvfs_xattr_unlink_hook(h->pvfs, h->name->full_name);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0,("Warning: xattr rmdir hook failed for '%s' - %s\n",
+				 h->name->full_name, nt_errstr(status)));
+		}
 		if (rmdir(h->name->full_name) != 0) {
 			DEBUG(0,("pvfs_close: failed to rmdir '%s' - %s\n", 
 				 h->name->full_name, strerror(errno)));
@@ -459,15 +464,13 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 
 	/* setup any EAs that were asked for */
 	if (io->ntcreatex.in.ea_list) {
-		int i;
-		for (i=0;i<io->ntcreatex.in.ea_list->num_eas;i++) {
-			status = pvfs_setfileinfo_ea_set(pvfs, name, fd, 
-							 &io->ntcreatex.in.ea_list->eas[i]);
-			if (!NT_STATUS_IS_OK(status)) {
-				idr_remove(pvfs->idtree_fnum, fnum);
-				close(fd);
-				return status;
-			}
+		status = pvfs_setfileinfo_ea_set(pvfs, name, fd, 
+						 io->ntcreatex.in.ea_list->num_eas,
+						 io->ntcreatex.in.ea_list->eas);
+		if (!NT_STATUS_IS_OK(status)) {
+			idr_remove(pvfs->idtree_fnum, fnum);
+			close(fd);
+			return status;
 		}
 	}
 

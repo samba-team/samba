@@ -102,17 +102,14 @@ int create_complex_file(struct smbcli_state *cli, TALLOC_CTX *mem_ctx, const cha
 	/* setup some EAs */
 	setfile.generic.level = RAW_SFILEINFO_EA_SET;
 	setfile.generic.file.fnum = fnum;
-	setfile.ea_set.in.ea.flags = 0;
-	setfile.ea_set.in.ea.name.s = "EAONE";
-	setfile.ea_set.in.ea.value = data_blob_talloc(mem_ctx, "VALUE1", 6);
-
-	status = smb_raw_setfileinfo(cli->tree, &setfile);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("Failed to setup EAs\n");
-	}
-
-	setfile.ea_set.in.ea.name.s = "SECONDEA";
-	setfile.ea_set.in.ea.value = data_blob_talloc(mem_ctx, "ValueTwo", 8);
+	setfile.ea_set.in.num_eas = 2;	
+	setfile.ea_set.in.eas = talloc_array_p(mem_ctx, struct ea_struct, 2);
+	setfile.ea_set.in.eas[0].flags = 0;
+	setfile.ea_set.in.eas[0].name.s = "EAONE";
+	setfile.ea_set.in.eas[0].value = data_blob_talloc(mem_ctx, "VALUE1", 6);
+	setfile.ea_set.in.eas[1].flags = 0;
+	setfile.ea_set.in.eas[1].name.s = "SECONDEA";
+	setfile.ea_set.in.eas[1].value = data_blob_talloc(mem_ctx, "ValueTwo", 8);
 	status = smb_raw_setfileinfo(cli->tree, &setfile);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to setup EAs\n");

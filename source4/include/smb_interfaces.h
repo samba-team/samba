@@ -764,7 +764,8 @@ union smb_setfileinfo {
 		enum smb_setfileinfo_level level;
 		union setfileinfo_file file;
 		struct {
-			struct ea_struct ea;
+			uint_t num_eas;
+			struct ea_struct *eas;			
 		} in;
 	} ea_set;
 
