@@ -252,6 +252,7 @@ DES_rand_data(unsigned char *data, int size)
     char *rnd_devices[] = {"/dev/random",
 			   "/dev/srandom",
 			   "/dev/urandom",
+			   "/dev/arandom",
 			   NULL};
     char **p;
 
