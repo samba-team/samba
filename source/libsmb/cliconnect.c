@@ -431,13 +431,8 @@ BOOL cli_send_tconX(struct cli_state *cli,
 		}
 	}
 
-	if (cli->port == 445) {
-		slprintf(fullshare, sizeof(fullshare)-1,
-			 "%s", share);
-	} else {
-		slprintf(fullshare, sizeof(fullshare)-1,
-			 "\\\\%s\\%s", cli->desthost, share);
-	}
+	slprintf(fullshare, sizeof(fullshare)-1,
+		 "\\\\%s\\%s", cli->desthost, share);
 
 	set_message(cli->outbuf,4, 0, True);
 	SCVAL(cli->outbuf,smb_com,SMBtconX);
