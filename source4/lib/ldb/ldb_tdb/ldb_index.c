@@ -33,6 +33,8 @@
  */
 
 #include "includes.h"
+#include "ldb/include/ldb.h"
+#include "ldb/include/ldb_private.h"
 #include "ldb/ldb_tdb/ldb_tdb.h"
 #include "ldb/include/ldb_parse.h"
 
@@ -523,7 +525,7 @@ static int ldb_index_filter(struct ldb_module *module, struct ldb_parse_tree *tr
 			return -1;
 		}
 
-		if (ldb_message_match(module, &msg, tree, base, scope) == 1) {
+		if (ltdb_message_match(module, &msg, tree, base, scope) == 1) {
 			ret = ltdb_add_attr_results(module, &msg, attrs, &count, res);
 		}
 		ltdb_search_dn1_free(module, &msg);
@@ -860,7 +862,7 @@ static int re_index(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *
 		return 0;
 	}
 
-	ret = ltdb_unpack_data(module->ldb, &data, &msg);
+	ret = ltdb_unpack_data(module, &data, &msg);
 	if (ret != 0) {
 		return -1;
 	}
@@ -871,7 +873,7 @@ static int re_index(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *
 
 	ret = ltdb_index_add(module, &msg);
 
-	ltdb_unpack_data_free(module->ldb, &msg);
+	ltdb_unpack_data_free(module, &msg);
 
 	return ret;
 }

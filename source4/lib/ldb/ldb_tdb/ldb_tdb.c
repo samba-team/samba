@@ -36,6 +36,8 @@
  */
 
 #include "includes.h"
+#include "ldb/include/ldb.h"
+#include "ldb/include/ldb_private.h"
 #include "ldb/ldb_tdb/ldb_tdb.h"
 
 /*
@@ -195,7 +197,7 @@ int ltdb_store(struct ldb_module *module, const struct ldb_message *msg, int flg
 		return -1;
 	}
 
-	ret = ltdb_pack_data(ldb, msg, &tdb_data);
+	ret = ltdb_pack_data(module, msg, &tdb_data);
 	if (ret == -1) {
 		ldb_free(ldb, tdb_key.dptr);
 		return -1;
@@ -439,7 +441,7 @@ static int msg_delete_element(struct ldb_module *module,
 	el = &msg->elements[found];
 
 	for (i=0;i<el->num_values;i++) {
-		if (ldb_val_equal(module, msg->elements[i].name, &el->values[i], val)) {
+		if (ltdb_val_equal(module, msg->elements[i].name, &el->values[i], val)) {
 			if (i<el->num_values-1) {
 				memmove(&el->values[i], &el->values[i+1],
 					sizeof(el->values[i])*(el->num_values-(i+1)));
@@ -483,7 +485,7 @@ int ltdb_modify_internal(struct ldb_module *module, const struct ldb_message *ms
 		return -1;
 	}
 
-	ret = ltdb_unpack_data(ldb, &tdb_data, &msg2);
+	ret = ltdb_unpack_data(module, &tdb_data, &msg2);
 	if (ret == -1) {
 		ldb_free(ldb, tdb_key.dptr);
 		free(tdb_data.dptr);
@@ -551,13 +553,13 @@ int ltdb_modify_internal(struct ldb_module *module, const struct ldb_message *ms
 
 	ldb_free(ldb, tdb_key.dptr);
 	free(tdb_data.dptr);
-	ltdb_unpack_data_free(ldb, &msg2);
+	ltdb_unpack_data_free(module, &msg2);
 	return ret;
 
 failed:
 	ldb_free(ldb, tdb_key.dptr);
 	free(tdb_data.dptr);
-	ltdb_unpack_data_free(ldb, &msg2);
+	ltdb_unpack_data_free(module, &msg2);
 	return -1;
 }
 

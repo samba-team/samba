@@ -117,3 +117,5 @@ struct test_join;
 struct test_join_ads_dc;
 
 struct netr_LMSessionKey;
+
+struct ldb_message;
