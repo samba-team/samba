@@ -20,66 +20,6 @@
 
 #include "python/py_spoolss.h"
 
-/* Structure/hash conversions */
-
-struct pyconv py_DRIVER_INFO_1[] = {
-	{ "name", PY_UNISTR, offsetof(DRIVER_INFO_1, name) },
-	{ NULL }
-};
-
-struct pyconv py_DRIVER_INFO_2[] = {
-	{ "version", PY_UINT32, offsetof(DRIVER_INFO_2, version) },
-	{ "name", PY_UNISTR, offsetof(DRIVER_INFO_2, name) },
-	{ "architecture", PY_UNISTR, offsetof(DRIVER_INFO_2, architecture) },
-	{ "driver_path", PY_UNISTR, offsetof(DRIVER_INFO_2, driverpath) },
-	{ "data_file", PY_UNISTR, offsetof(DRIVER_INFO_2, datafile) },
-	{ "config_file", PY_UNISTR, offsetof(DRIVER_INFO_2, configfile) },
-	{ NULL }
-};
-
-struct pyconv py_DRIVER_INFO_3[] = {
-	{ "version", PY_UINT32, offsetof(DRIVER_INFO_3, version) },
-	{ "name", PY_UNISTR, offsetof(DRIVER_INFO_3, name) },
-	{ "architecture", PY_UNISTR, offsetof(DRIVER_INFO_3, architecture) },
-	{ "driver_path", PY_UNISTR, offsetof(DRIVER_INFO_3, driverpath) },
-	{ "data_file", PY_UNISTR, offsetof(DRIVER_INFO_3, datafile) },
-	{ "config_file", PY_UNISTR, offsetof(DRIVER_INFO_3, configfile) },
-	{ "help_file", PY_UNISTR, offsetof(DRIVER_INFO_3, helpfile) },
-	/* dependentfiles */
-	{ "monitor_name", PY_UNISTR, offsetof(DRIVER_INFO_3, monitorname) },
-	{ "default_datatype", PY_UNISTR, offsetof(DRIVER_INFO_3, defaultdatatype) },
-	{ NULL }
-};
-
-struct pyconv py_DRIVER_INFO_6[] = {
-	{ "version", PY_UINT32, offsetof(DRIVER_INFO_6, version) },
-	{ "name", PY_UNISTR, offsetof(DRIVER_INFO_6, name) },
-	{ "architecture", PY_UNISTR, offsetof(DRIVER_INFO_6, architecture) },
-	{ "driver_path", PY_UNISTR, offsetof(DRIVER_INFO_6, driverpath) },
-	{ "data_file", PY_UNISTR, offsetof(DRIVER_INFO_6, datafile) },
-	{ "config_file", PY_UNISTR, offsetof(DRIVER_INFO_6, configfile) },
-	{ "help_file", PY_UNISTR, offsetof(DRIVER_INFO_6, helpfile) },
-	/* dependentfiles */
-	{ "monitor_name", PY_UNISTR, offsetof(DRIVER_INFO_6, monitorname) },
-	{ "default_datatype", PY_UNISTR, offsetof(DRIVER_INFO_6, defaultdatatype) },
-	/* driver_date */
-
-	{ "padding", PY_UINT32, offsetof(DRIVER_INFO_6, padding) },
-	{ "driver_version_low", PY_UINT32, offsetof(DRIVER_INFO_6, driver_version_low) },
-	{ "driver_version_high", PY_UINT32, offsetof(DRIVER_INFO_6, driver_version_high) },
-	{ "mfg_name", PY_UNISTR, offsetof(DRIVER_INFO_6, mfgname) },
-	{ "oem_url", PY_UNISTR, offsetof(DRIVER_INFO_6, oem_url) },
-	{ "hardware_id", PY_UNISTR, offsetof(DRIVER_INFO_6, hardware_id) },
-	{ "provider", PY_UNISTR, offsetof(DRIVER_INFO_6, provider) },
-	
-	{ NULL }
-};
-
-struct pyconv py_DRIVER_DIRECTORY_1[] = {
-	{ "name", PY_UNISTR, offsetof(DRIVER_DIRECTORY_1, name) },
-	{ NULL }
-};
-
 /* Enumerate printer drivers */
 
 PyObject *spoolss_enumprinterdrivers(PyObject *self, PyObject *args,
@@ -124,11 +64,13 @@ PyObject *spoolss_enumprinterdrivers(PyObject *self, PyObject *args,
 			cli, mem_ctx, needed, NULL, level, arch, 
 			&num_drivers, &ctr);
 
+	if (!W_ERROR_IS_OK(werror)) {
+		PyErr_SetObject(spoolss_werror, py_werror_tuple(werror));
+		return NULL;
+	}
+
 	/* Return value */
 	
-	if (!W_ERROR_IS_OK(werror))
-		goto done;
-
 	switch (level) {
 	case 1:
 		result = PyList_New(num_drivers);
@@ -136,7 +78,7 @@ PyObject *spoolss_enumprinterdrivers(PyObject *self, PyObject *args,
 		for (i = 0; i < num_drivers; i++) {
 			PyObject *value;
 			
-			value = from_struct(&ctr.info1, py_DRIVER_INFO_1);
+			py_from_DRIVER_INFO_1(&value, ctr.info1);
 			PyList_SetItem(result, i, value);
 		}
 		
@@ -147,7 +89,7 @@ PyObject *spoolss_enumprinterdrivers(PyObject *self, PyObject *args,
 		for(i = 0; i < num_drivers; i++) {
 			PyObject *value;
 
-			value = from_struct(&ctr.info2, py_DRIVER_INFO_2);
+			py_from_DRIVER_INFO_2(&value, ctr.info2);
 			PyList_SetItem(result, i, value);
 		}
 
@@ -158,7 +100,7 @@ PyObject *spoolss_enumprinterdrivers(PyObject *self, PyObject *args,
 		for(i = 0; i < num_drivers; i++) {
 			PyObject *value;
 
-			value = from_struct(&ctr.info2, py_DRIVER_INFO_6);
+			py_from_DRIVER_INFO_6(&value, ctr.info6);
 			PyList_SetItem(result, i, value);
 		}
 
@@ -210,22 +152,25 @@ PyObject *spoolss_getprinterdriver(PyObject *self, PyObject *args,
 			hnd->cli, hnd->mem_ctx, needed, NULL, &hnd->pol,
 			level, arch, &ctr);
 
+	if (!W_ERROR_IS_OK(werror)) {
+		PyErr_SetObject(spoolss_werror, py_werror_tuple(werror));
+		return NULL;
+	}
+
 	/* Return value */
 	
-	if (W_ERROR_IS_OK(werror)) {
-		switch (level) {
-		case 1:
-			result = from_struct(&ctr.info1, py_DRIVER_INFO_1);
-			break;
-		case 2: 
-			result = from_struct(&ctr.info2, py_DRIVER_INFO_2);
-			break;
-		case 6:
-			result = from_struct(&ctr.info6, py_DRIVER_INFO_6);
-			break;
-		default:
-			break;
-		}
+	switch (level) {
+	case 1:
+		py_from_DRIVER_INFO_1(&result, ctr.info1);
+		break;
+	case 2: 
+		py_from_DRIVER_INFO_2(&result, ctr.info2);
+		break;
+	case 6:
+		py_from_DRIVER_INFO_6(&result,  ctr.info6);
+		break;
+	default:
+		break;
 	}
 	
 	Py_INCREF(result);
@@ -273,17 +218,17 @@ PyObject *spoolss_getprinterdriverdir(PyObject *self, PyObject *args,
 		werror = cli_spoolss_getprinterdriverdir(
 			cli, mem_ctx, needed, NULL, level, arch, &ctr);
 
+	if (!W_ERROR_IS_OK(werror)) {
+		PyErr_SetObject(spoolss_werror, py_werror_tuple(werror));
+		return NULL;
+	}
+
 	/* Return value */
 	
-	if (W_ERROR_IS_OK(werror)) {
-		switch (level) {
-		case 1:
-			result = from_struct(
-				&ctr.info1, py_DRIVER_DIRECTORY_1);
-			break;
-		default:
-			break;
-		}
+	switch (level) {
+	case 1:
+		py_from_DRIVER_DIRECTORY_1(&result, ctr.info1);
+		break;
 	}
 	
  done:

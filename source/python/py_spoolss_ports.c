@@ -20,20 +20,6 @@
 
 #include "python/py_spoolss.h"
 
-struct pyconv py_PORT_INFO_1[] = {
-	{ "name", PY_UNISTR, offsetof(PORT_INFO_1, port_name) },
-	{ NULL }
-};
-
-struct pyconv py_PORT_INFO_2[] = {
-	{ "name", PY_UNISTR, offsetof(PORT_INFO_2, port_name) },
-	{ "monitor_name", PY_UNISTR, offsetof(PORT_INFO_2, monitor_name) },
-	{ "description", PY_UNISTR, offsetof(PORT_INFO_2, description) },
-	{ "reserved", PY_UINT32, offsetof(PORT_INFO_2, reserved) },
-	{ "type", PY_UINT32, offsetof(PORT_INFO_2, port_type) },
-	{ NULL }
-};	
-
 /* Enumerate ports */
 
 PyObject *spoolss_enumports(PyObject *self, PyObject *args, PyObject *kw)
@@ -85,8 +71,7 @@ PyObject *spoolss_enumports(PyObject *self, PyObject *args, PyObject *kw)
 		for (i = 0; i < num_ports; i++) {
 			PyObject *value;
 
-			value = from_struct (
-				&ctr.port.info_1[i], py_PORT_INFO_1);
+			py_from_PORT_INFO_1(&value, &ctr.port.info_1[i]);
 
 			PyList_SetItem(result, i, value);
 		}
@@ -96,8 +81,7 @@ PyObject *spoolss_enumports(PyObject *self, PyObject *args, PyObject *kw)
 		for(i = 0; i < num_ports; i++) {
 			PyObject *value;
 
-			value = from_struct(
-				&ctr.port.info_2[i], py_PORT_INFO_2);
+			py_from_PORT_INFO_2(&value, &ctr.port.info_2[i]);
 
 			PyList_SetItem(result, i, value);
 		}
