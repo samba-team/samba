@@ -91,6 +91,7 @@ DECL(get_entry);
 DECL(load);
 DECL(merge);
 DECL(add_new_key);
+DECL(add_random_key);
 DECL(mod_entry);
 DECL(dump);
 DECL(init);
@@ -100,6 +101,8 @@ DECL(ext_keytab);
 DECL(help);
 DECL(exit_kdb_edit);
 DECL(set_db);
+DECL(passwd);
+DECL(change_random_key);
 
 /* util.c */
 
@@ -115,6 +118,7 @@ void set_created_by (hdb_entry *ent);
 void set_modified_by (hdb_entry *ent);
 void edit_entry(hdb_entry *ent);
 int set_password(hdb_entry *ent);
+int set_random_key(hdb_entry *ent);
 
 /* life.c */
 
