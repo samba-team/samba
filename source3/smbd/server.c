@@ -456,11 +456,7 @@ static BOOL scan_directory(char *path, char *name,int cnum,BOOL docache)
     return(True);
   }      
 
-#if 0 
-  /* 
-   * This code I believe is incorrect - and commenting it out
-   * is the correct fix for the bug mentioned below in the
-   * comment 'name2 here was changed to dname - since 1.9.16p2 - not sure of reason (jra)'.
+  /*
    * The incoming name can be mangled, and if we de-mangle it
    * here it will not compare correctly against the filename (name2)
    * read from the directory and then mangled by the name_map_mangle()
@@ -468,8 +464,7 @@ static BOOL scan_directory(char *path, char *name,int cnum,BOOL docache)
    * (JRA).
    */
   if (mangled)
-    check_mangled_stack(name);
-#endif 
+    mangled = !check_mangled_stack(name);
 
   /* open the directory */
   if (!(cur_dir = OpenDir(cnum, path, True))) 
@@ -489,7 +484,7 @@ static BOOL scan_directory(char *path, char *name,int cnum,BOOL docache)
       if (!name_map_mangle(name2,False,SNUM(cnum))) continue;
 
       if ((mangled && mangled_equal(name,name2))
-	  || fname_equal(name, name2)) /* name2 here was changed to dname - since 1.9.16p2 - not sure of reason (jra) */
+	  || fname_equal(name, name2))
 	{
 	  /* we've found the file, change it's name and return */
 	  if (docache) DirCacheAdd(path,name,dname,SNUM(cnum));
