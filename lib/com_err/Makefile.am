@@ -1,10 +1,11 @@
 # $Id$
 
-include $(top_srcdir)/cf/Makefile.am.common
+include $(top_srcdir)/Makefile.am.common
 
 YFLAGS = -d
 
 lib_LTLIBRARIES = libcom_err.la
+libcom_err_la_LDFLAGS = -version-info 1:0:0
 
 bin_PROGRAMS = compile_et
 

@@ -1,8 +1,10 @@
 # $Id$
 
-include $(top_srcdir)/cf/Makefile.am.common
+include $(top_srcdir)/Makefile.am.common
 
 lib_LTLIBRARIES = libdes.la
+libdes_la_LDFLAGS = -version-info 0:0:0
+
 include_HEADERS = des.h md4.h md5.h sha.h
 
 build_HEADERZ = $(include_HEADERS)

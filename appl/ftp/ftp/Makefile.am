@@ -1,6 +1,6 @@
 # $Id$
 
-include $(top_srcdir)/cf/Makefile.am.common
+include $(top_srcdir)/Makefile.am.common
 
 INCLUDES += -I$(srcdir)/../common $(INCLUDE_readline) $(INCLUDE_krb4)
 

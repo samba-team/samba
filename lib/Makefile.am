@@ -1,6 +1,6 @@
 # $Id$
 
-include $(top_srcdir)/cf/Makefile.am.common
+include $(top_srcdir)/Makefile.am.common
 
 if KRB4
 dir_45 = 45

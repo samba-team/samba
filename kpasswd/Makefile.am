@@ -1,6 +1,6 @@
 # $Id$
 
-include $(top_srcdir)/cf/Makefile.am.common
+include $(top_srcdir)/Makefile.am.common
 
 man_MANS = kpasswd.1 kpasswdd.8
 
