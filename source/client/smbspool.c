@@ -59,7 +59,7 @@ static int		smb_print(struct cli_state *, char *, FILE *);
 		*server,	/* Server name */
 		*printer;	/* Printer name */
   FILE		*fp;		/* File to print */
-  int		status;		/* Status of LPD job */
+  int		status=0;		/* Status of LPD job */
   struct cli_state *cli;	/* SMB interface */
 
   /* we expect the URI in argv[0]. Detect the case where it is in argv[1] and cope */
