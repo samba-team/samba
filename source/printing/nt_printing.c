@@ -3609,6 +3609,16 @@ BOOL nt_printing_getsec(TALLOC_CTX *ctx, char *printername, SEC_DESC_BUF **secde
 			return False;
 		}
 
+		/* Save default security descriptor for later */
+
+		prs_init(&ps, (uint32)sec_desc_size((*secdesc_ctr)->sec) +
+				sizeof(SEC_DESC_BUF), ctx, MARSHALL);
+
+		if (sec_io_desc_buf("nt_printing_setsec", secdesc_ctr, &ps, 1))
+			tdb_prs_store(tdb_printers, key, &ps);
+
+		prs_mem_free(&ps);
+
 		return True;
 	}
 
