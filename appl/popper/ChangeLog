@@ -1,3 +1,9 @@
+2003-12-20  Love  <lha@stacken.kth.se>
+
+	* popper.c (main): avoid warning by sending empty string as
+	formatstring instead of NULL (even though pop_msg handles that
+	too)
+
 2003-10-10  Johan Danielsson  <joda@pdc.kth.se>
 
 	* pop_init.c (pop_init): change call to authentication function,
