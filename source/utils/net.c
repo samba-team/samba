@@ -82,6 +82,7 @@ int opt_acls = 0;
 int opt_attrs = 0;
 int opt_timestamps = 0;
 const char *opt_exclude = NULL;
+const char *opt_destination = NULL;
 
 BOOL opt_have_ip = False;
 struct in_addr opt_dest_ip;
@@ -209,23 +210,25 @@ NTSTATUS connect_to_ipc_anonymous(struct cli_state **c,
 }
 
 /**
- * Connect the local server and open a given pipe
+ * Connect a server and open a given pipe
  *
- * @param cli_local		A cli_state 
+ * @param cli_dst		A cli_state 
  * @param pipe			The pipe to open
  * @param got_pipe		boolean that stores if we got a pipe
  *
  * @return Normal NTSTATUS return.
  **/
-NTSTATUS connect_local_pipe(struct cli_state **cli_local, int pipe_num, BOOL *got_pipe)
+NTSTATUS connect_pipe(struct cli_state **cli_dst, int pipe_num, BOOL *got_pipe)
 {
 	NTSTATUS nt_status;
-	extern struct in_addr loopback_ip;
 	char *server_name = strdup("127.0.0.1");
 	struct cli_state *cli_tmp = NULL;
 
-	/* make a connection to local named pipe via loopback */
-	nt_status = connect_to_ipc(&cli_tmp, &loopback_ip, server_name);
+	if (opt_destination)
+		server_name = strdup(opt_destination);
+
+	/* make a connection to a named pipe */
+	nt_status = connect_to_ipc(&cli_tmp, NULL, server_name);
 	if (!NT_STATUS_IS_OK(nt_status)) 
 		return nt_status;
 
@@ -235,7 +238,7 @@ NTSTATUS connect_local_pipe(struct cli_state **cli_local, int pipe_num, BOOL *go
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	*cli_local = cli_tmp;
+	*cli_dst = cli_tmp;
 	*got_pipe = True;
 
 	return nt_status;
@@ -740,10 +743,11 @@ static struct functable net_func[] = {
 		{"ntname",      'N', POPT_ARG_STRING, &opt_newntname},
 		{"rid",         'R', POPT_ARG_INT,    &opt_rid},
 		/* Options for 'net rpc share migrate' */
-		{"acls",	0, POPT_ARG_NONE,   &opt_acls},
-		{"attrs",	0, POPT_ARG_NONE,   &opt_attrs},
-		{"timestamps",	0, POPT_ARG_NONE,   &opt_timestamps},
+		{"acls",	0, POPT_ARG_NONE,     &opt_acls},
+		{"attrs",	0, POPT_ARG_NONE,     &opt_attrs},
+		{"timestamps",	0, POPT_ARG_NONE,     &opt_timestamps},
 		{"exclude",	'e', POPT_ARG_STRING, &opt_exclude},
+		{"destination",	0, POPT_ARG_STRING,   &opt_destination},
 
 		POPT_COMMON_SAMBA
 		{ 0, 0, 0, 0}

@@ -1324,13 +1324,13 @@ NTSTATUS rpc_printer_migrate_security_internals(const DOM_SID *domain_sid, const
 
 	DEBUG(3,("copying printer ACLs\n"));
 
-	/* connect local PI_SPOOLSS */
-	nt_status = connect_local_pipe(&cli_dst, PI_SPOOLSS, &got_dst_spoolss_pipe);
+	/* connect destination PI_SPOOLSS */
+	nt_status = connect_pipe(&cli_dst, PI_SPOOLSS, &got_dst_spoolss_pipe);
 	if (!NT_STATUS_IS_OK(nt_status))
 		return nt_status;
 
 
-	/* enum remote printers */
+	/* enum source printers */
 	if (!get_printer_info(cli, mem_ctx, level, argc, argv, &num_printers, &ctr_enum)) {
 		nt_status = NT_STATUS_UNSUCCESSFUL;
 		goto done;
@@ -1474,8 +1474,8 @@ NTSTATUS rpc_printer_migrate_forms_internals(const DOM_SID *domain_sid, const ch
 
 	DEBUG(3,("copying forms\n"));
 	
-	/* connect local PI_SPOOLSS */
-	nt_status = connect_local_pipe(&cli_dst, PI_SPOOLSS, &got_dst_spoolss_pipe);
+	/* connect destination PI_SPOOLSS */
+	nt_status = connect_pipe(&cli_dst, PI_SPOOLSS, &got_dst_spoolss_pipe);
 	if (!NT_STATUS_IS_OK(nt_status))
 		return nt_status;
 	
@@ -1656,7 +1656,7 @@ NTSTATUS rpc_printer_migrate_drivers_internals(const DOM_SID *domain_sid, const 
 
 	DEBUG(3,("copying printer-drivers\n"));
 
-	nt_status = connect_local_pipe(&cli_dst, PI_SPOOLSS, &got_dst_spoolss_pipe);
+	nt_status = connect_pipe(&cli_dst, PI_SPOOLSS, &got_dst_spoolss_pipe);
 	if (!NT_STATUS_IS_OK(nt_status))
 		return nt_status;
 	
@@ -1855,8 +1855,8 @@ NTSTATUS rpc_printer_migrate_printers_internals(const DOM_SID *domain_sid, const
 
 	DEBUG(3,("copying printers\n"));
 
-	/* connect local PI_SPOOLSS */
-	nt_status = connect_local_pipe(&cli_dst, PI_SPOOLSS, &got_dst_spoolss_pipe);
+	/* connect destination PI_SPOOLSS */
+	nt_status = connect_pipe(&cli_dst, PI_SPOOLSS, &got_dst_spoolss_pipe);
 	if (!NT_STATUS_IS_OK(nt_status))
 		return nt_status;
 
@@ -2024,8 +2024,8 @@ NTSTATUS rpc_printer_migrate_settings_internals(const DOM_SID *domain_sid, const
 
 	DEBUG(3,("copying printer settings\n"));
 
-	/* connect local PI_SPOOLSS */
-	nt_status = connect_local_pipe(&cli_dst, PI_SPOOLSS, &got_dst_spoolss_pipe);
+	/* connect destination PI_SPOOLSS */
+	nt_status = connect_pipe(&cli_dst, PI_SPOOLSS, &got_dst_spoolss_pipe);
 	if (!NT_STATUS_IS_OK(nt_status))
 		return nt_status;
 
