@@ -214,7 +214,7 @@ int strwicmp(const char *psz1, const char *psz2)
 
 /* Convert a string to upper case, but don't modify it */
 
-char *strupper_static(char *s)
+char *strupper_static(const char *s)
 {
 	static pstring str;
 
