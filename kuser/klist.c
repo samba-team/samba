@@ -275,8 +275,8 @@ print_tickets (krb5_context context,
     }
     while (krb5_cc_next_cred (context,
 			      ccache,
-			      &creds,
-			      &cursor) == 0) {
+			      &cursor,
+			      &creds) == 0) {
 	if(do_verbose){
 	    print_cred_verbose(context, &creds);
 	}else{

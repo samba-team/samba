@@ -281,7 +281,7 @@ krb5_cc_retrieve_cred(krb5_context context,
     krb5_error_code ret;
     krb5_cc_cursor cursor;
     krb5_cc_start_seq_get(context, id, &cursor);
-    while((ret = krb5_cc_next_cred(context, id, creds, &cursor)) == 0){
+    while((ret = krb5_cc_next_cred(context, id, &cursor, creds)) == 0){
 	if(krb5_compare_creds(context, whichfields, mcreds, creds)){
 	    ret = 0;
 	    break;
@@ -328,8 +328,8 @@ krb5_cc_start_seq_get (krb5_context context,
 krb5_error_code
 krb5_cc_next_cred (krb5_context context,
 		   const krb5_ccache id,
-		   krb5_creds *creds,
-		   krb5_cc_cursor *cursor)
+		   krb5_cc_cursor *cursor,
+		   krb5_creds *creds)
 {
     return id->ops->get_next(context, id, cursor, creds);
 }
@@ -400,7 +400,7 @@ krb5_cc_copy_cache(krb5_context context,
 	krb5_free_principal(context, princ);
 	return ret;
     }
-    while(ret == 0 && krb5_cc_next_cred(context, from, &cred, &cursor) == 0){
+    while(ret == 0 && krb5_cc_next_cred(context, from, &cursor, &cred) == 0){
 	ret = krb5_cc_store_cred(context, to, &cred);
 	krb5_free_creds_contents (context, &cred);
     }
