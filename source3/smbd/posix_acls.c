@@ -605,14 +605,6 @@ static BOOL ensure_canon_entry_valid(canon_ace **pp_ace,
 	BOOL got_other = False;
 	canon_ace *pace_other = NULL;
 	canon_ace *pace_group = NULL;
-	connection_struct *conn = fsp->conn;
-	SMB_ACL_T current_posix_acl = NULL;
-	mode_t current_user_perms = 0;
-	mode_t current_grp_perms = 0;
-	mode_t current_other_perms = 0;
-	BOOL got_current_user = False;
-	BOOL got_current_grp = False;
-	BOOL got_current_other = False;
 
 	for (pace = *pp_ace; pace; pace = pace->next) {
 		if (pace->type == SMB_ACL_USER_OBJ) {
@@ -715,18 +707,13 @@ static BOOL ensure_canon_entry_valid(canon_ace **pp_ace,
 		pace->attr = ALLOW_ACE;
 
 		if (setting_acl) {
-			if (got_current_user) {
-				pace->perms = current_user_perms;
-			} else {
-				/* If we only got an "everyone" perm, just use that. */
-				if (!got_grp && got_other)
-					pace->perms = pace_other->perms;
-				else if (got_grp && uid_entry_in_group(pace, pace_group))
-					pace->perms = pace_group->perms;
-				else
-					pace->perms = 0;
-
-			}
+			/* If we only got an "everyone" perm, just use that. */
+			if (!got_grp && got_other)
+				pace->perms = pace_other->perms;
+			else if (got_grp && uid_entry_in_group(pace, pace_group))
+				pace->perms = pace_group->perms;
+			else
+				pace->perms = 0;
 
 			apply_default_perms(fsp, pace, S_IRUSR);
 		} else {
@@ -749,15 +736,11 @@ static BOOL ensure_canon_entry_valid(canon_ace **pp_ace,
 		pace->trustee = *pfile_grp_sid;
 		pace->attr = ALLOW_ACE;
 		if (setting_acl) {
-			if (got_current_grp) {
-				pace->perms = current_grp_perms;
-			} else {
-				/* If we only got an "everyone" perm, just use that. */
-				if (got_other)
-					pace->perms = pace_other->perms;
-				else
-					pace->perms = unix_perms_to_acl_perms(pst->st_mode, S_IRGRP, S_IWGRP, S_IXGRP);
-			}
+			/* If we only got an "everyone" perm, just use that. */
+			if (got_other)
+				pace->perms = pace_other->perms;
+			else
+				pace->perms = 0;
 			apply_default_perms(fsp, pace, S_IRGRP);
 		} else {
 			pace->perms = unix_perms_to_acl_perms(pst->st_mode, S_IRGRP, S_IWGRP, S_IXGRP);
@@ -779,10 +762,7 @@ static BOOL ensure_canon_entry_valid(canon_ace **pp_ace,
 		pace->trustee = global_sid_World;
 		pace->attr = ALLOW_ACE;
 		if (setting_acl) {
-			if (got_current_other)
-				pace->perms = current_other_perms;
-			else
-				pace->perms = 0;
+			pace->perms = 0;
 			apply_default_perms(fsp, pace, S_IROTH);
 		} else
 			pace->perms = unix_perms_to_acl_perms(pst->st_mode, S_IROTH, S_IWOTH, S_IXOTH);
@@ -2351,7 +2331,7 @@ size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
 		int nt_acl_type;
 		int i;
 
-		if (nt4_compatible_acls()) {
+		if (nt4_compatible_acls() && dir_ace) {
 			/*
 			 * NT 4 chokes if an ACL contains an INHERIT_ONLY entry
 			 * but no non-INHERIT_ONLY entry for one SID. So we only
@@ -2363,9 +2343,6 @@ size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
 			 * are not also contained in the Access ACL, so this
 			 * case will still fail under NT 4.
 			 */
-
-			if (!dir_ace)
-				goto simplify_file_ace_only;
 
 			ace = canon_ace_entry_for(dir_ace, SMB_ACL_OTHER, NULL);
 			if (ace && !ace->perms) {
@@ -2411,20 +2388,6 @@ size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
 			ace = canon_ace_entry_for(dir_ace, SMB_ACL_GROUP_OBJ, NULL);
 			if (ace && !ace->perms) {
 				DLIST_REMOVE(dir_ace, ace);
-				SAFE_FREE(ace);
-			}
-
- simplify_file_ace_only:
-
-			ace = canon_ace_entry_for(file_ace, SMB_ACL_OTHER, NULL);
-			if (ace && !ace->perms) {
-				DLIST_REMOVE(file_ace, ace);
-				SAFE_FREE(ace);
-			}
-
-			ace = canon_ace_entry_for(file_ace, SMB_ACL_GROUP_OBJ, NULL);
-			if (ace && !ace->perms) {
-				DLIST_REMOVE(file_ace, ace);
 				SAFE_FREE(ace);
 			}
 		}
