@@ -1,18 +1,18 @@
-Date: March 29, 2003
+Dear SuSE user,
 
-Note: The current packaging files are NOT officially supported files.
----------------------------------------------------------------------
+prebuilt Samba RPMs for all SuSE Linux versions are available at:
+ftp://ftp.SuSE.com/pub/projects/samba/
 
-While the SPEC file shows who the original author was, these files imply no warranty of
-fitness what so ever. These files are NOT official SuSE files and are NOT supported by
-them. If you have ANY problems with the use of these files then please email jht@samba.org
-and NOT SuSE support.
+The same package are also available at:
+http://download.Samba.org/samba/ftp/Binary_Packages/SuSE/
 
+Samba 3 is not supported by SuSE on SuSE Linux Enterprise Server 8. You find
+SerNet-supported packages on http://ftp.sernet.de/pub/samba/
 
-These files may be used to build Samba-3.0 packages for SuSE Linux 8.1 and/or for
-UnitedLinux 1.0 systems.
+If you encounter any problem with these packages please don't blame the
+Samba Team.  Instead file a bug at https://bugzilla.Samba.org/ pick
+product Samba 3.0, then select 'component' Packaging and set 'assign to'
+to <lmuelle@suse.de>.
 
-Note2: You most likely will need to update to heimdal-0.5.1 or later if you intend to
-use any Kerberos functionality.
+Have a lot of fun...
 
-- John T.
