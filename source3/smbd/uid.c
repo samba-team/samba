@@ -722,6 +722,8 @@ NTSTATUS uid_to_sid(DOM_SID *psid, uid_t uid)
 	uid_t low, high;
 	fstring sid;
 
+	ZERO_STRUCTP(psid);
+
 	if (fetch_sid_from_uid_cache(psid, uid))
 		return ( psid ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL );
 
@@ -760,6 +762,8 @@ NTSTATUS gid_to_sid(DOM_SID *psid, gid_t gid)
 {
 	gid_t low, high;
 	fstring sid;
+
+	ZERO_STRUCTP(psid);
 
 	if (fetch_sid_from_gid_cache(psid, gid))
 		return ( psid ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL );
