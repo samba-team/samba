@@ -1478,12 +1478,18 @@ done
 
 # Simple test for streamspty, based on the existance of getmsg(), alas
 # this breaks on SunOS4 which have streams but BSD-like ptys
+#
+# And also something wierd has happend with dec-osf1, fallback to bsd-ptys
 
 echo $ac_n "checking for streamspty""... $ac_c" 1>&6
-krb_cv_sys_streamspty="no"
-if expr "`uname -sr`" : "SunOS 4" > /dev/null; then :; else
+case "`uname -sr`" in
+SunOS\ 4*|OSF1*)
+	krb_cv_sys_streamspty=no
+	;;
+*)
 	krb_cv_sys_streamspty="$ac_cv_func_getmsg"
-fi
+	;;
+esac
 if test "$krb_cv_sys_streamspty" = yes; then
 	cat >> confdefs.h <<\EOF
 #define STREAMSPTY 1
