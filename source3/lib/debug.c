@@ -127,7 +127,7 @@ void debug_message(int msg_type, pid_t src, void *buf, size_t len)
 	int level;
 	memcpy(&level, buf, sizeof(int));
 	DEBUGLEVEL = level;
-	DEBUG(1,("Debug level set to %d from pid %d\n", level, (int)src));
+	DEBUG(1,("INFO: Debug level set to %d from pid %d\n", level, (int)src));
 }
 
 /****************************************************************************
