@@ -109,11 +109,44 @@ krb5_verify_password (POP *p)
  */
 
 int
+login_user(POP *p)
+{
+    struct stat st;
+    struct passwd *pw;
+
+    /*  Look for the user in the password file */
+    if ((pw = k_getpwnam(p->user)) == NULL) {
+	pop_log(p, POP_PRIORITY, "user %s (from %s) not found",
+		p->user, p->ipaddr);
+	return pop_msg(p, POP_FAILURE, "Login incorrect.");
+    }
+
+    pop_log(p, POP_INFO, "login from %s as %s", p->ipaddr, p->user);
+    
+    /*  Build the name of the user's maildrop */
+    snprintf(p->drop_name, sizeof(p->drop_name), "%s/%s", POP_MAILDIR, p->user);
+    if(stat(p->drop_name, &st) < 0 || !S_ISDIR(st.st_mode)){
+	/*  Make a temporary copy of the user's maildrop */
+	/*    and set the group and user id */
+	if (pop_dropcopy(p, pw) != POP_SUCCESS) return (POP_FAILURE);
+	
+	/*  Get information about the maildrop */
+	if (pop_dropinfo(p) != POP_SUCCESS) return(POP_FAILURE);
+    } else {
+	if(changeuser(p, pw) != POP_SUCCESS) return POP_FAILURE;
+	if(pop_maildir_info(p) != POP_SUCCESS) return POP_FAILURE;
+    }
+    /*  Initialize the last-message-accessed number */
+    p->last_msg = 0;
+    return POP_SUCCESS;
+}
+
+int
 pop_pass (POP *p)
 {
     struct passwd  *pw;
     int i;
-    struct stat st;
+    int status;
 
     /* Make one string of all these parameters */
     
@@ -199,25 +232,9 @@ pop_pass (POP *p)
 				"Password incorrect");
 	 }
     }
-    pop_log(p, POP_INFO, "login from %s as %s",
-	    p->ipaddr, p->user);
-
-    /*  Build the name of the user's maildrop */
-    snprintf(p->drop_name, sizeof(p->drop_name), "%s/%s", POP_MAILDIR, p->user);
-
-    if(stat(p->drop_name, &st) < 0 || !S_ISDIR(st.st_mode)){
-	/*  Make a temporary copy of the user's maildrop */
-	/*    and set the group and user id */
-	if (pop_dropcopy(p, pw) != POP_SUCCESS) return (POP_FAILURE);
-	
-	/*  Get information about the maildrop */
-	if (pop_dropinfo(p) != POP_SUCCESS) return(POP_FAILURE);
-    } else {
-	if(changeuser(p, pw) != POP_SUCCESS) return POP_FAILURE;
-	if(pop_maildir_info(p) != POP_SUCCESS) return POP_FAILURE;
-    }
-    /*  Initialize the last-message-accessed number */
-    p->last_msg = 0;
+    status = login_user(p);
+    if(status != POP_SUCCESS)
+	return status;
 
     /*  Authorization completed successfully */
     return (pop_msg (p, POP_SUCCESS,
