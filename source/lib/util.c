@@ -184,55 +184,82 @@ void reopen_logs(void)
   pstring fname;
   
   if (DEBUGLEVEL > 0)
-    {
-      pstrcpy(fname,debugf);
-      if (lp_loaded() && (*lp_logfile()))
-	pstrcpy(fname,lp_logfile());
+  {
+    pstrcpy(fname,debugf);
+    if (lp_loaded() && (*lp_logfile()))
+      pstrcpy(fname,lp_logfile());
 
-      if (!strcsequal(fname,debugf) || !dbf || !file_exist(debugf,NULL))
-	{
-	  int oldumask = umask(022);
-	  pstrcpy(debugf,fname);
-	  if (dbf) fclose(dbf);
-	  if (append_log)
-	    dbf = fopen(debugf,"a");
-	  else
-	    dbf = fopen(debugf,"w");
-	  if (dbf) setbuf(dbf,NULL);
-	  umask(oldumask);
-	}
-    }
-  else
+    if (!strcsequal(fname,debugf) || !dbf || !file_exist(debugf,NULL))
     {
+      int oldumask = umask(022);
+      pstrcpy(debugf,fname);
       if (dbf)
-	{
-	  fclose(dbf);
-	  dbf = NULL;
-	}
+        fclose(dbf);
+      if (append_log)
+        dbf = fopen(debugf,"a");
+      else
+        dbf = fopen(debugf,"w");
+      /*
+       * Fix from klausr@ITAP.Physik.Uni-Stuttgart.De
+       * to fix problem where smbd's that generate less
+       * than 100 messages keep growing the log.
+       */
+      force_check_log_size();
+      if (dbf)
+        setbuf(dbf,NULL);
+      umask(oldumask);
     }
+  }
+  else
+  {
+    if (dbf)
+    {
+      fclose(dbf);
+      dbf = NULL;
+    }
+  }
 }
 
+/*******************************************************************
+ Number of debug messages that have been output. 
+ Used to check log size.
+********************************************************************/
+
+static int debug_count=0;
 
 /*******************************************************************
-check if the log has grown too big
+ Force a check of the log size.
 ********************************************************************/
+
+void force_check_log_size(void)
+{
+  debug_count = 100;
+}
+
+/*******************************************************************
+ Check if the log has grown too big
+********************************************************************/
+
 static void check_log_size(void)
 {
-  static int debug_count=0;
   int maxlog;
   struct stat st;
 
-  if (debug_count++ < 100 || getuid() != 0) return;
+  if (debug_count++ < 100 || getuid() != 0)
+    return;
 
   maxlog = lp_max_log_size() * 1024;
-  if (!dbf || maxlog <= 0) return;
+  if (!dbf || maxlog <= 0)
+    return;
 
   if (fstat(fileno(dbf),&st) == 0 && st.st_size > maxlog) {
-    fclose(dbf); dbf = NULL;
+    fclose(dbf);
+    dbf = NULL;
     reopen_logs();
     if (dbf && file_size(debugf) > maxlog) {
       pstring name;
-      fclose(dbf); dbf = NULL;
+      fclose(dbf);
+      dbf = NULL;
       slprintf(name,sizeof(name)-1,"%s.old",debugf);
       rename(debugf,name);
       reopen_logs();

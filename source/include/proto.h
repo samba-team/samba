@@ -1149,8 +1149,9 @@ void lp_set_name_resolve_order(char *new_order);
 
 /*The following definitions come from  locking.c  */
 
-BOOL is_locked(int fnum,int cnum,uint32 count,uint32 offset);
-BOOL do_lock(int fnum,int cnum,uint32 count,uint32 offset,int *eclass,uint32 *ecode);
+BOOL is_locked(int fnum,int cnum,uint32 count,uint32 offset, int lock_type);
+BOOL do_lock(int fnum,int cnum,uint32 count,uint32 offset,int lock_type,
+             int *eclass,uint32 *ecode);
 BOOL do_unlock(int fnum,int cnum,uint32 count,uint32 offset,int *eclass,uint32 *ecode);
 BOOL locking_init(int read_only);
 BOOL locking_end(void);
@@ -1980,6 +1981,7 @@ int sig_usr2(void);
 int sig_usr1(void);
 void setup_logging(char *pname,BOOL interactive);
 void reopen_logs(void);
+void force_check_log_size(void);
 char *tmpdir(void);
 BOOL is_a_socket(int fd);
 BOOL next_token(char **ptr,char *buff,char *sep);
