@@ -1047,7 +1047,7 @@ NTSTATUS change_oem_password(SAM_ACCOUNT *hnd, char *old_passwd, char *new_passw
 	}
 
 	/* Use external script to check password complexity */
-	if (lp_check_password_script()) {
+	if (lp_check_password_script() && *(lp_check_password_script())) {
 		int check_ret;
 
 		check_ret = smbrunsecret(lp_check_password_script(), new_passwd);
