@@ -1092,6 +1092,21 @@ size_t strlen_m(const char *s)
 }
 
 /**
+   Work out the number of multibyte chars in a string, including the NULL
+   terminator.
+**/
+size_t strlen_m_term(const char *s)
+{
+	size_t count = 0;
+
+	if (!s) {
+		return 0;
+	}
+
+	return strlen_m(s) + 1;
+}
+
+/**
  Convert a string to upper case.
 **/
 
