@@ -1448,7 +1448,14 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
       return(ERROR(ERRDOS,ERRbadfunc)); /* os/2 needs this */      
 
     case SMB_QUERY_FILE_BASIC_INFO:
-      data_size = 36; /* w95 returns 40 bytes not 36 - why ?. */
+	case 1004:
+
+      if (info_level == SMB_QUERY_FILE_BASIC_INFO)
+	      data_size = 36; /* w95 returns 40 bytes not 36 - why ?. */
+      else {
+          data_size = 40;
+          SIVAL(pdata,36,0);
+      }
       put_long_date(pdata,get_create_time(&sbuf,lp_fake_dir_create_times(SNUM(conn))));
       put_long_date(pdata+8,sbuf.st_atime);
       put_long_date(pdata+16,sbuf.st_mtime); /* write time */
@@ -1559,16 +1566,6 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 	 * protocol a standard.... sure you are... :-).
 	 * Lying rat-bastards. JRA.
 	 */
-
-	case 1004:
-		put_long_date(pdata,get_create_time(&sbuf,lp_fake_dir_create_times(SNUM(conn))));
-		put_long_date(pdata+8,sbuf.st_atime);
-		put_long_date(pdata+16,sbuf.st_mtime); /* write time */
-		put_long_date(pdata+24,sbuf.st_mtime); /* change time */
-		SIVAL(pdata,32,mode);
-		SIVAL(pdata,36,0); /* ??? */
-		data_size = 40;
-		break;
 
 	case 1005:
 		SIVAL(pdata,0,mode);
@@ -1881,6 +1878,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
       break;
 
     case SMB_SET_FILE_BASIC_INFO:
+	case 1004:
     {
       /* Patch to do this correctly from Paul Eggert <eggert@twinsun.com>. */
       time_t write_time;
@@ -1902,14 +1900,6 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
                       ? changed_time
                       : write_time);
 
-#if 0 /* Needs more testing... */
-      /* Test from Luke to prevent Win95 from
-         setting incorrect values here.
-       */
-      if (tvs.actime < tvs.modtime)
-        return(ERROR(ERRDOS,ERRnoaccess));
-#endif /* Needs more testing... */
-
       /* attributes */
       mode = IVAL(pdata,32);
       break;
@@ -1920,6 +1910,8 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
      * to mean truncate the file. JRA.
      */
 
+	case 1019:
+	case 1020:
     case SMB_SET_FILE_ALLOCATION_INFO:
     {
       SMB_OFF_T newsize = IVAL(pdata,0);
@@ -2053,7 +2045,9 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
   DEBUG(6,("mode: %x\n"  , mode));
 
   if(!((info_level == SMB_SET_FILE_END_OF_FILE_INFO) ||
-     (info_level == SMB_SET_FILE_ALLOCATION_INFO))) {
+     (info_level == SMB_SET_FILE_ALLOCATION_INFO) ||
+     (info_level == 1019) ||
+     (info_level == 1020))) {
     /*
      * Only do this test if we are not explicitly
      * changing the size of a file.
