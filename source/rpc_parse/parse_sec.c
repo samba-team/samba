@@ -30,8 +30,9 @@ extern int DEBUGLEVEL;
 
 
 /*******************************************************************
-makes a structure.
+ Sets up a SEC_ACCESS structure.
 ********************************************************************/
+
 BOOL make_sec_access(SEC_ACCESS * t, uint32 mask)
 {
 	ZERO_STRUCTP(t);
@@ -40,9 +41,10 @@ BOOL make_sec_access(SEC_ACCESS * t, uint32 mask)
 }
 
 /*******************************************************************
-reads or writes a structure.
+ Reads or writes a SEC_ACCESS structure.
 ********************************************************************/
-BOOL sec_io_access(char *desc, SEC_ACCESS * t, prs_struct *ps, int depth)
+
+BOOL sec_io_access(char *desc, SEC_ACCESS *t, prs_struct *ps, int depth)
 {
 	if (t == NULL)
 		return False;
@@ -59,8 +61,9 @@ BOOL sec_io_access(char *desc, SEC_ACCESS * t, prs_struct *ps, int depth)
 
 
 /*******************************************************************
-makes a structure.
+ Sets up a SEC_ACE structure.
 ********************************************************************/
+
 BOOL make_sec_ace(SEC_ACE * t, const DOM_SID *sid, uint8 type,
 		  SEC_ACCESS mask, uint8 flag)
 {
@@ -77,8 +80,9 @@ BOOL make_sec_ace(SEC_ACE * t, const DOM_SID *sid, uint8 type,
 }
 
 /*******************************************************************
-reads or writes a structure.
+ Reads or writes a SEC_ACE structure.
 ********************************************************************/
+
 static BOOL sec_io_ace(char *desc, SEC_ACE * t, prs_struct *ps, int depth)
 {
 	uint32 old_offset;
@@ -91,7 +95,7 @@ static BOOL sec_io_ace(char *desc, SEC_ACE * t, prs_struct *ps, int depth)
 
 	prs_align(ps);
 
-	old_offset = ps->offset;
+	old_offset = prs_offset(ps);
 
 	prs_uint8("type ", ps, depth, &(t->type));
 	prs_uint8("flags", ps, depth, &(t->flags));
@@ -109,7 +113,7 @@ static BOOL sec_io_ace(char *desc, SEC_ACE * t, prs_struct *ps, int depth)
 }
 
 /*******************************************************************
-makes a structure.  
+ Create a SEC_ACL structure.
 ********************************************************************/
 BOOL make_sec_acl(SEC_ACL * t, uint16 revision, int num_aces, SEC_ACE * ace)
 {
@@ -131,6 +135,17 @@ BOOL make_sec_acl(SEC_ACL * t, uint16 revision, int num_aces, SEC_ACE * ace)
 }
 
 /*******************************************************************
+ Duplicate a SEC_ACL structure.
+********************************************************************/
+SEC_ACL *dup_sec_acl( SEC_ACL *src)
+{
+	if(src == NULL)
+		return NULL;
+
+	return NULL;
+}
+
+/*******************************************************************
 frees a structure.  
 ********************************************************************/
 void free_sec_acl(SEC_ACL * t)
@@ -146,11 +161,12 @@ void free_sec_acl(SEC_ACL * t)
 }
 
 /*******************************************************************
-reads or writes a structure.  
+ Reads or writes a structure.  
 
-first of the xx_io_xx functions that allocates its data structures
+ First of the xx_io_xx functions that allocates its data structures
  for you as it reads them.
 ********************************************************************/
+
 static BOOL sec_io_acl(char *desc, SEC_ACL * t, prs_struct *ps, int depth)
 {
 	uint32 i;
@@ -165,7 +181,7 @@ static BOOL sec_io_acl(char *desc, SEC_ACL * t, prs_struct *ps, int depth)
 
 	prs_align(ps);
 
-	old_offset = ps->offset;
+	old_offset = prs_offset(ps);
 
 	prs_uint16("revision", ps, depth, &(t->revision));
 	prs_uint16_pre("size     ", ps, depth, &(t->size), &offset_acl_size);
@@ -189,7 +205,8 @@ static BOOL sec_io_acl(char *desc, SEC_ACL * t, prs_struct *ps, int depth)
 	{
 		fstring tmp;
 		slprintf(tmp, sizeof(tmp) - 1, "ace[%02d]: ", i);
-		sec_io_ace(tmp, &t->ace[i], ps, depth);
+		if(!sec_io_ace(tmp, &t->ace[i], ps, depth))
+			return False;
 	}
 
 	prs_align(ps);
@@ -202,7 +219,7 @@ static BOOL sec_io_acl(char *desc, SEC_ACL * t, prs_struct *ps, int depth)
 
 
 /*******************************************************************
-makes a structure
+ Creates a SEC_DESC structure
 ********************************************************************/
 int make_sec_desc(SEC_DESC * t, uint16 revision, uint16 type,
 		  DOM_SID *owner_sid, DOM_SID *grp_sid,
@@ -327,7 +344,7 @@ BOOL sec_io_desc(char *desc, SEC_DESC * t, prs_struct *ps, int depth)
 	prs_align(ps);
 
 	/* start of security descriptor stored for back-calc offset purposes */
-	old_offset = ps->offset;
+	old_offset = prs_offset(ps);
 	max_offset = old_offset;
 
 	prs_uint16("revision ", ps, depth, &(t->revision));
@@ -345,7 +362,7 @@ BOOL sec_io_desc(char *desc, SEC_DESC * t, prs_struct *ps, int depth)
 	prs_uint32_pre("off_sacl     ", ps, depth, &(t->off_sacl), &off_sacl);
 	prs_uint32_pre("off_dacl     ", ps, depth, &(t->off_dacl), &off_dacl);
 #endif
-	max_offset = MAX(max_offset, ps->offset);
+	max_offset = MAX(max_offset, prs_offset(ps));
 
 	if (IS_BITS_SET_ALL(t->type, SEC_DESC_DACL_PRESENT))
 	{
@@ -353,7 +370,8 @@ BOOL sec_io_desc(char *desc, SEC_DESC * t, prs_struct *ps, int depth)
 		prs_uint32_post("off_dacl    ", ps, depth, &(t->off_dacl),
 				off_dacl, ps->offset - old_offset);
 #endif
-		ps->offset = old_offset + t->off_dacl;
+		if(!prs_set_offset(ps, old_offset + t->off_dacl))
+			return False;
 		if (ps->io)
 		{
 			/* reading */
@@ -368,7 +386,8 @@ BOOL sec_io_desc(char *desc, SEC_DESC * t, prs_struct *ps, int depth)
 			return False;
 		}
 
-		sec_io_acl("dacl", t->dacl, ps, depth);
+		if(!sec_io_acl("dacl", t->dacl, ps, depth))
+			return False;
 		prs_align(ps);
 	}
 #if 0
@@ -379,7 +398,7 @@ BOOL sec_io_desc(char *desc, SEC_DESC * t, prs_struct *ps, int depth)
 	}
 #endif
 
-	max_offset = MAX(max_offset, ps->offset);
+	max_offset = MAX(max_offset, prs_offset(ps));
 
 	if (IS_BITS_SET_ALL(t->type, SEC_DESC_SACL_PRESENT))
 	{
@@ -387,7 +406,8 @@ BOOL sec_io_desc(char *desc, SEC_DESC * t, prs_struct *ps, int depth)
 		prs_uint32_post("off_sacl  ", ps, depth, &(t->off_sacl),
 				off_sacl, ps->offset - old_offset);
 #endif
-		ps->offset = old_offset + t->off_sacl;
+		if(!prs_set_offset(ps, old_offset + t->off_sacl))
+			return False;
 		if (ps->io)
 		{
 			/* reading */
@@ -402,7 +422,8 @@ BOOL sec_io_desc(char *desc, SEC_DESC * t, prs_struct *ps, int depth)
 			return False;
 		}
 
-		sec_io_acl("sacl", t->sacl, ps, depth);
+		if(!sec_io_acl("sacl", t->sacl, ps, depth))
+			return False;
 		prs_align(ps);
 	}
 #if 0
@@ -413,7 +434,7 @@ BOOL sec_io_desc(char *desc, SEC_DESC * t, prs_struct *ps, int depth)
 	}
 #endif
 
-	max_offset = MAX(max_offset, ps->offset);
+	max_offset = MAX(max_offset, prs_offset(ps));
 
 #if 0
 	prs_uint32_post("off_owner_sid", ps, depth, &(t->off_owner_sid),
@@ -423,7 +444,8 @@ BOOL sec_io_desc(char *desc, SEC_DESC * t, prs_struct *ps, int depth)
 	{
 		if (ps->io)
 		{
-			ps->offset = old_offset + t->off_owner_sid;
+			if(!prs_set_offset(ps, old_offset + t->off_owner_sid))
+				return False;
 		}
 		if (ps->io)
 		{
@@ -444,7 +466,7 @@ BOOL sec_io_desc(char *desc, SEC_DESC * t, prs_struct *ps, int depth)
 		prs_align(ps);
 	}
 
-	max_offset = MAX(max_offset, ps->offset);
+	max_offset = MAX(max_offset, prs_offset(ps));
 
 #if 0
 	prs_uint32_post("off_grp_sid  ", ps, depth, &(t->off_grp_sid),
@@ -454,8 +476,8 @@ BOOL sec_io_desc(char *desc, SEC_DESC * t, prs_struct *ps, int depth)
 	{
 		if (ps->io)
 		{
-			ps->offset = old_offset + t->off_grp_sid;
-
+			if(!prs_set_offset(ps, old_offset + t->off_grp_sid))
+				return False;
 		}
 		if (ps->io)
 		{
@@ -475,9 +497,10 @@ BOOL sec_io_desc(char *desc, SEC_DESC * t, prs_struct *ps, int depth)
 		prs_align(ps);
 	}
 
-	max_offset = MAX(max_offset, ps->offset);
+	max_offset = MAX(max_offset, prs_offset(ps));
 
-	ps->offset = max_offset;
+	if(!prs_set_offset(ps, max_offset))
+		return False;
 
 	return True;
 }
@@ -537,7 +560,7 @@ BOOL sec_io_desc_buf(char *desc, SEC_DESC_BUF * sec, prs_struct *ps,
 	prs_uint32("undoc  ", ps, depth, &(sec->undoc));
 	prs_uint32_pre("len    ", ps, depth, &(sec->len), &off_len);
 
-	old_offset = ps->offset;
+	old_offset = prs_offset(ps);
 
 	if (sec->len != 0 && ps->io)
 	{
@@ -561,13 +584,14 @@ BOOL sec_io_desc_buf(char *desc, SEC_DESC_BUF * sec, prs_struct *ps,
 
 	prs_align(ps);
 
-	size = ps->offset - old_offset - 8;
+	size = prs_offset(ps) - old_offset - 8;
 	prs_uint32_post("max_len", ps, depth, &(sec->max_len), off_max_len,
 			size == 0 ? sec->max_len : size + 8);
 	prs_uint32_post("len    ", ps, depth, &(sec->len), off_len,
 			size == 0 ? 0 : size + 8);
 
-	ps->offset = old_offset + size + 8;
+	if(!prs_set_offset(ps, old_offset + size + 8))
+		return False;
 
 	return True;
 }
