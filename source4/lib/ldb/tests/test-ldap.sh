@@ -1,5 +1,6 @@
 #!/bin/sh
 
+export PATH=/usr/local/sbin:/usr/sbin:/sbin:$PATH
 SCHEMA_NEEDED="core nis cosine inetorgperson openldap"
 
 # setup needed schema files

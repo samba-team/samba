@@ -1,3 +1,5 @@
+#!/bin/sh
+
 echo "LDB_URL: $LDB_URL"
 
 echo "Adding base elements"
