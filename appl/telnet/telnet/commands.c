@@ -31,67 +31,9 @@
  * SUCH DAMAGE.
  */
 
-#include <config.h>
-#ifdef SOCKS
-#include <socks.h>
-#endif
+#include "telnet_locl.h"
 
 RCSID("$Id$");
-
-#include <stdlib.h>
-#include <stdarg.h>
-#include <string.h>
-#include <ctype.h>
-#include <signal.h>
-#include <errno.h>
-
-#ifdef HAVE_FCNTL_H
-#include <fcntl.h>
-#endif
-
-#ifdef HAVE_NETDB_H
-#include <netdb.h>
-#endif
-
-#ifdef HAVE_PWD_H
-#include <pwd.h>
-#endif
-
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
-#ifdef HAVE_SYS_PARAM_H
-#include <sys/param.h>
-#endif
-#ifdef HAVE_SYS_FILE_H
-#include <sys/file.h>
-#endif
-#ifdef HAVE_SYS_SOCKET_H
-#include <sys/socket.h>
-#endif
-#ifdef HAVE_NETINET_IN_H
-#include <netinet/in.h>
-#endif
-#ifdef HAVE_NETINET_IN_SYSTM_H
-#include <netinet/in_systm.h>
-#endif
-#ifdef HAVE_NETINET_IP_H
-#include <netinet/ip.h>
-#endif
-
-#ifdef HAVE_ARPA_TELNET_H
-#include <arpa/telnet.h>
-#endif
-
-#include "general.h"
-#include "ring.h"
-
-#include "externs.h"
-#include "defines.h"
-#include "types.h"
-#include "libtelnet/misc-proto.h"
-
-#include "roken.h"
 
 #if	defined(IPPROTO_IP) && defined(IP_TOS)
 int tos = -1;
@@ -129,7 +71,7 @@ makeargv()
 	margc++;
 	cp++;
     }
-    while (c = *cp) {
+    while ((c = *cp)) {
 	int inquote = 0;
 	while (isspace(c))
 	    c = *++cp;
@@ -374,6 +316,9 @@ sendcmd(int argc, char **argv)
 }
 
 static int
+send_tncmd(void (*func)(), char *cmd, char *name);
+
+static int
 send_esc()
 {
     NETADD(escape);
@@ -404,7 +349,7 @@ send_wontcmd(char *name)
     return(send_tncmd(send_wont, "wont", name));
 }
 
-int
+static int
 send_tncmd(void (*func)(), char *cmd, char *name)
 {
     char **cpp;
@@ -845,54 +790,25 @@ static struct setlist Setlist[] = {
     { "tracefile", "file to write trace information to", SetNetTrace, (cc_t *)NetTraceFile},
     { " ", "" },
     { " ", "The following need 'localchars' to be toggled true", 0, 0 },
-    { "flushoutput", "character to cause an Abort Output", 0, termFlushCharp },
-    { "interrupt", "character to cause an Interrupt Process", 0, termIntCharp },
-    { "quit",	"character to cause an Abort process", 0, termQuitCharp },
-    { "eof",	"character to cause an EOF ", 0, termEofCharp },
+    { "flushoutput", "character to cause an Abort Output", 0, &termFlushChar },
+    { "interrupt", "character to cause an Interrupt Process", 0, &termIntChar },
+    { "quit",	"character to cause an Abort process", 0, &termQuitChar },
+    { "eof",	"character to cause an EOF ", 0, &termEofChar },
     { " ", "" },
     { " ", "The following are for local editing in linemode", 0, 0 },
-    { "erase",	"character to use to erase a character", 0, termEraseCharp },
-    { "kill",	"character to use to erase a line", 0, termKillCharp },
-    { "lnext",	"character to use for literal next", 0, termLiteralNextCharp },
-    { "susp",	"character to cause a Suspend Process", 0, termSuspCharp },
-    { "reprint", "character to use for line reprint", 0, termRprntCharp },
-    { "worderase", "character to use to erase a word", 0, termWerasCharp },
-    { "start",	"character to use for XON", 0, termStartCharp },
-    { "stop",	"character to use for XOFF", 0, termStopCharp },
-    { "forw1",	"alternate end of line character", 0, termForw1Charp },
-    { "forw2",	"alternate end of line character", 0, termForw2Charp },
-    { "ayt",	"alternate AYT character", 0, termAytCharp },
+    { "erase",	"character to use to erase a character", 0, &termEraseChar },
+    { "kill",	"character to use to erase a line", 0, &termKillChar },
+    { "lnext",	"character to use for literal next", 0, &termLiteralNextChar },
+    { "susp",	"character to cause a Suspend Process", 0, &termSuspChar },
+    { "reprint", "character to use for line reprint", 0, &termRprntChar },
+    { "worderase", "character to use to erase a word", 0, &termWerasChar },
+    { "start",	"character to use for XON", 0, &termStartChar },
+    { "stop",	"character to use for XOFF", 0, &termStopChar },
+    { "forw1",	"alternate end of line character", 0, &termForw1Char },
+    { "forw2",	"alternate end of line character", 0, &termForw2Char },
+    { "ayt",	"alternate AYT character", 0, &termAytChar },
     { 0 }
 };
-
-#if	defined(CRAY) && !defined(__STDC__)
-/* Work around compiler bug in pcc 4.1.5 */
-    void
-_setlist_init()
-{
-#ifndef	KLUDGELINEMODE
-#define	N 5
-#else
-#define	N 6
-#endif
-	Setlist[N+0].charp = &termFlushChar;
-	Setlist[N+1].charp = &termIntChar;
-	Setlist[N+2].charp = &termQuitChar;
-	Setlist[N+3].charp = &termEofChar;
-	Setlist[N+6].charp = &termEraseChar;
-	Setlist[N+7].charp = &termKillChar;
-	Setlist[N+8].charp = &termLiteralNextChar;
-	Setlist[N+9].charp = &termSuspChar;
-	Setlist[N+10].charp = &termRprntChar;
-	Setlist[N+11].charp = &termWerasChar;
-	Setlist[N+12].charp = &termStartChar;
-	Setlist[N+13].charp = &termStopChar;
-	Setlist[N+14].charp = &termForw1Char;
-	Setlist[N+15].charp = &termForw2Char;
-	Setlist[N+16].charp = &termAytChar;
-#undef	N
-}
-#endif	/* defined(CRAY) && !defined(__STDC__) */
 
 static struct setlist *
 getset(char *name)
@@ -1129,7 +1045,7 @@ struct modelist {
 	int	arg1;
 };
 
-static int modehelp();
+static int modehelp(void);
 
 static struct modelist ModeList[] = {
     { "character", "Disable LINEMODE option",	docharmode, 1 },
@@ -1165,7 +1081,7 @@ static struct modelist ModeList[] = {
 
 
 static int
-modehelp()
+modehelp(void)
 {
     struct modelist *mt;
 
@@ -1438,7 +1354,7 @@ struct slclist {
 	int	arg;
 };
 
-static void slc_help();
+static void slc_help(void);
 
 struct slclist SlcList[] = {
     { "export",	"Use local special character definitions",
@@ -1453,7 +1369,7 @@ struct slclist SlcList[] = {
 };
 
 static void
-slc_help()
+slc_help(void)
 {
     struct slclist *c;
 
@@ -1511,16 +1427,7 @@ struct envlist {
 	int	narg;
 };
 
-extern struct env_lst *
-	env_define (unsigned char *, unsigned char *);
-extern void
-	env_undefine (unsigned char *),
-	env_export (unsigned char *),
-	env_unexport (unsigned char *),
-	env_send (unsigned char *),
-	env_list (void);
-static void
-	env_help (void);
+static void env_help (void);
 
 struct envlist EnvList[] = {
     { "define",	"Define an environment variable",
@@ -1621,14 +1528,14 @@ env_find(unsigned char *var)
 #endif
 
 void
-env_init()
+env_init(void)
 {
 	extern char **environ;
 	char **epp, *cp;
 	struct env_lst *ep;
 
 	for (epp = environ; *epp; epp++) {
-		if (cp = strchr(*epp, '=')) {
+		if ((cp = strchr(*epp, '='))) {
 			*cp = '\0';
 			ep = env_define((unsigned char *)*epp,
 					(unsigned char *)cp+1);
@@ -1642,8 +1549,8 @@ env_init()
 	 * hostname.
 	 */
 	if ((ep = env_find("DISPLAY"))
-	    && ((*ep->value == ':')
-		|| (strncmp((char *)ep->value, "unix:", 5) == 0))) {
+	    && (*ep->value == ':'
+	    || strncmp((char *)ep->value, "unix:", 5) == 0)) {
 		char hbuf[256+1];
 		char *cp2 = strchr((char *)ep->value, ':');
 
@@ -1681,7 +1588,7 @@ env_define(unsigned char *var, unsigned char *value)
 {
 	struct env_lst *ep;
 
-	if (ep = env_find(var)) {
+	if ((ep = env_find(var))) {
 		if (ep->var)
 			free(ep->var);
 		if (ep->value)
@@ -1706,7 +1613,7 @@ env_undefine(unsigned char *var)
 {
 	struct env_lst *ep;
 
-	if (ep = env_find(var)) {
+	if ((ep = env_find(var))) {
 		ep->prev->next = ep->next;
 		if (ep->next)
 			ep->next->prev = ep->prev;
@@ -1723,7 +1630,7 @@ env_export(unsigned char *var)
 {
 	struct env_lst *ep;
 
-	if (ep = env_find(var))
+	if ((ep = env_find(var)))
 		ep->export = 1;
 }
 
@@ -1732,7 +1639,7 @@ env_unexport(unsigned char *var)
 {
 	struct env_lst *ep;
 
-	if (ep = env_find(var))
+	if ((ep = env_find(var)))
 		ep->export = 0;
 }
 
@@ -1763,7 +1670,7 @@ env_send(unsigned char *var)
 }
 
 void
-env_list()
+env_list(void)
 {
 	struct env_lst *ep;
 
@@ -1783,7 +1690,7 @@ env_default(int init, int welldefined)
 		return NULL;
 	}
 	if (nep) {
-		while (nep = nep->next) {
+		while ((nep = nep->next)) {
 			if (nep->export && (nep->welldefined == welldefined))
 				return(nep->var);
 		}
@@ -1796,7 +1703,7 @@ env_getvalue(unsigned char *var)
 {
 	struct env_lst *ep;
 
-	if (ep = env_find(var))
+	if ((ep = env_find(var)))
 		return(ep->value);
 	return(NULL);
 }
@@ -1814,10 +1721,6 @@ struct authlist {
 	int	narg;
 };
 
-extern int
-	auth_enable (char *),
-	auth_disable (char *),
-	auth_status (void);
 static int
 	auth_help (void);
 
@@ -1898,17 +1801,6 @@ struct encryptlist {
 	int	maxarg;
 };
 
-extern int
-	EncryptEnable (char *, char *),
-	EncryptDisable (char *, char *),
-	EncryptType (char *, char *),
-	EncryptStart (char *),
-	EncryptStartInput (void),
-	EncryptStartOutput (void),
-	EncryptStop (char *),
-	EncryptStopInput (void),
-	EncryptStopOutput (void),
-	EncryptStatus (void);
 static int
 	EncryptHelp (void);
 
@@ -2045,13 +1937,12 @@ status(int argc, char **argv)
 /*
  * Function that gets called when SIGINFO is received.
  */
-ayt_status()
+void
+ayt_status(void)
 {
     call(status, "status", "notmuch", 0);
 }
 #endif
-
-unsigned long inet_addr();
 
 static char *rcname = 0;
 static char rcbuf[128];
@@ -2148,7 +2039,7 @@ tn(int argc, char **argv)
     extern char *inet_ntoa();
 #if	defined(IP_OPTIONS) && defined(IPPROTO_IP)
     char *srp = 0;
-    unsigned long sourceroute(), srlen;
+    int srlen;
 #endif
     char *cmd, *hostp = 0, *portp = 0, *user = 0;
 
@@ -2360,7 +2251,7 @@ tn(int argc, char **argv)
 	user = getenv("USER");
 	if (user == NULL ||
 	    ((pw = k_getpwnam(user)) && pw->pw_uid != getuid())) {
-		if (pw = k_getpwuid(getuid()))
+		if ((pw = k_getpwuid(getuid())))
 			user = pw->pw_name;
 		else
 			user = NULL;
@@ -2376,6 +2267,7 @@ tn(int argc, char **argv)
     NetClose(net);
     ExitString("Connection closed by foreign host.\r\n",1);
     /*NOTREACHED*/
+    return 0;
 }
 
 #define HELPINDENT (sizeof ("connect"))
@@ -2404,7 +2296,7 @@ static char
 	envhelp[] =	"change environment variables ('environ ?' for more)",
 	modestring[] = "try to enter line or character mode ('mode ?' for more)";
 
-static int	help();
+static int help(int argc, char **argv);
 
 static Command cmdtab[] = {
 	{ "close",	closehelp,	bye,		1 },
@@ -2466,7 +2358,7 @@ static Command
 {
     Command *cm;
 
-    if (cm = (Command *) genget(name, (char **) cmdtab, sizeof(Command)))
+    if ((cm = (Command *) genget(name, (char **) cmdtab, sizeof(Command))))
 	return cm;
     return (Command *) genget(name, (char **) cmdtab2, sizeof(Command));
 }
@@ -2618,9 +2510,6 @@ unsigned long
 sourceroute(char *arg, char **cpp, int *lenp)
 {
 	static char lsr[44];
-#ifdef	sysV88
-	static IOPTN ipopt;
-#endif
 	char *cp, *cp2, *lsrp, *lsrep;
 	int tmp;
 	struct in_addr sin_addr;
@@ -2654,27 +2543,17 @@ sourceroute(char *arg, char **cpp, int *lenp)
 	 * route or a strict source route, and fill in
 	 * the begining of the option.
 	 */
-#ifndef	sysV88
 	if (*cp == '!') {
 		cp++;
 		*lsrp++ = IPOPT_SSRR;
 	} else
 		*lsrp++ = IPOPT_LSRR;
-#else
-	if (*cp == '!') {
-		cp++;
-		ipopt.io_type = IPOPT_SSRR;
-	} else
-		ipopt.io_type = IPOPT_LSRR;
-#endif
 
 	if (*cp != '@')
 		return((unsigned long)-1);
 
-#ifndef	sysV88
 	lsrp++;		/* skip over length, we'll fill it in later */
 	*lsrp++ = 4;
-#endif
 
 	cp++;
 
@@ -2683,7 +2562,7 @@ sourceroute(char *arg, char **cpp, int *lenp)
 	for (c = 0;;) {
 		if (c == ':')
 			cp2 = 0;
-		else for (cp2 = cp; c = *cp2; cp2++) {
+		else for (cp2 = cp; (c = *cp2); cp2++) {
 			if (c == ',') {
 				*cp2++ = '\0';
 				if (*cp2 == '@')
@@ -2701,7 +2580,7 @@ sourceroute(char *arg, char **cpp, int *lenp)
 
 		if ((tmp = inet_addr(cp)) != -1) {
 			sin_addr.s_addr = tmp;
-		} else if (host = gethostbyname(cp)) {
+		} else if ((host = gethostbyname(cp))) {
 #if	defined(h_addr)
 			memmove(&sin_addr,
 				host->h_addr_list[0],
@@ -2726,7 +2605,6 @@ sourceroute(char *arg, char **cpp, int *lenp)
 		if (lsrp + 4 > lsrep)
 			return((unsigned long)-1);
 	}
-#ifndef	sysV88
 	if ((*(*cpp+IPOPT_OLEN) = lsrp - *cpp) <= 7) {
 		*cpp = 0;
 		*lenp = 0;
@@ -2734,16 +2612,6 @@ sourceroute(char *arg, char **cpp, int *lenp)
 	}
 	*lsrp++ = IPOPT_NOP; /* 32 bit word align it */
 	*lenp = lsrp - *cpp;
-#else
-	ipopt.io_len = lsrp - *cpp;
-	if (ipopt.io_len <= 5) {		/* Is 3 better ? */
-		*cpp = 0;
-		*lenp = 0;
-		return((unsigned long)-1);
-	}
-	*lenp = sizeof(ipopt);
-	*cpp = (char *) &ipopt;
-#endif
 	return(sin_addr.s_addr);
 }
 #endif

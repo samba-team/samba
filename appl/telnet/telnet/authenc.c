@@ -31,25 +31,11 @@
  * SUCH DAMAGE.
  */
 
-#include <config.h>
-#ifdef SOCKS
-#include <socks.h>
-#endif
+#include "telnet_locl.h"
 
 RCSID("$Id$");
 
 #if	defined(AUTHENTICATION) || defined(ENCRYPTION)
-#include <sys/types.h>
-#include <arpa/telnet.h>
-#include <libtelnet/encrypt.h>
-#include <libtelnet/misc.h>
-
-#include "general.h"
-#include "ring.h"
-#include "externs.h"
-#include "defines.h"
-#include "types.h"
-
 int
 net_write(unsigned char *str, int len)
 {
@@ -63,7 +49,7 @@ net_write(unsigned char *str, int len)
 }
 
 void
-net_encrypt()
+net_encrypt(void)
 {
 #if	defined(ENCRYPTION)
 	if (encrypt_output)
@@ -74,7 +60,7 @@ net_encrypt()
 }
 
 int
-telnet_spin()
+telnet_spin(void)
 {
 	return(-1);
 }
@@ -97,7 +83,7 @@ telnet_gets(char *prompt, char *result, int length, int echo)
 	if (echo) {
 		printf("%s", prompt);
 		res = fgets(result, length, stdin);
-	} else if (res = getpass(prompt)) {
+	} else if ((res = getpass(prompt))) {
 		strncpy(result, res, length);
 		res = result;
 	}

@@ -31,36 +31,9 @@
  * SUCH DAMAGE.
  */
 
-#include <config.h>
-#ifdef SOCKS
-#include <socks.h>
-#endif
+#include "telnet_locl.h"
 
 RCSID("$Id$");
-
-#include <sys/types.h>
-#ifdef HAVE_SYS_SELECT_H
-#include <sys/select.h>
-#endif
-#include <sys/socket.h>
-#ifdef TIME_WITH_SYS_TIME
-#include <sys/time.h>
-#include <time.h>
-#elif defined(HAVE_SYS_TIME_H)
-#include <sys/time.h>
-#else
-#include <time.h>
-#endif
-
-#include <errno.h>
-
-#include <arpa/telnet.h>
-
-#include "ring.h"
-
-#include "defines.h"
-#include "externs.h"
-#include "fdset.h"
 
 Ring		netoring, netiring;
 unsigned char	netobuf[2*BUFSIZ], netibuf[BUFSIZ];
@@ -69,8 +42,8 @@ unsigned char	netobuf[2*BUFSIZ], netibuf[BUFSIZ];
  * Initialize internal network data structures.
  */
 
-    void
-init_network()
+void
+init_network(void)
 {
     if (ring_init(&netoring, netobuf, sizeof netobuf) != 1) {
 	exit(1);
@@ -87,8 +60,8 @@ init_network()
  * Telnet "synch" processing).
  */
 
-    int
-stilloob()
+int
+stilloob(void)
 {
     static struct timeval timeout = { 0 };
     fd_set	excepts;
@@ -119,8 +92,8 @@ stilloob()
  *	Sets "neturg" to the current location.
  */
 
-    void
-setneturg()
+void
+setneturg(void)
 {
     ring_mark(&netoring);
 }
@@ -136,8 +109,8 @@ setneturg()
  */
 
 
-    int
-netflush()
+int
+netflush(void)
 {
     int n, n1;
 

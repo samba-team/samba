@@ -35,26 +35,9 @@
 
 /* $Id$ */
 
-#include <stdio.h>
-#include <setjmp.h>
-#if defined(CRAY) && !defined(NO_BSD_SETJMP)
-#include <bsdsetjmp.h>
-#endif
-/* not with SunOS 4 */
-#if defined(HAVE_SYS_IOCTL_H) && SunOS != 4
-#include <sys/ioctl.h>
-#endif
-#ifdef HAVE_SYS_FILIO_H
-#include <sys/filio.h>
-#endif
-
-#include <errno.h>
-
 #ifndef	BSD
 # define BSD 43
 #endif
-
-#include <termios.h>
 
 #ifndef	_POSIX_VDISABLE
 # ifdef sun
@@ -192,74 +175,182 @@ extern jmp_buf
     peerdied,
     toplevel;		/* For error conditions. */
 
-extern void
-    command (int, char *, int),
-    Dump (char, unsigned char *, int),
-    printoption (char *, int, int),
-    printsub (char, unsigned char *, int),
-    sendnaws (void),
-    setconnmode (int),
-    setcommandmode (void),
-    setneturg (void),
-    sys_telnet_init (void),
-    telnet (char *),
-    tel_enter_binary (int),
-    TerminalFlushOutput (void),
-    TerminalNewMode (int),
-    TerminalRestoreState (void),
-    TerminalSaveState (void),
-    tninit (void),
-    willoption (int),
-    wontoption (int);
+/* authenc.c */
 
-extern void
-    send_do (int, int),
-    send_dont (int, int),
-    send_will (int, int),
-    send_wont (int, int);
+#if	defined(AUTHENTICATION) || defined(ENCRYPTION)
+int net_write(unsigned char *str, int len);
+void net_encrypt(void);
+int telnet_spin(void);
+char *telnet_getenv(char *val);
+char *telnet_gets(char *prompt, char *result, int length, int echo);
+#endif
 
-extern void
-    lm_will (unsigned char *, int),
-    lm_wont (unsigned char *, int),
-    lm_do (unsigned char *, int),
-    lm_dont (unsigned char *, int),
-    lm_mode (unsigned char *, int, int);
+/* commands.c */
 
-extern void
-    slc_init (void),
-    slcstate (void),
-    slc_mode_export (void),
-    slc_mode_import (int),
-    slc_import (int),
-    slc_export (void),
-    slc (unsigned char *, int),
-    slc_check (void),
-    slc_start_reply (void),
-    slc_add_reply (unsigned char, unsigned char, cc_t),
-    slc_end_reply (void);
-extern int
-    slc_update (void);
+struct env_lst *env_define (unsigned char *, unsigned char *);
+struct env_lst *env_find(unsigned char *var);
+void env_init (void);
+void env_undefine (unsigned char *);
+void env_export (unsigned char *);
+void env_unexport (unsigned char *);
+void env_send (unsigned char *);
+void env_list (void);
+unsigned char * env_default(int init, int welldefined);
+unsigned char * env_getvalue(unsigned char *var);
 
-extern void
-    env_opt (unsigned char *, int),
-    env_opt_start (void),
-    env_opt_start_info (void),
-    env_opt_add (unsigned char *),
-    env_opt_end (int);
+void set_escape_char(char *s);
+unsigned long sourceroute(char *arg, char **cpp, int *lenp);
 
-extern unsigned char
-    *env_default (int, int),
-    *env_getvalue (unsigned char *);
+#if	defined(AUTHENTICATION)
+int auth_enable (char *);
+int auth_disable (char *);
+int auth_status (void);
+#endif
 
-extern int
-    get_status (void),
-    dosynch (void);
+#if defined(ENCRYPTION)
+int 	EncryptEnable (char *, char *);
+int 	EncryptDisable (char *, char *);
+int 	EncryptType (char *, char *);
+int 	EncryptStart (char *);
+int 	EncryptStartInput (void);
+int 	EncryptStartOutput (void);
+int 	EncryptStop (char *);
+int 	EncryptStopInput (void);
+int 	EncryptStopOutput (void);
+int 	EncryptStatus (void);
+#endif
 
-extern cc_t
-    *tcval (int);
+#ifdef SIGINFO
+void ayt_status(void);
+#endif
+int tn(int argc, char **argv);
+void command(int top, char *tbuf, int cnt);
 
-extern int quit (void);
+/* main.c */
 
+void tninit(void);
+void usage(void);
+
+/* network.c */
+
+void init_network(void);
+int stilloob(void);
+void setneturg(void);
+int netflush(void);
+
+/* sys_bsd.c */
+
+void init_sys(void);
+int TerminalWrite(char *buf, int n);
+int TerminalRead(unsigned char *buf, int n);
+int TerminalAutoFlush(void);
+int TerminalSpecialChars(int c);
+void TerminalFlushOutput(void);
+void TerminalSaveState(void);
+void TerminalDefaultChars(void);
+void TerminalNewMode(int f);
+cc_t *tcval(int func);
+void TerminalSpeeds(long *ispeed, long *ospeed);
+int TerminalWindowSize(long *rows, long *cols);
+int NetClose(int fd);
+void NetNonblockingIO(int fd, int onoff);
+int process_rings(int netin, int netout, int netex, int ttyin, int ttyout,
+		  int poll);
+
+/* telnet.c */
+
+void init_telnet(void);
+
+void tel_leave_binary(int rw);
+void tel_enter_binary(int rw);
+int opt_welldefined(char *ep);
+int telrcv(void);
+int rlogin_susp(void);
+void intp(void);
+void sendbrk(void);
+void sendabort(void);
+void sendsusp(void);
+void sendeof(void);
+void sendayt(void);
+
+void xmitAO(void);
+void xmitEL(void);
+void xmitEC(void);
+
+
+void     Dump (char, unsigned char *, int);
+void     printoption (char *, int, int);
+void     printsub (char, unsigned char *, int);
+void     sendnaws (void);
+void     setconnmode (int);
+void     setcommandmode (void);
+void     setneturg (void);
+void     sys_telnet_init (void);
+void     telnet (char *);
+void     tel_enter_binary (int);
+void     TerminalFlushOutput (void);
+void     TerminalNewMode (int);
+void     TerminalRestoreState (void);
+void     TerminalSaveState (void);
+void     tninit (void);
+void     willoption (int);
+void     wontoption (int);
+
+
+void     send_do (int, int);
+void     send_dont (int, int);
+void     send_will (int, int);
+void     send_wont (int, int);
+
+void     lm_will (unsigned char *, int);
+void     lm_wont (unsigned char *, int);
+void     lm_do (unsigned char *, int);
+void     lm_dont (unsigned char *, int);
+void     lm_mode (unsigned char *, int, int);
+
+void     slc_init (void);
+void     slcstate (void);
+void     slc_mode_export (void);
+void     slc_mode_import (int);
+void     slc_import (int);
+void     slc_export (void);
+void     slc (unsigned char *, int);
+void     slc_check (void);
+void     slc_start_reply (void);
+void     slc_add_reply (unsigned char, unsigned char, cc_t);
+void     slc_end_reply (void);
+int	 slc_update (void);
+
+void     env_opt (unsigned char *, int);
+void     env_opt_start (void);
+void     env_opt_start_info (void);
+void     env_opt_add (unsigned char *);
+void     env_opt_end (int);
+
+unsigned char     *env_default (int, int);
+unsigned char     *env_getvalue (unsigned char *);
+
+int get_status (void);
+int dosynch (void);
+
+cc_t *tcval (int);
+
+int quit (void);
+
+/* terminal.c */
+
+void init_terminal(void);
+int ttyflush(int drop);
+int getconnmode(void);
+
+/* utilities.c */
+
+int SetSockOpt(int fd, int level, int option, int yesno);
+void optionstatus(void);
+void EmptyTerminal(void);
+void SetForExit(void);
+void Exit(int returnCode);
+void ExitString(char *string, int returnCode);
 
 extern struct	termios new_tc;
 
@@ -322,23 +413,6 @@ extern cc_t termAytChar;
 #else
 #  define termAytChar		new_tc.c_cc[VSTATUS]
 #endif
-
-#  define termEofCharp		&termEofChar
-#  define termEraseCharp	&termEraseChar
-#  define termIntCharp		&termIntChar
-#  define termKillCharp		&termKillChar
-#  define termQuitCharp		&termQuitChar
-#  define termSuspCharp		&termSuspChar
-#  define termFlushCharp	&termFlushChar
-#  define termWerasCharp	&termWerasChar
-#  define termRprntCharp	&termRprntChar
-#  define termLiteralNextCharp	&termLiteralNextChar
-#  define termStartCharp	&termStartChar
-#  define termStopCharp		&termStopChar
-#  define termForw1Charp	&termForw1Char
-#  define termForw2Charp	&termForw2Char
-#  define termAytCharp		&termAytChar
-
 
 /* Ring buffer structures which are shared */
 

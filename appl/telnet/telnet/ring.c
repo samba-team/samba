@@ -31,10 +31,7 @@
  * SUCH DAMAGE.
  */
 
-#include <config.h>
-#ifdef SOCKS
-#include <socks.h>
-#endif
+#include "telnet_locl.h"
 
 RCSID("$Id$");
 
@@ -48,24 +45,6 @@ RCSID("$Id$");
  *]]]
  *
  */
-
-#include	<stdio.h>
-#include	<errno.h>
-
-#ifdef HAVE_SYS_TYPES_H
-#include	<sys/types.h>
-#endif
-#if defined(HAVE_SYS_IOCTL_H) && SunOS != 4
-#include	<sys/ioctl.h>
-#endif
-#ifdef HAVE_SYS_SOCKET_H
-#include	<sys/socket.h>
-#endif
-
-#include	"ring.h"
-#include	"general.h"
-
-#include <roken.h>
 
 /* Internal macros */
 

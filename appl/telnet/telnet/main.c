@@ -37,20 +37,9 @@ static char copyright[] =
 	The Regents of the University of California.  All rights reserved.\n";
 #endif /* not lint */
 
-#include <config.h>
-#ifdef SOCKS
-#include <socks.h>
-#endif
-#include "roken.h"
+#include "telnet_locl.h"
 
 RCSID("$Id$");
-
-#include <sys/types.h>
-#include <string.h>
-
-#include "ring.h"
-#include "externs.h"
-#include "defines.h"
 
 /* These values need to be the same as defined in libtelnet/kerberos5.c */
 /* Either define them in both places, or put in some common header file. */
@@ -65,7 +54,7 @@ RCSID("$Id$");
  * Initialize variables.
  */
 void
-tninit()
+tninit(void)
 {
     init_terminal();
 
@@ -76,7 +65,8 @@ tninit()
     init_sys();
 }
 
-void usage(void)
+void
+usage(void)
 {
   fprintf(stderr, "Usage: %s %s%s%s%s\n", prompt,
 #ifdef	AUTHENTICATION
@@ -101,7 +91,8 @@ void usage(void)
  */
 
 
-int main(int argc, char **argv)
+int
+main(int argc, char **argv)
 {
 	int ch;
 	char *user;
@@ -116,7 +107,7 @@ int main(int argc, char **argv)
 
 	TerminalSaveState();
 
-	if (prompt = strrchr(argv[0], '/'))
+	if ((prompt = strrchr(argv[0], '/')))
 		++prompt;
 	else
 		prompt = argv[0];

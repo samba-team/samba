@@ -31,45 +31,13 @@
  * SUCH DAMAGE.
  */
 
-#include <config.h>
-#ifdef SOCKS
-#include <socks.h>
-#endif
+#define TELOPTS
+#define TELCMDS
+#define SLC_NAMES
+
+#include "telnet_locl.h"
 
 RCSID("$Id$");
-
-#define	TELOPTS
-#define	TELCMDS
-#define	SLC_NAMES
-#include <arpa/telnet.h>
-#include <sys/types.h>
-#ifdef HAVE_SYS_SELECT_H
-#include <sys/select.h>
-#endif
-#ifdef HAVE_SYS_SOCKET_H
-#include <sys/socket.h>
-#endif
-#ifdef TIME_WITH_SYS_TIME
-#include <sys/time.h>
-#include <time.h>
-#elif defined(HAVE_SYS_TIME_H)
-#include <sys/time.h>
-#else
-#include <time.h>
-#endif
-
-#include <ctype.h>
-#include <roken.h>
-
-#include "general.h"
-
-#include "fdset.h"
-
-#include "ring.h"
-
-#include "defines.h"
-
-#include "externs.h"
 
 FILE	*NetTrace = 0;		/* Not in bss, since needs to stay */
 int	prettydump;
@@ -129,7 +97,6 @@ Dump(char direction, unsigned char *buffer, int length)
 #   define BYTES_PER_LINE	32
     unsigned char *pThis;
     int offset;
-    extern int pettydump;
 
     offset = 0;
 
@@ -797,7 +764,6 @@ printsub(char direction, unsigned char *pointer, int length)
 			    break;
 
 			default:
-			def_case:
 			    if (isprint(pointer[i]) && pointer[i] != '"') {
 				if (noquote) {
 				    putc('"', NetTrace);

@@ -31,20 +31,9 @@
  * SUCH DAMAGE.
  */
 
-#include <config.h>
-#ifdef SOCKS
-#include <socks.h>
-#endif
+#include "telnet_locl.h"
 
 RCSID("$Id$");
-
-#include <arpa/telnet.h>
-#include <sys/types.h>
-
-#include "ring.h"
-
-#include "externs.h"
-#include "types.h"
 
 Ring		ttyoring, ttyiring;
 unsigned char	ttyobuf[2*BUFSIZ], ttyibuf[BUFSIZ];
@@ -86,8 +75,8 @@ cc_t termAytChar;
  * initialize the terminal data structures.
  */
 
-    void
-init_terminal()
+void
+init_terminal(void)
 {
     if (ring_init(&ttyoring, ttyobuf, sizeof ttyobuf) != 1) {
 	exit(1);
@@ -110,9 +99,8 @@ init_terminal()
  */
 
 
-    int
-ttyflush(drop)
-    int drop;
+int
+ttyflush(int drop)
 {
     int n, n0, n1;
 
@@ -160,8 +148,8 @@ ttyflush(drop)
  */
 
 
-    int
-getconnmode()
+int
+getconnmode(void)
 {
     extern int linemode;
     int mode = 0;

@@ -92,6 +92,8 @@ extern void
 	ring_clearto (Ring *ring);
 #endif
 
+extern int ring_at_mark(Ring *ring);
+
 extern void
-    ring_clear_mark(),
-    ring_mark();
+    ring_clear_mark(Ring *ring),
+    ring_mark(Ring *ring);

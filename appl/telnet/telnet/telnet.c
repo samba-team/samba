@@ -31,33 +31,9 @@
  * SUCH DAMAGE.
  */
 
-#include <config.h>
-#ifdef SOCKS
-#include <socks.h>
-#endif
+#include "telnet_locl.h"
 
 RCSID("$Id$");
-
-#include <sys/types.h>
-#include <stdlib.h>
-
-#include <signal.h>
-/* By the way, we need to include curses.h before telnet.h since,
- * among other things, telnet.h #defines 'DO', which is a variable
- * declared in curses.h.
- */
-
-#include <arpa/telnet.h>
-
-#include <ctype.h>
-
-#include "ring.h"
-
-#include "defines.h"
-#include "externs.h"
-#include "types.h"
-#include "general.h"
-#include <roken.h>
 
 #define	strip(x) ((my_want_state_is_wont(TELOPT_BINARY)) ? ((x)&0x7f) : (x))
 
@@ -147,17 +123,20 @@ int	kludgelinemode = 1;
 
 Clocks clocks;
 
+static int is_unique(char *name, char **as, char **ae);
+
+
 /*
  * Initialize telnet environment.
  */
 
 void
-init_telnet()
+init_telnet(void)
 {
     env_init();
 
     SB_CLEAR();
-    ClearArray(options);
+    memset(options, 0, sizeof options);
 
     connected = ISend = localflow = donebinarytoggle = 0;
 #if	defined(AUTHENTICATION) || defined(ENCRYPTION)
@@ -525,7 +504,7 @@ dontoption(int option)
 static char *name_unknown = "UNKNOWN";
 static char *unknown[] = { 0, 0 };
 
-char **
+static char **
 mklist(char *buf, char *name)
 {
 	int n;
@@ -636,7 +615,7 @@ mklist(char *buf, char *name)
 		return(unknown);
 }
 
-int
+static int
 is_unique(char *name, char **as, char **ae)
 {
 	char **ap;
@@ -652,7 +631,7 @@ is_unique(char *name, char **as, char **ae)
 #ifndef HAVE_SETUPTERM
 char termbuf[1024];
 
-int
+static int
 setupterm(char *tname, int fd, int *errp)
 {
 	if (tgetent(termbuf, tname) == 1) {
@@ -672,7 +651,7 @@ extern char ttytype[];
 
 int resettermname = 1;
 
-char *
+static char *
 gettermname()
 {
 	char *tname;
@@ -685,7 +664,7 @@ gettermname()
 		if (tnamep && tnamep != unknown)
 			free(tnamep);
 		if ((tname = (char *)env_getvalue((unsigned char *)"TERM")) &&
-				(setupterm(tname, 1, &err) == 0)) {
+				setupterm(tname, 1, &err) == 0) {
 			tnamep = mklist(termbuf, tname);
 		} else {
 			if (tname && ((int)strlen(tname) <= 40)) {
@@ -759,8 +738,8 @@ suboption()
 	    TerminalSpeeds(&ispeed, &ospeed);
 
 	    snprintf((char *)temp, sizeof(temp),
-		     "%c%c%c%c%d,%d%c%c", IAC, SB, TELOPT_TSPEED,
-		     TELQUAL_IS, ospeed, ispeed, IAC, SE);
+		     "%c%c%c%c%u,%u%c%c", IAC, SB, TELOPT_TSPEED,
+		     TELQUAL_IS, (unsigned)ospeed, (unsigned)ispeed, IAC, SE);
 	    len = strlen((char *)temp+4) + 4;	/* temp[3] is 0 ... */
 
 	    if (len < NETROOM()) {
@@ -1106,7 +1085,7 @@ slc_init()
 
 #define	initfunc(func, flags) { \
 					spcp = &spc_data[func]; \
-					if (spcp->valp = tcval(func)) { \
+					if ((spcp->valp = tcval(func))) { \
 					    spcp->val = *spcp->valp; \
 					    spcp->mylevel = SLC_VARIABLE|flags; \
 					} else { \
@@ -1470,12 +1449,12 @@ env_opt_add(unsigned char *ep)
 	if (ep == NULL || *ep == '\0') {
 		/* Send user defined variables first. */
 		env_default(1, 0);
-		while (ep = env_default(0, 0))
+		while ((ep = env_default(0, 0)))
 			env_opt_add(ep);
 
 		/* Now add the list of well know variables.  */
 		env_default(1, 1);
-		while (ep = env_default(0, 1))
+		while ((ep = env_default(0, 1)))
 			env_opt_add(ep);
 		return;
 	}
@@ -1505,7 +1484,7 @@ env_opt_add(unsigned char *ep)
 	else
 		*opt_replyp++ = ENV_USERVAR;
 	for (;;) {
-		while (c = *ep++) {
+		while ((c = *ep++)) {
 			switch(c&0xff) {
 			case IAC:
 				*opt_replyp++ = IAC;
@@ -1519,7 +1498,7 @@ env_opt_add(unsigned char *ep)
 			}
 			*opt_replyp++ = c;
 		}
-		if (ep = vp) {
+		if ((ep = vp)) {
 #ifdef	OLD_ENVIRON
 			if (telopt_environ == TELOPT_OLD_ENVIRON)
 				*opt_replyp++ = old_env_value;
@@ -1569,7 +1548,7 @@ env_opt_end(int emptyok)
 
 
 int
-telrcv()
+telrcv(void)
 {
     int c;
     int scc;
@@ -1801,7 +1780,7 @@ process_iac:
 static int bol = 1, local = 0;
 
 int
-rlogin_susp()
+rlogin_susp(void)
 {
     if (local) {
 	local = 0;
@@ -1963,7 +1942,7 @@ telsnd()
  */
 
 
-int
+static int
 Scheduler(int block) /* should we block in the select ? */
 {
 		/* One wants to be a bit careful about setting returnValue
@@ -2143,7 +2122,7 @@ doflush()
 }
 
 void
-xmitAO()
+xmitAO(void)
 {
     NET2ADD(IAC, AO);
     printoption("SENT", IAC, AO);
@@ -2154,14 +2133,14 @@ xmitAO()
 
 
 void
-xmitEL()
+xmitEL(void)
 {
     NET2ADD(IAC, EL);
     printoption("SENT", IAC, EL);
 }
 
 void
-xmitEC()
+xmitEC(void)
 {
     NET2ADD(IAC, EC);
     printoption("SENT", IAC, EC);
@@ -2208,7 +2187,7 @@ get_status()
 }
 
 void
-intp()
+intp(void)
 {
     NET2ADD(IAC, IP);
     printoption("SENT", IAC, IP);
@@ -2222,7 +2201,7 @@ intp()
 }
 
 void
-sendbrk()
+sendbrk(void)
 {
     NET2ADD(IAC, BREAK);
     printoption("SENT", IAC, BREAK);
@@ -2236,7 +2215,7 @@ sendbrk()
 }
 
 void
-sendabort()
+sendabort(void)
 {
     NET2ADD(IAC, ABORT);
     printoption("SENT", IAC, ABORT);
@@ -2250,7 +2229,7 @@ sendabort()
 }
 
 void
-sendsusp()
+sendsusp(void)
 {
     NET2ADD(IAC, SUSP);
     printoption("SENT", IAC, SUSP);
@@ -2264,14 +2243,14 @@ sendsusp()
 }
 
 void
-sendeof()
+sendeof(void)
 {
     NET2ADD(IAC, xEOF);
     printoption("SENT", IAC, xEOF);
 }
 
 void
-sendayt()
+sendayt(void)
 {
     NET2ADD(IAC, AYT);
     printoption("SENT", IAC, AYT);

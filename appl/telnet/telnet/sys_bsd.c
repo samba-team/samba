@@ -31,10 +31,7 @@
  * SUCH DAMAGE.
  */
 
-#include <config.h>
-#ifdef SOCKS
-#include <socks.h>
-#endif
+#include "telnet_locl.h"
 
 RCSID("$Id$");
 
@@ -42,56 +39,6 @@ RCSID("$Id$");
  * The following routines try to encapsulate what is system dependent
  * (at least between 4.x and dos) which is used in telnet.c.
  */
-
-
-#ifdef HAVE_FCNTL_H
-#include <fcntl.h>
-#endif
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
-#ifdef HAVE_SYS_SELECT_H
-#include <sys/select.h>
-#endif
-#ifdef TIME_WITH_SYS_TIME
-#include <sys/time.h>
-#include <time.h>
-#elif defined(HAVE_SYS_TIME_H)
-#include <sys/time.h>
-#else
-#include <time.h>
-#endif
-#ifdef HAVE_SYS_SOCKET_H
-#include <sys/socket.h>
-#endif
-#include <signal.h>
-#include <errno.h>
-#ifdef HAVE_ARPA_TELNET_H
-#include <arpa/telnet.h>
-#endif
-
-#ifdef HAVE_TERMIOS_H
-#include <termios.h>
-#else
-#ifdef HAVE_TERMIO_H
-#include <termio.h>
-#endif
-#endif
-
-#include <roken.h>
-
-#include "ring.h"
-
-#include "fdset.h"
-
-#include "defines.h"
-#include "externs.h"
-#include "types.h"
-
-
-#ifdef	SIGINFO
-extern RETSIGTYPE ayt_status();
-#endif
 
 int
 	tout,			/* Output file descriptor */
@@ -125,15 +72,12 @@ extern struct termios new_tc;
 #   define	cfgetispeed(ptr)	cfgetospeed(ptr)
 #  endif
 # endif /* TCSANOW */
-# ifdef	sysV88
-# define TIOCFLUSH TC_PX_DRAIN
-# endif
 
 static fd_set ibits, obits, xbits;
 
 
 void
-init_sys()
+init_sys(void)
 {
     tout = fileno(stdout);
     tin = fileno(stdin);
@@ -154,7 +98,7 @@ TerminalWrite(char *buf, int n)
 int
 TerminalRead(unsigned char *buf, int n)
 {
-    return read(tin, (char*)buf, n);
+    return read(tin, buf, n);
 }
 
 /*
@@ -162,7 +106,7 @@ TerminalRead(unsigned char *buf, int n)
  */
 
 int
-TerminalAutoFlush()
+TerminalAutoFlush(void)
 {
 #if	defined(LNOFLSH)
     int flush;
@@ -188,8 +132,6 @@ extern int kludgelinemode;
  *	0	Don't add this character.
  *	1	Do add this character
  */
-
-extern void xmitAO(), xmitEL(), xmitEC(), intp(), sendbrk();
 
 int
 TerminalSpecialChars(int c)
@@ -235,7 +177,7 @@ TerminalSpecialChars(int c)
  */
 
 void
-TerminalFlushOutput()
+TerminalFlushOutput(void)
 {
 #ifdef	TIOCFLUSH
     ioctl(fileno(stdout), TIOCFLUSH, (char *) 0);
@@ -245,7 +187,7 @@ TerminalFlushOutput()
 }
 
 void
-TerminalSaveState()
+TerminalSaveState(void)
 {
     tcgetattr(0, &old_tc);
 
@@ -315,7 +257,7 @@ tcval(int func)
 }
 
 void
-TerminalDefaultChars()
+TerminalDefaultChars(void)
 {
     memmove(new_tc.c_cc, old_tc.c_cc, sizeof(old_tc.c_cc));
 # ifndef	VDISCARD
@@ -370,6 +312,13 @@ TerminalRestoreState()
  *		local/no signal mapping
  */
 
+
+#ifdef	SIGTSTP
+static RETSIGTYPE susp();
+#endif	/* SIGTSTP */
+#ifdef	SIGINFO
+static RETSIGTYPE ayt();
+#endif
 
 void
 TerminalNewMode(int f)
@@ -504,12 +453,6 @@ TerminalNewMode(int f)
     }
 
     if (f != -1) {
-#ifdef	SIGTSTP
-	RETSIGTYPE susp();
-#endif	/* SIGTSTP */
-#ifdef	SIGINFO
-	RETSIGTYPE ayt();
-#endif
 
 #ifdef	SIGTSTP
 	signal(SIGTSTP, susp);
@@ -634,10 +577,8 @@ struct termspeeds {
 };
 #endif	/* DECODE_BAUD */
 
-    void
-TerminalSpeeds(ispeed, ospeed)
-    long *ispeed;
-    long *ospeed;
+void
+TerminalSpeeds(long *ispeed, long *ospeed)
 {
 #ifdef	DECODE_BAUD
     struct termspeeds *tp;
@@ -665,9 +606,8 @@ TerminalSpeeds(ispeed, ospeed)
 #endif	/* DECODE_BAUD */
 }
 
-    int
-TerminalWindowSize(rows, cols)
-    long *rows, *cols;
+int
+TerminalWindowSize(long *rows, long *cols)
 {
     struct winsize ws;
 
@@ -679,18 +619,15 @@ TerminalWindowSize(rows, cols)
 	return 0;
 }
 
-    int
-NetClose(fd)
-    int	fd;
+int
+NetClose(int fd)
 {
     return close(fd);
 }
 
 
-    void
-NetNonblockingIO(fd, onoff)
-    int fd;
-    int onoff;
+void
+NetNonblockingIO(int fd, int onoff)
 {
     ioctl(fd, FIONBIO, (char *)&onoff);
 }
@@ -700,19 +637,24 @@ NetNonblockingIO(fd, onoff)
  * Various signal handling routines.
  */
 
+static RETSIGTYPE deadpeer(int),
+  intr(int), intr2(int), susp(int), sendwin(int);
+#ifdef SIGINFO
+static RETSIGTYPE ayt(int);
+#endif
+  
+
     /* ARGSUSED */
-    RETSIGTYPE
-deadpeer(sig)
-    int sig;
+static RETSIGTYPE
+deadpeer(int sig)
 {
 	setcommandmode();
 	longjmp(peerdied, -1);
 }
 
     /* ARGSUSED */
-    RETSIGTYPE
-intr(sig)
-    int sig;
+static RETSIGTYPE
+intr(int sig)
 {
     if (localchars) {
 	intp();
@@ -723,9 +665,8 @@ intr(sig)
 }
 
     /* ARGSUSED */
-    RETSIGTYPE
-intr2(sig)
-    int sig;
+static RETSIGTYPE
+intr2(int sig)
 {
     if (localchars) {
 #ifdef	KLUDGELINEMODE
@@ -740,9 +681,8 @@ intr2(sig)
 
 #ifdef	SIGTSTP
     /* ARGSUSED */
-    RETSIGTYPE
-susp(sig)
-    int sig;
+static RETSIGTYPE
+susp(int sig)
 {
     if ((rlogin != _POSIX_VDISABLE) && rlogin_susp())
 	return;
@@ -753,9 +693,8 @@ susp(sig)
 
 #ifdef	SIGWINCH
     /* ARGSUSED */
-    RETSIGTYPE
-sendwin(sig)
-    int sig;
+static RETSIGTYPE
+sendwin(int sig)
 {
     if (connected) {
 	sendnaws();
@@ -765,9 +704,8 @@ sendwin(sig)
 
 #ifdef	SIGINFO
     /* ARGSUSED */
-    RETSIGTYPE
-ayt(sig)
-    int sig;
+static RETSIGTYPE
+ayt(int sig)
 {
     if (connected)
 	sendayt();
@@ -777,8 +715,8 @@ ayt(sig)
 #endif
 
 
-    void
-sys_telnet_init()
+void
+sys_telnet_init(void)
 {
     signal(SIGINT, intr);
     signal(SIGQUIT, intr2);
@@ -816,9 +754,13 @@ sys_telnet_init()
  *	The return value is 1 if something happened, 0 if not.
  */
 
-    int
-process_rings(netin, netout, netex, ttyin, ttyout, poll)
-    int poll;		/* If 0, then block until something to do */
+int
+process_rings(int netin,
+	      int netout,
+	      int netex,
+	      int ttyin,
+	      int ttyout,
+	      int poll) /* If 0, then block until something to do */
 {
     int c;
 		/* One wants to be a bit careful about setting returnValue
