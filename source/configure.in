@@ -37,8 +37,7 @@ case "$host_os" in
         *sunos*) AC_DEFINE(SUNOS4)
                 LDSHFLAGS=""
 		;;
-        *bsd*) AC_DEFINE(BSD)
-                LDSHFLAGS="-shared -Bshareable"
+        *bsd*) LDSHFLAGS="-shared -Bshareable"
 		;;
         *irix*) AC_DEFINE(IRIX)
 		WRAP32=bin/smbwrapper.32.so
