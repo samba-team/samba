@@ -1,3 +1,9 @@
+2003-08-20  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/asn1/der_free.c: set free'd poiners to NULL
+	
+	* lib/asn1/gen_free.c: set free'd poiners to NULL
+	
 2003-08-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/crypto.c: Do the arcfour checksum mapping for
