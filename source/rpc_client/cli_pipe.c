@@ -185,6 +185,10 @@ static BOOL rpc_auth_pipe(struct cli_state *cli, prs_struct *rdata,
 
 	RPC_HDR_AUTH rhdr_auth; 
 
+	char *dp = prs_data_p(rdata) + fragment_start + len -
+		RPC_HDR_AUTH_LEN - auth_len;
+	prs_struct auth_verf;
+
 	*pauth_padding_len = 0;
 
 	if (auth_len == 0) {
@@ -204,30 +208,29 @@ static BOOL rpc_auth_pipe(struct cli_state *cli, prs_struct *rdata,
 		 BOOLSTR(cli->pipe_auth_flags & AUTH_PIPE_SIGN), 
 		 BOOLSTR(cli->pipe_auth_flags & AUTH_PIPE_SEAL)));
 
+	if (dp - prs_data_p(rdata) > prs_data_size(rdata)) {
+		DEBUG(0,("rpc_auth_pipe: schannel auth data > data size !\n"));
+		return False;
+	}
+
+	DEBUG(10,("rpc_auth_pipe: packet:\n"));
+	dump_data(100, dp, auth_len);
+
+	prs_init(&auth_verf, 0, cli->mem_ctx, UNMARSHALL);
+	
+	/* The endinness must be preserved. JRA. */
+	prs_set_endian_data( &auth_verf, rdata->bigendian_data);
+	
+	/* Point this new parse struct at the auth section of the main 
+	   parse struct - rather than copying it.  Avoids needing to
+	   free it on every error
+	*/
+	prs_give_memory(&auth_verf, dp, RPC_HDR_AUTH_LEN + auth_len, False /* not dynamic */);
+	prs_set_offset(&auth_verf, 0);
+
 	{
 		int auth_type;
 		int auth_level;
-		char *dp = prs_data_p(rdata) + fragment_start + len -
-					RPC_HDR_AUTH_LEN - auth_len;
-		prs_struct auth_verf;
-
-		if (dp - prs_data_p(rdata) > prs_data_size(rdata)) {
-			DEBUG(0,("rpc_auth_pipe: schannel auth data > data size !\n"));
-			return False;
-		}
-
-		DEBUG(10,("rpc_auth_pipe: packet:\n"));
-		dump_data(100, dp, auth_len);
-
-		prs_init(&auth_verf, RPC_HDR_AUTH_LEN, cli->mem_ctx, UNMARSHALL);
-
-		/* The endinness must be preserved. JRA. */
-		prs_set_endian_data( &auth_verf, rdata->bigendian_data);
-
-		prs_copy_data_in(&auth_verf, dp, RPC_HDR_AUTH_LEN);
-		prs_set_offset(&auth_verf, 0);
-
-
 		if (!smb_io_rpc_hdr_auth("auth_hdr", &rhdr_auth, &auth_verf, 0)) {
 			DEBUG(0, ("rpc_auth_pipe: Could not parse auth header\n"));
 			return False;
@@ -254,20 +257,21 @@ static BOOL rpc_auth_pipe(struct cli_state *cli, prs_struct *rdata,
 
 	if (pkt_type == RPC_BINDACK) {
 		if (cli->pipe_auth_flags & AUTH_PIPE_NTLMSSP) {
-			char *dp = prs_data_p(rdata) + len - auth_len;
-			
-			if(dp - prs_data_p(rdata) > prs_data_size(rdata)) {
-				DEBUG(0,("rpc_auth_pipe: auth data > data size !\n"));
-				return False;
-			}
+			/* copy the next auth_len bytes into a buffer for 
+			   later use */
+
+			DATA_BLOB ntlmssp_verf = data_blob(NULL, auth_len);
 			
 			/* save the reply away, for use a little later */
+			prs_copy_data_out(ntlmssp_verf.data, &auth_verf, auth_len);
+
+
 			return (NT_STATUS_IS_OK(ntlmssp_client_store_response(cli->ntlmssp_pipe_state, 
-									      data_blob(dp, auth_len))));
-		}
-		if (cli->pipe_auth_flags & AUTH_PIPE_NETSEC) {
-			/* nothing to do here - we don't seem to be able to validate the
-			   bindack based on VL's comments */
+									      ntlmssp_verf)));
+		} 
+		else if (cli->pipe_auth_flags & AUTH_PIPE_NETSEC) {
+			/* nothing to do here - we don't seem to be able to 
+			   validate the bindack based on VL's comments */
 			return True;
 		}
 	}
@@ -277,19 +281,12 @@ static BOOL rpc_auth_pipe(struct cli_state *cli, prs_struct *rdata,
 		DATA_BLOB sig;
 		if ((cli->pipe_auth_flags & AUTH_PIPE_SIGN) ||
 		    (cli->pipe_auth_flags & AUTH_PIPE_SEAL)) {
-			char *dp = prs_data_p(rdata) + len - auth_len;
-			
-			if(dp - prs_data_p(rdata) > prs_data_size(rdata)) {
-				DEBUG(0,("rpc_auth_pipe: auth data > data size !\n"));
-				return False;
-			}
-			
 			if (auth_len != RPC_AUTH_NTLMSSP_CHK_LEN) {
 				DEBUG(0,("rpc_auth_pipe: wrong ntlmssp auth len %d\n", auth_len));
 				return False;
 			}
-			
-			sig = data_blob(dp, auth_len);
+			sig = data_blob(NULL, auth_len);
+			prs_copy_data_out(sig.data, &auth_verf, auth_len);
 		}
 	
 		/*
@@ -308,8 +305,8 @@ static BOOL rpc_auth_pipe(struct cli_state *cli, prs_struct *rdata,
 				return False;
 			}
 			nt_status = ntlmssp_client_unseal_packet(cli->ntlmssp_pipe_state, 
-						     reply_data, data_len,
-						     &sig);
+								 reply_data, data_len,
+								 &sig);
 		} 
 		else if (cli->pipe_auth_flags & AUTH_PIPE_SIGN) {
 			nt_status = ntlmssp_client_check_packet(cli->ntlmssp_pipe_state, 
@@ -328,34 +325,16 @@ static BOOL rpc_auth_pipe(struct cli_state *cli, prs_struct *rdata,
 
 	if (cli->pipe_auth_flags & AUTH_PIPE_NETSEC) {
 		RPC_AUTH_NETSEC_CHK chk;
-		prs_struct netsec_verf;
-
-		char *dp = prs_data_p(rdata) + fragment_start + len - auth_len;
-		
-		if(dp - prs_data_p(rdata) > prs_data_size(rdata)) {
-			DEBUG(0,("rpc_auth_pipe: auth data > data size !\n"));
-			return False;
-		}
 
 		if (auth_len != RPC_AUTH_NETSEC_CHK_LEN) {
 			DEBUG(0,("rpc_auth_pipe: wrong schannel auth len %d\n", auth_len));
 			return False;
 		}
 
-		prs_init(&netsec_verf, RPC_AUTH_NETSEC_CHK_LEN, 
-			 cli->mem_ctx, UNMARSHALL);
-
-		/* The endinness must be preserved. JRA. */
-		prs_set_endian_data( &netsec_verf, rdata->bigendian_data);
-
-		prs_copy_data_in(&netsec_verf, dp, auth_len);
-		prs_set_offset(&netsec_verf, 0);
-
 		if (!smb_io_rpc_auth_netsec_chk("schannel_auth_sign", 
-						&chk, &netsec_verf, 0)) {
+						&chk, &auth_verf, 0)) {
 			DEBUG(0, ("rpc_auth_pipe: schannel unmarshalling "
 				  "RPC_AUTH_NETSECK_CHK failed\n"));
-			prs_mem_free(&netsec_verf);
 			return False;
 		}
 
@@ -364,13 +343,11 @@ static BOOL rpc_auth_pipe(struct cli_state *cli, prs_struct *rdata,
 				   SENDER_IS_ACCEPTOR,
 				   &chk, reply_data, data_len)) {
 			DEBUG(0, ("rpc_auth_pipe: Could not decode schannel\n"));
-			prs_mem_free(&netsec_verf);
 			return False;
 		}
 
 		cli->auth_info.seq_num++;
 
-		prs_mem_free(&netsec_verf);
 	}
 	return True;
 }
