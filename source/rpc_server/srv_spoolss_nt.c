@@ -3386,7 +3386,7 @@ static void free_dev_mode(DEVICEMODE *dev)
  Create a DEVMODE struct. Returns malloced memory.
 ****************************************************************************/
 
-static DEVICEMODE *construct_dev_mode(int snum)
+DEVICEMODE *construct_dev_mode(int snum)
 {
 	char adevice[32];
 	char aform[32];

@@ -125,7 +125,8 @@ LIB_OBJ = lib/charcnv.o lib/charset.o lib/debug.o lib/fault.o \
 	  lib/util.o lib/util_sock.o lib/util_sec.o smbd/ssl.o \
 	  lib/talloc.o lib/hash.o lib/substitute.o lib/fsusage.o \
 	  lib/ms_fnmatch.o lib/select.o lib/error.o lib/messages.o \
-	  lib/pam_errors.o nsswitch/wb_client.o nsswitch/wb_common.o $(TDB_OBJ)
+	  lib/pam_errors.o nsswitch/wb_client.o nsswitch/wb_common.o \
+	  lib/adt_tree.o $(TDB_OBJ)
 
 READLINE_OBJ = lib/readline.o
 
@@ -149,13 +150,16 @@ LIBMSRPC_OBJ = libsmb/cli_lsarpc.o libsmb/cli_samr.o libsmb/cli_spoolss.o \
 				libsmb/cli_reg.o \
 				rpc_client/cli_pipe.o libsmb/cli_pipe_util.o
 
+REGISTRY_OBJ = registry/reg_frontend.o registry/reg_cachehook.o registry/reg_printing.o \
+		registry/reg_db.o
+
 RPC_SERVER_OBJ = rpc_server/srv_lsa.o rpc_server/srv_lsa_nt.o \
                  rpc_server/srv_lsa_hnd.o rpc_server/srv_netlog.o rpc_server/srv_netlog_nt.o \
                  rpc_server/srv_pipe_hnd.o rpc_server/srv_reg.o rpc_server/srv_reg_nt.o \
                  rpc_server/srv_samr.o rpc_server/srv_samr_nt.o rpc_server/srv_srvsvc.o rpc_server/srv_srvsvc_nt.o \
                  rpc_server/srv_util.o rpc_server/srv_wkssvc.o rpc_server/srv_wkssvc_nt.o \
                  rpc_server/srv_pipe.o rpc_server/srv_dfs.o rpc_server/srv_dfs_nt.o \
-		 rpc_server/srv_spoolss.o rpc_server/srv_spoolss_nt.o
+		 rpc_server/srv_spoolss.o rpc_server/srv_spoolss_nt.o $(REGISTRY_OBJ)
 
 # this includes only the low level parse code, not stuff
 # that requires knowledge of security contexts

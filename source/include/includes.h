@@ -663,6 +663,7 @@ extern int errno;
 #include "nterr.h"
 #include "secrets.h"
 #include "messages.h"
+#include "adt_tree.h"
 
 #include "util_getent.h"
 

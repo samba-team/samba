@@ -22,9 +22,6 @@
 
 #include "includes.h"
 
-#undef DBGC_CLASS
-#define DBGC_CLASS DBGC_RPC_SRV
-
 #define MAX_TOP_LEVEL_KEYS	3
 
 /* some symbolic indexes into the top_level_keys */

@@ -22,9 +22,6 @@
 
 #include "includes.h"
 
-#undef DBGC_CLASS
-#define DBGC_CLASS DBGC_RPC_SRV
-
 static SORTED_TREE *cache_tree;
 extern REGISTRY_OPS regdb_ops;		/* these are the default */
 static REGISTRY_HOOK default_hook = { KEY_TREE_ROOT, &regdb_ops };
