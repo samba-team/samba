@@ -26,6 +26,33 @@
 
 #ifdef HAVE_KRB5
 
+static DATA_BLOB unwrap_pac(TALLOC_CTX *mem_ctx, DATA_BLOB *auth_data)
+{
+	DATA_BLOB out;
+	DATA_BLOB pac_contents = data_blob(NULL, 0);
+	ASN1_DATA data;
+	int data_type;
+
+	asn1_load(&data, *auth_data);
+	asn1_start_tag(&data, ASN1_SEQUENCE(0));
+	asn1_start_tag(&data, ASN1_SEQUENCE(0));
+	asn1_start_tag(&data, ASN1_CONTEXT(0));
+	asn1_read_Integer(&data, &data_type);
+	asn1_end_tag(&data);
+	asn1_start_tag(&data, ASN1_CONTEXT(1));
+	asn1_read_OctetString(&data, &pac_contents);
+	asn1_end_tag(&data);
+	asn1_end_tag(&data);
+	asn1_end_tag(&data);
+	asn1_free(&data);
+
+	out = data_blob_talloc(mem_ctx, pac_contents.data, pac_contents.length);
+
+	data_blob_free(&pac_contents);
+
+	return out;
+}
+
 /**********************************************************************************
  Try to verify a ticket using the system keytab... the system keytab has kvno -1 entries, so
  it's more like what microsoft does... see comment in utils/net_ads.c in the
@@ -33,7 +60,8 @@
 ***********************************************************************************/
 
 static BOOL ads_keytab_verify_ticket(krb5_context context, krb5_auth_context auth_context,
-			const DATA_BLOB *ticket, krb5_data *p_packet, krb5_ticket **pp_tkt)
+			const DATA_BLOB *ticket, krb5_data *p_packet, krb5_ticket **pp_tkt,
+			krb5_keyblock *keyblock)
 {
 	krb5_error_code ret = 0;
 	BOOL auth_ok = False;
@@ -45,6 +73,8 @@ static BOOL ads_keytab_verify_ticket(krb5_context context, krb5_auth_context aut
 
 	ZERO_STRUCT(kt_entry);
 	ZERO_STRUCT(cursor);
+
+	ZERO_STRUCTP(keyblock);
 
 	ret = krb5_kt_default(context, &keytab);
 	if (ret) {
@@ -75,17 +105,22 @@ static BOOL ads_keytab_verify_ticket(krb5_context context, krb5_auth_context aut
 			p_packet->length = ticket->length;
 			p_packet->data = (krb5_pointer)ticket->data;
 
-			if (!(ret = krb5_rd_req(context, &auth_context, p_packet, NULL, NULL, NULL, pp_tkt))) {
+			ret = krb5_rd_req(context, &auth_context, p_packet, NULL, NULL, NULL, pp_tkt);
+			if (!ret) {
 				unsigned int keytype;
 				krb5_free_unparsed_name(context, princ_name);
 				princ_name = NULL;
 #ifdef HAVE_KRB5_KEYTAB_ENTRY_KEYBLOCK
 				keytype = (unsigned int) kt_entry.keyblock.keytype;
+				copy_EncryptionKey(&kt_entry.keyblock, keyblock);
 #else
 				keytype = (unsigned int) kt_entry.key.enctype;
+				/* I'not sure if that works --metze*/
+				copy_EncryptionKey(&kt_entry.key, keyblock);
 #endif
 				DEBUG(10,("ads_keytab_verify_ticket: enc type [%u] decrypted message !\n",
 					  keytype));
+				
 				auth_ok = True;
 				break;
 			}
@@ -124,7 +159,8 @@ static BOOL ads_keytab_verify_ticket(krb5_context context, krb5_auth_context aut
 
 static BOOL ads_secrets_verify_ticket(krb5_context context, krb5_auth_context auth_context,
 			krb5_principal host_princ,
-			const DATA_BLOB *ticket, krb5_data *p_packet, krb5_ticket **pp_tkt)
+			const DATA_BLOB *ticket, krb5_data *p_packet, krb5_ticket **pp_tkt,
+			krb5_keyblock *keyblock)
 {
 	krb5_error_code ret = 0;
 	BOOL auth_ok = False;
@@ -132,6 +168,8 @@ static BOOL ads_secrets_verify_ticket(krb5_context context, krb5_auth_context au
 	krb5_data password;
 	krb5_enctype *enctypes = NULL;
 	int i;
+
+	ZERO_STRUCTP(keyblock);
 
 	if (!secrets_init()) {
 		DEBUG(1,("ads_secrets_verify_ticket: secrets_init failed\n"));
@@ -160,30 +198,24 @@ static BOOL ads_secrets_verify_ticket(krb5_context context, krb5_auth_context au
 
 	/* We need to setup a auth context with each possible encoding type in turn. */
 	for (i=0;enctypes[i];i++) {
-		krb5_keyblock *key = NULL;
-
-		if (!(key = (krb5_keyblock *)malloc(sizeof(*key)))) {
-			goto out;
-		}
-	
-		if (create_kerberos_key_from_string(context, host_princ, &password, key, enctypes[i])) {
-			SAFE_FREE(key);
+		if (create_kerberos_key_from_string(context, host_princ, &password, keyblock, enctypes[i])) {
 			continue;
 		}
 
-		krb5_auth_con_setuseruserkey(context, auth_context, key);
+		krb5_auth_con_setuseruserkey(context, auth_context, keyblock);
 
-		krb5_free_keyblock(context, key);
-
-		if (!(ret = krb5_rd_req(context, &auth_context, p_packet, 
+		ret = krb5_rd_req(context, &auth_context, p_packet, 
 					NULL,
-					NULL, NULL, pp_tkt))) {
+					NULL, NULL, pp_tkt);
+		if (!ret) {
 			DEBUG(10,("ads_secrets_verify_ticket: enc type [%u] decrypted message !\n",
 				(unsigned int)enctypes[i] ));
 			auth_ok = True;
 			break;
 		}
-	
+
+		free_EncryptionKey(keyblock);
+
 		DEBUG((ret != KRB5_BAD_ENCTYPE) ? 3 : 10,
 				("ads_secrets_verify_ticket: enc type [%u] failed to decrypt with error %s\n",
 				(unsigned int)enctypes[i], error_message(ret)));
@@ -207,7 +239,8 @@ static BOOL ads_secrets_verify_ticket(krb5_context context, krb5_auth_context au
 			   krb5_auth_context auth_context,
 			   const char *realm, const DATA_BLOB *ticket, 
 			   char **principal, DATA_BLOB *auth_data,
-			   DATA_BLOB *ap_rep)
+			   DATA_BLOB *ap_rep,
+			   krb5_keyblock *keyblock)
 {
 	NTSTATUS sret = NT_STATUS_LOGON_FAILURE;
 	krb5_data packet;
@@ -267,10 +300,10 @@ static BOOL ads_secrets_verify_ticket(krb5_context context, krb5_auth_context au
 		goto out;
 	}
 
-	auth_ok = ads_keytab_verify_ticket(context, auth_context, ticket, &packet, &tkt);
+	auth_ok = ads_keytab_verify_ticket(context, auth_context, ticket, &packet, &tkt, keyblock);
 	if (!auth_ok) {
 		auth_ok = ads_secrets_verify_ticket(context, auth_context, host_princ,
-							ticket, &packet, &tkt);
+							ticket, &packet, &tkt, keyblock);
 	}
 
 	release_server_mutex();
@@ -298,6 +331,8 @@ static BOOL ads_secrets_verify_ticket(krb5_context context, krb5_auth_context au
 #endif
 
 	get_auth_data_from_tkt(mem_ctx, auth_data, tkt);
+
+	*auth_data = unwrap_pac(mem_ctx, auth_data);
 
 #if 0
 	if (tkt->enc_part2) {

@@ -47,6 +47,10 @@ krb5_error_code krb5_auth_con_setuseruserkey(krb5_context context, krb5_auth_con
 void krb5_free_unparsed_name(krb5_context ctx, char *val);
 #endif
 
+#if defined(HAVE_KRB5_PRINCIPAL_GET_COMP_STRING) && !defined(HAVE_KRB5_PRINC_COMPONENT)
+const krb5_data *krb5_princ_component(krb5_context context, krb5_principal principal, int i );
+#endif
+
 /* Samba wrapper function for krb5 functionality. */
 void setup_kaddr( krb5_address *pkaddr, struct sockaddr *paddr);
 int create_kerberos_key_from_string(krb5_context context, krb5_principal host_princ, krb5_data *password, krb5_keyblock *key, krb5_enctype enctype);
@@ -68,7 +72,8 @@ NTSTATUS ads_verify_ticket(TALLOC_CTX *mem_ctx,
 			   krb5_auth_context auth_context,
 			   const char *realm, const DATA_BLOB *ticket, 
 			   char **principal, DATA_BLOB *auth_data,
-			   DATA_BLOB *ap_rep);
+			   DATA_BLOB *ap_rep,
+			   krb5_keyblock *keyblock);
 int kerberos_kinit_password_cc(krb5_context ctx, krb5_ccache cc, const char *principal, const char *password, time_t *expire_time, time_t *kdc_time);
 #endif /* HAVE_KRB5 */
 
