@@ -154,7 +154,7 @@ NTSTATUS idmap_set_mapping(const DOM_SID *sid, unid_t id, int id_type)
 
 	/* Being able to update the remote cache is seldomly right.
 	   Generally this is a forbidden operation. */
-	if (!(id_type & ID_CACHE) && (remote_map != NULL)) {
+	if (!(id_type & ID_CACHE_SAVE) && (remote_map != NULL)) {
 		remote_map->set_mapping(sid, id, id_type);
 		if (!NT_STATUS_IS_OK(ret)) {
 			DEBUG (0, ("idmap_set_mapping: Error, unable to modify remote cache!\n"));
@@ -175,7 +175,7 @@ NTSTATUS idmap_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID *sid)
 
 	loc_type = *id_type;
 	if (remote_map) { /* We have a central remote idmap */
-		loc_type |= ID_NOMAP;
+		loc_type |= ID_QUERY_ONLY;
 	}
 	ret = local_map->get_id_from_sid(id, &loc_type, sid);
 	if (!NT_STATUS_IS_OK(ret)) {
@@ -185,7 +185,7 @@ NTSTATUS idmap_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID *sid)
 				DEBUG(3, ("idmap_get_id_from_sid: error fetching id!\n"));
 				return ret;
 			} else {
-				loc_type |= ID_CACHE;
+				loc_type |= ID_CACHE_SAVE;
 				idmap_set_mapping(sid, *id, loc_type);
 			}
 		}
@@ -206,7 +206,7 @@ NTSTATUS idmap_get_sid_from_id(DOM_SID *sid, unid_t id, int id_type)
 
 	loc_type = id_type;
 	if (remote_map) {
-		loc_type = id_type | ID_NOMAP;
+		loc_type = id_type | ID_QUERY_ONLY;
 	}
 	ret = local_map->get_sid_from_id(sid, id, loc_type);
 	if (!NT_STATUS_IS_OK(ret)) {
@@ -216,7 +216,7 @@ NTSTATUS idmap_get_sid_from_id(DOM_SID *sid, unid_t id, int id_type)
 				DEBUG(3, ("idmap_get_sid_from_id: unable to fetch sid!\n"));
 				return ret;
 			} else {
-				loc_type |= ID_CACHE;
+				loc_type |= ID_CACHE_SAVE;
 				idmap_set_mapping(sid, id, loc_type);
 			}
 		}
