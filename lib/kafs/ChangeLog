@@ -1,3 +1,7 @@
+2004-12-06  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* afskrb5.c: s/KEYTYPE_DES/ETYPE_DES_CBC_CRC/
+	
 2004-08-09  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* afssysdefs.h: ifdef protect AFS_SYSCALL for DragonFly since they
