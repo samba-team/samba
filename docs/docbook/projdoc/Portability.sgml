@@ -1,0 +1,148 @@
+<chapter id="Portability">
+<chapterinfo>
+	<author>
+		<firstname>Jelmer</firstname><surname>Vernooij</surname>
+	</author>
+</chapterinfo>
+
+<title>Portability</title>
+
+<para>Samba works on a wide range of platforms but the interface all the 
+platforms provide is not always compatible. This chapter contains 
+platform-specific information about compiling and using samba.</para>
+
+<sect1>
+<title>HPUX</title>
+
+<para>
+HP's implementation of supplementary groups is, er, non-standard (for
+hysterical reasons).  There are two group files, /etc/group and
+/etc/logingroup; the system maps UIDs to numbers using the former, but
+initgroups() reads the latter.  Most system admins who know the ropes
+symlink /etc/group to /etc/logingroup (hard link doesn't work for reasons
+too stupid to go into here).  initgroups() will complain if one of the
+groups you're in in /etc/logingroup has what it considers to be an invalid
+ID, which means outside the range [0..UID_MAX], where UID_MAX is (I think)
+60000 currently on HP-UX.  This precludes -2 and 65534, the usual 'nobody'
+GIDs.
+</para>
+
+<para>
+If you encounter this problem, make sure that the programs that are failing 
+to initgroups() be run as users not in any groups with GIDs outside the 
+allowed range.
+</para>
+
+<para>This is documented in the HP manual pages under setgroups(2) and passwd(4).
+</para>
+
+</sect1>
+
+<sect1>
+<title>SCO Unix</title>
+
+<para> 
+If you run an old version of  SCO Unix then you may need to get important 
+TCP/IP patches for Samba to work correctly. Without the patch, you may 
+encounter corrupt data transfers using samba.
+</para>
+
+<para>
+The patch you need is UOD385 Connection Drivers SLS. It is available from
+SCO (ftp.sco.com, directory SLS, files uod385a.Z and uod385a.ltr.Z).
+</para>
+
+</sect1>
+
+<sect1>
+<title>DNIX</title>
+
+<para>
+DNIX has a problem with seteuid() and setegid(). These routines are
+needed for Samba to work correctly, but they were left out of the DNIX
+C library for some reason.
+</para>
+
+<para>
+For this reason Samba by default defines the macro NO_EID in the DNIX
+section of includes.h. This works around the problem in a limited way,
+but it is far from ideal, some things still won't work right.
+</para>
+
+<para> 
+To fix the problem properly you need to assemble the following two
+functions and then either add them to your C library or link them into
+Samba.
+</para>
+
+<para> 
+put this in the file <filename>setegid.s</filename>:
+</para>
+
+<para><programlisting>
+        .globl  _setegid
+_setegid:
+        moveq   #47,d0
+        movl    #100,a0
+        moveq   #1,d1
+        movl    4(sp),a1
+        trap    #9
+        bccs    1$
+        jmp     cerror
+1$:
+        clrl    d0
+        rts
+</programlisting></para>
+
+<para>
+put this in the file <filename>seteuid.s</filename>:
+</para>
+
+<para><programlisting>
+        .globl  _seteuid
+_seteuid:
+        moveq   #47,d0
+        movl    #100,a0
+        moveq   #0,d1
+        movl    4(sp),a1
+        trap    #9
+        bccs    1$
+        jmp     cerror
+1$:
+        clrl    d0
+        rts
+</programlisting></para>
+
+<para>
+after creating the above files you then assemble them using
+</para>
+
+<para><command>as seteuid.s</command></para>
+<para><command>as setegid.s</command></para>
+
+<para>
+that should produce the files <filename>seteuid.o</filename> and 
+<filename>setegid.o</filename>
+</para>
+
+<para>
+then you need to add these to the LIBSM line in the DNIX section of
+the Samba Makefile. Your LIBSM line will then look something like this:
+</para>
+
+<para><programlisting>
+LIBSM = setegid.o seteuid.o -ln
+</programlisting></para>
+
+<para> 
+You should then remove the line:
+</para>
+
+<para><programlisting>
+#define NO_EID
+</programlisting></para>
+
+<para>from the DNIX section of <filename>includes.h</filename></para>
+
+</sect1>
+</chapter>

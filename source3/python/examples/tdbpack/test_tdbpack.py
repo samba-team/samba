@@ -1,0 +1,195 @@
+#! /usr/bin/env python2.2
+
+__doc__ = """test case for samba.tdbkpack functions
+
+tdbpack provides a means of pickling values into binary formats
+compatible with that used by the samba tdbpack()/tdbunpack()
+functions.
+
+Numbers are always stored in little-endian format; strings are stored
+in either DOS or Unix codepage as appropriate.
+
+The format for any particular element is encoded as a short ASCII
+string, with one character per field."""
+
+# Copyright (C) 2002 Hewlett-Packard.
+
+__author__ = 'Martin Pool <mbp@sourcefrog.net>'
+
+import unittest
+# import tdbutil
+import samba.tdbpack
+
+packer = samba.tdbpack.pack
+unpacker = samba.tdbpack.unpack
+
+
+class PackTests(unittest.TestCase):
+    symm_cases = [('B', ['hello' * 51], '\xff\0\0\0' + 'hello' * 51),
+             ('w', [42], '\x2a\0'),
+             ('www', [42, 2, 69], '\x2a\0\x02\0\x45\0'),
+             ('wd', [42, 256], '\x2a\0\0\x01\0\0'),
+             ('w', [0], '\0\0'),
+             ('w', [255], '\xff\0'),
+             ('w', [256], '\0\x01'),
+             ('w', [0xdead], '\xad\xde'),
+             ('w', [0xffff], '\xff\xff'),
+             ('p', [0], '\0\0\0\0'),
+             ('p', [1], '\x01\0\0\0'),
+             ('d', [0x01020304], '\x04\x03\x02\x01'),
+             ('d', [0x7fffffff], '\xff\xff\xff\x7f'),
+             ('d', [0x80000000], '\x00\x00\x00\x80'),
+             ('d', [-1], '\xff\xff\xff\xff'),
+             ('d', [-255], '\x01\xff\xff\xff'),
+             ('d', [-256], '\x00\xff\xff\xff'),
+             ('ddd', [1, 10, 50], '\x01\0\0\0\x0a\0\0\0\x32\0\0\0'),
+             ('ff', ['hello', 'world'], 'hello\0world\0'),
+             ('fP', ['hello', 'world'], 'hello\0world\0'),
+             ('PP', ['hello', 'world'], 'hello\0world\0'),
+             ('B', [''], '\0\0\0\0'),
+             ('B', ['hello'], '\x05\0\0\0hello'),
+             ('BB', ['hello\0world', 'now'],
+              '\x0b\0\0\0hello\0world\x03\0\0\0now'),
+             ('pd', [1, 10], '\x01\0\0\0\x0a\0\0\0'),
+             ('BBB', ['hello', '', 'world'],
+              '\x05\0\0\0hello\0\0\0\0\x05\0\0\0world'),
+
+             # strings are sequences in Python, there's no getting away
+             # from it
+             ('ffff', 'evil', 'e\0v\0i\0l\0'),
+             ('BBBB', 'evil',                   
+              '\x01\0\0\0e'
+              '\x01\0\0\0v'
+              '\x01\0\0\0i'
+              '\x01\0\0\0l'),
+
+             ('', [], ''),
+
+             # exercise some long strings
+             ('PP', ['hello' * 255, 'world' * 255],
+              'hello' * 255 + '\0' + 'world' * 255 + '\0'),
+             ('PP', ['hello' * 40000, 'world' * 50000],
+              'hello' * 40000 + '\0' + 'world' * 50000 + '\0'),
+             ('B', ['hello' * 51], '\xff\0\0\0' + 'hello' * 51),
+             ('BB', ['hello' * 40000, 'world' * 50000],
+              '\x40\x0d\x03\0' + 'hello' * 40000 + '\x90\xd0\x03\x00' + 'world' * 50000),
+             ]
+
+    def test_symmetric(self):
+        """Cookbook of symmetric pack/unpack tests
+        """
+        for format, values, expected in self.symm_cases:
+            self.assertEquals(packer(format, values), expected)
+            out, rest = unpacker(format, expected)
+            self.assertEquals(rest, '')
+            self.assertEquals(list(values), list(out))
+        
+    
+    def test_pack(self):
+        """Cookbook of expected pack values
+
+        These can't be used for the symmetric test because the unpacked value is
+        not "canonical".
+        """
+        cases = [('w', (42,), '\x2a\0'),
+                 ('p', [None], '\0\0\0\0'),
+                 ('p', ['true'], '\x01\0\0\0'),
+
+                 ('w', {1: 'fruit'}, '\x01\0'),
+                 # passing a dictionary is dodgy, but it gets coerced to keys
+                 # as if you called list()
+                 ]
+
+        for format, values, expected in cases:
+            self.assertEquals(packer(format, values), expected)
+
+    def test_unpack_extra(self):
+        # Test leftover data
+        for format, values, packed in self.symm_cases:
+            out, rest = unpacker(format, packed + 'hello sailor!')
+            self.assertEquals(rest, 'hello sailor!')
+            self.assertEquals(list(values), list(out))
+        
+
+    def test_unpack(self):
+        """Cookbook of tricky unpack tests"""
+        cases = [
+                 ]
+        for format, values, expected in cases:
+            out, rest = unpacker(format, expected)
+            self.assertEquals(rest, '')
+            self.assertEquals(list(values), list(out))
+
+
+    def test_pack_failures(self):
+        """Expected errors for incorrect packing"""
+        cases = [('w', [], IndexError),
+                 ('w', (), IndexError),
+                 ('w', {}, IndexError),
+                 ('ww', [2], IndexError),
+                 ('w', 2, TypeError),
+                 ('', [1, 2, 3], IndexError),
+                 ('w', None, TypeError),
+                 ('wwwwwwwwwwww', [], IndexError),
+                 ('w', [2, 3], IndexError),
+                 ('w', [0x60A15EC5L], TypeError),
+                 ('w', [None], TypeError),
+                 ('w', xrange(10000), IndexError),
+                 ('d', [], IndexError),
+                 ('d', [0L], TypeError),
+                 ('p', [], IndexError),
+                 ('f', [2], TypeError),
+                 ('P', [None], TypeError),
+                 ('P', (), IndexError),
+                 ('f', [packer], TypeError),
+                 ('fw', ['hello'], IndexError),
+                 ('f', [u'hello'], TypeError),
+                 ('B', [2], TypeError),
+                 (None, [2, 3, 4], TypeError),
+                 (ord('f'), [20], TypeError),
+                 (['w', 'w'], [2, 2], TypeError),
+                 ('Q', [2], ValueError),
+                 ('fQ', ['2', 3], ValueError),
+                 ('fQ', ['2'], IndexError),
+                 (2, [2], TypeError),
+                 ({}, {}, TypeError)]
+        for format, values, throwable_class in cases:
+            def do_pack():
+                packer(format, values)
+            self.assertRaises(throwable_class, do_pack)
+
+
+    def test_unpack_failures(self):
+        """Expected errors for incorrect unpacking"""
+        cases = [('$', '', ValueError),
+                 ('Q', '', ValueError),
+                 ('Q$', '', ValueError),
+                 ('f', '', IndexError),
+                 ('d', '', IndexError),
+                 ('d', '2', IndexError),
+                 ('d', '22', IndexError),
+                 ('d', '222', IndexError),
+                 ('w', '', IndexError),
+                 ('w', '2', IndexError),
+                 ('f', 'hello', IndexError),
+                 ('f', '', IndexError),
+                 ('p', '\x01\0', IndexError),
+                 ('B', '\xff\0\0\0hello', IndexError),
+                 ('B', '\xff\0', IndexError),
+                 ('B', '\x01\0\0\0', IndexError),
+                 ('B', '\x05\0\0\0hell', IndexError),
+                 ('B', '\xff\xff\xff\xff', ValueError),
+                 ('B', 'foobar', IndexError),
+                 ('BB', '\x01\0\0\0a\x01', IndexError),
+                 ]
+        
+        for format, values, throwable_class in cases:
+            def do_unpack():
+                unpacker(format, values)
+            self.assertRaises(throwable_class, do_unpack)
+
+        
+
+if __name__ == '__main__':
+    unittest.main()
+    
