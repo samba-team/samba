@@ -1680,6 +1680,15 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 NTSTATUS set_delete_on_close_internal(files_struct *fsp, BOOL delete_on_close)
 {
 	/*
+	 * Only allow delete on close for writable shares.
+	 */
+
+	if (delete_on_close && !CAN_WRITE(fsp->conn)) {
+		DEBUG(10,("set_delete_on_close_internal: file %s delete on close flag set but write access denied on share.\n",
+				fsp->fsp_name ));
+				return NT_STATUS_ACCESS_DENIED;
+	}
+	/*
 	 * Only allow delete on close for files/directories opened with delete intent.
 	 */
 
