@@ -138,7 +138,7 @@ int dos_mode(connection_struct *conn,char *path,SMB_STRUCT_STAT *sbuf)
   
   if (S_ISDIR(sbuf->st_mode))
     result = aDIR | (result & aRONLY);
-
+ 
 #ifdef S_ISLNK
 #if LINKS_READ_ONLY
   if (S_ISLNK(sbuf->st_mode) && S_ISDIR(sbuf->st_mode))
