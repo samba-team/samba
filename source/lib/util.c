@@ -1809,7 +1809,6 @@ uint32 interpret_addr(char *str)
 {
   struct hostent *hp;
   uint32 res;
-  int i;
 
   if (strcmp(str,"0.0.0.0") == 0) return(0);
   if (strcmp(str,"255.255.255.255") == 0) return(0xFFFFFFFF);
