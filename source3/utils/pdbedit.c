@@ -119,27 +119,6 @@ static int export_groups (struct pdb_context *in, struct pdb_context *out) {
 }
 
 /*********************************************************
- Add all currently available account policy from tdb to one backend
- ********************************************************/
-
-static int export_account_policies (struct pdb_context *in, struct pdb_context *out) 
-{
-	int i;
-
-	for (i=1; decode_account_policy_name(i) != NULL; i++) {
-		uint32 policy_value;
-		if (NT_STATUS_IS_ERR(in->pdb_get_account_policy(in, i, &policy_value))) {
-			fprintf(stderr, "Can't get account policy from tdb\n");
-			return -1;
-		}
-		out->pdb_set_account_policy(out, i, policy_value);
-	}
-
-	return 0;
-}
-
-
-/*********************************************************
  Print info from sam structure
 **********************************************************/
 
@@ -669,7 +648,6 @@ int main (int argc, char **argv)
 	static char *backend_in = NULL;
 	static char *backend_out = NULL;
 	static BOOL transfer_groups = False;
-	static BOOL transfer_account_policies = False;
 	static BOOL  force_initialised_password = False;
 	static char *logon_script = NULL;
 	static char *profile_path = NULL;
@@ -710,7 +688,6 @@ int main (int argc, char **argv)
 		{"import",	'i', POPT_ARG_STRING, &backend_in, 0, "import user accounts from this backend", NULL},
 		{"export",	'e', POPT_ARG_STRING, &backend_out, 0, "export user accounts to this backend", NULL},
 		{"group",	'g', POPT_ARG_NONE, &transfer_groups, 0, "use -i and -e for groups", NULL},
-		{"policies",	'y', POPT_ARG_NONE, &transfer_account_policies, 0, "use -i and -e to move account policies between backends", NULL},
 		{"account-policy",	'P', POPT_ARG_STRING, &account_policy, 0,"value of an account policy (like maximum password age)",NULL},
 		{"value",       'C', POPT_ARG_LONG, &account_policy_value, 'C',"set the account policy to this value", NULL},
 		{"account-control",	'c', POPT_ARG_STRING, &account_control, 0, "Values of account control", NULL},
@@ -810,22 +787,20 @@ int main (int argc, char **argv)
 			SAFE_FREE(apn);
 			exit(1);
 		}
-		if (!pdb_get_account_policy(field, &value)) {
+		if (!account_policy_get(field, &value)) {
 			fprintf(stderr, "valid account policy, but unable to fetch value!\n");
-			if (!account_policy_value_set)
-				exit(1);
+			exit(1);
 		}
-		printf("account policy \"%s\" description: %s\n", account_policy, account_policy_get_comment(field));
 		if (account_policy_value_set) {
-			printf("account policy \"%s\" value was: %u\n", account_policy, value);
-			if (!pdb_set_account_policy(field, account_policy_value)) {
+			printf("account policy value for %s was %u\n", account_policy, value);
+			if (!account_policy_set(field, account_policy_value)) {
 				fprintf(stderr, "valid account policy, but unable to set value!\n");
 				exit(1);
 			}
-			printf("account policy \"%s\" value is now: %lu\n", account_policy, account_policy_value);
+			printf("account policy value for %s is now %lu\n", account_policy, account_policy_value);
 			exit(0);
 		} else {
-			printf("account policy \"%s\" value is: %u\n", account_policy, value);
+			printf("account policy value for %s is %u\n", account_policy, value);
 			exit(0);
 		}
 	}
@@ -849,10 +824,7 @@ int main (int argc, char **argv)
 		} else {
 			bout = bdef;
 		}
-		if (transfer_account_policies) {
-			if (!(checkparms & BIT_USER))
-				return export_account_policies(bin, bout);
-		} else 	if (transfer_groups) {
+		if (transfer_groups) {
 			if (!(checkparms & BIT_USER))
 				return export_groups(bin, bout);
 		} else {
