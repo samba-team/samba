@@ -995,7 +995,7 @@ BOOL cli_negprot(struct cli_state *cli)
 
 	cli->protocol = prots[SVAL(cli->inbuf,smb_vwv0)].prot;	
 
-	if ((cli->protocol < PROTOCOL_NT1) && (lp_client_signing() == Required)) {
+	if ((cli->protocol < PROTOCOL_NT1) && cli->sign_info.mandatory_signing) {
 		DEBUG(1,("cli_negprot: SMB signing is mandatory and the selected protocol level doesn't support it.\n"));
 		return False;
 	}
@@ -1026,7 +1026,7 @@ BOOL cli_negprot(struct cli_state *cli)
 
 		if ((cli->sec_mode & NEGOTIATE_SECURITY_SIGNATURES_REQUIRED)) {
 			/* Fail if signing is mandatory and we don't want to support it. */
-			if (!lp_client_signing()) {
+			if (!cli->sign_info.allow_smb_signing) {
 				DEBUG(1,("cli_negprot: SMB signing is mandatory and we have disabled it.\n"));
 				return False;
 			}
@@ -1259,6 +1259,7 @@ NTSTATUS cli_full_connection(struct cli_state **output_cli,
 			     const char *service, const char *service_type,
 			     const char *user, const char *domain, 
 			     const char *password, int flags,
+			     int signing_state,
 			     BOOL *retry) 
 {
 	struct ntuser_creds creds;
@@ -1320,6 +1321,8 @@ again:
 		}
 		return NT_STATUS_UNSUCCESSFUL;
 	}
+
+	cli_setup_signing_state(cli, signing_state);
 
 	if (flags & CLI_FULL_CONNECTION_DONT_SPNEGO)
 		cli->use_spnego = False;
@@ -1491,7 +1494,7 @@ struct cli_state *get_ipc_connect(char *server, struct in_addr *server_ip,
 	
 	nt_status = cli_full_connection(&cli, myname, server, server_ip, 0, "IPC$", "IPC", 
 					user_info->username, lp_workgroup(), user_info->password, 
-					CLI_FULL_CONNECTION_ANNONYMOUS_FALLBACK, NULL);
+					CLI_FULL_CONNECTION_ANNONYMOUS_FALLBACK, Undefined, NULL);
 
 	if (NT_STATUS_IS_OK(nt_status)) {
 		return cli;

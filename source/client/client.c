@@ -2529,6 +2529,8 @@ static struct cli_state *do_connect(const char *server, const char *share)
 
 	c->protocol = max_protocol;
 	c->use_kerberos = use_kerberos;
+	cli_setup_signing_state(c, cmdline_auth_info.signing_state);
+		
 
 	if (!cli_session_request(c, &calling, &called)) {
 		char *p;

@@ -159,7 +159,7 @@ BOOL torture_open_connection(struct cli_state **c)
 				     host, NULL, port_to_use, 
 				     share, "?????", 
 				     username, workgroup, 
-				     password, flags, &retry);
+				     password, flags, Undefined, &retry);
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}
@@ -1128,7 +1128,7 @@ static BOOL run_tcon_devtype_test(int dummy)
 				     host, NULL, port_to_use,
 				     NULL, NULL,
 				     username, workgroup,
-				     password, flags, &retry);
+				     password, flags, Undefined, &retry);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("could not open connection\n");
