@@ -21,8 +21,6 @@
 #include "includes.h"
 #include "wins_repl.h"
 
-#include "module_dummy.h"
-
 extern pstring user_socket_options;
 
 extern WINS_OWNER *global_wins_table;

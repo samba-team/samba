@@ -22,8 +22,6 @@
 
 #include "includes.h"
 
-#include "module_dummy.h"
-
 #include <mntent.h>
 #include <asm/types.h>
 #include <linux/smb_fs.h>
