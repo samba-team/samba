@@ -824,7 +824,7 @@ void cmd_sam_add_aliasmem(struct client_info *info, int argc, char *argv[])
 		return;
 	}
 
-	num_names = argc + 1;
+	num_names = argc - 1;
 	names = argv + 1;
 
 	report(out_hnd, "SAM Domain Alias Member\n");
@@ -896,8 +896,6 @@ void cmd_sam_add_aliasmem(struct client_info *info, int argc, char *argv[])
 	{
 		free(sids);
 	}
-
-	free_char_array(num_names, names);
 
 	if (res && res1 && res2)
 	{
