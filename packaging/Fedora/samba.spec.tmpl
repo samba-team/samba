@@ -32,7 +32,7 @@ Requires: logrotate >= 3.4 initscripts >= 5.54-1
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
 Prereq: /sbin/chkconfig /bin/mktemp /usr/bin/killall
 Prereq: fileutils sed /etc/init.d 
-BuildRequires: pam-devel, readline-devel, ncurses-devel, fileutils, libacl-devel, openldap-devel, krb5-devel
+BuildRequires: pam-devel, readline-devel, ncurses-devel, fileutils, libacl-devel, openldap-devel, krb5-devel, cups-devel
 
 
 # Working around perl dependency problem from docs
@@ -120,7 +120,8 @@ CFLAGS="$RPM_OPT_FLAGS" ./configure \
 	--with-sambabook=%{_datadir}/swat/using_samba \
 	--with-swatdir=%{_datadir}/swat \
 	--with-libsmbclient \
-	--with-acl-support 
+	--with-acl-support \
+	--enable-cups=yes
 make showlayout
 make proto
 make %{?_smp_mflags} all nsswitch/libnss_wins.so debug2html 
