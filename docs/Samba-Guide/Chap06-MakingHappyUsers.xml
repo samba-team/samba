@@ -944,6 +944,95 @@ clients is conservative and if followed will minimize problems - but it is not a
 
 		</sect3>
 
+		<sect3>
+		<title>Avoiding Failures &smbmdash; Solving Problems Before the Happen</title>
+
+		<para>
+		It has often been said that there are three types of people in the world: Those who
+		have sharp minds and those that forget things. Please do not ask what the third group
+		are like! Well, it seems that many of us have company in the second group. There must
+		be a good explanation why so many network administrators fail to solve apparently
+		simple problems efficiently and effectively.
+		</para>
+
+		<para>
+		Here are some diagnostic guidelines that can be referred to when things go wrong:
+		</para>
+
+		<sect4>
+		<title>Preliminary Advice &smbmdash; Dangers Can be Avoided</title>
+
+		<para>
+		When I was 8 years of age there was an old man who walked with a cane. He told the the 
+		kids of the neighborhood that when he was very yound he broke his leg. His parents could
+		not afford good medical care and they lived in the country when medical help was not readily
+		available, he suffered the consequences his whole life. His advice regarding how best
+		to mend a broken leg was <quote>never break a leg!</quote>
+		</para>
+
+		<para>
+		New comers to Samba and LDAP seem to struggle a great deal at first. Many experience the
+		consequences of their first experience with the same emotions memory as the old Mr.
+		Williams referred to above. So here is my advice regarding the best way to remedy LDAP
+		and Samab problems: <quote>Avoid them like the plague!</quote>
+		</para>
+
+		<para>
+		If you are now asking yourself how can problems be avoided? The best advice is to start
+		out your learning experience with an <emphasis>known-to-work</emphasis> solution. After
+		you have seen a fully working solution, a good way to learn is to make slow and progressive
+		changes that cause things to break, then observe carefully how and why things ceased to work.
+		</para>
+
+		<para>
+		The examples in this chapter (also in the book as a whole) are known to work. That means
+		that they could serve as the kick-off point for your journey through fields of knowledge.
+		Use this resource carefully; we hope it serves you well.
+		</para>
+
+		<para>
+		Warning: Do not be lulled into thinking that you can easily adopt the examples in this
+		book and adapt them without first working through the working examples provided. A little
+		thing over-looked can cause untold pain and may permanently tarnish your experience.
+		</para>
+
+		</sect4>
+
+		<sect4>
+		<title>Debugging LDAP</title>
+
+		<para>
+		ZZ
+		</para>
+
+		</sect4>
+
+		<sect4>
+		<title>Debugging NSS_LDAP</title>
+
+		<para>
+		</para>
+
+		</sect4>
+
+		<sect4>
+		<title>Debugging Samba</title>
+
+		<para>
+		</para>
+
+		</sect4>
+
+		<sect4>
+		<title>Debugging on the Windows Client</title>
+
+		<para>
+		</para>
+
+		</sect4>
+
+		</sect3>
+
 	</sect2>
 
 
@@ -1776,7 +1865,7 @@ my $smbldap_bind_conf="/etc/smbldap-tools/smbldap_bind.conf";
 		<step><para>
 		Install the source RPM that has been downloaded as follows:
 <screen>
-&rootprompt; rpm -i smbldap-tools-0.8.7-3.src.rpm
+&rootprompt; rpm -i smbldap-tools-0.8.7-5.src.rpm
 </screen>
 		</para></step>
 
@@ -1813,7 +1902,7 @@ my $smbldap_bind_conf="/etc/smbldap-tools/smbldap_bind.conf";
 		<step><para>
 		Install the binary package by executing:
 <screen>
-&rootprompt; rpm -Uvh ../RPMS/noarch/smbldap-tools-0.8.7-3.noarch.rpm
+&rootprompt; rpm -Uvh ../RPMS/noarch/smbldap-tools-0.8.7-5.noarch.rpm
 </screen>
 		</para></step>
 
@@ -2143,7 +2232,7 @@ Starting ldap-server                           done
 		<step><para>
 		Execute the script that will populate the LDAP database as shown here:
 <screen>
-&rootprompt; ./smbldap-populate
+&rootprompt; ./smbldap-populate -a root -k 0
 </screen>
 		The expected output from this is:
 <screen>
@@ -2361,28 +2450,38 @@ Retype new SMB password: XXXXXXXX
 		following:
 <screen>
 &rootprompt; getent passwd
+root:x:0:0:root:/root:/bin/bash
+bin:x:1:1:bin:/bin:/bin/bash
 ...
-root:x:998:512:Netbios Domain Administrator:/home:/bin/false
+root:x:0:512:Netbios Domain Administrator:/home:/bin/false
 nobody:x:999:514:nobody:/dev/null:/bin/false
 bobj:x:1000:513:System User:/home/bobj:/bin/bash
 stans:x:1001:513:System User:/home/stans:/bin/bash
 chrisr:x:1002:513:System User:/home/chrisr:/bin/bash
 maryv:x:1003:513:System User:/home/maryv:/bin/bash
+</screen>
+		This demonstates that user account resolution via LDAP is working.
+		<para></step>
 
+		<step><para>
+		This step will determin
+<screen>
 &rootprompt; id chrisr
 uid=1002(chrisr) gid=513(Domain Users) groups=513(Domain Users)
 </screen>
-		This confirms that the UNIX (Posix) user accounts can be resolved from LDAP.
+		This confirms that the UNIX (Posix) user account information can be resolved from LDAP
+		by system tools that make a getentpw() system call.
 		</para></step>
 
 	  <step><para><indexterm>
 		<primary>smbldap-usermod</primary>
 	      </indexterm>
-		In the above listing, you can see that the user <constant>root</constant>
-		has been given UID=998. This means that operations conducted from a Windows client
-		using tools such as the Domain User Manager fails under UNIX because the
-		management of user and group accounts requires that the UID=0. You decide to rectify 
-		this immediately as demonstrated here:
+		The 'root' account must have UID=0, if not this means that operations conducted from
+		a Windows client using tools such as the Domain User Manager fails under UNIX because
+		the management of user and group accounts requires that the UID=0. Additionally, it is
+		a good idea to make certain that no matter how 'root' account credentials are resolved
+		that the home directory and shell are valid. You decide to effect this immediately
+		as demonstrated here:
 <screen>
 &rootprompt; cd /opt/IDEALX/sbin
 &rootprompt; ./smbldap-usermod -u 0 -d /root -s /bin/bash root

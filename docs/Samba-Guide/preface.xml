@@ -92,7 +92,7 @@
 	went to print samba-3.0.2 was being released. There have been significant modifications
 	and enhancements between samba-3.0.2 and samba-3.0.11 (the current release) that
 	necessitate this documentation update. This update has the specific intent to
-	refocus this books so that its guidance can be followed for samba-3.0.12
+	refocus this book so that its guidance can be followed for samba-3.0.12
 	and beyond. Further changes are expected as Samba-3 matures further and will 
 	be reflected in future updates.
 	</para>
@@ -531,7 +531,7 @@
 		<para><emphasis>TechInfo</emphasis> &smbmdash; Samba provides the <command>ntlm_auth</command>
 		module that makes it possible for MS Windows Internet Explorer to connect via the Squid Web
 		and FTP proxy server. You will configure Samba-3 as well as Squid to deliver authenticated
-		access control based using the Active Directory Domain user security credentials.
+		access control using the Active Directory Domain user security credentials.
                 </para>
                 </listitem>
                 </varlistentry>
