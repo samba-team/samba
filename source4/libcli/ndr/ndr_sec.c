@@ -174,7 +174,7 @@ NTSTATUS ndr_pull_dom_sid_ofs(struct ndr_pull *ndr, struct dom_sid **sid)
   parse a security descriptor 
 */
 NTSTATUS ndr_pull_security_descriptor(struct ndr_pull *ndr, 
-				       struct security_descriptor **sd)
+				      struct security_descriptor **sd)
 {
 	NDR_ALLOC(ndr, *sd);
 
@@ -188,24 +188,122 @@ NTSTATUS ndr_pull_security_descriptor(struct ndr_pull *ndr,
 	return NT_STATUS_OK;
 }
 
+
+/*
+  parse a security_ace
+*/
+NTSTATUS ndr_push_security_ace(struct ndr_push *ndr, struct security_ace *ace)
+{
+	struct ndr_push_save save1, save2;
+
+	NDR_CHECK(ndr_push_u8(ndr, ace->type));
+	NDR_CHECK(ndr_push_u8(ndr, ace->flags));
+	ndr_push_save(ndr, &save1);
+	NDR_CHECK(ndr_push_u16(ndr, 0));
+	NDR_CHECK(ndr_push_u32(ndr, ace->access_mask));
+
+	if (sec_ace_object(ace->type)) {
+		NDR_CHECK(ndr_push_u32(ndr, ace->obj->flags));
+		if (ace->obj->flags & SEC_ACE_OBJECT_PRESENT) {
+			NDR_CHECK(ndr_push_guid(ndr, &ace->obj->object_guid));
+		}
+		if (ace->obj->flags & SEC_ACE_OBJECT_INHERITED_PRESENT) {
+			NDR_CHECK(ndr_push_guid(ndr, &ace->obj->inherit_guid));
+		}
+	}
+
+	NDR_CHECK(ndr_push_dom_sid(ndr, &ace->trustee));
+
+	ndr_push_save(ndr, &save2);
+	ndr_push_restore(ndr, &save1);
+	NDR_CHECK(ndr_push_u16(ndr, 2 + save2.offset - save1.offset));
+	ndr_push_restore(ndr, &save2);
+
+	return NT_STATUS_OK;	
+}
+
+
+/*
+  push a security_acl
+*/
+NTSTATUS ndr_push_security_acl(struct ndr_push *ndr, struct security_acl *acl)
+{
+	int i;
+	struct ndr_push_save save1, save2;
+
+	NDR_CHECK(ndr_push_u16(ndr, acl->revision));
+	ndr_push_save(ndr, &save1);
+	NDR_CHECK(ndr_push_u16(ndr, 0));
+	NDR_CHECK(ndr_push_u32(ndr, acl->num_aces));
+	for (i=0;i<acl->num_aces;i++) {
+		NDR_CHECK(ndr_push_security_ace(ndr, &acl->aces[i]));
+	}
+	ndr_push_save(ndr, &save2);
+	ndr_push_restore(ndr, &save1);
+	NDR_CHECK(ndr_push_u16(ndr, 2 + save2.offset - save1.offset));
+	ndr_push_restore(ndr, &save2);
+
+	return NT_STATUS_OK;
+}	
+
+/*
+  push a dom_sid
+*/
+NTSTATUS ndr_push_dom_sid(struct ndr_push *ndr, struct dom_sid *sid)
+{
+	int i;
+
+	NDR_CHECK(ndr_push_u8(ndr, sid->sid_rev_num));
+	NDR_CHECK(ndr_push_u8(ndr, sid->num_auths));
+	for (i=0;i<6;i++) {
+		NDR_CHECK(ndr_push_u8(ndr, sid->id_auth[i]));
+	}
+	for (i=0;i<sid->num_auths;i++) {
+		NDR_CHECK(ndr_push_u32(ndr, sid->sub_auths[i]));
+	}
+
+	return NT_STATUS_OK;
+}
+
+
 /*
   generate a ndr security descriptor 
 */
 NTSTATUS ndr_push_security_descriptor(struct ndr_push *ndr, 
 				      struct security_descriptor *sd)
 {
-	uint32 var_offset;
+	struct ndr_push_save save;
+	struct ndr_push_save ofs1, ofs2, ofs3, ofs4;
 
-	var_offset = 20;
+	ndr_push_save(ndr, &save);
 
 	NDR_CHECK(ndr_push_u8(ndr, sd->revision));
 	NDR_CHECK(ndr_push_u16(ndr, sd->type));
-/*
-	NDR_CHECK(ndr_push_dom_sid_ofs(ndr, sd->owner_sid, &var_offset));
-	NDR_CHECK(ndr_push_dom_sid_ofs(ndr, sd->group_sid, &var_offset));
-	NDR_CHECK(ndr_push_security_acl_ofs(ndr, sd->sacl, &var_offset));
-	NDR_CHECK(ndr_push_security_acl_ofs(ndr, sd->dacl, &var_offset));
-*/
+
+	NDR_CHECK(ndr_push_offset(ndr, &ofs1));
+	NDR_CHECK(ndr_push_offset(ndr, &ofs2));
+	NDR_CHECK(ndr_push_offset(ndr, &ofs3));
+	NDR_CHECK(ndr_push_offset(ndr, &ofs4));
+
+	if (sd->owner_sid) {
+		NDR_CHECK(ndr_push_offset_ptr(ndr, &ofs1, &save));
+		NDR_CHECK(ndr_push_dom_sid(ndr, sd->owner_sid));
+	}
+
+	if (sd->group_sid) {
+		NDR_CHECK(ndr_push_offset_ptr(ndr, &ofs2, &save));
+		NDR_CHECK(ndr_push_dom_sid(ndr, sd->group_sid));
+	}
+
+	if (sd->sacl) {
+		NDR_CHECK(ndr_push_offset_ptr(ndr, &ofs3, &save));
+		NDR_CHECK(ndr_push_security_acl(ndr, sd->sacl));
+	}
+
+	if (sd->dacl) {
+		NDR_CHECK(ndr_push_offset_ptr(ndr, &ofs4, &save));
+		NDR_CHECK(ndr_push_security_acl(ndr, sd->dacl));
+	}
+
 	return NT_STATUS_OK;
 }
-
