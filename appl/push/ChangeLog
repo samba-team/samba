@@ -1,3 +1,7 @@
+Wed Jun 24 14:41:41 1998  Johan Danielsson  <joda@blubb.pdc.kth.se>
+
+	* push.c: allow `po:user@host' mailbox syntax
+
 Tue Jun  2 17:35:06 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 	* push.c: quote '^From ' properly
