@@ -2190,6 +2190,7 @@ NTSTATUS _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SA
 	uint32 account_policy_temp;
 
 	time_t seq_num;
+	uint32 server_role;
 
 	uint32 num_users=0, num_groups=0, num_aliases=0;
 
@@ -2257,8 +2258,12 @@ NTSTATUS _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SA
 			if (!pdb_get_seq_num(&seq_num))
 				seq_num = time(NULL);
 
+			server_role = ROLE_DOMAIN_PDC;
+			if (lp_server_role() == ROLE_DOMAIN_BDC)
+				server_role = ROLE_DOMAIN_BDC;
+
 			init_unk_info2(&ctr->info.inf2, lp_serverstring(), lp_workgroup(), global_myname(), seq_num, 
-				       num_users, num_groups, num_aliases, nt_logout);
+				       num_users, num_groups, num_aliases, nt_logout, server_role);
 			break;
 		case 0x03:
 			pdb_get_account_policy(AP_TIME_TO_LOGOUT, (unsigned int *)&u_logout);
@@ -2273,7 +2278,11 @@ NTSTATUS _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SA
 			init_unk_info6(&ctr->info.inf6);
 			break;
 		case 0x07:
-			init_unk_info7(&ctr->info.inf7);
+			server_role = ROLE_DOMAIN_PDC;
+			if (lp_server_role() == ROLE_DOMAIN_BDC)
+				server_role = ROLE_DOMAIN_BDC;
+
+			init_unk_info7(&ctr->info.inf7, server_role);
 			break;
 		case 0x08:
 			if (!pdb_get_seq_num(&seq_num))
@@ -4585,6 +4594,7 @@ NTSTATUS _samr_unknown_2e(pipes_struct *p, SAMR_Q_UNKNOWN_2E *q_u, SAMR_R_UNKNOW
 	uint32 account_policy_temp;
 
 	time_t seq_num;
+	uint32 server_role;
 
 	if ((ctr = TALLOC_ZERO_P(p->mem_ctx, SAM_UNK_CTR)) == NULL)
 		return NT_STATUS_NO_MEMORY;
@@ -4649,8 +4659,12 @@ NTSTATUS _samr_unknown_2e(pipes_struct *p, SAMR_Q_UNKNOWN_2E *q_u, SAMR_R_UNKNOW
 			if (!pdb_get_seq_num(&seq_num))
 				seq_num = time(NULL);
 
+			server_role = ROLE_DOMAIN_PDC;
+			if (lp_server_role() == ROLE_DOMAIN_BDC)
+				server_role = ROLE_DOMAIN_BDC;
+
 			init_unk_info2(&ctr->info.inf2, lp_serverstring(), lp_workgroup(), global_myname(), seq_num, 
-				       num_users, num_groups, num_aliases, nt_logout);
+				       num_users, num_groups, num_aliases, nt_logout, server_role);
 			break;
 		case 0x03:
 			pdb_get_account_policy(AP_TIME_TO_LOGOUT, &account_policy_temp);
@@ -4667,7 +4681,11 @@ NTSTATUS _samr_unknown_2e(pipes_struct *p, SAMR_Q_UNKNOWN_2E *q_u, SAMR_R_UNKNOW
 			init_unk_info6(&ctr->info.inf6);
 			break;
 		case 0x07:
-			init_unk_info7(&ctr->info.inf7);
+			server_role = ROLE_DOMAIN_PDC;
+			if (lp_server_role() == ROLE_DOMAIN_BDC)
+				server_role = ROLE_DOMAIN_BDC;
+
+			init_unk_info7(&ctr->info.inf7, server_role);
 			break;
 		case 0x08:
 			if (!pdb_get_seq_num(&seq_num))
