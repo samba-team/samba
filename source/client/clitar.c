@@ -1054,9 +1054,11 @@ static int get_dir(file_info2 finfo)
    has the data. We only want the long file name, as the loop in do_tarput
    will deal with the rest.
 */
-static char * get_longfilename(file_info2 finfo)
+static char *get_longfilename(file_info2 finfo)
 {
-	int namesize = strlen(finfo.name) + strlen(cur_dir) + 2;
+	/* finfo.size here is the length of the filename as written by the "/./@LongLink" name
+	 * header call. */
+	int namesize = finfo.size + strlen(cur_dir) + 2;
 	char *longname = malloc(namesize);
 	int offset = 0, left = finfo.size;
 	BOOL first = True;
