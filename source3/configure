@@ -477,7 +477,7 @@ echo > confdefs.h
 
 # A filename unique to this package, relative to the directory that
 # configure is in, which we can look for to find out if srcdir is correct.
-ac_unique_file=byteorder.h
+ac_unique_file=include/includes.h
 
 # Find the source files, if location was not specified.
 if test -z "$srcdir"; then
@@ -3837,7 +3837,7 @@ else
 
 #define HAVE_NETMASK_IFCONF 1
 #define AUTOCONF 1
-#include "netmask.c"
+#include "lib/netmask.c"
 EOF
 if { (eval echo configure:3843: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest && (./conftest; exit) 2>/dev/null
 then
@@ -3866,7 +3866,7 @@ else
 
 #define HAVE_NETMASK_IFREQ 1
 #define AUTOCONF 1
-#include "netmask.c"
+#include "lib/netmask.c"
 EOF
 if { (eval echo configure:3872: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest && (./conftest; exit) 2>/dev/null
 then
@@ -3896,7 +3896,7 @@ else
 
 #define HAVE_NETMASK_AIX 1
 #define AUTOCONF 1
-#include "netmask.c"
+#include "lib/netmask.c"
 EOF
 if { (eval echo configure:3902: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest && (./conftest; exit) 2>/dev/null
 then
@@ -4647,9 +4647,10 @@ done
 ac_given_srcdir=$srcdir
 ac_given_INSTALL="$INSTALL"
 
-trap 'rm -fr `echo "Makefile tests/dummy client/dummy lib/dummy lib/rpc/dummy
-lib/rpc/client/dummy lib/rpc/include/dummy lib/rpc/parse/dummy
-lib/rpc/server/dummy lib/smb/dummy ubiqx/dummy web/dummy config.h" | sed "s/:[^ ]*//g"` conftest*; exit 1' 1 2 15
+trap 'rm -fr `echo "Makefile tests/dummy client/dummy lib/dummy ubiqx/dummy
+web/dummy param/dummy nmbd/dummy smbd/dummy rpc_server/dummy
+rpc_parse/dummy script/dummy include/dummy codepages/dummy
+libsmb/dummy include/config.h" | sed "s/:[^ ]*//g"` conftest*; exit 1' 1 2 15
 EOF
 cat >> $CONFIG_STATUS <<EOF
 
@@ -4742,9 +4743,10 @@ EOF
 
 cat >> $CONFIG_STATUS <<EOF
 
-CONFIG_FILES=\${CONFIG_FILES-"Makefile tests/dummy client/dummy lib/dummy lib/rpc/dummy
-lib/rpc/client/dummy lib/rpc/include/dummy lib/rpc/parse/dummy
-lib/rpc/server/dummy lib/smb/dummy ubiqx/dummy web/dummy"}
+CONFIG_FILES=\${CONFIG_FILES-"Makefile tests/dummy client/dummy lib/dummy ubiqx/dummy
+web/dummy param/dummy nmbd/dummy smbd/dummy rpc_server/dummy
+rpc_parse/dummy script/dummy include/dummy codepages/dummy
+libsmb/dummy"}
 EOF
 cat >> $CONFIG_STATUS <<\EOF
 for ac_file in .. $CONFIG_FILES; do if test "x$ac_file" != x..; then
@@ -4825,7 +4827,7 @@ ac_eD='%g'
 if test "${CONFIG_HEADERS+set}" != set; then
 EOF
 cat >> $CONFIG_STATUS <<EOF
-  CONFIG_HEADERS="config.h"
+  CONFIG_HEADERS="include/config.h"
 EOF
 cat >> $CONFIG_STATUS <<\EOF
 fi
