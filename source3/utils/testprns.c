@@ -41,6 +41,9 @@ int main(int argc, char *argv[])
 {
    setup_logging(argv[0],True);
 
+   printf("NOTICE: This program is now deprecated and will be removed \n");
+   printf("in a future Samba release.\n\n");
+
    if (argc != 2)
       printf("Usage: testprns printername\n");
    else
