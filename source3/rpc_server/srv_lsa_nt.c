@@ -1260,3 +1260,84 @@ NTSTATUS _lsa_query_info2(pipes_struct *p, LSA_Q_QUERY_INFO2 *q_u, LSA_R_QUERY_I
 
 	return r_u->status;
 }
+
+
+/***************************************************************************
+ For a given SID, enumerate all the privilege this account has.
+ ***************************************************************************/
+NTSTATUS _lsa_enum_acct_rights(pipes_struct *p, LSA_Q_ENUM_ACCT_RIGHTS *q_u, LSA_R_ENUM_ACCT_RIGHTS *r_u)
+{
+	struct lsa_info *info=NULL;
+	char **rights = NULL;
+	int num_rights = 0;
+
+	r_u->status = NT_STATUS_OK;
+
+	/* find the connection policy handle. */
+	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&info))
+		return NT_STATUS_INVALID_HANDLE;
+
+	init_r_enum_acct_rights(r_u, num_rights, rights);
+
+	return r_u->status;
+}
+
+/***************************************************************************
+ add privileges to a acct by SID
+ ***************************************************************************/
+NTSTATUS _lsa_add_acct_rights(pipes_struct *p, LSA_Q_ADD_ACCT_RIGHTS *q_u, LSA_R_ADD_ACCT_RIGHTS *r_u)
+{
+	struct lsa_info *info=NULL;
+	int i;
+
+	r_u->status = NT_STATUS_OK;
+
+	/* find the connection policy handle. */
+	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&info))
+		return NT_STATUS_INVALID_HANDLE;
+
+	/* no backend yet - just print them */
+
+	DEBUG(5,("_lsa_add_acct_rights to %s (%d rights)\n", 
+		 sid_string_static(&q_u->sid.sid), q_u->rights.count));
+
+	for (i=0;i<q_u->rights.count;i++) {
+		DEBUG(5,("\t%s\n", unistr2_static(&q_u->rights.strings[i].string)));
+	}
+
+	init_r_add_acct_rights(r_u);
+
+	return r_u->status;
+}
+
+
+/***************************************************************************
+ remove privileges from a acct by SID
+ ***************************************************************************/
+NTSTATUS _lsa_remove_acct_rights(pipes_struct *p, LSA_Q_REMOVE_ACCT_RIGHTS *q_u, LSA_R_REMOVE_ACCT_RIGHTS *r_u)
+{
+	struct lsa_info *info=NULL;
+	int i;
+
+	r_u->status = NT_STATUS_OK;
+
+	/* find the connection policy handle. */
+	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&info))
+		return NT_STATUS_INVALID_HANDLE;
+
+
+	/* no backend yet - just print them */
+
+	DEBUG(5,("_lsa_remove_acct_rights from %s all=%d (%d rights)\n", 
+		 sid_string_static(&q_u->sid.sid),
+		 q_u->removeall,
+		 q_u->rights.count));
+
+	for (i=0;i<q_u->rights.count;i++) {
+		DEBUG(5,("\t%s\n", unistr2_static(&q_u->rights.strings[i].string)));
+	}
+
+	init_r_remove_acct_rights(r_u);
+
+	return r_u->status;
+}

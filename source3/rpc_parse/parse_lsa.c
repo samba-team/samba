@@ -2301,6 +2301,19 @@ BOOL lsa_io_r_enum_acct_rights(const char *desc, LSA_R_ENUM_ACCT_RIGHTS *r_c, pr
 	return True;
 }
 
+/*******************************************************************
+ Inits an LSA_R_ENUM_ACCT_RIGHTS structure.
+********************************************************************/
+void init_r_enum_acct_rights(LSA_R_ENUM_ACCT_RIGHTS *q_r, 
+			     uint32 count, 
+			     const char **rights)
+{
+	DEBUG(5, ("init_r_enum_acct_rights\n"));
+
+	q_r->count = count;
+	init_unistr2_array(&q_r->rights, count, rights);
+}
+
 
 /*******************************************************************
  Inits an LSA_Q_ADD_ACCT_RIGHTS structure.
@@ -2316,7 +2329,6 @@ void init_q_add_acct_rights(LSA_Q_ADD_ACCT_RIGHTS *q_q,
 	q_q->pol = *hnd;
 	init_dom_sid2(&q_q->sid, sid);
 	init_unistr2_array(&q_q->rights, count, rights);
-	q_q->count = 5;
 }
 
 
@@ -2355,6 +2367,15 @@ BOOL lsa_io_r_add_acct_rights(const char *desc, LSA_R_ADD_ACCT_RIGHTS *r_c, prs_
 		return False;
 
 	return True;
+}
+
+/*******************************************************************
+ Inits an LSA_R_ADD_ACCT_RIGHTS structure.
+********************************************************************/
+void init_r_add_acct_rights(LSA_R_ADD_ACCT_RIGHTS *q_r)
+{
+	DEBUG(5, ("init_r_add_acct_rights\n"));
+	/* oh what a silly function! */
 }
 
 
@@ -2416,4 +2437,12 @@ BOOL lsa_io_r_remove_acct_rights(const char *desc, LSA_R_REMOVE_ACCT_RIGHTS *r_c
 		return False;
 
 	return True;
+}
+
+/*******************************************************************
+ Inits an LSA_R_REMOVE_ACCT_RIGHTS structure.
+********************************************************************/
+void init_r_remove_acct_rights(LSA_R_REMOVE_ACCT_RIGHTS *q_r)
+{
+	DEBUG(5, ("init_r_remove_acct_rights\n"));
 }
