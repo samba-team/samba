@@ -35,7 +35,7 @@ NTSTATUS gums_get_object_type(uint32 *type, const GUMS_OBJECT *obj)
 
 NTSTATUS gums_create_object(GUMS_OBJECT **obj, uint32 type)
 {
-	TALLOC_CTX *mem_ctx = talloc_init();
+	TALLOC_CTX *mem_ctx = talloc_init("gums_create_object");
 	GUMS_OBJECT *go;
 	NT_STATUS ret;
 	
