@@ -7,8 +7,6 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/time.h>
-#include <readline/readline.h>
-#include <readline/history.h>
 #include "tdb.h"
 
 /* a tdb tool for manipulating a tdb database */
@@ -163,7 +161,7 @@ int main(int argc, char *argv[])
 {
 	char *line;
 	char *tok;
-
+	
 	while ((line=readline("tdb> "))) {
 		tok = strtok(line," ");
 		if (strcmp(tok,"create") == 0) {
