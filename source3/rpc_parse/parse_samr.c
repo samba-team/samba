@@ -6970,8 +6970,7 @@ BOOL samr_io_r_get_dom_pwinfo(const char *desc, SAMR_R_GET_DOM_PWINFO * r_u,
 		return False;
 
 	/*
-	 * We need 16 bytes here according to tests.  Don't know
-	 * what they are, but the length is important for the singing
+	 * see the Samba4 IDL for what these actually are.
 	*/
 
 	if(!prs_uint16("unk_0", ps, depth, &r_u->unk_0))
