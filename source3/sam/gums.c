@@ -89,8 +89,8 @@ NTSTATUS gums_init(const char *module_name)
 		DEBUG(1, ("WARNING: Module's minor version does not match gums version!\n"));
 	}
 
-	module_open = sys_dlsym(dl_handle, "gumm_init");
-	if (!module_open) {
+	module_init = sys_dlsym(dl_handle, "gumm_init");
+	if (!module_init) {
 		DEBUG(0, ("ERROR: Failed to find gums module's init function!\n"));
 		goto error;
 	}

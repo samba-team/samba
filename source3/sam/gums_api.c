@@ -70,6 +70,7 @@ NTSTATUS gums_create_object(GUMS_OBJECT **obj, uint32 type)
 
 	if (!(go->data)) {
 		ret = NT_STATUS_NO_MEMORY;
+		DEBUG(0, ("gums_create_object: Out of memory!\n"));
 		goto error;
 	}
 
@@ -666,6 +667,7 @@ NTSTATUS gums_get_user_hours(uint8 **hours, const GUMS_OBJECT *obj)
 	return NT_STATUS_OK;
 }
 
+/* WARNING: always set hours_len before hours */
 NTSTATUS gums_set_user_hours(GUMS_OBJECT *obj, const uint8 *hours)
 {
 	if (!obj || !hours)
@@ -673,6 +675,9 @@ NTSTATUS gums_set_user_hours(GUMS_OBJECT *obj, const uint8 *hours)
 
 	if (obj->type != GUMS_OBJ_NORMAL_USER)
 		return NT_STATUS_OBJECT_TYPE_MISMATCH;
+
+	if (obj->data.user->hours_len == 0)
+		DEBUG(10, ("gums_set_user_hours: Warning, hours_len is zero!\n"));
 
 	obj->data.user->hours = (uint8 *)talloc_memdup(obj->mem_ctx, hours, obj->data.user->hours_len);
 	if (!(obj->data.user->hours) & (obj->data.user->hours_len != 0)) return NT_STATUS_NO_MEMORY;
@@ -767,11 +772,11 @@ NTSTATUS gums_get_group_members(uint32 *count, DOM_SID **members, const GUMS_OBJ
 	return NT_STATUS_OK;
 }
 
-NTSTATUS gums_set_group_members(GUMS_OBJECT *obj, uint32 count, const DOM_SID **members)
+NTSTATUS gums_set_group_members(GUMS_OBJECT *obj, uint32 count, DOM_SID **members)
 {
 	uint32 n;
 
-	if (!obj || !members)
+	if (!obj || !members || !members)
 		return NT_STATUS_INVALID_PARAMETER;
 
 	if (obj->type != GUMS_OBJ_GROUP &&
@@ -1035,12 +1040,12 @@ NTSTATUS gums_cs_set_munged_dial(TALLOC_CTX *mem_ctx, GUMS_COMMIT_SET *com_set, 
 	return gums_set_string(mem_ctx, com_set, GUMS_SET_NAME, munged_dial);
 }
 
-NTSTATUS gums_cs_set_nttime(TALLOC_CTX *mem_ctx, GUMS_COMMIT_SET *com_set, uint32 type, NTTIME *time)
+NTSTATUS gums_cs_set_nttime(TALLOC_CTX *mem_ctx, GUMS_COMMIT_SET *com_set, uint32 type, NTTIME *nttime)
 {
 	GUMS_DATA_SET *data_set;
 	NTTIME *new_time;
 
-	if (!mem_ctx || !com_set || !time || type < GUMS_SET_LOGON_TIME || type > GUMS_SET_PASS_MUST_CHANGE_TIME)
+	if (!mem_ctx || !com_set || !nttime || type < GUMS_SET_LOGON_TIME || type > GUMS_SET_PASS_MUST_CHANGE_TIME)
 		return NT_STATUS_INVALID_PARAMETER;
 
 	com_set->count = com_set->count + 1;
@@ -1060,8 +1065,8 @@ NTSTATUS gums_cs_set_nttime(TALLOC_CTX *mem_ctx, GUMS_COMMIT_SET *com_set, uint3
 	if (new_time == NULL)
 		return NT_STATUS_NO_MEMORY;
 
-	new_time->low = time->low;
-	new_time->high = time->high;
+	new_time->low = nttime->low;
+	new_time->high = nttime->high;
 	(char *)(data_set->data) = new_time;
 
 	return NT_STATUS_OK;
