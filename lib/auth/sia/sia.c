@@ -288,8 +288,8 @@ siad_ses_launch(sia_collect_func_t *collect,
 	char cell[64];
 	k_setpag();
 	if(k_afs_cell_of_file(entity->pwd->pw_dir, cell, sizeof(cell)) == 0)
-	    k_afsklog(cell, 0);
-	k_afsklog(0, 0);
+	    krb_afslog(cell, 0);
+	krb_afslog(0, 0);
     }
     return SIADSUCCESS;
 }
