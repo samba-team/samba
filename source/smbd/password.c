@@ -489,7 +489,7 @@ BOOL pass_check_smb(char *user, char *domain,
 
 	if (pass == NULL)
 	{
-		DEBUG(3,("Couldn't find user %s\n",user));
+		DEBUG(1,("Couldn't find user '%s' in UNIX password database.\n",user));
 		return(False);
 	}
 
@@ -497,26 +497,26 @@ BOOL pass_check_smb(char *user, char *domain,
 
 	if (smb_pass == NULL)
 	{
-		DEBUG(3,("Couldn't find user %s in smb_passwd file.\n", user));
+		DEBUG(1,("Couldn't find user '%s' in smb_passwd file.\n", user));
 		return(False);
 	}
 
 	/* Quit if the account was disabled. */
 	if(smb_pass->acct_ctrl & ACB_DISABLED) {
-		DEBUG(3,("account for user %s was disabled.\n", user));
+		DEBUG(1,("Account for user '%s' was disabled.\n", user));
 		return(False);
         }
 
 	/* Ensure the uid's match */
 	if (smb_pass->smb_userid != pass->pw_uid)
 	{
-		DEBUG(3,("Error : UNIX and SMB uids in password files do not match !\n"));
+		DEBUG(0,("Error : UNIX and SMB uids in password files do not match for user '%s'!\n", user));
 		return(False);
 	}
 
 	if (lm_pwd[0] == '\0' && IS_BITS_SET_ALL(smb_pass->acct_ctrl, ACB_PWNOTREQ) && lp_null_passwords())
 	{
-		DEBUG(3,("account for user %s has no password and null passwords are allowed.\n", smb_pass->smb_name));
+		DEBUG(1,("Account for user '%s' has no password and null passwords are allowed.\n", smb_pass->smb_name));
 		return(True);
 	}
 
