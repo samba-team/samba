@@ -32,7 +32,7 @@ static BOOL lsa_io_trans_names(char *desc, LSA_TRANS_NAME_ENUM *trn, prs_struct 
 ********************************************************************/
 
 void init_lsa_trans_name(LSA_TRANS_NAME *trn, UNISTR2 *uni_name,
-			uint16 sid_name_use, char *name, uint32 idx)
+			 uint16 sid_name_use, char *name, uint32 idx)
 {
 	int len_name = strlen(name)+1;
 
@@ -49,11 +49,9 @@ void init_lsa_trans_name(LSA_TRANS_NAME *trn, UNISTR2 *uni_name,
  Reads or writes a LSA_TRANS_NAME structure.
 ********************************************************************/
 
-static BOOL lsa_io_trans_name(char *desc, LSA_TRANS_NAME *trn, prs_struct *ps, int depth)
+static BOOL lsa_io_trans_name(char *desc, LSA_TRANS_NAME *trn, prs_struct *ps, 
+			      int depth)
 {
-	if (trn == NULL)
-		return False;
-
 	prs_debug(ps, depth, desc, "lsa_io_trans_name");
 	depth++;
 
@@ -77,15 +75,13 @@ static BOOL lsa_io_trans_name(char *desc, LSA_TRANS_NAME *trn, prs_struct *ps, i
  Reads or writes a DOM_R_REF structure.
 ********************************************************************/
 
-static BOOL lsa_io_dom_r_ref(char *desc, DOM_R_REF *r_r, prs_struct *ps, int depth)
+static BOOL lsa_io_dom_r_ref(char *desc, DOM_R_REF *r_r, prs_struct *ps, 
+			     int depth)
 {
 	int i;
 
 	prs_debug(ps, depth, desc, "lsa_io_dom_r_ref");
 	depth++;
-
-	if (r_r == NULL)
-		return False;
 
 	if(!prs_align(ps))
 		return False;
@@ -145,7 +141,7 @@ static BOOL lsa_io_dom_r_ref(char *desc, DOM_R_REF *r_r, prs_struct *ps, int dep
 ********************************************************************/
 
 void init_lsa_sec_qos(LSA_SEC_QOS *qos, uint16 imp_lev, uint8 ctxt, uint8 eff,
-				uint32 unknown)
+		      uint32 unknown)
 {
 	DEBUG(5, ("init_lsa_sec_qos\n"));
 
@@ -160,12 +156,10 @@ void init_lsa_sec_qos(LSA_SEC_QOS *qos, uint16 imp_lev, uint8 ctxt, uint8 eff,
  Reads or writes an LSA_SEC_QOS structure.
 ********************************************************************/
 
-static BOOL lsa_io_sec_qos(char *desc,  LSA_SEC_QOS *qos, prs_struct *ps, int depth)
+static BOOL lsa_io_sec_qos(char *desc,  LSA_SEC_QOS *qos, prs_struct *ps, 
+			   int depth)
 {
 	uint32 start;
-
-	if (qos == NULL)
-		return False;
 
 	prs_debug(ps, depth, desc, "lsa_io_obj_qos");
 	depth++;
@@ -198,7 +192,6 @@ static BOOL lsa_io_sec_qos(char *desc,  LSA_SEC_QOS *qos, prs_struct *ps, int de
 	return True;
 }
 
-
 /*******************************************************************
  Inits an LSA_OBJ_ATTR structure.
 ********************************************************************/
@@ -226,12 +219,10 @@ void init_lsa_obj_attr(LSA_OBJ_ATTR *attr, uint32 attributes, LSA_SEC_QOS *qos)
  Reads or writes an LSA_OBJ_ATTR structure.
 ********************************************************************/
 
-static BOOL lsa_io_obj_attr(char *desc, LSA_OBJ_ATTR *attr, prs_struct *ps, int depth)
+static BOOL lsa_io_obj_attr(char *desc, LSA_OBJ_ATTR *attr, prs_struct *ps, 
+			    int depth)
 {
 	uint32 start;
-
-	if (attr == NULL)
-		return False;
 
 	prs_debug(ps, depth, desc, "lsa_io_obj_attr");
 	depth++;
@@ -277,9 +268,8 @@ static BOOL lsa_io_obj_attr(char *desc, LSA_OBJ_ATTR *attr, prs_struct *ps, int 
 ********************************************************************/
 
 void init_q_open_pol(LSA_Q_OPEN_POL *r_q, uint16 system_name,
-			uint32 attributes,
-			uint32 desired_access,
-			LSA_SEC_QOS *qos)
+		     uint32 attributes, uint32 desired_access,
+		     LSA_SEC_QOS *qos)
 {
 	DEBUG(5, ("init_open_pol: attr:%d da:%d\n", attributes, 
 		  desired_access));
@@ -297,11 +287,9 @@ void init_q_open_pol(LSA_Q_OPEN_POL *r_q, uint16 system_name,
  Reads or writes an LSA_Q_OPEN_POL structure.
 ********************************************************************/
 
-BOOL lsa_io_q_open_pol(char *desc, LSA_Q_OPEN_POL *r_q, prs_struct *ps, int depth)
+BOOL lsa_io_q_open_pol(char *desc, LSA_Q_OPEN_POL *r_q, prs_struct *ps, 
+		       int depth)
 {
-	if (r_q == NULL)
-		return False;
-
 	prs_debug(ps, depth, desc, "lsa_io_q_open_pol");
 	depth++;
 
@@ -327,11 +315,9 @@ BOOL lsa_io_q_open_pol(char *desc, LSA_Q_OPEN_POL *r_q, prs_struct *ps, int dept
  Reads or writes an LSA_R_OPEN_POL structure.
 ********************************************************************/
 
-BOOL lsa_io_r_open_pol(char *desc, LSA_R_OPEN_POL *r_p, prs_struct *ps, int depth)
+BOOL lsa_io_r_open_pol(char *desc, LSA_R_OPEN_POL *r_p, prs_struct *ps, 
+		       int depth)
 {
-	if (r_p == NULL)
-		return False;
-
 	prs_debug(ps, depth, desc, "lsa_io_r_open_pol");
 	depth++;
 
@@ -349,8 +335,7 @@ BOOL lsa_io_r_open_pol(char *desc, LSA_R_OPEN_POL *r_p, prs_struct *ps, int dept
 ********************************************************************/
 
 void init_q_open_pol2(LSA_Q_OPEN_POL2 *r_q, char *server_name,
-			uint32 attributes,
-			uint32 desired_access,
+			uint32 attributes, uint32 desired_access,
 			LSA_SEC_QOS *qos)
 {
 	DEBUG(5, ("init_q_open_pol2: attr:%d da:%d\n", attributes, 
@@ -361,7 +346,9 @@ void init_q_open_pol2(LSA_Q_OPEN_POL2 *r_q, char *server_name,
 	if (qos == NULL)
 		r_q->des_access = desired_access;
 
-	init_unistr2(&r_q->uni_server_name, server_name, strlen(server_name)+1);
+	init_unistr2(&r_q->uni_server_name, server_name, 
+		     strlen(server_name) + 1);
+
 	init_lsa_obj_attr(&r_q->attr, attributes, qos);
 }
 
@@ -369,11 +356,9 @@ void init_q_open_pol2(LSA_Q_OPEN_POL2 *r_q, char *server_name,
  Reads or writes an LSA_Q_OPEN_POL2 structure.
 ********************************************************************/
 
-BOOL lsa_io_q_open_pol2(char *desc, LSA_Q_OPEN_POL2 *r_q, prs_struct *ps, int depth)
+BOOL lsa_io_q_open_pol2(char *desc, LSA_Q_OPEN_POL2 *r_q, prs_struct *ps, 
+			int depth)
 {
-	if (r_q == NULL)
-		return False;
-
 	prs_debug(ps, depth, desc, "lsa_io_q_open_pol2");
 	depth++;
 
@@ -397,11 +382,9 @@ BOOL lsa_io_q_open_pol2(char *desc, LSA_Q_OPEN_POL2 *r_q, prs_struct *ps, int de
  Reads or writes an LSA_R_OPEN_POL2 structure.
 ********************************************************************/
 
-BOOL lsa_io_r_open_pol2(char *desc, LSA_R_OPEN_POL2 *r_p, prs_struct *ps, int depth)
+BOOL lsa_io_r_open_pol2(char *desc, LSA_R_OPEN_POL2 *r_p, prs_struct *ps, 
+			int depth)
 {
-	if (r_p == NULL)
-		return False;
-
 	prs_debug(ps, depth, desc, "lsa_io_r_open_pol2");
 	depth++;
 
@@ -418,11 +401,9 @@ BOOL lsa_io_r_open_pol2(char *desc, LSA_R_OPEN_POL2 *r_p, prs_struct *ps, int de
 makes an LSA_Q_QUERY_SEC_OBJ structure.
 ********************************************************************/
 
-void init_q_query_sec_obj(LSA_Q_QUERY_SEC_OBJ *q_q, const POLICY_HND *hnd, uint32 sec_info)
+void init_q_query_sec_obj(LSA_Q_QUERY_SEC_OBJ *q_q, const POLICY_HND *hnd, 
+			  uint32 sec_info)
 {
-	if (q_q == NULL || hnd == NULL)
-		return;
-
 	DEBUG(5, ("init_q_query_sec_obj\n"));
 
 	q_q->pol = *hnd;
@@ -435,11 +416,9 @@ void init_q_query_sec_obj(LSA_Q_QUERY_SEC_OBJ *q_q, const POLICY_HND *hnd, uint3
  Reads or writes an LSA_Q_QUERY_SEC_OBJ structure.
 ********************************************************************/
 
-BOOL lsa_io_q_query_sec_obj(char *desc, LSA_Q_QUERY_SEC_OBJ *q_q, prs_struct *ps, int depth)
+BOOL lsa_io_q_query_sec_obj(char *desc, LSA_Q_QUERY_SEC_OBJ *q_q, 
+			    prs_struct *ps, int depth)
 {
-	if (q_q == NULL)
-		return False;
-
 	prs_debug(ps, depth, desc, "lsa_io_q_query_sec_obj");
 	depth++;
 
@@ -449,18 +428,16 @@ BOOL lsa_io_q_query_sec_obj(char *desc, LSA_Q_QUERY_SEC_OBJ *q_q, prs_struct *ps
 	if (!prs_uint32("sec_info", ps, depth, &q_q->sec_info))
 		return False;
 
-    return True;
+	return True;
 } 
 
 /*******************************************************************
  Reads or writes a LSA_R_QUERY_SEC_OBJ structure.
 ********************************************************************/
 
-BOOL lsa_io_r_query_sec_obj(char *desc, LSA_R_QUERY_SEC_OBJ *r_u, prs_struct *ps, int depth)
+BOOL lsa_io_r_query_sec_obj(char *desc, LSA_R_QUERY_SEC_OBJ *r_u, 
+			    prs_struct *ps, int depth)
 {
-	if (r_u == NULL)
-		return False;
-
 	prs_debug(ps, depth, desc, "lsa_io_r_query_sec_obj");
 	depth++;
 
@@ -473,11 +450,12 @@ BOOL lsa_io_r_query_sec_obj(char *desc, LSA_R_QUERY_SEC_OBJ *r_u, prs_struct *ps
 	if (r_u->ptr != 0) {
 		if (!sec_io_desc_buf("sec", &r_u->buf, ps, depth))
 			return False;
-    }
+	}
+
 	if (!prs_uint32("status", ps, depth, &r_u->status))
 		return False;
 
-    return True;
+	return True;
 }
 
 /*******************************************************************
@@ -497,11 +475,9 @@ void init_q_query(LSA_Q_QUERY_INFO *q_q, POLICY_HND *hnd, uint16 info_class)
  Reads or writes an LSA_Q_QUERY_INFO structure.
 ********************************************************************/
 
-BOOL lsa_io_q_query(char *desc, LSA_Q_QUERY_INFO *q_q, prs_struct *ps, int depth)
+BOOL lsa_io_q_query(char *desc, LSA_Q_QUERY_INFO *q_q, prs_struct *ps, 
+		    int depth)
 {
-	if (q_q == NULL)
-		return False;
-
 	prs_debug(ps, depth, desc, "lsa_io_q_query");
 	depth++;
 
@@ -515,17 +491,29 @@ BOOL lsa_io_q_query(char *desc, LSA_Q_QUERY_INFO *q_q, prs_struct *ps, int depth
 }
 
 /*******************************************************************
+makes an LSA_Q_ENUM_TRUST_DOM structure.
+********************************************************************/
+BOOL init_q_enum_trust_dom(LSA_Q_ENUM_TRUST_DOM * q_e, POLICY_HND *pol,
+			   uint32 enum_context, uint32 preferred_len)
+{
+	DEBUG(5, ("init_q_enum_trust_dom\n"));
+
+	q_e->pol = *pol;
+	q_e->enum_context = enum_context;
+	q_e->preferred_len = preferred_len;
+
+	return True;
+}
+
+/*******************************************************************
  Reads or writes an LSA_Q_ENUM_TRUST_DOM structure.
 ********************************************************************/
 
-BOOL lsa_io_q_enum_trust_dom(char *desc, LSA_Q_ENUM_TRUST_DOM *q_e, prs_struct *ps, int depth)
+BOOL lsa_io_q_enum_trust_dom(char *desc, LSA_Q_ENUM_TRUST_DOM *q_e, 
+			     prs_struct *ps, int depth)
 {
-	if (q_e == NULL)
-		return False;
-
 	prs_debug(ps, depth, desc, "lsa_io_q_enum_trust_dom");
 	depth++;
-
 
 	if(!smb_io_pol_hnd("", &q_e->pol, ps, depth))
 		return False;
@@ -539,44 +527,12 @@ BOOL lsa_io_q_enum_trust_dom(char *desc, LSA_Q_ENUM_TRUST_DOM *q_e, prs_struct *
 }
 
 /*******************************************************************
- Inits an LSA_R_ENUM_TRUST_DOM structure.
-********************************************************************/
-
-void init_r_enum_trust_dom(LSA_R_ENUM_TRUST_DOM *r_e,
-                           uint32 enum_context, char *domain_name, DOM_SID *domain_sid,
-                           uint32 status)
-{
-	DEBUG(5, ("init_r_enum_trust_dom\n"));
-
-	r_e->enum_context = enum_context;
-
-	if (status == 0) {
-		int len_domain_name = strlen(domain_name)+1;
-
-		r_e->num_domains  = 1;
-		r_e->ptr_enum_domains = 1;
-		r_e->num_domains2 = 1;
-
-		init_uni_hdr2(&r_e->hdr_domain_name, len_domain_name);
-		init_unistr2 (&r_e->uni_domain_name, domain_name, len_domain_name);
-		init_dom_sid2(&r_e->other_domain_sid, domain_sid);
-	} else {
-		r_e->num_domains = 0;
-		r_e->ptr_enum_domains = 0;
-	}
-
-	r_e->status = status;
-}
-
-/*******************************************************************
  Reads or writes an LSA_R_ENUM_TRUST_DOM structure.
 ********************************************************************/
 
-BOOL lsa_io_r_enum_trust_dom(char *desc,  LSA_R_ENUM_TRUST_DOM *r_e, prs_struct *ps, int depth)
+BOOL lsa_io_r_enum_trust_dom(char *desc, LSA_R_ENUM_TRUST_DOM *r_e, 
+			     prs_struct *ps, int depth)
 {
-	if (r_e == NULL)
-		return False;
-
 	prs_debug(ps, depth, desc, "lsa_io_r_enum_trust_dom");
 	depth++;
 
@@ -587,15 +543,41 @@ BOOL lsa_io_r_enum_trust_dom(char *desc,  LSA_R_ENUM_TRUST_DOM *r_e, prs_struct 
 	if(!prs_uint32("ptr_enum_domains", ps, depth, &r_e->ptr_enum_domains))
 		return False;
 
-	if (r_e->ptr_enum_domains != 0) {
+	if (r_e->ptr_enum_domains) {
+		int i, num_domains;
+
 		if(!prs_uint32("num_domains2", ps, depth, &r_e->num_domains2))
 			return False;
-		if(!smb_io_unihdr2 ("", &r_e->hdr_domain_name, ps, depth))
+
+		num_domains = r_e->num_domains2;
+
+		if (!(r_e->hdr_domain_name = (UNIHDR2 *)
+		      malloc(sizeof(UNIHDR2) * num_domains)))
 			return False;
-		if(!smb_io_unistr2 ("", &r_e->uni_domain_name, r_e->hdr_domain_name.buffer, ps, depth))
+
+		if (!(r_e->uni_domain_name = (UNISTR2 *)
+		      malloc(sizeof(UNISTR2) * num_domains)))
 			return False;
-		if(!smb_io_dom_sid2("", &r_e->other_domain_sid, ps, depth))
+
+		if (!(r_e->domain_sid = (DOM_SID *)
+		      malloc(sizeof(DOM_SID) * num_domains)))
 			return False;
+
+		for (i = 0; i < num_domains; i++) {
+			if(!smb_io_unihdr2 ("", &r_e->hdr_domain_name[i], ps, 
+					    depth))
+				return False;
+		}
+		
+		for (i = 0; i < num_domains; i++) {
+			if(!smb_io_unistr2 ("", &r_e->uni_domain_name[i],
+					    r_e->hdr_domain_name[i].buffer, 
+					    ps, depth))
+				return False;
+			if(!smb_io_dom_sid2("", &r_e->domain_sid[i], ps, 
+					    depth))
+				return False;
+		}
 	}
 
 	if(!prs_uint32("status", ps, depth, &r_e->status))
@@ -604,15 +586,27 @@ BOOL lsa_io_r_enum_trust_dom(char *desc,  LSA_R_ENUM_TRUST_DOM *r_e, prs_struct 
 	return True;
 }
 
+void lsa_free_r_enum_trust_dom(LSA_R_ENUM_TRUST_DOM * r_e)
+{
+	safe_free(r_e->uni_domain_name);
+	safe_free(r_e->hdr_domain_name);
+	safe_free(r_e->domain_sid);
+
+	r_e->uni_domain_name = NULL;
+	r_e->hdr_domain_name = NULL;
+	r_e->domain_sid = NULL;
+
+	r_e->num_domains = 0;
+	r_e->ptr_enum_domains = 0;
+}
+
 /*******************************************************************
  Reads or writes an LSA_Q_QUERY_INFO structure.
 ********************************************************************/
 
-BOOL lsa_io_r_query(char *desc, LSA_R_QUERY_INFO *r_q, prs_struct *ps, int depth)
+BOOL lsa_io_r_query(char *desc, LSA_R_QUERY_INFO *r_q, prs_struct *ps,
+		    int depth)
 {
-	if (r_q == NULL)
-		return False;
-
 	prs_debug(ps, depth, desc, "lsa_io_r_query");
 	depth++;
 
@@ -687,12 +681,10 @@ void init_lsa_sid_enum(TALLOC_CTX *mem_ctx, LSA_SID_ENUM *sen,
  Reads or writes a LSA_SID_ENUM structure.
 ********************************************************************/
 
-static BOOL lsa_io_sid_enum(char *desc, LSA_SID_ENUM *sen, 
-			    prs_struct *ps, int depth)
+static BOOL lsa_io_sid_enum(char *desc, LSA_SID_ENUM *sen, prs_struct *ps, 
+			    int depth)
 {
 	int i;
-
-	if (sen == NULL) return False;
 
 	prs_debug(ps, depth, desc, "lsa_io_sid_enum");
 	depth++;
@@ -768,11 +760,9 @@ void init_q_lookup_sids(TALLOC_CTX *mem_ctx, LSA_Q_LOOKUP_SIDS *q_l,
  Reads or writes a LSA_Q_LOOKUP_SIDS structure.
 ********************************************************************/
 
-BOOL lsa_io_q_lookup_sids(char *desc, LSA_Q_LOOKUP_SIDS *q_s, prs_struct *ps, int depth)
+BOOL lsa_io_q_lookup_sids(char *desc, LSA_Q_LOOKUP_SIDS *q_s, prs_struct *ps,
+			  int depth)
 {
-	if (q_s == NULL)
-		return False;
-
 	prs_debug(ps, depth, desc, "lsa_io_q_lookup_sids");
 	depth++;
 
@@ -802,9 +792,6 @@ static BOOL lsa_io_trans_names(char *desc, LSA_TRANS_NAME_ENUM *trn,
                 prs_struct *ps, int depth)
 {
 	int i;
-
-	if (trn == NULL)
-		return False;
 
 	prs_debug(ps, depth, desc, "lsa_io_trans_names");
 	depth++;
@@ -862,11 +849,9 @@ static BOOL lsa_io_trans_names(char *desc, LSA_TRANS_NAME_ENUM *trn,
  Reads or writes a structure.
 ********************************************************************/
 
-BOOL lsa_io_r_lookup_sids(char *desc, LSA_R_LOOKUP_SIDS *r_s, prs_struct *ps, int depth)
+BOOL lsa_io_r_lookup_sids(char *desc, LSA_R_LOOKUP_SIDS *r_s, 
+			  prs_struct *ps, int depth)
 {
-	if (r_s == NULL)
-		return False;
-
 	prs_debug(ps, depth, desc, "lsa_io_r_lookup_sids");
 	depth++;
 
@@ -938,12 +923,10 @@ void init_q_lookup_names(TALLOC_CTX *mem_ctx, LSA_Q_LOOKUP_NAMES *q_l,
 reads or writes a structure.
 ********************************************************************/
 
-BOOL lsa_io_q_lookup_names(char *desc, LSA_Q_LOOKUP_NAMES *q_r, prs_struct *ps, int depth)
+BOOL lsa_io_q_lookup_names(char *desc, LSA_Q_LOOKUP_NAMES *q_r, 
+			   prs_struct *ps, int depth)
 {
 	int i;
-
-	if (q_r == NULL)
-		return False;
 
 	prs_debug(ps, depth, desc, "lsa_io_q_lookup_names");
 	depth++;
@@ -1004,12 +987,10 @@ BOOL lsa_io_q_lookup_names(char *desc, LSA_Q_LOOKUP_NAMES *q_r, prs_struct *ps, 
 reads or writes a structure.
 ********************************************************************/
 
-BOOL lsa_io_r_lookup_names(char *desc, LSA_R_LOOKUP_NAMES *r_r, prs_struct *ps, int depth)
+BOOL lsa_io_r_lookup_names(char *desc, LSA_R_LOOKUP_NAMES *r_r, 
+			   prs_struct *ps, int depth)
 {
 	int i;
-
-	if (r_r == NULL)
-		return False;
 
 	prs_debug(ps, depth, desc, "lsa_io_r_lookup_names");
 	depth++;
@@ -1078,9 +1059,6 @@ void init_lsa_q_close(LSA_Q_CLOSE *q_c, POLICY_HND *hnd)
 
 BOOL lsa_io_q_close(char *desc, LSA_Q_CLOSE *q_c, prs_struct *ps, int depth)
 {
-	if (q_c == NULL)
-		return False;
-
 	prs_debug(ps, depth, desc, "lsa_io_q_close");
 	depth++;
 
@@ -1096,9 +1074,6 @@ BOOL lsa_io_q_close(char *desc, LSA_Q_CLOSE *q_c, prs_struct *ps, int depth)
 
 BOOL lsa_io_r_close(char *desc,  LSA_R_CLOSE *r_c, prs_struct *ps, int depth)
 {
-	if (r_c == NULL)
-		return False;
-
 	prs_debug(ps, depth, desc, "lsa_io_r_close");
 	depth++;
 
