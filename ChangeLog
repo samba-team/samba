@@ -1,3 +1,16 @@
+Sat Apr 10 15:41:49 1999  Assar Westerlund  <assar@sics.se>
+
+	* kadmin/load.c (doit): fix error message
+
+	* lib/krb5/crypto.c (encrypt_internal): free checksum if lengths
+ 	fail to match.
+	(krb5_get_wrapped_length): new function
+
+	* configure.in: security/pam_modules.h: check for
+
+	* lib/krb5/init_creds_pw.c (krb5_get_init_creds_password): kludge
+ 	around `ret_as_reply' semantics by only freeing it when ret == 0
+
 Fri Apr  9 20:24:04 1999  Assar Westerlund  <assar@sics.se>
 
 	* kuser/klist.c (print_cred_verbose): handle the case of a bad

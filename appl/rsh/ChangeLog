@@ -1,3 +1,12 @@
+Sat Apr 10 17:10:55 1999  Assar Westerlund  <assar@sics.se>
+
+	* rshd.c (setup_copier): use `socketpair' instead of `pipe'.  Some
+ 	shells don't think it's a rsh session if they find a pipe at the
+ 	other end.
+	(setup_environment): add SSH_CLIENT just to make bash happy
+
+	* common.c (do_read): use krb5_get_wrapped_length
+
 Wed Mar 24 03:59:42 1999  Assar Westerlund  <assar@sics.se>
 
 	* rsh.c (loop): more braces to make gcc happy
