@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -128,7 +128,8 @@ typedef HostAddresses krb5_addresses;
 typedef enum krb5_keytype { 
     KEYTYPE_NULL = 0,
     KEYTYPE_DES = 1,
-    KEYTYPE_DES3 = 7
+    KEYTYPE_DES3 = 7,
+    KEYTYPE_DES_AFS3 = 0x100000
 } krb5_keytype;
 
 typedef EncryptionKey krb5_keyblock;
