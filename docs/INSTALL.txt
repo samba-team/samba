@@ -225,7 +225,7 @@ setting for this to work. I do not recommend scope IDs.
 CHOOSING THE PROTOCOL LEVEL
 ===========================
 
-The SMB protocol has many dialects. Currently Samba supports 4, called
+The SMB protocol has many dialects. Currently Samba supports 5, called
 CORE, COREPLUS, LANMAN1, LANMAN2 and NT1.
 
 You can choose what protocols to support in the smb.conf file. The
