@@ -1261,7 +1261,7 @@ void init_net_user_info3(TALLOC_CTX *ctx, NET_USER_INFO_3 *usr, SAM_ACCOUNT *sam
 
 	usr->user_id = pdb_get_user_rid(sampw);
 	usr->group_id = pdb_get_group_rid(sampw);
-	usr->num_groups = num_groups;
+	usr->num_groups = num_groups+1;
 	usr->buffer_groups = 1; /* indicates fill in groups, below, even if there are none */
 	usr->user_flgs = user_flgs;
 
