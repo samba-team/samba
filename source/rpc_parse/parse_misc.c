@@ -907,22 +907,42 @@ BOOL smb_io_unistr2(char *desc,  UNISTR2 *uni2, uint32 buffer, prs_struct *ps, i
 
 	if (buffer)
 	{
+		uint32 remaining = 0;
 		prs_debug(ps, depth, desc, "smb_io_unistr2");
 		depth++;
 
 		prs_align(ps);
 		
+		if (MARSHALLING(ps))
+		{
+			/* oops! XXXX maybe issue a warning that this is happening... */
+			if (uni2->uni_max_len > MAX_UNISTRLEN) uni2->uni_max_len = MAX_UNISTRLEN;
+			if (uni2->uni_str_len > MAX_UNISTRLEN) uni2->uni_str_len = MAX_UNISTRLEN;
+		}
+
 		prs_uint32("uni_max_len", ps, depth, &(uni2->uni_max_len));
 		prs_uint32("undoc      ", ps, depth, &(uni2->undoc      ));
 		prs_uint32("uni_str_len", ps, depth, &(uni2->uni_str_len));
 
-		/* oops! XXXX maybe issue a warning that this is happening... */
-		if (uni2->uni_max_len > MAX_UNISTRLEN) uni2->uni_max_len = MAX_UNISTRLEN;
-		if (uni2->uni_str_len > MAX_UNISTRLEN) uni2->uni_str_len = MAX_UNISTRLEN;
+		if (UNMARSHALLING(ps))
+		{
+			/* oops! XXXX maybe issue a warning that this is happening... */
+			if (uni2->uni_max_len > MAX_UNISTRLEN) uni2->uni_max_len = MAX_UNISTRLEN;
+			if (uni2->uni_str_len > MAX_UNISTRLEN)
+			{
+				remaining = (uni2->uni_str_len - MAX_UNISTRLEN)
+					* sizeof(uint16);
+				uni2->uni_str_len = MAX_UNISTRLEN;
+			}
+		}
 
 		/* buffer advanced by indicated length of string
 		   NOT by searching for null-termination */
 		prs_unistr2(True, "buffer     ", ps, depth, uni2);
+
+		/* skip over the things, we ignored. */
+		if (!prs_set_offset(ps, prs_offset(ps) + remaining))
+			return False;
 	}
 	else
 	{

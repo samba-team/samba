@@ -382,7 +382,7 @@ BOOL prs_grow_data(prs_struct *buf, BOOL io, int new_size, BOOL force_grow)
 
 	CHECK_STRUCT(buf);
 
-	if (new_size >= buf->data_size)
+	if (new_size > buf->data_size)
 	{
 		if (!io || force_grow)
 		{
@@ -391,6 +391,13 @@ BOOL prs_grow_data(prs_struct *buf, BOOL io, int new_size, BOOL force_grow)
 		}
 		else
 		{
+			/*
+			 * reading, there is just not that much
+			 * data in the buffer
+			 */
+			DEBUG(1, ("prs_grow_data: %d > %d\n",
+				  new_size, buf->data_size));
+			return False;
 		}
 	}
 	return True;

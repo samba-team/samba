@@ -4932,10 +4932,11 @@ static BOOL sam_io_logon_hrs(char *desc, LOGON_HRS * hrs,
 
 	prs_uint32("len  ", ps, depth, &hrs->len);
 
-	if (hrs->len > 64)
+	if (hrs->len > sizeof(hrs->hours))
 	{
-		DEBUG(5, ("sam_io_logon_hrs: truncating length\n"));
-		hrs->len = 64;
+		DEBUG(3, ("sam_io_logon_hrs: truncating length from %d\n",
+			  hrs->len));
+		hrs->len = sizeof(hrs->hours);
 	}
 
 	prs_uint8s(False, "hours", ps, depth, hrs->hours, hrs->len);
