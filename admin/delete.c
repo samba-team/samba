@@ -30,6 +30,7 @@ del_entry(int argc, char **argv)
 	warnx("delete: %s", krb5_get_err_text(context, err));;
 	break;
     }
+    krb5_free_principal (context, ent.principal);
     memset(&ent, 0, sizeof(ent));
     db->close(context, db);
 }
