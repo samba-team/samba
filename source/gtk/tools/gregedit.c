@@ -158,7 +158,7 @@ static void on_open_remote_activate(GtkMenuItem *menuitem, gpointer user_data)
 	char *credentials;
 	const char *location;
 	char *tmp;
-	GtkWidget *rpcwin = GTK_WIDGET(gtk_rpc_binding_dialog_new(TRUE, NULL));
+	GtkWidget *rpcwin = GTK_WIDGET(gtk_rpc_binding_dialog_new(FALSE, NULL));
 	gint result = gtk_dialog_run(GTK_DIALOG(rpcwin));
 	WERROR error;
 	
@@ -347,15 +347,12 @@ static GtkWidget* create_mainwin (void)
 	gtk_window_set_default_size (GTK_WINDOW (mainwin), 642, 562);
 
 	vbox1 = gtk_vbox_new (FALSE, 0);
-	gtk_widget_show (vbox1);
 	gtk_container_add (GTK_CONTAINER (mainwin), vbox1);
 
 	menubar = gtk_menu_bar_new ();
-	gtk_widget_show (menubar);
 	gtk_box_pack_start (GTK_BOX (vbox1), menubar, FALSE, FALSE, 0);
 
 	menu_file = gtk_menu_item_new_with_mnemonic ("_File");
-	gtk_widget_show (menu_file);
 	gtk_container_add (GTK_CONTAINER (menubar), menu_file);
 
 	menu_file_menu = gtk_menu_new ();
@@ -363,7 +360,6 @@ static GtkWidget* create_mainwin (void)
 
 	if(reg_has_backend("nt4")) {
 		open_nt4 = gtk_image_menu_item_new_with_mnemonic("Open _NT4 file");
-		gtk_widget_show (open_nt4);
 		gtk_container_add (GTK_CONTAINER (menu_file_menu), open_nt4);
 
 		g_signal_connect ((gpointer) open_nt4, "activate",
@@ -373,7 +369,6 @@ static GtkWidget* create_mainwin (void)
 
 	if(reg_has_backend("w95")) {
 		open_w95 = gtk_image_menu_item_new_with_mnemonic("Open Win_9x file");
-		gtk_widget_show (open_w95);
 		gtk_container_add (GTK_CONTAINER (menu_file_menu), open_w95);
 
 		g_signal_connect ((gpointer) open_w95, "activate",
@@ -383,7 +378,6 @@ static GtkWidget* create_mainwin (void)
 
 	if(reg_has_backend("gconf")) {
 		open_gconf = gtk_image_menu_item_new_with_mnemonic ("Open _GConf");
-		gtk_widget_show (open_gconf);
 		gtk_container_add (GTK_CONTAINER (menu_file_menu), open_gconf);
 
 		g_signal_connect ((gpointer) open_gconf, "activate",
@@ -393,7 +387,6 @@ static GtkWidget* create_mainwin (void)
 
 	if(reg_has_backend("rpc")) {
 		open_remote = gtk_menu_item_new_with_mnemonic ("Open _Remote");
-		gtk_widget_show (open_remote);
 		gtk_container_add (GTK_CONTAINER (menu_file_menu), open_remote);
 
 		g_signal_connect ((gpointer) open_remote, "activate",
@@ -403,7 +396,6 @@ static GtkWidget* create_mainwin (void)
 
 	if(reg_has_backend("ldb")) {
 		open_ldb = gtk_image_menu_item_new_with_mnemonic("Open _LDB file");
-		gtk_widget_show (open_ldb);
 		gtk_container_add (GTK_CONTAINER (menu_file_menu), open_ldb);
 
 		g_signal_connect ((gpointer) open_ldb, "activate",
@@ -412,68 +404,55 @@ static GtkWidget* create_mainwin (void)
 	}
 
 	save = gtk_image_menu_item_new_from_stock ("gtk-save", accel_group);
-	gtk_widget_show (save);
 	gtk_widget_set_sensitive( save, False );
 	gtk_container_add (GTK_CONTAINER (menu_file_menu), save);
 
 	save_as = gtk_image_menu_item_new_from_stock ("gtk-save-as", accel_group);
-	gtk_widget_show (save_as);
 	gtk_widget_set_sensitive( save_as, False );
 	gtk_container_add (GTK_CONTAINER (menu_file_menu), save_as);
 
 	separatormenuitem1 = gtk_menu_item_new ();
-	gtk_widget_show (separatormenuitem1);
 	gtk_container_add (GTK_CONTAINER (menu_file_menu), separatormenuitem1);
 	gtk_widget_set_sensitive (separatormenuitem1, FALSE);
 
 	quit = gtk_image_menu_item_new_from_stock ("gtk-quit", accel_group);
-	gtk_widget_show (quit);
 	gtk_container_add (GTK_CONTAINER (menu_file_menu), quit);
 
 	men_edit = gtk_menu_item_new_with_mnemonic ("_Edit");
-	gtk_widget_show (men_edit);
 	gtk_container_add (GTK_CONTAINER (menubar), men_edit);
 
 	men_edit_menu = gtk_menu_new ();
 	gtk_menu_item_set_submenu (GTK_MENU_ITEM (men_edit), men_edit_menu);
 
 	cut = gtk_image_menu_item_new_from_stock ("gtk-cut", accel_group);
-	gtk_widget_show (cut);
 	gtk_widget_set_sensitive(cut, False);
 	gtk_container_add (GTK_CONTAINER (men_edit_menu), cut);
 
 	copy = gtk_image_menu_item_new_from_stock ("gtk-copy", accel_group);
-	gtk_widget_show (copy);
 	gtk_widget_set_sensitive(copy, False);
 	gtk_container_add (GTK_CONTAINER (men_edit_menu), copy);
 
 	paste = gtk_image_menu_item_new_from_stock ("gtk-paste", accel_group);
-	gtk_widget_show (paste);
 	gtk_widget_set_sensitive(paste, False);
 	gtk_container_add (GTK_CONTAINER (men_edit_menu), paste);
 
 	delete = gtk_image_menu_item_new_from_stock ("gtk-delete", accel_group);
-	gtk_widget_show (delete);
 	gtk_widget_set_sensitive(delete, False);
 	gtk_container_add (GTK_CONTAINER (men_edit_menu), delete);
 
 	help = gtk_menu_item_new_with_mnemonic ("_Help");
-	gtk_widget_show (help);
 	gtk_container_add (GTK_CONTAINER (menubar), help);
 
 	help_menu = gtk_menu_new ();
 	gtk_menu_item_set_submenu (GTK_MENU_ITEM (help), help_menu);
 
 	about = gtk_menu_item_new_with_mnemonic ("_About");
-	gtk_widget_show (about);
 	gtk_container_add (GTK_CONTAINER (help_menu), about);
 
 	hbox1 = gtk_hbox_new (FALSE, 0);
-	gtk_widget_show (hbox1);
 	gtk_box_pack_start (GTK_BOX (vbox1), hbox1, TRUE, TRUE, 0);
 
 	scrolledwindow1 = gtk_scrolled_window_new (NULL, NULL);
-	gtk_widget_show (scrolledwindow1);
 	gtk_box_pack_start (GTK_BOX (hbox1), scrolledwindow1, TRUE, TRUE, 0);
 
 	tree_keys = gtk_tree_view_new ();
@@ -487,7 +466,6 @@ static GtkWidget* create_mainwin (void)
 	gtk_tree_view_append_column(GTK_TREE_VIEW(tree_keys), curcol);
 
 	gtk_tree_view_column_add_attribute(curcol, renderer, "text", 0);
-	gtk_widget_show (tree_keys);
 	gtk_container_add (GTK_CONTAINER (scrolledwindow1), tree_keys);
 	store_keys = gtk_tree_store_new(2, G_TYPE_STRING, G_TYPE_POINTER);
 	gtk_tree_view_set_model(GTK_TREE_VIEW(tree_keys), GTK_TREE_MODEL(store_keys));
@@ -501,7 +479,6 @@ static GtkWidget* create_mainwin (void)
 
 
 	scrolledwindow2 = gtk_scrolled_window_new (NULL, NULL);
-	gtk_widget_show (scrolledwindow2);
 	gtk_box_pack_start (GTK_BOX (hbox1), scrolledwindow2, TRUE, TRUE, 0);
 
 	tree_vals = gtk_tree_view_new ();
@@ -529,7 +506,6 @@ static GtkWidget* create_mainwin (void)
 	gtk_tree_view_column_add_attribute(curcol, renderer, "text", 2);
 
 
-	gtk_widget_show (tree_vals);
 	gtk_container_add (GTK_CONTAINER (scrolledwindow2), tree_vals);
 
 	store_vals = gtk_list_store_new(4, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_POINTER);
@@ -537,7 +513,6 @@ static GtkWidget* create_mainwin (void)
 	g_object_unref(store_vals);
 
 	statusbar = gtk_statusbar_new ();
-	gtk_widget_show (statusbar);
 	gtk_box_pack_start (GTK_BOX (vbox1), statusbar, FALSE, FALSE, 0);
 	gtk_statusbar_set_has_resize_grip (GTK_STATUSBAR (statusbar), FALSE);
 
@@ -580,11 +555,9 @@ static GtkWidget* create_openfilewin (void)
 	gtk_container_set_border_width (GTK_CONTAINER (openfilewin), 10);
 
 	ok_button = GTK_FILE_SELECTION (openfilewin)->ok_button;
-	gtk_widget_show (ok_button);
 	GTK_WIDGET_SET_FLAGS (ok_button, GTK_CAN_DEFAULT);
 
 	cancel_button = GTK_FILE_SELECTION (openfilewin)->cancel_button;
-	gtk_widget_show (cancel_button);
 	GTK_WIDGET_SET_FLAGS (cancel_button, GTK_CAN_DEFAULT);
 
 	return openfilewin;
@@ -599,11 +572,9 @@ static GtkWidget* create_savefilewin (void)
 	gtk_container_set_border_width (GTK_CONTAINER (savefilewin), 10);
 
 	ok_button = GTK_FILE_SELECTION (savefilewin)->ok_button;
-	gtk_widget_show (ok_button);
 	GTK_WIDGET_SET_FLAGS (ok_button, GTK_CAN_DEFAULT);
 
 	cancel_button = GTK_FILE_SELECTION (savefilewin)->cancel_button;
-	gtk_widget_show (cancel_button);
 	GTK_WIDGET_SET_FLAGS (cancel_button, GTK_CAN_DEFAULT);
 
 	return savefilewin;
@@ -655,7 +626,7 @@ static GtkWidget* create_savefilewin (void)
 		mainwin = create_mainwin ();
 	}
 
-	gtk_widget_show (mainwin);
+	gtk_widget_show_all (mainwin);
 
 	gtk_main ();
 
