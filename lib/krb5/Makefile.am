@@ -157,7 +157,7 @@ $(srcdir)/krb5-private.h:
 	cd $(srcdir) && perl ../../cf/make-proto.pl -q -P comment -p krb5-private.h $(libkrb5_la_SOURCES) || rm -f krb5-private.h
 
 CHECK_SYMBOLS = -lib krb5 -com_err -version \
-	krb5_ _krb5_ __heimdal krb524_ krb4_fkt_ops
+	krb5_ _krb5_ __heimdal krb524_ krb4_fkt_ops heim_ pkcs7_
 
 #libkrb5_la_LIBADD = ../com_err/error.lo ../com_err/com_err.lo
 
