@@ -355,7 +355,7 @@ static NTSTATUS check_samlogon(struct samlogon_state *samlogon_state,
 		ZERO_STRUCT(samlogon_state->auth2);
 		creds_client_authenticator(&samlogon_state->creds, &samlogon_state->auth);
 		
-		r->out.authenticator = NULL;
+		r->out.return_authenticator = NULL;
 		status = dcerpc_netr_LogonSamLogon(samlogon_state->p, samlogon_state->mem_ctx, r);
 		if (!NT_STATUS_IS_OK(status)) {
 			if (error_string) {
@@ -363,8 +363,8 @@ static NTSTATUS check_samlogon(struct samlogon_state *samlogon_state,
 			}
 		}
 		
-		if (!r->out.authenticator || 
-		    !creds_client_check(&samlogon_state->creds, &r->out.authenticator->cred)) {
+		if (!r->out.return_authenticator || 
+		    !creds_client_check(&samlogon_state->creds, &r->out.return_authenticator->cred)) {
 			printf("Credential chaining failed\n");
 		}
 
@@ -377,30 +377,19 @@ static NTSTATUS check_samlogon(struct samlogon_state *samlogon_state,
 		if (r->in.validation_level == 2) {
 			static const char zeros[16];
 			
-			if (memcmp(r->out.validation.sam->LMSessKey.key, zeros,  
-				   sizeof(r->out.validation.sam->LMSessKey.key)) != 0) {
+			if (memcmp(r->out.validation.sam2->key.key, zeros,  
+				   sizeof(r->out.validation.sam2->key.key)) != 0) {
 				creds_arcfour_crypt(&samlogon_state->creds, 
-						    r->out.validation.sam->LMSessKey.key, 
-						    sizeof(r->out.validation.sam->LMSessKey.key));
-			}
-			
-			if (lm_key) {
-				memcpy(lm_key, r->out.validation.sam->LMSessKey.key, 8);
-			}
-			
-			if (memcmp(r->out.validation.sam->key.key, zeros,  sizeof(r->out.validation.sam->key.key)) != 0) {
-				creds_arcfour_crypt(&samlogon_state->creds, 
-						    r->out.validation.sam->key.key, 
-						    sizeof(r->out.validation.sam->key.key));
+						    r->out.validation.sam2->key.key, 
+						    sizeof(r->out.validation.sam2->key.key));
 			}
 			
 			if (user_session_key) {
-				memcpy(user_session_key, r->out.validation.sam->key.key, 16);
+				memcpy(user_session_key, r->out.validation.sam2->key.key, 16);
 			}
 			
-		} else if (r->in.validation_level == 3) {
-			static const char zeros[16];
-			if (memcmp(r->out.validation.sam2->LMSessKey.key, zeros,  sizeof(r->out.validation.sam2->LMSessKey.key)) != 0) {
+			if (memcmp(r->out.validation.sam2->LMSessKey.key, zeros,  
+				   sizeof(r->out.validation.sam2->LMSessKey.key)) != 0) {
 				creds_arcfour_crypt(&samlogon_state->creds, 
 						    r->out.validation.sam2->LMSessKey.key, 
 						    sizeof(r->out.validation.sam2->LMSessKey.key));
@@ -410,15 +399,30 @@ static NTSTATUS check_samlogon(struct samlogon_state *samlogon_state,
 				memcpy(lm_key, r->out.validation.sam2->LMSessKey.key, 8);
 			}
 			
-			if (memcmp(r->out.validation.sam2->key.key, zeros,  sizeof(r->out.validation.sam2->key.key)) != 0) {
+		} else if (r->in.validation_level == 3) {
+			static const char zeros[16];
+			if (memcmp(r->out.validation.sam3->key.key, zeros,  
+				   sizeof(r->out.validation.sam3->key.key)) != 0) {
 				creds_arcfour_crypt(&samlogon_state->creds, 
-						    r->out.validation.sam2->key.key, 
-						    sizeof(r->out.validation.sam2->key.key));
+						    r->out.validation.sam3->key.key, 
+						    sizeof(r->out.validation.sam3->key.key));
 			}
 			
 			if (user_session_key) {
-				memcpy(user_session_key, r->out.validation.sam2->key.key, 16);
+				memcpy(user_session_key, r->out.validation.sam3->key.key, 16);
 			}
+
+			if (memcmp(r->out.validation.sam3->LMSessKey.key, zeros, 
+				   sizeof(r->out.validation.sam3->LMSessKey.key)) != 0) {
+				creds_arcfour_crypt(&samlogon_state->creds, 
+						    r->out.validation.sam3->LMSessKey.key, 
+						    sizeof(r->out.validation.sam3->LMSessKey.key));
+			}
+			
+			if (lm_key) {
+				memcpy(lm_key, r->out.validation.sam3->LMSessKey.key, 8);
+			}
+			
 		}
 	}
 
@@ -912,7 +916,7 @@ static BOOL test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	samlogon_state.r.in.server_name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
 	samlogon_state.r.in.workstation = TEST_MACHINE_NAME;
 	samlogon_state.r.in.credential = &samlogon_state.auth;
-	samlogon_state.r.in.authenticator = &samlogon_state.auth2;
+	samlogon_state.r.in.return_authenticator = &samlogon_state.auth2;
 
 	for (i=2;i<=3;i++) {
 		samlogon_state.r.in.validation_level = i;

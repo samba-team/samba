@@ -171,8 +171,14 @@ interface netlogon
 		dom_sid2 *domain_sid;
 		netr_LMSessionKey LMSessKey;
 		uint32 AccountControl;
-		uint32 expansionroom[7];
-	} netr_SamInfo;
+		uint32 unknown1;
+		uint32 unknown2;
+		uint32 unknown3;
+		uint32 unknown4;
+		uint32 unknown5;
+		uint32 unknown6;
+		uint32 unknown7;
+	} netr_SamInfo2;
 
 	typedef struct {
 		dom_sid2 *sid;
@@ -205,10 +211,16 @@ interface netlogon
 		dom_sid2 *domain_sid;
 		netr_LMSessionKey LMSessKey;
 		uint32 AccountControl;
-		uint32 expansionroom[7];
+		uint32 unknown1;
+		uint32 unknown2;
+		uint32 unknown3;
+		uint32 unknown4;
+		uint32 unknown5;
+		uint32 unknown6;
+		uint32 unknown7;
 		uint32 sidcount;
 		[size_is(sidcount)] netr_SidAttr *sids;
-	} netr_SamInfo2;
+	} netr_SamInfo3;
 
 	typedef struct {
 		uint32 pac_size;
@@ -227,8 +239,8 @@ interface netlogon
 	} netr_PacInfo;
 
 	typedef union {
-		[case(2)] netr_SamInfo  *sam;
-		[case(3)] netr_SamInfo2 *sam2;
+		[case(2)] netr_SamInfo2  *sam2;
+		[case(3)] netr_SamInfo3 *sam3;
 		[case(4)] netr_PacInfo  *pac;
 		[case(5)] netr_PacInfo  *pac2;
 	} netr_Validation;
@@ -237,7 +249,7 @@ interface netlogon
 		[in] unistr *server_name,
 		[in] unistr *workstation,
 		[in] netr_Authenticator *credential,
-		[in][out] netr_Authenticator *authenticator,
+		[in][out] netr_Authenticator *return_authenticator,
 		[in]  uint16 logon_level,
 		[in]  [switch_is(logon_level)] netr_LogonLevel logon,
 		[in]  uint16 validation_level,
