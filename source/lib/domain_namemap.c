@@ -875,82 +875,76 @@ static BOOL get_sid_and_type(const char *ntdomain,
 *************************************************************************/
 BOOL lookupsmbpwuid(uid_t uid, DOM_NAME_MAP * gmep)
 {
+	POSIX_ID id;
+	static fstring nt_name;
+	static fstring unix_name;
+	static fstring nt_domain;
+
 	DEBUG(10, ("lookupsmbpwuid: unix uid %d\n", uid));
 	if (map_username_uid(uid, gmep))
 	{
 		return True;
 	}
-	if (lp_server_role() != ROLE_DOMAIN_NONE)
+
+	gmep->nt_name = nt_name;
+	gmep->unix_name = unix_name;
+	gmep->nt_domain = nt_domain;
+
+	gmep->unix_id = (uint32)uid;
+
+	/*
+	 * ok, assume it's one of ours.  then double-check it
+	 * if we are a member of a domain
+	 */
+
+	gmep->type = SID_NAME_USER;
+	fstrcpy(gmep->nt_name, uidtoname(uid));
+	fstrcpy(gmep->unix_name, gmep->nt_name);
+
+	/*
+	 * here we should do a LsaLookupNames() call
+	 * to check the status of the name with the PDC.
+	 * if the PDC know nothing of the name, it's ours.
+	 */
+
+	if (lp_server_role() == ROLE_DOMAIN_MEMBER)
 	{
-		POSIX_ID id;
-		static fstring nt_name;
-		static fstring unix_name;
-		static fstring nt_domain;
-
-		gmep->nt_name = nt_name;
-		gmep->unix_name = unix_name;
-		gmep->nt_domain = nt_domain;
-
-		gmep->unix_id = (uint32)uid;
-
-		/*
-		 * ok, assume it's one of ours.  then double-check it
-		 * if we are a member of a domain
-		 */
-
-		gmep->type = SID_NAME_USER;
-		fstrcpy(gmep->nt_name, uidtoname(uid));
-		fstrcpy(gmep->unix_name, gmep->nt_name);
-
-		/*
-		 * here we should do a LsaLookupNames() call
-		 * to check the status of the name with the PDC.
-		 * if the PDC know nothing of the name, it's ours.
-		 */
-
-		if (lp_server_role() == ROLE_DOMAIN_MEMBER)
-		{
 #if 0
-			lsa_lookup_names(global_myworkgroup, gmep->nt_name,
-					 &gmep->sid...);
+		lsa_lookup_names(global_myworkgroup, gmep->nt_name,
+				 &gmep->sid...);
 #endif
-		}
-
-		/*
-		 * ok, it's one of ours.
-		 */
-
-		gmep->nt_domain = global_sam_name;
-
-		switch (gmep->type)
-		{
-			case SID_NAME_USER:
-			{
-				id.type = SURS_POSIX_UID_AS_USR;
-				break;
-			}
-			case SID_NAME_DOM_GRP:
-			{
-				id.type = SURS_POSIX_GID_AS_GRP;
-				break;
-			}
-			case SID_NAME_ALIAS:
-			{
-				id.type = SURS_POSIX_GID_AS_ALS;
-				break;
-			}
-		}
-
-		id.id = gmep->unix_id;
-
-		surs_unixid_to_sam_sid(&id, &gmep->sid, False);
-
-		return True;
 	}
 
-	/* oops. */
+	/*
+	 * ok, it's one of ours.
+	 */
 
-	return False;
+	gmep->nt_domain = global_sam_name;
+
+	switch (gmep->type)
+	{
+		case SID_NAME_USER:
+		{
+			id.type = SURS_POSIX_UID_AS_USR;
+			break;
+		}
+		case SID_NAME_DOM_GRP:
+		{
+			id.type = SURS_POSIX_GID_AS_GRP;
+			break;
+		}
+		case SID_NAME_ALIAS:
+		{
+			id.type = SURS_POSIX_GID_AS_ALS;
+			break;
+		}
+	}
+
+	id.id = gmep->unix_id;
+
+	surs_unixid_to_sam_sid(&id, &gmep->sid, False);
+
+	return True;
 }
 
 /*************************************************************************
@@ -961,6 +955,8 @@ BOOL lookupsmbpwntnam(const char *fullntname, DOM_NAME_MAP * gmep)
 	static fstring nt_name;
 	static fstring unix_name;
 	static fstring nt_domain;
+
+	uid_t uid;
 
 	DEBUG(10, ("lookupsmbpwntnam: nt user name %s\n", fullntname));
 
@@ -973,34 +969,26 @@ BOOL lookupsmbpwntnam(const char *fullntname, DOM_NAME_MAP * gmep)
 	{
 		return True;
 	}
-	if (lp_server_role() != ROLE_DOMAIN_NONE)
+	gmep->nt_name = nt_name;
+	gmep->unix_name = unix_name;
+	gmep->nt_domain = nt_domain;
+
+	/*
+	 * ok, it's one of ours.  we therefore "create" an nt user named
+	 * after the unix user.  this is the point where "appliance mode"
+	 * should get its teeth in, as unix users won't really exist,
+	 * they will only be numbers...
+	 */
+
+	gmep->type = SID_NAME_USER;
+	fstrcpy(gmep->unix_name, gmep->nt_name);
+	if (!nametouid(gmep->unix_name, &uid))
 	{
-		uid_t uid;
-		gmep->nt_name = nt_name;
-		gmep->unix_name = unix_name;
-		gmep->nt_domain = nt_domain;
-
-		/*
-		 * ok, it's one of ours.  we therefore "create" an nt user named
-		 * after the unix user.  this is the point where "appliance mode"
-		 * should get its teeth in, as unix users won't really exist,
-		 * they will only be numbers...
-		 */
-
-		gmep->type = SID_NAME_USER;
-		fstrcpy(gmep->unix_name, gmep->nt_name);
-		if (!nametouid(gmep->unix_name, &uid))
-		{
-			return False;
-		}
-		gmep->unix_id = (uint32)uid;
-
-		return get_sid_and_type(nt_domain, nt_name, gmep->type, gmep);
+		return False;
 	}
+	gmep->unix_id = (uint32)uid;
 
-	/* oops. */
-
-	return False;
+	return get_sid_and_type(nt_domain, nt_name, gmep->type, gmep);
 }
 
 /*************************************************************************
@@ -1008,6 +996,11 @@ BOOL lookupsmbpwntnam(const char *fullntname, DOM_NAME_MAP * gmep)
 *************************************************************************/
 BOOL lookupsmbpwsid(DOM_SID *sid, DOM_NAME_MAP * gmep)
 {
+	POSIX_ID id;
+	static fstring nt_name;
+	static fstring unix_name;
+	static fstring nt_domain;
+
 	fstring sid_str;
 	sid_to_string(sid_str, sid);
 	DEBUG(10, ("lookupsmbpwsid: nt sid %s\n", sid_str));
@@ -1016,70 +1009,59 @@ BOOL lookupsmbpwsid(DOM_SID *sid, DOM_NAME_MAP * gmep)
 	{
 		return True;
 	}
-	if (lp_server_role() != ROLE_DOMAIN_NONE)
+	gmep->nt_name = nt_name;
+	gmep->unix_name = unix_name;
+	gmep->nt_domain = nt_domain;
+
+	/*
+	 * here we should do a LsaLookupNames() call
+	 * to check the status of the name with the PDC.
+	 * if the PDC know nothing of the name, it's ours.
+	 */
+
+	if (lp_server_role() == ROLE_DOMAIN_MEMBER)
 	{
-		POSIX_ID id;
-		static fstring nt_name;
-		static fstring unix_name;
-		static fstring nt_domain;
-
-		gmep->nt_name = nt_name;
-		gmep->unix_name = unix_name;
-		gmep->nt_domain = nt_domain;
-
-		/*
-		 * here we should do a LsaLookupNames() call
-		 * to check the status of the name with the PDC.
-		 * if the PDC know nothing of the name, it's ours.
-		 */
-
-		if (lp_server_role() == ROLE_DOMAIN_MEMBER)
-		{
-		}
-
-		/*
-		 * ok, it's one of ours.  we therefore "create" an nt user named
-		 * after the unix user.  this is the point where "appliance mode"
-		 * should get its teeth in, as unix users won't really exist,
-		 * they will only be numbers...
-		 */
-
-		gmep->type = SID_NAME_USER;
-		sid_copy(&gmep->sid, sid);
-		if (!surs_sam_sid_to_unixid(&gmep->sid, &id, False))
-		{
-			return False;
-		}
-
-		gmep->unix_id = id.id;
-		switch (id.type)
-		{
-			case SURS_POSIX_UID_AS_USR:
-			{
-				gmep->type = SID_NAME_USER;
-				break;
-			}
-			case SURS_POSIX_GID_AS_GRP:
-			{
-				gmep->type = SID_NAME_DOM_GRP;
-				break;
-			}
-			case SURS_POSIX_GID_AS_ALS:
-			{
-				gmep->type = SID_NAME_ALIAS;
-				break;
-			}
-		}
-
-		fstrcpy(gmep->nt_name, uidtoname((uid_t) gmep->unix_id));
-		fstrcpy(gmep->unix_name, gmep->nt_name);
-		gmep->nt_domain = global_sam_name;
-		return True;
 	}
 
-	/* oops. */
+	/*
+	 * ok, it's one of ours.  we therefore "create" an nt user named
+	 * after the unix user.  this is the point where "appliance mode"
+	 * should get its teeth in, as unix users won't really exist,
+	 * they will only be numbers...
+	 */
 
-	return False;
+	gmep->type = SID_NAME_USER;
+	sid_copy(&gmep->sid, sid);
+	if (!surs_sam_sid_to_unixid(&gmep->sid, &id, False))
+	{
+		return False;
+	}
+
+	gmep->unix_id = id.id;
+	switch (id.type)
+	{
+		case SURS_POSIX_UID_AS_USR:
+		{
+			gmep->type = SID_NAME_USER;
+			break;
+		}
+		case SURS_POSIX_GID_AS_GRP:
+		{
+			gmep->type = SID_NAME_DOM_GRP;
+			break;
+		}
+		case SURS_POSIX_GID_AS_ALS:
+		{
+			gmep->type = SID_NAME_ALIAS;
+			break;
+		}
+	}
+
+	fstrcpy(gmep->nt_name, uidtoname((uid_t) gmep->unix_id));
+	fstrcpy(gmep->unix_name, gmep->nt_name);
+	gmep->nt_domain = global_sam_name;
+
+	return True;
 }
 
 /************************************************************************
@@ -1104,6 +1086,11 @@ BOOL lookupsmbgrpnam(const char *unix_grp_name, DOM_NAME_MAP * grp)
 *************************************************************************/
 BOOL lookupsmbgrpsid(DOM_SID *sid, DOM_NAME_MAP * gmep)
 {
+	POSIX_ID id;
+	static fstring nt_name;
+	static fstring unix_name;
+	static fstring nt_domain;
+
 	fstring sid_str;
 	sid_to_string(sid_str, sid);
 	DEBUG(10, ("lookupsmbgrpsid: nt sid %s\n", sid_str));
@@ -1115,85 +1102,75 @@ BOOL lookupsmbgrpsid(DOM_SID *sid, DOM_NAME_MAP * gmep)
 	{
 		return True;
 	}
-	if (lp_server_role() != ROLE_DOMAIN_NONE)
+	gmep->nt_name = nt_name;
+	gmep->unix_name = unix_name;
+	gmep->nt_domain = nt_domain;
+	/*
+	 * here we should do a LsaLookupNames() call
+	 * to check the status of the name with the PDC.
+	 * if the PDC know nothing of the name, it's ours.
+	 */
+	if (lp_server_role() == ROLE_DOMAIN_MEMBER)
 	{
-		POSIX_ID id;
-		static fstring nt_name;
-		static fstring unix_name;
-		static fstring nt_domain;
-		gmep->nt_name = nt_name;
-		gmep->unix_name = unix_name;
-		gmep->nt_domain = nt_domain;
-		/*
-		 * here we should do a LsaLookupNames() call
-		 * to check the status of the name with the PDC.
-		 * if the PDC know nothing of the name, it's ours.
-		 */
-		if (lp_server_role() == ROLE_DOMAIN_MEMBER)
-		{
 #if 0
-			lsa_lookup_sids(global_myworkgroup, gmep->sid,
-					gmep->nt_name, gmep->nt_domain...);
+		lsa_lookup_sids(global_myworkgroup, gmep->sid,
+				gmep->nt_name, gmep->nt_domain...);
 #endif
-		}
-
-		/*
-		 * ok, it's one of ours.  we therefore "create" an nt group or
-		 * alias name named after the unix group.  this is the point
-		 * where "appliance mode" should get its teeth in, as unix
-		 * groups won't really exist, they will only be numbers...
-		 */
-
-		/* name is not explicitly mapped
-		 * with map files or the PDC
-		 * so we are responsible for it...
-		 */
-
-		if (lp_server_role() == ROLE_DOMAIN_MEMBER)
-		{
-			/* ... as a LOCAL group. */
-			gmep->type = SID_NAME_ALIAS;
-		}
-		else
-		{
-			/* ... as a DOMAIN group. */
-			gmep->type = SID_NAME_DOM_GRP;
-		}
-
-		sid_copy(&gmep->sid, sid);
-		if (!surs_sam_sid_to_unixid(&gmep->sid, &id, False))
-		{
-			return False;
-		}
-
-		gmep->unix_id = id.id;
-		switch (id.type)
-		{
-			case SURS_POSIX_UID_AS_USR:
-			{
-				gmep->type = SID_NAME_USER;
-				break;
-			}
-			case SURS_POSIX_GID_AS_GRP:
-			{
-				gmep->type = SID_NAME_DOM_GRP;
-				break;
-			}
-			case SURS_POSIX_GID_AS_ALS:
-			{
-				gmep->type = SID_NAME_ALIAS;
-				break;
-			}
-		}
-
-		fstrcpy(gmep->nt_name, gidtoname((gid_t) gmep->unix_id));
-		fstrcpy(gmep->unix_name, gmep->nt_name);
-		gmep->nt_domain = global_sam_name;
-		return True;
 	}
 
-	/* oops */
-	return False;
+	/*
+	 * ok, it's one of ours.  we therefore "create" an nt group or
+	 * alias name named after the unix group.  this is the point
+	 * where "appliance mode" should get its teeth in, as unix
+	 * groups won't really exist, they will only be numbers...
+	 */
+
+	/* name is not explicitly mapped
+	 * with map files or the PDC
+	 * so we are responsible for it...
+	 */
+
+	if (lp_server_role() == ROLE_DOMAIN_MEMBER)
+	{
+		/* ... as a LOCAL group. */
+		gmep->type = SID_NAME_ALIAS;
+	}
+	else
+	{
+		/* ... as a DOMAIN group. */
+		gmep->type = SID_NAME_DOM_GRP;
+	}
+
+	sid_copy(&gmep->sid, sid);
+	if (!surs_sam_sid_to_unixid(&gmep->sid, &id, False))
+	{
+		return False;
+	}
+
+	gmep->unix_id = id.id;
+	switch (id.type)
+	{
+		case SURS_POSIX_UID_AS_USR:
+		{
+			gmep->type = SID_NAME_USER;
+			break;
+		}
+		case SURS_POSIX_GID_AS_GRP:
+		{
+			gmep->type = SID_NAME_DOM_GRP;
+			break;
+		}
+		case SURS_POSIX_GID_AS_ALS:
+		{
+			gmep->type = SID_NAME_ALIAS;
+			break;
+		}
+	}
+
+	fstrcpy(gmep->nt_name, gidtoname((gid_t) gmep->unix_id));
+	fstrcpy(gmep->unix_name, gmep->nt_name);
+	gmep->nt_domain = global_sam_name;
+	return True;
 }
 
 /*************************************************************************
@@ -1201,6 +1178,10 @@ BOOL lookupsmbgrpsid(DOM_SID *sid, DOM_NAME_MAP * gmep)
 *************************************************************************/
 BOOL lookupsmbgrpgid(gid_t gid, DOM_NAME_MAP * gmep)
 {
+	static fstring nt_name;
+	static fstring unix_name;
+	static fstring nt_domain;
+
 	DEBUG(10, ("lookupsmbgrpgid: unix gid %d\n", (int)gid));
 	if (map_alias_gid(gid, gmep))
 	{
@@ -1210,55 +1191,46 @@ BOOL lookupsmbgrpgid(gid_t gid, DOM_NAME_MAP * gmep)
 	{
 		return True;
 	}
-	if (lp_server_role() != ROLE_DOMAIN_NONE)
+	gmep->nt_name = nt_name;
+	gmep->unix_name = unix_name;
+	gmep->nt_domain = nt_domain;
+	gmep->unix_id = (uint32)gid;
+	/*
+	 * here we should do a LsaLookupNames() call
+	 * to check the status of the name with the PDC.
+	 * if the PDC know nothing of the name, it's ours.
+	 */
+	if (lp_server_role() == ROLE_DOMAIN_MEMBER)
 	{
-		static fstring nt_name;
-		static fstring unix_name;
-		static fstring nt_domain;
-		gmep->nt_name = nt_name;
-		gmep->unix_name = unix_name;
-		gmep->nt_domain = nt_domain;
-		gmep->unix_id = (uint32)gid;
-		/*
-		 * here we should do a LsaLookupNames() call
-		 * to check the status of the name with the PDC.
-		 * if the PDC know nothing of the name, it's ours.
-		 */
-		if (lp_server_role() == ROLE_DOMAIN_MEMBER)
-		{
-		}
-
-		/*
-		 * ok, it's one of ours.  we therefore "create" an nt group or
-		 * alias name named after the unix group.  this is the point
-		 * where "appliance mode" should get its teeth in, as unix
-		 * groups won't really exist, they will only be numbers...
-		 */
-
-		/* name is not explicitly mapped
-		 * with map files or the PDC
-		 * so we are responsible for it...
-		 */
-
-		if (lp_server_role() == ROLE_DOMAIN_MEMBER)
-		{
-			/* ... as a LOCAL group. */
-			gmep->type = SID_NAME_ALIAS;
-		}
-		else
-		{
-			/* ... as a DOMAIN group. */
-			gmep->type = SID_NAME_DOM_GRP;
-		}
-		fstrcpy(gmep->nt_domain, global_sam_name);
-		fstrcpy(gmep->nt_name, gidtoname(gid));
-		fstrcpy(gmep->unix_name, gmep->nt_name);
-		return get_sid_and_type(gmep->nt_domain,
-					gmep->nt_name, gmep->type, gmep);
 	}
 
-	/* oops */
-	return False;
+	/*
+	 * ok, it's one of ours.  we therefore "create" an nt group or
+	 * alias name named after the unix group.  this is the point
+	 * where "appliance mode" should get its teeth in, as unix
+	 * groups won't really exist, they will only be numbers...
+	 */
+
+	/* name is not explicitly mapped
+	 * with map files or the PDC
+	 * so we are responsible for it...
+	 */
+
+	if (lp_server_role() == ROLE_DOMAIN_MEMBER)
+	{
+		/* ... as a LOCAL group. */
+		gmep->type = SID_NAME_ALIAS;
+	}
+	else
+	{
+		/* ... as a DOMAIN group. */
+		gmep->type = SID_NAME_DOM_GRP;
+	}
+	fstrcpy(gmep->nt_domain, global_sam_name);
+	fstrcpy(gmep->nt_name, gidtoname(gid));
+	fstrcpy(gmep->unix_name, gmep->nt_name);
+	return get_sid_and_type(gmep->nt_domain,
+				gmep->nt_name, gmep->type, gmep);
 }
 
 
