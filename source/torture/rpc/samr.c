@@ -2562,7 +2562,7 @@ static BOOL test_GroupList(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		    !NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES))
 			break;
 
-		for (i=0; i<q1.out.sam->count; i++) {
+		for (i=0; i<q1.out.num_entries; i++) {
 			add_string_to_array(mem_ctx,
 					    q1.out.sam->entries[i].name.string,
 					    &names, &num_names);
