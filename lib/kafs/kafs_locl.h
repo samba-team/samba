@@ -41,8 +41,9 @@
 #ifndef __KAFS_LOCL_H__
 #define __KAFS_LOCL_H__
 
+#ifdef HAVE_CONFIG_H
 #include <config.h>
-#include <protos.h>
+#endif
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -85,10 +86,11 @@
 #endif
 #include <roken.h>
 
+#include <krb5.h>
 #include <krb.h>
 #include <kafs.h>
 
-#include <resolve.h>
+/* #include <resolve.h> */
 
 #include "afssysdefs.h"
 
