@@ -209,9 +209,7 @@ void status_page(void)
 
 	if (!tdb) {
 		/* open failure either means no connections have been
-                   made or status=no */
-		if (!lp_status(-1))
-			printf("You need to have status=yes in your smb config file\n");
+                   made */
 	}
 
 

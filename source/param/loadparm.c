@@ -149,7 +149,6 @@ typedef struct
 #ifdef WITH_UTMP
 	char *szUtmpDir;
 	char *szWtmpDir;
-	char *szUtmpHostname;
 	BOOL bUtmp;
 #endif
 	char *szSourceEnv;
@@ -342,7 +341,6 @@ typedef struct
 	BOOL bCasePreserve;
 	BOOL bShortCasePreserve;
 	BOOL bCaseMangle;
-	BOOL status;
 	BOOL bHideDotFiles;
 	BOOL bHideUnReadable;
 	BOOL bBrowseable;
@@ -457,7 +455,6 @@ static service sDefault = {
 	True,			/* case preserve */
 	True,			/* short case preserve */
 	False,			/* case mangle */
-	True,			/* status */
 	True,			/* bHideDotFiles */
 	False,			/* bHideUnReadable */
 	True,			/* bBrowseable */
@@ -762,8 +759,6 @@ static struct parm_struct parm_table[] = {
 	{"debug pid", P_BOOL, P_GLOBAL, &Globals.bDebugPid, NULL, NULL, 0},
 	{"debug uid", P_BOOL, P_GLOBAL, &Globals.bDebugUid, NULL, NULL, 0},
 	
-	{"status", P_BOOL, P_LOCAL, &sDefault.status, NULL, NULL, FLAG_GLOBAL | FLAG_SHARE | FLAG_PRINT},
-
 	{"Protocol Options", P_SEP, P_SEPARATOR},
 	
 	{"protocol", P_ENUM, P_GLOBAL, &Globals.maxprotocol, NULL, enum_protocol, 0},
@@ -960,7 +955,6 @@ static struct parm_struct parm_table[] = {
 #ifdef WITH_UTMP
 	{"utmp directory", P_STRING, P_GLOBAL, &Globals.szUtmpDir, NULL, NULL, 0},
 	{"wtmp directory", P_STRING, P_GLOBAL, &Globals.szWtmpDir, NULL, NULL, 0},
-	{"utmp hostname", P_STRING, P_GLOBAL, &Globals.szUtmpHostname, NULL, NULL, 0},
 	{"utmp",          P_BOOL, P_GLOBAL, &Globals.bUtmp, NULL, NULL, 0},
 #endif
 	
@@ -1193,7 +1187,6 @@ static void init_globals(void)
 #ifdef WITH_UTMP
 	string_set(&Globals.szUtmpDir, "");
 	string_set(&Globals.szWtmpDir, "");
-	string_set(&Globals.szUtmpHostname, "%m");
 	Globals.bUtmp = False;
 #endif
 	string_set(&Globals.szSocketAddress, "0.0.0.0");
@@ -1436,7 +1429,6 @@ FN_GLOBAL_STRING(lp_lockdir, &Globals.szLockDir)
 #ifdef WITH_UTMP
 FN_GLOBAL_STRING(lp_utmpdir, &Globals.szUtmpDir)
 FN_GLOBAL_STRING(lp_wtmpdir, &Globals.szWtmpDir)
-FN_GLOBAL_STRING(lp_utmp_hostname, &Globals.szUtmpHostname)
 FN_GLOBAL_BOOL(lp_utmp, &Globals.bUtmp)
 #endif
 FN_GLOBAL_STRING(lp_rootdir, &Globals.szRootdir)
@@ -1643,7 +1635,6 @@ FN_LOCAL_BOOL(lp_casesensitive, bCaseSensitive)
 FN_LOCAL_BOOL(lp_preservecase, bCasePreserve)
 FN_LOCAL_BOOL(lp_shortpreservecase, bShortCasePreserve)
 FN_LOCAL_BOOL(lp_casemangle, bCaseMangle)
-FN_LOCAL_BOOL(lp_status, status)
 FN_LOCAL_BOOL(lp_hide_dot_files, bHideDotFiles)
 FN_LOCAL_BOOL(lp_hideunreadable, bHideUnReadable)
 FN_LOCAL_BOOL(lp_browseable, bBrowseable)
@@ -1883,7 +1874,6 @@ static BOOL lp_add_ipc(char *ipc_name, BOOL guest_ok)
 	string_set(&ServicePtrs[i]->szUsername, "");
 	string_set(&ServicePtrs[i]->comment, comment);
 	string_set(&ServicePtrs[i]->fstype, "IPC");
-	ServicePtrs[i]->status = False;
 	ServicePtrs[i]->iMaxConnections = 0;
 	ServicePtrs[i]->bAvailable = True;
 	ServicePtrs[i]->bRead_only = True;

@@ -668,6 +668,8 @@ extern int errno;
 
 #include "auth.h"
 
+#include "session.h"
+
 #ifndef MAXCODEPAGELINES
 #define MAXCODEPAGELINES 256
 #endif

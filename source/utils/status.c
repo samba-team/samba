@@ -198,41 +198,33 @@ static int traverse_fn1(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *st
 		return 0;
 	}
 
-	if (brief) {
-		ptr=srecs;
-		while (ptr!=NULL) {
-			if ((ptr->pid==crec.pid)&&(strncmp(ptr->machine,crec.machine,30)==0)) {
-				if (ptr->start > crec.start)
-					ptr->start=crec.start;
-				break;
-			}
-			ptr=ptr->next;
-		}
-		if (ptr==NULL) {
-			ptr=(struct session_record *) malloc(sizeof(struct session_record));
-			ptr->uid=crec.uid;
-			ptr->pid=crec.pid;
-			ptr->start=crec.start;
-			strncpy(ptr->machine,crec.machine,30);
-			ptr->machine[30]='\0';
-			ptr->next=srecs;
-			srecs=ptr;
-		}
-	} else {
-		Ucrit_addPid(crec.pid);  
-		if (processes_only) {
-			if (last_pid != crec.pid)
-				printf("%d\n",(int)crec.pid);
-			last_pid = crec.pid; /* XXXX we can still get repeats, have to
-						add a sort at some time */
-		} else {
-			printf("%-10.10s   %-8s %-8s %5d   %-8s (%s) %s",
-			       crec.name,uidtoname(crec.uid),gidtoname(crec.gid),(int)crec.pid,
-			       crec.machine,crec.addr,
-			       asctime(LocalTime(&crec.start)));
-		}
+	printf("%-10.10s   %5d   %-12s  %s",
+	       crec.name,(int)crec.pid,
+	       crec.machine,
+	       asctime(LocalTime(&crec.start)));
+
+	return 0;
+}
+
+static int traverse_sessionid(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *state)
+{
+	static pid_t last_pid;
+	struct session_record *ptr;
+	struct sessionid sessionid;
+
+	if (dbuf.dsize != sizeof(sessionid))
+		return 0;
+
+	memcpy(&sessionid, dbuf.dptr, sizeof(sessionid));
+
+	if (!process_exists(sessionid.pid) || !Ucrit_checkUsername(uidtoname(sessionid.uid))) {
+		return 0;
 	}
 
+	printf("%5d   %-12s  %-12s  %-12s (%s)\n",
+	       (int)sessionid.pid, uidtoname(sessionid.uid), gidtoname(sessionid.gid), 
+	       sessionid.remote_machine, sessionid.hostname);
+	
 	return 0;
 }
 
@@ -316,46 +308,38 @@ static int traverse_fn1(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *st
 		return profile_dump();
 	}
 	
-	tdb = tdb_open_log(lock_path("connections.tdb"), 0, USE_TDB_MMAP_FLAG, O_RDONLY, 0);
+	tdb = tdb_open_log(lock_path("sessionid.tdb"), 0, USE_TDB_MMAP_FLAG, O_RDONLY, 0);
 	if (!tdb) {
-		printf("connections.tdb not initialised\n");
-		if (!lp_status(-1))
-			printf("You need to have status=yes in your smb config file\n");
-		return(0);
-	}  else if (verbose) {
-		printf("Opened status file %s\n", fname);
+		printf("sessionid.tdb not initialised\n");
 	}
 
 	if (locks_only) goto locks;
 
 	printf("\nSamba version %s\n",VERSION);
-	if (brief) {
-		printf("PID     Username  Machine                       Time logged in\n");
-		printf("-------------------------------------------------------------------\n");
-	} else {
-		printf("Service      uid      gid      pid     machine\n");
-		printf("----------------------------------------------\n");
+	printf("PID     Username      Group         Machine                        \n");
+	printf("-------------------------------------------------------------------\n");
+
+	tdb_traverse(tdb, traverse_sessionid, NULL);
+	tdb_close(tdb);
+  
+	tdb = tdb_open_log(lock_path("connections.tdb"), 0, USE_TDB_MMAP_FLAG, O_RDONLY, 0);
+	if (!tdb) {
+		printf("connections.tdb not initialised\n");
+	}  else if (verbose) {
+		printf("Opened status file %s\n", fname);
 	}
+
+	if (brief) 
+		exit(0);
+	
+	printf("\nService      pid     machine       Connected at\n");
+	printf("-------------------------------------------------------\n");
+
 	tdb_traverse(tdb, traverse_fn1, NULL);
 	tdb_close(tdb);
 
  locks:
 	if (processes_only) exit(0);
-  
-	if (brief)  {
-		ptr=srecs;
-		while (ptr!=NULL) {
-			printf("%-8d%-10.10s%-30.30s%s",
-			       (int)ptr->pid,uidtoname(ptr->uid),
-			       ptr->machine,
-			       asctime(LocalTime(&(ptr->start))));
-			ptr=ptr->next;
-		}
-		printf("\n");
-		exit(0);
-	}
-
-	printf("\n");
 
 	if (!shares_only) {
 		int ret;
