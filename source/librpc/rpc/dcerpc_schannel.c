@@ -59,7 +59,7 @@ static NTSTATUS schan_sign_packet(struct dcerpc_security *dcerpc_security,
 static void schan_security_end(struct dcerpc_security *dcerpc_security)
 {
 	struct schannel_state *schannel_state = dcerpc_security->private;
-	return schannel_end(&schannel_state);
+	schannel_end(&schannel_state);
 }
 
 
