@@ -38,14 +38,13 @@
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
-#include "protos.h"
 
 RCSID("$Id$");
 #endif
 
 #include <des.h>
 #include <des_locl.h>
-#include <ktypes.h>
+#include <bits.h>
 
 #include <string.h>
 
