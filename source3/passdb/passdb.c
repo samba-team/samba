@@ -42,15 +42,14 @@ static void* pdb_handle = NULL;
 ***************************************************************/
 BOOL initialize_password_db(BOOL reload)
 {
-
-	char*	modulename = lp_passdb_module_path();
-	
 	/* This function is unfinished right now, so just 
 	   ignore the details and always return True.  It is here 
 	   only as a placeholder --jerry */
 	return True;
 
 #if _NOT_YET_	
+	char*	modulename = lp_passdb_module_path();
+	
 	/* load another module? */
 	if (reload && pdb_handle)
 	{

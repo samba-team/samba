@@ -72,7 +72,7 @@ NTSTATUS new_cli_net_req_chal(struct cli_state *cli, DOM_CHAL *clnt_chal,
 
         /* Return result */
 
-        if (result == NT_STATUS_OK) {
+        if (NT_STATUS_IS_OK(result)) {
                 memcpy(srv_chal, r.srv_chal.data, sizeof(srv_chal->data));
         }
         
@@ -129,7 +129,7 @@ NTSTATUS new_cli_net_auth2(struct cli_state *cli, uint16 sec_chan,
 
         result = r.status;
 
-        if (result == NT_STATUS_OK) {
+        if (NT_STATUS_IS_OK(result)) {
                 UTIME zerotime;
                 
                 /*
@@ -175,7 +175,7 @@ NTSTATUS new_cli_nt_setup_creds(struct cli_state *cli,
         /* send a client challenge; receive a server challenge */
         result = new_cli_net_req_chal(cli, &clnt_chal, &srv_chal);
 
-        if (result != NT_STATUS_OK) {
+        if (!NT_STATUS_IS_OK(result)) {
                 DEBUG(0,("cli_nt_setup_creds: request challenge failed\n"));
                 return result;
         }
@@ -199,14 +199,15 @@ NTSTATUS new_cli_nt_setup_creds(struct cli_state *cli,
          * Receive an auth-2 challenge response and check it.
          */
         
-        if (!new_cli_net_auth2(cli, (lp_server_role() == ROLE_DOMAIN_MEMBER) ?
-                               SEC_CHAN_WKSTA : SEC_CHAN_BDC, 0x000001ff, 
-                               &srv_chal)) {
-                DEBUG(0,("cli_nt_setup_creds: auth2 challenge failed\n"));
-                return False;
+	result = new_cli_net_auth2(cli, (lp_server_role() == ROLE_DOMAIN_MEMBER) ?
+				   SEC_CHAN_WKSTA : SEC_CHAN_BDC, 0x000001ff, 
+				   &srv_chal);
+	if (!NT_STATUS_IS_OK(result)) {
+                DEBUG(0,("cli_nt_setup_creds: auth2 challenge failed %s\n",
+			 get_nt_error_msg(result)));
         }
 
-        return True;
+        return result;
 }
 
 /* Logon Control 2 */
