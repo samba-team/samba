@@ -50,9 +50,9 @@ static char* Dfs_Crop_Whitespace(char* line)
 
   if(line[0]=='#' || line[0]==';') return NULL;
   
-  for(i=0;i<PSTRING_LEN && line[i]==' ';i++);
+  for(i=0;i<len && line[i]==' ';i++);
 
-  if(i>=PSTRING_LEN) return NULL;
+  if(i>=len) return NULL;
   
   line = &line[i];
 
@@ -71,7 +71,7 @@ static char* Dfs_Crop_Whitespace(char* line)
   return line;
 }
 
-BOOL parse_referral(char* s, struct referral* ref)
+static BOOL parse_referral(char* s, struct referral* ref)
 {
 #define MAXTOK_IN_REFERRAL 3
   char *tok[MAXTOK_IN_REFERRAL+1];
@@ -111,29 +111,7 @@ BOOL parse_referral(char* s, struct referral* ref)
   return True;
 }
 
-void load_dfsmaps(void)
-{
-  int i=0;
-  if(!lp_host_msdfs()) 
-    return;
-  
-  for(i=0;*lp_servicename(i) && *lp_dfsmap(i) 
-	&& !lp_dfsmap_loaded(i);i++)
-    {
-      char* dfsmapfile = lp_dfsmap(i);
-      DEBUG(4,("loading dfsmap for servicename: %s\n",lp_servicename(i)));
-      if(load_dfsmap(dfsmapfile,i))
-	{
-	  set_dfsmap_loaded(i,True);
-	}
-      else
-	{
-	  DEBUG(0,("handle_dfsmap: Unable to load Dfs map file %s.\nService %s not using MS Dfs",dfsmapfile,lp_servicename(i)));
-	  set_dfsmap_loaded(i,False);
-	}
-      
-    }
-}
+
 
 BOOL load_dfsmap(char* fname, int snum)
 {
@@ -242,6 +220,30 @@ BOOL load_dfsmap(char* fname, int snum)
   fclose(fp);
   msdfs_close();
   return True;
+}
+
+void load_dfsmaps(void)
+{
+  int i=0;
+  if(!lp_host_msdfs()) 
+    return;
+  
+  for(i=0;*lp_servicename(i) && *lp_dfsmap(i) 
+	&& !lp_dfsmap_loaded(i);i++)
+    {
+      char* dfsmapfile = lp_dfsmap(i);
+      DEBUG(4,("loading dfsmap for servicename: %s\n",lp_servicename(i)));
+      if(load_dfsmap(dfsmapfile,i))
+	{
+	  set_dfsmap_loaded(i,True);
+	}
+      else
+	{
+	  DEBUG(0,("handle_dfsmap: Unable to load Dfs map file %s.\nService %s not using MS Dfs",dfsmapfile,lp_servicename(i)));
+	  set_dfsmap_loaded(i,False);
+	}
+      
+    }
 }
 	  
 #else 
