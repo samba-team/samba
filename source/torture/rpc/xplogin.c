@@ -659,7 +659,7 @@ static NTSTATUS test_getgroups(struct smbcli_transport *transport,
 				continue;
 
 			l.in.connect_handle = &connect_handle;
-			l.in.domain = &e.out.sam->entries[i].name;
+			l.in.domain_name = &e.out.sam->entries[i].name;
 
 			status = dcerpc_samr_LookupDomain(p, mem_ctx, &l);
 
@@ -823,7 +823,7 @@ static NTSTATUS test_getallsids(struct smbcli_transport *transport,
 				continue;
 
 			l.in.connect_handle = &connect_handle;
-			l.in.domain = &e.out.sam->entries[i].name;
+			l.in.domain_name = &e.out.sam->entries[i].name;
 
 			status = dcerpc_samr_LookupDomain(p, mem_ctx, &l);
 

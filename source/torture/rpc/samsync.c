@@ -143,7 +143,7 @@ static struct policy_handle *samsync_open_domain(TALLOC_CTX *mem_ctx,
 
 	name.string = domain;
 	l.in.connect_handle = samsync_state->connect_handle;
-	l.in.domain = &name;
+	l.in.domain_name = &name;
 
 	nt_status = dcerpc_samr_LookupDomain(samsync_state->p_samr, mem_ctx, &l);
 	if (!NT_STATUS_IS_OK(nt_status)) {
