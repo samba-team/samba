@@ -1,3 +1,7 @@
+Sun Sep  7 14:33:50 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* kdc/kerberos5.c: Check invalid flag.
+
 Fri Sep  5 14:19:38 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 	* lib/krb5/verify_user.c: Use get_init_creds/verify_init_creds.
