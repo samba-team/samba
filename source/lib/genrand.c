@@ -117,6 +117,7 @@ static void do_reseed(unsigned char *md4_outbuf)
   int fd;
   struct timeval tval;
   pid_t mypid;
+  struct passwd *pw;
 
   memset(md4_inbuf, '\0', sizeof(md4_inbuf));
 
@@ -143,6 +144,17 @@ static void do_reseed(unsigned char *md4_outbuf)
   /* possibly add in some secret file contents */
   do_filehash("/etc/shadow", &md4_inbuf[0]);
   do_filehash(SMB_PASSWD_FILE, &md4_inbuf[16]);
+
+  /* add in the root encrypted password. On any system where security is taken
+     seriously this will be secret */
+  pw = getpwnam("root");
+  if (pw) {
+	  int i;
+	  unsigned char md4_tmp[16];
+	  mdfour(md4_tmp, pw->pw_passwd, strlen(pw->pw_passwd));
+	  for (i=0;i<16;i++)
+		  md4_inbuf[8+i] ^= md4_tmp[i];
+  }
 
   /*
    * Finally add the counter, time of day, and pid.
