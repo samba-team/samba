@@ -692,6 +692,7 @@ krb5_error_code
 krb5_print_address (const krb5_address *addr, 
 		    char *str, size_t len, size_t *ret_len)
 {
+    size_t ret;
     struct addr_operations *a = find_atype(addr->addr_type);
 
     if (a == NULL) {
@@ -712,10 +713,13 @@ krb5_print_address (const krb5_address *addr,
 	    len -= l;
 	    s += l;
 	}
-	*ret_len = s - str;
+	if(ret_len != NULL)
+	    *ret_len = s - str;
 	return 0;
     }
-    *ret_len = (*a->print_addr)(addr, str, len);
+    ret = (*a->print_addr)(addr, str, len);
+    if(ret_len != NULL)
+	*ret_len = ret;
     return 0;
 }
 
