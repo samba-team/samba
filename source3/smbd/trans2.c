@@ -2246,7 +2246,8 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 				SSVAL(params,0,0);
 				send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0);
 				return(-1);
-			}
+			} else
+				return (UNIXERROR(ERRDOS,ERRbadpath));
 	    } else {
 			/*
 			 * Original code - this is an open file.
