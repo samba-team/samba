@@ -101,7 +101,7 @@ void init_samr_q_lookup_domain(SAMR_Q_LOOKUP_DOMAIN * q_u,
 	q_u->connect_pol = *pol;
 
 	init_uni_hdr(&q_u->hdr_domain, len_name);
-	init_unistr2(&q_u->uni_domain, dom_name, len_name);
+	init_unistr2(&q_u->uni_domain, dom_name);
 }
 
 /*******************************************************************
@@ -637,7 +637,7 @@ void init_unk_info5(SAM_UNK_INFO_5 * u_5,const char *server)
 
 	init_uni_hdr(&u_5->hdr_server, len_server);
 
-	init_unistr2(&u_5->uni_server, server, len_server);
+	init_unistr2(&u_5->uni_server, server);
 }
 
 /*******************************************************************
@@ -692,8 +692,8 @@ void init_unk_info2(SAM_UNK_INFO_2 * u_2,
 
 	memset(u_2->padding, 0, sizeof(u_2->padding));	/* 12 bytes zeros */
 
-	init_unistr2(&u_2->uni_domain, domain, len_domain);
-	init_unistr2(&u_2->uni_server, server, len_server);
+	init_unistr2(&u_2->uni_domain, domain);
+	init_unistr2(&u_2->uni_server, server);
 }
 
 /*******************************************************************
@@ -1573,9 +1573,9 @@ NTSTATUS init_sam_dispinfo_1(TALLOC_CTX *ctx, SAM_DISPINFO_1 *sam, uint32 num_en
 		ZERO_STRUCTP(&sam->str[i].uni_full_name);
 		ZERO_STRUCTP(&sam->str[i].uni_acct_desc);
 
-		init_unistr2(&sam->str[i].uni_acct_name, pdb_get_username(pwd),  len_sam_name);
-		init_unistr2(&sam->str[i].uni_full_name, pdb_get_fullname(pwd),  len_sam_full);
-		init_unistr2(&sam->str[i].uni_acct_desc, pdb_get_acct_desc(pwd), len_sam_desc);
+		init_unistr2(&sam->str[i].uni_acct_name, pdb_get_username(pwd));
+		init_unistr2(&sam->str[i].uni_full_name, pdb_get_fullname(pwd));
+		init_unistr2(&sam->str[i].uni_acct_desc, pdb_get_acct_desc(pwd));
 	}
 
 	return NT_STATUS_OK;
@@ -1691,8 +1691,8 @@ NTSTATUS init_sam_dispinfo_2(TALLOC_CTX *ctx, SAM_DISPINFO_2 *sam, uint32 num_en
 		ZERO_STRUCTP(&sam->str[i].uni_srv_name);
 		ZERO_STRUCTP(&sam->str[i].uni_srv_desc);
 
-		init_unistr2(&sam->str[i].uni_srv_name, username,  len_sam_name);
-		init_unistr2(&sam->str[i].uni_srv_desc, pdb_get_acct_desc(pwd), len_sam_desc);
+		init_unistr2(&sam->str[i].uni_srv_name, username);
+		init_unistr2(&sam->str[i].uni_srv_desc, pdb_get_acct_desc(pwd));
 	}
 
 	return NT_STATUS_OK;
@@ -1785,8 +1785,8 @@ NTSTATUS init_sam_dispinfo_3(TALLOC_CTX *ctx, SAM_DISPINFO_3 *sam, uint32 num_en
 
 		init_sam_entry3(&sam->sam[i], start_idx + i + 1, len_sam_name, len_sam_desc, grp->rid);
 	  
-		init_unistr2(&sam->str[i].uni_grp_name, grp->name, len_sam_name);
-		init_unistr2(&sam->str[i].uni_grp_desc, grp->comment, len_sam_desc);
+		init_unistr2(&sam->str[i].uni_grp_name, grp->name);
+		init_unistr2(&sam->str[i].uni_grp_desc, grp->comment);
 	}
 
 	return NT_STATUS_OK;
@@ -2223,8 +2223,8 @@ void init_samr_group_info1(GROUP_INFO1 * gr1,
 
 	init_uni_hdr(&gr1->hdr_acct_desc, desc_len);
 
-	init_unistr2(&gr1->uni_acct_name, acct_name, acct_len);
-	init_unistr2(&gr1->uni_acct_desc, acct_desc, desc_len);
+	init_unistr2(&gr1->uni_acct_name, acct_name);
+	init_unistr2(&gr1->uni_acct_desc, acct_desc);
 }
 
 /*******************************************************************
@@ -2308,7 +2308,7 @@ void init_samr_group_info4(GROUP_INFO4 * gr4, char *acct_desc)
 	DEBUG(5, ("init_samr_group_info4\n"));
 
 	init_uni_hdr(&gr4->hdr_acct_desc, acct_len);
-	init_unistr2(&gr4->uni_acct_desc, acct_desc, acct_len);
+	init_unistr2(&gr4->uni_acct_desc, acct_desc);
 }
 
 /*******************************************************************
@@ -2391,7 +2391,7 @@ void init_samr_q_create_dom_group(SAMR_Q_CREATE_DOM_GROUP * q_e,
 	q_e->pol = *pol;
 
 	init_uni_hdr(&q_e->hdr_acct_desc, acct_len);
-	init_unistr2(&q_e->uni_acct_desc, acct_desc, acct_len);
+	init_unistr2(&q_e->uni_acct_desc, acct_desc);
 
 	q_e->access_mask = access_mask;
 }
@@ -3509,12 +3509,12 @@ void init_samr_alias_info1(ALIAS_INFO1 * al1, char *acct_name, uint32 num_member
 	DEBUG(5, ("init_samr_alias_info1\n"));
 
 	init_uni_hdr(&al1->hdr_acct_name, acct_len_name);
-	init_unistr2(&al1->uni_acct_name, acct_name, acct_len_name);
+	init_unistr2(&al1->uni_acct_name, acct_name);
 
 	al1->num_member=num_member;
 
 	init_uni_hdr(&al1->hdr_acct_desc, acct_len_desc);
-	init_unistr2(&al1->uni_acct_desc, acct_desc, acct_len_desc);
+	init_unistr2(&al1->uni_acct_desc, acct_desc);
 }
 
 /*******************************************************************
@@ -3565,7 +3565,7 @@ void init_samr_alias_info3(ALIAS_INFO3 * al3, char *acct_desc)
 	DEBUG(5, ("init_samr_alias_info3\n"));
 
 	init_uni_hdr(&al3->hdr_acct_desc, acct_len);
-	init_unistr2(&al3->uni_acct_desc, acct_desc, acct_len);
+	init_unistr2(&al3->uni_acct_desc, acct_desc);
 }
 
 /*******************************************************************
@@ -4280,7 +4280,7 @@ void init_samr_q_create_dom_alias(SAMR_Q_CREATE_DOM_ALIAS * q_u,
 	q_u->dom_pol = *hnd;
 
 	init_uni_hdr(&q_u->hdr_acct_desc, acct_len);
-	init_unistr2(&q_u->uni_acct_desc, acct_desc, acct_len);
+	init_unistr2(&q_u->uni_acct_desc, acct_desc);
 
 	q_u->access_mask = 0x001f000f;
 }
@@ -4672,7 +4672,7 @@ NTSTATUS init_samr_q_lookup_names(TALLOC_CTX *ctx, SAMR_Q_LOOKUP_NAMES * q_u,
 	for (i = 0; i < num_names; i++) {
 		int len_name = name[i] != NULL ? strlen(name[i]) : 0;
 		init_uni_hdr(&q_u->hdr_name[i], len_name);	/* unicode header for user_name */
-		init_unistr2(&q_u->uni_name[i], name[i], len_name);	/* unicode string for machine account */
+		init_unistr2(&q_u->uni_name[i], name[i]);	/* unicode string for machine account */
 	}
 
 	return NT_STATUS_OK;
@@ -5016,7 +5016,7 @@ void init_samr_q_create_user(SAMR_Q_CREATE_USER * q_u,
 	q_u->domain_pol = *pol;
 
 	init_uni_hdr(&q_u->hdr_name, len_name);
-	init_unistr2(&q_u->uni_name, name, len_name);
+	init_unistr2(&q_u->uni_name, name);
 
 	q_u->acb_info = acb_info;
 	q_u->access_mask = access_mask;
@@ -5273,7 +5273,7 @@ void init_sam_user_info11(SAM_USER_INFO_11 * usr,
 	ZERO_STRUCT(usr->padding_7);	/* 0 - padding 16 bytes */
 	usr->padding_8 = 0;	/* 0 - padding 4 bytes */
 
-	init_unistr2(&usr->uni_mach_acct, mach_acct, len_mach_acct);	/* unicode string for machine account */
+	init_unistr2(&usr->uni_mach_acct, mach_acct);	/* unicode string for machine account */
 }
 
 /*******************************************************************
@@ -5585,16 +5585,16 @@ void init_sam_user_info23A(SAM_USER_INFO_23 * usr, NTTIME * logon_time,	/* all z
 
 	memcpy(usr->pass, newpass, sizeof(usr->pass));
 
-	init_unistr2(&usr->uni_user_name, user_name, len_user_name);	/* NULL */
-	init_unistr2(&usr->uni_full_name, full_name, len_full_name);
-	init_unistr2(&usr->uni_home_dir, home_dir, len_home_dir);
-	init_unistr2(&usr->uni_dir_drive, dir_drive, len_dir_drive);
-	init_unistr2(&usr->uni_logon_script, log_scr, len_logon_script);
-	init_unistr2(&usr->uni_profile_path, prof_path, len_profile_path);
-	init_unistr2(&usr->uni_acct_desc, desc, len_description);
-	init_unistr2(&usr->uni_workstations, wkstas, len_workstations);
-	init_unistr2(&usr->uni_unknown_str, unk_str, len_unknown_str);
-	init_unistr2(&usr->uni_munged_dial, mung_dial, len_munged_dial);
+	init_unistr2(&usr->uni_user_name, user_name);	/* NULL */
+	init_unistr2(&usr->uni_full_name, full_name);
+	init_unistr2(&usr->uni_home_dir, home_dir);
+	init_unistr2(&usr->uni_dir_drive, dir_drive);
+	init_unistr2(&usr->uni_logon_script, log_scr);
+	init_unistr2(&usr->uni_profile_path, prof_path);
+	init_unistr2(&usr->uni_acct_desc, desc);
+	init_unistr2(&usr->uni_workstations, wkstas);
+	init_unistr2(&usr->uni_unknown_str, unk_str);
+	init_unistr2(&usr->uni_munged_dial, mung_dial);
 
 	usr->unknown_6 = unknown_6;	/* 0x0000 04ec */
 	usr->padding4 = 0;
@@ -6093,16 +6093,16 @@ NTSTATUS init_sam_user_info21A(SAM_USER_INFO_21 *usr, SAM_ACCOUNT *pw, DOM_SID *
 	ZERO_STRUCT(usr->padding1);
 	ZERO_STRUCT(usr->padding2);
 
-	init_unistr2(&usr->uni_user_name, user_name, len_user_name);
-	init_unistr2(&usr->uni_full_name, full_name, len_full_name);
-	init_unistr2(&usr->uni_home_dir, home_dir, len_home_dir);
-	init_unistr2(&usr->uni_dir_drive, dir_drive, len_dir_drive);
-	init_unistr2(&usr->uni_logon_script, logon_script, len_logon_script);
-	init_unistr2(&usr->uni_profile_path, profile_path, len_profile_path);
-	init_unistr2(&usr->uni_acct_desc, description, len_description);
-	init_unistr2(&usr->uni_workstations, workstations, len_workstations);
-	init_unistr2(&usr->uni_unknown_str, NULL, len_unknown_str);
-	init_unistr2(&usr->uni_munged_dial, munged_dial, len_munged_dial);
+	init_unistr2(&usr->uni_user_name, user_name);
+	init_unistr2(&usr->uni_full_name, full_name);
+	init_unistr2(&usr->uni_home_dir, home_dir);
+	init_unistr2(&usr->uni_dir_drive, dir_drive);
+	init_unistr2(&usr->uni_logon_script, logon_script);
+	init_unistr2(&usr->uni_profile_path, profile_path);
+	init_unistr2(&usr->uni_acct_desc, description);
+	init_unistr2(&usr->uni_workstations, workstations);
+	init_unistr2(&usr->uni_unknown_str, NULL);
+	init_unistr2(&usr->uni_munged_dial, munged_dial);
 
 	usr->unknown_6 = pdb_get_unknown_6(pw);
 	usr->padding4 = 0;
@@ -6245,7 +6245,7 @@ void init_sam_user_info20A(SAM_USER_INFO_20 *usr, SAM_ACCOUNT *pw)
 
 	len_munged_dial  = munged_dial  != NULL ? strlen(munged_dial )+1 : 0;
 	init_uni_hdr(&usr->hdr_munged_dial, len_munged_dial);
-	init_unistr2(&usr->uni_munged_dial, munged_dial, len_munged_dial);
+	init_unistr2(&usr->uni_munged_dial, munged_dial);
 
 }
 
@@ -6717,7 +6717,7 @@ void init_samr_q_connect(SAMR_Q_CONNECT * q_u,
 
 	/* make PDC server name \\server */
 	q_u->ptr_srv_name = len_srv_name > 0 ? 1 : 0;
-	init_unistr2(&q_u->uni_srv_name, srv_name, len_srv_name + 1);
+	init_unistr2(&q_u->uni_srv_name, srv_name);
 
 	/* example values: 0x0000 0002 */
 	q_u->access_mask = access_mask;
@@ -6790,7 +6790,7 @@ void init_samr_q_connect4(SAMR_Q_CONNECT4 * q_u,
 
 	/* make PDC server name \\server */
 	q_u->ptr_srv_name = len_srv_name > 0 ? 1 : 0;
-	init_unistr2(&q_u->uni_srv_name, srv_name, len_srv_name + 1);
+	init_unistr2(&q_u->uni_srv_name, srv_name);
 
 	/* Only value we've seen, possibly an address type ? */
 	q_u->unk_0 = 2;
@@ -6935,7 +6935,7 @@ void init_samr_q_get_dom_pwinfo(SAMR_Q_GET_DOM_PWINFO * q_u,
 
 	q_u->ptr = 1;
 	init_uni_hdr(&q_u->hdr_srv_name, len_srv_name);
-	init_unistr2(&q_u->uni_srv_name, srv_name, len_srv_name);
+	init_unistr2(&q_u->uni_srv_name, srv_name);
 }
 
 /*******************************************************************
@@ -7103,9 +7103,9 @@ void init_samr_q_chgpasswd_user(SAMR_Q_CHGPASSWD_USER * q_u,
 
 	q_u->ptr_0 = 1;
 	init_uni_hdr(&q_u->hdr_dest_host, len_dest_host);
-	init_unistr2(&q_u->uni_dest_host, dest_host, len_dest_host);
+	init_unistr2(&q_u->uni_dest_host, dest_host);
 	init_uni_hdr(&q_u->hdr_user_name, len_user_name);
-	init_unistr2(&q_u->uni_user_name, user_name, len_user_name);
+	init_unistr2(&q_u->uni_user_name, user_name);
 
 	init_enc_passwd(&q_u->nt_newpass, nt_newpass);
 	init_enc_hash(&q_u->nt_oldhash, nt_oldhash);

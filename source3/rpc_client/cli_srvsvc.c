@@ -142,11 +142,11 @@ WERROR cli_srvsvc_net_share_enum(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 			s = unistr2_tdup(mem_ctx, &r.ctr.share.info1[i].info_1_str.uni_netname);
 			if (s)
-				init_unistr2(&info1->info_1_str.uni_netname, s, strlen(s) + 1);
+				init_unistr2(&info1->info_1_str.uni_netname, s);
 		
 			s = unistr2_tdup(mem_ctx, &r.ctr.share.info1[i].info_1_str.uni_remark);
 			if (s)
-				init_unistr2(&info1->info_1_str.uni_remark, s, strlen(s) + 1);
+				init_unistr2(&info1->info_1_str.uni_remark, s);
 
 		}		
 
@@ -170,19 +170,19 @@ WERROR cli_srvsvc_net_share_enum(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 			s = unistr2_tdup(mem_ctx, &r.ctr.share.info2[i].info_2_str.uni_netname);
 			if (s)
-				init_unistr2(&info2->info_2_str.uni_netname, s, strlen(s) + 1);
+				init_unistr2(&info2->info_2_str.uni_netname, s);
 
 			s = unistr2_tdup(mem_ctx, &r.ctr.share.info2[i].info_2_str.uni_remark);
 			if (s)
-				init_unistr2(&info2->info_2_str.uni_remark, s, strlen(s) + 1);
+				init_unistr2(&info2->info_2_str.uni_remark, s);
 
 			s = unistr2_tdup(mem_ctx, &r.ctr.share.info2[i].info_2_str.uni_path);
 			if (s)
-				init_unistr2(&info2->info_2_str.uni_path, s, strlen(s) + 1);
+				init_unistr2(&info2->info_2_str.uni_path, s);
 
 			s = unistr2_tdup(mem_ctx, &r.ctr.share.info2[i].info_2_str.uni_passwd);
 			if (s)
-				init_unistr2(&info2->info_2_str.uni_passwd, s, strlen(s) + 1);
+				init_unistr2(&info2->info_2_str.uni_passwd, s);
 		}
 		break;
 	}
@@ -388,11 +388,11 @@ WERROR cli_srvsvc_net_file_enum(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 			s = unistr2_tdup(mem_ctx, &r.ctr.file.info3[i].info_3_str.uni_path_name);
 			if (s)
-				init_unistr2(&info3->info_3_str.uni_path_name, s, strlen(s) + 1);
+				init_unistr2(&info3->info_3_str.uni_path_name, s);
 		
 			s = unistr2_tdup(mem_ctx, &r.ctr.file.info3[i].info_3_str.uni_user_name);
 			if (s)
-				init_unistr2(&info3->info_3_str.uni_user_name, s, strlen(s) + 1);
+				init_unistr2(&info3->info_3_str.uni_user_name, s);
 
 		}		
 
