@@ -111,6 +111,8 @@ mode_t unix_mode(connection_struct *conn,int dosmode,const char *fname)
       result |= lp_force_create_mode(SNUM(conn));
     }
   }
+
+  DEBUG(3,("unix_mode(%s) returning 0%o\n",fname,(int)result ));
   return(result);
 }
 

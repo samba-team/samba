@@ -832,16 +832,15 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
     fstrcpy(user,p);
     p = skip_string(p,1);
     /*
-     * Incoming user is in DOS codepage format. Convert
+     * Incoming user and domain are in DOS codepage format. Convert
      * to UNIX.
      */
     dos_to_unix(user,True);
     domain = p;
-
+    dos_to_unix(domain, True);
     DEBUG(3,("Domain=[%s]  NativeOS=[%s] NativeLanMan=[%s]\n",
 	     domain,skip_string(p,1),skip_string(p,2)));
   }
-
 
   DEBUG(3,("sesssetupX:name=[%s]\n",user));
 
