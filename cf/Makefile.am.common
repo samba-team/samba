@@ -8,6 +8,8 @@ INCLUDES = -I$(top_builddir)/include
 
 AM_CFLAGS += $(WFLAGS)
 
+CP	= cp
+
 COMPILE_ET = $(top_builddir)/lib/com_err/compile_et
 
 ## set build_HEADERZ to headers that should just be installed in build tree
@@ -71,8 +73,8 @@ install-build-headers:: $(include_HEADERS) $(build_HEADERZ)
 		else file="$$f"; fi; \
 		if cmp -s  $$file $(buildinclude)/$$f 2> /dev/null ; then \
 		: ; else \
-			echo " cp $$file $(buildinclude)/$$f"; \
-			cp $$file $(buildinclude)/$$f; \
+			echo " $(CP) $$file $(buildinclude)/$$f"; \
+			$(CP) $$file $(buildinclude)/$$f; \
 		fi ; \
 	done
 
