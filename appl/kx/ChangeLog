@@ -1,3 +1,7 @@
+2002-03-18  Johan Danielsson  <joda@pdc.kth.se>
+
+	* rxtelnet.in, rxterm.in: add forward (-f) option
+
 2001-09-17  Assar Westerlund  <assar@sics.se>
 
 	* kx.h: add a kludge to make it build on aix (that defines NOERROR
