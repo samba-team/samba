@@ -1281,8 +1281,8 @@ SPOOL_PRINTER_DRIVER_INFO_LEVEL_3;
 
 /* SPOOL_PRINTER_DRIVER_INFO_LEVEL_6 structure */
 typedef struct {
-	uint32	dummy1;
-	uint32	version;
+	uint32 dummy1;
+	uint32 version;
 	uint32 name_ptr;
 	uint32 environment_ptr;
 	uint32 driverpath_ptr;
@@ -1683,6 +1683,35 @@ typedef struct spool_r_getjob
 
 }
 SPOOL_R_GETJOB;
+
+typedef struct spool_q_replyopenprinter
+{
+	UNISTR2 string;
+	uint32 printer;
+	uint32 type;
+	NEW_BUFFER *buffer;
+}
+SPOOL_Q_REPLYOPENPRINTER;
+
+typedef struct spool_r_replyopenprinter
+{
+	POLICY_HND handle;
+	uint32 status;
+}
+SPOOL_R_REPLYOPENPRINTER;
+
+typedef struct spool_q_replycloseprinter
+{
+	POLICY_HND handle;
+}
+SPOOL_Q_REPLYCLOSEPRINTER;
+
+typedef struct spool_r_replycloseprinter
+{
+	POLICY_HND handle;
+	uint32 status;
+}
+SPOOL_R_REPLYCLOSEPRINTER;
 
 #define PRINTER_DRIVER_VERSION 2
 #define PRINTER_DRIVER_ARCHITECTURE "Windows NT x86"
