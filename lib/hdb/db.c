@@ -216,13 +216,20 @@ static krb5_error_code
 DB_open(krb5_context context, HDB *db, int flags, mode_t mode)
 {
     char *fn;
+    krb5_error_code ret;
 
     asprintf(&fn, "%s.db", db->name);
     db->db = dbopen(fn, flags, mode, DB_BTREE, NULL);
     free(fn);
     if(db->db == NULL)
 	return errno;
-    return 0;
+    if((flags & O_ACCMODE) == O_RDONLY)
+	ret = hdb_check_db_format(context, db);
+    else
+	ret = hdb_init_db(context, db);
+    if(ret == HDB_ERR_NOENTRY)
+	return 0;
+    return ret;
 }
 
 krb5_error_code
