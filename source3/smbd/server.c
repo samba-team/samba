@@ -186,7 +186,7 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 	int fd_listenset[FD_SETSIZE];
 	fd_set listen_set;
 	int s;
-	int max_fd = 0;
+	int maxfd = 0;
 	int i;
 	char *ports;
 
@@ -249,9 +249,6 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 				if(s == -1)
 					return False;
 
-				if (max_fd < s)
-					max_fd = s;
-
 				/* ready to listen */
 				set_socket_options(s,"SO_KEEPALIVE"); 
 				set_socket_options(s,user_socket_options);
@@ -265,6 +262,7 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 					return False;
 				}
 				FD_SET(s,&listen_set);
+				maxfd = MAX( maxfd, s);
 
 				num_sockets++;
 				if (num_sockets >= FD_SETSIZE) {
@@ -307,6 +305,7 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 
 			fd_listenset[num_sockets] = s;
 			FD_SET(s,&listen_set);
+			maxfd = MAX( maxfd, s);
 
 			num_sockets++;
 
@@ -341,7 +340,7 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 		memcpy((char *)&lfds, (char *)&listen_set, 
 		       sizeof(listen_set));
 		
-		num = sys_select(max_fd+1,&lfds,NULL,NULL,NULL);
+		num = sys_select(maxfd+1,&lfds,NULL,NULL,NULL);
 		
 		if (num == -1 && errno == EINTR) {
 			if (got_sig_term) {
