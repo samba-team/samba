@@ -97,7 +97,7 @@ char *ldb_base64_encode(struct ldb_context *ldb, const char *buf, int len)
 	int bytes = (len*8 + 5)/6;
 	char *out;
 
-	out = talloc_array_p(ldb, char, bytes+2);
+	out = talloc_array(ldb, char, bytes+2);
 	if (!out) return NULL;
 
 	for (i=0;i<bytes;i++) {
@@ -305,7 +305,7 @@ static char *next_chunk(struct ldb_context *ldb,
 		if (chunk_size+1 >= alloc_size) {
 			char *c2;
 			alloc_size += 1024;
-			c2 = talloc_realloc_p(ldb, chunk, char, alloc_size);
+			c2 = talloc_realloc(ldb, chunk, char, alloc_size);
 			if (!c2) {
 				talloc_free(chunk);
 				errno = ENOMEM;
@@ -427,7 +427,7 @@ static int msg_add_empty(struct ldb_context *ldb,
 {
 	struct ldb_message_element *el2, *el;
 
-	el2 = talloc_realloc_p(msg, msg->elements, 
+	el2 = talloc_realloc(msg, msg->elements, 
 			       struct ldb_message_element, msg->num_elements+1);
 	if (!el2) {
 		errno = ENOMEM;
@@ -468,10 +468,10 @@ struct ldb_ldif *ldb_ldif_read(struct ldb_context *ldb,
 
 	value.data = NULL;
 
-	ldif = talloc_p(ldb, struct ldb_ldif);
+	ldif = talloc(ldb, struct ldb_ldif);
 	if (!ldif) return NULL;
 
-	ldif->msg = talloc_p(ldif, struct ldb_message);
+	ldif->msg = talloc(ldif, struct ldb_message);
 	if (ldif->msg == NULL) {
 		talloc_free(ldif);
 		return NULL;
@@ -556,7 +556,7 @@ struct ldb_ldif *ldb_ldif_read(struct ldb_context *ldb,
 		    flags == el->flags) {
 			/* its a continuation */
 			el->values = 
-				talloc_realloc_p(msg->elements, el->values, 
+				talloc_realloc(msg->elements, el->values, 
 						 struct ldb_val, el->num_values+1);
 			if (!el->values) {
 				goto failed;
@@ -565,7 +565,7 @@ struct ldb_ldif *ldb_ldif_read(struct ldb_context *ldb,
 			el->num_values++;
 		} else {
 			/* its a new attribute */
-			msg->elements = talloc_realloc_p(ldif, msg->elements, 
+			msg->elements = talloc_realloc(ldif, msg->elements, 
 							 struct ldb_message_element, 
 							 msg->num_elements+1);
 			if (!msg->elements) {
@@ -574,7 +574,7 @@ struct ldb_ldif *ldb_ldif_read(struct ldb_context *ldb,
 			el = &msg->elements[msg->num_elements];
 			el->flags = flags;
 			el->name = talloc_strdup(msg->elements, attr);
-			el->values = talloc_p(msg->elements, struct ldb_val);
+			el->values = talloc(msg->elements, struct ldb_val);
 			if (!el->values || !el->name) {
 				goto failed;
 			}

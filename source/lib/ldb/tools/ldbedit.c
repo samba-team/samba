@@ -280,7 +280,7 @@ static int do_edit(struct ldb_context *ldb, struct ldb_message **msgs1, int coun
 	}
 
 	while ((ldif = ldb_ldif_read_file(ldb, f))) {
-		msgs2 = talloc_realloc_p(ldb, msgs2, struct ldb_message *, count2+1);
+		msgs2 = talloc_realloc(ldb, msgs2, struct ldb_message *, count2+1);
 		if (!msgs2) {
 			fprintf(stderr, "out of memory");
 			return -1;
