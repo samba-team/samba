@@ -104,7 +104,7 @@ der_put_int (unsigned char *p, size_t len, int val, size_t *size)
 	if(p[1] < 128) {
 	    if(len < 1)
 		return ASN1_OVERFLOW;
-	    *p++ = 0xff;
+	    *p-- = 0xff;
 	    len--;
 	}
     }
