@@ -1602,6 +1602,8 @@ static BOOL api_PrintJobInfo(int cnum,uint16 vuid,char *param,char *data,
 	
 	DEBUG(3,("Setting print name to %s\n",name));
 	
+        become_root(True);
+
 	for (i=0;i<MAX_OPEN_FILES;i++)
 	  if (Files[i].open && Files[i].print_file)
 	    {
@@ -1617,6 +1619,8 @@ static BOOL api_PrintJobInfo(int cnum,uint16 vuid,char *param,char *data,
 		string_set(&Files[i].name,name);
 	      break;
 	    }
+
+         unbecome_root(True);
       }
     desc.errcode=NERR_Success;
   
