@@ -74,7 +74,6 @@ static void sync_child(char *name, int nm_type,
 	struct nmb_name called, calling;
 
 	if (!cli_initialise(&cli) || !cli_connect(&cli, name, &ip)) {
-		fclose(fp);
 		return;
 	}
 
@@ -84,7 +83,6 @@ static void sync_child(char *name, int nm_type,
 	if (!cli_session_request(&cli, &calling, &called))
 	{
 		cli_shutdown(&cli);
-		fclose(fp);
 		return;
 	}
 
