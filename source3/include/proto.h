@@ -793,7 +793,7 @@ void SMBOWFencrypt_ntv2(const uchar kr[16],
 				char resp_buf[16]);
 void SMBgenclientchals(char *lm_cli_chal,
 				char *nt_cli_chal, int *nt_cli_chal_len,
-				const char *srv, const char *domain);
+				const char *srv, const char *dom);
 void ntv2_owf_gen(const uchar owf[16], 
 				const char *user_n,
 				const char *domain_n,

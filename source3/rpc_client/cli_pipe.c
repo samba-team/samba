@@ -293,7 +293,9 @@ static BOOL rpc_api_pipe(struct cli_state *cli, uint16 nt_pipe_fnum, uint16 cmd,
 	          pp_ret_params, p_ret_params_len, /* return params, len */
 	          pp_ret_data, p_ret_data_len))    /* return data, len */
 	{
-		DEBUG(0, ("cli_pipe: return critical error. Error was %s\n", cli_errstr(cli)));
+		fstring errstr;
+		cli_safe_errstr(cli, errstr, sizeof(errstr));
+		DEBUG(0, ("cli_pipe: return critical error. Error was %s\n", errstr));
 		return False;
 	}
 
@@ -1043,8 +1045,10 @@ BOOL cli_nt_session_open(struct cli_state *cli, char *pipe_name, uint16* nt_pipe
 	{
 		if ((fnum = cli_nt_create(cli, &(pipe_name[5]))) == -1)
 		{
+			fstring errstr;
+			cli_safe_errstr(cli, errstr, sizeof(errstr));
 			DEBUG(0,("cli_nt_session_open: cli_nt_create failed on pipe %s to machine %s.  Error was %s\n",
-				 &(pipe_name[5]), cli->desthost, cli_errstr(cli)));
+				 &(pipe_name[5]), cli->desthost, errstr));
 			return False;
 		}
 
@@ -1054,8 +1058,10 @@ BOOL cli_nt_session_open(struct cli_state *cli, char *pipe_name, uint16* nt_pipe
 	{
 		if ((fnum = cli_open(cli, pipe_name, O_CREAT|O_RDWR, DENY_NONE)) == -1)
 		{
+			fstring errstr;
+			cli_safe_errstr(cli, errstr, sizeof(errstr));
 			DEBUG(0,("cli_nt_session_open: cli_open failed on pipe %s to machine %s.  Error was %s\n",
-				 pipe_name, cli->desthost, cli_errstr(cli)));
+				 pipe_name, cli->desthost, errstr));
 			return False;
 		}
 
@@ -1064,8 +1070,10 @@ BOOL cli_nt_session_open(struct cli_state *cli, char *pipe_name, uint16* nt_pipe
 		/**************** Set Named Pipe State ***************/
 		if (!rpc_pipe_set_hnd_state(cli, *nt_pipe_fnum, pipe_name, 0x4300))
 		{
+			fstring errstr;
+			cli_safe_errstr(cli, errstr, sizeof(errstr));
 			DEBUG(0,("cli_nt_session_open: pipe hnd state failed.  Error was %s\n",
-				  cli_errstr(cli)));
+				  errstr));
 			cli_close(cli, *nt_pipe_fnum);
 			return False;
 		}
@@ -1078,8 +1086,10 @@ BOOL cli_nt_session_open(struct cli_state *cli, char *pipe_name, uint16* nt_pipe
 	                   &abstract, &transfer,
 	                   global_myname))
 	{
+		fstring errstr;
+		cli_safe_errstr(cli, errstr, sizeof(errstr));
 		DEBUG(0,("cli_nt_session_open: rpc bind failed. Error was %s\n",
-		          cli_errstr(cli)));
+		          errstr));
 		cli_close(cli, *nt_pipe_fnum);
 		return False;
 	}
