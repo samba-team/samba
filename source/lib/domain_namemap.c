@@ -281,22 +281,54 @@ static void delete_map_list(ubi_slList *map_list)
 }
 
 
-/**************************************************************************
- makes a group sid out of a domain sid and a _unix_ gid.
-***************************************************************************/
+/***************************************************************************
+ maps a domain sid to user name
+ ***************************************************************************/
 static BOOL make_mydomain_sid(DOM_NAME_MAP *grp, DOM_MAP_TYPE type)
 {
-	pstring sid_str;
-
-	if (!lookup_lsa_name(grp->nt_domain, grp->nt_name,
-	                     &grp->sid, &grp->type))
+	int ret = False;
+	fstring sid_str;
+ 
+	if (!map_domain_name_to_sid(&grp->sid, &(grp->nt_domain)))
 	{
 		return False;
 	}
 
-	if (grp->type == SID_NAME_UNKNOWN || grp->type == SID_NAME_DELETED)
+	if (sid_equal(&grp->sid, &global_sid_S_1_5_20))
 	{
-		return False;
+		/*
+		 * only builtin aliases are recognised in S-1-5-20
+		 */
+		DEBUG(10,("make_mydomain_sid: group %s in builtin domain\n",
+		           grp->nt_name));
+
+		if (lookup_builtin_alias_name(grp->nt_name, "BUILTIN", &grp->sid, &grp->type) != 0x0)
+		{
+			DEBUG(0,("unix group %s mapped to an unrecognised BUILTIN domain name %s\n",
+			          grp->unix_name, grp->nt_name));
+			return False;
+		}
+		ret = True;
+	}
+	else if (lookup_wk_user_name(grp->nt_name, grp->nt_domain, &grp->sid, &grp->type) == 0x0)
+	{
+		if (type != DOM_MAP_USER)
+		{
+			DEBUG(0,("well-known NT user %s\\%s listed in wrong map file\n",
+			          grp->nt_domain, grp->nt_name));
+			return False;
+		}
+		ret = True;
+	}
+	else if (lookup_wk_group_name(grp->nt_name, grp->nt_domain, &grp->sid, &grp->type) == 0x0)
+	{
+		if (type != DOM_MAP_DOMAIN)
+		{
+			DEBUG(0,("well-known NT group %s\\%s listed in wrong map file\n",
+			          grp->nt_domain, grp->nt_name));
+			return False;
+		}
+		ret = True;
 	}
 	if (type != grp->type)
 	{
