@@ -24,7 +24,7 @@
 void writediff(REG_KEY *oldkey, REG_KEY *newkey, FILE *out)
 {
 	int i;
-	REG_KEY *t1,*t2;
+	REG_KEY *t1, *t2;
 	REG_VAL *v1, *v2;
 	WERROR error1, error2;
 
@@ -59,7 +59,7 @@ void writediff(REG_KEY *oldkey, REG_KEY *newkey, FILE *out)
 
 	for(i = 0; W_ERROR_IS_OK(error1 = reg_key_get_value_by_index(newkey, i, &v1)); i++) {
 		error2 = reg_key_get_value_by_name(oldkey, reg_val_name(v1), &v2);
-		if (((W_ERROR_IS_OK(error2) && reg_val_size(v2) != reg_val_size(v1)) || memcmp(reg_val_data_blk(v1), reg_val_data_blk(v2), reg_val_size(v1))) 
+		if ((W_ERROR_IS_OK(error2) && (reg_val_size(v2) != reg_val_size(v1) || memcmp(reg_val_data_blk(v1), reg_val_data_blk(v2), reg_val_size(v1)))) 
 			|| W_ERROR_EQUAL(error2, WERR_DEST_NOT_FOUND)) {
 			fprintf(out, "\"%s\"=%s:%s\n", reg_val_name(v1), str_regtype(reg_val_type(v1)), reg_val_data_string(v1));
 		}
