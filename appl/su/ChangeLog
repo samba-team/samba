@@ -1,3 +1,8 @@
+2000-06-03  Assar Westerlund  <assar@sics.se>
+
+	* su.c (main): just ignore shadow information if getspnam returns
+	NULL
+
 1999-10-20  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.am: use LIB_roken

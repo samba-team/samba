@@ -1,3 +1,8 @@
+2000-06-03  Assar Westerlund  <assar@sics.se>
+
+	* rshd.c (doit): check return value of getspnam.  From
+	<haba@pdc.kth.se>
+
 2000-05-23  Assar Westerlund  <assar@sics.se>
 
 	* rsh.c (proto): select on the normal socket when waiting for the
