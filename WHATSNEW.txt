@@ -107,6 +107,8 @@ buffers.
 24). Added Simplified Chinese codepage (936).
 25). Fixed expansion bug with %U, %G when multiple sessionsetups done
 in security > SHARE mode.
+26). Change to DEC enhanced mode security code to allow the same
+binary to work when in enhanced and non-enhanced security mode.
 
 Previous release notes for 1.9.18p4 follow.
 =========================================================================
