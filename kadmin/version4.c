@@ -651,7 +651,7 @@ kadm_ser_mod(krb5_context context,
     if (ret)
 	goto fail;
 
-    ret = kadm5_s_modify_principal_with_key(kadm_handle, &ent, mask);
+    ret = kadm5_s_modify_principal(kadm_handle, &ent, mask);
     if(ret) {
 	kadm5_free_principal_ent(kadm_handle, &ent);
 	krb5_warn(context, ret, "kadm5_s_modify_principal");
