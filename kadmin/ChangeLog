@@ -1,3 +1,8 @@
+1999-05-14  Assar Westerlund  <assar@sics.se>
+
+	* version4.c (error_code): try to handle really old krb4
+ 	distributions
+
 1999-05-11  Assar Westerlund  <assar@sics.se>
 
 	* init.c (init): initialize realm_max_life and realm_max_rlife
