@@ -55,37 +55,38 @@ TALLOC_CTX *talloc_init(void)
 void *talloc(TALLOC_CTX *t, size_t size)
 {
 	void *p;
-
 	if (size == 0)
 	{
 		/* debugging value used to track down
-		   memory problems */
-		p = (void*)0xdeadbeef;
+		   memory problems. BAD_PTR is defined
+		   in talloc.h */
+		p = BAD_PTR;
+		return p;
 	}
-	else
-	{
-		size = (size + (TALLOC_ALIGN-1)) & ~(TALLOC_ALIGN-1);
 
-		if (!t->list || (t->list->total_size - t->list->alloc_size) < size) {
-			struct talloc_chunk *c;
-			size_t asize = (size + (TALLOC_CHUNK_SIZE-1)) & ~(TALLOC_CHUNK_SIZE-1);
+	/* normal code path */
+	size = (size + (TALLOC_ALIGN-1)) & ~(TALLOC_ALIGN-1);
 
-			c = (struct talloc_chunk *)malloc(sizeof(*c));
-			if (!c) return NULL;
-			c->next = t->list;
-			c->ptr = (void *)malloc(asize);
-			if (!c->ptr) {
-				free(c);
-				return NULL;
-			}
-			c->alloc_size = 0;
-			c->total_size = asize;
-			t->list = c;
+	if (!t->list || (t->list->total_size - t->list->alloc_size) < size) {
+		struct talloc_chunk *c;
+		size_t asize = (size + (TALLOC_CHUNK_SIZE-1)) & ~(TALLOC_CHUNK_SIZE-1);
+
+		c = (struct talloc_chunk *)malloc(sizeof(*c));
+		if (!c) return NULL;
+		c->next = t->list;
+		c->ptr = (void *)malloc(asize);
+		if (!c->ptr) {
+			free(c);
+			return NULL;
 		}
-
-		p = ((char *)t->list->ptr) + t->list->alloc_size;
-		t->list->alloc_size += size;
+		c->alloc_size = 0;
+		c->total_size = asize;
+		t->list = c;
 	}
+
+	p = ((char *)t->list->ptr) + t->list->alloc_size;
+	t->list->alloc_size += size;
+
 	
 	return p;
 }
