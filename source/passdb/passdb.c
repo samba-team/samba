@@ -1158,36 +1158,3 @@ account without a valid local system user.\n", user_name);
 	pdb_free_sam(&sam_pass);
 	return True;
 }
-
-/***************************************************************************
- Search by uid.  Wrapper around pdb_getsampwnam()
- **************************************************************************/
-
-BOOL pdb_getsampwuid (SAM_ACCOUNT* user, uid_t uid)
-{
-	struct passwd	*pw;
-	fstring		name;
-
-	if (user==NULL) {
-		DEBUG(0,("pdb_getsampwuid: SAM_ACCOUNT is NULL.\n"));
-		return False;
-	}
-
-	/*
-	 * Never trust the uid in the passdb.  Lookup the username first
-	 * and then lokup the user by name in the sam.
-	 */
-	 
-	if ((pw=getpwuid_alloc(uid)) == NULL)  {
-		DEBUG(0,("pdb_getsampwuid: getpwuid(%d) return NULL. User does not exist in Unix accounts!\n", uid));
-		return False;
-	}
-	
-	fstrcpy (name, pw->pw_name);
-
-	passwd_free(&pw);
-
-	return pdb_getsampwnam (user, name);
-
-}
-

@@ -252,8 +252,14 @@ static void *make_internal_rpc_pipe_p(char *pipe_name,
 			      connection_struct *conn, uint16 vuid)
 {
 	pipes_struct *p;
+	user_struct *vuser = get_valid_user_struct(vuid);
 
 	DEBUG(4,("Create pipe requested %s\n", pipe_name));
+
+	if (!vuser && vuid != UID_FIELD_INVALID) {
+		DEBUG(0,("ERROR! vuid %d did not map to a valid vuser struct!\n", vuid));
+		return NULL;
+	}
 
 	p = (pipes_struct *)malloc(sizeof(*p));
 
@@ -308,6 +314,11 @@ static void *make_internal_rpc_pipe_p(char *pipe_name,
 	p->pipe_user.uid = (uid_t)-1;
 	p->pipe_user.gid = (gid_t)-1;
 	
+	/* Store the session key */
+	if (vuser) {
+		memcpy(p->session_key, vuser->session_key, sizeof(p->session_key));
+	}
+
 	/*
 	 * Initialize the incoming RPC struct.
 	 */

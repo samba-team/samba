@@ -1629,6 +1629,8 @@ typedef struct user_struct
 
 	NT_USER_TOKEN *nt_user_token;
 
+	uint8 session_key[16];
+
 	int session_id; /* used by utmp and pam session code */
 } user_struct;
 

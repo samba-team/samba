@@ -2439,9 +2439,6 @@ NTSTATUS _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SE
 {
 	uint32 rid = 0x0;
 	DOM_SID sid;
-	struct current_user user;
-	SAM_ACCOUNT *sam_pass=NULL;
-	unsigned char sess_key[16];
 	POLICY_HND *pol = &q_u->pol;
 	uint16 switch_value = q_u->switch_value;
 	SAM_USERINFO_CTR *ctr = q_u->ctr;
@@ -2450,13 +2447,6 @@ NTSTATUS _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SE
 	DEBUG(5, ("_samr_set_userinfo: %d\n", __LINE__));
 
 	r_u->status = NT_STATUS_OK;
-
-	if (p->ntlmssp_auth_validated) 	{
-		memcpy(&user, &p->pipe_user, sizeof(user));
-	} else 	{
-		extern struct current_user current_user;
-		memcpy(&user, &current_user, sizeof(user));
-	}
 
 	/* find the policy handle.  open a policy on it. */
 	if (!get_lsa_policy_samr_sid(p, pol, &sid))
@@ -2471,29 +2461,6 @@ NTSTATUS _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SE
 		return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
-
-	pdb_init_sam(&sam_pass);
-
-	/* 
-	 * We need the NT hash of the user who is changing the user's password.
-	 * This NT hash is used to generate a "user session key"
-	 * This "user session key" is in turn used to encrypt/decrypt the user's password.
-	 */
-
-	become_root();
-	ret = pdb_getsampwuid(sam_pass, user.uid);
-	unbecome_root();
-	if(ret == False) {
-		DEBUG(0,("_samr_set_userinfo: Unable to get smbpasswd entry for uid %u\n", (unsigned int)user.uid ));
-		pdb_free_sam(&sam_pass);
-		return NT_STATUS_ACCESS_DENIED;
-	}
-		
-	memset(sess_key, '\0', 16);
-	mdfour(sess_key, pdb_get_nt_passwd(sam_pass), 16);
-
-	pdb_free_sam(&sam_pass);
-
 	/* ok!  user info levels (lots: see MSDEV help), off we go... */
 	switch (switch_value) {
 		case 0x12:
@@ -2502,7 +2469,7 @@ NTSTATUS _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SE
 			break;
 
 		case 24:
-			SamOEMhash(ctr->info.id24->pass, sess_key, 516);
+			SamOEMhash(ctr->info.id24->pass, p->session_key, 516);
 
 			dump_data(100, (char *)ctr->info.id24->pass, 516);
 
@@ -2520,7 +2487,7 @@ NTSTATUS _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SE
 			 * info level and W2K SP2 drops down to level 23... JRA.
 			 */
 
-			SamOEMhash(ctr->info.id25->pass, sess_key, 532);
+			SamOEMhash(ctr->info.id25->pass, p->session_key, 532);
 
 			dump_data(100, (char *)ctr->info.id25->pass, 532);
 
@@ -2531,7 +2498,7 @@ NTSTATUS _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SE
 			return NT_STATUS_INVALID_INFO_CLASS;
 
 		case 23:
-			SamOEMhash(ctr->info.id23->pass, sess_key, 516);
+			SamOEMhash(ctr->info.id23->pass, p->session_key, 516);
 
 			dump_data(100, (char *)ctr->info.id23->pass, 516);
 

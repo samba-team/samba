@@ -423,6 +423,8 @@ failed authentication on named pipe %s.\n", domain, user_name, wks, p->name ));
 		return False;
 	}
 	
+	memcpy(p->session_key, server_info->session_key, sizeof(p->session_key));
+
 	uid = pdb_get_uid(server_info->sam_account);
 	gid = pdb_get_gid(server_info->sam_account);
 
