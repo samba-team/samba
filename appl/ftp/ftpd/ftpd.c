@@ -242,6 +242,7 @@ static RETSIGTYPE	 lostconn (int);
 static int	 receive_data (FILE *, FILE *);
 static void	 send_data (FILE *, FILE *, off_t);
 static struct passwd * sgetpwnam (char *);
+static void	 usage(void);
 
 static char *
 curdir(void)
@@ -287,18 +288,33 @@ parse_auth_level(char *str)
     return ret;	    
 }
 
+/*
+ * Print usage and die.
+ */
+
+static void
+usage (void)
+{
+    fprintf (stderr,
+	     "Usage: %s [-d] [-i] [-g guest_umask] [-l] [-p port]"
+	     " [-t timeout] [-T max_timeout] [-u umask] [-v]"
+	     " [-a auth_level] \n",
+	     __progname);
+    exit (1);
+}
+
 int
 main(int argc, char **argv)
 {
 	int addrlen, ch, on = 1, tos;
 	char *cp, line[LINE_MAX];
 	FILE *fd;
-
 	int not_inetd = 0;
 	int port;
 	struct servent *sp;
-	    
 	char tkfile[1024];
+
+	set_progname (argv[0]);
 
 	/* detach from any tickets and tokens */
 
@@ -381,14 +397,12 @@ main(int argc, char **argv)
 		    break;
 
 		default:
-		    warnx("unknown flag -%c ignored", argv[optind-1][0]);
-		    break;
+		    usage ();
 		}
 	}
 
 	if(not_inetd)
 	    mini_inetd (port);
-
 
 	/*
 	 * LOG_NDELAY sets up the logging connection immediately,
