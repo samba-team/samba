@@ -104,18 +104,19 @@ valid_etype(krb5_context context, krb5_enctype e)
 static krb5_error_code
 default_etypes(krb5_enctype **etype)
 {
-  krb5_enctype *p;
-  ALLOC(p, 6);
-  if(!p)
-    return ENOMEM;
-  *etype = p;
-  *p++ = ETYPE_DES3_CBC_SHA1;
-  *p++ = ETYPE_DES3_CBC_MD5;
-  *p++ = ETYPE_DES_CBC_MD5;
-  *p++ = ETYPE_DES_CBC_MD4;
-  *p++ = ETYPE_DES_CBC_CRC;
-  *p++ = 0;
-  return 0;
+    krb5_enctype p[] = {
+	ETYPE_DES3_CBC_SHA1,
+	ETYPE_DES3_CBC_MD5,
+	ETYPE_DES_CBC_MD5,
+	ETYPE_DES_CBC_MD4,
+	ETYPE_DES_CBC_CRC,
+	0
+    };
+    *etype = malloc(sizeof(p));
+    if(*etype == NULL)
+	return ENOMEM;
+    memcpy(*etype, p, sizeof(p));
+    return 0;
 }
 
 krb5_error_code
