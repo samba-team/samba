@@ -1,3 +1,17 @@
+2003-10-20  Johan Danielsson  <joda@pdc.kth.se>
+
+	* kdc/kerberos5.c (fix_transited_encoding): also verify with
+	policy, unless asked not to
+
+	* lib/krb5/rd_req.c (krb5_decrypt_ticket): try to verify transited
+	realms, unless the transited-policy-checked flag is set
+
+	* lib/krb5/transited.c (krb5_domain_x500_decode): handle zero
+	length tr data;
+	(krb5_check_transited): new function that does more useful stuff
+
+	* lib/krb5/get_cred.c: get capath info from [capaths] section
+
 2003-10-16  Johan Danielsson  <joda@pdc.kth.se>
 
 	* lib/krb5/fcache.c: Sleep forever waiting for lock. Previous
