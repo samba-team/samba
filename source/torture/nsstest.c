@@ -43,15 +43,14 @@ static void *find_fn(const char *name)
 	res = dlsym(h, s);
 	if (!res) {
 		printf("Can't find function %s\n", s);
-		exit(1);
+		return NULL;
 	}
 	return res;
 }
 
-static void report_nss_error(NSS_STATUS status)
+static void report_nss_error(const char *who, NSS_STATUS status)
 {
-	if (status >= NSS_STATUS_SUCCESS) return;
-	printf("NSS_STATUS=%d  %d\n", status, NSS_STATUS_SUCCESS);
+	printf("ERROR %s: NSS_STATUS=%d  %d\n", who, status, NSS_STATUS_SUCCESS);
 }
 
 static struct passwd *nss_getpwent(void)
@@ -61,13 +60,13 @@ static struct passwd *nss_getpwent(void)
 	static struct passwd pwd;
 	static char buf[1000];
 	NSS_STATUS status;
-	
+
 	status = _nss_getpwent_r(&pwd, buf, sizeof(buf), &nss_errno);
 	if (status == NSS_STATUS_NOTFOUND) {
 		return NULL;
 	}
-	if (status == NSS_STATUS_RETURN) {
-		report_nss_error(status);
+	if (status != NSS_STATUS_SUCCESS) {
+		report_nss_error("getpwent", status);
 		return NULL;
 	}
 	return &pwd;
@@ -85,8 +84,8 @@ static struct passwd *nss_getpwnam(const char *name)
 	if (status == NSS_STATUS_NOTFOUND) {
 		return NULL;
 	}
-	if (status == NSS_STATUS_RETURN) {
-		report_nss_error(status);
+	if (status != NSS_STATUS_SUCCESS) {
+		report_nss_error("getpwnam", status);
 		return NULL;
 	}
 	return &pwd;
@@ -104,8 +103,8 @@ static struct passwd *nss_getpwuid(uid_t uid)
 	if (status == NSS_STATUS_NOTFOUND) {
 		return NULL;
 	}
-	if (status == NSS_STATUS_RETURN) {
-		report_nss_error(status);
+	if (status != NSS_STATUS_SUCCESS) {
+		report_nss_error("getpwuid", status);
 		return NULL;
 	}
 	return &pwd;
@@ -114,15 +113,21 @@ static struct passwd *nss_getpwuid(uid_t uid)
 static void nss_setpwent(void)
 {
 	NSS_STATUS (*_nss_setpwent)(void) = find_fn("setpwent");
-
-	report_nss_error(_nss_setpwent());
+	NSS_STATUS status;
+	status = _nss_setpwent();
+	if (status != NSS_STATUS_SUCCESS) {
+		report_nss_error("setpwent", status);
+	}
 }
 
 static void nss_endpwent(void)
 {
 	NSS_STATUS (*_nss_endpwent)(void) = find_fn("endpwent");
-
-	report_nss_error(_nss_endpwent());
+	NSS_STATUS status;
+	status = _nss_endpwent();
+	if (status != NSS_STATUS_SUCCESS) {
+		report_nss_error("endpwent", status);
+	}
 }
 
 
@@ -138,8 +143,8 @@ static struct group *nss_getgrent(void)
 	if (status == NSS_STATUS_NOTFOUND) {
 		return NULL;
 	}
-	if (status == NSS_STATUS_RETURN) {
-		report_nss_error(status);
+	if (status != NSS_STATUS_SUCCESS) {
+		report_nss_error("getgrent", status);
 		return NULL;
 	}
 	return &grp;
@@ -157,8 +162,8 @@ static struct group *nss_getgrnam(const char *name)
 	if (status == NSS_STATUS_NOTFOUND) {
 		return NULL;
 	}
-	if (status == NSS_STATUS_RETURN) {
-		report_nss_error(status);
+	if (status != NSS_STATUS_SUCCESS) {
+		report_nss_error("getgrnam", status);
 		return NULL;
 	}
 	return &grp;
@@ -176,8 +181,8 @@ static struct group *nss_getgrgid(gid_t gid)
 	if (status == NSS_STATUS_NOTFOUND) {
 		return NULL;
 	}
-	if (status == NSS_STATUS_RETURN) {
-		report_nss_error(status);
+	if (status != NSS_STATUS_SUCCESS) {
+		report_nss_error("getgrgid", status);
 		return NULL;
 	}
 	return &grp;
@@ -186,15 +191,21 @@ static struct group *nss_getgrgid(gid_t gid)
 static void nss_setgrent(void)
 {
 	NSS_STATUS (*_nss_setgrent)(void) = find_fn("setgrent");
-
-	report_nss_error(_nss_setgrent());
+	NSS_STATUS status;
+	status = _nss_setgrent();
+	if (status != NSS_STATUS_SUCCESS) {
+		report_nss_error("setgrent", status);
+	}
 }
 
 static void nss_endgrent(void)
 {
 	NSS_STATUS (*_nss_endgrent)(void) = find_fn("endgrent");
-
-	report_nss_error(_nss_endgrent());
+	NSS_STATUS status;
+	status = _nss_endgrent();
+	if (status != NSS_STATUS_SUCCESS) {
+		report_nss_error("endgrent", status);
+	}
 }
 
 static int nss_initgroups(char *user, gid_t group, gid_t **groups, long int *start, long int *size)
@@ -204,8 +215,12 @@ static int nss_initgroups(char *user, gid_t group, gid_t **groups, long int *sta
 		find_fn("initgroups_dyn");
 	NSS_STATUS status;
 
+	if (!_nss_initgroups) return NSS_STATUS_UNAVAIL;
+
 	status = _nss_initgroups(user, group, start, size, groups, 0, &nss_errno);
-	report_nss_error(status);
+	if (status != NSS_STATUS_SUCCESS) {
+		report_nss_error("initgroups", status);
+	}
 	return status;
 }
 
@@ -246,11 +261,17 @@ static void nss_test_initgroups(char *name, gid_t gid)
 	long int start = 1;
 	gid_t *groups = NULL;
 	int i;
+	NSS_STATUS status;
 
 	groups = (gid_t *)malloc(size * sizeof(gid_t));
 	groups[0] = gid;
 
-	nss_initgroups(name, gid, &groups, &start, &size);
+	status = nss_initgroups(name, gid, &groups, &start, &size);
+	if (status == NSS_STATUS_UNAVAIL) {
+		printf("No initgroups fn\n");
+		return;
+	}
+
 	for (i=0; i<start-1; i++) {
 		printf("%d, ", groups[i]);
 	}
