@@ -1055,14 +1055,14 @@ convenience routine to grab string parameters into a rotating buffer,
 and run standard_sub_basic on them. The buffers can be written to by
 callers without affecting the source string.
 ********************************************************************/
-static char *lp_string(char *s)
+static char *lp_string(const char *s)
 {
   static char *bufs[10];
-  static int buflen[10];
+  static size_t buflen[10];
   static int next = -1;  
   char *ret;
   int i;
-  int len = s?strlen(s):0;
+  size_t len = s?strlen(s):0;
 
   if (next == -1) {
     /* initialisation */
@@ -1078,7 +1078,8 @@ static char *lp_string(char *s)
 
   if (buflen[next] != len) {
     buflen[next] = len;
-    if (bufs[next]) free(bufs[next]);
+    if (bufs[next])
+      free(bufs[next]);
     bufs[next] = (char *)malloc(len);
     if (!bufs[next]) {
       DEBUG(0,("out of memory in lp_string()"));
@@ -1092,7 +1093,7 @@ static char *lp_string(char *s)
   if (!s) 
     *ret = 0;
   else
-    StrCpy(ret,s);
+    StrnCpy(ret,s,len-1);
 
   trim_string(ret, "\"", "\"");
 
