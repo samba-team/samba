@@ -39,15 +39,15 @@ do_read (int fd,
 	 void *buf,
 	 size_t sz)
 {
-    int ret;
-
     if (do_encrypt) {
 #ifdef KRB4
 	if (auth_method == AUTH_KRB4) {
 	    return des_enc_read (fd, buf, sz, schedule, &iv);
 	} else
 #endif /* KRB4 */
+#ifdef KRB5
         if(auth_method == AUTH_KRB5) {
+	    krb5_error_code ret;
 	    u_int32_t len, outer_len;
 	    int status;
 	    krb5_data data;
@@ -76,9 +76,9 @@ do_read (int fd,
 	    memcpy (buf, data.data, len);
 	    krb5_data_free (&data);
 	    return len;
-	} else {
+	} else
+#endif /* KRB5 */
 	    abort ();
-	}
     } else
 	return read (fd, buf, sz);
 }
@@ -92,6 +92,7 @@ do_write (int fd, void *buf, size_t sz)
 	    return des_enc_write (fd, buf, sz, schedule, &iv);
 	} else
 #endif /* KRB4 */
+#ifdef KRB5
 	if(auth_method == AUTH_KRB5) {
 	    krb5_error_code status;
 	    krb5_data data;
@@ -116,9 +117,9 @@ do_write (int fd, void *buf, size_t sz)
 		return ret;
 	    free (data.data);
 	    return sz;
-	} else {
+	} else
+#endif /* KRB5 */
 	    abort();
-	}
     } else
 	return write (fd, buf, sz);
 }

@@ -97,8 +97,12 @@
 #include <krb.h>
 #include <prot.h>
 #endif
+#ifdef KRB5
 #include <krb5.h>
+#endif
+#ifdef KRB4
 #include <kafs.h>
+#endif
 
 #ifndef _PATH_NOLOGIN
 #define _PATH_NOLOGIN   "/etc/nologin"
@@ -124,9 +128,11 @@ enum auth_method { AUTH_KRB4, AUTH_KRB5, AUTH_BROKEN };
 
 extern enum auth_method auth_method;
 extern int do_encrypt;
+#ifdef KRB5
 extern krb5_context context;
 extern krb5_keyblock *keyblock;
 extern krb5_crypto crypto;
+#endif
 #ifdef KRB4
 extern des_key_schedule schedule;
 extern des_cblock iv;
