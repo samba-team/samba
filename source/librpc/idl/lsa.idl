@@ -453,12 +453,32 @@
 		);
 
 
+	/*******************/
 	/* Function:  0x21 */
-	NTSTATUS lsa_LookupPrivDisplayName();
+	/* in [out] there is a uin16 field
+	   which is not always present.
+	   its value varies */
+	NTSTATUS lsa_LookupPrivDisplayName (
+		[in,ref]     policy_handle *handle,
+		[in,ref]     lsa_Name *name,
+		[in]         uint16 unknown,     /* 0x0409 */
+		[in]         uint16 unknown2,    /* 0x0409 */
+		[out]        lsa_Name *disp_name,
+		[out]        uint16 unknown3     /* 0x0409 */
+		/* [out]        uint16 unknown4 */ /* not always present */
+		);
+
 	/* Function:        0x22 */
 	NTSTATUS lsa_DeleteObject();
-	/* Function:   0x23 */
-	NTSTATUS lsa_EnumAccountsWithUserRight();
+
+	
+	/*******************/
+	/* Function:      0x23 */
+	NTSTATUS lsa_EnumAccountsWithUserRight (
+		[in,ref]     policy_handle *handle,
+		[in]         lsa_Name *name,
+		[out,ref]    lsa_SidArray *sids
+		);
 
 	/* Function:      0x24 */
 	typedef struct {
