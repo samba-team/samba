@@ -1448,7 +1448,7 @@ inits a SAMR_Q_QUERY_DISPINFO structure.
 
 void init_samr_q_query_dispinfo(SAMR_Q_QUERY_DISPINFO * q_e, POLICY_HND *pol,
 				uint16 switch_level, uint32 start_idx,
-				uint32 max_entries)
+				uint32 max_entries, uint32 max_size)
 {
 	DEBUG(5, ("init_samr_q_query_dispinfo\n"));
 
@@ -1458,7 +1458,7 @@ void init_samr_q_query_dispinfo(SAMR_Q_QUERY_DISPINFO * q_e, POLICY_HND *pol,
 
 	q_e->start_idx = start_idx;
 	q_e->max_entries = max_entries;
-	q_e->max_size = 0xffff;	/* Not especially useful */
+	q_e->max_size = max_size;
 }
 
 /*******************************************************************

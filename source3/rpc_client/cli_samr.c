@@ -961,12 +961,45 @@ NTSTATUS cli_samr_query_dom_info(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
+/* This function returns the bizzare set of (max_entries, max_size) required
+   for the QueryDisplayInfo RPC to actually work against a domain controller
+   with large (10k and higher) numbers of users.  These values were 
+   obtained by inspection using ethereal and NT4 running User Manager. */
+
+void get_query_dispinfo_params(int loop_count, uint32 *max_entries,
+			       uint32 *max_size)
+{
+	switch(loop_count) {
+	case 0:
+		*max_entries = 512;
+		*max_size = 16383;
+		break;
+	case 1:
+		*max_entries = 1024;
+		*max_size = 32766;
+		break;
+	case 2:
+		*max_entries = 2048;
+		*max_size = 65532;
+		break;
+	case 3:
+		*max_entries = 4096;
+		*max_size = 131064;
+		break;
+	default:              /* loop_count >= 4 */
+		*max_entries = 4096;
+		*max_size = 131071;
+		break;
+	}
+}		     
+
 /* Query display info */
 
 NTSTATUS cli_samr_query_dispinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
                                  POLICY_HND *domain_pol, uint32 *start_idx,
                                  uint16 switch_value, uint32 *num_entries,
-                                 uint32 max_entries, SAM_DISPINFO_CTR *ctr)
+                                 uint32 max_entries, uint32 max_size,
+				 SAM_DISPINFO_CTR *ctr)
 {
 	prs_struct qbuf, rbuf;
 	SAMR_Q_QUERY_DISPINFO q;
@@ -984,7 +1017,7 @@ NTSTATUS cli_samr_query_dispinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	/* Marshall data and send request */
 
 	init_samr_q_query_dispinfo(&q, domain_pol, switch_value,
-				   *start_idx, max_entries);
+				   *start_idx, max_entries, max_size);
 
 	if (!samr_io_q_query_dispinfo("", &q, &qbuf, 0) ||
 	    !rpc_api_pipe_req(cli, SAMR_QUERY_DISPINFO, &qbuf, &rbuf)) {
