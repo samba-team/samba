@@ -190,8 +190,8 @@ struct winbindd_domain *find_domain_from_name(const char *domain_name)
 	/* Search through list */
 
 	for (domain = domain_list(); domain != NULL; domain = domain->next) {
-		if (strequal(domain_name, domain->name) ||
-		    strequal(domain_name, domain->full_name))
+		if (strequal_unix(domain_name, domain->name) ||
+		    strequal_unix(domain_name, domain->full_name))
 			return domain;
 	}
 
@@ -349,7 +349,7 @@ BOOL check_domain_env(char *domain_env, char *domain)
 	char *tmp = domain_env;
 
 	while(next_token(&tmp, name, ",", sizeof(fstring))) {
-		if (strequal(name, domain))
+		if (strequal_unix(name, domain))
 			return True;
 	}
 

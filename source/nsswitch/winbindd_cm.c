@@ -226,7 +226,7 @@ static void add_failed_connection_entry(struct winbindd_cm_conn *new_conn,
 	/* Check we already aren't in the cache */
 
 	for (fcc = failed_connection_cache; fcc; fcc = fcc->next) {
-		if (strequal(fcc->domain_name, new_conn->domain)) {
+		if (strequal_unix(fcc->domain_name, new_conn->domain)) {
 			DEBUG(10, ("domain %s already tried and failed\n",
 				   fcc->domain_name));
 			return;
@@ -285,8 +285,8 @@ static NTSTATUS cm_open_connection(const char *domain, const int pipe_index,
 
 	for (fcc = failed_connection_cache; fcc; fcc = fcc->next) {
 		
-		if (!(strequal(domain, fcc->domain_name) &&
-		      strequal(new_conn->controller, fcc->controller)))
+		if (!(strequal_unix(domain, fcc->domain_name) &&
+		      strequal_unix(new_conn->controller, fcc->controller)))
 			continue; /* Not our domain */
 
 		if ((time(NULL) - fcc->lookup_time) > 
@@ -404,8 +404,8 @@ static NTSTATUS get_connection_from_cache(const char *domain, const char *pipe_n
 	NTSTATUS result;
 
 	for (conn = cm_conns; conn; conn = conn->next) {
-		if (strequal(conn->domain, domain) && 
-		    strequal(conn->pipe_name, pipe_name)) {
+		if (strequal_unix(conn->domain, domain) && 
+		    strequal_unix(conn->pipe_name, pipe_name)) {
 			if (!connection_ok(conn)) {
 				if (conn->cli) {
 					cli_shutdown(conn->cli);
@@ -610,8 +610,8 @@ CLI_POLICY_HND *cm_get_sam_dom_handle(char *domain, DOM_SID *domain_sid)
 	/* Look for existing connections */
 
 	for (conn = cm_conns; conn; conn = conn->next) {
-		if (strequal(conn->domain, domain) &&
-		    strequal(conn->pipe_name, PIPE_SAMR) &&
+		if (strequal_unix(conn->domain, domain) &&
+		    strequal_unix(conn->pipe_name, PIPE_SAMR) &&
 		    conn->pipe_data.samr.pipe_type == SAM_PIPE_DOM) {
 
 			if (!connection_ok(conn)) {
@@ -630,8 +630,8 @@ CLI_POLICY_HND *cm_get_sam_dom_handle(char *domain, DOM_SID *domain_sid)
 		return False;
 
 	for (conn = cm_conns; conn; conn = conn->next) {
-		if (strequal(conn->domain, domain) &&
-		    strequal(conn->pipe_name, PIPE_SAMR) &&
+		if (strequal_unix(conn->domain, domain) &&
+		    strequal_unix(conn->pipe_name, PIPE_SAMR) &&
 		    conn->pipe_data.samr.pipe_type == SAM_PIPE_BASIC)
 			basic_conn = conn;
 	}
@@ -680,8 +680,8 @@ CLI_POLICY_HND *cm_get_sam_user_handle(char *domain, DOM_SID *domain_sid,
 	/* Look for existing connections */
 
 	for (conn = cm_conns; conn; conn = conn->next) {
-		if (strequal(conn->domain, domain) &&
-		    strequal(conn->pipe_name, PIPE_SAMR) &&
+		if (strequal_unix(conn->domain, domain) &&
+		    strequal_unix(conn->pipe_name, PIPE_SAMR) &&
 		    conn->pipe_data.samr.pipe_type == SAM_PIPE_USER &&
 		    conn->pipe_data.samr.rid == user_rid) {
 
@@ -701,8 +701,8 @@ CLI_POLICY_HND *cm_get_sam_user_handle(char *domain, DOM_SID *domain_sid,
 		return NULL;
 
 	for (conn = cm_conns; conn; conn = conn->next) {
-		if (strequal(conn->domain, domain) &&
-		    strequal(conn->pipe_name, PIPE_SAMR) &&
+		if (strequal_unix(conn->domain, domain) &&
+		    strequal_unix(conn->pipe_name, PIPE_SAMR) &&
 		    conn->pipe_data.samr.pipe_type == SAM_PIPE_DOM)
 			basic_conn = conn;
 	}
@@ -757,8 +757,8 @@ CLI_POLICY_HND *cm_get_sam_group_handle(char *domain, DOM_SID *domain_sid,
 	/* Look for existing connections */
 
 	for (conn = cm_conns; conn; conn = conn->next) {
-		if (strequal(conn->domain, domain) &&
-		    strequal(conn->pipe_name, PIPE_SAMR) &&
+		if (strequal_unix(conn->domain, domain) &&
+		    strequal_unix(conn->pipe_name, PIPE_SAMR) &&
 		    conn->pipe_data.samr.pipe_type == SAM_PIPE_GROUP &&
 		    conn->pipe_data.samr.rid == group_rid) {
 
@@ -778,8 +778,8 @@ CLI_POLICY_HND *cm_get_sam_group_handle(char *domain, DOM_SID *domain_sid,
 		return NULL;
 
 	for (conn = cm_conns; conn; conn = conn->next) {
-		if (strequal(conn->domain, domain) &&
-		    strequal(conn->pipe_name, PIPE_SAMR) &&
+		if (strequal_unix(conn->domain, domain) &&
+		    strequal_unix(conn->pipe_name, PIPE_SAMR) &&
 		    conn->pipe_data.samr.pipe_type == SAM_PIPE_DOM)
 			basic_conn = conn;
 	}
