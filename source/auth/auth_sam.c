@@ -280,8 +280,9 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 	}
 
 	acct_expiry = samdb_result_nttime(msgs[0], "accountExpires", 0);
-	must_change_time = samdb_result_force_pwd_change(sam_ctx, mem_ctx, 
-							 domain_dn, msgs[0], "pwdLastSet");
+	must_change_time = samdb_result_force_password_change(sam_ctx, mem_ctx, 
+							      domain_dn, msgs[0], 
+							      "pwdLastSet");
 	last_set_time = samdb_result_nttime(msgs[0], "pwdLastSet", 0);
 
 	workstation_list = samdb_result_string(msgs[0], "userWorkstations", NULL);

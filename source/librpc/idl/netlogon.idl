@@ -40,7 +40,7 @@ interface netlogon
 
 	WERROR netr_LogonUasLogon(
 		[in]   unistr *server_name,
-		[in]   unistr username,
+		[in]   unistr account_name,
 		[in]   unistr workstation,
 		[out]  netr_UasInfo *info
 		);
@@ -56,7 +56,7 @@ interface netlogon
 
 	WERROR netr_LogonUasLogoff(
 		[in] unistr *server_name,
-		[in] unistr username,
+		[in] unistr account_name,
 		[in] unistr workstation,
 		[out] netr_UasLogoffInfo info
 		);
@@ -97,7 +97,7 @@ interface netlogon
 		uint32      parameter_control;
 		uint32      logon_id_low;
 		uint32      logon_id_high;
-		netr_String username;
+		netr_String account_name;
 		netr_String workstation;
 	} netr_IdentityInfo;
 
@@ -149,19 +149,19 @@ interface netlogon
 		NTTIME logon_time;
 		NTTIME logoff_time;
 		NTTIME kickoff_time;
-		NTTIME passwd_last_set;
-		NTTIME passwd_can_change;
-		NTTIME passwd_must_change;
+		NTTIME password_last_set;
+		NTTIME password_can_change;
+		NTTIME password_must_change;
 		netr_String account_name;
 		netr_String full_name;
 		netr_String logon_script;
 		netr_String profile_path;
-		netr_String home_dir;
+		netr_String home_directory;
 		netr_String home_drive;
 		uint16 logon_count;
-		uint16 bad_passwd_count;
-		uint32 userid;
-		uint32 primary_group;
+		uint16 bad_password_count;
+		uint32 rid;
+		uint32 primary_gid;
 		uint32 group_count;
 		[size_is(group_count)] netr_GroupMembership *groupids;
 		uint32 user_flags;
@@ -183,19 +183,19 @@ interface netlogon
 		NTTIME logon_time;
 		NTTIME logoff_time;
 		NTTIME kickoff_time;
-		NTTIME passwd_last_set;
-		NTTIME passwd_can_change;
-		NTTIME passwd_must_change;
+		NTTIME password_last_set;
+		NTTIME password_can_change;
+		NTTIME password_must_change;
 		netr_String account_name;
 		netr_String full_name;
 		netr_String logon_script;
 		netr_String profile_path;
-		netr_String home_dir;
+		netr_String home_directory;
 		netr_String home_drive;
 		uint16 logon_count;
-		uint16 bad_passwd_count;
-		uint32 userid;
-		uint32 primary_group;
+		uint16 bad_password_count;
+		uint32 rid;
+		uint32 primary_gid;
 		uint32 group_count;
 		[size_is(group_count)] netr_GroupMembership *groupids;
 		uint32 user_flags;
@@ -280,7 +280,7 @@ interface netlogon
 
 	NTSTATUS netr_ServerAuthenticate(
 		[in]         unistr *server_name,
-		[in]         unistr username,
+		[in]         unistr account_name,
 		[in]         uint16 secure_channel_type,
 		[in]         unistr computer_name,
 		[in,out,ref] netr_Credential *credentials
@@ -292,7 +292,7 @@ interface netlogon
 
 	NTSTATUS netr_ServerPasswordSet(
 		[in]  unistr *server_name,
-		[in]  unistr username,
+		[in]  unistr account_name,
 		[in]  uint16 secure_channel_type,
 		[in]  unistr computer_name,
 		[in]  netr_Authenticator credential,
@@ -305,7 +305,7 @@ interface netlogon
 	/* Function 0x07 */
 
 	typedef struct {
-		unistr *username;
+		unistr *account_name;
 		netr_String unknown1;
 		netr_String unknown2;
 		netr_String unknown3;
@@ -366,10 +366,10 @@ interface netlogon
 		netr_String DomainName;
 		netr_String OEMInfo;
 		NTTIME forcedlogoff;
-		uint16 minpasswdlen;
-		uint16 passwdhistorylen;
-		uint64 pwd_must_change_time;
-		uint64 pwd_can_change_time;
+		uint16 min_password_len;
+		uint16 password_history_len;
+		uint64 password_must_change_time;
+		uint64 password_can_change_time;
 		uint64 sequence_num;
 		NTTIME domain_create_time;
 		uint32 SecurityInformation;
@@ -801,7 +801,7 @@ interface netlogon
 
 	NTSTATUS netr_ServerAuthenticate2(
 		[in]         unistr *server_name,
-		[in]         unistr username,
+		[in]         unistr account_name,
 		[in]         uint16 secure_channel_type,
 		[in]         unistr computer_name,
 		[in,out,ref] netr_Credential *credentials,
@@ -884,7 +884,7 @@ interface netlogon
 	/* Function 0x1a */
 	NTSTATUS netr_ServerAuthenticate3(
 		[in]         unistr *server_name,
-		[in]         unistr username,
+		[in]         unistr account_name,
 		[in]         uint16 secure_channel_type,
 		[in]         unistr computer_name,
 		[in,out,ref] netr_Credential *credentials,

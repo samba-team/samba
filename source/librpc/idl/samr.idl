@@ -135,7 +135,7 @@
 	} samr_Role;
 
 	typedef struct {
-		uint16 min_pwd_len;
+		uint16 min_password_len;
 		uint16 password_history;
 		uint32 password_properties;
 		/* yes, these are signed. They are in negative 100ns */
@@ -278,7 +278,7 @@
 	/* Function    0x0c     */
 	NTSTATUS samr_CreateUser(
 		[in,ref]      policy_handle *handle,
-		[in,ref]      samr_Name *username,
+		[in,ref]      samr_Name *account_name,
 		[in]          uint32 access_mask,
 		[out,ref]     policy_handle *acct_handle,
 		[out,ref]     uint32 *rid
@@ -577,7 +577,7 @@
 	/************************/
 	/* Function    0x24     */
 	typedef struct {
-		samr_Name username;
+		samr_Name account_name;
 		samr_Name full_name;
 		uint32 primary_gid;
 		samr_Name description;
@@ -592,22 +592,22 @@
 	} samr_UserInfo2;
 
 	typedef struct {
-		samr_Name username;
+		samr_Name account_name;
 		samr_Name full_name;
 		uint32 rid;
 		uint32 primary_gid;
 		samr_Name home_directory;
 		samr_Name home_drive;
 		samr_Name logon_script;
-		samr_Name profile;
+		samr_Name profile_path;
 		samr_Name workstations;
 		NTTIME last_logon;
 		NTTIME last_logoff;
-		NTTIME last_pwd_change;
-		NTTIME allow_pwd_change;
-		NTTIME force_pwd_change;
+		NTTIME last_password_change;
+		NTTIME allow_password_change;
+		NTTIME force_password_change;
 		samr_LogonHours logon_hours;
-		uint16 bad_pwd_count;
+		uint16 bad_password_count;
 		uint16 num_logons;
 		uint32 acct_flags;
 	} samr_UserInfo3;
@@ -617,33 +617,33 @@
 	} samr_UserInfo4;
 
 	typedef struct {
-		samr_Name username;
+		samr_Name account_name;
 		samr_Name full_name;
 		uint32 rid;
 		uint32 primary_gid;
 		samr_Name home_directory;
 		samr_Name home_drive;
 		samr_Name logon_script;
-		samr_Name profile;
+		samr_Name profile_path;
 		samr_Name description;
 		samr_Name workstations;
 		NTTIME last_logon;
 		NTTIME last_logoff;
 		samr_LogonHours logon_hours;
-		uint16 bad_pwd_count;
+		uint16 bad_password_count;
 		uint16 num_logons;
-		NTTIME last_pwd_change;
+		NTTIME last_password_change;
 		NTTIME acct_expiry;
 		uint32 acct_flags;
 	} samr_UserInfo5;
 
 	typedef struct {
-		samr_Name username;
+		samr_Name account_name;
 		samr_Name full_name;
 	} samr_UserInfo6;
 
 	typedef struct {
-		samr_Name username;
+		samr_Name account_name;
 	} samr_UserInfo7;
 
 	typedef struct {
@@ -664,7 +664,7 @@
 	} samr_UserInfo11;
 
 	typedef struct {
-		samr_Name profile;
+		samr_Name profile_path;
 	} samr_UserInfo12;
 
 	typedef struct {
@@ -692,7 +692,7 @@
 	const int SAMR_FIELD_DESCRIPTION  = 0x00000010;
 	const int SAMR_FIELD_COMMENT      = 0x00000020;
 	const int SAMR_FIELD_LOGON_SCRIPT = 0x00000100;
-	const int SAMR_FIELD_PROFILE      = 0x00000200;
+	const int SAMR_FIELD_PROFILE_PATH = 0x00000200;
 	const int SAMR_FIELD_WORKSTATION  = 0x00000400;
 	const int SAMR_FIELD_LOGON_HOURS  = 0x00002000;
 	const int SAMR_FIELD_CALLBACK     = 0x00200000;
@@ -703,16 +703,16 @@
 	typedef struct {
 		NTTIME last_logon;
 		NTTIME last_logoff;
-		NTTIME last_pwd_change;
+		NTTIME last_password_change;
 		NTTIME acct_expiry;
-		NTTIME allow_pwd_change;
-		NTTIME force_pwd_change;
-		samr_Name username;
+		NTTIME allow_password_change;
+		NTTIME force_password_change;
+		samr_Name account_name;
 		samr_Name full_name;
 		samr_Name home_directory;
 		samr_Name home_drive;
 		samr_Name logon_script;
-		samr_Name profile;
+		samr_Name profile_path;
 		samr_Name description;
 		samr_Name workstations;
 		samr_Name comment;
@@ -727,12 +727,12 @@
 		uint32 acct_flags;
 		uint32 fields_present;
 		samr_LogonHours logon_hours;
-		uint16 bad_pwd_count;
+		uint16 bad_password_count;
 		uint16 num_logons;
 		uint16 country_code;
 		uint16 code_page;
-		uint8  nt_pwd_set;
-		uint8  lm_pwd_set;
+		uint8  nt_password_set;
+		uint8  lm_password_set;
 		uint8  expired_flag;
 		uint8  unknown4;
 	} samr_UserInfo21;
@@ -964,7 +964,7 @@
 	const uint32 DOMAIN_REFUSE_PASSWORD_CHANGE   = 0x00000020;
 
 	typedef struct {
-		uint16 min_pwd_len;
+		uint16 min_password_len;
 		uint32 password_properties;
 	} samr_PwInfo;
 
@@ -1039,7 +1039,7 @@
 	/* Function    0x32     */
 	NTSTATUS samr_CreateUser2(
 		[in,ref]      policy_handle *handle,
-		[in,ref]      samr_Name *username,
+		[in,ref]      samr_Name *account_name,
 		[in]          uint32 acct_flags,
 		[in]          uint32 access_mask,
 		[out,ref]     policy_handle *acct_handle,

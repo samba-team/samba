@@ -427,11 +427,13 @@ uint64_t samdb_result_uint64(struct ldb_message *msg, const char *attr, uint64_t
 
 
 /*
-  construct the allow_pwd_change field from the PwdLastSet attribute and the 
+  construct the allow_password_change field from the PwdLastSet attribute and the 
   domain password settings
 */
-NTTIME samdb_result_allow_pwd_change(void *ctx, TALLOC_CTX *mem_ctx, 
-				     const char *domain_dn, struct ldb_message *msg, const char *attr)
+NTTIME samdb_result_allow_password_change(void *ctx, TALLOC_CTX *mem_ctx, 
+					  const char *domain_dn, 
+					  struct ldb_message *msg, 
+					  const char *attr)
 {
 	uint64_t attr_time = samdb_result_uint64(msg, attr, 0);
 	int64_t minPwdAge;
@@ -440,7 +442,8 @@ NTTIME samdb_result_allow_pwd_change(void *ctx, TALLOC_CTX *mem_ctx,
 		return 0;
 	}
 
-	minPwdAge = samdb_search_int64(ctx, mem_ctx, 0, NULL, "minPwdAge", "dn=%s", domain_dn);
+	minPwdAge = samdb_search_int64(ctx, mem_ctx, 0, NULL, 
+				       "minPwdAge", "dn=%s", domain_dn);
 
 	/* yes, this is a -= not a += as minPwdAge is stored as the negative
 	   of the number of 100-nano-seconds */
@@ -450,11 +453,13 @@ NTTIME samdb_result_allow_pwd_change(void *ctx, TALLOC_CTX *mem_ctx,
 }
 
 /*
-  construct the force_pwd_change field from the PwdLastSet attribute and the 
+  construct the force_password_change field from the PwdLastSet attribute and the 
   domain password settings
 */
-NTTIME samdb_result_force_pwd_change(void *ctx, TALLOC_CTX *mem_ctx, 
-				     const char *domain_dn, struct ldb_message *msg, const char *attr)
+NTTIME samdb_result_force_password_change(void *ctx, TALLOC_CTX *mem_ctx, 
+					  const char *domain_dn, 
+					  struct ldb_message *msg, 
+					  const char *attr)
 {
 	uint64_t attr_time = samdb_result_uint64(msg, attr, 0);
 	int64_t maxPwdAge;
