@@ -82,6 +82,8 @@ int reply_special(char *inbuf,char *outbuf)
 	
 	*name1 = *name2 = 0;
 	
+    bzero(outbuf,smb_size);
+
 	smb_setlen(outbuf,0);
 	
 	switch (msg_type) {
