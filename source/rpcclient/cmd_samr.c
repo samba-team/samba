@@ -253,16 +253,24 @@ static NTSTATUS cmd_samr_query_user(struct cli_state *cli,
 	POLICY_HND connect_pol, domain_pol, user_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	uint32 info_level = 21;
+	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
 	SAM_USERINFO_CTR *user_ctr;
 	fstring server;
 	uint32 user_rid;
 	
-	if (argc != 2) {
-		printf("Usage: %s rid\n", argv[0]);
+	if ((argc < 2) || (argc > 4)) {
+		printf("Usage: %s rid [info level] [access mask] \n", argv[0]);
 		return NT_STATUS_OK;
 	}
 	
 	sscanf(argv[1], "%i", &user_rid);
+	
+	if (argc > 2)
+		sscanf(argv[2], "%i", &info_level);
+		
+	if (argc > 3)
+		sscanf(argv[3], "%x", &access_mask);
+	
 
 	slprintf (server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
 	strupper (server);
@@ -281,7 +289,7 @@ static NTSTATUS cmd_samr_query_user(struct cli_state *cli,
 		goto done;
 
 	result = cli_samr_open_user(cli, mem_ctx, &domain_pol,
-				    MAXIMUM_ALLOWED_ACCESS,
+				    access_mask,
 				    user_rid, &user_pol);
 
 	if (!NT_STATUS_IS_OK(result))
@@ -354,16 +362,23 @@ static NTSTATUS cmd_samr_query_group(struct cli_state *cli,
 	POLICY_HND connect_pol, domain_pol, group_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	uint32 info_level = 1;
+	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
 	GROUP_INFO_CTR group_ctr;
 	fstring			server;	
 	uint32 group_rid;
 	
-	if (argc != 2) {
-		printf("Usage: %s rid\n", argv[0]);
+	if ((argc < 2) || (argc > 4)) {
+		printf("Usage: %s rid [info level] [access mask]\n", argv[0]);
 		return NT_STATUS_OK;
 	}
 
         sscanf(argv[1], "%i", &group_rid);
+	
+	if (argc > 2)
+		sscanf(argv[2], "%i", &info_level);
+	
+	if (argc > 3)
+		sscanf(argv[3], "%x", &access_mask);
 
 	slprintf (server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
 	strupper (server);
@@ -382,7 +397,7 @@ static NTSTATUS cmd_samr_query_group(struct cli_state *cli,
 		goto done;
 
 	result = cli_samr_open_group(cli, mem_ctx, &domain_pol,
-				     MAXIMUM_ALLOWED_ACCESS,
+				     access_mask,
 				     group_rid, &group_pol);
 
 	if (!NT_STATUS_IS_OK(result))
@@ -414,16 +429,20 @@ static NTSTATUS cmd_samr_query_usergroups(struct cli_state *cli,
 	NTSTATUS		result = NT_STATUS_UNSUCCESSFUL;
 	uint32 			num_groups, 
 				user_rid;
+	uint32			access_mask = MAXIMUM_ALLOWED_ACCESS;
 	DOM_GID 		*user_gids;
 	int 			i;
 	fstring			server;
 	
-	if (argc != 2) {
-		printf("Usage: %s rid\n", argv[0]);
+	if ((argc < 2) || (argc > 3)) {
+		printf("Usage: %s rid [access mask]\n", argv[0]);
 		return NT_STATUS_OK;
 	}
 
 	sscanf(argv[1], "%i", &user_rid);
+	
+	if (argc > 2)
+		sscanf(argv[2], "%x", &access_mask);
 
 	slprintf (server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
 	strupper (server);
@@ -442,7 +461,7 @@ static NTSTATUS cmd_samr_query_usergroups(struct cli_state *cli,
 		goto done;
 
 	result = cli_samr_open_user(cli, mem_ctx, &domain_pol,
-				    MAXIMUM_ALLOWED_ACCESS,
+				    access_mask,
 				    user_rid, &user_pol);
 
 	if (!NT_STATUS_IS_OK(result))
@@ -472,6 +491,7 @@ static NTSTATUS cmd_samr_query_useraliases(struct cli_state *cli,
 	POLICY_HND 		connect_pol, domain_pol;
 	NTSTATUS		result = NT_STATUS_UNSUCCESSFUL;
 	uint32 			user_rid, num_aliases, *alias_rids;
+	uint32			access_mask = MAXIMUM_ALLOWED_ACCESS;
 	int 			i;
 	fstring			server;
 	DOM_SID			tmp_sid;
@@ -480,12 +500,15 @@ static NTSTATUS cmd_samr_query_useraliases(struct cli_state *cli,
 
 	string_to_sid(&global_sid_Builtin, "S-1-5-32");
 
-	if (argc != 3) {
-		printf("Usage: %s builtin|domain rid\n", argv[0]);
+	if ((argc < 3) || (argc > 4)) {
+		printf("Usage: %s builtin|domain rid [access mask]\n", argv[0]);
 		return NT_STATUS_OK;
 	}
 
 	sscanf(argv[2], "%i", &user_rid);
+	
+	if (argc > 3)
+		sscanf(argv[3], "%x", &access_mask);
 
 	slprintf (server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
 	strupper (server);
@@ -498,11 +521,11 @@ static NTSTATUS cmd_samr_query_useraliases(struct cli_state *cli,
 
 	if (StrCaseCmp(argv[1], "domain")==0)
 		result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
-					      MAXIMUM_ALLOWED_ACCESS,
+					      access_mask,
 					      &domain_sid, &domain_pol);
 	else if (StrCaseCmp(argv[1], "builtin")==0)
 		result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
-					      MAXIMUM_ALLOWED_ACCESS,
+					      access_mask,
 					      &global_sid_Builtin, &domain_pol);
 	else
 		return NT_STATUS_OK;
@@ -536,15 +559,19 @@ static NTSTATUS cmd_samr_query_groupmem(struct cli_state *cli,
 	POLICY_HND connect_pol, domain_pol, group_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	uint32 num_members, *group_rids, *group_attrs, group_rid;
+	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
 	int i;
 	fstring			server;
 	
-	if (argc != 2) {
-		printf("Usage: %s rid\n", argv[0]);
+	if ((argc < 2) || (argc > 3)) {
+		printf("Usage: %s rid [access mask]\n", argv[0]);
 		return NT_STATUS_OK;
 	}
 
 	sscanf(argv[1], "%i", &group_rid);
+	
+	if (argc > 2)
+		sscanf(argv[2], "%x", &access_mask);
 
 	slprintf (server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
 	strupper (server);
@@ -563,7 +590,7 @@ static NTSTATUS cmd_samr_query_groupmem(struct cli_state *cli,
 		goto done;
 
 	result = cli_samr_open_group(cli, mem_ctx, &domain_pol,
-				     MAXIMUM_ALLOWED_ACCESS,
+				     access_mask,
 				     group_rid, &group_pol);
 
 	if (!NT_STATUS_IS_OK(result))
@@ -594,13 +621,17 @@ static NTSTATUS cmd_samr_enum_dom_groups(struct cli_state *cli,
 	POLICY_HND connect_pol, domain_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	uint32 start_idx, size, num_dom_groups, i;
+	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
 	struct acct_info *dom_groups;
 	BOOL got_connect_pol = False, got_domain_pol = False;
 
-	if (argc != 1) {
-		printf("Usage: %s\n", argv[0]);
+	if ((argc < 1) || (argc > 2)) {
+		printf("Usage: %s [access_mask]\n", argv[0]);
 		return NT_STATUS_OK;
 	}
+	
+	if (argc > 1)
+		sscanf(argv[1], "%x", &access_mask);
 
 	/* Get sam policy handle */
 
@@ -615,7 +646,7 @@ static NTSTATUS cmd_samr_enum_dom_groups(struct cli_state *cli,
 	/* Get domain policy handle */
 
 	result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
-				      MAXIMUM_ALLOWED_ACCESS,
+				      access_mask,
 				      &domain_sid, &domain_pol);
 
 	if (!NT_STATUS_IS_OK(result))
@@ -663,16 +694,20 @@ static NTSTATUS cmd_samr_enum_als_groups(struct cli_state *cli,
 	POLICY_HND connect_pol, domain_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	uint32 start_idx, size, num_als_groups, i;
+	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
 	struct acct_info *als_groups;
 	DOM_SID global_sid_Builtin;
 	BOOL got_connect_pol = False, got_domain_pol = False;
 
 	string_to_sid(&global_sid_Builtin, "S-1-5-32");
 
-	if (argc != 2) {
-		printf("Usage: %s builtin|domain\n", argv[0]);
+	if ((argc < 2) || (argc > 3)) {
+		printf("Usage: %s builtin|domain [access mask]\n", argv[0]);
 		return NT_STATUS_OK;
 	}
+	
+	if (argc > 2)
+		sscanf(argv[2], "%x", &access_mask);
 
 	/* Get sam policy handle */
 
@@ -688,11 +723,11 @@ static NTSTATUS cmd_samr_enum_als_groups(struct cli_state *cli,
 
 	if (StrCaseCmp(argv[1], "domain")==0)
 		result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
-					      MAXIMUM_ALLOWED_ACCESS,
+					      access_mask,
 					      &domain_sid, &domain_pol);
 	else if (StrCaseCmp(argv[1], "builtin")==0)
 		result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
-					      MAXIMUM_ALLOWED_ACCESS,
+					      access_mask,
 					      &global_sid_Builtin, &domain_pol);
 	else
 		return NT_STATUS_OK;
@@ -741,14 +776,21 @@ static NTSTATUS cmd_samr_query_aliasmem(struct cli_state *cli,
 	POLICY_HND connect_pol, domain_pol, alias_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	uint32 alias_rid, num_members, i;
+	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
 	DOM_SID *alias_sids;
+	DOM_SID global_sid_Builtin;
+	
+	string_to_sid(&global_sid_Builtin, "S-1-5-32");
 
-	if (argc != 2) {
-		printf("Usage: %s rid\n", argv[0]);
+	if ((argc < 3) || (argc > 4)) {
+		printf("Usage: %s builtin|domain rid [access mask]\n", argv[0]);
 		return NT_STATUS_OK;
 	}
 
-	sscanf(argv[1], "%i", &alias_rid);
+	sscanf(argv[2], "%i", &alias_rid);
+	
+	if (argc > 3)
+		sscanf(argv[3], "%x", &access_mask);
 
 	/* Open SAMR handle */
 
@@ -759,10 +801,17 @@ static NTSTATUS cmd_samr_query_aliasmem(struct cli_state *cli,
 		goto done;
 
 	/* Open handle on domain */
-
-	result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
-				      MAXIMUM_ALLOWED_ACCESS,
-				      &domain_sid, &domain_pol);
+	
+	if (StrCaseCmp(argv[1], "domain")==0)
+		result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
+					      MAXIMUM_ALLOWED_ACCESS,
+					      &domain_sid, &domain_pol);
+	else if (StrCaseCmp(argv[1], "builtin")==0)
+		result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
+					      MAXIMUM_ALLOWED_ACCESS,
+					      &global_sid_Builtin, &domain_pol);
+	else
+		return NT_STATUS_OK;
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -770,7 +819,7 @@ static NTSTATUS cmd_samr_query_aliasmem(struct cli_state *cli,
 	/* Open handle on alias */
 
 	result = cli_samr_open_alias(cli, mem_ctx, &domain_pol,
-				     MAXIMUM_ALLOWED_ACCESS,
+				     access_mask,
 				     alias_rid, &alias_pol);
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -801,7 +850,8 @@ static NTSTATUS cmd_samr_query_dispinfo(struct cli_state *cli,
 	POLICY_HND connect_pol, domain_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	uint32 start_idx=0, max_entries=250, num_entries, i;
-	int info_level = 1;
+	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
+	uint32 info_level = 1;
 	SAM_DISPINFO_CTR ctr;
 	SAM_DISPINFO_1 info1;
 	SAM_DISPINFO_2 info2;
@@ -809,8 +859,8 @@ static NTSTATUS cmd_samr_query_dispinfo(struct cli_state *cli,
 	SAM_DISPINFO_4 info4;
 	SAM_DISPINFO_5 info5;
 
-	if (argc > 4) {
-		printf("Usage: %s [info level] [start index] [max entries]\n", argv[0]);
+	if (argc > 5) {
+		printf("Usage: %s [info level] [start index] [max entries] [access mask]\n", argv[0]);
 		return NT_STATUS_OK;
 	}
 
@@ -822,6 +872,9 @@ static NTSTATUS cmd_samr_query_dispinfo(struct cli_state *cli,
         
 	if (argc >= 4)
                 sscanf(argv[3], "%i", &max_entries);
+	
+	if (argc >= 5)
+                sscanf(argv[4], "%x", &access_mask);
 
 	/* Get sam policy handle */
 
@@ -833,7 +886,7 @@ static NTSTATUS cmd_samr_query_dispinfo(struct cli_state *cli,
 	/* Get domain policy handle */
 
 	result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
-				      MAXIMUM_ALLOWED_ACCESS, 
+				      access_mask, 
 				      &domain_sid, &domain_pol);
 
 	if (!NT_STATUS_IS_OK(result))
@@ -913,16 +966,20 @@ static NTSTATUS cmd_samr_query_dominfo(struct cli_state *cli,
 {
 	POLICY_HND connect_pol, domain_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	int switch_value = 2;
+	uint32 switch_level = 2;
+	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
 	SAM_UNK_CTR ctr;
 
 	if (argc > 2) {
-		printf("Usage: %s [infolevel]\n", argv[0]);
+		printf("Usage: %s [info level] [access mask]\n", argv[0]);
 		return NT_STATUS_OK;
 	}
 
-	if (argc == 2)
-                sscanf(argv[1], "%i", &switch_value);
+	if (argc > 1)
+                sscanf(argv[1], "%i", &switch_level);
+	
+	if (argc > 2)
+                sscanf(argv[2], "%x", &access_mask);
 
 	/* Get sam policy handle */
 
@@ -935,7 +992,7 @@ static NTSTATUS cmd_samr_query_dominfo(struct cli_state *cli,
 	/* Get domain policy handle */
 
 	result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
-				      MAXIMUM_ALLOWED_ACCESS,
+				      access_mask,
 				      &domain_sid, &domain_pol);
 
 	if (!NT_STATUS_IS_OK(result))
@@ -944,14 +1001,14 @@ static NTSTATUS cmd_samr_query_dominfo(struct cli_state *cli,
 	/* Query domain info */
 
 	result = cli_samr_query_dom_info(cli, mem_ctx, &domain_pol,
-					 switch_value, &ctr);
+					 switch_level, &ctr);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
 	/* Display domain info */
 
-	switch (switch_value) {
+	switch (switch_level) {
 	case 1:
 		display_sam_unk_info_1(&ctr.info.inf1);
 		break;
@@ -960,7 +1017,7 @@ static NTSTATUS cmd_samr_query_dominfo(struct cli_state *cli,
 		break;
 	default:
 		printf("cannot display domain info for switch value %d\n",
-		       switch_value);
+		       switch_level);
 		break;
 	}
 
@@ -982,13 +1039,17 @@ static NTSTATUS cmd_samr_create_dom_user(struct cli_state *cli,
 	char *acct_name;
 	uint16 acb_info;
 	uint32 unknown, user_rid;
+	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
 
-	if (argc != 2) {
-		printf("Usage: %s username\n", argv[0]);
+	if ((argc < 2) || (argc > 3)) {
+		printf("Usage: %s username [access mask]\n", argv[0]);
 		return NT_STATUS_OK;
 	}
 
 	acct_name = argv[1];
+	
+	if (argc > 2)
+                sscanf(argv[2], "%x", &access_mask);
 
 	/* Get sam policy handle */
 
@@ -1001,7 +1062,7 @@ static NTSTATUS cmd_samr_create_dom_user(struct cli_state *cli,
 	/* Get domain policy handle */
 
 	result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
-				      MAXIMUM_ALLOWED_ACCESS,
+				      access_mask,
 				      &domain_sid, &domain_pol);
 
 	if (!NT_STATUS_IS_OK(result))
@@ -1158,11 +1219,15 @@ static NTSTATUS cmd_samr_delete_dom_user(struct cli_state *cli,
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	POLICY_HND connect_pol, domain_pol, user_pol;
+	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
 
-	if (argc != 2) {
+	if ((argc < 2) || (argc > 3)) {
 		printf("Usage: %s username\n", argv[0]);
 		return NT_STATUS_OK;
 	}
+	
+	if (argc > 2)
+                sscanf(argv[2], "%x", &access_mask);
 
 	/* Get sam policy and domain handles */
 
@@ -1194,7 +1259,7 @@ static NTSTATUS cmd_samr_delete_dom_user(struct cli_state *cli,
 			goto done;
 
 		result = cli_samr_open_user(cli, mem_ctx, &domain_pol,
-					    MAXIMUM_ALLOWED_ACCESS,
+					    access_mask,
 					    user_rids[0], &user_pol);
 
 		if (!NT_STATUS_IS_OK(result))
@@ -1232,19 +1297,19 @@ static NTSTATUS cmd_samr_query_sec_obj(struct cli_state *cli,
 
 	ctx=talloc_init();
 	
-	if (argc > 2) {
+	if ((argc < 1) || (argc > 2)) {
 		printf("Usage: %s [rid|-d]\n", argv[0]);
 		printf("\tSpecify rid for security on user, -d for security on domain\n");
 		return NT_STATUS_OK;
 	}
 	
-	if (argc == 2) {
+	if (argc > 1) {
 		if (strcmp(argv[1], "-d") == 0)
 			domain = True;
 		else
 			sscanf(argv[1], "%i", &user_rid);
 	}
-
+	
 	slprintf (server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
 	strupper (server);
 	result = cli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS,
