@@ -63,7 +63,7 @@ typedef struct _Printer{
 		fstring printerservername;
 	} dev;
 	uint32 type;
-	uint32 access;
+	uint32 access_granted;
 	struct {
 		uint32 flags;
 		uint32 options;
@@ -350,8 +350,9 @@ static uint32 delete_printer_hook(char * sharename)
 }	
 
 /****************************************************************************
-  delete a printer given a handle
+ Delete a printer given a handle.
 ****************************************************************************/
+
 static uint32 delete_printer_handle(pipes_struct *p, POLICY_HND *hnd)
 {
 	Printer_entry *Printer = find_printer_index_by_hnd(p, hnd);
@@ -401,23 +402,6 @@ static BOOL get_printer_snum(pipes_struct *p, POLICY_HND *hnd, int *number)
 	default:
 		return False;
 	}
-}
-
-/****************************************************************************
-  set printer handle type.
-****************************************************************************/
-static BOOL set_printer_hnd_accesstype(pipes_struct *p,POLICY_HND *hnd, uint32 access_required)
-{
-	Printer_entry *Printer = find_printer_index_by_hnd(p, hnd);
-
-	if (!Printer) {
-		DEBUG(2,("set_printer_hnd_accesstype: Invalid handle (%s:%u:%u)", OUR_HANDLE(hnd)));
-		return False;
-	}
-
-	DEBUG(4,("Setting printer access=%x\n", access_required));
-	Printer->access = access_required;
-	return True;		
 }
 
 /****************************************************************************
@@ -524,7 +508,7 @@ static BOOL set_printer_hnd_name(Printer_entry *Printer, char *handlename)
   find first available printer slot. creates a printer handle for you.
  ****************************************************************************/
 
-static BOOL open_printer_hnd(pipes_struct *p, POLICY_HND *hnd, char *name)
+static BOOL open_printer_hnd(pipes_struct *p, POLICY_HND *hnd, char *name, uint32 access_granted)
 {
         Printer_entry *new_printer;
 
@@ -555,25 +539,11 @@ static BOOL open_printer_hnd(pipes_struct *p, POLICY_HND *hnd, char *name)
                 return False;
         }
 
+	new_printer->access_granted = access_granted;
+
         DEBUG(5, ("%d printer handles active\n", (int)p->pipe_handles->count ));
 
         return True;
-}
-
-/********************************************************************
- Return True is the handle is a print server.
- ********************************************************************/
-static BOOL handle_is_printserver(pipes_struct *p, POLICY_HND *handle)
-{
-	Printer_entry *Printer=find_printer_index_by_hnd(p, handle);
-
-	if (!Printer)
-		return False;
-		
-	if (Printer->printer_type != PRINTER_HANDLE_IS_PRINTSERVER)
-		return False;
-	
-	return True;
 }
 
 /****************************************************************************
@@ -692,6 +662,7 @@ uint32 _spoolss_open_printer_ex( const UNISTR2 *printername, pipes_struct *p,
 	fstring name;
 	int snum;
 	struct current_user user;
+	Printer_entry *Printer=NULL;
 	
 	if (printername == NULL)
 		return ERROR_INVALID_PRINTER_NAME;
@@ -702,9 +673,17 @@ uint32 _spoolss_open_printer_ex( const UNISTR2 *printername, pipes_struct *p,
 
 	DEBUGADD(3,("checking name: %s\n",name));
 
-	if (!open_printer_hnd(p, handle, name))
+	if (!open_printer_hnd(p, handle, name, 0))
 		return ERROR_INVALID_PRINTER_NAME;
 	
+	Printer=find_printer_index_by_hnd(p, handle);
+	if (!Printer) {
+		DEBUG(0,(" _spoolss_open_printer_ex: logic error. \
+Can't find printer handle we created for priunter %s\n", name ));
+		close_printer_handle(p,handle);
+		return ERROR_INVALID_PRINTER_NAME;
+	}
+
 /*
 	if (printer_default->datatype_ptr != NULL)
 	{
@@ -715,11 +694,6 @@ uint32 _spoolss_open_printer_ex( const UNISTR2 *printername, pipes_struct *p,
 		set_printer_hnd_datatype(handle, "");
 */
 	
-	if (!set_printer_hnd_accesstype(p, handle, printer_default->access_required)) {
-		close_printer_handle(p, handle);
-		return ERROR_ACCESS_DENIED;
-	}
-		
 	/*
 	   First case: the user is opening the print server:
 
@@ -745,11 +719,10 @@ uint32 _spoolss_open_printer_ex( const UNISTR2 *printername, pipes_struct *p,
 
 	get_current_user(&user, p);
 
-	if (handle_is_printserver(p,handle)) {
+	if (Printer->printer_type == PRINTER_HANDLE_IS_PRINTSERVER) {
 		if (printer_default->access_required == 0) {
 			return NT_STATUS_NO_PROBLEMO;
-		}
-		else if ((printer_default->access_required & SERVER_ACCESS_ADMINISTER ) == SERVER_ACCESS_ADMINISTER) {
+		} else if ((printer_default->access_required & SERVER_ACCESS_ADMINISTER ) == SERVER_ACCESS_ADMINISTER) {
 
 			/* Printserver handles use global struct... */
 			snum = -1;
@@ -757,18 +730,14 @@ uint32 _spoolss_open_printer_ex( const UNISTR2 *printername, pipes_struct *p,
 			if (!lp_ms_add_printer_wizard()) {
 				close_printer_handle(p,handle);
 				return ERROR_ACCESS_DENIED;
-			}
-			else if (user.uid == 0 || user_in_list(uidtoname(user.uid), lp_printer_admin())) {
+			} else if (user.uid == 0 || user_in_list(uidtoname(user.uid), lp_printer_admin())) {
 				return NT_STATUS_NO_PROBLEMO;
-			} 
-			else {
+			} else {
 				close_printer_handle(p,handle);
 				return ERROR_ACCESS_DENIED;
 			}
 		}
-	}
-	else
-	{
+	} else {
 		/* NT doesn't let us connect to a printer if the connecting user
 		   doesn't have print permission.  */
 
@@ -785,6 +754,16 @@ uint32 _spoolss_open_printer_ex( const UNISTR2 *printername, pipes_struct *p,
 			return ERROR_ACCESS_DENIED;
 		}
 
+		/*
+		 * An admin user always has access.
+		 */
+
+		if (user.uid == 0 || user_in_list(uidtoname(user.uid), lp_printer_admin()))
+			printer_default->access_required = PRINTER_ACCESS_ADMINISTER;
+
+	        DEBUG(4,("Setting printer access=%x\n", printer_default->access_required));
+		Printer->access_granted = printer_default->access_required;
+		
 		/*
 		 * If we have a default device pointer in the
 		 * printer_default struct, then we need to get
@@ -1187,7 +1166,7 @@ uint32 _spoolss_getprinterdata(pipes_struct *p, POLICY_HND *handle, UNISTR2 *val
 	
 	unistr2_to_ascii(value, valuename, sizeof(value)-1);
 	
-	if (handle_is_printserver(p, handle))
+	if (Printer->printer_type != PRINTER_HANDLE_IS_PRINTSERVER)
 		found=getprinterdata_printer_server(value, type, data, needed, *out_size);
 	else
 		found= getprinterdata_printer(p, handle, value, type, data, needed, *out_size);
@@ -4412,9 +4391,8 @@ static uint32 update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 
 	/* Check calling user has permission to update printer description */
 
-	if (!print_access_check(NULL, snum, PRINTER_ACCESS_ADMINISTER)) {
-		DEBUG(3, ("update_printer: printer property change denied by security "
-			  "descriptor\n"));
+	if (Printer->access_granted != PRINTER_ACCESS_ADMINISTER) {
+		DEBUG(3, ("update_printer: printer property change denied by handle\n"));
 		result = ERROR_ACCESS_DENIED;
 		goto done;
 	}
@@ -5583,7 +5561,7 @@ static uint32 spoolss_addprinterex_level_2( pipes_struct *p, const UNISTR2 *uni_
 		return ERROR_ACCESS_DENIED;
 	}
 
-	if (!open_printer_hnd(p, handle, name)) {
+	if (!open_printer_hnd(p, handle, name, PRINTER_ACCESS_ADMINISTER)) {
 		/* Handle open failed - remove addition. */
 	        delete_printer_hook(printer->info_2->sharename);
 		del_a_printer(printer->info_2->sharename);
@@ -5955,9 +5933,8 @@ uint32 _spoolss_setprinterdata( pipes_struct *p, POLICY_HND *handle,
 	 * when connecting to a printer  --jerry
 	 */
 
-	if (!print_access_check(NULL, snum, PRINTER_ACCESS_ADMINISTER)) {
-		DEBUG(3, ("security descriptor change denied by existing "
-			  "security descriptor\n"));
+	if (Printer->access_granted != PRINTER_ACCESS_ADMINISTER) {
+		DEBUG(3, ("setprinterdata change denied by handle access permissions\n"));
 		status = ERROR_ACCESS_DENIED;
 		goto done;
 	}
@@ -6046,9 +6023,8 @@ uint32 _spoolss_deleteprinterdata( pipes_struct *p, POLICY_HND *handle, const UN
 	if (!get_printer_snum(p, handle, &snum))
 		return ERROR_INVALID_HANDLE;
 
-	if (!print_access_check(NULL, snum, PRINTER_ACCESS_ADMINISTER)) {
-		DEBUG(3, ("_spoolss_deleteprinterdata: printer properties "
-			  "change denied by existing security descriptor\n"));
+	if (Printer->access_granted != PRINTER_ACCESS_ADMINISTER) {
+		DEBUG(3, ("_spoolss_deleteprinterdata: printer properties change denied by handle permissions\n"));
 		return ERROR_ACCESS_DENIED;
 	}
 
@@ -6094,9 +6070,8 @@ uint32 _spoolss_addform( pipes_struct *p, POLICY_HND *handle,
 	if (!get_printer_snum(p, handle, &snum))
 		return ERROR_INVALID_HANDLE;
 
-	if (!print_access_check(NULL, snum, PRINTER_ACCESS_ADMINISTER)) {
-		DEBUG(3, ("security descriptor change denied by existing "
-			  "security descriptor\n"));
+	if (Printer->access_granted != PRINTER_ACCESS_ADMINISTER) {
+		DEBUG(3, ("addform denied by handle permissions.\n"));
 		result = ERROR_ACCESS_DENIED;
 		goto done;
 	}
@@ -6157,9 +6132,8 @@ uint32 _spoolss_deleteform( pipes_struct *p, POLICY_HND *handle, UNISTR2 *form_n
  	if (!get_printer_snum(p, handle, &snum))
 		return ERROR_INVALID_HANDLE;
 
-	if (!print_access_check(NULL, snum, PRINTER_ACCESS_ADMINISTER)) {
-		DEBUG(3, ("security descriptor change denied by existing "
-			  "security descriptor\n"));
+	if (Printer->access_granted != PRINTER_ACCESS_ADMINISTER) {
+		DEBUG(3, ("_spoolss_deleteform: denied by handle permissions\n"));
 		result = ERROR_ACCESS_DENIED;
 		goto done;
 	}
@@ -6212,9 +6186,8 @@ uint32 _spoolss_setform( pipes_struct *p, POLICY_HND *handle,
 	if (!get_printer_snum(p, handle, &snum))
 		return ERROR_INVALID_HANDLE;
 
-	if (!print_access_check(NULL, snum, PRINTER_ACCESS_ADMINISTER)) {
-		DEBUG(3, ("security descriptor change denied by existing "
-			  "security descriptor\n"));
+	if (Printer->access_granted != PRINTER_ACCESS_ADMINISTER) {
+		DEBUG(3, ("_spoolss_setform: denied by handle permissions\n"));
 		result = ERROR_ACCESS_DENIED;
 		goto done;
 	}

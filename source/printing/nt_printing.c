@@ -3820,7 +3820,7 @@ BOOL print_access_check(struct current_user *user, int snum, int access_type)
 
 	DEBUG(4, ("access check was %s\n", result ? "SUCCESS" : "FAILURE"));
 	
-	/* Free mallocated memory */
+	/* Free malloc'ed memory */
 
 	free_sec_desc_buf(&secdesc);
 
@@ -3862,6 +3862,7 @@ BOOL print_time_access_check(int snum)
 	return ok;
 }
 
+#if 0
 /****************************************************************************
  Attempt to write a default device.
 *****************************************************************************/
@@ -3937,5 +3938,6 @@ uint32 printer_write_default_dev(int snum, const PRINTER_DEFAULT *printer_defaul
 	free_a_printer(&printer, 2);
 	return result;
 }
+#endif
 
 #undef OLD_NTDOMAIN
