@@ -2695,12 +2695,12 @@ AC_ARG_WITH(expsam,
     case "$i" in
     xml)
       ## pdb_xml
-      AM_PATH_XML2([2.0.0],[default_shared_modules="$default_shared_modules pdb_xml"],[])
+	  AM_PATH_XML2([2.0.0],[default_shared_modules="$default_shared_modules pdb_xml"],[AC_MSG_ERROR([Can't find XML libraries while XML support is requested])])
       CFLAGS="$CFLAGS $XML_CFLAGS"
       ;;
     mysql)
       ## pdb_mysql
-      AM_PATH_MYSQL([default_shared_modules="$default_shared_modules pdb_mysql"],[])
+	  AM_PATH_MYSQL([default_shared_modules="$default_shared_modules pdb_mysql"],[AC_MSG_ERROR([Can't find MySQL libraries while MySQL support is requested])])
       CFLAGS="$CFLAGS $MYSQL_CFLAGS"
       ;;
     no)
