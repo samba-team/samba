@@ -237,10 +237,15 @@ static int tdb_brlock(TDB_CONTEXT *tdb, tdb_off offset,
 				 tdb->fd, offset, rw_type, lck_type));
 		}
 		/* Was it an alarm timeout ? */
-		if (errno == EINTR && palarm_fired && *palarm_fired)
+		if (errno == EINTR && palarm_fired && *palarm_fired) {
+			TDB_LOG((tdb, 5, "tdb_brlock timed out (fd=%d) at offset %d rw_type=%d lck_type=%d\n", 
+				 tdb->fd, offset, rw_type, lck_type));
 			return TDB_ERRCODE(TDB_ERR_LOCK_TIMEOUT, -1);
+		}
 		/* Otherwise - generic lock error. */
 		/* errno set by fcntl */
+		TDB_LOG((tdb, 5, "tdb_brlock failed (fd=%d) at offset %d rw_type=%d lck_type=%d: %s\n", 
+			 tdb->fd, offset, rw_type, lck_type, strerror(errno)));
 		return TDB_ERRCODE(TDB_ERR_LOCK, -1);
 	}
 	return 0;
