@@ -99,7 +99,7 @@ NTSTATUS smbcli_session_setup(struct smbcli_state *cli,
 
 /* wrapper around smb_tree_connect() */
 NTSTATUS smbcli_send_tconX(struct smbcli_state *cli, const char *sharename, 
-			const char *devtype, const char *password)
+			   const char *devtype, const char *password)
 {
 	union smb_tcon tcon;
 	TALLOC_CTX *mem_ctx;
@@ -110,17 +110,25 @@ NTSTATUS smbcli_send_tconX(struct smbcli_state *cli, const char *sharename,
 
 	cli->tree->reference_count++;
 
+	mem_ctx = talloc_init("tcon");
+	if (!mem_ctx) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	/* setup a tree connect */
 	tcon.generic.level = RAW_TCON_TCONX;
 	tcon.tconx.in.flags = 0;
-	tcon.tconx.in.password = data_blob(password, strlen(password)+1);
+	if (cli->transport->negotiate.sec_mode & NEGOTIATE_SECURITY_USER_LEVEL) {
+		tcon.tconx.in.password = data_blob(NULL, 0);
+	} else if (cli->transport->negotiate.sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) {
+		tcon.tconx.in.password = data_blob_talloc(mem_ctx, NULL, 16);
+		E_md4hash(password, tcon.tconx.in.password.data);
+	} else {
+		tcon.tconx.in.password = data_blob_talloc(mem_ctx, password, strlen(password)+1);
+	}
 	tcon.tconx.in.path = sharename;
 	tcon.tconx.in.device = devtype;
 	
-	mem_ctx = talloc_init("tcon");
-	if (!mem_ctx)
-		return NT_STATUS_NO_MEMORY;
-
 	status = smb_tree_connect(cli->tree, mem_ctx, &tcon);
 
 	cli->tree->tid = tcon.tconx.out.cnum;
