@@ -857,7 +857,7 @@ case "$host_os" in
 			SONAMEFLAG="-h "
 			if test "${GCC}" = "yes"; then
 				PICFLAG="-fPIC"
-				DYNEXP"-Wl,-E"
+				DYNEXP="-Wl,-E"
 			else
 				PICFLAG="-KPIC"
 				## ${CFLAGS} added for building 64-bit shared 
