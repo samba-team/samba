@@ -21,6 +21,35 @@
 
 #include "includes.h"
 
+static BOOL test_OpenPrinter(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+			     struct spoolss_PrinterInfo1 *info1)
+{
+	NTSTATUS status;
+	struct spoolss_OpenPrinter r;
+	struct policy_handle handle;
+	DATA_BLOB blob;
+
+	blob = data_blob(NULL, 0);
+
+	r.in.server = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.printer = info1->name;
+	r.in.buffer = &blob;
+	r.in.access_mask = SEC_RIGHT_MAXIMUM_ALLOWED;	
+	r.out.handle = &handle;
+
+	printf("Testing OpenPrinter(\\\\%s\\%s)\n", r.in.server, r.in.printer);
+
+	status = dcerpc_spoolss_OpenPrinter(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(r.out.result)) {
+		printf("OpenPrinter failed - %s/%s\n", 
+		       nt_errstr(status), win_errstr(r.out.result));
+		return False;
+	}
+
+	
+	return True;
+}
+
 static BOOL test_EnumPrinters(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
 	struct spoolss_EnumPrinters r;
@@ -73,6 +102,13 @@ static BOOL test_EnumPrinters(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		for (j=0;j<r.out.count;j++) {
 			printf("Printer %d\n", j);
 			NDR_PRINT_UNION_DEBUG(spoolss_PrinterEnum, r.in.level, &info[j]);
+		}
+
+		for (j=0;j<r.out.count;j++) {
+			if (r.in.level == 1 &&
+			    !test_OpenPrinter(p, mem_ctx, &info[j].info1)) {
+				ret = False;
+			}
 		}
 	}
 	

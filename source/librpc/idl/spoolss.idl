@@ -128,7 +128,12 @@
 
 	/******************/
 	/* Function: 0x01 */
-	NTSTATUS spoolss_01(
+	WERROR spoolss_OpenPrinter(
+		[in]        unistr *server,
+		[in]        unistr *printer,
+		[in]        DATA_BLOB *buffer,
+		[in]        uint32 access_mask,
+		[out,ref]   policy_handle *handle
 		);
 
 	/******************/

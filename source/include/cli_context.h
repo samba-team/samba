@@ -161,6 +161,10 @@ struct cli_transport {
 
 	/* a list of async requests that are pending on this connection */
 	struct cli_request *pending_requests;
+
+	/* remember the called name - some sub-protocols require us to
+	   know the server name */
+	struct nmb_name called;
 };
 
 /* this is the context for the user */

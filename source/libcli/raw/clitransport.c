@@ -42,6 +42,8 @@ struct cli_transport *cli_transport_init(struct cli_socket *sock)
 	cli_null_set_signing(transport);
 	transport->socket->reference_count++;
 
+	ZERO_STRUCT(transport->called);
+
 	return transport;
 }
 
@@ -70,6 +72,10 @@ BOOL cli_transport_connect(struct cli_transport *transport,
 	char *p;
 	int len = NBT_HDR_SIZE;
 	struct cli_request *req;
+
+	if (called) {
+		transport->called = *called;
+	}
 
 	/* 445 doesn't have session request */
 	if (transport->socket->port == 445) {
