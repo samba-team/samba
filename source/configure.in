@@ -228,7 +228,7 @@ AC_CHECK_TYPE(wchar_t, unsigned short)
 AC_CHECK_LIB(cups,httpConnect)
 
 # we need libdl for PAM and the new VFS code
-AC_CHECK_LIB(dl,main)
+AC_CHECK_LIB(dl,main, [LDFLAGS="$LDFLAGS -rdynamic"; LIBS="$LIBS -ldl"])
 
 AC_CACHE_CHECK([for sig_atomic_t type],samba_cv_sig_atomic_t, [
     AC_TRY_COMPILE([
