@@ -59,6 +59,8 @@
 #define SAM_ACCOUNT struct sam_passwd
 #endif
 
+#include "smbldap.h"
+
 struct ldapsam_privates {
 	/* Former statics */
 	LDAP *ldap_struct;
@@ -93,177 +95,6 @@ struct ldapsam_privates {
 
 static struct ldapsam_privates *static_ldap_state;
 
-/* specify schema versions between 2.2. and 3.0 */
-
-#define SCHEMAVER_SAMBAACCOUNT		1
-#define SCHEMAVER_SAMBASAMACCOUNT	2
-
-/* objectclass names */
-
-#define LDAP_OBJ_SAMBASAMACCOUNT	"sambaSamAccount"
-#define LDAP_OBJ_SAMBAACCOUNT		"sambaAccount"
-#define LDAP_OBJ_GROUPMAP		"sambaGroupMapping"
-#define LDAP_OBJ_DOMINFO		"sambaDomain"
-
-#define LDAP_OBJ_ACCOUNT		"account"
-#define LDAP_OBJ_POSIXACCOUNT		"posixAccount"
-#define LDAP_OBJ_POSIXGROUP		"posixGroup"
-
-/* some generic attributes that get reused a lot */
-
-#define LDAP_ATTRIBUTE_SID		"sambaSID"
-
-/* attribute map table indexes */
-
-#define LDAP_ATTR_LIST_END		0
-#define LDAP_ATTR_UID			1
-#define LDAP_ATTR_UIDNUMBER		2
-#define LDAP_ATTR_GIDNUMBER		3
-#define LDAP_ATTR_UNIX_HOME		4
-#define LDAP_ATTR_PWD_LAST_SET		5
-#define LDAP_ATTR_PWD_CAN_CHANGE	6
-#define LDAP_ATTR_PWD_MUST_CHANGE	7
-#define LDAP_ATTR_LOGON_TIME		8
-#define LDAP_ATTR_LOGOFF_TIME		9
-#define LDAP_ATTR_KICKOFF_TIME		10
-#define LDAP_ATTR_CN			11
-#define LDAP_ATTR_DISPLAY_NAME		12
-#define LDAP_ATTR_HOME_PATH		13
-#define LDAP_ATTR_LOGON_SCRIPT		14
-#define LDAP_ATTR_PROFILE_PATH		15
-#define LDAP_ATTR_DESC			16
-#define LDAP_ATTR_USER_WKS		17
-#define LDAP_ATTR_USER_SID		18
-#define LDAP_ATTR_USER_RID		18
-#define LDAP_ATTR_PRIMARY_GROUP_SID	19
-#define LDAP_ATTR_PRIMARY_GROUP_RID	20
-#define LDAP_ATTR_LMPW			21
-#define LDAP_ATTR_NTPW			22
-#define LDAP_ATTR_DOMAIN		23
-#define LDAP_ATTR_OBJCLASS		24
-#define LDAP_ATTR_ACB_INFO		25
-#define LDAP_ATTR_NEXT_USERRID		26
-#define LDAP_ATTR_NEXT_GROUPRID		27
-#define LDAP_ATTR_DOM_SID		28
-#define LDAP_ATTR_HOME_DRIVE		29
-#define LDAP_ATTR_GROUP_SID		30
-#define LDAP_ATTR_GROUP_TYPE		31
-
-
-typedef struct _attrib_map_entry {
-	int		attrib;
-	const char 	*name;
-} ATTRIB_MAP_ENTRY;
-
-
-/* attributes used by Samba 2.2 */
-
-static ATTRIB_MAP_ENTRY attrib_map_v22[] = {
-	{ LDAP_ATTR_UID,		"uid" 		},
-	{ LDAP_ATTR_UIDNUMBER,		"uidNumber"	},
-	{ LDAP_ATTR_GIDNUMBER,		"gidNumber"	},
-	{ LDAP_ATTR_UNIX_HOME,		"homeDirectory"	},
-	{ LDAP_ATTR_PWD_LAST_SET,	"pwdLastSet"	},
-	{ LDAP_ATTR_PWD_CAN_CHANGE,	"pwdCanChange"	},
-	{ LDAP_ATTR_PWD_MUST_CHANGE,	"pwdMustChange"	},
-	{ LDAP_ATTR_LOGON_TIME,		"logonTime" 	},
-	{ LDAP_ATTR_LOGOFF_TIME,	"logoffTime"	},
-	{ LDAP_ATTR_KICKOFF_TIME,	"kickoffTime"	},
-	{ LDAP_ATTR_CN,			"cn"		},
-	{ LDAP_ATTR_DISPLAY_NAME,	"displayName"	},
-	{ LDAP_ATTR_HOME_PATH,		"smbHome"	},
-	{ LDAP_ATTR_HOME_DRIVE,		"homeDrives"	},
-	{ LDAP_ATTR_LOGON_SCRIPT,	"scriptPath"	},
-	{ LDAP_ATTR_PROFILE_PATH,	"profilePath"	},
-	{ LDAP_ATTR_DESC,		"description"	},
-	{ LDAP_ATTR_USER_WKS,		"userWorkstations"},
-	{ LDAP_ATTR_USER_RID,		"rid"		},
-	{ LDAP_ATTR_PRIMARY_GROUP_RID,	"primaryGroupID"},
-	{ LDAP_ATTR_LMPW,		"lmPassword"	},
-	{ LDAP_ATTR_NTPW,		"ntPassword"	},
-	{ LDAP_ATTR_DOMAIN,		"domain"	},
-	{ LDAP_ATTR_OBJCLASS,		"objectClass"	},
-	{ LDAP_ATTR_ACB_INFO,		"acctFlags"	},
-	{ LDAP_ATTR_LIST_END,		NULL 		}
-};
-
-/* attributes used by Samba 3.0's sambaSamAccount */
-
-static ATTRIB_MAP_ENTRY attrib_map_v30[] = {
-	{ LDAP_ATTR_UID,		"uid" 			},
-	{ LDAP_ATTR_UIDNUMBER,		"uidNumber"		},
-	{ LDAP_ATTR_GIDNUMBER,		"gidNumber"		},
-	{ LDAP_ATTR_UNIX_HOME,		"homeDirectory"		},
-	{ LDAP_ATTR_PWD_LAST_SET,	"sambaPwdLastSet"	},
-	{ LDAP_ATTR_PWD_CAN_CHANGE,	"sambaPwdCanChange"	},
-	{ LDAP_ATTR_PWD_MUST_CHANGE,	"sambaPwdMustChange"	},
-	{ LDAP_ATTR_LOGON_TIME,		"sambaLogonTime" 	},
-	{ LDAP_ATTR_LOGOFF_TIME,	"sambaLogoffTime"	},
-	{ LDAP_ATTR_KICKOFF_TIME,	"sambaKickoffTime"	},
-	{ LDAP_ATTR_CN,			"cn"			},
-	{ LDAP_ATTR_DISPLAY_NAME,	"displayName"		},
-	{ LDAP_ATTR_HOME_DRIVE,		"sambaHomeDrive"	},
-	{ LDAP_ATTR_HOME_PATH,		"sambaHomePath"		},
-	{ LDAP_ATTR_LOGON_SCRIPT,	"sambaLogonScript"	},
-	{ LDAP_ATTR_PROFILE_PATH,	"sambaProfilePath"	},
-	{ LDAP_ATTR_DESC,		"description"		},
-	{ LDAP_ATTR_USER_WKS,		"sambaUserWorkstations"	},
-	{ LDAP_ATTR_USER_SID,		"sambaSID"		},
-	{ LDAP_ATTR_PRIMARY_GROUP_SID,	"sambaPrimaryGroupSID"	},
-	{ LDAP_ATTR_LMPW,		"sambaLMPassword"	},
-	{ LDAP_ATTR_NTPW,		"sambaNTPassword"	},
-	{ LDAP_ATTR_DOMAIN,		"sambaDomainName"	},
-	{ LDAP_ATTR_OBJCLASS,		"objectClass"		},
-	{ LDAP_ATTR_ACB_INFO,		"sambaAcctFlags"	},
-	{ LDAP_ATTR_LIST_END,		NULL 			}
-};
-
-/* attributes used for alalocating RIDs */
-
-static ATTRIB_MAP_ENTRY dominfo_attr_list[] = {
-	{ LDAP_ATTR_DOMAIN,		"sambaDomainName"	},
-	{ LDAP_ATTR_NEXT_USERRID,	"sambaNextUserRid"	},
-	{ LDAP_ATTR_NEXT_GROUPRID,	"sambaNextGroupRid"	},
-	{ LDAP_ATTR_DOM_SID,		"sambaSID"		},
-	{ LDAP_ATTR_LIST_END,		NULL			},
-};
-
-/* Samba 3.0 group mapping attributes */
-
-static ATTRIB_MAP_ENTRY groupmap_attr_list[] = {
-	{ LDAP_ATTR_GIDNUMBER,		"gidNumber"		},
-	{ LDAP_ATTR_GROUP_SID,		"sambaSID"		},
-	{ LDAP_ATTR_GROUP_TYPE,		"sambaGroupType"	},
-	{ LDAP_ATTR_DESC,		"description"		},
-	{ LDAP_ATTR_DISPLAY_NAME,	"displayName"		},
-	{ LDAP_ATTR_CN,			"cn"			},
-	{ LDAP_ATTR_LIST_END,		NULL			}	
-};
-
-static ATTRIB_MAP_ENTRY groupmap_attr_list_to_delete[] = {
-	{ LDAP_ATTR_GROUP_SID,		"sambaSID"		},
-	{ LDAP_ATTR_GROUP_TYPE,		"sambaGroupType"	},
-	{ LDAP_ATTR_DESC,		"description"		},
-	{ LDAP_ATTR_DISPLAY_NAME,	"displayName"		},
-	{ LDAP_ATTR_LIST_END,		NULL			}	
-};
-
-/**********************************************************************
- perform a simple table lookup and return the attribute name 
- **********************************************************************/
- 
-static const char* get_attr_key2string( ATTRIB_MAP_ENTRY table[], int key )
-{
-	int i = 0;
-	
-	while ( table[i].attrib != LDAP_ATTR_LIST_END ) {
-		if ( table[i].attrib == key )
-			return table[i].name;
-		i++;
-	}
-	
-	return NULL;
-}
 
 /**********************************************************************
  get the attribute name given a user schame version 
@@ -287,52 +118,6 @@ static const char* get_userattr_key2string( int schema_ver, int key )
 }
 
 /**********************************************************************
- Return the list of attribute names from a mapping table
- **********************************************************************/
-
-static char** get_attr_list( ATTRIB_MAP_ENTRY table[] )
-{
-	char **names;
-	int i = 0;
-	
-	while ( table[i].attrib != LDAP_ATTR_LIST_END )
-		i++;
-	i++;
-
-	names = (char**)malloc( sizeof(char*)*i );
-	if ( !names ) {
-		DEBUG(0,("get_attr_list: out of memory\n"));
-		return NULL;
-	}
-
-	i = 0;
-	while ( table[i].attrib != LDAP_ATTR_LIST_END ) {
-		names[i] = strdup( table[i].name );
-		i++;
-	}
-	names[i] = NULL;
-	
-	return names;
-}
-
-/*********************************************************************
- Cleanup 
- ********************************************************************/
-
-static void free_attr_list( char **list )
-{
-	int i = 0;
-
-	if ( !list )
-		return; 
-
-	while ( list[i] )
-		SAFE_FREE( list[i] );
-
-	SAFE_FREE( list );
-}
-
-/**********************************************************************
  return the list of attribute names given a user schema version 
  **********************************************************************/
 
@@ -351,70 +136,6 @@ static char** get_userattr_list( int schema_ver )
 	}
 	
 	return NULL;
-}
-
-/*******************************************************************
- find the ldap password
-******************************************************************/
-static BOOL fetch_ldapsam_pw(char **dn, char** pw)
-{
-	char *key = NULL;
-	size_t size;
-	
-	*dn = smb_xstrdup(lp_ldap_admin_dn());
-	
-	if (asprintf(&key, "%s/%s", SECRETS_LDAP_BIND_PW, *dn) < 0) {
-		SAFE_FREE(*dn);
-		DEBUG(0, ("fetch_ldapsam_pw: asprintf failed!\n"));
-	}
-	
-	*pw=secrets_fetch(key, &size);
-	SAFE_FREE(key);
-
-	if (!size) {
-		/* Upgrade 2.2 style entry */
-		char *p;
-	        char* old_style_key = strdup(*dn);
-		char *data;
-		fstring old_style_pw;
-		
-		if (!old_style_key) {
-			DEBUG(0, ("fetch_ldapsam_pw: strdup failed!\n"));
-			return False;
-		}
-
-		for (p=old_style_key; *p; p++)
-			if (*p == ',') *p = '/';
-	
-		data=secrets_fetch(old_style_key, &size);
-		if (!size && size < sizeof(old_style_pw)) {
-			DEBUG(0,("fetch_ldap_pw: neither ldap secret retrieved!\n"));
-			SAFE_FREE(old_style_key);
-			SAFE_FREE(*dn);
-			return False;
-		}
-
-		strncpy(old_style_pw, data, size);
-		old_style_pw[size] = 0;
-
-		SAFE_FREE(data);
-
-		if (!secrets_store_ldap_pw(*dn, old_style_pw)) {
-			DEBUG(0,("fetch_ldap_pw: ldap secret could not be upgraded!\n"));
-			SAFE_FREE(old_style_key);
-			SAFE_FREE(*dn);
-			return False;			
-		}
-		if (!secrets_delete(old_style_key)) {
-			DEBUG(0,("fetch_ldap_pw: old ldap secret could not be deleted!\n"));
-		}
-
-		SAFE_FREE(old_style_key);
-
-		*pw = smb_xstrdup(old_style_pw);		
-	}
-	
-	return True;
 }
 			     
 /*******************************************************************
@@ -632,7 +353,7 @@ static int ldapsam_connect_system(struct ldapsam_privates *ldap_state, LDAP * ld
 	static_ldap_state = ldap_state;
 
 	/* get the password */
-	if (!fetch_ldapsam_pw(&ldap_dn, &ldap_secret))
+	if (!fetch_ldap_pw(&ldap_dn, &ldap_secret))
 	{
 		DEBUG(0, ("ldap_connect_system: Failed to retrieve password from secrets.tdb\n"));
 		return LDAP_INVALID_CREDENTIALS;
