@@ -43,7 +43,7 @@ RCSID("$Id$");
 
 #if defined(HAVE_RES_SEARCH) && defined(HAVE_DN_EXPAND)
 
-#define DECL(X) #X, T_##X
+#define DECL(X) {#X, T_##X}
 
 static struct stot{
     char *name;
@@ -57,7 +57,7 @@ static struct stot{
     DECL(TXT),
     DECL(AFSDB),
     DECL(SRV),
-    NULL, 	0
+    {NULL, 	0}
 };
 
 static int
