@@ -1,5 +1,15 @@
 Mon Aug 11 05:34:43 1997  Assar Westerlund  <assar@sics.se>
 
+	* lib/krb5/rd_rep.c (krb5_free_ap_rep_enc_part): free all memory
+
+	* lib/krb5/principal.c (krb5_unparse_name): allocate memory
+ 	properly
+
+	* kpasswd/kpasswd.c: Use `krb5_change_password'
+
+	* lib/krb5/init_creds_pw.c (init_cred): set realm of server
+ 	correctly.
+
 	* lib/krb5/init_creds_pw.c: support changing of password when it
  	has expired
 
