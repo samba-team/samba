@@ -66,10 +66,6 @@ typedef struct auth_serversupplied_info
 {
 	BOOL guest;
 	
-	/* This groups info is needed for when we become_user() for this uid */
-	int n_groups;
-	gid_t *groups;
-	
 	/* NT group information taken from the info3 structure */
 	
 	NT_USER_TOKEN *ptok;
@@ -77,11 +73,6 @@ typedef struct auth_serversupplied_info
 	DATA_BLOB user_session_key;
 	DATA_BLOB lm_session_key;
 	
-	uint32 sam_fill_level;  /* How far is this structure filled? */
-	
-	SAM_ACCOUNT *sam_account;
-	
-	void *pam_handle;
 } auth_serversupplied_info;
 
 struct auth_context {

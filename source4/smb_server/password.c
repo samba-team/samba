@@ -56,10 +56,6 @@ void invalidate_vuid(struct server_context *smb, uint16 vuid)
 	if (vuser == NULL)
 		return;
 	
-	SAFE_FREE(vuser->homedir);
-	SAFE_FREE(vuser->unix_homedir);
-	SAFE_FREE(vuser->logon_script);
-	
 	data_blob_free(&vuser->session_key);
 
 	session_yield(vuser);
@@ -72,7 +68,6 @@ void invalidate_vuid(struct server_context *smb, uint16 vuid)
 	   from the vuid 'owner' of connections */
 	/* REWRITE: conn_clear_vuid_cache(smb, vuid); */
 
-	SAFE_FREE(vuser->groups);
 	delete_nt_token(&vuser->nt_user_token);
 	SAFE_FREE(vuser);
 	smb->users.num_validated_vuids--;
@@ -141,73 +136,17 @@ int register_vuid(struct server_context *smb,
 
 	vuser->vuid = smb->users.next_vuid;
 
-	/* the next functions should be done by a SID mapping system (SMS) as
-	 * the new real sam db won't have reference to unix uids or gids
-	 */
-	if (!IS_SAM_UNIX_USER(server_info->sam_account)) {
-		DEBUG(0,("Attempted session setup with invalid user.  No uid/gid in SAM_ACCOUNT\n"));
-		free(vuser);
-		free_server_info(&server_info);
-		return UID_FIELD_INVALID;
-	}
-	
-	vuser->uid = pdb_get_uid(server_info->sam_account);
-	vuser->gid = pdb_get_gid(server_info->sam_account);
-	
-	vuser->n_groups = server_info->n_groups;
-	if (vuser->n_groups) {
-		if (!(vuser->groups = memdup(server_info->groups, sizeof(gid_t) * vuser->n_groups))) {
-			DEBUG(0,("register_vuid: failed to memdup vuser->groups\n"));
-			free(vuser);
-			free_server_info(&server_info);
-			return UID_FIELD_INVALID;
-		}
-	}
-
 	vuser->guest = server_info->guest;
-	fstrcpy(vuser->user.unix_name, pdb_get_username(server_info->sam_account)); 
-
-	/* This is a potentially untrusted username */
-	alpha_strcpy(vuser->user.smb_name, smb_name, ". _-$", sizeof(vuser->user.smb_name));
-
-	fstrcpy(vuser->user.domain, pdb_get_domain(server_info->sam_account));
-	fstrcpy(vuser->user.full_name, pdb_get_fullname(server_info->sam_account));
-
-	{
-		/* Keep the homedir handy */
-		const char *homedir = pdb_get_homedir(server_info->sam_account);
-		const char *unix_homedir = pdb_get_unix_homedir(server_info->sam_account);
-		const char *logon_script = pdb_get_logon_script(server_info->sam_account);
-		if (homedir) {
-			vuser->homedir = smb_xstrdup(homedir);
-		}
-
-		if (unix_homedir) {
-			vuser->unix_homedir = smb_xstrdup(unix_homedir);
-		}
-
-		if (logon_script) {
-			vuser->logon_script = smb_xstrdup(logon_script);
-		}
-	}
 
 	vuser->session_key = *session_key;
 
-	DEBUG(10,("register_vuid: (%u,%u) %s %s %s guest=%d\n", 
-		  (unsigned int)vuser->uid, 
-		  (unsigned int)vuser->gid,
-		  vuser->user.unix_name, vuser->user.smb_name, vuser->user.domain, vuser->guest ));
-
-	DEBUG(3, ("User name: %s\tReal name: %s\n",vuser->user.unix_name,vuser->user.full_name));	
+	DEBUG(10,("register_vuid: guest=%d\n", vuser->guest ));
 
  	if (server_info->ptok) {
 		vuser->nt_user_token = dup_nt_token(server_info->ptok);
 	} else {
 		DEBUG(1, ("server_info does not contain a user_token - cannot continue\n"));
 		free_server_info(&server_info);
-		SAFE_FREE(vuser->homedir);
-		SAFE_FREE(vuser->unix_homedir);
-		SAFE_FREE(vuser->logon_script);
 
 		SAFE_FREE(vuser);
 		return UID_FIELD_INVALID;
@@ -215,8 +154,6 @@ int register_vuid(struct server_context *smb,
 
 	/* use this to keep tabs on all our info from the authentication */
 	vuser->server_info = server_info;
-
-	DEBUG(3,("UNIX uid %d is UNIX user %s, and will be vuid %u\n",(int)vuser->uid,vuser->user.unix_name, vuser->vuid));
 
 	smb->users.next_vuid++;
 	smb->users.num_validated_vuids++;
@@ -229,15 +166,6 @@ int register_vuid(struct server_context *smb,
 		return -1;
 	}
 
-	/* Register a home dir service for this user */
-	if ((!vuser->guest) && vuser->unix_homedir && *(vuser->unix_homedir)) {
-		DEBUG(3, ("Adding/updating homes service for user '%s' using home direcotry: '%s'\n", 
-			  vuser->user.unix_name, vuser->unix_homedir));
-		vuser->homes_snum = add_home_service(vuser->user.unix_name, vuser->user.unix_name, vuser->unix_homedir);	  
-	} else {
-		vuser->homes_snum = -1;
-	}
-	
 	return vuser->vuid;
 }
 

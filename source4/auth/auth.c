@@ -231,12 +231,6 @@ static NTSTATUS check_ntlm_password(const struct auth_context *auth_context,
 		}
 	}
 
-	/* This is one of the few places the *relies* (rather than just sets defaults
-	   on the value of lp_security().  This needs to change.  A new paramater 
-	   perhaps? */
-	if (lp_security() >= SEC_SERVER)
-		smb_user_control(user_info, *server_info, nt_status);
-
 	if (NT_STATUS_IS_OK(nt_status)) {
 		if (NT_STATUS_IS_OK(nt_status)) {
 			DEBUG((*server_info)->guest ? 5 : 2, 
