@@ -13,14 +13,13 @@ interface drsuapi
         /* Function 0x00 */
 
 	typedef [flag(NDR_PAHEX)] struct {
-		uint32 length;
+		[range(1,10000)] uint32 length;
 		[size_is(length)] uint8 data[];
 	} drsuapi_BindInfo;
 
 	NTSTATUS drsuapi_DsBind(
 		[in]	    GUID *server_guid,
-		[in]	    uint32 unknown,
-		[out]       drsuapi_BindInfo *info,
+		[in,out]    drsuapi_BindInfo *bind_info,
 		[out,ref]   policy_handle *bind_handle
 		);
 
