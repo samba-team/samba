@@ -1627,7 +1627,7 @@ static NTSTATUS samr_QueryUserInfo(struct dcesrv_call_state *dce_call, TALLOC_CT
 		break;
 
 	case 12:
-		QUERY_STRING(msg, info12.profile.name,        "profilePath");
+		QUERY_STRING(msg, info12.profile_path.name,   "profilePath");
 		break;
 
 	case 13:
@@ -1654,14 +1654,14 @@ static NTSTATUS samr_QueryUserInfo(struct dcesrv_call_state *dce_call, TALLOC_CT
 		QUERY_NTTIME(msg, info21.last_logoff,         "lastLogoff");
 		QUERY_NTTIME(msg, info21.last_password_change,     "pwdLastSet");
 		QUERY_NTTIME(msg, info21.acct_expiry,         "accountExpires");
-		QUERY_APASSC(msg, info21.allow_password_change,    "pwdLastSet");
-		QUERY_FPASSC(msg, info21.force_password_change,    "pwdLastSet");
-		QUERY_STRING(msg, info21.account_name.name,       "sAMAccountName");
+		QUERY_APASSC(msg, info21.allow_password_change,"pwdLastSet");
+		QUERY_FPASSC(msg, info21.force_password_change,"pwdLastSet");
+		QUERY_STRING(msg, info21.account_name.name,   "sAMAccountName");
 		QUERY_STRING(msg, info21.full_name.name,      "displayName");
 		QUERY_STRING(msg, info21.home_directory.name, "homeDirectory");
 		QUERY_STRING(msg, info21.home_drive.name,     "homeDrive");
 		QUERY_STRING(msg, info21.logon_script.name,   "scriptPath");
-		QUERY_STRING(msg, info21.profile.name,        "profilePath");
+		QUERY_STRING(msg, info21.profile_path.name,   "profilePath");
 		QUERY_STRING(msg, info21.description.name,    "description");
 		QUERY_STRING(msg, info21.workstations.name,   "userWorkstations");
 		QUERY_STRING(msg, info21.comment.name,        "comment");
@@ -1742,7 +1742,7 @@ static NTSTATUS samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 		break;
 
 	case 12:
-		SET_STRING(msg, info12.profile.name,        "profilePath");
+		SET_STRING(msg, info12.profile_path.name,   "profilePath");
 		break;
 
 	case 13:
@@ -1771,8 +1771,8 @@ static NTSTATUS samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 			SET_STRING(msg, info21.comment.name,      "comment");
 		IFSET(SAMR_FIELD_LOGON_SCRIPT) 
 			SET_STRING(msg, info21.logon_script.name, "scriptPath");
-		IFSET(SAMR_FIELD_PROFILE)      
-			SET_STRING(msg, info21.profile.name,      "profilePath");
+		IFSET(SAMR_FIELD_PROFILE_PATH)      
+			SET_STRING(msg, info21.profile_path.name, "profilePath");
 		IFSET(SAMR_FIELD_WORKSTATION)  
 			SET_STRING(msg, info21.workstations.name, "userWorkstations");
 		IFSET(SAMR_FIELD_LOGON_HOURS)  
@@ -1796,8 +1796,8 @@ static NTSTATUS samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 			SET_STRING(msg, info23.info.comment.name,      "comment");
 		IFSET(SAMR_FIELD_LOGON_SCRIPT) 
 			SET_STRING(msg, info23.info.logon_script.name, "scriptPath");
-		IFSET(SAMR_FIELD_PROFILE)      
-			SET_STRING(msg, info23.info.profile.name,      "profilePath");
+		IFSET(SAMR_FIELD_PROFILE_PATH)      
+			SET_STRING(msg, info23.info.profile_path.name, "profilePath");
 		IFSET(SAMR_FIELD_WORKSTATION)  
 			SET_STRING(msg, info23.info.workstations.name, "userWorkstations");
 		IFSET(SAMR_FIELD_LOGON_HOURS)  
@@ -1839,8 +1839,8 @@ static NTSTATUS samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 			SET_STRING(msg, info25.info.comment.name,      "comment");
 		IFSET(SAMR_FIELD_LOGON_SCRIPT) 
 			SET_STRING(msg, info25.info.logon_script.name, "scriptPath");
-		IFSET(SAMR_FIELD_PROFILE)      
-			SET_STRING(msg, info25.info.profile.name,      "profilePath");
+		IFSET(SAMR_FIELD_PROFILE_PATH)      
+			SET_STRING(msg, info25.info.profile_path.name, "profilePath");
 		IFSET(SAMR_FIELD_WORKSTATION)  
 			SET_STRING(msg, info25.info.workstations.name, "userWorkstations");
 		IFSET(SAMR_FIELD_LOGON_HOURS)  

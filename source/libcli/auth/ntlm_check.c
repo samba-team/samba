@@ -169,8 +169,8 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 			     const DATA_BLOB *challenge,
 			     const DATA_BLOB *lm_response,
 			     const DATA_BLOB *nt_response,
-			     const DATA_BLOB *lm_interactive_pwd,
-			     const DATA_BLOB *nt_interactive_pwd,
+			     const DATA_BLOB *lm_interactive_password,
+			     const DATA_BLOB *nt_interactive_password,
 			     const char *username, 
 			     const char *client_username, 
 			     const char *client_domain,
@@ -184,14 +184,14 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 			 username));
 	}
 
-	if (nt_interactive_pwd && nt_interactive_pwd->length && nt_pw) { 
-		if (nt_interactive_pwd->length != 16) {
-			DEBUG(3,("ntlm_password_check: Interactive logon: Invalid NT password length (%d) supplied for user %s\n", (int)nt_interactive_pwd->length,
+	if (nt_interactive_password && nt_interactive_password->length && nt_pw) { 
+		if (nt_interactive_password->length != 16) {
+			DEBUG(3,("ntlm_password_check: Interactive logon: Invalid NT password length (%d) supplied for user %s\n", (int)nt_interactive_password->length,
 				 username));
 			return NT_STATUS_WRONG_PASSWORD;
 		}
 
-		if (memcmp(nt_interactive_pwd->data, nt_pw, 16) == 0) {
+		if (memcmp(nt_interactive_password->data, nt_pw, 16) == 0) {
 			if (user_sess_key) {
 				*user_sess_key = data_blob(NULL, 16);
 				SMBsesskeygen_ntv1(nt_pw, user_sess_key->data);
@@ -203,9 +203,9 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 			return NT_STATUS_WRONG_PASSWORD;
 		}
 
-	} else if (lm_interactive_pwd && lm_interactive_pwd->length && lm_pw) { 
-		if (lm_interactive_pwd->length != 16) {
-			DEBUG(3,("ntlm_password_check: Interactive logon: Invalid LANMAN password length (%d) supplied for user %s\n", (int)lm_interactive_pwd->length,
+	} else if (lm_interactive_password && lm_interactive_password->length && lm_pw) { 
+		if (lm_interactive_password->length != 16) {
+			DEBUG(3,("ntlm_password_check: Interactive logon: Invalid LANMAN password length (%d) supplied for user %s\n", (int)lm_interactive_password->length,
 				 username));
 			return NT_STATUS_WRONG_PASSWORD;
 		}
@@ -216,7 +216,7 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 			return NT_STATUS_WRONG_PASSWORD;
 		}
 
-		if (memcmp(lm_interactive_pwd->data, lm_pw, 16) == 0) {
+		if (memcmp(lm_interactive_password->data, lm_pw, 16) == 0) {
 			return NT_STATUS_OK;
 		} else {
 			DEBUG(3,("ntlm_password_check: Interactive logon: LANMAN password check failed for user %s\n",
