@@ -1880,7 +1880,7 @@ static int rpc_trustdom_list(int argc, const char **argv)
 	int num_domains, i, pad_len, col_len = 20;
 	DOM_SID *domain_sids;
 	char **trusted_dom_names;
-	fstring pdc_name;
+	fstring pdc_name, dummy;
 	
 	/* trusting domains listing variables */
 	POLICY_HND domain_hnd;
@@ -1927,8 +1927,10 @@ static int rpc_trustdom_list(int argc, const char **argv)
 	};
 	
 	/* query info level 5 to obtain sid of a domain being queried */
-	nt_status = cli_lsa_query_info_policy(cli, mem_ctx, &connect_hnd,
-					5 /* info level */, domain_name, &queried_dom_sid);
+	nt_status = cli_lsa_query_info_policy(
+		cli, mem_ctx, &connect_hnd, 5 /* info level */, 
+		dummy, &queried_dom_sid);
+
 	if (NT_STATUS_IS_ERR(nt_status)) {
 		DEBUG(0, ("LSA Query Info failed. Returned error was %s\n",
 			nt_errstr(nt_status)));
