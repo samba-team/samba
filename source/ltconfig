@@ -180,7 +180,7 @@ help="Try \`$progname --help' for more information."
 # Global variables:
 default_ofile=libtool
 can_build_shared=yes
-enable_shared=no
+enable_shared=yes
 # All known linkers require a `.a' archive for static linking (except M$VC,
 # which needs '.lib').
 enable_static=yes
