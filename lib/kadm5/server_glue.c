@@ -104,6 +104,26 @@ kadm5_init_with_password(char *client_name,
 }
 
 kadm5_ret_t
+kadm5_init_with_password_ctx(krb5_context context,
+			     char *client_name,
+			     char *pass,
+			     char *service_name,
+			     kadm5_config_params *realm_params,
+			     unsigned long struct_version,
+			     unsigned long api_version,
+			     void **server_handle)
+{
+    return kadm5_s_init_with_password_ctx(context,
+					  client_name,
+					  pass,
+					  service_name,
+					  realm_params,
+					  struct_version,
+					  api_version,
+					  server_handle);
+}
+
+kadm5_ret_t
 kadm5_modify_principal(void *server_handle,
 		       kadm5_principal_ent_t princ,
 		       u_int32_t mask)
