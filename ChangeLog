@@ -1,3 +1,16 @@
+1999-10-01  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/config_file.c: rewritten to allow error messages
+
+	* lib/krb5/Makefile.am (bin_PROGRAMS): add verify_krb5_conf
+	(libkrb5_la_SOURCES): add config_file_netinfo.c
+
+	* lib/krb5/verify_krb5_conf.c: new program for verifying that
+	krb5.conf is corret
+
+	* lib/krb5/config_file_netinfo.c: moved netinfo code here from
+ 	config_file.c
+
 1999-09-28  Assar Westerlund  <assar@sics.se>
 
 	* lib/asn1/check-der.c: add test cases for Generalized time and
