@@ -55,7 +55,6 @@
 void    abort_remote __P((FILE *));
 void    abortpt __P((int));
 void    abortrecv __P((int));
-void    abortsend __P((int));
 void	account __P((int, char **));
 int	another __P((int *, char ***, char *));
 void	blkfree __P((char **));
