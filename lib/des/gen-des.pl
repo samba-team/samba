@@ -4,6 +4,8 @@
 
 use strict;
 
+print "/* GENERATE FILE from gen-des.pl, do not edit */\n\n";
+
 my $gen = 1;
 
 sub gen_pattern
