@@ -153,6 +153,7 @@ make \
 	PIDDIR=%{PIDDIR}
 make	nsswitch
 make	nsswitch/libnss_wins.so
+( cd ../example/VFS; ./configure  --prefix=%{_prefix}  --libdir=%{LIBDIR} --sbindir=%{_sbindir} )
 make -C ../examples/VFS
 make -C ../examples/VFS/block
 
