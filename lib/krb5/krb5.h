@@ -474,6 +474,9 @@ typedef struct krb5_auth_context_data {
     krb5_pointer i_vector;
   
     krb5_rcache rcache;
+
+    krb5_keytype keytype;	/* ¿requested key type ? */
+    krb5_cksumtype cksumtype;	/* ¡requested checksum type! */
   
 }krb5_auth_context_data, *krb5_auth_context;
 
