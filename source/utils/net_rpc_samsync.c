@@ -400,8 +400,7 @@ sam_account_from_delta(SAM_ACCOUNT *account, SAM_ACCOUNT_INFO *delta)
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS
-fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
+static NTSTATUS fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
 {
 	NTSTATUS nt_ret;
 	fstring account;
@@ -429,6 +428,7 @@ fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
 			    (delta->acb_info & ACB_DOMTRUST) ) {
 			pstrcpy(add_script, lp_addmachine_script());
 		} else {
+			*add_script = '\0';
 			DEBUG(1, ("Unknown user type: %s\n",
 				  smbpasswd_encode_acb_info(delta->acb_info)));
 		}
@@ -439,8 +439,7 @@ fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
 			add_ret = smbrun(add_script,NULL);
 			DEBUG(1,("fetch_account: Running the command `%s' "
 				 "gave %d\n", add_script, add_ret));
-		}
-		else {
+		} else {
 			DEBUG(8,("fetch_account_info: no add user/machine script.  Asking winbindd\n"));
 			
 			/* don't need a RID allocated since the user already has a SID */
