@@ -101,6 +101,8 @@ uint32 cmd_spoolss_enum_printers(struct client_info *info, int argc, char *argv[
 	else
 		report(out_hnd, "FAILED\n");
 		
+		
+#if 0	/* JERRY */
 	flags=PRINTER_ENUM_NAME;
 
 	if (msrpc_spoolss_enum_printers(srv_name, flags, level, ctr))
@@ -114,7 +116,7 @@ uint32 cmd_spoolss_enum_printers(struct client_info *info, int argc, char *argv[
 		DEBUG(5,("cmd_spoolss_enum_printer: query succeeded\n"));
 	else
 		report(out_hnd, "FAILED\n");
-		
+
 	flags=PRINTER_ENUM_CONNECTIONS;
 
 	if (msrpc_spoolss_enum_printers(srv_name, flags, level, ctr))
@@ -135,7 +137,8 @@ uint32 cmd_spoolss_enum_printers(struct client_info *info, int argc, char *argv[
 		DEBUG(5,("cmd_spoolss_enum_printer: query succeeded\n"));
 	else
 		report(out_hnd, "FAILED\n");
-		
+#endif
+
 	return NT_STATUS_NOPROBLEMO;
 }
 
