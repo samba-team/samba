@@ -33,6 +33,23 @@ extern struct current_user current_user;
 #define DIR_ENTRY_SAFETY_MARGIN 4096
 
 /********************************************************************
+ Roundup a value to the nearest allocation roundup size boundary.
+ Only do this for Windows clients.
+********************************************************************/
+
+SMB_BIG_UINT smb_roundup(connection_struct *conn, SMB_BIG_UINT val)
+{
+	SMB_BIG_UINT rval = lp_allocation_roundup_size(SNUM(conn));
+
+	/* Only roundup for Windows clients. */
+	enum remote_arch_types ra_type = get_remote_arch();
+	if (rval && (ra_type != RA_SAMBA) && (ra_type != RA_CIFSFS)) {
+		val = SMB_ROUNDUP(val,rval);
+	}
+	return val;
+}
+
+/********************************************************************
  Given a stat buffer return the allocated size on disk, taking into
  account sparse files.
 ********************************************************************/
@@ -50,7 +67,7 @@ SMB_BIG_UINT get_allocation_size(files_struct *fsp, SMB_STRUCT_STAT *sbuf)
 	if (!ret && fsp && fsp->initial_allocation_size)
 		ret = fsp->initial_allocation_size;
 
-	return ret;
+	return smb_roundup(fsp->conn, ret);
 }
 
 /****************************************************************************
@@ -3332,6 +3349,10 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 #endif /* LARGE_SMB_OFF_T */
 			DEBUG(10,("call_trans2setfilepathinfo: Set file allocation info for file %s to %.0f\n",
 					fname, (double)allocation_size ));
+
+			if (allocation_size) {
+				allocation_size = smb_roundup(conn, allocation_size);
+			}
 
 			if(allocation_size != get_file_size(sbuf)) {
 				SMB_STRUCT_STAT new_sbuf;

@@ -536,4 +536,23 @@ number of entries sent will be zero.
 #define SMB_POSIX_ACL_ENTRY_SIZE         10
 
 #define SMB_POSIX_IGNORE_ACE_ENTRIES	0xFFFF
+
+/* The query/set info levels for POSIX EA's. */
+#define SMB_QUERY_POSIX_EA	0x205
+#define SMB_SET_POSIX_EA	0x205
+
+/* The query/set info levels for POSIX fcntl locks. */
+#define SMB_QUERY_POSIX_LOCK	0x206
+#define SMB_SET_POSIX_LOCK	0x206
+
+/* What a lock get/set request looks like. */
+/* Wire format is (all little endian) :
+
+[2 bytes]		type - 0 = READ/1 = WRITE/2 = UNOCK
+[64 bytes]		start position
+[64 bytes]		length (zero means to end of file)
+[64 bytes]		lock context
+[4 bytes]		timeout in ms.
+
+*/
 #endif
