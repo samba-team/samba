@@ -23,7 +23,7 @@
 #include "includes.h"
 
 uint32 global_client_caps = 0;
-static struct auth_context *ntlmssp_auth_context;
+static struct auth_context *ntlmssp_auth_context = NULL;
 
 /*
   on a logon error possibly map the error to success if "map to guest"
@@ -288,7 +288,7 @@ static int reply_spnego_negotiate(connection_struct *conn,
 
 	DEBUG(3,("Got neg_flags=%08x\n", neg_flags));
 
-	if (!ntlmssp_auth_context) {
+	if (ntlmssp_auth_context) {
 		ntlmssp_auth_context->free(&ntlmssp_auth_context);
 	}
 
