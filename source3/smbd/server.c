@@ -1373,7 +1373,7 @@ void close_file(int fnum, BOOL normal_close)
   int cnum = fs_p->cnum;
   uint32 dev = fs_p->fd_ptr->dev;
   uint32 inode = fs_p->fd_ptr->inode;
-  share_lock_token token;
+  int token;
 
   invalidate_read_prediction(fs_p->fd_ptr->fd);
   fs_p->open = False;
@@ -1477,10 +1477,10 @@ BOOL check_file_sharing(int cnum,char *fname)
 {
   int i;
   int ret = False;
-  min_share_mode_entry *old_shares = 0;
+  share_mode_entry *old_shares = 0;
   int num_share_modes;
   struct stat sbuf;
-  share_lock_token token;
+  int token;
   int pid = getpid();
   uint32 dev, inode;
 
@@ -1509,7 +1509,7 @@ BOOL check_file_sharing(int cnum,char *fname)
       broke_oplock = False;
       for(i = 0; i < num_share_modes; i++)
       {
-        min_share_mode_entry *share_entry = &old_shares[i];
+        share_mode_entry *share_entry = &old_shares[i];
 
         /* 
          * Break oplocks before checking share modes. See comment in
@@ -1571,8 +1571,8 @@ free_and_exit:
   Helper for open_file_shared. 
   Truncate a file after checking locking; close file if locked.
   **************************************************************************/
-static void truncate_unless_locked(int fnum, int cnum, share_lock_token token, 
-       BOOL *share_locked)
+static void truncate_unless_locked(int fnum, int cnum, int token, 
+				   BOOL *share_locked)
 {
   if (Files[fnum].can_write){
     if (is_locked(fnum,cnum,0x3FFFFFFF,0)){
@@ -1596,7 +1596,7 @@ static void truncate_unless_locked(int fnum, int cnum, share_lock_token token,
 /****************************************************************************
 check if we can open a file with a share mode
 ****************************************************************************/
-int check_share_mode( min_share_mode_entry *share, int deny_mode, char *fname,
+int check_share_mode( share_mode_entry *share, int deny_mode, char *fname,
                       BOOL fcbopen, int *flags)
 {
   int old_open_mode = share->share_mode &0xF;
@@ -1648,7 +1648,7 @@ void open_file_shared(int fnum,int cnum,char *fname,int share_mode,int ofun,
   BOOL file_existed = file_exist(fname,&sbuf);
   BOOL share_locked = False;
   BOOL fcbopen = False;
-  share_lock_token token;
+  int token;
   uint32 dev = 0;
   uint32 inode = 0;
   int num_share_modes = 0;
@@ -1724,7 +1724,7 @@ void open_file_shared(int fnum,int cnum,char *fname,int share_mode,int ofun,
   if (lp_share_modes(SNUM(cnum))) 
   {
     int i;
-    min_share_mode_entry *old_shares = 0;
+    share_mode_entry *old_shares = 0;
 
     if (file_existed)
     {
@@ -1749,7 +1749,7 @@ void open_file_shared(int fnum,int cnum,char *fname,int share_mode,int ofun,
         broke_oplock = False;
         for(i = 0; i < num_share_modes; i++)
         {
-          min_share_mode_entry *share_entry = &old_shares[i];
+          share_mode_entry *share_entry = &old_shares[i];
 
           /* 
            * By observation of NetBench, oplocks are broken *before* share
@@ -2794,7 +2794,7 @@ Send an oplock break message to another smbd process. If the oplock is held
 by the local smbd then call the oplock break function directly.
 ****************************************************************************/
 
-BOOL request_oplock_break(min_share_mode_entry *share_entry, 
+BOOL request_oplock_break(share_mode_entry *share_entry, 
                           uint32 dev, uint32 inode)
 {
   char op_break_msg[OPLOCK_BREAK_MSG_LEN];
@@ -4177,9 +4177,7 @@ void exit_server(char *reason)
 #endif
   }    
 
-#ifdef FAST_SHARE_MODES
-  stop_share_mode_mgmt();
-#endif /* FAST_SHARE_MODES */
+  locking_end();
 
   DEBUG(3,("%s Server exit  (%s)\n",timestring(),reason?reason:""));
   exit(0);
@@ -5012,10 +5010,8 @@ static void usage(char *pname)
   if (!open_sockets(is_daemon,port))
     exit(1);
 
-#ifdef FAST_SHARE_MODES
-  if (!start_share_mode_mgmt())
+  if (!locking_init())
     exit(1);
-#endif /* FAST_SHARE_MODES */
 
   /* possibly reload the services file. */
   reload_services(True);

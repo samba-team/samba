@@ -53,80 +53,52 @@ int            Ucrit_pid[100];  /* Ugly !!! */        /* added by OH */
 int            Ucrit_MaxPid=0;                        /* added by OH */
 unsigned int   Ucrit_IsActive = 0;                    /* added by OH */
 
-#ifndef FAST_SHARE_MODES
-static char *read_share_file(int fd, char *fname, char *progname)
+/* we need these because we link to locking*.o */
+ void become_root(BOOL save_dir) {}
+ void unbecome_root(BOOL restore_dir) {}
+connection_struct Connections[MAX_CONNECTIONS];
+files_struct Files[MAX_OPEN_FILES];
+
+
+static void print_share_mode(share_mode_entry *e, char *fname)
 {
-  struct stat sb;
-  char *buf;
-  int size;
+	static int count;
+	if (count==0) {
+		printf("Locked files:\n");
+		printf("Pid    DenyMode   R/W        Oplock           Name\n");
+		printf("--------------------------------------------------\n");
+	}
+	count++;
 
-  if(fstat(fd, &sb) != 0)
-  {
-    printf("%s: ERROR: read_share_file: Failed to do stat on share file %s (%s)\n",
-                  progname, fname, strerror(errno));
-    return 0;
-  }
+	printf("%-5d  ",e->pid);
+	switch ((e->share_mode>>4)&0xF) {
+	case DENY_NONE: printf("DENY_NONE  "); break;
+	case DENY_ALL:  printf("DENY_ALL   "); break;
+	case DENY_DOS:  printf("DENY_DOS   "); break;
+	case DENY_READ: printf("DENY_READ  "); break;
+	case DENY_WRITE:printf("DENY_WRITE "); break;
+	}
+	switch (e->share_mode&0xF) {
+	case 0: printf("RDONLY     "); break;
+	case 1: printf("WRONLY     "); break;
+	case 2: printf("RDWR       "); break;
+	}
 
-  if(sb.st_size == 0)
-  {
-     return 0;
-  }
+	if((e->op_type & 
+	    (EXCLUSIVE_OPLOCK|BATCH_OPLOCK)) == 
+	   (EXCLUSIVE_OPLOCK|BATCH_OPLOCK))
+		printf("EXCLUSIVE+BATCH ");
+	else if (e->op_type & EXCLUSIVE_OPLOCK)
+		printf("EXCLUSIVE       ");
+	else if (e->op_type & BATCH_OPLOCK)
+		printf("BATCH           ");
+	else
+		printf("NONE            ");
 
-  /* Allocate space for the file */
-  if((buf = (char *)malloc(sb.st_size)) == NULL)
-  {
-    printf("%s: read_share_file: malloc for file size %d fail !\n", 
-              progname, (int)sb.st_size);
-    return 0;
-  }
-
-  if(lseek(fd, 0, SEEK_SET) != 0)
-  {
-    printf("%s: ERROR: read_share_file: Failed to reset position to 0 \
-for share file %s (%s)\n", progname, fname, strerror(errno));
-    if(buf)
-      free(buf);
-    return 0;
-  }
-
-  if (read(fd,buf,sb.st_size) != sb.st_size)
-  {
-    printf("%s: ERROR: read_share_file: Failed to read share file %s (%s)\n",
-               progname, fname, strerror(errno));
-    if(buf)
-      free(buf);
-    return 0;
-  }
-
-  if (IVAL(buf,SMF_VERSION_OFFSET) != LOCKING_VERSION) {
-    printf("%s: ERROR: read_share_file: share file %s has incorrect \
-locking version (was %d, should be %d).\n",fname, 
-              progname, IVAL(buf,SMF_VERSION_OFFSET), LOCKING_VERSION);
-    if(buf)
-      free(buf);
-    return 0;
-  }
-
-  /* Sanity check for file contents */
-  size = sb.st_size;
-  size -= SMF_HEADER_LENGTH; /* Remove the header */
-
-  /* Remove the filename component. */
-  size -= SVAL(buf, SMF_FILENAME_LEN_OFFSET);
-
-  /* The remaining size must be a multiple of SMF_ENTRY_LENGTH - error if not. */
-  if((size % SMF_ENTRY_LENGTH) != 0)
-  {
-    printf("%s: ERROR: read_share_file: share file %s is an incorrect length.\n", 
-             progname, fname);
-    if(buf)
-      free(buf);
-    return 0;
-  }
-
-  return buf;
+	printf(" %s   %s",fname,asctime(LocalTime((time_t *)&e->time.tv_sec)));
 }
-#endif /* FAST_SHARE_MODES */
+
+
 
  int main(int argc, char *argv[])
 {
@@ -136,20 +108,8 @@ locking version (was %d, should be %d).\n",fname,
   static pstring servicesf = CONFIGFILE;
   extern char *optarg;
   int verbose = 0, brief =0;
-  BOOL firstopen=True;
   BOOL processes_only=False;
   int last_pid=0;
-#ifdef FAST_SHARE_MODES
-  pstring shmem_file_name;
-  share_mode_record *file_scanner_p;
-  smb_shm_offset_t *mode_array;
-  int bytes_free, bytes_used, bytes_overhead, bytes_total;
-#else /* FAST_SHARE_MODES */
-  void *dir;
-  char *s;
-#endif /* FAST_SHARE_MODES */
-  int oplock_type;
-  int i;
   struct session_record *ptr;
 
 
@@ -302,191 +262,16 @@ locking version (was %d, should be %d).\n",fname,
 
   printf("\n");
 
-#ifdef FAST_SHARE_MODES 
-  /*******************************************************************
-  initialize the shared memory for share_mode management 
-  ******************************************************************/
-   
-  strcpy(shmem_file_name,lp_lockdir());
-  trim_string(shmem_file_name,"","/");
-  if (!*shmem_file_name) exit(-1);
-  strcat(shmem_file_name, "/SHARE_MEM_FILE");
-  if(!smb_shm_open(shmem_file_name, lp_shmem_size())) exit(-1);
-  
-  mode_array = (smb_shm_offset_t *)smb_shm_offset2addr(smb_shm_get_userdef_off());
-  if(mode_array == NULL)
-  {
-    printf("%s: base of shared memory hash array == 0! Exiting.\n", argv[0]);
-    smb_shm_close();
-    exit(-1);
-  }
+  locking_init();
 
-  for( i = 0; i < lp_shmem_hash_size(); i++)
-  {
-    smb_shm_lock_hash_entry(i);
-    if(mode_array[i] == NULL_OFFSET)
-    {
-      smb_shm_unlock_hash_entry(i);
-      continue;
-    }
-    file_scanner_p = (share_mode_record *)smb_shm_offset2addr(mode_array[i]);
-    while((file_scanner_p != 0) && (file_scanner_p->num_share_mode_entries != 0))
-    {
-      share_mode_entry *entry_scanner_p = 
-                 (share_mode_entry *)smb_shm_offset2addr(
-                                       file_scanner_p->share_mode_entries);
-
-      while(entry_scanner_p != 0)
-      {
-        struct timeval t;
-        int pid = entry_scanner_p->pid;
-        int mode = entry_scanner_p->share_mode;
-     
-        t.tv_sec = entry_scanner_p->time.tv_sec;
-        t.tv_usec = entry_scanner_p->time.tv_usec;
-        strcpy(fname, file_scanner_p->file_name);
-        oplock_type = entry_scanner_p->op_type;
-
-#else /* FAST_SHARE_MODES */
-
-     /* For slow share modes go through all the files in
-        the share mode directory and read the entries in
-        each.
-      */
-
-     dir = opendir(lp_lockdir());
-     if (!dir) 
-     {
-       printf("%s: Unable to open lock directory %s.\n", argv[0], lp_lockdir());
-       return(0);
-     }
-     while ((s=readdirname(dir))) {
-       char *buf;
-       char *base;
-       int fd;
-       pstring lname;
-       uint32 dev,inode;
-       
-       if (sscanf(s,"share.%u.%u",&dev,&inode)!=2) continue;
-       
-       strcpy(lname,lp_lockdir());
-       trim_string(lname,NULL,"/");
-       strcat(lname,"/");
-       strcat(lname,s);
-       
-       fd = open(lname,O_RDWR,0);
-       if (fd < 0) 
-       {
-         printf("%s: Unable to open share file %s.\n", argv[0], lname);
-         continue;
-       }
-
-       /* Lock the share mode file while we read it. */
-       if(fcntl_lock(fd, F_SETLKW, 0, 1, F_WRLCK) == False)
-       {
-         printf("%s: Unable to lock open share file %s.\n", argv[0], lname);
-         close(fd);
-         continue;
-       }
-
-       if(( buf = read_share_file( fd, lname, argv[0] )) == NULL)
-       {
-         close(fd);
-         continue;
-       } 
-       strcpy( fname, &buf[10]);
-       close(fd);
-      
-       base = buf + SMF_HEADER_LENGTH + SVAL(buf,SMF_FILENAME_LEN_OFFSET); 
-       for( i = 0; i < IVAL(buf, SMF_NUM_ENTRIES_OFFSET); i++)
-       {
-         char *p = base + (i*SMF_ENTRY_LENGTH);
-         struct timeval t;
-         int pid = IVAL(p,SME_PID_OFFSET);
-         int mode = IVAL(p,SME_SHAREMODE_OFFSET);
-     
-         t.tv_sec = IVAL(p,SME_SEC_OFFSET);
-         t.tv_usec = IVAL(p,SME_USEC_OFFSET);
-         oplock_type = SVAL(p,SME_OPLOCK_TYPE_OFFSET);
-#endif /* FAST_SHARE_MODES */
-
-    fname[sizeof(fname)-1] = 0;
-
-    if (firstopen) {
-      firstopen=False;
-      printf("Locked files:\n");
-      printf("Pid    DenyMode   R/W        Oplock           Name\n");
-      printf("--------------------------------------------------\n");
-    }
-
-
-    printf("%-5d  ",pid);
-    switch ((mode>>4)&0xF)
-      {
-      case DENY_NONE: printf("DENY_NONE  "); break;
-      case DENY_ALL:  printf("DENY_ALL   "); break;
-      case DENY_DOS:  printf("DENY_DOS   "); break;
-      case DENY_READ: printf("DENY_READ  "); break;
-      case DENY_WRITE:printf("DENY_WRITE "); break;
-      }
-    switch (mode&0xF) 
-      {
-      case 0: printf("RDONLY     "); break;
-      case 1: printf("WRONLY     "); break;
-      case 2: printf("RDWR       "); break;
-      }
-
-    if((oplock_type & (EXCLUSIVE_OPLOCK|BATCH_OPLOCK)) == (EXCLUSIVE_OPLOCK|BATCH_OPLOCK))
-      printf("EXCLUSIVE+BATCH ");
-    else if (oplock_type & EXCLUSIVE_OPLOCK)
-      printf("EXCLUSIVE       ");
-    else if (oplock_type & BATCH_OPLOCK)
-      printf("BATCH           ");
-    else
-      printf("NONE            ");
-
-    printf(" %s   %s",fname,asctime(LocalTime((time_t *)&t.tv_sec)));
-
-#ifdef FAST_SHARE_MODES
-
-        entry_scanner_p = (share_mode_entry *)smb_shm_offset2addr(
-                                    entry_scanner_p->next_share_mode_entry);
-      } /* end while entry_scanner_p */
-     file_scanner_p = (share_mode_record *)smb_shm_offset2addr(
-                                    file_scanner_p->next_offset);
-    } /* end while file_scanner_p */
-    smb_shm_unlock_hash_entry(i);
-  } /* end for */
-
-  smb_shm_get_usage(&bytes_free, &bytes_used, &bytes_overhead);
-  bytes_total = bytes_free + bytes_used + bytes_overhead;
-
-  /*******************************************************************
-  deinitialize the shared memory for share_mode management 
-  ******************************************************************/
-  smb_shm_close();
-
-#else /* FAST_SHARE_MODES */
-    } /* end for i */
-
-    if(buf)
-      free(buf);
-    base = 0;
-  } /* end while */
-  closedir(dir);
-
-#endif /* FAST_SHARE_MODES */
-  if (firstopen)
+  if (share_mode_forall(print_share_mode) <= 0)
     printf("No locked files\n");
-#ifdef FAST_SHARE_MODES
-  printf("\nShare mode memory usage (bytes):\n");
-  printf("   %d(%d%%) free + %d(%d%%) used + %d(%d%%) overhead = %d(100%%) total\n",
-	 bytes_free, (bytes_free * 100)/bytes_total,
-	 bytes_used, (bytes_used * 100)/bytes_total,
-	 bytes_overhead, (bytes_overhead * 100)/bytes_total,
-	 bytes_total);
-  
-#endif /* FAST_SHARE_MODES */
+
+  printf("\n");
+
+  share_status(stdout);
+
+  locking_end();
 
   return (0);
 }

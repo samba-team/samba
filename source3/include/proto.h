@@ -305,22 +305,25 @@ int lp_minor_announce_version(void);
 BOOL is_locked(int fnum,int cnum,uint32 count,uint32 offset);
 BOOL do_lock(int fnum,int cnum,uint32 count,uint32 offset,int *eclass,uint32 *ecode);
 BOOL do_unlock(int fnum,int cnum,uint32 count,uint32 offset,int *eclass,uint32 *ecode);
-BOOL start_share_mode_mgmt(void);
-BOOL stop_share_mode_mgmt(void);
-BOOL lock_share_entry(int cnum, uint32 dev, uint32 inode, share_lock_token *ptok);
-BOOL unlock_share_entry(int cnum, uint32 dev, uint32 inode, share_lock_token token);
-int get_share_modes(int cnum, share_lock_token token, uint32 dev, uint32 inode, 
-                    min_share_mode_entry **old_shares);
-void del_share_mode(share_lock_token token, int fnum);
-BOOL set_share_mode(share_lock_token token, int fnum, uint16 port, uint16 op_type);
-BOOL remove_share_oplock(int fnum, share_lock_token token);
-BOOL lock_share_entry(int cnum, uint32 dev, uint32 inode, share_lock_token *ptok);
-BOOL unlock_share_entry(int cnum, uint32 dev, uint32 inode, share_lock_token token);
-int get_share_modes(int cnum, share_lock_token token, uint32 dev, uint32 inode, 
-                    min_share_mode_entry **old_shares);
-void del_share_mode(share_lock_token token, int fnum);
-BOOL set_share_mode(share_lock_token token,int fnum, uint16 port, uint16 op_type);
-BOOL remove_share_oplock(int fnum, share_lock_token token);
+BOOL locking_init(void);
+BOOL locking_end(void);
+BOOL lock_share_entry(int cnum, uint32 dev, uint32 inode, int *ptok);
+BOOL unlock_share_entry(int cnum, uint32 dev, uint32 inode, int token);
+int get_share_modes(int cnum, int token, uint32 dev, uint32 inode, 
+		    share_mode_entry **shares);
+void del_share_mode(int token, int fnum);
+BOOL set_share_mode(int token, int fnum, uint16 port, uint16 op_type);
+BOOL remove_share_oplock(int fnum, int token);
+int share_mode_forall(void (*fn)(share_mode_entry *, char *));
+void share_status(FILE *f);
+
+/*The following definitions come from  locking_shm.c  */
+
+struct share_ops *locking_shm_init(void);
+
+/*The following definitions come from  locking_slow.c  */
+
+struct share_ops *locking_slow_init(void);
 
 /*The following definitions come from  lsaparse.c  */
 
@@ -778,7 +781,7 @@ BOOL check_name(char *name,int cnum);
 void sync_file(int fnum);
 void close_file(int fnum, BOOL normal_close);
 BOOL check_file_sharing(int cnum,char *fname);
-int check_share_mode( min_share_mode_entry *share, int deny_mode, char *fname,
+int check_share_mode( share_mode_entry *share, int deny_mode, char *fname,
                       BOOL fcbopen, int *flags);
 void open_file_shared(int fnum,int cnum,char *fname,int share_mode,int ofun,
 		      int mode,int oplock_request, int *Access,int *action);
@@ -791,7 +794,7 @@ int cached_error_packet(char *inbuf,char *outbuf,int fnum,int line);
 int unix_error_packet(char *inbuf,char *outbuf,int def_class,uint32 def_code,int line);
 int error_packet(char *inbuf,char *outbuf,int error_class,uint32 error_code,int line);
 BOOL oplock_break(uint32 dev, uint32 inode, struct timeval *tval);
-BOOL request_oplock_break(min_share_mode_entry *share_entry, 
+BOOL request_oplock_break(share_mode_entry *share_entry, 
                           uint32 dev, uint32 inode);
 BOOL snum_used(int snum);
 BOOL reload_services(BOOL test);
