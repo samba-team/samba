@@ -72,6 +72,7 @@ int opt_flags = -1;
 int opt_jobid = 0;
 int opt_timeout = 0;
 char *opt_target_workgroup = NULL;
+static int opt_machine_pass = 0;
 
 BOOL opt_have_ip = False;
 struct in_addr opt_dest_ip;
@@ -370,7 +371,6 @@ static struct functable net_func[] = {
 	poptContext pc;
 	static char *servicesf = dyn_CONFIGFILE;
 	static char *debuglevel = NULL;
-	int opt_machine_pass = 0;
 
 	struct poptOption long_options[] = {
 		{"help",	'h', POPT_ARG_NONE,   0, 'h'},
