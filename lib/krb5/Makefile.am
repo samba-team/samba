@@ -21,6 +21,7 @@ TESTS =						\
 	store-test				\
 	parse-name-test				\
 	test_acl				\
+	test_addr				\
 	test_cc					\
 	test_config				\
 	test_time				\
