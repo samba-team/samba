@@ -4,7 +4,7 @@
    SMB parameters and setup
    Copyright (C) Andrew Tridgell 1992-1998
    Copyright (C) Luke Kenneth Casson Leighton 1996-1998
-   Copyright (C) Jean Francois Micouleau 1998
+   Copyright (C) Jean Francois Micouleau 1998-1999
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -854,7 +854,7 @@ struct s_notify_info_data_table
 	uint16 field;
 	char   *name;
 	uint32 size;
-	void   (*fn) (int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer);
+	void   (*fn) (connection_struct *conn, int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer);
 };
 
 typedef struct spool_q_getprinterdriver2

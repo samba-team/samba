@@ -1580,7 +1580,7 @@ struct passgrp_ops *unix_initialise_password_grp(void);
 /*The following definitions come from  printing/nt_printing.c  */
 
 int get_ntforms(nt_forms_struct **list);
-int get_ntdrivers(fstring **list, char *architecture);
+int get_ntdrivers(connection_struct *conn, fstring **list, char *architecture);
 void get_short_archi(char *short_archi, char *long_archi);
 void dump_a_param(NT_PRINTER_PARAM *param);
 BOOL add_a_specific_param(NT_PRINTER_INFO_LEVEL_2 *info_2, NT_PRINTER_PARAM *param);
@@ -1638,6 +1638,15 @@ BOOL at_enum_jobs(struct cli_state *cli, uint16 fnum,
 		  AT_ENUM_INFO *jobs, fstring *commands);
 BOOL at_query_job(struct cli_state *cli, uint16 fnum, char *server_name,
 		  uint32 jobid, AT_JOB_INFO *job, fstring command);
+
+/*The following definitions come from  rpc_client/cli_eventlog.c  */
+
+BOOL do_event_open(struct cli_state *cli, uint16 fnum, char *log, POLICY_HND *hnd);
+BOOL do_event_close(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd);
+BOOL do_event_numofeventlogrec(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd, uint32 *number);
+BOOL do_event_readeventlog(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd, 
+                           uint32 number, uint32 flags, uint32 offset, 
+			   uint32 *number_of_bytes, EVENTLOGRECORD *ev);
 
 /*The following definitions come from  rpc_client/cli_login.c  */
 
@@ -1963,6 +1972,22 @@ void at_io_r_enum_jobs(char *desc, AT_R_ENUM_JOBS *r_e, prs_struct *ps, int dept
 void make_at_q_query_job(AT_Q_QUERY_JOB *q_q, char *server, uint32 jobid);
 void at_io_q_query_job(char *desc, AT_Q_QUERY_JOB *q_q, prs_struct *ps, int depth);
 void at_io_r_query_job(char *desc, AT_R_QUERY_JOB *r_q, prs_struct *ps, int depth);
+
+/*The following definitions come from  rpc_parse/parse_eventlog.c  */
+
+void make_eventlog_q_open(EVENTLOG_Q_OPEN *q_u, char *journal);
+void eventlog_io_q_open(char *desc, EVENTLOG_Q_OPEN *q_u, prs_struct *ps, int depth);
+void eventlog_io_r_open(char *desc, EVENTLOG_R_OPEN *r_u, prs_struct *ps, int depth);
+void make_eventlog_q_close(EVENTLOG_Q_CLOSE *q_u, POLICY_HND *pol);
+void eventlog_io_q_close(char *desc, EVENTLOG_Q_CLOSE *q_u, prs_struct *ps, int depth);
+void eventlog_io_r_close(char *desc, EVENTLOG_R_CLOSE *r_u, prs_struct *ps, int depth);
+void make_eventlog_q_numofeventlogrec(EVENTLOG_Q_NUMOFEVENTLOGREC *q_u, POLICY_HND *pol);
+void eventlog_io_q_numofeventlogrec(char *desc,EVENTLOG_Q_NUMOFEVENTLOGREC  *q_u, prs_struct *ps, int depth);
+void eventlog_io_r_numofeventlogrec(char *desc, EVENTLOG_R_NUMOFEVENTLOGREC *r_u, prs_struct *ps, int depth);
+void make_eventlog_q_readeventlog(EVENTLOG_Q_READEVENTLOG *q_u, POLICY_HND *pol,
+                                  uint32 flags, uint32 offset, uint32 number_of_bytes);
+void eventlog_io_q_readeventlog(char *desc, EVENTLOG_Q_READEVENTLOG *q_u, prs_struct *ps, int depth);
+void eventlog_io_r_readeventlog(char *desc, EVENTLOG_R_READEVENTLOG *r_u, prs_struct *ps, int depth);
 
 /*The following definitions come from  rpc_parse/parse_lsa.c  */
 
@@ -3027,6 +3052,10 @@ BOOL api_wkssvc_rpc(pipes_struct *p, prs_struct *data);
 
 void cmd_at(struct client_info *info);
 
+/*The following definitions come from  rpcclient/cmd_eventlog.c  */
+
+void cmd_eventlog(struct client_info *info);
+
 /*The following definitions come from  rpcclient/cmd_lsarpc.c  */
 
 void cmd_lsa_query_info(struct client_info *info);
@@ -3167,6 +3196,7 @@ void display_at_enum_info(FILE *out_hnd, enum action_type action,
 		     uint32 num_jobs, AT_ENUM_INFO *jobs, fstring *commands);
 void display_at_job_info(FILE *out_hnd, enum action_type action,
 		     AT_JOB_INFO *job, fstring command);
+void display_eventlog_eventrecord(FILE *out_hnd, enum action_type action, EVENTLOGRECORD *ev);
 
 /*The following definitions come from  rpcclient/rpcclient.c  */
 

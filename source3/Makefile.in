@@ -142,7 +142,7 @@ RPC_PARSE_OBJ = rpc_parse/parse_lsa.o rpc_parse/parse_misc.o \
                 rpc_parse/parse_samr.o rpc_parse/parse_srv.o \
                 rpc_parse/parse_wks.o rpc_parse/parse_sec.o \
                 rpc_parse/parse_svc.o rpc_parse/parse_at.o \
-		rpc_parse/parse_spoolss.o
+		rpc_parse/parse_spoolss.o rpc_parse/parse_eventlog.o
 
 RPC_CLIENT_OBJ = \
 		rpc_client/cli_login.o    \
@@ -154,7 +154,8 @@ RPC_CLIENT_OBJ = \
 		rpc_client/cli_srvsvc.o   \
 		rpc_client/cli_svcctl.o \
 		rpc_client/cli_samr.o   \
-		rpc_client/cli_atsvc.o
+		rpc_client/cli_atsvc.o \
+		rpc_client/cli_eventlog.o
 
 
 LOCKING_OBJ = locking/locking.o locking/locking_shm.o locking/locking_slow.o \
@@ -248,6 +249,7 @@ RPCCLIENT_OBJ = rpcclient/rpcclient.o \
              rpcclient/cmd_svcctl.o \
              rpcclient/cmd_netlogon.o \
              rpcclient/cmd_atsvc.o \
+             rpcclient/cmd_eventlog.o \
              $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
              $(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) $(PASSDB_OBJ)
 

@@ -44,6 +44,7 @@
 #include "rpc_wkssvc.h"
 #include "rpc_atsvc.h"
 #include "rpc_spoolss.h"
+#include "rpc_eventlog.h"
 
 /* 
  * A bunch of stuff that was put into smb.h
@@ -110,7 +111,7 @@ struct api_struct
 {  
   char *name;
   uint8 opnum;
-  void (*fn) (uint16 vuid, prs_struct*, prs_struct*);
+  void (*fn) (pipes_struct*, prs_struct*, prs_struct*);
 };
 
 struct mem_desc
