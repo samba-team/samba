@@ -3,7 +3,7 @@
    ads (active directory) utility library
    Copyright (C) Andrew Tridgell 2001
    Copyright (C) Remus Koos 2001
-   
+   Copyright (C) Jim McDonough 2002
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -122,6 +122,123 @@ ADS_STATUS ads_find_machine_acct(ADS_STRUCT *ads, void **res, const char *host)
 	return status;
 }
 
+/*
+  initialize a list of mods
+*/
+
+LDAPMod **ads_mod_list_start(int num_mods)
+{
+	LDAPMod **mods;
+	
+	if (num_mods < 1)
+		return NULL;
+	
+	mods = malloc(sizeof(LDAPMod *) * (num_mods + 1));
+	memset(mods, 0, sizeof(LDAPMod *) * num_mods);
+	mods[num_mods] = (LDAPMod *) -1;
+	
+	return mods;
+}
+
+/*
+  add an attribute to the list, with values list already constructed
+*/
+static BOOL ads_mod_list_add(LDAPMod **mods, int mod_op, char *name, char **values)
+{
+	int curmod;
+
+	/* find the first empty slot */
+	for (curmod=0; mods[curmod] > 0; curmod++);
+	if (mods[curmod] == (LDAPMod *) -1)
+		return False;
+
+	mods[curmod] = malloc(sizeof(LDAPMod));
+	mods[curmod]->mod_type = name;
+	mods[curmod]->mod_values = values;
+	mods[curmod]->mod_op = mod_op;
+	return True;
+}
+
+BOOL ads_mod_add_list(LDAPMod **mods, char *name, char **values)
+{
+	return ads_mod_list_add(mods, LDAP_MOD_ADD, name, values);
+}
+
+BOOL ads_mod_repl_list(LDAPMod **mods, char *name, char **values)
+{
+	if (values && *values)
+		return ads_mod_list_add(mods, LDAP_MOD_REPLACE, name, values);
+	else
+		return ads_mod_list_add(mods, LDAP_MOD_DELETE, name, NULL);
+}
+
+/*
+  add an attribute to the list, with values list to be built from args
+*/
+BOOL ads_mod_list_add_var(LDAPMod **mods, int mod_op, char *name, ...)
+{
+	va_list ap;
+	int num_vals, i;
+	char *value, **values;
+
+	/* count the number of values */
+	va_start(ap, name);
+	for (num_vals=0; va_arg(ap, char *); num_vals++);
+	va_end(ap);
+
+
+	if (num_vals) {
+		values = malloc(sizeof(char *) * (num_vals + 1));
+		va_start(ap, name);
+		for (i=0; (value = (char *) va_arg(ap, char *)) &&
+			     i < num_vals; i++)
+			values[i] = value;
+		va_end(ap);
+		values[i] = NULL;
+	} else
+		values = NULL;
+	return ads_mod_list_add(mods, mod_op, name, values);
+}
+
+BOOL ads_mod_repl(LDAPMod **mods, char *name, char *val)
+{
+  if (val)
+	  return ads_mod_list_add_var(mods, LDAP_MOD_REPLACE, name, val);
+  else
+	  return ads_mod_list_add_var(mods, LDAP_MOD_DELETE, name, NULL);
+}
+
+BOOL ads_mod_add(LDAPMod **mods, char *name, char *val)
+{
+  return ads_mod_list_add_var(mods, LDAP_MOD_ADD, name, val);
+}
+
+void ads_mod_list_end(LDAPMod **mods)
+{
+	int i;
+	
+	if (mods) {
+		for (i = 0; mods[i];  i++) {
+			if (mods[i]->mod_values) {
+				free(mods[i]->mod_values);
+			}
+			free(mods[i]);
+		}
+		free(mods);
+	}
+}
+
+ADS_STATUS ads_gen_mod(ADS_STRUCT *ads, const char *mod_dn, LDAPMod **mods)
+{
+	int ret,i;
+	
+	/* find the end of the list, marked by NULL or -1 */
+	for(i=0;mods[i]>0;i++);
+	/* make sure the end of the list is NULL */
+	mods[i] = NULL;
+	ret = ldap_add_s(ads->ld, mod_dn, mods);
+	return ADS_ERROR(ret);
+}
 
 /*
   a convenient routine for adding a generic LDAP record 
