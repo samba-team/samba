@@ -27,7 +27,6 @@
 extern pstring global_myname;
 extern fstring global_myworkgroup;
 extern char **my_netbios_names;
-extern struct in_addr ipzero;
 extern struct in_addr allones_ip;
 
 extern uint16 samba_nb_type; /* Samba's NetBIOS type. */
@@ -214,7 +213,7 @@ static void become_domain_master_query_success(struct subnet_record *subrec,
  /* BUG note. Samba 1.9.16p11 servers seem to return the broadcast
     address or zero ip for this query. Pretend this is ok. */
 
-  if(ismyip(ip) || ip_equal(allones_ip, ip) || ip_equal(ipzero, ip))
+  if(ismyip(ip) || ip_equal(allones_ip, ip) || is_zero_ip(ip))
   {
     if( DEBUGLVL( 3 ) )
     {

@@ -793,15 +793,32 @@ struct in_addr *interpret_addr2(const char *str)
 }
 
 /*******************************************************************
-  check if an IP is the 0.0.0.0
-  ******************************************************************/
-BOOL zero_ip(struct in_addr ip)
+ Check if an IP is the 0.0.0.0
+ ******************************************************************/
+
+BOOL is_zero_ip(struct in_addr ip)
 {
-  uint32 a;
-  putip((char *)&a,(char *)&ip);
-  return(a == 0);
+	uint32 a;
+	putip((char *)&a,(char *)&ip);
+	return(a == 0);
 }
 
+/*******************************************************************
+ Set an IP to 0.0.0.0
+ ******************************************************************/
+
+void zero_ip(struct in_addr *ip)
+{
+	static BOOL init;
+	static struct in_addr ipzero;
+
+	if (!init) {
+		ipzero = *interpret_addr2("0.0.0.0");
+		init = True;
+	}
+
+	*ip = ipzero;
+}
 
 #if (defined(HAVE_NETGROUP) && defined(WITH_AUTOMOUNT))
 /******************************************************************

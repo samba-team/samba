@@ -730,7 +730,6 @@ open the client sockets
 ****************************************************************************/
 BOOL cli_connect(struct cli_state *cli, const char *host, struct in_addr *ip)
 {
-	extern struct in_addr ipzero;
 	extern pstring user_socket_options;
 	int name_type = 0x20;
 	char *p;
@@ -747,7 +746,7 @@ BOOL cli_connect(struct cli_state *cli, const char *host, struct in_addr *ip)
 		*p = 0;
 	}
 	
-	if (!ip || ip_equal(*ip, ipzero)) {
+	if (!ip || is_zero_ip(*ip)) {
 		if (!resolve_name(cli->desthost, &cli->dest_ip, name_type)) {
 			return False;
 		}

@@ -135,14 +135,13 @@ static BOOL open_nbt_connection(struct cli_state *c)
 {
 	struct nmb_name called, calling;
 	struct in_addr ip;
-	extern struct in_addr ipzero;
 
 	ZERO_STRUCTP(c);
 
 	make_nmb_name(&calling, myname, 0x0);
 	make_nmb_name(&called , host, 0x20);
 
-	ip = ipzero;
+	zero_ip(&ip);
 
 	if (!cli_initialise(c) || !cli_connect(c, host, &ip)) {
 		printf("Failed to connect with %s\n", host);

@@ -245,9 +245,8 @@ struct smbc_server *smbc_server(char *server, char *share,
 	fstring group;
 	pstring ipenv;
 	struct in_addr ip;
-	extern struct in_addr ipzero;
   
-	ip = ipzero;
+	zero_ip(&ip);
 	ZERO_STRUCT(c);
 
 	/* try to use an existing connection */
@@ -305,7 +304,7 @@ struct smbc_server *smbc_server(char *server, char *share,
  again:
 	slprintf(ipenv,sizeof(ipenv)-1,"HOST_%s", server_n);
 
-	ip = ipzero;
+	zero_ip(&ip);
 
 	/* have to open a new connection */
 	if (!cli_initialise(&c) || !cli_connect(&c, server_n, &ip)) {

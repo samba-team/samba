@@ -27,8 +27,6 @@
 #include <asm/types.h>
 #include <linux/smb_fs.h>
 
-extern struct in_addr ipzero;
-
 extern BOOL in_client;
 extern pstring user_socket_options;
 extern BOOL append_log;
@@ -120,7 +118,6 @@ static struct cli_state *do_connection(char *svc_name)
 	struct nmb_name called, calling;
 	char *server_n;
 	struct in_addr ip;
-	extern struct in_addr ipzero;
 	pstring server;
 	char *share;
 
@@ -144,7 +141,7 @@ static struct cli_state *do_connection(char *svc_name)
 	make_nmb_name(&called , server, 0x20);
 
  again:
-	ip = ipzero;
+	zero_ip(&ip);
 	if (have_ip) ip = dest_ip;
 
 	/* have to open a new connection */
@@ -748,7 +745,7 @@ static void parse_mount_smb(int argc, char **argv)
 				DEBUGLEVEL = val;
 			} else if(!strcmp(opts, "ip")) {
 				dest_ip = *interpret_addr2(opteq+1);
-				if (zero_ip(dest_ip)) {
+				if (is_zero_ip(dest_ip)) {
 					fprintf(stderr,"Can't resolve address %s\n", opteq+1);
 					exit(1);
 				}

@@ -22,7 +22,6 @@
 #include "includes.h"
 
 extern int Protocol;
-extern struct in_addr ipzero;
 
 /* users from session setup */
 static pstring session_users="";
@@ -1337,7 +1336,7 @@ static BOOL attempt_connect_to_dc(struct cli_state *pcli, struct in_addr *ip, un
    * Ignore addresses we have already tried.
    */
 
-  if (ip_equal(ipzero, *ip))
+  if (is_zero_ip(*ip))
 	  return False;
 
   if (!lookup_dc_name(global_myname, lp_workgroup(), ip, dc_name))
@@ -1385,7 +1384,7 @@ static BOOL find_connect_pdc(struct cli_state *pcli, unsigned char *trust_passwd
 		if((connected_ok = attempt_connect_to_dc(pcli, &ip_list[i], trust_passwd))) 
 			break;
 		
-		ip_list[i] = ipzero; /* Tried and failed. */
+		zero_ip(&ip_list[i]); /* Tried and failed. */
 	}
 
 	/*
@@ -1394,8 +1393,10 @@ static BOOL find_connect_pdc(struct cli_state *pcli, unsigned char *trust_passwd
 	if(!connected_ok) {
 		i = (sys_random() % count);
 
-		if (!(connected_ok = attempt_connect_to_dc(pcli, &ip_list[i], trust_passwd)))
-			ip_list[i] = ipzero; /* Tried and failed. */
+		if (!is_zero_ip(ip_list[i])) {
+			if (!(connected_ok = attempt_connect_to_dc(pcli, &ip_list[i], trust_passwd)))
+				zero_ip(&ip_list[i]); /* Tried and failed. */
+		}
 	}
 
 	/*
@@ -1408,13 +1409,15 @@ static BOOL find_connect_pdc(struct cli_state *pcli, unsigned char *trust_passwd
 		 * Note that from a WINS server the #1 IP address is the PDC.
 		 */
 		for(i = 0; i < count; i++) {
+			if (is_zero_ip(ip_list[i]))
+				continue;
+
 			if((connected_ok = attempt_connect_to_dc(pcli, &ip_list[i], trust_passwd)))
 				break;
 		}
 	}
 
 	SAFE_FREE(ip_list);
-
 	return connected_ok;
 }
 

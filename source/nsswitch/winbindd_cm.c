@@ -147,38 +147,66 @@ static BOOL cm_get_dc_name(char *domain, fstring srv_name)
 		DEBUG(3, ("Could not look up dc's for domain %s\n", domain));
 		return False;
 	}
-		
-	/* Firstly choose a PDC/BDC who has the same network address as any
-	   of our interfaces. */
-	
+
+        /* Pick a nice close server */
+	/* Look for DC on local net */
+
 	for (i = 0; i < count; i++) {
-		if(is_local_net(ip_list[i]))
-			goto got_ip;
+		if (!is_local_net(ip_list[i]))
+			continue;
+
+		if (name_status_find(domain, 0x1c, 0x20, ip_list[i], srv_name)) {
+			dc_ip = ip_list[i];
+			goto done;
+		}
+		zero_ip(&ip_list[i]);
 	}
 
-	if (count == 0) {
-		DEBUG(3, ("No domain controllers for domain %s\n", domain));
-		return False;
-	}
-	
+	/*
+	 * Secondly try and contact a random PDC/BDC.
+	 */
+
 	i = (sys_random() % count);
-	
- got_ip:
-	dc_ip = ip_list[i];
-	SAFE_FREE(ip_list);
-		
-	/* We really should be doing a GETDC call here rather than a node
-	   status lookup. */
 
-	if (!name_status_find(domain, 0x1c, 0x20, dc_ip, srv_name)) {
-		DEBUG(3, ("Error looking up DC name for %s in domain %s\n", inet_ntoa(dc_ip), domain));
-		return False;
+	if (!is_zero_ip(ip_list[i]) && name_status_find(domain, 0x1c, 0x20,
+				ip_list[i], srv_name)) {
+		dc_ip = ip_list[i];
+		goto done;
 	}
+	zero_ip(&ip_list[i]); /* Tried and failed. */
+
+        /* Finally return first DC that we can contact */
+
+	for (i = 0; i < count; i++) {
+		if (is_zero_ip(ip_list[i]))
+			continue;
+
+		if (name_status_find(domain, 0x1c, 0x20, ip_list[i], srv_name)) {
+			dc_ip = ip_list[i];
+			goto done;
+		}
+	}
+
+	/* No-one to talk to )-: */
+	return False;           /* Boo-hoo */
+
+ done:
+
+	/*
+	 * We have the netbios name and IP address of a domain controller.
+	 * Ideally we should sent a SAMLOGON request to determine whether
+	 * the DC is alive and kicking.  If we can catch a dead DC before
+	 * performing a cli_connect() we can avoid a 30-second timeout.
+	 */
 
 	/* We have a name so make the cache entry positive now */
 
 	fstrcpy(dcc->srv_name, srv_name);
 
+	DEBUG(3, ("cm_get_dc_name: Returning DC %s (%s) for domain %s\n", srv_name,
+			inet_ntoa(dc_ip), domain));
+
+	SAFE_FREE(ip_list);
 	return True;
 }
 

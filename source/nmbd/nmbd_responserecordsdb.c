@@ -26,8 +26,6 @@
 
 extern int ClientNMB;
 
-extern struct in_addr ipzero;
-
 int num_response_packets = 0;
 
 /***************************************************************************

@@ -27,7 +27,6 @@
 extern pstring global_myname;
 extern fstring global_myworkgroup;
 extern char **my_netbios_names;
-extern struct in_addr ipzero;
 extern struct in_addr allones_ip;
 
 extern uint16 samba_nb_type; /* Samba's NetBIOS type. */

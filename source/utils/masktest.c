@@ -165,7 +165,6 @@ struct cli_state *connect_one(char *share)
 	char *server_n;
 	char *server;
 	struct in_addr ip;
-	extern struct in_addr ipzero;
 
 	server = share+2;
 	share = strchr(server,'\\');
@@ -175,13 +174,13 @@ struct cli_state *connect_one(char *share)
 
 	server_n = server;
 	
-	ip = ipzero;
+	zero_ip(&ip);
 
 	make_nmb_name(&calling, "masktest", 0x0);
 	make_nmb_name(&called , server, 0x20);
 
  again:
-	ip = ipzero;
+	zero_ip(&ip);
 
 	/* have to open a new connection */
 	if (!(c=cli_initialise(NULL)) || (cli_set_port(c, 139) == 0) ||

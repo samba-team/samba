@@ -26,25 +26,25 @@
 BOOL global_in_nmbd = False;
 
 /****************************************************************************
-generate a random trn_id
+ Generate a random trn_id.
 ****************************************************************************/
+
 static int generate_trn_id(void)
 {
 	static int trn_id;
 
-	if (trn_id == 0) {
+	if (trn_id == 0)
 		sys_srandom(sys_getpid());
-	}
 
 	trn_id = sys_random();
 
 	return trn_id % (unsigned)0x7FFF;
 }
 
-
 /****************************************************************************
- parse a node status response into an array of structures
+ Parse a node status response into an array of structures.
 ****************************************************************************/
+
 static struct node_status *parse_node_status(char *p, int *num_names)
 {
 	struct node_status *ret;
@@ -68,11 +68,11 @@ static struct node_status *parse_node_status(char *p, int *num_names)
 	return ret;
 }
 
-
 /****************************************************************************
-do a NBT node status query on an open socket and return an array of
-structures holding the returned names or NULL if the query failed
+ Do a NBT node status query on an open socket and return an array of
+ structures holding the returned names or NULL if the query failed.
 **************************************************************************/
+
 struct node_status *node_status_query(int fd,struct nmb_name *name,
 				      struct in_addr to_ip, int *num_names)
 {
@@ -1211,8 +1211,15 @@ BOOL get_dc_list(BOOL pdc_only, char *group, struct in_addr **ip_list, int *coun
 
 		p = pserver;
 		while (next_token(&p,name,LIST_SEP,sizeof(name))) {
-			if (strequal(name, "*"))
-				return internal_resolve_name(group, name_type, ip_list, count);
+			if (strequal(name, "*")) {
+				/*
+				 * Use 1C followed by 1B. This shouldn't work but with
+				 * broken WINS servers it might. JRA.
+				 */
+				if (!pdc_only && internal_resolve_name(group, 0x1C, ip_list, count))
+					return True;
+				return internal_resolve_name(group, 0x1B, ip_list, count);
+			}
 			num_adresses++;
 		}
 		if (num_adresses == 0)
@@ -1240,6 +1247,7 @@ BOOL get_dc_list(BOOL pdc_only, char *group, struct in_addr **ip_list, int *coun
 /********************************************************
  Get the IP address list of the Local Master Browsers
 ********************************************************/
+
 BOOL get_lmb_list(struct in_addr **ip_list, int *count)
 {
 	return internal_resolve_name( MSBROWSE, 0x1, ip_list, count);

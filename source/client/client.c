@@ -42,7 +42,6 @@ static pstring workgroup;
 static char *cmdstr;
 static BOOL got_pass;
 static int io_bufsize = 64512;
-extern struct in_addr ipzero;
 
 static int name_type = 0x20;
 static int max_protocol = PROTOCOL_NT1;
@@ -2147,7 +2146,6 @@ struct cli_state *do_connect(char *server, char *share)
 	struct nmb_name called, calling;
 	char *server_n;
 	struct in_addr ip;
-	extern struct in_addr ipzero;
 	fstring servicename;
 	char *sharename;
 	
@@ -2164,13 +2162,13 @@ struct cli_state *do_connect(char *server, char *share)
 
 	server_n = server;
 	
-	ip = ipzero;
+	zero_ip(&ip);
 
 	make_nmb_name(&calling, global_myname, 0x0);
 	make_nmb_name(&called , server, name_type);
 
  again:
-	ip = ipzero;
+	zero_ip(&ip);
 	if (have_ip) ip = dest_ip;
 
 	/* have to open a new connection */
@@ -2419,12 +2417,12 @@ static int do_message_op(void)
 	struct in_addr ip;
 	struct nmb_name called, calling;
 
-	ip = ipzero;
+	zero_ip(&ip);
 
 	make_nmb_name(&calling, global_myname, 0x0);
 	make_nmb_name(&called , desthost, name_type);
 
-	ip = ipzero;
+	zero_ip(&ip);
 	if (have_ip) ip = dest_ip;
 
 	if (!(cli=cli_initialise(NULL)) || (cli_set_port(cli, port) == 0) || !cli_connect(cli, desthost, &ip)) {
@@ -2661,7 +2659,7 @@ static int do_message_op(void)
 		case 'I':
 			{
 				dest_ip = *interpret_addr2(optarg);
-				if (zero_ip(dest_ip))
+				if (is_zero_ip(dest_ip))
 					exit(1);
 				have_ip = True;
 			}
