@@ -1,3 +1,26 @@
+2003-09-09  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* appl/test/gssapi_client.c: allow user to select mech; krb5,
+	spnego, and no-oid
+
+	* appl/test/test_locl.h: add mech
+	
+	* appl/test/common.c: add --mech,-m argument
+	
+	* appl/test/gssapi_server.c: print the mech that was used
+	
+	* kdc/kerberos5.c (only_older_enctype_p): check request if the
+	client only supports old enctypes, before it used the database
+	
+2003-09-08  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* **/*.c: add context argument to krb5_get_init_creds_opt_alloc
+
+	* lib/krb5/init_creds.c (krb5_get_init_creds_opt_alloc): add
+	context argument
+
+	* lib/krb5/krb5_get_init_creds.3: spelling
+	
 2003-09-04  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/context.c (add_file): make len argument an pointer to

@@ -1,5 +1,9 @@
 2003-09-09  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* accept_sec_context.c: Add support for SPNEGO on the initator
+	side.  Implementation initially from Assar Westerlund, passes
+	though quite a lot of hands before I commited it.
+	
 	* init_sec_context.c: Add support for SPNEGO on the initator side.
 	Tested with ldap server on a Windows 2000 DC. Implementation
 	initially from Assar Westerlund, passes though quite a lot of
