@@ -629,6 +629,10 @@ BOOL api_LsarpcTNP(int cnum,int uid, char *param,char *data,
 		     char **rdata,char **rparam,
 		     int *rdata_len,int *rparam_len);
 char *dom_sid_to_string(DOM_SID *sid);
+BOOL api_ntlsarpcTNP(int cnum,int uid, char *param,char *data,
+		     int mdrcnt,int mprcnt,
+		     char **rdata,char **rparam,
+		     int *rdata_len,int *rparam_len);
 
 /*The following definitions come from  predict.c  */
 
