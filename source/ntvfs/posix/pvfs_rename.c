@@ -48,16 +48,6 @@ NTSTATUS pvfs_rename(struct ntvfs_module_context *ntvfs,
 		return status;
 	}
 
-	status = pvfs_can_delete(pvfs, name1);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	status = pvfs_can_delete(pvfs, name2);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
 	if (name1->has_wildcard || name2->has_wildcard) {
 		DEBUG(3,("Rejecting wildcard rename '%s' -> '%s'\n", 
 			 ren->rename.in.pattern1, ren->rename.in.pattern2));
@@ -70,6 +60,11 @@ NTSTATUS pvfs_rename(struct ntvfs_module_context *ntvfs,
 
 	if (name2->exists) {
 		return NT_STATUS_OBJECT_NAME_COLLISION;
+	}
+
+	status = pvfs_can_delete(pvfs, name1);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	if (rename(name1->full_name, name2->full_name) == -1) {
