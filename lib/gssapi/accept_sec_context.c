@@ -40,6 +40,17 @@
 
 RCSID("$Id$");
 
+static krb5_keytab_data gss_keytab = { NULL };
+
+OM_uint32 gsskrb5_register_acceptor_identity
+        (char *identity)
+{
+  if (gss_keytab.filename != NULL)
+    free(gss_keytab.filename);
+  gss_keytab.filename = strdup(identity);
+  return GSS_S_COMPLETE;
+}
+
 OM_uint32 gss_accept_sec_context
            (OM_uint32 * minor_status,
             gss_ctx_id_t * context_handle,
@@ -61,6 +72,7 @@ OM_uint32 gss_accept_sec_context
   OM_uint32 flags;
   krb5_ticket *ticket;
   Checksum cksum;
+  krb5_keytab_data *keytab = NULL;
 
   gssapi_krb5_init ();
 
@@ -101,13 +113,20 @@ OM_uint32 gss_accept_sec_context
   if (ret)
     goto failure;
 
+  if (acceptor_cred_handle == GSS_C_NO_CREDENTIAL) {
+     if (gss_keytab.filename != NULL) {
+        keytab = &gss_keytab;
+     }
+  } else if (acceptor_cred_handle->keytab != NULL) {
+     keytab = acceptor_cred_handle->keytab;
+  }
+
   kret = krb5_rd_req (gssapi_krb5_context,
 		      &(*context_handle)->auth_context,
 		      &indata,
 		      (acceptor_cred_handle == GSS_C_NO_CREDENTIAL) ? NULL 
 			: acceptor_cred_handle->principal,
-		      (acceptor_cred_handle == GSS_C_NO_CREDENTIAL) ? NULL 
-			: acceptor_cred_handle->keytab,
+		      keytab,
 		      &ap_options,
 		      &ticket);
   if (kret) {
