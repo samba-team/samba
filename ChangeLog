@@ -1,3 +1,17 @@
+2000-07-22  Johan Danielsson  <joda@pdc.kth.se>
+
+	* kdc/hprop-common.c: nuke extra definitions of
+	krb5_read_priv_message et.al
+
+	* lib/krb5/read_message.c (krb5_read_message): return error if EOF
+
+2000-07-19  Johan Danielsson  <joda@pdc.kth.se>
+
+	* fix-export: use autoreconf
+
+	* configure.in: remove stuff that belong in roken, and remove some
+	obsolete constructs
+
 2000-07-18  Johan Danielsson  <joda@pdc.kth.se>
 
 	* configure.in: fix some typos

@@ -1,3 +1,7 @@
+2000-07-22  Johan Danielsson  <joda@pdc.kth.se>
+
+	* server.c: use krb5_read_priv_message; (v5_loop): check for EOF
+
 2000-07-11  Johan Danielsson  <joda@pdc.kth.se>
 
 	* version4.c: change log strings to match the v5 counterparts
