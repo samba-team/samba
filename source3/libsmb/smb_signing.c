@@ -188,7 +188,7 @@ static void free_signing_context(struct smb_sign_info *si)
 }
 
 
-static BOOL signing_good(char *inbuf, struct smb_sign_info *si, BOOL good) 
+static BOOL signing_good(char *inbuf, struct smb_sign_info *si, BOOL good, uint32 seq) 
 {
 	if (good && !si->doing_signing) {
 		si->doing_signing = True;
@@ -200,7 +200,8 @@ static BOOL signing_good(char *inbuf, struct smb_sign_info *si, BOOL good)
 
 			/* W2K sends a bad first signature but the sign engine is on.... JRA. */
 			if (data->send_seq_num > 1)
-				DEBUG(1, ("signing_good: SMB signature check failed!\n"));
+				DEBUG(1, ("signing_good: SMB signature check failed on seq %u!\n",
+							(unsigned int)seq ));
 
 			return False;
 		} else {
@@ -318,6 +319,7 @@ static BOOL client_check_incoming_message(char *inbuf, struct smb_sign_info *si)
 {
 	BOOL good;
 	uint32 reply_seq_number;
+	uint32 saved_seq;
 	unsigned char calc_md5_mac[16];
 	unsigned char *server_sent_mac;
 
@@ -341,6 +343,7 @@ static BOOL client_check_incoming_message(char *inbuf, struct smb_sign_info *si)
 		return False;
 	}
 
+	saved_seq = reply_seq_number;
 	simple_packet_signature(data, inbuf, reply_seq_number, calc_md5_mac);
 
 	server_sent_mac = &inbuf[smb_ss_field];
@@ -371,7 +374,7 @@ static BOOL client_check_incoming_message(char *inbuf, struct smb_sign_info *si)
 		DEBUG(10, ("client_check_incoming_message:: seq %u: got good SMB signature of\n", (unsigned int)reply_seq_number));
 		dump_data(10, server_sent_mac, 8);
 	}
-	return signing_good(inbuf, si, good);
+	return signing_good(inbuf, si, good, saved_seq);
 }
 
 /***********************************************************
@@ -589,9 +592,10 @@ static BOOL packet_is_oplock_break(char *buf)
 	if (CVAL(buf,smb_com) != SMBlockingX)
 		return False;
 
-	if (CVAL(buf,smb_vwv3) != LOCKING_ANDX_OPLOCK_RELEASE)
+	if (!(CVAL(buf,smb_vwv3) & LOCKING_ANDX_OPLOCK_RELEASE))
 		return False;
 
+	DEBUG(10,("packet_is_oplock_break = True !\n"));
 	return True;
 }
 
@@ -682,6 +686,7 @@ static BOOL srv_check_incoming_message(char *inbuf, struct smb_sign_info *si)
 	BOOL good;
 	struct smb_basic_signing_context *data = si->signing_context;
 	uint32 reply_seq_number = data->send_seq_num;
+	uint32 saved_seq;
 	unsigned char calc_md5_mac[16];
 	unsigned char *server_sent_mac;
 	uint mid;
@@ -708,6 +713,7 @@ static BOOL srv_check_incoming_message(char *inbuf, struct smb_sign_info *si)
 			get_sequence_for_reply(&data->outstanding_packet_list, mid, &reply_seq_number);
 	}
 
+	saved_seq = reply_seq_number;
 	simple_packet_signature(data, inbuf, reply_seq_number, calc_md5_mac);
 
 	server_sent_mac = &inbuf[smb_ss_field];
@@ -715,10 +721,12 @@ static BOOL srv_check_incoming_message(char *inbuf, struct smb_sign_info *si)
 	
 	if (!good) {
 
-		DEBUG(5, ("srv_check_incoming_message: BAD SIG: wanted SMB signature of\n"));
+		DEBUG(5, ("srv_check_incoming_message: BAD SIG: seq %u wanted SMB signature of\n",
+					(unsigned int)saved_seq));
 		dump_data(5, calc_md5_mac, 8);
 		
-		DEBUG(5, ("srv_check_incoming_message: BAD SIG: got SMB signature of\n"));
+		DEBUG(5, ("srv_check_incoming_message: BAD SIG: seq %u got SMB signature of\n",
+					(unsigned int)saved_seq));
 		dump_data(5, server_sent_mac, 8);
 
 #if 1 /* JRATEST */
@@ -740,7 +748,7 @@ static BOOL srv_check_incoming_message(char *inbuf, struct smb_sign_info *si)
 		DEBUG(10, ("srv_check_incoming_message: seq %u: got good SMB signature of\n", (unsigned int)reply_seq_number));
 		dump_data(10, server_sent_mac, 8);
 	}
-	return signing_good(inbuf, si, good);
+	return signing_good(inbuf, si, good, saved_seq);
 }
 
 /***********************************************************
