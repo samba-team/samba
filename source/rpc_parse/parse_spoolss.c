@@ -1053,6 +1053,28 @@ BOOL make_spoolss_printer_info_2(TALLOC_CTX *mem_ctx, SPOOL_PRINTER_INFO_LEVEL_2
 	return True;
 }
 
+/*******************************************************************
+create a SPOOL_PRINTER_INFO_3 struct from a PRINTER_INFO_3 struct
+*******************************************************************/
+
+BOOL make_spoolss_printer_info_3(TALLOC_CTX *mem_ctx, SPOOL_PRINTER_INFO_LEVEL_3 **spool_info3, 
+				PRINTER_INFO_3 *info)
+{
+
+	SPOOL_PRINTER_INFO_LEVEL_3 *inf;
+
+	/* allocate the necessary memory */
+	if (!(inf=(SPOOL_PRINTER_INFO_LEVEL_3*)talloc(mem_ctx, sizeof(SPOOL_PRINTER_INFO_LEVEL_3)))) {
+		DEBUG(0,("make_spoolss_printer_info_3: Unable to allocate SPOOL_PRINTER_INFO_LEVEL_3 sruct!\n"));
+		return False;
+	}
+	
+	inf->secdesc_ptr 	= (info->secdesc!=NULL)?1:0;
+
+	*spool_info3 = inf;
+
+	return True;
+}
 
 /*******************************************************************
  * read a structure.
@@ -4112,6 +4134,20 @@ BOOL make_spoolss_q_setprinter(TALLOC_CTX *mem_ctx, SPOOL_Q_SETPRINTER *q_u,
 		q_u->devmode_ctr.size = 0;
 		q_u->devmode_ctr.devmode = NULL;
 #endif
+		break;
+	case 3:
+		secdesc = info->printers_3->secdesc;
+		
+		make_spoolss_printer_info_3 (mem_ctx, &q_u->info.info_3, info->printers_3);
+		
+		q_u->secdesc_ctr = (SEC_DESC_BUF*)malloc(sizeof(SEC_DESC_BUF));
+		if (!q_u->secdesc_ctr)
+			return False;
+		q_u->secdesc_ctr->ptr = (secdesc != NULL) ? 1: 0;
+		q_u->secdesc_ctr->max_len = (secdesc) ? sizeof(SEC_DESC) + (2*sizeof(uint32)) : 0;
+		q_u->secdesc_ctr->len = (secdesc) ? sizeof(SEC_DESC) + (2*sizeof(uint32)) : 0;
+		q_u->secdesc_ctr->sec = secdesc;
+
 		break;
 	default: 
 		DEBUG(0,("make_spoolss_q_setprinter: Unknown info level [%d]\n", level));
@@ -7358,7 +7394,7 @@ BOOL spoolss_io_r_enumprinterdataex(const char *desc, SPOOL_R_ENUMPRINTERDATAEX 
 
 	if (!prs_set_offset(ps, end_offset))
 		return False;
-																	        	return True;
+	return True;
 }
 
 /*******************************************************************

@@ -1456,19 +1456,38 @@ BOOL srv_io_q_net_share_add(const char *desc, SRV_Q_NET_SHARE_ADD *q_n, prs_stru
 void init_srv_q_net_share_add(SRV_Q_NET_SHARE_ADD *q, const char *srvname,
 			      const char *netname, uint32 type, const char *remark, 
 			      uint32 perms, uint32 max_uses, uint32 num_uses,
-			      const char *path, const char *passwd)
+			      const char *path, const char *passwd, 
+			      int level, SEC_DESC *sd)
 {
-	q->ptr_srv_name = 1;
-	init_unistr2(&q->uni_srv_name, srvname, UNI_STR_TERMINATE);
-	q->info.switch_value = q->info_level = 2;
-
-	q->info.ptr_share_ctr = 1;
-	init_srv_share_info2(&q->info.share.info2.info_2, netname, type,
-			     remark, perms, max_uses, num_uses, path, passwd);
-	init_srv_share_info2_str(&q->info.share.info2.info_2_str, netname,
-				 remark, path, passwd);
-	q->ptr_err_index = 1;
-	q->err_index = 0;
+	switch(level) {
+	case 502: {
+		size_t sd_size = sec_desc_size(sd);
+		q->ptr_srv_name = 1;
+		init_unistr2(&q->uni_srv_name, srvname, UNI_STR_TERMINATE);
+		q->info.switch_value = q->info_level = level;
+		q->info.ptr_share_ctr = 1;
+		init_srv_share_info502(&q->info.share.info502.info_502, netname, type,
+				     remark, perms, max_uses, num_uses, path, passwd, sd, sd_size);
+		init_srv_share_info502_str(&q->info.share.info502.info_502_str, netname,
+					 remark, path, passwd, sd, sd_size);
+		q->ptr_err_index = 1;
+		q->err_index = 0;
+		}
+		break;
+	case 2:
+	default:
+		q->ptr_srv_name = 1;
+		init_unistr2(&q->uni_srv_name, srvname, UNI_STR_TERMINATE);
+		q->info.switch_value = q->info_level = level;
+		q->info.ptr_share_ctr = 1;
+		init_srv_share_info2(&q->info.share.info2.info_2, netname, type,
+				     remark, perms, max_uses, num_uses, path, passwd);
+		init_srv_share_info2_str(&q->info.share.info2.info_2_str, netname,
+					 remark, path, passwd);
+		q->ptr_err_index = 1;
+		q->err_index = 0;
+		break;
+	}
 }
 
 
