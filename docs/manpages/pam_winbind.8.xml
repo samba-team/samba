@@ -30,12 +30,12 @@
 <refsect1>
 	<title>OPTIONS</title>
 	<para>
-		pam_winbind does support several options:
+		pam_winbind supports several options:
 		<variablelist>
 
 		<varlistentry>
 		<term>debug</term>
-		<listitem><para>Gives debugging-output to syslog.</para></listitem>
+		<listitem><para>Gives debugging output to syslog.</para></listitem>
 		</varlistentry>
 
 		<varlistentry>
@@ -60,9 +60,9 @@
 		<varlistentry>
 		<term>use_first_pass</term>
 		<listitem><para>
-		The default is, that pam_winbind tries to get the
-		authentication token from a previous module. If no token is available, the user
-		is asked for the old password. With this option, pam_winbind aborts with an
+		By default, that pam_winbind tries to get the
+		authentication token from a previous module. If no token is available it asks the user
+		for the old password. With this option, pam_winbind aborts with an
 		error if no authentication token from a previous module is available.
 		</para></listitem>
 		</varlistentry>
@@ -71,7 +71,7 @@
 		<term>use_authtok</term>
 		<listitem><para>
 		Set the new password to the one provided by the previously
-		stacked password module. If this option is not set, pam_winbind would ask the
+		stacked password module. If this option is not set pam_winbind will ask the
 		user for the new password.
 		</para></listitem>
 		</varlistentry>
