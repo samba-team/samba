@@ -135,6 +135,8 @@ krb5_compare_creds(krb5_context context, krb5_flags whichfields,
 						 creds->server);
     else
 	match = krb5_principal_compare(context, mcreds->server, creds->server);
+    if(match && (whichfields & KRB5_TC_MATCH_KEYTYPE) &&
+       mcreds->session.keytype != creds->session.keytype)
+	match = FALSE;
     return match;
 }
-
