@@ -76,6 +76,8 @@ listen_v4 (int port)
 
      s = socket(AF_INET, SOCK_STREAM, 0);
      if(s < 0) {
+	 if (errno == ENOSYS)
+	     return -1;
 	  perror("socket");
 	  exit(1);
      }
@@ -104,8 +106,10 @@ listen_v6 (int port)
 
      s = socket(AF_INET6, SOCK_STREAM, 0);
      if(s < 0) {
-	  perror("socket");
-	  exit(1);
+	 if (errno == ENOSYS)
+	     return -1;
+	 perror("socket");
+	 exit(1);
      }
      socket_set_reuseaddr (s, 1);
      memset(&sa, 0, sizeof(sa));
