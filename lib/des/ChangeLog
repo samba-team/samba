@@ -1,3 +1,8 @@
+2005-03-23  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* des.[ch]: provide compatibility function DES_key_sched, same as
+	DES_set_key
+
 2005-03-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* destest.c: include config.h and protect some headers
