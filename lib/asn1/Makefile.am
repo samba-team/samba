@@ -59,8 +59,9 @@ gen_files =				\
 	asn1_TransitedEncoding.x
 
 
-noinst_PROGRAMS = asn1_compile
+noinst_PROGRAMS = asn1_compile asn1_print
 check_PROGRAMS = check-der
+TESTS = check-der
 
 asn1_compile_SOURCES = parse.y lex.l main.c hash.c symbol.c gen.c \
 	gen_encode.c gen_decode.c gen_free.c gen_length.c gen_copy.c \
@@ -82,6 +83,8 @@ check_der_LDADD = \
 	libasn1.la \
 	../com_err/libcom_err.la \
 	$(LIB_roken)
+
+asn1_print_LDADD = $(check_der_LDADD)
 
 TESTS = check-der
 
