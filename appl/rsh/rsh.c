@@ -491,7 +491,7 @@ proto (int s, int errsock,
  */
 
 static size_t
-construct_command (char **res, int argc, const char **argv)
+construct_command (char **res, int argc, char **argv)
 {
     int i;
     size_t len = 0;
@@ -575,7 +575,7 @@ doit_broken (int argc,
 #endif
 
     if (connect(priv_socket1, addr, socket_sockaddr_size(addr)) < 0) {
-	const char **h;
+	char **h;
 
 	if (hostent->h_addr_list[1] == NULL)
 	    return 1;
@@ -650,7 +650,7 @@ doit (const char *hostname,
 {
     struct hostent *hostent = NULL;
     int error;
-    const char **h;
+    char **h;
     int af;
 
 #ifdef HAVE_IPV6    
