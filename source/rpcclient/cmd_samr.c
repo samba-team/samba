@@ -212,22 +212,22 @@ void cmd_sam_enum_users(struct client_info *info)
 #ifdef DEBUG_TESTING
 	if (next_token(NULL, tmp, NULL, sizeof(tmp)))
 	{
-		num_entries = (uint16)strtoul(tmp, (char**)NULL, 16);
+		num_entries = (uint16)strtol(tmp, (char**)NULL, 16);
 	}
 
 	if (next_token(NULL, tmp, NULL, sizeof(tmp)))
 	{
-		unk_0 = (uint16)strtoul(tmp, (char**)NULL, 16);
+		unk_0 = (uint16)strtol(tmp, (char**)NULL, 16);
 	}
 
 	if (next_token(NULL, tmp, NULL, sizeof(tmp)))
 	{
-		acb_mask = (uint16)strtoul(tmp, (char**)NULL, 16);
+		acb_mask = (uint16)strtol(tmp, (char**)NULL, 16);
 	}
 
 	if (next_token(NULL, tmp, NULL, sizeof(tmp)))
 	{
-		unk_1 = (uint16)strtoul(tmp, (char**)NULL, 16);
+		unk_1 = (uint16)strtol(tmp, (char**)NULL, 16);
 	}
 #endif
 
@@ -373,8 +373,8 @@ void cmd_sam_query_user(struct client_info *info)
 	if (next_token(NULL, rid_str , NULL, sizeof(rid_str )) &&
 	    next_token(NULL, info_str, NULL, sizeof(info_str)))
 	{
-		user_rid   = strtoul(rid_str , (char**)NULL, 16);
-		info_level = strtoul(info_str, (char**)NULL, 10);
+		user_rid   = (uint32)strtol(rid_str , (char**)NULL, 16);
+		info_level = (uint32)strtol(info_str, (char**)NULL, 10);
 	}
 
 	fprintf(out_hnd, "SAM Query User: rid %x info level %d\n",
@@ -463,7 +463,7 @@ void cmd_sam_query_groups(struct client_info *info)
 
 	if (next_token(NULL, info_str, NULL, sizeof(info_str)))
 	{
-		switch_value = strtoul(info_str, (char**)NULL, 10);
+		switch_value = (uint32)strtol(info_str, (char**)NULL, 10);
 	}
 
 	fprintf(out_hnd, "SAM Query Groups: info level %d\n", switch_value);
