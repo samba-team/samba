@@ -78,18 +78,18 @@ valid_princ(krb5_context context, krb5_principal princ)
 
     ret = krb5_unparse_name(context, princ, &s);
     if (ret)
-	return 0;
+	return FALSE;
     ret = db_fetch(princ, &ent);
     if (ret) {
 	kdc_log(7, "Lookup %s failed: %s", s,
 		krb5_get_err_text (context, ret));
 	free(s);
-	return 0;
+	return FALSE;
     }
     kdc_log(7, "Lookup %s succeeded", s);
     free(s);
     free_ent(ent);
-    return 1;
+    return TRUE;
 }
 
 krb5_error_code
