@@ -3219,3 +3219,19 @@ BOOL become_user_permanently(uid_t uid, gid_t gid)
 	
 	return(True);
 }
+
+void free_char_array(uint32 num_entries, char **entries)
+{
+	uint32 i;
+	if (entries != NULL)
+	{
+		for (i = 0; i < num_entries; i++)
+		{
+			if (entries[i] != NULL)
+			{
+				free(entries[i]);
+			}
+		}
+		free(entries);
+	}
+}

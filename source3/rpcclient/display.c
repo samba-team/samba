@@ -1177,7 +1177,7 @@ void display_alias_rid_info(FILE *out_hnd, enum action_type action,
  display group members
  ****************************************************************************/
 void display_group_members(FILE *out_hnd, enum action_type action,
-				uint32 num_mem, fstring *name, uint32 *type)
+				uint32 num_mem, char **name, uint32 *type)
 {
 	switch (action)
 	{

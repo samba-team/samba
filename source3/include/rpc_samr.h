@@ -1193,8 +1193,8 @@ typedef struct q_samr_query_useraliases_info
 	uint32 ptr;            /* buffer pointer */
 	uint32 num_sids2;      /* number of rids being looked up */
 
-	uint32   ptr_sid[MAX_LOOKUP_SIDS]; /* pointers to sids to be looked up */
-	DOM_SID2 sid    [MAX_LOOKUP_SIDS]; /* sids to be looked up. */
+	uint32   *ptr_sid; /* pointers to sids to be looked up */
+	DOM_SID2 *sid    ; /* sids to be looked up. */
 
 } SAMR_Q_QUERY_USERALIASES;
 

@@ -906,7 +906,7 @@ BOOL lsa_io_r_lookup_sids(char *desc,  LSA_R_LOOKUP_SIDS *r_s, prs_struct *ps, i
 makes a structure.
 ********************************************************************/
 BOOL make_q_lookup_names(LSA_Q_LOOKUP_NAMES *q_l, POLICY_HND *hnd,
-				int num_names, const char **names)
+				int num_names, char **names)
 {
 	int i;
 	if (q_l == NULL) return False;
