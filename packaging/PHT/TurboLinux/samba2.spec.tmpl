@@ -213,6 +213,7 @@ CFLAGS="$RPM_OPT_FLAGS $EXTRA" ./configure \
 	--with-msdfs \
 	--with-netatalk \
 	--with-sambabook=%{prefix}/share/swat/using_samba
+
 make -j${NUMCPU} all smbfilter nsswitch/libnss_wins.so
 make -j${NUMCPU} smbtorture debug2html locktest2
 make -j${NUMCPU} masktest bin/smbspool
