@@ -850,6 +850,8 @@ void smbsrv_accept(struct server_connection *conn)
 
 	smb_conn->sessions.next_vuid = VUID_OFFSET;
 
+	srv_init_signing(smb_conn);
+
 	conn_init(smb_conn);
 
 	smb_conn->connection = conn;

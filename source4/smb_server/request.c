@@ -263,7 +263,7 @@ void req_send_reply_nosign(struct smbsrv_request *req)
 	}
 
 	if (write_data(req->smb_conn->connection->socket->fde->fd, req->out.buffer, req->out.size) != req->out.size) {
-		smb_panic("failed to send reply\n");
+		smbsrv_terminate_connection(req->smb_conn, "failed to send reply\n");
 	}
 
 	req_destroy(req);

@@ -25,34 +25,93 @@
 */
 void req_sign_packet(struct smbsrv_request *req)
 {
-	/* check if we are doing signing on this connection */
-	if (req->smb_conn->signing.signing_state != SMB_SIGNING_REQUIRED) {
-		return;
+#if 0
+	/* enable this when packet signing is preventing you working out why valgrind 
+	   says that data is uninitialised */
+	file_save("pkt.dat", req->out.buffer, req->out.size);
+#endif
+
+	switch (req->smb_conn->signing.signing_state) {
+	case SMB_SIGNING_ENGINE_OFF:
+		break;
+
+	case SMB_SIGNING_ENGINE_BSRSPYL:
+		/* mark the packet as signed - BEFORE we sign it...*/
+		mark_packet_signed(&req->out);
+		
+		/* I wonder what BSRSPYL stands for - but this is what MS 
+		   actually sends! */
+		memcpy((req->out.hdr + HDR_SS_FIELD), "BSRSPYL ", 8);
+		break;
+
+	case SMB_SIGNING_ENGINE_ON:
+			
+		sign_outgoing_message(&req->out, 
+				      &req->smb_conn->signing.mac_key, 
+				      req->seq_num+1);
+		break;
 	}
-	sign_outgoing_message(&req->out, 
-			      &req->smb_conn->signing.mac_key, 
-			      req->seq_num+1);
+	return;
 }
+
 
 
 /*
   setup the signing key for a connection. Called after authentication succeeds
   in a session setup
 */
-void srv_setup_signing(struct smbsrv_connection *smb_conn,
+BOOL srv_setup_signing(struct smbsrv_connection *smb_conn,
 		       DATA_BLOB *session_key,
-		       DATA_BLOB *session_response)
+		       DATA_BLOB *response)
 {
-	smb_conn->signing.mac_key = data_blob(NULL, 
-					 session_key->length + session_response->length);
-	memcpy(smb_conn->signing.mac_key.data, session_key->data, session_key->length);
-	if (session_response->length != 0) {
-		memcpy(&smb_conn->signing.mac_key.data[session_key->length],
-		       session_response->data, 
-		       session_response->length);
+	if (!set_smb_signing_common(&smb_conn->signing)) {
+		return False;
+	}
+	return smbcli_simple_set_signing(&smb_conn->signing, session_key, response);
+}
+
+void srv_signing_restart(struct smbsrv_connection *smb_conn,
+			 DATA_BLOB *session_key,
+			 DATA_BLOB *response) 
+{
+	if (!smb_conn->signing.seen_valid) {
+		DEBUG(5, ("Client did not send a valid signature on "
+			  "SPENGO session setup - ignored, expect good next time\n"));
+		/* force things back on (most clients do not sign this packet)... */
+		srv_setup_signing(smb_conn, session_key, response);
+		smb_conn->signing.next_seq_num = 2;
+		if (smb_conn->signing.mandatory_signing) {
+			DEBUG(5, ("Configured for mandetory signing, 'good packet seen' forced on\n"));
+			/* if this is mandetory, then
+			 * pretend we have seen a
+			 * valid packet, so we don't
+			 * turn it off */
+			smb_conn->signing.seen_valid = True;
+		}
 	}
 }
 
+BOOL srv_init_signing(struct smbsrv_connection *smb_conn)
+{
+	smb_conn->signing.mac_key = data_blob(NULL, 0);
+	if (!smbcli_set_signing_off(&smb_conn->signing)) {
+		return False;
+	}
+	
+	switch (lp_server_signing()) {
+	case SMB_SIGNING_OFF:
+		smb_conn->signing.allow_smb_signing = False;
+		break;
+	case SMB_SIGNING_SUPPORTED:
+		smb_conn->signing.allow_smb_signing = True;
+		break;
+	case SMB_SIGNING_REQUIRED:
+		smb_conn->signing.allow_smb_signing = True;
+		smb_conn->signing.mandatory_signing = True;
+		break;
+	}
+	return True;
+}
 
 /*
   allocate a sequence number to a request
@@ -68,34 +127,38 @@ static void req_signing_alloc_seq_num(struct smbsrv_request *req)
 	}
 }
 
-/*
-  check the signature of an incoming packet
-*/
+/***********************************************************
+ SMB signing - Simple implementation - check a MAC sent by client
+************************************************************/
+/**
+ * Check a packet supplied by the server.
+ * @return False if we had an established signing connection
+ *         which had a back checksum, True otherwise
+ */
 BOOL req_signing_check_incoming(struct smbsrv_request *req)
 {
-	uint8_t client_md5_mac[8], signature[8];
-
-	switch (req->smb_conn->signing.signing_state) {
-	case SMB_SIGNING_OFF:
-		return True;
-	case SMB_SIGNING_SUPPORTED:
-		if (req->flags2 & FLAGS2_SMB_SECURITY_SIGNATURES) {
-			req->smb_conn->signing.signing_state = SMB_SIGNING_REQUIRED;
-		}
-		break;
-	case SMB_SIGNING_REQUIRED:
-		break;
-	}
+	BOOL good;
 
 	req_signing_alloc_seq_num(req);
 
-	/* the first packet isn't checked as the key hasn't been established */
-	if (req->seq_num == 0) {
+	switch (req->smb_conn->signing.signing_state) 
+	{
+	case SMB_SIGNING_ENGINE_OFF:
 		return True;
+	case SMB_SIGNING_ENGINE_BSRSPYL:
+	case SMB_SIGNING_ENGINE_ON:
+	{			
+		if (req->in.size < (HDR_SS_FIELD + 8)) {
+			return False;
+		} else {
+			good = check_signed_incoming_message(&req->in, 
+							     &req->smb_conn->signing.mac_key, 
+							     req->seq_num);
+			
+			return signing_good(&req->smb_conn->signing, 
+					    req->seq_num+1, good);
+		}
 	}
-
-	return check_signed_incoming_message(&req->in,
-					     &req->smb_conn->signing.mac_key,
-					     req->seq_num);
-
+	}
+	return False;
 }

@@ -57,6 +57,11 @@ static void reply_corep(struct smbsrv_request *req, uint16_t choice)
 
 	req->smb_conn->negotiate.protocol = PROTOCOL_CORE;
 
+	if (req->smb_conn->signing.mandatory_signing) {
+		smbsrv_terminate_connection(req->smb_conn, 
+					    "CORE does not support SMB signing, and it is mandetory\n");
+	}
+
 	req_send_reply(req);
 }
 
@@ -83,6 +88,11 @@ static void reply_coreplus(struct smbsrv_request *req, uint16_t choice)
 	SSVAL(req->out.vwv, VWV(5), raw); 
 
 	req->smb_conn->negotiate.protocol = PROTOCOL_COREPLUS;
+
+	if (req->smb_conn->signing.mandatory_signing) {
+		smbsrv_terminate_connection(req->smb_conn, 
+					    "COREPLUS does not support SMB signing, and it is mandetory\n");
+	}
 
 	req_send_reply(req);
 }
@@ -128,6 +138,11 @@ static void reply_lanman1(struct smbsrv_request *req, uint16_t choice)
 		get_challenge(req->smb_conn, req->out.data);
 	}
 
+	if (req->smb_conn->signing.mandatory_signing) {
+		smbsrv_terminate_connection(req->smb_conn, 
+					    "LANMAN1 does not support SMB signing, and it is mandetory\n");
+	}
+
 	req_send_reply(req);	
 }
 
@@ -171,6 +186,10 @@ static void reply_lanman2(struct smbsrv_request *req, uint16_t choice)
 
 	req_push_str(req, NULL, lp_workgroup(), -1, STR_TERMINATE);
 
+	if (req->smb_conn->signing.mandatory_signing) {
+		smbsrv_terminate_connection(req->smb_conn, 
+					    "LANMAN2 does not support SMB signing, and it is mandetory\n");
+	}
 
 	req_send_reply(req);
 }
@@ -198,7 +217,7 @@ static void reply_nt1(struct smbsrv_request *req, uint16_t choice)
 	/* do spnego in user level security if the client
 	   supports it and we can do encrypted passwords */
 	
-	if (0 && req->smb_conn->negotiate.encrypted_passwords && 
+	if (req->smb_conn->negotiate.encrypted_passwords && 
 	    (lp_security() != SEC_SHARE) &&
 	    lp_use_spnego() &&
 	    (req->flags2 & FLAGS2_EXTENDED_SECURITY)) {
@@ -241,18 +260,12 @@ static void reply_nt1(struct smbsrv_request *req, uint16_t choice)
 		secword |= NEGOTIATE_SECURITY_CHALLENGE_RESPONSE;
 	}
 
-	req->smb_conn->signing.signing_state = lp_server_signing();
-
-	switch (req->smb_conn->signing.signing_state) {
-	case SMB_SIGNING_OFF:
-		break;
-	case SMB_SIGNING_SUPPORTED:
+	if (req->smb_conn->signing.allow_smb_signing) {
 		secword |= NEGOTIATE_SECURITY_SIGNATURES_ENABLED;
-		break;
-	case SMB_SIGNING_REQUIRED:
-		secword |= NEGOTIATE_SECURITY_SIGNATURES_ENABLED |
-			NEGOTIATE_SECURITY_SIGNATURES_REQUIRED;
-		break;
+	}
+
+	if (req->smb_conn->signing.mandatory_signing) {
+		secword |= NEGOTIATE_SECURITY_SIGNATURES_REQUIRED;
 	}
 	
 	req->smb_conn->negotiate.protocol = PROTOCOL_NT1;
