@@ -146,4 +146,6 @@ interface rpcecho
 	void echo_TestSurrounding(
 		[in,out,ref] echo_Surrounding *data
 	);
+
+	uint16 echo_TestDoublePointer([in] uint16 ***data);
 }
