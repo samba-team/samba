@@ -1187,7 +1187,7 @@ static BOOL ldapsam_getsampwrid(struct pdb_methods *my_methods, SAM_ACCOUNT * us
 /**********************************************************************
 Delete entry from LDAP for username 
 *********************************************************************/
-static BOOL ldapsam_delete_sam_account(struct pdb_methods *my_methods, const SAM_ACCOUNT * sam_acct)
+static BOOL ldapsam_delete_sam_account(struct pdb_methods *my_methods, SAM_ACCOUNT * sam_acct)
 {
 	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)my_methods->private_data;
 	const char *sname;
@@ -1247,7 +1247,7 @@ static BOOL ldapsam_delete_sam_account(struct pdb_methods *my_methods, const SAM
 /**********************************************************************
 Update SAM_ACCOUNT 
 *********************************************************************/
-static BOOL ldapsam_update_sam_account(struct pdb_methods *my_methods, const SAM_ACCOUNT * newpwd)
+static BOOL ldapsam_update_sam_account(struct pdb_methods *my_methods, SAM_ACCOUNT * newpwd)
 {
 	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)my_methods->private_data;
 	int rc;
@@ -1314,7 +1314,7 @@ static BOOL ldapsam_update_sam_account(struct pdb_methods *my_methods, const SAM
 /**********************************************************************
 Add SAM_ACCOUNT to LDAP 
 *********************************************************************/
-static BOOL ldapsam_add_sam_account(struct pdb_methods *my_methods, const SAM_ACCOUNT * newpwd)
+static BOOL ldapsam_add_sam_account(struct pdb_methods *my_methods, SAM_ACCOUNT * newpwd)
 {
 	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)my_methods->private_data;
 	int rc;

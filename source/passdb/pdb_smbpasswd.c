@@ -1248,7 +1248,8 @@ static BOOL build_sam_account(struct smbpasswd_privates *smbpasswd_state,
 		   a general default for non-unix users. --abartlet 2002-01-08
 		*/
 		pdb_set_group_rid (sam_pass, DOMAIN_GROUP_RID_USERS); 
-		
+		pdb_set_username (sam_pass, pw_buf->smb_name);
+		pdb_set_domain (sam_pass, lp_workgroup());
 	} else {
 
 		pwfile = getpwnam_alloc(pw_buf->smb_name);
@@ -1367,9 +1368,6 @@ static BOOL smbpasswd_getsampwnam(struct pdb_methods *my_methods, SAM_ACCOUNT *s
 	struct smbpasswd_privates *smbpasswd_state = (struct smbpasswd_privates*)my_methods->private_data;
 	struct smb_passwd *smb_pw;
 	void *fp = NULL;
-	char *domain = NULL;
-	char *user = NULL;
-	fstring name;
 
 	DEBUG(10, ("getsampwnam (smbpasswd): search by name: %s\n", username));
 
@@ -1456,7 +1454,7 @@ static BOOL smbpasswd_getsampwrid(struct pdb_methods *my_methods, SAM_ACCOUNT *s
 	return True;
 }
 
-static BOOL smbpasswd_add_sam_account(struct pdb_methods *my_methods, const SAM_ACCOUNT *sampass)
+static BOOL smbpasswd_add_sam_account(struct pdb_methods *my_methods, SAM_ACCOUNT *sampass)
 {
 	struct smbpasswd_privates *smbpasswd_state = (struct smbpasswd_privates*)my_methods->private_data;
 	struct smb_passwd smb_pw;
@@ -1474,7 +1472,7 @@ static BOOL smbpasswd_add_sam_account(struct pdb_methods *my_methods, const SAM_
 	return True;
 }
 
-static BOOL smbpasswd_update_sam_account(struct pdb_methods *my_methods, const SAM_ACCOUNT *sampass)
+static BOOL smbpasswd_update_sam_account(struct pdb_methods *my_methods, SAM_ACCOUNT *sampass)
 {
 	struct smbpasswd_privates *smbpasswd_state = (struct smbpasswd_privates*)my_methods->private_data;
 	struct smb_passwd smb_pw;
@@ -1494,7 +1492,7 @@ static BOOL smbpasswd_update_sam_account(struct pdb_methods *my_methods, const S
 	return True;
 }
 
-static BOOL smbpasswd_delete_sam_account (struct pdb_methods *my_methods, const SAM_ACCOUNT *sampass)
+static BOOL smbpasswd_delete_sam_account (struct pdb_methods *my_methods, SAM_ACCOUNT *sampass)
 {
 	struct smbpasswd_privates *smbpasswd_state = (struct smbpasswd_privates*)my_methods->private_data;
 
