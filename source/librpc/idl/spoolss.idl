@@ -1,0 +1,520 @@
+/*
+  spoolss interface definitions
+*/
+
+[ uuid(12345678-1234-abcd-ef00-0123456789ab),
+  version(1.0),
+  pointer_default(unique)
+] interface spoolss
+{
+	/******************/
+	/* Function: 0x00 */
+	NTSTATUS spoolss_00(
+		);
+
+	/******************/
+	/* Function: 0x01 */
+	NTSTATUS spoolss_01(
+		);
+
+	/******************/
+	/* Function: 0x02 */
+	NTSTATUS spoolss_02(
+		);
+
+	/******************/
+	/* Function: 0x03 */
+	NTSTATUS spoolss_03(
+		);
+
+	/******************/
+	/* Function: 0x04 */
+	NTSTATUS spoolss_04(
+		);
+
+	/******************/
+	/* Function: 0x05 */
+	NTSTATUS spoolss_05(
+		);
+
+	/******************/
+	/* Function: 0x06 */
+	NTSTATUS spoolss_06(
+		);
+
+	/******************/
+	/* Function: 0x07 */
+	NTSTATUS spoolss_07(
+		);
+
+	/******************/
+	/* Function: 0x08 */
+	NTSTATUS spoolss_08(
+		);
+
+	/******************/
+	/* Function: 0x09 */
+	NTSTATUS spoolss_09(
+		);
+
+	/******************/
+	/* Function: 0x0a */
+	NTSTATUS spoolss_0a(
+		);
+
+	/******************/
+	/* Function: 0x0b */
+	NTSTATUS spoolss_0b(
+		);
+
+	/******************/
+	/* Function: 0x0c */
+	NTSTATUS spoolss_0c(
+		);
+
+	/******************/
+	/* Function: 0x0d */
+	NTSTATUS spoolss_0d(
+		);
+
+	/******************/
+	/* Function: 0x0e */
+	NTSTATUS spoolss_0e(
+		);
+
+	/******************/
+	/* Function: 0x0f */
+	NTSTATUS spoolss_0f(
+		);
+
+	/******************/
+	/* Function: 0x10 */
+	NTSTATUS spoolss_10(
+		);
+
+	/******************/
+	/* Function: 0x11 */
+	NTSTATUS spoolss_11(
+		);
+
+	/******************/
+	/* Function: 0x12 */
+	NTSTATUS spoolss_12(
+		);
+
+	/******************/
+	/* Function: 0x13 */
+	NTSTATUS spoolss_13(
+		);
+
+	/******************/
+	/* Function: 0x14 */
+	NTSTATUS spoolss_14(
+		);
+
+	/******************/
+	/* Function: 0x15 */
+	NTSTATUS spoolss_15(
+		);
+
+	/******************/
+	/* Function: 0x16 */
+	NTSTATUS spoolss_16(
+		);
+
+	/******************/
+	/* Function: 0x17 */
+	NTSTATUS spoolss_17(
+		);
+
+	/******************/
+	/* Function: 0x18 */
+	NTSTATUS spoolss_18(
+		);
+
+	/******************/
+	/* Function: 0x19 */
+	NTSTATUS spoolss_19(
+		);
+
+	/******************/
+	/* Function: 0x1a */
+	NTSTATUS spoolss_1a(
+		);
+
+	/******************/
+	/* Function: 0x1b */
+	NTSTATUS spoolss_1b(
+		);
+
+	/******************/
+	/* Function: 0x1c */
+	NTSTATUS spoolss_1c(
+		);
+
+	/******************/
+	/* Function: 0x1d */
+	NTSTATUS spoolss_1d(
+		);
+
+	/******************/
+	/* Function: 0x1e */
+	NTSTATUS spoolss_1e(
+		);
+
+	/******************/
+	/* Function: 0x1f */
+	NTSTATUS spoolss_1f(
+		);
+
+	/******************/
+	/* Function: 0x20 */
+	NTSTATUS spoolss_20(
+		);
+
+	/******************/
+	/* Function: 0x21 */
+	NTSTATUS spoolss_21(
+		);
+
+	/******************/
+	/* Function: 0x22 */
+	NTSTATUS spoolss_22(
+		);
+
+	/******************/
+	/* Function: 0x23 */
+	NTSTATUS spoolss_23(
+		);
+
+	/******************/
+	/* Function: 0x24 */
+	NTSTATUS spoolss_24(
+		);
+
+	/******************/
+	/* Function: 0x25 */
+	NTSTATUS spoolss_25(
+		);
+
+	/******************/
+	/* Function: 0x26 */
+	NTSTATUS spoolss_26(
+		);
+
+	/******************/
+	/* Function: 0x27 */
+	NTSTATUS spoolss_27(
+		);
+
+	/******************/
+	/* Function: 0x28 */
+	NTSTATUS spoolss_28(
+		);
+
+	/******************/
+	/* Function: 0x29 */
+	NTSTATUS spoolss_29(
+		);
+
+	/******************/
+	/* Function: 0x2a */
+	NTSTATUS spoolss_2a(
+		);
+
+	/******************/
+	/* Function: 0x2b */
+	NTSTATUS spoolss_2b(
+		);
+
+	/******************/
+	/* Function: 0x2c */
+	NTSTATUS spoolss_2c(
+		);
+
+	/******************/
+	/* Function: 0x2d */
+	NTSTATUS spoolss_2d(
+		);
+
+	/******************/
+	/* Function: 0x2e */
+	NTSTATUS spoolss_2e(
+		);
+
+	/******************/
+	/* Function: 0x2f */
+	NTSTATUS spoolss_2f(
+		);
+
+	/******************/
+	/* Function: 0x30 */
+	NTSTATUS spoolss_30(
+		);
+
+	/******************/
+	/* Function: 0x31 */
+	NTSTATUS spoolss_31(
+		);
+
+	/******************/
+	/* Function: 0x32 */
+	NTSTATUS spoolss_32(
+		);
+
+	/******************/
+	/* Function: 0x33 */
+	NTSTATUS spoolss_33(
+		);
+
+	/******************/
+	/* Function: 0x34 */
+	NTSTATUS spoolss_34(
+		);
+
+	/******************/
+	/* Function: 0x35 */
+	NTSTATUS spoolss_35(
+		);
+
+	/******************/
+	/* Function: 0x36 */
+	NTSTATUS spoolss_36(
+		);
+
+	/******************/
+	/* Function: 0x37 */
+	NTSTATUS spoolss_37(
+		);
+
+	/******************/
+	/* Function: 0x38 */
+	NTSTATUS spoolss_38(
+		);
+
+	/******************/
+	/* Function: 0x39 */
+	NTSTATUS spoolss_39(
+		);
+
+	/******************/
+	/* Function: 0x3a */
+	NTSTATUS spoolss_3a(
+		);
+
+	/******************/
+	/* Function: 0x3b */
+	NTSTATUS spoolss_3b(
+		);
+
+	/******************/
+	/* Function: 0x3c */
+	NTSTATUS spoolss_3c(
+		);
+
+	/******************/
+	/* Function: 0x3d */
+	NTSTATUS spoolss_3d(
+		);
+
+	/******************/
+	/* Function: 0x3e */
+	NTSTATUS spoolss_3e(
+		);
+
+	/******************/
+	/* Function: 0x3f */
+	NTSTATUS spoolss_3f(
+		);
+
+	/******************/
+	/* Function: 0x40 */
+	NTSTATUS spoolss_40(
+		);
+
+	/******************/
+	/* Function: 0x41 */
+	NTSTATUS spoolss_41(
+		);
+
+	/******************/
+	/* Function: 0x42 */
+	NTSTATUS spoolss_42(
+		);
+
+	/******************/
+	/* Function: 0x43 */
+	NTSTATUS spoolss_43(
+		);
+
+	/******************/
+	/* Function: 0x44 */
+	NTSTATUS spoolss_44(
+		);
+
+	typedef struct {
+		uint32 foo;
+	} spoolss_Devmode;
+
+	typedef struct {
+		uint32 size;
+		spoolss_Devmode *devmode;
+	} spoolss_DevmodeContainer;
+
+	typedef struct {
+		uint32 size;
+		unistr *client;
+		unistr *user;
+		uint32 build;
+		uint32 major;
+		uint32 minor;
+		uint32 processor;
+	} spoolss_UserLevel1;
+
+	typedef union {
+		case(1)  spoolss_UserLevel1 *level1;
+	} spoolss_UserLevel;
+
+	/******************/
+	/* Function: 0x45 */
+	NTSTATUS spoolss_OpenPrinterEx(
+		[in]    unistr *printername,
+		[in]    unistr *datatype,
+		[in]	spoolss_DevmodeContainer devmode_ctr,
+		[in]	uint32 access_required,
+		[in]	uint32 level,
+		[in,switch_is(level)] spoolss_UserLevel userlevel,
+		[out]	policy_handle *handle
+		);
+
+	/******************/
+	/* Function: 0x46 */
+	NTSTATUS spoolss_46(
+		);
+
+	/******************/
+	/* Function: 0x47 */
+	NTSTATUS spoolss_47(
+		);
+
+	/******************/
+	/* Function: 0x48 */
+	NTSTATUS spoolss_48(
+		);
+
+	/******************/
+	/* Function: 0x49 */
+	NTSTATUS spoolss_49(
+		);
+
+	/******************/
+	/* Function: 0x4a */
+	NTSTATUS spoolss_4a(
+		);
+
+	/******************/
+	/* Function: 0x4b */
+	NTSTATUS spoolss_4b(
+		);
+
+	/******************/
+	/* Function: 0x4c */
+	NTSTATUS spoolss_4c(
+		);
+
+	/******************/
+	/* Function: 0x4d */
+	NTSTATUS spoolss_4d(
+		);
+
+	/******************/
+	/* Function: 0x4e */
+	NTSTATUS spoolss_4e(
+		);
+
+	/******************/
+	/* Function: 0x4f */
+	NTSTATUS spoolss_4f(
+		);
+
+	/******************/
+	/* Function: 0x50 */
+	NTSTATUS spoolss_50(
+		);
+
+	/******************/
+	/* Function: 0x51 */
+	NTSTATUS spoolss_51(
+		);
+
+	/******************/
+	/* Function: 0x52 */
+	NTSTATUS spoolss_52(
+		);
+
+	/******************/
+	/* Function: 0x53 */
+	NTSTATUS spoolss_53(
+		);
+
+	/******************/
+	/* Function: 0x54 */
+	NTSTATUS spoolss_54(
+		);
+
+	/******************/
+	/* Function: 0x55 */
+	NTSTATUS spoolss_55(
+		);
+
+	/******************/
+	/* Function: 0x56 */
+	NTSTATUS spoolss_56(
+		);
+
+	/******************/
+	/* Function: 0x57 */
+	NTSTATUS spoolss_57(
+		);
+
+	/******************/
+	/* Function: 0x58 */
+	NTSTATUS spoolss_58(
+		);
+
+	/******************/
+	/* Function: 0x59 */
+	NTSTATUS spoolss_59(
+		);
+
+	/******************/
+	/* Function: 0x5a */
+	NTSTATUS spoolss_5a(
+		);
+
+	/******************/
+	/* Function: 0x5b */
+	NTSTATUS spoolss_5b(
+		);
+
+	/******************/
+	/* Function: 0x5c */
+	NTSTATUS spoolss_5c(
+		);
+
+	/******************/
+	/* Function: 0x5d */
+	NTSTATUS spoolss_5d(
+		);
+
+	/******************/
+	/* Function: 0x5e */
+	NTSTATUS spoolss_5e(
+		);
+
+	/******************/
+	/* Function: 0x5f */
+	NTSTATUS spoolss_5f(
+		);
+
+}
