@@ -12,6 +12,7 @@ RCSID("$Id$");
 #include <unistd.h>
 #include <signal.h>
 #include <fcntl.h>
+#include <string.h>
 
 /*
  * Generate "random" data by checksumming a file.
