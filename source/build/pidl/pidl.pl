@@ -177,7 +177,7 @@ sub process_file($)
 			util::FileSave($client, 
 			"#include \"includes.h\"\n" .
 			"#include \"librpc/gen_ndr/com_$basename.h\"\n" . 
-			"#include \"lib/dcom/common/orpc.h\"\n". $res);
+			"#include \"lib/com/dcom/dcom.h\"\n" .$res);
 		}
 		$opt_odl = 1;
 	}

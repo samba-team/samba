@@ -22,10 +22,7 @@
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_remact.h"
 #include "librpc/gen_ndr/ndr_epmapper.h"
-
-#define CLSID_TEST "00000316-0000-0000-C000-000000000046"
-#define CLSID_SIMPLE "5e9ddec7-5767-11cf-beab-00aa006c3606"
-#define CLSID_COFFEEMACHINE "DB7C21F8-FE33-4C11-AEA5-CEB56F076FBB"
+#include "librpc/gen_ndr/com_dcom.h"
 
 static int test_RemoteActivation(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {

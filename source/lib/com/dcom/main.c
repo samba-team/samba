@@ -26,6 +26,7 @@
 #include "librpc/gen_ndr/ndr_oxidresolver.h"
 #include "librpc/gen_ndr/ndr_dcom.h"
 #include "librpc/gen_ndr/com_dcom.h"
+#include "lib/com/dcom/dcom.h"
 
 #define DCOM_NEGOTIATED_PROTOCOLS { EPM_PROTOCOL_TCP, EPM_PROTOCOL_SMB, EPM_PROTOCOL_NCALRPC }
 
@@ -71,7 +72,7 @@ static NTSTATUS dcom_connect_host(struct com_context *ctx, struct dcerpc_pipe **
 		return dcerpc_pipe_connect_b(p, &bd, 
 					DCERPC_IREMOTEACTIVATION_UUID, 
 					DCERPC_IREMOTEACTIVATION_VERSION, 
-					ctx->dcom.domain, ctx->dcom.user, ctx->dcom.password);
+					ctx->dcom->domain, ctx->dcom->user, ctx->dcom->password);
 	}
 
 	/* Allow server name to contain a binding string */
@@ -79,7 +80,7 @@ static NTSTATUS dcom_connect_host(struct com_context *ctx, struct dcerpc_pipe **
 		status = dcerpc_pipe_connect_b(p, &bd, 
 					DCERPC_IREMOTEACTIVATION_UUID, 
 					DCERPC_IREMOTEACTIVATION_VERSION, 
-					ctx->dcom.domain, ctx->dcom.user, ctx->dcom.password);
+					ctx->dcom->domain, ctx->dcom->user, ctx->dcom->password);
 
 		talloc_free(mem_ctx);
 		return status;
@@ -96,7 +97,7 @@ static NTSTATUS dcom_connect_host(struct com_context *ctx, struct dcerpc_pipe **
 		status = dcerpc_pipe_connect_b(p, &bd, 
 						DCERPC_IREMOTEACTIVATION_UUID, 
 						DCERPC_IREMOTEACTIVATION_VERSION, 
-						ctx->dcom.domain, ctx->dcom.user, ctx->dcom.password);
+						ctx->dcom->domain, ctx->dcom->user, ctx->dcom->password);
 
 		if (NT_STATUS_IS_OK(status)) {
 			return status;
@@ -279,8 +280,8 @@ NTSTATUS dcom_get_pipe (struct IUnknown *iface, struct dcerpc_pipe **pp)
 		} else {
 			status = dcerpc_pipe_connect_b(&p, &binding, 
 						       uuid, 0.0, 
-						       iface->ctx->dcom.domain, iface->ctx->dcom.user, 
-						       iface->ctx->dcom.password);
+						       iface->ctx->dcom->domain, iface->ctx->dcom->user, 
+						       iface->ctx->dcom->password);
 		}
 
 		i++;
