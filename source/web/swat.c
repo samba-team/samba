@@ -53,7 +53,7 @@ static int iNumNonAutoPrintServices = 0;
 
 /* FUNCTION DECLARATIONS */
 
-BOOL remote_password_change(const char *rmachine, const char *username,
+ BOOL remote_password_change(const char *rmachine, const char *username,
                             const char *old_pw, const char *new_pw,
                             char *err_str, size_t err_str_len);
 
