@@ -517,14 +517,18 @@ static BOOL test_generic_bits(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	owner_sid = dom_sid_string(mem_ctx, sd_orig->owner_sid);
 
-	status = smblsa_sid_check_privilege(cli, owner_sid, SEC_PRIV_RESTORE);
+	status = smblsa_sid_check_privilege(cli, 
+					    owner_sid, 
+					    sec_privilege_name(SEC_PRIV_RESTORE));
 	has_restore_privilege = NT_STATUS_IS_OK(status);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smblsa_sid_check_privilege - %s\n", nt_errstr(status));
 	}
 	printf("SEC_PRIV_RESTORE - %s\n", has_restore_privilege?"Yes":"No");
 
-	status = smblsa_sid_check_privilege(cli, owner_sid, SEC_PRIV_TAKE_OWNERSHIP);
+	status = smblsa_sid_check_privilege(cli, 
+					    owner_sid, 
+					    sec_privilege_name(SEC_PRIV_TAKE_OWNERSHIP));
 	has_take_ownership_privilege = NT_STATUS_IS_OK(status);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smblsa_sid_check_privilege - %s\n", nt_errstr(status));

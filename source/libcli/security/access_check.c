@@ -27,11 +27,12 @@
 /*
   check if a sid is in the supplied token
 */
-static BOOL sid_active_in_token(struct dom_sid *sid, struct nt_user_token *token)
+static BOOL sid_active_in_token(const struct dom_sid *sid, 
+				const struct security_token *token)
 {
 	int i;
 	for (i=0;i<token->num_sids;i++) {
-		if (dom_sid_equal(sid, token->user_sids[i])) {
+		if (dom_sid_equal(sid, token->sids[i])) {
 			return True;
 		}
 	}
@@ -42,16 +43,15 @@ static BOOL sid_active_in_token(struct dom_sid *sid, struct nt_user_token *token
 /*
   perform a SEC_FLAG_MAXIMUM_ALLOWED access check
 */
-static uint32_t access_check_max_allowed(struct security_descriptor *sd, 
-					 struct nt_user_token *token)
+static uint32_t access_check_max_allowed(const struct security_descriptor *sd, 
+					 const struct security_token *token)
 {
 	uint32_t denied = 0, granted = 0;
 	unsigned i;
 	
 	if (sid_active_in_token(sd->owner_sid, token)) {
-		granted |= SEC_STD_WRITE_DAC | SEC_STD_READ_CONTROL;
+		granted |= SEC_STD_WRITE_DAC | SEC_STD_READ_CONTROL | SEC_STD_DELETE;
 	}
-	granted |= SEC_STD_DELETE;
 
 	for (i = 0;i<sd->dacl->num_aces; i++) {
 		struct security_ace *ace = &sd->dacl->aces[i];
@@ -77,8 +77,8 @@ static uint32_t access_check_max_allowed(struct security_descriptor *sd,
 /*
   the main entry point for access checking. 
 */
-NTSTATUS sec_access_check(struct security_descriptor *sd, 
-			  struct nt_user_token *token,
+NTSTATUS sec_access_check(const struct security_descriptor *sd, 
+			  const struct security_token *token,
 			  uint32_t access_desired,
 			  uint32_t *access_granted)
 {

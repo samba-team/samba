@@ -298,127 +298,111 @@ BOOL make_user_info_guest(TALLOC_CTX *mem_ctx,
 }
 
 /****************************************************************************
- prints a NT_USER_TOKEN to debug output.
+ prints a struct security_token to debug output.
 ****************************************************************************/
-
-void debug_nt_user_token(int dbg_class, int dbg_lev, const NT_USER_TOKEN *token)
+void debug_security_token(int dbg_class, int dbg_lev, const struct security_token *token)
 {
 	TALLOC_CTX *mem_ctx;
 
 	size_t     i;
 	
 	if (!token) {
-		DEBUGC(dbg_class, dbg_lev, ("NT user token: (NULL)\n"));
+		DEBUGC(dbg_class, dbg_lev, ("Security token: (NULL)\n"));
 		return;
 	}
 	
-	mem_ctx = talloc_init("debug_nt_user_token()");
+	mem_ctx = talloc_init("debug_security_token()");
 	if (!mem_ctx) {
 		return;
 	}
 
-	DEBUGC(dbg_class, dbg_lev, ("NT user token of user %s\n",
-				    dom_sid_string(mem_ctx, token->user_sids[0]) ));
-	DEBUGADDC(dbg_class, dbg_lev, ("contains %lu SIDs\n", (unsigned long)token->num_sids));
-	for (i = 0; i < token->num_sids; i++)
-		DEBUGADDC(dbg_class, dbg_lev, ("SID[%3lu]: %s\n", (unsigned long)i, 
-					       dom_sid_string(mem_ctx, token->user_sids[i])));
+	DEBUGC(dbg_class, dbg_lev, ("Security token of user %s\n",
+				    dom_sid_string(mem_ctx, token->user_sid) ));
+	DEBUGADDC(dbg_class, dbg_lev, ("contains %lu SIDs\n", 
+				       (unsigned long)token->num_sids));
+	for (i = 0; i < token->num_sids; i++) {
+		DEBUGADDC(dbg_class, dbg_lev, 
+			  ("SID[%3lu]: %s\n", (unsigned long)i, 
+			   dom_sid_string(mem_ctx, token->sids[i])));
+	}
 
 	talloc_destroy(mem_ctx);
 }
 
 /****************************************************************************
- prints a NT_USER_TOKEN to debug output.
+ prints a struct auth_session_info security token to debug output.
 ****************************************************************************/
-
-void debug_session_info(int dbg_class, int dbg_lev, const struct auth_session_info *session_info)
+void debug_session_info(int dbg_class, int dbg_lev, 
+			const struct auth_session_info *session_info)
 {
 	if (!session_info) {
 		DEBUGC(dbg_class, dbg_lev, ("Session Info: (NULL)\n"));
 		return;	
 	}
 
-	debug_nt_user_token(dbg_class, dbg_lev, session_info->nt_user_token);
+	debug_security_token(dbg_class, dbg_lev, session_info->security_token);
 }
 
 /****************************************************************************
  Create the SID list for this user.
 ****************************************************************************/
-
-NTSTATUS create_nt_user_token(TALLOC_CTX *mem_ctx, 
-			      struct dom_sid *user_sid, struct dom_sid *group_sid, 
-			      int n_groupSIDs, struct dom_sid **groupSIDs, 
-			      BOOL is_guest, struct nt_user_token **token)
+NTSTATUS create_security_token(TALLOC_CTX *mem_ctx, 
+			       struct dom_sid *user_sid, struct dom_sid *group_sid, 
+			       int n_groupSIDs, struct dom_sid **groupSIDs, 
+			       BOOL is_guest, struct security_token **token)
 {
-	NTSTATUS       nt_status = NT_STATUS_OK;
-	struct nt_user_token *ptoken;
+	struct security_token *ptoken;
 	int i;
-	int sid_ndx;
-	
-	if (!(ptoken = talloc_p(mem_ctx, struct nt_user_token))) {
-		DEBUG(0, ("create_nt_token: Out of memory allocating token\n"));
-		nt_status = NT_STATUS_NO_MEMORY;
-		return nt_status;
+
+	ptoken = security_token_initialise(mem_ctx);
+	if (ptoken == NULL) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
-	ptoken->num_sids = 0;
-
-	if (!(ptoken->user_sids = talloc_array_p(mem_ctx, struct dom_sid*, n_groupSIDs + 5))) {
-		DEBUG(0, ("create_nt_token: Out of memory allocating SIDs\n"));
-		nt_status = NT_STATUS_NO_MEMORY;
-		return nt_status;
+	ptoken->sids = talloc_array_p(ptoken, struct dom_sid *, n_groupSIDs + 5);
+	if (!ptoken->sids) {
+		return NT_STATUS_NO_MEMORY;
 	}
-	
-	/*
-	 * Note - user SID *MUST* be first in token !
-	 * se_access_check depends on this.
-	 *
-	 * Primary group SID is second in token. Convention.
-	 */
 
-	ptoken->user_sids[PRIMARY_USER_SID_INDEX] = user_sid;
-	ptoken->num_sids++;
-	ptoken->user_sids[PRIMARY_GROUP_SID_INDEX] = group_sid;
-	ptoken->num_sids++;
+	ptoken->user_sid = user_sid;
+	ptoken->group_sid = group_sid;
+	ptoken->privilege_mask = 0;
+
+	ptoken->sids[0] = user_sid;
+	ptoken->sids[1] = group_sid;
 
 	/*
 	 * Finally add the "standard" SIDs.
 	 * The only difference between guest and "anonymous" (which we
 	 * don't really support) is the addition of Authenticated_Users.
 	 */
-	ptoken->user_sids[2] = dom_sid_parse_talloc(mem_ctx, SID_WORLD);
-	ptoken->user_sids[3] = dom_sid_parse_talloc(mem_ctx, SID_NT_NETWORK);
-
-	if (is_guest) {
-		ptoken->user_sids[4] = dom_sid_parse_talloc(mem_ctx, SID_BUILTIN_GUESTS);
-		ptoken->num_sids++;
-	} else {
-		ptoken->user_sids[4] = dom_sid_parse_talloc(mem_ctx, SID_NT_AUTHENTICATED_USERS);
-		ptoken->num_sids++;
-	}
-
-	sid_ndx = 5; /* next available spot */
+	ptoken->sids[2] = dom_sid_parse_talloc(mem_ctx, SID_WORLD);
+	ptoken->sids[3] = dom_sid_parse_talloc(mem_ctx, SID_NT_NETWORK);
+	ptoken->sids[4] = dom_sid_parse_talloc(mem_ctx, 
+					       is_guest?SID_BUILTIN_GUESTS:
+					       SID_NT_AUTHENTICATED_USERS);
+	ptoken->num_sids = 5;
 
 	for (i = 0; i < n_groupSIDs; i++) {
 		size_t check_sid_idx;
-		for (check_sid_idx = 1; check_sid_idx < ptoken->num_sids; check_sid_idx++) {
-			if (dom_sid_equal(ptoken->user_sids[check_sid_idx], 
-				      groupSIDs[i])) {
+		for (check_sid_idx = 1; 
+		     check_sid_idx < ptoken->num_sids; 
+		     check_sid_idx++) {
+			if (dom_sid_equal(ptoken->sids[check_sid_idx], groupSIDs[i])) {
 				break;
 			}
 		}
 		
-		if (check_sid_idx >= ptoken->num_sids) /* Not found already */ {
-			ptoken->user_sids[sid_ndx++] = groupSIDs[i];
-			ptoken->num_sids++;
+		if (check_sid_idx == ptoken->num_sids) {
+			ptoken->sids[ptoken->num_sids++] = groupSIDs[i];
 		}
 	}
 	
-	debug_nt_user_token(DBGC_AUTH, 10, ptoken);
+	debug_security_token(DBGC_AUTH, 10, ptoken);
 	
 	*token = ptoken;
 
-	return nt_status;
+	return NT_STATUS_OK;
 }
 
 /***************************************************************************
@@ -699,13 +683,13 @@ NTSTATUS make_session_info(TALLOC_CTX *mem_ctx,
 
 	/* we should search for local groups here */
 	
-	nt_status = create_nt_user_token((*session_info), 
-					 server_info->user_sid, 
-					 server_info->primary_group_sid, 
-					 server_info->n_domain_groups, 
-					 server_info->domain_groups,
-					 False, 
-					 &(*session_info)->nt_user_token);
+	nt_status = create_security_token((*session_info), 
+					  server_info->user_sid, 
+					  server_info->primary_group_sid, 
+					  server_info->n_domain_groups, 
+					  server_info->domain_groups,
+					  False, 
+					  &(*session_info)->security_token);
 	
 	return nt_status;
 }

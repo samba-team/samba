@@ -24,7 +24,7 @@
 #include "librpc/gen_ndr/ndr_security.h"
 
 /*
-  return a blank security descriptor (no owners, dacl or sacl)
+  return a blank security token
 */
 struct security_token *security_token_initialise(TALLOC_CTX *mem_ctx)
 {
@@ -35,22 +35,11 @@ struct security_token *security_token_initialise(TALLOC_CTX *mem_ctx)
 		return NULL;
 	}
 
-	st->flags = 0;
-
 	st->user_sid = NULL;
 	st->group_sid = NULL;
-	st->logon_sid = NULL;
-
 	st->num_sids = 0;
 	st->sids = NULL;
-
-	st->num_restricted_sids = 0;
-	st->restricted_sids = NULL;
-
-	st->num_privileges = 0;
-	st->privileges = NULL;
-
-	st->dacl = NULL;
+	st->privilege_mask = 0;
 
 	return st;
 }

@@ -97,15 +97,10 @@ struct auth_serversupplied_info
 	uint32 acct_flags;
 };
 
-struct auth_session_info 
-{
+struct auth_session_info {
 	int refcount;
-	/* NT group information taken from the info3 structure */
-	
-	NT_USER_TOKEN *nt_user_token;
-
+	struct security_token *security_token;
 	struct auth_serversupplied_info *server_info;
-
 	DATA_BLOB session_key;
 
 	/* needed to key the schannel credentials */
