@@ -3387,7 +3387,7 @@ static BOOL process(char *base_directory)
   
   bzero(OutBuffer,smb_size);
 
-  if (!cli_send_login(InBuffer,OutBuffer,True,True))
+  if (!cli_send_login(InBuffer,OutBuffer,True,True,NULL))
     return(False);
 
   if (*base_directory) do_cd(base_directory);
@@ -3783,7 +3783,7 @@ static void usage(char *pname)
 	  return(1);
 
 	bzero(OutBuffer,smb_size);
-	if (!cli_send_login(InBuffer,OutBuffer,True,True))
+	if (!cli_send_login(InBuffer,OutBuffer,True,True,NULL))
 	  return(False);
 
 	if (*base_directory) do_cd(base_directory);
@@ -3808,7 +3808,7 @@ static void usage(char *pname)
 #if 0
 	  *username = 0;
 #endif
-	  if (!cli_send_login(NULL,NULL,True,True))
+	  if (!cli_send_login(NULL,NULL,True,True,NULL))
 	    return(1);
 
 	  server_info();
@@ -3859,7 +3859,7 @@ static void usage(char *pname)
 
 		if (cli_open_sockets(port))
 		{
-			if (!cli_send_login(NULL,NULL,True,True)) return(1);
+			if (!cli_send_login(NULL,NULL,True,True,NULL)) return(1);
 
 			do_nt_login(desthost, myhostname, Client, cnum);
 

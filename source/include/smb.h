@@ -1628,6 +1628,25 @@ struct connect_record
   time_t start;
 };
 
+/* This is used by smbclient to send it to a smbfs mount point */
+struct connection_options {
+  int protocol;
+  /* Connection-Options */
+  uint32 max_xmit;
+  uint16 server_uid;
+  uint16 tid;
+  /* The following are LANMAN 1.0 options */
+  uint16 sec_mode;
+  uint16 max_mux;
+  uint16 max_vcs;
+  uint16 rawmode;
+  uint32 sesskey;
+  /* The following are NT LM 0.12 options */
+  uint32 maxraw;
+  uint32 capabilities;
+  uint16 serverzone;
+};
+
 #ifndef LOCKING_VERSION
 #define LOCKING_VERSION 4
 #endif /* LOCKING_VERSION */
