@@ -324,7 +324,7 @@ BOOL get_tdbdomsid(struct policy_cache *cache, const POLICY_HND *hnd,
 		if (sid != NULL)
 		{
 			sid_copy(sid, &dev->sid);
-			DEBUG(3, ("Getting policy sid=%s\n",
+			DEBUG(5, ("Getting policy sid=%s\n",
 				  sid_to_string(tmp, sid)));
 		}
 		if (usr_tdb != NULL)
@@ -400,7 +400,7 @@ BOOL get_tdbsid(struct policy_cache *cache, const POLICY_HND *hnd,
 		if (sid != NULL)
 		{
 			sid_copy(sid, &dev->sid);
-			DEBUG(3, ("Getting policy sid=%s\n",
+			DEBUG(5, ("Getting policy sid=%s\n",
 				  sid_to_string(tmp, sid)));
 		}
 		if (tdb != NULL)

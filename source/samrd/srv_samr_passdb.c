@@ -67,7 +67,7 @@ static BOOL get_policy_samr_sid(struct policy_cache *cache,
 	{
 		pstring tmp;
 		sid_copy(sid, dev);
-		DEBUG(3, ("Getting policy sid=%s\n",
+		DEBUG(5, ("Getting policy sid=%s\n",
 			  sid_to_string(tmp, sid)));
 		return True;
 	}
