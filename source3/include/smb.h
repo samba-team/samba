@@ -526,11 +526,7 @@ struct connect_record
 #define IS_HIDDEN_PATH(cnum,path)  (is_in_path((path),Connections[(cnum)].hide_list))
 #define IS_VETO_PATH(cnum,path)  (is_in_path((path),Connections[(cnum)].veto_list))
 
-#ifdef SMB_PASSWD
 #define SMBENCRYPT()       (lp_encrypted_passwords())
-#else
-#define SMBENCRYPT() (False)
-#endif
 
 /* the basic packet size, assuming no words or bytes */
 #define smb_size 39

@@ -440,15 +440,11 @@ BOOL cli_send_login(char *inbuf, char *outbuf, BOOL start_session, BOOL use_setu
       int passlen = strlen(pass)+1;
       strcpy(pword,pass);      
 
-#ifdef SMB_PASSWD
       if (doencrypt && *pass) {
 	DEBUG(5,("Using encrypted passwords\n"));
 	passlen = 24;
 	SMBencrypt((uchar *)pass,(uchar *)cryptkey,(uchar *)pword);
       }
-#else
-      doencrypt = False;
-#endif
 
       /* if in share level security then don't send a password now */
       if (!(sec_mode & 1)) {strcpy(pword, "");passlen=1;} 
@@ -559,12 +555,10 @@ BOOL cli_send_login(char *inbuf, char *outbuf, BOOL start_session, BOOL use_setu
     fstring pword;
     strcpy(pword,pass);
 
-#ifdef SMB_PASSWD
     if (doencrypt && *pass) {
       passlen=24;
       SMBencrypt((uchar *)pass,(uchar *)cryptkey,(uchar *)pword);      
     }
-#endif
 
     /* if in user level security then don't send a password now */
     if ((sec_mode & 1)) {

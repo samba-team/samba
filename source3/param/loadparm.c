@@ -598,11 +598,7 @@ static void init_globals(void)
 #endif
   string_set(&Globals.szPasswdChat,"*old*password* %o\\n *new*password* %n\\n *new*password* %n\\n *changed*");
   string_set(&Globals.szWorkGroup, WORKGROUP);
-#ifdef SMB_PASSWD
   string_set(&Globals.szPasswdProgram, SMB_PASSWD);
-#else
-  string_set(&Globals.szPasswdProgram, "/bin/passwd");
-#endif
   string_set(&Globals.szPrintcapname, PRINTCAP_NAME);
   string_set(&Globals.szLockDir, LOCKDIR);
   string_set(&Globals.szRootdir, "/");

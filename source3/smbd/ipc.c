@@ -440,7 +440,7 @@ static void PackDriverData(struct pack_desc* desc)
 }
 
 static int check_printq_info(struct pack_desc* desc,
- 			     int uLevel, char *id1, const char* id2)
+ 			     int uLevel, char *id1, char *id2)
 {
   desc->subformat = NULL;
   switch( uLevel ) {

@@ -1,4 +1,3 @@
-#ifdef SMB_PASSWD
 /*
    This code is from rfc1186. 
 */
@@ -294,6 +293,3 @@
  /*
  ** End of md4.c
  */
-#else
- void md4_dummy() {;}
-#endif

@@ -105,13 +105,8 @@
 
 #else /* not _KANJI_C_ */
 
-extern char* (*_dos_to_unix) (const char *str, BOOL overwrite);
-extern char* (*_unix_to_dos) (const char *str, BOOL overwrite);
-
-extern char *sj_strtok (char *s1, const char *s2);
-extern char *sj_strchr (const char *s, int c);
-extern char *sj_strrchr (const char *s, int c);
-extern char *sj_strstr (const char *s1, const char *s2);
+extern char *(*_dos_to_unix)(char *str, BOOL overwrite);
+extern char *(*_unix_to_dos)(char *str, BOOL overwrite);
 
 #define strchr sj_strchr
 #define strrchr sj_strrchr

@@ -28,7 +28,7 @@ static char *prog_name = NULL;
  * Print program usage and die.
  */
 
-void codepage_usage(const char *progname)
+void codepage_usage(char *progname)
 {
   fprintf(stderr, "Usage is : %s [c|d] <codepage> <inputfile> <outputfile>\n",
          progname);
@@ -162,7 +162,7 @@ void parse_error(char *buf, char *msg)
  * Create a compiled codepage file from a codepage definition file.
  */
 
-int do_compile(int codepage, const char *input_file, const char *output_file)
+int do_compile(int codepage, char *input_file, char *output_file)
 {
   FILE *fp = NULL;
   uint32 size = 0;
@@ -307,7 +307,7 @@ definition file. File %s has %d.\n", prog_name, input_file, num_lines);
  * Placeholder for now.
  */
 
-int do_decompile( int codepage, const char *input_file, const char *output_file)
+int do_decompile( int codepage, char *input_file, char *output_file)
 {
   uint32 size = 0;
   struct stat st;
