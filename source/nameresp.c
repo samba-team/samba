@@ -103,9 +103,9 @@ void expire_netbios_response_entries(time_t t)
 /****************************************************************************
   reply to a netbios name packet 
   ****************************************************************************/
-void reply_netbios_packet(struct packet_struct *p1,int trn_id,int rcode,int opcode,
-			  struct nmb_name *rr_name,int rr_type,int rr_class,int ttl,
-			  char *data,int len)
+void reply_netbios_packet(struct packet_struct *p1,int trn_id,int rcode,
+			  int opcode,BOOL recurse,struct nmb_name *rr_name,
+			  int rr_type,int rr_class,int ttl,char *data,int len)
 {
   struct packet_struct p;
   struct nmb_packet *nmb = &p.packet.nmb;
@@ -126,7 +126,7 @@ void reply_netbios_packet(struct packet_struct *p1,int trn_id,int rcode,int opco
   nmb->header.opcode = opcode;
   nmb->header.response = True;
   nmb->header.nm_flags.bcast = False;
-  nmb->header.nm_flags.recursion_available = True;
+  nmb->header.nm_flags.recursion_available = recurse;
   nmb->header.nm_flags.recursion_desired = True;
   nmb->header.nm_flags.trunc = False;
   nmb->header.nm_flags.authoritative = True;
@@ -275,11 +275,9 @@ void queue_netbios_pkt_wins(int fd,int quest_type,enum cmd_type cmd,
 /****************************************************************************
   create a name query response record
   **************************************************************************/
-static struct name_response_record *make_name_query_record(
-							   enum cmd_type cmd,int id,int fd,
-							   char *name,int type,
-							   BOOL bcast,BOOL recurse,
-							   struct in_addr ip)
+static struct name_response_record *
+make_name_query_record(enum cmd_type cmd,int id,int fd,char *name,int type,
+		       BOOL bcast,BOOL recurse,struct in_addr ip)
 {
   struct name_response_record *n;
 	

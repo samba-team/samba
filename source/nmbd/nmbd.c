@@ -289,7 +289,7 @@ static void load_hosts_file(char *fname)
 	if (group) {
 	  add_domain_entry(ipaddr, ipmask, name, True);
 	} else {
-	  add_netbios_entry(name,0x20,NB_ACTIVE,0,source,ipaddr);
+	  add_netbios_entry(name,0x20,NB_ACTIVE,0,source,ipaddr,True);
 	}
       }
     }

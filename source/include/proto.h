@@ -149,9 +149,9 @@ BOOL name_query(int fd,char *name,int name_type,
 		BOOL bcast,BOOL recurse,
 		struct in_addr to_ip, struct in_addr *ip,void (*fn)());
 void expire_netbios_response_entries(time_t t);
-void reply_netbios_packet(struct packet_struct *p1,int trn_id,int rcode,int opcode,
-			  struct nmb_name *rr_name,int rr_type,int rr_class,int ttl,
-			  char *data,int len);
+void reply_netbios_packet(struct packet_struct *p1,int trn_id,int rcode,
+			  int opcode,BOOL recurse,struct nmb_name *rr_name,
+			  int rr_type,int rr_class,int ttl,char *data,int len);
 uint16 initiate_netbios_packet(int fd,int quest_type,char *name,int name_type,
 			       int nb_flags,BOOL bcast,BOOL recurse,
 			       struct in_addr to_ip);
@@ -182,6 +182,7 @@ struct name_record *add_netbios_entry(char *name, int type, int nb_flags,
 void remove_name_entry(char *name,int type);
 void add_name_entry(char *name,int type,int nb_flags);
 void add_my_names(void);
+void remove_my_names();
 void refresh_my_names(time_t t);
 void expire_names(time_t t);
 void response_name_release(struct packet_struct *p);
@@ -189,8 +190,7 @@ void reply_name_release(struct packet_struct *p);
 void response_name_reg(struct packet_struct *p);
 void reply_name_reg(struct packet_struct *p);
 void reply_name_status(struct packet_struct *p);
-struct name_record *search_for_name(struct nmb_name *question,
-				    struct in_addr ip, int Time, int search);
+void reply_name_query(struct packet_struct *p);
 void process_nmb(struct packet_struct *p);
 void reset_server(char *name, int state, struct in_addr ip);
 void tell_become_backup(void);
@@ -250,6 +250,10 @@ int get_printqueue(int snum,int cnum,print_queue_struct **queue,
 		   print_status_struct *status);
 void del_printqueue(int cnum,int snum,int jobid);
 void status_printjob(int cnum,int snum,int jobid,int status);
+BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize);
+BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize);
+BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize);
+BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize);
 int reply_special(char *inbuf,char *outbuf);
 int reply_tcon(char *inbuf,char *outbuf);
 int reply_tcon_and_X(char *inbuf,char *outbuf,int length,int bufsize);
