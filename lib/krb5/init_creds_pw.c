@@ -90,7 +90,7 @@ init_cred (krb5_context context,
     memset (cred, 0, sizeof(*cred));
     
     if (client)
-	cred->client = client;
+	krb5_copy_principal(context, client, &cred->client);
     else {
 	ret = krb5_get_default_principal (context,
 					  &cred->client);
@@ -109,7 +109,7 @@ init_cred (krb5_context context,
 	tmp = parse_time(get_config_string (context,
 					    *client_realm,
 					    "ticket_lifetime",
-					    "36000"),
+					    "10h"),
 			 NULL);
     cred->times.endtime = time(NULL) + tmp;
 
@@ -131,15 +131,8 @@ init_cred (krb5_context context,
 	    goto out;
 	krb5_princ_set_realm (context, cred->server, client_realm);
     } else {
-	ret = krb5_build_principal_ext (context,
-					&cred->server,
-					strlen(*client_realm),
-					*client_realm,
-					strlen("krbtgt"),
-					"krbtgt",
-					strlen(*client_realm),
-					*client_realm,
-					NULL);
+	ret = krb5_make_principal(context, &cred->server, 
+				  *client_realm, "krbtgt", *client_realm, NULL);
 	if (ret)
 	    goto out;
     }
@@ -384,7 +377,7 @@ krb5_get_init_creds_keytab(krb5_context context,
 
     ret = krb5_kt_get_entry(context,
 			    keytab,
-			    this_cred.server,
+			    this_cred.client,
 			    0,
 			    KEYTYPE_DES,
 			    &kt_ent);
@@ -402,7 +395,7 @@ krb5_get_init_creds_keytab(krb5_context context,
 			    NULL,
 			    &this_cred,
 			    NULL /* &kdc_reply */);
-    ret = krb5_kt_free_entry(context, &kt_ent);
+    krb5_kt_free_entry(context, &kt_ent);
     if (ret)
 	goto out;
     free (pre_auth_types);
