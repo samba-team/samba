@@ -1,5 +1,5 @@
-              WHATS NEW IN Samba 2.0.5
-              ========================
+              WHATS NEW IN Samba 2.0.5a
+              =========================
 
 This is the latest stable release of Samba. This is the
 version that all production Samba servers should be running
@@ -21,7 +21,7 @@ exploitable as shipped (the problem parameter was disabled by
 default) but instructions on protecting any version of Samba
 prior to 2.0.5 are included below.
 
-All these bugs have been fixed in Samba 2.0.5. 
+All these bugs have been fixed in Samba 2.0.5 and 2.0.5a.
 
 If using any version of Samba prior to 2.0.5 the administrator
 *MUST NOT* enable the "message command" parameter in smb.conf,
@@ -34,15 +34,15 @@ denial of service attack causing nmbd to either crash or to go
 into an infinite loop. No known instances of this attack being
 exploited have been reported.
 
-New/Changed parameters in 2.0.5
--------------------------------
+New/Changed parameters in 2.0.5 and 2.0.5a.
+-------------------------------------------
 
 There are 5 new parameters in the smb.conf file.
 
 security mask
 force security mode
 directory security mask
-force directory mode
+force directory secruty mode
 level2 oplocks
 
 The first 4 parameters are used to control the UNIX permissions bits
@@ -72,8 +72,20 @@ documentation or read the file :
 
 docs/textdocs/Speed.txt.
 
-Changes in 2.0.5
+Changes in 2.0.5a
 -----------------
+
+1). Fix for smbd crash bug in string_sub(). smbd was miscalculating
+memmove lengths on multiple '%' substitutions.
+2). Fix for wildcard matching bug for old DOS programs running on Win9x.
+3). Fix for Windows NT client changing passwords against a Samba server,
+intermittently failing.
+4). Fix for PPP link being detected as primary interface if using the
+same IP address as the primary.
+5). Ensure smbmount is built with RPM build.
+
+Changes in 2.0.5
+----------------
 
 1). smbmount for Linux systems has been re-written to use
 the libsmb code and clientutil.c is no longer used with it.
