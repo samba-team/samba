@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -89,7 +89,7 @@ main (int argc, char **argv)
 
     ret = krb5_init_context (&context);
     if (ret)
-	errx (1, "krb5_init_context: %s", krb5_get_err_text(context, ret));
+	errx (1, "krb5_init_context failed: %d", ret);
   
     if(cache == NULL)
 	cache = krb5_cc_default_name(context);

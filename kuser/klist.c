@@ -540,7 +540,7 @@ display_v5_ccache (const char *cred_cache, int do_test, int do_verbose,
 
     ret = krb5_init_context (&context);
     if (ret)
-	krb5_err(context, 1, ret, "krb5_init_context");
+	errx (1, "krb5_init_context failed: %d", ret);
 
     if(cred_cache) {
 	ret = krb5_cc_resolve(context, cred_cache, &ccache);

@@ -129,7 +129,9 @@ main(int argc, char **argv)
     int optind = 0;
     krb5_error_code ret;
     set_progname(argv[0]);
-    krb5_init_context(&context);
+    ret = krb5_init_context(&context);
+    if (ret)
+	errx (1, "krb5_init_context failed: %d", ret);
     if(getarg(args, num_args, argc, argv, &optind))
 	usage(1);
     if(help_flag)

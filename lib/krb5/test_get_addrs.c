@@ -56,7 +56,9 @@ main(int argc, char **argv)
     krb5_error_code ret;
     krb5_addresses addrs;
 
-    krb5_init_context(&context);
+    ret = krb5_init_context(&context);
+    if (ret)
+	errx (1, "krb5_init_context failed: %d", ret);
 
     ret = krb5_get_all_client_addrs (context, &addrs);
     if (ret)

@@ -87,7 +87,7 @@ main (int argc, char **argv)
 
     ret = krb5_init_context (&context);
     if (ret)
-	errx (1, "krb5_init_context: %s", krb5_get_err_text(context, ret));
+	errx (1, "krb5_init_context failed: %d", ret);
   
     if(argv[0]) {
 	ret = krb5_parse_name (context, argv[0], &principal);

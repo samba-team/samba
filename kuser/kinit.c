@@ -344,7 +344,7 @@ main (int argc, char **argv)
     
     ret = krb5_init_context (&context);
     if (ret)
-	errx(1, "krb5_init_context failed: %u", ret);
+	errx(1, "krb5_init_context failed: %d", ret);
   
     forwardable_flag = krb5_config_get_bool (context, NULL,
 					     "libdefaults",

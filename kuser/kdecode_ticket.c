@@ -107,7 +107,7 @@ main(int argc, char **argv)
 
     ret = krb5_init_context (&context);
     if (ret)
-	errx(1, "krb5_init_context failed: %u", ret);
+	errx(1, "krb5_init_context failed: %d", ret);
   
     if(getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &optind))
 	usage(1);

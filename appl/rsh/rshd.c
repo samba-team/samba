@@ -871,7 +871,13 @@ main(int argc, char **argv)
     }
 
 #ifdef KRB5
-    krb5_init_context (&context);
+    {
+	krb5_error_code ret;
+
+	ret = krb5_init_context (&context);
+	if (ret)
+	    errx (1, "krb5_init_context failed: %d", ret);
+    }	
 #endif
 
     if(port_str) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1999 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -150,7 +150,7 @@ main(int argc, char **argv)
 
     ret = krb5_init_context(&context);
     if(ret != 0)
-	krb5_err(NULL, 1, ret, "krb5_init_context");
+	errx(1, "krb5_init_context failed: %d", ret);
     
     ret = hdb_create(context, &db, old_database);
     if(ret != 0)

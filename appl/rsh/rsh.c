@@ -845,7 +845,7 @@ main(int argc, char **argv)
     
     status = krb5_init_context (&context);
     if (status)
-        errx(1, "krb5_init_context failed: %u", status);
+        errx(1, "krb5_init_context failed: %d", status);
       
     if (getarg (args, sizeof(args) / sizeof(args[0]), argc, argv,
 		&optind))

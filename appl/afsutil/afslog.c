@@ -190,7 +190,9 @@ main(int argc, char **argv)
 	exit(0);
     }
 
-    krb5_init_context(&context);
+    ret = krb5_init_context(&context);
+    if (ret)
+	errx (1, "krb5_init_context failed: %d", ret);
     if(!k_hasafs())
 	krb5_errx(context, 1, 
 		  "AFS doesn't seem to be present on this machine");

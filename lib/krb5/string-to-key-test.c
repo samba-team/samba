@@ -74,7 +74,9 @@ main(int argc, char **argv)
     krb5_error_code ret;
     int val = 0;
 
-    krb5_init_context (&context);
+    ret = krb5_init_context (&context);
+    if (ret)
+	errx (1, "krb5_init_context failed: %d", ret);
 
     for (t = tests; t->principal_name; ++t) {
 	krb5_keyblock key;

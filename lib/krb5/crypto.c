@@ -2874,8 +2874,11 @@ main()
     krb5_keyblock key;
     char constant[4];
     unsigned usage = ENCRYPTION_USAGE(3);
+    krb5_error_code ret;
 
-    krb5_init_context(&context);
+    ret = krb5_init_context(&context);
+    if (ret)
+	errx (1, "krb5_init_context failed: %d", ret);
 
     key.keytype = ETYPE_NEW_DES3_CBC_SHA1;
     key.keyvalue.data = "\xb3\x85\x58\x94\xd9\xdc\x7c\xc8"
@@ -2898,12 +2901,14 @@ main()
     krb5_crypto crypto;
     struct key_data *d;
     krb5_keyblock key;
-
+    krb5_error_code ret;
     Checksum res;
 
     char *data = "what do ya want for nothing?";
 
-    krb5_init_context(&context);
+    ret = krb5_init_context(&context);
+    if (ret)
+	errx (1, "krb5_init_context failed: %d", ret);
 
     key.keytype = ETYPE_NEW_DES3_CBC_SHA1;
     key.keyvalue.data = "Jefe";
