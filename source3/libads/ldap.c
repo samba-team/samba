@@ -1106,6 +1106,23 @@ static void dump_binary(const char *field, struct berval **values)
 	}
 }
 
+struct uuid {
+        uint32   i1;
+        uint16   i2;
+        uint16   i3;
+        uint8    s[8];
+};
+
+static void dump_guid(const char *field, struct berval **values)
+{
+	int i;
+	GUID guid;
+	for (i=0; values[i]; i++) {
+		memcpy(guid.info, values[i]->bv_val, sizeof(guid.info));
+		printf("%s: %s\n", field, uuid_string_static(guid));
+	}
+}
+
 /*
   dump a sid result from ldap
 */
@@ -1172,7 +1189,7 @@ static BOOL ads_dump_field(char *field, void **values, void *data_area)
 		BOOL string;
 		void (*handler)(const char *, struct berval **);
 	} handlers[] = {
-		{"objectGUID", False, dump_binary},
+		{"objectGUID", False, dump_guid},
 		{"nTSecurityDescriptor", False, dump_sd},
 		{"dnsRecord", False, dump_binary},
 		{"objectSid", False, dump_sid},
