@@ -63,6 +63,9 @@ extern krb5_boolean allow_null_ticket_addresses;
 #ifdef KRB4
 extern char *v4_realm;
 #endif
+#ifdef KASERVER
+extern krb5_boolean enable_kaserver;
+#endif
 
 extern struct timeval now;
 #define kdc_time (now.tv_sec)
