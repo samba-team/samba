@@ -223,5 +223,5 @@ struct passgrp_ops *unix_initialise_password_grp(void)
 
 #else
  /* Do *NOT* make this function static. It breaks the compile on gcc. JRA */
- void smbpass_dummy_function(void) { } /* stop some compilers complaining */
+ void smbpassgroupunix_dummy_function(void) { } /* stop some compilers complaining */
 #endif /* USE_SMBPASS_DB */

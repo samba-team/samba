@@ -146,11 +146,12 @@ typedef struct
   char *szDomainOtherSIDs;
   char *szDriverFile;
   char *szNameResolveOrder;
+#ifdef WITH_LDAP
   char *szLdapServer;
   char *szLdapSuffix;
-  char *szLdapFilter;
-  char *szLdapRoot;
-  char *szLdapRootPassword; 
+  char *szLdapBindAs;
+  char *szLdapPasswdFile; 
+#endif /* WITH_LDAP */
   char *szPanicAction;
   int max_log_size;
   int mangled_stack;
@@ -742,9 +743,8 @@ static struct parm_struct parm_table[] =
   {"ldap server",      P_STRING,  P_GLOBAL, &Globals.szLdapServer,      NULL,   NULL,  0},
   {"ldap port",        P_INTEGER, P_GLOBAL, &Globals.ldap_port,         NULL,   NULL,  0},
   {"ldap suffix",      P_STRING,  P_GLOBAL, &Globals.szLdapSuffix,      NULL,   NULL,  0},
-  {"ldap filter",      P_STRING,  P_GLOBAL, &Globals.szLdapFilter,      NULL,   NULL,  0},
-  {"ldap root",        P_STRING,  P_GLOBAL, &Globals.szLdapRoot,        NULL,   NULL,  0},
-  {"ldap root passwd", P_STRING,  P_GLOBAL, &Globals.szLdapRootPassword,NULL,   NULL,  0},
+  {"ldap bind as",     P_STRING,  P_GLOBAL, &Globals.szLdapBindAs,      NULL,   NULL,  0},
+  {"ldap passwd file", P_STRING,  P_GLOBAL, &Globals.szLdapPasswdFile,  NULL,   NULL,  0},
 #endif /* WITH_LDAP */
 
 
@@ -1156,9 +1156,8 @@ FN_GLOBAL_STRING(lp_panic_action,&Globals.szPanicAction)
 #ifdef WITH_LDAP
 FN_GLOBAL_STRING(lp_ldap_server,&Globals.szLdapServer);
 FN_GLOBAL_STRING(lp_ldap_suffix,&Globals.szLdapSuffix);
-FN_GLOBAL_STRING(lp_ldap_filter,&Globals.szLdapFilter);
-FN_GLOBAL_STRING(lp_ldap_root,&Globals.szLdapRoot);
-FN_GLOBAL_STRING(lp_ldap_rootpasswd,&Globals.szLdapRootPassword);
+FN_GLOBAL_STRING(lp_ldap_bind_as,&Globals.szLdapBindAs);
+FN_GLOBAL_STRING(lp_ldap_passwd_file,&Globals.szLdapPasswdFile);
 #endif /* WITH_LDAP */
 
 #ifdef WITH_SSL

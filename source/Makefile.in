@@ -153,10 +153,11 @@ LOCKING_OBJ = locking/locking.o locking/locking_shm.o locking/locking_slow.o \
 GROUPDB_OBJ = groupdb/groupdb.o groupdb/aliasdb.o groupdb/builtindb.o \
 		groupdb/groupfile.o groupdb/aliasfile.o \
 		groupdb/groupunix.o groupdb/aliasunix.o groupdb/builtinunix.o \
+		groupdb/groupldap.o groupdb/aliasldap.o groupdb/builtinldap.o \
 		passdb/passgrp.o passdb/smbpassgroup.o \
-		passdb/smbpassgroupunix.o
+		passdb/smbpassgroupunix.o passdb/passgrpldap.o
 
-SAMPASSDB_OBJ = passdb/sampassdb.o passdb/sampass.o
+SAMPASSDB_OBJ = passdb/sampassdb.o passdb/sampass.o passdb/sampassldap.o
 
 PASSDB_OBJ = passdb/passdb.o passdb/smbpassfile.o passdb/smbpass.o \
              passdb/pass_check.o passdb/ldap.o passdb/nispass.o \
