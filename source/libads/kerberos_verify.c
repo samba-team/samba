@@ -76,9 +76,9 @@ static BOOL ads_keytab_verify_ticket(krb5_context context, krb5_auth_context aut
 			p_packet->data = (krb5_pointer)ticket->data;
 
 			if (!(ret = krb5_rd_req(context, &auth_context, p_packet, NULL, NULL, NULL, pp_tkt))) {
+				unsigned int keytype;
 				krb5_free_unparsed_name(context, princ_name);
 				princ_name = NULL;
-				unsigned int keytype;
 #ifdef HAVE_KRB5_KEYTAB_ENTRY_KEYBLOCK
 				keytype = (unsigned int) kt_entry.keyblock.keytype;
 #else
