@@ -21,13 +21,35 @@
 
 #include "includes.h"
 
+/* This map was extracted by the ERRMAPEXTRACT smbtorture command. 
+   The setup was a Samba HEAD (2002-01-03) PDC and an Win2k member 
+   workstation.  The PDC was modified (by using the 'name_to_nt_status'
+   authentication module) to convert the username (in hex) into the
+   corresponding NTSTATUS error return. 
+
+   By opening two nbt sessions to the Win2k workstation, one negotiating
+   DOS and one negotiating NT errors it was possible to extract the
+   error mapping.  (Because the server only supplies NT errors, the 
+   NT4 workstation had to use its own error tables to convert these
+   to dos errors). 
+
+   Some errors show up as 'squashed' because the NT error connection
+   got back a different error to the one it sent, so a mapping could
+   not be determined (a guess has been made in this case, to map the
+   error as squashed).  This is done mainly to prevent users from getting
+   NT_STATUS_WRONG_PASSWORD and NT_STATUS_NO_SUCH_USER errors (they get
+   NT_STATUS_LOGON_FAILURE instead.
+
+   -- abartlet (2002-01-03)
+*/
+
 /* NT status -> dos error map */
 static struct {
 	uint8 dos_class;
 	uint32 dos_code;
 	NTSTATUS ntstatus;
 } ntstatus_to_dos_map[] = {
-	{ERRDOS,	31,	NT_STATUS_UNSUCCESSFUL},
+	{ERRDOS,	ERRgeneral,	NT_STATUS_UNSUCCESSFUL},
 	{ERRDOS,	ERRbadfunc,	NT_STATUS_NOT_IMPLEMENTED},
 	{ERRDOS,	87,	NT_STATUS_INVALID_INFO_CLASS},
 	{ERRDOS,	24,	NT_STATUS_INFO_LENGTH_MISMATCH},
