@@ -737,6 +737,14 @@ int chain_reply(char *inbuf,char *outbuf,int size,int bufsize)
     orig_outbuf = outbuf;
   }
 
+  /*
+   * The original Win95 redirector dies on a reply to
+   * a lockingX and read chain unless the chain reply is
+   * 4 byte aligned. JRA.
+   */
+
+  outsize = (outsize + 3) & ~3;
+
   /* we need to tell the client where the next part of the reply will be */
   SSVAL(outbuf,smb_vwv1,smb_offset(outbuf+outsize,outbuf));
   CVAL(outbuf,smb_vwv0) = smb_com2;
