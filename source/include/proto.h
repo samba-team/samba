@@ -56,7 +56,7 @@ char* debug_classname_from_index(int ndx);
 int debug_lookup_classname(char* classname);
 BOOL debug_parse_params(char **params, int *debuglevel_class);
 BOOL debug_parse_levels(char *params_str);
-void debug_message(int msg_level, pid_t src, void *buf, size_t len);
+void debug_message(int msg_type, pid_t src, void *buf, size_t len);
 void debug_message_send(pid_t pid, int level);
 void setup_logging(char *pname, BOOL interactive);
 BOOL reopen_logs( void );
@@ -4503,7 +4503,7 @@ BOOL check_file_sharing(connection_struct *conn,char *fname, BOOL rename_op);
 
 int32 get_number_of_exclusive_open_oplocks(void);
 BOOL oplock_message_waiting(fd_set *fds);
-BOOL receive_local_message(fd_set *fds, char *buffer, int buffer_len, int timeout);
+BOOL receive_local_message( char *buffer, int buffer_len, int timeout);
 BOOL set_file_oplock(files_struct *fsp, int oplock_type);
 void release_file_oplock(files_struct *fsp);
 BOOL remove_oplock(files_struct *fsp, BOOL break_to_none);
@@ -4708,6 +4708,7 @@ BOOL reset_stat_cache( void );
 
 /* The following definitions come from smbd/trans2.c  */
 
+time_t interpret_long_unix_date(char *p);
 NTSTATUS set_bad_path_error(int err, BOOL bad_path);
 NTSTATUS set_delete_on_close_internal(files_struct *fsp, BOOL delete_on_close);
 int reply_findclose(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize);
