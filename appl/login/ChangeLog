@@ -1,3 +1,7 @@
+2002-02-27  Johan Danielsson  <joda@pdc.kth.se>
+
+	* login.c: reset signals to default, needed on solaris 8
+
 2002-02-19  Johan Danielsson  <joda@pdc.kth.se>
 
 	* login_locl.h: include netgroup.h and rpcsvc/ypclnt.h
