@@ -321,8 +321,8 @@ tgs_rep(krb5_context context,
 	rep.crealm = tgt->crealm;
 	rep.cname = tgt->cname;
 	rep.ticket.tkt_vno = 5;
-	rep.ticket.sname = *b->sname;
-	rep.ticket.realm = b->realm;
+	copy_PrincipalName (b->sname, &rep.ticket.sname);
+	rep.ticket.realm = strdup(b->realm);
 
 	et->caddr = ticket->tkt.caddr;
 	
