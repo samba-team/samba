@@ -44,8 +44,6 @@
 #include <sys/mman.h>
 #endif
 
-extern int h_errno;
-
 #include "ftp_var.h"
 #include "extern.h"
 #include "common.h"

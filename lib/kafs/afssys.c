@@ -22,13 +22,14 @@ RCSID("$Id$");
 #include <signal.h>
 
 #include <sys/socket.h>
+#include <netinet/in.h>
 #include <netdb.h>
 
-#ifdef HAVE_RESOLV_H
-#include <resolv.h>
-#endif
 #ifdef HAVE_ARPA_NAMESER_H
 #include <arpa/nameser.h>
+#endif
+#ifdef HAVE_RESOLV_H
+#include <resolv.h>
 #endif
 
 #include <krb.h>
