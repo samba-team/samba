@@ -250,7 +250,7 @@ writev(int d, const struct iovec *iov, int iovcnt);
 
 #ifndef HAVE_READV
 ssize_t
-readv(int d, const struct iovec *iov, int iovcnt)
+readv(int d, const struct iovec *iov, int iovcnt);
 #endif
 
 #ifndef HAVE_FLOCK
