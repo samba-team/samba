@@ -267,6 +267,10 @@ const struct socket_ops *socket_getops_byname(const char *name, enum socket_type
 		return socket_ipv4_ops();
 	}
 
+	if (strcmp("ipv6", name) == 0) {
+		return socket_ipv6_ops();
+	}
+
 	if (strcmp("unix", name) == 0) {
 		return socket_unixdom_ops();
 	}
