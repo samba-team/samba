@@ -39,20 +39,20 @@ BOOL msrpc_receive(struct msrpc_state *msrpc)
 ****************************************************************************/
 BOOL msrpc_send_prs(struct msrpc_state *msrpc, prs_struct *ps)
 {
-	size_t len = ps != NULL ? mem_buf_len(ps->data) : 0;
+	size_t len = ps != NULL ? prs_buf_len(ps) : 0;
 
 	DEBUG(10,("msrpc_send_prs: len %d\n", len));
 	dbgflush();
 
 	_smb_setlen(msrpc->outbuf, len);
-	if (len != 0 && !mem_buf_copy(&msrpc->outbuf[4], ps->data, 0, len))
+	if (len != 0 && !prs_buf_copy(&msrpc->outbuf[4], ps, 0, len))
 	{
 		return False;
 	}
 
 	if (msrpc_send(msrpc, True))
 	{
-		prs_mem_free(ps);
+		prs_free_data(ps);
 		return True;
 	}
 	return False;
@@ -77,9 +77,9 @@ BOOL msrpc_receive_prs(struct msrpc_state *msrpc, prs_struct *ps)
 
 	DEBUG(10,("msrpc_receive_prs: len %d\n", len));
 
-	prs_init(ps, len, 4, 0, False);
+	prs_init(ps, len, 4, False);
 	ps->offset = len;
-	data = mem_data(ps->data, 0);
+	data = prs_data(ps, 0);
 	if (data == NULL || len <= 0)
 	{
 		return False;
@@ -192,7 +192,7 @@ static BOOL msrpc_authenticate(struct msrpc_state *msrpc,
 	}
 
 	len = ps.offset;
-	data = mem_data(ps.data, 0);
+	data = prs_data(&ps, 0);
 
 	SIVAL(data, 0, len);
 

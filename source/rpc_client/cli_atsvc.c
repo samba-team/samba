@@ -44,8 +44,8 @@ BOOL at_add_job(
 		return False;
 	}
 
-	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
-	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
+	prs_init(&buf , 1024, 4, False);
+	prs_init(&rbuf, 0   , 4, True );
 
 	/* create and send a MSRPC command with api AT_ADD_JOB */
 
@@ -78,8 +78,8 @@ BOOL at_add_job(
 		}
 	}
 
-	prs_mem_free(&rbuf);
-	prs_mem_free(&buf );
+	prs_free_data(&rbuf);
+	prs_free_data(&buf );
 
 	cli_connection_unlink(con);
 
@@ -103,8 +103,8 @@ BOOL at_del_job( char *srv_name, uint32 min_jobid, uint32 max_jobid)
 		return False;
 	}
 
-	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
-	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
+	prs_init(&buf , 1024, 4, False);
+	prs_init(&rbuf, 0   , 4, True );
 
 	/* create and send a MSRPC command with api AT_DEL_JOB */
 
@@ -132,8 +132,8 @@ BOOL at_del_job( char *srv_name, uint32 min_jobid, uint32 max_jobid)
 		}
 	}
 
-	prs_mem_free(&rbuf);
-	prs_mem_free(&buf );
+	prs_free_data(&rbuf);
+	prs_free_data(&buf );
 
 	cli_connection_unlink(con);
 
@@ -158,8 +158,8 @@ BOOL at_enum_jobs( char *srv_name, uint32 *num_jobs,
 		return False;
 	}
 
-	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
-	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
+	prs_init(&buf , 1024, 4, False);
+	prs_init(&rbuf, 0   , 4, True );
 
 	/* create and send a MSRPC command with api AT_DEL_JOB */
 
@@ -206,8 +206,8 @@ BOOL at_enum_jobs( char *srv_name, uint32 *num_jobs,
 		}
 	}
 
-	prs_mem_free(&rbuf);
-	prs_mem_free(&buf );
+	prs_free_data(&rbuf);
+	prs_free_data(&buf );
 
 	cli_connection_unlink(con);
 
@@ -232,8 +232,8 @@ BOOL at_query_job(char *srv_name,
 		return False;
 	}
 
-	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
-	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
+	prs_init(&buf , 1024, 4, False);
+	prs_init(&rbuf, 0   , 4, True );
 
 	/* create and send a MSRPC command with api AT_QUERY_JOB */
 
@@ -268,8 +268,8 @@ BOOL at_query_job(char *srv_name,
 		}
 	}
 
-	prs_mem_free(&rbuf);
-	prs_mem_free(&buf );
+	prs_free_data(&rbuf);
+	prs_free_data(&buf );
 
 	cli_connection_unlink(con);
 

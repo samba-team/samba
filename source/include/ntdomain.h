@@ -62,14 +62,23 @@
 	} \
 }
 
-typedef struct
+typedef struct parse_struct
 {
 	uint32 struct_start;
-	struct mem_buf *data; /* memory buffer */
+
+	char *data; /* memory buffer */
+	size_t data_size; /* current memory buffer size */
+	/* array memory offsets */
+	uint32 start; 
+	uint32 end;
+
 	uint32 offset; /* offset currently being accessed in memory buffer */
 	uint8 align; /* data alignment */
 	BOOL io; /* parsing in or out of data stream */
-	BOOL error; /* error occurred */
+	BOOL error; /* error occurred while parsing (out of memory bounds) */
+
+	struct parse_struct *next;
+
 	uint32 struct_end;
 
 } prs_struct;
@@ -153,32 +162,6 @@ struct api_struct
   char *name;
   uint8 opnum;
   void (*fn) (rpcsrv_struct*, prs_struct*, prs_struct*);
-};
-
-struct mem_desc
-{  
-	/* array memory offsets */
-	uint32 start; 
-	uint32 end;
-};
-   
-struct mem_buf
-{  
-	uint32 struct_start;
-	BOOL dynamic; /* True iff data has been dynamically allocated
-					 (and therefore can be freed) */
-	char *data;
-	uint32 data_size;
-	uint32 data_used;
-
-	uint32 margin; /* safety margin when reallocing. */
-				   /* this can be abused quite nicely */
-	uint8 align;   /* alignment of data structures (smb, dce/rpc, udp etc) */
-
-	struct mem_desc offset;
-
-	struct mem_buf *next;
-	uint32 struct_end;
 };
 
 struct acct_info

@@ -552,9 +552,6 @@ BOOL spoolss_io_r_getprinterdata(char *desc, SPOOL_R_GETPRINTERDATA *r_u, prs_st
 	prs_debug(ps, depth, desc, "spoolss_io_r_getprinterdata");
 	depth++;
 
-	/* grow buffer mem enough */
-	mem_grow_data(&(ps->data), ps->io, r_u->size+100, 0);
-
 	prs_align(ps);
 	prs_uint32("type", ps, depth, &(r_u->type));
 	prs_uint32("size", ps, depth, &(r_u->size));
@@ -1726,8 +1723,6 @@ static BOOL spoolss_io_read_buffer(char *desc, prs_struct *ps, int depth, BUFFER
 		{
 			return False;
 		}
-		mem_grow_data(&(ps->data), ps->io,
-		              ps->data->data_size + buffer->size, 0);
 		prs_uint8s(True, "buffer", ps, depth, buffer->data, buffer->size);	
 		prs_align(ps);
 
@@ -1872,8 +1867,6 @@ BOOL spoolss_io_r_getprinterdriver2(char *desc, SPOOL_R_GETPRINTERDRIVER2 *r_u,
 	}
 	else
 	{	
-		mem_grow_data(&(ps->data), ps->io, r_u->offered, 0);
-	
 		DEBUG(4,("spoolss_io_r_getprinterdriver2, buffer large enough\n"));
 	
 		prs_uint32("size of buffer", ps, depth, &(r_u->offered));
@@ -2075,8 +2068,6 @@ BOOL spoolss_io_r_enumprinters(char *desc,
 			return False;
 		}	
 		
-		mem_grow_data(&(ps->data), ps->io, r_u->offered, 0);
-		
 		DEBUG(4,("spoolss_io_r_enumprinters, buffer large enough\n"));
 	}
 	
@@ -2219,8 +2210,6 @@ BOOL spoolss_io_r_getprinter(char *desc,
 	}
 	else
 	{	
-		mem_grow_data(&(ps->data), ps->io, r_u->offered, 0);
-	
 		DEBUG(4,("spoolss_io_r_getprinter, buffer large enough\n"));
 	
 		prs_uint32("size of buffer", ps, depth, &(r_u->offered));
@@ -2597,7 +2586,6 @@ BOOL spoolss_io_r_enumjobs(char *desc, SPOOL_R_ENUMJOBS *r_u, prs_struct *ps, in
 		{
 			useless_ptr = 1;
 		}
-		mem_grow_data(&(ps->data), ps->io, r_u->offered, 0);
 	}
 
 	prs_uint32("pointer", ps, depth, &useless_ptr);
@@ -2871,8 +2859,6 @@ BOOL spoolss_io_r_enumdrivers(char *desc, SPOOL_R_ENUMPRINTERDRIVERS *r_u, prs_s
 	}
 	else
 	{	
-		mem_grow_data(&(ps->data), ps->io, r_u->offered, 0);
-	
 		DEBUGADD(8,("buffer large enough\n"));
 	
 		prs_uint32("size of buffer", ps, depth, &(r_u->offered));
@@ -3000,8 +2986,6 @@ BOOL spoolss_io_r_enumforms(char *desc, SPOOL_R_ENUMFORMS *r_u, prs_struct *ps, 
 	}
 	else
 	{	
-		mem_grow_data(&(ps->data), ps->io, r_u->offered, 0);
-	
 		DEBUG(4,("spoolss_io_r_enumforms, buffer large enough\n"));
 	
 		prs_uint32("size of buffer", ps, depth, &(r_u->offered));
@@ -3106,8 +3090,6 @@ BOOL spoolss_io_r_enumports(char *desc, SPOOL_R_ENUMPORTS *r_u, prs_struct *ps, 
 	}
 	else
 	{	
-		mem_grow_data(&(ps->data), ps->io, r_u->offered, 0);
-	
 		DEBUG(4,("buffer large enough\n"));
 	
 		prs_uint32("size of buffer", ps, depth, &(r_u->offered));
@@ -3808,8 +3790,6 @@ BOOL spoolss_io_r_getprinterdriverdir(char *desc, SPOOL_R_GETPRINTERDRIVERDIR *r
 	}
 	else
 	{	
-		mem_grow_data(&(ps->data), ps->io, r_u->offered, 0);
-	
 		DEBUG(4,("spoolss_io_r_getprinterdriverdir, buffer large enough\n"));
 	
 		prs_uint32("size of buffer", ps, depth, &(r_u->offered));
@@ -3913,8 +3893,6 @@ BOOL spoolss_io_r_enumprintprocessors(char *desc, SPOOL_R_ENUMPRINTPROCESSORS *r
 	}
 	else
 	{	
-		mem_grow_data(&(ps->data), ps->io, r_u->offered, 0);
-	
 		DEBUG(4,("buffer large enough\n"));
 	
 		prs_uint32("size of buffer", ps, depth, &(r_u->offered));
@@ -4020,8 +3998,6 @@ BOOL spoolss_io_r_enumprintmonitors(char *desc, SPOOL_R_ENUMPRINTMONITORS *r_u, 
 	}
 	else
 	{	
-		mem_grow_data(&(ps->data), ps->io, r_u->offered, 0);
-	
 		DEBUG(4,("buffer large enough\n"));
 	
 		prs_uint32("size of buffer", ps, depth, &(r_u->offered));
@@ -4342,8 +4318,6 @@ BOOL spoolss_io_r_getjob(char *desc, SPOOL_R_GETJOB *r_u, prs_struct *ps, int de
 	}
 	else
 	{	
-		mem_grow_data(&(ps->data), ps->io, r_u->offered, 0);
-	
 		DEBUG(4,("spoolss_io_r_enumjobs, buffer large enough\n"));
 	
 		prs_uint32("size of buffer", ps, depth, &(r_u->offered));

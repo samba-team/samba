@@ -52,8 +52,8 @@ BOOL svc_open_sc_man( const char *srv_name, char *db_name,
 
 	if (hnd == NULL) return False;
 
-	prs_init(&buf , 0, 4, SAFETY_MARGIN, False);
-	prs_init(&rbuf, 0, 4, SAFETY_MARGIN, True );
+	prs_init(&buf , 0, 4, False);
+	prs_init(&rbuf, 0, 4, True );
 
 	/* create and send a MSRPC command with api SVC_OPEN_SC_MAN */
 
@@ -93,8 +93,8 @@ BOOL svc_open_sc_man( const char *srv_name, char *db_name,
 		}
 	}
 
-	prs_mem_free(&rbuf);
-	prs_mem_free(&buf );
+	prs_free_data(&rbuf);
+	prs_free_data(&buf );
 
 	return valid_pol;
 }
@@ -122,8 +122,8 @@ BOOL svc_open_service( POLICY_HND *scm_hnd,
 
 	if (hnd == NULL || scm_hnd == NULL) return False;
 
-	prs_init(&buf , 0, 4, SAFETY_MARGIN, False);
-	prs_init(&rbuf, 0, 4, SAFETY_MARGIN, True );
+	prs_init(&buf , 0, 4, False);
+	prs_init(&rbuf, 0, 4, True );
 
 	/* create and send a MSRPC command with api SVC_OPEN_SERVICE */
 
@@ -161,8 +161,8 @@ BOOL svc_open_service( POLICY_HND *scm_hnd,
 		}
 	}
 
-	prs_mem_free(&rbuf);
-	prs_mem_free(&buf );
+	prs_free_data(&rbuf);
+	prs_free_data(&buf );
 
 	return valid_pol;
 }
@@ -194,8 +194,8 @@ BOOL svc_enum_svcs( POLICY_HND *hnd,
 		return False;
 	}
 
-	prs_init(&buf , 0, 4, SAFETY_MARGIN, False);
-	prs_init(&rbuf, 0, 4, SAFETY_MARGIN, True );
+	prs_init(&buf , 0, 4, False);
+	prs_init(&rbuf, 0, 4, True );
 
 	/* create and send a MSRPC command with api SVC_ENUM_SVCS_STATUS */
 
@@ -244,8 +244,8 @@ BOOL svc_enum_svcs( POLICY_HND *hnd,
 		}
 	}
 
-	prs_mem_free(&rbuf);
-	prs_mem_free(&buf );
+	prs_free_data(&rbuf);
+	prs_free_data(&buf );
 
 	return valid_pol;
 }
@@ -273,8 +273,8 @@ BOOL svc_stop_service( POLICY_HND *hnd,
 
 	/* create and send a MSRPC command with api SVC_STOP_SERVICE */
 
-	prs_init(&buf , 0, 4, SAFETY_MARGIN, False);
-	prs_init(&rbuf, 0, 4, SAFETY_MARGIN, True );
+	prs_init(&buf , 0, 4, False);
+	prs_init(&rbuf, 0, 4, True );
 
 	DEBUG(4,("SVC Stop Service\n"));
 
@@ -308,8 +308,8 @@ BOOL svc_stop_service( POLICY_HND *hnd,
 		}
 	}
 
-	prs_mem_free(&rbuf);
-	prs_mem_free(&buf );
+	prs_free_data(&rbuf);
+	prs_free_data(&buf );
 
 	return valid_cfg;
 }
@@ -338,8 +338,8 @@ BOOL svc_start_service( POLICY_HND *hnd,
 
 	/* create and send a MSRPC command with api SVC_START_SERVICE */
 
-	prs_init(&buf , 0, 4, SAFETY_MARGIN, False);
-	prs_init(&rbuf, 0, 4, SAFETY_MARGIN, True );
+	prs_init(&buf , 0, 4, False);
+	prs_init(&rbuf, 0, 4, True );
 
 	DEBUG(4,("SVC Start Service\n"));
 
@@ -373,8 +373,8 @@ BOOL svc_start_service( POLICY_HND *hnd,
 		}
 	}
 
-	prs_mem_free(&rbuf);
-	prs_mem_free(&buf );
+	prs_free_data(&rbuf);
+	prs_free_data(&buf );
 
 	return valid_cfg;
 }
@@ -403,8 +403,8 @@ BOOL svc_query_svc_cfg( POLICY_HND *hnd,
 
 	/* create and send a MSRPC command with api SVC_QUERY_SVC_CONFIG */
 
-	prs_init(&buf , 0, 4, SAFETY_MARGIN, False);
-	prs_init(&rbuf, 0, 4, SAFETY_MARGIN, True );
+	prs_init(&buf , 0, 4, False);
+	prs_init(&rbuf, 0, 4, True );
 
 	DEBUG(4,("SVC Query Service Config\n"));
 
@@ -441,8 +441,8 @@ BOOL svc_query_svc_cfg( POLICY_HND *hnd,
 		}
 	}
 
-	prs_mem_free(&rbuf);
-	prs_mem_free(&buf );
+	prs_free_data(&rbuf);
+	prs_free_data(&buf );
 
 	return valid_cfg;
 }
@@ -469,8 +469,8 @@ BOOL svc_close(POLICY_HND *hnd)
 
 	/* create and send a MSRPC command with api SVC_CLOSE */
 
-	prs_init(&buf , 0, 4, SAFETY_MARGIN, False);
-	prs_init(&rbuf, 0, 4, SAFETY_MARGIN, True );
+	prs_init(&buf , 0, 4, False);
+	prs_init(&rbuf, 0, 4, True );
 
 	DEBUG(4,("SVC Close\n"));
 
@@ -521,8 +521,8 @@ BOOL svc_close(POLICY_HND *hnd)
 
 	close_policy_hnd(hnd);
 
-	prs_mem_free(&rbuf);
-	prs_mem_free(&buf );
+	prs_free_data(&rbuf);
+	prs_free_data(&buf );
 
 	return valid_close;
 }
@@ -556,8 +556,8 @@ BOOL svc_change_svc_cfg( POLICY_HND *hnd,
 
 	/* create and send a MSRPC command with api SVC_CHANGE_SVC_CONFIG */
 
-	prs_init(&buf , 0, 4, SAFETY_MARGIN, False);
-	prs_init(&rbuf, 0, 4, SAFETY_MARGIN, True );
+	prs_init(&buf , 0, 4, False);
+	prs_init(&rbuf, 0, 4, True );
 
 	DEBUG(4,("SVC Change Service Config\n"));
 
@@ -597,8 +597,8 @@ BOOL svc_change_svc_cfg( POLICY_HND *hnd,
 		}
 	}
 
-	prs_mem_free(&rbuf);
-	prs_mem_free(&buf );
+	prs_free_data(&rbuf);
+	prs_free_data(&buf );
 
 	return valid_cfg;
 }

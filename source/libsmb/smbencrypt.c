@@ -510,7 +510,7 @@ void create_ntlmssp_resp(struct pwd_info *pwd,
 			         ntlmssp_cli_flgs);
 
 	smb_io_rpc_auth_ntlmssp_resp("ntlmssp_resp", &ntlmssp_resp, auth_resp, 0);
-	mem_realloc_data(auth_resp->data, auth_resp->offset);
+	prs_realloc_data(auth_resp, auth_resp->offset);
 }
 
 /***********************************************************

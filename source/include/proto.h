@@ -270,21 +270,6 @@ void MD5Update(struct MD5Context *ctx, uchar const *buf, unsigned len);
 void MD5Final(uchar digest[16], struct MD5Context *ctx);
 void MD5Transform(uint32 buf[4], const uchar inext[64]);
 
-/*The following definitions come from  lib/membuffer.c  */
-
-void mem_init(struct mem_buf *buf, int margin);
-void mem_create(struct mem_buf *buf, char *data, int offset, int size, int margin, BOOL dynamic);
-BOOL mem_alloc_data(struct mem_buf *buf, int size);
-BOOL mem_buf_copy(char *copy_into, struct mem_buf *buf,
-				uint32 offset, uint32 len);
-BOOL mem_buf_init(struct mem_buf **buf, uint32 margin);
-void mem_buf_free(struct mem_buf **buf);
-void mem_free_data(struct mem_buf *buf);
-BOOL mem_realloc_data(struct mem_buf *buf, size_t new_size);
-BOOL mem_grow_data(struct mem_buf **buf, BOOL io, int new_size, BOOL force_grow);
-uint32 mem_buf_len(struct mem_buf *buf);
-char *mem_data(struct mem_buf *buf, uint32 offset);
-
 /*The following definitions come from  lib/msrpc-agent.c  */
 
 void start_msrpc_agent(char *pipe_name);
@@ -2814,11 +2799,18 @@ BOOL net_io_r_sam_sync(char *desc, uint8 sess_key[16],
 
 void prs_debug(prs_struct *ps, int depth, char *desc, char *fn_name);
 void prs_debug_out(prs_struct *ps, char *msg, int level);
-void prs_init(prs_struct *ps, uint32 size,
-				uint8 align, uint32 margin,
-				BOOL io);
+void prs_init(prs_struct *ps, uint32 size, uint8 align,  BOOL io);
+void prs_create(prs_struct *ps, char *data, uint32 size, uint8 align, BOOL io);
 BOOL prs_copy(prs_struct *ps, const prs_struct *from);
-void prs_mem_free(prs_struct *ps);
+BOOL prs_alloc_data(prs_struct *buf, int size);
+BOOL prs_buf_copy(char *copy_into, const prs_struct *buf,
+				uint32 offset, uint32 len);
+void prs_struct_free(prs_struct **buf);
+void prs_free_data(prs_struct *buf);
+BOOL prs_realloc_data(prs_struct *buf, size_t new_size);
+BOOL prs_grow_data(prs_struct *buf, BOOL io, int new_size, BOOL force_grow);
+uint32 prs_buf_len(const prs_struct *buf);
+char *prs_data(const prs_struct *buf, uint32 offset);
 void prs_link(prs_struct *prev, prs_struct *ps, prs_struct *next);
 void prs_align(prs_struct *ps);
 BOOL prs_grow(prs_struct *ps, uint32 new_size);

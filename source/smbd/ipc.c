@@ -140,7 +140,7 @@ static BOOL prefix_ok(char *str,char *prefix)
 
  ******************************************************************/
 static void copy_trans_params_and_data(char *outbuf, int align,
-				struct mem_buf *rparam, struct mem_buf *rdata,
+				prs_struct *rparam, prs_struct *rdata,
 				int param_offset, int data_offset,
 				int param_len, int data_len)
 {
@@ -150,17 +150,17 @@ static void copy_trans_params_and_data(char *outbuf, int align,
 			param_offset, param_offset + param_len,
 			data_offset , data_offset  + data_len));
 
-	if (param_len) mem_buf_copy(copy_into, rparam, param_offset, param_len);
+	if (param_len) prs_buf_copy(copy_into, rparam, param_offset, param_len);
 	copy_into += param_len + align;
-	if (data_len ) mem_buf_copy(copy_into, rdata , data_offset , data_len);
+	if (data_len ) prs_buf_copy(copy_into, rdata , data_offset , data_len);
 }
 
 /****************************************************************************
   send a trans reply
   ****************************************************************************/
 static void send_trans_reply(char *outbuf,
-				struct mem_buf *rdata,
-				struct mem_buf *rparam,
+				prs_struct *rdata,
+				prs_struct *rparam,
 				uint16 *setup, int lsetup, int max_data_ret)
 {
 	int i;
@@ -168,8 +168,8 @@ static void send_trans_reply(char *outbuf,
 	int tot_data=0,tot_param=0;
 	int align;
 
-	int ldata  = rdata  ? mem_buf_len(rdata ) : 0;
-	int lparam = rparam ? mem_buf_len(rparam) : 0;
+	int ldata  = rdata  ? prs_buf_len(rdata ) : 0;
+	int lparam = rparam ? prs_buf_len(rparam) : 0;
 
 	BOOL buffer_too_large = max_data_ret ? ldata > max_data_ret : False;
 
@@ -3123,12 +3123,12 @@ static BOOL api_WPrintPortEnum(connection_struct *conn,uint16 vuid, char *param,
 static void api_rpc_trans_reply(char *outbuf,
 				pipes_struct *p)
 {
-	send_trans_reply(outbuf, p->rsmb_pdu.data, NULL, NULL, 0, p->file_offset);
+	send_trans_reply(outbuf, &p->rsmb_pdu, NULL, NULL, 0, p->file_offset);
 
-	if (mem_buf_len(p->rsmb_pdu.data) <= p->file_offset)
+	if (prs_buf_len(&p->rsmb_pdu) <= p->file_offset)
 	{
 		/* all of data was sent: no need to wait for SMBreadX calls */
-		mem_free_data(p->rsmb_pdu.data);
+		prs_free_data(&p->rsmb_pdu);
 	}
 }
 
@@ -3183,13 +3183,12 @@ static BOOL api_SNPHS(char *outbuf, pipes_struct *p, char *param)
  ****************************************************************************/
 static BOOL api_no_reply(char *outbuf, int max_rdata_len)
 {
-	struct mem_buf rparam;
+	prs_struct rparam;
 
-	mem_init(&rparam, 0);
-	mem_alloc_data(&rparam, 4);
+	prs_init(&rparam, 4, 0, False);
 
-	rparam.offset.start = 0;
-	rparam.offset.end   = 4;
+	rparam.start = 0;
+	rparam.end   = 4;
 
 	/* unsupported */
 	SSVAL(rparam.data,0,NERR_notsupported);
@@ -3200,7 +3199,7 @@ static BOOL api_no_reply(char *outbuf, int max_rdata_len)
 	/* now send the reply */
 	send_trans_reply(outbuf, NULL, &rparam, NULL, 0, max_rdata_len);
 
-	mem_free_data(&rparam);
+	prs_free_data(&rparam);
 
 	return(-1);
 }
@@ -3373,8 +3372,8 @@ static int api_reply(connection_struct *conn,uint16 vuid,char *outbuf,char *data
 		     int tdscnt,int tpscnt,int mdrcnt,int mprcnt)
 {
   int api_command;
-  struct mem_buf rdata_buf;
-  struct mem_buf rparam_buf;
+  prs_struct rdata_buf;
+  prs_struct rparam_buf;
   char *rdata = NULL;
   char *rparam = NULL;
   int rdata_len = 0;
@@ -3425,14 +3424,14 @@ static int api_reply(connection_struct *conn,uint16 vuid,char *outbuf,char *data
 		    &rdata,&rparam,&rdata_len,&rparam_len);
 
       
-  mem_create(&rdata_buf , rdata , 0, rdata_len , 0, False);
-  mem_create(&rparam_buf, rparam, 0, rparam_len, 0, False);
+  prs_create(&rdata_buf , rdata , rdata_len , 0, False);
+  prs_create(&rparam_buf, rparam, rparam_len, 0, False);
 
   /* now send the reply */
   send_trans_reply(outbuf, &rdata_buf, &rparam_buf, NULL, 0, 0);
 
-  if (rdata ) free(rdata);
-  if (rparam) free(rparam);
+	prs_free_data(&rdata_buf);
+	prs_free_data(&rparam_buf);
   
   return(-1);
 }

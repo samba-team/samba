@@ -68,8 +68,8 @@ BOOL cli_net_logon_ctrl2(const char* srv_name, uint32 status_level)
 		return False;
 	}
 
-	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
-	prs_init(&rbuf, 0,    4, SAFETY_MARGIN, True );
+	prs_init(&buf , 1024, 4, False);
+	prs_init(&rbuf, 0,    4, True );
 
 	/* create and send a MSRPC command with api NET_LOGON_CTRL2 */
 
@@ -97,8 +97,8 @@ BOOL cli_net_logon_ctrl2(const char* srv_name, uint32 status_level)
 		}
 	}
 
-	prs_mem_free(&rbuf);
-	prs_mem_free(&buf );
+	prs_free_data(&rbuf);
+	prs_free_data(&buf );
 
 	cli_connection_unlink(con);
 	return ok;
@@ -137,8 +137,8 @@ uint32 cli_net_auth2(const char *srv_name,
 		return False;
 	}
 
-	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
-	prs_init(&rbuf, 0,    4, SAFETY_MARGIN, True );
+	prs_init(&buf , 1024, 4, False);
+	prs_init(&rbuf, 0,    4, True );
 
 	/* create and send a MSRPC command with api NET_AUTH2 */
 
@@ -216,8 +216,8 @@ with bad credential (bad trust account password ?).\n", srv_name));
 
 	DEBUG(5,("cli_net_auth2 status: %x\n", status));
 
-	prs_mem_free(&rbuf);
-	prs_mem_free(&buf );
+	prs_free_data(&rbuf);
+	prs_free_data(&buf );
 
 	return status;
 }
@@ -245,8 +245,8 @@ uint32 cli_net_req_chal( const char *srv_name, const char* myhostname,
   if (srv_chal == NULL || clnt_chal == NULL)
     return 0xC0000000 | NT_STATUS_INVALID_PARAMETER;
 
-  prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
-  prs_init(&rbuf, 0,    4, SAFETY_MARGIN, True );
+  prs_init(&buf , 1024, 4, False);
+  prs_init(&rbuf, 0,    4, True );
 
   /* create and send a MSRPC command with api NET_REQCHAL */
 
@@ -286,8 +286,8 @@ uint32 cli_net_req_chal( const char *srv_name, const char* myhostname,
     status = 0xC0000000 | NT_STATUS_ACCESS_DENIED;
   }
 
-  prs_mem_free(&rbuf);
-  prs_mem_free(&buf );
+  prs_free_data(&rbuf);
+  prs_free_data(&buf );
 
   return status;
 }
@@ -328,8 +328,8 @@ BOOL cli_net_srv_pwset(const char* srv_name,
 
   cli_con_gen_next_creds( con, &new_clnt_cred);
 
-  prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
-  prs_init(&rbuf, 0,    4, SAFETY_MARGIN, True );
+  prs_init(&buf , 1024, 4, False);
+  prs_init(&rbuf, 0,    4, True );
 
   /* create and send a MSRPC command with api NET_SRV_PWSET */
 
@@ -371,8 +371,8 @@ BOOL cli_net_srv_pwset(const char* srv_name,
     }
   }
 
-  prs_mem_free(&rbuf);
-  prs_mem_free(&buf );
+  prs_free_data(&rbuf);
+  prs_free_data(&buf );
 
   return ok;
 }
@@ -402,8 +402,8 @@ BOOL cli_net_sam_logon(const char* srv_name, const char* myhostname,
 
   cli_con_gen_next_creds( con, &new_clnt_cred);
 
-  prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
-  prs_init(&rbuf, 0,    4, SAFETY_MARGIN, True );
+  prs_init(&buf , 1024, 4, False);
+  prs_init(&rbuf, 0,    4, True );
 
   /* create and send a MSRPC command with api NET_SAMLOGON */
 
@@ -460,8 +460,8 @@ BOOL cli_net_sam_logon(const char* srv_name, const char* myhostname,
     }
   }
 
-  prs_mem_free(&rbuf);
-  prs_mem_free(&buf );
+  prs_free_data(&rbuf);
+  prs_free_data(&buf );
 
   return ok;
 }
@@ -494,8 +494,8 @@ BOOL cli_net_sam_logoff(const char* srv_name, const char* myhostname,
 
   cli_con_gen_next_creds( con, &new_clnt_cred);
 
-  prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
-  prs_init(&rbuf, 0,    4, SAFETY_MARGIN, True );
+  prs_init(&buf , 1024, 4, False);
+  prs_init(&rbuf, 0,    4, True );
 
   /* create and send a MSRPC command with api NET_SAMLOGOFF */
 
@@ -540,8 +540,8 @@ BOOL cli_net_sam_logoff(const char* srv_name, const char* myhostname,
     }
   }
 
-  prs_mem_free(&rbuf);
-  prs_mem_free(&buf );
+  prs_free_data(&rbuf);
+  prs_free_data(&buf );
 
   return ok;
 }
@@ -576,8 +576,8 @@ BOOL cli_net_sam_sync( const char* srv_name, const char* myhostname,
 
 	cli_con_gen_next_creds(con, &new_clnt_cred);
 	
-	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
-	prs_init(&rbuf, 0,    4, SAFETY_MARGIN, True );
+	prs_init(&buf , 1024, 4, False);
+	prs_init(&rbuf, 0,    4, True );
 	
 	/* create and send a MSRPC command with api NET_SAM_SYNC */
 	
@@ -624,8 +624,8 @@ credential (bad trust account password ?).\n", srv_name));
 		}
 	}
 	
-	prs_mem_free(&rbuf);
-	prs_mem_free(&buf );
+	prs_free_data(&rbuf);
+	prs_free_data(&buf );
 	
 	return ok;
 }

@@ -195,8 +195,8 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 	
 	fstrcpy(p->name, pipe_name);
 
-	prs_init(&p->smb_pdu, 0, 4, 0, True);
-	prs_init(&p->rsmb_pdu, 0, 4, 0, False);
+	prs_init(&p->smb_pdu, 0, 4, True);
+	prs_init(&p->rsmb_pdu, 0, 4, False);
 
 	DEBUG(4,("Opened pipe %s with handle %x (pipes_open=%d)\n",
 		 pipe_name, i, pipes_open));
@@ -262,8 +262,7 @@ int read_pipe(pipes_struct *p, char *data, uint32 pos, int n)
 	}
 
 
-	if (p->rsmb_pdu.data == NULL || p->rsmb_pdu.data->data == NULL ||
-	    p->rsmb_pdu.data->data_used == 0)
+	if (p->rsmb_pdu.data == NULL ||  p->rsmb_pdu.data_size == 0)
 	{
 		return 0;
 	}
@@ -306,7 +305,7 @@ int read_pipe(pipes_struct *p, char *data, uint32 pos, int n)
 		}			
 	}
 	
-	pdu_len = mem_buf_len(p->rsmb_pdu.data);
+	pdu_len = prs_buf_len(&p->rsmb_pdu);
 	num = pdu_len - this_pdu_data_pos;
 	
 	DEBUG(6,("read_pipe: pdu_len: %d num: %d n: %d\n", pdu_len, num, n));
@@ -323,7 +322,7 @@ int read_pipe(pipes_struct *p, char *data, uint32 pos, int n)
 		DEBUG(5,("read_pipe: warning - data read only part of a header\n"));
 	}
 
-	mem_buf_copy(data, p->rsmb_pdu.data, pdu_data_sent, num);
+	prs_buf_copy(data, &p->rsmb_pdu, pdu_data_sent, num);
 	
 	p->file_offset  += num;
 	pdu_data_sent  += num;
@@ -398,8 +397,8 @@ BOOL close_rpc_pipe_hnd(pipes_struct *p, connection_struct *conn)
 		return False;
 	}
 
-	mem_buf_free(&(p->smb_pdu .data));
-	mem_buf_free(&(p->rsmb_pdu.data));
+	prs_free_data(&p->smb_pdu );
+	prs_free_data(&p->rsmb_pdu);
 
 	bitmap_clear(bmap, p->pnum - pipe_handle_offset);
 
@@ -427,7 +426,7 @@ BOOL close_rpc_pipe_hnd(pipes_struct *p, connection_struct *conn)
 	{
 		DEBUG(4,("closed msrpc local: OK\n"));
 
-		mem_free_data(p->l->rdata  .data);
+		prs_free_data(&p->l->rdata);
 		rpcsrv_free_temp(p->l);
 
 		free(p->l);

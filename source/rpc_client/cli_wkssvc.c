@@ -50,8 +50,8 @@ BOOL wks_query_info( char *srv_name, uint32 switch_value,
 		return False;
 	}
 
-	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
-	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
+	prs_init(&buf , 1024, 4, False);
+	prs_init(&rbuf, 0   , 4, True );
 
 	/* create and send a MSRPC command with api WKS_QUERY_INFO */
 
@@ -87,8 +87,8 @@ BOOL wks_query_info( char *srv_name, uint32 switch_value,
 		}
 	}
 
-	prs_mem_free(&rbuf);
-	prs_mem_free(&buf );
+	prs_free_data(&rbuf);
+	prs_free_data(&buf );
 
 	cli_connection_unlink(con);
 

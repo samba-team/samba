@@ -151,6 +151,7 @@ struct sid_map* add_sidmap_to_array(uint32 *len, struct sid_map ***array,
 ****************************************************************************/
 void get_sam_domain_name(void)
 {
+
 	switch (lp_server_role())
 	{
 		case ROLE_DOMAIN_PDC:
@@ -158,21 +159,25 @@ void get_sam_domain_name(void)
 		{
 			/* we are PDC (or BDC) for a Domain */
 			fstrcpy(global_sam_name, lp_workgroup());
+			DEBUG(5,("get_sam_domain_name: PDC/BDC "));
 			break;
 		}
 		case ROLE_DOMAIN_MEMBER:
 		{
 			/* we are a "PDC", but FOR LOCAL SAM DATABASE ONLY */
 			fstrcpy(global_sam_name, global_myname);
+			DEBUG(5,("get_sam_domain_name: Dom-Mem"));
 			break;
 		}
 		default:
 		{
 			/* no domain role, probably due to "security = share" */
 			memset(global_sam_name, 0, sizeof(global_sam_name));
+			DEBUG(5,("get_sam_domain_name: no role"));
 			break;
 		}
 	}
+	DEBUG(5,("%s\n", global_sam_name));
 }
 
 /****************************************************************************

@@ -127,8 +127,8 @@ BOOL reg_open_hkcr( struct cli_connection *con,
 
 	if (hnd == NULL) return False;
 
-	prs_init(&buf , 0, 4, SAFETY_MARGIN, False);
-	prs_init(&rbuf, 0, 4, SAFETY_MARGIN, True );
+	prs_init(&buf , 0, 4, False);
+	prs_init(&rbuf, 0, 4, True );
 
 	/* create and send a MSRPC command with api REG_OPEN_HKCR */
 
@@ -165,8 +165,8 @@ BOOL reg_open_hkcr( struct cli_connection *con,
 		}
 	}
 
-	prs_mem_free(&rbuf);
-	prs_mem_free(&buf );
+	prs_free_data(&rbuf);
+	prs_free_data(&buf );
 
 	return valid_pol;
 }
@@ -185,8 +185,8 @@ BOOL reg_open_hklm( struct cli_connection *con,
 
 	if (hnd == NULL) return False;
 
-	prs_init(&buf , 0, 4, SAFETY_MARGIN, False);
-	prs_init(&rbuf, 0, 4, SAFETY_MARGIN, True );
+	prs_init(&buf , 0, 4, False);
+	prs_init(&rbuf, 0, 4, True );
 
 	/* create and send a MSRPC command with api REG_OPEN_HKLM */
 
@@ -223,8 +223,8 @@ BOOL reg_open_hklm( struct cli_connection *con,
 		}
 	}
 
-	prs_mem_free(&rbuf);
-	prs_mem_free(&buf );
+	prs_free_data(&rbuf);
+	prs_free_data(&buf );
 
 	return valid_pol;
 }
@@ -243,8 +243,8 @@ BOOL reg_open_hku( struct cli_connection *con,
 
 	if (hnd == NULL) return False;
 
-	prs_init(&buf , 0, 4, SAFETY_MARGIN, False);
-	prs_init(&rbuf, 0, 4, SAFETY_MARGIN, True );
+	prs_init(&buf , 0, 4, False);
+	prs_init(&rbuf, 0, 4, True );
 
 	/* create and send a MSRPC command with api REG_OPEN_HKU */
 
@@ -281,8 +281,8 @@ BOOL reg_open_hku( struct cli_connection *con,
 		}
 	}
 
-	prs_mem_free(&rbuf);
-	prs_mem_free(&buf );
+	prs_free_data(&rbuf);
+	prs_free_data(&buf );
 
 	return valid_pol;
 }
@@ -301,8 +301,8 @@ BOOL reg_flush_key( POLICY_HND *hnd)
 
 	if (hnd == NULL) return False;
 
-	prs_init(&buf , 0, 4, SAFETY_MARGIN, False);
-	prs_init(&rbuf, 0, 4, SAFETY_MARGIN, True );
+	prs_init(&buf , 0, 4, False);
+	prs_init(&rbuf, 0, 4, True );
 
 	/* create and send a MSRPC command with api REG_FLUSH_KEY */
 
@@ -337,8 +337,8 @@ BOOL reg_flush_key( POLICY_HND *hnd)
 		}
 	}
 
-	prs_mem_free(&rbuf);
-	prs_mem_free(&buf );
+	prs_free_data(&rbuf);
+	prs_free_data(&buf );
 
 	return valid_query;
 }
@@ -360,8 +360,8 @@ BOOL reg_query_key( POLICY_HND *hnd,
 
 	if (hnd == NULL) return False;
 
-	prs_init(&buf , 0, 4, SAFETY_MARGIN, False);
-	prs_init(&rbuf, 0, 4, SAFETY_MARGIN, True );
+	prs_init(&buf , 0, 4, False);
+	prs_init(&rbuf, 0, 4, True );
 
 	/* create and send a MSRPC command with api REG_QUERY_KEY */
 
@@ -407,8 +407,8 @@ BOOL reg_query_key( POLICY_HND *hnd,
 		}
 	}
 
-	prs_mem_free(&rbuf);
-	prs_mem_free(&buf );
+	prs_free_data(&rbuf);
+	prs_free_data(&buf );
 
 	return valid_query;
 }
@@ -425,8 +425,8 @@ BOOL reg_unknown_1a( POLICY_HND *hnd, uint32 *unk)
 
 	if (hnd == NULL) return False;
 
-	prs_init(&buf , 0, 4, SAFETY_MARGIN, False);
-	prs_init(&rbuf, 0, 4, SAFETY_MARGIN, True );
+	prs_init(&buf , 0, 4, False);
+	prs_init(&rbuf, 0, 4, True );
 
 	/* create and send a MSRPC command with api REG_UNKNOWN_1A */
 
@@ -462,8 +462,8 @@ BOOL reg_unknown_1a( POLICY_HND *hnd, uint32 *unk)
 		}
 	}
 
-	prs_mem_free(&rbuf);
-	prs_mem_free(&buf );
+	prs_free_data(&rbuf);
+	prs_free_data(&buf );
 
 	return valid_query;
 }
@@ -482,8 +482,8 @@ BOOL reg_query_info( POLICY_HND *hnd,
 
 	if (hnd == NULL) return False;
 
-	prs_init(&buf , 0, 4, SAFETY_MARGIN, False);
-	prs_init(&rbuf, 0, 4, SAFETY_MARGIN, True );
+	prs_init(&buf , 0, 4, False);
+	prs_init(&rbuf, 0, 4, True );
 
 	/* create and send a MSRPC command with api REG_INFO */
 
@@ -521,8 +521,8 @@ BOOL reg_query_info( POLICY_HND *hnd,
 		}
 	}
 
-	prs_mem_free(&rbuf);
-	prs_mem_free(&buf );
+	prs_free_data(&rbuf);
+	prs_free_data(&buf );
 
 	return valid_query;
 }
@@ -541,8 +541,8 @@ BOOL reg_set_key_sec( POLICY_HND *hnd,
 
 	if (hnd == NULL) return False;
 
-	prs_init(&buf , 0, 4, SAFETY_MARGIN, False);
-	prs_init(&rbuf, 0, 4, SAFETY_MARGIN, True );
+	prs_init(&buf , 0, 4, False);
+	prs_init(&rbuf, 0, 4, True );
 
 	/* create and send a MSRPC command with api REG_SET_KEY_SEC */
 
@@ -570,8 +570,8 @@ BOOL reg_set_key_sec( POLICY_HND *hnd,
 		}
 	}
 
-	prs_mem_free(&rbuf);
-	prs_mem_free(&buf );
+	prs_free_data(&rbuf);
+	prs_free_data(&buf );
 
 	return valid_query;
 }
@@ -591,8 +591,8 @@ BOOL reg_get_key_sec( POLICY_HND *hnd,
 
 	if (hnd == NULL) return False;
 
-	prs_init(&buf , 0, 4, SAFETY_MARGIN, False);
-	prs_init(&rbuf, 0, 4, SAFETY_MARGIN, True );
+	prs_init(&buf , 0, 4, False);
+	prs_init(&rbuf, 0, 4, True );
 
 	/* create and send a MSRPC command with api REG_GET_KEY_SEC */
 
@@ -641,8 +641,8 @@ BOOL reg_get_key_sec( POLICY_HND *hnd,
 		}
 	}
 
-	prs_mem_free(&rbuf);
-	prs_mem_free(&buf );
+	prs_free_data(&rbuf);
+	prs_free_data(&buf );
 
 	return valid_query;
 }
@@ -659,8 +659,8 @@ BOOL reg_delete_val( POLICY_HND *hnd, char *val_name)
 
 	if (hnd == NULL) return False;
 
-	prs_init(&buf , 0, 4, SAFETY_MARGIN, False);
-	prs_init(&rbuf, 0, 4, SAFETY_MARGIN, True );
+	prs_init(&buf , 0, 4, False);
+	prs_init(&rbuf, 0, 4, True );
 
 	/* create and send a MSRPC command with api REG_DELETE_VALUE */
 
@@ -695,8 +695,8 @@ BOOL reg_delete_val( POLICY_HND *hnd, char *val_name)
 		}
 	}
 
-	prs_mem_free(&rbuf);
-	prs_mem_free(&buf );
+	prs_free_data(&rbuf);
+	prs_free_data(&buf );
 
 	return valid_delete;
 }
@@ -713,8 +713,8 @@ BOOL reg_delete_key( POLICY_HND *hnd, char *key_name)
 
 	if (hnd == NULL) return False;
 
-	prs_init(&buf , 0, 4, SAFETY_MARGIN, False);
-	prs_init(&rbuf, 0, 4, SAFETY_MARGIN, True );
+	prs_init(&buf , 0, 4, False);
+	prs_init(&rbuf, 0, 4, True );
 
 	/* create and send a MSRPC command with api REG_DELETE_KEY */
 
@@ -749,8 +749,8 @@ BOOL reg_delete_key( POLICY_HND *hnd, char *key_name)
 		}
 	}
 
-	prs_mem_free(&rbuf);
-	prs_mem_free(&buf );
+	prs_free_data(&rbuf);
+	prs_free_data(&buf );
 
 	return valid_delete;
 }
@@ -777,8 +777,8 @@ BOOL reg_create_key( POLICY_HND *hnd,
 
 	if (hnd == NULL) return False;
 
-	prs_init(&buf , 0, 4, SAFETY_MARGIN, False);
-	prs_init(&rbuf, 0, 4, SAFETY_MARGIN, True );
+	prs_init(&buf , 0, 4, False);
+	prs_init(&rbuf, 0, 4, True );
 
 	/* create and send a MSRPC command with api REG_CREATE_KEY */
 
@@ -823,8 +823,8 @@ BOOL reg_create_key( POLICY_HND *hnd,
 
 	free_sec_desc(&sec);
 
-	prs_mem_free(&rbuf);
-	prs_mem_free(&buf );
+	prs_free_data(&rbuf);
+	prs_free_data(&buf );
 
 	return valid_create;
 }
@@ -844,8 +844,8 @@ BOOL reg_enum_key( POLICY_HND *hnd,
 
 	if (hnd == NULL) return False;
 
-	prs_init(&buf , 0, 4, SAFETY_MARGIN, False);
-	prs_init(&rbuf, 0, 4, SAFETY_MARGIN, True );
+	prs_init(&buf , 0, 4, False);
+	prs_init(&rbuf, 0, 4, True );
 
 	/* create and send a MSRPC command with api REG_ENUM_KEY */
 
@@ -885,8 +885,8 @@ BOOL reg_enum_key( POLICY_HND *hnd,
 		}
 	}
 
-	prs_mem_free(&rbuf);
-	prs_mem_free(&buf );
+	prs_free_data(&rbuf);
+	prs_free_data(&buf );
 
 	return valid_query;
 }
@@ -904,8 +904,8 @@ BOOL reg_create_val( POLICY_HND *hnd,
 
 	if (hnd == NULL) return False;
 
-	prs_init(&buf , 0, 4, SAFETY_MARGIN, False);
-	prs_init(&rbuf, 0, 4, SAFETY_MARGIN, True );
+	prs_init(&buf , 0, 4, False);
+	prs_init(&rbuf, 0, 4, True );
 
 	/* create and send a MSRPC command with api REG_CREATE_VALUE */
 
@@ -940,8 +940,8 @@ BOOL reg_create_val( POLICY_HND *hnd,
 		}
 	}
 
-	prs_mem_free(&rbuf);
-	prs_mem_free(&buf );
+	prs_free_data(&rbuf);
+	prs_free_data(&buf );
 
 	return valid_create;
 }
@@ -961,8 +961,8 @@ BOOL reg_enum_val( POLICY_HND *hnd,
 
 	if (hnd == NULL) return False;
 
-	prs_init(&buf , 0, 4, SAFETY_MARGIN, False);
-	prs_init(&rbuf, 0, 4, SAFETY_MARGIN, True );
+	prs_init(&buf , 0, 4, False);
+	prs_init(&rbuf, 0, 4, True );
 
 	/* create and send a MSRPC command with api REG_ENUM_VALUE */
 
@@ -1000,8 +1000,8 @@ BOOL reg_enum_val( POLICY_HND *hnd,
 		}
 	}
 
-	prs_mem_free(&rbuf);
-	prs_mem_free(&buf );
+	prs_free_data(&rbuf);
+	prs_free_data(&buf );
 
 	return valid_query;
 }
@@ -1020,8 +1020,8 @@ BOOL reg_open_entry( POLICY_HND *hnd,
 
 	if (hnd == NULL) return False;
 
-	prs_init(&buf , 0, 4, SAFETY_MARGIN, False);
-	prs_init(&rbuf, 0, 4, SAFETY_MARGIN, True );
+	prs_init(&buf , 0, 4, False);
+	prs_init(&rbuf, 0, 4, True );
 
 	/* create and send a MSRPC command with api REG_OPEN_ENTRY */
 
@@ -1064,8 +1064,8 @@ BOOL reg_open_entry( POLICY_HND *hnd,
 		}
 	}
 
-	prs_mem_free(&rbuf);
-	prs_mem_free(&buf );
+	prs_free_data(&rbuf);
+	prs_free_data(&buf );
 
 	return valid_pol;
 }
@@ -1084,8 +1084,8 @@ BOOL reg_close( POLICY_HND *hnd)
 
 	/* create and send a MSRPC command with api REG_CLOSE */
 
-	prs_init(&buf , 0, 4, SAFETY_MARGIN, False);
-	prs_init(&rbuf, 0, 4, SAFETY_MARGIN, True );
+	prs_init(&buf , 0, 4, False);
+	prs_init(&rbuf, 0, 4, True );
 
 	DEBUG(4,("REG Close\n"));
 
@@ -1134,8 +1134,8 @@ BOOL reg_close( POLICY_HND *hnd)
 		}
 	}
 
-	prs_mem_free(&rbuf);
-	prs_mem_free(&buf );
+	prs_free_data(&rbuf);
+	prs_free_data(&buf );
 
 	close_policy_hnd(hnd);
 
@@ -1162,8 +1162,8 @@ BOOL reg_shutdown(const char *srv_name,
 
 	if (msg == NULL) return False;
 
-	prs_init(&buf , 0, 4, SAFETY_MARGIN, False);
-	prs_init(&rbuf, 0, 4, SAFETY_MARGIN, True );
+	prs_init(&buf , 0, 4, False);
+	prs_init(&rbuf, 0, 4, True );
 
 	/* create and send a MSRPC command with api REG_SHUTDOWN */
 
@@ -1198,8 +1198,8 @@ BOOL reg_shutdown(const char *srv_name,
 		}
 	}
 
-	prs_mem_free(&rbuf);
-	prs_mem_free(&buf );
+	prs_free_data(&rbuf);
+	prs_free_data(&buf );
 
 	cli_connection_unlink(con);
 

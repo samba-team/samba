@@ -60,13 +60,13 @@ static BOOL rpc_read(struct cli_state *cli, uint16 fnum,
 	DEBUG(5,("rpc_read: data_to_read: %d data offset: %d file offset: %d\n",
 	data_to_read, rdata_offset, file_offset));
 
-	if (new_data_size > rdata->data->data_size)
+	if (new_data_size > rdata->data_size)
 	{
-		mem_grow_data(&rdata->data, True, new_data_size, True);
-		DEBUG(5,("rpc_read: grow buffer to %d\n", rdata->data->data_used));
+		prs_grow_data(rdata, True, new_data_size, True);
+		DEBUG(5,("rpc_read: grow buffer to %d\n", rdata->data_size));
 	}
 
-	data = rdata->data->data + rdata_offset;
+	data = rdata->data + rdata_offset;
 
 	do /* read data using SMBreadX */
 	{
@@ -94,10 +94,10 @@ static BOOL rpc_read(struct cli_state *cli, uint16 fnum,
 
 	} while (!one_only && num_read > 0 && data_to_read > 0);
 
-	rdata->data->offset.end = new_data_size;
+	rdata->end = new_data_size;
 
 	DEBUG(5,("rpc_read: offset end: 0x%x.  data left to read:0x%x\n",
-	          rdata->data->offset.end, data_to_read));
+	          rdata->end, data_to_read));
 
 	return True;
 }
@@ -108,7 +108,7 @@ static BOOL rpc_read(struct cli_state *cli, uint16 fnum,
 static BOOL rpc_check_hdr(prs_struct *rdata, RPC_HDR *rhdr, 
                           BOOL *first, BOOL *last, int *len)
 {
-	DEBUG(5,("rpc_check_hdr: rdata->data->data_used: %d\n", rdata->data->data_used));
+	DEBUG(5,("rpc_check_hdr: rdata->data_size: %d\n", rdata->data_size));
 
 	smb_io_rpc_hdr   ("rpc_hdr   ", rhdr   , rdata, 0);
 
@@ -118,12 +118,12 @@ static BOOL rpc_check_hdr(prs_struct *rdata, RPC_HDR *rhdr,
 		return False;
 	}
 
-	DEBUG(5,("rpc_check_hdr: (after smb_io_rpc_hdr call) rdata->data->data_used: %d\n",
-	          rdata->data->data_used));
+	DEBUG(5,("rpc_check_hdr: (after smb_io_rpc_hdr call) rdata->data_size: %d\n",
+	          rdata->data_size));
 
 	(*first   ) = IS_BITS_SET_ALL(rhdr->flags, RPC_FLG_FIRST);
 	(*last    ) = IS_BITS_SET_ALL(rhdr->flags, RPC_FLG_LAST );
-	(*len     ) = rhdr->frag_len - rdata->data->data_used;
+	(*len     ) = rhdr->frag_len - rdata->data_size;
 
 	return rhdr->pkt_type != RPC_FAULT;
 }
@@ -165,7 +165,7 @@ static BOOL rpc_auth_pipe(struct ntdom_info *nt, prs_struct *rdata,
 	RPC_AUTH_NTLMSSP_CHK chk;
 	uint32 crc32;
 	int data_len = len - 0x18 - auth_len - 8;
-	char *reply_data = mem_data(rdata->data, 0x18);
+	char *reply_data = prs_data(rdata, 0x18);
 
 	BOOL auth_verify = IS_BITS_SET_ALL(nt->ntlmssp_srv_flgs, NTLMSSP_NEGOTIATE_SIGN);
 	BOOL auth_seal   = IS_BITS_SET_ALL(nt->ntlmssp_srv_flgs, NTLMSSP_NEGOTIATE_SEAL);
@@ -187,11 +187,11 @@ static BOOL rpc_auth_pipe(struct ntdom_info *nt, prs_struct *rdata,
 	{
 		RPC_HDR_AUTH         rhdr_auth; 
 		prs_struct auth_req;
-		char *data = mem_data(rdata->data, len - auth_len - 8);
-		prs_init(&auth_req , 0x08, 4, 0, True);
-		memcpy(auth_req.data->data, data, 8);
+		char *data = prs_data(rdata, len - auth_len - 8);
+		prs_init(&auth_req , 0x08, 4, True);
+		memcpy(auth_req.data, data, 8);
 		smb_io_rpc_hdr_auth("hdr_auth", &rhdr_auth, &auth_req, 0);
-		prs_mem_free(&auth_req);
+		prs_free_data(&auth_req);
 
 		if (!rpc_hdr_auth_chk(&rhdr_auth))
 		{
@@ -202,17 +202,17 @@ static BOOL rpc_auth_pipe(struct ntdom_info *nt, prs_struct *rdata,
 	if (auth_verify)
 	{
 		prs_struct auth_verf;
-		char *data = mem_data(rdata->data, len - auth_len);
+		char *data = prs_data(rdata, len - auth_len);
 		if (data == NULL) return False;
 
 		DEBUG(10,("rpc_auth_pipe: verify\n"));
 		dump_data(100, data, auth_len);
 		NTLMSSPcalc_ap(nt, (uchar*)(data+4), auth_len - 4);
-		prs_init(&auth_verf, 0x08, 4, 0, True);
-		memcpy(auth_verf.data->data, data, 16);
+		prs_init(&auth_verf, 0x08, 4, True);
+		memcpy(auth_verf.data, data, 16);
 		smb_io_rpc_auth_ntlmssp_chk("auth_sign", &chk, &auth_verf, 0);
 		dump_data(100, data, auth_len);
-		prs_mem_free(&auth_verf);
+		prs_free_data(&auth_verf);
 	}
 
 	if (auth_verify)
@@ -271,8 +271,8 @@ static BOOL create_rpc_request(prs_struct *rhdr, uint8 op_num, uint8 flags,
 
 	if (rhdr->data == NULL || rhdr->offset != 0x18) return False;
 
-	rhdr->data->offset.start = 0;
-	rhdr->data->offset.end   = rhdr->offset;
+	rhdr->start = 0;
+	rhdr->end   = rhdr->offset;
 
 	return True;
 }
@@ -295,7 +295,7 @@ static BOOL create_request_pdu(struct cli_connection *con,
 	BOOL auth_verify;
 	BOOL auth_seal;
 	uint32 crc32 = 0;
-	char *d = mem_data(data->data, data_start);
+	char *d = prs_data(data, data_start);
 	struct ntdom_info *nt = cli_conn_get_ntinfo(con);
 	uint8 flags = 0;
 
@@ -324,14 +324,14 @@ static BOOL create_request_pdu(struct cli_connection *con,
 	/* happen to know that NTLMSSP authentication verifier is 16 bytes */
 	data_len               = data_len + auth_len + (auth_verify ? 8 : 0) + 0x18;
 
-	prs_init(&data_t   , 0       , 4, 0, False);
-	prs_init(&hdr      , data_len, 4, 0, False);
-	prs_init(&hdr_auth , 8       , 4, 0, False);
-	prs_init(&auth_verf, auth_len, 4, 0, False);
+	prs_init(&data_t   , 0       , 4, False);
+	prs_init(&hdr      , data_len, 4, False);
+	prs_init(&hdr_auth , 8       , 4, False);
+	prs_init(&auth_verf, auth_len, 4, False);
 
 	prs_append_data(&data_t, d, data_len);
-	data_t.data->offset.end = data_t.data->data_used;
-	data_t.offset = data_t.data->data_used;
+	data_t.end = data_t.data_size;
+	data_t.offset = data_t.data_size;
 
 	create_rpc_request(&hdr, op_num, flags, data_len, auth_len);
 
@@ -355,7 +355,7 @@ static BOOL create_request_pdu(struct cli_connection *con,
 
 		make_rpc_auth_ntlmssp_chk(&chk, NTLMSSP_SIGN_VERSION, crc32, nt->ntlmssp_seq_num++);
 		smb_io_rpc_auth_ntlmssp_chk("auth_sign", &chk, &auth_verf, 0);
-		NTLMSSPcalc_ap(nt, (uchar*)mem_data(auth_verf.data, 4), 12);
+		NTLMSSPcalc_ap(nt, (uchar*)prs_data(&auth_verf, 4), 12);
 	}
 
 	if (auth_seal || auth_verify)
@@ -372,26 +372,26 @@ static BOOL create_request_pdu(struct cli_connection *con,
 	}
 
 	DEBUG(100,("data_len: 0x%x data_calc_len: 0x%x\n",
-		data_len, mem_buf_len(data_t.data)));
+		data_len, prs_buf_len(&data_t)));
 
-	if (data_len != mem_buf_len(data_t.data))
+	if (data_len != prs_buf_len(&data_t))
 	{
-		prs_mem_free(&hdr_auth );
-		prs_mem_free(&auth_verf);
-		prs_mem_free(&hdr      );
-		prs_mem_free(&data_t   );
+		prs_free_data(&hdr_auth );
+		prs_free_data(&auth_verf);
+		prs_free_data(&hdr      );
+		prs_free_data(&data_t   );
 	
 		return False;
 	}
 
 	/* this is all a hack */
-	prs_init(dataa, data_len, 4, 0, False);
-	mem_buf_copy(dataa->data->data, hdr.data, 0, data_len);
+	prs_init(dataa, data_len, 4, False);
+	prs_buf_copy(dataa->data, &hdr, 0, data_len);
 
-	prs_mem_free(&hdr_auth );
-	prs_mem_free(&auth_verf);
-	prs_mem_free(&hdr      );
-	prs_mem_free(&data_t   );
+	prs_free_data(&hdr_auth );
+	prs_free_data(&auth_verf);
+	prs_free_data(&hdr      );
+	prs_free_data(&data_t   );
 
 	return True;
 }
@@ -418,16 +418,15 @@ BOOL rpc_api_pipe_bind(struct cli_connection *con, prs_struct *data, prs_struct 
 	prs_struct rpdu;
 	struct ntdom_info *nt = cli_conn_get_ntinfo(con);
 
-	prs_init(&rpdu, 0, 4, 0, True);
+	prs_init(&rpdu, 0, 4, True);
 
 	rpc_api_send_rcv_pdu(con, data, &rpdu);
 
 	/**** parse the header: check it's a response record */
 
-	rpdu.data->offset.start = 0;
-	rpdu.data->offset.end   = rpdu.data->data_used;
+	rpdu.start = 0;
+	rpdu.end   = rpdu.data_size;
 	rpdu.offset = 0;
-	rpdu.data->margin = 0;
 
 	if (!rpc_check_hdr(&rpdu, &rhdr, &first, &last, &len))
 	{
@@ -451,10 +450,10 @@ BOOL rpc_api_pipe_bind(struct cli_connection *con, prs_struct *data, prs_struct 
 	}
 
 	{
-		char *d = mem_data(rpdu.data, rpdu.offset);
+		char *d = prs_data(&rpdu, rpdu.offset);
 		int l = rhdr.frag_len - rpdu.offset;
 		prs_append_data(rdata, d, l);
-		prs_mem_free(&rpdu);
+		prs_free_data(&rpdu);
 	}
 
 	/* only one rpc fragment, and it has been read */
@@ -492,7 +491,7 @@ BOOL rpc_api_pipe_req(struct cli_connection *con, uint8 opnum,
 	int data_start = 0;
 	int data_end = 0;
 
-	prs_init(&rpdu, 0, 4, 0, True);
+	prs_init(&rpdu, 0, 4, True);
 
 	do
 	{
@@ -511,25 +510,24 @@ BOOL rpc_api_pipe_req(struct cli_connection *con, uint8 opnum,
 
 		if (!rpc_api_send_rcv_pdu(con, &data_t, &rpdu))
 		{
-			prs_mem_free(&data_t);
+			prs_free_data(&data_t);
 			return False;
 		}
-		prs_mem_free(&data_t);
+		prs_free_data(&data_t);
 
 		if (data_end != data->offset)
 		{
-			prs_mem_free(&rpdu);
-			prs_init(&rpdu, 0, 4, 0, True);
+			prs_free_data(&rpdu);
+			prs_init(&rpdu, 0, 4, True);
 		}
 
 	} while (data_end != data->offset);
 
 	/**** parse the header: check it's a response record */
 
-	rpdu.data->offset.start = 0;
-	rpdu.data->offset.end   = rpdu.data->data_used;
+	rpdu.start = 0;
+	rpdu.end   = rpdu.data_size;
 	rpdu.offset = 0;
-	rpdu.data->margin = 0;
 
 	if (!rpc_check_hdr(&rpdu, &rhdr, &first, &last, &len))
 	{
@@ -558,10 +556,10 @@ BOOL rpc_api_pipe_req(struct cli_connection *con, uint8 opnum,
 	}
 
 	{
-		char *d = mem_data(rpdu.data, rpdu.offset);
+		char *d = prs_data(&rpdu, rpdu.offset);
 		int l = rhdr.frag_len - rpdu.offset;
 		prs_append_data(rdata, d, l);
-		prs_mem_free(&rpdu);
+		prs_free_data(&rpdu);
 	}
 
 	/* only one rpc fragment, and it has been read */
@@ -581,21 +579,20 @@ BOOL rpc_api_pipe_req(struct cli_connection *con, uint8 opnum,
 
 		DEBUG(10,("rpc_api_pipe: another fragment expected\n"));
 
-		prs_init(&rpdu, 0x18, 4, 0, True);
+		prs_init(&rpdu, 0x18, 4, True);
 
 		rpc_api_rcv_pdu(con, &rpdu);
 
-		rpdu.data->offset.start = 0;
-		rpdu.data->offset.end   = rpdu.data->data_used;
+		rpdu.start = 0;
+		rpdu.end   = rpdu.data_size;
 		rpdu.offset = 0;
-		rpdu.data->margin = 0;
-		num_read = rpdu.data->data_used;
+		num_read = rpdu.data_size;
 
 		DEBUG(5,("cli_pipe: read header (size:%d)\n", num_read));
 
 		if (!rpc_check_hdr(&rpdu, &rhdr, &first, &last, &len))
 		{
-			prs_mem_free(&rpdu);
+			prs_free_data(&rpdu);
 			return False;
 		}
 
@@ -604,22 +601,22 @@ BOOL rpc_api_pipe_req(struct cli_connection *con, uint8 opnum,
 		if (first)
 		{
 			DEBUG(0,("cli_pipe: wierd rpc header received\n"));
-			prs_mem_free(&rpdu);
+			prs_free_data(&rpdu);
 			return False;
 		}
 
 		if (rhdr.auth_len != 0 &&
 		    !rpc_auth_pipe(nt, &rpdu, rhdr.frag_len, rhdr.auth_len))
 		{
-			prs_mem_free(&rpdu);
+			prs_free_data(&rpdu);
 			return False;
 		}
 
 		{
-			char *d = mem_data(rpdu.data, rpdu.offset);
+			char *d = prs_data(&rpdu, rpdu.offset);
 			int l = rhdr.frag_len - rpdu.offset;
 			prs_append_data(rdata, d, l);
-			prs_mem_free(&rpdu);
+			prs_free_data(&rpdu);
 		}
 	}
 
@@ -667,8 +664,8 @@ static BOOL cli_send_trans_data(struct cli_state *cli, uint16 fnum,
 	/*
 	 * Setup the pointers from the incoming.
 	 */
-	char *pdata = mem_data(data->data, data_offset);
-	int data_len = data ? (data->data->data_used - data_offset) : 0;
+	char *pdata = prs_data(data, data_offset);
+	int data_len = data ? (data->data_size - data_offset) : 0;
 	data_len = MIN(max_data_len, data_len);
 
 	/* create setup parameters. */
@@ -713,7 +710,7 @@ static BOOL cli_send_trans_data(struct cli_state *cli, uint16 fnum,
  send data on an rpc pipe, which *must* be in one fragment.
  receive response data from an rpc pipe, which may be large...
  ****************************************************************************/
- BOOL cli_send_and_rcv_pdu(struct cli_state *cli, uint16 fnum,
+BOOL cli_send_and_rcv_pdu(struct cli_state *cli, uint16 fnum,
 			prs_struct *data, prs_struct *rdata,
 			int max_send_pdu)
 {
@@ -724,35 +721,29 @@ static BOOL cli_send_trans_data(struct cli_state *cli, uint16 fnum,
 	BOOL first = True;
 	BOOL last  = True;
 	RPC_HDR    rhdr;
-	size_t data_left = data->data->data_used;
-	size_t data_len  = data->data->data_used;
+	size_t data_left = data->data_size;
+	size_t data_len  = data->data_size;
 	int max_data_len = data_len;
 	DEBUG(5,("cli_send_and_rcv_pdu: cmd:%x fnum:%x\n", cmd, fnum));
 
-	while (data_offset < data_len)
+	DEBUG(10,("cli_send_and_rcv_pdu: off: %d len: %d left: %d\n",
+		   data_offset, data_len, data_left));
+
+	if (!cli_send_trans_data(cli, fnum,
+		data, data_offset, max_data_len, rdata))
 	{
-		DEBUG(10,("cli_send_and_rcv_pdu: off: %d len: %d left: %d\n",
-			   data_offset, data_len, data_left));
-
-		if (!cli_send_trans_data(cli, fnum,
-			data, data_offset, max_data_len, rdata))
-		{
-			return False;
-		}
-		data_offset += max_data_len;
-		data_left   -= max_data_len;
+		return False;
 	}
+	data_offset += max_data_len;
+	data_left   -= max_data_len;
 
-	if (rdata->data->data == NULL) return False;
+	if (rdata->data == NULL) return False;
 
 	/**** parse the header: check it's a response record */
 
-	rdata->data->offset.start = 0;
-	rdata->data->offset.end   = rdata->data->data_used;
+	rdata->start = 0;
+	rdata->end   = rdata->data_size;
 	rdata->offset = 0;
-
-	/* cli_api_pipe does an ordinary Realloc - we have no margins now. */
-	rdata->data->margin = 0;
 
 	if (!rpc_check_hdr(rdata, &rhdr, &first, &last, &len))
 	{
@@ -776,13 +767,13 @@ static BOOL cli_send_trans_data(struct cli_state *cli, uint16 fnum,
 	}
 
 	DEBUG(5,("cli_pipe: len left: %d smbtrans read: %d\n",
-		  len, rdata->data->data_used));
+		  len, rdata->data_size));
 
 	/* check if data to be sent back was too large for one SMB. */
 	/* err status is only informational: the _real_ check is on the length */
 	if (len > 0) /* || err == (0x80000000 | STATUS_BUFFER_OVERFLOW)) */
 	{
-		if (!rpc_read(cli, fnum, rdata, len, rdata->data->data_used, False))
+		if (!rpc_read(cli, fnum, rdata, len, rdata->data_size, False))
 		{
 			return False;
 		}
@@ -803,7 +794,7 @@ static BOOL cli_send_trans_data(struct cli_state *cli, uint16 fnum,
  receive response data from an rpc pipe, which may be large...
  ****************************************************************************/
 
-BOOL cli_send_and_rcv_pdu(struct cli_state *cli, uint16 fnum,
+ BOOL cli_send_and_rcv_pdu(struct cli_state *cli, uint16 fnum,
 			prs_struct *data, prs_struct *rdata,
 			int max_send_pdu)
 {
@@ -817,8 +808,8 @@ BOOL cli_send_and_rcv_pdu(struct cli_state *cli, uint16 fnum,
 	int max_data_len = 2048;
 	int write_mode = 0x000c;
 	char *d = NULL;
-	size_t data_left = data->data->data_used;
-	size_t data_len  = data->data->data_used;
+	size_t data_left = data->data_size;
+	size_t data_len  = data->data_size;
 	DEBUG(5,("cli_send_and_rcv_pdu: cmd:%x fnum:%x\n", cmd, fnum));
 
 	while (data_offset < data_len)
@@ -860,12 +851,9 @@ BOOL cli_send_and_rcv_pdu(struct cli_state *cli, uint16 fnum,
 
 	/**** parse the header: check it's a response record */
 
-	rdata->data->offset.start = 0;
-	rdata->data->offset.end   = rdata->data->data_used;
+	rdata->start = 0;
+	rdata->end   = rdata->data_size;
 	rdata->offset = 0;
-
-	/* cli_api_pipe does an ordinary Realloc - we have no margins now. */
-	rdata->data->margin = 0;
 
 	if (!rpc_check_hdr(rdata, &rhdr, &first, &last, &len))
 	{
@@ -889,13 +877,13 @@ BOOL cli_send_and_rcv_pdu(struct cli_state *cli, uint16 fnum,
 	}
 
 	DEBUG(5,("cli_pipe: len left: %d smbtrans read: %d\n",
-		  len, rdata->data->data_used));
+		  len, rdata->data_size));
 
 	/* check if data to be sent back was too large for one SMB. */
 	/* err status is only informational: the _real_ check is on the length */
 	if (len > 0)
 	{
-		if (!rpc_read(cli, fnum, rdata, len, rdata->data->data_used, False))
+		if (!rpc_read(cli, fnum, rdata, len, rdata->data_size, False))
 		{
 			return False;
 		}
@@ -919,7 +907,7 @@ BOOL cli_rcv_pdu(struct cli_state *cli, uint16 fnum, prs_struct *rdata)
 	BOOL last  = True;
 	int len;
 
-	num_read = cli_read_one(cli, fnum, rdata->data->data, 0, 0x18);
+	num_read = cli_read_one(cli, fnum, rdata->data, 0, 0x18);
 	DEBUG(5,("cli_pipe: read header (size:%d)\n", num_read));
 
 	if (num_read != 0x18) return False;
@@ -931,7 +919,7 @@ BOOL cli_rcv_pdu(struct cli_state *cli, uint16 fnum, prs_struct *rdata)
 
 	smb_io_rpc_hdr_resp("rpc_hdr_resp", &rhdr_resp, rdata, 0);
 
-	if (!rpc_read(cli, fnum, rdata, len, rdata->data->data_used, False))
+	if (!rpc_read(cli, fnum, rdata, len, rdata->data_size, False))
 	{
 		return False;
 	}
@@ -974,25 +962,25 @@ static BOOL create_rpc_bind_req(prs_struct *rhdr,
 
 	/* stream the bind request data */
 	smb_io_rpc_hdr_rb("", &hdr_rb,  rhdr_rb, 0);
-	mem_realloc_data(rhdr_rb->data, rhdr_rb->offset);
+	prs_realloc_data(rhdr_rb, rhdr_rb->offset);
 
 	if (auth_req != NULL && rhdr_auth != NULL && auth_ntlm != NULL)
 	{
 		make_rpc_hdr_auth(&hdr_auth, 0x0a, 0x06, 0x00, 1);
 		smb_io_rpc_hdr_auth("hdr_auth", &hdr_auth, rhdr_auth, 0);
-		mem_realloc_data(rhdr_auth->data, rhdr_auth->offset);
+		prs_realloc_data(rhdr_auth, rhdr_auth->offset);
 
 		make_rpc_auth_ntlmssp_verifier(&auth_verifier,
 		                       "NTLMSSP", NTLMSSP_NEGOTIATE);
 
 		smb_io_rpc_auth_ntlmssp_verifier("auth_verifier", &auth_verifier, auth_req, 0);
-		mem_realloc_data(auth_req->data, auth_req->offset);
+		prs_realloc_data(auth_req, auth_req->offset);
 
 		make_rpc_auth_ntlmssp_neg(&ntlmssp_neg,
 		                       neg_flags, my_name, domain);
 
 		smb_io_rpc_auth_ntlmssp_neg("ntlmssp_neg", &ntlmssp_neg, auth_req, 0);
-		mem_realloc_data(auth_req->data, auth_req->offset);
+		prs_realloc_data(auth_req, auth_req->offset);
 	}
 
 	/* create the request RPC_HDR */
@@ -1005,7 +993,7 @@ static BOOL create_rpc_bind_req(prs_struct *rhdr,
 	             (auth_ntlm != NULL ? auth_ntlm->offset : 0));
 
 	smb_io_rpc_hdr("hdr"   , &hdr   , rhdr, 0);
-	mem_realloc_data(rhdr->data, rhdr->offset);
+	prs_realloc_data(rhdr, rhdr->offset);
 
 	if (rhdr->data == NULL || rhdr_rb->data == NULL) return False;
 
@@ -1052,13 +1040,13 @@ BOOL create_rpc_bind_resp(struct pwd_info *pwd,
 
 	make_rpc_hdr_autha(&hdr_autha, 0x1630, 0x1630, 0x0a, 0x06, 0x00);
 	smb_io_rpc_hdr_autha("hdr_autha", &hdr_autha, rhdr_autha, 0);
-	mem_realloc_data(rhdr_autha->data, rhdr_autha->offset);
+	prs_realloc_data(rhdr_autha, rhdr_autha->offset);
 
 	make_rpc_auth_ntlmssp_verifier(&auth_verifier,
 			       "NTLMSSP", NTLMSSP_AUTH);
 
 	smb_io_rpc_auth_ntlmssp_verifier("auth_verifier", &auth_verifier, auth_resp, 0);
-	mem_realloc_data(auth_resp->data, auth_resp->offset);
+	prs_realloc_data(auth_resp, auth_resp->offset);
 
 	create_ntlmssp_resp(pwd, domain, user_name, my_name, ntlmssp_cli_flgs,
                                 auth_resp);
@@ -1069,7 +1057,7 @@ BOOL create_rpc_bind_resp(struct pwd_info *pwd,
 	             auth_resp->offset);
 
 	smb_io_rpc_hdr("hdr"   , &hdr   , rhdr, 0);
-	mem_realloc_data(rhdr->data, rhdr->offset);
+	prs_realloc_data(rhdr, rhdr->offset);
 
 	if (rhdr->data == NULL || rhdr_autha->data == NULL) return False;
 
@@ -1258,13 +1246,13 @@ BOOL rpc_pipe_bind(struct cli_connection *con,
 
 	if (!valid_pipe_name(pipe_name, abstract, transfer)) return False;
 
-	prs_init(&hdr      , 0x10                     , 4, 0x0          , False);
-	prs_init(&hdr_rb   , 1024                     , 4, 0, False);
-	prs_init(&hdr_auth , (ntlmssp_auth ?    8 : 0), 4, 0, False);
-	prs_init(&auth_req , (ntlmssp_auth ? 1024 : 0), 4, 0, False);
-	prs_init(&auth_ntlm, (ntlmssp_auth ? 1024 : 0), 4, 0, False);
+	prs_init(&hdr      , 0x10                     , 4, False);
+	prs_init(&hdr_rb   , 1024                     , 4, False);
+	prs_init(&hdr_auth , (ntlmssp_auth ?    8 : 0), 4, False);
+	prs_init(&auth_req , (ntlmssp_auth ? 1024 : 0), 4, False);
+	prs_init(&auth_ntlm, (ntlmssp_auth ? 1024 : 0), 4, False);
 
-	prs_init(&rdata    , 0   , 4, 0, True);
+	prs_init(&rdata    , 0   , 4, True);
 
 	rpc_call_id = get_rpc_call_id();
 	create_rpc_bind_req(&hdr, &hdr_rb,
@@ -1276,8 +1264,8 @@ BOOL rpc_pipe_bind(struct cli_connection *con,
 	                    global_myname, usr->domain, usr->ntlmssp_flags);
 
 	/* this is a hack due to limitations in rpc_api_pipe */
-	prs_init(&data, mem_buf_len(hdr.data), 4, 0x0, False);
-	mem_buf_copy(data.data->data, hdr.data, 0, mem_buf_len(hdr.data));
+	prs_init(&data, prs_buf_len(&hdr), 4, False);
+	prs_buf_copy(data.data, &hdr, 0, prs_buf_len(&hdr));
 
 	nt->max_recv_frag = 0x1000;
 	nt->max_xmit_frag = 0x1000;
@@ -1334,9 +1322,9 @@ BOOL rpc_pipe_bind(struct cli_connection *con,
 
 			nt->ntlmssp_cli_flgs = rhdr_chal.neg_flags;
 
-			prs_init(&hdra     , 0x10, 4, 0x0          , False);
-			prs_init(&hdr_autha, 1024, 4, 0, False);
-			prs_init(&auth_resp, 1024, 4, 0, False);
+			prs_init(&hdra     , 0x10, 4, False);
+			prs_init(&hdr_autha, 1024, 4, False);
+			prs_init(&auth_resp, 1024, 4, False);
 
 			pwd_make_lm_nt_owf(&usr->pwd, rhdr_chal.challenge);
 
@@ -1382,8 +1370,8 @@ BOOL rpc_pipe_bind(struct cli_connection *con,
 			bzero(lm_hash, sizeof(lm_hash));
 
 			/* this is a hack! */
-			prs_init(&dataa, mem_buf_len(hdra.data), 4, 0x0, False);
-			mem_buf_copy(dataa.data->data, hdra.data, 0, mem_buf_len(hdra.data));
+			prs_init(&dataa, prs_buf_len(&hdra), 4, False);
+			prs_buf_copy(dataa.data, &hdra, 0, prs_buf_len(&hdra));
 
 			if (!rpc_api_write(con, &dataa))
 			{
@@ -1395,20 +1383,20 @@ BOOL rpc_pipe_bind(struct cli_connection *con,
 				nt->ntlmssp_srv_flgs = rhdr_chal.neg_flags;
 			}
 
-			prs_mem_free(&hdra);
-			prs_mem_free(&dataa);
-			prs_mem_free(&hdr_autha);
-			prs_mem_free(&auth_resp);
+			prs_free_data(&hdra);
+			prs_free_data(&dataa);
+			prs_free_data(&hdr_autha);
+			prs_free_data(&auth_resp);
 		}
 	}
 
-	prs_mem_free(&data     );
-	prs_mem_free(&hdr      );
-	prs_mem_free(&hdr_rb   );
-	prs_mem_free(&hdr_auth );
-	prs_mem_free(&auth_req );
-	prs_mem_free(&auth_ntlm);
-	prs_mem_free(&rdata    );
+	prs_free_data(&data     );
+	prs_free_data(&hdr      );
+	prs_free_data(&hdr_rb   );
+	prs_free_data(&hdr_auth );
+	prs_free_data(&auth_req );
+	prs_free_data(&auth_ntlm);
+	prs_free_data(&rdata    );
 
 	return valid_ack;
 }

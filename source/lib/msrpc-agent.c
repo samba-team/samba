@@ -87,17 +87,16 @@ static struct msrpc_state *init_client_connection(int c)
 #endif
 
  	/* make a static data parsing structure from the api_fd_reply data */
- 	prs_init(&ps, 0, 4, 0, True);
- 	mem_create(ps.data, buf, 0, len, 0, False);
+ 	prs_create(&ps, buf, len, 4, True);
 
 	if (!creds_io_cmd("creds", &cmd, &ps, 0))
 	{
 		DEBUG(0,("Unable to parse credentials\n"));
-		mem_free_data(ps.data);
+		prs_free_data(&ps);
 		return NULL;
 	}
 
- 	mem_free_data(ps.data);
+ 	prs_free_data(&ps);
 
 	if (ps.offset != rl)
 	{

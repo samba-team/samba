@@ -605,9 +605,8 @@ BOOL rpc_con_pipe_req(struct cli_connection *con, uint8 op_num,
                       prs_struct *data, prs_struct *rdata)
 {
 	DEBUG(10,("rpc_con_pipe_req: op_num %d offset %d used: %d\n",
-			op_num, data->offset, data->data->data_used));
-	data->data->margin = 0;
-	mem_realloc_data(data->data, data->offset);
+			op_num, data->offset, data->data_size));
+	prs_realloc_data(data, data->offset);
 	return rpc_api_pipe_req(con, op_num, data, rdata);
 }
 
@@ -623,13 +622,13 @@ BOOL rpc_api_write(struct cli_connection *con, prs_struct *data)
 			struct cli_state *cli = con->msrpc.smb->cli;
 			int fnum = con->msrpc.smb->fnum;
 			return cli_write(cli, fnum, 0x0008, 
-			          data->data->data, 0,
-			          data->data->data_used,
-			          data->data->data_used) > 0;
+			          data->data, 0,
+			          data->data_size,
+			          data->data_size) > 0;
 		}
 		case MSRPC_LOCAL:
 		{
-			data->offset = data->data->data_size;
+			data->offset = data->data_size;
 			prs_link(NULL, data, NULL);
 			return msrpc_send_prs(con->msrpc.local, data);
 		}
@@ -654,8 +653,8 @@ BOOL rpc_api_rcv_pdu(struct cli_connection *con, prs_struct *rdata)
 			ret = msrpc_receive_prs(con->msrpc.local, rdata);
 			rdata->io = True;
 			rdata->offset = 0;
-			rdata->data->offset.start = 0;
-			rdata->data->offset.end = rdata->data->data_used;
+			rdata->start = 0;
+			rdata->end = rdata->data_size;
 			return ret;
 		}
 	}
@@ -678,14 +677,14 @@ BOOL rpc_api_send_rcv_pdu(struct cli_connection *con, prs_struct *data,
 		case MSRPC_LOCAL:
 		{
 			BOOL ret;
-			data->offset = data->data->data_size;
+			data->offset = data->data_size;
 			prs_link(NULL, data, NULL);
 			ret = msrpc_send_prs(con->msrpc.local, data) &&
 			      msrpc_receive_prs(con->msrpc.local, rdata);
 			rdata->io = True;
 			rdata->offset = 0;
-			rdata->data->offset.start = 0;
-			rdata->data->offset.end = rdata->data->data_used;
+			rdata->start = 0;
+			rdata->end = rdata->data_size;
 			return ret;
 		}
 	}

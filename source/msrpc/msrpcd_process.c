@@ -156,8 +156,7 @@ static int do_message(pipes_struct *p,
 	int outsize = -1;
 
  	/* make a static data parsing structure from the api_fd_reply data */
- 	prs_init(&pd, 0, 4, 0, True);
- 	mem_create(pd.data, smb_base(inbuf), 0, smb_len(inbuf), 0, False);
+ 	prs_create(&pd, smb_base(inbuf), smb_len(inbuf), 4, True);
 
   if (pid == -1)
     pid = getpid();
@@ -166,16 +165,20 @@ static int do_message(pipes_struct *p,
 	if (rpc_to_smb(p, smb_base(inbuf), smb_len(inbuf)))
 	{
 		char *copy_into = smb_base(outbuf);
-		outsize = mem_buf_len(p->rsmb_pdu.data);
-		if (!mem_buf_copy(copy_into, p->rsmb_pdu.data, 0, outsize))
+		outsize = prs_buf_len(&p->rsmb_pdu);
+		if (!prs_buf_copy(copy_into, &p->rsmb_pdu, 0, outsize))
 		{
 			DEBUG(10,("do_message: %d bytes failed\n", outsize));
 			return -1;
 		}
-		mem_free_data(p->rsmb_pdu.data);
+		prs_free_data(&p->rsmb_pdu);
 	}
 
 	DEBUG(10,("do_message: returned %d bytes\n", outsize));
+
+	/* DO NOT free pd with prs_free_data because the memory it
+	 * uses is inbuf, which is not controlled by this function
+	 */
 
 	return outsize;
 }
@@ -302,17 +305,13 @@ BOOL get_user_creds(int c, struct user_creds *usr)
 #endif
 
  	/* make a static data parsing structure from the api_fd_reply data */
- 	prs_init(&ps, 0, 4, 0, True);
- 	mem_create(ps.data, buf, 0, len, 0, False);
+ 	prs_create(&ps, buf, len, 4, True);
 
 	if (!creds_io_cmd("creds", &cmd, &ps, 0))
 	{
 		DEBUG(0,("Unable to parse credentials\n"));
-		mem_free_data(ps.data);
 		return False;
 	}
-
- 	mem_free_data(ps.data);
 
 	if (ps.offset != rl)
 	{

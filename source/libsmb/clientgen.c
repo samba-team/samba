@@ -3008,7 +3008,7 @@ static BOOL cli_init_redirect(struct cli_state *cli,
 	}
 
 	len = ps.offset;
-	data = mem_data(ps.data, 0);
+	data = prs_data(&ps, 0);
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("data len: %d\n", len));
@@ -3213,7 +3213,7 @@ BOOL cli_establish_connection(struct cli_state *cli,
 		DEBUG(100,("cli_session_setup_x: crypt key\n"));
 		dump_data(100, cli->cryptkey, 8);
 #endif
-		prs_init(&auth_resp, 1024, 4, SAFETY_MARGIN, False);
+		prs_init(&auth_resp, 1024, 4, False);
 
 		if (cli->use_ntlmv2 != False)
 		{
@@ -3257,9 +3257,9 @@ BOOL cli_establish_connection(struct cli_state *cli,
 		CVAL(p, 0) = 0x3;
 		p += 4;
 
-		resp_len = mem_buf_len(auth_resp.data);
-		mem_buf_copy(p, auth_resp.data, 0, resp_len);
-		prs_mem_free(&auth_resp);
+		resp_len = prs_buf_len(&auth_resp);
+		prs_buf_copy(p, &auth_resp, 0, resp_len);
+		prs_free_data(&auth_resp);
 
 		p += resp_len;
 

@@ -75,12 +75,12 @@ static void NTLMSSPcalc_p( rpcsrv_struct *p, unsigned char *data, int len)
  ********************************************************************/
 void rpcsrv_free_temp(rpcsrv_struct *l)
 {
-	mem_free_data(l->rhdr .data);
-	mem_free_data(l->rfault .data);
-	mem_free_data(l->rdata_i.data);		
-	mem_free_data(l->rauth  .data);
-	mem_free_data(l->rverf  .data);
-	mem_free_data(l->rntlm  .data);		
+	prs_free_data(&l->rhdr );
+	prs_free_data(&l->rfault );
+	prs_free_data(&l->rdata_i);		
+	prs_free_data(&l->rauth  );
+	prs_free_data(&l->rverf  );
+	prs_free_data(&l->rntlm  );		
 }
 
 /*******************************************************************
@@ -113,9 +113,9 @@ BOOL create_rpc_reply(rpcsrv_struct *l, uint32 data_start)
 		}
 	}
 
-	prs_init(&l->rhdr , 0x18, 4, 0, False);
-	prs_init(&l->rauth, 1024, 4, 0, False);
-	prs_init(&l->rverf, 0x10, 4, 0, False);
+	prs_init(&l->rhdr , 0x18, 4, False);
+	prs_init(&l->rauth, 1024, 4, False);
+	prs_init(&l->rverf, 0x10, 4, False);
 
 	l->hdr.pkt_type = RPC_RESPONSE; /* mark header as an rpc response */
 
@@ -157,8 +157,8 @@ BOOL create_rpc_reply(rpcsrv_struct *l, uint32 data_start)
 		data_len = l->hdr.frag_len - 0x18;
 	}
 
-	l->rhdr.data->offset.start = 0;
-	l->rhdr.data->offset.end   = 0x18;
+	l->rhdr.start = 0;
+	l->rhdr.end   = 0x18;
 
 	DEBUG(10,("hdr flags: %x\n", l->hdr.flags));
 
@@ -169,10 +169,8 @@ BOOL create_rpc_reply(rpcsrv_struct *l, uint32 data_start)
 	/* don't use rdata: use rdata_i instead, which moves... */
 	/* make a pointer to the rdata data, NOT A COPY */
 
-	l->rdata_i.data = NULL;
-	prs_init(&l->rdata_i, 0, l->rdata.align, l->rdata.data->margin, l->rdata.io);
-	data = mem_data(l->rdata.data, data_start);
-	mem_create(l->rdata_i.data, data, 0, data_len, 0, False); 
+	data = prs_data(&l->rdata, data_start);
+	prs_create(&l->rdata_i, data, data_len, l->rdata.align, l->rdata_i.io); 
 	l->rdata_i.offset = data_len;
 	l->rdata_offset += data_len;
 
@@ -201,7 +199,7 @@ BOOL create_rpc_reply(rpcsrv_struct *l, uint32 data_start)
 			l->ntlmssp_seq_num++;
 			make_rpc_auth_ntlmssp_chk(&l->ntlmssp_chk, NTLMSSP_SIGN_VERSION, crc32, l->ntlmssp_seq_num++);
 			smb_io_rpc_auth_ntlmssp_chk("auth_sign", &(l->ntlmssp_chk), &l->rverf, 0);
-			auth_data = mem_data(l->rverf.data, 4);
+			auth_data = prs_data(&l->rverf, 4);
 			NTLMSSPcalc_p(l, (uchar*)auth_data, 12);
 		}
 	}
@@ -502,8 +500,8 @@ static BOOL api_pipe_fault_resp(rpcsrv_struct *l, prs_struct *pd, uint32 status)
 {
 	DEBUG(5,("api_pipe_fault_resp: make response\n"));
 
-	prs_init(&(l->rhdr     ), 0x18, 4, 0, False);
-	prs_init(&(l->rfault   ), 0x8 , 4, 0, False);
+	prs_init(&(l->rhdr     ), 0x18, 4, False);
+	prs_init(&(l->rfault   ), 0x8 , 4, False);
 
 	/***/
 	/*** set up the header, response header and fault status ***/
@@ -524,8 +522,8 @@ static BOOL api_pipe_fault_resp(rpcsrv_struct *l, prs_struct *pd, uint32 status)
 	smb_io_rpc_hdr      ("hdr"  , &(l->hdr      ), &(l->rhdr), 0);
 	smb_io_rpc_hdr_resp ("resp" , &(l->hdr_resp ), &(l->rhdr), 0);
 	smb_io_rpc_hdr_fault("fault", &(l->hdr_fault), &(l->rfault), 0);
-	mem_realloc_data(l->rhdr.data, l->rhdr.offset);
-	mem_realloc_data(l->rfault.data, l->rfault.offset);
+	prs_realloc_data(&l->rhdr  , l->rhdr.offset  );
+	prs_realloc_data(&l->rfault, l->rfault.offset);
 
 	/***/
 	/*** link rpc header and fault together ***/
@@ -574,11 +572,11 @@ static BOOL srv_pipe_bind_and_alt_req(rpcsrv_struct *l, prs_struct *pd,
 
 	DEBUG(5,("api_pipe_bind_req: make response. %d\n", __LINE__));
 
-	prs_init(&(l->rdata), 1024, 4, 0, False);
-	prs_init(&(l->rhdr ), 0x18, 4, 0, False);
-	prs_init(&(l->rauth), 1024, 4, 0, False);
-	prs_init(&(l->rverf), 0x08, 4, 0, False);
-	prs_init(&(l->rntlm), 1024, 4, 0, False);
+	prs_init(&(l->rdata), 1024, 4, False);
+	prs_init(&(l->rhdr ), 0x18, 4, False);
+	prs_init(&(l->rauth), 1024, 4, False);
+	prs_init(&(l->rverf), 0x08, 4, False);
+	prs_init(&(l->rntlm), 1024, 4, False);
 
 	/***/
 	/*** do the bind ack first ***/
@@ -602,7 +600,7 @@ static BOOL srv_pipe_bind_and_alt_req(rpcsrv_struct *l, prs_struct *pd,
 	                &(l->hdr_rb.transfer));
 
 	smb_io_rpc_hdr_ba("", &l->hdr_ba, &l->rdata, 0);
-	mem_realloc_data(l->rdata.data, l->rdata.offset);
+	prs_realloc_data(&l->rdata, l->rdata.offset);
 
 	/***/
 	/*** now the authentication ***/
@@ -617,21 +615,21 @@ static BOOL srv_pipe_bind_and_alt_req(rpcsrv_struct *l, prs_struct *pd,
 
 		make_rpc_hdr_auth(&l->auth_info, 0x0a, 0x06, 0, 1);
 		smb_io_rpc_hdr_auth("", &l->auth_info, &l->rverf, 0);
-		mem_realloc_data(l->rverf.data, l->rverf.offset);
+		prs_realloc_data(&l->rverf, l->rverf.offset);
 
 		/*** NTLMSSP verifier ***/
 
 		make_rpc_auth_ntlmssp_verifier(&l->auth_verifier,
 		                       "NTLMSSP", NTLMSSP_CHALLENGE);
 		smb_io_rpc_auth_ntlmssp_verifier("", &l->auth_verifier, &l->rauth, 0);
-		mem_realloc_data(l->rauth.data, l->rauth.offset);
+		prs_realloc_data(&l->rauth, l->rauth.offset);
 
 		/* NTLMSSP challenge ***/
 
 		make_rpc_auth_ntlmssp_chal(&l->ntlmssp_chal,
 		                           0x000082b1, challenge);
 		smb_io_rpc_auth_ntlmssp_chal("", &l->ntlmssp_chal, &l->rntlm, 0);
-		mem_realloc_data(l->rntlm.data, l->rntlm.offset);
+		prs_realloc_data(&l->rntlm, l->rntlm.offset);
 	}
 
 	/***/
@@ -644,7 +642,7 @@ static BOOL srv_pipe_bind_and_alt_req(rpcsrv_struct *l, prs_struct *pd,
 	             l->rauth.offset + l->rntlm.offset);
 
 	smb_io_rpc_hdr("", &l->hdr, &l->rhdr, 0);
-	mem_realloc_data(l->rhdr.data, l->rdata.offset);
+	prs_realloc_data(&l->rhdr, l->rdata.offset);
 
 	/***/
 	/*** link rpc header, bind acknowledgment and authentication responses ***/
@@ -759,7 +757,7 @@ static BOOL api_pipe_auth_process(rpcsrv_struct *l, prs_struct *pd)
 
 	if (auth_seal)
 	{
-		char *data = mem_data(pd->data, pd->offset);
+		char *data = prs_data(pd, pd->offset);
 		DEBUG(5,("api_pipe_auth_process: data %d\n", pd->offset));
 		NTLMSSPcalc_p(l, (uchar*)data, data_len);
 		crc32 = crc32_calc_buffer(data_len, data);
@@ -776,7 +774,7 @@ static BOOL api_pipe_auth_process(rpcsrv_struct *l, prs_struct *pd)
 
 	if (auth_verify)
 	{
-		char *req_data = mem_data(pd->data, pd->offset + 4);
+		char *req_data = prs_data(pd, pd->offset + 4);
 		DEBUG(5,("api_pipe_auth_process: auth %d\n", pd->offset + 4));
 		NTLMSSPcalc_p(l, (uchar*)req_data, 12);
 		smb_io_rpc_auth_ntlmssp_chk("auth_sign", &(l->ntlmssp_chk), pd, 0);
@@ -830,7 +828,7 @@ BOOL rpc_add_to_pdu(prs_struct *ps, const char *data, int len)
 	if (ps->data == NULL)
 	{
 		DEBUG(10,("rpc_add_to_pdu: new_size: %d\n", len));
-		prs_init(ps, len, 4, 0, True);
+		prs_init(ps, len, 4, True);
 		prev_size = 0;
 		new_size  = len;
 		if (ps->data == NULL)
@@ -840,29 +838,29 @@ BOOL rpc_add_to_pdu(prs_struct *ps, const char *data, int len)
 	}
 	else
 	{
-		prev_size = ps->data->data_used;
+		prev_size = ps->data_size;
 		new_size  = prev_size + len;
 		DEBUG(10,("rpc_add_to_pdu: prev_size: %d new_size: %d\n",
 				prev_size, new_size));
-		if (!mem_realloc_data(ps->data, new_size))
+		if (!prs_realloc_data(ps, new_size))
 		{
 			return False;
 		}
 	}
 
-	DEBUG(10,("ps->data->start: %d\n", ps->data->offset.start));
-	ps->data->offset.start = 0x0;
+	DEBUG(10,("ps->start: %d\n", ps->start));
+	ps->start = 0x0;
 
-	to = mem_data(ps->data, prev_size);
+	to = prs_data(ps, prev_size);
 	if (to == NULL)
 	{
 		DEBUG(10,("rpc_add_to_pdu: data could not be found\n"));
 		return False;
 	}
-	if (ps->data->data_used != new_size)
+	if (ps->data_size != new_size)
 	{
 		DEBUG(10,("rpc_add_to_pdu: ERROR: data used %d new_size %d\n",
-				ps->data->data_used, new_size));
+				ps->data_size, new_size));
 		return False;
 	}
 	memcpy(to, data, len);
@@ -970,7 +968,7 @@ BOOL rpc_send_and_rcv_pdu(pipes_struct *p)
 	}
 	else if (p->l != NULL)
 	{
-		if (p->smb_pdu.data == NULL || p->smb_pdu.data->data_used == 0)
+		if (p->smb_pdu.data == NULL || p->smb_pdu.data_size == 0)
 		{
 			BOOL ret = create_rpc_reply(p->l, p->l->rdata_offset);
 			/* flatten the data into a single pdu */
@@ -1003,17 +1001,17 @@ BOOL rpc_to_smb(pipes_struct *p, char *data, int len)
 
 		if (reply && is_complete_pdu(&p->smb_pdu))
 		{
-			p->smb_pdu.offset = p->smb_pdu.data->data_size;
+			p->smb_pdu.offset = p->smb_pdu.data_size;
 			prs_link(NULL, &p->smb_pdu, NULL);
 			reply = rpc_send_and_rcv_pdu(p);
-			mem_free_data(p->smb_pdu.data);
-			prs_init(&p->smb_pdu, 0, 4, 0, True);
+			prs_free_data(&p->smb_pdu);
+			prs_init(&p->smb_pdu, 0, 4, True);
 		}
 	}
 	else
 	{
-		mem_free_data(p->smb_pdu.data);
-		prs_init(&p->smb_pdu, 0, 4, 0, True);
+		prs_free_data(&p->smb_pdu);
+		prs_init(&p->smb_pdu, 0, 4, True);
 		reply = rpc_send_and_rcv_pdu(p);
 	}
 	return reply;
@@ -1044,18 +1042,18 @@ static BOOL api_rpc_command(rpcsrv_struct *l,
 		return False;
 	}
 
-	prs_init(&l->rdata, 0, 4, 0, False);
+	prs_init(&l->rdata, 0, 4, False);
 
 	/* do the actual command */
 	api_rpc_cmds[fn_num].fn(l, data, &(l->rdata));
 
 	if (l->rdata.data == NULL || l->rdata.offset == 0)
 	{
-		mem_free_data(l->rdata.data);
+		prs_free_data(&l->rdata);
 		return False;
 	}
 
-	mem_realloc_data(l->rdata.data, l->rdata.offset);
+	prs_realloc_data(&l->rdata, l->rdata.offset);
 
 	DEBUG(10,("called %s\n", rpc_name));
 
@@ -1095,7 +1093,7 @@ BOOL api_rpcTNP(rpcsrv_struct *l, char *rpc_name, struct api_struct *api_rpc_cmd
 BOOL is_complete_pdu(prs_struct *ps)
 {
 	RPC_HDR hdr;
-	int len = ps->data->data_size;
+	int len = ps->data_size;
 
 	DEBUG(10,("is_complete_pdu - len %d\n", len));
 	ps->offset = 0x0;

@@ -651,7 +651,7 @@ static void api_lsa_open_secret( rpcsrv_struct *p, prs_struct *data,
                                   prs_struct *rdata)
 {
 	/* XXXX this is NOT good */
-	char *q = mem_data(rdata->data, rdata->offset);
+	char *q = prs_data(rdata, rdata->offset);
 
 	SIVAL(q, 0, 0);
 	q += 4;
