@@ -1,6 +1,7 @@
 #include "config.h"
 #include "protos.h"
 
+#include <stdio.h>
 #include <sys/types.h>
 #include <sys/ioctl.h>
 #ifdef HAVE_SYS_FILIO_H
@@ -22,59 +23,90 @@
  * Here only ASCII characters are relevant.
  */
 
-#define IsAsciiUpper(c) ('A' <= (c) && (c) <= 'Z')
+#define IsAsciiLower(c) ('a' <= (c) && (c) <= 'z')
 
-#define ToAsciiLower(c) ((c) - 'A' + 'a')
+#define ToAsciiUpper(c) ((c) - 'a' + 'A')
 
 static void
-folddown(a, b)
+foldup(a, b)
      char *a, *b;
 {
   for (; *b; a++, b++)
-    if (IsAsciiUpper(*b))
-      *a = ToAsciiLower(*b);
+    if (IsAsciiLower(*b))
+      *a = ToAsciiUpper(*b);
     else
       *a = *b;
   *a = '\0';
 }
 
+#define _PATH_THISCELL "/usr/vice/etc/ThisCell"
+
+static char *
+k_cell()
+{
+    static char cell[64];
+    FILE *f = fopen(_PATH_THISCELL, "r");
+    if (f == 0)
+	return 0;
+    fscanf(f, "%s\n", cell);
+    if (cell[0] != 0)
+	return cell;
+    else
+	return 0;
+}
+
+static int
+get_cred(char *princ, char *inst, char *krealm, CREDENTIALS *c, KTEXT_ST *tkt)
+{
+  int k_errno = krb_get_cred(princ, inst, krealm, c);
+  if (k_errno != KSUCCESS)
+    {
+      k_errno = krb_mk_req(tkt, princ, inst, krealm, 0);
+      if (k_errno == KSUCCESS)
+	k_errno = krb_get_cred(princ, inst, krealm, c);
+    }
+  return k_errno;
+}
+
 int
-k_afsklog(char *realm)
+k_afsklog(char *cell, char *krealm)
 {
   int k_errno;
   CREDENTIALS c;
   KTEXT_ST ticket;
   char username[256];
-  char krealm[REALM_SZ];
+  char realm[REALM_SZ];
+  char CELL[64];
 
   if (!k_hasafs())
     return KSUCCESS;
 
-  if (realm == 0 || realm[0] == 0)
+  if (cell == 0 || cell[0] == 0)
+    cell = k_cell();
+  if (cell == 0)
+    return KSUCCESS;		/* Not running AFS */
+  foldup(CELL, cell);
+
+  if (krealm == 0 || krealm[0] == 0)
     {
-      k_errno = krb_get_lrealm(krealm, 0);
+      k_errno = krb_get_lrealm(realm, 0);
       if (k_errno != KSUCCESS)
 	return k_errno;
-      realm = krealm;
-    }
-
-  k_errno = krb_get_cred(AUTH_SUPERUSER, "", realm, &c);
+      krealm = realm;
+    }  
+  
+  /* First we try afs.cell@REALM, if there is no such thing try
+   * afs@CELL instead. */
+  k_errno = get_cred(AUTH_SUPERUSER, cell, krealm, &c, &ticket);
   if (k_errno != KSUCCESS)
-    {
-      k_errno = krb_mk_req(&ticket, AUTH_SUPERUSER, "", realm, 0);
-      if (k_errno == KSUCCESS)
-	k_errno = krb_get_cred(AUTH_SUPERUSER, "", realm, &c);
-    }
-
+    k_errno = get_cred(AUTH_SUPERUSER, "", CELL, &c, &ticket);
+  
   if (k_errno == KSUCCESS)
     {
-      char cell[256];
       struct ViceIoctl parms;
       struct ClearToken ct;
       int32_t sizeof_x;
       char buf[2048], *t;
-
-      folddown(cell, realm);
 
       /*
        * Build a struct ClearToken
