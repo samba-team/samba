@@ -2400,7 +2400,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 	if (lp_dos_filetime_resolution(SNUM(conn))) {
 		c_time &= ~1;
 		sbuf.st_atime &= ~1;
-		sbuf.st_mtime &= ~1;
+		sbuf.st_ctime &= ~1;
 		sbuf.st_mtime &= ~1;
 	}
 
