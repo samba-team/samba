@@ -10,6 +10,7 @@ main (int argc, char **argv)
   krb5_principal principal;
   krb5_principal server;
   krb5_creds cred;
+  krb5_preauthtype pre_auth[] = {KRB5_PADATA_ENC_TIMESTAMP};
 
   err = krb5_init_context (&context);
   if (err){
@@ -70,7 +71,7 @@ main (int argc, char **argv)
 				       0,
 				       NULL,
 				       NULL,
-				       NULL,
+				       /*NULL*/ pre_auth,
 				       NULL,
 				       ccache,
 				       &cred,
