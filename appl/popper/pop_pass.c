@@ -156,6 +156,7 @@ pop_pass (POP *p)
 			    "kerberos authentication failed");
 	}
 #endif
+	{ }
     } else {
 	 /*  We don't accept connections from users with null passwords */
 	 if (pw->pw_passwd == NULL)
