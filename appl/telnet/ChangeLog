@@ -1,3 +1,9 @@
+Mon Feb  1 04:08:36 1999  Assar Westerlund  <assar@sics.se>
+
+	* telnet/commands.c (tn): only call gethostbyname2 with AF_INET6
+ 	if we actually have IPv6.  From "Brandon S. Allbery KF8NH"
+ 	<allbery@kf8nh.apk.net>
+
 Wed May 27 04:19:17 1998  Assar Westerlund  <assar@sics.se>
 
 	* telnet/sys_bsd.c (process_rings): correct call to `stilloob'

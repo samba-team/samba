@@ -1,3 +1,11 @@
+Mon Feb  1 04:09:06 1999  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/send_to_kdc.c (krb5_sendto_kdc): only call
+ 	gethostbyname2 with AF_INET6 if we actually have IPv6.  From
+ 	"Brandon S. Allbery KF8NH" <allbery@kf8nh.apk.net>
+
+ 	* lib/krb5/changepw.c (get_kdc_address): dito
+
 Sun Jan 31 06:26:36 1999  Assar Westerlund  <assar@sics.se>
 
 	* kdc/connect.c (parse_prots): always bind to AF_INET, there are
