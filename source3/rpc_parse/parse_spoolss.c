@@ -746,6 +746,9 @@ static BOOL spoolss_io_printer_default(char *desc, PRINTER_DEFAULT *pd, prs_stru
 	if (!spoolss_io_devmode_cont("", &pd->devmode_cont, ps, depth))
 		return False;
 
+	if (!prs_align(ps))
+		return False;
+
 	if (!prs_uint32("access_required", ps, depth, &pd->access_required))
 		return False;
 
@@ -3832,6 +3835,9 @@ BOOL spoolss_io_q_setprinter(char *desc, SPOOL_Q_SETPRINTER *q_u, prs_struct *ps
 	if (!spoolss_io_devmode_cont(desc, &q_u->devmode_ctr, ps, depth))
 		return False;
 	
+	if(!prs_align(ps))
+		return False;
+
 	switch (q_u->level)
 	{
 		case 2:
@@ -4621,6 +4627,9 @@ BOOL spoolss_io_q_addprinterex(char *desc, SPOOL_Q_ADDPRINTEREX *q_u, prs_struct
 		return False;
 	
 	if (!spoolss_io_devmode_cont(desc, &q_u->devmode_ctr, ps, depth))
+		return False;
+
+	if(!prs_align(ps))
 		return False;
 
 	switch (q_u->level) {
