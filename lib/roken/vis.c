@@ -65,8 +65,7 @@
 #if 1
 #ifdef HAVE_CONFIG_H
 #include <config.h>
-RCSID("$Heimdal: vis.c,v 1.5 2001/09/03 05:37:23 assar Exp $"
-      "$NetBSD: vis.c,v 1.4 2003/08/07 09:15:32 agc Exp $");
+RCSID("$Id$");
 #endif
 #include <roken.h>
 #ifndef _DIAGASSERT
