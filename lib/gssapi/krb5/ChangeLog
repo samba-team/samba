@@ -1,5 +1,9 @@
 2003-10-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* add_cred.c: If its a MEMORY cc, make a copy. We need to do this
+	since now gss_release_cred will destroy the cred. This should be
+	really be solved a better way.
+
 	* acquire_cred.c (gss_release_cred): if its a mcc, destroy it
 	rather the just release it Found by: "Zi-Bin Yang"
 	<zbyang@decru.com>
