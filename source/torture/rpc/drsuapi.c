@@ -32,7 +32,8 @@ static BOOL test_DsBind(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct drsuapi_DsBind r;
 	BOOL ret = True;
 
-	ZERO_STRUCT(r);
+	r.in.server_guid = NULL;
+	r.in.bind_info = NULL;
 	r.out.bind_handle = bind_handle;
 
 	status = dcerpc_drsuapi_DsBind(p, mem_ctx, &r);
