@@ -283,7 +283,7 @@ VVS=packaging/%{Vendor}/%{Dist}
 
 mkdir -p $DESTDIR/etc/{{rc.d/init,logrotate,pam}.d,sysconfig/daemons,skel/Samba}
 mkdir -p $DESTDIR/var/{lo{ck,g}/samba.d,spool/samba}
-mkdir -p $DESTDIR/usr/share/swat/using_samba
+mkdir -p $DESTDIR/usr/share/swat/using_samba/{gifs,figs}
 mkdir -p $DESTDIR/lib/security
 mkdir -p $DESTDIR/%{LSBservedir}/{netlogon,profiles,Public}
 mkdir -p $DESTDIR%{EtcSamba}/codepages/src $DESTDIR/sbin
@@ -359,6 +359,20 @@ rm -rf $DOCD/docs/{htmldocs,manpages,yodldocs}
 rm -rf $DOCD/examples/{svr4-startup,printing}
 
 cp -p swat/README $DOCD/README.swat
+
+# This is the O'Reily Samba Book - on-line
+for i in docs/htmldocs/using_samba/*.html
+do
+install -m644 $i $DESTDIR%{prefix}/share/swat/using_samba
+done
+for i in docs/htmldocs/using_samba/figs/*.gif
+do
+install -m644 $i $DESTDIR%{prefix}/share/swat/using_samba/figs
+done
+for i in docs/htmldocs/using_samba/gifs/*.gif
+do
+install -m644 $i $DESTDIR%{prefix}/share/swat/using_samba/gifs
+done
 
 %{fixUP} -vT $DOCD/examples -e 's:/usr/local/bin/:/usr/bin/:g;'
 %{fixUP} -vT $DESTDIR/etc/samba.d -e 's:\@samba_home\@:%{LSBservedir}:'
@@ -457,4 +471,4 @@ lisa --inetd disable swat $1
 
 %ChangeLog
 * Mon Jan 01 1997 ...
-$Id: samba2.spec.tmpl,v 1.1.6.6 2001/02/26 15:01:04 jht Exp $
+$Id: samba2.spec.tmpl,v 1.1.6.7 2001/02/26 16:19:45 jht Exp $
