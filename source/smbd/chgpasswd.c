@@ -59,22 +59,24 @@ extern int DEBUGLEVEL;
 static int findpty(char **slave)
 {
   int master;
+#if defined(USE_GRANTPT)
 #if defined(SVR4) || defined(SUNOS5)
   extern char *ptsname();
-#else /* defined(SVR4) || defined(SUNOS5) */
+#endif /* defined(SVR4) || defined(SUNOS5) */
+#else /* USE_GRANTPT */
   static fstring line;
   void *dirp;
   char *dpname;
-#endif /* defined(SVR4) || defined(SUNOS5) */
+#endif /* USE_GRANTPT */
   
-#if defined(SVR4) || defined(SUNOS5)
+#if defined(USE_GRANTPT)
   if ((master = open("/dev/ptmx", O_RDWR)) >= 1) {
     grantpt(master);
     unlockpt(master);
     *slave = ptsname(master);
     return (master);
   }
-#else /* defined(SVR4) || defined(SUNOS5) */
+#else /* USE_GRANTPT */
   fstrcpy( line, "/dev/ptyXX" );
 
   dirp = OpenDir(-1, "/dev", False);
@@ -94,7 +96,7 @@ static int findpty(char **slave)
     }
   }
   CloseDir(dirp);
-#endif /* defined(SVR4) || defined(SUNOS5) */
+#endif /* USE_GRANTPT */
   return (-1);
 }
 
@@ -136,10 +138,12 @@ static int dochild(int master,char *slavedev, char *name, char *passwordprogram,
   ioctl(slave, I_PUSH, "ptem");
   ioctl(slave, I_PUSH, "ldterm");
 #else /* defined(SVR4) || defined(SUNOS5) || defined(SCO) */
+#if defined(TIOCSCTTY)
   if (ioctl(slave,TIOCSCTTY,0) <0) {
      DEBUG(3,("Error in ioctl call for slave pty\n"));
      /* return(False); */
   }
+#endif /* defined(TIOCSCTTY) */
 #endif /* defined(SVR4) || defined(SUNOS5) || defined(SCO) */
 
   /* Close master. */

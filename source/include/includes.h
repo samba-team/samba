@@ -342,6 +342,7 @@ extern int innetgr (const char *, const char *, const char *, const char *);
 #ifndef QSORT_CAST
 #define QSORT_CAST (int (*)(const void *, const void *))
 #endif /* QSORT_CAST */
+#define USE_GRANTPT
 #endif
 
 
@@ -387,16 +388,18 @@ char *getwd(char *);
 #include <string.h>
 #include <signal.h>
 #include <dirent.h>
+#include <termios.h>
 #define USE_WAITPID
 #define NETGROUP 
 #ifndef SYSV
 #define SYSV
-#endif
+#endif /* SYSV */
 #define SIGNAL_CAST (void (*)())
 #define USE_STATVFS
 #define USE_WAITPID
 #define USE_SETSID
 #define USE_SYSV_IPC
+#define USE_GRANTPT
 #ifndef QSORT_CAST
 #define QSORT_CAST (int (*)(const void *, const void *))
 #endif /* QSORT_CAST */
@@ -458,6 +461,7 @@ extern struct passwd *getpwnam();
 #define USE_SETSID
 #define USE_SYSV_IPC
 #define NO_SEMUN
+#define USE_GRANTPT
 #endif
 
 
