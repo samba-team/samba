@@ -30,21 +30,21 @@ Input: 8 byte challenge block
 Output:
       8 byte session key
 ****************************************************************************/
-void cred_session_key(char *challenge, char *srv_challenge, char *pass, 
+void cred_session_key(DOM_CHAL *clnt_chal, DOM_CHAL *srv_chal, char *pass, 
 		       char *session_key)
 {
 	uint32 sum[2];
 	char sum2[8];
 	char buf[8];
 
-	sum[0] = IVAL(challenge, 0) + IVAL(srv_challenge, 0);
-	sum[1] = IVAL(challenge, 4) + IVAL(srv_challenge, 4);
+	sum[0] = IVAL(clnt_chal->data, 0) + IVAL(srv_chal->data, 0);
+	sum[1] = IVAL(clnt_chal->data, 4) + IVAL(srv_chal->data, 4);
 
 	SIVAL(sum2,0,sum[0]);
 	SIVAL(sum2,4,sum[1]);
 
-	E1(pass,sum2,buf);
-	E1(pass+9,buf,session_key);
+	smbhash(pass, sum2, buf);
+	smbhash(pass+9,buf,session_key);
 }
 
 
@@ -59,20 +59,20 @@ Input:
 Output:
       8 byte credential
 ****************************************************************************/
-void cred_create(char *session_key, char *stored_cred, UTIME timestamp, 
-		 char *cred)
+void cred_create(char *session_key, DOM_CHAL *stored_cred, UTIME timestamp, 
+		 DOM_CHAL *cred)
 {
 	char key2[7];
 	char buf[8];
 	char timecred[8];
 
-	memcpy(timecred, stored_cred, 8);
+	memcpy(timecred, stored_cred->data, 8);
 	SIVAL(timecred, 0, IVAL(stored_cred, 0) + timestamp.time);
 
-	E1(session_key, timecred, buf);
+	smbhash(session_key, timecred, buf);
 	memset(key2, 0, 7);
 	key2[0] = session_key[7];
-	E1(key2, buf, cred);
+	smbhash(key2, buf, cred->data);
 }
 
 
@@ -89,13 +89,13 @@ Output:
       returns 1 if computed credential matches received credential
       returns 0 otherwise
 ****************************************************************************/
-int cred_assert(char *cred, char *session_key, char *stored_cred,
-		NTTIME timestamp)
+int cred_assert(DOM_CHAL *cred, char *session_key, DOM_CHAL *stored_cred,
+		UTIME timestamp)
 {
-	char cred2[8];
+	DOM_CHAL cred2;
 
-	cred_create(session_key, stored_cred, timestamp, cred2);
+	cred_create(session_key, stored_cred, timestamp, &cred2);
 
-	return memcmp(cred, cred2, 8) == 0;
+	return memcmp(cred->data, cred2.data, 8) == 0;
 }
 

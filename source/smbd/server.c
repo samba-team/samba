@@ -3003,7 +3003,8 @@ static int sig_hup()
 Setup the groups a user belongs to.
 ****************************************************************************/
 int setup_groups(char *user, int uid, int gid, int *p_ngroups, 
-		 int **p_igroups, gid_t **p_groups)
+		 int **p_igroups, gid_t **p_groups,
+         int **p_attrs)
 {
   if (-1 == initgroups(user,gid))
     {
@@ -3018,19 +3019,25 @@ int setup_groups(char *user, int uid, int gid, int *p_ngroups,
     {
       int i,ngroups;
       int *igroups;
+      int *attrs;
       gid_t grp = 0;
       ngroups = getgroups(0,&grp);
       if (ngroups <= 0)
         ngroups = 32;
       igroups = (int *)malloc(sizeof(int)*ngroups);
+      attrs   = (int *)malloc(sizeof(int)*ngroups);
       for (i=0;i<ngroups;i++)
+      {
+        attrs  [i] = 0x7; /* XXXX don't know what NT user attributes are yet! */
         igroups[i] = 0x42424242;
+      }
       ngroups = getgroups(ngroups,(gid_t *)igroups);
 
       if (igroups[0] == 0x42424242)
         ngroups = 0;
 
       *p_ngroups = ngroups;
+      *p_attrs   = attrs;
 
       /* The following bit of code is very strange. It is due to the
          fact that some OSes use int* and some use gid_t* for
@@ -3052,16 +3059,18 @@ int setup_groups(char *user, int uid, int gid, int *p_ngroups,
     	      groups_use_ints = False;
 	      
           if (groups_use_ints)
-            {
+          {
     	      *p_igroups = igroups;
     	      *p_groups = (gid_t *)igroups;	  
-            }
+          }
           else
-            {
+          {
 	      gid_t *groups = (gid_t *)igroups;
 	      igroups = (int *)malloc(sizeof(int)*ngroups);
 	      for (i=0;i<ngroups;i++)
+          {
 	        igroups[i] = groups[i];
+          }
 	      *p_igroups = igroups;
 	      *p_groups = (gid_t *)groups;
 	    }
@@ -3270,12 +3279,15 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
 
   /* groups stuff added by ih */
   pcon->ngroups = 0;
+  pcon->igroups = NULL;
   pcon->groups = NULL;
+  pcon->attrs = NULL;
 
   if (!IS_IPC(cnum))
     {
       /* Find all the groups this uid is in and store them. Used by become_user() */
-      setup_groups(pcon->user,pcon->uid,pcon->gid,&pcon->ngroups,&pcon->igroups,&pcon->groups);
+      setup_groups(pcon->user,pcon->uid,pcon->gid,
+                  &pcon->ngroups,&pcon->igroups,&pcon->groups,&pcon->attrs);
       
       /* check number of connections */
       if (!claim_connection(cnum,

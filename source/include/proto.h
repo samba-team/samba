@@ -60,6 +60,15 @@ int process_tar(char *inbuf, char *outbuf);
 int clipfind(char **aret, int ret, char *tok);
 int tar_parseargs(int argc, char *argv[], char *Optarg, int Optind);
 
+/*The following definitions come from  credentials.c  */
+
+void cred_session_key(DOM_CHAL *clnt_chal, DOM_CHAL *srv_chal, char *pass, 
+		       char *session_key);
+void cred_create(char *session_key, DOM_CHAL *stored_cred, UTIME timestamp, 
+		 DOM_CHAL *cred);
+int cred_assert(DOM_CHAL *cred, char *session_key, DOM_CHAL *stored_cred,
+		UTIME timestamp);
+
 /*The following definitions come from  dir.c  */
 
 void init_dptrs(void);
@@ -629,10 +638,11 @@ BOOL api_LsarpcTNP(int cnum,int uid, char *param,char *data,
 		     char **rdata,char **rparam,
 		     int *rdata_len,int *rparam_len);
 char *dom_sid_to_string(DOM_SID *sid);
-BOOL api_ntlsarpcTNP(int cnum,int uid, char *param,char *data,
+BOOL api_ntLsarpcTNP(int cnum,int uid, char *param,char *data,
 		     int mdrcnt,int mprcnt,
 		     char **rdata,char **rparam,
 		     int *rdata_len,int *rparam_len);
+void no_fn(uint uid);
 
 /*The following definitions come from  predict.c  */
 
@@ -755,7 +765,8 @@ BOOL request_oplock_break(min_share_mode_entry *share_entry,
 BOOL snum_used(int snum);
 BOOL reload_services(BOOL test);
 int setup_groups(char *user, int uid, int gid, int *p_ngroups, 
-		 int **p_igroups, gid_t **p_groups);
+		 int **p_igroups, gid_t **p_groups,
+         int **p_attrs);
 int make_connection(char *service,char *user,char *password, int pwlen, char *dev,uint16 vuid);
 int find_free_file(void );
 int reply_corep(char *outbuf);
@@ -791,6 +802,8 @@ BOOL smb_shm_get_usage(int *bytes_free,
 
 /*The following definitions come from  smbdes.c  */
 
+void str_to_key(unsigned char *str,unsigned char *key);
+void smbhash(unsigned char *out, unsigned char *in, unsigned char *key);
 void E_P16(unsigned char *p14,unsigned char *p16);
 void E_P24(unsigned char *p21, unsigned char *c8, unsigned char *p24);
 
