@@ -768,6 +768,12 @@ int net_ads_usage(int argc, const char **argv)
 	return -1;
 }
 
+int net_ads_help(int argc, const char **argv)
+{
+	d_printf("ADS support not compiled in\n");
+	return -1;
+}
+
 int net_ads_join(int argc, const char **argv)
 {
 	return -1;
