@@ -346,6 +346,8 @@ static BOOL test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	const char *username = lp_parm_string(-1, "torture", "username");
 	const char *password = lp_parm_string(-1, "torture", "password");
 	struct netr_CredentialState creds;
+	int i;
+	BOOL ret = True;
 
 	if (!test_SetupCredentials2(p, mem_ctx, &creds)) {
 		return False;
@@ -366,31 +368,33 @@ static BOOL test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	ninfo.lm.data = talloc(mem_ctx, 24);
 	SMBencrypt(password, ninfo.challenge, ninfo.lm.data);
 
-	ZERO_STRUCT(auth2);
-
-	creds_client_authenticator(&creds, &auth);
-
 	r.in.server_name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.workstation = TEST_MACHINE_NAME;
 	r.in.credential = &auth;
 	r.in.authenticator = &auth2;
 	r.in.logon_level = 2;
 	r.in.logon.network = &ninfo;
-	r.in.validation_level = 2;
 
-	printf("Testing SamLogon\n");
+	for (i=2;i<=3;i++) {
+		ZERO_STRUCT(auth2);
+		creds_client_authenticator(&creds, &auth);
 
-	status = dcerpc_netr_LogonSamLogon(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("LogonSamLogon - %s\n", nt_errstr(status));
-		return False;
+		r.in.validation_level = i;
+
+		printf("Testing SamLogon with validation level %d\n", i);
+
+		status = dcerpc_netr_LogonSamLogon(p, mem_ctx, &r);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("LogonSamLogon - %s\n", nt_errstr(status));
+			ret = False;
+		}
+
+		if (!creds_client_check(&creds, &r.out.authenticator->cred)) {
+			printf("Credential chaining failed\n");
+		}
 	}
 
-	if (!creds_client_check(&creds, &r.out.authenticator->cred)) {
-		printf("Credential chaining failed\n");
-	}
-
-	return True;
+	return ret;
 }
 
 

@@ -148,8 +148,12 @@ interface netlogon
 	} netr_GroupMembership;
 
 	typedef [flag(NDR_PAHEX)] struct {
-		uint8 user_session_key[16];
+		uint8 key[16];
 	} netr_UserSessionKey;
+
+	typedef [flag(NDR_PAHEX)] struct {
+		uint8 key[8];
+	} netr_LMSessionKey;
 
 	typedef struct {
 		NTTIME logon_time;
@@ -175,7 +179,9 @@ interface netlogon
 		netr_String logon_server;
 		netr_String domain;
 		dom_sid2 *domain_sid;
-		uint32 expansionroom[10];
+		netr_LMSessionKey LMSessKey;
+		uint32 AccountControl;
+		uint32 expansionroom[7];
 	} netr_SamInfo;
 
 	typedef struct {
@@ -207,7 +213,9 @@ interface netlogon
 		netr_String logon_server;
 		netr_String domain;
 		dom_sid2 *domain_sid;
-		uint32 expansionroom[10];
+		netr_LMSessionKey LMSessKey;
+		uint32 AccountControl;
+		uint32 expansionroom[7];
 		uint32 sidcount;
 		[size_is(sidcount)] netr_SidAttr *sids;
 	} netr_SamInfo2;
