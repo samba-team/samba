@@ -58,8 +58,8 @@ convert an oplock mode to a string
 char *get_file_oplock_str(uint32 op_type)
 {
 	static fstring oplock;
-	BOOL excl  = IS_BITS_SET_ALL(op_type, EXCLUSIVE_OPLOCK);
-	BOOL batch = IS_BITS_SET_ALL(op_type, BATCH_OPLOCK    );
+	BOOL excl  = ((op_type & EXCLUSIVE_OPLOCK) != 0);
+	BOOL batch = ((op_type & BATCH_OPLOCK    ) != 0);
 
 	oplock[0] = 0;
 
@@ -106,7 +106,7 @@ char *get_server_type_str(uint32 type)
 		typestr[0] = 0;
 		for (i = 0; i < 32; i++)
 		{
-			if (IS_BITS_SET_ALL(type, 1 << i))
+			if (type & (1 << i))
 			{
 				switch (((unsigned)1) << i)
 				{
@@ -984,7 +984,7 @@ char *get_sec_mask_str(uint32 type)
 	typestr[0] = 0;
 	for (i = 0; i < 32; i++)
 	{
-		if (IS_BITS_SET_ALL(type, 1 << i))
+		if (type & (1 << i))
 		{
 			switch (((unsigned)1) << i)
 			{

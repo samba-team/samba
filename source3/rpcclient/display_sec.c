@@ -54,7 +54,7 @@ static const char *get_sec_mask_str(uint32 type)
 	typestr[0] = 0;
 	for (i = 0; i < 32; i++)
 	{
-		if (IS_BITS_SET_ALL(type, 1 << i))
+		if (type & (1 << i))
 		{
 			switch (1 << i)
 			{

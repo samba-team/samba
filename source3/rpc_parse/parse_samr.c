@@ -1365,7 +1365,7 @@ void init_sam_info_2(SAM_INFO_2 *sam, uint32 acb_mask,
 	}
 
 	for (i = start_idx, entries_added = 0; i < num_sam_entries; i++) {
-		if (IS_BITS_SET_ALL(pass[i].acb_info, acb_mask)) {
+		if ((pass[i].acb_info & acb_mask) == acb_mask) {
 			init_sam_entry2(&sam->sam[entries_added],
 			                start_idx + entries_added + 1,
 			                pass[i].uni_user_name.uni_str_len,
@@ -1451,7 +1451,7 @@ void init_sam_info_1(SAM_INFO_1 *sam, uint32 acb_mask,
 
 	for (i = 0, entries_added = 0; 
 	     i < num_sam_entries; i++) {
-		if (IS_BITS_SET_ALL(pass[i].acb_info, acb_mask)) {
+		if ((pass[i].acb_info & acb_mask) == acb_mask) {
 			init_sam_entry1(&sam->sam[entries_added],
 						start_idx + entries_added + 1,
 						pass[i].uni_user_name.uni_str_len,

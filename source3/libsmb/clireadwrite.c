@@ -148,10 +148,10 @@ static void cli_issue_write(struct cli_state *cli, int fnum, off_t offset, uint1
 	SSVAL(cli->outbuf,smb_vwv2,fnum);
 
 	SIVAL(cli->outbuf,smb_vwv3,offset);
-	SIVAL(cli->outbuf,smb_vwv5,IS_BITS_SET_ALL(mode, 0x0008) ? 0xFFFFFFFF : 0);
+	SIVAL(cli->outbuf,smb_vwv5,(mode & 0x0008) ? 0xFFFFFFFF : 0);
 	SSVAL(cli->outbuf,smb_vwv7,mode);
 
-	SSVAL(cli->outbuf,smb_vwv8,IS_BITS_SET_ALL(mode, 0x0008) ? size : 0);
+	SSVAL(cli->outbuf,smb_vwv8,(mode & 0x0008) ? size : 0);
 	SSVAL(cli->outbuf,smb_vwv10,size);
 	SSVAL(cli->outbuf,smb_vwv11,
 	      smb_buf(cli->outbuf) - smb_base(cli->outbuf));

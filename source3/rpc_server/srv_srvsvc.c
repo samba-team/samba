@@ -192,7 +192,7 @@ static void init_srv_r_net_share_enum(SRV_R_NET_SHARE_ENUM *r_n,
 				    &resume_hnd, &r_n->total_entries)) {
 		r_n->status = 0x0;
 	} else {
-		r_n->status = 0xC0000000 | NT_STATUS_INVALID_INFO_CLASS;
+		r_n->status = NT_STATUS_INVALID_INFO_CLASS;
 	}
 
 	init_enum_hnd(&r_n->enum_hnd, resume_hnd);
@@ -255,11 +255,11 @@ static void init_srv_r_net_share_get_info(SRV_R_NET_SHARE_GET_INFO *r_n,
 			break;
 		default:
 			DEBUG(5,("init_srv_net_share_get_info: unsupported switch value %d\n", info_level));
-			status = 0xC0000000 | NT_STATUS_INVALID_INFO_CLASS;
+			status = NT_STATUS_INVALID_INFO_CLASS;
 			break;
 		}
 	} else {
-		status = 0xC0000000 | NT_STATUS_BAD_NETWORK_NAME;
+		status = NT_STATUS_BAD_NETWORK_NAME;
 	}
 
 	r_n->ptr_share_ctr = (status == 0x0) ? 1 : 0;
@@ -462,7 +462,7 @@ static uint32 init_srv_sess_info_ctr(SRV_SESS_INFO_CTR *ctr,
 			(*resume_hnd) = 0;
 			(*total_entries) = 0;
 			ctr->ptr_sess_ctr = 0;
-			status = 0xC0000000 | NT_STATUS_INVALID_INFO_CLASS;
+			status = NT_STATUS_INVALID_INFO_CLASS;
 			break;
 		}
 	}
@@ -481,7 +481,7 @@ static void init_srv_r_net_sess_enum(SRV_R_NET_SESS_ENUM *r_n,
 	r_n->sess_level  = sess_level;
 	if (sess_level == -1)
 	{
-		r_n->status = 0xC0000000 | NT_STATUS_INVALID_INFO_CLASS;
+		r_n->status = NT_STATUS_INVALID_INFO_CLASS;
 	}
 	else
 	{
@@ -675,7 +675,7 @@ static uint32 init_srv_conn_info_ctr(SRV_CONN_INFO_CTR *ctr,
 			(*resume_hnd = 0);
 			(*total_entries) = 0;
 			ctr->ptr_conn_ctr = 0;
-			status = 0xC0000000 | NT_STATUS_INVALID_INFO_CLASS;
+			status = NT_STATUS_INVALID_INFO_CLASS;
 			break;
 		}
 	}
@@ -694,7 +694,7 @@ static void init_srv_r_net_conn_enum(SRV_R_NET_CONN_ENUM *r_n,
 	r_n->conn_level  = conn_level;
 	if (conn_level == -1)
 	{
-		r_n->status = 0xC0000000 | NT_STATUS_INVALID_INFO_CLASS;
+		r_n->status = NT_STATUS_INVALID_INFO_CLASS;
 	}
 	else
 	{
@@ -810,7 +810,7 @@ static uint32 init_srv_file_info_ctr(SRV_FILE_INFO_CTR *ctr,
 			(*resume_hnd = 0);
 			(*total_entries) = 0;
 			ctr->ptr_file_ctr = 0;
-			status = 0xC0000000 | NT_STATUS_INVALID_INFO_CLASS;
+			status = NT_STATUS_INVALID_INFO_CLASS;
 			break;
 		}
 	}
@@ -829,7 +829,7 @@ static void init_srv_r_net_file_enum(SRV_R_NET_FILE_ENUM *r_n,
 	r_n->file_level  = file_level;
 	if (file_level == 0)
 	{
-		r_n->status = 0xC0000000 | NT_STATUS_INVALID_INFO_CLASS;
+		r_n->status = NT_STATUS_INVALID_INFO_CLASS;
 	}
 	else
 	{
@@ -910,7 +910,7 @@ static void srv_reply_net_srv_get_info(SRV_Q_NET_SRV_GET_INFO *q_n,
 		}
 		default:
 		{
-			status = 0xC0000000 | NT_STATUS_INVALID_INFO_CLASS;
+			status = NT_STATUS_INVALID_INFO_CLASS;
 			break;
 		}
 	}

@@ -354,7 +354,7 @@ static BOOL api_net_req_chal(pipes_struct *p)
 				 (char *)vuser->dc.md4pw, vuser->dc.sess_key);
 	} else {
 		/* lkclXXXX take a guess at a good error message to return :-) */
-		status = 0xC0000000 | NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT;
+		status = NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT;
 	}
 
 	/* construct reply. */
@@ -370,7 +370,7 @@ static BOOL api_net_req_chal(pipes_struct *p)
 
 static BOOL api_net_auth_2(pipes_struct *p)
 {
-        uint16 vuid = p->vuid;
+	uint16 vuid = p->vuid;
 	NET_Q_AUTH_2 q_a;
 	uint32 status = 0x0;
 	prs_struct *data = &p->in_data.data;
@@ -403,7 +403,7 @@ static BOOL api_net_auth_2(pipes_struct *p)
 		memcpy(vuser->dc.clnt_cred.challenge.data, q_a.clnt_chal.data, sizeof(q_a.clnt_chal.data));
 		memcpy(vuser->dc.srv_cred .challenge.data, q_a.clnt_chal.data, sizeof(q_a.clnt_chal.data));
 	} else {
-		status = NT_STATUS_ACCESS_DENIED | 0xC0000000;
+		status = NT_STATUS_ACCESS_DENIED;
 	}
 
 	/* construct reply. */
@@ -420,9 +420,9 @@ static BOOL api_net_auth_2(pipes_struct *p)
 
 static BOOL api_net_srv_pwset(pipes_struct *p)
 {
-        uint16 vuid = p->vuid;
+	uint16 vuid = p->vuid;
 	NET_Q_SRV_PWSET q_a;
-	uint32 status = NT_STATUS_WRONG_PASSWORD|0xC0000000;
+	uint32 status = NT_STATUS_WRONG_PASSWORD;
 	DOM_CRED srv_cred;
 	pstring mach_acct;
 	struct smb_passwd *smb_pass;
@@ -487,7 +487,7 @@ static BOOL api_net_srv_pwset(pipes_struct *p)
 
 	} else {
 		/* lkclXXXX take a guess at a sensible error code to return... */
-		status = 0xC0000000 | NT_STATUS_NETWORK_CREDENTIAL_CONFLICT;
+		status = NT_STATUS_NETWORK_CREDENTIAL_CONFLICT;
 	}
 
 	/* Construct reply. */
@@ -582,7 +582,7 @@ static uint32 net_login_interactive(NET_ID_INFO_1 *id1, struct smb_passwd *smb_p
 	if (memcmp(smb_pass->smb_passwd   , lm_pwd, 16) != 0 ||
 	    memcmp(smb_pass->smb_nt_passwd, nt_pwd, 16) != 0)
 	{
-		status = 0xC0000000 | NT_STATUS_WRONG_PASSWORD;
+		status = NT_STATUS_WRONG_PASSWORD;
 	}
 
 	return status;
@@ -609,7 +609,7 @@ static uint32 net_login_network(NET_ID_INFO_2 *id2, struct smb_passwd *smb_pass)
                            id2->lm_chal)) 
 			return 0x0;
 		else
-			return 0xC0000000 | NT_STATUS_WRONG_PASSWORD;
+			return NT_STATUS_WRONG_PASSWORD;
 	}
 
 	/* lkclXXXX this is not a good place to put disabling of LM hashes in.
@@ -631,7 +631,7 @@ static uint32 net_login_network(NET_ID_INFO_2 *id2, struct smb_passwd *smb_pass)
 
 	/* oops! neither password check succeeded */
 
-	return 0xC0000000 | NT_STATUS_WRONG_PASSWORD;
+	return NT_STATUS_WRONG_PASSWORD;
 }
 
 /*************************************************************************
@@ -673,7 +673,7 @@ static BOOL api_net_sam_logon(pipes_struct *p)
     /* checks and updates credentials.  creates reply credentials */
     if (!deal_with_creds(vuser->dc.sess_key, &(vuser->dc.clnt_cred), 
                          &(q_l.sam_id.client.cred), &srv_cred))
-        status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
+        status = NT_STATUS_INVALID_HANDLE;
     else
         memcpy(&(vuser->dc.srv_cred), &(vuser->dc.clnt_cred), 
                sizeof(vuser->dc.clnt_cred));
@@ -695,7 +695,7 @@ static BOOL api_net_sam_logon(pipes_struct *p)
             break;
         default:
             DEBUG(2,("SAM Logon: unsupported switch value\n"));
-            status = 0xC0000000 | NT_STATUS_INVALID_INFO_CLASS;
+            status = NT_STATUS_INVALID_INFO_CLASS;
             break;
         } /* end switch */
     } /* end if status == 0 */
@@ -723,11 +723,11 @@ static BOOL api_net_sam_logon(pipes_struct *p)
         unbecome_root();
         
         if (smb_pass == NULL)
-            status = 0xC0000000 | NT_STATUS_NO_SUCH_USER;
+            status = NT_STATUS_NO_SUCH_USER;
         else if (smb_pass->acct_ctrl & ACB_PWNOTREQ)
             status = 0;
         else if (smb_pass->acct_ctrl & ACB_DISABLED)
-            status =  0xC0000000 | NT_STATUS_ACCOUNT_DISABLED;
+            status =  NT_STATUS_ACCOUNT_DISABLED;
     }
     
     /* Validate password - if required. */
@@ -851,7 +851,7 @@ static BOOL api_net_sam_logon(pipes_struct *p)
                                 &global_sam_sid,     /* DOM_SID *dom_sid */
                                 NULL); /* char *other_sids */
         else
-            status = 0xC0000000 | NT_STATUS_NO_SUCH_USER;
+            status = NT_STATUS_NO_SUCH_USER;
         
         /* Free any allocated groups array. */
         if(gids)
