@@ -404,7 +404,7 @@ struct smbw_server *smbw_server(char *server, char *share)
 	DEBUG(4,("server_n=[%s] server=[%s]\n", server_n, server));
 
 	if ((p=strchr(server_n,'#')) && strcmp(p+1,"1D")==0) {
-		struct in_addr ip;
+		struct in_addr sip;
 		pstring s;
 
 		fstrcpy(group, server_n);
@@ -414,11 +414,11 @@ struct smbw_server *smbw_server(char *server, char *share)
 		/* cache the workgroup master lookup */
 		slprintf(s,sizeof(s)-1,"MASTER_%s", group);
 		if (!(server_n = smbw_getshared(s))) {
-			if (!find_master_ip(group, &ip)) {
+			if (!find_master_ip(group, &sip)) {
 				errno = ENOENT;
 				return NULL;
 			}
-			fstrcpy(group, inet_ntoa(ip));
+			fstrcpy(group, inet_ntoa(sip));
 			server_n = group;
 			smbw_setshared(s,server_n);
 		}

@@ -121,7 +121,6 @@ char *smbw_getshared(const char *name)
 
 	i=0;
 	while (i < shared_size) {
-		int len;
 		char *n, *v;
 
 		n = &variables[i];

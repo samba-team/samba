@@ -1115,7 +1115,7 @@ static int call_trans2qfsinfo(connection_struct *conn,
     }
     case SMB_QUERY_FS_ATTRIBUTE_INFO:
       data_len = 12 + 2*strlen(fstype);
-      SIVAL(pdata,0,FILE_CASE_PRESERVED_NAMES); /* FS ATTRIBUTES */
+      SIVAL(pdata,0,FILE_CASE_PRESERVED_NAMES|FILE_CASE_SENSITIVE_SEARCH); /* FS ATTRIBUTES */
 #if 0 /* Old code. JRA. */
       SIVAL(pdata,0,0x4006); /* FS ATTRIBUTES == long filenames supported? */
 #endif /* Old code. */
@@ -1238,23 +1238,45 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
   char *fname;
   char *p;
   int l;
-  SMB_OFF_T pos;
+  SMB_OFF_T pos = 0;
   BOOL bad_path = False;
 
   if (tran_call == TRANSACT2_QFILEINFO) {
     files_struct *fsp = file_fsp(params,0);
     info_level = SVAL(params,2);
 
-    CHECK_FSP(fsp,conn);
-    CHECK_ERROR(fsp);
+    if(fsp && fsp->open && fsp->is_directory) {
+      /*
+       * This is actually a QFILEINFO on a directory
+       * handle (returned from an NT SMB). NT5.0 seems
+       * to do this call. JRA.
+       */
+      fname = fsp->fsp_name;
+      unix_convert(fname,conn,0,&bad_path,&sbuf);
+      if (!check_name(fname,conn) || (!VALID_STAT(sbuf) && dos_stat(fname,&sbuf))) {
+        DEBUG(3,("fileinfo of %s failed (%s)\n",fname,strerror(errno)));
+        if((errno == ENOENT) && bad_path)
+        {
+          unix_ERR_class = ERRDOS;
+          unix_ERR_code = ERRbadpath;
+        }
+        return(UNIXERROR(ERRDOS,ERRbadpath));
+      }
+    } else {
+      /*
+       * Original code - this is an open file.
+       */
+      CHECK_FSP(fsp,conn);
+      CHECK_ERROR(fsp);
 
-    fname = fsp->fsp_name;
-    if (sys_fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
-      DEBUG(3,("fstat of fnum %d failed (%s)\n",fsp->fnum, strerror(errno)));
-      return(UNIXERROR(ERRDOS,ERRbadfid));
+      fname = fsp->fsp_name;
+      if (sys_fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
+        DEBUG(3,("fstat of fnum %d failed (%s)\n",fsp->fnum, strerror(errno)));
+        return(UNIXERROR(ERRDOS,ERRbadfid));
+      }
+      if((pos = sys_lseek(fsp->fd_ptr->fd,0,SEEK_CUR)) == -1)
+        return(UNIXERROR(ERRDOS,ERRnoaccess));
     }
-    if((pos = sys_lseek(fsp->fd_ptr->fd,0,SEEK_CUR)) == -1)
-      return(UNIXERROR(ERRDOS,ERRnoaccess));
   } else {
     /* qpathinfo */
     info_level = SVAL(params,0);
@@ -1270,7 +1292,6 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
       }
       return(UNIXERROR(ERRDOS,ERRbadpath));
     }
-    pos = 0;
   }
 
 

@@ -38,7 +38,6 @@ int main(int argc, char *argv[])
 	char *p, *u;
 	char *libd = BINDIR;	
 	pstring line;
-	extern FILE *dbf;
 	int opt;
 	extern char *optarg;
 	extern int optind;

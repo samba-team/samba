@@ -233,6 +233,39 @@ static int send_nt_replies(char *outbuf, int bufsize, char *params,
 }
 
 /****************************************************************************
+ (Hopefully) temporary call to fix bugs in NT5.0beta2. This OS sends unicode
+ strings in NT calls AND DOESN'T SET THE UNICODE BIT !!!!!!!
+****************************************************************************/
+
+static void my_wcstombs(char *dst, uint16 *src, size_t len)
+{
+  size_t i;
+
+  for(i = 0; i < len; i++)
+    dst[i] = (char)SVAL(src,i*2);
+}
+
+static void get_filename( char *fname, char *inbuf, int data_offset, int data_len, int fname_len)
+{
+  if(data_len - fname_len > 1) {
+    /*
+     * NT 5.0 Beta 2 has kindly sent us a UNICODE string
+     * without bothering to set the unicode bit. How kind.
+     *
+     * Firstly - ensure that the data offset is aligned
+     * on a 2 byte boundary - add one if not.
+     */
+    fname_len = fname_len/2;
+    if(data_offset & 1)
+      data_offset++;
+    my_wcstombs( fname, (uint16 *)(inbuf+data_offset), fname_len);
+  } else {
+    StrnCpy(fname,inbuf+data_offset,fname_len);
+  }
+  fname[fname_len] = '\0';
+}
+
+/****************************************************************************
  Save case statics.
 ****************************************************************************/
 
@@ -327,7 +360,7 @@ static int map_share_mode( uint32 desired_access, uint32 share_access, uint32 fi
     if(desired_access & (DELETE_ACCESS|FILE_WRITE_ATTRIBUTES|
                          WRITE_DAC_ACCESS|WRITE_OWNER_ACCESS))
       smb_open_mode = 2;
-    else if(desired_access & (FILE_EXECUTE|READ_CONTROL_ACCESS))
+    else if(desired_access & (FILE_EXECUTE|FILE_READ_ATTRIBUTES|READ_CONTROL_ACCESS))
       smb_open_mode = 0;
     else {
       DEBUG(0,("map_share_mode: Incorrect value for desired_access = %x\n",
@@ -481,12 +514,22 @@ int reply_ntcreate_and_X(connection_struct *conn,
       if(fname_len + dir_name_len >= sizeof(pstring))
         return(ERROR(ERRSRV,ERRfilespecs));
 
+      get_filename(&fname[dir_name_len], inbuf, smb_buf(inbuf)-inbuf, 
+                   smb_buflen(inbuf),fname_len);
+#if 0
       StrnCpy(&fname[dir_name_len], smb_buf(inbuf),fname_len);
       fname[dir_name_len+fname_len] = '\0';
+#endif
 
     } else {
+      
+      get_filename(fname, inbuf, smb_buf(inbuf)-inbuf, 
+                   smb_buflen(inbuf),fname_len);
+
+#if 0
 	  StrnCpy(fname,smb_buf(inbuf),fname_len);
       fname[fname_len] = '\0';
+#endif
     }
 	
 	/* If it's an IPC, use the pipe handler. */
