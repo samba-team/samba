@@ -214,15 +214,10 @@ encode_type (char *name, Type *t)
 	     "len -= 2;\n"
 	     "ret += 2;\n"
 	     "}\n\n"
-	     "l = der_put_length (p, len, ret);\n"
+	     "l = der_put_length_and_tag (p, len, ret, UNIV, PRIM,"
+	     "UT_BitString);\n"
 	     "if(l < 0)\n"
 	     "  return l;\n"
-	     "p -= l;\n"
-	     "len -= l;\n"
-	     "ret += l;\n\n"
-	     "l = der_put_tag (p, len, UNIV, PRIM, UT_BitString);\n"
-	     "if(l < 0)\n"
-	     "return l;\n"
 	     "p -= l;\n"
 	     "len -= l;\n"
 	     "ret += l;\n\n",
@@ -249,14 +244,8 @@ encode_type (char *name, Type *t)
 	       "ret = 0;\n");
       encode_type (s, m->type);
       fprintf (codefile,
-	       "l = der_put_length (p, len, ret);\n"
+	       "l = der_put_length_and_tag (p, len, ret, CONTEXT, CONS, %d);\n"
 	       "if (l < 0)\n"
-	       "return l;\n"
-	       "p -= l;\n"
-	       "len -= l;\n"
-	       "ret += l;\n\n"
-	       "l = der_put_tag (p, len, CONTEXT, CONS, %d);\n"
-	       "if(l < 0)\n"
 	       "return l;\n"
 	       "p -= l;\n"
 	       "len -= l;\n"
@@ -270,15 +259,9 @@ encode_type (char *name, Type *t)
       free (s);
     }
     fprintf (codefile,
-	     "l = der_put_length (p, len, ret);\n"
+	     "l = der_put_length_and_tag (p, len, ret, UNIV, CONS, UT_Sequence);\n"
 	     "if(l < 0)\n"
 	     "  return l;\n"
-	     "p -= l;\n"
-	     "len -= l;\n"
-	     "ret += l;\n\n"
-	     "l = der_put_tag (p, len, UNIV, CONS, UT_Sequence);\n"
-	     "if(l < 0)\n"
-	     "return l;\n"
 	     "p -= l;\n"
 	     "len -= l;\n"
 	     "ret += l;\n\n");
@@ -297,15 +280,9 @@ encode_type (char *name, Type *t)
     fprintf (codefile,
 	     "ret += oldret;\n"
 	     "}\n"
-	     "l = der_put_length (p, len, ret);\n"
+	     "l = der_put_length_and_tag (p, len, ret, UNIV, CONS, UT_Sequence);\n"
 	     "if(l < 0)\n"
 	     "  return l;\n"
-	     "p -= l;\n"
-	     "len -= l;\n"
-	     "ret += l;\n\n"
-	     "l = der_put_tag (p, len, UNIV, CONS, UT_Sequence);\n"
-	     "if(l < 0)\n"
-	     "return l;\n"
 	     "p -= l;\n"
 	     "len -= l;\n"
 	     "ret += l;\n\n");
@@ -321,15 +298,9 @@ encode_type (char *name, Type *t)
   case TApplication:
     encode_type (name, t->subtype);
     fprintf (codefile,
-	     "l = der_put_length (p, len, ret);\n"
+	     "l = der_put_length_and_tag (p, len, ret, APPL, CONS, %d);\n"
 	     "if(l < 0)\n"
 	     "  return l;\n"
-	     "p -= l;\n"
-	     "len -= l;\n"
-	     "ret += l;\n\n"
-	     "l = der_put_tag (p, len, APPL, CONS, %d);\n"
-	     "if(l < 0)\n"
-	     "return l;\n"
 	     "p -= l;\n"
 	     "len -= l;\n"
 	     "ret += l;\n\n",
@@ -402,13 +373,8 @@ decode_type (char *name, Type *t)
     int pos;
 
     fprintf (codefile,
-	     "l = der_match_tag (p, len, UNIV, PRIM, UT_BitString);\n"
-	     "if(l < 0)\n"
-	     "return l;\n"
-	     "p += l;\n"
-	     "len -= l;\n"
-	     "ret += l;\n"
-	     "l = der_get_length (p, len, &reallen);\n"
+	     "l = der_match_tag_and_length (p, len, UNIV, PRIM, UT_BitString,"
+	     "&reallen);\n"
 	     "if(l < 0)\n"
 	     "return l;\n"
 	     "p += l;\n"
@@ -441,13 +407,8 @@ decode_type (char *name, Type *t)
       break;
 
     fprintf (codefile,
-	     "l = der_match_tag (p, len, UNIV, CONS, UT_Sequence);\n"
-	     "if(l < 0)\n"
-	     "return l;\n"
-	     "p += l;\n"
-	     "len -= l;\n"
-	     "ret += l;\n"
-	     "l = der_get_length (p, len, &reallen);\n"
+	     "l = der_match_tag_and_length (p, len, UNIV, CONS, UT_Sequence,"
+	     "&reallen);\n"
 	     "if(l < 0)\n"
 	     "return l;\n"
 	     "p += l;\n"
@@ -497,14 +458,8 @@ decode_type (char *name, Type *t)
       decode_type (s, m->type);
       fprintf (codefile,
 	    "if(dce_fix){\n"
-	    "l = der_match_tag (p, len, 0, 0, 0);\n"
+	    "l = der_match_tag_and_length (p, len, 0, 0, 0, &reallen);\n"
 	    "if(l < 0) return l;\n"
-	    "p += l;\n"
-	    "len -= l;\n"
-	    "ret += l;\n"
-	    "l = der_get_length(p, len, &reallen);\n"
-	    "if(l < 0)\n"
-	    "return l;\n"
 	    "p += l;\n"
 	    "len -= l;\n"
 	    "ret += l;\n"
@@ -529,14 +484,8 @@ decode_type (char *name, Type *t)
     }
     fprintf(codefile,
 	    "if(dce_fix){\n"
-	    "l = der_match_tag (p, len, 0, 0, 0);\n"
+	    "l = der_match_tag_and_length (p, len, 0, 0, 0, &reallen);\n"
 	    "if(l < 0) return l;\n"
-	    "p += l;\n"
-	    "len -= l;\n"
-	    "ret += l;\n"
-	    "l = der_get_length(p, len, &reallen);\n"
-	    "if(l < 0)\n"
-	    "return l;\n"
 	    "p += l;\n"
 	    "len -= l;\n"
 	    "ret += l;\n"
@@ -549,13 +498,8 @@ decode_type (char *name, Type *t)
     char *n = malloc(2*strlen(name) + 20);
 
     fprintf (codefile,
-	     "l = der_match_tag (p, len, UNIV, CONS, UT_Sequence);\n"
-	     "if(l < 0)\n"
-	     "return l;\n"
-	     "p += l;\n"
-	     "len -= l;\n"
-	     "ret += l;\n"
-	     "l = der_get_length (p, len, &reallen);\n"
+	     "l = der_match_tag_and_length (p, len, UNIV, CONS, UT_Sequence,"
+	     "&reallen);\n"
 	     "if(l < 0)\n"
 	     "return l;\n"
 	     "p += l;\n"
@@ -587,13 +531,7 @@ decode_type (char *name, Type *t)
     break;
   case TApplication:
     fprintf (codefile,
-	     "l = der_match_tag (p, len, APPL, CONS, %d);\n"
-	     "if(l < 0)\n"
-	     "return l;\n"
-	     "p += l;\n"
-	     "len -= l;\n"
-	     "ret += l;\n"
-	     "l = der_get_length(p, len, &reallen);\n"
+	     "l = der_match_tag_and_length (p, len, APPL, CONS, %d, &reallen);\n"
 	     "if(l < 0)\n"
 	     "return l;\n"
 	     "p += l;\n"
@@ -611,14 +549,8 @@ decode_type (char *name, Type *t)
     decode_type (name, t->subtype);
     fprintf(codefile,
 	    "if(dce_fix){\n"
-	    "l = der_match_tag (p, len, 0, 0, 0);\n"
+	    "l = der_match_tag_and_length (p, len, 0, 0, 0, &reallen);\n"
 	    "if(l < 0) return l;\n"
-	    "p += l;\n"
-	    "len -= l;\n"
-	    "ret += l;\n"
-	    "l = der_get_length(p, len, &reallen);\n"
-	    "if(l < 0)\n"
-	    "return l;\n"
 	    "p += l;\n"
 	    "len -= l;\n"
 	    "ret += l;\n"
