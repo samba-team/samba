@@ -146,6 +146,7 @@ char *lp_remote_announce(void);
 char *lp_wins_server(void);
 char *lp_interfaces(void);
 char *lp_socket_address(void);
+char *lp_nis_home_map_name(void);
 BOOL lp_wins_support(void);
 BOOL lp_wins_proxy(void);
 BOOL lp_domain_master(void);
@@ -163,6 +164,8 @@ BOOL lp_strip_dot(void);
 BOOL lp_encrypted_passwords(void);
 BOOL lp_syslog_only(void);
 BOOL lp_browse_list(void);
+BOOL lp_unix_realname(void);
+BOOL lp_nis_home_map(void);
 int lp_os_level(void);
 int lp_max_ttl(void);
 int lp_max_log_size(void);
@@ -431,9 +434,9 @@ void process_logon_packet(struct packet_struct *p,char *buf,int len);
 
 void debug_browse_data(char *outbuf, int len);
 void initiate_netbios_packet(uint16 *id,
-				int fd,int quest_type,char *name,int name_type,
-			    int nb_flags,BOOL bcast,BOOL recurse,
-			    struct in_addr to_ip);
+			     int fd,int quest_type,char *name,int name_type,
+			     int nb_flags,BOOL bcast,BOOL recurse,
+			     struct in_addr to_ip);
 void reply_netbios_packet(struct packet_struct *p1,int trn_id,
 				int rcode, int rcv_code, int opcode, BOOL recurse,
 				struct nmb_name *rr_name,int rr_type,int rr_class,int ttl,
@@ -441,8 +444,7 @@ void reply_netbios_packet(struct packet_struct *p1,int trn_id,
 void queue_packet(struct packet_struct *packet);
 void run_packet_queue();
 void listen_for_packets(BOOL run_election);
-BOOL send_mailslot_reply(BOOL unique, char *mailslot,int fd,
-             char *buf,int len,char *srcname,
+BOOL send_mailslot_reply(BOOL unique, char *mailslot,int fd,char *buf,int len,char *srcname,
 			 char *dstname,int src_type,int dest_type,
 			 struct in_addr dest_ip,struct in_addr src_ip);
 
@@ -468,7 +470,7 @@ struct response_record *queue_netbios_packet(struct subnet_record *d,
 			int fd,int quest_type,enum state_type state,char *name,
 			int name_type,int nb_flags, time_t ttl,
 			int server_type, char *my_name, char *my_comment,
-		    BOOL bcast,BOOL recurse,
+			BOOL bcast,BOOL recurse,
 			struct in_addr send_ip, struct in_addr reply_to_ip);
 
 /*The following definitions come from  nameserv.c  */

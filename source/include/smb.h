@@ -372,6 +372,10 @@ typedef struct
   int user_ngroups;
   gid_t *user_groups;
   int *user_igroups; /* an integer version - some OSes are broken :-( */
+#if (defined(NETGROUP) && defined(AUTOMOUNT))
+  char *home_share;  /* to store NIS home of a user - simeon */
+#endif
+  char *real_name;   /* to store real name from password file - simeon */
 } user_struct;
 
 

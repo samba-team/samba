@@ -135,6 +135,7 @@ typedef struct
   char *szInterfaces;
   char *szRemoteAnnounce;
   char *szSocketAddress;
+  char *szNISHomeMapName;
   int max_log_size;
   int mangled_stack;
   int max_xmit;
@@ -167,6 +168,8 @@ typedef struct
   BOOL bReadbmpx;
   BOOL bSyslogOnly;
   BOOL bBrowseList;
+  BOOL bUnixRealname;
+  BOOL bNISHomeMap;
 } global;
 
 static global Globals;
@@ -412,6 +415,7 @@ struct parm_struct
   {"logon path",       P_STRING,  P_GLOBAL, &Globals.szLogonPath,       NULL},
   {"remote announce",  P_STRING,  P_GLOBAL, &Globals.szRemoteAnnounce,  NULL},
   {"socket address",   P_STRING,  P_GLOBAL, &Globals.szSocketAddress,   NULL},
+  {"homedir map",      P_STRING,  P_GLOBAL, &Globals.szNISHomeMapName,  NULL},
   {"max log size",     P_INTEGER, P_GLOBAL, &Globals.max_log_size,      NULL},
   {"mangled stack",    P_INTEGER, P_GLOBAL, &Globals.mangled_stack,     NULL},
   {"max mux",          P_INTEGER, P_GLOBAL, &Globals.max_mux,           NULL},
@@ -436,7 +440,8 @@ struct parm_struct
   {"domain master",    P_BOOL,    P_GLOBAL, &Globals.bDomainMaster,     NULL},
   {"domain logons",    P_BOOL,    P_GLOBAL, &Globals.bDomainLogons,     NULL},
   {"browse list",      P_BOOL,    P_GLOBAL, &Globals.bBrowseList,       NULL},
-
+  {"unix realname",    P_BOOL,    P_GLOBAL, &Globals.bUnixRealname,     NULL},
+  {"NIS homedir",      P_BOOL,    P_GLOBAL, &Globals.bNISHomeMap,       NULL},
   {"-valid",           P_BOOL,    P_LOCAL,  &sDefault.valid,            NULL},
   {"comment",          P_STRING,  P_LOCAL,  &sDefault.comment,          NULL},
   {"copy",             P_STRING,  P_LOCAL,  &sDefault.szCopy,    handle_copy},
@@ -603,7 +608,11 @@ static void init_globals(void)
   Globals.bWINSsupport = False;
   Globals.bWINSproxy = False;
   Globals.ReadSize = 16*1024;
-
+  Globals.bUnixRealname = False;
+#ifdef NETGROUP
+  Globals.bNISHomeMap = False;
+  string_set(&Globals.szNISHomeMapName, "auto.home");
+#endif
 #ifdef KANJI
   coding_system = interpret_coding_system (KANJI, SJIS_CODE);
 #endif /* KANJI */
@@ -758,6 +767,7 @@ FN_GLOBAL_STRING(lp_remote_announce,&Globals.szRemoteAnnounce)
 FN_GLOBAL_STRING(lp_wins_server,&Globals.szWINSserver)
 FN_GLOBAL_STRING(lp_interfaces,&Globals.szInterfaces)
 FN_GLOBAL_STRING(lp_socket_address,&Globals.szSocketAddress)
+FN_GLOBAL_STRING(lp_nis_home_map_name,&Globals.szNISHomeMapName)
 
 FN_GLOBAL_BOOL(lp_wins_support,&Globals.bWINSsupport)
 FN_GLOBAL_BOOL(lp_wins_proxy,&Globals.bWINSproxy)
@@ -776,6 +786,8 @@ FN_GLOBAL_BOOL(lp_strip_dot,&Globals.bStripDot)
 FN_GLOBAL_BOOL(lp_encrypted_passwords,&Globals.bEncryptPasswords)
 FN_GLOBAL_BOOL(lp_syslog_only,&Globals.bSyslogOnly)
 FN_GLOBAL_BOOL(lp_browse_list,&Globals.bBrowseList)
+FN_GLOBAL_BOOL(lp_unix_realname,&Globals.bUnixRealname)
+FN_GLOBAL_BOOL(lp_nis_home_map,&Globals.bNISHomeMap)
 
 FN_GLOBAL_INTEGER(lp_os_level,&Globals.os_level)
 FN_GLOBAL_INTEGER(lp_max_ttl,&Globals.max_ttl)
