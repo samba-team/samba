@@ -3,6 +3,10 @@
 	* ftp/security.c (sec_read): fix bug in previous (from Jacques A.
 	Vidrine <n@nectar.com>)
 
+2000-11-05  Johan Danielsson  <joda@pdc.kth.se>
+
+	* ftpd/ftpcmd.y: only allow pasv if logged in
+
 2000-10-23  Johan Danielsson  <joda@pdc.kth.se>
 
 	* ftpd/ftpd.c: change bad filename message slightly
