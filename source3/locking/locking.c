@@ -681,6 +681,7 @@ static BOOL mod_share_mode( SMB_DEV_T dev, SMB_INO_T inode, share_mode_entry *en
 	int i;
 	share_mode_entry *shares;
 	BOOL need_store=False;
+	BOOL ret = True;
 
 	/* read in the existing share modes */
 	dbuf = tdb_fetch(tdb, locking_key(dev, inode));
@@ -702,15 +703,15 @@ static BOOL mod_share_mode( SMB_DEV_T dev, SMB_INO_T inode, share_mode_entry *en
 	if (need_store) {
 		if (data->u.num_share_mode_entries == 0) {
 			if (tdb_delete(tdb, locking_key(dev, inode)) == -1)
-				need_store = False;
+				ret = False;
 		} else {
 			if (tdb_store(tdb, locking_key(dev, inode), dbuf, TDB_REPLACE) == -1)
-				need_store = False;
+				ret = False;
 		}
 	}
 
 	SAFE_FREE(dbuf.dptr);
-	return need_store;
+	return ret;
 }
 
 /*******************************************************************
