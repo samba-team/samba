@@ -6201,6 +6201,8 @@ WERROR _spoolss_setprinterdata( pipes_struct *p, SPOOL_Q_SETPRINTERDATA *q_u, SP
 
 	convert_specific_param(&param, value , type, data, real_len);
 
+#if 0
+	/* JRA. W2K always changes changeid. */
 
 	if (get_specific_param(*printer, 2, param->value, &old_param.data,
 			       &old_param.type, (uint32 *)&old_param.data_len)) {
@@ -6215,6 +6217,7 @@ WERROR _spoolss_setprinterdata( pipes_struct *p, SPOOL_Q_SETPRINTERDATA *q_u, SP
 			goto done;
 		}
 	}
+#endif
 
 	unlink_specific_param_if_exist(printer->info_2, param);
 	
