@@ -1,3 +1,12 @@
+2005-03-26  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* snprintf.c: use defined(TEST_SNPRINTF) like on all other places
+	in the same file
+
+2005-03-21  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* hex.c: check for overflows
+
 2005-03-18  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* vis.c: use RCSID instead of __RCSID
