@@ -92,9 +92,6 @@ while(@bins) {
     if ($nextfile eq "smbpasswd") {
       print IDB "f 4555 root sys usr/samba/bin/$nextfile source/$nextfile samba.sw.base\n";
     }
-    elsif ($nextfile eq "psfixes.pl") {
-      print IDB "f 0755 root sys usr/samba/bin/$nextfile packaging/SGI/$nextfile samba.sw.base\n";
-    }
     elsif ($nextfile eq "sambalp") {
       print IDB "f 0755 root sys usr/samba/bin/$nextfile packaging/SGI/$nextfile samba.sw.base\n";
     }
