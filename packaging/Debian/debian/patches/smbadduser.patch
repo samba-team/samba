@@ -1,0 +1,22 @@
+--- samba-2.2.2.cvs20020120.orig/source/script/smbadduser
++++ samba-2.2.2.cvs20020120/source/script/smbadduser
+@@ -2,13 +2,14 @@
+ #
+ # smbadduser - Written by Mike Zakharoff
+ #
++# Customized for Debian by Eloy A. Paris <peloy@debian.org>
++#
+ unalias *
+-set path = ($path /usr/local/samba/bin)
++# No need to set a path in Debian
++#set path = ($path /usr/local/samba/bin)
+ 
+-set smbpasswd = /usr/local/samba/private/smbpasswd
+-#set smbpasswd = /etc/samba.d/smbpasswd
+-set user_map  = /usr/local/samba/lib/users.map
+-#set user_map  = /etc/samba.d/smbusers
++set smbpasswd = /etc/samba/smbpasswd
++set user_map  = /etc/samba/users.map
+ #
+ # Set to site specific passwd command
+ #

@@ -1,0 +1,218 @@
+#!/bin/sh
+#
+# Post-installation script for the Samba package for Debian GNU/Linux
+#
+# Written by Eloy A. Paris <peloy@debian.org> for the Debian project.
+#
+# The prerm script (run before the postinst) disables Samba in /etc/inetd.conf
+#	and stops both nmbd and smbd. So, when this script is run we
+#	know that neither nmbd nor smbd can start.
+#
+
+case "$1" in
+	configure)
+		# continue below
+	;;
+
+	abort-upgrade|abort-remove|abort-deconfigure)
+		exit 0
+	;;
+
+	*)
+		echo "postinst called with unknown argument \`$1'" >&2
+		exit 0
+	;;
+esac
+
+# Take care of the /usr/doc/ to /usr/shar/doc/ migration.
+if [ -d /usr/doc -a ! -e /usr/doc/samba -a -d /usr/share/doc/samba ]; then
+	ln -sf ../share/doc/samba /usr/doc/samba
+fi
+
+# Starting with Samba 2.0.7-4 the location of the WINS database, the browse
+#	database and other important run-time files are stored in
+#	/var/state/samba/ rather than in /var/samba/. The following
+#	code takes care of moving the files in the old directory to
+#	the new directory.
+if [ -d /var/samba/ ]; then
+	mv /var/samba/* /var/state/samba/
+	rmdir /var/samba/
+fi
+
+# Define some constants...
+DEBIAN_CONFIG=/etc/samba/debian_config
+CONFIG_VERSION=1
+
+# Now some variables...
+samba_configured=no
+
+
+if [ -f $DEBIAN_CONFIG ]; then
+	. $DEBIAN_CONFIG
+    if [ "$config_version" -ge "$CONFIG_VERSION" ]; then
+		samba_configured=yes
+	fi
+fi
+
+# If Samba is configured we don't want to pester the user with
+#	configuration questions, just tell him that he can reconfigure
+#	Samba at any time by running /usr/sbin/sambaconfig.
+if [ "$samba_configured" = "no" ]; then
+	# Samba is not configured, go and ask the user the information needed
+	#	to configure it, and configure it!
+
+	# Create Debian specific configuration file
+	echo "config_version=$CONFIG_VERSION" > $DEBIAN_CONFIG
+
+	# We always run /etc/init.d/samba, even if we run Samba from inetd.
+	#	This script file takes care of handling the conflict of running
+	#	from inetd or as daemons.
+	update-rc.d samba defaults >/dev/null
+
+	# We want to add these entries to inetd.conf commented out. Otherwise
+	#	UDP traffic could make inetd to start nmbd or smbd right during
+	#	the configuration stage.
+	update-inetd --add "#<off># netbios-ssn	stream	tcp	nowait	root	/usr/sbin/tcpd	/usr/sbin/smbd"
+	update-inetd --add "#<off># netbios-ns	dgram	udp	wait	root 	/usr/sbin/tcpd	/usr/sbin/nmbd -a"
+
+	echo ""
+	echo Samba Configuration
+	echo -------------------
+	echo "The Samba server may be run either as a daemon at startup, or it may be"
+	echo "run from the inetd meta-daemon upon request. If run as a daemon, the"
+	echo "server will always be ready, so starting sessions will be faster. If run"
+	echo "from the inetd meta-daemon some memory will be saved and utilities such"
+	echo "as the tcpd TCP-wrapper may be used for extra security. If you don't"
+	echo "know what to do, running from inetd is a safe choice."
+	echo ""
+	echo "Run Samba as daemons or from inetd?"
+	echo -n "Press 'D' to run as daemons or 'I' to run from inetd: [I] "
+
+	read mode
+	test -n "$mode" || mode="I"
+
+	case "$mode" in
+		[Dd]*)
+			echo "Samba will run as daemons. Run sambaconfig to reconfigure"
+			update-inetd --disable netbios-ssn
+			update-inetd --disable netbios-ns
+			echo "run_mode=as_daemons" >> $DEBIAN_CONFIG
+		;;
+
+		*)
+			echo "Samba will run from inetd. Run sambaconfig to reconfigure"
+			update-inetd --enable netbios-ssn
+			update-inetd --enable netbios-ns
+			echo "run_mode=from_inetd" >> $DEBIAN_CONFIG
+		;;
+	esac
+
+	if [ ! -f /etc/samba/smbpasswd ]; then
+		echo ""
+		echo "If you are going to use encrypted passwords you need to have a"
+		echo "separate password file for this (the format is different from "
+		echo "/etc/passwd). Right now you don't have an /etc/samba/smbpasswd file."
+		echo "Do you want to generate this new file from your existing"
+		echo -n "/etc/passwd file? [y/N] "
+
+		read yn
+		test -n "$yn" || yn="N"
+
+		if [ $yn = y -o $yn = Y ]; then
+			cat /etc/passwd | /usr/sbin/mksmbpasswd > /etc/samba/smbpasswd
+			chmod 600 /etc/samba/smbpasswd 
+			echo ""
+			echo "/etc/samba/smbpasswd now has the same user names as /etc/passwd. However,"
+			echo "you need to run smbpasswd manually to set the password for each user."
+			echo ""
+			echo "smbpasswd_created=yes" >> $DEBIAN_CONFIG
+		else
+			echo "smbpasswd_created=no" >> $DEBIAN_CONFIG
+		fi
+	fi
+
+	echo ""
+
+	# Start Samba: nothing wrong will happen if Samba is running from inetd
+	#	and /etc/init.d/samba is run. However, to simplify things, we
+	#	do not run /etc/init.d/samba if we're running from inetd.
+
+	if [ $mode = d -o $mode = D ]; then
+		echo -n "Samba will run as daemons - start Samba now? [Y/n] "
+		read yn
+		test -n "$yn" || yn="Y"
+
+		case "$yn" in
+			[Nn]*)
+				echo "Not started; to start later, do: /etc/init.d/samba start"
+				echo -n "Press [ENTER] "
+				read line
+			;;
+
+			*)
+				/etc/init.d/samba start
+			;;
+		esac
+	else
+		echo "Since you are running Samba from inetd, the daemons will start"
+		echo "automatically by inetd when there is traffic on the NetBIOS"
+		echo "ports."
+		echo -n "Press [ENTER] "
+		read line
+	fi
+else	# if (samba_configured) ...
+	# We are here because Samba was already configured...
+
+	# At this point the NetBIOS daemons are disabled in /etc/inetd.conf.
+	#	This is a consequence of what we did in the prerm. If Samba was
+	#	configured to run from inetd we need to enable the entries in
+	#	/etc/inetd.conf.
+
+	# Read current Samba configuration
+	. $DEBIAN_CONFIG
+
+	if [ "$run_mode" = "from_inetd" ]; then
+		update-inetd --enable netbios-ssn
+		update-inetd --enable netbios-ns
+	fi
+
+	echo ""
+	echo "Samba was already installed and configured so I skipped the "
+	echo "configuration questions. You can run the script /usr/sbin/sambaconfig"
+	echo "at any time to reconfigure Samba. See sambaconfig(8) for more"
+	echo "details. I will not even ask you if you want to restart Samba,"
+	echo "I will just do it!"
+	echo "" 
+
+	/etc/init.d/samba start
+fi		# if (samba_configured) ...
+
+if test "$1" = configure && dpkg --compare-versions "$2" lt 2.0.0final-2 && [ -f /etc/samba/smbpasswd ]; then
+
+	cat << EOF
+
+*** IMPORTANT ***
+
+The format of the smbpasswd file (which is used only if you are using
+encrypted passwords) is different in Samba 2.0.0 and above. I will
+convert it to the new format.
+
+EOF
+
+	mv /etc/samba/smbpasswd /etc/samba/smbpasswd.old
+	cat /etc/samba/smbpasswd.old | /usr/bin/convert_smbpasswd \
+		> /etc/samba/smbpasswd 2> /dev/null
+fi
+
+# This check is a safety net: the /etc/samba/smbpasswd file must have
+#	permissions 600.
+if [ -f /etc/samba/smbpasswd ]; then
+	chmod 600 /etc/samba/smbpasswd
+fi
+
+# Do the same check for /var/backup/smbpasswd.bak, just in case.
+if [ -f /var/backups/smbpasswd.bak ]; then
+	chmod 600 /var/backups/smbpasswd.bak
+fi
+
+exit 0

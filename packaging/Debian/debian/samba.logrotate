@@ -1,0 +1,21 @@
+/var/log/samba/log.smbd {
+	weekly
+	missingok
+	rotate 7
+	postrotate
+		killall -q -HUP smbd || true
+	endscript
+	compress
+	notifempty
+}
+
+/var/log/samba/log.nmbd {
+	weekly
+	missingok
+	rotate 7
+	postrotate
+		killall -q -HUP nmbd || true
+	endscript
+	compress
+	notifempty
+}
