@@ -7,7 +7,7 @@ ACLOCAL_AMFLAGS = -I ../../cf
 CLEANFILES = roken.h make-roken.c $(XHEADERS)
 
 lib_LTLIBRARIES = libroken.la
-libroken_la_LDFLAGS = -version-info 16:0:0
+libroken_la_LDFLAGS = -version-info 17:0:1
 
 noinst_PROGRAMS = make-roken snprintf-test resolve-test
 
