@@ -2400,7 +2400,7 @@ BOOL smb_io_job_info_1(char *desc, NEW_BUFFER *buffer, JOB_INFO_1 *info, int dep
 
 BOOL smb_io_job_info_2(char *desc, NEW_BUFFER *buffer, JOB_INFO_2 *info, int depth)
 {	
-	uint pipo=0;
+	uint32 pipo=0;
 	prs_struct *ps=&buffer->prs;
 	
 	prs_debug(ps, depth, desc, "smb_io_job_info_2");

@@ -543,8 +543,8 @@ BOOL cli_lock64(struct cli_state *cli, int fnum,
 
 	p = smb_buf(cli->outbuf);
 	SIVAL(p, 0, cli->pid);
-	S_OFF_T_R(p, 0, offset);
-	S_OFF_T_R(p, 12, len);
+	SOFF_T_R(p, 0, offset);
+	SOFF_T_R(p, 12, len);
 	cli_send_smb(cli);
 
         cli->timeout = (timeout == -1) ? 0x7FFFFFFF : (timeout + 2*1000);
@@ -588,8 +588,8 @@ BOOL cli_unlock64(struct cli_state *cli, int fnum, SMB_BIG_UINT offset, SMB_BIG_
 
 	p = smb_buf(cli->outbuf);
 	SIVAL(p, 0, cli->pid);
-	S_OFF_T_R(p, 4, offset);
-	S_OFF_T_R(p, 12, len);
+	SOFF_T_R(p, 4, offset);
+	SOFF_T_R(p, 12, len);
 
 	cli_send_smb(cli);
 	if (!cli_receive_smb(cli)) {

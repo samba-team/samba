@@ -249,5 +249,5 @@ char *generate_random_str(size_t len)
 
 	retstr[i] = '\0';
 
-	return retstr;
+	return (char *)retstr;
 }

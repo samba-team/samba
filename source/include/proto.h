@@ -1149,6 +1149,7 @@ int share_mode_forall(SHAREMODE_FN(fn));
 /*The following definitions come from  locking/posix.c  */
 
 int fd_close_posix(struct connection_struct *conn, files_struct *fsp);
+uint32 map_lock_offset(uint32 high, uint32 low);
 BOOL is_posix_locked(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u_count, enum brl_type lock_type);
 BOOL set_posix_lock(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u_count, enum brl_type lock_type);
 BOOL release_posix_lock(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u_count);
@@ -1840,6 +1841,7 @@ struct passdb_ops *nisplus_initialize_password_db(void);
 /*The following definitions come from  passdb/pampass.c  */
 
 BOOL pam_session(BOOL flag, const connection_struct *conn, char *tty);
+BOOL pam_accountcheck(char * user);
 BOOL pam_passcheck(char * user, char * password);
 
 /*The following definitions come from  passdb/pass_check.c  */

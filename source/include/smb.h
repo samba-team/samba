@@ -1658,11 +1658,11 @@ struct pwd_info
 
 	uchar smb_lm_owf[24];
 	uchar smb_nt_owf[128];
-	size_t nt_owf_len;
+	uint32 nt_owf_len;
 
 	uchar lm_cli_chal[8];
 	uchar nt_cli_chal[128];
-	size_t nt_cli_chal_len;
+	uint32 nt_cli_chal_len;
 
 	uchar sess_key[16];
 };
