@@ -600,10 +600,19 @@ static BOOL parse_lpq_qnx(char *line,print_queue_struct *buf,BOOL first)
 /****************************************************************************
   parse a lpq line for the plp printing system
   Bertrand Wallrich <Bertrand.Wallrich@loria.fr>
+
+redone by tridge. Here is a sample queue:
+
+Local  Printer 'lp2' (fjall):
+  Printing (started at Jun 15 13:33:58, attempt 1).
+    Rank Owner       Pr Opt  Job Host        Files           Size     Date
+  active tridge      X  -    6   fjall       /etc/hosts      739      Jun 15 13:33
+     3rd tridge      X  -    7   fjall       /etc/hosts      739      Jun 15 13:33
+
 ****************************************************************************/
 static BOOL parse_lpq_plp(char *line,print_queue_struct *buf,BOOL first)
 {
-  string tok[5];
+  string tok[11];
   int count=0;
 
   /* handle the case of "(standard input)" as a filename */
@@ -611,60 +620,49 @@ static BOOL parse_lpq_plp(char *line,print_queue_struct *buf,BOOL first)
   string_sub(line,"(","\"");
   string_sub(line,")","\"");
   
-  for (count=0; count<8 && next_token(&line,tok[count],NULL); count++) ;
+  for (count=0; count<11 && next_token(&line,tok[count],NULL); count++) ;
 
-  /* we must get 5 tokens */
-  if (count < 8)
+  /* we must get 11 tokens */
+  if (count < 11)
     return(False);
 
-  /* the 4rd must be integer */
-  if (!isdigit(*tok[3])) return(False);
+  /* the first must be "active" or begin with an integer */
+  if (strcmp(tok[0],"active") && !isdigit(tok[0][0]))
+    return(False);
+
+  /* the 5th and 8th must be integer */
+  if (!isdigit(*tok[4]) || !isdigit(*tok[7])) 
+    return(False);
 
   /* if the fname contains a space then use STDIN */
-  if (strchr(tok[3],' '))
-    strcpy(tok[3],"STDIN");
+  if (strchr(tok[6],' '))
+    strcpy(tok[6],"STDIN");
 
   /* only take the last part of the filename */
   {
     string tmp;
-    char *p = strrchr(tok[5],'/');
+    char *p = strrchr(tok[6],'/');
     if (p)
       {
         strcpy(tmp,p+1);
-        strcpy(tok[5],tmp);
+        strcpy(tok[6],tmp);
       }
   }
 
 
-  buf->job = atoi(tok[3]);
+  buf->job = atoi(tok[4]);
 
-  /* calcul de la taille du fichier */
-  if (!isdigit(*tok[7])) {  buf->size = atoi(tok[7]) * 1.0 ; }
-  else {
-    string tmp;
-    strcpy(tmp,tok[7]);
-    if (strchr(tok[7],'K')) {
-      strncpy(tok[7],tmp,strlen(tmp)-1);
-      buf->size = atoi(tok[7]);
-      buf->size = buf->size * 1024;
-    }
-    if (strchr(tok[7],'M')) {
-      strncpy(tok[7],tmp,strlen(tmp)-1);
-      buf->size = atoi(tok[7]);
-      buf->size = buf->size * 1024.0 * 1000.0;
-    }
-    if (strchr(tok[7],'G')) {
-      strncpy(tok[7],tmp,strlen(tmp)-1);
-      buf->size = atoi(tok[7]);
-      buf->size = buf->size * 1024.0 * 1000000.0;
-    }
+  buf->size = atoi(tok[7]);
+  if (strchr(tok[7],'K'))
+    buf->size *= 1024;
+  if (strchr(tok[7],'M'))
+    buf->size *= 1024*1024;
 
-  }
   buf->status = strequal(tok[0],"active")?LPQ_PRINTING:LPQ_QUEUED;
   buf->priority = 0;
   buf->time = time(NULL);
   StrnCpy(buf->user,tok[1],sizeof(buf->user)-1);
-  StrnCpy(buf->file,tok[5],sizeof(buf->file)-1);
+  StrnCpy(buf->file,tok[6],sizeof(buf->file)-1);
   return(True);
 }
 
