@@ -152,7 +152,11 @@ append_number (struct state *state,
     if ((*state->reserve) (state, width - len))
       return 1;
 
+#ifdef HAVE_MEMMOVE
     memmove (state->s + width - 2 * len, state->s - len, len);
+#else
+    bcopy (state->s - len, state->s + width - 2 * len, len);
+#endif
     for (i = 0; i < width - len; ++i)
       state->s[-len+i] = (zerop ? '0' : ' ');
     state->s += width - len;
