@@ -1,3 +1,29 @@
+2005-03-29  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* telnet/telnet.c: From FreeBSD:
+	
+	Correct a pair of buffer overflows in the telnet(1) command:
+	
+	 (CAN-2005-0468) A heap buffer overflow in env_opt_add() and related
+	 functions.
+	
+	 (CAN-2005-0469) A global uninitialized data section buffer overflow in
+	 slc_add_reply() and related functions.
+	
+	As a result of these vulnerabilities, it may be possible for a
+	malicious telnet server or active network attacker to cause
+	telnet(1) to execute arbitrary code with the privileges of the
+	user running it.
+	
+	Security: CAN-2005-0468, CAN-2005-0469 Security:
+	FreeBSD-SA-05:01.telnet Security:
+	http://www.idefense.com/application/poi/display?id=220&type=vulnerabilities
+	Security:
+	http://www.idefense.com/application/poi/display?id=221&type=vulnerabilities
+	
+	These fixes are based in part on patches Submitted by: Solar
+	Designer <solar@openwall.com>
+
 2005-03-23  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* telnetd/telnetd.c: remove setting of DES_check_key, all code
