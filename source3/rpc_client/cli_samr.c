@@ -1464,3 +1464,49 @@ NTSTATUS cli_samr_get_dom_pwinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	return result;
 }
+
+/* Lookup Domain Name */
+
+NTSTATUS cli_samr_lookup_domain(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				POLICY_HND *user_pol, char *domain_name, 
+				DOM_SID *sid)
+{
+	prs_struct qbuf, rbuf;
+	SAMR_Q_LOOKUP_DOMAIN q;
+	SAMR_R_LOOKUP_DOMAIN r;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Marshall data and send request */
+
+	init_samr_q_lookup_domain(&q, user_pol, domain_name);
+
+	if (!samr_io_q_lookup_domain("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SAMR_LOOKUP_DOMAIN, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!samr_io_r_lookup_domain("", &r, &rbuf, 0))
+		goto done;
+
+	/* Return output parameters */
+
+	result = r.status;
+
+	if (NT_STATUS_IS_OK(result))
+		sid_copy(sid, &r.dom_sid.sid);
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
