@@ -832,7 +832,7 @@ enum winbindd_result winbindd_list_groups(struct winbindd_cli_state *state)
 				sizeof(struct acct_info) * 
                                 groups->num_sam_entries);
 			
-			groups->sam_entries = NULL;
+			SAFE_FREE(groups->sam_entries);
 			groups->num_sam_entries = 0;
 		}
 
@@ -846,6 +846,8 @@ enum winbindd_result winbindd_list_groups(struct winbindd_cli_state *state)
 		  
 		groups->num_sam_entries = num_domain_entries;
 		groups->sam_entries = sam_entries;
+
+		sam_entries = NULL;
 
 		/* keep track the of the total number of groups seen so 
 		   far over all domains */
