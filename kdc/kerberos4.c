@@ -517,9 +517,9 @@ encode_v4_ticket(void *buf, size_t len, const EncTicketPart *et,
 
     {
 	krb5_principal princ;
-	principalname2krb5_principal(&princ,
-				     *service,
-				     et->crealm);
+	_krb5_principalname2krb5_principal(&princ,
+					   *service,
+					   et->crealm);
 	ret = krb5_524_conv_principal(context, 
 				      princ,
 				      sname,
@@ -529,9 +529,9 @@ encode_v4_ticket(void *buf, size_t len, const EncTicketPart *et,
 	if(ret)
 	    return ret;
 
-	principalname2krb5_principal(&princ,
-				     et->cname,
-				     et->crealm);
+	_krb5_principalname2krb5_principal(&princ,
+					   et->cname,
+					   et->crealm);
 				     
 	ret = krb5_524_conv_principal(context, 
 				      princ,

@@ -323,7 +323,8 @@ main(int argc, char **argv)
 	ret = krb5_make_principal(context, &c1, NULL, "kadmin", "hprop", NULL);
 	if(ret)
 	    krb5_err(context, 1, ret, "krb5_make_principal");
-	principalname2krb5_principal(&c2, authent->cname, authent->crealm);
+	_krb5_principalname2krb5_principal(&c2, 
+					   authent->cname, authent->crealm);
 	if(!krb5_principal_compare(context, c1, c2)) {
 	    char *s;
 	    ret = krb5_unparse_name(context, c2, &s);

@@ -53,9 +53,9 @@ fetch_server (const Ticket *t,
     krb5_error_code ret;
     krb5_principal sprinc;
 
-    ret = principalname2krb5_principal(&sprinc, t->sname, t->realm);
+    ret = _krb5_principalname2krb5_principal(&sprinc, t->sname, t->realm);
     if (ret) {
-	kdc_log(0, "principalname2krb5_principal: %s",
+	kdc_log(0, "_krb5_principalname2krb5_principal: %s",
 		krb5_get_err_text(context, ret));
 	return ret;
     }
@@ -87,9 +87,9 @@ log_524 (const EncTicketPart *et,
     char *cpn;
     krb5_error_code ret;
 
-    ret = principalname2krb5_principal(&client, et->cname, et->crealm);
+    ret = _krb5_principalname2krb5_principal(&client, et->cname, et->crealm);
     if (ret) {
-	kdc_log(0, "principalname2krb5_principal: %s",
+	kdc_log(0, "_krb5_principalname2krb5_principal: %s",
 		krb5_get_err_text (context, ret));
 	return ret;
     }
