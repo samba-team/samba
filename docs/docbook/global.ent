@@ -11,7 +11,7 @@
 
 <!-- Author entities -->
 <!ENTITY person.jelmer '
-<firstname>Jelmer</firstname><surname>Vernooij</surname>
+<firstname>Jelmer</firstname><surname>Vernooij</surname><othername>R.</othername>
 <affiliation>
 	<orgname>The Samba Team</orgname>
 	<address><email>jelmer@samba.org</email></address>
@@ -38,7 +38,7 @@
 </author>'>
 
 <!ENTITY person.jht '
-<firstname>John H</firstname><surname>Terpstra</surname>
+<firstname>John</firstname><surname>Terpstra</surname><othername>H.</othername>
 <affiliation>
 	<orgname>Samba Team</orgname>
 	<address><email>jht@samba.org</email></address>
