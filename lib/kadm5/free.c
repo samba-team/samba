@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -70,7 +70,7 @@ kadm5_free_principal_ent(void *server_handle,
     if(princ->mod_name)
 	krb5_free_principal(context->context, princ->mod_name);
     kadm5_free_key_data(server_handle, &princ->n_key_data, princ->key_data);
-    while(princ->n_tl_data && princ->tl_data){
+    while(princ->n_tl_data && princ->tl_data) {
 	krb5_tl_data *tp;
 	tp = princ->tl_data;
 	princ->tl_data = tp->tl_data_next;
@@ -79,6 +79,8 @@ kadm5_free_principal_ent(void *server_handle,
 	free(tp->tl_data_contents);
 	free(tp);
     }
+    if (princ->key_data != NULL)
+	free (princ->key_data);
 }
 
 void 
