@@ -131,7 +131,7 @@ void cmd_lsa_lookup_names(struct client_info *info)
 	int i;
 	fstring srv_name;
 	int num_names = 0;
-	char *names[10];
+	const char *names[10];
 	DOM_SID *sids;
 	int num_sids = 0;
 #if 0
@@ -207,7 +207,7 @@ void cmd_lsa_lookup_names(struct client_info *info)
 	{
 		if (names[i] != NULL)
 		{
-			free(names[i]);
+			free(((char **)names)[i]);
 		}
 	}
 }

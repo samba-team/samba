@@ -518,7 +518,7 @@ static void samr_reply_add_aliasmem(SAMR_Q_ADD_ALIASMEM *q_u,
 			DEBUG(10,("add member on Domain SID\n"));
 
 			become_root(True);
-			r_e.status = add_alias_member(alias_rid, &q_u->sid) ? 0x0 : 0xC0000000 | NT_STATUS_ACCESS_DENIED;
+			r_e.status = add_alias_member(alias_rid, &q_u->sid.sid) ? 0x0 : 0xC0000000 | NT_STATUS_ACCESS_DENIED;
 			unbecome_root(True);
 		}
 		else if (sid_equal(&alias_sid, &global_sid_S_1_5_20))
@@ -526,7 +526,7 @@ static void samr_reply_add_aliasmem(SAMR_Q_ADD_ALIASMEM *q_u,
 			DEBUG(10,("add member on BUILTIN SID\n"));
 
 			become_root(True);
-			r_e.status = add_builtin_member(alias_rid, &q_u->sid) ? 0x0 : 0xC0000000 | NT_STATUS_ACCESS_DENIED;
+			r_e.status = add_builtin_member(alias_rid, &q_u->sid.sid) ? 0x0 : 0xC0000000 | NT_STATUS_ACCESS_DENIED;
 			unbecome_root(True);
 		}
 		else
@@ -2234,6 +2234,20 @@ static void samr_reply_query_dom_info(SAMR_Q_QUERY_DOMAIN_INFO *q_u,
 	{
 		switch (q_u->switch_value)
 		{
+			case 0x06:
+			{
+				switch_value = 0x6;
+				make_unk_info6(&ctr.info.inf6);
+
+				break;
+			}
+			case 0x07:
+			{
+				switch_value = 0x7;
+				make_unk_info7(&ctr.info.inf7);
+
+				break;
+			}
 			case 0x02:
 			{
 				switch_value = 0x2;

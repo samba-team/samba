@@ -199,7 +199,7 @@ BOOL lsa_lookup_names(struct cli_state *cli, uint16 fnum,
 					sid_copy(sid, &ref.ref_dom[dom_idx].ref_dom.sid);
 					if (dom_rid != 0xffffffff)
 					{
-					sid_append_rid(sid, dom_rid);
+						sid_append_rid(sid, dom_rid);
 					}
 				}
 				else
