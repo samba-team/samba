@@ -51,7 +51,7 @@ be read and understood. Try searching on the Microsoft web site for "Group Polic
 </para>
 
 <para>
-What follows is a very discussion with some helpful notes. The information provided
+What follows is a very brief discussion with some helpful notes. The information provided
 here is incomplete - you are warned.
 </para>
 
@@ -314,4 +314,69 @@ man pages for these tools and become familiar with their use.
 
 </sect1>
 
+<sect1>
+<title>System Startup and Logon Processing Overview</title>
+
+<para>
+The following attempts to document the order of processing of system and user policies following a system
+reboot and as part of the user logon:
+</para>
+
+<orderedlist>
+	<listitem><para>
+	Network starts, then Remote Procedure Call System Service (RPCSS) and Multiple Universal Naming
+	Convention Provider (MUP) start
+	</para></listitem>
+
+	<listitem><para>
+	Where Active Directory is involved, an ordered list of Group Policy Objects (GPOs) is downloaded
+	and applied. The list may include GPOs that:
+<simplelist>
+	<member>Apply to the location of machines in a Directory</member>
+	<member>Apply only when settings have changed</member>
+	<member>Depend on configuration of scope of applicability: local, site, domain, organizational unit, etc.</member>
+</simplelist>
+	No desktop user interface is presented until the above have been processed.
+	</para></listitem>
+
+	<listitem><para>
+	Execution of start-up scripts (hidden and synchronous by defaut).
+	</para></listitem>
+
+	<listitem><para>
+	A keyboard action to affect start of logon (Ctrl-Alt-Del).
+	</para></listitem>
+
+	<listitem><para>
+	User credentials are validated, User profile is loaded (depends on policy settings).
+	</para></listitem>
+
+	<listitem><para>
+	An ordered list of User GPOs is obtained. The list contents depends on what is configured in respsect of:
+
+<simplelist>
+	<member>Is user a domain member, thus subject to particular policies</member>
+	<member>Loopback enablement, and the state of the loopback policy (Merge or Replace)</member>
+	<member>Location of the Active Directory itself</member>
+	<member>Has the list of GPOs changed. No processing is needed if not changed.</member>
+</simplelist>
+	</para></listitem>
+
+	<listitem><para>
+	User Policies are applied from Active Directory. Note: There are several types.
+	</para></listitem>
+
+	<listitem><para>
+	Logon scripts are run. New to Win2K and Active Directory, logon scripts may be obtained based on Group
+	Policy objects (hidden and executed synchronously). NT4 style logon scripts are then run in a normal
+	window.
+	</para></listitem>
+
+	<listitem><para>
+	The User Interface as determined from the GPOs is presented. Note: In a Samba domain (like and NT4
+	Domain) machine (system) policies are applied at start-up, User policies are applied at logon.
+	</para></listitem>
+</orderedlist>
+
+</sect1>
 </chapter>

@@ -32,10 +32,13 @@ This is not a definitive ste-by-step process yet - just a place holder so the in
 is not lost.
 
 1. You will have an NT4 PDC that has the users, groups, policies and profiles to be migrated
+
 2. Samba-3 set up as a DC with netlogon share, profile share, etc.
+
 3. Process:
 	a. Create a BDC account for the samba server using NT Server Manager
 		- Samba must NOT be running
+
 	b. rpcclient NT4PDC -U Administrator%passwd
 		lsaquery
 
