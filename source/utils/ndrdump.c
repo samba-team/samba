@@ -21,6 +21,7 @@
 #include "includes.h"
 #include "lib/cmdline/popt_common.h"
 #include "system/iconv.h"
+#include "system/filesys.h"
 
 static const struct dcerpc_interface_call *find_function(
 	const struct dcerpc_interface_table *p,
@@ -70,6 +71,32 @@ static void show_functions(const struct dcerpc_interface_table *p)
 	exit(1);
 }
 
+static char *stdin_load(TALLOC_CTX *mem_ctx, size_t *size)
+{
+	int num_read, total_len = 0;
+	char buf[255];
+	char *result = NULL;
+
+	while((num_read = read(STDIN_FILENO, buf, 255)) > 0) {
+
+		if (result) {
+			result = (char *) talloc_realloc(
+				mem_ctx, result, char *, total_len + num_read);
+		} else {
+			result = talloc_size(mem_ctx, num_read);
+		}
+
+		memcpy(result + total_len, buf, num_read);
+
+		total_len += num_read;
+	}
+
+	if (size)
+		*size = total_len;
+
+	return result;
+}
+
  int main(int argc, const char *argv[])
 {
 	const struct dcerpc_interface_table *p;
@@ -100,7 +127,7 @@ static void show_functions(const struct dcerpc_interface_table *p)
 
 	pc = poptGetContext("ndrdump", argc, argv, long_options, 0);
 	
-	poptSetOtherOptionHelp(pc, "<pipe> <function> <inout> <filename>");
+	poptSetOtherOptionHelp(pc, "<pipe> <function> <inout> [<filename>]");
 
 	while ((opt = poptGetNextOpt(pc)) != -1) {
 	}
@@ -124,7 +151,7 @@ static void show_functions(const struct dcerpc_interface_table *p)
 	inout = poptGetArg(pc);
 	filename = poptGetArg(pc);
 
-	if (!function || !inout || !filename) {
+	if (!function || !inout) {
 		poptPrintUsage(pc, stderr, 0);
 		show_functions(p);
 		exit(1);
@@ -180,9 +207,16 @@ static void show_functions(const struct dcerpc_interface_table *p)
 		}
 	} 
 
-	data = (uint8_t *)file_load(filename, &size);
+	if (filename)
+		data = (uint8_t *)file_load(filename, &size);
+	else
+		data = (uint8_t *)stdin_load(mem_ctx, &size);
+
 	if (!data) {
-		perror(filename);
+		if (filename)
+			perror(filename);
+		else
+			perror("stdin");
 		exit(1);
 	}
 
