@@ -1260,33 +1260,18 @@ config.status: $(srcdir)/configure
 Makefile: $(srcdir)/Makefile.in config.status
 	@echo "WARNING: you need to run ./config.status"
 
-test_prefix=/tmp/test-samba
-# Run regression suite using the external "satyr" framework
-check:
-	@echo "** Sorry, samba self-test without installation does not work "
-	@echo "** yet.  Please try specifying a scratch directory to"
-	@echo "**       ./configure --prefix DIR"
-	@echo "** then run \"make install installcheck\""
-	exit 1
+######################################################################
+# Samba Testing Framework
 
-# 	-rm -rf $(test_prefix)/lib
-# 	mkdir $(test_prefix)/lib -p ./testdir 
-# 	PATH=$(builddir)/bin:$(PATH) \
-# 	SATYR_SUITEDIR=../testsuite/build_farm/ prefix=$(test_prefix) \
-# 	testdir=./testdir $(SHELL) satyr
+# FIXME: LD_LIBRARY_PATH is not portable, but in the absence of
+# libtool I don't know a better way to do it.  Perhaps we should fix
+# libbigballofmud to link statically?
 
-# Run regression suite on the installed version.
+check: check-programs
+	LD_LIBRARY_PATH="`pwd`/bin:$$LD_LIBRARY_PATH" \
+	PATH="`pwd`/bin:$$PATH" \
+	python stf/standardcheck.py
 
-# `installcheck'
-#      Perform installation tests (if any).  The user must build and
-#      install the program before running the tests.  You should not
-#      assume that `$(bindir)' is in the search path.
+# These are called by the test suite
+check-programs: bin/t_strcmp
 
-dangerous-installcheck:
-	mkdir -p $(BASEDIR)/lib
-	mkdir -p $(BASEDIR)/var
-	PATH=$(BINDIR):$(SBINDIR):$(PATH) \
-	SATYR_DISCOURAGE=1 \
-	SATYR_SUITEDIR=../testsuite/satyr/ prefix=$(BASEDIR) \
-	LIBSMB_PROG=$(SBINDIR)/smbd \
-	testdir=./testdir $(SHELL) satyr
