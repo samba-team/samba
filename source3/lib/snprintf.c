@@ -152,16 +152,6 @@
 #define VA_COPY(dest, src) (dest) = (src)
 #endif
 
-static size_t dopr(char *buffer, size_t maxlen, const char *format, 
-		   va_list args_in);
-static void fmtstr(char *buffer, size_t *currlen, size_t maxlen,
-		    char *value, int flags, int min, int max);
-static void fmtint(char *buffer, size_t *currlen, size_t maxlen,
-		    long value, int base, int min, int max, int flags);
-static void fmtfp(char *buffer, size_t *currlen, size_t maxlen,
-		   LDOUBLE fvalue, int min, int max, int flags);
-static void dopr_outch(char *buffer, size_t *currlen, size_t maxlen, char c);
-
 /*
  * dopr(): poor man's version of doprintf
  */
@@ -195,6 +185,19 @@ static void dopr_outch(char *buffer, size_t *currlen, size_t maxlen, char c);
 #ifndef MAX
 #define MAX(p,q) (((p) >= (q)) ? (p) : (q))
 #endif
+
+/* yes this really must be a ||. Don't muck with this (tridge) */
+#if !defined(HAVE_VSNPRINTF) || !defined(HAVE_C99_VSNPRINTF)
+
+static size_t dopr(char *buffer, size_t maxlen, const char *format, 
+		   va_list args_in);
+static void fmtstr(char *buffer, size_t *currlen, size_t maxlen,
+		    char *value, int flags, int min, int max);
+static void fmtint(char *buffer, size_t *currlen, size_t maxlen,
+		    long value, int base, int min, int max, int flags);
+static void fmtfp(char *buffer, size_t *currlen, size_t maxlen,
+		   LDOUBLE fvalue, int min, int max, int flags);
+static void dopr_outch(char *buffer, size_t *currlen, size_t maxlen, char c);
 
 static size_t dopr(char *buffer, size_t maxlen, const char *format, va_list args_in)
 {
@@ -810,15 +813,13 @@ static void dopr_outch(char *buffer, size_t *currlen, size_t maxlen, char c)
 	(*currlen)++;
 }
 
-/* yes this really must be a ||. Don't muck with this (tridge) */
-#if !defined(HAVE_VSNPRINTF) || !defined(HAVE_C99_VSNPRINTF)
  int vsnprintf (char *str, size_t count, const char *fmt, va_list args)
 {
 	return dopr(str, count, fmt, args);
 }
 #endif
 
-/* yes this really must be a ||. Don't muck wiith this (tridge)
+/* yes this really must be a ||. Don't muck with this (tridge)
  *
  * The logic for these two is that we need our own definition if the
  * OS *either* has no definition of *sprintf, or if it does have one
