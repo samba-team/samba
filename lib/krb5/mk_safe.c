@@ -13,19 +13,15 @@ krb5_mk_safe(krb5_context context,
   KRB_SAFE s;
   struct timeval tv;
   unsigned usec;
-  krb5_addresses addr;
   u_char buf[1024];
   size_t len;
+  unsigned tmp_seq;
 
   r = krb5_create_checksum (context,
-			    CKSUMTYPE_RSA_MD4,
+			    auth_context->cksumtype,
 			    userdata->data,
 			    userdata->length,
 			    &s.cksum);
-  if (r)
-    return r;
-
-  r = krb5_get_all_client_addrs (&addr);
   if (r)
     return r;
 
@@ -37,15 +33,15 @@ krb5_mk_safe(krb5_context context,
   s.safe_body.timestamp  = &tv.tv_sec;
   s.safe_body.usec       = &usec;
   if (auth_context->flags & KRB5_AUTH_CONTEXT_DO_SEQUENCE) {
-    s.safe_body.seq_number = malloc(sizeof(*s.safe_body.seq_number));
-    *(s.safe_body.seq_number) = ++auth_context->local_seqnumber;
+      tmp_seq = ++auth_context->local_seqnumber;
+      s.safe_body.seq_number = &tmp_seq;
   } else 
-    s.safe_body.seq_number = NULL;
-  s.safe_body.s_address = addr.val[0];
-  s.safe_body.r_address = NULL;
+      s.safe_body.seq_number = NULL;
+
+  s.safe_body.s_address = auth_context->local_address;
+  s.safe_body.r_address = auth_context->remote_address;
 
   r = encode_KRB_SAFE (buf + sizeof(buf) - 1, sizeof(buf), &s, &len);
-  free(s.safe_body.seq_number);
   if (r)
     return r;
   outbuf->length = len;

@@ -14,13 +14,9 @@ krb5_mk_priv(krb5_context context,
   EncKrbPrivPart part;
   struct timeval tv;
   unsigned usec;
-  krb5_addresses addr;
   u_char buf[1024];
   size_t len;
-
-  r = krb5_get_all_client_addrs (&addr);
-  if (r)
-    return r;
+  unsigned tmp_seq;
 
   part.user_data = *userdata;
   gettimeofday (&tv, NULL);
@@ -28,16 +24,16 @@ krb5_mk_priv(krb5_context context,
   part.timestamp  = &tv.tv_sec;
   part.usec       = &usec;
   if (auth_context->flags & KRB5_AUTH_CONTEXT_DO_SEQUENCE) {
-    part.seq_number = malloc(sizeof(*part.seq_number));
-    *(part.seq_number) = ++auth_context->local_seqnumber;
-  } else 
+    tmp_seq = ++auth_context->local_seqnumber;
+    part.seq_number = &tmp_seq;
+  } else {
     part.seq_number = NULL;
-  part.s_address.addr_type = addr.val[0].addr_type;
-  part.s_address.address   = addr.val[0].address;
-  part.r_address = NULL;
+  }
+
+  part.s_address = auth_context->local_address;
+  part.r_address = auth_context->remote_address;
 
   r = encode_EncKrbPrivPart (buf + sizeof(buf) - 1, sizeof(buf), &part, &len);
-  free (part.seq_number);
   if (r)
       return r;
 
