@@ -464,8 +464,6 @@ static uint32 lookup_sam_rid(const char *domain, DOM_SID *sid,
 	/* connect to the domain */
 	res = res ? samr_open_domain( &sam_pol, ace_perms, sid, &pol_dom) : False;
 
-	names[0] = name;
-
 	rid_mem = (uint32*)malloc(1 * sizeof(rid_mem[0]));
 
 	if (rid_mem == NULL)
