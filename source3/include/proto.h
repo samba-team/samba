@@ -1912,6 +1912,11 @@ BOOL check_oem_password(char *user, unsigned char *data,
                         int new_passwd_size);
 BOOL change_oem_password(struct smb_passwd *smbpw, char *new_passwd, BOOL override);
 
+/*The following definitions come from  smbd/close.c  */
+
+void close_file(files_struct *fsp, BOOL normal_close);
+void close_directory(files_struct *fsp);
+
 /*The following definitions come from  smbd/conn.c  */
 
 void conn_init(void);
@@ -1965,6 +1970,14 @@ void DirCacheFlush(int snum);
 mode_t unix_mode(connection_struct *conn,int dosmode);
 int dos_mode(connection_struct *conn,char *path,struct stat *sbuf);
 int dos_chmod(connection_struct *conn,char *fname,int dosmode,struct stat *st);
+int file_utime(connection_struct *conn, char *fname, struct utimbuf *times);
+BOOL set_filetime(connection_struct *conn, char *fname, time_t mtime);
+
+/*The following definitions come from  smbd/error.c  */
+
+int cached_error_packet(char *inbuf,char *outbuf,files_struct *fsp,int line);
+int unix_error_packet(char *inbuf,char *outbuf,int def_class,uint32 def_code,int line);
+int error_packet(char *inbuf,char *outbuf,int error_class,uint32 error_code,int line);
 
 /*The following definitions come from  smbd/fileio.c  */
 
@@ -2046,6 +2059,27 @@ void process_pending_change_notify_queue(time_t t);
 int reply_nttrans(connection_struct *conn,
 		  char *inbuf,char *outbuf,int length,int bufsize);
 
+/*The following definitions come from  smbd/open.c  */
+
+void fd_add_to_uid_cache(file_fd_struct *fd_ptr, uid_t u);
+int fd_attempt_close(file_fd_struct *fd_ptr);
+void open_file_shared(files_struct *fsp,connection_struct *conn,char *fname,int share_mode,int ofun,
+		      int mode,int oplock_request, int *Access,int *action);
+int open_directory(files_struct *fsp,connection_struct *conn,
+		   char *fname, int smb_ofun, int unixmode, int *action);
+BOOL check_file_sharing(connection_struct *conn,char *fname, BOOL rename_op);
+int check_share_mode( share_mode_entry *share, int deny_mode, char *fname,
+                      BOOL fcbopen, int *flags);
+
+/*The following definitions come from  smbd/oplock.c  */
+
+BOOL open_oplock_ipc(void);
+BOOL process_local_message(int sock, char *buffer, int buf_size);
+BOOL oplock_break(uint32 dev, uint32 inode, struct timeval *tval);
+BOOL request_oplock_break(share_mode_entry *share_entry, 
+                          uint32 dev, uint32 inode);
+BOOL attempt_close_oplocked_file(files_struct *fsp);
+
 /*The following definitions come from  smbd/password.c  */
 
 void generate_next_challenge(char *challenge);
@@ -2087,6 +2121,16 @@ int reply_pipe_close(connection_struct *conn, char *inbuf,char *outbuf);
 int read_predict(int fd,int offset,char *buf,char **ptr,int num);
 void do_read_prediction(void);
 void invalidate_read_prediction(int fd);
+
+/*The following definitions come from  smbd/process.c  */
+
+BOOL receive_next_smb(int smbfd, int oplockfd, char *inbuf, int bufsize, int timeout);
+void process_smb(char *inbuf, char *outbuf);
+char *smb_fn_name(int type);
+int chain_reply(char *inbuf,char *outbuf,int size,int bufsize);
+void construct_reply_common(char *inbuf,char *outbuf);
+int construct_reply(char *inbuf,char *outbuf,int size,int bufsize);
+void smbd_process(void);
 
 /*The following definitions come from  smbd/quotas.c  */
 
@@ -2168,36 +2212,15 @@ int reply_getattrE(connection_struct *conn, char *inbuf,char *outbuf, int dum_si
 
 void  *dflt_sig(void);
 void  killkids(void);
-int file_utime(connection_struct *conn, char *fname, struct utimbuf *times);
-BOOL set_filetime(connection_struct *conn, char *fname, time_t mtime);
-void fd_add_to_uid_cache(file_fd_struct *fd_ptr, uid_t u);
-void close_file(files_struct *fsp, BOOL normal_close);
-void close_directory(files_struct *fsp);
-int open_directory(files_struct *fsp,connection_struct *conn,
-		   char *fname, int smb_ofun, int unixmode, int *action);
-BOOL check_file_sharing(connection_struct *conn,char *fname, BOOL rename_op);
-int check_share_mode( share_mode_entry *share, int deny_mode, char *fname,
-                      BOOL fcbopen, int *flags);
-void open_file_shared(files_struct *fsp,connection_struct *conn,char *fname,int share_mode,int ofun,
-		      int mode,int oplock_request, int *Access,int *action);
+BOOL reload_services(BOOL test);
+void exit_server(char *reason);
+
+/*The following definitions come from  smbd/service.c  */
+
 BOOL become_service(connection_struct *conn,BOOL do_chdir);
 int find_service(char *service);
-int cached_error_packet(char *inbuf,char *outbuf,files_struct *fsp,int line);
-int unix_error_packet(char *inbuf,char *outbuf,int def_class,uint32 def_code,int line);
-int error_packet(char *inbuf,char *outbuf,int error_class,uint32 error_code,int line);
-BOOL oplock_break(uint32 dev, uint32 inode, struct timeval *tval);
-BOOL request_oplock_break(share_mode_entry *share_entry, 
-                          uint32 dev, uint32 inode);
-BOOL receive_next_smb(int smbfd, int oplockfd, char *inbuf, int bufsize, int timeout);
-BOOL reload_services(BOOL test);
 connection_struct *make_connection(char *service,char *user,char *password, int pwlen, char *dev,uint16 vuid, int *ecode);
-BOOL attempt_close_oplocked_file(files_struct *fsp);
 void close_cnum(connection_struct *conn, uint16 vuid);
-void exit_server(char *reason);
-char *smb_fn_name(int type);
-int chain_reply(char *inbuf,char *outbuf,int size,int bufsize);
-void construct_reply_common(char *inbuf,char *outbuf);
-int construct_reply(char *inbuf,char *outbuf,int size,int bufsize);
 
 /*The following definitions come from  smbd/ssl.c  */
 
