@@ -119,8 +119,7 @@ enum winbindd_result winbindd_list_trusted_domains(struct winbindd_cli_state
 
 		/* Skip own domain */
 
-		if (strequal(domain->name, lp_workgroup())) 
-                        continue;
+		if (strequal(domain->name, lp_workgroup())) continue;
 
 		/* Add domain to list */
 

@@ -330,7 +330,7 @@ static int map_create_disposition( uint32 create_disposition)
  Utility function to map share modes.
 ****************************************************************************/
 
-static int map_share_mode( BOOL *pstat_open_only, char *fname,
+static int map_share_mode( BOOL *pstat_open_only, char *fname, uint32 create_options,
 							uint32 desired_access, uint32 share_access, uint32 file_attributes)
 {
   int smb_open_mode = -1;
@@ -421,6 +421,13 @@ static int map_share_mode( BOOL *pstat_open_only, char *fname,
   if(desired_access & DELETE_ACCESS) {
     smb_open_mode |= DELETE_ACCESS_REQUESTED;
     DEBUG(10,("map_share_mode: DELETE_ACCESS requested. open_mode = %x\n", smb_open_mode));
+  }
+
+  if (create_options & FILE_DELETE_ON_CLOSE) {
+    /* Implicit delete access requested... */
+    smb_open_mode |= DELETE_ACCESS_REQUESTED;
+	smb_open_mode |= DELETE_ON_CLOSE_FLAG;
+    DEBUG(10,("map_share_mode: FILE_DELETE_ON_CLOSE requested. open_mode = %x\n", smb_open_mode));
   }
 
   /* Add in the requested share mode. */
@@ -650,7 +657,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	 */
 	RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
 
-	if((smb_open_mode = map_share_mode(&stat_open_only, fname, desired_access, 
+	if((smb_open_mode = map_share_mode(&stat_open_only, fname, create_options, desired_access, 
 					   share_access, 
 					   file_attributes)) == -1) {
 		END_PROFILE(SMBntcreateX);
@@ -681,7 +688,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	if(create_options & FILE_DIRECTORY_FILE) {
 		oplock_request = 0;
 		
-		fsp = open_directory(conn, fname, &sbuf, smb_ofun, unixmode, &smb_action);
+		fsp = open_directory(conn, fname, &sbuf, smb_open_mode, smb_ofun, unixmode, &smb_action);
 			
 		restore_case_semantics(file_attributes);
 
@@ -749,7 +756,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 				}
 	
 				oplock_request = 0;
-				fsp = open_directory(conn, fname, &sbuf, smb_ofun, unixmode, &smb_action);
+				fsp = open_directory(conn, fname, &sbuf, smb_open_mode, smb_ofun, unixmode, &smb_action);
 				
 				if(!fsp) {
 					restore_case_semantics(file_attributes);
@@ -1157,7 +1164,7 @@ static int call_nt_transact_create(connection_struct *conn,
    * and the share access.
    */
 
-  if((smb_open_mode = map_share_mode( &stat_open_only, fname, desired_access,
+  if((smb_open_mode = map_share_mode( &stat_open_only, fname, create_options, desired_access,
                                       share_access, file_attributes)) == -1)
     return ERROR_DOS(ERRDOS,ERRbadaccess);
 
@@ -1190,7 +1197,7 @@ static int call_nt_transact_create(connection_struct *conn,
      * CreateDirectory() call.
      */
 
-    fsp = open_directory(conn, fname, &sbuf, smb_ofun, unixmode, &smb_action);
+    fsp = open_directory(conn, fname, &sbuf, smb_open_mode, smb_ofun, unixmode, &smb_action);
 
     if(!fsp) {
       restore_case_semantics(file_attributes);
@@ -1226,7 +1233,7 @@ static int call_nt_transact_create(connection_struct *conn,
 			}
 	
 			oplock_request = 0;
-			fsp = open_directory(conn, fname, &sbuf, smb_ofun, unixmode, &smb_action);
+			fsp = open_directory(conn, fname, &sbuf, smb_open_mode, smb_ofun, unixmode, &smb_action);
 				
 			if(!fsp) {
 				restore_case_semantics(file_attributes);
