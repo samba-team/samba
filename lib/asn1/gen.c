@@ -45,21 +45,25 @@ FILE *headerfile, *codefile, *logfile;
 #define STEM "asn1"
 
 static char *orig_filename;
+static char header[1024];
 
 void
-init_generate (char *filename)
+init_generate (char *filename, char *basename)
 {
     orig_filename = filename;
-    headerfile = fopen (STEM ".h", "w");
+    if(basename == NULL)
+	basename = STEM;
+    sprintf(header, "%s.h", basename);
+    headerfile = fopen (header, "w");
     if (headerfile == NULL)
-	err (1, "open " STEM ".h");
+	err (1, "open %s", header);
     fprintf (headerfile,
 	     "/* Generated from %s */\n"
 	     "/* Do not edit */\n\n",
 	     filename);
     fprintf (headerfile, 
-	     "#ifndef __" STEM "_h__\n"
-	     "#define __" STEM "_h__\n\n");
+	     "#ifndef __%s_h__\n"
+	     "#define __%s_h__\n\n", basename, basename);
     fprintf (headerfile, 
 	     "#include <stddef.h>\n"
 	     "#include <time.h>\n\n");
@@ -86,7 +90,7 @@ init_generate (char *filename)
 void
 close_generate ()
 {
-    fprintf (headerfile, "#endif /* __" STEM "_h__ */\n");
+    fprintf (headerfile, "#endif /* __%s_h__ */\n", header);
 
     fclose (headerfile);
     fprintf (logfile, "\n");

@@ -45,22 +45,24 @@ extern FILE *yyin;
 int
 main(int argc, char **argv)
 {
-  int ret;
-  char *name;
+    int ret;
+    char *file;
+    char *name = NULL;
 
-  if (argc == 1) {
-    name = "stdin";
-    yyin = stdin;
-  } else {
-    name = argv[1];
-    yyin = fopen (name, "r");
-    if (yyin == NULL)
-	err (1, "open %s", name);
-  }
+    if (argc == 1) {
+	name = "stdin";
+	yyin = stdin;
+    } else {
+	file = argv[1];
+	yyin = fopen (file, "r");
+	if (yyin == NULL)
+	    err (1, "open %s", file);
+	name = argv[2];
+    }
 
-  init_generate (name);
-  initsym ();
-  ret = yyparse ();
-  close_generate ();
-  return ret;
+    init_generate (file, name);
+    initsym ();
+    ret = yyparse ();
+    close_generate ();
+    return ret;
 }
