@@ -982,11 +982,13 @@ mismatch with our scope (%s).\n", inet_ntoa(p->ip), dgram->dest_name.scope, scop
     }
     case ANN_AnnouncementRequest:
     {
+      debug_browse_data(buf, len);
       process_announce_request(subrec, p, buf+1);
       break;
     }
     case ANN_Election:
     {
+      debug_browse_data(buf, len);
       process_election(subrec, p, buf+1);
       break;
     }
@@ -1016,6 +1018,7 @@ packet from %s IP %s\n", namestr(&dgram->source_name), inet_ntoa(p->ip)));
     }
     case ANN_ResetBrowserState:
     {
+      debug_browse_data(buf, len);
       process_reset_browser(subrec, p, buf+1);
       break;
     }
@@ -1025,11 +1028,25 @@ packet from %s IP %s\n", namestr(&dgram->source_name), inet_ntoa(p->ip)));
          on the unicast subnet. */
       subrec = unicast_subnet;
 
+      debug_browse_data(buf, len);
       process_master_browser_announce(subrec, p, buf+1);
+      break;
+    }
+    case ANN_BecomeBackup:
+    {
+      /* 
+       * We don't currently implement this. Log it just in case.
+       */
+      debug_browse_data(buf, len);
+      DEBUG(10,("process_browse_packet: On subnet %s ignoring browse packet \
+command ANN_BecomeBackup from %s IP %s to %s\n",
+            subrec->subnet_name, namestr(&dgram->source_name),
+            inet_ntoa(p->ip), namestr(&dgram->dest_name)));
       break;
     }
     default:
     {
+      debug_browse_data(buf, len);
       DEBUG(0,("process_browse_packet: On subnet %s ignoring browse packet \
 command code %d from %s IP %s to %s\n", 
             subrec->subnet_name, command, namestr(&dgram->source_name),
