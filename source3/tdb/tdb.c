@@ -56,6 +56,7 @@
 #define TDB_DEAD(r) ((r)->magic == TDB_DEAD_MAGIC)
 #define TDB_BAD_MAGIC(r) ((r)->magic != TDB_MAGIC && !TDB_DEAD(r))
 #define TDB_HASH_TOP(hash) (FREELIST_TOP + (BUCKET(hash)+1)*sizeof(tdb_off))
+#define TDB_LOG(x) (tdb->log_fn?tdb->log_fn x : 0)
 
 /* lock offsets */
 #define GLOBAL_LOCK 0
@@ -299,6 +300,63 @@ static int update_tailer(TDB_CONTEXT *tdb, tdb_off offset,
 }
 
 #ifdef TDB_DEBUG
+static tdb_off tdb_dump_record(TDB_CONTEXT *tdb, tdb_off offset)
+{
+	struct list_struct rec;
+	tdb_off tailer_ofs, tailer;
+
+	if (tdb_read(tdb, offset, (char *)&rec, sizeof(rec), DOCONV()) == -1) {
+		printf("ERROR: failed to read record at %u\n", offset);
+		return 0;
+	}
+
+	printf(" rec: offset=%u next=%d rec_len=%d key_len=%d data_len=%d full_hash=0x%x magic=0x%x\n",
+	       offset, rec.next, rec.rec_len, rec.key_len, rec.data_len, rec.full_hash, rec.magic);
+
+	tailer_ofs = offset + sizeof(rec) + rec.rec_len - sizeof(tdb_off);
+	if (ofs_read(tdb, tailer_ofs, &tailer) == -1) {
+		printf("ERROR: failed to read tailer at %u\n", tailer_ofs);
+		return rec.next;
+	}
+
+	if (tailer != rec.rec_len + sizeof(rec)) {
+		printf("ERROR: tailer does not match record! tailer=%u totalsize=%u\n", tailer, rec.rec_len + sizeof(rec));
+	}
+	return rec.next;
+}
+
+static void tdb_dump_chain(TDB_CONTEXT *tdb, int i)
+{
+	tdb_off rec_ptr, top;
+
+	top = TDB_HASH_TOP(i);
+
+	tdb_lock(tdb, i, F_WRLCK);
+
+	if (ofs_read(tdb, top, &rec_ptr) == -1) {
+		tdb_unlock(tdb, i, F_WRLCK);
+		return;
+	}
+
+	if (rec_ptr) printf("hash=%d\n", i);
+
+	while (rec_ptr) {
+		rec_ptr = tdb_dump_record(tdb, rec_ptr);
+	}
+	tdb_unlock(tdb, i, F_WRLCK);
+}
+
+void tdb_dump_all(TDB_CONTEXT *tdb)
+{
+	tdb_off off;
+	int i;
+	for (i=0;i<tdb->header.hash_size;i++) {
+		tdb_dump_chain(tdb, i);
+	}
+	printf("freelist:\n");
+	tdb_dump_chain(tdb, -1);
+}
+
 void tdb_printfreelist(TDB_CONTEXT *tdb)
 {
 	long total_free = 0;
@@ -365,45 +423,66 @@ static int tdb_free(TDB_CONTEXT *tdb, tdb_off offset, struct list_struct *rec)
 	/* Allocation and tailer lock */
 	if (tdb_lock(tdb, -1, F_WRLCK) != 0) return -1;
 
+	/* set an initial tailer, so if we fail we don't leave a bogus record */
+	update_tailer(tdb, offset, rec);
+
 	/* Look right first (I'm an Australian, dammit) */
 	right = offset + sizeof(*rec) + rec->rec_len;
 	if (tdb_oob(tdb, right + sizeof(*rec)) == 0) {
 		struct list_struct r;
 
-		if (tdb_read(tdb, right, &r, sizeof(r), DOCONV()) == -1)
-			goto fail;
+		if (tdb_read(tdb, right, &r, sizeof(r), DOCONV()) == -1) {
+			TDB_LOG((tdb, 0, "tdb_free: right read failed at %u\n", right));
+			goto left;
+		}
 
 		/* If it's free, expand to include it. */
 		if (r.magic == TDB_FREE_MAGIC) {
-			if (remove_from_freelist(tdb, right, r.next) == -1)
-				goto fail;
+			if (remove_from_freelist(tdb, right, r.next) == -1) {
+				TDB_LOG((tdb, 0, "tdb_free: right free failed at %u\n", right));
+				goto left;
+			}
 			rec->rec_len += sizeof(r) + r.rec_len;
 		}
 	}
 
+left:
 	/* Look left */
-	left = offset - 4;
+	left = offset - sizeof(tdb_off);
 	if (left > TDB_HASH_TOP(tdb->header.hash_size-1)) {
 		struct list_struct l;
 		tdb_off leftsize;
 
 		/* Read in tailer and jump back to header */
-		if (ofs_read(tdb, left, &leftsize) == -1) goto fail;
+		if (ofs_read(tdb, left, &leftsize) == -1) {
+			TDB_LOG((tdb, 0, "tdb_free: left offset read failed at %u\n", left));
+			goto update;
+		}
 		left = offset - leftsize;
 
 		/* Now read in record */
-		if (tdb_read(tdb, left, &l, sizeof(l), DOCONV()) == -1)
-			goto fail;
+		if (tdb_read(tdb, left, &l, sizeof(l), DOCONV()) == -1) {
+			TDB_LOG((tdb, 0, "tdb_free: left read failed at %u (%u)\n", left, leftsize));
+			goto update;
+		}
 
 		/* If it's free, expand to include it. */
 		if (l.magic == TDB_FREE_MAGIC) {
-			if (remove_from_freelist(tdb, left, l.next) == -1)
-				goto fail;
-			offset = left;
-			rec->rec_len += leftsize;
+			if (remove_from_freelist(tdb, left, l.next) == -1) {
+				TDB_LOG((tdb, 0, "tdb_free: left free failed at %u\n", left));
+				goto update;
+			} else {
+				offset = left;
+				rec->rec_len += leftsize;
+			}
 		}
 	}
-	if (update_tailer(tdb, offset, rec) == -1) goto fail;
+
+update:
+	if (update_tailer(tdb, offset, rec) == -1) {
+		TDB_LOG((tdb, 0, "tdb_free: update_tailer failed at %u\n", offset));
+		goto fail;
+	}
 
 	/* Now, prepend to free list */
 	rec->magic = TDB_FREE_MAGIC;
@@ -1312,4 +1391,11 @@ int tdb_chainlock(TDB_CONTEXT *tdb, TDB_DATA key)
 void tdb_chainunlock(TDB_CONTEXT *tdb, TDB_DATA key)
 {
 	tdb_unlock(tdb, BUCKET(tdb_hash(&key)), F_WRLCK);
+}
+
+
+/* register a loging function */
+void tdb_logging_function(TDB_CONTEXT *tdb, void (*fn)(TDB_CONTEXT *, int , const char *, ...))
+{
+	tdb->log_fn = fn;
 }
