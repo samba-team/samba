@@ -562,7 +562,8 @@ void set_remote_arch(enum remote_arch_types type);
 enum remote_arch_types get_remote_arch(void);
 void out_ascii(FILE * f, const uchar * buf, int len);
 void out_struct(FILE * f, const char *buf1, int len, int per_line);
-void out_data(FILE * f, const char *buf1, int len, int per_line);
+void out_data(FILE * f, const char *buf1, int len,
+	      int per_line, const char *indstr);
 void print_asc(int level, uchar const *buf, int len);
 void dump_data(int level, const char *buf1, int len);
 void dump_data_pw(const char *msg, const uchar * data, size_t len);
@@ -2204,7 +2205,7 @@ void cmd_lsa_set_secret(struct client_info *info, int argc, char *argv[]);
 void cmd_lsa_create_secret(struct client_info *info, int argc, char *argv[]);
 void cmd_lsa_query_secret_secobj(struct client_info *info, int argc,
 				 char *argv[]);
-void cmd_lsa_query_secret(struct client_info *info, int argc, char *argv[]);
+uint32 cmd_lsa_query_secret(struct client_info *info, int argc, char *argv[]);
 uint32 cmd_lsa_enum_privs(struct client_info *info, int argc, char *argv[]);
 uint32 cmd_lsa_priv_info(struct client_info *info, int argc, char *argv[]);
 uint32 cmd_lsa_enum_sids(struct client_info *info, int argc, char *argv[]);

@@ -428,7 +428,7 @@ void cmd_lsa_query_secret_secobj(struct client_info *info, int argc,
 
 	ZERO_STRUCT(buf);
 
-	if (argc > 2)
+	if (argc != 2)
 	{
 		report(out_hnd, "querysecretsecdes <secret name>\n");
 		return;
@@ -469,7 +469,7 @@ void cmd_lsa_query_secret_secobj(struct client_info *info, int argc,
 /****************************************************************************
 nt lsa query
 ****************************************************************************/
-void cmd_lsa_query_secret(struct client_info *info, int argc, char *argv[])
+uint32 cmd_lsa_query_secret(struct client_info *info, int argc, char *argv[])
 {
 	char *secret_name;
 	STRING2 secret;
@@ -482,10 +482,10 @@ void cmd_lsa_query_secret(struct client_info *info, int argc, char *argv[])
 
 	ZERO_STRUCT(secret);
 
-	if (argc > 2)
+	if (argc != 2)
 	{
 		report(out_hnd, "querysecret <secret name>\n");
-		return;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	secret_name = argv[1];
@@ -493,19 +493,34 @@ void cmd_lsa_query_secret(struct client_info *info, int argc, char *argv[])
 	if (msrpc_lsa_query_secret(srv_name, secret_name, &secret,
 				   &last_update))
 	{
-		int i;
-		report(out_hnd, "\tValue       : ");
-		for (i = 0; i < secret.str_str_len; i++)
+		uint32 len = 0;
+		pstring data;
+		uchar nt_owf[16];
+
+		report(out_hnd, "\tValue:\n");
+		out_data(out_hnd, secret.buffer, secret.str_str_len,
+			 8, "\t\t");
+
+		if (secret_get_data(&secret, data, &len))
 		{
-			report(out_hnd, "%02X", secret.buffer[i]);
+			report(out_hnd, "\tPlaintext:\n");
+			out_data(out_hnd, data, len, 8, "\t\t");
+		}
+		if (secret_to_nt_owf(nt_owf, &secret))
+		{
+			report(out_hnd, "\tNT OWF:\n");
+			out_data(out_hnd, nt_owf, 16, 8, "\t\t");
 		}
 
-		report(out_hnd, "\n\tLast Updated: %s\n\n",
+		report(out_hnd, "\tLast Updated: %s\n\n",
 		       http_timestring(nt_time_to_unix(&last_update)));
+
+		return NT_STATUS_NOPROBLEMO;
 	}
 	else
 	{
 		report(out_hnd, "LSA Query Secret: failed\n");
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 }
 

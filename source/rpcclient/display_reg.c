@@ -90,13 +90,13 @@ static void print_reg_value(FILE *out_hnd, const char *val_name,
 			{
 				report(out_hnd, "\t%s:\t%s:\t", val_name, type);
 				out_data(out_hnd, (const char*)value->buffer, 
-				         value->buf_len, 8);
+				         value->buf_len, 8, "");
 			}
 			else
 			{
 				report(out_hnd, "\t%s:\t%s:\n", val_name, type);
 				out_data(out_hnd, (const char*)value->buffer, 
-				         value->buf_len, 16);
+				         value->buf_len, 16, "");
 			}
 			break;
 		}

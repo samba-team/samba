@@ -1751,7 +1751,8 @@ void out_struct(FILE * f, const char *buf1, int len, int per_line)
 	fprintf(f, "\n};\n");
 }
 
-void out_data(FILE * f, const char *buf1, int len, int per_line)
+void out_data(FILE * f, const char *buf1, int len,
+	      int per_line, const char *indstr)
 {
 	const uchar *buf = (const uchar *)buf1;
 	int i = 0;
@@ -1759,8 +1760,21 @@ void out_data(FILE * f, const char *buf1, int len, int per_line)
 	{
 		return;
 	}
+	if (f ==  NULL)
+	{
+		return;
+	}
+	if (buf1 == NULL)
+	{
+		DEBUG(1, ("out_data: NULL, len=%d\n", len));
+		return;
+	}
+	if (indstr == NULL)
+	{
+		indstr = "";
+	}
 
-	fprintf(f, "[%03X] ", i);
+	fprintf(f, "%s[%03X] ", indstr, i);
 	for (i = 0; i < len;)
 	{
 		fprintf(f, "%02X ", (int)buf[i]);
@@ -1774,7 +1788,7 @@ void out_data(FILE * f, const char *buf1, int len, int per_line)
 			out_ascii(f, &buf[i - per_line / 2], per_line / 2);
 			fprintf(f, "\n");
 			if (i < len)
-				fprintf(f, "[%03X] ", i);
+				fprintf(f, "%s[%03X] ", indstr, i);
 		}
 	}
 	if ((i % per_line) != 0)
