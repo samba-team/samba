@@ -1,3 +1,8 @@
+2003-08-16  Love  <lha@stacken.kth.se>
+
+	* Makefile.am.common: don't try doing local checks if CHECK_LOCAL
+	is set to no-check-local
+
 2003-08-01  Love  <lha@stacken.kth.se>
 
 	* check-compile-et.m4: check if compile_et support ``error_table N
