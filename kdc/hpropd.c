@@ -252,6 +252,8 @@ main(int argc, char **argv)
 	struct sockaddr *sa = (struct sockaddr *)&ss;
 	int sin_len = sizeof(ss);
 	char addr_name[256];
+	krb5_ticket *ticket;
+	char *server;
 
 	fd = STDIN_FILENO;
 	if (inetd_flag == -1) {
@@ -292,10 +294,19 @@ main(int argc, char **argv)
 	}
 
 	ret = krb5_recvauth(context, &ac, &fd, HPROP_VERSION, NULL,
-			    0, keytab, NULL);
+			    0, keytab, &ticket);
 	if(ret)
 	    krb5_err(context, 1, ret, "krb5_recvauth");
 	
+	ret = krb5_unparse_name(context, ticket->server, &server);
+	if (ret)
+	    krb5_err(context, 1, ret, "krb5_unparse_name");
+	if (strncmp(server, "hprop/", 5) != 0)
+	    krb5_errx(context, 1, "ticket not for hprop (%s)", server);
+
+	free(server);
+	krb5_free_ticket (context, ticket);
+
 	ret = krb5_auth_getauthenticator(context, ac, &authent);
 	if(ret)
 	    krb5_err(context, 1, ret, "krb5_auth_getauthenticator");
