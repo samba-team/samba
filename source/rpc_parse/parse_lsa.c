@@ -2382,10 +2382,11 @@ void init_r_add_acct_rights(LSA_R_ADD_ACCT_RIGHTS *q_r)
 }
 
 
+#if 0
 /*******************************************************************
  Inits an LSA_Q_REMOVE_ACCT_RIGHTS structure.
 ********************************************************************/
-void init_q_remove_acct_rights(LSA_Q_REMOVE_ACCT_RIGHTS *q_q, 
+ void init_q_remove_acct_rights(LSA_Q_REMOVE_ACCT_RIGHTS *q_q, 
 			       POLICY_HND *hnd, 
 			       DOM_SID *sid,
 			       uint32 removeall,
@@ -2404,7 +2405,7 @@ void init_q_remove_acct_rights(LSA_Q_REMOVE_ACCT_RIGHTS *q_q,
 /*******************************************************************
 reads or writes a LSA_Q_REMOVE_ACCT_RIGHTS structure.
 ********************************************************************/
-BOOL lsa_io_q_remove_acct_rights(const char *desc, LSA_Q_REMOVE_ACCT_RIGHTS *q_q, prs_struct *ps, int depth)
+ BOOL lsa_io_q_remove_acct_rights(const char *desc, LSA_Q_REMOVE_ACCT_RIGHTS *q_q, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "lsa_io_q_remove_acct_rights");
 	depth++;
@@ -2430,7 +2431,7 @@ BOOL lsa_io_q_remove_acct_rights(const char *desc, LSA_Q_REMOVE_ACCT_RIGHTS *q_q
 /*******************************************************************
 reads or writes a LSA_R_REMOVE_ACCT_RIGHTS structure.
 ********************************************************************/
-BOOL lsa_io_r_remove_acct_rights(const char *desc, LSA_R_REMOVE_ACCT_RIGHTS *r_c, prs_struct *ps, int depth)
+ BOOL lsa_io_r_remove_acct_rights(const char *desc, LSA_R_REMOVE_ACCT_RIGHTS *r_c, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "lsa_io_r_remove_acct_rights");
 	depth++;
@@ -2444,7 +2445,7 @@ BOOL lsa_io_r_remove_acct_rights(const char *desc, LSA_R_REMOVE_ACCT_RIGHTS *r_c
 /*******************************************************************
  Inits an LSA_R_REMOVE_ACCT_RIGHTS structure.
 ********************************************************************/
-void init_r_remove_acct_rights(LSA_R_REMOVE_ACCT_RIGHTS *q_r)
+ void init_r_remove_acct_rights(LSA_R_REMOVE_ACCT_RIGHTS *q_r)
 {
 	DEBUG(5, ("init_r_remove_acct_rights\n"));
 }
@@ -2452,7 +2453,7 @@ void init_r_remove_acct_rights(LSA_R_REMOVE_ACCT_RIGHTS *q_r)
 /*******************************************************************
  Inits an LSA_Q_ENUM_ACCT_WITH_RIGHT structure.
 ********************************************************************/
-void init_q_enum_acct_with_right(LSA_Q_ENUM_ACCT_WITH_RIGHT *q_q, 
+ void init_q_enum_acct_with_right(LSA_Q_ENUM_ACCT_WITH_RIGHT *q_q, 
 				 POLICY_HND *hnd, 
 				 const char *right)
 {
@@ -2469,7 +2470,7 @@ void init_q_enum_acct_with_right(LSA_Q_ENUM_ACCT_WITH_RIGHT *q_q,
 /*******************************************************************
 reads or writes a LSA_Q_ENUM_ACCT_WITH_RIGHT structure.
 ********************************************************************/
-BOOL lsa_io_q_enum_acct_with_right(const char *desc, LSA_Q_ENUM_ACCT_WITH_RIGHT *q_q, prs_struct *ps, int depth)
+ BOOL lsa_io_q_enum_acct_with_right(const char *desc, LSA_Q_ENUM_ACCT_WITH_RIGHT *q_q, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "lsa_io_q_enum_acct_with_right");
 	depth++;
@@ -2497,7 +2498,7 @@ BOOL lsa_io_q_enum_acct_with_right(const char *desc, LSA_Q_ENUM_ACCT_WITH_RIGHT 
 /*******************************************************************
 reads or writes a LSA_R_ENUM_ACCT_WITH_RIGHT structure.
 ********************************************************************/
-BOOL lsa_io_r_enum_acct_with_right(const char *desc, LSA_R_ENUM_ACCT_WITH_RIGHT *r_c, prs_struct *ps, int depth)
+ BOOL lsa_io_r_enum_acct_with_right(const char *desc, LSA_R_ENUM_ACCT_WITH_RIGHT *r_c, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "lsa_io_r_enum_acct_with_right");
 	depth++;
@@ -2517,7 +2518,7 @@ BOOL lsa_io_r_enum_acct_with_right(const char *desc, LSA_R_ENUM_ACCT_WITH_RIGHT 
 /*******************************************************************
  Inits an LSA_R_ENUM_ACCT_WITH_RIGHT structure.
 ********************************************************************/
-void init_r_enum_acct_with_right(LSA_R_ENUM_ACCT_WITH_RIGHT *r_c, 
+ void init_r_enum_acct_with_right(LSA_R_ENUM_ACCT_WITH_RIGHT *r_c, 
 				 uint32 count,
 				 DOM_SID *sids)
 {
@@ -2526,3 +2527,4 @@ void init_r_enum_acct_with_right(LSA_R_ENUM_ACCT_WITH_RIGHT *r_c,
 	r_c->count = count;
 	init_sid_array(&r_c->sids, count, sids);
 }
+#endif

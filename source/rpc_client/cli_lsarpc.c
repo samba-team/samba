@@ -1257,6 +1257,7 @@ NTSTATUS cli_lsa_remove_account_rights(struct cli_state *cli, TALLOC_CTX *mem_ct
 				       POLICY_HND *pol, DOM_SID sid, BOOL removeall,
 				       uint32 count, const char **privs_name)
 {
+#if 0
 	prs_struct qbuf, rbuf;
 	LSA_Q_REMOVE_ACCT_RIGHTS q;
 	LSA_R_REMOVE_ACCT_RIGHTS r;
@@ -1290,6 +1291,8 @@ NTSTATUS cli_lsa_remove_account_rights(struct cli_state *cli, TALLOC_CTX *mem_ct
 done:
 
 	return result;
+#endif
+	return NT_STATUS_UNSUCCESSFUL;
 }
 
 
