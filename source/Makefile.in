@@ -1361,7 +1361,6 @@ installman: installdirs
 	@$(SHELL) $(srcdir)/script/installman.sh $(DESTDIR)$(MANDIR) $(srcdir) $(man_langs) "@ROFF@"
 
 .PHONY: showlayout
-.NOTPARALLEL: proto
 
 showlayout: 
 	@echo "Samba will be installed into:"
