@@ -40,14 +40,10 @@ get_kdc_address (krb5_context context,
 		 krb5_realm realm,
 		 struct addrinfo **ai)
 {
-    struct addrinfo hints;
     krb5_error_code ret;
     char **hostlist;
     int port = 0;
-    char portstr[NI_MAXSERV];
     int error;
-    char *host;
-    char *dot;
 
     ret = krb5_get_krb_changepw_hst (context,
 				     &realm,
@@ -55,24 +51,9 @@ get_kdc_address (krb5_context context,
     if (ret)
 	return ret;
 
-    host = *hostlist;
+    port = ntohs(krb5_getportbyname (context, "kpasswd", "udp", KPASSWD_PORT));
+    error = roken_getaddrinfo_hostspec(*hostlist, port, ai);
 
-    dot = strchr (host, ':');
-    if (dot != NULL) {
-	char *end;
-
-	*dot++ = '\0';
-	port = strtol (dot, &end, 0);
-    }
-    if (port == 0)
-	port = krb5_getportbyname (context, "kpasswd", "udp", KPASSWD_PORT);
-    snprintf (portstr, sizeof(portstr), "%u", ntohs(port));
-
-    memset (&hints, 0, sizeof(hints));
-    hints.ai_socktype = SOCK_DGRAM;
-    hints.ai_protocol = IPPROTO_UDP;
-
-    error = getaddrinfo (host, portstr, &hints, ai);
     krb5_free_krbhst (context, hostlist);
     return error;
 }
