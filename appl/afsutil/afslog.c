@@ -94,7 +94,7 @@ createuser (char *cell)
 void
 usage(int ecode)
 {
-    arg_printusage(args, num_args, "");
+    arg_printusage(args, num_args, "[cell]... [path]...");
     exit(ecode);
 }
 
@@ -136,12 +136,14 @@ int main(int argc, char **argv)
     krb5_ccache id;
     char cellbuf[64];
     int i;
+    int num;
     
     set_progname(argv[0]);
 
     krb5_init_context(&context);
     if(!k_hasafs())
-	krb5_errx(context, 1, "No AFS!");
+	krb5_errx(context, 1, 
+		  "AFS doesn't seem to be present on this machine");
     if(getarg(args, num_args, argc, argv, &optind))
 	usage(1);
     if(help_flag)
@@ -153,16 +155,25 @@ int main(int argc, char **argv)
 	exit(0);
     }
     krb5_cc_default(context, &id);
-    for(i = 0; i < files.num_strings; i++)
+    num = 0;
+    for(i = 0; i < files.num_strings; i++){
 	afslog_file(context, id, files.strings[i]);
-    for(i = 0; i < cells.num_strings; i++)
+	num++;
+    }
+    for(i = 0; i < cells.num_strings; i++){
 	afslog_cell(context, id, cells.strings[i], 1);
+	num++;
+    }
     for(i = optind; i < argc; i++){
+	num++;
 	if(strcmp(argv[i], ".") == 0 ||
 	   strcmp(argv[i], "..") == 0 ||
-	   strchr(argv[i], '/'))
+	   strchr(argv[i], '/') ||
+	   access(argv[i], F_OK) == 0)
 	    afslog_file(context, id, argv[i]);
 	else
 	    afslog_cell(context, id, argv[i], 1);
     }    
+    if(num == 0)
+	k5_afsklog(context, id, NULL, NULL);
 }
