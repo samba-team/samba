@@ -490,6 +490,8 @@ void* add_item_to_array(uint32 *len, void ***array, const void *item,
 	void*(item_dup)(const void*), BOOL alloc_anyway);
 void free_char_array(uint32 num_entries, char **entries);
 char* add_chars_to_array(uint32 *len, char ***array, const char *name);
+void free_uint32_array(uint32 num_entries, uint32 **entries);
+uint32* add_uint32s_to_array(uint32 *len, uint32 ***array, const uint32 *name);
 void free_unistr_array(uint32 num_entries, UNISTR2 **entries);
 UNISTR2* add_unistr_to_array(uint32 *len, UNISTR2 ***array, UNISTR2 *name);
 void free_sid_array(uint32 num_entries, DOM_SID **entries);
@@ -1801,8 +1803,10 @@ BOOL lsa_open_policy2(struct cli_state *cli, uint16 fnum,
 			const char *server_name, POLICY_HND *hnd,
 			BOOL sec_qos);
 BOOL lsa_open_secret(struct cli_state *cli, uint16 fnum,
-		     POLICY_HND *hnd_pol, char *secret_name, uint32 des_access,
-		     POLICY_HND *hnd_secret);
+				const POLICY_HND *hnd_pol,
+				const char *secret_name,
+				uint32 des_access,
+				POLICY_HND *hnd_secret);
 BOOL lsa_query_secret(struct cli_state *cli, uint16 fnum,
 		      POLICY_HND *pol, STRING2 *enc_secret,
 		      NTTIME *last_update);
@@ -2139,6 +2143,13 @@ BOOL do_wks_query_info(struct cli_state *cli, uint16 fnum,
 			char *server_name, uint32 switch_value,
 			WKS_INFO_100 *wks100);
 
+/*The following definitions come from  rpc_client/msrpc_lsarpc.c  */
+
+BOOL msrpc_lsa_query_secret(struct cli_state *cli,
+				const char* secret_name,
+				STRING2 *secret,
+				NTTIME *last_update);
+
 /*The following definitions come from  rpc_client/msrpc_samr.c  */
 
 BOOL req_user_info(struct cli_state *cli, uint16 fnum,
@@ -2353,8 +2364,8 @@ BOOL lsa_io_q_open_pol2(char *desc,  LSA_Q_OPEN_POL2 *r_q, prs_struct *ps, int d
 BOOL lsa_io_r_open_pol2(char *desc,  LSA_R_OPEN_POL2 *r_p, prs_struct *ps, int depth);
 BOOL make_q_query(LSA_Q_QUERY_INFO *q_q, POLICY_HND *hnd, uint16 info_class);
 BOOL lsa_io_q_query(char *desc,  LSA_Q_QUERY_INFO *q_q, prs_struct *ps, int depth);
-BOOL make_q_open_secret(LSA_Q_OPEN_SECRET *q_o, POLICY_HND *pol_hnd,
-			char *secret_name, uint32 desired_access);
+BOOL make_q_open_secret(LSA_Q_OPEN_SECRET *q_o, const POLICY_HND *pol_hnd,
+			const char *secret_name, uint32 desired_access);
 BOOL lsa_io_q_open_secret(char *desc, LSA_Q_OPEN_SECRET *q_o, prs_struct *ps, int depth);
 BOOL lsa_io_r_open_secret(char *desc, LSA_R_OPEN_SECRET *r_o, prs_struct *ps, int depth);
 BOOL lsa_io_secret_value(char *desc, LSA_SECRET_VALUE *value, prs_struct *ps, int depth);
@@ -3387,7 +3398,7 @@ BOOL make_svc_q_start_service(SVC_Q_START_SERVICE *q_c, POLICY_HND *hnd,
 BOOL svc_io_q_start_service(char *desc, SVC_Q_START_SERVICE *q_s, prs_struct *ps, int depth);
 BOOL svc_io_r_start_service(char *desc,  SVC_R_START_SERVICE *r_s, prs_struct *ps, int depth);
 BOOL make_svc_query_svc_cfg(QUERY_SERVICE_CONFIG *q_u,
-				uint32 service_type, uint32 start_type,
+				uint32 service_item, uint32 start_item,
 				uint32 error_control,
 				char* bin_path_name, char* load_order_grp, 
 				uint32 tag_id,
@@ -3395,7 +3406,7 @@ BOOL make_svc_query_svc_cfg(QUERY_SERVICE_CONFIG *q_u,
 				char* disp_name);
 BOOL svc_io_query_svc_cfg(char *desc, QUERY_SERVICE_CONFIG *q_u, prs_struct *ps, int depth);
 BOOL make_svc_q_enum_svcs_status(SVC_Q_ENUM_SVCS_STATUS *q_c, POLICY_HND *hnd,
-				uint32 service_type, uint32 service_state,
+				uint32 service_item, uint32 service_state,
 				uint32 buf_size, uint32 resume_hnd );
 BOOL svc_io_q_enum_svcs_status(char *desc,  SVC_Q_ENUM_SVCS_STATUS *q_u, prs_struct *ps, int depth);
 BOOL make_svc_r_enum_svcs_status(SVC_R_ENUM_SVCS_STATUS *r_c, 
@@ -3418,6 +3429,16 @@ BOOL svc_io_r_query_disp_name(char *desc, SVC_R_QUERY_DISP_NAME *r_u, prs_struct
 BOOL make_svc_q_close(SVC_Q_CLOSE *q_c, POLICY_HND *hnd);
 BOOL svc_io_q_close(char *desc,  SVC_Q_CLOSE *q_u, prs_struct *ps, int depth);
 BOOL svc_io_r_close(char *desc,  SVC_R_CLOSE *r_u, prs_struct *ps, int depth);
+BOOL make_svc_q_unknown_1b(SVC_Q_UNKNOWN_1B *q_u,
+		const POLICY_HND *pol, uint32 switch_value,
+		uint32 unknown_1);
+BOOL svc_io_q_unknown_1b(char *desc,  SVC_Q_UNKNOWN_1B *q_u, prs_struct *ps, int depth);
+BOOL make_svc_r_unknown_1b(SVC_R_UNKNOWN_1B *r_u,
+		uint32 switch_value, uint32 unknown_1,
+		uint32 num_items, uint32 **item,
+		uint32 status);
+BOOL svc_io_r_unknown_1b(char *desc, SVC_R_UNKNOWN_1B *r_u, prs_struct *ps, int depth);
+void svc_free_r_unknown_1b(SVC_R_UNKNOWN_1B *r_u);
 
 /*The following definitions come from  rpc_parse/parse_wks.c  */
 
@@ -3580,6 +3601,7 @@ void cmd_sam_lookup_domain(struct client_info *info, int argc, char *argv[]);
 void cmd_sam_del_aliasmem(struct client_info *info, int argc, char *argv[]);
 void cmd_sam_delete_dom_alias(struct client_info *info, int argc, char *argv[]);
 void cmd_sam_add_aliasmem(struct client_info *info, int argc, char *argv[]);
+void cmd_sam_create_dom_trusting(struct client_info *info, int argc, char *argv[]);
 void cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[]);
 void cmd_sam_create_dom_alias(struct client_info *info, int argc, char *argv[]);
 void cmd_sam_del_groupmem(struct client_info *info, int argc, char *argv[]);

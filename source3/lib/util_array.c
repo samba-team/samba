@@ -77,6 +77,34 @@ char* add_chars_to_array(uint32 *len, char ***array, const char *name)
 				
 }
 
+static uint32 *uint32_dup(const uint32* from)
+{
+	if (from != NULL)
+	{
+		uint32 *copy = (uint32 *)malloc(sizeof(uint32));
+		if (copy != NULL)
+		{
+			memcpy(copy, from, sizeof(*copy));
+		}
+		return copy;
+	}
+	return NULL;
+}
+
+void free_uint32_array(uint32 num_entries, uint32 **entries)
+{
+	void(*fn)(void*) = (void(*)(void*))&free;
+	free_void_array(num_entries, (void**)entries, *fn);
+}
+
+uint32* add_uint32s_to_array(uint32 *len, uint32 ***array, const uint32 *name)
+{
+	void*(*fn)(const void*) = (void*(*)(const void*))&uint32_dup;
+	return (uint32*)add_item_to_array(len,
+	                     (void***)array, (const void*)name, *fn, False);
+				
+}
+
 void free_unistr_array(uint32 num_entries, UNISTR2 **entries)
 {
 	void(*fn)(void*) = (void(*)(void*))&unistr2_free;
