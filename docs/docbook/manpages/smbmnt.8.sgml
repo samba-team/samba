@@ -1,4 +1,6 @@
-<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook V4.1//EN">
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook V4.1//EN" [
+<!ENTITY % globalentities SYSTEM '../global.ent'> %globalentities;
+]>
 <refentry id="smbmnt.8">
 
 <refmeta>
@@ -23,6 +25,7 @@
 		<arg choice="opt">-f &lt;mask&gt;</arg>
 		<arg choice="opt">-d &lt;mask&gt;</arg>
 		<arg choice="opt">-o &lt;options&gt;</arg>
+		<arg choice="opt">-h</arg>
 	</cmdsynopsis>
 </refsynopsisdiv>
 
@@ -87,6 +90,8 @@
 		command is run on a 2.4 or higher Linux kernel.
 		</para></listitem>
 		</varlistentry>
+
+		&stdarg.help;
 
 	</variablelist>
 </refsect1>
