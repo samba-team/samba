@@ -56,6 +56,22 @@ STANDARD_MAPPING printer_std_mapping = {
 	PRINTER_ALL_ACCESS
 };
 
+/* Map generic permissions to print server object specific permissions */
+
+GENERIC_MAPPING printserver_generic_mapping = {
+	SERVER_READ,
+	SERVER_WRITE,
+	SERVER_EXECUTE,
+	SERVER_ALL_ACCESS
+};
+
+STANDARD_MAPPING printserver_std_mapping = {
+	SERVER_READ,
+	SERVER_WRITE,
+	SERVER_EXECUTE,
+	SERVER_ALL_ACCESS
+};
+
 /* We need one default form to support our default printer. Msoft adds the
 forms it wants and in the ORDER it wants them (note: DEVMODE papersize is an
 array index). Letter is always first, so (for the current code) additions

@@ -92,7 +92,8 @@ static uint32 smb_connections=0;
 
 
 /* in printing/nt_printing.c */
-extern STANDARD_MAPPING printer_std_mapping;
+
+extern STANDARD_MAPPING printer_std_mapping, printserver_std_mapping;
 
 #define OUR_HANDLE(hnd) (((hnd)==NULL)?"NULL":(IVAL((hnd)->data5,4)==(uint32)sys_getpid()?"OURS":"OTHER")), \
 ((unsigned int)IVAL((hnd)->data5,4)),((unsigned int)sys_getpid())
@@ -959,26 +960,54 @@ Can't find printer handle we created for printer %s\n", name ));
 	get_current_user(&user, p);
 
 	if (Printer->printer_type == PRINTER_HANDLE_IS_PRINTSERVER) {
-		if (printer_default->access_required == 0) {
-			return WERR_OK;
-		}
-		else if ((printer_default->access_required & SERVER_ACCESS_ADMINISTER ) == SERVER_ACCESS_ADMINISTER) {
 
-			/* Printserver handles use global struct... */
-			snum = -1;
+		/* Printserver handles use global struct... */
+
+		snum = -1;
+
+		/* Map standard access rights to object specific access
+		   rights */
+		
+		se_map_standard(&printer_default->access_required, 
+				&printserver_std_mapping);
+	
+		/* Deny any object specific bits that don't apply to print
+		   servers (i.e printer and job specific bits) */
+
+		printer_default->access_required &= SPECIFIC_RIGHTS_MASK;
+
+		if (printer_default->access_required &
+		    ~(SERVER_ACCESS_ADMINISTER | SERVER_ACCESS_ENUMERATE)) {
+			DEBUG(3, ("access DENIED for non-printserver bits"));
+			close_printer_handle(p, handle);
+			return WERR_ACCESS_DENIED;
+		}
+
+		/* Allow admin access */
+
+		if (printer_default->access_required & 
+		    SERVER_ACCESS_ADMINISTER) {
 
 			if (!lp_ms_add_printer_wizard()) {
 				close_printer_handle(p, handle);
 				return WERR_ACCESS_DENIED;
 			}
-			else if (user.uid == 0 || user_in_list(uidtoname(user.uid), lp_printer_admin(snum))) {
+
+			if (user.uid == 0 || 
+			    user_in_list(uidtoname(user.uid),
+					 lp_printer_admin(snum)))
 				return WERR_OK;
-			} 
-			else {
-				close_printer_handle(p, handle);
-				return WERR_ACCESS_DENIED;
-			}
+
+			DEBUG(0, ("** denied 0x%08x to user %s\n",
+				  printer_default->access_required,
+				  uidtoname(user.uid)));
+			
+			close_printer_handle(p, handle);
+			return WERR_ACCESS_DENIED;
 		}
+
+		/* We fall through to return WERR_OK */
+		
 	}
 	else
 	{
