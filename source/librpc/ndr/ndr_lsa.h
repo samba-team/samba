@@ -113,11 +113,33 @@ struct lsa_OpenPolicy {
 
 };
 
+struct lsa_AuditLogInfo {
+	uint32 percent_full;
+	uint32 log_size;
+	NTTIME retention_time;
+	uint8 shutdown_in_progress;
+	NTTIME time_to_shutdown;
+	uint32 next_audit_record;
+	uint32 unknown;
+};
+
+struct lsa_AuditEventsInfo {
+	uint32 auditing_mode;
+};
+
+union lsa_PolicyInformation {
+/* [case(1)] */ struct lsa_AuditLogInfo audit_log;
+/* [case(2)] */ struct lsa_AuditEventsInfo audit_events;
+};
+
 struct lsa_QueryInfoPolicy {
 	struct {
+		struct policy_handle *handle;
+		uint16 level;
 	} in;
 
 	struct {
+		union lsa_PolicyInformation *info;
 		NTSTATUS result;
 	} out;
 

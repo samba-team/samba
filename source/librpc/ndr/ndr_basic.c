@@ -353,3 +353,23 @@ NTSTATUS ndr_push_guid(struct ndr_push *ndr, GUID *guid)
 {
 	return ndr_push_bytes(ndr, guid->info, GUID_SIZE);
 }
+
+/*
+  push a NTTIME
+*/
+NTSTATUS ndr_push_NTTIME(struct ndr_push *ndr, NTTIME t)
+{
+	NDR_CHECK(ndr_push_uint32(ndr, t.low));
+	NDR_CHECK(ndr_push_uint32(ndr, t.high));
+	return NT_STATUS_OK;
+}
+
+/*
+  pull a NTTIME
+*/
+NTSTATUS ndr_pull_NTTIME(struct ndr_pull *ndr, NTTIME *t)
+{
+	NDR_CHECK(ndr_pull_uint32(ndr, &t->low));
+	NDR_CHECK(ndr_pull_uint32(ndr, &t->high));
+	return NT_STATUS_OK;
+}

@@ -528,6 +528,37 @@ static BOOL test_EnumTrustDom(struct dcerpc_pipe *p,
 	return True;
 }
 
+static BOOL test_QueryInfoPolicy(struct dcerpc_pipe *p, 
+				 TALLOC_CTX *mem_ctx, 
+				 struct policy_handle *handle)
+{
+	struct lsa_QueryInfoPolicy r;
+	NTSTATUS status;
+
+	printf("\nTesting QueryInfoPolicy\n");
+
+	r.in.handle = handle;
+	r.in.level = 1;
+
+	status = dcerpc_lsa_QueryInfoPolicy(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("QueryInfoPolicy failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	{
+		struct lsa_AuditLogInfo *u = &r.out.info->audit_log;
+		printf("percent_full=%d log_size=%d retention_time=%s\n", 
+		       u->percent_full, u->log_size, 
+		       nt_time_string(mem_ctx, &u->retention_time));
+		printf("shutdown_in_progress=%d time_to_shutdown=%s next_audit_record=%d unknown=0x%x\n", 
+		       u->shutdown_in_progress, nt_time_string(mem_ctx, &u->time_to_shutdown),
+		       u->next_audit_record, u->unknown);
+	}
+
+	return True;
+}
+
 static BOOL test_Delete(struct dcerpc_pipe *p, 
 		       TALLOC_CTX *mem_ctx, 
 		       struct policy_handle *handle)
@@ -612,6 +643,10 @@ BOOL torture_rpc_lsa(int dummy)
 	}
 
 	if (!test_EnumTrustDom(p, mem_ctx, &handle)) {
+		ret = False;
+	}
+
+	if (!test_QueryInfoPolicy(p, mem_ctx, &handle)) {
 		ret = False;
 	}
 	
