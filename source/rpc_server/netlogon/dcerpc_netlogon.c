@@ -541,6 +541,7 @@ static NTSTATUS netr_LogonSamLogonWithFlags(struct dcesrv_call_state *dce_call, 
 
 	nt_status = auth_context->check_ntlm_password(auth_context,
 						      user_info, 
+						      mem_ctx,
 						      &server_info);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
