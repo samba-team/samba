@@ -470,6 +470,24 @@ struct winbindd_domain *find_domain_from_name(char *domain_name)
 	return NULL;
 }
 
+/* Given a domain name, return the struct winbindd domain info for it */
+
+struct winbindd_domain *find_domain_from_sid(DOM_SID *sid)
+{
+	struct winbindd_domain *tmp;
+
+	/* Search through list */
+	for (tmp = domain_list; tmp != NULL; tmp = tmp->next) {
+		if (sid_equal(sid, &tmp->sid)) {
+			if (!tmp->got_domain_info) return NULL;
+                        return tmp;
+                }
+        }
+
+	/* Not found */
+	return NULL;
+}
+
 /* Free state information held for {set,get,end}{pw,gr}ent() functions */
 
 void free_getent_state(struct getent_state *state)
@@ -556,79 +574,67 @@ BOOL winbindd_param_init(void)
 
 /* Convert a enum winbindd_cmd to a string */
 
+struct cmdstr_table {
+	enum winbindd_cmd cmd;
+	char *desc;
+};
+
+static struct cmdstr_table cmdstr_table[] = {
+	
+	/* User functions */
+
+	{ WINBINDD_GETPWNAM_FROM_USER, "getpwnam from user" },
+	{ WINBINDD_GETPWNAM_FROM_UID, "getpwnam from uid" },
+	{ WINBINDD_SETPWENT, "setpwent" },
+	{ WINBINDD_ENDPWENT, "endpwent" },
+	{ WINBINDD_GETPWENT, "getpwent" },
+
+	/* Group functions */
+
+	{ WINBINDD_GETGRNAM_FROM_GROUP, "getgrnam from group" },
+	{ WINBINDD_GETGRNAM_FROM_GID, "getgrnam from gid" },
+	{ WINBINDD_SETGRENT, "setgrent" },
+	{ WINBINDD_ENDGRENT, "endgrent" },
+	{ WINBINDD_GETGRENT, "getgrent" },
+
+	/* PAM auth functions */
+
+	{ WINBINDD_PAM_AUTH, "pam auth" },
+	{ WINBINDD_PAM_CHAUTHTOK, "pam chauthtok" },
+        { WINBINDD_LIST_USERS, "list users" },
+        { WINBINDD_LIST_GROUPS, "list groups" },
+
+	/* SID related functions */
+
+	{ WINBINDD_LOOKUPSID, "lookup sid" },
+	{ WINBINDD_LOOKUPNAME, "lookup name" },
+
+	/* S*RS related functions */
+
+	{ WINBINDD_SID_TO_UID, "sid to uid" },
+	{ WINBINDD_SID_TO_GID, "sid to gid " },
+	{ WINBINDD_GID_TO_SID, "gid to sid" },
+	{ WINBINDD_UID_TO_SID, "uid to sid" },
+
+	/* End of list */
+
+	{ WINBINDD_NUM_CMDS, NULL }
+};
+
 char *winbindd_cmd_to_string(enum winbindd_cmd cmd)
 {
-	char *result;
+	struct cmdstr_table *table = cmdstr_table;
+	char *result = NULL;
 
-	switch (cmd) {
-
-	case WINBINDD_GETPWNAM_FROM_USER:
-		result = "getpwnam from user";
-		break;
-            
-	case WINBINDD_GETPWNAM_FROM_UID:
-		result = "getpwnam from uid";
-		break;
-
-	case WINBINDD_GETGRNAM_FROM_GROUP:
-		result = "getgrnam from group";
-		break;
-
-	case WINBINDD_GETGRNAM_FROM_GID:
-		result = "getgrnam from gid";
-		break;
-
-	case WINBINDD_SETPWENT:
-		result = "setpwent";
-		break;
-
-	case WINBINDD_ENDPWENT:
-		result = "endpwent";
-		break;
-
-	case WINBINDD_GETPWENT:
-		result = "getpwent";
-		break;
-
-	case WINBINDD_SETGRENT:
-		result = "setgrent";
-		break;
-
-	case WINBINDD_ENDGRENT:
-		result = "endgrent"; 
-		break;
-
-	case WINBINDD_GETGRENT:
-		result = "getgrent";
-		break;
-
-	case WINBINDD_PAM_AUTH:
-		result = "pam auth";
-		break;
-
-	case WINBINDD_PAM_CHAUTHTOK:
-		result = "pam chauthtok";
-		break;
-
-	case WINBINDD_LIST_USERS:
-		result = "list users";
-		break;
-
-	case WINBINDD_LIST_GROUPS:
-		result = "list groups";
-		break;
-
-	case WINBINDD_LOOKUPSID:
-		result = "lookup sid";
-		break;
-
-	case WINBINDD_LOOKUPNAME:
-		result = "lookup name";
-		break;
-
-	default:
+	for(table = cmdstr_table; table->desc; table++) {
+		if (cmd == table->cmd) {
+			result = table->desc;
+			break;
+		}
+	}
+	
+	if (result == NULL) {
 		result = "invalid command";
-		break;
 	}
 
 	return result;
