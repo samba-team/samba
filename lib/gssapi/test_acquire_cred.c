@@ -41,7 +41,7 @@ print_time(OM_uint32 time_rec)
     if (time_rec == GSS_C_INDEFINITE) {
 	printf("cred never expire\n");
     } else {
-	time_t t = time_rec;
+	time_t t = time_rec + time(NULL);
 	printf("expiration time: %s", ctime(&t));
     }
 }
