@@ -223,6 +223,25 @@ int reply_trans(char *inbuf,char *outbuf, int size, int bufsize);
 void interpret_coding_system(char *str);
 void initialize_multibyte_vectors( int client_codepage);
 
+/*The following definitions come from  ldap.c  */
+
+#ifdef USE_LDAP
+BOOL ldap_open_connection(LDAP **ldap_struct);
+BOOL ldap_connect_system(LDAP *ldap_struct);
+BOOL ldap_search_one_user_by_name(LDAP *ldap_struct, char *user, LDAPMessage **result);
+BOOL ldap_search_one_user_by_uid(LDAP *ldap_struct, int uid, LDAPMessage **result);
+void get_single_attribute(LDAP *ldap_struct, LDAPMessage *entry, char *attribute, char *value);
+BOOL ldap_check_user(LDAP *ldap_struct, LDAPMessage *entry);
+BOOL ldap_check_trust(LDAP *ldap_struct, LDAPMessage *entry);
+BOOL add_ldappwd_entry(struct smb_passwd *newpwd);
+BOOL mod_ldappwd_entry(struct smb_passwd* pwd, BOOL override);
+void *startldappwent(BOOL update);
+struct smb_passwd *getldappwent(void *vp);
+void endldappwent(void *vp);
+unsigned long getldappwpos(void *vp);
+BOOL setldappwpos(void *vp, unsigned long tok);
+#endif /* USE_LDAP */
+
 /*The following definitions come from  lib/rpc/client/cli_login.c  */
 
 BOOL cli_nt_setup_creds(struct cli_state *cli, unsigned char mach_pwd[16]);
@@ -899,20 +918,17 @@ BOOL api_srvsvc_rpc(pipes_struct *p, prs_struct *data);
 /*The following definitions come from  lib/rpc/server/srv_util.c  */
 
 int make_dom_gids(char *gids_str, DOM_GID *gids);
-void get_domain_user_groups(char *domain_groups, char *user);
 BOOL create_rpc_reply(pipes_struct *p,
 				uint32 data_start, uint32 data_end);
 BOOL api_rpcTNP(pipes_struct *p, char *rpc_name, struct api_struct *api_rpc_cmds,
 				prs_struct *data);
+void get_domain_user_groups(char *domain_groups, char *user);
 uint32 lookup_group_name(uint32 rid, char *group_name, uint32 *type);
 uint32 lookup_alias_name(uint32 rid, char *alias_name, uint32 *type);
 uint32 lookup_user_name(uint32 rid, char *user_name, uint32 *type);
 uint32 lookup_group_rid(char *group_name, uint32 *rid);
 uint32 lookup_alias_rid(char *alias_name, uint32 *rid);
 uint32 lookup_user_rid(char *user_name, uint32 *rid);
-BOOL name_to_rid(char *user_name, uint32 *u_rid, uint32 *g_rid);
-uint32 uid_to_user_rid(uint32 uid);
-uint32 gid_to_group_rid(uint32 gid);
 
 /*The following definitions come from  lib/rpc/server/srv_wkssvc.c  */
 
@@ -1560,15 +1576,28 @@ BOOL pm_process( char *FileName,
 
 /*The following definitions come from  passdb.c  */
 
-struct smb_passwd *getsampwnam(char *name);
-struct smb_passwd *getsampwuid(unsigned int uid);
 void *startsampwent(BOOL update);
 void endsampwent(void *vp);
 struct smb_passwd *getsampwent(void *vp);
+struct sam_passwd *getsam21pwent(void *vp);
 unsigned long getsampwpos(void *vp);
 BOOL setsampwpos(void *vp, unsigned long tok);
 BOOL add_sampwd_entry(struct smb_passwd *newpwd);
+BOOL add_sam21pwd_entry(struct sam_passwd *newpwd);
 BOOL mod_sampwd_entry(struct smb_passwd* pwd, BOOL override);
+BOOL mod_sam21pwd_entry(struct sam_passwd* pwd, BOOL override);
+struct smb_passwd *getsampwnam(char *name);
+struct sam_passwd *getsam21pwnam(char *name);
+struct smb_passwd *getsampwuid(uid_t smb_userid);
+struct sam_passwd *getsam21pwrid(uint32 rid);
+char *encode_acct_ctrl(uint16 acct_ctrl);
+uint16 decode_acct_ctrl(char *p);
+int gethexpwd(char *p, char *pwd);
+BOOL name_to_rid(char *user_name, uint32 *u_rid, uint32 *g_rid);
+uid_t user_rid_to_uid(uint32 u_rid);
+uid_t group_rid_to_uid(uint32 u_gid);
+uint32 uid_to_user_rid(uint32 uid);
+uint32 gid_to_group_rid(uint32 gid);
 
 /*The following definitions come from  password.c  */
 
@@ -1766,6 +1795,11 @@ struct shmem_ops *smb_shm_open(int ronly);
 
 struct shmem_ops *sysv_shm_open(int ronly);
 
+/*The following definitions come from  slprintf.c  */
+
+int vslprintf(char *str, int n, char *format, va_list ap);
+int slprintf(char *str, int n, char *format, ...);
+
 /*The following definitions come from  smbdes.c  */
 
 void E_P16(unsigned char *p14,unsigned char *p16);
@@ -1795,21 +1829,13 @@ void endsmbpwent(void *vp);
 struct smb_passwd *getsmbpwent(void *vp);
 unsigned long getsmbpwpos(void *vp);
 BOOL setsmbpwpos(void *vp, unsigned long tok);
-struct smb_passwd *getsmbpwnam(char *name);
-struct smb_passwd *getsmbpwuid(unsigned int uid);
-char *encode_acct_ctrl(uint16 acct_ctrl);
 BOOL add_smbpwd_entry(struct smb_passwd *newpwd);
 BOOL mod_smbpwd_entry(struct smb_passwd* pwd, BOOL override);
-BOOL machine_password_lock( char *domain, char *name, BOOL update);
-BOOL machine_password_unlock(void);
-BOOL machine_password_delete( char *domain, char *name );
-BOOL get_machine_account_password( unsigned char *ret_pwd, time_t *pass_last_set_time);
-BOOL set_machine_account_password( unsigned char *md4_new_pwd);
-
-/*The following definitions come from  snprintf.c  */
-
-int vslprintf(char *str, int n, char *format, va_list ap);
-int slprintf(char *str, int n, char *format, ...);
+BOOL trust_password_lock( char *domain, char *name, BOOL update);
+BOOL trust_password_unlock(void);
+BOOL trust_password_delete( char *domain, char *name );
+BOOL get_trust_account_password( unsigned char *ret_pwd, time_t *pass_last_set_time);
+BOOL set_trust_account_password( unsigned char *md4_new_pwd);
 
 /*The following definitions come from  status.c  */
 
@@ -2033,7 +2059,6 @@ void print_asc(int level, unsigned char *buf,int len);
 void dump_data(int level,char *buf1,int len);
 char *tab_depth(int depth);
 char *dom_sid_to_string(DOM_SID *sid);
-int gethexpwd(char *p, char *pwd);
 
 /*The following definitions come from  web/cgi.c  */
 

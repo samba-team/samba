@@ -44,8 +44,8 @@ Join a domain.
 **********************************************************/
 
 static int setup_account( char *domain, char *remote_machine, 
-                          unsigned char orig_machine_passwd_hash[16],
-                          unsigned char new_machine_passwd_hash[16])
+                          unsigned char orig_trust_passwd_hash[16],
+                          unsigned char new_trust_passwd_hash[16])
 {
   struct in_addr dest_ip;
   struct cli_state cli;
@@ -132,7 +132,7 @@ machine %s. Error was : %s.\n", prog_name, remote_machine, cli_errstr(&cli));
     return 1;
   } 
   
-  if(cli_nt_setup_creds(&cli, orig_machine_passwd_hash) == False) {
+  if(cli_nt_setup_creds(&cli, orig_trust_passwd_hash) == False) {
     fprintf(stderr, "%s: unable to setup the PDC credentials to machine \
 %s. Error was : %s.\n", prog_name, remote_machine, cli_errstr(&cli));
     cli_nt_session_close(&cli);
@@ -141,7 +141,7 @@ machine %s. Error was : %s.\n", prog_name, remote_machine, cli_errstr(&cli));
     return 1;
   } 
 
-  if( cli_nt_srv_pwset( &cli,new_machine_passwd_hash ) == False) {
+  if( cli_nt_srv_pwset( &cli,new_trust_passwd_hash ) == False) {
     fprintf(stderr, "%s: unable to change password for machine %s in domain \
 %s to Domain controller %s. Error was %s.\n", prog_name, global_myname, domain, remote_machine, 
                             cli_errstr(&cli));
@@ -166,17 +166,17 @@ static int join_domain( char *domain, char *remote)
 {
   fstring remote_machine;
   char *p;
-  fstring machine_passwd;
-  unsigned char machine_passwd_hash[16];
-  unsigned char new_machine_passwd_hash[16];
+  fstring trust_passwd;
+  unsigned char trust_passwd_hash[16];
+  unsigned char new_trust_passwd_hash[16];
   int ret = 1;
 
   fstrcpy(remote_machine, remote ? remote : "");
-  fstrcpy(machine_passwd, global_myname);
-  strlower(machine_passwd);
-  E_md4hash((uchar *)machine_passwd, machine_passwd_hash);
+  fstrcpy(trust_passwd, global_myname);
+  strlower(trust_passwd);
+  E_md4hash( (uchar *)trust_passwd, trust_passwd_hash);
 
-  generate_random_buffer( new_machine_passwd_hash, 16, True);
+  generate_random_buffer( new_trust_passwd_hash, 16, True);
 
   /* Ensure that we are not trying to join a
      domain if we are locally set up as a domain
@@ -195,20 +195,20 @@ for that domain.\n", prog_name, domain);
   /*
    * Get the machine account password.
    */
-  if(!machine_password_lock( domain, global_myname, True)) {
+  if(!trust_password_lock( domain, global_myname, True)) {
     fprintf(stderr, "%s: unable to open the machine account password file for \
 machine %s in domain %s.\n", prog_name, global_myname, domain); 
     return 1;
   }
 
-  if(!set_machine_account_password( new_machine_passwd_hash)) {              
+  if(!set_trust_account_password( new_trust_passwd_hash)) {              
     fprintf(stderr, "%s: unable to read the machine account password for \
 machine %s in domain %s.\n", prog_name, global_myname, domain);
-    machine_password_unlock();
+    trust_password_unlock();
     return 1;
   }
 
-  machine_password_unlock();
+  trust_password_unlock();
 
   /*
    * If we are given a remote machine assume this is the PDC.
@@ -216,7 +216,7 @@ machine %s in domain %s.\n", prog_name, global_myname, domain);
 
   if(remote != NULL) {
     strupper(remote_machine);
-    ret = setup_account( domain, remote_machine, machine_passwd_hash, new_machine_passwd_hash);
+    ret = setup_account( domain, remote_machine, trust_passwd_hash, new_trust_passwd_hash);
     if(ret == 0)
       printf("%s: Joined domain %s.\n", prog_name, domain);
   } else {
@@ -235,7 +235,7 @@ unable to join domain.\n", prog_name);
     while(p && next_token( &p, remote_machine, LIST_SEP)) {
 
       strupper(remote_machine);
-      if(setup_account( domain, remote_machine, machine_passwd_hash, new_machine_passwd_hash) == 0) {
+      if(setup_account( domain, remote_machine, trust_passwd_hash, new_trust_passwd_hash) == 0) {
         printf("%s: Joined domain %s.\n", prog_name, domain);
         return 0;
       }
@@ -243,7 +243,7 @@ unable to join domain.\n", prog_name);
   }
 
   if(ret) {
-    machine_password_delete( domain, global_myname);
+    trust_password_delete( domain, global_myname);
     fprintf(stderr,"%s: Unable to join domain %s.\n", prog_name, domain);
   }
 
@@ -275,7 +275,7 @@ int main(int argc, char **argv)
   char *remote_machine = NULL;
   BOOL add_user = False;
   BOOL got_new_pass = False;
-  BOOL machine_account = False;
+  BOOL trust_account = False;
   BOOL disable_user = False;
   BOOL set_no_password = False;
   BOOL joining_domain = False;
@@ -370,7 +370,7 @@ int main(int argc, char **argv)
         usage(prog_name, is_root);
     case 'm':
       if(is_root) {
-        machine_account = True;
+        trust_account = True;
       } else
         usage(prog_name, is_root);
       break;
@@ -433,7 +433,7 @@ int main(int argc, char **argv)
 
     if(*user_name) {
 
-      if(machine_account) {
+      if(trust_account) {
         int username_len = strlen(user_name);
         if(username_len >= sizeof(pstring) - 1) {
           fprintf(stderr, "%s: machine account name too long.\n", user_name);
@@ -500,7 +500,7 @@ int main(int argc, char **argv)
    * the machinename as the password.
    */
 
-  if(add_user && machine_account) {
+  if(add_user && trust_account) {
     got_new_pass = True;
     strncpy(new_passwd, user_name, sizeof(fstring));
     new_passwd[sizeof(fstring)-1] = '\0';
@@ -611,7 +611,7 @@ int main(int argc, char **argv)
    * Check for a machine account.
    */
 
-  if(machine_account && !pwd) {
+  if(trust_account && !pwd) {
     fprintf(stderr, "%s: User %s does not exist in system password file \
 (usually /etc/passwd). Cannot add machine account without a valid system user.\n",
            prog_name, user_name);
@@ -673,7 +673,7 @@ int main(int argc, char **argv)
       new_smb_pwent.smb_name = pwd->pw_name; 
       new_smb_pwent.smb_passwd = NULL;
       new_smb_pwent.smb_nt_passwd = NULL;
-      new_smb_pwent.acct_ctrl = (machine_account ? ACB_WSTRUST : ACB_NORMAL);
+      new_smb_pwent.acct_ctrl = (trust_account ? ACB_WSTRUST : ACB_NORMAL);
 
       if(disable_user) {
         new_smb_pwent.acct_ctrl |= ACB_DISABLED;

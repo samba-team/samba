@@ -21,40 +21,34 @@
 */
 
 #include "includes.h"
+#include "nterr.h"
 
 extern int DEBUGLEVEL;
 
-/************************************************************************
- Routine to search sam passwd by name.
-*************************************************************************/
+/**********************************************************
+ **********************************************************
 
-struct smb_passwd *getsampwnam(char *name)
-{
-#ifdef USE_LDAP
-  return getldappwnam(name);
-#else
-  return getsmbpwnam(name);
-#endif /* USE_LDAP */
-}
+ low-level redirection routines:
 
-/************************************************************************
- Routine to search sam passwd by uid.
-*************************************************************************/
+	startsampwent()
+	endsampwent()
+	getsampwent()
+	getsam21pwent()
+	getsampwpos()
+	setsampwpos()
 
-struct smb_passwd *getsampwuid(unsigned int uid)
-{
-#ifdef USE_LDAP
-  return getldappwuid(uid);
-#else
-  return getsmbpwuid(uid);
-#endif /* USE_LDAP */
-}
+	add_sampwd_entry()
+	mod_sampwd_entry()
+	add_sam21pwd_entry()
+	mod_sam21pwd_entry()
+
+ **********************************************************
+ **********************************************************/
 
 /***************************************************************
  Start to enumerate the sam passwd list. Returns a void pointer
  to ensure no modification outside this module.
 ****************************************************************/
-
 void *startsampwent(BOOL update)
 {
 #ifdef USE_LDAP
@@ -67,7 +61,6 @@ void *startsampwent(BOOL update)
 /***************************************************************
  End enumeration of the sam passwd list.
 ****************************************************************/
-
 void endsampwent(void *vp)
 {
 #ifdef USE_LDAP
@@ -80,7 +73,6 @@ void endsampwent(void *vp)
 /*************************************************************************
  Routine to return the next entry in the sam passwd list.
  *************************************************************************/
-
 struct smb_passwd *getsampwent(void *vp)
 {
 #ifdef USE_LDAP
@@ -88,6 +80,23 @@ struct smb_passwd *getsampwent(void *vp)
 #else
   return getsmbpwent(vp);
 #endif /* USE_LDAP */
+}
+
+/*************************************************************************
+ Routine to return the next entry in the sam passwd list.
+ *************************************************************************/
+struct sam_passwd *getsam21pwent(void *vp)
+{
+#if 0
+#ifdef USE_LDAP
+  return getldap21pwent(vp);
+#else
+  return getsmb21pwent(vp);
+#endif /* USE_LDAP */
+#else
+	DEBUG(0,("getsam21pwent: under development\n"));
+	return NULL;
+#endif
 }
 
 /*************************************************************************
@@ -119,13 +128,46 @@ BOOL setsampwpos(void *vp, unsigned long tok)
 /************************************************************************
  Routine to add an entry to the sam passwd file.
 *************************************************************************/
-
 BOOL add_sampwd_entry(struct smb_passwd *newpwd)
 {
 #ifdef USE_LDAP
   return add_ldappwd_entry(newpwd);
 #else
   return add_smbpwd_entry(newpwd);
+#endif /* USE_LDAP */
+}
+
+/************************************************************************
+ Routine to add an entry to the sam passwd file.
+*************************************************************************/
+BOOL add_sam21pwd_entry(struct sam_passwd *newpwd)
+{
+#if 0
+#ifdef USE_LDAP
+  return add_ldappwd_entry(newpwd);
+#else
+  return add_smbpwd_entry(newpwd);
+#endif /* USE_LDAP */
+#else
+	DEBUG(0,("add_sam21pwd_entry() - under development\n"));
+	return False;
+#endif
+}
+
+/************************************************************************
+ Routine to search the sam passwd file for an entry matching the username.
+ and then modify its password entry. We can't use the startsampwent()/
+ getsampwent()/endsampwent() interfaces here as we depend on looking
+ in the actual file to decide how much room we have to write data.
+ override = False, normal
+ override = True, override XXXXXXXX'd out password or NO PASS
+************************************************************************/
+BOOL mod_sampwd_entry(struct smb_passwd* pwd, BOOL override)
+{
+#ifdef USE_LDAP
+  return mod_ldappwd_entry(pwd, override);
+#else
+  return mod_smbpwd_entry(pwd, override);
 #endif /* USE_LDAP */
 }
 
@@ -137,13 +179,347 @@ BOOL add_sampwd_entry(struct smb_passwd *newpwd)
  override = False, normal
  override = True, override XXXXXXXX'd out password or NO PASS
 ************************************************************************/
-
-BOOL mod_sampwd_entry(struct smb_passwd* pwd, BOOL override)
+BOOL mod_sam21pwd_entry(struct sam_passwd* pwd, BOOL override)
 {
+#if 0
 #ifdef USE_LDAP
   return mod_ldappwd_entry(pwd, override);
 #else
   return mod_smbpwd_entry(pwd, override);
 #endif /* USE_LDAP */
+#else
+	DEBUG(0,("mod_sam21pwd_entry() - under development\n"));
+	return False;
+#endif
+}
+
+/**********************************************************
+ **********************************************************
+
+ high-level database routines:
+ 	getsampwnam()
+ 	getsampwuid()
+ 	getsam21pwnam()
+ 	getsam21pwuid()
+
+ **********************************************************
+ **********************************************************/
+
+/************************************************************************
+ Routine to search sam passwd by name.
+*************************************************************************/
+struct smb_passwd *getsampwnam(char *name)
+{
+	struct smb_passwd *pwd = NULL;
+	void *fp = NULL;
+
+	DEBUG(10, ("getsampwnam: search by name: %s\n", name));
+
+	/* Open the sam password file - not for update. */
+	fp = startsampwent(False);
+
+	if (fp == NULL)
+	{
+		DEBUG(0, ("getsampwnam: unable to open sam password database.\n"));
+		return NULL;
+	}
+
+	while ((pwd = getsampwent(fp)) != NULL && !strequal(pwd->smb_name, name));
+
+	if (pwd != NULL)
+	{
+		DEBUG(10, ("getsampwnam: found by name: %s\n", name));
+	}
+
+	endsampwent(fp);
+	return pwd;
+}
+
+/************************************************************************
+ Routine to search sam passwd by name.
+*************************************************************************/
+struct sam_passwd *getsam21pwnam(char *name)
+{
+	struct sam_passwd *pwd = NULL;
+	void *fp = NULL;
+
+	DEBUG(10, ("getsam21pwnam: search by name: %s\n", name));
+
+	/* Open the sam password file - not for update. */
+	fp = startsampwent(False);
+
+	if (fp == NULL)
+	{
+		DEBUG(0, ("getsam21pwnam: unable to open sam password database.\n"));
+		return NULL;
+	}
+
+	while ((pwd = getsam21pwent(fp)) != NULL && !strequal(pwd->smb_name, name));
+
+	if (pwd != NULL)
+	{
+		DEBUG(10, ("getsam21pwnam: found by name: %s\n", name));
+	}
+
+	endsampwent(fp);
+	return pwd;
+}
+
+/************************************************************************
+ Routine to search sam passwd by uid.
+*************************************************************************/
+struct smb_passwd *getsampwuid(uid_t smb_userid)
+{
+	struct smb_passwd *pwd = NULL;
+	void *fp = NULL;
+
+	DEBUG(10, ("getsampwuid: search by smb_userid: %x\n", smb_userid));
+
+	/* Open the sam password file - not for update. */
+	fp = startsampwent(False);
+
+	if (fp == NULL)
+	{
+		DEBUG(0, ("getsampwuid: unable to open sam password database.\n"));
+		return NULL;
+	}
+
+	while ((pwd = getsampwent(fp)) != NULL && pwd->smb_userid != smb_userid);
+
+	if (pwd != NULL)
+	{
+		DEBUG(10, ("getsampwuid: found by smb_userid: %x\n", smb_userid));
+	}
+
+	endsmbpwent(fp);
+	return pwd;
+}
+
+/************************************************************************
+ Routine to search sam passwd by rid.
+*************************************************************************/
+struct sam_passwd *getsam21pwrid(uint32 rid)
+{
+	struct sam_passwd *pwd = NULL;
+	void *fp = NULL;
+
+	DEBUG(10, ("getsam21pwrid: search by rid: %x\n", rid));
+
+	/* Open the sam password file - not for update. */
+	fp = startsampwent(False);
+
+	if (fp == NULL)
+	{
+		DEBUG(0, ("getsam21pwrid: unable to open sam password database.\n"));
+		return NULL;
+	}
+
+	while ((pwd = getsam21pwent(fp)) != NULL && pwd->user_rid != rid);
+
+	if (pwd != NULL)
+	{
+		DEBUG(10, ("getsam21pwrid: found by smb_userid: %x\n", rid));
+	}
+
+	endsmbpwent(fp);
+	return pwd;
+}
+
+
+/**********************************************************
+ **********************************************************
+
+ utility routines which are likely to be useful to all password
+ databases
+
+ **********************************************************
+ **********************************************************/
+
+/**********************************************************
+ Encode the account control bits into a string.
+ **********************************************************/
+char *encode_acct_ctrl(uint16 acct_ctrl)
+{
+  static fstring acct_str;
+  char *p = acct_str;
+ 
+  *p++ = '[';
+
+  if (acct_ctrl & ACB_HOMDIRREQ) *p++ = 'H';
+  if (acct_ctrl & ACB_TEMPDUP  ) *p++ = 'T'; 
+  if (acct_ctrl & ACB_NORMAL   ) *p++ = 'U';
+  if (acct_ctrl & ACB_MNS      ) *p++ = 'M';
+  if (acct_ctrl & ACB_WSTRUST  ) *p++ = 'W';
+  if (acct_ctrl & ACB_SVRTRUST ) *p++ = 'S';
+  if (acct_ctrl & ACB_AUTOLOCK ) *p++ = 'L';
+  if (acct_ctrl & ACB_PWNOEXP  ) *p++ = 'X';
+  if (acct_ctrl & ACB_DOMTRUST ) *p++ = 'I';
+      
+  *p++ = ']';
+  *p = '\0';
+  return acct_str;
+}     
+
+/**********************************************************
+ Decode the account control bits from a string.
+
+ this function breaks coding standards minimum line width of 80 chars.
+ reason: vertical line-up code clarity - all case statements fit into
+ 15 lines, which is more important.
+ **********************************************************/
+uint16 decode_acct_ctrl(char *p)
+{
+	uint16 acct_ctrl = 0;
+	BOOL finished = False;
+
+	/*
+	 * Check if the account type bits have been encoded after the
+	 * NT password (in the form [NDHTUWSLXI]).
+	 */
+
+	if (*p != '[') return 0;
+
+	for (p++; *p && !finished; p++)
+	{
+		switch (*p)
+		{
+#if 0
+			/*
+			 * Hmmm. Don't allow these to be set/read independently
+			 * of the actual password fields. We don't want a mismatch.
+			 * JRA.
+			 */
+			case 'N': { acct_ctrl |= ACB_PWNOTREQ ; break; /* 'N'o password. */ }
+			case 'D': { acct_ctrl |= ACB_DISABLED ; break; /* 'D'isabled. */ }
+#endif 
+			case 'H': { acct_ctrl |= ACB_HOMDIRREQ; break; /* 'H'omedir required. */ }
+			case 'T': { acct_ctrl |= ACB_TEMPDUP  ; break; /* 'T'emp account. */ } 
+			case 'U': { acct_ctrl |= ACB_NORMAL   ; break; /* 'U'ser account (normal). */ } 
+			case 'M': { acct_ctrl |= ACB_MNS      ; break; /* 'M'NS logon user account. What is this ? */ } 
+			case 'W': { acct_ctrl |= ACB_WSTRUST  ; break; /* 'W'orkstation account. */ } 
+			case 'S': { acct_ctrl |= ACB_SVRTRUST ; break; /* 'S'erver account. */ } 
+			case 'L': { acct_ctrl |= ACB_AUTOLOCK ; break; /* 'L'ocked account. */ } 
+			case 'X': { acct_ctrl |= ACB_PWNOEXP  ; break; /* No 'X'piry on password */ } 
+			case 'I': { acct_ctrl |= ACB_DOMTRUST ; break; /* 'I'nterdomain trust account. */ }
+
+			case ':':
+			case '\n':
+			case '\0': 
+			case ']':
+			default:  { finished = True; }
+		}
+	}
+
+	return acct_ctrl;
+}
+
+/*************************************************************
+ Routine to get the next 32 hex characters and turn them
+ into a 16 byte array.
+**************************************************************/
+int gethexpwd(char *p, char *pwd)
+{
+  int i;
+  unsigned char   lonybble, hinybble;
+  char           *hexchars = "0123456789ABCDEF";
+  char           *p1, *p2;
+
+  for (i = 0; i < 32; i += 2) {
+    hinybble = toupper(p[i]);
+    lonybble = toupper(p[i + 1]);
+ 
+    p1 = strchr(hexchars, hinybble);
+    p2 = strchr(hexchars, lonybble);
+    if (!p1 || !p2)
+      return (False);
+    hinybble = PTR_DIFF(p1, hexchars);
+    lonybble = PTR_DIFF(p2, hexchars);
+ 
+    pwd[i / 2] = (hinybble << 4) | lonybble;
+  }
+  return (True);
+}
+
+/*******************************************************************
+ Group and User RID username mapping function
+ ********************************************************************/
+BOOL name_to_rid(char *user_name, uint32 *u_rid, uint32 *g_rid)
+{
+    struct passwd *pw = Get_Pwnam(user_name, False);
+
+	if (u_rid == NULL || g_rid == NULL || user_name == NULL)
+	{
+		return False;
+	}
+
+    if (!pw)
+	{
+      DEBUG(1,("Username %s is invalid on this system\n", user_name));
+      return False;
+    }
+
+	if (user_in_list(user_name, lp_domain_guest_users()))
+	{
+		*u_rid = DOMAIN_USER_RID_GUEST;
+	}
+	else if (user_in_list(user_name, lp_domain_admin_users()))
+	{
+		*u_rid = DOMAIN_USER_RID_ADMIN;
+	}
+	else
+	{
+		/* turn the unix UID into a Domain RID.  this is what the posix
+		   sub-system does (adds 1000 to the uid) */
+		*u_rid = uid_to_user_rid(pw->pw_uid);
+	}
+
+	/* absolutely no idea what to do about the unix GID to Domain RID mapping */
+	*g_rid = gid_to_group_rid(pw->pw_gid);
+
+	return True;
+}
+
+/*******************************************************************
+ XXXX THIS FUNCTION SHOULD NOT BE HERE: IT SHOULD BE A STATIC FUNCTION
+ INSIDE smbpass.c
+
+ converts NT User RID to a UNIX uid.
+ ********************************************************************/
+uid_t user_rid_to_uid(uint32 u_rid)
+{
+	return (uid_t)(u_rid - 1000);
+}
+
+/*******************************************************************
+ XXXX THIS FUNCTION SHOULD NOT BE HERE: IT SHOULD BE A STATIC FUNCTION
+ INSIDE smbpass.c
+
+ converts NT Group RID to a UNIX uid.
+ ********************************************************************/
+uid_t group_rid_to_uid(uint32 u_gid)
+{
+	return (uid_t)(u_gid - 1000);
+}
+
+/*******************************************************************
+ XXXX THIS FUNCTION SHOULD NOT BE HERE: IT SHOULD BE A STATIC FUNCTION
+ INSIDE smbpass.c
+
+ converts UNIX uid to an NT User RID.
+ ********************************************************************/
+uint32 uid_to_user_rid(uint32 uid)
+{
+	return (uint32)(uid + 1000);
+}
+
+/*******************************************************************
+ XXXX THIS FUNCTION SHOULD NOT BE HERE: IT SHOULD BE A STATIC FUNCTION
+ INSIDE smbpass.c
+
+ converts NT Group RID to a UNIX uid.
+ ********************************************************************/
+uint32 gid_to_group_rid(uint32 gid)
+{
+	return (uint32)(gid + 1000);
 }
 

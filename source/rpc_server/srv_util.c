@@ -79,7 +79,6 @@ rid_name domain_group_rids[] =
 };
 
 
-
 int make_dom_gids(char *gids_str, DOM_GID *gids)
 {
 	char *ptr;
@@ -132,44 +131,6 @@ int make_dom_gids(char *gids_str, DOM_GID *gids)
 
 	return count;
 }
-
-/*******************************************************************
- gets a domain user's groups
- ********************************************************************/
-void get_domain_user_groups(char *domain_groups, char *user)
-{
-	pstring tmp;
-
-	if (domain_groups == NULL || user == NULL) return;
-
-	/* any additional groups this user is in.  e.g power users */
-	pstrcpy(domain_groups, lp_domain_groups());
-
-	/* can only be a user or a guest.  cannot be guest _and_ admin */
-	if (user_in_list(user, lp_domain_guest_users()))
-	{
-		sprintf(tmp, " %ld/7 ", DOMAIN_GROUP_RID_GUESTS);
-		strcat(domain_groups, tmp);
-
-		DEBUG(3,("domain guest access %s granted\n", tmp));
-	}
-	else
-	{
-		sprintf(tmp, " %ld/7 ", DOMAIN_GROUP_RID_USERS);
-		strcat(domain_groups, tmp);
-
-		DEBUG(3,("domain user access %s granted\n", tmp));
-
-		if (user_in_list(user, lp_domain_admin_users()))
-		{
-			sprintf(tmp, " %ld/7 ", DOMAIN_GROUP_RID_ADMINS);
-			strcat(domain_groups, tmp);
-
-			DEBUG(3,("domain admin access %s granted\n", tmp));
-		}
-	}
-}
-
 
 /*******************************************************************
  turns a DCE/RPC request into a DCE/RPC reply
@@ -320,7 +281,44 @@ BOOL api_rpcTNP(pipes_struct *p, char *rpc_name, struct api_struct *api_rpc_cmds
 	return True;
 }
 
-extern rid_name domain_group_rids[];
+
+/*******************************************************************
+ gets a domain user's groups
+ ********************************************************************/
+void get_domain_user_groups(char *domain_groups, char *user)
+{
+	pstring tmp;
+
+	if (domain_groups == NULL || user == NULL) return;
+
+	/* any additional groups this user is in.  e.g power users */
+	pstrcpy(domain_groups, lp_domain_groups());
+
+	/* can only be a user or a guest.  cannot be guest _and_ admin */
+	if (user_in_list(user, lp_domain_guest_users()))
+	{
+		sprintf(tmp, " %ld/7 ", DOMAIN_GROUP_RID_GUESTS);
+		strcat(domain_groups, tmp);
+
+		DEBUG(3,("domain guest access %s granted\n", tmp));
+	}
+	else
+	{
+		sprintf(tmp, " %ld/7 ", DOMAIN_GROUP_RID_USERS);
+		strcat(domain_groups, tmp);
+
+		DEBUG(3,("domain user access %s granted\n", tmp));
+
+		if (user_in_list(user, lp_domain_admin_users()))
+		{
+			sprintf(tmp, " %ld/7 ", DOMAIN_GROUP_RID_ADMINS);
+			strcat(domain_groups, tmp);
+
+			DEBUG(3,("domain admin access %s granted\n", tmp));
+		}
+	}
+}
+
 
 /*******************************************************************
  lookup_group_name
@@ -347,8 +345,6 @@ uint32 lookup_group_name(uint32 rid, char *group_name, uint32 *type)
 	DEBUG(5,(" none mapped\n"));
 	return 0xC0000000 | NT_STATUS_NONE_MAPPED;
 }
-
-extern rid_name domain_alias_rids[];
 
 /*******************************************************************
  lookup_alias_name
@@ -480,87 +476,3 @@ uint32 lookup_user_rid(char *user_name, uint32 *rid)
 
 	return 0xC0000000 | NT_STATUS_NONE_MAPPED;
 }
-
-/*******************************************************************
- Group and User RID username mapping function
- ********************************************************************/
-BOOL name_to_rid(char *user_name, uint32 *u_rid, uint32 *g_rid)
-{
-    struct passwd *pw = Get_Pwnam(user_name, False);
-
-	if (u_rid == NULL || g_rid == NULL || user_name == NULL)
-	{
-		return False;
-	}
-
-    if (!pw)
-	{
-      DEBUG(1,("Username %s is invalid on this system\n", user_name));
-      return False;
-    }
-
-	if (user_in_list(user_name, lp_domain_guest_users()))
-	{
-		*u_rid = DOMAIN_USER_RID_GUEST;
-	}
-	else if (user_in_list(user_name, lp_domain_admin_users()))
-	{
-		*u_rid = DOMAIN_USER_RID_ADMIN;
-	}
-	else
-	{
-		/* turn the unix UID into a Domain RID.  this is what the posix
-		   sub-system does (adds 1000 to the uid) */
-		*u_rid = uid_to_user_rid(pw->pw_uid);
-	}
-
-	/* absolutely no idea what to do about the unix GID to Domain RID mapping */
-	*g_rid = gid_to_group_rid(pw->pw_gid);
-
-	return True;
-}
-
-/*******************************************************************
- XXXX THIS FUNCTION SHOULD NOT BE HERE: IT SHOULD BE A STATIC FUNCTION
- INSIDE smbpass.c
-
- converts NT User RID to a UNIX uid.
- ********************************************************************/
-uid_t user_rid_to_uid(uint32 u_rid)
-{
-	return (uid_t)(u_rid - 1000);
-}
-
-/*******************************************************************
- XXXX THIS FUNCTION SHOULD NOT BE HERE: IT SHOULD BE A STATIC FUNCTION
- INSIDE smbpass.c
-
- converts NT Group RID to a UNIX uid.
- ********************************************************************/
-uid_t group_rid_to_uid(uint32 u_gid)
-{
-	return (uid_t)(u_gid - 1000);
-}
-
-/*******************************************************************
- XXXX THIS FUNCTION SHOULD NOT BE HERE: IT SHOULD BE A STATIC FUNCTION
- INSIDE smbpass.c
-
- converts UNIX uid to an NT User RID.
- ********************************************************************/
-uint32 uid_to_user_rid(uint32 uid)
-{
-	return (uint32)(uid + 1000);
-}
-
-/*******************************************************************
- XXXX THIS FUNCTION SHOULD NOT BE HERE: IT SHOULD BE A STATIC FUNCTION
- INSIDE smbpass.c
-
- converts NT Group RID to a UNIX uid.
- ********************************************************************/
-uint32 gid_to_group_rid(uint32 gid)
-{
-	return (uint32)(gid + 1000);
-}
-

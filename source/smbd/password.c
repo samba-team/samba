@@ -1919,7 +1919,7 @@ BOOL domain_client_validate( char *user, char *domain,
   unsigned char local_challenge[8];
   unsigned char local_lm_response[24];
   unsigned char local_nt_reponse[24];
-  unsigned char machine_passwd[16];
+  unsigned char trust_passwd[16];
   time_t lct;
   fstring remote_machine;
   char *p;
@@ -1977,20 +1977,20 @@ BOOL domain_client_validate( char *user, char *domain,
   /*
    * Get the machine account password.
    */
-  if(!machine_password_lock( global_myworkgroup, global_myname, False)) {
+  if(!trust_password_lock( global_myworkgroup, global_myname, False)) {
     DEBUG(0,("domain_client_validate: unable to open the machine account password file for \
 machine %s in domain %s.\n", global_myname, global_myworkgroup ));
     return False;
   }
 
-  if(get_machine_account_password( machine_passwd, &lct) == False) {
+  if(get_trust_account_password( trust_passwd, &lct) == False) {
     DEBUG(0,("domain_client_validate: unable to read the machine account password for \
 machine %s in domain %s.\n", global_myname, global_myworkgroup ));
-    machine_password_unlock();
+    trust_password_unlock();
     return False;
   }
 
-  machine_password_unlock();
+  trust_password_unlock();
 
   unbecome_root(False);
 
@@ -2115,7 +2115,7 @@ machine %s. Error was : %s.\n", remote_machine, cli_errstr(&cli)));
     return False; 
   }
 
-  if(cli_nt_setup_creds(&cli, machine_passwd) == False) {
+  if(cli_nt_setup_creds(&cli, trust_passwd) == False) {
     DEBUG(0,("domain_client_validate: unable to setup the PDC credentials to machine \
 %s. Error was : %s.\n", remote_machine, cli_errstr(&cli)));
     cli_nt_session_close(&cli);
