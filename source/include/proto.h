@@ -1815,6 +1815,7 @@ char *smb_errstr(char *inbuf);
 
 /*The following definitions come from  smbpass.c  */
 
+BOOL do_file_lock(int fd, int waitsecs, int type);
 void *startsmbpwent(BOOL update);
 void endsmbpwent(void *vp);
 struct sam_passwd *getsmb21pwent(void *vp);

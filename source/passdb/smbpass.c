@@ -40,7 +40,7 @@ static void gotalarm_sig(void)
  seconds.
 ****************************************************************/
 
-static BOOL do_pw_lock(int fd, int waitsecs, int type)
+BOOL do_file_lock(int fd, int waitsecs, int type)
 {
   struct flock    lock;
   int             ret;
@@ -60,7 +60,7 @@ static BOOL do_pw_lock(int fd, int waitsecs, int type)
   signal(SIGALRM, SIGNAL_CAST SIG_DFL);
 
   if (gotalarm) {
-    DEBUG(0, ("do_pw_lock: failed to %s SMB passwd file.\n",
+    DEBUG(0, ("do_file_lock: failed to %s file.\n",
                 type == F_UNLCK ? "unlock" : "lock"));
     return False;
   }
@@ -82,7 +82,7 @@ static BOOL pw_file_lock(int fd, int type, int secs, int *plock_depth)
   (*plock_depth)++;
 
   if(pw_file_lock_depth == 0) {
-    if (!do_pw_lock(fd, secs, type)) {
+    if (!do_file_lock(fd, secs, type)) {
       DEBUG(10,("pw_file_lock: locking file failed, error = %s.\n",
                  strerror(errno)));
       return False;
@@ -101,7 +101,7 @@ static BOOL pw_file_unlock(int fd, int *plock_depth)
   BOOL ret=True;
 
   if(*plock_depth == 1)
-    ret = do_pw_lock(fd, 5, F_UNLCK);
+    ret = do_file_lock(fd, 5, F_UNLCK);
 
   (*plock_depth)--;
 

@@ -552,7 +552,9 @@ BOOL resolve_name(char *name, struct in_addr *return_ip)
          * the first successful match.
          */
         for( i = 0; i < num_interfaces; i++) {
-          struct in_addr sendto_ip = *iface_bcast(*iface_n_ip(i));
+          struct in_addr sendto_ip;
+          /* Done this way to fix compiler error on IRIX 5.x */
+          sendto_ip = *iface_bcast(*iface_n_ip(i));
           iplist = name_query(sock, name, 0x20, True, False, sendto_ip, &count, NULL);
           if(iplist != NULL) {
             *return_ip = iplist[0];
