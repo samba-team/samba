@@ -39,7 +39,7 @@
 #include "kuser_locl.h"
 RCSID("$Id$");
 
-static char *cache;
+static const char *cache;
 static int help_flag;
 static int version_flag;
 static int unlog_flag = 1;
