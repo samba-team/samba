@@ -188,7 +188,7 @@ static codepage_p load_client_codepage( int client_codepage )
 {
   pstring codepage_file_name;
   unsigned char buf[8];
-  FILE *fp = NULL;
+  int fd = -1;
   SMB_OFF_T size;
   codepage_p cp_p = NULL;
   SMB_STRUCT_STAT st;
@@ -235,14 +235,14 @@ code page file (size=%d).\n", codepage_file_name, (int)size));
      is held in little endian format.
    */
 
-  if((fp = sys_fopen( codepage_file_name, "r")) == NULL)
+  if((fd = open(codepage_file_name, O_RDONLY)) == -1)
   {
     DEBUG(0,("load_client_codepage: cannot open file %s. Error was %s\n",
               codepage_file_name, strerror(errno)));
     return NULL;
   }
 
-  if(fread( buf, 1, CODEPAGE_HEADER_SIZE, fp)!=CODEPAGE_HEADER_SIZE)
+  if (read(fd, buf, CODEPAGE_HEADER_SIZE)!=CODEPAGE_HEADER_SIZE)
   {
     DEBUG(0,("load_client_codepage: cannot read header from file %s. Error was %s\n",
               codepage_file_name, strerror(errno)));
@@ -295,7 +295,7 @@ multiple of 4.\n", codepage_file_name));
     goto clean_and_exit;
   }
 
-  if(fread( (char *)cp_p, 1, size, fp)!=size)
+  if(read(fd, (char *)cp_p, size)!=size)
   {
     DEBUG(0,("load_client_codepage: read fail on file %s. Error was %s.\n",
               codepage_file_name, strerror(errno)));
@@ -305,15 +305,15 @@ multiple of 4.\n", codepage_file_name));
   /* Ensure array is correctly terminated. */
   memset(((char *)cp_p) + size, '\0', 4);
 
-  fclose(fp);
+  close(fd);
   return cp_p;
 
 clean_and_exit:
 
   /* pseudo destructor :-) */
 
-  if(fp != NULL)
-    fclose(fp);
+  if(fd != -1)
+    close(fd);
   if(cp_p)
     free((char *)cp_p);
   return NULL;
