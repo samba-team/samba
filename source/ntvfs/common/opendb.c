@@ -331,12 +331,14 @@ NTSTATUS odb_close_file(struct odb_lock *lck, uint16_t fnum)
 	elist = (struct odb_entry *)dbuf.dptr;
 	count = dbuf.dsize / sizeof(struct odb_entry);
 
-	/* send any pending notifications */
+	/* send any pending notifications, removing them once sent */
 	for (i=0;i<count;i++) {
 		if (elist[i].pending) {
 			messaging_send_ptr(odb->messaging_ctx, elist[i].server, 
 					   MSG_PVFS_RETRY_OPEN, elist[i].notify_ptr);
-			
+			memmove(&elist[i], &elist[i+1], sizeof(struct odb_entry)*(count-(i+1)));
+			i--;
+			count--;
 		}
 	}
 
