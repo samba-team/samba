@@ -32,6 +32,183 @@ struct cli_state *cli_netlogon_initialise(struct cli_state *cli,
         return cli_pipe_initialise(cli, system_name, PIPE_NETLOGON, creds);
 }
 
+/* LSA Request Challenge. Sends our challenge to server, then gets
+   server response. These are used to generate the credentials. */
+
+NTSTATUS new_cli_net_req_chal(struct cli_state *cli, DOM_CHAL *clnt_chal, 
+                              DOM_CHAL *srv_chal)
+{
+        prs_struct qbuf, rbuf;
+        NET_Q_REQ_CHAL q;
+        NET_R_REQ_CHAL r;
+        NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+        extern pstring global_myname;
+
+        prs_init(&qbuf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
+        prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
+        
+        /* create and send a MSRPC command with api NET_REQCHAL */
+
+        DEBUG(4,("cli_net_req_chal: LSA Request Challenge from %s to %s: %s\n",
+                 cli->desthost, global_myname, credstr(clnt_chal->data)));
+        
+        /* store the parameters */
+        init_q_req_chal(&q, cli->srv_name_slash, global_myname, clnt_chal);
+        
+        /* Marshall data and send request */
+
+        if (!net_io_q_req_chal("", &q,  &qbuf, 0) ||
+            !rpc_api_pipe_req(cli, NET_REQCHAL, &qbuf, &rbuf)) {
+                goto done;
+        }
+
+        /* Unmarhall response */
+
+        if (!net_io_r_req_chal("", &r, &rbuf, 0)) {
+                goto done;
+        }
+
+        result = r.status;
+
+        /* Return result */
+
+        if (result == NT_STATUS_OK) {
+                memcpy(srv_chal, r.srv_chal.data, sizeof(srv_chal->data));
+        }
+        
+ done:
+        prs_mem_free(&qbuf);
+        prs_mem_free(&rbuf);
+        
+        return result;
+}
+
+/****************************************************************************
+LSA Authenticate 2
+
+Send the client credential, receive back a server credential.
+Ensure that the server credential returned matches the session key 
+encrypt of the server challenge originally received. JRA.
+****************************************************************************/
+
+NTSTATUS new_cli_net_auth2(struct cli_state *cli, uint16 sec_chan, 
+                           uint32 neg_flags, DOM_CHAL *srv_chal)
+{
+        prs_struct qbuf, rbuf;
+        NET_Q_AUTH_2 q;
+        NET_R_AUTH_2 r;
+        NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+        extern pstring global_myname;
+
+        prs_init(&qbuf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
+        prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
+
+        /* create and send a MSRPC command with api NET_AUTH2 */
+
+        DEBUG(4,("cli_net_auth2: srv:%s acct:%s sc:%x mc: %s chal %s neg: %x\n",
+                 cli->srv_name_slash, cli->mach_acct, sec_chan, global_myname,
+                 credstr(cli->clnt_cred.challenge.data), neg_flags));
+
+        /* store the parameters */
+        init_q_auth_2(&q, cli->srv_name_slash, cli->mach_acct, 
+                      sec_chan, global_myname, &cli->clnt_cred.challenge, 
+                      neg_flags);
+
+        /* turn parameters into data stream */
+
+        if (!net_io_q_auth_2("", &q,  &qbuf, 0) ||
+            !rpc_api_pipe_req(cli, NET_AUTH2, &qbuf, &rbuf)) {
+                goto done;
+        }
+        
+        /* Unmarshall response */
+        
+        if (!net_io_r_auth_2("", &r, &rbuf, 0)) {
+                goto done;
+        }
+
+        result = r.status;
+
+        if (result == NT_STATUS_OK) {
+                UTIME zerotime;
+                
+                /*
+                 * Check the returned value using the initial
+                 * server received challenge.
+                 */
+
+                zerotime.time = 0;
+                if (cred_assert( &r.srv_chal, cli->sess_key, srv_chal, 
+                                 zerotime) == 0) {
+
+                        /*
+                         * Server replied with bad credential. Fail.
+                         */
+                        DEBUG(0,("cli_net_auth2: server %s replied with bad credential (bad machine \
+password ?).\n", cli->desthost ));
+                        result = NT_STATUS_ACCESS_DENIED;
+                        goto done;
+                }
+        }
+
+ done:
+        prs_mem_free(&qbuf);
+        prs_mem_free(&rbuf);
+        
+        return result;
+}
+
+/* Initialize domain session credentials */
+
+NTSTATUS new_cli_nt_setup_creds(struct cli_state *cli, 
+                                unsigned char mach_pwd[16])
+{
+        DOM_CHAL clnt_chal;
+        DOM_CHAL srv_chal;
+        UTIME zerotime;
+        NTSTATUS result;
+
+        /******************* Request Challenge ********************/
+
+        generate_random_buffer(clnt_chal.data, 8, False);
+	
+        /* send a client challenge; receive a server challenge */
+        result = new_cli_net_req_chal(cli, &clnt_chal, &srv_chal);
+
+        if (result != NT_STATUS_OK) {
+                DEBUG(0,("cli_nt_setup_creds: request challenge failed\n"));
+                return result;
+        }
+        
+        /**************** Long-term Session key **************/
+
+        /* calculate the session key */
+        cred_session_key(&clnt_chal, &srv_chal, (char *)mach_pwd, 
+                         cli->sess_key);
+        memset((char *)cli->sess_key+8, '\0', 8);
+
+        /******************* Authenticate 2 ********************/
+
+        /* calculate auth-2 credentials */
+        zerotime.time = 0;
+        cred_create(cli->sess_key, &clnt_chal, zerotime, 
+                    &cli->clnt_cred.challenge);
+
+        /*  
+         * Send client auth-2 challenge.
+         * Receive an auth-2 challenge response and check it.
+         */
+        
+        if (!new_cli_net_auth2(cli, (lp_server_role() == ROLE_DOMAIN_MEMBER) ?
+                               SEC_CHAN_WKSTA : SEC_CHAN_BDC, 0x000001ff, 
+                               &srv_chal)) {
+                DEBUG(0,("cli_nt_setup_creds: auth2 challenge failed\n"));
+                return False;
+        }
+
+        return True;
+}
+
 /* Logon Control 2 */
 
 NTSTATUS cli_netlogon_logon_ctrl2(struct cli_state *cli, TALLOC_CTX *mem_ctx,
