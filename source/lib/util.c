@@ -800,12 +800,15 @@ char *attrib_string(int mode)
 int StrCaseCmp(const char *s, const char *t)
 {
   /* compare until we run out of string, either t or s, or find a difference */
-  while (*s && *t && tolower(*s) == tolower(*t))
+  /* We *must* use toupper rather than tolower here due to the
+     asynchronous upper to lower mapping.
+   */
+  while (*s && *t && toupper(*s) == toupper(*t))
   {
     s++; t++;
   }
 
-  return(tolower(*s) - tolower(*t));
+  return(toupper(*s) - toupper(*t));
 }
 
 /*******************************************************************
@@ -814,13 +817,16 @@ int StrCaseCmp(const char *s, const char *t)
 int StrnCaseCmp(const char *s, const char *t, int n)
 {
   /* compare until we run out of string, either t or s, or chars */
-  while (n-- && *s && *t && tolower(*s) == tolower(*t))
+  /* We *must* use toupper rather than tolower here due to the
+     asynchronous upper to lower mapping.
+   */
+  while (n-- && *s && *t && toupper(*s) == toupper(*t))
   {
     s++; t++;
   }
 
   /* not run out of chars - strings are different lengths */
-  if (n) return(tolower(*s) - tolower(*t));
+  if (n) return(toupper(*s) - toupper(*t));
 
   /* identical up to where we run out of chars, and strings are same length */
   return(0);
