@@ -134,7 +134,7 @@ NTSTATUS socket_accept(struct socket_context *sock, struct socket_context **new_
 }
 
 NTSTATUS socket_recv(struct socket_context *sock, TALLOC_CTX *mem_ctx,
-			DATA_BLOB *blob, size_t wantlen, uint32_t flags)
+		     DATA_BLOB *blob, size_t wantlen, uint32_t flags)
 {
 	if (sock->type != SOCKET_TYPE_STREAM) {
 		return NT_STATUS_INVALID_PARAMETER;

@@ -79,7 +79,7 @@ static NTSTATUS rpc_resolve_dc(const char *server,
 			       struct in_addr *dest_ip)
 {
 	if (is_ipaddress(server)) {
-		struct in_addr to_ip = *interpret_addr2(server);
+		struct in_addr to_ip = interpret_addr2(server);
 
 		/* we need to know the machines netbios name - this is a lousy
 		   way to find it, but until we have a RPC call that does this

@@ -174,11 +174,11 @@ static void parse_ip(TALLOC_CTX *mem_ctx, struct tagged_ip *ip, const char *str)
 	char *s = strchr(str, ':');
 	if (!s) {
 		fstrcpy(ip->tag, "*");
-		ip->ip = *interpret_addr2(mem_ctx, str);
+		ip->ip = interpret_addr2(str);
 		return;
 	} 
 
-	ip->ip = *interpret_addr2(mem_ctx, s+1);
+	ip->ip = interpret_addr2(s+1);
 	fstrcpy(ip->tag, str);
 	s = strchr(ip->tag, ':');
 	if (s) *s = 0;

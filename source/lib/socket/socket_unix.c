@@ -30,31 +30,7 @@
 */
 static NTSTATUS unixdom_error(int ernum)
 {
-	switch (ernum) {
-	case EBADF:
-	case ENOTCONN:
-	case ENOTSOCK:
-	case EFAULT:
-	case EINVAL:
-		return NT_STATUS_INVALID_PARAMETER;
-	case EAGAIN:
-	case EINTR:
-		return STATUS_MORE_ENTRIES;
-	case ECONNREFUSED:
-		return NT_STATUS_CONNECTION_REFUSED;
-	case ENOBUFS:
-	case ENOMEM:
-		return NT_STATUS_NO_MEMORY;
-	case ENFILE:
-	case EMFILE:
-		return NT_STATUS_INSUFFICIENT_RESOURCES;
-	case EPIPE:
-		return NT_STATUS_CONNECTION_DISCONNECTED;
-	case EMSGSIZE:
-		return NT_STATUS_INVALID_BUFFER_SIZE;
-	}
-	
-	return NT_STATUS_UNSUCCESSFUL;
+	return map_nt_error_from_unix(ernum);
 }
 
 static NTSTATUS unixdom_init(struct socket_context *sock)

@@ -24,8 +24,7 @@ static NTSTATUS ipv4_tcp_init(struct socket_context *sock)
 {
 	sock->fd = socket(PF_INET, SOCK_STREAM, 0);
 	if (sock->fd == -1) {
-		/* TODO: we need to map from errno to NTSTATUS here! */ 
-		return NT_STATUS_FOOBAR;
+		return map_nt_error_from_unix(errno);
 	}
 
 	return NT_STATUS_OK;
@@ -37,41 +36,34 @@ static void ipv4_tcp_close(struct socket_context *sock)
 }
 
 static NTSTATUS ipv4_tcp_connect(struct socket_context *sock,
-					const char *my_address, int my_port,
-					const char *srv_address, int srv_port,
-					uint32_t flags)
+				 const char *my_address, int my_port,
+				 const char *srv_address, int srv_port,
+				 uint32_t flags)
 {
-	struct sockaddr_in my_addr;
 	struct sockaddr_in srv_addr;
 	struct in_addr my_ip;
 	struct in_addr srv_ip;
 	int ret;
 
-	ret = inet_aton(my_address, &my_ip);
-	if (ret == 0) {
-		/* not a valid ipv4 address */
-		return NT_STATUS_FOOBAR;
-	}
+	my_ip = interpret_addr2(my_address);
 
-	ZERO_STRUCT(my_addr);
+	if (my_ip.s_addr != 0 || my_port != 0) {
+		struct sockaddr_in my_addr;
+		ZERO_STRUCT(my_addr);
 #ifdef HAVE_SOCK_SIN_LEN
-	my_addr.sin_len		= sizeof(my_addr);
+		my_addr.sin_len		= sizeof(my_addr);
 #endif
-	my_addr.sin_addr	= my_ip;
-	my_addr.sin_port	= htons(my_port);
-	my_addr.sin_family	= PF_INET;
-
-	ret = inet_aton(srv_address, &srv_ip);
-	if (ret == 0) {
-		/* not a valid ipv4 address */
-		return NT_STATUS_FOOBAR;
+		my_addr.sin_addr	= my_ip;
+		my_addr.sin_port	= htons(my_port);
+		my_addr.sin_family	= PF_INET;
+		
+		ret = bind(sock->fd, (struct sockaddr *)&my_addr, sizeof(my_addr));
+		if (ret == -1) {
+			return map_nt_error_from_unix(errno);
+		}
 	}
 
-	ret = bind(sock->fd, (struct sockaddr *)&my_addr, sizeof(my_addr));
-	if (ret == -1) {
-		/* TODO: we need to map from errno to NTSTATUS here! */
-		return NT_STATUS_FOOBAR;
-	}
+	srv_ip = interpret_addr2(srv_address);
 
 	ZERO_STRUCT(srv_addr);
 #ifdef HAVE_SOCK_SIN_LEN
@@ -81,18 +73,16 @@ static NTSTATUS ipv4_tcp_connect(struct socket_context *sock,
 	srv_addr.sin_port	= htons(srv_port);
 	srv_addr.sin_family	= PF_INET;
 
+	ret = connect(sock->fd, (const struct sockaddr *)&srv_addr, sizeof(srv_addr));
+	if (ret == -1) {
+		return map_nt_error_from_unix(errno);
+	}
+
 	if (!(flags & SOCKET_FLAG_BLOCK)) {
 		ret = set_blocking(sock->fd, False);
 		if (ret == -1) {
-			/* TODO: we need to map from errno to NTSTATUS here! */
-			return NT_STATUS_FOOBAR;
+			return map_nt_error_from_unix(errno);
 		}
-	}
-
-	ret = connect(sock->fd, (const struct sockaddr *)&srv_addr, sizeof(srv_addr));
-	if (ret == -1) {
-		/* TODO: we need to map from errno to NTSTATUS here! */
-		return NT_STATUS_FOOBAR;
 	}
 
 	sock->state = SOCKET_STATE_CLIENT_CONNECTED;
@@ -108,11 +98,7 @@ static NTSTATUS ipv4_tcp_listen(struct socket_context *sock,
 	struct in_addr ip_addr;
 	int ret;
 
-	ret = inet_aton(my_address, &ip_addr);
-	if (ret == 0) {
-		/* not a valid ipv4 address */
-		return NT_STATUS_FOOBAR;
-	}
+	ip_addr = interpret_addr2(my_address);
 
 	ZERO_STRUCT(my_addr);
 #ifdef HAVE_SOCK_SIN_LEN
@@ -124,21 +110,18 @@ static NTSTATUS ipv4_tcp_listen(struct socket_context *sock,
 
 	ret = bind(sock->fd, (struct sockaddr *)&my_addr, sizeof(my_addr));
 	if (ret == -1) {
-		/* TODO: we need to map from errno to NTSTATUS here! */
-		return NT_STATUS_FOOBAR;
+		return map_nt_error_from_unix(errno);
 	}
 
 	ret = listen(sock->fd, queue_size);
 	if (ret == -1) {
-		/* TODO: we need to map from errno to NTSTATUS here! */
-		return NT_STATUS_FOOBAR;
+		return map_nt_error_from_unix(errno);
 	}
 
 	if (!(flags & SOCKET_FLAG_BLOCK)) {
 		ret = set_blocking(sock->fd, False);
 		if (ret == -1) {
-			/* TODO: we need to map from errno to NTSTATUS here! */
-			return NT_STATUS_FOOBAR;
+			return map_nt_error_from_unix(errno);
 		}
 	}
 
@@ -155,8 +138,7 @@ static NTSTATUS ipv4_tcp_accept(struct socket_context *sock, struct socket_conte
 
 	new_fd = accept(sock->fd, (struct sockaddr *)&cli_addr, &cli_addr_len);
 	if (new_fd == -1) {
-		/* TODO: we need to map from errno to NTSTATUS here! */
-		return NT_STATUS_FOOBAR;
+		return map_nt_error_from_unix(errno);
 	}
 
 	/* TODO: we could add a 'accept_check' hook here
@@ -257,34 +239,7 @@ static NTSTATUS ipv4_tcp_send(struct socket_context *sock, TALLOC_CTX *mem_ctx,
 
 	len = send(sock->fd, blob->data, blob->length, flgs);
 	if (len == -1) {
-		NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
-		switch (errno) {
-			case EBADF:
-			case ENOTSOCK:
-			case EFAULT:
-			case EINVAL:
-				status = NT_STATUS_INVALID_PARAMETER;
-				break;
-			case EMSGSIZE:
-				status = NT_STATUS_INVALID_BUFFER_SIZE;
-				break;
-			case EAGAIN:
-			/*case EWOULDBLOCK: this is an alis of EAGAIN --metze */
-			case EINTR:
-				*sendlen = 0;
-				status = STATUS_MORE_ENTRIES;
-				break;
-			case ENOBUFS:
-				status = NT_STATUS_FOOBAR;
-				break;
-			case ENOMEM:
-				status = NT_STATUS_NO_MEMORY;
-				break;
-			case EPIPE:
-				status = NT_STATUS_CONNECTION_DISCONNECTED;
-				break;
-		}
-		return status;
+		return map_nt_error_from_unix(errno);
 	}	
 
 	*sendlen = len;

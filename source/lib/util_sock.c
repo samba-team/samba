@@ -408,14 +408,14 @@ int open_udp_socket(const char *host, int port)
 	int type = SOCK_DGRAM;
 	struct sockaddr_in sock_out;
 	int res;
-	struct in_addr *addr;
+	struct in_addr addr;
 	TALLOC_CTX *mem_ctx;
 
 	mem_ctx = talloc_init("open_udp_socket");
 	if (!mem_ctx) {
 		return -1;
 	}
-	addr = interpret_addr2(mem_ctx, host);
+	addr = interpret_addr2(host);
 
 	res = socket(PF_INET, type, 0);
 	if (res == -1) {
@@ -423,7 +423,7 @@ int open_udp_socket(const char *host, int port)
 	}
 
 	memset((char *)&sock_out,'\0',sizeof(sock_out));
-	putip((char *)&sock_out.sin_addr,(char *)addr);
+	putip((char *)&sock_out.sin_addr,(char *)&addr);
 	sock_out.sin_port = htons(port);
 	sock_out.sin_family = PF_INET;
 	
@@ -508,7 +508,7 @@ char *get_socket_name(TALLOC_CTX *mem_ctx, int fd, BOOL force_lookup)
 	name_buf = talloc_strdup(mem_ctx, "UNKNOWN");
 	if (fd == -1) return name_buf;
 
-	addr = *interpret_addr2(mem_ctx, p);
+	addr = interpret_addr2(p);
 	
 	/* Look up the remote host name. */
 	if ((hp = gethostbyaddr((char *)&addr.s_addr, sizeof(addr.s_addr), AF_INET)) == 0) {

@@ -522,7 +522,7 @@ BOOL getlmhostsent( TALLOC_CTX *mem_ctx,
       continue;
     }
 
-    *ipaddr = *interpret_addr2(mem_ctx, ip);
+    *ipaddr = interpret_addr2(ip);
 
     /* Extra feature. If the name ends in '#XX', where XX is a hex number,
        then only add that name type. */
@@ -643,7 +643,7 @@ BOOL resolve_wins(TALLOC_CTX *mem_ctx, const char *name, int name_type,
 	}
 
 	/* the address we will be sending from */
-	src_ip = *interpret_addr2(mem_ctx, lp_socket_address());
+	src_ip = interpret_addr2(lp_socket_address());
 
 	/* in the worst case we will try every wins server with every
 	   tag! */
@@ -900,7 +900,7 @@ BOOL resolve_name(TALLOC_CTX *mem_ctx, const char *name, struct in_addr *return_
 	int count = 0;
 
 	if (is_ipaddress(name)) {
-		*return_ip = *interpret_addr2(mem_ctx, name);
+		*return_ip = interpret_addr2(name);
 		return True;
 	}
 

@@ -1490,66 +1490,69 @@ WERROR ntstatus_to_werror(NTSTATUS error)
 
 struct unix_error_map {
 	int unix_error;
-	int dos_class;
-	int dos_code;
 	NTSTATUS nt_error;
 };
 
-const struct unix_error_map unix_dos_nt_errmap[] = {
-	{ EPERM, ERRDOS, ERRnoaccess, NT_STATUS_ACCESS_DENIED },
-	{ EACCES, ERRDOS, ERRnoaccess, NT_STATUS_ACCESS_DENIED },
-	{ ENOENT, ERRDOS, ERRbadfile, NT_STATUS_OBJECT_NAME_NOT_FOUND },
-	{ ENOTDIR, ERRDOS, ERRbadpath,  NT_STATUS_NOT_A_DIRECTORY },
-	{ EIO, ERRHRD, ERRgeneral, NT_STATUS_IO_DEVICE_ERROR },
-	{ EBADF, ERRSRV, ERRsrverror, NT_STATUS_INVALID_HANDLE },
-	{ EINVAL, ERRSRV, ERRsrverror, NT_STATUS_INVALID_HANDLE },
-	{ EEXIST, ERRDOS, ERRfilexists, NT_STATUS_OBJECT_NAME_COLLISION},
-	{ ENFILE, ERRDOS, ERRnofids, NT_STATUS_TOO_MANY_OPENED_FILES },
-	{ EMFILE, ERRDOS, ERRnofids, NT_STATUS_TOO_MANY_OPENED_FILES },
-	{ ENOSPC, ERRHRD, ERRdiskfull, NT_STATUS_DISK_FULL },
-	{ EISDIR, ERRDOS, ERRbadpath, NT_STATUS_FILE_IS_A_DIRECTORY },
+const struct unix_error_map unix_nt_errmap[] = {
+	{ EAGAIN,       STATUS_MORE_ENTRIES },
+	{ EINTR,        STATUS_MORE_ENTRIES },
+	{ EINPROGRESS,  STATUS_MORE_ENTRIES },
+	{ EPERM,        NT_STATUS_ACCESS_DENIED },
+	{ EACCES,       NT_STATUS_ACCESS_DENIED },
+	{ ENOENT,       NT_STATUS_OBJECT_NAME_NOT_FOUND },
+	{ ENOTDIR,      NT_STATUS_NOT_A_DIRECTORY },
+	{ EIO,          NT_STATUS_IO_DEVICE_ERROR },
+	{ EBADF,        NT_STATUS_INVALID_HANDLE },
+	{ EINVAL,       NT_STATUS_INVALID_PARAMETER },
+	{ EEXIST,       NT_STATUS_OBJECT_NAME_COLLISION},
+	{ ENFILE,       NT_STATUS_TOO_MANY_OPENED_FILES },
+	{ EMFILE,       NT_STATUS_TOO_MANY_OPENED_FILES },
+	{ ENOSPC,       NT_STATUS_DISK_FULL },
+	{ EISDIR,       NT_STATUS_FILE_IS_A_DIRECTORY },
+	{ ENOTSOCK,     NT_STATUS_INVALID_HANDLE },
+	{ EFAULT,       NT_STATUS_INVALID_PARAMETER },
+	{ EMSGSIZE,     NT_STATUS_INVALID_BUFFER_SIZE },
+	{ ENOBUFS,      NT_STATUS_NO_MEMORY },
+	{ ENOMEM,       NT_STATUS_NO_MEMORY },
+	{ EPIPE,        NT_STATUS_CONNECTION_DISCONNECTED },
+	{ ECONNREFUSED, NT_STATUS_CONNECTION_REFUSED },
+	{ EBUSY,        NT_STATUS_SHARING_VIOLATION },
 #ifdef EDQUOT
-	{ EDQUOT, ERRHRD, ERRdiskfull, NT_STATUS_DISK_FULL },
+	{ EDQUOT,       NT_STATUS_QUOTA_EXCEEDED },
 #endif
 #ifdef ENOTEMPTY
-	{ ENOTEMPTY, ERRDOS, ERRnoaccess, NT_STATUS_DIRECTORY_NOT_EMPTY },
+	{ ENOTEMPTY,    NT_STATUS_DIRECTORY_NOT_EMPTY },
 #endif
 #ifdef EXDEV
-	{ EXDEV, ERRDOS, ERRdiffdevice, NT_STATUS_NOT_SAME_DEVICE },
+	{ EXDEV,        NT_STATUS_NOT_SAME_DEVICE },
 #endif
 #ifdef EROFS
-	{ EROFS, ERRHRD, ERRnowrite, NT_STATUS_ACCESS_DENIED },
+	{ EROFS,        NT_STATUS_MEDIA_WRITE_PROTECTED },
 #endif
 #ifdef ENAMETOOLONG
-	{ ENAMETOOLONG, ERRDOS, 206, NT_STATUS_OBJECT_NAME_INVALID },
+	{ ENAMETOOLONG, NT_STATUS_NAME_TOO_LONG },
 #endif
 #ifdef EFBIG
-	{ EFBIG, ERRHRD, ERRdiskfull, NT_STATUS_DISK_FULL },
+	{ EFBIG,        NT_STATUS_DISK_FULL },
 #endif
-#ifdef EFBIG
-	{ EBUSY, ERRDOS, ERRbadshare, NT_STATUS_SHARING_VIOLATION },
-#endif
-	{ 0, 0, 0, NT_STATUS_OK }
+	{ 0, NT_STATUS_UNSUCCESSFUL }
 };
+
 
 /*********************************************************************
  Map an NT error code from a Unix error code.
 *********************************************************************/
 NTSTATUS map_nt_error_from_unix(int unix_error)
 {
-	int i = 0;
-
-	if (unix_error == 0) {
-		return NT_STATUS_UNSUCCESSFUL;
-	}
+	int i;
 
 	/* Look through list */
-	while(unix_dos_nt_errmap[i].unix_error != 0) {
-		if (unix_dos_nt_errmap[i].unix_error == unix_error)
-			return unix_dos_nt_errmap[i].nt_error;
-		i++;
+	for (i=0;i<ARRAY_SIZE(unix_nt_errmap);i++) {
+		if (unix_nt_errmap[i].unix_error == unix_error) {
+			return unix_nt_errmap[i].nt_error;
+		}
 	}
 
 	/* Default return */
-	return NT_STATUS_ACCESS_DENIED;
+	return NT_STATUS_UNSUCCESSFUL;
 }

@@ -110,13 +110,11 @@ static void ldapsrv_init(struct server_service *service,
 			add_socket(service, model_ops, ifip);
 		}
 	} else {
-		struct in_addr *ifip;
+		struct in_addr ifip;
 
 		/* Just bind to lp_socket_address() (usually 0.0.0.0) */
-		ifip = interpret_addr2(service, lp_socket_address());
-		add_socket(service, model_ops, ifip);
-
-		talloc_destroy(ifip);
+		ifip = interpret_addr2(lp_socket_address());
+		add_socket(service, model_ops, &ifip);
 	}
 }
 
