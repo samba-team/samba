@@ -3,7 +3,7 @@
  *  RPC Pipe client / server routines
  *  Copyright (C) Andrew Tridgell              1992-2000,
  *  Copyright (C) Jean François Micouleau      1998-2000.
- *  Copyright (C) Gerald Carter                     2002.
+ *  Copyright (C) Gerald Carter                2002-2003.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -2282,6 +2282,9 @@ NT_DEVICEMODE *construct_nt_devicemode(const fstring default_devicename)
 NT_DEVICEMODE *dup_nt_devicemode(NT_DEVICEMODE *nt_devicemode)
 {
 	NT_DEVICEMODE *new_nt_devicemode = NULL;
+	
+	if ( !nt_devicemode )
+		return NULL;
 
 	if ((new_nt_devicemode = (NT_DEVICEMODE *)memdup(nt_devicemode, sizeof(NT_DEVICEMODE))) == NULL) {
 		DEBUG(0,("dup_nt_devicemode: malloc fail.\n"));
@@ -3119,26 +3122,6 @@ static uint32 dump_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level)
 }
 
 /****************************************************************************
- Get the parameters we can substitute in an NT print job.
-****************************************************************************/
-
-void get_printer_subst_params(int snum, fstring *printername, fstring *sharename, fstring *portname)
-{
-	NT_PRINTER_INFO_LEVEL *printer = NULL;
-
-	**printername = **sharename = **portname = '\0';
-
-	if (!W_ERROR_IS_OK(get_a_printer(&printer, 2, lp_servicename_dos(snum))))
-		return;
-
-	fstrcpy(*printername, printer->info_2->printername);
-	fstrcpy(*sharename, printer->info_2->sharename);
-	fstrcpy(*portname, printer->info_2->portname);
-
-	free_a_printer(&printer, 2);
-}
-
-/****************************************************************************
  Update the changeid time.
  This is SO NASTY as some drivers need this to change, others need it
  static. This value will change every second, and I must hope that this
@@ -3181,6 +3164,14 @@ WERROR mod_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level)
 	
 	dump_a_printer(printer, level);	
 	
+	/* 
+	 * invalidate cache for all open handles to this printer.
+	 * cache for a given handle will be updated on the next 
+	 * get_a_printer() 
+	 */
+	 
+	invalidate_printer_hnd_cache( printer.info_2->sharename );
+	
 	switch (level) {
 		case 2:
 		{
@@ -3216,6 +3207,7 @@ WERROR mod_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level)
 			 */
 
 			result=update_a_printer_2(printer.info_2);
+			
 			break;
 		}
 		default:
@@ -3585,16 +3577,85 @@ WERROR save_driver_init(NT_PRINTER_INFO_LEVEL *printer, uint32 level, uint8 *dat
 }
 
 /****************************************************************************
+ Deep copy a NT_PRINTER_DATA
+****************************************************************************/
+
+static NTSTATUS copy_printer_data( NT_PRINTER_DATA *dst, NT_PRINTER_DATA *src )
+{
+	int i, j, num_vals, new_key_index;
+	REGVAL_CTR *src_key, *dst_key;
+	
+	if ( !dst || !src )
+		return NT_STATUS_NO_MEMORY;
+	
+	for ( i=0; i<src->num_keys; i++ ) {
+			   
+		/* create a new instance of the printerkey in the destination 
+		   printer_data object */
+		   
+		new_key_index = add_new_printer_key( dst, src->keys[i].name );
+		dst_key = &dst->keys[new_key_index].values;
+
+		src_key = &src->keys[i].values;
+		num_vals = regval_ctr_numvals( src_key );
+		
+		/* dup the printer entire printer key */
+		
+		for ( j=0; j<num_vals; j++ ) {
+			regval_ctr_copyvalue( dst_key, regval_ctr_specific_value(src_key, j) );
+		}
+	}
+		
+	return NT_STATUS_OK;
+}
+
+/****************************************************************************
+ Deep copy a NT_PRINTER_INFO_LEVEL_2 structure using malloc()'d memeory
+ Caller must free.
+****************************************************************************/
+
+static NT_PRINTER_INFO_LEVEL_2* dup_printer_2( TALLOC_CTX *ctx, NT_PRINTER_INFO_LEVEL_2 *printer )
+{
+	NT_PRINTER_INFO_LEVEL_2 *copy;
+	
+	if ( !printer )
+		return NULL;
+	
+	if ( !(copy = (NT_PRINTER_INFO_LEVEL_2 *)malloc(sizeof(NT_PRINTER_INFO_LEVEL_2))) )
+		return NULL;
+		
+	memcpy( copy, printer, sizeof(NT_PRINTER_INFO_LEVEL_2) );
+	
+	/* malloc()'d members copied here */
+	
+	copy->devmode = dup_nt_devicemode( printer->devmode );	
+
+	ZERO_STRUCT( copy->data );
+	copy_printer_data( &copy->data, &printer->data );
+	
+	/* this is talloc()'d; very ugly that we have a structure that 
+	   is half malloc()'d and half talloc()'d but that is the way 
+	   that the PRINTER_INFO stuff is written right now.  --jerry  */
+	   
+	copy->secdesc_buf = dup_sec_desc_buf( ctx, printer->secdesc_buf );
+		
+	return copy;
+}
+
+/****************************************************************************
  Get a NT_PRINTER_INFO_LEVEL struct. It returns malloced memory.
 ****************************************************************************/
 
-WERROR get_a_printer(NT_PRINTER_INFO_LEVEL **pp_printer, uint32 level, const char *dos_sharename)
+#define ENABLE_PRINT_HND_CACHE	1
+
+WERROR get_a_printer( Printer_entry *print_hnd, NT_PRINTER_INFO_LEVEL **pp_printer, uint32 level, 
+			const char *dos_sharename)
 {
 	WERROR result;
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
 	
 	*pp_printer = NULL;
-
+		
 	DEBUG(10,("get_a_printer: [%s] level %u\n", dos_to_unix_static(dos_sharename), (unsigned int)level));
 
 	switch (level) {
@@ -3604,13 +3665,62 @@ WERROR get_a_printer(NT_PRINTER_INFO_LEVEL **pp_printer, uint32 level, const cha
 				return WERR_NOMEM;
 			}
 			ZERO_STRUCTP(printer);
+			
+			/* 
+			 * check for cache first.  A Printer handle cannot changed
+			 * to another printer object so we only check that the printer 
+			 * is actually for a printer and that the printer_info pointer 
+			 * is valid
+			 */
+#ifdef ENABLE_PRINT_HND_CACHE	/* JERRY */
+			if ( print_hnd 
+				&& (print_hnd->printer_type==PRINTER_HANDLE_IS_PRINTER) 
+				&& print_hnd->printer_info )
+			{
+				if ( !(printer->info_2 = dup_printer_2(print_hnd->ctx, print_hnd->printer_info->info_2)) ) {
+					DEBUG(0,("get_a_printer: unable to copy cached printer info!\n"));
+					
+					SAFE_FREE(printer);
+					return WERR_NOMEM;
+				}
+				
+				DEBUG(10,("get_a_printer: using cached copy of printer_info_2\n"));
+				
+				*pp_printer = printer;				
+				result = WERR_OK;
+				
+				break;
+			}
+#endif 
+
+			/* no cache; look it up on disk */
+			
 			result=get_a_printer_2(&printer->info_2, dos_sharename);
 			if (W_ERROR_IS_OK(result)) {
 				dump_a_printer(*printer, level);
-				*pp_printer = printer;
-			} else {
+
+#if ENABLE_PRINT_HND_CACHE	/* JERRY */								
+				/* save a copy in cache */
+				if ( print_hnd && (print_hnd->printer_type==PRINTER_HANDLE_IS_PRINTER)) {
+					if ( !print_hnd->printer_info )
+						print_hnd->printer_info = (NT_PRINTER_INFO_LEVEL *)malloc(sizeof(NT_PRINTER_INFO_LEVEL));
+					
+					if ( print_hnd->printer_info ) {
+						print_hnd->printer_info->info_2 = dup_printer_2(print_hnd->ctx, printer->info_2);
+						
+						/* don't fail the lookup just because the cache update failed */
+						if ( !print_hnd->printer_info->info_2 )
+							DEBUG(0,("get_a_printer: unable to copy new printer info!\n"));
+					}
+					
+				}
+#endif
+				*pp_printer = printer;	
+			} 
+			else 
 				SAFE_FREE(printer);
-			}
+	
+
 			break;
 		default:
 			result=WERR_UNKNOWN_LEVEL;
@@ -3786,7 +3896,7 @@ BOOL printer_driver_in_use ( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info_3 )
 		if ( !(lp_snum_ok(snum) && lp_print_ok(snum) ) )
 			continue;
 		
-		if ( !W_ERROR_IS_OK(get_a_printer(&printer, 2, lp_servicename_dos(snum))) )
+		if ( !W_ERROR_IS_OK(get_a_printer(NULL, &printer, 2, lp_servicename_dos(snum))) )
 			continue;
 		
 		if ( !StrCaseCmp(info_3->name, printer->info_2->drivername) ) {
@@ -4602,7 +4712,7 @@ BOOL print_time_access_check(int snum)
 	struct tm *t;
 	uint32 mins;
 
-	if (!W_ERROR_IS_OK(get_a_printer(&printer, 2, lp_servicename_dos(snum))))
+	if (!W_ERROR_IS_OK(get_a_printer(NULL, &printer, 2, lp_servicename_dos(snum))))
 		return False;
 
 	if (printer->info_2->starttime == 0 && printer->info_2->untiltime == 0)

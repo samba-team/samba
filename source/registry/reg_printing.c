@@ -494,7 +494,7 @@ static int print_subpath_printers( char *key, REGSUBKEY_CTR *subkeys )
 	keystr = key2;
 	reg_split_path( keystr, &base, &new_path );
 	
-		if ( !W_ERROR_IS_OK( get_a_printer(&printer, 2, base) ) )
+		if ( !W_ERROR_IS_OK( get_a_printer(NULL, &printer, 2, base) ) )
 			goto done;
 		
 	num_subkeys = get_printer_subkeys( &printer->info_2->data, new_path?new_path:"", &subkey_names );
@@ -554,7 +554,7 @@ static int print_subpath_values_printers( char *key, REGVAL_CTR *val )
 	{
 		/* we are dealing with the printer itself */
 
-		if ( !W_ERROR_IS_OK( get_a_printer(&printer, 2, printername) ) )
+		if ( !W_ERROR_IS_OK( get_a_printer(NULL, &printer, 2, printername) ) )
 			goto done;
 
 		info2 = printer->info_2;
@@ -635,7 +635,7 @@ static int print_subpath_values_printers( char *key, REGVAL_CTR *val )
 	
 	/* now enumerate the key */
 	
-	if ( !W_ERROR_IS_OK( get_a_printer(&printer, 2, printername) ) )
+	if ( !W_ERROR_IS_OK( get_a_printer(NULL, &printer, 2, printername) ) )
 		goto done;
 
 	/* iterate over all printer data and fill the regval container */

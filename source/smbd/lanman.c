@@ -521,7 +521,7 @@ static BOOL get_driver_name(int snum, pstring drivername)
 	NT_PRINTER_INFO_LEVEL *info = NULL;
 	BOOL in_tdb = False;
 
-	get_a_printer (&info, 2, lp_servicename_dos(snum));
+	get_a_printer (NULL, &info, 2, lp_servicename_dos(snum));
 	if (info != NULL) {
 		pstrcpy( drivername, info->info_2->drivername);
 		in_tdb = True;
