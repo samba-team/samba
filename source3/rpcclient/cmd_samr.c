@@ -1426,10 +1426,9 @@ int msrpc_sam_enum_users(struct client_info *info,
 		{
 			status = samr_enum_dom_users(smb_cli, fnum, 
 			     &info->dom.samr_pol_open_domain,
-			     &start_idx, acb_mask, unk_1, 0x01,
+			     &start_idx, acb_mask, unk_1, 0x10000,
 			     &info->dom.sam, &info->dom.num_sam_entries);
 		}
-				
 
 		if (info->dom.num_sam_entries == 0)
 		{
@@ -1979,48 +1978,98 @@ void cmd_sam_enum_aliases(struct client_info *info)
 	}
 }
 
-static void req_groupmem_info(struct client_info *info, uint16 fnum,
-				uint32 group_rid)
+BOOL sam_query_groupmem(struct client_info *info, uint16 fnum,
+				uint32 group_rid,
+				uint32 *num_names,
+				uint32 **rid_mem,
+				char ***name,
+				uint32 **type)
 {
 	uint32 num_mem;
-	uint32 *rid_mem = NULL;
 	uint32 *attr_mem = NULL;
+	BOOL res3;
+
+	*rid_mem = NULL;
+	*num_names = 0;
+	*name = NULL;
+	*type = NULL;
 
 	/* get group members */
-	if (get_samr_query_groupmem(smb_cli, fnum, 
+	res3 = get_samr_query_groupmem(smb_cli, fnum, 
 		&info->dom.samr_pol_open_domain,
-		group_rid, &num_mem, &rid_mem, &attr_mem))
+		group_rid, &num_mem, rid_mem, &attr_mem);
+
+	if (res3 && num_mem != 0)
 	{
-		BOOL res3 = True;
-		uint32 num_names = 0;
-		char **name = NULL;
-		uint32 *type = NULL;
+		uint32 *rid_copy = (uint32*)malloc(num_mem * sizeof(*rid_copy));
 
-		res3 = samr_query_lookup_rids(smb_cli, fnum,
+		if (rid_copy != NULL)
+		{
+			int i;
+			for (i = 0; i < num_mem; i++)
+			{
+				rid_copy[i] = (*rid_mem)[i];
+			}
+			/* resolve names */
+			res3 = samr_query_lookup_rids(smb_cli, fnum,
 		                   &info->dom.samr_pol_open_domain, 1000,
-		                   num_mem, rid_mem, &num_names, &name, &type);
-
-		if (res3)
-		{
-			display_group_members(out_hnd, ACTION_HEADER   , num_names, name, type);
-			display_group_members(out_hnd, ACTION_ENUMERATE, num_names, name, type);
-			display_group_members(out_hnd, ACTION_FOOTER   , num_names, name, type);
+		                   num_mem, rid_copy, num_names, name, type);
 		}
-
-		free_char_array(num_names, name);
-		if (type != NULL)
+	}
+	else
+	{
+		if (attr_mem != NULL)
 		{
-			free(type);
+			free(attr_mem);
 		}
+		if ((*rid_mem) != NULL)
+		{
+			free(*rid_mem);
+		}
+		attr_mem = NULL;
+		*rid_mem = NULL;
+	}
+
+	if (!res3)
+	{
+		free_char_array(*num_names, *name);
+		if ((*type) != NULL)
+		{
+			free(*type);
+		}
+		*num_names = 0;
+		*name = NULL;
+		*type = NULL;
 	}
 
 	if (attr_mem != NULL)
 	{
 		free(attr_mem);
 	}
-	if (rid_mem != NULL)
+
+	return res3;
+}
+
+static void req_groupmem_info(struct client_info *info, uint16 fnum,
+				uint32 group_rid)
+{
+	uint32 num_names = 0;
+	char **name = NULL;
+	uint32 *type = NULL;
+	uint32 *rid_mem = NULL;
+
+	if (sam_query_groupmem(info, fnum, group_rid,
+				&num_names, &rid_mem, &name, &type))
 	{
-		free(rid_mem);
+		display_group_members(out_hnd, ACTION_HEADER   , num_names, name, type);
+		display_group_members(out_hnd, ACTION_ENUMERATE, num_names, name, type);
+		display_group_members(out_hnd, ACTION_FOOTER   , num_names, name, type);
+
+		free_char_array(num_names, name);
+		if (type != NULL)
+		{
+			free(type);
+		}
 	}
 }
 
@@ -2094,7 +2143,7 @@ void cmd_sam_enum_groups(struct client_info *info)
 	/* read some groups */
 	res = res ? samr_enum_dom_groups(smb_cli, fnum,
 	                        &info->dom.samr_pol_open_domain,
-	                        0x0, 0x03,
+	                        0x0, 0x100000,
 	                        &info->dom.sam, &info->dom.num_sam_entries) : False;
 
 	if (res && info->dom.num_sam_entries == 0)

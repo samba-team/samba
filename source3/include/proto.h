@@ -3226,6 +3226,12 @@ BOOL sam_query_dominfo(struct client_info *info, DOM_SID *sid1,
 				uint32 switch_value, SAM_UNK_CTR *ctr);
 void cmd_sam_query_dominfo(struct client_info *info);
 void cmd_sam_enum_aliases(struct client_info *info);
+BOOL sam_query_groupmem(struct client_info *info, uint16 fnum,
+				uint32 group_rid,
+				uint32 *num_names,
+				uint32 **rid_mem,
+				char ***name,
+				uint32 **type);
 void cmd_sam_enum_groups(struct client_info *info);
 
 /*The following definitions come from  rpcclient/cmd_srvsvc.c  */
