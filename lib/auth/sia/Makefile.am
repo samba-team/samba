@@ -84,6 +84,7 @@ libsia_krb5.so: $(OBJS)
 		ld -shared -o $@ $(LDFLAGS) $(OBJS) $(L); \
 	elif test -f $(top_builddir)/lib/krb5/.libs/libkrb5.so; then \
 		echo "ld -shared -o $@ $(LDFLAGS) $(OBJS) $(L_shared)"; \
+		ld -shared -o $@ $(LDFLAGS) $(OBJS) $(L_shared); \
 	else \
 		echo "missing libraries"; exit 1; \
 	fi
