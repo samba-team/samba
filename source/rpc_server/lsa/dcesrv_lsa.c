@@ -640,22 +640,22 @@ static NTSTATUS lsa_lookup_sid(struct lsa_policy_state *state, TALLOC_CTX *mem_c
 
 
 /*
-  lsa_LookupSids2
+  lsa_LookupSids3
 */
-static NTSTATUS lsa_LookupSids2(struct dcesrv_call_state *dce_call,
+static NTSTATUS lsa_LookupSids3(struct dcesrv_call_state *dce_call,
 				TALLOC_CTX *mem_ctx,
-				struct lsa_LookupSids2 *r)
+				struct lsa_LookupSids3 *r)
 {
 	struct lsa_policy_state *state;
-	struct dcesrv_handle *h;
 	int i;
 	NTSTATUS status = NT_STATUS_OK;
 
 	r->out.domains = NULL;
 
-	DCESRV_PULL_HANDLE(h, r->in.handle, LSA_HANDLE_POLICY);
-
-	state = h->data;
+	status = lsa_get_policy_state(dce_call, mem_ctx, &state);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	r->out.domains = talloc_zero_p(mem_ctx,  struct lsa_RefDomainList);
 	if (r->out.domains == NULL) {
@@ -725,45 +725,76 @@ static NTSTATUS lsa_LookupSids2(struct dcesrv_call_state *dce_call,
 }
 
 
+/*
+  lsa_LookupSids2
+*/
+static NTSTATUS lsa_LookupSids2(struct dcesrv_call_state *dce_call,
+				TALLOC_CTX *mem_ctx,
+				struct lsa_LookupSids2 *r)
+{
+	struct lsa_LookupSids3 r3;
+	NTSTATUS status;
+
+	r3.in.sids     = r->in.sids;
+	r3.in.names    = r->in.names;
+	r3.in.level    = r->in.level;
+	r3.in.count    = r->in.count;
+	r3.in.unknown1 = r->in.unknown1;
+	r3.in.unknown2 = r->in.unknown2;
+	r3.out.count   = r->out.count;
+	r3.out.names   = r->out.names;
+
+	status = lsa_LookupSids3(dce_call, mem_ctx, &r3);
+	if (dce_call->fault_code != 0) {
+		return status;
+	}
+
+	r->out.domains = r3.out.domains;
+	r->out.names   = r3.out.names;
+	r->out.count   = r3.out.count;
+
+	return status;
+}
+
+
 /* 
   lsa_LookupSids 
 */
 static NTSTATUS lsa_LookupSids(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 			       struct lsa_LookupSids *r)
 {
-	struct lsa_LookupSids2 r2;
+	struct lsa_LookupSids3 r3;
 	NTSTATUS status;
 	int i;
 
-	r2.in.handle   = r->in.handle;
-	r2.in.sids     = r->in.sids;
-	r2.in.names    = NULL;
-	r2.in.level    = r->in.level;
-	r2.in.count    = r->in.count;
-	r2.in.unknown1 = 0;
-	r2.in.unknown2 = 0;
-	r2.out.count   = r->out.count;
+	r3.in.sids     = r->in.sids;
+	r3.in.names    = NULL;
+	r3.in.level    = r->in.level;
+	r3.in.count    = r->in.count;
+	r3.in.unknown1 = 0;
+	r3.in.unknown2 = 0;
+	r3.out.count   = r->out.count;
 
-	status = lsa_LookupSids2(dce_call, mem_ctx, &r2);
+	status = lsa_LookupSids3(dce_call, mem_ctx, &r3);
 	if (dce_call->fault_code != 0) {
 		return status;
 	}
 
-	r->out.domains = r2.out.domains;
+	r->out.domains = r3.out.domains;
 	r->out.names = talloc_p(mem_ctx, struct lsa_TransNameArray);
 	if (r->out.names == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	r->out.names->count = r2.out.names->count;
+	r->out.names->count = r3.out.names->count;
 	r->out.names->names = talloc_array_p(r->out.names, struct lsa_TranslatedName, 
 					     r->out.names->count);
 	if (r->out.names->names == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 	for (i=0;i<r->out.names->count;i++) {
-		r->out.names->names[i].sid_type    = r2.out.names->names[i].sid_type;
-		r->out.names->names[i].name.string = r2.out.names->names[i].name.string;
-		r->out.names->names[i].sid_index   = r2.out.names->names[i].sid_index;
+		r->out.names->names[i].sid_type    = r3.out.names->names[i].sid_type;
+		r->out.names->names[i].name.string = r3.out.names->names[i].name.string;
+		r->out.names->names[i].sid_index   = r3.out.names->names[i].sid_index;
 	}
 
 	return status;
@@ -1658,6 +1689,14 @@ static NTSTATUS lsa_lookup_name(struct lsa_policy_state *state, TALLOC_CTX *mem_
 	int ret;
 	struct ldb_message **res;
 	const char * const attrs[] = { "objectSid", "sAMAccountType", NULL};
+	const char *p;
+
+	p = strchr_m(name, '\\');
+	if (p != NULL) {
+		/* TODO: properly parse the domain prefix here, and use it to 
+		   limit the search */
+		name = p + 1;
+	}
 
 	ret = samdb_search(state->sam_ctx, mem_ctx, NULL, &res, attrs, "sAMAccountName=%s", name);
 	if (ret == 1) {
@@ -1679,6 +1718,83 @@ static NTSTATUS lsa_lookup_name(struct lsa_policy_state *state, TALLOC_CTX *mem_
 	/* need to add a call into sidmap to check for a allocated sid */
 
 	return NT_STATUS_INVALID_SID;
+}
+
+
+/*
+  lsa_LookupNames3
+*/
+static NTSTATUS lsa_LookupNames3(struct dcesrv_call_state *dce_call,
+				 TALLOC_CTX *mem_ctx,
+				 struct lsa_LookupNames3 *r)
+{
+	struct lsa_policy_state *state;
+	struct dcesrv_handle *h;
+	int i;
+	NTSTATUS status = NT_STATUS_OK;
+
+	r->out.domains = NULL;
+
+	DCESRV_PULL_HANDLE(h, r->in.handle, LSA_HANDLE_POLICY);
+
+	state = h->data;
+
+	r->out.domains = talloc_zero_p(mem_ctx,  struct lsa_RefDomainList);
+	if (r->out.domains == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	r->out.sids = talloc_zero_p(mem_ctx,  struct lsa_TransSidArray3);
+	if (r->out.sids == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	*r->out.count = 0;
+
+	r->out.sids->sids = talloc_array_p(r->out.sids, struct lsa_TranslatedSid3, 
+					   r->in.num_names);
+	if (r->out.sids->sids == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	for (i=0;i<r->in.num_names;i++) {
+		const char *name = r->in.names[i].string;
+		struct dom_sid *sid;
+		uint32_t atype, rtype, sid_index;
+		NTSTATUS status2;
+
+		r->out.sids->count++;
+		(*r->out.count)++;
+
+		r->out.sids->sids[i].sid_type    = SID_NAME_UNKNOWN;
+		r->out.sids->sids[i].sid         = NULL;
+		r->out.sids->sids[i].sid_index   = 0xFFFFFFFF;
+		r->out.sids->sids[i].unknown     = 0;
+
+		status2 = lsa_lookup_name(state, mem_ctx, name, &sid, &atype);
+		if (!NT_STATUS_IS_OK(status2) || sid->num_auths == 0) {
+			status = STATUS_SOME_UNMAPPED;
+			continue;
+		}
+
+		rtype = samdb_atype_map(atype);
+		if (rtype == SID_NAME_UNKNOWN) {
+			status = STATUS_SOME_UNMAPPED;
+			continue;
+		}
+
+		status2 = lsa_authority_list(state, mem_ctx, sid, r->out.domains, &sid_index);
+		if (!NT_STATUS_IS_OK(status2)) {
+			return status2;
+		}
+
+		r->out.sids->sids[i].sid_type    = rtype;
+		r->out.sids->sids[i].sid         = sid;
+		r->out.sids->sids[i].sid_index   = sid_index;
+		r->out.sids->sids[i].unknown     = 0;
+	}
+	
+	return status;
 }
 
 /*
@@ -1895,16 +2011,6 @@ static NTSTATUS lsa_CREDRPROFILELOADED(struct dcesrv_call_state *dce_call, TALLO
 
 
 /* 
-  lsa_LSARLOOKUPNAMES3 
-*/
-static NTSTATUS lsa_LSARLOOKUPNAMES3(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct lsa_LSARLOOKUPNAMES3 *r)
-{
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
-}
-
-
-/* 
   lsa_CREDRGETSESSIONTYPES 
 */
 static NTSTATUS lsa_CREDRGETSESSIONTYPES(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
@@ -1969,16 +2075,6 @@ static NTSTATUS lsa_LSARSETFORESTTRUSTINFORMATION(struct dcesrv_call_state *dce_
 */
 static NTSTATUS lsa_CREDRRENAME(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct lsa_CREDRRENAME *r)
-{
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
-}
-
-
-/* 
-  lsa_LSARLOOKUPSIDS3 
-*/
-static NTSTATUS lsa_LSARLOOKUPSIDS3(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct lsa_LSARLOOKUPSIDS3 *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
