@@ -1,6 +1,30 @@
               WHATS NEW IN Samba 3.0 alphaX
               =============================
 
+Changes in alpha13
+- updates to try to get more out-of-the-box compiles
+  (mostly kerberos and ldap stuff) (various)
+- 'net rpc shutdown' remote shutdown of servers 
+  (abartlet, original code from idra)
+- authentication subsystem rework, including move to
+  new RPC client code (abartlet)
+- winbind changes:
+    - use new client code (abartlet)
+    - change winbind_auth_pam_crap interface for squid's 
+      benifit. (abartlet)
+    - new interface versioning functionality (abartlet)
+    - cope better when inteface does change (tpot)
+    - better winbind trusted domain code (tpot)
+- doc updates (jerry)
+- new NTSTAUS -> DOS error map (abartlet)
+- large user list (> 1500) enumeration (jra)
+- dmalloc support (mbp)
+- spoolss changes (tpot)
+- talloc accounting (mbp)
+- rename fixes (jra)
+- smbmount trivial fixup (abartlet)
+- start of new unix extenions to CIFS (jra) 
+
 Changes in alpha12
 - doc updates (jerry)
 - store domain sid on ADS join (tridge)
