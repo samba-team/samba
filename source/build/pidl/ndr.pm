@@ -212,19 +212,10 @@ sub find_sibling($$)
 		$name = $1;
 	}
 
-	if ($fn->{TYPE} eq "FUNCTION") {
-		for my $e2 (@{$fn->{ELEMENTS}}) {
-			if ($e2->{NAME} eq $name) {
-				return $e2;
-			}
-		}
+	for my $e2 (@{$fn->{ELEMENTS}}) {
+		return $e2 if ($e2->{NAME} eq $name);
 	}
 
-	for my $e2 (@{$fn->{ELEMENTS}}) {
-		if ($e2->{NAME} eq $name) {
-			return $e2;
-		}
-	}
 	die "invalid sibling '$name'";
 }
 
@@ -238,13 +229,9 @@ sub ParseExpr($$$)
 
 	my($fn) = $e->{PARENT};
 
-	if (util::is_constant($size)) {
-		return $size;
-	}
+	return $size if (util::is_constant($size));
 
-	if ($size =~ /ndr->|\(/) {
-		return $size;
-	}
+	return $size if ($size =~ /ndr->|\(/);
 
 	my $prefix = "";
 
@@ -262,9 +249,11 @@ sub ParseExpr($$$)
 	if (util::has_property($e2, "in") && util::has_property($e2, "out")) {
 		return $prefix . "$var_prefix$size";
 	}
+	
 	if (util::has_property($e2, "in")) {
 		return $prefix . "r->in.$size";
 	}
+	
 	if (util::has_property($e2, "out")) {
 		return $prefix . "r->out.$size";
 	}
@@ -295,7 +284,6 @@ sub check_null_pointer_void($)
 	}
 }
 
-
 #####################################################################
 # work out is a parse function should be declared static or not
 sub fn_prefix($)
@@ -314,7 +302,6 @@ sub fn_prefix($)
 	}
 	return "static ";
 }
-
 
 ###################################################################
 # setup any special flags for an element or structure
@@ -913,9 +900,7 @@ sub ParseStructPush($)
 {
 	my($struct) = shift;
 	
-	if (! defined $struct->{ELEMENTS}) {
-		return;
-	}
+	return unless defined($struct->{ELEMENTS});
 
 	start_flags($struct);
 
@@ -1112,10 +1097,11 @@ $typefamily{BITMAP} = {
 sub ParseStructPrint($)
 {
 	my($struct) = shift;
+	my($name) = $struct->{PARENT}->{NAME};
 
-	if (! defined $struct->{ELEMENTS}) {
-		return;
-	}
+	return unless defined $struct->{ELEMENTS};
+
+	pidl "ndr_print_struct(ndr, name, \"$name\");";
 
 	start_flags($struct);
 
@@ -1135,9 +1121,7 @@ sub ParseStructPull($)
 	my($struct) = shift;
 	my $conform_e;
 
-	if (! defined $struct->{ELEMENTS}) {
-		return;
-	}
+	return unless defined $struct->{ELEMENTS};
 
 	# see if the structure contains a conformant array. If it
 	# does, then it must be the last element of the structure, and
@@ -1324,7 +1308,9 @@ sub ParseUnionPrint($)
 {
 	my $e = shift;
 	my $have_default = 0;
+	my($name) = $e->{PARENT}->{NAME};
 
+	pidl "ndr_print_union(ndr, name, level, \"$name\");";
 	start_flags($e);
 
 	pidl "switch (level) {";
@@ -1525,31 +1511,23 @@ sub ParseTypedefPrint($)
 
 	if ($e->{DATA}->{TYPE} eq "STRUCT") {
 		pidl "void ndr_print_$e->{NAME}(struct ndr_print *ndr, const char *name, struct $e->{NAME} *r)";
-		pidl "{";
-		indent;
-		pidl "ndr_print_struct(ndr, name, \"$e->{NAME}\");";
 	}
 
 	if ($e->{DATA}->{TYPE} eq "UNION") {
 		pidl "void ndr_print_$e->{NAME}(struct ndr_print *ndr, const char *name, int level, union $e->{NAME} *r)";
-		pidl "{";
-		indent;
-		pidl "ndr_print_union(ndr, name, level, \"$e->{NAME}\");";
 	}
 
 	if ($e->{DATA}->{TYPE} eq "ENUM") {
 		pidl "void ndr_print_$e->{NAME}(struct ndr_print *ndr, const char *name, enum $e->{NAME} r)";
-		pidl "{";
-		indent;
 	}
 
 	if ($e->{DATA}->{TYPE} eq "BITMAP") {
 		my $type_decl = util::bitmap_type_decl($e->{DATA});
 		pidl "void ndr_print_$e->{NAME}(struct ndr_print *ndr, const char *name, $type_decl r)";
-		pidl "{";
-		indent;
 	}
 
+	pidl "{";
+	indent;
 	$typefamily{$e->{DATA}->{TYPE}}->{PRINT_FN_BODY}->($e->{DATA});
 	deindent;
 	pidl "}";
