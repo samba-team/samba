@@ -25,9 +25,6 @@ static int testsam_debug_level = DBGC_ALL;
 #undef DBGC_CLASS
 #define DBGC_CLASS testsam_debug_level
 
-/* define the version of the passdb interface */ 
-PDB_MODULE_VERSIONING_MAGIC
-
 /***************************************************************
  Start enumeration of the passwd list.
 ****************************************************************/
@@ -107,7 +104,7 @@ static NTSTATUS testsam_add_sam_account (struct pdb_methods *methods, SAM_ACCOUN
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-NTSTATUS pdb_init(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const char *location)
+NTSTATUS testsam_init(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const char *location)
 {
 	NTSTATUS nt_status;
 
@@ -140,4 +137,13 @@ NTSTATUS pdb_init(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const char
 		DEBUG(10, ("Location: %s\n", location));
 
 	return NT_STATUS_OK;
+}
+
+int init_module(void);
+
+int init_module() {
+	if(smb_register_passdb("testsam", testsam_init, PASSDB_INTERFACE_VERSION))
+		return 0;
+
+	return 1;
 }
