@@ -1,4 +1,4 @@
-          WHATS NEW IN 1.9.18alpha5 Oct 25th 1997
+          WHATS NEW IN 1.9.18alpha6 Oct 26th 1997
           =======================================
 
 This is NOT a production release of Samba code.
@@ -112,9 +112,11 @@ The WINS client and WINS server capabilities in nmbd
 are also being restructured, to make it easier to
 understand and maintain.
 
-Samba supports the NT 4.0 Domain Authentication Protocol
-to a degree sufficient to download Profiles to an NT
-Workstation ("Welcome to the SAMBA Domain").
+Samba supports the NT 3.51 and 4.0 Domain Authentication
+Protocol to a degree sufficient to download Profiles to an
+NT 3.51 or 4.0Workstation.
+
+"Welcome to the SAMBA Domain".
 
 There is also code in smbclient to generate the same
 requests as an NT Workstation would when doing an NT
