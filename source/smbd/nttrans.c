@@ -44,6 +44,7 @@ static char *known_nt_pipes[] = {
   "\\lsass",
   "\\lsarpc",
   "\\winreg",
+  "\\spoolss",
   NULL
 };
 

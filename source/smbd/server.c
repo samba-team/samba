@@ -468,6 +468,9 @@ static void init_structs(void )
 	/* for LSA handles */
 	init_lsa_policy_hnd();
 
+	/* for SPOOLSS handles */
+	init_printer_hnd();
+	
 	init_dptrs();
 }
 
@@ -707,8 +710,8 @@ static void usage(char *pname)
 		DEBUG( 3, ( "Becoming a daemon.\n" ) );
 		become_daemon();
 	}
-        
-        check_kernel_oplocks();
+
+	check_kernel_oplocks();
 
 	if (!directory_exist(lp_lockdir(), NULL)) {
 		mkdir(lp_lockdir(), 0755);
