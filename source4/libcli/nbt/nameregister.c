@@ -22,6 +22,8 @@
 
 #include "includes.h"
 #include "libcli/nbt/libnbt.h"
+#include "libcli/raw/libcliraw.h"
+#include "libcli/composite/composite.h"
 #include "system/network.h"
 
 /*
@@ -137,4 +139,136 @@ NTSTATUS nbt_name_register(struct nbt_name_socket *nbtsock,
 {
 	struct nbt_name_request *req = nbt_name_register_send(nbtsock, io);
 	return nbt_name_register_recv(req, mem_ctx, io);
+}
+
+
+/*
+  a 4 step broadcast registration. 3 lots of name registration requests, followed by
+  a name registration demand
+*/
+struct register_bcast_state {
+	struct nbt_name_socket *nbtsock;
+	struct nbt_name_register *io;
+	int num_sends;
+	struct nbt_name_request *req;
+};
+
+
+/*
+  state handler for 4 stage name registration
+*/
+static void name_register_handler(struct nbt_name_request *req)
+{
+	struct smbcli_composite *c = talloc_get_type(req->async.private, struct smbcli_composite);
+	struct register_bcast_state *state = talloc_get_type(c->private, struct register_bcast_state);
+	NTSTATUS status;
+
+	status = nbt_name_register_recv(state->req, state, state->io);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
+		/* the registration timed out - good, send the next one */
+		state->num_sends++;
+		if (state->num_sends == 4) {
+			/* all done */
+			c->state = SMBCLI_REQUEST_DONE;
+			c->status = NT_STATUS_OK;
+			goto done;
+		}
+		if (state->num_sends == 3) {
+			state->io->in.register_demand = True;
+		}
+		state->req = nbt_name_register_send(state->nbtsock, state->io);
+		if (state->req == NULL) {
+			c->state = SMBCLI_REQUEST_ERROR;
+			c->status = NT_STATUS_NO_MEMORY;
+		} else {
+			state->req->async.fn      = name_register_handler;
+			state->req->async.private = c;
+		}
+	} else if (!NT_STATUS_IS_OK(status)) {
+		c->state = SMBCLI_REQUEST_ERROR;
+		c->status = status;
+	} else {
+		c->state = SMBCLI_REQUEST_ERROR;
+		c->status = NT_STATUS_CONFLICTING_ADDRESSES;
+		DEBUG(3,("Name registration conflict from %s for %s<%02x> with ip %s - rcode %d\n",
+			 state->io->out.reply_from, 
+			 state->io->out.name.name,
+			 state->io->out.name.type,
+			 state->io->out.reply_addr,
+			 state->io->out.rcode));
+	}
+
+done:
+	if (c->state >= SMBCLI_REQUEST_DONE &&
+	    c->async.fn) {
+		c->async.fn(c);
+	}
+}
+
+/*
+  the async send call for a 4 stage name registration
+*/
+struct smbcli_composite *nbt_name_register_bcast_send(struct nbt_name_socket *nbtsock,
+						      struct nbt_name_register_bcast *io)
+{
+	struct smbcli_composite *c;
+	struct register_bcast_state *state;
+
+	c = talloc_zero(nbtsock, struct smbcli_composite);
+	if (c == NULL) goto failed;
+
+	state = talloc(c, struct register_bcast_state);
+	if (state == NULL) goto failed;
+
+	state->io = talloc(state, struct nbt_name_register);
+	if (state->io == NULL) goto failed;
+
+	state->io->in.name            = io->in.name;
+	state->io->in.dest_addr       = io->in.dest_addr;
+	state->io->in.address         = io->in.address;
+	state->io->in.nb_flags        = io->in.nb_flags;
+	state->io->in.register_demand = False;
+	state->io->in.broadcast       = True;
+	state->io->in.ttl             = io->in.ttl;
+	state->io->in.timeout         = 1;
+
+	state->num_sends = 0;
+	state->nbtsock = nbtsock;
+
+	state->req = nbt_name_register_send(nbtsock, state->io);
+	if (state->req == NULL) goto failed;
+
+	state->req->async.fn      = name_register_handler;
+	state->req->async.private = c;
+
+	c->private   = state;
+	c->state     = SMBCLI_REQUEST_SEND;
+	c->event_ctx = nbtsock->event_ctx;
+
+	return c;
+
+failed:
+	talloc_free(c);
+	return NULL;
+}
+
+/*
+  broadcast 4 part name register - recv
+*/
+NTSTATUS nbt_name_register_bcast_recv(struct smbcli_composite *c)
+{
+	NTSTATUS status;
+	status = smb_composite_wait(c);
+	talloc_free(c);
+	return status;
+}
+
+/*
+  broadcast 4 part name register - sync interface
+*/
+NTSTATUS nbt_name_register_bcast(struct nbt_name_socket *nbtsock,
+				 struct nbt_name_register_bcast *io)
+{
+	struct smbcli_composite *c = nbt_name_register_bcast_send(nbtsock, io);
+	return nbt_name_register_bcast_recv(c);
 }
