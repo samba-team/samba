@@ -1064,7 +1064,7 @@ static uint32 get_correct_cversion(fstring architecture, fstring driverpath_in,
 	/* Null password is ok - we are already an authenticated user... */
 	null_pw = data_blob(NULL, 0);
  	become_root();
-	conn = make_connection("print$", null_pw, "A:", user->vuid, &nt_status);
+	conn = make_connection_with_chdir("print$", null_pw, "A:", user->vuid, &nt_status);
 	unbecome_root();
 
 	if (conn == NULL) {
@@ -1382,7 +1382,7 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 
 	become_root();
 	null_pw = data_blob(NULL, 0);
-	conn = make_connection("print$", null_pw, "A:", user->vuid, &nt_status);
+	conn = make_connection_with_chdir("print$", null_pw, "A:", user->vuid, &nt_status);
 	unbecome_root();
 
 	if (conn == NULL) {
