@@ -443,6 +443,8 @@ char *attrib_string(uint16 mode);
 void show_msg(char *buf);
 void smb_setlen(char *buf,int len);
 int set_message(char *buf,int num_words,int num_bytes,BOOL zero);
+void set_message_bcc(char *buf,int num_bytes);
+void set_message_end(void *outbuf,void *end_ptr);
 void dos_clean_name(char *s);
 void unix_clean_name(char *s);
 void make_dir_struct(char *buf,char *mask,char *fname,SMB_OFF_T size,int mode,time_t date);
@@ -879,6 +881,7 @@ int cli_set_port(struct cli_state *cli, int port);
 BOOL cli_receive_smb(struct cli_state *cli);
 BOOL cli_send_smb(struct cli_state *cli);
 void cli_setup_packet(struct cli_state *cli);
+void cli_setup_bcc(struct cli_state *cli, void *p);
 void cli_init_creds(struct cli_state *cli, const struct ntuser_creds *usr);
 struct cli_state *cli_initialise(struct cli_state *cli);
 void cli_shutdown(struct cli_state *cli);
@@ -897,10 +900,10 @@ BOOL cli_unlink(struct cli_state *cli, char *fname);
 BOOL cli_mkdir(struct cli_state *cli, char *dname);
 BOOL cli_rmdir(struct cli_state *cli, char *dname);
 int cli_nt_delete_on_close(struct cli_state *cli, int fnum, BOOL flag);
-int cli_nt_create_full(struct cli_state *cli, char *fname, uint32 DesiredAccess, uint32 FileAttributes,
-						uint32 ShareAccess, uint32 CreateDisposition, uint32 CreateOptions);
+int cli_nt_create_full(struct cli_state *cli, char *fname, uint32 DesiredAccess,
+		 uint32 FileAttributes, uint32 ShareAccess,
+		 uint32 CreateDisposition, uint32 CreateOptions);
 int cli_nt_create(struct cli_state *cli, char *fname, uint32 DesiredAccess);
-int cli_nt_create_uni(struct cli_state *cli, char *fname, uint32 DesiredAccess);
 int cli_open(struct cli_state *cli, char *fname, int flags, int share_mode);
 BOOL cli_close(struct cli_state *cli, int fnum);
 BOOL cli_lock(struct cli_state *cli, int fnum, 
@@ -921,10 +924,12 @@ int cli_ctemp(struct cli_state *cli, char *path, char **tmp_path);
 
 /*The following definitions come from  libsmb/clilist.c  */
 
-int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute, 
-	     void (*fn)(file_info *, const char *));
+int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute, 
+		 void (*fn)(file_info *, const char *, void *), void *state);
 int cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute, 
-		 void (*fn)(file_info *, const char *));
+		 void (*fn)(file_info *, const char *, void *), void *state);
+int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute, 
+	     void (*fn)(file_info *, const char *, void *), void *state);
 
 /*The following definitions come from  libsmb/climessage.c  */
 
@@ -941,7 +946,7 @@ int cli_printjob_del(struct cli_state *cli, int job);
 
 /*The following definitions come from  libsmb/clirap.c  */
 
-BOOL cli_api_pipe(struct cli_state *cli, char *pipe_name, int pipe_name_len,
+BOOL cli_api_pipe(struct cli_state *cli, char *pipe_name, 
                   uint16 *setup, uint32 setup_count, uint32 max_setup_count,
                   char *params, uint32 param_count, uint32 max_param_count,
                   char *data, uint32 data_count, uint32 max_data_count,
@@ -953,9 +958,10 @@ BOOL cli_api(struct cli_state *cli,
 	     char **rparam, int *rprcnt,
 	     char **rdata, int *rdrcnt);
 BOOL cli_NetWkstaUserLogon(struct cli_state *cli,char *user, char *workstation);
-int cli_RNetShareEnum(struct cli_state *cli, void (*fn)(const char *, uint32, const char *));
+int cli_RNetShareEnum(struct cli_state *cli, void (*fn)(const char *, uint32, const char *, void *), void *state);
 BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
-		       void (*fn)(const char *, uint32, const char *));
+		       void (*fn)(const char *, uint32, const char *, void *),
+		       void *state);
 BOOL cli_oem_change_password(struct cli_state *cli, const char *user, const char *new_password,
                              const char *old_password);
 BOOL cli_qpathinfo(struct cli_state *cli, const char *fname, 
@@ -984,10 +990,16 @@ ssize_t cli_smbwrite(struct cli_state *cli,
 SEC_DESC *cli_query_secdesc(struct cli_state *cli,int fd);
 BOOL cli_set_secdesc(struct cli_state *cli,int fd, SEC_DESC *sd);
 
+/*The following definitions come from  libsmb/clistr.c  */
+
+int clistr_push(struct cli_state *cli, void *dest, const char *src, int dest_len, int flags);
+int clistr_pull(struct cli_state *cli, char *dest, const void *src, int dest_len, int src_len, int flags);
+int clistr_align(const void *buf, const void *p);
+
 /*The following definitions come from  libsmb/clitrans.c  */
 
 BOOL cli_send_trans(struct cli_state *cli, int trans, 
-		    char *name, int pipe_name_len, 
+		    char *pipe_name, 
 		    int fid, int flags,
 		    uint16 *setup, int lsetup, int msetup,
 		    char *param, int lparam, int mparam,
@@ -1025,12 +1037,17 @@ BOOL deal_with_creds(uchar sess_key[8],
 struct node_status *name_status_query(int fd,struct nmb_name *name,
 				      struct in_addr to_ip, int *num_names);
 BOOL name_status_find(int type, struct in_addr to_ip, char *name);
+BOOL name_register(int fd, const char *name, int name_type,
+		   struct in_addr name_ip, int opcode,
+		   BOOL bcast, 
+		   struct in_addr to_ip, int *count);
 struct in_addr *name_query(int fd,const char *name,int name_type, 
 			   BOOL bcast,BOOL recurse,
 			   struct in_addr to_ip, int *count);
 FILE *startlmhosts(char *fname);
 BOOL getlmhostsent( FILE *fp, pstring name, int *name_type, struct in_addr *ipaddr);
 void endlmhosts(FILE *fp);
+BOOL name_register_wins(const char *name, int name_type);
 BOOL name_resolve_bcast(const char *name, int name_type,
 			struct in_addr **return_ip_list, int *return_count);
 BOOL resolve_name(const char *name, struct in_addr *return_ip, int name_type);

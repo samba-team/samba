@@ -473,7 +473,7 @@ static int do_list_queue_empty(void)
 /****************************************************************************
 a helper for do_list
   ****************************************************************************/
-static void do_list_helper(file_info *f, const char *mask)
+static void do_list_helper(file_info *f, const char *mask, void *state)
 {
 	if (f->mode & aDIR) {
 		if (do_list_dirs && do_this_one(f)) {
@@ -537,7 +537,7 @@ void do_list(const char *mask,uint16 attribute,void (*fn)(file_info *),BOOL rec,
 			 */
 			pstring head;
 			pstrcpy(head, do_list_queue_head());
-			cli_list(cli, head, attribute, do_list_helper);
+			cli_list(cli, head, attribute, do_list_helper, NULL);
 			remove_do_list_queue_head();
 			if ((! do_list_queue_empty()) && (fn == display_finfo))
 			{
@@ -561,7 +561,7 @@ void do_list(const char *mask,uint16 attribute,void (*fn)(file_info *),BOOL rec,
 	}
 	else
 	{
-		if (cli_list(cli, mask, attribute, do_list_helper) == -1)
+		if (cli_list(cli, mask, attribute, do_list_helper, NULL) == -1)
 		{
 			DEBUG(0, ("%s listing %s\n", cli_errstr(cli), mask));
 		}
@@ -1548,7 +1548,8 @@ static void cmd_lcd(void)
 /****************************************************************************
 list a share name
 ****************************************************************************/
-static void browse_fn(const char *name, uint32 m, const char *comment)
+static void browse_fn(const char *name, uint32 m, 
+                      const char *comment, void *state)
 {
         fstring typestr;
 
@@ -1581,7 +1582,7 @@ static BOOL browse_host(BOOL sort)
         printf("\n\tSharename      Type      Comment\n");
         printf("\t---------      ----      -------\n");
 
-	if((ret = cli_RNetShareEnum(cli, browse_fn)) == -1)
+	if((ret = cli_RNetShareEnum(cli, browse_fn, NULL)) == -1)
 		printf("Error returning browse list: %s\n", cli_errstr(cli));
 
 	return (ret != -1);
@@ -1590,7 +1591,8 @@ static BOOL browse_host(BOOL sort)
 /****************************************************************************
 list a server name
 ****************************************************************************/
-static void server_fn(const char *name, uint32 m, const char *comment)
+static void server_fn(const char *name, uint32 m, 
+                      const char *comment, void *state)
 {
         printf("\t%-16.16s     %s\n", name, comment);
 }
@@ -1605,12 +1607,12 @@ static BOOL list_servers(char *wk_grp)
         printf("\n\tServer               Comment\n");
         printf("\t---------            -------\n");
 
-	cli_NetServerEnum(cli, cli->server_domain, SV_TYPE_ALL, server_fn);
+	cli_NetServerEnum(cli, cli->server_domain, SV_TYPE_ALL, server_fn, NULL);
 
         printf("\n\tWorkgroup            Master\n");
         printf("\t---------            -------\n");
 
-	cli_NetServerEnum(cli, cli->server_domain, SV_TYPE_DOMAIN_ENUM, server_fn);
+	cli_NetServerEnum(cli, cli->server_domain, SV_TYPE_DOMAIN_ENUM, server_fn, NULL);
 	return True;
 }
 
@@ -1846,13 +1848,13 @@ static void process_stdin(void)
 
 	while (1) {
 		fstring tok;
-		fstring prompt;
+		fstring the_prompt;
 		char *line;
 		int i;
 		
 		/* display a prompt */
-		slprintf(prompt, sizeof(prompt)-1, "smb: %s> ", cur_dir);
-		line = smb_readline(prompt, readline_callback, completion_fn);
+		slprintf(the_prompt, sizeof(the_prompt)-1, "smb: %s> ", cur_dir);
+		line = smb_readline(the_prompt, readline_callback, completion_fn);
 
 		if (!line) break;
 

@@ -347,7 +347,7 @@ static BOOL rpc_api_pipe(struct cli_state *cli, uint16 cmd, prs_struct *data, pr
 	DEBUG(5,("rpc_api_pipe: cmd:%x fnum:%x\n", (int)cmd, (int)cli->nt_pipe_fnum));
 
 	/* send the data: receive a response. */
-	if (!cli_api_pipe(cli, "\\PIPE\\\0\0\0", 8,
+	if (!cli_api_pipe(cli, "\\PIPE\\",
 	          setup, 2, 0,                     /* Setup, length, max */
 	          NULL, 0, 0,                      /* Params, length, max */
 	          pdata, data_len, data_len,       /* data, length, max */                  
@@ -913,7 +913,7 @@ static BOOL rpc_pipe_set_hnd_state(struct cli_state *cli, char *pipe_name, uint1
 	setup[1] = cli->nt_pipe_fnum; /* pipe file handle.  got this from an SMBOpenX. */
 
 	/* send the data on \PIPE\ */
-	if (cli_api_pipe(cli, "\\PIPE\\\0\0\0", 8,
+	if (cli_api_pipe(cli, "\\PIPE\\",
 	            setup, 2, 0,                /* setup, length, max */
 	            param, 2, 0,                /* param, length, max */
 	            NULL, 0, 1024,              /* data, length, max */

@@ -51,7 +51,8 @@ static FILE *fp;
   This is the NetServerEnum callback.
   Note sname and comment are in UNIX codepage format.
   ******************************************************************/
-static void callback(const char *sname, uint32 stype, const char *comment)
+static void callback(const char *sname, uint32 stype, 
+                     const char *comment, void *state)
 {
 	fprintf(fp,"\"%s\" %08X \"%s\"\n", sname, stype, comment);
 }
@@ -106,8 +107,8 @@ static void sync_child(char *name, int nm_type,
 
 	/* Fetch a workgroup list. */
 	cli_NetServerEnum(&cli, unix_workgroup,
-			  local_type|SV_TYPE_DOMAIN_ENUM,
-			  callback);
+			  local_type|SV_TYPE_DOMAIN_ENUM, 
+			  callback, NULL);
 	
 	/* Now fetch a server list. */
 	if (servers) {
@@ -115,7 +116,7 @@ static void sync_child(char *name, int nm_type,
 		dos_to_unix(unix_workgroup, True);
 		cli_NetServerEnum(&cli, unix_workgroup, 
 				  local?SV_TYPE_LOCAL_LIST_ONLY:SV_TYPE_ALL,
-				  callback);
+				  callback, NULL);
 	}
 	
 	cli_shutdown(&cli);
