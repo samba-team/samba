@@ -274,6 +274,7 @@ AC_CHECK_HEADERS([\
 	errno.h					\
 	fcntl.h					\
 	fnmatch.h				\
+	gdbm/ndbm.h				\
 	grp.h					\
 	inttypes.h				\
 	io.h					\
