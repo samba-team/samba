@@ -37,8 +37,8 @@ void make_srv_share_info1_str(SH_INFO_1_STR *sh1, char *net_name, char *remark)
 
 	DEBUG(5,("make_srv_share_info1_str\n"));
 
-	make_unistr2(&(sh1->uni_netname), net_name, strlen(net_name)+1);
-	make_unistr2(&(sh1->uni_remark ), remark  , strlen(remark  )+1);
+	make_unistr2(&(sh1->uni_netname), net_name, strlen(net_name));
+	make_unistr2(&(sh1->uni_remark ), remark  , strlen(remark  ));
 }
 
 /*******************************************************************
