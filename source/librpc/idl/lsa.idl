@@ -455,9 +455,6 @@
 
 	/*******************/
 	/* Function:  0x21 */
-	/* in [out] there is a uin16 field
-	   which is not always present.
-	   its value varies */
 	NTSTATUS lsa_LookupPrivDisplayName (
 		[in,ref]     policy_handle *handle,
 		[in,ref]     lsa_Name *name,
@@ -465,7 +462,6 @@
 		[in]         uint16 unknown2,    /* 0x0409 */
 		[out]        lsa_Name *disp_name,
 		[out]        uint16 unknown3     /* 0x0409 */
-		/* [out]        uint16 unknown4 */ /* not always present */
 		);
 
 	/* Function:        0x22 */
