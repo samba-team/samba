@@ -37,7 +37,7 @@ Region                             Number of entries
     AMERICA - USA                                37
     ASIA                                          1
     AUSTRALIA & NEW ZEALAND                      19
-    CANADA                                        9
+    CANADA                                       10
     EUROPE                                       41
     MIDDLE EAST                                   1
 
@@ -1124,6 +1124,28 @@ GDS is an information management consulting company with headquarters in
 Regina, Saskatchewan, and offices across Western Canada.  The Edmonton 
 office offers Systems Management services covering a variety of Unix and 
 similar server operating systems.
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+ALBERTA - CANADA
+
+Distributed Computing Experts Corp.
+407, 1167 Kensington Cres. N.W.
+Calgary, Alberta   T2N 1X7
+
+Tel: +1 (403) 630-5931  Fax: +1 (403) 278-8437
+Email:                  WWW: http://www.dcexpert.ab.ca
+
+
+Distributed Computing Experts Corp. (DC Experts) is an
+Information Systems Consultancy in Calgary.  We can provide
+systems administration and systems programming for IBM AIX, Sun
+Solaris, Hewlett-Packard HP-UX, DEC Digital Unix, Silicon
+Graphics IRIX, BSD, Linux, and Windows NT.  Management of TCP/IP
+network infrastructures, security consultanting, Internet
+firewalls and configuration of Internet services are also a
+forte.  Our personnel have been installing and configuring Samba
+since 1995.
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
