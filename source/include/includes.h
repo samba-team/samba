@@ -1008,9 +1008,9 @@ extern int DEBUGLEVEL;
 #endif
 
 /* add varargs prototypes with printf checking */
-int fdprintf(int , char *, ...) PRINTF_ATTRIBUTE(2,3);
-int d_printf(char *, ...) PRINTF_ATTRIBUTE(1,2);
-int d_fprintf(FILE *f, char *, ...) PRINTF_ATTRIBUTE(2,3);
+int fdprintf(int , const char *, ...) PRINTF_ATTRIBUTE(2,3);
+int d_printf(const char *, ...) PRINTF_ATTRIBUTE(1,2);
+int d_fprintf(FILE *f, const char *, ...) PRINTF_ATTRIBUTE(2,3);
 #ifndef HAVE_SNPRINTF_DECL
 int snprintf(char *,size_t ,const char *, ...) PRINTF_ATTRIBUTE(3,4);
 #endif
