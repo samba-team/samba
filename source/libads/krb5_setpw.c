@@ -463,12 +463,12 @@ ADS_STATUS ads_krb5_set_password(const char *kdc_host, const char *princ,
 
 	ADS_STATUS aret;
 	krb5_error_code ret;
-	krb5_context context;
+	krb5_context context = NULL;
 	krb5_principal principal;
 	char *princ_name;
 	char *realm;
 	krb5_creds creds, *credsp;
-	krb5_ccache ccache;
+	krb5_ccache ccache = NULL;
 
 	ret = krb5_init_context(&context);
 	if (ret) {
@@ -578,7 +578,7 @@ static ADS_STATUS ads_krb5_chg_password(const char *kdc_host,
 {
     ADS_STATUS aret;
     krb5_error_code ret;
-    krb5_context context;
+    krb5_context context = NULL;
     krb5_principal princ;
     krb5_get_init_creds_opt opts;
     krb5_creds creds;

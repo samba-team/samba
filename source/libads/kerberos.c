@@ -56,9 +56,9 @@ kerb_prompter(krb5_context ctx, void *data,
 */
 int kerberos_kinit_password(const char *principal, const char *password, int time_offset, time_t *expire_time)
 {
-	krb5_context ctx;
+	krb5_context ctx = NULL;
 	krb5_error_code code = 0;
-	krb5_ccache cc;
+	krb5_ccache cc = NULL;
 	krb5_principal me;
 	krb5_creds my_creds;
 
@@ -142,8 +142,8 @@ int ads_kinit_password(ADS_STRUCT *ads)
 int ads_kdestroy(const char *cc_name)
 {
 	krb5_error_code code;
-	krb5_context ctx;
-	krb5_ccache cc;
+	krb5_context ctx = NULL;
+	krb5_ccache cc = NULL;
 
 	if ((code = krb5_init_context (&ctx))) {
 		DEBUG(3, ("ads_kdestroy: kdb5_init_context rc=%d\n", code));
