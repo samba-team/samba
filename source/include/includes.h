@@ -574,7 +574,7 @@ extern int errno;
 #endif
 
 /* this guess needs to be improved (tridge) */
-#if defined(STAT_STATVFS) && !defined(SYSV)
+#if (defined(STAT_STATVFS) || defined(STAT_STATVFS64)) && !defined(SYSV)
 #define SYSV 1
 #endif
 
