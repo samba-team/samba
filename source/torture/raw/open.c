@@ -752,6 +752,181 @@ done:
 	return ret;
 }
 
+
+/*
+  test RAW_OPEN_NTTRANS_CREATE
+*/
+static BOOL test_nttrans_create(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+{
+	union smb_open io;
+	union smb_fileinfo finfo;
+	const char *fname = BASEDIR "\\torture_ntcreatex.txt";
+	const char *dname = BASEDIR "\\torture_ntcreatex.dir";
+	NTSTATUS status;
+	int fnum = -1;
+	BOOL ret = True;
+	int i;
+	struct {
+		uint32_t open_disp;
+		BOOL with_file;
+		NTSTATUS correct_status;
+	} open_funcs[] = {
+		{ NTCREATEX_DISP_SUPERSEDE, 	True,  NT_STATUS_OK },
+		{ NTCREATEX_DISP_SUPERSEDE, 	False, NT_STATUS_OK },
+		{ NTCREATEX_DISP_OPEN, 	        True,  NT_STATUS_OK },
+		{ NTCREATEX_DISP_OPEN, 	        False, NT_STATUS_OBJECT_NAME_NOT_FOUND },
+		{ NTCREATEX_DISP_CREATE, 	True,  NT_STATUS_OBJECT_NAME_COLLISION },
+		{ NTCREATEX_DISP_CREATE, 	False, NT_STATUS_OK },
+		{ NTCREATEX_DISP_OPEN_IF, 	True,  NT_STATUS_OK },
+		{ NTCREATEX_DISP_OPEN_IF, 	False, NT_STATUS_OK },
+		{ NTCREATEX_DISP_OVERWRITE, 	True,  NT_STATUS_OK },
+		{ NTCREATEX_DISP_OVERWRITE, 	False, NT_STATUS_OBJECT_NAME_NOT_FOUND },
+		{ NTCREATEX_DISP_OVERWRITE_IF, 	True,  NT_STATUS_OK },
+		{ NTCREATEX_DISP_OVERWRITE_IF, 	False, NT_STATUS_OK },
+		{ 6, 			        True,  NT_STATUS_INVALID_PARAMETER },
+		{ 6, 	                        False, NT_STATUS_INVALID_PARAMETER },
+	};
+
+	printf("Checking RAW_OPEN_NTTRANS_CREATE\n");
+
+	/* reasonable default parameters */
+	io.generic.level = RAW_OPEN_NTTRANS_CREATE;
+	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED;
+	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.access_mask = GENERIC_RIGHTS_FILE_ALL_ACCESS;
+	io.ntcreatex.in.alloc_size = 1024*1024;
+	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_NONE;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
+	io.ntcreatex.in.create_options = 0;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io.ntcreatex.in.security_flags = 0;
+	io.ntcreatex.in.fname = fname;
+	io.ntcreatex.in.sec_desc = NULL;
+	io.ntcreatex.in.ea_list = NULL;
+
+	/* test the open disposition */
+	for (i=0; i<ARRAY_SIZE(open_funcs); i++) {
+		if (open_funcs[i].with_file) {
+			fnum = smbcli_open(cli->tree, fname, O_CREAT|O_RDWR|O_TRUNC, DENY_NONE);
+			if (fnum == -1) {
+				d_printf("Failed to create file %s - %s\n", fname, smbcli_errstr(cli->tree));
+				ret = False;
+				goto done;
+			}
+			smbcli_close(cli->tree, fnum);
+		}
+		io.ntcreatex.in.open_disposition = open_funcs[i].open_disp;
+		status = smb_raw_open(cli->tree, mem_ctx, &io);
+		if (!NT_STATUS_EQUAL(status, open_funcs[i].correct_status)) {
+			printf("(%s) incorrect status %s should be %s (i=%d with_file=%d open_disp=%d)\n", 
+			       __location__, nt_errstr(status), nt_errstr(open_funcs[i].correct_status),
+			       i, (int)open_funcs[i].with_file, (int)open_funcs[i].open_disp);
+			ret = False;
+		}
+		if (NT_STATUS_IS_OK(status) || open_funcs[i].with_file) {
+			smbcli_close(cli->tree, io.ntcreatex.out.fnum);
+			smbcli_unlink(cli->tree, fname);
+		}
+	}
+
+	/* basic field testing */
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
+
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum = io.ntcreatex.out.fnum;
+
+	CHECK_VAL(io.ntcreatex.out.oplock_level, 0);
+	CHECK_VAL(io.ntcreatex.out.create_action, NTCREATEX_ACTION_CREATED);
+	CHECK_NTTIME(io.ntcreatex.out.create_time, create_time);
+	CHECK_NTTIME(io.ntcreatex.out.access_time, access_time);
+	CHECK_NTTIME(io.ntcreatex.out.write_time, write_time);
+	CHECK_NTTIME(io.ntcreatex.out.change_time, change_time);
+	CHECK_ALL_INFO(io.ntcreatex.out.attrib, attrib);
+	CHECK_ALL_INFO(io.ntcreatex.out.alloc_size, alloc_size);
+	CHECK_ALL_INFO(io.ntcreatex.out.size, size);
+	CHECK_ALL_INFO(io.ntcreatex.out.is_directory, directory);
+	CHECK_VAL(io.ntcreatex.out.file_type, FILE_TYPE_DISK);
+
+	/* check fields when the file already existed */
+	smbcli_close(cli->tree, fnum);
+	smbcli_unlink(cli->tree, fname);
+	fnum = create_complex_file(cli, mem_ctx, fname);
+	if (fnum == -1) {
+		ret = False;
+		goto done;
+	}
+	smbcli_close(cli->tree, fnum);
+
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum = io.ntcreatex.out.fnum;
+
+	CHECK_VAL(io.ntcreatex.out.oplock_level, 0);
+	CHECK_VAL(io.ntcreatex.out.create_action, NTCREATEX_ACTION_EXISTED);
+	CHECK_NTTIME(io.ntcreatex.out.create_time, create_time);
+	CHECK_NTTIME(io.ntcreatex.out.access_time, access_time);
+	CHECK_NTTIME(io.ntcreatex.out.write_time, write_time);
+	CHECK_NTTIME(io.ntcreatex.out.change_time, change_time);
+	CHECK_ALL_INFO(io.ntcreatex.out.attrib, attrib);
+	CHECK_ALL_INFO(io.ntcreatex.out.alloc_size, alloc_size);
+	CHECK_ALL_INFO(io.ntcreatex.out.size, size);
+	CHECK_ALL_INFO(io.ntcreatex.out.is_directory, directory);
+	CHECK_VAL(io.ntcreatex.out.file_type, FILE_TYPE_DISK);
+	smbcli_close(cli->tree, fnum);
+	smbcli_unlink(cli->tree, fname);
+
+
+	/* create a directory */
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
+	io.ntcreatex.in.access_mask = GENERIC_RIGHTS_FILE_ALL_ACCESS;
+	io.ntcreatex.in.alloc_size = 0;
+	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_DIRECTORY;
+	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_NONE;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
+	io.ntcreatex.in.create_options = 0;
+	io.ntcreatex.in.fname = dname;
+	fname = dname;
+
+	smbcli_rmdir(cli->tree, fname);
+	smbcli_unlink(cli->tree, fname);
+
+	io.ntcreatex.in.access_mask = SEC_RIGHT_MAXIMUM_ALLOWED;
+	io.ntcreatex.in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
+	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_READ | NTCREATEX_SHARE_ACCESS_WRITE;
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum = io.ntcreatex.out.fnum;
+
+	CHECK_VAL(io.ntcreatex.out.oplock_level, 0);
+	CHECK_VAL(io.ntcreatex.out.create_action, NTCREATEX_ACTION_CREATED);
+	CHECK_NTTIME(io.ntcreatex.out.create_time, create_time);
+	CHECK_NTTIME(io.ntcreatex.out.access_time, access_time);
+	CHECK_NTTIME(io.ntcreatex.out.write_time, write_time);
+	CHECK_NTTIME(io.ntcreatex.out.change_time, change_time);
+	CHECK_ALL_INFO(io.ntcreatex.out.attrib, attrib);
+	CHECK_VAL(io.ntcreatex.out.attrib & ~FILE_ATTRIBUTE_NONINDEXED, 
+		  FILE_ATTRIBUTE_DIRECTORY);
+	CHECK_ALL_INFO(io.ntcreatex.out.alloc_size, alloc_size);
+	CHECK_ALL_INFO(io.ntcreatex.out.size, size);
+	CHECK_ALL_INFO(io.ntcreatex.out.is_directory, directory);
+	CHECK_VAL(io.ntcreatex.out.is_directory, 1);
+	CHECK_VAL(io.ntcreatex.out.size, 0);
+	CHECK_VAL(io.ntcreatex.out.alloc_size, 0);
+	CHECK_VAL(io.ntcreatex.out.file_type, FILE_TYPE_DISK);
+	smbcli_unlink(cli->tree, fname);
+	
+
+done:
+	smbcli_close(cli->tree, fnum);
+	smbcli_unlink(cli->tree, fname);
+
+	return ret;
+}
+
 /*
   test RAW_OPEN_NTCREATEX with an already opened and byte range locked file
 
@@ -1001,6 +1176,7 @@ BOOL torture_raw_open(void)
 	ret &= test_open(cli, mem_ctx);
 	ret &= test_openx(cli, mem_ctx);
 	ret &= test_ntcreatex(cli, mem_ctx);
+	ret &= test_nttrans_create(cli, mem_ctx);
 	ret &= test_t2open(cli, mem_ctx);
 	ret &= test_mknew(cli, mem_ctx);
 	ret &= test_create(cli, mem_ctx);
