@@ -194,9 +194,6 @@ init_auth
     krb5_enctype enctype;
     krb5_data fwd_data;
 
-    output_token->length = 0;
-    output_token->value  = NULL;
-
     krb5_data_zero(&outbuf);
     krb5_data_zero(&fwd_data);
 
@@ -214,6 +211,7 @@ init_auth
     (*context_handle)->flags        = 0;
     (*context_handle)->more_flags   = 0;
     (*context_handle)->ticket       = NULL;
+    (*context_handle)->lifetime     = GSS_C_INDEFINITE;
 
     kret = krb5_auth_con_init (gssapi_krb5_context,
 			       &(*context_handle)->auth_context);
@@ -286,7 +284,7 @@ init_auth
     memset(&this_cred, 0, sizeof(this_cred));
     this_cred.client          = (*context_handle)->source;
     this_cred.server          = (*context_handle)->target;
-    if (time_req) {
+    if (time_req && time_req != GSS_C_INDEFINITE) {
 	krb5_timestamp ts;
 
 	krb5_timeofday (gssapi_krb5_context, &ts);
@@ -307,6 +305,8 @@ init_auth
 	ret = GSS_S_FAILURE;
 	goto failure;
     }
+
+    (*context_handle)->lifetime = cred->times.endtime;
 
     krb5_auth_con_setkey(gssapi_krb5_context, 
 			 (*context_handle)->auth_context, 
@@ -412,6 +412,9 @@ init_auth
     if (flags & GSS_C_MUTUAL_FLAG) {
 	return GSS_S_CONTINUE_NEEDED;
     } else {
+	if (time_rec)
+	    *time_rec = (*context_handle)->lifetime;
+
 	(*context_handle)->more_flags |= OPEN;
 	return GSS_S_COMPLETE;
     }
@@ -453,6 +456,12 @@ repl_mutual
     krb5_data indata;
     krb5_ap_rep_enc_part *repl;
 
+    output_token->length = 0;
+    output_token->value = NULL;
+
+    if (actual_mech_type)
+	*actual_mech_type = GSS_KRB5_MECHANISM;
+
     ret = gssapi_krb5_decapsulate (minor_status, input_token, &indata,
 				   "\x02\x00");
     if (ret)
@@ -471,10 +480,14 @@ repl_mutual
     krb5_free_ap_rep_enc_part (gssapi_krb5_context,
 			       repl);
 
-    output_token->length = 0;
-
     (*context_handle)->more_flags |= OPEN;
+    
+    if (time_rec)
+	*time_rec = (*context_handle)->lifetime;
+    if (ret_flags)
+	*ret_flags = (*context_handle)->flags;
 
+    *minor_status = 0;
     return GSS_S_COMPLETE;
 }
 
@@ -499,6 +512,21 @@ OM_uint32 gss_init_sec_context
            )
 {
     GSSAPI_KRB5_INIT ();
+
+    output_token->length = 0;
+    output_token->value  = NULL;
+
+    if (ret_flags)
+	*ret_flags = 0;
+    if (time_rec)
+	*time_rec = 0;
+
+    if (target_name == GSS_C_NO_NAME) {
+	if (actual_mech_type)
+	    *actual_mech_type = GSS_C_NO_OID;
+	*minor_status = 0;
+	return GSS_S_BAD_NAME;
+    }
 
     if (input_token == GSS_C_NO_BUFFER || input_token->length == 0)
 	return init_auth (minor_status,
