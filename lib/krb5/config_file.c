@@ -2,8 +2,11 @@
 #include "config_file.h"
 RCSID("$Id$");
 
-static int parse_section(char *p, krb5_config_section **s, krb5_config_section **res);
-static int parse_binding(FILE *f, unsigned *lineno, char *p, krb5_config_binding **b, krb5_config_binding **parent);
+static int parse_section(char *p, krb5_config_section **s,
+			 krb5_config_section **res);
+static int parse_binding(FILE *f, unsigned *lineno, char *p,
+			 krb5_config_binding **b,
+			 krb5_config_binding **parent);
 static int parse_list(FILE *f, unsigned *lineno, krb5_config_binding **parent);
 
 static int
@@ -221,7 +224,8 @@ krb5_config_vget_string (krb5_config_section *c, char *section, va_list args)
     if (c == NULL)
 	return NULL;
     p = va_arg(args, char *);
-    for (b = c->list; b; b = b->next)
+    b = c->list;
+    while (b) {
 	if (strcmp (b->name, p) == 0) {
 	    p = va_arg(args, char *);
 	    if (b->type == STRING)
@@ -236,7 +240,9 @@ krb5_config_vget_string (krb5_config_section *c, char *section, va_list args)
 		    b = b->u.list;
 	    else
 		abort();
-	}
+	} else
+	    b = b->next;
+    }
     return NULL;
 }
 
