@@ -72,7 +72,7 @@ recv_conn (int sock, des_cblock *key, des_key_schedule schedule,
 			    &thataddr, &thisaddr, &auth, "", schedule,
 			    version);
      if (status != KSUCCESS ||
-	 strncmp(version, "KXSERV.0", KRB_SENDAUTH_VLEN) != 0) {
+	 strncmp(version, KXVERSION, KRB_SENDAUTH_VLEN) != 0) {
 	  return 1;
      }
      passwd = k_getpwnam (auth.pname);

@@ -126,7 +126,7 @@ connect_host (char *host, des_cblock *key, des_key_schedule schedule,
      status = krb_sendauth (KOPT_DO_MUTUAL, s, &text, "rcmd",
 			    host, krb_realmofhost (host),
 			    getpid(), &msg, &cred, schedule,
-			    &thisaddr, &thataddr, "KXSERV.0");
+			    &thisaddr, &thataddr, KXVERSION);
      if (status != KSUCCESS) {
 	  fprintf (stderr, "%s: %s: %s\n", prog, host,
 		   krb_get_err_text(status));

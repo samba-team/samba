@@ -83,4 +83,6 @@ int connect_local_xsocket (unsigned dnr);
 
 #define KX_PORT 2111
 
+#define KXVERSION "KXSERV.1"
+
 #define COOKIE_TYPE "MIT-MAGIC-COOKIE-1"
