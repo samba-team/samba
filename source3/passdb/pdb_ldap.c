@@ -1304,6 +1304,12 @@ static BOOL ldapsam_add_sam_account(struct pdb_context *context, const SAM_ACCOU
 	int 		ldap_op;
 	uint32		num_result;
 
+	const char *username = pdb_get_username(newpwd);
+	if (!username || !*username) {
+		DEBUG(0, ("Cannot add user without a username!\n"));
+		return False;
+	}
+
 	if (!ldapsam_open_connection(ldap_state, &ldap_struct))	/* open a connection to the server */
 	{
 		return False;
@@ -1315,7 +1321,7 @@ static BOOL ldapsam_add_sam_account(struct pdb_context *context, const SAM_ACCOU
 		return False;
 	}
 
-	rc = ldapsam_search_one_user_by_name (ldap_state, ldap_struct, pdb_get_username(newpwd), &result);
+	rc = ldapsam_search_one_user_by_name (ldap_state, ldap_struct, username, &result);
 
 	if (ldap_count_entries(ldap_struct, result) != 0)
 	{
@@ -1326,12 +1332,13 @@ static BOOL ldapsam_add_sam_account(struct pdb_context *context, const SAM_ACCOU
 	}
 	ldap_msgfree(result);
 
-	slprintf (filter, sizeof (filter) - 1, "uid=%s", pdb_get_username(newpwd));
+	slprintf (filter, sizeof (filter) - 1, "uid=%s", username);
 	rc = ldapsam_search_one_user(ldap_state, ldap_struct, filter, &result);
 	num_result = ldap_count_entries(ldap_struct, result);
 	
 	if (num_result > 1) {
 		DEBUG (0, ("More than one user with that uid exists: bailing out!\n"));
+		ldap_msgfree(result);
 		return False;
 	}
 	
@@ -1351,11 +1358,10 @@ static BOOL ldapsam_add_sam_account(struct pdb_context *context, const SAM_ACCOU
 		/* Check if we need to add an entry */
 		DEBUG(3,("Adding new user\n"));
 		ldap_op = LDAP_MOD_ADD;
-                if ( pdb_get_acct_ctrl( newpwd ) & ACB_WSTRUST ) {
-                        slprintf (dn, sizeof (dn) - 1, "uid=%s,%s", pdb_get_username(newpwd), lp_ldap_machine_suffix ());
-                }
-                else {
-                        slprintf (dn, sizeof (dn) - 1, "uid=%s,%s", pdb_get_username(newpwd), lp_ldap_user_suffix ());
+		if (username[strlen(username)-1] == '$') {
+                        slprintf (dn, sizeof (dn) - 1, "uid=%s,%s", username, lp_ldap_machine_suffix ());
+                } else {
+                        slprintf (dn, sizeof (dn) - 1, "uid=%s,%s", username, lp_ldap_user_suffix ());
                 }
 	}
 
@@ -1441,7 +1447,6 @@ NTSTATUS pdb_init_ldapsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, co
 		ldap_state->uri = talloc_strdup(pdb_context->mem_ctx, location);
 	} else {
 		ldap_state->uri = "ldap://localhost";
-		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	(*pdb_method)->private_data = ldap_state;
