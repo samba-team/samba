@@ -2638,10 +2638,10 @@ size_t get_nt_acl(files_struct *fsp, uint32 security_info, SEC_DESC **ppdesc)
 	size_t sd_size = 0;
 	SEC_ACL *psa = NULL;
 	size_t num_acls = 0;
-	size_t num_dir_acls = 0;
+	size_t num_def_acls = 0;
 	size_t num_aces = 0;
 	SMB_ACL_T posix_acl = NULL;
-	SMB_ACL_T dir_acl = NULL;
+	SMB_ACL_T def_acl = NULL;
 	canon_ace *file_ace = NULL;
 	canon_ace *dir_ace = NULL;
 	size_t num_profile_acls = 0;
@@ -2669,8 +2669,8 @@ size_t get_nt_acl(files_struct *fsp, uint32 security_info, SEC_DESC **ppdesc)
 		 */
 
 		if(fsp->is_directory) {
-			dir_acl = SMB_VFS_SYS_ACL_GET_FILE(conn, fsp->fsp_name, SMB_ACL_TYPE_DEFAULT);
-			dir_acl = free_empty_sys_acl(conn, dir_acl);
+			def_acl = SMB_VFS_SYS_ACL_GET_FILE(conn, fsp->fsp_name, SMB_ACL_TYPE_DEFAULT);
+			def_acl = free_empty_sys_acl(conn, def_acl);
 		}
 
 	} else {
@@ -2687,7 +2687,7 @@ size_t get_nt_acl(files_struct *fsp, uint32 security_info, SEC_DESC **ppdesc)
 
 	DEBUG(5,("get_nt_acl : file ACL %s, directory ACL %s\n",
 			posix_acl ? "present" :  "absent",
-			dir_acl ? "present" :  "absent" ));
+			def_acl ? "present" :  "absent" ));
 
 	pal = load_inherited_info(fsp);
 
@@ -2725,8 +2725,8 @@ size_t get_nt_acl(files_struct *fsp, uint32 security_info, SEC_DESC **ppdesc)
 			return 0;
 		}
 
-		if (fsp->is_directory && dir_acl) {
-			dir_ace = canonicalise_acl(fsp, dir_acl, &sbuf,
+		if (fsp->is_directory && def_acl) {
+			dir_ace = canonicalise_acl(fsp, def_acl, &sbuf,
 					&global_sid_Creator_Owner,
 					&global_sid_Creator_Group, pal, SMB_ACL_TYPE_DEFAULT );
 		}
@@ -2790,15 +2790,15 @@ size_t get_nt_acl(files_struct *fsp, uint32 security_info, SEC_DESC **ppdesc)
 			}
 
 			num_acls = count_canon_ace_list(file_ace);
-			num_dir_acls = count_canon_ace_list(dir_ace);
+			num_def_acls = count_canon_ace_list(dir_ace);
 
 			/* Allocate the ace list. */
-			if ((nt_ace_list = (SEC_ACE *)malloc((num_acls + num_profile_acls + num_dir_acls)* sizeof(SEC_ACE))) == NULL) {
+			if ((nt_ace_list = (SEC_ACE *)malloc((num_acls + num_profile_acls + num_def_acls)* sizeof(SEC_ACE))) == NULL) {
 				DEBUG(0,("get_nt_acl: Unable to malloc space for nt_ace_list.\n"));
 				goto done;
 			}
 
-			memset(nt_ace_list, '\0', (num_acls + num_dir_acls) * sizeof(SEC_ACE) );
+			memset(nt_ace_list, '\0', (num_acls + num_def_acls) * sizeof(SEC_ACE) );
 											                
 			/*
 			 * Create the NT ACE list from the canonical ace lists.
@@ -2824,7 +2824,7 @@ size_t get_nt_acl(files_struct *fsp, uint32 security_info, SEC_DESC **ppdesc)
 
 			ace = dir_ace;
 
-			for (i = 0; i < num_dir_acls; i++, ace = ace->next) {
+			for (i = 0; i < num_def_acls; i++, ace = ace->next) {
 				SEC_ACCESS acc;
 	
 				acc = map_canon_ace_perms(&nt_acl_type, &owner_sid, ace );
@@ -2894,8 +2894,8 @@ size_t get_nt_acl(files_struct *fsp, uint32 security_info, SEC_DESC **ppdesc)
 
 	if (posix_acl)
 		SMB_VFS_SYS_ACL_FREE_ACL(conn, posix_acl);
-	if (dir_acl)
-		SMB_VFS_SYS_ACL_FREE_ACL(conn, dir_acl);
+	if (def_acl)
+		SMB_VFS_SYS_ACL_FREE_ACL(conn, def_acl);
 	free_canon_ace_list(file_ace);
 	free_canon_ace_list(dir_ace);
 	free_inherited_info(pal);
@@ -3373,16 +3373,16 @@ int fchmod_acl(files_struct *fsp, int fd, mode_t mode)
 
 BOOL directory_has_default_acl(connection_struct *conn, const char *fname)
 {
-	SMB_ACL_T dir_acl = SMB_VFS_SYS_ACL_GET_FILE( conn, fname, SMB_ACL_TYPE_DEFAULT);
+	SMB_ACL_T def_acl = SMB_VFS_SYS_ACL_GET_FILE( conn, fname, SMB_ACL_TYPE_DEFAULT);
 	BOOL has_acl = False;
 	SMB_ACL_ENTRY_T entry;
 
-	if (dir_acl != NULL && (SMB_VFS_SYS_ACL_GET_ENTRY(conn, dir_acl, SMB_ACL_FIRST_ENTRY, &entry) == 1)) {
+	if (def_acl != NULL && (SMB_VFS_SYS_ACL_GET_ENTRY(conn, def_acl, SMB_ACL_FIRST_ENTRY, &entry) == 1)) {
 		has_acl = True;
 	}
 
-	if (dir_acl) {
-	        SMB_VFS_SYS_ACL_FREE_ACL(conn, dir_acl);
+	if (def_acl) {
+	        SMB_VFS_SYS_ACL_FREE_ACL(conn, def_acl);
 	}
         return has_acl;
 }
@@ -3532,23 +3532,23 @@ static SMB_ACL_T create_posix_acl_from_wire(connection_struct *conn, uint16 num_
 
 /****************************************************************************
  Calls from UNIX extensions - Default POSIX ACL set.
- If num_dir_acls == 0 and not a directory just return. If it is a directory
- and num_dir_acls == 0 then remove the default acl. Else set the default acl
+ If num_def_acls == 0 and not a directory just return. If it is a directory
+ and num_def_acls == 0 then remove the default acl. Else set the default acl
  on the directory.
 ****************************************************************************/
 
 BOOL set_unix_posix_default_acl(connection_struct *conn, const char *fname, SMB_STRUCT_STAT *psbuf,
-				uint16 num_dir_acls, const char *pdata)
+				uint16 num_def_acls, const char *pdata)
 {
-	SMB_ACL_T dir_acl = NULL;
+	SMB_ACL_T def_acl = NULL;
 
-	if (num_dir_acls && !S_ISDIR(psbuf->st_mode)) {
+	if (num_def_acls && !S_ISDIR(psbuf->st_mode)) {
 		DEBUG(5,("set_unix_posix_default_acl: Can't set default ACL on non-directory file %s\n", fname ));
 		errno = EISDIR;
 		return False;
 	}
 
-	if (!num_dir_acls) {
+	if (!num_def_acls) {
 		/* Remove the default ACL. */
 		if (SMB_VFS_SYS_ACL_DELETE_DEF_FILE(conn, fname) == -1) {
 			DEBUG(5,("set_unix_posix_default_acl: acl_delete_def_file failed on directory %s (%s)\n",
@@ -3558,19 +3558,19 @@ BOOL set_unix_posix_default_acl(connection_struct *conn, const char *fname, SMB_
 		return True;
 	}
 
-	if ((dir_acl = create_posix_acl_from_wire(conn, num_dir_acls, pdata)) == NULL) {
+	if ((def_acl = create_posix_acl_from_wire(conn, num_def_acls, pdata)) == NULL) {
 		return False;
 	}
 
-	if (SMB_VFS_SYS_ACL_SET_FILE(conn, fname, SMB_ACL_TYPE_DEFAULT, dir_acl) == -1) {
+	if (SMB_VFS_SYS_ACL_SET_FILE(conn, fname, SMB_ACL_TYPE_DEFAULT, def_acl) == -1) {
 		DEBUG(5,("set_unix_posix_default_acl: acl_set_file failed on directory %s (%s)\n",
 			fname, strerror(errno) ));
-	        SMB_VFS_SYS_ACL_FREE_ACL(conn, dir_acl);
+	        SMB_VFS_SYS_ACL_FREE_ACL(conn, def_acl);
 		return False;
 	}
 
 	DEBUG(10,("set_unix_posix_default_acl: set default acl for file %s\n", fname ));
-	SMB_VFS_SYS_ACL_FREE_ACL(conn, dir_acl);
+	SMB_VFS_SYS_ACL_FREE_ACL(conn, def_acl);
 	return True;
 }
 
@@ -3701,7 +3701,7 @@ static BOOL remove_posix_acl(connection_struct *conn, files_struct *fsp, const c
 
 /****************************************************************************
  Calls from UNIX extensions - POSIX ACL set.
- If num_dir_acls == 0 then read/modify/write acl after removing all entries
+ If num_def_acls == 0 then read/modify/write acl after removing all entries
  except SMB_ACL_USER_OBJ, SMB_ACL_GROUP_OBJ, SMB_ACL_OTHER.
 ****************************************************************************/
 
