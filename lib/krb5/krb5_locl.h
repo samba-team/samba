@@ -118,6 +118,7 @@ struct sockaddr_dl;
 #include <md4.h>
 #include <md5.h>
 #include <sha.h>
+#include <rc4.h>
 
 #include <asn1.h>
 #include <der.h>
