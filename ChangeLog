@@ -1,3 +1,18 @@
+Tue Aug 25 23:30:52 1998  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/send_to_kdc.c (krb5_sendto_kdc): care about
+ 	`use_admin_kdc'
+
+	* lib/krb5/changepw.c (get_kdc_address): use
+ 	krb5_get_krb_admin_hst
+
+	* lib/krb5/krbhst.c (krb5_get_krb_admin_hst): new function
+
+	* lib/krb5/krb5.h (krb5_context_data): add `use_admin_kdc'
+
+	* lib/krb5/context.c (krb5_get_use_admin_kdc,
+ 	krb5_set_use_admin_kdc): new functions
+
 Thu Aug 13 23:46:29 1998  Assar Westerlund  <assar@emma.pdc.kth.se>
 
 	* Release 0.0t
