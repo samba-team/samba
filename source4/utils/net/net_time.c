@@ -28,7 +28,6 @@
  * Code for getting the remote time
  */
 
-
 int net_time(struct net_context *ctx, int argc, const char **argv)
 {
 	NTSTATUS status;
@@ -41,8 +40,7 @@ int net_time(struct net_context *ctx, int argc, const char **argv)
 	if (argc > 0 && argv[0]) {
 		server_name = argv[0];
 	} else {
-		DEBUG(0,("net_time: server name needed!\n"));
-		return -1;
+		return net_time_usage(ctx, argc, argv);
 	}
 
 	libnetctx = libnet_context_init();
@@ -77,12 +75,12 @@ int net_time(struct net_context *ctx, int argc, const char **argv)
 
 int net_time_usage(struct net_context *ctx, int argc, const char **argv)
 {
-	d_printf("net_time_usage: TODO\n");
+	d_printf("net time <server> [options]\n");
 	return 0;	
 }
 
 int net_time_help(struct net_context *ctx, int argc, const char **argv)
 {
-	d_printf("net_time_help: TODO\n");
+	d_printf("Displays remote server's time.\n");
 	return 0;	
 }

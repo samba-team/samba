@@ -36,8 +36,7 @@ int net_join(struct net_context *ctx, int argc, const char **argv)
 
 	switch (argc) {
 		case 0: /* no args -> fail */
-			DEBUG(0,("net_join_domain: no args\n"));
-			return -1;
+			return net_join_usage(ctx, argc, argv);
 		case 1: /* only DOMAIN */
 			tmp = talloc_strdup(ctx->mem_ctx, argv[0]);
 			break;
@@ -49,12 +48,11 @@ int net_join(struct net_context *ctx, int argc, const char **argv)
 				secure_channel_type = SEC_CHAN_WKSTA;
 			} else {
 				DEBUG(0, ("net_join: 2nd argument must be MEMBER or BDC\n"));
-				return -1;
+				return net_join_usage(ctx, argc, argv);
 			}
 			break;
 		default: /* too many args -> fail */
-			DEBUG(0,("net_join: too many args [%d]\n",argc));
-			return -1;
+			return net_join_usage(ctx, argc, argv);
 	}
 
 	domain_name = tmp;
@@ -89,12 +87,12 @@ int net_join(struct net_context *ctx, int argc, const char **argv)
 
 int net_join_usage(struct net_context *ctx, int argc, const char **argv)
 {
-	d_printf("net_password_usage: TODO\n");
+	d_printf("net join <domain> [BDC | MEMBER] [options]\n");
 	return 0;	
 }
 
 int net_join_help(struct net_context *ctx, int argc, const char **argv)
 {
-	d_printf("net_password_help: TODO\n");
+	d_printf("Joins domain as either member or backup domain controller.\n");
 	return 0;	
 }
