@@ -115,7 +115,7 @@ BOOL req_signing_check_incoming(struct smbsrv_request *req)
 		if (req->flags2 & FLAGS2_SMB_SECURITY_SIGNATURES) {
 			req->smb_conn->signing.signing_state = SMB_SIGNING_REQUIRED;
 		}
-		return True;
+		break;
 	case SMB_SIGNING_REQUIRED:
 		break;
 	}
