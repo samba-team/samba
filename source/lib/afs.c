@@ -124,9 +124,13 @@ static BOOL afs_createtoken(const char *username, const char *cell,
 
 	p += 8;
 
-	/* Ticket lifetime. We fake everything here, so go as long as
-	   possible. This is in 5-minute intervals, so 255 is 21 hours
-	   and 15 minutes.*/
+	/* This is a kerberos 4 life time. The life time is expressed
+	 * in units of 5 minute intervals up to 38400 seconds, after
+	 * that a table is used up to lifetime 0xBF. Values between
+	 * 0xC0 and 0xFF is undefined. 0xFF is defined to be the
+	 * infinite time that never expire.
+	 *
+	 * So here we cheat and use the infinite time */
 	*p = 255;
 	p += 1;
 
