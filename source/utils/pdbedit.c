@@ -492,7 +492,13 @@ int main (int argc, char **argv)
 			break;
 		}
 	}
-	
+
+	poptGetArg(pc); /* Drop argv[0], the program name */
+
+	if (user_name == NULL) {
+		user_name = poptGetArg(pc);
+	}
+
 	if (!lp_load(dyn_CONFIGFILE,True,False,False)) {
 		fprintf(stderr, "Can't load %s - run testparm to debug it\n", dyn_CONFIGFILE);
 		exit(1);
