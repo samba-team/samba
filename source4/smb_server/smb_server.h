@@ -89,9 +89,6 @@ struct smbsrv_request {
 	/* the session context is derived from the vuid */
 	struct smbsrv_session *session;
 
-	/* the mid of this packet - used to match replies */
-	uint16_t mid;
-
 	/* a set of flags to control usage of the request. See REQ_CONTROL_* */
 	unsigned control_flags;
 
