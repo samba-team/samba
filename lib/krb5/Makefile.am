@@ -4,17 +4,15 @@ include $(top_srcdir)/Makefile.am.common
 
 INCLUDES += $(INCLUDE_krb4)
 
-LDADD = libkrb5.la
+noinst_PROGRAMS = dump_config
 
 check_PROGRAMS = n-fold-test string-to-key-test
 TESTS = n-fold-test string-to-key-test
 
-string_to_key_test_LDADD = libkrb5.la \
+LDADD = libkrb5.la \
 	$(top_builddir)/lib/des/libdes.la \
 	$(top_builddir)/lib/asn1/libasn1.la \
 	$(LIB_roken)
-
-n_fold_test_LDADD = $(string_to_key_test_LDADD)
 
 lib_LTLIBRARIES = libkrb5.la
 
