@@ -71,7 +71,7 @@ struct rap_NetServerEnum2 {
 		uint16 level;
 		uint16 bufsize;
 		uint32 servertype;
-		char *domain;
+		const char *domain;
 	} in;
 
 	struct {
