@@ -569,12 +569,13 @@ CLASS="COMMAND"
 >The next step is to join the domain. To do that use the 
 	<B
 CLASS="COMMAND"
->samedit</B
+>smbpasswd</B
 > program like this:  </P
 ><P
 ><B
 CLASS="COMMAND"
->samedit -S '*' -W DOMAIN -UAdministrator</B
+>smbpasswd -j DOMAIN -r PDC -U
+	Administrator</B
 ></P
 ><P
 >The username after the <TT
@@ -582,21 +583,12 @@ CLASS="PARAMETER"
 ><I
 >-U</I
 ></TT
-> can be any Domain 
-	user that has administrator privileges on the machine. Next from 
-	within <B
-CLASS="COMMAND"
->samedit</B
->, run the command: </P
-><P
-><B
-CLASS="COMMAND"
->createuser MACHINE$ -j DOMAIN -L</B
-></P
-><P
->This assumes your domain is called "DOMAIN" and your Samba 
-	workstation is called "MACHINE". </P
-><P
+> can be any
+	Domain user that has administrator privileges on the machine.
+	Substitute your domain name for "DOMAIN" and the name of your PDC
+	for "PDC".
+
+	<P
 >Next copy <TT
 CLASS="FILENAME"
 >libnss_winbind.so</TT
@@ -625,13 +617,17 @@ CLASS="FILENAME"
 CLASS="FILENAME"
 >/lib/libnss_winbind.so.1</TT
 >.</P
-><P
+>
+
+	<P
 >Finally, setup a <TT
 CLASS="FILENAME"
 >smb.conf</TT
 > containing directives like the 
 	following:  </P
-><P
+> 
+
+	<P
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -655,7 +651,10 @@ CLASS="PROGRAMLISTING"
 ></TR
 ></TABLE
 ></P
-><P
+>
+  
+
+	<P
 >Now start winbindd and you should find that your user and 
 	group database is expanded to include your NT users and groups, 
 	and that you can login to your unix box as a domain user, using 
@@ -668,11 +667,12 @@ CLASS="COMMAND"
 >getent group
 	</B
 > to confirm the correct operation of winbindd.</P
+></P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN197"
+NAME="AEN193"
 ></A
 ><H2
 >Notes</H2
@@ -732,7 +732,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN213"
+NAME="AEN209"
 ></A
 ><H2
 >Signals</H2
@@ -783,7 +783,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN230"
+NAME="AEN226"
 ></A
 ><H2
 >Files</H2
@@ -857,7 +857,7 @@ CLASS="FILENAME"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN259"
+NAME="AEN255"
 ></A
 ><H2
 >VERSION</H2
@@ -869,7 +869,7 @@ NAME="AEN259"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN262"
+NAME="AEN258"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -897,7 +897,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN269"
+NAME="AEN265"
 ></A
 ><H2
 >AUTHOR</H2

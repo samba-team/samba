@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "WINBINDD" "8" "09 July 2001" "" ""
+.TH "WINBINDD" "8" "15 August 2001" "" ""
 .SH NAME
 winbindd \- Name Service Switch daemon for resolving names  from NT servers
 .SH SYNOPSIS
@@ -237,18 +237,15 @@ Now replace the account lines with this:
 \fBaccount required /lib/security/pam_winbind.so
 \fR.PP
 The next step is to join the domain. To do that use the 
-\fBsamedit\fR program like this: 
+\fBsmbpasswd\fR program like this: 
 .PP
-\fBsamedit -S '*' -W DOMAIN -UAdministrator\fR
+\fBsmbpasswd -j DOMAIN -r PDC -U
+Administrator\fR
 .PP
-The username after the \fI-U\fR can be any Domain 
-user that has administrator privileges on the machine. Next from 
-within \fBsamedit\fR, run the command: 
-.PP
-\fBcreateuser MACHINE$ -j DOMAIN -L\fR
-.PP
-This assumes your domain is called "DOMAIN" and your Samba 
-workstation is called "MACHINE". 
+The username after the \fI-U\fR can be any
+Domain user that has administrator privileges on the machine.
+Substitute your domain name for "DOMAIN" and the name of your PDC
+for "PDC".
 .PP
 Next copy \fIlibnss_winbind.so\fR to 
 \fI/lib\fR and \fIpam_winbind.so\fR
