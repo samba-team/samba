@@ -159,6 +159,7 @@ static NTSTATUS rid_idmap_get_domains(uint32 *num_domains, fstring **domain_name
 	char **trusted_domain_names;
 	DOM_SID *trusted_domain_sids;
 	uint32 enum_ctx = 0;
+	DOM_SID builtin_sid;
 
 	/* put the results together */
 	*num_domains = 1;
@@ -271,18 +272,23 @@ static NTSTATUS rid_idmap_get_domains(uint32 *num_domains, fstring **domain_name
 	}
 
 	/* put the results together */
-	*num_domains = trusted_num_domains + 1;
+	*num_domains = trusted_num_domains + 2;
 	*domain_names = (fstring *) realloc(*domain_names, sizeof(fstring) * *num_domains);
 	*domain_sids = (DOM_SID *) realloc(*domain_sids, sizeof(DOM_SID) * *num_domains); 
 
-	/* first add myself at the end*/
+	/* first add myself */
 	fstrcpy((*domain_names)[0], domain_name);
 	sid_copy(&(*domain_sids)[0], domain_sid);
 
+	/* then add BUILTIN */
+	string_to_sid(&builtin_sid, "S-1-5-32");
+	fstrcpy((*domain_names)[1], "BUILTIN");
+	sid_copy(&(*domain_sids)[1], &builtin_sid);
+
 	/* add trusted domains */
 	for (i=0; i<trusted_num_domains; i++) {
-		fstrcpy((*domain_names)[i+1], trusted_domain_names[i]);
-		sid_copy(&((*domain_sids)[i+1]), &(trusted_domain_sids[i]));
+		fstrcpy((*domain_names)[i+2], trusted_domain_names[i]);
+		sid_copy(&((*domain_sids)[i+2]), &(trusted_domain_sids[i]));
 	}
 
 	/* show complete domain list */
