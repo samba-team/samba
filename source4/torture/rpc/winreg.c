@@ -80,6 +80,11 @@ static BOOL test_CreateKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		return False;
 	}
 
+	if (!W_ERROR_IS_OK(r.out.result)) {
+		printf("CreateKey failed - %s\n", win_errstr(r.out.result));
+		return False;
+	}
+
 	return True;
 }
 
@@ -163,6 +168,11 @@ static BOOL test_DeleteKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("DeleteKey failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	if (!W_ERROR_IS_OK(r.out.result)) {
+		printf("DeleteKey failed - %s\n", win_errstr(r.out.result));
 		return False;
 	}
 
@@ -413,7 +423,7 @@ typedef BOOL winreg_open_fn(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 static BOOL test_Open(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, void *fn)
 {
-	struct policy_handle handle;
+	struct policy_handle handle, newhandle;
 	BOOL ret = True;
 	winreg_open_fn *open_fn = (winreg_open_fn *)fn;
 
@@ -435,10 +445,21 @@ static BOOL test_Open(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, void *fn)
 		ret = False;
 	}
 
+	if (!test_OpenKey(p, mem_ctx, &handle, "spottyfoot", &newhandle)) {
+		printf("CreateKey failed (OpenKey after Create didn't work)\n");
+		ret = False;
+	}
+
 	if (!test_DeleteKey(p, mem_ctx, &handle, "spottyfoot")) {
 		printf("DeleteKey failed\n");
 		ret = False;
 	}
+
+	if (test_OpenKey(p, mem_ctx, &handle, "spottyfoot", &newhandle)) {
+		printf("DeleteKey failed (OpenKey after Delete didn't work)\n");
+		ret = False;
+	}
+
 
 	/* The HKCR hive has a very large fanout */
 

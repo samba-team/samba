@@ -90,7 +90,7 @@ static BOOL rpc_open_registry(REG_HANDLE *h, const char *location, BOOL try_full
                     DCERPC_WINREG_UUID,
                     DCERPC_WINREG_VERSION,
                      lp_workgroup(),
-                     "jelwin", "dds");
+                     "tridge", "samba");
 
 	if(!NT_STATUS_IS_OK(status)) return False;
 
