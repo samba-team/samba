@@ -63,7 +63,7 @@
 /* termios.h *must* be included before curses.h */
 #include <termios.h>
 
-#ifdef HAVE_CURSES_H
+#if defined(SOCKS) && defined(HAVE_CURSES_H)
 #include <curses.h>
 #endif
 
