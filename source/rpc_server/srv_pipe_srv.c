@@ -452,8 +452,18 @@ static BOOL api_pipe_request(rpcsrv_struct * l, const char *name,
 			return False;
 	}
 
+	if (num_cmds == 0)
+	{
+		DEBUG(0,("no commands to process!\n"));
+	}
+	else
+	{
+		DEBUG(10,("pipe name: %s\n", name));
+	}
+
 	for (i = 0; i < num_cmds; i++)
 	{
+		DEBUG(10,("search name: %s\n", api_fd_commands[i]->pipe_clnt_name));
 		if (strequal(api_fd_commands[i]->pipe_clnt_name, name) &&
 		    api_fd_commands[i]->fn != NULL)
 		{
@@ -593,6 +603,10 @@ static BOOL rpc_redir_local(rpcsrv_struct * l, prs_struct * req,
 					reply =
 						api_pipe_request(l, name,
 								 resp);
+				}
+				if (!reply)
+				{
+					DEBUG(10,("dce/rpc request failed\n"));
 				}
 			}
 			break;

@@ -3462,6 +3462,10 @@ libdir='$install_libdir'\
 		$echo "$modename: error: cannot create temporary directory \`$tmpdir'" 1>&2
 		continue
 	      fi
+	      # quick and dirty hack by Elrond <Elrond@Wunder-Nett.org>
+	      # to get libtool work with paths in its
+	      # output names.
+	      file=`$echo "X$file" | $Xsed -e 's%/%_%g'`
 	      outputname="$tmpdir/$file"
 	      # Replace the output file specification.
 	      relink_command=`$echo "X$relink_command" | $Xsed -e 's%@OUTPUT@%'"$outputname"'%g'`

@@ -314,7 +314,7 @@ SAMRNT5LDAPLIB_OBJ = lib/util_pwdb.o lib/domain_namemap.o \
 		samrd/samr_util.o
 #		samrd/srv_samr_sam_nt5ldap.o \
 #		samrd/srv_samr_grp_nt5ldap.o \
-#		samrd/srv_samr_als_nt5ldap.o \
+#		samrd/srv_samr_als_nt5ldap.o
 
 SAMRPASSLIB_OBJ = rpc_server/srv_lookup.o \
 		samrd/srv_samr_passdb.o \
@@ -392,14 +392,17 @@ NETLOGOND_OBJ = $(MSRPCD_OBJ) $(NETLOGOND_OBJ1) \
            $(SIDDB_OBJ) \
 		$(UNIXPASSDB_OBJ) $(LIBSTATUS_OBJ) $(PROFILE_OBJ) 
 
-NETLOGOND_LIBS        = $(SAMBA_LIBS) $(UBIQXLIB) $(SAM_PWDB_LIB) $(LIBSURS)
+NETLOGOND_LIBS        = $(SAMBA_LIBS) $(SAM_PWDB_LIB) \
+			$(LIBSURS) $(UBIQXLIB)
 
-NETLOGONPASSD_LIBS    = $(SAMBA_LIBS) $(UBIQXLIB) $(SAMRPASSLIB) $(SMBPWLIB) \
-			$(LIBSURS)
+NETLOGONPASSD_LIBS    = $(SAMBA_LIBS) $(SAMRPASSLIB) $(SMBPWLIB) \
+			$(LIBSURS) $(UBIQXLIB)
 
-NETLOGONTDBD_LIBS     = $(SAMBA_LIBS) $(UBIQXLIB) $(SAMRTDBLIB)   $(LIBSURS)
+NETLOGONTDBD_LIBS     = $(SAMBA_LIBS) $(SAMRTDBLIB) \
+			$(LIBSURS) $(UBIQXLIB)
 
-NETLOGONNT5LDAPD_LIBS = $(SAMBA_LIBS) $(UBIQXLIB) $(SAMRNT5LDAPLIB)   $(LIBSURS)
+NETLOGONNT5LDAPD_LIBS = $(SAMBA_LIBS) $(SAMRNT5LDAPLIB) \
+			$(LIBSURS) $(UBIQXLIB)
 
 SAMRD_OBJ = $(MSRPCD_OBJ) $(SAMRD_OBJ1) \
            $(RPC_SRVUTIL_OBJ) \
@@ -411,17 +414,17 @@ LIBSURS_OBJ = lib/surs.o lib/sursalgdomonly.o \
 		lib/sursalgnt5ldap.o \
 		lib/surstdb.o
 
-SAMRD_LIBS        = $(SAMBA_LIBS) $(UBIQXLIB) $(SAM_PWDB_LIB) \
-			$(LIBSURS)
+SAMRD_LIBS        = $(SAMBA_LIBS) $(SAM_PWDB_LIB) \
+			$(LIBSURS) $(UBIQXLIB)
 
-SAMRPASSD_LIBS    = $(SAMBA_LIBS) $(UBIQXLIB) $(SAMRPASSLIB) $(SMBPWLIB) \
-			$(LIBSURS)
+SAMRPASSD_LIBS    = $(SAMBA_LIBS) $(SAMRPASSLIB) $(SMBPWLIB) \
+			$(LIBSURS) $(UBIQXLIB)
 
-SAMRTDBD_LIBS     = $(SAMBA_LIBS) $(UBIQXLIB) $(SAMRTDBLIB) \
-			$(LIBSURS)
+SAMRTDBD_LIBS     = $(SAMBA_LIBS) $(SAMRTDBLIB) \
+			$(LIBSURS) $(UBIQXLIB)
 
-SAMRNT5LDAPD_LIBS = $(SAMBA_LIBS) $(UBIQXLIB) $(SAMRNT5LDAPLIB) \
-			$(LIBSURS)
+SAMRNT5LDAPD_LIBS = $(SAMBA_LIBS) $(SAMRNT5LDAPLIB) \
+			$(LIBSURS) $(UBIQXLIB)
 
 NMBD_OBJ1 = nmbd/asyncdns.o nmbd/nmbd.o nmbd/nmbd_become_dmb.o \
             nmbd/nmbd_become_lmb.o nmbd/nmbd_browserdb.o \
