@@ -22,6 +22,21 @@
 
 #include "librpc/gen_ndr/ndr_nbt.h"
 
+
+/*
+  a nbt name request
+*/
+struct nbt_dgram_request {
+	struct nbt_dgram_request *next, *prev;
+
+	/* where to send the request */
+	const char *dest_addr;
+	int dest_port;
+
+	/* the encoded request */
+	DATA_BLOB encoded;
+};
+
 /*
   context structure for operations on dgram packets
 */
@@ -32,6 +47,12 @@ struct nbt_dgram_socket {
 	/* the fd event */
 	struct fd_event *fde;
 
+	/* a queue of outgoing requests */
+	struct nbt_dgram_request *send_queue;
+
+	/* a list of mailslot handlers */
+	struct dgram_mailslot_handler *mailslot_handlers;
+
 	/* what to do with incoming request packets */
 	struct {
 		void (*handler)(struct nbt_dgram_socket *, struct nbt_dgram_packet *, 
@@ -39,3 +60,59 @@ struct nbt_dgram_socket {
 		void *private;
 	} incoming;
 };
+
+
+/*
+  the mailslot code keeps a list of mailslot handlers. A mailslot
+  handler is a function that receives incoming packets for a specific
+  mailslot name. When a caller needs to send a mailslot and wants to
+  get a reply then it needs to register itself as listening for
+  incoming packets on the reply mailslot
+*/
+
+typedef void (*dgram_mailslot_handler_t)(struct dgram_mailslot_handler *, 
+					 struct nbt_dgram_packet *, 
+					 const char *, int );
+
+struct dgram_mailslot_handler {
+	struct dgram_mailslot_handler *next, *prev;
+
+	struct nbt_dgram_socket *dgmsock;
+	const char *mailslot_name;
+
+	dgram_mailslot_handler_t handler;
+	void *private;
+};
+
+
+/* prototypes */
+NTSTATUS nbt_dgram_send(struct nbt_dgram_socket *dgmsock,
+			struct nbt_dgram_packet *packet,
+			const char *dest_addr,
+			int dest_port);
+NTSTATUS dgram_set_incoming_handler(struct nbt_dgram_socket *dgmsock,
+				    void (*handler)(struct nbt_dgram_socket *, 
+						    struct nbt_dgram_packet *, 
+						    const char *, int ),
+				    void *private);
+struct nbt_dgram_socket *nbt_dgram_socket_init(TALLOC_CTX *mem_ctx, 
+					       struct event_context *event_ctx);
+
+const char *dgram_mailslot_name(struct nbt_dgram_packet *packet);
+struct dgram_mailslot_handler *dgram_mailslot_find(struct nbt_dgram_socket *dgmsock,
+						   const char *mailslot_name);
+struct dgram_mailslot_handler *dgram_mailslot_listen(struct nbt_dgram_socket *dgmsock,
+						     const char *mailslot_name,
+						     dgram_mailslot_handler_t handler,
+						     void *private);
+struct dgram_mailslot_handler *dgram_mailslot_temp(struct nbt_dgram_socket *dgmsock,
+						   const char *mailslot_name,
+						   dgram_mailslot_handler_t handler,
+						   void *private);
+
+
+
+
+
+
+
