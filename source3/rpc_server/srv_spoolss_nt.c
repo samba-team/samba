@@ -7104,7 +7104,7 @@ static WERROR getprintprocessordirectory_level_1(UNISTR2 *name,
 
 	unistr2_to_ascii(long_archi, environment, sizeof(long_archi)-1);
 
-	if (get_short_archi(short_archi, long_archi)==FALSE)
+	if (get_short_archi(short_archi, long_archi)==False)
 		return WERR_INVALID_ENVIRONMENT;
 
 	if((info=(PRINTPROCESSOR_DIRECTORY_1 *)malloc(sizeof(PRINTPROCESSOR_DIRECTORY_1))) == NULL)
