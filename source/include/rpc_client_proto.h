@@ -700,11 +700,6 @@ BOOL msrpc_sam_query_userinfo(const char* srv_name, const DOM_SID *sid,
 
 /*The following definitions come from  rpc_client/ncacn_np_use.c  */
 
-BOOL ncacn_np_establish_connection(struct ncacn_np *cli,
-				   const char *srv_name,
-				   const struct ntuser_creds *ntc,
-				   const char *pipe_name, 
-				   BOOL reuse);
 void init_ncacn_np_use(void);
 void free_ncacn_np_use(void);
 struct ncacn_np *ncacn_np_initialise(struct ncacn_np *msrpc,

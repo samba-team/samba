@@ -37,7 +37,7 @@ struct ncacn_np_use
 };
 
 static struct ncacn_np_use **msrpcs = NULL;
-uint32 num_msrpcs = 0;
+static uint32 num_msrpcs = 0;
 
 /****************************************************************************
 terminate client connection
@@ -58,7 +58,7 @@ static void ncacn_np_shutdown(struct ncacn_np *cli)
 	}
 }
 
-BOOL ncacn_np_establish_connection(struct ncacn_np *cli,
+static BOOL ncacn_np_establish_connection(struct ncacn_np *cli,
 				   const char *srv_name,
 				   const struct ntuser_creds *ntc,
 				   const char *pipe_name, 
