@@ -720,6 +720,27 @@ if test x"$samba_cv_HAVE_KERNEL_OPLOCKS_LINUX" = x"yes"; then
     AC_DEFINE(HAVE_KERNEL_OPLOCKS_LINUX)
 fi
 
+AC_CACHE_CHECK([for kernel change notify support],samba_cv_HAVE_KERNEL_CHANGE_NOTIFY,[
+AC_TRY_RUN([
+#include <sys/types.h>
+#include <fcntl.h>
+#include <signal.h>
+#ifndef F_NOTIFY
+#define F_NOTIFY 1026
+#endif
+main() {
+	signal(SIGIO, SIG_IGN);
+       	exit(fcntl(open("/tmp", O_RDONLY), F_NOTIFY, 0xF) != 0);
+}
+],
+samba_cv_HAVE_KERNEL_CHANGE_NOTIFY=yes,samba_cv_HAVE_KERNEL_CHANGE_NOTIFY=no,samba_cv_HAVE_KERNEL_CHANGE_NOTIFY=cross)])
+if test x"$samba_cv_HAVE_KERNEL_CHANGE_NOTIFY" = x"yes"; then
+    AC_DEFINE(HAVE_KERNEL_CHANGE_NOTIFY)
+fi
+
+
+
+
 AC_CACHE_CHECK([for IRIX kernel oplock type definitions],samba_cv_HAVE_KERNEL_OPLOCKS_IRIX,[
 AC_TRY_COMPILE([#include <sys/types.h>
 #include <fcntl.h>],
