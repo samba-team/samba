@@ -578,7 +578,7 @@ void dos_clean_name(char *s)
   DEBUG(3,("dos_clean_name [%s]\n",s));
 
   /* remove any double slashes */
-  pstring_sub(s, "\\\\", "\\");
+  all_string_sub(s, "\\\\", "\\", 0);
 
   while ((p = strstr(s,"\\..\\")) != NULL)
     {
@@ -596,7 +596,7 @@ void dos_clean_name(char *s)
 
   trim_string(s,NULL,"\\..");
 
-  pstring_sub(s, "\\.\\", "\\");
+  all_string_sub(s, "\\.\\", "\\", 0);
 }
 
 /*******************************************************************
@@ -609,7 +609,7 @@ void unix_clean_name(char *s)
   DEBUG(3,("unix_clean_name [%s]\n",s));
 
   /* remove any double slashes */
-  pstring_sub(s, "//","/");
+  all_string_sub(s, "//","/", 0);
 
   /* Remove leading ./ characters */
   if(strncmp(s, "./", 2) == 0) {
@@ -676,7 +676,7 @@ BOOL reduce_name(char *s,char *dir,BOOL widelinks)
   DEBUG(3,("reduce_name [%s] [%s]\n",s,dir));
 
   /* remove any double slashes */
-  pstring_sub(s,"//","/");
+  all_string_sub(s,"//","/",0);
 
   pstrcpy(base_name,s);
   p = strrchr(base_name,'/');
