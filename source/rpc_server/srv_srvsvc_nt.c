@@ -1354,13 +1354,13 @@ net sess del
 
 WERROR _srv_net_sess_del(pipes_struct *p, SRV_Q_NET_SESS_DEL *q_u, SRV_R_NET_SESS_DEL *r_u)
 {
-	struct current_user user;
 	struct sessionid *session_list;
+	struct current_user user;
 	int num_sessions, snum, ret;
 	fstring username;
 	fstring machine;
-	SE_PRIV se_diskop = SE_DISK_OPERATOR; /* Is disk op appropriate here ? JRA. */
-	BOOL is_disk_op = False;
+	/* SE_PRIV se_diskop = SE_DISK_OPERATOR; / * Is disk op appropriate here ? JRA. * /
+	BOOL is_disk_op = False;                 / * No. SSS. :) */
 
 	rpcstr_pull_unistr2_fstring(username, &q_u->uni_user_name);
 	rpcstr_pull_unistr2_fstring(machine, &q_u->uni_cli_name);
@@ -1374,31 +1374,43 @@ WERROR _srv_net_sess_del(pipes_struct *p, SRV_Q_NET_SESS_DEL *q_u, SRV_R_NET_SES
 
 	DEBUG(5,("_srv_net_sess_del: %d\n", __LINE__));
 
-	get_current_user(&user,p);
-
-	is_disk_op = user_has_privileges( p->pipe_user.nt_user_token, &se_diskop );
+	/* is_disk_op = user_has_privileges( p->pipe_user.nt_user_token, &se_diskop ); */
 	
-	/* fail out now if you are not root and not a disk op */
-	
-	if ( user.uid != sec_initial_uid() && !is_disk_op )
-		return WERR_ACCESS_DENIED;
-
 	r_u->status = WERR_ACCESS_DENIED;
+
+	get_current_user(&user, p);
+	/* fail out now if you are not root */
+	/* or at least domain admins */
+	if ((user.uid != sec_initial_uid()) && 
+		( ! nt_token_check_domain_rid(p->pipe_user.nt_user_token, DOMAIN_GROUP_RID_ADMINS))) {
+
+		goto done;
+	}
 
 	for (snum = 0; snum < num_sessions; snum++) {
 
 		if ((strequal(session_list[snum].username, username) || username[0] == '\0' ) &&
 		    strequal(session_list[snum].remote_machine, machine)) {
 		
+			if (user.uid != sec_initial_uid()) {
+				become_root();
+			}
 			if ((ret = message_send_pid(session_list[snum].pid, MSG_SHUTDOWN, NULL, 0, False))) {
 				r_u->status = WERR_OK;
 			} else {
 				r_u->status = WERR_ACCESS_DENIED;
 			}
+			if (user.uid != sec_initial_uid()) {
+				unbecome_root();
+			}
 		}
 	}
 
 	DEBUG(5,("_srv_net_sess_del: %d\n", __LINE__));
+
+
+done:
+	SAFE_FREE(session_list);
 
 	return r_u->status;
 }
