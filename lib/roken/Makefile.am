@@ -7,7 +7,7 @@ AM_CFLAGS += $(WFLAGS)
 ## ACLOCAL = @ACLOCAL@ -I cf
 ACLOCAL_AMFLAGS = -I ../../cf
 
-CLEANFILES = roken.h make-roken.c
+CLEANFILES = roken.h make-roken.c $(XHEADERS)
 
 lib_LTLIBRARIES = libroken.la
 libroken_la_LDFLAGS = -version-info 10:0:1
@@ -80,12 +80,12 @@ EXTRA_libroken_la_SOURCES =	\
 	copyhostent.c		\
 	daemon.c		\
 	err.c			\
-	err.h			\
+	err.hin			\
 	errx.c			\
 	fchown.c		\
 	flock.c			\
 	fnmatch.c		\
-	fnmatch.h		\
+	fnmatch.hin		\
 	freeaddrinfo.c		\
 	freehostent.c		\
 	gai_strerror.c		\
@@ -102,7 +102,7 @@ EXTRA_libroken_la_SOURCES =	\
 	gettimeofday.c		\
 	getuid.c		\
 	getusershell.c		\
-	glob.h			\
+	glob.hin		\
 	hstrerror.c		\
 	ifaddrs.h		\
 	inet_aton.c		\
@@ -152,15 +152,9 @@ EXTRA_DIST = roken.awk roken.h.in
 
 libroken_la_LIBADD = @LTLIBOBJS@
 
-$(LTLIBOBJS) $(libroken_la_OBJECTS): roken.h
+$(LTLIBOBJS) $(libroken_la_OBJECTS): $(include_HEADERS) roken.h
 
 BUILT_SOURCES = make-roken.c roken.h
-
-include_HEADERS = $(err_h) base64.h getarg.h		\
-	parse_bytes.h parse_time.h parse_units.h	\
-	resolve.h roken-common.h		\
-	$(err_h) $(fnmatch_h) $(glob_h) $(vis_h) rtbl.h xdbm.h
-nodist_include_HEADERS = roken.h
 
 if have_err_h
 err_h =
@@ -180,11 +174,39 @@ else
 glob_h = glob.h
 endif
 
+if have_ifaddrs_h
+ifaddrs_h =
+else
+ifaddrs_h = ifaddrs.h
+endif
+
 if have_vis_h
 vis_h = 
 else
-vis_h = vis_h
+vis_h = vis.h
 endif
+
+## these are controlled by configure
+XHEADERS = $(err_h) $(fnmatch_h) $(glob_h) $(ifaddrs_h) $(vis_h)
+
+include_HEADERS = 				\
+	base64.h				\
+	getarg.h				\
+	parse_bytes.h 				\
+	parse_time.h 				\
+	parse_units.h				\
+	resolve.h 				\
+	roken-common.h 				\
+	rtbl.h 					\
+	xdbm.h					\
+	$(XHEADERS) 
+
+nodist_include_HEADERS = roken.h
+
+
+SUFFIXES += .hin
+.hin.h:
+	cp $< $@
 
 roken.h: make-roken$(EXEEXT)
 	@./make-roken$(EXEEXT) > tmp.h ;\
