@@ -273,9 +273,6 @@ AC_BROKEN([					\
 	gettimeofday				\
 	getuid					\
 	getusershell				\
-	inet_aton				\
-	inet_ntop				\
-	inet_pton				\
 	initgroups				\
 	innetgr					\
 	iruserok				\
@@ -316,6 +313,51 @@ AC_BROKEN([					\
 	warnx					\
 	writev					\
 ])
+
+AC_BROKEN2(inet_aton,
+[#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#ifdef HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
+#ifdef HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
+#ifdef HAVE_ARPA_INET_H
+#include <arpa/inet.h>
+#endif],
+[0,0])
+
+AC_BROKEN2(inet_ntop,
+[#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#ifdef HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
+#ifdef HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
+#ifdef HAVE_ARPA_INET_H
+#include <arpa/inet.h>
+#endif],
+[0, 0, 0, 0])
+
+AC_BROKEN2(inet_pton,
+[#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#ifdef HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
+#ifdef HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
+#ifdef HAVE_ARPA_INET_H
+#include <arpa/inet.h>
+#endif],
+[0,0,0])
 
 dnl
 dnl Check for sa_len in struct sockaddr, 
