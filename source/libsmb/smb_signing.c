@@ -491,21 +491,14 @@ static struct smb_sign_info srv_sign_info = {
 };
 
 /***********************************************************
- Turn on signing after sending an oplock break.
+ Turn signing off or on for oplock break code.
 ************************************************************/
 
-void srv_enable_signing(void)
+BOOL srv_oplock_set_signing(BOOL onoff)
 {
-	srv_sign_info.doing_signing = True;
-}
-
-/***********************************************************
- Turn off signing before sending an oplock break.
-************************************************************/
-
-void srv_disable_signing(void)
-{
-	srv_sign_info.doing_signing = False;
+	BOOL ret = srv_sign_info.doing_signing;
+	srv_sign_info.doing_signing = onoff;
+	return ret;
 }
 
 /***********************************************************
