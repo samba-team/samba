@@ -18,10 +18,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include "includes.h"
-#include "Python.h"
-
-#include "python/py_conv.h"
 #include "python/py_spoolss.h"
 
 struct pyconv py_PORT_INFO_1[] = {
@@ -40,8 +36,7 @@ struct pyconv py_PORT_INFO_2[] = {
 
 /* Enumerate ports */
 
-static PyObject *spoolss_enumports(PyObject *self, PyObject *args, 
-				   PyObject *kw)
+PyObject *spoolss_enumports(PyObject *self, PyObject *args, PyObject *kw)
 {
 	WERROR werror;
 	PyObject *result, *creds = NULL;

@@ -18,11 +18,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include "includes.h"
-#include "Python.h"
-
-#include "python/py_common.h"
-#include "python/py_conv.h"
 #include "python/py_spoolss.h"
 
 /* Exceptions this module can raise */
@@ -32,13 +27,6 @@ PyObject *spoolss_error, *spoolss_werror;
 /*
  * Routines to convert from python hashes to Samba structures
  */
-
-/* Return a cli_state struct opened on the SPOOLSS pipe.  If credentials
-   are passed use them. */
-
-typedef struct cli_state *(cli_pipe_fn)(
-	struct cli_state *cli, char *system_name,
-	struct ntuser_creds *creds);
 
 struct cli_state *open_pipe_creds(char *system_name, PyObject *creds, 
 				  cli_pipe_fn *connect_fn,
@@ -110,8 +98,8 @@ struct cli_state *open_pipe_creds(char *system_name, PyObject *creds,
 	return cli;
 }
 
-static PyObject *new_policy_hnd_object(struct cli_state *cli, 
-				       TALLOC_CTX *mem_ctx, POLICY_HND *pol)
+PyObject *new_policy_hnd_object(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+				POLICY_HND *pol)
 {
 	spoolss_policy_hnd_object *o;
 
@@ -127,11 +115,6 @@ static PyObject *new_policy_hnd_object(struct cli_state *cli,
 /* 
  * Method dispatch table
  */
-
-#include "py_spoolss_printers.c"
-#include "py_spoolss_drivers.c"
-#include "py_spoolss_ports.c"
-#include "py_spoolss_forms.c"
 
 static PyMethodDef spoolss_methods[] = {
 

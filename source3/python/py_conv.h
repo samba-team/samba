@@ -18,8 +18,8 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#ifndef _PY_SPOOLSS_CONV_H
-#define _PY_SPOOLSS_CONV_H
+#ifndef _PY_CONV_H
+#define _PY_CONV_H
 
 enum pyconv_types { PY_UNISTR, PY_UINT32, PY_UINT16 };
 
@@ -32,4 +32,9 @@ struct pyconv {
 PyObject *from_struct(void *s, struct pyconv *conv);
 void to_struct(void *s, PyObject *dict, struct pyconv *conv);
 
-#endif /* _PY_SPOOLSS_CONV_H */
+/* Another version of offsetof (-: */
+
+#undef offsetof
+#define offsetof(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER)
+
+#endif /* _PY_CONV_H */

@@ -18,6 +18,8 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#include "python/py_spoolss.h"
+
 struct pyconv py_PRINTER_INFO_0[] = {
 	{ "printer_name", PY_UNISTR, offsetof(PRINTER_INFO_0, printername) },
 	{ "server_name", PY_UNISTR, offsetof(PRINTER_INFO_0, servername) },
@@ -234,8 +236,7 @@ static PyObject *PyDEVICEMODE_FromDEVICEMODE(DEVICEMODE *devmode)
 
 /* Open a printer */
 
-static PyObject *spoolss_openprinter(PyObject *self, PyObject *args,
-				     PyObject *kw)
+PyObject *spoolss_openprinter(PyObject *self, PyObject *args, PyObject *kw)
 {
 	char *full_name, *computer_name = NULL;
 	TALLOC_CTX *mem_ctx;
@@ -296,7 +297,7 @@ static PyObject *spoolss_openprinter(PyObject *self, PyObject *args,
 
 /* Close a printer */
 
-static PyObject *spoolss_closeprinter(PyObject *self, PyObject *args)
+PyObject *spoolss_closeprinter(PyObject *self, PyObject *args)
 {
 	PyObject *po;
 	spoolss_policy_hnd_object *hnd;
@@ -326,8 +327,7 @@ static PyObject *spoolss_closeprinter(PyObject *self, PyObject *args)
 
 /* Fetch printer information */
 
-static PyObject *spoolss_getprinter(PyObject *self, PyObject *args,
-				    PyObject *kw)
+PyObject *spoolss_getprinter(PyObject *self, PyObject *args, PyObject *kw)
 {
 	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
 	WERROR werror;
@@ -403,8 +403,7 @@ static PyObject *spoolss_getprinter(PyObject *self, PyObject *args,
 
 /* Set printer information */
 
-static PyObject *spoolss_setprinter(PyObject *self, PyObject *args,
-				    PyObject *kw)
+PyObject *spoolss_setprinter(PyObject *self, PyObject *args, PyObject *kw)
 {
 	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
 	WERROR werror;
@@ -458,8 +457,7 @@ static PyObject *spoolss_setprinter(PyObject *self, PyObject *args,
 
 /* Enumerate printers */
 
-static PyObject *spoolss_enumprinters(PyObject *self, PyObject *args,
-				      PyObject *kw)
+PyObject *spoolss_enumprinters(PyObject *self, PyObject *args, PyObject *kw)
 {
 	WERROR werror;
 	PyObject *result, *creds = NULL;

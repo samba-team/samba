@@ -4,8 +4,8 @@ RCS file: /data/cvs/samba/source/Makefile.in,v
 retrieving revision 1.460
 diff -u -r1.460 Makefile.in
 --- Makefile.in	2002/03/22 02:39:35	1.460
-+++ Makefile.in	2002/03/28 00:02:54
-@@ -781,6 +781,20 @@
++++ Makefile.in	2002/03/28 04:12:51
+@@ -781,6 +781,27 @@
  	-$(INSTALLCMD) -d ${prefix}/include
  	-$(INSTALLCMD) include/libsmbclient.h ${prefix}/include
  
@@ -14,14 +14,21 @@ diff -u -r1.460 Makefile.in
 +PYTHON_OBJS = $(LIB_OBJ) $(LIBSMB_OBJ) $(RPC_PARSE_OBJ) $(UBIQX_OBJ) \
 +	$(PARAM_OBJ) $(LIBMSRPC_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ)
 +
-+python/setup.py: $(srcdir)/setup.py.in
-+	@echo "WARNING: you need to run ./config.status"
++PY_SPOOLSS_PROTO_OBJ = python/py_spoolss.o python/py_spoolss_printers.o \
++		python/py_spoolss_forms.o python/py_spoolss_ports.o \
++		python/py_spoolss_drivers.o
++
++python_proto: python_spoolss_proto
++
++python_spoolss_proto:
++	@cd $(srcdir) && $(SHELL) script/mkproto.sh $(AWK) \
++		-h _PY_SPOOLSS_PROTO_H python/py_spoolss_proto.h \
++		$(PY_SPOOLSS_PROTO_OBJ)
 +
 +python_ext: $(PYTHON_OBJS)
 +	@echo python python/setup.py build
 +	@PYTHON_OBJS="$(PYTHON_OBJS)" PYTHON_CFLAGS="$(CFLAGS) $(CPPFLAGS)" \
 +		python python/setup.py build
-+
 +
  # revert to the previously installed version
  revert:
@@ -32,7 +39,7 @@ RCS file: /data/cvs/samba/source/configure.in,v
 retrieving revision 1.292
 diff -u -r1.292 configure.in
 --- configure.in	2002/03/19 02:32:31	1.292
-+++ configure.in	2002/03/28 00:02:55
++++ configure.in	2002/03/28 04:12:52
 @@ -2690,7 +2690,7 @@
  builddir=`pwd`
  AC_SUBST(builddir)

@@ -21,10 +21,13 @@
 #ifndef _PY_SPOOLSS_H
 #define _PY_SPOOLSS_H
 
-/* Another version of offsetof (-: */
+#include "includes.h"
+#include "Python.h"
 
-#undef offsetof
-#define offsetof(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER)
+#include "python/py_common.h"
+#include "python/py_conv.h"
+
+/* Spoolss policy handle object */
 
 typedef struct {
 	PyObject_HEAD
@@ -33,11 +36,19 @@ typedef struct {
 	POLICY_HND pol;
 } spoolss_policy_hnd_object;
      
+/* Exceptions raised by this module */
+
 extern PyTypeObject spoolss_policy_hnd_type;
 
 extern PyObject *spoolss_error, *spoolss_werror;
 
-void to_struct(void *s, PyObject *dict, struct pyconv *conv);
-PyObject *from_struct(void *s, struct pyconv *conv);
+/* Return a cli_state struct opened on the SPOOLSS pipe.  If credentials
+   are passed use them. */
+
+typedef struct cli_state *(cli_pipe_fn)(
+	struct cli_state *cli, char *system_name,
+	struct ntuser_creds *creds);
+
+#include "python/py_spoolss_proto.h"
 
 #endif /* _PY_SPOOLSS_H */
