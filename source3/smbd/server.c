@@ -230,7 +230,7 @@ int dos_chmod(int cnum,char *fname,int dosmode,struct stat *st)
     unixmode |= tmp;
   }
 
-  return(chmod(fname,unixmode));
+  return(sys_chmod(fname,unixmode));
 }
 
 
@@ -3442,27 +3442,6 @@ static void process(void)
 	  }
 
 	  t = time(NULL);
-
-	  {
-	    /* the following bit of code was added to combat smbd
-               looping chewing lots of CPU time. It should never
-               actually be needed, but it seems that some systems
-               don't set error correctly, which is used to distinguish
-               a select() timeout from a read error 
-	       
-	       we exit if receive_smb() returns false 3 times in one second. 
-	       */
-	    static int error_count=0;
-	    static time_t error_time=0;
-	    if (error_count++==0) {
-	      error_time = t;
-	    } else if (error_time != t) {
-	      error_count = 0;
-	    } else if (error_count > 2) {
-	      exit_server("looping in process()\n");
-	    }
-	  }
-
 
 	  /* become root again if waiting */
 	  unbecome_user();

@@ -200,6 +200,13 @@ int sys_rename(char *from, char *to)
 #endif /* KANJI */
 }
 
+/*******************************************************************
+for chmod
+********************************************************************/
+int sys_chmod(char *fname,int mode)
+{
+  return(chmod(dos_to_unix(fname,False),mode));
+}
 
 /*******************************************************************
 chown isn't used much but OS/2 doesn't have it

@@ -827,6 +827,34 @@ static BOOL do_this_one(file_info *finfo)
   return(True);
 }
 
+
+/*****************************************************************************
+ Convert a character pointer in a call_api() response to a form we can use.
+ This function contains code to prevent core dumps if the server returns 
+ invalid data.
+*****************************************************************************/
+static char *fix_char_ptr(unsigned int datap, unsigned int converter, char *rdata, int rdrcnt)
+{
+if( datap == 0 )		/* turn NULL pointers */
+  {				/* into zero length strings */
+  return "";
+  }
+else
+  {
+  unsigned int offset = datap - converter;
+
+  if( offset < 0 || offset >= rdrcnt )
+    {
+      DEBUG(1,("bad char ptr: datap=%u, converter=%u, rdata=%u, rdrcnt=%d>", datap, converter, (unsigned)rdata, rdrcnt));
+    return "<ERROR>";
+    }
+  else
+    {
+    return &rdata[offset];
+    }
+  }
+}
+
 /****************************************************************************
 interpret a short filename structure
 The length of the structure is returned
@@ -2177,7 +2205,7 @@ static void do_cancel(int job)
   bzero(param,sizeof(param));
 
   p = param;
-  SSVAL(p,0,81);		/* api number */
+  SSVAL(p,0,81);		/* DosPrintJobDel() */
   p += 2;
   strcpy(p,"W");
   p = skip_string(p,1);
@@ -2424,7 +2452,7 @@ static void cmd_print(char *inbuf,char *outbuf )
 }
 
 /****************************************************************************
-print a file
+show a print queue
 ****************************************************************************/
 static void cmd_queue(char *inbuf,char *outbuf )
 {
@@ -2484,6 +2512,109 @@ static void cmd_queue(char *inbuf,char *outbuf )
   
 }
 
+
+/****************************************************************************
+show information about a print queue
+****************************************************************************/
+static void cmd_qinfo(char *inbuf,char *outbuf )
+{
+  char *rparam = NULL;
+  char *rdata = NULL;
+  char *p;
+  int rdrcnt, rprcnt;
+  pstring param;
+  int result_code;
+  
+  bzero(param,sizeof(param));
+
+  p = param;
+  SSVAL(p,0,70); 			/* API function number 70 (DosPrintQGetInfo) */
+  p += 2;
+  strcpy(p,"zWrLh");			/* parameter description? */
+  p = skip_string(p,1);
+  strcpy(p,"zWWWWzzzzWWzzl");		/* returned data format */
+  p = skip_string(p,1);
+  strcpy(p,strrchr(service,'\\')+1);	/* name of queue */
+  p = skip_string(p,1);
+  SSVAL(p,0,3);				/* API function level 3, just queue info, no job info */
+  SSVAL(p,2,1000);			/* size of bytes of returned data buffer */
+  p += 4;
+  strcpy(p,"");				/* subformat */
+  p = skip_string(p,1);
+
+  DEBUG(1,("Calling DosPrintQueueGetInfo()...\n"));
+  if( call_api(PTR_DIFF(p,param), 0,
+	       10, 4096,
+	       &rprcnt, &rdrcnt,
+	       param, NULL,
+	       &rparam, &rdata) )
+	{
+	int converter;
+	result_code = SVAL(rparam,0);
+	converter = SVAL(rparam,2);		/* conversion factor */
+
+	DEBUG(2,("returned %d bytes of parameters, %d bytes of data, %d records\n", rprcnt, rdrcnt, SVAL(rparam,4) ));
+
+	if (result_code == 0)			/* if no error, */
+	    {
+	    p = rdata;				/* received data */
+
+	    printf("Name: \"%s\"\n", fix_char_ptr(SVAL(p,0), converter, rdata, rdrcnt) );
+	    printf("Priority: %u\n", SVAL(p,4) );
+	    printf("Start time: %u\n", SVAL(p,6) );
+	    printf("Until time: %u\n", SVAL(p,8) );
+	    printf("Seperator file: \"%s\"\n", fix_char_ptr(SVAL(p,12), converter, rdata, rdrcnt) );
+	    printf("Print processor: \"%s\"\n", fix_char_ptr(SVAL(p,16), converter, rdata, rdrcnt) );
+	    printf("Parameters: \"%s\"\n", fix_char_ptr(SVAL(p,20), converter, rdata, rdrcnt) );
+	    printf("Comment: \"%s\"\n", fix_char_ptr(SVAL(p,24), converter, rdata, rdrcnt) );
+	    printf("Status: %u\n", SVAL(p,28) );
+	    printf("Jobs: %u\n", SVAL(p,30) );
+	    printf("Printers: \"%s\"\n", fix_char_ptr(SVAL(p,32), converter, rdata, rdrcnt) );
+	    printf("Drivername: \"%s\"\n", fix_char_ptr(SVAL(p,36), converter, rdata, rdrcnt) );
+
+	    /* Dump the driver data */
+	    {
+	    int count, x, y, c;
+	    char *ddptr;
+
+	    ddptr = rdata + SVAL(p,40) - converter;
+	    if( SVAL(p,40) == 0 ) {count = 0;} else {count = IVAL(ddptr,0);}
+	    printf("Driverdata: size=%d, version=%u\n", count, IVAL(ddptr,4) );
+
+	    for(x=8; x < count; x+=16)
+		{
+		for(y=0; y < 16; y++)
+		    {
+		    if( (x+y) < count )
+		    	printf("%2.2X ", CVAL(ddptr,(x+y)) );
+		    else
+		    	fputs("   ", stdout);
+		    }
+		for(y=0; y < 16 && (x+y) < count; y++)
+		    {
+		    c = CVAL(ddptr,(x+y));
+		    if(isprint(c))
+		    	fputc(c, stdout);
+		    else
+		    	fputc('.', stdout);
+		    }
+		fputc('\n', stdout);
+		}
+	    }
+	    
+	    }
+	}
+  else			/* call_api() failed */
+  	{
+  	printf("Failed, error = %d\n", result_code);
+  	}
+
+  /* If any parameters or data were returned, free the storage. */
+  if(rparam) free(rparam);
+  if(rdata) free(rdata);
+
+  return;
+}
 
 /****************************************************************************
 delete some files
@@ -3544,7 +3675,7 @@ static void server_info()
   bzero(param,sizeof(param));
 
   p = param;
-  SSVAL(p,0,63); /* api number */
+  SSVAL(p,0,63); 		/* NetServerGetInfo()? */
   p += 2;
   strcpy(p,"WrLh");
   p = skip_string(p,1);
@@ -3741,6 +3872,7 @@ struct
   {"print",cmd_print,"<file name> print a file"},
   {"printmode",cmd_printmode,"<graphics or text> set the print mode"},
   {"queue",cmd_queue,"show the print queue"},
+  {"qinfo",cmd_qinfo,"show print queue information"},
   {"cancel",cmd_cancel,"<jobid> cancel a print queue entry"},
   {"stat",cmd_stat,"<file> get info on a file (experimental!)"},
   {"quit",send_logout,"logoff the server"},

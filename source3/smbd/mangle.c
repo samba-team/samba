@@ -509,9 +509,36 @@ void mangle_name_83(char *s)
 	  *p++ = 0;
 	  while (*p && extlen < 3)
 	    {
+#ifdef KANJI
+	      if (is_shift_jis (*p))
+		{
+		  if (extlen < 2)
+		    {
+		      extension[extlen++] = p[0];
+		      extension[extlen++] = p[1];
+		    }
+		  else 
+		    {
+		      extension[extlen++] = base36 (((unsigned char) *p) % 36);
+		    }
+		  p += 2;
+		}
+	      else if (is_kana (*p))
+		{
+		  extension[extlen++] = p[0];
+		  p++;
+		}
+	      else 
+		{
+		  if (isdoschar (*p) && *p != '.')
+		    extension[extlen++] = p[0];
+		  p++;
+		}
+#else
 	      if (isdoschar(*p) && *p != '.')
 		extension[extlen++] = *p;
 	      p++;
+#endif /* KANJI */
 	    }
 	  extension[extlen] = 0;
 	}
@@ -521,9 +548,36 @@ void mangle_name_83(char *s)
 
   while (*p && baselen < 5)
     {
+#ifdef KANJI
+      if (is_shift_jis (*p))
+	{
+	  if (baselen < 4)
+	    {
+	      base[baselen++] = p[0];
+	      base[baselen++] = p[1];
+	    }
+	  else 
+	    {
+	      base[baselen++] = base36 (((unsigned char) *p) % 36);
+	    }
+	  p += 2;
+	}
+      else if (is_kana (*p))
+	{
+	  base[baselen++] = p[0];
+	  p++;
+	}
+      else 
+	{
+	  if (isdoschar (*p) && *p != '.')
+	    base[baselen++] = p[0];
+	  p++;
+	}
+#else
       if (isdoschar(*p) && *p != '.')
 	base[baselen++] = *p;
       p++;
+#endif /* KANJI */
     }
   base[baselen] = 0;
 

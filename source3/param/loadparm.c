@@ -192,6 +192,7 @@ typedef struct
   char *szLppausecommand;
   char *szLpresumecommand;
   char *szPrintername;
+  char *szPrinterDriver;
   char *szDontdescend;
   char *szHostsallow;
   char *szHostsdeny;
@@ -264,6 +265,7 @@ static service sDefault =
   NULL,    /* szLppausecommand */
   NULL,    /* szLpresumecommand */
   NULL,    /* szPrintername */
+  NULL,    /* szPrinterDriver */
   NULL,    /* szDontdescend */
   NULL,    /* szHostsallow */
   NULL,    /* szHostsdeny */
@@ -491,6 +493,7 @@ struct parm_struct
   {"lpresume command", P_STRING,  P_LOCAL,  &sDefault.szLpresumecommand,NULL},
   {"printer",          P_STRING,  P_LOCAL,  &sDefault.szPrintername,    NULL},
   {"printer name",     P_STRING,  P_LOCAL,  &sDefault.szPrintername,    NULL},
+  {"printer driver",   P_STRING,  P_LOCAL,  &sDefault.szPrinterDriver,  NULL},
   {"hosts allow",      P_STRING,  P_LOCAL,  &sDefault.szHostsallow,     NULL},
   {"allow hosts",      P_STRING,  P_LOCAL,  &sDefault.szHostsallow,     NULL},
   {"hosts deny",       P_STRING,  P_LOCAL,  &sDefault.szHostsdeny,      NULL},
@@ -759,6 +762,7 @@ FN_LOCAL_STRING(lp_lprmcommand,szLprmcommand)
 FN_LOCAL_STRING(lp_lppausecommand,szLppausecommand)
 FN_LOCAL_STRING(lp_lpresumecommand,szLpresumecommand)
 FN_LOCAL_STRING(lp_printername,szPrintername)
+FN_LOCAL_STRING(lp_printerdriver,szPrinterDriver)
 FN_LOCAL_STRING(lp_hostsallow,szHostsallow)
 FN_LOCAL_STRING(lp_hostsdeny,szHostsdeny)
 FN_LOCAL_STRING(lp_magicscript,szMagicScript)

@@ -223,6 +223,7 @@ Here come some platform specific sections
 #define USE_SETSID
 #define HAVE_BZERO
 #define HAVE_MEMMOVE
+#define USE_SIGBLOCK
 #if _LINUX_C_LIB_VERSION_MAJOR >= 5
 #define USE_SETFS
 #endif
@@ -255,6 +256,7 @@ typedef unsigned short mode_t;
 #endif
 #define REPLACE_GETPASS
 #define BSD_TERMIO
+#define USE_SIGBLOCK
 #endif
 
 
@@ -288,6 +290,7 @@ extern int innetgr (const char *, const char *, const char *, const char *);
 #define USE_GETCWD
 #define USE_SETSID
 #define REPLACE_GETPASS
+#define USE_SIGBLOCK
 #endif
 
 
@@ -479,6 +482,7 @@ char *mktemp(char *); /* No standard include */
 #include <netinet/tcp.h>
 #define SYSV
 #define USE_WAITPID
+#define USE_SIGBLOCK
 #define SIGNAL_CAST (void (*)())
 #define DEFAULT_PRINTING PRINT_AIX
 /* we undef this because sys/param.h is broken in aix. uggh. */
@@ -529,7 +533,12 @@ char *mktemp(char *); /* No standard include */
 #define NO_EID
 #define STATFS4
 #define USE_DIRECT
+#ifdef PTX4
+#undef USE_DIRECT
 #endif
+#endif
+
+
 
 #ifdef SEQUENT_PTX4
 #include <string.h>
