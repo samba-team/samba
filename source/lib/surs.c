@@ -38,7 +38,7 @@ BOOL surs_sam_sid_to_unixid(const SURS_SID_ID *sid, SURS_POSIX_ID *id, BOOL crea
 	return surs_tdb_sam_sid_to_unixid(id, sid, create);
 #endif
 #endif
-	return surs_multidomalg_sam_sid_to_unixid(sid, id, create);
+	return surs_algdomonly_sam_sid_to_unixid(sid, id, create);
 }
 
 /******************************************************************
@@ -54,5 +54,5 @@ BOOL surs_unixid_to_sam_sid(const SURS_POSIX_ID *id, SURS_SID_ID *sid, BOOL crea
 	return surs_tdb_unixid_to_sam_sid(id, sid, create);
 #endif
 #endif
-	return surs_multidomalg_unixid_to_sam_sid(id, sid, create);
+	return surs_algdomonly_unixid_to_sam_sid(id, sid, create);
 }

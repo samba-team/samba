@@ -1201,6 +1201,17 @@ static void spoolss_notify_job_position(int snum, SPOOL_NOTIFY_INFO_DATA *data, 
 
 #define END 65535
 
+struct s_notify_info_data_table
+{
+	uint16 type;
+	uint16 field;
+	char *name;
+	uint32 size;
+	void (*fn) (int snum, SPOOL_NOTIFY_INFO_DATA *data,
+		    print_queue_struct *queue,
+		    NT_PRINTER_INFO_LEVEL *printer);
+};
+
 struct s_notify_info_data_table notify_info_data_table[] =
 {
 { PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_SERVER_NAME,         "PRINTER_NOTIFY_SERVER_NAME",         POINTER,   spoolss_notify_server_name },
@@ -1905,6 +1916,31 @@ static BOOL construct_printer_info_2(fstring servername, PRINTER_INFO_2 *printer
 }
 
 /********************************************************************
+ * construct_printer_info_3
+ * fill a printer_info_3 struct
+ ********************************************************************/
+static BOOL construct_printer_info_3(fstring servername,
+			PRINTER_INFO_3 *printer, int snum)
+{
+	NT_PRINTER_INFO_LEVEL ntprinter;
+
+	if (get_a_printer(&ntprinter, 2, lp_servicename(snum)) !=0 )
+		return False;
+		
+	printer->flags = 4; /* no idea, yet.  see MSDN. */
+	if (ntprinter.info_2->secdesc.len != 0)
+	{
+		/* steal the printer info sec_desc structure.  [badly done]. */
+		printer->sec = *ntprinter.info_2->secdesc.sec;
+		safe_free(ntprinter.info_2->secdesc.sec);
+		ZERO_STRUCT(ntprinter.info_2->secdesc);
+	}
+
+	free_a_printer(ntprinter, 2);
+	return True;
+}
+
+/********************************************************************
  Spoolss_enumprinters.
 ********************************************************************/
 static BOOL enum_all_printers_info_1(fstring server, uint32 flags, NEW_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
@@ -2340,6 +2376,41 @@ static uint32 getprinter_level_2(fstring servername, int snum, NEW_BUFFER *buffe
 
 /****************************************************************************
 ****************************************************************************/
+static uint32 getprinter_level_3(fstring servername, int snum, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
+{
+	PRINTER_INFO_3 *printer=NULL;
+	fstring temp;
+
+	if((printer=(PRINTER_INFO_3*)malloc(sizeof(PRINTER_INFO_3)))==NULL)
+		return ERROR_NOT_ENOUGH_MEMORY;
+	
+	fstrcpy(temp, "\\\\");
+	fstrcat(temp, servername);
+	construct_printer_info_3(temp, printer, snum);
+	
+	/* check the required size. */	
+	*needed += spoolss_size_printer_info_3(printer);
+
+	if (!alloc_buffer_size(buffer, *needed)) {
+		safe_free(printer);
+		return ERROR_INSUFFICIENT_BUFFER;
+	}
+
+	/* fill the buffer with the structures */
+	new_smb_io_printer_info_3("", buffer, printer, 0);	
+	
+	/* clear memory */
+	free_sec_desc(&printer->sec);
+
+	if (*needed > offered) {
+		return ERROR_INSUFFICIENT_BUFFER;
+	}
+	else
+		return NT_STATUS_NO_PROBLEMO;	
+}
+
+/****************************************************************************
+****************************************************************************/
 uint32 _spoolss_getprinter(POLICY_HND *handle, uint32 level,
 			   NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
 {
@@ -2356,13 +2427,12 @@ uint32 _spoolss_getprinter(POLICY_HND *handle, uint32 level,
 	switch (level) {
 	case 0:
 		return getprinter_level_0(servername, snum, buffer, offered, needed);
-		break;
 	case 1:
 		return getprinter_level_1(servername,snum, buffer, offered, needed);
-		break;
 	case 2:		
 		return getprinter_level_2(servername,snum, buffer, offered, needed);
-		break;
+	case 3:		
+		return getprinter_level_3(servername,snum, buffer, offered, needed);
 	default:
 		return ERROR_INVALID_LEVEL;
 		break;

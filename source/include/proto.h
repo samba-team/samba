@@ -420,12 +420,12 @@ void standard_sub_vsnum(char *str, user_struct *vuser, int snum);
 BOOL surs_sam_sid_to_unixid(const SURS_SID_ID *sid, SURS_POSIX_ID *id, BOOL create);
 BOOL surs_unixid_to_sam_sid(const SURS_POSIX_ID *id, SURS_SID_ID *sid, BOOL create);
 
-/*The following definitions come from  lib/sursalgmultidom.c  */
+/*The following definitions come from  lib/sursalgdomonly.c  */
 
-BOOL surs_multidomalg_sam_sid_to_unixid(const SURS_SID_ID * sid,
-					SURS_POSIX_ID * id, BOOL create);
-BOOL surs_multidomalg_unixid_to_sam_sid(const SURS_POSIX_ID * id,
-					SURS_SID_ID * sid, BOOL create);
+BOOL surs_algdomonly_sam_sid_to_unixid(const DOM_SID *sid, SURS_POSIX_ID *id,
+				BOOL create);
+BOOL surs_algdomonly_unixid_to_sam_sid(const SURS_POSIX_ID *id, DOM_SID *sid,
+				BOOL create);
 
 /*The following definitions come from  lib/sursalgnt5ldap.c  */
 
@@ -855,6 +855,16 @@ UNISTR2 *unistr2_dup(const UNISTR2 *name);
 void unistr2_free(UNISTR2 *name);
 int StrCaseCmpW(const UNISTR2 *ws, const UNISTR2 *wt);
 BOOL unistr2equal(const UNISTR2 *s1, const UNISTR2 *s2);
+
+/*The following definitions come from  lib/util_unixsd.c  */
+
+size_t convertperms_unix_to_sd(const SMB_STRUCT_STAT * sbuf,
+			       BOOL is_directory, mode_t mode,
+			       SEC_DESC ** ppdesc);
+BOOL convertperms_sd_to_unix(SMB_STRUCT_STAT * psbuf, uid_t * puser,
+			     gid_t * pgrp, mode_t * pmode,
+			     uint32 security_info_sent, SEC_DESC * psd,
+			     BOOL is_directory);
 
 /*The following definitions come from  lib/util_wunistr.c  */
 

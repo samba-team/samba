@@ -1817,8 +1817,6 @@ extern int chain_size;
 
 #include "smb_macros.h"
 
-#include "nt_printing.h"
-
 struct use_info
 {
 	BOOL connected;
@@ -1947,6 +1945,7 @@ typedef struct policy_cache
 policy_cache;
 
 #include "ntdomain.h"
+#include "nt_printing.h"
 
 typedef struct {
 	fstring smb_name; /* user name from the client */

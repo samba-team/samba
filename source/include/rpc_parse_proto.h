@@ -890,6 +890,7 @@ BOOL smb_io_printmonitor_info_2(char *desc, NEW_BUFFER *buffer, PRINTMONITOR_2 *
 uint32 spoolss_size_printer_info_0(PRINTER_INFO_0 *info);
 uint32 spoolss_size_printer_info_1(PRINTER_INFO_1 *info);
 uint32 spoolss_size_printer_info_2(PRINTER_INFO_2 *info);
+uint32 spoolss_size_printer_info_3(PRINTER_INFO_3 *info);
 uint32 spoolss_size_printer_driver_info_1(DRIVER_INFO_1 *info);
 uint32 spoolss_size_printer_driver_info_2(DRIVER_INFO_2 *info);
 uint32 spoolss_size_printer_driver_info_3(DRIVER_INFO_3 *info);

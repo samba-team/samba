@@ -855,17 +855,6 @@ typedef struct spool_r_getprinter
 	uint32 status;
 } SPOOL_R_GETPRINTER;
 
-struct s_notify_info_data_table
-{
-	uint16 type;
-	uint16 field;
-	char *name;
-	uint32 size;
-	void (*fn) (int snum, SPOOL_NOTIFY_INFO_DATA *data,
-		    print_queue_struct *queue,
-		    NT_PRINTER_INFO_LEVEL *printer);
-};
-
 typedef struct driver_info_1
 {
 	UNISTR name;

@@ -82,7 +82,8 @@ uint32 domain_client_validate_backend(const char *srv_name,
 	BOOL cleartext = smb_apasslen != 0 && smb_apasslen != 24 &&
 		smb_ntpasslen == 0;
 
-	DEBUG(100, ("domain_client_validate: %s %s\n", user, domain));
+	DEBUG(100, ("domain_client_validate: %s %s %s\n",
+				srv_name, user, domain));
 	dump_data_pw("lmpw:", smb_apasswd, smb_apasslen);
 	dump_data_pw("ntpw:", smb_ntpasswd, smb_ntpasslen);
 

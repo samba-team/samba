@@ -2343,6 +2343,18 @@ uint32 spoolss_size_printer_info_2(PRINTER_INFO_2 *info)
 /*******************************************************************
 return the size required by a struct in the stream
 ********************************************************************/
+uint32 spoolss_size_printer_info_3(PRINTER_INFO_3 *info)
+{
+	/* well, we don't actually *know* the damn size of the
+	 * security descriptor.  spoolss is a stupidly designed
+	 * api.
+	 */
+	return 1024;
+}
+
+/*******************************************************************
+return the size required by a struct in the stream
+********************************************************************/
 uint32 spoolss_size_printer_driver_info_1(DRIVER_INFO_1 *info)
 {
 	int size=0;

@@ -72,7 +72,7 @@ static uint32 sursalg_uid_to_user_rid(uint32 uid)
  converts SID to a UNIX id + type.  the Domain SID is,
  and can only be, our own SID.
  ********************************************************************/
-BOOL surs_algdomonly_sam_sid_to_unixid(DOM_SID *sid, SURS_POSIX_ID *id,
+BOOL surs_algdomonly_sam_sid_to_unixid(const DOM_SID *sid, SURS_POSIX_ID *id,
 				BOOL create)
 {
 	DOM_SID tmp_sid;
@@ -96,17 +96,13 @@ BOOL surs_algdomonly_sam_sid_to_unixid(DOM_SID *sid, SURS_POSIX_ID *id,
 	{
 		case RID_TYPE_USER:
 		{
-			id->type = SURS_POSIX_UID_AS_USR;
+			id->type = SURS_POSIX_UID;
 			return True;
 		}
 		case RID_TYPE_ALIAS:
-		{
-			id->type = SURS_POSIX_GID_AS_ALS;
-			return True;
-		}
 		case RID_TYPE_GROUP:
 		{
-			id->type = SURS_POSIX_GID_AS_GRP;
+			id->type = SURS_POSIX_GID;
 			return True;
 		}
 		default:
@@ -121,25 +117,30 @@ BOOL surs_algdomonly_sam_sid_to_unixid(DOM_SID *sid, SURS_POSIX_ID *id,
  converts UNIX id + type to a SID.  the Domain SID is,
  and can only be, our own SID.
  ********************************************************************/
-BOOL surs_algdomonly_unixid_to_sam_sid(SURS_POSIX_ID *id, DOM_SID *sid,
+BOOL surs_algdomonly_unixid_to_sam_sid(const SURS_POSIX_ID *id, DOM_SID *sid,
 				BOOL create)
 {
 	sid_copy(sid, &global_sam_sid);
 	switch (id->type)
 	{
-		case SURS_POSIX_UID_AS_USR:
+		case SURS_POSIX_UID:
 		{
 			sid_append_rid(sid, sursalg_uid_to_user_rid(id->id));
 			return True;
 		}
-		case SURS_POSIX_GID_AS_ALS:
+		case SURS_POSIX_GID:
 		{
-			sid_append_rid(sid, sursalg_gid_to_alias_rid(id->id));
-			return True;
-		}
-		case SURS_POSIX_GID_AS_GRP:
-		{
-			sid_append_rid(sid, sursalg_gid_to_group_rid(id->id));
+			if (lp_server_role() == ROLE_DOMAIN_MEMBER ||
+			    lp_server_role() == ROLE_STANDALONE)
+			{
+				sid_append_rid(sid,
+					sursalg_gid_to_alias_rid(id->id));
+			}
+			else
+			{
+				sid_append_rid(sid,
+					sursalg_gid_to_group_rid(id->id));
+			}
 			return True;
 		}
 	}

@@ -21,6 +21,7 @@
  */
 
 #include "includes.h"
+#include "rpc_parse.h"
 #include "nterr.h"
 
 extern int DEBUGLEVEL;
@@ -638,7 +639,6 @@ static uint32 add_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info)
 	pstring file;
 	fstring printer_name;
 	NT_DEVICEMODE *nt_devmode;
-	
 	/*
 	 * JFM: one day I'll forget.
 	 * below that's info->portname because that's the SAMBA sharename
@@ -664,7 +664,9 @@ static uint32 add_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info)
 	unlink(file);
 	if((fd = sys_open(file, O_WRONLY|O_CREAT|O_EXCL, 0644)) == -1)
 	{
-		DEBUG(0, ("add_a_printer_2: Cannot create printer file [%s]. Error was %s\n", file, strerror(errno) ));
+		DEBUG(0, ("add_a_printer_2: Cannot create "
+			"printer file [%s]. Error was %s\n", 
+			file, strerror(errno) ));
 		return(2);
 	}
 
@@ -893,6 +895,7 @@ static void free_nt_printer_info_level_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr)
 	DEBUG(106,("free_nt_printer_info_level_2: deleting info\n"));
 
 	free_nt_devicemode(&info->devmode);
+	free_sec_desc_buf(&info->secdesc);
 
 	for(param_ptr = info->specific; param_ptr; ) {
 		NT_PRINTER_PARAM *tofree = param_ptr;
@@ -918,6 +921,7 @@ static uint32 get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharen
 	char *v = NULL;
 	char **lines;
 	int i;
+	SMB_STRUCT_STAT sbuf;
 		
 	/*
 	 * the sharename argument is the SAMBA sharename
@@ -930,6 +934,17 @@ static uint32 get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharen
 	lines = file_lines_load(file,NULL);
 	if(lines == NULL) {
 		DEBUG(2, ("get_a_printer_2: Cannot open printer file [%s]. Error was %s\n", file, strerror(errno) ));
+		return(2);
+	}
+
+	/*
+	 * used below, replace with better system, here, please.
+	 */
+	if (sys_stat(file, &sbuf) != 0)
+	{
+		DEBUG(0, ("add_a_printer_2: Cannot stat "
+			"printer file [%s]. Error was %s\n",
+			file, strerror(errno) ));
 		return(2);
 	}
 
@@ -946,6 +961,14 @@ static uint32 get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharen
 	init_devicemode(nt_devmode);
 	
 	info->devmode=nt_devmode;
+
+	/*
+	 * put a better system here, please.
+	 */
+	info->secdesc.len = convertperms_unix_to_sd(&sbuf, False,
+						    sbuf.st_mode, 
+						    &info->secdesc.sec);
+	info->secdesc.max_len = info->secdesc.len;
 
 	for (i=0; lines[i]; i++) {
 		char *line = lines[i];

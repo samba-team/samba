@@ -178,7 +178,6 @@ LIBSAMBA_OBJ = $(PARAM_OBJ) $(LIB_OBJ)
 
 LIBNMB_OBJ = libsmb/namequery.o libsmb/nmblib.o libsmb/unexpected.o
 
-
 LIBSMB_OBJ = libsmb/clientgen.o libsmb/clidomain.o \
 	libsmb/clifile.o libsmb/cliprint.o libsmb/clierror.o \
 	libsmb/climessage.o libsmb/cliconnect.o \
@@ -270,6 +269,7 @@ PROFILE_OBJ = profile/profile.o
 
 SMBD_OBJ1 = smbd/server.o smbd/files.o smbd/connection.o \
 		lib/set_uid.o smbd/dfree.o smbd/dir.o smbd/password.o \
+		lib/util_unixsd.o \
 		smbd/conn.o smbd/fileio.o \
 		smbd/statcache.o \
 		smbd/ipc.o smbd/lanman.o smbd/mangle.o smbd/negprot.o \
@@ -355,6 +355,7 @@ LSARPCD_OBJ1 = lsarpcd/lsarpcd.o \
 
 SPOOLSSD_OBJ1 = spoolssd/spoolssd.o \
 		rpc_server/srv_spoolss.o \
+		lib/util_unixsd.o \
 		spoolssd/srv_spoolss_nt.o \
 		printing/nt_printing.o 
 
@@ -408,7 +409,7 @@ SPOOLSSD_OBJ = $(MSRPCD_OBJ) $(SPOOLSSD_OBJ1) \
            $(SIDDB_OBJ) \
            $(RPC_SRVUTIL_OBJ) \
            $(PROFILE_OBJ)
-SPOOLSSD_LIBS = $(SAMBA_LIBS) $(UBIQXLIB)
+SPOOLSSD_LIBS = $(SAMBA_LIBS) $(UBIQXLIB) $(LIBSURS)
 
 NETLOGOND_OBJ = $(MSRPCD_OBJ) $(NETLOGOND_OBJ1) \
            $(RPC_SRVUTIL_OBJ) \
@@ -434,7 +435,7 @@ SAMRD_OBJ = $(MSRPCD_OBJ) $(SAMRD_OBJ1) \
            $(SIDDB_OBJ) \
 		$(PROFILE_OBJ) 
 
-LIBSURS_OBJ = lib/surs.o lib/sursalgmultidom.o \
+LIBSURS_OBJ = lib/surs.o lib/sursalgdomonly.o \
 		lib/sursalgnt5ldap.o \
 		lib/surstdb.o
 

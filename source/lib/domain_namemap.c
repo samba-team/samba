@@ -113,7 +113,8 @@ static void map_posix_to_nt_type( DOM_NAME_MAP * gmep, int type)
 	}
 	else
 	{
-		if (lp_server_role() == ROLE_DOMAIN_MEMBER)
+		if (lp_server_role() == ROLE_DOMAIN_MEMBER ||
+		    lp_server_role() == ROLE_STANDALONE)
 		{
 			/* ... as a LOCAL group. */
 			gmep->type = SID_NAME_ALIAS;
