@@ -32,19 +32,31 @@ void cmd_help(void);
 BOOL reopen_connection(char *inbuf,char *outbuf);
 char *smb_errstr(char *inbuf);
 
+/*The following definitions come from  clientgen.c  */
+
+BOOL cli_NetWkstaUserLogon(struct cli_state *cli,char *user, char *workstation);
+BOOL cli_session_setup(struct cli_state *cli, 
+		       char *user, 
+		       char *pass, int passlen,
+		       char *ntpass, int ntpasslen,
+		       char *workgroup);
+BOOL cli_send_tconX(struct cli_state *cli, 
+		    char *share, char *dev, char *pword, int passlen);
+BOOL cli_tdis(struct cli_state *cli);
+BOOL cli_negprot(struct cli_state *cli);
+BOOL cli_session_request(struct cli_state *cli, char *host, int name_type,
+			 char *myname);
+BOOL cli_connect(struct cli_state *cli, char *host, struct in_addr *ip);
+BOOL cli_initialise(struct cli_state *cli);
+void cli_shutdown(struct cli_state *cli);
+
 /*The following definitions come from  clientutil.c  */
 
-void cli_setup_pkt(char *outbuf);
-BOOL cli_receive_trans_response(char *inbuf,int trans,int *data_len,
-				int *param_len, char **data,char **param);
-BOOL cli_send_session_request(char *inbuf, char *outbuf);
 BOOL cli_send_login(char *inbuf, char *outbuf, BOOL start_session, BOOL use_setup);
 void cli_send_logout(void);
 BOOL cli_call_api(int prcnt,int drcnt,int mprcnt,int mdrcnt,int *rprcnt,
-	      int *rdrcnt, char *param,char *data, char **rparam,char **rdata);
-BOOL cli_send_trans_request(char *outbuf, int trans, char *name, int fid, int flags,
-			char *data,char *param,uint16 *setup, int ldata,int lparam,
-			int lsetup,int mdata,int mparam,int msetup);
+		  int *rdrcnt, char *param,char *data, 
+		  char **rparam, char **rdata);
 BOOL cli_open_sockets(int port);
 BOOL cli_reopen_connection(char *inbuf,char *outbuf);
 char *smb_errstr(char *inbuf);
@@ -114,10 +126,6 @@ int reply_trans(char *inbuf,char *outbuf);
 
 /*The following definitions come from  kanji.c  */
 
-char *sj_strtok(char *s1, char *s2);
-char *sj_strstr(char *s1, char *s2);
-char *sj_strchr (char *s, int c);
-char *sj_strrchr(char *s, int c);
 int interpret_coding_system(char *str, int def);
 
 /*The following definitions come from  loadparm.c  */
@@ -183,7 +191,6 @@ int lp_maxmux(void);
 int lp_maxpacket(void);
 int lp_keepalive(void);
 int lp_passwordlevel(void);
-int lp_usernamelevel(void);
 int lp_readsize(void);
 int lp_shmem_size(void);
 int lp_shmem_hash_size(void);
@@ -248,7 +255,6 @@ BOOL lp_map_archive(int );
 BOOL lp_locking(int );
 BOOL lp_strict_locking(int );
 BOOL lp_share_modes(int );
-BOOL lp_oplocks(int );
 BOOL lp_onlyuser(int );
 BOOL lp_manglednames(int );
 BOOL lp_widelinks(int );
@@ -257,7 +263,7 @@ BOOL lp_syncalways(int );
 BOOL lp_map_system(int );
 BOOL lp_delete_readonly(int );
 BOOL lp_fake_oplocks(int );
-BOOL lp_recursive_veto_delete(int );
+BOOL lp_dos_filetimes(int );
 int lp_create_mode(int );
 int lp_force_create_mode(int );
 int lp_dir_mode(int );
@@ -270,20 +276,14 @@ BOOL lp_add_home(char *pszHomename, int iDefaultService, char *pszHomedir);
 int lp_add_service(char *pszService, int iDefaultService);
 BOOL lp_add_printer(char *pszPrintername, int iDefaultService);
 BOOL lp_file_list_changed(void);
-BOOL lp_do_parameter(int snum, char *pszParmName, char *pszParmValue);
-int lp_next_parameter(int snum, int *i, char *label, 
-			   char *value, int allparameters);
 BOOL lp_snum_ok(int iService);
 BOOL lp_loaded(void);
 void lp_killunused(BOOL (*snumused)(int ));
 BOOL lp_load(char *pszFname,BOOL global_only);
 int lp_numservices(void);
-void lp_dump(FILE *f);
+void lp_dump(void);
 int lp_servicenumber(char *pszServiceName);
 char *volume_label(int snum);
-void lp_rename_service(int snum, char *new_name);
-void lp_remove_service(int snum);
-void lp_copy_service(int snum, char *new_name);
 int lp_default_server_announce(void);
 int lp_major_announce_version(void);
 int lp_minor_announce_version(void);
@@ -300,15 +300,13 @@ BOOL unlock_share_entry(int cnum, uint32 dev, uint32 inode, share_lock_token tok
 int get_share_modes(int cnum, share_lock_token token, uint32 dev, uint32 inode, 
                     min_share_mode_entry **old_shares);
 void del_share_mode(share_lock_token token, int fnum);
-BOOL set_share_mode(share_lock_token token, int fnum, uint16 port, uint16 op_type);
-BOOL remove_share_oplock(int fnum, share_lock_token token);
+BOOL set_share_mode(share_lock_token token, int fnum);
 BOOL lock_share_entry(int cnum, uint32 dev, uint32 inode, share_lock_token *ptok);
 BOOL unlock_share_entry(int cnum, uint32 dev, uint32 inode, share_lock_token token);
 int get_share_modes(int cnum, share_lock_token token, uint32 dev, uint32 inode, 
                     min_share_mode_entry **old_shares);
 void del_share_mode(share_lock_token token, int fnum);
-BOOL set_share_mode(share_lock_token token,int fnum, uint16 port, uint16 op_type);
-BOOL remove_share_oplock(int fnum, share_lock_token token);
+BOOL set_share_mode(share_lock_token token,int fnum);
 
 /*The following definitions come from  mangle.c  */
 
@@ -322,7 +320,6 @@ BOOL name_map_mangle(char *OutName,BOOL need83,int snum);
 
 /*The following definitions come from  md4.c  */
 
-void mdfour(unsigned char *out, unsigned char *in, int n);
 
 /*The following definitions come from  message.c  */
 
@@ -362,6 +359,20 @@ struct browse_cache_record *add_browser_entry(char *name, int type, char *wg,
                                               struct in_addr ip, BOOL local);
 void do_browser_lists(time_t t);
 
+/*The following definitions come from  nameconf.c  */
+
+int get_num_workgroups(void);
+int conf_workgroup_name_to_token(char *workgroup_name,char *default_name);
+char *conf_workgroup_name(int token);
+int conf_should_workgroup_member(int token);
+int conf_should_local_master(int token);
+int conf_should_domain_master(int token);
+char *conf_browsing_alias(int token);
+char *conf_browsing_alias_comment(int token);
+char *conf_alias_to_workgroup(char *alias);
+int conf_alias_to_token(char *alias);
+void read_smbbrowse_conf(char *default_name);
+
 /*The following definitions come from  namedbname.c  */
 
 void set_samba_nb_type(void);
@@ -396,7 +407,8 @@ struct response_record *make_response_queue_record(enum state_type state,
 				int quest_type, char *name,int type, int nb_flags, time_t ttl,
 				int server_type, char *my_name, char *my_comment,
 				BOOL bcast,BOOL recurse,
-				struct in_addr send_ip, struct in_addr reply_to_ip);
+				struct in_addr send_ip, struct in_addr reply_to_ip,
+				int reply_id);
 struct response_record *find_response_record(struct subnet_record **d,
 				uint16 id);
 
@@ -498,7 +510,8 @@ struct response_record *queue_netbios_packet(struct subnet_record *d,
 			int name_type,int nb_flags, time_t ttl,
 			int server_type, char *my_name, char *my_comment,
 			BOOL bcast,BOOL recurse,
-			struct in_addr send_ip, struct in_addr reply_to_ip);
+			struct in_addr send_ip, struct in_addr reply_to_ip,
+			int reply_id);
 
 /*The following definitions come from  nameserv.c  */
 
@@ -543,7 +556,6 @@ BOOL reload_services(BOOL test);
 
 /*The following definitions come from  nmblib.c  */
 
-char *lookup_opcode_name( int opcode );
 void debug_nmb_packet(struct packet_struct *p);
 char *namestr(struct nmb_name *n);
 void free_nmb_packet(struct nmb_packet *nmb);
@@ -585,8 +597,11 @@ BOOL user_ok(char *user,int snum);
 BOOL authorise_login(int snum,char *user,char *password, int pwlen, 
 		     BOOL *guest,BOOL *force,uint16 vuid);
 BOOL check_hosts_equiv(char *user);
-BOOL server_cryptkey(char *buf);
-BOOL server_validate(char *buf);
+struct cli_state *server_client(void);
+struct cli_state *server_cryptkey(void);
+BOOL server_validate(char *user, char *domain, 
+		     char *pass, int passlen,
+		     char *ntpass, int ntpasslen);
 
 /*The following definitions come from  pcap.c  */
 
@@ -700,17 +715,20 @@ void  killkids(void);
 mode_t unix_mode(int cnum,int dosmode);
 int dos_mode(int cnum,char *path,struct stat *sbuf);
 int dos_chmod(int cnum,char *fname,int dosmode,struct stat *st);
+int file_utime(int cnum, char *fname, struct utimbuf *times);
+BOOL set_filetime(int cnum, char *fname, time_t mtime);
 BOOL unix_convert(char *name,int cnum,pstring saved_last_component, BOOL *bad_path);
 int disk_free(char *path,int *bsize,int *dfree,int *dsize);
 int sys_disk_free(char *path,int *bsize,int *dfree,int *dsize);
 BOOL check_name(char *name,int cnum);
+int fd_attempt_open(char *fname, int flags, int mode);
+void fd_attempt_reopen(char *fname, int mode, file_fd_struct *fd_ptr);
+int fd_attempt_close(file_fd_struct *fd_ptr);
 void sync_file(int fnum);
-void close_file(int fnum);
+void close_file(int fnum, int normal_close);
 BOOL check_file_sharing(int cnum,char *fname);
-int check_share_mode( min_share_mode_entry *share, int deny_mode, char *fname,
-                      BOOL fcbopen, int *flags);
 void open_file_shared(int fnum,int cnum,char *fname,int share_mode,int ofun,
-		      int mode,int oplock_request, int *Access,int *action);
+		      int mode,int *Access,int *action);
 int seek_file(int fnum,uint32 pos);
 int read_file(int fnum,char *data,uint32 pos,int n);
 int write_file(int fnum,char *data,int n);
@@ -719,9 +737,6 @@ int find_service(char *service);
 int cached_error_packet(char *inbuf,char *outbuf,int fnum,int line);
 int unix_error_packet(char *inbuf,char *outbuf,int def_class,uint32 def_code,int line);
 int error_packet(char *inbuf,char *outbuf,int error_class,uint32 error_code,int line);
-BOOL oplock_break(uint32 dev, uint32 inode, struct timeval *tval);
-BOOL request_oplock_break(min_share_mode_entry *share_entry, 
-                          uint32 dev, uint32 inode);
 BOOL snum_used(int snum);
 BOOL reload_services(BOOL test);
 int setup_groups(char *user, int uid, int gid, int *p_ngroups, 
@@ -751,7 +766,7 @@ smb_shm_offset_t smb_shm_alloc(int size);
 BOOL smb_shm_free(smb_shm_offset_t offset);
 smb_shm_offset_t smb_shm_get_userdef_off(void);
 BOOL smb_shm_set_userdef_off(smb_shm_offset_t userdef_off);
-void *smb_shm_offset2addr(smb_shm_offset_t offset);
+void * smb_shm_offset2addr(smb_shm_offset_t offset);
 smb_shm_offset_t smb_shm_addr2offset(void *addr);
 BOOL smb_shm_lock_hash_entry( unsigned int entry);
 BOOL smb_shm_unlock_hash_entry( unsigned int entry );
@@ -759,13 +774,13 @@ BOOL smb_shm_get_usage(int *bytes_free,
 		   int *bytes_used,
 		   int *bytes_overhead);
 
-/*The following definitions come from  smbdes.c  */
-
-void E_P16(unsigned char *p14,unsigned char *p16);
-void E_P24(unsigned char *p21, unsigned char *c8, unsigned char *p24);
-
 /*The following definitions come from  smbencrypt.c  */
 
+void str_to_key(uchar *str,uchar *key);
+void D1(uchar *k, uchar *d, uchar *out);
+void E1(uchar *k, uchar *d, uchar *out);
+void E_P16(uchar *p14,uchar *p16);
+void E_P24(uchar *p21, uchar *c8, uchar *p24);
 void SMBencrypt(uchar *passwd, uchar *c8, uchar *p24);
 void E_md4hash(uchar *passwd, uchar *p16);
 void SMBNTencrypt(uchar *passwd, uchar *c8, uchar *p24);
@@ -825,13 +840,13 @@ int TimeDiff(time_t t);
 struct tm *LocalTime(time_t *t);
 time_t interpret_long_date(char *p);
 void put_long_date(char *p,time_t t);
+BOOL null_mtime(time_t mtime);
 void put_dos_date(char *buf,int offset,time_t unixdate);
 void put_dos_date2(char *buf,int offset,time_t unixdate);
 void put_dos_date3(char *buf,int offset,time_t unixdate);
 time_t make_unix_date(void *date_ptr);
 time_t make_unix_date2(void *date_ptr);
 time_t make_unix_date3(void *date_ptr);
-BOOL set_filetime(char *fname,time_t mtime);
 char *timestring(void );
 
 /*The following definitions come from  trans2.c  */
@@ -852,6 +867,8 @@ BOOL become_guest(void);
 BOOL become_user(int cnum, uint16 vuid);
 BOOL unbecome_user(void );
 int smbrun(char *cmd,char *outfile,BOOL shared);
+void become_root(int save_dir) ;
+void unbecome_root(int restore_dir);
 
 /*The following definitions come from  username.c  */
 
@@ -882,10 +899,10 @@ time_t file_modtime(char *fname);
 BOOL directory_exist(char *dname,struct stat *st);
 uint32 file_size(char *file_name);
 char *attrib_string(int mode);
-int StrCaseCmp(char *s, char *t);
-int StrnCaseCmp(char *s, char *t, int n);
-BOOL strequal(char *s1, char *s2);
-BOOL strnequal(char *s1,char *s2,int n);
+int StrCaseCmp(const char *s, const char *t);
+int StrnCaseCmp(const char *s, const char *t, int n);
+BOOL strequal(const char *s1, const char *s2);
+BOOL strnequal(const char *s1,const char *s2,int n);
 BOOL strcsequal(char *s1,char *s2);
 void strlower(char *s);
 void strupper(char *s);
@@ -928,12 +945,7 @@ int read_data(int fd,char *buffer,int N);
 int write_data(int fd,char *buffer,int N);
 int transfer_file(int infd,int outfd,int n,char *header,int headlen,int align);
 int read_smb_length(int fd,char *inbuf,int timeout);
-BOOL receive_smb(int fd,char *buffer, int timeout);
-BOOL receive_local_message(int fd, char *buffer, int buffer_len, int timeout);
-BOOL push_local_message(char *buf, int msg_len);
-BOOL receive_message_or_smb(int smbfd, int oplock_fd, 
-                           char *buffer, int buffer_len, 
-                           int timeout, BOOL *got_smb);
+BOOL receive_smb(int fd,char *buffer,int timeout);
 BOOL send_smb(int fd,char *buffer);
 char *name_ptr(char *buf,int ofs);
 int name_extract(char *buf,int ofs,char *name);
@@ -983,8 +995,21 @@ void free_namearray(name_compare_entry *name_array);
 BOOL fcntl_lock(int fd,int op,uint32 offset,uint32 count,int type);
 int file_lock(char *name,int timeout);
 void file_unlock(int fd);
-BOOL is_myname(char *s);
+BOOL is_myname(const char *s);
 void set_remote_arch(enum remote_arch_types type);
 enum remote_arch_types get_remote_arch();
 void fstrcpy(char *dest, char *src);
 void pstrcpy(char *dest, char *src);
+
+/*The following definitions come from  vt_mode.c  */
+
+int	VT_Check(char	*buffer);
+int VT_Start_utmp(void);
+int VT_Stop_utmp(void);
+void	VT_AtExit(void);
+void	VT_SigCLD(int	sig);
+void	VT_SigEXIT(int	sig);
+int	VT_Start(void);
+int	VT_Output(char	*Buffer);
+int	VT_Input(char	*Buffer,int		Size);
+void VT_Process(void);

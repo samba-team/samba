@@ -37,6 +37,7 @@ extern int num_response_packets;
 BOOL CanRecurse = True;
 extern pstring scope;
 extern struct in_addr wins_ip;
+extern struct in_addr loopback_ip;
 
 static uint16 name_trn_id=0;
 
@@ -228,14 +229,14 @@ void reply_netbios_packet(struct packet_struct *p1,int trn_id,
     }
     default:
     {
-      DEBUG(1,("replying netbios packet: %s %s\n",
+      DEBUG(1,("replying netbios packet: %s %s %s\n",
 	            packet_type, namestr(rr_name), inet_ntoa(p.ip)));
 
       return;
     }
   }
 
-  DEBUG(4,("replying netbios packet: %s %s\n",
+  DEBUG(4,("replying netbios packet: %s %s %s\n",
 	   packet_type, namestr(rr_name), inet_ntoa(p.ip)));
 
   nmb->header.name_trn_id = trn_id;
@@ -528,7 +529,9 @@ void listen_for_packets(BOOL run_election)
 		struct packet_struct *packet = read_packet(ClientNMB, NMB_PACKET);
 		if (packet)
 		{
-			if (ismyip(packet->ip) && packet->port == NMB_PORT)
+			if ((ip_equal(loopback_ip, packet->ip) || 
+			     ismyip(packet->ip)) && 
+			     packet->port == NMB_PORT)
 			{
 				DEBUG(7,("discarding own packet from %s:%d\n",
 				          inet_ntoa(packet->ip),packet->port));	  
@@ -546,7 +549,9 @@ void listen_for_packets(BOOL run_election)
 		struct packet_struct *packet = read_packet(ClientDGRAM, DGRAM_PACKET);
 		if (packet)
 		{
-			if (ismyip(packet->ip) && packet->port == DGRAM_PORT)
+			if ((ip_equal(loopback_ip, packet->ip) || 
+			     ismyip(packet->ip)) && 
+			    packet->port == DGRAM_PORT)
 			{
 				DEBUG(7,("discarding own packet from %s:%d\n",
 				          inet_ntoa(packet->ip),packet->port));	  

@@ -36,6 +36,7 @@ static char this_user[100]="";
 static char this_salt[100]="";
 static char this_crypted[100]="";
 
+#ifdef SMB_PASSWD
 /* Data to do lanman1/2 password challenge. */
 static unsigned char saved_challenge[8];
 static BOOL challenge_sent=False;
@@ -45,24 +46,17 @@ Get the next challenge value - no repeats.
 ********************************************************************/
 void generate_next_challenge(char *challenge)
 {
-	unsigned char buf[16];
-	static int counter = 0;
-	struct timeval tval;
-	int v1,v2;
-
-	/* get a sort-of random number */
-	GetTimeOfDay(&tval);
-	v1 = (counter++) + getpid() + tval.tv_sec;
-	v2 = (counter++) * getpid() + tval.tv_usec;
-	SIVAL(challenge,0,v1);
-	SIVAL(challenge,4,v2);
-
-	/* mash it up with md4 */
-	mdfour(buf, (unsigned char *)challenge, 8);
-
-	memcpy(saved_challenge, buf, 8);
-	memcpy(challenge,buf,8);
-	challenge_sent = True;
+  static int counter = 0;
+  struct timeval tval;
+  int v1,v2;
+  GetTimeOfDay(&tval);
+  v1 = (counter++) + getpid() + tval.tv_sec;
+  v2 = (counter++) * getpid() + tval.tv_usec;
+  SIVAL(challenge,0,v1);
+  SIVAL(challenge,4,v2);
+  E1((uchar *)challenge,(uchar *)"SAMBA",(uchar *)saved_challenge);
+  memcpy(challenge,saved_challenge,8);
+  challenge_sent = True;
 }
 
 /*******************************************************************
@@ -84,6 +78,7 @@ BOOL last_challenge(char *challenge)
   memcpy(challenge,saved_challenge,8);
   return(True);
 }
+#endif
 
 /* this holds info on user ids that are already validated for this VC */
 static user_struct *validated_users = NULL;
@@ -406,36 +401,36 @@ static char *PAM_password;
  * echo off means password.
  */
 static int PAM_conv (int num_msg,
-                     struct pam_message **msg,
+                     const struct pam_message **msg,
                      struct pam_response **resp,
                      void *appdata_ptr) {
-  int count = 0, replies = 0;
+  int replies = 0;
   struct pam_response *reply = NULL;
-  int size = sizeof(struct pam_response);
 
-  #define GET_MEM if (reply) realloc(reply, size); else reply = malloc(size); \
-  if (!reply) return PAM_CONV_ERR; \
-  size += sizeof(struct pam_response)
   #define COPY_STRING(s) (s) ? strdup(s) : NULL
 
-  for (count = 0; count < num_msg; count++) {
-    switch (msg[count]->msg_style) {
+  reply = malloc(sizeof(struct pam_response) * num_msg);
+  if (!reply) return PAM_CONV_ERR;
+
+  for (replies = 0; replies < num_msg; replies++) {
+    switch (msg[replies]->msg_style) {
       case PAM_PROMPT_ECHO_ON:
-        GET_MEM;
         reply[replies].resp_retcode = PAM_SUCCESS;
-        reply[replies++].resp = COPY_STRING(PAM_username);
+        reply[replies].resp = COPY_STRING(PAM_username);
           /* PAM frees resp */
         break;
       case PAM_PROMPT_ECHO_OFF:
-        GET_MEM;
         reply[replies].resp_retcode = PAM_SUCCESS;
-        reply[replies++].resp = COPY_STRING(PAM_password);
+        reply[replies].resp = COPY_STRING(PAM_password);
           /* PAM frees resp */
         break;
       case PAM_TEXT_INFO:
-        /* ignore it... */
-        break;
+	/* fall through */
       case PAM_ERROR_MSG:
+        /* ignore it... */
+        reply[replies].resp_retcode = PAM_SUCCESS;
+        reply[replies].resp = NULL;
+        break;
       default:
         /* Must be an error of some sort... */
         free (reply);
@@ -817,6 +812,7 @@ Hence we make a direct return to avoid a second chance!!!
 #endif
 }
 
+#ifdef SMB_PASSWD
 /****************************************************************************
 core of smb password checking routine.
 ****************************************************************************/
@@ -858,6 +854,7 @@ BOOL smb_password_check(char *password, unsigned char *part_passwd, unsigned cha
 #endif
   return (memcmp(p24, password, 24) == 0);
 }
+#endif
 
 /****************************************************************************
 check if a username/password is OK
@@ -867,16 +864,21 @@ BOOL password_ok(char *user,char *password, int pwlen, struct passwd *pwd)
   pstring pass2;
   int level = lp_passwordlevel();
   struct passwd *pass;
+#ifdef SMB_PASSWD
   char challenge[8];
   struct smb_passwd *smb_pass;
   BOOL challenge_done = False;
+#endif
 
   if (password) password[pwlen] = 0;
 
+#ifdef SMB_PASSWD
   if (pwlen == 24)
     challenge_done = last_challenge(challenge);
+#endif
 
 #if DEBUG_PASSWORD
+#ifdef SMB_PASSWD
   if (challenge_done)
     {
       int i;      
@@ -884,9 +886,10 @@ BOOL password_ok(char *user,char *password, int pwlen, struct passwd *pwd)
       for( i = 0; i < 24; i++)
 	DEBUG(100,("%0x ", (unsigned char)password[i]));
       DEBUG(100,("]\n"));
-    } else {
-	    DEBUG(100,("checking user=[%s] pass=[%s]\n",user,password));
     }
+  else
+#endif
+    DEBUG(100,("checking user=[%s] pass=[%s]\n",user,password));
 #endif
 
   if (!password)
@@ -902,6 +905,8 @@ BOOL password_ok(char *user,char *password, int pwlen, struct passwd *pwd)
     } 
   else 
     pass = Get_Pwnam(user,True);
+
+#ifdef SMB_PASSWD
 
   DEBUG(4,("SMB Password - pwlen = %d, challenge_done = %d\n", pwlen, challenge_done));
 
@@ -959,6 +964,7 @@ BOOL password_ok(char *user,char *password, int pwlen, struct passwd *pwd)
 
 	DEBUG(3,("Error smb_password_check failed\n"));
     }
+#endif 
 
   DEBUG(4,("Checking password for user %s (l=%d)\n",user,pwlen));
 
@@ -1501,207 +1507,146 @@ BOOL check_hosts_equiv(char *user)
   return(False);
 }
 
-
-int password_client = -1;
-static fstring pserver;
-static char *secserver_inbuf = NULL;
+static struct cli_state cli;
 
 /****************************************************************************
-attempted support for server level security 
+return the client state structure
 ****************************************************************************/
-BOOL server_cryptkey(char *buf)
+struct cli_state *server_client(void)
 {
-  pstring outbuf;
-  fstring pass_protocol;
-  extern fstring remote_machine;
-  char *p;
-  int len;
-  fstring desthost;
-  struct in_addr dest_ip;
-  int port = SMB_PORT;
-  BOOL ret;
-  
-  if(secserver_inbuf == NULL) {
-    secserver_inbuf = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
-    if(secserver_inbuf == NULL) {
-      DEBUG(0,("server_cryptkey: malloc fail for input buffer.\n"));
-      return False;
-    }
-  }
-
-  if (password_client >= 0)
-    close(password_client);
-  password_client = -1;
-
-  if (Protocol < PROTOCOL_NT1) {
-    strcpy(pass_protocol,"LM1.2X002");
-  } else {
-    strcpy(pass_protocol,"NT LM 0.12");
-  }
-
-  bzero(secserver_inbuf,BUFFER_SIZE + SAFETY_MARGIN);
-  bzero(outbuf,sizeof(outbuf));
-
-  for (p=strtok(lp_passwordserver(),LIST_SEP); p ; p = strtok(NULL,LIST_SEP)) {
-    strcpy(desthost,p);
-    standard_sub_basic(desthost);
-    strupper(desthost);
-
-    dest_ip = *interpret_addr2(desthost);
-    if (zero_ip(dest_ip)) {
-      DEBUG(1,("Can't resolve address for %s\n",p));
-      continue;
-    }
-
-    if (ismyip(dest_ip)) {
-      DEBUG(1,("Password server loop - disabling password server %s\n",p));
-      continue;
-    }
-
-    password_client = open_socket_out(SOCK_STREAM, &dest_ip, port, SHORT_CONNECT_TIMEOUT);
-    if (password_client >= 0) {
-      DEBUG(3,("connected to password server %s\n",p));
-      StrnCpy(pserver,p,sizeof(pserver)-1);
-      break;
-    }
-  }
-
-  if (password_client < 0) {
-    DEBUG(1,("password server not available\n"));
-    return(False);
-  }
-
-
-  /* send a session request (RFC 8002) */
-
-  /* put in the destination name */
-  len = 4;
-  p = outbuf+len;
-  name_mangle(desthost,p,' ');
-  len += name_len(p);
-  p = outbuf+len;
-
-  /* and my name */
-  /* Fix from Frank Varnavas <varnavas@ny.ubs.com>.
-     We cannot use the same name as the client to 
-     the NT password server, as NT will drop client
-     connections if the same client name connects
-     twice. Instead, synthesize a name from our pid.
-     and the remote machine name.
-   */
-  {
-    char buf2[32]; /* create name as PIDname */
-    sprintf(buf2,"%d", getpid());
-    strncpy(&buf2[strlen(buf2)], remote_machine, 31 - strlen(buf2));
-    buf2[31] = '\0';
-    DEBUG(1,("negprot w/password server as %s\n",buf2));
-    name_mangle(buf2,p,' ');
-    len += name_len(p);
-  }
-
-  _smb_setlen(outbuf,len);
-  CVAL(outbuf,0) = 0x81;
-
-  send_smb(password_client,outbuf);
-  
- 
-  if (!receive_smb(password_client,secserver_inbuf,5000) ||
-      CVAL(secserver_inbuf,0) != 0x82) {
-    DEBUG(1,("%s rejected the session\n",pserver));
-    close(password_client); password_client = -1;
-    return(False);
-  }
-
-  DEBUG(3,("got session\n"));
-
-  bzero(outbuf,smb_size);
-
-  /* setup the protocol string */
-  set_message(outbuf,0,strlen(pass_protocol)+2,True);
-  p = smb_buf(outbuf);
-  *p++ = 2;
-  strcpy(p,pass_protocol);
-
-  CVAL(outbuf,smb_com) = SMBnegprot;
-  CVAL(outbuf,smb_flg) = 0x8;
-  SSVAL(outbuf,smb_flg2,0x1);
-
-  send_smb(password_client,outbuf);
-  ret = receive_smb(password_client,secserver_inbuf,5000);
-
-  if (!ret || CVAL(secserver_inbuf,smb_rcls) || SVAL(secserver_inbuf,smb_vwv0)) {
-    DEBUG(1,("%s rejected the protocol\n",pserver));
-    close(password_client); password_client= -1;
-    return(False);
-  }
-
-  if (!(CVAL(secserver_inbuf,smb_vwv1) & 1)) {
-    DEBUG(1,("%s isn't in user level security mode\n",pserver));
-    close(password_client); password_client= -1;
-    return(False);
-  }
-
-  memcpy(buf,secserver_inbuf,smb_len(secserver_inbuf)+4);
-
-  DEBUG(3,("password server OK\n"));
-
-  return(True);
+	return &cli;
 }
 
 /****************************************************************************
-attempted support for server level security 
+support for server level security 
 ****************************************************************************/
-BOOL server_validate(char *buf)
+struct cli_state *server_cryptkey(void)
 {
-  pstring outbuf;  
-  BOOL ret;
+	fstring desthost;
+	struct in_addr dest_ip;
+	extern fstring local_machine;
+	char *p;
 
-  if(secserver_inbuf == NULL) {
-    secserver_inbuf = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
-    if(secserver_inbuf == NULL) {
-      DEBUG(0,("server_validate: malloc fail for input buffer.\n"));
-      return False;
-    }
-  }
+	if (!cli_initialise(&cli))
+		return NULL;
+	    
+	for (p=strtok(lp_passwordserver(),LIST_SEP); p ; p = strtok(NULL,LIST_SEP)) {
+		fstrcpy(desthost,p);
+		standard_sub_basic(desthost);
+		strupper(desthost);
 
-  if (password_client < 0) {
-    DEBUG(1,("%s not connected\n",pserver));
-    return(False);
-  }  
+		dest_ip = *interpret_addr2(desthost);
+		if (zero_ip(dest_ip)) {
+			DEBUG(1,("Can't resolve address for %s\n",p));
+			continue;
+		}
 
-  bzero(secserver_inbuf,BUFFER_SIZE + SAFETY_MARGIN);
-  memcpy(outbuf,buf,sizeof(outbuf));
+		if (ismyip(dest_ip)) {
+			DEBUG(1,("Password server loop - disabling password server %s\n",p));
+			continue;
+		}
 
-  /* send a session setup command */
-  CVAL(outbuf,smb_flg) = 0x8;
-  SSVAL(outbuf,smb_flg2,0x1);
-  CVAL(outbuf,smb_vwv0) = 0xFF;
+		if (cli_connect(&cli, desthost, &dest_ip)) {
+			DEBUG(3,("connected to password server %s\n",p));
+			break;
+		}
+	}
 
-  set_message(outbuf,smb_numwords(outbuf),smb_buflen(outbuf),False);
+	if (!p) {
+		DEBUG(1,("password server not available\n"));
+		cli_shutdown(&cli);
+		return NULL;
+	}
 
-  SCVAL(secserver_inbuf,smb_rcls,1);
+	if (!cli_session_request(&cli, desthost, 0x20, local_machine)) {
+		DEBUG(1,("%s rejected the session\n",desthost));
+		cli_shutdown(&cli);
+		return NULL;
+	}
 
-  send_smb(password_client,outbuf);
-  ret = receive_smb(password_client,secserver_inbuf,5000);
+	DEBUG(3,("got session\n"));
 
-  if (!ret || CVAL(secserver_inbuf,smb_rcls) != 0) {
-    DEBUG(1,("password server %s rejected the password\n",pserver));
-    return(False);
-  }
+	if (!cli_negprot(&cli)) {
+		DEBUG(1,("%s rejected the negprot\n",desthost));
+		cli_shutdown(&cli);
+		return NULL;
+	}
 
-  /* if logged in as guest then reject */
-  if ((SVAL(secserver_inbuf,smb_vwv2) & 1) != 0) {
-    DEBUG(1,("password server %s gave us guest only\n",pserver));
-    return(False);
-  }
+	if (cli.protocol < PROTOCOL_LANMAN2 ||
+	    !(cli.sec_mode & 1)) {
+		DEBUG(1,("%s isn't in user level security mode\n",desthost));
+		cli_shutdown(&cli);
+		return NULL;
+	}
 
-  DEBUG(3,("password server %s accepted the password\n",pserver));
+	DEBUG(3,("password server OK\n"));
 
-#if !KEEP_PASSWORD_SERVER_OPEN
-  close(password_client); password_client= -1;
-#endif
-
-  return(True);
+	return &cli;
 }
+
+/****************************************************************************
+validate a password with the password server
+****************************************************************************/
+BOOL server_validate(char *user, char *domain, 
+		     char *pass, int passlen,
+		     char *ntpass, int ntpasslen)
+{
+	extern fstring local_machine;
+	fstring share;
+
+	if (!cli.initialised) {
+		DEBUG(1,("password server %s is not connected\n", cli.desthost));
+		return(False);
+	}  
+
+	if (!cli_session_setup(&cli, user, pass, passlen, ntpass, ntpasslen, domain)) {
+		DEBUG(1,("password server %s rejected the password\n", cli.desthost));
+		return False;
+	}
+
+	/* if logged in as guest then reject */
+	if ((SVAL(cli.inbuf,smb_vwv2) & 1) != 0) {
+		DEBUG(1,("password server %s gave us guest only\n", cli.desthost));
+		return(False);
+	}
+
+
+	sprintf(share,"\\\\%s\\IPC$", cli.desthost);
+
+	if (!cli_send_tconX(&cli, share, "IPC", "", 1)) {
+		DEBUG(1,("password server %s refused IPC$ connect\n", cli.desthost));
+		return False;
+	}
+
+
+	if (!cli_NetWkstaUserLogon(&cli,user,local_machine)) {
+		DEBUG(1,("password server %s failed NetWkstaUserLogon\n", cli.desthost));
+		cli_tdis(&cli);
+		return False;
+	}
+
+	if (cli.privilages == 0) {
+		DEBUG(1,("password server %s gave guest privilages\n", cli.desthost));
+		cli_tdis(&cli);
+		return False;
+	}
+
+	if (!strequal(cli.eff_name, user)) {
+		DEBUG(1,("password server %s gave different username %s\n", 
+			 cli.desthost,
+			 cli.eff_name));
+		cli_tdis(&cli);
+		return False;
+	}
+
+	DEBUG(3,("password server %s accepted the password\n", cli.desthost));
+
+	cli_tdis(&cli);
+
+	return(True);
+}
+
+
+
 
 

@@ -1,6 +1,6 @@
   Samba FAQ
-  Paul Blackman, ictinus@lake.canberra.edu.au
-  v 0.7, June '97
+  Paul Blackman, ictinus@samba.anu.edu.au
+  v 0.8, June '97
 
   This is the Frequently Asked Questions (FAQ) document for Samba, the
   free and very popular SMB server product. An SMB server allows file
@@ -92,7 +92,7 @@
   5.1.    Is Samba Year 2000 compliant?
   ______________________________________________________________________
 
-  1.  General Information
+  11..  GGeenneerraall IInnffoorrmmaattiioonn
 
 
 
@@ -101,7 +101,7 @@
   details
 
 
-  1.1.  What is Samba?
+  11..11..  WWhhaatt iiss SSaammbbaa??
 
 
   Samba is a suite of programs which work together to allow clients to
@@ -122,30 +122,30 @@
   The components of the suite are (in summary):
 
 
-  o  smbd, the SMB server. This handles actual connections from clients,
+  +o  ssmmbbdd, the SMB server. This handles actual connections from clients,
      doing all the file, permission and username work
 
-  o  nmbd, the Netbios name server, which helps clients locate servers,
+  +o  nnmmbbdd, the Netbios name server, which helps clients locate servers,
      doing the browsing work and managing domains as this capability is
      being built into Samba
 
 
-  o  smbclient, the Unix-hosted client program
+  +o  ssmmbbcclliieenntt, the Unix-hosted client program
 
-  o  smbrun, a little 'glue' program to help the server run external
+  +o  ssmmbbrruunn, a little 'glue' program to help the server run external
      programs
 
-  o  testprns, a program to test server access to printers
+  +o  tteessttpprrnnss, a program to test server access to printers
 
-  o  testparms, a program to test the Samba configuration file for
+  +o  tteessttppaarrmmss, a program to test the Samba configuration file for
      correctness
 
-  o  smb.conf, the Samba configuration file
+  +o  ssmmbb..ccoonnff, the Samba configuration file
 
-  o  smbprint, a sample script to allow a Unix host to use smbclient to
+  +o  ssmmbbpprriinntt, a sample script to allow a Unix host to use smbclient to
      print to an SMB server
 
-  o  Documentation! DON'T neglect to read it - you will save a great
+  +o  DDooccuummeennttaattiioonn!! DON'T neglect to read it - you will save a great
      deal of time!
 
   The suite is supplied with full source (of course!) and is GPLed.
@@ -155,7 +155,7 @@
   and this FAQ were originally written by Karl Auer.
 
 
-  1.2.  What is the current version of Samba?
+  11..22..  WWhhaatt iiss tthhee ccuurrrreenntt vveerrssiioonn ooff SSaammbbaa??
 
 
   At time of writing, the current version was 1.9.17. If you want to be
@@ -165,7 +165,7 @@
   For more information see ``What do the version numbers mean?''
 
 
-  1.3.  Where can I get it?
+  11..33..  WWhheerree ccaann II ggeett iitt??
 
 
   The Samba suite is available via anonymous ftp from samba.anu.edu.au.
@@ -185,7 +185,7 @@
   do contain Samba binaries for that platform.
 
 
-  1.4.  What do the version numbers mean?
+  11..44..  WWhhaatt ddoo tthhee vveerrssiioonn nnuummbbeerrss mmeeaann??
 
 
   It is not recommended that you run a version of Samba with the word
@@ -234,7 +234,7 @@
   sion.
 
 
-  1.5.  What platforms are supported?
+  11..55..  WWhhaatt ppllaattffoorrmmss aarree ssuuppppoorrtteedd??
 
 
   Many different platforms have run Samba successfully. The platforms
@@ -242,188 +242,188 @@
 
   At time of writing, the Makefile claimed support for:
 
-  o  A/UX 3.0
+  +o  A/UX 3.0
 
-  o  AIX
+  +o  AIX
 
-  o  Altos Series 386/1000
+  +o  Altos Series 386/1000
 
-  o  Amiga
+  +o  Amiga
 
-  o  Apollo Domain/OS sr10.3
+  +o  Apollo Domain/OS sr10.3
 
-  o  BSDI
+  +o  BSDI
 
-  o  B.O.S. (Bull Operating System)
+  +o  B.O.S. (Bull Operating System)
 
-  o  Cray, Unicos 8.0
+  +o  Cray, Unicos 8.0
 
-  o  Convex
+  +o  Convex
 
-  o  DGUX.
+  +o  DGUX.
 
-  o  DNIX.
+  +o  DNIX.
 
-  o  FreeBSD
+  +o  FreeBSD
 
-  o  HP-UX
+  +o  HP-UX
 
-  o  Intergraph.
+  +o  Intergraph.
 
-  o  Linux with/without shadow passwords and quota
+  +o  Linux with/without shadow passwords and quota
 
-  o  LYNX 2.3.0
+  +o  LYNX 2.3.0
 
-  o  MachTen (a unix like system for Macintoshes)
+  +o  MachTen (a unix like system for Macintoshes)
 
-  o  Motorola 88xxx/9xx range of machines
+  +o  Motorola 88xxx/9xx range of machines
 
-  o  NetBSD
+  +o  NetBSD
 
-  o  NEXTSTEP Release 2.X, 3.0 and greater (including OPENSTEP for
+  +o  NEXTSTEP Release 2.X, 3.0 and greater (including OPENSTEP for
      Mach).
 
-  o  OS/2 using EMX 0.9b
+  +o  OS/2 using EMX 0.9b
 
-  o  OSF1
+  +o  OSF1
 
-  o  QNX 4.22
+  +o  QNX 4.22
 
-  o  RiscIX.
+  +o  RiscIX.
 
-  o  RISCOs 5.0B
+  +o  RISCOs 5.0B
 
-  o  SEQUENT.
+  +o  SEQUENT.
 
-  o  SCO (including: 3.2v2, European dist., OpenServer 5)
+  +o  SCO (including: 3.2v2, European dist., OpenServer 5)
 
-  o  SGI.
+  +o  SGI.
 
-  o  SMP_DC.OSx v1.1-94c079 on Pyramid S series
+  +o  SMP_DC.OSx v1.1-94c079 on Pyramid S series
 
-  o  SONY NEWS, NEWS-OS (4.2.x and 6.1.x)
+  +o  SONY NEWS, NEWS-OS (4.2.x and 6.1.x)
 
-  o  SUNOS 4
+  +o  SUNOS 4
 
-  o  SUNOS 5.2, 5.3, and 5.4 (Solaris 2.2, 2.3, and '2.4 and later')
+  +o  SUNOS 5.2, 5.3, and 5.4 (Solaris 2.2, 2.3, and '2.4 and later')
 
-  o  Sunsoft ISC SVR3V4
+  +o  Sunsoft ISC SVR3V4
 
-  o  SVR4
+  +o  SVR4
 
-  o  System V with some berkely extensions (Motorola 88k R32V3.2).
+  +o  System V with some berkely extensions (Motorola 88k R32V3.2).
 
-  o  ULTRIX.
+  +o  ULTRIX.
 
-  o  UNIXWARE
+  +o  UNIXWARE
 
-  o  UXP/DS
+  +o  UXP/DS
 
 
-  1.6.  How can I find out more about Samba?
+  11..66..  HHooww ccaann II ffiinndd oouutt mmoorree aabboouutt SSaammbbaa??
 
 
   There are a number of places to look for more information on Samba,
   including:
 
-  o  Two mailing lists devoted to discussion of Samba-related matters.
+  +o  Two mailing lists devoted to discussion of Samba-related matters.
 
-  o  The newsgroup, comp.protocols.smb, which has a great deal of
+  +o  The newsgroup, comp.protocols.smb, which has a great deal of
      discussion on Samba.
 
-  o  The WWW site 'SAMBA Web Pages' at
-     <http://samba.canberra.edu.au/pub/samba/samba.html> includes:
+  +o  The WWW site 'SAMBA Web Pages' at  <http://samba.edu.au/samba/>
+     includes:
 
-  o  Links to man pages and documentation, including this FAQ
+  +o  Links to man pages and documentation, including this FAQ
 
-  o  A comprehensive survey of Samba users.
+  +o  A comprehensive survey of Samba users.
 
-  o  A searchable hypertext archive of the Samba mailing list.
+  +o  A searchable hypertext archive of the Samba mailing list.
 
-  o  Links to Samba source code, binaries, and mirrors of both.
+  +o  Links to Samba source code, binaries, and mirrors of both.
 
-  o  The long list of topic documentation.  These files can be found in
+  +o  The long list of topic documentation.  These files can be found in
      the 'docs' directory of the Samba source, or at
      <ftp://samba.anu.edu.au/pub/samba/docs/>
 
-  o  Application_Serving.txt
+  +o  Application_Serving.txt
      <ftp://samba.anu.edu.au/pub/samba/docs/Application_Serving.txt>
 
-  o  BROWSING.txt <ftp://samba.anu.edu.au/pub/samba/docs/BROWSING.txt>
+  +o  BROWSING.txt <ftp://samba.anu.edu.au/pub/samba/docs/BROWSING.txt>
 
-  o  BUGS.txt <ftp://samba.anu.edu.au/pub/samba/docs/BUGS.txt>
+  +o  BUGS.txt <ftp://samba.anu.edu.au/pub/samba/docs/BUGS.txt>
 
-  o  DIAGNOSIS.txt <ftp://samba.anu.edu.au/pub/samba/docs/DIAGNOSIS.txt>
+  +o  DIAGNOSIS.txt <ftp://samba.anu.edu.au/pub/samba/docs/DIAGNOSIS.txt>
 
-  o  DNIX.txt <ftp://samba.anu.edu.au/pub/samba/docs/DNIX.txt>
+  +o  DNIX.txt <ftp://samba.anu.edu.au/pub/samba/docs/DNIX.txt>
 
-  o  DOMAIN.txt <ftp://samba.anu.edu.au/pub/samba/docs/DOMAIN.txt>
+  +o  DOMAIN.txt <ftp://samba.anu.edu.au/pub/samba/docs/DOMAIN.txt>
 
-  o  CONTROL.txt
+  +o  CONTROL.txt
      <ftp://samba.anu.edu.au/pub/samba/docs/DOMAIN_CONTROL.txt>
 
-  o  ENCRYPTION.txt
+  +o  ENCRYPTION.txt
      <ftp://samba.anu.edu.au/pub/samba/docs/ENCRYPTION.txt>
 
-  o  Faxing.txt <ftp://samba.anu.edu.au/pub/samba/docs/Faxing.txt>
+  +o  Faxing.txt <ftp://samba.anu.edu.au/pub/samba/docs/Faxing.txt>
 
-  o  GOTCHAS.txt <ftp://samba.anu.edu.au/pub/samba/docs/GOTCHAS.txt>
+  +o  GOTCHAS.txt <ftp://samba.anu.edu.au/pub/samba/docs/GOTCHAS.txt>
 
-  o  HINTS.txt <ftp://samba.anu.edu.au/pub/samba/docs/HINTS.txt>
+  +o  HINTS.txt <ftp://samba.anu.edu.au/pub/samba/docs/HINTS.txt>
 
-  o  INSTALL.sambatar
+  +o  INSTALL.sambatar
      <ftp://samba.anu.edu.au/pub/samba/docs/INSTALL.sambatar>
 
-  o  INSTALL.txt <ftp://samba.anu.edu.au/pub/samba/docs/INSTALL.txt>
+  +o  INSTALL.txt <ftp://samba.anu.edu.au/pub/samba/docs/INSTALL.txt>
 
-  o  MIRRORS <ftp://samba.anu.edu.au/pub/samba/docs/MIRRORS>
+  +o  MIRRORS <ftp://samba.anu.edu.au/pub/samba/docs/MIRRORS>
 
-  o  NetBIOS.txt <ftp://samba.anu.edu.au/pub/samba/docs/NetBIOS.txt>
+  +o  NetBIOS.txt <ftp://samba.anu.edu.au/pub/samba/docs/NetBIOS.txt>
 
-  o  OS2.txt <ftp://samba.anu.edu.au/pub/samba/docs/OS2.txt>
+  +o  OS2.txt <ftp://samba.anu.edu.au/pub/samba/docs/OS2.txt>
 
-  o  PROJECTS <ftp://samba.anu.edu.au/pub/samba/docs/PROJECTS>
+  +o  PROJECTS <ftp://samba.anu.edu.au/pub/samba/docs/PROJECTS>
 
-  o  Passwords.txt <ftp://samba.anu.edu.au/pub/samba/docs/Passwords.txt>
+  +o  Passwords.txt <ftp://samba.anu.edu.au/pub/samba/docs/Passwords.txt>
 
-  o  Printing.txt <ftp://samba.anu.edu.au/pub/samba/docs/Printing.txt>
+  +o  Printing.txt <ftp://samba.anu.edu.au/pub/samba/docs/Printing.txt>
 
-  o  README.DCEDFS <ftp://samba.anu.edu.au/pub/samba/docs/README.DCEDFS>
+  +o  README.DCEDFS <ftp://samba.anu.edu.au/pub/samba/docs/README.DCEDFS>
 
-  o  README.OS2 <ftp://samba.anu.edu.au/pub/samba/docs/README.OS2>
+  +o  README.OS2 <ftp://samba.anu.edu.au/pub/samba/docs/README.OS2>
 
-  o  README.jis <ftp://samba.anu.edu.au/pub/samba/docs/README.jis>
+  +o  README.jis <ftp://samba.anu.edu.au/pub/samba/docs/README.jis>
 
-  o  README.sambatar
+  +o  README.sambatar
      <ftp://samba.anu.edu.au/pub/samba/docs/README.sambatar>
 
-  o  SCO.txt <ftp://samba.anu.edu.au/pub/samba/docs/SCO.txt>
+  +o  SCO.txt <ftp://samba.anu.edu.au/pub/samba/docs/SCO.txt>
 
-  o  SMBTAR.notes <ftp://samba.anu.edu.au/pub/samba/docs/SMBTAR.notes>
+  +o  SMBTAR.notes <ftp://samba.anu.edu.au/pub/samba/docs/SMBTAR.notes>
 
-  o  Speed.txt <ftp://samba.anu.edu.au/pub/samba/docs/Speed.txt>
+  +o  Speed.txt <ftp://samba.anu.edu.au/pub/samba/docs/Speed.txt>
 
-  o  Support.txt <ftp://samba.anu.edu.au/pub/samba/docs/Support.txt>
+  +o  Support.txt <ftp://samba.anu.edu.au/pub/samba/docs/Support.txt>
 
-  o  THANKS <ftp://samba.anu.edu.au/pub/samba/docs/THANKS>
+  +o  THANKS <ftp://samba.anu.edu.au/pub/samba/docs/THANKS>
 
-  o  Tracing.txt <ftp://samba.anu.edu.au/pub/samba/docs/Tracing.txt>
+  +o  Tracing.txt <ftp://samba.anu.edu.au/pub/samba/docs/Tracing.txt>
 
-  o  SMB.txt <ftp://samba.anu.edu.au/pub/samba/docs/UNIX-SMB.txt>
+  +o  SMB.txt <ftp://samba.anu.edu.au/pub/samba/docs/UNIX-SMB.txt>
 
-  o  Warp.txt <ftp://samba.anu.edu.au/pub/samba/docs/Warp.txt>
+  +o  Warp.txt <ftp://samba.anu.edu.au/pub/samba/docs/Warp.txt>
 
-  o  WinNT.txt <ftp://samba.anu.edu.au/pub/samba/docs/WinNT.txt>
+  +o  WinNT.txt <ftp://samba.anu.edu.au/pub/samba/docs/WinNT.txt>
 
-  o  history <ftp://samba.anu.edu.au/pub/samba/docs/history>
+  +o  history <ftp://samba.anu.edu.au/pub/samba/docs/history>
 
-  o  level.txt
+  +o  level.txt
      <ftp://samba.anu.edu.au/pub/samba/docs/security_level.txt>
 
-  o  slip.htm <ftp://samba.anu.edu.au/pub/samba/docs/wfw_slip.htm>
+  +o  slip.htm <ftp://samba.anu.edu.au/pub/samba/docs/wfw_slip.htm>
 
 
-  1.7.  How do I subscribe to the Samba Mailing Lists?
+  11..77..  HHooww ddoo II ssuubbssccrriibbee ttoo tthhee SSaammbbaa MMaaiilliinngg LLiissttss??
 
 
   Send email to listproc@samba.anu.edu.au. Make sure the subject line is
@@ -456,14 +456,14 @@
 
 
 
-  The From: line in your message MUST be the same address you used when
+  The FFrroomm:: line in your message _M_U_S_T be the same address you used when
   you subscribed.
 
 
-  1.8.  Something's gone wrong - what should I do?
+  11..88..  SSoommeetthhiinngg''ss ggoonnee wwrroonngg -- wwhhaatt sshhoouulldd II ddoo??
 
 
-  # *** IMPORTANT! *** #
+  ## ****** IIMMPPOORRTTAANNTT!! ****** ##
 
   DO NOT post messages on mailing lists or in newsgroups until you have
   carried out the first three steps given here!
@@ -501,7 +501,7 @@
   Tridgell or any other individual, they may be lost if you do.
 
 
-  1.9.  Pizza supply details
+  11..99..  PPiizzzzaa ssuuppppllyy ddeettaaiillss
 
 
   Those who have registered in the Samba survey as "Pizza Factory" will
@@ -531,11 +531,11 @@
   hungry sniffer dogs but it will have been a noble gesture.
 
 
-  2.  Compiling and installing Samba on a Unix host
+  22..  CCoommppiilliinngg aanndd iinnssttaalllliinngg SSaammbbaa oonn aa UUnniixx hhoosstt
 
 
 
-  2.1.  I can't see the Samba server in any browse lists!
+  22..11..  II ccaann''tt sseeee tthhee SSaammbbaa sseerrvveerr iinn aannyy bbrroowwssee lliissttss!!
 
 
   See BROWSING.txt <ftp://samba.anu.edu.au/pub/samba/BROWSING.txt> for
@@ -557,14 +557,14 @@
   client to client - check your client's documentation.
 
 
-  2.2.  Some files that I KNOW are on the server doesn't show up when I
-  view the files from my client!
+  22..22..  SSoommee ffiilleess tthhaatt II KKNNOOWW aarree oonn tthhee sseerrvveerr ddooeessnn''tt sshhooww uupp wwhheenn II
+  vviieeww tthhee ffiilleess ffrroomm mmyy cclliieenntt!!
 
 
   See the next question.
 
-  2.3.  Some files on the server show up with really wierd filenames
-  when I view the files from my client!
+  22..33..  SSoommee ffiilleess oonn tthhee sseerrvveerr sshhooww uupp wwiitthh rreeaallllyy wwiieerrdd ffiilleennaammeess
+  wwhheenn II vviieeww tthhee ffiilleess ffrroomm mmyy cclliieenntt!!
 
 
   If you check what files are not showing up, you will note that they
@@ -579,7 +579,7 @@
   "mangled names = yes".
 
 
-  2.4.  My client reports "cannot locate specified computer" or similar
+  22..44..  MMyy cclliieenntt rreeppoorrttss ""ccaannnnoott llooccaattee ssppeecciiffiieedd ccoommppuutteerr"" oorr ssiimmiillaarr
 
 
   This indicates one of three things: You supplied an incorrect server
@@ -610,8 +610,8 @@
   tests :-)
 
 
-  2.5.  My client reports "cannot locate specified share name" or simi-
-  lar
+  22..55..  MMyy cclliieenntt rreeppoorrttss ""ccaannnnoott llooccaattee ssppeecciiffiieedd sshhaarree nnaammee"" oorr ssiimmii--
+  llaarr
 
 
   This message indicates that your client CAN locate the specified
@@ -624,19 +624,19 @@
   to specify a service name correctly), read on:
 
 
-  o  Many clients cannot accept or use service names longer than eight
+  +o  Many clients cannot accept or use service names longer than eight
      characters.
 
-  o  Many clients cannot accept or use service names containing spaces.
+  +o  Many clients cannot accept or use service names containing spaces.
 
-  o  Some servers (not Samba though) are case sensitive with service
+  +o  Some servers (not Samba though) are case sensitive with service
      names.
 
-  o  Some clients force service names into upper case.
+  +o  Some clients force service names into upper case.
 
 
-  2.6.  My client reports "cannot find domain controller", "cannot log
-  on to the network" or similar
+  22..66..  MMyy cclliieenntt rreeppoorrttss ""ccaannnnoott ffiinndd ddoommaaiinn ccoonnttrroolllleerr"",, ""ccaannnnoott lloogg
+  oonn ttoo tthhee nneettwwoorrkk"" oorr ssiimmiillaarr
 
 
   Nothing is wrong - Samba does not implement the primary domain name
@@ -658,7 +658,7 @@
 
 
 
-  2.7.  Printing doesn't work :-(
+  22..77..  PPrriinnttiinngg ddooeessnn''tt wwoorrkk ::--((
 
 
   Make sure that the specified print command for the service you are
@@ -689,8 +689,8 @@
   mechanism.
 
 
-  2.8.  My programs install on the server OK, but refuse to work prop-
-  erly
+  22..88..  MMyy pprrooggrraammss iinnssttaallll oonn tthhee sseerrvveerr OOKK,, bbuutt rreeffuussee ttoo wwoorrkk pprroopp--
+  eerrllyy
 
 
   There are numerous possible reasons for this, but one MAJOR
@@ -706,7 +706,7 @@
   Tridgell know via email at samba-bugs@samba.anu.edu.au.
 
 
-  2.9.  My "server string" doesn't seem to be recognised
+  22..99..  MMyy ""sseerrvveerr ssttrriinngg"" ddooeessnn''tt sseeeemm ttoo bbee rreeccooggnniisseedd
 
 
   OR My client reports the default setting, eg. "Samba 1.9.15p4",
@@ -719,8 +719,8 @@
   the "server string" field of smb.conf, -C for nmbd is now obsolete.
 
 
-  2.10.  My client reports "This server is not configured to list shared
-  resources"
+  22..1100..  MMyy cclliieenntt rreeppoorrttss ""TThhiiss sseerrvveerr iiss nnoott ccoonnffiigguurreedd ttoo lliisstt sshhaarreedd
+  rreessoouurrcceess""
 
 
   Your guest account is probably invalid for some reason. Samba uses the
@@ -730,7 +730,7 @@
   See also 'guest account' in smb.conf man page.
 
 
-  2.11.  Log message "you appear to have a trapdoor uid system"
+  22..1111..  LLoogg mmeessssaaggee ""yyoouu aappppeeaarr ttoo hhaavvee aa ttrraappddoooorr uuiidd ssyysstteemm""
 
 
   This can have several causes. It might be because you are using a uid
@@ -765,12 +765,12 @@
   as uid 65535 will actually run as root. This is not good!
 
 
-  3.  Common client questions
+  33..  CCoommmmoonn cclliieenntt qquueessttiioonnss
 
 
 
 
-  3.1.  Are there any Macintosh clients for Samba?
+  33..11..  AArree tthheerree aannyy MMaacciinnttoosshh cclliieennttss ffoorr SSaammbbaa??
 
 
   Yes! Thursby now have a CIFS Client / Server called DAVE - see
@@ -790,7 +790,7 @@
   Windows users, these packages offer to Macs.  For more info on these
   packages, Samba, and Linux (and other UNIX-based systems) see
   <http://www.eats.com/linux_mac_win.html>
-  3.2.  Session request failed (131,130)" error
+  33..22..  SSeessssiioonn rreeqquueesstt ffaaiilleedd ((113311,,113300))"" eerrrroorr
 
 
   The following answer is provided by John E. Miller:
@@ -819,26 +819,26 @@
   you'd have to use smbclient -iSomeStr otherparms in connecting to it.
 
 
-  3.3.  How do I synchronise my PC's clock with my Samba server?
+  33..33..  HHooww ddoo II ssyynncchhrroonniissee mmyy PPCC''ss cclloocckk wwiitthh mmyy SSaammbbaa sseerrvveerr??
 
 
   To syncronize your PC's clock with your Samba server:
 
-  o  Copy timesync.pif to your windows directory
+  +o  Copy timesync.pif to your windows directory
 
-  o  timesync.pif can be found at:
-     <http://samba.canberra.edu.au/pub/samba/binaries/miscellaneous/timesync.pif>
+  +o  timesync.pif can be found at:
+     <http://samba.anu.edu.au/samba/binaries/miscellaneous/timesync.pif>
 
-  o  Add timesync.pif to your 'Start Up' group/folder
+  +o  Add timesync.pif to your 'Start Up' group/folder
 
-  o  Open the properties dialog box for the program/icon
+  +o  Open the properties dialog box for the program/icon
 
-  o  Make sure the 'Run Minimized' option is set in program 'Properties'
+  +o  Make sure the 'Run Minimized' option is set in program 'Properties'
 
-  o  Change the command line section that reads \sambahost to reflect
+  +o  Change the command line section that reads \sambahost to reflect
      the name of your server.
 
-  o  Close the properties dialog box by choosing 'OK'
+  +o  Close the properties dialog box by choosing 'OK'
 
      Each time you start your computer (or login for Win95) your PC will
      synchronize its clock with your Samba server.
@@ -858,7 +858,7 @@
 
   as one of the lines in the logon script.
 
-  3.4.  Problems with WinDD, NTrigue, WinCenterPro etc
+  33..44..  PPrroobblleemmss wwiitthh WWiinnDDDD,, NNTTrriigguuee,, WWiinnCCeenntteerrPPrroo eettcc
 
 
   All of the above programs are applications that sit on an NT box and
@@ -900,7 +900,7 @@
   home directory. Use \serversername instead.
 
 
-  3.5.  Problem with printers under NT
+  33..55..  PPrroobblleemm wwiitthh pprriinntteerrss uunnddeerr NNTT
 
 
   This info from Stefan Hergeth hergeth@f7axp1.informatik.fh-muenchen.de
@@ -929,7 +929,7 @@
      try it yet.
 
 
-  3.6.  Why are my file's timestamps off by an hour, or by a few hours?
+  33..66..  WWhhyy aarree mmyy ffiillee''ss ttiimmeessttaammppss ooffff bbyy aann hhoouurr,, oorr bbyy aa ffeeww hhoouurrss??
 
 
   This is from Paul Eggert eggert@twinsun.com.
@@ -973,20 +973,20 @@
 
      where:
 
-     o  `Std' is the standard time designation (e.g. `PST').
+     +o  `Std' is the standard time designation (e.g. `PST').
 
-     o  `Offset' is the number of hours behind UTC (e.g. `8').  Prepend
+     +o  `Offset' is the number of hours behind UTC (e.g. `8').  Prepend
         a `-' if you are ahead of UTC, and append `:30' if you are at a
         half-hour offset.  Omit all the remaining items if you do not
         use daylight-saving time.
 
-     o  `Dst' is the daylight-saving time designation (e.g. `PDT').
+     +o  `Dst' is the daylight-saving time designation (e.g. `PDT').
 
         The optional second `Offset' is the number of hours that
         daylight-saving time is behind UTC.  The default is 1 hour ahead
         of standard time.
 
-     o  `Date/Time,Date/Time' specify when daylight-saving time starts
+     +o  `Date/Time,Date/Time' specify when daylight-saving time starts
         and ends.  The format for a date is `Mm.n.d', which specifies
         the dth day (0 is Sunday) of the nth week of the mth month,
         where week 5 means the last such day in the month.  The format
@@ -1005,7 +1005,7 @@
      Samba server to 1.9.16alpha10 or later.
 
 
-  3.7.  How do I set the printer driver name correctly?
+  33..77..  HHooww ddoo II sseett tthhee pprriinntteerr ddrriivveerr nnaammee ccoorrrreeccttllyy??
 
 
   Question: On NT, I opened "Printer Manager" and "Connect to Printer".
@@ -1050,17 +1050,17 @@
 
   this is effectively what older versions of Samba did, so if that
   worked for you then give it a go. If this does work then let us know
-  via samba-bugs@samba.anu.edu.au, and we'll make it the default. Currently
-  the default is a 0 length string.
+  via samba-bugs@samba.anu.edu.au, and we'll make it the default. Cur-
+  rently the default is a 0 length string.
 
 
-  3.8.  I've applied NT 4.0 SP3, and now I can't access Samba shares,
-  Why?
+  33..88..  II''vvee aapppplliieedd NNTT 44..00 SSPP33,, aanndd nnooww II ccaann''tt aacccceessss SSaammbbaa sshhaarreess,,
+  WWhhyy??
 
 
   As of SP3, Microsoft has decided that they will no longer default to
   passing clear text passwords over the network.  To enable access to
-  Samba shares from NT 4.0 SP3, you must do ONE of two things:
+  Samba shares from NT 4.0 SP3, you must do OONNEE of two things:
 
   1. Set the Samba configuration option 'security = user' and implement
      all of the stuff detailed in ENCRYPTION.txt
@@ -1071,13 +1071,13 @@
      <http://www.microsoft.com/kb/articles/q166/7/30.htm>
 
 
-  4.  Specific client application problems
+  44..  SSppeecciiffiicc cclliieenntt aapppplliiccaattiioonn pprroobblleemmss
 
 
 
 
-  4.1.  MS Office Setup reports "Cannot change properties of 'MSOF-
-  FICEUP.INI'"
+  44..11..  MMSS OOffffiiccee SSeettuupp rreeppoorrttss ""CCaannnnoott cchhaannggee pprrooppeerrttiieess ooff ''MMSSOOFF--
+  FFIICCEEUUPP..IINNII''""
 
 
   When installing MS Office on a Samba drive for which you have admin
@@ -1093,11 +1093,11 @@
   to fix the owner.
 
 
-  5.  Miscellaneous
+  55..  MMiisscceellllaanneeoouuss
 
 
 
-  5.1.  Is Samba Year 2000 compliant?
+  55..11..  IIss SSaammbbaa YYeeaarr 22000000 ccoommpplliiaanntt??
 
 
   The CIFS protocol that Samba implements negotiates times in various

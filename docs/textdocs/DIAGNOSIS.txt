@@ -1,5 +1,8 @@
+!==
+!== DIAGNOSIS.txt for Samba release 1.9.17p4 22 Oct 1997
+!==
 Contributor:	Andrew Tridgell
-Updated:	June 27, 1997
+Updated:	October 14, 1997
 
 Subject:	DIAGNOSING YOUR SAMBA SERVER
 ===========================================================================
@@ -44,6 +47,15 @@ smb.conf. I will assume this share is called "tmp". You can add a
 THESE TESTS ASSUME VERSION 1.9.16 OR LATER OF THE SAMBA SUITE. SOME
 COMMANDS SHOWN DID NOT EXIST IN EARLIER VERSIONS
 
+Please pay attention to the error messages you receive. If any error message
+reports that your server is being unfriendly you should first check that you
+IP name resolution is correctly set up. eg: Make sure your /etc/resolv.conf
+file points to name servers that really do exist.
+
+Also, if you do not have DNS server access for name resolution please check
+that the settings for your smb.conf file results in "dns proxy = no". The
+best way to check this is with "testparm smb.conf"
+
 
 TEST 1:
 -------
@@ -53,7 +65,7 @@ In the directory in which you store your smb.conf file, run the command
 configuration file is faulty.
 
 Note:	Your smb.conf file may be located in: /etc
-	or in:   /usr/local/samba/lib
+	Or in:   /usr/local/samba/lib
 
 
 TEST 2:
@@ -254,7 +266,10 @@ Still having troubles?
 ----------------------
 
 Try the mailing list or newsgroup, or use the tcpdump-smb utility to
-sniff the problem.
+sniff the problem. The official samba mailing list can be reached at
+samba@samba.anu.edu.au. To find out more about samba and how to
+subscribe to the mailing list check out the samba web page at
+              http://samba.anu.edu.au/samba
 
 Also look at the other docs in the Samba package!
 

@@ -1,3 +1,4 @@
+#ifdef SMB_PASSWD
 /*
  * Unix SMB/Netbios implementation. Version 1.9. SMB parameters and setup
  * Copyright (C) Andrew Tridgell 1992-1997 Modified by Jeremy Allison 1995.
@@ -291,3 +292,8 @@ struct smb_passwd *get_smbpwnam(char *name)
 	pw_file_unlock(lockfd);
 	return NULL;
 }
+#else
+ void smbpass_dummy(void)
+{
+}				/* To avoid compiler complaints */
+#endif

@@ -94,7 +94,7 @@ static BOOL smb_shm_global_lock(void)
    /* Do an exclusive wait lock on the first byte of the file */
    if (fcntl_lock(smb_shm_fd, F_SETLKW, 0, 1, F_WRLCK) == False)
    {
-      DEBUG(0,("ERROR smb_shm_global_lock : fcntl_lock failed with code %s\n",strerror(errno)));
+      DEBUG(0,("ERROR smb_shm_global_lock : fcntl_lock failed with code %d\n",errno));
       smb_shm_times_locked--;
       return False;
    }
@@ -128,7 +128,7 @@ static BOOL smb_shm_global_unlock(void)
    /* Do a wait unlock on the first byte of the file */
    if (fcntl_lock(smb_shm_fd, F_SETLKW, 0, 1, F_UNLCK) == False)
    {
-      DEBUG(0,("ERROR smb_shm_global_unlock : fcntl_lock failed with code %s\n",strerror(errno)));
+      DEBUG(0,("ERROR smb_shm_global_unlock : fcntl_lock failed with code %d\n",errno));
       smb_shm_times_locked++;
       return False;
    }
@@ -178,7 +178,7 @@ static BOOL smb_shm_register_process(char *processreg_file, pid_t pid, BOOL *oth
 #endif /* SECURE_SHARE_MODES */
    if ( smb_shm_processes_fd < 0 )
    {
-      DEBUG(0,("ERROR smb_shm_register_process : processreg_file open failed with code %s\n",strerror(errno)));
+      DEBUG(0,("ERROR smb_shm_register_process : processreg_file open failed with code %d\n",errno));
       return False;
    }
    
@@ -208,7 +208,7 @@ static BOOL smb_shm_register_process(char *processreg_file, pid_t pid, BOOL *oth
    }
    if (nb_read < 0)
    {
-      DEBUG(0,("ERROR smb_shm_register_process : processreg_file read failed with code %s\n",strerror(errno)));
+      DEBUG(0,("ERROR smb_shm_register_process : processreg_file read failed with code %d\n",errno));
       close(smb_shm_processes_fd);
       return False;
    }
@@ -220,7 +220,7 @@ static BOOL smb_shm_register_process(char *processreg_file, pid_t pid, BOOL *oth
    lseek(smb_shm_processes_fd, free_slot, SEEK_SET);
    if(write(smb_shm_processes_fd, &pid, sizeof(pid)) < 0)
    {
-      DEBUG(0,("ERROR smb_shm_register_process : processreg_file write failed with code %s\n",strerror(errno)));
+      DEBUG(0,("ERROR smb_shm_register_process : processreg_file write failed with code %d\n",errno));
       close(smb_shm_processes_fd);
       return False;
    }
@@ -246,7 +246,7 @@ static BOOL smb_shm_unregister_process(char *processreg_file, pid_t pid)
    umask(old_umask);
    if ( smb_shm_processes_fd < 0 )
    {
-      DEBUG(0,("ERROR smb_shm_unregister_process : processreg_file open failed with code %s\n",strerror(errno)));
+      DEBUG(0,("ERROR smb_shm_unregister_process : processreg_file open failed with code %d\n",errno));
       return False;
    }
    
@@ -262,7 +262,7 @@ static BOOL smb_shm_unregister_process(char *processreg_file, pid_t pid)
 	 erased_slot = lseek(smb_shm_processes_fd, seek_back, SEEK_CUR);
 	 if(write(smb_shm_processes_fd, &other_pid, sizeof(other_pid)) < 0)
 	 {
-	    DEBUG(0,("ERROR smb_shm_unregister_process : processreg_file write failed with code %s\n",strerror(errno)));
+	    DEBUG(0,("ERROR smb_shm_unregister_process : processreg_file write failed with code %d\n",errno));
 	    close(smb_shm_processes_fd);
 	    return False;
 	 }
@@ -273,7 +273,7 @@ static BOOL smb_shm_unregister_process(char *processreg_file, pid_t pid)
    }
    if (nb_read < 0)
    {
-      DEBUG(0,("ERROR smb_shm_unregister_process : processreg_file read failed with code %s\n",strerror(errno)));
+      DEBUG(0,("ERROR smb_shm_unregister_process : processreg_file read failed with code %d\n",errno));
       close(smb_shm_processes_fd);
       return False;
    }
@@ -399,7 +399,7 @@ BOOL smb_shm_open( char *file_name, int size)
    umask(old_umask);
    if ( smb_shm_fd < 0 )
    {
-      DEBUG(0,("ERROR smb_shm_open : open failed with code %s\n",strerror(errno)));
+      DEBUG(0,("ERROR smb_shm_open : open failed with code %d\n",errno));
       return False;
    }
    
@@ -411,7 +411,7 @@ BOOL smb_shm_open( char *file_name, int size)
    
    if( (filesize = lseek(smb_shm_fd, 0, SEEK_END)) < 0)
    {
-      DEBUG(0,("ERROR smb_shm_open : lseek failed with code %s\n",strerror(errno)));
+      DEBUG(0,("ERROR smb_shm_open : lseek failed with code %d\n",errno));
       smb_shm_global_unlock();
       close(smb_shm_fd);
       return False;
@@ -446,7 +446,7 @@ BOOL smb_shm_open( char *file_name, int size)
       /* we just created a new one, or are the first opener, lets set it size */
       if( ftruncate(smb_shm_fd, size) <0)
       {
-         DEBUG(0,("ERROR smb_shm_open : ftruncate failed with code %s\n",strerror(errno)));
+         DEBUG(0,("ERROR smb_shm_open : ftruncate failed with code %d\n",errno));
 	 smb_shm_unregister_process(smb_shm_processreg_name, getpid());
 	 smb_shm_global_unlock();
 	 close(smb_shm_fd);
@@ -471,7 +471,7 @@ BOOL smb_shm_open( char *file_name, int size)
    /* WARNING, smb_shm_header_p can be different for different processes mapping the same file ! */
    if (smb_shm_header_p  == (struct SmbShmHeader *)(-1))
    {
-      DEBUG(0,("ERROR smb_shm_open : mmap failed with code %s\n",strerror(errno)));
+      DEBUG(0,("ERROR smb_shm_open : mmap failed with code %d\n",errno));
       smb_shm_unregister_process(smb_shm_processreg_name, getpid());
       smb_shm_global_unlock();
       close(smb_shm_fd);
@@ -514,7 +514,7 @@ BOOL smb_shm_close( void )
    if ((smb_shm_header_p != NULL) && 
               (munmap((caddr_t)smb_shm_header_p, smb_shm_header_p->total_size) < 0))
    {
-      DEBUG(0,("ERROR smb_shm_close : munmap failed with code %s\n",strerror(errno)));
+      DEBUG(0,("ERROR smb_shm_close : munmap failed with code %d\n",errno));
    }
 
    smb_shm_global_lock();
@@ -733,7 +733,7 @@ BOOL smb_shm_set_userdef_off(smb_shm_offset_t userdef_off)
    return True;
 }
 
-void *smb_shm_offset2addr(smb_shm_offset_t offset)
+void * smb_shm_offset2addr(smb_shm_offset_t offset)
 {
    if (offset == NULL_OFFSET )
       return (void *)(0);
@@ -778,7 +778,7 @@ BOOL smb_shm_lock_hash_entry( unsigned int entry)
   /* Do an exclusive wait lock on the 4 byte region mapping into this entry  */
   if (fcntl_lock(smb_shm_fd, F_SETLKW, start, sizeof(smb_shm_offset_t), F_WRLCK) == False)
     {
-      DEBUG(0,("ERROR smb_shm_lock_hash_entry : fcntl_lock failed with code %s\n",strerror(errno)));
+      DEBUG(0,("ERROR smb_shm_lock_hash_entry : fcntl_lock failed with code %d\n",errno));
       return False;
     }
   
@@ -809,7 +809,7 @@ BOOL smb_shm_unlock_hash_entry( unsigned int entry )
   /* Do a wait lock on the 4 byte region mapping into this entry  */
   if (fcntl_lock(smb_shm_fd, F_SETLKW, start, sizeof(smb_shm_offset_t), F_UNLCK) == False)
     {
-      DEBUG(0,("ERROR smb_shm_unlock_hash_entry : fcntl_lock failed with code %s\n",strerror(errno)));
+      DEBUG(0,("ERROR smb_shm_unlock_hash_entry : fcntl_lock failed with code %d\n",errno));
       return False;
     }
   

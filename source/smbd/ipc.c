@@ -440,7 +440,7 @@ static void PackDriverData(struct pack_desc* desc)
 }
 
 static int check_printq_info(struct pack_desc* desc,
- 			     int uLevel, char *id1, char *id2)
+ 			     int uLevel, char *id1, const char* id2)
 {
   desc->subformat = NULL;
   switch( uLevel ) {
@@ -1074,7 +1074,7 @@ static BOOL api_RNetServerEnum(int cnum, uint16 vuid, char *param, char *data,
   
   *rparam_len = 8;
   *rparam = REALLOC(*rparam,*rparam_len);
-  SSVAL(*rparam,0,NERR_Success);
+  SSVAL(*rparam,0,(missed == 0 ? NERR_Success : ERROR_MORE_DATA));
   SSVAL(*rparam,2,0);
   SSVAL(*rparam,4,counted);
   SSVAL(*rparam,6,counted+missed);
@@ -1601,13 +1601,14 @@ static BOOL api_PrintJobInfo(int cnum,uint16 vuid,char *param,char *data,
 	name[l] = 0;
 	
 	DEBUG(3,("Setting print name to %s\n",name));
+
+	become_root(1);
 	
 	for (i=0;i<MAX_OPEN_FILES;i++)
 	  if (Files[i].open && Files[i].print_file)
 	    {
 	      pstring wd;
 	      GetWd(wd);
-	      unbecome_user();
 	      
 	      if (!become_user(Files[i].cnum,vuid) || 
 		  !become_service(Files[i].cnum,True))
@@ -1617,6 +1618,8 @@ static BOOL api_PrintJobInfo(int cnum,uint16 vuid,char *param,char *data,
 		string_set(&Files[i].name,name);
 	      break;
 	    }
+
+	unbecome_root(1);
       }
     desc.errcode=NERR_Success;
   
@@ -2001,6 +2004,8 @@ static BOOL api_RNetUserGetInfo(int cnum,uint16 vuid, char *param,char *data,
 
     *rparam_len = 6;
     *rparam = REALLOC(*rparam,*rparam_len);
+
+    DEBUG(4,("RNetUserGetInfo level=%d\n", uLevel));
   
 	/* check it's a supported variant */
 	if (strcmp(str1,"zWrLh") != 0) return False;
@@ -2219,7 +2224,6 @@ static BOOL api_WWkstaUserLogon(int cnum,uint16 vuid, char *param,char *data,
   int uLevel;
   struct pack_desc desc;
   char* name;
-  char* logon_script;
 
   uLevel = SVAL(p,0);
   name = p + 2;
@@ -2262,14 +2266,7 @@ static BOOL api_WWkstaUserLogon(int cnum,uint16 vuid, char *param,char *data,
       PACKS(&desc,"z",mypath); /* computer */
     }
     PACKS(&desc,"z",myworkgroup);/* domain */
-
-/* JHT - By calling lp_logon_script() and standard_sub() we have */
-/* made sure all macros are fully substituted and available */
-    logon_script = lp_logon_script();
-    standard_sub( cnum, logon_script );
-    PACKS(&desc,"z", logon_script);		/* script path */
-/* End of JHT mods */
-
+    PACKS(&desc,"z",lp_logon_script());		/* script path */
     PACKI(&desc,"D",0x00000000);		/* reserved */
   }
 

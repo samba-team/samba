@@ -1,3 +1,6 @@
+!==
+!== GOTCHAS.txt for Samba release 1.9.17p4 22 Oct 1997
+!==
 This file lists Gotchas to watch out for:
 =========================================================================
 Item Number:	1.0

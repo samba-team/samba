@@ -43,7 +43,7 @@
 #define WORDMAX 0xFFFF
 
 /* the maximum password length before we declare a likely attack */
-#define MAX_PASSWORD_LENGTH 200
+#define MAX_PASS_LEN 200
 
 /* separators for lists */
 #define LIST_SEP " \t,;:\n\r"
@@ -147,10 +147,6 @@
 /* shall we support browse requests via a FIFO to nmbd? */
 #define ENABLE_FIFO 1
 
-/* keep the password server open, this uses up a aocket, but is needed
-   by many apps */
-#define KEEP_PASSWORD_SERVER_OPEN 1
-
 /* how long to wait for a socket connect to happen */
 #define LONG_CONNECT_TIMEOUT 30
 #define SHORT_CONNECT_TIMEOUT 5
@@ -158,10 +154,5 @@
 
 /* the directory to sit in when idle */
 /* #define IDLE_DIR "/" */
-
-/* Timout (in seconds) to wait for an oplock breal
-   message to return. */
-
-#define OPLOCK_BREAK_TIMEOUT 30
 
 #endif

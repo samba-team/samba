@@ -49,11 +49,6 @@
 
 #include "includes.h"
 
-/* Set default coding system for KANJI if none specified in Makefile. */
-#ifndef KANJI
-#define KANJI "sjis"
-#endif /* KANJI */
-
 BOOL bLoaded = False;
 
 extern int DEBUGLEVEL;
@@ -102,7 +97,9 @@ int keepalive=0;
 extern BOOL use_getwd_cache;
 
 extern int extra_time_offset;
+#ifdef KANJI
 extern int coding_system;
+#endif
 
 /* 
  * This structure describes global (ie., server-wide) parameters.
@@ -146,7 +143,6 @@ typedef struct
   int max_mux;
   int max_packet;
   int pwordlevel;
-  int unamelevel;
   int deadtime;
   int maxprotocol;
   int security;
@@ -257,7 +253,6 @@ typedef struct
   BOOL bLocking;
   BOOL bStrictLocking;
   BOOL bShareModes;
-  BOOL bOpLocks;
   BOOL bOnlyUser;
   BOOL bMangledNames;
   BOOL bWidelinks;
@@ -267,7 +262,7 @@ typedef struct
   BOOL *copymap;
   BOOL bDeleteReadonly;
   BOOL bFakeOplocks;
-  BOOL bDeleteVetoFiles;
+  BOOL bDosFiletimes;
   char dummy[3]; /* for alignment */
 } service;
 
@@ -339,7 +334,6 @@ static service sDefault =
   True,  /* bLocking */
   False,  /* bStrictLocking */
   True,  /* bShareModes */
-  True,  /* bOpLocks */
   False, /* bOnlyUser */
   True,  /* bMangledNames */
   True,  /* bWidelinks */
@@ -349,7 +343,7 @@ static service sDefault =
   NULL,  /* copymap */
   False, /* bDeleteReadonly */
   False, /* bFakeOplocks */
-  False, /* bDeleteVetoFiles */
+  False, /* bDosFiletimes */
   ""     /* dummy */
 };
 
@@ -375,7 +369,9 @@ static BOOL handle_case(char *pszParmValue,int *val);
 static BOOL handle_printing(char *pszParmValue,int *val);
 static BOOL handle_character_set(char *pszParmValue,int *val);
 static BOOL handle_announce_as(char *pszParmValue, int *val);
+#ifdef KANJI
 static BOOL handle_coding_system(char *pszParmValue,int *val);
+#endif /* KANJI */
 
 static void set_default_server_announce_type(void);
 
@@ -452,14 +448,15 @@ struct parm_struct
   {"max packet",       P_INTEGER, P_GLOBAL, &Globals.max_packet,        NULL},
   {"packet size",      P_INTEGER, P_GLOBAL, &Globals.max_packet,        NULL},
   {"password level",   P_INTEGER, P_GLOBAL, &Globals.pwordlevel,        NULL},
-  {"username level",   P_INTEGER, P_GLOBAL, &Globals.unamelevel,        NULL},
   {"keepalive",        P_INTEGER, P_GLOBAL, &keepalive,                 NULL},
   {"deadtime",         P_INTEGER, P_GLOBAL, &Globals.deadtime,          NULL},
   {"time offset",      P_INTEGER, P_GLOBAL, &extra_time_offset,         NULL},
   {"read size",        P_INTEGER, P_GLOBAL, &Globals.ReadSize,          NULL},
   {"shared mem size",  P_INTEGER, P_GLOBAL, &Globals.shmem_size,        NULL},
   {"shared file entries",  P_INTEGER, P_GLOBAL, &Globals.shmem_hash_size, NULL},
+#ifdef KANJI
   {"coding system",    P_INTEGER, P_GLOBAL, &coding_system, handle_coding_system},
+#endif /* KANJI */
   {"client code page", P_INTEGER, P_GLOBAL, &Globals.client_code_page,	NULL},
   {"os level",         P_INTEGER, P_GLOBAL, &Globals.os_level,          NULL},
   {"max ttl",          P_INTEGER, P_GLOBAL, &Globals.max_ttl,           NULL},
@@ -527,7 +524,6 @@ struct parm_struct
   {"set directory",    P_BOOLREV, P_LOCAL,  &sDefault.bNo_set_dir,      NULL},
   {"status",           P_BOOL,    P_LOCAL,  &sDefault.status,           NULL},
   {"hide dot files",   P_BOOL,    P_LOCAL,  &sDefault.bHideDotFiles,    NULL},
-  {"delete veto files",P_BOOL,    P_LOCAL,  &sDefault.bDeleteVetoFiles, NULL},
   {"veto files",       P_STRING,  P_LOCAL,  &sDefault.szVetoFiles,      NULL},
   {"hide files",       P_STRING,  P_LOCAL,  &sDefault.szHideFiles,      NULL},
   {"guest only",       P_BOOL,    P_LOCAL,  &sDefault.bGuest_only,      NULL},
@@ -543,7 +539,6 @@ struct parm_struct
   {"locking",          P_BOOL,    P_LOCAL,  &sDefault.bLocking,         NULL},
   {"strict locking",   P_BOOL,    P_LOCAL,  &sDefault.bStrictLocking,   NULL},
   {"share modes",      P_BOOL,    P_LOCAL,  &sDefault.bShareModes,      NULL},
-  {"oplocks",          P_BOOL,    P_LOCAL,  &sDefault.bOpLocks,         NULL},
   {"only user",        P_BOOL,    P_LOCAL,  &sDefault.bOnlyUser,        NULL},
   {"wide links",       P_BOOL,    P_LOCAL,  &sDefault.bWidelinks,       NULL},
   {"follow symlinks",  P_BOOL,    P_LOCAL,  &sDefault.bSymlinks,        NULL},
@@ -567,6 +562,7 @@ struct parm_struct
   {"magic output",     P_STRING,  P_LOCAL,  &sDefault.szMagicOutput,    NULL},
   {"mangled map",      P_STRING,  P_LOCAL,  &sDefault.szMangledMap,     NULL},
   {"delete readonly",  P_BOOL,    P_LOCAL,  &sDefault.bDeleteReadonly,  NULL},
+  {"dos filetimes",    P_BOOL,    P_LOCAL,  &sDefault.bDosFiletimes,    NULL},
 
   {NULL,               P_BOOL,    P_NONE,   NULL,                       NULL}
 };
@@ -606,7 +602,11 @@ static void init_globals(void)
 #endif
   string_set(&Globals.szPasswdChat,"*old*password* %o\\n *new*password* %n\\n *new*password* %n\\n *changed*");
   string_set(&Globals.szWorkGroup, WORKGROUP);
+#ifdef SMB_PASSWD
   string_set(&Globals.szPasswdProgram, SMB_PASSWD);
+#else
+  string_set(&Globals.szPasswdProgram, "/bin/passwd");
+#endif
   string_set(&Globals.szPrintcapname, PRINTCAP_NAME);
   string_set(&Globals.szLockDir, LOCKDIR);
   string_set(&Globals.szRootdir, "/");
@@ -624,7 +624,6 @@ static void init_globals(void)
   Globals.max_mux = 50; /* This is *needed* for profile support. */
   Globals.lpqcachetime = 10;
   Globals.pwordlevel = 0;
-  Globals.unamelevel = 0;
   Globals.deadtime = 0;
   Globals.max_log_size = 5000;
   Globals.maxprotocol = PROTOCOL_NT1;
@@ -650,7 +649,9 @@ static void init_globals(void)
   Globals.bNISHomeMap = False;
   string_set(&Globals.szNISHomeMapName, "auto.home");
 #endif
+#ifdef KANJI
   coding_system = interpret_coding_system (KANJI, SJIS_CODE);
+#endif /* KANJI */
   Globals.client_code_page = DEFAULT_CLIENT_CODE_PAGE;
   Globals.bTimeServer = False;
 
@@ -781,6 +782,8 @@ char *lp_string(char *s)
   else
     StrCpy(ret,s);
 
+  trim_string(ret, "\"", "\"");
+
   standard_sub_basic(ret);
   return(ret);
 }
@@ -871,7 +874,6 @@ FN_GLOBAL_INTEGER(lp_maxmux,&Globals.max_mux)
 FN_GLOBAL_INTEGER(lp_maxpacket,&Globals.max_packet)
 FN_GLOBAL_INTEGER(lp_keepalive,&keepalive)
 FN_GLOBAL_INTEGER(lp_passwordlevel,&Globals.pwordlevel)
-FN_GLOBAL_INTEGER(lp_usernamelevel,&Globals.unamelevel)
 FN_GLOBAL_INTEGER(lp_readsize,&Globals.ReadSize)
 FN_GLOBAL_INTEGER(lp_shmem_size,&Globals.shmem_size)
 FN_GLOBAL_INTEGER(lp_shmem_hash_size,&Globals.shmem_hash_size)
@@ -938,7 +940,6 @@ FN_LOCAL_BOOL(lp_map_archive,bMap_archive)
 FN_LOCAL_BOOL(lp_locking,bLocking)
 FN_LOCAL_BOOL(lp_strict_locking,bStrictLocking)
 FN_LOCAL_BOOL(lp_share_modes,bShareModes)
-FN_LOCAL_BOOL(lp_oplocks,bOpLocks)
 FN_LOCAL_BOOL(lp_onlyuser,bOnlyUser)
 FN_LOCAL_BOOL(lp_manglednames,bMangledNames)
 FN_LOCAL_BOOL(lp_widelinks,bWidelinks)
@@ -947,7 +948,7 @@ FN_LOCAL_BOOL(lp_syncalways,bSyncAlways)
 FN_LOCAL_BOOL(lp_map_system,bMap_system)
 FN_LOCAL_BOOL(lp_delete_readonly,bDeleteReadonly)
 FN_LOCAL_BOOL(lp_fake_oplocks,bFakeOplocks)
-FN_LOCAL_BOOL(lp_recursive_veto_delete,bDeleteVetoFiles)
+FN_LOCAL_BOOL(lp_dos_filetimes,bDosFiletimes)
 
 FN_LOCAL_INTEGER(lp_create_mode,iCreate_mask)
 FN_LOCAL_INTEGER(lp_force_create_mode,iCreate_force_mode)
@@ -972,6 +973,8 @@ static void   copy_service( service *pserviceDest,
 static BOOL   service_ok(int iService);
 static BOOL   do_parameter(char *pszParmName, char *pszParmValue);
 static BOOL   do_section(char *pszSectionName);
+static void   dump_globals(void);
+static void   dump_a_service(service *pService);
 static void init_copymap(service *pservice);
 
 
@@ -1142,8 +1145,6 @@ BOOL lp_add_printer(char *pszPrintername, int iDefaultService)
   iSERVICE(i).bRead_only = False;
   /* No share modes on printer services. */
   iSERVICE(i).bShareModes = False;
-  /* No oplocks on printer services. */
-  iSERVICE(i).bOpLocks = False;
   /* Printer services must be printable. */
   iSERVICE(i).bPrint_ok = True;
   
@@ -1415,16 +1416,17 @@ BOOL lp_file_list_changed(void)
 
     mod_time = file_modtime(n2);
 
-    if (f->modtime != mod_time)
-    {
-      DEBUG(6,("file %s modified: %s\n", n2, ctime(&mod_time)));
-      return(True);
+    if (f->modtime != mod_time) {
+	    DEBUG(6,("file %s modified: %s\n", n2, ctime(&mod_time)));
+	    f->modtime = mod_time;
+	    return(True);
     }
     f = f->next;   
   }
   return(False);
 }
 
+#ifdef KANJI
 /***************************************************************************
   handle the interpretation of the coding system parameter
   *************************************************************************/
@@ -1433,6 +1435,7 @@ static BOOL handle_coding_system(char *pszParmValue,int *val)
   *val = interpret_coding_system(pszParmValue,*val);
   return(True);
 }
+#endif /* KANJI */
 
 /***************************************************************************
 handle the interpretation of the character set system parameter
@@ -1613,15 +1616,18 @@ static void init_copymap(service *pservice)
 
 
 /***************************************************************************
-Process a parameter for a particular service number. If snum < 0
-then assume we are in the globals
+Process a parameter.
 ***************************************************************************/
-BOOL lp_do_parameter(int snum, char *pszParmName, char *pszParmValue)
+static BOOL do_parameter(char *pszParmName, char *pszParmValue)
 {
    int parmnum;
    void *parm_ptr=NULL; /* where we are going to store the result */
    void *def_ptr=NULL;
 
+   if (!bInGlobalSection && bGlobalOnly) return(True);
+
+   DEBUG(3,("doing parameter %s = %s\n",pszParmName,pszParmValue));
+   
    parmnum = map_parameter(pszParmName);
 
    if (parmnum < 0)
@@ -1633,33 +1639,37 @@ BOOL lp_do_parameter(int snum, char *pszParmName, char *pszParmValue)
    def_ptr = parm_table[parmnum].ptr;
 
    /* we might point at a service, the default service or a global */
-   if (snum < 0) {
+   if (bInGlobalSection)
      parm_ptr = def_ptr;
-   } else {
-       if (parm_table[parmnum].class == P_GLOBAL) {
+   else
+     {
+       if (parm_table[parmnum].class == P_GLOBAL)
+	 {
 	   DEBUG(0,( "Global parameter %s found in service section!\n",pszParmName));
 	   return(True);
 	 }
-       parm_ptr = ((char *)pSERVICE(snum)) + PTR_DIFF(def_ptr,&sDefault);
-   }
+       parm_ptr = ((char *)pSERVICE(iServiceIndex)) + PTR_DIFF(def_ptr,&sDefault);
+     }
 
-   if (snum >= 0) {
-	   int i;
-	   if (!iSERVICE(snum).copymap)
-		   init_copymap(pSERVICE(snum));
-	   
-	   /* this handles the aliases - set the copymap for other entries with
-	      the same data pointer */
-	   for (i=0;parm_table[i].label;i++)
-		   if (parm_table[i].ptr == parm_table[parmnum].ptr)
-			   iSERVICE(snum).copymap[i] = False;
-   }
+   if (!bInGlobalSection)
+     {
+       int i;
+       if (!iSERVICE(iServiceIndex).copymap)
+	 init_copymap(pSERVICE(iServiceIndex));
+       
+       /* this handles the aliases - set the copymap for other entries with
+	  the same data pointer */
+       for (i=0;parm_table[i].label;i++)
+	 if (parm_table[i].ptr == parm_table[parmnum].ptr)
+	   iSERVICE(iServiceIndex).copymap[i] = False;
+     }
 
    /* if it is a special case then go ahead */
-   if (parm_table[parmnum].special) {
-	   parm_table[parmnum].special(pszParmValue,parm_ptr);
-	   return(True);
-   }
+   if (parm_table[parmnum].special)
+     {
+       parm_table[parmnum].special(pszParmValue,parm_ptr);
+       return(True);
+     }
 
    /* now switch on the type of variable it is */
    switch (parm_table[parmnum].type)
@@ -1708,101 +1718,44 @@ BOOL lp_do_parameter(int snum, char *pszParmName, char *pszParmValue)
 }
 
 /***************************************************************************
-Process a parameter.
-***************************************************************************/
-static BOOL do_parameter(char *pszParmName, char *pszParmValue)
-{
-   if (!bInGlobalSection && bGlobalOnly) return(True);
-
-   DEBUG(3,("doing parameter %s = %s\n",pszParmName,pszParmValue));
-
-   return lp_do_parameter(bInGlobalSection?-2:iServiceIndex, pszParmName, pszParmValue);
-}
-
-
-/***************************************************************************
 print a parameter of the specified type
 ***************************************************************************/
-static void print_parameter(parm_type type,void *ptr, FILE *f)
+static void print_parameter(parm_type type,void *ptr)
 {
   switch (type)
     {
     case P_BOOL:
-      fprintf(f,"%s",BOOLSTR(*(BOOL *)ptr));
+      printf("%s",BOOLSTR(*(BOOL *)ptr));
       break;
       
     case P_BOOLREV:
-      fprintf(f,"%s",BOOLSTR(! *(BOOL *)ptr));
+      printf("%s",BOOLSTR(! *(BOOL *)ptr));
       break;
       
     case P_INTEGER:
-      fprintf(f,"%d",*(int *)ptr);
+      printf("%d",*(int *)ptr);
       break;
       
     case P_CHAR:
-      fprintf(f,"%c",*(char *)ptr);
+      printf("%c",*(char *)ptr);
       break;
       
     case P_OCTAL:
-      fprintf(f,"0%o",*(int *)ptr);
+      printf("0%o",*(int *)ptr);
       break;
       
     case P_GSTRING:
     case P_UGSTRING:
       if ((char *)ptr)
-	fprintf(f,"%s",(char *)ptr);
+	printf("%s",(char *)ptr);
       break;
 
     case P_STRING:
     case P_USTRING:
       if (*(char **)ptr)
-	fprintf(f,"%s",*(char **)ptr);
+	printf("%s",*(char **)ptr);
       break;
     }
-}
-
-
-/***************************************************************************
-print a parameter of the specified type
-***************************************************************************/
-static void parameter_string(parm_type type,void *ptr,char *s)
-{
-	s[0] = 0;
-	
-	switch (type)
-		{
-		case P_BOOL:
-			sprintf(s, "%s",BOOLSTR(*(BOOL *)ptr));
-			break;
-			
-		case P_BOOLREV:
-			sprintf(s, "%s",BOOLSTR(! *(BOOL *)ptr));
-			break;
-			
-		case P_INTEGER:
-			sprintf(s, "%d",*(int *)ptr);
-			break;
-			
-		case P_CHAR:
-			sprintf(s, "%c",*(char *)ptr);
-			break;
-			
-		case P_OCTAL:
-			sprintf(s, "0%o",*(int *)ptr);
-			break;
-			
-		case P_GSTRING:
-		case P_UGSTRING:
-			if ((char *)ptr)
-				sprintf(s, "%s",(char *)ptr);
-			break;
-			
-		case P_STRING:
-		case P_USTRING:
-			if (*(char **)ptr)
-				sprintf(s, "%s",*(char **)ptr);
-			break;
-		}
 }
 
 
@@ -1898,32 +1851,32 @@ static BOOL do_section(char *pszSectionName)
 /***************************************************************************
 Display the contents of the global structure.
 ***************************************************************************/
-static void dump_globals(FILE *f)
+static void dump_globals(void)
 {
   int i;
-  fprintf(f, "# Global parameters\n");
+  printf("Global parameters:\n");
 
   for (i=0;parm_table[i].label;i++)
     if (parm_table[i].class == P_GLOBAL &&
 	parm_table[i].ptr &&
 	(i == 0 || (parm_table[i].ptr != parm_table[i-1].ptr)))
       {
-	fprintf(f,"\t%s = ",parm_table[i].label);
-	print_parameter(parm_table[i].type,parm_table[i].ptr, f);
-	fprintf(f,"\n");
+	printf("\t%s: ",parm_table[i].label);
+	print_parameter(parm_table[i].type,parm_table[i].ptr);
+	printf("\n");
       }
 }
 
 /***************************************************************************
 Display the contents of a single services record.
 ***************************************************************************/
-static void dump_a_service(service *pService, FILE *f)
+static void dump_a_service(service *pService)
 {
   int i;
   if (pService == &sDefault)
-    fprintf(f,"\n\n# Default service parameters\n");
+    printf("\nDefault service parameters:\n");
   else
-    fprintf(f,"\n[%s]\n",pService->szService);
+    printf("\nService parameters [%s]:\n",pService->szService);
 
   for (i=0;parm_table[i].label;i++)
     if (parm_table[i].class == P_LOCAL &&
@@ -1937,68 +1890,13 @@ static void dump_a_service(service *pService, FILE *f)
 						      ((char *)pService) + pdiff,
 						      ((char *)&sDefault) + pdiff))
 	  {
-	    fprintf(f,"\t%s = ",parm_table[i].label);
+	    printf("\t%s: ",parm_table[i].label);
 	    print_parameter(parm_table[i].type,
-			    ((char *)pService) + pdiff, f);
-	    fprintf(f,"\n");
+			    ((char *)pService) + pdiff);
+	    printf("\n");
 	  }
       }
 }
-
-
-/***************************************************************************
-return info about the next service  in a service. snum==-1 gives the default
-serice and snum==-2 gives the globals
-
-return 0 when out of parameters
-***************************************************************************/
-int lp_next_parameter(int snum, int *i, char *label, 
-			   char *value, int allparameters)
-{
-	if (snum == -2) {
-		/* do the globals */
-		for (;parm_table[*i].label;(*i)++)
-			if (parm_table[*i].class == P_GLOBAL &&
-			    parm_table[*i].ptr && 
-			    (*parm_table[*i].label != '-') &&
-			    ((*i) == 0 || 
-			     (parm_table[*i].ptr != parm_table[(*i)-1].ptr))) {
-				strcpy(label, parm_table[*i].label);
-				parameter_string(parm_table[*i].type,
-						 parm_table[*i].ptr,
-						 value);
-				(*i)++;
-				return 1;
-			}
-		return 0;
-	} else {
-		service *pService = (snum==-1?&sDefault:pSERVICE(snum));
-
-		for (;parm_table[*i].label;(*i)++)
-			if (parm_table[*i].class == P_LOCAL &&
-			    parm_table[*i].ptr && 
-			    (*parm_table[*i].label != '-') &&
-			    ((*i) == 0 || 
-			     (parm_table[*i].ptr != parm_table[(*i)-1].ptr))) {
-				int pdiff = PTR_DIFF(parm_table[*i].ptr,&sDefault);
-				
-				if (snum == -1 || allparameters ||
-				    !equal_parameter(parm_table[*i].type,
-						     ((char *)pService) + pdiff,
-						     ((char *)&sDefault) + pdiff)) {
-					strcpy(label, parm_table[*i].label);
-					parameter_string(parm_table[*i].type,
-							 ((char *)pService) + pdiff,
-							 value);
-					(*i)++;
-					return 1;
-				}
-			}
-	}
-
-  return 0;
-}
-
 
 #if 0
 /***************************************************************************
@@ -2108,7 +2006,7 @@ void lp_killunused(BOOL (*snumused)(int ))
 {
   int i;
   for (i=0;i<iNumServices;i++)
-    if (VALID(i) && (!snumused || !snumused(i)))
+    if (VALID(i) && !snumused(i))
       {
 	iSERVICE(i).valid = False;
 	free_service(pSERVICE(i));
@@ -2171,13 +2069,13 @@ int lp_numservices(void)
 /***************************************************************************
 Display the contents of the services array in human-readable form.
 ***************************************************************************/
-void lp_dump(FILE *f)
+void lp_dump(void)
 {
    int iService;
 
-   dump_globals(f);
+   dump_globals();
    
-   dump_a_service(&sDefault, f);
+   dump_a_service(&sDefault);
 
    for (iService = 0; iService < iNumServices; iService++)
    {
@@ -2185,11 +2083,10 @@ void lp_dump(FILE *f)
        {
 	 if (iSERVICE(iService).szService[0] == '\0')
 	   break;
-	 dump_a_service(pSERVICE(iService), f);
+	 dump_a_service(pSERVICE(iService));
        }
    }
 }
-
 
 /***************************************************************************
 Return the number of the service with the given name, or -1 if it doesn't
@@ -2268,38 +2165,6 @@ static void set_default_server_announce_type()
 #endif
 }
 
-
-/*******************************************************************
-rename a service
-********************************************************************/
-void lp_rename_service(int snum, char *new_name)
-{
-	string_set(&pSERVICE(snum)->szService, new_name);
-}
-
-/*******************************************************************
-remove a service
-********************************************************************/
-void lp_remove_service(int snum)
-{
-	pSERVICE(snum)->valid = False;
-}
-
-/*******************************************************************
-copy a service
-********************************************************************/
-void lp_copy_service(int snum, char *new_name)
-{
-	char *oldname = lp_servicename(snum);
-	do_section(new_name);
-	if (snum >= 0) {
-		snum = lp_servicenumber(new_name);
-		if (snum >= 0)
-			lp_do_parameter(snum, "copy", oldname);
-	}
-}
-
-
 /*******************************************************************
  Get the default server type we will announce as via nmbd.
 ********************************************************************/
@@ -2354,4 +2219,3 @@ int lp_minor_announce_version(void)
   minor_version = atoi(p);
   return minor_version;
 }  
-

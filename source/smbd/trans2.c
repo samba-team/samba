@@ -166,7 +166,7 @@ static int call_trans2open(char *inbuf, char *outbuf, int bufsize, int cnum,
   char *params = *pparams;
   int16 open_mode = SVAL(params, 2);
   int16 open_attr = SVAL(params,6);
-  BOOL oplock_request = (((SVAL(params,0)|(1<<1))>>1) | ((SVAL(params,0)|(1<<2))>>1));
+  BOOL oplock_request = BITSETW(params,1);
 #if 0
   BOOL return_additional_info = BITSETW(params,0);
   int16 open_sattr = SVAL(params, 4);
@@ -213,7 +213,7 @@ static int call_trans2open(char *inbuf, char *outbuf, int bufsize, int cnum,
       
       
   open_file_shared(fnum,cnum,fname,open_mode,open_ofun,unixmode,
-		   oplock_request, &rmode,&smb_action);
+		   &rmode,&smb_action);
       
   if (!Files[fnum].open)
   {
@@ -226,7 +226,7 @@ static int call_trans2open(char *inbuf, char *outbuf, int bufsize, int cnum,
   }
 
   if (fstat(Files[fnum].fd_ptr->fd,&sbuf) != 0) {
-    close_file(fnum);
+    close_file(fnum, 0);
     return(ERROR(ERRDOS,ERRnoaccess));
   }
     
@@ -235,7 +235,7 @@ static int call_trans2open(char *inbuf, char *outbuf, int bufsize, int cnum,
   mtime = sbuf.st_mtime;
   inode = sbuf.st_ino;
   if (fmode & aDIR) {
-    close_file(fnum);
+    close_file(fnum, 0);
     return(ERROR(ERRDOS,ERRnoaccess));
   }
 
@@ -252,7 +252,7 @@ static int call_trans2open(char *inbuf, char *outbuf, int bufsize, int cnum,
   SSVAL(params,12,rmode);
 
   if (oplock_request && lp_fake_oplocks(SNUM(cnum))) {
-    smb_action |= EXTENDED_OPLOCK_GRANTED;
+    smb_action |= (1<<15);
   }
 
   SSVAL(params,18,smb_action);
@@ -319,7 +319,7 @@ static int get_lanman2_dir_entry(int cnum,char *path_mask,int dirtype,int info_l
 
       reskey = TellDir(Connections[cnum].dirptr);
 
-      DEBUG(8,("get_lanman2_dir_entry:readdir on dirptr 0x%x now at offset %d\n",
+      DEBUG(6,("get_lanman2_dir_entry:readdir on dirptr 0x%x now at offset %d\n",
 	       Connections[cnum].dirptr,TellDir(Connections[cnum].dirptr)));
       
       if (!dname) 
@@ -607,15 +607,6 @@ static int call_trans2findfirst(char *inbuf, char *outbuf, int bufsize, int cnum
       unix_ERR_class = ERRDOS;
       unix_ERR_code = ERRbadpath;
     }
-
-    /* Ugly - NT specific hack - but needed (JRA) */
-    if((errno == ENOTDIR) && (Protocol >= PROTOCOL_NT1) && 
-       (get_remote_arch() == RA_WINNT))
-    {
-      unix_ERR_class = ERRDOS;
-      unix_ERR_code = ERRbaddirectory;
-    }
-
     return(ERROR(ERRDOS,ERRbadpath));
   }
 
@@ -649,14 +640,6 @@ static int call_trans2findfirst(char *inbuf, char *outbuf, int bufsize, int cnum
         {
           unix_ERR_class = ERRDOS;
           unix_ERR_code = ERRbadpath;
-        }
-
-        /* Ugly - NT specific hack - but needed (JRA) */
-        if((errno == ENOTDIR) && (Protocol >= PROTOCOL_NT1) && 
-           (get_remote_arch() == RA_WINNT))
-        {
-          unix_ERR_class = ERRDOS;
-          unix_ERR_code = ERRbaddirectory;
         }
         return (UNIXERROR(ERRDOS,ERRbadpath));
       }
@@ -1364,14 +1347,6 @@ static int call_trans2setfilepathinfo(char *inbuf, char *outbuf, int length,
       tvs.modtime=MAX(interpret_long_date(pdata+16),
                       interpret_long_date(pdata+24));
 
-#if 0 /* Needs more testing... */
-      /* Test from Luke to prevent Win95 from
-         setting incorrect values here.
-       */
-      if (tvs.actime < tvs.modtime)
-        return(ERROR(ERRDOS,ERRnoaccess));
-#endif /* Needs more testing... */
-
       /* attributes */
       mode = IVAL(pdata,32);
       break;
@@ -1408,7 +1383,7 @@ static int call_trans2setfilepathinfo(char *inbuf, char *outbuf, int length,
    */
   if (st.st_mtime != tvs.modtime || st.st_atime != tvs.actime)
   {
-    if(sys_utime(fname, &tvs)!=0)
+    if(file_utime(cnum,fname, &tvs)!=0)
     {
       return(ERROR(ERRDOS,ERRnoaccess));
     }

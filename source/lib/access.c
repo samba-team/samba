@@ -70,8 +70,8 @@ BOOL check_access(int snum)
 	}
       else
 	if (snum >= 0)
-	  DEBUG(0,("%s Denied connection from %s (%s) to %s\n",
-		   timestring(), client_name(),client_addr(),
+	  DEBUG(0,("Denied connection from %s (%s) to %s\n",
+		   client_name(),client_addr(),
 		   lp_servicename(snum)));
     }
 

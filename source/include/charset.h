@@ -63,13 +63,3 @@ extern void charset_initialise(void);
 #define issafe(c) (isalnum((c&0xff)) || strchr("-._",c))
 #endif
 
-/* Dynamic codepage files defines. */
-
-/* Version id for dynamically loadable codepage files. */
-#define CODEPAGE_FILE_VERSION_ID 0x1
-/* Version 1 codepage file header size. */
-#define CODEPAGE_HEADER_SIZE 8
-/* Offsets for codepage file header entries. */
-#define CODEPAGE_VERSION_OFFSET 0
-#define CODEPAGE_CLIENT_CODEPAGE_OFFSET 2
-#define CODEPAGE_LENGTH_OFFSET 4

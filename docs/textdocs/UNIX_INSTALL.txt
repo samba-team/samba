@@ -1,3 +1,6 @@
+!==
+!== UNIX_INSTALL.txt for Samba release 1.9.17p4 22 Oct 1997
+!==
 Contributor:	Andrew Tridgell <samba-bugs@samba.anu.edu.au>
 Date:		Unknown
 Status:		Current
@@ -15,7 +18,7 @@ try something like:
 
 Unfortunately, having said this, the man pages are sadly out of date and
 really need more effort to maintain them. Other sources of information 
-are pointed to by the Samba web site, http://samba.canberra.edu.au/pub/samba.
+are pointed to by the Samba web site, http://samba.anu.edu.au/samba/.
 
 STEP 1. Building the binaries
 

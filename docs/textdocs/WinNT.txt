@@ -1,7 +1,11 @@
+!==
+!== WinNT.txt for Samba release 1.9.17p4 22 Oct 1997
+!==
 Contributors:	Various
 		Password Section - Copyright (C) 1997 - John H Terpstra
 		Printing Section - Copyright (C) 1997 - Matthew Harrell
-Updated:	August 20, 1997
+		Priting Info     - Copyright (C) 1997 - Frank Varnavas
+Updated:	October 16, 1997
 Status:		Current
 
 Subject:	Samba and Windows NT Password Handling
@@ -72,3 +76,32 @@ time for the NT machine to get verification that the printer queue
 actually exists.
 
 I hope this helped in some way...
+
+=====================================================================
+Printing Info:
+--------------
+
+From: Frank Varnavas <varnavas@ny.ubs.com>
+Subject: RE: Samba as a print server
+
+When an NT client attempts to connect  to a printer  on a non-NT print
+server the attempt is failed with an error, something like:
+
+   "You have insufficient access to your computer to perform the
+    operation because a driver needs to be installed"
+
+This is  because  domain users  must  have 'Power User'  status on the
+desktop to connect to printers on a non-NT print server.
+
+This  error  occurs regardless of  whether  the driver  in question is
+already installed or not.  What it really means is  that the server is
+a non-NT  server  and the client does  not  have permission to  create
+printers  locally.   Apparently when a   connection to a  non-NT print
+server is made the printer is defined  locally.  Such an action can be
+performed   by  either a   local    administrator  or  a Power   User.
+Unfortunately there is no way to limit the powers of a Power User, nor
+is there any way to grant the Printer Creation right to another group.
+
+This permission policy is documented in PSS database WINNT, ID Q101874
+
+Frank Varnavas (varnavas@ny.ubs.com)

@@ -1,3 +1,5 @@
+#ifdef SMB_PASSWD
+
 /*
  * Unix SMB/Netbios implementation. Version 1.9. smbpasswd module. Copyright
  * (C) Jeremy Allison 1995-1997.
@@ -18,6 +20,7 @@
  */
 
 #include "includes.h"
+#include "des.h"
 
 /* Static buffers we will return. */
 static struct smb_passwd pw_buf;
@@ -375,24 +378,14 @@ static void usage(char *name)
    * Open the smbpaswd file XXXX - we need to parse smb.conf to get the
    * filename
    */
-  fp = fopen(pfile, "r+");
-  if (!fp && errno == ENOENT) {
-	  fp = fopen(pfile, "w");
-	  if (fp) {
-		  fprintf(fp, "# Samba SMB password file\n");
-		  fclose(fp);
-		  fp = fopen(pfile, "r+");
-	  }
+  if ((fp = fopen(pfile, "r+")) == NULL) {
+    err = errno;
+    fprintf(stderr, "%s: Failed to open password file %s.\n",
+	    argv[0], pfile);
+    errno = err;
+    perror(argv[0]);
+    exit(err);
   }
-  if (!fp) {
-	  err = errno;
-	  fprintf(stderr, "%s: Failed to open password file %s.\n",
-		  argv[0], pfile);
-	  errno = err;
-	  perror(argv[0]);
-	  exit(err);
-  }
-  
   /* Set read buffer to 16k for effiecient reads */
   setvbuf(fp, readbuf, _IOFBF, sizeof(readbuf));
   
@@ -424,8 +417,10 @@ static void usage(char *name)
     /* Create a new smb passwd entry and set it to the given password. */
     {
       int fd;
+      int i;
       int new_entry_length;
       char *new_entry;
+      char *p;
       long offpos;
 
       /* The add user write needs to be atomic - so get the fd from 
@@ -435,7 +430,7 @@ static void usage(char *name)
 
       if((offpos = lseek(fd, 0, SEEK_END)) == -1) {
         fprintf(stderr, "%s: Failed to add entry for user %s to file %s. \
-Error was %s\n", argv[0], pwd->pw_name, pfile, strerror(errno));
+Error was %d\n", argv[0], pwd->pw_name, pfile, errno);
         fclose(fp);
         pw_file_unlock(lockfd);
         exit(1);
@@ -447,7 +442,7 @@ Error was %s\n", argv[0], pwd->pw_name, pfile, strerror(errno));
                          strlen(pwd->pw_shell) + 1;
       if((new_entry = (char *)malloc( new_entry_length )) == 0) {
         fprintf(stderr, "%s: Failed to add entry for user %s to file %s. \
-Error was %s\n", argv[0], pwd->pw_name, pfile, strerror(errno));
+Error was %d\n", argv[0], pwd->pw_name, pfile, errno);
         fclose(fp);
         pw_file_unlock(lockfd);
         exit(1);
@@ -467,12 +462,12 @@ Error was %s\n", argv[0], pwd->pw_name, pfile, strerror(errno));
               pwd->pw_dir, pwd->pw_shell);
       if(write(fd, new_entry, strlen(new_entry)) != strlen(new_entry)) {
         fprintf(stderr, "%s: Failed to add entry for user %s to file %s. \
-Error was %s\n", argv[0], pwd->pw_name, pfile, strerror(errno));
+Error was %d\n", argv[0], pwd->pw_name, pfile, errno);
         /* Remove the entry we just wrote. */
         if(ftruncate(fd, offpos) == -1) {
           fprintf(stderr, "%s: ERROR failed to ftruncate file %s. \
-Error was %s. Password file may be corrupt ! Please examine by hand !\n", 
-                   argv[0], pwd->pw_name, strerror(errno));
+Error was %d. Password file may be corrupt ! Please examine by hand !\n", 
+                   argv[0], pwd->pw_name, errno);
         }
         fclose(fp);
         pw_file_unlock(lockfd);
@@ -483,9 +478,6 @@ Error was %s. Password file may be corrupt ! Please examine by hand !\n",
       pw_file_unlock(lockfd);  
       exit(0);
     }
-  } else {
-	  /* the entry already existed */
-	  add_user = False;
   }
 
   /* If we are root or the password is 'NO PASSWORD' then
@@ -579,3 +571,14 @@ Error was %s. Password file may be corrupt ! Please examine by hand !\n",
   return 0;
 }
 
+#else
+
+#include "includes.h"
+
+int 
+main(int argc, char **argv)
+{
+  printf("smb password encryption not selected in Makefile\n");
+  return 0;
+}
+#endif

@@ -77,7 +77,7 @@ extern int Client;
 /****************************************************************************
 setup basics in a outgoing packet
 ****************************************************************************/
-void cli_setup_pkt(char *outbuf)
+static void cli_setup_pkt(char *outbuf)
 {
   SSVAL(outbuf,smb_pid,pid);
   SSVAL(outbuf,smb_uid,uid);
@@ -89,11 +89,14 @@ void cli_setup_pkt(char *outbuf)
     }
 }
 
+
+
 /****************************************************************************
   receive a SMB trans or trans2 response allocating the necessary memory
   ****************************************************************************/
-BOOL cli_receive_trans_response(char *inbuf,int trans,int *data_len,
-				int *param_len, char **data,char **param)
+static BOOL cli_receive_trans_response(char *inbuf,int trans,int *data_len,
+				       int *param_len, char **data,
+				       char **param)
 {
   int total_data=0;
   int total_param=0;
@@ -164,7 +167,7 @@ BOOL cli_receive_trans_response(char *inbuf,int trans,int *data_len,
 /****************************************************************************
 send a session request
 ****************************************************************************/
-BOOL cli_send_session_request(char *inbuf, char *outbuf)
+static BOOL cli_send_session_request(char *inbuf, char *outbuf)
 {
   fstring dest;
   char *p;
@@ -441,11 +444,15 @@ BOOL cli_send_login(char *inbuf, char *outbuf, BOOL start_session, BOOL use_setu
       int passlen = strlen(pass)+1;
       fstrcpy(pword,pass);      
 
+#ifdef SMB_PASSWD
       if (doencrypt && *pass) {
 	DEBUG(5,("Using encrypted passwords\n"));
 	passlen = 24;
 	SMBencrypt((uchar *)pass,(uchar *)cryptkey,(uchar *)pword);
       }
+#else
+      doencrypt = False;
+#endif
 
       /* if in share level security then don't send a password now */
       if (!(sec_mode & 1)) {fstrcpy(pword, "");passlen=1;} 
@@ -556,10 +563,12 @@ BOOL cli_send_login(char *inbuf, char *outbuf, BOOL start_session, BOOL use_setu
     fstring pword;
     fstrcpy(pword,pass);
 
+#ifdef SMB_PASSWD
     if (doencrypt && *pass) {
       passlen=24;
       SMBencrypt((uchar *)pass,(uchar *)cryptkey,(uchar *)pword);      
     }
+#endif
 
     /* if in user level security then don't send a password now */
     if ((sec_mode & 1)) {
@@ -655,35 +664,12 @@ void cli_send_logout(void)
 }
 
 
-
-/****************************************************************************
-call a remote api
-****************************************************************************/
-BOOL cli_call_api(int prcnt,int drcnt,int mprcnt,int mdrcnt,int *rprcnt,
-	      int *rdrcnt, char *param,char *data, char **rparam,char **rdata)
-{
-  static char *inbuf=NULL;
-  static char *outbuf=NULL;
-
-  if (!inbuf) inbuf = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
-  if (!outbuf) outbuf = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
-
-  cli_send_trans_request(outbuf,SMBtrans,"\\PIPE\\LANMAN",0,0,
-			 data,param,NULL,
-			 drcnt,prcnt,0,
-			 mdrcnt,mprcnt,0);
-
-  return (cli_receive_trans_response(inbuf,SMBtrans,
-				     rdrcnt,rprcnt,
-				     rdata,rparam));
-}
-
 /****************************************************************************
   send a SMB trans or trans2 request
   ****************************************************************************/
-BOOL cli_send_trans_request(char *outbuf, int trans, char *name, int fid, int flags,
-			char *data,char *param,uint16 *setup, int ldata,int lparam,
-			int lsetup,int mdata,int mparam,int msetup)
+static BOOL cli_send_trans_request(char *outbuf, int trans, char *name, int fid, int flags,
+				   char *data,char *param,uint16 *setup, int ldata,int lparam,
+				   int lsetup,int mdata,int mparam,int msetup)
 {
   int i;
   int this_ldata,this_lparam;
@@ -788,6 +774,31 @@ BOOL cli_send_trans_request(char *outbuf, int trans, char *name, int fid, int fl
     }
 
     return(True);
+}
+
+
+
+/****************************************************************************
+call a remote api
+****************************************************************************/
+BOOL cli_call_api(int prcnt,int drcnt,int mprcnt,int mdrcnt,int *rprcnt,
+		  int *rdrcnt, char *param,char *data, 
+		  char **rparam, char **rdata)
+{
+  static char *inbuf=NULL;
+  static char *outbuf=NULL;
+
+  if (!inbuf) inbuf = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
+  if (!outbuf) outbuf = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
+
+  cli_send_trans_request(outbuf,SMBtrans,"\\PIPE\\LANMAN",0,0,
+			 data,param,NULL,
+			 drcnt,prcnt,0,
+			 mdrcnt,mprcnt,0);
+
+  return (cli_receive_trans_response(inbuf,SMBtrans,
+				     rdrcnt,rprcnt,
+				     rdata,rparam));
 }
 
 

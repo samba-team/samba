@@ -1,4 +1,4 @@
-.TH SMBD 8 smbd smbd
+.TH SMBD 8 "22 Oct 1997" "smbd 1.9.17p4"
 .SH NAME
 smbd \- provide SMB (aka LanManager) services to clients
 .SH SYNOPSIS
@@ -27,11 +27,10 @@ smbd \- provide SMB (aka LanManager) services to clients
 This program is part of the Samba suite.
 
 .B smbd
-is a server that can provide most SMB services. The server provides
-filespace and printer services to clients using the SMB protocol. This
-is compatible with the LanManager protocol, and can service LanManager
-clients.  These include MSCLIENT 3.0 for DOS, Windows for Workgroups,
-Windows 95, Windows NT, OS/2, DAVE for Macintosh, and smbfs for Linux.
+is a server that can provide most SMB services. The 
+server provides filespace and printer services to clients using the SMB 
+protocol. This is compatible with the LanManager protocol, and can
+service LanManager clients.
 
 An extensive description of the services that the server can provide is given
 in the man page for the configuration file controlling the attributes of those
@@ -51,11 +50,8 @@ of the server for each session. This copy then services all connections made
 by the client during that session. When all connections from its client are
 are closed, the copy of the server for that client terminates.
 
-The configuration file, and any files that it includes, are automatically
-reloaded every minute, if they change.  You can force a reload by sending a
-SIGHUP to the server.  Reloading the configuration file will not affect
-connections to any service that is already established.  Either the user
-will have to disconnect from the service, or smbd killed and restarted.
+The configuration file is automatically reloaded if it changes. You
+can force a reload by sending a SIGHUP to the server.
 .SH OPTIONS
 .B \-D
 
@@ -78,7 +74,7 @@ new connection. By default, the log files will be appended to.
 .I debuglevel
 .RS 3
 
-debuglevel is an integer from 0 to 10.
+debuglevel is an integer from 0 to 5.
 
 The default value if this parameter is not specified is zero.
 
@@ -141,10 +137,6 @@ server is 139, hence the default. If you wish to run the server as an ordinary
 user rather than as root, most systems will require you to use a port number
 greater than 1024 - ask your system administrator for help if you are in this
 situation.
-
-In order for the server to be useful by most clients, should you configure
-it on a port other than 139, you will require port redirection services
-on port 139, details of which are outlined in rfc1002.txt section 4.3.5.
 
 This parameter is not normally specified except in the above situation.
 .RE
@@ -382,8 +374,8 @@ To properly test and experiment with the server, we recommend using the
 smbclient program (see
 .BR smbclient (1)).
 .SH VERSION
-This man page is (mostly) correct for version 1.9.00 of the Samba suite,
-plus some of the recent patches to it. These notes will necessarily lag behind 
+This man page is (mostly) correct for version 1.9.00 of the Samba suite, plus some
+of the recent patches to it. These notes will necessarily lag behind 
 development of the software, so it is possible that your version of 
 the server has extensions or parameter semantics that differ from or are not 
 covered by this man page. Please notify these to the address below for 
@@ -396,8 +388,6 @@ rectification.
 .BR smbclient (1),
 .BR testparm (1), 
 .BR testprns (1)
-.BR rfc1001.txt
-.BR rfc1002.txt
 .SH DIAGNOSTICS
 [This section under construction]
 

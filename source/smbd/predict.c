@@ -53,24 +53,37 @@ int read_predict(int fd,int offset,char *buf,char **ptr,int num)
       offset >= rp_offset && 
       possible>0 &&
       smb_last_time-rp_time < rp_timeout)
-    {
-      ret = possible;
-      if (buf)
-	memcpy(buf,rp_buffer + (offset-rp_offset),possible);
-      else
-	*ptr = rp_buffer + (offset-rp_offset);
-      DEBUG(5,("read-prediction gave %d bytes of %d\n",ret,num));
-    }
+  {
+    ret = possible;
+    if (buf)
+      memcpy(buf,rp_buffer + (offset-rp_offset),possible);
+    else
+      *ptr = rp_buffer + (offset-rp_offset);
+    DEBUG(5,("read-prediction gave %d bytes of %d\n",ret,num));
+  }
 
   if (ret == num) {
     predict_skip = True;
   } else {
-    predict_skip = False;
+    struct stat rp_stat;
 
-    /* prepare the next prediction */
-    rp_predict_fd = fd;
-    rp_predict_offset = offset + num;
-    rp_predict_length = num;
+    /* Find the end of the file - ensure we don't
+       read predict beyond it. */
+    if(fstat(fd,&rp_stat) < 0)
+    {
+      DEBUG(0,("read-prediction failed on fstat. Error was %s\n", strerror(errno)));
+      predict_skip = True;
+    }
+    else
+    {
+      predict_skip = False;
+
+      /* prepare the next prediction */
+      rp_predict_fd = fd;
+      /* Make sure we don't seek beyond the end of the file. */
+      rp_predict_offset = MIN((offset + num),rp_stat.st_size);
+      rp_predict_length = num;
+    }
   }
 
   if (ret < 0) ret = 0;

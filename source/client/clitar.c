@@ -90,7 +90,7 @@ static void unfixtarname();
 Write a tar header to buffer
 ****************************************************************************/
 static void writetarheader(int f,  char *aname, int size, time_t mtime,
-			   char *amode)
+		    char *amode)
 {
   union hblock hb;
   int i, chk, l;
@@ -99,21 +99,10 @@ static void writetarheader(int f,  char *aname, int size, time_t mtime,
   memset(hb.dummy, 0, sizeof(hb.dummy));
   
   l=strlen(aname);
-  if (l >= NAMSIZ) {
-	  /* write a GNU tar style long header */
-	  char *b;
-	  b = (char *)malloc(l+TBLOCK+100);
-	  if (!b) {
-		  DEBUG(0,("out of memory\n"));
-		  exit(1);
-	  }
-	  writetarheader(f, "/./@LongLink", l+1, 0, "     0 \0");
-	  memset(b, 0, l+TBLOCK+100);
-	  fixtarname(b, aname, l+1);
-	  i = strlen(b)+1;
-	  dotarbuf(f, b, TBLOCK*((i+(TBLOCK-1)/TBLOCK)));
-	  free(b);
-  }
+  if (l >= NAMSIZ)
+    {
+      DEBUG(0, ("tar file %s name length exceeds NAMSIZ\n", aname));
+    }
 
   /* use l + 1 to do the null too */
   fixtarname(hb.dbuf.name, aname, (l >= NAMSIZ) ? NAMSIZ : l + 1);
@@ -130,13 +119,8 @@ static void writetarheader(int f,  char *aname, int size, time_t mtime,
   oct_it((long) size, 13, hb.dbuf.size);
   oct_it((long) mtime, 13, hb.dbuf.mtime);
   memcpy(hb.dbuf.chksum, "        ", sizeof(hb.dbuf.chksum));
+  hb.dbuf.linkflag='0';
   memset(hb.dbuf.linkname, 0, NAMSIZ);
-  if (strcmp("/./@LongLink", aname) == 0) {
-	  /* we're doing a GNU tar long filename */
-	  hb.dbuf.linkflag='L';
-  } else {
-	  hb.dbuf.linkflag='0';
-  }
   
   for (chk=0, i=sizeof(hb.dummy), jp=hb.dummy; --i>=0;) chk+=(0xFF & *jp++);
 
@@ -322,35 +306,27 @@ static void fixtarname(char *tptr, char *fp, int l)
    * to lovely unix /'s :-} */
 
   *tptr++='.';
-  if(lp_client_code_page() == KANJI_CODEPAGE)
-  {
-    while (l > 0) {
-      if (is_shift_jis (*fp)) {
-        *tptr++ = *fp++;
-        *tptr++ = *fp++;
-        l -= 2;
-      } else if (is_kana (*fp)) {
-        *tptr++ = *fp++;
-        l--;
-      } else if (*fp == '\\') {
-        *tptr++ = '/';
-        fp++;
-        l--;
-      } else {
-        *tptr++ = *fp++;
-        l--;
-      }
-    }
-  }
-  else
-  {
-    while (l--)
-    {
-      *tptr=(*fp == '\\') ? '/' : *fp;
-      tptr++;
+#ifdef KANJI
+  while (l > 0) {
+    if (is_shift_jis (*fp)) {
+      *tptr++ = *fp++;
+      *tptr++ = *fp++;
+      l -= 2;
+    } else if (is_kana (*fp)) {
+      *tptr++ = *fp++;
+      l--;
+    } else if (*fp == '\\') {
+      *tptr++ = '/';
       fp++;
+      l--;
+    } else {
+      *tptr++ = *fp++;
+      l--;
     }
   }
+#else
+  while (l--) { *tptr=(*fp == '\\') ? '/' : *fp; tptr++; fp++; }
+#endif
 }
 
 /****************************************************************************
@@ -1074,7 +1050,7 @@ static void do_atar(char *rname,char *lname,file_info *finfo1)
 	   * write out in 512 byte intervals */
 	  if (dotarbuf(tarhandle,dataptr,datalen) != datalen)
 	    {
-	      DEBUG(0,("Error writing to tar file - %s\n", strerror(errno)));
+	      DEBUG(0,("Error writing local file\n"));
 	      break;
 	    }
 	  
@@ -1094,7 +1070,7 @@ static void do_atar(char *rname,char *lname,file_info *finfo1)
         {
           DEBUG(0, ("Didn't get entire file. size=%d, nread=%d\n", finfo.size, nread));
           if (padit(inbuf, BUFFER_SIZE, finfo.size - nread))
-              DEBUG(0,("Error writing tar file - %s\n", strerror(errno)));
+              DEBUG(0,("Error writing local file\n"));
         }
 
       /* round tar file to nearest block */
@@ -1227,35 +1203,27 @@ static void unfixtarname(char *tptr, char *fp, int l)
   if (*fp == '.') fp++;
   if (*fp == '\\' || *fp == '/') fp++;
 
-  if(lp_client_code_page() == KANJI_CODEPAGE)
-  {
-    while (l > 0) {
-      if (is_shift_jis (*fp)) {
-        *tptr++ = *fp++;
-        *tptr++ = *fp++;
-        l -= 2;
-      } else if (is_kana (*fp)) {
-        *tptr++ = *fp++;
-        l--;
-      } else if (*fp == '/') {
-        *tptr++ = '\\';
-        fp++;
-        l--;
-      } else {
-        *tptr++ = *fp++;
-        l--;
-      }
-    }
-  }
-  else
-  {
-    while (l--)
-    {
-      *tptr=(*fp == '/') ? '\\' : *fp;
-      tptr++;
+#ifdef KANJI
+  while (l > 0) {
+    if (is_shift_jis (*fp)) {
+      *tptr++ = *fp++;
+      *tptr++ = *fp++;
+      l -= 2;
+    } else if (is_kana (*fp)) {
+      *tptr++ = *fp++;
+      l--;
+    } else if (*fp == '/') {
+      *tptr++ = '\\';
       fp++;
+      l--;
+    } else {
+      *tptr++ = *fp++;
+      l--;
     }
   }
+#else
+  while (l--) { *tptr=(*fp == '/') ? '\\' : *fp; tptr++; fp++; }
+#endif
 }
 
 static void do_tarput()
@@ -1761,8 +1729,7 @@ int tar_parseargs(int argc, char *argv[], char *Optarg, int Optind)
     if ((tar_type=='x' && (tarhandle = open(argv[Optind], O_RDONLY)) == -1)
 	|| (tar_type=='c' && (tarhandle=creat(argv[Optind], 0644)) < 0))
       {
-	DEBUG(0,("Error opening local file %s - %s\n",
-		 argv[Optind], strerror(errno)));
+	DEBUG(0,("Error opening local file %s\n",argv[Optind]));
 	return(0);
       }
   }

@@ -98,10 +98,10 @@ for share file %s (%s)\n", progname, fname, strerror(errno));
     return 0;
   }
 
-  if (IVAL(buf,SMF_VERSION_OFFSET) != LOCKING_VERSION) {
+  if (IVAL(buf,0) != LOCKING_VERSION) {
     printf("%s: ERROR: read_share_file: share file %s has incorrect \
 locking version (was %d, should be %d).\n",fname, 
-              progname, IVAL(buf,SMF_VERSION_OFFSET), LOCKING_VERSION);
+              progname, IVAL(buf,0), LOCKING_VERSION);
     if(buf)
       free(buf);
     return 0;
@@ -109,13 +109,13 @@ locking version (was %d, should be %d).\n",fname,
 
   /* Sanity check for file contents */
   size = sb.st_size;
-  size -= SMF_HEADER_LENGTH; /* Remove the header */
+  size -= 10; /* Remove the header */
 
   /* Remove the filename component. */
-  size -= SVAL(buf, SMF_FILENAME_LEN_OFFSET);
+  size -= SVAL(buf, 8);
 
-  /* The remaining size must be a multiple of SMF_ENTRY_LENGTH - error if not. */
-  if((size % SMF_ENTRY_LENGTH) != 0)
+  /* The remaining size must be a multiple of 16 - error if not. */
+  if((size % 16) != 0)
   {
     printf("%s: ERROR: read_share_file: share file %s is an incorrect length.\n", 
              progname, fname);
@@ -148,9 +148,6 @@ locking version (was %d, should be %d).\n",fname,
   void *dir;
   char *s;
 #endif /* FAST_SHARE_MODES */
-#ifdef USE_OPLOCKS
-  int oplock_type;
-#endif /* USE_OPLOCKS */
   int i;
   struct session_record *ptr;
 
@@ -347,10 +344,6 @@ locking version (was %d, should be %d).\n",fname,
         t.tv_sec = entry_scanner_p->time.tv_sec;
         t.tv_usec = entry_scanner_p->time.tv_usec;
         strcpy(fname, file_scanner_p->file_name);
-#ifdef USE_OPLOCKS  
-        oplock_type = entry_scanner_p->op_type;
-#endif /* USE_OPLOCKS */
-
 #else /* FAST_SHARE_MODES */
 
      /* For slow share modes go through all the files in
@@ -401,19 +394,16 @@ locking version (was %d, should be %d).\n",fname,
        strcpy( fname, &buf[10]);
        close(fd);
       
-       base = buf + SMF_HEADER_LENGTH + SVAL(buf,SMF_FILENAME_LEN_OFFSET); 
-       for( i = 0; i < IVAL(buf, SMF_NUM_ENTRIES_OFFSET); i++)
+       base = buf + 10 + SVAL(buf,8); 
+       for( i = 0; i < IVAL(buf, 4); i++)
        {
-         char *p = base + (i*SMF_ENTRY_LENGTH);
+         char *p = base + (i*16);
          struct timeval t;
-         int pid = IVAL(p,SME_PID_OFFSET);
-         int mode = IVAL(p,SME_SHAREMODE_OFFSET);
+         int pid = IVAL(p,12);
+         int mode = IVAL(p,8);
      
-         t.tv_sec = IVAL(p,SME_SEC_OFFSET);
-         t.tv_usec = IVAL(p,SME_USEC_OFFSET);
-#ifdef USE_OPLOCKS
-         oplock_type = SVAL(p,SME_OPLOCK_TYPE_OFFSET);
-#endif /* USE_OPLOCKS */
+         t.tv_sec = IVAL(p,0);
+         t.tv_usec = IVAL(p,4);
 #endif /* FAST_SHARE_MODES */
 
     fname[sizeof(fname)-1] = 0;
@@ -421,13 +411,8 @@ locking version (was %d, should be %d).\n",fname,
     if (firstopen) {
       firstopen=False;
       printf("Locked files:\n");
-#ifdef USE_OPLOCKS
-      printf("Pid    DenyMode   R/W        Oplock           Name\n");
-      printf("--------------------------------------------------\n");
-#else /* USE_OPLOCKS */
-      printf("Pid    DenyMode   R/W         Name\n");
-      printf("----------------------------------\n");
-#endif /* USE_OPLOCKS */
+      printf("Pid    DenyMode   R/W     Name\n");
+      printf("------------------------------\n");
     }
 
 
@@ -442,20 +427,10 @@ locking version (was %d, should be %d).\n",fname,
       }
     switch (mode&0xF) 
       {
-      case 0: printf("RDONLY     "); break;
-      case 1: printf("WRONLY     "); break;
-      case 2: printf("RDWR       "); break;
+      case 0: printf("RDONLY "); break;
+      case 1: printf("WRONLY "); break;
+      case 2: printf("RDWR   "); break;
       }
-#ifdef USE_OPLOCKS
-    if((oplock_type & (EXCLUSIVE_OPLOCK|BATCH_OPLOCK)) == (EXCLUSIVE_OPLOCK|BATCH_OPLOCK))
-      printf("EXCLUSIVE+BATCH ");
-    else if (oplock_type & EXCLUSIVE_OPLOCK)
-      printf("EXCLUSIVE       ");
-    else if (oplock_type & BATCH_OPLOCK)
-      printf("BATCH           ");
-    else
-      printf("NONE            ");
-#endif /* USE_OPLOCKS */
     printf(" %s   %s",fname,asctime(LocalTime((time_t *)&t.tv_sec)));
 
 #ifdef FAST_SHARE_MODES

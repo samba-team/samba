@@ -176,7 +176,7 @@ static void response_server_check(struct nmb_name *ans_name,
     queue_netbios_packet(d,ClientNMB,NMB_STATUS, cmd,
 				ans_name->name, ans_name->name_type,
 				0,0,0,n->my_name,NULL,
-				False,False,send_ip,n->reply_to_ip);
+				False,False,send_ip,n->reply_to_ip, 0);
 }
 
 
@@ -362,9 +362,11 @@ static void response_name_query_register(struct nmb_packet *nmb,
 	}
 
 	/* register the old or the new owners' ip */
-	add_name_respond(d, n->fd, d->myip, n->response_id,&n->name,n->nb_flags,
+	add_name_respond(d, n->fd, d->myip, n->reply_id,&n->name,n->nb_flags,
 					GET_TTL(0), register_ip,
 					new_owner, n->reply_to_ip);
+
+	remove_response_record(d,n); /* remove the response record */
 }
 
 
@@ -803,7 +805,8 @@ void response_netbios_packet(struct packet_struct *p)
   struct subnet_record *d = NULL;
 
   if (!(n = find_response_record(&d,nmb->header.name_trn_id))) {
-    DEBUG(2,("unknown netbios response (received late or from nmblookup?)\n"));
+    DEBUG(2,("unknown netbios response id %d (received late or from nmblookup?)\n", 
+               nmb->header.name_trn_id));
     return;
   }
 
@@ -829,8 +832,8 @@ void response_netbios_packet(struct packet_struct *p)
     }
 
   ans_name = &nmb->answers->rr_name;
-  DEBUG(3,("response for %s from %s (bcast=%s)\n",
-	   namestr(ans_name), inet_ntoa(p->ip), BOOLSTR(bcast)));
+  DEBUG(3,("response for %s from %s(%d) (bcast=%s)\n",
+	   namestr(ans_name), inet_ntoa(p->ip), p->port, BOOLSTR(bcast)));
   
   debug_rr_type(nmb->answers->rr_type);
   

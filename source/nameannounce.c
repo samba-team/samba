@@ -383,6 +383,7 @@ void announce_master(time_t t)
 
   for (d = FIRST_SUBNET; d; d = NEXT_SUBNET_EXCLUDING_WINS(d))
     {
+      struct work_record *work;
       for (work = d->workgrouplist; work; work = work->next)
 	{
 	  if (AM_MASTER(work))
@@ -436,10 +437,9 @@ workgroup %s\n", am_master, work->work_group));
            /* We are the WINS server - query ourselves for the dmb name. */
 
            struct nmb_name netb_name;
+           struct subnet_record *d = 0;
            struct name_record *nr = 0;
-
-	   d = NULL;
-
+ 
            make_nmb_name(&netb_name, name, type, scope);
 
            if ((nr = find_name_search(&d, &netb_name, FIND_WINS, ipzero)) == 0)
@@ -469,7 +469,7 @@ for workgroup %s\n", name, type, inet_ntoa(nr->ip_flgs[0].ip), work->work_group 
                     NMB_QUERY,NAME_STATUS_DOM_SRV_CHK,
                     name, type, 0,0,0,
                     work->work_group,NULL,
-                    False, False, nr->ip_flgs[0].ip, nr->ip_flgs[0].ip);
+                    False, False, nr->ip_flgs[0].ip, nr->ip_flgs[0].ip, 0);
          }
 
     }

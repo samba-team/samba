@@ -25,6 +25,7 @@ extern int DEBUGLEVEL;
 
 struct in_addr ipzero;
 struct in_addr wins_ip;
+struct in_addr loopback_ip;
 static struct in_addr default_ip;
 static struct in_addr default_bcast;
 static struct in_addr default_nmask;
@@ -262,6 +263,7 @@ static void interpret_interfaces(char *s, struct interface **interfaces,
 
   ipzero = *interpret_addr2("0.0.0.0");
   wins_ip = *interpret_addr2("255.255.255.255");
+  loopback_ip = *interpret_addr2("127.0.0.1");
 
   while (next_token(&ptr,token,NULL)) {
     /* parse it into an IP address/netmasklength pair */
@@ -337,9 +339,9 @@ static void interpret_interfaces(char *s, struct interface **interfaces,
   iface->next = NULL;
   (*interfaces) = last_iface = iface;
 
-  DEBUG(1,("Added interface ip=%s ",inet_ntoa(iface->ip)));
-  DEBUG(1,("bcast=%s ",inet_ntoa(iface->bcast)));
-  DEBUG(1,("nmask=%s\n",inet_ntoa(iface->nmask)));	     
+  DEBUG(2,("Added interface ip=%s ",inet_ntoa(iface->ip)));
+  DEBUG(2,("bcast=%s ",inet_ntoa(iface->bcast)));
+  DEBUG(2,("nmask=%s\n",inet_ntoa(iface->nmask)));	     
 }
 
 

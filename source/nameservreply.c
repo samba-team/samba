@@ -45,7 +45,7 @@ static void send_name_response(int fd, struct in_addr from_ip,
 				int name_trn_id, int opcode, BOOL success,
                 BOOL recursion_available, BOOL recursion_desired,
 				struct nmb_name *reply_name, int nb_flags, int ttl,
-				struct in_addr ip)
+			       struct in_addr ip)
 {
   char rdata[6];
   struct packet_struct p;
@@ -96,7 +96,8 @@ void add_name_respond(struct subnet_record *d, int fd, struct in_addr from_ip,
 
   /* reply yes or no to the host that requested the name */
   /* see rfc1002.txt - 4.2.10 and 4.2.11 */
-  send_name_response(fd,from_ip, response_id, NMB_REG,
+
+  send_name_response(fd, reply_to_ip, response_id, NMB_REG,
                      new_owner,
                      True, True,
                      name, nb_flags, ttl, reply_to_ip);
@@ -317,7 +318,8 @@ void reply_name_reg(struct packet_struct *p)
              reply_name->name,reply_name->name_type,
              nb_flags,0,0,NULL,NULL,
 			 False, False,
-             n->ip_flgs[0].ip, p->ip);
+             n->ip_flgs[0].ip, p->ip, 
+	     nmb->header.name_trn_id);
   }
   else
   {
