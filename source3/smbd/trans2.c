@@ -775,7 +775,50 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			p += 4;
 			len = srvstr_push(outbuf, p + 20, fname, -1, STR_TERMINATE_ASCII);
 			SIVAL(p, 0, len);
+			memset(p+4,'\0',16); /* EA size. Unknown 0 1 2 */
 			p += 20 + len; /* Strlen, EA size. Unknown 0 1 2, string itself */
+			len = PTR_DIFF(p, pdata);
+			len = (len + 3) & ~3;
+			SIVAL(pdata,0,len);
+			p = pdata + len;
+			break;
+
+		case SMB_FIND_FILE_LEVEL_262:
+			was_8_3 = mangle_is_8_3(fname, True);
+			p += 4;
+			SIVAL(p,0,reskey); p += 4;
+			put_long_date(p,cdate); p += 8;
+			put_long_date(p,adate); p += 8;
+			put_long_date(p,mdate); p += 8;
+			put_long_date(p,mdate); p += 8;
+			SOFF_T(p,0,file_size);
+			SOFF_T(p,8,allocation_size);
+			p += 16;
+			SIVAL(p,0,nt_extmode); p += 4;
+			q = p; p += 4;
+			SIVAL(p,0,0); p += 4;
+			/* Clear the short name buffer. This is
+			 * IMPORTANT as not doing so will trigger
+			 * a Win2k client bug. JRA.
+			 */
+			memset(p,'\0',26);
+			if (!was_8_3) {
+				pstring mangled_name;
+				pstrcpy(mangled_name, fname);
+				mangle_map(mangled_name,True,True,SNUM(conn));
+				mangled_name[12] = 0;
+				len = srvstr_push(outbuf, p+2, mangled_name, 24, STR_UPPER|STR_UNICODE);
+				SSVAL(p, 0, len);
+			} else {
+				SSVAL(p,0,0);
+				*(p+2) = 0;
+			}
+			p += 2 + 24;
+			memset(p, '\0', 10); /* 2 4 byte unknowns plus a zero reserved. */
+			p += 10;
+			len = srvstr_push(outbuf, p, fname, -1, STR_TERMINATE_ASCII);
+			SIVAL(q,0,len);
+			p += len;
 			len = PTR_DIFF(p, pdata);
 			len = (len + 3) & ~3;
 			SIVAL(pdata,0,len);
@@ -915,6 +958,7 @@ close_if_end = %d requires_resume_key = %d level = %d, max_data_bytes = %d\n",
 		case SMB_FIND_FILE_NAMES_INFO:
 		case SMB_FIND_FILE_BOTH_DIRECTORY_INFO:
 		case SMB_FIND_FILE_LEVEL_261:
+		case SMB_FIND_FILE_LEVEL_262:
 			break;
 		case SMB_FIND_FILE_UNIX:
 			if (!lp_unix_extensions())
