@@ -111,6 +111,11 @@ static uint32 check_any(char *trust_account, uchar trust_passwd[16])
 		return NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
 	}
 
+	/* If none of the domain controllers can be contacted then we
+	   return domain controller not found. */
+
+	result = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
+
 	for (i = 0; i < count; i++) {
 		fstring srv_name;
 
