@@ -6567,7 +6567,8 @@ WERROR _spoolss_addprinterdriver(pipes_struct *p, SPOOL_Q_ADDPRINTERDRIVER *q_u,
 	NT_PRINTER_DRIVER_INFO_LEVEL driver;
 	struct current_user user;
 	fstring driver_name;
-	
+	uint32 version;
+
 	ZERO_STRUCT(driver);
 
 	get_current_user(&user, p);	
@@ -6621,15 +6622,69 @@ WERROR _spoolss_addprinterdriver(pipes_struct *p, SPOOL_Q_ADDPRINTERDRIVER *q_u,
 			driver_name));
 	}
 
-	/* if driver is not 9x, delete existing driver init data */
+	/*
+	 * Based on the version (e.g. driver destination dir: 0=9x,2=Nt/2k,3=2k/Xp),
+	 * decide if the driver init data should be deleted. The rules are:
+	 *  1) never delete init data if it is a 9x driver, they don't use it anyway
+	 *  2) delete init data only if there is no 2k/Xp driver
+	 *  3) always delete init data
+	 * The generalized rule is always use init data from the highest order driver.
+	 * It is necessary to follow the driver install by an initialization step to
+	 * finish off this process.
+	*/
+	if (level == 3)
+		version = driver.info_3->cversion;
+	else if (level == 6)
+		version = driver.info_6->version;
+	else
+		version = -1;
+	switch (version) {
+		/*
+		 * 9x printer driver - never delete init data
+		*/
+		case 0: 
+			DEBUG(10,("_spoolss_addprinterdriver: init data not deleted for 9x driver [%s]\n",
+					driver_name));
+			break;
+		
+		/*
+		 * Nt or 2k (compatiblity mode) printer driver - only delete init data if
+		 * there is no 2k/Xp driver init data for this driver name.
+		*/
+		case 2:
+		{
+			NT_PRINTER_DRIVER_INFO_LEVEL driver1;
 
-	if ((level == 3 && driver.info_3->cversion != 0) ||
-				(level == 6 && driver.info_6->version  != 0)) {
-		if (!del_driver_init(driver_name))
-			DEBUG(3,("_spoolss_addprinterdriver: del_driver_init(%s) failed!\n", driver_name));
-	} else {
-		DEBUG(10,("_spoolss_addprinterdriver: init data not deleted for 9x driver [%s]\n", driver_name));
-	}
+			if (!W_ERROR_IS_OK(get_a_printer_driver(&driver1, 3, driver_name, "Windows NT x86", 3))) {
+				/*
+				 * No 2k/Xp driver found, delete init data (if any) for the new Nt driver.
+				*/
+				if (!del_driver_init(driver_name))
+					DEBUG(6,("_spoolss_addprinterdriver: del_driver_init(%s) Nt failed!\n", driver_name));
+			} else {
+				/*
+				 * a 2k/Xp driver was found, don't delete init data because Nt driver will use it.
+				*/
+				free_a_printer_driver(driver1,3);
+				DEBUG(10,("_spoolss_addprinterdriver: init data not deleted for Nt driver [%s]\n", 
+						driver_name));
+			}
+		}
+		break;
+
+		/*
+		 * 2k or Xp printer driver - always delete init data
+		*/
+		case 3:	
+			if (!del_driver_init(driver_name))
+				DEBUG(6,("_spoolss_addprinterdriver: del_driver_init(%s) 2k/Xp failed!\n", driver_name));
+			break;
+
+		default:
+			DEBUG(0,("_spoolss_addprinterdriver: invalid level=%d\n", level));
+			break;
+ 	}
+
 	
 done:
 	free_a_printer_driver(driver, level);
