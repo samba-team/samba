@@ -100,7 +100,6 @@ ATTRIB_MAP_ENTRY attrib_map_v30[] = {
 	{ LDAP_ATTR_MUNGED_DIAL,	"sambaMungedDial"	},
 	{ LDAP_ATTR_BAD_PASSWORD_COUNT,	"sambaBadPasswordCount" },
 	{ LDAP_ATTR_BAD_PASSWORD_TIME,	"sambaBadPasswordTime" 	},
-	{ LDAP_ATTR_MOD_TIMESTAMP,	"modifyTimestamp"	},
 	{ LDAP_ATTR_LIST_END,		NULL 			}
 };
 
@@ -123,6 +122,7 @@ ATTRIB_MAP_ENTRY groupmap_attr_list[] = {
 	{ LDAP_ATTR_GIDNUMBER,		LDAP_ATTRIBUTE_GIDNUMBER},
 	{ LDAP_ATTR_GROUP_SID,		LDAP_ATTRIBUTE_SID	},
 	{ LDAP_ATTR_GROUP_TYPE,		"sambaGroupType"	},
+	{ LDAP_ATTR_SID_LIST,		"sambaSIDList"		},
 	{ LDAP_ATTR_DESC,		"description"		},
 	{ LDAP_ATTR_DISPLAY_NAME,	"displayName"		},
 	{ LDAP_ATTR_CN,			"cn"			},
@@ -135,6 +135,7 @@ ATTRIB_MAP_ENTRY groupmap_attr_list_to_delete[] = {
 	{ LDAP_ATTR_GROUP_TYPE,		"sambaGroupType"	},
 	{ LDAP_ATTR_DESC,		"description"		},
 	{ LDAP_ATTR_DISPLAY_NAME,	"displayName"		},
+	{ LDAP_ATTR_SID_LIST,		"sambaSIDList"		},
 	{ LDAP_ATTR_LIST_END,		NULL			}	
 };
 

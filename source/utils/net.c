@@ -66,6 +66,7 @@ int opt_long_list_entries = 0;
 int opt_reboot = 0;
 int opt_force = 0;
 int opt_port = 0;
+int opt_verbose = 0;
 int opt_maxusers = -1;
 const char *opt_comment = "";
 const char *opt_container = "cn=Users";
@@ -683,7 +684,7 @@ static struct functable net_func[] = {
 		{"timeout",	't', POPT_ARG_INT,    &opt_timeout},
 		{"machine-pass",'P', POPT_ARG_NONE,   &opt_machine_pass},
 		{"myworkgroup", 'W', POPT_ARG_STRING, &opt_workgroup},
-
+		{"verbose",	'v', POPT_ARG_NONE,   &opt_verbose},
 		/* Options for 'net groupmap set' */
 		{"local",       'L', POPT_ARG_NONE,   &opt_localgroup},
 		{"domain",      'D', POPT_ARG_NONE,   &opt_domaingroup},

@@ -48,16 +48,6 @@
 
 #include "includes.h"
 
-#ifdef HAVE_WORKING_CRACKLIB
-#include <crack.h>
-
-#ifndef HAVE_CRACKLIB_DICTPATH
-#ifndef CRACKLIB_DICTPATH
-#define CRACKLIB_DICTPATH SAMBA_CRACKLIB_DICTPATH
-#endif
-#endif
-#endif
-
 extern struct passdb_ops pdb_ops;
 
 static NTSTATUS check_oem_password(const char *user,
@@ -984,43 +974,6 @@ NTSTATUS change_oem_password(SAM_ACCOUNT *hnd, char *old_passwd, char *new_passw
 	if (!pass) {
 		DEBUG(1, ("check_oem_password: Username does not exist in system !?!\n"));
 	}
-
-#ifdef HAVE_WORKING_CRACKLIB
-	if (pass) {
-		/* if we can, become the user to overcome internal cracklib sillyness */
-		if (!push_sec_ctx())
-			return NT_STATUS_UNSUCCESSFUL;
-		
-		set_sec_ctx(pass->pw_uid, pass->pw_gid, 0, NULL, NULL);
-		set_re_uid();
-	}
-
-	if (lp_use_cracklib()) {
-		const char *crack_check_reason;
-		DEBUG(4, ("change_oem_password: Checking password for user [%s]"
-			  " against cracklib. \n", pdb_get_username(hnd)));
-		DEBUGADD(4, ("If this is your last message, then something is "
-			     "wrong with cracklib, it might be missing it's "
-			     "dictionaries at %s\n", 
-			     CRACKLIB_DICTPATH));
-		dbgflush();
-
-		crack_check_reason = FascistCheck(new_passwd, (char *)CRACKLIB_DICTPATH);
-		if (crack_check_reason) {
-			DEBUG(1, ("Password Change: user [%s], "
-				  "New password failed cracklib test - %s\n",
-			  pdb_get_username(hnd), crack_check_reason));
-			
-			/* get back to where we should be */
-			if (pass)
-				pop_sec_ctx();
-			return NT_STATUS_PASSWORD_RESTRICTION;
-		}
-	}
-
-	if (pass)
-		pop_sec_ctx();
-#endif
 
 	/*
 	 * If unix password sync was requested, attempt to change

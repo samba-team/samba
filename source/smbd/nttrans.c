@@ -1500,7 +1500,7 @@ int reply_ntrename(connection_struct *conn,
 		   char *inbuf,char *outbuf,int length,int bufsize)
 {
 	int outsize = 0;
-	pstring name;
+	pstring oldname;
 	pstring newname;
 	char *p;
 	NTSTATUS status;
@@ -1515,13 +1515,13 @@ int reply_ntrename(connection_struct *conn,
 	}
 
 	p = smb_buf(inbuf) + 1;
-	p += srvstr_get_path(inbuf, name, p, sizeof(name), 0, STR_TERMINATE, &status);
+	p += srvstr_get_path(inbuf, oldname, p, sizeof(oldname), 0, STR_TERMINATE, &status);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBntrename);
 		return ERROR_NT(status);
 	}
 
-	if( strchr_m(name, ':')) {
+	if( strchr_m(oldname, ':')) {
 		/* Can't rename a stream. */
 		END_PROFILE(SMBntrename);
 		return ERROR_NT(NT_STATUS_ACCESS_DENIED);
@@ -1534,15 +1534,15 @@ int reply_ntrename(connection_struct *conn,
 		return ERROR_NT(status);
 	}
 	
-	RESOLVE_DFSPATH(name, conn, inbuf, outbuf);
+	RESOLVE_DFSPATH(oldname, conn, inbuf, outbuf);
 	RESOLVE_DFSPATH(newname, conn, inbuf, outbuf);
 	
-	DEBUG(3,("reply_ntrename : %s -> %s\n",name,newname));
+	DEBUG(3,("reply_ntrename : %s -> %s\n",oldname,newname));
 	
 	if (rename_type == RENAME_FLAG_RENAME) {
-		status = rename_internals(conn, name, newname, attrs, False);
+		status = rename_internals(conn, oldname, newname, attrs, False);
 	} else {
-		status = hardlink_internals(conn, name, newname);
+		status = hardlink_internals(conn, oldname, newname);
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {

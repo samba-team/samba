@@ -30,10 +30,8 @@
 
 enum winbindd_result winbindd_lookupsid(struct winbindd_cli_state *state)
 {
-	extern DOM_SID global_sid_Builtin;
 	enum SID_NAME_USE type;
-	DOM_SID sid, tmp_sid;
-	uint32 rid;
+	DOM_SID sid;
 	fstring name;
 	fstring dom_name;
 
@@ -47,15 +45,6 @@ enum winbindd_result winbindd_lookupsid(struct winbindd_cli_state *state)
 
 	if (!string_to_sid(&sid, state->request.data.sid)) {
 		DEBUG(5, ("%s not a SID\n", state->request.data.sid));
-		return WINBINDD_ERROR;
-	}
-
-	/* Don't look up BUILTIN sids */
-
-	sid_copy(&tmp_sid, &sid);
-	sid_split_rid(&tmp_sid, &rid);
-
-	if (sid_equal(&tmp_sid, &global_sid_Builtin)) {
 		return WINBINDD_ERROR;
 	}
 
@@ -106,14 +95,14 @@ enum winbindd_result winbindd_lookupname(struct winbindd_cli_state *state)
 	DEBUG(3, ("[%5lu]: lookupname %s%s%s\n", (unsigned long)state->pid,
 		  name_domain, lp_winbind_separator(), name_user));
 
-	if ((domain = find_domain_from_name(name_domain)) == NULL) {
+	if ((domain = find_lookup_domain_from_name(name_domain)) == NULL) {
 		DEBUG(0, ("could not find domain entry for domain %s\n", 
 			  name_domain));
 		return WINBINDD_ERROR;
 	}
 
 	/* Lookup name from PDC using lsa_lookup_names() */
-	if (!winbindd_lookup_sid_by_name(domain, name_user, &sid, &type)) {
+	if (!winbindd_lookup_sid_by_name(domain, name_domain, name_user, &sid, &type)) {
 		return WINBINDD_ERROR;
 	}
 
@@ -346,7 +335,7 @@ enum winbindd_result winbindd_uid_to_sid(struct winbindd_cli_state *state)
 			return WINBINDD_ERROR;
 		}
 
-		if ( !winbindd_lookup_sid_by_name(domain, pw->pw_name, &sid, &type) )
+		if ( !winbindd_lookup_sid_by_name(domain, domain->name, pw->pw_name, &sid, &type) )
 			return WINBINDD_ERROR;
 		
 		if ( type != SID_NAME_USER )
@@ -416,7 +405,7 @@ enum winbindd_result winbindd_gid_to_sid(struct winbindd_cli_state *state)
 			return WINBINDD_ERROR;
 		}
 
-		if ( !winbindd_lookup_sid_by_name(domain, grp->gr_name, &sid, &type) )
+		if ( !winbindd_lookup_sid_by_name(domain, domain->name, grp->gr_name, &sid, &type) )
 			return WINBINDD_ERROR;
 		
 		if ( type!=SID_NAME_DOM_GRP && type!=SID_NAME_ALIAS )
@@ -442,6 +431,26 @@ done:
 	/* Construct sid and return it */
 	sid_to_string(state->response.data.sid.sid, &sid);
 	state->response.data.sid.type = SID_NAME_DOM_GRP;
+
+	return WINBINDD_OK;
+}
+
+enum winbindd_result winbindd_allocate_rid(struct winbindd_cli_state *state)
+{
+	if ( !state->privileged ) {
+		DEBUG(2, ("winbindd_allocate_rid: non-privileged access "
+			  "denied!\n"));
+		return WINBINDD_ERROR;
+	}
+
+	/* We tell idmap to always allocate a user RID. There might be a good
+	 * reason to keep RID allocation for users to even and groups to
+	 * odd. This needs discussion I think. For now only allocate user
+	 * rids. */
+
+	if (!NT_STATUS_IS_OK(idmap_allocate_rid(&state->response.data.rid,
+						USER_RID_TYPE)))
+		return WINBINDD_ERROR;
 
 	return WINBINDD_OK;
 }

@@ -82,6 +82,7 @@ typedef int BOOL;
 #define READ_ERROR 3
 #define WRITE_ERROR 4 /* This error code can go into the client smb_rw_error. */
 #define READ_BAD_SIG 5
+#define DO_NOT_DO_TDIS 6 /* cli_close_connection() check for this when smbfs wants to keep tree connected */
 
 #define DIR_STRUCT_SIZE 43
 
@@ -538,7 +539,7 @@ enum {LPQ_QUEUED=0,LPQ_PAUSED,LPQ_SPOOLING,LPQ_PRINTING,LPQ_ERROR,LPQ_DELETING,
 
 typedef struct _print_queue_struct
 {
-  int job;		/* normally the SMB jobid -- see note in 
+  int job;		/* normally the UNIX jobid -- see note in 
 			   printing.c:traverse_fn_delete() */
   int size;
   int page_count;
@@ -703,7 +704,7 @@ struct parm_struct
 	parm_type type;
 	parm_class class;
 	void *ptr;
-	BOOL (*special)(const char *, char **);
+	BOOL (*special)(int snum, const char *, char **);
 	const struct enum_list *enum_list;
 	unsigned flags;
 	union {
@@ -1523,6 +1524,12 @@ struct node_status {
 	nstring name;
 	unsigned char type;
 	unsigned char flags;
+};
+
+/* The extra info from a NetBIOS node status query */
+struct node_status_extra {
+	unsigned char mac_addr[6];
+	/* There really is more here ... */ 
 };
 
 struct pwd_info

@@ -135,39 +135,38 @@ BOOL secrets_fetch_domain_sid(const char *domain, DOM_SID *sid)
 	return True;
 }
 
-BOOL secrets_store_domain_guid(const char *domain, GUID *guid)
+BOOL secrets_store_domain_guid(const char *domain, struct uuid *guid)
 {
 	fstring key;
 
 	slprintf(key, sizeof(key)-1, "%s/%s", SECRETS_DOMAIN_GUID, domain);
 	strupper_m(key);
-	return secrets_store(key, guid, sizeof(GUID));
+	return secrets_store(key, guid, sizeof(struct uuid));
 }
 
-BOOL secrets_fetch_domain_guid(const char *domain, GUID *guid)
+BOOL secrets_fetch_domain_guid(const char *domain, struct uuid *guid)
 {
-	GUID *dyn_guid;
+	struct uuid *dyn_guid;
 	fstring key;
 	size_t size;
-	GUID new_guid;
+	struct uuid new_guid;
 
 	slprintf(key, sizeof(key)-1, "%s/%s", SECRETS_DOMAIN_GUID, domain);
 	strupper_m(key);
-	dyn_guid = (GUID *)secrets_fetch(key, &size);
+	dyn_guid = (struct uuid *)secrets_fetch(key, &size);
 
-	DEBUG(6,("key is %s, size is %d\n", key, (int)size));
-
-	if ((NULL == dyn_guid) && (ROLE_DOMAIN_PDC == lp_server_role())) {
+	if ((!dyn_guid) && (lp_server_role() == ROLE_DOMAIN_PDC)) {
 		smb_uuid_generate_random(&new_guid);
 		if (!secrets_store_domain_guid(domain, &new_guid))
 			return False;
-		dyn_guid = (GUID *)secrets_fetch(key, &size);
+		dyn_guid = (struct uuid *)secrets_fetch(key, &size);
 		if (dyn_guid == NULL)
 			return False;
 	}
 
-	if (size != sizeof(GUID))
+	if (size != sizeof(struct uuid))
 	{ 
+		DEBUG(1,("UUID size %d is wrong!\n", (int)size));
 		SAFE_FREE(dyn_guid);
 		return False;
 	}
@@ -245,7 +244,7 @@ uint32 get_default_sec_channel(void)
 /************************************************************************
  Routine to get the trust account password for a domain.
  The user of this function must have locked the trust password file using
- the above call.
+ the above secrets_lock_trust_account_password().
 ************************************************************************/
 
 BOOL secrets_fetch_trust_account_password(const char *domain, uint8 ret_pwd[16],
@@ -569,7 +568,8 @@ BOOL secrets_store_ldap_pw(const char* dn, char* pw)
  * @return nt status code of rpc response
  **/ 
 
-NTSTATUS secrets_get_trusted_domains(TALLOC_CTX* ctx, int* enum_ctx, unsigned int max_num_domains, int *num_domains, TRUSTDOM ***domains)
+NTSTATUS secrets_get_trusted_domains(TALLOC_CTX* ctx, int* enum_ctx, unsigned int max_num_domains,
+                                     int *num_domains, TRUSTDOM ***domains)
 {
 	TDB_LIST_NODE *keys, *k;
 	TRUSTDOM *dom = NULL;

@@ -2,7 +2,7 @@
  *  Unix SMB/CIFS implementation.
  *  UUID server routines
  *  Copyright (C) Theodore Ts'o               1996, 1997,
- *  Copyright (C) Jim McDonough <jmcd@us.ibm.com> 2002.
+ *  Copyright (C) Jim McDonough <jmcd@us.ibm.com> 2002, 2003
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -27,57 +27,47 @@
 #define TIME_OFFSET_HIGH 0x01B21DD2
 #define TIME_OFFSET_LOW  0x13814000
 
-struct uuid {
-        uint32   time_low;
-        uint16   time_mid;
-        uint16   time_hi_and_version;
-        uint8    clock_seq[2];
-        uint8    node[6];
-};
-
-
-static void uuid_pack(const struct uuid *uu, GUID *ptr)
+void smb_uuid_pack(const struct uuid uu, UUID_FLAT *ptr)
 {
-	uint8 *out = ptr->info;
-
-	SIVAL(out, 0, uu->time_low);
-	SSVAL(out, 4, uu->time_mid);
-	SSVAL(out, 6, uu->time_hi_and_version);
-	memcpy(out+8, uu->clock_seq, 2);
-	memcpy(out+10, uu->node, 6);
+	SIVAL(ptr, 0, uu.time_low);
+	SSVAL(ptr, 4, uu.time_mid);
+	SSVAL(ptr, 6, uu.time_hi_and_version);
+	memcpy(ptr+8, uu.clock_seq, 2);
+	memcpy(ptr+10, uu.node, 6);
 }
 
-static void uuid_unpack(const GUID in, struct uuid *uu)
+void smb_uuid_unpack(const UUID_FLAT in, struct uuid *uu)
 {
-	const uint8 *ptr = in.info;
-
-	uu->time_low = IVAL(ptr, 0);
-	uu->time_mid = SVAL(ptr, 4);
-	uu->time_hi_and_version = SVAL(ptr, 6);
-	memcpy(uu->clock_seq, ptr+8, 2);
-	memcpy(uu->node, ptr+10, 6);
+	uu->time_low = IVAL(in.info, 0);
+	uu->time_mid = SVAL(in.info, 4);
+	uu->time_hi_and_version = SVAL(in.info, 6);
+	memcpy(uu->clock_seq, in.info+8, 2);
+	memcpy(uu->node, in.info+10, 6);
 }
 
-void smb_uuid_generate_random(GUID *out)
+const struct uuid smb_uuid_unpack_static(const UUID_FLAT in)
 {
-	GUID tmp;
-	struct uuid uu;
+	static struct uuid uu;
+
+	smb_uuid_unpack(in, &uu);
+	return uu;
+}
+
+void smb_uuid_generate_random(struct uuid *uu)
+{
+	UUID_FLAT tmp;
 
 	generate_random_buffer(tmp.info, sizeof(tmp.info), True);
-	uuid_unpack(tmp, &uu);
+	smb_uuid_unpack(tmp, uu);
 
-	uu.clock_seq[0] = (uu.clock_seq[0] & 0x3F) | 0x80;
-	uu.time_hi_and_version = (uu.time_hi_and_version & 0x0FFF) | 0x4000;
-	uuid_pack(&uu, out);
+	uu->clock_seq[0] = (uu->clock_seq[0] & 0x3F) | 0x80;
+	uu->time_hi_and_version = (uu->time_hi_and_version & 0x0FFF) | 0x4000;
 }
 
-char *smb_uuid_to_string(const GUID in)
+char *smb_uuid_to_string(const struct uuid uu)
 {
-	struct uuid uu;
 	char *out;
 
-	uuid_unpack(in, &uu);
-	
 	asprintf(&out, "%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x",
 		 uu.time_low, uu.time_mid, uu.time_hi_and_version,
 		 uu.clock_seq[0], uu.clock_seq[1],
@@ -87,17 +77,98 @@ char *smb_uuid_to_string(const GUID in)
 	return out;
 }
 
-const char *smb_uuid_string_static(const GUID in)
+const char *smb_uuid_string_static(const struct uuid uu)
 {
-	struct uuid uu;
 	static char out[37];
 
-	uuid_unpack(in, &uu);
-	slprintf(out, sizeof(out) -1, 
+	slprintf(out, sizeof(out), 
 		 "%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x",
 		 uu.time_low, uu.time_mid, uu.time_hi_and_version,
 		 uu.clock_seq[0], uu.clock_seq[1],
 		 uu.node[0], uu.node[1], uu.node[2], 
 		 uu.node[3], uu.node[4], uu.node[5]);
 	return out;
+}
+
+BOOL smb_string_to_uuid(const char *in, struct uuid* uu)
+{
+	BOOL ret = False;
+	const char *ptr = in;
+	char *end = (char *)in;
+	int i;
+
+	if (!in || !uu) goto out;
+
+	uu->time_low = strtoul(ptr, &end, 16);
+	if ((end - ptr) != 8 || *end != '-') goto out;
+	ptr = (end + 1);
+
+	uu->time_mid = strtoul(ptr, &end, 16);
+	if ((end - ptr) != 4 || *end != '-') goto out;
+	ptr = (end + 1);
+
+	uu->time_hi_and_version = strtoul(ptr, &end, 16);
+	if ((end - ptr) != 4 || *end != '-') goto out;
+	ptr = (end + 1);
+
+	for (i = 0; i < 2; i++) {
+		int adj = 0;
+		if (*ptr >= '0' && *ptr <= '9') {
+			adj = '0';
+		} else if (*ptr >= 'a' && *ptr <= 'f') {
+			adj = 'a';
+		} else if (*ptr >= 'A' && *ptr <= 'F') {
+			adj = 'A';
+		} else {
+			goto out;
+		}
+		uu->clock_seq[i] = (*ptr - adj) << 4;
+		ptr++;
+
+		if (*ptr >= '0' && *ptr <= '9') {
+			adj = '0';
+		} else if (*ptr >= 'a' && *ptr <= 'f') {
+			adj = 'a';
+		} else if (*ptr >= 'A' && *ptr <= 'F') {
+			adj = 'A';
+		} else {
+			goto out;
+		}
+		uu->clock_seq[i] |= (*ptr - adj);
+		ptr++;
+	}
+
+	if (*ptr != '-') goto out;
+	ptr++;
+
+	for (i = 0; i < 6; i++) {
+		int adj = 0;
+		if (*ptr >= '0' && *ptr <= '9') {
+			adj = '0';
+		} else if (*ptr >= 'a' && *ptr <= 'f') {
+			adj = 'a';
+		} else if (*ptr >= 'A' && *ptr <= 'F') {
+			adj = 'A';
+		} else {
+			goto out;
+		}
+		uu->node[i] = (*ptr - adj) << 4;
+		ptr++;
+
+		if (*ptr >= '0' && *ptr <= '9') {
+			adj = '0';
+		} else if (*ptr >= 'a' && *ptr <= 'f') {
+			adj = 'a';
+		} else if (*ptr >= 'A' && *ptr <= 'F') {
+			adj = 'A';
+		} else {
+			goto out;
+		}
+		uu->node[i] |= (*ptr - adj);
+		ptr++;
+	}
+
+	ret = True;
+out:
+        return ret;
 }

@@ -201,6 +201,13 @@ void split_domain_name(const char *fullname, char *domain, char *name)
 		fstrcpy(domain, full_name);
 		fstrcpy(name, p+1);
 	} else {
+		if(!lp_domain_logons()) {
+			fstrcpy(domain, global_myname());
+			fstrcpy(name, full_name);
+		} else {
+			fstrcpy(domain, lp_workgroup());
+			fstrcpy(name, full_name);
+		}
 		fstrcpy(domain, global_myname());
 		fstrcpy(name, full_name);
 	}
@@ -615,23 +622,6 @@ char *sid_binstring(const DOM_SID *sid)
 	s = binary_string(buf, len);
 	free(buf);
 	return s;
-}
-
-
-/*****************************************************************
- Print a GUID structure for debugging.
-*****************************************************************/
-
-void print_guid(GUID *guid)
-{
-	int i;
-
-	d_printf("%08x-%04x-%04x", 
-		 IVAL(guid->info, 0), SVAL(guid->info, 4), SVAL(guid->info, 6));
-	d_printf("-%02x%02x-", guid->info[8], guid->info[9]);
-	for (i=10;i<GUID_SIZE;i++)
-		d_printf("%02x", guid->info[i]);
-	d_printf("\n");
 }
 
 /*******************************************************************

@@ -36,7 +36,7 @@
 
 /* Update this when you change the interface.  */
 
-#define WINBIND_INTERFACE_VERSION 9
+#define WINBIND_INTERFACE_VERSION 10
 
 /* Socket commands */
 
@@ -84,6 +84,7 @@ enum winbindd_cmd {
 	WINBINDD_SID_TO_GID,
 	WINBINDD_UID_TO_SID,
 	WINBINDD_GID_TO_SID,
+	WINBINDD_ALLOCATE_RID,
 
 	/* Miscellaneous other stuff */
 
@@ -116,7 +117,6 @@ enum winbindd_cmd {
 	WINBINDD_GETGRLST,
 
 	WINBINDD_NETBIOS_NAME,       /* The netbios name of the server */
-	/* Placeholder for end of cmd list */
 
 	/* find the location of our privileged pipe */
 	WINBINDD_PRIV_PIPE_DIR,
@@ -124,6 +124,7 @@ enum winbindd_cmd {
 	/* return a list of group sids for a user sid */
 	WINBINDD_GETUSERSIDS,	
 
+	/* Placeholder for end of cmd list */
 	WINBINDD_NUM_CMDS
 };
 
@@ -150,13 +151,14 @@ typedef struct winbindd_gr {
 
 #define WBFLAG_PAM_INFO3_NDR  		0x0001
 #define WBFLAG_PAM_INFO3_TEXT 		0x0002
-#define WBFLAG_PAM_NTKEY      		0x0004
+#define WBFLAG_PAM_USER_SESSION_KEY     0x0004
 #define WBFLAG_PAM_LMKEY      		0x0008
 #define WBFLAG_PAM_CONTACT_TRUSTDOM 	0x0010
 #define WBFLAG_QUERY_ONLY		0x0020
 #define WBFLAG_ALLOCATE_RID		0x0040
 #define WBFLAG_PAM_UNIX_NAME            0x0080
 #define WBFLAG_PAM_AFS_TOKEN            0x0100
+#define WBFLAG_PAM_NT_STATUS_SQUASH     0x0200
 
 /* Winbind request structure */
 
@@ -179,6 +181,7 @@ struct winbindd_request {
                            character is. */	
 			fstring user;
 			fstring pass;
+		        fstring required_membership_sid;
 		} auth;              /* pam_winbind auth module */
                 struct {
                         unsigned char chal[8];
@@ -189,6 +192,7 @@ struct winbindd_request {
                         fstring nt_resp;
                         uint16 nt_resp_len;
 			fstring workstation;
+		        fstring required_membership_sid;
                 } auth_crap;
                 struct {
                     fstring user;
@@ -264,10 +268,10 @@ struct winbindd_response {
 			fstring nt_status_string;
 			fstring error_string;
 			int pam_error;
-			char nt_session_key[16];
+			char user_session_key[16];
 			char first_8_lm_hash[8];
 		} auth;
-		uint32 rid;	/* create user or group */
+		uint32 rid;	/* create user or group or allocate rid */
 		struct {
 			fstring name;
 			fstring alt_name;

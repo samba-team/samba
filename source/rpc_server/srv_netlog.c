@@ -317,6 +317,42 @@ static BOOL api_net_logon_ctrl(pipes_struct *p)
 	return True;
 }
 
+/*************************************************************************
+ api_ds_enum_dom_trusts:
+ *************************************************************************/
+
+#if 0 	/* JERRY */
+static BOOL api_ds_enum_dom_trusts(pipes_struct *p)
+{
+	DS_Q_ENUM_DOM_TRUSTS q_u;
+	DS_R_ENUM_DOM_TRUSTS r_u;
+
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	DEBUG(6,("api_ds_enum_dom_trusts\n"));
+
+	if ( !ds_io_q_enum_domain_trusts("", data, 0, &q_u) ) {
+		DEBUG(0,("api_ds_enum_domain_trusts: Failed to unmarshall DS_Q_ENUM_DOM_TRUSTS.\n"));
+		return False;
+	}
+
+	r_u.status = _ds_enum_dom_trusts(p, &q_u, &r_u);
+
+	if ( !ds_io_r_enum_domain_trusts("", rdata, 0, &r_u) ) {
+		DEBUG(0,("api_ds_enum_domain_trusts: Failed to marshall DS_R_ENUM_DOM_TRUSTS.\n"));
+		return False;
+	}
+
+	DEBUG(6,("api_ds_enum_dom_trusts\n"));
+
+	return True;
+}
+#endif	/* JERRY */
+
 /*******************************************************************
  array of \PIPE\NETLOGON operations
  ********************************************************************/
@@ -330,7 +366,10 @@ static struct api_struct api_net_cmds [] =
       { "NET_SAMLOGOFF"     , NET_SAMLOGOFF     , api_net_sam_logoff     }, 
       { "NET_LOGON_CTRL2"   , NET_LOGON_CTRL2   , api_net_logon_ctrl2    }, 
       { "NET_TRUST_DOM_LIST", NET_TRUST_DOM_LIST, api_net_trust_dom_list },
-      { "NET_LOGON_CTRL"    , NET_LOGON_CTRL    , api_net_logon_ctrl     }
+      { "NET_LOGON_CTRL"    , NET_LOGON_CTRL    , api_net_logon_ctrl     },
+#if 0	/* JERRY */
+      { "DS_ENUM_DOM_TRUSTS", DS_ENUM_DOM_TRUSTS, api_ds_enum_dom_trusts }
+#endif	/* JERRY */
     };
 
 void netlog_get_pipe_fns( struct api_struct **fns, int *n_fns )

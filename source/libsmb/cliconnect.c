@@ -40,6 +40,18 @@ static const struct {
 	{-1,NULL}
 };
 
+/**
+ * Set the user session key for a connection
+ * @param cli The cli structure to add it too
+ * @param session_key The session key used.  (A copy of this is taken for the cli struct)
+ *
+ */
+
+static void cli_set_session_key (struct cli_state *cli, const DATA_BLOB session_key) 
+{
+	cli->user_session_key = data_blob(session_key.data, session_key.length);
+}
+
 /****************************************************************************
  Do an old lanman2 style session setup.
 ****************************************************************************/
@@ -47,6 +59,8 @@ static const struct {
 static BOOL cli_session_setup_lanman2(struct cli_state *cli, const char *user, 
 				      const char *pass, size_t passlen, const char *workgroup)
 {
+	DATA_BLOB session_key = data_blob(NULL, 0);
+	DATA_BLOB lm_response = data_blob(NULL, 0);
 	fstring pword;
 	char *p;
 
@@ -66,14 +80,15 @@ static BOOL cli_session_setup_lanman2(struct cli_state *cli, const char *user,
 
 	if (passlen > 0 && (cli->sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) && passlen != 24) {
 		/* Encrypted mode needed, and non encrypted password supplied. */
-		passlen = 24;
-		SMBencrypt(pass,cli->secblob.data,(uchar *)pword);
+		lm_response = data_blob(NULL, 24);
+		SMBencrypt(pass, cli->secblob.data,(uchar *)lm_response.data);
 	} else if ((cli->sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) && passlen == 24) {
 		/* Encrypted mode needed, and encrypted password supplied. */
-		memcpy(pword, pass, passlen);
+		lm_response = data_blob(pass, passlen);
 	} else if (passlen > 0) {
 		/* Plaintext mode needed, assume plaintext supplied. */
 		passlen = clistr_push(cli, pword, pass, sizeof(pword), STR_TERMINATE);
+		lm_response = data_blob(pass, passlen);
 	}
 
 	/* send a session setup command */
@@ -87,10 +102,10 @@ static BOOL cli_session_setup_lanman2(struct cli_state *cli, const char *user,
 	SSVAL(cli->outbuf,smb_vwv3,2);
 	SSVAL(cli->outbuf,smb_vwv4,1);
 	SIVAL(cli->outbuf,smb_vwv5,cli->sesskey);
-	SSVAL(cli->outbuf,smb_vwv7,passlen);
+	SSVAL(cli->outbuf,smb_vwv7,lm_response.length);
 
 	p = smb_buf(cli->outbuf);
-	memcpy(p,pword,passlen);
+	memcpy(p,lm_response.data,lm_response.length);
 	p += passlen;
 	p += clistr_push(cli, p, user, -1, STR_TERMINATE|STR_UPPER);
 	p += clistr_push(cli, p, workgroup, -1, STR_TERMINATE|STR_UPPER);
@@ -110,6 +125,11 @@ static BOOL cli_session_setup_lanman2(struct cli_state *cli, const char *user,
 	/* use the returned vuid from now on */
 	cli->vuid = SVAL(cli->inbuf,smb_uid);	
 	fstrcpy(cli->user_name, user);
+
+	if (session_key.data) {
+		/* Have plaintext orginal */
+		cli_set_session_key(cli, session_key);
+	}
 
 	return True;
 }
@@ -248,18 +268,6 @@ static BOOL cli_session_setup_plaintext(struct cli_state *cli, const char *user,
 	return True;
 }
 
-/**
- * Set the user session key for a connection
- * @param cli The cli structure to add it too
- * @param session_key The session key used.  (A copy of this is taken for the cli struct)
- *
- */
-
-static void cli_set_session_key (struct cli_state *cli, const DATA_BLOB session_key) 
-{
-	cli->user_session_key = data_blob(session_key.data, session_key.length);
-}
-
 /****************************************************************************
    do a NT1 NTLM/LM encrypted session setup - for when extended security
    is not negotiated.
@@ -310,22 +318,39 @@ static BOOL cli_session_setup_nt1(struct cli_state *cli, const char *user,
 			uchar nt_hash[16];
 			E_md4hash(pass, nt_hash);
 
+#ifdef LANMAN_ONLY
+			nt_response = data_blob(NULL, 0);
+#else
 			nt_response = data_blob(NULL, 24);
 			SMBNTencrypt(pass,cli->secblob.data,nt_response.data);
-
+#endif
 			/* non encrypted password supplied. Ignore ntpass. */
 			if (lp_client_lanman_auth()) {
 				lm_response = data_blob(NULL, 24);
-				SMBencrypt(pass,cli->secblob.data, lm_response.data);
+				if (!SMBencrypt(pass,cli->secblob.data, lm_response.data)) {
+					/* Oops, the LM response is invalid, just put 
+					   the NT response there instead */
+					data_blob_free(&lm_response);
+					lm_response = data_blob(nt_response.data, nt_response.length);
+				}
 			} else {
 				/* LM disabled, place NT# in LM field instead */
 				lm_response = data_blob(nt_response.data, nt_response.length);
 			}
 
 			session_key = data_blob(NULL, 16);
+#ifdef LANMAN_ONLY
+			E_deshash(pass, session_key.data);
+			memset(&session_key.data[8], '\0', 8);
+#else
 			SMBsesskeygen_ntv1(nt_hash, NULL, session_key.data);
+#endif
 		}
+#ifdef LANMAN_ONLY
+		cli_simple_set_signing(cli, session_key, lm_response); 
+#else
 		cli_simple_set_signing(cli, session_key, nt_response); 
+#endif
 	} else {
 		/* pre-encrypted password supplied.  Only used for 
 		   security=server, can't do

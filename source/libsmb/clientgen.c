@@ -374,8 +374,12 @@ void cli_close_connection(struct cli_state *cli)
 	 * can remain active on the peer end, until some (long) timeout period
 	 * later.  This tree disconnect forces the peer to clean up, since the
 	 * connection will be going away.
+	 *
+	 * Also, do not do tree disconnect when cli->smb_rw_error is DO_NOT_DO_TDIS
+	 * the only user for this so far is smbmount which passes opened connection
+	 * down to kernel's smbfs module.
 	 */
-	if ( cli->cnum != (uint16)-1 )
+	if ( (cli->cnum != (uint16)-1) && (cli->smb_rw_error != DO_NOT_DO_TDIS ) )
 		cli_tdis(cli);
         
 	cli_nt_session_close(cli);

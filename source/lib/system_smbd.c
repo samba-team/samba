@@ -99,6 +99,11 @@ static int getgrouplist_internals(const char *user, gid_t gid, gid_t *groups, in
 		free(gids_saved);
 		return -1;
 	}
+	
+	/* this will remove any duplicates gids in the list and 
+	   update the group counter */
+	   
+	remove_duplicate_gids( grpcnt, groups );
 
 	free(gids_saved);
 	return ret;

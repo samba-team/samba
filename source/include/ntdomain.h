@@ -23,6 +23,22 @@
 #ifndef _NT_DOMAIN_H /* _NT_DOMAIN_H */
 #define _NT_DOMAIN_H 
 
+struct uuid
+{
+  uint32 time_low;
+  uint16 time_mid;
+  uint16 time_hi_and_version;
+  uint8  clock_seq[2];
+  uint8  node[6];
+};
+#define UUID_SIZE 16
+
+#define UUID_FLAT_SIZE 16
+typedef struct uuid_flat
+{
+	uint8 info[UUID_FLAT_SIZE];
+} UUID_FLAT;
+
 /* dce/rpc support */
 #include "rpc_dce.h"
 
@@ -365,13 +381,6 @@ typedef struct
 	const char *name;
 
 } rid_name;
-
-struct acct_info
-{
-    fstring acct_name; /* account name */
-    fstring acct_desc; /* account name */
-    uint32 rid; /* domain-relative RID */
-};
 
 /*
  * higher order functions for use with msrpc client code

@@ -227,7 +227,7 @@ BOOL create_next_pdu(pipes_struct *p)
 		if (auth_seal || auth_verify) {
 			RPC_HDR_AUTH auth_info;
 
-			init_rpc_hdr_auth(&auth_info, NTLMSSP_AUTH_TYPE, RPC_PIPE_AUTH_SEAL_LEVEL, 
+			init_rpc_hdr_auth(&auth_info, NTLMSSP_AUTH_TYPE, auth_info.auth_level,
 					(auth_verify ? RPC_HDR_AUTH_LEN : 0), (auth_verify ? 1 : 0));
 			if(!smb_io_rpc_hdr_auth("hdr_auth", &auth_info, &outgoing_pdu, 0)) {
 				DEBUG(0,("create_next_pdu: failed to marshall RPC_HDR_AUTH.\n"));
@@ -737,9 +737,9 @@ BOOL check_bind_req(struct pipes_struct *p, RPC_IFACE* abstract,
 	{
 		if ( strequal(pipe_names[i].client_pipe, pname)
 			&& (abstract->version == pipe_names[i].abstr_syntax.version) 
-			&& (memcmp(&abstract->uuid, &pipe_names[i].abstr_syntax.uuid, sizeof(RPC_UUID)) == 0)
+			&& (memcmp(&abstract->uuid, &pipe_names[i].abstr_syntax.uuid, sizeof(struct uuid)) == 0)
 			&& (transfer->version == pipe_names[i].trans_syntax.version)
-			&& (memcmp(&transfer->uuid, &pipe_names[i].trans_syntax.uuid, sizeof(RPC_UUID)) == 0) )
+			&& (memcmp(&transfer->uuid, &pipe_names[i].trans_syntax.uuid, sizeof(struct uuid)) == 0) )
 		{
 			struct api_struct 	*fns = NULL;
 			int 			n_fns = 0;
@@ -1106,7 +1106,7 @@ BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
                    re-used from the auth2 the client did before. */
 		p->dc = last_dcinfo;
 
-		init_rpc_hdr_auth(&auth_info, NETSEC_AUTH_TYPE, RPC_PIPE_AUTH_SEAL_LEVEL, RPC_HDR_AUTH_LEN, 1);
+		init_rpc_hdr_auth(&auth_info, NETSEC_AUTH_TYPE, auth_info.auth_level, RPC_HDR_AUTH_LEN, 1);
 		if(!smb_io_rpc_hdr_auth("", &auth_info, &out_auth, 0)) {
 			DEBUG(0,("api_pipe_bind_req: marshalling of RPC_HDR_AUTH failed.\n"));
 			goto err_exit;

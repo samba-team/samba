@@ -74,7 +74,13 @@ static void mount_cifs_usage(void)
 {
 	printf("\nUsage:  %s <remotetarget> <dir> -o <options>\n", thisprogram);
 	printf("\nMount the remote target, specified as a UNC name,");
-	printf(" to a local directory.\n");
+	printf(" to a local directory.\n\nOptions:\n");
+	printf("\tuser=<arg>\n\tpass=<arg>\n\tdom=<arg>\n");
+	printf("\nOther less commonly used options are described in the manual page");
+	printf("\n\tman 8 mount.cifs\n");
+	printf("\nTo display the version number of the mount helper:");
+	printf("\n\t%s -V\n",thisprogram);
+
 	if(mountpassword) {
 		memset(mountpassword,0,64);
 		free(mountpassword);
@@ -95,7 +101,7 @@ static char * getusername(void) {
 
 char * parse_cifs_url(char * unc_name)
 {
-	printf("\ncifs url %s\n",unc_name);
+	printf("\nMounting cifs URL not implemented yet. Attempt to mount %s\n",unc_name);
 	return NULL;
 }
 
@@ -132,7 +138,7 @@ static int open_cred_file(char * file_name)
 						break;
 				}
 				if(length > 4086) {
-					printf("cifs.mount failed due to malformed username in credentials file");
+					printf("mount.cifs failed due to malformed username in credentials file");
 					memset(line_buf,0,4096);
 					if(mountpassword) {
 						memset(mountpassword,0,64);
@@ -156,7 +162,7 @@ static int open_cred_file(char * file_name)
 						break;
 				}
 				if(length > 64) {
-					printf("cifs.mount failed: password in credentials file too long\n");
+					printf("mount.cifs failed: password in credentials file too long\n");
 					memset(line_buf,0, 4096);
 					if(mountpassword) {
 						memset(mountpassword,0,64);
@@ -198,7 +204,7 @@ static int get_password_from_file(int file_descript, char * filename)
 	if(filename != NULL) {
 		file_descript = open(filename, O_RDONLY);
 		if(file_descript < 0) {
-			printf("cifs.mount failed. %s attempting to open password file %s\n",
+			printf("mount.cifs failed. %s attempting to open password file %s\n",
 				   strerror(errno),filename);
 			exit(1);
 		}
@@ -208,7 +214,7 @@ static int get_password_from_file(int file_descript, char * filename)
 	for(i=0;i<64;i++) {
 		rc = read(file_descript,&c,1);
 		if(rc < 0) {
-			printf("cifs.mount failed. Error %s reading password file\n",strerror(errno));
+			printf("mount.cifs failed. Error %s reading password file\n",strerror(errno));
 			memset(mountpassword,0,64);
 			if(filename != NULL)
 				close(file_descript);
@@ -292,7 +298,7 @@ static int parse_options(char * options, int * filesys_flags)
 						mountpassword = calloc(65,1);
 					if(mountpassword) {
 						if(got_password)
-							printf("\ncifs.mount warning - password specified twice\n");
+							printf("\nmount.cifs warning - password specified twice\n");
 						got_password = 1;
 						percent_char++;
 						strncpy(mountpassword, percent_char,64);
@@ -315,7 +321,7 @@ static int parse_options(char * options, int * filesys_flags)
 					got_password = 1;
 			} else if (strnlen(value, 17) < 17) {
 				if(got_password)
-					printf("\ncifs.mount warning - password specified twice\n");
+					printf("\nmount.cifs warning - password specified twice\n");
 				got_password = 1;
 			} else {
 				printf("password too long\n");
@@ -438,6 +444,8 @@ static int parse_options(char * options, int * filesys_flags)
 			*filesys_flags |= MS_NOEXEC;
 		} else if (strncmp(data, "exec", 4) == 0) {
 			*filesys_flags &= ~MS_NOEXEC;
+		} else if (strncmp(data, "guest", 5) == 0) {
+			got_password=1;
 		} else if (strncmp(data, "ro", 2) == 0) {
 			*filesys_flags |= MS_RDONLY;
 		} else if (strncmp(data, "rw", 2) == 0) {
@@ -477,7 +485,6 @@ static int parse_options(char * options, int * filesys_flags)
 			*next_keyword = ',';
 		else
 			data = 0;
-
 	}
 	return 0;
 }
@@ -591,6 +598,7 @@ int main(int argc, char ** argv)
 	char * uuid = NULL;
 	char * mountpoint;
 	char * options;
+	char * resolved_path;
 	char * temp;
 	int rc;
 	int rsize = 0;
@@ -731,13 +739,22 @@ int main(int argc, char ** argv)
 	}
 
 	ipaddr = parse_server(share_name);
+
+	if(ipaddr == NULL)
+		return -1;
 	
 	if (orgoptions && parse_options(orgoptions, &flags))
-		return 1;
+		return -1;
 
 	/* BB save off path and pop after mount returns? */
-	/* BB canonicalize the path in argv[1]? */
-
+	resolved_path = malloc(PATH_MAX+1);
+	if(resolved_path) {
+		/* Note that if we can not canonicalize the name, we get
+		another chance to see if it is valid when we chdir to it */
+		if (realpath(mountpoint, resolved_path)) {
+			mountpoint = resolved_path; 
+		}
+	}
 	if(chdir(mountpoint)) {
 		printf("mount error: can not change directory into mount target %s\n",mountpoint);
 		return -1;
@@ -761,7 +778,7 @@ int main(int argc, char ** argv)
 			flags |= MS_NOSUID | MS_NODEV;
 #endif						
 		} else {
-			printf("mount error: permission denied or not superuser and cifs.mount not installed SUID\n"); 
+			printf("mount error: permission denied or not superuser and mount.cifs not installed SUID\n"); 
 			return -1;
 		}
 	}
@@ -823,7 +840,7 @@ int main(int argc, char ** argv)
 		strcat(options,orgoptions);
 	}
 	if(verboseflag)
-		printf("\ncifs.mount kernel mount options %s \n",options);
+		printf("\nmount.cifs kernel mount options %s \n",options);
 	if(mount(share_name, mountpoint, "cifs", flags, options)) {
 	/* remember to kill daemon on error */
 		switch (errno) {
@@ -891,6 +908,10 @@ int main(int argc, char ** argv)
 		memset(orgoptions,0,orgoptlen);
 		free(orgoptions);
 	}
+	if(resolved_path) {
+		free(resolved_path);
+	}
+
 	return 0;
 }
 

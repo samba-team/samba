@@ -323,48 +323,6 @@ static NTSTATUS enum_local_groups(struct winbindd_domain *domain,
 	return NT_STATUS_OK;
 }
 
-/* convert a single name to a sid in a domain */
-static NTSTATUS name_to_sid(struct winbindd_domain *domain,
-			    TALLOC_CTX *mem_ctx,
-			    const char *name,
-			    DOM_SID *sid,
-			    enum SID_NAME_USE *type)
-{
-	ADS_STRUCT *ads;
-
-	DEBUG(3,("ads: name_to_sid\n"));
-
-	ads = ads_cached_connection(domain);
-	
-	if (!ads) {
-		domain->last_status = NT_STATUS_SERVER_DISABLED;
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	return ads_name_to_sid(ads, name, sid, type);
-}
-
-/* convert a sid to a user or group name */
-static NTSTATUS sid_to_name(struct winbindd_domain *domain,
-			    TALLOC_CTX *mem_ctx,
-			    const DOM_SID *sid,
-			    char **name,
-			    enum SID_NAME_USE *type)
-{
-	ADS_STRUCT *ads = NULL;
-	DEBUG(3,("ads: sid_to_name\n"));
-
-	ads = ads_cached_connection(domain);
-	
-	if (!ads) {
-		domain->last_status = NT_STATUS_SERVER_DISABLED;
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	return ads_sid_to_name(ads, mem_ctx, sid, name, type);
-}
-
-
 /* convert a DN to a name, SID and name type 
    this might become a major speed bottleneck if groups have
    lots of users, in which case we could cache the results
@@ -1004,8 +962,8 @@ struct winbindd_methods ads_methods = {
 	query_user_list,
 	enum_dom_groups,
 	enum_local_groups,
-	name_to_sid,
-	sid_to_name,
+	msrpc_name_to_sid,
+	msrpc_sid_to_name,
 	query_user,
 	lookup_usergroups,
 	lookup_groupmem,

@@ -75,7 +75,7 @@ static NTSTATUS auth_ntlmssp_set_challenge(struct ntlmssp_state *ntlmssp_state, 
  * Return the session keys used on the connection.
  */
 
-static NTSTATUS auth_ntlmssp_check_password(struct ntlmssp_state *ntlmssp_state, DATA_BLOB *nt_session_key, DATA_BLOB *lm_session_key) 
+static NTSTATUS auth_ntlmssp_check_password(struct ntlmssp_state *ntlmssp_state, DATA_BLOB *user_session_key, DATA_BLOB *lm_session_key) 
 {
 	AUTH_NTLMSSP_STATE *auth_ntlmssp_state = ntlmssp_state->auth_context;
 	auth_usersupplied_info *user_info = NULL;
@@ -113,11 +113,11 @@ static NTSTATUS auth_ntlmssp_check_password(struct ntlmssp_state *ntlmssp_state,
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}
-	if (auth_ntlmssp_state->server_info->nt_session_key.length) {
-		DEBUG(10, ("Got NT session key of length %u\n", auth_ntlmssp_state->server_info->nt_session_key.length));
-		*nt_session_key = data_blob_talloc(auth_ntlmssp_state->mem_ctx, 
-						   auth_ntlmssp_state->server_info->nt_session_key.data,
-						   auth_ntlmssp_state->server_info->nt_session_key.length);
+	if (auth_ntlmssp_state->server_info->user_session_key.length) {
+		DEBUG(10, ("Got NT session key of length %u\n", auth_ntlmssp_state->server_info->user_session_key.length));
+		*user_session_key = data_blob_talloc(auth_ntlmssp_state->mem_ctx, 
+						   auth_ntlmssp_state->server_info->user_session_key.data,
+						   auth_ntlmssp_state->server_info->user_session_key.length);
 	}
 	if (auth_ntlmssp_state->server_info->lm_session_key.length) {
 		DEBUG(10, ("Got LM session key of length %u\n", auth_ntlmssp_state->server_info->lm_session_key.length));

@@ -28,13 +28,17 @@
 /*
    This implements the X/Open SMB password encryption
    It takes a password ('unix' string), a 8 byte "crypt key" 
-   and puts 24 bytes of encrypted password into p24 */
-void SMBencrypt(const char *passwd, const uchar *c8, uchar p24[24])
+   and puts 24 bytes of encrypted password into p24 
+
+   Returns False if password must have been truncated to create LM hash
+*/
+BOOL SMBencrypt(const char *passwd, const uchar *c8, uchar p24[24])
 {
+	BOOL ret;
 	uchar p21[21];
 
 	memset(p21,'\0',21);
-	E_deshash(passwd, p21); 
+	ret = E_deshash(passwd, p21); 
 
 	SMBOWFencrypt(p21, c8, p24);
 
@@ -44,6 +48,8 @@ void SMBencrypt(const char *passwd, const uchar *c8, uchar p24[24])
 	dump_data(100, (const char *)c8, 8);
 	dump_data(100, (char *)p24, 24);
 #endif
+
+	return ret;
 }
 
 /**
@@ -420,7 +426,7 @@ BOOL SMBNTLMv2encrypt(const char *user, const char *domain, const char *password
 		      const DATA_BLOB *server_chal, 
 		      const DATA_BLOB *names_blob,
 		      DATA_BLOB *lm_response, DATA_BLOB *nt_response, 
-		      DATA_BLOB *nt_session_key) 
+		      DATA_BLOB *user_session_key) 
 {
 	uchar nt_hash[16];
 	uchar ntlm_v2_hash[16];
@@ -437,12 +443,12 @@ BOOL SMBNTLMv2encrypt(const char *user, const char *domain, const char *password
 	if (nt_response) {
 		*nt_response = NTLMv2_generate_response(ntlm_v2_hash, server_chal,
 							names_blob); 
-		if (nt_session_key) {
-			*nt_session_key = data_blob(NULL, 16);
+		if (user_session_key) {
+			*user_session_key = data_blob(NULL, 16);
 			
 			/* The NTLMv2 calculations also provide a session key, for signing etc later */
 			/* use only the first 16 bytes of nt_response for session key */
-			SMBsesskeygen_ntv2(ntlm_v2_hash, nt_response->data, nt_session_key->data);
+			SMBsesskeygen_ntv2(ntlm_v2_hash, nt_response->data, user_session_key->data);
 		}
 	}
 	

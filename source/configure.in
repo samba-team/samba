@@ -369,7 +369,8 @@ fi
 
 #
 # Config CPPFLAG settings for strange OS's that must be set
-# before other tests.
+# before other tests. Do NOT invoke AC_CHECK_HEADERS within this
+# case statement; its first reference must be unconditional.
 #
 case "$host_os" in
 # Try to work out if this is the native HPUX compiler that uses the -Ae flag.
@@ -482,8 +483,8 @@ case "$host_os" in
 	  *-D_POSIX_C_SOURCE*)
 		;;
 	  *)
-		CPPFLAGS="$CPPFLAGS -D_POSIX_C_SOURCE=199506L"
-		AC_DEFINE(_POSIX_C_SOURCE, 199506L, [Whether to enable POSIX support])
+		CPPFLAGS="$CPPFLAGS -D_POSIX_C_SOURCE=200112L"
+		AC_DEFINE(_POSIX_C_SOURCE, 200112L, [Whether to enable POSIX support])
 		;;
     esac
     case "$CPPFLAGS" in
@@ -581,27 +582,23 @@ main() {
 # is so horribly broken....
 #
     *darwin*)
-		AC_DEFINE(BROKEN_UNICODE_COMPOSE_CHARACTERS, 1, [Does this system use unicode compose characters])
+	AC_DEFINE(BROKEN_UNICODE_COMPOSE_CHARACTERS, 1, [Does this system use unicode compose characters])
 # Add Fink directories for various packages, like dlcompat.
 # Note: iconv does that explicitly below, but other packages
 # don't.
-		CPPFLAGS="$CPPFLAGS -I/sw/include"
-		LDFLAGS="$LDFLAGS -L/sw/lib"
+	CPPFLAGS="$CPPFLAGS -I/sw/include"
+	LDFLAGS="$LDFLAGS -L/sw/lib"
 
 # If we have dlsym_prepend_underscore (from Fink's dlcompat),
 # use that instead of plain dlsym.
 
-		AC_CHECK_LIB(dl,dlopen)
-		AC_CHECK_FUNCS(dlsym_prepend_underscore,[CPPFLAGS="$CPPFLAGS -Ddlsym=dlsym_prepend_underscore"])
+	AC_CHECK_LIB(dl,dlopen)
+	AC_CHECK_FUNCS(dlsym_prepend_underscore,[CPPFLAGS="$CPPFLAGS -Ddlsym=dlsym_prepend_underscore"])
 
-#Add a system specific charset module.
+# Add a system specific charset module.
 
-		default_shared_modules="$default_shared_modules charset_macosxfs"
-		old_CPPFLAGS="$CPPFLAGS"
-		CPPFLAGS="-Iinclude $CPPFLAGS" 
-		AC_CHECK_HEADERS([CoreFoundation/CFStringEncodingConverter.h], [], [AC_CHECK_HEADERS([CFStringEncodingConverter.h])])
-		CPPFLAGS="$old_CPPFLAGS"
-		;;
+	default_shared_modules="$default_shared_modules charset_macosxfs"
+	;;
     *hurd*)
         AC_MSG_CHECKING([for LFS support])
         old_CPPFLAGS="$CPPFLAGS"
@@ -641,6 +638,12 @@ AC_CHECK_HEADERS(sys/termio.h sys/statfs.h sys/dustat.h sys/statvfs.h stdarg.h s
 AC_CHECK_HEADERS(security/pam_modules.h security/_pam_macros.h dlfcn.h)
 AC_CHECK_HEADERS(sys/syslog.h syslog.h execinfo.h)
 AC_CHECK_HEADERS(langinfo.h locale.h)
+
+# Look for Darwin headers
+old_CPPFLAGS="$CPPFLAGS"
+CPPFLAGS="-Iinclude $CPPFLAGS"
+AC_CHECK_HEADERS([CoreFoundation/CFStringEncodingConverter.h], [], [AC_CHECK_HEADERS([CFStringEncodingConverter.h])])
+CPPFLAGS="$old_CPPFLAGS"
 
 # In valgrind 1.0.x, it's just valgrind.h.  In 1.9.x+ there's a
 # subdirectory of headers.
@@ -1653,7 +1656,7 @@ fi
 
 
 ICONV_LOCATION=standard
-LOOK_DIRS="/usr /usr/local /sw"
+LOOK_DIRS="/usr /usr/local /sw /opt"
 AC_ARG_WITH(libiconv,
 [  --with-libiconv=BASEDIR Use libiconv in BASEDIR/lib and BASEDIR/include (default=auto) ],
 [
@@ -1668,6 +1671,7 @@ AC_ARG_WITH(libiconv,
 ])
 
 ICONV_FOUND="no"
+libext=""
 for i in $LOOK_DIRS ; do
     save_LIBS=$LIBS
     save_LDFLAGS=$LDFLAGS
@@ -1675,15 +1679,24 @@ for i in $LOOK_DIRS ; do
     CPPFLAGS="$CPPFLAGS -I$i/include"
 dnl This is here to handle -withval stuff for --with-libiconv
 dnl Perhaps we should always add a -L
-    LDFLAGS="$LDFLAGS -L$i/lib"
-    LIBS=
-    export LDFLAGS LIBS CPPFLAGS
+
+dnl Check lib and lib32 library variants to cater for IRIX ABI-specific
+dnl installation paths.
+    for l in "lib" "lib32" ; do
+        LDFLAGS="$LDFLAGS -L$i/$l"
+        LIBS=
+        export LDFLAGS LIBS CPPFLAGS
 dnl Try to find iconv(3)
-    jm_ICONV($i)
+        jm_ICONV($i)
+        if test "$ICONV_FOUND" = yes; then
+            libext="$l"
+            break;
+        fi
+    done
 
     if test "$ICONV_FOUND" = yes; then
 	LDFLAGS=$save_LDFLAGS
-        LIB_ADD_DIR(LDFLAGS, "$i/lib")
+        LIB_ADD_DIR(LDFLAGS, "$i/$libext")
         CFLAGS_ADD_DIR(CPPFLAGS, "$i/include")
         LIBS="$save_LIBS"
         ICONV_LOCATION=$i
@@ -1759,7 +1772,7 @@ dnl ])
            fi
 	   dnl Add the flags we need to CPPFLAGS and LDFLAGS
 	   CFLAGS_ADD_DIR(CPPFLAGS, "$i/include")
-	   LIB_ADD_DIR(LDFLAGS, "$i/lib")
+	   LIB_ADD_DIR(LDFLAGS, "$i/$libext")
 	   export CPPFLAGS
            AC_DEFINE(HAVE_NATIVE_ICONV,1,[Whether to use native iconv])
 	   AC_DEFINE_UNQUOTED(DEFAULT_DOS_CHARSET,$default_dos_charset,[Default dos charset name])
@@ -1775,6 +1788,7 @@ dnl We only need to clean these up here for the next pass through the loop
     LIBS=$save_LIBS
     export LDFLAGS LIBS CPPFLAGS
 done
+unset libext
 
 
 if test x"$ICONV_FOUND" = x"no" -o x"$samba_cv_HAVE_NATIVE_ICONV" != x"yes" ; then
@@ -2361,6 +2375,10 @@ if test x"$samba_cv_WITH_AFS" != x"no" ||
     else
     	have_afs_headers=yes
     fi
+fi
+
+if test x"$samba_cv_WITH_FAKE_KASERVER" != x"no"; then
+	AC_CHECK_LIB( crypto, DES_pcbc_encrypt, LIBS="$LIBS -lcrypto" )
 fi
 
 if test x"$samba_cv_WITH_FAKE_KASERVER" != x"no" && test x"$have_afs_headers" == x"yes"; then
@@ -2981,63 +2999,6 @@ if test x"$samba_cv_HAVE_TRUNCATED_SALT" = x"yes"; then
 fi
 fi
 
-
-dictpath="/usr/lib/cracklib_dict"
-with_cracklib=yes
-###############################################
-# test for where we get FaciestCheck from
-AC_MSG_CHECKING(where to use cracklib from (default=$dictpath))
-AC_ARG_WITH(cracklib,
-[  --with-cracklib[=DIR]     Look for cracklib dictionary in this location ],
-[  case "$withval" in
-  yes)
-    AC_MSG_RESULT(${dictpath})
-    ;;
-  no)
-    AC_MSG_RESULT(no)
-      dictpath=""
-    ;;
-  *)
-      dictpath="$withval"
-    AC_MSG_RESULT(${dictpath})
-    ;;
-  esac ],
-  dictpath=""
-  AC_MSG_RESULT(no)
-)
-
-if test x$dictpath != x""; then
-     AC_SEARCH_LIBS(FascistCheck, [crack],
-                    [test "$ac_cv_search_crack" = "none required" || samba_cv_found_crack="yes"
-                    AC_DEFINE(HAVE_CRACK,1,[Whether the system has the FaciestCheck function from cracklib])])
-
-     crack_saved_libs=$LIBS;
-
-     if test x$samba_cv_found_crack=x"yes"; then
-        AC_SEARCH_LIBS(CRACKLIB_DICTPATH, [crypt],
-            AC_DEFINE(HAVE_CRACKLIB_DICTPATH, 1, [Whether we have given a CRACKLIB_DICTPATH in our headers])
-        )
-
-	AC_DEFINE_UNQUOTED(SAMBA_CRACKLIB_DICTPATH, "$dictpath", [Where the cracklib dictionay is])
-        AC_MSG_CHECKING(Whether we have a working cracklib)
-        AC_TRY_RUN([
-		#include "${srcdir-.}/tests/crack.c"],
-              AC_MSG_RESULT(yes)
-              AC_DEFINE(HAVE_WORKING_CRACKLIB,1,[Whether we have a working cracklib])
-	      AUTH_LIBS="-lcrack $AUTH_LIBS",
-
-              AC_MSG_RESULT(no)
-	      AC_MSG_WARN(cracklib exists - but does not function correctly),
-
-              AC_MSG_RESULT(no)
-	      AC_MSG_WARN(cannot test-run when cross-compiling)
-	      )
-    else
-        AC_MSG_CHECKING(Whether we have cracklib)
-        AC_MSG_RESULT(no)
-    fi
-    LIBS=$crack_saved_libs
-fi
 
 ########################################################################################
 ##
@@ -4188,7 +4149,7 @@ if test x"$HAVE_WINBIND" = x"yes"; then
 
 	EXTRA_BIN_PROGS="$EXTRA_BIN_PROGS bin/wbinfo\$(EXEEXT)"
 	EXTRA_SBIN_PROGS="$EXTRA_SBIN_PROGS bin/winbindd\$(EXEEXT)"
-        if test x"$BLDSHARED" = x"true"; then
+        if test $BLDSHARED = true; then
 		SHLIB_PROGS="$SHLIB_PROGS $WINBIND_NSS $WINBIND_WINS_NSS"
 
 		if test x"$with_pam" = x"yes"; then
@@ -4280,10 +4241,10 @@ done
 
 for i in `echo $default_shared_modules | sed -e's/,/ /g'`
 do
-	dnl Fall back to static if dlopen() is not available
+	dnl Fall back to static if we cannot build shared libraries
 	eval MODULE_DEFAULT_$i=STATIC
 
-	if test x"$ac_cv_func_dlopen" = xyes; then
+	if test $BLDSHARED = true; then
 		eval MODULE_DEFAULT_$i=SHARED
 	fi
 done
