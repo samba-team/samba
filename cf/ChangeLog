@@ -1,3 +1,11 @@
+2002-09-10  Johan Danielsson  <joda@pdc.kth.se>
+
+	* crypto.m4: move krb4 test before test for openssl, and bail out
+	if krb4 is requested, but the crypto library is not the same as
+	krb4
+
+	* db.m4: filter contents of LDFLAGS
+
 2002-09-09  Johan Danielsson  <joda@pdc.kth.se>
 
 	* auth-modules.m4: rename to rk_AUTH_MODULES
