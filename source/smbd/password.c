@@ -184,7 +184,7 @@ has been given. vuid is biased by an offset. This allows us to
 tell random client vuid's (normally zero) from valid vuids.
 ****************************************************************************/
 
-int register_vuid(auth_serversupplied_info *server_info, char *smb_name)
+int register_vuid(auth_serversupplied_info *server_info, const char *smb_name)
 {
 	user_struct *vuser = NULL;
 	uid_t uid;
