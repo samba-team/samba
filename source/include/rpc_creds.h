@@ -38,7 +38,7 @@ typedef struct unixuser_creds
 	fstring user_name;
 	fstring requested_name;
 	fstring real_name;
-	BOOL guest;
+	uint32 guest;
 
 } CREDS_UNIX;
 
@@ -46,7 +46,7 @@ typedef struct unixsec_creds
 {
 	uint32 uid;
 	uint32 gid;
-	int num_grps;
+	uint32 num_grps;
 	uint32 *grps;
 
 } CREDS_UNIX_SEC;
