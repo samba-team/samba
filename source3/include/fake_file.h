@@ -26,7 +26,11 @@ enum FAKE_FILE_TYPE {
 	FAKE_FILE_TYPE_QUOTA	
 };
 
+/*
+we now get the unix name --metze
 #define FAKE_FILE_NAME_QUOTA	"\\$Extend\\$Quota:$Q:$INDEX_ALLOCATION"
+*/
+#define FAKE_FILE_NAME_QUOTA	"$Extend/$Quota:$Q:$INDEX_ALLOCATION"
 
 typedef struct _FAKE_FILE_HANDLE {
 	enum FAKE_FILE_TYPE type;
