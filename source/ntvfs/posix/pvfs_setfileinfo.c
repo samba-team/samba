@@ -301,18 +301,18 @@ NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 
 	case RAW_SFILEINFO_BASIC_INFO:
 	case RAW_SFILEINFO_BASIC_INFORMATION:
-		if (info->basic_info.in.create_time) {
+		if (!null_nttime(info->basic_info.in.create_time)) {
 			newstats.dos.create_time = info->basic_info.in.create_time;
 		}
-		if (info->basic_info.in.access_time) {
+		if (!null_nttime(info->basic_info.in.access_time)) {
 			newstats.dos.access_time = info->basic_info.in.access_time;
 		}
-		if (info->basic_info.in.write_time) {
+		if (!null_nttime(info->basic_info.in.write_time)) {
 			newstats.dos.write_time = info->basic_info.in.write_time;
 			newstats.dos.flags |= XATTR_ATTRIB_FLAG_STICKY_WRITE_TIME;
 			h->sticky_write_time = True;
 		}
-		if (info->basic_info.in.change_time) {
+		if (!null_nttime(info->basic_info.in.change_time)) {
 			newstats.dos.change_time = info->basic_info.in.change_time;
 		}
 		if (info->basic_info.in.attrib != 0) {
@@ -490,16 +490,16 @@ NTSTATUS pvfs_setpathinfo(struct ntvfs_module_context *ntvfs,
 
 	case RAW_SFILEINFO_BASIC_INFO:
 	case RAW_SFILEINFO_BASIC_INFORMATION:
-		if (info->basic_info.in.create_time) {
+		if (!null_nttime(info->basic_info.in.create_time)) {
 			newstats.dos.create_time = info->basic_info.in.create_time;
 		}
-		if (info->basic_info.in.access_time) {
+		if (!null_nttime(info->basic_info.in.access_time)) {
 			newstats.dos.access_time = info->basic_info.in.access_time;
 		}
-		if (info->basic_info.in.write_time) {
+		if (!null_nttime(info->basic_info.in.write_time)) {
 			newstats.dos.write_time = info->basic_info.in.write_time;
 		}
-		if (info->basic_info.in.change_time) {
+		if (!null_nttime(info->basic_info.in.change_time)) {
 			newstats.dos.change_time = info->basic_info.in.change_time;
 		}
 		if (info->basic_info.in.attrib != 0) {
