@@ -349,14 +349,6 @@ typedef int (*comparison_fn_t)(const void *, const void *);
 #define INADDR_NONE 0xffffffff
 #endif
 
-#ifndef HAVE_CRYPT
-#define crypt ufc_crypt
-#endif
-
-#ifndef O_ACCMODE
-#define O_ACCMODE (O_RDONLY | O_WRONLY | O_RDWR)
-#endif
-
 #if defined(HAVE_CRYPT16) && defined(HAVE_GETAUTHUID)
 #define ULTRIX_AUTH 1
 #endif
@@ -367,14 +359,6 @@ char *strdup(const char *s);
 
 #ifndef HAVE_MEMMOVE
 void *memmove(void *dest,const void *src,int size);
-#endif
-
-#ifndef HAVE_INITGROUPS
-int initgroups(char *name,gid_t id);
-#endif
-
-#ifndef HAVE_RENAME
-int rename(const char *zfrom, const char *zto);
 #endif
 
 #ifndef HAVE_MKTIME
@@ -417,46 +401,7 @@ int vasprintf(char **ptr, const char *format, va_list ap);
 #define bzero(a,b) memset((a),'\0',(b))
 #endif
 
-#ifdef REPLACE_GETPASS
-#define getpass(prompt) getsmbpass((prompt))
-#endif
-
-/*
- * Some older systems seem not to have MAXHOSTNAMELEN
- * defined.
- */
-#ifndef MAXHOSTNAMELEN
-#define MAXHOSTNAMELEN 254
-#endif
-
-/* yuck, I'd like a better way of doing this */
-#define DIRP_SIZE (256 + 32)
-
-/*
- * glibc on linux doesn't seem to have MSG_WAITALL
- * defined. I think the kernel has it though..
- */
-
-#ifndef MSG_WAITALL
-#define MSG_WAITALL 0
-#endif
-
-/* Load header file for dynamic linking stuff */
-#ifdef HAVE_DLFCN_H
-#include <dlfcn.h>
-#endif
-
 extern int DEBUGLEVEL;
-
-#ifndef RTLD_LAZY
-#define RTLD_LAZY 0
-#endif
-
-/* needed for some systems without iconv. Doesn't really matter
-   what error code we use */
-#ifndef EILSEQ
-#define EILSEQ EIO
-#endif
 
 /* add varargs prototypes with printf checking */
 #ifndef HAVE_SNPRINTF_DECL

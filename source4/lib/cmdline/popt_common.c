@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "system/passwd.h"
 #include "lib/cmdline/popt_common.h"
 
 /* Handle command line options:

@@ -33,3 +33,9 @@
 #include <ctype.h>
 #endif
 
+/* needed for some systems without iconv. Doesn't really matter
+   what error code we use */
+#ifndef EILSEQ
+#define EILSEQ EIO
+#endif
+
