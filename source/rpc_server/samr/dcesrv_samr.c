@@ -201,7 +201,7 @@ static NTSTATUS samr_LookupDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX
 
 	sid = dom_sid_parse_talloc(mem_ctx, sidstr);
 	if (sid == NULL) {
-		DEBUG(1,("samdb: Invalid sid '%s' for domain %s\n",
+		DEBUG(0,("samdb: Invalid sid '%s' for domain %s\n",
 			 sidstr, r->in.domain->name));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
@@ -238,7 +238,7 @@ static NTSTATUS samr_EnumDomains(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 					     mem_ctx, NULL, &domains, 
 					     "name", "(objectclass=domain)");
 	if (count == -1) {
-		DEBUG(1,("samdb: no domains found in EnumDomains\n"));
+		DEBUG(0,("samdb: no domains found in EnumDomains\n"));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
@@ -513,7 +513,7 @@ static NTSTATUS samr_CreateDomainGroup(struct dcesrv_call_state *dce_call, TALLO
 	ret = samdb_copy_template(d_state->sam_ctx, mem_ctx, &msg, 
 				  "(&(name=TemplateGroup)(objectclass=groupTemplate))");
 	if (ret != 0) {
-		DEBUG(1,("Failed to load TemplateGroup from samdb\n"));
+		DEBUG(0,("Failed to load TemplateGroup from samdb\n"));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
@@ -554,7 +554,7 @@ static NTSTATUS samr_CreateDomainGroup(struct dcesrv_call_state *dce_call, TALLO
 	/* create the group */
 	ret = samdb_add(d_state->sam_ctx, mem_ctx, &msg);
 	if (ret != 0) {
-		DEBUG(1,("Failed to create group record %s\n", msg.dn));
+		DEBUG(0,("Failed to create group record %s\n", msg.dn));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
@@ -660,7 +660,7 @@ static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 		ret = samdb_copy_template(d_state->sam_ctx, mem_ctx, &msg, 
 					  "(&(name=TemplateUser)(objectclass=userTemplate))");
 		if (ret != 0) {
-			DEBUG(1,("Failed to load TemplateUser from samdb\n"));
+			DEBUG(0,("Failed to load TemplateUser from samdb\n"));
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 
@@ -671,7 +671,7 @@ static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 		ret = samdb_copy_template(d_state->sam_ctx, mem_ctx, &msg, 
 					  "(&(name=TemplateMemberServer)(objectclass=userTemplate))");
 		if (ret != 0) {
-			DEBUG(1,("Failed to load TemplateMemberServer from samdb\n"));
+			DEBUG(0,("Failed to load TemplateMemberServer from samdb\n"));
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 
@@ -683,7 +683,7 @@ static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 		ret = samdb_copy_template(d_state->sam_ctx, mem_ctx, &msg, 
 					  "(&(name=TemplateDomainController)(objectclass=userTemplate))");
 		if (ret != 0) {
-			DEBUG(1,("Failed to load TemplateDomainController from samdb\n"));
+			DEBUG(0,("Failed to load TemplateDomainController from samdb\n"));
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 
@@ -695,7 +695,7 @@ static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 		ret = samdb_copy_template(d_state->sam_ctx, mem_ctx, &msg, 
 					  "(&(name=TemplateTrustingDomain)(objectclass=userTemplate))");
 		if (ret != 0) {
-			DEBUG(1,("Failed to load TemplateTrustingDomain from samdb\n"));
+			DEBUG(0,("Failed to load TemplateTrustingDomain from samdb\n"));
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 
@@ -738,7 +738,7 @@ static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	/* create the user */
 	ret = samdb_add(d_state->sam_ctx, mem_ctx, &msg);
 	if (ret != 0) {
-		DEBUG(1,("Failed to create user record %s\n", msg.dn));
+		DEBUG(0,("Failed to create user record %s\n", msg.dn));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
@@ -1050,13 +1050,13 @@ static NTSTATUS samr_OpenGroup(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 		return NT_STATUS_NO_SUCH_GROUP;
 	}
 	if (ret != 1) {
-		DEBUG(1,("Found %d records matching sid %s\n", ret, sidstr));
+		DEBUG(0,("Found %d records matching sid %s\n", ret, sidstr));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
 	groupname = samdb_result_string(msgs[0], "sAMAccountName", NULL);
 	if (groupname == NULL) {
-		DEBUG(1,("sAMAccountName field missing for sid %s\n", sidstr));
+		DEBUG(0,("sAMAccountName field missing for sid %s\n", sidstr));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
@@ -1429,13 +1429,13 @@ static NTSTATUS samr_OpenUser(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 		return NT_STATUS_NO_SUCH_USER;
 	}
 	if (ret != 1) {
-		DEBUG(1,("Found %d records matching sid %s\n", ret, sidstr));
+		DEBUG(0,("Found %d records matching sid %s\n", ret, sidstr));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
 	account_name = samdb_result_string(msgs[0], "sAMAccountName", NULL);
 	if (account_name == NULL) {
-		DEBUG(1,("sAMAccountName field missing for sid %s\n", sidstr));
+		DEBUG(0,("sAMAccountName field missing for sid %s\n", sidstr));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
