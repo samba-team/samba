@@ -286,7 +286,6 @@ static const char *share_type[] = {
 /************************************************************************************/
 
 extern int optind, opterr, optopt;
-extern struct in_addr ipzero;
 
 static struct cli_state *cli;
 static char *opt_requester_name;
@@ -355,14 +354,15 @@ static struct cli_state *connect_to_ipc(char *server)
 	
 	server_n = server; 
 	
-	ip = ipzero;
+        zero_ip(&ip);
 	make_nmb_name(&calling, opt_requester_name, 0x0);
 	make_nmb_name(&called , server, 0x20);
 	
 again:
 	if (have_ip)
 		ip = dest_ip;
-	else ip = ipzero;
+	else 
+                zero_ip(&ip);
 	
 	DEBUG(3,("Connecting to host=%s\\share=%s\n\n", 
 		 server, "IPC$"));
@@ -1276,7 +1276,7 @@ int main(int argc,char *argv[])
 	};
 
 	got_pass = 0;
-	dest_ip = ipzero;
+	zero_ip(&dest_ip);
 
 	dbf = x_stdout;
 	
@@ -1291,7 +1291,7 @@ int main(int argc,char *argv[])
 			break;
 		case 'I':
 			dest_ip = *interpret_addr2(poptGetOptArg(pc));
-			if (zero_ip(dest_ip))
+			if (is_zero_ip(dest_ip))
 				d_printf(ERRMSG_INVALID_IPADDRESS);
 			else
 				have_ip = True;

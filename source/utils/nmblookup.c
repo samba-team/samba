@@ -24,8 +24,6 @@
 
 #include "includes.h"
 
-extern struct in_addr ipzero;
-
 static BOOL use_bcast = True;
 static BOOL got_bcast = False;
 static struct in_addr bcast_addr;

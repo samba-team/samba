@@ -409,7 +409,7 @@ enum client_action
 			case 'I':
 			{
 				cli_info.dest_ip = *interpret_addr2(optarg);
-				if (zero_ip(cli_info.dest_ip))
+				if (is_zero_ip(cli_info.dest_ip))
 				{
 					exit(1);
 				}

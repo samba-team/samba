@@ -24,8 +24,6 @@
 
 BOOL global_machine_password_needs_changing = False;
 
-extern struct in_addr ipzero;
-
 extern pstring global_myname;
 
 /***********************************************************************
@@ -183,7 +181,7 @@ static BOOL attempt_connect_to_dc(struct cli_state *pcli, struct in_addr *ip,
 	 * Ignore addresses we have already tried.
 	 */
 
-	if (ip_equal(ipzero, *ip))
+	if (is_zero_ip(*ip))
 		return False;
 
 	if (!lookup_pdc_name(global_myname, lp_workgroup(), ip, dc_name))
@@ -232,7 +230,7 @@ static BOOL find_connect_pdc(struct cli_state *pcli,
 		if((connected_ok = attempt_connect_to_dc(pcli, &ip_list[i], trust_passwd))) 
 			break;
 		
-		ip_list[i] = ipzero; /* Tried and failed. */
+		zero_ip(&ip_list[i]); /* Tried and failed. */
 	}
 
 	/*
@@ -242,7 +240,7 @@ static BOOL find_connect_pdc(struct cli_state *pcli,
 		i = (sys_random() % count);
 
 		if (!(connected_ok = attempt_connect_to_dc(pcli, &ip_list[i], trust_passwd)))
-			ip_list[i] = ipzero; /* Tried and failed. */
+                        zero_ip(&ip_list[i]); /* Tried and failed. */
 	}
 
 	/*

@@ -26,8 +26,6 @@
 #define WINS_LIST "wins.dat"
 #define WINS_VERSION 1
 
-extern struct in_addr ipzero;
-
 /****************************************************************************
 possibly call the WINS hook external program when a WINS change is made
 *****************************************************************************/
