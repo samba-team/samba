@@ -898,13 +898,13 @@ dn: cn=updateuser,dc=abmas,dc=biz
 objectClass: person
 cn: updateuser
 sn: updateuser
-userpaddword: not24get
+userPassword: not24get
 
 dn: cn=sambaadmin,dc=abmas,dc=biz
 objectClass: person
 cn: sambaadmin
 sn: sambaadmin
-userpaddword: buttercup
+userPassword: buttercup
 </screen>
 	</para></step>
 
