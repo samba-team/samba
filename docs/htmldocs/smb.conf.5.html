@@ -12096,7 +12096,7 @@ NAME="OBEYPAMRESTRICTIONS"
 >obey pam restrictions (G)</DT
 ><DD
 ><P
->When Samba 2.2 is configure to enable PAM support
+>When Samba 2.2 is configured to enable PAM support
 		(i.e. --with-pam), this parameter will control whether or not Samba
 		should obey PAM's account and session management directives.  The 
 		default behavior is to use PAM for clear text authentication only
@@ -12428,9 +12428,20 @@ NAME="PAMPASSWORDCHANGE"
 ><DD
 ><P
 >With the addition of better PAM support in Samba 2.2, 
-		this parameter, it is possible to use PAM's password change control 
-		flag for Samba.  If enabled, then PAM will be used for password
-		changes when requested by an SMB client, and  the <A
+  		this parameter, it is possible to use PAM's password change control 
+  		flag for Samba.  If enabled, then PAM will be used for password
+ 		changes when requested by an SMB client insted of the program listed in 
+                <A
+HREF="#PASSWDPROGRAM"
+><TT
+CLASS="PARAMETER"
+><I
+>passwd program</I
+></TT
+></A
+>. 
+                It should be possible to enable this without changing your 
+                <A
 HREF="#PASSWDCHAT"
 ><TT
 CLASS="PARAMETER"
@@ -12438,9 +12449,9 @@ CLASS="PARAMETER"
 >passwd chat</I
 ></TT
 ></A
-> must be
-		be changed to work with the PAM prompts.
-		</P
+>
+                paramater for most setups.
+  		</P
 ><P
 >Default: <B
 CLASS="COMMAND"
@@ -12578,20 +12589,13 @@ HREF="#PAMPASSWORDCHANGE"
 CLASS="PARAMETER"
 ><I
 >pam
-		password change</I
+ 		password change</I
 ></TT
 ></A
-> parameter is set to <TT
-CLASS="CONSTANT"
->true</TT
->, then the
-		chat sequence should consist of three elements. The first element should
-		match the PAM prompt for the old password, the second element should match
-		the PAM prompt for the first request for the new password, and the final
-		element should match the PAM prompt for the second request for the new password.
-		These matches are done case insensitively. Under most conditions this change
-		is done as root so the prompt for the old password will never be matched.
-		</P
+> parameter is set to true, the chat pairs
+                may be matched in any order, and sucess is determined by the PAM result, 
+                not any particular output. The \n macro is ignored for PAM conversions.
+  		</P
 ><P
 >See also <A
 HREF="#UNIXPASSWORDSYNC"
@@ -12684,10 +12688,19 @@ CLASS="PARAMETER"
 >passwd program</I
 ></TT
 > and should 
-		be turned off after this has been done. This parameter is off by
-		default.</P
+ 		be turned off after this has been done. This option has no effect if the 
+                <A
+HREF="#PAMPASSWORDCHANGE"
+><TT
+CLASS="PARAMETER"
+><I
+>pam password change</I
+></TT
+></A
+>
+                paramter is set. This parameter is off by default.</P
 ><P
->See also &#60;<A
+>See also <A
 HREF="#PASSWDCHAT"
 ><TT
 CLASS="PARAMETER"
@@ -12695,7 +12708,16 @@ CLASS="PARAMETER"
 >passwd chat</I
 ></TT
 >
-		</A
+ 		</A
+>, <A
+HREF="#PAMPASSWORDCHANGE"
+><TT
+CLASS="PARAMETER"
+><I
+>pam password change</I
+></TT
+>
+                </A
 >, <A
 HREF="#PASSWDPROGRAM"
 ><TT
@@ -12704,7 +12726,7 @@ CLASS="PARAMETER"
 >passwd program</I
 ></TT
 >
-		</A
+  		</A
 >.</P
 ><P
 >Default: <B
@@ -15143,7 +15165,7 @@ HREF="#AEN234"
 NAME="SECURITYEQUALSUSER"
 ></A
 ><EM
->SECURIYT = USER
+>SECURITY = USER
 		</EM
 ></P
 ><P
@@ -18444,7 +18466,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5825"
+NAME="AEN5830"
 ></A
 ><H2
 >WARNINGS</H2
@@ -18474,7 +18496,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5831"
+NAME="AEN5836"
 ></A
 ><H2
 >VERSION</H2
@@ -18485,7 +18507,7 @@ NAME="AEN5831"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5834"
+NAME="AEN5839"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -18564,7 +18586,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5854"
+NAME="AEN5859"
 ></A
 ><H2
 >AUTHOR</H2

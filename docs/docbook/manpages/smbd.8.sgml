@@ -468,17 +468,24 @@
 	password), for account checking (is this account disabled?) and for
 	session management.  The degree too which samba supports PAM is restricted
 	by the limitations of the SMB protocol and the 
-	<ulink url="smb.conf.5.html#obeypamrestrictions">obey pam restricions</ulink></para>
+	<ulink url="smb.conf.5.html#OBEYPAMRESRICTIONS">obey pam restricions</ulink>
 	smb.conf paramater.  When this is set, the following restrictions apply:
+	</para>
 
-	<para>Account Validation:  All acccesses to a samba server are checked 
+	<itemizedlist>
+	<listitem><para><emphasis>Account Validation</emphasis>:  All acccesses to a 
+	samba server are checked 
 	against PAM to see if the account is vaild, not disabled and is permitted to 
-	login at this time.  This also applies to encrypted logins.</para>
+	login at this time.  This also applies to encrypted logins.
+	</para></listitem>
 
-	<para>Session Management:  When not using share level secuirty, users must pass
-	PAM's session checks before access is granted.  Note however, that this is 
-	bypassed in share level secuirty.  Note also that some older pam configuration
-	files may need a line added for session support. </para>
+	<listitem><para><emphasis>Session Management</emphasis>:  When not using share 
+	level secuirty, users must pass PAM's session checks before access 
+	is granted.  Note however, that this is bypassed in share level secuirty.  
+	Note also that some older pam configuration files may need a line 
+	added for session support. 
+	</para></listitem>
+	</itemizedlist>
 </refsect1>
 
 <refsect1>

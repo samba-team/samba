@@ -795,6 +795,51 @@ CLASS="REFSECT1"
 NAME="AEN233"
 ></A
 ><H2
+>PAM INTERACTION</H2
+><P
+>Samba uses PAM for authentication (when presented with a plaintext 
+	password), for account checking (is this account disabled?) and for
+	session management.  The degree too which samba supports PAM is restricted
+	by the limitations of the SMB protocol and the 
+	<A
+HREF="smb.conf.5.html#OBEYPAMRESRICTIONS"
+TARGET="_top"
+>obey pam restricions</A
+>
+	smb.conf paramater.  When this is set, the following restrictions apply:
+	</P
+><P
+></P
+><UL
+><LI
+><P
+><EM
+>Account Validation</EM
+>:  All acccesses to a 
+	samba server are checked 
+	against PAM to see if the account is vaild, not disabled and is permitted to 
+	login at this time.  This also applies to encrypted logins.
+	</P
+></LI
+><LI
+><P
+><EM
+>Session Management</EM
+>:  When not using share 
+	level secuirty, users must pass PAM's session checks before access 
+	is granted.  Note however, that this is bypassed in share level secuirty.  
+	Note also that some older pam configuration files may need a line 
+	added for session support. 
+	</P
+></LI
+></UL
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="AEN244"
+></A
+><H2
 >TESTING THE INSTALLATION</H2
 ><P
 >If running the server as a daemon, execute it before 
@@ -850,7 +895,7 @@ CLASS="FILENAME"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN247"
+NAME="AEN258"
 ></A
 ><H2
 >VERSION</H2
@@ -861,7 +906,7 @@ NAME="AEN247"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN250"
+NAME="AEN261"
 ></A
 ><H2
 >DIAGNOSTICS</H2
@@ -884,7 +929,7 @@ NAME="AEN250"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN255"
+NAME="AEN266"
 ></A
 ><H2
 >SIGNALS</H2
@@ -948,7 +993,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN272"
+NAME="AEN283"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -1014,7 +1059,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN289"
+NAME="AEN300"
 ></A
 ><H2
 >AUTHOR</H2

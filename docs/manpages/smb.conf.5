@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMB.CONF" "5" "22 June 2001" "" ""
+.TH "SMB.CONF" "5" "05 July 2001" "" ""
 .SH NAME
 smb.conf \- The configuration file for the Samba suite
 .SH "SYNOPSIS"
@@ -4449,7 +4449,7 @@ See also smbpasswd (5).
 Default: \fBnull passwords = no\fR
 .TP
 \fBobey pam restrictions (G)\fR
-When Samba 2.2 is configure to enable PAM support
+When Samba 2.2 is configured to enable PAM support
 (i.e. --with-pam), this parameter will control whether or not Samba
 should obey PAM's account and session management directives. The 
 default behavior is to use PAM for clear text authentication only
@@ -4581,8 +4581,11 @@ Default: \fBos2 driver map = <empty string>
 With the addition of better PAM support in Samba 2.2, 
 this parameter, it is possible to use PAM's password change control 
 flag for Samba. If enabled, then PAM will be used for password
-changes when requested by an SMB client, and the \fIpasswd chat\fR must be
-be changed to work with the PAM prompts.
+changes when requested by an SMB client insted of the program listed in 
+\fIpasswd program\fR. 
+It should be possible to enable this without changing your 
+\fIpasswd chat\fR
+paramater for most setups.
 
 Default: \fBpam password change = no\fR
 .TP
@@ -4633,13 +4636,9 @@ password cleartext. In this case the old password cleartext is set
 to "" (the empty string).
 
 Also, if the \fIpam
-password change\fR parameter is set to true, then the
-chat sequence should consist of three elements. The first element should
-match the PAM prompt for the old password, the second element should match
-the PAM prompt for the first request for the new password, and the final
-element should match the PAM prompt for the second request for the new password.
-These matches are done case insensitively. Under most conditions this change
-is done as root so the prompt for the old password will never be matched.
+password change\fR parameter is set to true, the chat pairs
+may be matched in any order, and sucess is determined by the PAM result, 
+not any particular output. The \\n macro is ignored for PAM conversions.
 
 See also \fIunix password 
 sync\fR, \fI passwd program\fR , \fIpasswd chat debug\fR and  \fIpam password change\fR.
@@ -4661,10 +4660,12 @@ of 100. This is a dangerous option as it will allow plaintext passwords
 to be seen in the \fBsmbd\fR log. It is available to help 
 Samba admins debug their \fIpasswd chat\fR scripts 
 when calling the \fIpasswd program\fR and should 
-be turned off after this has been done. This parameter is off by
-default.
+be turned off after this has been done. This option has no effect if the 
+\fIpam password change\fR
+paramter is set. This parameter is off by default.
 
-See also <\fIpasswd chat\fR
+See also \fIpasswd chat\fR
+, \fIpam password change\fR
 , \fIpasswd program\fR
 \&.
 
@@ -5630,7 +5631,7 @@ be used in granting access.
 See also the section  NOTE ABOUT USERNAME/PASSWORD VALIDATION.
 .PP
 .PP
-\fBSECURIYT = USER
+\fBSECURITY = USER
 \fR.PP
 .PP
 This is the default security setting in Samba 2.2. 

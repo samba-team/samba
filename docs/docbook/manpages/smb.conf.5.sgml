@@ -5018,7 +5018,7 @@
 		Samba admins debug their <parameter>passwd chat</parameter> scripts 
 		when calling the <parameter>passwd program</parameter> and should 
  		be turned off after this has been done. This option has no effect if the 
-                <link linkend="PAMPASSWORDCHANGE"><parameter>pam password change</parameter>
+                <link linkend="PAMPASSWORDCHANGE"><parameter>pam password change</parameter></link>
                 paramter is set. This parameter is off by default.</para>
   
 
