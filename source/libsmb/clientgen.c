@@ -212,9 +212,8 @@ struct cli_state *cli_initialise(struct cli_state *cli)
                 alloced_cli = True;
 	}
 
-	if (cli->initialised) {
-		cli_shutdown(cli);
-	}
+	if (cli->initialised)
+		cli_close_connection(cli);
 
 	ZERO_STRUCTP(cli);
 
@@ -286,11 +285,14 @@ void cli_close_connection(struct cli_state *cli)
 
 	data_blob_free(&cli->secblob);
 
-	if (cli->mem_ctx)
+	if (cli->mem_ctx) {
 		talloc_destroy(cli->mem_ctx);
+		cli->mem_ctx = NULL;
+	}
 
 	if (cli->fd != -1) 
 		close(cli->fd);
+	cli->fd = -1;
 }
 
 /****************************************************************************
