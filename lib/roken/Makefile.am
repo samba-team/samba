@@ -29,6 +29,8 @@ libroken_la_SOURCES =				\
 	roken_gethostby.c			\
 	signal.c				\
 	snprintf.c				\
+	strcat_truncate.c			\
+	strcpy_truncate.c			\
 	verify.c				\
 	warnerr.c
 
