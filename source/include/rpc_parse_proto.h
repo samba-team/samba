@@ -8,9 +8,9 @@
 BOOL receive_msrpc(int fd, prs_struct * data, unsigned int timeout);
 BOOL msrpc_send(int fd, prs_struct * ps);
 BOOL msrpc_receive(int fd, prs_struct * ps);
+void ncalrpc_l_shutdown(struct msrpc_local *msrpc);
 struct msrpc_local *ncalrpc_l_initialise(struct msrpc_local *msrpc,
 					 const vuser_key * key);
-void ncalrpc_l_shutdown(struct msrpc_local *msrpc);
 BOOL ncalrpc_l_establish_connection(struct msrpc_local *msrpc,
 				    const char *pipe_name);
 

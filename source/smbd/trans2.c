@@ -288,6 +288,19 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf,
   return -1;
 }
 
+/*********************************************************
+* Routine to check if a given string matches exactly.
+* as a special case a mask of "." does NOT match. That
+* is required for correct wildcard semantics
+* Case can be significant or not.
+**********************************************************/
+static BOOL exact_match(char *str,char *mask, BOOL case_sig) 
+{
+	if (mask[0] == '.' && mask[1] == 0) return False;
+	if (case_sig) return strcmp(str,mask)==0;
+	return strcasecmp(str,mask) == 0;
+}
+
 /****************************************************************************
   get a level dependent lanman2 dir entry.
 ****************************************************************************/
@@ -361,7 +374,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
     pstrcpy(fname,dname);      
 
     if(!(got_match = *got_exact_match = exact_match(fname, mask, case_sensitive)))
-      got_match = mask_match(fname, mask, case_sensitive, True);
+      got_match = mask_match(fname, mask, case_sensitive);
 
     if(!got_match && !is_8_3(fname, False)) {
 
@@ -376,7 +389,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
       pstrcpy( newname, fname);
       name_map_mangle( newname, True, False, SNUM(conn));
       if(!(got_match = *got_exact_match = exact_match(newname, mask, case_sensitive)))
-        got_match = mask_match(newname, mask, case_sensitive, True);
+        got_match = mask_match(newname, mask, case_sensitive);
     }
 
     if(got_match)
@@ -510,13 +523,14 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
       SIVAL(p,0,strlen(fname)); p += 4;
       SIVAL(p,0,0); p += 4;
       if (!was_8_3) {
-        pstrcpy(p+2,fname);
-        if (!name_map_mangle(p+2,True,True,SNUM(conn)))
-          (p+2)[12] = 0;
-      } else
+	      fstrcpy(p+2,fname);
+	      name_map_mangle(p+2,True,True,SNUM(conn));
+	      strupper(p+2);
+	      SSVAL(p, 0, strlen(p+2));
+      } else {
+	      SSVAL(p,0,0);
         *(p+2) = 0;
-      strupper(p+2);
-      SSVAL(p,0,strlen(p+2));
+      }
       p += 2 + 24;
       /* nameptr = p;  */
       pstrcpy(p,fname); p += strlen(p);
@@ -592,32 +606,6 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
   return(found);
 }
   
-/****************************************************************************
- Convert the directory masks formated for the wire.
-****************************************************************************/
-
-void mask_convert( char *mask)
-{
-  /*
-   * We know mask is a pstring.
-   */
-  char *p = mask;
-  while (*p) {
-    if (*p == '<') {
-      pstring expnd;
-      if(p[1] != '"' && p[1] != '.') {
-        pstrcpy( expnd, p+1 );
-        *p++ = '*';
-        *p = '.';
-        safe_strcpy( p+1, expnd, sizeof(pstring) - (p - mask) - 2);
-      } else
-        *p = '*';
-    }
-    if (*p == '>') *p = '?';
-    if (*p == '"') *p = '.';
-    p++;
-  }
-}
 
 /****************************************************************************
  Reply to a TRANS2_FINDFIRST.
@@ -727,9 +715,6 @@ static int call_trans2findfirst(connection_struct *conn,
   dptr_num = dptr_create(conn,directory, False, True ,SVAL(inbuf,smb_pid));
   if (dptr_num < 0)
     return(UNIXERROR(ERRDOS,ERRbadfile));
-
-  /* Convert the formatted mask. */
-  mask_convert(mask);
 
   /* Save the wildcard match and attribs we are using on this directory - 
      needed as lanman2 assumes these are being saved between calls */

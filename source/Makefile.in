@@ -164,6 +164,7 @@ LIB_OBJ =	lib/charcnv.o lib/charset.o lib/debug.o lib/fault.o \
 		lib/util_sock.o lib/util_sec.o lib/util_array.o \
 		lib/talloc.o \
 		lib/fnmatch.o \
+		lib/ms_fnmatch.o \
 		lib/interfaces.o \
 		tdb/tdb.o tdb/tdbutil.o
 
@@ -238,7 +239,6 @@ RPC_CLIENT_OBJ = \
 		rpc_client/cli_svcctl.o \
 		rpc_client/cli_samr.o   \
 		rpc_client/msrpc_samr.o   \
-		rpc_client/msrpc_spoolss.o   \
 		rpc_client/msrpc_netlogon.o   \
 		rpc_client/msrpc_lsarpc.o   \
 		rpc_client/cli_atsvc.o \
@@ -271,6 +271,7 @@ PROFILE_OBJ = profile/profile.o
 SMBD_OBJ1 = smbd/server.o smbd/files.o smbd/connection.o \
 		lib/set_uid.o smbd/dfree.o smbd/dir.o smbd/password.o \
 		smbd/conn.o smbd/fileio.o \
+		smbd/statcache.o \
 		smbd/ipc.o smbd/lanman.o smbd/mangle.o smbd/negprot.o \
 		smbd/message.o smbd/nttrans.o smbd/pipes.o \
 		smbd/$(QUOTAOBJS) smbd/reply.o smbd/ssl.o smbd/trans2.o \
@@ -586,11 +587,13 @@ SPOOLCLIENT_OBJ = lib/cmd_interp.o \
 		rpcclient/spoolss_cmds.o \
 		rpcclient/display_spool.o \
 		rpcclient/cmd_spoolss.o \
+		rpc_client/msrpc_spoolss.o   \
 		$(SIDDB_OBJ) \
 		$(STUB_UID_OBJ)
 SPOOLCLIENT_LIBS = $(SAMBA_LIBS)
 
 RPCCLIENT_OBJ = lib/cmd_interp.o \
+		rpc_client/msrpc_spoolss.o   \
 		rpcclient/rpcclient.o \
 		rpcclient/svcctrl_cmds.o \
 		rpcclient/samedit_cmds.o \

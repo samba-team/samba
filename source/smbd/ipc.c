@@ -206,13 +206,13 @@ static BOOL api_WNPHS(char *outbuf, pipes_struct *p, char *param, int param_len)
 	if (!param || param_len < 2)
 		return False;
 
-	priority = SVAL(param,0);
+	priority = SVAL(param, 0);
 	DEBUG(4, ("WaitNamedPipeHandleState priority %x\n", priority));
 
-	if (wait_rpc_pipe_hnd_state(p, priority))
-	{
+	if (wait_rpc_pipe_hnd_state(p, priority)) {
 		/* now send the reply */
-		send_trans_reply(outbuf, NULL, NULL, NULL, 0, param_len, False);
+		send_trans_reply(outbuf, NULL, NULL, NULL, 0, param_len,
+				 False);
 
 		return True;
 	}
@@ -231,13 +231,13 @@ static BOOL api_SNPHS(char *outbuf, pipes_struct *p, char *param, int param_len)
 	if (!param || param_len < 2)
 		return False;
 
-	id = SVAL(param,0);
+	id = SVAL(param, 0);
 	DEBUG(4, ("SetNamedPipeHandleState to code %x\n", id));
 
-	if (set_rpc_pipe_hnd_state(p, id))
-	{
+	if (set_rpc_pipe_hnd_state(p, id)) {
 		/* now send the reply */
-		send_trans_reply(outbuf, NULL, NULL, NULL, 0, param_len, False);
+		send_trans_reply(outbuf, NULL, NULL, NULL, 0, param_len,
+				 False);
 
 		return True;
 	}
@@ -246,8 +246,9 @@ static BOOL api_SNPHS(char *outbuf, pipes_struct *p, char *param, int param_len)
 
 
 /****************************************************************************
- when no reply is generated, indicate unsupported.
+ When no reply is generated, indicate unsupported.
  ****************************************************************************/
+
 static BOOL api_no_reply(char *outbuf, int max_rdata_len)
 {
 	prs_struct rparam;
@@ -273,89 +274,84 @@ static BOOL api_no_reply(char *outbuf, int max_rdata_len)
 }
 
 /****************************************************************************
-  handle remote api calls delivered to a named pipe already opened.
+ Handle remote api calls delivered to a named pipe already opened.
   ****************************************************************************/
+
 static int api_fd_reply(connection_struct * conn, uint16 vuid, char *outbuf,
 			uint16 *setup, char *data, char *params,
-			int suwcnt, int tdscnt, int tpscnt, int mdrcnt,
-			int mprcnt)
+		 	int suwcnt,int tdscnt,int tpscnt,int mdrcnt,int mprcnt)
 {
 	BOOL reply = False;
-
-	uint16 pnum;
-	uint16 subcommand;
 	pipes_struct *p = NULL;
+	int pnum;
+	int subcommand;
 
 	DEBUG(5, ("api_fd_reply\n"));
 
 	/* First find out the name of this file. */
-	if (suwcnt != 2)
-	{
+	if (suwcnt != 2) {
 		DEBUG(0, ("Unexpected named pipe transaction.\n"));
 		return (-1);
 	}
 
 	/* Get the file handle and hence the file name. */
-	pnum = setup[1];
-	subcommand = setup[0];
-	p = get_rpc_pipe(pnum);
+	/* 
+	 * NB. The setup array has already been transformed
+	 * via SVAL and so is in gost byte order.
+	 */
+	pnum = ((int)setup[1]) & 0xFFFF;
+	subcommand = ((int)setup[0]) & 0xFFFF;
 
-	if (p != NULL)
-	{
-		DEBUG(3, ("Got API command 0x%x on pipe \"%s\" (pnum %x)",
-			  subcommand, p->name, pnum));
+	if(!(p = get_rpc_pipe(pnum))) {
+		DEBUG(1, ("api_fd_reply: INVALID PIPE HANDLE: %x\n", pnum));
+		return api_no_reply(outbuf, mdrcnt);
+	}
 
-		/* record maximum data length that can be transmitted in an SMBtrans */
-		DEBUG(10, ("api_fd_reply: p:%p mdrcnt: %d\n", p, mdrcnt));
+	DEBUG(3,("Got API command 0x%x on pipe \"%s\" (pnum %x)", subcommand, p->name, pnum));
 
-		switch (subcommand)
+	/* record maximum data length that can be transmitted in an SMBtrans */
+	DEBUG(10, ("api_fd_reply: p:%p mdrcnt: %d\n", p, mdrcnt));
+
+	switch (subcommand) {
+		case 0x26:
 		{
-			case 0x26:
+			BOOL pipe_outstanding = False;
+			char *rdata = NULL;
+			int rlen = mdrcnt;
+			/* writes data, reads at least 1 byte
+			 * and checks if there is more data left
+			 * to read.  it really doesn't matter how
+			 * much data we get back, but we *do*
+			 * need to know if there is more of it.
+			 */
+			reply = read_then_write_pipe(p, data, tdscnt,
+						     &rdata, &rlen,
+						     &pipe_outstanding);
+			if (reply)
 			{
-				BOOL pipe_outstanding = False;
-				char *rdata = NULL;
-				int rlen = mdrcnt;
-				/* writes data, reads at least 1 byte
-				 * and checks if there is more data left
-				 * to read.  it really doesn't matter how
-				 * much data we get back, but we *do*
-				 * need to know if there is more of it.
+				/* pipe_outstanding sets a warning
+				 * status code.  nt clients rely on
+				 * this code to continue reading
+				 * data with further SMBs.
 				 */
-				reply = read_then_write_pipe(p, data, tdscnt,
-						       &rdata, &rlen,
-						       &pipe_outstanding);
-				if (reply)
-				{
-					/* pipe_outstanding sets a warning
-					 * status code.  nt clients rely on
-					 * this code to continue reading
-					 * data with further SMBs.
-					 */
-					api_rpc_trans_reply(outbuf, rdata,
-							    rlen,
-							    pipe_outstanding);
-				}
-				break;
+				api_rpc_trans_reply(outbuf, rdata,
+						    rlen, pipe_outstanding);
 			}
-			case 0x53:
-			{
-				/* Wait Named Pipe Handle state */
-				reply = api_WNPHS(outbuf, p, params, mdrcnt);
-				break;
-			}
-			case 0x01:
-			{
-				/* Set Named Pipe Handle state */
-				reply = api_SNPHS(outbuf, p, params, mdrcnt);
-				break;
-			}
+			break;
+		}
+		case 0x53:
+		{
+			/* Wait Named Pipe Handle state */
+			reply = api_WNPHS(outbuf, p, params, tpscnt);
+			break;
+		}
+		case 0x01:
+		{
+			/* Set Named Pipe Handle state */
+			reply = api_SNPHS(outbuf, p, params, tpscnt);
+			break;
 		}
 	}
-	else
-	{
-		DEBUG(1, ("api_fd_reply: INVALID PIPE HANDLE: %x\n", pnum));
-	}
-
 	if (!reply)
 	{
 		return api_no_reply(outbuf, mdrcnt);
@@ -366,31 +362,34 @@ static int api_fd_reply(connection_struct * conn, uint16 vuid, char *outbuf,
 /****************************************************************************
   handle named pipe commands
   ****************************************************************************/
-static int named_pipe(connection_struct *conn,uint16 vuid, char *outbuf,char *name,
-		      uint16 *setup,char *data,char *params,
-		      int suwcnt,int tdscnt,int tpscnt,
-		      int msrcnt,int mdrcnt,int mprcnt)
+static int named_pipe(connection_struct * conn, uint16 vuid,
+		      char *outbuf, char *name, uint16 *setup,
+		      char *data, char *params, int suwcnt,
+		      int tdscnt, int tpscnt, int msrcnt, int mdrcnt,
+		      int mprcnt)
 {
 	DEBUG(3, ("named pipe command on <%s> name\n", name));
 
 	if (strequal(name, "LANMAN"))
-		return api_reply(conn,vuid,outbuf,data,params,tdscnt,tpscnt,mdrcnt,mprcnt);
+		return api_reply(conn, vuid, outbuf, data, params,
+				 tdscnt, tpscnt, mdrcnt, mprcnt);
 
 	if (strequal(name, "WKSSVC") ||
 	    strequal(name, "SRVSVC") ||
 	    strequal(name, "WINREG") ||
-	    strequal(name,"SAMR") ||
-	    strequal(name,"LSARPC"))
+	    strequal(name, "SAMR") || strequal(name, "LSARPC"))
 	{
 		DEBUG(4, ("named pipe command from Win95 (wow!)\n"));
-		return api_fd_reply(conn, vuid, outbuf, setup, data, params,
-				    suwcnt, tdscnt, tpscnt, mdrcnt, mprcnt);
+		return api_fd_reply(conn, vuid, outbuf, setup, data,
+				    params, suwcnt, tdscnt, tpscnt,
+				    mdrcnt, mprcnt);
 	}
 
 	if (strlen(name) < 1)
 	{
-		return api_fd_reply(conn, vuid, outbuf, setup, data, params,
-				    suwcnt, tdscnt, tpscnt, mdrcnt, mprcnt);
+		return api_fd_reply(conn, vuid, outbuf, setup, data,
+				    params, suwcnt, tdscnt, tpscnt,
+				    mdrcnt, mprcnt);
 	}
 
 	if (setup)
@@ -408,7 +407,8 @@ static int named_pipe(connection_struct *conn,uint16 vuid, char *outbuf,char *na
  Reply to a SMBtrans.
   ****************************************************************************/
 
-int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int bufsize)
+int reply_trans(connection_struct * conn, char *inbuf, char *outbuf,
+		int size, int bufsize)
 {
 	fstring name;
 	int name_offset = 0;
@@ -429,7 +429,7 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 	int dsoff = SVAL(inbuf, smb_vwv12);
 	int suwcnt = CVAL(inbuf, smb_vwv13);
 
-	memset(name, '\0',sizeof(name));
+	memset(name, '\0', sizeof(name));
 	fstrcpy(name, smb_buf(inbuf));
 
 	if (dscnt > tdscnt || pscnt > tpscnt) {
@@ -518,7 +518,8 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 		pscnt += pcnt;
 		dscnt += dcnt;
 
-		if (dscnt > tdscnt || pscnt > tpscnt) {
+		if (dscnt > tdscnt || pscnt > tpscnt)
+		{
 			exit_server("invalid trans parameters\n");
 		}
 
@@ -536,16 +537,24 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 	 * WinCE wierdness....
 	 */
 
-	if (name[0] == '\\' && (StrnCaseCmp(&name[1],local_machine, strlen(local_machine)) == 0) &&
-			(name[strlen(local_machine)+1] == '\\'))
+	if (name[0] == '\\'
+	    &&
+	    (StrnCaseCmp
+	     (&name[1], local_machine, strlen(local_machine)) == 0)
+	    && (name[strlen(local_machine) + 1] == '\\'))
 		name_offset = strlen(local_machine) + 1;
 
-	if (strncmp(&name[name_offset],"\\PIPE\\",strlen("\\PIPE\\")) == 0) {
+	if (strncmp(&name[name_offset], "\\PIPE\\", strlen("\\PIPE\\")) == 0)
+	{
 		DEBUG(5, ("calling named_pipe\n"));
 		outsize = named_pipe(conn, vuid, outbuf,
-				     name+name_offset+strlen("\\PIPE\\"),setup,data,params,
-				     suwcnt,tdscnt,tpscnt,msrcnt,mdrcnt,mprcnt);
-	} else {
+				     name + name_offset +
+				     strlen("\\PIPE\\"), setup, data,
+				     params, suwcnt, tdscnt, tpscnt,
+				     msrcnt, mdrcnt, mprcnt);
+	}
+	else
+	{
 		DEBUG(3, ("invalid pipe name\n"));
 		outsize = 0;
 	}

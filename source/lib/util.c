@@ -64,7 +64,7 @@ extern int DEBUGLEVEL;
 int Protocol = PROTOCOL_COREPLUS;
 
 /* a default finfo structure to ensure all fields are sensible */
-file_info def_finfo = { -1, 0, 0, 0, 0, 0, 0, "" };
+file_info def_finfo = { -1, 0, 0, 0, 0, 0, 0, "", "" };
 
 /* this is used by the chaining code */
 int chain_size = 0;
@@ -168,7 +168,7 @@ like atoi but gets the value up to the separater character
 ****************************************************************************/
 char *Atoic(char *p, int *n, char *c)
 {
-	if (!isdigit(*p))
+	if (!isdigit((int)*p))
 	{
 		DEBUG(5, ("Atoic: malformed number\n"));
 		return NULL;
@@ -181,7 +181,7 @@ char *Atoic(char *p, int *n, char *c)
 		p += 2;
 	}
 
-	while ((*p) && isdigit(*p))
+	while ((*p) && isdigit((int)*p))
 	{
 		p++;
 	}
@@ -600,86 +600,6 @@ BOOL reduce_name(char *s, char *dir, BOOL widelinks)
 #endif
 }
 
-/****************************************************************************
-expand some *s 
-****************************************************************************/
-static void expand_one(char *Mask, int len)
-{
-	char *p1;
-	while ((p1 = strchr(Mask, '*')) != NULL)
-	{
-		int lfill = (len + 1) - strlen(Mask);
-		int l1 = (p1 - Mask);
-		pstring tmp;
-		pstrcpy(tmp, Mask);
-		memset(tmp + l1, '?', lfill);
-		pstrcpy(tmp + l1 + lfill, Mask + l1 + 1);
-		pstrcpy(Mask, tmp);
-	}
-}
-
-/****************************************************************************
-expand a wildcard expression, replacing *s with ?s
-****************************************************************************/
-void expand_mask(char *Mask, BOOL doext)
-{
-	pstring mbeg, mext;
-	pstring dirpart;
-	pstring filepart;
-	BOOL hasdot = False;
-	char *p1;
-	BOOL absolute = (*Mask == '\\');
-
-	*mbeg = *mext = *dirpart = *filepart = 0;
-
-	/* parse the directory and filename */
-	if (strchr(Mask, '\\'))
-		split_at_last_component(Mask, dirpart, '\\', NULL);
-
-	filename_dos(Mask, filepart);
-
-	pstrcpy(mbeg, filepart);
-	if ((p1 = strchr(mbeg, '.')) != NULL)
-	{
-		hasdot = True;
-		*p1 = 0;
-		p1++;
-		pstrcpy(mext, p1);
-	}
-	else
-	{
-		pstrcpy(mext, "");
-		if (strlen(mbeg) > 8)
-		{
-			pstrcpy(mext, mbeg + 8);
-			mbeg[8] = 0;
-		}
-	}
-
-	if (*mbeg == 0)
-		pstrcpy(mbeg, "????????");
-	if ((*mext == 0) && doext && !hasdot)
-		pstrcpy(mext, "???");
-
-	if (strequal(mbeg, "*") && *mext == 0)
-		pstrcpy(mext, "*");
-
-	/* expand *'s */
-	expand_one(mbeg, 8);
-	if (*mext)
-		expand_one(mext, 3);
-
-	pstrcpy(Mask, dirpart);
-	if (*dirpart || absolute)
-		pstrcat(Mask, "\\");
-	pstrcat(Mask, mbeg);
-	pstrcat(Mask, ".");
-	pstrcat(Mask, mext);
-
-	DEBUG(6, ("Mask expanded to [%s]\n", Mask));
-}
-
-
 
 /****************************************************************************
   make a dir struct
@@ -871,8 +791,6 @@ SMB_OFF_T transfer_file(int infd, int outfd, SMB_OFF_T n, char *header,
 }
 
 
-
-
 /*******************************************************************
 sleep for a specified number of milliseconds
 ********************************************************************/
@@ -899,636 +817,6 @@ void msleep(int t)
 	}
 }
 
-
-/*********************************************************
-* Recursive routine that is called by unix_mask_match.
-* Does the actual matching. This is the 'original code' 
-* used by the unix matcher.
-*********************************************************/
-
-BOOL unix_do_match(char *str, char *regexp, BOOL case_sig)
-{
-	char *p;
-
-	for (p = regexp; *p && *str;)
-	{
-		switch (*p)
-		{
-			case '?':
-				str++;
-				p++;
-				break;
-
-			case '*':
-				/*
-				 * Look for a character matching 
-				 * the one after the '*'.
-				 */
-				p++;
-				if (!*p)
-					return True;	/* Automatic match */
-				while (*str)
-				{
-					while (*str
-					       && (case_sig ? (*p != *str)
-						   : (toupper(*p) !=
-						      toupper(*str))))
-						str++;
-
-					/*
-					 * Patch from weidel@multichart.de. In the case of the regexp
-					 * '*XX*' we want to ensure there are at least 2 'X' characters
-					 * in the filename after the '*' for a match to be made.
-					 */
-
-					{
-						int matchcount = 0;
-
-						/*
-						 * Eat all the characters that match, but count how many there were.
-						 */
-
-						while (*str
-						       && (case_sig
-							   ? (*p ==
-							      *str)
-							   : (toupper(*p) ==
-							      toupper(*str))))
-						{
-							str++;
-							matchcount++;
-						}
-
-						/*
-						 * Now check that if the regexp had n identical characters that
-						 * matchcount had at least that many matches.
-						 */
-
-						while (
-						       (*(p + 1)
-							&& (case_sig
-							    ? (*(p + 1) ==
-							       *p)
-							    : (toupper
-							       (*(p + 1)) ==
-							       toupper(*p)))))
-						{
-							p++;
-							matchcount--;
-						}
-						if (matchcount <= 0)
-						{
-							return False;
-						}
-					}
-					str--;	/* We've eaten the match char after the '*' */
-					if (unix_do_match(str, p, case_sig))
-						return True;
-					if (!*str)
-						return False;
-					else
-						str++;
-				}
-				return False;
-
-			default:
-				if (case_sig)
-				{
-					if (*str != *p)
-						return False;
-				}
-				else
-				{
-					if (toupper(*str) != toupper(*p))
-						return False;
-				}
-				str++, p++;
-				break;
-		}
-	}
-	if (!*p && !*str)
-		return True;
-
-	if (!*p && str[0] == '.' && str[1] == 0)
-		return (True);
-
-	if (!*str && *p == '?')
-	{
-		while (*p == '?')
-			p++;
-		return (!*p);
-	}
-
-	if (!*str && (*p == '*' && p[1] == '\0'))
-		return True;
-	return False;
-}
-
-
-/*********************************************************
-* Routine to match a given string with a regexp - uses
-* simplified regexp that takes * and ? only. Case can be
-* significant or not.
-* This is the 'original code' used by the unix matcher.
-*********************************************************/
-
-static BOOL unix_mask_match(char *str, char *regexp, BOOL case_sig)
-{
-	char *p;
-	pstring p1, p2;
-	fstring ebase, sbase;
-	BOOL matched;
-
-	/* Make local copies of str and regexp */
-	StrnCpy(p1, regexp, sizeof(pstring) - 1);
-	StrnCpy(p2, str, sizeof(pstring) - 1);
-
-	/* Remove any *? and ** as they are meaningless */
-	for (p = p1; *p; p++)
-		while (*p == '*' && (p[1] == '?' || p[1] == '*'))
-			(void)pstrcpy(&p[1], &p[2]);
-
-	if (strequal(p1, "*"))
-		return (True);
-
-	DEBUG(8,
-	      ("unix_mask_match str=<%s> regexp=<%s>, case_sig = %d\n", p2,
-	       p1, case_sig));
-
-	fstrcpy(ebase, p1);
-	fstrcpy(sbase, p2);
-
-	matched = unix_do_match(sbase, ebase, case_sig);
-
-	DEBUG(8, ("unix_mask_match returning %d\n", matched));
-
-	return matched;
-}
-
-/*********************************************************
-* Recursive routine that is called by mask_match.
-* Does the actual matching. Returns True if matched,
-* False if failed. This is the 'new' NT style matcher.
-* The win9x_semantics parameter is needed as Win9x matching
-* is *actually different*. In Win9x, trailing '?' characters
-* will only match the *exact* number of characters. Under
-* DOS and NT they match any number. This makes no
-* sense.....
-*********************************************************/
-
-static BOOL do_match(char *str, char *regexp, int case_sig,
-		     BOOL win9x_semantics)
-{
-	char *p;
-
-	for (p = regexp; *p && *str;)
-	{
-		switch (*p)
-		{
-			case '?':
-				str++;
-				p++;
-				break;
-
-			case '*':
-				/* Look for a character matching 
-				   the one after the '*' */
-				p++;
-				if (!*p)
-					return True;	/* Automatic match */
-				while (*str)
-				{
-					while (*str
-					       && (case_sig ? (*p != *str)
-						   : (toupper(*p) !=
-						      toupper(*str))))
-						str++;
-
-					/*
-					 * Patch from weidel@multichart.de. In the case of the regexp
-					 * '*XX*' we want to ensure there are at least 2 'X' characters
-					 * in the filename after the '*' for a match to be made.
-					 */
-
-					{
-						int matchcount = 0;
-
-						/*
-						 * Eat all the characters that match, but count how many there were.
-						 */
-
-						while (*str
-						       && (case_sig
-							   ? (*p ==
-							      *str)
-							   : (toupper(*p) ==
-							      toupper(*str))))
-						{
-							str++;
-							matchcount++;
-						}
-
-						/*
-						 * Now check that if the regexp had n identical characters that
-						 * matchcount had at least that many matches.
-						 */
-
-						while (
-						       (*(p + 1)
-							&& (case_sig
-							    ? (*(p + 1) ==
-							       *p)
-							    : (toupper
-							       (*(p + 1)) ==
-							       toupper(*p)))))
-						{
-							p++;
-							matchcount--;
-						}
-						if (matchcount <= 0)
-						{
-							return False;
-						}
-					}
-					str--;	/* We've eaten the match char after the '*' */
-					if (do_match
-					    (str, p, case_sig,
-					     win9x_semantics))
-					{
-						return True;
-					}
-					if (!*str)
-					{
-						return False;
-					}
-					else
-					{
-						str++;
-					}
-				}
-				return False;
-
-			default:
-				if (case_sig)
-				{
-					if (*str != *p)
-					{
-						return False;
-					}
-				}
-				else
-				{
-					if (toupper(*str) != toupper(*p))
-					{
-						return False;
-					}
-				}
-				str++, p++;
-				break;
-		}
-	}
-
-	if (!*p && !*str)
-		return True;
-
-	if (!*p && str[0] == '.' && str[1] == 0)
-	{
-		return (True);
-	}
-
-	if (!win9x_semantics)
-	{
-		if (!*str && *p == '?')
-		{
-			while (*p == '?')
-				p++;
-			return (!*p);
-		}
-	}
-
-	if (!*str && (*p == '*' && p[1] == '\0'))
-	{
-		return True;
-	}
-
-	return False;
-}
-
-
-/*********************************************************
-* Routine to match a given string with a regexp - uses
-* simplified regexp that takes * and ? only. Case can be
-* significant or not.
-* The 8.3 handling was rewritten by Ums Harald <Harald.Ums@pro-sieben.de>
-* This is the new 'NT style' matcher.
-*********************************************************/
-
-BOOL mask_match(char *str, char *regexp, BOOL case_sig, BOOL trans2)
-{
-	char *p;
-	pstring t_pattern, t_filename, te_pattern, te_filename;
-	fstring ebase, eext, sbase, sext;
-
-	BOOL matched = False;
-	BOOL win9x_semantics = (get_remote_arch() == RA_WIN95) && trans2;
-
-	/* special case - if it is exactly the same then it always matches! */
-	if (exact_match(str, regexp, case_sig))
-		return True;
-
-	/* Make local copies of str and regexp */
-	pstrcpy(t_pattern, regexp);
-	pstrcpy(t_filename, str);
-
-	if (trans2)
-	{
-
-		/* a special case for 16 bit apps */
-		if (strequal(t_pattern, "????????.???"))
-			pstrcpy(t_pattern, "*");
-
-#if 0
-		/*
-		 * Handle broken clients that send us old 8.3 format.
-		 */
-		pstring_sub(t_pattern, "????????", "*");
-		pstring_sub(t_pattern, ".???", ".*");
-#endif
-	}
-
-#if 0
-	/* 
-	 * Not sure if this is a good idea. JRA.
-	 */
-	if (trans2 && is_8_3(t_pattern, False) && is_8_3(t_filename, False))
-		trans2 = False;
-#endif
-
-#if 0
-	if (!strchr(t_filename, '.'))
-	{
-		pstrcat(t_filename, ".");
-	}
-#endif
-
-	/* Remove any *? and ** as they are meaningless */
-	for (p = t_pattern; *p; p++)
-		while (*p == '*' && (p[1] == '?' || p[1] == '*'))
-			(void)pstrcpy(&p[1], &p[2]);
-
-	if (strequal(t_pattern, "*"))
-		return (True);
-
-	DEBUG(8,
-	      ("mask_match str=<%s> regexp=<%s>, case_sig = %d\n", t_filename,
-	       t_pattern, case_sig));
-
-	if (trans2)
-	{
-		/*
-		 * Match each component of the regexp, split up by '.'
-		 * characters.
-		 */
-		char *fp, *rp, *cp2, *cp1;
-		BOOL last_wcard_was_star = False;
-		int num_path_components, num_regexp_components;
-
-		pstrcpy(te_pattern, t_pattern);
-		pstrcpy(te_filename, t_filename);
-		/*
-		 * Remove multiple "*." patterns.
-		 */
-		pstring_sub(te_pattern, "*.*.", "*.");
-		num_regexp_components = count_chars(te_pattern, '.');
-		num_path_components = count_chars(te_filename, '.');
-
-		/* 
-		 * Check for special 'hack' case of "DIR a*z". - needs to match a.b.c...z
-		 */
-		if (num_regexp_components == 0)
-			matched =
-				do_match(te_filename, te_pattern, case_sig,
-					 win9x_semantics);
-		else
-		{
-			for (cp1 = te_pattern, cp2 = te_filename; cp1;)
-			{
-				fp = strchr(cp2, '.');
-				if (fp)
-					*fp = '\0';
-				rp = strchr(cp1, '.');
-				if (rp)
-					*rp = '\0';
-
-				if (cp1[0] && cp1[strlen(cp1) - 1] == '*')
-					last_wcard_was_star = True;
-				else
-					last_wcard_was_star = False;
-
-				if (!do_match
-				    (cp2, cp1, case_sig, win9x_semantics))
-					break;
-
-				/*
-				 * Ugly ! Special case for Win9x *only*. If filename is XXXX and pattern extension
-				 * is '*' or all '?' then disallow match.
-				 */
-
-				if (win9x_semantics)
-				{
-					if (*cp2 == '\0'
-					    && str_is_all(cp1, '?'))
-						break;
-				}
-
-				cp1 = rp ? rp + 1 : NULL;
-				cp2 = fp ? fp + 1 : "";
-
-				if (last_wcard_was_star
-				    || ((cp1 != NULL) && (*cp1 == '*')))
-				{
-					/* Eat the extra path components. */
-					int i;
-
-					for (i = 0;
-					     i <
-					     num_path_components -
-					     num_regexp_components; i++)
-					{
-						fp = strchr(cp2, '.');
-						if (fp)
-							*fp = '\0';
-
-						if ((cp1 != NULL)
-						    && do_match(cp2, cp1,
-								case_sig,
-								win9x_semantics))
-						{
-							cp2 =
-								fp ? fp +
-								1 : "";
-							break;
-						}
-						cp2 = fp ? fp + 1 : "";
-					}
-					num_path_components -= i;
-				}
-			}
-			if (cp1 == NULL
-			    && ((*cp2 == '\0') || last_wcard_was_star))
-				matched = True;
-		}
-	}
-	else
-	{
-
-		/* -------------------------------------------------
-		 * Behaviour of Win95
-		 * for 8.3 filenames and 8.3 Wildcards
-		 * -------------------------------------------------
-		 */
-		if (strequal(t_filename, "."))
-		{
-			/*
-			 *  Patterns:  *.*  *. ?. ? ????????.??? are valid.
-			 *
-			 */
-			if (strequal(t_pattern, "*.*")
-			    || strequal(t_pattern, "*.")
-			    || strequal(t_pattern, "????????.???")
-			    || strequal(t_pattern, "?.")
-			    || strequal(t_pattern, "?"))
-				matched = True;
-		}
-		else if (strequal(t_filename, ".."))
-		{
-			/*
-			 *  Patterns:  *.*  *. ?. ? *.? ????????.??? are valid.
-			 *
-			 */
-			if (strequal(t_pattern, "*.*")
-			    || strequal(t_pattern, "*.")
-			    || strequal(t_pattern, "?.")
-			    || strequal(t_pattern, "?")
-			    || strequal(t_pattern, "????????.???")
-			    || strequal(t_pattern, "*.?")
-			    || strequal(t_pattern, "?.*"))
-				matched = True;
-		}
-		else
-		{
-
-			if ((p = strrchr(t_pattern, '.')))
-			{
-				/*
-				 * Wildcard has a suffix.
-				 */
-				*p = 0;
-				fstrcpy(ebase, t_pattern);
-				if (p[1])
-				{
-					fstrcpy(eext, p + 1);
-				}
-				else
-				{
-					/* pattern ends in DOT: treat as if there is no DOT */
-					*eext = 0;
-					if (strequal(ebase, "*"))
-						return (True);
-				}
-			}
-			else
-			{
-				/*
-				 * No suffix for wildcard.
-				 */
-				fstrcpy(ebase, t_pattern);
-				eext[0] = 0;
-			}
-
-			p = strrchr(t_filename, '.');
-			if (p && (p[1] == 0))
-			{
-				/*
-				 * Filename has an extension of '.' only.
-				 */
-				*p = 0;	/* nuke dot at end of string */
-				p = 0;	/* and treat it as if there is no extension */
-			}
-
-			if (p)
-			{
-				/*
-				 * Filename has an extension.
-				 */
-				*p = 0;
-				fstrcpy(sbase, t_filename);
-				fstrcpy(sext, p + 1);
-				if (*eext)
-				{
-					matched =
-						do_match(sbase, ebase,
-							 case_sig, False)
-						&& do_match(sext, eext,
-							    case_sig, False);
-				}
-				else
-				{
-					/* pattern has no extension */
-					/* Really: match complete filename with pattern ??? means exactly 3 chars */
-					matched =
-						do_match(str, ebase, case_sig,
-							 False);
-				}
-			}
-			else
-			{
-				/* 
-				 * Filename has no extension.
-				 */
-				fstrcpy(sbase, t_filename);
-				fstrcpy(sext, "");
-				if (*eext)
-				{
-					/* pattern has extension */
-					matched =
-						do_match(sbase, ebase,
-							 case_sig, False)
-						&& do_match(sext, eext,
-							    case_sig, False);
-
-				}
-				else
-				{
-					matched =
-						do_match(sbase, ebase,
-							 case_sig, False);
-#ifdef EMULATE_WEIRD_W95_MATCHING
-					/*
-					 * Even Microsoft has some problems
-					 * Behaviour Win95 -> local disk 
-					 * is different from Win95 -> smb drive from Nt 4.0
-					 * This branch would reflect the Win95 local disk behaviour
-					 */
-					if (!matched)
-					{
-						/* a? matches aa and a in w95 */
-						fstrcat(sbase, ".");
-						matched =
-							do_match(sbase, ebase,
-								 case_sig,
-								 False);
-					}
-#endif
-				}
-			}
-		}
-	}
-
-	DEBUG(8, ("mask_match returning %d\n", matched));
-
-	return matched;
-}
 
 /****************************************************************************
 become a daemon, discarding the controlling terminal
@@ -2178,12 +1466,7 @@ BOOL is_in_path(char *name, name_compare_entry * namelist)
 	{
 		if (namelist->is_wild)
 		{
-			/* 
-			 * Look for a wildcard match. Use the old
-			 * 'unix style' mask match, rather than the
-			 * new NT one.
-			 */
-			if (unix_mask_match
+			if (mask_match
 			    (last_component, namelist->name, case_sensitive))
 			{
 				DEBUG(8,
@@ -2294,8 +1577,7 @@ void set_namearray(name_compare_entry ** ppname_array, char *namelist)
 		if (name_end == NULL)
 			break;
 
-		(*ppname_array)[i].is_wild = ((strchr(nameptr, '?') != NULL) ||
-					      (strchr(nameptr, '*') != NULL));
+		(*ppname_array)[i].is_wild = ms_has_wild(nameptr);
 		if (((*ppname_array)[i].name = strdup(nameptr)) == NULL)
 		{
 			DEBUG(0, ("set_namearray: malloc fail (1)\n"));
@@ -2325,6 +1607,173 @@ void free_namearray(name_compare_entry * name_array)
 		free(name_array->name);
 
 	free((char *)name_array);
+}
+
+/****************************************************************************
+ Pathetically try and map a 64 bit lock offset into 31 bits. I hate Windows :-).
+****************************************************************************/
+
+uint32 map_lock_offset(uint32 high, uint32 low)
+{
+	unsigned int i;
+	uint32 mask = 0;
+	uint32 highcopy = high;
+
+	/*
+	 * Try and find out how many significant bits there are in high.
+	 */
+
+	for (i = 0; highcopy; i++)
+		highcopy >>= 1;
+
+	/*
+	 * We use 31 bits not 32 here as POSIX
+	 * lock offsets may not be negative.
+	 */
+
+	mask = (~0) << (31 - i);
+
+	if (low & mask)
+		return 0;	/* Fail. */
+
+	high <<= (31 - i);
+
+	return (high | low);
+}
+
+/****************************************************************************
+routine to do file locking
+****************************************************************************/
+
+BOOL fcntl_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
+{
+#if HAVE_FCNTL_LOCK
+	SMB_STRUCT_FLOCK lock;
+	int ret;
+
+#if defined(LARGE_SMB_OFF_T)
+	/*
+	 * In the 64 bit locking case we store the original
+	 * values in case we have to map to a 32 bit lock on
+	 * a filesystem that doesn't support 64 bit locks.
+	 */
+	SMB_OFF_T orig_offset = offset;
+	SMB_OFF_T orig_count = count;
+#endif /* LARGE_SMB_OFF_T */
+
+	DEBUG(8,
+	      ("fcntl_lock %d %d %.0f %.0f %d\n", fd, op, (double)offset,
+	       (double)count, type));
+
+	lock.l_type = type;
+	lock.l_whence = SEEK_SET;
+	lock.l_start = offset;
+	lock.l_len = count;
+	lock.l_pid = 0;
+
+	errno = 0;
+
+	ret = fcntl(fd, op, &lock);
+	if (errno == EFBIG)
+	{
+		if (DEBUGLVL(0))
+		{
+			dbgtext
+				("fcntl_lock: WARNING: lock request at offset %.0f, length %.0f returned\n",
+				 (double)offset, (double)count);
+			dbgtext
+				("a 'file too large' error. This can happen when using 64 bit lock offsets\n");
+			dbgtext
+				("on 32 bit NFS mounted file systems. Retrying with 32 bit truncated length.\n");
+		}
+		/* 32 bit NFS file system, retry with smaller offset */
+		errno = 0;
+		lock.l_len = count & 0x7fffffff;
+		ret = fcntl(fd, op, &lock);
+	}
+
+	if (errno != 0)
+		DEBUG(3,
+		      ("fcntl lock gave errno %d (%s)\n", errno,
+		       strerror(errno)));
+
+	/* a lock query */
+	if (op == SMB_F_GETLK)
+	{
+		if ((ret != -1) &&
+		    (lock.l_type != F_UNLCK) &&
+		    (lock.l_pid != 0) && (lock.l_pid != getpid()))
+		{
+			DEBUG(3,
+			      ("fd %d is locked by pid %d\n", fd,
+			       (int)lock.l_pid));
+			return (True);
+		}
+
+		/* it must be not locked or locked by me */
+		return (False);
+	}
+
+	/* a lock set or unset */
+	if (ret == -1)
+	{
+		DEBUG(3,
+		      ("lock failed at offset %.0f count %.0f op %d type %d (%s)\n",
+		       (double)offset, (double)count, op, type,
+		       strerror(errno)));
+
+		/* perhaps it doesn't support this sort of locking?? */
+		if (errno == EINVAL)
+		{
+
+#if defined(LARGE_SMB_OFF_T)
+			{
+				/*
+				 * Ok - if we get here then we have a 64 bit lock request
+				 * that has returned EINVAL. Try and map to 31 bits for offset
+				 * and length and try again. This may happen if a filesystem
+				 * doesn't support 64 bit offsets (efs/ufs) although the underlying
+				 * OS does.
+				 */
+				uint32 off_low = (orig_offset & 0xFFFFFFFF);
+				uint32 off_high =
+					((orig_offset >> 32) & 0xFFFFFFFF);
+
+				lock.l_len = (orig_count & 0x7FFFFFFF);
+				lock.l_start =
+					(SMB_OFF_T) map_lock_offset(off_high,
+								    off_low);
+				ret = fcntl(fd, op, &lock);
+				if (ret == -1)
+				{
+					if (errno == EINVAL)
+					{
+						DEBUG(3,
+						      ("locking not supported? returning True\n"));
+						return (True);
+					}
+					return False;
+				}
+				DEBUG(3,
+				      ("64 -> 32 bit modified lock call successful\n"));
+				return True;
+			}
+#else /* LARGE_SMB_OFF_T */
+			DEBUG(3, ("locking not supported? returning True\n"));
+			return (True);
+#endif /* LARGE_SMB_OFF_T */
+		}
+
+		return (False);
+	}
+
+	/* everything went OK */
+	DEBUG(8, ("Lock call successful\n"));
+
+	return (True);
+#else
+	return (False);
+#endif
 }
 
 /*******************************************************************
@@ -3283,21 +2732,82 @@ const char *get_sid_name_use_str(uint32 sid_name_use)
 	return enum_field_to_str(sid_name_use, sid_name_info, True);
 }
 
+
+/*******************************************************************
+determine if a pattern contains any Microsoft wildcard characters
+ *******************************************************************/
+BOOL ms_has_wild(char *s)
+{
+	char c;
+	while ((c = *s++))
+	{
+		switch (c)
+		{
+			case '*':
+			case '?':
+			case '<':
+			case '>':
+			case '"':
+				return True;
+		}
+	}
+	return False;
+}
+
+
+/*******************************************************************
+ a wrapper that handles case sensitivity and the special handling
+   of the ".." name
+
+   case_sensitive is a boolean
+ *******************************************************************/
+BOOL mask_match(char *string, char *pattern, BOOL case_sensitive)
+{
+	fstring p2, s2;
+	if (strcmp(string, "..") == 0)
+		string = ".";
+	if (strcmp(pattern, ".") == 0)
+		return False;
+
+	if (case_sensitive)
+	{
+		return ms_fnmatch(pattern, string) == 0;
+	}
+
+	fstrcpy(p2, pattern);
+	fstrcpy(s2, string);
+	strlower(p2);
+	strlower(s2);
+	return ms_fnmatch(p2, s2) == 0;
+}
+
+
+
 #ifdef __INSURE__
+
+/*******************************************************************
+This routine is a trick to immediately catch errors when debugging
+with insure. A xterm with a gdb is popped up when insure catches
+a error. It is Linux specific.
+********************************************************************/
 int _Insure_trap_error(int a1, int a2, int a3, int a4, int a5, int a6)
 {
-	return enum_field_to_str(sid_name_use, sid_name_info, True);
-	static int (*fn)();
+	static int (*fn) ();
 	int ret;
 	char pidstr[10];
-	pstring cmd = "/usr/X11R6/bin/xterm -display :0 -T Panic -n Panic -e /bin/sh -c 'cat /tmp/ierrs.*.%d ; gdb /proc/%d/exe %d'";
+	pstring cmd =
+		"/usr/X11R6/bin/xterm -display :0 -T Panic -n Panic -e /bin/sh -c 'cat /tmp/ierrs.*.%d ; gdb /proc/%d/exe %d'";
 
 	slprintf(pidstr, sizeof(pidstr), "%d", getpid());
 	pstring_sub(cmd, "%d", pidstr);
 
-	if (!fn) {
+	if (!fn)
+	{
 		static void *h;
-		h = dlopen("/usr/local/parasoft/insure++lite/lib.linux2/libinsure.so", RTLD_LAZY);
+		h =
+			dlopen
+			("/usr/local/parasoft/insure++lite/lib.linux2/libinsure.so",
+			 RTLD_LAZY);
 		fn = dlsym(h, "_Insure_trap_error");
 	}
 

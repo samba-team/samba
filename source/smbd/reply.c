@@ -86,8 +86,7 @@ int reply_special(char *inbuf, char *outbuf)
 	DEBUG(20, ("NBT message\n"));
 	dump_data(20, inbuf, smb_len(inbuf));
 
-	switch (msg_type)
-	{
+	switch (msg_type) {
 		case 0x81:	/* session request */
 			CVAL(outbuf, 0) = 0x82;
 			CVAL(outbuf, 3) = 0;
@@ -506,8 +505,8 @@ int reply_sesssetup_and_X(connection_struct * conn, char *inbuf, char *outbuf,
 {
 	uint16 sess_vuid;
 	NET_USER_INFO_3 info3;
-	int gid;
-	int uid;
+	gid_t gid;
+	uid_t uid;
 	int smb_bufsize;
 	int smb_apasslen = 0;
 	pstring smb_apasswd;
@@ -1198,9 +1197,6 @@ int reply_search(connection_struct * conn, char *inbuf, char *outbuf,
 
 	/* dirtype &= ~aDIR; */
 
-	DEBUG(5, ("reply_search: path=%s status_len=%d\n", path, status_len));
-
-
 	if (status_len == 0)
 	{
 		pstring dir2;
@@ -1239,67 +1235,13 @@ int reply_search(connection_struct * conn, char *inbuf, char *outbuf,
 	else
 	{
 		memcpy(status, smb_buf(inbuf) + 1 + strlen(path) + 4, 21);
-		memcpy(mask, status + 1, 11);
-		mask[11] = 0;
 		dirtype = CVAL(status, 0) & 0x1F;
 		conn->dirptr = dptr_fetch(status + 12, &dptr_num);
 		if (!conn->dirptr)
 			goto SearchEmpty;
 		string_set(&conn->dirpath, dptr_path(dptr_num));
-		if (!case_sensitive)
-			strnorm(mask);
+		fstrcpy(mask, dptr_wcard(dptr_num));
 	}
-
-	/* turn strings of spaces into a . */
-	{
-		trim_string(mask, NULL, " ");
-		if ((p = strrchr(mask, ' ')))
-		{
-			fstring ext;
-			fstrcpy(ext, p + 1);
-			*p = 0;
-			trim_string(mask, NULL, " ");
-			pstrcat(mask, ".");
-			pstrcat(mask, ext);
-		}
-	}
-
-	/* Convert the formatted mask. (This code lives in trans2.c) */
-	mask_convert(mask);
-
-	{
-		int skip;
-		p = mask;
-		while (*p)
-		{
-			if ((skip = get_character_len(*p)) != 0)
-			{
-				p += skip;
-			}
-			else
-			{
-				if (*p != '?' && *p != '*' && !isdoschar(*p))
-				{
-					DEBUG(5,
-					      ("Invalid char [%c] in search mask?\n",
-					       *p));
-					*p = '?';
-				}
-				p++;
-			}
-		}
-	}
-
-	if (!strchr(mask, '.') && strlen(mask) > 8)
-	{
-		fstring tmp;
-		fstrcpy(tmp, &mask[8]);
-		mask[8] = '.';
-		mask[9] = 0;
-		pstrcat(mask, tmp);
-	}
-
-	DEBUG(5, ("mask=%s directory=%s\n", mask, directory));
 
 	if (can_open)
 	{
@@ -1326,6 +1268,7 @@ int reply_search(connection_struct * conn, char *inbuf, char *outbuf,
 				}
 				return (ERROR(ERRDOS, ERRnofids));
 			}
+			dptr_set_wcard(dptr_num, mask);
 		}
 
 		DEBUG(4, ("dptr_num is %d\n", dptr_num));
@@ -1935,7 +1878,7 @@ int reply_unlink(connection_struct * conn, char *inbuf, char *outbuf,
 	if (!rc && is_mangled(mask))
 		check_mangled_cache(mask);
 
-	has_wild = strchr(mask, '*') || strchr(mask, '?');
+	has_wild = ms_has_wild(mask);
 
 	if (!has_wild)
 	{
@@ -1972,9 +1915,8 @@ int reply_unlink(connection_struct * conn, char *inbuf, char *outbuf,
 				pstring fname;
 				pstrcpy(fname, dname);
 
-				if (!mask_match
-				    (fname, mask, case_sensitive,
-				     False)) continue;
+				if (!mask_match(fname, mask, case_sensitive))
+					continue;
 
 				error = ERRnoaccess;
 				slprintf(fname, sizeof(fname) - 1, "%s/%s",
@@ -3701,7 +3643,7 @@ int rename_internals(connection_struct * conn,
 	if (!rc && is_mangled(mask))
 		check_mangled_cache(mask);
 
-	has_wild = strchr(mask, '*') || strchr(mask, '?');
+	has_wild = ms_has_wild(mask);
 
 	if (!has_wild)
 	{
@@ -3830,8 +3772,7 @@ int rename_internals(connection_struct * conn,
 
 				pstrcpy(fname, dname);
 
-				if (!mask_match
-				    (fname, mask, case_sensitive, False))
+				if (!mask_match(fname, mask, case_sensitive))
 					continue;
 
 				error = ERRnoaccess;
@@ -4098,7 +4039,7 @@ int reply_copy(connection_struct * conn, char *inbuf, char *outbuf,
 	if (!rc && is_mangled(mask))
 		check_mangled_cache(mask);
 
-	has_wild = strchr(mask, '*') || strchr(mask, '?');
+	has_wild = ms_has_wild(mask);
 
 	if (!has_wild)
 	{
@@ -4137,8 +4078,7 @@ int reply_copy(connection_struct * conn, char *inbuf, char *outbuf,
 				pstring fname;
 				pstrcpy(fname, dname);
 
-				if (!mask_match
-				    (fname, mask, case_sensitive, False))
+				if (!mask_match(fname, mask, case_sensitive))
 					continue;
 
 				error = ERRnoaccess;
@@ -4225,6 +4165,141 @@ int reply_setdir(connection_struct * conn, char *inbuf, char *outbuf,
 	DEBUG(3, ("setdir %s\n", newdir));
 
 	return (outsize);
+}
+
+/****************************************************************************
+ Get a lock count, dealing with large count requests.
+****************************************************************************/
+
+SMB_BIG_UINT get_lock_count(char *data, int data_offset,
+			    BOOL large_file_format)
+{
+	SMB_BIG_UINT count = 0;
+
+	if (!large_file_format)
+	{
+		count =
+			(SMB_BIG_UINT) IVAL(data,
+					    SMB_LKLEN_OFFSET(data_offset));
+	}
+	else
+	{
+
+#if defined(HAVE_LONGLONG)
+		count =
+			(((SMB_BIG_UINT)
+			  IVAL(data,
+			       SMB_LARGE_LKLEN_OFFSET_HIGH(data_offset))) <<
+			 32) | ((SMB_BIG_UINT)
+				IVAL(data,
+				     SMB_LARGE_LKLEN_OFFSET_LOW
+				     (data_offset)));
+#else /* HAVE_LONGLONG */
+
+		/*
+		 * NT4.x seems to be broken in that it sends large file (64 bit)
+		 * lockingX calls even if the CAP_LARGE_FILES was *not*
+		 * negotiated. For boxes without large unsigned ints truncate the
+		 * lock count by dropping the top 32 bits.
+		 */
+
+		if (IVAL(data, SMB_LARGE_LKLEN_OFFSET_HIGH(data_offset)) != 0)
+		{
+			DEBUG(3,
+			      ("get_lock_count: truncating lock count (high)0x%x (low)0x%x to just low count.\n",
+			       (unsigned int)IVAL(data,
+						  SMB_LARGE_LKLEN_OFFSET_HIGH
+						  (data_offset)),
+			       (unsigned int)IVAL(data,
+						  SMB_LARGE_LKLEN_OFFSET_LOW
+						  (data_offset))));
+			SIVAL(data, SMB_LARGE_LKLEN_OFFSET_HIGH(data_offset),
+			      0);
+		}
+
+		count =
+			(SMB_BIG_UINT) IVAL(data,
+					    SMB_LARGE_LKLEN_OFFSET_LOW
+					    (data_offset));
+#endif /* HAVE_LONGLONG */
+	}
+
+	return count;
+}
+
+/****************************************************************************
+ Get a lock offset, dealing with large offset requests.
+****************************************************************************/
+
+SMB_BIG_UINT get_lock_offset(char *data, int data_offset,
+			     BOOL large_file_format, BOOL *err)
+{
+	SMB_BIG_UINT offset = 0;
+
+	*err = False;
+
+	if (!large_file_format)
+	{
+		offset =
+			(SMB_BIG_UINT) IVAL(data,
+					    SMB_LKOFF_OFFSET(data_offset));
+	}
+	else
+	{
+
+#if defined(HAVE_LONGLONG)
+		offset =
+			(((SMB_BIG_UINT)
+			  IVAL(data,
+			       SMB_LARGE_LKOFF_OFFSET_HIGH(data_offset))) <<
+			 32) | ((SMB_BIG_UINT)
+				IVAL(data,
+				     SMB_LARGE_LKOFF_OFFSET_LOW
+				     (data_offset)));
+#else /* HAVE_LONGLONG */
+
+		/*
+		 * NT4.x seems to be broken in that it sends large file (64 bit)
+		 * lockingX calls even if the CAP_LARGE_FILES was *not*
+		 * negotiated. For boxes without large unsigned ints mangle the
+		 * lock offset by mapping the top 32 bits onto the lower 32.
+		 */
+
+		if (IVAL(data, SMB_LARGE_LKOFF_OFFSET_HIGH(data_offset)) != 0)
+		{
+			uint32 low =
+				IVAL(data,
+				     SMB_LARGE_LKOFF_OFFSET_LOW(data_offset));
+			uint32 high =
+				IVAL(data,
+				     SMB_LARGE_LKOFF_OFFSET_HIGH
+				     (data_offset));
+			uint32 new_low = 0;
+
+			if ((new_low = map_lock_offset(high, low)) == 0)
+			{
+				*err = True;
+				return (SMB_BIG_UINT) - 1;
+			}
+
+			DEBUG(3,
+			      ("get_lock_offset: truncating lock offset (high)0x%x (low)0x%x to offset 0x%x.\n",
+			       (unsigned int)high, (unsigned int)low,
+			       (unsigned int)new_low));
+			SIVAL(data, SMB_LARGE_LKOFF_OFFSET_HIGH(data_offset),
+			      0);
+			SIVAL(data, SMB_LARGE_LKOFF_OFFSET_LOW(data_offset),
+			      new_low);
+		}
+
+		offset =
+			(SMB_BIG_UINT) IVAL(data,
+					    SMB_LARGE_LKOFF_OFFSET_LOW
+					    (data_offset));
+#endif /* HAVE_LONGLONG */
+	}
+
+	return offset;
 }
 
 /****************************************************************************

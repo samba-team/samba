@@ -333,6 +333,10 @@ void MD5Update(struct MD5Context *ctx, uchar const *buf, unsigned len);
 void MD5Final(uchar digest[16], struct MD5Context *ctx);
 void MD5Transform(uint32 buf[4], const uchar inext[64]);
 
+/*The following definitions come from  lib/ms_fnmatch.c  */
+
+int ms_fnmatch(char *pattern, char *string);
+
 /*The following definitions come from  lib/passcheck.c  */
 
 BOOL smb_password_ok(uint16 acct_ctrl,
@@ -416,9 +420,9 @@ const vuser_key *get_sec_ctx(void);
 
 /*The following definitions come from  lib/substitute.c  */
 
+void standard_sub_basic(char *str);
 void standard_sub_conn(connection_struct *conn, char *str);
 void standard_sub_snum(int snum, char *str);
-void standard_sub_basic(char *str);
 void standard_sub_vuser(char *str, user_struct *vuser);
 void standard_sub_vsnum(char *str, user_struct *vuser, int snum);
 
@@ -559,7 +563,6 @@ int set_message(char *buf, int num_words, int num_bytes, BOOL zero);
 void dos_clean_name(char *s);
 void unix_clean_name(char *s);
 BOOL reduce_name(char *s, char *dir, BOOL widelinks);
-void expand_mask(char *Mask, BOOL doext);
 void make_dir_struct(char *buf, char *mask, char *fname, SMB_OFF_T size,
 		     int mode, time_t date);
 void close_low_fds(void);
@@ -567,8 +570,6 @@ int set_blocking(int fd, BOOL set);
 SMB_OFF_T transfer_file(int infd, int outfd, SMB_OFF_T n, char *header,
 			int headlen, int align);
 void msleep(int t);
-BOOL unix_do_match(char *str, char *regexp, BOOL case_sig);
-BOOL mask_match(char *str, char *regexp, BOOL case_sig, BOOL trans2);
 void become_daemon(void);
 BOOL yesno(char *p);
 int set_filelen(int fd, SMB_OFF_T len);
@@ -588,6 +589,8 @@ char *readdirname(DIR * p);
 BOOL is_in_path(char *name, name_compare_entry * namelist);
 void set_namearray(name_compare_entry ** ppname_array, char *namelist);
 void free_namearray(name_compare_entry * name_array);
+uint32 map_lock_offset(uint32 high, uint32 low);
+BOOL fcntl_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type);
 BOOL is_myname(char *s);
 void set_remote_arch(enum remote_arch_types type);
 enum remote_arch_types get_remote_arch(void);
@@ -624,6 +627,8 @@ char *passdb_path(char *name);
 char *lock_path(char *name);
 char *parent_dirname(const char *path);
 const char *get_sid_name_use_str(uint32 sid_name_use);
+BOOL ms_has_wild(char *s);
+BOOL mask_match(char *string, char *pattern, BOOL case_sensitive);
 int _Insure_trap_error(int a1, int a2, int a3, int a4, int a5, int a6);
 
 /*The following definitions come from  lib/util_array.c  */
@@ -650,12 +655,6 @@ DOM_SID* add_sid_to_array(uint32 *len, DOM_SID ***array, const DOM_SID *sid);
 BOOL do_file_lock(int fd, int waitsecs, int type);
 BOOL file_lock(int fd, int type, int secs, int *plock_depth);
 BOOL file_unlock(int fd, int *plock_depth);
-uint32 map_lock_offset(uint32 high, uint32 low);
-SMB_BIG_UINT get_lock_count(char *data, int data_offset,
-			    BOOL large_file_format);
-SMB_BIG_UINT get_lock_offset(char *data, int data_offset,
-			     BOOL large_file_format, BOOL *err);
-BOOL fcntl_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type);
 BOOL file_modified(const char *filename, time_t *lastmodified);
 void *open_file_if_modified(const char *filename, char *mode, time_t *lastmodified);
 SMB_OFF_T get_file_size(char *file_name);
@@ -3797,11 +3796,9 @@ void sys_fsync_file(connection_struct *conn, files_struct *fsp);
 
 /*The following definitions come from  smbd/filename.c  */
 
-void print_stat_cache_statistics(void);
 BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component, 
                   BOOL *bad_path, SMB_STRUCT_STAT *pst);
 BOOL check_name(char *name,connection_struct *conn);
-BOOL reset_stat_cache( void );
 
 /*The following definitions come from  smbd/files.c  */
 
@@ -3828,7 +3825,8 @@ void send_trans_reply(char *outbuf,
 		      prs_struct *rparam,
 		      uint16 *setup, int lsetup, int max_data_ret,
 		      BOOL pipe_data_outstanding);
-int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int bufsize);
+int reply_trans(connection_struct * conn, char *inbuf, char *outbuf,
+		int size, int bufsize);
 
 /*The following definitions come from  smbd/lanman.c  */
 
@@ -4037,6 +4035,10 @@ int reply_copy(connection_struct * conn, char *inbuf, char *outbuf,
 	       int dum_size, int dum_buffsize);
 int reply_setdir(connection_struct * conn, char *inbuf, char *outbuf,
 		 int dum_size, int dum_buffsize);
+SMB_BIG_UINT get_lock_count(char *data, int data_offset,
+			    BOOL large_file_format);
+SMB_BIG_UINT get_lock_offset(char *data, int data_offset,
+			     BOOL large_file_format, BOOL *err);
 int reply_lockingX(connection_struct * conn, char *inbuf, char *outbuf,
 		   int length, int bufsize);
 int reply_readbmpx(connection_struct * conn, char *inbuf, char *outbuf,
@@ -4076,9 +4078,16 @@ int sslutil_connect(int fd);
 int sslutil_disconnect(int fd);
 int sslutil_negotiate_ssl(int fd, int msg_type);
 
+/*The following definitions come from  smbd/statcache.c  */
+
+void print_stat_cache_statistics(void);
+void stat_cache_add( char *full_orig_name, char *orig_translated_path);
+BOOL stat_cache_lookup(connection_struct *conn, char *name, char *dirpath, 
+		       char **start, SMB_STRUCT_STAT *pst);
+BOOL reset_stat_cache( void );
+
 /*The following definitions come from  smbd/trans2.c  */
 
-void mask_convert( char *mask);
 int reply_findclose(connection_struct *conn,
 		    char *inbuf,char *outbuf,int length,int bufsize);
 int reply_findnclose(connection_struct *conn, 
@@ -4414,7 +4423,12 @@ int tdb_writelock(TDB_CONTEXT *tdb);
 int tdb_writeunlock(TDB_CONTEXT *tdb);
 int tdb_lockchain(TDB_CONTEXT *tdb, TDB_DATA key);
 int tdb_unlockchain(TDB_CONTEXT *tdb, TDB_DATA key);
+
+/*The following definitions come from  tdb/tdbutil.c  */
+
+int tdb_get_int_byblob(TDB_CONTEXT *tdb, char *keyval, size_t len);
 int tdb_get_int(TDB_CONTEXT *tdb, char *keystr);
+int tdb_store_int_byblob(TDB_CONTEXT *tdb, char *keystr, size_t len, int v);
 int tdb_store_int(TDB_CONTEXT *tdb, char *keystr, int v);
 
 /*The following definitions come from  utils/rpctorture.c  */

@@ -109,7 +109,7 @@ static void interpret_interface(char *token)
 	
 	/* first check if it is an interface name */
 	for (i=0;i<total_probed;i++) {
-		if (fnmatch(token, probed_ifaces[i].name, 0) == 0) {
+		if (ms_fnmatch(token, probed_ifaces[i].name) == 0) {
 			add_interface(probed_ifaces[i].ip,
 				      probed_ifaces[i].netmask);
 			added = 1;

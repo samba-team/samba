@@ -499,7 +499,7 @@ static int tdb_new_database(TDB_CONTEXT *tdb, int hash_size)
         header.version = TDB_VERSION;
         header.hash_size = hash_size;
         lseek(tdb->fd, 0, SEEK_SET);
-        ftruncate(tdb->fd, 0);
+        if (tdb->fd != -1) ftruncate(tdb->fd, 0);
         
         if (tdb->fd != -1 && write(tdb->fd, &header, sizeof(header)) != 
             sizeof(header)) {
@@ -1150,12 +1150,12 @@ TDB_CONTEXT *tdb_open(char *name, int hash_size, int tdb_flags,
 
 	tdb.read_only = ((open_flags & O_ACCMODE) == O_RDONLY);
 
-        if (name != NULL) {
-            tdb.fd = open(name, open_flags, mode);
-            if (tdb.fd == -1) {
+        if (name == NULL) goto in_memory;
+
+	tdb.fd = open(name, open_flags, mode);
+	if (tdb.fd == -1) {
 		goto fail;
-            }
-        }
+	}
 
 	/* ensure there is only one process initialising at once */
 	tdb_brlock(&tdb, GLOBAL_LOCK, LOCK_SET, F_WRLCK, F_SETLKW);
@@ -1182,19 +1182,15 @@ TDB_CONTEXT *tdb_open(char *name, int hash_size, int tdb_flags,
 		if (tdb_new_database(&tdb, hash_size) == -1) goto fail;
 
 		lseek(tdb.fd, 0, SEEK_SET);
-		if (tdb.fd != -1 && read(tdb.fd, &tdb.header, 
-                                         sizeof(tdb.header)) != 
-                                         sizeof(tdb.header)) 
+		if (read(tdb.fd, &tdb.header, sizeof(tdb.header)) != sizeof(tdb.header)) 
                     goto fail;
 	}
 
-        if (tdb.fd != -1) {
-            fstat(tdb.fd, &st);
+	fstat(tdb.fd, &st);
 
-            /* map the database and fill in the return structure */
-            tdb.name = (char *)strdup(name);
-            tdb.map_size = st.st_size;
-        }
+	/* map the database and fill in the return structure */
+	tdb.name = (char *)strdup(name);
+	tdb.map_size = st.st_size;
 
         tdb.locked = (int *)calloc(tdb.header.hash_size+1, 
                                    sizeof(tdb.locked[0]));
@@ -1203,13 +1199,12 @@ TDB_CONTEXT *tdb_open(char *name, int hash_size, int tdb_flags,
         }
 
 #if HAVE_MMAP
-        if (tdb.fd != -1) {
-            tdb.map_ptr = (void *)mmap(NULL, st.st_size, 
-                                       tdb.read_only? PROT_READ : PROT_READ|PROT_WRITE,
-                                       MAP_SHARED | MAP_FILE, tdb.fd, 0);
-        }
+	tdb.map_ptr = (void *)mmap(NULL, st.st_size, 
+				   tdb.read_only? PROT_READ : PROT_READ|PROT_WRITE,
+				   MAP_SHARED | MAP_FILE, tdb.fd, 0);
 #endif
 
+ in_memory:
 	ret = (TDB_CONTEXT *)malloc(sizeof(tdb));
 	if (!ret) goto fail;
 

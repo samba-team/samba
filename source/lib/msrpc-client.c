@@ -222,6 +222,24 @@ static BOOL ncalrpc_l_authenticate(struct msrpc_local *msrpc)
 }
 
 /****************************************************************************
+shutdown a msrpcent structure
+****************************************************************************/
+void ncalrpc_l_shutdown(struct msrpc_local *msrpc)
+{
+	DEBUG(10, ("msrpc_shutdown\n"));
+	if (msrpc->outbuf)
+	{
+		free(msrpc->outbuf);
+	}
+	if (msrpc->inbuf)
+	{
+		free(msrpc->inbuf);
+	}
+	ncalrpc_l_close_socket(msrpc);
+	memset(msrpc, 0, sizeof(*msrpc));
+}
+
+/****************************************************************************
 initialise a msrpcent structure
 ****************************************************************************/
 struct msrpc_local *ncalrpc_l_initialise(struct msrpc_local *msrpc,
@@ -274,24 +292,6 @@ struct msrpc_local *ncalrpc_l_initialise(struct msrpc_local *msrpc,
 	return msrpc;
 }
 
-
-/****************************************************************************
-shutdown a msrpcent structure
-****************************************************************************/
-void ncalrpc_l_shutdown(struct msrpc_local *msrpc)
-{
-	DEBUG(10, ("msrpc_shutdown\n"));
-	if (msrpc->outbuf)
-	{
-		free(msrpc->outbuf);
-	}
-	if (msrpc->inbuf)
-	{
-		free(msrpc->inbuf);
-	}
-	ncalrpc_l_close_socket(msrpc);
-	memset(msrpc, 0, sizeof(*msrpc));
-}
 
 /****************************************************************************
 establishes a connection right up to doing tconX, reading in a password.

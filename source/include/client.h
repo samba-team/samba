@@ -44,8 +44,8 @@ typedef struct file_info
 	time_t atime;
 	time_t ctime;
 	pstring name;
-}
-file_info;
+	char short_name[13];
+} file_info;
 
 struct print_job_info
 {
@@ -104,7 +104,7 @@ struct cli_state
 	uint32 servertime;
 	int readbraw_supported;
 	int writebraw_supported;
-	int timeout;
+	int timeout; /* in milliseconds. */
 	int max_xmit;
 	int max_mux;
 	char *outbuf;

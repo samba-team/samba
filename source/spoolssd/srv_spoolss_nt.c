@@ -569,8 +569,8 @@ static BOOL convert_printer_driver_info(const SPOOL_PRINTER_DRIVER_INFO_LEVEL *u
 
 static BOOL convert_devicemode(DEVICEMODE devmode, NT_DEVICEMODE *nt_devmode)
 {
-	unistr_to_ascii(nt_devmode->devicename, devmode.devicename.buffer, 31);
-	unistr_to_ascii(nt_devmode->formname, devmode.formname.buffer, 31);
+	unistr_to_ascii(nt_devmode->devicename, (char *)devmode.devicename.buffer, 31);
+	unistr_to_ascii(nt_devmode->formname, (char *)devmode.formname.buffer, 31);
 
 	nt_devmode->specversion=devmode.specversion;
 	nt_devmode->driverversion=devmode.driverversion;
@@ -864,7 +864,7 @@ static void spoolss_notify_server_name(int snum, SPOOL_NOTIFY_INFO_DATA *data, p
 	snprintf(temp_name, sizeof(temp_name), "\\\\%s", global_myname);
 
 	data->notify_data.data.length=strlen(temp_name);
-	ascii_to_unistr(data->notify_data.data.string, temp_name, sizeof(data->notify_data.data.string)-1);
+	ascii_to_unistr((char *)data->notify_data.data.string, temp_name, sizeof(data->notify_data.data.string)-1);
 }
 
 /*******************************************************************
@@ -878,7 +878,7 @@ static void spoolss_notify_printer_name(int snum, SPOOL_NOTIFY_INFO_DATA *data, 
 	ascii_to_unistr(data->notify_data.data.string, lp_servicename(snum), sizeof(data->notify_data.data.string)-1);
 */
 	data->notify_data.data.length=strlen(printer->info_2->printername);
-	ascii_to_unistr(data->notify_data.data.string, 
+	ascii_to_unistr((char *)data->notify_data.data.string, 
 	                printer->info_2->printername, 
 			sizeof(data->notify_data.data.string)-1);
 }
@@ -889,7 +889,7 @@ static void spoolss_notify_printer_name(int snum, SPOOL_NOTIFY_INFO_DATA *data, 
 static void spoolss_notify_share_name(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 	data->notify_data.data.length=strlen(lp_servicename(snum));
-	ascii_to_unistr(data->notify_data.data.string,
+	ascii_to_unistr((char *)data->notify_data.data.string,
 	                lp_servicename(snum), 
 			sizeof(data->notify_data.data.string)-1);
 }
@@ -902,7 +902,7 @@ static void spoolss_notify_port_name(int snum, SPOOL_NOTIFY_INFO_DATA *data, pri
 	/* even if it's strange, that's consistant in all the code */
 
 	data->notify_data.data.length=strlen(lp_servicename(snum));
-	ascii_to_unistr(data->notify_data.data.string,
+	ascii_to_unistr((char *)data->notify_data.data.string,
 	                lp_servicename(snum), 
 			sizeof(data->notify_data.data.string)-1);
 }
@@ -915,7 +915,7 @@ static void spoolss_notify_port_name(int snum, SPOOL_NOTIFY_INFO_DATA *data, pri
 static void spoolss_notify_driver_name(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 	data->notify_data.data.length=strlen(printer->info_2->drivername);
-	ascii_to_unistr(data->notify_data.data.string, 
+	ascii_to_unistr((char *)data->notify_data.data.string, 
 	                printer->info_2->drivername, 
 			sizeof(data->notify_data.data.string)-1);
 }
@@ -926,7 +926,7 @@ static void spoolss_notify_driver_name(int snum, SPOOL_NOTIFY_INFO_DATA *data, p
 static void spoolss_notify_comment(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 	data->notify_data.data.length=strlen(lp_comment(snum));
-	ascii_to_unistr(data->notify_data.data.string,
+	ascii_to_unistr((char *)data->notify_data.data.string,
 	                lp_comment(snum),
 			sizeof(data->notify_data.data.string)-1);
 }
@@ -939,7 +939,7 @@ static void spoolss_notify_comment(int snum, SPOOL_NOTIFY_INFO_DATA *data, print
 static void spoolss_notify_location(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 	data->notify_data.data.length=strlen(printer->info_2->location);
-	ascii_to_unistr(data->notify_data.data.string, 
+	ascii_to_unistr((char *)data->notify_data.data.string, 
 	                printer->info_2->location, 
 			sizeof(data->notify_data.data.string)-1);
 }
@@ -960,7 +960,7 @@ static void spoolss_notify_devmode(int snum, SPOOL_NOTIFY_INFO_DATA *data, print
 static void spoolss_notify_sepfile(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 	data->notify_data.data.length=strlen(printer->info_2->sepfile);
-	ascii_to_unistr(data->notify_data.data.string, 
+	ascii_to_unistr((char *)data->notify_data.data.string, 
 	                printer->info_2->sepfile, 
 			sizeof(data->notify_data.data.string)-1);
 }
@@ -972,7 +972,7 @@ static void spoolss_notify_sepfile(int snum, SPOOL_NOTIFY_INFO_DATA *data, print
 static void spoolss_notify_print_processor(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 	data->notify_data.data.length=strlen(printer->info_2->printprocessor);
-	ascii_to_unistr(data->notify_data.data.string, 
+	ascii_to_unistr((char *)data->notify_data.data.string, 
 	                printer->info_2->printprocessor, 
 			sizeof(data->notify_data.data.string)-1);
 }
@@ -984,7 +984,7 @@ static void spoolss_notify_print_processor(int snum, SPOOL_NOTIFY_INFO_DATA *dat
 static void spoolss_notify_parameters(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 	data->notify_data.data.length=strlen(printer->info_2->parameters);
-	ascii_to_unistr(data->notify_data.data.string, 
+	ascii_to_unistr((char *)data->notify_data.data.string, 
 	                printer->info_2->parameters, 
 			sizeof(data->notify_data.data.string)-1);
 }
@@ -996,7 +996,7 @@ static void spoolss_notify_parameters(int snum, SPOOL_NOTIFY_INFO_DATA *data, pr
 static void spoolss_notify_datatype(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 	data->notify_data.data.length=strlen(printer->info_2->datatype);
-	ascii_to_unistr(data->notify_data.data.string, 
+	ascii_to_unistr((char *)data->notify_data.data.string, 
 	                printer->info_2->datatype, 
 			sizeof(data->notify_data.data.string)-1);
 }
@@ -1099,7 +1099,7 @@ static void spoolss_notify_average_ppm(int snum, SPOOL_NOTIFY_INFO_DATA *data, p
 static void spoolss_notify_username(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 	data->notify_data.data.length=strlen(queue->user);
-	ascii_to_unistr(data->notify_data.data.string, queue->user, sizeof(data->notify_data.data.string)-1);
+	ascii_to_unistr((char *)data->notify_data.data.string, queue->user, sizeof(data->notify_data.data.string)-1);
 }
 
 /*******************************************************************
@@ -1116,7 +1116,7 @@ static void spoolss_notify_job_status(int snum, SPOOL_NOTIFY_INFO_DATA *data, pr
 static void spoolss_notify_job_name(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 	data->notify_data.data.length=strlen(queue->file);
-	ascii_to_unistr(data->notify_data.data.string, queue->file, sizeof(data->notify_data.data.string)-1);
+	ascii_to_unistr((char *)data->notify_data.data.string, queue->file, sizeof(data->notify_data.data.string)-1);
 }
 
 /*******************************************************************
@@ -1140,7 +1140,7 @@ static void spoolss_notify_job_status_string(int snum, SPOOL_NOTIFY_INFO_DATA *d
 		break;
 	}
 	data->notify_data.data.length=strlen(p);
-	ascii_to_unistr(data->notify_data.data.string, p, sizeof(data->notify_data.data.string)-1);
+	ascii_to_unistr((char *)data->notify_data.data.string, p, sizeof(data->notify_data.data.string)-1);
 }
 
 /*******************************************************************
@@ -1582,8 +1582,6 @@ uint32 _spoolss_rfnpcnex( const POLICY_HND *handle, uint32 change,
 	if (option!=NULL)
 		safe_free(option->ctr.type);
 	
-	safe_free(option);
-
 	switch (Printer->printer_type) {
 		case PRINTER_HANDLE_IS_PRINTSERVER:
 			return printserver_notify_info(handle, info);
@@ -1600,7 +1598,7 @@ uint32 _spoolss_rfnpcnex( const POLICY_HND *handle, uint32 change,
  * construct_printer_info_0
  * fill a printer_info_1 struct
  ********************************************************************/
-static BOOL construct_printer_info_0(PRINTER_INFO_0 *printer, int snum, pstring servername)
+static BOOL construct_printer_info_0(PRINTER_INFO_0 *printer, int snum, fstring servername)
 {
 	pstring chaine;
 	int count;
@@ -1801,7 +1799,7 @@ static BOOL construct_dev_mode(DEVICEMODE *devmode, int snum, char *servername)
  * construct_printer_info_2
  * fill a printer_info_2 struct
  ********************************************************************/
-static BOOL construct_printer_info_2(pstring servername, PRINTER_INFO_2 *printer, int snum)
+static BOOL construct_printer_info_2(fstring servername, PRINTER_INFO_2 *printer, int snum)
 {
 	pstring chaine;
 	pstring chaine2;
@@ -2209,7 +2207,7 @@ uint32 _spoolss_enumprinters( uint32 flags, const UNISTR2 *servername, uint32 le
 
 /****************************************************************************
 ****************************************************************************/
-static uint32 getprinter_level_0(pstring servername, int snum, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
+static uint32 getprinter_level_0(fstring servername, int snum, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
 {
 	PRINTER_INFO_0 *printer=NULL;
 
@@ -2241,7 +2239,7 @@ static uint32 getprinter_level_0(pstring servername, int snum, NEW_BUFFER *buffe
 
 /****************************************************************************
 ****************************************************************************/
-static uint32 getprinter_level_1(pstring servername, int snum, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
+static uint32 getprinter_level_1(fstring servername, int snum, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
 {
 	PRINTER_INFO_1 *printer=NULL;
 
@@ -2273,7 +2271,7 @@ static uint32 getprinter_level_1(pstring servername, int snum, NEW_BUFFER *buffe
 
 /****************************************************************************
 ****************************************************************************/
-static uint32 getprinter_level_2(pstring servername, int snum, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
+static uint32 getprinter_level_2(fstring servername, int snum, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
 {
 	PRINTER_INFO_2 *printer=NULL;
 	fstring temp;
@@ -2314,7 +2312,7 @@ uint32 _spoolss_getprinter(POLICY_HND *handle, uint32 level,
 			   NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
 {
 	int snum;
-	pstring servername;
+	fstring servername;
 	
 	*needed=0;
 
@@ -2345,13 +2343,13 @@ uint32 _spoolss_getprinter(POLICY_HND *handle, uint32 level,
  ********************************************************************/
 static void fill_printer_driver_info_1(DRIVER_INFO_1 *info, 
                                        NT_PRINTER_DRIVER_INFO_LEVEL driver, 
-				       pstring servername, fstring architecture)
+				       fstring servername, fstring architecture)
 {
 	init_unistr( &(info->name), driver.info_3->name);
 }
 
 static void construct_printer_driver_info_1(DRIVER_INFO_1 *info, int snum, 
-                                            pstring servername, fstring architecture)
+                                            fstring servername, fstring architecture)
 {	
 	NT_PRINTER_INFO_LEVEL printer;
 	NT_PRINTER_DRIVER_INFO_LEVEL driver;
@@ -2371,7 +2369,7 @@ static void construct_printer_driver_info_1(DRIVER_INFO_1 *info, int snum,
  ********************************************************************/
 static void fill_printer_driver_info_2(DRIVER_INFO_2 *info, 
                                        NT_PRINTER_DRIVER_INFO_LEVEL driver, 
-				       pstring servername, fstring architecture)
+				       fstring servername, fstring architecture)
 {
 	pstring where;
 	pstring temp_driverpath;
@@ -2405,7 +2403,7 @@ static void fill_printer_driver_info_2(DRIVER_INFO_2 *info,
  * construct_printer_driver_info_2
  * fill a printer_info_2 struct
  ********************************************************************/
-static void construct_printer_driver_info_2(DRIVER_INFO_2 *info, int snum, pstring servername, fstring architecture)
+static void construct_printer_driver_info_2(DRIVER_INFO_2 *info, int snum, fstring servername, fstring architecture)
 {
 	NT_PRINTER_INFO_LEVEL printer;
 	NT_PRINTER_DRIVER_INFO_LEVEL driver;
@@ -2441,7 +2439,7 @@ static void init_unistr_array(uint16 **uni_array, char **char_array, char *where
 			DEBUG(0,("init_unistr_array: Realloc error\n" ));
 			return;
 		}
-		ascii_to_unistr( *uni_array+j, line , strlen(line));
+		ascii_to_unistr((char *)(*uni_array+j), line , 2*strlen(line));
 		j+=strlen(line)+1;			
 		i++;
 	}
@@ -2457,7 +2455,7 @@ static void init_unistr_array(uint16 **uni_array, char **char_array, char *where
  ********************************************************************/
 static void fill_printer_driver_info_3(DRIVER_INFO_3 *info, 
                                        NT_PRINTER_DRIVER_INFO_LEVEL driver, 
-				       pstring servername, fstring architecture)
+				       fstring servername, fstring architecture)
 {
 	pstring where;
 	pstring temp_driverpath;
@@ -2499,7 +2497,7 @@ static void fill_printer_driver_info_3(DRIVER_INFO_3 *info,
  * fill a printer_info_3 struct
  ********************************************************************/
 static void construct_printer_driver_info_3(DRIVER_INFO_3 *info, int snum, 
-                                            pstring servername, fstring architecture)
+                                            fstring servername, fstring architecture)
 {	
 	NT_PRINTER_INFO_LEVEL printer;
 	NT_PRINTER_DRIVER_INFO_LEVEL driver;
@@ -2515,7 +2513,7 @@ static void construct_printer_driver_info_3(DRIVER_INFO_3 *info, int snum,
 
 /****************************************************************************
 ****************************************************************************/
-static uint32 getprinterdriver2_level1(pstring servername, pstring architecture, int snum, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
+static uint32 getprinterdriver2_level1(fstring servername, fstring architecture, int snum, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
 {
 	DRIVER_INFO_1 *info=NULL;
 	
@@ -2546,7 +2544,7 @@ static uint32 getprinterdriver2_level1(pstring servername, pstring architecture,
 
 /****************************************************************************
 ****************************************************************************/
-static uint32 getprinterdriver2_level2(pstring servername, pstring architecture, int snum, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
+static uint32 getprinterdriver2_level2(fstring servername, fstring architecture, int snum, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
 {
 	DRIVER_INFO_2 *info=NULL;
 	
@@ -2577,7 +2575,7 @@ static uint32 getprinterdriver2_level2(pstring servername, pstring architecture,
 
 /****************************************************************************
 ****************************************************************************/
-static uint32 getprinterdriver2_level3(pstring servername, pstring architecture, int snum, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
+static uint32 getprinterdriver2_level3(fstring servername, fstring architecture, int snum, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
 {
 	DRIVER_INFO_3 *info=NULL;
 	
@@ -2614,7 +2612,7 @@ uint32 _spoolss_getprinterdriver2(const POLICY_HND *handle, const UNISTR2 *uni_a
 				NEW_BUFFER *buffer, uint32 offered,
 				uint32 *needed, uint32 *servermajorversion, uint32 *serverminorversion)
 {
-	pstring servername;
+	fstring servername;
 	fstring architecture;
 	int snum;
 
@@ -3270,7 +3268,8 @@ static uint32 enumprinterdrivers_level2(fstring *list, fstring servername, fstri
 	NT_PRINTER_DRIVER_INFO_LEVEL driver;
 	DRIVER_INFO_2 *driver_info_2=NULL;
 
-	if((driver_info_2=(DRIVER_INFO_2 *)malloc(*returned * sizeof(DRIVER_INFO_2))) == NULL)
+	if (*returned > 0 && 
+	    !(driver_info_2=(DRIVER_INFO_2 *)malloc(*returned * sizeof(DRIVER_INFO_2))))
 		return ERROR_NOT_ENOUGH_MEMORY;
 
 	for (i=0; i<*returned; i++) {
@@ -3883,13 +3882,13 @@ uint32 _spoolss_enumprinterdata(const POLICY_HND *handle, uint32 idx,
 	 * take a pause *before* coding not *during* coding
 	 */
 	 
-	*out_max_value_len=in_value_len/2;
+	*out_max_value_len=in_value_len;
 	if((*out_value=(uint16 *)malloc(in_value_len*sizeof(uint8))) == NULL) {
 		free_a_printer(printer, 2);
 		safe_free(data);
 		return ERROR_NOT_ENOUGH_MEMORY;
 	}
-	ascii_to_unistr(*out_value, value, *out_max_value_len);
+	ascii_to_unistr((char *)*out_value, value, *out_max_value_len);
 	*out_value_len=2*(1+strlen(value));
 
 	*out_type=type;

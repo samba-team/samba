@@ -253,7 +253,7 @@ static int expect(int master, char *issue, char *expected)
 			nread += len;
 			buffer[nread] = 0;
 
-			if ((match = unix_do_match(buffer, expected, False)))
+			if ((match = ms_fnmatch(buffer, expected)))
 				timeout = 200;
 		}
 
