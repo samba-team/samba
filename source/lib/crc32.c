@@ -3,6 +3,9 @@
  *
  * Copyright Mark R. Nelson 1992
  *
+ * This code used by permission of J Erickson <jerickson@ddj.com>
+ * Tues 6th October 1998.  Copyright acknowledged above, as agreed.
+ *
  */
 
 #include "includes.h"
