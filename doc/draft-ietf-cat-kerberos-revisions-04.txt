@@ -118,7 +118,7 @@ the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -180,11 +180,10 @@ Encrypting the authenticator in the session key proves that it was generated
 by a party possessing the session key. Since no one except the requesting
 principal and the server know the session key (it is never sent over the
 network in the clear) this guarantees the identity of the client.
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -245,11 +244,10 @@ Although realms are typically hierarchical, intermediate realms may be
 bypassed to achieve cross-realm authentication through alternate
 authentication paths (these might be established to make communication
 between two realms more efficient). It is important for the end-service to
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -312,11 +310,10 @@ properly function:
      mount an offline dictionary attack by repeatedly attempting to decrypt,
      with successive entries from a dictionary, messages obtained which are
      encrypted under a key derived from the user's password.
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -378,11 +375,10 @@ KDC
      the Authentication Server (or service). The ticket-granting ticket
      portion is sometimes referred to as the ticket-granting server (or
      service).
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -443,11 +439,10 @@ password-changing program) can insist that this flag be set in any tickets
 they accept, and thus be assured that the client's key was recently
 presented to the application client.
 
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -501,11 +496,10 @@ may request it be set by setting the RENEWABLE option in the KRB_AS_REQ
 message. If it is set, then the renew-till field in the ticket contains the
 time after which the ticket may not be renewed.
 
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -565,11 +559,10 @@ authentication. By default, the client will request that it be set when
 requesting a ticket granting ticket, and reset when requesting any other
 ticket.
 
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -633,11 +626,10 @@ It indicates that the ticket to be issued for the end server is to be
 encrypted in the session key from the a additional second ticket-granting
 ticket provided with the request. See section 3.3.3 for specific details.
 
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -696,11 +688,10 @@ can be used to pass additional information that might be needed for the
 initial exchange. This field may be used for preauthentication as described
 in section [hl<>].
 
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -762,11 +753,10 @@ been specified then the error KDC_ERR_CANNOT_POSTDATE is returned. Otherwise
 the requested start time is checked against the policy of the local realm
 (the administrator might decide to prohibit certain types or ranges of
 postdated tickets), and if acceptable, the ticket's start time is set as
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -825,11 +815,10 @@ returning an error message, KRB_ERROR, to the client, with the error-code
 and e-text fields set to appropriate values. The error message contents and
 details are described in Section 5.9.1.
 
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -889,11 +878,10 @@ tickets by proving to the server that the client knows the session key of
 the ticket and thus is entitled to use the ticket. The KRB_AP_REQ message is
 referred to elsewhere as the 'authentication header.'
 
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -955,11 +943,10 @@ decrypted ticket. If decryption shows it to have been modified, the
 KRB_AP_ERR_BAD_INTEGRITY error is returned. The name and realm of the client
 from the ticket are compared against the same fields in the authenticator.
 If they don't match, the KRB_AP_ERR_BADMATCH error is returned (they might
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -1021,11 +1008,10 @@ to the application's protocol. The timestamp and microsecond field used in
 the reply must be the client's timestamp and microsecond field (as provided
 in the authenticator)[12]. If a sequence number is to be included, it should
 be randomly chosen as described above for the authenticator. A subkey may be
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -1081,11 +1067,10 @@ client and server of their peer's identity. If an application protocol
 requires privacy of its messages, it can use the KRB_PRIV message (section
 3.5). The KRB_SAFE message (section 3.4) can be used to assure integrity.
 
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -1147,11 +1132,10 @@ which the client does posess a ticket-granting ticket (using the KRB_TGS_REQ
 message recursively). The Kerberos server may return a TGT for the desired
 realm in which case one can proceed. Alternatively, the Kerberos server may
 return a TGT for a realm which is 'closer' to the desired realm (further
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -1215,11 +1199,10 @@ the sub-session key from the Authenticator.
 
 If any of the decryptions indicate failed integrity checks, the
 KRB_AP_ERR_BAD_INTEGRITY error is returned.
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -1279,11 +1262,10 @@ in no case may the starttime, endtime, or renew-till time of a newly-issued
 postdated ticket extend beyond the renew-till time of the ticket-granting
 ticket.
 
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -1345,11 +1327,10 @@ ticket-granting ticket. The name of the realm that issued the
 ticket-granting ticket will be added to the transited field of the ticket to
 be issued. This is accomplished by reading the transited field from the
 ticket-granting ticket (which is treated as an unordered set of realm
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -1412,11 +1393,10 @@ and that everything from /COM down to the server's realm in an X.500 style
 has also been traversed. This could occur if the EDU realm in one hierarchy
 shares an inter-realm key directly with the /COM realm in another hierarchy.
 
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -1478,11 +1458,10 @@ generates a KRB_AP_ERR_BADVERSION or KRB_AP_ERR_MSG_TYPE error. The
 application verifies that the checksum used is a collision-proof keyed
 checksum, and if it is not, a KRB_AP_ERR_INAPP_CKSUM error is generated. If
 the sender's address was included in the control information, the recipient
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -1544,11 +1523,10 @@ generates a KRB_AP_ERR_BADADDR error. Then the timestamp and usec and/or the
 sequence number fields are checked. If timestamp and usec are expected and
 not present, or they are present but not current, the KRB_AP_ERR_SKEW error
 is generated. If the server name, along with the client name, time and
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -1611,11 +1589,10 @@ its ticket cache together with the session key and other information in the
 corresponding KrbCredInfo sequence from the encrypted part of the KRB_CRED
 message.
 
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -1668,11 +1645,10 @@ request for initial authentication, the most recent key (known by the
 Kerberos server) will be used for encryption. This is the key with the
 highest key version number.
 
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -1733,11 +1709,10 @@ expiration time for any tickets that have been issued using each key. This
 field would be used to indicate how long old keys must remain valid to allow
 the continued use of outstanding tickets.
 
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -1801,11 +1776,10 @@ PrincipalName ::=   SEQUENCE {
                     name-type[0]     INTEGER,
                     name-string[1]   SEQUENCE OF GeneralString
 }
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -1868,11 +1842,10 @@ ad-type
      values are reserved for local use. Non-negative values are reserved for
      registered use.
 
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -1932,11 +1905,10 @@ KDCOptions ::=   BIT STRING
                   -- renewable(8),
                   -- unused9(9),
                   -- unused10(10),
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -1995,11 +1967,10 @@ This section describes the format and encryption parameters for tickets and
 authenticators. When a ticket or authenticator is included in a protocol
 message it is treated as an opaque object.
 
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -2062,11 +2033,10 @@ extensions
      will be selected and the spec modified by 7/14/99 ***] This optional
      field contains a sequence of extentions that may be used to carry
      information that must be carried with the ticket to support several
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -2128,11 +2098,10 @@ flags
                                    ticket-granting  tickets  may  be issued
                                    with different network addresses.
 
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -2194,11 +2163,10 @@ INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
                                    selected  by the KDC and the strength of
                                    the method is not indicated.
 
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -2260,11 +2228,10 @@ key
 crealm
      This field contains the name of the realm in which the client is
      registered and in which initial authentication took place.
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -2326,11 +2293,10 @@ caddr
      key (perhaps through operating system security breaches or a careless
      user's unattended session) to make use of stolen tickets.
 
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -2393,11 +2359,10 @@ authorization-data
      The authorization-data field is optional and does not have to be
      included in a ticket.
 
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -2458,11 +2423,10 @@ seq-number
      For sequence numbers to adequately support the detection of replays
      they should be non-repeating, even across connection boundaries. The
      initial sequence number should be random and uniformly distributed
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -2527,11 +2491,10 @@ KDC-REQ-BODY ::=   SEQUENCE {
                     additional-tickets[11] SEQUENCE OF Ticket OPTIONAL
 }
 
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -2595,11 +2558,10 @@ padata
      certain token cards with Kerberos. The details of such extensions are
      specified in separate documents. See [Pat92] for additional uses of
      this field.
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -2672,11 +2634,10 @@ is
 the
                                       addresses field of the request.
 
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -2773,11 +2734,10 @@ the
          9-13     UNUSED
                                       These options are presently unused.
 
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -2871,11 +2831,10 @@ the
 ticket-
                                       granting ticket provided.
 
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -2962,11 +2921,10 @@ till
      to have the maximum endtime permitted according to KDC policy for the
      parties to the authentication exchange as limited by expiration date of
      the ticket granting ticket or other preauthentication credentials.
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -3027,11 +2985,10 @@ absent, the session key from the ticket-granting ticket used in the request.
 In that case, no version number will be present in the EncryptedData
 sequence.
 
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -3091,11 +3048,10 @@ enc-part
      The encrypted part is encoded as described in section 6.1.
 key
      This field is the same as described for the ticket in section 5.3.1.
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -3157,11 +3113,10 @@ APOptions ::=   BIT STRING {
                 mutual-required(2)
 }
 
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -3224,11 +3179,10 @@ EncAPRepPart ::=   [APPLICATION 27[29]] SEQUENCE {
                    subkey[2]                         EncryptionKey OPTIONAL,
                    seq-number[3]                     INTEGER OPTIONAL
 }
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -3291,11 +3245,10 @@ KRB-SAFE-BODY ::=   SEQUENCE {
                     r-address[5]                  HostAddress OPTIONAL
 }
 
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -3359,11 +3312,10 @@ KRB-PRIV ::=         [APPLICATION 21] SEQUENCE {
                      enc-part[3]                       EncryptedData
 }
 
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -3427,11 +3379,10 @@ EncKrbCredPart   ::= [APPLICATION 29]   SEQUENCE {
 KrbCredInfo      ::=                    SEQUENCE {
                  key[0]                 EncryptionKey,
                  prealm[1]              Realm OPTIONAL,
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -3490,11 +3441,10 @@ flags, authtime, starttime, endtime, renew-till, srealm, sname, and caddr
      ticket found in the ticket field. Descriptions of the fields are
      identical to the descriptions in the KDC-REP message.
 
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -3554,11 +3504,10 @@ susec
      value ranges from 0 to 999999. It appears along with stime. The two
      fields are used in conjunction to specify a reasonably accurate
      timestamp.
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -3620,11 +3569,10 @@ e-typed-data
      could contain the METHOD-DATA specified since I don't think anyone
      actually uses it yet. It could also contain the PA-DATA sequence for
      the preauth required error if we had a clear way to transition to the
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -3686,11 +3634,10 @@ encryption type is expected to provide and verify an appropriate checksum.
 The specification of each encryption method sets out its checksum
 requirements.
 
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -3747,11 +3694,10 @@ item. The type and length is implicit and specified by the particular
 encryption type being used (etype). The format for the data to be encrypted
 is described in the following diagram:
 
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -3815,11 +3761,10 @@ All negative values for the encryption key type are reserved for local use.
 All non-negative values are reserved for officially assigned type fields and
 interpreta- tions.
 
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -3879,11 +3824,10 @@ octet supplies the 8 most significant bits (with the octet's MSbit used as
 the DES input block's MSbit, etc.), the second octet the next 8 bits, ...,
 and the eighth octet supplies the 8 least significant bits.
 
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -3945,11 +3889,10 @@ the result which is return as the key. Pseudocode follows:
           odd = 1;
           s = string + salt;
           tempkey = NULL;
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -4011,11 +3954,10 @@ The EncryptionKey value is 24 octets long. The 7 most significant bits of
 each octet contain key bits, and the least significant bit is the inverse of
 the xor of the key bits.
 
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -4077,11 +4019,10 @@ with key usage values and RFC 1510 section numbers:
     (section 5.3.2)
  8. TGS-REP encrypted part (includes application session key),
     encrypted with the tgs session key (section 5.4.2)
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -4143,11 +4084,10 @@ ciphertest must be generated from the plaintext as follows:
 
 The confounder and padding are specific to the encryption algorithm E.
 
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -4206,11 +4146,10 @@ algorithm of type RSA-MD5-DES). For most keyed checksums, as well as for the
 encrypted forms of unkeyed collision-proof checksums, Kerberos prepends a
 confounder before the checksum is calculated.
 
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -4272,11 +4211,10 @@ be collision-proof.
 The RSA-MD5-DES checksum calculates a keyed collision-proof checksum by
 prepending an 8 octet confounder before the text, applying the RSA MD5
 checksum algorithm, and encrypting the confounder and the checksum using DES
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -4338,11 +4276,10 @@ shall a key be used whose variant is 'weak' or 'semi-weak'.
 The RSA-MD4-DES-K checksum calculates a keyed collision-proof checksum by
 applying the RSA MD4 checksum algorithm and encrypting the results using DES
 in cipher-block-chaining (CBC) mode using a DES key as both key and
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -4402,11 +4339,10 @@ contains no equal (=) or period (.) and the prefix must be followed by a
 colon (:) and the rest of the name. All prefixes must be assigned before
 they may be used. Presently none are assigned.
 
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -4470,11 +4406,10 @@ is the Kerberos ticket-granting service whose name has a first component of
 krbtgt and a second component identifying the realm for which the ticket is
 valid.
 
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -4536,11 +4471,10 @@ Internet (IPv4) Addresses
 Internet (IPv4) addresses are 32-bit (4-octet) quantities, encoded in MSB
 order. The type of IPv4 addresses is two (2).
 
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -4601,11 +4535,10 @@ the sender's IP address. Kerberos servers supporting IP transport must
 accept UDP requests on port 88 (decimal). The response to a request made
 through UDP/IP transport must also use UDP/IP transport.
 
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -4665,11 +4598,10 @@ header (KRB_AP_REQ), an authentication reply (KRB_AP_REP), a safe message
 ASN.1 description for each message. The application code may be used by
 Kerberos to determine the message type.
 
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -4734,11 +4666,10 @@ rsa-md5-des3               9                   24
 hmac-sha1-des3             12                  20  (I had this as 10, is it
 12)
 
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -4797,11 +4728,10 @@ TE-TYPE-PKCROSS-CLIENT        3      PKCROSS cross realm key ticket
 TE-TYPE-CYBERSAFE-EXT         4      Assigned to CyberSafe Corp
                     5      TE-TYPE-DEST-HOST (I have reservations)
 
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -4868,11 +4798,10 @@ KDC_ERR_TRTYPE_NOSUPP          17   KDC has no support for transited type
 KDC_ERR_CLIENT_REVOKED         18   Clients credentials have been revoked
 KDC_ERR_SERVICE_REVOKED        19   Credentials for server have been revoked
 KDC_ERR_TGT_REVOKED            20   TGT has been revoked
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -4942,11 +4871,10 @@ user to user authentication, support for proxies, forwarding, postdating,
 and renewing tickets, the format of realm names, and the handling of
 authorization data.
 
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -5007,11 +4935,10 @@ PA-ENC-TIMESTAMP preauthentication method. Servers need not support the
 PA-ENC-TIMESTAMP method, but if not supported the server should ignore the
 presence of PA-ENC-TIMESTAMP pre-authentication in a request.
 
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -5076,11 +5003,10 @@ empty addresses               only when suitable  restrictions  appear
                               in authorization data
 proxiable, etc.               Allowed.
 
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -5141,11 +5067,10 @@ INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
           Processing Standards Publication  46,   Washington,  DC
           (1977).
 
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -5187,11 +5112,10 @@ INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
           Keyed-Hashing for Message Authentication", draft-ietf-ipsec-hmac-
           md5-01.txt, August, 1996.
 
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -5244,11 +5168,10 @@ A.1. KRB_AS_REQ generation
                 retry or use alternate server;
         endif
 
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -5311,11 +5234,10 @@ then
                 set new_tkt.flags.FORWARDABLE;
         endif
         if (req.kdc-options.PROXIABLE is set) then
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -5377,11 +5299,10 @@ INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
         if (req.kdc-options.RENEWABLE is set) then
                 set new_tkt.flags.RENEWABLE;
                 new_tkt.renew-till := min(rtime,
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -5437,11 +5358,10 @@ INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
                          using use_etype, client.key, client.p_kvno;
         send(resp);
 
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -5505,11 +5425,10 @@ A.4. KRB_AS_REP and KRB_TGS_REP common checks
                 return KRB_AP_ERR_SKEW;
         endif
         if ((req.from != 0) and (req.from != resp.starttime)) then
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -5573,11 +5492,10 @@ A.5. KRB_TGS_REQ generation
         body.enc-authorization-data := user-supplied data;
         if (body.kdc-options.ENC-TKT-IN-SKEY) then
                 body.additional-tickets_ticket := second TGT;
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -5642,11 +5560,10 @@ then
             keyed) then
                 error_out(KRB_AP_ERR_INAPP_CKSUM);
         endif
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -5707,11 +5624,10 @@ INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
                 if (tgt.flags.PROXIABLE is reset)
                         error_out(KDC_ERR_BADOPTION);
                 endif
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -5776,11 +5692,10 @@ INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
                         error_out(KDC_ERR_BADOPTION);
                 endif
                 if (tgt.renew-till < kdc_time) then
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -5846,11 +5761,10 @@ decrypted_authorization_data
 
         new_tkt.key := session;
         new_tkt.crealm := tgt.crealm;
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -5913,11 +5827,10 @@ tgt.realm)
         omit resp.key-expiration;
 
         resp.sname := new_tkt.sname;
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -5980,11 +5893,10 @@ A.8. Authenticator generation
                 body.seq-number := initial sequence;
         endif
 
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -6046,11 +5958,10 @@ A.10. KRB_AP_REQ verification
                 using decr_ticket.key;
         if (decryption_error()) then
                 error_out(KRB_AP_ERR_BAD_INTEGRITY);
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -6095,11 +6006,10 @@ INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
         /* caller must check decr_ticket.flags for any pertinent details */
         return(OK, decr_ticket, packet.ap_options.MUTUAL-REQUIRED);
 
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -6152,11 +6062,10 @@ A.12. KRB_AP_REP verification
         endif
         return(AUTHENTICATION_SUCCEEDED);
 
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -6218,11 +6127,10 @@ A.15. KRB_SAFE and KRB_PRIV common checks
         endif
         if ((packet.r-address is present) and
             (packet.r-address != local_host_address)) then
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -6281,11 +6189,10 @@ A.16. KRB_PRIV generation
         select encryption type;
         encrypt OCTET STRING into packet.enc-part.cipher;
 
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -6347,11 +6254,10 @@ A.18. KRB_CRED generation
         endif
 
         if (using s-address) then
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -6408,11 +6314,10 @@ A.19. KRB_CRED verification
                                server[n],times[n],flags[n]);
         return
 
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -6440,11 +6345,10 @@ A.20. KRB_ERROR generation
                 packet.e-data := error data;
         endif
 
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -6498,11 +6402,10 @@ level authorization data field. Applications and application servers that do
 not implement this element should reject tickets that contain authorization
 data elements of this type.
 
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -6570,11 +6473,10 @@ This element and the elements it encapulates may be safely ignored by
 applications, application servers, and KDCs that do not implement this
 element.
 
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -6633,11 +6535,10 @@ ticket, each will have a corresponding element of type in-ticket-extensions
 in the top level authorization data field, and the external entries will be
 linked to the corresponding element by their checksums.
 
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -6701,11 +6602,10 @@ in normal exchanges with that realm's services. However, for even small
 numbers of clients this becomes cumbersome, and more automatic methods as
 described here are necessary.
 
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -6768,11 +6668,10 @@ This might result in the use of a realm which has been compromised, and
 would result in an attacker's ability to compromise the authentication of
 the application server to the client.
 
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
@@ -6831,11 +6730,10 @@ additional check that the message was decrypted properly.
 [31] An application code in the encrypted part of a message provides an
 additional check that the message was decrypted properly.
 
-the authentication protocol. These extensions provide for authentication of
 
 Neuman, Ts'o, Kohl                                 Expires: 25 December,
 1999
-
+
 INTERNET-DRAFT    draft-ietf-cat-kerberos-revisions-04          June 25,
 1999
 
