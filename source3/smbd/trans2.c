@@ -3298,7 +3298,7 @@ static int call_trans2getdfsreferral(connection_struct *conn, char* inbuf,
 	srvstr_pull(inbuf, pathname, &params[2], sizeof(pathname), -1, STR_TERMINATE);
 
 	if((reply_size = setup_dfs_referral(conn, pathname,max_referral_level,ppdata)) < 0)
-		return ERROR_DOS(ERRDOS,ERRbadfile);
+		return UNIXERROR(ERRDOS,ERRbadfile);
     
 	SSVAL(outbuf,smb_flg2,SVAL(outbuf,smb_flg2) | FLAGS2_DFS_PATHNAMES);
 	send_trans2_replies(outbuf,bufsize,0,0,*ppdata,reply_size);
