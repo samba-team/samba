@@ -31,12 +31,16 @@ get a users home directory.
 ****************************************************************************/
 char *get_home_dir(char *user)
 {
-  static struct passwd *pass;
+	struct passwd *pass;
+	static pstring home_dir;
 
-  pass = Get_Pwnam(user, False);
+	pass = Get_Pwnam(user, False);
 
-  if (!pass) return(NULL);
-  return(pass->pw_dir);      
+	if (pass == NULL || pass->pw_dir == NULL) return(NULL);
+
+	pstrcpy(home_dir, pass->pw_dir);
+	DEBUG(10,("get_home_dir: returning %s for user %s\n", home_dir, user));
+	return home_dir;
 }
 
 
