@@ -814,12 +814,15 @@ size_t smbcli_blob_pull_string(struct smbcli_session *session,
 	int extra;
 	dest->s = NULL;
 	
-	if (len_offset > blob->length-4) {
-		return 0;
-	}
 	if (flags & STR_LEN8BIT) {
+		if (len_offset > blob->length-1) {
+			return 0;
+		}
 		dest->private_length = CVAL(blob->data, len_offset);
 	} else {
+		if (len_offset > blob->length-4) {
+			return 0;
+		}
 		dest->private_length = IVAL(blob->data, len_offset);
 	}
 	extra = 0;
