@@ -288,7 +288,6 @@ try_mkdir (const char *path)
 
     oldmask = umask(0);
     mkdir (dir, 01777);
-    chmod (dir, 01777);
     umask (oldmask);
     free (dir);
 }
@@ -375,6 +374,22 @@ get_xsockets (int *number, struct x_socket **sockets, int tcp_socket)
      *number = n;
      *sockets = s;
      return dpy;
+}
+
+/*
+ *
+ */
+
+int
+chown_xsockets (int n, struct x_socket *sockets, uid_t uid, gid_t gid)
+{
+    int i;
+
+    for (i = 0; i < n; ++i)
+	if (sockets[i].pathname != NULL)
+	    if (chown (sockets[i].pathname, uid, gid) < 0)
+		return -1;
+    return 0;
 }
 
 /*
