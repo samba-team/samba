@@ -298,6 +298,30 @@ static NTSTATUS netr_ServerAuthenticate2(struct dcesrv_call_state *dce_call, TAL
 }
 
 /* 
+ netr_ServerPasswordSet 
+
+ 	NTSTATUS netr_ServerPasswordSet(
+		[in]  unistr *server_name,
+		[in]  unistr username,
+		[in]  uint16 secure_channel_type,
+		[in]  unistr computer_name,
+		[in]  netr_Authenticator credential,
+		[in]  netr_Password new_password,
+		[out] netr_Authenticator return_authenticator
+		);
+
+*/
+static NTSTATUS netr_ServerPasswordSet(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+				       struct netr_ServerPasswordSet *r)
+{
+
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	
+
+}
+
+
+/* 
   netr_LogonUasLogon 
 */
 static WERROR netr_LogonUasLogon(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
@@ -339,18 +363,6 @@ static NTSTATUS netr_LogonSamLogoff(struct dcesrv_call_state *dce_call, TALLOC_C
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-
-
-/* 
-  netr_ServerPasswordSet 
-*/
-static NTSTATUS netr_ServerPasswordSet(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct netr_ServerPasswordSet *r)
-{
-
-	
-
-}
 
 
 /* 
