@@ -44,7 +44,7 @@ void prs_dump(char *name, int v, prs_struct *ps)
 		if (fd != -1 || errno != EEXIST) break;
 	}
 	if (fd != -1) {
-		write(fd, ps->data_p + ps->data_offset, ps->buffer_size - ps->data_offset);
+		write(fd, ps->data_p + ps->data_offset, ps->grow_size - ps->data_offset);
 		close(fd);
 		DEBUG(0,("created %s\n", fname));
 	}
@@ -162,6 +162,8 @@ BOOL prs_grow(prs_struct *ps, uint32 extra_space)
 {
 	uint32 new_size;
 	char *new_data;
+
+	ps->grow_size = MAX(ps->grow_size, ps->data_offset + extra_space);
 
 	if(ps->data_offset + extra_space <= ps->buffer_size)
 		return True;
