@@ -41,10 +41,22 @@ static WERROR reg_close_gconf(REG_HANDLE *h)
 	return WERR_OK;
 }
 
-static WERROR gconf_open_key (REG_HANDLE *h, const char *name, REG_KEY **key) 
+static WERROR gconf_get_hive (REG_HANDLE *h, int hivenum, REG_KEY **key)
+{
+	if(hivenum != 0) return WERR_NO_MORE_ITEMS;
+	*key = reg_key_new_abs("", h, NULL);
+	(*key)->backend_data = talloc_strdup((*key)->mem_ctx, "/");
+	return WERR_OK;
+}
+
+static WERROR gconf_open_key (REG_HANDLE *h, int hivenum, const char *name, REG_KEY **key) 
 {
 	REG_KEY *ret;
-	char *fullpath = reg_path_win2unix(strdup(name));
+	char *fullpath;
+	
+	if(hivenum != 0) return WERR_NO_MORE_ITEMS;
+	
+	fullpath = reg_path_win2unix(strdup(name));
 
 	/* Check if key exists */
 	if(!gconf_client_dir_exists((GConfClient *)h->backend_data, fullpath, NULL)) {
@@ -183,6 +195,7 @@ static struct registry_ops reg_backend_gconf = {
 	.name = "gconf",
 	.open_registry = reg_open_gconf,
 	.close_registry = reg_close_gconf,
+	.get_hive = gconf_get_hive,
 	.open_key = gconf_open_key,
 	.fetch_subkeys = gconf_fetch_subkeys,
 	.fetch_values = gconf_fetch_values,

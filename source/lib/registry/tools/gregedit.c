@@ -454,24 +454,40 @@ static GtkWidget* create_mainwin (void)
 		open_nt4 = gtk_image_menu_item_new_with_mnemonic("_Open NT4 file");
 		gtk_widget_show (open_nt4);
 		gtk_container_add (GTK_CONTAINER (menu_file_menu), open_nt4);
+
+  		g_signal_connect ((gpointer) open_nt4, "activate",
+                    G_CALLBACK (on_open_file_activate),
+                    "nt4");
 	}
 
 	if(reg_has_backend("w95")) {
 		open_w95 = gtk_image_menu_item_new_with_mnemonic("_Open Win9x file");
 		gtk_widget_show (open_w95);
 		gtk_container_add (GTK_CONTAINER (menu_file_menu), open_w95);
+
+  		g_signal_connect ((gpointer) open_w95, "activate",
+                    G_CALLBACK (on_open_file_activate),
+                    "w95");
 	}
 
 	if(reg_has_backend("gconf")) {
 		open_gconf = gtk_image_menu_item_new_with_mnemonic ("_Open GConf");
 		gtk_widget_show (open_gconf);
 		gtk_container_add (GTK_CONTAINER (menu_file_menu), open_gconf);
+
+  		g_signal_connect ((gpointer) open_gconf, "activate",
+                    G_CALLBACK (on_open_gconf_activate),
+                    NULL);
 	}
 
 	if(reg_has_backend("rpc")) {
 		open_remote = gtk_menu_item_new_with_mnemonic ("_Open Remote");
 		gtk_widget_show (open_remote);
 		gtk_container_add (GTK_CONTAINER (menu_file_menu), open_remote);
+
+  		g_signal_connect ((gpointer) open_remote, "activate",
+                    G_CALLBACK (on_open_remote_activate),
+                    NULL);
 	}
 
 	save = gtk_image_menu_item_new_from_stock ("gtk-save", accel_group);
@@ -605,18 +621,6 @@ static GtkWidget* create_mainwin (void)
   gtk_box_pack_start (GTK_BOX (vbox1), statusbar, FALSE, FALSE, 0);
   gtk_statusbar_set_has_resize_grip (GTK_STATUSBAR (statusbar), FALSE);
 
-  g_signal_connect ((gpointer) open_nt4, "activate",
-                    G_CALLBACK (on_open_file_activate),
-                    "nt4");
-  g_signal_connect ((gpointer) open_w95, "activate",
-                    G_CALLBACK (on_open_file_activate),
-                    "w95");
-  g_signal_connect ((gpointer) open_gconf, "activate",
-                    G_CALLBACK (on_open_gconf_activate),
-                    NULL);
-  g_signal_connect ((gpointer) open_remote, "activate",
-                    G_CALLBACK (on_open_remote_activate),
-                    NULL);
   g_signal_connect ((gpointer) save, "activate",
                     G_CALLBACK (on_save_activate),
                     NULL);
