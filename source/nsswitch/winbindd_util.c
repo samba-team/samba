@@ -435,6 +435,11 @@ BOOL get_domain_info(struct winbindd_domain *domain)
 
     if (!lookup_domain_sid(domain->name, domain)) {
 	    DEBUG(0, ("could not find sid for domain %s\n", domain->name));
+
+	    /* Could be a DC failure - shut down connections to this domain */
+
+	    winbindd_kill_connections(domain);
+
 	    return False;
     }
     
