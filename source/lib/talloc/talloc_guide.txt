@@ -306,6 +306,7 @@ NOTE: It is possible to produce loops in the parent/child relationship
 if you are not careful with talloc_steal(). No guarantees are provided
 as to your sanity or the safety of your data if you do this.
 
+talloc_steal (new_ctx, NULL) will return NULL with no sideeffects.
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 off_t talloc_total_size(const void *ptr);
