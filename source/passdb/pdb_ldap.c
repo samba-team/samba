@@ -3759,7 +3759,7 @@ static NTSTATUS ldapsam_update_trust_passwd(struct pdb_methods *methods, const S
 	char **attr_list;
 	LDAPMessage *res = NULL;
 	LDAPMod **mod = NULL;
-	pstring dn;
+	char *dn = NULL;
 	int ldap_op;
 	int rc, count;
 	const char *dom_name;
@@ -3798,22 +3798,23 @@ static NTSTATUS ldapsam_update_trust_passwd(struct pdb_methods *methods, const S
 			  dom_name));
 		ldap_msgfree(res);
 		free_attr_list(attr_list);
-		return NT_STATUS_UNSUCCESSFUL;  /* TODO: find more suitable status code */
+		return NT_STATUS_NOT_FOUND;
 
 	} else if (count > 1) {
 		DEBUG(0, ("More than one (%d) trust passwords (%s) found in the directory!\n",
 			  count, dom_name));
 		ldap_msgfree(res);
 		free_attr_list(attr_list);
-		return NT_STATUS_UNSUCCESSFUL;  /* TODO: find more suitable status code */
+		return NT_STATUS_UNSUCCESSFUL;  /* I don't know of more suitable status code yet */
 	}
 
 	ldap_op = LDAP_MOD_REPLACE;
 
-	/* DN of the object being added */
-	snprintf(dn, sizeof(dn) - 1, "%s=%s,%s=%s,%s", get_attr_key2string(trustpw_attr_list, LDAP_ATTR_DOMAIN),
-	         dom_name, get_attr_key2string(dominfo_attr_list, LDAP_ATTR_DOMAIN), lp_workgroup(),
-	         lp_ldap_suffix());
+	/* DN of the object being modified */
+	dn = smbldap_get_dn(ldap_state->smbldap_state->ldap_struct, res);
+	if (!dn) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
 
 	/* Init LDAP entry from trust password structure */
 	if (!init_ldap_from_trustpw(ldap_state, res, &mod, &trustpw)) {
