@@ -583,7 +583,7 @@ static BOOL init_ldap_from_sam (LDAPMod *** mods, int ldap_state, SAM_ACCOUNT * 
 	make_a_mod(mods, ldap_state, "rid", temp);
 
 	if ( !sampass->group_rid)
-		sampass->user_rid = pdb_gid_to_group_rid(pdb_get_gid(sampass));
+		sampass->group_rid = pdb_gid_to_group_rid(pdb_get_gid(sampass));
 	slprintf(temp, sizeof(temp) - 1, "%i", sampass->group_rid);
 	make_a_mod(mods, ldap_state, "primaryGroupID", temp);
 
