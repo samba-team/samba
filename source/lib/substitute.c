@@ -40,6 +40,9 @@ void set_local_machine_name(const char* local_name, BOOL perm)
 	static BOOL already_perm = False;
 	fstring tmp_local_machine;
 
+	if (strcmp(local_name, "*SMBSERVER")==0) 
+		return;
+
 	if (already_perm)
 		return;
 
