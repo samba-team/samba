@@ -138,7 +138,7 @@ send_request (krb5_context context,
     msghdr.msg_controllen = 0;
 #endif
 
-    iov[0].iov_base    = header;
+    iov[0].iov_base    = (void*)header;
     iov[0].iov_len     = 6;
     iov[1].iov_base    = ap_req_data.data;
     iov[1].iov_len     = ap_req_data.length;
