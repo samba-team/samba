@@ -527,10 +527,64 @@ or workgroup. Defaults to local domain.</para>
 <refsect2>
 <title>CACHE</title>
 
-<para>Interface to samba's internal gencache functions. For debugging 
-purposes only.</para>
+<para>Samba uses a general caching interface called 'gencache'. It 
+can be controlled using 'NET CACHE'.</para>
 
-<!--FIXME-->
+<para>All the timeout parameters support the suffixes:
+
+<simplelist>
+<member>s - Seconds</member>
+<member>m - Minutes</member>
+<member>h - Hours</member>
+<member>d - Days</member>
+<member>w - Weeks</member>
+</simplelist>
+
+</para>
+
+<refsect3>
+<title>CACHE ADD <replaceable>key</replaceable> <replaceable>data</replaceable> <replaceable>time-out</replaceable></title>
+
+<para>Add specified key+data to the cache with the given timeout.</para>
+
+</refsect3>
+
+<refsect3>
+<title>CACHE DEL <replaceable>key</replaceable></title>
+
+<para>Delete key from the cache.</para>
+
+</refsect3>
+
+<refsect3>
+<title>CACHE SET <replaceable>key</replaceable> <replaceable>data</replaceable> <replaceable>time-out</replaceable></title>
+
+<para>Update data of existing cache entry.</para>
+
+</refsect3>
+
+<refsect3>
+<title>CACHE SEARCH <replaceable>PATTERN</replaceable></title>
+
+<para>Search for the specified pattern in the cache data.</para>
+
+</refsect3>
+
+<refsect3>
+<title>CACHE LIST</title>
+
+<para>
+List all current items in the cache.
+</para>
+
+</refsect3>
+
+<refsect3>
+<title>CACHE FLUSH</title>
+
+<para>Remove all the current items from the cache.</para>
+
+</refsect3>
 
 </refsect2>
 
