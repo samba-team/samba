@@ -325,7 +325,7 @@ BOOL svcctl_io_q_open_service(const char *desc, SVCCTL_Q_OPEN_SERVICE *q_u, prs_
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_uint32("access_mask", ps, depth, &q_u->access_mask))
+	if(!prs_uint32("access", ps, depth, &q_u->access))
 		return False;
 	
 	return True;

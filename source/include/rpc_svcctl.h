@@ -148,7 +148,7 @@ typedef struct {
 typedef struct {
 	POLICY_HND handle;
 	UNISTR2 servicename;
-	uint32 access_mask;
+	uint32 access;
 } SVCCTL_Q_OPEN_SERVICE;
 
 typedef struct {
