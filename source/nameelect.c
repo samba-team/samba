@@ -76,7 +76,7 @@ void check_master_browser(time_t t)
     {
       if (strequal(work->work_group, myworkgroup) && !AM_MASTER(work))
       {
-        if (lp_local_master())
+        if (lp_local_master() && lp_preferred_master())
         {
           /* potential master browser - not a master browser.  force
              becoming a master browser, hence the log message.
