@@ -391,7 +391,7 @@ pid %d, port %d, dev = %x, inode = %.0f, file_id = %lu\n",
 		/* 
 		 * Keep this as a debug case - eventually we can remove it.
 		 */
-		case 0x8001:
+		case (CMD_REPLY | KERNEL_OPLOCK_BREAK_CMD):
 			DEBUG(0,("process_local_message: Received unsolicited break \
 reply - dumping info.\n"));
 
