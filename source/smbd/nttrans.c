@@ -46,10 +46,10 @@ static char *known_nt_pipes[] = {
 /* Map generic permissions to file object specific permissions */
  
 struct generic_mapping file_generic_mapping = {
-    FILE_GENERIC_READ,
-    FILE_GENERIC_WRITE,
-    FILE_GENERIC_EXECUTE,
-    FILE_GENERIC_ALL
+	FILE_GENERIC_READ,
+	FILE_GENERIC_WRITE,
+	FILE_GENERIC_EXECUTE,
+	FILE_GENERIC_ALL
 };
 
 /****************************************************************************
@@ -256,17 +256,17 @@ static BOOL saved_short_case_preserve;
 
 static void set_posix_case_semantics(uint32 file_attributes)
 {
-  if(!(file_attributes & FILE_FLAG_POSIX_SEMANTICS))
-    return;
+	if(!(file_attributes & FILE_FLAG_POSIX_SEMANTICS))
+		return;
 
-  saved_case_sensitive = case_sensitive;
-  saved_case_preserve = case_preserve;
-  saved_short_case_preserve = short_case_preserve;
+	saved_case_sensitive = case_sensitive;
+	saved_case_preserve = case_preserve;
+	saved_short_case_preserve = short_case_preserve;
 
-  /* Set to POSIX. */
-  case_sensitive = True;
-  case_preserve = True;
-  short_case_preserve = True;
+	/* Set to POSIX. */
+	case_sensitive = True;
+	case_preserve = True;
+	short_case_preserve = True;
 }
 
 /****************************************************************************
@@ -275,12 +275,12 @@ static void set_posix_case_semantics(uint32 file_attributes)
 
 static void restore_case_semantics(uint32 file_attributes)
 {
-  if(!(file_attributes & FILE_FLAG_POSIX_SEMANTICS))
-    return;
+	if(!(file_attributes & FILE_FLAG_POSIX_SEMANTICS))
+		return;
 
-  case_sensitive = saved_case_sensitive;
-  case_preserve = saved_case_preserve;
-  short_case_preserve = saved_short_case_preserve;
+	case_sensitive = saved_case_sensitive;
+	case_preserve = saved_case_preserve;
+	short_case_preserve = saved_short_case_preserve;
 }
 
 /****************************************************************************
@@ -289,40 +289,40 @@ static void restore_case_semantics(uint32 file_attributes)
 
 static int map_create_disposition( uint32 create_disposition)
 {
-  int ret;
+	int ret;
 
-  switch( create_disposition ) {
-  case FILE_CREATE:
-    /* create if not exist, fail if exist */
-    ret = (FILE_CREATE_IF_NOT_EXIST|FILE_EXISTS_FAIL);
-    break;
-  case FILE_SUPERSEDE:
-  case FILE_OVERWRITE_IF:
-    /* create if not exist, trunc if exist */
-    ret = (FILE_CREATE_IF_NOT_EXIST|FILE_EXISTS_TRUNCATE);
-    break;
-  case FILE_OPEN:
-    /* fail if not exist, open if exists */
-    ret = (FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN);
-    break;
-  case FILE_OPEN_IF:
-    /* create if not exist, open if exists */
-    ret = (FILE_CREATE_IF_NOT_EXIST|FILE_EXISTS_OPEN);
-    break;
-  case FILE_OVERWRITE:
-    /* fail if not exist, truncate if exists */
-    ret = (FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_TRUNCATE);
-    break;
-  default:
-    DEBUG(0,("map_create_disposition: Incorrect value for create_disposition = %d\n",
-             create_disposition ));
-    return -1;
-  }
+	switch( create_disposition ) {
+		case FILE_CREATE:
+			/* create if not exist, fail if exist */
+			ret = (FILE_CREATE_IF_NOT_EXIST|FILE_EXISTS_FAIL);
+			break;
+		case FILE_SUPERSEDE:
+		case FILE_OVERWRITE_IF:
+			/* create if not exist, trunc if exist */
+			ret = (FILE_CREATE_IF_NOT_EXIST|FILE_EXISTS_TRUNCATE);
+			break;
+		case FILE_OPEN:
+			/* fail if not exist, open if exists */
+			ret = (FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN);
+			break;
+		case FILE_OPEN_IF:
+			/* create if not exist, open if exists */
+			ret = (FILE_CREATE_IF_NOT_EXIST|FILE_EXISTS_OPEN);
+			break;
+		case FILE_OVERWRITE:
+			/* fail if not exist, truncate if exists */
+			ret = (FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_TRUNCATE);
+			break;
+		default:
+			DEBUG(0,("map_create_disposition: Incorrect value for create_disposition = %d\n",
+				create_disposition ));
+			return -1;
+	}
 
-  DEBUG(10,("map_create_disposition: Mapped create_disposition 0x%lx to 0x%x\n",
-        (unsigned long)create_disposition, ret ));
+	DEBUG(10,("map_create_disposition: Mapped create_disposition 0x%lx to 0x%x\n",
+			(unsigned long)create_disposition, ret ));
 
-  return ret;
+	return ret;
 }
 
 /****************************************************************************
@@ -330,133 +330,133 @@ static int map_create_disposition( uint32 create_disposition)
 ****************************************************************************/
 
 static int map_share_mode( BOOL *pstat_open_only, char *fname, uint32 create_options,
-							uint32 desired_access, uint32 share_access, uint32 file_attributes)
+			uint32 desired_access, uint32 share_access, uint32 file_attributes)
 {
-  int smb_open_mode = -1;
+	int smb_open_mode = -1;
 
-  *pstat_open_only = False;
+	*pstat_open_only = False;
 
-  /*
-   * Convert GENERIC bits to specific bits.
-   */
+	/*
+	 * Convert GENERIC bits to specific bits.
+	 */
 
-  se_map_generic(&desired_access, &file_generic_mapping);
+	se_map_generic(&desired_access, &file_generic_mapping);
 
-  switch( desired_access & (FILE_READ_DATA|FILE_WRITE_DATA|FILE_APPEND_DATA) ) {
-  case FILE_READ_DATA:
-    smb_open_mode = DOS_OPEN_RDONLY;
-    break;
-  case FILE_WRITE_DATA:
-  case FILE_APPEND_DATA:
-  case FILE_WRITE_DATA|FILE_APPEND_DATA:
-    smb_open_mode = DOS_OPEN_WRONLY;
-    break;
-  case FILE_READ_DATA|FILE_WRITE_DATA:
-  case FILE_READ_DATA|FILE_WRITE_DATA|FILE_APPEND_DATA:
-  case FILE_READ_DATA|FILE_APPEND_DATA:
-    smb_open_mode = DOS_OPEN_RDWR;
-    break;
-  }
+	switch( desired_access & (FILE_READ_DATA|FILE_WRITE_DATA|FILE_APPEND_DATA) ) {
+		case FILE_READ_DATA:
+			smb_open_mode = DOS_OPEN_RDONLY;
+			break;
+		case FILE_WRITE_DATA:
+		case FILE_APPEND_DATA:
+		case FILE_WRITE_DATA|FILE_APPEND_DATA:
+			smb_open_mode = DOS_OPEN_WRONLY;
+			break;
+		case FILE_READ_DATA|FILE_WRITE_DATA:
+		case FILE_READ_DATA|FILE_WRITE_DATA|FILE_APPEND_DATA:
+		case FILE_READ_DATA|FILE_APPEND_DATA:
+			smb_open_mode = DOS_OPEN_RDWR;
+			break;
+	}
 
-  /*
-   * NB. For DELETE_ACCESS we should really check the
-   * directory permissions, as that is what controls
-   * delete, and for WRITE_DAC_ACCESS we should really
-   * check the ownership, as that is what controls the
-   * chmod. Note that this is *NOT* a security hole (this
-   * note is for you, Andrew) as we are not *allowing*
-   * the access at this point, the actual unlink or
-   * chown or chmod call would do this. We are just helping
-   * clients out by telling them if they have a hope
-   * of any of this succeeding. POSIX acls may still
-   * deny the real call. JRA.
-   */
+	/*
+	 * NB. For DELETE_ACCESS we should really check the
+	 * directory permissions, as that is what controls
+	 * delete, and for WRITE_DAC_ACCESS we should really
+	 * check the ownership, as that is what controls the
+	 * chmod. Note that this is *NOT* a security hole (this
+	 * note is for you, Andrew) as we are not *allowing*
+	 * the access at this point, the actual unlink or
+	 * chown or chmod call would do this. We are just helping
+	 * clients out by telling them if they have a hope
+	 * of any of this succeeding. POSIX acls may still
+	 * deny the real call. JRA.
+	 */
 
-  if (smb_open_mode == -1) {
+	if (smb_open_mode == -1) {
 
-	if(desired_access == WRITE_DAC_ACCESS || desired_access == READ_CONTROL_ACCESS)
-		*pstat_open_only = True;
+		if(desired_access == WRITE_DAC_ACCESS || desired_access == READ_CONTROL_ACCESS)
+			*pstat_open_only = True;
 
-    if(desired_access & (DELETE_ACCESS|WRITE_DAC_ACCESS|WRITE_OWNER_ACCESS|
-                              FILE_EXECUTE|FILE_READ_ATTRIBUTES|
-                              FILE_READ_EA|FILE_WRITE_EA|SYSTEM_SECURITY_ACCESS|
-                              FILE_WRITE_ATTRIBUTES|READ_CONTROL_ACCESS)) {
-      smb_open_mode = DOS_OPEN_RDONLY;
-	} else if(desired_access == 0) {
+		if(desired_access & (DELETE_ACCESS|WRITE_DAC_ACCESS|WRITE_OWNER_ACCESS|
+					FILE_EXECUTE|FILE_READ_ATTRIBUTES|
+					FILE_READ_EA|FILE_WRITE_EA|SYSTEM_SECURITY_ACCESS|
+					FILE_WRITE_ATTRIBUTES|READ_CONTROL_ACCESS)) {
+			smb_open_mode = DOS_OPEN_RDONLY;
+		} else if(desired_access == 0) {
 
-		/* 
-		 * JRA - NT seems to sometimes send desired_access as zero. play it safe
-		 * and map to a stat open.
-		 */
+			/* 
+			 * JRA - NT seems to sometimes send desired_access as zero. play it safe
+			 * and map to a stat open.
+			 */
 
-		*pstat_open_only = True;
-		smb_open_mode = DOS_OPEN_RDONLY;
+			*pstat_open_only = True;
+			smb_open_mode = DOS_OPEN_RDONLY;
 
-	} else {
-      DEBUG(0,("map_share_mode: Incorrect value 0x%lx for desired_access to file %s\n",
-             (unsigned long)desired_access, fname));
-      return -1;
-    }
-  }
+		} else {
+			DEBUG(0,("map_share_mode: Incorrect value 0x%lx for desired_access to file %s\n",
+				(unsigned long)desired_access, fname));
+			return -1;
+		}
+	}
 
-  /*
-   * Set the special bit that means allow share delete.
-   * This is held outside the normal share mode bits at 1<<15.
-   * JRA.
-   */
+	/*
+	 * Set the special bit that means allow share delete.
+	 * This is held outside the normal share mode bits at 1<<15.
+	 * JRA.
+	 */
 
-  if(share_access & FILE_SHARE_DELETE) {
-    smb_open_mode |= ALLOW_SHARE_DELETE;
-    DEBUG(10,("map_share_mode: FILE_SHARE_DELETE requested. open_mode = 0x%x\n", smb_open_mode));
-  }
+	if(share_access & FILE_SHARE_DELETE) {
+		smb_open_mode |= ALLOW_SHARE_DELETE;
+		DEBUG(10,("map_share_mode: FILE_SHARE_DELETE requested. open_mode = 0x%x\n", smb_open_mode));
+	}
 
-  /*
-   * We need to store the intent to open for Delete. This
-   * is what determines if a delete on close flag can be set.
-   * This is the wrong way (and place) to store this, but for 2.2 this
-   * is the only practical way. JRA.
-   */
+	/*
+	 * We need to store the intent to open for Delete. This
+	 * is what determines if a delete on close flag can be set.
+	 * This is the wrong way (and place) to store this, but for 2.2 this
+	 * is the only practical way. JRA.
+	 */
 
-  if(desired_access & DELETE_ACCESS) {
-    smb_open_mode |= DELETE_ACCESS_REQUESTED;
-    DEBUG(10,("map_share_mode: DELETE_ACCESS requested. open_mode = 0x%x\n", smb_open_mode));
-  }
+	if(desired_access & DELETE_ACCESS) {
+		smb_open_mode |= DELETE_ACCESS_REQUESTED;
+		DEBUG(10,("map_share_mode: DELETE_ACCESS requested. open_mode = 0x%x\n", smb_open_mode));
+	}
 
-  if (create_options & FILE_DELETE_ON_CLOSE) {
-    /* Implicit delete access requested... */
-    smb_open_mode |= DELETE_ACCESS_REQUESTED;
-	smb_open_mode |= DELETE_ON_CLOSE_FLAG;
-    DEBUG(10,("map_share_mode: FILE_DELETE_ON_CLOSE requested. open_mode = 0x%x\n", smb_open_mode));
-  }
+	if (create_options & FILE_DELETE_ON_CLOSE) {
+		/* Implicit delete access requested... */
+		smb_open_mode |= DELETE_ACCESS_REQUESTED;
+		smb_open_mode |= DELETE_ON_CLOSE_FLAG;
+		DEBUG(10,("map_share_mode: FILE_DELETE_ON_CLOSE requested. open_mode = 0x%x\n", smb_open_mode));
+	}
 
-  /* Add in the requested share mode. */
-  switch( share_access & (FILE_SHARE_READ|FILE_SHARE_WRITE)) {
-  case FILE_SHARE_READ:
-    smb_open_mode |= SET_DENY_MODE(DENY_WRITE);
-    break;
-  case FILE_SHARE_WRITE:
-    smb_open_mode |= SET_DENY_MODE(DENY_READ);
-    break;
-  case (FILE_SHARE_READ|FILE_SHARE_WRITE):
-    smb_open_mode |= SET_DENY_MODE(DENY_NONE);
-    break;
-  case FILE_SHARE_NONE:
-    smb_open_mode |= SET_DENY_MODE(DENY_ALL);
-    break;
-  }
+	/* Add in the requested share mode. */
+	switch( share_access & (FILE_SHARE_READ|FILE_SHARE_WRITE)) {
+		case FILE_SHARE_READ:
+			smb_open_mode |= SET_DENY_MODE(DENY_WRITE);
+			break;
+		case FILE_SHARE_WRITE:
+			smb_open_mode |= SET_DENY_MODE(DENY_READ);
+			break;
+		case (FILE_SHARE_READ|FILE_SHARE_WRITE):
+			smb_open_mode |= SET_DENY_MODE(DENY_NONE);
+			break;
+		case FILE_SHARE_NONE:
+			smb_open_mode |= SET_DENY_MODE(DENY_ALL);
+			break;
+	}
 
-  /*
-   * Handle an O_SYNC request.
-   */
+	/*
+	 * Handle an O_SYNC request.
+	 */
 
-  if(file_attributes & FILE_FLAG_WRITE_THROUGH)
-    smb_open_mode |= FILE_SYNC_OPENMODE;
+	if(file_attributes & FILE_FLAG_WRITE_THROUGH)
+		smb_open_mode |= FILE_SYNC_OPENMODE;
 
-  DEBUG(10,("map_share_mode: Mapped desired access 0x%lx, share access 0x%lx, file attributes 0x%lx \
+	DEBUG(10,("map_share_mode: Mapped desired access 0x%lx, share access 0x%lx, file attributes 0x%lx \
 to open_mode 0x%x\n", (unsigned long)desired_access, (unsigned long)share_access,
-                    (unsigned long)file_attributes, smb_open_mode ));
+		(unsigned long)file_attributes, smb_open_mode ));
  
-  return smb_open_mode;
+	return smb_open_mode;
 }
 
 /****************************************************************************
