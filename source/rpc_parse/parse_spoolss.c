@@ -828,15 +828,25 @@ static void smb_io_relarraystr(char *desc, prs_struct *ps, int depth, UNISTR ***
 	uint32 relative_offset;
 	struct_offset=ps->offset;
 	
-	
 	while ( (*buffer)[i]!=0x0000 )
+	{
+		i++;
+	}
+	
+	i--;
+	
+	/* that's for the ending NULL */
+	*end_offset-=2;
+	
+	do
 	{
 		*end_offset-= 2*(str_len_uni((*buffer)[i])+1);	
 		ps->offset=*end_offset;
 		spoolss_smb_io_unistr(desc, (*buffer)[i], ps, depth);
 		
-		i++;
+		i--;
 	}
+	while (i>=0);
 
 	ps->offset=struct_offset;
 	relative_offset=*end_offset-*start_offset;
@@ -1328,7 +1338,7 @@ static uint32 spoolss_size_printer_driver_info_3(DRIVER_INFO_3 *info)
 		size+=2*(1+ str_len_uni( string[i] ) );
 		i++;
 	}
-	size+=4;
+	size+=6;
 
 	DEBUGADD(9,("size: [%d]\n", size));
 	return (size);

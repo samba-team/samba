@@ -2012,11 +2012,11 @@ static void fill_printer_driver_info_2(DRIVER_INFO_2 *info,
 	         driver.info_3->driverpath);
 	make_unistr( &(info->driverpath),   temp_driverpath );
 
-	snprintf(temp_datafile,   sizeof(temp_driverpath)-1, "%s%s", where, 
+	snprintf(temp_datafile,   sizeof(temp_datafile)-1, "%s%s", where, 
 	         driver.info_3->datafile);
 	make_unistr( &(info->datafile),     temp_datafile );
 
-	snprintf(temp_configfile, sizeof(temp_driverpath)-1, "%s%s", where, 
+	snprintf(temp_configfile, sizeof(temp_configfile)-1, "%s%s", where, 
 	         driver.info_3->configfile);
 	make_unistr( &(info->configfile),   temp_configfile );	
 }
@@ -2043,10 +2043,11 @@ static void construct_printer_driver_info_2(DRIVER_INFO_2 *info, int snum,
 /********************************************************************
  * copy a strings array and convert to UNICODE
  ********************************************************************/
-static void make_unistr_array(UNISTR ***uni_array, char **char_array)
+static void make_unistr_array(UNISTR ***uni_array, char **char_array, char *where)
 {
 	int i=0;
 	char *v;
+	pstring line;
 
 	DEBUG(6,("make_unistr_array\n"));
 
@@ -2061,7 +2062,8 @@ static void make_unistr_array(UNISTR ***uni_array, char **char_array)
 		(*uni_array)[i]=(UNISTR *)malloc( sizeof(UNISTR) );
 		DEBUGADD(7,("alloc:[%p],", (*uni_array)[i]));
 
-		make_unistr( (*uni_array)[i], v );
+		snprintf(line, sizeof(line)-1, "%s%s", where, v);
+		make_unistr( (*uni_array)[i], line );
 		DEBUGADD(7,("copy\n"));
 			
 		i++;
@@ -2114,7 +2116,7 @@ static void fill_printer_driver_info_3(DRIVER_INFO_3 *info,
 	make_unistr( &(info->defaultdatatype), driver.info_3->defaultdatatype );
 
 	info->dependentfiles=NULL;
-	make_unistr_array(&(info->dependentfiles), driver.info_3->dependentfiles);
+	make_unistr_array(&(info->dependentfiles), driver.info_3->dependentfiles, where);
 }
 
 /********************************************************************
