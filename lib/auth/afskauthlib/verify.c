@@ -170,11 +170,14 @@ verify_krb5(struct passwd *pwd,
 			     NULL)) {
 	CREDENTIALS c;
 	krb5_creds mcred, cred;
+        krb5_realm realm;
 
+        krb5_get_default_realm(context, &realm);
 	krb5_make_principal(context, &mcred.server, realm,
 			    "krbtgt",
 			    realm,
 			    NULL);
+	free (realm);
 	ret = krb5_cc_retrieve_cred(context, ccache, 0, &mcred, &cred);
 	if(ret == 0) {
 	    ret = krb524_convert_creds_kdc(context, ccache, &cred, &c);
