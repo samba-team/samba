@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -63,7 +63,8 @@ void generate_type_copy (const Symbol *s);
 void generate_type_maybe (const Symbol *s);
 void generate_glue (const Symbol *s);
 
-void init_generate (char *filename, char *basename);
+void init_generate (const char *filename, const char *basename);
+const char *filename (void);
 void close_generate(void);
 int yyparse(void);
 
