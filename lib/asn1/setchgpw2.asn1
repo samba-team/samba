@@ -3,7 +3,7 @@
 SETCHGPW2 DEFINITIONS ::=
 BEGIN
 
-IMPORTS PrincipalName, Realm FROM KERBEROS5;
+IMPORTS PrincipalName, Realm FROM krb5;
 
 ProtocolErrorCode ::= ENUMERATED {
 	generic-error(0),
