@@ -42,6 +42,22 @@ typedef struct canon_ace {
 static void free_canon_ace_list( canon_ace *list_head );
 
 /****************************************************************************
+ Function to duplicate a canon_ace entry.
+****************************************************************************/
+
+static canon_ace *dup_canon_ace( canon_ace *src_ace)
+{
+	canon_ace *dst_ace = (canon_ace *)malloc(sizeof(canon_ace));
+
+	if (dst_ace == NULL)
+		return NULL;
+
+	*dst_ace = *src_ace;
+	dst_ace->prev = dst_ace->next = NULL;
+	return dst_ace;
+}
+
+/****************************************************************************
  Function to create owner and group SIDs from a SMB_STRUCT_STAT.
 ****************************************************************************/
 
@@ -254,11 +270,120 @@ static BOOL merge_aces( canon_ace *list_head, canon_ace *p_ace)
 }
 
 /****************************************************************************
+ Create a default mode for a directory default ACE.
+****************************************************************************/
+
+static mode_t get_default_ace_mode(files_struct *fsp, int type)
+{
+    mode_t force_mode = lp_force_dir_security_mode(SNUM(fsp->conn));
+	mode_t mode = 0;
+
+	switch(type) {
+		case S_IRUSR:
+			mode |= (force_mode & S_IRUSR) ? S_IRUSR : 0;
+			mode |= (force_mode & S_IWUSR) ? S_IWUSR : 0;
+			mode |= (force_mode & S_IXUSR) ? S_IXUSR : 0;
+			break;
+		case S_IRGRP:
+			mode |= (force_mode & S_IRGRP) ? S_IRUSR : 0;
+			mode |= (force_mode & S_IWGRP) ? S_IWUSR : 0;
+			mode |= (force_mode & S_IXGRP) ? S_IXUSR : 0;
+			break;
+		case S_IROTH:
+			mode |= (force_mode & S_IROTH) ? S_IRUSR : 0;
+			mode |= (force_mode & S_IWOTH) ? S_IWUSR : 0;
+			mode |= (force_mode & S_IXOTH) ? S_IXUSR : 0;
+			break;
+	}
+
+	return mode;
+}
+
+/****************************************************************************
+ A well formed POSIX file or default ACL has at least 3 entries, a 
+ SMB_ACL_USER_OBJ, SMB_ACL_GROUP_OBJ, SMB_ACL_OTHER_OBJ.
+****************************************************************************/
+
+static BOOL ensure_canon_entry_valid(canon_ace **pp_ace,
+							files_struct *fsp,
+							DOM_SID *pfile_owner_sid,
+							DOM_SID *pfile_grp_sid,
+							SMB_STRUCT_STAT *pst,
+							BOOL default_acl)
+{
+	extern DOM_SID global_sid_World;
+	canon_ace *pace;
+	BOOL got_user = False;
+	BOOL got_grp = False;
+	BOOL got_other = False;
+
+	for (pace = *pp_ace; pace; pace = pace->next) {
+		if (pace->type == SMB_ACL_USER_OBJ)
+			got_user = True;
+		else if (pace->type == SMB_ACL_GROUP_OBJ)
+			got_grp = True;
+		else if (pace->type == SMB_ACL_OTHER)
+			got_other = True;
+	}
+
+	if (!got_user) {
+		if ((pace = (canon_ace *)malloc(sizeof(canon_ace))) == NULL) {
+			DEBUG(0,("ensure_canon_entry_valid: malloc fail.\n"));
+			return False;
+		}
+
+		ZERO_STRUCTP(pace);
+		pace->type = SMB_ACL_USER_OBJ;
+		pace->owner_type = UID_ACE;
+		pace->unix_ug.uid = pst->st_uid;
+		pace->sid = *pfile_owner_sid;
+		pace->perms = default_acl ? get_default_ace_mode(fsp, S_IRUSR): 0;
+
+		DLIST_ADD(*pp_ace, pace);
+	}
+
+	if (!got_grp) {
+		if ((pace = (canon_ace *)malloc(sizeof(canon_ace))) == NULL) {
+			DEBUG(0,("ensure_canon_entry_valid: malloc fail.\n"));
+			return False;
+		}
+
+		ZERO_STRUCTP(pace);
+		pace->type = SMB_ACL_GROUP_OBJ;
+		pace->owner_type = GID_ACE;
+		pace->unix_ug.uid = pst->st_gid;
+		pace->sid = *pfile_grp_sid;
+		pace->perms = default_acl ? get_default_ace_mode(fsp, S_IRGRP): 0;
+
+		DLIST_ADD(*pp_ace, pace);
+	}
+
+	if (!got_other) {
+		if ((pace = (canon_ace *)malloc(sizeof(canon_ace))) == NULL) {
+			DEBUG(0,("ensure_canon_entry_valid: malloc fail.\n"));
+			return False;
+		}
+
+		ZERO_STRUCTP(pace);
+		pace->type = SMB_ACL_OTHER;
+		pace->owner_type = WORLD_ACE;
+		pace->unix_ug.world = -1;
+		pace->sid = global_sid_World;
+		pace->perms = default_acl ? get_default_ace_mode(fsp, S_IROTH): 0;
+
+		DLIST_ADD(*pp_ace, pace);
+	}
+
+	return True;
+}
+
+/****************************************************************************
  Unpack a SEC_DESC into two canonical ace lists. We don't depend on this
  succeeding.
 ****************************************************************************/
 
 static BOOL unpack_canon_ace(files_struct *fsp, 
+							SMB_STRUCT_STAT *pst,
 							DOM_SID *pfile_owner_sid,
 							DOM_SID *pfile_grp_sid,
 							canon_ace **ppfile_ace, canon_ace **ppdir_ace,
@@ -383,7 +508,8 @@ static BOOL unpack_canon_ace(files_struct *fsp,
 			current_ace->type = (current_ace->owner_type == UID_ACE) ? SMB_ACL_USER : SMB_ACL_GROUP;
 		}
 
-		if (fsp->is_directory && (psa->flags & SEC_ACE_FLAG_INHERIT_ONLY)) {
+		if (fsp->is_directory) {
+
 			/*
 			 * We can only add to the default POSIX ACE list if the ACE is
 			 * designed to be inherited by both files and directories.
@@ -391,14 +517,45 @@ static BOOL unpack_canon_ace(files_struct *fsp,
 			if ((psa->flags & (SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_CONTAINER_INHERIT)) ==
 				(SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_CONTAINER_INHERIT)) {
 				DLIST_ADD(dir_ace, current_ace);
-			} else {
-				DEBUG(0,("unpack_canon_ace: unable to use a non-generic default ACE.\n"));
-				free(current_ace);
+
+				/*
+				 * If this is not an inherit only ACE we need to add a duplicate
+				 * to the file acl.
+				 */
+
+				if (!(psa->flags & SEC_ACE_FLAG_INHERIT_ONLY)) {
+					canon_ace *dup_ace = dup_canon_ace(current_ace);
+
+					if (!dup_ace) {
+						DEBUG(0,("unpack_canon_ace: malloc fail !\n"));
+						free_canon_ace_list(file_ace);
+						free_canon_ace_list(dir_ace);
+						return False;
+					}
+
+					current_ace = dup_ace;
+				} else {
+					current_ace = NULL;
+				}
 			}
-		} else {
+		}
+
+		/*
+		 * Only add to the file ACL if not inherit only.
+		 */
+
+		if (!(psa->flags & SEC_ACE_FLAG_INHERIT_ONLY)) {
 			DLIST_ADD(file_ace, current_ace);
 			all_aces_are_inherit_only = False;
+			current_ace = NULL;
 		}
+
+		/*
+		 * Free if ACE was not addedd.
+		 */
+
+		if (current_ace)
+			free(current_ace);
 	}
 
 	if (fsp->is_directory && all_aces_are_inherit_only) {
@@ -429,6 +586,24 @@ static BOOL unpack_canon_ace(files_struct *fsp,
 	for (current_ace = dir_ace; current_ace; current_ace = current_ace->next ) {
 		if (merge_aces( dir_ace, current_ace))
 			goto again_dir;
+	}
+
+	/*
+	 * A well formed POSIX file or default ACL has at least 3 entries, a 
+	 * SMB_ACL_USER_OBJ, SMB_ACL_GROUP_OBJ, SMB_ACL_OTHER_OBJ
+	 * and optionally a mask entry. Ensure this is the case.
+	 */
+
+	if (!ensure_canon_entry_valid(&file_ace, fsp, pfile_owner_sid, pfile_grp_sid, pst, False)) {
+		free_canon_ace_list(file_ace);
+		free_canon_ace_list(dir_ace);
+		return False;
+	}
+
+	if (!ensure_canon_entry_valid(&dir_ace, fsp, pfile_owner_sid, pfile_grp_sid, pst, True)) {
+		free_canon_ace_list(file_ace);
+		free_canon_ace_list(dir_ace);
+		return False;
 	}
 
 	if( DEBUGLVL( 10 )) {
@@ -1325,7 +1500,7 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 
 	create_file_sids(&sbuf, &file_owner_sid, &file_grp_sid);
 
-	acl_perms = unpack_canon_ace( fsp, &file_owner_sid, &file_grp_sid,
+	acl_perms = unpack_canon_ace( fsp, &sbuf, &file_owner_sid, &file_grp_sid,
 									&file_ace_list, &dir_ace_list, security_info_sent, psd);
 	posix_perms = unpack_posix_permissions( fsp, &sbuf, &perms, security_info_sent, psd, acl_perms);
 
