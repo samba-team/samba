@@ -38,6 +38,7 @@ int cli_set_port(struct cli_state *cli, int port)
 
 BOOL cli_receive_smb(struct cli_state *cli)
 {
+	extern int smb_read_error;
 	BOOL ret;
 
 	/* fd == -1 causes segfaults -- Tom (tom@ninja.nl) */
@@ -69,6 +70,7 @@ BOOL cli_receive_smb(struct cli_state *cli)
         if (!ret && cli->timeout > 0) {
                 close(cli->fd);
                 cli->fd = -1;
+		cli->smb_read_erorr = smb_read_error;
         }
 
 	return ret;
