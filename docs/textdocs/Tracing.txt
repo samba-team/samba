@@ -1,5 +1,5 @@
 !==
-!== Tracing.txt for Samba release TNG-alpha 20 Apr 2000
+!== Tracing.txt for Samba release TNG-alpha 25 Apr 2000
 !==
 Contributor:	Andrew Tridgell <samba-bugs@samba.org>
 Date:		Old

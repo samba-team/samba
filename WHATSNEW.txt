@@ -1,5 +1,5 @@
-          WHATS NEW IN Samba (The Next Generation) 2.4.2
-          ==============================================
+          WHATS NEW IN Samba (The Next Generation) 2.5
+          ============================================
 
 This is an ALPHA release of Samba TNG, the UNIX based SMB/CIFS file,
 print and login server for Windows systems.
@@ -11,9 +11,7 @@ NT Domains for Unix project.
 
 If you are running Windows 9x and do not forsee the need for or
 need to use any Windows NT Workstations on your network in the near
-future, you will not need Samba TNG or any of its functionality,
-and your assistance is not being solicited in the development of
-this project.
+future, you will not need Samba TNG or any of its functionality.
 
 
 Major changes in Samba TNG
