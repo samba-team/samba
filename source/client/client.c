@@ -140,7 +140,7 @@ static int readfile(char *b, int n, FILE *f)
 	int i;
 	int c;
 
-	if (!translation || (size != 1))
+	if (!translation)
 		return fread(b,1,n,f);
   
 	i = 0;
