@@ -49,7 +49,7 @@ struct smbsrv_request *init_smb_request(struct smbsrv_connection *smb_conn)
 {
 	struct smbsrv_request *req;
 
-	smb_conn->connection->socket->pkt_count++;
+	smb_conn->socket.pkt_count++;
 
 	req = talloc_p(smb_conn, struct smbsrv_request);
 	if (!req) {
@@ -251,7 +251,7 @@ void req_send_reply_nosign(struct smbsrv_request *req)
 		_smb_setlen(req->out.buffer, req->out.size - NBT_HDR_SIZE);
 	}
 
-	if (write_data(req->smb_conn->connection->socket->fde->fd, req->out.buffer, req->out.size) != req->out.size) {
+	if (write_data(req->smb_conn->connection->event.fde->fd, req->out.buffer, req->out.size) != req->out.size) {
 		smbsrv_terminate_connection(req->smb_conn, "failed to send reply\n");
 	}
 

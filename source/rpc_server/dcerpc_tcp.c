@@ -139,7 +139,7 @@ void dcesrv_tcp_accept(struct server_connection *conn)
 	 *       but the smb server can't handle it yet
 	 *	 --metze
 	 */ 
-	set_blocking(conn->socket->fde->fd, False);
+	set_blocking(conn->event.fde->fd, False);
 
 	return;	
 }
@@ -158,7 +158,7 @@ void dcesrv_tcp_recv(struct server_connection *conn, time_t t, uint16_t flags)
 		return;
 	}
 
-	ret = read(conn->socket->fde->fd, blob.data, blob.length);
+	ret = read(conn->event.fde->fd, blob.data, blob.length);
 	if (ret == 0 || (ret == -1 && errno != EINTR)) {
 		data_blob_free(&blob);
 		dcesrv_terminate_connection(dce_conn, "eof on socket");
@@ -176,7 +176,7 @@ void dcesrv_tcp_recv(struct server_connection *conn, time_t t, uint16_t flags)
 	data_blob_free(&blob);
 
 	if (dce_conn->call_list && dce_conn->call_list->replies) {
-		conn->socket->fde->flags |= EVENT_FD_WRITE;
+		conn->event.fde->flags |= EVENT_FD_WRITE;
 	}
 
 	return;	
@@ -189,13 +189,13 @@ void dcesrv_tcp_send(struct server_connection *conn, time_t t, uint16_t flags)
 
 	DEBUG(10,("dcesrv_tcp_send\n"));
 
-	status = dcesrv_output(dce_conn, conn->socket->fde, dcerpc_write_fn);
+	status = dcesrv_output(dce_conn, conn->event.fde, dcerpc_write_fn);
 	if (NT_STATUS_IS_ERR(status)) {
 		/* TODO: destroy fd_event? */
 	}
 
 	if (!dce_conn->call_list || !dce_conn->call_list->replies) {
-		conn->socket->fde->flags &= ~EVENT_FD_WRITE;
+		conn->event.fde->flags &= ~EVENT_FD_WRITE;
 	}
 
 	return;	

@@ -249,7 +249,8 @@ close a cnum
 void close_cnum(struct smbsrv_tcon *tcon)
 {
 	DEBUG(3,("%s closed connection to service %s\n",
-		 tcon->smb_conn->connection->socket->client_addr, lp_servicename(SNUM(tcon))));
+		 get_socket_addr(tcon, tcon->smb_conn->connection->event.fde->fd),
+		 lp_servicename(SNUM(tcon))));
 
 	/* tell the ntvfs backend that we are disconnecting */
 	tcon->ntvfs_ops->disconnect(tcon);

@@ -64,7 +64,7 @@ static struct smbsrv_request *receive_smb_request(struct smbsrv_connection *smb_
 	char header[4];
 	struct smbsrv_request *req;
 
-	len = read_data(smb_conn->connection->socket->fde->fd, header, 4);
+	len = read_data(smb_conn->connection->event.fde->fd, header, 4);
 	if (len != 4) {
 		return NULL;
 	}
@@ -82,7 +82,7 @@ static struct smbsrv_request *receive_smb_request(struct smbsrv_connection *smb_
 	/* fill in the already received header */
 	memcpy(req->in.buffer, header, 4);
 
-	len2 = read_data(smb_conn->connection->socket->fde->fd, req->in.buffer + NBT_HDR_SIZE, len);
+	len2 = read_data(smb_conn->connection->event.fde->fd, req->in.buffer + NBT_HDR_SIZE, len);
 	if (len2 != len) {
 		return NULL;
 	}
@@ -831,7 +831,7 @@ void smbsrv_accept(struct server_connection *conn)
 
 	/* set an initial client name based on its IP address. This will be replaced with
 	   the netbios name later if it gives us one */
-	socket_addr = get_socket_addr(smb_conn, conn->socket->fde->fd);
+	socket_addr = get_socket_addr(smb_conn, conn->event.fde->fd);
 	sub_set_remote_machine(socket_addr);
 
 	/* now initialise a few default values associated with this smb socket */
