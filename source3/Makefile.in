@@ -491,6 +491,8 @@ talloctort : SHOWFLAGS bin/talloctort
 
 nsswitch : SHOWFLAGS $(WINBIND_PROGS) $(WINBIND_SPROGS) $(LPROGS)
 
+wins : SHOWFLAGS nsswitch/libnss_wins.so
+
 .SUFFIXES:
 .SUFFIXES: .c .o .po .po32 .lo
 
