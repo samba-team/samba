@@ -1971,6 +1971,7 @@ static BOOL lp_add_ipc(char *ipc_name, BOOL guest_ok)
 	return (True);
 }
 
+BOOL (*register_printer_fn)(const char *);
 
 /***************************************************************************
 add a new printer service, with defaults coming from service iFrom.
@@ -2004,6 +2005,8 @@ BOOL lp_add_printer(char *pszPrintername, int iDefaultService)
 	DEBUG(3, ("adding printer service %s\n", pszPrintername));
 
 	update_server_announce_as_printserver();
+	if (register_printer_fn && (!(*register_printer_fn)(pszPrintername)))
+		return False;
 
 	return (True);
 }
@@ -3878,11 +3881,11 @@ void lp_set_name_resolve_order(char *new_order)
 	Globals.szNameResolveOrder = new_order;
 }
 
-char *lp_printername(int snum)
+const char *lp_printername(int snum)
 {
-	char *ret = _lp_printername(snum);
+	const char *ret = _lp_printername(snum);
 	if (ret == NULL || (ret != NULL && *ret == '\0'))
-		ret = lp_servicename(snum);
+		ret = lp_const_servicename(snum);
 
 	return ret;
 }

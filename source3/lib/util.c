@@ -1859,7 +1859,7 @@ char *myhostname(void)
 /*****************************************************************
 a useful function for returning a path in the Samba lock directory
  *****************************************************************/  
-char *lock_path(char *name)
+char *lock_path(const char *name)
 {
 	static pstring fname;
 
@@ -1879,7 +1879,7 @@ char *lock_path(char *name)
 /*****************************************************************
 a useful function for returning a path in the Samba pid directory
  *****************************************************************/
-char *pid_path(char *name)
+char *pid_path(const char *name)
 {
 	static pstring fname;
 
@@ -1904,7 +1904,7 @@ char *pid_path(char *name)
  *
  * @retval Pointer to a static #pstring containing the full path.
  **/
-char *lib_path(char *name)
+char *lib_path(const char *name)
 {
 	static pstring fname;
 	snprintf(fname, sizeof(fname), "%s/%s", dyn_LIBDIR, name);

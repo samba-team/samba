@@ -3593,7 +3593,7 @@ BOOL get_specific_param(NT_PRINTER_INFO_LEVEL printer, uint32 level,
  Store a security desc for a printer.
 ****************************************************************************/
 
-WERROR nt_printing_setsec(char *printername, SEC_DESC_BUF *secdesc_ctr)
+WERROR nt_printing_setsec(const char *printername, SEC_DESC_BUF *secdesc_ctr)
 {
 	SEC_DESC_BUF *new_secdesc_ctr = NULL;
 	SEC_DESC_BUF *old_secdesc_ctr = NULL;
@@ -3754,7 +3754,7 @@ static SEC_DESC_BUF *construct_default_printer_sdb(TALLOC_CTX *ctx)
  Get a security desc for a printer.
 ****************************************************************************/
 
-BOOL nt_printing_getsec(TALLOC_CTX *ctx, char *printername, SEC_DESC_BUF **secdesc_ctr)
+BOOL nt_printing_getsec(TALLOC_CTX *ctx, const char *printername, SEC_DESC_BUF **secdesc_ctr)
 {
 	prs_struct ps;
 	fstring key;
@@ -3782,7 +3782,7 @@ BOOL nt_printing_getsec(TALLOC_CTX *ctx, char *printername, SEC_DESC_BUF **secde
 		prs_init(&ps, (uint32)sec_desc_size((*secdesc_ctr)->sec) +
 				sizeof(SEC_DESC_BUF), ctx, MARSHALL);
 
-		if (sec_io_desc_buf("nt_printing_setsec", secdesc_ctr, &ps, 1))
+		if (sec_io_desc_buf("nt_printing_getsec", secdesc_ctr, &ps, 1))
 			tdb_prs_store(tdb_printers, key, &ps);
 
 		prs_mem_free(&ps);
@@ -3923,7 +3923,7 @@ BOOL print_access_check(struct current_user *user, int snum, int access_type)
 	uint32 access_granted;
 	NTSTATUS status;
 	BOOL result;
-	char *pname;
+	const char *pname;
 	TALLOC_CTX *mem_ctx = NULL;
 	extern struct current_user current_user;
 	
