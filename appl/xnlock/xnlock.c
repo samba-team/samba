@@ -229,18 +229,17 @@ init_words (int argc, char **argv)
 		    errx (1, "cannot allocate memory for message");
 	    }
 	} else {
-	    appres.text = strdup("");
+	    int j;
+	    int len = 1;
+	    for(j = i; argv[j]; j++)
+		len += strlen(argv[j]) + 1;
+	    appres.text = malloc(len);
 	    if (appres.text == NULL)
 		errx (1, "cannot allocate memory for message");
-	    while (argv[i]) {
-		int n = strlen (argv[i]);
-		char *tmp = realloc(appres.text,
-				    strlen(appres.text) + n + 2);
-		if (tmp == NULL)
-		    errx (1, "cannot allocate memory for message");
-		strcat (appres.text, argv[i]);
-		strcat (appres.text, " ");
-		++i;
+	    appres.text[0] = 0;
+	    for(; i < j; i++){
+		strcat(appres.text, argv[i]);
+		strcat(appres.text, " ");
 	    }
 	}
     }
@@ -545,6 +544,7 @@ countdown(XtPointer _t, XtIntervalId *_d)
     return;
 }
 
+#ifdef KRB5
 static int
 verify_krb5(const char *name, const char *inst, const char *realm, 
 	    const char *password)
@@ -578,7 +578,7 @@ verify_krb5(const char *name, const char *inst, const char *realm,
     krb5_free_context(context);
     return -1;
 }
-
+#endif
 
 static int
 verify(char *password)
@@ -620,11 +620,13 @@ verify(char *password)
     if (unix_verify_user(name, password) == 0)
 	return 0;
 
+#ifdef KRB5
     /*
      * Try to verify as user with kerberos 5.
      */
     if(verify_krb5(name, inst, realm, password) == 0)
 	return 0;
+#endif
 
     /*
      * Try to verify as user with kerberos 4.
