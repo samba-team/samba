@@ -1,10 +1,11 @@
-HEADERS = krb5.h asn1.h des.h bits.h cache.h config_file.h
+HEADERS = krb5.h asn1.h des.h md4.h bits.h cache.h config_file.h
 
 srcdir	= @srcdir@
 VPATH	= $(srcdir)
 top_srcdir = @top_srcdir@
 CC	= @CC@
 CFLAGS	= @CFLAGS@
+DEFS	= -DHOST=\"@CANONICAL_HOST@\" 
 
 LN_S = ln -s
 
@@ -13,6 +14,9 @@ all:
 	if [ ! -h $$i -a ! -e $$i ]; then X="$$X $$i"; fi \
 	done; \
 	if [ ! -z "$$X" ]; then $(MAKE) $$X; fi
+
+.c.o:
+	$(CC) $(CFLAGS) $(DEFS) -c $< 
 
 clean:
 	rm -f $(HEADERS) bits *.o core
@@ -32,8 +36,11 @@ asn1.h:
 des.h:
 	$(LN_S) $(top_srcdir)/lib/des/des.h .
 
+md4.h:
+	$(LN_S) $(top_srcdir)/lib/des/md4.h .
+
 bits.h: bits
-	./bits > bits.h
+	./bits bits.h
 
 bits: bits.o
 	$(CC) -o bits bits.o
