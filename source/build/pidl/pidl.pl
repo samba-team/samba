@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 
 ###################################################
-# package to parse IDL files and generate code for 
+# package to parse IDL files and generate code for
 # rpc functions in Samba
 # Copyright tridge@samba.org 2000-2003
 # released under the GNU GPL
@@ -118,7 +118,7 @@ sub process_file($)
 		IdlValidator::Validate($pidl);
 		if ($opt_keep && !util::SaveStructure($pidl_file, $pidl)) {
 			    die "Failed to save $pidl_file\n";
-		}		
+		}
 	} else {
 		$pidl = util::LoadStructure($pidl_file);
 		defined $pidl || die "Failed to load $pidl_file - maybe you need --parse\n";
@@ -127,7 +127,7 @@ sub process_file($)
 	if ($opt_dump) {
 		print IdlDump::Dump($pidl);
 	}
-	
+
 	if ($opt_header) {
 		my($header) = util::ChangeExtension($output, ".h");
 		util::FileSave($header, IdlHeader::Parse($pidl));
@@ -137,17 +137,17 @@ sub process_file($)
 		my($server) = util::ChangeExtension($output, "_s.c");
 		util::FileSave($server, IdlServer::Parse($pidl));
 	}
-	
+
 	if ($opt_parser) {
 		my($parser) = util::ChangeExtension($output, ".c");
 		IdlParser::Parse($pidl, $parser);
 	}
-	
+
 	if ($opt_eparser) {
 		my($parser) = util::ChangeExtension($output, "_ethereal.c");
 		util::FileSave($parser, IdlEParser::Parse($pidl));
 	}
-	
+
 	if ($opt_diff) {
 		my($tempfile) = util::ChangeExtension($output, ".tmp");
 		util::FileSave($tempfile, IdlDump::Dump($pidl));
