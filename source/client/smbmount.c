@@ -141,8 +141,8 @@ static struct cli_state *do_connection(char *service)
 	
 	ip = ipzero;
 
-	make_nmb_name(&calling, my_netbios_name, 0x0, "");
-	make_nmb_name(&called , server, 0x20, "");
+	make_nmb_name(&calling, my_netbios_name, 0x0);
+	make_nmb_name(&called , server, 0x20);
 
  again:
 	ip = ipzero;
@@ -159,7 +159,7 @@ static struct cli_state *do_connection(char *service)
 		fprintf(stderr, "session request to %s failed\n", called.name);
 		cli_shutdown(c);
 		if (strcmp(called.name, "*SMBSERVER")) {
-			make_nmb_name(&called , "*SMBSERVER", 0x20, "");
+			make_nmb_name(&called , "*SMBSERVER", 0x20);
 			goto again;
 		}
 		return NULL;
