@@ -47,6 +47,8 @@ static BOOL test_opendomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r2.in.connect_handle = &h;
 	r2.in.domain_name = domname;
 
+	printf("domain lookup\n");
+
 	status = dcerpc_samr_LookupDomain(p, mem_ctx, &r2);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("LookupDomain failed - %s\n", nt_errstr(status));
@@ -57,6 +59,8 @@ static BOOL test_opendomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r3.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r3.in.sid = r2.out.sid;
 	r3.out.domain_handle = &domain_handle;
+
+	printf("opening domain\n");
 
 	status = dcerpc_samr_OpenDomain(p, mem_ctx, &r3);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -71,14 +75,17 @@ static BOOL test_opendomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 BOOL torture_userinfo(void)
 {
 	NTSTATUS status;
+	const char *binding;
 	struct dcerpc_pipe *p;
+	struct dcerpc_binding b;
 	TALLOC_CTX *mem_ctx;
 	BOOL ret = True;
 	struct policy_handle h;
-	struct samr_String name = { 4, 4, "TEST" };
+	struct samr_String name;
 
 	mem_ctx = talloc_init("test_userinfo");
-	
+	binding = lp_parm_string(-1, "torture", "binding");
+
 	status = torture_rpc_connection(&p,
 					DCERPC_SAMR_NAME,
 					DCERPC_SAMR_UUID,
@@ -88,12 +95,21 @@ BOOL torture_userinfo(void)
 		return False;
 	}
 
+	status = dcerpc_parse_binding(mem_ctx, binding, &b);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("failed to parse dcerpc binding '%s'\n", binding);
+		talloc_free(mem_ctx);
+		ret = False;
+		goto done;
+	}
+	name.string = b.host;
+
 	if (!test_opendomain(p, mem_ctx, &h, &name)) {
 		ret = False;
 	}
 
+done:
 	talloc_free(mem_ctx);
-	
 	torture_rpc_close(p);
 
 	return ret;
