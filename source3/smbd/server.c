@@ -84,11 +84,6 @@ extern struct in_addr myip;
 
 static int find_free_connection(int hash);
 
-#ifdef SMB_PASSWD
-extern void generate_next_challenge(char *challenge);
-extern void set_challenge(char *challenge);
-#endif
-
 /* for readability... */
 #define IS_DOS_READONLY(test_mode) (((test_mode) & aRONLY) != 0)
 #define IS_DOS_DIR(test_mode) (((test_mode) & aDIR) != 0)
