@@ -41,6 +41,8 @@
 
 RCSID("$Id$");
 
+static int login_timeout = 60;
+
 static int
 start_login_process(void)
 {
@@ -562,7 +564,7 @@ do_login(const struct passwd *pwd, char *tty, char *ttyn)
 #endif /* KRB4 */
 
     {
-	char *str = login_conf_get_string("environment");
+	const char *str = login_conf_get_string("environment");
 	char buf[MAXPATHLEN];
 
 	if(str == NULL) {
