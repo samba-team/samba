@@ -1616,9 +1616,6 @@ uint32 _samr_open_user(const POLICY_HND *domain_pol,
 	struct sam_passwd *sam_pass;
 	DOM_SID sid;
 
-	/* set up the SAMR open_user response */
-	bzero(user_pol->data, POL_HND_SIZE);
-
 	/* find the policy handle.  open a policy on it. */
 	if (!get_policy_samr_sid(get_global_hnd_cache(), domain_pol, &sid))
 	{
@@ -1638,7 +1635,6 @@ uint32 _samr_open_user(const POLICY_HND *domain_pol,
 	/* check that the RID exists in our domain. */
 	if (sam_pass == NULL)
 	{
-		close_policy_hnd(get_global_hnd_cache(), user_pol);
 		return NT_STATUS_NO_SUCH_USER;
 	}
 

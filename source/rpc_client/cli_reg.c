@@ -161,7 +161,7 @@ BOOL reg_open_hkcr( struct cli_connection *con,
 		if (p)
 		{
 			/* ok, at last: we're happy. return the policy handle */
-			memcpy(hnd, r_o.pol.data, sizeof(hnd->data));
+			*hnd = r_o.pol;
 			valid_pol = True;
 		}
 	}
@@ -217,7 +217,7 @@ BOOL reg_open_hklm( struct cli_connection *con,
 		if (p)
 		{
 			/* ok, at last: we're happy. return the policy handle */
-			memcpy(hnd, r_o.pol.data, sizeof(hnd->data));
+			*hnd = r_o.pol;
 			valid_pol = True;
 		}
 	}
@@ -273,7 +273,7 @@ BOOL reg_open_hku( struct cli_connection *con,
 		if (p)
 		{
 			/* ok, at last: we're happy. return the policy handle */
-			memcpy(hnd, r_o.pol.data, sizeof(hnd->data));
+			*hnd = r_o.pol;
 			valid_pol = True;
 		}
 	}
@@ -796,7 +796,7 @@ BOOL reg_create_key( POLICY_HND *hnd,
 		if (p)
 		{
 			valid_create = True;
-			memcpy(key, r_o.key_pol.data, sizeof(key->data));
+			*key = r_o.key_pol;
 		}
 	}
 
@@ -1030,7 +1030,7 @@ BOOL reg_open_entry( POLICY_HND *hnd,
 				return False;
 			}
 
-			memcpy(key_hnd, r_o.pol.data, sizeof(key_hnd->data));
+			*key_hnd = r_o.pol;
 			valid_pol = cli_pol_link(key_hnd, hnd);
 		}
 	}

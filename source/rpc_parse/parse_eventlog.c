@@ -97,7 +97,12 @@ BOOL eventlog_io_r_open(char *desc, EVENTLOG_R_OPEN *r_u, prs_struct *ps, int de
 ********************************************************************/  
 BOOL make_eventlog_q_close(EVENTLOG_Q_CLOSE *q_u, POLICY_HND *pol)
 {
-	memcpy(&(q_u->pol.data), pol->data, sizeof(q_u->pol.data));
+	if ((q_u == NULL) || (pol == NULL))
+	{
+		return False;
+	}
+
+	q_u->pol = *pol;
 
 	return True;
 }
@@ -133,8 +138,12 @@ BOOL eventlog_io_r_close(char *desc, EVENTLOG_R_CLOSE *r_u, prs_struct *ps, int 
 ********************************************************************/  
 BOOL make_eventlog_q_numofeventlogrec(EVENTLOG_Q_NUMOFEVENTLOGREC *q_u, POLICY_HND *pol)
 {
-	memcpy(&(q_u->pol.data), pol->data, sizeof(q_u->pol.data));
+	if ((q_u == NULL) || (pol == NULL))
+	{
+		return False;
+	}
 
+	q_u->pol = *pol;
 
 	return True;
 }
@@ -148,7 +157,6 @@ BOOL eventlog_io_q_numofeventlogrec(char *desc,EVENTLOG_Q_NUMOFEVENTLOGREC  *q_u
 
 	prs_align(ps);
 	smb_io_pol_hnd("", &(q_u->pol), ps, depth);
-
 
 	return True;
 }
@@ -172,10 +180,15 @@ BOOL eventlog_io_r_numofeventlogrec(char *desc, EVENTLOG_R_NUMOFEVENTLOGREC *r_u
 BOOL make_eventlog_q_readeventlog(EVENTLOG_Q_READEVENTLOG *q_u, POLICY_HND *pol,
                                   uint32 flags, uint32 offset, uint32 number_of_bytes)
 {
-	memcpy(&(q_u->pol.data), pol->data, sizeof(q_u->pol.data));
-	q_u->flags=flags;
-	q_u->offset=offset;
-	q_u->number_of_bytes=number_of_bytes;
+	if ((q_u == NULL) || (pol == NULL))
+	{
+		return False;
+	}
+
+	q_u->pol = *pol;
+	q_u->flags = flags;
+	q_u->offset = offset;
+	q_u->number_of_bytes = number_of_bytes;
 
 	return True;
 }

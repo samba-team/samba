@@ -324,7 +324,7 @@ BOOL lsa_open_policy2( const char *system_name, POLICY_HND *hnd,
 		if (p)
 		{
 			/* ok, at last: we're happy. return the policy handle */
-			memcpy(hnd, r_o.pol.data, sizeof(hnd->data));
+			*hnd = r_o.pol;
 
 			valid_pol = register_policy_hnd(get_global_hnd_cache(),
 			                                cli_con_sec_ctx(con),
@@ -357,7 +357,7 @@ BOOL lsa_create_secret( const POLICY_HND *hnd,
 	if (hnd == NULL) return False;
 
 	prs_init(&buf , 0, 4, False);
-	prs_init(&rbuf, 0   , 4, True );
+	prs_init(&rbuf, 0, 4, True );
 
 	/* create and send a MSRPC command with api LSA_CREATE_SECRET */
 
@@ -385,7 +385,7 @@ BOOL lsa_create_secret( const POLICY_HND *hnd,
 		if (p)
 		{
 			/* ok, at last: we're happy. return the policy handle */
-			memcpy(hnd_secret, r_o.pol.data, sizeof(hnd_secret->data));
+			*hnd_secret = r_o.pol;
 			valid_pol = cli_pol_link(hnd_secret, hnd);
 		}
 	}
@@ -412,7 +412,7 @@ BOOL lsa_open_secret( const POLICY_HND *hnd,
 	if (hnd == NULL) return False;
 
 	prs_init(&buf , 0, 4, False);
-	prs_init(&rbuf, 0   , 4, True );
+	prs_init(&rbuf, 0, 4, True );
 
 	/* create and send a MSRPC command with api LSA_OPENSECRET */
 
@@ -440,7 +440,7 @@ BOOL lsa_open_secret( const POLICY_HND *hnd,
 		if (p)
 		{
 			/* ok, at last: we're happy. return the policy handle */
-			memcpy(hnd_secret, r_o.pol.data, sizeof(hnd_secret->data));
+			*hnd_secret = r_o.pol;
 			valid_pol = cli_pol_link(hnd_secret, hnd);
 		}
 	}
