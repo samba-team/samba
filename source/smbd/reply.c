@@ -1215,6 +1215,9 @@ static NTSTATUS can_delete(char *fname,connection_struct *conn, int dirtype)
 	int access_mode;
 	files_struct *fsp;
 
+	DEBUG(10,("can_delete: %s, dirtype = %d\n",
+		fname, dirtype ));
+
 	if (!CAN_WRITE(conn))
 		return NT_STATUS_MEDIA_WRITE_PROTECTED;
 
@@ -1226,8 +1229,13 @@ static NTSTATUS can_delete(char *fname,connection_struct *conn, int dirtype)
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 
 	fmode = dos_mode(conn,fname,&sbuf);
+
+	/* Can't delete a directory. */
 	if (fmode & aDIR)
 		return NT_STATUS_FILE_IS_A_DIRECTORY;
+	else if (dirtype & aDIR) /* Asked for a directory and it isn't. */
+		return NT_STATUS_OBJECT_NAME_INVALID;
+
 	if (!lp_delete_readonly(SNUM(conn))) {
 		if (fmode & aRONLY)
 			return NT_STATUS_CANNOT_DELETE;
@@ -1333,7 +1341,7 @@ NTSTATUS unlink_internals(connection_struct *conn, int dirtype, char *name)
 		*/
 		
 		if (dirptr) {
-			error = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+			error = NT_STATUS_NO_SUCH_FILE;
 			
 			if (strequal(mask,"????????.???"))
 				pstrcpy(mask,"*");
