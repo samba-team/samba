@@ -32,6 +32,7 @@ extern BOOL case_sensitive;
 extern int Client;
 extern int oplock_sock;
 extern int smb_read_error;
+extern fstring local_machine;
 
 /****************************************************************************
   Send the required number of replies back.
@@ -940,7 +941,8 @@ static int call_trans2qfsinfo(char *inbuf, char *outbuf, int length, int bufsize
   int data_len;
   struct stat st;
   char *vname = volume_label(SNUM(cnum));
-  
+  int snum = SNUM(cnum);
+ 
   DEBUG(3,("call_trans2qfsinfo: cnum = %d, level = %d\n", cnum, info_level));
 
   if(sys_stat(".",&st)!=0) {
@@ -971,7 +973,11 @@ static int call_trans2qfsinfo(char *inbuf, char *outbuf, int length, int bufsize
       /* Return volume name */
       int volname_len = MIN(strlen(vname),11);
       data_len = l2_vol_szVolLabel + volname_len + 1;
-      put_dos_date2(pdata,l2_vol_fdateCreation,st.st_ctime);
+      /* 
+       * Add volume serial number - hash of a combination of
+       * the called hostname and the service name.
+       */
+      SIVAL(pdata,0,str_checksum(lp_servicename(snum)) ^ str_checksum(local_machine) );
       SCVAL(pdata,l2_vol_cch,volname_len);
       StrnCpy(pdata+l2_vol_szVolLabel,vname,volname_len);
       DEBUG(5,("call_trans2qfsinfo : time = %x, namelen = %d, name = %s\n",st.st_ctime, volname_len,
@@ -992,6 +998,11 @@ static int call_trans2qfsinfo(char *inbuf, char *outbuf, int length, int bufsize
       break;
     case SMB_QUERY_FS_VOLUME_INFO:      
       data_len = 18 + 2*strlen(vname);
+      /* 
+       * Add volume serial number - hash of a combination of
+       * the called hostname and the service name.
+       */
+      SIVAL(pdata,8,str_checksum(lp_servicename(snum)) ^ str_checksum(local_machine) );
       SIVAL(pdata,12,2*strlen(vname));
       PutUniCode(pdata+18,vname);      
       DEBUG(5,("call_trans2qfsinfo : SMB_QUERY_FS_VOLUME_INFO namelen = %d, vol = %s\n", strlen(vname),
@@ -1128,9 +1139,18 @@ static int call_trans2qfilepathinfo(char *inbuf, char *outbuf, int length,
     case SMB_INFO_STANDARD:
     case SMB_INFO_QUERY_EA_SIZE:
       data_size = (info_level==1?22:26);
-      put_dos_date2(pdata,l1_fdateCreation,get_create_time(&sbuf));
-      put_dos_date2(pdata,l1_fdateLastAccess,get_access_time(&sbuf));
-      put_dos_date2(pdata,l1_fdateLastWrite,sbuf.st_mtime); /* write time */
+      if( lp_win95_bug_compatibility())
+      {
+        put_dos_date(pdata,l1_fdateCreation,get_create_time(&sbuf));
+        put_dos_date(pdata,l1_fdateLastAccess,get_access_time(&sbuf));
+        put_dos_date(pdata,l1_fdateLastWrite,sbuf.st_mtime); /* write time */
+      }
+      else
+      {
+        put_dos_date2(pdata,l1_fdateCreation,get_create_time(&sbuf));
+        put_dos_date2(pdata,l1_fdateLastAccess,get_access_time(&sbuf));
+        put_dos_date2(pdata,l1_fdateLastWrite,sbuf.st_mtime); /* write time */
+      }
       SIVAL(pdata,l1_cbFile,size);
       SIVAL(pdata,l1_cbFileAlloc,ROUNDUP(size,1024));
       SSVAL(pdata,l1_attrFile,mode);

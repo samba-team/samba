@@ -53,6 +53,7 @@ void init_uid(void)
   initial_gid = getegid();
 
   current_user.cnum = -1;
+  current_user.vuid = UID_FIELD_INVALID;
 
   ChDir(OriginalDir);
 }
@@ -174,6 +175,7 @@ BOOL become_guest(void)
     DEBUG(1,("Failed to become guest. Invalid guest account?\n"));
 
   current_user.cnum = -2;
+  current_user.vuid = UID_FIELD_INVALID;
 
   return(ret);
 }
@@ -208,7 +210,8 @@ BOOL become_user(connection_struct *conn, int cnum, uint16 vuid)
   int snum,gid;
   int uid;
 
-  if (current_user.cnum == cnum && vuser != 0 && current_user.id == vuser->uid) {
+  if ((current_user.cnum == cnum) && (vuser != 0) && (current_user.vuid == vuid) && 
+      (current_user.uid == vuser->uid)) {
     DEBUG(4,("Skipping become_user - already user\n"));
     return(True);
   }
@@ -272,7 +275,7 @@ BOOL become_user(connection_struct *conn, int cnum, uint16 vuid)
     }
 
   current_user.cnum = cnum;
-  current_user.id = uid;
+  current_user.vuid = vuid;
   
   DEBUG(5,("become_user uid=(%d,%d) gid=(%d,%d)\n",
 	   getuid(),geteuid(),getgid(),getegid()));
@@ -333,6 +336,7 @@ BOOL unbecome_user(void )
 	getuid(),geteuid(),getgid(),getegid()));
 
   current_user.cnum = -1;
+  current_user.vuid = UID_FIELD_INVALID;
 
   return(True);
 }

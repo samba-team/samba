@@ -1344,7 +1344,7 @@ static void open_file(int fnum,int cnum,char *fname1,int flags,int mode, struct 
       Connections[cnum].num_files_open++;
       fsp->mode = sbuf->st_mode;
       GetTimeOfDay(&fsp->open_time);
-      fsp->uid = current_user.id;
+      fsp->vuid = current_user.vuid;
       fsp->size = 0;
       fsp->pos = -1;
       fsp->open = True;

@@ -1385,7 +1385,7 @@ int reply_ulogoffX(char *inbuf,char *outbuf,int length,int bufsize)
   if ((vuser != 0) && (lp_security() != SEC_SHARE)) {
     int i;
     for (i=0;i<MAX_OPEN_FILES;i++)
-      if (Files[i].uid == vuser->uid && Files[i].open) {
+      if ((Files[i].vuid == vuid) && Files[i].open) {
 	close_file(i,False);
       }
   }

@@ -27,7 +27,7 @@
    MAX_CONNECTIONS services, but any number of machines may connect at
    one time. */
 #define MAX_CONNECTIONS 127
-#define MAX_OPEN_FILES 10
+#define MAX_OPEN_FILES 100
 
 /* Default size of shared memory used for share mode locking */
 #ifndef SHMEM_SIZE
