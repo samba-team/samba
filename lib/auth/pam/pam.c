@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995, 1996, 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -213,11 +213,22 @@ int
 pam_sm_open_session(pam_handle_t *pamh, int flags, int argc, const char **argv)
 {
     char *tkt;
+    void *user;
+    const char *homedir = NULL;
+
+    if(pam_get_item (pamh, PAM_USER, &user) == PAM_SUCCESS) {
+	struct passwd *pwd;
+
+	pwd = getpwnam ((char *)user);
+	if (pwd != NULL)
+	    homedir = pwd->pw_dir;
+    }
+
     pam_get_data(pamh, "KRBTKFILE", (const void**)&tkt);
     setenv("KRBTKFILE", tkt, 1);
     if(k_hasafs()){
 	k_setpag();
-	krb_afslog(0, 0);
+	krb_afslog_home(0, 0, homedir);
     }
     return PAM_SUCCESS;
 }
