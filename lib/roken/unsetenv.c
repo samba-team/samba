@@ -2,9 +2,12 @@
 #include <config.h>
 #endif
 
-#include <stdlib.h>
-
 RCSID("$Id$");
+
+#include <stdlib.h>
+#include <string.h>
+
+#include "roken.h"
 
 extern char **environ;
 

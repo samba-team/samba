@@ -14,6 +14,10 @@ int putenv(const char *string);
 int setenv(const char *var, const char *val, int rewrite);
 #endif
 
+#ifndef HAVE_UNSETENV
+void unsetenv(const char *name);
+#endif
+
 #ifndef HAVE_GETUSERSHELL
 char *getusershell(void);
 #endif
@@ -43,6 +47,10 @@ char *strerror(int eno);
 char *hstrerror(int herr);
 #endif
 
+#ifndef HAVE_HERROR
+void herror(char *s);
+#endif
+
 #ifndef HAVE_INET_ATON
 /* Minimal implementation of inet_aton. Doesn't handle hex numbers. */
 #ifndef __GNUC__
@@ -52,6 +60,14 @@ int inet_aton(char *cp, struct in_addr *adr);
 
 #if !defined(HAVE_GETCWD)
 char* getcwd(char *path, int size);
+#endif
+
+#ifndef HAVE_GETENT
+int getent(char *cp, char *name);
+#endif
+
+#ifndef HAVE_GETSTR
+char *getstr(char *id, char **cpp);
 #endif
 
 #endif /*  __ROKEN_H__ */
