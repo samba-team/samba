@@ -34,6 +34,18 @@ struct smb_basic_signing_context {
 	uint32_t next_seq_num;
 };
 
+struct smb_signing_context {
+	void (*sign_outgoing_message)(struct smbcli_request *req);
+	BOOL (*check_incoming_message)(struct smbcli_request *req);
+	void (*free_signing_context)(struct smb_signing_context *sign_info);
+	struct smb_basic_signing_context *signing_context;
+	BOOL negotiated_smb_signing;
+	BOOL allow_smb_signing;
+	BOOL doing_signing;
+	BOOL mandatory_signing;
+	BOOL seen_valid; /* Have I ever seen a validly signed packet? */
+};
+
 /* context that will be and has been negotiated between the client and server */
 struct smbcli_negotiate {
 	/* 
@@ -53,17 +65,7 @@ struct smbcli_negotiate {
 	DATA_BLOB secblob;      /* cryptkey or negTokenInit blob */
 	uint32_t sesskey;
 	
-	struct {
-		void (*sign_outgoing_message)(struct smbcli_request *req);
-		BOOL (*check_incoming_message)(struct smbcli_request *req);
-		void (*free_signing_context)(struct smbcli_transport *transport);
-		struct smb_basic_signing_context *signing_context;
-		BOOL negotiated_smb_signing;
-		BOOL allow_smb_signing;
-		BOOL doing_signing;
-		BOOL mandatory_signing;
-		BOOL seen_valid; /* Have I ever seen a validly signed packet? */
-	} sign_info;
+	struct smb_signing_context sign_info;
 
 	/* capabilities that the server reported */
 	uint32_t capabilities;
