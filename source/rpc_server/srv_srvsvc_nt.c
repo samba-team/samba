@@ -955,7 +955,7 @@ uint32 _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 
 	share_name = dos_unistr2_to_str(&q_u->uni_share_name);
 
-	r_u->switch_value = q_u->info_level;
+	r_u->switch_value = 0;
 
 	snum = find_service(share_name);
 
@@ -985,7 +985,6 @@ uint32 _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 		status = NT_STATUS_BAD_NETWORK_NAME;
 	}
 
-	r_u->switch_value = 0;
 	r_u->status = status;
 
 	DEBUG(5,("_srv_net_share_set_info: %d\n", __LINE__));
@@ -1003,7 +1002,7 @@ uint32 _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 
 	DEBUG(5,("_srv_net_share_add: %d\n", __LINE__));
 
-	r_u->switch_value = q_u->info_level;
+	r_u->switch_value = 0;
 
 	switch (q_u->info_level) {
 	case 1:
@@ -1025,12 +1024,34 @@ uint32 _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 		break;
 	}
 
-	r_u->switch_value = 0;
 	r_u->status = status;
 
 	DEBUG(5,("_srv_net_share_add: %d\n", __LINE__));
 
 	return r_u->status;
+}
+
+/*******************************************************************
+ Net share delete. Stub for now. JRA.
+********************************************************************/
+
+uint32 _srv_net_share_del(pipes_struct *p, SRV_Q_NET_SHARE_DEL *q_u, SRV_R_NET_SHARE_DEL *r_u)
+{
+	char *share_name;
+	uint32 status = NT_STATUS_NOPROBLEMO;
+	int snum;
+
+	DEBUG(5,("_srv_net_share_del: %d\n", __LINE__));
+
+	share_name = dos_unistr2_to_str(&q_u->uni_share_name);
+
+	snum = find_service(share_name);
+
+	if (snum < 0)
+		return NT_STATUS_BAD_NETWORK_NAME;
+
+	/* Stub... */
+	return ERROR_ACCESS_DENIED;
 }
 
 /*******************************************************************
