@@ -1750,9 +1750,6 @@ int reply_findnclose(char *inbuf,char *outbuf,int length,int bufsize);
 int reply_transs2(char *inbuf,char *outbuf,int length,int bufsize);
 int reply_trans2(char *inbuf,char *outbuf,int length,int bufsize);
 
-/*The following definitions come from  ubiqx/ubi_dLinkList.c  */
-
-
 /*The following definitions come from  ufc.c  */
 
 char *ufc_crypt(char *key,char *salt);
