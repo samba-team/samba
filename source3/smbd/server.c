@@ -486,7 +486,7 @@ void exit_server(char *reason)
 	DEBUG(2,("Closing connections\n"));
 
 	if (negprot_global_auth_context) {
-		negprot_global_auth_context->free(&negprot_global_auth_context);
+		(negprot_global_auth_context->free)(&negprot_global_auth_context);
 	}
 
 	conn_close_all();

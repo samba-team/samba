@@ -68,7 +68,7 @@ static NTSTATUS pass_check_smb(char *smb_name,
 		nt_status = plaintext_auth_context->check_ntlm_password(plaintext_auth_context, 
 									user_info, &server_info); 
 		
-		plaintext_auth_context->free(&plaintext_auth_context);
+		(plaintext_auth_context->free)(&plaintext_auth_context);
 	}		
 	free_user_info(&user_info);
 	free_server_info(&server_info);

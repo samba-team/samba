@@ -37,7 +37,7 @@ static void get_challange(char buff[8])
 	/* We might be called more than once, muliple negprots are premitted */
 	if (negprot_global_auth_context) {
 		DEBUG(3, ("get challange: is this a secondary negprot?  negprot_global_auth_context is non-NULL!\n"));
-		negprot_global_auth_context->free(&negprot_global_auth_context);
+		(negprot_global_auth_context->free)(&negprot_global_auth_context);
 	}
 
 	DEBUG(10, ("get challange: creating negprot_global_auth_context\n"));
