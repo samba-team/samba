@@ -1,5 +1,6 @@
 /* 
    Unix SMB/Netbios implementation.
+   ACL get/set utility
    Version 3.0
    
    Copyright (C) Andrew Tridgell 2000
@@ -131,35 +132,36 @@ static SEC_DESC *sec_desc_parse(char *str)
 {
 	char *p = str;
 	fstring tok;
-	SEC_DESC *sd, *ret;
+	SEC_DESC *ret;
 	int sd_size;
-
-	sd = (SEC_DESC *)calloc(1, sizeof(SEC_DESC));
-	if (!sd) return NULL;
+	DOM_SID *grp_sid=NULL, *owner_sid=NULL;
+	SEC_ACL *dacl=NULL, *sacl=NULL;
+	int revision=1;
+	int type=0x8004;
 
 	while (next_token(&p, tok, " \t,\r\n", sizeof(tok))) {
 
 		if (strncmp(tok,"REVISION:", 9) == 0) {
-			sd->revision = strtol(tok+9, NULL, 16);
+			revision = strtol(tok+9, NULL, 16);
 		}
 
 		if (strncmp(tok,"TYPE:", 5) == 0) {
-			sd->type = strtol(tok+5, NULL, 16);
+			type = strtol(tok+5, NULL, 16);
 		}
 
 		if (strncmp(tok,"OWNER:", 6) == 0) {
-			sd->owner_sid = (DOM_SID *)calloc(1, sizeof(DOM_SID));
-			if (!sd->owner_sid ||
-			    !StringToSid(sd->owner_sid, tok+6)) {
+			owner_sid = (DOM_SID *)calloc(1, sizeof(DOM_SID));
+			if (!owner_sid ||
+			    !StringToSid(owner_sid, tok+6)) {
 				printf("Failed to parse owner sid\n");
 				return NULL;
 			}
 		}
 
 		if (strncmp(tok,"GROUP:", 6) == 0) {
-			sd->grp_sid = (DOM_SID *)calloc(1, sizeof(DOM_SID));
-			if (!sd->grp_sid ||
-			    !StringToSid(sd->grp_sid, tok+6)) {
+			grp_sid = (DOM_SID *)calloc(1, sizeof(DOM_SID));
+			if (!grp_sid ||
+			    !StringToSid(grp_sid, tok+6)) {
 				printf("Failed to parse group sid\n");
 				return NULL;
 			}
@@ -168,7 +170,7 @@ static SEC_DESC *sec_desc_parse(char *str)
 		if (strncmp(tok,"DACL:", 5) == 0) {
 			SEC_ACE ace;
 			if (!parse_ace(&ace, tok+5) || 
-			    !add_ace(&sd->dacl, &ace)) {
+			    !add_ace(&dacl, &ace)) {
 				printf("Failed to parse DACL\n");
 				return NULL;
 			}
@@ -177,17 +179,20 @@ static SEC_DESC *sec_desc_parse(char *str)
 		if (strncmp(tok,"SACL:", 5) == 0) {
 			SEC_ACE ace;
 			if (!parse_ace(&ace, tok+5) || 
-			    !add_ace(&sd->sacl, &ace)) {
+			    !add_ace(&sacl, &ace)) {
 				printf("Failed to parse SACL\n");
 				return NULL;
 			}
 		}
 	}
 
-	ret = make_sec_desc(sd->revision, sd->type, sd->owner_sid, sd->grp_sid, 
-			    sd->sacl, sd->dacl, &sd_size);
+	ret = make_sec_desc(revision, type, owner_sid, grp_sid, 
+			    sacl, dacl, &sd_size);
 
-	free_sec_desc(&sd);
+	free_sec_acl(&sacl);
+	free_sec_acl(&dacl);
+	if (grp_sid) free(grp_sid);
+	if (owner_sid) free(owner_sid);
 
 	return ret;
 }
