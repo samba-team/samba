@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -89,7 +89,7 @@ parse_args(krb5_context context, kadm5_principal_ent_t ent,
     return 0;
 }
 
-int
+
 mod_entry(int argc, char **argv)
 {
     kadm5_principal_ent_rec princ;
@@ -122,13 +122,12 @@ mod_entry(int argc, char **argv)
 				  KADM5_MAX_LIFE | KADM5_MAX_RLIFE |
 				  KADM5_PRINC_EXPIRE_TIME |
 				  KADM5_PW_EXPIRATION);
+	krb5_free_principal (context, princ_ent);
 	if (ret) {
 	    printf ("no such principal: %s\n", argv[0]);
-	    krb5_free_principal (context, princ_ent);
 	    return 0;
 	}
 	edit_entry(&princ, &mask, NULL, 0);
-
     } else {
 	princ.principal = princ_ent;
     }
@@ -136,8 +135,6 @@ mod_entry(int argc, char **argv)
     ret = kadm5_modify_principal(kadm_handle, &princ, mask);
     if(ret)
 	krb5_warn(context, ret, "kadm5_modify_principal");
-    if(princ_ent)
-	krb5_free_principal(context, princ_ent);
     kadm5_free_principal_ent(kadm_handle, &princ);
     return 0;
 }
