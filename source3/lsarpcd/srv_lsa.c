@@ -571,23 +571,12 @@ static void api_lsa_lookup_names( pipes_struct *p, prs_struct *data,
 static void api_lsa_close( pipes_struct *p, prs_struct *data,
                                   prs_struct *rdata)
 {
-	/* XXXX this is NOT good */
-	char *q = mem_data(&(rdata->data), rdata->offset);
+	LSA_R_CLOSE r_c;
 
-	SIVAL(q, 0, 0);
-	q += 4;
-	SIVAL(q, 0, 0);
-	q += 4;
-	SIVAL(q, 0, 0);
-	q += 4;
-	SIVAL(q, 0, 0);
-	q += 4;
-	SIVAL(q, 0, 0); 
-	q += 4;
-	SIVAL(q, 0, 0);
-	q += 4;
+	ZERO_STRUCT(r_c);
 
-	rdata->offset += 24;
+	/* store the response in the SMB stream */
+	lsa_io_r_close("", &r_c, rdata, 0);
 }
 
 /***************************************************************************
