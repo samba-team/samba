@@ -233,6 +233,8 @@ struct cli_state *cli_initialise(struct cli_state *cli)
 	memset(cli->outbuf, '\0', cli->bufsize);
 	memset(cli->inbuf, '\0', cli->bufsize);
 
+	cli->nt_pipe_fnum = 0;
+
 	cli->initialised = 1;
 
 	return cli;
