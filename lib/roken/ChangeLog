@@ -1,3 +1,10 @@
+Tue Aug 18 22:25:52 1998  Assar Westerlund  <assar@sics.se>
+
+	* getarg.h (arg_printusage): new signature
+
+	* getarg.c (arg_printusage): new parameter `progname'.  NULL means
+ 	__progname.
+
 Sun Aug  9 14:53:44 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 	* Makefile.am: net_{read,write}.c
