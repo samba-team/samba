@@ -185,16 +185,21 @@ void get_sam_domain_name(void)
 ****************************************************************************/
 BOOL get_member_domain_sid(void)
 {
+	DEBUG(10,("get_member_domain_sid: "));
 	switch (lp_server_role())
 	{
 		case ROLE_DOMAIN_NONE:
 		{
 			ZERO_STRUCT(global_member_sid);
+			DEBUG(10,("none\n"));
 			return True;
 		}
 		case ROLE_DOMAIN_PDC:
 		{
+			fstring sidstr;
 			sid_copy(&global_member_sid, &global_sam_sid);
+			sid_to_string(sidstr, &global_member_sid);
+			DEBUG(10,("%s\n", sidstr));
 			return True;
 		}
 		default:
@@ -372,6 +377,10 @@ BOOL pwdb_initialise(BOOL is_server)
 				  global_sam_name));
 			return False;
 		}
+		if (!get_member_domain_sid())
+		{
+			return False;
+		}
 	}
 	else
 	{
@@ -382,9 +391,7 @@ BOOL pwdb_initialise(BOOL is_server)
 		}
 	}
 
-	create_sidmap_table();
-
-	return True;
+	return create_sidmap_table();
 }
 
 /**************************************************************************

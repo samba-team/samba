@@ -36,13 +36,6 @@ void msrpc_service_init(char* service_name)
 	{
 		exit(-1);
 	}
-
-	if (!get_member_domain_sid())
-	{
-		DEBUG(0,("ERROR: Samba cannot obtain PDC SID from PDC(s) %s.\n",
-		          lp_passwordserver()));
-		exit(-1);
-	}
 }
 
 /****************************************************************************
