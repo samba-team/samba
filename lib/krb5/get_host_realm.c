@@ -138,7 +138,7 @@ krb5_get_host_realm(krb5_context context,
 	    return 0;
 	else if(dns_find_realm(context, p, *realms) == 0)
 	    return 0;
-	p = strchr(p, '.');
+	p = strchr(p + 1, '.');
     }
     p = strchr(host, '.');
     if(p == NULL)
