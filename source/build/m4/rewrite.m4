@@ -410,9 +410,8 @@ AC_CHECK_FUNCS(fstat strchr utime utimes getrlimit fsync bzero memset strlcpy st
 AC_CHECK_FUNCS(memmove vsnprintf snprintf asprintf vasprintf setsid glob strpbrk pipe crypt16 getauthuid)
 AC_CHECK_FUNCS(strftime sigprocmask sigblock sigaction sigset innetgr setnetgrent getnetgrent endnetgrent)
 AC_CHECK_FUNCS(initgroups select rdchk getgrnam getgrent pathconf realpath)
-AC_CHECK_FUNCS(setpriv setgidx setuidx setgroups sysconf mktime rename ftruncate stat64 fstat64)
-AC_CHECK_FUNCS(lstat64 fopen64 atexit grantpt dup2 lseek64 ftruncate64 readdir64)
-AC_CHECK_FUNCS(fseek64 fseeko64 ftell64 ftello64 setluid getpwanam setlinebuf)
+AC_CHECK_FUNCS(setpriv setgidx setuidx setgroups sysconf mktime rename ftruncate)
+AC_CHECK_FUNCS(setluid getpwanam setlinebuf)
 AC_CHECK_FUNCS(srandom random srand rand setenv usleep strcasecmp fcvt fcvtl symlink readlink)
 AC_CHECK_FUNCS(syslog vsyslog getgrouplist timegm backtrace)
 # setbuffer, shmget, shm_open are needed for smbtorture
@@ -421,20 +420,9 @@ AC_CHECK_FUNCS(setbuffer shmget shm_open)
 # syscall() is needed for smbwrapper.
 AC_CHECK_FUNCS(syscall)
 
-AC_CHECK_FUNCS(_dup _dup2 _opendir _readdir _seekdir _telldir _closedir)
-AC_CHECK_FUNCS(__dup __dup2 __opendir __readdir __seekdir __telldir __closedir)
-AC_CHECK_FUNCS(__getcwd _getcwd)
-AC_CHECK_FUNCS(__xstat __fxstat __lxstat)
-AC_CHECK_FUNCS(_stat _lstat _fstat __stat __lstat __fstat)
-AC_CHECK_FUNCS(_acl __acl _facl __facl _open __open _chdir __chdir)
-AC_CHECK_FUNCS(_close __close _fchdir __fchdir _fcntl __fcntl)
-AC_CHECK_FUNCS(getdents _getdents __getdents _lseek __lseek _read __read)
-AC_CHECK_FUNCS(getdirentries _write __write _fork __fork)
-AC_CHECK_FUNCS(_stat64 __stat64 _fstat64 __fstat64 _lstat64 __lstat64)
-AC_CHECK_FUNCS(__sys_llseek llseek _llseek __llseek readdir64 _readdir64 __readdir64)
-AC_CHECK_FUNCS(pread _pread __pread pread64 _pread64 __pread64)
-AC_CHECK_FUNCS(pwrite _pwrite __pwrite pwrite64 _pwrite64 __pwrite64)
-AC_CHECK_FUNCS(open64 _open64 __open64 creat64)
+AC_CHECK_FUNCS(getdents)
+AC_CHECK_FUNCS(pread pwrite)
+
 
 #
 # stat64 family may need <sys/stat.h> on some systems, notably ReliantUNIX
@@ -451,34 +439,6 @@ if test x$ac_cv_func_stat64 = xno ; then
   AC_MSG_RESULT([$ac_cv_func_stat64])
   if test x$ac_cv_func_stat64 = xyes ; then
     AC_DEFINE(HAVE_STAT64,1,[Whether stat64() is available])
-  fi
-fi
-
-if test x$ac_cv_func_lstat64 = xno ; then
-  AC_MSG_CHECKING([for lstat64 in <sys/stat.h>])
-  AC_TRY_LINK([
-#if defined(HAVE_UNISTD_H)
-#include <unistd.h>
-#endif
-#include <sys/stat.h>
-], [struct stat64 st64; exit(lstat64(".",&st64));], [ac_cv_func_lstat64=yes])
-  AC_MSG_RESULT([$ac_cv_func_lstat64])
-  if test x$ac_cv_func_lstat64 = xyes ; then
-    AC_DEFINE(HAVE_LSTAT64,[Whether lstat64() is available])
-  fi
-fi
-
-if test x$ac_cv_func_fstat64 = xno ; then
-  AC_MSG_CHECKING([for fstat64 in <sys/stat.h>])
-  AC_TRY_LINK([
-#if defined(HAVE_UNISTD_H)
-#include <unistd.h>
-#endif
-#include <sys/stat.h>
-], [struct stat64 st64; exit(fstat64(0,&st64));], [ac_cv_func_fstat64=yes])
-  AC_MSG_RESULT([$ac_cv_func_fstat64])
-  if test x$ac_cv_func_fstat64 = xyes ; then
-    AC_DEFINE(HAVE_FSTAT64,1,[Whether fstat64() is available])
   fi
 fi
 
