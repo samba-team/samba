@@ -834,7 +834,7 @@ retrieve(char *cmd, char *name)
 			if(strcmp(tail, p->ext) == 0){
 			    sprintf(line, p->cmd, name);
 			    /* XXX */
-			    line[tail - name] = 0; 
+			    line[strlen(name) - strlen(p->ext)] = 0; 
 			    break;
 			}
 		    }
