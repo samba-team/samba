@@ -327,13 +327,12 @@ pytdbpack_calc_reqd_len(char *format_str,
 			if (!str_obj)
 				return -1;
 
-			item_len = PyString_Size(str_obj);
-			if (item_len == -1) {
+			if (!PyString_Check(str_obj) || ((item_len = PyString_Size(str_obj)) == -1)) {
 				pytdbpack_bad_type(ch, "String", str_obj);
 				return -1;
 			}
 			
-			len += item_len;
+			len += 1 + item_len;
 		}
 		else if (ch == 'B') {
 			/* length-preceded byte buffer: n bytes, plus a preceding
@@ -608,8 +607,12 @@ pytdbpack_pack_data(const char *format_str,
 			int size;
 			char *sval;
 
-			size = PyString_GET_SIZE(val_obj);
-			sval = PyString_AS_STRING(val_obj);
+			size = PySequence_Length(val_obj);
+			if (size < 0)
+				return NULL;
+			sval = PyString_AsString(val_obj);
+			if (!sval)
+				return NULL;
 			pack_bytes(size+1, sval, &packed); /* include nul */
 		}
 		else if (ch == 'B') {
