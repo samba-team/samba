@@ -124,7 +124,7 @@ struct ds_domain_trust {
 	uint32		parent_index;
 	uint32		trust_type;
 	uint32		trust_attributes;
-	GUID		guid;
+	struct uuid	guid;
 	
 	DOM_SID	sid;
 	char *netbios_domain;
