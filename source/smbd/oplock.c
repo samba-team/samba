@@ -205,7 +205,7 @@ Error was %s.\n", strerror(errno) ));
     }
 
     dev = (SMB_DEV_T)os.os_dev;
-    inode = (SMB_DEV_T)os.os_ino;
+    inode = (SMB_INO_T)os.os_ino;
 
     DEBUG(5,("receive_local_message: kernel oplock break request received for \
 dev = %x, inode = %.0f\n", (unsigned int)dev, (double)inode ));

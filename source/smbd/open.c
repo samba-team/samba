@@ -1130,25 +1130,48 @@ int open_directory(files_struct *fsp,connection_struct *conn,
 {
 	extern struct current_user current_user;
 	SMB_STRUCT_STAT st;
+	BOOL got_stat = False;
 
-	if (smb_ofun & 0x10) {
-		/*
-		 * Create the directory.
-		 */
+	if(dos_stat(fname, &st) == 0) {
+		got_stat = True;
+	}
 
-		if(dos_mkdir(fname, unix_mode(conn,aDIR)) < 0) {
-			DEBUG(0,("open_directory: unable to create %s. Error was %s\n",
-				 fname, strerror(errno) ));
-			return -1;
+	if (got_stat && (GET_FILE_OPEN_DISPOSITION(smb_ofun) == FILE_EXISTS_FAIL)) {
+		errno = EEXIST;
+		return -1;
+	}
+
+	if (GET_FILE_CREATE_DISPOSITION(smb_ofun) == FILE_CREATE_IF_NOT_EXIST) {
+
+		if (got_stat) {
+
+			if(!S_ISDIR(st.st_mode)) {
+				DEBUG(0,("open_directory: %s is not a directory !\n", fname ));
+				return -1;
+			}
+			*action = FILE_WAS_OPENED;
+
+		} else {
+
+			/*
+			 * Try and create the directory.
+			 */
+
+			if(dos_mkdir(fname, unix_mode(conn,aDIR)) < 0) {
+				DEBUG(0,("open_directory: unable to create %s. Error was %s\n",
+					 fname, strerror(errno) ));
+				return -1;
+			}
+			*action = FILE_WAS_CREATED;
+
 		}
-
-		*action = FILE_WAS_CREATED;
 	} else {
+
 		/*
-		 * Check that it *was* a directory.
+		 * Don't create - just check that it *was* a directory.
 		 */
 
-		if(dos_stat(fname, &st) < 0) {
+		if(!got_stat) {
 			DEBUG(0,("open_directory: unable to stat name = %s. Error was %s\n",
 				 fname, strerror(errno) ));
 			return -1;
@@ -1158,6 +1181,7 @@ int open_directory(files_struct *fsp,connection_struct *conn,
 			DEBUG(0,("open_directory: %s is not a directory !\n", fname ));
 			return -1;
 		}
+
 		*action = FILE_WAS_OPENED;
 	}
 	
@@ -1202,10 +1226,9 @@ int open_directory(files_struct *fsp,connection_struct *conn,
 	return 0;
 }
 
-
 /*******************************************************************
-check if the share mode on a file allows it to be deleted or unlinked
-return True if sharing doesn't prevent the operation
+ Check if the share mode on a file allows it to be deleted or unlinked.
+ Return True if sharing doesn't prevent the operation.
 ********************************************************************/
 
 BOOL check_file_sharing(connection_struct *conn,char *fname, BOOL rename_op)
