@@ -1,7 +1,5 @@
 # $Id$
 
-AUTOMAKE_OPTIONS = foreign no-dependencies 1.6
-
 SUFFIXES = .et .h
 
 INCLUDES = -I$(top_builddir)/include $(INCLUDES_roken)
