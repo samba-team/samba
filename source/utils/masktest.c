@@ -29,6 +29,9 @@ static fstring username;
 static fstring workgroup;
 static int got_pass;
 
+static char *maskchars = "?*abc.";
+static char *filechars = "abcdefghijklm.";
+
 /***************************************************** 
 return a connection to a server
 *******************************************************/
@@ -167,8 +170,6 @@ static void testpair(struct cli_state *cli1, struct cli_state *cli2,
 static void test_mask(struct cli_state *cli1, struct cli_state *cli2)
 {
 	pstring mask, file;
-	char *maskchars = "?*abc.";
-	char *filechars = "abcdefghijklm.";
 	int l1, l2, i, l;
 	int mc_len = strlen(maskchars);
 	int fc_len = strlen(filechars);
@@ -212,11 +213,14 @@ static void usage(void)
   options:\n\
         -U user%%pass\n\
         -s seed\n\
+        -f filechars (default %s)\n\
+        -m maskchars (default %s)\n\
 \n\
   This program tests wildcard matching between two servers. It generates\n\
   random pairs of filenames/masks and tests that they match in the same\n\
   way on two servers\n\
-");
+", 
+  filechars, maskchars);
 }
 
 /****************************************************************************
@@ -260,7 +264,7 @@ static void usage(void)
 
 	seed = time(NULL);
 
-	while ((opt = getopt(argc, argv, "U:s:h")) != EOF) {
+	while ((opt = getopt(argc, argv, "U:s:hm:f:")) != EOF) {
 		switch (opt) {
 		case 'U':
 			pstrcpy(username,optarg);
@@ -277,6 +281,12 @@ static void usage(void)
 		case 'h':
 			usage();
 			exit(1);
+		case 'm':
+			maskchars = optarg;
+			break;
+		case 'f':
+			filechars = optarg;
+			break;
 		default:
 			printf("Unknown option %c (%d)\n", (char)opt, opt);
 			exit(1);
