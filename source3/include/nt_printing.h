@@ -133,6 +133,13 @@
 #define COLLATE_FALSE  0
 #define COLLATE_TRUE   1
 
+/* Printer permissions ACE settings */
+
+#define PRINTER_ACE_FULL_CONTROL      GENERIC_ALL_ACCESS
+#define PRINTER_ACE_MANAGE_DOCUMENTS  READ_CONTROL_ACCESS
+#define PRINTER_ACE_PRINT             \
+            GENERIC_READ_ACCESS | GENERIC_WRITE_ACCESS | GENERIC_EXECUTE_ACCESS
+
 typedef struct nt_printer_driver_info_level_3
 {
 	uint32 cversion;
