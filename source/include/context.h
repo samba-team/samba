@@ -326,32 +326,7 @@ struct timers_context {
 	time_t last_smb_conf_reload;
 };
 
-
-/* the process model operations structure - contains function pointers to 
-   the model-specific implementations of each operation */
-struct model_ops {
-	/* called at startup when the model is selected */
-	void (*model_startup)(void);
-
-	/* function to accept new connection */
-	void (*accept_connection)(struct event_context *, struct fd_event *, time_t, uint16);
-
-	/* function to accept new rpc over tcp connection */
-	void (*accept_rpc_connection)(struct event_context *, struct fd_event *, time_t, uint16);
-				
-	/* function to terminate a connection */
-	void (*terminate_connection)(struct server_context *smb, const char *reason);
-
-	/* function to terminate a connection */
-	void (*terminate_rpc_connection)(void *r, const char *reason);
-	
-	/* function to exit server */
-	void (*exit_server)(struct server_context *smb, const char *reason);
-	
-	/* returns process or thread id */
-	int (*get_id)(struct request_context *req);
-};
-
+#include "smbd/process_model.h"
 
 /* smb context structure. This should contain all the state
  * information associated with a SMB server */

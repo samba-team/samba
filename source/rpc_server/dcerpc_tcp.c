@@ -255,7 +255,7 @@ static void setup_listen_rpc(struct event_context *events,
   add a socket address to the list of events, one event per dcerpc endpoint
 */
 static void add_socket_rpc(struct event_context *events, 
-			   struct model_ops *model_ops, 
+			   const struct model_ops *model_ops, 
 			   struct in_addr *ifip)
 {
 	struct dcesrv_endpoint *e;
@@ -289,7 +289,7 @@ static void add_socket_rpc(struct event_context *events,
  Open the listening sockets for RPC over TCP
 ****************************************************************************/
 void open_sockets_rpc(struct event_context *events,
-		      struct model_ops *model_ops)
+		      const struct model_ops *model_ops)
 {
 	if (lp_interfaces() && lp_bind_interfaces_only()) {
 		int num_interfaces = iface_count();

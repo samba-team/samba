@@ -465,25 +465,39 @@ static void model_startup(void)
 	register_debug_handlers("thread", &d_ops);	
 }
 
+static void thread_exit_server(struct server_context *smb, const char *reason)
+{
+	DEBUG(1,("thread_exit_server: reason[%s]\n",reason));
+}
+
 /*
   initialise the thread process model, registering ourselves with the model subsystem
  */
-void process_model_thread_init(void)
+NTSTATUS process_model_thread_init(void)
 {
+	NTSTATUS ret;
 	struct model_ops ops;
 
 	ZERO_STRUCT(ops);
-	
+
+	/* fill in our name */
+	ops.name = "thread";
+
 	/* fill in all the operations */
 	ops.model_startup = model_startup;
 	ops.accept_connection = accept_connection;
 	ops.accept_rpc_connection = accept_rpc_connection;
 	ops.terminate_connection = terminate_connection;
 	ops.terminate_rpc_connection = terminate_rpc_connection;
-	ops.exit_server = NULL;
+	ops.exit_server = thread_exit_server;
 	ops.get_id = get_id;
-	
-	/* register ourselves with the process model subsystem. We
-	   register under the name 'thread'. */
-	register_process_model("thread", &ops);
+
+	/* register ourselves with the PROCESS_MODEL subsystem. */
+	ret = register_backend("process_model", &ops);
+	if (!NT_STATUS_IS_OK(ret)) {
+		DEBUG(0,("Failed to register process_model 'thread'!\n"));
+		return ret;
+	}
+
+	return ret;
 }

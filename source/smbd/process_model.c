@@ -24,7 +24,6 @@
 
 /* the list of currently registered process models */
 static struct {
-	const char *name;
 	struct model_ops *ops;
 } *models = NULL;
 static int num_models;
@@ -35,13 +34,15 @@ static int num_models;
   The 'name' can be later used by other backends to find the operations
   structure for this backend.  
 */
-BOOL register_process_model(const char *name, struct model_ops *ops)
+static NTSTATUS register_process_model(void *_ops)
 {
-	if (process_model_byname(name) != NULL) {
+	const struct model_ops *ops = _ops;
+
+	if (process_model_byname(ops->name) != NULL) {
 		/* its already registered! */
-		DEBUG(2,("process_model '%s' already registered\n", 
-			 name));
-		return False;
+		DEBUG(0,("PROCESS_MODEL '%s' already registered\n", 
+			 ops->name));
+		return NT_STATUS_OBJECT_NAME_COLLISION;
 	}
 
 	models = Realloc(models, sizeof(models[0]) * (num_models+1));
@@ -49,23 +50,26 @@ BOOL register_process_model(const char *name, struct model_ops *ops)
 		smb_panic("out of memory in register_process_model");
 	}
 
-	models[num_models].name = smb_xstrdup(name);
 	models[num_models].ops = smb_xmemdup(ops, sizeof(*ops));
+	models[num_models].ops->name = smb_xstrdup(ops->name);
 
 	num_models++;
 
-	return True;
+	DEBUG(3,("PROCESS_MODEL '%s' registered\n", 
+		 ops->name));
+
+	return NT_STATUS_OK;
 }
 
 /*
   return the operations structure for a named backend of the specified type
 */
-struct model_ops *process_model_byname(const char *name)
+const struct model_ops *process_model_byname(const char *name)
 {
 	int i;
 
 	for (i=0;i<num_models;i++) {
-		if (strcmp(models[i].name, name) == 0) {
+		if (strcmp(models[i].ops->name, name) == 0) {
 			return models[i].ops;
 		}
 	}
@@ -73,13 +77,39 @@ struct model_ops *process_model_byname(const char *name)
 	return NULL;
 }
 
-
-/* initialise the builtin process models */
-void process_model_init(void)
+/*
+  return the PROCESS_MODEL module version, and the size of some critical types
+  This can be used by process model modules to either detect compilation errors, or provide
+  multiple implementations for different smbd compilation options in one module
+*/
+const struct process_model_critical_sizes *process_model_version(void)
 {
-	process_model_standard_init();
-	process_model_single_init();
-#ifdef WITH_PTHREADS
-	process_model_thread_init();
-#endif
+	static const struct process_model_critical_sizes critical_sizes = {
+		PROCESS_MODEL_VERSION,
+		sizeof(struct model_ops),
+		sizeof(struct server_context),
+		sizeof(struct event_context),
+		sizeof(struct fd_event)
+	};
+
+	return &critical_sizes;
+}
+
+/*
+  initialise the PROCESS_MODEL subsystem
+*/
+BOOL process_model_init(void)
+{
+	NTSTATUS status;
+
+	status = register_subsystem("process_model", register_process_model); 
+	if (!NT_STATUS_IS_OK(status)) {
+		return False;
+	}
+
+	/* FIXME: Perhaps panic if a basic process model, such as simple, fails to initialise? */
+	static_init_process_model;
+
+	DEBUG(3,("PROCESS subsystem version %d initialised\n", PROCESS_MODEL_VERSION));
+	return True;
 }
