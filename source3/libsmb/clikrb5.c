@@ -365,7 +365,7 @@ failed:
 	return data_blob(NULL, 0);
 }
 
-BOOL krb5_get_smb_session_key(krb5_context context, krb5_auth_context auth_context, uint8 session_key[16])
+ BOOL krb5_get_smb_session_key(krb5_context context, krb5_auth_context auth_context, uint8 session_key[16])
  {
 	krb5_keyblock *skey;
 	BOOL ret = False;
@@ -394,10 +394,4 @@ DATA_BLOB krb5_get_ticket(const char *principal, time_t time_offset)
 	 return data_blob(NULL, 0);
  }
 
-BOOL krb5_get_smb_session_key(krb5_context context, krb5_auth_context ac, uint8 session_key[16])
- {
-	DEBUG(0,("NO KERBEROS SUPPORT\n"));
-	memset(session_key, 0, 16);
-	return False;
- }
 #endif
