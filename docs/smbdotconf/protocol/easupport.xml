@@ -8,7 +8,9 @@
     <manvolnum>8</manvolnum></citerefentry> will allow clients to attempt to store OS/2 style Extended
     attributes on a share. In order to enable this parameter the underlying filesystem exported by
     the share must support extended attributes (such as provided on XFS and EXT3 on Linux, with the
-    correct kernel patches). On Linux the filesystem must have been mounted with the mount option user_xattr.</para>
+    correct kernel patches). On Linux the filesystem must have been mounted with the mount
+        option user_xattr in order for extended attributes to work, also
+        extended attributes must be compiled into the Linux kernel.
 </description>
 
 <value type="default">no</value>
