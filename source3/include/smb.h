@@ -656,6 +656,7 @@ typedef struct sam_passwd
 #define LOCAL_SET_NO_PASSWORD 0x20
 #define LOCAL_SET_PASSWORD 0x40
 #define LOCAL_SET_LDAP_ADMIN_PW 0x80
+#define LOCAL_INTERDOM_ACCOUNT 0x100
 
 /* key and data in the connections database - used in smbstatus and smbd */
 struct connections_key {

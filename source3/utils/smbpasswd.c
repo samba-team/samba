@@ -56,6 +56,7 @@ static void usage(void)
 	printf("  -e                   enable user\n");
 	printf("  -n                   set no password\n");
 	printf("  -m                   machine trust account\n");
+	printf("  -i                   interdomain trust account\n");
 #ifdef WITH_LDAP_SAM
 	printf("  -w                   ldap admin password\n");
 #endif
@@ -213,7 +214,7 @@ static int process_root(int argc, char *argv[])
 
 	user_name[0] = '\0';
 
-	while ((ch = getopt(argc, argv, "axdehmnjr:swR:D:U:L")) != EOF) {
+	while ((ch = getopt(argc, argv, "axdehmnijr:swR:D:U:L")) != EOF) {
 		switch(ch) {
 		case 'L':
 			local_mode = True;
@@ -235,6 +236,9 @@ static int process_root(int argc, char *argv[])
 			break;
 		case 'm':
 			local_flags |= LOCAL_TRUST_ACCOUNT;
+			break;
+		case 'i':
+			local_flags |= LOCAL_INTERDOM_ACCOUNT;
 			break;
 		case 'j':
 			d_printf("See 'net rpc join' for this functionality\n");
@@ -375,6 +379,22 @@ static int process_root(int argc, char *argv[])
 
 		slprintf(buf, sizeof(buf)-1, "%s$", user_name);
 		fstrcpy(user_name, buf);
+	} else if (local_flags & LOCAL_INTERDOM_ACCOUNT) {
+		static fstring buf;
+
+		if (local_flags & LOCAL_ADD_USER) {
+			/*
+			 * Prompt for trusting domain's account password
+			 */
+			new_passwd = prompt_for_new_password(stdin_passwd_get);
+			if(!new_passwd) {
+				fprintf(stderr, "Unable to get newpassword.\n");
+				exit(1);
+			}
+		}
+		slprintf(buf, sizeof(buf) - 1, "%s$", user_name);
+		fstrcpy(user_name, buf);
+
 	} else {
 		
 		if (remote_machine != NULL) {
