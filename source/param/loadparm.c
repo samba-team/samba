@@ -1909,13 +1909,6 @@ static BOOL service_ok(int iService)
 			ServicePtrs[iService]->bBrowseable = False;
 	}
 
-	if (ServicePtrs[iService]->szPath[0] == '\0' &&
-	    strwicmp(ServicePtrs[iService]->szService, HOMES_NAME) != 0) {
-		DEBUG(0, ("No path in service %s - using %s\n",
-		       ServicePtrs[iService]->szService, tmpdir()));
-		string_set(&ServicePtrs[iService]->szPath, tmpdir());
-	}
-
 	/* If a service is flagged unavailable, log the fact at level 0. */
 	if (!ServicePtrs[iService]->bAvailable)
 		DEBUG(1, ("NOTE: Service %s is flagged unavailable.\n",
