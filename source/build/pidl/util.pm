@@ -191,7 +191,7 @@ sub is_scalar_type($)
     }
     if ($type =~ /char|short|long|NTTIME|
 	time_t|error_status_t|boolean32|unsigned32|
-	HYPER_T|wchar_t|DATA_BLOB/x) {
+	HYPER_T|wchar_t|DATA_BLOB|WERROR/x) {
 	    return 1;
     }
 

@@ -6,7 +6,6 @@
  */
 
 #define IPID GUID
-#define HRESULT uint32
 
 [
 	uuid("4d9f4ab8-7d1c-11cf-861e-0020af6e7c57"),
@@ -42,8 +41,8 @@ interface IRemoteActivation
 			[out] IPID ipidRemUnknown,
 			[out] uint32 AuthnHint,
 			[out] COMVERSION ServerVersion,
-			[out] HRESULT hr,
+			[out] WERROR hr,
 			[out,size_is(Interfaces)] MInterfacePointer ifaces[],
-			[out,size_is(Interfaces)] HRESULT results[]
+			[out,size_is(Interfaces)] WERROR results[]
 			);
 }
