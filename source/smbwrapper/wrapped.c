@@ -26,7 +26,7 @@
 #include <errno.h>
 #include "realcalls.h"
 
- int open(const char *name, int flags, mode_t mode)
+ int open(char *name, int flags, mode_t mode)
 {
 	if (smbw_path(name)) {
 		return smbw_open(name, flags, mode);
@@ -36,12 +36,12 @@
 }
 
 #ifdef HAVE__OPEN
- int _open(const char *name, int flags, mode_t mode) 
+ int _open(char *name, int flags, mode_t mode) 
 {
 	return open(name, flags, mode);
 }
 #elif HAVE___OPEN
- int __open(const char *name, int flags, mode_t mode) 
+ int __open(char *name, int flags, mode_t mode) 
 {
 	return open(name, flags, mode);
 }
@@ -49,7 +49,7 @@
 
 
 #ifdef HAVE_OPEN64
- int open64(const char *name, int flags, mode_t mode)
+ int open64(char *name, int flags, mode_t mode)
 {
 	if (smbw_path(name)) {
 		return smbw_open(name, flags, mode);
@@ -61,12 +61,12 @@
 
 #ifndef NO_OPEN64_ALIAS
 #ifdef HAVE__OPEN64
- int _open64(const char *name, int flags, mode_t mode) 
+ int _open64(char *name, int flags, mode_t mode) 
 {
 	return open64(name, flags, mode);
 }
 #elif HAVE___OPEN64
- int __open64(const char *name, int flags, mode_t mode) 
+ int __open64(char *name, int flags, mode_t mode) 
 {
 	return open64(name, flags, mode);
 }
@@ -118,18 +118,18 @@
 #endif
 
 
- int chdir(const char *name)
+ int chdir(char *name)
 {
 	return smbw_chdir(name);
 }
 
 #ifdef HAVE___CHDIR
- int __chdir(const char *name)
+ int __chdir(char *name)
 {
 	return chdir(name);
 }
 #elif HAVE__CHDIR
- int _chdir(const char *name)
+ int _chdir(char *name)
 {
 	return chdir(name);
 }
@@ -295,7 +295,7 @@
 
 
 
- int access(const char *name, int mode)
+ int access(char *name, int mode)
 {
 	if (smbw_path(name)) {
 		return smbw_access(name, mode);
@@ -306,7 +306,7 @@
 
 
 
- int chmod(const char *name,mode_t mode)
+ int chmod(char *name,mode_t mode)
 {
 	if (smbw_path(name)) {
 		return smbw_chmod(name, mode);
@@ -317,7 +317,7 @@
 
 
 
- int chown(const char *name,uid_t owner, gid_t group)
+ int chown(char *name,uid_t owner, gid_t group)
 {
 	if (smbw_path(name)) {
 		return smbw_chown(name, owner, group);
@@ -329,13 +329,13 @@
 
  char *getcwd(char *buf, size_t size)
 {
-	return smbw_getcwd(buf, size);
+	return (char *)smbw_getcwd(buf, size);
 }
 
 
 
 
- int mkdir(const char *name, mode_t mode)
+ int mkdir(char *name, mode_t mode)
 {
 	if (smbw_path(name)) {
 		return smbw_mkdir(name, mode);
@@ -395,7 +395,7 @@
 #endif
 
 
- int stat(const char *name, void *st)
+ int stat(char *name, void *st)
 {
 #if HAVE___XSTAT
 	return xstat(name, st);
@@ -432,7 +432,7 @@
 }
 
 
- int unlink(const char *name)
+ int unlink(char *name)
 {
 	if (smbw_path(name)) {
 		return smbw_unlink(name);
@@ -443,7 +443,7 @@
 
 
 #ifdef HAVE_UTIME
- int utime(const char *name,void *tvp)
+ int utime(char *name,void *tvp)
 {
 	if (smbw_path(name)) {
 		return smbw_utime(name, tvp);
@@ -454,7 +454,7 @@
 #endif
 
 #ifdef HAVE_UTIMES
- int utimes(const char *name,void *tvp)
+ int utimes(char *name,void *tvp)
 {
 	if (smbw_path(name)) {
 		return smbw_utimes(name, tvp);
@@ -474,7 +474,7 @@
 }
 
 
- int rename(const char *oldname,const char *newname)
+ int rename(char *oldname,char *newname)
 {
 	int p1, p2;
 	p1 = smbw_path(oldname); 
@@ -491,7 +491,7 @@
 	return real_rename(oldname, newname);
 }
 
- int rmdir(const char *name)
+ int rmdir(char *name)
 {
 	if (smbw_path(name)) {
 		return smbw_rmdir(name);
@@ -501,7 +501,7 @@
 }
 
 
- int symlink(const char *topath,const char *frompath)
+ int symlink(char *topath,char *frompath)
 {
 	int p1, p2;
 	p1 = smbw_path(topath); 
@@ -538,13 +538,13 @@
 }
 
 #ifdef real_opendir
- void *opendir(const char *name)
+ void *opendir(char *name)
 {
 	if (smbw_path(name)) {
-		return smbw_opendir(name);
+		return (void *)smbw_opendir(name);
 	}
 
-	return real_opendir(name);
+	return (void *)real_opendir(name);
 }
 #endif
 
@@ -552,10 +552,10 @@
  void *readdir(void *dir)
 {
 	if (smbw_dirp(dir)) {
-		return smbw_readdir(dir);
+		return (void *)smbw_readdir(dir);
 	}
 
-	return real_readdir(dir);
+	return (void *)real_readdir(dir);
 }
 #endif
 
@@ -617,14 +617,14 @@
 }
 #endif
 
- int creat(const char *path, mode_t mode)
+ int creat(char *path, mode_t mode)
 {
 	extern int creat_bits;
 	return open(path, creat_bits, mode);
 }
 
 #ifdef HAVE_CREAT64
- int creat64(const char *path, mode_t mode)
+ int creat64(char *path, mode_t mode)
 {
 	extern int creat_bits;
 	return open64(path, creat_bits, mode);
@@ -632,7 +632,7 @@
 #endif
 
 #ifdef HAVE_STAT64
-  int stat64(const char *name, void *st64)
+  int stat64(char *name, void *st64)
 {
 	if (smbw_path(name)) {
 		long xx[32];
@@ -654,7 +654,7 @@
 	return real_fstat64(fd, st64);
 }
 
-  int lstat64(const char *name, void *st64)
+  int lstat64(char *name, void *st64)
 {
 	if (smbw_path(name)) {
 		long xx[32];
@@ -681,12 +681,13 @@
 {
 	if (smbw_dirp(dir)) {
 		static long xx[70];
-		d = readdir(dir);
+		void *d;
+		d = (void *)readdir(dir);
 		if (!d) return NULL;
 		dirent64_convert(d, xx);
 		return xx;
 	}
-	return real_readdir64(dir);
+	return (void *)real_readdir64(dir);
 }
 #endif
 
