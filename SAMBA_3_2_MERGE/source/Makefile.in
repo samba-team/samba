@@ -170,8 +170,6 @@ SMBLDAP_OBJ = @SMBLDAP@ @SMBLDAPUTIL@
 
 VERSION_OBJ = lib/version.o
 
-DOSERR_OBJ = libsmb/doserr.o
-
 SNPRINTF_OBJ = lib/snprintf.o
 
 WBCOMMON_OBJ = nsswitch/wb_common.o
@@ -269,9 +267,9 @@ LIBRPC_RPC_OBJ = \
                 librpc/rpc/dcerpc_smb.o \
                 librpc/rpc/dcerpc_tcp.o
 
-LIBNDR_RAW_OBJ = \
-                librpc/ndr/ndr.o \
-                librpc/ndr/ndr_basic.o \
+LIBNDR_BASIC_OBJ = librpc/ndr/ndr_basic.o librpc/ndr/ndr.o
+
+LIBNDR_RAW_OBJ = $(LIBNDR_BASIC_OBJ) \
                 librpc/ndr/ndr_sec.o \
                 librpc/ndr/ndr_spoolss_buf.o \
                 librpc/gen_ndr/tables.o \
@@ -304,10 +302,9 @@ LIBNDR_RAW_OBJ = \
 
 LIBRPC_OBJ = $(LIBRPC_RPC_OBJ) $(LIBNDR_RAW_OBJ)
 
-LIBCLI_UTILS_OBJ = libcli/util/asn1.o libcli/util/smberr.o libcli/util/doserr.o \
-                   libcli/util/errormap.o libcli/util/clierror.o libcli/util/cliutil.o \
-                   libcli/util/nterr.o libcli/util/smbdes.o libcli/util/smbencrypt.o \
-                   libcli/util/dom_sid.o
+LIBCLI_UTILS_OBJ = libcli/util/asn1.o libcli/util/errormap.o libcli/util/clierror.o \
+                   libcli/util/cliutil.o libcli/util/dom_sid.o $(ERROR_OBJ) \
+                   $(SMBENCRYPT_OBJ)
 
 LIBCLI_AUTH_OBJ = \
                 libcli/auth/ntlmssp.o \
@@ -544,7 +541,7 @@ SWAT_OBJ = $(SWAT_OBJ1) $(PARAM_OBJ) $(PRINTING_OBJ) $(BASICS_OBJ) \
 	   $(LOCKING_OBJ) $(PASSDB_OBJ) $(SECRETS_OBJ) $(KRBCLIENT_OBJ) \
 	   $(UBIQX_OBJ) $(LIB_NONSMBD_OBJ) $(GROUPDB_OBJ) $(PLAINTEXT_AUTH_OBJ) \
 	    $(SMBLDAP_OBJ) $(RPC_PARSE_OBJ) $(RPC_PARSE_OBJ1) $(LIBMSRPC_OBJ) \
-           $(PASSCHANGE_OBJ) $(DUMMYROOT_OBJ) 
+           $(PASSCHANGE_OBJ) $(DUMMYROOT_OBJ) $(ERROR_OBJ)
 
 SMBSH_OBJ = smbwrapper/smbsh.o smbwrapper/shared.o \
             $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_NONSMBD_OBJ)
@@ -576,9 +573,8 @@ SMBPASSWD_OBJ = utils/smbpasswd.o $(PASSCHANGE_OBJ) $(PARAM_OBJ) $(SECRETS_OBJ) 
 
 PDBEDIT_OBJ = utils/pdbedit.o $(PARAM_OBJ) $(PASSDB_OBJ) $(LIBSAMBA_OBJ) \
 		$(UBIQX_OBJ) $(LIB_NONSMBD_OBJ) $(GROUPDB_OBJ) $(SECRETS_OBJ) \
-		 $(SMBLDAP_OBJ) $(DUMMYROOT_OBJ) lib/cmdline/popt_common.o \
-                libcli/util/smbencrypt.o libcli/util/smbdes.o libcli/util/nterr.o \
-                librpc/ndr/ndr_basic.o librpc/ndr/ndr.o libcli/util/doserr.o
+                $(SMBLDAP_OBJ) $(DUMMYROOT_OBJ) lib/cmdline/popt_common.o \
+                $(ERROR_OBJ) $(SMBENCRYPT_OBJ) $(LIBNDR_BASIC_OBJ)
 
 SMBGET_OBJ = utils/smbget.o  $(LIBSMBCLIENT_OBJ) $(SECRETS_OBJ)
 
@@ -644,6 +640,9 @@ BASIC_OBJ = lib/util_str.o lib/debug.o lib/xfile.o lib/util.o \
             lib/replace.o lib/bitmap.o lib/util_uuid.o lib/fsusage.o  \
             lib/messages.o lib/tallocmsg.o lib/dmallocmsg.o lib/pam_errors.o 
 			
+ERROR_OBJ = libcli/util/smberr.o libcli/util/nterr.o libcli/util/doserr.o
+
+SMBENCRYPT_OBJ = libcli/util/smbencrypt.o libcli/util/smbdes.o
 
 
 NSSWITCH_OBJ = nsswitch/wb_client.o $(WBCOMMON_OBJ)
@@ -685,7 +684,7 @@ UMOUNT_OBJ = client/smbumount.o
 
 NMBLOOKUP_OBJ = utils/nmblookup.o $(PARAM_OBJ) $(UBIQX_OBJ) $(LIBNMB_OBJ) \
                $(LIB_NONSMBD_OBJ) $(SECRETS_OBJ) $(LIBCLI_UTILS_OBJ)  \
-               librpc/ndr/ndr_basic.o librpc/ndr/ndr.o lib/cmdline/popt_common.o
+               $(LIBNDR_BASIC_OBJ) lib/cmdline/popt_common.o
 
 SMBTORTURE_OBJ1 = torture/torture.o torture/nbio.o torture/scanner.o torture/utable.o \
 		torture/denytest.o torture/mangle_test.o 

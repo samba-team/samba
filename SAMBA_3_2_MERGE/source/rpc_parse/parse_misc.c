@@ -123,9 +123,7 @@ BOOL smb_io_time(const char *desc, NTTIME *nttime, prs_struct *ps, int depth)
 	if(!prs_align(ps))
 		return False;
 	
-	if(!prs_uint32("low ", ps, depth, &nttime->low)) /* low part */
-		return False;
-	if(!prs_uint32("high", ps, depth, &nttime->high)) /* high part */
+	if(!prs_uint64("time ", ps, depth, nttime))
 		return False;
 
 	return True;
@@ -1694,8 +1692,13 @@ BOOL smb_io_unistr3(const char *desc, UNISTR3 *name, prs_struct *ps, int depth)
  ********************************************************************/
 BOOL prs_uint64(const char *name, prs_struct *ps, int depth, uint64_t *data64)
 {
-	return prs_uint32(name, ps, depth+1, &data64->low) &&
-		prs_uint32(name, ps, depth+1, &data64->high);
+	uint32_t low, high;
+
+	low  = *data64 & 0xFFFFFFFF;
+	high = *data64 >> 32;
+
+	return prs_uint32(name, ps, depth+1, &low) &&
+		prs_uint32(name, ps, depth+1, &high);
 }
 
 /*******************************************************************

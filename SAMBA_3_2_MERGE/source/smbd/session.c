@@ -166,6 +166,7 @@ void session_yield(user_struct *vuser)
 	struct sessionid sessionid;
 	struct in_addr *client_ip;
 	TDB_DATA key;
+	TALLOC_CTX *mem_ctx;
 
 	if (!tdb) return;
 
@@ -183,7 +184,12 @@ void session_yield(user_struct *vuser)
 
 	memcpy(&sessionid, dbuf.dptr, sizeof(sessionid));
 
-	client_ip = interpret_addr2_x(sessionid.ip_addr);
+	if ( !(mem_ctx = talloc_init( "session_yield" )) ) {
+		DEBUG(0,("session_yield: tallic_init() failed!\n"));
+		return;
+	}
+	client_ip = interpret_addr2(mem_ctx, sessionid.ip_addr);
+	talloc_destroy( mem_ctx );
 
 	SAFE_FREE(dbuf.dptr);
 
