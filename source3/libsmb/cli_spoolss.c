@@ -212,7 +212,7 @@ static void decode_printer_info_0(NEW_BUFFER *buffer, uint32 returned,
         buffer->prs.data_offset=0;
 
         for (i=0; i<returned; i++) {
-                new_smb_io_printer_info_0("", buffer, &inf[i], 0);
+                smb_io_printer_info_0("", buffer, &inf[i], 0);
         }
 
         *info=inf;
@@ -229,7 +229,7 @@ static void decode_printer_info_1(NEW_BUFFER *buffer, uint32 returned,
         buffer->prs.data_offset=0;
 
         for (i=0; i<returned; i++) {
-                new_smb_io_printer_info_1("", buffer, &inf[i], 0);
+                smb_io_printer_info_1("", buffer, &inf[i], 0);
         }
 
         *info=inf;
@@ -248,7 +248,7 @@ static void decode_printer_info_2(NEW_BUFFER *buffer, uint32 returned,
         for (i=0; i<returned; i++) {
 		/* a little initialization as we go */
 		inf[i].secdesc = NULL;
-                new_smb_io_printer_info_2("", buffer, &inf[i], 0);
+                smb_io_printer_info_2("", buffer, &inf[i], 0);
         }
 
         *info=inf;
@@ -266,7 +266,7 @@ static void decode_printer_info_3(NEW_BUFFER *buffer, uint32 returned,
 
         for (i=0; i<returned; i++) {
 		inf[i].secdesc = NULL;
-                new_smb_io_printer_info_3("", buffer, &inf[i], 0);
+                smb_io_printer_info_3("", buffer, &inf[i], 0);
         }
 
         *info=inf;
@@ -286,7 +286,7 @@ static void decode_port_info_1(NEW_BUFFER *buffer, uint32 returned,
         prs_set_offset(&buffer->prs, 0);
 
         for (i=0; i<returned; i++) {
-                new_smb_io_port_info_1("", buffer, &(inf[i]), 0);
+                smb_io_port_info_1("", buffer, &(inf[i]), 0);
         }
 
         *info=inf;
@@ -306,7 +306,7 @@ static void decode_port_info_2(NEW_BUFFER *buffer, uint32 returned,
         prs_set_offset(&buffer->prs, 0);
 
         for (i=0; i<returned; i++) {
-                new_smb_io_port_info_2("", buffer, &(inf[i]), 0);
+                smb_io_port_info_2("", buffer, &(inf[i]), 0);
         }
 
         *info=inf;
@@ -323,7 +323,7 @@ static void decode_printer_driver_1(NEW_BUFFER *buffer, uint32 returned,
         buffer->prs.data_offset=0;
 
         for (i=0; i<returned; i++) {
-                new_smb_io_printer_driver_info_1("", buffer, &(inf[i]), 0);
+                smb_io_printer_driver_info_1("", buffer, &(inf[i]), 0);
         }
 
         *info=inf;
@@ -340,7 +340,7 @@ static void decode_printer_driver_2(NEW_BUFFER *buffer, uint32 returned,
         buffer->prs.data_offset=0;
 
         for (i=0; i<returned; i++) {
-                new_smb_io_printer_driver_info_2("", buffer, &(inf[i]), 0);
+                smb_io_printer_driver_info_2("", buffer, &(inf[i]), 0);
         }
 
         *info=inf;
@@ -360,7 +360,7 @@ static void decode_printer_driver_3(
         buffer->prs.data_offset=0;
 
         for (i=0; i<returned; i++) {
-                new_smb_io_printer_driver_info_3("", buffer, &(inf[i]), 0);
+                smb_io_printer_driver_info_3("", buffer, &(inf[i]), 0);
         }
 
         *info=inf;
@@ -378,7 +378,7 @@ static void decode_printerdriverdir_1 (
 
         prs_set_offset(&buffer->prs, 0);
 
-        new_smb_io_driverdir_1("", buffer, inf, 0);
+        smb_io_driverdir_1("", buffer, inf, 0);
  
 	*info=inf;
 }
