@@ -23,7 +23,7 @@
 /*
   this type allows us to distinguish handle types
 */
-enum spoolss_handle {
+enum spoolss_handle_type {
 	SPOOLSS_HANDLE_SERVER,
 	SPOOLSS_HANDLE_PRINTER
 };
@@ -31,7 +31,7 @@ enum spoolss_handle {
 /*
   state asscoiated with a spoolss_OpenPrinter{,Ex}() operation
 */
-struct spoolss_openprinter_state {
-	void *openprinter_ctx;
+struct spoolss_handle_server {
+	enum spoolss_handle_type handle_type;
 	uint32_t access_mask;
 };
