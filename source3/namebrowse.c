@@ -167,6 +167,8 @@ static void start_sync_browse_entry(struct browse_cache_record *b)
 
   if (!(d = find_subnet(b->ip))) return;
 
+  if (!(work = find_workgroupstruct(d, b->group, False))) return;
+
   /* only sync if we are the master */
   if (AM_MASTER(work)) {
 
