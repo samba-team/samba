@@ -21,6 +21,7 @@
 		<command>swat</command>
 		<arg choice="opt">-s &lt;smb config file&gt;</arg>
 		<arg choice="opt">-a</arg>
+		<arg choice="opt">-P</arg>
 	</cmdsynopsis>
 </refsynopsisdiv>
 
