@@ -56,7 +56,10 @@ static void overflow_attack(int len)
 	DEBUG(0,("ERROR: Invalid password length %d\n", len));
 	DEBUG(0,("your machine may be under attack by a user exploiting an old bug\n"));
 	DEBUG(0,("Attack was from IP=%s\n", client_addr()));
+/* Don't exit server here - it allows a possible denial of service attack. */
+#if 0
 	exit_server("possible attack");
+#endif
 }
 
 
@@ -253,6 +256,7 @@ int reply_tcon_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 
   if (passlen > MAX_PASSWORD_LENGTH) {
 	  overflow_attack(passlen);
+      return(ERROR(ERRSRV,ERRbadpw));
   }
   
   {
@@ -388,7 +392,10 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   if (Protocol < PROTOCOL_NT1) {
     smb_apasslen = SVAL(inbuf,smb_vwv7);
     if (smb_apasslen > MAX_PASSWORD_LENGTH)
+    {
 	    overflow_attack(smb_apasslen);
+        return(ERROR(ERRSRV,ERRbadpw));
+    }
 
     memcpy(smb_apasswd,smb_buf(inbuf),smb_apasslen);
     pstrcpy(user,smb_buf(inbuf)+smb_apasslen);
@@ -422,6 +429,7 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 
     if (passlen1 > MAX_PASSWORD_LENGTH) {
 	    overflow_attack(passlen1);
+        return(ERROR(ERRSRV,ERRbadpw));
     }
 
     passlen1 = MIN(passlen1, MAX_PASSWORD_LENGTH);
