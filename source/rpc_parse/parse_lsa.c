@@ -2219,18 +2219,21 @@ BOOL lsa_io_r_query_info2(const char *desc, LSA_R_QUERY_INFO2 *r_c,
 
 	if(!prs_uint32("ptr", ps, depth, &r_c->ptr))
 		return False;
-	if(!prs_uint16("info_class", ps, depth, &r_c->info_class))
-		return False;
-	switch(r_c->info_class) {
-	case 0x000c:
-		if (!lsa_io_dns_dom_info("info12", &r_c->info.dns_dom_info,
-					 ps, depth))
+
+	if (r_c->ptr != 0) {
+		if(!prs_uint16("info_class", ps, depth, &r_c->info_class))
 			return False;
+		switch(r_c->info_class) {
+		case 0x000c:
+			if (!lsa_io_dns_dom_info("info12", &r_c->info.dns_dom_info,
+						 ps, depth))
+				return False;
 		break;
-	default:
-		DEBUG(0,("lsa_io_r_query_info2: unknown info class %d\n",
-			 r_c->info_class));
-		return False;
+		default:
+			DEBUG(0,("lsa_io_r_query_info2: unknown info class %d\n",
+				 r_c->info_class));
+			return False;
+		}
 	}
 
 	if(!prs_align(ps))
