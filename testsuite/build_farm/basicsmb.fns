@@ -2,7 +2,7 @@
 
 # Common functions for Samba build scripts.
 
-# Copyright (C) 2001 by Martin Pool <mbp@samba.org>
+# Copyright (C) 2001 by Martin Pool <mbp@samba.org> and others
 
 # The following variables are passed in by the calling script.  They
 # originate in either the buildfarm scripts or the configured
@@ -24,7 +24,7 @@
 template_smb_conf_setup() {
 	cat basicsmb.smb.conf$1.template | \
               sed "s|PREFIX|$prefix|g" | \
-	      sed "s|BUILD_FARM|$pwd|g" | \
+	      sed "s|BUILD_FARM|$test_root|g" | \
 	      sed "s|WHOAMI|$whoami|g" | \
 	      sed "s|LOGLEVEL|$loglevel|g" \
         > $prefix/lib/smb.conf$1
@@ -34,7 +34,7 @@ template_smb_conf_setup() {
 test_smb_conf_setup() {
     echo "test_smb_conf_setup: Configuring: "
     echo "    PREFIX=$prefix"
-    echo "    BUILD_FARM=$pwd"
+    echo "    BUILD_FARM=$test_root"
     echo "    WHOAMI=$whoami"
     echo "    LOGLEVEL=$loglevel"
     echo "    TREE=$tree"
@@ -153,4 +153,3 @@ then
     loglevel=1
 fi
 
-# NB $pwd is not really `pwd`
