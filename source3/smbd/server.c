@@ -4776,6 +4776,9 @@ static void process(void)
   }
 #endif    
 
+  /* re-initialise the timezone */
+  TimeInit();
+
   while (True)
   {
     int deadtime = lp_deadtime()*60;
