@@ -52,6 +52,8 @@ PyObject *spoolss_setjob(PyObject *self, PyObject *args, PyObject *kw);
 PyObject *spoolss_getjob(PyObject *self, PyObject *args, PyObject *kw);
 PyObject *spoolss_startpageprinter(PyObject *self, PyObject *args, PyObject *kw);
 PyObject *spoolss_endpageprinter(PyObject *self, PyObject *args, PyObject *kw);
+PyObject *spoolss_startdocprinter(PyObject *self, PyObject *args, PyObject *kw);
+PyObject *spoolss_enddocprinter(PyObject *self, PyObject *args, PyObject *kw);
 
 /* The following definitions come from python/py_spoolss_jobs_conv.c  */
 
@@ -59,6 +61,8 @@ BOOL py_from_JOB_INFO_1(PyObject **dict, JOB_INFO_1 *info);
 BOOL py_to_JOB_INFO_1(JOB_INFO_1 *info, PyObject *dict);
 BOOL py_from_JOB_INFO_2(PyObject **dict, JOB_INFO_2 *info);
 BOOL py_to_JOB_INFO_2(JOB_INFO_2 *info, PyObject *dict);
+BOOL py_from_DOC_INFO_1(PyObject **dict, DOC_INFO_1 *info);
+BOOL py_to_DOC_INFO_1(DOC_INFO_1 *info, PyObject *dict);
 
 /* The following definitions come from python/py_spoolss_ports.c  */
 

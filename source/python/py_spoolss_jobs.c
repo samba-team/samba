@@ -213,3 +213,139 @@ PyObject *spoolss_endpageprinter(PyObject *self, PyObject *args, PyObject *kw)
 	Py_INCREF(Py_None);
 	return Py_None;
 }
+
+/* Start doc printer.  This notifies the spooler that a document is about to be
+   printed on the specified printer. */
+
+PyObject *spoolss_startdocprinter(PyObject *self, PyObject *args, PyObject *kw)
+{
+	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
+	WERROR werror;
+	static char *kwlist[] = { "document_info", NULL };
+	PyObject *doc_info, *obj;
+	uint32 level, jobid;
+	char *document_name = NULL, *output_file = NULL, *data_type = NULL;
+
+	/* Parse parameters */
+
+	if (!PyArg_ParseTupleAndKeywords(args, kw, "O!", kwlist,
+		&PyDict_Type, &doc_info))
+		return NULL;
+	
+	/* Check document_info parameter */
+
+	if ((obj = PyDict_GetItemString(doc_info, "level"))) {
+
+		if (!PyInt_Check(obj)) {
+			PyErr_SetString(spoolss_error,
+					"level not an integer");
+			return NULL;
+		}
+
+		level = PyInt_AsLong(obj);
+
+		/* Only level 1 supported by Samba! */
+
+		if (level != 1) {
+			PyErr_SetString(spoolss_error,
+					"unsupported info level");
+			return NULL;
+		}
+
+	} else {
+		PyErr_SetString(spoolss_error, "no info level present");
+		return NULL;
+	}
+
+	if ((obj = PyDict_GetItemString(doc_info, "document_name"))) {
+
+		if (!PyString_Check(obj) && obj != Py_None) {
+			PyErr_SetString(spoolss_error,
+					"document_name not a string");
+			return NULL;
+		}
+		
+		if (PyString_Check(obj))
+			document_name = PyString_AsString(obj);
+
+	} else {
+		PyErr_SetString(spoolss_error, "no document_name present");
+		return NULL;
+	}
+
+	if ((obj = PyDict_GetItemString(doc_info, "output_file"))) {
+
+		if (!PyString_Check(obj) && obj != Py_None) {
+			PyErr_SetString(spoolss_error,
+					"output_file not a string");
+			return NULL;
+		}
+		
+		if (PyString_Check(obj))
+			output_file = PyString_AsString(obj);
+
+	} else {
+		PyErr_SetString(spoolss_error, "no output_file present");
+		return NULL;
+	}
+
+	if ((obj = PyDict_GetItemString(doc_info, "data_type"))) {
+		
+		if (!PyString_Check(obj) && obj != Py_None) {
+			PyErr_SetString(spoolss_error,
+					"data_type not a string");
+			return NULL;
+		}
+
+		if (PyString_Check(obj))
+			data_type = PyString_AsString(obj);
+
+	} else {
+		PyErr_SetString(spoolss_error, "no data_type present");
+		return NULL;
+	}
+
+	/* Call rpc function */
+	
+	werror = cli_spoolss_startdocprinter(
+		hnd->cli, hnd->mem_ctx, &hnd->pol, document_name,
+		output_file, data_type, &jobid);
+
+	if (!W_ERROR_IS_OK(werror)) {
+		PyErr_SetObject(spoolss_werror, py_werror_tuple(werror));
+		return NULL;
+	}
+	
+	/* The return value is zero for an error (where does the status
+	   code come from now??) and the return value is the jobid
+	   allocated for the new job. */
+
+	return Py_BuildValue("i", jobid);
+}
+
+/* End doc printer.  This notifies the spooler that a document has finished
+   being printed on the specified printer. */
+
+PyObject *spoolss_enddocprinter(PyObject *self, PyObject *args, PyObject *kw)
+{
+	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
+	WERROR werror;
+	static char *kwlist[] = { NULL };
+
+	/* Parse parameters */
+
+	if (!PyArg_ParseTupleAndKeywords(args, kw, "", kwlist))
+		return NULL;
+	
+	/* Call rpc function */
+	
+	werror = cli_spoolss_enddocprinter(hnd->cli, hnd->mem_ctx, &hnd->pol);
+
+	if (!W_ERROR_IS_OK(werror)) {
+		PyErr_SetObject(spoolss_werror, py_werror_tuple(werror));
+		return NULL;
+	}
+	
+	Py_INCREF(Py_None);
+	return Py_None;
+}

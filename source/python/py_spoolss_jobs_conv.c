@@ -61,6 +61,13 @@ struct pyconv py_JOB_INFO_2[] = {
 	{ NULL }
 };
 
+struct pyconv py_DOC_INFO_1[] = {
+	{ "document_name", PY_UNISTR, offsetof(DOC_INFO_1, docname) },
+	{ "output_file", PY_UNISTR, offsetof(DOC_INFO_1, outputfile) },
+	{ "data_type", PY_UNISTR, offsetof(DOC_INFO_1, datatype) },
+	{ NULL }
+};
+
 BOOL py_from_JOB_INFO_1(PyObject **dict, JOB_INFO_1 *info)
 {
 	*dict = from_struct(info, py_JOB_INFO_1);
@@ -82,3 +89,16 @@ BOOL py_to_JOB_INFO_2(JOB_INFO_2 *info, PyObject *dict)
 {
 	return False;
 }
+
+BOOL py_from_DOC_INFO_1(PyObject **dict, DOC_INFO_1 *info)
+{
+	*dict = from_struct(info, py_DOC_INFO_1);
+	return True;
+}
+
+BOOL py_to_DOC_INFO_1(DOC_INFO_1 *info, PyObject *dict)
+{
+	to_struct(info, dict, py_DOC_INFO_1);
+	return True;
+}
+
