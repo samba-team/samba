@@ -1330,7 +1330,6 @@ files_struct *open_directory(connection_struct *conn, char *fname, SMB_STRUCT_ST
 files_struct *open_file_stat(connection_struct *conn, char *fname, SMB_STRUCT_STAT *psbuf)
 {
 	extern struct current_user current_user;
-	BOOL got_stat = False;
 	files_struct *fsp = NULL;
 
 	if (!VALID_STAT(*psbuf))

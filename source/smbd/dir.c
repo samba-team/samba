@@ -695,7 +695,6 @@ static BOOL user_can_read_file(connection_struct *conn, char *name)
 	size_t sd_size;
 	files_struct *fsp;
 	int smb_action;
-	int access_mode;
 	NTSTATUS status;
 	uint32 access_granted;
 
