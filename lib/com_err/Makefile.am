@@ -9,6 +9,6 @@ lib_LIBRARIES = liberror.a
 liberror_a_SOURCES = krb5_err.c asn1_err.c error.c 
 
 %.c: %.et
-	$(SHELL) compile_et $<
+	$(SHELL) ./compile_et $<
 
 krb5_err.o: asn1_err.c
