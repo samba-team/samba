@@ -22,73 +22,13 @@
 
 #include "includes.h"
 
-struct samdb_context {
-	struct ldb_context *ldb;
-	struct samdb_context **static_ptr;
-};
-
-
-/*
-  this is used to catch debug messages from ldb
-*/
-void samdb_debug(void *context, enum ldb_debug_level level, const char *fmt, va_list ap)  _PRINTF_ATTRIBUTE(3,0)
-{
-	char *s = NULL;
-	if (DEBUGLEVEL < 4 && level > LDB_DEBUG_WARNING) {
-		return;
-	}
-	vasprintf(&s, fmt, ap);
-	if (!s) return;
-	DEBUG(level, ("samdb: %s\n", s));
-	free(s);
-}
-
-/* destroy the last connection to the sam */
-static int samdb_destructor(void *ctx)
-{
-	struct samdb_context *sam_ctx = ctx;
-	ldb_close(sam_ctx->ldb);
-	*(sam_ctx->static_ptr) = NULL;
-	return 0;
-}				 
-
 /*
   connect to the SAM database
   return an opaque context pointer on success, or NULL on failure
  */
 void *samdb_connect(TALLOC_CTX *mem_ctx)
 {
-	static struct samdb_context *ctx;
-	/*
-	  the way that unix fcntl locking works forces us to have a
-	  static ldb handle here rather than a much more sensible
-	  approach of having the ldb handle as part of the
-	  samr_Connect() pipe state. Otherwise we would try to open
-	  the ldb more than once, and tdb would rightly refuse the
-	  second open due to the broken nature of unix locking.
-	*/
-	if (ctx != NULL) {
-		return talloc_reference(mem_ctx, ctx);
-	}
-
-	ctx = talloc_p(mem_ctx, struct samdb_context);
-	if (ctx == NULL) {
-		errno = ENOMEM;
-		return NULL;
-	}
-
-	ctx->static_ptr = &ctx;
-
-	ctx->ldb = ldb_connect(lp_sam_url(), 0, NULL);
-	if (ctx->ldb == NULL) {
-		talloc_free(ctx);
-		return NULL;
-	}
-
-	talloc_set_destructor(ctx, samdb_destructor);
-	ldb_set_debug(ctx->ldb, samdb_debug, NULL);
-
-	return ctx;
+	return ldb_wrap_connect(mem_ctx, lp_sam_url(), 0, NULL);
 }
 
 /*
@@ -101,7 +41,7 @@ int samdb_search(void *ctx,
 		 const char * const *attrs,
 		 const char *format, ...) _PRINTF_ATTRIBUTE(6,7)
 {
-	struct samdb_context *sam_ctx = ctx;
+	struct ldb_wrap *sam_ctx = ctx;
 	va_list ap;
 	int count;
 
@@ -118,7 +58,7 @@ int samdb_search(void *ctx,
 int samdb_search_free(void *ctx,
 		      TALLOC_CTX *mem_ctx, struct ldb_message **res)
 {
-	struct samdb_context *sam_ctx = ctx;
+	struct ldb_wrap *sam_ctx = ctx;
 	ldb_set_alloc(sam_ctx->ldb, talloc_realloc_fn, mem_ctx);
 	return ldb_search_free(sam_ctx->ldb, res);
 }
@@ -132,7 +72,7 @@ const char *samdb_search_string_v(void *ctx,
 				  const char *attr_name,
 				  const char *format, va_list ap) _PRINTF_ATTRIBUTE(5,0)
 {
-	struct samdb_context *sam_ctx = ctx;
+	struct ldb_wrap *sam_ctx = ctx;
 	int count;
 	const char * const attrs[2] = { attr_name, NULL };
 	struct ldb_message **res = NULL;
@@ -178,7 +118,7 @@ int samdb_search_count(void *ctx,
 		       const char *basedn,
 		       const char *format, ...) _PRINTF_ATTRIBUTE(4,5)
 {
-	struct samdb_context *samdb_ctx = ctx;
+	struct ldb_wrap *samdb_ctx = ctx;
 	va_list ap;
 	struct ldb_message **res;
 	const char * const attrs[] = { NULL };
@@ -202,7 +142,7 @@ uint_t samdb_search_uint(void *ctx,
 			 const char *attr_name,
 			 const char *format, ...) _PRINTF_ATTRIBUTE(6,7)
 {
-	struct samdb_context *samdb_ctx = ctx;
+	struct ldb_wrap *samdb_ctx = ctx;
 	va_list ap;
 	int count;
 	struct ldb_message **res;
@@ -229,7 +169,7 @@ int64_t samdb_search_int64(void *ctx,
 			   const char *attr_name,
 			   const char *format, ...) _PRINTF_ATTRIBUTE(6,7)
 {
-	struct samdb_context *samdb_ctx = ctx;
+	struct ldb_wrap *samdb_ctx = ctx;
 	va_list ap;
 	int count;
 	struct ldb_message **res;
@@ -257,7 +197,7 @@ int samdb_search_string_multiple(void *ctx,
 				 const char *attr_name,
 				 const char *format, ...) _PRINTF_ATTRIBUTE(6,7)
 {
-	struct samdb_context *samdb_ctx = ctx;
+	struct ldb_wrap *samdb_ctx = ctx;
 	va_list ap;
 	int count, i;
 	const char * const attrs[2] = { attr_name, NULL };
@@ -643,7 +583,7 @@ int samdb_copy_template(void *ctx, TALLOC_CTX *mem_ctx,
 static NTSTATUS _samdb_allocate_next_id(void *ctx, TALLOC_CTX *mem_ctx, const char *dn, 
 					const char *attr, uint32_t *id)
 {
-	struct samdb_context *sam_ctx = ctx;
+	struct ldb_wrap *sam_ctx = ctx;
 	struct ldb_message msg;
 	int ret;
 	const char *str;
@@ -740,7 +680,7 @@ NTSTATUS samdb_allocate_next_id(void *ctx, TALLOC_CTX *mem_ctx, const char *dn, 
 int samdb_msg_add_string(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
 			 const char *attr_name, const char *str)
 {
-	struct samdb_context *sam_ctx = ctx;
+	struct ldb_wrap *sam_ctx = ctx;
 	char *s = talloc_strdup(mem_ctx, str);
 	char *a = talloc_strdup(mem_ctx, attr_name);
 	if (s == NULL || a == NULL) {
@@ -756,7 +696,7 @@ int samdb_msg_add_string(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg
 int samdb_msg_add_delete(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
 			 const char *attr_name)
 {
-	struct samdb_context *sam_ctx = ctx;
+	struct ldb_wrap *sam_ctx = ctx;
 	char *a = talloc_strdup(mem_ctx, attr_name);
 	if (a == NULL) {
 		return -1;
@@ -803,7 +743,7 @@ int samdb_msg_add_uint64(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg
 int samdb_msg_add_hash(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
 		       const char *attr_name, struct samr_Password hash)
 {
-	struct samdb_context *sam_ctx = ctx;
+	struct ldb_wrap *sam_ctx = ctx;
 	struct ldb_val val;
 	val.data = talloc(mem_ctx, 16);
 	val.length = 16;
@@ -821,7 +761,7 @@ int samdb_msg_add_hash(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
 int samdb_msg_add_hashes(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
 			 const char *attr_name, struct samr_Password *hashes, uint_t count)
 {
-	struct samdb_context *sam_ctx = ctx;
+	struct ldb_wrap *sam_ctx = ctx;
 	struct ldb_val val;
 	int i;
 	val.data = talloc(mem_ctx, count*16);
@@ -851,7 +791,7 @@ int samdb_msg_add_acct_flags(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message 
 int samdb_msg_add_logon_hours(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
 			      const char *attr_name, struct samr_LogonHours hours)
 {
-	struct samdb_context *sam_ctx = ctx;
+	struct ldb_wrap *sam_ctx = ctx;
 	struct ldb_val val;
 	val.length = hours.units_per_week / 8;
 	val.data = hours.bitmap;
@@ -865,7 +805,7 @@ int samdb_msg_add_logon_hours(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message
 int samdb_msg_set_string(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
 			 const char *attr_name, const char *str)
 {
-	struct samdb_context *sam_ctx = ctx;
+	struct ldb_wrap *sam_ctx = ctx;
 	struct ldb_message_element *el;
 
 	ldb_set_alloc(sam_ctx->ldb, talloc_realloc_fn, mem_ctx);
@@ -895,7 +835,7 @@ int samdb_msg_set_ldaptime(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *m
 */
 int samdb_add(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg)
 {
-	struct samdb_context *sam_ctx = ctx;
+	struct ldb_wrap *sam_ctx = ctx;
 
 	ldb_set_alloc(sam_ctx->ldb, talloc_realloc_fn, mem_ctx);
 	return ldb_add(sam_ctx->ldb, msg);
@@ -906,7 +846,7 @@ int samdb_add(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg)
 */
 int samdb_delete(void *ctx, TALLOC_CTX *mem_ctx, const char *dn)
 {
-	struct samdb_context *sam_ctx = ctx;
+	struct ldb_wrap *sam_ctx = ctx;
 
 	ldb_set_alloc(sam_ctx->ldb, talloc_realloc_fn, mem_ctx);
 	return ldb_delete(sam_ctx->ldb, dn);
@@ -917,7 +857,7 @@ int samdb_delete(void *ctx, TALLOC_CTX *mem_ctx, const char *dn)
 */
 int samdb_modify(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg)
 {
-	struct samdb_context *sam_ctx = ctx;
+	struct ldb_wrap *sam_ctx = ctx;
 
 	ldb_set_alloc(sam_ctx->ldb, talloc_realloc_fn, mem_ctx);
 	return ldb_modify(sam_ctx->ldb, msg);

@@ -139,9 +139,9 @@ BOOL lang_tdb_init(const char *lang)
 
 	asprintf(&path, "%s%s.tdb", lock_path(mem_ctx, "lang_"), lang);
 
-	tdb = tdb_open_log(path, 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0644);
+	tdb = tdb_open(path, 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0644);
 	if (!tdb) {
-		tdb = tdb_open_log(path, 0, TDB_DEFAULT, O_RDONLY, 0);
+		tdb = tdb_open(path, 0, TDB_DEFAULT, O_RDONLY, 0);
 		free(path);
 		free(msg_path);
 		talloc_destroy(mem_ctx);

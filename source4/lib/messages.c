@@ -48,7 +48,7 @@
 #include "includes.h"
 
 /* the locking database handle */
-static TDB_CONTEXT *tdb;
+static struct tdb_wrap *tdb;
 static int received_signal;
 
 /* change the message version with any incompatible changes in the protocol */
@@ -105,9 +105,9 @@ BOOL message_init(void)
 		DEBUG(0,("ERROR: No memory to initialise messages database\n"));
 		return False;
 	}
-	tdb = tdb_open_log(lock_path(mem_ctx, "messages.tdb"), 
-		       0, TDB_CLEAR_IF_FIRST|TDB_DEFAULT, 
-		       O_RDWR|O_CREAT,0600);
+	tdb = tdb_wrap_open(NULL, lock_path(mem_ctx, "messages.tdb"), 
+			    0, TDB_CLEAR_IF_FIRST|TDB_DEFAULT, 
+			    O_RDWR|O_CREAT,0600);
 	talloc_destroy(mem_ctx);
 
 	if (!tdb) {
@@ -155,7 +155,7 @@ static BOOL message_notify(pid_t pid)
 	if (kill(pid, SIGUSR1) == -1) {
 		if (errno == ESRCH) {
 			DEBUG(2,("pid %d doesn't exist - deleting messages record\n", (int)pid));
-			tdb_delete(tdb, message_key_pid(pid));
+			tdb_delete(tdb->tdb, message_key_pid(pid));
 		} else {
 			DEBUG(2,("message to process %d failed - %s\n", (int)pid, strerror(errno)));
 		}
@@ -209,18 +209,18 @@ static BOOL message_send_pid_internal(pid_t pid, int msg_type, const void *buf, 
 
 		/* lock the record for the destination */
 		if (timeout) {
-			if (tdb_chainlock_with_timeout(tdb, kbuf, timeout) == -1) {
+			if (tdb_chainlock_with_timeout(tdb->tdb, kbuf, timeout) == -1) {
 				DEBUG(0,("message_send_pid_internal: failed to get chainlock with timeout %ul.\n", timeout));
 				return False;
 			}
 		} else {
-			if (tdb_chainlock(tdb, kbuf) == -1) {
+			if (tdb_chainlock(tdb->tdb, kbuf) == -1) {
 				DEBUG(0,("message_send_pid_internal: failed to get chainlock.\n"));
 				return False;
 			}
 		}	
-		tdb_append(tdb, kbuf, dbuf);
-		tdb_chainunlock(tdb, kbuf);
+		tdb_append(tdb->tdb, kbuf, dbuf);
+		tdb_chainunlock(tdb->tdb, kbuf);
 
 		SAFE_FREE(dbuf.dptr);
 		errno = 0;                    /* paranoia */
@@ -229,24 +229,24 @@ static BOOL message_send_pid_internal(pid_t pid, int msg_type, const void *buf, 
 
 	/* lock the record for the destination */
 	if (timeout) {
-		if (tdb_chainlock_with_timeout(tdb, kbuf, timeout) == -1) {
+		if (tdb_chainlock_with_timeout(tdb->tdb, kbuf, timeout) == -1) {
 			DEBUG(0,("message_send_pid_internal: failed to get chainlock with timeout %ul.\n", timeout));
 			return False;
 		}
 	} else {
-		if (tdb_chainlock(tdb, kbuf) == -1) {
+		if (tdb_chainlock(tdb->tdb, kbuf) == -1) {
 			DEBUG(0,("message_send_pid_internal: failed to get chainlock.\n"));
 			return False;
 		}
 	}	
 
-	old_dbuf = tdb_fetch(tdb, kbuf);
+	old_dbuf = tdb_fetch(tdb->tdb, kbuf);
 
 	if (!old_dbuf.dptr) {
 		/* its a new record */
 
-		tdb_store(tdb, kbuf, dbuf, TDB_REPLACE);
-		tdb_chainunlock(tdb, kbuf);
+		tdb_store(tdb->tdb, kbuf, dbuf, TDB_REPLACE);
+		tdb_chainunlock(tdb->tdb, kbuf);
 
 		SAFE_FREE(dbuf.dptr);
 		errno = 0;                    /* paranoia */
@@ -264,7 +264,7 @@ static BOOL message_send_pid_internal(pid_t pid, int msg_type, const void *buf, 
 
 		if (!memcmp(ptr, &rec, sizeof(rec))) {
 			if (!len || (len && !memcmp( ptr + sizeof(rec), buf, len))) {
-				tdb_chainunlock(tdb, kbuf);
+				tdb_chainunlock(tdb->tdb, kbuf);
 				DEBUG(10,("message_send_pid_internal: discarding duplicate message.\n"));
 				SAFE_FREE(dbuf.dptr);
 				SAFE_FREE(old_dbuf.dptr);
@@ -277,8 +277,8 @@ static BOOL message_send_pid_internal(pid_t pid, int msg_type, const void *buf, 
 
 	/* we're adding to an existing entry */
 
-	tdb_append(tdb, kbuf, dbuf);
-	tdb_chainunlock(tdb, kbuf);
+	tdb_append(tdb->tdb, kbuf, dbuf);
+	tdb_chainunlock(tdb->tdb, kbuf);
 
 	SAFE_FREE(old_dbuf.dptr);
 	SAFE_FREE(dbuf.dptr);
@@ -323,14 +323,14 @@ static BOOL retrieve_all_messages(char **msgs_buf, size_t *total_len)
 
 	kbuf = message_key_pid(getpid());
 
-	tdb_chainlock(tdb, kbuf);
-	dbuf = tdb_fetch(tdb, kbuf);
+	tdb_chainlock(tdb->tdb, kbuf);
+	dbuf = tdb_fetch(tdb->tdb, kbuf);
 	/*
 	 * Replace with an empty record to keep the allocated
 	 * space in the tdb.
 	 */
-	tdb_store(tdb, kbuf, null_dbuf, TDB_REPLACE);
-	tdb_chainunlock(tdb, kbuf);
+	tdb_store(tdb->tdb, kbuf, null_dbuf, TDB_REPLACE);
+	tdb_chainunlock(tdb->tdb, kbuf);
 
 	if (dbuf.dptr == NULL || dbuf.dsize == 0) {
 		SAFE_FREE(dbuf.dptr);

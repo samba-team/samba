@@ -21,7 +21,7 @@
 
 #include "includes.h"
 
-static TDB_CONTEXT *tdbd = NULL;
+static struct tdb_wrap *tdbd = NULL;
 
 /* the key type used in the unexpeceted packet database */
 struct unexpected_key {
@@ -49,9 +49,9 @@ void unexpected_packet(struct packet_struct *p)
 	if (!tdbd) {
 		mem_ctx = talloc_init("receive_unexpected");
 		if (!mem_ctx) return;
-		tdbd = tdb_open_log(lock_path(mem_ctx, "unexpected.tdb"), 0, 
-			       TDB_CLEAR_IF_FIRST|TDB_DEFAULT,
-			       O_RDWR | O_CREAT, 0644);
+		tdbd = tdb_wrap_open(NULL, lock_path(mem_ctx, "unexpected.tdb"), 0, 
+				     TDB_CLEAR_IF_FIRST|TDB_DEFAULT,
+				     O_RDWR | O_CREAT, 0644);
 		talloc_destroy(mem_ctx);
 		if (!tdbd) {
 			return;
@@ -71,7 +71,7 @@ void unexpected_packet(struct packet_struct *p)
 	dbuf.dptr = buf;
 	dbuf.dsize = len;
 
-	tdb_store(tdbd, kbuf, dbuf, TDB_REPLACE);
+	tdb_store(tdbd->tdb, kbuf, dbuf, TDB_REPLACE);
 }
 
 
@@ -106,7 +106,7 @@ void clear_unexpected(time_t t)
 
 	lastt = t;
 
-	tdb_traverse(tdbd, traverse_fn, NULL);
+	tdb_traverse(tdbd->tdb, traverse_fn, NULL);
 }
 
 
@@ -149,23 +149,25 @@ check for a particular packet in the unexpected packet queue
 struct packet_struct *receive_unexpected(enum packet_type packet_type, int id, 
 					 const char *mailslot_name)
 {
-	TDB_CONTEXT *tdb2;
+	struct tdb_wrap *tdb2;
 	TALLOC_CTX *mem_ctx;
 
 	mem_ctx = talloc_init("receive_unexpected");
 	if (!mem_ctx) return NULL;
-	tdb2 = tdb_open_log(lock_path(mem_ctx, "unexpected.tdb"), 0, 0, O_RDONLY, 0);
-	talloc_destroy(mem_ctx);
-	if (!tdb2) return NULL;
+	tdb2 = tdb_wrap_open(mem_ctx, lock_path(mem_ctx, "unexpected.tdb"), 0, 0, O_RDONLY, 0);
+	if (!tdb2) {
+		talloc_destroy(mem_ctx);
+		return NULL;
+	}
 
 	matched_packet = NULL;
 	match_id = id;
 	match_type = packet_type;
 	match_name = mailslot_name;
 
-	tdb_traverse(tdb2, traverse_match, NULL);
+	tdb_traverse(tdb2->tdb, traverse_match, NULL);
 
-	tdb_close(tdb2);
+	talloc_destroy(mem_ctx);
 
 	return matched_packet;
 }
