@@ -157,7 +157,8 @@ NTSTATUS torture_rpc_connection(struct dcerpc_pipe **p, const char *pipe_name)
 		STD_RIGHT_READ_CONTROL_ACCESS | 
 		SA_RIGHT_FILE_WRITE_ATTRIBUTES | 
 		SA_RIGHT_FILE_WRITE_EA | 
-		GENERIC_RIGHTS_FILE_READ;
+		GENERIC_RIGHTS_FILE_READ |
+		GENERIC_RIGHTS_FILE_WRITE;
 	open_parms.ntcreatex.in.file_attr = 0;
 	open_parms.ntcreatex.in.alloc_size = 0;
 	open_parms.ntcreatex.in.share_access = 
