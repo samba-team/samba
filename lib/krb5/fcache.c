@@ -174,7 +174,7 @@ fcc_gen_new(krb5_context context, krb5_ccache *id)
     f = malloc(sizeof(*f));
     if(f == NULL)
 	return KRB5_CC_NOMEM;
-    file = strdup (KRB5_DEFAULT_CCFILE_ROOT);
+    asprintf (&file, "%sXXXXXX", KRB5_DEFAULT_CCFILE_ROOT);
     if(file == NULL) {
 	free(f);
 	return KRB5_CC_NOMEM;
