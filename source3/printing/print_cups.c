@@ -1,7 +1,7 @@
 /*
  * Support code for the Common UNIX Printing System ("CUPS")
  *
- * Copyright 1999-2001 by Michael R Sweet.
+ * Copyright 1999-2003 by Michael R Sweet.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -194,12 +194,111 @@ void cups_printer_fn(void (*fn)(char *, char *))
  		if (info == NULL || !info[0])
 			(*fn)(name, make_model);
 		else
-			(*fn)(name,info);
+			(*fn)(name, info);
 		
 
 	}
 
 	ippDelete(response);
+
+
+       /*
+	* Build a CUPS_GET_CLASSES request, which requires the following
+	* attributes:
+	*
+	*    attributes-charset
+	*    attributes-natural-language
+	*    requested-attributes
+	*/
+
+	request = ippNew();
+
+	request->request.op.operation_id = CUPS_GET_CLASSES;
+	request->request.op.request_id   = 1;
+
+	language = cupsLangDefault();
+
+	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_CHARSET,
+                     "attributes-charset", NULL, cupsLangEncoding(language));
+
+	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_LANGUAGE,
+                     "attributes-natural-language", NULL, language->language);
+
+        ippAddStrings(request, IPP_TAG_OPERATION, IPP_TAG_NAME,
+	              "requested-attributes",
+		      (sizeof(requested) / sizeof(requested[0])),
+		      NULL, requested);
+
+       /*
+	* Do the request and get back a response...
+	*/
+
+	if ((response = cupsDoRequest(http, request, "/")) == NULL)
+	{
+		DEBUG(0,("Unable to get printer list - %s\n",
+			 ippErrorString(cupsLastError())));
+		httpClose(http);
+		return;
+	}
+
+	for (attr = response->attrs; attr != NULL;)
+	{
+	       /*
+		* Skip leading attributes until we hit a printer...
+		*/
+
+		while (attr != NULL && attr->group_tag != IPP_TAG_PRINTER)
+			attr = attr->next;
+
+		if (attr == NULL)
+        		break;
+
+	       /*
+		* Pull the needed attributes from this printer...
+		*/
+
+		name       = NULL;
+		make_model = NULL;
+		info       = NULL;
+
+		while (attr != NULL && attr->group_tag == IPP_TAG_PRINTER)
+		{
+        		if (strcmp(attr->name, "printer-name") == 0 &&
+			    attr->value_tag == IPP_TAG_NAME)
+				name = attr->values[0].string.text;
+
+        		if (strcmp(attr->name, "printer-make-and-model") == 0 &&
+			    attr->value_tag == IPP_TAG_TEXT)
+				make_model = attr->values[0].string.text;
+
+        		if (strcmp(attr->name, "printer-info") == 0 &&
+			    attr->value_tag == IPP_TAG_TEXT)
+				info = attr->values[0].string.text;
+
+        		attr = attr->next;
+		}
+
+	       /*
+		* See if we have everything needed...
+		*/
+
+		if (name == NULL)
+			break;
+
+ 		if (info == NULL || !info[0])
+			(*fn)(name, make_model);
+		else
+			(*fn)(name, info);
+		
+
+	}
+
+	ippDelete(response);
+
+       /*
+        * Close the connection to the server...
+	*/
+
 	httpClose(http);
 }
 
