@@ -48,7 +48,7 @@ struct cli_state *open_pipe_creds(char *system_name, PyObject *creds,
 	ZERO_STRUCT(nt_creds);
 	nt_creds.pwd.null_pwd = True;
 
-	if (creds) {
+	if (creds && PyDict_Size(creds) > 0) {
 		char *username, *password, *domain;
 		PyObject *username_obj, *password_obj, *domain_obj;
 
@@ -186,6 +186,15 @@ Return a list of printer drivers.
 Return the printer driver directory for a given architecture.  The 
 architecture defaults to \"Windows NT x86\".
 "},
+
+	/* Other stuff - this should really go into a samba config module
+  	   but for the moment let's leave it here. */
+
+	{ "setup_logging", py_setup_logging, METH_VARARGS | METH_KEYWORDS, 
+	  "" },
+
+	{ "get_debuglevel", get_debuglevel, METH_VARARGS, "" },
+	{ "set_debuglevel", set_debuglevel, METH_VARARGS, "" },
 
 	{ NULL }
 };
