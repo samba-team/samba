@@ -130,7 +130,7 @@ int smbc_fstat(int fd, struct stat *st);
  * Chown a file 
  */
 
-int smbc_chown(const *fname, uid_t owner, gid_t group);
+int smbc_chown(const char *fname, uid_t owner, gid_t group);
 
 /*
  * Chmod a file
