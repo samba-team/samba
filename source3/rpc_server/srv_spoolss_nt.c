@@ -2852,7 +2852,7 @@ uint32 _spoolss_endpageprinter(const POLICY_HND *handle)
  *
  ********************************************************************/
 uint32 _spoolss_startdocprinter( const POLICY_HND *handle, uint32 level,
-				DOC_INFO *docinfo, uint32 *jobid)
+				 uint32 vuid, DOC_INFO *docinfo, uint32 *jobid)
 {
 	DOC_INFO_1 *info_1 = &docinfo->doc_info_1;
 	int snum;
@@ -2895,7 +2895,7 @@ uint32 _spoolss_startdocprinter( const POLICY_HND *handle, uint32 level,
 
 	unistr2_to_ascii(jobname, &info_1->docname, sizeof(jobname));
 	
-	Printer->jobid = print_job_start(snum, jobname);
+	Printer->jobid = print_job_start(snum, vuid, jobname);
 
 	/* need to map error codes properly - for now give out of
 	   memory as I don't know the correct codes (tridge) */
@@ -2956,7 +2956,8 @@ uint32 _spoolss_writeprinter( const POLICY_HND *handle,
  * called from the spoolss dispatcher
  *
  ********************************************************************/
-static uint32 control_printer(const POLICY_HND *handle, uint32 command)
+static uint32 control_printer(const POLICY_HND *handle, uint32 command,
+			      uint16 vuid)
 {
 	int snum;
 	Printer_entry *Printer = find_printer_index_by_hnd(handle);
@@ -2969,18 +2970,18 @@ static uint32 control_printer(const POLICY_HND *handle, uint32 command)
 
 	switch (command) {
 	case PRINTER_CONTROL_PAUSE:
-		if (print_queue_pause(snum)) {
+		if (print_queue_pause(snum, vuid)) {
 			return 0;
 		}
 		break;
 	case PRINTER_CONTROL_RESUME:
 	case PRINTER_CONTROL_UNPAUSE:
-		if (print_queue_resume(snum)) {
+		if (print_queue_resume(snum, vuid)) {
 			return 0;
 		}
 		break;
 	case PRINTER_CONTROL_PURGE:
-		if (print_queue_purge(snum)) {
+		if (print_queue_purge(snum, vuid)) {
 			return 0;
 		}
 		break;
@@ -3074,7 +3075,7 @@ uint32 _spoolss_setprinter(const POLICY_HND *handle, uint32 level,
 			   const SPOOL_PRINTER_INFO_LEVEL *info,
 			   DEVMODE_CTR devmode_ctr,
 			   SEC_DESC_BUF *secdesc_ctr,
-			   uint32 command)
+			   uint32 command, uint16 vuid)
 {
 	Printer_entry *Printer = find_printer_index_by_hnd(handle);
 	
@@ -3084,7 +3085,7 @@ uint32 _spoolss_setprinter(const POLICY_HND *handle, uint32 level,
 	/* check the level */	
 	switch (level) {
 		case 0:
-			return control_printer(handle, command);
+			return control_printer(handle, command, vuid);
 			break;
 		case 2:
 			return update_printer(handle, level, info, devmode_ctr.devmode);
@@ -3162,7 +3163,6 @@ static BOOL fill_job_info_2(JOB_INFO_2 *job_info, print_queue_struct *queue,
                             int position, int snum)
 {
 	pstring temp_name;
-	DEVICEMODE *devmode;
 	NT_PRINTER_INFO_LEVEL *ntprinter = NULL;
 	pstring chaine;
 
@@ -3208,7 +3208,6 @@ static BOOL fill_job_info_2(JOB_INFO_2 *job_info, print_queue_struct *queue,
 		return False;
 	}
 
-	job_info->devmode=devmode;
 	free_a_printer(&ntprinter, 2);
 	return (True);
 }
@@ -3357,6 +3356,7 @@ uint32 _spoolss_schedulejob( const POLICY_HND *handle, uint32 jobid)
 uint32 _spoolss_setjob( const POLICY_HND *handle,
 				uint32 jobid,
 				uint32 level,
+		                uint32 vuid,
 				JOB_INFO *ctr,
 				uint32 command)
 
@@ -3377,13 +3377,13 @@ uint32 _spoolss_setjob( const POLICY_HND *handle,
 	switch (command) {
 	case JOB_CONTROL_CANCEL:
 	case JOB_CONTROL_DELETE:
-		if (print_job_delete(jobid)) return 0x0;
+		if (print_job_delete(vuid, jobid)) return 0x0;
 		break;
 	case JOB_CONTROL_PAUSE:
-		if (print_job_pause(jobid)) return 0x0;
+		if (print_job_pause(vuid, jobid)) return 0x0;
 		break;
 	case JOB_CONTROL_RESUME:
-		if (print_job_resume(jobid)) return 0x0;
+		if (print_job_resume(vuid, jobid)) return 0x0;
 		break;
 	default:
 		return ERROR_INVALID_LEVEL;
@@ -4523,8 +4523,10 @@ static uint32 getjob_level_2(print_queue_struct *queue, int count, int snum, uin
 {
 	int i=0;
 	BOOL found=False;
-	JOB_INFO_2 *info_2=NULL;
+	JOB_INFO_2 *info_2;
 	info_2=(JOB_INFO_2 *)malloc(sizeof(JOB_INFO_2));
+
+	ZERO_STRUCTP(info_2);
 
 	if (info_2 == NULL) {
 		safe_free(queue);
@@ -4556,6 +4558,7 @@ static uint32 getjob_level_2(print_queue_struct *queue, int count, int snum, uin
 
 	new_smb_io_job_info_2("", buffer, info_2, 0);
 
+	free_dev_mode(info_2->devmode);
 	safe_free(info_2);
 
 	if (*needed > offered)
