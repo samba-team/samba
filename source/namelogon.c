@@ -39,21 +39,15 @@ extern pstring myname;
 /****************************************************************************
    process a domain logon packet
 
-   08aug96 lkcl@pires.co.uk
-   reply_code == 0xC courtesy of jim@oxfordcc.co.uk forwarded by
-                                 lewis2@server.uwindsor.ca
    **************************************************************************/
 void process_logon_packet(struct packet_struct *p,char *buf,int len)
 {
   struct dgram_packet *dgram = &p->packet.dgram;
-  struct in_addr ip = dgram->header.source_ip;
-  struct subnet_record *d = find_subnet_all(ip);
   char *logname,*q;
   fstring reply_name;
   BOOL add_slashes = False;
   pstring outbuf;
   int code,reply_code;
-  struct work_record *work;
   char   unknown_byte = 0;
   uint16 request_count = 0;
   uint16 token = 0;
@@ -64,19 +58,6 @@ void process_logon_packet(struct packet_struct *p,char *buf,int len)
       return;
     }
   
-  if (!d) 
-    {
-      DEBUG(0,("process_logon_packet: Cannot find subnet for logon request from %s\n",
-                inet_ntoa(p->ip)  ));
-      return;
-    }
-  
-  if (!(work = find_workgroupstruct(d,dgram->dest_name.name, False))) 
-    {
-      DEBUG(0,("process_logon_packet: Cannot find WORKGROUP %s for logon request fomr %s\n",
-                dgram->dest_name.name, inet_ntoa(p->ip) ));
-      return;
-    }
  
   code = SVAL(buf,0);
   switch (code)
