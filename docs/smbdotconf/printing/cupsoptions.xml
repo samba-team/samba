@@ -1,0 +1,19 @@
+<samba:parameter name="cups options"
+                 context="S"
+		 type="string"
+		 print="1"
+                 xmlns:samba="http://samba.org/common">
+<description>
+    <para>This parameter is only applicable if <link 
+    linkend="PRINTING"><parameter moreinfo="none">printing</parameter></link> is 
+    set to <constant>cups</constant>.  Its value is a free form string of options
+    passed directly to the cups library.  Frequently this is used to enable
+    raw printing for a queue without enabling the feature system wide in 
+    <filename>cupsd.conf</filename>.  
+    </para>
+
+    <value type="default">""</value>
+    <value type="example">"raw"</value>
+
+</description>
+</samba:parameter>
