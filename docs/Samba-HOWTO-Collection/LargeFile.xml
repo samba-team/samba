@@ -3,7 +3,7 @@
 <!ENTITY % globalentities SYSTEM '../entities/global.entities'> %globalentities;
 ]>
 
-<chapter id="AccessControls">
+<chapter id="largefile">
 <chapterinfo>
 	&author.jeremy;
 	&author.jht;
