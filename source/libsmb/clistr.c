@@ -73,7 +73,7 @@ int clistr_push(struct cli_state *cli, void *dest, const char *src, int dest_len
 
 	/* the server likes unicode. give it the works */
 	if (flags & STR_CONVERT)
-		dos_PutUniCode(dest, unix_to_dos(src,False), dest_len, flags & STR_TERMINATE);
+		dos_PutUniCode(dest, (char *)unix_to_dos(src,False), dest_len, flags & STR_TERMINATE);
 	else
 		unix_PutUniCode(dest, src, dest_len, flags & STR_TERMINATE);
 
