@@ -11,5 +11,5 @@ The Samba testsuite is divided up into the following subdirectories.
     - rpc_client      Tests for the RPC client library code
     - rpcclient       Tests for the rpcclient program
 
-    - build_farm      Tests designed to run automaticly on the build farm
+    - build_farm      Tests designed to run automatically on the build farm
 
