@@ -27,8 +27,12 @@ changequote(, )dnl
 if test `eval echo \\$ac_cv_header_$cv` = yes; then
   ac_tr_hdr=HAVE_`echo $i | sed 'y%abcdefghijklmnopqrstuvwxyz./-%ABCDEFGHIJKLMNOPQRSTUVWXYZ___%'`
 changequote([, ])dnl
-  AC_DEFINE_UNQUOTED($ac_tr_hdr, 1, [define if you have a $i])
+  AC_DEFINE_UNQUOTED($ac_tr_hdr, 1)
 fi
-
 done
+dnl autoheader tricks *sigh*
+: << END
+@@@headers="$headers netinet/ip.h netinet/tcp.h"@@@
+END
+
 ])
