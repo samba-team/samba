@@ -1,6 +1,21 @@
+Fri Aug  8 01:20:39 1997  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/get_default_principal.c: new file
+
+	* kpasswd/kpasswdd.c: use krb5_log*
+
 Fri Aug  8 00:37:47 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 	* lib/krb5/init_creds_pw.c: Implement krb5_get_init_creds_keytab.
+
+Fri Aug  8 00:37:17 1997  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/init_creds_pw.c: Use `krb5_get_default_principal'.
+  	Print password expire information.
+
+	* kdc/config.c: new variable `kdc_warn_pwexpire'
+
+	* kpasswd/kpasswd.c: converted to getarg and get_init_creds
 
 Thu Aug  7 22:17:09 1997  Assar Westerlund  <assar@sics.se>
 
