@@ -901,8 +901,10 @@ int create_pipe_socket(char *dir, int dir_perms,
 	int s;
 	struct sockaddr_un sa;
 
-	DEBUG(10,("create_pipe_socket: %s %d %s %d\n",
+	DEBUG(0,("create_pipe_socket: %s %d %s %d\n",
 	           dir, dir_perms, path, path_perms));
+
+	DEBUG(0,("*** RACE CONDITION.  PLEASE SOMEONE EXAMINE create_pipe_Socket AND FIX IT ***\n"));
 
 	mkdir(dir, dir_perms);
 
