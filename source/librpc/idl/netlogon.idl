@@ -137,7 +137,7 @@ interface netlogon
 		uint8 key[8];
 	} netr_LMSessionKey;
 
-	typedef [public] struct {
+	typedef struct {
 		NTTIME last_logon;
 		NTTIME last_logoff;
 		NTTIME acct_expiry;
@@ -166,11 +166,11 @@ interface netlogon
 		uint32 unknown[7];
 	} netr_SamBaseInfo;
 
-	typedef [public] struct {
+	typedef struct {
 		netr_SamBaseInfo base;
 	} netr_SamInfo2;
 
-	typedef [public] struct {
+	typedef struct {
 		dom_sid2 *sid;
 		uint32 attribute;
 	} netr_SidAttr;
