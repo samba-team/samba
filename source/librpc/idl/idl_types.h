@@ -44,6 +44,12 @@
 */
 #define ascstr3       [flag(STR_ASCII|STR_SIZE2)]            string
 
+/*
+  an ascii string prefixed with [size] [offset] [length], all 32 bits
+  not null terminated
+*/
+#define ascstr_noterm        [flag(STR_NOTERM|STR_ASCII|STR_SIZE4|STR_LEN4)]  string
+
 
 #define NDR_NOALIGN       LIBNDR_FLAG_NOALIGN
 #define NDR_REMAINING     LIBNDR_FLAG_REMAINING

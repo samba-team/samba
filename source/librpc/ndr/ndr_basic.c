@@ -419,6 +419,7 @@ NTSTATUS ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
 		break;
 
 	case LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_LEN4|LIBNDR_FLAG_STR_SIZE4:
+	case LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_LEN4|LIBNDR_FLAG_STR_SIZE4|LIBNDR_FLAG_STR_NOTERM:
 		NDR_CHECK(ndr_pull_uint32(ndr, &len1));
 		NDR_CHECK(ndr_pull_uint32(ndr, &ofs));
 		NDR_CHECK(ndr_pull_uint32(ndr, &len2));
@@ -548,6 +549,21 @@ NTSTATUS ndr_push_string(struct ndr_push *ndr, int ndr_flags, const char *s)
 					      "Bad character conversion");
 		}
 		ndr->offset += c_len + 1;
+		break;
+
+	case LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_LEN4|LIBNDR_FLAG_STR_SIZE4|LIBNDR_FLAG_STR_NOTERM:
+		NDR_CHECK(ndr_push_uint32(ndr, c_len));
+		NDR_CHECK(ndr_push_uint32(ndr, 0));
+		NDR_CHECK(ndr_push_uint32(ndr, c_len));
+		NDR_PUSH_NEED_BYTES(ndr, c_len);
+		ret = convert_string(CH_UNIX, CH_DOS, 
+				     s, s_len,
+				     ndr->data+ndr->offset, c_len);
+		if (ret == -1) {
+			return ndr_push_error(ndr, NDR_ERR_CHARCNV, 
+					      "Bad character conversion");
+		}
+		ndr->offset += c_len;
 		break;
 
 	case LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_LEN4:
@@ -733,8 +749,8 @@ void ndr_print_array_uint8(struct ndr_print *ndr, const char *name,
 {
 	int i;
 
-	if (count <= 32 && (ndr->flags & LIBNDR_PRINT_ARRAY_HEX)) {
-		char s[65];
+	if (count <= 600 && (ndr->flags & LIBNDR_PRINT_ARRAY_HEX)) {
+		char s[1202];
 		for (i=0;i<count;i++) {
 			snprintf(&s[i*2], 3, "%02x", data[i]);
 		}
