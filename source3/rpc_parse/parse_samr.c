@@ -3432,6 +3432,63 @@ BOOL samr_io_r_enum_dom_aliases(char *desc, SAMR_R_ENUM_DOM_ALIASES * r_u,
 }
 
 /*******************************************************************
+inits a ALIAS_INFO1 structure.
+********************************************************************/
+
+void init_samr_alias_info1(ALIAS_INFO1 * al1, char *acct_name, uint32 num_member, char *acct_desc)
+{
+	int acct_len_name = acct_name != NULL ? strlen(acct_name) : 0;
+	int acct_len_desc = acct_desc != NULL ? strlen(acct_desc) : 0;
+
+	DEBUG(5, ("init_samr_alias_info1\n"));
+
+	init_uni_hdr(&al1->hdr_acct_name, acct_len_name);
+	init_unistr2(&al1->uni_acct_name, acct_name, acct_len_name);
+
+	al1->num_member=num_member;
+
+	init_uni_hdr(&al1->hdr_acct_desc, acct_len_desc);
+	init_unistr2(&al1->uni_acct_desc, acct_desc, acct_len_desc);
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+
+BOOL samr_io_alias_info1(char *desc, ALIAS_INFO1 * al1,
+			 prs_struct *ps, int depth)
+{
+	if (al1 == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "samr_io_alias_info1");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!smb_io_unihdr("hdr_acct_name", &al1->hdr_acct_name, ps, depth))
+		return False;
+	if(!prs_uint32("num_member", ps, depth, &al1->num_member))
+		return False;
+	if(!smb_io_unihdr("hdr_acct_desc", &al1->hdr_acct_desc, ps, depth))
+		return False;
+
+	if(!smb_io_unistr2("uni_acct_name", &al1->uni_acct_name,
+		       al1->hdr_acct_name.buffer, ps, depth))
+		return False;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!smb_io_unistr2("uni_acct_desc", &al1->uni_acct_desc,
+		       al1->hdr_acct_desc.buffer, ps, depth))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
 inits a ALIAS_INFO3 structure.
 ********************************************************************/
 
@@ -3489,6 +3546,10 @@ BOOL samr_alias_info_ctr(char *desc, ALIAS_INFO_CTR * ctr,
 		return False;
 
 	switch (ctr->switch_value1) {
+	case 1: 
+		if(!samr_io_alias_info1("alias_info1", &ctr->alias.info1, ps, depth))
+			return False;
+		break;
 	case 3: 
 		if(!samr_io_alias_info3("alias_info3", &ctr->alias.info3, ps, depth))
 			return False;

@@ -1136,6 +1136,16 @@ typedef struct q_samr_query_alias_info
 
 } SAMR_Q_QUERY_ALIASINFO;
 
+typedef struct samr_alias_info1
+{
+	UNIHDR hdr_acct_name;
+	UNIHDR hdr_acct_desc;
+	uint32 num_member;
+	UNISTR2 uni_acct_name;
+	UNISTR2 uni_acct_desc;
+
+} ALIAS_INFO1;
+
 typedef struct samr_alias_info3
 {
 	UNIHDR hdr_acct_desc;
@@ -1151,6 +1161,7 @@ typedef struct alias_info_ctr
 
 	union
  	{
+		ALIAS_INFO1 info1;
 		ALIAS_INFO3 info3;
 
 	} alias;
