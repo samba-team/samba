@@ -248,26 +248,36 @@ smb_ucs2_t *strchr_w(const smb_ucs2_t *s, smb_ucs2_t c)
 
 /*******************************************************************
  Convert a string to lower case.
+ return True if any char is converted
 ********************************************************************/
-void strlower_w(smb_ucs2_t *s)
+BOOL strlower_w(smb_ucs2_t *s)
 {
+	BOOL ret = False;
 	while (*s) {
-		if (isupper_w(*s))
+		if (isupper_w(*s)) {
 			*s = tolower_w(*s);
+			ret = True;
+		}
 		s++;
 	}
+	return ret;
 }
 
 /*******************************************************************
  Convert a string to upper case.
+ return True if any char is converted
 ********************************************************************/
-void strupper_w(smb_ucs2_t *s)
+BOOL strupper_w(smb_ucs2_t *s)
 {
+	BOOL ret = False;
 	while (*s) {
-		if (islower_w(*s))
+		if (islower_w(*s)) {
 			*s = toupper_w(*s);
+			ret = True;
+		}
 		s++;
 	}
+	return ret;
 }
 
 /*******************************************************************
