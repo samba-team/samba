@@ -899,6 +899,30 @@ if test x"$samba_cv_HAVE_STRUCT_DIRENT64" = x"yes"; then
     AC_DEFINE(HAVE_STRUCT_DIRENT64)
 fi
 
+AC_CACHE_CHECK([for major macro],samba_cv_HAVE_DEVICE_MAJOR_FN,[
+AC_TRY_RUN([
+#if defined(HAVE_UNISTD_H)
+#include <unistd.h>
+#endif
+#include <sys/types.h>
+main() { dev_t dev; int i = major(dev); return 0; }],
+samba_cv_HAVE_DEVICE_MAJOR_FN=yes,samba_cv_HAVE_DEVICE_MAJOR_FN=no,samba_cv_HAVE_DEVICE_MAJOR_FN=cross)])
+if test x"$samba_cv_HAVE_DEVICE_MAJOR_FN" = x"yes"; then
+    AC_DEFINE(HAVE_DEVICE_MAJOR_FN)
+fi
+
+AC_CACHE_CHECK([for minor macro],samba_cv_HAVE_DEVICE_MINOR_FN,[
+AC_TRY_RUN([
+#if defined(HAVE_UNISTD_H)
+#include <unistd.h>
+#endif
+#include <sys/types.h>
+main() { dev_t dev; int i = minor(dev); return 0; }],
+samba_cv_HAVE_DEVICE_MINOR_FN=yes,samba_cv_HAVE_DEVICE_MINOR_FN=no,samba_cv_HAVE_DEVICE_MINOR_FN=cross)])
+if test x"$samba_cv_HAVE_DEVICE_MINOR_FN" = x"yes"; then
+    AC_DEFINE(HAVE_DEVICE_MINOR_FN)
+fi
+
 AC_CACHE_CHECK([for unsigned char],samba_cv_HAVE_UNSIGNED_CHAR,[
 AC_TRY_RUN([#include <stdio.h>
 main() { char c; c=250; exit((c > 0)?0:1); }],
