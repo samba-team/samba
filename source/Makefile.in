@@ -117,10 +117,10 @@ LOCKING_OBJ = locking/locking.o locking/locking_shm.o locking/locking_slow.o \
               locking/shmem.o locking/shmem_sysv.o
 
 PASSDB_OBJ = passdb/passdb.o passdb/smbpassfile.o passdb/username.o \
-             passdb/smbpass.o passdb/password.o 
+             passdb/smbpass.o 
 
 SMBD_OBJ1 = smbd/server.o smbd/access.o smbd/chgpasswd.o smbd/connection.o \
-            smbd/dfree.o smbd/dir.o \
+            smbd/dfree.o smbd/dir.o smbd/password.o \
             smbd/groupname.o smbd/ipc.o smbd/ldap.o smbd/mangle.o \
             smbd/message.o smbd/nispass.o smbd/nttrans.o \
             smbd/pipes.o smbd/predict.o \
@@ -149,13 +149,24 @@ NMBD_OBJ = $(NMBD_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) \
            $(PASSDB_OBJ) $(LIB_OBJ)
 
 SWAT_OBJ = web/cgi.o web/diagnose.o web/startstop.o web/statuspage.o \
-           web/swat.o $(PASSDB_OBJ) $(LIBSMB_OBJ) $(LOCKING_OBJ) \
+           web/swat.o \
+           smbd/password.o \
+           $(PASSDB_OBJ) $(LIBSMB_OBJ) $(LOCKING_OBJ) \
            $(PARAM_OBJ) $(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) \
            $(UBIQX_OBJ) $(LIB_OBJ)
 
-PROTO_OBJ = $(SMBD_OBJ1) $(NMBD_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) \
-           $(RPC_SERVER_OBJ) $(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) \
-           $(LOCKING_OBJ) $(PASSDB_OBJ) $(SWAT_OBJ) $(LIB_OBJ)
+SMBRUN_OBJ = utils/smbrun.o
+
+TESTPARM_OBJ = utils/testparm.o smbd/access.o $(PARAM_OBJ) $(PASSDB_OBJ) \
+               $(UBIQX_OBJ) $(LIB_OBJ)
+
+TESTPRNS_OBJ = utils/testprns.o $(PARAM_OBJ) $(UBIQX_OBJ) $(PASSDB_OBJ) \
+               $(LIB_OBJ)
+
+CLIENT_OBJ = client/client.o client/clientutil.o client/clitar.o \
+             $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) $(PASSDB_OBJ) $(LIB_OBJ)
+
+PROTO_OBJ = $(SMBD_OBJ) $(NMBD_OBJ) $(SWAT_OBJ) $(CLIENT_OBJ)
 
 ######################################################################
 # now the rules...
@@ -182,17 +193,26 @@ bin/swat: $(SWAT_OBJ)
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SWAT_OBJ) $(LIBS) 
 
-bin/smbrun: utils/smbrun.o 
+bin/smbrun: $(SMBRUN_OBJ)
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ utils/smbrun.o $(LIBS)
+	@$(CC) $(FLAGS) -o $@ $(SMBRUN_OBJ) $(LIBS)
+
+bin/smbclient: $(CLIENT_OBJ) 
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(CLIENT_OBJ) $(LIBS)
+
+bin/testparm: $(TESTPARM_OBJ)
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(TESTPARM_OBJ) $(LIBS)
+
+bin/testprns: $(TESTPRNS_OBJ)
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(TESTPRNS_OBJ) $(LIBS)
+
 
 nmblookup: $(LOOKUP_OBJ)
 	@echo Linking nmblookup
 	@$(CC) $(FLAGS) -o nmblookup $(LOOKUP_OBJ) $(LIBS)
-
-smbclient: $(CLIENT_OBJ) 
-	@echo Linking smbclient
-	@$(CC) $(FLAGS) -o smbclient $(CLIENT_OBJ) $(LIBS)
 
 smbmount: $(MOUNT_OBJ) 
 	@echo Linking smbmount
@@ -213,14 +233,6 @@ smbtorture: torture.o getsmbpass.o $(UTILOBJ) $(CLIENTUTIL)
 smbstatus: $(STATUS_OBJ)
 	@echo Linking smbstatus
 	@$(CC) $(FLAGS) -o smbstatus $(STATUS_OBJ) $(LIBS)
-
-testparm: testparm.o access.o $(UTILOBJ)
-	@echo Linking testparm
-	@$(CC) $(FLAGS) -o testparm testparm.o access.o $(UTILOBJ) $(LIBS)
-
-testprns: testprns.o $(UTILOBJ)
-	@echo Linking testprns
-	@$(CC) $(FLAGS) -o testprns testprns.o $(UTILOBJ) $(LIBS)
 
 smbpasswd: smbpasswd.o getsmbpass.o $(PASSDB_OBJ) $(UTILOBJ) $(CLIENTUTIL) $(RPC_CLIENT_SERVER_SUBSET_OBJ) $(RPC_OBJ)
 	@echo Linking smbpasswd

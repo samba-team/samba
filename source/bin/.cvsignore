@@ -1,3 +1,7 @@
 nmbd
+smbclient
 smbd
+smbrun
 swat
+testparm
+testprns
