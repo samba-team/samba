@@ -12,6 +12,44 @@ static char SccsId[] = "@(#)@(#)pop_dropinfo.c	2.1  2.1 3/18/91";
 #include <popper.h>
 RCSID("$Id$");
 
+#ifdef UIDL
+
+/*
+ *Copy the string found after after : into a malloced buffer. Stop
+ * copying at end of string or end of line. End of line delimiter is
+ * not part the resulting copy of copy.
+ */
+static
+char *
+find_value_after_colon(char *p)
+{
+  char *t, *tmp;
+
+  for (; *p != 0 && *p != ':'; p++) /* Find : */
+    ;
+
+  if (*p == 0)
+    goto error;
+
+  p++;				/* Skip over : */
+
+  for (t = p; *t != 0 && *t != '\n' && *t != '\r'; t++)	/* Find end of str */
+    ;
+
+  tmp = t = malloc(t - p + 1);
+  if (tmp == 0)
+    goto error;
+
+  for (; *p != 0 && *p != '\n' && *p != '\r'; p++, t++)	/* Copy characters */
+    *t = *p;
+  *t = 0;			/* Terminate string */
+  return tmp;
+
+error:
+  return "ErrorUIDL";
+}
+#endif
+
 /* 
  *  dropinfo:   Extract information about the POP maildrop and store 
  *  it for use by the other POP routines.
@@ -26,7 +64,15 @@ pop_dropinfo(POP *p)
     register int            msg_num;                /*  Current message 
                                                         counter */
     int                     nchar;                  /*  Bytes written/read */
-
+#ifdef UIDL
+    /* msg_idp points to the current Message-Id to be filled in. The
+     * pointer is moved every time we find a From line and we fill in
+     * msg_id whenever we encounter the corresponding Message-Id or
+     * X-UIDL line. */
+    char *_sentinel = 0;
+    char **msg_idp = &_sentinel;
+#endif
+    
     /*  Initialize maildrop status variables in the POP parameter block */
     p->msg_count = 0;
     p->msgs_deleted = 0;
@@ -81,11 +127,23 @@ pop_dropinfo(POP *p)
             mp->offset = ftell(p->drop) - nchar;
             mp->del_flag = FALSE;
             mp->retr_flag = FALSE;
+#ifdef UIDL
+	    mp->msg_id = 0;
+	    msg_idp = &mp->msg_id;
+#endif
 #ifdef DEBUG
             if(p->debug)
                 pop_log(p,POP_DEBUG, "Msg %d being added to list", mp->number);
 #endif /* DEBUG */
         }
+#ifdef UIDL
+	else if (strncasecmp("Message-Id:",buffer, 11) == 0) {
+	  if (mp->msg_id == 0)
+	    *msg_idp = find_value_after_colon(buffer);
+	} else if (strncasecmp(buffer, "X-UIDL:", 7) == 0) {
+	  *msg_idp = find_value_after_colon(buffer);
+	}
+#endif
         mp->length += nchar;
         p->drop_size += nchar;
         mp->lines++;
@@ -96,9 +154,15 @@ pop_dropinfo(POP *p)
     if(p->debug && msg_num > 0) {
         int i;
         for (i = 0, mp = p->mlp; i < p->msg_count; i++, mp++)
+#ifdef UIDL
+            pop_log(p,POP_DEBUG,
+                "Msg %d at offset %d is %d octets long and has %u lines and id %s.",
+                    mp->number,mp->offset,mp->length,mp->lines, mp->msg_id);
+#else	
             pop_log(p,POP_DEBUG,
                 "Msg %d at offset %d is %d octets long and has %u lines.",
                     mp->number,mp->offset,mp->length,mp->lines);
+#endif
     }
 #endif /* DEBUG */
 

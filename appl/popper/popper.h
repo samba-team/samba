@@ -209,6 +209,9 @@ typedef struct {                                /*  Message information */
                                                     is marked for deletion */
     int         retr_flag;                      /*  Flag indicating if message 
                                                     was retrieved */
+#ifdef UIDL
+    char        *msg_id;
+#endif
 } MsgInfoList;
 
 typedef struct  {                               /*  POP parameter block */
@@ -267,6 +270,9 @@ int pop_updt(POP *p);
 int pop_user(POP *p);
 int pop_xmit(POP *p);
 int pop_xtnd(POP *p);
+#ifdef UIDL
+int pop_uidl(POP *p);
+#endif
 state_table *pop_get_command(POP *p, char *mp);
 void pop_lower(char *buf);
 xtnd_table *pop_get_subcommand(POP *p);

@@ -34,6 +34,9 @@ static state_table states[] = {
         trans,  "last", 0,  0,  pop_last,   {trans, trans},
         trans,  "xtnd", 1,  99, pop_xtnd,   {trans, trans},
         trans,  "quit", 0,  0,  pop_updt,   {halt,  halt},
+#ifdef UIDL
+        trans,  "uidl", 0,  1,  pop_uidl,   {trans, trans},
+#endif
         (state) 0,  NULL,   0,  0,  NULL,       {halt,  halt},
 };
 
