@@ -33,6 +33,7 @@ NTSTATUS pvfs_read(struct ntvfs_module_context *ntvfs,
 	ssize_t ret;
 	struct pvfs_file *f;
 	NTSTATUS status;
+	uint32_t maxcnt;
 
 	if (rd->generic.level != RAW_READ_READX) {
 		return ntvfs_map_read(req, rd, ntvfs);
@@ -51,15 +52,14 @@ NTSTATUS pvfs_read(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_ACCESS_VIOLATION;
 	}
 
-	/* this matches w2k3 behaviour for attempted large reads */
-	if (rd->readx.in.maxcnt > UINT16_MAX) {
-		ret = 0;
-		goto done_read;
+	maxcnt = rd->readx.in.maxcnt;
+	if (maxcnt > UINT16_MAX) {
+		maxcnt = 0;
 	}
-	
+
 	status = pvfs_check_lock(pvfs, f, req->smbpid, 
 				 rd->readx.in.offset,
-				 rd->readx.in.maxcnt,
+				 maxcnt,
 				 READ_LOCK);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -67,13 +67,12 @@ NTSTATUS pvfs_read(struct ntvfs_module_context *ntvfs,
 
 	ret = pread(f->fd, 
 		    rd->readx.out.data, 
-		    rd->readx.in.maxcnt,
+		    maxcnt,
 		    rd->readx.in.offset);
 	if (ret == -1) {
 		return pvfs_map_errno(pvfs, errno);
 	}
 
-done_read:
 	f->position = f->seek_offset = rd->readx.in.offset + ret;
 
 	rd->readx.out.nread = ret;
