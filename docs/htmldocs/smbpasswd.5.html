@@ -3,7 +3,7 @@
  
 
 
-<html><head><title>smbpasswd</title>
+<html><head><title>smbpasswd (5)</title>
 
 <link rev="made" href="mailto:samba-bugs@samba.anu.edu.au">
 </head>
@@ -11,7 +11,7 @@
 
 <hr>
 
-<h1>smbpasswd</h1>
+<h1>smbpasswd (5)</h1>
 <h2>Samba</h2>
 <h2>23 Oct 1998</h2>
 
@@ -30,7 +30,7 @@
     
 <p><br>This file is part of the <strong>Samba</strong> suite.
 <p><br>smbpasswd is the <strong>Samba</strong> encrypted password file. It contains
-the username, unix user id and the SMB hashed passwords of the
+the username, Unix user id and the SMB hashed passwords of the
 user, as well as account flag information and the time the password
 was last changed. This file format has been evolving with Samba
 and has had several different formats in the past.
@@ -38,7 +38,7 @@ and has had several different formats in the past.
 <h2>FILE FORMAT</h2>
     
 <p><br>The format of the smbpasswd file used by Samba 2.0 is very similar to
-the familiar unix <strong>passwd (5)</strong> file. It is an ASCII file containing
+the familiar Unix <strong>passwd (5)</strong> file. It is an ASCII file containing
 one line for each user. Each field within each line is separated from
 the next by a colon. Any entry beginning with # is ignored. The
 smbpasswd file contains the following information for each user:
@@ -50,7 +50,9 @@ smbpasswd file contains the following information for each user:
 <p><br><a name="uid"></a>
 <li><strong><strong>uid</strong></strong> <br> <br>
 <p><br>This is the UNIX uid. It must match the uid field for the same
-	user entry in the standard UNIX passwd file.
+	user entry in the standard UNIX passwd file. If this does not
+	match then Samba will refuse to recognize this <strong>smbpasswd</strong> file entry
+	as being valid for a user.
 <p><br><a name="LanmanPasswordHash"></a>
 <li><strong><strong>Lanman Password Hash</strong></strong> <br> <br>
 <p><br>This is the <em>LANMAN</em> hash of the users password, encoded as 32 hex
@@ -58,7 +60,7 @@ smbpasswd file contains the following information for each user:
 	string with the users password as the DES key. This is the same
 	password used by Windows 95/98 machines. Note that this password hash
 	is regarded as weak as it is vulnerable to dictionary attacks and if
-	two users choose the same password this entry will be identical (ie.
+	two users choose the same password this entry will be identical (i.e.
 	the password is not <em>"salted"</em> as the UNIX password is). If the
 	user has a null password this field will contain the characters
 	<code>"NO PASSWORD"</code> as the start of the hex string. If the hex string
@@ -67,7 +69,7 @@ smbpasswd file contains the following information for each user:
 	server.
 <p><br><em>WARNING !!</em>. Note that, due to the challenge-response nature of the
 	SMB/CIFS authentication protocol, anyone with a knowledge of this
-	password hash will be able to impersonate the user of the network.
+	password hash will be able to impersonate the user on the network.
 	For this reason these hashes are known as <em>"plain text equivalent"</em>
 	and must <em>NOT</em> be made available to anyone but the root user. To
 	protect these passwords the <strong>smbpasswd</strong> file is placed in a
@@ -84,11 +86,11 @@ smbpasswd file contains the following information for each user:
 	Password Hash</strong></a> as it preserves the case of the
 	password and uses a much higher quality hashing algorithm. However, it
 	is still the case that if two users choose the same password this
-	entry will be identical (ie. the password is not <em>"salted"</em> as the
+	entry will be identical (i.e. the password is not <em>"salted"</em> as the
 	UNIX password is).
 <p><br><em>WARNING !!</em>. Note that, due to the challenge-response nature of the
 	SMB/CIFS authentication protocol, anyone with a knowledge of this
-	password hash will be able to impersonate the user of the network.
+	password hash will be able to impersonate the user on the network.
 	For this reason these hashes are known as <em>"plain text equivalent"</em>
 	and must <em>NOT</em> be made available to anyone but the root user. To
 	protect these passwords the <strong>smbpasswd</strong> file is placed in a
@@ -104,8 +106,8 @@ smbpasswd file contains the following information for each user:
 	any of the characters.
 <p><br><ul>
 <p><br><a name="capU"></a>
-		<li > <strong>'U'</strong> This means this is a <em>"User"</em> account, ie. an ordinary
-		user. Only <strong>User</strong> and <a href="smbpasswd.5.html#capW"><strong>Worskstation Trust</strong></a> accounts are
+		<li > <strong>'U'</strong> This means this is a <em>"User"</em> account, i.e. an ordinary
+		user. Only <strong>User</strong> and <a href="smbpasswd.5.html#capW"><strong>Workstation Trust</strong></a> accounts are
 		currently supported in the <strong>smbpasswd</strong> file.
 <p><br><a name="capN"></a>
 		<li > <strong>'N'</strong> This means the account has <em>no</em> password (the passwords
@@ -115,7 +117,7 @@ smbpasswd file contains the following information for each user:
 		<a href="smb.conf.5.html#nullpasswords"><strong>null passwords</strong></a> parameter is set
 		in the <a href="smb.conf.5.html"><strong>smb.conf (5)</strong></a> config file.
 <p><br><a name="capD"></a>
-		<li > <strong>'D'</strong> This means the account is diabled and no SMB/CIFS logins 
+		<li > <strong>'D'</strong> This means the account is disabled and no SMB/CIFS logins 
 		will be	allowed for this user.
 <p><br><a name="capW"></a>
 		<li > <strong>'W'</strong> This means this account is a <em>"Workstation Trust"</em> account.
@@ -177,12 +179,14 @@ algorithm.
 <h2>AUTHOR</h2>
     
 <p><br>The original Samba software and related utilities were created by
-Andrew Tridgell (samba-bugs@samba.anu.edu.au). Samba is now developed
+Andrew Tridgell <a href="mailto:samba-bugs@samba.anu.edu.au"><em>samba-bugs@samba.anu.edu.au</em></a>. Samba is now developed
 by the Samba Team as an Open Source project similar to the way the
 Linux kernel is developed.
 <p><br>The original Samba man pages were written by Karl Auer. The man page
 sources were converted to YODL format (another excellent piece of Open
-Source software) and updated for the Samba2.0 release by Jeremy
+Source software, available at
+<a href="ftp://ftp.icce.rug.nl/pub/unix/"><strong>ftp://ftp.icce.rug.nl/pub/unix/</strong></a>) 
+and updated for the Samba2.0 release by Jeremy
 Allison, <a href="mailto:samba-bugs@samba.anu.edu.au"><em>samba-bugs@samba.anu.edu.au</em></a>.
 <p><br>See <a href="samba.7.html"><strong>samba (7)</strong></a> to find out how to get a full
 list of contributors and details on how to submit bug reports,

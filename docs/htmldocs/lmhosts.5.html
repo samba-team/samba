@@ -3,7 +3,7 @@
 
 
 
-<html><head><title>lmhosts</title>
+<html><head><title>lmhosts (5)</title>
 
 <link rev="made" href="mailto:samba-bugs@samba.anu.edu.au">
 </head>
@@ -11,7 +11,7 @@
 
 <hr>
 
-<h1>lmhosts</h1>
+<h1>lmhosts (5)</h1>
 <h2>Samba</h2>
 <h2>23 Oct 1998</h2>
 
@@ -29,7 +29,7 @@
 <h2>DESCRIPTION</h2>
     
 <p><br>This file is part of the <strong>Samba</strong> suite.
-<p><br>lmhosts is the <strong>Samba</strong> NetBIOS name to IP address mapping file.  It
+<p><br><strong>lmhosts</strong> is the <strong>Samba</strong> NetBIOS name to IP address mapping file.  It
 is very similar to the <strong>/etc/hosts</strong> file format, except that the
 hostname component must correspond to the NetBIOS naming format.
 <p><br><a name="FILEFORMAT"></a>
@@ -49,18 +49,12 @@ returned for all names that match the given name, whatever the NetBIOS
 name type in the lookup.
 <p><br></ul>
 <p><br>An example follows :
-<p><br><pre>
-
-
-#
-# Sample Samba lmhosts file.
-#
-192.9.200.1	TESTPC
-192.9.200.20	NTSERVER#20
-192.9.200.21	SAMBASERVER
-
-</pre>
-
+<p><br># <br>
+# Sample Samba lmhosts file. <br>
+# <br>
+192.9.200.1	TESTPC <br>
+192.9.200.20	NTSERVER#20 <br>
+192.9.200.21	SAMBASERVER <br>
 <p><br>Contains three IP to NetBIOS name mappings. The first and third will
 be returned for any queries for the names <code>"TESTPC"</code> and
 <code>"SAMBASERVER"</code> respectively, whatever the type component of the
@@ -84,7 +78,7 @@ as the <a href="smb.conf.html"><strong>smb.conf</strong></a> file.
 <h2>AUTHOR</h2>
     
 <p><br>The original Samba software and related utilities were created by
-Andrew Tridgell (samba-bugs@samba.anu.edu.au). Samba is now developed
+Andrew Tridgell <a href="mailto:samba-bugs@samba.anu.edu.au"><em>samba-bugs@samba.anu.edu.au</em></a>. Samba is now developed
 by the Samba Team as an Open Source project similar to the way the
 Linux kernel is developed.
 <p><br>The original Samba man pages were written by Karl Auer. The man page

@@ -1,4 +1,4 @@
-.TH "smbpasswd" "8" "23 Oct 1998" "Samba" "SAMBA" 
+.TH "smbpasswd " "8" "23 Oct 1998" "Samba" "SAMBA" 
 .PP 
 .SH "NAME" 
 smbpasswd \- change a users SMB password
@@ -18,7 +18,7 @@ sessions on any machines that store SMB passwords\&.
 .PP 
 By default (when run with no arguments) it will attempt to change the
 current users SMB password on the local machine\&. This is similar to
-the way the \fBpasswd (1)\fP program works\&. \fBsmbpasswd\fP differs from
+the way the \fBpasswd (1)\fP program works\&. \fBsmbpasswd\fP differs from how
 the \fBpasswd\fP program works however in that it is not \fIsetuid root\fP
 but works in a client-server mode and communicates with a locally
 running \fBsmbd\fP\&. As a consequence in order for this
@@ -34,14 +34,14 @@ typed\&. If you have a blank smb password (specified by the string "NO
 PASSWORD" in the \fBsmbpasswd\fP file) then just
 press the <Enter> key when asked for your old password\&.
 .PP 
-\fBsmbpasswd\fP also can be used by a normal user to change their SMB
+\fBsmbpasswd\fP can also be used by a normal user to change their SMB
 password on remote machines, such as Windows NT Primary Domain
 Controllers\&. See the (\fB-r\fP) and
 \fB-U\fP options below\&.
 .PP 
 When run by root, \fBsmbpasswd\fP allows new users to be added and
 deleted in the \fBsmbpasswd\fP file, as well as
-changes to the attributes of the user in this file to be made\&. When
+allows changes to the attributes of the user in this file to be made\&. When
 run by root, \fBsmbpasswd\fP accesses the local
 \fBsmbpasswd\fP file directly, thus enabling
 changes to be made even if \fBsmbd\fP is not running\&.
@@ -55,8 +55,8 @@ be added to the local \fBsmbpasswd\fP file, with
 the new password typed (type <Enter> for the old password)\&. This
 option is ignored if the username following already exists in the
 \fBsmbpasswd\fP file and it is treated like a
-regular change password command\&. Note that the user to be added \&.B
-must already exist in the system password file (usually /etc/passwd)
+regular change password command\&. Note that the user to be added
+\fBmust\fP already exist in the system password file (usually /etc/passwd)
 else the request to add the user will fail\&.
 .IP 
 This option is only available when running \fBsmbpasswd\fP as
@@ -146,6 +146,10 @@ specified must be the Primary Domain Controller for the domain (Backup
 Domain Controllers only have a read-only copy of the user account
 database and will not allow the password change)\&.
 .IP 
+\fINote\fP that Windows 95/98 do not have a real password database
+so it is not possible to change passwords specifying a Win95/98 
+machine as remote machine target\&.
+.IP 
 .IP "\fB-R name resolve order\fP" 
 This option allows the user of
 smbclient to determine what name resolution services to use when
@@ -162,12 +166,13 @@ resolved as follows :
 .IP o 
 \fBhost\fP : Do a standard host name to IP address resolution,
 using the system /etc/hosts, NIS, or DNS lookups\&. This method of name
-resolution is operating system depended for instance on IRIX or
-Solaris this may be controlled by the \fI/etc/nsswitch\&.conf\fP file)\&.
+resolution is operating system dependent\&. For instance on IRIX or
+Solaris, this may be controlled by the \fI/etc/nsswitch\&.conf\fP file)\&.
 .IP 
 .IP o 
-\fBwins\fP : Query a name with the IP address listed in the \fBwins
-server\fP parameter in the smb\&.conf file\&. If 
+\fBwins\fP : Query a name with the IP address listed in the 
+\fBwins server\fP parameter in the 
+\fBsmb\&.conf file\fP\&. If 
 no WINS server has been specified this method will be ignored\&.
 .IP 
 .IP o 
@@ -178,7 +183,7 @@ methods as it depends on the target host being on a locally connected
 subnet\&.
 .IP 
 .IP 
-If this parameter is not set then the name resolver order defined
+If this parameter is not set then the name resolve order defined
 in the \fBsmb\&.conf\fP file parameter 
 \fBname resolve order\fP
 will be used\&.
@@ -218,7 +223,7 @@ Controller for the Domain (found in the
 the machine account password used to create the secure Domain
 communication\&.  This password is then stored by \fBsmbpasswd\fP in a
 file, read only by root, called \f(CW<Domain>\&.<Machine>\&.mac\fP where
-\f(CW<Domain>\fP is the name of the Domain we are joining and tt<Machine>
+\f(CW<Domain>\fP is the name of the Domain we are joining and \f(CW<Machine>\fP
 is the primary NetBIOS name of the machine we are running on\&.
 .IP 
 Once this operation has been performed the
@@ -246,19 +251,20 @@ This option prints the help string for \fBsmbpasswd\fP,
 selecting the correct one for running as root or as an ordinary user\&.
 .IP 
 .IP "\fB-s\fP" 
-This option causes \fBsmbpasswd\fP to be silent (ie\&. not
+This option causes \fBsmbpasswd\fP to be silent (i\&.e\&. not
 issue prompts) and to read it\'s old and new passwords from standard 
 input, rather than from \f(CW/dev/tty\fP (like the \fBpasswd (1)\fP program
 does)\&. This option is to aid people writing scripts to drive \fBsmbpasswd\fP
 .IP 
-dir(\fBusername\fP) This specifies the username for all of the \fIroot
+.IP "\fBusername\fP" 
+This specifies the username for all of the \fIroot
 only\fP options to operate on\&. Only root can specify this parameter as
 only root has the permission needed to modify attributes directly
 in the local \fBsmbpasswd\fP file\&.
 .IP 
 .SH "NOTES" 
 .IP 
-As \fBsmbpasswd\fP works in client-server mode communicating with a
+Since \fBsmbpasswd\fP works in client-server mode communicating with a
 local \fBsmbd\fP for a non-root user then the \fBsmbd\fP
 daemon must be running for this to work\&. A common problem is to add a
 restriction to the hosts that may access the \fBsmbd\fP running on the

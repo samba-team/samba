@@ -3,7 +3,7 @@
  
 
 
-<html><head><title>smbclient</title>
+<html><head><title>smbclient (1)</title>
 
 <link rev="made" href="mailto:samba-bugs@samba.anu.edu.au">
 </head>
@@ -11,7 +11,7 @@
 
 <hr>
 
-<h1>smbclient</h1>
+<h1>smbclient (1)</h1>
 <h2>Samba</h2>
 <h2>23 Oct 1998</h2>
 
@@ -105,7 +105,7 @@ methods as it depends on the target host being on a locally connected
 subnet. To specify a particular broadcast address the <a href="smbclient.1.html#minusB"><strong>-B</strong></a> option 
 may be used.
 <p><br></ul>
-<p><br>If this parameter is not set then the name resolver order defined
+<p><br>If this parameter is not set then the name resolve order defined
 in the <a href="smb.conf.5.html"><strong>smb.conf</strong></a> file parameter 
 <a href="smb.conf.5.html#nameresolveorder">(<strong>name resolve order</strong>)</a>
 will be used.
@@ -219,7 +219,7 @@ that it must be a valid NetBIOS name.
 the environment variable <code>USER</code> or <code>LOGNAME</code> in that order.  If no
 username is supplied and neither environment variable exists the
 username "GUEST" will be used.
-<p><br>If the <code>USER</code> environment variable containts a '%' character,
+<p><br>If the <code>USER</code> environment variable contains a '%' character,
 everything after that will be treated as a password. This allows you
 to set the environment variable to be <code>USER=username%password</code> so
 that a password is not passed on the command line (where it may be
@@ -269,7 +269,7 @@ tested and may have some problems.
 Samba source code for the complete list.
 <p><br><a name="minusm"></a>
 <li><strong><strong>-m max protocol level</strong></strong> With the new code in Samba2.0,
-<strong>smbclient</strong> allways attempts to connect at the maximum
+<strong>smbclient</strong> always attempts to connect at the maximum
 protocols level the server supports. This parameter is
 preserved for backwards compatibility, but any string
 following the <strong>-m</strong> will be ignored.
@@ -291,11 +291,11 @@ share. The secondary tar flags that can be given to this option are :
 	share. Unless the <a href="smbclient.1.html#minusD"><strong>-D</strong></a> option is given, the tar files will be
 	restored from the top level of the share. Must be followed by the name
 	of the tar file, device or <code>"-"</code> for standard input. Mutually exclusive
-	with the <strong>c</strong> flag. Restored files have theuir creation times (mtime)
+	with the <strong>c</strong> flag. Restored files have their creation times (mtime)
 	set to the date saved in the tar file. Directories currently do not
 	get their creation dates restored properly.
 <p><br><li><strong><strong>I</strong></strong> Include files and directories. Is the default
-	behaviour when filenames are specified above. Causes tar files to
+	behavior when filenames are specified above. Causes tar files to
 	be included in an extract or create (and therefore everything else to
 	be excluded). See example below.  Filename globbing does not work for
 	included files for extractions (yet).
@@ -364,12 +364,12 @@ commands are case-insensitive.  Parameters to commands may or may not
 be case sensitive, depending on the command.
 <p><br>You can specify file names which have spaces in them by quoting the
 name with double quotes, for example "a long file name".
-<p><br>Parameters shown in square brackets (eg., "[parameter]") are
+<p><br>Parameters shown in square brackets (e.g., "[parameter]") are
 optional. If not given, the command will use suitable
-defaults. Parameters shown in angle brackets (eg., "&lt;parameter&gt;") are
+defaults. Parameters shown in angle brackets (e.g., "&lt;parameter&gt;") are
 required.
 <p><br>Note that all commands operating on the server are actually performed
-by issuing a request to the server. Thus the behaviour may vary from
+by issuing a request to the server. Thus the behavior may vary from
 server to server, depending on how the server was implemented.
 <p><br>The commands available are given here in alphabetical order.
 <p><br><ul>
@@ -459,7 +459,7 @@ from the local machine through a printable service on the server.
 mode to suit either binary data (such as graphical information) or
 text. Subsequent print commands will use the currently set print
 mode.
-<p><br><a name="prompt"></a> dir(<strong>prompt</strong>) Toggle prompting for filenames during
+<p><br><a name="prompt"></a> <li><strong><strong>prompt</strong></strong> Toggle prompting for filenames during
 operation of the <a href="smbclient.1.html#mget"><strong>mget</strong></a> and <a href="smbclient.1.html#mput"><strong>mput</strong></a>
 commands.
 <p><br>When toggled ON, the user will be prompted to confirm the transfer of
@@ -470,12 +470,12 @@ file called "local file name" from the machine running the client to
 the server. If specified, name the remote copy "remote file name".
 Note that all transfers in smbclient are binary. See also the
 <a href="smbclient.1.html#lowercase"><strong>lowercase</strong></a> command.
-<p><br><a name="queue"></a> dir(<strong>queue</strong>) Displays the print queue, showing the job
+<p><br><a name="queue"></a> <li><strong><strong>queue</strong></strong> Displays the print queue, showing the job
 id, name, size and current status.
 <p><br><a name="quit"></a> <li><strong><strong>quit</strong></strong> See the <a href="smbclient.1.html#exit"><strong>exit</strong></a> command.
-<p><br><a name="rd"></a> dir(<strong>rd &lt;directory name&gt;</strong>) See the <a href="smbclient.1.html#rmdir"><strong>rmdir</strong></a>
+<p><br><a name="rd"></a> <li><strong><strong>rd &lt;directory name&gt;</strong></strong> See the <a href="smbclient.1.html#rmdir"><strong>rmdir</strong></a>
 command.
-<p><br><a name="recurse"></a> dir(<strong>recurse</strong>) Toggle directory recursion for the
+<p><br><a name="recurse"></a> <li><strong><strong>recurse</strong></strong> Toggle directory recursion for the
 commands <a href="smbclient.1.html#mget"><strong>mget</strong></a> and <a href="smbclient.1.html#mput"><strong>mput</strong></a>.
 <p><br>When toggled ON, these commands will process all directories in the
 source directory (i.e., the directory they are copying .IR from ) and
@@ -488,12 +488,12 @@ directory on the source machine that match the mask specified to the
 <a href="smbclient.1.html#mget"><strong>mget</strong></a> or <a href="smbclient.1.html#mput"><strong>mput</strong></a> commands will be copied,
 and any mask specified using the <a href="smbclient.1.html#mask"><strong>mask</strong></a> command will be
 ignored.
-<p><br><a name="rm"></a> dir(<strong>rm &lt;mask&gt;</strong>) Remove all files matching mask from
+<p><br><a name="rm"></a> <li><strong><strong>rm &lt;mask&gt;</strong></strong> Remove all files matching mask from
 the current working directory on the server.
 <p><br><a name="rmdir"></a> <li><strong><strong>rmdir &lt;directory name&gt;</strong></strong> Remove the specified
 directory (user access privileges permitting) from the server.
 <p><br><a name="tar"></a> <li><strong><strong>tar &lt;c|x&gt;[IXbgNa]</strong></strong> Performs a tar operation - see
-the <a href="smbclient.1.html#minusT"><strong>-T</strong></a> command line option above. Behaviour may be
+the <a href="smbclient.1.html#minusT"><strong>-T</strong></a> command line option above. Behavior may be
 affected by the <a href="smbclient.1.html#tarmode"><strong>tarmode</strong></a> command (see below). Using
 g (incremental) and N (newer) will affect tarmode settings. Note that
 using the "-" option with tar x may not work - use the command line
@@ -501,8 +501,8 @@ option instead.
 <p><br><a name="blocksize"></a> <li><strong><strong>blocksize &lt;blocksize&gt;</strong></strong> Blocksize. Must be
 followed by a valid (greater than zero) blocksize. Causes tar file to
 be written out in blocksize*TBLOCK (usually 512 byte) blocks.
-<p><br><a name="tarmode"></a> dir(<strong>tarmode &lt;full|inc|reset|noreset&gt;</strong>) Changes tar's
-behaviour with regard to archive bits. In full mode, tar will back up
+<p><br><a name="tarmode"></a> <li><strong><strong>tarmode &lt;full|inc|reset|noreset&gt;</strong></strong> Changes tar's
+behavior with regard to archive bits. In full mode, tar will back up
 everything regardless of the archive bit setting (this is the default
 mode). In incremental mode, tar will only back up files with the
 archive bit set. In reset mode, tar will reset the archive bit on all
@@ -516,7 +516,7 @@ of the DOS attrib command to set file permissions. For example:
 <h2>NOTES</h2>
     
 <p><br>Some servers are fussy about the case of supplied usernames,
-passwords, share names (aka service names) and machine names. If you
+passwords, share names (AKA service names) and machine names. If you
 fail to connect try giving all parameters in uppercase.
 <p><br>It is often necessary to use the <a href="smbclient.1.html#minusn"><strong>-n</strong></a> option when connecting to some
 types of servers. For example OS/2 LanManager insists on a valid
@@ -544,7 +544,7 @@ readable by all, writeable only by root. The client program itself
 should be executable by all. The client should <em>NOT</em> be setuid or
 setgid!
 <p><br>The client log files should be put in a directory readable and
-writable only by the user.
+writeable only by the user.
 <p><br>To test the client, you will need to know the name of a running
 SMB/CIFS server. It is possible to run <a href="smbd.8.html"><strong>smbd (8)</strong></a>
 an ordinary user - running that server as a daemon on a

@@ -1,4 +1,4 @@
-.TH "lmhosts" "5" "23 Oct 1998" "Samba" "SAMBA" 
+.TH "lmhosts " "5" "23 Oct 1998" "Samba" "SAMBA" 
 .PP 
 .SH "NAME" 
 lmhosts \- The Samba NetBIOS hosts file
@@ -11,7 +11,7 @@ lmhosts is the \fBSamba\fP NetBIOS name to IP address mapping file\&.
 .PP 
 This file is part of the \fBSamba\fP suite\&.
 .PP 
-lmhosts is the \fBSamba\fP NetBIOS name to IP address mapping file\&.  It
+\fBlmhosts\fP is the \fBSamba\fP NetBIOS name to IP address mapping file\&.  It
 is very similar to the \fB/etc/hosts\fP file format, except that the
 hostname component must correspond to the NetBIOS naming format\&.
 .PP 
@@ -38,21 +38,18 @@ name type in the lookup\&.
 .PP 
 An example follows :
 .PP 
-
-.DS 
- 
-
-
-#
-# Sample Samba lmhosts file\&.
-#
-192\&.9\&.200\&.1	TESTPC
-192\&.9\&.200\&.20	NTSERVER#20
-192\&.9\&.200\&.21	SAMBASERVER
-
-.DE 
- 
-
+# 
+.br 
+# Sample Samba lmhosts file\&. 
+.br 
+# 
+.br 
+192\&.9\&.200\&.1	TESTPC 
+.br 
+192\&.9\&.200\&.20	NTSERVER#20 
+.br 
+192\&.9\&.200\&.21	SAMBASERVER 
+.br 
 .PP 
 Contains three IP to NetBIOS name mappings\&. The first and third will
 be returned for any queries for the names \f(CW"TESTPC"\fP and
@@ -79,7 +76,7 @@ This man page is correct for version 2\&.0 of the Samba suite\&.
 .SH "AUTHOR" 
 .PP 
 The original Samba software and related utilities were created by
-Andrew Tridgell (samba-bugs@samba\&.anu\&.edu\&.au)\&. Samba is now developed
+Andrew Tridgell \fIsamba-bugs@samba\&.anu\&.edu\&.au\fP\&. Samba is now developed
 by the Samba Team as an Open Source project similar to the way the
 Linux kernel is developed\&.
 .PP 
