@@ -183,6 +183,7 @@ kerberos5_send(char *name, Authenticator *ap)
     krb5_ccache ccache;
     int ap_opts;
     krb5_data cksum_data;
+    char foo[2];
     
     printf("[ Trying %s ... ]\r\n", name);
     if (!UserNameRequested) {
@@ -206,8 +207,11 @@ kerberos5_send(char *name, Authenticator *ap)
     
     auth_context = NULL;
 
-    cksum_data.length = 0;
-    cksum_data.data   = NULL;
+    foo[0] = ap->type;
+    foo[1] = ap->way;
+
+    cksum_data.length = sizeof(foo);
+    cksum_data.data   = foo;
     r = krb5_mk_req(context, &auth_context, ap_opts, 
 		    "host", RemoteHostName, 
 		    &cksum_data, ccache, &auth);
@@ -280,6 +284,39 @@ kerberos5_is(Authenticator *ap, unsigned char *data, int cnt)
 		printf("%s\r\n", errbuf);
 	    return;
 	}
+	{
+	    krb5_authenticator authenticator;
+
+	    r = krb5_auth_getauthenticator (context,
+					    auth_context,
+					    &authenticator);
+	    if (r)
+		abort ();
+	    if (authenticator->cksum) {
+		char foo[2];
+
+		foo[0] = ap->type;
+		foo[1] = ap->way;
+
+		r = krb5_verify_checksum (context,
+					  foo,
+					  sizeof(foo),
+					  NULL,
+					  authenticator->cksum);
+		if (r) {
+		    Data(ap, KRB_REJECT, "No checksum", -1);
+		    if (auth_debug_mode)
+			printf ("No checksum\r\n");
+		    krb5_free_authenticator (context,
+					     &authenticator);
+
+		    return;
+		}
+	    }
+	    krb5_free_authenticator (context,
+				     &authenticator);
+	}
+
 	if ((ap->way & AUTH_HOW_MASK) == AUTH_HOW_MUTUAL) {
 	    r = krb5_mk_rep(context, &auth_context, &outbuf);
 	    if(r){
@@ -296,7 +333,13 @@ kerberos5_is(Authenticator *ap, unsigned char *data, int cnt)
 	}
 	auth_finished(ap, AUTH_USER);
 
-	r = krb5_auth_con_getkey(context, auth_context, &key_block);
+	r = krb5_auth_con_getremotesubkey (context,
+					   auth_context,
+					   &key_block);
+
+	if (r)
+	    r = krb5_auth_con_getkey(context, auth_context, &key_block);
+
 	if(r){
 	  abort ();
 	}
@@ -411,9 +454,14 @@ kerberos5_reply(Authenticator *ap, unsigned char *data, int cnt)
 	      Session_Key skey;
 	      krb5_keyblock *keyblock;
 	      
-	      if (r = krb5_auth_con_getkey (context,
+	      r = krb5_auth_con_getlocalsubkey (context,
+						auth_context,
+						&keyblock);
+	      if (r)
+		  r = krb5_auth_con_getkey (context,
 					    auth_context,
-					    &keyblock)) {
+					    &keyblock);
+	      if (r) {
 		abort ();
 	      }
 	      
