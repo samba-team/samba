@@ -88,6 +88,18 @@ int ads_search(ADS_STRUCT *ads, void **res,
 			     LDAP_SCOPE_SUBTREE, exp, (char **)attrs, 0, (LDAPMessage **)res);
 }
 
+/*
+  do a search on a specific DistinguishedName
+*/
+int ads_search_dn(ADS_STRUCT *ads, void **res, 
+		  const char *dn, 
+		  const char **attrs)
+{
+	*res = NULL;
+	return ldap_search_s(ads->ld, dn, 
+			     LDAP_SCOPE_BASE, "(objectclass=*)", (char **)attrs, 0, (LDAPMessage **)res);
+}
+
 
 /*
   find a machine account given a hostname 
@@ -434,6 +446,35 @@ BOOL ads_pull_sid(ADS_STRUCT *ads,
 	return ret;
 }
 
+/*
+  pull an array of DOM_SIDs from a ADS result
+  return the count of SIDs pulled
+*/
+int ads_pull_sids(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
+		  void *msg, const char *field, DOM_SID **sids)
+{
+	struct berval **values;
+	BOOL ret;
+	int count, i;
+
+	values = ldap_get_values_len(ads->ld, msg, field);
+
+	if (!values) return 0;
+
+	for (i=0; values[i]; i++) /* nop */ ;
+
+	(*sids) = talloc(mem_ctx, sizeof(DOM_SID) * i);
+
+	count = 0;
+	for (i=0; values[i]; i++) {
+		ret = sid_parse(values[i]->bv_val, values[i]->bv_len, &(*sids)[count]);
+		if (ret) count++;
+	}
+	
+	ldap_value_free_len(values);
+	return count;
+}
+
 
 /* find the update serial number - this is the core of the ldap cache */
 BOOL ads_USN(ADS_STRUCT *ads, uint32 *usn)
@@ -443,7 +484,7 @@ BOOL ads_USN(ADS_STRUCT *ads, uint32 *usn)
 	void *res;
 
 	rc = ldap_search_s(ads->ld, ads->bind_path, 
-			   LDAP_SCOPE_BASE, "(objectclass=*)", (char **)attrs, 0, (LDAPMessage **)&res);
+			   LDAP_SCOPE_BASE, "(objectclass=*)", attrs, 0, (LDAPMessage **)&res);
 	if (rc || ads_count_replies(ads, res) != 1) return False;
 	return ads_pull_uint32(ads, res, "highestCommittedUSN", usn);
 }
