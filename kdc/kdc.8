@@ -13,7 +13,6 @@ Kerberos 5 server
 .Op Fl -config-file= Ns Ar file
 .Op Fl k Ar file
 .Op Fl -key-file= Ns Ar file
-.Op Fl -log-level= Ns Ar number
 .Op Fl p
 .Op Fl -no-require-preauth
 .Op Fl r Ar realm
@@ -38,10 +37,6 @@ The location of the master-key file. All keys in the database is
 encrypted with this master key. The use of a master key is currently
 optional, so there is no default. 
 .Em "Don't specify a master key file if your database is not encrypted."
-.It Fl -log-level= Ns Ar number
-What level of information you want logged. The default is 0, and logs
-only requests and any errors when parsing them. You can turn off
-logging by specifying -1.
 .It Fl p
 .It Fl -no-require-preauth
 Turn off the requirement for pre-autentication in the initial
@@ -62,10 +57,11 @@ This option is only availabe if the KDC has been compiled with version
 4 support.
 .El
 .Pp
-All activities (as specified by the log level), are logged to one or
-more destinations, see the logging section of the
-.Xr krb5.conf 5
-manual page. The entity used for logging is
+All activities , are logged to one or more destinations, see 
+.Xr krb5.conf 5 ,
+and
+.Xr krb5_openlog 3 .
+The entity used for logging is
 .Nm kdc .
 .Sh CONFIGURATION FILE
 The configuration file has the same syntax as the 
@@ -83,8 +79,7 @@ that has to be specified as:
 .Dl require-preauth = no
 .Pp
 (in fact you can specify the option as
-.Fl -require-preauth=no
-as well).
+.Fl -require-preauth=no ) .
 .Pp
 An example of a config file:
 .Bd -literal -offset indent
