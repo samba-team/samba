@@ -979,9 +979,11 @@ retrieve(char *cmd, char *name)
 		return;
 	}
 	byte_count = -1;
-	if (cmd == 0 && (fstat(fileno(fin), &st) < 0 || !S_ISREG(st.st_mode))) {
+	if (cmd == 0){
+	    if(fstat(fileno(fin), &st) < 0 || !S_ISREG(st.st_mode)) {
 		reply(550, "%s: not a plain file.", name);
 		goto done;
+	    }
 	}
 	if (restart_point) {
 		if (type == TYPE_A) {
