@@ -146,10 +146,10 @@ int seteuid(int euid);
 int setegid(int egid);
 #endif
 
-#ifndef HAVE_STRCHR && defined(HAVE_INDEX)
+#if !defined(HAVE_STRCHR) && defined(HAVE_INDEX)
 #define strchr(p, ch) index(p, ch)
 #endif
-#ifndef HAVE_STRRCHR && defined(HAVE_RINDEX)
+#if !defined(HAVE_STRRCHR) && defined(HAVE_RINDEX)
 #define strrchr(p, ch) rindex(p, ch)
 #endif
 
