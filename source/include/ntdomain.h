@@ -113,7 +113,7 @@ SamrTestPrivateFunctionsUser
 #define SAMR_UNKNOWN_3         0x03
 #define SAMR_QUERY_DISPINFO    0x28
 #define SAMR_UNKNOWN_22        0x22
-#define SAMR_UNKNOWN_24        0x24
+#define SAMR_QUERY_USERINFO    0x24
 #define SAMR_UNKNOWN_32        0x32
 #define SAMR_UNKNOWN_34        0x34
 #define SAMR_CONNECT           0x39
@@ -399,6 +399,179 @@ typedef struct gid_info
   uint32 attr;
 
 } DOM_GID;
+
+typedef struct logon_hours_info
+{
+	uint32 len; /* normally 21 bytes */
+	char hours[32];
+
+} LOGON_HRS;
+
+#define LSA_MAX_GROUPS 32
+#define LSA_MAX_SIDS 32
+
+/* USER_INFO_15 */
+typedef struct user_info_15
+{
+	NTTIME logon_time;            /* logon time */
+	NTTIME logoff_time;           /* logoff time */
+	NTTIME kickoff_time;          /* kickoff time */
+	NTTIME pass_last_set_time;    /* password last set time */
+	NTTIME pass_can_change_time;  /* password can change time */
+	NTTIME pass_must_change_time; /* password must change time */
+
+	UNIHDR hdr_user_name;    /* username unicode string header */
+	UNIHDR hdr_full_name;    /* user's full name unicode string header */
+	UNIHDR hdr_home_dir;     /* home directory unicode string header */
+	UNIHDR hdr_dir_drive;    /* home drive unicode string header */
+	UNIHDR hdr_profile_path; /* profile path unicode string header */
+	UNIHDR hdr_logon_script; /* logon script unicode string header */
+	UNIHDR hdr_description;  /* user description */
+
+	uint16 logon_count;  /* logon count */
+	uint16 bad_pw_count; /* bad password count */
+
+	uint32 ptr_0;         /* unknown pointer 0 */
+	uint32 unknown_0;
+
+	uint32 ptr_1;         /* unknown pointer 1 */
+	uint32 unknown_1;
+
+	uint32 ptr_2;         /* unknown pointer 3 */
+	char unknown_2[32];    /* user passwords? */
+
+	uint32 user_rid;      /* User ID */
+	uint32 group_rid;     /* Group ID */
+	uint32 other_grp_rids[LSA_MAX_GROUPS]; /* Other Group RIDs, terminated by 0x00ff ffff */
+	uint32 unknown_4; /* 0x0000 00a8 */
+
+	uint32 ptr_3; /* undocumented buffer pointer to groups. */
+	uint32 unknown_5;     /* 0x0002 0000 */
+
+	char padding1[8];
+
+	UNISTR2 uni_user_name;    /* username unicode string */
+	UNISTR2 uni_full_name;    /* user's full name unicode string */
+	UNISTR2 uni_home_dir;     /* home directory unicode string */
+	UNISTR2 uni_dir_drive;    /* home directory drive unicode string */
+	UNISTR2 uni_profile_path; /* profile path unicode string */
+	UNISTR2 uni_logon_script; /* logon script unicode string */
+	UNISTR2 uni_description;  /* user description unicode string */
+
+	char padding2[32];
+	uint32 padding3;
+
+	uint32 unknown_rid; /* 0x0000 04ec */
+	uint32 padding4;
+
+	LOGON_HRS logon_hdrs;
+
+} USER_INFO_15;
+
+
+/* USER_INFO_11 */
+typedef struct user_info_11
+{
+	uint8  padding_0[16];  /* 0 - padding 16 bytes */
+	NTTIME expiry;         /* expiry time or something? */
+	uint8  padding_1[24];  /* 0 - padding 24 bytes */
+
+	UNIHDR hdr_mach_acct;  /* unicode header for machine account */
+	uint32 padding_2;      /* 0 - padding 4 bytes */
+
+	uint32 ptr_1;          /* pointer */
+	uint8  padding_3[32];  /* 0 - padding 32 bytes */
+	uint32 padding_4;      /* 0 - padding 4 bytes */
+
+	uint32 ptr_2;          /* pointer */
+	uint32 padding_5;      /* 0 - padding 4 bytes */
+
+	uint32 ptr_3;          /* pointer */
+	uint8  padding_6[32];  /* 0 - padding 32 bytes */
+
+	uint32 rid_user;       /* user RID */
+	uint32 rid_group;      /* group RID */
+
+	uint16 acct_ctrl;      /* 0080 - ACB_XXXX */
+	uint16 unknown_3;      /* 16 bit padding */
+
+	uint16 unknown_4;      /* 0x003f      - 16 bit unknown */
+	uint16 unknown_5;      /* 0x003c      - 16 bit unknown */
+
+	uint8  padding_7[16];  /* 0 - padding 16 bytes */
+	uint32 padding_8;      /* 0 - padding 4 bytes */
+	
+	UNISTR2 uni_mach_acct; /* unicode string for machine account */
+
+	uint8  padding_9[48];  /* 0 - padding 48 bytes */
+
+} USER_INFO_11;
+
+
+/* USER_INFO_10 */
+typedef struct user_info_10
+{
+	uint32 rid_group;
+
+} USER_INFO_10;
+
+/* USER_INFO_3 */
+typedef struct user_info_3
+{
+	uint32 ptr_user_info;
+
+	NTTIME logon_time;            /* logon time */
+	NTTIME logoff_time;           /* logoff time */
+	NTTIME kickoff_time;          /* kickoff time */
+	NTTIME pass_last_set_time;    /* password last set time */
+	NTTIME pass_can_change_time;  /* password can change time */
+	NTTIME pass_must_change_time; /* password must change time */
+
+	UNIHDR hdr_user_name;    /* username unicode string header */
+	UNIHDR hdr_full_name;    /* user's full name unicode string header */
+	UNIHDR hdr_logon_script; /* logon script unicode string header */
+	UNIHDR hdr_profile_path; /* profile path unicode string header */
+	UNIHDR hdr_home_dir;     /* home directory unicode string header */
+	UNIHDR hdr_dir_drive;    /* home directory drive unicode string header */
+
+	uint16 logon_count;  /* logon count */
+	uint16 bad_pw_count; /* bad password count */
+
+	uint32 user_id;       /* User ID */
+	uint32 group_id;      /* Group ID */
+	uint32 num_groups;    /* num groups */
+	uint32 buffer_groups; /* undocumented buffer pointer to groups. */
+	uint32 user_flgs;     /* user flags */
+
+	char user_sess_key[16]; /* unused user session key */
+
+	UNIHDR hdr_logon_srv; /* logon server unicode string header */
+	UNIHDR hdr_logon_dom; /* logon domain unicode string header */
+
+	uint32 buffer_dom_id; /* undocumented logon domain id pointer */
+	char padding[40];    /* unused padding bytes.  expansion room */
+
+	uint32 num_other_sids; /* 0 - num_sids */
+	uint32 buffer_other_sids; /* NULL - undocumented pointer to SIDs. */
+	
+	UNISTR2 uni_user_name;    /* username unicode string */
+	UNISTR2 uni_full_name;    /* user's full name unicode string */
+	UNISTR2 uni_logon_script; /* logon script unicode string */
+	UNISTR2 uni_profile_path; /* profile path unicode string */
+	UNISTR2 uni_home_dir;     /* home directory unicode string */
+	UNISTR2 uni_dir_drive;    /* home directory drive unicode string */
+
+	uint32 num_groups2;        /* num groups */
+	DOM_GID gids[LSA_MAX_GROUPS]; /* group info */
+
+	UNISTR2 uni_logon_srv; /* logon server unicode string */
+	UNISTR2 uni_logon_dom; /* logon domain unicode string */
+
+	DOM_SID dom_sid;           /* domain SID */
+	DOM_SID other_sids[LSA_MAX_SIDS]; /* undocumented - domain SIDs */
+
+} USER_INFO_3;
+
 
 /* RPC_IFACE */
 typedef struct rpc_iface_info
@@ -892,67 +1065,6 @@ typedef struct lsa_r_srv_pwset_info
 
 } LSA_R_SRV_PWSET;
 
-#define LSA_MAX_GROUPS 32
-#define LSA_MAX_SIDS 32
-
-/* LSA_USER_INFO */
-typedef struct lsa_q_user_info
-{
-	uint32 ptr_user_info;
-
-	NTTIME logon_time;            /* logon time */
-	NTTIME logoff_time;           /* logoff time */
-	NTTIME kickoff_time;          /* kickoff time */
-	NTTIME pass_last_set_time;    /* password last set time */
-	NTTIME pass_can_change_time;  /* password can change time */
-	NTTIME pass_must_change_time; /* password must change time */
-
-	UNIHDR hdr_user_name;    /* username unicode string header */
-	UNIHDR hdr_full_name;    /* user's full name unicode string header */
-	UNIHDR hdr_logon_script; /* logon script unicode string header */
-	UNIHDR hdr_profile_path; /* profile path unicode string header */
-	UNIHDR hdr_home_dir;     /* home directory unicode string header */
-	UNIHDR hdr_dir_drive;    /* home directory drive unicode string header */
-
-	uint16 logon_count;  /* logon count */
-	uint16 bad_pw_count; /* bad password count */
-
-	uint32 user_id;       /* User ID */
-	uint32 group_id;      /* Group ID */
-	uint32 num_groups;    /* num groups */
-	uint32 buffer_groups; /* undocumented buffer pointer to groups. */
-	uint32 user_flgs;     /* user flags */
-
-	char user_sess_key[16]; /* unused user session key */
-
-	UNIHDR hdr_logon_srv; /* logon server unicode string header */
-	UNIHDR hdr_logon_dom; /* logon domain unicode string header */
-
-	uint32 buffer_dom_id; /* undocumented logon domain id pointer */
-	char padding[40];    /* unused padding bytes.  expansion room */
-
-	uint32 num_other_sids; /* 0 - num_sids */
-	uint32 buffer_other_sids; /* NULL - undocumented pointer to SIDs. */
-	
-	UNISTR2 uni_user_name;    /* username unicode string */
-	UNISTR2 uni_full_name;    /* user's full name unicode string */
-	UNISTR2 uni_logon_script; /* logon script unicode string */
-	UNISTR2 uni_profile_path; /* profile path unicode string */
-	UNISTR2 uni_home_dir;     /* home directory unicode string */
-	UNISTR2 uni_dir_drive;    /* home directory drive unicode string */
-
-	uint32 num_groups2;        /* num groups */
-	DOM_GID gids[LSA_MAX_GROUPS]; /* group info */
-
-	UNISTR2 uni_logon_srv; /* logon server unicode string */
-	UNISTR2 uni_logon_dom; /* logon domain unicode string */
-
-	DOM_SID dom_sid;           /* domain SID */
-	DOM_SID other_sids[LSA_MAX_SIDS]; /* undocumented - domain SIDs */
-
-} LSA_USER_INFO;
-
-
 /* LSA_Q_SAM_LOGON */
 typedef struct lsa_q_sam_logon_info
 {
@@ -967,7 +1079,7 @@ typedef struct lsa_r_sam_logon_info
     DOM_CRED srv_creds; /* server credentials.  server time stamp appears to be ignored. */
     
 	uint16 switch_value; /* 3 - indicates type of USER INFO */
-    LSA_USER_INFO *user;
+    USER_INFO_3 *user;
 
     uint32 auth_resp; /* 1 - Authoritative response; 0 - Non-Auth? */
 
@@ -1126,8 +1238,10 @@ typedef struct q_samr_enum_dom_users_info
 {
 	POLICY_HND pol;          /* policy handle */
 
-	uint32 enum_ctx;         /* 32 bit enumeration context */
-	uint32 unknown_1;         /* 0x0000 0000 */
+	uint16 req_num_entries;   /* number of values (0 indicates unlimited?) */
+	uint16 unknown_0;         /* enumeration context? */
+	uint16 acb_mask;          /* 0x0000 indicates all */
+	uint16 unknown_1;         /* 0x0000 */
 
 	uint32 max_size;              /* 0x0000 ffff */
 
@@ -1137,17 +1251,19 @@ typedef struct q_samr_enum_dom_users_info
 /* SAMR_R_ENUM_DOM_USERS - SAM rids and names */
 typedef struct r_samr_enum_dom_users_info
 {
-	uint32 enum_ctx;    /* same as enum context in request */
-	uint32 num_entries;
-	uint32 ptr_entries;
+	uint16 total_num_entries;  /* number of entries that match without the acb mask */
+	uint16 unknown_0;          /* same as unknown_0 (enum context?) in request */
+	uint32 ptr_entries1;       /* actual number of entries to follow, having masked some out */
 
 	uint32 num_entries2;
 	uint32 ptr_entries2;
 
+	uint32 num_entries3;
+
 	SAM_ENTRY sam[MAX_SAM_ENTRIES];
 	UNISTR2 uni_acct_name[MAX_SAM_ENTRIES];
 
-	uint32 num_entries3;
+	uint32 num_entries4;
 
 	uint32 status;
 
@@ -1321,7 +1437,7 @@ typedef struct samr_alias_info3
 typedef struct r_samr_query_aliasinfo_info
 {
 	uint32 ptr;        
-	uint16 switch_level;     /* 0x0003 */
+	uint16 switch_value;     /* 0x0003 */
 	/* uint8[2] padding */
 
 	union
@@ -1334,6 +1450,33 @@ typedef struct r_samr_query_aliasinfo_info
 
 } SAMR_R_QUERY_ALIASINFO;
 
+
+/* SAMR_Q_QUERY_USERINFO - probably a get sam info */
+typedef struct q_samr_query_user_info
+{
+    POLICY_HND pol;          /* policy handle associated with unknown id */
+	uint16 switch_value;         /* 0x0015, 0x0011 or 0x0010 - 16 bit unknown */
+
+} SAMR_Q_QUERY_USERINFO;
+
+/* SAMR_R_QUERY_USERINFO - probably a get sam info */
+typedef struct r_samr_query_user_info
+{
+	uint32 ptr;            /* pointer */
+	uint16 switch_value;      /* 0x0015, 0x0011 or 0x0010 - same as in query */
+	/* uint8[2] padding. */
+
+	union
+	{
+		USER_INFO_10 *id10; /* auth-level 10 */
+		USER_INFO_11 *id11; /* auth-level 11 */
+		USER_INFO_15 *id15; /* auth-level 15 */
+
+	} info;
+
+	uint32 status;         /* return status */
+
+} SAMR_R_QUERY_USERINFO;
 
 
 /****************************************************************************
@@ -1392,56 +1535,6 @@ typedef struct r_samr_unknown_22_info
 
 } SAMR_R_UNKNOWN_22;
 
-
-/* SAMR_Q_UNKNOWN_24 - probably a get sam info */
-typedef struct q_samr_unknown_24_info
-{
-    POLICY_HND pol;          /* policy handle associated with unknown id */
-	uint16 unknown_0;         /* 0x0015 or 0x0011 - 16 bit unknown */
-
-} SAMR_Q_UNKNOWN_24;
-
-
-/* lkclXXXX this looks like a botched LSA_USER_INFO structure */
-/* SAMR_R_UNKNOWN_24 - probably a get sam info */
-typedef struct r_samr_unknown_24_info
-{
-	uint32 ptr;            /* pointer */
-	uint16 unknown_0;      /* 0x0015 or 0x0011 - 16 bit unknown (same as above) */
-	uint16 unknown_1;      /* 0x8b73 - 16 bit unknown */
-	uint8  padding_0[16];  /* 0 - padding 16 bytes */
-	NTTIME expiry;         /* expiry time or something? */
-	uint8  padding_1[24];  /* 0 - padding 24 bytes */
-
-	UNIHDR hdr_mach_acct;  /* unicode header for machine account */
-	uint32 padding_2;      /* 0 - padding 4 bytes */
-
-	uint32 ptr_1;          /* pointer */
-	uint8  padding_3[32];  /* 0 - padding 32 bytes */
-	uint32 padding_4;      /* 0 - padding 4 bytes */
-
-	uint32 ptr_2;          /* pointer */
-	uint32 padding_5;      /* 0 - padding 4 bytes */
-
-	uint32 ptr_3;          /* pointer */
-	uint8  padding_6[32];  /* 0 - padding 32 bytes */
-
-	uint32 unknown_id_0;   /* unknown id associated with policy handle */
-	uint16 unknown_2;      /* 0x0201      - 16 bit unknown */
-	uint32 acct_ctrl;      /* 0x0000 0080 - ACB_XXXX */
-	uint16 unknown_4;      /* 0x003f      - 16 bit unknown */
-	uint16 unknown_5;      /* 0x003c      - 16 bit unknown */
-
-	uint8  padding_7[16];  /* 0 - padding 16 bytes */
-	uint32 padding_8;      /* 0 - padding 4 bytes */
-	
-	UNISTR2 uni_mach_acct; /* unicode string for machine account */
-
-	uint8  padding_9[48];  /* 0 - padding 48 bytes */
-
-	uint32 status;         /* return status */
-
-} SAMR_R_UNKNOWN_24;
 
 
 /* SAMR_Q_UNKNOWN_32 - probably a "create SAM entry" */

@@ -83,7 +83,7 @@ struct
   {"ntlogin",    cmd_nt_login_test,    "<username> NT Domain login test"},
   {"nltest",     cmd_nltest,           "<server> Net Logon Test"},
   {"lsaquery",   cmd_lsa_query_info,   "<server> Query Info Policy"},
-  {"samrid",     cmd_sam_query_users,  "<server> SAM User Info lookup"},
+  {"samquery",   cmd_sam_query_users,  "SAM User Database Query"},
   {"message",    cmd_send_message,"<username/workgroup> Send a message"},
   {"shares",     cmd_list_shares, "List shares on a server"},
   {"servers",    cmd_list_servers,"[<workgroup>] [<type, hex>] List known browse servers"},

@@ -108,7 +108,10 @@ static int gethexpwd(char *p, char *pwd)
  Routine to search the smbpasswd file for an entry matching the username
  or user id.  if the name is NULL, then the smb_uid is used instead.
  *************************************************************************/
-BOOL get_smbpwd_entries(struct smb_passwd *pw_buf, int *num_entries, int max_num_entries)
+BOOL get_smbpwd_entries(struct smb_passwd *pw_buf,
+				int *total_entries, int *num_entries,
+				int max_num_entries,
+				uint16 acb_mask)
 {
 	/* Static buffers we will return. */
 	static pstring  user_name;
@@ -124,14 +127,18 @@ BOOL get_smbpwd_entries(struct smb_passwd *pw_buf, int *num_entries, int max_num
 	int             lockfd;
 	char           *pfile = lp_smb_passwd_file();
 	unsigned long   acct_ctrl;
+
 	(*num_entries) = 0;
+	(*total_entries) = 0;
 
 	if (pw_buf == NULL) return False;
 
-	if (!*pfile) {
+	if (!*pfile)
+	{
 		DEBUG(0, ("No SMB password file set\n"));
 		return False;
 	}
+
 	DEBUG(10, ("get_smbpwd_entries: opening file %s\n", pfile));
 
 	fp = fopen(pfile, "r");
@@ -297,7 +304,6 @@ BOOL get_smbpwd_entries(struct smb_passwd *pw_buf, int *num_entries, int max_num
 		fstrcpy(pw_buf[(*num_entries)].smb_name, user_name);
 		pw_buf[(*num_entries)].smb_userid    = uidval;
 		pw_buf[(*num_entries)].smb_nt_passwd = NULL;
-		pw_buf[(*num_entries)].acct_ctrl     = ACB_NORMAL;
 
 		/* Now check if the NT compatible password is available. */
 		p += 33; /* Move to the first character of the line after
@@ -316,13 +322,28 @@ BOOL get_smbpwd_entries(struct smb_passwd *pw_buf, int *num_entries, int max_num
 		if ((linebuf_len >= (PTR_DIFF(p, linebuf) + 5)) && (p[4] == ':'))
 		{
 			acct_ctrl = strtoul( p, (char**)NULL, 16);
-			pw_buf[(*num_entries)].acct_ctrl = (uint16)acct_ctrl;
+		}
+		else
+		{
+			acct_ctrl = ACB_NORMAL;
 		}
 		
-		DEBUG(5, ("get_smbpwd_entries: idx: %d user %s, uid %d, acb %x\n",
+		pw_buf[(*num_entries)].acct_ctrl = (uint16)acct_ctrl;
+
+		DEBUG(5, ("get_smbpwd_entries: idx: %d user %s, uid %d, acb %x",
 			  (*num_entries), user_name, uidval, acct_ctrl));
 
-		(*num_entries)++;
+		if (acb_mask == 0 || IS_BITS_SET_SOME(acct_ctrl, acb_mask))
+		{
+			DEBUG(5,(" acb_mask %x accepts\n", acb_mask));
+			(*num_entries)++;
+		}
+		else
+		{
+			DEBUG(5,(" acb_mask %x rejects\n", acb_mask));
+		}
+
+		(*total_entries)++;
 	}
 
 	fclose(fp);

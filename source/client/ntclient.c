@@ -56,13 +56,7 @@ void cmd_lsa_query_info(struct client_info *info)
 	strcpy(info->dom.level5_sid, "");
 
 	strcpy(srv_name, "\\\\");
-
-	if (!next_token(NULL, &(srv_name[2]), NULL))
-	{
-		DEBUG(0,("cmd_lsa_query_info: <server name>\n"));
-		return;
-	}
-
+	strcat(srv_name, info->myhostname);
 	strupper(srv_name);
 
 	DEBUG(4,("cmd_lsa_query_info: server:%s\n", srv_name));
@@ -124,40 +118,48 @@ void cmd_sam_query_users(struct client_info *info)
 	fstring sid;
 	int user_idx;
 	BOOL res = True;
-	uint32 val1 = 0x0;
-	uint32 val2 = 0x0;
-	uint32 admin_rid = 0x304;
+	uint16 num_entries = 0;
+	uint16 unk_0 = 0x0;
+	uint16 acb_mask = 0;
+	uint16 unk_1 = 0x0;
+	uint32 admin_rid = 0x304; /* absolutely no idea. */
 	fstring tmp;
 
 	fstrcpy(sid, info->dom.level5_sid);
 
 	if (strlen(sid) == 0)
 	{
-		DEBUG(0,("cmd_sam_query_users: use 'lsaquery <domain server name>' first\n"));
+		DEBUG(0,("please use 'lsaquery' first, to ascertain the SID\n"));
 		return;
 	}
 
 	strcpy(srv_name, "\\\\");
-
-	if (!next_token(NULL, &(srv_name[2]), NULL))
-	{
-		DEBUG(0,("samquery: <domain server name>\n"));
-		return;
-	}
-
+	strcat(srv_name, info->dest_host);
 	strupper(srv_name);
 
 	if (next_token(NULL, tmp, NULL))
 	{
-		val1 = strtoul(tmp, (char**)NULL, 16);
+		num_entries = strtoul(tmp, (char**)NULL, 16);
 	}
 
 	if (next_token(NULL, tmp, NULL))
 	{
-		val2 = strtoul(tmp, (char**)NULL, 16);
+		unk_0 = strtoul(tmp, (char**)NULL, 16);
 	}
 
-	DEBUG(0,("Account Information for %s, SID: %s\n", srv_name, sid));
+	if (next_token(NULL, tmp, NULL))
+	{
+		acb_mask = strtoul(tmp, (char**)NULL, 16);
+	}
+
+	if (next_token(NULL, tmp, NULL))
+	{
+		unk_1 = strtoul(tmp, (char**)NULL, 16);
+	}
+
+	DEBUG(0,("SAM Query Information for %s, SID: %s\n", srv_name, sid));
+	DEBUG(1,("Number of entries:%d unk_0:%04x acb_mask:%04x unk_1:%04x\n",
+	          num_entries, unk_0, acb_mask, unk_1));
 
 	/* open SAMR session.  negotiate credentials */
 	res = res ? do_samr_session_open(smb_cli, smb_tidx, info) : False;
@@ -175,7 +177,7 @@ void cmd_sam_query_users(struct client_info *info)
 	/* read some users */
 	res = res ? do_samr_enum_dom_users(smb_cli, smb_tidx, info->dom.samr_fnum,
 				&info->dom.samr_pol_open_domain,
-	            val1, val2, 0xffff,
+	            num_entries, unk_0, acb_mask, unk_1, 0xffff,
 				info->dom.sam, &info->dom.num_sam_entries) : False;
 
 	if (res && info->dom.num_sam_entries == 0)

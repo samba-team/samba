@@ -963,7 +963,6 @@ void make_q_srv_pwset(LSA_Q_SRV_PWSET *q_s, char sess_key[16],
 		DOM_CRED *cred, char nt_cypher[16]);
 char* lsa_io_q_srv_pwset(BOOL io, LSA_Q_SRV_PWSET *q_s, char *q, char *base, int align, int depth);
 char* lsa_io_r_srv_pwset(BOOL io, LSA_R_SRV_PWSET *r_s, char *q, char *base, int align, int depth);
-char* lsa_io_user_info(BOOL io, LSA_USER_INFO *usr, char *q, char *base, int align, int depth);
 char* lsa_io_q_sam_logon(BOOL io, LSA_Q_SAM_LOGON *q_l, char *q, char *base, int align, int depth);
 char* lsa_io_r_sam_logon(BOOL io, LSA_R_SAM_LOGON *r_l, char *q, char *base, int align, int depth);
 char* lsa_io_q_sam_logoff(BOOL io, LSA_Q_SAM_LOGOFF *q_l, char *q, char *base, int align, int depth);
@@ -987,7 +986,7 @@ void make_nt_login_info(DOM_ID_INFO_1 *id1,
 BOOL do_nt_login(struct cli_state *cli, int t_idx, uint16 fnum,
 				uint8 sess_key[16], DOM_CRED *clnt_cred, DOM_CRED *rtn_cred,
 				DOM_ID_INFO_1 *id1, char *dest_host, char *myhostname,
-				LSA_USER_INFO *user_info1);
+				USER_INFO_3 *user_info3);
 BOOL do_nt_logoff(struct cli_state *cli, int t_idx, uint16 fnum,
 				uint8 sess_key[16], DOM_CRED *clnt_cred, DOM_CRED *rtn_cred,
 				DOM_ID_INFO_1 *id1, char *dest_host, char *myhostname);
@@ -1025,7 +1024,7 @@ BOOL do_lsa_sam_logon(struct cli_state *cli, int t_idx, uint16 fnum,
         DOM_CRED *clnt_cred, DOM_CRED *rtn_cred,
 		uint16 logon_level, uint16 switch_value,
 		DOM_ID_INFO_1 *id1, uint16 switch_value2,
-		LSA_USER_INFO *user_info,
+		USER_INFO_3 *user_info3,
 		DOM_CRED *srv_cred);
 BOOL do_lsa_sam_logoff(struct cli_state *cli, int t_idx, uint16 fnum,
 		uchar sess_key[8], DOM_CRED *sto_clnt_cred,
@@ -1047,7 +1046,8 @@ BOOL rpc_pipe_bind(struct cli_state *cli, int t_idx, char *pipe_name, uint16 fnu
 BOOL do_samr_session_open(struct cli_state *cli, int t_idx, struct client_info *info);
 void do_samr_session_close(struct cli_state *cli, int t_idx, struct client_info *info);
 BOOL do_samr_enum_dom_users(struct cli_state *cli, int t_idx, uint16 fnum, 
-				POLICY_HND *pol, uint32 enum_ctx, uint32 unk_1, uint32 size,
+				POLICY_HND *pol, uint16 num_entries, uint16 unk_0,
+				uint16 acb_mask, uint16 unk_1, uint32 size,
 				struct acct_info sam[MAX_SAM_ENTRIES],
 				int *num_sam_users);
 BOOL do_samr_connect(struct cli_state *cli, int t_idx, uint16 fnum, 
@@ -1166,10 +1166,11 @@ void make_samr_q_open_domain(SAMR_Q_OPEN_DOMAIN *q_u,
 char* samr_io_q_open_domain(BOOL io, SAMR_Q_OPEN_DOMAIN *q_u, char *q, char *base, int align, int depth);
 char* samr_io_r_open_domain(BOOL io, SAMR_R_OPEN_DOMAIN *r_u, char *q, char *base, int align, int depth);
 void make_samr_q_enum_dom_users(SAMR_Q_ENUM_DOM_USERS *q_e, POLICY_HND *pol,
-				uint32 enum_ctx, uint32 unk_1, uint32 size);
+				uint16 req_num_entries, uint16 unk_0,
+				uint16 acb_mask, uint16 unk_1, uint32 size);
 char* samr_io_q_enum_dom_users(BOOL io, SAMR_Q_ENUM_DOM_USERS *q_e, char *q, char *base, int align, int depth);
 void make_samr_r_enum_dom_users(SAMR_R_ENUM_DOM_USERS *r_u,
-		uint32 enum_ctx,
+		uint16 total_num_entries, uint16 unk_0,
 		uint32 num_sam_entries, struct smb_passwd pass[MAX_SAM_ENTRIES], uint32 status);
 char* samr_io_r_enum_dom_users(BOOL io, SAMR_R_ENUM_DOM_USERS *r_u, char *q, char *base, int align, int depth);
 void make_samr_q_enum_dom_aliases(SAMR_Q_ENUM_DOM_ALIASES *q_e, POLICY_HND *pol, uint32 size);
@@ -1208,12 +1209,10 @@ void make_samr_r_lookup_rids(SAMR_R_LOOKUP_RIDS *r_u,
 char* samr_io_r_lookup_rids(BOOL io, SAMR_R_LOOKUP_RIDS *r_u, char *q, char *base, int align, int depth);
 char* samr_io_q_unknown_22(BOOL io, SAMR_Q_UNKNOWN_22 *q_u, char *q, char *base, int align, int depth);
 char* samr_io_r_unknown_22(BOOL io, SAMR_R_UNKNOWN_22 *r_u, char *q, char *base, int align, int depth);
-char* samr_io_q_unknown_24(BOOL io, SAMR_Q_UNKNOWN_24 *q_u, char *q, char *base, int align, int depth);
-void make_samr_r_unknown_24(SAMR_R_UNKNOWN_24 *r_u,
-				uint16 unknown_0, NTTIME *expiry, char *mach_acct,
-				uint32 acct_ctrl,
-				uint32 unknown_id_0, uint32 status);
-char* samr_io_r_unknown_24(BOOL io, SAMR_R_UNKNOWN_24 *r_u, char *q, char *base, int align, int depth);
+char* samr_io_q_query_userinfo(BOOL io, SAMR_Q_QUERY_USERINFO *q_u, char *q, char *base, int align, int depth);
+void make_samr_r_query_userinfo(SAMR_R_QUERY_USERINFO *r_u,
+				uint16 switch_level, void *info, uint32 status);
+char* samr_io_r_query_userinfo(BOOL io, SAMR_R_QUERY_USERINFO *r_u, char *q, char *base, int align, int depth);
 char* samr_io_q_unknown_32(BOOL io, SAMR_Q_UNKNOWN_32 *q_u, char *q, char *base, int align, int depth);
 char* samr_io_r_unknown_32(BOOL io, SAMR_R_UNKNOWN_32 *r_u, char *q, char *base, int align, int depth);
 void make_samr_q_connect(SAMR_Q_CONNECT *q_u,
@@ -1333,6 +1332,47 @@ char* smb_io_netinfo_1(BOOL io, NETLOGON_INFO_1 *info, char *q, char *base, int 
 void make_netinfo_2(NETLOGON_INFO_2 *info, uint32 flags, uint32 pdc_status,
 				uint32 tc_status, char *trusted_dc_name);
 char* smb_io_netinfo_2(BOOL io, NETLOGON_INFO_2 *info, char *q, char *base, int align, int depth);
+char* smb_io_logon_hrs(BOOL io, LOGON_HRS *hrs, char *q, char *base, int align, int depth);
+void make_user_info3(USER_INFO_3 *usr,
+
+	NTTIME *logon_time,
+	NTTIME *logoff_time,
+	NTTIME *kickoff_time,
+	NTTIME *pass_last_set_time,
+	NTTIME *pass_can_change_time,
+	NTTIME *pass_must_change_time,
+
+	char *user_name,
+	char *full_name,
+	char *logon_script,
+	char *profile_path,
+	char *home_dir,
+	char *dir_drive,
+
+	uint16 logon_count,
+	uint16 bad_pw_count,
+
+	uint32 user_id,
+	uint32 group_id,
+	uint32 num_groups,
+	DOM_GID *gids,
+	uint32 user_flgs,
+
+	char sess_key[16],
+
+	char *logon_srv,
+	char *logon_dom,
+
+	char *dom_sid,
+	char *other_sids);
+char* sam_io_user_info3(BOOL io, USER_INFO_3 *usr, char *q, char *base, int align, int depth);
+void make_user_info11(USER_INFO_11 *usr,
+				NTTIME *expiry,
+				char *mach_acct,
+				uint32 rid_user,
+				uint32 rid_group,
+				uint16 acct_ctrl);
+char* smb_io_user_info11(BOOL io, USER_INFO_11 *usr, char *q, char *base, int align, int depth);
 
 /*The following definitions come from  rpc_pipes/srvparse.c  */
 
@@ -1433,7 +1473,10 @@ char *smb_errstr(char *inbuf);
 
 int pw_file_lock(char *name, int type, int secs);
 int pw_file_unlock(int fd);
-BOOL get_smbpwd_entries(struct smb_passwd *pw_buf, int *num_entries, int max_num_entries);
+BOOL get_smbpwd_entries(struct smb_passwd *pw_buf,
+				int *total_entries, int *num_entries,
+				int max_num_entries,
+				uint16 acb_mask);
 struct smb_passwd *get_smbpwd_entry(char *name, int smb_userid);
 BOOL add_smbpwd_entry(struct smb_passwd* pwd);
 BOOL mod_smbpwd_entry(struct smb_passwd* pwd);
