@@ -761,16 +761,17 @@ void make_reg_r_info(REG_R_INFO *r_r,
 				uint32 level, char *os_type,
 				uint32 status)
 {
-	char buf[512];
 	int len;
 
-	len = ascii_to_unibuf(buf, os_type, sizeof(buf)-2) - buf;
+	if (r_r == NULL || os_type == NULL) return;
+
+	len = strlen(os_type) * 2;
 
 	r_r->ptr1 = 1;
 	r_r->level = level;
 
 	r_r->ptr_type = 1;
-	make_buffer2(&(r_r->uni_type), buf, len);
+	make_buffer2(&(r_r->uni_type), os_type, len);
 
 	r_r->ptr2 = 1;
 	r_r->unknown_0 = len;

@@ -458,19 +458,17 @@ void smb_io_buffer3(char *desc,  BUFFER3 *buf3, prs_struct *ps, int depth)
 /*******************************************************************
 creates a BUFFER2 structure.
 ********************************************************************/
-void make_buffer2(BUFFER2 *str, uint8 *buf, int len)
+void make_buffer2(BUFFER2 *str, const char *buf, int len)
 {
 	ZERO_STRUCTP(str);
 
-	/* max buffer size (allocated size) */
+	/* set up string lengths. */
 	str->buf_max_len = len;
 	str->undoc       = 0;
-	str->buf_len = buf != NULL ? len : 0;
+	str->buf_len     = len;
 
-	if (buf != NULL)
-	{
-		memcpy(str->buffer, buf, MIN(str->buf_len, sizeof(str->buffer)));
-	}
+	/* store the string (wide chars) */
+	ascii_to_unistr(str->buffer, buf, len);
 }
 
 /*******************************************************************
