@@ -22,6 +22,17 @@
 
 #include "includes.h"
 
+enum {MY_PING=1000, MY_PONG, MY_EXIT};
+
+static void ping_message(void *msg_ctx, void *private, 
+			 uint32_t msg_type, servid_t src, DATA_BLOB *data)
+{
+	NTSTATUS status;
+	do {
+		status = messaging_send(msg_ctx, src, MY_PONG, data);
+	} while (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES));
+}
+
 static void pong_message(void *msg_ctx, void *private, 
 			 uint32_t msg_type, servid_t src, DATA_BLOB *data)
 {
@@ -49,7 +60,8 @@ static BOOL test_ping_speed(TALLOC_CTX *mem_ctx)
 
 	if (fork() == 0) {
 		void *msg_ctx2 = messaging_init(mem_ctx, 1, ev);
-		messaging_register(msg_ctx2, mem_ctx, -1, exit_message);
+		messaging_register(msg_ctx2, NULL, MY_PING, ping_message);
+		messaging_register(msg_ctx2, mem_ctx, MY_EXIT, exit_message);
 		event_loop_wait(ev);
 		exit(0);
 	}
@@ -58,7 +70,7 @@ static BOOL test_ping_speed(TALLOC_CTX *mem_ctx)
 
 	msg_ctx = messaging_init(mem_ctx, 2, ev);
 
-	messaging_register(msg_ctx, &pong_count, MSG_PONG, pong_message);
+	messaging_register(msg_ctx, &pong_count, MY_PONG, pong_message);
 
 	start_timer();
 
@@ -70,22 +82,22 @@ static BOOL test_ping_speed(TALLOC_CTX *mem_ctx)
 		data.data = discard_const_p(char, "testing");
 		data.length = strlen(data.data);
 
-		status1 = messaging_send(msg_ctx, 1, MSG_PING, &data);
-		status2 = messaging_send(msg_ctx, 1, MSG_PING, NULL);
+		status1 = messaging_send(msg_ctx, 1, MY_PING, &data);
+		status2 = messaging_send(msg_ctx, 1, MY_PING, NULL);
 
-		if (!NT_STATUS_IS_OK(status1)) {
-			printf("Failed to send msg1 (%s) (done %d)\n", nt_errstr(status1), ping_count);
-		} else {
+		if (NT_STATUS_IS_OK(status1)) {
 			ping_count++;
 		}
 
-		if (!NT_STATUS_IS_OK(status2)) {
-			printf("Failed to send msg2 (%s) (done %d)\n", nt_errstr(status2), ping_count);
-		} else {
+		if (NT_STATUS_IS_OK(status2)) {
 			ping_count++;
 		}
 
-		while (pong_count < ping_count) {
+		while (ping_count > pong_count + 20) {
+			event_loop_once(ev);
+			event_loop_once(ev);
+			event_loop_once(ev);
+			event_loop_once(ev);
 			event_loop_once(ev);
 		}
 	}
@@ -97,7 +109,7 @@ static BOOL test_ping_speed(TALLOC_CTX *mem_ctx)
 	}
 
 	printf("sending exit\n");
-	messaging_send(msg_ctx, 1, -1, NULL);
+	messaging_send(msg_ctx, 1, MY_EXIT, NULL);
 	event_loop_once(ev);
 
 	if (ping_count != pong_count) {
