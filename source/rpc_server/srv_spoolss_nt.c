@@ -6523,14 +6523,15 @@ WERROR _spoolss_addform( pipes_struct *p, SPOOL_Q_ADDFORM *q_u, SPOOL_R_ADDFORM 
 		return WERR_BADFID;
 	}
 
-	/* 
-	 * FIXME!!  Feels like there should be an access check here, but haven't
-	 * had time to verify.  --jerry
-	 */
-
-
 	if (!get_printer_snum(p,handle, &snum))
                 return WERR_BADFID;
+
+	if (!print_access_check(NULL, snum, PRINTER_ACCESS_ADMINISTER)) {
+		DEBUG(3, ("security descriptor change denied by existing "
+			  "security descriptor\n"));
+		result = ERROR_ACCESS_DENIED;
+		goto done;
+	}
 		
 	/* can't add if builtin */
 	if (get_a_builtin_ntform(&form->name,&tmpForm)) {
