@@ -343,7 +343,11 @@ v5_loop (krb5_context context,
     krb5_data in, out, msg, reply;
 
     for (;;) {
-	krb5_net_read(context, &fd, tmp, 4);
+	n = krb5_net_read(context, &fd, tmp, 4);
+	if (n < 0)
+	    krb5_err (context, 1, ret, "krb5_net_read");
+	if (n == 0)
+	    exit (0);
 	_krb5_get_int (tmp, &len, 4);
 
 	ret = krb5_data_alloc(&in, len);
@@ -355,9 +359,9 @@ v5_loop (krb5_context context,
 	    exit (0);
 	if(n < 0)
 	    krb5_errx(context, 1, "read error: %d", errno);
-	if(n < in.length)
-	    krb5_errx(context, 1, "short read (%ld)", (long int)n);
 	ret = krb5_rd_priv(context, ac, &in, &out, NULL);
+	if (ret)
+	    krb5_err(context, 1, ret, "krb5_rd_priv");
 	krb5_data_free(&in);
 	kadmind_dispatch(kadm_handle, &out, &msg);
 	krb5_data_free(&out);
@@ -394,11 +398,15 @@ handle_v5(krb5_context context,
     krb5_principal server;
     char *client;
     void *kadm_handle;
+    ssize_t n;
 
     if (len != sizeof(KRB5_SENDAUTH_VERSION))
 	krb5_errx(context, 1, "bad sendauth len %d", len);
-    if(krb5_net_read(context, &fd, version, len) != len)
+    n = krb5_net_read(context, &fd, version, len);
+    if (n < 0)
 	krb5_err (context, 1, errno, "reading sendauth version");
+    if (n == 0)
+	krb5_errx (context, 1, "EOF reading sendauth version");
     if(memcmp(version, KRB5_SENDAUTH_VERSION, len) != 0)
 	krb5_errx(context, 1, "bad sendauth version %.8s", version);
 	
@@ -441,8 +449,6 @@ kadmind_loop(krb5_context context,
 	exit(0);
     if(n < 0)
 	krb5_errx(context, 1, "read error: %d", errno);
-    if(n < 4)
-	krb5_errx(context, 1, "short read (%ld)", (long int)n);
     _krb5_get_int(tmp, &len, 4);
     if(len > 0xffff && (len & 0xffff) == ('K' << 8) + 'A') {
 	len >>= 16;
