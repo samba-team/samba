@@ -438,4 +438,115 @@ out:
     return 0;
 }
 
+
+#define ETYPE_DES_PCBC 17 /* XXX */
+
+krb5_error_code
+encrypt_v4_ticket(void *buf, size_t len, des_cblock *key, EncryptedData *reply)
+{
+    des_key_schedule schedule;
+
+    reply->etype = ETYPE_DES_PCBC;
+    reply->kvno = NULL;
+    reply->cipher.length = len;
+    reply->cipher.data = malloc(len);
+    if(reply->cipher.data == NULL)
+	return ENOMEM;
+    des_set_key(key, schedule);
+    des_pcbc_encrypt(buf,
+		     reply->cipher.data,
+		     len,
+		     schedule,
+		     key,
+		     DES_ENCRYPT);
+    memset(schedule, 0, sizeof(schedule));
+    return 0;
+}
+
+krb5_error_code
+encode_v4_ticket(void *buf, size_t len, EncTicketPart *et, 
+		 PrincipalName *service, size_t *size)
+{
+    unsigned char *p = buf;
+    krb5_storage *sp;
+    krb5_error_code ret;
+    char name[40], inst[40], realm[40];
+    char sname[40], sinst[40];
+
+    {
+	krb5_principal princ;
+	principalname2krb5_principal(&princ,
+				     *service,
+				     et->crealm);
+	ret = krb5_524_conv_principal(context, 
+				      princ,
+				      sname,
+				      sinst,
+				      realm);
+	krb5_free_principal(context, princ);
+	if(ret)
+	    return ret;
+
+	principalname2krb5_principal(&princ,
+				     et->cname,
+				     et->crealm);
+				     
+	ret = krb5_524_conv_principal(context, 
+				      princ,
+				      name,
+				      inst,
+				      realm);
+	krb5_free_principal(context, princ);
+    }
+    if(ret)
+	return ret;
+
+    sp = krb5_storage_emem();
+    
+    krb5_store_int8(sp, 0); /* flags */
+    krb5_store_stringz(sp, name);
+    krb5_store_stringz(sp, inst);
+    krb5_store_stringz(sp, realm);
+    {
+	unsigned char tmp[4] = { 0, 0, 0, 0 };
+	int i;
+	if(et->caddr){
+	    for(i = 0; i < et->caddr->len; i++)
+		if(et->caddr->val[i].addr_type == AF_INET &&
+		   et->caddr->val[i].address.length == 4){
+		    memcpy(tmp, et->caddr->val[i].address.data, 4);
+		    break;
+		}
+	}
+	sp->store(sp, tmp, sizeof(tmp));
+    }
+
+    if(et->key.keytype != KEYTYPE_DES || 
+       et->key.keyvalue.length != 8)
+	return -1;
+    sp->store(sp, et->key.keyvalue.data, 8);
+    
+    {
+	time_t start = et->starttime ? *et->starttime : et->authtime;
+	krb5_store_int8(sp, krb_time_to_life(start, et->endtime));
+	krb5_store_int32(sp, start);
+    }
+
+    krb5_store_stringz(sp, sname);
+    krb5_store_stringz(sp, sinst);
+    
+    {
+	krb5_data data;
+	krb5_storage_to_data(sp, &data);
+	krb5_storage_free(sp);
+	*size = (data.length + 7) & ~7; /* pad to 8 bytes */
+	if(*size > len)
+	    return -1;
+	memset(buf - *size + 1, 0, *size);
+	memcpy(buf - *size + 1, data.data, data.length);
+	krb5_data_free(&data);
+    }
+    return 0;
+}
+
 #endif
