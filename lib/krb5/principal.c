@@ -543,10 +543,11 @@ struct v4_name_convert {
     const char *from;
     const char *to; 
 } default_v4_name_convert[] = {
-    { "ftp", "ftp" },
-    { "hprop", "hprop" },
-    { "pop", "pop" },
-    { "rcmd", "host" },
+    { "ftp",	"ftp" },
+    { "hprop",	"hprop" },
+    { "pop",	"pop" },
+    { "imap",	"imap" }
+    { "rcmd",	"host" },
     { NULL, NULL }
 };
 
@@ -658,7 +659,17 @@ krb5_425_conv_principal_ext(krb5_context context,
 	    inst = hp->h_name;
 #endif
 	if(inst) {
-	    ret = krb5_make_principal(context, &pr, realm, name, inst, NULL);
+	    char *low_inst = strdup(inst);
+
+	    if (low_inst == NULL) {
+#ifdef USE_RESOLVER
+		dns_free_data(r);
+#endif
+		return ENOMEM;
+	    }
+	    ret = krb5_make_principal(context, &pr, realm, name, low_inst,
+				      NULL);
+	    free (low_inst);
 	    if(ret == 0) {
 		if(func == NULL || (*func)(context, pr)){
 		    *princ = pr;
