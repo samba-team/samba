@@ -131,7 +131,9 @@ static int print_user_info (char *username, BOOL verbosity, BOOL smbpwdstyle)
 	SAM_ACCOUNT *sam_pwent=NULL;
 	BOOL ret;
 	
-	pdb_init_sam(&sam_pwent);
+	if (!NT_STATUS_IS_OK(pdb_init_sam (&sam_pwent))) {
+		return -1;
+	}
 	
 	ret = pdb_getsampwnam (sam_pwent, username);
 
@@ -283,7 +285,9 @@ static int new_machine (char *machinename)
 	char name[16];
 	char *password = NULL;
 	
-	pdb_init_sam (&sam_pwent);
+	if (!NT_STATUS_IS_OK(pdb_init_sam (&sam_pwent))) {
+		return -1;
+	}
 
 	if (machinename[strlen (machinename) -1] == '$')
 		machinename[strlen (machinename) -1] = '\0';
@@ -317,9 +321,11 @@ static int new_machine (char *machinename)
 
 static int delete_user_entry (char *username)
 {
-	SAM_ACCOUNT *samaccount;
+	SAM_ACCOUNT *samaccount = NULL;
 
-	pdb_init_sam(&samaccount);
+	if (!NT_STATUS_IS_OK(pdb_init_sam (&samaccount))) {
+		return -1;
+	}
 
 	if (!pdb_getsampwnam(samaccount, username)) {
 		fprintf (stderr, "user %s does not exist in the passdb\n", username);
@@ -336,13 +342,15 @@ static int delete_user_entry (char *username)
 static int delete_machine_entry (char *machinename)
 {
 	char name[16];
-	SAM_ACCOUNT *samaccount;
+	SAM_ACCOUNT *samaccount = NULL;
 	
 	safe_strcpy (name, machinename, 16);
 	if (name[strlen(name)] != '$')
 		safe_strcat (name, "$", 16);
 
-	pdb_init_sam(&samaccount);
+	if (!NT_STATUS_IS_OK(pdb_init_sam (&samaccount))) {
+		return -1;
+	}
 
 	if (!pdb_getsampwnam(samaccount, name)) {
 		fprintf (stderr, "user %s does not exist in the passdb\n", name);
