@@ -215,6 +215,59 @@ void locking_close_file(files_struct *fsp)
 }
 
 /****************************************************************************
+ Delete a record if it is for a dead process, if check_self is true, then
+ delete any records belonging to this pid also (there shouldn't be any).
+ This function is only called on locking startup and shutdown.
+****************************************************************************/
+
+static int delete_fn(TDB_CONTEXT *ttdb, TDB_DATA kbuf, TDB_DATA dbuf, void *state)
+{
+	struct locking_data *data;
+	share_mode_entry *shares;
+	int i, del_count=0;
+	pid_t mypid = sys_getpid();
+	BOOL check_self = *(BOOL *)state;
+
+	tdb_chainlock(tdb, kbuf);
+
+	data = (struct locking_data *)dbuf.dptr;
+	shares = (share_mode_entry *)(dbuf.dptr + sizeof(*data));
+
+	for (i=0;i<data->num_share_mode_entries;) {
+
+		if (check_self && (shares[i].pid == mypid)) {
+			DEBUG(0,("locking : delete_fn. LOGIC ERROR ! Shutting down and a record for my pid (%u) exists !\n",
+					(unsigned int)shares[i].pid ));
+		} else if (!process_exists(shares[i].pid)) {
+			DEBUG(0,("locking : delete_fn. LOGIC ERROR ! Entry for pid %u and it no longer exists !\n",
+					(unsigned int)shares[i].pid ));
+		} else {
+			/* Process exists, leave this record alone. */
+			i++;
+			continue;
+		}
+
+		data->num_share_mode_entries--;
+		memmove(&shares[i], &shares[i+1],
+		dbuf.dsize - (sizeof(*data) + (i+1)*sizeof(*shares)));
+		del_count++;
+
+	}
+
+	/* the record has shrunk a bit */
+	dbuf.dsize -= del_count * sizeof(*shares);
+
+	/* store it back in the database */
+	if (data->num_share_mode_entries == 0)
+		tdb_delete(ttdb, kbuf);
+	else
+		tdb_store(ttdb, kbuf, dbuf, TDB_REPLACE);
+
+	tdb_chainunlock(tdb, kbuf);
+	return 0;
+}
+
+/****************************************************************************
  Initialise the locking functions.
 ****************************************************************************/
 
@@ -222,6 +275,8 @@ static int open_read_only;
 
 BOOL locking_init(int read_only)
 {
+	BOOL check_self = False;
+
 	brl_init(read_only);
 
 	if (tdb)
@@ -240,6 +295,10 @@ BOOL locking_init(int read_only)
 	if (!posix_locking_init(read_only))
 		return False;
 
+	/* delete any dead locks */
+	if (!read_only)
+		tdb_traverse(tdb, delete_fn, &check_self);
+
 	open_read_only = read_only;
 
 	return True;
@@ -248,11 +307,23 @@ BOOL locking_init(int read_only)
 /*******************************************************************
  Deinitialize the share_mode management.
 ******************************************************************/
+
 BOOL locking_end(void)
 {
+	BOOL check_self = True;
+
 	brl_shutdown(open_read_only);
-	if (tdb && tdb_close(tdb) != 0)
-		return False;
+	if (tdb) {
+
+		/* delete any dead locks */
+
+		if (!open_read_only)
+			tdb_traverse(tdb, delete_fn, &check_self);
+
+		if (tdb_close(tdb) != 0)
+			return False;
+	}
+
 	return True;
 }
 

@@ -135,16 +135,16 @@ static int delete_fn(TDB_CONTEXT *ttdb, TDB_DATA kbuf, TDB_DATA dbuf, void *stat
 		/* If check_self is true we want to remove our own records. */
 		if (check_self && (mypid == lock->context.pid)) {
 
-			DEBUG(0,("locking : delete_fn. LOGIC ERROR ! Shutting down and a record for my pid (%u) exists !\n",
+			DEBUG(0,("brlock : delete_fn. LOGIC ERROR ! Shutting down and a record for my pid (%u) exists !\n",
 					(unsigned int)lock->context.pid ));
 
 		} else if (process_exists(lock->context.pid)) {
 
-			DEBUG(10,("locking : delete_fn. pid %u exists.\n", (unsigned int)lock->context.pid ));
+			DEBUG(10,("brlock : delete_fn. pid %u exists.\n", (unsigned int)lock->context.pid ));
 			continue;
 		}
 
-		DEBUG(10,("locking : delete_fn. Deleting record for process %u\n",
+		DEBUG(10,("brlock : delete_fn. Deleting record for process %u\n",
 				(unsigned int)lock->context.pid ));
 
 		if (count > 1 && i < count-1) {
