@@ -129,7 +129,7 @@ NTSTATUS cli_samr_close(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 NTSTATUS cli_samr_open_domain(struct cli_state *cli, TALLOC_CTX *mem_ctx,
                               POLICY_HND *connect_pol, uint32 access_mask, 
-                              DOM_SID *domain_sid, POLICY_HND *domain_pol)
+                              const DOM_SID *domain_sid, POLICY_HND *domain_pol)
 {
 	prs_struct qbuf, rbuf;
 	SAMR_Q_OPEN_DOMAIN q;
@@ -940,7 +940,7 @@ NTSTATUS cli_samr_lookup_names(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /* Create a domain user */
 
 NTSTATUS cli_samr_create_dom_user(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
-                                  POLICY_HND *domain_pol, char *acct_name,
+                                  POLICY_HND *domain_pol, const char *acct_name,
                                   uint32 acb_info, uint32 unknown, 
                                   POLICY_HND *user_pol, uint32 *rid)
 {
