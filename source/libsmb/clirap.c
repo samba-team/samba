@@ -655,12 +655,27 @@ BOOL cli_qpathinfo_basic( struct cli_state *cli, const char *name,
 	char param[sizeof(pstring)+6];
 	char *rparam=NULL, *rdata=NULL;
 	char *p;
+	pstring path;
+	int len;
+	
+	/* send full paths to dfs root shares */
+	
+	if ( cli->dfsroot )
+		pstr_sprintf(path, "\\%s\\%s\\%s", cli->desthost, cli->share, name );
+	else
+		pstrcpy( path, name );
+	
+	/* cleanup */
+	
+	len = strlen( path );
+	if ( path[len] == '\\' )
+		path[len] = '\0';
 
 	p = param;
 	memset(p, 0, 6);
 	SSVAL(p, 0, SMB_QUERY_FILE_BASIC_INFO);
 	p += 6;
-	p += clistr_push(cli, p, name, sizeof(pstring)-6, STR_TERMINATE);
+	p += clistr_push(cli, p, path, sizeof(pstring)-6, STR_TERMINATE);
 	param_len = PTR_DIFF(p, param);
 
 	if (!cli_send_trans(cli, SMBtrans2,
