@@ -320,7 +320,7 @@ change_password (krb5_context context,
 	password_data.length = sizeof(buf1);
 
 	prompt.hidden = 1;
-	prompt.prompt = "New password";
+	prompt.prompt = "New password: ";
 	prompt.reply  = &password_data;
 
 	ret = (*prompter) (context, data, "Changing password", 1, &prompt);
@@ -331,7 +331,7 @@ change_password (krb5_context context,
 	password_data.length = sizeof(buf2);
 
 	prompt.hidden = 1;
-	prompt.prompt = "Repeat new password";
+	prompt.prompt = "Repeat new password: ";
 	prompt.reply  = &password_data;
 
 	ret = (*prompter) (context, data, "Changing password", 1, &prompt);
