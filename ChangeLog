@@ -1,9 +1,16 @@
+2005-03-15  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/crypto.c: more static and unsigned issues
+
+	* lib/krb5/crypto.c: fix signedness issues, prompted by report of
+	Magnus Ahltorp
+
 2005-03-13  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/krb5_keytab.3: more text about how to free returned
 	resources
 
-2005-03-10  Love  <lha@kth.se>
+2005-03-10  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/pkinit.c: handle the -25 generation path
 
@@ -11,13 +18,13 @@
 	
 	* lib/krb5/pkinit.c: fold in pk-init-25 asn1 changes
 	
-2005-03-09  Love  <lha@kth.se>
+2005-03-09  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kdc/pkinit.c: use generated oid's
 	
 	* lib/krb5/pkinit.c: use generated oid's
 	
-2005-03-08  Love  <lha@kth.se>
+2005-03-08  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kdc/pkinit.c: update to the asn1 structures used in -25's
 
