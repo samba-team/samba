@@ -48,8 +48,9 @@ char *keyfile;
 static char *max_request_str;
 size_t max_request;
 time_t kdc_warn_pwexpire;
-char *database;
-HDB *db;
+char **databases;
+HDB **db;
+int num_db;
 char *port_str;
 int enable_http = -1;
 krb5_boolean encode_as_rep_as_tgs_rep; /* bug compatibility */
@@ -85,7 +86,7 @@ static struct getargs args[] = {
 	"max size for a kdc-request", "size"
     },
     {
-	"database",	'd', 	arg_string, &database,
+	"database",	'd', 	arg_string, &databases,
 	"location of database", "database"
     },
     { "enable-http", 'H', arg_flag, &enable_http, "turn on HTTP support" },
@@ -157,10 +158,8 @@ configure(int argc, char **argv)
 	    keyfile = strdup(p);
     }
 
-    if(database == NULL){
-	p = krb5_config_get_string (context, cf, "kdc", "database", NULL);
-	if(p) database = strdup(p);
-    }
+    if(databases == NULL)
+	databases = krb5_config_get_strings (context, cf, "kdc", "database", NULL);
     
     if(max_request_str){
 	max_request = parse_bytes(max_request_str, NULL);
