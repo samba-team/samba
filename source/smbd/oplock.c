@@ -670,7 +670,7 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, unsigned long file_id, 
 	 * Now comes the horrid part. We must send an oplock break to the client,
 	 * and then process incoming messages until we get a close or oplock release.
 	 * At this point we know we need a new inbuf/outbuf buffer pair.
-	 * We cannot use these staticaly as we may recurse into here due to
+	 * We cannot use these statically as we may recurse into here due to
 	 * messages crossing on the wire.
 	 */
 
