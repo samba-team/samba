@@ -140,7 +140,7 @@ static int parse_quota_set(pstring set_str, pstring username_str, enum SMB_QUOTA
 	BOOL enable = False;
 	BOOL deny = False;
 	
-	if (strncasecmp(set_str,"UQLIM:",6)==0) {
+	if (strnequal(set_str,"UQLIM:",6)) {
 		p += 6;
 		*qtype = SMB_USER_QUOTA_TYPE;
 		*cmd = QUOTA_SETLIM;
@@ -154,12 +154,12 @@ static int parse_quota_set(pstring set_str, pstring username_str, enum SMB_QUOTA
 		
 		fstrcpy(username_str,p);
 		p = p2;
-	} else if (strncasecmp(set_str,"FSQLIM:",7)==0) {
+	} else if (strnequal(set_str,"FSQLIM:",7)) {
 		p +=7;
 		*qtype = SMB_USER_FS_QUOTA_TYPE;
 		*cmd = QUOTA_SETLIM;
 		todo = PARSE_LIM;
-	} else if (strncasecmp(set_str,"FSQFLAGS:",9)==0) {
+	} else if (strnequal(set_str,"FSQFLAGS:",9)) {
 		p +=9;
 		todo = PARSE_FLAGS;
 		*qtype = SMB_USER_FS_QUOTA_TYPE;
@@ -189,13 +189,13 @@ static int parse_quota_set(pstring set_str, pstring username_str, enum SMB_QUOTA
 					p2++;
 				}
 
-				if (strncasecmp(p,"QUOTA_ENABLED",13)==0) {
+				if (strnequal(p,"QUOTA_ENABLED",13)) {
 					enable = True;
-				} else if (strncasecmp(p,"DENY_DISK",9)==0) {
+				} else if (strnequal(p,"DENY_DISK",9)) {
 					deny = True;
-				} else if (strncasecmp(p,"LOG_SOFTLIMIT",13)==0) {
+				} else if (strnequal(p,"LOG_SOFTLIMIT",13)) {
 					pqt->qflags |= QUOTAS_LOG_THRESHOLD;
-				} else if (strncasecmp(p,"LOG_HARDLIMIT",13)==0) {
+				} else if (strnequal(p,"LOG_HARDLIMIT",13)) {
 					pqt->qflags |= QUOTAS_LOG_LIMIT;
 				} else {
 					return -1;

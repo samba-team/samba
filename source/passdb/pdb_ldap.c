@@ -356,7 +356,7 @@ static BOOL get_unix_attributes (struct ldapsam_privates *ldap_state,
 	}
 
 	for (values=ldap_values;*values;values++) {
-		if (strcasecmp(*values, LDAP_OBJ_POSIXACCOUNT ) == 0) {
+		if (strequal(*values, LDAP_OBJ_POSIXACCOUNT )) {
 			break;
 		}
 	}

@@ -86,7 +86,7 @@ static NTSTATUS check_name_to_ntstatus_security(const struct auth_context *auth_
 	long error_num;
 	fstrcpy(user, user_info->smb_name.str);
 	
-	if (strncasecmp("NT_STATUS", user, strlen("NT_STATUS")) == 0) {
+	if (strnequal("NT_STATUS", user, strlen("NT_STATUS"))) {
 		strupper_m(user);
 		return nt_status_string_to_code(user);
 	}

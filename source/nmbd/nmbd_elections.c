@@ -247,7 +247,7 @@ static BOOL win_election(struct work_record *work, int version,
 	if (timeup < mytimeup)
 		return(True);
 
-	if (strcasecmp(global_myname(), server_name) > 0)
+	if (StrCaseCmp(global_myname(), server_name) > 0)
 		return(False);
   
 	return(True);
