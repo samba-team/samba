@@ -3436,6 +3436,8 @@ df $1 | tail -1 | awk '{print $2" "$4}'
 		<manvolnum>8</manvolnum></citerefentry> man page for more information on how 
 		to accmplish this.
 		</para>
+		</listitem>
+		</varlistentry>
 	
 		<varlistentry>
 		<term><anchor id="LDAPDELETEDN"/>ldap del only sam attr (G)</term>
