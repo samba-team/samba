@@ -223,6 +223,9 @@ SMB_INCLUDE_M4(rpc_server/config.m4)
 SMB_INCLUDE_M4(lib/registry/config.m4)
 SMB_INCLUDE_M4(torture/config.m4)
 SMB_INCLUDE_M4(scripting/config.m4)
+SMB_INCLUDE_M4(client/config.m4)
+SMB_INCLUDE_M4(utils/config.m4)
+SMB_INCLUDE_M4(smbd/config.m4)
 
 ALLLIBS_LIBS="$LIBS"
 ALLLIBS_CFLAGS="$CFLAGS"
@@ -236,35 +239,6 @@ SMB_EXT_LIB(ALLLIBS,
 		[${ALLLIBS_CFLAGS}],
 		[${ALLLIBS_CPPFLAGS}],
 		[${ALLLIBS_LDFLAGS}])
-
-SMB_INCLUDE_M4(smbd/config.m4)
-
-SMB_BINARY(smbclient, [ALL], [BIN], 
-	[client/client.o
-	client/clitar.o],
-	[],
-	[LIBSMB CONFIG LIBBASIC LIBCMDLINE])
-
-SMB_BINARY(ndrdump, [ALL], [BIN],
-	[utils/ndrdump.o],
-	[],
-	[LIBSMB CONFIG LIBBASIC LIBCMDLINE])
-
-SMB_BINARY(gentest, [ALL], [BIN],
-	[torture/gentest.o
-	torture/torture_util.o],
-	[],
-	[LIBSMB CONFIG LIBBASIC LIBCMDLINE])
-
-SMB_BINARY(masktest, [ALL], [BIN], 
-	[torture/masktest.o],
-	[],
-	[LIBSMB CONFIG LIBBASIC LIBCMDLINE])
-
-SMB_BINARY(locktest, [ALL], [BIN],
-	[torture/locktest.o],
-	[],
-	[LIBSMB CONFIG LIBBASIC LIBCMDLINE])
 
 AC_DEFINE_UNQUOTED(STRING_STATIC_MODULES, "$string_static_modules", [String list of builtin modules])
 
