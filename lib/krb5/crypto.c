@@ -2209,8 +2209,8 @@ krb5_get_wrapped_length (krb5_context context,
     size_t blocksize = et->blocksize;
     size_t res;
 
-    res = et->confoundersize + et->cksumtype->checksumsize + data_len;
-    res = (res + blocksize - 1) / blocksize * blocksize;
+    res = (data_len + blocksize - 1) / blocksize * blocksize;
+    res = res + et->confoundersize + et->cksumtype->checksumsize;
     return res;
 }
 
