@@ -50,6 +50,7 @@ void smbw_init(void)
 	extern FILE *dbf;
 	char *p;
 	int eno;
+	pstring line;
 
 	if (initialised) return;
 	initialised = 1;
@@ -96,13 +97,16 @@ void smbw_init(void)
 		DEBUG(2,("SMBW_PREFIX is %s\n", smbw_prefix));
 	}
 
-	if ((p=getenv(SMBW_PWD_ENV))) {
-		pstrcpy(smbw_cwd, p);
-		DEBUG(4,("Initial cwd from smbw_cwd is %s\n", smbw_cwd));
-	} else {
-		sys_getwd(smbw_cwd);
-		DEBUG(4,("Initial cwd from getwd is %s\n", smbw_cwd));
+	slprintf(line,sizeof(line)-1,"PWD_%d", getpid());
+	
+	p = smbw_getshared(line);
+	if (!p) {
+		DEBUG(0,("ERROR: %s is not set\n", line));
+		exit(1);
 	}
+	pstrcpy(smbw_cwd, p);
+	DEBUG(4,("Initial cwd is %s\n", smbw_cwd));
+
 	smbw_busy--;
 
 	set_maxfiles(SMBW_MAX_OPEN);
@@ -1325,6 +1329,7 @@ int smbw_fork(void)
 	pid_t child;
 	int p[2];
 	char c=0;
+	pstring line;
 
 	struct smbw_file *file, *next_file;
 	struct smbw_server *srv, *next_srv;
@@ -1355,6 +1360,9 @@ int smbw_fork(void)
 		next_srv = srv->next;
 		smbw_srv_close(srv);
 	}
+
+	slprintf(line,sizeof(line)-1,"PWD_%d", getpid());
+	smbw_setshared(line,smbw_cwd);
 
 	/* unblock the parent */
 	write(p[1], &c, 1);

@@ -28,8 +28,6 @@
 #define SMBW_FILE_MODE (S_IFREG | 0444)
 #define SMBW_DIR_MODE (S_IFDIR | 0555)
 
-#define SMBW_PWD_ENV "PWD"
-
 struct smbw_server {
 	struct smbw_server *next, *prev;
 	struct cli_state cli;
