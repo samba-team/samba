@@ -186,10 +186,9 @@ static enum nss_status fill_pwent(struct passwd *result,
    Return NSS_STATUS_TRYAGAIN if we run out of memory. */
 
 static int fill_grent(struct group *result, 
-                      struct winbindd_response *response,
+                      struct winbindd_gr *gr,
                       char **buffer, int *buflen)
 {
-	struct winbindd_gr *gr = &response->data.gr;
 	char *tmp_data;
 	fstring name;
 	int i;
@@ -221,6 +220,23 @@ static int fill_grent(struct group *result,
 	/* gid */
 
 	result->gr_gid = gr->gr_gid;
+
+	gr->num_gr_mem = 0;
+	
+	if ((result->gr_mem = 
+	     (char **)get_static(buffer, buflen, (gr->num_gr_mem + 1) * 
+				 sizeof(char *))) == NULL) {
+
+		/* Out of memory */
+
+		return NSS_STATUS_TRYAGAIN;
+	}
+
+	(result->gr_mem)[0] = NULL;
+
+	return NSS_STATUS_SUCCESS;	
+
+#if 0
 
 	/* Group membership */
 
@@ -270,8 +286,10 @@ static int fill_grent(struct group *result,
 	/* Terminate list */
 
 	(result->gr_mem)[i] = NULL;
-    
+
 	return NSS_STATUS_SUCCESS;
+#endif
+
 }
 
 /*
@@ -280,8 +298,8 @@ static int fill_grent(struct group *result,
 
 static struct winbindd_response getpwent_response;
 
-static int ndx_pw_cache;                 /* Current index into cache */
-static int num_pw_cache;                 /* Current size of cache */
+static int ndx_pw_cache;                 /* Current index into pwd cache */
+static int num_pw_cache;                 /* Current size of pwd cache */
 
 /* Rewind "file pointer" to start of ntdom password database */
 
@@ -315,7 +333,7 @@ _nss_winbind_endpwent(void)
 
 enum nss_status
 _nss_winbind_getpwent_r(struct passwd *result, char *buffer, 
-                      size_t buflen, int *errnop)
+			size_t buflen, int *errnop)
 {
 	enum nss_status ret;
 	struct winbindd_request request;
@@ -328,7 +346,7 @@ _nss_winbind_getpwent_r(struct passwd *result, char *buffer,
 		goto return_result;
 	}
 
-	/* Else call winbind to get a bunch of entries */
+	/* Else call winbindd to get a bunch of entries */
 	
 	if (num_pw_cache > 0) {
 		free_response(&getpwent_response);
@@ -377,7 +395,7 @@ _nss_winbind_getpwent_r(struct passwd *result, char *buffer,
 		called_again = False;
 		ndx_pw_cache++;
 
-		/* We've finished with this lot of results so free cache */
+		/* If we've finished with this lot of results free cache */
 
 		if (ndx_pw_cache == num_pw_cache) {
 			ndx_pw_cache = num_pw_cache = 0;
@@ -507,11 +525,21 @@ _nss_winbind_getpwnam_r(const char *name, struct passwd *result, char *buffer,
  * NSS group functions
  */
 
+static struct winbindd_response getgrent_response;
+
+static int ndx_gr_cache;                 /* Current index into grp cache */
+static int num_gr_cache;                 /* Current size of grp cache */
+
 /* Rewind "file pointer" to start of ntdom group database */
 
 enum nss_status
 _nss_winbind_setgrent(void)
 {
+	if (num_gr_cache > 0) {
+		ndx_gr_cache = num_gr_cache = 0;
+		free_response(&getgrent_response);
+	}
+
 	return winbindd_request(WINBINDD_SETGRENT, NULL, NULL);
 }
 
@@ -520,56 +548,90 @@ _nss_winbind_setgrent(void)
 enum nss_status
 _nss_winbind_endgrent(void)
 {
+	if (num_gr_cache > 0) {
+		ndx_gr_cache = num_gr_cache = 0;
+		free_response(&getgrent_response);
+	}
+
 	return winbindd_request(WINBINDD_ENDGRENT, NULL, NULL);
 }
 
 /* Get next entry from ntdom group database */
+
+#define MAX_GETGRENT_USERS 250
 
 enum nss_status
 _nss_winbind_getgrent_r(struct group *result,
 			char *buffer, size_t buflen, int *errnop)
 {
 	enum nss_status ret;
-	static struct winbindd_response response;
-	static int keep_response;
+	static struct winbindd_request request;
+	static int called_again;
 
-	/* If our static buffer needs to be expanded we are called again */
+	/* Return an entry from the cache if we have one, or if we are
+	   called again because we exceeded our static buffer.  */
 
-	if (!keep_response) {
+	if ((ndx_gr_cache < num_gr_cache) || called_again) {
+		goto return_result;
+	}
 
-		/* Call for the first time */
+	/* Else call winbindd to get a bunch of entries */
+	
+	if (num_gr_cache > 0) {
+		free_response(&getgrent_response);
+	}
 
-		ZERO_STRUCT(response);
-		
-		ret = winbindd_request(WINBINDD_GETGRENT, NULL, &response);
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(getgrent_response);
 
-		if (ret == NSS_STATUS_SUCCESS) {
-			ret = fill_grent(result, &response, &buffer, &buflen);
+	request.data.num_entries = MAX_GETGRENT_USERS;
 
-			if (ret == NSS_STATUS_TRYAGAIN) {
-				keep_response = True;
-				*errnop = ERANGE;
-				return ret;
-			}
+	ret = winbindd_request(WINBINDD_GETGRENT, &request, 
+			       &getgrent_response);
+
+	if (ret == NSS_STATUS_SUCCESS) {
+		struct winbindd_gr *gr_cache;
+
+		/* Fill cache */
+
+		ndx_gr_cache = 0;
+		num_gr_cache = getgrent_response.data.num_entries;
+
+		/* Return a result */
+
+	return_result:
+
+		gr_cache = getgrent_response.extra_data;
+
+		/* Check data is valid */
+
+		if (gr_cache == NULL) {
+			return NSS_STATUS_NOTFOUND;
 		}
 
-	} else {
+		ret = fill_grent(result, &gr_cache[ndx_gr_cache],
+				 &buffer, &buflen);
 		
-		/* We've been called again */
-
-		ret = fill_grent(result, &response, &buffer, &buflen);
+		/* Out of memory - try again */
 
 		if (ret == NSS_STATUS_TRYAGAIN) {
-			keep_response = True;
+			called_again = True;
 			*errnop = ERANGE;
 			return ret;
 		}
 
-		keep_response = False;
-		*errnop = 0;            
+		*errnop = 0;
+		called_again = False;
+		ndx_gr_cache++;
+
+		/* If we've finished with this lot of results free cache */
+
+		if (ndx_gr_cache == num_gr_cache) {
+			ndx_gr_cache = num_gr_cache = 0;
+			free_response(&getgrent_response);
+		}
 	}
 
-	free_response(&response);
 	return ret;
 }
 
@@ -603,7 +665,8 @@ _nss_winbind_getgrnam_r(const char *name,
 				       &request, &response);
 
 		if (ret == NSS_STATUS_SUCCESS) {
-			ret = fill_grent(result, &response, &buffer, &buflen);
+			ret = fill_grent(result, &response.data.gr, 
+					 &buffer, &buflen);
 
 			if (ret == NSS_STATUS_TRYAGAIN) {
 				keep_response = True;
@@ -616,7 +679,7 @@ _nss_winbind_getgrnam_r(const char *name,
 		
 		/* We've been called again */
 		
-		ret = fill_grent(result, &response, &buffer, &buflen);
+		ret = fill_grent(result, &response.data.gr, &buffer, &buflen);
 		
 		if (ret == NSS_STATUS_TRYAGAIN) {
 			keep_response = True;
@@ -659,7 +722,8 @@ _nss_winbind_getgrgid_r(gid_t gid,
 				       &response);
 
 		if (ret == NSS_STATUS_SUCCESS) {
-			ret = fill_grent(result, &response, &buffer, &buflen);
+			ret = fill_grent(result, &response.data.gr, 
+					 &buffer, &buflen);
 
 			if (ret == NSS_STATUS_TRYAGAIN) {
 				keep_response = True;
@@ -672,7 +736,7 @@ _nss_winbind_getgrgid_r(gid_t gid,
 
 		/* We've been called again */
 
-		ret = fill_grent(result, &response, &buffer, &buflen);
+		ret = fill_grent(result, &response.data.gr, &buffer, &buflen);
 
 		if (ret == NSS_STATUS_TRYAGAIN) {
 			keep_response = True;

@@ -52,11 +52,12 @@ struct winbindd_cli_state {
 /* State between get{pw,gr}ent() calls */
 
 struct getent_state {
-    struct getent_state *prev, *next;
-    void *sam_entries;
-    uint32 sam_entry_index, num_sam_entries;  
-    struct winbindd_domain *domain;
-    BOOL got_sam_entries;
+	struct getent_state *prev, *next;
+	void *sam_entries;
+	uint32 sam_entry_index, num_sam_entries;
+	uint32 dispinfo_ndx;
+	BOOL got_all_sam_entries, got_sam_entries;
+	struct winbindd_domain *domain;
 };
 
 /* Storage for cached getpwent() user entries */

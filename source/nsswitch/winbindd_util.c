@@ -24,16 +24,6 @@
 #include "winbindd.h"
 #include "sids.h"
 
-/* Return true if the SAM domain handles are open and responding */
-
-BOOL domain_handles_open(struct winbindd_domain *domain)
-{
-	return domain->sam_handle_open &&
-		domain->sam_dom_handle_open &&
-		rpc_hnd_ok(&domain->sam_handle) &&
-		rpc_hnd_ok(&domain->sam_dom_handle);
-}
-
 /* Call name_query() from the clientgen library to resolve a domain
    controller for a domain name. */
 
@@ -42,7 +32,7 @@ static BOOL resolve_dc_name(char *domain_name, fstring domain_controller)
 	struct in_addr ip;
 	extern pstring global_myname;
 	
-	/* if its our primary domain and password server is not '*' then
+	/* If its our primary domain and password server is not '*' then
 	   use the password server parameter */
 
 	if (strcmp(domain_name,lp_workgroup()) == 0 && !lp_wildcard_dc()) {
@@ -178,6 +168,44 @@ static BOOL open_sam_handles(struct winbindd_domain *domain)
 	return True;
 }
 
+/* Return true if the SAM domain handles are open and responding.  This is only
+   actually checked every WINBINDD_ESTABLISH_LOOP seconds to avoid probing dead
+   domains too often. */
+
+static BOOL sam_handles_open(struct winbindd_domain *domain)
+{
+	return domain->sam_handle_open &&
+		domain->sam_dom_handle_open &&
+		rpc_hnd_ok(&domain->sam_handle) &&
+		rpc_hnd_ok(&domain->sam_dom_handle);
+}
+
+BOOL domain_handles_open(struct winbindd_domain *domain)
+{
+	static time_t lastt;
+	time_t t;
+
+	/* Check we haven't checked too recently */
+
+	t = time(NULL);
+
+	if ((t - lastt) < WINBINDD_ESTABLISH_LOOP) {
+		DEBUG(3, ("checking domain handles for domain %s\n", 
+			  domain->name));
+
+		return domain->sam_handle_open &&
+			domain->sam_dom_handle_open;
+	}
+
+	lastt = t;
+
+	if (!sam_handles_open(domain)) {
+		open_sam_handles(domain);
+	}
+
+	return sam_handles_open(domain);
+}
+
 /* Shut down connections to all domain controllers */
 
 void winbindd_kill_connections(struct winbindd_domain *domain)
@@ -255,9 +283,10 @@ void winbindd_kill_all_connections(void)
 
 void establish_connections(BOOL force_reestablish) 
 {
-	struct winbindd_domain *domain;
 	static time_t lastt;
 	time_t t;
+
+	/* Check we haven't checked too recently */
 
 	t = time(NULL);
 	if ((t - lastt < WINBINDD_ESTABLISH_LOOP) && !force_reestablish) {
@@ -266,6 +295,7 @@ void establish_connections(BOOL force_reestablish)
 	lastt = t;
 
 	/* maybe the connection died - if so then close up and restart */
+
 	if (server_state.pwdb_initialised &&
 	    server_state.lsa_handle_open &&
 	    !rpc_hnd_ok(&server_state.lsa_handle)) {
@@ -286,6 +316,7 @@ void establish_connections(BOOL force_reestablish)
 	}
 
 	/* Open lsa handle if it isn't already open */
+
 	if (!server_state.lsa_handle_open) {
 		server_state.lsa_handle_open =
 			lsa_open_policy(server_state.controller, 
@@ -295,12 +326,6 @@ void establish_connections(BOOL force_reestablish)
 
 		/* now we can talk to the server we can get some info */
 		get_trusted_domains();
-	}
-
-	for (domain=domain_list; domain; domain=domain->next) {
-		if (!domain_handles_open(domain)) {
-			open_sam_handles(domain);
-		}
 	}
 }
 
@@ -323,6 +348,7 @@ BOOL lookup_domain_sid(char *domain_name, struct winbindd_domain *domain)
     DEBUG(1, ("looking up sid for domain %s\n", domain_name));
 
     /* Get controller name for domain */
+
     if (!resolve_dc_name(domain_name, domain->controller)) {
 	    DEBUG(0, ("Could not resolve domain controller for domain %s\n",
 		      domain_name));
@@ -480,8 +506,6 @@ BOOL winbindd_lookup_name_by_sid(DOM_SID *sid, fstring name,
 BOOL winbindd_lookup_userinfo(struct winbindd_domain *domain,
                               uint32 user_rid, SAM_USERINFO_CTR *user_info)
 {
-	if (!domain_handles_open(domain)) return False;
-
 	return get_samr_query_userinfo(&domain->sam_dom_handle, 0x15, 
 				       user_rid, user_info);
 }                                   
@@ -491,8 +515,6 @@ BOOL winbindd_lookup_userinfo(struct winbindd_domain *domain,
 BOOL winbindd_lookup_groupinfo(struct winbindd_domain *domain,
                               uint32 group_rid, GROUP_INFO_CTR *info)
 {
-	if (!domain_handles_open(domain)) return False;
-
 	return get_samr_query_groupinfo(&domain->sam_dom_handle, 1, 
 					group_rid, info);
 }
@@ -504,8 +526,6 @@ BOOL winbindd_lookup_groupmem(struct winbindd_domain *domain,
                               uint32 **rid_mem, char ***names, 
                               enum SID_NAME_USE **name_types)
 {
-	if (!domain_handles_open(domain)) return False;
-    
 	return sam_query_groupmem(&domain->sam_dom_handle, group_rid, 
 				  num_names, rid_mem, names, name_types);
 }
@@ -517,9 +537,6 @@ int winbindd_lookup_aliasmem(struct winbindd_domain *domain,
                              DOM_SID ***sids, char ***names, 
                              enum SID_NAME_USE **name_types)
 {
-    /* Open sam handles */
-    if (!domain_handles_open(domain)) return False;
-
     return sam_query_aliasmem(domain->controller, 
 			      &domain->sam_dom_handle, alias_rid, num_names, 
 			      sids, names, name_types);
@@ -536,14 +553,20 @@ struct winbindd_domain *find_domain_from_name(char *domain_name)
 	struct winbindd_domain *tmp;
 
 	/* Search through list */
+
 	for (tmp = domain_list; tmp != NULL; tmp = tmp->next) {
 		if (strcmp(domain_name, tmp->name) == 0) {
-			if (!tmp->got_domain_info) return NULL;
-                        return tmp;
+
+			if (!tmp->got_domain_info) {
+				get_domain_info(tmp);
+			}
+
+                        return tmp->got_domain_info ? tmp : NULL;
                 }
         }
 
 	/* Not found */
+
 	return NULL;
 }
 
@@ -760,8 +783,6 @@ uint32 winbindd_query_dispinfo(struct winbindd_domain *domain,
 			     uint32 *num_entries, SAM_DISPINFO_CTR *ctr)
 {
 	uint32 status;
-
-	if (!domain_handles_open(domain)) return False;
 
 	status = samr_query_dispinfo(&domain->sam_dom_handle, start_ndx,
 				     info_level, num_entries, ctr);

@@ -287,6 +287,12 @@ static void process_request(struct winbindd_cli_state *state)
 			break;
 		}
 	}
+
+	/* In case extra data pointer is NULL */
+
+	if (!state->response.extra_data) {
+		state->response.length = sizeof(struct winbindd_response);
+	}
 }
 
 /* Process a new connection by adding it to the client connection list */
