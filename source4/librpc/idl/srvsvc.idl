@@ -378,6 +378,7 @@
 	const int STYPE_PRINTQ   = 1;
 	const int STYPE_DEVICE   = 2;	/* Serial device */
 	const int STYPE_IPC      = 3;	/* Interprocess communication (IPC) */
+	const int STYPE_TEMPORARY= 0x40000000; /* share is a temporary one */
 	const int STYPE_HIDDEN   = 0x80000000; /* share is a hidden one */
 
 	typedef struct {
