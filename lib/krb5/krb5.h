@@ -165,9 +165,23 @@ typedef enum krb5_key_usage {
     KRB5_KU_OTHER_ENCRYPTED = 16,
     /* Data which is defined in some specification outside of
        Kerberos to be encrypted using an RFC1510 encryption type. */
-    KRB5_KU_OTHER_CKSUM = 17
+    KRB5_KU_OTHER_CKSUM = 17,
     /* Data which is defined in some specification outside of
        Kerberos to be checksummed using an RFC1510 checksum type. */
+    KRB5_KU_KRB_ERROR = 18,
+    /* Krb-error checksum */
+    KRB5_KU_AD_KDC_ISSUED = 19,
+    /* AD-KDCIssued checksum */
+    KRB5_KU_MANDATORY_TICKET_EXTENSION = 20,
+    /* Checksum for Mandatory Ticket Extensions */
+    KRB5_KU_AUTH_DATA_TICKET_EXTENSION = 21,
+    /* Checksum in Authorization Data in Ticket Extensions */
+    KRB5_KU_USAGE_SEAL = 22,
+    /* seal in GSSAPI krb5 mechanism */
+    KRB5_KU_USAGE_SIGN = 23,
+    /* sign in GSSAPI krb5 mechanism */
+    KRB5_KU_USAGE_MIC = 24
+    /* MIC in GSSAPI krb5 mechanism */
 } krb5_key_usage;
 
 typedef enum krb5_salttype {
