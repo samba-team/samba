@@ -656,17 +656,20 @@ handle_tcp(struct descr *d, int index, int min_free)
     }
     sa = (struct sockaddr *)sa_buf;
 
-    from_len = sa_size;
-    n = recvfrom(d[index].s, buf, sizeof(buf), 0, 
-		 sa, &from_len);
+    /*
+     * We can't trust recvfrom to return an address so we always call
+     * getpeername.
+     */
+
+    n = recvfrom(d[index].s, buf, sizeof(buf), 0, NULL, NULL);
     if(n < 0){
 	krb5_warn(context, errno, "recvfrom");
 	goto out;
     }
-    /* sometimes recvfrom doesn't return an address */
-    if(from_len == 0) {
-	from_len = sa_size;
-	getpeername(d[index].s, sa, &from_len);
+    from_len = sa_size;
+    if (getpeername(d[index].s, sa, &from_len) < 0) {
+	krb5_warn(context, errno, "getpeername");
+	goto out;
     }
     addr_to_string(sa, from_len, addr, sizeof(addr));
     if (grow_descr (&d[index], n))
