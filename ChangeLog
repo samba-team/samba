@@ -1,3 +1,8 @@
+2001-08-08  Assar Westerlund  <assar@sics.se>
+
+	* configure.in: just add -L (if required) from krb4 when testing
+	for libdes/libcrypto
+
 2001-08-04  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/Makefile.am (man_MANS): add some missing man pages
