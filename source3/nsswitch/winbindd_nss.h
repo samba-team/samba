@@ -59,13 +59,13 @@ enum winbindd_cmd {
 	/* PAM authenticate and password change */
 
 	WINBINDD_PAM_AUTH,
-        WINBINDD_PAM_AUTH_CRAP,
+	WINBINDD_PAM_AUTH_CRAP,
 	WINBINDD_PAM_CHAUTHTOK,
 
 	/* List various things */
 
-        WINBINDD_LIST_USERS,         /* List w/o rid->id mapping */
-        WINBINDD_LIST_GROUPS,        /* Ditto */
+	WINBINDD_LIST_USERS,         /* List w/o rid->id mapping */
+	WINBINDD_LIST_GROUPS,        /* Ditto */
 	WINBINDD_LIST_TRUSTDOM,
 
 	/* SID conversion */
@@ -73,7 +73,7 @@ enum winbindd_cmd {
 	WINBINDD_LOOKUPSID,
 	WINBINDD_LOOKUPNAME,
 
-	/* S*RS functions */
+	/* Lookup functions */
 
 	WINBINDD_SID_TO_UID,       
 	WINBINDD_SID_TO_GID,
@@ -121,7 +121,7 @@ struct winbindd_request {
 		fstring name;        /* lookupname */
 		uint32 num_entries;  /* getpwent, getgrent */
 	} data;
-        fstring domain;      /* {set,get,end}{pw,gr}ent() */
+	fstring domain;      /* {set,get,end}{pw,gr}ent() */
 };
 
 /* Response values */

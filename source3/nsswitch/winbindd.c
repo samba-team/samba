@@ -602,7 +602,7 @@ static void process_loop(int accept_sock)
             
 			/* Process activity on client connections */
             
-			for (state = client_list; state; state = state->next) {
+			for (state = client_list; state; ) {
                 
 				/* Data available for reading */
                 
@@ -613,17 +613,29 @@ static void process_loop(int accept_sock)
 					client_read(state);
 
 #if 0
-					/* If we have the start of a
+					/* JRA - currently there's no length field in the request... */
+					/* 
+					 * If we have the start of a
 					 * packet, then check the
 					 * length field to make sure
 					 * the client's not talking
-					 * Mock Swedish. */
+					 * Mock Swedish.
+					 */
+
 					if (state->read_buf_len >= sizeof(int)
 					    && *(int *) state->buf != sizeof(state->request)) {
-						BORK_BORK_BORK();
+
+						struct winbindd_cli_state *rem_state = state;
+
+						DEBUG(0,("process_loop: Invalid request size (%d) send, should be (%d)\n",
+								*(int *) rem_state->buf, sizeof(rem_state->request) ));
+
+						state = state_next;
+						remove_client(rem_state);
+						continue;
 					}
 #endif
-                    
+
 					/* A request packet might be 
 					   complete */
                     
@@ -631,6 +643,8 @@ static void process_loop(int accept_sock)
 					    sizeof(state->request)) {
 						process_packet(state);
 					}
+
+					state = state->next;
 				}
                 
 				/* Data available for writing */
