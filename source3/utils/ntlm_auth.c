@@ -1624,6 +1624,12 @@ static void squid_stream(enum stdio_helper_mode stdio_mode, stdio_helper_functio
 	/* initialize FDescs */
 	x_setbuf(x_stdout, NULL);
 	x_setbuf(x_stderr, NULL);
+	{
+		struct passwd *pass = getpwuid(getuid());
+		if (initgroups (pass->pw_name, pass->pw_gid)) {
+			DEBUG(0,("Unable to initgroups. Error was %s\n", strerror(errno) ));
+		}
+	}
 	while(1) {
 		manage_squid_request(stdio_mode, fn);
 	}
