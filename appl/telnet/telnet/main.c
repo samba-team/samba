@@ -130,10 +130,13 @@ int main(int argc, char **argv)
 	 */
 	autologin = -1;
 
-	while ((ch = getopt(argc, argv, "8EKLS:X:acde:fFk:l:n:rt:x")) != EOF) {
+	while ((ch = getopt(argc, argv, "78EKLS:X:acde:fFk:l:n:rt:x")) != EOF) {
 		switch(ch) {
 		case '8':
 			eight = 3;	/* binary output and input */
+			break;
+		case '7':
+			eight = 0;
 			break;
 		case 'E':
 			rlogin = escape = _POSIX_VDISABLE;

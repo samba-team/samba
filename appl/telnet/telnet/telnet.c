@@ -76,7 +76,7 @@ char	do_dont_resp[256];
 char	will_wont_resp[256];
 
 int
-	eight = 0,
+	eight = 3,
 	autologin = 0,	/* Autologin anyone? */
 	skiprc = 0,
 	connected,

@@ -41,7 +41,7 @@
 protocol
 .Sh SYNOPSIS
 .Nm telnet
-.Op Fl 8EFKLacdfrx
+.Op Fl 78EFKLacdfrx
 .Op Fl S Ar tos
 .Op Fl X Ar authtype
 .Op Fl e Ar escapechar
@@ -78,6 +78,10 @@ Specifies an 8-bit data path.  This causes an attempt to
 negotiate the
 .Dv TELNET BINARY
 option on both input and output.
+.It Fl 7
+Do not try to negotiate
+.Dv TELNET BINARY
+option.
 .It Fl E
 Stops any character from being recognized as an escape character.
 .It Fl F
