@@ -71,6 +71,10 @@
 
 #include "protos.h"
 
+#if !defined(HAVE_SETSID) && defined(HAVE__SETSID)
+#define setsid _setsid
+#endif
+
 #ifndef HAVE_PUTENV
 int putenv(const char *string);
 #endif
