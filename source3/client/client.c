@@ -302,7 +302,7 @@ static BOOL do_this_one(file_info *finfo)
 	if (finfo->mode & aDIR) return(True);
 
 	if (*fileselection && 
-	    !mask_match(finfo->name,fileselection,False,False)) {
+	    !mask_match(finfo->name,fileselection,False)) {
 		DEBUG(3,("match_match %s failed\n", finfo->name));
 		return False;
 	}

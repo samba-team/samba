@@ -604,7 +604,7 @@ BOOL get_dir_entry(connection_struct *conn,char *mask,int dirtype,char *fname,
 
     if ((filename_is_mask = (strcmp(filename,mask) == 0)) ||
         (name_map_mangle(filename,True,False,SNUM(conn)) &&
-         mask_match(filename,mask,False,False)))
+         mask_match(filename,mask,False)))
     {
       if (isrootdir && (strequal(filename,"..") || strequal(filename,".")))
         continue;

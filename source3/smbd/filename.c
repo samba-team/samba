@@ -88,228 +88,6 @@ static BOOL mangled_equal(char *name1, char *name2)
   return(strequal(name1,tmpname));
 }
 
-/****************************************************************************
- Stat cache code used in unix_convert.
-*****************************************************************************/
-
-static int global_stat_cache_lookups;
-static int global_stat_cache_misses;
-static int global_stat_cache_hits;
-
-/****************************************************************************
- Stat cache statistics code.
-*****************************************************************************/
-
-void print_stat_cache_statistics(void)
-{
-  double eff;
-
-  if(global_stat_cache_lookups == 0)
-    return;
-
-  eff = (100.0* (double)global_stat_cache_hits)/(double)global_stat_cache_lookups;
-
-  DEBUG(0,("stat cache stats: lookups = %d, hits = %d, misses = %d, \
-stat cache was %f%% effective.\n", global_stat_cache_lookups,
-       global_stat_cache_hits, global_stat_cache_misses, eff ));
-}
-
-typedef struct {
-  int name_len;
-  char names[2]; /* This is extended via malloc... */
-} stat_cache_entry;
-
-#define INIT_STAT_CACHE_SIZE 512
-static hash_table stat_cache;
-
-/****************************************************************************
- Compare a pathname to a name in the stat cache - of a given length.
- Note - this code always checks that the next character in the pathname
- is either a '/' character, or a '\0' character - to ensure we only
- match *full* pathname components. Note we don't need to handle case
- here, if we're case insensitive the stat cache orig names are all upper
- case.
-*****************************************************************************/
-
-#if 0 /* This function unused?? */
-static BOOL stat_name_equal_len( char *stat_name, char *orig_name, int len)
-{
-  BOOL matched = (memcmp( stat_name, orig_name, len) == 0);
-  if(orig_name[len] != '/' && orig_name[len] != '\0')
-    return False;
-
-  return matched;
-}
-#endif
-
-/****************************************************************************
- Add an entry into the stat cache.
-*****************************************************************************/
-
-static void stat_cache_add( char *full_orig_name, char *orig_translated_path)
-{
-  stat_cache_entry *scp;
-  stat_cache_entry *found_scp;
-  pstring orig_name;
-  pstring translated_path;
-  int namelen;
-  hash_element *hash_elem;
-
-  if (!lp_stat_cache()) return;
-
-  namelen = strlen(orig_translated_path);
-
-  /*
-   * Don't cache trivial valid directory entries.
-   */
-  if((*full_orig_name == '\0') || (strcmp(full_orig_name, ".") == 0) ||
-     (strcmp(full_orig_name, "..") == 0))
-    return;
-
-  /*
-   * If we are in case insentive mode, we need to
-   * store names that need no translation - else, it
-   * would be a waste.
-   */
-
-  if(case_sensitive && (strcmp(full_orig_name, orig_translated_path) == 0))
-    return;
-
-  /*
-   * Remove any trailing '/' characters from the
-   * translated path.
-   */
-
-  pstrcpy(translated_path, orig_translated_path);
-  if(translated_path[namelen-1] == '/') {
-    translated_path[namelen-1] = '\0';
-    namelen--;
-  }
-
-  /*
-   * We will only replace namelen characters 
-   * of full_orig_name.
-   * StrnCpy always null terminates.
-   */
-
-  StrnCpy(orig_name, full_orig_name, namelen);
-  if(!case_sensitive)
-    strupper( orig_name );
-
-  /*
-   * Check this name doesn't exist in the cache before we 
-   * add it.
-   */
-
-  if ((hash_elem = hash_lookup(&stat_cache, orig_name))) {
-    found_scp = (stat_cache_entry *)(hash_elem->value);
-    if (strcmp((found_scp->names+found_scp->name_len+1), translated_path) == 0) {
-      return;
-    } else {
-      hash_remove(&stat_cache, hash_elem);
-      if((scp = (stat_cache_entry *)malloc(sizeof(stat_cache_entry)+2*namelen)) == NULL) {
-        DEBUG(0,("stat_cache_add: Out of memory !\n"));
-        return;
-      }
-      pstrcpy(scp->names, orig_name);
-      pstrcpy((scp->names+namelen+1), translated_path);
-      scp->name_len = namelen;
-      hash_insert(&stat_cache, (char *)scp, orig_name);
-    }
-    return;
-  } else {
-
-    /*
-     * New entry.
-     */
-
-    if((scp = (stat_cache_entry *)malloc(sizeof(stat_cache_entry)+2*namelen)) == NULL) {
-      DEBUG(0,("stat_cache_add: Out of memory !\n"));
-      return;
-    }
-    pstrcpy(scp->names, orig_name);
-    pstrcpy(scp->names+namelen+1, translated_path);
-    scp->name_len = namelen;
-    hash_insert(&stat_cache, (char *)scp, orig_name);
-  }
-
-  DEBUG(5,("stat_cache_add: Added entry %s -> %s\n", scp->names, (scp->names+scp->name_len+1)));
-}
-
-/****************************************************************************
- Look through the stat cache for an entry - promote it to the top if found.
- Return True if we translated (and did a scuccessful stat on) the entire name.
-*****************************************************************************/
-
-static BOOL stat_cache_lookup(connection_struct *conn, char *name, char *dirpath, 
-                              char **start, SMB_STRUCT_STAT *pst)
-{
-  stat_cache_entry *scp;
-  char *trans_name;
-  pstring chk_name;
-  int namelen;
-  hash_element *hash_elem;
-  char *sp;
-
-  if (!lp_stat_cache())
-    return False;
- 
-  namelen = strlen(name);
-
-  *start = name;
-  global_stat_cache_lookups++;
-
-  /*
-   * Don't lookup trivial valid directory entries.
-   */
-  if((*name == '\0') || (strcmp(name, ".") == 0) || (strcmp(name, "..") == 0)) {
-    global_stat_cache_misses++;
-    return False;
-  }
-
-  pstrcpy(chk_name, name);
-  if(!case_sensitive)
-    strupper( chk_name );
-
-  while (1) {
-    hash_elem = hash_lookup(&stat_cache, chk_name);
-    if(hash_elem == NULL) {
-      /*
-       * Didn't find it - remove last component for next try.
-       */
-      sp = strrchr(chk_name, '/');
-      if (sp) {
-        *sp = '\0';
-      } else {
-        /*
-         * We reached the end of the name - no match.
-         */
-        global_stat_cache_misses++;
-        return False;
-      }
-      if((*chk_name == '\0') || (strcmp(chk_name, ".") == 0)
-                          || (strcmp(chk_name, "..") == 0)) {
-        global_stat_cache_misses++;
-        return False;
-      }
-    } else {
-      scp = (stat_cache_entry *)(hash_elem->value);
-      global_stat_cache_hits++;
-      trans_name = scp->names+scp->name_len+1;
-      if(conn->vfs_ops.stat(dos_to_unix(trans_name,False), pst) != 0) {
-        /* Discard this entry - it doesn't exist in the filesystem.  */
-        hash_remove(&stat_cache, hash_elem);
-        return False;
-      }
-      memcpy(name, trans_name, scp->name_len);
-      *start = &name[scp->name_len];
-      if(**start == '/')
-        ++*start;
-      StrnCpy( dirpath, trans_name, name - (*start));
-      return (namelen == scp->name_len);
-    }
-  }
-}
 
 /****************************************************************************
 This routine is called to convert names from the dos namespace to unix
@@ -406,26 +184,6 @@ BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component,
       (!case_preserve || (is_8_3(name, False) && !short_case_preserve)))
     strnorm(name);
 
-  /* 
-   * Check if it's a printer file.
-   */
-  if (conn->printer) {
-    if ((! *name) || strchr(name,'/') || !is_8_3(name, True)) {
-      char *s;
-      fstring name2;
-      slprintf(name2,sizeof(name2)-1,"%.6s.XXXXXX",remote_machine);
-
-      /* 
-       * Sanitise the name.
-       */
-
-      for (s=name2 ; *s ; s++)
-        if (!issafe(*s)) *s = '_';
-      pstrcpy(name,(char *)smbd_mktemp(name2));	  
-    }      
-    return(True);
-  }
-
   /*
    * If we trimmed down to a single '\0' character
    * then we will be using the "." directory.
@@ -471,8 +229,7 @@ BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component,
       !lp_strip_dot() && !use_mangled_map)
     return(False);
 
-  if(strchr(start,'?') || strchr(start,'*'))
-    name_has_wildcard = True;
+  name_has_wildcard = ms_has_wild(start);
 
   /* 
    * is_mangled() was changed to look at an entire pathname, not 
@@ -549,7 +306,7 @@ BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component,
          * Try to find this part of the path in the directory.
          */
 
-        if (strchr(start,'?') || strchr(start,'*') ||
+        if (ms_has_wild(start) ||
             !scan_directory(dirpath, start, conn, end?True:False)) {
           if (end) {
             /*
@@ -752,15 +509,3 @@ static BOOL scan_directory(char *path, char *name,connection_struct *conn,BOOL d
   return(False);
 }
 
-/*************************************************************************** **
- * Initializes or clears the stat cache.
- *
- *  Input:  none.
- *  Output: none.
- *
- * ************************************************************************** **
- */
-BOOL reset_stat_cache( void )
-{
-  return hash_table_init( &stat_cache, INIT_STAT_CACHE_SIZE, (compare_function)(strcmp));
-} /* reset_stat_cache  */

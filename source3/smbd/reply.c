@@ -1331,9 +1331,6 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
     }
   }
 
-  /* Convert the formatted mask. (This code lives in trans2.c) */
-  mask_convert(mask);
-
   {
     int skip;
     p = mask;
@@ -1936,7 +1933,7 @@ int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   if (!rc && is_mangled(mask))
     check_mangled_cache( mask );
 
-  has_wild = strchr(mask,'*') || strchr(mask,'?');
+  has_wild = ms_has_wild(mask);
 
   if (!has_wild) {
     pstrcat(directory,"/");
@@ -1969,7 +1966,7 @@ int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 	    pstring fname;
 	    pstrcpy(fname,dname);
 	    
-	    if(!mask_match(fname, mask, case_sensitive, False)) continue;
+	    if(!mask_match(fname, mask, case_sensitive)) continue;
 
 	    error = ERRnoaccess;
 	    slprintf(fname,sizeof(fname)-1, "%s/%s",directory,dname);
@@ -3508,7 +3505,7 @@ int rename_internals(connection_struct *conn,
 	if (!rc && is_mangled(mask))
 		check_mangled_cache( mask );
 
-	has_wild = strchr(mask,'*') || strchr(mask,'?');
+	has_wild = ms_has_wild(mask);
 
 	if (!has_wild) {
 		/*
@@ -3618,7 +3615,7 @@ int rename_internals(connection_struct *conn,
 
 				pstrcpy(fname,dname);
 				
-				if(!mask_match(fname, mask, case_sensitive, False))
+				if(!mask_match(fname, mask, case_sensitive))
 					continue;
 				
 				error = ERRnoaccess;
@@ -3847,7 +3844,7 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
   if (!rc && is_mangled(mask))
     check_mangled_cache( mask );
 
-  has_wild = strchr(mask,'*') || strchr(mask,'?');
+  has_wild = ms_has_wild(mask);
 
   if (!has_wild) {
     pstrcat(directory,"/");
@@ -3878,7 +3875,7 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 	    pstring fname;
 	    pstrcpy(fname,dname);
 	    
-	    if(!mask_match(fname, mask, case_sensitive, False))
+	    if(!mask_match(fname, mask, case_sensitive))
 			continue;
 
 	    error = ERRnoaccess;

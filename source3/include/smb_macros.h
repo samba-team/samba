@@ -176,14 +176,6 @@
 #define _smb_setlen(buf,len) buf[0] = 0; buf[1] = (len&0x10000)>>16; \
         buf[2] = (len&0xFF00)>>8; buf[3] = len&0xFF;
 
-/*********************************************************
-* Routine to check if a given string matches exactly.
-* Case can be significant or not.
-**********************************************************/
-
-#define exact_match(str, regexp, case_sig) \
-  ((case_sig?strcmp(str,regexp):strcasecmp(str,regexp)) == 0)
-
 /*******************************************************************
 find the difference in milliseconds between two struct timeval
 values
