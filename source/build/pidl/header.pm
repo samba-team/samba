@@ -228,7 +228,12 @@ sub HeaderTypedefProto($)
     my($d) = shift;
 
     if (needed::is_needed("ndr_size_$d->{NAME}")) {
-	    $res .= "size_t ndr_size_$d->{NAME}(const struct $d->{NAME} *r, int flags);\n";
+	    if ($d->{DATA}{TYPE} eq "STRUCT") {
+		    $res .= "size_t ndr_size_$d->{NAME}(const struct $d->{NAME} *r, int flags);\n";
+	    }
+	    if ($d->{DATA}{TYPE} eq "UNION") {
+		    $res .= "size_t ndr_size_$d->{NAME}(const union $d->{NAME} *r, uint32_t level, int flags);\n";
+	    }
     }
 
     if (!util::has_property($d, "public")) {
