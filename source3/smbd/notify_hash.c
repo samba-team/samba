@@ -76,7 +76,7 @@ static BOOL notify_hash(connection_struct *conn, char *path, uint32 flags,
 	 * larger than the max time_t value).
 	 */
 
-	dp = OpenDir(conn, path, True);
+	dp = OpenDir(conn, path);
 	if (dp == NULL)
 		return False;
 
@@ -91,18 +91,22 @@ static BOOL notify_hash(connection_struct *conn, char *path, uint32 flags,
 	
 	offset = 0;
 	while ((fname = ReadDirName(dp, &offset))) {
+		ZERO_STRUCT(st);
 		if(strequal(fname, ".") || strequal(fname, ".."))
 			continue;		
+
+		if (!is_visible_file(conn, path, fname, &st, True))
+			continue;
 
 		data->num_entries++;
 		safe_strcpy(p, fname, remaining_len);
 
-		ZERO_STRUCT(st);
-
 		/*
 		 * Do the stat - but ignore errors.
 		 */		
-		SMB_VFS_STAT(conn,full_name, &st);
+		if (!VALID_STAT(st)) {
+			SMB_VFS_STAT(conn,full_name, &st);
+		}
 
 		/*
 		 * Always sum the times.

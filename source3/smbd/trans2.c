@@ -864,11 +864,12 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 	} else
 		pstrcpy(mask, path_mask);
 
+
 	while (!found) {
 		BOOL got_match;
 		/* Needed if we run out of space */
 		long curr_dirpos = prev_dirpos = dptr_TellDir(conn->dirptr);
-		dname = dptr_ReadDirName(conn->dirptr,&curr_dirpos);
+		dname = dptr_ReadDirName(conn->dirptr,&curr_dirpos,&sbuf);
 
 		/*
 		 * Due to bugs in NT client redirectors we are not using
@@ -922,7 +923,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 						pathreal,strerror(errno)));
 					continue;
 				}
-			} else if (SMB_VFS_STAT(conn,pathreal,&sbuf) != 0) {
+			} else if (!VALID_STAT(sbuf) && SMB_VFS_STAT(conn,pathreal,&sbuf) != 0) {
 
 				/* Needed to show the msdfs symlinks as 
 				 * directories */
@@ -945,7 +946,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 
 			mode = dos_mode(conn,pathreal,&sbuf);
 
-			if (!dir_check_ftype(conn,mode,&sbuf,dirtype)) {
+			if (!dir_check_ftype(conn,mode,dirtype)) {
 				DEBUG(5,("[%s] attribs didn't match %x\n",fname,dirtype));
 				continue;
 			}
@@ -1341,7 +1342,7 @@ static int call_trans2findfirst(connection_struct *conn, char *inbuf, char *outb
 	int info_level = SVAL(params,6);
 	pstring directory;
 	pstring mask;
-	char *p, *wcard;
+	char *p;
 	int last_name_off=0;
 	int dptr_num = -1;
 	int numentries = 0;
@@ -1442,7 +1443,7 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 		return ERROR_DOS(ERRDOS,ERRnomem);
 	}
 
-	DEBUG(4,("dptr_num is %d, wcard = %s, attr = %d\n",dptr_num, wcard, dirtype));
+	DEBUG(4,("dptr_num is %d, wcard = %s, attr = %d\n",dptr_num, mask, dirtype));
 
 	/* We don't need to check for VOL here as this is returned by 
 		a different TRANS2 call. */
@@ -1667,6 +1668,8 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
 	 */
 
 	if(*resume_name && !continue_bit) {
+		SMB_STRUCT_STAT st;
+
 		long current_pos = 0;
 		/*
 		 * Remember, mangle_map is called by
@@ -1687,7 +1690,7 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
 		 * should already be at the correct place.
 		 */
 
-		finished = !dptr_SearchDir(conn->dirptr, resume_name, &current_pos, True);
+		finished = !dptr_SearchDir(conn->dirptr, resume_name, &current_pos, &st);
 	} /* end if resume_name && !continue_bit */
 
 	for (i=0;(i<(int)maxentries) && !finished && !out_of_space ;i++) {
