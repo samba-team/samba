@@ -83,28 +83,11 @@
 
 #include "smbldap.h"
 
-struct ldapsam_privates {
-	struct smbldap_state *smbldap_state;
-
-	/* Former statics */
-	LDAPMessage *result;
-	LDAPMessage *entry;
-	int index;
-	
-	const char *domain_name;
-	DOM_SID domain_sid;
-	
-	/* configuration items */
-	int schema_ver;
-
-	char *domain_dn;
-};
-
 /**********************************************************************
  Free a LDAPMessage (one is stored on the SAM_ACCOUNT).
  **********************************************************************/
  
-static void private_data_free_fn(void **result) 
+void private_data_free_fn(void **result) 
 {
 	ldap_msgfree(*result);
 	*result = NULL;
@@ -134,7 +117,7 @@ static const char* get_userattr_key2string( int schema_ver, int key )
  Return the list of attribute names given a user schema version.
 **********************************************************************/
 
-static const char** get_userattr_list( int schema_ver )
+const char** get_userattr_list( int schema_ver )
 {
 	switch ( schema_ver ) {
 		case SCHEMAVER_SAMBAACCOUNT:
@@ -199,7 +182,7 @@ static const char* get_objclass_filter( int schema_ver )
  Run the search by name.
 ******************************************************************/
 
-static int ldapsam_search_suffix_by_name (struct ldapsam_privates *ldap_state, 
+int ldapsam_search_suffix_by_name(struct ldapsam_privates *ldap_state, 
 					  const char *user,
 					  LDAPMessage ** result,
 					  const char **attr)
@@ -444,7 +427,7 @@ static time_t ldapsam_get_entry_timestamp(
  (Based on init_sam_from_buffer in pdb_tdb.c)
 *********************************************************************/
 
-static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state, 
+static BOOL init_sam_from_ldap(struct ldapsam_privates *ldap_state, 
 				SAM_ACCOUNT * sampass,
 				LDAPMessage * entry)
 {
@@ -470,6 +453,7 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 	uint32 		user_rid; 
 	uint8 		smblmpwd[LM_HASH_LEN],
 			smbntpwd[NT_HASH_LEN];
+	BOOL 		use_samba_attrs = True;
 	uint16 		acct_ctrl = 0, 
 			logon_divs;
 	uint16 		bad_password_count = 0, 
@@ -708,27 +692,56 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 	hours_len = 21;
 	memset(hours, 0xff, hours_len);
 
-	if (!smbldap_get_single_pstring (ldap_state->smbldap_state->ldap_struct, entry, 
-		get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_LMPW), temp)) {
-		/* leave as default */
-	} else {
-		pdb_gethexpwd(temp, smblmpwd);
-		memset((char *)temp, '\0', strlen(temp)+1);
-		if (!pdb_set_lanman_passwd(sampass, smblmpwd, PDB_SET))
-			return False;
-		ZERO_STRUCT(smblmpwd);
-	}
+	if (ldap_state->is_nds_ldap) {
+		char *user_dn;
+		size_t pwd_len;
+		uchar clear_text_pw[512];
 
-	if (!smbldap_get_single_pstring (ldap_state->smbldap_state->ldap_struct, entry,
-		get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_NTPW), temp)) {
-		/* leave as default */
-	} else {
-		pdb_gethexpwd(temp, smbntpwd);
-		memset((char *)temp, '\0', strlen(temp)+1);
-		if (!pdb_set_nt_passwd(sampass, smbntpwd, PDB_SET))
-			return False;
-		ZERO_STRUCT(smbntpwd);
-	}
+		/* Make call to Novell eDirectory ldap extension to get clear text password.
+			NOTE: This will only work if we have an SSL connection to eDirectory. */
+		user_dn = smbldap_get_dn(ldap_state->smbldap_state->ldap_struct, entry);
+		if (user_dn != NULL) {
+			DEBUG(3, ("init_sam_from_ldap: smbldap_get_dn(%s) returned '%s'\n", username, user_dn));
+
+			pwd_len = sizeof(clear_text_pw);
+			if (pdb_nds_get_password(ldap_state->smbldap_state, user_dn, &pwd_len, clear_text_pw) == LDAP_SUCCESS) {
+				nt_lm_owf_gen(clear_text_pw, smbntpwd, smblmpwd);
+				if (!pdb_set_lanman_passwd(sampass, smblmpwd, PDB_SET))
+					return False;
+				ZERO_STRUCT(smblmpwd);
+				if (!pdb_set_nt_passwd(sampass, smbntpwd, PDB_SET))
+					return False;
+				ZERO_STRUCT(smbntpwd);
+				use_samba_attrs = False;
+			}
+		} else {
+			DEBUG(0, ("init_sam_from_ldap: failed to get user_dn for '%s'\n", username));
+		}
+ 	}
+
+	if (use_samba_attrs) {
+		if (!smbldap_get_single_pstring (ldap_state->smbldap_state->ldap_struct, entry, 
+			get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_LMPW), temp)) {
+			/* leave as default */
+		} else {
+			pdb_gethexpwd(temp, smblmpwd);
+			memset((char *)temp, '\0', strlen(temp)+1);
+			if (!pdb_set_lanman_passwd(sampass, smblmpwd, PDB_SET))
+				return False;
+			ZERO_STRUCT(smblmpwd);
+		}
+
+		if (!smbldap_get_single_pstring (ldap_state->smbldap_state->ldap_struct, entry,
+			get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_NTPW), temp)) {
+			/* leave as default */
+		} else {
+			pdb_gethexpwd(temp, smbntpwd);
+			memset((char *)temp, '\0', strlen(temp)+1);
+			if (!pdb_set_nt_passwd(sampass, smbntpwd, PDB_SET))
+				return False;
+			ZERO_STRUCT(smbntpwd);
+		}
+ 	}
 
 	account_policy_get(AP_PASSWORD_HISTORY, &pwHistLen);
 	if (pwHistLen > 0){
@@ -1491,15 +1504,17 @@ static NTSTATUS ldapsam_modify_entry(struct pdb_methods *my_methods,
 			(pdb_get_plaintext_passwd(newpwd)!=NULL)) {
 		BerElement *ber;
 		struct berval *bv;
-		char *retoid;
-		struct berval *retdata;
+		char *retoid = NULL;
+		struct berval *retdata = NULL;
 		char *utf8_password;
 		char *utf8_dn;
 
-		if (!ldapsam_can_pwchange_exop(ldap_state->smbldap_state)) {
-			DEBUG(2, ("ldap password change requested, but LDAP "
-				  "server does not support it -- ignoring\n"));
-			return NT_STATUS_OK;
+		if (!ldap_state->is_nds_ldap) {
+			if (!ldapsam_can_pwchange_exop(ldap_state->smbldap_state)) {
+				DEBUG(2, ("ldap password change requested, but LDAP "
+					  "server does not support it -- ignoring\n"));
+				return NT_STATUS_OK;
+			}
 		}
 
 		if (push_utf8_allocate(&utf8_password, pdb_get_plaintext_passwd(newpwd)) == (size_t)-1) {
@@ -1533,10 +1548,16 @@ static NTSTATUS ldapsam_modify_entry(struct pdb_methods *my_methods,
 		SAFE_FREE(utf8_password);
 		ber_free(ber, 1);
 
-		if ((rc = smbldap_extended_operation(ldap_state->smbldap_state, 
-						     LDAP_EXOP_MODIFY_PASSWD,
-						     bv, NULL, NULL, &retoid, 
-						     &retdata)) != LDAP_SUCCESS) {
+		if (!ldap_state->is_nds_ldap) {
+			rc = smbldap_extended_operation(ldap_state->smbldap_state, 
+							LDAP_EXOP_MODIFY_PASSWD,
+							bv, NULL, NULL, &retoid, 
+							&retdata);
+		} else {
+			rc = pdb_nds_set_password(ldap_state->smbldap_state, dn,
+							pdb_get_plaintext_passwd(newpwd));
+		}
+		if (rc != LDAP_SUCCESS) {
 			char *ld_error = NULL;
 
 			if (rc == LDAP_OBJECT_CLASS_VIOLATION) {
@@ -1559,8 +1580,10 @@ static NTSTATUS ldapsam_modify_entry(struct pdb_methods *my_methods,
 #ifdef DEBUG_PASSWORD
 			DEBUG(100,("ldapsam_modify_entry: LDAP Password changed to %s\n",pdb_get_plaintext_passwd(newpwd)));
 #endif    
-			ber_bvfree(retdata);
-			ber_memfree(retoid);
+			if (retdata)
+				ber_bvfree(retdata);
+			if (retoid)
+				ber_memfree(retoid);
 		}
 		ber_bvfree(bv);
 	}
@@ -3174,7 +3197,7 @@ static NTSTATUS pdb_init_ldapsam_common(PDB_CONTEXT *pdb_context, PDB_METHODS **
  Initialise the 'compat' mode for pdb_ldap
  *********************************************************************/
 
-static NTSTATUS pdb_init_ldapsam_compat(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const char *location)
+NTSTATUS pdb_init_ldapsam_compat(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const char *location)
 {
 	NTSTATUS nt_status;
 	struct ldapsam_privates *ldap_state;
@@ -3213,7 +3236,7 @@ static NTSTATUS pdb_init_ldapsam_compat(PDB_CONTEXT *pdb_context, PDB_METHODS **
  Initialise the normal mode for pdb_ldap
  *********************************************************************/
 
-static NTSTATUS pdb_init_ldapsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const char *location)
+NTSTATUS pdb_init_ldapsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const char *location)
 {
 	NTSTATUS nt_status;
 	struct ldapsam_privates *ldap_state;
@@ -3317,6 +3340,9 @@ NTSTATUS pdb_ldap_init(void)
 
 	if (!NT_STATUS_IS_OK(nt_status = smb_register_passdb(PASSDB_INTERFACE_VERSION, "ldapsam_compat", pdb_init_ldapsam_compat)))
 		return nt_status;
+
+	/* Let pdb_nds register backends */
+	pdb_nds_init();
 
 	return NT_STATUS_OK;
 }

@@ -325,6 +325,24 @@ static NTSTATUS context_delete_sam_account(struct pdb_context *context, SAM_ACCO
 	return sam_acct->methods->delete_sam_account(sam_acct->methods, sam_acct);
 }
 
+static NTSTATUS context_update_login_attempts(struct pdb_context *context,
+						SAM_ACCOUNT *sam_acct, BOOL success)
+{
+	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+
+	if (!context) {
+		DEBUG(0, ("invalid pdb_context specified!\n"));
+		return ret;
+	}
+
+	if (!sam_acct || !sam_acct->methods){
+		DEBUG(0, ("invalid sam_acct specified\n"));
+		return ret;
+	}
+
+	return sam_acct->methods->update_login_attempts(sam_acct->methods, sam_acct, success);
+}
+
 static NTSTATUS context_getgrsid(struct pdb_context *context,
 				 GROUP_MAP *map, DOM_SID sid)
 {
@@ -749,6 +767,7 @@ static NTSTATUS make_pdb_context(struct pdb_context **context)
 	(*context)->pdb_add_sam_account = context_add_sam_account;
 	(*context)->pdb_update_sam_account = context_update_sam_account;
 	(*context)->pdb_delete_sam_account = context_delete_sam_account;
+	(*context)->pdb_update_login_attempts = context_update_login_attempts;
 	(*context)->pdb_getgrsid = context_getgrsid;
 	(*context)->pdb_getgrgid = context_getgrgid;
 	(*context)->pdb_getgrnam = context_getgrnam;
@@ -990,6 +1009,17 @@ BOOL pdb_delete_sam_account(SAM_ACCOUNT *sam_acct)
 	}
 
 	return NT_STATUS_IS_OK(pdb_context->pdb_delete_sam_account(pdb_context, sam_acct));
+}
+
+NTSTATUS pdb_update_login_attempts(SAM_ACCOUNT *sam_acct, BOOL success)
+{
+	struct pdb_context *pdb_context = pdb_get_static_context(False);
+
+	if (!pdb_context) {
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
+
+	return pdb_context->pdb_update_login_attempts(pdb_context, sam_acct, success);
 }
 
 BOOL pdb_getgrsid(GROUP_MAP *map, DOM_SID sid)
@@ -1279,6 +1309,11 @@ static NTSTATUS pdb_default_delete_sam_account (struct pdb_methods *methods, SAM
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
+static NTSTATUS pdb_default_update_login_attempts (struct pdb_methods *methods, SAM_ACCOUNT *newpwd, BOOL success)
+{
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS pdb_default_setsampwent(struct pdb_methods *methods, BOOL update, uint16 acb_mask)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
@@ -1422,6 +1457,7 @@ NTSTATUS make_pdb_methods(TALLOC_CTX *mem_ctx, PDB_METHODS **methods)
 	(*methods)->add_sam_account = pdb_default_add_sam_account;
 	(*methods)->update_sam_account = pdb_default_update_sam_account;
 	(*methods)->delete_sam_account = pdb_default_delete_sam_account;
+	(*methods)->update_login_attempts = pdb_default_update_login_attempts;
 
 	(*methods)->getgrsid = pdb_default_getgrsid;
 	(*methods)->getgrgid = pdb_default_getgrgid;
