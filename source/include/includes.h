@@ -1239,6 +1239,7 @@ int asprintf(char **,const char *, ...) PRINTF_ATTRIBUTE(2,3);
 
 #if !defined(HAVE_SNPRINTF) || !defined(HAVE_C99_VSNPRINTF)
 #define snprintf smb_snprintf
+#define vsnprintf smb_vsnprintf
 #endif
 
 void sys_adminlog(int priority, const char *format_str, ...) PRINTF_ATTRIBUTE(2,3);
