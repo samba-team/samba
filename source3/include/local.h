@@ -74,6 +74,9 @@
 /* separators for lists */
 #define LIST_SEP " \t,;:\n\r"
 
+/* wchar separators for lists */
+#define LIST_SEP_W wchar_list_sep
+
 #ifndef LOCKDIR
 /* this should have been set in the Makefile */
 #define LOCKDIR "/tmp/samba"
