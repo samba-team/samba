@@ -2439,6 +2439,7 @@ static struct {
         {"RPC-SAMR", torture_rpc_samr, 0},
         {"RPC-NETLOGON", torture_rpc_netlogon, 0},
         {"RPC-SAMLOGON", torture_rpc_samlogon, 0},
+        {"RPC-SAMSYNC", torture_rpc_samsync, 0},
         {"RPC-SCHANNEL", torture_rpc_schannel, 0},
         {"RPC-WKSSVC", torture_rpc_wkssvc, 0},
         {"RPC-SRVSVC", torture_rpc_srvsvc, 0},

@@ -28,7 +28,6 @@ struct gensec_user {
 	const char *realm;
 	const char *name;
 	const char *password;
-	char schan_session_key[16];
 };
 struct gensec_target {
 	const char *principal;

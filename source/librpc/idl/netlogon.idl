@@ -285,6 +285,11 @@ interface netlogon
 	/*****************/
 	/* Function 0x07 */
 
+	/* SAM database types */
+	const int SAM_DATABASE_DOMAIN  = 0x00; /* Domain users and groups */
+	const int SAM_DATABASE_BUILTIN = 0x01; /* BUILTIN users and groups */
+	const int SAM_DATABASE_PRIVS   = 0x02; /* Privileges */
+
 	typedef struct {
 		unistr *account_name;
 		netr_String unknown1;
@@ -313,19 +318,19 @@ interface netlogon
 		netr_String logon_script;
 		netr_String description;
 		netr_String workstations;
-		NTTIME LastLogon;
-		NTTIME LastLogoff;
+		NTTIME last_logon;
+		NTTIME last_logoff;
 		samr_LogonHours logon_hours;
 		uint16 bad_pw_count;
 		uint16 logon_count;
-		NTTIME PwLastSet;
-		NTTIME AccountExpires;
-		uint32 AccountControl;
-		samr_Password lmpw;
-		samr_Password ntpw;
-		bool8 NTPwPresent;
-		bool8 LMPwPresent;
-		bool8 PwExpired;
+		NTTIME last_password_change;
+		NTTIME acct_expiry;
+		uint32 acct_flags;
+		samr_Password lmpassword;
+		samr_Password ntpassword;
+		bool8 ntpassword_present;
+		bool8 lmpassword_present;
+		bool8 password_expired;
 		netr_String UserComment;
 		netr_String Parameters;
 		uint16 CountryCode;
@@ -777,6 +782,13 @@ interface netlogon
 		[out][switch_is(level)]        netr_CONTROL_QUERY_INFORMATION query
 		);
 
+
+	/* If this flag is not set, then the passwords and LM session keys are
+	 * encrypted with DES calls.  (And the user session key is
+	 * unencrypted) */ 
+	const int NETLOGON_NEG_ARCFOUR  = 0x00000004;
+	const int NETLOGON_NEG_128BIT   = 0x00004000;
+	const int NETLOGON_NEG_SCHANNEL = 0x40000000;
 
 	/*****************/
 	/* Function 0x0F */

@@ -316,6 +316,72 @@ static BOOL test_SetPassword(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	return True;
 }
 
+/*
+  try a netlogon SamLogon
+*/
+static BOOL test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+{
+	NTSTATUS status;
+	struct netr_LogonSamLogon r;
+	struct netr_Authenticator auth, auth2;
+	struct netr_NetworkInfo ninfo;
+	const char *username = lp_parm_string(-1, "torture", "username");
+	const char *password = lp_parm_string(-1, "torture", "password");
+	struct creds_CredentialState creds;
+
+	int i;
+	BOOL ret = True;
+
+	if (!test_SetupCredentials(p, mem_ctx, TEST_MACHINE_NAME, 
+				   machine_password, &creds)) {
+		return False;
+	}
+
+	ninfo.identity_info.domain_name.string = lp_workgroup();
+	ninfo.identity_info.parameter_control = 0;
+	ninfo.identity_info.logon_id_low = 0;
+	ninfo.identity_info.logon_id_high = 0;
+	ninfo.identity_info.account_name.string = username;
+	ninfo.identity_info.workstation.string = TEST_MACHINE_NAME;
+	generate_random_buffer(ninfo.challenge, 
+			       sizeof(ninfo.challenge));
+	ninfo.nt.length = 24;
+	ninfo.nt.data = talloc(mem_ctx, 24);
+	SMBNTencrypt(password, ninfo.challenge, ninfo.nt.data);
+	ninfo.lm.length = 24;
+	ninfo.lm.data = talloc(mem_ctx, 24);
+	SMBencrypt(password, ninfo.challenge, ninfo.lm.data);
+
+	r.in.server_name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.workstation = TEST_MACHINE_NAME;
+	r.in.credential = &auth;
+	r.in.return_authenticator = &auth2;
+	r.in.logon_level = 2;
+	r.in.logon.network = &ninfo;
+
+	for (i=2;i<=3;i++) {
+		ZERO_STRUCT(auth2);
+		creds_client_authenticator(&creds, &auth);
+
+		r.in.validation_level = i;
+
+		printf("Testing SamLogon with validation level %d\n", i);
+
+		status = dcerpc_netr_LogonSamLogon(p, mem_ctx, &r);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("LogonSamLogon - %s\n", nt_errstr(status));
+			ret = False;
+		}
+
+		if (!creds_client_check(&creds, &r.out.return_authenticator->cred)) {
+			printf("Credential chaining failed\n");
+		}
+	}
+
+	return ret;
+}
+
+
 
 /* we remember the sequence numbers so we can easily do a DatabaseDelta */
 static uint64_t sequence_nums[3];
@@ -328,7 +394,7 @@ static BOOL test_DatabaseSync(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	NTSTATUS status;
 	struct netr_DatabaseSync r;
 	struct creds_CredentialState creds;
-	const uint32_t database_ids[] = {0, 1, 2}; 
+	const uint32_t database_ids[] = {SAM_DATABASE_DOMAIN, SAM_DATABASE_BUILTIN, SAM_DATABASE_PRIVS}; 
 	int i;
 	BOOL ret = True;
 
@@ -366,7 +432,7 @@ static BOOL test_DatabaseSync(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 
 			if (r.out.delta_enum_array &&
 			    r.out.delta_enum_array->num_deltas > 0 &&
-			    r.out.delta_enum_array->delta_enum[0].delta_type == 1 &&
+			    r.out.delta_enum_array->delta_enum[0].delta_type == NETR_DELTA_DOMAIN &&
 			    r.out.delta_enum_array->delta_enum[0].delta_union.domain) {
 				sequence_nums[r.in.database_id] = 
 					r.out.delta_enum_array->delta_enum[0].delta_union.domain->sequence_num;
@@ -969,7 +1035,7 @@ BOOL torture_rpc_netlogon(void)
         struct dcerpc_pipe *p;
 	TALLOC_CTX *mem_ctx;
 	BOOL ret = True;
-	void *join_ctx;
+	struct test_join *join_ctx;
 
 	mem_ctx = talloc_init("torture_rpc_netlogon");
 
@@ -993,6 +1059,10 @@ BOOL torture_rpc_netlogon(void)
 	}
 
 	if (!test_LogonUasLogoff(p, mem_ctx)) {
+		ret = False;
+	}
+
+	if (!test_SamLogon(p, mem_ctx)) {
 		ret = False;
 	}
 
