@@ -619,13 +619,13 @@ static BOOL test_ldb(void)
 
 	root = talloc(NULL, 0);
 
-	p1 = talloc_ldb_alloc(root, NULL, 10);
+	p1 = talloc_realloc_fn(root, NULL, 10);
 	CHECK_BLOCKS(root, 2);
 	CHECK_SIZE(root, 10);
-	p1 = talloc_ldb_alloc(root, p1, 20);
+	p1 = talloc_realloc_fn(root, p1, 20);
 	CHECK_BLOCKS(root, 2);
 	CHECK_SIZE(root, 20);
-	p1 = talloc_ldb_alloc(root, p1, 0);
+	p1 = talloc_realloc_fn(root, p1, 0);
 	CHECK_BLOCKS(root, 1);
 	CHECK_SIZE(root, 0);
 
