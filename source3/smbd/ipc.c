@@ -2219,6 +2219,7 @@ static BOOL api_WWkstaUserLogon(int cnum,uint16 vuid, char *param,char *data,
   int uLevel;
   struct pack_desc desc;
   char* name;
+  char* logon_script;
 
   uLevel = SVAL(p,0);
   name = p + 2;
@@ -2261,7 +2262,14 @@ static BOOL api_WWkstaUserLogon(int cnum,uint16 vuid, char *param,char *data,
       PACKS(&desc,"z",mypath); /* computer */
     }
     PACKS(&desc,"z",myworkgroup);/* domain */
-    PACKS(&desc,"z",lp_logon_script());		/* script path */
+
+/* JHT - By calling lp_logon_script() and standard_sub() we have */
+/* made sure all macros are fully substituted and available */
+    logon_script = lp_logon_script();
+    standard_sub( cnum, logon_script );
+    PACKS(&desc,"z", logon_script);		/* script path */
+/* End of JHT mods */
+
     PACKI(&desc,"D",0x00000000);		/* reserved */
   }
 
