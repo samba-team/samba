@@ -357,9 +357,16 @@ static BOOL user_in_winbind_group_list(char *user,char *gname, BOOL *winbind_ans
 		fstrcpy( last_user, user );
 		
 	}
-	else
+	else 
 		DEBUG(10,("user_in_winbind_group_list: using cached user groups for [%s]\n", user));
  
+ 	if ( DEBUGLEVEL >= 10 ) {
+		DEBUG(10,("user_in_winbind_group_list: using groups -- "));
+	 	for ( i=0; i<num_groups; i++ )
+			DEBUGADD(10,("%d ", groups[i]));
+		DEBUGADD(10,("\n"));	
+	}
+	
  	/*
  	 * Now we have the gid list for this user - convert the gname
  	 * to a gid_t via either winbind or the local UNIX lookup and do the comparison.
@@ -370,6 +377,8 @@ static BOOL user_in_winbind_group_list(char *user,char *gname, BOOL *winbind_ans
  			gname ));
  		goto err;
  	}
+
+	DEBUG(10, ("user_in_winbind_group_list: group %s [%d]\n", gname, gid ));
  
  	for (i = 0; i < num_groups; i++) {
  		if (gid == groups[i]) {
@@ -545,7 +554,9 @@ BOOL user_in_list(char *user,char *list)
 			BOOL ret;
  
 			/* Check to see if name is a Windows group */
-			if (winbind_lookup_name(NULL, tok, &g_sid, &name_type) && name_type == SID_NAME_DOM_GRP) {
+			if (winbind_lookup_name(NULL, tok, &g_sid, &name_type) 
+				&& ( name_type==SID_NAME_DOM_GRP || name_type==SID_NAME_ALIAS ) )
+			{
  
 				/* Check if user name is in the Windows group */
 				ret = user_in_winbind_group_list(user, tok, &winbind_answered);
@@ -658,9 +669,13 @@ BOOL user_in_plist(char *user, char **the_list)
 			BOOL winbind_answered = False;
 			BOOL ret;
  
-			/* Check to see if name is a Windows group */
-			if (winbind_lookup_name(NULL, *list, &g_sid, &name_type) && name_type == SID_NAME_DOM_GRP) {
- 
+			/* Check to see if name is a Windows group;  Win2k native mode DCs
+			   will return domain local groups; while NT4 or mixed mode 2k DCs
+			   will not */
+			
+			if ( winbind_lookup_name(NULL, *list, &g_sid, &name_type) 
+				&& ( name_type==SID_NAME_DOM_GRP || name_type==SID_NAME_ALIAS ) )
+			{
 				/* Check if user name is in the Windows group */
 				ret = user_in_winbind_group_list(user, *list, &winbind_answered);
  

@@ -446,7 +446,7 @@ BOOL winbind_gidtoname(fstring name, gid_t gid)
 	if (!winbind_lookup_sid(&sid, dom_name, group_name, &name_type))
 		return False;
 
-	if (name_type != SID_NAME_DOM_GRP)
+	if (name_type != SID_NAME_DOM_GRP && name_type != SID_NAME_ALIAS )
 		return False;
 
 	slprintf(name, sizeof(fstring)-1, "%s%s%s", dom_name, 
@@ -481,7 +481,7 @@ BOOL winbind_nametogid(gid_t *pgid, const char *gname)
 	if (!winbind_lookup_name(NULL, gname, &g_sid, &name_type))
                 return False;
 
-	if (name_type != SID_NAME_DOM_GRP)
+	if (name_type != SID_NAME_DOM_GRP && name_type != SID_NAME_ALIAS )
 		return False;
 
 	return winbind_sid_to_gid(pgid, &g_sid);
