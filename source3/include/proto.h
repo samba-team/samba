@@ -18,19 +18,6 @@ BOOL queue_dns_query(struct packet_struct *p,struct nmb_name *question,
 		     struct name_record **n);
 void kill_async_dns_child();
 
-/*The following definitions come from  cgi.c  */
-
-void cgi_load_variables(FILE *f1);
-char *cgi_variable(char *name);
-char *cgi_vnum(int i, char **name);
-int cgi_boolean(char *name, int def);
-char *quotedup(char *s);
-char *urlquote(char *s);
-char *quotequotes(char *s);
-void quote_spaces(char *buf);
-void cgi_setup(char *rootdir, int auth_required);
-char *cgi_baseurl(void);
-
 /*The following definitions come from  charcnv.c  */
 
 char *unix2dos_format(char *str,BOOL overwrite);
@@ -1473,6 +1460,9 @@ BOOL last_challenge(char *challenge);
 user_struct *get_valid_user_struct(uint16 vuid);
 void invalidate_vuid(uint16 vuid);
 char *validated_username(uint16 vuid);
+int setup_groups(char *user, int uid, int gid, int *p_ngroups, 
+		 int **p_igroups, gid_t **p_groups,
+         int **p_attrs);
 uint16 register_vuid(int uid,int gid, char *name,BOOL guest);
 void add_session_user(char *user);
 void dfs_unlogin(void);
@@ -1627,9 +1617,6 @@ BOOL request_oplock_break(share_mode_entry *share_entry,
 BOOL receive_next_smb(int smbfd, int oplockfd, char *inbuf, int bufsize, int timeout);
 BOOL snum_used(int snum);
 BOOL reload_services(BOOL test);
-int setup_groups(char *user, int uid, int gid, int *p_ngroups, 
-		 int **p_igroups, gid_t **p_groups,
-         int **p_attrs);
 int make_connection(char *service,char *user,char *password, int pwlen, char *dev,uint16 vuid);
 int find_free_file(void );
 int reply_corep(char *outbuf);
@@ -1909,3 +1896,22 @@ void print_asc(int level, unsigned char *buf,int len);
 void dump_data(int level,char *buf1,int len);
 char *tab_depth(int depth);
 char *dom_sid_to_string(DOM_SID *sid);
+
+/*The following definitions come from  web/cgi.c  */
+
+void cgi_load_variables(FILE *f1);
+char *cgi_variable(char *name);
+char *cgi_vnum(int i, char **name);
+int cgi_boolean(char *name, int def);
+char *quotedup(char *s);
+char *urlquote(char *s);
+char *quotequotes(char *s);
+void quote_spaces(char *buf);
+void cgi_setup(char *rootdir, int auth_required);
+char *cgi_baseurl(void);
+char *cgi_rooturl(void);
+char *cgi_pathinfo(void);
+
+/*The following definitions come from  web/swat.c  */
+
+int main(int argc, char *argv[]);

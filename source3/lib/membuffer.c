@@ -304,7 +304,6 @@ BOOL mem_grow_data(struct mem_buf **buf, BOOL io, int new_size)
 		else
 		{
 			return mem_realloc_data((*buf), new_size);
-			return False;
 		}
 	}
 	return True;
