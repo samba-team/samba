@@ -672,9 +672,6 @@ struct passwd *sys_getpwnam(const char *name)
 		return setup_pwret(&pw_cache.pass);
 	}
 
-	/* no cache hit--use old lookup instead */
-	DEBUG(2,("getpwnam(%s) called\n",name));
-
 	return setup_pwret(getpwnam(name));
 }
 
