@@ -42,8 +42,6 @@ RCSID("$Id$");
 
 sig_atomic_t exit_flag = 0;
 
-int require_enc_timestamp = 1;
-
 static RETSIGTYPE
 sigterm(int sig)
 {
@@ -64,19 +62,8 @@ main(int argc, char **argv)
     des_cblock key;
     int c;
     set_progname(argv[0]);
-    while((c = getopt(argc, argv, "p")) != -1){
-	switch(c){
-	case 'p':
-	    require_enc_timestamp = 0;
-	    break;
-	default:
-	    usage();
-	}
-    }
-    argc -= optind;
-    argv += optind;
-    if(argc)
-	usage();
+    
+    configure(argc, argv);
     des_new_random_key(&key);
     memset(&key, 0, sizeof(key));
     signal(SIGINT, sigterm);
