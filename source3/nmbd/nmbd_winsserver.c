@@ -859,8 +859,10 @@ already exists in WINS as a GROUP name.\n", nmb_namestr(question) ));
 	 * reject without doing the query - we know we will reject it.
 	 */
 
-	pull_ascii_nstring(name, namerec->name.name);
-	if((namerec != NULL) && (is_myname(name)) ) {
+	if ( namerec != NULL )
+		pull_ascii_nstring(name, namerec->name.name);
+		
+	if( is_myname(name) ) {
 		if(!ismyip(from_ip)) {
 			DEBUG(3,("wins_process_name_registration_request: Attempt to register name %s. Name \
 is one of our (WINS server) names. Denying registration.\n", nmb_namestr(question) ));
