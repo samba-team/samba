@@ -80,12 +80,6 @@ int	registerd_host_only = 0;
 # ifdef HAVE_SYS_PTYVAR_H
 # include <sys/ptyvar.h>
 # endif
-#ifdef HAVE_CURSES_H
-#include <curses.h>
-#endif
-#ifdef HAVE_TERM_H
-#include <term.h>
-#endif
 
 /*
  * Because of the way ptyibuf is used with streams messages, we need
