@@ -195,7 +195,7 @@ sl_loop (SL_cmd *cmds, char *prompt)
 
     for (;;) {
 	char *buf;
-	unsigned count;
+	int count;
 	SL_cmd *c;
 
 	ret = 0;
