@@ -417,10 +417,11 @@ typedef struct krb5_context_data {
     krb5_addresses *ignore_addresses;
     char *default_cc_name;
     int pkinit_flags;
+    void *mutex;			/* protects error_string/error_buf */
 } krb5_context_data;
 
 enum {
-    KRB5_PKINIT_WIN2K		= 1,	/* wire compatible with Windows 2000 */
+    KRB5_PKINIT_WIN2K		= 1,	/* wire compatible with Windows 2k */
     KRB5_PKINIT_PACKET_CABLE	= 2	/* use packet cable standard */
 };
 
