@@ -522,8 +522,7 @@ krb5_rd_req(krb5_context context,
 			     ap_req_options,
 			     ticket);
 
-    if(keyblock != NULL)
-	krb5_free_keyblock(context, keyblock);
+    krb5_free_keyblock(context, keyblock);
 
 out:
     free_AP_REQ(&ap_req);
