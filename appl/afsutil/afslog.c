@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -40,7 +40,7 @@ RCSID("$Id$");
 #include <kafs.h>
 #include <roken.h>
 #include <getarg.h>
-
+#include <err.h>
 
 static int help_flag;
 static int version_flag;

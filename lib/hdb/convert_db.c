@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1999 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -38,7 +38,8 @@
  */
 
 #include "hdb_locl.h"
-#include "getarg.h"
+#include <getarg.h>
+#include <err.h>
 
 RCSID("$Id$");
 
