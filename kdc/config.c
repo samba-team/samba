@@ -133,11 +133,12 @@ get_dbinfo(krb5_config_section *cf)
 
     databases = NULL;
     dt = &databases;
-    while((db_binding = krb5_config_get_next(context, cf, &top_binding, 
-					     krb5_config_list, 
-					     "kdc", 
-					     "database",
-					     NULL))) {
+    while((db_binding = (krb5_config_binding *)
+	   krb5_config_get_next(context, cf, &top_binding, 
+				krb5_config_list, 
+				"kdc", 
+				"database",
+				NULL))) {
 	p = krb5_config_get_string(context, db_binding, "realm", NULL);
 	if(p == NULL) {
 	    if(default_binding) {
