@@ -442,7 +442,7 @@ BOOL do_reg_query_info(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
 do a REG Set Key Security 
 ****************************************************************************/
 BOOL do_reg_set_key_sec(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
-				SEC_DESC_BUF *sec_buf)
+				uint32 sec_buf_size, SEC_DESC *sec_buf)
 {
 	prs_struct rbuf;
 	prs_struct buf; 
@@ -458,7 +458,7 @@ BOOL do_reg_set_key_sec(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
 
 	DEBUG(4,("REG Set Key security.\n"));
 
-	make_reg_q_set_key_sec(&q_o, hnd, sec_buf);
+	make_reg_q_set_key_sec(&q_o, hnd, sec_buf_size, sec_buf);
 
 	/* turn parameters into data stream */
 	reg_io_q_set_key_sec("", &q_o, &buf, 0);
@@ -491,8 +491,7 @@ BOOL do_reg_set_key_sec(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
 do a REG Query Key Security 
 ****************************************************************************/
 BOOL do_reg_get_key_sec(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
-				uint32 *sec_buf_size,
-				SEC_DESC_BUF **ppsec_desc_buf)
+				uint32 *sec_buf_size, SEC_DESC_BUF *sec_buf)
 {
 	prs_struct rbuf;
 	prs_struct buf; 
@@ -508,7 +507,7 @@ BOOL do_reg_get_key_sec(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
 
 	DEBUG(4,("REG query key security.  buf_size: %d\n", *sec_buf_size));
 
-	make_reg_q_get_key_sec(&q_o, hnd, *sec_buf_size, NULL);
+	make_reg_q_get_key_sec(&q_o, hnd, *sec_buf_size, sec_buf);
 
 	/* turn parameters into data stream */
 	reg_io_q_get_key_sec("", &q_o, &buf, 0);
@@ -521,6 +520,11 @@ BOOL do_reg_get_key_sec(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
 
 		ZERO_STRUCT(r_o);
 
+		r_o.data = sec_buf;
+		if (*sec_buf_size != 0)
+		{
+			sec_buf->sec = (SEC_DESC*)malloc(*sec_buf_size);
+		}
 		reg_io_r_get_key_sec("", &r_o, &rbuf, 0);
 		p = rbuf.offset != 0;
 
@@ -543,7 +547,6 @@ BOOL do_reg_get_key_sec(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
 		{
 			valid_query = True;
 			(*sec_buf_size) = r_o.data->len;
-			*ppsec_desc_buf = r_o.data;
 		}
 	}
 
@@ -673,9 +676,9 @@ BOOL do_reg_create_key(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
 	prs_struct buf; 
 	REG_Q_CREATE_KEY q_o;
 	BOOL valid_create = False;
-	SEC_DESC *sec;
-	SEC_DESC_BUF *sec_buf;
-	size_t sec_len;
+	SEC_DESC sec;
+	SEC_DESC_BUF sec_buf;
+	int sec_len;
 
 	ZERO_STRUCT(sec);
 	ZERO_STRUCT(sec_buf);
@@ -691,27 +694,13 @@ BOOL do_reg_create_key(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
 	DEBUG(4,("REG Create Key: %s %s 0x%08x\n", key_name, key_class,
 		sam_access != NULL ? sam_access->mask : 0));
 
-	sec = make_sec_desc(1, SEC_DESC_SELF_RELATIVE,
-	                    NULL, NULL, NULL, NULL, &sec_len);
-	if (sec == NULL)
-	{
-		DEBUG(0,("make_sec_desc : malloc fail.\n"));
-		return False;
-	}
+	sec_len = make_sec_desc(&sec, 1, SEC_DESC_SELF_RELATIVE,
+	                        NULL, NULL, NULL, NULL);
 
 	DEBUG(10,("make_sec_desc: len = %d\n", sec_len));
 
-	sec_buf = make_sec_desc_buf( (int)sec_len, sec);
-	if (sec_buf == NULL)
-	{
-		DEBUG(0,("make_sec_desc : malloc fail (1)\n"));
-		free_sec_desc(&sec);
-		return False;
-	}
-	free_sec_desc(&sec);
-
 	make_reg_q_create_key(&q_o, hnd, key_name, key_class, sam_access,
-	                      sec_buf);
+	                      &sec_buf, sec_len, &sec);
 
 	/* turn parameters into data stream */
 	reg_io_q_create_key("", &q_o, &buf, 0);
@@ -741,7 +730,7 @@ BOOL do_reg_create_key(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
 		}
 	}
 
-	free_sec_desc_buf(&sec_buf);
+	free_sec_desc(&sec);
 
 	prs_mem_free(&rbuf);
 	prs_mem_free(&buf );
