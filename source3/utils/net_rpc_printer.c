@@ -305,7 +305,7 @@ net_copy_fileattr(TALLOC_CTX *mem_ctx,
 	int fnum_dst = 0;
 	SEC_DESC *sd = NULL;
 	uint16 attr;
-	time_t atime, ctime, mtime;
+	time_t f_atime, f_ctime, f_mtime;
 
 
 	if (!copy_timestamps && !copy_acls && !copy_attrs)
@@ -346,7 +346,7 @@ net_copy_fileattr(TALLOC_CTX *mem_ctx,
 
 		/* get file attributes */
 		if (!cli_getattrE(cli_share_src, fnum_src, &attr, NULL, 
-				 &ctime, &atime, &mtime)) {
+				 &f_ctime, &f_atime, &f_mtime)) {
 			DEBUG(0,("failed to get file-attrs: %s\n", 
 				cli_errstr(cli_share_src)));
 			nt_status = cli_nt_error(cli_share_src);
@@ -368,7 +368,7 @@ net_copy_fileattr(TALLOC_CTX *mem_ctx,
 	if (copy_timestamps) {
 
 		/* set timestamps */
-		if (!cli_setattrE(cli_share_dst, fnum_dst, ctime, atime, mtime)) {
+		if (!cli_setattrE(cli_share_dst, fnum_dst, f_ctime, f_atime, f_mtime)) {
 			DEBUG(0,("failed to set file-attrs (timestamps): %s\n",
 				cli_errstr(cli_share_dst)));
 			nt_status = cli_nt_error(cli_share_dst);
@@ -1312,7 +1312,7 @@ static NTSTATUS rpc_printer_publish_internals_args(struct cli_state *cli, TALLOC
 	POLICY_HND hnd;
 	BOOL got_hnd = False;
 	WERROR result;
-	char *action_str;
+	const char *action_str;
 
 	if (!get_printer_info(cli, mem_ctx, 2, argc, argv, &num_printers, &ctr))
 		return nt_status;
@@ -1348,6 +1348,7 @@ static NTSTATUS rpc_printer_publish_internals_args(struct cli_state *cli, TALLOC
 			action_str = "unpublished";
 			break;
 		default:
+			action_str = "unknown action";
 			printf("unkown action: %d\n", action);
 			break;
 		}
