@@ -27,3 +27,4 @@ SMB_SUBSYSTEM(LIBCLI_RAW,[],
 		libcli/raw/rawacl.o 
 		libcli/raw/rawdate.o],
 		[${LIBCLI_RAW_LIBS}])
+

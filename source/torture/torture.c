@@ -2410,6 +2410,7 @@ static struct {
 	{"RAW-STREAMS", torture_raw_streams, 0},
 	{"RAW-ACLS", torture_raw_acls, 0},
 	{"RAW-RAP", torture_raw_rap, 0},
+	{"RAW-COMPOSITE", torture_raw_composite, 0},
 
 	/* protocol scanners */
 	{"SCAN-TRANS2", torture_trans2_scan, 0},
