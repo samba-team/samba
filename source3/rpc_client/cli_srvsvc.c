@@ -47,7 +47,7 @@ WERROR cli_srvsvc_net_srv_get_info(struct cli_state *cli,
 	/* Marshall data and send request */
 
 	if (!srv_io_q_net_srv_get_info("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SRV_NET_SRV_GET_INFO, &qbuf, &rbuf))
+	    !rpc_api_pipe_req(cli, PI_SRVSVC, SRV_NET_SRV_GET_INFO, &qbuf, &rbuf))
 		goto done;
 
 	/* Unmarshall response */
@@ -92,7 +92,7 @@ WERROR cli_srvsvc_net_share_enum(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	/* Marshall data and send request */
 
 	if (!srv_io_q_net_share_enum("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SRV_NET_SHARE_ENUM_ALL, &qbuf, &rbuf))
+	    !rpc_api_pipe_req(cli, PI_SRVSVC, SRV_NET_SHARE_ENUM_ALL, &qbuf, &rbuf))
 		goto done;
 
 	/* Unmarshall response */
@@ -249,7 +249,7 @@ WERROR cli_srvsvc_net_share_get_info(struct cli_state *cli,
 	/* Marshall data and send request */
 
 	if (!srv_io_q_net_share_get_info("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SRV_NET_SHARE_GET_INFO, &qbuf, &rbuf))
+	    !rpc_api_pipe_req(cli, PI_SRVSVC, SRV_NET_SHARE_GET_INFO, &qbuf, &rbuf))
 		goto done;
 
 	/* Unmarshall response */
@@ -333,7 +333,7 @@ WERROR cli_srvsvc_net_share_del(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	/* Marshall data and send request */
 
 	if (!srv_io_q_net_share_del("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SRV_NET_SHARE_DEL, &qbuf, &rbuf))
+	    !rpc_api_pipe_req(cli, PI_SRVSVC, SRV_NET_SHARE_DEL, &qbuf, &rbuf))
 		goto done;
 
 	/* Unmarshall response */
@@ -377,7 +377,7 @@ WERROR cli_srvsvc_net_share_add(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	/* Marshall data and send request */
 
 	if (!srv_io_q_net_share_add("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SRV_NET_SHARE_ADD, &qbuf, &rbuf))
+	    !rpc_api_pipe_req(cli, PI_SRVSVC, SRV_NET_SHARE_ADD, &qbuf, &rbuf))
 		goto done;
 
 	/* Unmarshall response */
@@ -417,7 +417,7 @@ WERROR cli_srvsvc_net_remote_tod(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	/* Marshall data and send request */
 
 	if (!srv_io_q_net_remote_tod("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SRV_NET_REMOTE_TOD, &qbuf, &rbuf))
+	    !rpc_api_pipe_req(cli, PI_SRVSVC, SRV_NET_REMOTE_TOD, &qbuf, &rbuf))
 		goto done;
 
 	/* Unmarshall response */
@@ -466,7 +466,7 @@ WERROR cli_srvsvc_net_file_enum(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	/* Marshall data and send request */
 
 	if (!srv_io_q_net_file_enum("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SRV_NET_FILE_ENUM, &qbuf, &rbuf))
+	    !rpc_api_pipe_req(cli, PI_SRVSVC, SRV_NET_FILE_ENUM, &qbuf, &rbuf))
 		goto done;
 
 	/* Unmarshall response */
@@ -548,7 +548,7 @@ WERROR cli_srvsvc_net_file_close(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	/* Marshall data and send request */
 
 	if (!srv_io_q_net_file_close("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SRV_NET_FILE_CLOSE, &qbuf, &rbuf))
+	    !rpc_api_pipe_req(cli, PI_SRVSVC, SRV_NET_FILE_CLOSE, &qbuf, &rbuf))
 		goto done;
 
 	/* Unmarshall response */

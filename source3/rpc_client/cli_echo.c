@@ -48,7 +48,7 @@ NTSTATUS cli_echo_add_one(struct cli_state *cli, TALLOC_CTX *mem_ctx,
         init_echo_q_add_one(&q, request);
 
 	if (!echo_io_q_add_one("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, ECHO_ADD_ONE, &qbuf, &rbuf))
+	    !rpc_api_pipe_req(cli, PI_ECHO, ECHO_ADD_ONE, &qbuf, &rbuf))
 		goto done;
 
 	/* Unmarshall response */
@@ -94,7 +94,7 @@ NTSTATUS cli_echo_data(struct cli_state *cli, TALLOC_CTX *mem_ctx,
         init_echo_q_echo_data(&q, size, in_data);
 
 	if (!echo_io_q_echo_data("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, ECHO_DATA, &qbuf, &rbuf))
+	    !rpc_api_pipe_req(cli, PI_ECHO, ECHO_DATA, &qbuf, &rbuf))
 		goto done;
 
 	/* Unmarshall response */
@@ -142,7 +142,7 @@ NTSTATUS cli_echo_sink_data(struct cli_state *cli, TALLOC_CTX *mem_ctx,
         init_echo_q_sink_data(&q, size, in_data);
 
 	if (!echo_io_q_sink_data("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, ECHO_SINK_DATA, &qbuf, &rbuf)) {
+	    !rpc_api_pipe_req(cli, PI_ECHO, ECHO_SINK_DATA, &qbuf, &rbuf)) {
 		goto done;
 	}
 
@@ -187,7 +187,7 @@ NTSTATUS cli_echo_source_data(struct cli_state *cli, TALLOC_CTX *mem_ctx,
         init_echo_q_source_data(&q, size);
 
 	if (!echo_io_q_source_data("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, ECHO_SOURCE_DATA, &qbuf, &rbuf)) {
+	    !rpc_api_pipe_req(cli, PI_ECHO, ECHO_SOURCE_DATA, &qbuf, &rbuf)) {
 		goto done;
 	}
 

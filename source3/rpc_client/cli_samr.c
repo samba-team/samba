@@ -50,7 +50,7 @@ NTSTATUS cli_samr_connect(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	init_samr_q_connect(&q, cli->desthost, access_mask);
 
 	if (!samr_io_q_connect("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SAMR_CONNECT, &qbuf, &rbuf))
+	    !rpc_api_pipe_req(cli, PI_SAMR, SAMR_CONNECT, &qbuf, &rbuf))
 		goto done;
 
 	/* Unmarshall response */
@@ -99,7 +99,7 @@ NTSTATUS cli_samr_connect4(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	init_samr_q_connect4(&q, cli->desthost, access_mask);
 
 	if (!samr_io_q_connect4("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SAMR_CONNECT4, &qbuf, &rbuf))
+	    !rpc_api_pipe_req(cli, PI_SAMR, SAMR_CONNECT4, &qbuf, &rbuf))
 		goto done;
 
 	/* Unmarshall response */
@@ -148,7 +148,7 @@ NTSTATUS cli_samr_close(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	init_samr_q_close_hnd(&q, connect_pol);
 
 	if (!samr_io_q_close_hnd("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SAMR_CLOSE_HND, &qbuf, &rbuf))
+	    !rpc_api_pipe_req(cli, PI_SAMR, SAMR_CLOSE_HND, &qbuf, &rbuf))
 		goto done;
 
 	/* Unmarshall response */
@@ -198,7 +198,7 @@ NTSTATUS cli_samr_open_domain(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	init_samr_q_open_domain(&q, connect_pol, access_mask, domain_sid);
 
 	if (!samr_io_q_open_domain("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SAMR_OPEN_DOMAIN, &qbuf, &rbuf))
+	    !rpc_api_pipe_req(cli, PI_SAMR, SAMR_OPEN_DOMAIN, &qbuf, &rbuf))
 		goto done;
 
 	/* Unmarshall response */
@@ -248,7 +248,7 @@ NTSTATUS cli_samr_open_user(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	init_samr_q_open_user(&q, domain_pol, access_mask, user_rid);
 
 	if (!samr_io_q_open_user("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SAMR_OPEN_USER, &qbuf, &rbuf))
+	    !rpc_api_pipe_req(cli, PI_SAMR, SAMR_OPEN_USER, &qbuf, &rbuf))
 		goto done;
 
 	/* Unmarshall response */
@@ -298,7 +298,7 @@ NTSTATUS cli_samr_open_group(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	init_samr_q_open_group(&q, domain_pol, access_mask, group_rid);
 
 	if (!samr_io_q_open_group("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SAMR_OPEN_GROUP, &qbuf, &rbuf))
+	    !rpc_api_pipe_req(cli, PI_SAMR, SAMR_OPEN_GROUP, &qbuf, &rbuf))
 		goto done;
 
 	/* Unmarshall response */
@@ -349,7 +349,7 @@ NTSTATUS cli_samr_create_dom_group(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	init_samr_q_create_dom_group(&q, domain_pol, group_name, access_mask);
 
 	if (!samr_io_q_create_dom_group("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SAMR_CREATE_DOM_GROUP, &qbuf, &rbuf))
+	    !rpc_api_pipe_req(cli, PI_SAMR, SAMR_CREATE_DOM_GROUP, &qbuf, &rbuf))
 		goto done;
 
 	/* Unmarshall response */
@@ -396,7 +396,7 @@ NTSTATUS cli_samr_add_groupmem(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	init_samr_q_add_groupmem(&q, group_pol, rid);
 
 	if (!samr_io_q_add_groupmem("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SAMR_ADD_GROUPMEM, &qbuf, &rbuf))
+	    !rpc_api_pipe_req(cli, PI_SAMR, SAMR_ADD_GROUPMEM, &qbuf, &rbuf))
 		goto done;
 
 	/* Unmarshall response */
@@ -440,7 +440,7 @@ NTSTATUS cli_samr_del_groupmem(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	init_samr_q_del_groupmem(&q, group_pol, rid);
 
 	if (!samr_io_q_del_groupmem("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SAMR_DEL_GROUPMEM, &qbuf, &rbuf))
+	    !rpc_api_pipe_req(cli, PI_SAMR, SAMR_DEL_GROUPMEM, &qbuf, &rbuf))
 		goto done;
 
 	/* Unmarshall response */
@@ -485,7 +485,7 @@ NTSTATUS cli_samr_query_userinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	init_samr_q_query_userinfo(&q, user_pol, switch_value);
 
 	if (!samr_io_q_query_userinfo("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SAMR_QUERY_USERINFO, &qbuf, &rbuf))
+	    !rpc_api_pipe_req(cli, PI_SAMR, SAMR_QUERY_USERINFO, &qbuf, &rbuf))
 		goto done;
 
 	/* Unmarshall response */
@@ -530,7 +530,7 @@ NTSTATUS cli_samr_set_groupinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	init_samr_q_set_groupinfo(&q, group_pol, ctr);
 
 	if (!samr_io_q_set_groupinfo("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SAMR_SET_GROUPINFO, &qbuf, &rbuf))
+	    !rpc_api_pipe_req(cli, PI_SAMR, SAMR_SET_GROUPINFO, &qbuf, &rbuf))
 		goto done;
 
 	/* Unmarshall response */
@@ -575,7 +575,7 @@ NTSTATUS cli_samr_query_groupinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	init_samr_q_query_groupinfo(&q, group_pol, info_level);
 
 	if (!samr_io_q_query_groupinfo("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SAMR_QUERY_GROUPINFO, &qbuf, &rbuf))
+	    !rpc_api_pipe_req(cli, PI_SAMR, SAMR_QUERY_GROUPINFO, &qbuf, &rbuf))
 		goto done;
 
 	/* Unmarshall response */
@@ -622,7 +622,7 @@ NTSTATUS cli_samr_query_usergroups(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	init_samr_q_query_usergroups(&q, user_pol);
 
 	if (!samr_io_q_query_usergroups("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SAMR_QUERY_USERGROUPS, &qbuf, &rbuf))
+	    !rpc_api_pipe_req(cli, PI_SAMR, SAMR_QUERY_USERGROUPS, &qbuf, &rbuf))
 		goto done;
 
 	/* Unmarshall response */
@@ -669,7 +669,7 @@ NTSTATUS cli_samr_set_aliasinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	init_samr_q_set_aliasinfo(&q, alias_pol, ctr);
 
 	if (!samr_io_q_set_aliasinfo("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SAMR_SET_ALIASINFO, &qbuf, &rbuf))
+	    !rpc_api_pipe_req(cli, PI_SAMR, SAMR_SET_ALIASINFO, &qbuf, &rbuf))
 		goto done;
 
 	/* Unmarshall response */
@@ -715,7 +715,7 @@ NTSTATUS cli_samr_query_useraliases(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	init_samr_q_query_useraliases(&q, user_pol, num_sids, &ptr, sid);
 
 	if (!samr_io_q_query_useraliases("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SAMR_QUERY_USERALIASES, &qbuf, &rbuf))
+	    !rpc_api_pipe_req(cli, PI_SAMR, SAMR_QUERY_USERALIASES, &qbuf, &rbuf))
 		goto done;
 
 	/* Unmarshall response */
@@ -763,7 +763,7 @@ NTSTATUS cli_samr_query_groupmem(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	init_samr_q_query_groupmem(&q, group_pol);
 
 	if (!samr_io_q_query_groupmem("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SAMR_QUERY_GROUPMEM, &qbuf, &rbuf))
+	    !rpc_api_pipe_req(cli, PI_SAMR, SAMR_QUERY_GROUPMEM, &qbuf, &rbuf))
 		goto done;
 
 	/* Unmarshall response */
@@ -833,7 +833,7 @@ NTSTATUS cli_samr_enum_dom_users(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	init_samr_q_enum_dom_users(&q, pol, *start_idx, acb_mask, 0, size);
 	
 	if (!samr_io_q_enum_dom_users("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SAMR_ENUM_DOM_USERS, &qbuf, &rbuf)) {
+	    !rpc_api_pipe_req(cli, PI_SAMR, SAMR_ENUM_DOM_USERS, &qbuf, &rbuf)) {
 		goto done;
 	}
 
@@ -910,7 +910,7 @@ NTSTATUS cli_samr_enum_dom_groups(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	init_samr_q_enum_dom_groups(&q, pol, *start_idx, size);
 
 	if (!samr_io_q_enum_dom_groups("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SAMR_ENUM_DOM_GROUPS, &qbuf, &rbuf))
+	    !rpc_api_pipe_req(cli, PI_SAMR, SAMR_ENUM_DOM_GROUPS, &qbuf, &rbuf))
 		goto done;
 
 	/* Unmarshall response */
@@ -989,7 +989,7 @@ NTSTATUS cli_samr_enum_als_groups(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	init_samr_q_enum_dom_aliases(&q, pol, *start_idx, size);
 
 	if (!samr_io_q_enum_dom_aliases("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SAMR_ENUM_DOM_ALIASES, &qbuf, &rbuf)) {
+	    !rpc_api_pipe_req(cli, PI_SAMR, SAMR_ENUM_DOM_ALIASES, &qbuf, &rbuf)) {
 		goto done;
 	}
 
@@ -1070,7 +1070,7 @@ NTSTATUS cli_samr_query_aliasmem(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	init_samr_q_query_aliasmem(&q, alias_pol);
 
 	if (!samr_io_q_query_aliasmem("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SAMR_QUERY_ALIASMEM, &qbuf, &rbuf)) {
+	    !rpc_api_pipe_req(cli, PI_SAMR, SAMR_QUERY_ALIASMEM, &qbuf, &rbuf)) {
 		goto done;
 	}
 
@@ -1136,7 +1136,7 @@ NTSTATUS cli_samr_open_alias(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	init_samr_q_open_alias(&q, domain_pol, access_mask, alias_rid);
 
 	if (!samr_io_q_open_alias("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SAMR_OPEN_ALIAS, &qbuf, &rbuf)) {
+	    !rpc_api_pipe_req(cli, PI_SAMR, SAMR_OPEN_ALIAS, &qbuf, &rbuf)) {
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
@@ -1190,7 +1190,7 @@ NTSTATUS cli_samr_create_dom_alias(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	init_samr_q_create_dom_alias(&q, domain_pol, name);
 
 	if (!samr_io_q_create_dom_alias("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SAMR_CREATE_DOM_ALIAS, &qbuf, &rbuf)) {
+	    !rpc_api_pipe_req(cli, PI_SAMR, SAMR_CREATE_DOM_ALIAS, &qbuf, &rbuf)) {
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
@@ -1240,7 +1240,7 @@ NTSTATUS cli_samr_add_aliasmem(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	init_samr_q_add_aliasmem(&q, alias_pol, member);
 
 	if (!samr_io_q_add_aliasmem("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SAMR_ADD_ALIASMEM, &qbuf, &rbuf)) {
+	    !rpc_api_pipe_req(cli, PI_SAMR, SAMR_ADD_ALIASMEM, &qbuf, &rbuf)) {
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
@@ -1286,7 +1286,7 @@ NTSTATUS cli_samr_del_aliasmem(struct cli_state *cli, TALLOC_CTX *mem_ctx,
  	init_samr_q_del_aliasmem(&q, alias_pol, member);
 
 	if (!samr_io_q_del_aliasmem("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SAMR_DEL_ALIASMEM, &qbuf, &rbuf)) {
+	    !rpc_api_pipe_req(cli, PI_SAMR, SAMR_DEL_ALIASMEM, &qbuf, &rbuf)) {
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
@@ -1333,7 +1333,7 @@ NTSTATUS cli_samr_query_alias_info(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	init_samr_q_query_aliasinfo(&q, alias_pol, switch_value);
 
 	if (!samr_io_q_query_aliasinfo("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SAMR_QUERY_ALIASINFO, &qbuf, &rbuf)) {
+	    !rpc_api_pipe_req(cli, PI_SAMR, SAMR_QUERY_ALIASINFO, &qbuf, &rbuf)) {
 		goto done;
 	}
 
@@ -1384,7 +1384,7 @@ NTSTATUS cli_samr_query_dom_info(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	init_samr_q_query_dom_info(&q, domain_pol, switch_value);
 
 	if (!samr_io_q_query_dom_info("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SAMR_QUERY_DOMAIN_INFO, &qbuf, &rbuf)) {
+	    !rpc_api_pipe_req(cli, PI_SAMR, SAMR_QUERY_DOMAIN_INFO, &qbuf, &rbuf)) {
 		goto done;
 	}
 
@@ -1476,7 +1476,7 @@ NTSTATUS cli_samr_chgpasswd_user(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 				   old_lanman_hash_enc);
 
 	if (!samr_io_q_chgpasswd_user("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SAMR_CHGPASSWD_USER, &qbuf, &rbuf)) {
+	    !rpc_api_pipe_req(cli, PI_SAMR, SAMR_CHGPASSWD_USER, &qbuf, &rbuf)) {
 		goto done;
 	}
 
@@ -1562,7 +1562,7 @@ NTSTATUS cli_samr_query_dispinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 				   *start_idx, max_entries, max_size);
 
 	if (!samr_io_q_query_dispinfo("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SAMR_QUERY_DISPINFO, &qbuf, &rbuf)) {
+	    !rpc_api_pipe_req(cli, PI_SAMR, SAMR_QUERY_DISPINFO, &qbuf, &rbuf)) {
 		goto done;
 	}
 
@@ -1629,7 +1629,7 @@ NTSTATUS cli_samr_lookup_rids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 				num_rids, rids);
 
 	if (!samr_io_q_lookup_rids("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SAMR_LOOKUP_RIDS, &qbuf, &rbuf)) {
+	    !rpc_api_pipe_req(cli, PI_SAMR, SAMR_LOOKUP_RIDS, &qbuf, &rbuf)) {
 		goto done;
 	}
 
@@ -1700,7 +1700,7 @@ NTSTATUS cli_samr_lookup_names(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 				 num_names, names);
 
 	if (!samr_io_q_lookup_names("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SAMR_LOOKUP_NAMES, &qbuf, &rbuf)) {
+	    !rpc_api_pipe_req(cli, PI_SAMR, SAMR_LOOKUP_NAMES, &qbuf, &rbuf)) {
 		goto done;
 	}
 
@@ -1764,7 +1764,7 @@ NTSTATUS cli_samr_create_dom_user(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	init_samr_q_create_user(&q, domain_pol, acct_name, acb_info, unknown);
 
 	if (!samr_io_q_create_user("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SAMR_CREATE_USER, &qbuf, &rbuf)) {
+	    !rpc_api_pipe_req(cli, PI_SAMR, SAMR_CREATE_USER, &qbuf, &rbuf)) {
 		goto done;
 	}
 
@@ -1827,7 +1827,7 @@ NTSTATUS cli_samr_set_userinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 				 ctr->info.id);
 
 	if (!samr_io_q_set_userinfo("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SAMR_SET_USERINFO, &qbuf, &rbuf)) {
+	    !rpc_api_pipe_req(cli, PI_SAMR, SAMR_SET_USERINFO, &qbuf, &rbuf)) {
 		goto done;
 	}
 
@@ -1881,7 +1881,7 @@ NTSTATUS cli_samr_set_userinfo2(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	init_samr_q_set_userinfo2(&q, user_pol, sess_key, switch_value, ctr);
 
 	if (!samr_io_q_set_userinfo2("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SAMR_SET_USERINFO2, &qbuf, &rbuf)) {
+	    !rpc_api_pipe_req(cli, PI_SAMR, SAMR_SET_USERINFO2, &qbuf, &rbuf)) {
 		goto done;
 	}
 
@@ -1929,7 +1929,7 @@ NTSTATUS cli_samr_delete_dom_group(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	init_samr_q_delete_dom_group(&q, group_pol);
 
 	if (!samr_io_q_delete_dom_group("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SAMR_DELETE_DOM_GROUP, &qbuf, &rbuf)) {
+	    !rpc_api_pipe_req(cli, PI_SAMR, SAMR_DELETE_DOM_GROUP, &qbuf, &rbuf)) {
 		goto done;
 	}
 
@@ -1975,7 +1975,7 @@ NTSTATUS cli_samr_delete_dom_alias(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	init_samr_q_delete_dom_alias(&q, alias_pol);
 
 	if (!samr_io_q_delete_dom_alias("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SAMR_DELETE_DOM_ALIAS, &qbuf, &rbuf)) {
+	    !rpc_api_pipe_req(cli, PI_SAMR, SAMR_DELETE_DOM_ALIAS, &qbuf, &rbuf)) {
 		goto done;
 	}
 
@@ -2021,7 +2021,7 @@ NTSTATUS cli_samr_delete_dom_user(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	init_samr_q_delete_dom_user(&q, user_pol);
 
 	if (!samr_io_q_delete_dom_user("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SAMR_DELETE_DOM_USER, &qbuf, &rbuf)) {
+	    !rpc_api_pipe_req(cli, PI_SAMR, SAMR_DELETE_DOM_USER, &qbuf, &rbuf)) {
 		goto done;
 	}
 
@@ -2068,7 +2068,7 @@ NTSTATUS cli_samr_query_sec_obj(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	init_samr_q_query_sec_obj(&q, user_pol, switch_value);
 
 	if (!samr_io_q_query_sec_obj("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SAMR_QUERY_SEC_OBJECT, &qbuf, &rbuf)) {
+	    !rpc_api_pipe_req(cli, PI_SAMR, SAMR_QUERY_SEC_OBJECT, &qbuf, &rbuf)) {
 		goto done;
 	}
 
@@ -2115,7 +2115,7 @@ NTSTATUS cli_samr_get_dom_pwinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	init_samr_q_get_dom_pwinfo(&q, cli->desthost);
 
 	if (!samr_io_q_get_dom_pwinfo("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SAMR_GET_DOM_PWINFO, &qbuf, &rbuf))
+	    !rpc_api_pipe_req(cli, PI_SAMR, SAMR_GET_DOM_PWINFO, &qbuf, &rbuf))
 		goto done;
 
 	/* Unmarshall response */
@@ -2167,7 +2167,7 @@ NTSTATUS cli_samr_lookup_domain(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	init_samr_q_lookup_domain(&q, user_pol, domain_name);
 
 	if (!samr_io_q_lookup_domain("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SAMR_LOOKUP_DOMAIN, &qbuf, &rbuf))
+	    !rpc_api_pipe_req(cli, PI_SAMR, SAMR_LOOKUP_DOMAIN, &qbuf, &rbuf))
 		goto done;
 
 	/* Unmarshall response */
