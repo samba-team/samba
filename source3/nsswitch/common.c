@@ -298,9 +298,9 @@ void free_response(struct winbindd_response *response)
 
 /* Handle simple types of requests */
 
-enum nss_status generic_request(int req_type, 
-				struct winbindd_request *request,
-				struct winbindd_response *response)
+enum nss_status winbindd_request(int req_type, 
+				 struct winbindd_request *request,
+				 struct winbindd_response *response)
 {
 	struct winbindd_request lrequest;
 	struct winbindd_response lresponse;
