@@ -44,25 +44,60 @@ struct krb5_kafs_data {
 enum { KAFS_RXKAD_K5_KVNO = 256 };
 
 static int
-v5_to_kt(krb5_creds *cred, uid_t uid, struct kafs_token *kt)
+v5_to_kt(krb5_creds *cred, uid_t uid, struct kafs_token *kt, int local524)
 {
+    int kvno, ret;
+
     kt->ticket = NULL;
 
     /* check if des key */
     if (cred->session.keyvalue.length != 8)
 	return EINVAL;
 
-    kt->ticket = malloc(cred->ticket.length);
-    if (kt->ticket == NULL)
-	return ENOMEM;
-    kt->ticket_len = cred->ticket.length;
-    memcpy(kt->ticket, cred->ticket.data, kt->ticket_len);
+    if (local524) {
+	Ticket t;
+	unsigned char *buf;
+	size_t buf_len;
+	size_t len;
+
+	kvno = 213;
+
+	ret = decode_Ticket(cred->ticket.data, cred->ticket.length, &t, &len);
+	if (ret)
+	    return ret;
+	if (t.tkt_vno != 5)
+	    return -1;
+
+	ASN1_MALLOC_ENCODE(EncryptedData, buf, buf_len, &t.enc_part,
+			   &len, ret);
+	free_Ticket(&t);
+	if (ret)
+	    return ret;
+	if(buf_len != len) {
+	    free(buf);
+	    return KRB5KRB_ERR_GENERIC;
+	}
+
+	kt->ticket = buf;
+	kt->ticket_len = buf_len;
+
+    } else {
+	kvno = KAFS_RXKAD_K5_KVNO;
+	kt->ticket = malloc(cred->ticket.length);
+	if (kt->ticket == NULL)
+	    return ENOMEM;
+	kt->ticket_len = cred->ticket.length;
+	memcpy(kt->ticket, cred->ticket.data, kt->ticket_len);
+
+	ret = 0;
+    }
+
 
     /*
      * Build a struct ClearToken
      */
 
-    kt->ct.AuthHandle = KAFS_RXKAD_K5_KVNO;
+    kt->ct.AuthHandle = kvno;
     memcpy(kt->ct.HandShakeKey, cred->session.keyvalue.data, 8);
     kt->ct.ViceId = uid;
     kt->ct.BeginTimestamp = cred->times.starttime;
@@ -72,6 +107,40 @@ v5_to_kt(krb5_creds *cred, uid_t uid, struct kafs_token *kt)
 
     return 0;
 }
+
+static krb5_error_code
+v5_convert(krb5_context context, krb5_ccache id,
+	   krb5_creds *cred, uid_t uid, 
+	   struct kafs_token *kt)
+{
+    krb5_error_code ret;
+    char *val;
+
+    krb5_appdefault_string (context, "libkafs", 
+			    krb5_principal_get_realm(context,
+						     cred->server),
+			    "afs-use-524", "yes", &val);
+    
+    if (strcmp("no", val) == 0) {
+	ret = v5_to_kt(cred, uid, kt, 0);
+    } else if (strcmp("local", val) == 0 || strcmp("2b", val) == 0) {
+	ret = v5_to_kt(cred, uid, kt, 1);
+    } else { /* "yes" */
+	struct credentials c;
+	
+	if (id == NULL)
+	    ret = krb524_convert_creds_kdc(context, cred, &c);
+	else
+	    ret = krb524_convert_creds_kdc_ccache(context, id, cred, &c);
+	if (ret)
+	    return ret;
+
+	ret = _kafs_v4_to_kt(&c, uid, kt);
+    }
+
+    return ret;
+}
+
 
 /*
  *
@@ -84,7 +153,6 @@ get_cred(kafs_data *data, const char *name, const char *inst,
     krb5_error_code ret;
     krb5_creds in_creds, *out_creds;
     struct krb5_kafs_data *d = data->data;
-    krb5_boolean use_524;
 
     memset(&in_creds, 0, sizeof(in_creds));
     ret = krb5_425_conv_principal(d->context, name, inst, realm, 
@@ -103,23 +171,9 @@ get_cred(kafs_data *data, const char *name, const char *inst,
     if(ret)
 	return ret;
 
-    krb5_appdefault_boolean (d->context, "libkafs", 
-			     krb5_principal_get_realm(d->context,
-						      out_creds->server),
-			     "afs-use-524", TRUE, &use_524);
+    ret = v5_convert(d->context, d->id, out_creds, uid, kt);
+    krb5_free_creds(d->context, out_creds);
 
-    if (use_524 == FALSE) {
-	v5_to_kt(out_creds, uid, kt);
-    } else {
-	struct credentials c;
-
-	ret = krb524_convert_creds_kdc_ccache(d->context, d->id, 
-					      out_creds, &c);
-	if (ret)
-	    return ret;
-	krb5_free_creds(d->context, out_creds);
-	ret = _kafs_v4_to_kt(&c, uid, kt);
-    }
     return ret;
 }
 
@@ -239,12 +293,15 @@ krb5_realm_of_cell(const char *cell, char **realm)
  */
 
 int
-kafs_settoken5(const char *cell, uid_t uid, krb5_creds *c)
+kafs_settoken5(krb5_context context, const char *cell, uid_t uid,
+	       krb5_creds *cred)
 {
     struct kafs_token kt;
     int ret;
 
-    v5_to_kt(c, uid, &kt);
+    ret = v5_convert(context, NULL, cred, uid, &kt);
+    if (ret)
+	return ret;
 
     ret = kafs_settoken_rxkad(cell, &kt.ct, kt.ticket, kt.ticket_len);
 
