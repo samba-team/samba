@@ -19,36 +19,14 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#include <stdio.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <unistd.h>
+
 #include "includes.h"
 #include "winbindd.h"
 #include "sids.h"
-
-/****************************************************************************
-exit thy server
-****************************************************************************/
-void exit_server(char *reason)
-{
-	static int firsttime=1;
-
-	if (!firsttime) exit(0);
-	firsttime = 0;
-
-	DEBUG(0,("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% AARGH\n"));
-
-	if (!reason) {   
-		DEBUG(0,("====================================\n"));
-	}    
-
-	DEBUG(3,("Server exit (%s)\n", (reason ? reason : "")));
-#ifdef MEM_MAN
-	{
-		extern FILE *dbf;
-		smb_mem_write_verbose(dbf);
-		dbgflush();
-	}
-#endif
-	exit(0);
-}
 
 /* Connect to a domain controller and return domain sid */
 
@@ -58,12 +36,11 @@ int winbind_get_domain_sid(char *system_name, fstring domain_name,
     POLICY_HND lsa_handle;
     DOM_SID level3_sid, level5_sid;
     fstring level3_dom, level5_dom;
-    BOOL res = True;
+    BOOL res;
 
     /* Get SID from domain controller */
 
-    res = res ? lsa_open_policy(system_name, &lsa_handle, False, 
-                                0x02000000) : False;
+    res = lsa_open_policy(system_name, &lsa_handle, False, 0x02000000);
 
     res = res ? lsa_query_info_pol(&lsa_handle, 0x03, level3_dom, 
                                    &level3_sid) : False;
@@ -83,14 +60,14 @@ int winbind_get_domain_sid(char *system_name, fstring domain_name,
     return res;
 }
 
-/* Return a sid and type within a domain given a username */
+/* Lookup a sid and type within a domain given a username */
 
 int winbind_lookup_by_name(char *system_name, DOM_SID *level5_sid,
                            fstring name, DOM_SID *sid,
                            enum SID_NAME_USE *type)
 {
     POLICY_HND lsa_handle;
-    BOOL res = True;
+    BOOL res;
     DOM_SID *sids = NULL;
     int num_sids = 0, num_names = 1;
     uint32 *types = NULL;
@@ -99,8 +76,7 @@ int winbind_lookup_by_name(char *system_name, DOM_SID *level5_sid,
         return 0;
     }
 
-    res = res ? lsa_open_policy(system_name, &lsa_handle, True,
-                                0x02000000) : False;
+    res = lsa_open_policy(system_name, &lsa_handle, True, 0x02000000);
     
     res = res ? lsa_lookup_names(&lsa_handle, num_names, (char **)&name,
                                  &sids, &types, &num_sids) : False;
@@ -123,7 +99,8 @@ int winbind_lookup_by_name(char *system_name, DOM_SID *level5_sid,
     return res;
 }
 
-/* Return a name and type within a domain given a rid */
+/* Lookup a name and type within a domain given a rid */
+
 int winbind_lookup_by_sid(char *system_name, DOM_SID *level5_sid,
                           DOM_SID *sid, char *name,
                           enum SID_NAME_USE *type)
@@ -132,11 +109,9 @@ int winbind_lookup_by_sid(char *system_name, DOM_SID *level5_sid,
     int num_sids = 1, num_names = 0;
     uint32 *types = NULL;
     char **names;
-    BOOL res = True;
+    BOOL res;
 
-
-    res = res ? lsa_open_policy(system_name, &lsa_handle, True,
-                                0x02000000) : False;
+    res = lsa_open_policy(system_name, &lsa_handle, True, 0x02000000);
 
     res = res ? lsa_lookup_sids(&lsa_handle, num_sids, (DOM_SID **)&sid,
                                 &names, &types, &num_names) : False;
@@ -158,110 +133,158 @@ int winbind_lookup_by_sid(char *system_name, DOM_SID *level5_sid,
     return res;
 }
 
-/* Lookup user information from rid */
+/* Lookup user information and group information from rid */
 
 int winbind_lookup_userinfo(char *system_name, DOM_SID *level5_sid,
-                            uint32 user_rid, SAM_USERINFO_CTR *info)
+                            uint32 user_rid, SAM_USERINFO_CTR *user_info)
 {
     POLICY_HND sam_handle, sam_dom_handle;
-    BOOL res = True;
+    BOOL res, res1;
 
     /* Open connection to SAM pipe and SAM domain */
 
-    res = res ? samr_connect(system_name, 0x02000000, &sam_handle) : False;
+    res = samr_connect(system_name, 0x02000000, &sam_handle);
 
     res = res ? samr_open_domain(&sam_handle, 0x02000000, level5_sid, 
                                  &sam_dom_handle) : False;
-    /* Query user info */
+    /* Get user info */
 
-    res = res ? get_samr_query_userinfo(&sam_dom_handle, 0x15, user_rid,
-                                        info) : False;
+    res1 = res ? get_samr_query_userinfo(&sam_dom_handle, 0x15, user_rid,
+                                        user_info) : False;
+#if 0
+
+    /* Get groups user is a member of */
+
+    res2 = res ? get_samr_query_usergroups(&sam_dom_handle, user_rid, 
+                                           num_gids, gids) : False;
+#endif
+
     /* Close up shop */
 
-    res = res ? samr_close(&sam_dom_handle) : False;
+    samr_close(&sam_dom_handle);
+    samr_close(&sam_handle);
 
-    res = res ? samr_close(&sam_handle) : False;
-
-    return res;
+    return res && res1;
 }                                   
+
+/* Return information about a group */
 
 int winbind_lookup_groupinfo(char *system_name, DOM_SID *level5_sid,
                              uint32 group_rid, GROUP_INFO_CTR *info)
 {
     POLICY_HND sam_handle, sam_dom_handle;
-    BOOL res = True;
+    BOOL res;
 
     /* Open connection to SAM pipe and SAM domain */
 
-    res = res ? samr_connect(system_name, 0x02000000, &sam_handle) : False;
+    res = samr_connect(system_name, 0x02000000, &sam_handle);
 
     res = res ? samr_open_domain(&sam_handle, 0x02000000, level5_sid, 
                                  &sam_dom_handle) : False;
     /* Query group info */
-
+    
     res = res ? get_samr_query_groupinfo(&sam_dom_handle, 1,
                                          group_rid, info) : False;
 
     /* Close up shop */
 
-    res = res ? samr_close(&sam_dom_handle) : False;
-
-    res = res ? samr_close(&sam_handle) : False;
+    samr_close(&sam_dom_handle);
+    samr_close(&sam_handle);
 
     return res;
 }
 
-/* Create ipc socket */
-
-int create_winbind_socket(void)
+int winbind_lookup_groupmem(char *system_name, DOM_SID *level5_sid,
+                            uint32 group_rid, uint32 *num_names,
+                            uint32 **rid_mem, char ***names,
+                            uint32 **name_types)
 {
-    struct sockaddr_un sunaddr;
-    struct stat st;
-    int ret, sock;
+    POLICY_HND sam_handle, sam_dom_handle;
+    BOOL res;
 
-    ret = stat(SOCKET_NAME, &st);
-    if (ret == -1 && errno != ENOENT) {
-        perror("stat");
-        return -1;
-    }
+    /* Open connection to SAM pipe and SAM domain */
 
-    if (ret == 0) {
-        fprintf(stderr, "socket exists!\n");
-        return -1;
-    }
+    res = samr_connect(system_name, 0x02000000, &sam_handle);
 
-    sock = socket(AF_UNIX, SOCK_STREAM, 0);
+    res = res ? samr_open_domain(&sam_handle, 0x02000000, level5_sid, 
+                                 &sam_dom_handle) : False;
+    /* Query group membership */
     
-    if (sock < 0) {
-        perror("socket");
-        return -1;
-    }
+    res = res ? sam_query_groupmem(&sam_dom_handle, group_rid, num_names, 
+                                   rid_mem, names, name_types) : False;
+
+    /* Close up shop */
+
+    samr_close(&sam_dom_handle);
+    samr_close(&sam_handle);
+
+    return res;
+}
+
+int winbind_lookup_aliasmem(char *system_name, DOM_SID *level5_sid,
+                            uint32 group_rid, uint32 *num_names,
+                            DOM_SID ***sids, char ***names,
+                            uint32 **name_types)
+{
+    POLICY_HND sam_handle, sam_dom_handle;
+    BOOL res;
+
+    /* Open connection to SAM pipe and SAM domain */
+
+    res = samr_connect(system_name, 0x02000000, &sam_handle);
+
+    res = res ? samr_open_domain(&sam_handle, 0x02000000, level5_sid, 
+                                 &sam_dom_handle) : False;
+    /* Query alias membership */
     
-    memset(&sunaddr, 0, sizeof(sunaddr));
-    sunaddr.sun_family = AF_UNIX;
-    strncpy(sunaddr.sun_path, SOCKET_NAME, sizeof(sunaddr.sun_path));
+    res = res ? sam_query_aliasmem(system_name, &sam_dom_handle, group_rid,
+                                   num_names, sids, names, name_types)
+        : False;
+
+    /* Close up shop */
+
+    samr_close(&sam_dom_handle);
+    samr_close(&sam_handle);
+
+    return res;
+}
+
+/* Return information about a local group */
+
+int winbind_lookup_aliasinfo(char *system_name, DOM_SID *level5_sid,
+                             uint32 group_rid, ALIAS_INFO_CTR *info)
+{
+    POLICY_HND sam_handle, sam_dom_handle;
+    BOOL res;
+
+    /* Open connection to SAM pipe and SAM domain */
+
+    res = samr_connect(system_name, 0x02000000, &sam_handle);
+
+    res = res ? samr_open_domain(&sam_handle, 0x02000000, level5_sid, 
+                                 &sam_dom_handle) : False;
+    /* Query group info */
     
-    if (bind(sock, (struct sockaddr *)&sunaddr, sizeof(sunaddr)) < 0) {
-        perror("bind");
-        close(sock);
-        return -1;
-    }
-    
-    if (chmod(SOCKET_NAME, 0700) < 0) {
-        perror("chmod");
-        close(sock);
-      return -1;
-    }
-    
-    if (listen(sock, 5) < 0) {
-        perror("listen");
-        close(sock);
-        return -1;
-    }
-    
-    /* Success! */
-    
-    return sock;
+    res = res ? get_samr_query_aliasinfo(&sam_dom_handle, 1,
+                                         group_rid, info) : False;
+
+    /* Close up shop */
+
+    samr_close(&sam_dom_handle);
+    samr_close(&sam_handle);
+
+    return res;
+}
+
+/* Handle termination signals */
+
+static void termination_handler(int signum)
+{
+    /* Clean up */
+
+    remove_sock();
+
+    exit(0);
 }
 
 /*
@@ -272,7 +295,7 @@ int main(int argc, char **argv)
 {
     DOM_SID domain_sid;
     fstring domain_name, sid;
-    int sock;
+    int sock, sock2;
     
     /* Initialise samba/rpc client stuff */
 
@@ -284,10 +307,17 @@ int main(int argc, char **argv)
     charset_initialise();
     codepage_initialise(lp_client_code_page());
 
+    /* Setup signal handlers */
+
+    signal (SIGINT, termination_handler);
+    signal (SIGQUIT, termination_handler);
+    signal (SIGTERM, termination_handler);
+    signal (SIGPIPE, SIG_IGN);
+
     /* Get the domain sid */
 
     if (!winbind_get_domain_sid(SERVER, domain_name, &domain_sid)) {
-        DEBUG(0, ("Cannot get domain sid from %s\n", domain_name));
+        DEBUG(0, ("Cannot get domain sid from %s\n", SERVER));
         return 1;
     }
 
@@ -298,15 +328,23 @@ int main(int argc, char **argv)
     sid_copy(&global_sam_sid, &domain_sid); /* ??? */
     generate_wellknown_sids(); /* ??? */
 
+    winbindd_surs_init(&domain_sid, domain_name);
+
     /* Loop waiting for requests */
 
-    if ((sock = create_winbind_socket()) == -1) {
+    if ((unlink(WINBINDD_SOCKET_NAME) < 0) && (errno != ENOENT)) {
+        DEBUG(0, ("Unable to remove domain socket %s: %s\n",
+                  WINBINDD_SOCKET_NAME, sys_errlist[errno]));
+        return 1;
+    }
+
+    if ((sock = create_sock()) == -1) {
         DEBUG(0, ("failed to create socket\n"));
         return 1;
     }
 
     while (1) {
-        int len, sock2;
+        int len;
         struct sockaddr_un sunaddr;
         struct winbindd_request request;
         struct winbindd_response response;
@@ -318,7 +356,7 @@ int main(int argc, char **argv)
 
         /* Read command */
 
-        if ((len = read(sock2, &request, sizeof(request))) < 0) {
+        if ((len = read_sock(sock2, &request, sizeof(request))) < 0) {
             close(sock2);
             continue;
         }
@@ -332,25 +370,68 @@ int main(int argc, char **argv)
             /* User functions */
 
         case WINBINDD_GETPWNAM_FROM_USER: 
-            DEBUG(1, ("getpwnam from user '%s'\n", request.data.username));
-            winbindd_getpwnam_from_user(&domain_sid, &request, &response);
+            DEBUG(1, ("--getpwnam from user '%s'\n", request.data.username));
+            winbindd_getpwnam_from_user(&domain_sid, domain_name,
+                                        &request, &response);
+            DEBUG(1, ("--done\n"));
             break;
 
         case WINBINDD_GETPWNAM_FROM_UID:
-            DEBUG(1, ("getpwnam from uid %d\n", request.data.uid));
+            DEBUG(1, ("--getpwnam from uid %d\n", request.data.uid));
             winbindd_getpwnam_from_uid(&domain_sid, &request, &response);
+            DEBUG(1, ("--done\n"));
+            break;
+
+        case WINBINDD_SETPWENT:
+            DEBUG(1, ("--setpwent\n"));
+            winbindd_setpwent(&domain_sid, &request, &response);
+            DEBUG(1, ("--done\n"));
+            break;
+
+        case WINBINDD_ENDPWENT:
+            DEBUG(1, ("--endpwent\n"));
+            winbindd_endpwent(&request, &response);
+            DEBUG(1, ("--done\n"));
+            break;
+
+        case WINBINDD_GETPWENT:
+            DEBUG(1, ("--getpwent\n"));
+            winbindd_getpwent(&domain_sid, domain_name, &request, &response);
+            DEBUG(1, ("--done\n"));
             break;
 
             /* Group functions */
 
         case WINBINDD_GETGRNAM_FROM_GROUP:
-            DEBUG(1, ("getgrnam from group '%s'\n", request.data.groupname));
-            winbindd_getgrnam_from_group(&domain_sid, &request, &response);
+            DEBUG(1, ("--getgrnam from group '%s'\n", request.data.groupname));
+            winbindd_getgrnam_from_group(&domain_sid, domain_name,
+                                         &request, &response);
+            DEBUG(1, ("--done\n"));
             break;
 
         case WINBINDD_GETGRNAM_FROM_GID:
-            DEBUG(1, ("getgrnam from gid %d\n", request.data.gid));
-            winbindd_getgrnam_from_gid(&domain_sid, &request, &response);
+            DEBUG(1, ("--getgrnam from gid %d\n", request.data.gid));
+            winbindd_getgrnam_from_gid(&domain_sid, domain_name,
+                                       &request, &response);
+            DEBUG(1, ("--done\n"));
+            break;
+
+        case WINBINDD_SETGRENT:
+            DEBUG(1, ("--setgrent\n"));
+            winbindd_setgrent(&domain_sid, &request, &response);
+            DEBUG(1, ("--done\n"));
+            break;
+
+        case WINBINDD_ENDGRENT:
+            DEBUG(1, ("--endgrent\n"));
+            winbindd_endgrent(&request, &response);
+            DEBUG(1, ("--done\n"));
+            break;
+
+        case WINBINDD_GETGRENT:
+            DEBUG(1, ("--getgrent\n"));
+            winbindd_getgrent(&domain_sid, domain_name, &request, &response);
+            DEBUG(1, ("--done\n"));
             break;
 
             /* Oops */
@@ -362,9 +443,15 @@ int main(int argc, char **argv)
 
         /* Send response */
 
-        write(sock2, &response, sizeof(response));
+        write_sock(sock2, &response, sizeof(response));
         close(sock2);
     }
 
     return 0;
 }
+
+/*
+Local variables:
+compile-command: "make -C ~/work/nss-ntdom/samba-tng/source nsswitch"
+end:
+*/

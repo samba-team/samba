@@ -22,8 +22,10 @@
 #ifndef _WINBINDD_H
 #define _WINBINDD_H
 
-#define SOCKET_NAME "/tmp/winbindd"
-#define SERVER "controller"
+#define WINBINDD_SOCKET_NAME "/tmp/winbindd"    /* Name of PF_UNIX socket */
+#define SERVER "nt4pdc"                     /* NT machine to contact */
+
+#define WINBINDD_TIMEOUT 2                      /* Read/write timeout on socket */
 
 /* Naughty global stuff */
 
@@ -33,10 +35,16 @@ extern pstring debugf;
 /* Socket commands */
 
 enum winbindd_cmd {
-    WINBINDD_GETPWNAM_FROM_USER,
+    WINBINDD_GETPWNAM_FROM_USER,     /* getpwnam stuff */
     WINBINDD_GETPWNAM_FROM_UID,
-    WINBINDD_GETGRNAM_FROM_GROUP,
-    WINBINDD_GETGRNAM_FROM_GID
+    WINBINDD_GETGRNAM_FROM_GROUP,    /* getgrnam stuff */
+    WINBINDD_GETGRNAM_FROM_GID,
+    WINBINDD_SETPWENT,               /* get/set/endpwent */
+    WINBINDD_ENDPWENT,
+    WINBINDD_GETPWENT,
+    WINBINDD_SETGRENT,               /* get/set/endgrent */
+    WINBINDD_ENDGRENT,
+    WINBINDD_GETGRENT
 };
 
 /* Winbind request structure */
@@ -65,6 +73,9 @@ struct winbindd_response {
     enum winbindd_result result;
 
     union {
+        
+        /* getpwnam_from_user, getpwnam_from_uid */
+
         struct winbindd_pw {
             char pw_name[1024];
             char pw_passwd[1024];
@@ -74,12 +85,17 @@ struct winbindd_response {
             char pw_dir[1024];
             char pw_shell[1024];
         } pw;
+
+        /* getgrnam_from_group, get_grnam_from_gid */
+
         struct winbindd_gr {
             char gr_name[1024];
             char gr_passwd[1024];
             gid_t gr_gid;
             char gr_mem[1024];
+            int num_gr_mem;
         } gr;
+
     } data;
 };
 
