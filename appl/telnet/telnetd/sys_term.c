@@ -1265,7 +1265,10 @@ cleanopen(line)
 	 */
 # if !(defined(CRAY) || defined(__hpux)) && (BSD <= 43) && !defined(STREAMSPTY)
 	(void) signal(SIGHUP, SIG_IGN);
+#ifdef HAVE_VHANGUP
 	vhangup();
+#else
+#endif
 	(void) signal(SIGHUP, SIG_DFL);
 	t = open(line, O_RDWR|O_NOCTTY);
 	if (t < 0)
@@ -1316,6 +1319,7 @@ cleanopen(line)
 login_tty(t)
 	int t;
 {
+#ifndef _AIX
 	if (setsid() < 0) {
 #ifdef ultrix
 		/*
@@ -1327,6 +1331,7 @@ login_tty(t)
 #endif
 			fatalperror(net, "setsid()");
 	}
+#endif
 # ifdef	TIOCSCTTY
 	if (ioctl(t, TIOCSCTTY, (char *)0) < 0)
 		fatalperror(net, "ioctl(sctty)");
@@ -1457,9 +1462,9 @@ startslave(host, autologin, autoname)
 		utmp_sig_notify(pid);
 # endif	/* PARENT_DOES_UTMP */
 	} else {
-		getptyslave(autologin);
-		start_login(host, autologin, autoname);
-		/*NOTREACHED*/
+	  getptyslave(autologin);
+	  start_login(host, autologin, autoname);
+	  /*NOTREACHED*/
 	}
 #else	/* NEWINIT */
 
@@ -1890,7 +1895,10 @@ cleanup(sig)
 	void rmut();
 
 	rmut();
+#ifdef HAVE_VHANGUP
 	vhangup();	/* XXX */
+#else
+#endif
 	(void) shutdown(net, 2);
 	exit(1);
 # endif
