@@ -48,6 +48,10 @@ add_dynamic_entries()
 	echo f none lib/libsmbclient.so 0755 root other
 	echo f none include/libsmbclient.h 0644 root other
 
+	echo "#\n# smbwrapper\n#"
+	echo f none lib/smbwrapper.so 0755 root other
+	echo f none bin/smbsh 0755 root other
+
 	echo "#\n# nss_winbind.so\n#"
 	echo f none /usr/lib/nss_winbind.so.1=lib/libnss_winbind.so 0755 root other
 	echo s none /lib/nss_winbind.so.1=../usr/lib/nss_winbind.so.1 0755 root other
@@ -157,6 +161,9 @@ cp -fp nsswitch/libnss_winbind.so $TMPINSTALLDIR/$LIBDIR/libnss_winbind.so
 if [ -f nsswitch/pam_winbind.so ]; then
 	cp -fp nsswitch/pam_winbind.so $TMPINSTALLDIR/$LIBDIR/pam_winbind.so
 fi
+
+cp -p bin/smbwrapper.so $TMPINSTALLDIR/$INSTALL_BASE/lib
+cp -p bin/smbsh $TMPINSTALLDIR/$INSTALL_BASE/bin
 
 mkdir -p $TMPINSTALLDIR/$INSTALL_BASE/docs
 cp -p ../docs/*pdf $TMPINSTALLDIR/$INSTALL_BASE/docs
