@@ -1554,8 +1554,8 @@ static NTSTATUS rpc_trustdom_add_internals(const DOM_SID *domain_sid, struct cli
 	uint16 acb_info;
 	uint32 unknown, user_rid;
 
-	if (argc != 1) {
-		d_printf("Usage: net rpc trustdom add <domain_name>\n");
+	if (argc != 2) {
+		d_printf("Usage: net rpc trustdom add <domain_name> <pw>\n");
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -1586,7 +1586,7 @@ static NTSTATUS rpc_trustdom_add_internals(const DOM_SID *domain_sid, struct cli
 
 	/* Create trusting domain's account */
 	acb_info = ACB_DOMTRUST;
-	unknown = 0xe005000b; /* No idea what this is - a permission mask?
+	unknown = 0xe00500b0; /* No idea what this is - a permission mask?
 	                         mimir: yes, most probably it is */
 
 	result = cli_samr_create_dom_user(cli, mem_ctx, &domain_pol,
@@ -1594,6 +1594,37 @@ static NTSTATUS rpc_trustdom_add_internals(const DOM_SID *domain_sid, struct cli
 					  &user_pol, &user_rid);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
+	}
+
+	{
+		SAM_USERINFO_CTR ctr;
+		SAM_USER_INFO_24 p24;
+		fstring ucs2_trust_password;
+		int ucs2_pw_len;
+		uchar pwbuf[516];
+
+		ucs2_pw_len = push_ucs2(NULL, ucs2_trust_password, argv[1],
+					sizeof(ucs2_trust_password), 0);
+
+		encode_pw_buffer((char *)pwbuf, ucs2_trust_password,
+				 ucs2_pw_len);
+
+		ZERO_STRUCT(ctr);
+		ZERO_STRUCT(p24);
+
+		init_sam_user_info24(&p24, (char *)pwbuf, 24);
+
+		ctr.switch_value = 24;
+		ctr.info.id24 = &p24;
+
+		result = cli_samr_set_userinfo(cli, mem_ctx, &user_pol, 24,
+					       cli->user_session_key, &ctr);
+
+		if (!NT_STATUS_IS_OK(result)) {
+			DEBUG(0,("Could not set trust account password: %s\n"
+				 nt_errstr(result)));
+			goto done;
+		}
 	}
 
  done:
