@@ -62,10 +62,11 @@ The "provision" step sets up a basic user database.
   cd source
   ./script/provision.pl --realm=YOUR.REALM --domain=YOURDOM --adminpass=SOMEPASSWORD
 
-This will create a file called newsam.ldb. You need to copy this to
-sam.ldb in the "private" subdirectory of your install. For example:
+This will create a number of new 'ldb' database files in a directory
+newdb.XXX. You need to move these to the "private" subdirectory of
+your install. For example:
 
-  cp newsam.ldb /usr/local/samba/private/sam.ldb
+  mv newdb.123/*.ldb /usr/local/samba/private/
 
 
 Step 5: Create a simple smb.conf
