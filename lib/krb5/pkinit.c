@@ -473,6 +473,11 @@ build_auth_pack(krb5_context context,
 			       len,
 			       &checksum);
     free(buf);
+    if (ret == 0) {
+	ret = krb5_data_copy(&a->pkAuthenticator.paChecksum,
+			     checksum.checksum.data, checksum.checksum.length);
+	free_Checksum(&checksum);
+    }
 
     if (ret == 0 && dh) {
 	DomainParameters dp;
