@@ -73,7 +73,7 @@ uint32 _dfs_add(pipes_struct *p, DFS_Q_DFS_ADD* q_u, DFS_R_DFS_ADD *r_u)
   if(!create_junction(dfspath, &jn))
     return NERR_DfsNoSuchServer;
 
-  if(get_referred_path(&jn))
+  if(get_referred_path(dfspath, &jn, NULL, NULL))
     {
       exists = True;
       jn.referral_count += 1;
@@ -145,7 +145,7 @@ uint32 _dfs_remove(pipes_struct *p, DFS_Q_DFS_REMOVE *q_u, DFS_R_DFS_REMOVE *r_u
   if(!create_junction(dfspath, &jn))
     return NERR_DfsNoSuchServer;
 
-  if(!get_referred_path(&jn))
+  if(!get_referred_path(dfspath, &jn, NULL, NULL))
     return NERR_DfsNoSuchVolume;
 
   /* if no server-share pair given, remove the msdfs link completely */
@@ -353,7 +353,7 @@ uint32 _dfs_get_info(pipes_struct *p, DFS_Q_DFS_GET_INFO *q_u, DFS_R_DFS_GET_INF
   if(!create_junction(path, &jn))
      return NERR_DfsNoSuchServer;
   
-  if(!get_referred_path(&jn))
+  if(!get_referred_path(path, &jn, NULL, NULL))
     return NERR_DfsNoSuchVolume;
 
   r_u->level = level;

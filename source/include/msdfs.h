@@ -17,6 +17,8 @@
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+   
+   $Id: msdfs.h,v 1.5.4.2 2001/08/28 00:47:29 kalele Exp $
 */
 
 #ifndef _MSDFS_H
@@ -62,19 +64,20 @@ struct dfs_path
 
 #define RESOLVE_DFSPATH(name, conn, inbuf, outbuf) \
 { if(((SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES)) && \
-     dfs_redirect(name,conn)) \
-     return(dfs_path_error(inbuf,outbuf)); }
+     lp_host_msdfs() && dfs_redirect(name,conn,False)) \
+             return(dfs_path_error(inbuf,outbuf)); }
 
 #define RESOLVE_FINDFIRST_DFSPATH(name, conn, inbuf, outbuf) \
 { if((SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES) || \
      get_remote_arch()==RA_WIN95) \
-      if(dfs_findfirst_redirect(directory,conn)) \
-	 return(dfs_path_error(inbuf,outbuf)); }
+      if(lp_host_msdfs() && dfs_redirect(name,conn,True)) \
+	         return(dfs_path_error(inbuf,outbuf)); }
  
 #define init_dfsroot(conn, inbuf, outbuf) \
-{ if(lp_msdfs_root(SNUM(conn)) && lp_host_msdfs())  \
-	SSVAL(outbuf, smb_vwv2, SMB_SHARE_IN_DFS | SMB_SUPPORT_SEARCH_BITS); \
-}
+{ if(lp_msdfs_root(SNUM(conn)) && lp_host_msdfs()) {  \
+        DEBUG(1,("Serving %s as a Dfs root\n", lp_servicename(SNUM(conn)) ));\
+	SSVAL(outbuf, smb_vwv2, SMB_SHARE_IN_DFS | SVAL(outbuf, smb_vwv2)); \
+} }
 
 #else
 /* Stub macros */
