@@ -238,7 +238,7 @@ init_sockets(struct descr **desc)
 			ports[i].family, ports[i].type, ports[i].port);
 	    if(d[num].s != -1){
 		char a_str[80];
-		int len;
+		size_t len;
 
 		krb5_print_address (&addresses.val[j], a_str,
 				    sizeof(a_str), &len);
@@ -292,7 +292,7 @@ process_request(unsigned char *buf,
 	do_version4(buf, len, reply, from, (struct sockaddr_in*)addr);
 	return 0;
     }else if(decode_Ticket(buf, len, &ticket, &i) == 0){
-	ret = do_524(&ticket, reply, from, (struct sockaddr_in*)addr);
+	ret = do_524(&ticket, reply, from, addr);
 	free_Ticket(&ticket);
 	return ret;
     }
@@ -310,20 +310,14 @@ process_request(unsigned char *buf,
 static void
 addr_to_string(struct sockaddr *addr, size_t addr_len, char *str, size_t len)
 {
-    switch(addr->sa_family){
-    case AF_INET:
-	strncpy(str, inet_ntoa(((struct sockaddr_in*)addr)->sin_addr), len);
-	break;
-#if defined(HAVE_IPV6) && defined(HAVE_INET_NTOP)
-    case AF_INET6 :
-	inet_ntop(AF_INET6, &((struct sockaddr_in6*)addr)->sin6_addr,
-		  str, len);
-	break;
-#endif
-    default:
-	snprintf(str, len, "<%d addr>", addr->sa_family);
+    krb5_address a;
+    krb5_sockaddr2address(addr, &a);
+    if(krb5_print_address(&a, str, len, &len) == 0) {
+	krb5_free_address(context, &a);
+	return;
     }
-    str[len - 1] = 0;
+    krb5_free_address(context, &a);
+    snprintf(str, len, "<family=%d>", addr->sa_family);
 }
 
 static void
