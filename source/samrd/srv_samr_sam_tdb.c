@@ -129,33 +129,6 @@ uint32 _samr_enum_domains(const POLICY_HND *pol, uint32 *start_idx,
 	return NT_STATUS_NOPROBLEMO;
 }
 
-static BOOL create_domain(TDB_CONTEXT *tdb, char* domain, DOM_SID *sid)
-{
-	prs_struct key;
-	prs_struct data;
-	UNISTR2 uni_domain;
-
-	DEBUG(10,("creating domain %s\n", domain));
-
-	make_unistr2(&uni_domain, domain, strlen(domain));
-
-	prs_init(&key, 0, 4, False);
-	prs_init(&data, 0, 4, False);
-
-	if (!smb_io_unistr2("dom", &uni_domain, True, &key, 0) ||
-	    !smb_io_dom_sid("sid", sid, &data, 0) ||
-	     prs_tdb_store(tdb, TDB_REPLACE, &key, &data) != 0)
-	{
-		prs_free_data(&key);
-		prs_free_data(&data);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	prs_free_data(&key);
-	prs_free_data(&data);
-	return NT_STATUS_NOPROBLEMO;
-}
-
 /*******************************************************************
  tdb_samr_connect
  ********************************************************************/
@@ -170,29 +143,8 @@ static uint32 tdb_samr_connect( POLICY_HND *pol, uint32 ace_perms)
 	}
 
 	become_root(True);
-	sam_tdb = tdb_open(passdb_path("sam.tdb"), 0, 0, O_RDWR, 0600);
+	sam_tdb = tdb_open(passdb_path("sam.tdb"), 0, 0, O_RDWR, 0644);
 	unbecome_root(True);
-
-	if (sam_tdb == NULL)
-	{
-		fstring dom_name;
-
-		DEBUG(0,("HACKALERT - tdb_samr_connect: creating sam.tdb\n"));
-
-		become_root(True);
-		sam_tdb = tdb_open(passdb_path("sam.tdb"), 0, 0, O_RDWR | O_CREAT, 0600);
-		unbecome_root(True);
-
-		if (sam_tdb == NULL)
-		{
-			close_policy_hnd(get_global_hnd_cache(), pol);
-			return NT_STATUS_ACCESS_DENIED;
-		}
-		fstrcpy(dom_name, global_sam_name);
-		strupper(dom_name);
-		create_domain(sam_tdb, dom_name, &global_sam_sid);
-		create_domain(sam_tdb, "BUILTIN", &global_sid_S_1_5_20);
-	}
 
 	if (sam_tdb == NULL)
 	{

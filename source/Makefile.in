@@ -53,6 +53,7 @@ FORMSFILE = $(LIBDIR)/ntforms.def
 NTDRIVERSDIR = $(LIBDIR)
 PASSWD_PROGRAM = /bin/passwd
 SMB_PASSWD_FILE = $(BASEDIR)/private/smbpasswd
+SAM_DIR = $(BASEDIR)/sam
 SMB_PASSGRP_FILE = $(BASEDIR)/private/smbpassgrp
 SMB_GROUP_FILE = $(BASEDIR)/private/smbgroup
 SMB_ALIAS_FILE = $(BASEDIR)/private/smbalias
@@ -82,17 +83,20 @@ PASSWD_FLAGS = \
 		-DPASSWD_PROGRAM=\"$(PASSWD_PROGRAM)\"           \
 		-DSMB_PASSWD_PROGRAM=\"$(SMB_PASSWD_PROGRAM)\"   \
 		-DSMB_PASSWD_FILE=\"$(SMB_PASSWD_FILE)\"         \
+		-DSAM_DIR=\"$(SAM_DIR)\"                         \
 		-DSMB_PASSGRP_FILE=\"$(SMB_PASSGRP_FILE)\"       \
 		-DSMB_GROUP_FILE=\"$(SMB_GROUP_FILE)\"           \
 		-DSMB_ALIAS_FILE=\"$(SMB_ALIAS_FILE)\" 
+
 FLAGS1 = $(CFLAGS)	\
-		-Iinclude -I$(srcdir)/include \
-		-I$(srcdir)/ubiqx \
-		-I$(srcdir)/smbwrapper \
-		$(CPPFLAGS) \
-		-DLOGFILEBASE=\"$(LOGFILEBASE)\" \
-		-DSMBLOGFILE=\"$(SMBLOGFILE)\" \
+		-Iinclude -I$(srcdir)/include                    \
+		-I$(srcdir)/ubiqx                                \
+		-I$(srcdir)/smbwrapper                           \
+		$(CPPFLAGS)                                      \
+		-DLOGFILEBASE=\"$(LOGFILEBASE)\"                 \
+		-DSMBLOGFILE=\"$(SMBLOGFILE)\"                   \
 		-DNMBLOGFILE=\"$(NMBLOGFILE)\"
+
 FLAGS2 = -DCONFIGFILE=\"$(CONFIGFILE)\" -DLMHOSTSFILE=\"$(LMHOSTSFILE)\"  
 FLAGS3 = -DSWATDIR=\"$(SWATDIR)\" -DSBINDIR=\"$(SBINDIR)\" -DLOCKDIR=\"$(LOCKDIR)\" -DSMBRUN=\"$(SMBRUN)\" -DCODEPAGEDIR=\"$(CODEPAGEDIR)\"
 FLAGS4 = -DDRIVERFILE=\"$(DRIVERFILE)\" -DBINDIR=\"$(BINDIR)\" -DFORMSFILE=\"$(FORMSFILE)\" -DNTDRIVERSDIR=\"$(NTDRIVERSDIR)\"
@@ -291,6 +295,7 @@ SAMRTDBD_OBJ1 = samrd/samrtdbd.o \
 		passdb/smbpassfile.o \
 		lib/sursalgdomonly.o \
 		lib/util_pwdb.o lib/domain_namemap.o \
+		samrd/srv_samr_tdb_init.o \
 		samrd/srv_samr_dom_tdb.o \
 		samrd/srv_samr_sam_tdb.o \
 		samrd/srv_samr_usr_tdb.o \

@@ -24,6 +24,7 @@
 
 #include "includes.h"
 #include "nterr.h"
+#include "rpc_parse.h"
 #include "sids.h"
 
 extern int DEBUGLEVEL;
@@ -120,40 +121,29 @@ uint32 _samr_open_domain(const POLICY_HND *connect_pol,
 	sid_to_string(usr, sid);
 	sid_to_string(grp, sid);
 	sid_to_string(als, sid);
+
 	safe_strcat(usr, ".usr.tdb", sizeof(usr)-1);
 	safe_strcat(grp, ".grp.tdb", sizeof(grp)-1);
 	safe_strcat(als, ".als.tdb", sizeof(als)-1);
 
-	become_root(True);
-	if (sid_equal(sid, &global_sid_S_1_5_20))
-	{
-		als_tdb = tdb_open(passdb_path(als),0,0,O_RDWR|O_CREAT, 0600);
-	}
-	if (sid_equal(sid, &global_sam_sid))
-	{
-
-		usr_tdb = tdb_open(passdb_path(usr),0,0,O_RDWR|O_CREAT, 0600);
-#if 0
-		grp_tdb = tdb_open(passdb_path(grp),0,0,O_RDWR|O_CREAT, 0600);
-		als_tdb = tdb_open(passdb_path(als),0,0,O_RDWR|O_CREAT, 0600);
-#endif
-	}
-	unbecome_root(True);
+	DEBUG(0,("TODO: no request write access, no GET write access...\n"));
 
 	if (sid_equal(sid, &global_sid_S_1_5_20))
 	{
+		als_tdb = tdb_open(passdb_path(als),0,0,O_RDWR, 0644);
 		if (als_tdb == NULL)
 		{
-			tdb_close(usr_tdb);
-			tdb_close(grp_tdb);
-			tdb_close(als_tdb);
 			close_policy_hnd(get_global_hnd_cache(), domain_pol);
 			return NT_STATUS_ACCESS_DENIED;
 		}
 	}
-	if (sid_equal(sid, &global_sam_sid))
+	else
 	{
-		if (usr_tdb == NULL)
+
+		usr_tdb = tdb_open(passdb_path(usr),0,0,O_RDWR, 0644);
+		grp_tdb = tdb_open(passdb_path(grp),0,0,O_RDWR, 0644);
+		als_tdb = tdb_open(passdb_path(als),0,0,O_RDWR, 0644);
+		if (usr_tdb == NULL || grp_tdb == NULL || als_tdb == NULL)
 		{
 			tdb_close(usr_tdb);
 			tdb_close(grp_tdb);
@@ -161,16 +151,6 @@ uint32 _samr_open_domain(const POLICY_HND *connect_pol,
 			close_policy_hnd(get_global_hnd_cache(), domain_pol);
 			return NT_STATUS_ACCESS_DENIED;
 		}
-#if 0
-		if (grp_tdb == NULL || als_tdb == NULL)
-		{
-			tdb_close(usr_tdb);
-			tdb_close(grp_tdb);
-			tdb_close(als_tdb);
-			close_policy_hnd(get_global_hnd_cache(), domain_pol);
-			return NT_STATUS_ACCESS_DENIED;
-		}
-#endif
 	}
 
 	/* associate the domain SID with the (unique) handle. */

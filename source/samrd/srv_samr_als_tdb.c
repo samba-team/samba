@@ -24,6 +24,7 @@
 
 #include "includes.h"
 #include "nterr.h"
+#include "rpc_parse.h"
 #include "sids.h"
 
 extern int DEBUGLEVEL;

@@ -116,6 +116,7 @@ typedef struct
   char *szLogFile;
   char *szConfigFile;
   char *szSMBPasswdFile;
+  char *szSAMDirectory;
   char *szSMBPassGroupFile;
   char *szSMBGroupFile;
   char *szSMBAliasFile;
@@ -549,6 +550,7 @@ static struct parm_struct parm_table[] =
   {"null passwords",   P_BOOL,    P_GLOBAL, &Globals.bNullPasswords,    NULL,   NULL,  0},
   {"password server",  P_STRING,  P_GLOBAL, &Globals.szPasswordServer,  NULL,   NULL,  0},
   {"smb passwd file",  P_STRING,  P_GLOBAL, &Globals.szSMBPasswdFile,   NULL,   NULL,  0},
+  {"sam directory",  P_STRING,  P_GLOBAL, &Globals.szSAMDirectory,   NULL,   NULL,  0},
 #if USE_SMBFILE_DB
   {"smb passgrp file", P_STRING,  P_GLOBAL, &Globals.szSMBPassGroupFile, NULL,   NULL,  0},
 #endif
@@ -874,7 +876,7 @@ static void init_globals(void)
 
   DEBUG(3,("Initialising global parameters\n"));
 
-  string_set(&Globals.szSMBPasswdFile, SMB_PASSWD_FILE);
+  string_set(&Globals.szSMBPasswdFile, SAM_DIR);
 #if USE_SMBFILE_DB
   string_set(&Globals.szSMBPassGroupFile, SMB_PASSGRP_FILE);
 #endif
@@ -1198,6 +1200,7 @@ FN_GLOBAL_STRING(lp_logfile,&Globals.szLogFile)
 FN_GLOBAL_STRING(lp_smbrun,&Globals.szSmbrun)
 FN_GLOBAL_STRING(lp_configfile,&Globals.szConfigFile)
 FN_GLOBAL_STRING(lp_smb_passwd_file,&Globals.szSMBPasswdFile)
+FN_GLOBAL_STRING(lp_sam_directory,&Globals.szSAMDirectory)
 #if USE_SMBFILE_DB
 FN_GLOBAL_STRING(lp_smb_passgrp_file,&Globals.szSMBPassGroupFile)
 #endif

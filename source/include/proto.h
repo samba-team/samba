@@ -1447,6 +1447,7 @@ char *lp_logfile(void);
 char *lp_smbrun(void);
 char *lp_configfile(void);
 char *lp_smb_passwd_file(void);
+char *lp_sam_directory(void);
 char *lp_smb_passgrp_file(void);
 char *lp_smb_group_file(void);
 char *lp_smb_alias_file(void);
@@ -3470,6 +3471,7 @@ uint32 _samr_chgpasswd_user( const UNISTR2 *uni_dest_host,
 				const uchar lm_oldhash[16]);
 uint32 _samr_get_dom_pwinfo(const UNISTR2 *uni_srv_name,
 				uint16 *unk_0, uint16 *unk_1, uint16 *unk_2);
+uint32 _samr_query_sec_obj(const POLICY_HND *pol, SEC_DESC_BUF *buf);
 
 /*The following definitions come from  samrd/srv_samr_tdb.c  */
 
@@ -3498,12 +3500,16 @@ BOOL get_tdbsid(struct policy_cache *cache, const POLICY_HND *hnd,
 uint32 samr_open_by_tdbrid( TDB_CONTEXT *tdb,
 				POLICY_HND *pol, uint32 access_mask, uint32 rid);
 
+/*The following definitions come from  samrd/srv_samr_tdb_init.c  */
+
+uint32 initialise_dom_tdb(const DOM_SID *sid);
+uint32 initialise_sam_tdb( const char* sam_name, const DOM_SID *sam_sid);
+
 /*The following definitions come from  samrd/srv_samr_usr_tdb.c  */
 
 uint32 _samr_get_usrdom_pwinfo(const POLICY_HND *user_pol,
 				uint32 *unknown_0,
 				uint32 *unknown_1);
-uint32 _samr_query_sec_obj(const POLICY_HND *user_pol, SEC_DESC_BUF *buf);
 uint32 _samr_query_usergroups(const POLICY_HND *pol,
 				uint32 *num_groups,
 				DOM_GID **gids);

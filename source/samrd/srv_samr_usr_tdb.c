@@ -232,7 +232,6 @@ uint32 _samr_query_usergroups(const POLICY_HND *pol,
 				DOM_GID **gids)
 {
 	DOMAIN_GRP *mem_grp = NULL;
-	struct sam_passwd *sam_pass = NULL;
 	uint32 rid;
 	BOOL ret = True;
 	TDB_CONTEXT *tdb = NULL;
@@ -246,6 +245,7 @@ uint32 _samr_query_usergroups(const POLICY_HND *pol,
 	}
 
 #if 0
+	struct sam_passwd *sam_pass = NULL;
 	become_root(True);
 	sam_pass = getsam21pwrid(rid);
 	unbecome_root(True);

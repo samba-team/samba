@@ -2974,10 +2974,12 @@ char *passdb_path(char *name)
 {
 	static pstring fname;
 
-	pstrcpy(fname,lp_lockdir());
+	pstrcpy(fname,lp_sam_directory());
 	trim_string(fname,"","/");
 	
-	if (!directory_exist(fname,NULL)) {
+	if (!directory_exist(fname,NULL))
+	{
+		/* must be 0755 because root can readwrite, all others read */
 		mkdir(fname,0755);
 	}
 	
