@@ -61,10 +61,10 @@ enum winbindd_result winbindd_getpwent(struct winbindd_cli_state *state);
 
 /*The following definitions come from  nsswitch/winbindd_util.c  */
 
+BOOL domain_handles_open(struct winbindd_domain *domain);
+BOOL establish_connections(void) ;
 BOOL lookup_domain_sid(char *domain_name, struct winbindd_domain *domain);
 BOOL get_domain_info(struct winbindd_domain *domain);
-BOOL open_lsa_handle(struct winbindd_domain *domain);
-BOOL open_sam_handles(struct winbindd_domain *domain);
 BOOL winbindd_lookup_sid_by_name(struct winbindd_domain *domain,
                                  char *name, DOM_SID *sid,
                                  enum SID_NAME_USE *type);
