@@ -60,17 +60,23 @@ sub check_module($$)
 {
 	my $CTX = shift;
 	my $mod = shift;
+
+	die("Module $mod->{NAME} does not have a SUBSYSTEM set") if not defined($mod->{SUBSYSTEM});
+
+	($mod->{DEFAULT_BUILD} = "STATIC") if not defined($mod->{DEFAULT_BUILD});
 	
 	my $use_default = 0;
+
+	$mod->{SUBSYSTEM} = join(' ', @{$mod->{SUBSYSTEM}});
 
 	if (!(defined($CTX->{INPUT}{$mod->{SUBSYSTEM}}))) {
 		$mod->{BUILD} = "NOT";
 		$mod->{ENABLE} = "NO";
-		printf("Module: %s...PARENT SUBSYSTEM DISABLED\n",$mod->{NAME});
+		printf("Module: %s...PARENT SUBSYSTEM ($mod->{SUBSYSTEM}) DISABLED\n",$mod->{NAME});
 		return;
 	}
 
-	if ($mod->{CHOSEN_BUILD} eq "DEFAULT") {
+	if (not defined($mod->{CHOSEN_BUILD}) or $mod->{CHOSEN_BUILD} eq "DEFAULT") {
 		$mod->{CHOSEN_BUILD} = $mod->{DEFAULT_BUILD};
 	}
 
@@ -114,6 +120,8 @@ sub check_binary($$)
 		return;
 	}
 
+	($bin->{BINARY} = (lc $bin->{NAME})) if not defined($bin->{BINARY});
+
 	$bin->{OUTPUT_TYPE} = "BINARY";
 }
 
@@ -142,6 +150,10 @@ sub calc_unique_deps
 sub check($)
 {
 	my $CTX = shift;
+
+	foreach my $part (values %{$CTX->{INPUT}}) {
+		($part->{ENABLE} = "YES") if not defined($part->{ENABLE});
+	}
 
 	foreach my $part (values %{$CTX->{INPUT}}) {
 		check_subsystem($CTX, $part) if ($part->{TYPE} eq "SUBSYSTEM");

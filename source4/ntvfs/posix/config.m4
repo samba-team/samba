@@ -30,5 +30,3 @@ AC_SEARCH_LIBS(flistxattr, [attr])
 if test x"$ac_cv_func_flistxattr" = x"yes"; then
 	AC_DEFINE(HAVE_XATTR_SUPPORT,1,[Whether we have xattr support])
 fi
-
-SMB_MODULE_MK(ntvfs_posix, NTVFS, STATIC, ntvfs/config.mk)

@@ -14,19 +14,6 @@ REQUIRED_SUBSYSTEMS = \
 #################################
 
 #################################
-# Start BINARY lookupuuid
-[BINARY::lookupuuid]
-OBJ_FILES = \
-		utils/lookupuuid.o
-REQUIRED_SUBSYSTEMS = \
-		CONFIG \
-		LIBCMDLINE \
-		LIBBASIC \
-		LIBSMB
-# End BINARY lookupuuid
-#################################
-
-#################################
 # Start BINARY ntlm_auth
 [BINARY::ntlm_auth]
 OBJ_FILES = \

@@ -1,8 +1,0 @@
-dnl # LIBRPC subsystem
-
-SMB_SUBSYSTEM_NOPROTO(LIBNDR_GEN)
-SMB_SUBSYSTEM_MK(LIBNDR_GEN,librpc/config.mk)
-
-SMB_SUBSYSTEM_MK(LIBNDR_RAW,librpc/config.mk)
-SMB_SUBSYSTEM_MK(LIBRPC_RAW,librpc/config.mk)
-SMB_SUBSYSTEM_MK(LIBRPC,librpc/config.mk)

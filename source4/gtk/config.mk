@@ -3,6 +3,7 @@
 ##############################
 # Start SUBSYSTEM GTKSMB
 [SUBSYSTEM::GTKSMB]
+NOPROTO = YES
 INIT_OBJ_FILES = gtk/common/gtk-smb.o 
 ADD_OBJ_FILES = gtk/common/select.o
 REQUIRED_SUBSYSTEMS = CHARSET LIBBASIC EXT_LIB_gtk

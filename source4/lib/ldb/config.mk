@@ -1,6 +1,7 @@
 ################################################
 # Start MODULE libldb_ldap
 [MODULE::libldb_ldap]
+SUBSYSTEM = LIBLDB
 INIT_OBJ_FILES = \
 		lib/ldb/ldb_ldap/ldb_ldap.o
 REQUIRED_SUBSYSTEMS = \
@@ -11,6 +12,7 @@ REQUIRED_SUBSYSTEMS = \
 ################################################
 # Start MODULE libldb_tdb
 [MODULE::libldb_tdb]
+SUBSYSTEM = LIBLDB
 INIT_OBJ_FILES = \
 		lib/ldb/ldb_tdb/ldb_tdb.o
 ADD_OBJ_FILES = \

@@ -67,6 +67,7 @@ REQUIRED_SUBSYSTEMS = \
 ################################################
 # Start BINARY tdbbackup
 [BINARY::tdbbackup]
+ENABLE = NO
 OBJ_FILES= \
 		lib/tdb/tools/tdbbackup.o
 REQUIRED_SUBSYSTEMS = \
