@@ -134,6 +134,7 @@ struct winbindd_request {
 			fstring pass;
 		} auth;              /* pam_winbind auth module */
                 struct {
+			unsigned char proof[16];
                         unsigned char chal[8];
                         fstring user;
                         fstring domain;

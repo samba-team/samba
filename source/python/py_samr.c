@@ -73,7 +73,7 @@ static PyObject *samr_open_domain(PyObject *self, PyObject *args, PyObject *kw)
 		return NULL;
 	}
 
-	if (!(mem_ctx = talloc_init())) {
+	if (!(mem_ctx = talloc_init("samr_open_domain"))) {
 		PyErr_SetString(samr_error, "unable to init talloc context");
 		return NULL;
 	}
@@ -167,7 +167,7 @@ static PyObject *samr_enum_dom_groups(PyObject *self, PyObject *args,
 		    args, kw, "", kwlist))
 		return NULL;
 
-	if (!(mem_ctx = talloc_init())) {
+	if (!(mem_ctx = talloc_init("samr_enum_dom_groups"))) {
 		PyErr_SetString(samr_error, "unable to init talloc context");
 		return NULL;
 	}
@@ -399,7 +399,7 @@ static PyObject *samr_connect(PyObject *self, PyObject *args, PyObject *kw)
 		return NULL;
 	}
 
-	if (!(mem_ctx = talloc_init())) {
+	if (!(mem_ctx = talloc_init("samr_connect"))) {
 		PyErr_SetString(samr_ntstatus,
 				"unable to init talloc context\n");
 		goto done;

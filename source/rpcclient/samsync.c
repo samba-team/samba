@@ -373,7 +373,7 @@ static NTSTATUS sam_sync(struct cli_state *cli, unsigned char trust_passwd[16],
 		      return result;
 	}
 
-	if (!(mem_ctx = talloc_init())) {
+	if (!(mem_ctx = talloc_init("sam_sync"))) {
 		DEBUG(0,("talloc_init failed\n"));
 		return result;
 	}

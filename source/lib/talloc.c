@@ -136,7 +136,6 @@ static TALLOC_CTX *talloc_init_internal(void)
 
 /**
  * Create a new talloc context, with a name specifying its purpose.
- * Please call this in preference to talloc_init().
  **/
 
  TALLOC_CTX *talloc_init(char const *fmt, ...) 
