@@ -1778,6 +1778,7 @@ Can't find printer handle we created for printer %s\n", name ));
 	if ( (printer_default->access_required == PRINTER_ACCESS_ADMINISTER) 
 		&& (RA_WIN2K == get_remote_arch()) )
 	{
+		DEBUG(10,("_spoolss_open_printer_ex: Enabling LAN/WAN hack for Win2k clients.\n"));
 		usleep( 500000 );
 	}
 
