@@ -259,6 +259,7 @@ typedef struct
   BOOL bNTAclSupport;
   BOOL bStatCache;
   BOOL bKernelOplocks;
+  BOOL bRestrictAnonymous;
 #if defined(HAVE_MYSQL_H) && defined(WITH_MYSQLSAM)
   char *sMysqlDatabase;
   char *sMysqlTable;
@@ -646,6 +647,7 @@ static struct parm_struct parm_table[] =
   {"password level",   P_INTEGER, P_GLOBAL, &Globals.pwordlevel,        NULL,   NULL,  0},
   {"username level",   P_INTEGER, P_GLOBAL, &Globals.unamelevel,        NULL,   NULL,  0},
   {"unix password sync", P_BOOL,  P_GLOBAL, &Globals.bUnixPasswdSync,   NULL,   NULL,  0},
+  {"restrict anonymous", P_BOOL,  P_GLOBAL, &Globals.bRestrictAnonymous,NULL,   NULL,  0},
   {"revalidate",       P_BOOL,    P_LOCAL,  &sDefault.bRevalidate,      NULL,   NULL,  FLAG_GLOBAL|FLAG_SHARE},
   {"use rhosts",       P_BOOL,    P_GLOBAL, &Globals.bUseRhosts,        NULL,   NULL,  0},
   {"username",         P_STRING,  P_LOCAL,  &sDefault.szUsername,       NULL,   NULL,  FLAG_GLOBAL|FLAG_SHARE},
@@ -1089,6 +1091,7 @@ static void init_globals(void)
   Globals.bNTPipeSupport = True; /* Do NT pipes by default. */
   Globals.bNTAclSupport = True; /* Use NT ACLs by default. */
   Globals.bStatCache = True; /* use stat cache by default */
+  Globals.bRestrictAnonymous = False;
   Globals.map_to_guest = 0; /* By Default, "Never" */
   Globals.min_passwd_length = MINPASSWDLENGTH; /* By Default, 5. */
   Globals.oplock_break_wait_time = 10; /* By Default, 10 msecs. */
@@ -1463,6 +1466,7 @@ FN_GLOBAL_BOOL(lp_nt_smb_support,&Globals.bNTSmbSupport)
 FN_GLOBAL_BOOL(lp_nt_pipe_support,&Globals.bNTPipeSupport)
 FN_GLOBAL_BOOL(lp_nt_acl_support,&Globals.bNTAclSupport)
 FN_GLOBAL_BOOL(lp_stat_cache,&Globals.bStatCache)
+FN_GLOBAL_BOOL(lp_restrict_anonymous,&Globals.bRestrictAnonymous)
 FN_GLOBAL_BOOL(lp_host_msdfs,&Globals.bHostMSDfs)
 FN_GLOBAL_INTEGER(lp_os_level,&Globals.os_level)
 FN_GLOBAL_INTEGER(lp_max_ttl,&Globals.max_ttl)

@@ -198,7 +198,8 @@ static void api_rpc_trans_reply(char *outbuf, char *rdata, int rlen,
 /****************************************************************************
  WaitNamedPipeHandleState 
 ****************************************************************************/
-static BOOL api_WNPHS(char *outbuf, pipes_struct * p, char *param, int mdrcnt)
+
+static BOOL api_WNPHS(char *outbuf, pipes_struct *p, char *param, int param_len)
 {
 	uint16 priority;
 
@@ -211,7 +212,7 @@ static BOOL api_WNPHS(char *outbuf, pipes_struct * p, char *param, int mdrcnt)
 	if (wait_rpc_pipe_hnd_state(p, priority))
 	{
 		/* now send the reply */
-		send_trans_reply(outbuf, NULL, NULL, NULL, 0, mdrcnt, False);
+		send_trans_reply(outbuf, NULL, NULL, NULL, 0, param_len, False);
 
 		return True;
 	}
@@ -222,7 +223,8 @@ static BOOL api_WNPHS(char *outbuf, pipes_struct * p, char *param, int mdrcnt)
 /****************************************************************************
  SetNamedPipeHandleState 
 ****************************************************************************/
-static BOOL api_SNPHS(char *outbuf, pipes_struct * p, char *param, int mdrcnt)
+
+static BOOL api_SNPHS(char *outbuf, pipes_struct *p, char *param, int param_len)
 {
 	uint16 id;
 
@@ -235,7 +237,7 @@ static BOOL api_SNPHS(char *outbuf, pipes_struct * p, char *param, int mdrcnt)
 	if (set_rpc_pipe_hnd_state(p, id))
 	{
 		/* now send the reply */
-		send_trans_reply(outbuf, NULL, NULL, NULL, 0, mdrcnt, False);
+		send_trans_reply(outbuf, NULL, NULL, NULL, 0, param_len, False);
 
 		return True;
 	}

@@ -690,24 +690,27 @@ user %s attempted down-level SMB connection\n",
 	if ((user[strlen(user) - 1] == '$') && (smb_apasslen == 24)
 	    && (smb_ntpasslen == 24))
 	{
-		return session_trust_account(conn, inbuf, outbuf, user,
+		return session_trust_account(conn, inbuf, outbuf, user, domain,
 					     smb_apasswd, smb_apasslen,
 					     smb_ntpasswd, smb_ntpasslen);
 	}
 
 	if (done_sesssetup && lp_restrict_anonymous())
 	{
-		/* tests show that even if browsing is done over already validated connections
-		 * without a username and password the domain is still provided, which it
-		 * wouldn't be if it was a purely anonymous connection.  So, in order to
-		 * restrict anonymous, we only deny connections that have no session
-		 * information.  If a domain has been provided, then it's not a purely
+		/* tests show that even if browsing is done over
+		 * already validated connections without a username
+		 * and password the domain is still provided, which it
+		 * wouldn't be if it was a purely anonymous connection.
+		 * So, in order to restrict anonymous, we only deny
+		 * connections that have no session information.  If a
+		 * domain has been provided, then it's not a purely
 		 * anonymous connection. AAB
 		 */
 		if (!*user && !*smb_apasswd && !*domain)
 		{
 			DEBUG(0,
-			      ("restrict anonymous is True and anonymous connection attempted. Denying access.\n"));
+			      ("restrict anonymous is True and anonymous "
+			       "connection attempted. Denying access.\n"));
 			return (ERROR(ERRDOS, ERRnoaccess));
 		}
 	}
