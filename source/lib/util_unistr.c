@@ -61,7 +61,7 @@ int dos_PutUniCode(char *dst,const char *src, ssize_t len)
 		 */
 
 		if (skip == 2)
-			val = ((val << 8) | src[1]);
+			val = ((val << 8) | (src[1] & 0xff));
 
 		SSVAL(dst,ret,doscp_to_ucs2[val]);
 		ret += 2;
@@ -279,7 +279,7 @@ size_t dos_struni2(char *dst, const char *src, size_t max_len)
 			 */
 
 			if (skip == 2)
-				val = ((val << 8) | src[1]);
+				val = ((val << 8) | (src[1] & 0xff));
 
 			SSVAL(dst,0,doscp_to_ucs2[val]);
 			if (skip)
