@@ -1,5 +1,8 @@
 1999-07-24  Assar Westerlund  <assar@sics.se>
 
+	* configure.in (AC_PROG_AWK): disable. mawk seems to mishandle \#
+ 	in lib/roken/roken.awk
+
 	* lib/krb5/get_addrs.c (find_all_addresses): try to use SA_LEN to
  	step over addresses if there's no `sa_lan' field
 
