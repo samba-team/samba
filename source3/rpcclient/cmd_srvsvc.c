@@ -246,6 +246,25 @@ static void display_share_info_2(SRV_SHARE_INFO_2 *info2)
 	printf("\tpassword:\t%s\n", passwd);
 }
 
+static void display_share_info_502(SRV_SHARE_INFO_502 *info502)
+{
+	fstring netname = "", remark = "", path = "", passwd = "";
+
+	rpcstr_pull_unistr2_fstring(netname, &info502->info_502_str.uni_netname);
+	rpcstr_pull_unistr2_fstring(remark, &info502->info_502_str.uni_remark);
+	rpcstr_pull_unistr2_fstring(path, &info502->info_502_str.uni_path);
+	rpcstr_pull_unistr2_fstring(passwd, &info502->info_502_str.uni_passwd);
+
+	printf("netname: %s\n", netname);
+	printf("\tremark:\t%s\n", remark);
+	printf("\tpath:\t%s\n", path);
+	printf("\tpassword:\t%s\n", passwd);
+
+	if (info502->info_502_str.sd)
+		display_sec_desc(info502->info_502_str.sd);
+
+}
+
 static WERROR cmd_srvsvc_net_share_enum(struct cli_state *cli, 
                                           TALLOC_CTX *mem_ctx,
                                           int argc, const char **argv)
@@ -282,6 +301,10 @@ static WERROR cmd_srvsvc_net_share_enum(struct cli_state *cli,
 	case 2:
 		for (i = 0; i < ctr.num_entries; i++)
 			display_share_info_2(&ctr.share.info2[i]);
+		break;
+	case 502:
+		for (i = 0; i < ctr.num_entries; i++)
+			display_share_info_502(&ctr.share.info502[i]);
 		break;
 	default:
 		printf("unsupported info level %d\n", info_level);
