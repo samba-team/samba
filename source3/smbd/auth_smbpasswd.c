@@ -127,7 +127,7 @@ uint32 smb_password_ok(SAM_ACCOUNT *sampass, const auth_usersupplied_info *user_
 		if (lp_null_passwords()) 
 		{
 			DEBUG(3,("Account for user '%s' has no password and null passwords are allowed.\n", user_info->smb_username.str));
-			return(NT_STATUS_NOPROBLEMO);
+			return(NT_STATUS_OK);
 		} 
 		else 
 		{
@@ -156,7 +156,7 @@ uint32 smb_password_ok(SAM_ACCOUNT *sampass, const auth_usersupplied_info *user_
 						  user_info->requested_domain.str,
 						  (char *)server_info->session_key))
 			{
-				return NT_STATUS_NOPROBLEMO;
+				return NT_STATUS_OK;
 			}
 			DEBUG(4,("smb_password_ok: NTLMv2 password check failed\n"));
 
@@ -169,7 +169,7 @@ uint32 smb_password_ok(SAM_ACCOUNT *sampass, const auth_usersupplied_info *user_
 						 nt_pw, user_info->chal,
 						 server_info->session_key)) {
 				DEBUG(4,("smb_password_ok: NT MD4 password check succeeded\n"));
-				return NT_STATUS_NOPROBLEMO;
+				return NT_STATUS_OK;
 			} else { 
 				DEBUG(4,("smb_password_ok: NT MD4 password check failed\n"));
 				return NT_STATUS_WRONG_PASSWORD;
@@ -185,7 +185,7 @@ uint32 smb_password_ok(SAM_ACCOUNT *sampass, const auth_usersupplied_info *user_
 					 lm_pw, user_info->chal,
 					 server_info->session_key)) {
 			DEBUG(4,("smb_password_ok: LM password check succeeded\n"));
-			return NT_STATUS_NOPROBLEMO;
+			return NT_STATUS_OK;
 		} else {
 			DEBUG(4,("smb_password_ok: LM password check failed\n"));
 			return NT_STATUS_WRONG_PASSWORD;

@@ -532,7 +532,7 @@ BOOL lsa_io_q_enum_trust_dom(char *desc, LSA_Q_ENUM_TRUST_DOM *q_e,
 
 void init_r_enum_trust_dom(TALLOC_CTX *ctx, LSA_R_ENUM_TRUST_DOM *r_e, uint32 enum_context, 
 			   char *domain_name, DOM_SID *domain_sid,
-                           uint32 status)
+                           NTSTATUS status)
 {
         DEBUG(5, ("init_r_enum_trust_dom\n"));
 	

@@ -135,7 +135,7 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
                                         server_state.controller, trust_passwd,
                                         last_change_time);
 
-	return (result == NT_STATUS_NOPROBLEMO) ? WINBINDD_OK : WINBINDD_ERROR;
+	return (result == NT_STATUS_OK) ? WINBINDD_OK : WINBINDD_ERROR;
 }
 
 /* Challenge Response Authentication Protocol */
@@ -206,7 +206,7 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
                                         server_state.controller, trust_passwd,
                                         last_change_time);
 
-	return (result == NT_STATUS_NOPROBLEMO) ? WINBINDD_OK : WINBINDD_ERROR;
+	return (result == NT_STATUS_OK) ? WINBINDD_OK : WINBINDD_ERROR;
 }
 
 /* Change a user password */

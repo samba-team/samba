@@ -55,7 +55,7 @@ DFS_Q_DFS_EXIST;
 /* status == 1 if dfs exists. */
 typedef struct dfs_r_dfs_exist
 {
-  uint32 status;
+  NTSTATUS status;
 }
 DFS_R_DFS_EXIST;
 
@@ -75,7 +75,7 @@ DFS_Q_DFS_ADD;
 
 typedef struct dfs_r_dfs_add
 {
-  uint32 status;
+  NTSTATUS status;
 }
 DFS_R_DFS_ADD;
 
@@ -92,7 +92,7 @@ DFS_Q_DFS_REMOVE;
 
 typedef struct dfs_r_dfs_remove
 {
-  uint32 status;
+  NTSTATUS status;
 }
 DFS_R_DFS_REMOVE;
 
@@ -173,7 +173,7 @@ typedef struct dfs_r_dfs_get_info
   uint32 level;
   uint32 ptr_ctr;
   DFS_INFO_CTR ctr;
-  uint32 status;
+  NTSTATUS status;
 }
 DFS_R_DFS_GET_INFO;
 
@@ -202,7 +202,7 @@ typedef struct dfs_r_dfs_enum
   uint32 ptr_num_entries2;
   uint32 num_entries2;
   ENUM_HND reshnd;
-  uint32 status;
+  NTSTATUS status;
 }
 DFS_R_DFS_ENUM;
 

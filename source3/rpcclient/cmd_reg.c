@@ -973,7 +973,7 @@ static uint32 cmd_reg_shutdown(struct cli_state *cli, int argc, char **argv)
 	/* create an entry */
 	result = cli_reg_shutdown(cli, mem_ctx, srv_name, msg, timeout, flgs);
 
-	if (result == NT_STATUS_NOPROBLEMO)
+	if (result == NT_STATUS_OK)
 		DEBUG(5,("cmd_reg_shutdown: query succeeded\n"));
 	else
 		DEBUG(5,("cmd_reg_shutdown: query failed\n"));
@@ -1017,7 +1017,7 @@ static uint32 cmd_reg_abort_shutdown(struct cli_state *cli, int argc, char **arg
 
 	result = cli_reg_abort_shutdown(cli, mem_ctx, srv_name);
 
-	if (result == NT_STATUS_NOPROBLEMO)
+	if (result == NT_STATUS_OK)
 		DEBUG(5,("cmd_reg_abort_shutdown: query succeeded\n"));
 	else
 		DEBUG(5,("cmd_reg_abort_shutdown: query failed\n"));

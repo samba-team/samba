@@ -38,7 +38,7 @@ extern DOM_SID global_sam_sid;
  *************************************************************************/
 
 static void init_net_r_req_chal(NET_R_REQ_CHAL *r_c,
-                                DOM_CHAL *srv_chal, int status)
+                                DOM_CHAL *srv_chal, NTSTATUS status)
 {
 	DEBUG(6,("init_net_r_req_chal: %d\n", __LINE__));
 	memcpy(r_c->srv_chal.data, srv_chal->data, sizeof(srv_chal->data));
@@ -62,7 +62,7 @@ static void init_net_r_req_chal(NET_R_REQ_CHAL *r_c,
 #define LOGON_CTRL_REPL_NEEDED      0x01
 #define LOGON_CTRL_REPL_IN_PROGRESS 0x02
 
-uint32 _net_logon_ctrl(pipes_struct *p, NET_Q_LOGON_CTRL *q_u, 
+NTSTATUS _net_logon_ctrl(pipes_struct *p, NET_Q_LOGON_CTRL *q_u, 
 		       NET_R_LOGON_CTRL *r_u)
 {
 	uint32 flags = 0x0;
@@ -80,7 +80,7 @@ uint32 _net_logon_ctrl(pipes_struct *p, NET_Q_LOGON_CTRL *q_u,
  net_reply_logon_ctrl2:
  *************************************************************************/
 
-uint32 _net_logon_ctrl2(pipes_struct *p, NET_Q_LOGON_CTRL2 *q_u, NET_R_LOGON_CTRL2 *r_u)
+NTSTATUS _net_logon_ctrl2(pipes_struct *p, NET_Q_LOGON_CTRL2 *q_u, NET_R_LOGON_CTRL2 *r_u)
 {
     /* lkclXXXX - guess what - absolutely no idea what these are! */
     uint32 flags = 0x0;
@@ -105,7 +105,7 @@ uint32 _net_logon_ctrl2(pipes_struct *p, NET_Q_LOGON_CTRL2 *q_u, NET_R_LOGON_CTR
  net_reply_trust_dom_list:
  *************************************************************************/
 
-uint32 _net_trust_dom_list(pipes_struct *p, NET_Q_TRUST_DOM_LIST *q_u, NET_R_TRUST_DOM_LIST *r_u)
+NTSTATUS _net_trust_dom_list(pipes_struct *p, NET_Q_TRUST_DOM_LIST *q_u, NET_R_TRUST_DOM_LIST *r_u)
 {
 	char *trusted_domain = "test_domain";
 	uint32 num_trust_domains = 1;
@@ -125,7 +125,7 @@ uint32 _net_trust_dom_list(pipes_struct *p, NET_Q_TRUST_DOM_LIST *q_u, NET_R_TRU
  ***********************************************************************************/
 
 static void init_net_r_srv_pwset(NET_R_SRV_PWSET *r_s,
-                             DOM_CRED *srv_cred, int status)  
+                             DOM_CRED *srv_cred, NTSTATUS status)  
 {
 	DEBUG(5,("init_net_r_srv_pwset: %d\n", __LINE__));
 
@@ -194,9 +194,9 @@ static BOOL get_md4pw(char *md4pw, char *mach_acct)
  _net_req_chal
  *************************************************************************/
 
-uint32 _net_req_chal(pipes_struct *p, NET_Q_REQ_CHAL *q_u, NET_R_REQ_CHAL *r_u)
+NTSTATUS _net_req_chal(pipes_struct *p, NET_Q_REQ_CHAL *q_u, NET_R_REQ_CHAL *r_u)
 {
-	uint32 status = NT_STATUS_NOPROBLEMO;
+	NTSTATUS status = NT_STATUS_OK;
 	fstring mach_acct;
 
 	if (!get_valid_user_struct(p->vuid))
@@ -242,7 +242,7 @@ uint32 _net_req_chal(pipes_struct *p, NET_Q_REQ_CHAL *q_u, NET_R_REQ_CHAL *r_u)
  init_net_r_auth:
  *************************************************************************/
 
-static void init_net_r_auth(NET_R_AUTH *r_a, DOM_CHAL *resp_cred, int status)
+static void init_net_r_auth(NET_R_AUTH *r_a, DOM_CHAL *resp_cred, NTSTATUS status)
 {
 	memcpy(r_a->srv_chal.data, resp_cred->data, sizeof(resp_cred->data));
 	r_a->status = status;
@@ -252,9 +252,9 @@ static void init_net_r_auth(NET_R_AUTH *r_a, DOM_CHAL *resp_cred, int status)
  _net_auth
  *************************************************************************/
 
-uint32 _net_auth(pipes_struct *p, NET_Q_AUTH *q_u, NET_R_AUTH *r_u)
+NTSTATUS _net_auth(pipes_struct *p, NET_Q_AUTH *q_u, NET_R_AUTH *r_u)
 {
-	uint32 status = NT_STATUS_NOPROBLEMO;
+	NTSTATUS status = NT_STATUS_OK;
 	DOM_CHAL srv_cred;
 	UTIME srv_time;
 
@@ -287,7 +287,7 @@ uint32 _net_auth(pipes_struct *p, NET_Q_AUTH *q_u, NET_R_AUTH *r_u)
  *************************************************************************/
 
 static void init_net_r_auth_2(NET_R_AUTH_2 *r_a,
-                              DOM_CHAL *resp_cred, NEG_FLAGS *flgs, int status)
+                              DOM_CHAL *resp_cred, NEG_FLAGS *flgs, NTSTATUS status)
 {
 	memcpy(r_a->srv_chal.data, resp_cred->data, sizeof(resp_cred->data));
 	memcpy(&r_a->srv_flgs, flgs, sizeof(r_a->srv_flgs));
@@ -298,9 +298,9 @@ static void init_net_r_auth_2(NET_R_AUTH_2 *r_a,
  _net_auth_2
  *************************************************************************/
 
-uint32 _net_auth_2(pipes_struct *p, NET_Q_AUTH_2 *q_u, NET_R_AUTH_2 *r_u)
+NTSTATUS _net_auth_2(pipes_struct *p, NET_Q_AUTH_2 *q_u, NET_R_AUTH_2 *r_u)
 {
-	uint32 status = NT_STATUS_NOPROBLEMO;
+	NTSTATUS status = NT_STATUS_OK;
 	DOM_CHAL srv_cred;
 	UTIME srv_time;
 	NEG_FLAGS srv_flgs;
@@ -335,9 +335,9 @@ uint32 _net_auth_2(pipes_struct *p, NET_Q_AUTH_2 *q_u, NET_R_AUTH_2 *r_u)
  _net_srv_pwset
  *************************************************************************/
 
-uint32 _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *r_u)
+NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *r_u)
 {
-	uint32 status = NT_STATUS_WRONG_PASSWORD;
+	NTSTATUS status = NT_STATUS_WRONG_PASSWORD;
 	DOM_CRED srv_cred;
 	pstring mach_acct;
 	SAM_ACCOUNT *sampass=NULL;
@@ -403,7 +403,7 @@ uint32 _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *r_
 	unbecome_root();
  
 	if (ret)
-		status = NT_STATUS_NOPROBLEMO;
+		status = NT_STATUS_OK;
 
 	/* set up the LSA Server Password Set response */
 	init_net_r_srv_pwset(r_u, &srv_cred, status);
@@ -417,7 +417,7 @@ uint32 _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *r_
  _net_sam_logoff:
  *************************************************************************/
 
-uint32 _net_sam_logoff(pipes_struct *p, NET_Q_SAM_LOGOFF *q_u, NET_R_SAM_LOGOFF *r_u)
+NTSTATUS _net_sam_logoff(pipes_struct *p, NET_Q_SAM_LOGOFF *q_u, NET_R_SAM_LOGOFF *r_u)
 {
 	DOM_CRED srv_cred;
 
@@ -435,7 +435,7 @@ uint32 _net_sam_logoff(pipes_struct *p, NET_Q_SAM_LOGOFF *q_u, NET_R_SAM_LOGOFF 
 	r_u->buffer_creds = 1; /* yes, we have valid server credentials */
 	memcpy(&r_u->srv_creds, &srv_cred, sizeof(r_u->srv_creds));
 
-	r_u->status = NT_STATUS_NOPROBLEMO;
+	r_u->status = NT_STATUS_OK;
 
 	return r_u->status;
 }
@@ -444,9 +444,9 @@ uint32 _net_sam_logoff(pipes_struct *p, NET_Q_SAM_LOGOFF *q_u, NET_R_SAM_LOGOFF 
  _net_logon_any:  Use the new authentications subsystem to log in.
  *************************************************************************/
 
-static uint32 _net_logon_any(NET_ID_INFO_CTR *ctr, char *user, char *domain, char *sess_key)
+static NTSTATUS _net_logon_any(NET_ID_INFO_CTR *ctr, char *user, char *domain, char *sess_key)
 {
-	uint32 nt_status = NT_STATUS_LOGON_FAILURE;
+	NTSTATUS nt_status = NT_STATUS_LOGON_FAILURE;
 
 	unsigned char local_lm_response[24];
 	unsigned char local_nt_response[24];
@@ -550,10 +550,10 @@ static uint32 _net_logon_any(NET_ID_INFO_CTR *ctr, char *user, char *domain, cha
 	
 	nt_status = check_password(&user_info, &server_info);
 
-	DEBUG(5, ("_net_logon_any: exited with status %d\n", nt_status));
+	DEBUG(5, ("_net_logon_any: exited with status %s\n", 
+		  get_nt_error_msg(nt_status)));
 
 	return nt_status;
-
 }
 
 
@@ -562,9 +562,9 @@ static uint32 _net_logon_any(NET_ID_INFO_CTR *ctr, char *user, char *domain, cha
  _net_sam_logon
  *************************************************************************/
 
-uint32 _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *r_u)
+NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *r_u)
 {
-	uint32 status = NT_STATUS_NOPROBLEMO;
+	NTSTATUS status = NT_STATUS_OK;
 	NET_USER_INFO_3 *usr_info = NULL;
 	DOM_CRED srv_cred;
 	SAM_ACCOUNT *sampass = NULL;
@@ -637,7 +637,7 @@ uint32 _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *r_
 
 	/* Check account and password */
     
-	if (status != NT_STATUS_NOPROBLEMO)
+	if (NT_STATUS_V(status))
 		return status;
 
 	pdb_init_sam(&sampass);

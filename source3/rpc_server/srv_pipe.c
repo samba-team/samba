@@ -93,7 +93,7 @@ BOOL create_next_pdu(pipes_struct *p)
 	 */
 
 	if(p->fault_state) {
-		setup_fault_pdu(p, 0x1c010002);
+		setup_fault_pdu(p, NT_STATUS(0x1c010002));
 		return True;
 	}
 
@@ -367,11 +367,12 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p, RPC_AUTH_NTLMSSP_RESP *ntlm
 
 		become_root();
 
-		if(!(p->ntlmssp_auth_validated = 
-		     pass_check_smb_with_chal(pipe_user_name, domain,
-					      (uchar*)p->challenge, 
-					      lm_owf, lm_pw_len, 
-					      nt_owf, nt_pw_len) == NT_STATUS_NOPROBLEMO)) {
+		p->ntlmssp_auth_validated = 
+			NT_STATUS_IS_OK(pass_check_smb_with_chal(pipe_user_name, domain,
+								 (uchar*)p->challenge, 
+								 lm_owf, lm_pw_len, 
+								 nt_owf, nt_pw_len));
+		if (!p->ntlmssp_auth_validated) {
 			DEBUG(1,("api_pipe_ntlmssp_verify: User %s\\%s from machine %s \
 failed authentication on named pipe %s.\n", domain, pipe_user_name, wks, p->name ));
 			unbecome_root();
@@ -625,7 +626,7 @@ static BOOL setup_bind_nak(pipes_struct *p)
  Marshall a fault pdu.
 *******************************************************************/
 
-BOOL setup_fault_pdu(pipes_struct *p, uint32 status)
+BOOL setup_fault_pdu(pipes_struct *p, NTSTATUS status)
 {
 	prs_struct outgoing_pdu;
 	RPC_HDR fault_hdr;
@@ -1203,7 +1204,7 @@ BOOL api_rpcTNP(pipes_struct *p, char *rpc_name,
 		 * and not put the pipe into fault state. JRA.
 		 */
 		DEBUG(4, ("unknown\n"));
-		setup_fault_pdu(p, 0x1c010002);
+		setup_fault_pdu(p, NT_STATUS(0x1c010002));
 		return True;
 	}
 

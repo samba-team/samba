@@ -57,7 +57,7 @@ static void gen_next_creds( struct cli_state *cli, DOM_CRED *new_clnt_cred)
 /****************************************************************************
 do a LSA Logon Control2
 ****************************************************************************/
-BOOL cli_net_logon_ctrl2(struct cli_state *cli, uint32 status_level)
+BOOL cli_net_logon_ctrl2(struct cli_state *cli, NTSTATUS status_level)
 {
   prs_struct rbuf;
   prs_struct buf; 
@@ -446,7 +446,7 @@ uint32 cli_net_sam_logon(struct cli_state *cli, NET_ID_INFO_CTR *ctr,
 	result = cli_net_sam_logon_internal(cli, ctr, user_info3, 
                                             validation_level);
 
-	if(result == NT_STATUS_NOPROBLEMO) {
+	if(result == NT_STATUS_OK) {
 		DEBUG(10,("cli_net_sam_logon: Success \n"));
 	} else if (result == NT_STATUS_INVALID_INFO_CLASS) {
 		DEBUG(10,("cli_net_sam_logon: STATUS INVALID INFO CLASS \n"));

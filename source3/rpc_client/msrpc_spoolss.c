@@ -227,7 +227,7 @@ nt spoolss query
 BOOL msrpc_spoolss_enum_printers(char* srv_name, uint32 flags, 
 				 uint32 level, PRINTER_INFO_CTR ctr)
 {
-	uint32 status;
+	NTSTATUS status;
 	NEW_BUFFER buffer;
 	uint32 needed;
 	uint32 returned;
@@ -250,7 +250,7 @@ BOOL msrpc_spoolss_enum_printers(char* srv_name, uint32 flags,
 					     needed, &needed, &returned);
 	}
 	
-	if (status!=NT_STATUS_NOPROBLEMO)
+	if (status!=NT_STATUS_OK)
 	{
 		DEBUG(0,("spoolss_enum_printers: %s\n", get_nt_error_msg(status)));
 		if (mem_ctx)
@@ -290,7 +290,7 @@ nt spoolss query
 BOOL msrpc_spoolss_enum_ports(char* srv_name, 
 				 uint32 level, PORT_INFO_CTR *ctr)
 {
-	uint32 status;
+	NTSTATUS status;
 	NEW_BUFFER buffer;
 	uint32 needed;
 	uint32 returned;
@@ -316,7 +316,7 @@ BOOL msrpc_spoolss_enum_ports(char* srv_name,
 	
 	report(out_hnd, "\tstatus:[%d (%x)]\n", status, status);
 	
-	if (status!=NT_STATUS_NOPROBLEMO)
+	if (status!=NT_STATUS_OK)
 	{
 		if (mem_ctx)
 			talloc_destroy(mem_ctx);
@@ -362,7 +362,7 @@ uint32 msrpc_spoolss_getprinterdata( const char* printer_name,
                                 void *fn)
 {
         POLICY_HND hnd;
-        uint32 status;
+        NTSTATUS status;
         uint32 needed;
         uint32 size;
         char *data;
@@ -405,7 +405,7 @@ uint32 msrpc_spoolss_getprinterdata( const char* printer_name,
 	if (mem_ctx)
 		talloc_destroy(mem_ctx);
 
-        if (status != NT_STATUS_NOPROBLEMO) 
+        if (status != NT_STATUS_OK) 
 	{
                 if (!spoolss_closeprinter(&hnd))
                         return NT_STATUS_ACCESS_DENIED;
@@ -429,7 +429,7 @@ BOOL msrpc_spoolss_enum_jobs( const char* printer_name,
                                 void ***ctr, JOB_INFO_FN(fn))
 {
         POLICY_HND hnd;
-        uint32 status;
+        NTSTATUS status;
         NEW_BUFFER buffer;
         uint32 needed;
         uint32 returned;
@@ -462,7 +462,7 @@ BOOL msrpc_spoolss_enum_jobs( const char* printer_name,
 	if (mem_ctx)
 		talloc_destroy(mem_ctx);
 		
-        if (status!=NT_STATUS_NOPROBLEMO) {
+        if (status!=NT_STATUS_OK) {
                 if (!spoolss_closeprinter(&hnd))
                         return False;
                 return False;
@@ -482,7 +482,7 @@ BOOL msrpc_spoolss_enum_printerdata( const char* printer_name,
 		const char* station, const char* user_name )
 {
 	POLICY_HND hnd;
-	uint32 status;
+	NTSTATUS status;
 	uint32 idx;
 	uint32 valuelen;
 	uint16 *value;
@@ -540,7 +540,7 @@ BOOL msrpc_spoolss_enum_printerdata( const char* printer_name,
 				 value, rvaluelen, type, datalen, data, rdatalen);
 
 	
-	if (status!=NT_STATUS_NOPROBLEMO) {
+	if (status!=NT_STATUS_OK) {
 		/* 
 		 * the check on this if statement is redundant
 		 * since is the status is bad we're going to 
@@ -563,7 +563,7 @@ BOOL msrpc_spoolss_getprinter( const char* printer_name, const uint32 level,
                 PRINTER_INFO_CTR ctr)
 {
         POLICY_HND hnd;
-        uint32 status=0;
+        NTSTATUS status=0;
         NEW_BUFFER buffer;
         uint32 needed=1000;
 	TALLOC_CTX *mem_ctx = NULL;
@@ -589,7 +589,7 @@ BOOL msrpc_spoolss_getprinter( const char* printer_name, const uint32 level,
 
         report(out_hnd, "\tstatus:[%d (%x)]\n", status, status);
 
-        if (status!=NT_STATUS_NOPROBLEMO)
+        if (status!=NT_STATUS_OK)
 	{
 		if (mem_ctx)
 			talloc_destroy(mem_ctx);
@@ -618,7 +618,7 @@ BOOL msrpc_spoolss_getprinter( const char* printer_name, const uint32 level,
 	if (mem_ctx)
 		talloc_destroy(mem_ctx);
 
-        if (status!=NT_STATUS_NOPROBLEMO) {
+        if (status!=NT_STATUS_OK) {
                 if (!spoolss_closeprinter(&hnd))
                         return False;
                 return False;
@@ -636,7 +636,7 @@ BOOL msrpc_spoolss_getprinterdriver( const char* printer_name,
                 PRINTER_DRIVER_CTR ctr)
 {
         POLICY_HND hnd;
-        uint32 status=0;
+        NTSTATUS status=0;
         NEW_BUFFER buffer;
         uint32 needed;
 	TALLOC_CTX *mem_ctx = NULL;
@@ -662,7 +662,7 @@ BOOL msrpc_spoolss_getprinterdriver( const char* printer_name,
 
         /* report(out_hnd, "\tstatus:[%d (%x)]\n", status, status); */
 
-        if (status!=NT_STATUS_NOPROBLEMO)
+        if (status!=NT_STATUS_OK)
 	{
 		if (mem_ctx)
 			talloc_destroy(mem_ctx);
@@ -688,7 +688,7 @@ BOOL msrpc_spoolss_getprinterdriver( const char* printer_name,
 	if (mem_ctx)
 		talloc_destroy(mem_ctx);
 		
-        if (status!=NT_STATUS_NOPROBLEMO) {
+        if (status!=NT_STATUS_OK) {
                 if (!spoolss_closeprinter(&hnd))
                         return False;
                 return False;
@@ -704,7 +704,7 @@ BOOL msrpc_spoolss_enumprinterdrivers( const char* srv_name,
                 const char *environment, const uint32 level,
                 PRINTER_DRIVER_CTR ctr)
 {
-        uint32 status=0;
+        NTSTATUS status=0;
         NEW_BUFFER buffer;
         uint32 needed;
         uint32 returned;
@@ -731,7 +731,7 @@ BOOL msrpc_spoolss_enumprinterdrivers( const char* srv_name,
 
         report(out_hnd, "\tstatus:[%d (%x)]\n", status, status);
 
-        if (status!=NT_STATUS_NOPROBLEMO)
+        if (status!=NT_STATUS_OK)
 	{
 		if (mem_ctx)
 			talloc_destroy(mem_ctx);
@@ -766,7 +766,7 @@ nt spoolss query
 ****************************************************************************/
 BOOL msrpc_spoolss_getprinterdriverdir(char* srv_name, char* env_name, uint32 level, DRIVER_DIRECTORY_CTR ctr)
 {
-        uint32 status;
+        NTSTATUS status;
         NEW_BUFFER buffer;
         uint32 needed;
 	TALLOC_CTX *mem_ctx = NULL;
@@ -788,7 +788,7 @@ BOOL msrpc_spoolss_getprinterdriverdir(char* srv_name, char* env_name, uint32 le
 
         report(out_hnd, "\tstatus:[%d (%x)]\n", status, status);
 
-        if (status!=NT_STATUS_NOPROBLEMO)
+        if (status!=NT_STATUS_OK)
 	{
 		if (mem_ctx)
 			talloc_destroy(mem_ctx);

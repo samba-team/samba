@@ -59,7 +59,7 @@ static uint32 cmd_lsa_query_info_policy(struct cli_state *cli, int argc, char **
 
 	if ((result = cli_lsa_open_policy(cli, mem_ctx, True, 
 					  SEC_RIGHTS_MAXIMUM_ALLOWED,
-					  &pol)) != NT_STATUS_NOPROBLEMO) {
+					  &pol)) != NT_STATUS_OK) {
 		goto done;
 	}
 
@@ -69,7 +69,7 @@ static uint32 cmd_lsa_query_info_policy(struct cli_state *cli, int argc, char **
 
 	if ((result = cli_lsa_query_info_policy(cli, mem_ctx, &pol, info_class, 
 						domain_name, &dom_sid)) 
-	    != NT_STATUS_NOPROBLEMO) {
+	    != NT_STATUS_OK) {
 		goto done;
 	}
 
@@ -125,7 +125,7 @@ static uint32 cmd_lsa_lookup_names(struct cli_state *cli, int argc, char **argv)
 
 	if ((result = cli_lsa_open_policy(cli, mem_ctx, True, 
 					  SEC_RIGHTS_MAXIMUM_ALLOWED,
-					  &pol)) != NT_STATUS_NOPROBLEMO) {
+					  &pol)) != NT_STATUS_OK) {
 		goto done;
 	}
 
@@ -135,7 +135,7 @@ static uint32 cmd_lsa_lookup_names(struct cli_state *cli, int argc, char **argv)
 
 	if ((result = cli_lsa_lookup_names(cli, mem_ctx, &pol, argc - 1, 
 		&argv[1], &sids, &types, &num_names) !=
-	     NT_STATUS_NOPROBLEMO)) {
+	     NT_STATUS_OK)) {
 		goto done;
 	}
 
@@ -193,7 +193,7 @@ static uint32 cmd_lsa_lookup_sids(struct cli_state *cli, int argc, char **argv)
 
 	if ((result = cli_lsa_open_policy(cli, mem_ctx, True, 
 					  SEC_RIGHTS_MAXIMUM_ALLOWED,
-					  &pol)) != NT_STATUS_NOPROBLEMO) {
+					  &pol)) != NT_STATUS_OK) {
 		goto done;
 	}
 
@@ -216,7 +216,7 @@ static uint32 cmd_lsa_lookup_sids(struct cli_state *cli, int argc, char **argv)
 
 	if ((result = cli_lsa_lookup_sids(cli, mem_ctx, &pol, argc - 1, sids, 
 					  &names, &types, &num_names) !=
-	     NT_STATUS_NOPROBLEMO)) {
+	     NT_STATUS_OK)) {
 		goto done;
 	}
 
@@ -286,7 +286,7 @@ static uint32 cmd_lsa_enum_trust_dom(struct cli_state *cli, int argc, char **arg
 
 	if ((result = cli_lsa_open_policy(cli, mem_ctx, True, 
 					  SEC_RIGHTS_MAXIMUM_ALLOWED,
-					  &pol)) != NT_STATUS_NOPROBLEMO) {
+					  &pol)) != NT_STATUS_OK) {
 		goto done;
 	}
 
@@ -297,7 +297,7 @@ static uint32 cmd_lsa_enum_trust_dom(struct cli_state *cli, int argc, char **arg
 	if ((result = cli_lsa_enum_trust_dom(cli, mem_ctx, &pol, &enum_ctx,
 					     &num_domains, &domain_names,
 					     &domain_sids) 
-	     != NT_STATUS_NOPROBLEMO)) {
+	     != NT_STATUS_OK)) {
 		goto done;
 	}
 

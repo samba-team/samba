@@ -188,7 +188,7 @@ static BOOL check_error(int line, struct cli_state *c,
                 }
 
         } else {
-                uint32 status;
+                NTSTATUS status;
 
                 /* Check NT error */
 

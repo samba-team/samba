@@ -1110,7 +1110,7 @@ static uint32 clean_up_driver_struct_level_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *dri
 									driver->driverpath, user, &err)) == -1)
 		return err;
 
-	return NT_STATUS_NOPROBLEMO;
+	return NT_STATUS_OK;
 }
 	
 /****************************************************************************
@@ -1175,7 +1175,7 @@ static uint32 clean_up_driver_struct_level_6(NT_PRINTER_DRIVER_INFO_LEVEL_6 *dri
 									driver->driverpath, user, &err)) == -1)
 		return err;
 
-	return NT_STATUS_NOPROBLEMO;
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
@@ -3003,7 +3003,7 @@ static uint32 save_driver_init_2(NT_PRINTER_INFO_LEVEL *printer, NT_PRINTER_PARA
 
 uint32 save_driver_init(NT_PRINTER_INFO_LEVEL *printer, uint32 level, NT_PRINTER_PARAM *param)
 {
-	uint32 status = ERRsuccess;
+	NTSTATUS status = ERRsuccess;
 	
 	switch (level)
 	{
@@ -3285,7 +3285,7 @@ BOOL printer_driver_in_use (char *arch, char *driver)
  Remove a printer driver from the TDB.  This assumes that the the driver was
  previously looked up.
  ***************************************************************************/
-uint32 delete_printer_driver (NT_PRINTER_DRIVER_INFO_LEVEL_3 *i)
+NTSTATUS delete_printer_driver (NT_PRINTER_DRIVER_INFO_LEVEL_3 *i)
 {
 	pstring 	key;
 	fstring		arch;
@@ -3308,7 +3308,7 @@ uint32 delete_printer_driver (NT_PRINTER_DRIVER_INFO_LEVEL_3 *i)
 	DEBUG(5,("delete_printer_driver: [%s] driver delete successful.\n",
 		i->name));
 	
-	return NT_STATUS_NOPROBLEMO;
+	return NT_STATUS_OK;
 }
 /****************************************************************************
 ****************************************************************************/
@@ -3396,7 +3396,7 @@ uint32 nt_printing_setsec(char *printername, SEC_DESC_BUF *secdesc_ctr)
 	prs_struct ps;
 	TALLOC_CTX *mem_ctx = NULL;
 	fstring key;
-	uint32 status;
+	NTSTATUS status;
 
 	mem_ctx = talloc_init();
 	if (mem_ctx == NULL)

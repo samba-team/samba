@@ -213,13 +213,13 @@ void fetch_domain_sid(struct cli_state *cli)
 	
 	if ((result = cli_lsa_open_policy(cli, mem_ctx, True, 
 					  SEC_RIGHTS_MAXIMUM_ALLOWED,
-					  &pol) != NT_STATUS_NOPROBLEMO)) {
+					  &pol) != NT_STATUS_OK)) {
 		goto error;
 	}
 
 	if ((result = cli_lsa_query_info_policy(cli, mem_ctx, &pol, info_class, 
 						domain_name, &domain_sid))
-	    != NT_STATUS_NOPROBLEMO) {
+	    != NT_STATUS_OK) {
 		goto error;
 	}
 
@@ -234,7 +234,7 @@ void fetch_domain_sid(struct cli_state *cli)
  error:
 	fprintf(stderr, "could not obtain sid for domain %s\n", cli->domain);
 
-	if (result != NT_STATUS_NOPROBLEMO) {
+	if (result != NT_STATUS_OK) {
 		fprintf(stderr, "error: %s\n", get_nt_error_msg(result));
 	}
 
@@ -327,7 +327,7 @@ static uint32 cmd_debuglevel(struct cli_state *cli, int argc, char **argv)
 {
 	if (argc > 2) {
 		printf("Usage: %s [debuglevel]\n", argv[0]);
-		return NT_STATUS_NOPROBLEMO;
+		return NT_STATUS_OK;
 	}
 
 	if (argc == 2) {
@@ -336,13 +336,13 @@ static uint32 cmd_debuglevel(struct cli_state *cli, int argc, char **argv)
 
 	printf("debuglevel is %d\n", DEBUGLEVEL);
 
-	return NT_STATUS_NOPROBLEMO;
+	return NT_STATUS_OK;
 }
 
 static uint32 cmd_quit(struct cli_state *cli, int argc, char **argv)
 {
 	exit(0);
-	return NT_STATUS_NOPROBLEMO; /* NOTREACHED */
+	return NT_STATUS_OK; /* NOTREACHED */
 }
 
 /* Build in rpcclient commands */

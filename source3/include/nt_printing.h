@@ -231,7 +231,7 @@ typedef struct nt_printer_info_level_2
 	uint32 default_priority;
 	uint32 starttime;
 	uint32 untiltime;
-	uint32 status;
+	NTSTATUS status;
 	uint32 cjobs;
 	uint32 averageppm;
 	fstring servername;

@@ -207,7 +207,7 @@ int smbc_errno(struct cli_state *c)
                 DEBUG(3,("smbc_error %d %d (0x%x) -> %d\n", 
                          (int)eclass, (int)ecode, (int)ecode, ret));
         } else {
-                uint32 status;
+                NTSTATUS status;
 
                 status = cli_nt_error(c);
                 ret = cli_errno_from_nt(status);

@@ -46,7 +46,7 @@ static void free_reg_info(void *ptr)
  reg_reply_unknown_1
  ********************************************************************/
 
-uint32 _reg_close(pipes_struct *p, REG_Q_CLOSE *q_u, REG_R_CLOSE *r_u)
+NTSTATUS _reg_close(pipes_struct *p, REG_Q_CLOSE *q_u, REG_R_CLOSE *r_u)
 {
 	/* set up the REG unknown_1 response */
 	ZERO_STRUCT(r_u->pol);
@@ -55,26 +55,26 @@ uint32 _reg_close(pipes_struct *p, REG_Q_CLOSE *q_u, REG_R_CLOSE *r_u)
 	if (!close_policy_hnd(p, &q_u->pol))
 		return NT_STATUS_OBJECT_NAME_INVALID;
 
-	return NT_STATUS_NOPROBLEMO;
+	return NT_STATUS_OK;
 }
 
 /*******************************************************************
  reg_reply_open
  ********************************************************************/
 
-uint32 _reg_open(pipes_struct *p, REG_Q_OPEN_HKLM *q_u, REG_R_OPEN_HKLM *r_u)
+NTSTATUS _reg_open(pipes_struct *p, REG_Q_OPEN_HKLM *q_u, REG_R_OPEN_HKLM *r_u)
 {
 	if (!create_policy_hnd(p, &r_u->pol, free_reg_info, NULL))
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 
-	return NT_STATUS_NOPROBLEMO;
+	return NT_STATUS_OK;
 }
 
 /*******************************************************************
  reg_reply_open_entry
  ********************************************************************/
 
-uint32 _reg_open_entry(pipes_struct *p, REG_Q_OPEN_ENTRY *q_u, REG_R_OPEN_ENTRY *r_u)
+NTSTATUS _reg_open_entry(pipes_struct *p, REG_Q_OPEN_ENTRY *q_u, REG_R_OPEN_ENTRY *r_u)
 {
 	POLICY_HND pol;
 	fstring name;
@@ -103,7 +103,7 @@ uint32 _reg_open_entry(pipes_struct *p, REG_Q_OPEN_ENTRY *q_u, REG_R_OPEN_ENTRY 
 	if (!create_policy_hnd(p, &pol, free_reg_info, (void *)info))
 		return NT_STATUS_TOO_MANY_SECRETS; /* ha ha very droll */
 
-	init_reg_r_open_entry(r_u, &pol, NT_STATUS_NOPROBLEMO);
+	init_reg_r_open_entry(r_u, &pol, NT_STATUS_OK);
 
 	DEBUG(5,("reg_open_entry: %d\n", __LINE__));
 
@@ -114,9 +114,9 @@ uint32 _reg_open_entry(pipes_struct *p, REG_Q_OPEN_ENTRY *q_u, REG_R_OPEN_ENTRY 
  reg_reply_info
  ********************************************************************/
 
-uint32 _reg_info(pipes_struct *p, REG_Q_INFO *q_u, REG_R_INFO *r_u)
+NTSTATUS _reg_info(pipes_struct *p, REG_Q_INFO *q_u, REG_R_INFO *r_u)
 {
-	uint32 status = NT_STATUS_NOPROBLEMO;
+	NTSTATUS status = NT_STATUS_OK;
 	char *key = NULL;
 	uint32 type=0x1; /* key type: REG_SZ */
 
@@ -141,7 +141,7 @@ uint32 _reg_info(pipes_struct *p, REG_Q_INFO *q_u, REG_R_INFO *r_u)
 
 	if ( strequal(name, "RefusePasswordChange") ) {
 		type=0xF770;
-		status = ERRbadfile;
+		status = NT_STATUS_NO_SUCH_FILE;
 		init_unistr2(uni_key, "", 0);
 		init_buffer2(buf, (uint8*) uni_key->buffer, uni_key->uni_str_len*2);
 		
@@ -186,9 +186,9 @@ uint32 _reg_info(pipes_struct *p, REG_Q_INFO *q_u, REG_R_INFO *r_u)
 #define SHUTDOWN_F_STRING "-f"
 
 
-uint32 _reg_shutdown(pipes_struct *p, REG_Q_SHUTDOWN *q_u, REG_R_SHUTDOWN *r_u)
+NTSTATUS _reg_shutdown(pipes_struct *p, REG_Q_SHUTDOWN *q_u, REG_R_SHUTDOWN *r_u)
 {
-	uint32 status = NT_STATUS_NOPROBLEMO;
+	NTSTATUS status = NT_STATUS_OK;
 	pstring shutdown_script;
 	UNISTR2 unimsg = q_u->uni_msg;
 	pstring message;
@@ -223,9 +223,9 @@ uint32 _reg_shutdown(pipes_struct *p, REG_Q_SHUTDOWN *q_u, REG_R_SHUTDOWN *r_u)
 	return status;
 }
 
-uint32 _reg_abort_shutdown(pipes_struct *p, REG_Q_ABORT_SHUTDOWN *q_u, REG_R_ABORT_SHUTDOWN *r_u)
+NTSTATUS _reg_abort_shutdown(pipes_struct *p, REG_Q_ABORT_SHUTDOWN *q_u, REG_R_ABORT_SHUTDOWN *r_u)
 {
-	uint32 status = NT_STATUS_NOPROBLEMO;
+	NTSTATUS status = NT_STATUS_OK;
 	pstring abort_shutdown_script;
 
 	pstrcpy(abort_shutdown_script, lp_abort_shutdown_script());

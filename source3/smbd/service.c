@@ -217,14 +217,13 @@ int find_service(char *service)
  do some basic sainity checks on the share.  
  This function modifies dev, ecode.
 ****************************************************************************/
-static BOOL share_sanity_checks(int snum, char* service, char *dev, int *ecode) 
+static NTSTATUS share_sanity_checks(int snum, char* service, char *dev) 
 {
 	
 	if (!lp_snum_ok(snum) || 
 	    !check_access(smbd_server_fd(), 
 			  lp_hostsallow(snum), lp_hostsdeny(snum))) {    
-		*ecode = ERRaccess;
-		return False;
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	/* you can only connect to the IPC$ service as an ipc device */
@@ -243,15 +242,15 @@ static BOOL share_sanity_checks(int snum, char* service, char *dev, int *ecode)
 	strupper(dev);
 	if (!lp_print_ok(snum) && (strncmp(dev,"LPT",3) == 0)) {
 		DEBUG(1,("Attempt to connect to non-printer as a printer\n"));
-		*ecode = ERRinvdevice;
-		return False;
+		return NT_STATUS_BAD_DEVICE_TYPE;
 	}
 
 	/* Behave as a printer if we are supposed to */
 	if (lp_print_ok(snum) && (strcmp(dev, "A:") == 0)) {
 		pstrcpy(dev, "LPT1:");
 	}
-	return True;
+
+	return NT_STATUS_OK;
 }
 
 
@@ -319,7 +318,8 @@ static void set_admin_user(connection_struct *conn)
 /****************************************************************************
   make a connection to a service
 ****************************************************************************/
-connection_struct *make_connection(char *service,char *user,char *password, int pwlen, char *dev,uint16 vuid, int *ecode)
+connection_struct *make_connection(char *service,char *user,char *password, 
+				   int pwlen, char *dev,uint16 vuid, NTSTATUS *status)
 {
 	int snum;
 	struct passwd *pass = NULL;
@@ -334,13 +334,13 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	if (snum < 0) {
 		if (strequal(service,"IPC$") || strequal(service,"ADMIN$")) {
 			DEBUG(3,("refusing IPC connection\n"));
-			*ecode = ERRnoipc;
+			*status = NT_STATUS_ACCESS_DENIED;
 			return NULL;
 		}
 
 		DEBUG(0,("%s (%s) couldn't find service %s\n",
 			 remote_machine, client_addr(), service));
-		*ecode = ERRnosuchshare;
+		*status = NT_STATUS_BAD_NETWORK_PATH;
 		return NULL;
 	}
 
@@ -349,7 +349,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 			fstring dos_username;
 			fstrcpy(dos_username, user);
 			return(make_connection(dos_username,user,password,
-					       pwlen,dev,vuid,ecode));
+					       pwlen,dev,vuid,status));
 		}
 
 		if(lp_security() != SEC_SHARE) {
@@ -357,7 +357,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 				fstring dos_username;
 				fstrcpy(user,validated_username(vuid));
 				fstrcpy(dos_username, user);
-				return(make_connection(dos_username,user,password,pwlen,dev,vuid,ecode));
+				return(make_connection(dos_username,user,password,pwlen,dev,vuid,status));
 			}
 		} else {
 			/* Security = share. Try with current_user_info.smb_name
@@ -366,12 +366,12 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 				fstring dos_username;
 				fstrcpy(user,current_user_info.smb_name);
 				fstrcpy(dos_username, user);
-				return(make_connection(dos_username,user,password,pwlen,dev,vuid,ecode));
+				return(make_connection(dos_username,user,password,pwlen,dev,vuid,status));
 			}
 		}
 	}
 
-	if (!share_sanity_checks(snum, service, dev, ecode)) {
+	if (NT_STATUS_IS_ERR(share_sanity_checks(snum, service, dev))) {
 		return NULL;
 	}	
 
@@ -387,14 +387,14 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	/* shall we let them in? */
 	if (!authorise_login(snum,user,password,pwlen,&guest,&force,vuid)) {
 		DEBUG( 2, ( "Invalid username/password for %s [%s]\n", service, user ) );
-		*ecode = ERRbadpw;
+		*status = NT_STATUS_WRONG_PASSWORD;
 		return NULL;
 	}
   
 	conn = conn_new();
 	if (!conn) {
 		DEBUG(0,("Couldn't find free connection.\n"));
-		*ecode = ERRnoresource;
+		*status = NT_STATUS_INSUFFICIENT_RESOURCES;
 		return NULL;
 	}
 
@@ -403,7 +403,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 
 	if (pass == NULL) {
 		DEBUG(0,( "Couldn't find account %s\n",user));
-		*ecode = ERRbaduid;
+		*status = NT_STATUS_NO_SUCH_USER;
 		conn_free(conn);
 		return NULL;
 	}
@@ -543,7 +543,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 		if (!can_write) {
 			if (!share_access_check(conn, snum, vuid, FILE_READ_DATA)) {
 				/* No access, read or write. */
-				*ecode = ERRaccess;
+				*status = NT_STATUS_ACCESS_DENIED;
 				DEBUG(0,( "make_connection: connection to %s denied due to security descriptor.\n",
 					service ));
 				conn_free(conn);
@@ -567,7 +567,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 			      lp_max_connections(SNUM(conn)),
 			      False)) {
 		DEBUG(1,("too many connections - rejected\n"));
-		*ecode = ERRnoresource;
+		*status = NT_STATUS_INSUFFICIENT_RESOURCES;
 		conn_free(conn);
 		return NULL;
 	}  
@@ -585,7 +585,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 					 lp_servicename(SNUM(conn)),
 					 lp_max_connections(SNUM(conn)));
 			conn_free(conn);
-			*ecode = ERRsrverror;
+			*status = NT_STATUS_UNSUCCESSFUL;
 			return NULL;
 		}
 	}
@@ -596,7 +596,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 				 lp_servicename(SNUM(conn)),
 				 lp_max_connections(SNUM(conn)));
 		conn_free(conn);
-		*ecode = ERRbadpw;
+		*status = NT_STATUS_WRONG_PASSWORD;
 		return NULL;
 	}
 	
@@ -609,7 +609,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 				 lp_servicename(SNUM(conn)),
 				 lp_max_connections(SNUM(conn)));
 		conn_free(conn);
-		*ecode = ERRnosuchshare;
+		*status = NT_STATUS_BAD_NETWORK_NAME;
 		return NULL;
 	}
 	
@@ -638,7 +638,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 			DEBUG(1,("preexec gave %d - failing connection\n", ret));
 			yield_connection(conn, lp_servicename(SNUM(conn)), lp_max_connections(SNUM(conn)));
 			conn_free(conn);
-			*ecode = ERRsrverror;
+			*status = NT_STATUS_UNSUCCESSFUL;
 			return NULL;
 		}
 	}

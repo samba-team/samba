@@ -226,7 +226,7 @@ typedef struct net_r_logon_ctrl_info
 		NETLOGON_INFO_1 info1;
 	} logon;
 
-	uint32 status;
+	NTSTATUS status;
 } NET_R_LOGON_CTRL;
 
 /********************************************************
@@ -269,7 +269,7 @@ typedef struct net_r_logon_ctrl2_info
 
 	} logon;
 
-	uint32 status; /* return code */
+	NTSTATUS status; /* return code */
 
 } NET_R_LOGON_CTRL2;
 
@@ -288,7 +288,7 @@ typedef struct net_r_trust_dom_info
 {
 	UNISTR2 uni_trust_dom_name[MAX_TRUST_DOMS];
 
-	uint32 status; /* return code */
+	NTSTATUS status; /* return code */
 
 } NET_R_TRUST_DOM_LIST;
 
@@ -315,10 +315,8 @@ typedef struct net_q_req_chal_info
 /* NET_R_REQ_CHAL */
 typedef struct net_r_req_chal_info
 {
-    DOM_CHAL srv_chal; /* server challenge */
-
-  uint32 status; /* return code */
-
+	DOM_CHAL srv_chal; /* server challenge */
+	NTSTATUS status; /* return code */
 } NET_R_REQ_CHAL;
 
 /* NET_Q_AUTH */
@@ -332,7 +330,7 @@ typedef struct net_q_auth_info
 typedef struct net_r_auth_info
 {
 	DOM_CHAL srv_chal;     /* server-calculated credentials */
-	uint32 status; /* return code */
+	NTSTATUS status; /* return code */
 } NET_R_AUTH;
 
 /* NET_Q_AUTH_2 */
@@ -352,7 +350,7 @@ typedef struct net_r_auth2_info
     DOM_CHAL srv_chal;     /* server-calculated credentials */
     NEG_FLAGS srv_flgs; /* usually 0x0000 01ff */
 
-  uint32 status; /* return code */
+  NTSTATUS status; /* return code */
 
 } NET_R_AUTH_2;
 
@@ -370,7 +368,7 @@ typedef struct net_r_srv_pwset_info
 {
     DOM_CRED srv_cred;     /* server-calculated credentials */
 
-  uint32 status; /* return code */
+  NTSTATUS status; /* return code */
 
 } NET_R_SRV_PWSET;
 
@@ -459,7 +457,7 @@ typedef struct net_r_sam_logon_info
 
     uint32 auth_resp; /* 1 - Authoritative response; 0 - Non-Auth? */
 
-  uint32 status; /* return code */
+  NTSTATUS status; /* return code */
 
 } NET_R_SAM_LOGON;
 
@@ -477,7 +475,7 @@ typedef struct net_r_sam_logoff_info
     uint32 buffer_creds; /* undocumented buffer pointer */
     DOM_CRED srv_creds; /* server credentials.  server time stamp appears to be ignored. */
     
-  uint32 status; /* return code */
+  NTSTATUS status; /* return code */
 
 } NET_R_SAM_LOGOFF;
 

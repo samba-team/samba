@@ -2240,7 +2240,7 @@ BOOL srv_io_q_net_srv_get_info(char *desc, SRV_Q_NET_SRV_GET_INFO *q_n, prs_stru
  ********************************************************************/
 
 void init_srv_r_net_srv_get_info(SRV_R_NET_SRV_GET_INFO *srv,
-				uint32 switch_value, SRV_INFO_CTR *ctr, uint32 status)
+				uint32 switch_value, SRV_INFO_CTR *ctr, NTSTATUS status)
 {
 	DEBUG(5,("init_srv_r_net_srv_get_info\n"));
 
@@ -2262,7 +2262,7 @@ void init_srv_r_net_srv_get_info(SRV_R_NET_SRV_GET_INFO *srv,
  ********************************************************************/
 
 void init_srv_r_net_srv_set_info(SRV_R_NET_SRV_SET_INFO *srv,
-				 uint32 switch_value, uint32 status)
+				 uint32 switch_value, NTSTATUS status)
 {
 	DEBUG(5,("init_srv_r_net_srv_set_info\n"));
 

@@ -143,7 +143,7 @@ NTSTATUS do_lock(files_struct *fsp,connection_struct *conn, uint16 lock_pid,
 
 	if (!ok) return NT_STATUS_FILE_LOCK_CONFLICT;
 
-	return NT_STATUS_NOPROBLEMO; /* Got lock */
+	return NT_STATUS_OK; /* Got lock */
 }
 
 /****************************************************************************

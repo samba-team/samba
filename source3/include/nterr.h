@@ -12,7 +12,6 @@
    we start supporting NT error codes in Samba. They were extracted
    using a loop in smbclient then printing a netmon sniff to a file */
 
-#define NT_STATUS_NOPROBLEMO NT_STATUS(0x0)
 #define NT_STATUS_OK NT_STATUS(0x0)
 #define NT_STATUS_UNSUCCESSFUL NT_STATUS(0xC0000000 | 1)
 #define NT_STATUS_NOT_IMPLEMENTED NT_STATUS(0xC0000000 | 2)

@@ -214,7 +214,7 @@ use this machine as the password server.\n"));
 		/* Make this cli_nt_error() when the conversion is in */
 		nt_status = NT_STATUS_LOGON_FAILURE;
 	} else {
-		nt_status = NT_STATUS_NOPROBLEMO;
+		nt_status = NT_STATUS_OK;
 	}
 
 	/* if logged in as guest then reject */

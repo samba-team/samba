@@ -594,7 +594,7 @@ BOOL winbindd_lookup_usergroups(struct winbindd_domain *domain,
 	if (cli_samr_query_usergroups(domain->sam_dom_handle.cli,
 				      domain->sam_dom_handle.mem_ctx,
 				      &user_pol, num_groups, user_groups)
-	    != NT_STATUS_NOPROBLEMO) {
+	    != NT_STATUS_OK) {
 		result = False;
 		goto done;
 	}
@@ -871,7 +871,7 @@ uint32 winbindd_query_dispinfo(struct winbindd_domain *domain,
 			     uint32 *start_ndx, uint16 info_level, 
 			     uint32 *num_entries, SAM_DISPINFO_CTR *ctr)
 {
-	uint32 status;
+	NTSTATUS status;
 
 	status = wb_samr_query_dispinfo(&domain->sam_dom_handle, start_ndx,
 					info_level, num_entries, ctr);

@@ -132,7 +132,7 @@ BOOL spoolss_connect_to_client( struct cli_state *cli, char *remote_machine)
  do a reply open printer
 ****************************************************************************/
 
-BOOL cli_spoolss_reply_open_printer(struct cli_state *cli, char *printer, uint32 localprinter, uint32 type, uint32 *status, POLICY_HND *handle)
+BOOL cli_spoolss_reply_open_printer(struct cli_state *cli, char *printer, uint32 localprinter, uint32 type, NTSTATUS *status, POLICY_HND *handle)
 {
 	prs_struct rbuf;
 	prs_struct buf; 
@@ -188,7 +188,7 @@ BOOL cli_spoolss_reply_open_printer(struct cli_state *cli, char *printer, uint32
 ****************************************************************************/
 
 BOOL cli_spoolss_reply_rrpcn(struct cli_state *cli, POLICY_HND *handle, 
-			     uint32 change_low, uint32 change_high, uint32 *status)
+			     uint32 change_low, uint32 change_high, NTSTATUS *status)
 {
 	prs_struct rbuf;
 	prs_struct buf; 
@@ -242,7 +242,7 @@ BOOL cli_spoolss_reply_rrpcn(struct cli_state *cli, POLICY_HND *handle,
  do a reply open printer
 ****************************************************************************/
 
-BOOL cli_spoolss_reply_close_printer(struct cli_state *cli, POLICY_HND *handle, uint32 *status)
+BOOL cli_spoolss_reply_close_printer(struct cli_state *cli, POLICY_HND *handle, NTSTATUS *status)
 {
 	prs_struct rbuf;
 	prs_struct buf; 
