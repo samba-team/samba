@@ -938,10 +938,19 @@ NTSTATUS ntlmssp_server_start(struct ntlmssp_state **ntlmssp_state)
 	(*ntlmssp_state)->ref_count = 1;
 
 	(*ntlmssp_state)->neg_flags = 
-		NTLMSSP_NEGOTIATE_128 |
-		NTLMSSP_NEGOTIATE_NTLM |
-		NTLMSSP_NEGOTIATE_NTLM2 |
-		NTLMSSP_NEGOTIATE_KEY_EXCH;
+		NTLMSSP_NEGOTIATE_NTLM;
+
+	if (lp_parm_bool(-1, "ntlmssp_server", "128bit", True)) {
+		(*ntlmssp_state)->neg_flags |= NTLMSSP_NEGOTIATE_128;		
+	}
+
+	if (lp_parm_bool(-1, "ntlmssp_server", "keyexchange", True)) {
+		(*ntlmssp_state)->neg_flags |= NTLMSSP_NEGOTIATE_KEY_EXCH;		
+	}
+
+	if (lp_parm_bool(-1, "ntlmssp_server", "ntlm2", True)) {
+		(*ntlmssp_state)->neg_flags |= NTLMSSP_NEGOTIATE_NTLM2;		
+	}
 
 	return NT_STATUS_OK;
 }
@@ -1291,11 +1300,23 @@ NTSTATUS ntlmssp_client_start(struct ntlmssp_state **ntlmssp_state)
 	(*ntlmssp_state)->ref_count = 1;
 
 	(*ntlmssp_state)->neg_flags = 
-		NTLMSSP_NEGOTIATE_128 |
 		NTLMSSP_NEGOTIATE_NTLM |
-		NTLMSSP_NEGOTIATE_NTLM2 |
-		NTLMSSP_NEGOTIATE_KEY_EXCH |
 		NTLMSSP_REQUEST_TARGET;
+
+	if (lp_parm_bool(-1, "ntlmssp_client", "128bit", True)) {
+		(*ntlmssp_state)->neg_flags |= NTLMSSP_NEGOTIATE_128;		
+	}
+
+	if (lp_parm_bool(-1, "ntlmssp_client", "keyexchange", True)) {
+		(*ntlmssp_state)->neg_flags |= NTLMSSP_NEGOTIATE_KEY_EXCH;		
+	}
+
+	if (lp_parm_bool(-1, "ntlmssp_client", "ntlm2", True)) {
+		(*ntlmssp_state)->neg_flags |= NTLMSSP_NEGOTIATE_NTLM2;		
+	} else {
+		/* apparently we can't do ntlmv2 if we don't do ntlm2 */
+		(*ntlmssp_state)->use_ntlmv2 = False;
+	}
 
 	return NT_STATUS_OK;
 }
