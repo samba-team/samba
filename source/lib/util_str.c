@@ -1040,7 +1040,7 @@ Use with caution!
 void all_string_sub(char *s,const char *pattern,const char *insert)
 {
 	char *p;
-	size_t ls,lp,li, i;
+	size_t ls,lp,li;
 
 	if (!insert || !pattern || !s) return;
 
