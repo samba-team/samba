@@ -44,6 +44,11 @@ END {
 
 # we handle the loadparm.c fns separately
 
+/^FN_VUSER_STRING/ {
+  split($0,a,"[,()]")
+  printf "char *%s(uint16 );\n", a[2]
+}
+
 /^FN_LOCAL_BOOL/ {
   split($0,a,"[,()]")
   printf "BOOL %s(int );\n", a[2]

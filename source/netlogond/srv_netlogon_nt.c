@@ -291,8 +291,6 @@ static uint32 net_login_network(NET_ID_INFO_2 *id2,
 	DEBUG(5,("net_login_network: lm_len:%d nt_len:%d user:%s domain:%s\n",
 		lm_pw_len, nt_pw_len, user, domain));
 
-	DEBUG(0,("net_login_network: HACK alert - unix name is nt name\n"));
-
 	if (smb_password_ok(acb_info, ctr.info.id12->lm_pwd,
 	                    ctr.info.id12->nt_pwd,
 	                    id2->lm_chal, 

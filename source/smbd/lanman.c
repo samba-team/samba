@@ -73,7 +73,7 @@ static BOOL api_TooSmall(connection_struct *conn,uint16 vuid, char *param,char *
 			 int *rdata_len,int *rparam_len);
 
 
-static int CopyExpanded(connection_struct *conn, 
+static int CopyExpanded(connection_struct *conn,  uint16 vuid,
 			int snum, char** dst, char* src, int* n)
 {
 	pstring buf;
@@ -83,7 +83,7 @@ static int CopyExpanded(connection_struct *conn,
 
 	StrnCpy(buf,src,sizeof(buf)/2);
 	string_sub(buf,"%S",lp_servicename(snum));
-	standard_sub(conn,buf);
+	standard_sub(conn,get_valid_user_struct(vuid), buf);
 	StrnCpy(*dst,buf,*n);
 	l = strlen(*dst) + 1;
 	(*dst) += l;
@@ -102,23 +102,24 @@ static int CopyAndAdvance(char** dst, char* src, int* n)
   return l;
 }
 
-static int StrlenExpanded(connection_struct *conn, int snum, char* s)
+static int StrlenExpanded(connection_struct *conn,
+				uint16 vuid, int snum, char* s)
 {
 	pstring buf;
 	if (!s) return(0);
 	StrnCpy(buf,s,sizeof(buf)/2);
 	string_sub(buf,"%S",lp_servicename(snum));
-	standard_sub(conn,buf);
+	standard_sub(conn,get_valid_user_struct(vuid), buf);
 	return strlen(buf) + 1;
 }
 
-static char* Expand(connection_struct *conn, int snum, char* s)
+static char* Expand(connection_struct *conn, uint16 vuid, int snum, char* s)
 {
 	static pstring buf;
 	if (!s) return(NULL);
 	StrnCpy(buf,s,sizeof(buf)/2);
 	string_sub(buf,"%S",lp_servicename(snum));
-	standard_sub(conn,buf);
+	standard_sub(conn,get_valid_user_struct(vuid), buf);
 	return &buf[0];
 }
 
@@ -397,7 +398,8 @@ static int check_printq_info(struct pack_desc* desc,
   return True;
 }
 
-static void fill_printjob_info(connection_struct *conn, int snum, int uLevel,
+static void fill_printjob_info(connection_struct *conn, 
+				int snum, int uLevel,
 			       struct pack_desc* desc,
 			       print_queue_struct* queue, int n)
 {
@@ -444,7 +446,8 @@ static void fill_printjob_info(connection_struct *conn, int snum, int uLevel,
   }
 }
 
-static void fill_printq_info(connection_struct *conn, int snum, int uLevel,
+static void fill_printq_info(connection_struct *conn, uint16 vuid,
+				int snum, int uLevel,
  			     struct pack_desc* desc,
  			     int count, print_queue_struct* queue,
  			     print_status_struct* status)
@@ -457,7 +460,7 @@ static void fill_printq_info(connection_struct *conn, int snum, int uLevel,
     case 3:
     case 4:
     case 5:
-      PACKS(desc,"z",Expand(conn,snum,SERVICE(snum)));
+      PACKS(desc,"z",Expand(conn,vuid, snum,SERVICE(snum)));
       break;
   }
 
@@ -475,7 +478,7 @@ static void fill_printq_info(connection_struct *conn, int snum, int uLevel,
       PACKI(desc,"W",LPSTAT_ERROR);
     }
     else if (!status || !status->message[0]) {
-      PACKS(desc,"z",Expand(conn,snum,lp_comment(snum)));
+      PACKS(desc,"z",Expand(conn,vuid, snum,lp_comment(snum)));
       PACKI(desc,"W",LPSTAT_OK); /* status */
     } else {
       PACKS(desc,"z",status->message);
@@ -492,7 +495,7 @@ static void fill_printq_info(connection_struct *conn, int snum, int uLevel,
     PACKS(desc,"z","WinPrint");	/* pszPrProc */
     PACKS(desc,"z","");		/* pszParms */
     if (!status || !status->message[0]) {
-      PACKS(desc,"z",Expand(conn,snum,lp_comment(snum))); /* pszComment */
+      PACKS(desc,"z",Expand(conn,vuid, snum,lp_comment(snum))); /* pszComment */
       PACKI(desc,"W",LPSTAT_OK); /* fsStatus */
     } else {
       PACKS(desc,"z",status->message); /* pszComment */
@@ -715,7 +718,7 @@ static BOOL api_DosPrintQGetInfo(connection_struct *conn,
 	  count = get_printerdrivernumber(snum);
 	  DEBUG(3,("api_DosPrintQGetInfo: Driver files count: %d\n",count));
   } else {
-	  count = get_printqueue(snum, conn,&queue,&status);
+	  count = get_printqueue(snum, conn,vuid,&queue,&status);
   }
 
   if (mdrcnt > 0) *rdata = REALLOC(*rdata,mdrcnt);
@@ -723,7 +726,7 @@ static BOOL api_DosPrintQGetInfo(connection_struct *conn,
   desc.buflen = mdrcnt;
   if (init_package(&desc,1,count)) {
 	  desc.subcount = count;
-	  fill_printq_info(conn,snum,uLevel,&desc,count,queue,&status);
+	  fill_printq_info(conn,vuid,snum,uLevel,&desc,count,queue,&status);
   } else if (uLevel == 0) {
 	/*
 	 * This is a *disgusting* hack.
@@ -813,7 +816,7 @@ static BOOL api_DosPrintQEnum(connection_struct *conn, uint16 vuid, char* param,
     n = 0;
     for (i = 0; i < services; i++)
       if (lp_snum_ok(i) && lp_print_ok(i) && lp_browseable(i)) {
- 	subcntarr[n] = get_printqueue(i, conn,&queue[n],&status[n]);
+ 	subcntarr[n] = get_printqueue(i, conn, vuid, &queue[n],&status[n]);
  	subcnt += subcntarr[n];
  	n++;
       }
@@ -827,7 +830,7 @@ static BOOL api_DosPrintQEnum(connection_struct *conn, uint16 vuid, char* param,
     succnt = 0;
     for (i = 0; i < services; i++)
       if (lp_snum_ok(i) && lp_print_ok(i) && lp_browseable(i)) {
-	fill_printq_info(conn,i,uLevel,&desc,subcntarr[n],queue[n],&status[n]);
+	fill_printq_info(conn,vuid, i,uLevel,&desc,subcntarr[n],queue[n],&status[n]);
 	n++;
 	if (desc.errcode == NERR_Success) succnt = n;
       }
@@ -1266,7 +1269,8 @@ static BOOL check_share_info(int uLevel, char* id)
   return True;
 }
 
-static int fill_share_info(connection_struct *conn, int snum, int uLevel,
+static int fill_share_info(connection_struct *conn, uint16 vuid,
+				int snum, int uLevel,
  			   char** buf, int* buflen,
  			   char** stringbuf, int* stringspace, char* baseaddr)
 {
@@ -1288,7 +1292,7 @@ static int fill_share_info(connection_struct *conn, int snum, int uLevel,
   if (!buf)
     {
       len = 0;
-      if (uLevel > 0) len += StrlenExpanded(conn,snum,lp_comment(snum));
+      if (uLevel > 0) len += StrlenExpanded(conn,vuid,snum,lp_comment(snum));
       if (uLevel > 1) len += strlen(lp_pathname(snum)) + 1;
       if (buflen) *buflen = struct_len;
       if (stringspace) *stringspace = len;
@@ -1321,7 +1325,7 @@ static int fill_share_info(connection_struct *conn, int snum, int uLevel,
       if (strequal("IPC$",lp_servicename(snum))) type = STYPE_IPC;
       SSVAL(p,14,type);		/* device type */
       SIVAL(p,16,PTR_DIFF(p2,baseaddr));
-      len += CopyExpanded(conn,snum,&p2,lp_comment(snum),&l2);
+      len += CopyExpanded(conn,vuid, snum,&p2,lp_comment(snum),&l2);
     }
   
   if (uLevel > 1)
@@ -1381,7 +1385,7 @@ static BOOL api_RNetShareGetInfo(connection_struct *conn,uint16 vuid, char *para
  
   *rdata = REALLOC(*rdata,mdrcnt);
   p = *rdata;
-  *rdata_len = fill_share_info(conn,snum,uLevel,&p,&mdrcnt,0,0,0);
+  *rdata_len = fill_share_info(conn,vuid,snum,uLevel,&p,&mdrcnt,0,0,0);
   if (*rdata_len < 0) return False;
  
   *rparam_len = 6;
@@ -1422,7 +1426,7 @@ static BOOL api_RNetShareEnum(connection_struct *conn,uint16 vuid, char *param,c
     if (lp_browseable(i) && lp_snum_ok(i))
     {
       total++;
-      data_len += fill_share_info(conn,i,uLevel,0,&f_len,0,&s_len,0);
+      data_len += fill_share_info(conn,vuid,i,uLevel,0,&f_len,0,&s_len,0);
       if (data_len <= buf_len)
       {
         counted++;
@@ -1442,7 +1446,7 @@ static BOOL api_RNetShareEnum(connection_struct *conn,uint16 vuid, char *param,c
   s_len = string_len;
   for (i = 0; i < count;i++)
     if (lp_browseable(i) && lp_snum_ok(i))
-      if (fill_share_info(conn,i,uLevel,&p,&f_len,&p2,&s_len,*rdata) < 0)
+      if (fill_share_info(conn,vuid,i,uLevel,&p,&f_len,&p2,&s_len,*rdata) < 0)
  	break;
   
   *rparam_len = 8;
@@ -1673,7 +1677,7 @@ static BOOL api_RDosPrintJobDel(connection_struct *conn,uint16 vuid, char *param
     {
       print_queue_struct *queue=NULL;
       lpq_reset(snum);
-      count = get_printqueue(snum,conn,&queue,NULL);
+      count = get_printqueue(snum,conn,vuid,&queue,NULL);
   
       for (i=0;i<count;i++)
   	if ((queue[i].job&0xFF) == jobid)
@@ -1681,13 +1685,13 @@ static BOOL api_RDosPrintJobDel(connection_struct *conn,uint16 vuid, char *param
  	    switch (function) {
 	    case 81:		/* delete */ 
 	      DEBUG(3,("Deleting queue entry %d\n",queue[i].job));
-	      del_printqueue(conn,snum,queue[i].job);
+	      del_printqueue(conn,vuid,snum,queue[i].job);
 	      break;
 	    case 82:		/* pause */
 	    case 83:		/* resume */
 	      DEBUG(3,("%s queue entry %d\n",
 		       (function==82?"pausing":"resuming"),queue[i].job));
-	      status_printjob(conn,snum,queue[i].job,
+	      status_printjob(conn,vuid,snum,queue[i].job,
 			      (function==82?LPQ_PAUSED:LPQ_QUEUED));
 	      break;
  	    }
@@ -1746,7 +1750,7 @@ static BOOL api_WPrintQueuePurge(connection_struct *conn,uint16 vuid, char *para
     switch (function) {
     case 74: /* Pause queue */
     case 75: /* Resume queue */
-      status_printqueue(conn,snum,(function==74?LPSTAT_STOPPED:LPSTAT_OK));
+      status_printqueue(conn,vuid,snum,(function==74?LPSTAT_STOPPED:LPSTAT_OK));
       DEBUG(3,("Print queue %s, queue=%s\n",
             (function==74?"pause":"resume"),QueueName));
       break;
@@ -1754,9 +1758,9 @@ static BOOL api_WPrintQueuePurge(connection_struct *conn,uint16 vuid, char *para
       {
         print_queue_struct *queue=NULL;
         int i, count;
-        count = get_printqueue(snum,conn,&queue,NULL);
+        count = get_printqueue(snum,conn,vuid,&queue,NULL);
         for (i = 0; i < count; i++)
-          del_printqueue(conn,snum,queue[i].job);
+          del_printqueue(conn,vuid,snum,queue[i].job);
  
         if (queue) free(queue);
         DEBUG(3,("Print queue purge, queue=%s\n",QueueName));
@@ -1827,7 +1831,7 @@ static BOOL api_PrintJobInfo(connection_struct *conn,uint16 vuid,char *param,cha
 			int count;
   
 			lpq_reset(snum);
-			count = get_printqueue(snum,conn,&queue,NULL);
+			count = get_printqueue(snum,conn,vuid,&queue,NULL);
 			for (i=0;i<count;i++)	/* find job */
 				if ((queue[i].job&0xFF) == jobid) break;
  	    
@@ -1984,7 +1988,7 @@ static BOOL api_RNetServerGetInfo(connection_struct *conn,uint16 vuid, char *par
 	SIVAL(p,6,0);
       } else {
 	SIVAL(p,6,PTR_DIFF(p2,*rdata));
-	standard_sub(conn,comment);
+	standard_sub(conn,get_valid_user_struct(vuid), comment);
 	StrnCpy(p2,comment,MAX(mdrcnt - struct_len,0));
 	p2 = skip_string(p2,1);
       }
@@ -2323,7 +2327,7 @@ static BOOL api_RNetUserGetInfo(connection_struct *conn,uint16 vuid, char *param
 		SIVAL(p,usri11_auth_flags,AF_OP_PRINT);		/* auth flags */
 		SIVALS(p,usri11_password_age,-1);		/* password age */
 		SIVAL(p,usri11_homedir,PTR_DIFF(p2,p)); /* home dir */
-		pstrcpy(p2, lp_logon_path());
+		pstrcpy(p2, lp_logon_path(vuid));
 		p2 = skip_string(p2,1);
 		SIVAL(p,usri11_parms,PTR_DIFF(p2,p)); /* parms */
 		pstrcpy(p2,"");
@@ -2359,7 +2363,7 @@ static BOOL api_RNetUserGetInfo(connection_struct *conn,uint16 vuid, char *param
 		SSVAL(p,42,
 		conn->admin_user?USER_PRIV_ADMIN:USER_PRIV_USER);
 		SIVAL(p,44,PTR_DIFF(p2,*rdata)); /* home dir */
-		pstrcpy(p2,lp_logon_path());
+		pstrcpy(p2,lp_logon_path(vuid));
 		p2 = skip_string(p2,1);
 		SIVAL(p,48,PTR_DIFF(p2,*rdata)); /* comment */
 		*p2++ = 0;
@@ -2509,8 +2513,8 @@ static BOOL api_WWkstaUserLogon(connection_struct *conn,uint16 vuid, char *param
 
 /* JHT - By calling lp_logon_script() and standard_sub() we have */
 /* made sure all macros are fully substituted and available */
-    logon_script = lp_logon_script();
-    standard_sub( conn, logon_script );
+    logon_script = lp_logon_script(vuid);
+    standard_sub( conn, get_valid_user_struct(vuid), logon_script );
     PACKS(&desc,"z", logon_script);		/* script path */
 /* End of JHT mods */
 
@@ -2592,7 +2596,7 @@ static BOOL api_WPrintJobGetInfo(connection_struct *conn,uint16 vuid, char *para
 
   if (snum < 0 || !VALID_SNUM(snum)) return(False);
 
-  count = get_printqueue(snum,conn,&queue,&status);
+  count = get_printqueue(snum,conn,vuid,&queue,&status);
   for (i = 0; i < count; i++) {
     if ((queue[i].job & 0xFF) == job) break;
   }
@@ -2664,7 +2668,7 @@ static BOOL api_WPrintJobEnumerate(connection_struct *conn,uint16 vuid, char *pa
 
   if (snum < 0 || !VALID_SNUM(snum)) return(False);
 
-  count = get_printqueue(snum,conn,&queue,&status);
+  count = get_printqueue(snum,conn,vuid,&queue,&status);
   if (mdrcnt > 0) *rdata = REALLOC(*rdata,mdrcnt);
   desc.base = *rdata;
   desc.buflen = mdrcnt;

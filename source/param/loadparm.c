@@ -1125,6 +1125,56 @@ convenience routine to grab string parameters into a rotating buffer,
 and run standard_sub_basic on them. The buffers can be written to by
 callers without affecting the source string.
 ********************************************************************/
+static char *lp_user_string(uint16 vuid, char *s)
+{
+  static char *bufs[10];
+  static int buflen[10];
+  static int next = -1;  
+  char *ret;
+  int i;
+  int len = s?strlen(s):0;
+
+  if (next == -1) {
+    /* initialisation */
+    for (i=0;i<10;i++) {
+      bufs[i] = NULL;
+      buflen[i] = 0;
+    }
+    next = 0;
+  }
+
+  len = MAX(len+100,sizeof(pstring)); /* the +100 is for some
+					 substitution room */
+
+  if (buflen[next] != len) {
+    buflen[next] = len;
+    if (bufs[next]) free(bufs[next]);
+    bufs[next] = (char *)malloc(len);
+    if (!bufs[next]) {
+      DEBUG(0,("out of memory in lp_string()"));
+      exit(1);
+    }
+  } 
+
+  ret = &bufs[next][0];
+  next = (next+1)%10;
+
+  if (!s) 
+    *ret = 0;
+  else
+    StrCpy(ret,s);
+
+  trim_string(ret, "\"", "\"");
+
+  standard_sub_vuser(get_valid_user_struct(vuid), ret);
+  return(ret);
+}
+
+/******************************************************************* a
+convenience routine to grab string parameters into a rotating buffer,
+and run standard_sub_basic on them. The buffers can be written to by
+callers without affecting the source string.
+********************************************************************/
 static char *lp_string(char *s)
 {
   static char *bufs[10];
@@ -1194,6 +1244,9 @@ static char *lp_string(char *s)
 #define FN_LOCAL_INTEGER(fn_name,val) \
  int fn_name(int i) {return(LP_SNUM_OK(i)? pSERVICE(i)->val : sDefault.val);}
 
+#define FN_VUSER_STRING(fn_name,ptr) \
+ char *fn_name(uint16 vuid) {return(lp_user_string(vuid, *(char **)(ptr) ? *(char **)(ptr) : ""));}
+
 struct vfs_options *lp_vfsoptions(int i) 
 { return(LP_SNUM_OK(i) ? pSERVICE(i)->vfsOptions : sDefault.vfsOptions); }
 
@@ -1230,10 +1283,6 @@ FN_GLOBAL_STRING(lp_groupname_map,&Globals.szGroupnameMap)
 FN_GLOBAL_STRING(lp_builtinname_map,&Globals.szBuiltinnameMap)
 FN_GLOBAL_STRING(lp_builtinrid_file,&Globals.szBuiltinRidFile)
 FN_GLOBAL_STRING(lp_ntusrname_map,&Globals.szNTusernameMap)
-FN_GLOBAL_STRING(lp_logon_script,&Globals.szLogonScript) 
-FN_GLOBAL_STRING(lp_logon_path,&Globals.szLogonPath) 
-FN_GLOBAL_STRING(lp_logon_drive,&Globals.szLogonDrive) 
-FN_GLOBAL_STRING(lp_logon_home,&Globals.szLogonHome) 
 FN_GLOBAL_STRING(lp_remote_announce,&Globals.szRemoteAnnounce) 
 FN_GLOBAL_STRING(lp_remote_browse_sync,&Globals.szRemoteBrowseSync) 
 FN_GLOBAL_STRING(lp_wins_server,&Globals.szWINSserver)
@@ -1336,6 +1385,15 @@ FN_GLOBAL_INTEGER(lp_map_to_guest,&Globals.map_to_guest)
 #ifdef WITH_LDAP
 FN_GLOBAL_INTEGER(lp_ldap_port,&Globals.ldap_port)
 #endif /* WITH_LDAP */
+
+/* user-dependent parameters */ 
+
+FN_VUSER_STRING(lp_logon_script,&Globals.szLogonScript) 
+FN_VUSER_STRING(lp_logon_path,&Globals.szLogonPath) 
+FN_VUSER_STRING(lp_logon_drive,&Globals.szLogonDrive) 
+FN_VUSER_STRING(lp_logon_home,&Globals.szLogonHome) 
+
+/* local parameters */
 
 FN_LOCAL_STRING(lp_preexec,szPreExec)
 FN_LOCAL_STRING(lp_postexec,szPostExec)

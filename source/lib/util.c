@@ -76,9 +76,6 @@ pstring myhostname="";
 pstring user_socket_options="";   
 
 pstring sesssetup_user="";
-pstring samlogon_user="";
-
-BOOL sam_logon_in_ssb = False;
 
 pstring global_myname = "";
 fstring global_myworkgroup = "";
@@ -1706,32 +1703,16 @@ void standard_sub_basic(char *str)
 {
 	char *s, *p;
 	char pidstr[10];
-	const struct passwd *pass;
-	char *username = sam_logon_in_ssb ? samlogon_user : sesssetup_user;
 
 	for (s = str ; s && *s && (p = strchr(s,'%')); s = p )
 	{
 		switch (*(p+1))
 		{
-			case 'G' :
-			{
-				if ((pass = Get_Pwnam(username,False))!=NULL)
-				{
-					string_sub(p,"%G",gidtoname(pass->pw_gid));
-				}
-				else
-				{
-					p += 2;
-				}
-				break;
-			}
-			case 'N' : string_sub(p,"%N", automount_server(username)); break;
 			case 'I' : string_sub(p,"%I", client_connection_addr()); break;
 			case 'L' : string_sub(p,"%L", local_machine); break;
 			case 'M' : string_sub(p,"%M", client_connection_name()); break;
 			case 'R' : string_sub(p,"%R", remote_proto); break;
 			case 'T' : string_sub(p,"%T", timestring()); break;
-			case 'U' : string_sub(p,"%U", username); break;
 			case 'a' : string_sub(p,"%a", remote_arch); break;
 			case 'd' :
 			{
@@ -1789,15 +1770,49 @@ void standard_sub_basic(char *str)
 	return;
 }
 
+/*******************************************************************
+user-specific sub strings with useful parameters
+********************************************************************/
+void standard_sub_vuser(const user_struct *vuser, char *str)
+{
+	char *s, *p;
+
+	for (s = str ; vuser != NULL && s && *s && (p = strchr(s,'%')); s = p )
+	{
+		switch (*(p+1))
+		{
+			case 'G' :
+			{
+				const struct passwd *pass;
+				if ((pass = Get_Pwnam(vuser->name,False))!=NULL)
+				{
+					string_sub(p,"%G",gidtoname(pass->pw_gid));
+				}
+				else
+				{
+					p += 2;
+				}
+				break;
+			}
+			case 'N' : string_sub(p,"%N", automount_server(vuser->name)); break;
+			case 'U' : string_sub(p,"%U", vuser->requested_name); break;
+			case '\0': p++; break; /* don't run off end if last character is % */
+			default  : p+=2; break;
+		}
+	}
+	standard_sub_basic(str);
+	return;
+}
+
 
 /****************************************************************************
 do some standard substitutions in a string
 ****************************************************************************/
-void standard_sub(connection_struct *conn,char *str)
+void standard_sub(connection_struct *conn, user_struct *vuser, char *str)
 {
 	char *p, *s, *home;
 
-	for (s=str; (p=strchr(s, '%'));s=p)
+	for (s=str; conn != NULL && (p=strchr(s, '%'));s=p)
 	{
 		switch (*(p+1))
 		{
@@ -1817,7 +1832,7 @@ void standard_sub(connection_struct *conn,char *str)
 			 * "path =" string in [homes] and so needs the
 			 * service name, not the username.  */
 			case 'p': string_sub(p,"%p", automount_path(lp_servicename(SNUM(conn)))); break;
-			case 'P': string_sub(p,"%P",conn->connectpath); break; 
+			case 'P': string_sub(p,"%P", conn->connectpath); break; 
 			case 'S': string_sub(p,"%S", lp_servicename(SNUM(conn))); break; 
 			case 'g': string_sub(p,"%g", gidtoname(conn->gid)); break;
 			case 'u': string_sub(p,"%u", conn->user); break;
@@ -1827,7 +1842,7 @@ void standard_sub(connection_struct *conn,char *str)
 		}
 	}
 	
-	standard_sub_basic(str);
+	standard_sub_vuser(vuser, str);
 }
 
 

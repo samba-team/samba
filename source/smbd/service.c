@@ -412,7 +412,7 @@ connection_struct *make_connection(char *service,char *user,
 	{
 		pstring s;
 		pstrcpy(s,lp_pathname(snum));
-		standard_sub(conn,s);
+		standard_sub(conn,get_valid_user_struct(vuid), s);
 		string_set(&conn->connectpath,s);
 		DEBUG(3,("Connect path is %s\n",s));
 	}
@@ -447,7 +447,7 @@ connection_struct *make_connection(char *service,char *user,
 	if (*lp_rootpreexec(SNUM(conn))) {
 		pstring cmd;
 		pstrcpy(cmd,lp_rootpreexec(SNUM(conn)));
-		standard_sub(conn,cmd);
+		standard_sub(conn,get_valid_user_struct(vuid), cmd);
 		DEBUG(5,("cmd=%s\n",cmd));
 		smbrun(cmd,NULL,False);
 	}
@@ -502,7 +502,7 @@ connection_struct *make_connection(char *service,char *user,
 	if (*lp_preexec(SNUM(conn))) {
 		pstring cmd;
 		pstrcpy(cmd,lp_preexec(SNUM(conn)));
-		standard_sub(conn,cmd);
+		standard_sub(conn,get_valid_user_struct(vuid), cmd);
 		smbrun(cmd,NULL,False);
 	}
 	
@@ -615,7 +615,7 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 	    become_user(conn, vuid))  {
 		pstring cmd;
 		pstrcpy(cmd,lp_postexec(SNUM(conn)));
-		standard_sub(conn,cmd);
+		standard_sub(conn,get_valid_user_struct(vuid), cmd);
 		smbrun(cmd,NULL,False);
 		unbecome_user();
 	}
@@ -625,7 +625,7 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 	if (*lp_rootpostexec(SNUM(conn)))  {
 		pstring cmd;
 		pstrcpy(cmd,lp_rootpostexec(SNUM(conn)));
-		standard_sub(conn,cmd);
+		standard_sub(conn,get_valid_user_struct(vuid), cmd);
 		smbrun(cmd,NULL,False);
 	}
 	
