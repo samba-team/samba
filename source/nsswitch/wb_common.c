@@ -141,6 +141,7 @@ static int open_pipe_sock(void)
 	if (connect(established_socket, (struct sockaddr *)&sunaddr, 
 		    sizeof(sunaddr)) == -1) {
 		close_sock();
+		established_socket = -1;
 		return -1;
 	}
         
