@@ -132,10 +132,9 @@ struct winbindd_domain *find_domain_from_sid(DOM_SID *sid);
 void free_getent_state(struct getent_state *state);
 BOOL winbindd_param_init(void);
 char *winbindd_cmd_to_string(enum winbindd_cmd cmd);
-void parse_domain_user(char *domuser, fstring domain, fstring user);
 uint32 domain_sequence_number(char *domain_name);
 BOOL winbindd_query_dispinfo(struct winbindd_domain *domain,
-                             uint16 info_level, uint32 *num_entries,
-                             SAM_DISPINFO_CTR *ctr);
+			     uint16 info_level, 
+			     uint32 *num_entries, SAM_DISPINFO_CTR *ctr);
 BOOL check_domain_env(char *domain_env, char *domain);
 #endif /* _WINBINDD_PROTO_H_ */

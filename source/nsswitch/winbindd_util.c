@@ -705,14 +705,14 @@ uint32 domain_sequence_number(char *domain_name)
    application. */
 
 BOOL winbindd_query_dispinfo(struct winbindd_domain *domain,
-			     uint32 *start_idx, uint16 info_level, 
+			     uint16 info_level, 
 			     uint32 *num_entries, SAM_DISPINFO_CTR *ctr)
 {
 	BOOL res;
 
 	if (!domain_handles_open(domain)) return False;
 
-	res = samr_query_dispinfo(&domain->sam_dom_handle, start_idx,
+	res = samr_query_dispinfo(&domain->sam_dom_handle,
 				  info_level, num_entries, ctr);
 
 	return res;
