@@ -1,3 +1,21 @@
+Changes in release 0.0t:
+
+ * more robust parsing of krb5.conf
+ * include net{read,write} in lib/roken
+ * bug fixes
+
+Changes in release 0.0s:
+
+ * kludges for parsing options to rsh
+ * more robust parsing of krb5.conf
+ * removed some arbitrary limits
+ * bug fixes
+
+Changes in release 0.0r:
+
+ * default options for some programs
+ * bug fixes
+
 Changes in release 0.0q:
 
  * support for building shared libraries with libtool
