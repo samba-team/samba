@@ -414,7 +414,7 @@ int ldap_bind_sasl(struct ldap_connection *conn, const char *username, const cha
 
 	status = gensec_set_target_service(conn->gensec, "ldap");
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Failed to start set GENSEC target hostname: %s\n", 
+		DEBUG(1, ("Failed to start set GENSEC target service: %s\n", 
 			  nt_errstr(status)));
 		goto done;
 	}
