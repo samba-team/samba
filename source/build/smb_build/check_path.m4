@@ -107,24 +107,6 @@ AC_ARG_WITH(logfilebase,
     ;;
   esac])
 
-#################################################
-# set configuration directory location
-eparserdir=""
-
-AC_ARG_WITH(eparserdir,
-[  --with-eparserdir=DIR    Where to put output for the Ethereal/PIDL plugin],
-[ case "$withval" in
-  yes|no)
-  #
-  # Just in case anybody does it
-  #
-    AC_MSG_ERROR([--with-eparserdir called without argument])
-  ;;
-  * )
-    eparserdir="$withval"
-    ;;
-  esac])
-
 AC_SUBST(configdir)
 AC_SUBST(lockdir)
 AC_SUBST(piddir)
@@ -132,7 +114,6 @@ AC_SUBST(logfilebase)
 AC_SUBST(privatedir)
 AC_SUBST(bindir)
 AC_SUBST(sbindir)
-AC_SUBST(eparserdir)
 
 debug=no
 AC_ARG_ENABLE(debug, 
