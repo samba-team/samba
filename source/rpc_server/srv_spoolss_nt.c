@@ -618,25 +618,26 @@ void srv_spoolss_receive_message(int msg_type, pid_t src, void *buf, size_t len)
 {
 	Printer_entry *find_printer;
 	uint32 status;
+	fstring printer_name;
 	char msg[8];
+	char *buf_ptr = (char *)buf;
 	uint32 low, high;
 
-	if (len != sizeof(msg)) {
+	if (len < sizeof(msg) + 2) {
 		DEBUG(0,("srv_spoolss_receive_message: got incorrect message size (%u)!\n", (unsigned int)len));
 		return;
 	}
 
-	memcpy(msg, buf, len);
+	memcpy(msg, buf_ptr, sizeof(msg));
 	low = IVAL(msg,0);
 	high = IVAL(msg,4);
+	fstrcpy(printer_name, buf_ptr + sizeof(msg));
 
-	DEBUG(10,("srv_spoolss_receive_message: Got message printer change low=0x%x  high=0x%x\n", (unsigned int)low,
-		(unsigned int)high ));
-
-	find_printer = printers_list;
+        DEBUG(10,("srv_spoolss_receive_message: Got message printer change name [%s] low=0x%x  high=0x%x\n",
+                printer_name, (unsigned int)low, (unsigned int)high ));
 
 	/* Iterate the printer list */
-	for(; find_printer; find_printer = find_printer->next) {
+	for(find_printer = printers_list; find_printer; find_printer = find_printer->next) {
 
 		/*
 		 * If the entry has a connected client we send the message.
@@ -644,6 +645,12 @@ void srv_spoolss_receive_message(int msg_type, pid_t src, void *buf, size_t len)
 
 		if (find_printer->notify.client_connected==True) {
 			DEBUG(10,("srv_spoolss_receive_message: printerserver [%s]\n", find_printer->dev.printerservername ));
+			if (*printer_name && !strequal(printer_name, find_printer->dev.handlename)) {
+				DEBUG(10,("srv_spoolss_receive_message: ignoring message sent to %s [%s]\n",
+					printer_name, find_printer->dev.handlename ));
+				continue;
+			}
+
 			if (cli_spoolss_reply_rrpcn(&cli, &find_printer->notify.client_hnd, low, high, &status))
 				DEBUG(10,("srv_spoolss_receive_message: cli_spoolss_reply_rrpcn status = 0x%x\n",
 					(unsigned int)status));
@@ -658,8 +665,9 @@ void srv_spoolss_receive_message(int msg_type, pid_t src, void *buf, size_t len)
 ****************************************************************************/
 static BOOL srv_spoolss_sendnotify(uint32 high, uint32 low)
 {
-	char msg[8];
+	char msg[10];
 
+	ZERO_STRUCT(msg);
 	SIVAL(msg,0,low);
 	SIVAL(msg,4,high);
 	DEBUG(10,("srv_spoolss_sendnotify: printer change low=%x  high=%x\n", msg[0], msg[1]));
