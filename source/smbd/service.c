@@ -349,3 +349,33 @@ void service_close_listening_sockets(struct server_context *srv_ctx)
 		}
 	}
 }
+
+
+/*
+  cleanup temporary files. This is the new alternative to
+  TDB_CLEAR_IF_FIRST. Unfortunately TDB_CLEAR_IF_FIRST is not
+  efficient on unix systems due to the lack of scaling of the byte
+  range locking system. So instead of putting the burden on tdb to
+  cleanup tmp files, this function deletes them. You need to expand
+  the list here as appropriate.
+*/
+void service_cleanup_tmp_files(void)
+{
+	const char *list[] = { 
+		"openfiles.tdb",
+		"brlock.tdb",
+		"unexpected.tdb"};
+	int i;
+	for (i=0;i<ARRAY_SIZE(list);i++) {
+		char *path = lock_path(NULL, list[i]);
+		int ret;
+		ret = unlink(path);
+		if (ret == -1 && 
+		    errno != ENOENT &&
+		    errno != ENOTDIR) {
+			DEBUG(0,("Failed to cleanup '%s'\n", path));
+			smb_panic("unable to cleanup temporary files\n");
+		}
+		talloc_free(path);
+	}
+}
