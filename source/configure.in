@@ -2257,13 +2257,14 @@ AC_ARG_WITH(smbwrapper,
 
 #################################################
 # check for AFS clear-text auth support
+samba_cv_WITH_AFS=no
 AC_MSG_CHECKING(whether to use AFS clear-text auth)
 AC_ARG_WITH(afs,
 [  --with-afs              Include AFS clear-text auth support (default=no) ],
 [ case "$withval" in
-  yes)
-    AC_MSG_RESULT(yes)
-    AC_DEFINE(WITH_AFS,1,[Whether to include AFS clear-text auth support])
+  yes|auto)
+    AC_MSG_RESULT($withval)
+    samba_cv_WITH_AFS=$withval
     ;;
   *)
     AC_MSG_RESULT(no)
@@ -2274,13 +2275,14 @@ AC_ARG_WITH(afs,
 
 ####################################################
 # check for Linux-specific AFS fake-kaserver support
+samba_cv_WITH_FAKE_KASERVER=no
 AC_MSG_CHECKING(whether to use AFS fake-kaserver)
 AC_ARG_WITH(fake-kaserver,
 [  --with-fake-kaserver    Include AFS fake-kaserver support (default=no) ],
 [ case "$withval" in
-  yes)
-    AC_MSG_RESULT(yes)
-    AC_DEFINE(WITH_FAKE_KASERVER,1,[Whether to include AFS fake-kaserver support])
+  yes|auto)
+    AC_MSG_RESULT($withval)
+    samba_cv_WITH_FAKE_KASERVER=$withval
     ;;
   *)
     AC_MSG_RESULT(no)
@@ -2288,6 +2290,44 @@ AC_ARG_WITH(fake-kaserver,
   esac ],
   AC_MSG_RESULT(no)
 )
+
+#################################################
+# decide whether we can support WITH_AFS and / or WITH_FAKE_KASERVER
+if test x"$samba_cv_WITH_AFS" != x"no" ||
+   test x"$samba_cv_WITH_FAKE_KASERVER" != x"no"; then
+
+    # see if this box has the afs-headers in /usr/include/afs
+    AC_MSG_CHECKING(for /usr/include/afs)
+    if test -d /usr/include/afs; then
+          CFLAGS="$CFLAGS -I/usr/include/afs"
+          CPPFLAGS="$CPPFLAGS -I/usr/include/afs"
+          AC_MSG_RESULT(yes)
+    else
+      AC_MSG_RESULT(no)
+    fi
+   
+    # check for afs.h
+    have_afs_headers=no
+    AC_CHECK_HEADERS(afs.h afs/afs.h)
+    if test x"$ac_cv_header_afs_h" = x"no" && test x"$ac_cv_header_afs_afs_h" = x"no"; then
+    	if test x"$samba_cv_WITH_FAKE_KASERVER" = x"auto" ||
+	   test x"$samba_cv_WITH_AFS" = x"auto"; then
+	    	AC_MSG_WARN([AFS cannot be supported without afs.h])
+	else
+	    	AC_MSG_ERROR([AFS cannot be supported without afs.h])
+	fi
+    else
+    	have_afs_headers=yes
+    fi
+fi
+
+if test x"$samba_cv_WITH_FAKE_KASERVER" != x"no" && test x"$have_afs_headers" == x"yes"; then
+    AC_DEFINE(WITH_FAKE_KASERVER,1,[Whether to include AFS fake-kaserver support])
+fi
+	
+if test x"$samba_cv_WITH_AFS" != x"no" && test x"$have_afs_headers" = x"yes"; then
+    AC_DEFINE(WITH_AFS,1,[Whether to include AFS clear-text auth support])
+fi
 
 #################################################
 # check for the DFS clear-text auth system
