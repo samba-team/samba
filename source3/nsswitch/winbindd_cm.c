@@ -169,6 +169,11 @@ static NTSTATUS cm_open_connection(const char *domain, const int pipe_index,
 		return result;
 	}
 	
+	/* set the domain if empty; needed for schannel connections */
+	if ( !*new_conn->cli->domain )
+		fstrcpy( new_conn->cli->domain, domain );
+		
+	
 	if ( !cli_nt_session_open (new_conn->cli, pipe_index) ) {
 		result = NT_STATUS_PIPE_NOT_AVAILABLE;
 		/* 

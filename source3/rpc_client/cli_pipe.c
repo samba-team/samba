@@ -697,8 +697,10 @@ static NTSTATUS create_rpc_bind_req(struct cli_state *cli, prs_struct *rpc_out,
 
 		/* Use lp_workgroup() if domain not specified */
 
-		if (!domain || !domain[0])
+		if (!domain || !domain[0]) {
+			DEBUG(10,("create_rpc_bind_req: no domain; assuming my own\n"));
 			domain = lp_workgroup();
+		}
 
 		init_rpc_auth_netsec_neg(&netsec_neg, domain, my_name);
 
