@@ -610,7 +610,7 @@ static BOOL add_smbfilepwd_entry(struct smbpasswd_privates *smbpasswd_state, str
   /* Account not in /etc/passwd hack!!! */
   if (!newpwd->smb_userid_set) {
 	  if (!smbpasswd_state->permit_non_unix_accounts) {
-		  DEBUG(0, ("add_smbfilepwd_entry: cannot add account %s without unix identity\n", pwd->smb_name));
+		  DEBUG(0, ("add_smbfilepwd_entry: cannot add account %s without unix identity\n", newpwd->smb_name));
 		  endsmbfilepwent(fp, &(smbpasswd_state->pw_file_lock_depth));
 		  return False;
 	  }
