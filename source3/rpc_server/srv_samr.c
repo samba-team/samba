@@ -78,7 +78,8 @@ static BOOL get_sampwd_entries(SAM_USER_INFO_21 *pw_buf,
 		pw_buf[(*num_entries)].acb_info = (uint16)pwd->acct_ctrl;
 
 		DEBUG(5, ("entry idx: %d user %s, rid 0x%x, acb %x",
-		(*num_entries), pwd->smb_name, pwd->user_rid, pwd->acct_ctrl));
+		          (*num_entries), pwd->smb_name,
+		          pwd->user_rid, pwd->acct_ctrl));
 
 		if (acb_mask == 0 || IS_BITS_SET_SOME(pwd->acct_ctrl, acb_mask))
 		{
@@ -451,49 +452,55 @@ static void samr_reply_query_dispinfo(SAMR_Q_QUERY_DISPINFO *q_u,
 	SAM_INFO_1 info1;
 	SAM_INFO_2 info2;
 	SAM_USER_INFO_21 pass[MAX_SAM_ENTRIES];
-	int num_entries;
-	int total_entries;
+	int num_entries = 0;
+	int total_entries = 0;
 	BOOL got_pwds;
 	uint16 switch_level = 0x0;
 
+	ZERO_STRUCT(r_e);
+
 	r_e.status = 0x0;
+
+	DEBUG(5,("samr_reply_query_dispinfo: %d\n", __LINE__));
 
 	/* find the policy handle.  open a policy on it. */
 	if (r_e.status == 0x0 && (find_lsa_policy_by_hnd(&(q_u->pol)) == -1))
 	{
 		r_e.status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
+		DEBUG(5,("samr_reply_query_dispinfo: invalid handle\n"));
 	}
 
-	DEBUG(5,("samr_reply_query_dispinfo: %d\n", __LINE__));
-
-	become_root(True);
-	got_pwds = get_sampwd_entries(pass, &total_entries, &num_entries, MAX_SAM_ENTRIES, 0);
-	unbecome_root(True);
-
-	switch (q_u->switch_level)
+	if (r_e.status == 0x0)
 	{
-		case 0x1:
+		become_root(True);
+		got_pwds = get_sampwd_entries(pass, &total_entries, &num_entries, MAX_SAM_ENTRIES, 0);
+		unbecome_root(True);
+
+		switch (q_u->switch_level)
 		{
-		
-			/* query disp info is for users */
-			switch_level = 0x1;
-			make_sam_info_1(&info1, ACB_NORMAL,
-		                q_u->start_idx, num_entries, pass);
+			case 0x1:
+			{
+			
+				/* query disp info is for users */
+				switch_level = 0x1;
+				make_sam_info_1(&info1, ACB_NORMAL,
+					q_u->start_idx, num_entries, pass);
 
-			ctr.sam.info1 = &info1;
+				ctr.sam.info1 = &info1;
 
-			break;
-		}
-		case 0x2:
-		{
-			/* query disp info is for servers */
-			switch_level = 0x2;
-			make_sam_info_2(&info2, ACB_WSTRUST,
-		                q_u->start_idx, num_entries, pass);
+				break;
+			}
+			case 0x2:
+			{
+				/* query disp info is for servers */
+				switch_level = 0x2;
+				make_sam_info_2(&info2, ACB_WSTRUST,
+					q_u->start_idx, num_entries, pass);
 
-			ctr.sam.info2 = &info2;
+				ctr.sam.info2 = &info2;
 
-			break;
+				break;
+			}
 		}
 	}
 
@@ -1170,6 +1177,59 @@ static void api_samr_unknown_32( uint16 vuid, prs_struct *data, prs_struct *rdat
 
 
 /*******************************************************************
+ samr_reply_connect_anon
+ ********************************************************************/
+static void samr_reply_connect_anon(SAMR_Q_CONNECT_ANON *q_u,
+				prs_struct *rdata)
+{
+	SAMR_R_CONNECT_ANON r_u;
+	BOOL pol_open = False;
+
+	/* set up the SAMR connect_anon response */
+
+	r_u.status = 0x0;
+	/* get a (unique) handle.  open a policy on it. */
+	if (r_u.status == 0x0 && !(pol_open = open_lsa_policy_hnd(&(r_u.connect_pol))))
+	{
+		r_u.status = 0xC0000000 | NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+
+	/* associate the domain SID with the (unique) handle. */
+	if (r_u.status == 0x0 && !set_lsa_policy_samr_pol_status(&(r_u.connect_pol), q_u->unknown_0))
+	{
+		/* oh, whoops.  don't know what error message to return, here */
+		r_u.status = 0xC0000000 | NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+
+	if (r_u.status != 0 && pol_open)
+	{
+		close_lsa_policy_hnd(&(r_u.connect_pol));
+	}
+
+	DEBUG(5,("samr_connect_anon: %d\n", __LINE__));
+
+	/* store the response in the SMB stream */
+	samr_io_r_connect_anon("", &r_u, rdata, 0);
+
+	DEBUG(5,("samr_connect_anon: %d\n", __LINE__));
+
+}
+
+/*******************************************************************
+ api_samr_connect_anon
+ ********************************************************************/
+static void api_samr_connect_anon( uint16 vuid, prs_struct *data, prs_struct *rdata)
+{
+	SAMR_Q_CONNECT_ANON q_u;
+
+	/* grab the samr open policy */
+	samr_io_q_connect_anon("", &q_u, data, 0);
+
+	/* construct reply.  always indicate success */
+	samr_reply_connect_anon(&q_u, rdata);
+}
+
+/*******************************************************************
  samr_reply_connect
  ********************************************************************/
 static void samr_reply_connect(SAMR_Q_CONNECT *q_u,
@@ -1283,6 +1343,7 @@ static struct api_struct api_samr_cmds [] =
 {
 	{ "SAMR_CLOSE_HND"        , SAMR_CLOSE_HND        , api_samr_close_hnd        },
 	{ "SAMR_CONNECT"          , SAMR_CONNECT          , api_samr_connect          },
+	{ "SAMR_CONNECT_ANON"     , SAMR_CONNECT_ANON     , api_samr_connect_anon     },
 	{ "SAMR_ENUM_DOM_USERS"   , SAMR_ENUM_DOM_USERS   , api_samr_enum_dom_users   },
 	{ "SAMR_ENUM_DOM_GROUPS"  , SAMR_ENUM_DOM_GROUPS  , api_samr_enum_dom_groups  },
 	{ "SAMR_ENUM_DOM_ALIASES" , SAMR_ENUM_DOM_ALIASES , api_samr_enum_dom_aliases },

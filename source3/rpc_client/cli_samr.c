@@ -186,13 +186,14 @@ BOOL do_samr_unknown_38(struct cli_state *cli, char *srv_name)
 		samr_io_r_unknown_38("", &r_e, &rdata, 0);
 
 		p = rdata.offset != 0;
+#if 0
 		if (p && r_e.status != 0)
 		{
 			/* report error code */
 			DEBUG(0,("SAMR_R_UNKNOWN_38: %s\n", get_nt_error_msg(r_e.status)));
 			p = False;
 		}
-
+#endif
 		if (p)
 		{
 			valid_un8 = True;

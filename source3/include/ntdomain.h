@@ -61,6 +61,7 @@ typedef struct pipes_struct
 	uint16 vuid;
 	BOOL open; /* open connection */
 	uint16 device_state;
+	uint16 priority;
 	fstring name;
 	fstring pipe_srv_name;
 

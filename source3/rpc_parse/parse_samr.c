@@ -2403,6 +2403,58 @@ void samr_io_r_connect(char *desc,  SAMR_R_CONNECT *r_u, prs_struct *ps, int dep
 }
 
 /*******************************************************************
+makes a SAMR_Q_CONNECT_ANON structure.
+********************************************************************/
+void make_samr_q_connect_anon(SAMR_Q_CONNECT_ANON *q_u)
+{
+	if (q_u == NULL) return;
+
+	DEBUG(5,("make_q_connect_anon\n"));
+
+	q_u->ptr       = 1;
+	q_u->unknown_0 = 0x5c;
+	q_u->unknown_1 = 0x01;
+	q_u->unknown_2 = 0x20;
+}
+
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+void samr_io_q_connect_anon(char *desc,  SAMR_Q_CONNECT_ANON *q_u, prs_struct *ps, int depth)
+{
+	if (q_u == NULL) return;
+
+	prs_debug(ps, depth, desc, "samr_io_q_connect_anon");
+	depth++;
+
+	prs_align(ps);
+
+	prs_uint32("ptr      ", ps, depth, &(q_u->ptr      ));
+	prs_uint16("unknown_0", ps, depth, &(q_u->unknown_0));
+	prs_uint16("unknown_1", ps, depth, &(q_u->unknown_1));
+	prs_uint32("unknown_2", ps, depth, &(q_u->unknown_2));
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+void samr_io_r_connect_anon(char *desc,  SAMR_R_CONNECT_ANON *r_u, prs_struct *ps, int depth)
+{
+	if (r_u == NULL) return;
+
+	prs_debug(ps, depth, desc, "samr_io_r_connect_anon");
+	depth++;
+
+	prs_align(ps);
+
+	smb_io_pol_hnd("connect_pol", &(r_u->connect_pol), ps, depth); 
+	prs_align(ps);
+
+	prs_uint32("status", ps, depth, &(r_u->status));
+}
+
+/*******************************************************************
 makes a SAMR_Q_OPEN_ALIAS structure.
 ********************************************************************/
 void make_samr_q_open_alias(SAMR_Q_OPEN_ALIAS *q_u,
@@ -2552,16 +2604,16 @@ void samr_io_q_unknown_38(char *desc,  SAMR_Q_UNKNOWN_38 *q_u, prs_struct *ps, i
 /*******************************************************************
 makes a SAMR_R_UNKNOWN_38 structure.
 ********************************************************************/
-void make_samr_r_unknown_38(SAMR_R_UNKNOWN_38 *r_u,
-				uint16 level, uint32 status)
+void make_samr_r_unknown_38(SAMR_R_UNKNOWN_38 *r_u)
 {
 	if (r_u == NULL) return;
 
 	DEBUG(5,("make_r_unknown_38\n"));
 
-	r_u->level.value = level;
-	r_u->ptr_0       = 0;
-	r_u->status      = status;
+	r_u->unk_0 = 0;
+	r_u->unk_1 = 0;
+	r_u->unk_2 = 0;
+	r_u->unk_3 = 0;
 }
 
 /*******************************************************************
@@ -2576,9 +2628,14 @@ void samr_io_r_unknown_38(char *desc,  SAMR_R_UNKNOWN_38 *r_u, prs_struct *ps, i
 
 	prs_align(ps);
 
-	smb_io_lookup_level("level ", &(r_u->level), ps, depth); 
-	prs_uint32("ptr_0 ", ps, depth, &(r_u->ptr_0 ));
-	prs_uint32("status", ps, depth, &(r_u->status));
+	prs_uint16("unk_0", ps, depth, &(r_u->unk_0));
+	prs_align(ps);
+	prs_uint16("unk_1", ps, depth, &(r_u->unk_1));
+	prs_align(ps);
+	prs_uint16("unk_2", ps, depth, &(r_u->unk_2));
+	prs_align(ps);
+	prs_uint16("unk_3", ps, depth, &(r_u->unk_3));
+	prs_align(ps);
 }
 
 /*******************************************************************

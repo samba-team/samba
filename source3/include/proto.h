@@ -1339,12 +1339,18 @@ void make_lsa_trans_name(LSA_TRANS_NAME *trn, uint32 sid_name_use, char *name, u
 void make_lsa_sec_qos(LSA_SEC_QOS *qos, uint16 imp_lev, uint8 ctxt, uint8 eff,
 				uint32 unknown);
 void make_lsa_obj_attr(LSA_OBJ_ATTR *attr, uint32 attributes, LSA_SEC_QOS *qos);
-void make_q_open_pol(LSA_Q_OPEN_POL *r_q, char *server_name,
+void make_q_open_pol(LSA_Q_OPEN_POL *r_q, uint16 system_name,
 			uint32 attributes,
 			uint32 desired_access,
 			LSA_SEC_QOS *qos);
 void lsa_io_q_open_pol(char *desc,  LSA_Q_OPEN_POL *r_q, prs_struct *ps, int depth);
 void lsa_io_r_open_pol(char *desc,  LSA_R_OPEN_POL *r_p, prs_struct *ps, int depth);
+void make_q_open_pol2(LSA_Q_OPEN_POL2 *r_q, char *server_name,
+			uint32 attributes,
+			uint32 desired_access,
+			LSA_SEC_QOS *qos);
+void lsa_io_q_open_pol2(char *desc,  LSA_Q_OPEN_POL2 *r_q, prs_struct *ps, int depth);
+void lsa_io_r_open_pol2(char *desc,  LSA_R_OPEN_POL2 *r_p, prs_struct *ps, int depth);
 void make_q_query(LSA_Q_QUERY_INFO *q_q, POLICY_HND *hnd, uint16 info_class);
 void lsa_io_q_query(char *desc,  LSA_Q_QUERY_INFO *q_q, prs_struct *ps, int depth);
 void lsa_io_q_enum_trust_dom(char *desc,  LSA_Q_ENUM_TRUST_DOM *q_e, prs_struct *ps, int depth);
@@ -1710,6 +1716,9 @@ void make_samr_q_connect(SAMR_Q_CONNECT *q_u,
 				char *srv_name, uint32 unknown_0);
 void samr_io_q_connect(char *desc,  SAMR_Q_CONNECT *q_u, prs_struct *ps, int depth);
 void samr_io_r_connect(char *desc,  SAMR_R_CONNECT *r_u, prs_struct *ps, int depth);
+void make_samr_q_connect_anon(SAMR_Q_CONNECT_ANON *q_u);
+void samr_io_q_connect_anon(char *desc,  SAMR_Q_CONNECT_ANON *q_u, prs_struct *ps, int depth);
+void samr_io_r_connect_anon(char *desc,  SAMR_R_CONNECT_ANON *r_u, prs_struct *ps, int depth);
 void make_samr_q_open_alias(SAMR_Q_OPEN_ALIAS *q_u,
 				uint32 unknown_0, uint32 rid);
 void samr_io_q_open_alias(char *desc,  SAMR_Q_OPEN_ALIAS *q_u, prs_struct *ps, int depth);
@@ -1723,8 +1732,7 @@ void make_samr_q_unknown_13(SAMR_Q_UNKNOWN_13 *q_c,
 				POLICY_HND *hnd, uint16 unk_1, uint16 unk_2);
 void make_samr_q_unknown_38(SAMR_Q_UNKNOWN_38 *q_u, char *srv_name);
 void samr_io_q_unknown_38(char *desc,  SAMR_Q_UNKNOWN_38 *q_u, prs_struct *ps, int depth);
-void make_samr_r_unknown_38(SAMR_R_UNKNOWN_38 *r_u,
-				uint16 level, uint32 status);
+void make_samr_r_unknown_38(SAMR_R_UNKNOWN_38 *r_u);
 void samr_io_r_unknown_38(char *desc,  SAMR_R_UNKNOWN_38 *r_u, prs_struct *ps, int depth);
 void make_enc_passwd(SAMR_ENC_PASSWD *pwd, char pass[512]);
 void samr_io_enc_passwd(char *desc, SAMR_ENC_PASSWD *pwd, prs_struct *ps, int depth);
@@ -1860,6 +1868,7 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 			      connection_struct *conn, uint16 vuid);
 int write_pipe(pipes_struct *p, char *data, int n);
 int read_pipe(pipes_struct *p, char *data, uint32 pos, int n);
+BOOL wait_rpc_pipe_hnd_state(pipes_struct *p, uint16 priority);
 BOOL set_rpc_pipe_hnd_state(pipes_struct *p, uint16 device_state);
 BOOL close_rpc_pipe_hnd(pipes_struct *p, connection_struct *conn);
 pipes_struct *get_rpc_pipe_p(char *buf, int where);

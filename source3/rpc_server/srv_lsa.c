@@ -31,6 +31,28 @@ extern int DEBUGLEVEL;
 extern DOM_SID global_machine_sid;
 
 /***************************************************************************
+lsa_reply_open_policy2
+ ***************************************************************************/
+static void lsa_reply_open_policy2(prs_struct *rdata)
+{
+	int i;
+	LSA_R_OPEN_POL2 r_o;
+
+	ZERO_STRUCT(r_o);
+
+	/* set up the LSA QUERY INFO response */
+
+	for (i = 4; i < POL_HND_SIZE; i++)
+	{
+		r_o.pol.data[i] = i;
+	}
+	r_o.status = 0x0;
+
+	/* store the response in the SMB stream */
+	lsa_io_r_open_pol2("", &r_o, rdata, 0);
+}
+
+/***************************************************************************
 lsa_reply_open_policy
  ***************************************************************************/
 static void lsa_reply_open_policy(prs_struct *rdata)
@@ -282,6 +304,25 @@ static void lsa_reply_lookup_rids(prs_struct *rdata,
 /***************************************************************************
 api_lsa_open_policy
  ***************************************************************************/
+static void api_lsa_open_policy2( uint16 vuid, prs_struct *data,
+                             prs_struct *rdata )
+{
+	LSA_Q_OPEN_POL2 q_o;
+
+	ZERO_STRUCT(q_o);
+
+	/* grab the server, object attributes and desired access flag...*/
+	lsa_io_q_open_pol2("", &q_o, data, 0);
+
+	/* lkclXXXX having decoded it, ignore all fields in the open policy! */
+
+	/* return a 20 byte policy handle */
+	lsa_reply_open_policy2(rdata);
+}
+
+/***************************************************************************
+api_lsa_open_policy
+ ***************************************************************************/
 static void api_lsa_open_policy( uint16 vuid, prs_struct *data,
                              prs_struct *rdata )
 {
@@ -513,6 +554,7 @@ static void api_lsa_open_secret( uint16 vuid, prs_struct *data,
  ***************************************************************************/
 static struct api_struct api_lsa_cmds[] =
 {
+	{ "LSA_OPENPOLICY2"     , LSA_OPENPOLICY2     , api_lsa_open_policy2   },
 	{ "LSA_OPENPOLICY"      , LSA_OPENPOLICY      , api_lsa_open_policy    },
 	{ "LSA_QUERYINFOPOLICY" , LSA_QUERYINFOPOLICY , api_lsa_query_info     },
 	{ "LSA_ENUMTRUSTDOM"    , LSA_ENUMTRUSTDOM    , api_lsa_enum_trust_dom },

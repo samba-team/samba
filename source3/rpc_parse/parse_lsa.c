@@ -227,10 +227,11 @@ static void lsa_io_obj_attr(char *desc,  LSA_OBJ_ATTR *attr, prs_struct *ps, int
 	}
 }
 
+
 /*******************************************************************
 makes an LSA_Q_OPEN_POL structure.
 ********************************************************************/
-void make_q_open_pol(LSA_Q_OPEN_POL *r_q, char *server_name,
+void make_q_open_pol(LSA_Q_OPEN_POL *r_q, uint16 system_name,
 			uint32 attributes,
 			uint32 desired_access,
 			LSA_SEC_QOS *qos)
@@ -246,7 +247,7 @@ void make_q_open_pol(LSA_Q_OPEN_POL *r_q, char *server_name,
 		r_q->des_access = desired_access;
 	}
 
-	make_unistr2     (&(r_q->uni_server_name), server_name, strlen(server_name));
+	r_q->system_name = system_name;
 	make_lsa_obj_attr(&(r_q->attr           ), attributes, qos);
 }
 
@@ -261,8 +262,9 @@ void lsa_io_q_open_pol(char *desc,  LSA_Q_OPEN_POL *r_q, prs_struct *ps, int dep
 	depth++;
 
 	prs_uint32("ptr       ", ps, depth, &(r_q->ptr       ));
+	prs_uint16("system_name", ps, depth, &(r_q->system_name ));
+	prs_align ( ps );
 
-	smb_io_unistr2 ("", &(r_q->uni_server_name), r_q->ptr, ps, depth);
 	lsa_io_obj_attr("", &(r_q->attr           ), ps, depth);
 
 	if (r_q->attr.ptr_sec_qos == 0)
@@ -279,6 +281,65 @@ void lsa_io_r_open_pol(char *desc,  LSA_R_OPEN_POL *r_p, prs_struct *ps, int dep
 	if (r_p == NULL) return;
 
 	prs_debug(ps, depth, desc, "lsa_io_r_open_pol");
+	depth++;
+
+	smb_io_pol_hnd("", &(r_p->pol), ps, depth);
+
+	prs_uint32("status", ps, depth, &(r_p->status));
+}
+
+/*******************************************************************
+makes an LSA_Q_OPEN_POL2 structure.
+********************************************************************/
+void make_q_open_pol2(LSA_Q_OPEN_POL2 *r_q, char *server_name,
+			uint32 attributes,
+			uint32 desired_access,
+			LSA_SEC_QOS *qos)
+{
+	if (r_q == NULL) return;
+
+	DEBUG(5,("make_open_pol2: attr:%d da:%d\n", attributes, desired_access));
+
+	r_q->ptr = 1; /* undocumented pointer */
+
+	if (qos == NULL)
+	{
+		r_q->des_access = desired_access;
+	}
+
+	make_unistr2     (&(r_q->uni_server_name), server_name, strlen(server_name));
+	make_lsa_obj_attr(&(r_q->attr           ), attributes, qos);
+}
+
+/*******************************************************************
+reads or writes an LSA_Q_OPEN_POL2 structure.
+********************************************************************/
+void lsa_io_q_open_pol2(char *desc,  LSA_Q_OPEN_POL2 *r_q, prs_struct *ps, int depth)
+{
+	if (r_q == NULL) return;
+
+	prs_debug(ps, depth, desc, "lsa_io_q_open_pol2");
+	depth++;
+
+	prs_uint32("ptr       ", ps, depth, &(r_q->ptr       ));
+
+	smb_io_unistr2 ("", &(r_q->uni_server_name), r_q->ptr, ps, depth);
+	lsa_io_obj_attr("", &(r_q->attr           ), ps, depth);
+
+	if (r_q->attr.ptr_sec_qos == 0)
+	{
+		prs_uint32("des_access", ps, depth, &(r_q->des_access));
+	}
+}
+
+/*******************************************************************
+reads or writes an LSA_R_OPEN_POL2 structure.
+********************************************************************/
+void lsa_io_r_open_pol2(char *desc,  LSA_R_OPEN_POL2 *r_p, prs_struct *ps, int depth)
+{
+	if (r_p == NULL) return;
+
+	prs_debug(ps, depth, desc, "lsa_io_r_open_pol2");
 	depth++;
 
 	smb_io_pol_hnd("", &(r_p->pol), ps, depth);

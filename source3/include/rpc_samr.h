@@ -94,6 +94,7 @@ SamrTestPrivateFunctionsUser
 #define SAMR_CHGPASSWD_USER    0x37
 #define SAMR_UNKNOWN_38        0x38
 #define SAMR_CONNECT           0x39
+#define SAMR_CONNECT_ANON      0x00
 #define SAMR_OPEN_ALIAS        0x1b
 #define SAMR_QUERY_ALIASINFO   0x1c
 #define SAMR_ENUM_DOM_USERS    0x0d
@@ -934,11 +935,29 @@ typedef struct q_samr_open_alias_info
 /* SAMR_R_OPEN_ALIAS - probably an open */
 typedef struct r_samr_open_alias_info
 {
-    POLICY_HND pol;       /* policy handle */
+	POLICY_HND pol;       /* policy handle */
 	uint32 status;         /* return status */
 
 } SAMR_R_OPEN_ALIAS;
 
+
+/* SAMR_Q_CONNECT_ANON - probably an open */
+typedef struct q_samr_connect_anon_info
+{
+	uint32 ptr;                  /* ptr? */
+	uint16 unknown_0;            /* 0x005c */
+	uint16 unknown_1;            /* 0x0001 */
+	uint32 unknown_2;            /* 0x0000 0020 */
+
+} SAMR_Q_CONNECT_ANON;
+
+/* SAMR_R_CONNECT_ANON - probably an open */
+typedef struct r_samr_connect_anon_info
+{
+	POLICY_HND connect_pol;       /* policy handle */
+	uint32 status;         /* return status */
+
+} SAMR_R_CONNECT_ANON;
 
 /* SAMR_Q_CONNECT - probably an open */
 typedef struct q_samr_connect_info
@@ -971,9 +990,10 @@ typedef struct q_samr_unknown_38
 /* SAMR_R_UNKNOWN_38 */
 typedef struct r_samr_unknown_38
 {
-	LOOKUP_LEVEL level; /* 0x0006 */
-	uint32 ptr_0; /* 0x0000 0000 */
-	uint32 status;
+	uint16 unk_0;
+	uint16 unk_1;
+	uint16 unk_2;
+	uint16 unk_3;
 
 } SAMR_R_UNKNOWN_38;
 
