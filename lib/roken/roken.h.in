@@ -189,10 +189,6 @@ char* getcwd(char *path, size_t size);
 int getent(char *cp, char *name);
 #endif
 
-#ifndef HAVE_GETSTR
-char *getstr(char *id, char **cpp);
-#endif
-
 #ifdef HAVE_PWD_H
 #include <pwd.h>
 struct passwd *k_getpwnam (char *user);
