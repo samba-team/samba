@@ -1598,7 +1598,7 @@ static BOOL set_canon_ace_list(files_struct *fsp, canon_ace *the_ace, BOOL defau
 
 		if (map_acl_perms_to_permset(p_ace->perms, &the_permset) == -1) {
 			DEBUG(0,("set_canon_ace_list: Failed to create permset for mode (%u) on entry %d. (%s)\n",
-				p_ace->perms, i, strerror(errno) ));
+				(unsigned int)p_ace->perms, i, strerror(errno) ));
 			goto done;
 		}
 
