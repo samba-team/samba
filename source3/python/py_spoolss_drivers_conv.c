@@ -111,8 +111,6 @@ BOOL py_from_DRIVER_INFO_3(PyObject **dict, DRIVER_INFO_3 *info)
 
 BOOL py_to_DRIVER_INFO_3(DRIVER_INFO_3 *info, PyObject *dict)
 {
-	PyObject *obj;
-
 	to_struct(info, dict, py_DRIVER_INFO_3);
 
 	return True;
