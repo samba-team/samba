@@ -31,11 +31,10 @@
  * SUCH DAMAGE.
  */
 
-#include "bsd_locl.h"
+#include "roken.h"
+
 
 RCSID("$Id$");
-
-#ifndef HAVE_IRUSEROK
 
 int     __check_rhosts_file = 1;
 char    *__rcmd_errstr = 0;
@@ -275,5 +274,3 @@ again:
 	}
 	return (-1);
 }
-
-#endif /* !HAVE_IRUSEROK */
