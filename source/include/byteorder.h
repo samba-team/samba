@@ -206,7 +206,7 @@ it also defines lots of intermediate macros, just ignore those :-)
 	RW_PCVAL(read,inbuf,outbuf,len) \
 	DEBUG(5,("%s%04x %s: ", \
              tab_depth(depth), PTR_DIFF(inbuf,base),string)); \
-    if (charmode) print_asc(5, (char*)(outbuf), (len)); else \
+    if (charmode) print_asc(5, (unsigned char*)(outbuf), (len)); else \
 	{ int idx; for (idx = 0; idx < len; idx++) { DEBUG(5,("%02x ", CVAL(&((outbuf)[idx]), 0))); } } \
 	DEBUG(5,("\n"));
 
@@ -214,7 +214,7 @@ it also defines lots of intermediate macros, just ignore those :-)
 	RW_PSVAL(read,inbuf,outbuf,len) \
 	DEBUG(5,("%s%04x %s: ", \
              tab_depth(depth), PTR_DIFF(inbuf,base),string)); \
-    if (charmode) print_asc(5, (char*)(outbuf), 2*(len)); else \
+    if (charmode) print_asc(5, (unsigned char*)(outbuf), 2*(len)); else \
 	{ int idx; for (idx = 0; idx < len; idx++) { DEBUG(5,("%04x ", SVAL(&((outbuf)[idx]), 0))); } } \
 	DEBUG(5,("\n"));
 
@@ -222,7 +222,7 @@ it also defines lots of intermediate macros, just ignore those :-)
 	RW_PIVAL(read,inbuf,outbuf,len) \
 	DEBUG(5,("%s%04x %s: ", \
              tab_depth(depth), PTR_DIFF(inbuf,base),string)); \
-    if (charmode) print_asc(5, (char*)(outbuf), 4*(len)); else \
+    if (charmode) print_asc(5, (unsigned char*)(outbuf), 4*(len)); else \
 	{ int idx; for (idx = 0; idx < len; idx++) { DEBUG(5,("%08x ", IVAL(&((outbuf)[idx]), 0))); } } \
 	DEBUG(5,("\n"));
 
