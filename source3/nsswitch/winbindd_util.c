@@ -641,14 +641,15 @@ BOOL parse_domain_user(const char *domuser, fstring domain, fstring user)
 */
 void fill_domain_username(fstring name, const char *domain, const char *user)
 {
+	strlower_m( name );
+
 	if (assume_domain(domain)) {
 		strlcpy(name, user, sizeof(fstring));
 	} else {
-		slprintf(name, sizeof(fstring) - 1, "%s%s%s",
-			 domain, lp_winbind_separator(),
+		slprintf(name, sizeof(fstring) - 1, "%s%c%s",
+			 domain, *lp_winbind_separator(),
 			 user);
 	}
-	strlower_m(name);
 }
 
 /*
