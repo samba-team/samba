@@ -340,16 +340,21 @@ static void manage_squid_ntlmssp_request(enum stdio_helper_mode stdio_helper_mod
 		return;
 	}
 
-	if (strlen(buf) > 3) {
-		request = base64_decode_data_blob(buf + 3);
-	} else if (strcmp(buf, "YR") == 0) {
-		request = data_blob(NULL, 0);
+	if (strncmp(buf, "YR", 2) == 0) {
 		if (ntlmssp_state)
 			ntlmssp_end(&ntlmssp_state);
+	} else if (strncmp(buf, "KK", 2) == 0) {
+		
 	} else {
 		DEBUG(1, ("NTLMSSP query [%s] invalid", buf));
 		x_fprintf(x_stdout, "BH\n");
 		return;
+	}
+
+	if (strlen(buf) > 3) {
+		request = base64_decode_data_blob(buf + 3);
+	} else {
+		request = data_blob(NULL, 0);
 	}
 
 	if (!ntlmssp_state) {
