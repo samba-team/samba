@@ -41,6 +41,15 @@ static const struct table_node archi_table[]= {
 	{NULL,                   "",		-1 }
 };
 
+/**
+ * @file
+ *
+ * rpcclient module for SPOOLSS rpc pipe.
+ *
+ * This generally just parses and checks command lines, and then calls
+ * a cli_spoolss function.
+ **/
+
 /****************************************************************************
 function to do the mapping between the long architecture name and
 the short one.
