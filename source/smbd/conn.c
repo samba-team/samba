@@ -164,6 +164,21 @@ free a conn structure
 ****************************************************************************/
 void conn_free(connection_struct *conn)
 {
+	/* Close dlopen() handle */
+
+	if (conn->vfs_conn->dl_handle != NULL) {
+		dlclose(conn->vfs_conn->dl_handle);  /* should we check return val? */
+	}
+
+	/* Free vfs_connection_struct */
+	    
+	if (conn->vfs_conn != NULL) {
+		if (conn->vfs_conn->groups != NULL) {
+			free(conn->vfs_conn->groups);
+		}
+		free(conn->vfs_conn);
+	}
+
 	DLIST_REMOVE(Connections, conn);
 
 	if (conn->ngroups && conn->groups) {
