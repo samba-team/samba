@@ -162,7 +162,7 @@ static NTSTATUS cvfs_disconnect(struct smbsrv_tcon *tcon, int depth)
 	struct cvfs_private *private = tcon->ntvfs_private_list[depth];
 
 	smb_tree_disconnect(private->tree);
-	smbcli_tree_close(private->tree);
+	talloc_free(private->tree);
 
 	return NT_STATUS_OK;
 }
@@ -517,11 +517,29 @@ static NTSTATUS cvfs_close(struct smbsrv_request *req, union smb_close *io)
 }
 
 /*
-  exit - closing files?
+  exit - closing files open by the pid
 */
 static NTSTATUS cvfs_exit(struct smbsrv_request *req)
 {
-	return NT_STATUS_NOT_SUPPORTED;
+	NTVFS_GET_PRIVATE(cvfs_private, private, req);
+	struct smbcli_request *c_req;
+
+	if (!req->async.send_fn) {
+		return smb_raw_exit(private->tree->session);
+	}
+
+	c_req = smb_raw_exit_send(private->tree->session);
+
+	SIMPLE_ASYNC_TAIL;
+}
+
+/*
+  logoff - closing files open by the user
+*/
+static NTSTATUS cvfs_logoff(struct smbsrv_request *req)
+{
+	/* we can't do this right in the cifs backend .... */
+	return NT_STATUS_OK;
 }
 
 /*
@@ -699,6 +717,7 @@ NTSTATUS ntvfs_cifs_init(void)
 	ops.search_next = cvfs_search_next;
 	ops.search_close = cvfs_search_close;
 	ops.trans = cvfs_trans;
+	ops.logoff = cvfs_logoff;
 
 	if (lp_parm_bool(-1, "cifs", "maptrans2", False)) {
 	    ops.trans2 = cvfs_trans2;

@@ -476,6 +476,19 @@ static NTSTATUS nbench_exit(struct smbsrv_request *req)
 }
 
 /*
+  logoff - closing files
+*/
+static NTSTATUS nbench_logoff(struct smbsrv_request *req)
+{
+	NTVFS_GET_PRIVATE(nbench_private, private, req);
+	NTSTATUS status;
+
+	PASS_THRU_REQ(req, logoff, (req));
+
+	return status;
+}
+
+/*
   lock a byte range
 */
 static NTSTATUS nbench_lock(struct smbsrv_request *req, union smb_lock *lck)
@@ -672,6 +685,7 @@ NTSTATUS ntvfs_nbench_init(void)
 	ops.search_next = nbench_search_next;
 	ops.search_close = nbench_search_close;
 	ops.trans = nbench_trans;
+	ops.logoff = nbench_logoff;
 
 	/* we don't register a trans2 handler as we want to be able to
 	   log individual trans2 requests */

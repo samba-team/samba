@@ -334,7 +334,7 @@ static NTSTATUS smb_shutdown_pipe(struct dcerpc_pipe *p)
 	c.close.in.fnum = smb->fnum;
 	c.close.in.write_time = 0;
 	smb_raw_close(smb->tree, &c);
-	smbcli_tree_close(smb->tree);
+	talloc_free(smb->tree);
 
 	return NT_STATUS_OK;
 }
@@ -443,7 +443,7 @@ NTSTATUS dcerpc_pipe_open_smb(struct dcerpc_pipe **p,
 	smb->tree = tree;
 
 	(*p)->transport.private = smb;
-	tree->reference_count++;
+	talloc_increase_ref_count(tree);
 
         return NT_STATUS_OK;
 }

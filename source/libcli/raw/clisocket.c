@@ -21,6 +21,18 @@
 
 #include "includes.h"
 
+/*
+  destroy a socket
+ */
+static int sock_destructor(void *ptr)
+{
+	struct smbcli_socket *sock = ptr;
+	if (sock->fd != -1) {
+		close(sock->fd);
+		sock->fd = -1;
+	}
+	return 0;
+}
 
 /*
   create a smbcli_socket context
@@ -37,10 +49,12 @@ struct smbcli_socket *smbcli_sock_init(void)
 	ZERO_STRUCTP(sock);
 	sock->fd = -1;
 	sock->port = 0;
+
 	/* 20 second default timeout */
 	sock->timeout = 20000;
-
 	sock->hostname = NULL;
+
+	talloc_set_destructor(sock, sock_destructor);
 
 	return sock;
 }
@@ -93,18 +107,6 @@ void smbcli_sock_dead(struct smbcli_socket *sock)
 	if (sock->fd != -1) {
 		close(sock->fd);
 		sock->fd = -1;
-	}
-}
-
-/****************************************************************************
- reduce socket reference count - if it becomes zero then close
-****************************************************************************/
-void smbcli_sock_close(struct smbcli_socket *sock)
-{
-	sock->reference_count--;
-	if (sock->reference_count <= 0) {
-		smbcli_sock_dead(sock);
-		talloc_free(sock);
 	}
 }
 

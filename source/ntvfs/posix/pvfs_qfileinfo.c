@@ -114,7 +114,7 @@ NTSTATUS pvfs_qfileinfo(struct smbsrv_request *req, union smb_fileinfo *info)
 		return ntvfs_map_qfileinfo(req, info, pvfs->ops);
 	}
 
-	f = pvfs_find_fd(pvfs, info->generic.in.fnum);
+	f = pvfs_find_fd(req, info->generic.in.fnum);
 	if (!f) {
 		return NT_STATUS_INVALID_HANDLE;
 	}
