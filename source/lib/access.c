@@ -262,14 +262,14 @@ static BOOL only_ipaddrs_in_list(const char* list)
 		{
 			char *p;
 			/* 
-			 * if we failed, make surethat it was not because the token
+			 * if we failed, make sure that it was not because the token
 			 * was a network/netmask pair.  Only network/netmask pairs
 			 * have a '/' in them
 			 */
-			if ((p=strtok(tok, "/")) == NULL)
+			if ((p=strchr(tok, '/')) == NULL)
 			{
 				only_ip = False;
-				DEBUG(3,("only_ipaddrs_in_list: list [%s] has non-ip address %s\n", list, p));
+				DEBUG(3,("only_ipaddrs_in_list: list [%s] has non-ip address %s\n", list, tok));
 				break;
 			}
 		}
@@ -286,47 +286,48 @@ BOOL check_access(int sock, char *allow_list, char *deny_list)
 {
 	BOOL ret = False;
 	BOOL only_ip = False;
+	char	*deny = NULL;
+	char	*allow = NULL;
 	
-	if (deny_list) deny_list = strdup(deny_list);
-	if (allow_list) allow_list = strdup(allow_list);
+	DEBUG(10,("check_access: allow = %s, deny = %s\n",
+		allow_list ? allow_list : "NULL",
+		deny_list ? deny_list : "NULL"));
 
-	if ((!deny_list || *deny_list==0) && (!allow_list || *allow_list==0)) 
-	{
+	if (deny_list) 
+		deny = strdup(deny_list);
+	if (allow_list) 
+		allow = strdup(allow_list);
+
+	if ((!deny || *deny==0) && (!allow || *allow==0))
 		ret = True;
-	}
 
-	if (!ret) 
-	{
+	if (!ret) {
 		/* bypass gethostbyaddr() calls if the lists only contain IP addrs */
-		if (only_ipaddrs_in_list(allow_list) && only_ipaddrs_in_list(deny_list))
-		{
+		if (only_ipaddrs_in_list(allow) && only_ipaddrs_in_list(deny)) {
 			only_ip = True;
 			DEBUG (3, ("check_access: no hostnames in host allow/deny list.\n"));
-			ret = allow_access(deny_list,allow_list, "", get_socket_addr(sock));
-		}
-		else
-		{
+			ret = allow_access(deny,allow, "", get_socket_addr(sock));
+		} else {
 			DEBUG (3, ("check_access: hostnames in host allow/deny list.\n"));
-			ret = allow_access(deny_list,allow_list, get_socket_name(sock),
+			ret = allow_access(deny,allow, get_socket_name(sock),
 					   get_socket_addr(sock));
 		}
 		
-		if (ret) 
-		{
+		if (ret) {
 			DEBUG(2,("Allowed connection from %s (%s)\n",
 				 only_ip ? "" : get_socket_name(sock),
 				 get_socket_addr(sock)));
-		} 
-		else 
-		{
+		} else {
 			DEBUG(0,("Denied connection from %s (%s)\n",
 				 only_ip ? "" : get_socket_name(sock),
 				 get_socket_addr(sock)));
 		}
 	}
 
-	if (deny_list) free(deny_list);
-	if (allow_list) free(allow_list);
+	if (deny)
+		free(deny);
+	if (allow)
+		free(allow);
 	
 	return(ret);
 }
