@@ -335,7 +335,6 @@ char *readdirname(DIR *p);
 BOOL is_in_path(char *name, name_compare_entry *namelist);
 void set_namearray(name_compare_entry **ppname_array, char *namelist);
 void free_namearray(name_compare_entry *name_array);
-uint32 map_lock_offset(uint32 high, uint32 low);
 BOOL fcntl_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type);
 BOOL is_myname(char *s);
 void set_remote_arch(enum remote_arch_types type);
@@ -3374,6 +3373,7 @@ int vfswrap_unlink(char *path);
 int vfswrap_chmod(char *path, mode_t mode);
 int vfswrap_utime(char *path, struct utimbuf *times);
 int vfswrap_ftruncate(int fd, SMB_OFF_T offset);
+BOOL vfswrap_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type);
 
 /*The following definitions come from  smbd/vfs.c  */
 
