@@ -365,32 +365,32 @@
 			<tbody>
 				<row>
 					<entry>Add User Accounts</entry>
-					<entry>smbldap-useradd.pl</entry>
+					<entry>smbldap-useradd</entry>
 					<entry>useradd</entry>
 				</row>
 				<row>
 					<entry>Delete User Accounts</entry>
-					<entry>smbldap-userdel.pl</entry>
+					<entry>smbldap-userdel</entry>
 					<entry>userdel</entry>
 				</row>
 				<row>
 					<entry>Add Group Accounts</entry>
-					<entry>smbldap-groupadd.pl</entry>
+					<entry>smbldap-groupadd</entry>
 					<entry>groupadd</entry>
 				</row>
 				<row>
 					<entry>Delete Group Accounts</entry>
-					<entry>smbldap-groupdel.pl</entry>
+					<entry>smbldap-groupdel</entry>
 					<entry>groupdel</entry>
 				</row>
 				<row>
 					<entry>Add User to Group</entry>
-					<entry>smbldap-groupmod.pl</entry>
+					<entry>smbldap-groupmod</entry>
 					<entry>usermod (See Note)</entry>
 				</row>
 				<row>
 					<entry>Add Machine Accounts</entry>
-					<entry>smbldap-useradd.pl</entry>
+					<entry>smbldap-useradd</entry>
 					<entry>useradd</entry>
 				</row>
 			</tbody>
