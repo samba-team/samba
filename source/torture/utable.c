@@ -140,11 +140,11 @@ BOOL torture_casetable(int dummy)
 		printf("%04x\n", c);
 
 		fname = form_name(c);
-		fnum = cli_nt_create_full(&cli, fname, 
+		fnum = cli_nt_create_full(&cli, fname, 0,
 					  GENERIC_ALL_ACCESS, 
 					  FILE_ATTRIBUTE_NORMAL,
 					  FILE_SHARE_NONE,
-					  FILE_OPEN_IF, 0);
+					  FILE_OPEN_IF, 0, 0);
 
 		if (fnum == -1) continue;
 
