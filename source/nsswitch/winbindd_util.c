@@ -67,7 +67,6 @@ BOOL lookup_domain_sid(char *domain_name, struct winbindd_domain *domain)
 	uint32 num_doms = 0;
 	char **domains = NULL;
 	DOM_SID **sids = NULL;
-        int i;
 
         /* Use lsaenumdomains to get sid for this domain */
 
@@ -79,6 +78,7 @@ BOOL lookup_domain_sid(char *domain_name, struct winbindd_domain *domain)
 
         if (res && domains && sids) {
             int found = False;
+            int i;
 
             for(i = 0; i < num_doms; i++) {
                 if (strequal(domain_name, domains[i])) {
@@ -93,31 +93,8 @@ BOOL lookup_domain_sid(char *domain_name, struct winbindd_domain *domain)
 
         /* Free memory */
 
-        if (domains) {
-
-            /* Free array elements */
-
-            for(i = 0; i < num_doms; i++) {
-                safe_free(domains[i]);
-            }
-
-            /* Free array */
-
-            safe_free(domains);
-        }
-
-        if (sids) {
-            
-            /* Free array elements */
-
-            for(i = 0; i < num_doms; i++) {
-                safe_free(sids[i]);
-            }
-
-            /* Free array */
-
-            safe_free(sids);
-        }
+        free_char_array(num_doms, domains);
+        free_sid_array(num_doms, sids);
     }
 
     return res;
@@ -309,18 +286,8 @@ BOOL winbindd_lookup_name_by_sid(struct winbindd_domain *domain,
 
     /* Free memory */
 
-    if (types != NULL) free(types);
-
-    if (names != NULL) { 
-        int i;
-
-        for (i = 0; i < num_names; i++) {
-            if (names[i] != NULL) {
-                free(names[i]);
-            }
-        }
-        free(names); 
-    }
+    safe_free(types);
+    free_char_array(num_names, names);
 
     return res;
 }
@@ -446,70 +413,6 @@ struct winbindd_domain *find_domain_from_name(char *domain_name)
     return NULL;
 }
 
-/* Given a uid return the domain for which the uid falls in the uid range. */
-
-struct winbindd_domain *find_domain_from_uid(uid_t uid)
-{
-    struct winbindd_domain *tmp;
-
-    for(tmp = domain_list; tmp != NULL; tmp = tmp->next) {
-        if ((uid >= tmp->uid_low) && (uid <= tmp->uid_high)) {
-
-            /* Get domain info for this domain */
-
-            if (!tmp->got_domain_info && !get_domain_info(tmp)) {
-                return NULL;
-            }
-
-            return tmp;
-        }
-    }
-
-    return NULL;
-}
-
-/* Given a gid return the domain for which the gid falls in the gid range. */
-
-struct winbindd_domain *find_domain_from_gid(gid_t gid)
-{
-    struct winbindd_domain *tmp;
-
-    for(tmp = domain_list; tmp != NULL; tmp = tmp->next) {
-        if ((gid >= tmp->gid_low) && (gid <= tmp->gid_high)) {
-
-            /* Get domain info for this domain */
-
-            if (!tmp->got_domain_info && !get_domain_info(tmp)) {
-                return NULL;
-            }
-
-            return tmp;
-        }
-    }
-
-    return NULL;
-}
-
-struct winbindd_domain *find_domain_from_sid(DOM_SID *sid)
-{
-    struct winbindd_domain *tmp;
-
-    for(tmp = domain_list; tmp != NULL; tmp = tmp->next) {
-        if(sid_equal(sid, &tmp->sid)) {
-
-            /* Get domain info for this domain */
-
-            if (!tmp->got_domain_info && !get_domain_info(tmp)) {
-                return NULL;
-            }
-
-            return tmp;
-        }
-    }
-
-    return NULL;
-}
-
 /* Free state information held for {set,get,end}{pw,gr}ent() functions */
 
 void free_getent_state(struct getent_state *state)
@@ -539,66 +442,23 @@ void free_getent_state(struct getent_state *state)
 static BOOL parse_id_list(char *paramstr, BOOL is_user)
 {
     uid_t id_low, id_high = 0;
-    struct winbindd_domain *domain;
-    fstring domain_name;
-    fstring p;
 
-    while(next_token(&paramstr, p, LIST_SEP, sizeof(fstring) - 1)) {
+    /* Parse entry */
 
-        /* Parse domain entry */
-
-        if ((sscanf(p, "%[^/]/%u-%u", domain_name, &id_low, 
-                    &id_high) != 3) && 
-            (sscanf(p, "%[^/]/%u", domain_name, &id_low) != 2)) {
-
-            DEBUG(0, ("winbid %s parameter invalid\n", 
-                      is_user ? "uid" : "gid"));
-            return False;
-        }
-
-        /* Find domain record */
-        
-        if ((domain = find_domain_from_name(domain_name)) == NULL) {
-            
-            /* Create new domain record */
-            
-            if ((domain = (struct winbindd_domain *)malloc(sizeof(*domain)))
-                 == NULL) {
-                return False;
-            }
-
-            ZERO_STRUCTP(domain);
-            fstrcpy(domain->name, domain_name);
-
-            DLIST_ADD(domain_list, domain);
-        }
-
-        /* Store domain id info */
-            
-        if (is_user) {
-
-            /* Store user info */
-
-            domain->uid_low = id_low;
-
-            if (id_high == 0) {
-                domain->uid_high = -1;
-            } else {
-                domain->uid_high = id_high;
-            }
-
-        } else {
-
-            /* Store group info */
-
-            domain->gid_low = id_low;
-
-            if (id_high == 0) {
-                domain->gid_high = -1;
-            } else {
-                domain->gid_high = id_high;
-            }
-        }
+    if (sscanf(paramstr, "%u-%u", &id_low, &id_high) != 2) {
+        DEBUG(0, ("winbid %s parameter invalid\n", 
+                  is_user ? "uid" : "gid"));
+        return False;
+    }
+    
+    /* Store id info */
+    
+    if (is_user) {
+        server_state.uid_low = id_low;
+        server_state.uid_high = id_high;
+    } else {
+        server_state.gid_low = id_low;
+        server_state.gid_high = id_high;
     }
 
     return True;
@@ -608,72 +468,74 @@ static BOOL parse_id_list(char *paramstr, BOOL is_user)
 
 BOOL winbindd_param_init(void)
 {
+    struct winbindd_domain *domain;
+    uint32 enum_ctx = 0;
+    uint32 num_doms = 0;
+    char **domains = NULL;
+    DOM_SID **sids = NULL;
     BOOL result;
 
     /* Parse winbind uid and winbind_gid parameters */
 
-    result = parse_id_list(lp_winbind_uid(), True) &&
-        parse_id_list(lp_winbind_gid(), False);
+    if (!(parse_id_list(lp_winbind_uid(), True) &&
+          parse_id_list(lp_winbind_gid(), False))) {
+        return False;
+    }
 
-    /* Perform other sanity checks on results.  The only fields we have filled
-       in at the moment are name and [ug]id_{low,high} */
+    /* Check for reversed uid and gid ranges */
+        
+    if (server_state.uid_low > server_state.uid_high) {
+        DEBUG(0, ("uid range invalid\n"));
+        return False;
+    }
+    
+    if (server_state.gid_low > server_state.gid_high) {
+        DEBUG(0, ("gid range for invalid\n"));
+        return False;
+    }
+    
+    /* Initialise list of trusted domains */
+    
+    if ((domain = (struct winbindd_domain *)malloc(sizeof(*domain))) == NULL) {
+        return False;
+    }
 
-    if (result) {
-        struct winbindd_domain *temp, *temp2;
+    ZERO_STRUCTP(domain);
 
-        /* Check for duplicate domain names */
+    fstrcpy(domain->name, lp_workgroup());
+    fstrcpy(domain->controller, server_state.controller);
 
-        for (temp = domain_list; temp; temp = temp->next) {
+    DLIST_ADD(domain_list, domain);
 
-            /* Check for reversed uid and gid ranges */
+    fprintf(stderr, "added primary domain %s\n", domain->name);
+    
+    if (!open_lsa_handle(domain)) {
+        return False;
+    }
 
-            if (temp->uid_low > temp->uid_high) {
-                DEBUG(0, ("uid range for domain %s invalid\n", temp->name));
+    result = lsa_enum_trust_dom(&server_state.lsa_handle, &enum_ctx,
+                             &num_doms, &domains, &sids);
+
+    if (result && domains && sids) {
+        int i;
+
+        for(i = 0; i < num_doms; i++) {
+            if ((domain = (struct winbindd_domain *)
+                 malloc(sizeof(*domain))) == NULL) {
                 return False;
             }
 
-            if (temp->gid_low > temp->gid_high) {
-                DEBUG(0, ("gid range for domain %s invalid\n", temp->name));
-                return False;
-            }
+            ZERO_STRUCTP(domain);
+            fstrcpy(domain->name, domains[i]);
+            DLIST_ADD(domain_list, domain);
 
-            for (temp2 = domain_list; temp2; temp2 = temp2->next) {
-                if (temp != temp2) {
-                    
-                    /* Check for duplicate domain names */
-                    
-                    if ((temp != temp2) && strequal(temp->name, temp2->name)) {
-                        DEBUG(0, ("found duplicate domain %s in winbind "
-                                  "domain list\n", temp->name));
-                        return False;
-                    }
-
-                    /* Check for overlapping uid ranges */
-
-                    if (((temp->uid_low >= temp2->uid_low) &&
-                         (temp->uid_low <= temp2->uid_high)) ||
-                        ((temp->uid_high >= temp2->uid_low) &&
-                         (temp->uid_high <= temp2->uid_high))) {
-                        
-                        DEBUG(0, ("uid ranges for domains %s and %s overlap\n",
-                                  temp->name, temp2->name));
-                        return False;
-                    }
-
-                    /* Check for overlapping gid ranges */
-
-                    if (((temp->gid_low >= temp2->gid_low) &&
-                         (temp->gid_low <= temp2->gid_high)) ||
-                        ((temp->gid_high >= temp2->gid_low) &&
-                         (temp->gid_high <= temp2->gid_high))) {
-
-                        DEBUG(0, ("gid ranges for domains %s and %s overlap\n",
-                                 temp->name, temp2->name));
-                        return False;
-                    }                    
-                }
-            }
+            fprintf(stderr, "added trusted domain %s\n", domains[i]);
         }
+
+        /* Free memory */
+
+        free_char_array(num_doms, domains);
+        free_sid_array(num_doms, sids);
     }
 
     return result;
