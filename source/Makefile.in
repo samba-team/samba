@@ -92,7 +92,7 @@ WINBIND_PAM_PROGS = @WINBIND_PAM_TARGETS@
 WINBIND_LPROGS = @WINBIND_LTARGETS@
 
 SPROGS = bin/smbd bin/nmbd bin/swat bin/wrepld @WINBIND_STARGETS@
-PROGS1 = bin/smbclient bin/net bin/smbspool bin/testparm bin/testprns bin/smbstatus bin/smbcontrol bin/smbtree @RUNPROG@ @WINBIND_TARGETS@
+PROGS1 = bin/smbclient bin/net bin/smbspool bin/testparm bin/testprns bin/smbstatus bin/smbcontrol bin/smbtree bin/tdbbackup @RUNPROG@ @WINBIND_TARGETS@
 PROGS2 = bin/smbpasswd bin/rpcclient bin/smbcacls @WRAP@ @WRAP32@ @PAM_MOD@
 MPROGS = @MPROGS@
 LPROGS = $(WINBIND_PAM_PROGS) $(WINBIND_LPROGS)
