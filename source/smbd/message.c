@@ -31,9 +31,9 @@ extern int DEBUGLEVEL;
 
 
 static char msgbuf[1600];
-static int msgpos=0;
-static fstring msgfrom="";
-static fstring msgto="";
+static int msgpos;
+static fstring msgfrom;
+static fstring msgto;
 
 /****************************************************************************
 deliver the message
@@ -107,8 +107,10 @@ int reply_sends(connection_struct *conn,
 		char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
   int len;
-  char *orig,*dest,*msg;
+  char *msg;
   int outsize = 0;
+  char *p;
+
   START_PROFILE(SMBsends);
 
   msgpos = 0;
@@ -120,12 +122,11 @@ int reply_sends(connection_struct *conn,
 
   outsize = set_message(outbuf,0,0,True);
 
-  orig = smb_buf(inbuf)+1;
-  dest = skip_string(orig,1)+1;
-  msg = skip_string(dest,1)+1;
+  p = smb_buf(inbuf)+1;
+  p += srvstr_pull(inbuf, msgfrom, p, sizeof(msgfrom), -1, STR_TERMINATE|STR_CONVERT) + 1;
+  p += srvstr_pull(inbuf, msgto, p, sizeof(msgto), -1, STR_TERMINATE|STR_CONVERT) + 1;
 
-  fstrcpy(msgfrom,orig);
-  fstrcpy(msgto,dest);
+  msg = p;
 
   len = SVAL(msg,0);
   len = MIN(len,sizeof(msgbuf)-msgpos);
@@ -134,8 +135,6 @@ int reply_sends(connection_struct *conn,
 
   memcpy(&msgbuf[msgpos],msg+2,len);
   msgpos += len;
-
-  DEBUG( 3, ( "SMBsends (from %s to %s)\n", orig, dest ) );
 
   msg_deliver();
 
@@ -150,8 +149,9 @@ int reply_sends(connection_struct *conn,
 int reply_sendstrt(connection_struct *conn,
 		   char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
-  char *orig,*dest;
   int outsize = 0;
+  char *p;
+
   START_PROFILE(SMBsendstrt);
 
   if (! (*lp_msg_command())) {
@@ -164,11 +164,9 @@ int reply_sendstrt(connection_struct *conn,
   memset(msgbuf,'\0',sizeof(msgbuf));
   msgpos = 0;
 
-  orig = smb_buf(inbuf)+1;
-  dest = skip_string(orig,1)+1;
-
-  fstrcpy(msgfrom,orig);
-  fstrcpy(msgto,dest);
+  p = smb_buf(inbuf)+1;
+  p += srvstr_pull(inbuf, msgfrom, p, sizeof(msgfrom), -1, STR_TERMINATE|STR_CONVERT) + 1;
+  p += srvstr_pull(inbuf, msgto, p, sizeof(msgto), -1, STR_TERMINATE|STR_CONVERT) + 1;
 
   DEBUG( 3, ( "SMBsendstrt (from %s to %s)\n", msgfrom, msgto ) );
 
