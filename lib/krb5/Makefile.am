@@ -37,6 +37,7 @@ libkrb5_la_SOURCES = \
 	creds.c \
 	crypto.c \
 	data.c \
+	expand_hostname.c \
 	fcache.c \
 	free.c \
 	free_host_realm.c \
