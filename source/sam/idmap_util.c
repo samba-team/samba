@@ -133,7 +133,7 @@ NTSTATUS uid_to_sid(DOM_SID *sid, uid_t uid)
 
 	id.uid = uid;
 	if (NT_STATUS_IS_ERR(ret = idmap_get_sid_from_id(sid, id, flags))) {
-		DEBUG(10, ("uid_to_sid: Failed to map uid = [%s]\n", (unsigned int)uid));
+		DEBUG(10, ("uid_to_sid: Failed to map uid = [%u]\n", (unsigned int)uid));
 		if (flags & ID_NOMAP) {
 			sid_copy(sid, get_global_sam_sid());
 			sid_append_rid(sid, fallback_pdb_uid_to_user_rid(uid));

@@ -291,8 +291,7 @@ NTSTATUS pdb_init_sam_new(SAM_ACCOUNT **new_sam_acct, const char *username)
 			return nt_status;
 		}
 
-		/* this is a hack this thing should not be set
-		   here --SSS */
+		pdb_set_domain (*new_sam_acct, lp_workgroup(), PDB_DEFAULT);
 
 		/* set Domain Users by default ! */
 		sid_copy(&g_sid, get_global_sam_sid());
