@@ -402,7 +402,7 @@ BOOL smb_password_ok(struct smb_passwd *smb_pass, uchar chal[8],
 		/* We have the NT MD4 hash challenge available - see if we can
 		   use it (ie. does it exist in the smbpasswd file).
 		*/
-		if (lp_server_ntlmv2())
+		if (lp_server_ntlmv2() != False && nt_pwd_len > 24)
 		{
 			DEBUG(4,("smb_password_ok: Check NTLMv2 password\n"));
 			if (smb_pwd_check_ntlmv2(nt_pass, nt_pwd_len,
