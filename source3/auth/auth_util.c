@@ -627,8 +627,10 @@ static NTSTATUS get_user_groups_from_local_sam(const DOM_SID *user_sid,
 	*groups   = NULL;
 	
 	if (!sid_to_uid(user_sid,  &uid, &snu)) {
-		DEBUG(2, ("get_user_groups_from_local_sam: Failed to convert user SID %s to a uid!\n", sid_to_string(str, user_sid)));
-		return NT_STATUS_NO_SUCH_USER;
+		DEBUG(2, ("get_user_groups_from_local_sam: Failed to convert user SID %s to a uid!\n", 
+			  sid_to_string(str, user_sid)));
+		/* This might be a non-unix account */
+		return NT_STATUS_OK;
 	}
 
 	usr = getpwuid_alloc(uid);
