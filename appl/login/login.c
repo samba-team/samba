@@ -431,7 +431,7 @@ checknologin(void)
 static void
 do_login(const struct passwd *pwd, char *tty, char *ttyn)
 {
-#ifdef HAVE_SHADOW_H 
+#ifdef HAVE_GETSPNAM
     struct spwd *sp;
 #endif
     int rootlogin = (pwd->pw_uid == 0);
@@ -442,7 +442,7 @@ do_login(const struct passwd *pwd, char *tty, char *ttyn)
     if(!rootlogin)
 	checknologin();
     
-#ifdef HAVE_SHADOW_H
+#ifdef HAVE_GETSPNAM
     sp = getspnam(pwd->pw_name);
 #endif
 
@@ -493,7 +493,7 @@ do_login(const struct passwd *pwd, char *tty, char *ttyn)
     }
     /* all kinds of different magic */
 
-#ifdef HAVE_SHADOW_H
+#ifdef HAVE_GETSPNAM
     check_shadow(pwd, sp);
 #endif
 
