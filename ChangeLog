@@ -1,4 +1,10 @@
+Mon Sep  1 17:42:14 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* lib/krb5/data.c: don't return ENOMEM if len == 0
+
 Sun Aug 31 17:15:49 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* lib/hdb/hdb.asn1: Include salt type in salt.
 
 	* kdc/hprop.h: Change port to 754.
 
