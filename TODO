@@ -4,6 +4,10 @@ $Id$
 
 - admin
 
+* add password changing protocol
+
+* add some kind of remote admin protocol
+
 - appl
 
 * more programs here
