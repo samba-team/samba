@@ -575,6 +575,7 @@ struct cli_state *setup_connection(struct cli_state *cli, char *system_name,
 
 	/* Establish a SMB connection */
 	if (!resolve_srv_name(system_name, dest_host, &dest_ip)) {
+                fprintf(stderr, "Could not resolve %s\n", dest_host);
 		return NULL;
 	}
 
@@ -583,6 +584,7 @@ struct cli_state *setup_connection(struct cli_state *cli, char *system_name,
 
 	if (!cli_establish_connection(cli, dest_host, &dest_ip, &calling, 
 				      &called, "IPC$", "IPC", False, True)) {
+                fprintf(stderr, "Error establishing IPC$ connection\n");
 		return NULL;
 	}
 	
