@@ -309,6 +309,8 @@ struct nbt_name_socket *nbt_name_socket_init(TALLOC_CTX *mem_ctx,
 	status = socket_create("ip", SOCKET_TYPE_DGRAM, &nbtsock->sock, 0);
 	if (!NT_STATUS_IS_OK(status)) goto failed;
 
+	socket_set_option(nbtsock->sock, "SO_BROADCAST", "1");
+
 	talloc_steal(nbtsock, nbtsock->sock);
 
 	nbtsock->idr = idr_init(nbtsock);
@@ -387,10 +389,6 @@ struct nbt_name_request *nbt_name_request_send(struct nbt_name_socket *nbtsock,
 	if (!NT_STATUS_IS_OK(status)) goto failed;
 
 	DLIST_ADD_END(nbtsock->send_queue, req, struct nbt_name_request *);
-
-	if (request->operation & NBT_FLAG_BROADCAST) {
-		socket_set_option(nbtsock->sock, "SO_BROADCAST", "1");
-	}
 
 	if (DEBUGLVL(10)) {
 		DEBUG(10,("Queueing nbt packet to %s:%d\n", 
