@@ -220,6 +220,8 @@ static BOOL test_SetPassword(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		printf("Credential chaining failed\n");
 	}
 
+	/* by changing the machine password twice we test the credentials
+	   chaining fully */
 	printf("Testing a second ServerPasswordSet on machine account\n");
 
 	creds_client_authenticator(&creds, &r.in.credential);
@@ -227,6 +229,44 @@ static BOOL test_SetPassword(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	status = dcerpc_netr_ServerPasswordSet(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("ServerPasswordSet - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	if (!creds_client_check(&creds, &r.out.return_authenticator.cred)) {
+		printf("Credential chaining failed\n");
+	}
+
+	return True;
+}
+
+
+/*
+  try a netlogon DatabaseSync
+*/
+static BOOL test_DatabaseSync(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+{
+	NTSTATUS status;
+	struct netr_DatabaseSync r;
+	struct netr_CredentialState creds;
+
+	if (!test_SetupCredentials(p, mem_ctx, &creds)) {
+		return False;
+	}
+
+	creds_client_authenticator(&creds, &r.in.credential);
+	ZERO_STRUCT(r.in.return_authenticator);
+
+	r.in.logonserver = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.computername = lp_netbios_name();
+	r.in.database_id = 1;
+	r.in.sync_context = 1;
+	r.in.preferredmaximumlength = (uint32)-1;
+
+	printf("Testing DatabaseSync\n");
+
+	status = dcerpc_netr_DatabaseSync(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("DatabaseSync - %s\n", nt_errstr(status));
 		return False;
 	}
 
@@ -270,6 +310,10 @@ BOOL torture_rpc_netlogon(int dummy)
 	}
 
 	if (!test_SamLogon(p, mem_ctx)) {
+		ret = False;
+	}
+
+	if (!test_DatabaseSync(p, mem_ctx)) {
 		ret = False;
 	}
 

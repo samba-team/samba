@@ -63,3 +63,6 @@
   this is used to control formatting of uint8 arrays
 */
 #define NDR_PAHEX LIBNDR_PRINT_ARRAY_HEX
+
+
+#define bool8 uint8

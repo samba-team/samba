@@ -116,28 +116,26 @@ sub HeaderEnum($$)
 
 
 #####################################################################
-# parse a union element
-sub HeaderUnionElement($)
-{
-    my($element) = shift;
-    $res .= "/* [case($element->{CASE})] */ ";
-    if ($element->{TYPE} eq "UNION_ELEMENT") {
-	    HeaderElement($element->{DATA});
-    }
-}
-
-#####################################################################
 # parse a union
 sub HeaderUnion($$)
 {
-    my($union) = shift;
-    my($name) = shift;
-    (defined $union->{PROPERTIES}) && HeaderProperties($union->{PROPERTIES});
-    $res .= "\nunion $name {\n";
-    foreach my $e (@{$union->{DATA}}) {
-	HeaderUnionElement($e);
-    }
-    $res .= "}";
+	my($union) = shift;
+	my($name) = shift;
+	my %done = ();
+
+	(defined $union->{PROPERTIES}) && HeaderProperties($union->{PROPERTIES});
+	$res .= "\nunion $name {\n";
+	$tab_depth++;
+	foreach my $e (@{$union->{DATA}}) {
+		if ($e->{TYPE} eq "UNION_ELEMENT") {
+			if (! defined $done{$e->{DATA}->{NAME}}) {
+				HeaderElement($e->{DATA});
+			}
+			$done{$e->{DATA}->{NAME}} = 1;
+		}
+	}
+	$tab_depth--;
+	$res .= "}";
 }
 
 #####################################################################

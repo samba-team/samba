@@ -13,12 +13,6 @@
   pointer_default(unique)
 ] interface samr
 {
-	/* a 4 byte aligned 64-bit integer */
-	typedef [public] struct {
-		uint32 low;
-		uint32 high;
-	} ULONG8;
-
 	/******************/
 	/* Function: 0x00 */
 	NTSTATUS samr_Connect (
@@ -491,16 +485,14 @@
 		NTTIME last_pwd_change;
 		NTTIME allow_pwd_change;
 		NTTIME force_pwd_change;
-		uint32 units_per_week;
-		[size_is(1260), length_is(units_per_week/8)] uint8 *logon_hours;
+		samr_LogonHours logon_hours;
 		uint16 bad_pwd_count;
 		uint16 num_logons;
 		uint32 acct_flags;
 	} samr_UserInfo3;
 
 	typedef struct {
-		uint32 units_per_week;
-		[size_is(1260), length_is(units_per_week/8)] uint8 *logon_hours;
+		samr_LogonHours logon_hours;
 	} samr_UserInfo4;
 
 	typedef struct {
@@ -516,8 +508,7 @@
 		samr_Name workstations;
 		NTTIME last_logon;
 		NTTIME last_logoff;
-		uint32 units_per_week;
-		[size_is(1260), length_is(units_per_week/8)] uint8 *logon_hours;
+		samr_LogonHours logon_hours;
 		uint16 bad_pwd_count;
 		uint16 num_logons;
 		NTTIME last_pwd_change;
@@ -601,8 +592,7 @@
 		uint32 primary_gid;
 		uint32 acct_flags;
 		uint32 fields_present;
-		uint32 units_per_week;
-		[size_is(1260), length_is(units_per_week/8)] uint8 *logon_hours;
+		samr_LogonHours logon_hours;
 		uint16 bad_pwd_count;
 		uint16 num_logons;
 		uint16 country_code;

@@ -280,7 +280,6 @@ interface netlogon
 		[out] netr_Authenticator return_authenticator
 		);
 
-#if 0
 
 	/*****************/
 	/* Function 0x07 */
@@ -298,7 +297,7 @@ interface netlogon
 	} DELTA_DELETE_USER;
 
 	typedef struct {
-		bool SensitiveDataFlag;
+		bool8  SensitiveDataFlag;
 		uint32 DataLength;
 		[size_is(DataLength)] uint8 *SensitiveData;
 	} USER_PRIVATE_INFO;
@@ -315,24 +314,24 @@ interface netlogon
 		netr_String workstations;
 		NTTIME LastLogon;
 		NTTIME LastLogoff;
-		LOGON_HOURS logonhours;
+		samr_LogonHours logon_hours;
 		uint16 BadPwCount;
 		uint16 LogonCount;
 		NTTIME PwLastSet;
 		NTTIME AccountExpires;
 		uint32 AccountControl;
-		LM_OWF_PASSWORD lmpw;
-		NT_OWF_PASSWORD ntpw;
-		bool NTPwPresent;
-		bool LMPwPresent;
-		bool PwExpired;
+		netr_Password lmpw;
+		netr_Password ntpw;
+		bool8 NTPwPresent;
+		bool8 LMPwPresent;
+		bool8 PwExpired;
 		netr_String UserComment;
 		netr_String Parameters;
 		uint16 CountryCode;
 		uint16 CodePage;
 		USER_PRIVATE_INFO user_private_info;
 		uint32 SecurityInformation;
-		LSA_SECURITY_DESCRIPTOR sec_desc;
+		security_descriptor sec_desc;
 		netr_String unknown1;
 		netr_String unknown2;
 		netr_String unknown3;
@@ -354,7 +353,7 @@ interface netlogon
 		NTTIME domain_modify_time;
 		NTTIME domain_create_time;
 		uint32 SecurityInformation;
-		LSA_SECURITY_DESCRIPTOR sec_desc;
+		security_descriptor sec_desc;
 		netr_String unknown1;
 		netr_String unknown2;
 		netr_String unknown3;
@@ -367,10 +366,10 @@ interface netlogon
 
 	typedef struct {
 		netr_String groupname;
-		GROUP_MEMBERSHIP group_membership;
+		netr_GroupMembership group_membership;
 		netr_String comment;
 		uint32 SecurityInformation;
-		LSA_SECURITY_DESCRIPTOR sec_desc;
+		security_descriptor sec_desc;
 		netr_String unknown1;
 		netr_String unknown2;
 		netr_String unknown3;
@@ -408,7 +407,7 @@ interface netlogon
 		netr_String alias_name;
 		uint32 rid;
 		uint32 SecurityInformation;
-		LSA_SECURITY_DESCRIPTOR sec_desc;
+		security_descriptor sec_desc;
 		netr_String unknown1;
 		netr_String unknown2;
 		netr_String unknown3;
@@ -420,7 +419,12 @@ interface netlogon
 	} DELTA_ALIAS;
 
 	typedef struct {
-		 SID_ARRAY sids;
+		uint32 count;
+		[size_is(count)] dom_sid2 *sids;
+	} netr_SidArray;
+
+	typedef struct {
+		netr_SidArray sids;
 		uint32 unknown1;
 		uint32 unknown2;
 		uint32 unknown3;
@@ -439,16 +443,16 @@ interface netlogon
 	typedef struct {
 		uint32 maxlogsize;
 		NTTIME auditretentionperiod;
-		bool auditingmode;
+		bool8 auditingmode;
 		uint32 maxauditeventcount;
 		[size_is(maxauditeventcount)] uint32 *eventauditoptions;
 		netr_String primarydomainname;
-		 dom_sid2 *sid;
+		dom_sid2 *sid;
 		QUOTA_LIMITS quota_limits;
 		NTTIME db_modify_time;
 		NTTIME db_create_time;
 		uint32 SecurityInformation;
-		LSA_SECURITY_DESCRIPTOR sec_desc;
+		security_descriptor sec_desc;
 		netr_String unknown1;
 		netr_String unknown2;
 		netr_String unknown3;
@@ -464,7 +468,7 @@ interface netlogon
 		uint32 num_controllers;
 		[size_is(num_controllers)] netr_String *controller_names;
 		uint32 SecurityInformation;
-		LSA_SECURITY_DESCRIPTOR sec_desc;
+		security_descriptor sec_desc;
 		netr_String unknown1;
 		netr_String unknown2;
 		netr_String unknown3;
@@ -476,13 +480,13 @@ interface netlogon
 	} DELTA_TRUSTED_DOMAINS;
 
 	typedef struct {
-		uint32 privilegeentries;
-		uint32 provolegecontrol;
+		uint32 privilege_entries;
+		uint32 privilege_control;
 		[size_is(privilege_entries)] uint32 *privilege_attrib;
 		[size_is(privilege_entries)] netr_String *privilege_name;
-		QUOTALIMITS quotalimits;
+		QUOTA_LIMITS quotalimits;
 		uint32 SecurityInformation;
-		LSA_SECURITY_DESCRIPTOR sec_desc;
+		security_descriptor sec_desc;
 		netr_String unknown1;
 		netr_String unknown2;
 		netr_String unknown3;
@@ -505,7 +509,7 @@ interface netlogon
 		CIPHER_VALUE old_cipher;
 		NTTIME old_cipher_set_time;
 		uint32 SecurityInformation;
-		LSA_SECURITY_DESCRIPTOR sec_desc;
+		security_descriptor sec_desc;
 		netr_String unknown1;
 		netr_String unknown2;
 		netr_String unknown3;
@@ -516,20 +520,15 @@ interface netlogon
 		uint32 unknown8;
 	} DELTA_SECRET;
 
-	typedef struct {
-		uint32 low_value;
-		uint32 high_value;
-	} xxx;
-
-	typedef [switch_type(short)] union {
+	typedef union {
 		[case(1)] DELTA_DOMAIN *domain;
 		[case(2)] DELTA_GROUP *group;
-		[case(4)] DELTA_RENAME_GROUP *rename_group;
+		[case(4)] DELTA_RENAME *rename_group;
 		[case(5)] DELTA_USER *user;
-		[case(7)] DELTA_RENAME_USER *rename_user;
+		[case(7)] DELTA_RENAME *rename_user;
 		[case(8)] DELTA_GROUP_MEMBER *group_member;
 		[case(9)] DELTA_ALIAS *alias;
-		[case(11)] DELTA_RENAME_ALIAS *rename_alias;
+		[case(11)] DELTA_RENAME *rename_alias;
 		[case(12)] DELTA_ALIAS_MEMBER *alias_member;
 		[case(13)] DELTA_POLICY *policy;
 		[case(14)] DELTA_TRUSTED_DOMAINS *trusted_domains;
@@ -537,10 +536,10 @@ interface netlogon
 		[case(18)] DELTA_SECRET *secret;
 		[case(20)] DELTA_DELETE_USER *delete_group;
 		[case(21)] DELTA_DELETE_USER *delete_user;
-		[case(22)] MODIFIED_COUNT *modified_count;
+		[case(22)] HYPER_T *modified_count;
 	} DELTA_UNION;
 
-	typedef [switch_type(short)] union {
+	typedef union {
 		[case(1)] uint32 rid;
 		[case(2)] uint32 rid;
 		[case(3)] uint32 rid;
@@ -566,8 +565,8 @@ interface netlogon
 
 	typedef struct {
 		uint16 delta_type;
-		DELTA_ID_UNION delta_id_union;
-		DELTA_UNION delta_union;
+		[switch_is(delta_type)] DELTA_ID_UNION delta_id_union;
+		[switch_is(delta_type)] DELTA_UNION delta_union;
 	} DELTA_ENUM;
 
 	typedef struct {
@@ -576,31 +575,34 @@ interface netlogon
 	} DELTA_ENUM_ARRAY;
 
 
-	WERROR netr_DatabaseDeltas(
-		[in][string][ref] wchar_t *logonserver, # REF!!!
-		[in][string][ref] wchar_t *computername,
-		[in][ref] AUTHENTICATOR credential,
-		[in][out][ref] AUTHENTICATOR return_authenticator,
-		[in] uint32 database_id,
-		[in][out][ref] MODIFIED_COUNT domain_modify_count,
-		[in] uint32 preferredmaximumlength,
-		[out] DELTA_ENUM_ARRAY *delta_enum_array
+	NTSTATUS netr_DatabaseDeltas(
+		[in]      unistr logonserver,
+		[in]      unistr computername,
+		[in]      netr_Authenticator credential,
+		[in,out]  netr_Authenticator return_authenticator,
+		[in]      uint32 database_id,
+		[in,out]  HYPER_T domain_modify_count,
+		[in]      uint32 preferredmaximumlength,
+		[out]     DELTA_ENUM_ARRAY *delta_enum_array
 		);
 
 
 	/*****************/
 	/* Function 0x08 */
 
-	WERROR netr_DatabaseSync(
-		[in][string][ref] wchar_t *logonserver, # REF!!!
-		[in][string][ref] wchar_t *computername,
-		[in][ref] AUTHENTICATOR credential,
-		[in][out][ref] AUTHENTICATOR return_authenticator,
-		[in] uint32 database_id,
-		[in][out][ref] uint32 sync_context,
-		[in] uint32 preferredmaximumlength,
-		[out] DELTA_ENUM_ARRAY *delta_enum_array
+	NTSTATUS netr_DatabaseSync(
+		[in]     unistr logonserver,
+		[in]     unistr computername,
+		[in]     netr_Authenticator credential,
+		[in,out] netr_Authenticator return_authenticator,
+		[in]     uint32 database_id,
+		[in,out] uint32 sync_context,
+		[in]     uint32 preferredmaximumlength,
+		[out]    DELTA_ENUM_ARRAY *delta_enum_array
 		);
+
+#if 0
+
 
 
 	/*****************/
@@ -612,7 +614,7 @@ interface netlogon
 		uint32 serial_number;
 	} UAS_INFO_0;
 
-	WERROR netr_AccountDeltas(
+	NTSTATUS netr_AccountDeltas(
 		[in][string] wchar_t *logonserver,
 		[in][string][ref] wchar_t *computername,
 		[in][ref] AUTHENTICATOR credential,
@@ -630,7 +632,7 @@ interface netlogon
 	/*****************/
 	/* Function 0x0A */
 
-	WERROR netr_AccountSync(
+	NTSTATUS netr_AccountSync(
 		[in][string] wchar_t *logonserver,
 		[in][string][ref] wchar_t *computername,
 		[in][ref] AUTHENTICATOR credential,
@@ -649,7 +651,7 @@ interface netlogon
 	/*****************/
 	/* Function 0x0B */
 
-	WERROR netr_GetDcName(
+	NTSTATUS netr_GetDcName(
 		[in] unistr logon_server,
 		[in] unistr *domainname,
 		[out]unistr *dcname,
@@ -687,7 +689,7 @@ interface netlogon
 	/*****************/
 	/* Function 0x0C */
 
-	WERROR netr_LogonControl(
+	NTSTATUS netr_LogonControl(
 		[in][string] wchar_t *logonserver,
 		[in] uint32 function_code,
 		[in] uint32 level,
@@ -698,7 +700,7 @@ interface netlogon
 	/*****************/
 	/* Function 0x0D */
 
-	WERROR netr_GetAnyDCName(
+	NTSTATUS netr_GetAnyDCName(
 		[in] unistr *logon_server,
 		[in] unistr *domainname,
 		[out]unistr *dcname,
@@ -715,7 +717,7 @@ interface netlogon
 	/*****************/
 	/* Function 0x0E */
 
-	WERROR netr_LogonControl2(
+	NTSTATUS netr_LogonControl2(
 		[in][string] wchar_t *logonserver,
 		[in] uint32 function_code,
 		[in] uint32 level,
@@ -727,7 +729,7 @@ interface netlogon
 	/*****************/
 	/* Function 0x0F */
 
-	WERROR netr_ServerAuthenticate2(
+	NTSTATUS netr_ServerAuthenticate2(
 		[in][string] wchar_t *logonserver,
 		[in] unistr username,
 		[in] uint16 secure_channel_type,
@@ -741,7 +743,7 @@ interface netlogon
 	/*****************/
 	/* Function 0x10 */
 
-	WERROR netr_DatabaseSync2(
+	NTSTATUS netr_DatabaseSync2(
 		[in][string][ref] wchar_t *logonserver, # REF!!!
 		[in][string][ref] wchar_t *computername,
 		[in][ref] AUTHENTICATOR credential,
@@ -757,7 +759,7 @@ interface netlogon
 	/*****************/
 	/* Function 0x11 */
 
-	WERROR netr_DatabaseRedo(
+	NTSTATUS netr_DatabaseRedo(
 		[in][string][ref] wchar_t *logonserver, # REF!!!
 		[in][string][ref] wchar_t *computername,
 		[in][ref] AUTHENTICATOR credential,
@@ -771,7 +773,7 @@ interface netlogon
 	/*****************/
 	/* Function 0x12 */
 
-	WERROR netr_LogonControl2Ex(
+	NTSTATUS netr_LogonControl2Ex(
 		[in][string] wchar_t *logonserver,
 		[in] uint32 function_code,
 		[in] uint32 level,

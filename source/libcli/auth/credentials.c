@@ -23,8 +23,7 @@
 #include "includes.h"
 
 /*
-  initialise the credentials state and return the initial credentials
-  to be sent as part of a netr_ServerAuthenticate*() call.
+  initialise the credentials state 
 
   this call is made after the netr_ServerReqChallenge call
 */
@@ -60,7 +59,8 @@ static void creds_init(struct netr_CredentialState *creds,
 
 
 /*
-  step the credentials to the next element in the chain
+  step the credentials to the next element in the chain, updating the
+  current client and server credentials and the seed
 */
 static void creds_step(struct netr_CredentialState *creds)
 {
@@ -95,6 +95,12 @@ static void creds_step(struct netr_CredentialState *creds)
 	creds->seed = time_cred;
 }
 
+
+
+/*****************************************************************
+The above functions are common to the client and server interface
+next comes the client specific functions
+******************************************************************/
 
 /*
   initialise the credentials chain and return the first client
