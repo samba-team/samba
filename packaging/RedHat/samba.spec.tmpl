@@ -182,10 +182,12 @@ find $RPM_BUILD_ROOT -name "*.old" -exec rm -f {} \;
 rm -rf $RPM_BUILD_ROOT
 
 %post
-/sbin/chkconfig --add smb
-/sbin/chkconfig --add winbind
-/sbin/chkconfig smb off
-/sbin/chkconfig winbind off
+if [ "$1" -eq "1" ]; then
+	/sbin/chkconfig --add smb
+	/sbin/chkconfig --add winbind
+	/sbin/chkconfig smb off
+	/sbin/chkconfig winbind off
+fi
 
 echo "Looking for old /etc/smb.conf..."
 if [ -f /etc/smb.conf -a ! -f /etc/samba/smb.conf ]; then

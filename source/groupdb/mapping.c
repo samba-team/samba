@@ -719,37 +719,50 @@ int smb_create_group(char *unix_group, gid_t *new_gid)
 	int ret;
 	int fd = 0;
 
-	pstrcpy(add_script, lp_addgroup_script());
-	if (! *add_script) return -1;
-	pstring_sub(add_script, "%g", unix_group);
-	ret = smbrun(add_script, (new_gid!=NULL) ? &fd : NULL);
-	DEBUG(3,("smb_create_group: Running the command `%s' gave %d\n",add_script,ret));
-	if (ret != 0)
-		return ret;
+	/* defer to scripts */
+	
+	if ( *lp_addgroup_script() ) {
+		pstrcpy(add_script, lp_addgroup_script());
+		pstring_sub(add_script, "%g", unix_group);
+		ret = smbrun(add_script, (new_gid!=NULL) ? &fd : NULL);
+		DEBUG(3,("smb_create_group: Running the command `%s' gave %d\n",add_script,ret));
+		if (ret != 0)
+			return ret;
+			
+		if (fd != 0) {
+			fstring output;
 
-	if (fd != 0) {
-		fstring output;
+			*new_gid = 0;
+			if (read(fd, output, sizeof(output)) > 0) {
+				*new_gid = (gid_t)strtoul(output, NULL, 10);
+			}
+			close(fd);
 
-		*new_gid = 0;
-		if (read(fd, output, sizeof(output)) > 0) {
-			*new_gid = (gid_t)strtoul(output, NULL, 10);
+			if (*new_gid == 0) {
+				/* The output was garbage. We assume nobody
+	       	                    will create group 0 via smbd. Now we try to
+	                           get the group via getgrnam. */
+
+				struct group *grp = getgrnam(unix_group);
+				if (grp != NULL)
+					*new_gid = grp->gr_gid;
+				else
+					return 1;
+			}
 		}
-		close(fd);
-
-		if (*new_gid == 0) {
-			/* The output was garbage. We assume nobody
-                           will create group 0 via smbd. Now we try to
-                           get the group via getgrnam. */
-
-			struct group *grp = getgrnam(unix_group);
-			if (grp != NULL)
-				*new_gid = grp->gr_gid;
-			else
-				return 1;
-		}
+		
+		return 0;
 	}
 
-	return ret;
+	/* Try winbindd */
+
+	if ( winbind_create_group( unix_group ) ) {
+		DEBUG(3,("smb_create_group: winbindd created the group (%s)\n",
+			unix_group));
+		return 0;
+	}
+			
+	return -1;	
 }
 
 /****************************************************************************
@@ -761,12 +774,25 @@ int smb_delete_group(char *unix_group)
 	pstring del_script;
 	int ret;
 
-	pstrcpy(del_script, lp_delgroup_script());
-	if (! *del_script) return -1;
-	pstring_sub(del_script, "%g", unix_group);
-	ret = smbrun(del_script,NULL);
-	DEBUG(3,("smb_delete_group: Running the command `%s' gave %d\n",del_script,ret));
-	return ret;
+	/* defer to scripts */
+	
+	if ( *lp_delgroup_script() ) {
+		pstrcpy(del_script, lp_delgroup_script());
+		pstring_sub(del_script, "%g", unix_group);
+		ret = smbrun(del_script,NULL);
+		DEBUG(3,("smb_delete_group: Running the command `%s' gave %d\n",del_script,ret));
+		return ret;
+	}
+#if 0	
+	if ( winbind_delete_group( unix_group ) ) {
+		DEBUG(3,("smb_delete_group: winbindd deleted the group (%s)\n",
+			unix_group));
+		return 0;
+	}
+		
+#endif
+		
+	return -1;
 }
 
 /****************************************************************************
@@ -777,14 +803,27 @@ int smb_set_primary_group(const char *unix_group, const char* unix_user)
 	pstring add_script;
 	int ret;
 
-	pstrcpy(add_script, lp_setprimarygroup_script());
-	if (! *add_script) return -1;
-	all_string_sub(add_script, "%g", unix_group, sizeof(add_script));
-	all_string_sub(add_script, "%u", unix_user, sizeof(add_script));
-	ret = smbrun(add_script,NULL);
-	DEBUG(3,("smb_set_primary_group: "
-		 "Running the command `%s' gave %d\n",add_script,ret));
-	return ret;
+	/* defer to scripts */
+	
+	if ( *lp_setprimarygroup_script() ) {
+		pstrcpy(add_script, lp_setprimarygroup_script());
+		all_string_sub(add_script, "%g", unix_group, sizeof(add_script));
+		all_string_sub(add_script, "%u", unix_user, sizeof(add_script));
+		ret = smbrun(add_script,NULL);
+		DEBUG(3,("smb_set_primary_group: "
+			 "Running the command `%s' gave %d\n",add_script,ret));
+		return ret;
+	}
+
+	/* Try winbindd */
+	
+	if ( winbind_set_user_primary_group( unix_user, unix_group ) ) {
+		DEBUG(3,("smb_delete_group: winbindd set the group (%s) as the primary group for user (%s)\n",
+			unix_group, unix_user));
+		return 0;
+	}		
+	
+	return -1;
 }
 
 /****************************************************************************
@@ -796,13 +835,26 @@ int smb_add_user_group(char *unix_group, char *unix_user)
 	pstring add_script;
 	int ret;
 
-	pstrcpy(add_script, lp_addusertogroup_script());
-	if (! *add_script) return -1;
-	pstring_sub(add_script, "%g", unix_group);
-	pstring_sub(add_script, "%u", unix_user);
-	ret = smbrun(add_script,NULL);
-	DEBUG(3,("smb_add_user_group: Running the command `%s' gave %d\n",add_script,ret));
-	return ret;
+	/* defer to scripts */
+	
+	if ( *lp_addusertogroup_script() ) {
+		pstrcpy(add_script, lp_addusertogroup_script());
+		pstring_sub(add_script, "%g", unix_group);
+		pstring_sub(add_script, "%u", unix_user);
+		ret = smbrun(add_script,NULL);
+		DEBUG(3,("smb_add_user_group: Running the command `%s' gave %d\n",add_script,ret));
+		return ret;
+	}
+	
+	/* Try winbindd */
+
+	if ( winbind_add_user_to_group( unix_user, unix_group ) ) {
+		DEBUG(3,("smb_delete_group: winbindd added user (%s) to the group (%s)\n",
+			unix_user, unix_group));
+		return -1;
+	}	
+	
+	return -1;
 }
 
 /****************************************************************************
@@ -814,13 +866,26 @@ int smb_delete_user_group(const char *unix_group, const char *unix_user)
 	pstring del_script;
 	int ret;
 
-	pstrcpy(del_script, lp_deluserfromgroup_script());
-	if (! *del_script) return -1;
-	pstring_sub(del_script, "%g", unix_group);
-	pstring_sub(del_script, "%u", unix_user);
-	ret = smbrun(del_script,NULL);
-	DEBUG(3,("smb_delete_user_group: Running the command `%s' gave %d\n",del_script,ret));
-	return ret;
+	/* defer to scripts */
+	
+	if ( *lp_deluserfromgroup_script() ) {
+		pstrcpy(del_script, lp_deluserfromgroup_script());
+		pstring_sub(del_script, "%g", unix_group);
+		pstring_sub(del_script, "%u", unix_user);
+		ret = smbrun(del_script,NULL);
+		DEBUG(3,("smb_delete_user_group: Running the command `%s' gave %d\n",del_script,ret));
+		return ret;
+	}
+	
+	/* Try winbindd */
+
+	if ( winbind_remove_user_from_group( unix_user, unix_group ) ) {
+		DEBUG(3,("smb_delete_group: winbindd removed user (%s) from the group (%s)\n",
+			unix_user, unix_group));
+		return 0;
+	}
+	
+	return -1;
 }
 
 

@@ -45,6 +45,20 @@ static struct idmap_state {
 	gid_t gid_low, gid_high;               /* Range of gids to allocate */
 } idmap_state;
 
+/**********************************************************************
+ Return the TDB_CONTEXT* for winbindd_idmap.  I **really** feel
+ dirty doing this, but not so dirty that I want to create another 
+ tdb
+***********************************************************************/
+
+TDB_CONTEXT *idmap_tdb_handle( void )
+{
+	if ( idmap_tdb )
+		return idmap_tdb;
+	
+	return NULL;
+}
+
 /* Allocate either a user or group id from the pool */
 static NTSTATUS db_allocate_id(unid_t *id, int id_type)
 {
@@ -111,7 +125,7 @@ static NTSTATUS db_allocate_id(unid_t *id, int id_type)
 			}
 			
 			(*id).gid = hwm;
-			DEBUG(10,("db_allocate_id: ID_GROUPID (*id).uid = %d\n", (unsigned int)hwm));
+			DEBUG(10,("db_allocate_id: ID_GROUPID (*id).gid = %d\n", (unsigned int)hwm));
 			
 			break;
 		default:
@@ -595,6 +609,7 @@ static void db_idmap_status(void)
 static struct idmap_methods db_methods = {
 
 	db_idmap_init,
+	db_allocate_id,
 	db_get_sid_from_id,
 	db_get_id_from_sid,
 	db_set_mapping,

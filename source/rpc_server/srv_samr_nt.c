@@ -2259,17 +2259,13 @@ NTSTATUS _api_samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_
 	 */
 
 	DEBUG(10,("checking account %s at pos %d for $ termination\n",account, strlen(account)-1));
-#if 0
-	if ((acb_info & ACB_WSTRUST) && (account[strlen(account)-1] == '$')) {
-		pstrcpy(add_script, lp_addmachine_script());		
-	} else if ((!(acb_info & ACB_WSTRUST)) && (account[strlen(account)-1] != '$')) {
-		pstrcpy(add_script, lp_adduser_script());
-	} else {
-		DEBUG(0, ("_api_samr_create_user: mismatch between trust flags and $ termination\n"));
-		pdb_free_sam(&sam_pass);
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-#endif
+	
+	/* 
+	 * we used to have code here that made sure the acb_info flags 
+	 * matched with the users named (e.g. an account flags as a machine 
+	 * trust account ended in '$').  It has been ifdef'd out for a long 
+	 * time, so I replaced it with this comment.     --jerry
+	 */
 
 	/* the passdb lookup has failed; check to see if we need to run the
 	   add user/machine script */
@@ -2295,11 +2291,17 @@ NTSTATUS _api_samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_
   			add_ret = smbrun(add_script,NULL);
  			DEBUG(3,("_api_samr_create_user: Running the command `%s' gave %d\n", add_script, add_ret));
   		}
+		else	/* no add user script -- ask winbindd to do it */
+		{
+			if ( !winbind_create_user( account ) )
+				DEBUG(3,("_api_samr_create_user: winbind_create_user(%s) failed\n", account));
+		}
 		
 	}
 	
-	nt_status = pdb_init_sam_new(&sam_pass, account);
-	if (!NT_STATUS_IS_OK(nt_status))
+	/* implicit call to getpwnam() next */
+
+	if ( !NT_STATUS_IS_OK(nt_status = pdb_init_sam_new(&sam_pass, account)) )
 		return nt_status;
 		
  	pdb_set_acct_ctrl(sam_pass, acb_info, PDB_CHANGED);

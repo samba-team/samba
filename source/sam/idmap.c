@@ -252,6 +252,21 @@ NTSTATUS idmap_get_sid_from_id(DOM_SID *sid, unid_t id, int id_type)
 }
 
 /**************************************************************************
+ Get ID from SID. This can create a mapping for a SID to a POSIX id.
+**************************************************************************/
+
+NTSTATUS idmap_allocate_id(unid_t *id, int id_type)
+{
+	/* we have to allocate from the authoritative backend */
+	
+	if ( remote_map )
+		return remote_map->allocate_id( id, id_type );
+
+	return cache_map->allocate_id( id, id_type );
+}
+
+
+/**************************************************************************
  Shutdown maps.
 **************************************************************************/
 
