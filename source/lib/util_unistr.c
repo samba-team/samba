@@ -105,7 +105,11 @@ void init_valid_table(void)
 	valid_table = malloc(0x10000);
 	for (i=0;i<128;i++) valid_table[UCS2_CHAR(i)] = isalnum(i) || 
 				    strchr(allowed,i);
-	for (;i<0x10000;i++) valid_table[UCS2_CHAR(i)] = check_dos_char(i);
+	for (;i<0x10000;i++) {
+		smb_ucs2_t c;
+		SSVAL(&c, 0, i);
+		valid_table[c] = check_dos_char(c);
+	}
 }
 
 

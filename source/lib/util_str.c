@@ -198,9 +198,9 @@ int strwicmp(const char *psz1, const char *psz2)
 	/* sync the strings on first non-whitespace */
 	while (1)
 	{
-		while (isspace(*psz1))
+		while (isspace((int)*psz1))
 			psz1++;
-		while (isspace(*psz2))
+		while (isspace((int)*psz2))
 			psz2++;
 		if (toupper(*psz1) != toupper(*psz2) || *psz1 == '\0'
 		    || *psz2 == '\0')
