@@ -866,11 +866,10 @@ int main(int argc, char **argv)
 	if (!init_names())
 		exit(1);
 
-	if (!interactive) {
+	if (!interactive)
 		become_daemon(Fork);
-		pidfile_create("winbindd");
-	}
 
+	pidfile_create("winbindd");
 
 #if HAVE_SETPGID
 	/*
