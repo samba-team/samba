@@ -128,10 +128,9 @@ ssize_t write_file(files_struct *fsp,char *data,size_t n)
 sync a file
 ********************************************************************/
 
-void sys_sync_file(struct connection_struct *conn, files_struct *fsp)
+void sys_sync_file(int fd)
 {
 #ifdef HAVE_FSYNC
-    if(lp_strict_sync(SNUM(conn)))
-      fsync(fsp->fd_ptr->fd);
+    fsync(fd);
 #endif
 }
