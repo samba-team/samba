@@ -206,12 +206,11 @@ static BOOL cli_session_setup_plaintext(struct cli_state *cli, char *user,
 	SSVAL(cli->outbuf,smb_vwv3,2);
 	SSVAL(cli->outbuf,smb_vwv4,cli->pid);
 	SIVAL(cli->outbuf,smb_vwv5,cli->sesskey);
-	SSVAL(cli->outbuf,smb_vwv7,passlen);
 	SSVAL(cli->outbuf,smb_vwv8,0);
 	SIVAL(cli->outbuf,smb_vwv11,capabilities); 
 	p = smb_buf(cli->outbuf);
-	memcpy(p, pword, passlen);
-	p += passlen;
+	p += clistr_push(cli, p, pword, -1, STR_TERMINATE); /* password */
+	SSVAL(cli->outbuf,smb_vwv7,PTR_DIFF(p, smb_buf(cli->outbuf)));
 	p += clistr_push(cli, p, user, -1, STR_TERMINATE); /* username */
 	p += clistr_push(cli, p, workgroup, -1, STR_TERMINATE); /* workgroup */
 	p += clistr_push(cli, p, "Unix", -1, STR_TERMINATE);

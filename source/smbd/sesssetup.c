@@ -699,9 +699,10 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 			lm_resp = data_blob(p, passlen1);
 			nt_resp = data_blob(p+passlen1, passlen2);
 		} else {
-			plaintext_password = data_blob(p, passlen1+1);
-			/* Ensure null termination */
-			plaintext_password.data[passlen1] = 0;
+			pstring pass;
+			srvstr_pull_buf(inbuf, pass, smb_buf(inbuf), 
+					sizeof(pass), STR_TERMINATE);
+			plaintext_password = data_blob(pass, strlen(pass));
 		}
 		
 		p += passlen1 + passlen2;
