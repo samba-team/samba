@@ -321,14 +321,17 @@ unparse_name(krb5_context context,
 	    len += 2*plen;
 	len++;
     }
+    len++;
     *name = malloc(len);
     if(len != 0 && *name == NULL) {
 	krb5_set_error_string (context, "malloc: out of memory");
 	return ENOMEM;
     }
     ret = unparse_name_fixed(context, principal, *name, len, short_flag);
-    if(ret)
+    if(ret) {
 	free(*name);
+	*name = NULL;
+    }
     return ret;
 }
 
