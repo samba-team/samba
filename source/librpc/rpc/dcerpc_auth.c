@@ -4,7 +4,7 @@
    Generic Authentication Interface
 
    Copyright (C) Andrew Tridgell 2003
-   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2004
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2004-2005
    Copyright (C) Stefan Metzmacher 2004
    
    This program is free software; you can redistribute it and/or modify
@@ -159,34 +159,10 @@ NTSTATUS dcerpc_bind_auth_password(struct dcerpc_pipe *p,
 		return status;
 	}
 
-	status = gensec_set_workstation(p->conn->security_state.generic_state, 
-								cli_credentials_get_workstation(credentials));
+	status = gensec_set_credentials(p->conn->security_state.generic_state, 
+					credentials);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Failed to start set GENSEC client workstation name to %s: %s\n", 
-			  cli_credentials_get_workstation(credentials), nt_errstr(status)));
-		return status;
-	}
-
-	status = gensec_set_domain(p->conn->security_state.generic_state, 
-							   cli_credentials_get_domain(credentials));
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Failed to start set GENSEC client domain to %s: %s\n", 
-			  cli_credentials_get_domain(credentials), nt_errstr(status)));
-		return status;
-	}
-
-	status = gensec_set_username(p->conn->security_state.generic_state, 
-								 cli_credentials_get_username(credentials));
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Failed to start set GENSEC client username to %s: %s\n", 
-			  cli_credentials_get_username(credentials), nt_errstr(status)));
-		return status;
-	}
-
-	status = gensec_set_password(p->conn->security_state.generic_state, 
-								 cli_credentials_get_password(credentials));
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Failed to start set GENSEC client password: %s\n", 
+		DEBUG(1, ("Failed to start set GENSEC client credentails: %s\n", 
 			  nt_errstr(status)));
 		return status;
 	}

@@ -296,7 +296,7 @@ static NTSTATUS sesssetup_spnego(struct smbsrv_request *req, union smb_sesssetup
 	sesssetup_common_strings(req, 
 				 &sess->spnego.out.os,
 				 &sess->spnego.out.lanman,
-				 &sess->spnego.out.domain);
+				 &sess->spnego.out.workgroup);
 
 	return status;
 }

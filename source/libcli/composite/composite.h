@@ -70,12 +70,10 @@ struct smb_composite_fetchfile {
 		const char *dest_host;
 		int port;
 		const char *called_name;
-		const char *calling_name;
 		const char *service;
 		const char *service_type;
-		const char *user;
-		const char *domain;
-		const char *password;
+		struct cli_credentials *credentials;
+		const char *workgroup;
 		const char *filename;
 	} in;
 	struct {
@@ -111,12 +109,10 @@ struct smb_composite_connect {
 		const char *dest_host;
 		int port;
 		const char *called_name;
-		const char *calling_name;
 		const char *service;
 		const char *service_type;
-		const char *user;
-		const char *domain;
-		const char *password;
+		struct cli_credentials *credentials;
+		const char *workgroup;
 	} in;
 	struct {
 		struct smbcli_tree *tree;
@@ -132,9 +128,8 @@ struct smb_composite_sesssetup {
 	struct {
 		uint32_t sesskey;
 		uint32_t capabilities;
-		const char *password;
-		const char *user;
-		const char *domain;
+		struct cli_credentials *credentials;
+		const char *workgroup;
 	} in;
 	struct {
 		uint16_t vuid;

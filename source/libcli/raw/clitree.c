@@ -164,7 +164,6 @@ NTSTATUS smb_tree_disconnect(struct smbcli_tree *tree)
 */
 NTSTATUS smbcli_tree_full_connection(TALLOC_CTX *parent_ctx,
 				     struct smbcli_tree **ret_tree, 
-				     const char *my_name, 
 				     const char *dest_host, int port,
 				     const char *service, const char *service_type,
 				     struct cli_credentials *credentials)
@@ -175,12 +174,10 @@ NTSTATUS smbcli_tree_full_connection(TALLOC_CTX *parent_ctx,
 	io.in.dest_host = dest_host;
 	io.in.port = port;
 	io.in.called_name = strupper_talloc(parent_ctx, dest_host);
-	io.in.calling_name = strupper_talloc(parent_ctx, my_name);
 	io.in.service = service;
 	io.in.service_type = service_type;
-	io.in.domain = cli_credentials_get_domain(credentials);
-	io.in.user = cli_credentials_get_username(credentials);
-	io.in.password = cli_credentials_get_password(credentials);
+	io.in.credentials = credentials;
+	io.in.workgroup = lp_workgroup();
 	
 	status = smb_composite_connect(&io, parent_ctx);
 	if (NT_STATUS_IS_OK(status)) {

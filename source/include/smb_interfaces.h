@@ -269,14 +269,14 @@ union smb_sesssetup {
 			DATA_BLOB secblob;
 			const char *os;
 			const char *lanman;
-			const char *domain;
+			const char *workgroup;
 		} in;
 		struct {
 			uint16_t action;
 			DATA_BLOB secblob;
 			char *os;
 			char *lanman;
-			char *domain;
+			char *workgroup;
 			uint16_t vuid;
 		} out;
 	} spnego;

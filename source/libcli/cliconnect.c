@@ -63,7 +63,7 @@ NTSTATUS smbcli_negprot(struct smbcli_state *cli)
 
 /* wrapper around smb_raw_session_setup() */
 NTSTATUS smbcli_session_setup(struct smbcli_state *cli, 
-							  struct cli_credentials *credentials)
+			      struct cli_credentials *credentials)
 {
 	struct smb_composite_sesssetup setup;
 	NTSTATUS status;
@@ -77,15 +77,8 @@ NTSTATUS smbcli_session_setup(struct smbcli_state *cli,
 
 	setup.in.sesskey = cli->transport->negotiate.sesskey;
 	setup.in.capabilities = cli->transport->negotiate.capabilities;
-	if (cli_credentials_is_anonymous(credentials)) {
-		if (cli->transport->negotiate.sec_mode & NEGOTIATE_SECURITY_USER_LEVEL) {
-			setup.in.password = cli_credentials_get_password(credentials);
-		} else {
-			setup.in.password = NULL;
-		}
-		setup.in.user = cli_credentials_get_username(credentials);
-		setup.in.domain = cli_credentials_get_domain(credentials);
-	}
+	setup.in.credentials = credentials;
+	setup.in.workgroup = lp_workgroup();
 
 	status = smb_composite_sesssetup(cli->session, &setup);
 
@@ -144,7 +137,6 @@ NTSTATUS smbcli_send_tconX(struct smbcli_state *cli, const char *sharename,
 */
 NTSTATUS smbcli_full_connection(TALLOC_CTX *parent_ctx,
 				struct smbcli_state **ret_cli, 
-				const char *myname,
 				const char *host,
 				const char *sharename,
 				const char *devtype,
@@ -159,7 +151,7 @@ NTSTATUS smbcli_full_connection(TALLOC_CTX *parent_ctx,
 	*ret_cli = NULL;
 
 	status = smbcli_tree_full_connection(parent_ctx,
-					     &tree, myname, host, 0, sharename, devtype,
+					     &tree, host, 0, sharename, devtype,
 					     credentials);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;

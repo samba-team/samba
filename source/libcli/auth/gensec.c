@@ -4,7 +4,7 @@
    Generic Authentication Interface
 
    Copyright (C) Andrew Tridgell 2003
-   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2004
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2004-2005
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -130,13 +130,7 @@ static NTSTATUS gensec_start(TALLOC_CTX *mem_ctx, struct gensec_security **gense
 
 	(*gensec_security)->ops = NULL;
 
-	ZERO_STRUCT((*gensec_security)->user);
 	ZERO_STRUCT((*gensec_security)->target);
-	ZERO_STRUCT((*gensec_security)->default_user);
-
-	(*gensec_security)->default_user.name = "";
-	(*gensec_security)->default_user.domain = talloc_strdup(*gensec_security, lp_workgroup());
-	(*gensec_security)->default_user.realm = talloc_strdup(*gensec_security, lp_realm());
 
 	(*gensec_security)->subcontext = False;
 	(*gensec_security)->want_features = 0;
@@ -184,8 +178,6 @@ NTSTATUS gensec_client_start(TALLOC_CTX *mem_ctx, struct gensec_security **gense
 	}
 	(*gensec_security)->gensec_role = GENSEC_CLIENT;
 	(*gensec_security)->password_callback = NULL;
-
-	ZERO_STRUCT((*gensec_security)->user);
 
 	return status;
 }
@@ -507,163 +499,24 @@ BOOL gensec_have_feature(struct gensec_security *gensec_security,
 }
 
 /** 
- * Set a username on a GENSEC context - ensures it is talloc()ed 
+ * Associate a credentails structure with a GENSEC context - talloc_reference()s it to the context 
  *
  */
 
-NTSTATUS gensec_set_username(struct gensec_security *gensec_security, const char *user) 
+NTSTATUS gensec_set_credentials(struct gensec_security *gensec_security, struct cli_credentials *credentials) 
 {
-	gensec_security->user.name = talloc_strdup(gensec_security, user);
-	if (user && !gensec_security->user.name) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	gensec_security->credentials = talloc_reference(gensec_security, credentials);
 	return NT_STATUS_OK;
 }
 
 /** 
- * Set a username on a GENSEC context - ensures it is talloc()ed 
+ * Return the credentails structure associated with a GENSEC context
  *
  */
 
-const char *gensec_get_username(struct gensec_security *gensec_security) 
+struct cli_credentials *gensec_get_credentials(struct gensec_security *gensec_security) 
 {
-	if (gensec_security->user.name) {
-		return gensec_security->user.name;
-	}
-	return gensec_security->default_user.name;
-}
-
-/** 
- * Set a domain on a GENSEC context - ensures it is talloc()ed 
- *
- */
-
-NTSTATUS gensec_set_domain(struct gensec_security *gensec_security, const char *domain) 
-{
-	gensec_security->user.domain = talloc_strdup(gensec_security, domain);
-	if (domain && !gensec_security->user.domain) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	return NT_STATUS_OK;
-}
-
-/** 
- * Return the NT domain for this GENSEC context
- *
- */
-
-const char *gensec_get_domain(struct gensec_security *gensec_security) 
-{
-	if (gensec_security->user.domain) {
-		return gensec_security->user.domain;
-	} else if (gensec_security->user.realm) {
-		return gensec_security->user.realm;
-	}
-	return gensec_security->default_user.domain;
-}
-
-/** 
- * Set the client workstation on a GENSEC context - ensures it is talloc()ed 
- *
- */
-
-NTSTATUS gensec_set_workstation(struct gensec_security *gensec_security, const char *workstation) 
-{
-	gensec_security->user.workstation = talloc_strdup(gensec_security, workstation);
-	if (workstation && !gensec_security->user.workstation) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	return NT_STATUS_OK;
-}
-
-/** 
- * Return the client workstation on a GENSEC context - ensures it is talloc()ed 
- *
- */
-
-const char *gensec_get_workstation(struct gensec_security *gensec_security) 
-{
-	if (gensec_security->user.workstation) {
-		return gensec_security->user.workstation;
-	} else {
-		return lp_netbios_name();
-	}
-}
-
-/** 
- * Set a kerberos realm on a GENSEC context - ensures it is talloc()ed 
- *
- */
-
-NTSTATUS gensec_set_realm(struct gensec_security *gensec_security, const char *realm) 
-{
-	gensec_security->user.realm = talloc_strdup(gensec_security, realm);
-	if (realm && !gensec_security->user.realm) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	return NT_STATUS_OK;
-}
-
-/** 
- * Return the Krb5 realm for this context
- *
- */
-
-const char *gensec_get_realm(struct gensec_security *gensec_security) 
-{
-	if (gensec_security->user.realm) {
-		return gensec_security->user.realm;
-	} else if (gensec_security->user.domain) {
-		return gensec_security->user.domain;
-	}
-	return gensec_security->default_user.realm;
-}
-
-/** 
- * Return a kerberos principal for this context, if one has been set 
- *
- */
-
-char *gensec_get_client_principal(struct gensec_security *gensec_security, TALLOC_CTX *mem_ctx) 
-{
-	const char *realm = gensec_get_realm(gensec_security);
-	if (realm) {
-		return talloc_asprintf(mem_ctx, "%s@%s", 
-				       gensec_get_username(gensec_security), 
-				       gensec_get_realm(gensec_security));
-	} else {
-		return talloc_strdup(mem_ctx, gensec_get_username(gensec_security));
-	}
-}
-
-/** 
- * Set the password outright on GENSEC context - ensures it is talloc()ed, and that we will
- * not do a callback
- *
- */
-
-NTSTATUS gensec_set_password(struct gensec_security *gensec_security,
-			     const char *password) 
-{
-	gensec_security->user.password = talloc_strdup(gensec_security, password);
-	if (password && !gensec_security->user.password) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	return NT_STATUS_OK;
-}
-
-/** 
- * Set the target principal name (if already known) on a GENSEC context - ensures it is talloc()ed 
- *
- */
-
-NTSTATUS gensec_set_target_principal(struct gensec_security *gensec_security, const char *principal) 
-{
-	gensec_security->target.principal = talloc_strdup(gensec_security, principal);
-	if (!gensec_security->target.principal) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	return NT_STATUS_OK;
+	return gensec_security->credentials;
 }
 
 /** 
@@ -711,54 +564,6 @@ const char *gensec_get_target_service(struct gensec_security *gensec_security)
 	}
 
 	return "host";
-}
-
-const char *gensec_get_target_principal(struct gensec_security *gensec_security) 
-{
-	const char *mechListMIC;
-	
-	if (gensec_security->target.principal) {
-		return gensec_security->target.principal;
-	}
-
-	mechListMIC = talloc_asprintf(gensec_security,"%s$@%s",
-				      lp_netbios_name(),
-				      lp_realm());
-	return mechListMIC;
-}
-
-/** 
- * Set a password callback, if the gensec module we use demands a password
- */
-
-void gensec_set_password_callback(struct gensec_security *gensec_security, 
-				  gensec_password_callback callback, void *callback_private_data) 
-{
-	gensec_security->password_callback = callback;
-	gensec_security->password_callback_private = callback_private_data;
-}
-
-/**
- * Get (or call back for) a password.
- */
-
-NTSTATUS gensec_get_password(struct gensec_security *gensec_security,
-			     TALLOC_CTX *mem_ctx, 
-			     char **password) 
-{
-	if (gensec_security->user.password) {
-		*password = talloc_strdup(mem_ctx, gensec_security->user.password);
-		if (!*password) {
-			return NT_STATUS_NO_MEMORY;
-		} else {
-			return NT_STATUS_OK;
-		}
-	}
-	if (!gensec_security->password_callback) {
-		*password = NULL;
-		return NT_STATUS_OK;
-	}
-	return gensec_security->password_callback(gensec_security, mem_ctx, password);
 }
 
 /*
@@ -821,6 +626,5 @@ const struct gensec_critical_sizes *gensec_interface_version(void)
 */
 NTSTATUS gensec_init(void)
 {
-	gensec_dcerpc_schannel_init();
 	return NT_STATUS_OK;
 }

@@ -3,7 +3,7 @@
  *  Version 3.0
  *  NTLMSSP Signing routines
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-2001
- *  Copyright (C) Andrew Bartlett 2003
+ *  Copyright (C) Andrew Bartlett <abartlet@samba.org> 2003-2004
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by

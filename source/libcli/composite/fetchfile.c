@@ -140,12 +140,10 @@ struct composite_context *smb_composite_fetchfile_send(struct smb_composite_fetc
 	state->connect->in.dest_host    = io->in.dest_host;
 	state->connect->in.port         = io->in.port;
 	state->connect->in.called_name  = io->in.called_name;
-	state->connect->in.calling_name = io->in.calling_name;
 	state->connect->in.service      = io->in.service;
 	state->connect->in.service_type = io->in.service_type;
-	state->connect->in.user         = io->in.user;
-	state->connect->in.domain       = io->in.domain;
-	state->connect->in.password     = io->in.password;
+	state->connect->in.credentials  = io->in.credentials;
+	state->connect->in.workgroup    = io->in.workgroup;
 
 	state->req = smb_composite_connect_send(state->connect, event_ctx);
 	if (state->req == NULL) goto failed;

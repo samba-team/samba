@@ -142,7 +142,7 @@ static void request_handler(struct smbcli_request *req)
 	}
 
 	/* enforce the local signing required flag */
-	if (NT_STATUS_IS_OK(c->status) && state->io->in.user && state->io->in.user[0]) {
+	if (NT_STATUS_IS_OK(c->status) && !cli_credentials_is_anonymous(state->io->in.credentials)) {
 		if (!session->transport->negotiate.sign_info.doing_signing 
 		    && session->transport->negotiate.sign_info.mandatory_signing) {
 			DEBUG(0, ("SMB signing required, but server does not support it\n"));
@@ -169,6 +169,7 @@ static struct smbcli_request *session_setup_nt1(struct composite_context *c,
 						struct smb_composite_sesssetup *io) 
 {
 	struct sesssetup_state *state = talloc_get_type(c->private, struct sesssetup_state);
+	const char *password = cli_credentials_get_password(io->in.credentials);
 
 	state->setup.nt1.level           = RAW_SESSSETUP_NT1;
 	state->setup.nt1.in.bufsize      = session->transport->options.max_xmit;
@@ -176,23 +177,23 @@ static struct smbcli_request *session_setup_nt1(struct composite_context *c,
 	state->setup.nt1.in.vc_num       = 1;
 	state->setup.nt1.in.sesskey      = io->in.sesskey;
 	state->setup.nt1.in.capabilities = io->in.capabilities;
-	state->setup.nt1.in.domain       = io->in.domain;
-	state->setup.nt1.in.user         = io->in.user;
 	state->setup.nt1.in.os           = "Unix";
 	state->setup.nt1.in.lanman       = "Samba";
 
-	if (!io->in.password) {
+	state->setup.old.in.domain  = cli_credentials_get_domain(io->in.credentials);
+	state->setup.old.in.user    = cli_credentials_get_username(io->in.credentials);
+	if (!password) {
 		state->setup.nt1.in.password1 = data_blob(NULL, 0);
 		state->setup.nt1.in.password2 = data_blob(NULL, 0);
 	} else if (session->transport->negotiate.sec_mode & 
 		   NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) {
-		state->setup.nt1.in.password1 = lanman_blob(state, io->in.password, 
+		state->setup.nt1.in.password1 = lanman_blob(state, password, 
 							    session->transport->negotiate.secblob);
-		state->setup.nt1.in.password2 = nt_blob(state, io->in.password, 
+		state->setup.nt1.in.password2 = nt_blob(state, password, 
 							session->transport->negotiate.secblob);
-		use_nt1_session_keys(session, io->in.password, &state->setup.nt1.in.password2);
+		use_nt1_session_keys(session, password, &state->setup.nt1.in.password2);
 	} else {
-		state->setup.nt1.in.password1 = data_blob_talloc(state, io->in.password, strlen(io->in.password));
+		state->setup.nt1.in.password1 = data_blob_talloc(state, password, strlen(password));
 		state->setup.nt1.in.password2 = data_blob(NULL, 0);
 	}
 
@@ -208,26 +209,27 @@ static struct smbcli_request *session_setup_old(struct composite_context *c,
 						struct smb_composite_sesssetup *io)
 {
 	struct sesssetup_state *state = talloc_get_type(c->private, struct sesssetup_state);
+	const char *password = cli_credentials_get_password(io->in.credentials);
 
 	state->setup.old.level      = RAW_SESSSETUP_OLD;
 	state->setup.old.in.bufsize = session->transport->options.max_xmit;
 	state->setup.old.in.mpx_max = session->transport->options.max_mux;
 	state->setup.old.in.vc_num  = 1;
 	state->setup.old.in.sesskey = io->in.sesskey;
-	state->setup.old.in.domain  = io->in.domain;
-	state->setup.old.in.user    = io->in.user;
+	state->setup.old.in.domain  = cli_credentials_get_domain(io->in.credentials);
+	state->setup.old.in.user    = cli_credentials_get_username(io->in.credentials);
 	state->setup.old.in.os      = "Unix";
 	state->setup.old.in.lanman  = "Samba";
 	
-	if (!io->in.password) {
+	if (!password) {
 		state->setup.old.in.password = data_blob(NULL, 0);
 	} else if (session->transport->negotiate.sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) {
-		state->setup.old.in.password = lanman_blob(state, io->in.password, 
+		state->setup.old.in.password = lanman_blob(state, password, 
 							   session->transport->negotiate.secblob);
 	} else {
 		state->setup.old.in.password = data_blob_talloc(state,
-								io->in.password, 
-								strlen(io->in.password));
+								password, 
+								strlen(password));
 	}
 	
 	return smb_raw_session_setup_send(session, &state->setup);
@@ -253,9 +255,10 @@ static struct smbcli_request *session_setup_spnego(struct composite_context *c,
 	state->setup.spnego.in.vc_num       = 1;
 	state->setup.spnego.in.sesskey      = io->in.sesskey;
 	state->setup.spnego.in.capabilities = io->in.capabilities;
-	state->setup.spnego.in.domain       = io->in.domain;
 	state->setup.spnego.in.os           = "Unix";
 	state->setup.spnego.in.lanman       = "Samba";
+	state->setup.spnego.in.workgroup    = io->in.workgroup;
+
 	state->setup.spnego.out.vuid        = session->vuid;
 
 	smbcli_temp_set_signing(session->transport);
@@ -268,23 +271,9 @@ static struct smbcli_request *session_setup_spnego(struct composite_context *c,
 
 	gensec_want_feature(session->gensec, GENSEC_FEATURE_SESSION_KEY);
 
-	status = gensec_set_domain(session->gensec, io->in.domain);
+	status = gensec_set_credentials(session->gensec, io->in.credentials);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Failed to start set GENSEC client domain to %s: %s\n", 
-			  io->in.domain, nt_errstr(status)));
-		return NULL;
-	}
-
-	status = gensec_set_username(session->gensec, io->in.user);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Failed to start set GENSEC client username to %s: %s\n", 
-			  io->in.user, nt_errstr(status)));
-		return NULL;
-	}
-
-	status = gensec_set_password(session->gensec, io->in.password);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Failed to start set GENSEC client password: %s\n", 
+		DEBUG(1, ("Failed to start set GENSEC client credentails: %s\n", 
 			  nt_errstr(status)));
 		return NULL;
 	}
@@ -292,6 +281,13 @@ static struct smbcli_request *session_setup_spnego(struct composite_context *c,
 	status = gensec_set_target_hostname(session->gensec, session->transport->socket->hostname);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to start set GENSEC target hostname: %s\n", 
+			  nt_errstr(status)));
+		return NULL;
+	}
+
+	status = gensec_set_target_service(session->gensec, "cifs");
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Failed to start set GENSEC target service: %s\n", 
 			  nt_errstr(status)));
 		return NULL;
 	}

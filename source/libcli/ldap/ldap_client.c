@@ -605,7 +605,7 @@ int ldap_bind_simple(struct ldap_connection *conn, const char *userdn, const cha
 	return result;
 }
 
-int ldap_bind_sasl(struct ldap_connection *conn, const char *username, const char *domain, const char *password)
+int ldap_bind_sasl(struct ldap_connection *conn, struct cli_credentials *creds)
 {
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx = NULL;
@@ -626,23 +626,9 @@ int ldap_bind_sasl(struct ldap_connection *conn, const char *username, const cha
 
 	gensec_want_feature(conn->gensec, GENSEC_FEATURE_SIGN | GENSEC_FEATURE_SEAL);
 
-	status = gensec_set_domain(conn->gensec, domain);
+	status = gensec_set_credentials(conn->gensec, creds);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Failed to start set GENSEC client domain to %s: %s\n", 
-			  domain, nt_errstr(status)));
-		goto done;
-	}
-
-	status = gensec_set_username(conn->gensec, username);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Failed to start set GENSEC client username to %s: %s\n", 
-			  username, nt_errstr(status)));
-		goto done;
-	}
-
-	status = gensec_set_password(conn->gensec, password);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Failed to start set GENSEC client password: %s\n", 
+		DEBUG(1, ("Failed to start set GENSEC creds: %s\n", 
 			  nt_errstr(status)));
 		goto done;
 	}
@@ -739,8 +725,9 @@ struct ldap_connection *ldap_setup_connection(TALLOC_CTX *mem_ctx, const char *u
 	return conn;
 }
 
-struct ldap_connection *ldap_setup_connection_with_sasl(TALLOC_CTX *mem_ctx, const char *url,
-							const char *username, const char *domain, const char *password)
+struct ldap_connection *ldap_setup_connection_with_sasl(TALLOC_CTX *mem_ctx, 
+							const char *url,
+							struct cli_credentials *creds)
 {
 	struct ldap_connection *conn;
 	int result;
@@ -750,7 +737,7 @@ struct ldap_connection *ldap_setup_connection_with_sasl(TALLOC_CTX *mem_ctx, con
 		return NULL;
 	}
 
-	result = ldap_bind_sasl(conn, username, domain, password);
+	result = ldap_bind_sasl(conn, creds);
 	if (result != LDAP_SUCCESS) {
 		talloc_free(conn);
 		return NULL;

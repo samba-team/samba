@@ -81,9 +81,9 @@ static BOOL test_session(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	setup.in.sesskey = cli->transport->negotiate.sesskey;
 	setup.in.capabilities = cli->transport->negotiate.capabilities; /* ignored in secondary session setup, except by our libs, which care about the extended security bit */
-	setup.in.password = cli_credentials_get_password(cmdline_credentials);
-	setup.in.user = cli_credentials_get_username(cmdline_credentials);
-	setup.in.domain = cli_credentials_get_domain(cmdline_credentials);
+	setup.in.workgroup = lp_workgroup();
+
+	setup.in.credentials = cmdline_credentials;
 
 	status = smb_composite_sesssetup(session, &setup);
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -96,10 +96,9 @@ static BOOL test_session(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	session2->vuid = session->vuid;
 	setup.in.sesskey = cli->transport->negotiate.sesskey;
 	setup.in.capabilities = cli->transport->negotiate.capabilities; /* ignored in secondary session setup, except by our libs, which care about the extended security bit */
+	setup.in.workgroup = lp_workgroup();
 
-	setup.in.password = cli_credentials_get_password(cmdline_credentials);
-	setup.in.user = cli_credentials_get_username(cmdline_credentials);
-	setup.in.domain = cli_credentials_get_domain(cmdline_credentials);
+	setup.in.credentials = cmdline_credentials;
 
 	status = smb_composite_sesssetup(session2, &setup);
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -117,11 +116,10 @@ static BOOL test_session(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		session3->vuid = session->vuid;
 		setup.in.sesskey = cli->transport->negotiate.sesskey;
 		setup.in.capabilities = 0; /* force a non extended security login (should fail) */
-
-
-		setup.in.password = cli_credentials_get_password(cmdline_credentials);
-		setup.in.user = cli_credentials_get_username(cmdline_credentials);
-		setup.in.domain = cli_credentials_get_domain(cmdline_credentials);
+		setup.in.workgroup = lp_workgroup();
+	
+		setup.in.credentials = cmdline_credentials;
+	
 
 		status = smb_composite_sesssetup(session3, &setup);
 		CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);

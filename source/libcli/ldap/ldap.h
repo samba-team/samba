@@ -337,11 +337,11 @@ struct ldap_message *ldap_receive(struct ldap_connection *conn, int msgid,
 struct ldap_message *ldap_transaction(struct ldap_connection *conn,
 				      struct ldap_message *request);
 int ldap_bind_simple(struct ldap_connection *conn, const char *userdn, const char *password);
-int ldap_bind_sasl(struct ldap_connection *conn, const char *username, const char *domain, const char *password);
+int ldap_bind_sasl(struct ldap_connection *conn, struct cli_credentials *creds);
 struct ldap_connection *ldap_setup_connection(TALLOC_CTX *mem_ctx, const char *url, 
 						const char *userdn, const char *password);
 struct ldap_connection *ldap_setup_connection_with_sasl(TALLOC_CTX *mem_ctx, const char *url,
-							const char *username, const char *domain, const char *password);
+							struct cli_credentials *creds);
 BOOL ldap_abandon_message(struct ldap_connection *conn, int msgid,
 				 const struct timeval *endtime);
 BOOL ldap_setsearchent(struct ldap_connection *conn, struct ldap_message *msg,

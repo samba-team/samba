@@ -610,7 +610,7 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 			spnego_out.negTokenInit.mechTypes = mechlist;
 			spnego_out.negTokenInit.reqFlags = 0;
 			spnego_out.negTokenInit.mechListMIC
-				= data_blob_string_const(gensec_get_target_principal(gensec_security));
+				= data_blob_string_const(talloc_asprintf(out_mem_ctx, "%s$@%s", lp_netbios_name(), lp_realm()));
 			spnego_out.negTokenInit.mechToken = unwrapped_out;
 			
 			if (spnego_write_data(out_mem_ctx, out, &spnego_out) == -1) {
@@ -657,13 +657,7 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 		}
 
 		if (spnego.negTokenInit.targetPrincipal) {
-			DEBUG(5, ("Server claims it's principal name is %s\n", spnego.negTokenInit.targetPrincipal));
-			nt_status = gensec_set_target_principal(gensec_security, 
-								spnego.negTokenInit.targetPrincipal);
-			if (!NT_STATUS_IS_OK(nt_status)) {
-				spnego_free_data(&spnego);
-				return nt_status;
-			}
+			DEBUG(5, ("Server claims it's principal name is %s (ignored)\n", spnego.negTokenInit.targetPrincipal));
 		}
 
 		nt_status = gensec_spnego_client_parse_negTokenInit(gensec_security,

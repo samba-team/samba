@@ -116,9 +116,6 @@ BOOL test_SetupCredentials(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	a.out.credentials = &credentials3;
 
 	creds_client_init(creds, &credentials1, &credentials2, 
-			  machine_name, 
-			  lp_workgroup(),
-			  a.in.account_name,
 			  &mach_password, &credentials3, 
 			  0);
 
@@ -185,9 +182,6 @@ BOOL test_SetupCredentials2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	a.out.credentials = &credentials3;
 
 	creds_client_init(creds, &credentials1, &credentials2, 
-			  machine_name, 
-			  lp_workgroup(),
-			  a.in.account_name,
 			  &mach_password, &credentials3, 
 			  negotiate_flags);
 
@@ -258,9 +252,6 @@ BOOL test_SetupCredentials3(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	a.out.rid = &rid;
 
 	creds_client_init(creds, &credentials1, &credentials2, 
-			  machine_name, 
-			  lp_workgroup(),
-			  a.in.account_name,
 			  &mach_password, &credentials3,
 			  negotiate_flags);
 

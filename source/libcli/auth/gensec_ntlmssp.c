@@ -109,7 +109,7 @@ static NTSTATUS auth_ntlmssp_check_password(struct ntlmssp_state *ntlmssp_state,
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
 	nt_status = auth_check_password(gensec_ntlmssp_state->auth_context, gensec_ntlmssp_state,
-						  user_info, &gensec_ntlmssp_state->server_info);
+					user_info, &gensec_ntlmssp_state->server_info);
 	talloc_free(user_info);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
@@ -197,7 +197,7 @@ static NTSTATUS gensec_ntlmssp_server_start(struct gensec_security *gensec_secur
 static NTSTATUS gensec_ntlmssp_client_start(struct gensec_security *gensec_security)
 {
 	struct gensec_ntlmssp_state *gensec_ntlmssp_state;
-	char *password = NULL;
+	const char *password = NULL;
 	NTSTATUS nt_status;
 
 	nt_status = gensec_ntlmssp_start(gensec_security);
@@ -228,25 +228,20 @@ static NTSTATUS gensec_ntlmssp_client_start(struct gensec_security *gensec_secur
 	}
 
 	nt_status = ntlmssp_set_domain(gensec_ntlmssp_state->ntlmssp_state, 
-				       gensec_security->user.domain);
+				       cli_credentials_get_domain(gensec_security->credentials));
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 	
 	nt_status = ntlmssp_set_username(gensec_ntlmssp_state->ntlmssp_state, 
-					 gensec_security->user.name);
+					 cli_credentials_get_username(gensec_security->credentials));
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
-	if (gensec_security->user.name) {
-		nt_status = gensec_get_password(gensec_security, gensec_ntlmssp_state, &password);
-		NT_STATUS_NOT_OK_RETURN(nt_status);
-	}
+	password = cli_credentials_get_password(gensec_security->credentials);
 
-	if (password) {
-		nt_status = ntlmssp_set_password(gensec_ntlmssp_state->ntlmssp_state, password);
-		NT_STATUS_NOT_OK_RETURN(nt_status);
-	}
+	nt_status = ntlmssp_set_password(gensec_ntlmssp_state->ntlmssp_state, password);
+	NT_STATUS_NOT_OK_RETURN(nt_status);
 
 	nt_status = ntlmssp_set_workstation(gensec_ntlmssp_state->ntlmssp_state,
-					    gensec_get_workstation(gensec_security));
+					    cli_credentials_get_workstation(gensec_security->credentials));
 
 	gensec_security->private_data = gensec_ntlmssp_state;
 

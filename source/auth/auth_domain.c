@@ -51,7 +51,15 @@ static NTSTATUS domain_check_password(struct auth_method_context *ctx,
 		binding = bindings[0];
 	}
 
+	if (!user_info->account_name) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	if (!user_info->workstation_name) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
 	credentials = cli_credentials_init(mem_ctx);
+	cli_credentials_set_conf(credentials);
 	status = cli_credentials_set_machine_account(credentials);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -101,7 +109,7 @@ static NTSTATUS domain_check_password(struct auth_method_context *ctx,
 	ninfo.lm.data = user_info->lm_resp.data;
 
 	r.in.server_name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
-	r.in.workstation = creds->computer_name;
+	r.in.workstation = cli_credentials_get_workstation(credentials);
 	r.in.credential = &auth;
 	r.in.return_authenticator = &auth2;
 	r.in.logon_level = 2;

@@ -192,18 +192,12 @@ next comes the client specific functions
 void creds_client_init(struct creds_CredentialState *creds,
 		       const struct netr_Credential *client_challenge,
 		       const struct netr_Credential *server_challenge,
-		       const char *computer_name, 
-		       const char *domain,
-		       const char *account_name,
 		       const struct samr_Password *machine_password,
 		       struct netr_Credential *initial_credential,
 		       uint32_t negotiate_flags)
 {
 	creds->sequence = time(NULL);
 	creds->negotiate_flags = negotiate_flags;
-	creds->computer_name = talloc_strdup(creds, computer_name);
-	creds->domain = talloc_strdup(creds, domain);
-	creds->account_name = talloc_strdup(creds, account_name);
 
 	dump_data_pw("Client chall", client_challenge->data, sizeof(client_challenge->data));
 	dump_data_pw("Server chall", server_challenge->data, sizeof(server_challenge->data));

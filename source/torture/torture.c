@@ -82,8 +82,7 @@ BOOL torture_open_connection_share(struct smbcli_state **c,
 	NTSTATUS status;
 
 	status = smbcli_full_connection(NULL,
-					c, lp_netbios_name(),
-					hostname, 
+					c, hostname, 
 					sharename, NULL,
 					cmdline_credentials);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -725,8 +724,7 @@ static BOOL run_tcon_devtype_test(void)
 	const char *share = lp_parm_string(-1, "torture", "share");
 	
 	status = smbcli_full_connection(NULL,
-					&cli1, lp_netbios_name(),
-					host, 
+					&cli1, host, 
 					share, NULL,
 					cmdline_credentials);
 
