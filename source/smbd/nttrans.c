@@ -23,6 +23,7 @@
 
 extern int DEBUGLEVEL;
 extern int Protocol;
+extern int chain_fnum;
 extern connection_struct Connections[];
 extern files_struct Files[];
 extern int Client;  
@@ -45,6 +46,10 @@ static char *known_nt_pipes[] = {
   "\\lsarpc",
   NULL
 };
+
+/****************************************************************************
+ Save case statics.
+****************************************************************************/
 
 static BOOL saved_case_sensitive;
 static BOOL saved_case_preserve;
@@ -106,7 +111,8 @@ int reply_ntcreate_and_X(char *inbuf,char *outbuf,int length,int bufsize)
      reply bits separately. */
   int oplock_request = flags & (REQUEST_OPLOCK|REQUEST_BATCH_OPLOCK);
   int unixmode;
-  int size=0,fmode=0,mtime=0,rmode=0;
+  int fmode=0,mtime=0,rmode=0;
+  off_t file_size = 0;
   struct stat sbuf;
   int smb_action = 0;
   BOOL bad_path = False;
@@ -206,16 +212,13 @@ int reply_ntcreate_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   unix_convert(fname,cnum,0,&bad_path);
     
   fnum = find_free_file();
-  if (fnum < 0)
-  {
+  if (fnum < 0) {
     restore_case_semantics(file_attributes);
     return(ERROR(ERRSRV,ERRnofids));
   }
 
-  if (!check_name(fname,cnum))
-  { 
-    if((errno == ENOENT) && bad_path)
-    {
+  if (!check_name(fname,cnum)) { 
+    if((errno == ENOENT) && bad_path) {
       unix_ERR_class = ERRDOS;
       unix_ERR_code = ERRbadpath;
     }
@@ -229,14 +232,12 @@ int reply_ntcreate_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   unixmode = unix_mode(cnum,smb_attr | aARCH);
     
   open_file_shared(fnum,cnum,fname,smb_open_mode,smb_ofun,unixmode,
-           oplock_request, &rmode,&smb_action);
+                   oplock_request,&rmode,&smb_action);
 
   fsp = &Files[fnum];
     
-  if (!fsp->open)
-  { 
-    if((errno == ENOENT) && bad_path)
-    {
+  if (!fsp->open) { 
+    if((errno == ENOENT) && bad_path) {
       unix_ERR_class = ERRDOS;
       unix_ERR_code = ERRbadpath;
     }
@@ -283,47 +284,57 @@ int reply_ntcreate_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 
   p = outbuf + smb_vwv2;
 
-  SCVAL(p,0, (smb_action & EXTENDED_OPLOCK_GRANTED ? );
+  /*
+   * Currently as we don't support level II oplocks we just report
+   * exclusive & batch here.
+   */
+
+  SCVAL(p,0, (smb_action & EXTENDED_OPLOCK_GRANTED ? 3 : 0));
   p++;
   SSVAL(p,0,fnum);
   p += 2;
   SIVAL(p,0,smb_action);
   p += 4;
-  
-  CreationTime
-  p += 8;
-  LastAccessTime;
-  p += 8;
-  LastWriteTime;
-  p += 8;
-  ChangeTime;
-  p += 8;
-  FileAttributes;
-  p += 4;
-  AllocationSize;
-  p += 8;
-  EndOfFile;
-  p += 8;
-  SSVAL(p,0,0); /* File Type */
-  p += 2;
-  SSVAL(p,0,0); /* Device State */
-  p += 1;
-  SCVAL(p,0,0); /* Not Directory. */
 
-  SSVAL(outbuf,smb_vwv3,fmode);
-  if(lp_dos_filetime_resolution(SNUM(cnum)) )
-    put_dos_date3(outbuf,smb_vwv4,mtime & ~1);
-  else
-    put_dos_date3(outbuf,smb_vwv4,mtime);
-  SIVAL(outbuf,smb_vwv6,size);
-  SSVAL(outbuf,smb_vwv8,rmode);
-  SSVAL(outbuf,smb_vwv11,smb_action);
-    
+  /* Create time. */  
+  put_long_date(p,get_create_time(&sbuf,lp_fake_dir_create_times(SNUM(cnum))));
+  p += 8;
+  put_long_date(p,sbuf.st_atime); /* access time */
+  p += 8;
+  put_long_date(p,sbuf.st_mtime); /* write time */
+  p += 8;
+  put_long_date(p,sbuf.st_mtime); /* change time */
+  p += 8;
+  SIVAL(p,0,fmode); /* File Attributes. */
+  p += 12;
+  SIVAL(p,0, size & 0xFFFFFFFF);
+  SIVAL(p,4, (size >> 32));
+
   chain_fnum = fnum;
     
   restore_case_semantics(file_attributes);
 
   return chain_reply(inbuf,outbuf,length,bufsize);
+}
+
+/****************************************************************************
+ reply to a NT_TRANSACT_CREATE call (needs to process SD's).
+****************************************************************************/
+
+static int call_nt_transact_create(char *inbuf, char *outbuf, int bufsize, int cnum,
+                                   char **setup, char **params, char **data)
+{
+  char *params = *pparams;
+  uint32 flags = SIVAL(params,0);
+  uint32 desired_access = 
+  uint32 file_attributes = SIVAL(inbuf,smb_ntcreate_FileAttributes);
+  uint32 share_access = SIVAL(inbuf,smb_ntcreate_ShareAccess);
+  uint32 create_disposition = SIVAL(inbuf,smb_ntcreate_CreateDisposition);
+  uint32 fname_len = MIN(((uint32)SSVAL(inbuf,smb_ntcreate_NameLength)),
+                         ((uint32)sizeof(fname)-1));
+  int smb_ofun;
+  int smb_open_mode;
+  int smb_attr = file_attributes & SAMBA_ATTRIBUTES_MASK;
 }
 
 /****************************************************************************
@@ -344,11 +355,11 @@ int reply_nttrans(char *inbuf,char *outbuf,int length,int bufsize)
 {
   int outsize = 0;
   int cnum = SVAL(inbuf,smb_tid);
-#if 0
+#if 0 /* Not used. */
   uint16 max_setup_count = CVAL(inbuf, smb_nt_MaxSetupCount);
   uint32 max_parameter_count = IVAL(inbuf, smb_nt_MaxParameterCount);
   uint32 max_data_count = IVAL(inbuf,smb_nt_MaxDataCount);
-#endif
+#endif /* Not used. */
   uint32 total_parameter_count = IVAL(inbuf, smb_nt_TotalParameterCount);
   uint32 total_data_count = IVAL(inbuf, smb_nt_TotalDataCount);
   uint32 parameter_count = IVAL(inbuf,smb_nt_ParameterCount);

@@ -77,7 +77,7 @@ static int findpty(char **slave)
 #else /* defined(SVR4) || defined(SUNOS5) */
   fstrcpy( line, "/dev/ptyXX" );
 
-  dirp = OpenDir(-1, "/dev", True);
+  dirp = OpenDir(-1, "/dev", False);
   if (!dirp) return(-1);
   while ((dpname = ReadDirName(dirp)) != NULL) {
     if (strncmp(dpname, "pty", 3) == 0 && strlen(dpname) == 5) {
