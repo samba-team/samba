@@ -100,7 +100,7 @@ static const char *decode_account_policy_name(int field)
 Get the account policy name as a string from its #define'ed number
 ****************************************************************************/
 
-int account_policy_name_to_feildnum(const char *name)
+int account_policy_name_to_fieldnum(const char *name)
 {
 	int i;
 	for (i=0; account_policy_names[i].string; i++) {
