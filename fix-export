@@ -8,4 +8,4 @@ autoconf
 autoheader
 automake
 (cd doc; makeinfo heimdal.texi)
-rm fix-export
+rm fix-export make-release make-release.el
