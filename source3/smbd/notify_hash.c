@@ -44,7 +44,7 @@ static BOOL notify_hash(connection_struct *conn, char *path, uint32 flags,
 	const char *fname;
 	size_t remaining_len;
 	size_t fullname_len;
-	void *dp;
+	struct smb_Dir *dp;
 	long offset;
 
 	ZERO_STRUCTP(data);

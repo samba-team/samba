@@ -867,8 +867,8 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 	while (!found) {
 		BOOL got_match;
 		/* Needed if we run out of space */
-		long curr_dirpos = prev_dirpos = TellDir(conn->dirptr);
-		dname = ReadDirName(conn->dirptr,&curr_dirpos);
+		long curr_dirpos = prev_dirpos = dptr_TellDir(conn->dirptr);
+		dname = dptr_ReadDirName(conn->dirptr,&curr_dirpos);
 
 		/*
 		 * Due to bugs in NT client redirectors we are not using
@@ -1303,7 +1303,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 
 	if (PTR_DIFF(p,pdata) > space_remaining) {
 		/* Move the dirptr back to prev_dirpos */
-		SeekDir(conn->dirptr, prev_dirpos);
+		dptr_SeekDir(conn->dirptr, prev_dirpos);
 		*out_of_space = True;
 		DEBUG(9,("get_lanman2_dir_entry: out of space\n"));
 		return False; /* Not finished - just out of space */
@@ -1442,8 +1442,7 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 		return ERROR_DOS(ERRDOS,ERRnomem);
 	}
 
-	dptr_set_wcard(dptr_num, wcard);
-	dptr_set_attr(dptr_num, dirtype);
+	dptr_set_wcard_and_attributes(dptr_num, wcard, dirtype);
 
 	DEBUG(4,("dptr_num is %d, wcard = %s, attr = %d\n",dptr_num, wcard, dirtype));
 
@@ -1651,7 +1650,7 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
 	DEBUG(3,("dptr_num is %d, mask = %s, attr = %x, dirptr=(0x%lX,%ld)\n",
 		dptr_num, mask, dirtype, 
 		(long)conn->dirptr,
-		TellDir(conn->dirptr)));
+		dptr_TellDir(conn->dirptr)));
 
 	/* We don't need to check for VOL here as this is returned by 
 		a different TRANS2 call. */
@@ -1690,7 +1689,7 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
 		 * should already be at the correct place.
 		 */
 
-		finished = !SearchDir(conn->dirptr, resume_name, &current_pos, True);
+		finished = !dptr_SearchDir(conn->dirptr, resume_name, &current_pos, True);
 	} /* end if resume_name && !continue_bit */
 
 	for (i=0;(i<(int)maxentries) && !finished && !out_of_space ;i++) {
