@@ -29,6 +29,7 @@ NTSTATUS pdb_init_plugin(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, con
 	void * dl_handle;
 	char *plugin_location, *plugin_name, *p;
 	pdb_init_function plugin_init;
+	int (*plugin_version)(void);
 
 	if (location == NULL) {
 		DEBUG(0, ("The plugin module needs an argument!\n"));
@@ -51,8 +52,23 @@ NTSTATUS pdb_init_plugin(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, con
 		return NT_STATUS_UNSUCCESSFUL;
 	}
     
+	plugin_version = sys_dlsym(dl_handle, "pdb_version");
+	if (!plugin_version) {
+		sys_dlclose(dl_handle);
+		DEBUG(0, ("Failed to find function 'pdb_version' using sys_dlsym in sam plugin %s (%s)\n", plugin_name, sys_dlerror()));	    
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	if (plugin_version()!=PASSDB_INTERFACE_VERSION) {
+		sys_dlclose(dl_handle);
+		DEBUG(0, ("Wrong PASSDB_INTERFACE_VERSION! sam plugin has version %d and version %d is needed! Please update!\n",
+			    plugin_version(),PASSDB_INTERFACE_VERSION));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+				    	
 	plugin_init = sys_dlsym(dl_handle, "pdb_init");
-	if (!plugin_init){
+	if (!plugin_init) {
+		sys_dlclose(dl_handle);
 		DEBUG(0, ("Failed to find function 'pdb_init' using sys_dlsym in sam plugin %s (%s)\n", plugin_name, sys_dlerror()));	    
 		return NT_STATUS_UNSUCCESSFUL;
 	}

@@ -27,6 +27,20 @@
  Functions to be implemented by the new (v2) passdb API 
 ****************************************************************/
 
+/*
+ * This next constant specifies the version number of the PASSDB interface
+ * this SAMBA will load. Increment this if *ANY* changes are made to the interface. 
+ */
+
+#define PASSDB_INTERFACE_VERSION 2
+
+/* use this inside a passdb module */
+#define PDB_MODULE_VERSIONING_MAGIC \
+int pdb_version(void)\
+{\
+	return PASSDB_INTERFACE_VERSION;\
+}
+
 typedef struct pdb_context 
 {
 	struct pdb_methods *pdb_methods;

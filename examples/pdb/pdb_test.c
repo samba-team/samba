@@ -19,9 +19,14 @@
 
 
 #include "includes.h"
+
 static int testsam_debug_level = DBGC_ALL;
+
 #undef DBGC_CLASS
 #define DBGC_CLASS testsam_debug_level
+
+/* define the version of the passdb interface */ 
+PDB_MODULE_VERSIONING_MAGIC
 
 /***************************************************************
  Start enumeration of the passwd list.
@@ -63,12 +68,12 @@ static BOOL testsam_getsampwnam (struct pdb_methods *methods, SAM_ACCOUNT *user,
 }
 
 /***************************************************************************
- Search by rid
+ Search by sid
  **************************************************************************/
 
-static BOOL testsam_getsampwrid (struct pdb_methods *methods, SAM_ACCOUNT *user, uint32 rid)
+static BOOL testsam_getsampwsid (struct pdb_methods *methods, SAM_ACCOUNT *user, DOM_SID sid)
 {
-	DEBUG(10, ("testsam_getsampwrid called\n"));
+	DEBUG(10, ("testsam_getsampwsid called\n"));
 	return False;
 }
 
@@ -119,7 +124,7 @@ NTSTATUS pdb_init(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const char
 	(*pdb_method)->endsampwent = testsam_endsampwent;
 	(*pdb_method)->getsampwent = testsam_getsampwent;
 	(*pdb_method)->getsampwnam = testsam_getsampwnam;
-	(*pdb_method)->getsampwrid = testsam_getsampwrid;
+	(*pdb_method)->getsampwsid = testsam_getsampwsid;
 	(*pdb_method)->add_sam_account = testsam_add_sam_account;
 	(*pdb_method)->update_sam_account = testsam_update_sam_account;
 	(*pdb_method)->delete_sam_account = testsam_delete_sam_account;
