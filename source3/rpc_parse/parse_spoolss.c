@@ -5877,7 +5877,7 @@ BOOL spoolss_io_r_addform(char *desc, SPOOL_R_ADDFORM *r_u, prs_struct *ps, int 
 
 BOOL spoolss_io_q_setform(char *desc, SPOOL_Q_SETFORM *q_u, prs_struct *ps, int depth)
 {
-	uint32 useless_ptr=0;
+	uint32 useless_ptr=1;
 	prs_debug(ps, depth, desc, "spoolss_io_q_setform");
 	depth++;
 
@@ -6695,12 +6695,13 @@ BOOL make_spoolss_q_addform(SPOOL_Q_ADDFORM *q_u, POLICY_HND *handle,
  ********************************************************************/
 
 BOOL make_spoolss_q_setform(SPOOL_Q_SETFORM *q_u, POLICY_HND *handle, 
-			    int level, FORM *form)
+			    int level, char *form_name, FORM *form)
 {
 	memcpy(&q_u->handle, handle, sizeof(POLICY_HND));
 	q_u->level = level;
 	q_u->level2 = level;
 	memcpy(&q_u->form, form, sizeof(FORM));
+	init_unistr2(&q_u->name, form_name, strlen(form_name) + 1);
 
 	return True;
 }
@@ -6713,5 +6714,38 @@ BOOL make_spoolss_q_deleteform(SPOOL_Q_DELETEFORM *q_u, POLICY_HND *handle, char
 {
 	memcpy(&q_u->handle, handle, sizeof(POLICY_HND));
 	init_unistr2(&q_u->name, form, strlen(form) + 1);
+	return True;
+}
+
+/*******************************************************************
+ * init a structure.
+ ********************************************************************/
+
+BOOL make_spoolss_q_getform(SPOOL_Q_GETFORM *q_u, POLICY_HND *handle, 
+                            char *formname, uint32 level, NEW_BUFFER *buffer,
+			    uint32 offered)
+{
+        memcpy(&q_u->handle, handle, sizeof(POLICY_HND));
+        q_u->level = level;
+        init_unistr2(&q_u->formname, formname, strlen(formname) + 1);
+        q_u->buffer=buffer;
+        q_u->offered=offered;
+
+        return True;
+}
+
+/*******************************************************************
+ * init a structure.
+ ********************************************************************/
+
+BOOL make_spoolss_q_enumforms(SPOOL_Q_ENUMFORMS *q_u, POLICY_HND *handle, 
+			      uint32 level, NEW_BUFFER *buffer,
+			      uint32 offered)
+{
+        memcpy(&q_u->handle, handle, sizeof(POLICY_HND));
+        q_u->level = level;
+        q_u->buffer=buffer;
+        q_u->offered=offered;
+
 	return True;
 }
