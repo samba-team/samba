@@ -57,29 +57,39 @@ fullpath(const char *p)
 {
         char path[MAXPATHLEN];
 
-	if (strlen(p) > MAXPATHLEN-1)
-	{
+	if (strlen(p) > MAXPATHLEN-1) {
 		return NULL;
 	}
 
-        if (realpath(p, path) == NULL)
-	{
-                return strdup(p);
+        if (realpath(p, path) == NULL) {
+		fprintf(stderr,"Failed to find real path for mount point\n");
+		exit(1);
 	}
 	return strdup(path);
 }
 
-/* Check whether user is allowed to mount on the specified mount point */
-static int mount_ok(SMB_STRUCT_STAT *st)
+/* Check whether user is allowed to mount on the specified mount point. If it's
+   OK then we change into that directory - this prevents race conditions */
+static int mount_ok(char *mount_point)
 {
-        if (!S_ISDIR(st->st_mode)) {
+	SMB_STRUCT_STAT st;
+
+	if (chdir(mount_point) != 0) {
+		return -1;
+	}
+
+        if (sys_stat(".", &st) != 0) {
+		return -1;
+        }
+
+        if (!S_ISDIR(st.st_mode)) {
                 errno = ENOTDIR;
                 return -1;
         }
 	
         if ((getuid() != 0) && 
-	    ((getuid() != st->st_uid) || 
-	     ((st->st_mode & S_IRWXU) != S_IRWXU))) {
+	    ((getuid() != st.st_uid) || 
+	     ((st.st_mode & S_IRWXU) != S_IRWXU))) {
                 errno = EPERM;
                 return -1;
         }
@@ -94,7 +104,6 @@ static int mount_ok(SMB_STRUCT_STAT *st)
 	int fd, um;
 	unsigned int flags;
 	struct smb_mount_data data;
-	SMB_STRUCT_STAT st;
 	struct mntent ment;
 
 	memset(&data, 0, sizeof(struct smb_mount_data));
@@ -114,18 +123,12 @@ static int mount_ok(SMB_STRUCT_STAT *st)
 		exit(1);
 	}
 
-        mount_point = argv[1];
+        mount_point = fullpath(argv[1]);
 
         argv += 1;
         argc -= 1;
 
-        if (sys_stat(mount_point, &st) == -1) {
-                fprintf(stderr, "could not find mount point %s: %s\n",
-                        mount_point, strerror(errno));
-                exit(1);
-        }
-
-        if (mount_ok(&st) != 0) {
+        if (mount_ok(mount_point) != 0) {
                 fprintf(stderr, "cannot mount on %s: %s\n",
                         mount_point, strerror(errno));
                 exit(1);
@@ -160,7 +163,7 @@ static int mount_ok(SMB_STRUCT_STAT *st)
 
 	flags = MS_MGC_VAL;
 
-	if (mount(share_name, mount_point, "smbfs", flags, (char *)&data) < 0)
+	if (mount(share_name, ".", "smbfs", flags, (char *)&data) < 0)
 	{
 		perror("mount error");
 		printf("Please refer to the smbmnt(8) manual page\n");
@@ -168,7 +171,7 @@ static int mount_ok(SMB_STRUCT_STAT *st)
 	}
 
         ment.mnt_fsname = share_name ? share_name : "none";
-        ment.mnt_dir = fullpath(mount_point);
+        ment.mnt_dir = mount_point;
         ment.mnt_type = "smbfs";
         ment.mnt_opts = "";
         ment.mnt_freq = 0;
