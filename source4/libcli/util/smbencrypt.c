@@ -291,19 +291,20 @@ void SMBsesskeygen_lm_sess_key(const uchar lm_hash[16],
 #endif
 }
 
-DATA_BLOB NTLMv2_generate_names_blob(const char *hostname, 
+DATA_BLOB NTLMv2_generate_names_blob(TALLOC_CTX *mem_ctx, 
+				     const char *hostname, 
 				     const char *domain)
 {
-	DATA_BLOB names_blob = data_blob(NULL, 0);
+	DATA_BLOB names_blob = data_blob_talloc(mem_ctx, NULL, 0);
 	
-	msrpc_gen(&names_blob, "aaa", 
+	msrpc_gen(mem_ctx, &names_blob, "aaa", 
 		  NTLMSSP_NAME_TYPE_DOMAIN, domain,
 		  NTLMSSP_NAME_TYPE_SERVER, hostname,
 		  0, "");
 	return names_blob;
 }
 
-static DATA_BLOB NTLMv2_generate_client_data(const DATA_BLOB *names_blob) 
+static DATA_BLOB NTLMv2_generate_client_data(TALLOC_CTX *mem_ctx, const DATA_BLOB *names_blob) 
 {
 	uchar client_chal[8];
 	DATA_BLOB response = data_blob(NULL, 0);
@@ -318,7 +319,7 @@ static DATA_BLOB NTLMv2_generate_client_data(const DATA_BLOB *names_blob)
 
 	/* See http://www.ubiqx.org/cifs/SMB.html#SMB.8.5 */
 
-	msrpc_gen(&response, "ddbbdb", 
+	msrpc_gen(mem_ctx, &response, "ddbbdb", 
 		  0x00000101,     /* Header  */
 		  0,              /* 'Reserved'  */
 		  long_date, 8,	  /* Timestamp */
@@ -337,10 +338,16 @@ static DATA_BLOB NTLMv2_generate_response(const uchar ntlm_v2_hash[16],
 	DATA_BLOB ntlmv2_client_data;
 	DATA_BLOB final_response;
 	
+	TALLOC_CTX *mem_ctx = talloc_init("NTLMv2_generate_response internal context");
+
+	if (!mem_ctx) {
+		return data_blob(NULL, 0);
+	}
+	
 	/* NTLMv2 */
 	/* generate some data to pass into the response function - including
 	   the hostname and domain name of the server */
-	ntlmv2_client_data = NTLMv2_generate_client_data(names_blob);
+	ntlmv2_client_data = NTLMv2_generate_client_data(mem_ctx, names_blob);
 
 	/* Given that data, and the challenge from the server, generate a response */
 	SMBOWFencrypt_ntv2(ntlm_v2_hash, server_chal, &ntlmv2_client_data, ntlmv2_response);
@@ -352,7 +359,7 @@ static DATA_BLOB NTLMv2_generate_response(const uchar ntlm_v2_hash[16],
 	memcpy(final_response.data+sizeof(ntlmv2_response), 
 	       ntlmv2_client_data.data, ntlmv2_client_data.length);
 
-	data_blob_free(&ntlmv2_client_data);
+	talloc_destroy(mem_ctx);
 
 	return final_response;
 }

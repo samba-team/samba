@@ -9,7 +9,7 @@ ADD_OBJ_FILES = \
 		torture/basic/charset.o \
 		torture/basic/mangle_test.o \
 		torture/basic/denytest.o \
-		torture/basic/aliases.o
+		torture/basic/aliases.o 
 REQUIRED_SUBSYSTEMS = \
 		LIBSMB
 # End SUBSYSTEM TORTURE_BASIC
@@ -81,7 +81,8 @@ ADD_OBJ_FILES = \
 [BINARY::smbtorture]
 OBJ_FILES = \
 		torture/torture.o \
-		torture/torture_util.o
+		torture/torture_util.o \
+		torture/ntlmssp.o
 REQUIRED_SUBSYSTEMS = \
 		TORTURE_BASIC \
 		TORTURE_RAW \

@@ -499,7 +499,15 @@
 
 
 	/* Function:    0x2d */
-	NTSTATUS UNK_GET_CONNUSER ();
+	NTSTATUS UNK_GET_CONNUSER (
+		[in]  unistr *system_name,
+		[in]  uint32 unknown1,
+		[in]  uint32 unknown2,
+		[in]  uint32 unknown3,
+		[out] unistr *username,
+		[out] unistr *domain_name
+		);
+
 	/* Function:          0x2e */
 	NTSTATUS QUERYINFO2 ();
 }

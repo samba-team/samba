@@ -66,6 +66,7 @@ BOOL dcesrv_auth_bind(struct dcesrv_call_state *call)
 
 	status = auth_ntlmssp_start(&dce_conn->auth_state.ntlmssp_state);
 	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(2, ("Failed to start NTLMSSP subsystem!\n"));
 		return False;
 	}
 
@@ -85,10 +86,12 @@ BOOL dcesrv_auth_bind_ack(struct dcesrv_call_state *call, struct dcerpc_packet *
 	}
 
 	status = auth_ntlmssp_update(dce_conn->auth_state.ntlmssp_state,
+				     call->mem_ctx,
 				     dce_conn->auth_state.auth_info->credentials, 
 				     &dce_conn->auth_state.auth_info->credentials);
 	if (!NT_STATUS_IS_OK(status) && 
 	    !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		DEBUG(2, ("Failed to start NTLMSSP process NTLMSSP negotiate: %s\n", nt_errstr(status)));
 		return False;
 	}
 
@@ -131,18 +134,12 @@ BOOL dcesrv_auth_auth3(struct dcesrv_call_state *call)
 	}
 
 	status = auth_ntlmssp_update(dce_conn->auth_state.ntlmssp_state,
+				     call->mem_ctx,
 				     dce_conn->auth_state.auth_info->credentials, 
 				     &dce_conn->auth_state.auth_info->credentials);
 	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(4, ("User failed to authenticated with NTLMSSP: %s\n", nt_errstr(status)));
 		return False;
-	}
-
-	switch (dce_conn->auth_state.auth_info->auth_level) {
-	case DCERPC_AUTH_LEVEL_PRIVACY:
-	case DCERPC_AUTH_LEVEL_INTEGRITY:
-		/* setup for signing */
-		status = ntlmssp_sign_init(dce_conn->auth_state.ntlmssp_state->ntlmssp_state);
-		break;
 	}
 
 	return True;
@@ -197,6 +194,7 @@ BOOL dcesrv_auth_request(struct dcesrv_call_state *call)
 	switch (dce_conn->auth_state.auth_info->auth_level) {
 	case DCERPC_AUTH_LEVEL_PRIVACY:
 		status = ntlmssp_unseal_packet(dce_conn->auth_state.ntlmssp_state->ntlmssp_state, 
+					       call->mem_ctx,
 					       pkt->u.request.stub_and_verifier.data, 
 					       pkt->u.request.stub_and_verifier.length, 
 					       &auth.credentials);
@@ -204,6 +202,7 @@ BOOL dcesrv_auth_request(struct dcesrv_call_state *call)
 
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
 		status = ntlmssp_check_packet(dce_conn->auth_state.ntlmssp_state->ntlmssp_state, 
+					      call->mem_ctx,
 					      pkt->u.request.stub_and_verifier.data, 
 					      pkt->u.request.stub_and_verifier.length, 
 					      &auth.credentials);
@@ -262,6 +261,7 @@ BOOL dcesrv_auth_response(struct dcesrv_call_state *call,
 	switch (dce_conn->auth_state.auth_info->auth_level) {
 	case DCERPC_AUTH_LEVEL_PRIVACY:
 		status = ntlmssp_seal_packet(dce_conn->auth_state.ntlmssp_state->ntlmssp_state, 
+					     call->mem_ctx,
 					     ndr->data + DCERPC_REQUEST_LENGTH, 
 					     ndr->offset - DCERPC_REQUEST_LENGTH,
 					     &dce_conn->auth_state.auth_info->credentials);
@@ -269,6 +269,7 @@ BOOL dcesrv_auth_response(struct dcesrv_call_state *call,
 
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
 		status = ntlmssp_sign_packet(dce_conn->auth_state.ntlmssp_state->ntlmssp_state, 
+					     call->mem_ctx,
 					     ndr->data + DCERPC_REQUEST_LENGTH, 
 					     ndr->offset - DCERPC_REQUEST_LENGTH,
 					     &dce_conn->auth_state.auth_info->credentials);
