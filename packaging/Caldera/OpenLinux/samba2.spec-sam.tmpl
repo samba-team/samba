@@ -295,7 +295,9 @@ make LOGFILEBASE=/var/log/samba.d everything nsswitch/libnss_wins.so
 cd ../examples/VFS
 make
 cd block
-CFLAGS="$RPM_OPT_FLAGS -DPARAMCONF=/etc/samba.d/samba-block.conf" make
+mv block.c block.c.old
+sed 's/etc\/samba/etc\/samba\.d/g' < block.c.old > block.c
+make
 
 
 
@@ -439,7 +441,7 @@ done
 cat << 'EOF' | %{mkLists} -d samba
 Samba					base
 /lib/$					base
-/lib/samba/$					base
+/usr/lib/samba/$			base
 %{LSBservedir}				config-IGNORED
 ^/(etc|var|home|tmp)			config-IGNORED
 swat					swat
@@ -459,6 +461,7 @@ Samba/README.txt			base
 libnss_*				base
 pam_*					base
 winbind*				base
+/usr/lib/samba/$			base
 %{_defaultdocdir}/samba-[^/]+/(COPYING|README$)	base
 %{_defaultdocdir}/samba- 		doc
 smb(mount|mnt|umount)			smbfs
