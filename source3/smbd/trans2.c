@@ -1690,7 +1690,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
   tvs.actime = sbuf.st_atime;
   mode = dos_mode(conn,fname,&sbuf);
 
-  if (total_data > 0 && IVAL(pdata,0) == total_data) {
+  if (total_data > 4 && IVAL(pdata,0) == total_data) {
     /* uggh, EAs for OS2 */
     DEBUG(4,("Rejecting EA request with total_data=%d\n",total_data));
     return(ERROR(ERRDOS,ERROR_EAS_NOT_SUPPORTED));
