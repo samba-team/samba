@@ -458,6 +458,8 @@ static BOOL wbinfo_auth(char *username)
         return result == NSS_STATUS_SUCCESS;
 }
 
+#ifdef WITH_WINBIND_AUTH_CRAP
+
 /* Authenticate a user with a challenge/response */
 
 static BOOL wbinfo_auth_crap(char *username)
@@ -511,6 +513,8 @@ static BOOL wbinfo_auth_crap(char *username)
 
         return result == NSS_STATUS_SUCCESS;
 }
+
+#endif	/* WITH_WINBIND_AUTH_CRAP */
 
 /* Print domain users */
 
@@ -841,13 +845,13 @@ int main(int argc, char **argv)
                                        "plaintext password\n", string_arg);
                                 got_error = True;
                         }
-
+#ifdef WITH_WINBIND_AUTH_CRAP
                         if (!wbinfo_auth_crap(string_arg)) {
                                 printf("Could not authenticate user %s with "
                                        "challenge/response\n", string_arg);
                                 got_error = True;
                         }
-			
+#endif
                         if (got_error)
                                 goto done;
                         break;

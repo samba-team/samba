@@ -85,6 +85,7 @@
 #undef HAVE_CONNECT
 #undef HAVE_SHORT_INO_T
 #undef WITH_SMBWRAPPER
+#undef WITH_WINBIND_AUTH_CRAP
 #undef WITH_AFS
 #undef WITH_DFS
 #undef SUNOS5
@@ -125,9 +126,6 @@
 #undef WITH_SYSLOG
 #undef WITH_PROFILE
 #undef WITH_SSL
-#undef WITH_LDAP
-#undef WITH_NISPLUS
-#undef WITH_TDBPWD
 #undef WITH_PAM
 #undef WITH_PAM_SMBPASS
 #undef WITH_NISPLUS_HOME
@@ -141,10 +139,8 @@
 #undef HAVE_VA_COPY
 #undef HAVE_SETRESUID_DECL
 #undef HAVE_SETRESUID
-#undef WITH_NETATALK
 #undef WITH_UTMP
 #undef WITH_MSDFS
-#undef WITH_VFS
 #undef HAVE_INO64_T
 #undef HAVE_DEV64_T
 #undef HAVE_STRUCT_FLOCK64

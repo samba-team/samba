@@ -2719,6 +2719,20 @@ else
 	WINBIND_PAM_TARGETS=""
 fi
 
+
+AC_ARG_WITH(winbind,
+[  --with-winbind-auth-challenge   Enable winbindd_pam_auth_crap() functionality (default no)],
+[ 
+  case "$withval" in
+	yes)
+		WITH_WINBIND_AUTH_CRAP=yes
+		;;
+        no)
+		WITH_WINBIND_AUTH_CRAP=no
+                ;;
+  esac ],
+)
+
 # Check for FreeBSD problem with getgroups
 # It returns EGID too many times in the list of groups
 # and causes a security problem
