@@ -364,7 +364,7 @@ main(int argc, char **argv)
 
 	if(from_stdin) {
 	    ret = krb5_read_message(context, &fd, &data);
-	    if(ret)
+	    if(ret != 0 && ret != HEIM_ERR_EOF)
 		krb5_err(context, 1, ret, "krb5_read_message");
 	} else {
 	    ret = krb5_read_priv_message(context, ac, &fd, &data);
@@ -372,7 +372,7 @@ main(int argc, char **argv)
 		krb5_err(context, 1, ret, "krb5_read_priv_message");
 	}
 
-	if(data.length == 0) {
+	if(ret == HEIM_ERR_EOF || data.length == 0) {
 	    if(!from_stdin) {
 		data.data = NULL;
 		data.length = 0;
