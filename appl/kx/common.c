@@ -141,6 +141,7 @@ get_xsockets (int *unix_socket, int *tcp_socket)
      char *dir, *p;
 
      dir = strdup (X_UNIX_PATH);
+     errx (1, "strdup: out of memory");
      p = strrchr (dir, '/');
      if (p)
        *p = '\0';
@@ -339,19 +340,29 @@ verify_and_remove_cookies (int fd, int sock)
      npad = (4 - (n % 4)) % 4;
      dpad = (4 - (d % 4)) % 4;
      protocol_name = malloc(n + npad);
+     if (protocol_name == NULL)
+	 return 1;
      protocol_data = malloc(d + dpad);
+     if (protocol_data == NULL)
+	 goto fail;
      if (krb_net_read (fd, protocol_name, n + npad) != n + npad)
-	  return 1;
+	 goto fail;
      if (krb_net_read (fd, protocol_data, d + dpad) != d + dpad)
-	  return 1;
+	 goto fail;
      if (strncmp (protocol_name, COOKIE_TYPE, strlen(COOKIE_TYPE)) != 0)
-	  return 1;
+	 goto fail;
      if (d != cookie_len ||
 	 memcmp (protocol_data, cookie, cookie_len) != 0)
-	  return 1;
+	 goto fail;
+     free (protocol_name);
+     free (protocol_data);
      if (krb_net_write (sock, zeros, 6) != 6)
 	  return 1;
      return 0;
+fail:
+     free (protocol_name);
+     free (protocol_data);
+     return 1;
 }
 
 /*

@@ -601,6 +601,8 @@ main(int argc, char **argv)
 	  if (p == NULL)
 	      errx(1, "Who are you?");
 	  user = strdup (p->pw_name);
+	  if (user == NULL)
+	      errx (1, "strdup: out of memory");
      }
      if (port == 0)
 	 port = k_getportbyname ("kx", "tcp", htons(KX_PORT));

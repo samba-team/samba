@@ -161,8 +161,13 @@ int krb4_mic(char *msg)
     MSG_DAT m_data;
     char *tmp, *cmd;
   
-    cmd = strdup(msg);
+    cmd = malloc(strlen(msg) + 1);
     
+    if (cmd == NULL) {
+	reply(451, "Failed to allocate memory.");
+	return -1;
+    }
+
     len = base64_decode(msg, cmd);
     if(len < 0){
 	reply(501, "Failed to decode base 64 data.");
@@ -172,18 +177,22 @@ int krb4_mic(char *msg)
     kerror = krb_rd_safe(cmd, len, &auth_dat.session, 
 			 &his_addr, &ctrl_addr, &m_data);
 
+    free(cmd);
     if(kerror){
 	reply(535, "Error reading request: %s.", krb_get_err_text(kerror));
-	free(cmd);
 	return -1;
     }
     
     tmp = malloc(strlen(msg) + 1);
-    snprintf(tmp, strlen(msg) + 1, "%.*s", (int)m_data.app_length, m_data.app_data);
+    if (tmp == NULL) {
+	reply(451, "Failed to allocate memory.");
+	return -1;
+    }
+    snprintf(tmp, strlen(msg) + 1, "%.*s",
+	     (int)m_data.app_length, m_data.app_data);
     if(!strstr(tmp, "\r\n"))
 	strcat(tmp, "\r\n");
     new_ftp_command(tmp);
-    free(cmd);
     return 0;
 }
 
@@ -202,8 +211,8 @@ int krb4_enc(char *msg)
     MSG_DAT m_data;
     char *tmp, *cmd;
   
-    cmd = strdup(msg);
-    
+    cmd = malloc(strlen(msg) + 1);
+
     len = base64_decode(msg, cmd);
     if(len < 0){
 	reply(501, "Failed to decode base 64 data.");
@@ -212,19 +221,22 @@ int krb4_enc(char *msg)
     }
     kerror = krb_rd_priv(cmd, len, schedule, &auth_dat.session, 
 			 &his_addr, &ctrl_addr, &m_data);
+    free(cmd);
 
     if(kerror){
 	reply(535, "Error reading request: %s.", krb_get_err_text(kerror));
-	free(cmd);
 	return -1;
     }
     
-    tmp = strdup(msg);
+    tmp = malloc(strlen(msg) + 1);
+    if (tmp == NULL) {
+	reply(451, "Failed to allocate memory.");
+	return -1;
+    }
     snprintf(tmp, strlen(msg) + 1, "%.*s", (int)m_data.app_length, m_data.app_data);
     if(!strstr(tmp, "\r\n"))
 	strcat(tmp, "\r\n");
     new_ftp_command(tmp);
-    free(cmd);
     return 0;
 }
 
