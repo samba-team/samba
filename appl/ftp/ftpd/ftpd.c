@@ -372,7 +372,7 @@ main(int argc, char **argv)
 	data_source.sin_port = htons(ntohs(ctrl_addr.sin_port) - 1);
 	debug = 0;
 
-	/* set this here so klogin can use it... */
+	/* set this here so it can be put in wtmp */
 	sprintf(ttyline, "ftp%d", getpid());
 
 
@@ -386,7 +386,8 @@ main(int argc, char **argv)
 
 	/* Try to handle urgent data inline */
 #ifdef SO_OOBINLINE
-	if (setsockopt(0, SOL_SOCKET, SO_OOBINLINE, (char *)&on, sizeof(on)) < 0)
+	if (setsockopt(0, SOL_SOCKET, SO_OOBINLINE, (char *)&on,
+		       sizeof(on)) < 0)
 		syslog(LOG_ERR, "setsockopt: %m");
 #endif
 
