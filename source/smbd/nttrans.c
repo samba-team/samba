@@ -433,6 +433,17 @@ static int map_share_mode( BOOL *pstat_open_only, char *fname,
    */
 
   if (smb_open_mode == -1) {
+
+	/* 
+	 * JRA - NT seems to sometimes send desired_access as zero. play it safe
+	 * and map to a stat open.
+	 */
+
+	if(desired_access == 0) {
+		*pstat_open_only = True;
+		smb_open_mode = DOS_OPEN_RDONLY;
+	}
+
 	if(desired_access == WRITE_DAC_ACCESS || desired_access == READ_CONTROL_ACCESS)
 		*pstat_open_only = True;
 
