@@ -82,7 +82,7 @@ common_setup(krb5_context *context, int *argc, char **argv,
 	krb5_errx(*context, 0, "%s", heimdal_version);
     
     if(port_str){
-	struct servent *s = getservbyname(port_str, "tcp");
+	struct servent *s = roken_getservbyname(port_str, "tcp");
 	if(s)
 	    port = s->s_port;
 	else {

@@ -57,7 +57,7 @@ add_port(int family, const char *port_str, const char *protocol)
     int port;
     int i;
 
-    sp = getservbyname(port_str, protocol);
+    sp = roken_getservbyname(port_str, protocol);
     if(sp){
 	port = sp->s_port;
     }else{
@@ -441,12 +441,14 @@ handle_tcp(struct descr *d, int index, int min_free)
 	    n = 0;
 	}
     }
-    else if(enable_http && strncmp(d[index].buf, "GET ", 4) == 0 && 
-	    strncmp(d[index].buf + d[index].len - 4, "\r\n\r\n", 4) == 0){
+    else if(enable_http &&
+	    strncmp((char *)d[index].buf, "GET ", 4) == 0 && 
+	    strncmp((char *)d[index].buf + d[index].len - 4,
+		    "\r\n\r\n", 4) == 0){
 	char *s, *p, *t;
 	void *data;
 	int len;
-	s = d[index].buf;
+	s = (char *)d[index].buf;
 	p = strstr(s, "\r\n");
 	*p = 0;
 	p = NULL;

@@ -335,7 +335,7 @@ int main(int argc, char **argv)
 	if (argc > 1) {
 	    usage ();
 	} else if (argc == 1) {
-	    sp = getservbyname (*argv, "tcp");
+	    sp = roken_getservbyname (*argv, "tcp");
 	    if (sp)
 		port = sp->s_port;
 	    else
@@ -408,7 +408,7 @@ int main(int argc, char **argv)
     }
 #endif	/* _SC_CRAY_SECURE_SYS */
 
-    openlog("telnetd", LOG_PID | LOG_ODELAY, LOG_DAEMON);
+    roken_openlog("telnetd", LOG_PID | LOG_ODELAY, LOG_DAEMON);
     fromlen = sizeof (from);
     if (getpeername(0, (struct sockaddr *)&from, &fromlen) < 0) {
 	fprintf(stderr, "%s: ", progname);
@@ -705,7 +705,7 @@ doit(struct sockaddr_in *who)
 #endif	/* _SC_CRAY_SECURE_SYS */
 
     /* get name of connected client */
-    hp = gethostbyaddr((const char *)&who->sin_addr,
+    hp = roken_gethostbyaddr((const char *)&who->sin_addr,
 		       sizeof (struct in_addr),
 		       who->sin_family);
 

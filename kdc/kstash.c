@@ -94,7 +94,8 @@ int main(int argc, char **argv)
     f = fopen(keyfile, "w");
     if(f == NULL)
 	krb5_err(context, 1, errno, "fopen(%s)", keyfile);
-    encode_EncryptionKey(buf + sizeof(buf) - 1, sizeof(buf), &key, &len);
+    encode_EncryptionKey((unsigned char *)buf + sizeof(buf) - 1,
+			 sizeof(buf), &key, &len);
     fwrite(buf + sizeof(buf) - len, len, 1, f);
     fclose(f);
     exit(0);

@@ -159,7 +159,7 @@ doit (const char *hostname, int port, const char *service)
     struct in_addr **h;
     struct hostent *hostent;
 
-    hostent = gethostbyname (hostname);
+    hostent = roken_gethostbyname (hostname);
     if (hostent == NULL)
 	errx (1, "gethostbyname '%s' failed: %s",
 	      hostname,

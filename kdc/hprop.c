@@ -71,7 +71,7 @@ int open_socket(krb5_context context, const char *hostname)
 	warn("socket");
 	return -1;
     }
-    hp = gethostbyname(hostname);
+    hp = roken_gethostbyname(hostname);
     if(hp == NULL){
 	warnx("%s: %s", hostname, hstrerror(h_errno));
 	close(s);
