@@ -105,6 +105,7 @@ static BOOL lsa_io_dom_r_ref(char *desc,  DOM_R_REF *r_r, prs_struct *ps, int de
 			{
 				slprintf(t, sizeof(t) - 1, "dom_ref[%d] ", i);
 				smb_io_unistr2(t, &(r_r->ref_dom[n].uni_dom_name), True, ps, depth); /* domain name unicode string */
+				prs_align(ps);
 				n++;
 			}
 
