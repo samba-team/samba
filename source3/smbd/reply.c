@@ -209,9 +209,9 @@ int reply_tcon(connection_struct *conn,
 	 * Ensure the user and password names are in UNIX codepage format.
 	 */
 	
-	dos_to_unix(user,True);
+	pstrcpy(user,dos_to_unix(user,False));
 	if (!doencrypt)
-    	dos_to_unix(password,True);
+    	pstrcpy(password,dos_to_unix(password,False));
 
 	/*
 	 * Pass the user through the NT -> unix user mapping
@@ -797,8 +797,8 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
        * Ensure the plaintext passwords are in UNIX format.
        */
       if(!doencrypt) {
-        dos_to_unix(smb_apasswd,True);
-        dos_to_unix(smb_ntpasswd,True);
+        pstrcpy(smb_apasswd,dos_to_unix(smb_apasswd,False));
+        pstrcpy(smb_ntpasswd,dos_to_unix(smb_ntpasswd,False));
       }
 
     } else {
@@ -808,7 +808,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
       /*
        * Ensure the plaintext password is in UNIX format.
        */
-      dos_to_unix(smb_apasswd,True);
+      pstrcpy(smb_apasswd,dos_to_unix(smb_apasswd,False));
       
       /* trim the password */
       smb_apasslen = strlen(smb_apasswd);
