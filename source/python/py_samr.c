@@ -393,7 +393,7 @@ static PyObject *samr_connect(PyObject *self, PyObject *args, PyObject *kw)
 		return NULL;
 	}
 
-	if (!(cli = open_pipe_creds(server, creds, PIPE_SAMR, &errstr))) {
+	if (!(cli = open_pipe_creds(server, creds, PI_SAMR, &errstr))) {
 		PyErr_SetString(samr_error, errstr);
 		free(errstr);
 		return NULL;
@@ -409,7 +409,6 @@ static PyObject *samr_connect(PyObject *self, PyObject *args, PyObject *kw)
 
 	if (!NT_STATUS_IS_OK(ntstatus)) {
 		cli_shutdown(cli);
-		SAFE_FREE(cli);
 		PyErr_SetObject(samr_ntstatus, py_ntstatus_tuple(ntstatus));
 		goto done;
 	}
