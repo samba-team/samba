@@ -52,12 +52,14 @@ static int decrypt_flag;
 static EncryptionKey mkey5;
 static krb5_data msched5;
 
-#ifdef KRB4
 static int v4_db;
-
-#ifdef KASERVER_DB
 static int ka_db;
 static char *afs_cell;
+
+#ifdef KRB4
+static char *realm;
+
+#ifdef KASERVER_DB
 static int kaspecials_flag;
 #endif
 #endif
@@ -125,7 +127,7 @@ v5_prop(krb5_context context, HDB *db, hdb_entry *entry, void *appdata)
 #ifdef KRB4
 static des_cblock mkey4;
 static des_key_schedule msched4;
-static char realm[REALM_SZ];
+static char realm_buf[REALM_SZ];
 
 static int
 v4_prop(void *arg, Principal *p)
@@ -382,6 +384,7 @@ struct getargs args[] = {
     { "database", 'd',	arg_string, &database, "database", "file" },
 #ifdef KRB4
     { "v4-db",    '4',	arg_flag, &v4_db, "use version 4 database" },
+    { "v4-realm", 'r',  arg_string, &realm, "v4 realm to use" },
 #endif
 #ifdef KASERVER_DB
     { "ka-db",	  'K',  arg_flag, &ka_db, "use kaserver database" },
@@ -609,6 +612,22 @@ main(int argc, char **argv)
     }
     
 #ifdef KRB4
+    if (v4_db
+#ifdef KASERVER_DB
+ || ka_db
+#endif
+) {
+	int e;
+
+	if (realm == NULL) {
+	    e = krb_get_lrealm(realm_buf, 1);
+	    if(e)
+		krb5_errx(context, 1, "krb_get_lrealm: %s",
+			  krb_get_err_text(e));
+	    realm = realm_buf;
+	}
+    }
+
     if(v4_db) {
 	int e = kerb_db_set_name (database);
 	if(e)
@@ -618,16 +637,6 @@ main(int argc, char **argv)
 	if(e)
 	    krb5_errx(context, 1, "kdb_get_master_key: %s",
 		      krb_get_err_text(e));
-	e = krb_get_lrealm(realm, 1);
-	if(e)
-	    krb5_errx(context, 1, "krb_get_lrealm: %s",
-		      krb_get_err_text(e));
-#ifdef KASERVER_DB
-    } else if(ka_db) {
-	int e = krb_get_lrealm(realm, 1);
-	if(e)
-	    krb5_errx(context, 1, "krb_get_lrealm: %s", krb_get_err_text(e));
-#endif
     } else
 #endif
 	{
