@@ -1047,7 +1047,7 @@ static void print_queue_update(int snum)
 
 #define NOTIFY_PID_LIST_KEY "NOTIFY_PID_LIST"
 
-static TDB_DATA get_printer_notify_pid_list(struct tdb_print_db *pdb)
+static TDB_DATA get_printer_notify_pid_list(struct tdb_print_db *pdb, BOOL cleanlist)
 {
 	TDB_DATA data;
 	size_t i;
@@ -1062,18 +1062,21 @@ static TDB_DATA get_printer_notify_pid_list(struct tdb_print_db *pdb)
 	}
 
 	if (data.dsize % 8) {
-		DEBUG(0,("get_pid_list: Size of record for printer %s not a multiple of 8 !\n",
+		DEBUG(0,("get_printer_notify_pid_list: Size of record for printer %s not a multiple of 8 !\n",
 					pdb->printer_name ));
 		tdb_delete_by_string(pdb->tdb, NOTIFY_PID_LIST_KEY );
 		ZERO_STRUCT(data);
 		return data;
 	}
 
+	if (!cleanlist)
+		return data;
+
 	/*
 	 * Weed out all dead entries.
 	 */
 
-	for( i = 0; i < data.dsize; ) {
+	for( i = 0; i < data.dsize; i += 8) {
 		pid_t pid = (pid_t)IVAL(data.dptr, i);
 
 		if (pid == sys_getpid())
@@ -1081,21 +1084,18 @@ static TDB_DATA get_printer_notify_pid_list(struct tdb_print_db *pdb)
 
 		/* Entry is dead if process doesn't exist or refcount is zero. */
 
-		if ((IVAL(data.dptr, i + 4) == 0) || !process_exists(pid)) {
+		while ((i < data.dsize) && ((IVAL(data.dptr, i + 4) == 0) || !process_exists(pid))) {
 
 			/* Refcount == zero is a logic error and should never happen. */
 			if (IVAL(data.dptr, i + 4) == 0) {
-				DEBUG(0,("get_pid_list: Refcount == 0 for pid = %u printer %s !\n",
+				DEBUG(0,("get_printer_notify_pid_list: Refcount == 0 for pid = %u printer %s !\n",
 							(unsigned int)pid, pdb->printer_name ));
 			}
 
 			if (data.dsize - i > 8)
 				memmove( &data.dptr[i], &data.dptr[i+8], data.dsize - i - 8);
 			data.dsize -= 8;
-			continue;
 		}
-
-		i += 8;
 	}
 
 	return data;
@@ -1121,13 +1121,13 @@ BOOL print_notify_pid_list(const char *printername, TALLOC_CTX *mem_ctx, size_t 
 	if (!pdb)
 		return False;
 
-	if (tdb_lock_bystring(pdb->tdb, NOTIFY_PID_LIST_KEY, 10) == -1) {
+	if (tdb_read_lock_bystring(pdb->tdb, NOTIFY_PID_LIST_KEY, 10) == -1) {
 		DEBUG(0,("print_notify_pid_list: Failed to lock printer %s database\n", printername));
 		release_print_db(pdb);
 		return False;
 	}
 
-	data = get_printer_notify_pid_list( pdb );
+	data = get_printer_notify_pid_list( pdb, True );
 
 	if (!data.dptr) {
 		ret = True;
@@ -1151,7 +1151,7 @@ BOOL print_notify_pid_list(const char *printername, TALLOC_CTX *mem_ctx, size_t 
 
   done:
 
-	tdb_unlock_bystring(pdb->tdb, NOTIFY_PID_LIST_KEY);
+	tdb_read_unlock_bystring(pdb->tdb, NOTIFY_PID_LIST_KEY);
 	release_print_db(pdb);
 	SAFE_FREE(data.dptr);
 	return ret;
@@ -1181,7 +1181,7 @@ BOOL print_notify_register_pid(int snum)
 		return False;
 	}
 
-	data = get_printer_notify_pid_list( pdb );
+	data = get_printer_notify_pid_list( pdb, True );
 
 	/* Add ourselves and increase the refcount. */
 
@@ -1245,7 +1245,7 @@ BOOL print_notify_deregister_pid(int snum)
 		return False;
 	}
 
-	data = get_printer_notify_pid_list( pdb );
+	data = get_printer_notify_pid_list( pdb, True );
 
 	/* Reduce refcount. Remove ourselves if zero. */
 
@@ -1454,6 +1454,14 @@ BOOL print_job_delete(struct current_user *user, int snum, uint32 jobid, WERROR 
 	    !print_access_check(user, snum, JOB_ACCESS_ADMINISTER)) {
 		DEBUG(3, ("delete denied by security descriptor\n"));
 		*errcode = WERR_ACCESS_DENIED;
+
+		/* BEGIN_ADMIN_LOG */
+		sys_adminlog( LOG_ERR, (char *)
+			 "Permission denied-- user not allowed to delete, \
+pause, or resume print job. User name: %s. Printer name: %s.",
+				uidtoname(user->uid), PRINTERNAME(snum) );
+		/* END_ADMIN_LOG */
+
 		return False;
 	}
 
@@ -1511,6 +1519,14 @@ BOOL print_job_pause(struct current_user *user, int snum, uint32 jobid, WERROR *
 	if (!is_owner(user, snum, jobid) &&
 	    !print_access_check(user, snum, JOB_ACCESS_ADMINISTER)) {
 		DEBUG(3, ("pause denied by security descriptor\n"));
+
+		/* BEGIN_ADMIN_LOG */
+		sys_adminlog( LOG_ERR, (char *)
+			"Permission denied-- user not allowed to delete, \
+pause, or resume print job. User name: %s. Printer name: %s.",
+				uidtoname(user->uid), PRINTERNAME(snum) );
+		/* END_ADMIN_LOG */
+
 		*errcode = WERR_ACCESS_DENIED;
 		return False;
 	}
@@ -1554,6 +1570,13 @@ BOOL print_job_resume(struct current_user *user, int snum, uint32 jobid, WERROR 
 	    !print_access_check(user, snum, JOB_ACCESS_ADMINISTER)) {
 		DEBUG(3, ("resume denied by security descriptor\n"));
 		*errcode = WERR_ACCESS_DENIED;
+
+		/* BEGIN_ADMIN_LOG */
+		sys_adminlog( LOG_ERR, (char *)
+			 "Permission denied-- user not allowed to delete, \
+pause, or resume print job. User name: %s. Printer name: %s.",
+			uidtoname(user->uid), PRINTERNAME(snum) );
+		/* END_ADMIN_LOG */
 		return False;
 	}
 
