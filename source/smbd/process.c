@@ -928,11 +928,11 @@ const char *smb_fn_name(int type)
  Helper functions for contruct_reply.
 ****************************************************************************/
 
-static uint32 common_flags2 = FLAGS2_LONG_PATH_COMPONENTS|FLAGS2_EXTENDED_SECURITY;
+static uint32 common_flags2 = FLAGS2_LONG_PATH_COMPONENTS|FLAGS2_EXTENDED_SECURITY|FLAGS2_32_BIT_ERROR_CODES;
 
-void add_to_common_flags2(uint32 v)
+void remove_from_common_flags2(uint32 v)
 {
-	common_flags2 |= v;
+	common_flags2 &= ~v;
 }
 
 void construct_reply_common(char *inbuf,char *outbuf)
