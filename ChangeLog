@@ -1,3 +1,8 @@
+2000-03-30  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/principal.c (krb5_425_conv_principal_ext): add some
+	comments.  add fall-back on adding the realm name in lower case.
+
 2000-03-29  Assar Westerlund  <assar@sics.se>
 
 	* kdc/connect.c: remember to repoint all descr->sa to _ss after

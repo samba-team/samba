@@ -1,3 +1,9 @@
+2000-04-02  Assar Westerlund  <assar@sics.se>
+
+	* kadmin.c (main): make parse errors a fatal error
+	* init.c (init): create changepw/kerberos with disallow-tgt and
+	pwchange attributes
+
 2000-03-23  Assar Westerlund  <assar@sics.se>
 
 	* util.c (hex2n, parse_des_key): add

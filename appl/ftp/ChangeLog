@@ -1,3 +1,12 @@
+2000-04-02  Assar Westerlund  <assar@sics.se>
+
+	* ftpd/ls.c: rename all st_mtime variables to avoid conflict with
+	#define.
+	* ftpd/ftpcmd.y: rename all st_mtime variables to avoid conflict
+	with #define.
+	* ftp/cmds.c: rename all st_mtime variables to avoid conflict with
+	#define.
+
 2000-03-26  Assar Westerlund  <assar@sics.se>
 
 	* ftpd/ls.c, ftpd/ftpcmd.y, ftp/cmds.c: make sure to always call
