@@ -337,6 +337,13 @@ Byte offset   Type     name                description
 #define SMB_UID_NO_CHANGE                  0xFFFFFFFF
 #define SMB_GID_NO_CHANGE                  0xFFFFFFFF
 
+#define SMB_SIZE_NO_CHANGE_LO              0xFFFFFFFF
+#define SMB_SIZE_NO_CHANGE_HI              0xFFFFFFFF
+
+#define SMB_TIME_NO_CHANGE_LO              0xFFFFFFFF
+#define SMB_TIME_NO_CHANGE_HI              0xFFFFFFFF
+
+
 /*
 Offset Size         Name
 0      LARGE_INTEGER EndOfFile                File size

@@ -417,6 +417,21 @@ static mode_t unix_perms_from_wire( connection_struct *conn, SMB_STRUCT_STAT *ps
 }
 
 /****************************************************************************
+checks for SMB_TIME_NO_CHANGE and if not found
+calls interpret_long_date
+****************************************************************************/
+time_t interpret_long_unix_date(char *p)
+{
+	DEBUG(1,("interpret_long_unix_date\n"));
+	if(IVAL(p,0) == SMB_TIME_NO_CHANGE_LO &&
+	   IVAL(p,4) == SMB_TIME_NO_CHANGE_HI) {
+		return -1;
+	} else {
+		return interpret_long_date(p);
+	}
+}
+
+/****************************************************************************
  Get a level dependent lanman2 dir entry.
 ****************************************************************************/
 
@@ -2569,16 +2584,19 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 			if (total_data < 100)
 				return(ERROR_DOS(ERRDOS,ERRinvalidparam));
 
-			size=IVAL(pdata,0); /* first 8 Bytes are size */
+			if(IVAL(pdata, 0) != SMB_SIZE_NO_CHANGE_LO &&
+			   IVAL(pdata, 4) != SMB_SIZE_NO_CHANGE_HI) {
+				size=IVAL(pdata,0); /* first 8 Bytes are size */
 #ifdef LARGE_SMB_OFF_T
-			size |= (((SMB_OFF_T)IVAL(pdata,4)) << 32);
+				size |= (((SMB_OFF_T)IVAL(pdata,4)) << 32);
 #else /* LARGE_SMB_OFF_T */
-			if (IVAL(pdata,4) != 0)	/* more than 32 bits? */
-				return ERROR_DOS(ERRDOS,ERRunknownlevel);
+				if (IVAL(pdata,4) != 0)	/* more than 32 bits? */
+					return ERROR_DOS(ERRDOS,ERRunknownlevel);
 #endif /* LARGE_SMB_OFF_T */
+			}
 			pdata+=24;          /* ctime & st_blocks are not changed */
-			tvs.actime = interpret_long_date(pdata); /* access_time */
-			tvs.modtime = interpret_long_date(pdata+8); /* modification_time */
+			tvs.actime = interpret_long_unix_date(pdata); /* access_time */
+			tvs.modtime = interpret_long_unix_date(pdata+8); /* modification_time */
 			pdata+=16;
 			set_owner = (uid_t)IVAL(pdata,0);
 			pdata += 8;
