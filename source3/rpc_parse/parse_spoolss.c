@@ -1102,15 +1102,15 @@ BOOL make_spoolss_q_deleteprinterdriver(
  ********************************************************************/
 
 BOOL make_spoolss_q_getprinterdata(SPOOL_Q_GETPRINTERDATA *q_u,
-                                const POLICY_HND *handle,
-                                UNISTR2 *valuename, uint32 size)
+				   const POLICY_HND *handle,
+				   char *valuename, uint32 size)
 {
         if (q_u == NULL) return False;
 
         DEBUG(5,("make_spoolss_q_getprinterdata\n"));
 
         q_u->handle = *handle;
-        copy_unistr2(&q_u->valuename, valuename);
+	init_unistr2(&q_u->valuename, valuename, strlen(valuename) + 1);
         q_u->size = size;
 
         return True;
@@ -1205,6 +1205,9 @@ BOOL spoolss_io_r_getprinterdata(char *desc, SPOOL_R_GETPRINTERDATA *r_u, prs_st
 	if (!prs_uint32("size", ps, depth, &r_u->size))
 		return False;
 	
+	if (UNMARSHALLING(ps))
+		r_u->data = prs_alloc_mem(ps, r_u->size);
+
 	if (!prs_uint8s(False,"data", ps, depth, r_u->data, r_u->size))
 		return False;
 		
@@ -5712,6 +5715,16 @@ BOOL spoolss_io_r_enumprinterdata(char *desc, SPOOL_R_ENUMPRINTERDATA *r_u, prs_
 	if(!prs_uint32("valuesize", ps, depth, &r_u->valuesize))
 		return False;
 
+	if (UNMARSHALLING(ps) && r_u->valuesize) {
+
+		r_u->value = (uint16 *)prs_alloc_mem(ps, r_u->valuesize * 2);
+
+		if (!r_u->value) {
+			DEBUG(0, ("spoolss_io_r_enumprinterdata: out of memory for printerdata value\n"));
+			return False;
+		}
+	}
+
 	if(!prs_uint16uni(False, "value", ps, depth, r_u->value, r_u->valuesize ))
 		return False;
 
@@ -5726,6 +5739,17 @@ BOOL spoolss_io_r_enumprinterdata(char *desc, SPOOL_R_ENUMPRINTERDATA *r_u, prs_
 
 	if(!prs_uint32("datasize", ps, depth, &r_u->datasize))
 		return False;
+
+	if (UNMARSHALLING(ps) && r_u->datasize) {
+
+		r_u->data = (uint8 *)prs_alloc_mem(ps, r_u->datasize);
+
+		if (!r_u->value) {
+			DEBUG(0, ("spoolss_io_r_enumprinterdata: out of memory for printerdata data\n"));
+			return False;
+		}
+	}
+
 	if(!prs_uint8s(False, "data", ps, depth, r_u->data, r_u->datasize))
 		return False;
 	if(!prs_align(ps))
@@ -5778,19 +5802,15 @@ BOOL make_spoolss_q_enumprinterdata(SPOOL_Q_ENUMPRINTERDATA *q_u,
 
 /*******************************************************************
 ********************************************************************/  
-BOOL make_spoolss_q_setprinterdata(SPOOL_Q_SETPRINTERDATA *q_u, TALLOC_CTX *ctx, const POLICY_HND *hnd,
-				char* value, char* data)
+BOOL make_spoolss_q_setprinterdata(SPOOL_Q_SETPRINTERDATA *q_u, const POLICY_HND *hnd,
+				   char* value, char* data, uint32 data_size)
 {
-	UNISTR2 tmp;
-
 	memcpy(&q_u->handle, hnd, sizeof(q_u->handle));
 	q_u->type = REG_SZ;
 	init_unistr2(&q_u->value, value, strlen(value)+1);
 
-	init_unistr2(&tmp, data, strlen(data)+1);
-	q_u->max_len = q_u->real_len = tmp.uni_max_len*2;
-	q_u->data = talloc(ctx, q_u->real_len);
-	memcpy(q_u->data, tmp.buffer, q_u->real_len);
+	q_u->max_len = q_u->real_len = data_size;
+	q_u->data = data;
 	
 	return True;
 }
