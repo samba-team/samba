@@ -393,19 +393,16 @@ enum winbindd_result winbindd_endgrent(struct winbindd_cli_state *state)
 
 #define MAX_FETCH_SAM_ENTRIES 100
 
-static BOOL get_sam_group_entries(struct getent_state *ent)
+static BOOL get_sam_group_entries(struct getent_state *ent, NTSTATUS *status)
 {
-	NTSTATUS status;
 	uint32 num_entries;
 	struct acct_info *name_list = NULL;
 	TALLOC_CTX *mem_ctx;
 	BOOL result = False;
 	struct acct_info *sam_grp_entries = NULL;
 	struct winbindd_domain *domain;
+	NTSTATUS nt_status;
         
-	if (ent->got_sam_entries)
-		return False;
-
 	if (!(mem_ctx = talloc_init_named("get_sam_group_entries(%s)",
 					  ent->domain_name)))
 		return False;
@@ -425,12 +422,13 @@ static BOOL get_sam_group_entries(struct getent_state *ent)
 		goto done;
 	}
 
-	status = domain->methods->enum_dom_groups(domain,
-						  mem_ctx, 
-						  &num_entries,
-						  &sam_grp_entries);
+	nt_status = domain->methods->enum_dom_groups(
+		domain, mem_ctx, &num_entries, &sam_grp_entries);
 	
-	if (!NT_STATUS_IS_OK(status)) {
+	if (status && !NT_STATUS_IS_OK(nt_status))
+		*status = nt_status;
+
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		result = False;
 		goto done;
 	}
@@ -508,7 +506,7 @@ enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state)
 
 		if (ent->num_sam_entries == ent->sam_entry_index) {
 
-			while(ent && !get_sam_group_entries(ent)) {
+			while(ent && !get_sam_group_entries(ent, NULL)) {
 				struct getent_state *next_ent;
 
 				DEBUG(10, ("freeing state info for domain %s\n", ent->domain_name)); 
@@ -685,21 +683,28 @@ enum winbindd_result winbindd_list_groups(struct winbindd_cli_state *state)
 
 	for (domain = domain_list(); domain; domain = domain->next) {
 		struct getent_state groups;
+		NTSTATUS status;
 
 		ZERO_STRUCT(groups);
 
 		/* Skip domains other than WINBINDD_DOMAIN environment
 		   variable */ 
+
 		if ((strcmp(state->request.domain, "") != 0) &&
 		    !check_domain_env(state->request.domain, domain->name))
 			continue;
 
 		/* Get list of sam groups */
+
 		ZERO_STRUCT(groups);
 		fstrcpy(groups.domain_name, domain->name);
 
-		get_sam_group_entries(&groups);
-			
+		if (!get_sam_group_entries(&groups, &status)) {
+			if (!NT_STATUS_IS_OK(status))
+				state->response.nt_status = NT_STATUS_V(status);
+			continue;
+		}
+
 		if (groups.num_sam_entries == 0) {
 			/* this domain is empty or in an error state */
 			continue;
@@ -707,10 +712,12 @@ enum winbindd_result winbindd_list_groups(struct winbindd_cli_state *state)
 
 		/* keep track the of the total number of groups seen so 
 		   far over all domains */
+
 		total_entries += groups.num_sam_entries;
 		
 		/* Allocate some memory for extra data.  Note that we limit
 		   account names to sizeof(fstring) = 128 characters.  */		
+
                 ted = Realloc(extra_data, sizeof(fstring) * total_entries);
  
 		if (!ted) {
