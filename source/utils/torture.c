@@ -1466,7 +1466,7 @@ security hole)
 */
 static void run_fdpasstest(int dummy)
 {
-	static struct cli_state cli1, cli2;
+	static struct cli_state cli1, cli2, cli3;
 	char *fname = "\\fdpass.tst";
 	int fnum1;
 	pstring buf;
@@ -1492,12 +1492,12 @@ static void run_fdpasstest(int dummy)
 		return;
 	}
 
-	cli2.vuid = cli1.vuid;
-	cli2.cnum = cli1.cnum;
-	cli2.pid = cli1.pid;
+	cli3 = cli2;
+	cli3.vuid = cli1.vuid;
+	cli3.cnum = cli1.cnum;
+	cli3.pid = cli1.pid;
 
-
-	if (cli_read(&cli2, fnum1, buf, 0, 13) == 13) {
+	if (cli_read(&cli3, fnum1, buf, 0, 13) == 13) {
 		printf("read succeeded! nasty security hole [%s]\n",
 		       buf);
 		return;
@@ -1588,13 +1588,16 @@ static void run_maxfidtest(int dummy)
 			break;
 		}
 		fnum++;
+		if (fnum % 100 == 0) printf("%d\r", fnum);
 	}
+	printf("%d\n", fnum);
 
 	printf("cleaning up\n");
-	while (fnum > n) {
+	while (fnum > 0) {
 		fnum--;
 		slprintf(fname,sizeof(fname)-1,template, fnum,(int)getpid());
-		if (cli_unlink(&cli, fname)) {
+		cli_close(&cli, fnum);
+		if (!cli_unlink(&cli, fname)) {
 			printf("unlink of %s failed (%s)\n", 
 			       fname, cli_errstr(&cli));
 		}
