@@ -3,12 +3,12 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "WBINFO" "1" "04 January 2002" "" ""
+.TH "WBINFO" "1" "10 January 2002" "" ""
 .SH NAME
 wbinfo \- Query information from winbind daemon
 .SH SYNOPSIS
 .sp
-\fBwbinfo\fR [ \fB-u\fR ]  [ \fB-g\fR ]  [ \fB-n name\fR ]  [ \fB-s sid\fR ]  [ \fB-U uid\fR ]  [ \fB-G gid\fR ]  [ \fB-S sid\fR ]  [ \fB-Y sid\fR ]  [ \fB-t\fR ]  [ \fB-m\fR ] 
+\fBwbinfo\fR [ \fB-u\fR ]  [ \fB-g\fR ]  [ \fB-n name\fR ]  [ \fB-s sid\fR ]  [ \fB-U uid\fR ]  [ \fB-G gid\fR ]  [ \fB-S sid\fR ]  [ \fB-Y sid\fR ]  [ \fB-t\fR ]  [ \fB-m\fR ]  [ \fB-a user%password\fR ]  [ \fB-p\fR ] 
 .SH "DESCRIPTION"
 .PP
 This tool is part of the  Sambasuite.
@@ -82,6 +82,14 @@ Produce a list of domains trusted by the
 Windows NT server \fBwinbindd(8)\fR contacts 
 when resolving names. This list does not include the Windows 
 NT domain the server is a Primary Domain Controller for.
+.TP
+\fB-a username%password\fR
+Attempt to authenticate a user via winbindd. 
+This checks both authenticaion methods and reports its results.
+.TP
+\fB-p\fR
+Attempt a simple 'ping' check that the winbindd
+is indeed alive.
 .SH "EXIT STATUS"
 .PP
 The wbinfo program returns 0 if the operation 
