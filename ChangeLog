@@ -1,3 +1,71 @@
+Sat Jan 31 17:28:58 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* kdc/524.c: Use krb5_decode_EncTicketPart.
+
+	* kdc/kerberos5.c: Check at runtime whether to use enctypes
+ 	instead of keytypes. If so use the same value to encrypt ticket,
+ 	and kdc-rep as well as `keytype' for session key. Fix some obvious
+ 	bugs with the handling of additional tickets.
+
+	* lib/krb5/rd_req.c: Use krb5_decode_EncTicketPart, and
+ 	krb5_decode_Authenticator.
+
+	* lib/krb5/rd_rep.c: Use krb5_decode_EncAPRepPart.
+
+	* lib/krb5/rd_cred.c: Use krb5_decode_EncKrbCredPart.
+
+	* lib/krb5/mk_rep.c: Make sure enc_part.etype is an encryption
+ 	type, and not a key type.  Use krb5_encode_EncAPRepPart.
+
+	* lib/krb5/init_creds_pw.c: Use krb5_decode_PA_KEY_INFO.
+
+	* lib/krb5/get_in_tkt.c: Use krb5_decode_Enc{AS,TGS}RepPart.
+
+	* lib/krb5/get_for_creds.c: Use krb5_encode_EncKrbCredPart.
+
+	* lib/krb5/get_cred.c: Use krb5_decode_Enc{AS,TGS}RepPart.
+
+	* lib/krb5/build_auth.c: Use krb5_encode_Authenticator.
+
+	* lib/krb5/codec.c: Enctype conversion stuff.
+
+	* lib/krb5/context.c: Ignore KRB5_CONFIG if *not* running
+ 	setuid. Get configuration for libdefaults ktype_is_etype, and
+ 	default_etypes.
+
+	* lib/krb5/encrypt.c: Add krb5_string_to_etype, rename
+ 	krb5_convert_etype to krb5_decode_keytype, and add
+ 	krb5_decode_keyblock.
+
+Fri Jan 23 00:32:09 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* lib/krb5/{get_in_tkt,rd_req}.c: Use krb5_convert_etype.
+
+	* lib/krb5/encrypt.c: Add krb5_convert_etype function - converts
+ 	from protocol keytypes (that really are enctypes) to internal
+ 	representation.
+
+Thu Jan 22 21:24:36 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* lib/asn1/k5.asn1: Add PA-KEY-INFO structure to hold information
+ 	on keys in the database; and also a new `pa-key-info' padata-type.
+
+	* kdc/kerberos5.c: If pre-authentication fails, return a list of
+ 	keytypes, salttypes, and salts.
+
+	* lib/krb5/init_creds_pw.c: Add better support for
+ 	pre-authentication, by looking at hints from the KDC.
+
+	* lib/krb5/get_in_tkt.c: Add better support for specifying what
+ 	pre-authentication to use.
+
+	* lib/krb5/str2key.c: Merge entries for KEYTYPE_DES and
+ 	KEYTYPE_DES_AFS3.
+
+	* lib/krb5/krb5.h: Add pre-authentication structures.
+
+	* kdc/connect.c: Don't fail if realloc(X, 0) returns NULL.
+
 Wed Jan 21 06:20:40 1998  Assar Westerlund  <assar@sics.se>
 
 	* lib/kadm5/init_s.c (kadm5_s_init_with_password_ctx): initialize
@@ -7,6 +75,10 @@ Wed Jan 21 06:20:40 1998  Assar Westerlund  <assar@sics.se>
  	to inform the possible running ipropd of an update.
 
 Wed Jan 21 01:34:09 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* lib/krb5/get_in_tkt.c: Return error-packet to caller.
+
+	* lib/krb5/free.c (krb5_free_kdc_rep): Free krb5_kdc_rep->error.
 
 	* kdc/kerberos5.c: Add some support for using enctypes instead of
  	keytypes.
