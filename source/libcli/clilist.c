@@ -20,10 +20,11 @@
 */
 
 #include "includes.h"
+#include "client.h"
 #include "libcli/raw/libcliraw.h"
 
 struct search_private {
-	file_info *dirlist;
+	struct file_info *dirlist;
 	TALLOC_CTX *mem_ctx;
 	int dirlist_len;
 	int ff_searchcount;  /* total received in 1 server trip */
@@ -39,9 +40,9 @@ struct search_private {
 ****************************************************************************/
 static BOOL interpret_long_filename(enum smb_search_level level,
 				    union smb_search_data *info,
-				    file_info *finfo)
+				    struct file_info *finfo)
 {
-	file_info finfo2;
+	struct file_info finfo2;
 
 	if (!finfo) finfo = &finfo2;
 	ZERO_STRUCTP(finfo);
@@ -81,7 +82,7 @@ static BOOL interpret_long_filename(enum smb_search_level level,
 static BOOL smbcli_list_new_callback(void *private, union smb_search_data *file)
 {
 	struct search_private *state = (struct search_private*) private;
-	file_info *tdl;
+	struct file_info *tdl;
  
 	/* add file info to the dirlist pool */
 	tdl = talloc_realloc(state, 
@@ -105,7 +106,7 @@ static BOOL smbcli_list_new_callback(void *private, union smb_search_data *file)
 
 int smbcli_list_new(struct smbcli_tree *tree, const char *Mask, uint16_t attribute, 
 		    enum smb_search_level level,
-		    void (*fn)(file_info *, const char *, void *), 
+		    void (*fn)(struct file_info *, const char *, void *), 
 		    void *caller_state)
 {
 	union smb_search_first first_parms;
@@ -208,9 +209,9 @@ int smbcli_list_new(struct smbcli_tree *tree, const char *Mask, uint16_t attribu
 ****************************************************************************/
 static BOOL interpret_short_filename(int level,
 				union smb_search_data *info,
-				file_info *finfo)
+				struct file_info *finfo)
 {
-	file_info finfo2;
+	struct file_info finfo2;
 
 	if (!finfo) finfo = &finfo2;
 	ZERO_STRUCTP(finfo);
@@ -228,7 +229,7 @@ static BOOL interpret_short_filename(int level,
 static BOOL smbcli_list_old_callback(void *private, union smb_search_data *file)
 {
 	struct search_private *state = (struct search_private*) private;
-	file_info *tdl;
+	struct file_info *tdl;
 	
 	/* add file info to the dirlist pool */
 	tdl = talloc_realloc(state,
@@ -251,7 +252,7 @@ static BOOL smbcli_list_old_callback(void *private, union smb_search_data *file)
 }
 
 int smbcli_list_old(struct smbcli_tree *tree, const char *Mask, uint16_t attribute, 
-		 void (*fn)(file_info *, const char *, void *), 
+		 void (*fn)(struct file_info *, const char *, void *), 
 		 void *caller_state)
 {
 	union smb_search_first first_parms;
@@ -337,7 +338,7 @@ int smbcli_list_old(struct smbcli_tree *tree, const char *Mask, uint16_t attribu
 ****************************************************************************/
 
 int smbcli_list(struct smbcli_tree *tree, const char *Mask,uint16_t attribute, 
-	     void (*fn)(file_info *, const char *, void *), void *state)
+	     void (*fn)(struct file_info *, const char *, void *), void *state)
 {
 	if (tree->session->transport->negotiate.protocol <= PROTOCOL_LANMAN1)
 		return smbcli_list_old(tree, Mask, attribute, fn, state);

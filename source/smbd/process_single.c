@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "events.h"
 #include "dlinklist.h"
 #include "smb_server/smb_server.h"
 #include "process_model.h"

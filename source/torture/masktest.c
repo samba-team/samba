@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "client.h"
 #include "libcli/raw/libcliraw.h"
 #include "system/time.h"
 
@@ -96,7 +97,7 @@ static struct {
 } last_hit;
 static BOOL f_info_hit;
 
-static void listfn(file_info *f, const char *s, void *state)
+static void listfn(struct file_info *f, const char *s, void *state)
 {
 	if (strcmp(f->name,".") == 0) {
 		resultp[0] = '+';

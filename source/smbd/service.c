@@ -22,6 +22,7 @@
 */
 
 #include "includes.h"
+#include "events.h"
 #include "system/dir.h"
 #include "dlinklist.h"
 #include "process_model.h"
