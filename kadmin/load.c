@@ -46,7 +46,7 @@ doit(char *filename, int merge)
 	    if(*p == '\\')
 		p++;
 	    else if(isspace(*p)) {
-		*p == 0;
+		*p = 0;
 		break;
 	    }
 	}
