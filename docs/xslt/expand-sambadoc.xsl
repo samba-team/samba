@@ -133,13 +133,13 @@
 				<xsl:attribute name="moreinfo">
 					<xsl:text>none</xsl:text>
 				</xsl:attribute>
-				<xsl:value-of select="name"/>	
+				<xsl:value-of select="@name"/>	
 			</xsl:element>
 
 			<xsl:choose>
-				<xsl:when test="value != ''">
+				<xsl:when test="text() != ''">
 					<xsl:text> = </xsl:text>
-					<xsl:value-of select="value"/>
+					<xsl:value-of select="text()"/>
 				</xsl:when>
 			</xsl:choose>
 		</xsl:variable>
@@ -151,7 +151,7 @@
 			<xsl:otherwise>
 				<xsl:element name="link">
 					<xsl:attribute name="linkend">
-						<xsl:value-of select="translate(translate(string(name),' ',''),'abcdefghijklmnopqrstuvwxyz','ABCDEFGHIJKLMNOPQRSTUVWXYZ')"/>
+						<xsl:value-of select="translate(translate(string(@name),' ',''),'abcdefghijklmnopqrstuvwxyz','ABCDEFGHIJKLMNOPQRSTUVWXYZ')"/>
 					</xsl:attribute>
 					<xsl:value-of select="$linkcontent"/>
 				</xsl:element>
