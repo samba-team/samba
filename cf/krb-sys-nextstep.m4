@@ -9,7 +9,7 @@ AC_DEFUN(AC_KRB_SYS_NEXTSTEP, [
 AC_MSG_CHECKING(for NEXTSTEP)
 AC_CACHE_VAL(krb_cv_sys_nextstep,
 AC_EGREP_CPP(yes, 
-[#ifdef NeXT
+[#if defined(NeXT) && !defined(__APPLE__)
 	yes
 #endif 
 ], krb_cv_sys_nextstep=yes, krb_cv_sys_nextstep=no) )
