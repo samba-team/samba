@@ -25,10 +25,11 @@ automake
 make_proto () {
 	   (top=`pwd`
 	   cd $1
+	   b=`basename $1`
 	   perl $top/cf/make-proto.pl -o $2 -p $3 `perl -e '
 		do { 
 			$_ = <>; 
-		} until(/'$1'_.*SOURCES/); 
+		} until(/'$b'_.*SOURCES/); 
 		while(/\\\\\s*$/s){ 
 			$_ = $_ . <>;
 		} 
