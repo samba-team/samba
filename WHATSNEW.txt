@@ -1,5 +1,5 @@
-            WHAT'S NEW IN Samba 2.2.6rc2  - 9th October 2002
-            ================================================
+            WHAT'S NEW IN Samba 2.2.6rc3  - 11th October 2002
+            =================================================
 
 This is a prelease snapshot of SAMBA_2_2 cvs branch.  This is a non-production
 release provided for testing purposes only.
@@ -7,114 +7,17 @@ release provided for testing purposes only.
 The following new new smb.conf(5) options have been added in this preview
 release:
 
-  * profile acls (S)
+	* profiles acls (S)
 
 The following options have been added to Samba's configure script
 
-  --with-sendfile            Enable experimental sendfile support
-  --with-winbind-ldap-hack   Enable winbindd_ldap_hack() functionality
-                             for Windows 2000 native mode domains
-
-
-
-Changes since 2.2.6rc1
-----------------------
-1)  Default all LDAP connections to v3 with compiling with --with-ldapsam
-
-Changes since 2.2.6pre2
------------------------
-1)  Merge in free list unlock on error fix
-2)  Correctly fail opens with mismatching SYSTEM or HIDDEN attributes
-    if we are mapping system or hidden
-3)  Fix bug with stat mode open being done on read-only open with truncate
-4)  Fix crash bug discovered where cli struct was being deallocated in a
-    called function
-5)  Ensure we open UNIX fifo's non-blocking
-6)  Fix DeletePrinterDriver() (hopefully for the last time...yeah right....)
-7)  only lowercase global_myname in the %L substitution, not the whole string
-8)  Merged Steve French's fix for OS/2 EA return error being removed
-9)  Patch from Steve French to fix difference in responses to smbclient
-    //server/share ls / on Samba and Windows 2000
-10) Print error and exit if smb.conf doesn't have security=domain and 
-    encrypt passwords=yes when joining domain
-11) Added final Steve French patch for "required" attributes with old dir 
-    listings
-12) Initialize user_rid value in WINBIND_USERINFO structure returned by 
-    the rpc version of query_user()
-13) Ensure we've failed a lock with a lock denied message before automatically 
-    pushing it onto the	blocking queue
-14) Add experimental --with-sendfile code
-15) alignment fix in printing code merged from HEAD
-16) Merge fix for other sids in token from HEAD
-17) Merge winbindd with current (more advanced) state of play in APPLIANCE_HEAD
-18) fix smbclient / Win98 off by one bug
-19) Never, *ever* hold a mutex lock in the message database where there may be
-    traversals being attempted
-20) Add LDAP hack for retrieving the SAM sequence number when a member of a 
-    Windows 2000 native mode domain
-21) Fix race condition when changing a machine account password as we were 
-    no longer locking the secrets entry
-22) Allow '@' as a valid character in domain names
-23) remove jobs from the spool directory when using cups
-24) removed -lresolv for --enable-ldapsam
-25) Memory leak fix and correct use of negative caching in winbindd
-26) Updated spoolss parsing code with known good state of APPLIANCE_HEAD
-27) Delete printer security check was reversed
-28) Windows allows delete printer on a handle opened by an admin user, then
-    used on a pipe handle created by an anonymous user...We do to now...
-29) Make explicit the difference between a tdb key with no data attached, and 
-    a non existent entry
-30) Ensure we register the 1c name on the unicast subnet.
-31) Fix inheritance problem when recursively setting ACLs on directories
-32) prevent ACL set on read-only share
-33) Ensure we never have more than MAX_PRINT_JOBS in a queue
-34) Added timeout to tdb_lock_bystring()
-35) Ensure we set FIRST+LAST flags on a bind request
-36) Add version strings to the usage message for smbcacls and smbpasswd
-37) Fix bug in the write cache code
-38) make the default printed values for boolean the same for all parameters
-
-
-Changes since 2.2.6pre1
------------------------
-1)  fix incorrect semantics in the DeletePrinterDriver() spoolss rpc
-    to only attempt to delete the architecture specified by the client
-2)  Don't allow TEMP attribute on directory open
-3)  Restore VxFS quotas to the 2.2 branch
-4)  Added basic "Wizard" functionality to SWAT
-5)  Fix initial "allocation size" in NTcreate&X call
-6)  Fix for open fid, "nametoolong"
-7)  Exit server on receipt of a non-SMB packet.  Ensure we have 
-    at least smb_size bytes before processing a packet
-8)  Replace inet_aton with inet_addr() to correct compile problems on Solaris
-9)  Include the "account" objectclass when adding a new account to --with-ldapsam
-    in order to comply with the data model implemented by OpenLDAP 2.1.x
-10) Various fixes for POSIX compliance
-11) Correct alignment & offset bug in EnumPrinterDataEx()
-12) Fix access checks when modifying forms using a print server handle
-    (not just a printer handle)
-13) Account for case data_len == 0 in EnumPrinterDataEx()
-14) Fix logic error in blocking lock code
-15) Fixed various incorrect return codes to clients
-16) Add RESOLVE_DFSPATH to mkdir operations
-17) Fix longstanding bug in Win2k clients by clearing the shortname
-    buffer before returning ASCII short name
-18) added -t option to smbpasswd for explicitly changing a trust 
-    account password when operating in security = domain
-19) installed -x option to testparm to eXclude printing all parameter
-    values that are at default settings.
-20) Fix shares/printers view in SWAT so that only Basic options are exposed
-    upon initial entry.
-21) Added 1125 & KOI8-U to codepage list in Makefile.in
-22) Include separate configure checks for *openbsd* & *freebsd* when
-    determining flags used to compile shared libraries.
-
-
+  --with-sendfile		Enable experimental sendfile support
+  --with-winbind-ldap-hack	Enable winbindd_ldap_hack() functionality
+				for Windows 2000 native mode domains
 
 
 Changes since 2.2.5
 --------------------
-
 1)  Fixed several compiler warnings caused by the use of const parameters
 2)  Fixed a hang in the main smbd process caused by an EINTR in the
     wrong place
@@ -142,6 +45,103 @@ Changes since 2.2.5
 18) Correcting check for ldap_start_tls()
 19) Fixed a problem with getgroups() where it could include our current
     effective gid
+
+( Changes since 2.2.6pre1 )
+
+20) fix incorrect semantics in the DeletePrinterDriver() spoolss rpc
+    to only attempt to delete the architecture specified by the client
+21) Don't allow TEMP attribute on directory open
+22) Restore VxFS quotas to the 2.2 branch
+23) Added basic "Wizard" functionality to SWAT
+24) Fix initial "allocation size" in NTcreate&X call
+25) Fix for open fid, "nametoolong"
+26) Exit server on receipt of a non-SMB packet.  Ensure we have 
+    at least smb_size bytes before processing a packet
+27) Replace inet_aton with inet_addr() to correct compile problems on Solaris
+28) Include the "account" objectclass when adding a new account to --with-ldapsam
+    in order to comply with the data model implemented by OpenLDAP 2.1.x
+29) Various fixes for POSIX compliance
+30) Correct alignment & offset bug in EnumPrinterDataEx()
+31) Fix access checks when modifying forms using a print server handle
+    (not just a printer handle)
+32) Account for case data_len == 0 in EnumPrinterDataEx()
+33) Fix logic error in blocking lock code
+34) Fixed various incorrect return codes to clients
+35) Add RESOLVE_DFSPATH to mkdir operations
+36) Fix longstanding bug in Win2k clients by clearing the shortname
+    buffer before returning ASCII short name
+37) added -t option to smbpasswd for explicitly changing a trust 
+    account password when operating in security = domain
+38) installed -x option to testparm to eXclude printing all parameter
+    values that are at default settings.
+39) Fix shares/printers view in SWAT so that only Basic options are exposed
+    upon initial entry.
+40) Added 1125 & KOI8-U to codepage list in Makefile.in
+41) Include separate configure checks for *openbsd* & *freebsd* when
+    determining flags used to compile shared libraries.
+
+( Changes since 2.2.6pre2 )
+
+42) Merge in free list unlock on error fix
+43) Correctly fail opens with mismatching SYSTEM or HIDDEN attributes
+    if we are mapping system or hidden
+44) Fix bug with stat mode open being done on read-only open with truncate
+45) Fix crash bug discovered where cli struct was being deallocated in a
+    called function
+46) Ensure we open UNIX fifo's non-blocking
+47) Fix DeletePrinterDriver() (hopefully for the last time...yeah right....)
+48) only lowercase global_myname in the %L substitution, not the whole string
+49) Merged Steve French's fix for OS/2 EA return error being removed
+50) Patch from Steve French to fix difference in responses to smbclient
+    //server/share ls / on Samba and Windows 2000
+51) Print error and exit if smb.conf doesn't have security=domain and 
+    encrypt passwords=yes when joining domain
+52) Added final Steve French patch for "required" attributes with old dir 
+    listings
+53) Initialize user_rid value in WINBIND_USERINFO structure returned by 
+    the rpc version of query_user()
+54) Ensure we've failed a lock with a lock denied message before automatically 
+    pushing it onto the	blocking queue
+55) Add experimental --with-sendfile code
+56) alignment fix in printing code merged from HEAD
+57) Merge fix for other sids in token from HEAD
+58) Merge winbindd with current (more advanced) state of play in APPLIANCE_HEAD
+59) fix smbclient / Win98 off by one bug
+60) Never, *ever* hold a mutex lock in the message database where there may be
+    traversals being attempted
+61) Add LDAP hack for retrieving the SAM sequence number when a member of a 
+    Windows 2000 native mode domain
+62) Fix race condition when changing a machine account password as we were 
+    no longer locking the secrets entry
+63) Allow '@' as a valid character in domain names
+64) remove jobs from the spool directory when using cups
+65) removed -lresolv for --enable-ldapsam
+66) Memory leak fix and correct use of negative caching in winbindd
+67) Updated spoolss parsing code with known good state of APPLIANCE_HEAD
+68) Delete printer security check was reversed
+69) Windows allows delete printer on a handle opened by an admin user, then
+    used on a pipe handle created by an anonymous user...We do to now...
+70) Make explicit the difference between a tdb key with no data attached, and 
+    a non existent entry
+71) Ensure we register the 1c name on the unicast subnet.
+72) Fix inheritance problem when recursively setting ACLs on directories
+73) prevent ACL set on read-only share
+74) Ensure we never have more than MAX_PRINT_JOBS in a queue
+75) Added timeout to tdb_lock_bystring()
+76) Ensure we set FIRST+LAST flags on a bind request
+77) Add version strings to the usage message for smbcacls and smbpasswd
+78) Fix bug in the write cache code
+79) make the default printed values for boolean the same for all parameters
+
+( Changes since 2.2.6rc1 )
+
+80) Default all LDAP connections to v3 with compiling with --with-ldapsam
+
+( Changes since 2.2.6rc1 )
+
+81) Fix memory leak in smbspool
+82) Fix bug in mangling code that resulted in Win9x clients not being
+    able to execute batch files in deep, non 8.3  directory paths
 
 
               =========================================

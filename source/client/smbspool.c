@@ -307,18 +307,21 @@ smb_connect(char *workgroup,		/* I - Workgroup */
   if (!cli_set_port(c, SMB_PORT))
   {
     fputs("ERROR: cli_set_port() failed...\n", stderr);
+    cli_shutdown(c);
     return (NULL);
   }
 
   if (!cli_connect(c, server, &ip))
   {
     fputs("ERROR: cli_connect() failed...\n", stderr);
+    cli_shutdown(c);
     return (NULL);
   }
 
   if (!cli_session_request(c, &calling, &called))
   {
     fputs("ERROR: cli_session_request() failed...\n", stderr);
+    cli_shutdown(c);
     return (NULL);
   }
 
@@ -339,6 +342,7 @@ smb_connect(char *workgroup,		/* I - Workgroup */
 			 workgroup))
   {
     fprintf(stderr, "ERROR: SMB session setup failed: %s\n", cli_errstr(c));
+    cli_shutdown(c);
     return (NULL);
   }
 
