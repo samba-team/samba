@@ -134,6 +134,7 @@ main(int argc, char **argv)
     HDB *db, *new;
     EncryptionKey key;
     int optind = 0;
+    int master_key_set = 0;
     
     set_progname(argv[0]);
 
@@ -157,20 +158,23 @@ main(int argc, char **argv)
 	krb5_err(context, 1, ret, "hdb_create");
 
     ret = hdb_read_master_key(context, mkeyfile, &key);
-    if(ret)
-	krb5_err(context, 1, ret, "hdb_read_master_key");
-    if(key.keytype == KEYTYPE_DES)
-	key.keytype = ETYPE_DES_CBC_MD5;
+    if(ret == 0) {
+	if(key.keytype == KEYTYPE_DES)
+	    key.keytype = ETYPE_DES_CBC_MD5;
     
-    ret = hdb_set_master_key(context, db, key);
-    if (ret)
-	krb5_err(context, 1, ret, "hdb_set_master_key");
+	ret = hdb_set_master_key(context, db, key);
+	if (ret)
+	    krb5_err(context, 1, ret, "hdb_set_master_key");
+	master_key_set = 1;
+    }
     ret = hdb_create(context, &new, new_database);
     if(ret != 0)
 	krb5_err(context, 1, ret, "hdb_create");
-    ret = hdb_set_master_key(context, new, key);
-    if (ret)
-	krb5_err(context, 1, ret, "hdb_set_master_key");
+    if (master_key_set) {
+	ret = hdb_set_master_key(context, new, key);
+	if (ret)
+	    krb5_err(context, 1, ret, "hdb_set_master_key");
+    }
     ret = db->open(context, db, O_RDONLY, 0);
     if(ret == HDB_ERR_BADVERSION) {
 	krb5_data tag;
