@@ -190,7 +190,7 @@ implemented */
 #define STYPE_IPC       3	/* Interprocess communication (IPC) */
 #define STYPE_HIDDEN    0x80000000 /* share is a hidden one (ends with $) */
 
-/* SMB X/Open error codes for the ERRdos error class */
+/* SMB X/Open error codes for the ERRDOS error class */
 #define ERRbadfunc 1 /* Invalid function (or system call) */
 #define ERRbadfile 2 /* File not found (pathname error) */
 #define ERRbadpath 3 /* Directory not found */
@@ -1076,7 +1076,7 @@ struct parm_struct
 #define smb_nt_DataOffset (smb_vwv0 + 31)
 #define smb_nt_SetupCount (smb_vwv0 + 35)
 #define smb_nt_Function (smb_vwv0 + 36)
-#define smb_nt_SetupStart (smb_vwv0 + 39)
+#define smb_nt_SetupStart (smb_vwv0 + 38)
 
 /* these are for the NT trans secondary request. */
 #define smb_nts_TotalParameterCount (smb_vwv0 + 3)
@@ -1194,6 +1194,17 @@ struct parm_struct
 #define FILE_CASE_PRESERVED_NAMES 0x2
 #define FILE_UNICODE_ON_DISK 0x4
 #define FILE_PERISITANT_ACLS 0x8
+
+/* ChangeNotify flags. */
+#define FILE_NOTIFY_CHANGE_FILE_NAME   0x001
+#define FILE_NOTIFY_CHANGE_DIR_NAME    0x002
+#define FILE_NOTIFY_CHANGE_ATTRIBUTES  0x004
+#define FILE_NOTIFY_CHANGE_SIZE        0x008
+#define FILE_NOTIFY_CHANGE_LAST_WRITE  0x010
+#define FILE_NOTIFY_CHANGE_LAST_ACCESS 0x020
+#define FILE_NOTIFY_CHANGE_CREATION    0x040
+#define FILE_NOTIFY_CHANGE_EA          0x080
+#define FILE_NOTIFY_CHANGE_SECURITY    0x100
 
 /* where to find the base of the SMB packet proper */
 #define smb_base(buf) (((char *)(buf))+4)

@@ -1475,6 +1475,8 @@ void close_directory(int fnum)
      change notify requests and free
      any pertaining to this fnum. */
 
+  remove_pending_change_notify_requests_by_fid(fnum);
+
   /*
    * Do the code common to files and directories.
    */
@@ -1531,6 +1533,9 @@ int open_directory(int fnum,int cnum,char *fname, int smb_ofun, int unixmode, in
     }
     *action = FILE_WAS_OPENED;
   }
+
+  DEBUG(5,("open_directory: opening directory %s, fnum = %d\n",
+        fname, fnum ));
 
   /*
    * Setup the files_struct for it.
@@ -4029,7 +4034,7 @@ int reply_nt1(char *outbuf)
 
 /*
   other valid capabilities which we may support at some time...
-                     CAP_LARGE_FILES|CAP_NT_SMBS|CAP_RPC_REMOTE_APIS;
+                     CAP_LARGE_FILES|
                      CAP_LARGE_READX|CAP_STATUS32|CAP_LEVEL_II_OPLOCKS;
  */
 
@@ -5116,6 +5121,12 @@ machine %s in domain %s.\n", global_myname, global_myworkgroup ));
         trust_password_unlock();
         global_machine_pasword_needs_changing = False;
       }
+
+      /*
+       * Check to see if we have any change notifies 
+       * outstanding on the queue.
+       */
+      process_pending_change_notify_queue(t);
     }
 
     if(got_smb)
