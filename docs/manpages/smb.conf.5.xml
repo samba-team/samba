@@ -1,4 +1,4 @@
-<refentry id="smb.conf.5">
+<refentry id="smb.conf.5" xmlns:xi="http://www.w3.org/2003/XInclude">
 	
 <refmeta>
 	<refentrytitle>smb.conf</refentrytitle>
@@ -589,7 +589,7 @@ alias|alias|alias|alias...
 <refsect1>
 	<title>EXPLANATION OF EACH PARAMETER</title>
 	
-	<xi:include href="../smbdotconf/parameters.all.xml" parse="xml" xmlns:xi="http://www.w3.org/2003/XInclude"/>
+	<xi:include href="../smbdotconf/parameters.all.xml" parse="xml"/>
 
 </refsect1>
 
