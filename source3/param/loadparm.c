@@ -1914,8 +1914,8 @@ BOOL lp_add_home(const char *pszHomename, int iDefaultService,
 	if (i < 0)
 		return (False);
 
-	if (!(*(ServicePtrs[i]->szPath))
-	    || strequal(ServicePtrs[i]->szPath, lp_pathname(-1))) {
+	if (!(*(ServicePtrs[iDefaultService]->szPath))
+	    || strequal(ServicePtrs[iDefaultService]->szPath, lp_pathname(-1))) {
 		pstrcpy(newHomedir, pszHomedir);
 	} else {
 		pstrcpy(newHomedir, lp_pathname(iDefaultService));
