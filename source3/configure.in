@@ -250,7 +250,6 @@ AC_CHECK_HEADERS(sys/mman.h sys/filio.h sys/priv.h sys/shm.h string.h strings.h 
 AC_CHECK_HEADERS(sys/mount.h sys/vfs.h sys/fs/s5param.h sys/filsys.h termios.h termio.h)
 AC_CHECK_HEADERS(sys/termio.h sys/statfs.h sys/dustat.h sys/statvfs.h stdarg.h sys/sockio.h)
 AC_CHECK_HEADERS(security/pam_modules.h security/_pam_macros.h ldap.h)
-AC_CHECK_HEADERS(gssapi/gssapi_generic.h gssapi/gssapi.h)
 
 #
 # HPUX has a bug in that including shadow.h causes a re-definition of MAXINT.
@@ -1652,6 +1651,10 @@ AC_ARG_WITH(krb5,
 # note that this check is done here to allow for different kerberos
 # include paths
 AC_CHECK_HEADERS(krb5.h)
+
+# now check for gssapi headers.  This is also done here to allow for
+# different kerberos include paths
+AC_CHECK_HEADERS(gssapi/gssapi_generic.h gssapi/gssapi.h)
 
 ##################################################################
 # we might need the k5crypto and com_err libraries on some systems
