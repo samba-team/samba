@@ -42,7 +42,7 @@ struct winbindd_cli_state {
 	BOOL finished;                            /* Can delete from list */
 	BOOL write_extra_data;                    /* Write extra_data field */
 	time_t last_access;                       /* Time of last access (read or write) */
-	BOOL privilaged;                           /* Is the client 'privilaged' */
+	BOOL privileged;                           /* Is the client 'privileged' */
 
 	struct winbindd_request request;          /* Request from client */
 	struct winbindd_response response;        /* Respose to client */
