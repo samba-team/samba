@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -33,4 +33,7 @@
 
 /* $Id$ */
 
-void error_message (char *, ...);
+void error_message (const char *, ...)
+__attribute__ ((format (printf, 1, 2)));
+
+int yylex(void);
