@@ -78,7 +78,7 @@ generic_test (const struct test_case *tests,
     int ret = 0;
     void *val = malloc (data_size);
 
-    if (val == NULL)
+    if (data_size != 0 && val == NULL)
 	err (1, "malloc");
 
     for (i = 0; i < ntests; ++i) {
