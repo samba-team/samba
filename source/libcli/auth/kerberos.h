@@ -61,5 +61,7 @@ krb5_error_code ads_krb5_mk_req(krb5_context context,
 				const char *principal,
 				krb5_ccache ccache, 
 				krb5_data *outbuf);
+void get_auth_data_from_tkt(TALLOC_CTX *mem_ctx, 
+ 	 		    DATA_BLOB *auth_data, krb5_ticket *tkt);
 #endif /* HAVE_KRB5 */
 
