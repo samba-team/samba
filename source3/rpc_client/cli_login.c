@@ -156,8 +156,8 @@ password equivalents over the network. JRA.
 ****************************************************************************/
 
 BOOL cli_nt_login_network(struct cli_state *cli, char *domain, char *username, 
-                          uint32 smb_userid_low, char lm_chal[8], char lm_chal_resp[24],
-                          char nt_chal_resp[24],
+                          uint32 smb_userid_low, char lm_chal[8], 
+			  char *lm_chal_resp, char *nt_chal_resp,
                           NET_ID_INFO_CTR *ctr, NET_USER_INFO_3 *user_info3)
 {
   DEBUG(5,("cli_nt_login_network: %d\n", __LINE__));
