@@ -42,6 +42,7 @@ RCSID("$Id$");
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #ifdef HAVE_PATHS_H
 #include <paths.h>
 #endif
@@ -179,7 +180,7 @@ initshells()
 	if (*cp == '#' || *cp == '\0')
 	    continue;
 	*sp++ = cp;
-	while (!isspace(*cp) && *cp != '#' && *cp != '\0')
+	while (!isspace((unsigned char)*cp) && *cp != '#' && *cp != '\0')
 	    cp++;
 	*cp++ = '\0';
     }
