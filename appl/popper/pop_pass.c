@@ -4,11 +4,6 @@
  * specifies the terms and conditions for redistribution.
  */
 
-#if 0
-static char copyright[] = "Copyright (c) 1990 Regents of the University of California.\nAll rights reserved.\n";
-static char SccsId[] = "@(#)@(#)pop_pass.c	2.3  2.3 4/2/91";
-#endif /* not lint */
-
 #include <popper.h>
 RCSID("$Id$");
 
