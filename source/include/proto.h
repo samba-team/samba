@@ -4479,7 +4479,7 @@ void mangle_reset_cache(void);
 BOOL mangle_is_mangled(const char *s);
 BOOL mangle_is_8_3(const char *fname, BOOL check_case);
 BOOL mangle_is_8_3_wildcards(const char *fname, BOOL check_case);
-BOOL mangle_check_cache(char *s);
+BOOL mangle_check_cache(char *s, size_t maxlen);
 void mangle_map(char *OutName, BOOL need83, BOOL cache83, int snum);
 
 /* The following definitions come from smbd/mangle_hash2.c  */
