@@ -7483,9 +7483,11 @@
 
 		<varlistentry>
 		<term><anchor id="STRIPDOT">strip dot (G)</term>
-		<listitem><para>This is a boolean that controls whether to 
-		strip trailing dots off UNIX filenames. This helps with some 
-		CDROMs that have filenames ending in a single dot.</para>
+		<listitem><para>This parameter is now unused in Samba (2.2.5 and above).
+		It used strip trailing dots off UNIX filenames but was not correctly implmented.
+		In Samba 2.2.5 and above UNIX filenames ending in a dot are invalid Windows long
+		filenames (as they are in Windows NT and above) and are mangled to 8.3 before
+		being returned to a client.</para>
 
 		<para>Default: <command>strip dot = no</command></para>
 		</listitem>
