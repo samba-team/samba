@@ -61,7 +61,8 @@ BOOL nbtd_self_packet(struct nbt_name_socket *nbtsock,
 
 	/* this uses the fact that iface->nbtsock is our non-broadcast
 	   listen address */
-	if (iface->nbtsock == nbtsock) {
+	if (iface->nbtsock == nbtsock &&
+	    iface != iface->nbtsrv->bcast_interface) {
 		return False;
 	}
 
