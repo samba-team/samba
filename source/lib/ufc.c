@@ -778,6 +778,6 @@ static ufc_long *_ufc_doit(l1, l2, r1, r2, itr)
 
 
 #else
- int ufc_dummy_procedure(void)
-{return 0;}
+ int ufc_dummy_procedure(void);
+ int ufc_dummy_procedure(void) {return 0;}
 #endif

@@ -23,9 +23,8 @@
 
 extern int DEBUGLEVEL;
 
-
- void replace_dummy(void) 
-{}
+ void replace_dummy(void);
+ void replace_dummy(void) {}
 
 
 #ifndef HAVE_FTRUNCATE

@@ -151,6 +151,6 @@ char *getsmbpass(char *prompt)
 }
 
 #else
-
+ void getsmbpasswd_dummy(void);
  void getsmbpasswd_dummy(void) {;}
 #endif

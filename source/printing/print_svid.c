@@ -117,5 +117,6 @@ int sysv_printername_ok(char *name)
 
 #else
 /* this keeps fussy compilers happy */
+ void print_svid_dummy(void);
  void print_svid_dummy(void) {}
 #endif

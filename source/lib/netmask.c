@@ -51,6 +51,11 @@
 #include <sys/sockio.h>
 #endif
 
+/*
+ * Prototype for gcc in fussy mode.
+ */
+
+int get_netmask(struct in_addr *ipaddr, struct in_addr *nmask);
 
 /****************************************************************************
   get the netmask address for a local interface

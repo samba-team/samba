@@ -673,6 +673,7 @@ struct passdb_ops *nisplus_initialize_password_db(void)
 }
  
 #else
+ void nisplus_dummy_function(void);
  void nisplus_dummy_function(void) { } /* stop some compilers complaining */
 #endif /* WITH_NISPLUS */
 

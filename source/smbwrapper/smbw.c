@@ -1417,6 +1417,10 @@ struct kernel_stat {
 	unsigned long int __unused5;
 };
 
+/*
+ * Prototype for gcc in 'fussy' mode.
+ */
+ void xstat_convert(int vers, struct stat *st, struct kernel_stat *kbuf);
  void xstat_convert(int vers, struct stat *st, struct kernel_stat *kbuf)
 {
 #ifdef _STAT_VER_LINUX_OLD

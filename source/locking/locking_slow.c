@@ -1071,6 +1071,6 @@ struct share_ops *locking_slow_init(int ronly)
 	return &share_ops;
 }
 #else
- int locking_slow_dummy_procedure(void)
-{return 0;}
+ int locking_slow_dummy_procedure(void);
+ int locking_slow_dummy_procedure(void) {return 0;}
 #endif /* !FAST_SHARE_MODES */

@@ -993,5 +993,6 @@ struct passdb_ops *ldap_initialize_password_db(void)
 }
 
 #else
+ void dummy_function(void);
  void dummy_function(void) { } /* stop some compilers complaining */
 #endif
