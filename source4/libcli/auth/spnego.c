@@ -777,7 +777,8 @@ static const struct gensec_security_ops gensec_spnego_security_ops = {
 	.unwrap         = gensec_spnego_unwrap,
 	.session_key	= gensec_spnego_session_key,
 	.session_info   = gensec_spnego_session_info,
-	.have_feature   = gensec_spnego_have_feature
+	.have_feature   = gensec_spnego_have_feature,
+	.enabled        = True
 };
 
 NTSTATUS gensec_spnego_init(void)

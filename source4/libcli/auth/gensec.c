@@ -778,7 +778,7 @@ NTSTATUS gensec_register(const void *_ops)
 {
 	const struct gensec_security_ops *ops = _ops;
 	
-	if (!lp_parm_bool(-1, "gensec", ops->name, !ops->disabled_by_default)) {
+	if (!lp_parm_bool(-1, "gensec", ops->name, ops->enabled)) {
 		DEBUG(2,("gensec subsystem %s is disabled\n", ops->name));
 		return NT_STATUS_OK;
 	}
