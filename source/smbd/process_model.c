@@ -21,6 +21,29 @@
 
 #include "includes.h"
 
+/*
+  setup the events for the chosen process model
+*/
+void process_model_startup(struct event_context *events, 
+				const char *model)
+{
+	const struct model_ops *ops;
+
+	ops = process_model_byname(model);
+	if (!ops) {
+		DEBUG(0,("Unknown process model '%s'\n", model));
+		exit(-1);
+	}
+
+	ops->model_startup();
+
+	/* now setup the listening sockets, adding 
+	   event handlers to the events structure */
+	open_sockets_smbd(events, ops);
+
+	/* setup any sockets we need to listen on for RPC over TCP */
+	open_sockets_rpc(events, ops);
+}
 
 /* the list of currently registered process models */
 static struct {

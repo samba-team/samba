@@ -677,6 +677,104 @@ void server_terminate(struct server_context *smb)
 	talloc_destroy(smb->mem_ctx);
 }
 
+/*
+  called on a fatal error that should cause this server to terminate
+*/
+void exit_server(struct server_context *smb, const char *reason)
+{
+	smb->model_ops->terminate_connection(smb, reason);
+}
+
+/*
+  setup a single listener of any type
+ */
+static void setup_listen(struct event_context *events,
+			 const struct model_ops *model_ops, 
+			 void (*accept_handler)(struct event_context *,struct fd_event *,time_t,uint16_t),
+			 struct in_addr *ifip, uint_t port)
+{
+	struct fd_event fde;
+	fde.fd = open_socket_in(SOCK_STREAM, port, 0, ifip->s_addr, True);
+	if (fde.fd == -1) {
+		DEBUG(0,("Failed to open socket on %s:%u - %s\n",
+			 inet_ntoa(*ifip), port, strerror(errno)));
+		return;
+	}
+
+	/* ready to listen */
+	set_socket_options(fde.fd, "SO_KEEPALIVE"); 
+	set_socket_options(fde.fd, lp_socket_options());
+      
+	if (listen(fde.fd, SMBD_LISTEN_BACKLOG) == -1) {
+		DEBUG(0,("Failed to listen on %s:%d - %s\n",
+			 inet_ntoa(*ifip), port, strerror(errno)));
+		close(fde.fd);
+		return;
+	}
+
+	/* we are only interested in read events on the listen socket */
+	fde.flags = EVENT_FD_READ;
+	fde.private = model_ops;
+	fde.handler = accept_handler;
+	
+	event_add_fd(events, &fde);
+}
+
+/*
+  add a socket address to the list of events, one event per port
+*/
+static void add_socket(struct event_context *events, 
+		       const struct model_ops *model_ops, 
+		       struct in_addr *ifip)
+{
+	char *ptr, *tok;
+	const char *delim = ", ";
+
+	for (tok=strtok_r(lp_smb_ports(), delim, &ptr); 
+	     tok; 
+	     tok=strtok_r(NULL, delim, &ptr)) {
+		uint_t port = atoi(tok);
+		if (port == 0) continue;
+		setup_listen(events, model_ops, model_ops->accept_connection, ifip, port);
+	}
+}
+
+/****************************************************************************
+ Open the socket communication.
+****************************************************************************/
+void open_sockets_smbd(struct event_context *events,
+			      const struct model_ops *model_ops)
+{
+	if (lp_interfaces() && lp_bind_interfaces_only()) {
+		int num_interfaces = iface_count();
+		int i;
+
+		/* We have been given an interfaces line, and been 
+		   told to only bind to those interfaces. Create a
+		   socket per interface and bind to only these.
+		*/
+		for(i = 0; i < num_interfaces; i++) {
+			struct in_addr *ifip = iface_n_ip(i);
+
+			if (ifip == NULL) {
+				DEBUG(0,("open_sockets_smbd: interface %d has NULL IP address !\n", i));
+				continue;
+			}
+
+			add_socket(events, model_ops, ifip);
+		}
+	} else {
+		TALLOC_CTX *mem_ctx = talloc_init("open_sockets_smbd");
+		
+		struct in_addr *ifip = interpret_addr2(mem_ctx, lp_socket_address());
+		/* Just bind to lp_socket_address() (usually 0.0.0.0) */
+		if (!mem_ctx) {
+			smb_panic("No memory");
+		}
+		add_socket(events, model_ops, ifip);
+		talloc_destroy(mem_ctx);
+	} 
+}
 
 /*
   called when a SMB socket becomes readable
