@@ -51,8 +51,11 @@ SOURCES = \
 	fchown.c \
 	flock.c \
 	fnmatch.c \
+	freeaddrinfo.c \
 	freehostent.c \
+	gai_strerror.c \
 	get_window_size.c \
+	getaddrinfo.c \
 	getarg.c \
 	getcwd.c \
 	get_default_username.c \
@@ -60,6 +63,7 @@ SOURCES = \
 	gethostname.c \
 	getipnodebyaddr.c \
 	getipnodebyname.c \
+	getnameinfo.c \
 	getopt.c \
 	getusershell.c \
 	glob.c \
@@ -119,7 +123,8 @@ SOURCES = \
 	warnx.c
 
 EXTRA_SOURCES = \
-	make-print-version.c
+	make-print-version.c \
+	getaddrinfo-test.c
 
 OBJECTS = \
 	base64.o \
@@ -209,6 +214,9 @@ print_version.h: make-print-version$(EXECSUFFIX)
 
 make-print-version$(EXECSUFFIX): make-print-version.o
 	$(LINK) $(CFLAGS) -o $@ make-print-version.o
+
+getaddrinfo-test$(EXECSUFFIX): getaddrinfo-test.o
+	$(LINK) $(CFLAGS) -o $@ getaddrinfo-test.o -L. -lroken
 
 install-roken-h: roken.h
 	@if [ -f ../../include/roken.h ] && cmp -s ../../include/roken.h roken.h ; \
