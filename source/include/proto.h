@@ -2283,6 +2283,7 @@ BOOL init_buffer5(BUFFER5 **str);
 BOOL clear_buffer5(BUFFER5 **str);
 BOOL make_buffer5(BUFFER5 *str, char *buf, int len);
 BOOL smb_io_buffer5(char *desc, BUFFER5 *buf5, prs_struct *ps, int depth);
+BOOL make_buffer2_multi(BUFFER2 *str, char *const* const buf, uint32 num);
 BOOL make_buffer2(BUFFER2 *str, const char *buf, int len);
 BOOL smb_io_buffer2(char *desc,  BUFFER2 *buf2, uint32 buffer, prs_struct *ps, int depth);
 BOOL make_buf_unistr2(UNISTR2 *str, uint32 *ptr, const char *buf);
