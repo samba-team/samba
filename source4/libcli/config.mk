@@ -32,7 +32,8 @@ ADD_OBJ_FILES = \
 	libcli/resolve/resolve.o \
 	libcli/resolve/nbtlist.o \
 	libcli/resolve/bcast.o \
-	libcli/resolve/wins.o
+	libcli/resolve/wins.o \
+	libcli/resolve/host.o
 REQUIRED_SUBSYSTEMS = LIBCLI_NBT
 
 [SUBSYSTEM::LIBCLI]
