@@ -213,7 +213,11 @@ static BOOL srv_pipe_bind_and_alt_req(rpcsrv_struct *l,
 	if (l->data_i.offset == 0) return False;
 
 	assoc_gid = l->hdr_rb.bba.assoc_gid;
-	l->key.pid = assoc_gid;
+
+	if (assoc_gid != 0)
+	{
+		l->key.pid = assoc_gid;
+	}
 
 	if (l->hdr.auth_len != 0)
 	{
@@ -247,7 +251,10 @@ static BOOL srv_pipe_bind_and_alt_req(rpcsrv_struct *l,
 		l->auth_info = NULL;
 		
 		assoc_gid = l->hdr_rb.bba.assoc_gid;
-		l->key.pid = assoc_gid;
+		if (assoc_gid != 0)
+		{
+			l->key.pid = assoc_gid;
+		}
 	}
 
 	if (l->auth != NULL)
@@ -502,7 +509,10 @@ static BOOL rpc_redir_local(rpcsrv_struct *l, prs_struct *req, prs_struct *resp,
 				reply = smb_io_rpc_hdr_req("req", &(l->hdr_req), &l->data_i, 0);
 				if (reply)
 				{
-					l->key.vuid = l->hdr_req.context_id;
+					if (l->hdr_req.context_id != 0)
+					{
+						l->key.vuid = l->hdr_req.context_id;
+					}
 					reply = become_vuser(&l->key) ||
 					        become_guest();
 

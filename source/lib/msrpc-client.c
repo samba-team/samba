@@ -207,16 +207,15 @@ static BOOL msrpc_authenticate(struct msrpc_state *msrpc,
 {
 	int sock = msrpc->fd;
 	uint32 len;
-#if 0
 	char *data;
 	prs_struct ps;
-#endif
+
 	char *in = msrpc->inbuf;
 	char *out = msrpc->outbuf;
 
-	msrpc->nt.key = *key;
-#if 0
 	uint16 command;
+
+	msrpc->nt.key = *key;
 
 	command = usr != NULL ? AGENT_CMD_CON : AGENT_CMD_CON_ANON;
 
@@ -243,7 +242,6 @@ static BOOL msrpc_authenticate(struct msrpc_state *msrpc,
 		DEBUG(0,("write failed\n"));
 		return False;
 	}
-#endif
 	if (msrpc->redirect)
 	{
 		struct msrpc_state msrpc_redir;
@@ -263,12 +261,10 @@ static BOOL msrpc_authenticate(struct msrpc_state *msrpc,
 	}
 	else
 	{
-#if 0
 		uint32 status;
 		len = read(sock, &status, sizeof(status));
 
 		return len == sizeof(status) && status == 0x0;
-#endif
 	}
 	return True;
 }
@@ -292,7 +288,7 @@ static BOOL msrpc_init_redirect(struct msrpc_state *msrpc,
 
 	msrpc->fd = sock;
 
-	if (!msrpc_authenticate(msrpc, key, usr))
+	if (!msrpc_authenticate(msrpc, key, NULL))
 	{
 		DEBUG(0,("authenticate failed\n"));
 		close(msrpc->fd);
@@ -421,7 +417,7 @@ BOOL msrpc_establish_connection(struct msrpc_state *msrpc,
 		}
 	}
 
-	if (!msrpc_authenticate(msrpc, key, &msrpc->usr))
+	if (!msrpc_authenticate(msrpc, key, NULL))
 	{
 		DEBUG(0,("authenticate failed\n"));
 		close(msrpc->fd);

@@ -334,7 +334,6 @@ void add_srv_auth_fn(rpcsrv_struct *l, srv_auth_fns *fn)
 ****************************************************************************/
 BOOL msrpcd_init(int c, msrpc_pipes_struct *p)
 {
-#if 0
 	struct user_creds usr;
 	vuser_key uk;
 	user_struct *vuser;
@@ -364,20 +363,17 @@ BOOL msrpcd_init(int c, msrpc_pipes_struct *p)
 	{
 		return False;
 	}
-#endif
+
 	p->l = malloc(sizeof(*p->l));
 	if (p->l == NULL)
 	{
-#if 0
 		vuid_free_user_struct(vuser);
 		safe_free(vuser);
-#endif
 		return False;
 	}
 
 	ZERO_STRUCTP(p->l);
 
-#if 0
 	p->l->key = uk;
 
 	if (!vuser->guest)
@@ -399,7 +395,7 @@ BOOL msrpcd_init(int c, msrpc_pipes_struct *p)
 
 	vuid_free_user_struct(vuser);
 	safe_free(vuser);
-#endif
+
 	return True;
 }
 
