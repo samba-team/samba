@@ -17,12 +17,12 @@ typedef struct hdb_entry{
     union {
 	int i;
 	struct {
-	    int initial:1;	/* Require AS_REQ */
-	    int forwardable:1;	/* Ticket may be forwardable */
-	    int renewable:1;	/* Ticket may be renewable */
-	    int allow_postdate:1; /* Ticket may be postdated */
-	    int server:1;	/* Principal may be server */
-	    int locked:1;	/* Principal is locked */
+	    unsigned initial:1;	/* Require AS_REQ */
+	    unsigned forwardable:1;	/* Ticket may be forwardable */
+	    unsigned renewable:1;	/* Ticket may be renewable */
+	    unsigned allow_postdate:1; /* Ticket may be postdated */
+	    unsigned server:1;	/* Principal may be server */
+	    unsigned locked:1;	/* Principal is locked */
 	}b;
     }flags;
 }hdb_entry;
