@@ -754,14 +754,6 @@ Can't find printer handle we created for priunter %s\n", name ));
 			return ERROR_ACCESS_DENIED;
 		}
 
-		/*
-		 * An admin user always has access.
-		 */
-
-		if (user.uid == 0 || user_in_list(uidtoname(user.uid), lp_printer_admin()))
-			printer_default->access_required = PRINTER_ACCESS_ADMINISTER;
-
-
 		if (printer_default->access_required & PRINTER_ACCESS_ADMINISTER)
 			printer_default->access_required = PRINTER_ACCESS_ADMINISTER;
 		else

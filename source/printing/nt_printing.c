@@ -2741,7 +2741,7 @@ static uint32 rev_changeid(void)
 
 	get_process_uptime(&tv);
 
-    /* Return changeid as msec since spooler restart */
+	/* Return changeid as msec since spooler restart */
 	return tv.tv_sec * 1000 + tv.tv_usec / 1000;
 }
 
