@@ -1,8 +1,18 @@
 2000-01-02  Assar Westerlund  <assar@sics.se>
 
+
+	* admin/ktutil.c (list): support --verbose (also listning time
+	stamps)
+	(kt_add, kt_get): set timestamp in newly created entries
+	(kt_change): add `change' command
+
+	* admin/srvconvert.c (srvconv): set timestamp in newly created
+	entries
+	* lib/krb5/keytab_keyfile.c (akf_next_entry): set timetsamp,
+	always go the a predicatble position on error
+	* lib/krb5/keytab.c (krb5_kt_copy_entry_contents): copy timestamp
 	* lib/krb5/keytab_file.c (fkt_add_entry): store timestamp
 	(fkt_next_entry_int): return timestamp
-
 	* lib/krb5/krb5.h (krb5_keytab_entry): add timestamp
 
 1999-12-30  Assar Westerlund  <assar@sics.se>
