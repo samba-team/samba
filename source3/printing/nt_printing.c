@@ -286,7 +286,7 @@ BOOL get_short_archi(char *short_archi, char *long_archi)
 
 /****************************************************************************
 ****************************************************************************/
-static uint32 clean_up_driver_struct_level_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver)
+static void clean_up_driver_struct_level_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver)
 {
 	fstring architecture;
 	fstring new_name;
@@ -353,14 +353,14 @@ static uint32 clean_up_driver_struct_level_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *dri
 
 /****************************************************************************
 ****************************************************************************/
-static uint32 clean_up_driver_struct_level_6(NT_PRINTER_DRIVER_INFO_LEVEL_6 *driver)
+static void clean_up_driver_struct_level_6(NT_PRINTER_DRIVER_INFO_LEVEL_6 *driver)
 {
 
 }
 
 /****************************************************************************
 ****************************************************************************/
-uint32 clean_up_driver_struct(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, uint32 level)
+void clean_up_driver_struct(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, uint32 level)
 {
 	switch (level) {
 		case 3:
@@ -382,7 +382,7 @@ uint32 clean_up_driver_struct(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, uint
 
 /****************************************************************************
 ****************************************************************************/
-uint32 move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, uint32 level, struct current_user *user)
+BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, uint32 level, struct current_user *user)
 {
 	NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver;
 	fstring architecture;
@@ -390,9 +390,10 @@ uint32 move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract
 	pstring new_dir;
 	pstring old_name;
 	pstring new_name;
+	fstring user_name;
 	connection_struct *conn;
-	fstring inbuf;
-	fstring outbuf;
+	pstring inbuf;
+	pstring outbuf;
 	struct smb_passwd *smb_pass;
 	int ecode;
 	int outsize = 0;
@@ -408,8 +409,19 @@ uint32 move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract
 	all_string_sub(clean_driver_name, "/", "#", 0);
 	
 	/* connect to the print$ share under the same account as the user connected to the rpc pipe */	
-	smb_pass = getsmbpwnam(uidtoname(user->uid));
+	fstrcpy(user_name, uidtoname(user->uid));
+	if((smb_pass = getsmbpwnam(user_name)) == NULL) {
+		DEBUG(0,("move_driver_to_download_area: Unable to get smbpasswd entry for user %s\n",
+				user_name ));
+		return False;
+	}
+
 	conn = make_connection("print$", uidtoname(user->uid), smb_pass->smb_nt_passwd, 24, "A:", user->vuid, &ecode);
+
+	if (conn == NULL) {
+		DEBUG(0,("move_driver_to_download_area: Unable to connect\n"));
+		return False;
+	}
 
 	/* 
 	 * make the directories version and version\driver_name 
@@ -430,29 +442,51 @@ uint32 move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract
 	DEBUG(5,("Moving file now !\n"));
 	slprintf(old_name, sizeof(old_name), "%s\\%s", architecture, driver->driverpath);	
 	slprintf(new_name, sizeof(new_name), "%s\\%s", new_dir, driver->driverpath);	
-	outsize = rename_internals(conn, inbuf, outbuf, old_name, new_name, False);
+	if ((outsize = rename_internals(conn, inbuf, outbuf, old_name, new_name, False)) != 0) {
+		DEBUG(0,("move_driver_to_download_area: Unable to rename %s to %s\n",
+				old_name, new_name ));
+		return False;
+	}
 
 	slprintf(old_name, sizeof(old_name), "%s\\%s", architecture, driver->datafile);	
 	slprintf(new_name, sizeof(new_name), "%s\\%s", new_dir, driver->datafile);	
-	outsize = rename_internals(conn, inbuf, outbuf, old_name, new_name, False);
+	if ((outsize = rename_internals(conn, inbuf, outbuf, old_name, new_name, False)) != 0) {
+		DEBUG(0,("move_driver_to_download_area: Unable to rename %s to %s\n",
+				old_name, new_name ));
+		return False;
+	}
 
 	slprintf(old_name, sizeof(old_name), "%s\\%s", architecture, driver->configfile);	
 	slprintf(new_name, sizeof(new_name), "%s\\%s", new_dir, driver->configfile);	
-	outsize = rename_internals(conn, inbuf, outbuf, old_name, new_name, False);
+	if ((outsize = rename_internals(conn, inbuf, outbuf, old_name, new_name, False)) != 0) {
+		DEBUG(0,("move_driver_to_download_area: Unable to rename %s to %s\n",
+			old_name, new_name ));
+		return False;
+	}
 
 	slprintf(old_name, sizeof(old_name), "%s\\%s", architecture, driver->helpfile);	
 	slprintf(new_name, sizeof(new_name), "%s\\%s", new_dir, driver->helpfile);	
-	outsize = rename_internals(conn, inbuf, outbuf, old_name, new_name, False);
+	if ((outsize = rename_internals(conn, inbuf, outbuf, old_name, new_name, False)) != 0) {
+		DEBUG(0,("move_driver_to_download_area: Unable to rename %s to %s\n",
+			old_name, new_name ));
+		return False;
+	}
 
 	if (driver->dependentfiles) {
 		for (i=0; *driver->dependentfiles[i]; i++) {
 			slprintf(old_name, sizeof(old_name), "%s\\%s", architecture, driver->dependentfiles[i]);	
 			slprintf(new_name, sizeof(new_name), "%s\\%s", new_dir, driver->dependentfiles[i]);	
-			outsize = rename_internals(conn, inbuf, outbuf, old_name, new_name, False);
+			if ((outsize = rename_internals(conn, inbuf, outbuf, old_name, new_name, False)) != 0) {
+				DEBUG(0,("move_driver_to_download_area: Unable to rename %s to %s\n",
+					old_name, new_name ));
+				return False;
+			}
 		}
 	}
 
 	close_cnum(conn, user->vuid);
+
+	return True;
 }
 
 /****************************************************************************

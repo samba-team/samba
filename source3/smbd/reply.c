@@ -3124,6 +3124,8 @@ int mkdir_internal(connection_struct *conn, char *inbuf, char *outbuf, pstring d
     }
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
+
+  return ret;
 }
 
 /****************************************************************************
