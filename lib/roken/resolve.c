@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995, 1996, 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -124,8 +124,14 @@ parse_reply(unsigned char *data, int len)
 	return NULL;
 
     p = data;
+#if 0
+    /* doesn't work on Crays */
     memcpy(&r->h, p, sizeof(HEADER));
     p += sizeof(HEADER);
+#else
+    memcpy(&r->h, p, 12); /* XXX this will probably be mostly garbage */
+    p += 12;
+#endif
     status = dn_expand(data, data + len, p, host, sizeof(host));
     if(status < 0){
 	dns_free_data(r);
