@@ -115,7 +115,7 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 
       getdc = skip_string(machine,1);
       q = skip_string(getdc,1);
-      q = ALIGN2(q, buf);
+      q = ALIGN2(q, outbuf);
 
       /* at this point we can work out if this is a W9X or NT style
          request. Experiments show that the difference is wether the
