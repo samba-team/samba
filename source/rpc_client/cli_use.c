@@ -277,7 +277,6 @@ struct cli_state *cli_net_use_add(const char *srv_name,
 				      "IPC$", "IPC", False, True))
 	{
 		DEBUG(0, ("cli_net_use_add: connection failed\n"));
-		cli->cli = NULL;
 		cli_use_free(cli);
 		return NULL;
 	}
