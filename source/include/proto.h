@@ -1374,8 +1374,8 @@ void msrpcd_process(msrpc_service_fns * fn, rpcsrv_struct * l,
 
 /*The following definitions come from  netlogond/creds_db.c  */
 
-BOOL cred_get(uint32 pid, const char *domain, const char* wks, struct dcinfo *dc);
-BOOL cred_store(uint32 pid, const char *domain, const char* wks, struct dcinfo *dc);
+BOOL cred_get(const char *domain, const char* wks, struct dcinfo *dc);
+BOOL cred_store(const char *domain, const char* wks, struct dcinfo *dc);
 BOOL cred_init_db(void);
 
 /*The following definitions come from  netlogond/netlogond.c  */
@@ -1387,7 +1387,7 @@ msrpc_service_fns *get_service_fns(void);
 uint32 _net_req_chal(const UNISTR2 *uni_logon_server,
 		     const UNISTR2 *uni_logon_client,
 		     const DOM_CHAL * clnt_chal,
-		     DOM_CHAL * srv_chal, uint32 remote_pid);
+		     DOM_CHAL * srv_chal);
 uint32 _net_logon_ctrl2(const UNISTR2 *uni_server_name,
 			uint32 function_code,
 			uint32 query_level,
@@ -1401,7 +1401,7 @@ uint32 _net_auth(const UNISTR2 *uni_logon_srv,
 		 uint16 sec_chan,
 		 const UNISTR2 *uni_comp_name,
 		 const DOM_CHAL * clnt_chal,
-		 DOM_CHAL * srv_chal, uint32 remote_pid);
+		 DOM_CHAL * srv_chal);
 uint32 _net_auth_2(const UNISTR2 *uni_logon_srv,
 		   const UNISTR2 *uni_acct_name,
 		   uint16 sec_chan,
@@ -1409,14 +1409,14 @@ uint32 _net_auth_2(const UNISTR2 *uni_logon_srv,
 		   const DOM_CHAL * clnt_chal,
 		   const NEG_FLAGS * clnt_flgs,
 		   DOM_CHAL * srv_chal,
-		   NEG_FLAGS * srv_flgs, uint32 remote_pid);
+		   NEG_FLAGS * srv_flgs);
 uint32 _net_srv_pwset(const UNISTR2 *uni_logon_srv,
 		      const UNISTR2 *uni_acct_name,
 		      uint16 sec_chan,
 		      const UNISTR2 *uni_comp_name,
 		      const DOM_CRED * clnt_cred,
 		      const uint8 pwd[16],
-		      DOM_CRED * srv_cred, uint32 remote_pid);
+		      DOM_CRED * srv_cred);
 uint32 _net_sam_logon(const UNISTR2 *uni_logon_srv,
 		      const UNISTR2 *uni_comp_name,
 		      const DOM_CRED * clnt_cred,
@@ -1424,10 +1424,10 @@ uint32 _net_sam_logon(const UNISTR2 *uni_logon_srv,
 		      const NET_ID_INFO_CTR * id_ctr,
 		      uint16 validation_level,
 		      DOM_CRED * srv_creds,
-		      NET_USER_INFO_CTR * uctr, uint32 remote_pid,
+		      NET_USER_INFO_CTR * uctr,
 		      uint32 *auth_resp);
 uint32 _net_sam_logoff(const DOM_SAM_INFO * sam_id,
-		       DOM_CRED * srv_creds, uint32 remote_pid);
+		       DOM_CRED * srv_creds);
 uint32 _net_sam_sync(const UNISTR2 *uni_srv_name,
 		     const UNISTR2 *uni_cli_name,
 		     DOM_CRED * cli_creds,
@@ -1438,8 +1438,7 @@ uint32 _net_sam_sync(const UNISTR2 *uni_srv_name,
 		     uint32 max_size,
 		     uint32 *num_deltas,
 		     uint32 *num_deltas2,
-		     SAM_DELTA_HDR * hdr_deltas, SAM_DELTA_CTR * deltas,
-		     uint32 remote_pid);
+		     SAM_DELTA_HDR * hdr_deltas, SAM_DELTA_CTR * deltas);
 
 /*The following definitions come from  nmbd/asyncdns.c  */
 
@@ -3909,15 +3908,14 @@ void vuid_free_user_struct(user_struct * r_u);
 
 /*The following definitions come from  rpc_server/srv_brs.c  */
 
-BOOL api_brs_rpc(rpcsrv_struct *p);
+BOOL api_brs_rpc(rpcsrv_struct * p);
 
 /*The following definitions come from  rpc_server/srv_lookup.c  */
 
-uint32 make_dom_gids(DOMAIN_GRP *mem, int num_members, DOM_GID **ppgids);
-int get_domain_user_groups(DOMAIN_GRP_MEMBER **grp_members, uint32 group_rid);
-uint32 lookup_sid(DOM_SID *sid, char *name, uint32  *type);
-uint32 lookup_added_user_rids(char *nt_name,
-		uint32 *usr_rid, uint32 *grp_rid);
+uint32 make_dom_gids(DOMAIN_GRP * mem, int num_members, DOM_GID ** ppgids);
+int get_domain_user_groups(DOMAIN_GRP_MEMBER ** grp_members, uint32 group_rid);
+uint32 lookup_sid(DOM_SID *sid, char *name, uint32 *type);
+uint32 lookup_added_user_rids(char *nt_name, uint32 *usr_rid, uint32 *grp_rid);
 uint32 lookup_name(const char *name, DOM_SID *sid, uint32 *type);
 
 /*The following definitions come from  rpc_server/srv_netlog.c  */
@@ -3926,11 +3924,10 @@ BOOL api_netlog_rpc(rpcsrv_struct * p);
 
 /*The following definitions come from  rpc_server/srv_pipe.c  */
 
-BOOL readwrite_pipe(pipes_struct *p, char *data, int len,
-		char **rdata, int *rlen,
-		BOOL *pipe_outstanding);
-ssize_t write_pipe(pipes_struct *p, char *data, size_t n);
-int read_pipe(pipes_struct *p, char *data, int n);
+BOOL readwrite_pipe(pipes_struct * p, char *data, int len,
+		    char **rdata, int *rlen, BOOL *pipe_outstanding);
+ssize_t write_pipe(pipes_struct * p, char *data, size_t n);
+int read_pipe(pipes_struct * p, char *data, int n);
 
 /*The following definitions come from  rpc_server/srv_pipe_hnd.c  */
 
@@ -3975,7 +3972,7 @@ BOOL api_samr_rpc(rpcsrv_struct * p);
 
 /*The following definitions come from  rpc_server/srv_spoolss.c  */
 
-BOOL api_spoolss_rpc(rpcsrv_struct *p);
+BOOL api_spoolss_rpc(rpcsrv_struct * p);
 
 /*The following definitions come from  rpc_server/srv_srvsvc.c  */
 
@@ -3987,7 +3984,7 @@ BOOL api_svcctl_rpc(rpcsrv_struct * p);
 
 /*The following definitions come from  rpc_server/srv_wkssvc.c  */
 
-BOOL api_wkssvc_rpc(rpcsrv_struct *p);
+BOOL api_wkssvc_rpc(rpcsrv_struct * p);
 
 /*The following definitions come from  samrd/samrd.c  */
 

@@ -34,13 +34,13 @@ uint16 ctx_id_table[65536];
 turns a DCE/RPC response stream into a DCE/RPC reply
 ********************************************************************/
 static BOOL create_rpc_reply(rpcsrv_struct * l, uint32 data_start,
-			     prs_struct * resp)
+			     prs_struct *resp)
 {
 	BOOL ret;
 
 	if (l->auth != NULL)
 	{
-                SMB_ASSERT(l->auth->api_create_pdu != NULL);
+		SMB_ASSERT(l->auth->api_create_pdu != NULL);
 		ret = l->auth->api_create_pdu(l, data_start, resp);
 	}
 	else
@@ -115,7 +115,7 @@ static void free_api_cmd_array(uint32 num_entries, struct api_cmd **entries)
 	free_void_array(num_entries, (void **)entries, *fn);
 }
 
-static struct api_cmd *add_api_cmd_to_array(uint32 * len,
+static struct api_cmd *add_api_cmd_to_array(uint32 *len,
 					    struct api_cmd ***array,
 					    const struct api_cmd *name)
 {
@@ -145,7 +145,7 @@ void add_msrpc_command_processor(char *pipe_name,
 }
 
 static BOOL api_pipe_nack_resp(rpcsrv_struct * l, uint16 rej_code,
-				prs_struct * resp)
+			       prs_struct *resp)
 {
 	prs_struct rhdr;
 	prs_struct rnack;
@@ -165,8 +165,7 @@ static BOOL api_pipe_nack_resp(rpcsrv_struct * l, uint16 rej_code,
 	hdr_nack.rej_code = rej_code;
 
 	make_rpc_hdr(&l->hdr, RPC_BINDNACK,
-		     RPC_FLG_FIRST | RPC_FLG_LAST,
-		     l->hdr.call_id, 0x12, 0);
+		     RPC_FLG_FIRST | RPC_FLG_LAST, l->hdr.call_id, 0x12, 0);
 
 	smb_io_rpc_hdr("hdr", &l->hdr, &rhdr, 0);
 	smb_io_rpc_hdr_nack("nack", &hdr_nack, &rnack, 0);
@@ -190,7 +189,7 @@ static BOOL api_pipe_nack_resp(rpcsrv_struct * l, uint16 rej_code,
 }
 
 static BOOL api_pipe_fault_resp(rpcsrv_struct * l, uint32 status,
-				prs_struct * resp)
+				prs_struct *resp)
 {
 	prs_struct rhdr;
 	prs_struct rfault;
@@ -247,7 +246,7 @@ static BOOL api_pipe_fault_resp(rpcsrv_struct * l, uint32 status,
 
 static BOOL srv_pipe_bind_and_alt_req(rpcsrv_struct * l,
 				      const char *ack_pipe_name,
-				      prs_struct * resp,
+				      prs_struct *resp,
 				      enum RPC_PKT_TYPE pkt_type)
 {
 	BOOL ret;
@@ -316,7 +315,7 @@ static BOOL srv_pipe_bind_and_alt_req(rpcsrv_struct * l,
 
 	if (l->auth != NULL)
 	{
-               SMB_ASSERT(l->auth->api_auth_chk != NULL);
+		SMB_ASSERT(l->auth->api_auth_chk != NULL);
 		if (!l->auth->api_auth_chk(l, pkt_type))
 		{
 			if (l->auth_info != NULL)
@@ -351,7 +350,7 @@ static BOOL srv_pipe_bind_and_alt_req(rpcsrv_struct * l,
 		/*** now the authentication ***/
 		/***/
 
-                SMB_ASSERT(l->auth->api_auth_gen != NULL);
+		SMB_ASSERT(l->auth->api_auth_gen != NULL);
 
 		ret = l->auth->api_auth_gen(l, resp, pkt_type);
 
@@ -373,7 +372,7 @@ static BOOL srv_pipe_bind_and_alt_req(rpcsrv_struct * l,
 
 static BOOL api_pipe_bind_and_alt_req(rpcsrv_struct * l,
 				      const char *name,
-				      prs_struct * resp,
+				      prs_struct *resp,
 				      enum RPC_PKT_TYPE pkt_type)
 {
 	fstring ack_pipe_name;
@@ -433,19 +432,19 @@ static BOOL api_pipe_bind_and_alt_req(rpcsrv_struct * l,
  * have the same bug.
  */
 static BOOL api_pipe_bind_req(rpcsrv_struct * l, const char *name,
-			      prs_struct * resp)
+			      prs_struct *resp)
 {
 	return api_pipe_bind_and_alt_req(l, name, resp, RPC_BINDACK);
 }
 
 static BOOL api_pipe_alt_req(rpcsrv_struct * l, const char *name,
-			     prs_struct * resp)
+			     prs_struct *resp)
 {
 	return api_pipe_bind_and_alt_req(l, name, resp, RPC_ALTCONTRESP);
 }
 
 static BOOL api_pipe_request(rpcsrv_struct * l, const char *name,
-			     prs_struct * resp)
+			     prs_struct *resp)
 {
 	int i = 0;
 
@@ -453,7 +452,7 @@ static BOOL api_pipe_request(rpcsrv_struct * l, const char *name,
 	{
 		DEBUG(10, ("api_pipe_request: validated auth\n"));
 
-                SMB_ASSERT(l->auth->api_decode_pdu != NULL);
+		SMB_ASSERT(l->auth->api_decode_pdu != NULL);
 
 		if (!l->auth->api_decode_pdu(l))
 			return False;
@@ -461,18 +460,20 @@ static BOOL api_pipe_request(rpcsrv_struct * l, const char *name,
 
 	if (num_cmds == 0)
 	{
-		DEBUG(0,("no commands to process!\n"));
+		DEBUG(0, ("no commands to process!\n"));
 	}
 	else
 	{
-		DEBUG(10,("pipe name: %s\n", name));
+		DEBUG(10, ("pipe name: %s\n", name));
 	}
 
 	for (i = 0; i < num_cmds; i++)
 	{
-		DEBUG(10,("search name: %s\n", api_fd_commands[i]->pipe_clnt_name));
-		if (strequal(api_fd_commands[i]->pipe_clnt_name, name) &&
-		    api_fd_commands[i]->fn != NULL)
+		DEBUG(10,
+		      ("search name: %s\n",
+		       api_fd_commands[i]->pipe_clnt_name));
+		if (strequal(api_fd_commands[i]->pipe_clnt_name, name)
+		    && api_fd_commands[i]->fn != NULL)
 		{
 			DEBUG(3,
 			      ("Doing \\PIPE\\%s\n",
@@ -491,8 +492,8 @@ static BOOL api_pipe_request(rpcsrv_struct * l, const char *name,
 	return False;
 }
 
-static BOOL rpc_redir_local(rpcsrv_struct * l, prs_struct * req,
-			    prs_struct * resp, const char *name)
+static BOOL rpc_redir_local(rpcsrv_struct * l, prs_struct *req,
+			    prs_struct *resp, const char *name)
 {
 	BOOL reply = False;
 	BOOL last;
@@ -600,9 +601,11 @@ static BOOL rpc_redir_local(rpcsrv_struct * l, prs_struct * req,
 							   &l->data_i, 0);
 				if (reply)
 				{
-					key.vuid = ctx_id_table[l->hdr_req.context_id];
-					reply = become_vuser(&key) ||
-						become_guest();
+					key.vuid =
+						ctx_id_table[l->hdr_req.
+							     context_id];
+					reply = become_vuser(&key)
+						|| become_guest();
 
 				}
 				if (reply)
@@ -613,20 +616,21 @@ static BOOL rpc_redir_local(rpcsrv_struct * l, prs_struct * req,
 				}
 				if (!reply)
 				{
-					DEBUG(10,("dce/rpc request failed\n"));
+					DEBUG(10,
+					      ("dce/rpc request failed\n"));
 				}
 			}
 			break;
 		}
 		case RPC_BINDRESP:	/* not the real name! */
 		{
-                        if (l->auth != NULL) 
+			if (l->auth != NULL)
 			{
-                                SMB_ASSERT(l->auth->api_auth_chk != NULL);
+				SMB_ASSERT(l->auth->api_auth_chk != NULL);
 
 				reply = l->auth->api_auth_chk(l,
-							      l->hdr.
-							      pkt_type);
+							      l->
+							      hdr.pkt_type);
 			}
 			if (!reply)
 			{
@@ -695,7 +699,7 @@ static BOOL api_rpc_command(rpcsrv_struct * l, const char *rpc_name,
 	prs_init(&l->rdata, 0, 4, False);
 
 	/* do the actual command */
-	api_rpc_cmds[fn_num].fn(l, &l->data_i, &(l->rdata));
+	api_rpc_cmds[fn_num].fn(&l->data_i, &l->rdata);
 
 	if (l->rdata.data == NULL || l->rdata.offset == 0)
 	{

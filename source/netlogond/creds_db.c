@@ -25,32 +25,31 @@ extern int DEBUGLEVEL;
 
 static TDB_CONTEXT *db = NULL;
 
-static char *make_creds_key(uint32 pid, const char *domain, const char* wks, int *klen)
+static char *make_creds_key(const char *domain, const char* wks, int *klen)
 {
 	char *k;
 	int domlen = strlen(domain);
 	int wkslen = strlen(wks);
 
-	(*klen) = domlen + wkslen + 2 + sizeof(pid);
+	(*klen) = domlen + wkslen + 2;
 	k = malloc((*klen) * sizeof(char));
 
 	if (k != NULL)
 	{
-		*((uint32*)k) = pid;
-		safe_strcpy(k+sizeof(pid)         , domain, domlen);
-		safe_strcpy(k+sizeof(pid)+domlen+1, wks   , wkslen);
-		strlower(k+sizeof(pid));
-		strlower(k+sizeof(pid)+domlen+1);
+		safe_strcpy(k, domain, domlen);
+		safe_strcpy(k+domlen+1, wks   , wkslen);
+		strlower(k);
+		strlower(k+domlen+1);
 
-		DEBUG(10,("make_creds_key: pid: %x dom %s wks %s\n",
-		           pid, domain, wks));
+		DEBUG(10,("make_creds_key: dom %s wks %s\n",
+		           domain, wks));
 		dump_data(10, k, (*klen));
 	}
 
 	return k;
 }
 
-BOOL cred_get(uint32 pid, const char *domain, const char* wks, struct dcinfo *dc)
+BOOL cred_get(const char *domain, const char* wks, struct dcinfo *dc)
 {
 	int klen;
 	char *k;
@@ -58,7 +57,7 @@ BOOL cred_get(uint32 pid, const char *domain, const char* wks, struct dcinfo *dc
 
 	DEBUG(10,("cred_get:\n"));
 
-	k = make_creds_key(pid, domain, wks, &klen);
+	k = make_creds_key(domain, wks, &klen);
 
 	if (k == NULL) return False;
 
@@ -88,7 +87,7 @@ BOOL cred_get(uint32 pid, const char *domain, const char* wks, struct dcinfo *dc
 	return True;
 }
 
-BOOL cred_store(uint32 pid, const char *domain, const char* wks, struct dcinfo *dc)
+BOOL cred_store(const char *domain, const char* wks, struct dcinfo *dc)
 {
 	int klen;
 	char *k;
@@ -97,7 +96,7 @@ BOOL cred_store(uint32 pid, const char *domain, const char* wks, struct dcinfo *
 
 	DEBUG(10,("cred_store:\n"));
 
-	k = make_creds_key(pid, domain, wks, &klen);
+	k = make_creds_key(domain, wks, &klen);
 
 	if (k == NULL) return False;
 

@@ -34,7 +34,7 @@ extern int DEBUGLEVEL;
 turns a DCE/RPC request into a DCE/RPC reply
 ********************************************************************/
 static BOOL api_noauth_create_pdu(rpcsrv_struct * l, uint32 data_start,
-				  prs_struct * resp)
+				  prs_struct *resp)
 {
 	BOOL ret;
 	uint32 data_len;
@@ -122,7 +122,7 @@ static BOOL api_noauth_create_pdu(rpcsrv_struct * l, uint32 data_start,
 	return ret;
 }
 
-static BOOL api_noauth_auth_gen(rpcsrv_struct * l, prs_struct * resp,
+static BOOL api_noauth_auth_gen(rpcsrv_struct * l, prs_struct *resp,
 				enum RPC_PKT_TYPE pkt_type)
 {
 	prs_struct rhdr;

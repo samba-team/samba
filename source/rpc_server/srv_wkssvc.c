@@ -34,8 +34,7 @@ extern pstring global_myname;
 /*******************************************************************
  api_wks_query_info
  ********************************************************************/
-static BOOL api_wks_query_info( rpcsrv_struct *p, prs_struct *data,
-                                    prs_struct *rdata )
+static BOOL api_wks_query_info(prs_struct *data, prs_struct *rdata)
 {
 	WKS_Q_QUERY_INFO q_u;
 	WKS_R_QUERY_INFO r_u;
@@ -52,7 +51,8 @@ static BOOL api_wks_query_info( rpcsrv_struct *p, prs_struct *data,
 	}
 
 
-	status = _wks_query_info(&q_u.uni_srv_name, q_u.switch_value, &wks100);
+	status =
+		_wks_query_info(&q_u.uni_srv_name, q_u.switch_value, &wks100);
 	make_wks_r_query_info(&r_u, q_u.switch_value, &wks100, status);
 
 	/* store the response in the SMB stream */
@@ -63,17 +63,15 @@ static BOOL api_wks_query_info( rpcsrv_struct *p, prs_struct *data,
 /*******************************************************************
  \PIPE\wkssvc commands
  ********************************************************************/
-static const struct api_struct api_wks_cmds[] =
-{
-	{ "WKS_Q_QUERY_INFO", WKS_QUERY_INFO, api_wks_query_info },
-	{ NULL             , 0            , NULL }
+static const struct api_struct api_wks_cmds[] = {
+	{"WKS_Q_QUERY_INFO", WKS_QUERY_INFO, api_wks_query_info},
+	{NULL, 0, NULL}
 };
 
 /*******************************************************************
  receives a wkssvc pipe and responds.
  ********************************************************************/
-BOOL api_wkssvc_rpc(rpcsrv_struct *p)
+BOOL api_wkssvc_rpc(rpcsrv_struct * p)
 {
 	return api_rpcTNP(p, "api_wkssvc_rpc", api_wks_cmds);
 }
-

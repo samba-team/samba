@@ -61,7 +61,7 @@ headers and data sections.
 
 ********************************************************************/
 static BOOL api_ntlmssp_create_pdu(rpcsrv_struct * l, uint32 data_start,
-				   prs_struct * resp)
+				   prs_struct *resp)
 {
 	ntlmssp_auth_struct *a = (ntlmssp_auth_struct *) l->auth_info;
 
@@ -307,8 +307,8 @@ static BOOL api_ntlmssp_verify(rpcsrv_struct * l,
 	DEBUG(5, ("user: %s domain: %s wks: %s\n", user_name, domain, wks));
 
 	l->auth_validated = check_domain_security(user_name, domain,
-						  (const uchar *)a->
-						  ntlmssp_chal.challenge,
+						  (const uchar *)
+						  a->ntlmssp_chal.challenge,
 						  lm_owf, lm_owf_len, nt_owf,
 						  nt_owf_len, &info3) == 0x0;
 
@@ -501,7 +501,7 @@ static BOOL api_ntlmssp_auth_chk(rpcsrv_struct * l,
 	return False;
 }
 
-static BOOL api_ntlmssp_auth_gen(rpcsrv_struct * l, prs_struct * resp,
+static BOOL api_ntlmssp_auth_gen(rpcsrv_struct * l, prs_struct *resp,
 				 enum RPC_PKT_TYPE pkt_type)
 {
 	BOOL ret;

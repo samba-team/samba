@@ -34,7 +34,7 @@ headers and data sections.
 
 ********************************************************************/
 static BOOL api_netsec_create_pdu(rpcsrv_struct * l, uint32 data_start,
-				  prs_struct * resp)
+				  prs_struct *resp)
 {
 	netsec_auth_struct *a = (netsec_auth_struct *) l->auth_info;
 
@@ -184,8 +184,7 @@ static BOOL api_netsec_verify(rpcsrv_struct * l)
 	/*
 	 * obtain the session key
 	 */
-	if (!cred_get(l->key.pid,
-		      a->netsec_neg.domain, a->netsec_neg.myname, &dc))
+	if (!cred_get( a->netsec_neg.domain, a->netsec_neg.myname, &dc))
 	{
 		return False;
 	}
@@ -267,7 +266,7 @@ static BOOL api_netsec_auth_chk(rpcsrv_struct * l, enum RPC_PKT_TYPE pkt_type)
 	return False;
 }
 
-static BOOL api_netsec_auth_gen(rpcsrv_struct * l, prs_struct * resp,
+static BOOL api_netsec_auth_gen(rpcsrv_struct * l, prs_struct *resp,
 				enum RPC_PKT_TYPE pkt_type)
 {
 	BOOL ret;

@@ -3,8 +3,8 @@
  *  Unix SMB/Netbios implementation.
  *  Version 1.9.
  *  RPC Pipe client / server routines
- *  Copyright (C) Andrew Tridgell              1992-1999,
- *  Copyright (C) Luke Kenneth Casson Leighton 1996-1999,
+ *  Copyright (C) Andrew Tridgell              1992-2000,
+ *  Copyright (C) Luke Kenneth Casson Leighton 1996-2000,
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -27,14 +27,11 @@
 #include "nterr.h"
 
 extern int DEBUGLEVEL;
-extern pstring global_myname;
-
 
 /*******************************************************************
  api_brs_query_info
  ********************************************************************/
-static BOOL api_brs_query_info( rpcsrv_struct *p, prs_struct *data,
-                                    prs_struct *rdata )
+static BOOL api_brs_query_info(prs_struct *data, prs_struct *rdata)
 {
 	BRS_Q_QUERY_INFO q_u;
 	BRS_R_QUERY_INFO r_u;
@@ -50,8 +47,9 @@ static BOOL api_brs_query_info( rpcsrv_struct *p, prs_struct *data,
 		return False;
 	}
 
-
-	status = _brs_query_info(&q_u.uni_srv_name, q_u.switch_value1, &brs100);
+	status =
+		_brs_query_info(&q_u.uni_srv_name, q_u.switch_value1,
+				&brs100);
 	make_brs_r_query_info(&r_u, q_u.switch_value1, &brs100, status);
 	return brs_io_r_query_info("", &r_u, rdata, 0);
 }
@@ -60,17 +58,15 @@ static BOOL api_brs_query_info( rpcsrv_struct *p, prs_struct *data,
 /*******************************************************************
  \PIPE\brssvc commands
  ********************************************************************/
-static const struct api_struct api_brs_cmds[] =
-{
-	{ "BRS_Q_QUERY_INFO", BRS_QUERY_INFO, api_brs_query_info },
-	{ NULL             , 0            , NULL }
+static const struct api_struct api_brs_cmds[] = {
+	{"BRS_Q_QUERY_INFO", BRS_QUERY_INFO, api_brs_query_info},
+	{NULL, 0, NULL}
 };
 
 /*******************************************************************
  receives a browser pipe and responds.
  ********************************************************************/
-BOOL api_brs_rpc(rpcsrv_struct *p)
+BOOL api_brs_rpc(rpcsrv_struct * p)
 {
 	return api_rpcTNP(p, "api_brs_rpc", api_brs_cmds);
 }
-

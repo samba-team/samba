@@ -31,7 +31,7 @@ extern int DEBUGLEVEL;
 /*******************************************************************
  api_svc_close
  ********************************************************************/
-static BOOL api_svc_close(rpcsrv_struct * p, prs_struct *data,
+static BOOL api_svc_close(prs_struct *data,
 			  prs_struct *rdata)
 {
 	SVC_Q_CLOSE q_r;
@@ -55,7 +55,7 @@ static BOOL api_svc_close(rpcsrv_struct * p, prs_struct *data,
 /*******************************************************************
  api_svc_open_service
  ********************************************************************/
-static BOOL api_svc_open_service(rpcsrv_struct * p, prs_struct *data,
+static BOOL api_svc_open_service(prs_struct *data,
 				 prs_struct *rdata)
 {
 	SVC_Q_OPEN_SERVICE q_u;
@@ -80,7 +80,7 @@ static BOOL api_svc_open_service(rpcsrv_struct * p, prs_struct *data,
 /*******************************************************************
  api_svc_stop_service
  ********************************************************************/
-static BOOL api_svc_stop_service(rpcsrv_struct * p, prs_struct *data,
+static BOOL api_svc_stop_service(prs_struct *data,
 				 prs_struct *rdata)
 {
 	SVC_Q_STOP_SERVICE q_u;
@@ -110,7 +110,7 @@ static BOOL api_svc_stop_service(rpcsrv_struct * p, prs_struct *data,
 /*******************************************************************
  api_svc_start_service
  ********************************************************************/
-static BOOL api_svc_start_service(rpcsrv_struct * p, prs_struct *data,
+static BOOL api_svc_start_service(prs_struct *data,
 				  prs_struct *rdata)
 {
 	SVC_Q_START_SERVICE q_u;
@@ -134,7 +134,7 @@ static BOOL api_svc_start_service(rpcsrv_struct * p, prs_struct *data,
 /*******************************************************************
  api_svc_open_sc_man
  ********************************************************************/
-static BOOL api_svc_open_sc_man(rpcsrv_struct * p, prs_struct *data,
+static BOOL api_svc_open_sc_man(prs_struct *data,
 				prs_struct *rdata)
 {
 	SVC_Q_OPEN_SC_MAN q_u;
@@ -159,7 +159,7 @@ static BOOL api_svc_open_sc_man(rpcsrv_struct * p, prs_struct *data,
 /*******************************************************************
  api_svc_enum_svcs_status
  ********************************************************************/
-static BOOL api_svc_enum_svcs_status(rpcsrv_struct * p, prs_struct *data,
+static BOOL api_svc_enum_svcs_status(prs_struct *data,
 				     prs_struct *rdata)
 {
 	SVC_Q_ENUM_SVCS_STATUS q_u;
@@ -197,7 +197,7 @@ static BOOL api_svc_enum_svcs_status(rpcsrv_struct * p, prs_struct *data,
 /*******************************************************************
  api_svc_query_disp_name
  ********************************************************************/
-static BOOL api_svc_query_disp_name(rpcsrv_struct * p, prs_struct *data,
+static BOOL api_svc_query_disp_name(prs_struct *data,
 				    prs_struct *rdata)
 {
 	SVC_Q_QUERY_DISP_NAME q_u;
@@ -223,7 +223,7 @@ static BOOL api_svc_query_disp_name(rpcsrv_struct * p, prs_struct *data,
 /*******************************************************************
  api_svc_unknown_3
  ********************************************************************/
-static BOOL api_svc_unknown_3(rpcsrv_struct * p, prs_struct *data,
+static BOOL api_svc_unknown_3(prs_struct *data,
 			      prs_struct *rdata)
 {
 	SVC_Q_UNKNOWN_3 q_u;
@@ -250,8 +250,8 @@ static const struct api_struct api_svc_cmds[] = {
 	{"SVC_CLOSE", SVC_CLOSE, api_svc_close},
 	{"SVC_OPEN_SC_MAN", SVC_OPEN_SC_MAN, api_svc_open_sc_man},
 	{"SVC_OPEN_SERVICE", SVC_OPEN_SERVICE, api_svc_open_service},
-	
-		{"SVC_ENUM_SVCS_STATUS", SVC_ENUM_SVCS_STATUS,
+
+	{"SVC_ENUM_SVCS_STATUS", SVC_ENUM_SVCS_STATUS,
 	 api_svc_enum_svcs_status},
 	{"SVC_QUERY_DISP_NAME", SVC_QUERY_DISP_NAME, api_svc_query_disp_name},
 	{"SVC_START_SERVICE", SVC_START_SERVICE, api_svc_start_service},

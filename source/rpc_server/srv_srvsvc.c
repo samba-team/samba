@@ -32,7 +32,7 @@ extern pstring global_myname;
 
 /*******************************************************************
 ********************************************************************/
-static BOOL api_srv_net_srv_get_info(rpcsrv_struct * p, prs_struct *data,
+static BOOL api_srv_net_srv_get_info(prs_struct *data,
 				     prs_struct *rdata)
 {
 	SRV_Q_NET_SRV_GET_INFO q_n;
@@ -61,7 +61,7 @@ static BOOL api_srv_net_srv_get_info(rpcsrv_struct * p, prs_struct *data,
 
 /*******************************************************************
 ********************************************************************/
-static BOOL api_srv_net_file_enum(rpcsrv_struct * p, prs_struct *data,
+static BOOL api_srv_net_file_enum(prs_struct *data,
 				  prs_struct *rdata)
 {
 	SRV_Q_NET_FILE_ENUM q_n;
@@ -101,7 +101,7 @@ static BOOL api_srv_net_file_enum(rpcsrv_struct * p, prs_struct *data,
 
 /*******************************************************************
 ********************************************************************/
-static BOOL api_srv_net_conn_enum(rpcsrv_struct * p, prs_struct *data,
+static BOOL api_srv_net_conn_enum(prs_struct *data,
 				  prs_struct *rdata)
 {
 	SRV_Q_NET_CONN_ENUM q_n;
@@ -136,7 +136,7 @@ static BOOL api_srv_net_conn_enum(rpcsrv_struct * p, prs_struct *data,
 
 /*******************************************************************
 ********************************************************************/
-static BOOL api_srv_net_sess_enum(rpcsrv_struct * p, prs_struct *data,
+static BOOL api_srv_net_sess_enum(prs_struct *data,
 				  prs_struct *rdata)
 {
 	SRV_Q_NET_SESS_ENUM q_n;
@@ -170,7 +170,7 @@ static BOOL api_srv_net_sess_enum(rpcsrv_struct * p, prs_struct *data,
 
 /*******************************************************************
 ********************************************************************/
-static BOOL api_srv_net_share_enum(rpcsrv_struct * p, prs_struct *data,
+static BOOL api_srv_net_share_enum(prs_struct *data,
 				   prs_struct *rdata)
 {
 	SRV_Q_NET_SHARE_ENUM q_n;
@@ -210,7 +210,7 @@ static BOOL api_srv_net_share_enum(rpcsrv_struct * p, prs_struct *data,
 
 /*******************************************************************
 ********************************************************************/
-static BOOL api_srv_net_share_add(rpcsrv_struct * p, prs_struct *data,
+static BOOL api_srv_net_share_add(prs_struct *data,
 				  prs_struct *rdata)
 {
 	SRV_Q_NET_SHARE_ADD q_n;
@@ -235,7 +235,7 @@ static BOOL api_srv_net_share_add(rpcsrv_struct * p, prs_struct *data,
 
 /*******************************************************************
 ********************************************************************/
-static BOOL api_srv_net_share_get_info(rpcsrv_struct * p, prs_struct *data,
+static BOOL api_srv_net_share_get_info(prs_struct *data,
 				       prs_struct *rdata)
 {
 	SRV_Q_NET_SHARE_GET_INFO q_n;
@@ -270,7 +270,7 @@ static BOOL api_srv_net_share_get_info(rpcsrv_struct * p, prs_struct *data,
 
 /*******************************************************************
 ********************************************************************/
-static BOOL api_srv_net_remote_tod(rpcsrv_struct * p, prs_struct *data,
+static BOOL api_srv_net_remote_tod(prs_struct *data,
 				   prs_struct *rdata)
 {
 	SRV_Q_NET_REMOTE_TOD q_n;

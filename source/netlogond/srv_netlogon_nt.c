@@ -388,7 +388,7 @@ static uint32 net_login_network(const NET_ID_INFO_2 * id2,
 uint32 _net_req_chal(const UNISTR2 *uni_logon_server,
 		     const UNISTR2 *uni_logon_client,
 		     const DOM_CHAL * clnt_chal,
-		     DOM_CHAL * srv_chal, uint32 remote_pid)
+		     DOM_CHAL * srv_chal)
 {
 	fstring trust_acct;
 	fstring trust_name;
@@ -431,7 +431,7 @@ uint32 _net_req_chal(const UNISTR2 *uni_logon_server,
 	cred_session_key(&(dc.clnt_chal), &(dc.srv_chal),
 			 (char *)dc.md4pw, dc.sess_key);
 
-	if (!cred_store(remote_pid, global_sam_name, trust_name, &dc))
+	if (!cred_store(global_sam_name, trust_name, &dc))
 	{
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -584,7 +584,7 @@ uint32 _net_auth(const UNISTR2 *uni_logon_srv,
 		 uint16 sec_chan,
 		 const UNISTR2 *uni_comp_name,
 		 const DOM_CHAL * clnt_chal,
-		 DOM_CHAL * srv_chal, uint32 remote_pid)
+		 DOM_CHAL * srv_chal)
 {
 	UTIME srv_time;
 	fstring trust_name;
@@ -596,7 +596,7 @@ uint32 _net_auth(const UNISTR2 *uni_logon_srv,
 
 	unistr2_to_ascii(trust_name, uni_comp_name, sizeof(trust_name) - 1);
 
-	if (!cred_get(remote_pid, global_sam_name, trust_name, &dc))
+	if (!cred_get(global_sam_name, trust_name, &dc))
 	{
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -618,7 +618,7 @@ uint32 _net_auth(const UNISTR2 *uni_logon_srv,
 	memcpy(dc.srv_cred.challenge.data, clnt_chal->data,
 	       sizeof(clnt_chal->data));
 
-	if (!cred_store(remote_pid, global_sam_name, trust_name, &dc))
+	if (!cred_store(global_sam_name, trust_name, &dc))
 	{
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -636,7 +636,7 @@ uint32 _net_auth_2(const UNISTR2 *uni_logon_srv,
 		   const DOM_CHAL * clnt_chal,
 		   const NEG_FLAGS * clnt_flgs,
 		   DOM_CHAL * srv_chal,
-		   NEG_FLAGS * srv_flgs, uint32 remote_pid)
+		   NEG_FLAGS * srv_flgs)
 {
 	UTIME srv_time;
 	fstring trust_name;
@@ -648,7 +648,7 @@ uint32 _net_auth_2(const UNISTR2 *uni_logon_srv,
 
 	unistr2_to_ascii(trust_name, uni_comp_name, sizeof(trust_name) - 1);
 
-	if (!cred_get(remote_pid, global_sam_name, trust_name, &dc))
+	if (!cred_get(global_sam_name, trust_name, &dc))
 	{
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -670,7 +670,7 @@ uint32 _net_auth_2(const UNISTR2 *uni_logon_srv,
 	memcpy(dc.srv_cred.challenge.data, clnt_chal->data,
 	       sizeof(clnt_chal->data));
 
-	if (!cred_store(remote_pid, global_sam_name, trust_name, &dc))
+	if (!cred_store(global_sam_name, trust_name, &dc))
 	{
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -710,7 +710,7 @@ uint32 _net_srv_pwset(const UNISTR2 *uni_logon_srv,
 		      const UNISTR2 *uni_comp_name,
 		      const DOM_CRED * clnt_cred,
 		      const uint8 pwd[16],
-		      DOM_CRED * srv_cred, uint32 remote_pid)
+		      DOM_CRED * srv_cred)
 {
 	pstring trust_acct;
 	unsigned char hash3_pwd[16];
@@ -724,7 +724,7 @@ uint32 _net_srv_pwset(const UNISTR2 *uni_logon_srv,
 
 	unistr2_to_ascii(trust_name, uni_comp_name, sizeof(trust_name) - 1);
 
-	if (!cred_get(remote_pid, global_sam_name, trust_name, &dc))
+	if (!cred_get(global_sam_name, trust_name, &dc))
 	{
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -739,7 +739,7 @@ uint32 _net_srv_pwset(const UNISTR2 *uni_logon_srv,
 
 	memcpy(&(dc.srv_cred), &(dc.clnt_cred), sizeof(dc.clnt_cred));
 
-	if (!cred_store(remote_pid, global_sam_name, trust_name, &dc))
+	if (!cred_store(global_sam_name, trust_name, &dc))
 	{
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -802,7 +802,7 @@ uint32 _net_sam_logon(const UNISTR2 *uni_logon_srv,
 		      const NET_ID_INFO_CTR * id_ctr,
 		      uint16 validation_level,
 		      DOM_CRED * srv_creds,
-		      NET_USER_INFO_CTR * uctr, uint32 remote_pid,
+		      NET_USER_INFO_CTR * uctr,
 		      uint32 *auth_resp)
 {
 	const UNISTR2 *uni_samusr = NULL;
@@ -846,7 +846,7 @@ uint32 _net_sam_logon(const UNISTR2 *uni_logon_srv,
 
 	unistr2_to_ascii(trust_name, uni_comp_name, sizeof(trust_name) - 1);
 
-	if (!cred_get(remote_pid, global_sam_name, trust_name, &dc))
+	if (!cred_get(global_sam_name, trust_name, &dc))
 	{
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -860,7 +860,7 @@ uint32 _net_sam_logon(const UNISTR2 *uni_logon_srv,
 
 	memcpy(&dc.srv_cred, &dc.clnt_cred, sizeof(dc.clnt_cred));
 
-	if (!cred_store(remote_pid, global_sam_name, trust_name, &dc))
+	if (!cred_store(global_sam_name, trust_name, &dc))
 	{
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -1115,7 +1115,7 @@ uint32 _net_sam_logon(const UNISTR2 *uni_logon_srv,
  _net_sam_logoff
  *************************************************************************/
 uint32 _net_sam_logoff(const DOM_SAM_INFO * sam_id,
-		       DOM_CRED * srv_creds, uint32 remote_pid)
+		       DOM_CRED * srv_creds)
 {
 	fstring trust_name;
 	struct dcinfo dc;
@@ -1125,7 +1125,7 @@ uint32 _net_sam_logoff(const DOM_SAM_INFO * sam_id,
 	unistr2_to_ascii(trust_name, &(sam_id->client.login.uni_comp_name),
 			 sizeof(trust_name) - 1);
 
-	if (!cred_get(remote_pid, global_sam_name, trust_name, &dc))
+	if (!cred_get(global_sam_name, trust_name, &dc))
 	{
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -1139,7 +1139,7 @@ uint32 _net_sam_logoff(const DOM_SAM_INFO * sam_id,
 
 	memcpy(&(dc.srv_cred), &(dc.clnt_cred), sizeof(dc.clnt_cred));
 
-	if (!cred_store(remote_pid, global_sam_name, trust_name, &dc))
+	if (!cred_store(global_sam_name, trust_name, &dc))
 	{
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -1160,8 +1160,7 @@ uint32 _net_sam_sync(const UNISTR2 *uni_srv_name,
 		     uint32 max_size,
 		     uint32 *num_deltas,
 		     uint32 *num_deltas2,
-		     SAM_DELTA_HDR * hdr_deltas, SAM_DELTA_CTR * deltas,
-		     uint32 remote_pid)
+		     SAM_DELTA_HDR * hdr_deltas, SAM_DELTA_CTR * deltas)
 {
 	fstring trust_name;
 
@@ -1182,7 +1181,7 @@ uint32 _net_sam_sync(const UNISTR2 *uni_srv_name,
 
 	unistr2_to_ascii(trust_name, uni_cli_name, sizeof(trust_name) - 1);
 
-	if (!cred_get(remote_pid, global_sam_name, trust_name, &dc))
+	if (!cred_get(global_sam_name, trust_name, &dc))
 	{
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -1196,7 +1195,7 @@ uint32 _net_sam_sync(const UNISTR2 *uni_srv_name,
 
 	memcpy(&dc.srv_cred, &dc.clnt_cred, sizeof(dc.clnt_cred));
 
-	if (!cred_store(remote_pid, global_sam_name, trust_name, &dc))
+	if (!cred_store(global_sam_name, trust_name, &dc))
 	{
 		return NT_STATUS_ACCESS_DENIED;
 	}

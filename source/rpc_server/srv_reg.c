@@ -74,7 +74,7 @@ static BOOL get_policy_reg_name(struct policy_cache *cache, POLICY_HND *hnd,
 /*******************************************************************
  api_reg_close
  ********************************************************************/
-static BOOL api_reg_close(rpcsrv_struct * p, prs_struct *data,
+static BOOL api_reg_close(prs_struct *data,
 			  prs_struct *rdata)
 {
 	REG_Q_CLOSE q_r;
@@ -100,7 +100,7 @@ static BOOL api_reg_close(rpcsrv_struct * p, prs_struct *data,
 /*******************************************************************
  api_reg_open
  ********************************************************************/
-static BOOL api_reg_open(rpcsrv_struct * p, prs_struct *data,
+static BOOL api_reg_open(prs_struct *data,
 			 prs_struct *rdata)
 {
 	REG_Q_OPEN_HKLM q_u;
@@ -123,7 +123,7 @@ static BOOL api_reg_open(rpcsrv_struct * p, prs_struct *data,
 /*******************************************************************
  api_reg_open_entry
  ********************************************************************/
-static BOOL api_reg_open_entry(rpcsrv_struct * p, prs_struct *data,
+static BOOL api_reg_open_entry(prs_struct *data,
 			       prs_struct *rdata)
 {
 	uint32 status;
@@ -155,7 +155,7 @@ static BOOL api_reg_open_entry(rpcsrv_struct * p, prs_struct *data,
 /*******************************************************************
  api_reg_info
  ********************************************************************/
-static BOOL api_reg_info(rpcsrv_struct * p, prs_struct *data,
+static BOOL api_reg_info(prs_struct *data,
 			 prs_struct *rdata)
 {
 	REG_R_INFO r_u;

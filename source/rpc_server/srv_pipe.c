@@ -32,15 +32,14 @@ extern int DEBUGLEVEL;
  pdu; hands pdu off to msrpc, which gets a pdu back (except in the
  case of the RPC_BINDCONT pdu).
  ********************************************************************/
-BOOL readwrite_pipe(pipes_struct *p, char *data, int len,
-		char **rdata, int *rlen,
-		BOOL *pipe_outstanding)
+BOOL readwrite_pipe(pipes_struct * p, char *data, int len,
+		    char **rdata, int *rlen, BOOL *pipe_outstanding)
 {
 	fd_set fds;
 	int selrtn;
 	struct timeval timeout;
 
-	DEBUG(10,("rpc_to_smb_readwrite: len %d\n", len));
+	DEBUG(10, ("rpc_to_smb_readwrite: len %d\n", len));
 
 	if (write_socket(p->m->fd, data, len) != len)
 	{
@@ -52,7 +51,7 @@ BOOL readwrite_pipe(pipes_struct *p, char *data, int len,
 		return False;
 	}
 
-	(*rdata) = (char*)Realloc((*rdata), (*rlen));
+	(*rdata) = (char *)Realloc((*rdata), (*rlen));
 	if ((*rdata) == NULL)
 	{
 		return False;
@@ -60,12 +59,12 @@ BOOL readwrite_pipe(pipes_struct *p, char *data, int len,
 
 	/* compromise.  MUST read a minimum of an rpc header.
 	 * timeout waiting for the rest for 10 seconds */
-	(*rlen) = read_with_timeout(p->m->fd, (*rdata), 16,(*rlen), 10000);
+	(*rlen) = read_with_timeout(p->m->fd, (*rdata), 16, (*rlen), 10000);
 	if ((*rlen) < 0)
 	{
 		return False;
 	}
-	(*rdata) = (char*)Realloc((*rdata), (*rlen));
+	(*rdata) = (char *)Realloc((*rdata), (*rlen));
 	if ((*rdata) == NULL)
 	{
 		return False;
@@ -79,13 +78,13 @@ BOOL readwrite_pipe(pipes_struct *p, char *data, int len,
 	 */
 
 	FD_ZERO(&fds);
-	FD_SET(p->m->fd,&fds);
+	FD_SET(p->m->fd, &fds);
 
 	/* Set initial timeout to zero */
 	timeout.tv_sec = 0;
 	timeout.tv_usec = 0;
 
-	selrtn = sys_select(p->m->fd+1,&fds,NULL, &timeout);
+	selrtn = sys_select(p->m->fd + 1, &fds, NULL, &timeout);
 
 	/* Check if error */
 	if (selrtn == -1)
@@ -102,10 +101,10 @@ BOOL readwrite_pipe(pipes_struct *p, char *data, int len,
 /****************************************************************************
 writes data to a pipe.
 ****************************************************************************/
-ssize_t write_pipe(pipes_struct *p, char *data, size_t n)
+ssize_t write_pipe(pipes_struct * p, char *data, size_t n)
 {
-	DEBUG(6,("write_pipe: %x", p->pnum));
-	DEBUG(6,("name: %s len: %d", p->name, n));
+	DEBUG(6, ("write_pipe: %x", p->pnum));
+	DEBUG(6, ("name: %s len: %d", p->name, n));
 
 	dump_data(50, data, n);
 
@@ -121,17 +120,16 @@ ssize_t write_pipe(pipes_struct *p, char *data, size_t n)
  read by an SMBtrans (file_offset != 0).
 
  ****************************************************************************/
-int read_pipe(pipes_struct *p, char *data, int n)
+int read_pipe(pipes_struct * p, char *data, int n)
 {
-	DEBUG(6,("read_pipe: %x name: %s len: %d", p->pnum, p->name, n));
+	DEBUG(6, ("read_pipe: %x name: %s len: %d", p->pnum, p->name, n));
 
 	if (!p)
 	{
-		DEBUG(6,("pipe not open\n"));
-		return -1;		
+		DEBUG(6, ("pipe not open\n"));
+		return -1;
 	}
 
 	/* read a minimum of 1 byte! :-) */
 	return read_with_timeout(p->m->fd, data, 1, n, 10000);
 }
-
