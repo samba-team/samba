@@ -197,11 +197,12 @@ LIBRAW_NDR_OBJ = librpc/ndr/ndr.o librpc/ndr/ndr_basic.o librpc/ndr/ndr_sec.o \
 		librpc/ndr/ndr_echo.o librpc/ndr/ndr_misc.o librpc/ndr/ndr_lsa.o \
 		librpc/ndr/ndr_dfs.o librpc/ndr/ndr_samr.o \
 		librpc/ndr/ndr_spoolss.o librpc/ndr/ndr_spoolss_buf.o \
-		librpc/ndr/ndr_wkssvc.o librpc/ndr/ndr_srvsvc.o 
+		librpc/ndr/ndr_wkssvc.o librpc/ndr/ndr_srvsvc.o  librpc/ndr/ndr_atsvc.o
 
 LIBRAW_RPC_OBJ = librpc/rpc/dcerpc.o librpc/rpc/rpc_echo.o librpc/rpc/rpc_lsa.o \
 		librpc/rpc/dcerpc_smb.o librpc/rpc/rpc_dfs.o librpc/rpc/rpc_spoolss.o \
-		librpc/rpc/rpc_samr.o librpc/rpc/rpc_wkssvc.o librpc/rpc/rpc_srvsvc.o
+		librpc/rpc/rpc_samr.o librpc/rpc/rpc_wkssvc.o librpc/rpc/rpc_srvsvc.o \
+		librpc/rpc/rpc_atsvc.o
 
 LIBRAW_OBJ = libcli/raw/rawfile.o libcli/raw/smb_signing.o  \
 	     libcli/raw/clisocket.o libcli/raw/clitransport.o \
@@ -438,7 +439,7 @@ SMBTORTURE_RAW_OBJ = torture/raw/qfsinfo.o torture/raw/qfileinfo.o torture/raw/s
 
 SMBTORTURE_RPC_OBJ = torture/rpc/lsa.o torture/rpc/echo.o torture/rpc/dfs.o \
 		torture/rpc/spoolss.o torture/rpc/samr.o torture/rpc/wkssvc.o \
-		torture/rpc/srvsvc.o
+		torture/rpc/srvsvc.o torture/rpc/atsvc.o
 
 SMBTORTURE_OBJ1 = torture/torture.o torture/torture_util.o torture/nbio.o torture/scanner.o \
 		torture/utable.o torture/denytest.o torture/mangle_test.o \
