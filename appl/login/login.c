@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -153,14 +153,11 @@ krb5_verify(struct passwd *pwd, const char *password)
     krb5_principal princ;
 
     ret = krb5_parse_name(context, pwd->pw_name, &princ);
-    if(ret){
-	krb5_free_context(context);
+    if(ret)
 	return 1;
-    }
     ret = krb5_cc_gen_new(context, &krb5_mcc_ops, &id);
-    if(ret){
+    if(ret) {
 	krb5_free_principal(context, princ);
-	krb5_free_context(context);
 	return 1;
     }
     ret = krb5_verify_user_lrealm(context,
@@ -170,8 +167,6 @@ krb5_verify(struct passwd *pwd, const char *password)
 				  1,
 				  NULL);
     krb5_free_principal(context, princ);
-    if (ret)
-	krb5_free_context (context);
     return ret;
 }
 
@@ -282,7 +277,6 @@ krb5_get_afs_tokens (const struct passwd *pwd)
 			      pwd->pw_uid, pwd->pw_dir);
 	krb5_cc_close (context, id2);
     }
-    krb5_free_context (context);
 }
 
 #endif /* KRB4 */
@@ -546,7 +540,6 @@ do_login(const struct passwd *pwd, char *tty, char *ttyn)
 #ifdef KRB5
     if (auth == AUTH_KRB5) {
 	krb5_start_session (pwd);
-	krb5_finish ();
     }
 #ifdef KRB4
     else if (auth == 0) {
@@ -562,6 +555,7 @@ do_login(const struct passwd *pwd, char *tty, char *ttyn)
 
     krb5_get_afs_tokens (pwd);
 #endif /* KRB4 */
+    krb5_finish ();
 #endif /* KRB5 */
 
 #ifdef KRB4
