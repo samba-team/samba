@@ -390,8 +390,8 @@ typedef struct lsa_trans_name_info
 
 } LSA_TRANS_NAME;
 
-/* This number purly arbitary - just to prevent a client from requesting large amounts of memory */
-#define MAX_LOOKUP_SIDS 256
+/* This number is based on Win2k and later maximum response allowed */
+#define MAX_LOOKUP_SIDS 20480
 
 /* LSA_TRANS_NAME_ENUM - LSA Translated Name Enumeration container */
 typedef struct lsa_trans_name_enum_info
