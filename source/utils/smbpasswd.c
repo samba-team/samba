@@ -37,6 +37,7 @@ static const char *remote_machine = NULL;
 
 static fstring ldap_secret;
 
+
 /*********************************************************
  Print command usage on stderr and die.
 **********************************************************/
