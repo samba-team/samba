@@ -1154,8 +1154,8 @@ static BOOL smb_io_clnt_srv(char *desc, DOM_CLNT_SRV *log, prs_struct *ps, int d
  Inits a DOM_LOG_INFO structure.
 ********************************************************************/
 
-void init_log_info(DOM_LOG_INFO *log, char *logon_srv, char *acct_name,
-		uint16 sec_chan, char *comp_name)
+void init_log_info(DOM_LOG_INFO *log, const char *logon_srv, const char *acct_name,
+		uint16 sec_chan, const char *comp_name)
 {
 	DEBUG(5,("make_log_info %d\n", __LINE__));
 
