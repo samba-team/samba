@@ -153,6 +153,8 @@ REQUIRED_SUBSYSTEMS = \
 [MODULE::dcerpc_drsuapi]
 INIT_OBJ_FILES = \
 		rpc_server/drsuapi/dcesrv_drsuapi.o
+ADD_OBJ_FILES = \
+		rpc_server/drsuapi/drsuapi_cracknames.o
 REQUIRED_SUBSYSTEMS = \
 		SAMDB \
 		DCERPC_COMMON

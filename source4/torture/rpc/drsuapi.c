@@ -53,20 +53,24 @@ static BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct drsuapi_DsCrackNames r;
-	struct drsuapi_DsCrackNamesInInfo1Names names[1];
+	struct drsuapi_DsNameString names[1];
 	BOOL ret = True;
+	const char *dns_domain;
+	const char *nt4_domain;
+	const char *FQDN_1779_domain;
+	const char *FQDN_1779_name;
 
 	ZERO_STRUCT(r);
-	r.in.bind_handle = bind_handle;
-	r.in.level = 1;
-	r.in.in.info1.unknown1 = 0x000004e4;
-	r.in.in.info1.unknown2 = 0x00000407;
-	r.in.in.info1.unknown3 = 0x00000000;
-	r.in.in.info1.unknown4 = 0x00000007;
-	r.in.in.info1.unknown5 = 0x00000002;
-	r.in.in.info1.count = 1;
-	r.in.in.info1.names = names;
-	
+	r.in.bind_handle		= bind_handle;
+	r.in.level			= 1;
+	r.in.req.req1.unknown1		= 0x000004e4;
+	r.in.req.req1.unknown2		= 0x00000407;
+	r.in.req.req1.count		= 1;
+	r.in.req.req1.names		= names;
+	r.in.req.req1.format_flags	= DRSUAPI_DS_NAME_FLAG_NO_FLAGS;
+
+	r.in.req.req1.format_offered	= DRSUAPI_DS_NAME_FORMAT_CANONICAL;
+	r.in.req.req1.format_desired	= DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT;
 	names[0].str = talloc_asprintf(mem_ctx, "%s/", lp_realm());
 
 	status = dcerpc_drsuapi_DsCrackNames(p, mem_ctx, &r);
@@ -77,6 +81,135 @@ static BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		}
 		printf("drsuapi_DsCrackNames failed - %s\n", errstr);
 		ret = False;
+	}
+
+	if (!ret) {
+		return ret;
+	}
+
+	dns_domain = r.out.ctr.ctr1->array[0].dns_domain_name;
+	nt4_domain = r.out.ctr.ctr1->array[0].result_name;
+
+	r.in.req.req1.format_offered	= DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT;
+	r.in.req.req1.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779;
+	names[0].str = nt4_domain;
+
+	status = dcerpc_drsuapi_DsCrackNames(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		const char *errstr = nt_errstr(status);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
+			errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
+		}
+		printf("drsuapi_DsCrackNames failed - %s\n", errstr);
+		ret = False;
+	}
+
+	if (!ret) {
+		return ret;
+	}
+
+	FQDN_1779_domain = r.out.ctr.ctr1->array[0].result_name;
+
+	r.in.req.req1.format_offered	= DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT;
+	r.in.req.req1.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779;
+	names[0].str = talloc_asprintf(mem_ctx, "%s%s$", nt4_domain, dcerpc_server_name(p));
+
+	status = dcerpc_drsuapi_DsCrackNames(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		const char *errstr = nt_errstr(status);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
+			errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
+		}
+		printf("drsuapi_DsCrackNames failed - %s\n", errstr);
+		ret = False;
+	}
+
+	if (!ret) {
+		return ret;
+	}
+
+	FQDN_1779_name = r.out.ctr.ctr1->array[0].result_name;
+
+	r.in.req.req1.format_offered	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779;
+	r.in.req.req1.format_desired	= DRSUAPI_DS_NAME_FORMAT_CANONICAL;
+	names[0].str = FQDN_1779_name;
+
+	status = dcerpc_drsuapi_DsCrackNames(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		const char *errstr = nt_errstr(status);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
+			errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
+		}
+		printf("drsuapi_DsCrackNames failed - %s\n", errstr);
+		ret = False;
+	}
+
+	if (!ret) {
+		return ret;
+	}
+
+	r.in.req.req1.format_desired	= DRSUAPI_DS_NAME_FORMAT_DISPLAY;
+
+	status = dcerpc_drsuapi_DsCrackNames(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		const char *errstr = nt_errstr(status);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
+			errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
+		}
+		printf("drsuapi_DsCrackNames failed - %s\n", errstr);
+		ret = False;
+	}
+
+	if (!ret) {
+		return ret;
+	}
+
+	r.in.req.req1.format_desired	= DRSUAPI_DS_NAME_FORMAT_GUID;
+
+	status = dcerpc_drsuapi_DsCrackNames(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		const char *errstr = nt_errstr(status);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
+			errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
+		}
+		printf("drsuapi_DsCrackNames failed - %s\n", errstr);
+		ret = False;
+	}
+
+	if (!ret) {
+		return ret;
+	}
+
+	r.in.req.req1.format_desired	= DRSUAPI_DS_NAME_FORMAT_USER_PRINCIPAL;
+
+	status = dcerpc_drsuapi_DsCrackNames(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		const char *errstr = nt_errstr(status);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
+			errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
+		}
+		printf("drsuapi_DsCrackNames failed - %s\n", errstr);
+		ret = False;
+	}
+
+	if (!ret) {
+		return ret;
+	}
+
+	r.in.req.req1.format_desired	= DRSUAPI_DS_NAME_FORMAT_SERVICE_PRINCIPAL;
+
+	status = dcerpc_drsuapi_DsCrackNames(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		const char *errstr = nt_errstr(status);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
+			errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
+		}
+		printf("drsuapi_DsCrackNames failed - %s\n", errstr);
+		ret = False;
+	}
+
+	if (!ret) {
+		return ret;
 	}
 
 	return ret;
