@@ -40,6 +40,7 @@ static struct {
 	{"pool-usage", MSG_REQ_POOL_USAGE },
 	{"dmalloc-mark", MSG_REQ_DMALLOC_MARK },
 	{"dmalloc-log-changed", MSG_REQ_DMALLOC_LOG_CHANGED },
+	{"shutdown", MSG_SHUTDOWN },
 	{NULL, -1}
 };
 
@@ -428,6 +429,11 @@ static BOOL do_command(char *dest, char *msg_name, int iparams, char **params)
 	case MSG_REQ_DMALLOC_LOG_CHANGED:
 	case MSG_REQ_DMALLOC_MARK:
 		if (!send_message(dest, mtype, NULL, 0, False))
+			return False;
+		break;
+
+	case MSG_SHUTDOWN:
+		if (!send_message(dest, MSG_SHUTDOWN, NULL, 0, False))
 			return False;
 		break;
 	}

@@ -41,6 +41,8 @@
  * what has changed since the last MARK */
 #define MSG_REQ_DMALLOC_LOG_CHANGED	12
 
+#define MSG_SHUTDOWN		13
+
 /* nmbd messages */
 #define MSG_FORCE_ELECTION 1001
 #define MSG_WINS_NEW_ENTRY 1002
