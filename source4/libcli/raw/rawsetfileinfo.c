@@ -22,7 +22,7 @@
 #include "includes.h"
 
 /****************************************************************************
- Handle qfileinfo/qpathinfo trans2 backend.
+ Handle setfileinfo/setpathinfo trans2 backend.
 ****************************************************************************/
 static BOOL smb_raw_setinfo_backend(struct cli_tree *tree,
 				    TALLOC_CTX *mem_ctx,
@@ -232,7 +232,7 @@ static struct cli_request *smb_raw_setattrE_send(struct cli_tree *tree,
 	put_dos_date2(req->out.vwv, VWV(1), parms->setattre.in.create_time);
 	put_dos_date2(req->out.vwv, VWV(3), parms->setattre.in.access_time);
 	put_dos_date2(req->out.vwv, VWV(5), parms->setattre.in.write_time);
-	
+
 	if (!cli_request_send(req)) {
 		cli_request_destroy(req);
 		return NULL;
