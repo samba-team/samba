@@ -384,12 +384,10 @@ BOOL pdb_setsampwent(BOOL update)
 	pstrcat (tdbfile, PASSDB_FILE_NAME);
 	
 	/* Open tdb passwd */
-	if (!(global_tdb_ent.passwd_tdb = tdb_open_log(tdbfile, 0, TDB_DEFAULT, update ? O_RDWR : O_RDONLY, 0600))) {
-		DEBUG(0, ("Unable to open TDB passwd, trying create new!\n"));
-		if (!(global_tdb_ent.passwd_tdb = tdb_open_log(tdbfile, 0, TDB_DEFAULT, O_RDWR | O_CREAT | O_EXCL, 0600))) {
-			DEBUG(0, ("Unable to create TDB passwd (passdb.tdb) !!!"));
-			return False;
-		}
+	if (!(global_tdb_ent.passwd_tdb = tdb_open_log(tdbfile, 0, TDB_DEFAULT, update?(O_RDWR|O_CREAT):O_RDONLY, 0600)))
+	{
+		DEBUG(0, ("Unable to open/create TDB passwd\n"));
+		return False;
 	}
 	
 	global_tdb_ent.key = tdb_firstkey(global_tdb_ent.passwd_tdb);
@@ -502,7 +500,9 @@ BOOL pdb_getsampwnam (SAM_ACCOUNT *user, char *sname)
 		return False;
 	}
 
-	fstrcpy (name, sname);
+	/* Data is stored in all lower-case */
+	unix_strlower(sname, -1, name, sizeof(name));
+
 	get_private_directory(tdbfile);
 	pstrcat (tdbfile, PASSDB_FILE_NAME);
 	
@@ -648,8 +648,7 @@ BOOL pdb_delete_sam_account(char *sname)
 	uint32		rid;
 	fstring		name;
 	
-	fstrcpy (name, sname);
-	strlower (name);
+	unix_strlower(sname, -1, name, sizeof(name));
 	
 	get_private_directory(tdbfile);
 	pstrcat (tdbfile, PASSDB_FILE_NAME);
@@ -726,7 +725,7 @@ BOOL pdb_delete_sam_account(char *sname)
 
 static BOOL tdb_update_sam(SAM_ACCOUNT* newpwd, BOOL override, int flag)
 {
-	TDB_CONTEXT 	*pwd_tdb;
+	TDB_CONTEXT 	*pwd_tdb = NULL;
 	TDB_DATA 	key, data;
 	uint8		*buf = NULL;
 	fstring 	keystr;
@@ -756,8 +755,7 @@ static BOOL tdb_update_sam(SAM_ACCOUNT* newpwd, BOOL override, int flag)
 	}
 	data.dptr = buf;
 
-	fstrcpy (name, pdb_get_username(newpwd));
-	strlower (name);
+	unix_strlower(pdb_get_username(newpwd), -1, name, sizeof(name));
 	
   	/* setup the USER index key */
 	slprintf(keystr, sizeof(keystr)-1, "%s%s", USERPREFIX, name);
@@ -771,17 +769,11 @@ static BOOL tdb_update_sam(SAM_ACCOUNT* newpwd, BOOL override, int flag)
 	}
 
  	/* open the account TDB passwd*/
-  	if (!(pwd_tdb = tdb_open_log(tdbfile, 0, TDB_DEFAULT, O_RDWR, 0600))) {
+	pwd_tdb = tdb_open_log(tdbfile, 0, TDB_DEFAULT, O_RDWR | O_CREAT, 0600);
+  	if (!pwd_tdb)
+	{
 		DEBUG(0, ("tdb_update_sam: Unable to open TDB passwd!\n"));
-		if (flag == TDB_INSERT) {
-			DEBUG(0, ("Unable to open TDB passwd, trying create new!\n"));
-			if (!(pwd_tdb = tdb_open_log(tdbfile, 0, TDB_DEFAULT, O_RDWR | O_CREAT | O_EXCL, 0600))) {
-				DEBUG(0, ("Unable to create TDB passwd (passdb.tdb) !!!\n"));
-				ret = False;
-				goto done;
-			}
-			newtdb = True;
-		}
+		return False;
 	}
 
 	/* add the account */
@@ -811,11 +803,11 @@ static BOOL tdb_update_sam(SAM_ACCOUNT* newpwd, BOOL override, int flag)
 	}
 
 done:	
-
 	/* cleanup */
 	tdb_close (pwd_tdb);
 	SAFE_FREE(buf);
-	return (ret);
+	
+	return (ret);	
 }
 
 /***************************************************************************
