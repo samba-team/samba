@@ -911,7 +911,7 @@ int main (int argc, char **argv)
 		if (!(checkparms & ~(BIT_MODIFY + BIT_USER))) {
 			time_t pwd_can_change = -1;
 			time_t pwd_must_change = -1;
-			char *errstr;
+			const char *errstr;
 
 			if (pwd_can_change_time) {
 				errstr = "can";
