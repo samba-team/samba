@@ -203,7 +203,6 @@ BOOL create_rpc_reply(pipes_struct *p,
 	}
 
 	/* indicate to subsequent data reads where we are up to */
-	p->frag_len_left   = p->hdr.frag_len - p->file_offset;
 	p->next_frag_start = p->hdr.frag_len; 
 	
 	return p->rhdr.data != NULL && p->rhdr.offset == 0x18;
