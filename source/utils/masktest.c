@@ -274,6 +274,7 @@ static void usage(void)
 "Usage:\n\
   masktest //server/share [options..]\n\
   options:\n\
+        -W workgroup\n\
         -U user%%pass\n\
         -s seed\n\
         -f filechars (default %s)\n\
@@ -322,6 +323,7 @@ static void usage(void)
 
 	TimeInit();
 	charset_initialise();
+	codepage_initialise(lp_client_code_page());
 
 	lp_load(servicesf,True,False,False);
 	load_interfaces();
@@ -332,7 +334,7 @@ static void usage(void)
 
 	seed = time(NULL);
 
-	while ((opt = getopt(argc, argv, "U:s:hm:f:ao")) != EOF) {
+	while ((opt = getopt(argc, argv, "U:s:hm:f:aoW:")) != EOF) {
 		switch (opt) {
 		case 'U':
 			pstrcpy(username,optarg);
@@ -360,6 +362,9 @@ static void usage(void)
 			break;
 		case 'o':
 			old_list = True;
+			break;
+		case 'W':
+			pstrcpy(workgroup, optarg);
 			break;
 		default:
 			printf("Unknown option %c (%d)\n", (char)opt, opt);
