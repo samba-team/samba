@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMB.CONF" "5" "02 oktober 2002" "" ""
+.TH "SMB.CONF" "5" "03 oktober 2002" "" ""
 .SH NAME
 smb.conf \- The configuration file for the Samba suite
 .SH "SYNOPSIS"
@@ -632,6 +632,9 @@ each parameter for details.  Note that some are synonyms.
 .TP 0.2i
 \(bu
 \fIhide unwriteable files\fR
+.TP 0.2i
+\(bu
+\fIhide special files\fR
 .TP 0.2i
 \(bu
 \fIhomedir map\fR
@@ -3008,6 +3011,13 @@ the existance of files that cannot be written to. Defaults to off.
 Note that unwriteable directories are shown as usual.
 
 Default: \fBhide unwriteable = no\fR
+.TP
+\fBhide special files (G)\fR
+This parameter prevents clients from seeing
+special files such as sockets, devices and fifo's in directory 
+listings.
+
+Default: \fBhide special files = no\fR
 .TP
 \fBhomedir map (G)\fR
 If\fInis homedir
