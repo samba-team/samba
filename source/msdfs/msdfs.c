@@ -45,7 +45,7 @@ static BOOL parse_dfs_path(char* pathname, struct dfs_path* pdp)
 
 	/* now tokenize */
 	/* parse out hostname */
-	p = strchr(temp,'\\');
+	p = strchr_m(temp,'\\');
 	if(p == NULL)
 		return False;
 	*p = '\0';
@@ -54,7 +54,7 @@ static BOOL parse_dfs_path(char* pathname, struct dfs_path* pdp)
 
 	/* parse out servicename */
 	temp = p+1;
-	p = strchr(temp,'\\');
+	p = strchr_m(temp,'\\');
 	if(p == NULL) {
 		pstrcpy(pdp->servicename,temp);
 		pdp->reqpath[0] = '\0';
@@ -67,9 +67,8 @@ static BOOL parse_dfs_path(char* pathname, struct dfs_path* pdp)
 	/* rest is reqpath */
 	pstrcpy(pdp->reqpath, p+1);
 	p = pdp->reqpath;
-	while (*p) {
-		if (*p == '\\') *p = '/';
-		p++;
+	while ((p = strchr_m(p, '\\'))!=NULL) {
+		*p++ = '/';
 	}
 
 	DEBUG(10,("rest of the path: %s\n",pdp->reqpath));
@@ -148,7 +147,7 @@ static BOOL parse_symlink(char* buf,struct referral** preflist,
 	
 	for(i=0;i<count;i++) {
 		/* replace / in the alternate path by a \ */
-		char* p = strchr(alt_path[i],'/');
+		char* p = strchr_m(alt_path[i],'/');
 		if(p)
 			*p = '\\'; 
 
@@ -270,7 +269,7 @@ static BOOL resolve_dfs_path(pstring dfspath, struct dfs_path* dp,
 
 	/* redirect if any component in the path is a link */
 	pstrcpy(reqpath, dp->reqpath);
-	p = strrchr(reqpath, '/');
+	p = strrchr_m(reqpath, '/');
 	while (p) {
 		*p = '\0';
 		pstrcpy(localpath, reqpath);
@@ -288,7 +287,7 @@ static BOOL resolve_dfs_path(pstring dfspath, struct dfs_path* dp,
 				pstrcpy(buf, dfspath);
 				trim_char(buf, '\0', '\\');
 				for (; consumed_level; consumed_level--) {
-					q = strrchr(buf, '\\');
+					q = strrchr_m(buf, '\\');
 					if (q)
 						*q = 0;
 				}
@@ -298,7 +297,7 @@ static BOOL resolve_dfs_path(pstring dfspath, struct dfs_path* dp,
 			
 			return True;
 		}
-		p = strrchr(reqpath, '/');
+		p = strrchr_m(reqpath, '/');
 		consumed_level++;
 	}
 	
@@ -526,7 +525,7 @@ static int setup_ver2_dfs_referral(char* pathname, char** ppdata,
 	offset = 8;
 	/* add the referral elements */
 	for(i=0;i<junction->referral_count;i++) {
-		struct referral* ref = &(junction->referral_list[i]);
+		struct referral* ref = &junction->referral_list[i];
 		int unilen;
 
 		SSVAL(pdata,offset,2); /* version 2 */
