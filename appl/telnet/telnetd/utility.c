@@ -351,7 +351,7 @@ void fatal(int f, char *msg)
 }
 
 void
-fatalperror(int f, char *msg)
+fatalperror(int f, const char *msg)
 {
     char buf[BUFSIZ];
     
