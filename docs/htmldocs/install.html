@@ -1,36 +1,82 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <HTML
 ><HEAD
 ><TITLE
 >How to Install and Test SAMBA</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.57"></HEAD
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="SAMBA Project Documentation"
+HREF="Samba-HOWTO.html"><LINK
+REL="PREVIOUS"
+TITLE="SAMBA Project Documentation"
+HREF="Samba-HOWTO.html"><LINK
+REL="NEXT"
+TITLE="Diagnosing your samba server"
+HREF="diagnosis.html"></HEAD
 ><BODY
-CLASS="ARTICLE"
+CLASS="CHAPTER"
 BGCOLOR="#FFFFFF"
 TEXT="#000000"
 LINK="#0000FF"
 VLINK="#840084"
 ALINK="#0000FF"
 ><DIV
-CLASS="ARTICLE"
-><DIV
-CLASS="TITLEPAGE"
-><H1
-CLASS="TITLE"
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>SAMBA Project Documentation</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
 ><A
-NAME="INSTALL"
->How to Install and Test SAMBA</A
-></H1
-><HR></DIV
+HREF="Samba-HOWTO.html"
+ACCESSKEY="P"
+>Prev</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+></TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="diagnosis.html"
+ACCESSKEY="N"
+>Next</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="CHAPTER"
+><H1
+><A
+NAME="INSTALL">Chapter 1. How to Install and Test SAMBA</H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3"
->Step 0: Read the man pages</A
-></H1
+NAME="AEN20">1.1. Step 0: Read the man pages</H1
 ><P
 >The man pages distributed with SAMBA contain 
 	lots of useful info that will help to get you started. 
@@ -57,12 +103,10 @@ TARGET="_top"
 ></DIV
 ><DIV
 CLASS="SECT1"
-><HR><H1
+><H1
 CLASS="SECT1"
 ><A
-NAME="AEN11"
->Step 1: Building the Binaries</A
-></H1
+NAME="AEN28">1.2. Step 1: Building the Binaries</H1
 ><P
 >To do this, first run the program <B
 CLASS="COMMAND"
@@ -156,12 +200,10 @@ CLASS="USERINPUT"
 ></DIV
 ><DIV
 CLASS="SECT1"
-><HR><H1
+><H1
 CLASS="SECT1"
 ><A
-NAME="AEN39"
->Step 2: The all important step</A
-></H1
+NAME="AEN56">1.3. Step 2: The all important step</H1
 ><P
 >At this stage you must fetch yourself a 
 	coffee or other drink you find stimulating. Getting the rest 
@@ -173,12 +215,10 @@ NAME="AEN39"
 ></DIV
 ><DIV
 CLASS="SECT1"
-><HR><H1
+><H1
 CLASS="SECT1"
 ><A
-NAME="AEN43"
->Step 3: Create the smb configuration file.</A
-></H1
+NAME="AEN60">1.4. Step 3: Create the smb configuration file.</H1
 ><P
 >There are sample configuration files in the examples 
 	subdirectory in the distribution. I suggest you read them 
@@ -229,15 +269,13 @@ CLASS="FILENAME"
 ></DIV
 ><DIV
 CLASS="SECT1"
-><HR><H1
+><H1
 CLASS="SECT1"
 ><A
-NAME="AEN57"
->Step 4: Test your config file with 
+NAME="AEN74">1.5. Step 4: Test your config file with 
 	<B
 CLASS="COMMAND"
 >testparm</B
-></A
 ></H1
 ><P
 >It's important that you test the validity of your
@@ -253,12 +291,10 @@ CLASS="FILENAME"
 ></DIV
 ><DIV
 CLASS="SECT1"
-><HR><H1
+><H1
 CLASS="SECT1"
 ><A
-NAME="AEN63"
->Step 5: Starting the smbd and nmbd</A
-></H1
+NAME="AEN80">1.6. Step 5: Starting the smbd and nmbd</H1
 ><P
 >You must choose to start smbd and nmbd either
 	as daemons or from <B
@@ -293,12 +329,10 @@ CLASS="COMMAND"
 	request.</P
 ><DIV
 CLASS="SECT2"
-><HR><H2
+><H2
 CLASS="SECT2"
 ><A
-NAME="AEN73"
->Step 5a: Starting from inetd.conf</A
-></H2
+NAME="AEN90">1.6.1. Step 5a: Starting from inetd.conf</H2
 ><P
 >NOTE; The following will be different if 
 		you use NIS or NIS+ to distributed services maps.</P
@@ -397,12 +431,10 @@ CLASS="COMMAND"
 ></DIV
 ><DIV
 CLASS="SECT2"
-><HR><H2
+><H2
 CLASS="SECT2"
 ><A
-NAME="AEN102"
->Step 5b. Alternative: starting it as a daemon</A
-></H2
+NAME="AEN119">1.6.2. Step 5b. Alternative: starting it as a daemon</H2
 ><P
 >To start the server as a daemon you should create 
 		a script something like this one, perhaps calling 
@@ -454,13 +486,11 @@ CLASS="FILENAME"
 ></DIV
 ><DIV
 CLASS="SECT1"
-><HR><H1
+><H1
 CLASS="SECT1"
 ><A
-NAME="AEN118"
->Step 6: Try listing the shares available on your 
-	server</A
-></H1
+NAME="AEN135">1.7. Step 6: Try listing the shares available on your 
+	server</H1
 ><P
 ><TT
 CLASS="PROMPT"
@@ -495,12 +525,10 @@ CLASS="COMMAND"
 ></DIV
 ><DIV
 CLASS="SECT1"
-><HR><H1
+><H1
 CLASS="SECT1"
 ><A
-NAME="AEN127"
->Step 7: Try connecting with the unix client</A
-></H1
+NAME="AEN144">1.8. Step 7: Try connecting with the unix client</H1
 ><P
 ><TT
 CLASS="PROMPT"
@@ -558,13 +586,11 @@ CLASS="USERINPUT"
 ></DIV
 ><DIV
 CLASS="SECT1"
-><HR><H1
+><H1
 CLASS="SECT1"
 ><A
-NAME="AEN143"
->Step 8: Try connecting from a DOS, WfWg, Win9x, WinNT, 
-	Win2k, OS/2, etc... client</A
-></H1
+NAME="AEN160">1.9. Step 8: Try connecting from a DOS, WfWg, Win9x, WinNT, 
+	Win2k, OS/2, etc... client</H1
 ><P
 >Try mounting disks. eg:</P
 ><P
@@ -607,12 +633,10 @@ CLASS="USERINPUT"
 ></DIV
 ><DIV
 CLASS="SECT1"
-><HR><H1
+><H1
 CLASS="SECT1"
 ><A
-NAME="AEN157"
->What If Things Don't Work?</A
-></H1
+NAME="AEN174">1.10. What If Things Don't Work?</H1
 ><P
 >If nothing works and you start to think "who wrote 
 	this pile of trash" then I suggest you do step 2 again (and 
@@ -630,12 +654,10 @@ NAME="AEN157"
 	easier. </P
 ><DIV
 CLASS="SECT2"
-><HR><H2
+><H2
 CLASS="SECT2"
 ><A
-NAME="AEN162"
->Diagnosing Problems</A
-></H2
+NAME="AEN179">1.10.1. Diagnosing Problems</H2
 ><P
 >If you have installation problems then go to 
 		<TT
@@ -646,12 +668,10 @@ CLASS="FILENAME"
 ></DIV
 ><DIV
 CLASS="SECT2"
-><HR><H2
+><H2
 CLASS="SECT2"
 ><A
-NAME="AEN166"
->Scope IDs</A
-></H2
+NAME="AEN183">1.10.2. Scope IDs</H2
 ><P
 >By default Samba uses a blank scope ID. This means 
 		all your windows boxes must also have a blank scope ID. 
@@ -662,12 +682,10 @@ NAME="AEN166"
 ></DIV
 ><DIV
 CLASS="SECT2"
-><HR><H2
+><H2
 CLASS="SECT2"
 ><A
-NAME="AEN169"
->Choosing the Protocol Level</A
-></H2
+NAME="AEN186">1.10.3. Choosing the Protocol Level</H2
 ><P
 >The SMB protocol has many dialects. Currently 
 		Samba supports 5, called CORE, COREPLUS, LANMAN1, 
@@ -703,30 +721,29 @@ CLASS="FILENAME"
 ></DIV
 ><DIV
 CLASS="SECT2"
-><HR><H2
+><H2
 CLASS="SECT2"
 ><A
-NAME="AEN178"
->Printing from UNIX to a Client PC</A
-></H2
+NAME="AEN195">1.10.4. Printing from UNIX to a Client PC</H2
 ><P
 >To use a printer that is available via a smb-based 
-		server from a unix host you will need to compile the 
+		server from a unix host with LPR you will need to compile the 
 		smbclient program. You then need to install the script 
 		"smbprint". Read the instruction in smbprint for more details.
 		</P
 ><P
 >There is also a SYSV style script that does much 
 		the same thing called smbprint.sysv. It contains instructions.</P
+><P
+>See the CUPS manual for information about setting up 
+		printing from a unix host with CUPS to a smb-based server. </P
 ></DIV
 ><DIV
 CLASS="SECT2"
-><HR><H2
+><H2
 CLASS="SECT2"
 ><A
-NAME="AEN182"
->Locking</A
-></H2
+NAME="AEN200">1.10.5. Locking</H2
 ><P
 >One area which sometimes causes trouble is locking.</P
 ><P
@@ -781,18 +798,74 @@ NAME="AEN182"
 ></DIV
 ><DIV
 CLASS="SECT2"
-><HR><H2
+><H2
 CLASS="SECT2"
 ><A
-NAME="AEN191"
->Mapping Usernames</A
-></H2
+NAME="AEN209">1.10.6. Mapping Usernames</H2
 ><P
 >If you have different usernames on the PCs and 
 		the unix server then take a look at the "username map" option. 
 		See the smb.conf man page for details.</P
 ></DIV
 ></DIV
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="Samba-HOWTO.html"
+ACCESSKEY="P"
+>Prev</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="Samba-HOWTO.html"
+ACCESSKEY="H"
+>Home</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="diagnosis.html"
+ACCESSKEY="N"
+>Next</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>SAMBA Project Documentation</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+>&nbsp;</TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>Diagnosing your samba server</TD
+></TR
+></TABLE
 ></DIV
 ></BODY
 ></HTML

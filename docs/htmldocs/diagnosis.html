@@ -1,36 +1,82 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <HTML
 ><HEAD
 ><TITLE
 >Diagnosing your samba server</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.57"></HEAD
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="SAMBA Project Documentation"
+HREF="Samba-HOWTO.html"><LINK
+REL="PREVIOUS"
+TITLE="How to Install and Test SAMBA"
+HREF="install.html"><LINK
+REL="NEXT"
+TITLE="Integrating MS Windows networks with Samba"
+HREF="integrate-ms-networks.html"></HEAD
 ><BODY
-CLASS="ARTICLE"
+CLASS="CHAPTER"
 BGCOLOR="#FFFFFF"
 TEXT="#000000"
 LINK="#0000FF"
 VLINK="#840084"
 ALINK="#0000FF"
 ><DIV
-CLASS="ARTICLE"
-><DIV
-CLASS="TITLEPAGE"
-><H1
-CLASS="TITLE"
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>SAMBA Project Documentation</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
 ><A
-NAME="DIAGNOSIS"
->Diagnosing your samba server</A
-></H1
-><HR></DIV
+HREF="install.html"
+ACCESSKEY="P"
+>Prev</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+></TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="integrate-ms-networks.html"
+ACCESSKEY="N"
+>Next</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="CHAPTER"
+><H1
+><A
+NAME="DIAGNOSIS">Chapter 2. Diagnosing your samba server</H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3"
->Introduction</A
-></H1
+NAME="AEN223">2.1. Introduction</H1
 ><P
 >This file contains a list of tests you can perform to validate your
 Samba server. It also tells you what the likely cause of the problem
@@ -47,12 +93,10 @@ ignore your email.</P
 ></DIV
 ><DIV
 CLASS="SECT1"
-><HR><H1
+><H1
 CLASS="SECT1"
 ><A
-NAME="AEN8"
->Assumptions</A
-></H1
+NAME="AEN228">2.2. Assumptions</H1
 ><P
 >In all of the tests I assume you have a Samba server called BIGSERVER
 and a PC called ACLIENT both in workgroup TESTGROUP. I also assume the
@@ -88,20 +132,16 @@ best way to check this is with "testparm smb.conf"</P
 ></DIV
 ><DIV
 CLASS="SECT1"
-><HR><H1
+><H1
 CLASS="SECT1"
 ><A
-NAME="AEN18"
->Tests</A
-></H1
+NAME="AEN238">2.3. Tests</H1
 ><DIV
 CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN20"
->Test 1</A
-></H2
+NAME="AEN240">2.3.1. Test 1</H2
 ><P
 >In the directory in which you store your smb.conf file, run the command
 "testparm smb.conf". If it reports any errors then your smb.conf
@@ -118,12 +158,10 @@ CLASS="FILENAME"
 ></DIV
 ><DIV
 CLASS="SECT2"
-><HR><H2
+><H2
 CLASS="SECT2"
 ><A
-NAME="AEN26"
->Test 2</A
-></H2
+NAME="AEN246">2.3.2. Test 2</H2
 ><P
 >Run the command "ping BIGSERVER" from the PC and "ping ACLIENT" from
 the unix box. If you don't get a valid response then your TCP/IP
@@ -144,12 +182,10 @@ this is done via the ipfwadm program.)</P
 ></DIV
 ><DIV
 CLASS="SECT2"
-><HR><H2
+><H2
 CLASS="SECT2"
 ><A
-NAME="AEN32"
->Test 3</A
-></H2
+NAME="AEN252">2.3.3. Test 3</H2
 ><P
 >Run the command "smbclient -L BIGSERVER" on the unix box. You
 should get a list of available shares back. </P
@@ -215,12 +251,10 @@ correct and that Samba has correctly noted these in the log.nmb file.</P
 ></DIV
 ><DIV
 CLASS="SECT2"
-><HR><H2
+><H2
 CLASS="SECT2"
 ><A
-NAME="AEN47"
->Test 4</A
-></H2
+NAME="AEN267">2.3.4. Test 4</H2
 ><P
 >Run the command "nmblookup -B BIGSERVER __SAMBA__". You should get the
 IP address of your Samba server back.</P
@@ -236,12 +270,10 @@ inetd.</P
 ></DIV
 ><DIV
 CLASS="SECT2"
-><HR><H2
+><H2
 CLASS="SECT2"
 ><A
-NAME="AEN52"
->Test 5</A
-></H2
+NAME="AEN272">2.3.5. Test 5</H2
 ><P
 >run the command <B
 CLASS="COMMAND"
@@ -257,12 +289,10 @@ client in the above test.</P
 ></DIV
 ><DIV
 CLASS="SECT2"
-><HR><H2
+><H2
 CLASS="SECT2"
 ><A
-NAME="AEN58"
->Test 6</A
-></H2
+NAME="AEN278">2.3.6. Test 6</H2
 ><P
 >Run the command <B
 CLASS="COMMAND"
@@ -291,12 +321,10 @@ not correct. (Refer to TEST 3 notes above).</P
 ></DIV
 ><DIV
 CLASS="SECT2"
-><HR><H2
+><H2
 CLASS="SECT2"
 ><A
-NAME="AEN66"
->Test 7</A
-></H2
+NAME="AEN286">2.3.7. Test 7</H2
 ><P
 >Run the command <B
 CLASS="COMMAND"
@@ -380,12 +408,10 @@ CLASS="COMMAND"
 ></DIV
 ><DIV
 CLASS="SECT2"
-><HR><H2
+><H2
 CLASS="SECT2"
 ><A
-NAME="AEN92"
->Test 8</A
-></H2
+NAME="AEN312">2.3.8. Test 8</H2
 ><P
 >On the PC type the command <B
 CLASS="COMMAND"
@@ -440,12 +466,10 @@ the hosts.allow file for your client (or subnet, etc.)</P
 ></DIV
 ><DIV
 CLASS="SECT2"
-><HR><H2
+><H2
 CLASS="SECT2"
 ><A
-NAME="AEN109"
->Test 9</A
-></H2
+NAME="AEN329">2.3.9. Test 9</H2
 ><P
 >Run the command <B
 CLASS="COMMAND"
@@ -464,12 +488,10 @@ fixes things you may need the username mapping option.</P
 ></DIV
 ><DIV
 CLASS="SECT2"
-><HR><H2
+><H2
 CLASS="SECT2"
 ><A
-NAME="AEN114"
->Test 10</A
-></H2
+NAME="AEN334">2.3.10. Test 10</H2
 ><P
 >Run the command <B
 CLASS="COMMAND"
@@ -490,12 +512,10 @@ an election is held at startup.</P
 ></DIV
 ><DIV
 CLASS="SECT2"
-><HR><H2
+><H2
 CLASS="SECT2"
 ><A
-NAME="AEN120"
->Test 11</A
-></H2
+NAME="AEN340">2.3.11. Test 11</H2
 ><P
 >From file manager try to browse the server. Your samba server should
 appear in the browse list of your local workgroup (or the one you
@@ -518,12 +538,10 @@ for encrypted passwords (refer to the Makefile).</P
 ></DIV
 ><DIV
 CLASS="SECT1"
-><HR><H1
+><H1
 CLASS="SECT1"
 ><A
-NAME="AEN125"
->Still having troubles?</A
-></H1
+NAME="AEN345">2.4. Still having troubles?</H1
 ><P
 >Try the mailing list or newsgroup, or use the ethereal utility to
 sniff the problem. The official samba mailing list can be reached at
@@ -542,6 +560,64 @@ TARGET="_top"
 ><P
 >Also look at the other docs in the Samba package!</P
 ></DIV
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="install.html"
+ACCESSKEY="P"
+>Prev</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="Samba-HOWTO.html"
+ACCESSKEY="H"
+>Home</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="integrate-ms-networks.html"
+ACCESSKEY="N"
+>Next</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>How to Install and Test SAMBA</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+>&nbsp;</TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>Integrating MS Windows networks with Samba</TD
+></TR
+></TABLE
 ></DIV
 ></BODY
 ></HTML
