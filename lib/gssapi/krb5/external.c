@@ -160,8 +160,15 @@ gss_OID GSS_KRB5_NT_STRING_UID_NAME = &gss_c_nt_string_uid_name_oid_desc;
  *   gssapi(2) krb5(2)}
  */
 
+#if 0 /* This is the old OID */
+
 static gss_OID_desc gss_krb5_mechanism_oid_desc =
 {5, (void *)"\x2b\x05\x01\x05\x02"};
+
+#endif
+
+static gss_OID_desc gss_krb5_mechanism_oid_desc =
+{9, (void *)"\x2a\x86\x48\x86\xf7\x12\x01\x02\x02"};
 
 gss_OID GSS_KRB5_MECHANISM = &gss_krb5_mechanism_oid_desc;
 
