@@ -360,6 +360,8 @@ enum winbindd_result winbindd_setpwent(struct winbindd_cli_state *state)
 		DLIST_ADD(state->getpwent_state, domain_state);
 	}
         
+	state->getpwent_initialized = True;
+        
 	return WINBINDD_OK;
 }
 
@@ -370,6 +372,7 @@ enum winbindd_result winbindd_endpwent(struct winbindd_cli_state *state)
 	DEBUG(3, ("[%5lu]: endpwent\n", (unsigned long)state->pid));
 
 	free_getent_state(state->getpwent_state);    
+	state->getpwent_initialized = False;
 	state->getpwent_state = NULL;
         
 	return WINBINDD_OK;
@@ -501,6 +504,9 @@ enum winbindd_result winbindd_getpwent(struct winbindd_cli_state *state)
 	       sizeof(struct winbindd_pw));
 
 	user_list = (struct winbindd_pw *)state->response.extra_data;
+
+	if (!state->getpwent_initialized)
+		winbindd_setpwent(state);
 	
 	if (!(ent = state->getpwent_state))
 		return WINBINDD_ERROR;
