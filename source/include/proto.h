@@ -4771,6 +4771,7 @@ SMB_BIG_UINT get_allocation_size(files_struct *fsp, SMB_STRUCT_STAT *sbuf);
 time_t interpret_long_unix_date(char *p);
 NTSTATUS set_bad_path_error(int err, BOOL bad_path);
 NTSTATUS set_delete_on_close_internal(files_struct *fsp, BOOL delete_on_close);
+NTSTATUS set_delete_on_close_over_all(files_struct *fsp, BOOL delete_on_close);
 int reply_findclose(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize);
 int reply_findnclose(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize);
 int reply_transs2(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize);
