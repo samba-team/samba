@@ -498,6 +498,40 @@ struct connect_record
 #endif /* USE_OPLOCKS */
 #endif /* LOCKING_VERSION */
 
+#if !defined(FAST_SHARE_MODES)
+/* 
+ * Defines for slow share modes.
+ */
+
+/* 
+ * Locking file header lengths & offsets. 
+ */
+#define SMF_VERSION_OFFSET 0
+#define SMF_NUM_ENTRIES_OFFSET 4
+#define SMF_FILENAME_LEN_OFFSET 8
+#define SMF_HEADER_LENGTH 10
+
+#ifdef USE_OPLOCKS
+#define SMF_ENTRY_LENGTH 16
+#else /* USE_OPLOCKS */
+#define SMF_ENTRY_LENGTH 18
+#endif /* USE_OPLOCKS */
+
+/*
+ * Share mode record offsets.
+ */
+
+#define SME_SEC_OFFSET 0
+#define SME_USEC_OFFSET 4
+#define SME_SHAREMODE_OFFSET 8
+#define SME_PID_OFFSET 12
+
+#ifdef USE_OPLOCKS
+#define SME_PORT_OFFSET 16
+#endif /* USE_OPLOCKS */
+
+#endif /* FAST_SHARE_MODES */
+
 /* these are useful macros for checking validity of handles */
 #define VALID_FNUM(fnum)   (((fnum) >= 0) && ((fnum) < MAX_OPEN_FILES))
 #define OPEN_FNUM(fnum)    (VALID_FNUM(fnum) && Files[fnum].open)
