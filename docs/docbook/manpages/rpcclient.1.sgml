@@ -201,6 +201,7 @@
 		<varlistentry><term>deletedomuser</term><listitem><para>Delete domain user</para></listitem></varlistentry>
 		<varlistentry><term>samquerysecobj</term><listitem><para>Query SAMR security object</para></listitem></varlistentry>
 		<varlistentry><term>getdompwinfo</term><listitem><para>Retrieve domain password info</para></listitem></varlistentry>
+		<varlistentry><term>lookupdomain</term><listitem><para>Look up domain</para></listitem></varlistentry>
 	</variablelist>
 
 	</refsect2>
