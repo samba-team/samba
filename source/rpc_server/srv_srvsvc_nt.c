@@ -356,14 +356,11 @@ out:
 
 static void init_srv_share_info_501(pipes_struct *p, SRV_SHARE_INFO_501 *sh501, int snum)
 {
-	int len_net_name;
 	pstring remark;
 
-	char *net_name = lp_servicename(snum);
+	const char *net_name = lp_servicename(snum);
 	pstrcpy(remark, lp_comment(snum));
 	standard_sub_conn(p->conn, remark, sizeof(remark));
-
-	len_net_name = strlen(net_name);
 
 	init_srv_share_info501(&sh501->info_501, net_name, get_share_type(snum), remark, (lp_csc_policy(snum) << 4));
 	init_srv_share_info501_str(&sh501->info_501_str, net_name, remark);
@@ -375,7 +372,6 @@ static void init_srv_share_info_501(pipes_struct *p, SRV_SHARE_INFO_501 *sh501, 
 
 static void init_srv_share_info_502(pipes_struct *p, SRV_SHARE_INFO_502 *sh502, int snum)
 {
-	int len_net_name;
 	pstring net_name;
 	pstring remark;
 	pstring path;
@@ -401,7 +397,6 @@ static void init_srv_share_info_502(pipes_struct *p, SRV_SHARE_INFO_502 *sh502, 
 	string_replace(path, '/', '\\');
 
 	pstrcpy(passwd, "");
-	len_net_name = strlen(net_name);
 
 	sd = get_share_security(ctx, snum, &sd_size);
 
