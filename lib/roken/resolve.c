@@ -369,26 +369,43 @@ dns_lookup_int(const char *domain, int rr_class, int rr_type)
 {
     unsigned char reply[1024];
     int len;
-#ifdef HAVE__RES
+#if defined(HAVE__RES) || defined(HAVE_RES_NSEARCH)
     u_long old_options = 0;
+#endif
+#ifdef HAVE_RES_NSEARCH
+    res_state statp;
+    if(res_ninit(statp))
+	return NULL; /* is this the best we can do? */
 #endif
     
     if (_resolve_debug) {
-#ifdef HAVE__RES
+#ifdef HAVE_RES_NSEARCH
+        old_options = statp.options;
+	statp.options |= RES_DEBUG;
+#elif defined(HAVE__RES)
         old_options = _res.options;
 	_res.options |= RES_DEBUG;
 #endif
 	fprintf(stderr, "dns_lookup(%s, %d, %s)\n", domain,
 		rr_class, dns_type_to_string(rr_type));
     }
+#ifdef HAVE_RES_NSEARCH
+    len = res_nsearch(statp, domain, rr_class, rr_type, reply, sizeof(reply));
+#else
     len = res_search(domain, rr_class, rr_type, reply, sizeof(reply));
+#endif
     if (_resolve_debug) {
-#ifdef HAVE__RES
+#ifdef HAVE_RES_NSEARCH
+	statp.options = old_options;
+#elif defined(HAVE__RES)
         _res.options = old_options;
 #endif
 	fprintf(stderr, "dns_lookup(%s, %d, %s) --> %d\n",
 		domain, rr_class, dns_type_to_string(rr_type), len);
     }
+#ifdef HAVE_RES_NSEARCH
+    res_nclose(statp);
+#endif    
     if(len < 0) {
 	return NULL;
     } else {
