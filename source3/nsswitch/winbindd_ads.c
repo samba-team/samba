@@ -143,7 +143,7 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 	ads->password = secrets_fetch_machine_password();
 
 	status = ads_connect(ads);
-	if (!ADS_ERR_OK(status)) {
+	if (!ADS_ERR_OK(status) || !ads->realm) {
 		extern struct winbindd_methods msrpc_methods;
 		DEBUG(1,("ads_connect for domain %s failed: %s\n", 
 			 domain->name, ads_errstr(status)));
