@@ -137,27 +137,30 @@ int net_ads_check(void)
 }
 
 
-static void usergrp_display(char *field, void **values, void *data_area)
+static BOOL usergrp_display(char *field, void **values, void *data_area)
 {
 	char **disp_fields = (char **) data_area;
 
 	if (!field) { /* must be end of record */
 		if (!strchr_m(disp_fields[0], '$')) {
 			if (disp_fields[1])
-				printf("%-21.21s %-50.50s\n", 
+				d_printf("%-21.21s %-50.50s\n", 
 				       disp_fields[0], disp_fields[1]);
 			else
-				printf("%s\n", disp_fields[0]);
+				d_printf("%s\n", disp_fields[0]);
 		}
 		SAFE_FREE(disp_fields[0]);
 		SAFE_FREE(disp_fields[1]);
-		return;
+		return True;
 	}
+	if (!values) /* must be new field, indicate string field */
+		return True;
 	if (StrCaseCmp(field, "sAMAccountName") == 0) {
-		disp_fields[0] = strdup(((struct berval *) values[0])->bv_val);
+		disp_fields[0] = strdup((char *) values[0]);
 	}
 	if (StrCaseCmp(field, "description") == 0)
-		disp_fields[1] = strdup(((struct berval *) values[0])->bv_val);
+		disp_fields[1] = strdup((char *) values[0]);
+	return True; /* always strings here */
 }
 
 static int net_ads_user_usage(int argc, const char **argv)
@@ -186,7 +189,6 @@ static int ads_user_add(int argc, const char **argv)
 	
 	if (ads_count_replies(ads, res)) {
 		d_printf("ads_user_add: User %s already exists\n", argv[0]);
-		ads_msgfree(ads, res);
 		goto done;
 	}
 
@@ -262,7 +264,7 @@ static int ads_user_info(int argc, const char **argv)
 		char **groupname;
 		for (i=0;grouplist[i];i++) {
 			groupname = ldap_explode_dn(grouplist[i], 1);
-			printf("%s\n", groupname[0]);
+			d_printf("%s\n", groupname[0]);
 			ldap_value_free(groupname);
 		}
 		ldap_value_free(grouplist);
@@ -635,6 +637,11 @@ static int net_ads_printer_info(int argc, const char **argv)
 	return 0;
 }
 
+void do_drv_upgrade_printer(int msg_type, pid_t src, void *buf, size_t len)
+{
+	return;
+}
+
 static int net_ads_printer_publish(int argc, const char **argv)
 {
         ADS_STRUCT *ads;
@@ -642,6 +649,7 @@ static int net_ads_printer_publish(int argc, const char **argv)
 	char *uncname, *servername;
 	ADS_PRINTER_ENTRY prt;
 	extern pstring global_myname;
+	char *ports[2] = {"Samba", NULL};
 
 	/* 
 	   these const strings are only here as an example.  The attributes
@@ -650,7 +658,6 @@ static int net_ads_printer_publish(int argc, const char **argv)
 	const char *bins[] = {"Tray 21", NULL};
 	const char *media[] = {"Letter", NULL};
 	const char *orients[] = {"PORTRAIT", NULL};
-	const char *ports[] = {"Samba", NULL};
 
 	if (!(ads = ads_startup())) return -1;
 
@@ -659,6 +666,9 @@ static int net_ads_printer_publish(int argc, const char **argv)
 
 	memset(&prt, 0, sizeof(ADS_PRINTER_ENTRY));
 
+	/* we don't sue the servername or unc name provided by 
+	   get_a_printer, because the server name might be
+	   localhost or an ip address */
 	prt.printerName = argv[0];
 	asprintf(&servername, "%s.%s", global_myname, ads->realm);
 	prt.serverName = servername;
@@ -671,7 +681,7 @@ static int net_ads_printer_publish(int argc, const char **argv)
 	prt.printOrientationsSupported = (char **) orients;
 	prt.portName = (char **) ports;
 	prt.printSpooling = "PrintAfterSpooled";
- 
+
         rc = ads_add_printer(ads, &prt);
         if (!ADS_ERR_OK(rc)) {
                 d_printf("ads_publish_printer: %s\n", ads_errstr(rc));
