@@ -8,8 +8,8 @@ lib_LIBRARIES = libkadm5.a libkadm5srv.a
 
 libkadm5_a_SOURCES = \
 	chpass_s.c context_s.c create_s.c delete_s.c destroy_s.c	\
-	ent_setup.c flush.c free.c get_s.c init_s.c kadm5_err.et	\
-	modify_s.c randkey_s.c rename_s.c set_modifier.c
+	ent_setup.c flush.c free.c get_s.c init_s.c kadm5_err.c	\
+	modify_s.c randkey_s.c rename_s.c set_modifier.c set_keys.c
 
 libkadm5srv_a_SOURCES = $(libkadm5_a_SOURCES) server_glue.c
 
