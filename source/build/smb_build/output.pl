@@ -40,7 +40,9 @@ sub _generate_subsystems($)
 		my $NAME = $CTX->{INPUT}{SUBSYSTEMS}{$key}{NAME};
 		my @OBJ_LIST = @{$CTX->{DEPEND}{SUBSYSTEMS}{$key}{OBJ_LIST}};
 
-		push(@{$CTX->{OUTPUT}{PROTO}{OBJ_LIST}},"\$(SUBSYSTEM_$key\_OBJS)");
+		if ($CTX->{INPUT}{SUBSYSTEMS}{$key}{NOPROTO} ne "YES") {
+			push(@{$CTX->{OUTPUT}{PROTO}{OBJ_LIST}},"\$(SUBSYSTEM_$key\_OBJS)");
+		}
 
 		#
 		# set the lists
