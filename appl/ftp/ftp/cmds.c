@@ -403,7 +403,8 @@ usage:
 		argv[2] = domap(argv[2]);
 	}
 	sendrequest(cmd, argv[1], argv[2],
-	    argv[1] != oldargv1 || argv[2] != oldargv2);
+		    curtype == TYPE_I ? "rb" : "r",
+		    argv[1] != oldargv1 || argv[2] != oldargv2);
 }
 
 /* ARGSUSED */
@@ -481,7 +482,9 @@ mput(int argc, char **argv)
 		    tp = domap(tp);
 		}
 		sendrequest((sunique) ? "STOU" : "STOR",
-			    cp, tp, cp != tp || !interactive);
+			    cp, tp,
+			    curtype == TYPE_I ? "rb" : "r",
+			    cp != tp || !interactive);
 		if (!mflag && fromatty) {
 		    ointer = interactive;
 		    interactive = 1;
@@ -506,7 +509,9 @@ mput(int argc, char **argv)
 		tp = (ntflag) ? dotrans(argv[i]) : argv[i];
 		tp = (mapflag) ? domap(tp) : tp;
 		sendrequest((sunique) ? "STOU" : "STOR",
-			    argv[i], tp, tp != argv[i] || !interactive);
+			    argv[i],
+			    curtype == TYPE_I ? "rb" : "r",
+			    tp, tp != argv[i] || !interactive);
 		if (!mflag && fromatty) {
 		    ointer = interactive;
 		    interactive = 1;
@@ -531,7 +536,9 @@ mput(int argc, char **argv)
 		tp = (ntflag) ? dotrans(*cpp) : *cpp;
 		tp = (mapflag) ? domap(tp) : tp;
 		sendrequest((sunique) ? "STOU" : "STOR",
-			    *cpp, tp, *cpp != tp || !interactive);
+			    *cpp, tp,
+			    curtype == TYPE_I ? "rb" : "r",
+			    *cpp != tp || !interactive);
 		if (!mflag && fromatty) {
 		    ointer = interactive;
 		    interactive = 1;
@@ -551,13 +558,26 @@ mput(int argc, char **argv)
 void
 reget(int argc, char **argv)
 {
-    getit(argc, argv, 1, "r+w");
+    getit(argc, argv, 1, curtype == TYPE_I ? "r+wb" : "r+w");
 }
 
 void
 get(int argc, char **argv)
 {
-    getit(argc, argv, 0, restart_point ? "r+w" : "w" );
+    char *mode;
+
+    if (restart_point)
+	if (curtype == TYPE_I)
+	    mode = "r+wb";
+	else
+	    mode = "r+w";
+    else
+	if (curtype == TYPE_I)
+	    mode = "wb";
+	else
+	    mode = "w";
+
+    getit(argc, argv, 0, mode);
 }
 
 /*
@@ -712,8 +732,9 @@ mget(int argc, char **argv)
 			if (mapflag) {
 				tp = domap(tp);
 			}
-			recvrequest("RETR", tp, cp, "w",
-			    tp != cp || !interactive, 0);
+			recvrequest("RETR", tp, cp,
+				    curtype == TYPE_I ? "wb" : "w",
+				    tp != cp || !interactive, 0);
 			if (!mflag && fromatty) {
 				ointer = interactive;
 				interactive = 1;
@@ -2085,7 +2106,7 @@ void
 newer(int argc, char **argv)
 {
 
-	if (getit(argc, argv, -1, "w"))
+	if (getit(argc, argv, -1, curtype == TYPE_I ? "wb" : "w"))
 		printf("Local file \"%s\" is newer than remote file \"%s\"\n",
 			argv[2], argv[1]);
 }
