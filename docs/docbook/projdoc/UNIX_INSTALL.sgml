@@ -316,8 +316,8 @@
 		<para>By default Samba uses a blank scope ID. This means 
 		all your windows boxes must also have a blank scope ID. 
 		If you really want to use a non-blank scope ID then you will 
-		need to use the -i &lt;scope&gt; option to nmbd, smbd, and 
-		smbclient. All your PCs will need to have the same setting for 
+		need to use the 'netbios scope' smb.conf option.
+                All your PCs will need to have the same setting for 
 		this to work. I do not recommend scope IDs.</para>
 	</sect2>
 
@@ -431,15 +431,5 @@
 		See the smb.conf man page for details.</para>
 	</sect2>
 
-	<sect2>
-		<title>Other Character Sets</title>
-
-		<para>If you have problems using filenames with accented 
-		characters in them (like the German, French or Scandinavian 
-		character sets) then I recommend you look at the "valid chars" 
-		option in smb.conf and also take a look at the validchars 
-		package in the examples directory.</para>
-	</sect2>
-	
 </sect1>	
 </chapter>
