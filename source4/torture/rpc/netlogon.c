@@ -1045,6 +1045,8 @@ static BOOL test_SetPassword(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	password = generate_random_str(mem_ctx, 8);
 	E_md4hash(password, r.in.new_password.data);
 
+	creds_des_encrypt(&creds, &r.in.new_password);
+
 	/* by changing the machine password twice we test the credentials
 	   chaining fully */
 	printf("Testing a second ServerPasswordSet on machine account\n");
